@@ -1,45 +1,46 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 07:37 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 08:01 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
-- NACHTRAG 07:40 (gilt VOR den Zeilen darunter; wo sie widersprechen, gilt dieser): KARTE 2 = **81 von 1 718** (Buchung 07:22).
-  **GELANDET 07:25:49: z706 `w28-klima-kontinent` → main 87bb259c** (V18.546.393; trägt den Klassen-Schnitt der Karte — jeder Zweig mergt ab jetzt
-  `origin/main` und löst `docs/README.md` ganz zur Seite von main). Anspruch `land-meer-luft#3,#4` = koordination 581255a4; die Landung bucht 0,
-  weil die Front der Leiter bei #1 steht. **IM ZUG: z707 `w28-licht-stetig` fc7e4a32** (Stempel 07:17:46, Kandidat c2c7ed12 seit 07:32).
-  **GESTEMPELT, warten auf z708:** `w28-erbe-geburt` 4e1ef816 (07:24:33; der Neulauf des Stand-Takt-Jobs war grün) · `w28-bewohner-satz` 628bc789
-  (07:32:58, Vorwärts-Schritt auf dem Halt 9c80f78c; EHRLICH: kein eigenes Bild dieses Zweigs von mir gesehen — er trägt kein `bild:`-Tag; nach
-  der Landung `bild:dorf` an main ansehen) · `w28-nerv-bewegung` 9958afd3 (07:35:32). Alle drei paarweise und gegen main + licht sauber,
-  PROBE-TAG OK, Bilder der Proben von mir gesehen (Wiese, Dorf, Stadt-voll: heil). Werkzeug: Scratch `stempel.sh <zweig> <kopf40> <msg> [erster
-  Elter]` prüft Kopf, Batterie, merge-tree, Siegel-Wörter und stempelt. RUNDE: noch 15 am 9d4319c0; EIN Sprung nach der Landung von z708 (er trägt
-  dann vier Landungen), nicht vorher.
-  **FAHRT-WAND (Block R4 von OMEN, 07:28) — MEIN ENTSCHEID:** `punkte.cjs:419` summiert die Deckel des ganzen KATALOGS (289 Läufe, GTX Σ 21 080 s,
-  Radeon Σ 21 287 s gegen 12 × 1 740 = 20 880 s mit der Station von auge-der-art) — den fährt seit dem 21.11. kein Gerät; die Wand stieg schon
-  3 → 12 und reißt bei jeder neuen Station (`liste`, `run`, `buchen` fallen an beiden Geräten). Sie bindet ab jetzt die Fahrt, die fährt (`run`:
-  die Liste der Sitzung an ihrem Gerät), der Katalog trägt keine Summe. Auftrag an OMEN `auftrag/2411-fahrt-wand.md` (be505bff), VOR scherbe-liegt.
-  **BIS SEIN KOPF IN punkte-maschine LIEGT, MERGE ICH KEINE STATION.** Danach in dieser Reihe, je mit Blick auf den nächsten Buchungs-Puls:
-  pm-erbe-geburt 0cf308d9 → pm-nerv-bewegung 28e7cbc8 → pm-auge-der-art 42009563 → pm-faecher-kopplung 8ed1dead → pm-faecher-planet 2ee64a40
-  (alle fünf einzeln sauber gegen punkte-maschine 91051ba0, gemessen 07:26).
-  **DRUCK-SCHLAF HAT EINEN TÄTER MIT ZEILE** (Stichprobe ist durch: 10 Wellen; Schlaf gegen Körper-Wind 1,8–6,6 m/s → 0,9–1,3 s, 7,95 m/s → 2,87 s;
-  rot heute 3,9 s): `stamm/koerper-frei.js:1117` `_freiLuftPacken` gibt jedem Körper die GRÖSSTE Quer-Fläche — die flach liegende Glas-Scherbe
-  (~4 mm, ~10 kg/m²) liest im Wind die Breitseite einer fallenden Platte: 0,07 · v² = 4,5–5,7 m/s² bei 8–9 m/s gegen μ·g ≈ 4–6. Gesetz-Defekt mit
-  Spiel-Folge. Auftrag an OMEN `auftrag/2411-scherbe-liegt.md` (e63ac98e): Spike (fester Körper-Wind 5 / 9,5 m/s) VOR dem Schnitt (EINE
-  Flächen-Funktion, der gestützte Körper liest seine Lage). Bis dahin gilt: roter Stand-Takt-Job → EIN Neulauf nur dieses Jobs.
-  **GTX 1050 (war idle) HAT EINE MACHER-WELLE:** die Front `planet.kopplung.land-meer-luft` #1/#2/#5 — `auftrag/2411-klima-front.md` (cf3d50b9):
-  #1 und #2 sind Stations-Schnitte (Kamm einer Kette statt Plateau-Buckel im 3°-Raster: echte Ketten geben 2,92; Rang je Breiten-Gürtel), #5 ist
-  ein Kern-Schnitt (Hebung über 10⁶ a als Funktion der Konvergenz, km statt 200 m; −50 % verlangt 1,73 km). Zweige `klima-hebung` + `pm-klima-front`.
-  **OMEN:** auge-der-art 2 = 380dc644 gepusht 07:27 (Täter: die Wariness rampte über die Sichtweite; jetzt `auraReichM` 21 m), Batterie läuft,
-  Stempel bei Grün `[gpu-probe: gate:kreatur-leben, gate:kreatur-takt, bild:wiese@0.5] [ci voll]`. Reihenfolge OMEN: Fahrt-Wand → scherbe-liegt →
-  ci-post-erbt (dort auch: `model: opus` in `.claude/agents/champion.md`; der Stempel erbt GPU-Probe und Batterie vom Kopf mit gleichem Baum —
-  heute stößt jeder Stempel beides neu an, der Zug sah w28-erbe-geburt deshalb 07:29 nicht bereit und fuhr z707 mit EINEM Zweig).
-  **CLOUD (ListAgents 07:36):** `ort-ausstattung` LÄUFT (Kopf 8574142e, `bild:ort-zeichen` weiter ROT: sie senkte die Schwelle auf 0,1 %, relief
-  0,0 % — Post 5c6edfa1: Schwelle 0,2 % bleibt, Schild wächst, merge main). FÜNF Richter-Sitzungen (Planet, Kopplung, Erleben/Same, Mensch, Leben)
-  stehen auf „waiting on a human“ — sie brauchen einen Klick des Schöpfers, ich kann sie nicht lösen. Idle: bewohner-satz, licht-stetig, klima,
-  nerv-bewegung (ihre Zweige sind gestempelt bzw. gelandet).
-  HAUSHALT 07:14: Woche alle Modelle 59 %, Fable 57 % (Reset 28.11. 21:59). MEIN FEHLER 04:55–06:43: zwei lokale Arbeiter ohne `model` gestartet → sie
-  erbten Fable (einer 2 h 47 min, 1 510 Züge), Fable-Woche 38 → 56 %. REGEL: JEDER Agent-Start nennt `model: "opus"`, das Modell wird im Protokoll
-  nachgelesen, `get_usage` stündlich.
+- NACHTRAG 08:03 (gilt VOR den Zeilen darunter; wo sie widersprechen, gilt dieser): KARTE 2 = **82 von 1 718** (Stand-Datei am Kopf 471545ef, 07:53).
+  **GELANDET:** z706 `w28-klima-kontinent` → 87bb259c (07:25) · z707 `w28-licht-stetig` → c2c7ed12 (07:42) · z708 `w28-erbe-geburt` → **main 07693cc8**
+  (07:59, V18.546.395). Ansprüche gebucht: `land-meer-luft#3,#4` · `himmelsmechanik#1` (f0c9ccbc) · `erbe#1, zivilisation#1` (5a801b48).
+  **IM ZUG: z709 `w28-bewohner-satz2` b446fa03 + `w28-nerv-bewegung` 9958afd3** (seit 07:59:50). Nach der Landung: Anspruch nerv `tiere.bewegung#1`,
+  bewohner die 11 Sprossen aus seinem Zweig-Bericht, `bild:dorf` an main ansehen (kein eigenes Bild dieses Zweigs von mir gesehen), EIN Runden-Sprung.
+  **RUNDE 16 am c2c7ed12** seit 07:47 (Sprung, weil die Radeon am 9d4319c0 durch war und leer stand): Radeon 57 Stationen, GTX 240.
+  **MEIN FEHLER 07:33, GEHEILT 07:42:** der Stempel `w28-bewohner-satz` 628bc789 war ein Vorwärts-Schritt mit ZWEI Eltern — ein Merge erbt keine
+  Batterie (`check.yml:233`, `ci-kopf.cjs` `kopfKette`), die volle Batterie lief am Stempel neu. Geheilt: derselbe Baum als `w28-bewohner-satz2` mit EINEM
+  Elter (306c13eb) → „geerbt vom leeren Vorfahr“, bereit nach 5 min; `w28-bewohner-satz` steht als Halt 68905af4 (kein Abgabe-Betreff), die drei
+  überflüssigen Läufe sind abgebrochen (darum die zwei ROT-Zeilen GPU-PROBE 628bc789/aac19dd4 — kein Befund). REGEL im `stempel.sh`-Kopf: ein
+  Stempel hat EINEN Elter; liegt am Namen ein Halt, bekommt die Abgabe einen neuen Namen.
+  **TAFEL LOG, WERKZEUG GEHEILT:** die Front-Tafel zeigt Akten, nicht Landungen — Klang (klang-leib, z705), Stoffstrom (stoffstrom-kette), Fisch-Pegel
+  und Haarlinie (front-leben, z703) standen „rot mit Täter“, sind aber gebaut und warten nur auf die Messung. Drei Doppel-Macher habe ich VOR dem
+  Start an der Quelle abgefangen (`git log -S`, `zug/anspruch.txt`). Die Tafel liest jetzt die Ansprüche und schreibt „⟵ BEANSPRUCHT <zweig> ⟶“
+  (Scratch `front-tafel-neu.cjs`, Blatt `front-tafel-0750.md`: 296 Fronten, 31 beansprucht). Offen ohne Anspruch — FERN: eis#2 · jahreslauf#2 ·
+  kraft#2 · wanderung#1 · siedlungslage#1 · land-meer-luft#1/#2/#5 · stadtklima#1 · gegenwart#2/#5; NAH: sukzession#1 · kopplung.leib#5 ·
+  aufwaerts#1 (+ tiere.bewegung#1 = nerv-bewegung im Zug); TEIL: tiere.arten#1. Das Werkzeug gehört nach der Schicht in koordination
+  `bericht/2311-werkzeug/front-tafel.cjs` (noch nur im Scratch).
+  **nerv-schwung:** Vorprüfung b5d36832 fiel an EINEM Punkt der Statik (Studio-Vertrag U: `recipes.json` kannte `schwungTangente/-Wechsel/-Spitze`
+  nicht); von mir neu geprägt (3 Unterschiede, sonst byte-gleich), Zwischen-Kopf **f3f72ec6** `[ci voll]` gepusht 07:52, Batterie läuft; GPU-Probe am
+  b5d36832 Radeon GRÜN. MEIN AUGE (Scratch `nerv/blick2/blatt.png`): der Sprint faltet das Schwungbein, der Rumpf neigt sich, die Arme schwingen
+  gegen; im Mittel-Schwung sitzt das Becken noch tief. Abgabe-Vorprüfung „nerv-schwung 2 (auf main …)“ NACH der Landung von z709 (Merge main,
+  volle Tags), dann Stempel.
+  **mensch-nah:** gepusht **2527193d** (auf main c2c7ed12) `[gpu-probe: bild:dorf@0.5] [ci voll]`, Batterie läuft. Haut durch ihr eigenes Tuch
+  576 → 32 (94 %; der Stern-Schnitt an `foundry-core.js:6744` verschlechterte auf 80/512 und ist verworfen). MEIN AUGE (Scratch
+  `bild/mensch-nah/licht/blatt-koordinator-2.png`): vorher dunkle Durchstich-Flecken auf der Brust, nachher glattes Hemd, kein heller Rand an Kragen
+  und Ärmel. Stempel bei Grün; die Sprosse `leib.stoff#1` bleibt ROT bis 0 — Rest-Täter 2 Ecken × 16 Posen, mein nächster Schnitt-Entscheid: der Weg
+  misst den Abstand zur Haut-FLÄCHE (nächster Punkt auf den Dreiecken), nicht die Höhe über der Tangenten-Ebene einer 3 cm fernen Ecke.
+  **FAHRT-WAND:** OMENs Kopf liegt 08:00 noch nicht in punkte-maschine → ich merge weiter KEINE Station (Reihe: pm-erbe-geburt → pm-nerv-bewegung →
+  pm-auge-der-art → pm-faecher-kopplung → pm-faecher-planet). auge-der-art 2 = 380dc644: Batterie 12 von 22 grün, 0 rot (08:00).
+  **OMEN PLATTE:** 07:34/07:42 Alarm „C: frei 7,8 GB < 10 GB, Landung angehalten“, 07:44 „19,3 GB — weiter“. Wer was löschte, steht nicht bei mir.
+  **CLOUD:** `ort-ausstattung` weiter am Kopf 8574142e (`bild:ort-zeichen` ROT), kein neuer Push seit dem Post 5c6edfa1. Fünf Richter-Sitzungen
+  warten auf einen Klick des Schöpfers. GTX 1050: klima-front (`auftrag/2411-klima-front.md`), noch kein Zweig; `gegenwart#2` (Orogen an der
+  konvergenten Grenze, Gipfel 46,3 % gegen ≥ 95 %) hat dieselbe Wurzel wie ihr #5 — im Zensus mitlesen.
+  ARBEITS-BÄUME: 448 (232 Geschwister-Ordner) — Last für jeden git-Ruf; neue Arbeiter nehmen ruhende Bäume, keinen neuen.
+  HAUSHALT 07:14: Woche alle Modelle 59 %, Fable 57 % (Reset 28.11. 21:59); nächste Lesung fällig 08:15. REGEL: JEDER Agent-Start nennt
+  `model: "opus"`, das Modell wird im Protokoll nachgelesen (beide neuen Arbeiter: claude-opus-5-5, gelesen 08:00).
 - GELANDET 24.11.: z700 `w28-linse-slot-rest` (01:09) · z701 `w28-wetter-am-ort` → 60e8909d (02:46) · z702 `w28-front-stoff` → 5b0f551a (03:55) ·
   z703 `w28-front-leben` → 447eaea6 (04:40) · z704 `w28-vorrat-wartet-erwachen` → bad4d677 (kein Anspruch; das Rennen des Welt-Wechsels, die Register-Zeile dazu
   ist gefallen) · z705 `w28-klang-leib` → main **9d4319c0** (05:43, V18.546.392; Stempel 05:03 →
@@ -105,22 +106,17 @@
   m/s, Sprint 5,18 → 6,28 m/s); Stationen `pm-nerv-bewegung` 28e7cbc danach. MEIN BLICK (Bilder Scratch `nerv/blick/`): Gehen trägt (Ferse zuerst,
   Abrollen), die Arme hängen; der SPRINT ist ein Spagat-Sprung (beide Beine fast gestreckt, Rumpf senkrecht, Ferse zuerst) — an main genauso, keine
   Verschlechterung, aber kein Sprint.
-- LOKALE ARBEITER AN DER RADEON (zwei = Obergrenze, beide Plätze belegt, beides MACHER, beide OPUS — im Protokoll nachgelesen): `nerv-schwung` (NEUER
-  Arbeiter seit 06:50, der Fable-Arbeiter ist angehalten; gestapelt auf 5ce568cb im Baum `AnazhRealm-nerv`): Schwung des Beins, Aufsatz, Rumpf und Arme
-  als EINE stetige Funktion der Geschwindigkeit im Kern (Froude-Achse; `ziele`/`kontakt` der `VERB_TAFEL` steuern heute 0 von 11 Verben,
-  `koerper-core.js:6163`), Profi-Zahlen im Brief (Knie-Spitze im Schwung 60° / 90–110° / ≥ 120°, Vorfuß im Sprint, Duty 0,6 → 0,25), Bildpaar in
-  Scratch `nerv/blick2/`. MEIN AUGE auf 5ce568cb (Scratch `nerv/blick/`): Gehen rollt über die Ferse (gut), die Arme hängen; der Sprint ist ein Spagat
-  mit zwei fast gestreckten Beinen, aufrechtem Rumpf und Fersen-Aufsatz — auf main genauso, das ist der Auftrag der Welle. · `mensch-nah` (Baum
-  `AnazhRealm-nah`, lokal 21f0513b auf 08aa22eb auf bb7c53c9, NICHT gepusht): Haut durch ihr eigenes Tuch 576 (main) → 0 (08aa22eb, aber mit hellem
-  Rand an Kragen und beiden Ärmel-Säumen — mein Auge 06:55: Rückschritt im Bild) → 32 (21f0513b: `__hautMaske` lässt hinter jeder offenen Tuch-Kante ein
-  Band Haut stehen, Breite √3 · (Spalt + 1,5 · luftM); die Kragen-Hebung ist gestrichen; mein Auge 07:13: kein heller Rand mehr bei 1,5 m). REST-TÄTER
-  mit Zeile: `foundry-core.js:6744` (`__hautUnterTuch` misst die Höhe über der Tangenten-Ebene einer Haut-Ecke, die 3,2 cm seitlich liegt → 16,5 mm
-  Scheinweg durch die Schulter-Naht, 2 Ecken × 16 Posen). AUFTRAG 07:14 (derselbe Arbeiter, 122k Kontext): eine Tuch-Ecke regiert nur die Haut, in
-  deren Stern sie fällt; Zeitkasten 30 min; danach in JEDEM Fall Goldens, Bildpaar im selben Licht (frontal + Profil), Merge des Klassen-Schnitts,
-  `cloud-post/mensch-nah.md`, EIN Push „Vorprüfung mensch-nah 2 … [ci voll]“. Die Station (`pm-mensch-nah`, zählt heute Haut unter FREMDEM Tuch) buche
-  ich nach der Landung aus Scratch `mensch-nah/station-eigenes-tuch.diff` (alte Akten der Sprosse im selben Commit weg). GESICHT (`leib.gesicht#1`
-  7 von 10) = nächste Welle: drei Täter benannt (`haaransatz`-Spanne `koerper-core.js` ~5173 gegen `KOPF_SOLL` ~1366; Lippen- und Augenhöhlen-Ton gegen
-  `KOPF_TON` ~1427), kein Schnitt. Verboten lokal: `npm run check`, voller Playtest, Ollama; GPU ≤ 180 s je Lauf, nie zwei zugleich.
+- LOKALE ARBEITER AN DER RADEON (zwei = Obergrenze, beide Plätze belegt seit 07:58, beides MACHER, beide OPUS — im Protokoll nachgelesen; nur CPU,
+  keine GPU, kein Browser; RAM frei 16 GB beim Start): **`tat-aufwaerts`** (Baum `AnazhRealm-brand`, von main c2c7ed12): `leben.oeko.sukzession#1`
+  (Übergänge in Folge 3 gegen ≥ 4; Sukzession als EINE Funktion der Zeit seit der Wunde, Gesetz in phyto-core, `_sukzession` liest) und
+  `same.kopplung.aufwaerts#1` (Orte geändert 0 gegen ≥ 10; gespeichert bleibt nur die Tat, Pegel · Wuchs · Wild lesen sie im Wirk-Radius). ·
+  **`wind-saison`** (Baum `AnazhRealm-oeko`): `leben.pflanzen.kraft#2` (Böen-Laufzeit 36,9 % gegen ≤ 20 %; die Böe wandert mit dem Wind, EINE
+  Quelle für CPU und Shader), `planet.kopplung.stadtklima#1` (Abweichung 61,9° gegen ≤ 20°; `_windAt` liest die Gasse aus dem Plan des Orts),
+  `leben.pflanzen.jahreslauf#2` (Rang 0 gegen ≥ 0,8; Phänologie je Art als Wärmesumme im Kern). Beide: Zensus zuerst, Linse in bestehender Familie
+  mit Mutante, EIN Push „Vorprüfung <zweig> (auf main …) … [ci voll]“ mit den Tags aus `zug.cjs probe-tag`, Bericht `cloud-post/<zweig>.md` im Zweig.
+  Geendet: `nerv-schwung` (Kopf f3f72ec6, siehe NACHTRAG) · `mensch-nah` (Kopf 2527193d, siehe NACHTRAG; im Ordner `bild/mensch-nah/licht/` liegen
+  zwei Fehlschuss-Dateien `nachher-s9-seite1.5-rot.png` + `.abnahme.json`). Verboten lokal: `npm run check`, voller Playtest, Ollama; GPU ≤ 180 s
+  je Lauf, nie zwei zugleich.
 - RUNDE 15 am Kopf main 9d4319c0 seit 05:53 (Sprung von 447eaea6, koordination 3043a44d; Runde 14 stand bei gtx 10/241, radeon 15/58). K1 = die Ansprüche
   bis z705. 06:08: `gtx laeuft 0/241`, `radeon laeuft`. Die GTX braucht ~9 min je Station — die Listen beginnen mit den jüngsten Ansprüchen.
 - CI-REIHE = der Takt der Landung (20 gehostete Jobs, eine Batterie = 22; NICHT FIFO, keine Vorfahrt — Register-Nachtrag 06:10). Der Vorfahrt-Wächter läuft
