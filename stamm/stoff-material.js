@@ -166,9 +166,7 @@ class AnazhRealm_stoff_material {
         // (`positionGeometry`, Wurzel bei y = 0) trägt die Halm-Höhe; `opts.hoehe` reicht eine eigene Höhe in Metern.
         const hf = max(opts.hoehe || TSL.positionGeometry.y, float(0.0));
         const B = AnazhRealm.WIND_BOE;
-        const gust = sin(
-            wu.uBoePhase.sub(positionWorld.x.mul(wd.x).add(positionWorld.z.mul(wd.y)).mul(float(B.k)))
-        )
+        const gust = sin(wu.uBoePhase.sub(positionWorld.x.mul(wd.x).add(positionWorld.z.mul(wd.y)).mul(float(B.k))))
             .mul(float(B.amp))
             .add(float(B.mitte));
         let windEff = wu.uWindStrength.mul(gust);
