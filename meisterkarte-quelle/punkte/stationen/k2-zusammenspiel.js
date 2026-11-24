@@ -1112,6 +1112,8 @@ L.perspektive("planet", (() => {
                         const t = st.spielZeit || 0;
                         const ab = [];
                         const abG = [];
+                        const platz = [];
+                        const dW = r._windDirAt(t);
                         let groesste = 0;
                         let bewohner = 0;
                         let kern = null;
@@ -1129,8 +1131,14 @@ L.perspektive("planet", (() => {
                                     const mx = Si.ox + (pts[i].x + pts[i - 1].x) / 2, mz = Si.oz + (pts[i].z + pts[i - 1].z) / 2;
                                     const g = Math.atan2(dx, dz);
                                     const dev = (w1) => { let d = Math.abs(Math.atan2(w1.x, w1.z) - g) * (180 / Math.PI) % 180; return d > 90 ? 180 - d : d; };
-                                    ab.push(dev(r._windAt(mx, mz, t, {})));
-                                    abG.push(dev(r._windAt(mx + 300, mz + 300, t, {})));
+                                    // DER UMFANG DER SPROSSE (stadtklima#1): die Gasse ist die Schlucht mit Fassade beidseits (fachwerk
+                                    // `gassenWind` κ ≥ 0,99) — dort das Maß und sein Gegenlauf 300 m abseits; der Platz (κ 0, kein Haus in
+                                    // Reichweite) ist die Gegenprobe: frei folgt der Wind dem Feld, nicht dem Weg
+                                    const kap = r._gassenWind(mx, mz, dW).kappa;
+                                    if (kap >= 0.99) {
+                                        ab.push(dev(r._windAt(mx, mz, t, {})));
+                                        abG.push(dev(r._windAt(mx + 300, mz + 300, t, {})));
+                                    } else if (kap === 0) platz.push(dev(r._windAt(mx, mz, t, {})));
                                 }
                             }
                         }
@@ -1147,14 +1155,43 @@ L.perspektive("planet", (() => {
                         const tK = kern ? r._temperaturAt(yK, 0) : null;
                         const tR = rand ? r._temperaturAt(rand.y, 0) : null;
                         const tRoh = kern ? r._temperaturAt(r._terrainSaatY(kern.x + 600, kern.z, true), 0) : null;
+                        // DIE PFÜTZE IM SCHATTEN (stadtklima#1), als VERHALTEN: am Haus des Dach-Pools, das dem Auge am nächsten steht,
+                        // ein Ort im Wurf seiner Wand (gegen die Sonne) und einer in der Sonne (vor ihr) — die Zeit, bis die Nässe am
+                        // Ort (`_naesseAm`, derselbe Leser wie der Stoff) trocken ist, unter klarem Mittag (die Uhr kehrt zurück)
+                        let schatten = null;
+                        const U = st.atmoUniforms;
+                        if (typeof r._naesseAm === "function" && U && U.dachLage && U.schattenSonne) {
+                            const uhr = st.timeOfDay;
+                            try {
+                                st.timeOfDay = 0.45;
+                                const wfK = r._weatherFieldFor("sunny");
+                                r._schattenTakt(r.constructor._trockenAnteil(wfK));
+                                const S = U.schattenSonne.value, h = Math.hypot(S.x, S.z) || 1;
+                                const R = r.constructor._trockenRate(wfK);
+                                const zeit = (x, y, z) => { for (let q = 0; q < 2e4; q += 5) if (r._naesseAm(x, y, z, q * R) <= 0) return q; return null; };
+                                for (let i = 0; i < U.dachLage.length && !schatten; i++) {
+                                    const L = U.dachLage[i].value, M = U.dachMass[i].value;
+                                    if (!(M.x > 0)) continue;
+                                    const e = Math.hypot(M.x, M.y);
+                                    const o = (k) => { const x = L.x + (k * S.x / h) * (e + 2), z = L.y + (k * S.z / h) * (e + 2); return [x, r._terrainSaatY(x, z, true) + 0.05, z]; };
+                                    const [pS, pO] = [o(-1), o(1)];
+                                    if (!(r._hausSchatten(...pS) === 1 && r._hausSchatten(...pO) === 0)) continue;
+                                    const [tS, tO] = [zeit(...pS), zeit(...pO)];
+                                    if (tS && tO) schatten = { trockenSchattenS: tS, trockenSonneS: tO, verh: r3(tS / tO), haus: i };
+                                }
+                            } finally {
+                                st.timeOfDay = uhr;
+                                r._schattenTakt(r.constructor._trockenAnteil(r._weatherFieldFor(st.weather)));
+                            }
+                        }
                         const wf = r._weatherFieldFor();
                         const bk = kern ? r._windAt(kern.x, kern.z, t, {}) : null;
                         const bf = kern ? r._windAt(kern.x + 600, kern.z, t, {}) : null;
-                        return { segmente: ab.length, abweichung: r3(m(ab)), abweichungFrei: r3(m(abG)), schatten: ["_schattenTrocknen", "_naesseSchatten"].filter((n) => typeof r[n] === "function").length, groesste, bewohner, dK: tK != null && tR != null ? r3(tK - tR) : null, dHoeheM: rand ? r3(rand.y - yK) : null, dKOhneHoehe: tK != null ? r3(tK - tRoh) : null, nebel: r3(wf.fog), boeFaktor: bk && bf && bf.boe ? r3(bk.boe / bf.boe) : null };
+                        return { segmente: ab.length, abweichung: r3(m(ab)), abweichungFrei: r3(m(abG)), platzStuecke: platz.length, platzGrad: r3(m(platz)), schatten: schatten ? schatten.verh : 0, pfuetze: schatten, groesste, bewohner, dK: tK != null && tR != null ? r3(tK - tR) : null, dHoeheM: rand ? r3(rand.y - yK) : null, dKOhneHoehe: tK != null ? r3(tK - tRoh) : null, nebel: r3(wf.fog), boeFaktor: bk && bf && bf.boe ? r3(bk.boe / bf.boe) : null };
                     };
                     const w = await S(seite, {});
                     const aus = M.teil || {};
-                    aus[1] = { werte: { abweichungGrad: w.abweichung, abweichungFrei: w.abweichungFrei }, zeuge: w };
+                    aus[1] = { werte: { abweichungGrad: w.abweichung, abweichungFrei: w.abweichungFrei, platzGrad: w.platzGrad, schattenTrockenVerh: w.schatten }, zeuge: w };
                     aus[2] = { werte: { dK: w.dK }, zeuge: w, auge: await M.auge("stadtklima-s2", { ort: "wiese" }), ...(w.groesste >= 100 ? {} : { nicht: "keine Stadt mit 10² Häusern geladen (größter Ort " + w.groesste + " Häuser); _temperaturAt liest nur die Höhe: Kern − Rand auf gleicher Höhe " + w.dK + " K (" + w.dHoeheM + " m Höhenversatz), 600 m daneben ohne Höhen-Abgleich " + w.dKOhneHoehe + " K — die Höhe, keine Stadt" }) };
                     aus[3] = { werte: { sichtProzent: 100, boeFaktor: w.boeFaktor }, zeuge: w, nicht: "keine Stadt mit 10⁴ Häusern (die Wand des Rang-Gesetzes 500); der Dunst ist ein Wetter-Feld der ganzen Welt (Nebel " + w.nebel + ")" };
                     aus[4] = { werte: {}, zeuge: w, nicht: "keine 10⁶ Bewohner (geladen " + w.bewohner + ")" };
@@ -1170,12 +1207,13 @@ L.perspektive("planet", (() => {
                             const z = roh.zeuge || {};
                             if (!(z.segmente >= 10)) return "nur " + (z.segmente || 0) + " Gassen-Stücke gemessen";
                             if (!(z.abweichungFrei - z.abweichung >= 10)) return "der Gegenlauf 300 m abseits weicht gleich ab (" + z.abweichungFrei + "° ↔ " + z.abweichung + "°): die Gasse lenkt nicht";
-                            if (!(z.schatten > 0)) return "kein Leser lässt die Pfütze im Schatten später trocknen";
+                            if (!(z.platzGrad - z.abweichung >= 10)) return "der Platz (κ 0) folgt dem Weg wie die Gasse (" + z.platzGrad + "° ↔ " + z.abweichung + "°): keine Gegenprobe";
+                            if (!(z.schatten > 1)) return "die Pfütze trocknet im Schatten nicht später (Trocken-Zeit Schatten ÷ Sonne " + z.schatten + ")";
                             return null;
                         },
                         taeter: "stamm/stoff-material.js _windAt (liest keine Häuser)",
-                        leser: "stamm/stoff-material.js:368 — _windAt liest Relief (windForm), keine Gasse; _trockenRate (stoff-material.js:2236) kennt keinen Schatten",
-                        gruen: { werte: { abweichungGrad: 12 }, zeuge: { segmente: 40, abweichung: 12, abweichungFrei: 44, schatten: 1 } },
+                        leser: "stamm/stoff-material.js _windAt über _gassenWind (fachwerk gassenWind, die Gasse κ ≥ 0,99); stamm/stoff-dach.js _naesseAm über _hausSchatten (der Dach-Pool, die Sonne des Lichts) — der Stoff liest dieselbe Nässe am Ort (_naesseOrtKnoten)",
+                        gruen: { werte: { abweichungGrad: 12 }, zeuge: { segmente: 40, abweichung: 12, abweichungFrei: 44, platzGrad: 43, schatten: 2.6 } },
                         attrappen: [{ name: "12° ohne Gassen", roh: { werte: { abweichungGrad: 12 }, zeuge: {} } }],
                     },
                     2: {
