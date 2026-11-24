@@ -247,13 +247,13 @@ function selbsttest() {
                 rest: 0,
                 grenze: 29.982,
                 scheiben: [[8.031, 5.557, 1, 16], [12.037, 3.234, 2, 32], [16.045, 2.177, 1, 16], [24.064, 1.296, 1, 6], [36.097, 0.811, 1, 0], [48.142, 0.593, 1, 0]].map(([R, last, n, scherben]) => ({ R, gebrochen: scherben > 0, last, kreuz: 4 * n, scherben, ...(scherben ? ((k) => ({ soll: scherben, kanteSoll: k.slice(), kante: k.slice() }))(scherben === 6 ? [0.085, 0.25] : [0.066, 0.184]) : {}) })), // prettier-ignore
-                ...{ scherben: 70, zaehler: 70, vorrat: { rest: 5, scherben: [9, 4] }, wach: 0, schlafS: 2.167, verzug: 0.032 },
+                ...{ scherben: 70, zaehler: 70, vorrat: { rest: 5, scherben: [9, 4] }, wach: 0, schlafS: 2.167, verzug: 0.032, brueche: { zugleich: 2, ueber: 0, bilder: 6 } },
                 staub: { randM: 43.173, kornMm: 0.111, ostM: 8, narbeM2: 2300, sollG: 1200, echt: { ballen: 9, lebend: 9 }, gesaet: 384, ballen: 384, max: 384, grob: 150, masseG: 1190, aussen: 0, jenseits: 0, lebenS: 13.9, bilder: 700, ballenMax: 384, satzMax: 384, luftMaxG: 1150, satzMaxG: 1150, ohneSatz: 0, nebenG: 0.01, steigt: 0, endeS: 12.2, danach: { satz: 0, uhr: null } },
                 bildLage: Object.fromEntries([["geburt", 70], ["neubau", 16], ["stand", 1]].map(([k, n]) => [k, { n, schief: 0, grad: 0, mm: 0 }])), // prettier-ignore
                 kiste: { R: 6, dv: 1.542, soll: 1.542, wegM: 0.202 },
                 spieler: { R: 16, dv: 1.005 },
                 ohr: { dp: 18281.248, dauer: 0.008 },
-                mutante: { raeumt: 4, bruch: [3254, 6318, 3516, 1832], bild: { geburt: [70, 92.148], neubau: [16, 172.125], stand: [1, 57.296] }, staub: { aussen: 180, masseG: 2400, sollG: 1200 } },
+                mutante: { raeumt: 4, bruch: [3254, 6318, 3516, 1832], bild: { geburt: [70, 92.148], neubau: [16, 172.125], stand: [1, 57.296] }, staub: { aussen: 180, masseG: 2400, sollG: 1200 }, brueche: { zugleich: 2, ueber: 0, bilder: 6 } },
                 nachher: simPh(0, 60),
             }))([
                 { art: "welle", einheiten: 2245, blick: 71, netz: 4136 },
@@ -791,6 +791,11 @@ function selbsttest() {
         // hinter seiner Ankunft
         ["das Bild-Budget hält den letzten Bruch 2,6 s zurück", ["simWecken.druck.verzug=", 2.628], /DRUCK-VERZUG: die letzte Frist fiel 2.628 s nach ihrer Ankunft \(Soll ≤ 0.35 s\)/],
         ["kein Verzug gemessen", ["simWecken.druck.verzug=", null], /DRUCK-VERZUG: die letzte Frist fiel null s/],
+        // scherbe-liegt: das Budget des Takts in Brüchen, nie an der Wanduhr
+        ["das Budget liest die Wanduhr (unter stehender Uhr fällt alles Fällige)", ["simWecken.druck.mutante.brueche.ueber=", 1], /DRUCK-WANDUHR: unter stehender Uhr trug ein Bild 1 Bruch über dem Gesetz/],
+        ["ein Bild bricht über dem Budget", ["simWecken.druck.brueche.ueber=", 2], /DRUCK-BUDGET: ein Bild der Welle trug 2 Brüche über dem Gesetz/],
+        ["kein Bild trägt zwei fällige Werke", (b) => (b.simWecken.druck.brueche.zugleich = b.simWecken.druck.mutante.brueche.zugleich = 1), /BLIND: kein Takt der Welle sah zwei fällige Werke/],
+        ["das Budget ungemessen", (b) => delete b.simWecken.druck.mutante.brueche, /LEER: die Probe maß das Budget des Takts nicht/],
         // der erste Lauf an 52 Werken: 53 von 208 Scherben lagen nach der Welle wach (sie hielten einander, `_freiVier`)
         ["die Scherben schlafen nicht ein", ["simWecken.druck", { wach: 5, schlafS: null }], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nie \(5 liegen nach 10 s wach\) \(Soll ≤ 3 s\)/],
         ["die letzte Scherbe schläft nach 6 s", ["simWecken.druck.schlafS=", 6], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 6 s \(Soll ≤ 3 s\)/],
@@ -3700,6 +3705,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                     const plan = f.art === "werk" && f.q ? (f.q._gesetz && f.q._gesetz.plan) || st.blueprints[f.q.type] : null;
                                     const p = f.q ? (f.q._frei ? { x: f.q._frei.p[0], z: f.q._frei.p[2] } : f.q.position) : st.playerMesh.position;
                                     const e = { art: f.art, R: r3(Math.hypot(p.x - f.welle.x, p.z - f.welle.z)), teile: plan && plan.parts ? plan.parts.length : 0 };
+                                    if (f.art === "werk") werkImTakt++;
                                     const vor = new Set(freie());
                                     mess(e, () => P._druckTrifft.call(this, f));
                                     const neu = freie().filter((x) => !vor.has(x));
@@ -3709,6 +3715,29 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 };
                                 r._druckEnde = function (w) {
                                     mess({ art: "ende" }, () => P._druckEnde.call(this, w));
+                                };
+                                // DAS BUDGET DES TAKTS (scherbe-liegt): je Takt der Welle die fälligen Werke (`zugleich`: wie viele zugleich warteten),
+                                // die gefallenen über dem Gesetz (`ueber`: mehr als `DRUCK.bruecheJeBild` und das Soll des Rückstands) — hier gerechnet,
+                                // wie `_tickDruck` es rechnet. Die Mutante läuft unter STEHENDER UHR (`performance.now` steht im Takt): liest das
+                                // Budget die Wanduhr, fällt unter ihr alles Fällige in einem Bild — DRUCK-WANDUHR
+                                const BR = (D.brueche = { zugleich: 0, ueber: 0, bilder: 0 });
+                                let werkImTakt = 0;
+                                r._tickDruck = function () {
+                                    const F = this._druckFristen || [];
+                                    const jetzt = st.spielZeit;
+                                    const faellig = F.filter((f) => f.t <= jetzt);
+                                    const soll = faellig.length ? Math.max(DR.mindestJeBild, Math.ceil((faellig.length * (jetzt - Math.min(...faellig.map((f) => f.t)))) / DR.verzugS)) : 0;
+                                    BR.zugleich = Math.max(BR.zugleich, faellig.filter((f) => f.art === "werk").length);
+                                    const uhr = performance.now;
+                                    if (mutante) performance.now = ((t) => () => t)(uhr.call(performance));
+                                    werkImTakt = 0;
+                                    try {
+                                        return P._tickDruck.call(this);
+                                    } finally {
+                                        performance.now = uhr;
+                                        if (werkImTakt) BR.bilder++;
+                                        BR.ueber = Math.max(BR.ueber, werkImTakt - Math.max(DR.bruecheJeBild | 0, soll));
+                                    }
                                 };
                                 const stoss = new Map();
                                 r._druckStoss = function (q, ...a) {
@@ -3732,7 +3761,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                             delete this._werkPoseZeigen;
                                         }
                                     };
-                                const eigen = ["_ladungUmsatz", "_druckWelle", "_druckStaub", "_druckTrifft", "_druckEnde", "_druckStoss", "_substanzKlang", "_grundrissRaeumen", "_rebuildArchitectureMesh", "_brandZellen", "_brandNarbeFn"];
+                                const eigen = ["_tickDruck", "_ladungUmsatz", "_druckWelle", "_druckStaub", "_druckTrifft", "_druckEnde", "_druckStoss", "_substanzKlang", "_grundrissRaeumen", "_rebuildArchitectureMesh", "_brandZellen", "_brandNarbeFn"];
                                 const [kiste0, kisteR] = [kiste._frei.p.slice(), Array.from(kiste._frei.R)];
                                 const wachN = () => st.architectures.filter((e) => e._frei && !e._frei.schlaf && !bautenVor.has(e)).length;
                                 const loesche = () => (st.brandFeld && (r._brandRest = st.brandFeld.clear()), (st.worldMeta.taten.length = taten0)); // das Feuer des Funkens: von Hand, ohne Asche
@@ -3931,6 +3960,8 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             // der Staub unter der Narbe, die überall als Asche gilt: Ballen westlich der gestellten Narbe, seine Masse gegen das Soll
                             staub: DM.staub ? { aussen: DM.staub.aussen, masseG: DM.staub.masseG, sollG: DM.staub.sollG } : null,
                             ms: DM.ms,
+                            // das Budget des Takts unter stehender Uhr
+                            brueche: DM.brueche,
                         };
                         // DAS FENSTER ZÄHLT SCHRITTE DES BRANDS, nie Bilder (linse-brand-schritte): die Uhr der Welt geht erst einen
                         // Schritt weiter, wenn der vorige ganz ist (`_brandRest` leer) — ein langsamer Läufer geht denselben Schritt in

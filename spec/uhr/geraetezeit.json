@@ -33,7 +33,7 @@
   "dirigent-regler": "messung _exportPerfTrace _flightRecorderBuildTrace:3 _flightRecorderInit:2 _flightRecorderSampleSizes:2 _flightRecorderTick:3 _perfGpuResolveKick:3 _perfGpuSample:2 _perfPanelRender:2 _perfSenseLap _perfSenseRender",
   "dirigent-takt": "frist _bauPflichtGang:2 _bauer:2 _buildDeferrableJobs:9 _fristAufgabe _fristRest _kappeOffen _ladeBildFaellig _ladeFrist:2 · messung _gpuLeineBinden _gpuLeineFrei:2 _loopWeatherAndGrowth · gpu _loopRender · takt startEternalLoop:10",
   "feld-dsl": "anzeige grokSpeakFromJournal:3",
-  "feld-brand": "frist _brandArbeit _tickBrand _tickDruck:2",
+  "feld-brand": "frist _brandArbeit _tickBrand",
   "feld-leben": "messung _analogEMetrologieStempelLog · speicher chatSystemPatterns",
   "feld-nexus": "ki llmBuildSystemPrompt maybeAnswerWithLlm",
   "gelaende-boden": "messung _ortWahlImFaden:2",
