@@ -62,20 +62,27 @@ class AnazhRealm_kreatur_furcht {
         // Ein PIRSCHENDER Jäger bleibt unbemerkt bis jagd.pirschSichtM, ein HETZENDER fällt auf, sobald das Auge der Beute ihn
         // sieht (`_kreaturSiehtM`: sein Fell gegen den Boden unter ihm im Rezeptorraum der Beute — Welle LF: die Jagd gelingt aus
         // der Pirsch; bis auge-der-art sah jede Beute jeden hetzenden Jäger auf denselben 22 m, der Wolf im Gras wie im Schnee).
+        // ENTDECKUNG ≠ ALARM (auge-der-art 2): das Auge sagt, OB die Beute ihn sieht; AB WELCHER NÄHE sie flieht, sagt die
+        // Fluchtdistanz ihrer Gattung (`_kreaturFluchtDistanzM`, das Feldmaß — dasselbe der Glut und der Flucht vor dem Menschen).
+        // Bis hier war der Flucht-Radius die ganze Sichtweite: der Hirsch floh einen hetzenden Wolf ab 1 066 m und lief
+        // fluchtRadius = r + 2,2 r ≈ 3,5 km weit (gate:kreatur-takt an der GTX 595 s über dem Deckel 480 s).
         const sichtPirsch = AnazhRealm._verhaltenGesetz().jagd.pirschSichtM;
         let best = Infinity;
         let J = null;
         let sichtJ = 0;
+        let fluchtM = -1;
         for (const j of jaeger) {
             if (j === creature || !j.position) continue;
             const d = Math.hypot(j.position.x - creature.position.x, j.position.z - creature.position.z);
             if (!(d < best)) continue;
-            const sicht =
-                j.userData && j.userData._motionZustand === "hetzen" ? this._kreaturSiehtM(creature, j) : sichtPirsch;
+            const hetzt = j.userData && j.userData._motionZustand === "hetzen";
+            if (hetzt && fluchtM < 0) fluchtM = this._kreaturFluchtDistanzM(creature);
+            // das Auge wird nur gefragt, wo es zählt: in der Fluchtdistanz (die Kosten folgen der Nähe, nie dem Bestand)
+            const sicht = !hetzt ? sichtPirsch : d < fluchtM ? Math.min(fluchtM, this._kreaturSiehtM(creature, j)) : 0;
             if (d < sicht) [best, J, sichtJ] = [d, j, sicht];
         }
         // Ein jagender Jäger im Blick wiegt wie ein Treffer (combatFearWariness): die Beute flieht, solange sie ihn sieht
-        // (Flucht-Radius = die Distanz, in der ihr Auge ihn sieht).
+        // (Flucht-Radius = die Fluchtdistanz, die ihr Auge trägt).
         if (!J || NAT.combatFearWariness < wSpieler) return wSpieler;
         von.x = J.position.x;
         von.z = J.position.z;
@@ -119,10 +126,6 @@ class AnazhRealm_kreatur_furcht {
         const FG = AnazhRealm._furchtGesetz();
         const erinnert = this._kreaturFurchtErinnert(creature);
         const weit = 1 + Math.max(0, erinnert) * FG.F.fluchtJeFurcht;
-        // DAS AUGE DER ART (auge-der-art): fern der Distanz, in der sein Auge den Spieler sieht, ignoriert ihn das Wesen — seine
-        // Farbe gegen den Boden unter ihm im Rezeptorraum der Art (`_kreaturSiehtM`). Bis auge-der-art EIN noticeRadius 22 m
-        // für jede Gattung, jede Farbe und jeden Boden.
-        const witterung = this._kreaturSiehtM(creature, this.state.playerMesh) * weit;
         von.x = pm.x;
         von.z = pm.z;
         von.r = NAT.fleeRadius * weit;
@@ -137,25 +140,43 @@ class AnazhRealm_kreatur_furcht {
         // schrecken weiter. Bis oekologie.K4#2 verscheuchte die Furcht des Umstellten (chaos × menaceFromChaos) sein Rudel.
         const jaegt = (this._spielerJaeger || []).includes(creature);
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        const bedroht = FG.bedrohung(e, NAT);
+        // ENTDECKUNG ≠ ALARM (auge-der-art 2): das Auge sagt, OB das Wesen den Spieler wahrnimmt (`sieht`: seine Farbe gegen den
+        // Boden unter ihm im Rezeptorraum der Art, `_kreaturSiehtM` — Hunderte Meter); AB WELCHER NÄHE es ihn angeht, sagt die
+        // Fluchtdistanz seiner Gattung (`alarm`, das Feldmaß — dasselbe der Glut und des hetzenden Jägers). Bis auge-der-art EIN
+        // noticeRadius 22 m für jede Gattung, jede Farbe und jeden Boden; bis auge-der-art 2 rampte die Wariness über die ganze
+        // Sichtweite: auf 90 m stand der scheue Hirsch bei +0,80, der kühne bei −0,84 neugierig auf dem Weg zum Spieler (Playtest
+        // Tier-Separation „Anker nicht initialisiert“). Ein Leib ohne Auge (keine Gattung im Gesetzbuch) sieht nichts.
+        const auge = this._kreaturAuge(creature);
+        const d0 = auge ? this._kreaturFluchtDistanzM(creature) : 0;
+        const fluchtM = d0 * weit;
+        // das Auge wird nur gefragt, wo es zählt — in der Fluchtdistanz und, im pfad, in der Flucht vor dem Menschen, die eine
+        // drohende Aura weitet (`_kreaturMenschFlucht`, dasselbe Gesetz `fluchtDistanz`): die Kosten folgen der Nähe, nie dem Bestand
+        const reichM =
+            mode === "pfad" && !jaegt
+                ? Math.max(fluchtM, FG.fluchtDistanz(d0, erinnert, bedroht, ud.bond || 0, FG.F))
+                : fluchtM;
+        const sieht = auge && dist <= reichM ? this._kreaturSiehtM(creature, this.state.playerMesh) * weit : 0;
+        const alarm = Math.min(sieht, fluchtM);
         let wariness = 0; // fern → neutral, das Wesen wandert
-        if (fearActive || dist <= witterung) {
-            const menace = jaegt ? 0 : FG.bedrohung(e, NAT);
+        if (fearActive || dist <= alarm) {
+            const menace = jaegt ? 0 : bedroht;
             // DIE NATUR des Wesens ist das Temperament seiner Gattung (Welle LF 08.10.): der Mut der Art (_kreaturMut) macht
             // kühn oder scheu, Bindung macht mutig. Vorher lasen hier die Substanz-Tags (dichte · härte · lebendig), die für
             // alle Tiere gleich sind (Lehre 8) — jeder Hirsch stand mit Wariness −1,0 neugierig am Spieler.
             const boldness = (this._kreaturMut(creature) * 2 - 1) * NAT.mutGewicht + (ud.bond || 0) * NAT.boldFromBond;
             const modeMul = mode === "pfad" ? 1 : mode === "frieden" ? NAT.friedenMenace : NAT.schoepferMenace;
-            const proximity = Math.max(0, 1 - dist / witterung);
+            const proximity = alarm > 0 ? Math.max(0, 1 - dist / alarm) : 0;
             wariness = (menace * modeMul - boldness + erinnert) * (fearActive ? 1 : proximity);
             if (fearActive) wariness = Math.max(wariness, NAT.combatFearWariness);
         }
         // DER MENSCH IST DER SUPER-RÄUBER (leben.tiere.mensch S1, tetrapoda fluchtDistanz): im pfad flieht jedes Wesen den
         // Spieler ab der Fluchtdistanz seiner Gattung (`_kreaturMenschFlucht`); ihr Radius ist der Radius der Flucht — sobald es
-        // ihn WAHRNIMMT (sein Auge, `witterung`; der Hieb): wen es nicht sieht, den flieht es nicht, der getarnte Jäger kommt
+        // ihn WAHRNIMMT (sein Auge, `sieht`; der Hieb): wen es nicht sieht, den flieht es nicht, der getarnte Jäger kommt
         // näher (auge-der-art). Vorher floh der Hirsch jeden Spieler ab 120 m, jede Farbe, jeden Boden.
         const D =
-            mode === "pfad" && !jaegt && (fearActive || dist <= witterung)
-                ? this._kreaturMenschFlucht(creature, dist, erinnert, FG.bedrohung(e, NAT), wariness)
+            mode === "pfad" && !jaegt && (fearActive || dist <= sieht)
+                ? this._kreaturMenschFlucht(creature, dist, erinnert, bedroht, wariness)
                 : 0;
         if (!(D > 0)) return wariness;
         if (D > von.r) von.r = D;
@@ -211,7 +232,15 @@ class AnazhRealm_kreatur_furcht {
         const K = globalThis.__tetrapodaCore;
         const Z = this._sichtZiel(ziel);
         const p = ziel.position;
-        const boden = this._bodenFarbeAt(p.x, p.y, p.z, this._sichtBoden || (this._sichtBoden = [0, 0, 0]));
+        // der Boden unter dem Ziel, am Ziel gemerkt je ORT (alle Tiere eines Takts sehen denselben Spieler auf demselben Boden:
+        // EINE Frage je Ziel und Stand, eine neue mit jedem Schritt — die Kosten folgen der Änderung, nie der Zahl der Augen)
+        const zu = ziel.userData || (ziel.userData = {});
+        const B = zu._sichtBoden || (zu._sichtBoden = { x: NaN, y: NaN, z: NaN, f: [0, 0, 0] });
+        if (B.x !== p.x || B.y !== p.y || B.z !== p.z) {
+            this._bodenFarbeAt(p.x, p.y, p.z, B.f);
+            [B.x, B.y, B.z] = [p.x, p.y, p.z];
+        }
+        const boden = B.f;
         // DIE LUFT DER WELT (auge-der-art 2): die Extinktion am Auge aus der EINEN Sichtweite, die Bild und Wetter lesen
         // (`_luftSichtM`, Koschmieder: β = −ln(LUFT.kontrast) / V) — kein eigener Dunst im Auge
         const beta = -Math.log(AnazhRealm.LUFT.kontrast) / this._luftSichtM(creature.position.y);

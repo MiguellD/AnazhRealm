@@ -1310,7 +1310,7 @@ async function checkBandTierSeparation({ page, check }) {
         const pm = s.playerMesh && s.playerMesh.position;
         if (!pm) return { error: "kein Spieler" };
     
-        // Test-Spot: 80–150 m vom Spieler, über Wasser (Determinismus-Fenster, s. Kopf).
+        // Test-Spot: ab der Bühne (`buehneM`, die Fluchtdistanz) bis 40 m dahinter, über Land.
         const findSpot = (dist, ang) => {
             for (let i = 0; i < 200; i++) {
                 const d = dist + (i % 40);
@@ -1349,7 +1349,12 @@ async function checkBandTierSeparation({ page, check }) {
         };
     
         // ── (A) SEPARATION: identisches Paar auf DEMSELBEN Punkt ──
-        const spotA = findSpot(100, 0.3);
+        // DIE BÜHNE STEHT JENSEITS DER FLUCHTDISTANZ (auge-der-art 2): das Auge des Wesens sieht den Spieler Hunderte Meter weit,
+        // angehen tut es ihn erst in der Fluchtdistanz seiner Gattung (`_kreaturFluchtDistanzM`, derselbe Leser wie die Furcht) —
+        // dort beginnt die Bühne, gemessen werden Größe und Mut, nie die Nähe des Spielers. Vorher 90–100 m, jenseits des
+        // gefallenen noticeRadius 22 m: an der Fluchtdistanz 120 m stand der kühne Gigant auf 90 m neugierig (Wariness −0,22).
+        const buehneM = r._kreaturFluchtDistanzM({ userData: { soul: "wesen" } });
+        const spotA = findSpot(buehneM + 10, 0.3);
         if (!spotA) return { error: "kein Land-Spot (A)" };
         const a1 = spawn(spotA, "wesen", 1);
         const a2 = spawn(spotA, "wesen", 1);
@@ -1386,8 +1391,8 @@ async function checkBandTierSeparation({ page, check }) {
         cleanup([a1, a2]);
     
         // ── (B1) STAT-ACHSE: klein flink vs. Gigant träge (gleiche Soul) ──
-        const spotB1a = findSpot(95, 1.8);
-        const spotB1b = findSpot(95, -1.8);
+        const spotB1a = findSpot(buehneM + 5, 1.8);
+        const spotB1b = findSpot(buehneM + 5, -1.8);
         if (!spotB1a || !spotB1b) return { error: "kein Land-Spot (B1)" };
         const bSmall = spawn(spotB1a, "wesen", 0.6);
         const bBig = spawn(spotB1b, "wesen", 2.4);
@@ -1426,8 +1431,8 @@ async function checkBandTierSeparation({ page, check }) {
         // Radius-Differenz läuft über die sanktionierte GRÖSSEN-Achse (Kitz
         // vs. Gigant derselben Soul); die Mut-Achse (wehrhaft 28 vs. wild
         // ~24.7 Basis) wird als Konsum-Wert am Wolf mitgemessen. ──
-        const spotShy = findSpot(90, 2.9);
-        const spotBold = findSpot(90, -2.9);
+        const spotShy = findSpot(buehneM, 2.9);
+        const spotBold = findSpot(buehneM, -2.9);
         if (!spotShy || !spotBold) return { error: "kein Land-Spot (B2)" };
         const shy = spawn(spotShy, "wesen", 0.6); // Kitz (scheu) → Leine ~4,8 m
         const bold = spawn(spotBold, "wesen", 2.4); // Gigant → Leine ~67.2 m
