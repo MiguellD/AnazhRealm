@@ -845,7 +845,8 @@ class AnazhRealm_feld_brand {
     // DIE FAHNE DES BRANDS (`_brandBild`): `qu` die glühenden Zellen mit ihren Flammen [von, bis) im Bild und dem Holz, das ihre
     // Front seit ihrem letzten Bild verzehrte (`holz` kg). Je Zelle und Sekunde `rauch.jeS` × Glut Ballen an einer ihrer Flammen (der Same ist
     // der Zähler der Fahne, kein Zufall der Bild-Uhr), höchstens `rauch.max` im Himmel (der älteste weicht dem neuen); jeder
-    // steigt, wächst, verdünnt und zieht (`_windAt` am Ballen, zur Welt-Uhr wie die Front, die ihn trägt).
+    // steigt, wächst, verdünnt und zieht (`_windAt` am Ballen, zur Welt-Uhr wie die Front, die ihn trägt, in seiner Höhe über
+    // dem Fuß seiner Flamme: `_rauchWindAt`).
     // DER BALLEN TRÄGT DIE MASSE SEINES RAUCHS (same.physik.reaktion#1, `_brandMasse`): was die Front seit dem letzten verzehrte,
     // ohne die Asche (`m` kg). Sichtbar ist sein Schwebstoff (`BRAND.partikel`: `jeKg` kg je kg verbranntem Holz, mit dem
     // Auslösch-Querschnitt `km` m² je kg): die optische Dicke über seine Fläche ist km × Schwebstoff — im Maß des Rauch-Bilds
@@ -896,6 +897,7 @@ class AnazhRealm_feld_brand {
                     y,
                     z: f.z,
                     y0: y,
+                    g: f.y, // der Fuß seiner Flamme: die Höhe über Grund, in der der Wind ihn trägt (`_rauchWindAt`)
                     b0,
                     s: b0,
                     w: Math.min(R.wMax, Math.cbrt((9.81 * f.I * 1000) / (1.2 * 1005 * 300))),
@@ -906,9 +908,10 @@ class AnazhRealm_feld_brand {
                 });
             }
         }
+        const RW = this._brandRauchWind || (this._brandRauchWind = {});
         for (let k = T.length - 1; k >= 0; k--) {
             const p = T[k];
-            const w = wind(p.x, p.z);
+            const w = this._rauchWindAt(p.x, p.z, st.spielZeit, p.y - p.g, wind(p.x, p.z), RW); // der Wind in seiner Höhe
             p.y += p.w * s;
             p.x += w.x * w.ms * s;
             p.z += w.z * w.ms * s;
@@ -1451,7 +1454,7 @@ class AnazhRealm_feld_brand {
         if (k) S.saat.splice(0, k);
         for (let i = T.length - 1; i >= 0; i--) {
             const p = T[i];
-            const w = this._windAt(p.x, p.z, jetzt);
+            const w = this._rauchWindAt(p.x, p.z, jetzt, p.y - p.boden); // der Wind in seiner Höhe über dem Boden
             const zug = w.ms * s;
             p.x += w.x * zug;
             p.z += w.z * zug;

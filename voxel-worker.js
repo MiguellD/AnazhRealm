@@ -1421,14 +1421,59 @@ function genesisPlan(msg) {
 // Funktion des Samens (Lehre 7) — sie liest weder die Lage dieses Fadens noch eine Uhr (was sie kostet, misst die Linse, K6).
 // Rückgabe { samen, version, breite, laenge (rad), kuesteKm }. Der Plan entsteht einmal je Samen im Faden (der Kern merkt
 // Scheiben und Anker je Plan).
+// DER KÖRPER DES AUFTRAGS (Karte 2 planet.kopplung.bahn-klima#2): ein Auftrag darf den Körper seines Planeten nennen
+// (`msg.koerper`: Neigung, Tag, …) — die Felder überschreiben PLANET_ERDE, derselbe Samen trägt dieselbe Geografie. Vorher baute
+// der Faden jeden Plan mit PLANET_ERDE, ein genannter Körper fiel still (die Neigung 0 antwortete wie die Erde). Jedes Feld ist eine
+// Zahl des Plan-Gesetzes (`planetPlan`), `gebunden` heißt: die Drehung dauert das Jahr. Ein fremdes oder nicht-endliches Feld bricht
+// laut — der Plan fiele sonst still auf seinen Zufall zurück (`zahl` im Kern).
+const KOERPER_FELDER = [
+    "radiusKm",
+    "g",
+    "wasserKm",
+    "krustenAnteil",
+    "freibordKm",
+    "neigungRad",
+    "tagStunden",
+    "jahrTage",
+    "drehsinn",
+    "sternFluss",
+    "alterMa",
+    "bodenAlterMaxMa",
+    "shelfKm",
+];
+function planetKoerper(k, erde) {
+    if (k === undefined || k === null) return null;
+    if (typeof k !== "object") throw new Error("planet: koerper ist kein Objekt (" + typeof k + ")");
+    const out = Object.assign({}, erde);
+    for (const f of Object.keys(k)) {
+        if (f === "gebunden") {
+            if (typeof k.gebunden !== "boolean") throw new Error("planet: koerper.gebunden ist kein Wahrheitswert");
+            continue;
+        }
+        if (!KOERPER_FELDER.includes(f)) throw new Error("planet: koerper." + f + " ist kein Feld des Plan-Gesetzes");
+        if (!Number.isFinite(k[f])) throw new Error("planet: koerper." + f + " ist keine endliche Zahl (" + k[f] + ")");
+        out[f] = k[f];
+    }
+    if (k.gebunden === true) {
+        const t = out.jahrTage * 24;
+        if (k.tagStunden !== undefined && k.tagStunden !== t)
+            throw new Error(
+                "planet: koerper gebunden, aber tagStunden " + k.tagStunden + " ist nicht das Jahr (" + t + " h)"
+            );
+        out.tagStunden = t;
+    }
+    return KOERPER_FELDER.every((f) => out[f] === erde[f]) ? null : out;
+}
 const planetPlaene = new Map();
-function planetPlanVon(samen) {
+function planetPlanVon(samen, koerper) {
     if (!self.__planetCore) importScripts(QUELLE.spaet.planet);
     const P = self.__planetCore;
-    let plan = planetPlaene.get(samen);
+    const k = planetKoerper(koerper, P.PLANET_ERDE);
+    const key = k ? samen + "|" + JSON.stringify(k) : samen;
+    let plan = planetPlaene.get(key);
     if (!plan) {
-        plan = P.planetPlan(samen, P.PLANET_ERDE); // der Körper der Erde trägt das Jahr des Ort-Gesetzes (R5 bricht sonst beim Namen)
-        planetPlaene.set(samen, plan);
+        plan = P.planetPlan(samen, k || P.PLANET_ERDE); // der Körper der Erde trägt das Jahr des Ort-Gesetzes (R5 bricht sonst beim Namen)
+        planetPlaene.set(key, plan);
     }
     return plan;
 }
@@ -1444,11 +1489,12 @@ function planetAnker(msg) {
 // des Planeten, Band 16 km) und die Küste. Eine reine Funktion von Samen, Lage und Zeit — sie liest weder den Stand des Fadens
 // noch eine Uhr. Rückgabe { samen, version, breite, laenge, zeitMa, land, hoeheM, kuesteKm, delta }.
 function planetOrtAuftrag(msg) {
-    const plan = planetPlanVon(msg.samen);
+    const plan = planetPlanVon(msg.samen, msg.koerper);
     const P = self.__planetCore;
     const RAD = Math.PI / 180;
     const S = P.planetScheibe(plan, msg.zeitMa);
-    const o = P.planetOrt(S, msg.breite * RAD, msg.laenge * RAD, G.ortGesetz());
+    // das Δ misst gegen den Anker der HEIMAT (der Plan der Erde am selben Samen) — ein fremder Körper ändert den Ort, nie die Heimat
+    const o = P.planetOrt(S, msg.breite * RAD, msg.laenge * RAD, G.ortGesetz(), undefined, planetPlanVon(msg.samen));
     const p = {};
     P.planetPunkt(S, msg.breite * RAD, msg.laenge * RAD, 16, p);
     const d = o.delta;
