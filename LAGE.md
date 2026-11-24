@@ -1,6 +1,6 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 06:14 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 06:21 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
@@ -13,9 +13,16 @@
   `same.gedaechtnis.alter#1`, die alte Akte blieb liegen, EINE Akte mit fremdem Soll bricht die ganze Buchung. Geheilt an den Daten (die Akte fiel,
   punkte-maschine 026568c1), 06:03 „GEBUCHT 219/330 · 78 von 1718“. REGEL: wer einen Richter-Text ändert, entfernt im selben Commit die Akten der Sprosse.
   Klassen-Schnitt benannt im Register (06:10), nicht gebaut.
-- STEMPEL-REIF BEI GRÜN: `klima-kontinent` 40eb5720 (Cloud, Vorprüfung 2, T11 geheilt; GPU-Probe 45325849771 grün; Batterie 45325849803 V2, 06:08: 11 durch,
-  5 laufen, 6 warten; Sprossen land-meer-luft#3/#4, gegenwart#2; vor dem Stempel Kopf per ls-remote + `cloud-post/klima-kontinent.md` lesen, merge-tree,
-  probe-tag, `bild:wiese` ansehen; Tags `[gpu-probe: bild:wiese@0.5, gate:studio-begehen, gate:kopplung, gate:wetter-wache] [ci voll]`) · `erbe-geburt`
+- KONFLIKT-KLASSE `docs/README.md` GESCHNITTEN (Zweig `karte-nennt-klasse` 6b27e264 = main 9d4319c0 + EIN Commit; landet mit klima-kontinent): jeder
+  Zweig trug seinen Bericht als Zeile in DIESELBE Tabelle der Karte — nach jeder Landung kollidierte jeder andere Zweig dort (klima-kontinent und
+  bewohner-satz gegen 9d4319c0). Jetzt nennt die Karte die Klasse `cloud-post/<zweig>.md` EINMAL, die Zitat-Wand (`scripts/diag-betriebsgesetz.cjs`
+  `zitatBefund`) deckt den Ordner der Klasse (Selbsttest 11 Funde genau, Gate GRÜN). REGEL für jeden Zweig bis zur Landung: `origin/karte-nennt-klasse`
+  mergen statt main, `docs/README.md` ganz zu seiner Seite auflösen, KEINE Zeile für den Bericht. Gesagt: beide lokalen Arbeiter, OMEN, GTX 1050 (06:21),
+  Post an ort-ausstattung (koordination 9ece8617).
+- STEMPEL-REIF BEI GRÜN: `klima-kontinent` **2ab011ec** = Vorprüfung 3 (06:19, von mir: Merge karte-nennt-klasse in die Vorprüfung 2 der Cloud 40eb5720,
+  kein Code des Zweigs geändert; Batterie 45332462445 und GPU-Probe 45332462430 laufen; Sprossen land-meer-luft#3/#4, gegenwart#2; vor dem Stempel Kopf per
+  ls-remote lesen, merge-tree gegen main, probe-tag, `bild:wiese` ansehen; Tags `[gpu-probe: bild:wiese@0.5, gate:studio-begehen, gate:kopplung,
+  gate:wetter-wache] [ci voll]`; Post an die Cloud-Sitzung: kein Push mehr, koordination 60c8eb93) · `erbe-geburt`
   2a80ce2d (der eine rote Job voll 17/18 läuft neu, Versuch 4 seit 06:00; bei Grün Stempel `[gpu-probe: gate:kreatur-leben, bild:wiese@0.5] [ci voll]`,
   Stationen `pm-erbe-geburt` 0cf308d9 danach).
 - DRUCK-SCHLAF (Register, Nachtrag 3 an `scripts/diag-stand-takt.cjs:3782`): GESICHERT — der Baum von erbe-geburt schläft in der CI auch schnell (Sonde 3,
@@ -38,9 +45,9 @@
   „Das Nervensystem“: `S: kein Zwilling (grenzstein)` — eine Namens-Kollision mit der FIXTUR der Linse (`worlds/neuntes-buch/stele-core.js:49`, „ein
   Gesetzbuch, das der Wirt nicht kennt“). Auftrag als Post 06:07 (koordination ef474f2b): die Fixtur weicht (Art umbenennen), Merge main, EIN Push
   „Vorprüfung ort-ausstattung 3 … [gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen] [ci voll]“, der Bericht im selben Commit.
-  BILD-BEWEIS FEHLT (Marktkreuz, Schild, Hauszeichen im Blick): das Marktkreuz steht bei Plan 841.79/456.44, 4,7 m neben der Kamera des Messorts stadt-voll
-  (842.49/451.79) außerhalb ihres Blicks — das Bild schieße ich am neuen Kopf an der Radeon in einer Lücke (Baum `AnazhRealm-auge-main`, Port 4793; nie,
-  während die Runde misst: „Karte belegt“). Sprossen: mensch.kultur.schrift#1 (0/69 → 69/69), bildkunst#1 (17 Werke), mensch.macht.grenze#1 (3 Steine),
+  BILD-BEWEIS: die Cloud schob 06:09 den Kopf 2b711daa nach („Messort ort-zeichen: das Auge vor Schild und Hauszeichen“, `spec/profiband/haushalt.json` +
+  `stamm/siedlung-ort.js`, ohne `[ci voll]`) — das Bild kommt damit aus ihrer GPU-Probe `bild:ort-zeichen`; ich sehe es mir vor dem Stempel an (fehlt das
+  Marktkreuz darin — Plan 841.79/456.44 — schieße ich es an der Radeon in einer Lücke nach, nie während die Runde misst). Sprossen: mensch.kultur.schrift#1 (0/69 → 69/69), bildkunst#1 (17 Werke), mensch.macht.grenze#1 (3 Steine),
   megastadt#1 (Bau); mensch.netz.stoffwechsel#1 offen.
 - OMEN: ZUERST `auge-der-art` 2 (59080c51 ROT mit vier Röten: GOLDEN tetrapoda neu prägen; Playtest „Anker nicht initialisiert“, Kreatur-Linse 2 und
   kreatur-takt 595 s > 480 s haben EINEN Täter — die Wariness rampt über die Sichtweite statt über 22 m); Stempel bei Grün `[gpu-probe: gate:kreatur-leben,
