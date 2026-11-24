@@ -371,7 +371,10 @@ class AnazhRealm_stoff_material {
         const B = AnazhRealm.WIND_BOE;
         const boe = Math.sin(tt * B.omega - (x * d.x + z * d.z) * B.k) * B.amp + B.mitte;
         const form = this._windForm(x, z, d);
-        const staerke = this._weatherFieldFor(this.state.weather).wind * this._windWob(tt) * form;
+        // DIE STÄRKE AM ORT (wetter-am-ort): der Wind-Kanal des Felds über (x, z) (`_wetterFeldAm`, ohne Relief: der Wind-Kanal
+        // trägt keins) — am Spieler das Feld seines Worts, fern die Front über dem Ort; bis hier wehte jeder Ort im Wort am Spieler
+        const wf = this._wetterFeldAm(x, z, tt, this._windFeldAus || (this._windFeldAus = {}), false);
+        const staerke = wf.wind * this._windWob(tt) * form;
         const ms = staerke * boe * globalThis.__phytoCore.WIND_FELD.sturmMS;
         if (!aus) return { x: d.x, z: d.z, staerke, boe, form, ms };
         aus.x = d.x;
@@ -381,6 +384,18 @@ class AnazhRealm_stoff_material {
         aus.form = form;
         aus.ms = ms;
         return aus;
+    }
+    // DER WIND AM RAUCH (wetter-am-ort): der EINE Wind am Ort (`_windAt`: Richtung, Feld am Ort, Form, Böe) in der Höhe h über
+    // Grund — sein Betrag über das Profil des Kerns (phyto-core `windProfil`, Hellmann: der Wind am Ort gilt in 10 m). `grund`:
+    // der Wind am Boden, den der Leser schon fragte (der Brand je Zelle und Bild); `aus` wird gefüllt statt neu gebaut. Bis
+    // wetter-am-ort zog jeder Rauch in jeder Höhe mit dem Wind am Boden. Leser: die Fahne des Brands, der Rauch der Kamine, der
+    // Staub der Druckwelle.
+    _rauchWindAt(x, z, t, h, grund, aus) {
+        const w = grund || this._windAt(x, z, t, aus);
+        const o = aus || (grund ? {} : w);
+        if (o !== w) Object.assign(o, w);
+        o.ms = w.ms * globalThis.__phytoCore.windProfil(h);
+        return o;
     }
     // DAS WIEGEN AM ORT auf der CPU (haar.K3): derselbe Versatz wie `_windSwayOffset` (WIND_WIEGEN: längs des Winds
     // sin(t·takt + 2π·ν) · laengs, quer cos(t·takt·quer + 2π·fract(256·ν))), die Weite Stärke × WEATHER_WIND_AMP × Böe des EINEN
