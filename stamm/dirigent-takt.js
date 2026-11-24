@@ -2508,6 +2508,14 @@ class AnazhRealm_dirigent_takt {
             const w = this._windAt(auge.x, auge.z, bildZeit);
             this.state.windUniforms.uWindStrength.value = w.staerke * AnazhRealm.WEATHER_WIND_AMP;
             if (this.state.windUniforms.uWindDir) this.state.windUniforms.uWindDir.value.set(w.x, w.z);
+            // die Wetterseite des Stoffs (`uWetterVon`): gegen den Zug der Fronten, je Saat einmal (`_windUniformsEnsure`)
+            const wm = this.state.worldMeta;
+            if (wm && wm.seed && this._wetterVonSaat !== wm.seed && this.state.windUniforms.uWetterVon) {
+                const g = this._alterWind();
+                const l = Math.hypot(g.x, g.z) || 1;
+                this.state.windUniforms.uWetterVon.value.set(-g.x / l, 0, -g.z / l);
+                this._wetterVonSaat = wm.seed;
+            }
             this._tickGrasBend();
             this._tickHalmWelle();
         }

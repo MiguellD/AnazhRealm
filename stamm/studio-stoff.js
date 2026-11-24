@@ -435,7 +435,7 @@ class AnazhRealm_studio_stoff {
     // DAS RELIEF: die Höhe der drei Skalen (Meter) kippt die Normale gegen ihren Gradienten — aus den Ableitungen am Schirm
     // (Mikkelsen 2010, kein Tangenten-Raum, wie `_steinRahmen`), begrenzt auf `GEFUEGE_KIPP` (im streifenden Blick wächst die
     // Ableitung über jede Neigung). DIE WÖLBUNG: im Verband steht jeder Stein als Kissen (`woelb` am Rand, zur Fuge fallend), im
-    // Raster des Verbands und mit dessen Fußabdruck. DAS WETTER: die Seite zum Wetter (`wetterVon`) ist gewaschen und gebleicht,
+    // Raster des Verbands und mit dessen Fußabdruck. DAS WETTER: die Seite zum Wetter (`uWetterVon` des Wind-Satzes: gegen den Zug der Fronten, derselbe Wind wie im Alter) ist gewaschen und gebleicht,
     // die Lee-Seite dunkler (± `wetter` über den Kompass, mittelfrei); Holz nimmt dort Silber an (`grau`, bei gleicher
     // Leuchtdichte: die Albedo der Rolle bleibt). DER SPRITZ-SAUM: am Fuß des Baus (die Höhe in der Vorlage) dunkelt die Fläche um
     // den Anteil ihrer Zeile (`spritz`). DER LÄUFER UNTER DEM DACH: nennt die Ecke ihre Tiefe unter der Dachhaut (`V.tiefe`), steht
@@ -484,7 +484,7 @@ class AnazhRealm_studio_stoff {
             !(GG.periode >= 16) ||
             !(holz > 0 && F.ab >= Z.length && F.klassen > 0 && F.toene >= 2) ||
             !(F.ab + F.klassen * F.toene - 1 <= 127) ||
-            ![GG.wetterVon, GG.silber].every((q) => Array.isArray(q) && q.length === 3)
+            !(Array.isArray(GG.silber) && GG.silber.length === 3)
         )
             throw this._stoffBruch("das Gefüge-Gesetz fehlt in fachwerk:GEFUEGE_GESETZ");
         // die Tafel: [Korn quer, längs, Zug quer, längs] · [Wolke quer, längs, Faser, Grund] · [Ton Korn, Zug, Wolke, Wetter] ·
@@ -595,9 +595,8 @@ class AnazhRealm_studio_stoff {
         const [zug] = skala(mass.z, mass.w, 59.0, wolke.mul(rand2.w));
         // DIE BAHN DES LÄUFERS (`lauf.bahn`: schmal, lotrecht, von der Wolke verzogen) — nur unter dem Dach (unten)
         const [bahn] = skala(GG.lauf.bahn[0], GG.lauf.bahn[1], 151.0, wolke.mul(1.5));
-        // das Wetter: die Seite der Fläche gegen die Richtung, aus der es kommt (−1 Lee … 1 Wetterseite)
-        const wl = Math.hypot(...GG.wetterVon) || 1;
-        const wetter = T.dot(nG, T.vec3(...GG.wetterVon.map((x) => x / wl)));
+        // das Wetter: die Seite der Fläche gegen die Richtung, aus der es kommt (−1 Lee … 1 Wetterseite; der EINE Wind der Welt)
+        const wetter = T.dot(nG, this._windUniformsEnsure().uWetterVon);
         // der Spritz-Saum: die Höhe über dem Fuß des Baus (`V.hoch`: die der Ecke — dieselbe in jeder Stufe; ohne Angabe keiner),
         // sein Rand von Wolke und Zug gebrochen (`spritz.rand`: ¾ die Wolke, ¼ der Zug; fern, wo beide ihr Mittel sind, eine
         // gerade Kante: derselbe Anteil der Fläche)

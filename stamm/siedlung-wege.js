@@ -2751,13 +2751,19 @@ class AnazhRealm_siedlung_wege {
     // `STADTMAUER_FUSS_M` unter den tiefsten Punkt unter ihrer Sehne, die Krone folgt dem Hang; der Turm steht auf seiner
     // tiefsten Ecke. Was die Wasser-Wand nimmt, steht nicht. Die Natur weicht der Mauer wie dem Anger (`kanal` −1: kein
     // Boden-Kanal, die Natur-Wand hält die Linie frei). Bis K2 strich der Export die Mauer — die Stadt der Welt stand ohne sie.
+    // DIE WEHR IHRER ZEIT (mensch.macht.wehrbau#2, fachwerk `MAUER_FORM` über `mauerGestalt`): der Export trägt Form, Maße und
+    // Stoff — die Palisade aus Stämmen mit hölzernen Türmen, der Steinring mit Wehrgang und Türmen, die Bastion als niedriger,
+    // dicker Wall mit der Brustwehr außen und Bollwerken (je eine Raute, deren Spitze vor den Ring springt) an Stelle der Türme.
+    // Bis front-stoff stand jede Epoche in EINER Wand (STADTMAUER, dick 1,6 m, hoch 5,6 m): die Stadt von 1650 trug den Ring von 1350.
     _stlMauerBuild(plan, origin) {
         const M = plan && plan.mauer;
         if (!M || !Array.isArray(M.segs) || !this.state.scene) return 0;
         const FC = globalThis.__fachwerkCore;
-        const SM = FC.STADTMAUER;
-        const stein = FC.DEFCOL.stein;
-        const ziegel = FC.DEFCOL.ziegel;
+        if (!M.wand || !M.art)
+            throw new Error("_stlMauerBuild: die Mauer trägt keine Form (fachwerk `mauerGestalt`: art, wand)");
+        const [W, K, T, D, BW] = [M.wand, M.krone, M.turm, M.dach, M.bollwerk];
+        const farbe = FC.DEFCOL[M.stoff];
+        const dachFarbe = M.dachStoff ? FC.DEFCOL[M.dachStoff] : null;
         const P = this._stlMauerEnsurePool();
         const wk = this._wegeKarteEnsure();
         const FUSS = AnazhRealm.STADTMAUER_FUSS_M;
@@ -2803,25 +2809,33 @@ class AnazhRealm_siedlung_wege {
             const my = (y0 + y1) / 2;
             const yaw = Math.atan2(dx, dz);
             const pitch = -Math.atan2(y1 - y0, len);
-            const L = len + SM.wand.ueber;
-            this._stlStreifen(
-                P,
-                mx,
-                my + (SM.wand.hoch - fuss) / 2,
-                mz,
-                yaw,
-                pitch,
-                SM.wand.dick,
-                SM.wand.hoch + fuss,
-                L,
-                stein
-            );
-            this._stlStreifen(P, mx, my + SM.krone.y, mz, yaw, pitch, SM.krone.dick, SM.krone.hoch, L, stein);
-            form({ typ: "segment", kanal: -1, ax, az, bx, bz, halb: SM.krone.dick / 2 });
+            const L = len + W.ueber;
+            this._stlStreifen(P, mx, my + (W.hoch - fuss) / 2, mz, yaw, pitch, W.dick, W.hoch + fuss, L, farbe);
+            if (K) {
+                // die Brustwehr der Bastion steht außen auf dem Wall (`aussen`), der Wehrgang des Steinrings über seiner Mitte
+                const [ox, oz, ol] = [mx - origin.x, mz - origin.z, Math.hypot(mx - origin.x, mz - origin.z) || 1];
+                const o = K.aussen ? (W.dick - K.dick) / 2 : 0;
+                this._stlStreifen(
+                    P,
+                    mx + (ox / ol) * o,
+                    my + K.y,
+                    mz + (oz / ol) * o,
+                    yaw,
+                    pitch,
+                    K.dick,
+                    K.hoch,
+                    L,
+                    farbe
+                );
+            }
+            form({ typ: "segment", kanal: -1, ax, az, bx, bz, halb: Math.max(W.dick, K ? K.dick : 0) / 2 });
             n++;
         }
-        const tb = SM.turm.breit / 2;
-        for (const t of Array.isArray(M.towers) ? M.towers : []) {
+        // die Türme (Palisade, Steinring) oder die Bollwerke (Bastion: die Raute mit der Seite vor × √2, ihre innere Ecke am Ring)
+        const breit = T ? T.breit : BW ? BW.vor * Math.SQRT2 : 0;
+        const hoch = T ? T.hoch : BW ? BW.hoch : 0;
+        const tb = BW ? BW.vor : breit / 2; // der Halbmesser, über den der Fuß den Boden liest
+        for (const t of breit > 0 && Array.isArray(M.towers) ? M.towers : []) {
             const x = origin.x + t.x;
             const z = origin.z + t.z;
             if (!this._landAt(x, z, 0.2)) continue;
@@ -2838,20 +2852,21 @@ class AnazhRealm_siedlung_wege {
                 if (Number.isFinite(ye)) tief = Math.max(tief, y - ye);
             }
             const fuss = FUSS + tief;
-            this._stlStreifen(
-                P,
-                x,
-                y + (SM.turm.hoch - fuss) / 2,
-                z,
-                0,
-                0,
-                SM.turm.breit,
-                SM.turm.hoch + fuss,
-                SM.turm.breit,
-                stein
-            );
-            this._stlStreifen(P, x, y + SM.dach.y, z, 0, 0, SM.dach.breit, SM.dach.hoch, SM.dach.breit, ziegel);
-            form({ typ: "kasten", kanal: -1, ax: x, az: z, bx: x, bz: z, ex: tb, ez: tb, phi: 0, halb: 0 });
+            const gier = BW ? Math.atan2(t.x, t.z) + Math.PI / 4 : 0; // die Raute: eine Ecke zeigt vom Ort weg
+            this._stlStreifen(P, x, y + (hoch - fuss) / 2, z, gier, 0, breit, hoch + fuss, breit, farbe);
+            if (D && dachFarbe !== null) this._stlStreifen(P, x, y + D.y, z, 0, 0, D.breit, D.hoch, D.breit, dachFarbe);
+            form({
+                typ: "kasten",
+                kanal: -1,
+                ax: x,
+                az: z,
+                bx: x,
+                bz: z,
+                ex: breit / 2,
+                ez: breit / 2,
+                phi: gier,
+                halb: 0,
+            });
             n++;
         }
         box.streifen.push(P ? P.top : 0);
