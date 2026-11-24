@@ -2140,7 +2140,8 @@ class AnazhRealm_feld_leben {
         // Seite (leben-erbe)
         if (!this._lebenErbeGilt(t.a) || !this._lebenErbeGilt(t.e) || ![t.alterS, t.x, t.z].every(zahl)) return false;
         if (t.m != null && !(typeof t.m === "string" && t.m.length <= 96)) return false;
-        const tier = { soul: t.soul.slice(0, 48), g: t.g, a: t.a.slice(), e: t.e.slice(), m: t.m == null ? null : t.m };
+        const LK = AnazhRealm._lebenKern();
+        const tier = { soul: t.soul.slice(0, 48), g: t.g, a: LK.erbeVoll(t.a), e: LK.erbeVoll(t.e), m: t.m == null ? null : t.m }; // prettier-ignore
         Object.assign(tier, { alterS: t.alterS, x: t.x, z: t.z });
         tier.v = typeof t.v === "string" ? t.v.slice(0, 48) : null;
         tier.name = typeof t.name === "string" ? t.name.slice(0, 48) : undefined;
@@ -2156,10 +2157,11 @@ class AnazhRealm_feld_leben {
     // Regionen ab leer nach, ihr Feld trug 0 von 1 172 Zellen des Mitspielers. Mit dem Nahen reist die Region jedes gezeichneten
     // Tiers (`_bestandReist`): kein Leib des Stands kehrt ohne sein Tier wieder.
     // DAS ERBE AUS FREMDER HAND (Stand, Draht): ein Vektor endlicher Zahlen, je Achse des Gesetzes des Lebens eine
-    // (`__lebenCore.gesetz().achsen`) — alles andere ist kein Erbe.
+    // (`__lebenCore.gesetz().achsen`) — oder weniger: ein Stand von vor einer Achse (erbe-geburt: [lnM] vor [lnM, scheu]) trägt
+    // die neuen nicht, sie lesen als das Art-Mittel (`__lebenCore.erbeVoll`, die benannte Wandlung). Alles andere ist kein Erbe.
     _lebenErbeGilt(a) {
         const n = AnazhRealm._lebenKern().gesetz().achsen.length;
-        return Array.isArray(a) && a.length === n && a.every((x) => typeof x === "number" && Number.isFinite(x));
+        return Array.isArray(a) && a.length >= 1 && a.length <= n && a.every((x) => typeof x === "number" && Number.isFinite(x)); // prettier-ignore
     }
     // DIE WANDLUNG DES ALTEN STANDS (leben-erbe — benannt, deterministisch, nie still): ein Tier eines Stands von vor dem Erbe
     // trägt kein `a`, nur seine gewürfelte Größe `bs` — es wird als GRÜNDER SEINER KENNUNG gelesen (`_erbeGruender(id)`: a und e
@@ -2168,15 +2170,16 @@ class AnazhRealm_feld_leben {
     // Tier ERWACHSEN bei alterS 0 ein und lebte die eine Spanne refS (35 min) — es steht jetzt reif plus derselbe Anteil seines
     // eigenen erwachsenen Lebens, reifeS + (alterS / refS)·(lebensdauerS − reifeS): kein altes Tier schrumpft beim Laden zum
     // Kalb, und keines stirbt im ersten Takt nur, weil seine Art kürzer lebt. Die alte Größe fällt ungelesen (sie war ein Wurf
-    // der Bänder, kein Erbe). Ein Tier mit Erbe kehrt wieder, wie es reiste.
+    // der Bänder, kein Erbe). Ein Tier mit Erbe kehrt wieder, wie es reiste — ein Erbe von vor einer Achse (erbe-geburt: ohne die
+    // Scheu) mit dem Art-Mittel auf ihr (`__lebenCore.erbeVoll`).
     _lebenWandeln(t) {
         const tier = Object.assign({}, t, { v: t.v == null ? null : String(t.v) });
         delete tier.bs;
+        const LK = AnazhRealm._lebenKern();
         if (t.a !== undefined)
-            return Object.assign(tier, { a: t.a.slice(), e: t.e.slice(), m: t.m == null ? null : t.m });
+            return Object.assign(tier, { a: LK.erbeVoll(t.a), e: LK.erbeVoll(t.e), m: t.m == null ? null : t.m });
         Object.assign(tier, this._erbeGruender(t.id), { m: null });
-        const L = AnazhRealm._lebenKern();
-        const [E, anteil] = [this._bestandErbe(tier), Math.min(1, Math.max(0, t.alterS) / L.gesetz().refS)];
+        const [E, anteil] = [this._bestandErbe(tier), Math.min(1, Math.max(0, t.alterS) / LK.gesetz().refS)];
         tier.alterS = E.reif + anteil * (E.tod - E.reif);
         return tier;
     }
