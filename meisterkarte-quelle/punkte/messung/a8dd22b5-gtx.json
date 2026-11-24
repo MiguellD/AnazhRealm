@@ -1,7 +1,7 @@
 {
  "sha": "a8dd22b581f18eeda5d74fc835f1eaf343368267",
  "geraet": "gtx",
- "zeit": "2026-11-24T13:41:31.399Z",
+ "zeit": "2026-11-24T13:44:28.412Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.megastadt#1": {
@@ -420,6 +420,76 @@
    },
    "zeit": "2026-11-24T13:41:31.399Z",
    "abdruck": "bf253a3ed167",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.geist.absicht#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: fehlender Leser: kein Ziel über Monate: der Satz des Bewohners trägt kein Ziel, keinen Vorrat, keinen Fortschritt (1363 Bewohner der Stadt) (stamm/siedlung-bewohner.js:887) · gemessen 1363 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.2,
+   "grund": "ROT: S2 ROT: fehlender Leser: kein Ziel über Monate: der Satz des Bewohners trägt kein Ziel, keinen Vorrat, keinen Fortschritt (1363 Bewohner der Stadt) (stamm/siedlung-bewohner.js:887) · gemessen 1363 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k85eab464c663",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kedbb956acc0e",
+   "s": 11.8,
+   "fremd": {
+    "s": 15.4,
+    "takte": 7,
+    "fremdS": 6.86,
+    "kerne": 0.445,
+    "fensterKerne": 0.445,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.88
+     ],
+     [
+      "Explorer.EXE",
+      0.98
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      0.92
+     ]
+    ],
+    "dienerS": 5.34,
+    "diener": [
+     [
+      "dwm.exe",
+      3.14
+     ],
+     [
+      "System",
+      1.23
+     ]
+    ],
+    "geraetS": 5.89,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.69
+     ],
+     [
+      "svchost.exe",
+      1.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.2
+     ]
+    ],
+    "eigenS": 39.38,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T13:44:28.412Z",
+   "abdruck": "2c56489b3c28",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
