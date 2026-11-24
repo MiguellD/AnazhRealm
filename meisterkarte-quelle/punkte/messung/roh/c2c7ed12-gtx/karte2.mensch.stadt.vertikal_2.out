@@ -1,0 +1,9 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 11.4 s · am Messort hochhaus-dach (ego) nach 11.4 s, 247 Takte, Anlauf gegangen
+@@ 11.5 s · hochhaus-dach: höchstes Gebäude 73.66 m, 23 Geschosse, Überführungen 5
+@@ 11.5 s · S4 warf: Umfang erreicht (2 ≥ 2), die Messung der Sprosse ist nicht gebaut
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
