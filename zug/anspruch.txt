@@ -68,3 +68,5 @@ w28-saison-schatten karte2.leben.pflanzen.jahreslauf#2,karte2.planet.kopplung.st
 w28-tat-aufwaerts karte2.same.kopplung.aufwaerts#1
 # 715 (main bf9be26c, 24.11. 12:21): w28-spiegel-eis gelandet 12:35 (main bf9be26c): das Eis spiegelt den Himmel
 w28-spiegel-eis karte2.planet.wasser.eis#2
+# 716 (main a8dd22b5, 24.11. 13:22): w28-auge-der-art gelandet 13:32 (main a8dd22b5): das Tier sieht mit dem Auge seiner Art
+w28-auge-der-art karte2.erleben.sinne.gesehen#3
