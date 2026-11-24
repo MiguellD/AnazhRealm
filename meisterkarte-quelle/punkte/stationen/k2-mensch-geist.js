@@ -195,31 +195,136 @@ const TAG_TAGE = async (r, T, arg, HILF) => {
     };
 };
 
-// DAS GESPRÄCH (gespraech S2, S3): wer von den Bewohnern im Ruf des Gesprächs steht — der Name sucht nur `state.creatures` mit
-// `userData.name` (`_findCreatureByName`) —, wer einen Namen trägt, wessen Leib eine Erinnerung trägt (`userData.memory`)
+// DAS GESPRÄCH (gespraech S2, S3): wer von den Bewohnern im Ruf des Gesprächs steht — DER RUF IST DER LESER (`_findCreatureByName`,
+// seit bewohner-satz: nach den Wesen der nächste Leib eines Bewohners dieses Vornamens, der Vorname aus dem Lebenslauf `b.vorname`);
+// je Gerufenem die Persona des Gesprächs (`_buildCreaturePersonaPrompt`: trägt sie seinen Lebenslauf?) und ob die Welt eine Stimme
+// hat (`state.llm.enabled` — ohne sie antwortet `maybeAnswerCreature` „keine Stimme“, kein Bewohner spricht). Gerufen werden
+// `arg.n` Bewohner mit Leib, über die Liste verteilt (der Ruf liest je Aufruf alle Vornamen der Welt: die Kosten gehören dem Ruf);
+// wer einen Namen trägt, wessen Leib eine Erinnerung trägt (`userData.memory`)
 const SPRECHEN = async (r, T, arg, HILF) => {
     const { s, L } = HILF;
     if (!L.length) return { fehler: "keine Bewohner am Messort" };
-    const ruf = new Set((Array.isArray(s.creatures) ? s.creatures : []).filter((c) => c && c.userData && typeof c.userData.name === "string" && c.userData.name));
     const ud = (b) => (b.leib && b.leib.userData) || {};
+    const mitLeib = L.filter((b) => b.leib);
+    const n = Math.min(mitLeib.length, (arg && arg.n) || 30);
+    const bis = performance.now() + ((arg && arg.ms) || 10000) * 0.6;
+    let [gerufen, erreichbar, mitLauf] = [0, 0, 0];
+    for (let i = 0; i < n && performance.now() < bis; i++) {
+        const b = mitLeib[Math.floor((i * mitLeib.length) / n)];
+        const v = b.vorname;
+        gerufen++;
+        const c = r._findCreatureByName(v);
+        // erreichbar: der Ruf seines Vornamens trifft den Leib eines Bewohners dieses Vornamens (der nächste am Spieler)
+        const wer = c && [...r._bewohnerSiedlungen.values()].reduce((a, S) => a || (S.liste || []).find((x) => x.leib === c), null);
+        if (!wer || wer.vorname !== v) continue;
+        erreichbar++;
+        const p = r._buildCreaturePersonaPrompt(c);
+        if (typeof p === "string" && p.indexOf("Dein Lebenslauf:") >= 0 && p.indexOf(v) >= 0) mitLauf++;
+    }
     return {
         bewohner: L.length,
-        erreichbar: L.filter((b) => b.leib && ruf.has(b.leib)).length,
+        gerufen,
+        erreichbar,
+        mitLauf,
+        stimme: !!(s.llm && s.llm.enabled),
         mitName: L.filter((b) => typeof ud(b).name === "string" && ud(b).name).length,
         mitGedaechtnis: L.filter((b) => Array.isArray(ud(b).memory) && ud(b).memory.length).length,
-        wesenMitNamen: ruf.size,
     };
 };
 
 // DER BESUCH (netz S1): um die Stunde des Besuchs nach dem Werk (koerper TAGES_GESETZ: werk bis 17 ± 0,5, besuchH 0,75) die
-// Bewohner im Akt „besuch“, angekommen an ihrem Ziel; der Satz des Bewohners trägt keine Bindung an einen Gastgeber
+// Bewohner im Akt „besuch“, angekommen an ihrem Ziel — und WEM der Besuch gilt: der Stand des Besuchs (`b.orte.besuch`, der Ring an
+// einer fremden Tür) trägt die Tür des Hauses als Anker (`ringStand` anker), die Tür nennt das Haus (`b.orte.tuer` seiner
+// Bewohner, `b.heim`); ein Freund ist, wer in der Dunbar-Folge des Besuchers steht — die EINE Funktion des Lebenslaufs
+// (`_bewohnerLauf(S, b, "kreis", n)`, LEBENSLAUF.freunde.schichten: 15 · 50 · 150, die äußerste die Freunde; die innerste, die
+// Sympathie-Gruppe, als Beleg). Verwandte wohnen im eigenen Haus (der Haushalt ist die Familie, Laslett) — dorthin geht kein Besuch
 const BESUCH = async (r, T, arg, HILF) => {
-    const { L, ab } = HILF;
+    const { L, ab, A } = HILF;
     if (!L.length) return { fehler: "keine Bewohner am Messort" };
     HILF.uhrAuf(arg.uhr);
     const da = L.filter((b) => b.leib && b.akt === "besuch" && !b.weg && b.ziel && ab(b.leib.position, b.ziel) < 1.5);
-    const bindung = L.filter((b) => ["freunde", "familie", "verwandte", "bindung", "netz", "eltern", "kinder"].some((k) => b[k] != null)).length;
-    return { bewohner: L.length, besuche: da.length, mitBesuchsort: L.filter((b) => b.orte && b.orte.besuch).length, bindung, uhr: +HILF.stunde().toFixed(2) };
+    const tuerKey = (p) => (p ? Math.round(p.x * 100) + "," + Math.round(p.z * 100) : "");
+    const hausAn = new Map();
+    for (const b of L) if (b.orte && b.orte.tuer) hausAn.set(tuerKey(b.orte.tuer), b.heim);
+    const SCH = A.LEBENSLAUF.freunde.schichten;
+    const [aussen, innen] = [SCH[SCH.length - 1], SCH[0]];
+    let [beiFreund, beiInnen, gezaehlt, ohneHaus] = [0, 0, 0, 0];
+    const wem = (b) => {
+        const v = b.orte && b.orte.besuch;
+        const haus = v && v.anker ? hausAn.get(tuerKey(v.anker)) : undefined;
+        if (haus === undefined) return null;
+        const ist = (k) => r._bewohnerLauf(b.sied, b, "kreis", k).some((f) => f.heim === haus);
+        return { freund: ist(aussen), innen: ist(innen) };
+    };
+    for (const b of da) {
+        const w = wem(b);
+        if (!w) {
+            ohneHaus++;
+            continue;
+        }
+        gezaehlt++;
+        if (w.freund) beiFreund++;
+        if (w.innen) beiInnen++;
+    }
+    // der Beleg über den ganzen Tag: jeder gebundene Besuch der Stadt (nicht nur der zur Stunde angekommene)
+    let [gebunden, gebundenFreund] = [0, 0];
+    for (const b of L) {
+        if (!(b.orte && b.orte.besuch)) continue;
+        const w = wem(b);
+        if (!w) continue;
+        gebunden++;
+        if (w.freund) gebundenFreund++;
+    }
+    return {
+        bewohner: L.length,
+        besuche: da.length,
+        gezaehlt,
+        ohneHaus,
+        anteil: gezaehlt ? +(beiFreund / gezaehlt).toFixed(4) : null,
+        anteilInnen: gezaehlt ? +(beiInnen / gezaehlt).toFixed(4) : null,
+        gebunden,
+        anteilGebunden: gebunden ? +(gebundenFreund / gebunden).toFixed(4) : null,
+        schichten: SCH.slice(),
+        uhr: +HILF.stunde().toFixed(2),
+    };
+};
+
+// DAS ZIEL ÜBER JAHRE (absicht S2, wörtlich „100 Befragte, 1 Spieljahr später: Fortschritt sichtbar ≥ 0,5“): je Befragtem sein Ziel
+// aus dem Lebenslauf (`b.absicht` → `_bewohnerLauf` „absicht“: { ziel, art, fortschritt }, das Ziel rechnet mit dem Kalender der Welt),
+// dann EIN Spieljahr später — der Kalender der Welt (`_kalenderZeit`, sein Versatz `worldMeta.kalender` [Versatz, Tag-Länge]) um
+// `_kalender().jahrK` vorwärts, gelesen, und zurück auf den Stand davor (byte-gleich: das Feld, wie es war). SICHTBAR ist der
+// Fortschritt, wie die Welt ihn zeigt: die Prozent-Zahl im Lebenslauf des Gesprächs (`satz`: „Dein Ziel: … (… %)“, gerundet) steigt.
+// Die Befragten: `arg.n` über die Liste der Stadt verteilt
+const FORTSCHRITT = async (r, T, arg, HILF) => {
+    const { s, L } = HILF;
+    if (!L.length) return { fehler: "keine Bewohner am Messort" };
+    const wm = s.worldMeta;
+    if (!wm) return { fehler: "kein worldMeta: die Welt trägt keinen Kalender" };
+    const n = Math.min(L.length, arg.n);
+    const B = Array.from({ length: n }, (_, i) => L[Math.floor((i * L.length) / n)]);
+    r._kalenderZeit(); // der Versatz liegt am Gang, der jetzt gilt
+    const vor = B.map((b) => b.absicht);
+    const hatte = Object.prototype.hasOwnProperty.call(wm, "kalender");
+    const alt = hatte ? wm.kalender : undefined;
+    const [v0, l0] = alt || [0, r._kalender().normS];
+    const jahrK = r._kalender().jahrK;
+    let nach;
+    try {
+        wm.kalender = [v0 + jahrK, l0];
+        nach = B.map((b) => b.absicht);
+    } finally {
+        if (hatte) wm.kalender = alt;
+        else delete wm.kalender;
+    }
+    const pz = (z) => Math.round(z.fortschritt * 100);
+    let [sichtbar, gleich, ziele] = [0, 0, {}];
+    for (let i = 0; i < n; i++) {
+        if (pz(nach[i]) > pz(vor[i])) sichtbar++;
+        else gleich++;
+        ziele[vor[i].ziel] = (ziele[vor[i].ziel] || 0) + 1;
+    }
+    const zurueck = B.every((b, i) => b.absicht.fortschritt === vor[i].fortschritt);
+    return { bewohner: L.length, befragt: n, sichtbar, gleich, anteil: n ? +(sichtbar / n).toFixed(4) : null, ziele, jahrK, zurueck };
 };
 
 // DAS ALTER (generationen S1, innenleben S3): das Alter, das der Leib jedes Bewohners zeigt — die Gestalt seiner Siedlung, in der er
@@ -407,7 +512,7 @@ module.exports = (F) => [
         pfad: PFAD,
         bestehend: { 1: "mensch.K5#1" },
         sprossen: {
-            2: leser(um(10, "sprechende Bewohner"), [ge("faktentreue", "Faktentreue der Antworten", 0.95), ge("bezug", "Anteil Gespräche mit Bezug auf die vorige Begegnung", 1)], "kein Bewohner ist ansprechbar: der Name des Gesprächs sucht nur state.creatures", "stamm/feld-nexus.js:1281"),
+            2: { umfang: um(10, "sprechende Bewohner"), masse: [ge("faktentreue", "Faktentreue der Antworten", 0.95), ge("bezug", "Anteil Gespräche mit Bezug auf die vorige Begegnung", 1)] },
             3: leser(um(100, "Personen im Blick"), [ge("erinnert", "Anteil letzte Begegnung korrekt genannt", 0.95)], "kein Gedächtnis über Sitzungen: der Satz des Bewohners trägt keinen Namen und keine Erinnerung", "stamm/siedlung-bewohner.js:887"),
             4: nicht(um(10000, "Bewohner"), [ge("widerspruchsfrei", "Anteil widerspruchsfrei zur Welt", 0.95), le("erfindungen", "Anteil Erfindungen", 0.02)], "10⁴ Bewohner, 100 Befragte"),
             5: nicht(um(100000, "Bewohner"), [ge("imBand", "Kenntnis in 1 km nach 1 Tag im Diffusions-Band (1 = ja)", 1)], "10⁵ Bewohner, die Kunde einer Tat über 1 km"),
@@ -429,10 +534,19 @@ module.exports = (F) => [
             };
             let zen = null, spr = null;
             const zensus = async () => zen || (zen = pruef(await welt("ZENSUS"), "der Zensus der Stadt"));
-            const sprechen = async () => spr || (spr = pruef(await welt("SPRECHEN"), "der Ruf der Bewohner"));
+            const sprechen = async () => spr || (spr = pruef(await welt("SPRECHEN", { n: 30 }), "der Ruf der Bewohner"));
+            // S2: der Ruf ist der Leser (`_findCreatureByName` trifft den Bewohner beim Vornamen seines Lebenslaufs, die Persona trägt den
+            // Lebenslauf); GESPROCHEN hat erst, wer antwortet — die Antwort ist die Stimme der Welt (`maybeAnswerCreature` →
+            // `llmCallCreature`). Die Probe ruft kein Modell: ohne eine geprüfte Antwort keine Faktentreue, kein Bezug (null, ROT beim Namen)
             await K.schritt(2, async () => {
                 const g = await sprechen();
-                K.leser(2, { fehlt: "kein Bewohner ist ansprechbar: der Name des Gesprächs sucht nur state.creatures (" + g.erreichbar + " von " + g.bewohner + " Bewohnern im Ruf, " + g.mitName + " mit Namen, " + g.wesenMitNamen + " Wesen mit Namen)", wo: "stamm/feld-nexus.js:1281", n: g.erreichbar });
+                H.zeile("S2 gerufen " + g.gerufen + ", erreichbar " + g.erreichbar + ", Persona mit Lebenslauf " + g.mitLauf + ", Stimme " + g.stimme);
+                K.zahl(2, {
+                    n: 0,
+                    werte: { faktentreue: null, bezug: null },
+                    beleg: "der Ruf trifft " + g.erreichbar + " von " + g.gerufen + " gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), " + g.mitLauf + " Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt " + (g.stimme ? "an" : "aus") + " (state.llm); " + g.bewohner + " Bewohner",
+                    taeter: "stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18)",
+                });
             });
             await K.schritt(3, async () => {
                 const g = await sprechen();
@@ -445,7 +559,11 @@ module.exports = (F) => [
                 });
         },
         proben: {
-            2: [{ name: "Attrappe: 10 Sprechende mit erfundenen Antworten — ROT an der Faktentreue", j: mut("mensch.geist.gespraech", 2, 10, { faktentreue: 0.5, bezug: 1 }), gruen: false, zahl: /ROT an Faktentreue der Antworten 0\.5 verfehlt ≥ 0\.95/ }],
+            2: [
+                { name: "Attrappe: 10 Sprechende mit erfundenen Antworten — ROT an der Faktentreue", j: mut("mensch.geist.gespraech", 2, 10, { faktentreue: 0.5, bezug: 1 }), gruen: false, zahl: /ROT an Faktentreue der Antworten 0\.5 verfehlt ≥ 0\.95/ },
+                { name: "die Stimme genommen (der Stand von heute): gerufen, keiner antwortet — ROT am Umfang", j: mut("mensch.geist.gespraech", 2, 0, { faktentreue: null, bezug: null }), gruen: false, zahl: /ROT an Umfang 0 < 10 sprechende Bewohner/ },
+                { name: "treue Antworten ohne Bezug auf die vorige Begegnung — ROT am Bezug", j: mut("mensch.geist.gespraech", 2, 10, { faktentreue: 1, bezug: 0 }), gruen: false, zahl: /ROT an Anteil Gespräche mit Bezug auf die vorige Begegnung 0 verfehlt ≥ 1/ },
+            ],
             4: [{ name: "die Stadt von heute (1092 < 10⁴) — ROT am Umfang", j: mut("mensch.geist.gespraech", 4, 1092, { widerspruchsfrei: 1, erfindungen: 0 }), gruen: false, zahl: /ROT an Umfang 1092 < 10000 Bewohner/ }],
         },
     }),
@@ -456,7 +574,7 @@ module.exports = (F) => [
         mutiert: true,
         pfad: PFAD,
         sprossen: {
-            1: leser(um(100, "Bewohner"), [ge("besuche", "Anteil Besuche bei Verwandten oder Freunden", 0.6)], "keine Verwandtschaft und keine Freundschaft: der Besuch wählt ein Haus fern von Heim und Platz nach Same und Angebot", "koerper-core.js:5316"),
+            1: { umfang: um(100, "Bewohner"), masse: [ge("besuche", "Anteil Besuche bei Verwandten oder Freunden", 0.6)] },
             2: { auge: { pose: "stadt-voll Markt, 7 m vor der dichtesten Gruppe, Augenhöhe 1,7 m, 17:36", vorbild: "Gesten zwischen Freund, Feind und Fremdem (Prüfer sagt die Beziehung ≥ 0,7)" } },
             3: nicht(um(10000, "Bewohner"), [ge("meiden", "Mehr-Meiden der Bekannten des Opfers", 0.3)], "10⁴ Bewohner mit Bekannten"),
             4: nicht(um(1000000, "Bewohner"), [{ key: "pfad", wort: "mittlere Pfadlänge", von: 4, bis: 7 }, ge("gleich", "Anteil gleicher Antworten bei Wiederholung", 1)], "10⁶ Bewohner, 1 000 befragte Paare"),
@@ -485,8 +603,13 @@ module.exports = (F) => [
                 });
             await K.schritt(1, async () => {
                 const b = pruef(await welt("BESUCH", { uhr: 17.6 }), "der Besuch in der Stadt");
-                H.zeile("S1 um " + b.uhr + " Uhr " + b.besuche + " beim Besuch, Bindungen im Satz " + b.bindung);
-                K.leser(1, { fehlt: "keine Verwandtschaft und keine Freundschaft: der Besuch wählt ein Haus fern von Heim und Platz nach Same und Angebot (" + b.besuche + " beim Besuch um " + b.uhr + " Uhr, " + b.mitBesuchsort + " von " + b.bewohner + " mit Besuchsort, " + b.bindung + " mit einer Bindung im Satz)", wo: "koerper-core.js:5316", n: b.besuche });
+                H.zeile("S1 um " + b.uhr + " Uhr " + b.besuche + " beim Besuch, " + b.gezaehlt + " am Haus gezählt, bei Freunden " + b.anteil + " (Sympathie-Gruppe " + b.anteilInnen + "), über den Tag " + b.anteilGebunden + " von " + b.gebunden);
+                K.zahl(1, {
+                    n: b.bewohner,
+                    werte: { besuche: b.anteil },
+                    beleg: "um " + b.uhr + " Uhr " + b.besuche + " Bewohner am Ziel ihres Besuchs, " + b.gezaehlt + " am Haus des Gastgebers gezählt (" + b.ohneHaus + " ohne Haus an der Tür des Stands); im Haus eines Freundes (Dunbar " + b.schichten.join(" · ") + ", die Schicht " + b.schichten[b.schichten.length - 1] + ") " + b.anteil + ", der Sympathie-Gruppe (" + b.schichten[0] + ") " + b.anteilInnen + "; über den Tag " + b.anteilGebunden + " von " + b.gebunden + " gebundenen Besuchen",
+                    taeter: "stamm/siedlung-bewohner.js _bewohnerListe (DER BESUCH GILT DEN SEINEN: `P.freund` aus `_bewohnerLauf` kreis) — der Besuch wählt ein Haus, in dem keiner seiner Dunbar-Folge wohnt",
+                });
             });
             await K.schritt(2, async () => {
                 const p = pruef(await welt("POSE"), "die Pose am Markt");
@@ -495,7 +618,10 @@ module.exports = (F) => [
             });
         },
         proben: {
-            1: [{ name: "Attrappe: Besuche ohne Bindung (Anteil 0) — ROT am Anteil", j: mut("mensch.geist.netz", 1, 300, { besuche: 0 }), gruen: false, zahl: /ROT an Anteil Besuche bei Verwandten oder Freunden 0 verfehlt ≥ 0\.6/ }],
+            1: [
+                { name: "die Freundschaft genommen (der Besuch vor bewohner-satz: jedes Haus fern von Heim und Platz, Anteil 0) — ROT am Anteil", j: mut("mensch.geist.netz", 1, 300, { besuche: 0 }), gruen: false, zahl: /ROT an Anteil Besuche bei Verwandten oder Freunden 0 verfehlt ≥ 0\.6/ },
+                { name: "keiner zur Stunde am Ziel seines Besuchs (kein Anteil) — ROT", j: mut("mensch.geist.netz", 1, 1391, { besuche: null }), gruen: false, zahl: /ROT an Anteil Besuche bei Verwandten oder Freunden — verfehlt/ },
+            ],
         },
     }),
 
@@ -570,17 +696,19 @@ module.exports = (F) => [
         pfad: PFAD,
         sprossen: {
             1: { umfang: um(100, "Bewohner"), masse: [ge("zug", "Anteil ihrem Zug zugeordnet", 0.6)] },
-            2: leser(um(1000, "Bewohner"), [ge("fortschritt", "Anteil sichtbarer Fortschritt nach 1 Spieljahr", 0.5)], "kein Ziel über Monate: der Satz des Bewohners trägt kein Ziel, keinen Vorrat, keinen Fortschritt", "stamm/siedlung-bewohner.js:887"),
+            2: { umfang: um(1000, "Bewohner"), masse: [ge("fortschritt", "Anteil sichtbarer Fortschritt nach 1 Spieljahr", 0.5)] },
             3: nicht(um(10000, "Bewohner"), [ge("ziele", "Anteil erklärter Ziele in der Welt", 0.3), ge("rueckfuehrbar", "Anteil Ziele auf eine Person rückführbar", 1)], "10⁴ Bewohner über einen Sprung von 10 J"),
             4: { auge: { pose: "stadt-voll, je Saat die Geschichte eines Bewohners", vorbild: "Geschichten „erzählenswert und folgerichtig“ (Panel ≥ 0,5)" }, erwartet: "nicht", fehlt: "10⁶ Bewohner in 100 Saaten" },
             5: nicht(um(1000000000, "Menschen über Epochen"), [le("anachron", "Anteil anachronistischer Ziele", 0.01), ge("verteilung", "Verteilung der Ziele im historischen Band (1 = ja)", 1)], "10⁹ Menschen über Epochen"),
             6: nicht(um(100, "Welten fremder Gesellschaften"), [ge("rang", "Rang des vorhergesagten Lebensentwurfs", 0.7)], FREMD),
         },
-        seite: { STADT, ZENSUS, ZUEGE },
-        // DER MESSORT IM UMFANG (k2-mensch.js K.messort, 23.11.): S1 „10²“ Bewohner, 20 Personen nach einem Spieltag (Klasse Ort, „P · Dorf“)
-        // — die Stadt (91 Häuser im Plan); das Dorf (50 Bewohner) trägt 10² nicht, die volle Stadt maß den Preis am 13-fachen (564,7 MB)
+        seite: { STADT, ZENSUS, ZUEGE, FORTSCHRITT },
+        // DER MESSORT IM UMFANG (k2-mensch.js K.messort): die Leiter misst in EINER Probe, ihr Ort trägt den größten gemessenen Umfang —
+        // S2 „10³“ Bewohner, 100 Befragte (Klasse Ort, „P · Stadt“): die volle Stadt (1 391 Bewohner); die Stadt (91 Häuser im Plan, 477
+        // Bewohner am Radeon-Lauf c9da3a64) trägt 10³ nicht. S1 „10²“, 20 Personen nach einem Spieltag, misst dort dieselben ersten 100
+        // (bis pm-leser-welle stand die Leiter an der Stadt: S1 ROT 0,55 am Zug, S2 ohne Leser)
         messe: async (H, K) => {
-            await K.messort("stadt");
+            await K.messort("stadt-voll");
             const welt = (name, arg) =>
                 K.welt(
                     "const HILF = (" + H.seite.STADT + ")(r, T);\ntry {\n    return await (" + H.seite[name] + ")(r, T, " +
@@ -604,9 +732,17 @@ module.exports = (F) => [
                     taeter: "koerper-core.js tagesPlan · TAGES_GESETZ.zuege — der Zug verschiebt die Wenden des Tags nicht weit genug, dass der Tag ihn trägt",
                 });
             });
+            // S2: das Ziel des Lebenslaufs (`b.absicht`) je Befragtem jetzt und EIN Spieljahr später am Kalender der Welt
             await K.schritt(2, async () => {
-                const z = await zensus();
-                K.leser(2, { fehlt: "kein Ziel über Monate: der Satz des Bewohners trägt kein Ziel, keinen Vorrat, keinen Fortschritt (" + z.stadt + " Bewohner der Stadt)", wo: "stamm/siedlung-bewohner.js:887", n: z.stadt });
+                const f = pruef(await welt("FORTSCHRITT", { n: 100 }), "das Ziel über ein Spieljahr");
+                H.zeile("S2 " + f.befragt + " befragt, sichtbar " + f.sichtbar + " (" + f.anteil + "), Ziele " + JSON.stringify(f.ziele) + ", der Kalender zurück " + f.zurueck);
+                if (!f.zurueck) throw new Error("der Kalender stand nach dem Spieljahr nicht, wo er stand");
+                K.zahl(2, {
+                    n: f.bewohner,
+                    werte: { fortschritt: f.anteil },
+                    beleg: f.befragt + " Befragte über die " + f.bewohner + " Bewohner der Stadt verteilt; ein Spieljahr später (der Kalender der Welt + jahrK " + f.jahrK + ") steigt die Prozent-Zahl ihres Ziels im Lebenslauf bei " + f.sichtbar + ", " + f.gleich + " gleich; Ziele " + JSON.stringify(f.ziele),
+                    taeter: "stamm/siedlung-bewohner.js _bewohnerLauf („absicht“) — der Fortschritt des Ziels folgt dem Kalender der Welt nicht sichtbar (unter einem Prozentpunkt je Spieljahr)",
+                });
             });
             for (const [n, fehlt, welten] of [[3, "10⁴ Bewohner über einen Sprung von 10 J", false], [4, "10⁶ Bewohner in 100 Saaten", false], [5, "10⁹ Menschen über Epochen", false], [6, "100 Welten fremder Gesellschaften", true]])
                 await K.schritt(n, async () => {
@@ -618,6 +754,11 @@ module.exports = (F) => [
             1: [{ name: "Attrappe: 20 Personen, Zuordnung beim Raten (1 von 8) — ROT am Anteil", j: mut("mensch.geist.absicht", 1, 100, { zug: 0.125 }), gruen: false, zahl: /ROT an Anteil ihrem Zug zugeordnet 0\.125 verfehlt ≥ 0\.6/ },
                 { name: "die Stadt trägt ihren Zug (0,72 über 1 092)", j: mut("mensch.geist.absicht", 1, 1092, { zug: 0.72 }), gruen: true },
                 { name: "zu wenige Bewohner — ROT am Umfang", j: mut("mensch.geist.absicht", 1, 40, { zug: 0.9 }), gruen: false, zahl: /ROT an Umfang 40 < 100/ },
+            ],
+            2: [
+                { name: "das Ziel genommen: kein Befragter zeigt nach einem Spieljahr Fortschritt — ROT am Anteil", j: mut("mensch.geist.absicht", 2, 1391, { fortschritt: 0 }), gruen: false, zahl: /ROT an Anteil sichtbarer Fortschritt nach 1 Spieljahr 0 verfehlt ≥ 0\.5/ },
+                { name: "die Stadt des Messorts (477 < 10³) — ROT am Umfang", j: mut("mensch.geist.absicht", 2, 477, { fortschritt: 0.9 }), gruen: false, zahl: /ROT an Umfang 477 < 1000 Bewohner/ },
+                { name: "der Kalender ohne Messung (das Ziel fehlt im Lauf) — ROT", j: mut("mensch.geist.absicht", 2, 1391, { fortschritt: null }), gruen: false, zahl: /ROT an Anteil sichtbarer Fortschritt nach 1 Spieljahr — verfehlt/ },
             ],
         },
     }),

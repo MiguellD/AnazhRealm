@@ -120,7 +120,53 @@ async function zensus(r, T, arg) {
         return Math.abs(dx * c - dz * s) <= b.ex + m && Math.abs(dx * s + dz * c) <= b.ez + m;
     };
     const sonder = steht.filter((sl) => !WOHN.test(rolle(sl)));
-    const schildAn = (sl) => texte.filter((t) => imGrund(sl, t.x, t.z, 2));
+    // DIE STÜCKE, DIE DEN ORT AUSWEISEN (ort-ausstattung: Schild, Hauszeichen, Marktkreuz) — was STEHT, nie was der Plan nur trägt:
+    // die Stücke des Plans aus dem EINEN Leser der Welt (`_ortStuecke`: am Haus `amHaus` [Stück, Nummer k], frei `liste` bis zur
+    // Kappe), je Stück der Bau der Welt mit seinem Bauplan und dem Samen `_ausstattungSame` an seinem Ort (< 1 m), seine Gestalt
+    // aus dem Stempel am Eintrag (`studioOv.__gestalt`, den `_foundryGestaltFor` zuerst liest). Das Wort des Schilds liest
+    // fachwerk `schildArt` (der Export, den die Welt baut).
+    const stueckeAm = {};
+    for (const Z of typeof r._ortStuecke === "function" ? r._ortStuecke(S.plan) : []) {
+        const xs = Z.amHaus.length ? Z.amHaus : Z.liste.slice(0, Z.kappe || Z.liste.length).map((q, k) => [q, k]);
+        stueckeAm[Z.art] = xs.map(([q, k]) => {
+            const same = r._ausstattungSame(S.plan, Z.art, k) >>> 0;
+            const e = (jeSame.get(same) || []).find((e) => e.type === Z.bauplan && Math.hypot(e.position.x - S.ox - q.x, e.position.z - S.oz - q.z) < 1);
+            const g = e && e.studioOv && Number.isInteger(e.studioOv.__gestalt) ? e.studioOv.__gestalt : null;
+            return { q, e: e || null, g };
+        });
+    }
+    // LESBAR (Band: Canada DOC 1981 Co24-3-8-705 — die Lettern der Punktschrift brauchen mindestens die Matrix 5 × 7, je Punkt ein
+    // Pixel): die Letter des stehenden Schilds (`SCHILD_GESETZ.letterM` × Maß des Eintrags) misst ≥ 7 Pixel der Leinwand des Spiels
+    // (Höhe der Zeichenfläche, fov der Kamera) am Stand des Auges vor ihm (`ZEICHEN_POSE.abstandM[0]`, die Regel „zeichen“ von
+    // `_ortPose`) — dazu, wie viele es vom Stand der Kamera aus sind
+    const AR = r.constructor;
+    const SGz = FC && FC.SCHILD_GESETZ;
+    const hPx = (st.renderer && st.renderer.domElement && st.renderer.domElement.height) || 0;
+    const fovT = Math.tan(((cam.fov || 60) * Math.PI) / 360);
+    const lesM = AR.ZEICHEN_POSE && AR.ZEICHEN_POSE.abstandM ? AR.ZEICHEN_POSE.abstandM[0] : NaN;
+    const letterPx = (e, d) => (SGz && hPx && d > 0 ? ((SGz.letterM * (e.scale || 1)) / (2 * d * fovT)) * hPx : NaN);
+    const schilde = (stueckeAm.schild || []).filter((s) => s.e && s.g != null).map((s) => {
+        const a = FC.schildArt(s.g);
+        return { slot: s.q.slot, wort: a.wort, form: a.form, px: letterPx(s.e, lesM), pxKamera: letterPx(s.e, Math.hypot(s.e.position.x - cam.position.x, s.e.position.y - cam.position.y, s.e.position.z - cam.position.z)) };
+    });
+    const schildVon = (sl) => schilde.filter((s) => s.slot === S.plan.slots.indexOf(sl));
+    const schildLesbar = (s) => s.px >= 7;
+    // DIE WERKE DER BILDKUNST (ort-ausstattung): je stehendes Hauszeichen die Rolle seines Motivs (fachwerk `reliefMass`: die Gestalt
+    // g trägt das Motiv der Rolle SCHILD_WORT[(g − 1) mod 19], 20–38 dieselben Bilder neben der Tür — das Wort der Folge aus dem
+    // Export `schildArt` der Gestalten 1–19), „in der Welt gefunden“, wo das Haus, an dem es hängt, STEHT und diese Rolle trägt;
+    // das Marktkreuz, wo sein Platz Stände trägt. Paare gleicher Werke: zwei Hauszeichen desselben Motivs, zwei Kreuze derselben Gestalt.
+    // (die Länge der Folge: die erste Gestalt nach 1, die wieder das Wort der ersten trägt — die Tafel des Gasthauses, 20)
+    const nW = FC && FC.schildArt ? [...Array(40).keys()].findIndex((i) => i > 0 && FC.schildArt(i + 1).wort === FC.schildArt(1).wort) : -1;
+    const steht1 = new Set(steht);
+    const werkeH = (stueckeAm.relief || []).filter((s) => s.e && s.g != null).map((s) => {
+        const sl = S.plan.slots[s.q.slot];
+        const motiv = nW > 0 ? FC.schildArt(((s.g - 1) % nW) + 1).wort : null;
+        return { art: "relief", bild: "relief:" + motiv, gefunden: !!(sl && steht1.has(sl) && rolle(sl) === motiv) };
+    });
+    const werkeK = (stueckeAm.denkmal || []).filter((s) => s.e).map((s) => ({ art: "denkmal", bild: "denkmal:" + s.g, gefunden: !!(S.plan.staende && S.plan.staende.length) }));
+    const werkAlle = [...werkeH, ...werkeK];
+    let werkGleich = 0;
+    for (let i = 0; i < werkAlle.length; i++) for (let k = i + 1; k < werkAlle.length; k++) if (werkAlle[i].bild === werkAlle[k].bild) werkGleich++;
     const T0 = {
         n: texte.length,
         leuchtet: texte.filter((t) => t.leuchtet).length,
@@ -179,8 +225,15 @@ async function zensus(r, T, arg) {
             kult: steht.filter((sl) => KULT.test(rolle(sl))).length,
             kultKulturen: [...new Set(steht.filter((sl) => KULT.test(rolle(sl))).map((sl) => sl.kultur || "?"))],
             sonder: sonder.length,
-            sonderMitSchild: sonder.filter((sl) => schildAn(sl).length > 0).length,
-            sonderPassend: sonder.filter((sl) => schildAn(sl).some((t) => t.wort.toLowerCase().includes(rolle(sl)))).length,
+            // das Schild, das STEHT, an seinem Sonderbau: passend trägt es das Wort der Rolle seines Slots, lesbar misst die Letter ≥ 7 px
+            sonderMitSchild: sonder.filter((sl) => schildVon(sl).length > 0).length,
+            sonderPassend: sonder.filter((sl) => schildVon(sl).some((s) => s.wort === rolle(sl) && schildLesbar(s))).length,
+            sonderWort: sonder.filter((sl) => schildVon(sl).some((s) => s.wort === rolle(sl))).length,
+            schildePlan: (stueckeAm.schild || []).length,
+            schildeStehen: schilde.length,
+            schildPx: schilde.length ? Math.round(Math.min(...schilde.map((s) => s.px)) * 10) / 10 : null,
+            schildLesbarKamera: schilde.filter((s) => s.pxKamera >= 7).length,
+            ohneSchild: sonder.filter((sl) => !schildVon(sl).length).map(rolle).slice(0, 8),
             jahre: jahre.length ? { von: Math.min(...jahre), bis: Math.max(...jahre) } : null,
             chronik: !!S.plan.chronik,
         },
@@ -204,6 +257,7 @@ async function zensus(r, T, arg) {
         texte: T0,
         videos,
         kunst,
+        werke: { n: werkAlle.length, hauszeichen: werkeH.length, kreuz: werkeK.length, plan: (stueckeAm.relief || []).length + (stueckeAm.denkmal || []).length, gefunden: werkAlle.filter((w) => w.gefunden).length, gleich: werkGleich },
         buehnen: zahlRolle(/buehne|theater|kino|oper|verlag|lichtspiel/),
         wissenArten: [/schule|akademie|universitaet/, /bibliothek|archiv/, /werkstatt/].filter((re) => zahlRolle(re) > 0).length,
         lokale: zahlRolle(/gasthaus|wirtshaus|taverne|schenke|cafe|bar/),
@@ -489,9 +543,16 @@ module.exports = (F) => [
             const traeger = (z) => z.texte.n;
             await H.seite.STUFEN(H, K, z, [
                 {
-                    n: 1, art: "leser", wert: (z) => z.ort.sonder, da: (z) => z.ort.sonderMitSchild > 0, wo: "fachwerk-core.js:2182",
-                    fehlt: "kein Sonderbau trägt ein Schild: das Bau-Gesetz der Rolle (BAU_NUTZUNG) kennt Maß und Raum, keine Schrift",
-                    zahl: (z) => ({ n: z.ort.sonder, werte: { anteil: z.ort.sonder ? z.ort.sonderPassend / z.ort.sonder : NaN }, beleg: "mit Schild " + z.ort.sonderMitSchild + " · passend " + z.ort.sonderPassend, taeter: "das Schild am Sonderbau (fachwerk-core BAU_NUTZUNG)" }),
+                    n: 1, art: "leser", wert: (z) => z.ort.sonder, da: (z) => z.ort.sonderMitSchild > 0, wo: "stamm/siedlung-ort.js _hausStueckSetzen · fachwerk-core.js ortAusstattung",
+                    fehlt: "kein Sonderbau trägt ein stehendes Schild: kein Bau `schild_dorf` mit dem Samen seines Stücks steht an der Tür-Wand",
+                    // je Sonderbau, der STEHT: das Schild, das an ihm steht (Bau der Welt, Same, Ort), sein Wort (fachwerk schildArt) gegen die
+                    // Rolle seines Slots, die Letter ≥ 7 px am Stand des Auges — der Anteil über ALLE stehenden Sonderbauten
+                    zahl: (z) => ({
+                        n: z.ort.sonder,
+                        werte: { anteil: z.ort.sonder ? z.ort.sonderPassend / z.ort.sonder : NaN },
+                        beleg: "Sonderbauten " + z.ort.sonder + " · mit stehendem Schild " + z.ort.sonderMitSchild + " · Wort der Rolle " + z.ort.sonderWort + " · passend und lesbar " + z.ort.sonderPassend + " · Schilde im Plan " + z.ort.schildePlan + ", stehend " + z.ort.schildeStehen + " · kleinste Letter " + z.ort.schildPx + " px am Stand des Auges, lesbar vom Stand der Kamera " + z.ort.schildLesbarKamera + " · ohne Schild " + JSON.stringify(z.ort.ohneSchild),
+                        taeter: "fachwerk-core.js ortAusstattung (amTuerWand: wo die Wand das Brett nicht trägt, hängt kein Schild) · stamm/siedlung-ort.js _hausStueckSetzen",
+                    }),
                 },
                 { n: 2, art: "nicht", wert: (z) => z.stuecke.grab, fehlt: "Grabsteine: der Kirchhof der Stadt trägt nur seine Lose (fachwerk-core STADT_GRAMMATIK kirchhof), keine Tafel mit Schrift" },
                 { n: 3, art: "leser", wert: traeger, da: (z) => z.texte.haus > 0, wo: "fachwerk-core.js:4320", fehlt: "keine Hauswand trägt Schrift: die Viertel der Stadt-Grammatik nennen Gewerbe, kein Schild nennt es" },
@@ -501,7 +562,7 @@ module.exports = (F) => [
             ]);
         },
         sprossen: {
-            1: { umfang: null, masse: [{ key: "anteil", wort: "Sonderbauten mit lesbarem, passendem Schild", soll: 0.9, richtung: "≥" }], erwartet: "leser", fehlt: "kein Sonderbau trägt ein Schild", wo: "fachwerk-core.js:2182" },
+            1: { umfang: null, masse: [{ key: "anteil", wort: "Sonderbauten mit lesbarem, passendem Schild", soll: 0.9, richtung: "≥" }] },
             2: { umfang: { soll: 500, wort: "Grabsteine" }, masse: [{ key: "ocr", wort: "OCR liest zu den Akten zurück", soll: 0.8, richtung: "≥" }, { key: "typen", wort: "Schrift-Typen (U_eff)", soll: 10, richtung: "≥" }], erwartet: "nicht", fehlt: "Grabsteine: ≤ 36 Lose des Kirchhofs, keine Schrift" },
             3: { umfang: { soll: 100, wort: "Schrift-Typen an jeder Hauswand" }, masse: [{ key: "pixel", wort: "Text-Pixel-Anteil gegen Foto (Abweichung)", soll: 0.25, richtung: "≤" }, { key: "gewerbe", wort: "Schilder nennen das Gewerbe", soll: 0.9, richtung: "≥" }], erwartet: "leser", fehlt: "keine Hauswand trägt Schrift", wo: "fachwerk-core.js:4320" },
             4: { auge: { pose: POSE, vorbild: "Shinjuku (Kabukichō) bei Nacht: Leuchtdichte und Schriftdichte je Straßenzug, ≥ 20 Schriften im Viertel" }, erwartet: "nicht", fehlt: "leuchtende Schilder: keines" },
@@ -509,7 +570,10 @@ module.exports = (F) => [
             6: { umfang: { soll: 200, wort: "lesbare Texte" }, masse: [{ key: "widerspruchsfrei", wort: "Texte widerspruchsfrei", soll: 0.9, richtung: "≥" }, { key: "ereignis", wort: "Texte mit Verweis auf ein Ereignis", soll: 0.5, richtung: "≥" }], erwartet: "leser", fehlt: "kein lesbarer Text", wo: "fachwerk-core.js:4509" },
         },
         proben: {
-            1: [{ name: "die Attrappe: Schilder ohne das Gewerbe ihres Hauses", j: mut("mensch.kultur.schrift", 1, { art: "zahl", n: 40, werte: { anteil: 0.5 } }), gruen: false, zahl: /ROT an Sonderbauten mit lesbarem, passendem Schild / }],
+            1: [{ name: "die Attrappe: Schilder ohne das Gewerbe ihres Hauses", j: mut("mensch.kultur.schrift", 1, { art: "zahl", n: 40, werte: { anteil: 0.5 } }), gruen: false, zahl: /ROT an Sonderbauten mit lesbarem, passendem Schild / },
+                { name: "das Schild nur im Plan: 69 Sonderbauten, keines steht an seiner Tür-Wand", j: mut("mensch.kultur.schrift", 1, { art: "zahl", n: 69, werte: { anteil: 0 } }), gruen: false, zahl: /ROT an Sonderbauten mit lesbarem, passendem Schild 0 / },
+                { name: "die Letter unter 7 Pixeln (kein Schild lesbar, kein Anteil)", j: mut("mensch.kultur.schrift", 1, { art: "zahl", n: 69, werte: { anteil: null } }), gruen: false, zahl: /ROT an Sonderbauten mit lesbarem, passendem Schild — verfehlt/ },
+            ],
         },
     }),
 
@@ -743,10 +807,20 @@ module.exports = (F) => [
             await K.messort("stadt-voll");
             const z = await K.welt("return await (" + H.seite.ZENSUS + ")(r, T, " + JSON.stringify({}) + ");", 30000);
             if (!z || z.fehler) throw new Error("der Zensus der Stadt: " + ((z && z.fehler) || "ohne Antwort"));
-            H.zeile("Bildkunst: Werke " + z.kunst + " (Figur, Wandbild, Ornament, Denkmal …) binnen 700 m, Bewohner " + z.bewohner.n);
+            H.zeile("Bildkunst: Werke " + z.kunst + " (Figur, Wandbild, Ornament, Denkmal …) binnen 700 m, am Ort stehend " + JSON.stringify(z.werke) + ", Bewohner " + z.bewohner.n);
             const werke = (z) => z.kunst;
             await H.seite.STUFEN(H, K, z, [
-                { n: 1, art: "leser", wert: werke, da: (z) => z.kunst > 0, wo: "fachwerk-core.js:6495", fehlt: "kein Werk: die Ausstattung des Orts (AUSSTATTUNG) trägt Stand, Brunnen, Grab — kein Wandbild, keine Figur, kein Ornament als Werk" },
+                // die Werke, die am Ort STEHEN (Hauszeichen und Marktkreuz, ort-ausstattung): ihr Motiv in der Welt gefunden, ihre gleichen Paare
+                {
+                    n: 1, art: "leser", wert: (z) => z.werke.n, da: (z) => z.werke.n > 0, wo: "fachwerk-core.js ortAusstattung · HAUSZEICHEN_MOTIV",
+                    fehlt: "kein Werk steht am Ort: kein Hauszeichen, kein Marktkreuz mit dem Samen seines Stücks",
+                    zahl: (z) => ({
+                        n: z.werke.n,
+                        werte: { motiv: z.werke.n ? z.werke.gefunden / z.werke.n : NaN, gleich: z.werke.gleich },
+                        beleg: "Werke " + z.werke.n + " (Hauszeichen " + z.werke.hauszeichen + ", Marktkreuz " + z.werke.kreuz + "; im Plan " + z.werke.plan + ") · Motiv in der Welt gefunden " + z.werke.gefunden + " · gleiche Paare " + z.werke.gleich,
+                        taeter: "fachwerk-core.js ortAusstattung (je Rolle EIN Hauszeichen, HAUSZEICHEN_MOTIV) · stamm/siedlung-ort.js _hausStueckSetzen",
+                    }),
+                },
                 { n: 2, art: "auge", um: 10, wert: (z) => (z.kunst > 0 ? Object.keys(z.ort.kulturen).length : 0), fehlt: "Kulturen mit Werken" },
                 { n: 3, art: "auge", um: 1000, wert: (z) => (z.kunst > 0 && z.ort.jahre ? z.ort.jahre.bis - z.ort.jahre.von : 0), fehlt: "Jahre der Werke eines Orts" },
                 { n: 4, art: "leser", wert: werke, da: (z) => z.kunst > 0, wo: "fachwerk-core.js:6495", fehlt: "kein Werkstoff der Kunst: kein Werk, keine Malerei mit Pigment" },
@@ -756,7 +830,7 @@ module.exports = (F) => [
             ]);
         },
         sprossen: {
-            1: { umfang: { soll: 10, wort: "Werke an einem Ort" }, masse: [{ key: "motiv", wort: "Motiv in der Welt gefunden", soll: 0.8, richtung: "≥" }, { key: "gleich", wort: "Paare gleicher Werke", soll: 0, richtung: "≤" }], erwartet: "leser", fehlt: "kein Werk", wo: "fachwerk-core.js:6495" },
+            1: { umfang: { soll: 10, wort: "Werke an einem Ort" }, masse: [{ key: "motiv", wort: "Motiv in der Welt gefunden", soll: 0.8, richtung: "≥" }, { key: "gleich", wort: "Paare gleicher Werke", soll: 0, richtung: "≤" }] },
             2: { auge: { pose: POSE, vorbild: "Werke realer Kunst von 10 Kulturen: blind der richtigen zugeordnet ≥ 70 % (Prüfer)" }, erwartet: "nicht", fehlt: "Kulturen mit Werken: keine" },
             3: { auge: { pose: POSE, vorbild: "Blind-Datierung realer Werke eines Orts über 1 000 Jahre (Fehler ≤ 15 % der Spanne, Prüfer)" }, erwartet: "nicht", fehlt: "Jahre der Werke: kein Werk" },
             4: { umfang: null, masse: [{ key: "gegenlauf", wort: "Werke aus fehlendem Stoff", soll: 0, richtung: "≤" }, { key: "pigment", wort: "Farbtöne im Band der Pigmente des Orts", soll: 1, richtung: "≥" }], erwartet: "leser", fehlt: "kein Werkstoff der Kunst", wo: "fachwerk-core.js:6495" },
@@ -765,7 +839,10 @@ module.exports = (F) => [
             7: { auge: { pose: POSE, vorbild: "Fremdwelt-Probe (R10): Sinn und Glaube der Art aus dem Werk gelesen, Rang ≥ 0,7 (Prüfer)" }, erwartet: "nicht", fehlt: "fremde Arten mit Kunst: keine" },
         },
         proben: {
-            1: [{ name: "die Attrappe: zehn Werke, zwei davon gleich", j: mut("mensch.kultur.bildkunst", 1, { art: "zahl", n: 10, werte: { motiv: 0.9, gleich: 1 } }), gruen: false, zahl: /ROT an Paare gleicher Werke / }],
+            1: [{ name: "die Attrappe: zehn Werke, zwei davon gleich", j: mut("mensch.kultur.bildkunst", 1, { art: "zahl", n: 10, werte: { motiv: 0.9, gleich: 1 } }), gruen: false, zahl: /ROT an Paare gleicher Werke / },
+                { name: "kein Werk steht am Ort (Hauszeichen und Kreuz nur im Plan) — ROT am Umfang", j: mut("mensch.kultur.bildkunst", 1, { art: "zahl", n: 0, werte: { motiv: null, gleich: 0 } }), gruen: false, zahl: /ROT an Umfang 0 < 10 Werke an einem Ort/ },
+                { name: "17 Werke, ihr Motiv nirgends in der Welt (das Bild fremder Rollen)", j: mut("mensch.kultur.bildkunst", 1, { art: "zahl", n: 17, werte: { motiv: 0.1, gleich: 0 } }), gruen: false, zahl: /ROT an Motiv in der Welt gefunden 0\.1 / },
+            ],
         },
     }),
 

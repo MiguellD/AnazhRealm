@@ -22,7 +22,15 @@ module.exports = (F) => [
             H.zeile("Grenze: " + JSON.stringify(w));
             const reich = "Reich " + w.reichM + " m um den Ort mit Herrn (" + w.reichKm2 + " km²)";
             const keine = "keine Grenze im Land: das Reich eines Orts (fachwerk siedlungsReich, `_imReichEinesOrts`) hält nur Gründungen und Herden fern — kein Bau, kein Weg, kein Zeichen zeigt es (" + w.zeichen + " Grenzzeichen in der Szene; " + reich + ")";
-            await K.schritt(1, async () => K.leser(1, { n: w.herren, fehlt: keine, wo: "stamm/siedlung-ort.js:1609" }));
+            // die Grenze im Bild (Marksteine der Szene binnen 300 m des Rands, Band 250–600 m Steinweite) gegen die Karte (der Rand des Reichs)
+            await K.schritt(1, async () =>
+                K.zahl(1, {
+                    n: w.herren,
+                    werte: { grenzeKarte: w.grenzeKarte, burgLage: w.burgLage },
+                    beleg: reich + " · Grenzzeichen in der Szene " + w.steine + ", davon am Rand " + w.steineAmRand + " · Rand im Bild " + w.imBild + " von " + w.randPunkte + " Punkten · Burg in Lage " + w.burgLage,
+                    taeter: "stamm/siedlung-ort.js _markSteinSetzen — der Stein steht nur, wo der Weg eines Paars geladener Orte das Reich verlässt (fachwerk grenzeAmWeg), je Paar einer; der Rand des Reichs zwischen den Wegen trägt kein Zeichen (" + keine + ")",
+                })
+            );
             await K.schritt(2, async () => K.leser(2, { n: w.gemein, fehlt: "keine Grenze aus der Kostenfläche: " + w.gemein + " Gemeinwesen in " + w.zellen + " von " + w.zellenSoll + " Zellen (32 × 32 km) tragen kein Reich mit Grenze, kein Fluss und kein Kamm verlegt eine", wo: "stamm/siedlung-ort.js:1609" }));
             await K.schritt(3, async () => K.nicht(3, { n: w.bund, fehlt: "keine zweite Ebene: kein Bund, kein Stadtstaat über den Orten (" + w.gemein + " Gemeinwesen ohne Ordnung über sich)" }));
             await K.schritt(4, async () => K.nicht(4, { n: w.chronikJ, fehlt: "keine Herrschaft über die Zeit: der Ort mit Herrn trägt eine Chronik von " + w.chronikJ + " Jahren, kein Aufstieg, kein Fall, der Hauptort wandert nie" }));
@@ -46,10 +54,34 @@ module.exports = (F) => [
                 const reichM = herren.length ? Math.round(reich(SG, haeuser)) : 0;
                 const reichKm2 = +((Math.PI * reichM * reichM) / 1e6).toFixed(3);
                 let zeichen = 0;
+                const steine = [];
                 for (const e of r.state.architectures || []) {
                     const t = e && typeof e.type === "string" ? e.type.toLowerCase() : "";
-                    if (t.indexOf("grenz") >= 0 || t.indexOf("markstein") >= 0 || t.indexOf("schlagbaum") >= 0) zeichen++;
+                    if (t.indexOf("grenz") >= 0 || t.indexOf("markstein") >= 0 || t.indexOf("schlagbaum") >= 0) (zeichen++, e.position && steine.push(e.position));
                 }
+                // DIE GRENZE IM BILD GEGEN DIE KARTE (Sprosse 1): die Karte ist der Rand des Reichs um den Ort mit Herrn (fachwerk
+                // siedlungsReich, reichM), 360 Punkte; ein Punkt steht im Bild, wo ein Grenzzeichen der Szene (Markstein, stamm/siedlung-ort.js
+                // _markSteinSetzen) binnen der halben Weite zweier Steine liegt — Band: die Hauptgrenzsteine standen 250–600 m voneinander
+                // (Kleindenkmale Baden-Württemberg, Kreisarchiv Bodenseekreis), die halbe größte Weite 300 m
+                const herr = herren[0];
+                let [randPunkte, imBild, steineAmRand] = [0, 0, 0];
+                if (herr && reichM > 0) {
+                    for (let k = 0; k < 360; k++) {
+                        const a = (k * Math.PI) / 180;
+                        const [x, z] = [herr.ort.x + reichM * Math.cos(a), herr.ort.z + reichM * Math.sin(a)];
+                        randPunkte++;
+                        if (steine.some((q) => Math.hypot(q.x - x, q.z - z) <= 300)) imBild++;
+                    }
+                    steineAmRand = steine.filter((q) => Math.abs(Math.hypot(q.x - herr.ort.x, q.z - herr.ort.z) - reichM) <= 300).length;
+                }
+                // DIE BURG, WO LAGE UND REICHTUM SIE TRAGEN: je Ort mit Herrn steht der Palas (Rolle burg) im obersten Viertel der Höhen
+                // seiner Lose (fachwerk STADT_GRAMMATIK burg lage "hoehe"; die Höhe des Slots sl.y) und der Ort ist eine Stadt (das
+                // BURG-GESETZ: herrBar nur städtisch)
+                const burgOk = herren.filter((p) => {
+                    const ys = p.slots.map((sl) => sl.y).filter(Number.isFinite).sort((a, b) => a - b);
+                    const b = p.slots.find((sl) => sl.rolle === "burg");
+                    return b && Number.isFinite(b.y) && ys.length && b.y >= ys[Math.floor(0.75 * (ys.length - 1))] && !!p.staedtisch;
+                }).length;
                 // die Gemeinwesen des Rang-Gesetzes auf 32 × 32 km um den Messort (eine Zelle je `cellM`), mit Frist
                 const cellM = SG.cellM;
                 const halb = Math.round(16000 / cellM);
@@ -79,6 +111,12 @@ module.exports = (F) => [
                     reichM,
                     reichKm2,
                     zeichen,
+                    steine: steine.length,
+                    steineAmRand,
+                    randPunkte,
+                    imBild,
+                    grenzeKarte: randPunkte ? +(imBild / randPunkte).toFixed(3) : null,
+                    burgLage: herren.length ? +(burgOk / herren.length).toFixed(3) : null,
                     zellen,
                     zellenSoll: 4 * halb * halb,
                     gemein,
@@ -97,9 +135,6 @@ module.exports = (F) => [
                     { key: "grenzeKarte", wort: "Grenze im Bild deckt die Karte (Anteil)", soll: 1, richtung: "≥" },
                     { key: "burgLage", wort: "Burg, wo Lage und Reichtum sie tragen (Anteil)", soll: 1, richtung: "≥" },
                 ],
-                erwartet: "leser",
-                fehlt: "keine Grenze im Land: das Reich eines Orts hält nur Gründungen und Herden fern, nichts zeigt es",
-                wo: "stamm/siedlung-ort.js:1609",
             },
             2: {
                 umfang: { soll: 10, wort: "Gemeinwesen auf 32 × 32 km" },
@@ -154,6 +189,18 @@ module.exports = (F) => [
                     j: { leiter: "mensch.macht.grenze", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "zahl", n: 0, werte: { grenzeKarte: 1, burgLage: 1 } } } },
                     gruen: false,
                     zahl: /ROT an Umfang 0 < 1 Herrschaftsgebiet/,
+                },
+                {
+                    name: "die Marksteine genommen: ein Herrschaftsgebiet, sein Rand nirgends im Bild",
+                    j: { leiter: "mensch.macht.grenze", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "zahl", n: 1, werte: { grenzeKarte: 0, burgLage: 1 } } } },
+                    gruen: false,
+                    zahl: /ROT an Grenze im Bild deckt die Karte \(Anteil\) 0 /,
+                },
+                {
+                    name: "drei Steine an drei Wegen: der Rand zu 0,4 im Bild",
+                    j: { leiter: "mensch.macht.grenze", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "zahl", n: 1, werte: { grenzeKarte: 0.4, burgLage: 1 } } } },
+                    gruen: false,
+                    zahl: /ROT an Grenze im Bild deckt die Karte \(Anteil\) 0\.4 /,
                 },
             ],
             2: [
@@ -801,8 +848,17 @@ module.exports = (F) => [
             const w = await K.welt("return await (" + H.seite.KRIEG + ")(r, T, {});", 20000);
             if (!w || w.fehler) throw new Error("die Welt des Kriegs: " + ((w && w.fehler) || "ohne Antwort"));
             H.zeile("Krieg: " + JSON.stringify(w));
-            const nur = "nur der Spieler trägt eine Klinge (" + (w.haelt || "die leere Hand") + "): " + w.bewaffneteBewohner + " von " + w.bewohner + " Bewohnern bewaffnet";
-            await K.schritt(1, async () => K.nicht(1, { n: w.bewaffnet, fehlt: nur + ", kein zweiter Kämpfer für einen Zweikampf" }));
+            const nur = "der Spieler (" + (w.haelt || "die leere Hand") + ") und " + w.bewaffneteBewohner + " von " + w.bewohner + " Bewohnern bewaffnet (die Wache), " + w.imZweikampf + " im Kampf";
+            // S1: seit bewohner-satz tragen die Wachen ihre Waffe (`b.waffe`, der Lebenslauf) — der Umfang sind die Bewaffneten IM
+            // Zweikampf: wer einen Gegner trägt oder im Akt eines Kampfs steht; Treffer, Antwort und Deckung zählt erst ein Zweikampf
+            await K.schritt(1, async () =>
+                K.zahl(1, {
+                    n: w.imZweikampf,
+                    werte: { sitzt: null, antwortet: null, durchDeckung: null },
+                    beleg: w.bewaffnet + " Bewaffnete (" + w.bewaffneteBewohner + " von " + w.bewohner + " Bewohnern mit Waffe " + JSON.stringify(w.waffen) + " und der Spieler, " + (w.haelt || "die leere Hand") + "), " + w.imZweikampf + " im Zweikampf",
+                    taeter: "stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature)",
+                })
+            );
             await K.schritt(2, async () => {
                 if (w.bewaffnet < 10) return K.nicht(2, { n: w.bewaffnet, fehlt: nur + ", keine zehn Kämpfer, keine Moral, keine Flucht" });
                 const b = await K.bild(2, w.pose);
@@ -824,12 +880,18 @@ module.exports = (F) => [
             KRIEG: async (r, T, arg) => {
                 const st = r.state;
                 const pm = st.playerMesh.position;
-                let [bewohner, bewaffneteBewohner] = [0, 0];
+                let [bewohner, bewaffneteBewohner, imZweikampf] = [0, 0, 0];
+                const waffen = {};
+                const KAMPF = /kampf|hieb|duell|fecht|streit/i;
                 for (const S of (r._bewohnerSiedlungen || new Map()).values())
                     for (const b of S.liste || []) {
                         bewohner++;
                         const u = (b.leib && b.leib.userData) || {};
-                        if (b.waffe || b.bewaffnet || u.waffe || (b.equipped && b.equipped.held) || (u.equipped && u.equipped.held)) bewaffneteBewohner++;
+                        const wf = b.waffe || u.waffe || (b.equipped && b.equipped.held) || (u.equipped && u.equipped.held) || (b.bewaffnet ? "?" : null);
+                        if (!wf) continue;
+                        bewaffneteBewohner++;
+                        waffen[wf] = (waffen[wf] || 0) + 1;
+                        if (b.gegner || u.gegner || KAMPF.test(String(b.akt || ""))) imZweikampf++;
                     }
                 const cells = (st.worldMeta && st.worldMeta.settlementCells) || {};
                 let [orte, imKrieg] = [0, 0];
@@ -844,6 +906,8 @@ module.exports = (F) => [
                     bewohner,
                     bewaffneteBewohner,
                     bewaffnet: bewaffneteBewohner + (st.player ? 1 : 0),
+                    imZweikampf,
+                    waffen,
                     haelt: haelt || null,
                     orte,
                     imKrieg,
@@ -859,8 +923,6 @@ module.exports = (F) => [
                     { key: "antwortet", wort: "der Getroffene antwortet (Anteil)", soll: 1, richtung: "≥" },
                     { key: "durchDeckung", wort: "Treffer durch die Deckung", soll: 0, richtung: "≤" },
                 ],
-                erwartet: "nicht",
-                fehlt: "nur der Spieler trägt eine Klinge, kein Bewohner ist bewaffnet",
             },
             2: {
                 auge: { pose: "stadt-voll: der Platz, 40 m über ihm", vorbild: "Berichte und Bilder von Kämpfen Mensch gegen Mensch: Flucht statt Tod (Marshall, Men against Fire)" },
@@ -912,10 +974,22 @@ module.exports = (F) => [
         proben: {
             1: [
                 {
-                    name: "der Spieler allein (der Stand der Welt): ein Bewaffneter, der Treffer sitzt am Tier",
+                    name: "der Spieler allein (der Stand vor bewohner-satz): ein Bewaffneter, der Treffer sitzt am Tier",
                     j: { leiter: "mensch.macht.krieg", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "zahl", n: 1, werte: { sitzt: 1, antwortet: 1, durchDeckung: 0 } } } },
                     gruen: false,
                     zahl: /ROT an Umfang 1 < 2 Bewaffnete im Zweikampf/,
+                },
+                {
+                    name: "die Wache bewaffnet, keiner kämpft (der Stand von heute) — ROT am Umfang",
+                    j: { leiter: "mensch.macht.krieg", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "zahl", n: 0, werte: { sitzt: null, antwortet: null, durchDeckung: null } } } },
+                    gruen: false,
+                    zahl: /ROT an Umfang 0 < 2 Bewaffnete im Zweikampf/,
+                },
+                {
+                    name: "der Zweikampf, dessen Hieb durch die Deckung trifft — ROT an der Deckung",
+                    j: { leiter: "mensch.macht.krieg", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "zahl", n: 2, werte: { sitzt: 1, antwortet: 1, durchDeckung: 2 } } } },
+                    gruen: false,
+                    zahl: /ROT an Treffer durch die Deckung 2 verfehlt ≤ 0/,
                 },
             ],
         },
@@ -932,7 +1006,16 @@ module.exports = (F) => [
             const w = await K.welt("return await (" + H.seite.MEGA + ")(r, T, {});", 20000);
             if (!w || w.fehler) throw new Error("die Welt der Megastadt: " + ((w && w.fehler) || "ohne Antwort"));
             H.zeile("Megastadt: " + JSON.stringify(w));
-            await K.schritt(1, async () => K.leser(1, { n: w.wachen, fehlt: "keine Wache, keine Streife: " + w.wachen + " Bauten mit der Rolle Wache in " + w.plaene + " Plänen, " + w.fahrer + " Fahrer am Steuer fahren die Trassen, keiner fährt aus einer Wache", wo: "stamm/siedlung-verkehr.js:431" }));
+            // S1: der Umfang ist die Wache MIT Streife (wer aus ihr ausrückt); ρ (Antwortzeit ↔ Weg zur Wache) und das Sichtfeld misst
+            // erst eine Streife, die aus der Wache kommt — ohne sie null (ROT beim Namen), nie ein Wert der Wache am Posten
+            await K.schritt(1, async () =>
+                K.zahl(1, {
+                    n: w.mitStreife,
+                    werte: { rho: null, imSicht: null },
+                    beleg: w.wachen + " Bauten mit der Rolle Wache in " + w.plaene + " Plänen um den Spieler (" + w.wacheBau + " in den Plänen der Bewohner), " + w.inWache + " Bewohner wohnen in ihr, " + w.ausWache + " davon bewaffnet oder am Steuer; " + w.bewaffnet + " Wächter mit Waffe in der Welt, " + w.fahrer + " Fahrer am Steuer",
+                    taeter: "stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlung-verkehr.js)",
+                })
+            );
             await K.schritt(2, async () => {
                 if (w.reviere < 10) return K.nicht(2, { n: w.reviere, fehlt: "keine Banden, keine Reviere, kein Graffiti" });
                 const b = await K.bild(2, w.pose);
@@ -959,9 +1042,24 @@ module.exports = (F) => [
                         if (ro.indexOf("wache") >= 0 || ro.indexOf("polizei") >= 0 || ro.indexOf("revier") >= 0) wachen++;
                         if (((s.ov && s.ov.storeys) || 0) >= 10) tuerme++;
                     }
-                let [bewohner, fahrer, protest, oben, reviere] = [0, 0, 0, 0, 0];
+                let [bewohner, fahrer, protest, oben, reviere, wacheBau] = [0, 0, 0, 0, 0, 0];
+                // DIE WACHE ALS BAU (ort-ausstattung, fachwerk `wacheLose`: die Rolle „wache“ eines Slots) und IHRE STREIFE: wer aus ihr
+                // ausrückt — ein Bewohner mit der Waffe der Wache (`b.waffe`, der Lebenslauf; er naht der Tat, `_bewohnerNahen`), der in
+                // ihr wohnt, oder ein Wagen, dessen Fahrer in ihr wohnt
+                const streifeJe = new Map();
+                let [inWache, bewaffnet, ausWache] = [0, 0, 0];
                 for (const S of (r._bewohnerSiedlungen || new Map()).values()) {
                     if (S.revier || S.bande) reviere++;
+                    const wsl = new Set(((S.plan && S.plan.slots) || []).filter((s) => s && s.rolle === "wache").map((s) => s.seed >>> 0));
+                    wacheBau += wsl.size;
+                    for (const b of S.liste || []) {
+                        if (wsl.has(b.heim)) inWache++;
+                        if (b.waffe) bewaffnet++;
+                        if (wsl.has(b.heim) && (b.waffe || b.amSteuer)) {
+                            ausWache++;
+                            streifeJe.set(S.key + ":" + b.heim, (streifeJe.get(S.key + ":" + b.heim) || 0) + 1);
+                        }
+                    }
                     for (const b of S.liste || []) {
                         bewohner++;
                         if (b.amSteuer) fahrer++;
@@ -975,6 +1073,11 @@ module.exports = (F) => [
                 return {
                     plaene: plaene.length,
                     wachen,
+                    wacheBau,
+                    mitStreife: streifeJe.size,
+                    inWache,
+                    bewaffnet,
+                    ausWache,
                     tuerme,
                     bewohner,
                     fahrer,
@@ -992,9 +1095,6 @@ module.exports = (F) => [
                     { key: "rho", wort: "Antwortzeit ∝ Weg zur Wache ρ", soll: 0.7, richtung: "≥" },
                     { key: "imSicht", wort: "wer im Sichtfeld erscheint (Zahl)", soll: 0, richtung: "≤" },
                 ],
-                erwartet: "leser",
-                fehlt: "keine Wache, keine Streife: kein Bau trägt die Rolle Wache, kein Wagen fährt Streife",
-                wo: "stamm/siedlung-verkehr.js:431",
             },
             2: {
                 auge: { pose: "hochhaus-dach: Blick über die Türme zum Platz", vorbild: "Bandenreviere und Graffiti einer Megastadt (Los Angeles, Gang-Karten; Rio, Favelas)" },
@@ -1033,6 +1133,18 @@ module.exports = (F) => [
         },
         proben: {
             1: [
+                {
+                    name: "die Wache als Bau ohne Streife (der Stand von heute) — ROT am Umfang",
+                    j: { leiter: "mensch.macht.megastadt", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "zahl", n: 0, werte: { rho: null, imSicht: null } } } },
+                    gruen: false,
+                    zahl: /ROT an Umfang 0 < 1 Wache mit Streife/,
+                },
+                {
+                    name: "die Streife antwortet ohne Bezug zum Weg (ρ 0,2) — ROT an ρ",
+                    j: { leiter: "mensch.macht.megastadt", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "zahl", n: 1, werte: { rho: 0.2, imSicht: 0 } } } },
+                    gruen: false,
+                    zahl: /ROT an Antwortzeit ∝ Weg zur Wache ρ 0\.2 verfehlt ≥ 0\.7/,
+                },
                 {
                     name: "die Streife erscheint im Sichtfeld (sie fährt nicht aus der Wache)",
                     j: { leiter: "mensch.macht.megastadt", adapter: "[linse-gpu] amd/rdna-3 (Probe)", sprossen: { 1: { art: "zahl", n: 1, werte: { rho: 0.9, imSicht: 2 } } } },
