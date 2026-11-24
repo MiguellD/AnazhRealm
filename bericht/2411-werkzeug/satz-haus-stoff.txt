@@ -1,0 +1,12 @@
+das Haus steht auf einem Sockel aus Stein, und seine Höhe kommt aus dem Wasser des Orts — trocken 0,30 m, Heimat 0,55 m, nass 0,80 m
+
+Geschnitten: der Sockel liest das Wasser des Orts (gelaende-core ortGesetz(teil).spendeVerh über den EINEN Klima-Kanal _siedlungKlima,
+dazu sockelImWasser) statt einer festen Höhe je Kultur: 0,30 m Spritzwasserzone + 0,25 m je Spende relativ zur Heimat, gedeckelt bei 0,95 m; huette und
+stroh malen den Sockel nicht mehr in Blockholz. Labor ohne Klima: Prüf-Hash c31204c7cdb89380 unverändert.
+Gemessen: gate:settlement Teil R5 — die Hülle steigt an 22 von 22 Bauten um +0,50 m, wenn der Ort nass wird; Mutante „der Sockel liest
+das Wasser nicht“ ROT. Dasselbe Bild am Messort dorf 225 → 143 ms, 80 → 80 Draw-Calls, 331 289 → 328 798 Dreiecke. Quellen:
+ÖNORM B 2320 (Spritzwasserzone 0,30 m), Marx 1891 (Sockel 0,55 m, Böhmen bis 0,95 m).
+Offen: das Gefach bleibt je Kultur konstant (kein heller Putz aus Boden und Bestand); Deckung und Neigung des Dachs sind konstant
+(Folge-Zweig haus-dach); der Sockel ist am Hang nicht gestuft; die fernen Stufen L1 und L2 verlieren den Sockel; die lineare Form
+Wasser → Höhe ist eine Annahme zwischen zwei belegten Punkten; alpin darf weiter auf Meereshöhe stehen. karte2.mensch.bau.bauen#1 steht
+unverändert bei 98,0 %.
