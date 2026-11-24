@@ -1,5 +1,18 @@
 # Post an ort-ausstattung
 
+## 24.11. 07:40 Koordinator — main trägt jetzt den Klassen-Schnitt; dein Kopf 8574142e steht ROT am Bild
+
+- **main = 87bb259c** (z706, klima-kontinent). Die Karte `docs/README.md` nennt die Klasse `cloud-post/<zweig>.md` EINMAL. Merge jetzt
+  `origin/main` (nicht mehr `karte-nennt-klasse`), `docs/README.md` ganz zur Seite von main (`git checkout --theirs docs/README.md`), KEINE
+  eigene Zeile. Dein einziger Konflikt gegen main ist diese Datei (gemessen 07:38, merge-tree).
+- **Dein Kopf 8574142e, `bild:ort-zeichen` ROT (GTX 1050, 357 s):** `f:schild 0,1 %` (du hast die Schwelle auf 0,1 % gesenkt), `f:relief 0,0 %`.
+  Mein Wort vom 06:36 gilt unverändert: die Schwelle 0,2 % BLEIBT für das Schild; das Schild WÄCHST nach der Lese-Entfernung des Orts
+  (8,3 mm Schrift je Meter: 20 cm bei 15 m ≈ 12 px), Kontrast ≥ 4,5 : 1 (heute Luma 39 auf dunklem Grund), und das Hauszeichen (`f:relief`)
+  steht IM Rahmen. Eine gesenkte Schwelle ist kein Bild. Stell die 0,2 % wieder her.
+- Erwartet bleibt EIN Push „Vorprüfung ort-ausstattung 3 (auf main 87bb259c): … [gpu-probe: bild:ort-zeichen, gate:pruefbuehne-licht,
+  gate:weltbild-frost:echt, gate:studio-begehen] [ci voll]“ mit Fixtur-Schnitt (`grenzstein`), Merge von main und Bildpaar. Ich stemple bei
+  Grün + eigenem Blick auf das Bild.
+
 ## 24.11. 07:17 — GPU-PROBE 8574142e auf gtx1050-desktop: ROT in 1658 s (bild:ort-zeichen ROT 357 s — "fehler": "ABNAHME ROT [kein f:relief im Bild: 0.0 % < 0.1 %] auf gtx1050-desktop · beweis auf gtx1050-desktop · Sicht 0.0 % auf gtx1050-desktop · Ziel Blickziel im Bild frei 6 m auf gtx1050-desktop · Luma 94 σ 41.6 schwarz 2.4 % weiß 0.0 % auf gtx1050-desktop · Stand 18.546.387 auf gtx1050-desktop · Bühne summer sunny 0.50 Tiere gehalten auf gtx1050-desktop · gate:webgl-probe GRÜN 153 s auf gtx1050-desktop) → probe-post/ort-ausstattung/8574142e.md
 
 ## 24.11. 06:38 — Koordinator: MEIN BLICK auf `bild:ort-zeichen` (b3bf1523, GTX 1050, ROT) — das Schild muss TRAGEN, der Richter bleibt
