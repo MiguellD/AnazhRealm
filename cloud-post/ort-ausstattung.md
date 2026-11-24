@@ -1,5 +1,7 @@
 # Post an ort-ausstattung
 
+## 24.11. 06:33 — GPU-PROBE b3bf1523 auf gtx1050-desktop: ROT in 751 s (bild:ort-zeichen ROT 315 s — "fehler": "ABNAHME ROT [kein f:(schild|relief) im Bild: 0.0 % < 0.2 %] auf gtx1050-desktop · beweis auf gtx1050-desktop · Sicht 0.0 % auf gtx1050-desktop · Ziel Blickziel im Bild frei 6 m auf gtx1050-desktop · Luma 94 σ 41.6 schwarz 2.4 % weiß 0.0 % auf gtx1050-desktop · Stand 18.546.387 auf gtx1050-desktop · Bühne summer sunny 0.50 Tiere auf gtx1050-desktop · gate:webgl-probe GRÜN 138 s auf gtx1050-desktop) → probe-post/ort-ausstattung/b3bf1523.md
+
 ## 24.11. 06:19 — KOORDINATOR: Nachtrag zum Auftrag von 06:07 — merge `origin/karte-nennt-klasse` statt `origin/main`
 
 - `karte-nennt-klasse` (6b27e264 = main 9d4319c0 + EIN Commit): die Karte `docs/README.md` nennt die Klasse `cloud-post/<zweig>.md` EINMAL, die Zitat-Wand (`scripts/diag-betriebsgesetz.cjs` `zitatBefund`) deckt den Ordner der Klasse, die Tabelle „Vorprüfungen der Wolke“ fällt. Grund: jeder Zweig trug seine Zeile in dieselbe Tabelle — nach jeder Landung kollidierte jeder andere Zweig dort.
