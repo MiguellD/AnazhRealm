@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 33,
+    "heute": 34,
     "kern": 3,
     "kernDazu": 3,
-    "anteilHeute": 5.8,
+    "anteilHeute": 6,
     "anteilKern": 0.4
    },
    "perspektiven": [
@@ -6951,7 +6951,7 @@
        "richter": "N = 100 Welten: Fremdwelt-Probe (R10) — Netzform aus Lebensweise und Sinnen der Art vorhergesagt Rang ≥ 0,7"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Haus mit n Bewohnern ohne Bindung",
@@ -20089,7 +20089,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 89,
+  "heute": 90,
   "davonKopplungen": 33,
   "kern": 4,
   "kernDazu": 4,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 53,
-  "nachwache": 36
+  "nachwache": 37
  },
  "zusammengelegt": [
   {

@@ -17119,7 +17119,7 @@
   },
   "karte2.mensch.geist.netz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.netz#1 radeon: Station seit der Messung geändert — zuletzt an 2d6a0447: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — off · karte2.mensch.geist.netz#1 gtx: Station seit der Messung geändert · karte2.mensch.geist.netz#2 radeon: ungemessen (R10) · karte2.mensch.geist.netz#2 gtx: ungemessen (R10) · karte2.mensch.geist.netz#3 radeon: ungemessen (R10) · karte2.mensch.geist.netz#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.netz#4 radeon: ungemessen (R10) · karte2.mensch.geist.netz#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.netz#5 radeon: ungemessen (R10) · karte2.mensch.geist.netz#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.netz#6 radeon: ungemessen (R10) · karte2.mensch.geist.netz#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: S1 GRÜN · Anteil Besuche bei Verwandten oder Freunden 1 (Soll ≥ 0.6) · Umfang 1356 (Soll ≥ 100 Bewohner) · um 17.6 Uhr 37 Bewohner am Ziel ihres Besuchs, 37 am Haus des Gastgebers gezählt (0 ohne Haus an der Tür des Stands); im Haus eines Freundes (Dunbar 15 · 50 · 150, die Schicht 150) 1, der Sympathie-Gruppe (15) 1; über den Tag 1 von 1356 gebundenen Besuchen · [linse-gpu] nvidia/pascal an 2d6a0447 gtx — offen: karte2.mensch.geist.netz#1 radeon: Station seit der Messung geändert — zuletzt an 2d6a0447: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — off · karte2.mensch.geist.netz#2 radeon: ungemessen (R10) · karte2.mensch.geist.netz#2 gtx: ungemessen (R10) · karte2.mensch.geist.netz#3 radeon: ungemessen (R10) · karte2.mensch.geist.netz#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.netz#4 radeon: ungemessen (R10) · karte2.mensch.geist.netz#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.netz#5 radeon: ungemessen (R10) · karte2.mensch.geist.netz#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.netz#6 radeon: ungemessen (R10) · karte2.mensch.geist.netz#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.netz#1",
@@ -17134,11 +17134,11 @@
     {
      "id": "karte2.mensch.geist.netz#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 GRÜN · Anteil Besuche bei Verwandten oder Freunden 1 (Soll ≥ 0.6) · Umfang 1356 (Soll ≥ 100 Bewohner) · um 17.6 Uhr 37 Bewohner am Ziel ihres Besuchs, 37 am Haus des Gastgebers gezählt (0 ohne Haus an der Tür des Stands); im Haus eines Freundes (Dunbar 15 · 50 · 150, die Schicht 150) 1, der Sympathie-Gruppe (15) 1; über den Tag 1 von 1356 gebundenen Besuchen · [linse-gpu] nvidia/pascal",
+     "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -20523,7 +20523,7 @@
   },
   "karte2.mensch.macht.recht": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.recht#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — off · karte2.mensch.macht.recht#1 gtx: Station seit der Messung geändert — zuletzt an a8dd22b5: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eva · karte2.mensch.macht.recht#2 radeon: ungemessen (R10) · karte2.mensch.macht.recht#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#3 radeon: ungemessen (R10) · karte2.mensch.macht.recht#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#4 radeon: ungemessen (R10) · karte2.mensch.macht.recht#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#5 radeon: ungemessen (R10) · karte2.mensch.macht.recht#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#6 radeon: ungemessen (R10) · karte2.mensch.macht.recht#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#7 radeon: ungemessen (R10) · karte2.mensch.macht.recht#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.recht#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — off · karte2.mensch.macht.recht#1 gtx: Station seit der Messung geändert — zuletzt an 2d6a0447: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eva · karte2.mensch.macht.recht#2 radeon: ungemessen (R10) · karte2.mensch.macht.recht#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#3 radeon: ungemessen (R10) · karte2.mensch.macht.recht#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#4 radeon: ungemessen (R10) · karte2.mensch.macht.recht#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#5 radeon: ungemessen (R10) · karte2.mensch.macht.recht#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#6 radeon: ungemessen (R10) · karte2.mensch.macht.recht#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#7 radeon: ungemessen (R10) · karte2.mensch.macht.recht#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.macht.recht#1",
@@ -20541,7 +20541,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an a8dd22b5: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eva",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d6a0447: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eva",
      "ungemessen": true,
      "beide": true
     },
@@ -37534,7 +37534,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 299,
+  "konsum": 300,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37702,10 +37702,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3323
+  "ohne": 3322
  },
  "kopfVoll": "2d6a0447b80ae36b4b83e52e12757c457c536133",
- "zeit": "2026-11-24T19:13:24.085Z",
+ "zeit": "2026-11-24T19:24:45.069Z",
  "vorher": "2d6a0447",
  "bilanz": {
   "gewinn": [],
