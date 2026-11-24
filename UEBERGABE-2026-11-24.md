@@ -246,3 +246,11 @@ Kultur, Sockel am Hang, Dach) · Boot und Leiterwagen (`_bauFrei` sperrt 8 von 8
 Bewohner im Bild. Ab Tag 4 nach der Hebel-Folge der Front-Tafel: buchen → Preis-Wurzel → Apparat-rot → Fähigkeits-Welle. Ehrlich
 zum 17.12.: 1 635 Sprossen in 23 Tagen sind 71 je Tag; heute waren es 0. Das Tempo ändern nur Bündel, eine Runde, die durchläuft,
 und Tore, die nicht schlafen — eine Zahl dafür ist noch nicht gemessen.
+
+**Wo die Lehren wirklich geladen werden (Frage des Schöpfers 24.11. ~16:00, am Code gelesen):** IMMER geladen sind nur CLAUDE.md und
+der Index MEMORY.md (eine Zeile je Gedächtnis). Der Skill `anazh-lehren` lädt NICHT von selbst — nur seine Beschreibung steht im
+Kontext, der Text erst nach dem Ruf des Skill-Werkzeugs; ich habe ihn in dieser Sitzung nicht geladen, obwohl CLAUDE.md es vor Merge
+und Push verlangt. Der SessionStart-Hook installiert nur npm-Pakete in Web-Sitzungen und trägt keine Lehre. Bestellt für deinen
+ersten kleinen Zweig (Apparat, EIN Commit): die drei ersten Züge jedes Kontos (main spielen + drei Bilder · reife Köpfe bündeln ·
+keine Apparat-Frage an ihn) und „vor dem Wort Wackler das grüne Log lesen“ als Zeilen in CLAUDE.md unter DAS BETRIEBSGESETZ, die
+Lehren des 24.11. als Lehre 28 ff. in den Skill — und lade den Skill als ersten Werkzeug-Ruf nach der Lage.
