@@ -1315,15 +1315,18 @@ class AnazhRealm_koerper_bewegung {
             return st;
         }
         // die FUGE trägt nie (`gedeckt`, `_blockerFugen`): auf ihr sitzt eine Box desselben Werks
+        // DER FUSSABDRUCK IST DER KREIS DER KAPSEL (nerv-bewegung): eine Oberkante trägt, wo der Kreis (Radius der Kapsel) ihre
+        // Grundfläche trifft (`_boxAbstand2` ≤ r²) — dieselbe Regel wie das Tier (`_kreaturAuflage`), der Bewohner
+        // (`_bewohnerTritt`) und die Wand hier darunter. Bis hier trug die um r geweitete Box, ein Quadrat: neben jeder Ecke stand
+        // der Leib bis 0,145 m (r·(√2 − 1)) neben der Fläche in der Luft — gate:haus-welt W2: im Haus der Welt auf der vierten
+        // Stufe 0,360 m neben ihrer Ecke, 18,2 cm über der Stufe, die sein Kreis trifft (3 von 26 Häusern, am Gehen 1,58 m/s;
+        // am Gehen 1,15 m/s hielt der Leib 3 cm davor, ruhend stand er ebenso daneben).
         if (
             box.gedeckt !== true &&
-            pos.x >= box.minX - radius &&
-            pos.x <= box.maxX + radius &&
-            pos.z >= box.minZ - radius &&
-            pos.z <= box.maxZ + radius &&
             box.topY <= feetY + STEP &&
             box.topY >= feetY - SNAP &&
-            box.topY > supportTop
+            box.topY > supportTop &&
+            this._boxAbstand2(box, pos.x, pos.z) <= radius * radius
         ) {
             supportTop = box.topY;
         }
