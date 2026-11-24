@@ -3745,6 +3745,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                     D.start = !!r._brandEntfachen(O.x - 2.4 * kx, O.z - 2.4 * kz);
                                     D.frist = fass._ladungFrist != null ? r3(fass._ladungFrist - st.spielZeit) : null;
                                     if (D.frist > 0) {
+                                        D.uhr = { sim: +(+st._fixedSimTime).toFixed(3), spiel: +st.spielZeit.toFixed(3), wind: [0, 1, 2, 3, 4, 6].map((s) => +r._windAt(O.x - 10, O.z, st._fixedSimTime + s).ms.toFixed(2)) };
                                         r._weltUhrNimm(fass._ladungFrist - 0.02);
                                         S.frame();
                                         const bild = () => (takt(), (D.einheiten += S.frame().druck));
@@ -3955,6 +3956,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             // der Staub unter der Narbe, die überall als Asche gilt: Ballen westlich der gestellten Narbe, seine Masse gegen das Soll
                             staub: DM.staub ? { aussen: DM.staub.aussen, masseG: DM.staub.masseG, sollG: DM.staub.sollG } : null,
                             ms: DM.ms,
+                            schlafS: DM.schlafS, wach: DM.wach, spaet: DM.spaet, wecker: DM.wecker, uhr: DM.uhr,
                         };
                         // DAS FENSTER ZÄHLT SCHRITTE DES BRANDS, nie Bilder (linse-brand-schritte): die Uhr der Welt geht erst einen
                         // Schritt weiter, wenn der vorige ganz ist (`_brandRest` leer) — ein langsamer Läufer geht denselben Schritt in
@@ -4345,7 +4347,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                               amSoll: STAND.brandAmSoll(w),
                           }) + ` — nachher ${simZeile(w.nachher)}`
                         : n === "druck"
-                          ? druckZeile(w) + "\nSONDE-WECKER " + JSON.stringify(w.wecker) + "\nSONDE-SPAET " + JSON.stringify(w.spaet)
+                          ? druckZeile(w) + "\nSONDE-WECKER " + JSON.stringify(w.wecker) + "\nSONDE-SPAET " + JSON.stringify(w.spaet) + "\nSONDE-UHR " + JSON.stringify(w.uhr) + "\nSONDE-MUTANTE " + JSON.stringify({ schlafS: w.mutante.schlafS, wach: w.mutante.wach, ms: w.mutante.ms, uhr: w.mutante.uhr, wecker: w.mutante.wecker, spaet: w.mutante.spaet })
                           : `wach ${simZeile(w.wach)} — nachher ${simZeile(w.nachher)}`)
         );
     const v = urteil(befund);
