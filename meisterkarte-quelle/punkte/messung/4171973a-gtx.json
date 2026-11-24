@@ -1,7 +1,7 @@
 {
  "sha": "4171973adc8279ac233fc37a2cee24c6105104de",
  "geraet": "gtx",
- "zeit": "2026-11-24T22:12:12.718Z",
+ "zeit": "2026-11-24T22:21:39.873Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.grenze#1": {
@@ -73,10 +73,152 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.sport.kunst#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":428,\"tanz\":8,\"kampf\":5,\"brett\":8} und Anfänger {\"handwerk\":634,\"tanz\":823,\"kampf\":1011,\"brett\":894} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.15,
+   "grund": "ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":428,\"tanz\":8,\"kampf\":5,\"brett\":8} und Anfänger {\"handwerk\":634,\"tanz\":823,\"kampf\":1011,\"brett\":894} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kdde71287898d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k029c57d27e4c",
+   "s": 8.4,
+   "fremd": {
+    "s": 10.8,
+    "takte": 5,
+    "fremdS": 3.03,
+    "kerne": 0.28,
+    "fensterKerne": 0.28,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.98
+     ],
+     [
+      "Explorer.EXE",
+      0.95
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.17
+     ]
+    ],
+    "dienerS": 1.8,
+    "diener": [
+     [
+      "System",
+      0.75
+     ],
+     [
+      "dwm.exe",
+      0.47
+     ]
+    ],
+    "geraetS": 4.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      2.58
+     ],
+     [
+      "svchost.exe",
+      1.14
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 32.95,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T22:20:13.368Z",
+   "abdruck": "64bbef8b031b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.geist.gespraech#2": {
+   "gruen": false,
+   "zahl": "S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.22,
+   "grund": "ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k413740a1a1e3",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k029c57d27e4c",
+   "s": 13.1,
+   "fremd": {
+    "s": 15.2,
+    "takte": 7,
+    "fremdS": 5.17,
+    "kerne": 0.341,
+    "fensterKerne": 0.41,
+    "namen": [
+     [
+      "Explorer.EXE",
+      1.52
+     ],
+     [
+      "node.exe dienst-omen/runde.cjs push-pfade AnazhRealm-OMEN/n0611-pm punkte-maschine gtx 417",
+      0.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.58
+     ]
+    ],
+    "dienerS": 3.06,
+    "diener": [
+     [
+      "System",
+      1.53
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.69
+     ]
+    ],
+    "geraetS": 6.97,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.52
+     ],
+     [
+      "svchost.exe",
+      2.02
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 26.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T22:21:39.873Z",
+   "abdruck": "73cec9f86a69",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "kdde71287898d": "bVTbjpswEP2XPHbLmmswlvbBKVslUreb/YQxjIENgciGUKXqv1eQOOGy8wTojOf4nDP8XZ0gOUCGz5+6rlZs9W31faXhjJZGdUb1/KlXbBUljose49cinPMfPSxRxanRpCwEAVFBfkSrVQ0W5XMytIFAP6WMdK882xMiyYXE3cvLvLUUmNZWAxLvjQFNZcDmwFZnINCCVg7DbmDbpmsXGBmKxvw9Jvfq3jjf+9Lf03h2mIAqnbKN1kGIAdt1nL/yBcu0AGyssqi0meukYSRtNpq16FHQWRfAvER1a0LqOL4wZDe9nL00s0ZZtlpPhlEvDVzKCInm2Ax1keSNdVK1wOoGF5EbOsA2S7WzU2vJMSMQAqiYa50DVhmqCQfbS+TaYeQPnR96gCMqsCrIjZa2F7rioQ0hZLvkUg7EhxGGeOqEgetMGntTybkXmO+4iWD/Trd3hPkeZ/xRH4uBOskLdZxKJX10bY/9WtLTOaSorEOtmzvaw9C3xXUTdvF17p5u5p2Pixn/AICOwkIo4duFjrqWTQcKrezUmsD4GIQB43y3ADdwPBq/PbRTe26ibvqQj2n44RoRGSFP1yVZXvq6EtYFi9I0Sen70WIbzwqOFohMFVIa10WQyOirkHZYNpao68bI6ISh5zHikWps9O9u0HXkYZx9+G8/efbKJ7Xjc97DhFo1hnQg1rb0mRyCkyzQhWqsDpLcwF0pECL2BfSCqsQMJzKKkEZ9vLtkxNQ3D0+T8F4WLl8K7AWudKuNyQn4ImBfWNKhOgioDjdgkjrOOh3it3nn26ko8ceexv2aTMobtItzfjv4hAk5qVoW/R+Q5NDqHMrm8fv/9x8=",
-  "k73bfaf80a92a": "jVXbjpswEP2XPHbLmosJYGkfnE3UZKvtZqv+wBjGwIZAZEOoUvXfK5I44bIPnSeEzvicOXMMf2YHiHeQ4uOHrsoZm32ZfZ1pOKKlUR1RPX7oGZtFseOix/ilCOf8WweLVX6oNSlyQUCUkO3RalSNefEYn9tAIE1CRtoVT7eESHIiy5bf6pk/PY2PKQQmlVWDxNshfphIn42BjU5BoAWNPBNfwbYdzl1g5Fzhkr8tya3aV863VNJtuBwdJqBMhsqjuR+gzzYt56upyiQHrK0iL7XhdZIgkjbrcU16FLTWCTArUF2bMHQcKozYRWdJZ9OoURaN1gOy0Et8N2SERGNsijqPs9o6qEpgeYWLyA0cYIt2Mkd6aCzZVwRCQCjGXmeAZYpqoMH2Yjl3GPkdjg/dwR4VWCVkxkvbC1xx94YQsp5qKc7CzxRGeOIEvusMGrulXgzmGxMjcuxer28I836Z3qPG3yeEOs5ytR9aJSm6tjeeX2eQoLJ2la5vSA8DaovLjdgsL5zbcDHuvA9ldgcAYS8oJCR8PfFQV7JuQaGVHhoTFop+4DOeTpKla9jvza49tBN7MkDdBbwvgwZzRGSEPFztnNhzuQ7WCfPCNElJaeSz5wUdg48K9haIVOVSmq0LP5bRZyFtsagtUVW1sdIJAs9jxCNlf9E/Wv7M+Wtvh8viJ62Ll4cVH9R3/vIZQ6VqI9wXc1tSJs+TxmPxba5qq4U4M3BXCoRobOIJVYEpDmwUQRh10W7jnkpqHh4GwT1NtnzKsTO41I02S46BCp9dE34J1/Dz06LaCSh314Y4cZx5ws5hf+Prnitrvvllb1v+f7Xi7x3JAWNyUJXMuy8iyaDRGRT1/dfw9x8="
+  "k73bfaf80a92a": "jVXbjpswEP2XPHbLmosJYGkfnE3UZKvtZqv+wBjGwIZAZEOoUvXfK5I44bIPnSeEzvicOXMMf2YHiHeQ4uOHrsoZm32ZfZ1pOKKlUR1RPX7oGZtFseOix/ilCOf8WweLVX6oNSlyQUCUkO3RalSNefEYn9tAIE1CRtoVT7eESHIiy5bf6pk/PY2PKQQmlVWDxNshfphIn42BjU5BoAWNPBNfwbYdzl1g5Fzhkr8tya3aV863VNJtuBwdJqBMhsqjuR+gzzYt56upyiQHrK0iL7XhdZIgkjbrcU16FLTWCTArUF2bMHQcKozYRWdJZ9OoURaN1gOy0Et8N2SERGNsijqPs9o6qEpgeYWLyA0cYIt2Mkd6aCzZVwRCQCjGXmeAZYpqoMH2Yjl3GPkdjg/dwR4VWCVkxkvbC1xx94YQsp5qKc7CzxRGeOIEvusMGrulXgzmGxMjcuxer28I836Z3qPG3yeEOs5ytR9aJSm6tjeeX2eQoLJ2la5vSA8DaovLjdgsL5zbcDHuvA9ldgcAYS8oJCR8PfFQV7JuQaGVHhoTFop+4DOeTpKla9jvza49tBN7MkDdBbwvgwZzRGSEPFztnNhzuQ7WCfPCNElJaeSz5wUdg48K9haIVOVSmq0LP5bRZyFtsagtUVW1sdIJAs9jxCNlf9E/Wv7M+Wtvh8viJ62Ll4cVH9R3/vIZQ6VqI9wXc1tSJs+TxmPxba5qq4U4M3BXCoRobOIJVYEpDmwUQRh10W7jnkpqHh4GwT1NtnzKsTO41I02S46BCp9dE34J1/Dz06LaCSh314Y4cZx5ws5hf+Prnitrvvllb1v+f7Xi7x3JAWNyUJXMuy8iyaDRGRT1/dfw9x8=",
+  "k029c57d27e4c": "jVVdj5swEPwveeyVMx8mgKV7cI6oyVXXy1X9A2tYAxcCkQ2hStX/XpHESYB76D4hNOuZnR3Mn9keki1k+Pih62rGZl9mX2caDmhpVAdUjx96xmZR4rjoMX4uwjn/1sMSVewbTcpCEBAV5Du0WtVgUT4mpzYQSNOQkW7Jsw0hkhxJ3PFrPfOnp/ExpcC0thqQeD3ED1PpszGw1RkItKCVJ+IL2LbDuQuMnCqM+VtMrtW9cr6hkm7CeHSYgCodKo/mfoA+W3ecL6cq0wKwscqi0obXSYNI2uyOa9KjoLOOgHmJ6tKEoeNQYcQuekt6m0aNsmy1HpCFXuq7ISMkGmMz1EWSN9Ze1QKrC1xEbuAAW3STObJ9a8l7RSAEhGLsdQ5YZagGGmwvkXOHkd/h+NAt7FCBVUFuvLS9wBU3bwghq6mW8iT8RGGEp07gu86gsV/q2WC+NjEih/716oow7+PsFjX+PiHUSV6o3dAqSdG1vfH8OocUlbWtdXNFehhQW5y/iHV85tyEi3HnbSizOwAI74JCQsJXEw91LZsOFFrZvjVhoegHPuPZJFm6gd3O7NpDO7UnAzR9wO9l0GCOiIyQh4udE3vOn4N1xKI0TVJSGvnseUHH4IOCnQUiU4WUZuvCT2T0WUg7LBtL1HVjrHSCwPMY8Uh1v+gfHX/m/PXuuojLn7QpXx6WfFDf+ctnDLVqjHBfzG1JmTxNmozFd4VqrA6S3MBdKRCisYlHVCVmOLBRBGHUR7tLbnJiah4eBsE9TrZ8LLA3uNKtNktOgAqfXRJ+Dtfw+ulQbQVU20tDkjrOPGWnsL/x1Z0rK77+ZW86/n+15O89yR4Tsle1LPobkeTQ6hzK5vZr+PsP",
+  "k413740a1a1e3": "bVXLjqMwEPwXjjvLmGcwlubgDCMl0j6ST2hDG5gQiGwIq6z231eQOAkwfcOqcper2uavdYL0ADm+fuqmtpj1zfpuaTijrVGdUb1+aotZcep66DO+50PtOOfvAyxV5anVpCoFAVFDcUS7Uy2W1Ws60kBgkFFG+g+e7wiR5EKS/u1tTq0EZo3dgsQ7MaSZDNkc2OkcBNrQybHZDew4dOUBI2PRhP9OyL16yvkukMGOJrPNBNTZVG28CiMM2bbn/IMvVGYlYGtXZa1NXzeLYumwR6+fC46C3r4AFhWqGwmp6wbCiF0Pdg7WzIiy6rSeNKN+FnqUERLPsTnqMi1a+6QagfUNLmIvcoGtl27np86Wz4pACKBi7nUBWOeoJhocP5Url5E/dL7pAY6owK6hMF46fuSJhzeEkM1SSzUKH1sY4ZkbhZ47IQ6hkvNgMN/yW43fdHNHmPUk54/aLxrqtCjVcWqVDNBzfPZjKU8XkKGyD41u72gfo8ARbNx/m1z77uh6znwczOQHAPRpWAglfLPwUTey7UGhnZ86MzABhlHION8uwC0cjyZvH53MmYeo22HIn2UE0QoRGSEv10uyPPT1StgXLCtDkjII4sVtPCs42iByVUppUhdhKuOvhrTHqrVF07TGRjeKfJ8Rn9TPQf/qR1+fMkzyfdBW6/6DT2rL57rHDo1qjehQrBwZMDkOTrpAl6q1e0gLA/ekQBikLzK5oKowx4mNIqLxMN69vOq+DM9MdHsG5MtkeC/LHUscDK51p03IKQQiZF9E0qM6CKgPN2Caue4qG8dv/ZtvJp68J/sdTYZrMik/H7xLivV1PR08NW/VCVNyUo0sh9eQFNDpAqr28Sv49x8="
  }
 }
