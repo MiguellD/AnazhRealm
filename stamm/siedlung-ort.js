@@ -267,6 +267,11 @@ class AnazhRealm_siedlung_ort {
         const d = Object.assign({}, dp || {});
         const ort = d.ort;
         delete d.ort;
+        // DAS KLIMA IST EIN EINGANG DES PLANS (haus-gestalt, fachwerk `REGION_KLIMA`): der Kanal liest kein Klima selbst — wer ein Dorf
+        // OHNE WORT bestellt, legt das Klima seines Orts in den Auftrag (`_zellEingang`: die Zelle des Dorf-Zugs, ihr Gedächtnis), und
+        // wer den Plan nachrechnet, rechnet mit demselben Eingang denselben Plan (gate:settlement Teil O: der Plan-Hash Studio = Welt).
+        // Der Plan eines Worts (der Satz „dorf 7 300“, sein Gedächtnis „d:…“ und die Kacheln seiner Stadt) trägt keins: er ist eine
+        // Funktion des Worts allein, derselbe an jedem Ort, für jeden, der ihn teilt.
         // DAS WASSER DES RASTERS (die Stadt-Grammatik liest es, fachwerk `dorfLayout`): der Faden nennt je Zelle im Umkreis des
         // Plans (fachwerk `wasserReich`: der Ring der Stadt samt Vorstadt, 0 für das Dorf), ob dort das Wasser des Gesetzes steht (`nass`, das Urteil der Ort-Wahl) — seine Kacheln
         // liegen, bevor er urteilt (`_ensureHydroTilesAround`, wie die Ort-Wahl)
@@ -452,13 +457,6 @@ class AnazhRealm_siedlung_ort {
         // DER BODEN DES PLANS (K10): der Slot trägt seine Höhe `y` aus dem Plan v2 (fachwerk `ortPlan`, `_ortPlanSetzen`) — die
         // Welt erfindet keine Höhe mehr: die hMax-Suche über das Raster, das Podest, die Klippen-Wand und die Ersatz-Orte fielen,
         // der Erdbau des Orts trägt das Haus. Ein Slot ohne y fällt geschlossen und laut.
-        if (!Number.isFinite(slot.y)) {
-            this.log(
-                `SIEDLUNG: der Slot „${slot.kultur}" trägt keinen Boden y — der Plan v2 fehlt (fail-closed)`,
-                "ERROR"
-            );
-            return false;
-        }
         const wx = origin.x + slot.x;
         const wz = origin.z + slot.z;
         // DER GRUND FÄLLT MIT DEM SLOT (S4): der Erdbau des Orts trägt den Grund jedes Hauses seines Plans (`ortPlan`); fällt
@@ -485,6 +483,14 @@ class AnazhRealm_siedlung_ort {
             this._erdbauGrundFaellt({ position: { x: wx, z: wz } });
             return false;
         };
+        // ohne Boden fällt das Los beim Namen in die Bilanz (`so.gefallen`), nicht nur ins Log: bis haus-dach las die Probe es als „fiel still“
+        if (!Number.isFinite(slot.y)) {
+            this.log(
+                `SIEDLUNG: der Slot „${slot.kultur}" trägt keinen Boden y — der Plan v2 fehlt (fail-closed)`,
+                "ERROR"
+            );
+            return zu("kein Boden y");
+        }
         const name = this._slotBauplan(slot, f);
         if (!name) return zu("kein Bauplan"); // fail-closed
         const ry = slot.phi || 0;
@@ -1521,6 +1527,16 @@ class AnazhRealm_siedlung_ort {
     // den Zell-Hash (FNV-1a über „<Welt-Same>:dorf:cx,cz") und hält das Gedächtnis je Welt-Same. `mehrM`: so viel weiter als
     // ein Dorf reicht der Ort (die Spawn-Klar-Wand und das Erwachen zählen ab seinem Rand). Bis K2 würfelte die Zelle hier
     // 8–17 Häuser — die Welt trug nur Dörfer.
+    // DAS KLIMA DES ORTS für den Plan (haus-gestalt, fachwerk `REGION_KLIMA`): Winter- und Sommer-Mittel am Meer in °C aus dem
+    // Ort-Gesetz der Welt (gelaende-core `ortGesetz(teil).klimaHeute`: die Heimat −4 / 18, am Ziel der Reise Heimat + Δ). Leser: der
+    // Export (`_foundryRequestSettlement`) und die Massen der Stadt-Kacheln (`kachelMassen`) — die Region jedes Dorfs liegt im Klima.
+    // Dazu die Wasser-Spende relativ zur Heimat (haus-stoff, fachwerk `sockelImWasser`: `ortGesetz(teil).spendeVerh`, die Heimat 1):
+    // der Sockel jedes Baus steht über dem Spritzwasser des Orts.
+    _siedlungKlima() {
+        const o = this._gelaende().ort,
+            k = o.klimaHeute;
+        return { winter: k.winter, sommer: k.sommer, spendeVerh: o.spendeVerh };
+    }
     _autoSettlementCellInfo(cx, cz) {
         // ZENSUS 17.07. — Existenz/Raster/Größe sind fachwerk-Gesetz (SIEDLUNG); kaltes Buch → keine Zelle.
         const A = AnazhRealm._siedlungGesetz();
@@ -1626,7 +1642,7 @@ class AnazhRealm_siedlung_ort {
                 const [dx, dz] = [cx - s.cx, cz - s.cz];
                 const drin = Math.max(Math.abs(dx), Math.abs(dz)) <= s.ringe * SF.schritt;
                 if (!drin || (!dx && !dz) || dx % SF.schritt || dz % SF.schritt) continue;
-                const w = wort(s.seed, s.nH, dx / SF.schritt, dz / SF.schritt, s.epoche);
+                const w = wort(s.seed, s.nH, dx / SF.schritt, dz / SF.schritt, s.epoche); // die Stadt des Worts: ihr Plan ohne Klima (`_foundryRequestSettlement`)
                 if (w)
                     aus = {
                         key: cx + "," + cz,
@@ -1647,6 +1663,12 @@ class AnazhRealm_siedlung_ort {
         }
         M.set(mk, aus);
         return aus;
+    }
+    // DER EINGANG EINER ZELLE (haus-gestalt): ihre Zeit (`_zellZeit`), dazu das Klima ihres Orts, wenn kein Wort sie plant — das Viertel
+    // einer Stadt des Worts (`kachel`) trägt keins. Leser: der Export der Zelle (`_dorfBereiten`) und ihres Gedächtnisses (`_ortDp`).
+    _zellEingang(key, seed) {
+        const z = this._zellZeit(key, seed);
+        return z.kachel ? z : Object.assign(z, { klima: this._siedlungKlima() });
     }
     // DIE ZEIT EINER ZELLE: das Viertel einer Stadt trägt die Epoche und das Erbe seiner Stadt (`_viertelInfo`: Region, Jahr und
     // Spanne ihres Kerns), jede andere Zelle die Legende ihres Samens (`_siedlungEpoche`). Leser: der Export der Zelle
@@ -2239,7 +2261,7 @@ class AnazhRealm_siedlung_ort {
         // (`frei` null) — wer ihn berührt, wartet im Zug (`_dorfZugSchritt`). Bis stadt-erwachen rückte das Dorf vor den
         // Spieler (`_siedlungsAnker`), sobald er im Vorlauf in seiner Reichweite stand: nH 300 reicht 422 m, der Vorlauf
         // beginnt bei 420 m — der Anker folgte seinem Schritt (GTX 22.10.: −835,27 ≠ −835,10 zwischen zwei Boots).
-        const dp = { seed: i2.seed, nH: i2.nH, ...this._zellZeit(key, i2.seed) }; // die Epochen-Legende (V18.488), im Viertel die Zeit seiner Stadt
+        const dp = { seed: i2.seed, nH: i2.nH, ...this._zellEingang(key, i2.seed) }; // die Epochen-Legende (V18.488), im Viertel die Zeit seiner Stadt
         v.fertig = this._ortMitTrasse(dp, i2, null, key === "start", !!i2.fest).then((b) => {
             if (!b || !b.plan) {
                 if (M.get(key) === v) M.delete(key); // der nächste Takt fragt neu — eine Trasse ohne Ruhe trägt kein Dorf
@@ -3168,7 +3190,7 @@ class AnazhRealm_siedlung_ort {
         // die Kachel trägt die Zeit ihrer Stadt und nennt sich (`kachel`); die Mitte einer Stadt des Worts ist ihre Kachel (0, 0)
         const zeit = akt
             ? { epoche: c.epoche, ...(c.stadt ? { kachel: { samen: c.seed, nH: c.stadt, i: 0, k: 0 } } : null) }
-            : this._zellZeit(k, c.seed);
+            : this._zellEingang(k, c.seed);
         return {
             seed: c.seed,
             nH: c.nH,
@@ -3347,7 +3369,15 @@ class AnazhRealm_siedlung_ort {
         const laternen = (plan.laternen || []).map((l) =>
             l && l.wand ? Object.assign({}, l, { slot: neu.has(l.slot) ? neu.get(l.slot) : -1 }) : l
         );
-        return Object.assign({}, plan, { slots, laternen });
+        // ebenso das Stück am Haus (ort-ausstattung: Schild und Relief tragen `slot`, `_hausStueckSetzen`). Bis hier reiste die
+        // Nummer des Exports: nach dem Reload standen 3 von 17 Häusern des nordischen Start-Dorfs, die Schmiede #10 rückte im
+        // offenen Zug auf 8 — das Haus auf 10 hob ihr Schild vor ihr, und sie fiel an der Bau-Wand ihres eigenen Schilds
+        // (gate:haus-welt W9 Zug 15 von 16)
+        if (!Array.isArray(plan.gegenstaende)) return Object.assign({}, plan, { slots, laternen });
+        const gegenstaende = plan.gegenstaende.map((q) =>
+            q && Number.isInteger(q.slot) ? Object.assign({}, q, { slot: neu.has(q.slot) ? neu.get(q.slot) : -1 }) : q
+        );
+        return Object.assign({}, plan, { slots, laternen, gegenstaende });
     }
     // Der Bau eines Orts (sein Same `same`) an (x, z), oder undefined. Der Zug, der wiederkehrt, hebt nur, was nicht steht; das
     // Wachstum nimmt, was sein neuer Plan nicht trägt (`_ortWaechst`).
