@@ -43,3 +43,5 @@ pm-beobachter karte2.mensch.fahrzeug.medium#2,karte2.mensch.nahrung.tier#2,karte
 w28-wetter-am-ort karte2.planet.kopplung.wetter-welt#2,karte2.mensch.kopplung.leib#1,karte2.mensch.kopplung.kultur#2
 # z702 (main 5b0f551a, 24.11. 03:55): vier Stoff-Fronten — Rauch (Deckung 4,98 %), Wehr ihrer Zeit (0,75), Plankton im See (Sicht 8,323 m); alter#1 urteilt ehrlich rot (Seiten-ΔE 0,77 gegen 2,3) und steht nicht im Anspruch
 w28-front-stoff karte2.same.physik.reaktion#1,karte2.mensch.macht.wehrbau#2,karte2.planet.wasser.tiefsee#1
+# z703 (main 447eaea6, 24.11. 04:25): der Fisch folgt dem Pegel (Hub des Stands je Pegel-Hub 0,394 → 0,844); Brandflucht (ereignis#2 ohne Zeugen) und Stirn (gesicht#1 noch 7 von 10 rot) stehen nicht im Anspruch
+w28-front-leben karte2.leben.wasser.netz#1
