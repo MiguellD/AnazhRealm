@@ -188,12 +188,66 @@
     // DIE GRENZNEIGUNG JE STIL (w28-bau-rezept, EINE Quelle): so flach trägt die Deckung des Stils — HAUS klemmt jede Neigung darauf,
     // und das Bau-Gesetz schreibt die gebaute Neigung ins Rezept (`grenzNeigung`); vorher stand sie nur in STILMODE, und das Rezept
     // trug eine tote Zahl: die griechischen Wohnhäuser 10–14° im Plan, 18° gebaut. Ohne Stil-Eintrag (alt) 28°.
-    var STIL_GRENZNEIGUNG = { modern: 14, huette: 30, stein: 18, glas: 4, klinker: 22, stroh: 38 };
-    // der Stil, den HAUS baut (das Monument trägt keinen Holzbau: FEATURE→MATERIAL), und seine Grenzneigung
-    function grenzNeigung(P) {
+    // haus-dach: `stroh` stand bei 38° unter der Reet-Regel 45° (BauNetz Wissen „Reet und Stroh“) — der Stil trägt jetzt die Grenze seiner Deckung
+    var STIL_GRENZNEIGUNG = { modern: 14, huette: 30, stein: 18, glas: 4, klinker: 22, stroh: 45 };
+    // DAS GESETZ DER DECKUNG (haus-dach): je Deckung ihre Regeldachneigung — so flach bleibt sie regensicher (je loser die Einzeldeckung,
+    // desto steiler: das Wasser läuft schneller ab, als es kapillar eindringt). Reet ≥ 45° (BauNetz Wissen „Reet und Stroh“; Landkreis
+    // Rostock 40–45°) · Mönch-Nonne ≥ 40° (BauNetz Wissen Glossar, keine Falz, Überdeckung 80 mm) · Biberschwanz 30° (BauNetz Wissen
+    // „Regeldachneigung“) · Schiefer altdeutsch 26,5° (Wikipedia „Dachneigung“) · Holzschindel dreilagig 22° (BauNetz Wissen
+    // „Regeldachneigung“) · Hohlziegel/Coppi 30 % = 16,7° (Manuale coperture in laterizio 2025, Tafel „Pendenza“: Pendenza minima 30 % bei 9 cm Überdeckung, < 30 % sconsigliata) · flach (Blech, Pappe, Lehm):
+    // die Grenze trägt der Stil. `rolle`: der Stoff, den HAUS der Deckung malt; `farbe`: sein Ton, wo der Ort die Deckung wechselt (je Rolle);
+    // `traufe`: die Dicke der Deckung an der Traufkante in m (Reet: 30–35 cm Packung, BauNetz Wissen; die Ziegel liegen als Reihen).
+    // prettier-ignore
+    var DECKUNG_GESETZ = {
+        reet:       { grad: 45,   rolle: "stroh", traufe: 0.32, farbe: [0x6e6242] },   // das Reet im Wetter: oliv-graubraun (Foto Molfsee, f3), nicht das Gold des frischen Strohs
+        moenchnonne:{ grad: 40,   rolle: "ziegel", farbe: [0xa65a36, 0x84432a] },
+        biber:      { grad: 30,   rolle: "ziegel", farbe: [0x9c4a35, 0x803a28] },
+        schiefer:   { grad: 26.5, rolle: "ziegel", farbe: [0x4c4f57, 0x3c3f46] },
+        schindel:   { grad: 22,   rolle: "stamm" },
+        hohlziegel: { grad: 16.7, rolle: "ziegel", farbe: [0xb5673c, 0x8c4a2a] },
+        flach:      { grad: 0,    rolle: "dachmod" },
+    };
+    // die Deckung je Stil, und die Kulturen, deren Deckung der Stil nicht nennt (ihre Farbe sagt es: Schiefer grau, Kanal-Ziegel des Südens)
+    var STIL_DECKUNG = { alt: "biber", modern: "flach", huette: "schindel", stein: "hohlziegel", glas: "flach", klinker: "biber", stroh: "reet" };
+    var KULTUR_DECKUNG = { franzoesisch: "schiefer", georgian: "schiefer", viktorianisch: "schiefer", gotisch: "biber" };
+    function _stilVon(P) {
         var stil = ["alt", "modern", "huette", "stein", "glas", "klinker", "stroh"].indexOf(P.stil) >= 0 ? P.stil : "alt";
         if ((P.portikus || P.zinnen || P.kuppel || P.arkade) && (stil === "alt" || stil === "huette" || stil === "stroh")) stil = "stein";
-        return STIL_GRENZNEIGUNG[stil] != null ? STIL_GRENZNEIGUNG[stil] : 28;
+        return stil;
+    }
+    // die Deckung des Baus: die des Orts (`P.deckung`, DORF mit Klima) oder die seiner Kultur und seines Stils (das Labor)
+    function deckungVon(P) {
+        if (P.deckung) {
+            if (!DECKUNG_GESETZ[P.deckung]) throw new Error("fachwerk deckungVon: die Deckung „" + P.deckung + "“ steht nicht in DECKUNG_GESETZ");
+            return P.deckung;
+        }
+        var stil = _stilVon(P);
+        if (stil === "modern" || stil === "glas" || stil === "huette" || stil === "stroh") return STIL_DECKUNG[stil];
+        return KULTUR_DECKUNG[P.kultur] || STIL_DECKUNG[stil];
+    }
+    // der Stil, den HAUS baut (das Monument trägt keinen Holzbau: FEATURE→MATERIAL), und seine Grenzneigung — nie unter der seiner Deckung
+    function grenzNeigung(P) {
+        var stil = _stilVon(P), g = STIL_GRENZNEIGUNG[stil] != null ? STIL_GRENZNEIGUNG[stil] : 28;
+        return Math.max(g, DECKUNG_GESETZ[deckungVon(P)].grad);
+    }
+    // DIE DECKUNG DES ORTS (haus-dach): der Stoff, der am Ort wächst, deckt das Dach des Landes — Eingang das Klima des Orts
+    // (`_siedlungKlima`: winter, sommer, spendeVerh aus gelaende-core `ortGesetz(teil)`), dazu die Stadt (`dicht`). Die Regeln:
+    //   · der Süden (winter ≥ 4 °C, Kottek C-warm wie REGION_KLIMA mediterran) deckt in Kanal-Ziegeln — Ton brennt, Reet wächst nicht im Trockenen;
+    //   · das nasse Land (spendeVerh ≥ 1, die Wasser-Spende der Heimat) trägt Schilf: der Holz- und Fachwerkbau des Dorfs deckt in Reet
+    //     (Molfsee, Ammerland; die Isba im Stroh) — die Stadt nicht: Weichdach brennt, die Bauordnungen der Städte verboten es;
+    //   · das trockene Schnee-Land (winter ≤ −3 °C, die Grenze C/D nach Kottek u. a. 2006) trägt Wald: Holzschindel;
+    //   · Schiefer und Flachdach bleiben (der Fels und das Werk des Baus, der Ort liest ihn nicht).
+    // Die Neigung folgt: nie unter der Regeldachneigung der Deckung (`grenzNeigung`). Leser: DORF, gate:settlement Teil R (R6, R7).
+    function ortDeckung(klima, P, dicht) {
+        if (!(klima && isFinite(klima.winter) && isFinite(klima.spendeVerh)))
+            throw new Error("fachwerk ortDeckung: das Klima des Orts trägt winter und spendeVerh nicht als Zahl");
+        var d = deckungVon(P), stil = _stilVon(P);
+        if (d === "schiefer" || d === "flach") return d;
+        if (klima.winter >= 4) return "hohlziegel";
+        var holz = stil === "alt" || stil === "huette" || stil === "stroh";
+        if (holz && !dicht && klima.spendeVerh >= 1) return "reet";
+        if (holz && klima.winter <= -3) return "schindel";
+        return d;
     }
     // prettier-ignore
     function HAUS(THREE, mat, PARAMS){
@@ -220,18 +274,19 @@
   if((P.portikus||P.zinnen||P.kuppel||P.arkade) && (P.stil==='alt'||P.stil==='huette'||P.stil==='stroh')) P.stil='stein';   // FEATURE→MATERIAL (Parametererweiterung wie STILMODE): Tempel/Burg/Kuppel/Riad implizieren monumentale Fassade — kein Fachwerk am Monument
   const STILMODE={
     modern:{ RM:{holz:'putz',backstein:'putz',gefach:'putz',lehm:'putz',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:STIL_GRENZNEIGUNG.modern },   // glatt verputzt, flaches Dach
-    huette:{ RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stamm',ziegel2:'stamm'},      brace:null,   flat:0, pMin:STIL_GRENZNEIGUNG.huette },   // Blockhütte: Holzwände + Holzschindeln, Sichtbalken bleiben
+    huette:{ RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',ziegel:'stamm',ziegel2:'stamm'},      brace:null,   flat:0, pMin:STIL_GRENZNEIGUNG.huette },   // Blockhütte: Holzwände + Holzschindeln, Sichtbalken bleiben — der Sockel bleibt Stein (haus-stoff: das Holz steht nie im Spritzwasser, Marx 1891; das Foto Molfsee: Feldstein unter Reet)
     stein: { RM:{holz:'putz',gefach:'putz',lehm:'putz',backstein:'putz'},                                      brace:'none', flat:0, pMin:STIL_GRENZNEIGUNG.stein },   // glatt verputzt (FR/IT), Ziegeldach bleibt
     glas:  { RM:{gefach:'metall',lehm:'metall',backstein:'metall',holz:'metall',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:STIL_GRENZNEIGUNG.glas },   // Glas-Vorhangfassade + Stahl, (fast) flaches Dach (Hochhaus/Moderne)
     klinker:{ RM:{holz:'backstein',gefach:'backstein',lehm:'backstein',stein:'backstein'},                         brace:'none', flat:0, pMin:STIL_GRENZNEIGUNG.klinker },   // Sichtmauerwerk: Vollziegelwand + Tonziegeldach (NL/Hanse/England) — KEINE Sichtbalken, massiver Klinker
-    stroh:  { RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stroh',ziegel2:'stroh'},          brace:null,   flat:0, pMin:STIL_GRENZNEIGUNG.stroh },   // Reet/Stroh: Holzwände + dickes Strohdach (angelsächsisch/afrikanisch/neolith)
+    stroh:  { RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',ziegel:'stroh',ziegel2:'stroh'},          brace:null,   flat:0, pMin:STIL_GRENZNEIGUNG.stroh },   // Reet/Stroh: Holzwände + dickes Strohdach (angelsächsisch/afrikanisch/neolith)
   };
   const sm=STILMODE[P.stil], modern = (P.stil==='modern'||P.stil==='glas');
   const TRIMR=(P.stil==='modern'||P.stil==='glas')?'metall':'lattung';   // TRIM-STIL-GESETZ: Dachabschlussprofile folgen der Stilistik (modern = Metall, sonst Holzton)
-  if(sm){
-    if(sm.brace!=null && !(PARAMS&&PARAMS.brace!=null)) P.brace=sm.brace;
-    if(sm.flat && !(PARAMS&&PARAMS.hip!=null)) P.hip=0;
-    const _m=mat, RM=sm.RM;
+  const DECK=DECKUNG_GESETZ[deckungVon(P)], DRM=(DECK.rolle==='ziegel')?{}:{ziegel:DECK.rolle,ziegel2:DECK.rolle};   // DIE DECKUNG MALT DAS DACH (haus-dach, DECKUNG_GESETZ): ihr Stoff, nicht der des Stils — ohne Deckung des Orts dieselbe Rolle wie STILMODE
+  if(sm||P.deckung){
+    if(sm&&sm.brace!=null && !(PARAMS&&PARAMS.brace!=null)) P.brace=sm.brace;
+    if(sm&&sm.flat && !(PARAMS&&PARAMS.hip!=null)) P.hip=0;
+    const _m=mat, RM=Object.assign({}, sm?sm.RM:{}, DRM); if(DECK.rolle==='ziegel'){ delete RM.ziegel; delete RM.ziegel2; }
     mat = r => { const m=_m(RM[r]||r); return (m && typeof m==='object' && '__role' in m) ? {__role:r} : m; };  // Material tauschen, im Mess-Harness aber ORIGINAL-Rolle behalten (sonst sieht das Gate falsche Rollen)
   }
   // ════ DIE WAND DES STILS (w28-putz-wand) — malt der Stil das Gerüst in den Stoff der Wand (RM.holz ≡ RM.gefach: stein · modern → putz, glas → metall, klinker → backstein), dann IST die Fassade eine WAND: kein Ständer, kein Rähm, keine Schwelle, kein Riegel, keine Strebe, kein Nagel unter der Farbe — die Felder schließen als Platten über die Achsen (`wandFelder`), EIN Ton statt der Patina je Brett. Der Verband Stein für Stein steht nur, wo der Stil ihn als Backstein zeigt (klinker); umgemalt wäre er Relief ohne Stoff. Vorher (griechisch, Saat 902392) waren 37 548 von 61 324 Dreiecken der L0, 8 280 von 10 768 der L1 und 2 464 von 2 838 der L2 umgemaltes Fachwerk — das Gitter, das im Bild als Schleier vor der Wand stand. ════
@@ -269,7 +324,12 @@
   // je Lage): alpenchalet L0 blockholz 23 124 → 45 876 Dreiecke, gegen die Zeile gezählt. `lage` = [Raster quer, Raster hoch, Fuge].
   const STEIN_ECHT=!(sm&&sm.RM.backstein);
   const lage=gross=>{ if(STEIN_ECHT){ const v=VERBAND_GESETZ.mauerwerk; return [v.steinM+v.fugeM, v.hoeheM+v.fugeM, v.fugeM]; } const z=gross?GROSSFORMAT():1; return [0.32*z, 0.15*z, 0.025]; };
-  function eindeckenFlaeche(g,o){ const slope=(o.rY-o.eaveDropY)/o.eZ, th=Math.atan(slope), lift=(o.lift==null?0.08:o.lift), _zg=GROSSFORMAT(), tw=0.26*_zg, tl=0.34*_zg, tt=0.03, cs=0.205*_zg; const ax=o.axis||'z';   // über der Zeile (P.__sehne, buildInstance): das Großformat — weniger, größere Ziegel, dieselbe Fläche
+  // DIE DREHUNG IM RASTER (haus-stoff, Plattform-Ratsche v6): Sinus und Kosinus jedes Winkels liegen auf 2^-30 (je Bau EINMAL je Winkel
+  // gerechnet, `_SC`) — eine Drift der Transzendenten um 1 ULP (2^-53) kippt kein Byte mehr, außer an einer Raster-Grenze (2^-23 je Winkel).
+  // Leser: die Neigung der Eindeckung (`th`, atan auf demselben Raster: alpenchalet L3, fachwerk-core.js:264), der gedrehte Balken (`beam`: das Quaternion aus den halben Winkeln, XYZ wie three `setFromEuler`) und der gebogene (`rotE`).
+  // Bis hier rechnete three je Balken sin/cos neu (holzhuette L2: sin kippte die Stufe, fachwerk-core.js:321).
+  const _SC=new Map(), DREH_RASTER=1073741824, sc=a=>{ let v=_SC.get(a); if(!v){ v=[Math.round(Math.sin(a)*DREH_RASTER)/DREH_RASTER+0, Math.round(Math.cos(a)*DREH_RASTER)/DREH_RASTER+0]; _SC.set(a,v); } return v; };
+  function eindeckenFlaeche(g,o){ const slope=(o.rY-o.eaveDropY)/o.eZ, th=Math.round(Math.atan(slope)*DREH_RASTER)/DREH_RASTER, lift=(o.lift==null?0.08:o.lift), _zg=GROSSFORMAT(), tw=0.26*_zg, tl=0.34*_zg, tt=0.03, cs=0.205*_zg; const ax=o.axis||'z';   // über der Zeile (P.__sehne, buildInstance): das Großformat — weniger, größere Ziegel, dieselbe Fläche
     const _fl2=(typeof P!=='undefined'&&P&&P.flaechig);   // FLÄCHEN-STUFE (Stufe 1): je Reihe EIN Ziegel-Band (Kehl-/Gauben-Lücken bleiben Segmente), keine Lattung darunter
     const _cv=(typeof P!=='undefined'&&P&&P.roofCurve>0)?P.roofCurve:0, _cA=0;   // SCHWUNG global im deform-Feld   // SCHWUNG IM GESETZ: jede Fläche (Haupt/Flügel/Gaube/Balkon) konkav, relativ zur EIGENEN Traufe — keine Liste, nichts vergessen
     const nC=Math.max(4,Math.round(o.eZ/(cs*Math.cos(th)))+1);
@@ -318,7 +378,8 @@
   const defYZ=r=>Math.hypot(r[1],r[2]);
   // BIEGE-ACHSEN-GESETZ (pipeline.K3): die Biegung krümmt nur entlang x — für festes x ist das Feld in (y,z) linear (X=r·sin θ, Z=r·cos θ−R, r=R+z), die Teilung misst die x-Länge Lx; der Schwung darüber misst wie ohne Biegung die (Y,Z)-Länge (gleicher Sehnenfehler, die gerade Strebe entlang z bleibt EIN Segment)
   function defSeg(L,Lyz,min,step,cap,yTop,Lx){ if(P.__sehne>1) step*=P.__sehne; if(DEF_bk>0){ const nb=Lx>min?Math.min(cap,Math.ceil(Lx/step)):1; return (DEF_cv>0&&yTop>eaveY-1e-6&&Lyz>min)?Math.max(nb,Math.min(cap,Math.ceil(Lyz/step))):nb; } if(yTop<=eaveY-1e-6) return 1; return Lyz>min?Math.min(cap,Math.ceil(Lyz/step)):1; }
-  function rotE(vx,vy,vz,rx,ry,rz){ const a=Math.cos(rx),b=Math.sin(rx),c=Math.cos(ry),d=Math.sin(ry),e=Math.cos(rz),f=Math.sin(rz);
+  const drehQ=(m,rx,ry,rz)=>{ const [s1,c1]=sc(rx/2),[s2,c2]=sc(ry/2),[s3,c3]=sc(rz/2); m.quaternion.set(s1*c2*c3+c1*s2*s3, c1*s2*c3-s1*c2*s3, c1*c2*s3+s1*s2*c3, c1*c2*c3-s1*s2*s3); };
+  function rotE(vx,vy,vz,rx,ry,rz){ const [b,a]=sc(rx),[d,c]=sc(ry),[f,e]=sc(rz);
     return [ c*e*vx-c*f*vy+d*vz, (a*f+b*e*d)*vx+(a*e-b*f*d)*vy-b*c*vz, (b*f-a*e*d)*vx+(b*e+a*f*d)*vy+a*c*vz ]; }
   // ════ EINHEITLICHES PRIMITIV · jeder Eckpunkt durch deform — die Box biegt wie der Ziegel, kein Sonderfall ════
   // ════ DIE MASS-HÜLLE (`__nurMass`, nur massBau): der Mass-Bau zählt nur seine Box (Box3.setFromObject = Vereinigung der Geometrie-Boxen unter der Welt-Matrix) — ungebogen teilt jede Box gleichen Maßes EINE Geometrie (gleiche Float32-Ecken ⇒ dieselbe Box), ohne Tint; die Ziegelreihe legt je Maß nur ihre Enden (eindeckenFlaeche). Der Export bleibt byte-gleich (gate:settlement), der Mass-Bau fällt ~6× ════
@@ -326,7 +387,7 @@
   function _hgBox(lx,ly,lz){ let a=_HG.get(lx); if(!a)_HG.set(lx,a=new Map()); let b=a.get(ly); if(!b)a.set(ly,b=new Map()); let q=b.get(lz); if(!q)b.set(lz,q=new THREE.BoxGeometry(lx,ly,lz)); return q; }
   const _BF=[[0,2,1],[0,3,2],[4,5,6],[4,6,7],[0,7,3],[0,4,7],[1,2,6],[1,6,5],[0,1,5],[0,5,4],[3,7,6],[3,6,2]];
   function beam(g,cx,cy,cz,lx,ly,lz,role,rot){ const rx=(rot&&rot[0])||0, ry=(rot&&rot[1])||0, rz=(rot&&rot[2])||0;
-    if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const m=new THREE.Mesh(_HG?_hgBox(lx,ly,lz):new THREE.BoxGeometry(lx,ly,lz),mat(role)); m.position.set(cx,cy,cz); if(rx||ry||rz)m.rotation.set(rx,ry,rz); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return _HG?m:tintWood(m,role,cx,cy,cz); }
+    if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const m=new THREE.Mesh(_HG?_hgBox(lx,ly,lz):new THREE.BoxGeometry(lx,ly,lz),mat(role)); m.position.set(cx,cy,cz); if(rx||ry||rz)drehQ(m,rx,ry,rz); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return _HG?m:tintWood(m,role,cx,cy,cz); }
     const hx=lx/2,hy=ly/2,hz=lz/2, useX=lx>=lz, Ln=useX?lx:lz, N=defSeg(Ln, Ln*defYZ(rotE(useX?1:0,0,useX?0:1,rx,ry,rz)), 0.9, 0.4, 32, cy+Math.abs(rotE(1,0,0,rx,ry,rz)[1])*hx+Math.abs(rotE(0,1,0,rx,ry,rz)[1])*hy+Math.abs(rotE(0,0,1,rx,ry,rz)[1])*hz, Ln*Math.abs(rotE(useX?1:0,0,useX?0:1,rx,ry,rz)[0])), P=[];
     const wc=(x,y,z)=>{ const r=rotE(x,y,z,rx,ry,rz); return deform(cx+r[0],cy+r[1],cz+r[2]); };
     for(let i=0;i<N;i++){ let c; if(useX){ const a=-hx+i*lx/N, q=-hx+(i+1)*lx/N; c=[wc(a,-hy,-hz),wc(q,-hy,-hz),wc(q,hy,-hz),wc(a,hy,-hz),wc(a,-hy,hz),wc(q,-hy,hz),wc(q,hy,hz),wc(a,hy,hz)]; } else { const a=-hz+i*lz/N, q=-hz+(i+1)*lz/N; c=[wc(-hx,-hy,a),wc(hx,-hy,a),wc(hx,hy,a),wc(-hx,hy,a),wc(-hx,-hy,q),wc(hx,-hy,q),wc(hx,hy,q),wc(-hx,hy,q)]; }
@@ -895,7 +956,8 @@
     const xhAt=y=>{ const xh=(spanH<0.02||y<=hipStartY+0.01)?(W/2+ovX):Math.max(rH+0.05,W/2+(rH-W/2)*(y-hipStartY)/spanH); return [-xh,xh]; };  // Ortgang/Walm pro Reihe
       { const bx2=W/2+ovX+0.02, yB0=eaveY-ovZ*tanP+0.14, zB0=eaveZ+ovZ, yB1=Math.min(hipStartY,ridgeY)+0.14, zB1=gzTop;   // ORTGANG-GESETZ: Windbrett je Rake schließt die Ziegel-Sägezähne (voll & Krüppelwalm — folgt hipStartY)
         [1,-1].forEach(sx2=>[1,-1].forEach(sz3=>{ if(zB0-Math.abs(zB1)>0.3) strut(g,sx2*bx2,yB0,sz3*zB0, sx2*bx2,yB1,sz3*zB1, 0.24,TRIMR); })); }
-      [1,-1].forEach(sz3=>beam(g,0,eaveY-ovZ*tanP+0.02,sz3*(eaveZ+ovZ+0.09), W+2*ovX+0.2,0.11,0.13,'dunkel'));   // TRAUFRINNEN-GESETZ Hauptdach: beidseitig, dunkel — synergetisch zum Ziegel
+      if(DECK.traufe) [1,-1].forEach(sz3=>beam(g,0,eaveY-ovZ*tanP+0.10-DECK.traufe/2,sz3*(eaveZ+ovZ-0.12), W+2*ovX+0.1,DECK.traufe,0.36,'ziegel'));   // DIE TRAUFKANTE DER DECKUNG (haus-dach, DECKUNG_GESETZ.traufe): das Reet endet als Packung von 32 cm, ohne Rinne (das Wasser tropft vom Halm) — auch die ferne Stufe trägt sie (der Rand)
+      else [1,-1].forEach(sz3=>beam(g,0,eaveY-ovZ*tanP+0.02,sz3*(eaveZ+ovZ+0.09), W+2*ovX+0.2,0.11,0.13,'dunkel'));   // TRAUFRINNEN-GESETZ Hauptdach: beidseitig, dunkel — synergetisch zum Ziegel
     const roofSkip=(x,z)=> (notchCut(x,z)&&notchCut(x, z+Math.sign(z||1)*0.30)) || (DORMER && z<DORMER.zBack+0.05 && z>DORMER.zFront-0.02 && x>DORMER.gx-DORMER.gW/2-0.10 && x<DORMER.gx+DORMER.gW/2+0.10);   // RANDBAND 0.30: Hauptreihen überlappen in den Notch (kein nacktes Unterdach am Stoß) · CONSTRAINT: Skip nur INNERHALB der Gauben-Deckung (z[zFront,zBack], vom Gaubendach verdeckt) — nicht VOR der Front, sonst liegt Unterdach frei   // Ziegel über dem Gauben-Footprint ausgespart
     if(!RAND){ eindeckenFlaeche(g,{rY:ridgeY,eaveDropY,eZ,zMid:0,sign:1,xRangeAt:xhAt,trim:true,lift:0.10,skip:roofSkip});
     eindeckenFlaeche(g,{rY:ridgeY,eaveDropY,eZ,zMid:0,sign:-1,xRangeAt:xhAt,trim:true,lift:0.10,skip:roofSkip}); }
@@ -924,10 +986,13 @@
       beam(g,cx,levelTop+hh,cz,h?len:0.07,0.08,h?0.07:len,'holz');
       for(let t=0;t<=Math.max(2,Math.round(len/0.5));t++){const f=t/Math.max(2,Math.round(len/0.5));beam(g,x0+dx*f,levelTop+hh/2,z0+dz*f,0.06,hh,0.06,'holz');}
       const sx=(hcx!==undefined&&!h)?cx+Math.sign(hcx-cx)*0.06:cx, sz=(hcz!==undefined&&h)?cz+Math.sign(hcz-cz)*0.06:cz; addSolid(sx,levelTop+hh/2,sz,h?len:0.12,hh,h?0.12:len); };  // Solid auf Loch-Seite → ragt nicht in die Lane
+    // DER BODEN IST DIE WAND (haus-stoff, Heilung 24.11.): im Blockbau (huette · stroh: `RM.backstein` → blockholz) liegt der EG-Boden in
+    // Bohlen — Stein trägt nur der Sockel im Spritzwasser (Marx 1891); bis hier sah das Fenster der Hütte auf Stein (gate:haus-fern S3, Glas L2 0,195)
+    const EG_BODEN=(sm&&sm.RM.backstein==='blockholz')?'blockholz':'stein';
     if(P.keller){ const ks={x0:lxL-0.04,x1:lxR+0.04,z0:stZ0-0.06,z1:wz1+0.10};                // EG-Boden mit Kellertreppen-Loch (rechte Spur)
-      [[-Wi,ks.x0,-Di,Di],[ks.x1,Wi,-Di,Di],[ks.x0,ks.x1,-Di,ks.z0],[ks.x0,ks.x1,ks.z1,Di]].forEach(([x0,x1,z0,z1])=>{ if(x1-x0<0.05||z1-z0<0.05)return; rect(baseY+0.03,x0,x1,z0,z1,'stein'); });
+      [[-Wi,ks.x0,-Di,Di],[ks.x1,Wi,-Di,Di],[ks.x0,ks.x1,-Di,ks.z0],[ks.x0,ks.x1,ks.z1,Di]].forEach(([x0,x1,z0,z1])=>{ if(x1-x0<0.05||z1-z0<0.05)return; rect(baseY+0.03,x0,x1,z0,z1,EG_BODEN); });
       levelTop=baseY; if(!P.flaechig){ bruestungSeg(g,'z',ks.x0,ks.x1,ks.z1,ks.z1,baseY+0.06,'holz'); bruestungSeg(g,'x',ks.x0,ks.x0,ks.z0,ks.z1,baseY+0.06,'holz'); bruestungSeg(g,'x',ks.x1,ks.x1,ks.z0,ks.z1,baseY+0.06,'holz'); } }   // FLÄCHEN-STUFE: die Brüstung ums Kellermaul schläft im Innern wie die der Geschosse (railSeg) — 492 Dreiecke hinter dem Innenkörper   // SIA-BRÜSTUNGS-GESETZ ums Kellermaul — EIN Gesetz statt Ad-hoc-railSeg, Antritt vorn frei
-    else rect(baseY+0.03,-Wi,Wi,-Di,Di,'stein');                                  // EG-Boden (voll)
+    else rect(baseY+0.03,-Wi,Wi,-Di,Di,EG_BODEN);                                  // EG-Boden (voll)
     // Geschossboden mit Treppenloch + 3-seitiger Brüstung (Austritt nach +z offen)
     const floorWithStair=(yT,op)=>{ levelTop=yT;
       rect(yT+0.02,-Wi,wx0,-Di,Di,'boden'); rect(yT+0.02,wx1,Wi,-Di,Di,'boden');
@@ -981,16 +1046,23 @@
         s.cuts.forEach(zc=>wallX(zc,Math.min(xf,xOut),Math.max(xf,xOut),[],hh,y0)); }); }); // Querwände (Vollwand)
     return g; }
 
+  // DER STEIN DES HERDS IM RAUM (haus-stoff, Heilung 24.11.): Feuerraum, die zwei Stufen des Rauchsammlers und der Schornstein bis
+  // über den First, je [Mitte x, y, z, Maß x, y, z] — EINE Quelle: der Herd baut sie (`herd`), das Fern-Fenster der L2 liest sie
+  // (`kamin` am Bau → `fensterFern`: der Raum hinter der Scheibe trägt den Stein, soweit er die Scheibe deckt). Bis hier sah die
+  // L0 der Hütte durch ihr Giebel-Fenster den Stein-Schornstein, die L2 Holz (gate:haus-fern G, holzhuette/s1 Farbe 0,195).
+  function herdKaesten(){ if(ROUND||P.kuppel||modern) return null; const hx=hearthX, hz=hearthZ, bD=hearthBD, bW=hearthBW, bH=1.0, top=ridgeY+0.9;
+    return { feuer:[hx,baseY+bH/2,hz,bD,bH,bW], sammler:[[hx,baseY+bH+0.45,hz,bD*0.78,0.80,bW*0.72],[hx,baseY+bH+1.05,hz,bD*0.62,0.55,bW*0.5]],
+      rohr:[hx,(baseY+bH+1.3+top)/2,hz,STACK_W*0.83,top-(baseY+bH+1.3),STACK_W*0.83] }; }
   function herd(){const g=grp(); if(ROUND||P.kuppel){chimney=null;return g;} if(modern){ chimney=null; return g; }   // KAMIN-GESETZ (Realität): Rücken an der Giebelwand · Feuerraum mit Wangen+Sturz · SIMS · verjüngter Rauchsammler · VERWAHRUNG am Dachdurchgang · Kopfplatte
     const hx=hearthX, hz=hearthZ, nx=hearthNX, bD=hearthBD, bW=hearthBW, bH=1.0, fO=hx+nx*(bD/2);
     if(!P.flaechig){   // FLÄCHEN-STUFE (Stufe 1): der Feuerraum schläft im Innern — es bleibt der Schornstein über Dach
-    beam(g,hx,baseY+bH/2,hz,bD,bH,bW,'stein'); addSolid(hx,baseY+bH/2,hz,bD,bH,bW);
+    const HK=herdKaesten(); beam(g,...HK.feuer,'stein'); addSolid(...HK.feuer);
     [-1,1].forEach(s5=>beam(g,fO-nx*0.10,baseY+0.40,hz+s5*(bW/2-0.14),0.20,0.80,0.24,'stein'));
     beam(g,fO-nx*0.10,baseY+0.86,hz,0.20,0.16,bW-0.20,'stein');
     beam(g,fO-nx*0.05,baseY+0.42,hz,0.10,0.66,bW-0.62,'dunkel'); beam(g,fO-nx*0.16,baseY+0.14,hz,0.30,0.22,0.7,'feuer');
     beam(g,hx+nx*0.10,baseY+bH+0.05,hz,bD+0.26,0.10,bW+0.30,'holz');
-    beam(g,hx,baseY+bH+0.45,hz,bD*0.78,0.80,bW*0.72,'stein'); beam(g,hx,baseY+bH+1.05,hz,bD*0.62,0.55,bW*0.5,'stein'); }
-    const top=ridgeY+0.9; beam(g,hx,(baseY+bH+1.3+top)/2,hz,STACK_W*0.83,top-(baseY+bH+1.3),STACK_W*0.83,'stein'); addSolid(hx,(baseY+bH+1.3+top)/2,hz,STACK_W*0.83,top-(baseY+bH+1.3),STACK_W*0.83);
+    for(const k of HK.sammler) beam(g,...k,'stein'); }
+    const top=ridgeY+0.9, RO=herdKaesten().rohr; beam(g,...RO,'stein'); addSolid(...RO);
     { const sk=roofSkinY(hx,hz); beam(g,hx,sk+0.10,hz,STACK_W*0.83+0.22,0.16,STACK_W*0.83+0.22,'dunkel'); }
     beam(g,hx,top,hz,STACK_W,0.12,STACK_W,'stein'); beam(g,hx,top+0.10,hz,STACK_W+0.14,0.08,STACK_W+0.14,'stein');
     [-1,1].forEach(s5=>beam(g,hx+s5*(STACK_W/2+0.02),top+0.20,hz,0.10,0.12,STACK_W*0.9,'ziegel'));
@@ -1917,10 +1989,10 @@
   const annexDoors = GAs.length ? GAs.flatMap(A=>{ const tw=Math.min(2.45,A.gw-0.55), t0=A.xin+A.sx*0.30, tlo=Math.min(t0,t0+A.sx*tw), thi=Math.max(t0,t0+A.sx*tw), p0=A.xin+A.sx*0.35;
     return [ {x0:tlo, x1:thi, y0:0.06, y1:0.06+2.0, z:A.z0, kind:'tor'},
              {x0:Math.min(p0,p0+A.sx*0.85), x1:Math.max(p0,p0+A.sx*0.85), y0:0.06, y1:0.06+2.0, z:A.z1, kind:'personentuer'} ]; }) : [];
-  { const hm={art:'haupt',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,y0:P.pilotis?baseY-0.24:0,eY:eaveY,rY:ridgeY,egTop:levels[0].top,dach:ROOFMODE==='alt'?'alt:'+P.dachTyp:ROOFMODE,hip:P.hip,ovZ:P.ovEave,ovX:P.ovRake,curve:DEF_cv,dachRolle:(sm&&sm.RM&&sm.RM.ziegel)||'ziegel',ring:ROUND?0:P.post/2-0.02};   // ring: so weit steht der Ständer-Ring (postsRing, plateRing: Mitte 2 cm innen) vor dem Grundriss — der Umriss der L0
+  { const hm={art:'haupt',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,y0:P.pilotis?baseY-0.24:0,eY:eaveY,rY:ridgeY,egTop:levels[0].top,dach:ROOFMODE==='alt'?'alt:'+P.dachTyp:ROOFMODE,hip:P.hip,ovZ:P.ovEave,ovX:P.ovRake,curve:DEF_cv,dachRolle:DRM.ziegel||'ziegel',ring:ROUND?0:P.post/2-0.02};   // ring: so weit steht der Ständer-Ring (postsRing, plateRing: Mitte 2 cm innen) vor dem Grundriss — der Umriss der L0
     addMasse(Object.assign({},hm)); if(P.doppel){ SHIFT=W; addMasse(Object.assign({},hm)); SHIFT=0; }
     if(DORMER) addMasse({art:'gaube',x0:DORMER.gx-DORMER.gW/2,x1:DORMER.gx+DORMER.gW/2,z0:DORMER.zFront,z1:DORMER.zBack,y0:DORMER.baseY2,y1:DORMER.frontTop}); }   // der Hauptkörper (das Doppelhaus: beide Einheiten)
-  return { P, subsystems, order, solids, strahl, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, annexDoors, licht:LICHT,
+  return { P, subsystems, order, solids, strahl, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, annexDoors, licht:LICHT, herdKaesten,
     cellar: P.keller?{x0:-(W/2-0.08),x1:(W/2-0.08),z0:-(Dp/2-0.08),z1:(Dp/2-0.08),floorY:kellerY+0.12}:null,
     wings: wings.map(w=>({side:w.side,outIsX:w.outIsX,ox:w.ox,oz:w.oz,x0:w.x0,x1:w.x1,z0:w.z0,z1:w.z1,eY:w.eY,rY:w.rY,roofAt:w.roofAt,door:w.door})),
     grundriss: P.grundriss,
@@ -3457,8 +3529,15 @@
   const liste=fen&&fen.liste; if(!liste||!liste.length) return;
   const kol=B.p.col, pu=_colFor('putz',kol), rr=fen.rahmen||'holz', rStoff=SEH_DER_ROLLE[rr]==='stoff';
   const rahmenM=rStoff?M[rr]:M.putz, rahmenF=rStoff?[1,1,1]:_colFor(rr,kol).map((c,i)=>c/Math.max(1e-4,pu[i]));
-  const innen=_innenFaktor(B,fen.raum), gd=_colFor('glasdunkel',kol), da=M.glasdunkel.opacity;
-  const schlafF=[0,1,2].map(i=>(da*gd[i]+(1-da)*innen[i]*pu[i])/Math.max(1e-4,pu[i]));   // die Mischung, als Faktor auf den Putz-Ton
+  const innen0=_innenFaktor(B,fen.raum), gd=_colFor('glasdunkel',kol), da=M.glasdunkel.opacity;
+  // DER STEIN HINTER DER SCHEIBE (`herdKaesten`, EINE Quelle mit dem Herd der L0): je Fenster der Anteil der Scheibe, den die Kästen
+  // des Herds im Raum decken (der Blick senkrecht durch die Wand, wie der Strahl der L0) — der Raum mischt den Stein des Hauses zu
+  // diesem Anteil unter (gedämmt wie der Raum, INNEN_DAEMMER)
+  const HK=fen.kamin, steinF=_colFor('stein',kol).map((c,i)=>c*INNEN_DAEMMER/Math.max(1e-4,pu[i])), kaesten=HK?[HK.feuer,...HK.sammler,HK.rohr]:[];
+  const steinAnteil=(o,z,pw,ph)=>{ const u=z?o.cx:o.cz, A=4*pw*ph; let d=0; for(const k of kaesten){ const ku=z?k[0]:k[2], kl=z?k[3]:k[5];
+      const du=Math.min(u+pw,ku+kl/2)-Math.max(u-pw,ku-kl/2), dv=Math.min(o.cy+ph,k[1]+k[4]/2)-Math.max(o.cy-ph,k[1]-k[4]/2); if(du>0&&dv>0) d+=du*dv; } return Math.min(1,d/A); };
+  const innenVon=(o,z,pw,ph)=>{ const a=steinAnteil(o,z,pw,ph); return a>0?innen0.map((c,i)=>c*(1-a)+steinF[i]*a):innen0; };
+  const schlafVon=innen=>[0,1,2].map(i=>(da*gd[i]+(1-da)*innen[i]*pu[i])/Math.max(1e-4,pu[i]));   // die Mischung, als Faktor auf den Putz-Ton
   const kappen=_hautKappen(B), grp2=new THREE.Group(), eins=[1,1,1];
   // Flächen aus Ecken, ohne Drehung (kein sin/cos im Bau — die Plattform-Ratsche v6 zählt jede Drift); die Wicklung folgt der Normale
   const teile=(Qs,mat,f)=>{ const pos=[],nrm=[],col=[],idx=[];
@@ -3473,6 +3552,7 @@
     teile([[[P(u-rw,y0,d1),P(u+rw,y0,d1),P(u+rw,y1,d1),P(u-rw,y1,d1)],aus],                // Front und die Seiten längs der Wand (Ober- und Unterseite sieht von der Gasse kein Pixel: 0,4 px bei 30 m)
       [[P(u-rw,y0,d0),P(u-rw,y1,d0),P(u-rw,y1,d1),P(u-rw,y0,d1)],uR.map(c=>-c)], [[P(u+rw,y0,d0),P(u+rw,y1,d0),P(u+rw,y1,d1),P(u+rw,y0,d1)],uR]], rahmenM, rahmenF);
     const pw=Math.max(0.1,o.w/2-SCHEIBE_RAND), ph=Math.max(0.1,o.h/2-SCHEIBE_RAND), scheibe=(d)=>[[P(u-pw,o.cy-ph,d),P(u+pw,o.cy-ph,d),P(u+pw,o.cy+ph,d),P(u-pw,o.cy+ph,d)],aus];
+    const innen=innenVon(o,z,pw,ph), schlafF=schlafVon(innen);
     if(schlaf) teile([scheibe(d1+0.01)], M.putz, schlafF);
     else { teile([scheibe(d1+0.01)], M.putz, innen); if(Math.sign(z?o.cz:o.cx)!==s) teile([scheibe(d1+0.02)], M.glas, eins); }   // DAS GLAS STEHT IM FLÜGEL, NICHT IN DER ÖFFNUNG (licht-eine-skala): schwenkt der Flügel aus (unten, wie an der L0: fensterAt dreht jeden um 0,62 rad), ist die Öffnung leer — man sieht den Raum; bis hier glühte dort eine zweite Scheibe (gate:haus-fern G: Glut L2/L0 1,274)
     const k=d1+0.03, q=(ua,ub,ya,yb)=>[[P(ua,ya,k),P(ub,ya,k),P(ub,yb,k),P(ua,yb,k)],aus];   // das Kreuz: der Pfosten durchgehend, der Kämpfer links und rechts von ihm
@@ -3509,7 +3589,7 @@
   for(const k of kappen) if(k.perp===o.perp&&k.s===s&&s*k.d>s*e&&(drin(k.Q,u-1e-3,o.cy)||drin(k.Q,u+1e-3,o.cy))) e=k.d;   // die Mitte auf der First-Kante zweier Keile: eine Seite trägt sie
   return e; }
     // Die Öffnungen eines Stapel-Baus (`stapelBau`: der Aufsatz eines Turms steht um `off` höher) — die Liste des Fern-Fensters.
-    function fensterVon(st){ const a=(st.H&&st.H.windows)||[], rahmen=(st.H&&st.H.rahmen)||'holz', raum=(st.H&&st.H.raum)||'gefach'; if(!st.topH||!st.topH.windows) return {liste:a, rahmen, raum}; return {liste:a.concat(st.topH.windows.map(function(o){ return Object.assign({},o,{cy:o.cy+st.off}); })), rahmen, raum}; }
+    function fensterVon(st){ const a=(st.H&&st.H.windows)||[], rahmen=(st.H&&st.H.rahmen)||'holz', raum=(st.H&&st.H.raum)||'gefach', kamin=(st.H&&st.H.herdKaesten)?st.H.herdKaesten():null; if(!st.topH||!st.topH.windows) return {liste:a, rahmen, raum, kamin}; return {liste:a.concat(st.topH.windows.map(function(o){ return Object.assign({},o,{cy:o.cy+st.off}); })), rahmen, raum, kamin}; }
     // prettier-ignore
     function fpVon(H){ const d=H.dims;                                                          // GRUNDRISS-QUELLE: Hauptkörper + Flügel-Rechtecke (lokal) — speist den silhouetten-treuen Fernkörper
   return [{x0:-d.W/2,x1:d.W/2,z0:-d.D/2,z1:d.D/2,eY:d.eaveY,rY:d.ridgeY}]
@@ -4798,14 +4878,14 @@
     // steht keine). Bis zur Wand ist (0, 0) das Wort selbst und sonst nichts; darüber ist (0, 0) die Mitte (der Same des Worts,
     // `jeKachel` Häuser; ihr Erbe trägt nur die Form — ihre Zeit ist die der Stadt), jede andere trägt die Zahl ihres Platzes
     // im Plan der Stadt (`stadtPlan`) und im Erbe Region, Jahr und Spanne der Mitte samt ihrer Form (`stadtFormAm`: die Höhe).
-    function viertelWort(samen, nH, i, k, epoche) {
+    function viertelWort(samen, nH, i, k, epoche, klima) {
         samen = isFinite(samen) ? Number(samen) : 1;
         nH = Math.floor(Number(nH)) || 0;
         if (!(nH > STADT_FUNKTION.voll)) return !i && !k ? { seed: samen, nH: nH, epoche: epoche, ring: 0 } : null;
         var n = stadtKachelZahl(samen, nH, i, k);
         if (n < STADT_FUNKTION.rest) return null;
         if (!i && !k) return { seed: samen, nH: n, epoche: epoche, erbe: stadtFormAm(samen, nH, 0, 0), ring: 0 };
-        var kern = DORF({ seed: samen, nH: 4, epoche: epoche });
+        var kern = DORF({ seed: samen, nH: 4, epoche: epoche, klima: klima }); // die Mitte im Klima des Orts (REGION_KLIMA)
         return {
             seed: 1 + (netzHash(samen, 31, i, k) % 1000000),
             nH: n,
@@ -4867,11 +4947,11 @@
     // Kosten: das Netz und die Liste, 2–4 ms je Kachel (einmal, der Wirt merkt sie).
     var STADT_MASSEN = { einzugM: 4.2, platzM: 11, eckeM: 9, geschossM: 2.7, sockelM: 0.5, flachGrad: 8, strasseJe: 4 };
     // prettier-ignore
-    function kachelMassen(samen, nH, i, k, epoche) {
-        const wort = viertelWort(samen, nH, i, k, epoche);
+    function kachelMassen(samen, nH, i, k, epoche, klima) {
+        const wort = viertelWort(samen, nH, i, k, epoche, klima);
         if (!wort) return null;
         const S = STADT_MASSEN, netz = kachelNetz(samen, i, k), ring = globalThis.__ring, e3 = v => Math.round(v * 1000) / 1000;
-        const dorf = DORF({ seed: wort.seed, nH: wort.nH, epoche: wort.epoche, erbe: wort.erbe }), H = dorf.houses;
+        const dorf = DORF({ seed: wort.seed, nH: wort.nH, epoche: wort.epoche, erbe: wort.erbe, klima: klima }), H = dorf.houses;
         globalThis.__ring = ring;   // DORF würfelt die Zeitachse in ein Global (dorfLayout liest sie): die Frage nach der Ferne lässt es, wie es stand
         // die Straßen der Kachel: jede Kante des Netzes als Linienzug (jeder `strasseJe`-te Punkt), Breite, Belag und Saum des
         // Belag-Gesetzes (`gassenBelag`, `gassenBreite`) für Größe und Jahr der Kachel — dieselben Gassen, die Stufe 2 pflastert
@@ -5198,6 +5278,62 @@
           Object.assign(bp,{seed:bs,kultur:herrK,terrain:0,baujahr:palas.baujahr,rolle:'wohnhaus',wohl:1.2,keller:0,annexN:0,balcony:0,grundriss:'I',arm:0});
           setze(bp,z,band,'burg'); neu.push(bp); } }
       return neu; }
+    // DIE BAUWEISE FOLGT DEM KLIMA (haus-gestalt): die Region eines Orts ohne Wort ist kein freier Wurf über den Planeten, sie ist
+    // der Wurf über die Regionen, deren Klima am Ort steht — `DP.klima` {winter, sommer}: das Tagesmittel des kältesten und des
+    // wärmsten Monats in °C (der Wirt: gelaende-core `ortGesetz(teil).klimaHeute`, die Heimat −4 / 18 °C). Je Region das Band beider
+    // Mittel aus den Klima-Normalen ihrer Orte (WMO 1961–1990: Berlin −0,5/19, Frankfurt 1/20, London 5/18 · Innsbruck −2/18,
+    // Davos −6/12 · Rom 8/25, Athen 10/28, Marseille 7/24 · Oslo −4/17, Helsinki −5/18, Moskau −7/19 · Tokio 5/26, Peking −3/27,
+    // Sapporo −4/22), die Grenze C/D bei −3 °C im kältesten Monat (Kottek u. a. 2006, Köppen-Geiger, Meteorol. Z. 15: 259–263). Der
+    // Wurf `r` bleibt derselbe Zug des Samens: sein Gewicht (die Spalte `w`, die Anteile des Wurfs bis hier) über den Regionen im
+    // Band, neu normiert. Steht keine im Band, trägt der Ort die nächste (die kleinste Summe der Abstände zum Band). Ohne Klima
+    // (das Labor, ein Plan ohne Ort) ist jede Region im Band — der Wurf bis hier, byte-gleich. Vorher stand im Dorf der Heimat
+    // (−4 °C im Winter, Schnee) das griechische Dorf mit Kykladen-Putz und Flachdach-Neigung (Zelle −4,−4, Same 4291161376).
+    // Die Deckung folgt der Region (KULTUR.pitch): Reet ≥ 45°, Schiefer 26,5° (BauNetz Wissen „Reet und Stroh“, Wikipedia
+    // „Dachneigung“) — die Gegenprobe in gate:settlement Teil R (die Heimat 49,6°, der Mittelmeer-Ort 25,1°).
+    // prettier-ignore
+    var REGION_KLIMA = [
+        { region: "mitteleuropa", w: 0.3, winter: [-8, 6], sommer: [14, 24] },
+        { region: "alpin", w: 0.16, winter: [-12, 0], sommer: [8, 20] },
+        { region: "mediterran", w: 0.18, winter: [4, 14], sommer: [22, 30] },
+        { region: "nordisch", w: 0.12, winter: [-20, -3], sommer: [10, 20] },
+        { region: "fernost", w: 0.12, winter: [-10, 8], sommer: [20, 30] },
+        { region: "antik", w: 0.12, winter: [4, 14], sommer: [22, 30] },
+    ];
+    function klimaAbstand(z, k) {
+        var a = function (v, b) {
+            return v < b[0] ? b[0] - v : v > b[1] ? v - b[1] : 0;
+        };
+        return a(k.winter, z.winter) + a(k.sommer, z.sommer);
+    }
+    // prettier-ignore
+    function regionImKlima(r, klima) {
+        var Z = REGION_KLIMA;
+        // ohne Ort jede Region: die Schwellen des Wurfs als Literale (die Summe der Gewichte in Gleitkomma läge um 1e-16 daneben)
+        if (klima == null) return r < 0.3 ? "mitteleuropa" : r < 0.46 ? "alpin" : r < 0.64 ? "mediterran" : r < 0.76 ? "nordisch" : r < 0.88 ? "fernost" : "antik";
+        if (!(isFinite(klima.winter) && isFinite(klima.sommer)))
+            throw new Error("fachwerk regionImKlima: das Klima des Orts trägt winter und sommer nicht als Zahl");
+        var im = Z.filter(function (z) { return klimaAbstand(z, klima) === 0; });
+        if (!im.length) im = [Z.reduce(function (b, z) { return klimaAbstand(z, klima) < klimaAbstand(b, klima) ? z : b; })];
+        var S = 0, c = 0;
+        for (var i = 0; i < im.length; i++) S += im[i].w;
+        for (var j = 0; j < im.length; j++) { c += im[j].w / S; if (r < c) return im[j].region; }
+        return im[im.length - 1].region;
+    }
+    // DER SOCKEL FOLGT DEM WASSER DES ORTS (haus-stoff): die Schwelle liegt über dem Spritzwasser — Marx 1891 (Handbuch der
+    // Architektur III.2.1, „Unterbaute Fachwerkwand“): der Sockel „gern 50 bis 60 cm“, die Bauordnungen je Land Mähren 0,5 m, Hessen
+    // ≥ 0,5 m, Böhmen ≥ 0,95 m; heute 0,30 m Spritzwasserzone (ÖNORM B 2320). Der Eingang ist die Wasser-Spende des Orts relativ zur
+    // Heimat (`spendeVerh`, gelaende-core `ortGesetz(teil)`: die Heimat 1, der Ort nach planet-core `abflussMm`): die Heimat trägt
+    // Marx' 0,55 m (die Konstante `foundH` bis hier), der trockene Ort sinkt auf die Spritzwasserzone, der nasse steigt bis zur
+    // böhmischen Ordnung. Linear im Wasser (Annahme: das Spritzwasser wächst mit der Menge, die an der Wand abläuft; die Form ist
+    // unbelegt, die drei Höhen sind es). Leser: DORF (je Bau `foundH`), gate:settlement Teil R (R5, die Gegenprobe nass ↔ trocken).
+    var SOCKEL_WASSER = { spritz: 0.3, heimat: 0.55, nass: 0.95 };
+    function sockelImWasser(klima) {
+        var v = klima && klima.spendeVerh;
+        if (!(isFinite(v) && v >= 0))
+            throw new Error("fachwerk sockelImWasser: das Klima des Orts trägt die Spende (spendeVerh) nicht als Zahl");
+        var S = SOCKEL_WASSER, h = S.spritz + (S.heimat - S.spritz) * v;
+        return Math.round(Math.min(S.nass, Math.max(S.spritz, h)) * 100) / 100;
+    }
     // prettier-ignore
     function DORF(DP){
   let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
@@ -5208,7 +5344,7 @@
   const leg=chronik?EPOCHEN[achse[achse.length-1]]:leg0;
   let region,jahr,spanne,d=0;
   if(leg){ region=leg.region; d=((rnd()-0.5)*50)|0; jahr=leg.jahr+d; spanne=leg.spanne; }
-  else{ const r=rnd(); region= r<.30?'mitteleuropa': r<.46?'alpin': r<.64?'mediterran': r<.76?'nordisch': r<.88?'fernost':'antik';
+  else{ region=regionImKlima(rnd(), DP.klima);   // DIE BAUWEISE FOLGT DEM KLIMA (REGION_KLIMA): der Wurf über die Regionen im Klima des Orts
     if(region==='antik'){ jahr=-150+((rnd()*400)|0); spanne=40+((rnd()*90)|0); }
     else{ jahr=880+((rnd()*680)|0); const sp=rnd(); spanne= sp<.35?(20+((rnd()*60)|0)):(sp<.75?(180+((rnd()*300)|0)):(500+((rnd()*420)|0)));
       if(region==='fernost'&&jahr>1500) jahr=1050+((rnd()*450)|0); } }
@@ -5319,6 +5455,13 @@
   if(C) for(let a=0;a<alle.length;a++){ let v=alle[a];
     if(v.baujahr>za[a].gr) for(const f of za[a].fr) if(f.ab<=za[a].gr) v=f.v;
     C.jahre.push(za[a].gr); C.leute.push(leuteVon(v)); C.wohl.push(isFinite(v.wohl)?v.wohl:1); }
+  // DER SOCKEL FOLGT DEM WASSER DES ORTS (haus-stoff, `sockelImWasser`): jeder Bau und jede seiner Fassungen trägt die Höhe aus der Spende des Orts — ohne Klima (das Labor) der Bau, wie er stand
+  if(DP.klima!=null){ const fh=sockelImWasser(DP.klima); alle.forEach((b,ai)=>{ b.foundH=fh; for(const f of za[ai].fr) f.v.foundH=fh; }); }
+  // DIE DECKUNG FOLGT DEM ORT (haus-dach, `ortDeckung`): jeder Bau und jede Fassung deckt im Stoff des Orts, die Neigung steigt auf die Regel
+  // seiner Deckung (`grenzNeigung`), der Ziegel trägt die Farbe seiner Deckung, wo der Ort sie wechselt — ohne Klima (das Labor) der Bau, wie er stand
+  if(DP.klima!=null){ const deck=b=>{ const d0=deckungVon(b), d=ortDeckung(DP.klima, b, staedtisch); b.deckung=d; b.pitchDeg=Math.max(b.pitchDeg, Math.ceil(grenzNeigung(b)));
+      const G=DECKUNG_GESETZ[d], F=G.farbe; if(d!==d0&&F) b.col=Object.assign({}, b.col||{}, G.rolle==="ziegel"?{ziegel:F[0], ziegel2:F[1]}:{[G.rolle]:F[0]}); };
+    alle.forEach((b,ai)=>{ deck(b); for(const f of za[ai].fr) deck(f.v); }); }
   return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
           schnitt:{jahr:j0, spanne:chronik?T-j0:spanne, groesse:gS, staedtisch:staedtischVon(gS)},
           kleidung:{top:tracht.top, bottom:tracht.bottom, shoes:tracht.shoes, farben:tracht.farben.slice()},
@@ -12010,7 +12153,7 @@
         var ks = dp.kachel && isFinite(dp.kachel.samen) && isFinite(dp.kachel.nH) ? dp.kachel : { samen: isFinite(dp.seed) ? Number(dp.seed) : 1, nH: dp.nH, i: 0, k: 0 };
         var kachel = isFinite(ks.nH) && Number(ks.nH) > STADT_FUNKTION.voll ? { samen: Number(ks.samen), nH: Math.floor(Number(ks.nH)), i: ks.i | 0, k: ks.k | 0 } : null;
         var epo = typeof dp.epoche === "string" ? dp.epoche : undefined;
-        var kw = kachel ? viertelWort(kachel.samen, kachel.nH, kachel.i, kachel.k, epo) : null;
+        var kw = kachel ? viertelWort(kachel.samen, kachel.nH, kachel.i, kachel.k, epo, dp.klima) : null;
         if (kachel && !kw) throw new Error("fachwerk: die Stadt " + kachel.samen + " " + kachel.nH + " trägt keine Kachel " + kachel.i + "," + kachel.k);
         var plan = DORF({
             seed: kw ? kw.seed : isFinite(dp.seed) ? Number(dp.seed) : 1,
@@ -12019,6 +12162,7 @@
             budget: isFinite(dp.budget) ? Number(dp.budget) : undefined,
             jahr: isFinite(dp.jahr) ? Number(dp.jahr) : undefined, // das Jahr des Orts (Staffel 2, `wachstum`); ohne es das Ende der Epoche
             erbe: kw ? kw.erbe : dp.erbe && typeof dp.erbe === "object" ? dp.erbe : undefined, // die Kachel einer Stadt: Region, Jahr und Spanne ihrer Mitte (`viertelWort`)
+            klima: dp.klima, // das Klima des Orts (REGION_KLIMA): der Wirt nennt es, ein Plan ohne Ort (das Labor) nicht
         });
         var kNetz = null,
             kRand = null;
@@ -13668,6 +13812,18 @@
             // Vorplätze (die Stufe vor der Tür liegt auf allem)
             erdbau: wegSaeume.concat(hausPlatten, wegKerne, erdbau, vorplaetze, freiSplats),
         });
+        // DAS STÜCK AM HAUS folgt seiner Nummer wie die Wandlaterne (`neuSi`, ort-ausstattung: Schild und Relief tragen `slot`)
+        // und fällt mit seinem Haus ins Wasser. Bis hier reiste die Nummer des v1-Plans: am nordischen Start-Dorf nahm das Wasser
+        // 3 von 17 Slots, das Haus #10 rückte auf 8 — das Haus auf 10 hob das Schild der Schmiede vor ihr, und die Schmiede
+        // fiel an der Bau-Wand ihres eigenen Schilds (gate:haus-welt W9 Zug 15 von 16)
+        if (wasserSlots && Array.isArray(plan.gegenstaende))
+            v2.gegenstaende = plan.gegenstaende
+                .filter(function (q) {
+                    return !q || !Number.isInteger(q.slot) || neuSi[q.slot] >= 0;
+                })
+                .map(function (q) {
+                    return q && Number.isInteger(q.slot) ? Object.assign({}, q, { slot: neuSi[q.slot] }) : q;
+                });
         // die Slots, die das Wasser nahm (der Leser zählt das Dorf ehrlich: geplant = stehend + im Wasser gefallen)
         if (wasserSlots) v2.wasserSlots = wasserSlots;
         // der Torplatz trägt seine Höhe wie der Platz (`y`, absolut)
@@ -14915,6 +15071,14 @@
         platzAnziehung: platzAnziehung,
         imPlatzStueck: imPlatzStueck,
         DORF: DORF,
+        REGION_KLIMA: REGION_KLIMA, // die Bauweise folgt dem Klima (haus-gestalt): je Region das Band der Monats-Mittel; Leser: DORF, gate:settlement Teil R
+        regionImKlima: regionImKlima,
+        SOCKEL_WASSER: SOCKEL_WASSER, // der Sockel folgt dem Wasser des Orts (haus-stoff): Spritzwasser 0,30 · Heimat 0,55 · Böhmen 0,95 m; Leser: DORF, gate:settlement R5
+        sockelImWasser: sockelImWasser,
+        DECKUNG_GESETZ: DECKUNG_GESETZ, // die Regeldachneigung und der Stoff je Deckung (haus-dach); Leser: HAUS, DORF, gate:settlement Teil R
+        deckungVon: deckungVon,
+        ortDeckung: ortDeckung,
+        grenzNeigung: grenzNeigung,
         GRUENDUNG_RASTER: GRUENDUNG_RASTER, // w28-gruendung-flach — das Raster der Grundriss-Probe (Leser: gate:settlement G, seine Mutante)
         GRUENDUNG_OPS: GRUENDUNG_OPS, // w28-gruendung-flach — die Stände und Grundriss-Proben je Gründung (Leser: gate:settlement G)
         ortAusstattung: ortAusstattung, // ort-ausstattung — das EINE Gesetz der Stücke, die den Ort ausweisen (Leser: exportSettlement)
