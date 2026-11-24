@@ -30669,7 +30669,7 @@
   },
   "karte2.planet.wasser.eis": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wasser.eis#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/draw-zaehler.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.wasser.eis#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/draw-zaehler.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 1feab29c: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.planet.wasser.eis#2 radeon: ungemessen (R10) · karte2.planet.wasser.eis#2 gtx: ungemessen (R10) · karte2.planet.wasser.eis#3 radeon: ungemessen (R10) · karte2.planet.wasser.eis#3 gtx: ungemessen (R10) · karte2.planet.wasser.eis#4 radeon: ungemessen (R10) · karte2.planet.wasser.eis#4 gtx: ungemessen (R10) · karte2.planet.wasser.eis#5 radeon: ungemessen (R10) · karte2.planet.wasser.eis#5 gtx: ungemessen (R10) · karte2.planet.wasser.eis#6 radeon: ungemessen (R10) · karte2.planet.wasser.eis#6 gtx: ungemessen (R10) · karte2.planet.wasser.eis#7 radeon: ungemessen (R10) · karte2.planet.wasser.eis#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: S1 abwM 75 m gegen Soll 0 ± 150 m ✓ · posen 10 gegen Soll ≥ 10 ✓ · jahreszeiten 4 gegen Soll ≥ 4 ✓ · fussCm 37,2 cm gegen Soll ≥ 5 cm ✓ · Zeuge: 40 Linien der Welt, die Grenze wandert mit der Saison, der Fuß sinkt im Winter und nie im Sommer an 1feab29c gtx — offen: karte2.planet.wasser.eis#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/draw-zaehler.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.wasser.eis#2 radeon: ungemessen (R10) · karte2.planet.wasser.eis#2 gtx: ungemessen (R10) · karte2.planet.wasser.eis#3 radeon: ungemessen (R10) · karte2.planet.wasser.eis#3 gtx: ungemessen (R10) · karte2.planet.wasser.eis#4 radeon: ungemessen (R10) · karte2.planet.wasser.eis#4 gtx: ungemessen (R10) · karte2.planet.wasser.eis#5 radeon: ungemessen (R10) · karte2.planet.wasser.eis#5 gtx: ungemessen (R10) · karte2.planet.wasser.eis#6 radeon: ungemessen (R10) · karte2.planet.wasser.eis#6 gtx: ungemessen (R10) · karte2.planet.wasser.eis#7 radeon: ungemessen (R10) · karte2.planet.wasser.eis#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.wasser.eis#1",
@@ -30685,11 +30685,10 @@
     {
      "id": "karte2.planet.wasser.eis#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/draw-zaehler.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 1feab29c: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 abwM 75 m gegen Soll 0 ± 150 m ✓ · posen 10 gegen Soll ≥ 10 ✓ · jahreszeiten 4 gegen Soll ≥ 4 ✓ · fussCm 37,2 cm gegen Soll ≥ 5 cm ✓ · Zeuge: 40 Linien der Welt, die Grenze wandert mit der Saison, der Fuß sinkt im Winter und nie im Sommer",
+     "sha": "1feab29c69723a5982df4e4f0b064afc08d094cf",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -31059,7 +31058,7 @@
   },
   "karte2.planet.wasser.seegang": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wasser.seegang#1 radeon: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.wasser.seegang#1 gtx: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.planet.wasser.seegang#2 radeon: ungemessen (R10) · karte2.planet.wasser.seegang#2 gtx: ungemessen (R10) · karte2.planet.wasser.seegang#3 radeon: ungemessen (R10) · karte2.planet.wasser.seegang#3 gtx: ungemessen (R10) · karte2.planet.wasser.seegang#4 radeon: ungemessen (R10) · karte2.planet.wasser.seegang#4 gtx: ungemessen (R10) · karte2.planet.wasser.seegang#5 radeon: ungemessen (R10) · karte2.planet.wasser.seegang#5 gtx: ungemessen (R10) · karte2.planet.wasser.seegang#6 radeon: ungemessen (R10) · karte2.planet.wasser.seegang#6 gtx: ungemessen (R10) · karte2.planet.wasser.seegang#7 radeon: ungemessen (R10) · karte2.planet.wasser.seegang#7 gtx: ungemessen (R10) · karte2.planet.wasser.seegang#8 radeon: ungemessen (R10) · karte2.planet.wasser.seegang#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wasser.seegang#1 radeon: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.wasser.seegang#1 gtx: ROT: S1 spiegelTreue ungemessen gegen Soll ≥ 0,6 ✗ · posen ungemessen gegen Soll ≥ 12 ✗ · Täter: stamm/wasser-hydro.js _wasserBlick (der Spiegel-Pass) an der Bucht an 1feab29c · karte2.planet.wasser.seegang#2 radeon: ungemessen (R10) · karte2.planet.wasser.seegang#2 gtx: ungemessen (R10) · karte2.planet.wasser.seegang#3 radeon: ungemessen (R10) · karte2.planet.wasser.seegang#3 gtx: ungemessen (R10) · karte2.planet.wasser.seegang#4 radeon: ungemessen (R10) · karte2.planet.wasser.seegang#4 gtx: ungemessen (R10) · karte2.planet.wasser.seegang#5 radeon: ungemessen (R10) · karte2.planet.wasser.seegang#5 gtx: ungemessen (R10) · karte2.planet.wasser.seegang#6 radeon: ungemessen (R10) · karte2.planet.wasser.seegang#6 gtx: ungemessen (R10) · karte2.planet.wasser.seegang#7 radeon: ungemessen (R10) · karte2.planet.wasser.seegang#7 gtx: ungemessen (R10) · karte2.planet.wasser.seegang#8 radeon: ungemessen (R10) · karte2.planet.wasser.seegang#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.wasser.seegang#1",
@@ -31075,10 +31074,10 @@
      "id": "karte2.planet.wasser.seegang#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "S1 spiegelTreue ungemessen gegen Soll ≥ 0,6 ✗ · posen ungemessen gegen Soll ≥ 12 ✗ · Täter: stamm/wasser-hydro.js _wasserBlick (der Spiegel-Pass) an der Bucht",
+     "sha": "1feab29c69723a5982df4e4f0b064afc08d094cf",
+     "grund": "ROT: S1 spiegelTreue ungemessen gegen Soll ≥ 0,6 ✗ · posen ungemessen gegen Soll ≥ 12 ✗ · Täter: stamm/wasser-hydro.js _wasserBlick (der Spiegel-Pass) an der Bucht",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -35492,7 +35491,7 @@
   },
   "karte2.same.physik.feuer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.feuer#1 radeon: ungemessen (R10) · karte2.same.physik.feuer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/lib/stand-linse.cjs, scripts/lib/welt-boot.cjs +7) · karte2.same.physik.feuer#2 radeon: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.physik.feuer#2 gtx: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.same.physik.feuer#3 radeon: ungemessen (R10) · karte2.same.physik.feuer#3 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#4 radeon: ungemessen (R10) · karte2.same.physik.feuer#4 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#5 radeon: ungemessen (R10) · karte2.same.physik.feuer#5 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#6 radeon: ungemessen (R10) · karte2.same.physik.feuer#6 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#7 radeon: ungemessen (R10) · karte2.same.physik.feuer#7 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#8 radeon: ungemessen (R10) · karte2.same.physik.feuer#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.feuer#1 radeon: ungemessen (R10) · karte2.same.physik.feuer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/lib/stand-linse.cjs, scripts/lib/welt-boot.cjs +7) · karte2.same.physik.feuer#2 radeon: ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.physik.feuer#2 gtx: ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 1,468 (Faden 1,468 · alle Kerne 1,466; vor 132,1/337 ms, nach 112/314,9 ms, Ruhe 90/229,8 ms seit 2026-11-22) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc  · karte2.same.physik.feuer#3 radeon: ungemessen (R10) · karte2.same.physik.feuer#3 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#4 radeon: ungemessen (R10) · karte2.same.physik.feuer#4 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#5 radeon: ungemessen (R10) · karte2.same.physik.feuer#5 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#6 radeon: ungemessen (R10) · karte2.same.physik.feuer#6 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#7 radeon: ungemessen (R10) · karte2.same.physik.feuer#7 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#8 radeon: ungemessen (R10) · karte2.same.physik.feuer#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.feuer#1",
@@ -35530,7 +35529,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 1feab29c: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 1,468 (Faden 1,468 · alle Kerne 1,466; vor 132,1/337 ms, nach 112/314,9 ms, Ruhe 90/229,8 ms seit 2026-11-22) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc ",
      "ungemessen": true
     },
     {
@@ -37521,7 +37520,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 293,
+  "konsum": 294,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37689,10 +37688,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3329
+  "ohne": 3328
  },
  "kopfVoll": "f287dfb91e7672949f1ffaeb4908dab20a7fcdd7",
- "zeit": "2026-11-24T01:13:02.193Z",
+ "zeit": "2026-11-24T01:18:47.880Z",
  "vorher": "f287dfb9",
  "bilanz": {
   "gewinn": [],
