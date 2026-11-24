@@ -1512,11 +1512,20 @@
     // hinter ihm fällt die Linie zum `nacken` (die Höhe des Ohrläppchens), dazwischen gerade. Bis hier trug die Haut den Ton der
     // Kappe überall, wo ihr Ellipsoid sie tiefer umschloss als die Form des Gesichts: eine dicke Kappe (afro 0,24) färbte Wange,
     // Kiefer und Hals bis zum Kragen — die Sturmhaube —, jede Kappe den Hals hinter dem Ohr.
-    var HAAR_GRENZE = Object.freeze({ schlaefe: Object.freeze([0.05, 0.33]), nacken: Object.freeze([-0.2, 0.12]) });
+    // DIE STIRN (front-leben, mensch.leib.gesicht#1 augeFrei): vor der Schläfe steigt die Linie zum Haar-Ansatz der Stirn — ab z =
+    // `stirn` liegt sie auf dem Ansatz des Kanons (labProportionen hairlineY, 0,91 Kopf-Segment: dieselbe Linie, über der KOPF_SOLL
+    // haarLinie 0,8 der Kopf-Höhe das Haar verlangt), dazwischen gerade. Bis hier galt die Linie der Schläfe (0,33, unter dem Auge
+    // 0,37) bis an die Front: die Kappe des krausen Haars (afro 0,24, locken 0,14 dick) umschloss Stirn und Augen, ihre Strähnen lagen
+    // über der Iris (augeFrei 0,742–0,876 an den Samen 0, 2, 3 — GTX und Werkbank gleich, verdeckt von `kopf/hair`).
+    var HAAR_GRENZE = Object.freeze({ schlaefe: Object.freeze([0.05, 0.33]), nacken: Object.freeze([-0.2, 0.12]), stirn: 0.25 });
+    var _haarStirnY = null;
     function haarGrenze(z) {
         var a = HAAR_GRENZE.schlaefe,
-            b = HAAR_GRENZE.nacken;
-        if (z >= a[0]) return a[1];
+            b = HAAR_GRENZE.nacken,
+            s = HAAR_GRENZE.stirn;
+        if (_haarStirnY === null) _haarStirnY = _labKanon().hairlineY;
+        if (z >= s) return _haarStirnY;
+        if (z >= a[0]) return a[1] + ((_haarStirnY - a[1]) * (z - a[0])) / (s - a[0]);
         if (z <= b[0]) return b[1];
         return b[1] + ((a[1] - b[1]) * (z - b[0])) / (a[0] - b[0]);
     }
@@ -5599,7 +5608,10 @@
     // der gereichten Orte, wo sein Name, akt eines von schlaf · morgen · besuch · arbeit · mittag · abend; drinnen = der Mensch
     // ist in seinem Haus (an der Tür ungezeichnet). nass = der Regen am Ort (0–1, der Kanal `rain` des Wetter-Felds; ohne ihn
     // trocken): über der Schwelle des Menschen (TAGES_GESETZ.regen) bleibt er daheim, außer am Posten seiner Arbeit
-    // (`regenfest`).
+    // (`regenfest`). krank = das Feld seines Lebenslaufs an diesem Tag (mensch.menge.seuche#1, der Satz `b.krank`): jede Stunde,
+    // die ihn fortführte — Werk, Markt, Mahl, Besuch, Treff —, sitzt er vor seiner Tür im Akt des Abends; der Posten hält seine
+    // Schicht wie im Regen (`regenfest`: die Wache, der Fahrer). Bis hier stand die Krankheit als Zweig im Wirt (`_bewohnerSoll`)
+    // neben diesem Plan: die Linse des Tags las den Plan ohne ihn (Soll-Orte 0,567 statt ≥ 0,9), der kranke Fahrer stieg nie ein.
     // DIE WENDEN DES TAGS EINES MENSCHEN (rein aus Same und Rolle, in den Stunden seiner Rolle — ohne den Versatz `versatzH`): die
     // EINE Rechnung, die der Plan der Stunde (`tagesPlan`) und das Fenster seiner Arbeit (`tagesFenster`, der Bestand) lesen
     function _tagesWenden(same, rolle) {
@@ -5627,7 +5639,7 @@
         if (!post && Z.werkNachH) w1 = Math.max((R.werk || G.werk)[1] + j("werk1"), Math.min(w1, ruhe - G.besuchH));
         return { R: R, wach: wach, w0: w0, w1: w1, morgenH: morgenH, mittagAmWerk: mittagAmWerk, m0: m0, m1: m1, ruhe: ruhe, abendTreffH: Z.abendTreffH };
     }
-    function tagesPlan(same, rolle, stunde, orte, nass) {
+    function tagesPlan(same, rolle, stunde, orte, nass, krank) {
         var G = TAGES_GESETZ;
         var T = _tagesWenden(same, rolle),
             R = T.R;
@@ -5645,8 +5657,9 @@
         var W = G.regen,
             regen = nass > 0 && nass >= W.ab + (_tagZahl(same, "regen") * 2 - 1) * W.streuH;
         var aus = function (wo, akt, drinnen) {
-            if (regen && !drinnen && !(akt === "arbeit" && R.regenfest))
-                return { ort: heim, wo: "heim", akt: akt, drinnen: true };
+            var posten = akt === "arbeit" && R.regenfest;
+            if (regen && !drinnen && !posten) return { ort: heim, wo: "heim", akt: akt, drinnen: true };
+            if (krank && !drinnen && !posten && (orte[wo] || heim) !== heim) return { ort: heim, wo: "heim", akt: "abend", drinnen: false };
             return { ort: orte[wo] || heim, wo: orte[wo] ? wo : "heim", akt: akt, drinnen: !!drinnen };
         };
         var bA = besuch && w1 + G.besuchH <= ruhe - 0.5;

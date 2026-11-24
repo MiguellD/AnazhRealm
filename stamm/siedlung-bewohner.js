@@ -301,9 +301,10 @@ class AnazhRealm_siedlung_bewohner {
     _bewohnerLauf(S, b, feld, tag) {
         const L = AnazhRealm.LEBENSLAUF;
         if (feld === "krank") {
-            // je Spanne von `krank.tage` Tagen (versetzt um seinen Samen) EIN Wurf: krank mit dem Anteil der Kranken-Kassen
-            const wm = this.state.worldMeta;
-            const d = Number.isFinite(tag) ? tag : +(wm && wm.tag) || 0;
+            // je Spanne von `krank.tage` Tagen (versetzt um seinen Samen) EIN Wurf: krank mit dem Anteil der Kranken-Kassen. Der
+            // Tag ist der der Prozesse (`_weltTag`): die Uhr des Spielers bewegt keine Krankheit (bis hier der Tag der Sicht
+            // `worldMeta.tag` — ein Zug am Regler über Mitternacht machte den Kranken gesund, die Wiederkehr fand ihn 34 m fort)
+            const d = Number.isFinite(tag) ? tag : Math.floor(this._weltTag());
             const sp = Math.floor((d + (b.same % L.krank.tage)) / L.krank.tage);
             let h = (b.same ^ Math.imul(sp, 0x9e3779b1)) >>> 0;
             h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
@@ -723,12 +724,19 @@ class AnazhRealm_siedlung_bewohner {
         // Netz und ihre Längen merkt der Grund selbst (`_bewohnerTuerAm`, `_bewohnerAnTuer`)
         const grundVon = () => S.netzGrund || (S.netzGrund = realm._wegeNetzGrund(plan, S.ox, S.oz));
         let freiKnoten = null;
+        // JEDER ORT SEINES TAGS IST EIN GANG (`seine`: die Stände des Menschen, für den `standAm` eben stellt — sein Heim, sein
+        // Platz, jeder schon gebundene): der neue liegt `gangM` von jedem, sonst ist die Wende seines Plans kein Weg. Bis hier
+        // trennte die Stände nur der Raum (`raumM`, je zwei Stände der Liste): die Station des Wirts im Ring seines Hauses
+        // stand 1,54 m vor seinem Heim-Stand, Werk und Abend lagen einen Schritt auseinander (Steintal 5 von 89, Stadt 21 von
+        // 1 391; gate:kreatur-takt bewohner: 3 Wege des Tags, Soll 4–10)
+        let seine = null;
         const frei = function* (x, z, amRand = true, tuer = null) {
             const [ix, iz] = [Math.floor(x / BW.raumM), Math.floor(z / BW.raumM)];
             for (let i = -1; i <= 1; i++)
                 for (let j = -1; j <= 1; j++)
                     for (let n = 0, l = belegt.get(raumZelle(ix + i, iz + j)) || []; n < l.length; n += 2)
                         if ((l[n] - x) ** 2 + (l[n + 1] - z) ** 2 < BW.raumM * BW.raumM) return false;
+            for (const p of seine || []) if (p && (p.x - x) ** 2 + (p.z - z) ** 2 < BW.gangM * BW.gangM) return false;
             if (amRand && amWeg(x, z)) return false;
             // (kein Stand in einem Stück des Platzes: der Tritt eines Marktstands, der Kreis eines Brunnens — aus dem PLAN, die
             // Stücke selbst stehen erst mit dem Erlebnis des Dorfs; an stadt-voll lagen 30 Stände in einem, fachwerk `imPlatzStueck`)
@@ -1006,12 +1014,26 @@ class AnazhRealm_siedlung_bewohner {
             // Plans GEHT, nie nach der Luftlinie (pendler-anschluss)
             wegZu = KC.tagesWege(TC, orte, NG, S.ox, S.oz, (o, i) => ortAm[i]);
         };
-        const standAm = function* (g, i, heimI, platz) {
+        // der Stand des Menschen P am Ort i, einen Gang von jedem seiner Stände (`seine`). Am Platz ohne freien Markt-Stand ein
+        // eigener Stand auf dem Platz (`platzStand`): bis hier stand er dort, wo ihn der Morgengang hinstellte — sein Werk am
+        // Platz WAR sein Platz-Stand (Steintal 22 Kinder), das Spiel nach dem Morgen am Markt kein Weg. Trägt auch der Platz
+        // keinen mehr, bleibt er an seinem Stand vom Morgen; ein voller Platz bleibt voll (`platzVoll`: die Liste stellt nur
+        // hinzu) — an stadt-voll suchte sonst jedes der 208 Kinder vergebens den ganzen Platz ab (die Liste 6,1 → 8,5 s)
+        let platzVoll = false;
+        const standAm = function* (P, i) {
             const o = orte[i];
-            if (o.art === "platz") return (yield* marktStand(g)) || platz;
-            if (o.art === "feld") return yield* feldStand(g, plan.felder[o.feld]);
-            const T = tuerVon.get(o.slot);
-            return yield* ringStand(g, i === heimI ? "w" : "o" + i, T.ex, T.ez, T.ux, T.uz, null, i !== heimI, { x: T.tx, z: T.tz }); // prettier-ignore
+            seine = [P.heim, P.platz, ...P.am.values()];
+            try {
+                if (o.art === "platz") {
+                    const st = (yield* marktStand(P.g)) || (platzVoll ? null : yield* platzStand(P.g));
+                    return st || ((platzVoll = true), P.platz);
+                }
+                if (o.art === "feld") return yield* feldStand(P.g, plan.felder[o.feld]);
+                const T = tuerVon.get(o.slot);
+                return yield* ringStand(P.g, i === P.heimI ? "w" : "o" + i, T.ex, T.ez, T.ux, T.uz, null, i !== P.heimI, { x: T.tx, z: T.tz }); // prettier-ignore
+            } finally {
+                seine = null;
+            }
         };
         // DIE BINDUNG (der Kern wählt, `tagesBindung`): je Bedürfnis `namen` der Ort des Menschen P; der Wirt stellt den Stand
         // (je Ort einen, `am`) — trägt ein Ort keinen freien mehr oder hängt sein Stand an einem anderen Teil des Netzes (`voll`),
@@ -1025,8 +1047,7 @@ class AnazhRealm_siedlung_bewohner {
                 for (const wo of namen) {
                     const i = P.bind[wo];
                     if (i < 0 || P.am.has(i) || (i === P.heimI && wo !== "werk")) continue;
-                    const st =
-                        i === P.heimI && P.rolle === "wohnhaus" ? null : yield* standAm(P.g, i, P.heimI, P.platz);
+                    const st = i === P.heimI && P.rolle === "wohnhaus" ? null : yield* standAm(P, i);
                     P.am.set(i, st);
                     if (i !== P.heimI && (!st || teilVon(st) !== P.heimTeil)) neu = P.voll.add(i);
                 }
@@ -1086,6 +1107,7 @@ class AnazhRealm_siedlung_bewohner {
                 same,
                 rolle,
                 heimI,
+                heim,
                 heimTeil: teilVon(heim),
                 platz,
                 am: new Map(),
@@ -1120,7 +1142,7 @@ class AnazhRealm_siedlung_bewohner {
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
                     blick: u, begegnet: u, kopfY: u,
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
-                    drehen: u, platz: u, weichen: null,
+                    drehen: u, platz: u, weichen: null, brand: null,
                     weg: u, wi: u, linie: u, tag: u, wegRest: u, wegRestAb: u, gegangen: u, gehDt: u, gehTakt: u, rueck: u,
                     tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, grundGx: 0, grundGz: 0, _gait: u, _gaitW: u, walkPhase: u,
                     wagen: u, amSteuer: u, bestand: null, bestandBild: null, werkzeug: null,
@@ -1203,8 +1225,8 @@ class AnazhRealm_siedlung_bewohner {
         const posten = [...tore.slice(0, 1), ...(amPlatz ? [amPlatz] : []), ...tore.slice(1)];
         const nPosten = Math.max(tore.length ? 1 : 0, Math.round(liste.length / WL.jeKoepfe));
         const postenStand = function* (g, P) {
-            for (let v = 0; v < 120; v++) {
-                const r = 1.5 + Math.floor(v / 12) * 1.2;
+            for (let v = 0; v < WL.ring.alle; v++) {
+                const r = WL.ring.r0M + Math.floor(v / WL.ring.jeStufe) * WL.ring.stufeM;
                 const a = g.axis(`${v}:postenstand`) * 2 * Math.PI;
                 const [x, z] = [P.x + Math.cos(a) * r, P.z + Math.sin(a) * r];
                 // am Tor sieht er hinaus
@@ -1902,6 +1924,8 @@ class AnazhRealm_siedlung_bewohner {
                 if (b.ziel !== z0) this._bewohnerWecken(S, b);
             }
             if (S.planSoll >= N) S.planSoll = 0;
+            // DIE FRONT DES BRANDS (`_bewohnerBrandSchau`): je Stand des Brand-Felds flieht, wer in der Gefahr steht oder hingeht
+            if (this._bewohnerBrandSchau(S, stunde)) anders = true;
             this._bewohnerVorlagen(S, p);
             if (this._bewohnerGangBacken(S, BW.gangJeTakt)) anders = true;
             // in der Reihe der Liste (wer geweckt oder besucht wurde, kam hinten dazu)
@@ -2485,6 +2509,105 @@ class AnazhRealm_siedlung_bewohner {
         return ort ? { ort, soll } : null;
     }
 
+    // DIE GEFAHR DES BRANDS (same.kopplung.ereignis#2, front-leben): die Quelle ist das EINE Brand-Feld (`state.brandFeld`,
+    // stamm/feld-brand.js) — kein zweites Feuer-Register. Gefahr trägt jede Zelle des Lebens-Rasters (LIFE_FIELD.cell), die
+    // brennt (`t0` gesetzt), und jede ihrer acht Nachbarinnen (der Saum: die Front kriecht im Gras eine Zelle in Minuten, wer am
+    // Saum steht, geht, bevor sie ihn erreicht) — je Zelle die früheste Zündung, die sie gefährdet (Schlüssel wie das Raster der
+    // Siedlung). Gebaut EINMAL je Stand des Felds (Uhr, Größe, Fortschritt der Zündungen), für jede Siedlung; ohne Brand null.
+    _bewohnerBrandGefahr() {
+        const bf = this.state.brandFeld;
+        if (!bf || !bf.size) return null;
+        const R = this._brandRest;
+        const k = this._brandUhr + ":" + bf.size + ":" + (R ? R.t + "/" + R.i : "-");
+        const H = this._bewohnerBrand;
+        if (H && H.k === k) return H;
+        const G = new Map();
+        for (const z of bf.values()) {
+            if (z.t0 === null) continue;
+            for (let i = -1; i <= 1; i++)
+                for (let j = -1; j <= 1; j++) {
+                    const q = (z.cx + i) * 2097152 + (z.cz + j);
+                    const t = G.get(q);
+                    if (t === undefined || z.t0 < t) G.set(q, z.t0);
+                }
+        }
+        return (this._bewohnerBrand = { k, G });
+    }
+
+    // DER ORT OHNE GEFAHR nächst (x, z): Ring um Ring der Zellen (bis `BEWOHNER.brandRinge`) die erste Zelle ohne Gefahr — ihr
+    // Punkt nächst (x, z), sonst ihre Mitte —, auf Land, nicht im Wasser, in keinem Grundriss; der nächste im ersten Ring, der
+    // einen trägt. Ohne einen: null (er bleibt, laut ist der Rufer).
+    _bewohnerBrandOrt(x, z, G) {
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const [cx, cz] = [Math.floor(x / cs), Math.floor(z / cs)];
+        const frei = (q) => this._landAt(q.x, q.z) && !this._nassAt(q.x, q.z) && !["haus", "bau"].includes(this._imGrundriss(q.x, q.z, 0.5)); // prettier-ignore
+        let best = null;
+        let bd = Infinity;
+        for (let d = 0; d <= AnazhRealm.BEWOHNER.brandRinge && !best; d++)
+            for (let i = -d; i <= d; i++)
+                for (const [ix, iz] of d
+                    ? [
+                          [cx + i, cz - d],
+                          [cx + i, cz + d],
+                          [cx - d, cz + i],
+                          [cx + d, cz + i],
+                      ]
+                    : [[cx, cz]]) {
+                    if (G.has(ix * 2097152 + iz)) continue;
+                    const nah = { x: Math.min(Math.max(x, ix * cs + 1), (ix + 1) * cs - 1), z: Math.min(Math.max(z, iz * cs + 1), (iz + 1) * cs - 1) }; // prettier-ignore
+                    const q = frei(nah) ? nah : { x: (ix + 0.5) * cs, z: (iz + 0.5) * cs };
+                    const dq = Math.hypot(q.x - x, q.z - z);
+                    if (dq < bd && (q === nah || frei(q))) [best, bd] = [q, dq];
+                }
+        return best;
+    }
+
+    // DIE SCHAU DER SIEDLUNG vor der Front (`_tickBewohner`, je Stand des Felds): wer in der Gefahr steht (draußen oder drinnen)
+    // oder dessen Ziel in ihr liegt, flieht an den nächsten Ort ohne Gefahr (`_bewohnerBrandOrt`) und hält ihn, solange der Brand
+    // lebt (`b.brand`, gelesen im Soll `_bewohnerSoll`); wer drinnen war, tritt aus seiner Tür. SEINE FLUCHT BEGANN, ALS DIE
+    // GEFAHR SEINEN ORT ERREICHTE (die früheste Zündung dort, die Uhr der Welt): wer den Brand nicht im Takt sah — der Ruhende, ein
+    // Brand, der seiner Uhr vorauslief —, steht, wo ihn seine Flucht im Tempo seines Leibs jetzt sähe (wie die Ankunft
+    // `_bewohnerAnkunft`: f(t), nie die Lage vor dem Brand); der Rest des Wegs geht im Takt. Liefert, ob eine Lage wechselte.
+    _bewohnerBrandSchau(S, stunde) {
+        const H = this._bewohnerBrandGefahr();
+        if (!H || S.brandK === H.k) return false;
+        S.brandK = H.k;
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const jetzt = this.state.spielZeit;
+        const gefahr = (q) => H.G.get(Math.floor(q.x / cs) * 2097152 + Math.floor(q.z / cs));
+        let anders = false;
+        for (const b of S.liste || []) {
+            const g = b.leib;
+            if (!g || b.amSteuer || b.ankunft) continue;
+            const von = b.drinnen ? b.orte.tuer : g.position;
+            const t0 = gefahr(von);
+            const ziel = b.brand ? b.brand.ort : b.ziel;
+            if (t0 === undefined && !(ziel && gefahr(ziel) !== undefined)) continue;
+            const ort = this._bewohnerBrandOrt(von.x, von.z, H.G);
+            if (!ort) continue;
+            this._bewohnerWecken(S, b);
+            b.brand = { ort };
+            if (t0 !== undefined) {
+                const [x0, z0] = [von.x, von.z];
+                if (b.drinnen) {
+                    [b.drinnen, b.hinaus, g.userData._drinnen] = [false, false, false];
+                    this._bewohnerStellen(b, g, x0, z0);
+                }
+                const d = Math.hypot(ort.x - x0, ort.z - z0);
+                const w = d > 0 ? Math.min(1, (Math.max(0, jetzt - t0) * b.tempo) / d) : 1;
+                if (w > 0) this._bewohnerStellen(b, g, x0 + (ort.x - x0) * w, z0 + (ort.z - z0) * w);
+                [b.vx, b.vz, b.lageNeu] = [0, 0, true];
+                this._bewohnerRasterLage(S, b);
+            }
+            // der Weg der Flucht beginnt hier (kein Stand, keine Lage des Tags, nichts aufzuholen)
+            [b.da, b.weg, b.tag, b.platz] = [false, null, null, false];
+            this._bewohnerZiel(b, stunde);
+            b.zielUhr = NaN;
+            anders = true;
+        }
+        return anders;
+    }
+
     // DAS SOLL DER STUNDE (mensch.K2): der Plan des Gesetzes (koerper-core `tagesPlan`) aus dem Samen, der Rolle seines
     // Hauses und den Orten seiner Bindung (`_bewohnerListe`) — drinnen ist das Ziel die Tür. Liefert { ziel, drinnen, akt }. Leser: das Ziel
     // (`_bewohnerZiel`), die Wende (`_bewohnerWende`). DER REGEN (mensch.kopplung.leben): das Gesetz liest den Regen, der fällt —
@@ -2502,30 +2625,24 @@ class AnazhRealm_siedlung_bewohner {
         if (!KC || typeof KC.tagesPlan !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesPlan");
         const o = b.orte;
         // der Regen an seiner Tür (wetter-am-ort: das EINE Wetter-Feld am Ort, `_wetterFeldAm`)
-        const regenAn = (x) =>
-            this._wetterFeldAm(x.orte.tuer.x, x.orte.tuer.z, undefined, this._tuerFeldAus || (this._tuerFeldAus = {}))
-                .rain;
-        let soll = KC.tagesPlan(b.same, b.rolle, stunde, o, regenAn(b));
-        // DER KRANKE BLEIBT DAHEIM (mensch.menge.seuche#1, bewohner-satz): ist er an diesem Tag der Sicht krank (der Lebenslauf,
-        // `krank`), sitzt er in jeder Stunde, die ihn fortführte — Werk, Markt, Mahl, Besuch —, vor seiner Tür im Akt seines Abends
-        const wm = this.state.worldMeta;
-        const tag = (+(wm && wm.tag) || 0) + Math.floor(stunde / 24);
-        const krank = (x) => this._bewohnerLauf(null, x, "krank", tag);
-        if (!soll.drinnen && soll.ort !== o.heim && !b.amSteuer && krank(b))
-            return { ziel: o.heim, drinnen: false, akt: "abend" };
-        // DIE VERTRETUNG (Leiter mensch.netz.verkehr: jeder Wagen der Stadt fährt): ist der andere Fahrer seines Wagens an diesem
-        // Tag krank und nennt dessen Plan jetzt das Werk, übernimmt er die Schicht — sein Soll ist das Werk (der Stand am Wagen),
-        // der Schichtwechsel des Verkehrs (`_tickVerkehr`) setzt ihn ans Steuer. Bis hier blieb der Kranke daheim und sein Wagen
-        // stand: am Messort stadt-voll fand der Verkehr keinen Fahrer, die Stadt wurde nie bereit (gate:fahr-leben VK, CI voll 9/18:
-        // „DER BAU STEHT NICHT: verkehr: die Stadt steht nach 39102 Takten").
-        const wg = b.wagen;
-        const f = wg && wg.fahrer ? wg.fahrer.find((x) => x !== b) : null;
-        if (f && soll.ort !== o.werk && krank(f) && !krank(b)) {
-            const fs = KC.tagesPlan(f.same, f.rolle, stunde, f.orte, regenAn(f));
-            if (!fs.drinnen && fs.ort === f.orte.werk) soll = { ort: o.werk, drinnen: false, akt: fs.akt };
-        }
+        const regen = this._wetterFeldAm(
+            o.tuer.x,
+            o.tuer.z,
+            undefined,
+            this._tuerFeldAus || (this._tuerFeldAus = {})
+        ).rain;
+        // DER KRANKE BLEIBT DAHEIM (mensch.menge.seuche#1): das Feld seines Lebenslaufs am Tag der Prozesse (`b.krank`) ist ein
+        // Eingang des Plans — der Kern setzt ihn vor seine Tür, der Posten (Fahrer, Wache) hält seine Schicht: kein Wagen der
+        // Stadt steht, keine Vertretung, die den Plan eines Zweiten liest (VK am Kopf e0714e46: „die Stadt steht nach 39102 Takten")
+        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, regen, b.krank);
         const ort = b.amSteuer && soll.ort === o.werk ? b.wagen.entry.position : soll.ort;
         const ziel = soll.drinnen ? o.tuer : ort;
+        // DIE FRONT DES BRANDS (`_bewohnerBrandSchau`, das EINE Brand-Feld): wer vor ihr floh, hält den Ort ohne Gefahr, solange
+        // der Brand lebt — sein Plan führt ihn nie in die Front zurück; erlischt sie, gilt sein Tag wieder
+        if (b.brand) {
+            if (this._brandLebt()) return { ziel: b.brand.ort, drinnen: false, akt: soll.akt };
+            b.brand = null;
+        }
         // DER ZEUGE WEICHT (`_bewohnerWeichen`): solange sein Plan das Ziel der Tat nennt, bis zur Wende, der Stand jenseits der Tat
         const W = b.weichen;
         if (W && ziel === W.plan && (((stunde - W.ab) % 24) + 24) % 24 < W.dauer)
@@ -4404,6 +4521,9 @@ AnazhRealm.LEBENSLAUF = Object.freeze({
         rollen: Object.freeze(["waechter", "nachtwaechter"]),
         nahM: 1.5, // so nah tritt die Wache an die Tat
         torInnenM: 6, // der Posten steht so weit innerhalb des Tors
+        // der Ring der Stände um den Posten (`postenStand`; die Kreatur-Linse liest ihn als Schranke, zielplan): je Stufe `jeStufe`
+        // Würfe, die erste `r0M` vom Posten, jede weitere `stufeM` weiter
+        ring: Object.freeze({ r0M: 1.5, stufeM: 1.2, jeStufe: 12, alle: 120 }),
         waffe: Object.freeze([Object.freeze({ bis: 1829, art: "langschwert" }), Object.freeze({ bis: Infinity, art: "keule" })]), // prettier-ignore
     }),
 });
@@ -4447,6 +4567,9 @@ AnazhRealm.BEWOHNER = Object.freeze({
     restBau: Object.freeze([0.06, 0.03, 0.07, -0.02]),
     platzAnteil: 0.45,
     raumM: 1.5,
+    // DER GANG (`_bewohnerListe` `seine`; der Richter: gate:kreatur-takt bewohner „Wege", eine Wende ≥ gangM): zwei Orte
+    // eines Tags liegen drei Schritte auseinander (die Schrittlänge des Gehens 0,65–0,75 m, Perry 1992 „Gait Analysis")
+    gangM: 2,
     saumM: 0.45,
     geburtenJeTakt: 2,
     fernFaktor: 1.25,
@@ -4509,6 +4632,9 @@ AnazhRealm.BEWOHNER = Object.freeze({
     kopfRadS: 4.5,
     spielerRaumM: 0.5,
     zeugeM: 25,
+    // die Ringe der Zellen des Lebens-Rasters (LIFE_FIELD.cell), über die der Fliehende den nächsten Ort ohne Gefahr sucht
+    // (`_bewohnerBrandOrt`: 8 × 16 m)
+    brandRinge: 8,
 });
 
 // DAS BILD DES BESTANDS (`_bestandBild`, `_bestandTausch`, `_verkehrLadung`): tauschM = so nah steht der Spieler am Stand (dem
