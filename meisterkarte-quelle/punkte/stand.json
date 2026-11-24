@@ -23132,7 +23132,7 @@
   },
   "karte2.mensch.sport.arena": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.arena#1 radeon: ungemessen (R10) · karte2.mensch.sport.arena#1 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#2 radeon: ungemessen (R10) · karte2.mensch.sport.arena#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#3 radeon: ungemessen (R10) · karte2.mensch.sport.arena#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#4 radeon: ungemessen (R10) · karte2.mensch.sport.arena#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#5 radeon: ungemessen (R10) · karte2.mensch.sport.arena#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#6 radeon: ungemessen (R10) · karte2.mensch.sport.arena#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#7 radeon: ungemessen (R10) · karte2.mensch.sport.arena#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: S1 GRÜN · Blicke, die dem Geschehen folgen 1 (Soll ≥ 0.8) · Umfang 22 (Soll ≥ 10 Zuschauer am Spielfeld des Ort-Gesetzes) · [linse-gpu] nvidia/pascal an b1f0de0e gtx — offen: karte2.mensch.sport.arena#1 radeon: ungemessen (R10) · karte2.mensch.sport.arena#2 radeon: ungemessen (R10) · karte2.mensch.sport.arena#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#3 radeon: ungemessen (R10) · karte2.mensch.sport.arena#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#4 radeon: ungemessen (R10) · karte2.mensch.sport.arena#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#5 radeon: ungemessen (R10) · karte2.mensch.sport.arena#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#6 radeon: ungemessen (R10) · karte2.mensch.sport.arena#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#7 radeon: ungemessen (R10) · karte2.mensch.sport.arena#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.arena#1",
@@ -23147,11 +23147,11 @@
     {
      "id": "karte2.mensch.sport.arena#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 GRÜN · Blicke, die dem Geschehen folgen 1 (Soll ≥ 0.8) · Umfang 22 (Soll ≥ 10 Zuschauer am Spielfeld des Ort-Gesetzes) · [linse-gpu] nvidia/pascal",
+     "sha": "b1f0de0e0068399caba1583bb70c5f9cd598d1a6",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -23755,7 +23755,7 @@
   },
   "karte2.mensch.sport.mannschaft": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.mannschaft#1 radeon: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#1 gtx: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#2 radeon: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#3 radeon: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#4 radeon: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#5 radeon: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#6 radeon: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#7 radeon: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: S1 GRÜN · Siegquote des Stärkeren 0.6625 (Soll 0.6–0.8) · Umfang 160 (Soll ≥ 1 Paar im Kampf 1 gegen 1) · [linse-gpu] nvidia/pascal an b1f0de0e gtx — offen: karte2.mensch.sport.mannschaft#1 radeon: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#2 radeon: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#3 radeon: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#4 radeon: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#5 radeon: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#6 radeon: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#7 radeon: Station seit der Messung geändert · karte2.mensch.sport.mannschaft#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.mannschaft#1",
@@ -23770,11 +23770,11 @@
     {
      "id": "karte2.mensch.sport.mannschaft#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 GRÜN · Siegquote des Stärkeren 0.6625 (Soll 0.6–0.8) · Umfang 160 (Soll ≥ 1 Paar im Kampf 1 gegen 1) · [linse-gpu] nvidia/pascal",
+     "sha": "b1f0de0e0068399caba1583bb70c5f9cd598d1a6",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37570,7 +37570,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 323,
+  "konsum": 325,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37738,11 +37738,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3299
+  "ohne": 3297
  },
  "kopfVoll": "b1f0de0e0068399caba1583bb70c5f9cd598d1a6",
- "zeit": "2026-11-24T23:31:28.000Z",
- "vorher": "cf1e6404",
+ "zeit": "2026-11-24T23:37:47.194Z",
+ "vorher": "b1f0de0e",
  "bilanz": {
   "gewinn": [],
   "fall": [],

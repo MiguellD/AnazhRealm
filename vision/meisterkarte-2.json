@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 35,
+    "heute": 37,
     "kern": 3,
     "kernDazu": 3,
-    "anteilHeute": 6.1,
+    "anteilHeute": 6.4,
     "anteilKern": 0.4
    },
    "perspektiven": [
@@ -6423,7 +6423,7 @@
        "richter": "Tracking-Blindtest Spiel ↔ Liga ≤ 60 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "0 Mannschaften; Bewohner folgen nur dem Tagesplan",
@@ -6500,7 +6500,7 @@
        "richter": "Partie in Sichtweite in ≥ 30 % der Stadt-Stichproben am Nachmittag"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Prüfstand-Hof 22 Geräte, Spielplatz mit Bänken (fachwerk-core.js:10014); 0 Zuschauer, 0 Ligen",
@@ -20089,7 +20089,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 96,
+  "heute": 98,
   "davonKopplungen": 33,
   "kern": 4,
   "kernDazu": 4,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 54,
-  "nachwache": 42
+  "nachwache": 44
  },
  "zusammengelegt": [
   {
