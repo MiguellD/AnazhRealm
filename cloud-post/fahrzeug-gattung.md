@@ -140,3 +140,7 @@ fremdArten {}, gate:settlement EXIT 0. Teil O stand damit zweimal rot (auf 495ff
 sind fahrende Wagen des Verkehrs; ob einer im Augenblick der Zählung auf dem Erdbau des zweiten Dorfs steht, hängt am Takt des Laufs.
 Ein Täter in diesem Zweig ist nicht belegt. Das ist ein Wackler der Zählung: sie zählt fahrende Wagen als Bauten.
 Leser: `gate:settlement` (Teil O, die Schleife „fremde Bauten“). Offen bleiben die 12 Familien-Schritte vor dem Push.
+
+Halt-Block: gate:settlement nie zeitgleich mit einem zweiten Baum — fester Port 4436 (`SETTLEMENT_PORT`). Meine Logs nennen nur die
+Seite http://127.0.0.1:4436, nie den Prozess, der den Server stellte. Ob die zwei roten Läufe gegen den Server des Haus-Baums
+(AnazhRealm-front-pl) maßen, belegen sie weder dafür noch dagegen. Gewertet wird Teil O am dritten Lauf (62419de5, GRÜN, fremdArten {}).
