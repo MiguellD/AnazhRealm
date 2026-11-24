@@ -1,9 +1,25 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 12:18 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 12:47 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
+- NACHTRAG 12:50 (gilt VOR allem darunter): main **bf9be26c** (V18.546.402) — z715 `w28-spiegel-eis` gelandet 12:35, Anspruch
+  `karte2.planet.wasser.eis#2` gebucht, Station gemischt (punkte-maschine 458d5f80), RUNDE 21 am bf9be26c seit 12:37. KARTE 2: 83 von 1 718.
+  DER DECKEL, DER ALLES HÄLT: `gate:pruefbuehne-licht` fällt an jedem Kopf mit main ab z713 — „S0 Boden-Programm: 108011 Zeichen WGSL
+  (Budget ≤ 104162)“. Der Zuwachs ist ein gelandeter Bild-Gewinn (stadtklima#1, jahreslauf#2). Entscheid nach dem Wort des Schöpfers
+  („ist das wirklich ein problem?“): die Zeichenzahl ist kein Tor, sie wird zur Zahl. Den Schnitt baut die GTX 1050 als EINEN
+  pflückbaren Commit auf `probe-deckel-einlass` (`auftrag/2411-gtx-ratsche-zahl.md`); JEDER gehaltene Zweig pflückt genau diesen SHA
+  (identischer Hunk mischt ohne Konflikt) — ort-ausstattung (OMEN), der Haus-Stapel, fahrzeug-gattung, sport-regeln.
+  ROT ZURÜCK AN DIE MACHER: `haus-gestalt` 5e497a9f an FÜNF Linsen (gate:haus-welt W7-Selbsttests blind · Kreatur 3: Los 0 kirche „fiel
+  still“, 54 von 520 Ständen jenseits der Wand · Kreatur 1: Steckenbleiber in der Stadt · Fahr-Linse: stadt-voll 3 Gattungen statt ≥ 5,
+  Stand außer der Bahn). Der Haus-Arbeiter heilt im Baum AnazhRealm-front-pl auf dem Zweig `haus-stoff-heil` — EINE Landung beider Stufen,
+  das Dach ruht als lokaler WIP. Achtung: der Titel „auf main bf5a1542“ stimmte nicht, die Basis war f18576b6 — vor der Abgabe main
+  einmischen. `probe-deckel-einlass` f4158c03: Konflikt `spec/ci/ci-zeiten.json` + zwei fremde Rots (Dither-Blende, Stand-Takt).
+  IN DER BATTERIE: nur noch `auge-der-art` 3 f55b3018 (Basis 5ef0404b; Satz liegt bereit). `ort-ausstattung` 2 4d012d86 wartet auf den
+  Ratschen-SHA. OMEN: Platte C: räumen (`auftrag/2411-omen-platte.md`, fünf Landungs-Halte heute) → Wechsel/Schloss mit Frist (die
+  GTX-Liste 20 stand 17 min in cpu_ruhe hinter einer CI-GPU-Probe mit leerem Besitzer) → sport-regeln 3. `fahrzeug-gattung`: 12:27
+  angewiesen, sofort lokal zu sichern und die kleinste ganze Stufe abzugeben. VERBRAUCH 12:25: 86 % alle Modelle, 79 % Fable.
 - NACHTRAG 12:20 (gilt VOR allem darunter): main **daee7541** (V18.546.401). GELANDET seit 10:39: z711 `w28-wind-saison` · z712 `w28-mensch-nah` ·
   z713 `w28-saison-schatten` + `w28-klima-hebung` · z714 `w28-tat-aufwaerts`. Ansprüche gebucht: kraft#2 · jahreslauf#2, stadtklima#1 ·
   aufwaerts#1; Station `pm-saison-schatten` gemischt (punkte-maschine 16f1cdae). KARTE 2: 83 von 1 718 (12:17).
