@@ -778,8 +778,9 @@ L.perspektive("pflanzen", (() => {
 
             // ══ LEBENSLAUF: der Bestand am Spieler, 20 Orte über 10² km² und 100 Orte; die Zeitreise der Prozess-Uhr (synchron, zurückgestellt) ══
             [LL_ID]: {
-                sek: 20,
+                sek: 40,
                 mutiert: true,
+                faecher: true,
                 pfad: PFAD_WALD.concat(["stamm/feld-leben.js", "stamm/bild-himmel.js"]),
                 ungefahren: "das Höhenhistogramm und die Bildreihe aus dem Bild (Ertragstafel, Fotoreihe)",
                 mess: async function (H, U, M) {
@@ -867,10 +868,127 @@ L.perspektive("pflanzen", (() => {
                     } catch (e) {
                         fehler = String((e && e.message) || e).slice(0, 200);
                     }
+                    // S1 ÜBER DEN FÄCHER (stationen/faecher.js): der Bestand ist eine Adresse — 100 Fenster von 6 × 6 Zellen (72 m × 72 m)
+                    // in ±5 km, je eines eine Bestellung beim Wald-Faden (`_voxelWorkerWaldDarts` → voxel-worker waldDarts → phyto-core
+                    // planForestCell / forestStehende: dieselbe, die `_waldFadenSchicken` schickt und `_waldDartSetzen` pflanzt): je Baum
+                    // die Größe s (`forestTreeSize`) und die Schicht (`forestSchicht`). Dazu je Baum-Rezept die Astung am GEZEICHNETEN
+                    // Körper (`_foundryRequest`, Stufe 1): der Laub-Fuß (tiefster Punkt des Laubs durch die Höhe) der Bestand-Gestalten
+                    // 1..V gegen den Solitär V+1 (phyto-core FREISTAND: wer Seitenlicht hat, hält die unteren Äste; der Ort wählt ihn,
+                    // `_ortGestaltSame` → `_forestStehtFrei`). Das Vorbild: der ungleichaltrige Bestand fällt je Größen-Klasse (reverse-J,
+                    // de Liocourt 1898; Meyer 1952: q 1,2–2,0), im Bestand sterben die Schattenäste (Selbstastung; Hasenauer & Monserud
+                    // 1996: das Kronenverhältnis fällt mit BAL und CCF); dazu die Adresse des stehenden Totholzes
+                    const LL1_AN = async (r, T, a) => {
+                        if (a.saat === "totholz") {
+                            const namen = Object.keys(r.constructor.STREU_NAMEN || {}).filter((k) => /totholz/.test(k));
+                            if (!namen.length)
+                                return { fehlt: "stehendes Totholz: der Wald-Faden (phyto-core.js:3997 planForestCell → :3800 forestStehende) gebiert kein totes Individuum, kein Welt-Name zeigt auf das Rezept totholz (stamm/studio-bruecke.js:3305 STREU_NAMEN: „Stehendes Totholz hat in der Welt keinen Erzeuger“); liegendes legt stamm/vegetation-baum.js:1305 nur ohne Studio (Studio " + (r._foundryEnabled() ? "an — aus" : "aus") + ")" };
+                            return { namen: namen.length };
+                        }
+                        if (a.saat === "astung") {
+                            const pre = a.ort;
+                            const n = r.constructor._studioGestaltenKern(pre);
+                            const frei = r.constructor._ortWaehlt(pre) ? n : 0;
+                            const fuss = [];
+                            for (let g = 1; g <= n; g++) {
+                                const m = await r._foundryRequest(pre, g, 1, null, 0);
+                                let y0 = Infinity, y1 = -Infinity, ly = Infinity;
+                                for (const x of m || []) {
+                                    if (!x || !x.position || !x.position.array || /^__|schatten/.test(x.kind)) continue;
+                                    for (let i = 1, p = x.position.array; i < p.length; i += 3) {
+                                        (y0 = Math.min(y0, p[i])), (y1 = Math.max(y1, p[i]));
+                                        if (x.kind !== "bark" && x.kind !== "stem") ly = Math.min(ly, p[i]);
+                                    }
+                                }
+                                if (!(y1 > y0) || !Number.isFinite(ly)) throw new Error("der Körper " + pre + "|" + g + " trägt kein Laub");
+                                fuss.push((ly - y0) / (y1 - y0));
+                            }
+                            const S = globalThis.__terrainCore.skelettDerGestalt(pre, 1, 1, null);
+                            const best = fuss.filter((_, i) => i + 1 !== frei);
+                            return { pre, n, frei, fussBestand: best.reduce((s, x) => s + x, 0) / best.length, fussFrei: frei ? fuss[frei - 1] : null, hoeheM: S && S.P.hoeheM };
+                        }
+                        const C = r.constructor.FOREST.cell;
+                        const p = r.state.playerMesh.position;
+                        let h = 2166136261 >>> 0;
+                        for (const ch of "lebenslauf-" + a.saat) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+                        const u = (k) => ((Math.imul(h ^ (k * 0x9e3779b9), 2654435761) >>> 0) % 100000) / 100000;
+                        const gx = Math.floor((p.x + (u(1) * 2 - 1) * 5000) / C), gz = Math.floor((p.z + (u(2) * 2 - 1) * 5000) / C);
+                        const z = [];
+                        for (let i = 0; i < 6; i++) for (let k = 0; k < 6; k++) z.push(gx + i, gz + k);
+                        const W = await r._voxelWorkerWaldDarts(new Int32Array(z), r._forestSeedInt(), r._forestExtraSpecies(), null, "faecher-lebenslauf-" + a.saat);
+                        const B = [];
+                        for (let i = 0, j = 0; i < W.anzahl.length; i++) for (let m = W.anzahl[i]; m > 0; m--, j += 13) B.push({ sp: W.arten[W.werte[j + 2]], s: W.werte[j + 3], alter: W.werte[j + 12] });
+                        const K = [0.55, 0.8, 1.05, 1.3, 1.55, 2.0];
+                        const sMin = {};
+                        for (const d of B) {
+                            const pre = r._foundryPresetFor(d.sp) || d.sp;
+                            sMin[pre] = Math.min(sMin[pre] == null ? Infinity : sMin[pre], d.s);
+                        }
+                        const ha = (36 * C * C) / 10000;
+                        return { n: B.length, hist: K.slice(1).map((_, i) => B.filter((d) => d.s >= K[i] && d.s < K[i + 1]).length), unterstand: B.filter((d) => d.alter < 1).length, tot: B.filter((d) => /totholz/.test(d.sp)).length, stufen: new Set(B.map((d) => Math.round(d.alter * 100))).size, dichte: B.length / ha, sMin, x: gx * C, z: gz * C };
+                    };
+                    let s1 = null;
+                    try {
+                        const BAUM_REZEPTE = ["tanne", "fichte", "buche", "birke", "eiche", "weide", "karst"];
+                        const R1 = await FAECHER((c) => H.seite(c), {
+                            gesetz: { fn: LL1_AN, export: "voxel-worker.js:1606 waldDarts → phyto-core.js:3997 planForestCell / :3800 forestStehende (forestTreeSize :3273, forestSchicht :3739) · stamm/studio-bruecke.js:1541 _foundryRequest (der Körper je Gestalt, FREISTAND phyto-core.js:2888)", leser: "stamm/vegetation-baum.js:1088 _waldDartSetzen (der Wald pflanzt den Dart) · :902 _ortGestaltSame → :972 _forestStehtFrei (der Ort wählt den Solitär)" },
+                            adressen: { saaten: 100, dazu: BAUM_REZEPTE.map((pre) => ({ saat: "astung", ort: pre })).concat([{ saat: "totholz" }]) },
+                            ms: 14000,
+                            masse: {
+                                bestaende: { wie: (v) => v.filter((n) => n >= 20).length, feld: "n" },
+                                baeume: { wie: "summe", feld: "n" },
+                                unterstand: { wie: "summe", feld: "unterstand" },
+                                dichteMittel: { wie: "mittel", feld: "dichte" },
+                                totholzStehend: { wie: "summe", feld: "tot" },
+                                altersStufen: { wie: "max", feld: "stufen" },
+                            },
+                            schlecht: { feld: "dichte", richtung: "max" },
+                            pose: (q, w) => "der dichteste Bestand an (" + Math.round(w.x) + ", " + Math.round(w.z) + "): " + Math.round(w.dichte) + " Stämme/ha, Größen-Klassen " + w.hist.join("/"),
+                            ungemessen: ["das Höhenhistogramm aus dem Bild gegen die Ertragstafel (Korpus) — ungemessen bis zum Gerät", "der Anteil der Solitäre je Bestand (der Ort fragt den Plan des Walds, vegetation-wiese.js:3051 _waldPlanSteht — im Fächer nicht bestellbar)"],
+                        });
+                        const je = R1.je.filter((e) => typeof e.a.saat === "number" && e.w.n >= 20);
+                        const fallend = je.filter((e) => e.w.hist.every((x, i) => i === 0 || x <= e.w.hist[i - 1]));
+                        const H5 = [0, 0, 0, 0, 0];
+                        for (const e of je) e.w.hist.forEach((x, i) => (H5[i] += x));
+                        const qs = H5.slice(0, 4).map((x, i) => (H5[i + 1] > 0 ? x / H5[i + 1] : null)).filter((x) => x != null);
+                        // die Selbstastung: je Baum-Rezept mit Solitär der Laub-Fuß der Bestand-Gestalten minus der des Solitärs
+                        const ast = R1.je.filter((e) => e.a.saat === "astung");
+                        const mitFrei = ast.filter((e) => e.w.fussFrei != null);
+                        const astungDelta = mitFrei.length ? mitFrei.reduce((s, e) => s + (e.w.fussBestand - e.w.fussFrei), 0) / mitFrei.length : null;
+                        const hm = {};
+                        for (const e of ast) hm[e.w.pre] = e.w.hoeheM;
+                        let hMin = Infinity, hMinArt = null;
+                        for (const e of je) for (const [pre, sm] of Object.entries(e.w.sMin)) if (hm[pre] > 0 && sm * hm[pre] < hMin) (hMin = sm * hm[pre]), (hMinArt = pre);
+                        const ns = je.map((e) => e.w.n);
+                        const mn = ns.length ? ns.reduce((s, x) => s + x, 0) / ns.length : 0;
+                        const r3 = (x) => (Number.isFinite(x) ? Math.round(x * 1000) / 1000 : x);
+                        const astText = ast.map((e) => e.w.pre + " " + r3(e.w.fussBestand) + (e.w.fussFrei != null ? "/" + r3(e.w.fussFrei) : " (kein Solitär)")).join(", ");
+                        s1 = {
+                            werte: {
+                                reverseJProzent: je.length ? (100 * fallend.length) / je.length : null,
+                                astungDelta,
+                                bestaende: R1.werte.bestaende,
+                                baeume: R1.werte.baeume,
+                                unterstandProzent: R1.werte.baeume ? (100 * R1.werte.unterstand) / R1.werte.baeume : null,
+                                staemmeJeHa: R1.werte.dichteMittel,
+                                qKlassen: qs.length ? qs.reduce((s, x) => s + x, 0) / qs.length : null,
+                                groessenKlassen: H5.join("/"),
+                                laubFussBestandFrei: astText,
+                                totholzStehend: R1.werte.totholzStehend,
+                                kleinsterBaumM: Number.isFinite(hMin) ? hMin : null,
+                                kleinsterBaumArt: hMinArt,
+                                altersStufen: R1.werte.altersStufen,
+                            },
+                            zeuge: { fehler: R1.fehler.length ? R1.fehler[0].fehler : null, faecher: R1.gemessen, streuungBestand: ns.length > 1 ? Math.sqrt(ns.reduce((s, x) => s + (x - mn) ** 2, 0) / (ns.length - 1)) : 0 },
+                            akte: R1.akte + " · Laub-Fuß Bestand/Solitär " + astText,
+                            ...(R1.fehlt ? { nicht: R1.fehlt + " — " + R1.werte.totholzStehend + " stehende Tote unter " + R1.werte.baeume + " Bäumen in " + R1.werte.bestaende + " Beständen" } : {}),
+                        };
+                    } catch (e) {
+                        s1 = { werte: {}, zeuge: { fehler: "der Fächer warf: " + String((e && e.message) || e).slice(0, 200) } };
+                    }
                     const aus = M.teil || {};
                     if (!w) {
                         for (const nr of Object.keys(U)) {
-                            aus[nr] = { werte: {}, zeuge: { fehler } };
+                            aus[nr] = nr === "1" ? s1 : { werte: {}, zeuge: { fehler } };
                             if (U[nr].auge) aus[nr].auge = await M.auge("pflanzen-lebenslauf-s" + nr, U[nr].auge);
                         }
                         return { sprossen: aus };
@@ -929,7 +1047,7 @@ L.perspektive("pflanzen", (() => {
                     const zeit = (J) => ({ baeume, jahre: J, gleich: gleichAb(J), zurueck: w.zurueck });
                     const keineUhr = "der Bestand ist keine Funktion der Zeit: " + baeume + " Bäume an " + N + " Orten blieben über 500 Jahre der Prozess-Uhr byte-gleich (phyto-core planForestCell liest keine Uhr; _baumAlter altert nur Taten)";
                     const roh = {
-                        1: { werte: { baeumeLokal: w.lok, reverseJ: w.hist[0] >= w.hist[1] && w.hist[1] >= w.hist[2] ? 1 : 0, totholz: w.totholz, staemmeJeHa: Math.round((w.lok / (Math.PI * 150 * 150)) * 10000) }, zeuge: zeit(0) },
+                        1: Object.assign(s1, { werte: Object.assign({}, s1.werte, { baeumeLokal: w.lok, totholzLokal: w.totholz, staemmeJeHaLokal: Math.round((w.lok / (Math.PI * 150 * 150)) * 10000) }), zeuge: Object.assign(zeit(0), s1.zeuge) }),
                         2: { werte: { jahreMitFormwechsel: formJahre }, zeuge: zeit(150), ...(formJahre < 150 ? { nicht: "die Pflanze wechselt ihre Form über 150 Jahre nicht — ihr Alter ist die Schicht des Bestands (phyto-core forestSchicht), keine Funktion der Zeit" } : {}) },
                         3: { werte: { staemmeVerh: s0[0] ? s150[0] / s0[0] : null, basalVerh: s0[2] ? s150[2] / s0[2] : null, staemmeJeHa: Math.round(s0[0] / (besetzt * ha || 1)) }, zeuge: zeit(150), ...(gleichAb(150) ? { nicht: keineUhr } : {}) },
                         4: { werte: { orte: besetzt, jahre: 50, orteImBandProzent: besetzt ? (100 * imBand) / besetzt : null, staemmeVerh50: s0[0] ? s50[0] / s0[0] : null }, zeuge: zeit(50), ...(gleichAb(50) ? { nicht: keineUhr } : {}) },
@@ -946,12 +1064,21 @@ L.perspektive("pflanzen", (() => {
                 sprossen: {
                     1: {
                         u: { auge: { ort: "wiese" } },
-                        soll: [ohneZahl(LL_ID, 1, "Höhenhistogramm aus dem Bild gegen Ertragstafel", "hoehenAbstand")],
+                        // dazu am Fächer: die Tiefe der Sprosse beim Wort — reverse-J und Selbstastung über 100 Bestände des Wald-Fadens
+                        soll: [
+                            ohneZahl(LL_ID, 1, "Höhenhistogramm aus dem Bild gegen Ertragstafel", "hoehenAbstand"),
+                            K.soll(LL_ID, 1, "Höhenhistogramm aus dem Bild", { key: "reverseJProzent", rel: "≥", zahl: 90, einheit: "%", refQuelle: "Tiefe der Sprosse „reverse-J-Größen“: der ungleichaltrige Bestand fällt je Größen-Klasse (de Liocourt 1898; Meyer 1952, J. For. 50:85, q 1,2–2,0) — GEWÄHLT: ≥ 90 % der Bestände mit fallender Klassen-Folge" }),
+                            K.soll(LL_ID, 1, "Höhenhistogramm", { key: "astungDelta", rel: ">", zahl: 0, refQuelle: "Tiefe der Sprosse „Selbstastung“: im Bestand sterben die Schattenäste, der Kronenansatz steht höher als im Freistand (Hasenauer & Monserud 1996, For. Ecol. Manage. 84:49 — das Kronenverhältnis fällt mit BAL und CCF): Laub-Fuß Bestand minus Solitär derselben Art > 0" }),
+                        ],
                         auge: { pose: "Ego im Wald am Rand der Mess-Wiese", vorbild: "Höhenhistogramm des Bestands gegen die Ertragstafel (Prüfer-Satz R11, die Schwelle fehlt dem Richter)" },
-                        taeter: "phyto-core.js forestTreeSize (reverse-J als statischer Parameter)",
+                        taeter: "phyto-core.js:3273 forestTreeSize (die Größe ab 0,55 der Art: kein Jungwuchs unter dem Dach) · phyto-core.js:2888 FREISTAND (die Astung in zwei Zuständen: Bestand oder Solitär) · stamm/studio-bruecke.js:3305 STREU_NAMEN (kein Erzeuger des stehenden Totholzes)",
+                        leser: "voxel-worker.js:1606 waldDarts → phyto-core.js:3997 planForestCell / :3800 forestStehende (forestTreeSize :3273, forestSchicht :3739) — gepflanzt in stamm/vegetation-baum.js:1088 _waldDartSetzen; die Gestalt wählt der Ort (:902 _ortGestaltSame → :972 _forestStehtFrei), gezeichnet über stamm/studio-bruecke.js:1541 _foundryRequest",
                         unklar: "der Richter nennt keine Schwelle — Vorschlag: Kolmogorow-Smirnow-Abstand Höhenhistogramm ↔ Ertragstafel ≤ 0,15.",
-                        gruen: { werte: { hoehenAbstand: 0.1, baeumeLokal: 300, reverseJ: 1 }, zeuge: { baeume: 300, jahre: 0, gleich: false } },
-                        attrappen: [{ name: "das Histogramm ohne Bestand", roh: { werte: { hoehenAbstand: 0.1 }, zeuge: { baeume: 0 } } }],
+                        gruen: { werte: { hoehenAbstand: 0.1, reverseJProzent: 95, astungDelta: 0.06, baeumeLokal: 300 }, zeuge: { baeume: 300, jahre: 0, gleich: false } },
+                        attrappen: [
+                            { name: "das Histogramm ohne Bestand", roh: { werte: { hoehenAbstand: 0.1 }, zeuge: { baeume: 0 } } },
+                            { name: "der Laub-Fuß im Bestand wie im Freistand (Selbstastung 0)", roh: { werte: { hoehenAbstand: 0.1, reverseJProzent: 95, astungDelta: 0 }, zeuge: { baeume: 300, jahre: 0, gleich: false } } },
+                        ],
                     },
                     2: {
                         u: { auge: { ort: "wiese" } },
