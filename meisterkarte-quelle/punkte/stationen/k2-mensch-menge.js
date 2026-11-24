@@ -9,6 +9,7 @@
 "use strict";
 const { STADT, ZENSUS, POSE } = require("./k2-mensch-geist.js");
 const { SAATEN } = require("./sitzung-seite.js");
+const { FAECHER } = require("./faecher.js");
 
 // 20 STICHPROBEN-PERSONEN (bevoelkerung S2): um die Stunde des Werks (Wohnort ≠ Arbeitsort) springt die Uhr, jeder kommt an, dann
 // 2 Spiel-Sekunden im Takt des Spiels (wie dorfZaehlung je Ort); je Person über die Liste gestreut ihr Soll der Stunde
@@ -259,81 +260,157 @@ const WEGE = async (r, T, arg, HILF) => {
     return { bewohner: L.length, stunden: je.length, je, max, spitzen: spitzen.length, spitzenUm: spitzen.map((x) => x.h), verhaeltnis, wegeTag: je.reduce((x, y) => x + y, 0) };
 };
 
-// DIE SCHRECK-FRONT (kollektiv S2) wie zeugenGang am Markt der Stadt: um 10 Uhr, der Gegenlauf 2 Spiel-s ohne Tat (wer ging ohnehin
-// weg), dann die Tat 2 m neben dem Spieler (das Kitz, `damageCreature` vom Spieler: der EINE Schadens-Weg ruft `_bewohnerZeuge`);
-// 6 Spiel-s im Takt des Spiels. Je Bewohner draußen binnen 60 m seine Reaktion: der erste Takt, in dem er ≥ 0,5 m weiter vom Opfer
-// steht als bei der Tat; die Front v = Var(d) ÷ Cov(d, t) (die Steigung der Reaktionszeit über den Abstand; ohne Gefälle 999: die
-// Kunde erreicht jeden im selben Takt). Flucht: der Anteil der Zeugen (≤ zeugeM bei der Tat), die nach 6 s ≥ 0,5 m weiter weg stehen
-const SCHRECK = async (r, T, arg, HILF) => {
-    const { s, A, L, pm } = HILF;
-    if (!L.length) return { fehler: "keine Bewohner am Messort" };
-    s.renderer.setAnimationLoop(null);
-    HILF.uhrAuf(arg.uhr);
-    await HILF.takt(10);
-    const fx = pm.x + 2, fz = pm.z, o = { x: fx, z: fz };
-    const lage = () => new Map(L.filter((b) => b.leib && !b.drinnen).map((b) => [b, { x: b.leib.position.x, z: b.leib.position.z }]));
-    const abO = (p) => Math.hypot(p.x - o.x, p.z - o.z);
-    const ZM = A.BEWOHNER.zeugeM;
-    const g0 = lage();
-    await HILF.takt(20);
-    const g1 = lage();
-    let gegenN = 0, gegenWeg = 0;
-    for (const [b, p] of g0) {
-        if (abO(p) >= ZM) continue;
-        const q = g1.get(b);
-        if (!q) continue;
-        gegenN++;
-        if (abO(q) - abO(p) > 0.5) gegenWeg++;
-    }
-    const opfer = r.spawnCreatureAt(fx, r._voxelSurfaceY(fx, fz), fz, "happy", "wesen", { precise: true, bodySize: 0.6 });
-    if (!opfer) return { fehler: "Spawn des Opfers" };
-    const vor = lage();
-    const zeugen = [...vor].filter(([, p]) => abO(p) < ZM).map(([b]) => b);
-    const furcht0 = zeugen.map((b) => r._kreaturFurchtErinnert(b.leib));
-    const tat = r.damageCreature(opfer, 9999, { source: "player", fromPos: { x: pm.x, y: pm.y, z: pm.z } });
-    const reakt = new Map();
-    for (let k = 1; k <= 60; k++) {
-        await HILF.takt(1);
-        for (const [b, p] of vor) {
-            if (reakt.has(b) || !b.leib) continue;
-            const d0 = abO(p);
-            if (d0 > 60) continue;
-            if (abO(b.leib.position) - d0 >= 0.5) reakt.set(b, { d: d0, t: k * A.TAKT_DECKEL_S });
+// DIE KUNDE DER TAT AM FÄCHER (kollektiv S2; pm-faecher-mensch 24.11., Meta-Gesetz M4, stationen/faecher.js): je Adresse { ort: Index
+// einer Siedlung in `r._bewohnerSiedlungen`, zeit: Stunde } schlägt der Spieler an den mit.punkte dichtesten Ständen der Siedlung (die
+// Orte `BEWOHNER.staende` ihrer Bewohner, gereiht nach den Leibern draußen binnen zeugeM) — der Ruf ist das EINE Zeugen-Gesetz selbst,
+// `r._bewohnerZeuge(o)` (stamm/siedlung-bewohner.js:2421), wie ihn `damageCreature` vom Spieler ruft (stamm/kreatur-leben.js:798).
+// Gelesen je Bewohner draußen binnen 3 × zeugeM (aller Siedlungen, wie das Gesetz sie durchgeht): erinnert er die Tat im selben Ruf
+// (sein Gedächtnis `userData.memory` trägt danach den neuen Eintrag `gewalt`), sein Abstand; je Zeuge ohne Waffe sein Soll danach —
+// `r._bewohnerSoll(b, h)`, der Leser des Weichens (:2647): liegt das Ziel draußen ≥ fluchtRadius von der Tat (tetrapoda, B = die Tat
+// und zeugeM, wie `_bewohnerWeichOrt` :2491), flieht er weg. Die Front: der Ruf liegt in EINEM Takt (TAKT_DECKEL_S) — wer erinnert,
+// erinnert zur Zeit 0, v ≥ Saum ÷ Takt (der Saum = der fernste Erinnernde); jenseits zeugeM: der Anteil der Erinnernden. Je Tat nimmt
+// der Richter sie zurück (Gedächtnis, Weichen, Akte des Orts), damit jede Adresse für sich steht; die Uhr springt je Stunde EINMAL
+// (`r.__kunde`, die STADT der Probe). Bis hier stand EINE Tat am Markt der Stadt (die Bühne SCHRECK, 6 Spiel-s im Takt).
+const KUNDE_AN = async (r, T, a, mit) => {
+    const A = r.constructor, H = r.__kunde;
+    if (!H) return { fehlt: "die Stadt der Probe (r.__kunde) fehlt" };
+    if (typeof r._bewohnerZeuge !== "function") return { fehlt: "kein Zeugen-Gesetz (stamm/siedlung-bewohner.js:2421 _bewohnerZeuge)" };
+    if (H.h !== a.zeit) (H.uhrAuf(a.zeit), (H.h = a.zeit));
+    const alle = Array.from((r._bewohnerSiedlungen || new Map()).values()).filter((x) => Array.isArray(x.liste));
+    const S = Array.from((r._bewohnerSiedlungen || new Map()).values())[a.ort];
+    if (!S || !Array.isArray(S.liste)) return { fehlt: "keine Siedlung " + a.ort + " in der warmen Welt (r._bewohnerSiedlungen)" };
+    const ZM = A.BEWOHNER.zeugeM, FG = A._furchtGesetz(), TAKT = A.TAKT_DECKEL_S;
+    const ab = (p, q) => Math.hypot(p.x - q.x, p.z - q.z);
+    const stunde = ((((Number.isFinite(r.state.timeOfDay) ? r.state.timeOfDay : 0.5) % 1) + 1) % 1) * 24; // wie das Gesetz
+    const draussen = alle.flatMap((x) => x.liste).filter((b) => b.leib && !b.drinnen);
+    const staende = new Set();
+    for (const b of S.liste) for (const k of A.BEWOHNER.staende) if (b.orte && b.orte[k]) staende.add(b.orte[k]);
+    const punkte = [...staende]
+        .map((q) => [draussen.filter((b) => ab(b.leib.position, q) < ZM).length, q])
+        .filter(([n]) => n > 0)
+        .sort((x, y) => y[0] - x[0])
+        .slice(0, mit.punkte || 2);
+    const w = { name: S.name || S.key || "Siedlung " + a.ort, h: a.zeit, taten: 0, zeugen: 0, jenseits: 0, verfehlt: 0, wache: 0, frei: 0, weg: 0, weichen: 0, ohnehin: 0, drinnen: 0, bleibt: 0, saum: null, front: null, R: null, pose: null };
+    const cells = (r.state.worldMeta || {}).settlementCells || {};
+    for (const [, q] of punkte) {
+        const o = { x: q.x, y: r.getTerrainHeightAt(q.x, q.z), z: q.z };
+        const um = draussen.filter((b) => ab(b.leib.position, o) < 3 * ZM);
+        const vor = new Map(um.map((b) => {
+            const m = (b.leib.userData && b.leib.userData.memory) || [];
+            return [b, { d: ab(b.leib.position, o), letzt: m[m.length - 1], weichen: b.weichen }];
+        }));
+        const akten = new Map(alle.map((x) => [x, cells[x.key] && cells[x.key].akten]));
+        r._bewohnerZeuge(o);
+        const R = FG.fluchtRadius({ x: o.x, z: o.z, r: ZM }, null, false);
+        w.R = +R.toFixed(1);
+        let saum = 0, n = 0;
+        for (const [b, v] of vor) {
+            const m = (b.leib.userData && b.leib.userData.memory) || [];
+            const neu = m[m.length - 1];
+            const sah = !!neu && neu !== v.letzt && neu.type === "gewalt";
+            if (!sah) {
+                if (v.d < ZM) w.verfehlt++;
+                continue;
+            }
+            n++;
+            saum = Math.max(saum, v.d);
+            if (v.d >= ZM) w.jenseits++;
+            if (b.waffe) w.wache++;
+            else {
+                w.frei++;
+                const soll = r._bewohnerSoll(b, stunde);
+                const weg = !soll.drinnen && soll.ziel && ab(soll.ziel, o) >= R;
+                if (weg) w.weg++;
+                if (b.weichen && b.weichen !== v.weichen) w.weichen++;
+                else if (weg) w.ohnehin++;
+                else if (soll.drinnen) w.drinnen++;
+                else w.bleibt++;
+            }
+            // der Richter nimmt die Tat zurück: der Eintrag, das Weichen (die Adresse steht für sich)
+            if (m[m.length - 1] === neu) m.pop();
+            b.weichen = v.weichen;
+        }
+        for (const [x, k] of akten) if (cells[x.key]) cells[x.key].akten = k;
+        w.taten++;
+        w.zeugen += n;
+        if (n >= 2) {
+            const v = saum / TAKT;
+            w.front = w.front == null ? +v.toFixed(1) : Math.min(w.front, +v.toFixed(1));
+        }
+        w.saum = Math.max(w.saum || 0, +saum.toFixed(1));
+        if (!w.pose && n) {
+            const c = { x: o.x + 6, z: o.z };
+            w.pose = { px: +c.x.toFixed(2), py: +(r.getTerrainHeightAt(c.x, c.z) + 1.7).toFixed(2), pz: +c.z.toFixed(2), lx: +o.x.toFixed(2), ly: +(o.y + 1).toFixed(2), lz: +o.z.toFixed(2) };
         }
     }
-    const nach = lage();
-    const furcht1 = zeugen.map((b) => r._kreaturFurchtErinnert(b.leib));
-    let fl = 0, fn = 0;
-    for (const b of zeugen) {
-        const p = vor.get(b), q = nach.get(b);
-        if (!p || !q) continue;
-        fn++;
-        if (abO(q) - abO(p) > 0.5) fl++;
-    }
-    for (const c of [...(s.creatures || []), ...(s.leichname || [])]) if (c === opfer) r.removeCreature(c);
-    const pts = [...reakt.values()];
-    let front = 0;
-    if (pts.length >= 3) {
-        const md = pts.reduce((x, p) => x + p.d, 0) / pts.length, mt = pts.reduce((x, p) => x + p.t, 0) / pts.length;
-        let cov = 0, vd = 0;
-        for (const p of pts) (cov += (p.d - md) * (p.t - mt)), (vd += (p.d - md) ** 2);
-        front = cov > 1e-9 ? +(vd / cov).toFixed(2) : 999;
-    }
-    const med = (a) => {
-        const v = a.filter(Number.isFinite).sort((x, y) => x - y);
-        return v.length ? +v[Math.floor(v.length / 2)].toFixed(3) : null;
-    };
-    const fern = pts.filter((p) => p.d > ZM).length;
-    return { zeugen: zeugen.length, gezaehlt: fn, flucht: fn ? +(fl / fn).toFixed(3) : null, front, reagiert: pts.length, jenseits: fern, gegenlauf: gegenN ? +(gegenWeg / gegenN).toFixed(3) : null, furcht: [med(furcht0), med(furcht1)], tat: !!(tat && tat.ok), zeugeM: ZM };
+    w.flucht = w.frei ? +(w.weg / w.frei).toFixed(3) : null;
+    return w;
 };
 
-// DIE GESUNDHEIT (seuche S1, S2): wessen Satz oder Leib ein Feld der Krankheit trägt (krank, Infekt, Seuche, Erreger, Fieber, gesund)
-const KRANK = async (r, T, arg, HILF) => {
-    const { L } = HILF;
-    if (!L.length) return { fehler: "keine Bewohner am Messort" };
-    const wort = (k) => ["krank", "infekt", "seuche", "erreger", "fieber", "gesund"].some((w) => String(k).toLowerCase().includes(w));
-    const krank = L.filter((b) => Object.keys(b).some(wort) || (b.leib && b.leib.userData && Object.keys(b.leib.userData).some(wort))).length;
-    return { bewohner: L.length, krank };
+// DER KRANK-TAG AM FÄCHER (seuche S1, S2; pm-faecher-mensch 24.11., Meta-Gesetz M4, stationen/faecher.js): je Adresse { ort: Index
+// einer Siedlung in `r._bewohnerSiedlungen`, zeit: Tag ab heute } der Lebenslauf `krank` jedes Bewohners — der Ruf
+// `r._bewohnerLauf(S, b, "krank", tag)` (stamm/siedlung-bewohner.js:303) ist dasselbe Gesetz, das der Satz (`b.krank`) trägt — und für
+// jeden Kranken sein Tag aus dem Plan des Kerns gesund ↔ krank (`KC.tagesPlan(same, rolle, h, orte, regen, krank)`, koerper-core.js
+// :5677 — derselbe Ruf, den das Soll der Welt tut, stamm/siedlung-bewohner.js:2637), je halbe Stunde: weicht Ort oder Akt ab? Am Tag
+// der Prozesse (zeit 0) dazu der KONSUM: folgt das Soll der Welt (`r._bewohnerSoll(b, h)`) dem Krank-Plan, nicht dem gesunden?
+// Bis hier zählte die Station Schlüssel, die nach „krank“ heißen (eine Existenz-Probe), und urteilte ROT „kein Bewohner kann erkranken“
+const KRANK_AN = async (r, T, a, mit) => {
+    const KC = window.__koerperCore;
+    if (!KC || typeof KC.tagesPlan !== "function") return { fehlt: "kein Plan des Tags (koerper-core.js tagesPlan)" };
+    if (typeof r._bewohnerLauf !== "function") return { fehlt: "kein Lebenslauf (stamm/siedlung-bewohner.js:301 _bewohnerLauf)" };
+    const S = Array.from((r._bewohnerSiedlungen || new Map()).values())[a.ort];
+    if (!S || !Array.isArray(S.liste)) return { fehlt: "keine Siedlung " + a.ort + " in der warmen Welt (r._bewohnerSiedlungen)" };
+    const tag = Math.floor(r._weltTag()) + a.zeit;
+    const regenAn = (o) => (typeof r._wetterFeldAm === "function" ? r._wetterFeldAm(o.tuer.x, o.tuer.z, undefined, r._tuerFeldAus || (r._tuerFeldAus = {})).rain : 0);
+    const ziel = (p, o) => (p.drinnen ? o.tuer : p.ort);
+    let n = 0, ohneOrt = 0, stunden = 0, ab = 0, heim = 0, konsumN = 0, konsum = 0;
+    const kranke = [], fehlKonsum = [];
+    let erster = null;
+    for (const b of S.liste) {
+        n++;
+        if (!r._bewohnerLauf(S, b, "krank", tag)) continue;
+        const o = b.orte;
+        if (!o || !o.heim || !o.tuer) {
+            ohneOrt++;
+            continue;
+        }
+        kranke.push(String(b.seed));
+        const nass = regenAn(o);
+        let erstH = null, eigen = 0;
+        for (let h = 0; h < 24; h += 0.5) {
+            const g = KC.tagesPlan(b.same, b.rolle, h, o, nass, false), k = KC.tagesPlan(b.same, b.rolle, h, o, nass, true);
+            stunden++;
+            if (g.ort === k.ort && g.akt === k.akt && g.drinnen === k.drinnen) continue;
+            ab++;
+            eigen++;
+            if (k.ort === o.heim) heim++;
+            if (erstH == null) erstH = h;
+        }
+        if (erstH != null && !erster && b.leib && b.leib.position) erster = { seed: String(b.seed), rolle: b.rolle, h: erstH, x: +b.leib.position.x.toFixed(1), z: +b.leib.position.z.toFixed(1), eigen };
+        // DER KONSUM (heute): das Soll der Welt liest `b.krank` am Tag der Prozesse — in der ersten abweichenden Stunde muss es dem
+        // Krank-Plan folgen (ohne Brand, Weichen und Steuer, die das Soll vorher wendet)
+        if (a.zeit === 0 && erstH != null && typeof r._bewohnerSoll === "function" && !b.brand && !b.weichen && !b.amSteuer) {
+            const z = r._bewohnerSoll(b, erstH);
+            const k = KC.tagesPlan(b.same, b.rolle, erstH, o, nass, true), g = KC.tagesPlan(b.same, b.rolle, erstH, o, nass, false);
+            konsumN++;
+            if (z && z.ziel === ziel(k, o) && z.ziel !== ziel(g, o)) konsum++;
+            else if (fehlKonsum.length < 3) fehlKonsum.push(String(b.seed) + " " + b.rolle + " um " + erstH + " h");
+        }
+    }
+    return { name: (S.plan && S.plan.name) || String(a.ort), tag, n, krank: kranke.length, kranke, ohneOrt, stunden, ab, heim, anteilAb: stunden ? ab / stunden : null, konsumN, konsum, fehlKonsum, erster };
+};
+// DAS BILDPAAR DES KRANK-TAGS (seuche S1, der Beleg): die Uhr auf die erste abweichende Stunde des Kranken, die Leute kommen an, dann
+// je eine Pose 4 m vor dem Kranken und vor einem Gesunden derselben Rolle draußen — das Bild richtet nicht (die Zahl richtet)
+const KRANK_BILD = async (r, T, arg, HILF) => {
+    HILF.uhrAuf(arg.h);
+    await HILF.takt(Math.round(2 / HILF.A.TAKT_DECKEL_S));
+    const alle = [...(r._bewohnerSiedlungen || new Map()).values()].flatMap((S) => S.liste || []);
+    const b = alle.find((x) => String(x.seed) === arg.seed);
+    if (!b || !b.leib || !b.leib.position) return { fehler: "der Kranke " + arg.seed + " trägt um " + arg.h + " h keinen Leib" };
+    const g = alle.find((x) => x !== b && x.rolle === b.rolle && x.leib && x.leib.position && !x.drinnen && !x.krank);
+    const q = (v) => +v.toFixed(2);
+    const vor = (p) => ({ px: q(p.x + 4), py: q(r.getTerrainHeightAt(p.x + 4, p.z + 1) + 1.7), pz: q(p.z + 1), lx: q(p.x), ly: q(r.getTerrainHeightAt(p.x, p.z) + 1.2), lz: q(p.z) });
+    return { krank: vor(b.leib.position), gesund: g ? vor(g.leib.position) : null, rolle: b.rolle, draussen: !b.drinnen };
 };
 
 const PFAD = [
@@ -615,16 +692,27 @@ module.exports = (F) => [
     // ── mensch.menge.seuche ── kein Gesetz der Krankheit: S1 das Bild ohne Kranken (Umfang nicht erzeugbar), S2 der fehlende Leser
     F.leiter("mensch.menge.seuche", {
         sek: 45,
+        mutiert: true, // das Bildpaar stellt die Uhr auf die abweichende Stunde des Kranken
         pfad: PFAD,
         sprossen: {
-            1: { auge: { pose: "Dorf, 3 m vor einer kranken und einer gesunden Person", vorbild: "Bildpaar gesund/krank (Haltung, Husten, bleibt daheim; der Krank-Tag weicht ab)" }, erwartet: "nicht", fehlt: "keine Krankheit: kein Bewohner kann erkranken" },
-            2: leser(um(100, "Bewohner im Ausbruch"), [ge("sir", "Kurve in der Form S-I-R (1 = ja)", 1), ge("r0", "R0 im Band des Erregers (1 = ja)", 1)], "kein Erreger und keine Ansteckung: der Satz des Bewohners trägt keine Gesundheit", "stamm/siedlung-bewohner.js:887"),
+            // S1 AM GESETZ (pm-faecher-mensch 24.11.): der Krank-Tag ist eine Zahl des Spiels — der Plan des Kerns mit dem Lebenslauf
+            // `krank` gegen denselben Plan gesund, über Siedlungen × 28 Tage; dazu sein Konsum im Soll der Welt; das Bildpaar ist Beleg
+            1: {
+                umfang: um(1, "Person krank (Lebenslauf, Siedlungen × 28 Tage)"),
+                masse: [
+                    { key: "abweichung", wort: "Krank-Tag weicht ab: Anteil der halben Stunden mit anderem Ort oder Akt", soll: 0, richtung: ">" },
+                    ge("konsum", "das Soll der Welt folgt dem Krank-Plan (Anteil der heute Kranken)", 1),
+                    ge("bildpaar", "Bildpaar gesund/krank zur abweichenden Stunde (ja = 1)", 1),
+                ],
+                erwartet: "zahl",
+            },
+            2: leser(um(100, "Bewohner im Ausbruch"), [ge("sir", "Kurve in der Form S-I-R (1 = ja)", 1), ge("r0", "R0 im Band des Erregers (1 = ja)", 1)], "keine Ansteckung: krank ist ein Wurf je Bewohner und Woche, kein Erreger geht von Kopf zu Kopf", "stamm/siedlung-bewohner.js:303"),
             3: nicht(um(10000, "Bewohner einer Stadt"), [ge("senkung", "Senkung der Spitze bei geschlossenem Markt", 0.3)], "10⁴ Bewohner einer Stadt im Ausbruch"),
             4: nicht(um(1000000, "Bewohner einer Region"), [ge("r", "Korrelation Ankunft und Netzabstand", 0.7)], "10⁶ Bewohner einer Region"),
             5: nicht(um(100000000, "Menschen über Epochen"), [ge("erreger", "Anteil Erreger im historischen Band", 0.8), ge("lebenserwartung", "Zuwachs der Lebenserwartung 1800 bis 2000 in J", 30)], "10⁸ Menschen über Epochen"),
             6: nicht(um(10000000000, "Menschen eines Planeten"), [ge("wellenzahl", "Wellenzahl im Band realer Pandemien (1 = ja)", 1), ge("abstand", "Wellenabstand im Band realer Pandemien (1 = ja)", 1), ge("ketten", "Anteil verfolgbarer Infektionsketten", 1)], "10¹⁰ Menschen eines Planeten"),
         },
-        seite: { STADT, ZENSUS, KRANK },
+        seite: { STADT, ZENSUS, FAECHER, KRANK_AN, KRANK_BILD },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const welt = (name, arg) =>
@@ -639,14 +727,61 @@ module.exports = (F) => [
             };
             let zen = null, kr = null;
             const zensus = async () => zen || (zen = pruef(await welt("ZENSUS"), "der Zensus der Stadt"));
-            const krank = async () => kr || (kr = pruef(await welt("KRANK"), "die Gesundheit der Stadt"));
+            // DER FÄCHER DES KRANK-TAGS: Siedlungen der warmen Welt × 28 Tage (4 Spannen der Krankheit), je Adresse ein Ruf des Gesetzes
+            const krank = async () => {
+                if (kr) return kr;
+                const nS = await K.welt("const Sm = r._bewohnerSiedlungen; return Sm && typeof Sm.size === 'number' ? Sm.size : 0;", 5000);
+                if (!nS) throw new Error("keine Siedlung in der warmen Welt am Messort stadt-voll (r._bewohnerSiedlungen leer)");
+                const R = await H.seite.FAECHER(K.welt, {
+                    gesetz: { fn: H.seite.KRANK_AN, export: "stamm/siedlung-bewohner.js:303 _bewohnerLauf(S, b, \"krank\", tag) + koerper-core.js:5677 tagesPlan", leser: "stamm/siedlung-bewohner.js:2637" },
+                    adressen: { orte: Array.from({ length: nS }, (_, i) => i), zeiten: Array.from({ length: 28 }, (_, i) => i) },
+                    masse: {
+                        bewohner: { wie: "summe", feld: "n", nur: (a) => a.zeit === 0 },
+                        kopfTage: { wie: "summe", feld: "krank" },
+                        personen: { wie: (v, aus) => new Set(aus.flatMap((x) => x.w.kranke)).size },
+                        ab: { wie: "summe", feld: "ab" },
+                        stunden: { wie: "summe", feld: "stunden" },
+                        heim: { wie: "summe", feld: "heim" },
+                        ohneOrt: { wie: "summe", feld: "ohneOrt" },
+                        konsum: { wie: "summe", feld: "konsum" },
+                        konsumN: { wie: "summe", feld: "konsumN" },
+                        fehlKonsum: { wie: (v, aus) => aus.flatMap((x) => x.w.fehlKonsum).slice(0, 3) },
+                        erster: { wie: "erste", feld: "erster" },
+                    },
+                    schlecht: { feld: "anteilAb", richtung: "min" },
+                    pose: (a, w) => (w.erster ? "4 m vor dem Kranken " + w.erster.seed + " um " + w.erster.h + " h bei (" + w.erster.x + ", " + w.erster.z + ")" : "Siedlung " + w.name + " Tag " + w.tag + ": kein Kranker mit Leib"),
+                    ungemessen: ["das Bildpaar gesund/krank am Gerät: ungemessen bis zum Gerät (die Probe legt es als Beleg, es richtet nicht)", "die Haltung des Kranken (Husten, Gang): kein Leser im Spiel, der Kranke sitzt im Akt des Abends vor der Tür"],
+                    ms: Math.max(3000, Math.floor((H.rest() - 14) * 1000)),
+                });
+                H.zeile("Krank-Tag: " + R.akte.slice(0, 600));
+                if (R.fehlt && !R.gemessen) throw new Error("der Krank-Tag am Gesetz: " + R.fehlt);
+                return (kr = R);
+            };
             await K.schritt(1, async () => {
-                const k = await krank();
-                K.nicht(1, { n: k.krank, fehlt: "keine Krankheit: " + k.krank + " von " + k.bewohner + " Bewohnern tragen ein Feld der Krankheit, keiner kann erkranken" });
+                const R = await krank(), w = R.werte;
+                // das Bildpaar zur ersten abweichenden Stunde eines Kranken (Beleg; ohne Leib kein Paar — das Maß nennt es)
+                let bildpaar = 0, beleg = "";
+                if (w.erster) {
+                    const p = pruef(await welt("KRANK_BILD", { seed: w.erster.seed, h: w.erster.h }), "das Bildpaar des Krank-Tags");
+                    const bk = await K.bild("1-krank", p.krank);
+                    const bg = p.gesund ? await K.bild("1-gesund", p.gesund) : null;
+                    bildpaar = bk && bg ? 1 : 0;
+                    beleg = "Bildpaar " + (bk ? bk.datei : "—") + " ↔ " + (bg ? bg.datei : "kein Gesunder der Rolle " + p.rolle + " draußen") + " · ";
+                }
+                const anteil = w.stunden ? +(w.ab / w.stunden).toFixed(4) : null;
+                K.zahl(1, {
+                    n: w.personen,
+                    werte: { abweichung: anteil, konsum: w.konsumN ? +(w.konsum / w.konsumN).toFixed(3) : null, bildpaar },
+                    beleg: beleg + w.personen + " Kranke (" + w.kopfTage + " Kopf-Tage, " + w.bewohner + " Bewohner), " + w.ab + "/" + w.stunden + " halbe Stunden weichen ab (" + w.heim + " daheim), Soll folgt " + w.konsum + "/" + w.konsumN + " · " + R.akte,
+                    taeter: !w.personen ? "stamm/siedlung-bewohner.js:303 _bewohnerLauf krank: kein Kopf erkrankt in 28 Tagen"
+                        : !(anteil > 0) ? "koerper-core.js:5677 tagesPlan: der Krank-Tag folgt dem Plan des Gesunden"
+                        : w.konsumN && w.konsum < w.konsumN ? "stamm/siedlung-bewohner.js:2637 _bewohnerSoll: das Soll der Welt folgt dem gesunden Plan (" + w.fehlKonsum.join("; ") + ")"
+                        : !bildpaar ? "kein Bildpaar: " + (w.erster ? "kein Gesunder derselben Rolle draußen" : "kein Kranker mit Leib") : null,
+                });
             });
             await K.schritt(2, async () => {
-                const k = await krank();
-                K.leser(2, { fehlt: "kein Erreger und keine Ansteckung: der Satz des Bewohners trägt keine Gesundheit (" + k.krank + " von " + k.bewohner + " mit einem Feld der Krankheit)", wo: "stamm/siedlung-bewohner.js:887", n: k.krank });
+                const w = (await krank()).werte;
+                K.leser(2, { fehlt: "keine Ansteckung: krank ist ein Wurf je Bewohner und Woche (" + w.personen + " Kranke, " + w.kopfTage + " Kopf-Tage in 28 Tagen), kein Erreger geht von Kopf zu Kopf", wo: "stamm/siedlung-bewohner.js:303", n: w.personen });
             });
             for (const [n, fehlt] of [[3, "10⁴ Bewohner einer Stadt im Ausbruch"], [4, "10⁶ Bewohner einer Region"], [5, "10⁸ Menschen über Epochen"], [6, "10¹⁰ Menschen eines Planeten"]])
                 await K.schritt(n, async () => {
@@ -655,6 +790,11 @@ module.exports = (F) => [
                 });
         },
         proben: {
+            1: [
+                { name: "der Kranke geht zur Arbeit (der Plan liest krank nicht, Abweichung 0) — ROT am Krank-Tag", j: mut("mensch.menge.seuche", 1, 29, { abweichung: 0, konsum: 1, bildpaar: 1 }), gruen: false, zahl: /ROT an Krank-Tag weicht ab: Anteil der halben Stunden mit anderem Ort oder Akt 0 verfehlt > 0/ },
+                { name: "der Kern weicht ab, das Soll der Welt folgt dem Gesunden (Konsum 0,5) — ROT am Konsum", j: mut("mensch.menge.seuche", 1, 29, { abweichung: 0.4, konsum: 0.5, bildpaar: 1 }), gruen: false, zahl: /ROT an das Soll der Welt folgt dem Krank-Plan \(Anteil der heute Kranken\) 0\.5 verfehlt ≥ 1/ },
+                { name: "der Krank-Tag weicht ab, die Welt folgt, das Paar am Gerät liegt — GRÜN", j: mut("mensch.menge.seuche", 1, 29, { abweichung: 0.4, konsum: 1, bildpaar: 1 }), gruen: true },
+            ],
             2: [
                 { name: "Attrappe: ein Ausbruch ohne Kurve (keiner steckt an) — ROT an der Form S-I-R", j: mut("mensch.menge.seuche", 2, 100, { sir: 0, r0: 1 }), gruen: false, zahl: /ROT an Kurve in der Form S-I-R \(1 = ja\) 0 verfehlt ≥ 1/ },
                 { name: "die Seuche ohne Maß des Erregers (R0 fremd) — ROT an R0", j: mut("mensch.menge.seuche", 2, 100, { sir: 1, r0: 0 }), gruen: false, zahl: /ROT an R0 im Band des Erregers \(1 = ja\) 0 verfehlt ≥ 1/ },
@@ -662,7 +802,7 @@ module.exports = (F) => [
         },
     }),
 
-    // ── mensch.menge.kollektiv ── S2 die Schreck-Front am Markt (der Leser von S1 größer); S3 ohne Leser; S4–S7 jenseits der Stadt
+    // ── mensch.menge.kollektiv ── S2 die Kunde der Tat am Fächer (das Zeugen-Gesetz je Siedlung × Stunde × Stand); S3 ohne Leser; S4–S7 jenseits der Stadt
     F.leiter("mensch.menge.kollektiv", {
         sek: 45,
         mutiert: true,
@@ -676,7 +816,7 @@ module.exports = (F) => [
             6: nicht(um(10000000, "Menschen eines Volks"), [ge("route", "Anteil Siedlungen entlang der Route", 0.6), ge("mangel", "Anteil ungesetzter Wanderungen aus Mangel", 0.8)], "10⁷ Menschen über Jahrzehnte"),
             7: nicht(um(100000000, "Menschen über Jahrtausende"), [le("logFehler", "log-Fehler der Besiedlungsfront je Jahrtausend", 0.3)], "10⁸–10⁹ Menschen über Jahrtausende"),
         },
-        seite: { STADT, ZENSUS, SCHRECK },
+        seite: { STADT, ZENSUS, FAECHER, KUNDE_AN },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const welt = (name, arg) =>
@@ -700,15 +840,60 @@ module.exports = (F) => [
                     const z = await zensus();
                     K.nicht(n, { n: z.alle, fehlt: fehlt + ": die Welt trägt " + z.alle + " Bewohner in " + z.siedlungen + " Siedlungen (die Stadt " + z.stadt + ")" });
                 });
-            // S2 zuletzt: die Probe endet an seiner Pose (der Spieler am Markt, die Tat 2 m neben ihm)
+            // S2 am FÄCHER: die Tat an den dichtesten Ständen jeder Siedlung zu drei Stunden, je ein Ruf des Zeugen-Gesetzes
             await K.schritt(2, async () => {
-                const s = pruef(await welt("SCHRECK", { uhr: 10 }), "die Tat am Markt");
-                H.zeile("S2 Zeugen " + s.zeugen + ", Flucht " + s.flucht + ", Front " + s.front + " m/s, reagiert " + s.reagiert + " (jenseits " + s.zeugeM + " m: " + s.jenseits + ")");
+                const nS = (await K.welt("r.__kunde = (" + H.seite.STADT + ")(r, T);\nreturn (r._bewohnerSiedlungen || new Map()).size;", 4000)) || 0;
+                if (!nS) throw new Error("keine Siedlung in der warmen Welt (r._bewohnerSiedlungen)");
+                const summe = (k) => (v, aus) => aus.reduce((x, y) => x + (y.w[k] || 0), 0);
+                const f = {
+                    gesetz: { fn: H.seite.KUNDE_AN, export: "stamm/siedlung-bewohner.js:2421 _bewohnerZeuge(o) (der Ruf von damageCreature, stamm/kreatur-leben.js:798)", leser: "stamm/siedlung-bewohner.js:2647" },
+                    adressen: { dazu: [9, 12, 16].flatMap((h) => Array.from({ length: nS }, (_, i) => ({ ort: i, zeit: h }))) },
+                    mit: { punkte: 2 },
+                    masse: {
+                        taten: { wie: summe("taten") },
+                        zeugen: { wie: summe("zeugen") },
+                        front: { wie: "min", feld: "front" },
+                        frontMax: { wie: "max", feld: "front" },
+                        saum: { wie: "max", feld: "saum" },
+                        R: { wie: "erste", feld: "R" },
+                        jenseits: { wie: summe("jenseits") },
+                        verfehlt: { wie: summe("verfehlt") },
+                        wache: { wie: summe("wache") },
+                        frei: { wie: summe("frei") },
+                        weg: { wie: summe("weg") },
+                        weichen: { wie: summe("weichen") },
+                        ohnehin: { wie: summe("ohnehin") },
+                        drinnen: { wie: summe("drinnen") },
+                        bleibt: { wie: summe("bleibt") },
+                        flucht: { wie: (v, aus) => { const fr = summe("frei")(v, aus); return fr ? +(summe("weg")(v, aus) / fr).toFixed(3) : null; } },
+                    },
+                    schlecht: { feld: "flucht", richtung: "min" },
+                    pose: (a, w) => w.pose,
+                    ungemessen: [
+                        "die Kunde nach dem Ruf (ob ein anderes Gesetz sie Takte später weiterträgt): kein Takt nach der Tat im Fächer — der Saum im selben Takt richtet die Front schon",
+                        "die Flucht im Bild (die Zeugen laufen weg): ungemessen bis zum Gerät, gezählt ist das Soll des Lesers",
+                    ],
+                    ms: Math.max(3000, Math.floor((H.rest() - 8) * 1000)),
+                };
+                let R;
+                try {
+                    R = await H.seite.FAECHER(K.welt, f);
+                } finally {
+                    await K.welt("if (r.__kunde) r.__kunde.zurueck();\ndelete r.__kunde;\nreturn 1;", 3000);
+                }
+                const W = R.werte;
+                H.zeile("S2 " + R.akte.slice(0, 160) + " · Taten " + W.taten + ", Zeugen " + W.zeugen + ", Front ≥ " + W.front + " m/s (Saum " + W.saum + " m), Flucht " + W.flucht);
+                if (!R.gemessen || !W.taten) throw new Error("der Fächer schlug keine Tat (" + (R.fehlt || "keine Leiber draußen an den Ständen") + ")");
                 K.zahl(2, {
-                    n: s.zeugen,
-                    werte: { front: s.front, flucht: s.flucht },
-                    beleg: "Tat " + s.tat + " um 10 Uhr, reagiert " + s.reagiert + " binnen 60 m (jenseits des Zeugen-Kreises " + s.jenseits + "), Gegenlauf ohne Tat weg " + s.gegenlauf + ", Furcht der Zeugen " + JSON.stringify(s.furcht),
-                    taeter: s.front > 8 ? "stamm/siedlung-bewohner.js _bewohnerZeuge: jeder Zeuge ≤ " + s.zeugeM + " m erinnert die Tat im selben Takt, kein Schreck wandert über Sicht und Klang" : null,
+                    n: W.zeugen,
+                    werte: { front: W.front, flucht: W.flucht },
+                    beleg: R.akte.slice(0, 120) + " · " + W.taten + " Taten, Saum " + W.saum + " m in EINEM Takt, jenseits zeugeM " + W.jenseits + ", ungesehen ≤ zeugeM " + W.verfehlt + ", Wache naht " + W.wache +
+                        ", frei " + W.frei + ": weicht " + W.weichen + " · ohnehin fort " + W.ohnehin + " · drinnen " + W.drinnen + " · bleibt " + W.bleibt + " (R " + W.R + " m)",
+                    taeter: W.front > 8
+                        ? "stamm/siedlung-bewohner.js:2421 _bewohnerZeuge: jeder Zeuge ≤ zeugeM erinnert die Tat im selben Ruf (Saum " + W.saum + " m in einem Takt), keine Kunde wandert über Sicht und Klang"
+                        : W.flucht != null && W.flucht < 0.9
+                          ? "stamm/siedlung-bewohner.js:2491 _bewohnerWeichOrt: " + W.bleibt + " Zeugen ohne Ort jenseits des Kreises, " + W.drinnen + " gehen drinnen nah der Tat"
+                          : null,
                 });
             });
         },
@@ -716,6 +901,8 @@ module.exports = (F) => [
             2: [
                 { name: "die Kunde im selben Takt (Front 999 m/s) — ROT an der Front", j: mut("mensch.menge.kollektiv", 2, 140, { front: 999, flucht: 0.95 }), gruen: false, zahl: /ROT an Schreck-Front in m je s 999 verfehlt 3–8/ },
                 { name: "Attrappe: die Zeugen bleiben stehen (Flucht 0,4) — ROT an der Flucht", j: mut("mensch.menge.kollektiv", 2, 140, { front: 5, flucht: 0.4 }), gruen: false, zahl: /ROT an Anteil Zeugen auf der Flucht weg 0\.4 verfehlt ≥ 0\.9/ },
+                { name: "der Saum des Gesetzes: 24 m in einem Takt (Front 240 m/s) — ROT an der Front", j: mut("mensch.menge.kollektiv", 2, 140, { front: 240, flucht: 0.95 }), gruen: false, zahl: /ROT an Schreck-Front in m je s 240 verfehlt 3–8/ },
+                { name: "der Fächer an einem Dorf (40 Zeugen) — ROT am Umfang", j: mut("mensch.menge.kollektiv", 2, 40, { front: 5, flucht: 0.95 }), gruen: false, zahl: /ROT an Umfang 40 < 100 Zeugen der Tat/ },
             ],
         },
     }),
