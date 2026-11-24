@@ -302,8 +302,8 @@ const FORTSCHRITT = async (r, T, arg, HILF) => {
     if (!wm) return { fehler: "kein worldMeta: die Welt trägt keinen Kalender" };
     const n = Math.min(L.length, arg.n);
     const B = Array.from({ length: n }, (_, i) => L[Math.floor((i * L.length) / n)]);
-    const vor = B.map((b) => b.absicht);
     r._kalenderZeit(); // der Versatz liegt am Gang, der jetzt gilt
+    const vor = B.map((b) => b.absicht);
     const hatte = Object.prototype.hasOwnProperty.call(wm, "kalender");
     const alt = hatte ? wm.kalender : undefined;
     const [v0, l0] = alt || [0, r._kalender().normS];
