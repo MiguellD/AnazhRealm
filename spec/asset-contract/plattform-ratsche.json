@@ -81,8 +81,8 @@
         },
         "v6a": {
             "kern": "fachwerk-core.js",
-            "faelle": 37,
-            "probe": "jede Ausstattung (Feuerstelle, Marktstand, Brunnen, Laterne, Wandlaterne, Grabstein) x Gestalt x Stufe (0/1/3) + ov. Gehoben an der Stadt-Grammatik (w28): der Grabstein des Friedhofs traegt 3 Gestalten x 3 Stufen = 9 Faelle mehr (28 -> 37), keiner kippt",
+            "faelle": 241,
+            "probe": "jede Ausstattung (Feuerstelle, Marktstand, Brunnen, Laterne, Wandlaterne, Grabstein, Schild, Markstein, Hauszeichen, Marktkreuz) x Gestalt x Stufe (0/1/3) + ov. Gehoben an der Stadt-Grammatik (w28): der Grabstein des Friedhofs traegt 3 Gestalten x 3 Stufen = 9 Faelle mehr (28 -> 37), keiner kippt. Gehoben am Ort, der sich ausweist (ort-ausstattung): das Schild traegt 24 Gestalten (19 Woerter, 5 Gewerbe an der Tafel) x 3 Stufen = 72 Faelle mehr (37 -> 109), der Markstein 3 Koepfe x 3 Stufen = 9 mehr (109 -> 118), keiner kippt. Gehoben an den Werken des Orts (mensch.kultur.bildkunst): das Hauszeichen traegt 38 Gestalten (19 Motive in zwei Hoehen) x 3 Stufen = 114 Faelle mehr (118 -> 232), das Marktkreuz 3 Epochen x 3 Stufen = 9 mehr (232 -> 241), keiner kippt",
             "kippt": {},
             "soll": "0 - erreicht: ausRaster am Ausgang der Ausstattung (Architektur-Welle 05.10.)"
         },

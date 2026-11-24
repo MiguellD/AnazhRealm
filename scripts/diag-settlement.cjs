@@ -2120,12 +2120,15 @@ hauptLauf(async () => {
         res.placed1 = r1.placed;
         res.skipped1 = r1.skipped;
         res.placed2 = r2.placed;
-        // Die Buchhaltung: der Akt setzt die Häuser seiner Slots und an ihnen ihre Wandlaternen (die Laterne des Plans
-        // mit `wand` und dem Slot des Hauses, `_spawnSettlementSlot`) — sonst nichts.
+        // Die Buchhaltung: der Akt setzt die Häuser seiner Slots und an ihnen die Stücke ihres Hauses — die Wandlaterne (die
+        // Laterne des Plans mit `wand` und dem Slot des Hauses, `_spawnSettlementSlot`) und jedes Stück des Plans mit `slot`
+        // (`gegenstaende`, das Schild: sein Bauplan aus der Tafel der Welt `ORT_AUSSTATTUNG`) — sonst nichts.
         const istHaus = (e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0;
         const alle1 = st.architectures.slice(mid2, after);
         const e1 = alle1.filter(istHaus);
-        const wandPlan = (plan.laternen || []).filter((l) => l?.wand).length;
+        const amHaus = (plan.gegenstaende || []).filter((q) => q && Number.isInteger(q.slot));
+        const amHausTyp = new Set(["wandlaterne_dorf", ...amHaus.map((q) => (AnazhRealm.ORT_AUSSTATTUNG[q.art] || {}).bauplan)]);
+        const wandPlan = (plan.laternen || []).filter((l) => l?.wand).length + amHaus.length;
         res.wand1 = alle1.length - e1.length;
         res.wandPlan = wandPlan;
         res.entriesMatch =
@@ -2134,7 +2137,7 @@ hauptLauf(async () => {
             e1.length === r2.placed &&
             akt1.length === alle1.length &&
             res.wand1 <= wandPlan;
-        res.allHaus = alle1.every((e) => istHaus(e) || e.type === "wandlaterne_dorf");
+        res.allHaus = alle1.every((e) => istHaus(e) || amHausTyp.has(e.type));
         // Slot-Anker == Plan-Slot, POSITIONS-DETERMINISTISCH: JEDES Haus BEIDER Akte trägt exakt anker + slot.x/z, phi und seed
         // seines Slots, beide Akte heben gleich viele; der zweite steht auf dem Boden des Plans v2 (y = slot.y + 0,5,
         // `_ortWahl` — derselbe Plan am selben Anker; y des ersten ist der Grund vor seinem Erdbau). Die Welt rückt kein Haus:
@@ -2365,7 +2368,9 @@ hauptLauf(async () => {
             res.c.placed = archAfter - archBefore;
             res.c.ticks = ticks;
             // DORF-ERLEBNIS — die Siedlung hebt auch BRUNNEN (brunnen_dorf) und HOF-BÄUME (Studio-Bäume der
-            // trees-Schicht): das Band wandert mit dem Gesetz.
+            // trees-Schicht), dazu jedes Stück ihrer Ausstattung (die Bauplan-Zeilen der Tafel `ORT_AUSSTATTUNG`: Stand, Grab,
+            // Schild): das Band wandert mit dem Gesetz.
+            const stueckTyp = new Set([...Object.values(AnazhRealm.ORT_AUSSTATTUNG).map((Z) => Z.bauplan).filter(Boolean)]);
             res.c.allHaus = st.architectures
                 .slice(archBefore)
                 .every(
@@ -2376,6 +2381,7 @@ hauptLauf(async () => {
                             e.type === "marktstand_dorf" ||
                             e.type === "laterne_dorf" ||
                             e.type === "wandlaterne_dorf" ||
+                            stueckTyp.has(e.type) ||
                             e.type.indexOf("baum_") === 0)
                 );
             // C4 — IDEMPOTENZ: dieselbe Zelle nochmal -> 0 neue (Reservierung traegt).
@@ -3606,11 +3612,11 @@ hauptLauf(async () => {
         // placed > 0, Buchhaltung exakt
         "B: der Konsument platziert",
         out.placed1 > 0 && out.entriesMatch === true,
-        `placed=${out.placed1} skipped=${out.skipped1} Wandlaternen ${out.wand1}/${out.wandPlan}`
+        `placed=${out.placed1} skipped=${out.skipped1} Stücke am Haus ${out.wand1}/${out.wandPlan}`
     );
     check(
         // Tabellen-Regel, kein Literal
-        "B: jeder Eintrag ist ein haus_<kultur>-Blueprint oder die Wandlaterne seines Hauses",
+        "B: jeder Eintrag ist ein haus_<kultur>-Blueprint oder ein Stück seines Hauses (Wandlaterne, Schild)",
         out.allHaus === true
     );
     check(
