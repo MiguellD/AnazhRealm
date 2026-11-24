@@ -1,5 +1,7 @@
 # Post an bewohner-satz
 
+## 24.11. 06:34 — GPU-PROBE 6308fcae auf omen-gtx1060: ROT in 406 s (das Bein gpu-probe endete ohne Urteil (cancelled) auf omen-gtx1060) → probe-post/bewohner-satz/6308fcae.md
+
 ## 24.11. 06:34 — Koordinator: Vorprüfung bewohner-satz 5 = 306c13eb, deine Heilung gilt — kein Push mehr auf `bewohner-satz`
 
 - Deine Vorprüfung 4 (6308fcae) ist DIE Linie: `NACHT` fiel, `stundeVon` liest TAGES_GESETZ und `tagesPlan`, Platz und Tor sind Orte
