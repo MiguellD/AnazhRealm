@@ -1954,15 +1954,17 @@ class AnazhRealm_bild_himmel {
             u.cloudCover.value = Math.min(1, this._weatherBlendedValue(klar, regen)); // D5a: [0,1]-Konsument clampt lokal
         }
         if (u.zug) {
-            // DER ZUG DER WOLKE (licht.K4): die Fronten ziehen mit `zugMS` längs der Grundrichtung der Saat (phyto-core
-            // `windGrund`, der EINE Wind) — in Einheiten der Schicht je Sekunde; das Feld wandert mit (f(u − v·t))
-            const P = globalThis.__phytoCore;
-            const g = P.windGrund(AnazhRealm._saatJe(this));
+            // DER ZUG DER WOLKE (licht.K4, wetter-am-ort): die Schicht zieht mit dem EINEN Wind (`_wolkenWind`) — in Einheiten der
+            // Schicht; die Kuppel, der Spiegel und der Wurf rechnen ihr Feld an u − zug·time (f(u − Weg)), darum trägt `zug` den
+            // Weg seit der Wolken-Uhr 0 je Sekunde dieser Uhr (der Weg ÷ die Uhr, zur Uhr 0 der Zug selbst): zug·time ist der Weg
             const HG =
                 AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) ||
                 AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
-            const k = -P.WIND_FELD.front.zugMS / ((1 + HG.projY) * AnazhRealm.WOLKEN_SCHICHT.hoeheM);
-            u.zug.value.set(g.x * k, g.z * k);
+            const tW = this._wolkenZeit || 0; // dieselbe Uhr, die `time` trägt (`_loopRender`, je Takt `startEternalLoop`)
+            const W = this._wolkenWind(tW);
+            const k = -1 / ((1 + HG.projY) * AnazhRealm.WOLKEN_SCHICHT.hoeheM);
+            if (tW > 0) u.zug.value.set((W.weg[0] * k) / tW, (W.weg[1] * k) / tW);
+            else u.zug.value.set(W.ms[0] * k, W.ms[1] * k);
         }
         if (u.sonneKlar) u.sonneKlar.value = 1 / Math.max(tint.lightMul, 1e-3);
     }
@@ -3043,6 +3045,84 @@ class AnazhRealm_bild_himmel {
         if (!wort)
             throw new Error("_wetterAmOrt: die Zeile „" + zeile + "“ hat kein Wort der Welt (ihre Wetter-Tafel)");
         return wort;
+    }
+
+    // DAS WETTER-FELD AM ORT (wetter-am-ort): die fünf Kanäle {fog, sun, grey, wind, rain} über (x, z) zur Welt-Uhr t — der Kern
+    // (phyto-core `wetterFeldAm`: die Front stetig über ihre Stufen, das Δ des Planeten `ort.wetter`, der Steigungsregen auf der
+    // Höhe des Gesetzes, `relief`) in den Zeilen der Wetter-Tafel DIESER Welt (je Zeile der Front ihr Wort, dessen Feld
+    // WEATHER_FIELD trägt). Das Wort am Spieler ist sein EINGRIFF, nie das Wetter der Welt: das Feld, das er trägt
+    // (`_weatherFieldFor`: der Zug der Front an seinem Ort, sein Übergang, das Wort des Spielers, ein Wunsch der Welt), gilt in
+    // seiner Region und läuft in die Natur aus; den Regen, den es zieht, gibt das Lee windab her. Am Spieler ist das Feld darum
+    // das Feld seines Worts (Licht, Nebel, Himmel, Regen-Bild lesen es dort), fern davon die Front über dem Ort. `aus`: ein
+    // Leser, der je Bild hunderte Male fragt, gibt sein Objekt mit. Leser: der Wind am Ort (`_windAt` → Gras, Krone, Wasser,
+    // Rauch, Wagen, Ohr), der Tag der Bewohner (`_bewohnerSoll`), das Gefäß im Regen (`_tickWerkGesetz`).
+    _wetterFeldAm(x, z, t = this.state.spielZeit, aus, relief = true) {
+        const st = this.state;
+        const tafel = AnazhRealm._weltGesetz(st.worldMeta || {}).wetter;
+        let E = Object.hasOwn(this, "_wetterFeldEin") ? this._wetterFeldEin : null;
+        if (!E || E.tafel !== tafel) {
+            const F = AnazhRealm.WEATHER_FIELD;
+            const zeilen = {};
+            for (const z0 of Object.keys(tafel)) {
+                if (!F[tafel[z0]])
+                    throw new Error("_wetterFeldAm: das Wort „" + tafel[z0] + "“ hat kein Feld (WEATHER_FIELD)");
+                zeilen[z0] = F[tafel[z0]];
+            }
+            Object.freeze(zeilen); // (eingefroren prüft der Kern die Tafel einmal, nie je Ruf)
+            const hier = { x: 0, z: 0, feld: null };
+            const hoehe = (hx, hz) => this._terrainMacroSurfaceY(hx, hz, false);
+            E = this._wetterFeldEin = {
+                tafel,
+                von: null,
+                zu: null,
+                fort: null,
+                mit: { zeilen, hier, hoehe },
+                ohne: { zeilen, hier },
+            };
+        }
+        // der Eingriff: der Ort des Spielers (dort zieht der Zug sein Wort) und das Feld, das er dort trägt — neu, wenn Wort oder
+        // Übergang weiterzogen
+        // (je Ruf ohne Bau: der Leser fragt je Rauch-Teilchen und je Schritt der Wende-Suche des Tagesplans)
+        const pm = st.playerMesh;
+        const H = E.mit.hier;
+        H.x = pm ? pm.position.x : 0;
+        H.z = pm ? pm.position.z : 0;
+        const wt = st.weatherTransition;
+        const zug = !!(wt && wt.from && wt.to);
+        const von = zug ? wt.from : st.weather;
+        const zu = zug ? wt.to : null;
+        const fort = zug ? wt.progress : null;
+        if (!H.feld || von !== E.von || zu !== E.zu || fort !== E.fort) {
+            E.von = von;
+            E.zu = zu;
+            E.fort = fort;
+            H.feld = this._weatherFieldFor();
+        }
+        return globalThis.__phytoCore.wetterFeldAm(
+            AnazhRealm._saatVon(st.worldMeta || {}),
+            x,
+            z,
+            t,
+            this._gelaende().ort.wetter,
+            relief ? E.mit : E.ohne,
+            aus
+        );
+    }
+
+    // DER WIND DER WOLKEN-SCHICHT (licht.K4, wetter-am-ort): die Schicht zieht mit dem EINEN Wind (phyto-core `windRichtung`: die
+    // Richtung, die Gras, Krone, Wasser und Rauch an jedem Ort lesen) im Zug der Fronten (`WIND_FELD.front.zugMS`, 850 hPa) —
+    // `ms` ihr Zug zur Wolken-Uhr tW (m/s), `weg` ihr Weg seit der Wolken-Uhr 0 (m, phyto-core `windWeg`: geschlossen, eine
+    // Funktion von Saat und Uhr — auf jeder Seite einer Uhr derselbe Himmel, nie eine Summe über Bilder). Die Wolken-Uhr läuft der
+    // Welt-Uhr um die Saat der Wolken voraus (`_wolkenSaat`): ihr Wind zu tW ist der der Welt-Uhr tW − Saat. Bis wetter-am-ort zog
+    // sie starr längs der Grundrichtung der Saat, und gegen das Gras stand der Mäander (bis ±41°). Leser: der Zug der Kuppel,
+    // des Spiegels und des Wurfs (`_dayNightApplySkybox` → `zug`).
+    _wolkenWind(tW) {
+        const P = globalThis.__phytoCore;
+        const saat = AnazhRealm._saatJe(this);
+        const [s0, v] = [this._wolkenSaat(), P.WIND_FELD.front.zugMS];
+        const d = P.windRichtung(saat, tW - s0);
+        const w = P.windWeg(saat, -s0, tW - s0);
+        return { ms: [d.x * v, d.z * v], weg: [w.x * v, w.z * v] };
     }
 
     // D5a (V18.128) — die wet-Frage: regnet es hier (rainy UND stormy)?
