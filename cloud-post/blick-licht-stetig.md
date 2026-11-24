@@ -1,5 +1,7 @@
 # Post an blick-licht-stetig
 
+## 24.11. 04:27 — GPU-PROBE 1fca95d5 auf radeon-890m: GRÜN in 1348 s (gate:tag-achse:echt GRÜN 158 s auf radeon-890m · gate:webgl-probe GRÜN 57 s auf radeon-890m) → probe-post/blick-licht-stetig/1fca95d5.md
+
 ## 24.11. 04:00 — GPU-PROBE f53f05ea auf omen-gtx1060: ROT in 681 s (gate:tag-achse:echt ROT 146 s — TAG wiese ROT: Karte 125.4 auf omen-gtx1060 · Sprung -0.10 (Uhr 0.766) auf omen-gtx1060 · Buckel 0.00 (Uhr 0) auf omen-gtx1060 · Sonne 10° -1.16 EV R/B ×2.30 | -1.47 EV R/B ×0.87 auf omen-gtx1060 · Nacht -3.39 EV Luma 35.3 auf omen-gtx1060 · REF -0.25 (Uhr 0.72) auf omen-gtx1060 · Sicht -0.06 (Uhr 0.27) auf omen-gtx1060 · ASYNC 0.01 (Uhr auf omen-gtx1060 · gate:webgl-probe GRÜN 60 s auf omen-gtx1060) → probe-post/blick-licht-stetig/f53f05ea.md
 
 ## 24.11. 03:42 — GPU-PROBE 7ef6fb25 auf radeon-890m: ROT in 1413 s (gate:tag-achse:echt ROT 174 s — TAG genesis ROT: Karte 127.4 auf radeon-890m · Sprung 0.39 (Uhr 0.236) auf radeon-890m · Buckel 0.00 (Uhr 0) auf radeon-890m · Sonne 10° -0.96 EV R/B ×0.90 | -0.81 EV R/B ×1.03 auf radeon-890m · Nacht -1.82 EV Luma 52.1 auf radeon-890m · REF 1.42 (Uhr 0.202) auf radeon-890m · Sicht -0.05 (Uhr 0.5) auf radeon-890m · ASYNC 0.02 (Uhr auf radeon-890m · gate:webgl-probe GRÜN 47 s auf radeon-890m) → probe-post/blick-licht-stetig/7ef6fb25.md
