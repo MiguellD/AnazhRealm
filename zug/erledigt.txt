@@ -2273,3 +2273,4 @@ omen-gtx-gtx-447eaea6-2-447eaea6 ROT 1 GRÜN / 3 ROT / 1 UNGEMESSEN · ROT karte
 2026-11-24 06:47 RUNDE 15 ALARM gtx: PLATTE 8.5 GB frei (< 10 GB) — die Landung wird angehalten, weiter ab 15 GB, Löschen entscheidet der Schöpfer — laeuft 8/241, Station karte2.erleben.spieler.wegfindung#1, Kopf 9d4319c0; die Runde setzt an derselben Station fort — gesehen von platte-dienst
 2026-11-24 06:48 PLATTE 8.5 GB — angehalten (C: frei < 10 GB; die Landungs-Schleife steht, weiter erst ab 15 GB; Löschen entscheidet der Schöpfer)
 2026-11-24 06:50 PLATTE 20.1 GB — weiter (ab 15 GB; die Landungs-Schleife startet neu und nimmt ihre Liste auf)
+2026-11-24 06:51 landung Runde 15 am 9d4319c0: misst 49 von 241 Stationen (vorn; 11 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
