@@ -20086,7 +20086,7 @@
   },
   "karte2.mensch.macht.grenze": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.grenze#1 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#1 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#2 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#3 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#4 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#5 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#6 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#7 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#8 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.grenze#1 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#1 gtx: ROT: S1 ROT: fehlender Leser: keine Grenze im Land: das Reich eines Orts (fachwerk siedlungsReich, `_imReichEinesOrts`) hält nur Gründungen und Herden fern — kein Bau, kein Weg, kein Zeichen zeigt es (0 Grenzzeichen in der Szene; Reich 424 m um den Ort mit Herrn (0.565 km²)) (stamm/siedlung-ort.js:1609) · gemessen 1 · [linse-gpu] nvidia/pascal an eba9bf8f · karte2.mensch.macht.grenze#2 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#3 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#4 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#5 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#6 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#7 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.grenze#8 radeon: ungemessen (R10) · karte2.mensch.macht.grenze#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.macht.grenze#1",
@@ -20102,10 +20102,10 @@
      "id": "karte2.mensch.macht.grenze#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 ROT: fehlender Leser: keine Grenze im Land: das Reich eines Orts (fachwerk siedlungsReich, `_imReichEinesOrts`) hält nur Gründungen und Herden fern — kein Bau, kein Weg, kein Zeichen zeigt es (0 Grenzzeichen in der Szene; Reich 424 m um den Ort mit Herrn (0.565 km²)) (stamm/siedlung-ort.js:1609) · gemessen 1 · [linse-gpu] nvidia/pascal",
+     "sha": "eba9bf8fbb8ca7c694b78237cb5b1ab04b8df698",
+     "grund": "ROT: S1 ROT: fehlender Leser: keine Grenze im Land: das Reich eines Orts (fachwerk siedlungsReich, `_imReichEinesOrts`) hält nur Gründungen und Herden fern — kein Bau, kein Weg, kein Zeichen zeigt es (0 Grenzzeichen in der Szene; Reich 424 m um den Ort mit Herrn (0.565 km²)) (stamm/siedlung-ort.js:1609) · gemessen 1 · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37566,7 +37566,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 317,
+  "konsum": 318,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37734,10 +37734,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3305
+  "ohne": 3304
  },
  "kopfVoll": "eba9bf8fbb8ca7c694b78237cb5b1ab04b8df698",
- "zeit": "2026-11-24T15:56:59.014Z",
+ "zeit": "2026-11-24T16:04:20.066Z",
  "vorher": "eba9bf8f",
  "bilanz": {
   "gewinn": [],
