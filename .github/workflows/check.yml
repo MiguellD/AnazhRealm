@@ -41,8 +41,12 @@ on:
 # die Gruppe mit dem push, sodass ein PR-Branch nicht doppelt läuft. AUSSER auf main: die Nachwache bricht nie ab — landet der
 # nächste Zug, während sie fährt, wartet sein Lauf (GitHub hält je Gruppe einen laufenden und einen wartenden; ein überholter
 # wartender fällt, sein Kopf steht im Bereich des nächsten Urteils: zug.cjs nachwache nennt die Landungen seit dem letzten grünen main).
+# DER POST ZÄHLT NICHT (ci-post-erbt, 24.11.): ein push, dessen Kopf-Commit GENAU EINE Datei unter cloud-post/ anlegt oder ändert und
+# nichts entfernt (der Bericht eines Zweigs), fährt in der EIGENEN Gruppe `…-post` — er bricht die Batterie am Zweig nie ab (bis hier
+# brach der Bericht-Commit c2ad9aad von ort-ausstattung die Vorprüfung c18ad5eb bei 4 von 22 Jobs ab); sein Kopf-Richter erbt über
+# die Kette des Inhalts (scripts/ci-kopf.cjs `inhaltVon`: der Wurzel-Baum ohne cloud-post). Jeder andere push wie bisher.
 concurrency:
-    group: check-${{ github.workflow }}-${{ github.ref }}
+    group: check-${{ github.workflow }}-${{ github.ref }}${{ github.event_name == 'push' && join(github.event.head_commit.removed, '') == '' && ((join(github.event.head_commit.added, ',') == '' && startsWith(join(github.event.head_commit.modified, ','), 'cloud-post/') && !contains(join(github.event.head_commit.modified, ','), ',')) || (join(github.event.head_commit.modified, ',') == '' && startsWith(join(github.event.head_commit.added, ','), 'cloud-post/') && !contains(join(github.event.head_commit.added, ','), ','))) && '-post' || '' }}
     cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:

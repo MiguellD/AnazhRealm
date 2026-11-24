@@ -12,7 +12,7 @@ const yaml = require("js-yaml");
 const R6 = require("./lib/ci-klasse.cjs");
 const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE, PULS_S, ueber, R6_SHELL } = R6;
 const { schluessel } = require("./ci-schluessel.cjs");
-const { kopfUrteil, kopfKette, KETTE } = require("./ci-kopf.cjs");
+const { kopfUrteil, kopfKette, KETTE, inhaltVon, POST } = require("./ci-kopf.cjs");
 const { messe } = require("./ci-zeiten.cjs");
 const {
     taeterFaelle,
@@ -413,7 +413,11 @@ function deckung(skripte, docs, ausnahmen) {
     // eine Wand der Karte: was die CI von ihr nicht fährt, fährt der Job echt in seiner Form (KARTE_GRUND) — die abgeleitete Klasse
     const nurKarte = (teile) => {
         const rest = teile.filter((t) => !gefahren.has(t.t));
-        return !inSich(teile).length && rest.length > 0 && rest.every((t) => (stummBei.get(t.t) || []).some((e) => e.endsWith(KARTE_GRUND)));
+        return (
+            !inSich(teile).length &&
+            rest.length > 0 &&
+            rest.every((t) => (stummBei.get(t.t) || []).some((e) => e.endsWith(KARTE_GRUND)))
+        );
     };
     const klassen = new Set(Object.values(KLASSEN));
     const zahl = { waende: W.size, inCi: 0, ausnahmen: 0, offen: 0, jeKlasse: {} };
@@ -534,7 +538,8 @@ function korpusAnteilUrteil(doc, skripte) {
         }
     const ns = [...new Set(traeger.map((t) => t.n))];
     const wer = (l) => l.map((t) => `„${t.name}"`).join(" · ");
-    if (!traeger.length && !v.length) v.push("(O) Korpus-Anteil fehlt: kein Schritt fährt den Korpus (diag-persistence.cjs)");
+    if (!traeger.length && !v.length)
+        v.push("(O) Korpus-Anteil fehlt: kein Schritt fährt den Korpus (diag-persistence.cjs)");
     if (ns.length > 1)
         v.push(
             `(O) Korpus-Anteil doppelt: ${traeger.map((t) => `„${t.name}" ${t.k}/${t.n}`).join(" · ")} teilen in verschiedene n — ein Stand lädt mehrmals oder nie`
@@ -736,7 +741,9 @@ function einlassTeil(docs) {
     if (!E) return [`(V) KOPF: ${PROBE_WF} trägt keinen Job „einlass"`];
     const js = String(E.steps.at(-1)?.env?.EINLASS_JS || "");
     if (!/require\("\.\/scripts\/ci-kopf\.cjs"\)/.test(js))
-        return [`(V) KOPF: der Einlass der GPU-Probe ruft scripts/ci-kopf.cjs nicht — der Stempel erbt seine Probe nicht`];
+        return [
+            `(V) KOPF: der Einlass der GPU-Probe ruft scripts/ci-kopf.cjs nicht — der Stempel erbt seine Probe nicht`,
+        ];
     return teilLaedt(E, "der Einlass der GPU-Probe");
 }
 
@@ -1185,30 +1192,99 @@ function selbsttestSchluessel() {
 // (V) KOPF: das Urteil des Kopf-Richters (scripts/ci-kopf.cjs) gegen die Fälle
 // DER KOPF IST SEIN INHALT: die Kette der leeren Vorfahren (scripts/ci-kopf.cjs `kopfKette`, Leser: der Job `kopf`) —
 // die Fälle, dazu zwei Mutanten, die beim Namen fallen (blind für den Baum · blind für den Merge)
+// DIE KETTE DES INHALTS (ci-post-erbt, 24.11.): je Commit sein Wurzel-Baum als Einträge — „T1" ist der Code-Stand (Eintrag stamm),
+// „T1/P2" derselbe Code mit dem Bericht P2 (Eintrag cloud-post), „T1/P2/D3" dazu eine zweite Datei (Eintrag docs); der Inhalt kommt
+// aus DEMSELBEN inhaltVon wie im Richter (API und lokales git), die Baum-SHA ist die ganze Zeichenkette
 function selbsttestKette(kette = kopfKette) {
-    const c = (sha, baum, ...eltern) => [sha, { sha, tree: { sha: baum }, parents: eltern.map((e) => ({ sha: e })) }];
+    const eintraege = (baum) => {
+        const [code, post, doc] = baum.split("/");
+        return [{ path: "stamm", mode: "040000", type: "tree", sha: code }]
+            .concat(post ? [{ path: POST, mode: "040000", type: "tree", sha: post }] : [])
+            .concat(doc ? [{ path: "docs", mode: "040000", type: "tree", sha: doc }] : []);
+    };
+    const c = (sha, baum, ...eltern) => [sha, { sha, tree: { sha: baum }, parents: eltern.map((e) => ({ sha: e })), inhalt: inhaltVon(eintraege(baum)) }]; // prettier-ignore
     const lang = Array.from({ length: KETTE + 3 }, (_, i) => c("L" + i, "T", "L" + (i + 1)));
     // [Name, Kopf, Commits, Soll-Kette]
     const faelle = [
-        ["der Stempel ohne Inhalt trägt das Urteil des geprüften Kopfs", "S", [c("S", "T1", "K"), c("K", "T1", "A"), c("A", "T0", "B")], "S K"],
+        [
+            "der Stempel ohne Inhalt trägt das Urteil des geprüften Kopfs",
+            "S",
+            [c("S", "T1", "K"), c("K", "T1", "A"), c("A", "T0", "B")],
+            "S K",
+        ],
         ["ein Commit mit Inhalt erbt nichts", "S", [c("S", "T2", "K"), c("K", "T1", "A")], "S"],
         ["ein Merge erbt nichts, auch bei gleichem Baum", "M", [c("M", "T1", "K", "X"), c("K", "T1", "A")], "M"],
-        ["zwei leere Commits in Folge (Vorprüfung, dann Stempel)", "S", [c("S", "T1", "V"), c("V", "T1", "K"), c("K", "T1", "A"), c("A", "T0")], "S V K"],
+        [
+            "zwei leere Commits in Folge (Vorprüfung, dann Stempel)",
+            "S",
+            [c("S", "T1", "V"), c("V", "T1", "K"), c("K", "T1", "A"), c("A", "T0")],
+            "S V K",
+        ],
         ["der Elter ist nicht geladen", "S", [c("S", "T1", "K")], "S"],
         ["ein Wurzel-Commit", "S", [c("S", "T1")], "S"],
-        [`die Kette endet nach ${KETTE} Vorfahren`, "L0", lang, lang.slice(0, KETTE + 1).map((x) => x[0]).join(" ")],
+        [
+            `die Kette endet nach ${KETTE} Vorfahren`,
+            "L0",
+            lang,
+            lang
+                .slice(0, KETTE + 1)
+                .map((x) => x[0])
+                .join(" "),
+        ],
+        // DER POST ZÄHLT NICHT: der Bericht-Commit (nur cloud-post) erbt, der leere Stempel darüber erbt durch ihn hindurch
+        [
+            "Post-Glied erbt (der Bericht über der Vorprüfung)",
+            "B",
+            [c("B", "T1/P2", "V"), c("V", "T1/P1", "A"), c("A", "T0/P1")],
+            "B V",
+        ],
+        ["der leere Stempel über dem Post erbt bis zur Vorprüfung", "S", [c("S", "T1/P2", "B"), c("B", "T1/P2", "V"), c("V", "T1", "A")], "S B V"], // prettier-ignore
+        ["Post + zweite Datei erbt nicht", "B", [c("B", "T1/P2/D1", "V"), c("V", "T1/P1", "A")], "B"],
+        [
+            "Merge erbt nicht, auch wenn nur der Post sich unterscheidet",
+            "M",
+            [c("M", "T1/P2", "V", "X"), c("V", "T1/P1", "A")],
+            "M",
+        ],
     ];
-    const urteil = (k) => faelle.filter(([, kopf, cs, soll]) => k(kopf, Object.fromEntries(cs)).join(" ") !== soll).map((x) => x[0]);
+    const urteil = (k) =>
+        faelle.filter(([, kopf, cs, soll]) => k(kopf, Object.fromEntries(cs)).join(" ") !== soll).map((x) => x[0]);
     const f = urteil(kette).map((n) => `Kette „${n}": fällt`);
     for (const [n] of faelle) console.log(`  ${f.some((x) => x.includes(n)) ? "❌" : "✅"} Selbsttest Kette „${n}"`);
+    const je = (cs, m) => Object.fromEntries(Object.entries(cs).map(([k, v]) => [k, m(v)]));
     const mutanten = [
-        ["blind für den Baum (jeder Elter vererbt)", (s, cs) => kopfKette(s, Object.fromEntries(Object.entries(cs).map(([k, v]) => [k, { ...v, tree: { sha: "gleich" } }])))],
-        ["blind für den Merge (der erste Elter vererbt)", (s, cs) => kopfKette(s, Object.fromEntries(Object.entries(cs).map(([k, v]) => [k, { ...v, parents: v.parents.slice(0, 1) }])))],
+        [
+            "blind für den Inhalt (jeder Elter vererbt)",
+            (s, cs) =>
+                kopfKette(
+                    s,
+                    je(cs, (v) => ({ ...v, inhalt: "gleich" }))
+                ),
+        ],
+        [
+            "blind für den Merge (der erste Elter vererbt)",
+            (s, cs) =>
+                kopfKette(
+                    s,
+                    je(cs, (v) => ({ ...v, parents: v.parents.slice(0, 1) }))
+                ),
+        ],
+        // der Stand bis ci-post-erbt: der Inhalt ist die Baum-SHA — der Bericht-Commit erbt nicht mehr
+        [
+            "blind für den Post (Inhalt = Baum-SHA)",
+            (s, cs) =>
+                kopfKette(
+                    s,
+                    je(cs, (v) => ({ ...v, inhalt: v.tree.sha }))
+                ),
+        ],
     ];
     if (kette === kopfKette)
         for (const [n, m] of mutanten) {
             const rot = urteil(m);
-            console.log(`  ${rot.length ? "✅" : "❌"} Selbsttest Kette, Mutant „${n}" → ${rot.length ? "ROT an „" + rot[0] + '"' : "bleibt grün"}`);
+            console.log(
+                `  ${rot.length ? "✅" : "❌"} Selbsttest Kette, Mutant „${n}" → ${rot.length ? "ROT an „" + rot[0] + '"' : "bleibt grün"}`
+            );
             if (!rot.length) f.push(`Kette: der Mutant „${n}" bleibt grün — die Fälle sind vakuös`);
         }
     return f;
@@ -1260,8 +1336,16 @@ function selbsttestKopf(urteile = kopfUrteil) {
         ["im Zug: push auf integ-probe (der Kandidat)", fall("push", [], [], "refs/heads/integ-probe"), "nein"],
         ["im Zug: push auf zug-a (die Hälfte der Bisektion)", fall("push", [], [], "refs/heads/zug-a"), "nein"],
         ["im Zug: push auf zug-b", fall("push", [], [], "refs/heads/zug-b"), "nein"],
-        ["im Zug wartet der Richter auf keinen älteren Lauf", fall("push", [laufend], [], "refs/heads/integ-probe"), "nein"],
-        ["auf Abruf an integ-probe läuft sie (der Abruf ist kein Zug)", fall("workflow_dispatch", [], [], "refs/heads/integ-probe"), "ja"],
+        [
+            "im Zug wartet der Richter auf keinen älteren Lauf",
+            fall("push", [laufend], [], "refs/heads/integ-probe"),
+            "nein",
+        ],
+        [
+            "auf Abruf an integ-probe läuft sie (der Abruf ist kein Zug)",
+            fall("workflow_dispatch", [], [], "refs/heads/integ-probe"),
+            "ja",
+        ],
         [
             "die Nachwache auf main: der Zug-Lauf am selben Kopf trug kopf und Puls, nie voll (sie fährt)",
             fall("push", [gruen(1, "push", ["skipped", "skipped"])]),
@@ -1295,7 +1379,10 @@ function selbsttestKopf(urteile = kopfUrteil) {
         console.log(
             `  ${ok ? "✅" : "❌"} Selbsttest Kopf, Mutant „der Richter blind für den Zug" → ${alt.length ? "ROT an „" + alt.join("“ · „") + '"' : "bleibt grün"}`
         );
-        if (!ok) f.push("Kopf: der Mutant „der Richter blind für den Zug\" fällt nicht an jedem Zug-Fall — die Fälle sind vakuös");
+        if (!ok)
+            f.push(
+                'Kopf: der Mutant „der Richter blind für den Zug" fällt nicht an jedem Zug-Fall — die Fälle sind vakuös'
+            );
     }
     return f;
 }
@@ -1334,8 +1421,11 @@ function selbsttest() {
     });
     // (E) die Karten in ihrer Form: zwei Beine, je Schritt genau eines (D auf omen, W auf radeon), mit Frist
     const bein = (k) => `\${{ !cancelled() && matrix.karte == '${k}' }}`;
-    const echtDazu = (d) =>
-        ((d.on = { push: { branches: ["**"] }, workflow_dispatch: { inputs: { [ECHT_WAHL]: { type: "boolean", default: false } } } }),
+    const echtDazu = (d) => (
+        (d.on = {
+            push: { branches: ["**"] },
+            workflow_dispatch: { inputs: { [ECHT_WAHL]: { type: "boolean", default: false } } },
+        }),
         (d.jobs.echt = {
             if: ECHT_WENN,
             strategy: { "fail-fast": false, matrix: { karte: ["omen", "radeon"] } },
@@ -1349,7 +1439,8 @@ function selbsttest() {
                 { name: "D auf der Karte", if: bein("omen"), run: "npm run gate:d", "timeout-minutes": 5 },
                 { name: "W auf der Karte", if: bein("radeon"), run: "npm run gate:w", "timeout-minutes": 5 },
             ],
-        }));
+        })
+    );
     const faelle = [
         [
             "ein Karten-Schritt ohne Frist",
@@ -1840,7 +1931,12 @@ function selbsttestGegenrichtung() {
             steps: [
                 CHECKOUT,
                 { name: "Dependencies", run: "npm ci --no-audit --no-fund" },
-                { name: "E auf der Karte", if: "${{ !cancelled() && matrix.karte == 'omen' }}", run: "npm run gate:e", "timeout-minutes": 5 },
+                {
+                    name: "E auf der Karte",
+                    if: "${{ !cancelled() && matrix.karte == 'omen' }}",
+                    run: "npm run gate:e",
+                    "timeout-minutes": 5,
+                },
             ],
         };
         return d["check.yml"].jobs.echt;
@@ -1976,8 +2072,12 @@ function selbsttestGegenrichtung() {
     mitKarte(s, d);
     const z = deckung(s, d, aus()).zahl;
     const zok = z.jeKlasse[KARTE_KLASSE] === 1 && z.inCi === z.waende - z.ausnahmen;
-    console.log(`  ${zok ? "✅" : "❌"} Selbsttest „die Wand der Karte steht in der Klasse Karte" → ${JSON.stringify(z.jeKlasse)}, in der CI ${z.inCi}`);
-    return zok ? f : f.concat([`(W) die Wand der Karte zählt nicht in „${KARTE_KLASSE}": ${JSON.stringify(z.jeKlasse)}`]);
+    console.log(
+        `  ${zok ? "✅" : "❌"} Selbsttest „die Wand der Karte steht in der Klasse Karte" → ${JSON.stringify(z.jeKlasse)}, in der CI ${z.inCi}`
+    );
+    return zok
+        ? f
+        : f.concat([`(W) die Wand der Karte zählt nicht in „${KARTE_KLASSE}": ${JSON.stringify(z.jeKlasse)}`]);
 }
 
 // (P) Der volle Playtest gegen ein Fixture: die gute check.yml trägt ihn allein in Gruppe 2 der vollen Batterie, mit
@@ -2075,7 +2175,12 @@ function selbsttestKorpus() {
             voll: {
                 steps: prep(
                     { name: "Teil 1", if: gr(2), env: { PERSISTENCE_KORPUS: "1/2" }, run: "npm run gate:persistence" },
-                    { name: "Teil 2", if: gr(3), env: { PERSISTENCE_KORPUS: "2/2" }, run: "node scripts/diag-persistence.cjs" },
+                    {
+                        name: "Teil 2",
+                        if: gr(3),
+                        env: { PERSISTENCE_KORPUS: "2/2" },
+                        run: "node scripts/diag-persistence.cjs",
+                    },
                     { name: "Stufe", if: gr(4), run: "node scripts/diag-persistence.cjs --stufe" }
                 ),
             },
@@ -2100,7 +2205,11 @@ function selbsttestKorpus() {
             /\(O\) Korpus-Anteil fehlt: 2\/2 fährt kein Schritt/,
         ],
         ["ein leerer Schalter", (d) => (T(d, 1).env.PERSISTENCE_KORPUS = ""), /\(O\) Korpus-Anteil unlesbar: „Teil 1"/],
-        ["verschiedene n", (d) => (T(d, 2).env.PERSISTENCE_KORPUS = "2/3"), /\(O\) Korpus-Anteil doppelt: .*verschiedene n/],
+        [
+            "verschiedene n",
+            (d) => (T(d, 2).env.PERSISTENCE_KORPUS = "2/3"),
+            /\(O\) Korpus-Anteil doppelt: .*verschiedene n/,
+        ],
     ];
     const f = [];
     taeterFaelle(faelle, (d) => korpusAnteilUrteil(d, skripte), { fehler: f, klon: docs });
@@ -2167,8 +2276,12 @@ async function selbsttestZeiten() {
     );
     const B = n.out.schritte.B;
     const bleibt = !!B && B.s === 13 && B.geschaetzt === true && !n.ohne.length && n.out.schritte.A?.s === 214;
-    const wb = B ? `B ${B.s} s${B.geschaetzt ? " geschaetzt" : ""}` : `B fehlt (ohne Messung: ${n.ohne.join(", ") || "—"})`;
-    console.log(`  ${bleibt ? "✅" : "❌"} Selbsttest „ein neuer Schritt ohne gelandeten Lauf behält die Zeit seines Zweigs" → ${wb}`);
+    const wb = B
+        ? `B ${B.s} s${B.geschaetzt ? " geschaetzt" : ""}`
+        : `B fehlt (ohne Messung: ${n.ohne.join(", ") || "—"})`;
+    console.log(
+        `  ${bleibt ? "✅" : "❌"} Selbsttest „ein neuer Schritt ohne gelandeten Lauf behält die Zeit seines Zweigs" → ${wb}`
+    );
     // LANDUNG ≤ 10 MIN: der Zug fährt voll nie — die Nachwache auf main wiegt die volle Stufe; ein Arbeits-Zweig wiegt nie (der Täter
     // ist der alte Filter „nur integ-probe": er fände keinen Lauf, die Tafel bliebe ROT stehen)
     const zweigLauf = (id, zweig, s) => ({ id, zweig, s });
@@ -2178,14 +2291,20 @@ async function selbsttestZeiten() {
             ? { total_count: nw.length, workflow_runs: nw.map((x) => ({ id: x.id, head_sha: G, head_branch: x.zweig, status: "completed", run_attempt: 1, created_at: new Date().toISOString() })) } // prettier-ignore
             : p.startsWith("/contents/")
               ? { content: Buffer.from(yaml.dump(jetzt)).toString("base64") }
-              : { jobs: nw.filter((x) => p === `/actions/runs/${x.id}/attempts/1/jobs?per_page=100`).map((x) => job(x.s, "success")) };
+              : {
+                    jobs: nw
+                        .filter((x) => p === `/actions/runs/${x.id}/attempts/1/jobs?per_page=100`)
+                        .map((x) => job(x.s, "success")),
+                };
     const tn = await messe(apiNw, jetzt, {}, 0, () => true).then(
         (x) => x.out,
         (e) => ({ schritte: {}, e: e.message })
     );
     const wache = tn.schritte.A?.s === 300 && tn.schritte.A?.n === 1;
     const ww = tn.schritte.A ? `A ${tn.schritte.A.s} s aus ${tn.schritte.A.n} Lauf` : `A fehlt (${tn.e || "—"})`;
-    console.log(`  ${wache ? "✅" : "❌"} Selbsttest „die Nachwache auf main wiegt voll, ein Arbeits-Zweig nie" → ${ww}`);
+    console.log(
+        `  ${wache ? "✅" : "❌"} Selbsttest „die Nachwache auf main wiegt voll, ein Arbeits-Zweig nie" → ${ww}`
+    );
     return (ok ? [] : [`ci-zeiten an einer leeren API: ${u}`]).concat(
         gut ? [] : [`der Täter-Lauf ${T.slice(0, 8)} vergiftet die Tafel: ${w}`],
         bleibt ? [] : [`das Neu-Messen wirft den Eintrag eines neuen Schritts aus der Tafel: ${wb}`],

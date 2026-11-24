@@ -288,14 +288,27 @@ function tasteNachWanduhr(name, src) {
 // fällt in takt-t8-geist, 15 fielen in abdruck-am-takt auf ihr Ereignis oder ihre Takt-Zahl). Was bleibt, steht in
 // `SCHLAF_REST` je Datei mit Zahl und Grund — ein Messfenster, der Abstand einer Ereignis-Frage, ein Werkzeug —, die Zahl sinkt
 // nur; eine Stelle über der Tafel nennt jede feste Stelle ihrer Datei.
-const SCHLAF_FEST = /\bawait\s+(?:sleep|warte|warten|pause)\s*\(\s*(\d[\d_]*)\s*\)|\.waitForTimeout\s*\(\s*(\d[\d_]*)\s*\)/g;
+const SCHLAF_FEST =
+    /\bawait\s+(?:sleep|warte|warten|pause)\s*\(\s*(\d[\d_]*)\s*\)|\.waitForTimeout\s*\(\s*(\d[\d_]*)\s*\)/g;
 const SCHLAF_AB_MS = 1000;
 const SCHLAF_REST = {
-    "scripts/diag-hitch-telemetrie.cjs": [1, "das Messfenster des Flugschreibers — seine Ringe falten je echter Sekunde (die Schleife führt spec/ci/frist-rest.json)"],
+    "scripts/diag-hitch-telemetrie.cjs": [
+        1,
+        "das Messfenster des Flugschreibers — seine Ringe falten je echter Sekunde (die Schleife führt spec/ci/frist-rest.json)",
+    ],
     "scripts/diag-takt.cjs": [1, "T8 — fällt mit takt-t8-geist auf sein Ereignis"],
-    "scripts/lib/speicher-proben.cjs": [1, "der Abstand der Frage in der gezählten Warte auf `__einschwingOffen` — kein Urteil nach ihm"],
-    "scripts/lib/welt-boot.cjs": [1, "Selbsttest der Todes-Wache — das Fenster, in dem eine gesunde Seite keinen Alarm auslösen darf"],
-    "scripts/omen-messfolge.cjs": [2, "Werkzeug — die Frist, in der ein beendeter Prozess fort sein muss (`warte` meldet sein Ereignis)"],
+    "scripts/lib/speicher-proben.cjs": [
+        1,
+        "der Abstand der Frage in der gezählten Warte auf `__einschwingOffen` — kein Urteil nach ihm",
+    ],
+    "scripts/lib/welt-boot.cjs": [
+        1,
+        "Selbsttest der Todes-Wache — das Fenster, in dem eine gesunde Seite keinen Alarm auslösen darf",
+    ],
+    "scripts/omen-messfolge.cjs": [
+        2,
+        "Werkzeug — die Frist, in der ein beendeter Prozess fort sein muss (`warte` meldet sein Ereignis)",
+    ],
     "scripts/werkbank.cjs": [1, "Werkzeug — 2 s Anlauf vor der Spur der leeren Leinwand (das Boden-Maß der Belegung)"],
 };
 function festerSchlaf(src) {
@@ -537,7 +550,9 @@ const PROBE_RUFE = [
             },
         ],
     ],
-    ["[gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen, gate:tag-achse:echt, gate:apparat]"],
+    [
+        "[gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen, gate:tag-achse:echt, gate:apparat]",
+    ],
 ];
 
 // Klinge 7, DER STEMPEL ERBT (stempel-erbt-probe, 22.11.): der Einlass fährt hier gegen eine GESTELLTE API (kein Netz im Gate:
@@ -546,16 +561,24 @@ const PROBE_RUFE = [
 // ist die Vorprüfung, leer über dem WIP V (derselbe Baum, ohne Ruf — wie w28-pop-treue 7570379a über c7324b75), V über W mit
 // anderem Baum; der eigene Lauf 900 läuft, der Lauf 800 trägt E. Je Fall [Name, Ruf des Kopfs, Tafel, Soll]: Soll
 // `geerbt=<E> lauf=800` (keine Matrix), die Matrix des Rufs (fährt) oder `rot` (Exit ≠ 0, kein Ausgang — wie der Richter).
-const ERB = { K: "a".repeat(40), S: "5".repeat(40), E: "e".repeat(40), V: "0".repeat(40), W: "f".repeat(40), D: "d".repeat(40) }; // prettier-ignore
+const ERB = { K: "a".repeat(40), S: "5".repeat(40), E: "e".repeat(40), V: "0".repeat(40), W: "f".repeat(40), D: "d".repeat(40), B: "b".repeat(40) }; // prettier-ignore
 const ERB_JETZT = Date.now();
 const erbZeit = (min) => new Date(ERB_JETZT - min * 6e4).toISOString();
-function erbTafel({ kopf = {}, elterRuf = "bild:wiese@0.5, gate:apparat", lauf = { status: "completed", conclusion: "success" }, mitte = false, fehler } = {}) {
+function erbTafel({
+    kopf = {},
+    elterRuf = "bild:wiese@0.5, gate:apparat",
+    lauf = { status: "completed", conclusion: "success" },
+    mitte = false,
+    bericht = false,
+    fehler,
+} = {}) {
     const c = (sha, tree, parents, message) => ({ sha, tree: { sha: tree }, parents: parents.map((p) => ({ sha: p })), message, committer: { date: erbZeit(20) } }); // prettier-ignore
-    const k = { tree: "t1", parents: [mitte ? ERB.S : ERB.E], ...kopf };
+    const k = { tree: bericht ? "t1p" : "t1", parents: [mitte ? ERB.S : bericht ? ERB.B : ERB.E], ...kopf };
     const commits = Object.fromEntries(
         [
             c(ERB.K, k.tree, k.parents, "Abgabe w28-x: y [gpu-probe: bild:wiese@0.5] [ci voll]"),
             c(ERB.S, "t1", [ERB.E], "Abgabe w28-x: zweiter Stempel [ci voll]"),
+            c(ERB.B, "t1p", [ERB.E], "Bericht w28-x: cloud-post/w28-x.md"),
             c(ERB.E, "t1", [ERB.V], `Vorprüfung w28-x: y [gpu-probe: ${elterRuf}] [ci voll]`),
             c(ERB.V, "t1", [ERB.W], "WIP w28-x [skip ci]"),
             c(ERB.W, "t0", [], "WIP w28-x davor [skip ci]"),
@@ -581,6 +604,13 @@ const ERB_FAELLE = [
     ["(6) der Ruf nennt eine Probe, die der Elter nicht fuhr", "[gpu-probe: bild:wiese@0.5, gate:apparat]", erbTafel({ elterRuf: "bild:wiese@0.5" }), faehrt("bild:wiese@0.5 gate:apparat gate:webgl-probe")], // prettier-ignore
     ["(7) zwei leere Commits über grünem Elter", "[gpu-probe: bild:wiese@0.5]", erbTafel({ mitte: true }), ERB_GEERBT],
     ["(8) Fehler der API", "[gpu-probe: bild:wiese@0.5]", erbTafel({ fehler: 403 }), "rot"],
+    // ci-post-erbt (24.11.): der Stempel über dem Bericht (nur cloud-post) erbt die Probe der Vorprüfung darunter
+    [
+        "(9) leer über dem Bericht über grünem Elter",
+        "[gpu-probe: bild:wiese@0.5]",
+        erbTafel({ bericht: true }),
+        ERB_GEERBT,
+    ],
 ];
 // DER TREIBER IM KIND (`node <datei>`, EIN Prozess je Quelltext und Mutante — ein Prozess je Fall kostete den Selbsttest 40 s):
 // die gestellte API (fetch beantwortet die Tafel des Falls), die Mutante des Richters im require-Cache unter ihrem echten Pfad,
@@ -604,7 +634,15 @@ async function einlassTreiber() {
         if (T.fehler) return antwort(T.fehler, { message: "gestellt" });
         const c = /\/git\/commits\/([0-9a-f]{40})$/.exec(u.pathname);
         if (c) return T.commits[c[1]] ? antwort(200, T.commits[c[1]]) : antwort(404, { message: "Not Found" });
-        if (!/\/actions\/workflows\/gpu-probe\.yml\/runs$/.test(u.pathname)) return antwort(404, { message: u.pathname });
+        // der Wurzel-Baum je Glied (ci-post-erbt: der Inhalt ist der Baum ohne cloud-post) — „t1p" ist t1 mit einem Bericht
+        const b = /\/git\/trees\/([^/]+)$/.exec(u.pathname);
+        if (b) {
+            const [code, post] = [b[1].replace(/p$/, ""), b[1].endsWith("p") ? "p" + b[1] : null];
+            const tree = [{ path: "stamm", mode: "040000", type: "tree", sha: code }].concat(post ? [{ path: "cloud-post", mode: "040000", type: "tree", sha: post }] : []); // prettier-ignore
+            return antwort(200, { sha: b[1], tree, truncated: false });
+        }
+        if (!/\/actions\/workflows\/gpu-probe\.yml\/runs$/.test(u.pathname))
+            return antwort(404, { message: u.pathname });
         const [je, s] = [Number(u.searchParams.get("per_page")), Number(u.searchParams.get("page"))];
         return antwort(200, { total_count: T.laeufe.length, workflow_runs: T.laeufe.slice((s - 1) * je, s * je) });
     };
@@ -655,8 +693,16 @@ function einlassFahren(js, faelle, kopfQuelle = "") {
     }
     const env = { ...process.env, GITHUB_OUTPUT: "", GITHUB_STEP_SUMMARY: "", GITHUB_SHA: ERB.K, GITHUB_RUN_ID: "900" };
     Object.assign(env, { GITHUB_REPOSITORY: "o/r", GITHUB_API_URL: "https://api.gestellt.invalid", GH_TOKEN: "t" });
-    Object.assign(env, { EINLASS_JS_TEXT: js, EINLASS_FAELLE: JSON.stringify(faelle), EINLASS_KOPF_QUELLE: kopfQuelle });
-    const r = require("child_process").spawnSync(process.execPath, [treiberDatei], { cwd: ROOT, env, encoding: "utf8" });
+    Object.assign(env, {
+        EINLASS_JS_TEXT: js,
+        EINLASS_FAELLE: JSON.stringify(faelle),
+        EINLASS_KOPF_QUELLE: kopfQuelle,
+    });
+    const r = require("child_process").spawnSync(process.execPath, [treiberDatei], {
+        cwd: ROOT,
+        env,
+        encoding: "utf8",
+    });
     let aus;
     try {
         aus = JSON.parse(r.stdout);
@@ -683,7 +729,10 @@ function probeGesetz(doc) {
     }
     const e = doc.jobs.einlass.steps.at(-1);
     // (die Mutanten des Richters zielen auf das Erbe: diese Rufe fahren mit dem echten scripts/ci-kopf.cjs, ihr Kopf trägt Inhalt)
-    const rufe = einlassFahren(e.env.EINLASS_JS, PROBE_RUFE.map(([m]) => ({ m, tafel: ERB_INHALT })));
+    const rufe = einlassFahren(
+        e.env.EINLASS_JS,
+        PROBE_RUFE.map(([m]) => ({ m, tafel: ERB_INHALT }))
+    );
     for (const [i, [m, matrix]] of PROBE_RUFE.entries()) {
         const { aus } = rufe[i];
         if (
@@ -694,7 +743,11 @@ function probeGesetz(doc) {
     }
     // DER STEMPEL ERBT: je Fall das Soll (geerbt ohne Matrix · die Matrix des Rufs · ROT ohne Ausgang), dazu das Recht, Läufe zu
     // lesen, und der Post, der „GEERBT von <eltern-sha8>“ schreibt und GRÜN urteilt
-    const erbe = einlassFahren(e.env.EINLASS_JS, ERB_FAELLE.map(([, m, tafel]) => ({ m, tafel })), doc.__kopfQuelle);
+    const erbe = einlassFahren(
+        e.env.EINLASS_JS,
+        ERB_FAELLE.map(([, m, tafel]) => ({ m, tafel })),
+        doc.__kopfQuelle
+    );
     for (const [i, [name, , , soll]] of ERB_FAELLE.entries()) {
         const r = erbe[i];
         const ok = soll === "rot" ? r.code !== 0 && r.aus === "" : r.code === 0 && r.aus === soll;
@@ -703,7 +756,10 @@ function probeGesetz(doc) {
     const E = doc.jobs.einlass;
     if (E.permissions?.actions !== "read" || e.env.GH_TOKEN !== "${{ github.token }}")
         v.push("Erbe: der Einlass liest keine Läufe (permissions actions: read und GH_TOKEN: ${{ github.token }})");
-    if (E.outputs?.geerbt !== "${{ steps.einlass.outputs.geerbt }}" || E.outputs?.lauf !== "${{ steps.einlass.outputs.lauf }}")
+    if (
+        E.outputs?.geerbt !== "${{ steps.einlass.outputs.geerbt }}" ||
+        E.outputs?.lauf !== "${{ steps.einlass.outputs.lauf }}"
+    )
         v.push("Erbe: der Einlass reicht geerbt/lauf nicht an den Post");
     const postRun = doc.jobs.post.steps.find((s) => /^Post/.test(s.name || ""))?.run || "";
     if (
@@ -978,7 +1034,8 @@ function selftest() {
     ];
     for (const q of schlafRot) {
         const e = schlaf(q).errs;
-        if (e.length !== 1 || !/^probe\.cjs:\d+ schläft fest \d+ ms/.test(e[0])) fails.push(`Klinge 5 nennt den festen Schlaf nicht: ${q}`);
+        if (e.length !== 1 || !/^probe\.cjs:\d+ schläft fest \d+ ms/.test(e[0]))
+            fails.push(`Klinge 5 nennt den festen Schlaf nicht: ${q}`);
     }
     const schlafStill = [
         "await sleep(999);\n",
@@ -990,8 +1047,10 @@ function selftest() {
     for (const q of schlafStill) if (schlaf(q).errs.length) fails.push(`Klinge 5 feuert ohne festen Schlaf: ${q}`);
     const tafel = { "probe.cjs": [1, "Probe"] };
     if (schlaf(schlafRot[0], tafel).errs.length) fails.push("Klinge 5 feuert an einer Stelle der Tafel SCHLAF_REST");
-    if (schlaf(schlafRot[0] + schlafRot[2], tafel).errs.length !== 2) fails.push("Klinge 5 nennt die Stelle über der Tafel nicht");
-    if (schlaf("const a = 1;\n", tafel).unter.join() !== "probe.cjs 0 < 1") fails.push("Klinge 5 meldet die gesunkene Zahl der Tafel nicht");
+    if (schlaf(schlafRot[0] + schlafRot[2], tafel).errs.length !== 2)
+        fails.push("Klinge 5 nennt die Stelle über der Tafel nicht");
+    if (schlaf("const a = 1;\n", tafel).unter.join() !== "probe.cjs 0 < 1")
+        fails.push("Klinge 5 meldet die gesunkene Zahl der Tafel nicht");
     // Klinge 6: der Schneider von gate:vehicle-drive bis D2-N1 und ein `case "{"` fallen mit Datei:Zeile; der EINE Schneider,
     // ein JSON-Text, ein Kommentar und dieselbe Probe im freien Schneider schweigen.
     const schneiderRot = [
@@ -1073,12 +1132,29 @@ function selftest() {
             ["Post am festen Ordner", (z) => { const s = z.jobs.post.steps.find((x) => /^Post/.test(x.name || "")); s.run = s.run.replace(/D=\$\(ls -d [^\n]*\n/, 'D="probe/probe-$L"\n'); }, /Versuch: der Post/], // prettier-ignore
             // DER STEMPEL ERBT (stempel-erbt-probe): je Bedingung des Erbes eine Mutante des Richters scripts/ci-kopf.cjs (im
             // require-Cache des Kinds) oder des Einlasses — jede fällt an ihrem Fall
-            ["Erbe ohne Baum-Vergleich", kopfMutante("e.tree.sha !== c.tree.sha", "false"), /Erbe \(2\) Commit mit Inhalt/],
+            [
+                "Erbe ohne Inhalts-Vergleich",
+                kopfMutante("inhalt(e) !== inhalt(c)", "false"),
+                /Erbe \(2\) Commit mit Inhalt/,
+            ],
+            ["Erbe blind für den Post (der Inhalt ist der ganze Baum)", kopfMutante("e.path !== POST", "true"), /Erbe \(9\) leer über dem Bericht/], // prettier-ignore
             ["Erbe über den Merge", kopfMutante("parents.length === 1", "parents.length >= 1"), /Erbe \(3\) Merge/],
-            ["Erbe ohne Schluss des Laufs", kopfMutante('l.conclusion === "success"', "true"), /Erbe \(4\) Elter-Lauf rot/],
+            [
+                "Erbe ohne Schluss des Laufs",
+                kopfMutante('l.conclusion === "success"', "true"),
+                /Erbe \(4\) Elter-Lauf rot/,
+            ],
             ["Erbe, solange nichts rot ist", kopfMutante('l.status === "completed" && l.conclusion === "success"', 'l.conclusion !== "failure"'), /Erbe \(5\) Elter-Lauf läuft noch/], // prettier-ignore
-            ["Erbe ohne Ruf-Vergleich", kopfMutante("proben.filter((p) => !ruf.includes(p))", "[]"), /Erbe \(6\) der Ruf nennt/],
-            ["Erbe nur vom nächsten Elter", kopfMutante("kette.slice(1)", "kette.slice(1, 2)"), /Erbe \(7\) zwei leere Commits/],
+            [
+                "Erbe ohne Ruf-Vergleich",
+                kopfMutante("proben.filter((p) => !ruf.includes(p))", "[]"),
+                /Erbe \(6\) der Ruf nennt/,
+            ],
+            [
+                "Erbe nur vom nächsten Elter",
+                kopfMutante("kette.slice(1)", "kette.slice(1, 2)"),
+                /Erbe \(7\) zwei leere Commits/,
+            ],
             ["Erbe still bei Fehler der API", (z) => { const e = z.jobs.einlass.steps.at(-1).env; e.EINLASS_JS = mutiert(e.EINLASS_JS, /console\.error\(`❌ Einlass[^\n]*\n\s*process\.exitCode = 1;/, "aus(`matrix=${JSON.stringify({ include: arten })}`);"); }, /Erbe \(8\) Fehler der API/], // prettier-ignore
             ["Einlass ohne Erbe (der Stand bis stempel-erbt-probe)", (z) => { const e = z.jobs.einlass.steps.at(-1).env; e.EINLASS_JS = mutiert(e.EINLASS_JS, "if (u.erbt) {", "if (false) {"); }, /Erbe \(1\) leer über grünem Elter/], // prettier-ignore
             ["Einlass ohne Recht auf die Läufe", ["jobs.einlass.permissions"], /Erbe: der Einlass liest keine Läufe/],
@@ -1143,7 +1219,15 @@ function main() {
             .filter((f) => f.endsWith(".cjs"))
             .map((f) => ["scripts/" + f, ausDatei(path.join(root, "scripts", f))])
     );
-    const errs = ratchet.errs.concat(anker.errs, param.errs, tasten.errs, schlaf.errs, probe, urteilFaelle(), wacheLuecken(linsen));
+    const errs = ratchet.errs.concat(
+        anker.errs,
+        param.errs,
+        tasten.errs,
+        schlaf.errs,
+        probe,
+        urteilFaelle(),
+        wacheLuecken(linsen)
+    );
     // die EINE rote Liste (welt-boot rotListe) statt einer eigenen Schleife daneben
     rotListe(errs);
     if (ratchet.nT < FROZEN_TYPEOF)
@@ -1151,7 +1235,9 @@ function main() {
             `ℹ️  Der typeof-Bestand sank (${ratchet.nT} < ${FROZEN_TYPEOF}) — FROZEN_TYPEOF nachziehen (der Ratchet darf enger).`
         );
     if (schlaf.unter.length)
-        console.log(`ℹ️  Der Bestand fester Schlafe sank (${schlaf.unter.join(" · ")}) — SCHLAF_REST nachziehen (die Tafel darf enger).`);
+        console.log(
+            `ℹ️  Der Bestand fester Schlafe sank (${schlaf.unter.join(" · ")}) — SCHLAF_REST nachziehen (die Tafel darf enger).`
+        );
     // der Grün-Satz nennt die Zahlen: typeof-Existenz-Proben gegen den Ratchet (nur sinkend), Anker auf lebendem Stamm-Code
     // (__consumes + __anker installiert), Linsen ohne Parameter-Anker, Kopf-Muster, Taste nach der Wanduhr, eigenen Schneider und
     // ersten Treffer im ganzen Stamm, die festen Schlafe ab 1 s gegen ihre Tafel (nur sinkend), die Rufe am Einlass der GPU-Probe
