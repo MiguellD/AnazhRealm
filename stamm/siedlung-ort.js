@@ -3369,7 +3369,15 @@ class AnazhRealm_siedlung_ort {
         const laternen = (plan.laternen || []).map((l) =>
             l && l.wand ? Object.assign({}, l, { slot: neu.has(l.slot) ? neu.get(l.slot) : -1 }) : l
         );
-        return Object.assign({}, plan, { slots, laternen });
+        // ebenso das Stück am Haus (ort-ausstattung: Schild und Relief tragen `slot`, `_hausStueckSetzen`). Bis hier reiste die
+        // Nummer des Exports: nach dem Reload standen 3 von 17 Häusern des nordischen Start-Dorfs, die Schmiede #10 rückte im
+        // offenen Zug auf 8 — das Haus auf 10 hob ihr Schild vor ihr, und sie fiel an der Bau-Wand ihres eigenen Schilds
+        // (gate:haus-welt W9 Zug 15 von 16)
+        if (!Array.isArray(plan.gegenstaende)) return Object.assign({}, plan, { slots, laternen });
+        const gegenstaende = plan.gegenstaende.map((q) =>
+            q && Number.isInteger(q.slot) ? Object.assign({}, q, { slot: neu.has(q.slot) ? neu.get(q.slot) : -1 }) : q
+        );
+        return Object.assign({}, plan, { slots, laternen, gegenstaende });
     }
     // Der Bau eines Orts (sein Same `same`) an (x, z), oder undefined. Der Zug, der wiederkehrt, hebt nur, was nicht steht; das
     // Wachstum nimmt, was sein neuer Plan nicht trägt (`_ortWaechst`).

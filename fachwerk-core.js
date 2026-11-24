@@ -13762,6 +13762,18 @@
             // Vorplätze (die Stufe vor der Tür liegt auf allem)
             erdbau: wegSaeume.concat(hausPlatten, wegKerne, erdbau, vorplaetze, freiSplats),
         });
+        // DAS STÜCK AM HAUS folgt seiner Nummer wie die Wandlaterne (`neuSi`, ort-ausstattung: Schild und Relief tragen `slot`)
+        // und fällt mit seinem Haus ins Wasser. Bis hier reiste die Nummer des v1-Plans: am nordischen Start-Dorf nahm das Wasser
+        // 3 von 17 Slots, das Haus #10 rückte auf 8 — das Haus auf 10 hob das Schild der Schmiede vor ihr, und die Schmiede
+        // fiel an der Bau-Wand ihres eigenen Schilds (gate:haus-welt W9 Zug 15 von 16)
+        if (wasserSlots && Array.isArray(plan.gegenstaende))
+            v2.gegenstaende = plan.gegenstaende
+                .filter(function (q) {
+                    return !q || !Number.isInteger(q.slot) || neuSi[q.slot] >= 0;
+                })
+                .map(function (q) {
+                    return q && Number.isInteger(q.slot) ? Object.assign({}, q, { slot: neuSi[q.slot] }) : q;
+                });
         // die Slots, die das Wasser nahm (der Leser zählt das Dorf ehrlich: geplant = stehend + im Wasser gefallen)
         if (wasserSlots) v2.wasserSlots = wasserSlots;
         // der Torplatz trägt seine Höhe wie der Platz (`y`, absolut)
