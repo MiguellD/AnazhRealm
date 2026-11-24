@@ -2253,3 +2253,4 @@ omen-gtx-gtx-1feab29c-3-1feab29c UNGEMESSEN 0 GRÜN / 0 ROT / 2 UNGEMESSEN · UN
 2026-11-24 04:41 RUNDE 13 SPRUNG am 1feab29c → Runde 14 am 447eaea6 (gtx laeuft 51/246, radeon durch 55/55): Koordinator 24.11. 04:42: die Landungen z701–z703 (wetter-am-ort, front-stoff, front-leben) und die Stationen pm-beobachter und pm-front-stoff tragen Ansprüche, die an 1feab29c niemand misst; die GTX steht dort seit 02:45 bei 51/246 (Alarm seit 04:02)
 2026-11-24 04:57 RUNDE 14 ALARM gtx: ohne Fortschritt seit 16 min (offen, 0/0, Station -, Kopf 447eaea6) — gesehen von radeon (radeon-dienst)
 2026-11-24 04:58 landung Runde 14 am 447eaea6: misst 58 von 241 Stationen (vorn; 0 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+2026-11-24 05:29 RUNDE 14 ALARM gtx: ohne Fortschritt seit 16 min (laeuft, 5/241, Station karte2.planet.kosmos.systeme#1, Kopf 447eaea6) — gesehen von gtx (landung-dienst)
