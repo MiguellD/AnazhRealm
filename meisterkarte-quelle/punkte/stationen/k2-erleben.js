@@ -142,6 +142,32 @@ const NEULING_AN = async (r, T, a) => {
     return { ganz: eigen, erschafft: 1, teilt: 1, eigen, weg: eigen ? "ganz" : "geteilt mit Same " + seedCode + ", gesetzt mit " + seedWerk, name, zeichen: c.code.length };
 };
 
+// EIN SATZ DES KORPUS (erleben.schoepfen.satz#1, das Gesetz des Fächers): a = { satz, still } — ein Satz des eingefrorenen Korpus
+// (spec/abnahme/ki-korpus.json; still: der Satz verlangt keine Tat). Der Weg, den das Spiel liest (stamm/feld-leben.js:671–673): erst
+// die Regel (`_regelAusSatz` stamm/feld-sprache.js:568), dann das Programm (`parseChatToDsl` :545); ohne beides die KI
+// (`maybeAnswerWithLlm` stamm/feld-leben.js:1603 — der Richter ruft kein Modell: ist die KI bereit, zählt der Satz ohne Fähigkeit).
+// Gültig: ein Satz mit Tat trägt ein Programm, ein stiller keines; ein Wurf des Parsers ist ein Bruch, über 100 ms ein Hänger (die
+// Uhr der Seite um den Ruf). Der Same-Zähler `worldMeta.bauSame` kehrt zurück.
+const SATZ_AN = async (r, T, a) => {
+    const st = r.state, wm = st.worldMeta || {}, bs = JSON.stringify(wm.bauSame || {});
+    let p = null, bruch = 0;
+    const t0 = performance.now();
+    try {
+        const q = typeof r._regelAusSatz === "function" ? r._regelAusSatz(a.satz) : null;
+        p = q && Array.isArray(q.program) ? q : r.parseChatToDsl(a.satz);
+    } catch (e) {
+        bruch = 1;
+    } finally {
+        wm.bauSame = JSON.parse(bs);
+    }
+    const ms = performance.now() - t0;
+    const prog = p && Array.isArray(p.program) ? p.program : null;
+    const llm = st.llm || {}, defs = r.llmProviderDefs ? r.llmProviderDefs() : {}, def = defs[llm.provider], cfg = (llm.providerConfig || {})[llm.provider] || {};
+    const ki = !def ? "llm.fehler.provider" : !llm.enabled ? "llm.fehler.aus" : def.requiresKey && !cfg.apiKey ? "llm.fehler.schluessel" : null;
+    if (!prog && !bruch && !a.still && !ki) return { fehlt: "der Satz geht an die KI (stamm/feld-leben.js:1603 maybeAnswerWithLlm) — der Richter ruft kein Modell" };
+    return { gueltig: bruch ? 0 : a.still ? (prog ? 0 : 1) : prog ? 1 : 0, bruch, haenger: ms > 100 ? 1 : 0, ms: +ms.toFixed(2), verb: prog ? String(prog[0]) : null, ki: ki || "bereit" };
+};
+
 // DIE LUFT EINES WETTERS (erleben.bild.ferne#1, das Gesetz des Fächers): a = { wetter } — ein Wort der Wetter-Tabelle
 // (`WEATHER_FIELD`, stamm/daten.js:122) oder a.feld (die Mutante: ein Feld ohne Dunst und Regen). Die CPU-Eingänge des Knotens der
 // Luft: β am Bezugs-Niveau (`_luftBeta(wf)` stamm/bild-himmel.js:2473) und die Extinktion je Kanal relativ zu β (`_luftSpektrum`
@@ -1485,6 +1511,7 @@ const FERNE_AN = async (r, T, a) => {
             leiter: "erleben.schoepfen.satz",
             sek: 30,
             mutiert: true,
+            seite: { FAECHER, SATZ_AN },
             pfad: ["spec/abnahme/ki-korpus.json", "stamm/dienst.js", "stamm/feld-nexus.js", "stamm/feld-leben.js", "stamm/feld-sprache.js", "stamm/feld-dsl.js", "stamm/siedlung-bewohner.js", "stamm/gelaende-chunks.js"],
             welt: [{ wort: "werke_neu", ab: 1, was: "Werke, die der Satz neu in die Welt setzte (state.architectures)" }],
             sprossen: {
@@ -1497,6 +1524,7 @@ const FERNE_AN = async (r, T, a) => {
                         { wort: "satz_bild_s", richtung: "≤", wert: 6, wortlaut: "Satz → Bild ≤ 6 s lokal", feld: "preis" },
                     ],
                     umfang: { verlangt: 40, einheit: "Sätze des eingefrorenen Korpus im echten Fenster", wortlaut: "eingefrorener Korpus ≥ 40 Sätze", feld: "richter" },
+                    welt: [{ wort: "saetze", ab: 1, was: "Sätze des Korpus, die der Weg des Spiels las (Regel, Parser)" }],
                 },
                 2: {
                     soll: [{ wort: "passt_pct", richtung: "≥", wert: 70, wortlaut: "Blindurteil „passt\" ≥ 70 %", feld: "richter" }],
@@ -1547,22 +1575,43 @@ const FERNE_AN = async (r, T, a) => {
                 const nRegler = Object.keys((korpus.regler && korpus.regler.saetze) || {}).length;
                 const kiText = ki.grund ? "der LLM-Lauf fehlt: " + ki.grund + " (Anbieter " + ki.anbieter + ", an " + ki.an + ", Schlüssel " + ki.schluessel + "; stamm/dienst.js:93–96)" : "das Modell ist erreichbar (Anbieter " + ki.anbieter + ")";
                 L.zeile("satz KI " + JSON.stringify(ki) + " · Korpus " + nSaetze + " Sätze, Regler " + nRegler);
-                // ── S1 · der eingefrorene Korpus im echten Fenster ──
+                // ── S1 · der eingefrorene Korpus ÜBER DEN FÄCHER (vorher: ohne Schlüssel „Umfang nicht erzeugbar“, mit Schlüssel je Satz
+                // ein Ruf des Modells): je Satz der Weg des Spiels (SATZ_AN) — die Kontrolle („bau mir ein haus“ mit Tat) muss gültig
+                // sein, die Mutante (derselbe Satz als still verlangt) ungültig. Absicht am Ausgabebild und Satz → Bild: am Gerät ──
                 await L.je(1, async () => {
-                    if (ki.grund) return L.umfang(1, 0, kiText + " — 0 von " + nSaetze + " Sätzen des Korpus (spec/abnahme/ki-korpus.json) erreichen das Modell");
-                    // mit Schlüssel: die Sätze an das Modell, solange die Leiter Zeit hat (je Satz ein Ruf von `llmCall`, ohne Tat)
-                    let n = 0;
-                    for (const s of Object.keys(korpus.saetze)) {
-                        if (H.rest() < 18) break;
-                        const a = await L.ev("const a = await r.llmCall(" + JSON.stringify(s) + "); return { fehler: a && a.error ? String(a.error[0]) : null, programm: !!(a && a.program) };", 15).then(
-                            (x) => x,
-                            () => ({ fehler: "warf" })
-                        );
-                        if (!a.fehler) n++;
-                    }
-                    if (n >= P.sprossen[1].umfang.verlangt)
-                        return L.leser(1, "gültig und Absicht am Ausgabebild: kein Leser in der Sitzung — das Urteil je Satz lebt in der Linse (scripts/diag-v1-pfad.cjs:1009 korpusSatzUrteil)", n);
-                    L.umfang(1, n, "im Fenster der Leiter (" + H.sek() + " s) antwortete das Modell auf " + n + " von " + nSaetze + " Sätzen — gültig und Absicht am Ausgabebild verlangen ≥ 40 im echten Fenster");
+                    const s1 = P.sprossen[1];
+                    const saetze = Object.entries(korpus.saetze || {}).map(([satz, e]) => ({ satz, still: !!(e && e.still) }));
+                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.SATZ_AN, export: "stamm/feld-sprache.js:568 _regelAusSatz → :545 parseChatToDsl", leser: "stamm/feld-leben.js:671 _chatTryRuleCommand · :673 _chatTryDslParse" },
+                        adressen: { dazu: saetze.concat([{ satz: "bau mir ein haus", still: false, kontrolle: true }, { satz: "bau mir ein haus", still: true, mutante: true }]) },
+                        ms: Math.max(3000, Math.floor((L.rest() - 20) * 1000)),
+                        masse: {
+                            saetze: { wie: "anzahl", nur: (a) => !a.kontrolle && !a.mutante },
+                            gueltig: { wie: "mittel", feld: "gueltig", nur: (a) => !a.kontrolle && !a.mutante },
+                            brueche: { wie: "summe", feld: "bruch", nur: (a) => !a.kontrolle && !a.mutante },
+                            haenger: { wie: "summe", feld: "haenger", nur: (a) => !a.kontrolle && !a.mutante },
+                            msMax: { wie: "max", feld: "ms" },
+                            kontrolle: { wie: "max", feld: "gueltig", nur: "kontrolle" },
+                            mutante: { wie: "max", feld: "gueltig", nur: "mutante" },
+                            ki: { wie: "erste", feld: "ki" },
+                        },
+                        schlecht: { feld: "gueltig", richtung: "min" },
+                        pose: (a) => "der Satz „" + a.satz + "“ an der Wiese, Ego — das Ausgabebild",
+                        ungemessen: ["Absicht am Ausgabebild: ungemessen bis zum Gerät (das Urteil je Satz lebt in der Linse scripts/diag-v1-pfad.cjs:1009 korpusSatzUrteil)", "Satz → Bild ≤ 6 s: die Wanduhr am Gerät"],
+                    });
+                    L.zeile("satz S1: " + R.akte.slice(0, 500));
+                    const w = R.werte;
+                    if (w.kontrolle !== 1 || w.mutante !== 0) throw new Error("Kontrolle " + w.kontrolle + " / Mutante " + w.mutante + " — das Prädikat „gültig“ trennt nicht (" + R.akte.slice(0, 200) + ")");
+                    if (!w.saetze) return L.leser(1, "der Weg eines Satzes: " + (R.fehlt || "kein Satz gemessen") + " · " + R.akte);
+                    const pct = +(100 * w.gueltig).toFixed(1);
+                    const zahlen = w.saetze + " von " + saetze.length + " Sätzen auf dem Weg des Spiels (KI " + w.ki + "): gültig " + pct + " %, " + w.brueche + " Brüche, " + w.haenger + " Hänger > 100 ms (längster " + w.msMax + " ms)";
+                    if (pct < s1.soll[0].wert || w.brueche > 0 || w.haenger > 0)
+                        return L.gemessen(1, { gueltig_pct: pct, brueche: w.brueche, haenger: w.haenger }, {
+                            erzeugt: w.saetze,
+                            welt: { saetze: R.gemessen },
+                            taeter: zahlen + " — ohne KI trägt nur der Parser (Regel und Studio-Satz, stamm/feld-sprache.js:497–568) ein Programm, jeder andere Satz bleibt ohne Tat; Absicht am Ausgabebild und Satz → Bild: ungemessen bis zum Gerät · " + R.akte,
+                        });
+                    L.leser(1, "Absicht am Ausgabebild: kein Leser in der Sitzung — das Urteil je Satz lebt in der Linse (scripts/diag-v1-pfad.cjs:1009 korpusSatzUrteil); " + zahlen + (R.fehlt ? "; " + (saetze.length - w.saetze) + " Sätze an die KI: " + R.fehlt : "") + " · " + R.akte, w.saetze);
                 });
                 // ── S2 · 100 Regler-Sätze ──
                 await L.je(2, async () => {
