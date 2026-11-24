@@ -20,6 +20,9 @@ case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /
 D=$(cd "$(dirname "$0")" && pwd)
 . "$D/gemein.sh"
 . "$D/front.sh" # die Front der Runde: EINE Quelle mit der OMEN (front_bauen, liste_datei, zahl)
+# WER DER LAUF IST (ko-hand-lauf, 24.11.): die Läufe dieses Diensts tragen PUNKTE_WER=radeon — punkte.cjs nennt sie am GPU-Schloss
+# `punkte-radeon-*` und am Baum `radeon-<pid>`; jeder andere Einzel-Lauf heißt `hand-<wer>-…` und ist eine HAND (warter sieht ihn)
+export PUNKTE_WER=radeon
 PM=$T/w3/pm
 RUNDE_REPO=$R # der Klon, dessen refs/runde/koord `runde lies` holt (Karte und Ansprüche der Front, front.sh)
 L=$W/radeon-nie-leer.log
@@ -59,13 +62,20 @@ ci() { tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runn
 # die laufende Station misst allein. Lehre 12.11. (08:50–11:23: neun Fahrten, sieben vom ersten Runner.Worker abgebrochen, 17 Stationen
 # in 2,5 h, gebucht ±0): der Job ist dann ein WARTER wie jede Hand — die Karte geht an der nächsten Stations-Grenze frei, nichts fällt weg.
 ci_wartet() { tail -1 "$HOOK_LOG" 2>/dev/null | grep -q "wartet auf Schloss"; }
-# warter — die Namen der Läufe, die am Schloss warten (leer: keiner). Die eigenen Läufe der Punkte-Maschine (punkte-radeon-*) zählen nie:
-# sie reihen sich an deren Baum-Sperre, und die Fortsetzung nimmt das Schloss in einer neuen Sitzung wieder
-warter() {
-    node "$D/schloss-puls.cjs" --geraet radeon --einmal 2>/dev/null | grep -A8 '"wartende"' | tail -n +2 | grep -oE '^ +"[^"]+"' | tr -d ' "' | grep -v '^punkte-radeon' | tr '\n' ' ' | sed 's/ $//'
-}
+# warter — die Namen der Läufe, die WARTEN (leer: keiner): am GPU-Schloss (gemein.sh schloss_wartende; die eigenen Läufe heißen
+# punkte-radeon-* und zählen nie: sie reihen sich an deren Baum-Sperre, die Fortsetzung nimmt das Schloss in einer neuen Sitzung wieder)
+# und am BAUM (gemein.sh baum_wartende — DIESELBE Funktion wie die OMEN: die Marke eines Laufs, den nicht der Dienst startete, ist eine
+# HAND). DER FREMDE EINZEL-LAUF IST EINE HAND (ko-hand-lauf, Koordinator 24.11.): bis hier las warter nur das Schloss und blendete
+# jeden punkte-radeon-* aus — der Einzel-Lauf eines Machers hieß genauso, und wer am Baum wartete, stand nie am Schloss.
+# baum_ordner — `punkte-radeon.wartet` neben dem Spiel-Baum: im Repo des Mess-Klons (sein git-common-dir), wie punkte.cjs spielRepo
+baum_ordner() { local c; c=$(cd "$PM" 2>/dev/null && cd "$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd) && echo "$(dirname "$c")/.claude/worktrees/punkte-radeon.wartet"; }
+warter() { { schloss_wartende radeon punkte-radeon | tr ' ' '\n'; baum_wartende "$(baum_ordner)" radeon; } | grep . | tr '\n' ' ' | sed 's/ $//'; }
 # DER ORDNER ist das Schloss (atomar mkdir, gpu-schloss.sh) — nie nur besitzer.txt lesen
-lauf_da() { ps -ef | grep -q "[p]unkte.cjs run"; }
+# lauf_da — lebt der EIGENE Mess-Lauf? (ko-hand-lauf, Koordinator 24.11.: `ps -ef | grep "[p]unkte.cjs run"` hielt JEDEN fremden
+# Einzel-Lauf für den eigenen — `frei` war nie wahr, und die Regel „die Hand verhungert die Messung nicht“ griff nie.) Die Marke
+# $S/radeon.lauf trägt die Windows-pid des Laufs, den miss() startete (nach dem Start geschrieben, nach seinem Ende gelöscht); sie lebt
+# nur mit ihrem Halter (gemein.sh halter_lebt: pid + START, Abbild timeout.exe) — auch über einen Neustart des Diensts, der ihn verwaisen ließ
+lauf_da() { halter_lebt "$S/radeon.lauf" timeout.exe; }
 frei() { [ ! -d "$GS" ] && ! lauf_da && ! ci && [ -z "$(warter)" ]; }
 # verwaist: der Halter (pid= in besitzer.txt) lebt nicht mehr, oder der Ordner steht seit > 2 min ohne Halter (10.11. 21:54: der
 # Konto-Wechsel beendete die Messung, ihr Schloss hing 35 min an pid 30944 — CI und Messung hätten daran gewartet)
@@ -203,6 +213,7 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
     PROG=0
     cd "$PM/meisterkarte-quelle/punkte" && { timeout 9000 node punkte.cjs run --sha "$K" --geraet radeon "$@" >"$W/radeon-nie-leer-lauf.out" 2>&1 & }
     p=$!
+    cat "/proc/$p/winpid" >"$S/radeon.lauf" 2>/dev/null # die Marke des eigenen Laufs (lauf_da)
     ab=
     weich=0
     t_fahrt=$(date +%s)
@@ -243,6 +254,7 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
         kill $p 2>/dev/null
     fi
     wait $p 2>/dev/null
+    rm -f "$S/radeon.lauf"
     cd "$PM" || return 1
     rm -f "$WACHE"
     if [ -n "$ab" ]; then
@@ -436,6 +448,10 @@ takt() {
 # b  ein Warter erscheint nach 5 Stationen → der Dienst gibt an der nächsten Grenze frei, beginnt nichts, solange er wartet, setzt fort
 # c  ein lebender gpu-lauf-Halter (pid in Zeile 1) seit 300 s bleibt, ein toter Halter (pid in Zeile 2) fällt
 # d  nach dem Weichen kein Eintritt, solange die Hand von vorhin steht; eine spätere hält ihn nicht auf
+# h  DER FREMDE EINZEL-LAUF IST EINE HAND (ko-hand-lauf 24.11.): ein fremder `punkte.cjs run` lebt, eine Hand hält die Karte → vor
+#    HAND_ZEIT_S keine Fahrt, danach beginnt sie; ein Einzel-Lauf, den nicht der Dienst startete, wartet am Baum → die Fahrt weicht an
+#    der nächsten Grenze (behalten n, wie b). Mutanten: lauf-fremd (lauf_da sieht wieder jeden punkte.cjs run) · warter-ohne-baum (warter
+#    liest nur das Schloss, die Regel bis 24.11.) — beide ROT an h.
 # z  DAS GESETZ DER RUNDE: main springt → am Kopf der Runde zu Ende, in der Reihe der Klassen, die nächste Runde erst, wenn beide durch
 # Mutanten: von-vorn (die Fortsetzung misst die ganze Gruppe) · rest (kein Rest-Behalten) · warter (blind für Warter) · pid (die alte
 # r  DAS GESETZ DER ROH-BILDER: ein Bild bei gehaltenem Urteil bleibt am Gerät (Prüfsumme in git), bei Wechsel geht es nach git
@@ -671,6 +687,16 @@ const schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
         if (marke("ci_nach") === String(n)) { fs.rmSync(path.join(S, "ci_nach")); fs.writeFileSync(path.join(S, "ci"), "x"); await halte(); }
         // nach dem Warter misst er erst weiter, wenn der Dienst WEICHT ins Log schrieb, dann genau EINE Station bis zur Grenze und hält
         // (behalten n + 1, der Rest offen); ein Dienst, der nie weicht (Mutante warter), läuft nach 120 s durch
+        // nach Station n wartet ein Einzel-Lauf, den nicht der Dienst startete, am BAUM (die Marke von punkte.cjs baumSperre im Ordner
+        // neben dem Spiel-Baum): wie beim Warter misst der Stummel erst weiter, wenn der Dienst WEICHT (wie beim Warter: er hält vor der nächsten Station, behalten n);
+        // ein Dienst, der den Baum nicht liest (Mutante warter-ohne-baum), läuft nach 30 s durch
+        if (marke("baum_nach") === String(n)) {
+            const w0 = weicht(), e = Date.now() + 30000, wo = path.join(__dirname, "..", "..", ".claude", "worktrees", "punkte-radeon.wartet");
+            fs.rmSync(path.join(S, "baum_nach")); fs.mkdirSync(wo, { recursive: true }); fs.writeFileSync(path.join(wo, "macher-4242"), "");
+            while (weicht() <= w0 && Date.now() < e) await schlaf(200);
+            fs.rmSync(path.join(wo, "macher-4242"), { force: true });
+            halt = weicht() > w0;
+        }
         if (marke("warter_nach") === String(n)) {
             const w0 = weicht(), e = Date.now() + 120000;
             fs.rmSync(path.join(S, "warter_nach")); fs.writeFileSync(path.join(S, "warter"), "macher-hand");
@@ -684,14 +710,15 @@ STUMMEL
     git -C "$PM" add -A && git -C "$PM" $A commit -qm stummel && git -C "$PM" push -q origin punkte-maschine
     ci() { [ -f "$STUB/ci" ]; }
     ci_wartet() { [ -f "$STUB/ci_wartet" ]; }
-    warter() { cat "$STUB/warter" 2>/dev/null; }
-    lauf_da() { [ -f "$STUB/pid" ] && tasklist //FI "PID eq $(cat "$STUB/pid")" //NH 2>/dev/null | grep -qi node; } # nur der Stummel DIESES Sandkastens
+    schloss_wartende() { cat "$STUB/warter" 2>/dev/null; } # das Schloss gestellt; warter (Schloss + Baum) und lauf_da (die eigene Marke) echt
     richter() { echo "Richter $1: KEIN FALL (Stummel)" >>"$S/richter.out"; }
     sleep() { command sleep 0.1; }
     case "$1" in
     von-vorn) offen_am() { echo "$1"; } ;; # die Fortsetzung blind: jede Fahrt die ganze Gruppe
     rest) rest_behalten() { rm -f "$WACHE"; } ;;
     warter) warter() { :; } ;;
+    lauf-fremd) lauf_da() { ps -ef | grep -q "[p]unkte.cjs run"; } ;; # die Regel bis 24.11.: jeder punkte.cjs run ist der eigene Lauf
+    warter-ohne-baum) warter() { schloss_wartende radeon punkte-radeon; } ;; # die Regel bis 24.11.: nur das Schloss, der Baum ungelesen
     ziel) kopf() { main_jetzt; } ;; # die alte Regel: der Takt misst am jüngsten main
     bild) bilder_halten() { :; } ;; # die alte Regel: git add -A nimmt jedes Roh-Bild mit
     liste-als-argument) liste_datei() { echo "$2"; } ;; # die alte Regel: die Liste reist als EIN Argument
@@ -761,6 +788,36 @@ STUMMEL
     else echo "ROT d  Reihe der Ankunft: Fahrten bis zum Weichen $vor (Soll 1), solange die Hand von vorhin steht $a1 (Soll 1), mit der späteren Hand $a2 (Soll 2)"; fi
     fi
     [ "$1" = reihe ] && { nur -; command rm -rf "$X"; return; } # die Mutante prüft nur d
+    if nur h; then
+    # h — DER FREMDE EINZEL-LAUF IST EINE HAND (ko-hand-lauf, Koordinator 24.11.; Befund 8: die Hand verhungert die Runde). Ein fremder
+    # `node … punkte.cjs run` lebt (ein Macher), eine Hand hält die Karte (das Schloss mit lebendem Halter): mit laufender Hand-Zeit
+    # beginnt keine Fahrt (h0), nach HAND_ZEIT_S beginnt sie (h1, sie stellt sich mit Vorrang ans Schloss). In der Fahrt wartet nach
+    # Station 3 ein Einzel-Lauf, den nicht der Dienst startete, am BAUM (Marke macher-4242): die Fahrt WEICHT an der nächsten Grenze,
+    # behalten 3 von 8 (bis zur Grenze, wie b). Vorher sah lauf_da den fremden Lauf als eigenen (h1 = 0), und warter las den Baum nie (8 von 8, kein WEICHT).
+    local hf h0 h1 hg
+    neu hand
+    seq 1 8 | sed 's/^/hand.K/;s/$/#1/' >"$STUB/alle.txt"
+    gtx_vorn
+    node -e "setTimeout(() => {}, 300000)" punkte.cjs run --nur fremd.K1#1 &
+    hf=$!
+    mkdir -p "$GS"
+    printf 'hand-macher-radeon-sitzung %s pid=%s\n' "$(date -Iseconds)" "$(cat /proc/$$/winpid)" >"$GS/besitzer.txt"
+    echo 3 >"$STUB/baum_nach"
+    f=0 WEICH_VOR= T_FAHRT_ENDE=$(date +%s) HAND_ZEIT_S=9999999999
+    takt
+    h0=$(starts "$K")
+    HAND_ZEIT_S=0
+    takt
+    h1=$(starts "$K")
+    hg=$(gem "$K")
+    kill "$hf" 2>/dev/null
+    command rm -rf "$GS" "$STUB/baum_nach"
+    f=0 WEICH_VOR= T_FAHRT_ENDE= HAND_ZEIT_S=9999999999
+    if [ "$h0" = 0 ] && [ "$h1" = 1 ] && grep -q "die Karte hält nur eine Hand (hand-macher-radeon-sitzung" "$L" && grep -q "WEICHT: am Schloss wartet Baum-Sperre:macher-4242" "$L" && [ "$hg" = 3 ]; then
+        echo "OK h  der fremde Einzel-Lauf ist eine Hand: ein fremder punkte.cjs run lebt, eine Hand hält die Karte → vor HAND_ZEIT_S keine Fahrt, danach beginnt sie; ein Einzel-Lauf wartet am Baum → die Fahrt weicht an der nächsten Grenze (behalten $hg von 8)"
+    else echo "ROT h  der fremde Einzel-Lauf ist eine Hand: Fahrten vor HAND_ZEIT_S $h0 (Soll 0), danach $h1 (Soll 1), WEICHT vor dem Baum $(grep -c "WEICHT: am Schloss wartet Baum-Sperre" "$L") (Soll 1), behalten ${hg:-?} (Soll 3 von 8: behalten bis zur Grenze, der Rest offen)"; fi
+    fi
+    case "$1" in lauf-fremd | warter-ohne-baum) nur -; command rm -rf "$X"; return ;; esac # die Mutanten des fremden Laufs prüfen nur h
     case "$1" in offen-blind | offen-nur-rot | offen-ungemessen | reihe-gtx | altes-gesetz | warte) ST_NUR_G=1; st_gesetz; nur -; command rm -rf "$X"; return ;; esac # die Mutanten der geteilten Front prüfen nur o und g
     f=0 T_FAHRT_ENDE= WEICH_VOR=
     # a — der Fall 23:28 in der Runde: CI-Job nach 9 von 61, die Fortsetzung am Kopf der Runde misst die 52, dann „durch“
@@ -960,11 +1017,11 @@ STUMMEL
 selbsttest() {
     local echt m r rot=0 mz=0 mr=0 O
     O=$(mktemp -d)
-    local MUT=${ST_MUTANTEN-"von-vorn rest warter pid reihe ziel bild still-push pushe-still referenz-rechner liste-als-argument offen-blind offen-nur-rot offen-ungemessen reihe-gtx altes-gesetz warte"} # ST_MUTANTEN="" fährt nur die Fälle (die Mutanten getrennt, wenn der Zug wenig Zeit lässt)
+    local MUT=${ST_MUTANTEN-"von-vorn rest warter pid reihe ziel bild still-push pushe-still referenz-rechner liste-als-argument offen-blind offen-nur-rot offen-ungemessen reihe-gtx altes-gesetz warte lauf-fremd warter-ohne-baum"} # ST_MUTANTEN="" fährt nur die Fälle (die Mutanten getrennt, wenn der Zug wenig Zeit lässt)
     # DIE FANG-TAFEL (22.11., wie landung-dienst.sh): jede Mutante fährt nur den Fall, an dem sie fällt — ST_NUR wählt die Fälle von
     # echt; ST_ECHT=0 fährt nur die Mutanten. Höchstens VIER Sandkästen zugleich (Koordinator 22.11. 09:11: 14 nebeneinander verstopften
     # den Laptop 2 h 13 min) — die Mutanten in Gruppen per ST_MUTANTEN
-    local FANG="von-vorn:a rest:a3 warter:b pid:c reihe:d ziel:z bild:r still-push:p pushe-still:p referenz-rechner:p,q liste-als-argument:t offen-blind:o,g offen-nur-rot:o,g offen-ungemessen:o,g reihe-gtx:g altes-gesetz:g warte:g1"
+    local FANG="von-vorn:a rest:a3 warter:b pid:c reihe:d ziel:z bild:r still-push:p pushe-still:p referenz-rechner:p,q liste-als-argument:t offen-blind:o,g offen-nur-rot:o,g offen-ungemessen:o,g reihe-gtx:g altes-gesetz:g warte:g1 lauf-fremd:h warter-ohne-baum:h"
     fang() { local p; for p in $FANG; do [ "${p%%:*}" = "$1" ] && { echo "${p#*:}"; return; }; done; }
     if [ "${ST_ECHT:-1}" = 0 ]; then : >"$O/echt"; else (st_lauf "" >"$O/echt" 2>&1) & fi
     for m in $MUT; do (ST_NUR=${ST_NUR:-$(fang "$m")}; st_lauf "$m" >"$O/$m" 2>&1) & done
@@ -973,7 +1030,7 @@ selbsttest() {
     [ -n "$echt" ] && echo "$echt" | sed 's/^/  /'
     echt=$(echo "$echt" | grep -v "^ZEIT")
     echo "$echt" | grep -q "^ROT" && rot=1
-    [ -n "$ST_NUR" ] || [ "${ST_ECHT:-1}" = 0 ] || [ "$(echo "$echt" | grep -c "^OK")" = 17 ] || rot=1
+    [ -n "$ST_NUR" ] || [ "${ST_ECHT:-1}" = 0 ] || [ "$(echo "$echt" | grep -c "^OK")" = 18 ] || rot=1
     for m in $MUT; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-160)
@@ -981,7 +1038,7 @@ selbsttest() {
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-110 | tr '\n' '|' | sed 's/|$//;s/|/ · /g') $zt"; else echo "  Mutante „$m“ bleibt GRÜN $zt"; fi
     done
     rm -rf "$O"
-    local nf="17 Fälle grün"
+    local nf="18 Fälle grün"
     [ -n "$ST_NUR" ] && nf="die Fälle $ST_NUR grün"
     [ "${ST_ECHT:-1}" = 0 ] && nf="ohne echt"
     if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: $nf, $mr/$mz Mutanten ROT"; return 0; fi

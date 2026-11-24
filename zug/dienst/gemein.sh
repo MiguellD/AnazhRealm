@@ -41,11 +41,19 @@ schleife_lebt() { halter_lebt "$1" "$SCHLEIFE_BILDER"; }
 
 # schloss_wartende <gerät> [eigen-präfix] — wer am GPU-Schloss WARTET, aus der EINEN Quelle schloss-puls.cjs (gpu-lauf.sh vor dem
 # Schloss, Vorrang-Marken, der CI-Job im Start-Hook; `wartende` nach „welten“) — Namen mit Leerzeichen getrennt, leer = keiner.
-# Läufe mit dem eigen-Präfix (die eigene Mess-Sitzung) zählen nie. Dasselbe Lese-Format wie radeon-dienst.sh warter().
+# Läufe mit dem eigen-Präfix (die eigene Mess-Sitzung) zählen nie. Seit ko-hand-lauf (24.11.) heißt nur ein Lauf, den ein Dienst
+# startete, `punkte-<gerät>-…` (punkte.cjs schlossName); jeder andere Einzel-Lauf heißt `hand-<wer>-…` und wartet hier wie jede Hand.
 schloss_wartende() {
     node "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/schloss-puls.cjs" --geraet "$1" --einmal 2>/dev/null | grep -A8 '"wartende"' | tail -n +2 |
         grep -oE '^ +"[^"]+"' | tr -d ' "' | { if [ -n "$2" ]; then grep -v "^$2"; else cat; fi; } | tr '\n' ' ' | sed 's/ $//'
 }
+
+# baum_wartende <ordner> <eigen-ERE> — wer am BAUM des Mess-Laufs WARTET (punkte.cjs baumSperre: solange ein Lauf auf den Spiel-Baum
+# wartet, liegt `punkte-<gerät>.wartet/<wer>-<pid>`, je Runde aufgefrischt; wer = PUNKTE_WER, sonst „macher“): jede Marke jünger als
+# eine Minute, die nicht dem eigenen Dienst gehört (eigen-ERE: `landung|dauer` die OMEN, `radeon` die Radeon), als „Baum-Sperre:<marke>“
+# je Zeile, leer = keiner. EINE Quelle beider Dienste (OMEN 14.11.; die Radeon seit ko-hand-lauf 24.11.: ein Einzel-Lauf, den nicht der
+# Dienst startete, ist eine HAND — wartet er am Baum, weicht die Fahrt an der nächsten Stations-Grenze).
+baum_wartende() { find "$1" -maxdepth 1 -type f -mmin -1 2>/dev/null | sed 's|.*/||' | grep -vE "^($2)-" | sed 's/^/Baum-Sperre:/'; }
 
 # selbsttest_lebt — (a) für start.sh --selbsttest beider Dienst-Ordner: eine sh.exe- und eine bash.exe-Schleife leben, ein fremdes
 # Abbild (sleep.exe, eine Kopie als pwsh.exe — das alte Teilwort „sh.exe“ traf sie) und eine tote PID nicht. Mutanten: das alte
