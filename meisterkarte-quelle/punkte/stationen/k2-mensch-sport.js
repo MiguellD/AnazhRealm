@@ -146,6 +146,116 @@ const SPORT = async (r, T, arg) => {
     };
 };
 
+// DAS SPIEL DES ABENDS (regeln S1 · mannschaft S1 · arena S1 · geistspiel S1; der Wirt `_spielTag` · `_spielProgramm`, der Kern
+// `spielProgramm`): die Uhr springt auf die Stunde `uhr` des Programms (`uhrAuf` der STADT: jeder kommt an, wo sein Tag ihn sieht),
+// dann `takte` Takte des Spiels (der Kopf wendet sich). Gelesen: das Programm, das der Wirt der Stadt für den Tag der Welt stellt
+// (`S.spiel`), und die Programme der folgenden Tage aus derselben Funktion des Kerns über dieselben Gäste und dasselbe Feld (gelesen,
+// nichts gesetzt), bis 20 Läufe, 200 Gänge des Zweikampfs und 100 Partien am Brett beisammen sind. Der Lauf: ρ (Spearman) der
+// Laufzeit gegen die Leistung des Leibs allein (`spielLeib`: das Sprint-Tempo aus Bein und Kraft, ohne Übung und Tagesform) über
+// alle Läufer; der Zweikampf: wie oft der Stärkere des Tags siegt; das Brett: jeder Zug der Partie (`spielTischPartie`) nachgespielt
+// auf eigenem Brett — im Brett, auf ein freies Feld, keiner nach der ersten Reihe von fünf, der Sieger die Seite dieser Reihe. Die
+// Arena: wer jetzt draußen im Akt „zuschauen“ an seinem Stand steht (am Feld des Platzes), und wohin er blickt — der Kopf in der
+// Welt (`rig.head`, seine Richtung), sonst der Leib — gegen den Punkt des Geschehens (`S.spielJetzt`), ± 30°.
+const SPIEL = async (r, T, arg, HILF) => {
+    const { S, L } = HILF;
+    if (!S) return { fehler: "keine Bewohner am Messort" };
+    const KC = window.__koerperCore;
+    HILF.uhrAuf(arg.uhr);
+    await HILF.takt(arg.takte || 0);
+    const sp = S.spiel;
+    const aus = { bewohner: L.length, programm: !!sp, uhr: +HILF.stunde().toFixed(3), tag: S.spielTag };
+    if (!sp || !KC || typeof KC.spielProgramm !== "function") return aus;
+    const sek = r._bewohnerStundeSek();
+    const laeufe = [], kaempfe = [], tische = [];
+    let tage = 0;
+    for (let d = 0; d < arg.tage && (laeufe.length < 20 || kaempfe.length < 200 || tische.length < 100); d++) {
+        const P = d === 0 ? sp.programm : KC.spielProgramm(S.plan.seed >>> 0, S.spielTag + d, sp.gaeste, sp.feld, sek);
+        tage++;
+        if (!P) continue;
+        for (const g of P.gaenge) {
+            if (g.art === "lauf" && laeufe.length < 20) laeufe.push(g);
+            if (g.art === "ringen" && kaempfe.length < 200) kaempfe.push(g);
+            if (g.art === "brett" && tische.length < 100) tische.push(g.tisch);
+        }
+    }
+    const rang = (A) => {
+        const R = new Array(A.length);
+        A.map((x, i) => [x, i]).sort((a, c) => a[0] - c[0]).forEach((x, k) => (R[x[1]] = k));
+        return R;
+    };
+    const spear = (A, B) => {
+        const ra = rang(A), rb = rang(B), m = (A.length - 1) / 2;
+        let s = 0, sa = 0, sb = 0;
+        for (let i = 0; i < A.length; i++) (s += (ra[i] - m) * (rb[i] - m)), (sa += (ra[i] - m) ** 2), (sb += (rb[i] - m) ** 2);
+        return sa && sb ? s / Math.sqrt(sa * sb) : 0;
+    };
+    const zeit = [], leib = [];
+    for (const g of laeufe) g.teil.forEach((gi, i) => (zeit.push(-g.zeiten[i]), leib.push(KC.spielLeib("lauf", sp.gaeste[gi].beinM, sp.gaeste[gi].kraft))));
+    const staerker = kaempfe.filter((g) => g.teil[g.staerke[0] >= g.staerke[1] ? 0 : 1] === g.sieger).length;
+    // das Brett nachgespielt: N × N, Reihe `reihe` (die Regel des Gesetzes, SPIEL_GESETZ.arten.brett)
+    const B = KC.SPIEL_GESETZ.arten.brett, N = B.feld;
+    const reihe = (f, i) => {
+        let best = 0;
+        for (const [dx, dz] of [[1, 0], [0, 1], [1, 1], [1, -1]]) {
+            let n = 1;
+            for (const s of [-1, 1])
+                for (let q = 1; q < N; q++) {
+                    const x = (i % N) + s * q * dx, z = ((i / N) | 0) + s * q * dz;
+                    if (x < 0 || z < 0 || x >= N || z >= N || f[z * N + x] !== f[i]) break;
+                    n++;
+                }
+            best = Math.max(best, n);
+        }
+        return best;
+    };
+    let widrig = 0, zuege = 0;
+    for (const t of tische) {
+        const p = KC.spielTischPartie(t);
+        const f = new Array(N * N).fill(0);
+        let ende = -1;
+        p.zuege.forEach((i, k) => {
+            zuege++;
+            if (ende >= 0 || !(Number.isInteger(i) && i >= 0 && i < N * N && f[i] === 0)) return widrig++;
+            f[i] = 1 + (k % 2);
+            if (reihe(f, i) >= B.reihe) ende = k;
+        });
+        if (p.sieger !== (ende >= 0 ? ende % 2 : -1) || (ende < 0 && p.zuege.length !== N * N)) widrig++;
+    }
+    // die Arena jetzt: die Zuschauer an ihrem Stand und ihr Blick
+    const jetzt = S.spielJetzt;
+    const v = new T.Vector3();
+    let zuschauer = 0, folgt = 0;
+    for (const b of L) {
+        const g = b.leib;
+        if (!g || b.drinnen || b.akt !== "zuschauen" || !b.da) continue;
+        zuschauer++;
+        if (!jetzt) continue;
+        const k = g.userData && g.userData.rig && g.userData.rig.head;
+        const yaw = k ? (k.getWorldDirection(v), Math.atan2(v.x, v.z)) : g.rotation.y;
+        const soll = Math.atan2(jetzt.x - g.position.x, jetzt.z - g.position.z);
+        let d = soll - yaw;
+        d -= 2 * Math.PI * Math.round(d / (2 * Math.PI));
+        if (Math.abs(d) < Math.PI / 6) folgt++;
+    }
+    return Object.assign(aus, {
+        gaeste: sp.gaeste.length,
+        feld: sp.feld,
+        tage,
+        laeufe: laeufe.length,
+        laeufer: zeit.length,
+        rho: zeit.length >= 3 ? +spear(zeit, leib).toFixed(4) : null,
+        kaempfe: kaempfe.length,
+        sieg: kaempfe.length ? +(staerker / kaempfe.length).toFixed(4) : null,
+        partien: tische.length,
+        zuege,
+        regelwidrig: widrig,
+        zuschauer,
+        folgt,
+        jetzt: !!jetzt,
+        blick: zuschauer && jetzt ? +(folgt / zuschauer).toFixed(4) : null,
+    });
+};
+
 // DER LEIB IM TAKT (sport.koerper S1 + S2): der Spieler an der Mess-Wiese im Takt des Spiels (60 Hz, die Verb-Tafel `gehalten`):
 // gehen und laufen je 150 Takte (das Tempo über die letzte Sekunde), springen aus dem Stand (der Hub der Lage über 84 Takte), dann
 // den steilsten Hang im Umkreis von 12 m hinauf (die Richtung probiert die Gier aus: der Weg der Probe nennt seine Neigung). DER FUSS
@@ -518,6 +628,13 @@ const VERBEN = async (r, T, arg) => {
 };
 
 const PFAD = ["stamm/siedlung-bewohner.js", "koerper-core.js", "fachwerk-core.js", "stamm/siedlung-ort.js"];
+const { STADT } = require("./k2-mensch-geist.js");
+// DAS SPIEL DES ABENDS an der Stadt des Messorts stadt-voll (die Seite SPIEL mit der STADT): die Uhr 18,55 Uhr — im dritten Lauf
+// des Programms vor dem Start, der Punkt des Geschehens an der Linie am Ende des Felds —, 15 Takte, bis zu 40 Tage des Programms
+const SPIEL_ARG = { uhr: 18.55, takte: 15, tage: 40 };
+const spielWelt = async (H, K) =>
+    K.welt("const HILF = (" + H.seite.STADT + ")(r, T);\ntry {\n    return await (" + H.seite.SPIEL + ")(r, T, " + JSON.stringify(SPIEL_ARG) + ", HILF);\n} finally {\n    HILF.zurueck();\n}", 30000); // prettier-ignore
+const spielZeile = (sp) => "Spiel an stadt-voll um " + sp.uhr + " Uhr (Tag " + sp.tag + "): " + (sp.programm ? sp.gaeste + " Gäste des Treffs, Feld " + JSON.stringify(sp.feld) + " · " + sp.tage + " Tage: " + sp.laeufe + " Läufe (" + sp.laeufer + " Läufer, ρ " + sp.rho + ") · " + sp.kaempfe + " Gänge (der Stärkere " + sp.sieg + ") · " + sp.partien + " Partien (" + sp.zuege + " Züge, " + sp.regelwidrig + " regelwidrig) · jetzt " + sp.zuschauer + " Zuschauer, " + sp.folgt + " mit Blick am Geschehen" : "kein Programm (" + sp.bewohner + " Bewohner)"); // prettier-ignore
 const KARTE = "[linse-gpu] amd/rdna-3 (Probe)";
 const mutante = (id, n, name, werte, zahl, umfang) => [{ name, j: { leiter: id, adapter: KARTE, sprossen: { [n]: { art: "zahl", n: umfang, werte } } }, gruen: false, zahl }];
 
@@ -526,12 +643,16 @@ module.exports = (F) => [
     F.leiter("mensch.sport.regeln", {
         sek: 30,
         pfad: PFAD,
-        seite: { SPORT },
+        seite: { SPORT, STADT, SPIEL },
         messe: async (H, K) => {
+            // DER LAUF (koerper SPIEL_GESETZ, der Wirt `_spielTag`): am Platz der vollen Stadt — am Genesis-Ort wohnt niemand
+            await K.messort("stadt-voll");
+            const sp = await spielWelt(H, K);
+            H.zeile(spielZeile(sp));
+            await K.schritt(1, async () => (sp.laeufe ? K.zahl(1, { n: sp.laeufe, werte: { rho: sp.rho } }) : K.leser(1, { n: 0, fehlt: "kein Wettkampf-Akt im Tages-Gesetz: kein Lauf, kein Wurf, kein Sieger (" + spielZeile(sp) + ")", wo: "stamm/siedlung-bewohner.js _spielTag" })));
             await K.messort("genesis");
             const z = await K.welt("return await (" + H.seite.SPORT + ")(r, T, " + JSON.stringify({ stunde: 15 }) + ");", 30000);
             H.zeile("Sport am Genesis-Ort: " + z.n + " Bewohner · Akte jetzt " + JSON.stringify(z.akte) + " · um 15 Uhr " + JSON.stringify(z.akteN) + " · Sport-Akte " + z.sport + "/" + z.sportN + " · Arena " + JSON.stringify(z.arena) + " · Geräte " + z.geraete);
-            await K.schritt(1, async () => K.leser(1, { n: z.sportN, fehlt: "kein Wettkampf-Akt im Tages-Gesetz (Akte " + Object.keys(z.akteN || z.akte).join(", ") + "): kein Lauf, kein Wurf, kein Sieger", wo: "koerper-core.js:5126" }));
             await K.schritt(2, async () => K.leser(2, { n: z.sportN, fehlt: "kein Ballspiel, kein Gegner, keine Rolle Schiedsrichter (TAGES_GESETZ rollen)", wo: "koerper-core.js:5135" }));
             await K.schritt(3, async () => K.nicht(3, { n: z.sport + z.sportN, fehlt: "10 Sportarten aus einer Grammatik: 0 Sportarten in der Welt (" + z.n + " Bewohner, kein Sport-Akt)" }));
             await K.schritt(4, async () => K.nicht(4, { n: 1, fehlt: "10² Saaten wählen ihre Art: eine Welt, 0 Arten" }));
@@ -704,12 +825,16 @@ module.exports = (F) => [
     F.leiter("mensch.sport.mannschaft", {
         sek: 30,
         pfad: [...PFAD, "stamm/kampf.js"],
-        seite: { SPORT },
+        seite: { SPORT, STADT, SPIEL },
         messe: async (H, K) => {
+            // DER ZWEIKAMPF (koerper `spielKampf`: Angriff, Finte, Abwehr; der Wirt `_spielTag`): am Platz der vollen Stadt
+            await K.messort("stadt-voll");
+            const sp = await spielWelt(H, K);
+            H.zeile(spielZeile(sp));
+            await K.schritt(1, async () => (sp.kaempfe ? K.zahl(1, { n: sp.kaempfe, werte: { sieg: sp.sieg } }) : K.leser(1, { n: 0, fehlt: "kein Kampf 1 gegen 1 zweier Leiber (" + spielZeile(sp) + ")", wo: "stamm/siedlung-bewohner.js _spielTag" })));
             await K.messort("genesis");
             const z = await K.welt("return await (" + H.seite.SPORT + ")(r, T, " + JSON.stringify({ stunde: 15 }) + ");", 30000);
             H.zeile("Mannschaft: " + z.n + " Bewohner · Sport-Akte " + z.sport + "/" + z.sportN + " · Arena " + JSON.stringify(z.arena));
-            await K.schritt(1, async () => K.leser(1, { n: z.sportN, fehlt: "kein Kampf 1 gegen 1 zweier Leiber: nur der Spieler schwingt (Hieb gegen Tier und Streitpuppe), kein Gegner mit Finte und Abwehr", wo: "stamm/kampf.js:92" }));
             await K.schritt(2, async () => K.leser(2, { n: z.sportN, fehlt: "kein 5 gegen 5: keine Mannschaft, kein Ball, kein Pass", wo: "koerper-core.js:5135" }));
             await K.schritt(3, async () => K.leser(3, { n: z.sportN, fehlt: "kein 11 gegen 11 mit Schiedsrichter: die Arena bleibt Fläche", wo: "fachwerk-core.js:11423" }));
             await K.schritt(4, async () => K.leser(4, { n: 0, fehlt: "keine Vereine, keine Trainer, keine Stile", wo: "koerper-core.js:5135" }));
@@ -742,7 +867,7 @@ module.exports = (F) => [
     F.leiter("mensch.sport.arena", {
         sek: 45,
         pfad: PFAD,
-        seite: { SPORT },
+        seite: { SPORT, STADT, SPIEL },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const s = await K.welt("return await (" + H.seite.SPORT + ")(r, T, " + JSON.stringify({ stunde: 15 }) + ");", 30000);
@@ -752,6 +877,11 @@ module.exports = (F) => [
                 if (s.partien >= 100000) return K.zahl(7, { n: s.partien, werte: { anteil }, beleg: s.stichproben + " Stadt-Stichproben, " + s.mitPartie + " mit Partie in Sichtweite" });
                 K.nicht(7, { n: s.partien, fehlt: "10⁵–10⁷ Partien an einem Nachmittag: die volle Stadt trägt um 15 Uhr " + s.partien + " (kein Spiel-Akt im Tages-Gesetz, koerper-core.js:5126); Partie in Sichtweite an " + s.mitPartie + " von " + s.stichproben + " Stadt-Stichproben (Anteil " + anteil + ")" });
             });
+            // DIE ZUSCHAUER AM FELD DES ORT-GESETZES (der Platz des Plans, der Wirt `_spielTag`, der Kopf `_bewohnerKopf`): an der vollen
+            // Stadt — am Genesis-Ort wohnt niemand, seine Arena bleibt Fläche
+            const sp = await spielWelt(H, K);
+            H.zeile(spielZeile(sp));
+            await K.schritt(1, async () => (sp.programm && sp.jetzt ? K.zahl(1, { n: sp.zuschauer, werte: { blick: sp.blick } }) : K.leser(1, { n: sp.zuschauer || 0, fehlt: "kein Geschehen auf dem Feld: die Arena bleibt Fläche, kein Spiel, kein Ball (" + spielZeile(sp) + ")", wo: "stamm/siedlung-bewohner.js _spielTag" }))); // prettier-ignore
             await K.messort("genesis");
             const z = await K.welt("return await (" + H.seite.SPORT + ")(r, T, {});", 30000);
             H.zeile("Arena: " + JSON.stringify(z.arena) + " · Zuschauer " + z.zuschauer + " (Blick zur Mitte " + z.blickt + ") · Sport-Akte " + z.sport);
@@ -760,11 +890,6 @@ module.exports = (F) => [
             await K.schritt(4, async () => K.leser(4, { n: 0, fehlt: "keine Liga, keine Vereine, keine Tabelle", wo: "koerper-core.js:5135" }));
             await K.schritt(5, async () => K.nicht(5, { n: z.zuschauer, fehlt: "10⁵ Zuschauer mit Welle und Fanmarsch: an der Arena " + z.zuschauer }));
             await K.schritt(6, async () => K.leser(6, { n: 0, fehlt: "keine Ligen über Epochen: keine Sieger, keine Arten, die 100 Jahre zurück anders wären", wo: "fachwerk-core.js:11423" }));
-            await K.schritt(1, async () => {
-                if (!z.arena) throw new Error("keine Arena am Genesis-Ort geladen (_genesisWerkListe.buehnen)");
-                if (z.sport === 0) return K.leser(1, { n: z.zuschauer, fehlt: "kein Geschehen auf dem Feld: die Arena bleibt Fläche, kein Spiel, kein Ball (" + z.zuschauer + " Bewohner am Feld, " + z.blickt + " mit Blick zur Mitte)", wo: "fachwerk-core.js:11423" });
-                K.zahl(1, { n: z.zuschauer, werte: { blick: z.zuschauer ? z.blickt / z.zuschauer : 0 } });
-            });
         },
         sprossen: {
             1: { umfang: { soll: 10, wort: "Zuschauer am Spielfeld des Ort-Gesetzes" }, masse: [{ key: "blick", wort: "Blicke, die dem Geschehen folgen", soll: 0.8, richtung: "≥" }], erwartet: "leser", fehlt: "kein Geschehen auf dem Feld: die Arena bleibt Fläche", wo: "fachwerk-core.js:11423" },
@@ -814,13 +939,16 @@ module.exports = (F) => [
     F.leiter("mensch.sport.geistspiel", {
         sek: 30,
         pfad: PFAD,
-        seite: { SPORT },
+        seite: { SPORT, STADT, SPIEL },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const z = await K.welt("return await (" + H.seite.SPORT + ")(r, T, {});", 30000);
             H.zeile("Geist-Spiele: " + z.n + " Bewohner · im Akt treff " + z.treff + " · Sport-Akte " + z.sport);
             const tisch = "kein Brettspiel: Gasthaus und Platz bieten mahl und treff, keinen Tisch mit Brett (" + z.treff + " Bewohner im Akt treff)";
-            await K.schritt(1, async () => K.leser(1, { n: z.treff, fehlt: tisch, wo: "koerper-core.js:5182" }));
+            // DAS BRETT AM RAND DES FELDS (koerper `spielBrett`, die Tische des Programms, der Wirt `_spielTag`)
+            const sp = await spielWelt(H, K);
+            H.zeile(spielZeile(sp));
+            await K.schritt(1, async () => (sp.partien ? K.zahl(1, { n: sp.partien, werte: { regelwidrig: sp.regelwidrig } }) : K.leser(1, { n: z.treff, fehlt: tisch + " (" + spielZeile(sp) + ")", wo: "stamm/siedlung-bewohner.js _spielTag" }))); // prettier-ignore
             await K.schritt(2, async () => K.leser(2, { n: z.treff, fehlt: "keine Spielstärke, keine Übung, kein Elo: " + tisch, wo: "koerper-core.js:5182" }));
             await K.schritt(3, async () => K.leser(3, { n: 0, fehlt: "keine Grammatik der Spiele: 0 historische Spiele", wo: "koerper-core.js:5126" }));
             await K.schritt(4, async () => K.leser(4, { n: 0, fehlt: "keine neuen Spiele aus der Saat", wo: "koerper-core.js:5126" }));
