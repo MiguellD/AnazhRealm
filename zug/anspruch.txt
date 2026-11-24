@@ -75,3 +75,5 @@ w28-ort-ausstattung karte2.mensch.kultur.schrift#1,karte2.mensch.kultur.bildkuns
 # 720 (main 2d6a0447, 24.11. 18:27): z720 18:27 w28-sport-regeln (Spiel des Abends am Platz der Stadt) — echte Station GTX am Vorprüf-Kopf 26f27214 mit der geheilten Station pm-sport-regeln 7315e73a: geistspiel#1 GRÜN (100 Partien, 5 035 Züge, 0 regelwidrig, Preis grün). NICHT beansprucht: regeln#1 · mannschaft#1 · arena#1 (ROT an der echten Station), reaktion#2 (Urteil steht aus)
 # 720 Nachtrag 24.11. 19:01: reaktion#2 GRÜN an der echten Station GTX am main 2d6a0447 (radius_abw_pct 23,213, Soll ≤ 25; Umfang 3 von 3 Ladungen; Preis p95 25,3 ms)
 w28-sport-regeln karte2.mensch.sport.geistspiel#1,karte2.same.physik.reaktion#2
+# 723 (main cf1e6404, 25.11. 00:12): z723 00:12 w28-grenze-im-land (109 Grenzsteine am Rand des Reichs, fachwerk grenzeImLand) — echte Station an der Radeon am Kopf 352488da GRÜN (Rand im Bild 360 von 360), Kopf 5 (8504da2a) ändert nur die Linse gate:nervensystem
+w28-grenze-im-land karte2.mensch.macht.grenze#1
