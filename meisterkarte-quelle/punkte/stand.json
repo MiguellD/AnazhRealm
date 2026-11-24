@@ -1,5 +1,5 @@
 {
- "kopf": "c9da3a64",
+ "kopf": "f18576b6",
  "je": {
   "affekt.K1": {
    "punkte": 1,
@@ -3562,7 +3562,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +213)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +214)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3598,7 +3598,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +213)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +214)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3608,7 +3608,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +213)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +214)",
      "gehalten": true,
      "r6": "naehe"
     }
@@ -16595,7 +16595,7 @@
   },
   "karte2.mensch.geist.absicht": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Anteil ihrem Zug zugeordnet 0.69 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.69 (477 in der Stadt), je Zug {\"haeuslich\":{\"n\":23,\"ok\":12},\"fleissig\":{\"n\":31,\"ok\":20},\"ausgeglichen\":{\"n\":28,\"ok\":20},\"gesellig\":{\"n\":18,\"ok\":17} · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · gehalten: S1 GRÜN · Anteil ihrem Zug zugeordnet 0.69 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.69 (477 in der Stadt), je Zug {\"haeuslich\":{\"n\":23,\"ok\":12},\"fleissig\":{\"n\":31,\"ok\":20},\"ausgeglichen\":{\"n\":28,\"ok\":20},\"gesellig\":{\"n\":18,\"ok\":17} · [linse-gpu] nvidia/pascal an f0a89f7e gtx — offen: karte2.mensch.geist.absicht#2 radeon: ROT: S2 ROT: fehlender Leser: kein Ziel über Monate: der Satz des Bewohners trägt kein Ziel, keinen Vorrat, keinen Fortschritt (477 Bewohner der Stadt) (stamm/siedlung-bewohner.js:887) · gemessen 477 · [linse-gpu] amd/rdna-3 an c9da3a64 · karte2.mensch.geist.absicht#2 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#3 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#4 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#5 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#6 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Anteil ihrem Zug zugeordnet 0.69 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.69 (477 in der Stadt), je Zug {\"haeuslich\":{\"n\":23,\"ok\":12},\"fleissig\":{\"n\":31,\"ok\":20},\"ausgeglichen\":{\"n\":28,\"ok\":20},\"gesellig\":{\"n\":18,\"ok\":17} · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · gehalten: S1 GRÜN · Anteil ihrem Zug zugeordnet 0.69 (Soll ≥ 0.6) · Umfang 100 (Soll ≥ 100 Bewohner) · das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 0.7, erste 100 0.69 (477 in der Stadt), je Zug {\"haeuslich\":{\"n\":23,\"ok\":12},\"fleissig\":{\"n\":31,\"ok\":20},\"ausgeglichen\":{\"n\":28,\"ok\":20},\"gesellig\":{\"n\":18,\"ok\":17} · [linse-gpu] nvidia/pascal an f0a89f7e gtx — offen: karte2.mensch.geist.absicht#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/koerper-leib.js, stamm/siedlung-bewohner.js) · karte2.mensch.geist.absicht#2 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#3 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#4 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#5 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.absicht#6 radeon: ungemessen (R10) · karte2.mensch.geist.absicht#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.absicht#1",
@@ -16623,9 +16623,10 @@
      "id": "karte2.mensch.geist.absicht#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "S2 ROT: fehlender Leser: kein Ziel über Monate: der Satz des Bewohners trägt kein Ziel, keinen Vorrat, keinen Fortschritt (477 Bewohner der Stadt) (stamm/siedlung-bewohner.js:887) · gemessen 477 · [linse-gpu] amd/rdna-3",
-     "sha": "c9da3a64777a0e13ee4bbcd1a40c274a2ea9d4f0",
-     "grund": "ROT: S2 ROT: fehlender Leser: kein Ziel über Monate: der Satz des Bewohners trägt kein Ziel, keinen Vorrat, keinen Fortschritt (477 Bewohner der Stadt) (stamm/siedlung-bewohner.js:887) · gemessen 477 · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/koerper-leib.js, stamm/siedlung-bewohner.js)",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
@@ -16713,7 +16714,7 @@
   },
   "karte2.mensch.geist.generationen": {
    "punkte": 0,
-   "beleg": "Maschine: S1 GRÜN · Anteil Kinder unter 15 J 0.3744 (Soll ≥ 0.35) · Umfang 1365 · Alter am Leib (die Gestalt jedes Bewohners, Regler 18–80 J) 3.7–60.4 J, die Gestalten [3.7,7.6,12.1,17.3,24.4,33.4,44.5,60.4], Epoche 1238, 1365 Bewohner · [linse-gpu] amd/rdna-3 an c9da3a64 radeon — offen: karte2.mensch.geist.generationen#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/draw-zaehler.cjs +26) · karte2.mensch.geist.generationen#2 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#2 gtx: ungemessen (R10) · karte2.mensch.geist.generationen#3 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#4 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#5 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#6 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#7 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#7 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#8 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Anteil Kinder unter 15 J 0.3744 (Soll ≥ 0.35) · Umfang 1365 · Alter am Leib (die Gestalt jedes Bewohners, Regler 18–80 J) 3.7–60.4 J, die Gestalten [3.7,7.6,12.1,17.3,24.4,33.4,44.5,60.4], Epoche 1238, 1365 Bewohner · [linse-gpu] amd/rdna-3 an c9da3a64 radeon — offen: karte2.mensch.geist.generationen#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/draw-zaehler.cjs +26) · karte2.mensch.geist.generationen#2 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#2 gtx: ungemessen (R10) · karte2.mensch.geist.generationen#3 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#4 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#5 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#6 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#7 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#7 gtx: Station seit der Messung geändert · karte2.mensch.geist.generationen#8 radeon: ungemessen (R10) · karte2.mensch.geist.generationen#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.generationen#1",
@@ -16721,7 +16722,8 @@
      "gruen": true,
      "zahl": "S1 GRÜN · Anteil Kinder unter 15 J 0.3744 (Soll ≥ 0.35) · Umfang 1365 · Alter am Leib (die Gestalt jedes Bewohners, Regler 18–80 J) 3.7–60.4 J, die Gestalten [3.7,7.6,12.1,17.3,24.4,33.4,44.5,60.4], Epoche 1238, 1365 Bewohner · [linse-gpu] amd/rdna-3",
      "sha": "c9da3a64777a0e13ee4bbcd1a40c274a2ea9d4f0",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/koerper-leib.js, stamm/siedlung-bewohner.js)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -16866,15 +16868,16 @@
   },
   "karte2.mensch.geist.gespraech": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.gespraech#2 radeon: ROT: S2 ROT: fehlender Leser: kein Bewohner ist ansprechbar: der Name des Gesprächs sucht nur state.creatures (0 von 1023 Bewohnern im Ruf, 0 mit Namen, 0 Wesen mit Namen) (stamm/feld-nexus.js:1281) · gemessen 0 · [linse-gpu] amd/rdna-3 an c9da3a64 · karte2.mensch.geist.gespraech#2 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#3 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#4 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#5 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#6 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#7 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.gespraech#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/koerper-leib.js, stamm/siedlung-bewohner.js) · karte2.mensch.geist.gespraech#2 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#3 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#4 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#5 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#6 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#7 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.gespraech#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "S2 ROT: fehlender Leser: kein Bewohner ist ansprechbar: der Name des Gesprächs sucht nur state.creatures (0 von 1023 Bewohnern im Ruf, 0 mit Namen, 0 Wesen mit Namen) (stamm/feld-nexus.js:1281) · gemessen 0 · [linse-gpu] amd/rdna-3",
-     "sha": "c9da3a64777a0e13ee4bbcd1a40c274a2ea9d4f0",
-     "grund": "ROT: S2 ROT: fehlender Leser: kein Bewohner ist ansprechbar: der Name des Gesprächs sucht nur state.creatures (0 von 1023 Bewohnern im Ruf, 0 mit Namen, 0 Wesen mit Namen) (stamm/feld-nexus.js:1281) · gemessen 0 · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/koerper-leib.js, stamm/siedlung-bewohner.js)",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
@@ -20225,15 +20228,16 @@
   },
   "karte2.mensch.macht.krieg": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.krieg#1 radeon: ROT: S1 ROT: Umfang nicht erzeugbar: nur der Spieler trägt eine Klinge (die leere Hand): 6 von 1365 Bewohnern bewaffnet, kein zweiter Kämpfer für einen Zweikampf (gemessen 7, Soll 2 Bewaffnete im Zweikampf) · [linse-gpu] amd/rdna-3 an c9da3a64 · karte2.mensch.macht.krieg#1 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#2 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#3 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#4 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#5 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#6 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#7 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#8 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#8 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#9 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#9 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.krieg#1 radeon: Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js) · karte2.mensch.macht.krieg#1 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#2 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#3 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#4 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#5 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#6 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#7 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#8 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#8 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#9 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#9 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.macht.krieg#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "S1 ROT: Umfang nicht erzeugbar: nur der Spieler trägt eine Klinge (die leere Hand): 6 von 1365 Bewohnern bewaffnet, kein zweiter Kämpfer für einen Zweikampf (gemessen 7, Soll 2 Bewaffnete im Zweikampf) · [linse-gpu] amd/rdna-3",
-     "sha": "c9da3a64777a0e13ee4bbcd1a40c274a2ea9d4f0",
-     "grund": "ROT: S1 ROT: Umfang nicht erzeugbar: nur der Spieler trägt eine Klinge (die leere Hand): 6 von 1365 Bewohnern bewaffnet, kein zweiter Kämpfer für einen Zweikampf (gemessen 7, Soll 2 Bewaffnete im Zweikampf) · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js)",
+     "ungemessen": true,
      "r6": "konsum",
      "beide": true
     },
@@ -21591,15 +21595,16 @@
   },
   "karte2.mensch.menge.seuche": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.seuche#1 radeon: ROT: S1 ROT: Umfang nicht erzeugbar: keine Krankheit: 0 von 1365 Bewohnern tragen ein Feld der Krankheit, keiner kann erkranken (gemessen 0) · [linse-gpu] amd/rdna-3 an c9da3a64 · karte2.mensch.menge.seuche#1 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#2 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#2 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#3 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#3 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#4 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#4 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#5 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#5 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#6 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.seuche#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/koerper-leib.js, stamm/siedlung-bewohner.js) · karte2.mensch.menge.seuche#1 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#2 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#2 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#3 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#3 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#4 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#4 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#5 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#5 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#6 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.menge.seuche#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "S1 ROT: Umfang nicht erzeugbar: keine Krankheit: 0 von 1365 Bewohnern tragen ein Feld der Krankheit, keiner kann erkranken (gemessen 0) · [linse-gpu] amd/rdna-3",
-     "sha": "c9da3a64777a0e13ee4bbcd1a40c274a2ea9d4f0",
-     "grund": "ROT: S1 ROT: Umfang nicht erzeugbar: keine Krankheit: 0 von 1365 Bewohnern tragen ein Feld der Krankheit, keiner kann erkranken (gemessen 0) · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/koerper-leib.js, stamm/siedlung-bewohner.js)",
+     "ungemessen": true,
      "r6": "konsum",
      "beide": true
     },
@@ -23357,7 +23362,7 @@
   },
   "karte2.mensch.sport.koennen": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 13.68 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 81.22 s · Altersgang ρ(Alter, Zeit) 0.477959795979598 · 1511 mit Können-Profil · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · gehalten: S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 12.3 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 83.92 s · Altersgang ρ(Alter, Zeit) 0.2695469546954695 · 477 mit Können-Profil · [linse-gpu] nvidia/pascal an 5b36f69a gtx — offen: karte2.mensch.sport.koennen#2 radeon: ROT: S2 ROT: fehlender Leser: keine Übung: kein Bewohner trägt Stunden der Übung, die Leib-Werte lesen nur die Größe (koerper-core.js:5455) · gemessen 477 · [linse-gpu] amd/rdna-3 an c9da3a64 · karte2.mensch.sport.koennen#2 gtx: ROT: S2 ROT: fehlender Leser: keine Übung: kein Bewohner trägt Stunden der Übung, die Leib-Werte lesen nur die Größe (koerper-core.js:5455) · gemessen 477 · [linse-gpu] nvidia/pascal an c9da3a64 · karte2.mensch.sport.koennen#3 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#4 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#5 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#6 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 13.68 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 81.22 s · Altersgang ρ(Alter, Zeit) 0.477959795979598 · 1511 mit Können-Profil · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · gehalten: S1 GRÜN · Variationskoeffizient der 100-m-Zeit (%) 12.3 (Soll 10–20) · Umfang 100 (Soll ≥ 100 Bewohner mit 100-m-Zeit) · 100-m-Zeit = 100 m ÷ Tempo des Gangs (b.tempo, stamm/siedlung-bewohner.js:1051), Mittel 83.92 s · Altersgang ρ(Alter, Zeit) 0.2695469546954695 · 477 mit Können-Profil · [linse-gpu] nvidia/pascal an 5b36f69a gtx — offen: karte2.mensch.sport.koennen#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js) · karte2.mensch.sport.koennen#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js) · karte2.mensch.sport.koennen#3 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#4 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#5 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.koennen#6 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.koennen#1",
@@ -23385,18 +23390,20 @@
      "id": "karte2.mensch.sport.koennen#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "S2 ROT: fehlender Leser: keine Übung: kein Bewohner trägt Stunden der Übung, die Leib-Werte lesen nur die Größe (koerper-core.js:5455) · gemessen 477 · [linse-gpu] amd/rdna-3",
-     "sha": "c9da3a64777a0e13ee4bbcd1a40c274a2ea9d4f0",
-     "grund": "ROT: S2 ROT: fehlender Leser: keine Übung: kein Bewohner trägt Stunden der Übung, die Leib-Werte lesen nur die Größe (koerper-core.js:5455) · gemessen 477 · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js)",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
      "id": "karte2.mensch.sport.koennen#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "S2 ROT: fehlender Leser: keine Übung: kein Bewohner trägt Stunden der Übung, die Leib-Werte lesen nur die Größe (koerper-core.js:5455) · gemessen 477 · [linse-gpu] nvidia/pascal",
-     "sha": "c9da3a64777a0e13ee4bbcd1a40c274a2ea9d4f0",
-     "grund": "ROT: S2 ROT: fehlender Leser: keine Übung: kein Bewohner trägt Stunden der Übung, die Leib-Werte lesen nur die Größe (koerper-core.js:5455) · gemessen 477 · [linse-gpu] nvidia/pascal",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js)",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
@@ -23609,15 +23616,16 @@
   },
   "karte2.mensch.sport.kunst": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: ROT: S1 ROT: Umfang nicht erzeugbar: Meister und Anfänger in 3 Künsten: 1500 Bewohner mit Können-Profil, jeder Leib gleich geschickt (gemessen 1500) · [linse-gpu] amd/rdna-3 an c9da3a64 · karte2.mensch.sport.kunst#1 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js) · karte2.mensch.sport.kunst#1 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.kunst#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "S1 ROT: Umfang nicht erzeugbar: Meister und Anfänger in 3 Künsten: 1500 Bewohner mit Können-Profil, jeder Leib gleich geschickt (gemessen 1500) · [linse-gpu] amd/rdna-3",
-     "sha": "c9da3a64777a0e13ee4bbcd1a40c274a2ea9d4f0",
-     "grund": "ROT: S1 ROT: Umfang nicht erzeugbar: Meister und Anfänger in 3 Künsten: 1500 Bewohner mit Können-Profil, jeder Leib gleich geschickt (gemessen 1500) · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js)",
+     "ungemessen": true,
      "r6": "konsum",
      "beide": true
     },
@@ -25692,7 +25700,7 @@
   },
   "karte2.mensch.wirtschaft.technik": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · gehalten: S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] nvidia/pascal an 1feab29c gtx — offen: karte2.mensch.wirtschaft.technik#2 radeon: ROT: S2 ROT: Umfang nicht erzeugbar: 10² Techniken in ≥ 5 Pfaden (50 Saaten): die Welt trägt keine Technik, nur das Jahr des Plans (1238) (gemessen 0, Soll 100 Techniken in ≥ 5 Pfaden) · [linse-gpu] amd/rdna-3 an c9da3a64 · karte2.mensch.wirtschaft.technik#2 gtx: ungemessen (R10) — zuletzt an c2c7ed12: Frist der Probe 64 s gerissen im /umstellen stadt (der Ruf lief 63.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 6 · karte2.mensch.wirtschaft.technik#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] amd/rdna-3 an f0a89f7e radeon · gehalten: S1 GRÜN · Techniken ohne Voraussetzung im Bild (20 Saaten) 0 (Soll ≤ 0) · verschiedene Stände (20 Saaten) 4 (Soll ≥ 2) · Umfang 11 (Soll ≥ 10 Techniken mit Voraussetzung) · 20 Saaten + die Stadt am Messort (mediterran, ohne zinn/kupfer/bronze); im Bild {\"ziegelei\":54,\"zimmerei\":867,\"eisen\":17,\"stahlbau\":10,\"kalkmoertel\":335,\"stahlbeton\":19,\"stahl\":18,\"kupfer\":4} · [linse-gpu] nvidia/pascal an 1feab29c gtx — offen: karte2.mensch.wirtschaft.technik#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js) — zuletzt an c2c7ed12: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.mensch.wirtschaft.technik#2 gtx: ungemessen (R10) — zuletzt an c2c7ed12: Frist der Probe 64 s gerissen im /umstellen stadt (der Ruf lief 63.8 s: der Messort trug die Frist) — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 6 · karte2.mensch.wirtschaft.technik#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#6 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.technik#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.wirtschaft.technik#1",
@@ -25718,9 +25726,10 @@
      "id": "karte2.mensch.wirtschaft.technik#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "S2 ROT: Umfang nicht erzeugbar: 10² Techniken in ≥ 5 Pfaden (50 Saaten): die Welt trägt keine Technik, nur das Jahr des Plans (1238) (gemessen 0, Soll 100 Techniken in ≥ 5 Pfaden) · [linse-gpu] amd/rdna-3",
-     "sha": "c9da3a64777a0e13ee4bbcd1a40c274a2ea9d4f0",
-     "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: 10² Techniken in ≥ 5 Pfaden (50 Saaten): die Welt trägt keine Technik, nur das Jahr des Plans (1238) (gemessen 0, Soll 100 Techniken in ≥ 5 Pfaden) · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js) — zuletzt an c2c7ed12: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
@@ -37707,8 +37716,8 @@
   ],
   "ohne": 3324
  },
- "kopfVoll": "c9da3a64777a0e13ee4bbcd1a40c274a2ea9d4f0",
- "zeit": "2026-11-24T08:38:51.088Z",
+ "kopfVoll": "f18576b68d15c54daae67d56135c17ba92f1beb4",
+ "zeit": "2026-11-24T09:00:06.818Z",
  "vorher": "c9da3a64",
  "bilanz": {
   "gewinn": [],
