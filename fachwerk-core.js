@@ -6420,6 +6420,77 @@
   if(gatePts.length<2){ const t=(gatePts[0]?gatePts[0].th:0)+Math.PI; gatePts.push({x:Math.cos(t)*Rw, z:Math.sin(t)*Rw, th:t}); }
   let s=((Math.round((seed||1)*577+13)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
   return mauerRing(Rw, gatePts, rnd); }
+    // DER GEFALLENE RING WIRD GASSE (mensch.macht.wehrbau#3): faellt die Mauer (die Entfestigung nach MAUER_BIS), legt die Stadt auf
+    // ihre Spur die Ringstrasse — die Linie des Rings im letzten Jahr der Mauer (derselbe Ring, `exportSettlement` am Jahr
+    // MAUER_BIS - 1), ueber jedes Tor im Bogen geschlossen, so breit wie `anteilR` seines Radius, nie schmaler als die Hauptstrasse
+    // (DORF_NORM.strasseW); wo ein Haus der Gegenwart auf ihr steht, setzt sie aus. Das Band der Profis: der ganze Ring wurde
+    // Strasse (Wien 1857: 57 m auf dem Glacis um die Altstadt, Radius ~950 m → 0,06; Koeln 1881: 32–114 m, 0,03–0,10; der Abriss
+    // der Wallanlagen 1802–1812 und die Pariser Boulevards 1670 auf der Linie der Mauer Karls V.). `luecke`: ein Spalt bis zu so
+    // vielen rad ist ein Tor (mauerRing gA 0,30 je Seite), ein groesserer (die Ecke einer Kachel ohne Rand) beginnt eine neue Linie.
+    // Leser: exportSettlement (`roads`), die Welt malt sie wie jede Gasse (`_stlWegeBuild`).
+    var RING_GASSE = { anteilR: 0.06, luecke: 1.2, schrittM: 3 };
+    function ringGasse(m, slots) {
+        if (!m || !Array.isArray(m.segs) || !m.segs.length) return [];
+        var G = RING_GASSE,
+            w = Math.max(DORF_NORM.strasseW, G.anteilR * m.R),
+            winkel = function (a, b) {
+                var d = Math.atan2(b.z, b.x) - Math.atan2(a.z, a.x);
+                return Math.atan2(Math.sin(d), Math.cos(d));
+            },
+            // von a nach b im Bogen um die Mitte (der Radius linear) in Schritten ≤ schrittM, ohne a, mit b
+            bogen = function (L, a, b) {
+                var t0 = Math.atan2(a.z, a.x), dt = winkel(a, b), ra = Math.hypot(a.x, a.z), rb = Math.hypot(b.x, b.z);
+                var n = Math.max(1, Math.ceil((Math.abs(dt) * Math.max(ra, rb) + Math.abs(rb - ra)) / G.schrittM));
+                for (var k = 1; k <= n; k++) {
+                    var f = k / n, t = t0 + dt * f, r = ra + (rb - ra) * f;
+                    L.push({ x: Math.cos(t) * r, z: Math.sin(t) * r });
+                }
+            };
+        var linien = [], L = null;
+        for (var i = 0; i < m.segs.length; i++) {
+            var s = m.segs[i], a = { x: s.x0, z: s.z0 };
+            if (L) {
+                var e = L[L.length - 1];
+                if (Math.hypot(a.x - e.x, a.z - e.z) > 0.01) {
+                    if (Math.abs(winkel(e, a)) > G.luecke) L = null;
+                    else bogen(L, e, a);
+                }
+            }
+            if (!L) linien.push((L = [a]));
+            for (var k = 1, n = Math.max(1, Math.ceil(Math.hypot(s.x1 - s.x0, s.z1 - s.z0) / G.schrittM)); k <= n; k++)
+                L.push({ x: s.x0 + ((s.x1 - s.x0) * k) / n, z: s.z0 + ((s.z1 - s.z0) * k) / n }); // das Segment gerade
+        }
+        // der Ring schliesst sich: das Ende der letzten Linie an den Anfang der ersten (ueber das Tor bei 0 rad)
+        var A0 = linien[0][0], Z = L[L.length - 1];
+        if (Math.abs(winkel(Z, A0)) <= G.luecke) {
+            if (Math.hypot(A0.x - Z.x, A0.z - Z.z) > 0.01) bogen(L, Z, A0);
+            if (linien.length > 1) linien[linien.length - 1] = L.concat(linien.shift().slice(1));
+        }
+        var aus = [],
+            frei = function (q) {
+                for (var j = 0; j < slots.length; j++) if (slots[j].obb && distPunktOBB(q.x, q.z, slots[j].obb) < w / 2) return false;
+                return true;
+            },
+            gasse = function (P) {
+                if (P.length < 2) return;
+                var len = 0;
+                for (var k = 0; k < P.length; k++) {
+                    var q = P[Math.min(k + 1, P.length - 1)], p = P[k === P.length - 1 ? k - 1 : k];
+                    P[k].th = Math.atan2(q.z - p.z, q.x - p.x);
+                    if (k) len += Math.hypot(P[k].x - P[k - 1].x, P[k].z - P[k - 1].z);
+                }
+                aus.push({ pts: P, w: w, gen: 0, len: len, quer: false, ring: true });
+            };
+        linien.forEach(function (P) {
+            var cur = [];
+            for (var k = 0; k < P.length; k++) {
+                if (frei(P[k])) cur.push(P[k]);
+                else gasse(cur), (cur = []);
+            }
+            gasse(cur);
+        });
+        return aus;
+    }
     // DIE FORM DER WEHR IM JAHR (mensch.macht.wehrbau#2, front-stoff, additiv): der Ring (`mauerRing`, `schnittMauer`, `kachelMauer`)
     // traegt die Wehr seiner Zeit. In Mitteleuropa die PALISADE bis ins 12. Jh. (die Pfahlwand aus Eichenstaemmen auf dem Wall der
     // ottonischen und salischen Orte, Holztuerme ueber den Toren), ab 1150 der STEINRING (die Stadtmauer der Staufer- und Hansezeit:
@@ -12259,6 +12330,16 @@
               (plan.chronik && plan.schnitt.staedtisch && plan.schnitt.jahr < MAUER_BIS
                   ? schnittMauer(slots, lay.roads, plan.seed)
                   : null);
+        // DER GEFALLENE RING WIRD GASSE (`ringGasse`): ein Ort der Chronik, vor MAUER_BIS gegründet, den das Jahr seines Orts über
+        // MAUER_BIS trägt (`dp.jahr`, ohne es das Jahr des Schnitts), legt den Ring, den er im letzten Jahr der Mauern trug, als Straße
+        // — der Ring derselben Ableitung (der Export desselben Auftrags am Jahr MAUER_BIS - 1; die Kachel ihre Rand-Mauer,
+        // `kachelMauer`) —, wenn seine Mauer gefallen ist oder weiter draußen steht (der Ring der Gegenwart um mehr als die Breite
+        // der Gasse jenseits des alten)
+        var jahrOrt = plan.chronik && isFinite(dp.jahr) ? Math.min(plan.chronik.ende, Number(dp.jahr)) : plan.schnitt.jahr;
+        if (plan.chronik && plan.chronik.gr0 < MAUER_BIS && (kachel ? plan.staedtisch && !mz && plan.jahr >= MAUER_BIS : jahrOrt >= MAUER_BIS)) {
+            var alt = kachel ? kachelMauer(kNetz, kRand) : exportSettlement(Object.assign({}, dp, { jahr: MAUER_BIS - 1 })).mauer;
+            if (alt && (!mz || mz.R - alt.R > Math.max(DORF_NORM.strasseW, RING_GASSE.anteilR * alt.R))) lay.roads = lay.roads.concat(ringGasse(alt, slots));
+        }
         var aus = {
             seed: plan.seed,
             name: plan.name,
@@ -15105,6 +15186,8 @@
         epocheBei: epocheBei, // die Epoche eines Jahrs (Tracht, Kirche; Leser: DORF, gate:settlement J)
         epocheImJahr: epocheImJahr, // die Epoche des Jahrs eines Satzes (Leser: der Wirt, „dorf … 1560")
         MAUER_BIS: MAUER_BIS, // bis zu diesem Jahr steht die Mauer der Stadt (Leser: gate:settlement J)
+        RING_GASSE: RING_GASSE, // der gefallene Ring als Straße (Leser: exportSettlement, gate:fachwerk-contract 10c)
+        ringGasse: ringGasse,
         MAUER_FORM: MAUER_FORM, // die Form der Wehr im Jahr: Palisade, Steinring, Bastion (Leser: mauerGestalt)
         mauerForm: mauerForm,
         mauerGestalt: mauerGestalt, // der Ring in der Form seiner Zeit (Leser: exportSettlement, das Labor)
