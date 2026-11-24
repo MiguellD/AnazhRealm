@@ -4220,20 +4220,46 @@ LEITERN.push(
         })
     );
 
-    // ─────────── same.preis.speicher — Speicher, Wärme, Akku ───────────
-    // Der Preis aus DERSELBEN Quelle wie richter-akte.cjs: je Messort (Wiese, Dorf) ein kurzer Spielgang der Bahn (`/lauf` wandern bahn) in
-    // einer Zelle des Stroms (Bilder, Weg, Heap je Block), danach die Posten nach erzwungenem GC (`/puffer`, wie punkte.cjs preisPosten).
-    // Der Richter verlangt die Kurve über 5 min: gemessen unter dem Umfang. Die übrigen Sprossen zählen die Welt der Sitzung (Bauten
-    // ohne Natur, Menschen der Siedlungen, Planet und Epoche) gegen ihren Umfang.
+    // ─────────── same.preis.speicher — Speicher, Wärme, Akku: DIE RUNDE DREIMAL ───────────
+    // DER EINE SCHREIBER DER LEITER 1–6 (Koordinator 24.11., Entscheid pm-speicher-runde Weg (a)): die Runde genesis → stadt-voll →
+    // genesis dreimal in DERSELBEN Welt der Sitzung — je Halt die Posten nach GC (`/puffer`) und die Register des Renderers
+    // (info.memory geometries/textures, memoryMap, die dispose-Hörer der Schatten-Tiefe, Szenen-Kinder), an genesis-2 und genesis-3 die
+    // Halde nach Halter (`/halde`, scripts/lib/halde-halter.cjs), ihr Diff nennt den Halter beim Namen. Bis hier ging S1 Wiese und Dorf
+    // je 3 s in der Minute (GTX f68dbf09: „FRIST 87 s der Probe gerissen“, ehe ein Posten stand) — die Probe fällt in dieser Welle.
+    //   Teil 1: genesis-0 (frisch: S1) → stadt-voll (die Gründung, wo die Stadt noch nicht steht) → stadt-1 (S4)
+    //   Teil 2: genesis-1 (S2: Runde 1) → stadt-2 → genesis-2
+    //   Teil 3: Halde genesis-2 → stadt-3 (der Umfang von S3) → genesis-3, dreimal gepostet (die Streuung) → Halde → S1 · S3
+    // S3 urteilt R3 gegen R2 (R n = Heap nach GC an genesis-n): „Speicher am Ende = Anfang ±2 %“ über der GEMESSENEN Streuung des
+    // Postens (drei Posten am selben Halt, max − min) — rueck_pct = max(0, |R3 − R2| − Streuung) / R2; der Täter nennt R2 − R1, R3 − R2
+    // und den Halter des Diffs. Ein Vorrat, der sich im zweiten Besuch füllt und steht, ist grün; eine Undichte je Besuch nie.
+    // NUR AUF ANSPRUCH: die Station fährt, wenn eine Anspruchs-Zeile (zug/anspruch.txt) sie nennt oder die Leiter nie beurteilt wurde
+    // (nötig messen) — nie in jeder Runde; ein Gerät zahlt die drei Teile (≈ 8–10 min) einmal je Anspruch.
+    // DIE EINE AUSNAHME DER MINUTE (`SPEICHER_RUNDE`, nur hier — `leiter()` hält jede andere Leiter bei sek ≤ 60): je Teil der Deckel
+    // `sekJeTeil`, Grund gemessen an der GTX 1060 (main 1feab29c6, p3/n2311/heap/runde-a-vor/schritte.log der OMEN): die Gründung an
+    // stadt-voll 153 s, die warme Ankunft stadt-voll 98 s, genesis 23–27 s, der Posten 4–8 s, die Halde 18 s.
+    const SPEICHER_RUNDE = {
+        teile: 3,
+        sekJeTeil: 210,
+        grund: "warme Ankunft stadt-voll 98 s + genesis 23 s, Gründung 153 s, Halde 18 s je Halt — gemessen GTX 1060 an main 1feab29c6",
+    };
     LEITERN.push(
         leiter({
             leiter: "same.preis.speicher",
             sek: 60,
-            pfad: ["scripts/werkbank.cjs", "scripts/lib/zerlege-linse.cjs", "spec/profiband/haushalt.json", "stamm/siedlung-bewohner.js", "stamm/vegetation-baum.js", "stamm/gelaende-chunks.js"],
+            pfad: [
+                "scripts/werkbank.cjs",
+                "scripts/lib/halde-halter.cjs",
+                "spec/profiband/haushalt.json",
+                "stamm/siedlung-*.js",
+                "stamm/gelaende-boden.js",
+                "stamm/gelaende-chunks.js",
+                "stamm/vegetation-baum.js",
+                "stamm/werkstatt-bauen.js",
+            ],
             welt: [
-                { wort: "orte", ab: 2, was: "Messorte mit Posten nach GC (Wiese und Dorf)" },
-                { wort: "bilder", ab: 30, was: "Bilder des Spielgangs im Strom je Ort" },
-                { wort: "weg_m", ab: 5, was: "Weg des Leibs im Strom je Ort" },
+                { wort: "orte", ab: 2, was: "Messorte der Runde mit Posten nach GC (genesis und stadt-voll)" },
+                { wort: "bilder", ab: 30, was: "Bilder der Runde im Strom" },
+                { wort: "weg_m", ab: 5, was: "Weg des Leibs im Strom der Runde" },
             ],
             sprossen: {
                 1: {
@@ -4282,70 +4308,186 @@ LEITERN.push(
                 },
             },
             lauf: async function speicherLauf(H, P, L) {
+                const fs = require("fs"), os = require("os"), path = require("path");
                 const U = (nr) => P.sprossen[nr].umfang.verlangt;
-                // die Welt der Sitzung gezählt (billig, ohne Ortswechsel): alle Bauten ohne Natur, die Menschen jeder gemeldeten Siedlung
-                const w = await L.ev(
-                    "const st = r.state; let bauten = 0; for (const a of st.architectures || []) if (a && a.position && !r._istNatur(a)) bauten++;" +
-                        " let menschen = 0, sied = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) { sied++; menschen += S.liste ? S.liste.length : S.plan && S.plan.slots ? S.plan.slots.length : 0; }" +
-                        " const teil = r._gelaende().ort.teil; return { bauten, menschen, sied, planet: r._planetSamen(), zeitMa: teil && Number.isFinite(teil.zeitMa) ? teil.zeitMa : 0 };"
-                );
-                L.zeile("Welt der Sitzung: " + JSON.stringify(w));
-                await L.je(3, async () => {
-                    if (w.bauten < U(3)) return L.umfang(3, w.bauten, "die Welt der Sitzung trägt " + w.bauten + " Bauten in " + w.sied + " Siedlungen (die größte Stadt des Gesetzes am Messort stadt-voll, „dorf 7 300“)");
-                    L.leser(3, "die Bahn durch die Stadt und zurück mit den Posten an Anfang und Ende: die Bahn der Werkbank geht nur die Kette des Messorts (scripts/lib/zerlege-linse.cjs:479)", w.bauten);
-                });
-                await L.je(4, async () => {
-                    if (w.menschen < U(4)) return L.umfang(4, w.menschen, "die Welt wirkt mit " + w.menschen + " Menschen in " + w.sied + " Siedlungen — keine Megastadt");
-                    L.leser(4, "60 min Megastadt mit Speicher-Kurve: kein Lauf der Sitzung trägt 60 min", w.menschen);
-                });
-                await L.je(5, async () => L.umfang(5, 0, "kein Orbit: der Boden ist eine Ebene (planetFlaeche planet-core.js:2256 ohne Leser im Stamm), kein Sprung Orbit ↔ Boden"));
-                await L.je(6, async () => L.umfang(6, new Set([w.planet + "|" + w.zeitMa]).size, "die Sitzung hält eine Welt (Same " + w.planet + ", zeitMa " + w.zeitMa + ")"));
-                // S1 · je Messort: der Spielgang der Bahn in einer Zelle des Stroms, dann die Posten nach GC (/puffer)
-                const orte = [];
-                await L.je(1, async () => {
-                    L.preisPose("dorf", "ego");
-                    for (const ort of ["wiese", "dorf"]) {
-                        if (H.rest() < 16) throw new Error("die Frist trägt den Ort " + ort + " nicht mehr: " + Math.round(H.rest()) + " s Rest");
-                        await L.ort(ort, "ego");
-                        const zelle = "k2-speicher-" + ort;
-                        await L.zelle(zelle);
-                        await L.wb("/lauf", { sek: 3, ein: 1, wandern: "bahn" }, 60);
-                        await L.zelle(null);
-                        const b = L.bilder(zelle);
-                        let weg = 0;
-                        for (let i = 1; i < b.length; i++) weg += Math.hypot(b[i].x - b[i - 1].x, b[i].z - b[i - 1].z);
-                        const p = await L.wb("/puffer", { top: 200 }, 60);
-                        orte.push({
-                            ort,
-                            n: b.length,
-                            weg: +weg.toFixed(1),
-                            min: b.length > 1 ? (b[b.length - 1].wand - b[0].wand) / 60000 : 0,
-                            heap: p && Number.isFinite(p.heapMB) ? p.heapMB : null,
-                            vram: p && p.vram && Number.isFinite(p.vram.mb) ? p.vram.mb : null,
-                            heapStrom: b.length ? [b[0].heap, b[b.length - 1].heap] : null,
-                            vramStrom: b.length ? [b[0].vram, b[b.length - 1].vram] : null,
+                // DER TEIL (punkte.cjs fahreGruppe, PUNKTE_TEIL „i/N“): ohne ihn (ein Lauf von Hand) fährt EIN Prozess alle drei
+                const [teil, teile] = String(process.env.PUNKTE_TEIL || "0/1").split("/").map(Number);
+                const faehrt = (n) => teile === 1 || teil === n;
+                // DER STAND DER VORIGEN TEILE: H.fahre schrieb ihre Sprossen und die Halte der Runde nach {AUS}
+                if (teile > 1 && teil > 1) {
+                    const v = JSON.parse(fs.readFileSync(H.AUS, "utf8"));
+                    Object.assign(L.j.sprossen, v.sprossen || {});
+                    Object.assign(L.j.fehler, v.fehler || {});
+                    L.j.runde = v.runde;
+                }
+                const R = L.j.runde || (L.j.runde = { halte: {}, halde: {} });
+                const ZELLE = "k2-speicher-runde";
+                const REG =
+                    "const R = r.state.renderer, M = R.info.memory || {}, sm = r._lichtWurfK && r._lichtWurfK.roh && r._lichtWurfK.roh.shadowMap, dt = sm && sm._depthTexture;" +
+                    " return { geo: M.geometries, tex: M.textures, memoryMap: R.info.memoryMap ? R.info.memoryMap.size : null, kinder: r.state.scene.children.length, arch: r.state.architectures.length," +
+                    " schattenHoerer: dt && dt._listeners && dt._listeners.dispose ? dt._listeners.dispose.length : null };";
+                const posten = async (name) => {
+                    const p = await L.wb("/puffer", { top: 30 }, 60);
+                    const g = await L.ev(REG);
+                    const h = { heap: p && Number.isFinite(p.heapMB) ? p.heapMB : null, vram: p && p.vram && Number.isFinite(p.vram.mb) ? p.vram.mb : null, wand: Date.now(), ...g };
+                    if (!R.halte[name]) R.halte[name] = h;
+                    (R.halte[name].wdh || (R.halte[name].wdh = [])).push(h.heap);
+                    L.zeile("Posten " + name + ": " + JSON.stringify(h));
+                    return h;
+                };
+                const ort = async (o, brauch) => {
+                    if (H.rest() < brauch) throw new Error("der Teil " + teil + "/" + teile + " trägt " + o + " nicht mehr: " + Math.round(H.rest()) + " s Rest, " + brauch + " s gebraucht");
+                    const t = Date.now();
+                    await L.ort(o, "ego");
+                    L.zeile(o + " steht nach " + ((Date.now() - t) / 1000).toFixed(1) + " s");
+                };
+                // DIE HALDE NACH HALTER am Halt: der Schnappschuss liegt im Temp der Maschine und fällt nach dem Lesen (nie in den Roh-Akten)
+                const halde = async (name) => {
+                    const datei = path.join(os.tmpdir(), "k2-speicher-" + process.pid + "-" + name + ".heapsnapshot");
+                    try {
+                        const o = await L.wb("/halde", { datei, tiefe: 7, top: 120 }, 120);
+                        R.halde[name] = { heap: o.heapMB, halter: (o.halter || []).map((x) => [x[0], x[1]]) };
+                        L.zeile("Halde " + name + ": " + o.heapMB + " MB, " + (o.halter || []).length + " Halter in " + o.ms + " ms");
+                    } catch (e) {
+                        // eine Halde, die nicht fiel, nimmt der Runde kein Urteil: der Täter sagt „keine Halde“ beim Grund
+                        R.halde[name] = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 160), halter: [] };
+                        L.zeile("Halde " + name + " fiel nicht: " + R.halde[name].fehler);
+                    } finally {
+                        try {
+                            fs.unlinkSync(datei);
+                        } catch (_e) {
+                            /* die Werkbank schrieb keinen */
+                        }
+                    }
+                };
+                const MB = (x) => (Number.isFinite(x) ? +x.toFixed(1) : null);
+                // die Halte der vorigen Teile, auf denen dieser aufbaut — fehlt einer, riss ein Teil davor (beim Namen, nie ein Wurf)
+                const traegt = (...n) => {
+                    const ohne = n.filter((x) => !R.halte[x] || !Number.isFinite(R.halte[x].heap));
+                    if (ohne.length) throw new Error("der Teil " + teil + "/" + teile + " findet die Halte " + ohne.join(", ") + " der Runde nicht");
+                };
+                const stadtZahl = () =>
+                    L.ev(
+                        "let best = null; for (const p of (r._ortPlaene || new Map()).values()) if (p && p.ort && p.welt && Array.isArray(p.slots) && (!best || p.slots.length > best.slots.length)) best = p;" +
+                            " let bauten = 0; if (best) { const o = best.ort, w = best.welt; for (const a of r.state.architectures) { const q = a && a.position; if (q && !r._istNatur(a) && q.x >= o.x + w.x0 && q.x <= o.x + w.x1 && q.z >= o.z + w.z0 && q.z <= o.z + w.z1) bauten++; } }" +
+                            " let menschen = 0, sied = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) { sied++; menschen += S.liste ? S.liste.length : S.plan && S.plan.slots ? S.plan.slots.length : 0; }" +
+                            " const teil = r._gelaende().ort.teil; return { bauten, haeuser: best ? best.slots.length : 0, ort: best ? [Math.round(best.ort.x), Math.round(best.ort.z)] : null, menschen, sied, planet: r._planetSamen(), zeitMa: teil && Number.isFinite(teil.zeitMa) ? teil.zeitMa : 0 };"
+                    );
+                // DIE KURVE der Runde aus dem Strom der Sitzung (alle Teile, dieselbe Zelle): Minuten, Bilder, Weg des Leibs
+                const kurve = () => {
+                    const b = L.bilder(ZELLE);
+                    let weg = 0;
+                    for (let i = 1; i < b.length; i++) weg += Math.hypot(b[i].x - b[i - 1].x, b[i].z - b[i - 1].z);
+                    return { n: b.length, weg: +weg.toFixed(1), min: b.length > 1 ? +((b[b.length - 1].wand - b[0].wand) / 60000).toFixed(3) : 0, heapMax: b.reduce((m, x) => (Number.isFinite(x.heap) ? Math.max(m, x.heap) : m), -Infinity) };
+                };
+                const welt = () => {
+                    const k = kurve();
+                    return { orte: new Set(Object.keys(R.halte).map((n) => n.split("-")[0])).size, bilder: k.n, weg_m: k.weg };
+                };
+                try {
+                    if (faehrt(1)) {
+                        // der Ort der Probe (punkte.cjs probeOrt): die Sitzung stellt sie vor dem Deckel an genesis
+                        await L.wb("/umstellen", { ort: "genesis", sicht: "ego" }, 240);
+                        await L.zelle(ZELLE);
+                        await posten("genesis-0");
+                        await L.je(5, async () => L.umfang(5, 0, "kein Orbit: der Boden ist eine Ebene (planetFlaeche planet-core.js:2256 ohne Leser im Stamm), kein Sprung Orbit ↔ Boden"));
+                        await ort("stadt-voll", 160);
+                        await posten("stadt-1");
+                        const w = (R.stadt1 = await stadtZahl());
+                        L.zeile("Welt an stadt-1: " + JSON.stringify(w));
+                        await L.je(4, async () => {
+                            if (w.menschen < U(4)) return L.umfang(4, w.menschen, "die Welt wirkt mit " + w.menschen + " Menschen in " + w.sied + " Siedlungen an der vollen Stadt — keine Megastadt");
+                            L.leser(4, "60 min Megastadt mit Speicher-Kurve: kein Lauf der Sitzung trägt 60 min", w.menschen);
+                        });
+                        await L.je(6, async () => L.umfang(6, new Set([w.planet + "|" + w.zeitMa]).size, "die Sitzung hält eine Welt (Same " + w.planet + ", zeitMa " + w.zeitMa + ")"));
+                    }
+                    if (faehrt(2)) {
+                        traegt("genesis-0", "stadt-1");
+                        await L.zelle(ZELLE);
+                        await ort("genesis", 40);
+                        await posten("genesis-1");
+                        await L.je(2, async () => {
+                            const [a, b] = [R.halte["genesis-0"], R.halte["genesis-1"]];
+                            const min = (b.wand - a.wand) / 60000;
+                            L.gemessen(
+                                2,
+                                { steigung_mb_min: min > 0 ? MB((b.heap - a.heap) / min) : null, vram_drift_mb: MB(b.vram - a.vram) },
+                                {
+                                    erzeugt: 0,
+                                    welt: welt(),
+                                    taeter: "Runde 1 (genesis-0 → stadt-voll → genesis-1, " + min.toFixed(2) + " min): Heap " + a.heap + " → " + b.heap + " MB, VRAM " + a.vram + " → " + b.vram + " MB nach GC — die Runde geht keinen Weg im Dorf, die 20 min am Stück trägt der Dauer-Lauf der Sitzung (profiband.K5, g6.js:4159)",
+                                    beleg: { a, b },
+                                }
+                            );
+                        });
+                        await ort("stadt-voll", 110);
+                        await posten("stadt-2");
+                        await ort("genesis", 40);
+                        await posten("genesis-2");
+                    }
+                    if (faehrt(3)) {
+                        traegt("genesis-0", "genesis-1", "stadt-1", "stadt-2", "genesis-2");
+                        await L.zelle(ZELLE);
+                        await halde("genesis-2");
+                        await ort("stadt-voll", 110);
+                        await posten("stadt-3");
+                        const w3 = (R.stadt3 = await stadtZahl());
+                        L.zeile("Stadt an stadt-3: " + JSON.stringify(w3));
+                        await ort("genesis", 40);
+                        for (let i = 0; i < 3; i++) await posten("genesis-3");
+                        await halde("genesis-3");
+                        L.preisPose("genesis", "ego");
+                        const k = kurve();
+                        await L.je(1, async () => {
+                            const a = R.halte["genesis-0"];
+                            L.gemessen(
+                                1,
+                                { heap_mb: a.heap, vram_mb: a.vram },
+                                {
+                                    erzeugt: k.min,
+                                    welt: welt(),
+                                    taeter: "Heap " + a.heap + " MB · VRAM " + a.vram + " MB an genesis frisch (nach GC); die Kurve der Runde ging " + k.min.toFixed(2) + " min, Heap im Strom bis " + MB(k.heapMax) + " MB",
+                                    beleg: { genesis: [0, 1, 2, 3].map((n) => R.halte["genesis-" + n].heap), stadt: [1, 2, 3].map((n) => R.halte["stadt-" + n].heap) },
+                                }
+                            );
+                        });
+                        await L.je(3, async () => {
+                            const g = (n) => R.halte["genesis-" + n];
+                            const wdh = g(3).wdh.filter(Number.isFinite);
+                            const streu = Math.max(...wdh) - Math.min(...wdh);
+                            const [d21, d32] = [g(2).heap - g(1).heap, g(3).heap - g(2).heap];
+                            const rueck = (100 * Math.max(0, Math.abs(d32) - streu)) / g(2).heap;
+                            // DER HALTER DES DIFFS: je Pfad ab r die MB an genesis-3 gegen genesis-2, die größten zuerst
+                            const [h2, h3] = [new Map((R.halde["genesis-2"] || {}).halter || []), new Map((R.halde["genesis-3"] || {}).halter || [])];
+                            const diff = [...new Set([...h2.keys(), ...h3.keys()])].map((p) => [p, (h3.get(p) || 0) - (h2.get(p) || 0)]).sort((x, y) => y[1] - x[1]);
+                            const halter = diff.slice(0, 3).map(([p, d]) => (d >= 0 ? "+" : "") + d.toFixed(1) + " MB " + p).join(" · ");
+                            const stadt = [1, 2, 3].map((n) => R.halte["stadt-" + n]);
+                            const reg = (n) => { const x = g(n); return "geo " + x.geo + " · tex " + x.tex + " · memoryMap " + x.memoryMap + " · Schatten-Hörer " + x.schattenHoerer + " · Kinder " + x.kinder; }; // prettier-ignore
+                            L.gemessen(
+                                3,
+                                { heap_mb: Math.max(...stadt.map((x) => x.heap)), vram_mb: Math.max(...Object.values(R.halte).map((x) => x.vram).filter(Number.isFinite)), rueck_pct: MB(rueck) },
+                                {
+                                    erzeugt: w3.bauten,
+                                    welt: welt(),
+                                    taeter:
+                                        "R3 − R2 " + MB(d32) + " MB (genesis-2 " + g(2).heap + " → genesis-3 " + g(3).heap + " MB), Streuung des Postens " + MB(streu) + " MB, R2 − R1 " + MB(d21) + " MB" +
+                                        (Math.abs(d32) > streu ? " — der Halter des Diffs: " + (halter || "keine Halde") : " — ein Vorrat, der steht") +
+                                        " · Register genesis-2 " + reg(2) + " → genesis-3 " + reg(3) + " · die Stadt des Gesetzes (" + w3.haeuser + " Häuser an " + JSON.stringify(w3.ort) + ") trägt " + w3.bauten + " Bauten",
+                                    beleg: { genesis: [0, 1, 2, 3].map((n) => ({ heap: g(n).heap, vram: g(n).vram, geo: g(n).geo, tex: g(n).tex })), streu: wdh, diff: diff.slice(0, 12) },
+                                }
+                            );
                         });
                     }
-                    const da = orte.filter((o) => Number.isFinite(o.heap) && Number.isFinite(o.vram));
-                    const top = (k) => da.reduce((a, o) => (!a || o[k] > a[k] ? o : a), null);
-                    const [h, v] = [top("heap"), top("vram")];
-                    L.gemessen(
-                        1,
-                        { heap_mb: h ? h.heap : null, vram_mb: v ? v.vram : null },
-                        {
-                            erzeugt: +orte.reduce((s, o) => s + o.min, 0).toFixed(3),
-                            welt: { orte: da.length, bilder: Math.min(...orte.map((o) => o.n)), weg_m: Math.min(...orte.map((o) => o.weg)) },
-                            taeter: (h ? "Heap " + h.heap + " MB an " + h.ort : "Heap ohne Posten") + " · " + (v ? "VRAM " + v.vram + " MB an " + v.ort : "VRAM ohne Posten") + " (nach GC) — die Kurve über 5 min trägt der Dauer-Lauf, die Leiter ging " + orte.reduce((s, o) => s + o.min, 0).toFixed(2) + " min",
-                            beleg: orte,
-                        }
-                    );
-                });
-                await L.je(2, async () => {
-                    const d = orte.find((o) => o.ort === "dorf");
-                    L.umfang(2, d ? +d.min.toFixed(3) : 0, "20 min Weg im Dorf verlangt: die Leiter ging " + (d ? d.min.toFixed(2) + " min, " + d.weg + " m" : "nicht im Dorf") + " — der Weg am Stück ist der Dauer-Lauf der Sitzung (profiband.K5, g6.js:4159)");
-                });
+                } catch (e) {
+                    if (e && e.messort) throw e;
+                    L.j.fehler.runde = String((e && e.message) || e).split("\n")[0].slice(0, 240);
+                    L.zeile("die Runde riss im Teil " + teil + "/" + teile + ": " + L.j.fehler.runde);
+                    return;
+                }
+                // DER NÄCHSTE TEIL (punkte.cjs fahreGruppe): nur, wenn dieser ganz lief
+                if (teile > 1 && teil < teile) console.log("@@PUNKTE@@ TEIL WEITER");
             },
-        })
+        }).map((st) => Object.assign(st, { probe: Object.assign(st.probe, { sek: SPEICHER_RUNDE.sekJeTeil, teile: SPEICHER_RUNDE.teile }), minuten: +((SPEICHER_RUNDE.teile * SPEICHER_RUNDE.sekJeTeil) / 60).toFixed(1) }))
     );
 }
 // @@TEILE-ENDE@@
