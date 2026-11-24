@@ -2657,8 +2657,11 @@ class AnazhRealm_koerper_leib {
         // der Sub-Strom (`seq`), nie zwei Achsen: Achsen-Namen, die sich nur im letzten Zeichen unterscheiden, tragen fast dieselbe
         // Gleichverteilte (FNV, r ≈ 0,96) — ein Paar daraus ist keine Normale
         const u = this._rollGenome(welt + "/" + String(kennung), "erbe").seq("erbe");
-        const n = () => L.gesetz().achsen.map(() => L.normal(u(), u()));
-        return { a: L.gruender(n()), e: L.umwelt(n()) };
+        // je Achse das Paar (a, e) hintereinander (erbe-geburt): die Größe zieht dieselben vier Gleichverteilten wie vor der
+        // zweiten Achse — der Gründer einer Kennung behält seine Größe, die Scheu kommt dahinter
+        const [na, ne] = [[], []];
+        for (let i = 0; i < L.gesetz().achsen.length; i++) (na.push(L.normal(u(), u())), ne.push(L.normal(u(), u())));
+        return { a: L.gruender(na), e: L.umwelt(ne) };
     }
 
     // Der size-Dial braucht KEINE eigene Achse (ein Doppel-Faktor wäre falsch): er reist durch die EINE

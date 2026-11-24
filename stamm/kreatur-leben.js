@@ -2013,7 +2013,8 @@ class AnazhRealm_kreatur_leben {
         let j = 0;
         for (const t of R.tiere)
             if (String(t.id).startsWith(kopfId)) j = Math.max(j, Number(String(t.id).slice(kopfId.length)) + 1 || 0);
-        const n = () => this._lebenNormale(rng);
+        // je Kind der Strom seiner Adresse (erbe-geburt): die Achsen jenseits der Größe ziehen aus ihm, der Strom des Takts bleibt
+        const n = (adr) => this._lebenNormale(rng, adr);
         const geboren = [];
         for (const best of wuerfe) {
             const g = AnazhRealm.TETRAPODA_SOUL_MAP[best.soul];
@@ -2023,6 +2024,7 @@ class AnazhRealm_kreatur_leben {
             const wurf = [];
             for (let k = 0; k < kopf; k++) {
                 const id = L.indId(key, R.t, j++);
+                const adr = this._faunaRng("erbe:" + id, true);
                 if (reife.length) {
                     const mu = this._lebenZug(
                         reife,
@@ -2038,12 +2040,12 @@ class AnazhRealm_kreatur_leben {
                         else if (d === d2) nah.push(t);
                     }
                     const va = this._lebenZug(nah, (t) => this._bestandEignung(t), rng);
-                    const a = L.kind(mu.a, va ? va.a : null, n(), n(), n());
-                    const e = L.umwelt(n());
+                    const a = L.kind(mu.a, va ? va.a : null, n(adr), n(adr), n(adr));
+                    const e = L.umwelt(n(adr));
                     wurf.push({ id, soul: mu.soul, g, a, e, m: mu.id, alterS: 0, x: mu.x, z: mu.z, v: mu.v });
                     continue;
                 }
-                const [a, e] = [L.gruender(n()), L.umwelt(n())];
+                const [a, e] = [L.gruender(n(adr)), L.umwelt(n(adr))];
                 const t = { id, soul: best.soul, g, a, e, m: null, alterS: 0, x: best.x, z: best.z };
                 t.v = wurf.length ? wurf[0].id : id;
                 t.alterS = this._bestandErbe(t).reif;

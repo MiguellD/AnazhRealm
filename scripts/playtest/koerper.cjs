@@ -2074,9 +2074,20 @@ async function checkBandGamepadVerben({ page, check }) {
             c.lenk = o.lenk[2] < 0 && [0.35, 0.6].every((a, i) => Math.abs(o.lenk[i] / o.lenk[2] - soll(a)) < 0.03);
             const fahrt = (setze, n) => (s.playerVel.setValue(0, 0, 0), setze(), takt(n), (o.f = v()), ruhe(), o.f);
             o.gas = [0.25, 0.5, 1].map((a) => fahrt(() => knopf(7, a), 20));
-            c.gas = o.gas[0] > 0 && o.gas[1] / o.gas[2] > 0.3 && o.gas[1] / o.gas[2] < 0.6;
+            // DAS GAS IST STETIG, GEMESSEN AM GESETZ (nerv-bewegung): der Motor zieht ∝ Gas, die Luft bremst ∝ v² (vehicle-core) —
+            // halbes Gas endet bei √½ des Deckels und liegt auf dem Weg dorthin darunter; ein Abzug, der halb wie voll zieht, liest
+            // 1, einer mit Wurzel-Kurve 0,79, einer mit Quadrat 0,28. Die alte Decke 0,6 war am Wagen von main geeicht (0,554:
+            // seine Reibung 1,0 m/s² wog gegen aEngine 7,45 m/s² schwerer); am Deckel aus der Gestalt (aEngine 10,2 m/s²) liest
+            // das Band 0,584 und mit einem Sim-Schritt mehr 0,600 (1 von 9 Läufen: 1,234 statt 1,201 m/s).
+            c.gas = o.gas[0] > 0 && o.gas[1] / o.gas[2] > 0.3 && o.gas[1] / o.gas[2] < Math.SQRT1_2;
+            // DER AUSLAUF AUS VIERTEL-GAS (nerv-bewegung): der Deckel des Pad-Wagens ist Gehen × 1,48 (koerper-fahrt `vmax`), und sein
+            // Luftwiderstand hält dort dem vollen Motor die Waage (vehicle-core: dragK = (aEngine − Reibung)/vmax², aEngine =
+            // kAcc·vmax) — am Deckel bremst schon das Gas-Weg mit aEngine. Mit dem Gehen aus der Gestalt (1,15 → 1,58 m/s) stieg
+            // der Deckel 1,70 → 2,33 m/s und aEngine 7,45 → 10,2 m/s²: aus Vollgas legte die gesperrte Hinterachse nur noch 9 %
+            // auf den Auslauf (0,854 gegen 1,042 → 1,107 gegen 1,208 m/s in 10 Takten, 1,22× → 1,09×). Aus Viertel-Gas trägt der
+            // Reifen den Auslauf: 0,254 gegen 0,583 m/s (2,30×, v0 0,59) → 0,326 gegen 0,705 m/s (2,16×, v0 0,87).
             const auslauf = (bremse) => (
-                (o.v0 = fahrt(() => knopf(7, 1), 40)),
+                (o.v0 = fahrt(() => knopf(7, 0.25), 40)),
                 bremse && knopf(kn("handbremse"), 1),
                 takt(10),
                 (o.hb = T.handbremse),
@@ -2087,9 +2098,9 @@ async function checkBandGamepadVerben({ page, check }) {
             o.bremse = [auslauf(false), auslauf(true)];
             // die Handbremse sperrt nur die Hinterachse (w28-reibellipse): ihr Zug ist μ·N des Hecks, nie mehr der Deckel beider Achsen
             // (das Gesetz der Achse richtet gate:vehicle-drive A6 je Rezept). Hier urteilt der VERB-Draht: das Pad erreicht den Kern.
-            // Die gesperrte Hinterachse des Pad-Wagens trägt in geschlossener Form μ 0,6 → 1,161 · 0,797 (die Bühne) → 1,272 ·
-            // 1,0 → 1,378, die Handbremse, die den Kern nie erreicht, 0,999; die Schwelle 1,15 liegt dazwischen. Die alten 1,3
-            // waren die Handbremse am Deckel beider Achsen (1,79). Der Auslauf hängt am μ der Bühne (`haft`), er steht im Text.
+            // Die Handbremse, die den Kern nie erreicht, fährt zwei gleiche Ausläufe (aus Vollgas gemessen 0,999); die Schwelle 1,15
+            // liegt zwischen ihr und der gesperrten Hinterachse (aus Viertel-Gas 2,16× an der Bühne μ 0,73). Die alten 1,3 waren
+            // die Handbremse am Deckel beider Achsen (1,79). Der Auslauf hängt am μ der Bühne (`haft`), er steht im Text.
             o.haft = r._fahrHaft(wagen._fahr);
             c.handbremse = o.hb === true && o.bremse[1] > 1.15 * o.bremse[0];
             fx.length = 0;

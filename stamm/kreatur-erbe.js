@@ -35,10 +35,11 @@ class AnazhRealm_kreatur_erbe {
     // Saat der Welt (jede junge Welt trug dieselben ersten Tiere), und der angenommene Leib musste a = −e tragen. Masse, Größe und
     // Temperament sind Ableitung. Den Kern liest der EINE Leser `AnazhRealm._lebenKern()` (fail-closed), den Gründer einer
     // Kennung `_erbeGruender`.
-    // Normalverteilte je Achse des Erbes aus dem Strom eines Takts (`rng`: Gleichverteilte u ∈ [0, 1), zwei je Achse).
-    _lebenNormale(rng) {
-        const L = AnazhRealm._lebenKern();
-        return L.gesetz().achsen.map(() => L.normal(rng(), rng()));
+    // Normalverteilte je Achse des Erbes (`__lebenCore.normale`, die EINE Regel): die Größe aus dem Strom eines Takts (`rng`: zwei
+    // Gleichverteilte u ∈ [0, 1)), jede weitere Achse aus dem Strom der Adresse des Kinds (`adr`, `_faunaRng("erbe:" + Kennung,
+    // true)`, erbe-geburt) — die zweite Achse verschiebt keinen Zug des Takts. Bis erbe-geburt zog jede Achse aus `rng`.
+    _lebenNormale(rng, adr) {
+        return AnazhRealm._lebenKern().normale(rng, adr);
     }
     // DAS ERBE ALS LEIB ohne das Alter: M∞, Lebensdauer und Reife (je Datensatz einmal, solange Kennung, Gattung und Erbe stehen).
     _bestandErbe(t) {
@@ -97,14 +98,15 @@ class AnazhRealm_kreatur_erbe {
         t.alterS = gross ? Math.max(L.alterZurMasse(M, M * tol), alterS > 0 ? alterS : 0) : L.alterZurMasse(M, m);
         return t;
     }
-    // DIE EIGNUNG EINES TIERS in der Nische seiner Art (`__lebenCore.eignung`): sein Phänotyp P = ln(M∞ / M_guss) gegen das
-    // Optimum der Art (Welle 1: der Guss).
+    // DIE EIGNUNG EINES TIERS in der Nische seiner Art (`__lebenCore.eignung`): sein Phänotyp je Achse gegen das Optimum der Art
+    // (Welle 1: der Guss) — die Größe P = ln(M∞ / M_guss) am Leib, jede andere Achse am Erbe P = a + e (erbe-geburt: die Scheu
+    // kostet, wer flieht, äst weniger). Bis erbe-geburt las die Nische nur die Größe.
     _bestandEignung(t) {
         const E = this._bestandErbe(t);
         if (E.eignung === undefined) {
             const L = AnazhRealm._lebenKern();
             const P = Math.log(E.M / this._gattungKg(t.g));
-            E.eignung = L.eignung(L.gesetz().achsen.map((x) => (x.name === "lnM" ? P : 0)));
+            E.eignung = L.eignung(L.gesetz().achsen.map((x, i) => (x.name === "lnM" ? P : t.a[i] + t.e[i])));
         }
         return E.eignung;
     }
@@ -137,11 +139,12 @@ class AnazhRealm_kreatur_erbe {
         return this._lebenZug(tiere, (t) => (g && t.g !== g ? 0 : 1 / L.fastenRang(this._bestandKg(t))), rng);
     }
     // DAS OPFER DES RISSES: gezogen aus der Beute (`beute`: Map/Set der Gejagten, mit g nur seiner Gattung) mit dem Gewicht
-    // `rissGewicht` seiner Masse (der Ertrag des Jägers ∝ Masse).
+    // `rissGewicht` seiner Masse (der Ertrag des Jägers ∝ Masse) mal seinem Fang-Gewicht (`fangGewicht`, erbe-geburt: wer früher
+    // flieht, wird seltener gefasst — die Auslese der Scheu, wie im Riss des Gaus).
     _bestandRissOpfer(tiere, g, beute, rng) {
         const L = AnazhRealm._lebenKern();
         const ist = (t) => !(g && t.g !== g) && !(beute && !beute.has(t));
-        return this._lebenZug(tiere, (t) => (ist(t) ? L.rissGewicht(this._bestandKg(t)) : 0), rng);
+        return this._lebenZug(tiere, (t) => (ist(t) ? L.rissGewicht(this._bestandKg(t)) * L.fangGewicht(t.a, t.e) : 0), rng); // prettier-ignore
     }
 
     // DIE GRENZEN DES GESETZES für eine Größe, die kein Gesetz trägt (`__lebenCore.spanne`: das Neugeborene des −4σ-Tiers bis
