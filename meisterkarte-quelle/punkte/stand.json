@@ -20231,7 +20231,7 @@
   },
   "karte2.mensch.macht.krieg": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.krieg#1 radeon: ROT: S1 ROT: Umfang nicht erzeugbar: nur der Spieler trägt eine Klinge (die leere Hand): 6 von 1365 Bewohnern bewaffnet, kein zweiter Kämpfer für einen Zweikampf (gemessen 7, Soll 2 Bewaffnete im Zweikampf) · [linse-gpu] amd/rdna-3 an 5ef0404b · karte2.mensch.macht.krieg#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs) · karte2.mensch.macht.krieg#2 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#3 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#4 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#5 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#6 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#7 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#8 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#8 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#9 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#9 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.krieg#1 radeon: ROT: S1 ROT: Umfang nicht erzeugbar: nur der Spieler trägt eine Klinge (die leere Hand): 6 von 1365 Bewohnern bewaffnet, kein zweiter Kämpfer für einen Zweikampf (gemessen 7, Soll 2 Bewaffnete im Zweikampf) · [linse-gpu] amd/rdna-3 an 5ef0404b · karte2.mensch.macht.krieg#1 gtx: ROT: S1 ROT: Umfang nicht erzeugbar: nur der Spieler trägt eine Klinge (die leere Hand): 6 von 1365 Bewohnern bewaffnet, kein zweiter Kämpfer für einen Zweikampf (gemessen 7, Soll 2 Bewaffnete im Zweikampf) · [linse-gpu] nvidia/pascal an daee7541 · karte2.mensch.macht.krieg#2 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#3 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#4 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#5 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#6 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#7 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#8 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#8 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#9 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#9 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.macht.krieg#1",
@@ -20247,10 +20247,9 @@
      "id": "karte2.mensch.macht.krieg#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs)",
-     "ungemessen": true,
+     "zahl": "S1 ROT: Umfang nicht erzeugbar: nur der Spieler trägt eine Klinge (die leere Hand): 6 von 1365 Bewohnern bewaffnet, kein zweiter Kämpfer für einen Zweikampf (gemessen 7, Soll 2 Bewaffnete im Zweikampf) · [linse-gpu] nvidia/pascal",
+     "sha": "daee7541bfcc7a5a5346b886ab4498ad73120925",
+     "grund": "ROT: S1 ROT: Umfang nicht erzeugbar: nur der Spieler trägt eine Klinge (die leere Hand): 6 von 1365 Bewohnern bewaffnet, kein zweiter Kämpfer für einen Zweikampf (gemessen 7, Soll 2 Bewaffnete im Zweikampf) · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -37716,8 +37715,8 @@
   "ohne": 3318
  },
  "kopfVoll": "bf9be26c5b6d4e5f15926be5d8eb5c79c62d4d4d",
- "zeit": "2026-11-24T11:36:36.996Z",
- "vorher": "daee7541",
+ "zeit": "2026-11-24T11:43:53.916Z",
+ "vorher": "bf9be26c",
  "bilanz": {
   "gewinn": [],
   "fall": [],
