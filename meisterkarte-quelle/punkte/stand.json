@@ -29395,7 +29395,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an a8dd22b5: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 60.5 s · 438.4 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an c2c7ed12: Last: Referenz f 1,456 (Faden 1,456 · alle Kerne 1,383; vor 118,6/234,3 ms, nach 130,9/317,6 ms, Ruhe 89,9/229,7 ms seit 2026-11-18) · fremd: node.exe punkte/punkte.cjs selbsttest --ohne 3c 112,2 CPU- · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an a8dd22b5: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 60.5 s · 438.4 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an a8dd22b5: Last: Referenz f 1,217 (Faden 1,071 · alle Kerne 1,217; vor 85,6/214,3 ms, nach 96,3/279 ms, Ruhe 89,9/229,2 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjj · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -29413,7 +29413,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c2c7ed12: Last: Referenz f 1,456 (Faden 1,456 · alle Kerne 1,383; vor 118,6/234,3 ms, nach 130,9/317,6 ms, Ruhe 89,9/229,7 ms seit 2026-11-18) · fremd: node.exe punkte/punkte.cjs selbsttest --ohne 3c 112,2 CPU-",
+     "grund": "ungemessen (R10) — zuletzt an a8dd22b5: Last: Referenz f 1,217 (Faden 1,071 · alle Kerne 1,217; vor 85,6/214,3 ms, nach 96,3/279 ms, Ruhe 89,9/229,2 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjj",
      "ungemessen": true,
      "beide": true
     },
@@ -37737,8 +37737,8 @@
   "ohne": 3305
  },
  "kopfVoll": "eba9bf8fbb8ca7c694b78237cb5b1ab04b8df698",
- "zeit": "2026-11-24T15:45:51.942Z",
- "vorher": "499f8b57",
+ "zeit": "2026-11-24T15:56:59.014Z",
+ "vorher": "eba9bf8f",
  "bilanz": {
   "gewinn": [],
   "fall": [],
