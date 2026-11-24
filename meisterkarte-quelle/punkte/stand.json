@@ -30713,7 +30713,7 @@
   },
   "karte2.planet.wasser.eis": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 abwM 75 m gegen Soll 0 ± 150 m ✓ · posen 10 gegen Soll ≥ 10 ✓ · jahreszeiten 4 gegen Soll ≥ 4 ✓ · fussCm 37,2 cm gegen Soll ≥ 5 cm ✓ · Zeuge: 40 Linien der Welt, die Grenze wandert mit der Saison, der Fuß sinkt im Winter und nie im Sommer an 1feab29c gtx — offen: karte2.planet.wasser.eis#1 radeon: Station seit der Messung geändert · karte2.planet.wasser.eis#2 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.planet.wasser.eis#2 gtx: Station seit der Messung geändert — zuletzt an 2d6a0447: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Yune ×3\",\"Nox ×2\",\"Kai\",\"Lera\"],\"neu\":[],\"anders\":[]}}) — of · karte2.planet.wasser.eis#3 radeon: ungemessen (R10) · karte2.planet.wasser.eis#3 gtx: ungemessen (R10) · karte2.planet.wasser.eis#4 radeon: ungemessen (R10) · karte2.planet.wasser.eis#4 gtx: ungemessen (R10) · karte2.planet.wasser.eis#5 radeon: ungemessen (R10) · karte2.planet.wasser.eis#5 gtx: ungemessen (R10) · karte2.planet.wasser.eis#6 radeon: ungemessen (R10) · karte2.planet.wasser.eis#6 gtx: ungemessen (R10) · karte2.planet.wasser.eis#7 radeon: ungemessen (R10) · karte2.planet.wasser.eis#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 abwM 75 m gegen Soll 0 ± 150 m ✓ · posen 10 gegen Soll ≥ 10 ✓ · jahreszeiten 4 gegen Soll ≥ 4 ✓ · fussCm 37,2 cm gegen Soll ≥ 5 cm ✓ · Zeuge: 40 Linien der Welt, die Grenze wandert mit der Saison, der Fuß sinkt im Winter und nie im Sommer an 1feab29c gtx · S2 fddEinsetzen 14,782 gegen Soll 15,7 ± 20 % ✓ · Zeuge: der Fächer: ≥ 10 Säulen aus ≥ 3 Saaten, die frieren und tauen — der See trägt im Frost und bricht im Tauwetter an 2d6a0447 gtx — offen: karte2.planet.wasser.eis#1 radeon: Station seit der Messung geändert · karte2.planet.wasser.eis#2 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.planet.wasser.eis#3 radeon: ungemessen (R10) · karte2.planet.wasser.eis#3 gtx: ungemessen (R10) · karte2.planet.wasser.eis#4 radeon: ungemessen (R10) · karte2.planet.wasser.eis#4 gtx: ungemessen (R10) · karte2.planet.wasser.eis#5 radeon: ungemessen (R10) · karte2.planet.wasser.eis#5 gtx: ungemessen (R10) · karte2.planet.wasser.eis#6 radeon: ungemessen (R10) · karte2.planet.wasser.eis#6 gtx: ungemessen (R10) · karte2.planet.wasser.eis#7 radeon: ungemessen (R10) · karte2.planet.wasser.eis#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.wasser.eis#1",
@@ -30747,11 +30747,11 @@
     {
      "id": "karte2.planet.wasser.eis#2",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2d6a0447: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Yune ×3\",\"Nox ×2\",\"Kai\",\"Lera\"],\"neu\":[],\"anders\":[]}}) — of",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "S2 fddEinsetzen 14,782 gegen Soll 15,7 ± 20 % ✓ · Zeuge: der Fächer: ≥ 10 Säulen aus ≥ 3 Saaten, die frieren und tauen — der See trägt im Frost und bricht im Tauwetter",
+     "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.wasser.eis#3",
@@ -37556,7 +37556,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 316,
+  "konsum": 317,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37724,10 +37724,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3306
+  "ohne": 3305
  },
  "kopfVoll": "32c0cd8b87c45b767ad81be177cd3ff1c1259c58",
- "zeit": "2026-11-24T21:06:58.721Z",
+ "zeit": "2026-11-24T21:15:04.720Z",
  "vorher": "32c0cd8b",
  "bilanz": {
   "gewinn": [],

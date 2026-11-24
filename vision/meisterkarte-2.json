@@ -205,10 +205,10 @@
    "summe": {
     "kriterien": 26,
     "sprossen": 180,
-    "heute": 8,
+    "heute": 9,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 4,
+    "anteilHeute": 4.4,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -1419,7 +1419,7 @@
        "richter": "Albedo-Kippe unter Strahlungs-Schwelle in 10 Saaten reproduzierbar; Blindpaar Eismond gegen Sondenfoto"
       }
      ],
-     "heute": 1,
+     "heute": 2,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Mechanik halb: See-Eis nach Stefan (gelaende-core.js:1341-1422) trägt headless 1 151 Schritte; Schneedecke mit Tiefe 1/2 (wetter.K4); kein Gletscher, kein Meereis. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
@@ -20089,7 +20089,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 94,
+  "heute": 95,
   "davonKopplungen": 33,
   "kern": 4,
   "kernDazu": 4,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 54,
-  "nachwache": 40
+  "nachwache": 41
  },
  "zusammengelegt": [
   {
