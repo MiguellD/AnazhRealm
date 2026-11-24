@@ -152,6 +152,7 @@ class AnazhRealm_bild_schatten {
             auge: uniform(new THREE.Vector3()),
             vor: uniform(new THREE.Vector3()),
             weissBoden: uniform(0),
+            licht: uniform(new THREE.Vector3(0, 1, 0)), // BLICK (nur Messung)
         });
         // der Boden der Atmosphäre: dieselbe PMREM-Stufe und dasselbe Licht wie der Himmel jedes Stoffs (`_spiegelUmgebung`)
         const atmoBoden = __weltLicht.himmelDerStoffe(
@@ -179,6 +180,8 @@ class AnazhRealm_bild_schatten {
             const n = float(0).toVar();
             const sicht = float(0).toVar();
             const sichtN = float(0).toVar();
+            const blickNLV = float(0).toVar();
+            const blickNL = float(0).toVar();
             // vor jedem Zweig geboren (Lehre 26: ein Knoten steht, wo er zuerst gebaut wird — beide Blöcke lesen die Größe)
             const gr = vec2(tiefe.size()).toVar();
             const welt = (px) => {
@@ -301,8 +304,12 @@ class AnazhRealm_bild_schatten {
                                     wert.subAssign(float(1).sub(s).mul(anteil));
                                 });
                             }
-                            sicht.addAssign(wert.mul(this._sonnenSicht(p.xyz)));
+                            const blickV = wert.mul(this._sonnenSicht(p.xyz)).toVar();
+                            sicht.addAssign(blickV);
                             sichtN.addAssign(1);
+                            const blickW = T.max(dot(N, U.licht), float(0)).toVar();
+                            blickNLV.addAssign(blickW.mul(blickV));
+                            blickNL.addAssign(blickW);
                         });
                     });
                 });
@@ -313,7 +320,11 @@ class AnazhRealm_bild_schatten {
             return select(
                 imBild,
                 vec4(summe.div(n.max(1)), n),
-                select(kachel.x.greaterThan(KX), vec4(sicht.div(sichtN.max(1)), sichtN, 0, 1), vec4(atmoBoden, 1))
+                select(
+                    kachel.x.greaterThan(KX),
+                    vec4(sicht.div(sichtN.max(1)), sichtN, blickNLV.div(sichtN.max(1)), blickNL.div(sichtN.max(1))),
+                    vec4(atmoBoden, 1)
+                )
             );
         })();
         const pp = st.postProcessing;
@@ -400,6 +411,7 @@ class AnazhRealm_bild_schatten {
             P.U.auge.value.setFromMatrixPosition(cam.matrixWorld);
             cam.getWorldDirection(P.U.vor.value);
             P.U.weissBoden.value = this._rueckstrahlWeiss();
+            if (P.U.licht) P.U.licht.value.copy(P.lichtDir); // BLICK (nur Messung)
             const rend = st.renderer;
             if (typeof rend.readRenderTargetPixelsAsync !== "function")
                 throw new Error("der Renderer liest kein Ziel zurück (readRenderTargetPixelsAsync fehlt, Vendor)");
@@ -429,6 +441,8 @@ class AnazhRealm_bild_schatten {
                     if (mitSicht) {
                         let ss = 0;
                         let sm = 0;
+                        let snlv = 0;
+                        let snl = 0;
                         for (let y = 0; y < KY >> 1; y++)
                             for (let x = KX + 1; x <= 2 * KX; x++) {
                                 const o = y * zeile + 4 * x;
@@ -436,9 +450,12 @@ class AnazhRealm_bild_schatten {
                                 if (k > 0) {
                                     ss += w(o) * k;
                                     sm += k;
+                                    snlv += w(o + 2) * k;
+                                    snl += w(o + 3) * k;
                                 }
                             }
                         if (sm > 0) L.sicht = Math.min(1, Math.max(0, ss / sm));
+                        if (sm > 0) (L.blickNLV = snlv / sm), (L.blickNL = snl / sm); // BLICK (nur Messung)
                         L.sichtRichtung.copy(P.messRichtung);
                     }
                     if (L.licht !== licht) return;
