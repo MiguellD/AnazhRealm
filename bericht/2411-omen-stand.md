@@ -1,5 +1,17 @@
 # OMEN-Stand 24.11. 15:50 (vor dem Konto-Wechsel)
 
+## NACHTRAG 16:27 (neue OMEN-Sitzung „Meister der Omen“ — SendMessage an DIESEN Namen; „Omen Meister“ ist die alte Sitzung)
+
+- **Neustart der OMEN 16:02** (Konto-Wechsel): landung · platte · puls waren tot, die Mess-Sitzung der Runde 22 auch. 16:14
+  `start.sh` (installiert 70bce02a), alle drei leben; die Runde misst a8dd22b5 weiter (16:25 bei 32/239). Runner GTX 1060 lebt seit 16:03.
+- **sport-regeln 3: STEMPLE c0e41d1868b14dc5b3210d814fc0bd330bdca1fc, NICHT cf3bff66.** Die GPU-Probe an cf3bff66 wurde vom
+  Einlass ABGEWIESEN (mein Ruf lautete „wie am Kopf 998254be“ statt Probe-Namen; 54d43e20). c0e41d18 ist ein Commit OHNE Inhalt
+  (Baum 29444137 = cf3bff66): die Code-Batterie erbt von cf3bff66, die Probe fährt die vier Namen von 998254be
+  (gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen, bild:stadt-voll@0.773). grün-reif: ja, sobald die Probe grün ist.
+- **scherbe-liegt läuft:** Messung DRUCK-BUDGET-WANDUHR an main 499f8b57 (Mess-Kopie der Linse: Bild je Treffer, Budget 4 ↔ 0),
+  Handlauf an der Stations-Grenze. Schnitt im Scratch bereit: `_tickDruck` zählt Brüche je Bild (`DRUCK.bruecheJeBild` 1) statt
+  `performance.now()` + 4 ms; `spec/uhr/geraetezeit.json` verliert `_tickDruck:2`. Die Zahl folgt als Kopf mit grün-reif ja/nein.
+
 ## Köpfe je Zweig
 
 | Zweig | Kopf | Baum | grün-reif |
