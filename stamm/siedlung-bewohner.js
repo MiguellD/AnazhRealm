@@ -1225,8 +1225,8 @@ class AnazhRealm_siedlung_bewohner {
         const posten = [...tore.slice(0, 1), ...(amPlatz ? [amPlatz] : []), ...tore.slice(1)];
         const nPosten = Math.max(tore.length ? 1 : 0, Math.round(liste.length / WL.jeKoepfe));
         const postenStand = function* (g, P) {
-            for (let v = 0; v < 120; v++) {
-                const r = 1.5 + Math.floor(v / 12) * 1.2;
+            for (let v = 0; v < WL.ring.alle; v++) {
+                const r = WL.ring.r0M + Math.floor(v / WL.ring.jeStufe) * WL.ring.stufeM;
                 const a = g.axis(`${v}:postenstand`) * 2 * Math.PI;
                 const [x, z] = [P.x + Math.cos(a) * r, P.z + Math.sin(a) * r];
                 // am Tor sieht er hinaus
@@ -4414,6 +4414,9 @@ AnazhRealm.LEBENSLAUF = Object.freeze({
         rollen: Object.freeze(["waechter", "nachtwaechter"]),
         nahM: 1.5, // so nah tritt die Wache an die Tat
         torInnenM: 6, // der Posten steht so weit innerhalb des Tors
+        // der Ring der Stände um den Posten (`postenStand`; die Kreatur-Linse liest ihn als Schranke, zielplan): je Stufe `jeStufe`
+        // Würfe, die erste `r0M` vom Posten, jede weitere `stufeM` weiter
+        ring: Object.freeze({ r0M: 1.5, stufeM: 1.2, jeStufe: 12, alle: 120 }),
         waffe: Object.freeze([Object.freeze({ bis: 1829, art: "langschwert" }), Object.freeze({ bis: Infinity, art: "keule" })]), // prettier-ignore
     }),
 });

@@ -1250,11 +1250,23 @@ async function lebenBuehnen() {
                 feld(1)
             );
         };
-        // (der Fahrer: sein Werk ist sein Wagen — am Steuer oder am Stand neben ihm; der Frühaufsteher geht schon über den Platz;
-        // die Nachtschicht, `versatzH` des Tages-Gesetzes, lebt die Gegen-Stunde: um 10 und 13 Uhr schläft sie, um 23 arbeitet sie)
-        const NACHT = { 6: 18, 10: 23, 13: 23, 18: 6, 23: 10 };
+        // (der Fahrer: sein Werk ist sein Wagen — am Steuer oder am Stand neben ihm; der Frühaufsteher geht schon über den Platz)
+        // DIE STUNDE DES MENSCHEN (koerper TAGES_GESETZ): die Nachtschicht lebt den Tag um `versatzH` versetzt — ihre Stunde ist die
+        // Uhr minus den Versatz, ihr Urteil das der Stunde, in die sie fällt: der Morgen bis nach dem Gang über den Platz, das Werk
+        // bis zum Mittag, das Mittag samt Streuung, dann der Abend. DIE NACHT urteilt nur über den, den der Kern schlafen legt (sein
+        // Plan zur Uhr, `tagesPlan`: die Ruhe seiner Rolle, seine Streuung, der gesellige Abend seines Zugs) — wer noch wach ist, lebt
+        // seinen Abend. Bis hier las die Probe eine Tafel (10 → 23 Uhr) und die Stunde ohne die Wenden des Menschen: der
+        // Nachtwächter um 10 Uhr (sein Tag 22 Uhr, im Akt des Abends vor seiner Tür) und um 23 Uhr drei, deren Zug später ruht,
+        // zählten ohne Ziel (Stadt 10 Uhr 1, 23 Uhr 4 von 145, a62d5eeb; 23 Uhr ebenso am Kopf 3c9bed7f)
+        const TG = window.__koerperCore.TAGES_GESETZ;
+        const stundeVon = (uhr, b) => {
+            const hs = (((uhr - ((TG.rollen[b.rolle] || {}).versatzH || 0)) % 24) + 24) % 24;
+            if (hs >= TG.ruhe - TG.streuH || hs < TG.wach + TG.streuH)
+                return window.__koerperCore.tagesPlan(b.same, b.rolle, s.timeOfDay * 24, b.orte, 0, b.krank).akt === "schlaf" ? 23 : 18; // prettier-ignore
+            return hs < TG.wach + TG.streuH + TG.morgenPlatzH ? 6 : hs < TG.mittag[0] ? 10 : hs <= TG.mittag[1] + TG.streuH ? 13 : 18; // prettier-ignore
+        };
         const passt = (o, uhr, b, drinnen) => {
-            const h = (window.__koerperCore.TAGES_GESETZ.rollen[b.rolle] || {}).versatzH ? NACHT[uhr] : uhr;
+            const h = stundeVon(uhr, b);
             const [eigen, hr] = [
                 !!o && o.k === "haus#" + b.heim,
                 (heimVon.get("haus#" + b.heim) || {}).rolle || "wohnhaus",
@@ -1301,23 +1313,45 @@ async function lebenBuehnen() {
             const [c, sn, dx, dz] = [Math.cos(pz.phi || 0), Math.sin(pz.phi || 0), p.x - mitte.x, p.z - mitte.z];
             return Math.hypot(Math.max(0, Math.abs(dx * c - dz * sn) - pz.ex), Math.max(0, Math.abs(dx * sn + dz * c) - pz.ez));
         };
-        // Täter (Selbsttest): der erste Stand am Platz, der dem Werk eines Gesunden gehört, steht mit seinem Ursprung (`ur`) jenseits
-        // des Rands — auf dem ersten Punkt, den der Wirt dort trägt (keine Wand, keine Spur: sonst geht der Mensch ohne ihn,
+        // DER STAND HINTER SEINER SCHRANKE (die Täter platzfern · torfern): der Stand st steht mit seinem Ursprung (`ur`) auf dem
+        // ersten Punkt jenseits von R0 um `von`, den der Wirt dort trägt (keine Wand, keine Spur: sonst geht der Mensch ohne ihn,
         // `_bewohnerOhneStand`, und der Täter fiele an der Wache des Wirts statt an der Linse)
-        if (taeter === "zielplan-platzfern") {
-            const st = S.liste.map((b) => !b.krank && b.orte.werk).find((q) => q && q.anker && mitte && ab(q.anker, mitte) < 0.05); // prettier-ignore
+        const hinaus = (st, von, R0) => {
             const frei = (p) => !r._bewohnerWand(p, p, true, A.BEWOHNER.standRandM) && !(S.verkehr && r._verkehrAufSpur(S, p.x, p.z)); // prettier-ignore
-            const R = Math.hypot(pz.ex, pz.ez) + platzRandM;
             let p = null;
             for (let d = 8; !p && d <= 48; d += 4)
                 for (let i = 0; !p && i < 16; i++) {
-                    const q = { x: mitte.x + Math.cos((i * Math.PI) / 8) * (R + d), z: mitte.z + Math.sin((i * Math.PI) / 8) * (R + d) };
+                    const q = { x: von.x + Math.cos((i * Math.PI) / 8) * (R0 + d), z: von.z + Math.sin((i * Math.PI) / 8) * (R0 + d) }; // prettier-ignore
                     if (frei(q)) p = q;
                 }
             const alt = { x: st.x, z: st.z, ur: st.ur && { x: st.ur.x, z: st.ur.z } };
             Object.assign(st, { x: p.x, z: p.z });
             if (st.ur) Object.assign(st.ur, { x: p.x, z: p.z });
             restore.push(() => (Object.assign(st, { x: alt.x, z: alt.z }), alt.ur && Object.assign(st.ur, alt.ur)));
+        };
+        // der erste Stand eines Werks, dessen Marke `marke` trifft — eines Gesunden (der Kranke geht nicht an sein Werk)
+        const werkStand = (marke) => S.liste.map((b) => !b.krank && b.orte.werk).find((q) => q && q.anker && marke(q.anker)); // prettier-ignore
+        // Täter (Selbsttest): der erste Stand am Platz, der dem Werk eines Gesunden gehört, steht jenseits des Rands
+        if (taeter === "zielplan-platzfern")
+            hinaus(werkStand((a) => mitte && ab(a, mitte) < 0.05), mitte, Math.hypot(pz.ex, pz.ez) + platzRandM);
+        // DER POSTEN AM TOR IST EIN ORT DES WERKS (mensch.macht.recht#1, bewohner-satz): der Plan nennt die Tore (`plan.mauer.gates`),
+        // der Posten liegt `torInnenM` innerhalb (LEBENSLAUF.wache), der Stand der Wache trägt ihn als Marke (`anker`, `postenStand`);
+        // die Schranke ist der Ring des Wirts um ihn (LEBENSLAUF.wache.ring), jenseits steht er „fern von seiner Marke" (Täter
+        // zielplan-torfern). Bis hier kannte die Probe kein Tor: der Wächter am Posten zählte als „an seinem eigenen Wohnhaus"
+        // (die nächste Tür bis 20 m) und um 10 und 13 Uhr ohne Ziel (Stadt je 1 von 145, a62d5eeb)
+        const WL = A.LEBENSLAUF.wache;
+        const tore = ((plan.mauer && plan.mauer.gates) || []).flatMap((t, i) => {
+            const R = plan.mauer.R || 0;
+            const [gx, gz] = Number.isFinite(t.x) ? [t.x, t.z] : [Math.cos(t.th) * R, Math.sin(t.th) * R];
+            const l = Math.hypot(gx, gz);
+            return l > WL.torInnenM ? [{ x: S.ox + gx * (1 - WL.torInnenM / l), z: S.oz + gz * (1 - WL.torInnenM / l), k: "tor#" + i }] : []; // prettier-ignore
+        });
+        const torVon = (a) => tore.find((t) => ab(a, t) < 0.05);
+        const torRingM = WL.ring.r0M + (WL.ring.alle / WL.ring.jeStufe - 1) * WL.ring.stufeM;
+        // Täter (Selbsttest): der erste Stand am Posten eines Tors steht jenseits seines Rings
+        if (taeter === "zielplan-torfern") {
+            const st = werkStand(torVon);
+            hinaus(st, st.anker, torRingM);
         }
         // Täter (Selbsttest): die Marke eines Werk-Stands nennt die fernste Tür der Stadt, er steht, wo er stand
         if (taeter === "zielplan-fremd") {
@@ -1373,6 +1407,9 @@ async function lebenBuehnen() {
                 const amPlatz = !tuer && !!st && !!mitte && ab(st.anker, mitte) < 0.05;
                 const platzM = amPlatz ? vomPlatz(st.ur || st) : 0;
                 if (platzM > platzRandM && !fern.some((f) => f.st === st)) fern.push({ st, text: `${wer(b)}: ${q3(platzM)} m vom Platz` }); // prettier-ignore
+                const tor = !tuer && !amPlatz && !!st && torVon(st.anker);
+                const torM = tor ? ab(st.ur || st, st.anker) : 0;
+                if (torM > torRingM + 0.05 && !fern.some((f) => f.st === st)) fern.push({ st, text: `${wer(b)}: ${q3(torM)} m vom Posten an ${tor.k}` }); // prettier-ignore
                 // (der Stand neben dem eigenen Wagen ist der Ort des Fahrers, `_verkehrAnlegen` — kein Haus daneben; am Steuer
                 // ist es der Wagen selbst, `_bewohnerSoll`: kein Haus, an dem er vorbeifährt)
                 const o = tuer
@@ -1381,7 +1418,11 @@ async function lebenBuehnen() {
                       ? platzM <= platzRandM
                           ? { k: "platz", rolle: "platz" }
                           : null
-                      : b.wagen && (ziel === b.orte.werk || ziel === (b.wagen.entry && b.wagen.entry.position))
+                      : tor
+                        ? torM <= torRingM + 0.05
+                            ? { k: tor.k, rolle: "tor" }
+                            : null
+                        : b.wagen && (ziel === b.orte.werk || ziel === (b.wagen.entry && b.wagen.entry.position))
                         ? null
                         : ortVon(ziel, "haus#" + b.heim);
                 const dort = b.amSteuer || (drinnen ? !!b.drinnen : !b.weg && ab(b.leib.position, ziel) < 1.5);
@@ -1554,6 +1595,7 @@ async function lebenBuehnen() {
             bruch: bruch.slice(0, 3),
             ringM: q3(ringM),
             platzRandM: q3(platzRandM),
+            torRingM: q3(torRingM),
             fehlt,
             fernN: fern.length,
             fern: fern.slice(0, 3),
@@ -2597,7 +2639,7 @@ function lebenUrteil(name, z, soll) {
             !z.fehlt.length,
             `Lose des Plans stehen nicht: ${z.fehlt.length} von ${z.haeuser} (${z.fehlt.join(" · ")})`
         );
-        soll(!z.fernN, `Stand fern von seiner Marke (Tür: Ring ${z.ringM} m, Platz: Rand ${z.platzRandM} m): ${z.fernN} (${z.fern.join(" · ")})`); // prettier-ignore
+        soll(!z.fernN, `Stand fern von seiner Marke (Tür: Ring ${z.ringM} m, Platz: Rand ${z.platzRandM} m, Posten: Ring ${z.torRingM} m): ${z.fernN} (${z.fern.join(" · ")})`); // prettier-ignore
         // der Stand hängt nahe seiner Tür am Netz (pendler-anschluss): über das Netz höchstens umweg × Luftlinie + nahtM
         const [J, JL] = [z.jenseits, z.jenseitsLeben];
         const JR = J.n || !JL.n ? J : JL; // die Liste, die fällt: die neu gestellte zuerst, sonst die nach dem Tag
@@ -2924,6 +2966,7 @@ module.exports = {
             ["zielplan-einort", /Rollen ohne Ziel-Ort/],
             ["zielplan-fremd", /Stand fern von seiner Marke.*m von haus#/],
             ["zielplan-platzfern", /Stand fern von seiner Marke.*m vom Platz/],
+            ["zielplan-torfern", /Stand fern von seiner Marke.*m vom Posten an tor#/],
             ["zielplan-los", /steht nicht: fiel still/, []],
             ["zielplan-jenseits", /Stand jenseits der Wand: [1-9]/, []],
         ],
