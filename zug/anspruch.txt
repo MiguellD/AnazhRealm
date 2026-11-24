@@ -56,3 +56,5 @@ w28-erbe-geburt karte2.leben.evolution.erbe#1,karte2.leben.evolution.zivilisatio
 # 709 (main c9da3a64, 24.11. 08:03): nerv-bewegung: der Gang der Tiere aus dem Nerv · bewohner-satz: der Bewohner als EIN Satz (elf Front-Sprossen laut Zweig-Bericht; gespraech#2 misst bis zur Erweiterung der Station 0, seuche#1 ohne Ansteckung)
 w28-nerv-bewegung karte2.leben.tiere.bewegung#1
 w28-bewohner-satz2 karte2.mensch.kultur.sprache#1,karte2.mensch.geist.gespraech#2,karte2.mensch.geist.netz#1,karte2.mensch.geist.generationen#1,karte2.mensch.geist.absicht#2,karte2.mensch.sport.koennen#2,karte2.mensch.sport.kunst#1,karte2.mensch.menge.seuche#1,karte2.mensch.macht.recht#1,karte2.mensch.macht.krieg#1,karte2.mensch.macht.megastadt#1
+# Nachmessung 24.11. 09:07 (kein Zug): zwei Front-Sprossen sind rot nur durch ALTE Akten — sukzession#1 trägt eine NaN-Kurve vom 22.11. (sechs andere Läufe und headless am main: 4 · 0,4), gegenwart#2 trägt 46,3 % von vor klima-kontinent (am Kopf c9da3a64 gemessen: 98,6 %, 356 von 361)
+nachmessung-2411 karte2.leben.oeko.sukzession#1,karte2.planet.kopplung.gegenwart#2
