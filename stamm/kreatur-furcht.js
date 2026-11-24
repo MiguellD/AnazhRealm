@@ -70,7 +70,8 @@ class AnazhRealm_kreatur_furcht {
             if (j === creature || !j.position) continue;
             const d = Math.hypot(j.position.x - creature.position.x, j.position.z - creature.position.z);
             if (!(d < best)) continue;
-            const sicht = j.userData && j.userData._motionZustand === "hetzen" ? this._kreaturSiehtM(creature, j) : sichtPirsch;
+            const sicht =
+                j.userData && j.userData._motionZustand === "hetzen" ? this._kreaturSiehtM(creature, j) : sichtPirsch;
             if (d < sicht) [best, J, sichtJ] = [d, j, sicht];
         }
         // Ein jagender Jäger im Blick wiegt wie ein Treffer (combatFearWariness): die Beute flieht, solange sie ihn sieht

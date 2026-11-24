@@ -2161,7 +2161,11 @@ class AnazhRealm_bild_kosten {
         const Z = this.state.zugang || {};
         // DAS AUGE DER ART (`_augeDerArt`) geht der Farbsicht vor: die Kette zeichnet dann durch die Zapfen seines Taxons
         const auge = this.state.augeDerArt || null;
-        const art = auge ? "auge:" + auge.taxon : AnazhRealm.FARBSICHT.arten.includes(Z.farbsicht) ? Z.farbsicht : "aus";
+        const art = auge
+            ? "auge:" + auge.taxon
+            : AnazhRealm.FARBSICHT.arten.includes(Z.farbsicht)
+              ? Z.farbsicht
+              : "aus";
         const pp = this.state.postProcessing;
         if (pp && ppu && ppu.ausgabe && ppu._farbArt !== art) {
             const m = auge ? null : AnazhRealm._farbsichtMatrix(art);
@@ -2187,7 +2191,8 @@ class AnazhRealm_bild_kosten {
         if (taxon == null) return (this.state.augeDerArt = null);
         const K = globalThis.__tetrapodaCore;
         const F = K && K.augeFang ? K.augeFang(taxon, AnazhRealm.FARBSICHT.lms) : null;
-        if (!F) throw new Error("AUGE DER ART: das Taxon " + taxon + " trägt kein Gesetz (tetrapoda SINNES_GESETZ.taxa)");
+        if (!F)
+            throw new Error("AUGE DER ART: das Taxon " + taxon + " trägt kein Gesetz (tetrapoda SINNES_GESETZ.taxa)");
         return (this.state.augeDerArt = F);
     }
 
@@ -2567,7 +2572,10 @@ class AnazhRealm_bild_kosten {
                     .max(vec3(0, 0, 0))
                     .div(VB.k),
                 // die Welt durch die Zapfen einer Art: der Himmel mit (das Tier sieht ihn), dieselbe Skala ÷ k
-                auge: u.augeBild.mul(gesehen).max(vec3(0, 0, 0)).div(VB.k),
+                auge: u.augeBild
+                    .mul(gesehen)
+                    .max(vec3(0, 0, 0))
+                    .div(VB.k),
             };
 
             // Die Ausgabe-Wandlung (die Tonkurve Khronos PBR Neutral + sRGB, `_ensureRenderer`) macht die Pipeline selbst im
