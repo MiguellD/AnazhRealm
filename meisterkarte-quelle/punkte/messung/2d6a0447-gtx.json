@@ -1,7 +1,7 @@
 {
  "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
  "geraet": "gtx",
- "zeit": "2026-11-24T21:36:16.543Z",
+ "zeit": "2026-11-24T21:47:53.131Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.grenze#1": {
@@ -2091,6 +2091,76 @@
    },
    "zeit": "2026-11-24T21:36:16.543Z",
    "abdruck": "99ff8c872f75",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.kollektiv#2": {
+   "gruen": false,
+   "zahl": "S2 ROT an Schreck-Front in m je s 51.72 verfehlt 3–8 — Täter: stamm/siedlung-bewohner.js _bewohnerZeuge: jeder Zeuge ≤ 25 m erinnert die Tat im selben Takt, kein Schreck wandert über Sicht und Klang · Schreck-Front in m je s 51.72 (Soll 3–8) · Anteil Zeugen auf der Flucht weg 0.777 (Soll ≥ 0.9) · Umfang 148 (Soll ≥ 100 Zeugen der Tat) · Tat true um 10 Uhr, reagiert 119 binnen 60 m (jenseits des Zeugen-Kreises 4), Gegenlauf ohne Tat weg 0, Furcht der Zeugen [0,1] · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.62,
+   "grund": "ROT: S2 ROT an Schreck-Front in m je s 51.72 verfehlt 3–8 — Täter: stamm/siedlung-bewohner.js _bewohnerZeuge: jeder Zeuge ≤ 25 m erinnert die Tat im selben Takt, kein Schreck wandert über Sicht und Klang · Schreck-Front in m je s 51.72 (Soll 3–8) · Anteil Zeugen auf der Flucht weg 0.777 (Soll ≥ 0.9) · Umfang 148 (Soll ≥ 100 Zeugen der Tat) · Tat true um 10 Uhr, reagiert 119 binnen 60 m (jenseits des Zeugen-Kreises 4), Gegenlauf ohne Tat weg 0, Furcht der Zeugen [0,1] · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k4a51c262359c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k9e943d0bf40a",
+   "s": 96.3,
+   "fremd": {
+    "s": 100.5,
+    "takte": 47,
+    "fremdS": 13.53,
+    "kerne": 0.135,
+    "fensterKerne": 0.243,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.17
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.23
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      1.13
+     ]
+    ],
+    "dienerS": 8.98,
+    "diener": [
+     [
+      "System",
+      3.8
+     ],
+     [
+      "WmiPrvSE.exe",
+      3.72
+     ]
+    ],
+    "geraetS": 25.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.36
+     ],
+     [
+      "svchost.exe",
+      7.58
+     ],
+     [
+      "SearchIndexer.exe",
+      0.44
+     ]
+    ],
+    "eigenS": 141.92,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T21:47:53.131Z",
+   "abdruck": "18a5a366a051",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
