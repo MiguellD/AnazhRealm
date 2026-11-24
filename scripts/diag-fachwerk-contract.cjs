@@ -1247,7 +1247,7 @@ function raumLinse() {
     //     Stufen echt verschieden UND deckungsgleich (L1 ersetzt L0 ohne Sprung: Hülle ± 8 cm), Boden-Anschluss (jedes
     //     Stück taucht unter y = 0), die Glut leuchtet und wirft nie, jede Zahl auf dem Raster 2^-12 (plattformgleich:
     //     V8 rundet sin/cos auf Linux und Windows verschieden — das Raster macht die Bytes gleich), Determinismus, Goldens.
-    console.log("\n=== DIE AUSSTATTUNG — Feuerstelle · Marktstand · Brunnen · Laterne · Wandlaterne · Grabstein · Schild · Grenzstein · Hauszeichen · Marktkreuz (dasselbe Gesetzbuch) ===");
+    console.log("\n=== DIE AUSSTATTUNG — Feuerstelle · Marktstand · Brunnen · Laterne · Wandlaterne · Grabstein · Schild · Markstein · Hauszeichen · Marktkreuz (dasselbe Gesetzbuch) ===");
     check(
         `zehn Ausstattungs-Rezepte mit Stufen [0,1,3] und Gestalten (${AUS.join(", ")})`,
         AUS.length === 10 && JSON.stringify(AUS_LODS) === "[0,1,3]" && AUS_CASES.length >= 34

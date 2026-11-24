@@ -1330,17 +1330,17 @@ class AnazhRealm_bau_vorlagen {
                     },
                 ],
             },
-            // DER GRENZSTEIN (ort-ausstattung) — das Zeichen am Feldweg zweier Orte, wo das Reich des einen an das des anderen stößt
-            // (fachwerk `grenzeAmWeg`, gesetzt vom Feldweg `_grenzSteinSetzen`). Die GESTALT baut das Gesetzbuch (fachwerk
-            // AUSSTATTUNG `grenzstein`: der Kopf gefast, Giebel oder flach, das Kreuz auf jeder Stirn, die Weisung oben — die Welt
-            // stempelt sie als `__gestalt`); die Parts sind seine Substanz in seinen Maßen (GRENZSTEIN_GESETZ 0,4 × 0,7 × 0,25 m
+            // DER MARKSTEIN (ort-ausstattung) — das Zeichen am Feldweg zweier Orte, wo das Reich des einen an das des anderen stößt
+            // (fachwerk `grenzeAmWeg`, gesetzt vom Feldweg `_markSteinSetzen`). Die GESTALT baut das Gesetzbuch (fachwerk
+            // AUSSTATTUNG `markstein`: der Kopf gefast, Giebel oder flach, das Kreuz auf jeder Stirn, die Weisung oben — die Welt
+            // stempelt sie als `__gestalt`); die Parts sind seine Substanz in seinen Maßen (MARKSTEIN_GESETZ 0,4 × 0,7 × 0,25 m
             // über dem Grund): stein dicht → solide.
-            grenzstein_dorf: {
-                name: "grenzstein_dorf",
-                etikett: ["bau.grenzstein"],
+            markstein_dorf: {
+                name: "markstein_dorf",
+                etikett: ["bau.markstein"],
                 builtIn: true,
                 instanced: true,
-                studioGestalt: "grenzstein",
+                studioGestalt: "markstein",
                 parts: [
                     {
                         shape: "box",
