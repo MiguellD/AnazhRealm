@@ -27,10 +27,11 @@ selben Baum, nur koerper-core.js und stamm/siedlung-bewohner.js von main 2d6a044
 | 19,00 | im Ring 1 · im Zweikampf 0 | im Ring 34 · im Zweikampf 2 |
 | 18,66 | — | im Ring 27 · der Lauf läuft über das Feld |
 
-Die Dateien liegen im Scratchpad der Sitzung, Ordner …/615d4441-bade-4136-a7ae-2c4db13afa4f/scratchpad/sw/:
-bild-1855/vor-18_55.png ↔ bild-1855/nach-18_55.png, bild/vorR-19_00.png ↔ bild/nachR-19_00.png, bild/nachL-18_66.png.
+Das Bildpaar liegt im Zweig, 960 × 540, JPEG: `cloud-post/sport-wurzel-bild/vor-19_00.jpg` ↔
+`cloud-post/sport-wurzel-bild/nach-19_00.jpg`, dazu `cloud-post/sport-wurzel-bild/nach-18_66.jpg` (der Lauf). Die Bilder um 18,55 Uhr
+in voller Größe liegen im Scratchpad der Sitzung (…/615d4441-bade-4136-a7ae-2c4db13afa4f/scratchpad/sw/bild-1855/).
 
-**Die Stationen (GTX 1060, die echte Station, `punkte.cjs run --geraet gtx`).**
+**Die Stationen (GTX 1060, die echte Station der Punkte-Maschine am Gerät gtx).**
 
 | Sprosse | main 2d6a0447 | Kandidat 7e2c5b2c | Preis am Kandidaten |
 |---|---|---|---|
@@ -38,7 +39,9 @@ bild-1855/vor-18_55.png ↔ bild-1855/nach-18_55.png, bild/vorR-19_00.png ↔ bi
 | mannschaft#1 Siegquote des Stärkeren (Soll 0,6–0,8) | 0 Gänge in 40 Tagen | 0,6625 über 160 Gänge | p95 25,01 ms |
 | arena#1 Blick folgt dem Geschehen (Soll ≥ 0,8, ≥ 10 Zuschauer) | 1 im Ring (das Bild, 19 Uhr) | 1 bei 22 Zuschauern | p95 17,02 ms |
 
-Am Kopf fährt dieselbe Station noch einmal; ihr Urteil mit SHA steht in der Zeile an den Koordinator.
+Am Kopf 4d4a74ab (derselbe Code-Baum wie dieser Kopf, dazu nur der Post und das Bildpaar) urteilte dieselbe Station am 24.11. um
+22:21: regeln#1 GRÜN ρ 0,8364 über 20 Läufe · mannschaft#1 GRÜN 0,6625 über 160 Gänge · arena#1 GRÜN Blick 1 bei 22 Zuschauern;
+Preis GRÜN, p95 17,09 · 17,09 · 17,04 ms (die Akten der Punkte-Maschine je Sprosse, Kopf 4d4a74ab, Gerät gtx).
 
 **Die Tore am Kopf 9d1226b5:** gate:koerper-kern GRÜN, format:check GRÜN, lint (0 Fehler), check:statik GRÜN (505 s). Den
 Selbsttest der Linse fuhr der Kandidat c5f9f47c: dreiundvierzig von dreiundvierzig Tätern ROT beim Namen. Die Browser-Familien
