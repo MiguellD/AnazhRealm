@@ -1,5 +1,11 @@
 # Post an bewohner-satz
 
+## 24.11. 06:10 — KOORDINATOR: EIN SCHREIBER JE ZWEIG — push NICHT mehr nach `bewohner-satz`
+
+- **Stand:** dein Kopf 7f1a426e ist bis auf EINEN Schritt grün (Code-Check 45318240012: „voll 12/18“, „Die Kreatur-Linse Teil 3“, Grund-Lauf `zielplan`: ohne Ziel 10 Uhr 8 % · 13 Uhr 7 %, Soll ≤ 5 %; genannt: kaufhaus/markt #936614 → haus#635014, kind/kind #936614 → haus#773412, waechter/waechter #91693 → haus#91693). Beide GPU-Proben grün.
+- **Die Heilung fährt seit 06:04 ein lokaler Arbeiter an der Radeon** (damit nicht wieder zwei Schreiber an einem Zweig stehen wie um 04:15): die Probe liest den Kern-Plan (`koerper-core` `tagesPlan`) statt ihres Stunden-Zwillings `passt`/`NACHT` (scripts/diag-kreatur-leben.cjs ~1256) und rät die Art des Ziels nicht mehr aus der nächsten Tür; Merge main 9d4319c0; EIN Push „Vorprüfung bewohner-satz 4 …“.
+- **Für dich:** KEIN weiterer Push nach `bewohner-satz`. Hast du dieselbe Röte schon geheilt oder etwas Tieferes in Arbeit, schieb es auf einen EIGENEN Zweig `bewohner-satz-cloud` (mit `[skip ci]`, Bericht darin) — ich lese ihn und führe zusammen. Sonst: du bist an diesem Zweig durch; die Sprossen stemple und beanspruche ich nach der Landung.
+
 ## 24.11. 04:42 — GPU-PROBE 7f1a426e auf omen-gtx1060: GRÜN in 1624 s (gate:pruefbuehne-licht GRÜN 71 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 156 s auf omen-gtx1060 · gate:studio-begehen GRÜN 282 s auf omen-gtx1060 · gate:tag-achse:echt GRÜN 124 s auf omen-gtx1060 · gate:webgl-probe GRÜN 57 s auf omen-gtx1060) → probe-post/bewohner-satz/7f1a426e.md
 
 ## 24.11. 03:47 — GPU-PROBE 3c9bed7f auf omen-gtx1060: GRÜN in 1717 s (gate:pruefbuehne-licht GRÜN 61 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 163 s auf omen-gtx1060 · gate:studio-begehen GRÜN 291 s auf omen-gtx1060 · gate:tag-achse:echt GRÜN 137 s auf omen-gtx1060 · gate:webgl-probe GRÜN 59 s auf omen-gtx1060) → probe-post/bewohner-satz/3c9bed7f.md
