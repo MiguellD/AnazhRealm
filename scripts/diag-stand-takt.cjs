@@ -3745,7 +3745,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                     D.start = !!r._brandEntfachen(O.x - 2.4 * kx, O.z - 2.4 * kz);
                                     D.frist = fass._ladungFrist != null ? r3(fass._ladungFrist - st.spielZeit) : null;
                                     if (D.frist > 0) {
-                                        D.uhr = { sim: +(+st._fixedSimTime).toFixed(3), spiel: +st.spielZeit.toFixed(3), wind: [0, 1, 2, 3, 4, 6].map((s) => +r._windAt(O.x - 10, O.z, st._fixedSimTime + s).ms.toFixed(2)) };
+                                        D.uhr = { sim: +(+st._fixedSimTime).toFixed(3), simZeit: +(+st._simZeit).toFixed(3), spiel: +st.spielZeit.toFixed(3) };
                                         r._weltUhrNimm(fass._ladungFrist - 0.02);
                                         S.frame();
                                         const bild = () => (takt(), (D.einheiten += S.frame().druck));
@@ -3780,33 +3780,13 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                             // die Scherben schlafen ein: der Takt läuft, bis keine mehr wach liegt (höchstens 10 s Spielzeit)
                                             D.scherben = freie().length;
                                             D.zaehler = w.scherben;
-                                            const __W = (D.wecker = {});
-                                            const __o = r._freiWecken;
-                                            r._freiWecken = function (K) {
-                                                const z = (new Error().stack.split("\n")[2] || "").trim().replace(/^at /, "").replace(/\(?https?:\/\/[^/]+\//, "").replace(/\?v=[\d.]+/, "").slice(0, 60);
-                                                const k = `${K.schlaf ? "S" : "w"} ${z} @${(st.spielZeit - tW).toFixed(0)}s`;
-                                                __W[k] = (__W[k] || 0) + 1;
-                                                return __o.call(this, K);
-                                            };
-                                            D.spaet = [];
-                                            let __i = 0;
-                                            while (st.spielZeit - tW < 10 && wachN() > 0) {
-                                                bild();
-                                                const dt = st.spielZeit - tW;
-                                                if (dt > 0.8 && ++__i % 15 === 0 && D.spaet.length < 30)
-                                                    D.spaet.push(((von) => [
-                                                        +dt.toFixed(2),
-                                                        wachN(),
-                                                        Object.entries(st.architectures.filter((e) => e._frei && !e._frei.schlaf).reduce((z, e) => ((z[String(e.type).replace(/_[0-9a-f]{6,}$/, "") + (bautenVor.has(e) ? "*" : "")] = (z[String(e.type).replace(/_[0-9a-f]{6,}$/, "") + (bautenVor.has(e) ? "*" : "")] || 0) + 1), z), {})).map((x) => x.join(":")).join(" "),
-                                                        ...st.architectures
-                                                            .filter((e) => e._frei && !e._frei.schlaf && !bautenVor.has(e))
-                                                            .slice(0, 3)
-                                                            .map((e) => `${e.type} v${(+e._frei.tempo || 0).toFixed(3)} vy${e._frei.v[1].toFixed(2)} r${(+e._frei.ruhe || 0).toFixed(2)} @${e.position.x.toFixed(2)},${e.position.y.toFixed(2)},${e.position.z.toFixed(2)} N[${e._frei.nachbarn.filter((x) => !x.schlaf && !(x.ruhe >= 0.3)).map((x) => `${(von.get(x) || {}).type || "?"} v${(+x.tempo || 0).toFixed(3)} r${(+x.ruhe || 0).toFixed(2)}${bautenVor.has(von.get(x)) ? "*" : ""}`).join("; ")}]`),
-                                                    ])(new Map(st.architectures.filter((e) => e._frei).map((e) => [e._frei, e]))));
-                                            }
-                                            delete r._freiWecken;
+                                            while (st.spielZeit - tW < 10 && wachN() > 0) bild();
                                             D.wach = wachN();
                                             D.schlafS = D.wach ? null : r3(st.spielZeit - tW);
+                                            D.uhr.wind = [0, 1, 2, 3, 4, 6].map((x) => +r._windAt(O.x - 10, O.z, D.uhr.sim + x).ms.toFixed(2));
+                                            D.uhr.koerperWind = r._freiWindAus ? [+(+r._freiWindAus.x).toFixed(2), +(+r._freiWindAus.z).toFixed(2), +(+r._freiWindAus.ms).toFixed(2)] : null;
+                                            D.uhr.nach = { sim: +(+st._fixedSimTime).toFixed(3), simZeit: +(+st._simZeit).toFixed(3) };
+                                            D.uhr.lage = ((d) => [d.length, +Math.min(...d).toFixed(2), d.filter((x) => x < 13).length, d.filter((x) => x < 12.6 && x > 11.4).length])(freie().map((k) => Math.hypot(k.position.x - O.x, k.position.z - O.z)));
                                             // das Bild schlafender Scherben neu gebaut, wie der Cull-Takt es baut (höchstens 16: die Probe bleibt kurz)
                                             for (const x of freie().filter((x) => x._frei.schlaf && x.mesh).slice(0, 16)) {
                                                 r._cullArchitectureMesh(x);
