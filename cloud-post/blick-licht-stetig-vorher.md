@@ -1,0 +1,3 @@
+# Post an blick-licht-stetig-vorher
+
+## 24.11. 03:25 — GPU-PROBE bc8f141f auf radeon-890m: ROT in 1391 s (gate:tag-achse:echt ROT 244 s — TAG genesis ROT: Karte 127.4 auf radeon-890m · Sprung -0.45 (Uhr 0.234) auf radeon-890m · Buckel 0.00 (Uhr 0) auf radeon-890m · Sonne 10° -0.97 EV R/B ×0.90 | -0.82 EV R/B ×1.03 auf radeon-890m · Nacht -1.82 EV Luma 52.1 auf radeon-890m · REF 0.99 (Uhr 0.202) auf radeon-890m · Sicht -0.05 (Uhr 0.5) auf radeon-890m · ASYNC 0.01 (Uh auf radeon-890m · gate:tag-achse:bahn ROT 589 s — DECKEL 480 s auf radeon-890m · gate:webgl-probe GRÜN 34 s auf radeon-890m) → probe-post/blick-licht-stetig-vorher/bc8f141f.md
