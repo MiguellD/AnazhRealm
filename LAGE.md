@@ -1,6 +1,6 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 01:25 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 77 von 1 718 (`karte-2-stand.json`: kern 3 · beide 50 · nachwache 27).**
+**STAND 24.11. 01:31 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus) — Karte 2 gebucht 77 von 1 718 (`karte-2-stand.json`: kern 3 · beide 50 · nachwache 27).**
 - KURS: die FRONT führt (Blatt `vision/front-tafel.md`, Werkzeug `bericht/2311-werkzeug/front-tafel.cjs`; NEU GESCHRIEBEN 24.11. 01:03, koordination
   5f3f95d4: 296 Fronten — SONST 75 · KEINE STATION 74 · BUEHNE Umfang sonst 55 / Saaten 11 / Menge 10 / Spieler 9 / Kosmos 7 · SPIEL Leser fehlt 23 ·
   FERN 14 · NAH 7 · PROBE misst nichts 4 · GRUEN, Preis nicht grün 3 · GRUEN+PREIS 2; ihr Leser verlor bis dahin still 199 von 2 976 Akten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, koordination f18ee952; Schöpfer 23.11.: „du entscheidest …
@@ -74,7 +74,14 @@
   9077e404 bleibt ungestempelt (Archiv-Kandidat). Der Schnitt liegt an der Messung: jeder Posten wartet auf die Ruhe des Vorbaus (kein Gast
   `vorbau:`/`vorwaermen:` in der Szene, dreimal in Folge) — in runde.sh und in der Station; ihr Deckel je Teil ist jetzt 240 s. Die Runde dreimal
   ohne Halde (runde-c-vor) wartet als EINE Hand hinter Runde 13 und liefert R3 − R2 danach. WAS BLEIBT: der Vorrat nach dem Stadt-Besuch
-  (+175,5 und +65,5 MB, dann flach) — den urteilt die Leiter same.preis.speicher. Danach die Welle „SPIEL Leser fehlt“ im Kapitel erleben (15 Fronten)) · RUNDE 13 am 1feab29c: Radeon durch 55/55; GTX (OMEN) 25/246 um 23:57 nach 100 min — Front 55
+  (+175,5 und +65,5 MB, dann flach) — den urteilt die Leiter same.preis.speicher. GESTARTET (ihre START-Meldung zwischen 01:26 und 01:31): Zweig `auge-der-art`, sechs Sprossen —
+  erleben.sinne.genom#1 · gesehen#1 · sicht#1 (Front) und gesehen#2 · gesehen#3 · genom#2 (Folge): EIN Sinnes-Gesetz je Art (Zapfen-Kurven,
+  Reichweiten) statt EINEM noticeRadius 22 m und scentRangeM 50 m für alle vier Gattungen (tetrapoda-core.js:151, :183), Leser: die Entdeckung
+  (`_creatureWarinessSpieler`, stamm/kreatur-furcht.js:107) und das Bild durch das Auge der Art. Mein Wort dazu: ABLEITUNG aus dem Leib statt Tabelle
+  je Gattung (M2), zwei Leser, der alte Radius fällt in derselben Welle; DATEI-REIHENFOLGE: `tetrapoda-core.js` trägt auch front-leben (und vermutlich
+  nerv-bewegung), `stamm/kreatur-furcht.js` trägt erbe-geburt — der Schnitt dort setzt auf erbe-geburt auf. Die übrigen 9 der 15 Fronten „SPIEL Leser
+  fehlt“ im Kapitel erleben nach ihrer Lesart: der Bewohner spricht (ziele#2, tod#3, stimme#1) · Leib wechseln (rolle#2, nichtleib#1) · geeichtes
+  Licht (nacht#1, himmel#1) · einzeln hoeren#1, feld#1, forscher#1, schoepfen.gesetz#1, klang.ereignis#3. Station `pm-speicher-runde` jetzt 91b9eb93) · RUNDE 13 am 1feab29c: Radeon durch 55/55; GTX (OMEN) 25/246 um 23:57 nach 100 min — Front 55
   (30 offen, ~4 min je Station), Schwanz 191; 33/246 um 00:38 laut der Runden-Zeile in koordination; zwei Alarme „16 min ohne Fortschritt“ (23:04,
   23:44) lösten sich von selbst · GTX 1050: `front-stoff` abgegeben (Zeile oben), weiter alter#1 nach
   dem Entscheid, danach nacht-laterne (Karten-Takt ≤ 9,43 ms) · VIER
