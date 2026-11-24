@@ -1,0 +1,82 @@
+{
+ "sha": "9d4319c05f2426cea21cd7a5ee37dad47220b8db",
+ "geraet": "gtx",
+ "zeit": "2026-11-24T05:05:32.307Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.mensch.fahrzeug.medium#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 38.63–45.39 m (im Band 100 %), 50→0 im Band 83 %, ≥ 130 km/h 120/120 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 120/120 Adressen (20 Saaten × 6 Orte) in 1382 ms  (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.2,
+   "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 38.63–45.39 m (im Band 100 %), 50→0 im Band 83 %, ≥ 130 km/h 120/120 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 120/120 Adressen (20 Saaten × 6 Orte) in 1382 ms  (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "keb55c8f1f18b",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2b071f9725eb",
+   "s": 10.7,
+   "fremd": {
+    "s": 13.6,
+    "takte": 6,
+    "fremdS": 30.75,
+    "kerne": 2.258,
+    "fensterKerne": 2.346,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-24740-profil-r8wGfS --no-p",
+      25.67
+     ],
+     [
+      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
+      1.02
+     ],
+     [
+      "Explorer.EXE",
+      0.86
+     ]
+    ],
+    "dienerS": 3.86,
+    "diener": [
+     [
+      "dwm.exe",
+      1.75
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.05
+     ]
+    ],
+    "geraetS": 3.75,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      2.19
+     ],
+     [
+      "svchost.exe",
+      1.23
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 36.66,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T05:05:32.307Z",
+   "abdruck": "aacab6a06d8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "keb55c8f1f18b": "bVRdb6MwEPwvebwe3SRAMJb64JZIqXQfzU9YmzXQEIhsCKec7r+fSOIkQPcJmRnveHbsv7MDqh1m9Pxp62rGZ99m32cWj+RZMkcyz592xmexWizJ5+JSIIR462HKFIfGQllIQFlhvievNQ0V5bM601BSkDIO3VpkHwAaTpB0Ly9jaikprb0GNd2IIUt1yMfA1mYoycNWn5tdweHcX0jN4VwsEb8TuFX3U4iPQAcfLBltJrFKh2rjVRhRyN87IdZiojItkBqvLCrr+i7SKNZz/tBrwjHYeSekvCRzJRFbLALpxL72dvbWjIi6bK0dNGN+Gi4ZB4jH2IxsofLGO5haUnWFy3gZLZC/Tt3ODq2nHxWhlMjk2OscqcrIDDTMfaVXCw5/2HjTHe7JoFdh7ryc+9FS3r0BgM1US3kWfm5xFx6EKQ6I/VDhCCBc/I790ub2160nmbjXdtLMqrww+6FNOqDl3Oc/ptJsjikZb1fb5oZmASKx6y1IQGxFH65xsOz9UI6HiOwhKMBAbCYe2lo3HRryskPrwhJQGIVciPcJuMH93uVf+4GvxgO0TR/wRxlh5Gu24gBPlwsyPfTlOngnKkpH0joI4slNPBrceygzU2jtJi5DpeOvAtpR2Xiyrhtnh2SkiYMP1eOQf3W9reuHGSZdrdZv2VYMay3Gus8datPcTipXcx1w3QelUxN0YRqvQ5U7+FJLwph/AT2RKSmjgY0yYnEf7U49KA3cx9MguKfJlE8F9QZXtrVuyAoDGfIvRtKR2Umsdk7mPFKrS/xef4vN0JRk+8ESgG646me9n0kurhsfSMHB1LroXz/IsbU5ls396f/3Hw==",
+  "k2b071f9725eb": "jVXBjpswEP2XHLv1mgQIxtIenCVqtlJ3E6lSz2MzBjYEIhtCN1X/vSIJSYA9dA4ImTeeN2+ezZ/JHtQWEnx8t2Ux4ZMvk68TCwckFs0BzeO7nfBJqKYzdLk4BxVCfGthymT7ytI8kxRkAekOSW0qzPJHdUoDiV7MOG2WIllTqumRRo24xrN4ehpuk0uMS1KBxusmPou1z4fA2iYgkUCtT4UvYN9xp1JzegoWibeIXqP5IcTa096aRYPNJBRxn3k49wP0+UsjxHLMMs4AK5Jnhe3qTuMg1A6/qzXKMdCQI2Cao7kkIZtOPdmRXbSStDINEnVeW9srxtzYnzFOaTjEJmgzlVZkb0qJxQUuw1kwBb5oRn0k+5roe0YgJTA51DoFLBI0PQ6Oq/R8yulvNtx0Czs0QApIOy0dN5jJmzaU0tWYS34ifipxI+75MfQS26G2z85C9NAura5fu/UoudlMbEbFrEozs+vLpD2cOe6wd5tCjIZsS1tdkcwDQHY5DREVG9Eaa2gqe2uoywMAdmcSyqhYjfSzpa4aMEiSfd0ZxUM/8LlIRq6yFex2nfe167lq1EDVmvuehh+4ms05pQ/nwzGexfkokCNmeZekteeFPn9eeEPwwcCOgExMpnU3cekrHX5m0AbzisiyrDpJJEONnLq0uB/yayMWiVjeRvg9+ijZr4+tK/rxKpafVShNde1Wzh3tcX3qVA3JN5mpSAMq7eAzLRHCoYhHNDkm2JNRBixsbd2oG53I614eeqY9jqZ8zLAVuLC17YaswJP+2R2XS/Klf/U0aLYSim1H1QnUvLVhlIg3sbpTZSVefjrrRvxfLMWmLbJHRfem1Fl7G9IUaptCXt1+C3//AQ=="
+ }
+}
