@@ -3439,7 +3439,8 @@ return { wind, hubMaxM: R(r.constructor._wasserHubM()), sichtM: R(r.state.camera
     // ════════════════════════════════════════ GEZEITEN ════════════════════════════════════════
     const GZ = "planet.wasser.gezeiten";
     const gezeiten = {
-        sek: 30,
+        sek: 45,
+        faecher: true,
         pfad: PFAD,
         mutiert: true,
         ungefahren: "die Bilder (Watt im Bild, Doppelmond) schießt die Probe nur am Gerät",
@@ -3484,25 +3485,113 @@ window.__pwMeer = m;
             const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
             const ziel = Object.keys(U);
             const aus = M.teil || {};
-            // DER SPIEGEL ÜBER 25 STUNDEN der Welt-Uhr (`spielZeit`, der Pegel nachgezogen) an der Küste und quer übers Watt (41 Punkte vom
-            // Ufer zur Tiefe, `_nassAt`), der Mond gegen die Sonne an 31 Tagen (`__weltLicht`), der Spiegel im Sturm gegen die Flaute
+            // S1 DIE GEZEIT AM FÄCHER (M4): je Adresse (Saat × Stunde der Welt-Uhr) der Spiegel des Meers 200 m vor der Küste und das
+            // Watt quer über sie (11 Punkte von 200 m Land bis 200 m See) — die Heimat liest der Leser des Spiels unter der gestellten
+            // Uhr (`spielZeit` + `_pegelTakt` → `_koerperWasser`, `_nassAt`), jede andere Saat das Gesetz an ihrer Lage (planet-ort →
+            // gelaende-core lageAus → wasserSpiegel, die Lage ohne Uhr: der Export nimmt keine Zeit). Die Periode aus den steigenden
+            // Durchgängen durchs Mittel je Saat, ihr Median über die Küsten mit Hub
+            const u1 = U[1];
+            if (u1) {
+                const GEZEIT_AN = async (r, T, a, mit) => {
+                    const G = globalThis.__gelaendeCore, st = r.state, k = String(a.saat);
+                    const memo = mit.memo || (mit.memo = {});
+                    let M0 = memo[k];
+                    if (!M0) {
+                        let L, wl;
+                        if (a.saat === "heim") {
+                            L = r._gelaende();
+                            wl = st.waterLevel;
+                        } else {
+                            await r._fadenQuelle();
+                            const breite = ((a.saat * 0.6180339887) % 1) * 140 - 70, laenge = ((a.saat * 137.508) % 360) - 180;
+                            const o = await r._planetAuftrag({ type: "planet-ort", samen: r._planetSamen(), breite, laenge, zeitMa: 0 });
+                            const heim = r.constructor._weltGesetz(st.worldMeta).gelaende;
+                            const ort = { samen: o.samen, version: o.version, breite: o.breite, laenge: o.laenge, zeitMa: o.zeitMa, delta: o.delta };
+                            const O = G.ortGesetz(ort), eg = G.erbgutNormal(G.ortErbgut(G.erbgutNormal(heim == null ? undefined : heim), o.delta.wildnis));
+                            wl = G.GRUND.basis - O.meerUnterBasisM;
+                            L = G.lageAus({ seed: r._reiseSaat(ort, heim), baseHeight: G.GRUND.basis, waterLevel: wl, ort, erbgut: { terme: eg, wildnis: eg[0] && eg[0].art === "wildnis" ? 1 : 0 }, regionSize: G.GRUND.kachel }, SimplexNoise);
+                        }
+                        const nassIn = (x, z) => G.hoehe(L, x, z, false) < wl;
+                        const n0 = nassIn(0, 0);
+                        let quer = null;
+                        for (let d = 250; d <= mit.bisM && !quer; d += 250)
+                            for (let i = 0; i < 16 && !quer; i++) {
+                                const c = Math.cos((i * Math.PI) / 8), s = Math.sin((i * Math.PI) / 8);
+                                if (nassIn(d * c, d * s) === n0) continue;
+                                let e = d - 250;
+                                while (e < d && nassIn(e * c, e * s) === n0) e += 10;
+                                quer = [];
+                                for (let t = 0; t <= 10; t++) { const q = n0 ? e - (t - 5) * 40 : e + (t - 5) * 40; quer.push([q * c, q * s, G.hoehe(L, q * c, q * s, false)]); }
+                            }
+                        M0 = memo[k] = { L, wl, quer };
+                        if (quer && a.saat === "heim") for (const [x, z] of [quer[0], quer[10]]) { let n = 0; while (r._ensureHydroTilesAround(x, z, 32) && n < 100) { await new Promise((f) => setTimeout(f, 50)); n++; } }
+                    }
+                    if (!M0.quer) return { saat: k, kueste: false };
+                    const [sx, sz] = M0.quer[10];
+                    if (a.saat !== "heim") {
+                        const spiegel = G.wasserSpiegel(M0.L, sx, sz);
+                        return { saat: k, zeit: a.zeit, spiegel: Math.round(spiegel * 1000) / 1000, nass: M0.quer.filter(([x, z, h]) => G.wasserSpiegel(M0.L, x, z) > h).length, uhr: 0, wl: M0.wl };
+                    }
+                    const alt = st.spielZeit, stundeS = r._kalender().normS / 24;
+                    try {
+                        st.spielZeit = alt + a.zeit * stundeS;
+                        r._pegelTakt();
+                        const spiegel = r._koerperWasser(sx, sz, -Infinity);
+                        return { saat: k, zeit: a.zeit, spiegel: Math.round(spiegel * 1000) / 1000, nass: M0.quer.filter(([x, z]) => r._nassAt(x, z)).length, uhr: 1, wl: M0.wl };
+                    } finally {
+                        st.spielZeit = alt;
+                        r._pegelTakt();
+                    }
+                };
+                const jeSaat = (l) => { const g = {}; for (const x of l) (g[x.a.saat] = g[x.a.saat] || []).push(x); return Object.values(g).map((s) => s.sort((p, q) => p.a.zeit - q.a.zeit)); };
+                const hubVon = (s) => Math.max(...s.map((x) => x.w.spiegel)) - Math.min(...s.map((x) => x.w.spiegel));
+                const periodeVon = (s) => {
+                    const v = s.map((x) => x.w.spiegel), m = v.reduce((p, y) => p + y, 0) / v.length, auf = [];
+                    for (let i = 1; i < v.length; i++) if (v[i - 1] < m && v[i] >= m) auf.push(s[i - 1].a.zeit + ((m - v[i - 1]) / (v[i] - v[i - 1])) * (s[i].a.zeit - s[i - 1].a.zeit));
+                    return auf.length > 1 ? (auf[auf.length - 1] - auf[0]) / (auf.length - 1) : null;
+                };
+                const med = (v) => { const b = v.filter(Number.isFinite).sort((p, q) => p - q); return b.length ? b[Math.floor(b.length / 2)] : null; };
+                const stunden = Array.from({ length: Number(u1.stunden) || 25 }, (_, h) => h);
+                const RF = await FAECHER((c) => H.seite(c), {
+                    gesetz: { fn: GEZEIT_AN, export: "gelaende-core.js:7767 wasserSpiegel(L, x, z) über den Meeres-Spiegel gelaende-core.js:5884 waterLevel = GRUND.basis − meerUnterBasisM", leser: "stamm/wasser-hydro.js:681 _koerperWasser (der Spiegel am Körper) · stamm/wasser-hydro.js:325 _pegelTakt unter der Welt-Uhr" },
+                    adressen: { saaten: Array.from({ length: Number(u1.saaten) || 12 }, (_, i) => i + 1), zeiten: stunden, dazu: stunden.map((h) => ({ saat: "heim", ort: null, zeit: h })) },
+                    mit: { bisM: Number(u1.bisM) || 20000 },
+                    ms: Number(u1.ms) || 12000,
+                    masse: {
+                        adressen: { wie: "anzahl", feld: "spiegel" },
+                        kuesten: { wie: "verschieden", feld: "a.saat", nur: (a, w) => w.spiegel != null },
+                        stunden: { wie: "verschieden", feld: "a.zeit", nur: (a, w) => w.spiegel != null },
+                        uhr: { wie: "summe", feld: "uhr", nur: (a, w) => w.spiegel != null },
+                        hubM: { wie: (v, l) => (l.length ? Math.max(...jeSaat(l).map(hubVon)) : null), feld: "spiegel", nur: (a, w) => w.spiegel != null },
+                        periodeH: { wie: (v, l) => med(jeSaat(l).filter((s) => hubVon(s) >= 0.01).map(periodeVon)), feld: "spiegel", nur: (a, w) => w.spiegel != null },
+                        benetztDiff: { wie: (v, l) => (l.length ? Math.max(...jeSaat(l).map((s) => Math.max(...s.map((x) => x.w.nass)) - Math.min(...s.map((x) => x.w.nass)))) : null), feld: "nass", nur: (a, w) => w.spiegel != null },
+                    },
+                    schlecht: { feld: "nass", richtung: "min" },
+                    pose: (a, w) => "Ego am Ufer " + (a.saat === "heim" ? "der Heimat" : "der Saat " + a.saat) + " zur Stunde " + a.zeit + " der Welt-Uhr, Blick quer übers Watt (" + w.nass + " von 11 Punkten nass, Spiegel " + w.spiegel + " m)",
+                    ungemessen: ["das Bild des trockenfallenden Watts (die Welt zeichnet den Spiegel, den der Leser trägt — am Gerät)"],
+                });
+                const W1 = RF.werte;
+                aus[1] = {
+                    werte: { periodeH: W1.periodeH == null ? null : R(W1.periodeH), hubM: W1.hubM == null ? null : R(W1.hubM), benetztDiff: W1.benetztDiff },
+                    zeuge: { adressen: W1.adressen, kuesten: W1.kuesten, stunden: W1.stunden, uhr: W1.uhr, hubM: W1.hubM == null ? null : R(W1.hubM), benetztDiff: W1.benetztDiff, gerissen: RF.gerissen, akte: RF.akte },
+                    taeter: (RF.fehler.length && !RF.gemessen ? "Leser fehlt: " + RF.fehler[0].fehler + " · " : "") + "gelaende-core.js:5884 waterLevel = GRUND.basis − meerUnterBasisM (eine Konstante je Lage) und gelaende-core.js:7767 wasserSpiegel(L, x, z) ohne Zeit — kein Leser hebt den Spiegel mit Mond und Uhr: Hub " + (W1.hubM == null ? "—" : R(W1.hubM)) + " m über " + W1.kuesten + " Küsten × " + W1.stunden + " Stunden (" + W1.uhr + " unter der Uhr der Heimat), Watt " + W1.benetztDiff + " Punkte · " + RF.akte,
+                };
+            }
+            // DER SPIEGEL ÜBER 25 STUNDEN der Welt-Uhr (`spielZeit`, der Pegel nachgezogen) an 20 Punkten der Küste (S3; S1 trägt der Fächer
+            // oben), der Mond gegen die Sonne an 31 Tagen (`__weltLicht`), der Spiegel im Sturm gegen die Flaute
             const w = await H.seite(MEER + `
 if (!m.gefunden) return { meer: false };
 const st = r.state, tagS = r.constructor.DAY_LENGTH_DEFAULT_MINUTES * 60;
 const [bx, bz] = m.B;
-const s = m.ufer ? [m.ufer[0], m.ufer[2]] : m.B;
-const quer = []; for (let k = 0; k <= 40; k++) quer.push([s[0] + ((bx - s[0]) * k) / 40, s[1] + ((bz - s[1]) * k) / 40]);
 const kq = m.kueste.slice(0, 20);
 const alt = [st.spielZeit, st.seasonPhase, st.regenStempel && st.regenStempel.slice()];
-const reihe = [], mond = [], kuesteHub = kq.map(() => [Infinity, -Infinity]);
+const mond = [], kuesteHub = kq.map(() => [Infinity, -Infinity]);
 let windstau = null;
 try {
 for (let k = 0; k <= 25; k++) {
 st.spielZeit = alt[0] + (k * tagS) / 24;
 r._pegelTakt();
-let nass = 0; for (const [x, z] of quer) if (r._nassAt(x, z)) nass++;
 kq.forEach(([x, z], i) => { const v = r._koerperWasser(x, z, -Infinity); kuesteHub[i][0] = Math.min(kuesteHub[i][0], v); kuesteHub[i][1] = Math.max(kuesteHub[i][1], v); });
-reihe.push([k, R(r._koerperWasser(bx, bz, -Infinity)), nass]);
 }
 for (let d = 0; d <= 30; d++) {
 st.seasonPhase = (alt[1] + d / 365) % 1;
@@ -3522,10 +3611,10 @@ if (window.__wetterSetzen("stormy") !== "stormy") throw new Error("das Wetter de
 r._pegelTakt();
 windstau = [R(flaute), R(r._koerperWasser(bx, bz, -Infinity)), R(r._windAt(bx, bz, 0).ms)];
 } finally { window.__wetterSetzen(wAlt); r._pegelTakt(); }
-return { meer: true, reihe, mond, windstau, kuesteHub: kuesteHub.map(([a, b]) => R(b - a)), flaecheKm2: m.flaecheKm2, abstandKm: m.abstandKm, ufer: m.ufer };
+return { meer: true, mond, windstau, kuesteHub: kuesteHub.map(([a, b]) => R(b - a)), flaecheKm2: m.flaecheKm2, abstandKm: m.abstandKm, ufer: m.ufer };
 `);
             if (!w.meer) {
-                for (const nr of ziel) aus[nr] = M.nicht("kein Meer im Gelände der Welt bis 20 km vom Spawn");
+                for (const nr of ziel) if (nr !== "1") aus[nr] = M.nicht("kein Meer im Gelände der Welt bis 20 km vom Spawn");
                 return { sprossen: aus };
             }
             // DER PLANET-FADEN: die Saaten antworten mit ihrem Anker (trägt einer einen Mond?), die Erde zu −3 Ga
@@ -3538,23 +3627,12 @@ const zeiten = [0, -3000];
 const ort = await Promise.all(zeiten.map((zeitMa) => r._planetAuftrag({ type: "planet-ort", samen: "erde", breite: e.breite * RAD, laenge: e.laenge * RAD, zeitMa }).then((o) => [zeitMa, o.delta.meer.waterLevelM, o.version]).catch((x) => [zeitMa, null, String(x && x.message)])));
 return { anker: anker.map((a) => ({ samen: a.samen, felder: Object.keys(a), mond: "mond" in a || "mondMasse" in a })), ort };
 `);
-            const reihe = w.reihe;
-            const sp = reihe.map((x) => x[1]).filter(Number.isFinite);
-            const hub = sp.length ? Math.max(...sp) - Math.min(...sp) : NaN;
-            const nass = reihe.map((x) => x[2]);
-            const benetztDiff = Math.max(...nass) - Math.min(...nass);
             const mond = w.mond.filter(Number.isFinite);
             const spanne = mond.length ? Math.max(...mond) - Math.min(...mond) : NaN;
             const monde = faden.anker.filter((a) => a.mond).length;
             const ort = "die Bucht " + w.abstandKm + " km vom Spawn (" + w.flaecheKm2 + " km²)";
             const je = {};
-            je[1] = {
-                werte: { hubM: R(hub), benetztDiff, stunden: reihe.length },
-                zeuge: { stunden: reihe.length, hubM: R(hub), benetztDiff },
-                ...(hub < 0.01 ? { nicht: "keine Gezeit: der Meeresspiegel an " + ort + " steht über 25 Stunden der Welt-Uhr (Hub " + R(hub) + " m, benetzt " + Math.min(...nass) + "–" + Math.max(...nass) + " von 41) — gelaende-core.js:5816 waterLevel = Basis − meerUnterBasisM, kein Leser der Himmels-Uhr" } : {}),
-                auge: await M.auge("wasser-gezeiten-s1", w.ufer ? { px: w.ufer[0], py: w.ufer[1], pz: w.ufer[2], lx: w.ufer[3], ly: w.ufer[4], lz: w.ufer[5] } : { ort: "wiese" }),
-            };
-            delete je[1].auge;
+            if (aus[1]) je[1] = aus[1];
             je[2] = {
                 werte: { tage: mond.length, mondWinkelSpanne: R(spanne), mondWinkel: mond[0] },
                 zeuge: { tage: mond.length, phasenSpanne: R(spanne) },
@@ -3569,7 +3647,7 @@ return { anker: anker.map((a) => ({ samen: a.samen, felder: Object.keys(a), mond
             je[4] = {
                 werte: { windstauM: R(stau), sturmMs: w.windstau ? w.windstau[2] : null },
                 zeuge: { windstauM: R(stau) },
-                ...(!(stau > 0.01) ? { nicht: "kein Windstau: der Spiegel an " + ort + " steht im Sturm (" + (w.windstau && w.windstau[2]) + " m/s) wie in der Flaute (Δ " + R(stau) + " m) — der Meeresspiegel ist eine Konstante (gelaende-core.js:5816)" } : {}),
+                ...(!(stau > 0.01) ? { nicht: "kein Windstau: der Spiegel an " + ort + " steht im Sturm (" + (w.windstau && w.windstau[2]) + " m/s) wie in der Flaute (Δ " + R(stau) + " m) — der Meeresspiegel ist eine Konstante (gelaende-core.js:5884)" } : {}),
             };
             je[5] = {
                 werte: { konfigurationen: monde, saatenGefragt: faden.anker.length },
@@ -3593,15 +3671,20 @@ return { anker: anker.map((a) => ({ samen: a.samen, felder: Object.keys(a), mond
         },
         sprossen: {
             1: {
-                u: { stunden: 25, quer: 41 },
+                u: { saaten: 12, stunden: 25, bisM: 20000, ms: 12000 },
                 soll: [K.soll(GZ, 1, "Periode ±2 %", { key: "periodeH", ref: 12.42, refQuelle: "Erde: halbtägige Mondgezeit M2, 12 h 25 min (12,42 h)", einheit: "h" })],
-                zeuge: zMin({ stunden: 25, hubM: 0.05, benetztDiff: 1 }),
-                zeugeText: "der Spiegel stieg und fiel über 25 Stunden, das Watt fiel trocken",
-                taeter: "gelaende-core.js waterLevel (eine Konstante, kein Leser der Himmels-Uhr)",
+                zeuge: zMin({ adressen: 200, kuesten: 5, stunden: 25, uhr: 25, hubM: 0.05, benetztDiff: 1 }),
+                zeugeText: "der Fächer: ≥ 200 Adressen an ≥ 5 Küsten über 25 Stunden (die Heimat unter ihrer Uhr), der Spiegel stieg und fiel, das Watt fiel trocken",
+                taeter: "gelaende-core.js:5884 waterLevel (eine Konstante je Lage) · gelaende-core.js:7767 wasserSpiegel ohne Zeit",
                 nicht: "keine Gezeit (der Meeresspiegel ist eine Konstante)",
-                leser: "gelaende-core.js:5816 — waterLevel = Basis − meerUnterBasisM; kein Leser hebt den Spiegel mit Mond und Uhr",
-                gruen: gut({ periodeH: 12.5, hubM: 1.2 }, { stunden: 25, hubM: 1.2, benetztDiff: 9 }),
-                attrappen: [{ name: "die Periode 12,42 h eingetragen, der Spiegel steht", roh: gut({ periodeH: 12.42, hubM: 0 }, { stunden: 25, hubM: 0, benetztDiff: 0 }) }],
+                leser: "stamm/wasser-hydro.js:681 _koerperWasser über gelaende-core.js:7767 wasserSpiegel — waterLevel = GRUND.basis − meerUnterBasisM (gelaende-core.js:5884); kein Leser hebt den Spiegel mit Mond und Uhr",
+                gruen: gut({ periodeH: 12.5, hubM: 1.2, benetztDiff: 9 }, { adressen: 325, kuesten: 13, stunden: 25, uhr: 25, hubM: 1.2, benetztDiff: 9 }),
+                attrappen: [
+                    { name: "die Periode 12,42 h eingetragen, der Spiegel steht", roh: gut({ periodeH: 12.42, hubM: 0 }, { adressen: 325, kuesten: 13, stunden: 25, uhr: 25, hubM: 0, benetztDiff: 0 }) },
+                    { name: "die Gezeit EINER Küste", roh: gut({ periodeH: 12.5, hubM: 1.2 }, { adressen: 25, kuesten: 1, stunden: 25, uhr: 25, hubM: 1.2, benetztDiff: 9 }) },
+                    { name: "die Saaten ohne die Uhr der Heimat", roh: gut({ periodeH: 12.5, hubM: 1.2 }, { adressen: 300, kuesten: 12, stunden: 25, uhr: 0, hubM: 1.2, benetztDiff: 9 }) },
+                    { name: "der stehende Spiegel (der Fächer am Export: kein Hub, keine Periode)", roh: gut({ periodeH: null, hubM: 0, benetztDiff: 0 }, { adressen: 325, kuesten: 13, stunden: 25, uhr: 25, hubM: 0, benetztDiff: 0 }) },
+                ],
             },
             2: {
                 u: { tage: 30 },
@@ -3629,7 +3712,7 @@ return { anker: anker.map((a) => ({ samen: a.samen, felder: Object.keys(a), mond
                 zeugeText: "an 20 Küsten ein Hub gemessen",
                 taeter: "gelaende-core.js waterLevel (kein Tidenhub)",
                 nicht: "kein Tidenhub, EINE Küste",
-                leser: "gelaende-core.js:5816 — kein Hub des Spiegels je Küste, keine Resonanz aus Schelf und Bucht",
+                leser: "gelaende-core.js:5884 — kein Hub des Spiegels je Küste, keine Resonanz aus Schelf und Bucht",
                 gruen: gut({ hubJeResonanz: 1.1, buchtenJe1e4: 1.4, kuesten: 20, saaten: 5 }, { hubKuesten: 20 }),
                 attrappen: [{ name: "die Resonanz eingesetzt, kein Hub an der Küste", roh: gut({ hubJeResonanz: 1, buchtenJe1e4: 1, kuesten: 20, saaten: 5 }, { hubKuesten: 0 }) }],
             },
@@ -3643,7 +3726,7 @@ return { anker: anker.map((a) => ({ samen: a.samen, felder: Object.keys(a), mond
                 zeugeText: "der Sturm hob den Spiegel gegen die Flaute",
                 taeter: "gelaende-core.js waterLevel (der Wind hebt das Meer nicht)",
                 nicht: "kein Windstau",
-                leser: "gelaende-core.js:5816 — der Spiegel des Meers liest keinen Wind (stamm/stoff-material.js _windAt)",
+                leser: "gelaende-core.js:5884 — der Spiegel des Meers liest keinen Wind (stamm/stoff-material.js _windAt)",
                 gruen: gut({ windstauJeSoll: 1.1, deckungProzent: 93 }, { windstauM: 1.8 }),
                 attrappen: [{ name: "der Windstau als Formel, der Spiegel bleibt", roh: gut({ windstauJeSoll: 1, deckungProzent: 95 }, { windstauM: 0 }) }],
             },
@@ -3888,7 +3971,8 @@ return { posen, laeufe: lf.length, meer: m.gefunden, meerPunkte: meerPunkte.leng
     // ════════════════════════════════════════ EIS ════════════════════════════════════════
     const EI = "planet.wasser.eis";
     const eis = {
-        sek: 40,
+        sek: 50,
+        faecher: true,
         pfad: PFAD,
         mutiert: true,
         ungefahren: "die Bilder (Scholle im Blindpaar, Eismond) schießt die Probe nur am Gerät",
@@ -3933,6 +4017,102 @@ window.__pwMeer = m;
             const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
             const ziel = Object.keys(U);
             const aus = M.teil || {};
+            // S2 DAS EIS DES SEES AM FÄCHER (M4): je Adresse (Saat × Säule [Tiefe m, Höhe über dem Meer m]) das Jahr des Gesetzes —
+            // je Tag die Luft über dem Spiegel (temperaturAus über temperaturFeld, das Tagesmittel aus vier Stunden, ohne Wetter wie
+            // das Gesetz des Eises) und ob das Eis trägt (gelaende-core eisDicke ≥ EIS.traegt, derselbe Ruf wie `_eisLinien`); die
+            // Heimat am Feld des Spiels (`_temperaturFeld`, `_wasserStoff`), der See der Soll-Tafel über den Leser des Spielers
+            // (`_eisAt` je Tag der Saison), jede andere Saat an ihrer Lage (planet-ort → lageAus). Das Einsetzen: die Frostgrad-Summe
+            // ab dem ersten Frosttag nach dem wärmsten bis zum ersten tragenden — gezählt nur, wo das Jahr friert UND taut
+            const u2 = U[2];
+            if (u2) {
+                const EIS_AN = async (r, T, a, mit) => {
+                    const G = globalThis.__gelaendeCore, st = r.state, nT = G.TEMPERATUR.jahrTage, stoff = r._wasserStoff();
+                    const memo = mit.memo || (mit.memo = {});
+                    let L, wl, feld;
+                    if (a.saat === "heim") {
+                        L = r._gelaende();
+                        wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - G.GRUND.meerUnterBasis;
+                        feld = (y, tr) => r._temperaturFeld(y, tr);
+                    } else {
+                        let M0 = memo[String(a.saat)];
+                        if (!M0) {
+                            await r._fadenQuelle();
+                            const breite = (a.saat % 2 ? 1 : -1) * (35 + 35 * ((a.saat * 0.6180339887) % 1)), laenge = ((a.saat * 137.508) % 360) - 180;
+                            const o = await r._planetAuftrag({ type: "planet-ort", samen: r._planetSamen(), breite, laenge, zeitMa: 0 });
+                            const heim = r.constructor._weltGesetz(st.worldMeta).gelaende;
+                            const ort = { samen: o.samen, version: o.version, breite: o.breite, laenge: o.laenge, zeitMa: o.zeitMa, delta: o.delta };
+                            const O = G.ortGesetz(ort), eg = G.erbgutNormal(G.ortErbgut(G.erbgutNormal(heim == null ? undefined : heim), o.delta.wildnis));
+                            const w0 = G.GRUND.basis - O.meerUnterBasisM;
+                            M0 = memo[String(a.saat)] = { wl: w0, L: G.lageAus({ seed: r._reiseSaat(ort, heim), baseHeight: G.GRUND.basis, waterLevel: w0, ort, erbgut: { terme: eg, wildnis: eg[0] && eg[0].art === "wildnis" ? 1 : 0 }, regionSize: G.GRUND.kachel }, SimplexNoise) };
+                        }
+                        L = M0.L;
+                        wl = M0.wl;
+                        feld = (y, tr) => G.temperaturFeld(L, y, tr);
+                    }
+                    const luft = (y, s) => { const F = feld(y, 0); let t = 0; for (let h = 0; h < 4; h++) t += G.temperaturAus(F, s, 0.125 + h / 4, null) / 4; return t; };
+                    const Tt = [], E = [];
+                    if (a.ort === "see") {
+                        const S = mit.see;
+                        let n = 0;
+                        while (r._ensureHydroTilesAround(S[0], S[1], 32) && n < 100) { await new Promise((f) => setTimeout(f, 50)); n++; }
+                        const spiegel = r._koerperWasser(S[0], S[1], -Infinity), alt = st.seasonPhase;
+                        if (!Number.isFinite(spiegel)) return { saat: "heim", ort: "see", kein: 1 };
+                        try {
+                            for (let d = 0; d < nT; d++) { st.seasonPhase = d / nT; Tt.push(luft(spiegel, d / nT)); E.push(r._eisAt(S[0], S[1]) === null ? 0 : 1); }
+                        } finally {
+                            st.seasonPhase = alt;
+                            r._eisLinien();
+                        }
+                    } else {
+                        const tiefe = a.ort[0], y = wl + a.ort[1];
+                        for (let d = 0; d < nT; d++) { const s = d / nT; Tt.push(luft(y, s)); E.push(G.eisDicke(L, y, s, tiefe, (tr) => feld(y, tr), stoff) >= G.EIS.traegt ? 1 : 0); }
+                    }
+                    const traegt = E.reduce((p, v) => p + v, 0), warm = Tt.indexOf(Math.max(...Tt));
+                    let start = -1, on = -1, fdd = 0, auf = -1;
+                    for (let k = 1; k < nT; k++) {
+                        const d = (warm + k) % nT;
+                        if (start < 0 && Tt[d] < 0) start = k;
+                        if (start >= 0 && on < 0) { fdd += Math.max(0, -Tt[d]); if (E[d]) on = k; }
+                        if (on >= 0 && auf < 0 && !E[d]) auf = k;
+                    }
+                    const jz = traegt > 0 && traegt < nT && on >= 0 ? 1 : 0;
+                    return { saat: String(a.saat), tage: nT, frost: Tt.filter((t) => t < 0).length, traegt, bricht: E.filter((e, d) => !e && Tt[d] > 0).length, jz, ewig: traegt === nT ? 1 : 0, fdd: jz ? Math.round(fdd * 10) / 10 : null, abw: jz ? Math.round((Math.abs(fdd - mit.ref) / mit.ref) * 1000) / 1000 : null, einsetzen: jz ? (warm + on) % nT : null, tau: jz && auf >= 0 ? (warm + auf) % nT : null, tminC: Math.round(Math.min(...Tt) * 10) / 10 };
+                };
+                const ORTE = [[1, 5], [1, 25], [3.4, 10], [3.4, 50], [4.5, 25], [4.5, 100], [10, 50], [10, 150]];
+                const med = (v) => { const b = v.filter(Number.isFinite).sort((p, q) => p - q); return b.length ? (b.length % 2 ? b[(b.length - 1) / 2] : (b[b.length / 2 - 1] + b[b.length / 2]) / 2) : null; };
+                const sd = (v) => { const m = v.length ? v.reduce((p, q) => p + q, 0) / v.length : 0; return v.length > 1 ? Math.sqrt(v.reduce((p, q) => p + (q - m) ** 2, 0) / v.length) : 0; };
+                const jz = (a, w) => w.jz === 1;
+                const RF = await FAECHER((c) => H.seite(c), {
+                    gesetz: { fn: EIS_AN, export: "gelaende-core.js:1404 eisDicke ≥ EIS.traegt (gelaende-core.js:1376) über gelaende-core temperaturFeld", leser: "stamm/bild-himmel.js:3178 _eisLinien (der Ruf :3204, die tragende Linie je Säule) → stamm/wasser-hydro.js:705 _eisAt (der Spieler auf dem See)" },
+                    adressen: { saaten: Array.from({ length: Number(u2.saaten) || 12 }, (_, i) => i + 1), orte: ORTE, dazu: ORTE.map((o) => ({ saat: "heim", ort: o, zeit: null })).concat([{ saat: "heim", ort: "see", zeit: null }]) },
+                    mit: { ref: 13.7, see: u2.see || [1816, -6168] },
+                    ms: Number(u2.ms) || 12000,
+                    masse: {
+                        adressen: { wie: "anzahl", feld: "tage" },
+                        tage: { wie: "max", feld: "tage" },
+                        saaten: { wie: "verschieden", feld: "a.saat", nur: jz },
+                        jahreszeitlich: { wie: "summe", feld: "jz" },
+                        ewig: { wie: "summe", feld: "ewig" },
+                        fddEinsetzen: { wie: med, feld: "fdd", nur: jz },
+                        fddMin: { wie: "min", feld: "fdd", nur: jz },
+                        fddMax: { wie: "max", feld: "fdd", nur: jz },
+                        streu: { wie: sd, feld: "fdd", nur: jz },
+                        imBand: { wie: "anzahl", feld: "abw", nur: (a, w) => jz(a, w) && w.abw <= 0.2 },
+                        traegtTage: { wie: "summe", feld: "traegt", nur: jz },
+                        brichtTage: { wie: "summe", feld: "bricht", nur: jz },
+                        see: { wie: "anzahl", feld: "fdd", nur: (a, w) => a.ort === "see" && jz(a, w) },
+                    },
+                    schlecht: { feld: "abw", richtung: "max" },
+                    pose: (a, w) => "Ego auf dem See " + (a.ort === "see" ? "der Soll-Tafel (1816/−6168)" : "der Säule " + a.ort[0] + " m, " + a.ort[1] + " m über dem Meer") + " unter der Saat " + a.saat + " am Tag " + w.einsetzen + " des Einsetzens (" + w.fdd + " K·d), Blick aufs Eis",
+                    ungemessen: ["das Bild des Spielers, der bei Frost auf dem See geht und bei Tauwetter einbricht (am Gerät)"],
+                });
+                const W2 = RF.werte;
+                aus[2] = {
+                    werte: Object.assign({ jahreszeitlich: W2.jahreszeitlich, ewig: W2.ewig, imBand: W2.imBand }, W2.fddEinsetzen != null ? { fddEinsetzen: R(W2.fddEinsetzen), fddMin: W2.fddMin, fddMax: W2.fddMax } : {}),
+                    zeuge: { adressen: W2.adressen, tage: W2.tage, saaten: W2.saaten, jahreszeitlich: W2.jahreszeitlich, traegtTage: W2.traegtTage, brichtTage: W2.brichtTage, see: W2.see, streu: R(W2.streu), gerissen: RF.gerissen, akte: RF.akte },
+                    taeter: (RF.fehler.length && !RF.gemessen ? "Leser fehlt: " + RF.fehler[0].fehler + " · " : "") + "gelaende-core.js:1404 eisDicke trägt (EIS.traegt 0,05 m, gelaende-core.js:1376) nach " + (W2.fddEinsetzen == null ? "—" : R(W2.fddEinsetzen)) + " K·d (Median über " + W2.jahreszeitlich + " frierende und tauende Säulen, " + W2.fddMin + "–" + W2.fddMax + ", " + W2.imBand + " im Band ±20 %), " + W2.ewig + " Säulen frieren ganzjährig · " + RF.akte,
+                };
+            }
             // DER SCHNEE: an 10 Posen (Ring 600 m um den Spawn) × 4 Jahreszeiten die tiefste Höhe, an der die Decke trägt (`_schneeTafel`,
             // `_schneeVersatz` der Saison, gelaende-core schneeTrittAm), gegen die Nullgrad-Höhe des Tagesmittels (temperaturAus über
             // `_temperaturFeld`, vier Stunden); der Tritt des Fußes am Gelände der Pose
@@ -3955,25 +4135,22 @@ je.push({ ph, null0: n0, linien, fuss });
 } finally { st.seasonPhase = alt; }
 return { je, unten, oben };
 `);
-            // DER SEE FRIERT (der See der Soll-Tafel 1816/−6168): je Tag des Jahrs das Tagesmittel der Luft über dem Spiegel und ob das Eis
-            // den Spieler trägt (`_eisAt` am See, die Linien `_eisLinien` der Saison); DAS MEER FRIERT: an 40 Punkten der Bucht je Woche
+            // DER SEE DER SOLL-TAFEL (1816/−6168, S2 trägt der Fächer oben): Spiegel und Tiefe; DAS MEER FRIERT: an 40 Punkten der Bucht
+            // je Woche (`_eisAt`, die Linien `_eisLinien` der Saison)
             const jahr = await H.seite(MEER + `
 const st = r.state, S = [1816, -6168];
 await warte(S[0], S[1]);
 const spiegel = r._koerperWasser(S[0], S[1], -Infinity), boden = r._voxelSurfaceY(S[0], S[1]);
-const alt = st.seasonPhase, wf = r._weatherFieldFor();
-const tage = [], wochen = [];
+const alt = st.seasonPhase;
+const wochen = [];
 const mp = m.gefunden ? m.innen.slice(0, 40) : [];
 try {
 for (let d = 0; d < 365; d++) {
 st.seasonPhase = d / 365;
-const F = r._temperaturFeld(spiegel, 0);
-let T = 0; for (let h = 0; h < 4; h++) T += G.temperaturAus(F, d / 365, (h + 0.5) / 4, wf) / 4;
-tage.push([R(T), r._eisAt(S[0], S[1]) === null ? 0 : 1]);
 if (d % 7 === 0 && mp.length) wochen.push(mp.filter(([x, z]) => r._eisAt(x, z) !== null).length / mp.length);
 }
 } finally { st.seasonPhase = alt; r._eisLinien(); }
-return { spiegel: R(spiegel), tiefe: R(spiegel - boden), art: r._wasserArtAt(S[0], S[1]), tage, wochen: wochen.map(R), meerPunkte: mp.length, meerKm2: m.gefunden ? m.flaecheKm2 : null, ufer: m.gefunden ? m.ufer : null };
+return { spiegel: R(spiegel), tiefe: R(spiegel - boden), art: r._wasserArtAt(S[0], S[1]), wochen: wochen.map(R), meerPunkte: mp.length, meerKm2: m.gefunden ? m.flaecheKm2 : null, ufer: m.gefunden ? m.ufer : null };
 `);
             // DER GIPFEL DER HEIMAT (±3 km): seine Höhe und ob der Schnee dort den Sommer überdauert (Firn — der Anfang eines Gletschers)
             const gipfel = await H.seite(`
@@ -4009,26 +4186,7 @@ return { meer, kalt, felder: Object.keys(a) };
                 werte: Object.assign({ fussCm: R(100 * fussW), posen: Math.min(...schnee.je.map((s) => s.linien.filter((l) => l !== null).length)), jahreszeiten: jz }, kombi.length ? { abwM: R(Math.max(...kombi)) } : {}),
                 zeuge: { messungen: kombi.length, spanneM: R(mittelLinie.length ? Math.max(...mittelLinie) - Math.min(...mittelLinie) : 0), gegenlauf: fussW >= 0.05 && fussS < 0.005 ? 1 : 0, je: schnee.je.map((s) => [s.ph, s.null0, Math.min(...s.linien.filter((l) => l !== null)), Math.max(...s.linien.filter((l) => l !== null))]) },
             };
-            // S2: Frostgrad-Summe ab dem ersten Frosttag nach dem wärmsten Tag bis zum ersten tragenden Tag
-            const T = jahr.tage.map((t) => t[0]), E = jahr.tage.map((t) => t[1]);
-            const n = T.length;
-            const warm = T.indexOf(Math.max(...T));
-            let start = -1, onset = -1, fdd = 0, auf = -1;
-            for (let k = 1; k < n; k++) {
-                const d = (warm + k) % n;
-                if (start < 0 && T[d] < 0) start = k;
-                if (start >= 0 && onset < 0) {
-                    fdd += Math.max(0, -T[d]);
-                    if (E[d]) onset = k;
-                }
-                if (onset >= 0 && auf < 0 && !E[d]) auf = k;
-            }
-            const traegtTage = E.filter(Boolean).length;
-            const brichtTage = E.filter((e, d) => !e && T[d] > 0).length;
-            je[2] = {
-                werte: Object.assign({ traegtTage, frostTage: T.filter((t) => t < 0).length, seeTiefeM: jahr.tiefe }, onset >= 0 ? { fddEinsetzen: R(fdd), einsetzenTag: (warm + onset) % n, tauTag: auf >= 0 ? (warm + auf) % n : null } : {}),
-                zeuge: { tage: n, traegtTage, brichtTage },
-            };
+            if (aus[2]) je[2] = aus[2];
             // S3 Meereis: Anteil der Bucht, den das Eis trägt, je Woche
             const wo = jahr.wochen;
             const wMax = wo.length ? Math.max(...wo) : NaN, wMin = wo.length ? Math.min(...wo) : NaN;
@@ -4083,13 +4241,18 @@ return { meer, kalt, felder: Object.keys(a) };
                 ],
             },
             2: {
-                u: { see: [1816, -6168], tage: 365 },
+                u: { saaten: 12, see: [1816, -6168], ms: 12000 },
                 soll: [K.soll(EI, 2, "Einsetzen gegen Frostgrad-Summe ±20 %", { key: "fddEinsetzen", ref: 13.7, refQuelle: "Erde: Stefan mit α = 2,7 cm/√(K·d) (Ashton 1986, windiger See ohne Schnee) — 10 cm tragend: (10/2,7)² = 13,7 K·d", einheit: "K·d" })],
-                zeuge: zMin({ tage: 365, traegtTage: 1, brichtTage: 1 }),
-                zeugeText: "der See trägt im Frost und bricht im Tauwetter",
-                taeter: "gelaende-core.js eisDicke (EIS.traegt) · stamm/wasser-hydro.js _eisAt",
-                gruen: gut({ fddEinsetzen: 14.5 }, { tage: 365, traegtTage: 110, brichtTage: 200 }),
-                attrappen: [{ name: "die Frostgrad-Summe aus Stefan eingesetzt, der See trägt nie", roh: gut({ fddEinsetzen: 13.7 }, { tage: 365, traegtTage: 0, brichtTage: 365 }) }],
+                zeuge: zMin({ tage: 365, jahreszeitlich: 10, saaten: 3, traegtTage: 1, brichtTage: 1 }),
+                zeugeText: "der Fächer: ≥ 10 Säulen aus ≥ 3 Saaten, die frieren und tauen — der See trägt im Frost und bricht im Tauwetter",
+                taeter: "gelaende-core.js:1404 eisDicke (EIS.traegt, gelaende-core.js:1376) · stamm/wasser-hydro.js:705 _eisAt",
+                leser: "stamm/bild-himmel.js:3178 _eisLinien ruft (:3204) gelaende-core.js:1404 eisDicke je Säule, stamm/wasser-hydro.js:705 _eisAt trägt den Spieler über der Linie voll",
+                gruen: gut({ fddEinsetzen: 14.5 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 4000, brichtTage: 6000 }),
+                attrappen: [
+                    { name: "die Frostgrad-Summe aus Stefan eingesetzt, der See trägt nie", roh: gut({ fddEinsetzen: 13.7 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 0, brichtTage: 365 }) },
+                    { name: "EINE Säule der Heimat", roh: gut({ fddEinsetzen: 13.7 }, { tage: 365, jahreszeitlich: 1, saaten: 1, traegtTage: 130, brichtTage: 200 }) },
+                    { name: "die ganzjährige Kälte als Einsetzen gezählt (die Säule 10 m · 800 m über dem Meer am Export: 70,6 K·d)", roh: gut({ fddEinsetzen: 70.6 }, { tage: 365, jahreszeitlich: 40, saaten: 8, traegtTage: 4000, brichtTage: 6000 }) },
+                ],
             },
             3: {
                 u: { wochen: 53, punkte: 40 },
@@ -4152,7 +4315,8 @@ return { meer, kalt, felder: Object.keys(a) };
     // ════════════════════════════════════════ KREISLAUF ════════════════════════════════════════
     const KR = "planet.wasser.kreislauf";
     const kreislauf = {
-        sek: 30,
+        sek: 45,
+        faecher: true,
         pfad: PFAD,
         mutiert: true,
         ungefahren: "das Bild der braunen Wiese (Sprosse 3) schießt die Probe nur am Gerät",
@@ -4160,28 +4324,89 @@ return { meer, kalt, felder: Object.keys(a) };
             const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
             const ziel = Object.keys(U);
             const aus = M.teil || {};
-            // DIE GRUBEN AM SEE (der See der Soll-Tafel): 20 Gruben 40–200 m vom Ufer, ihr Boden 1 m unter dem Spiegel des Sees — wie hoch
-            // füllt die Welt sie (`_atlasWaterLevelAt`, der Spiegel, den die Zellen des Wassers lesen)?
-            const gruben = await H.seite(`
-const L = r._gelaende(), G = globalThis.__gelaendeCore, R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
-const S = [1816, -6168];
-let nw = 0; while (r._ensureHydroTilesAround(S[0], S[1], 32) && nw < 200) { await new Promise((f) => setTimeout(f, 50)); nw++; }
-const spiegel = r._koerperWasser(S[0], S[1], -Infinity);
-const je = [];
-for (let a = 0; a < 4; a++) {
-const ux = Math.cos((a * Math.PI) / 2 + 0.3), uz = Math.sin((a * Math.PI) / 2 + 0.3);
-let k = 0; while (k < 400 && r._nassAt(S[0] + ux * k, S[1] + uz * k)) k += 4;
-for (const d of [40, 80, 120, 160, 200]) {
-const x = S[0] + ux * (k + d), z = S[1] + uz * (k + d), g = r._voxelSurfaceY(x, z);
-if (g === null || !(g > spiegel)) continue;
-const boden = spiegel - 1;
-const f = r._atlasWaterLevelAt(x, z, boden);
-je.push([R(x), R(z), d, R(g), Number.isFinite(f) ? R(f) : null]);
-}
-}
-const lf = G.flussLaeufe(L, -1000, -1000, 1000, 1000, 16);
-return { spiegel: R(spiegel), je, laeufe: lf.length };
-`);
+            // S2 DIE GRUBE AM FÄCHER (M4): je Adresse (Saat × Richtung × Abstand vom Ufer 8–160 m) eine Grube neben dem größten See der
+            // Lage, ihr Boden 1 m unter seinem Spiegel — wie hoch füllt das Gesetz sie (gelaende-core atlasSpiegel über dem Boden der
+            // Grube, der Spiegel, den die Zellen des Wassers lesen)? Die Heimat am See der Soll-Tafel über den Leser des Spiels
+            // (`_atlasWaterLevelAt`), jede andere Saat an ihrer Lage (planet-ort → lageAus) mit der Hydrosphäre, die der Faden rechnet
+            // (gelaende-core hydrosphaere mit dem Gesetz des Stamms `HYDROSPHERE`, der Boden die Makro-Höhe)
+            const u2 = U[2];
+            if (u2) {
+                const GRUBE_AN = async (r, T, a, mit) => {
+                    const G = globalThis.__gelaendeCore, st = r.state, k = String(a.saat);
+                    const memo = mit.memo || (mit.memo = {});
+                    let M0 = memo[k];
+                    if (!M0) {
+                        if (a.saat === "heim") {
+                            const S = mit.see;
+                            let nw = 0;
+                            while (r._ensureHydroTilesAround(S[0], S[1], 32) && nw < 200) { await new Promise((f) => setTimeout(f, 50)); nw++; }
+                            const sp = r._koerperWasser(S[0], S[1], -Infinity);
+                            const nass = (x, z) => r._nassAt(x, z);
+                            M0 = { heim: true, c: S, sp, ufer: [0, 1, 2, 3].map((q) => { const ux = Math.cos((q * Math.PI) / 2 + 0.3), uz = Math.sin((q * Math.PI) / 2 + 0.3); let e = 0; while (e < 400 && nass(S[0] + ux * e, S[1] + uz * e)) e += 4; return e; }) };
+                        } else {
+                            await r._fadenQuelle();
+                            const breite = ((a.saat * 0.6180339887) % 1) * 120 - 60, laenge = ((a.saat * 137.508) % 360) - 180;
+                            const o = await r._planetAuftrag({ type: "planet-ort", samen: r._planetSamen(), breite, laenge, zeitMa: 0 });
+                            const heim = r.constructor._weltGesetz(st.worldMeta).gelaende;
+                            const ort = { samen: o.samen, version: o.version, breite: o.breite, laenge: o.laenge, zeitMa: o.zeitMa, delta: o.delta };
+                            const O = G.ortGesetz(ort), eg = G.erbgutNormal(G.ortErbgut(G.erbgutNormal(heim == null ? undefined : heim), o.delta.wildnis));
+                            const wl = G.GRUND.basis - O.meerUnterBasisM;
+                            const L = G.lageAus({ seed: r._reiseSaat(ort, heim), baseHeight: G.GRUND.basis, waterLevel: wl, ort, erbgut: { terme: eg, wildnis: eg[0] && eg[0].art === "wildnis" ? 1 : 0 }, regionSize: G.GRUND.kachel }, SimplexNoise);
+                            const HY = r.constructor.HYDROSPHERE;
+                            L.hydroGesetz = HY;
+                            const h = (L.hydrosphere = G.hydrosphaere(L, HY, (x, z) => G.hoehe(L, x, z, false), null));
+                            let best = null;
+                            for (const lk of h.lakes || []) if (lk.cells && lk.cells.length >= HY.minLakeCells && (!best || lk.cells.length > best.cells.length)) best = lk;
+                            if (!best) M0 = { kein: 1 };
+                            else {
+                                let sx = 0, sz = 0;
+                                for (const i of best.cells) { sx += h.originX + ((i % h.dim) + 0.5) * h.cell; sz += h.originZ + (Math.floor(i / h.dim) + 0.5) * h.cell; }
+                                const c = [sx / best.cells.length, sz / best.cells.length], sp = G.atlasSpiegel(L, c[0], c[1], -1e9);
+                                const nass = (x, z) => G.atlasSpiegel(L, x, z, -1e9) >= sp - 0.01 && G.hoehe(L, x, z, false) < sp;
+                                M0 = { L, c, sp, ufer: [0, 1, 2, 3].map((q) => { const ux = Math.cos((q * Math.PI) / 2 + 0.3), uz = Math.sin((q * Math.PI) / 2 + 0.3); let e = 0; while (e < 2000 && nass(c[0] + ux * e, c[1] + uz * e)) e += 4; return e; }) };
+                            }
+                        }
+                        memo[k] = M0;
+                    }
+                    if (M0.kein || !Number.isFinite(M0.sp)) return { saat: k, kein: 1 };
+                    const q = a.ort[0], d = a.ort[1], ux = Math.cos((q * Math.PI) / 2 + 0.3), uz = Math.sin((q * Math.PI) / 2 + 0.3);
+                    const x = M0.c[0] + ux * (M0.ufer[q] + d), z = M0.c[1] + uz * (M0.ufer[q] + d);
+                    const g = M0.heim ? r._voxelSurfaceY(x, z) : G.hoehe(M0.L, x, z, false);
+                    if (g === null || !(g > M0.sp)) return { saat: k, unter: 1 };
+                    const boden = M0.sp - 1, f = M0.heim ? r._atlasWaterLevelAt(x, z, boden) : G.atlasSpiegel(M0.L, x, z, boden);
+                    const voll = Number.isFinite(f) && f > boden ? f : boden;
+                    return { saat: k, d, abw: Math.round(Math.abs(M0.sp - voll) * 1000) / 1000, gefuellt: Number.isFinite(f) && f > boden + 0.01 ? 1 : 0, bis: Math.abs(M0.sp - voll) <= 0.1 ? 1 : 0, fern: d >= mit.rand ? 1 : 0, spiegel: Math.round(M0.sp * 1000) / 1000 };
+                };
+                const ORTE = [];
+                for (const q of [0, 1, 2, 3]) for (const d of [8, 24, 40, 80, 160]) ORTE.push([q, d]);
+                const grube = (a, w) => w.abw != null;
+                const RF = await FAECHER((c) => H.seite(c), {
+                    gesetz: { fn: GRUBE_AN, export: "gelaende-core.js:7799 atlasSpiegel (Körper, Rand 3×3 der Zellen, Stau, Fluss) über der Hydrosphäre gelaende-core.js:6107 hydrosphaere", leser: "stamm/wasser-hydro.js:67 _atlasWaterLevelAt (der Spiegel, den die Zellen des Wassers lesen)" },
+                    adressen: { saaten: Array.from({ length: Number(u2.saaten) || 8 }, (_, i) => i + 1), orte: ORTE, dazu: ORTE.map((o) => ({ saat: "heim", ort: o, zeit: null })) },
+                    mit: { see: u2.see || [1816, -6168], rand: 80 },
+                    ms: Number(u2.ms) || 15000,
+                    masse: {
+                        gruben: { wie: "anzahl", feld: "abw" },
+                        seen: { wie: "verschieden", feld: "a.saat", nur: grube },
+                        gefuellt: { wie: "summe", feld: "gefuellt", nur: grube },
+                        fernGruben: { wie: "summe", feld: "fern", nur: grube },
+                        fernGefuellt: { wie: "summe", feld: "gefuellt", nur: (a, w) => grube(a, w) && w.fern === 1 },
+                        fernBis: { wie: "summe", feld: "bis", nur: (a, w) => grube(a, w) && w.fern === 1 },
+                        grubeAbwM: { wie: "max", feld: "abw", nur: grube },
+                        imBand: { wie: "anzahl", feld: "abw", nur: (a, w) => grube(a, w) && w.abw <= 0.1 },
+                        randMaxM: { wie: "max", feld: "d", nur: (a, w) => grube(a, w) && w.gefuellt === 1 },
+                    },
+                    schlecht: { feld: "abw", richtung: "max" },
+                    pose: (a, w) => "Ego am Rand einer Grube " + w.d + " m vom Ufer des Sees " + (a.saat === "heim" ? "der Soll-Tafel" : "der Saat " + a.saat) + " (Boden 1 m unter dem Spiegel " + w.spiegel + " m), Blick hinein",
+                    ungemessen: ["das Bild der vollgelaufenen Grube an der Bohrung (am Gerät)"],
+                });
+                const W2 = RF.werte;
+                aus[2] = {
+                    werte: Object.assign({ gruben: W2.gruben, gefuellt: W2.gefuellt, fernBis: W2.fernBis, imBand: W2.imBand }, W2.grubeAbwM != null ? { grubeAbwM: R(W2.grubeAbwM) } : {}),
+                    zeuge: { gruben: W2.gruben, seen: W2.seen, gefuellt: W2.gefuellt, fernGruben: W2.fernGruben, fernGefuellt: W2.fernGefuellt, fernBis: W2.fernBis, randMaxM: W2.randMaxM, gerissen: RF.gerissen, akte: RF.akte },
+                    taeter: (RF.fehler.length && !RF.gemessen ? "Leser fehlt: " + RF.fehler[0].fehler + " · " : "") + "gelaende-core.js:7799 atlasSpiegel füllt eine Grube nur am Rand 3×3 der Zellen eines Körpers, aus einem Fluss oder Stau (" + W2.fernBis + " von " + W2.fernGruben + " Gruben ab 80 m bis zum Spiegel des Sees ±0,1 m, " + W2.fernGefuellt + " überhaupt benetzt) — kein Grundwasser-Spiegel, also keine Quelle am Spiegel-Austritt (die Quelle eines Laufs ist ein Knoten ohne Oberlieger, gelaende-core.js:1953 flussLaeufe) · " + RF.akte,
+                };
+            }
             // DIE DÜRRE AM BACH DER MESS-WIESE (derselbe Bach wie kreislauf S1): 60 Spieltage ohne Regen-Stempel auf der Welt-Uhr, der Pegel
             // nachgezogen (`_pegelTakt`) — die Tiefe des Bachs vor und nach, die Welt-Uhr und die Stempel danach zurück
             const duerre = await H.seite(`
@@ -4220,15 +4445,7 @@ const o = await Promise.all(P.map((p) => r._planetAuftrag({ type: "planet-ort", 
 return o.map((x) => [x.land, x.kuesteKm, x.delta.wetter.regenQuote, x.version]);
 `);
             const je = {};
-            // S2
-            const G2 = gruben.je;
-            const gefuellt = G2.filter((g) => g[4] !== null && g[4] > gruben.spiegel - 1 + 0.01);
-            const abw = G2.map((g) => Math.abs(gruben.spiegel - (g[4] !== null && g[4] > gruben.spiegel - 1 ? g[4] : gruben.spiegel - 1)));
-            je[2] = {
-                werte: Object.assign({ gruben: G2.length, gefuellt: gefuellt.length, laeufe: gruben.laeufe }, abw.length ? { grubeAbwM: R(Math.max(...abw)) } : {}),
-                zeuge: { gruben: G2.length, gefuellt: gefuellt.length, je: G2 },
-                ...(gefuellt.length === 0 ? { nicht: "kein Grundwasser-Spiegel: " + G2.length + " Gruben 40–200 m vom See (Boden 1 m unter seinem Spiegel " + gruben.spiegel + " m) bleiben trocken (gelaende-core.js:7728 atlasSpiegel füllt nur den Rand 3×3 eines Körpers); keine Quelle am Spiegel, kein Brunnen" } : {}),
-            };
+            if (aus[2]) je[2] = aus[2];
             // S3
             const d0 = duerre.vor && duerre.vor[1], d1 = duerre.nach && duerre.nach[1];
             const verloren = d0 > 0 && Number.isFinite(d1) ? 100 * (1 - d1 / d0) : NaN;
@@ -4265,18 +4482,23 @@ return o.map((x) => [x.land, x.kuesteKm, x.delta.wetter.regenQuote, x.version]);
         },
         sprossen: {
             2: {
-                u: { see: [1816, -6168], gruben: 20 },
+                u: { saaten: 8, see: [1816, -6168], ms: 15000 },
                 soll: [
                     K.soll(KR, 2, "Grube unter dem Spiegel füllt sich bis zu ihm ±0,1 m", { key: "grubeAbwM", ref: 0, refQuelle: "Erde: eine Grube unter dem Grundwasser-Spiegel füllt sich bis zu ihm (Darcy 1856), Abweichung 0", einheit: "m" }),
                     K.soll(KR, 2, "Quellen ≥ 90 % an Spiegel-Austritten", { key: "quellenProzent", einheit: "%" }),
                 ],
-                zeuge: zMin({ gruben: 10, gefuellt: 1 }),
-                zeugeText: "die Gruben der Welt füllten sich aus dem Grundwasser",
-                taeter: "gelaende-core.js atlasSpiegel (kein Grundwasser jenseits des Rands)",
+                zeuge: zMin({ gruben: 40, seen: 3, fernBis: 1 }),
+                zeugeText: "der Fächer: ≥ 40 Gruben an ≥ 3 Seen, und das Grundwasser füllt mindestens eine jenseits des Rands (≥ 80 m vom Ufer) bis zum Spiegel des Sees",
+                taeter: "gelaende-core.js:7799 atlasSpiegel (kein Grundwasser jenseits des Rands 3×3)",
                 nicht: "kein Grundwasser-Spiegel, keine Entnahme",
-                leser: "gelaende-core.js:7728 atlasSpiegel — füllt nur den Rand 3×3 eines Körpers; kein Aquifer als Volumen, kein Brunnen",
-                gruen: gut({ grubeAbwM: 0.06, quellenProzent: 92 }, { gruben: 20, gefuellt: 20 }),
-                attrappen: [{ name: "die Gruben am Rand des Sees (die füllt der See, nicht das Grundwasser)", roh: gut({ grubeAbwM: 0, quellenProzent: 92 }, { gruben: 20, gefuellt: 0 }) }],
+                leser: "stamm/wasser-hydro.js:67 _atlasWaterLevelAt über gelaende-core.js:7799 atlasSpiegel — füllt nur den Rand 3×3 eines Körpers; kein Aquifer als Volumen, kein Brunnen",
+                gruen: gut({ grubeAbwM: 0.06, quellenProzent: 92 }, { gruben: 60, seen: 4, fernBis: 22 }),
+                attrappen: [
+                    { name: "die Gruben am Rand des Sees (die füllt der See, nicht das Grundwasser)", roh: gut({ grubeAbwM: 0, quellenProzent: 92 }, { gruben: 24, seen: 3, fernBis: 0 }) },
+                    { name: "EIN See der Heimat", roh: gut({ grubeAbwM: 0.06, quellenProzent: 92 }, { gruben: 20, seen: 1, fernBis: 10 }) },
+                    { name: "die trockene Grube (der Fächer am Export: ab 80 m 0 von 22 gefüllt, Abweichung 1 m)", roh: gut({ grubeAbwM: 1 }, { gruben: 58, seen: 3, fernBis: 0 }) },
+                    { name: "die Grube am Fluss (benetzt vom Lauf, nicht vom Grundwasser des Sees)", roh: gut({ grubeAbwM: 0.06, quellenProzent: 92 }, { gruben: 60, seen: 4, fernGefuellt: 11, fernBis: 0 }) },
+                ],
             },
             3: {
                 u: { bach: [-258.4, -1132.8], tage: 60 },
@@ -5283,7 +5505,7 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
             const med2 = (v) => { const b = v.filter(Number.isFinite).sort((p, q) => p - q); return b.length ? (b.length % 2 ? b[(b.length - 1) / 2] : (b[b.length / 2 - 1] + b[b.length / 2]) / 2) : null; };
             const u2 = U[2] || {};
             const RF = await FAECHER((c) => H.seite(c), {
-                gesetz: { fn: GRENZE_AN, export: "gelaende-core.js schnee (die Kühlung gelaende-core.js:5850 kuehlungKJeM) an der Lage der Welt", leser: "stamm _schneeGilt und der Boden (stamm/gelaende-boden.js:833 _gelaende)" },
+                gesetz: { fn: GRENZE_AN, export: "gelaende-core.js schnee (die Kühlung gelaende-core.js:5918 kuehlungKJeM) an der Lage der Welt", leser: "stamm _schneeGilt und der Boden (stamm/gelaende-boden.js:833 _gelaende)" },
                 adressen: { saaten: Array.from({ length: Number(u2.saaten) || 16 }, (_, i) => i + 1), dazu: [{ saat: "heim", ort: null, zeit: null }] },
                 mit: { von: 43, bis: 46, bisM: 6000 },
                 ms: Number(u2.ms) || 6000,
@@ -5303,7 +5525,7 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
                 werte: { schneegrenzeM: R(RF.werte.schnee), baumgrenzeM: R(RF.werte.baum), hoechsterM: R(heim.hoechsterM) },
                 zeuge: { grenzen: RF.werte.grenzen || 0, welten: RF.werte.welten || 0, breiteMin: R(RF.werte.bMin), breiteMax: R(RF.werte.bMax), abstandM: R(Math.abs((RF.werte.schnee || 0) - (RF.werte.baum || 0))), breiteAnkerGrad: R(faden.anker[0]), adressen: RF.adressen, gerissen: RF.gerissen },
                 auge: await M.auge("wetter-klima-s2", { ort: "wiese" }, { uhr: 0.5 }),
-                taeter: "gelaende-core.js:5850 kuehlungKJeM (die Höhe gestaucht: 18 K ÷ 162,5 m = 0,11 K/m, Erde 0,0065 K/m) · " + RF.akte,
+                taeter: "gelaende-core.js:5918 kuehlungKJeM (die Höhe gestaucht: 18 K ÷ 162,5 m = 0,11 K/m, Erde 0,0065 K/m) · " + RF.akte,
             };
             // S3 Kontinentalität: Spearman der Jahresamplitude gegen den Küstenabstand an 30 Land-Orten um den Anker
             const l3 = faden.land3;
@@ -5357,7 +5579,7 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
                 ],
                 auge: { pose: "Ego an der Mess-Wiese, Blick zum höchsten Grund, Mittag", vorbild: "Foto eines Gebirges gleicher Breite (Pyrenäen/Alpen) mit Baum- und Schneegrenze" },
                 taeter: "gelaende-core.js TEMPERATUR (Höhe gestaucht, 0,11 K/m)",
-                leser: "gelaende-core.js:5850 kuehlungKJeM — die Kühlung 18 K ÷ 162,5 m = 0,11 K/m (Erde 0,0065 K/m): Schnee- und Baumgrenze liegen bei ~150 m statt 2 000–3 000 m; der Fächer liest gelaende-core schnee an der Lage jeder Welt im Band",
+                leser: "gelaende-core.js:5918 kuehlungKJeM — die Kühlung 18 K ÷ 162,5 m = 0,11 K/m (Erde 0,0065 K/m): Schnee- und Baumgrenze liegen bei ~150 m statt 2 000–3 000 m; der Fächer liest gelaende-core schnee an der Lage jeder Welt im Band",
                 // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
                 // DIE QUELLE DER ERD-REFERENZ IN DER STATION (pm-front-f1): ref 2 900 / 2 100 m gilt nur für 43–46° N (Alpen, die refQuelle) —
                 // der Zeuge trägt die Breite des Ankers, den der Faden der Welt nennt (planet-anker); steht er außerhalb des Bands (andere
@@ -5378,7 +5600,7 @@ return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3
                     { name: "Erd-Höhe an der Südhalbkugel (−45,5°)", roh: { werte: { schneegrenzeM: 2800, baumgrenzeM: 2000 }, zeuge: { grenzen: 14, welten: 13, breiteMin: -46, breiteMax: -45, abstandM: 800 } } },
                     { name: "EINE Welt trägt die Grenzen", roh: { werte: { schneegrenzeM: 2800, baumgrenzeM: 2000 }, zeuge: { grenzen: 14, welten: 1, breiteMin: 43.4, breiteMax: 43.4, abstandM: 800 } } },
                 ],
-                proben: [{ name: "die gestauchte Höhe: Schnee 150 m gegen 2 900 m (ROT beim Täter)", roh: { werte: { schneegrenzeM: 150, baumgrenzeM: 120 }, zeuge: { grenzen: 14, welten: 13, breiteMin: 43.1, breiteMax: 45.9, abstandM: 30 }, taeter: "gelaende-core.js:5850 kuehlungKJeM" } }],
+                proben: [{ name: "die gestauchte Höhe: Schnee 150 m gegen 2 900 m (ROT beim Täter)", roh: { werte: { schneegrenzeM: 150, baumgrenzeM: 120 }, zeuge: { grenzen: 14, welten: 13, breiteMin: 43.1, breiteMax: 45.9, abstandM: 30 }, taeter: "gelaende-core.js:5918 kuehlungKJeM" } }],
             },
             3: {
                 u: { orte: 30, radiusGrad: [14, 20] },
