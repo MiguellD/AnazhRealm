@@ -3827,6 +3827,11 @@ function nachtSicht(o) {
                     e.evOhneKarte = +ev(c, b).toFixed(2);
                     if (e.ev >= 1) gut++;
                     if (e.evOhneKarte >= 1) gutOhneK++;
+                    // die Quelle ohne Fleck trägt ihre Punkte beim Namen: Ring, Lage, Luma mit · ohne · ohne Karte — und die beste
+                    // Quelle ihrer Art als Zeugin dieselben (unten: nur Täter und Zeugin behalten sie)
+                    e.proben = pkt
+                            .filter((s) => s.i === i && gesehen(px(s.m)) && px(s.p) >= 0)
+                            .map((s) => [s.R, +s.p.x.toFixed(2), +s.p.y.toFixed(2), +s.p.z.toFixed(2), ...[mit, ohne, ohneK].map((bild) => +Y(bild, px(s.p)).toExponential(3))]);
                 }
                 // die Karte der Quelle: ihre Mitte im Bild, gesehen (nicht verdeckt: die Karte steht in beiden Schüssen, die Differenz trägt
                 // nur, wo sie liegt) — die Farbe ihres Lichts, mit minus ohne die Lichter des Orts
@@ -3839,6 +3844,11 @@ function nachtSicht(o) {
                     if (f) kelvin.push({ art: q.quelle, soll: q.L.kelvin, ist: f.K, duv: f.duv, abw: Math.abs(f.K - q.L.kelvin) });
                 }
                 aus.je.push(e);
+            }
+            for (const e of aus.je.filter((x) => x.proben && !(x.ev < 1))) {
+                const zeugin = aus.je.filter((x) => x.art === e.art && x.ev >= 1).sort((a, b) => b.ev - a.ev)[0];
+                if (e === zeugin && aus.je.some((x) => x.art === e.art && x.ev < 1)) e.zeugin = true;
+                else delete e.proben;
             }
             Object.assign(aus, { sichtbar, gut, anteil: sichtbar ? +(gut / sichtbar).toFixed(3) : null, ohneKarte: { gut: gutOhneK, anteil: sichtbar ? +(gutOhneK / sichtbar).toFixed(3) : null }, kelvin, kartenVerdeckt });
             kartenGruen.dispose();
