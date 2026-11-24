@@ -2061,8 +2061,7 @@ async function starte() {
                 const U = window.__buehneUhr,
                     T0 = U.T,
                     S = auf.tiefe,
-                    nah = new Uint8Array(W * H),
-                    B = r.constructor.WIND_BOE;
+                    nah = new Uint8Array(W * H);
                 for (let p = 0; p < W * H; p++) {
                     const P = mitte(S, Math.floor(((Math.floor(p / W) + 0.5) * S.th) / H) * S.tw + Math.floor((((p % W) + 0.5) * S.tw) / W));
                     nah[p] = P?.distanceTo(cam.position) <= k.nahM ? 1 : 0;
@@ -2091,7 +2090,7 @@ async function starte() {
                     return o;
                 };
                 try {
-                    zeit = { dt: k.zeit, nahAnteil: nah.reduce(addiere, 0) / (W * H), tempo: B.omega / B.k, kamm: await paar(boe.at(-1)), tal: await paar(boe[0]) };
+                    zeit = { dt: k.zeit, nahAnteil: nah.reduce(addiere, 0) / (W * H), tempo: r._boeWeg(T0 + 1) - r._boeWeg(T0), kamm: await paar(boe.at(-1)), tal: await paar(boe[0]) };
                 } finally {
                     U.T = T0;
                 }

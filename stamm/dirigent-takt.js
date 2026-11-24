@@ -2504,6 +2504,8 @@ class AnazhRealm_dirigent_takt {
         // 0.06·AMP, AMP=0.55), auf der Bild-Uhr wie uWindTime; uBend = Spieler/Ritt/nahe Kreaturen (`_tickGrasBend`).
         if (this.state.windUniforms) {
             this.state.windUniforms.uWindTime.value = bildZeit;
+            // die Böe zieht mit dem Wind (`_boePhase`, Taylor): dieselbe Phase wie `_windAt` auf der Bild-Uhr
+            this.state.windUniforms.uBoePhase.value = this._boePhase(bildZeit);
             const auge = (this.state.camera || this.state.playerMesh || { position: { x: 0, z: 0 } }).position;
             const w = this._windAt(auge.x, auge.z, bildZeit);
             this.state.windUniforms.uWindStrength.value = w.staerke * AnazhRealm.WEATHER_WIND_AMP;
