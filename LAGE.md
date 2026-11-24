@@ -1,9 +1,26 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 10:08 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 10:27 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
+- NACHTRAG 10:27 — WORT DES SCHÖPFERS 10:20 UND KURS-WECHSEL (gilt VOR allem darunter): „das bau/macherniveau scheint immernoch fern von AAAA …
+  sehe kaum fortschritte … sieht fast alles noch gleich aus wie vor 12 h?“ Er hat recht (meine eigenen Bilder: Dorf = graue Kästen, Wiese
+  gleich, Boot = Kasten). **WURZEL 1:** der Arbeitsbaum des Haupt-Klons trug eine ALTE `.claude/agents/champion.md` (ohne WebSearch/WebFetch,
+  ohne IPERKA), alte SKILL.md und CLAUDE.md — alle lokalen Arbeiter liefen ohne Web-Zugriff. Angeglichen an origin/main um 10:23 (geschrieben
+  + `git add`); ob die laufende Sitzung sie für neue Arbeiter lädt, ist ungeprüft — jeder Brief fragt „WebSearch/WebFetch ja/nein“.
+  **WURZEL 2:** die Wellen der Nacht zielten auf Kopplungen, die node misst; das Bild blieb. AB JETZT: sichtbare Gestalt-Fronten zuerst,
+  jeder Brief trägt BILD-PFLICHT (Bildpaar im Spiel, der Macher urteilt je Merkmal) und zwei äußere Quellen mit Zahl; Gestalt kommt aus dem
+  Gesetzbuch eines Studios, nie als Kasten-Vorlage; ich sehe das Bild VOR der Batterie.
+  **GESTEMPELT:** `w28-wind-saison` 5166b746 (10:21:47) · `w28-mensch-nah` (10:27). **ZURÜCK:** `spiegel-eis` 2c04ae52 — ROT am Stammbaum
+  („WAISEN boot_anleger steg_anleger“), Batterie abgebrochen; Arbeiter „spiegel-eis 3“ löst das Eis vom Anleger (Baum `AnazhRealm-acker`;
+  der Anleger bleibt lokal als Zweig `anleger-gestalt`, das Boot kommt später als Gattung des Fahrzeug-Studios,
+  `mensch.fahrzeug.gestalt#1`). **NEU:** Arbeiter `haus-gestalt` (Baum `AnazhRealm-front-pl`, Sprosse `mensch.bau.bauen#1`: Labor ↔ Welt
+  98 %, Soll ≤ 2,1 %; Zensus → Spike → Welle über alle Haus-Rollen; GPU-Läufe ≤ 180 s unter dem EINEN gpu-schloss, Port 4790).
+  **IN DER BATTERIE:** `klima-hebung` 43ea39ed · `saison-schatten` db7a8245 · `tat-aufwaerts` 3 03d2bba8 (Satz neu) · `sport-regeln` 2
+  998254be (Merge mit main f18576b6, Satz liegt; Station `pm-sport-regeln` 3581c6ac, Messort stadt-voll von mir entschieden).
+  **CLOUD (vom Schöpfer 10:19 gestartet):** „Klima des Kontinents: Land, Meer, Luft im Kern“ · „Klang aus Leib und Raum: sechs Klang-Fronten“.
+  **OFFEN BEIM SCHÖPFER:** dürfen Arbeiter Referenz-Fotos zum Ansehen herunterladen (nie ins Repo)?
 - NACHTRAG 10:07 (gilt VOR den Zeilen darunter; wo sie widersprechen, gilt dieser): KARTE 2 = **82 von 1 718** (Stand-Datei am Kopf ce32531e).
   **main f18576b6** (z710 `w28-nerv-schwung` gelandet 09:57; Anspruch `mensch.sport.koerper#1`, koordination c5ad7a1a). RUNDE 18 misst dort
   seit 10:00 (Sprung 00fe3f47).
