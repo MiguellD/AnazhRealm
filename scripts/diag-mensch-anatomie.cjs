@@ -1270,7 +1270,7 @@ const zeige = (m) =>
 // Abspreizung in Ruhe (Schulter → Ellbogen gegen das Lot, Grad) hält ihr Band ARM_RUHE.spreizGrad — bis w12-arme hielt die
 // Ruhe die Hüllen beider Seiten und das Fett-Depot, der muskulöse Mann bei mass 1 stand mit 54° fast in T-Pose (9ab928c6).
 // Täter (R2): der um 0,6 rad gespreizte Arm. Die Bänder (innen, spreizGrad) urteilt `urteile` wie MENSCH_SOLL.
-const messeRuhe = (sb, kern = (K) => K, K = sb.__koerperCore) => K.ARM_RUHE.koerper.map((dials) => ({ dials, ...K.armRuheUrteil(sb.BAKERS_BY_KIND.koerper(kern(K), "mensch", 1, 0, { dials })) })); // prettier-ignore
+const messeRuhe = (sb, kern = (K) => K, K = sb.__koerperCore, buehne = {}) => K.ARM_RUHE.koerper.map((d) => ({ ...d, ...buehne })).map((dials) => ({ dials, ...K.armRuheUrteil(sb.BAKERS_BY_KIND.koerper(kern(K), "mensch", 1, 0, { dials })) })); // prettier-ignore
 const urteileRuhe = (so, R) => R.flatMap((r) => urteile(so, r, "ARM_RUHE").map((x) => `ruhe ${JSON.stringify(r.dials)}: ${x}`)); // prettier-ignore
 // DIE RUHE IN DER STAND-ZEILE (w28-mensch-samen, ARM_RUHE.innenStand): derselbe Guss, gestellt wie die Welt ihren Leib stellt — der
 // Stamm im vm (`_animateHumanoidRig`) auf dem Rig des Kerns (koerper `leibGussGestellt`) —, am Ofen L0 je Körper des Gesetzes und an
@@ -1296,7 +1296,7 @@ if (SELBSTTEST) {
     const pruefe = (name, verzerre, muster, kopf) => {
         const sb = kopf ? ladeOfen() : ladeWelt();
         const f =
-            kopf === "handMenge" ? urteileHandMenge(messeHandMenge(sb, verzerre)) : kopf === "flankeMenge" ? urteileFlankeMenge(messeFlankeMenge(sb, verzerre)) : kopf === "bau" ? urteileBau(sb, messeBau(verzerre, 1)) : kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "form" ? urteileForm(sb, messeForm(sb, verzerre)) : kopf === "formFrau" ? urteileFormFrau(sb, messeFormFrau(sb, verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf === "kalotte" ? urteileKalotte(sb, messeKalotte(sb, verzerre)) : kopf === "grob" ? urteileKopf(sb, messeGrob(sb, verzerre)) : /^kleid/.test(kopf) ? urteileKleid(sb, messeKleid(sb, verzerre, { kleid: "guss", kleidMenge: "menge", kleidSchuh: "schuh" }[kopf])) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
+            kopf === "handMenge" ? urteileHandMenge(messeHandMenge(sb, verzerre)) : kopf === "flankeMenge" ? urteileFlankeMenge(messeFlankeMenge(sb, verzerre)) : kopf === "bau" ? urteileBau(sb, messeBau(verzerre, 1)) : kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "form" ? urteileForm(sb, messeForm(sb, verzerre)) : kopf === "formFrau" ? urteileFormFrau(sb, messeFormFrau(sb, verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern, undefined, verzerre.dials)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf === "kalotte" ? urteileKalotte(sb, messeKalotte(sb, verzerre)) : kopf === "grob" ? urteileKopf(sb, messeGrob(sb, verzerre)) : /^kleid/.test(kopf) ? urteileKleid(sb, messeKleid(sb, verzerre, { kleid: "guss", kleidMenge: "menge", kleidSchuh: "schuh" }[kopf])) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
@@ -1478,9 +1478,27 @@ if (SELBSTTEST) {
     // DIE RUHE DER ARME: der Guss ohne die Anlage (der Arm im Rumpf) und der gespreizte Arm (der Regler arms 0,5: +0,65 rad)
     pruefe("R1 der Arm im Rumpf", { kern: (K) => ({ ...K, armAnlage: () => 0 }) }, /innen/, "ruhe");
     pruefe("R2 der gespreizte Arm", { kern: (K) => ({ ...K, morphAuf: (B, d) => K.morphAuf(B, { ...d, arms: 0.5 }) }) }, /spreizGrad/, "ruhe"); // prettier-ignore
-    // (R4, seit w28-leib-kanon auf der Bühne des beleibten Rumpfs — Masse 2,5 im Gesetz —: der Kanon-Rumpf liegt an keinem Körper des
-    // Gitters unter dem Arm, ohne Täter misst dieselbe Bühne durch 0)
-    pruefe("R4 die Lagen des Rumpfs ohne Folge unter dem Arm (Haut und Stoff weichen gleich tief)", { kern: (K) => ({ ...K, morphAuf: (B, d) => K.morphAuf(B, { ...d, mass: 2.5 }), armAnlage: (B, hu, gel) => (hu.forEach((h) => (h.lage = 0)), K.armAnlage(B, hu, gel)) }) }, /durch/, "ruhe"); // prettier-ignore
+    // R4 — DIE LAGE AN IHRER EINEN QUELLE, AUF DER BÜHNE MIT HAUT IN DER MULDE (anatomie-r4-heil). Der Täter nimmt jeder Stoff-Hülle
+    // die Lage dort, wo ihre ZWEI Leser sie lesen (`userData.__lage` der Hülle: koerper `armAnlage` über die Kopie in `anlage`,
+    // foundry `__hautUnterStoff` an der Hülle selbst) — Haut und Stoff weichen gleich tief, und keine verdeckte Haut rückt unter
+    // ihren Stoff. Bis hier nullte er nur die Kopie der Anlage: seit w28-mensch-nah (85aec8c18) legt `__hautUnterStoff` die Haut
+    // NACH der Anlage um die Lage der Hülle unter sie (gemessen an main a8dd22b58: jede Rumpf-Haut-Ecke 24,000 mE unter ihrem Stoff,
+    // durch 0 an allen fünf Körpern, 4 von 4 Läufen, Node 20 und 24 bit-gleich) — die Mutante war stumpf, der Selbsttest rot, wo er
+    // lief (er ruhte bei der Landung: der Ruhe-Schlüssel trug foundry-core.js nicht, ci-klasse `r6Kerne`). Und unter dem T-Shirt
+    // steht in der Mulde keine Haut neben Stoff (der Ärmel deckt die Achsel: selbst mit der Lage an der Quelle fiel dort 1 Ecke
+    // an 1 Körper). DIE BÜHNE: das Trägerhemd (`top: "tank"` — der Rand des Armlochs liegt in der Mulde) am beleibten Rumpf (Masse
+    // 2,5 im Gesetz, seit w28-leib-kanon: der Kanon-Rumpf liegt an keinem Körper des Gitters unter dem Arm). Gemessen (Ofen L0,
+    // die fünf Körper von ARM_RUHE.koerper): die Bühne allein durch 0 · 2 · 2 · 0 · 0 (der Rand des Armlochs am schwersten Leib,
+    // FUND-REGISTER), der alte Täter 1 · 7 · 0 · 0 · 1, der Täter an der Quelle 10 · 43 · 57 · 41 · 29 (größter Überstand 17–54 mE
+    // gegen die Schwelle 4 mE). Das Muster verlangt darum ZWEISTELLIG — und die Bühne allein muss darunter bleiben: sonst fiele R4
+    // an der Bühne, nicht am Täter.
+    const r4 = { dials: { top: "tank" }, kern: (K) => ({ ...K, morphAuf: (B, d) => K.morphAuf(B, { ...d, mass: 2.5 }) }) };
+    pruefe("R4 die Lagen des Rumpfs ohne Folge unter dem Arm (Haut und Stoff weichen gleich tief)", { dials: r4.dials, kern: (K) => ({ ...r4.kern(K), armAnlage: (B, hu, gel) => (hu.forEach((h) => h.lage > 0 && (h.lage = h.m.userData.__lage = 0)), K.armAnlage(B, hu, gel)) }) }, /durch \d\d+ > 0/, "ruhe"); // prettier-ignore
+    {
+        const sb = ladeOfen(), fb = urteileRuhe(sb, messeRuhe(sb, r4.kern, undefined, r4.dials)).filter((x) => /durch \d\d+ > 0/.test(x)); // prettier-ignore
+        console.log(`  ${fb.length ? "❌" : "✅"} R4-Bühne ohne ihren Täter (Trägerhemd, Masse 2,5) bleibt unter dem Muster der Mutante${fb.length ? " — " + fb[0] : ""}`); // prettier-ignore
+        if (fb.length) rot++;
+    }
     pruefe("R3 das Rig ohne die Ruhe seiner Arme (jede Schulter auf 0: der Stand der Welt vor w28-mensch-samen)", (rig) => (rig.armRuhe = [{}, {}]), /stufe":2.*innenStand/, "stand"); // prettier-ignore
     // DER KANON (w28-leib-kanon): der Brustkorb anderthalbfach tief (der Ballon-Rumpf vor w28-leib-kanon) und das Becken tief
     // hängend (der Schritt auf der Höhe der Windel)

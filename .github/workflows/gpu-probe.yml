@@ -39,6 +39,13 @@ on:
 permissions:
     contents: read
 
+# DER DECKEL JE PROBE (kreatur-takt, 24.11.): EINE Zahl. Das Bein hält jede Probe an ihr (der dritte Läufer am Doppelten), der
+# Einlass weist ein Tor ab, das schon in der Cloud länger misst (spec/ci/ci-zeiten.json `skripte`, scripts/ci-zeiten.cjs) — sein
+# Richter ist die Cloud-Batterie. gate:kreatur-takt (Null-Welt, 742 + 937 + 596 s in drei Teilen der Cloud) brach auf der GTX 1050
+# dreimal stumm am Deckel 960 s (1 134 · 1 127 · 1 115 s) und hielt das Schloss je 19 min, auf der OMEN am Deckel 480 s.
+env:
+    PROBE_DECKEL_S: 480
+
 # DIE NEUESTE PROBE JE ZWEIG (09.11.: 17 Proben in der Schlange, fahrt-planer allein mit vier überholten Köpfen): je Zweig läuft
 # höchstens eine Probe, und eine wartende wird von der nächsten ersetzt. Die laufende Probe hält ihr Schloss bis zum Ende
 # (kein cancel-in-progress: der Ende-Hook gibt das Schloss frei, ein harter Abbruch mitten im Bild nähme dem Läufer die Ruhe).
@@ -71,6 +78,7 @@ jobs:
                       /spec/profiband/
                       /scripts/ci-kopf.cjs
                       /scripts/lib/urteil-zeile.cjs
+                      /spec/ci/ci-zeiten.json
                   sparse-checkout-cone-mode: false
 
             # DER EINE LESER: die Message geht NUR über env hinein, nie in den Text eines run-Schritts (Injektion); heraus gehen
@@ -95,12 +103,19 @@ jobs:
                       const skripte = require("./package.json").scripts;
                       const orte = require("./spec/profiband/haushalt.json").messorte.map((o) => o.id);
                       const proben = rufVon(process.env.KOPF_NACHRICHT) || [];
+                      // der Deckel je Probe und die Zeit je Tor in der Cloud: ein Tor, das länger misst, hält kein Läufer
+                      const deckel = Number(process.env.PROBE_DECKEL_S);
+                      const cloud = require("./spec/ci/ci-zeiten.json").skripte;
+                      if (!(deckel > 0) || !cloud) throw new Error(`der Deckel je Probe (PROBE_DECKEL_S ${process.env.PROBE_DECKEL_S}) oder die Zeit je Tor (spec/ci/ci-zeiten.json skripte) fehlt`);
                       let grund = n === 1 ? "" : `${n} Marken [gpu-probe: …] auf einer Zeile, genau eine`;
                       for (const p of proben) {
                           const b = /^bild:([a-z][a-z0-9-]*)(?:@(?:0(?:\.\d{1,3})?|1(?:\.0{1,3})?))?$/.exec(p);
                           const s = /^(?:zeit:)?(gate:[a-z0-9][a-z0-9:-]*)$/.exec(p);
                           const g = s
-                              ? !skripte[s[1]] && "kein npm-Skript in package.json"
+                              ? !skripte[s[1]]
+                                  ? "kein npm-Skript in package.json"
+                                  : cloud[s[1]]?.s > deckel &&
+                                    `misst in der Cloud ${cloud[s[1]].s} s (spec/ci/ci-zeiten.json), der Deckel je Probe ist ${deckel} s — kein Läufer hält es, sein Richter ist die Cloud-Batterie (check.yml, [ci voll])`
                               : b
                                 ? !orte.includes(b[1]) && `kein Messort der Orts-Tafel (${orte.join(", ")})`
                                 : "weder gate:<npm-skript>, zeit:gate:<npm-skript> noch bild:<ort>[@<uhr 0..1>]";
@@ -216,11 +231,12 @@ jobs:
                   OUT="$(cygpath -u "$RUNNER_TEMP")/probe"
                   mkdir -p "$OUT"
                   SHA8=${GITHUB_SHA:0:8}
-                  DECKEL=480
+                  DECKEL=$PROBE_DECKEL_S
+                  BLICK_TAKT=30
                   # DER DECKEL JE LÄUFER (09.11.): der dritte Läufer (GTX 1050, i7-950, HDD) braucht für dieselbe Probe das
                   # 1,5–2-Fache (bild:wiese 102–203 s gegen 40–100 s auf der OMEN; weltbild-frost:echt 362–524 s). Der Deckel fängt
                   # Hänger, kein Tempo: dort gilt das Doppelte. Ein Zeit-Urteil fährt dort nie (`zeit:` läuft nur auf `gpu-zeit`).
-                  case "$RUNNER_NAME" in *gtx1050*) DECKEL=960 ;; esac
+                  case "$RUNNER_NAME" in *gtx1050*) DECKEL=$((2 * PROBE_DECKEL_S)) ;; esac
                   echo "$RUNNER_NAME" > "$OUT/laeufer.txt"
                   # DAS SICHTBARE FENSTER (Schöpfer 08./09.11.): auf dem OMEN (interaktiver Läufer in Sitzung 1) öffnet jede Probe ihren Browser
                   # als Fenster (welt-boot `startePuppeteer`); Radeon und GTX 1050 bleiben headless, bis ihr A/B die Kosten nennt.
@@ -252,34 +268,51 @@ jobs:
                   # DIE VORFAHRT: ein CI-Job, der auf das Schloss dieses Rechners wartet (hook.log), oder ein Karten-Job aus check.yml
                   # für DIESEN Läufer in der Schlange (das Bein echt <karte>: sein Label <karte>-gpu, die Karte heißt wie der Läufer bis
                   # zum ersten Bindestrich — omen-gtx1060 → omen-gpu) — dann startet keine Probe, und eine laufende fällt samt
-                  # Prozessbaum. Ein Blick, der scheitert, gibt ebenfalls nach (laut, mit Grund): die Karten tragen den Zug.
+                  # Prozessbaum. EIN GESCHEITERTER BLICK IST KEIN VORFAHRT-FALL (24.11., spiegel-eis 2adc05ed, Lauf 45368225622: ein 502 der
+                  # API gab nach 81 s nach — ROT ohne Verhalten): 5xx und Netzfehler liest der Blick dreimal mit Abstand neu; bleibt er aus,
+                  # steht seine Zeile auf stderr (→ $BLICK, Kopf und Post nennen sie) und die Probe misst zu Ende — das Schloss reiht den
+                  # echt-Job ohnehin ein. stdout trägt NUR den GELESENEN Vorfahrt-Fall: nur er gibt nach.
                   VORFAHRT_JS='
                   const h = { authorization: `Bearer ${process.env.GH_TOKEN}`, accept: "application/vnd.github+json" };
                   const a = `${process.env.GITHUB_API_URL}/repos/${process.env.GITHUB_REPOSITORY}/actions`;
                   const karte = String(process.env.RUNNER_NAME || "").split("-")[0] + "-gpu";
+                  const abstand = 2000;
                   const lies = async (u) => {
-                      const r = await fetch(u, { headers: h });
-                      if (!r.ok) throw new Error(`${r.status} ${u}`);
-                      return r.json();
+                      let f;
+                      for (let n = 0; n <= 3; n++) {
+                          if (n) await new Promise((r) => setTimeout(r, n * abstand));
+                          try {
+                              const r = await fetch(u, { headers: h });
+                              if (r.ok) return await r.json();
+                              f = `${r.status} ${u}`;
+                              if (r.status < 500) break;
+                          } catch (e) {
+                              f = `${(e.cause && e.cause.code) || e.message} ${u}`;
+                          }
+                      }
+                      throw new Error(f);
                   };
                   (async () => {
                       for (const s of ["queued", "in_progress"])
                           for (const l of (await lies(`${a}/workflows/check.yml/runs?status=${s}&per_page=20`)).workflow_runs)
                               for (const j of (await lies(`${l.jobs_url}?per_page=100`)).jobs)
                                   if (j.status === "queued" && j.labels.includes(karte)) return console.log(`Karten-Job „${j.name}“ (Lauf ${l.id}) wartet auf diesen Läufer (${karte})`);
-                  })().catch((e) => console.log(`Vorfahrt-Blick gescheitert: ${e.message}`));'
-                  vorfahrt() { if ci_wartet; then echo "ein CI-Job wartet auf das Schloss (hook.log)"; else node -e "$VORFAHRT_JS"; fi; }
+                  })().catch((e) => console.error(`Vorfahrt-Blick gescheitert: ${e.message}`));'
+                  BLICK="$OUT/vorfahrt-blick.txt"
+                  vorfahrt() { if ci_wartet; then echo "ein CI-Job wartet auf das Schloss (hook.log)"; else node -e "$VORFAHRT_JS" 2>> "$BLICK"; fi; }
                   # EIN LAUF mit Deckel und Vorfahrt: am Deckel oder bei Vorfahrt fällt der GANZE Prozessbaum (taskkill -T, wie gpu-lauf.sh:
-                  # Git-Bash-kill träfe nur das Kind, Chrome zeichnete weiter)
+                  # Git-Bash-kill träfe nur das Kind, Chrome zeichnete weiter). Der Deckel misst die Wanduhr (ein Blick, der neu liest,
+                  # dauert — gezählte Schlaf-Schritte hätten den Deckel um seine Dauer gedehnt), der Blick fällt je $BLICK_TAKT s.
                   lauf() {
                       "$@" > "$LOG" 2>&1 &
-                      local k=$! t=0 w
+                      local k=$! t0=$SECONDS t=0 n=$BLICK_TAKT w v
                       w=$(cat /proc/$k/winpid 2> /dev/null)
                       GRUND=
                       while kill -0 $k 2> /dev/null; do
                           sleep 5
-                          t=$((t + 5))
-                          if [ $t -ge $DECKEL ]; then GRUND="DECKEL $DECKEL s"; elif [ $((t % 30)) = 0 ]; then
+                          t=$((SECONDS - t0))
+                          if [ $t -ge $DECKEL ]; then GRUND="DECKEL $DECKEL s"; elif [ $t -ge $n ]; then
+                              n=$((t + BLICK_TAKT))
                               v=$(vorfahrt)
                               [ -n "$v" ] && GRUND="NACHGEGEBEN: $v"
                           fi
@@ -337,6 +370,7 @@ jobs:
                   for p in $PLAN; do
                       LOG="$OUT/$(echo "$p" | tr ':@' '--').log"
                       t=$SECONDS
+                      : > "$BLICK"
                       GRUND=$(vorfahrt)
                       [ -n "$GRUND" ] && GRUND="NACHGEGEBEN: $GRUND" && echo "$GRUND" > "$LOG"
                       BILD=
@@ -365,6 +399,9 @@ jobs:
                           esac
                       fi
                       d=$((SECONDS - t))
+                      # der gescheiterte Blick dieser Probe, laut: seine erste Zeile und wie oft — er gab nicht nach
+                      BL=$(grep -a -m1 "Vorfahrt-Blick gescheitert" "$BLICK" | cut -c1-200)
+                      [ -n "$BL" ] && BL="$BL ($(grep -ac "Vorfahrt-Blick gescheitert" "$BLICK")-mal, ein gescheiterter Blick gibt nicht nach)"
                       ADAPTER=$(grep -ho "\[linse-gpu\].*" "$LOG" | sort -u | paste -sd ' ')
                       # das Urteil der Probe: nachgegeben, am Deckel ROT, auf swiftshader ROT (das ist nie die Karte), sonst LOG UND EXIT
                       # (Lehre 6, w28-probe-urteil — bis dahin urteilte hier der Exit allein, und 14 von 70 Paketen standen GRÜN über
@@ -386,13 +423,13 @@ jobs:
                               ;;
                       esac
                       case "$U" in ROT) URTEIL=ROT ;; NACHGEGEBEN) [ "$URTEIL" = GRÜN ] && URTEIL=NACHGEGEBEN ;; BEKANNT) BEKANNT="$BEKANNT${BEKANNT:+ · }$p: ${GRUND#ROT wie an main (bekannt): }" ;; esac
-                      KOPF="$KOPF${KOPF:+ · }$p $U $d s${GRUND:+ — ${GRUND:0:240}}"
+                      KOPF="$KOPF${KOPF:+ · }$p $U $d s${GRUND:+ — ${GRUND:0:240}}${BL:+ — $BL}"
                       Z=$(grep -E "✅|❌|⛔|ROT|GRÜN|GRUEN|ABSTURZ|Error|ABNAHME|Kamera des Spiels|NACHGEGEBEN|DECKEL" "$LOG" | tail -n 10 | cut -c1-600)
                       [ -n "$Z" ] || Z=$(tail -n 10 "$LOG" | cut -c1-600)
                       {
                           echo "### $p — $U · $d s"
                           echo
-                          echo "Adapter: ${ADAPTER:-ungenannt (die Probe nannte keinen Browser-Adapter)}${GRUND:+ · $GRUND}"
+                          echo "Adapter: ${ADAPTER:-ungenannt (die Probe nannte keinen Browser-Adapter)}${GRUND:+ · $GRUND}${BL:+ · $BL}"
                           echo
                           echo '```text'
                           echo "$Z"

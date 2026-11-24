@@ -580,6 +580,14 @@ function zugStelle(doc, skripte, r6 = R6) {
             .filter((e) => !r6.r6Immer(e) || !r6.r6Urteil(a, { immer: r6.r6Immer(e) }).laeuft)
             .map((e) => e.GITHUB_EVENT_NAME);
         if (!r6.r6Urteil(a, { diff: new Map([[linse, []]]), bekannt: () => 1 }).laeuft) nie.push(`Diff ${linse}`);
+        // … und auf einem Diff, der nur einen KERN ändert, durch den seine Linse baut (anatomie-r4-heil; ci-klasse `r6Kerne`: der
+        // Selbsttest der Mensch-Anatomie ruhte, als w28-mensch-nah foundry-core.js änderte — seine Mutante R4 war ab da stumpf,
+        // main fiel erst rot, als ein anderer Diff ihn weckte). Ein Ruf, dessen Kerne der Schlüssel nicht lesen kann, ist ROT.
+        const ab = r6.r6Abhaengig(linse || "");
+        for (const k of ab.kerne)
+            if (!r6.r6Urteil(a, { diff: new Map([[k, []]]), bekannt: () => 1 }, () => ab).laeuft) nie.push(`Diff ${k}`);
+        if (ab.blind.length)
+            v.push(`(Z) KERN: „${linse}" baut im Faden über „${ab.blind[0]}" — der Ruhe-Schlüssel liest seine Kerne nicht (ci-klasse r6Kerne)`); // prettier-ignore
         if (nie.length) v.push(`(Z) NIE: „${a}" liefe nie mehr (${nie.join(" · ")})`);
     }
     return v;
@@ -1587,7 +1595,7 @@ function selbsttestEinlass() {
 
 function selbsttestZug() {
     const [doc, sk] = [yaml.load(ausDatei(path.join(root, DATEI))), jsonLesen("package.json").scripts];
-    const leer = () => ({ code: new Map(), text: "", namen: new Set(), zeilen: [] });
+    const leer = () => ({ code: new Map(), text: "", kerne: new Set(), blind: [], namen: new Set(), zeilen: [] });
     const z = [
         ["die echte check.yml", R6, /^$/],
         [
@@ -1599,6 +1607,19 @@ function selbsttestZug() {
             "die Linse fehlt in ihrer Abhängigkeit",
             { ...R6, r6Urteil: (a, kx) => R6.r6Urteil(a, kx, leer) },
             /NIE: „node scripts\/diag-haus-welt.*Diff scripts\/diag-haus-welt/,
+        ],
+        // (anatomie-r4-heil) der Schlüssel vor dem Schnitt: der Kern, durch den die Linse baut, weckt ihren Selbsttest nicht
+        [
+            "der Kern einer Linse weckt ihren Selbsttest nicht",
+            { ...R6, r6Urteil: (a, kx) => R6.r6Urteil(a, kx, (l) => ({ ...R6.r6Abhaengig(l), kerne: new Set() })) },
+            /NIE: „node scripts\/diag-(mensch-anatomie|tier-anatomie|ofen-contract)[^„]*Diff (foundry|phyto|tetrapoda|koerper)-core\.js/,
+        ],
+        // … und der Faden über eine Liste, die der Schlüssel nicht lesen kann (kein Literal, keine Liste der Bibliothek, kein Kern)
+        [
+            "eine Linse baut über eine Liste, die der Schlüssel nicht liest",
+            // (der Ruf ist zusammengesetzt: am Stück läse der Schlüssel DIESER Linse ihn als eigenen)
+            { ...R6, r6Abhaengig: (l) => ({ ...R6.r6Abhaengig(l), ...(/diag-mensch-anatomie/.test(l) ? R6.r6Kerne("const sb = faden" + "Scope(quellen);") : {}) }) }, // prettier-ignore
+            /\(Z\) KERN: „scripts\/diag-mensch-anatomie\.cjs" baut im Faden über „quellen"/,
         ],
     ].flatMap(([n, r6, soll]) => {
         const u = zugStelle(doc, sk, r6).join(" · ");
