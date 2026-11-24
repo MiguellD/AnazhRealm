@@ -1,7 +1,7 @@
 {
  "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
  "geraet": "gtx",
- "zeit": "2026-11-24T18:36:09.697Z",
+ "zeit": "2026-11-24T18:37:40.024Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.grenze#1": {
@@ -696,6 +696,76 @@
    },
    "zeit": "2026-11-24T18:36:09.697Z",
    "abdruck": "c4adbcfa93ea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Umfang 0 < 2 Bewaffnete im Zweikampf — Täter: stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature) · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) — (Soll ≥ 1) · Treffer durch die Deckung — (Soll ≤ 0) · Umfang 0 (Soll ≥ 2 Bewaffnete im Zweikampf) · 7 Bewaffnete (6 von 1356 Bewohnern mit Waffe {\"langschwert\":6} und der Spieler, die leere Hand), 0 im Zweikampf · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.23,
+   "grund": "ROT: S1 ROT an Umfang 0 < 2 Bewaffnete im Zweikampf — Täter: stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature) · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) — (Soll ≥ 1) · Treffer durch die Deckung — (Soll ≤ 0) · Umfang 0 (Soll ≥ 2 Bewaffnete im Zweikampf) · 7 Bewaffnete (6 von 1356 Bewohnern mit Waffe {\"langschwert\":6} und der Spieler, die leere Hand), 0 im Zweikampf · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k5d22618bde07",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k9e943d0bf40a",
+   "s": 13.2,
+   "fremd": {
+    "s": 15.2,
+    "takte": 7,
+    "fremdS": 11.16,
+    "kerne": 0.733,
+    "fensterKerne": 0.794,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.16
+     ],
+     [
+      "Explorer.EXE",
+      2.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.14
+     ]
+    ],
+    "dienerS": 4.44,
+    "diener": [
+     [
+      "dwm.exe",
+      2.05
+     ],
+     [
+      "System",
+      1.48
+     ]
+    ],
+    "geraetS": 6.91,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.55
+     ],
+     [
+      "svchost.exe",
+      1.67
+     ],
+     [
+      "SearchIndexer.exe",
+      0.38
+     ]
+    ],
+    "eigenS": 28.38,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T18:37:40.024Z",
+   "abdruck": "b2ca939fc27a",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
