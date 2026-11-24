@@ -785,7 +785,7 @@ function boeSelbsttest() {
     const { ctx } = require("./lib/stamm.cjs").ladeKlasse(R);
     const r = require("vm").runInContext("new AnazhRealm()", ctx);
     r.state.worldMeta = { seed: "anazh-realm-seed", voxelTerrain: true };
-    r.state.playerMesh = { position: { x: 40, y: 0, z: -30 } };
+    r.state.playerMesh = { position: { x: 40, y: 0, z: -30 } }; // BÜHNE: der Stand-Ort der Station kraft#2 am Wirt ohne Welt (Saat anazh-realm-seed), kein Welt-Ort
     r.state.weatherTransition = null;
     const Bm = boeMessung(r);
     const v = boeRot(Bm, boeQuelle(R)).map((x) => `böe am Wirt: ${x}`);
