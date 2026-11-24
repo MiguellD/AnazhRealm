@@ -542,6 +542,51 @@
       "vertices": 24,
       "sha256": "dcf009397695a3df0cbfb4dbc7046ebf45e66202005df90663e73e46836d87c7"
     },
+    "grenzstein-s1-L0": {
+      "objects": 1,
+      "vertices": 312,
+      "sha256": "d23a5c6292bb8974e24599d17dc0f0c8bfb19aa29fb029657afef8cf886070b8"
+    },
+    "grenzstein-s1-L1": {
+      "objects": 1,
+      "vertices": 144,
+      "sha256": "7cf56107adaa39acee1ff84aa3683ce772280ec2c678ab9908b1ea7fa4313278"
+    },
+    "grenzstein-s1-L3": {
+      "objects": 1,
+      "vertices": 48,
+      "sha256": "408c8e3f0dfe276e855fe31f4b3685417aa13ce8834849c864e7b456dbea485e"
+    },
+    "grenzstein-s2-L0": {
+      "objects": 1,
+      "vertices": 216,
+      "sha256": "c62740caf8154ca2264787470e34a40d7ff5d7b07208ef0418a07989583b967f"
+    },
+    "grenzstein-s2-L1": {
+      "objects": 1,
+      "vertices": 120,
+      "sha256": "8fb935a7eb1ab8fb23b1121457ecdb969d3b43825df79857b68515cdc250c524"
+    },
+    "grenzstein-s2-L3": {
+      "objects": 1,
+      "vertices": 24,
+      "sha256": "976ac10193e34c192f8bddf2dbf39acaa05731f498d46322276824d55ff9db8c"
+    },
+    "grenzstein-s3-L0": {
+      "objects": 1,
+      "vertices": 312,
+      "sha256": "fc1d4453073f44d3527f4f958fecbae3ca7ba35ff7e05fd7596a130057f151d6"
+    },
+    "grenzstein-s3-L1": {
+      "objects": 1,
+      "vertices": 144,
+      "sha256": "d4cc37a7e4809f958d4074a06b6d63c16796a8a0356877281cee266ff48d1e19"
+    },
+    "grenzstein-s3-L3": {
+      "objects": 1,
+      "vertices": 48,
+      "sha256": "dd63a5934412fd2152b422cef8cc5a1bdc0ac26d8684402d9bff1dfea7bf297b"
+    },
     "feuerstelle-s1-L0-ov_fuelle": {
       "objects": 4,
       "vertices": 906,

@@ -3533,6 +3533,7 @@ class AnazhRealm_siedlung_ort {
                     sp.map((s) => [s.wa, s.wb])
                 );
                 if (sp.length) this._brueckenLegen(sp, "netz:" + paar);
+                this._grenzSteinSetzen(kante.pts, antwort.nass, Sa, Sb, paar);
                 return kante;
             },
             (e) => {
@@ -3543,6 +3544,61 @@ class AnazhRealm_siedlung_ort {
         );
         K.set(paar, kante);
         return kante.fertig;
+    }
+
+    // DER GRENZSTEIN AM FELDWEG (ort-ausstattung, Leiter mensch.macht.grenze): wo der Weg zwischen den Orten Sa und Sb das Reich
+    // des einen verlässt (fachwerk `grenzeAmWeg`: die Nähe nach dem Reich, `siedlungsReich` über die Häuser des Plans), steht neben
+    // ihm der Stein (`grenzstein_dorf`, seine Gestalt im Wort `__gestalt`, die Stirnen längs des Wegs) — aus dem Gesetz
+    // (`ausGesetz`: jeder Boot setzt ihn neu), je Paar einmal je Sitzung, auf dem Grund (der Fuß `grundM` in ihm), der Same aus
+    // dem Paar. Der Weg ist der Feldweg des Paars `pts` (Welt; `nass` je Punkt das Wasser aus dem Faden), dann die Nähte beider
+    // Netze (`_wegeNetzGrund`), dann ihre Straßen und Feldwege — die Straße eines Orts reicht über sein Reich hinaus: am Paar
+    // −1,−5|0,−5 lief die des einen 240 m bis vor die Mitte des anderen, der Feldweg des Paars lag ganz in dessen Reich, die
+    // Grenze auf der Straße. Bis hier stand zwischen zwei Orten kein Zeichen: die Grenze war nirgends zu sehen. Trägt der Weg
+    // keinen Stein, sagt es das Log beim Namen des Paars. Rückgabe: das Werk.
+    _grenzSteinSetzen(pts, nass, Sa, Sb, paar) {
+        const typ = "grenzstein_dorf";
+        if (!pts || !this.state.blueprints || !this.state.blueprints[typ]) return null;
+        const K = this._grenzSchluessel || (this._grenzSchluessel = new Set());
+        if (K.has(paar)) return null;
+        K.add(paar);
+        const [SG, reich] = [AnazhRealm._siedlungGesetz(), AnazhRealm.Gesetz("fachwerk:siedlungsReich")];
+        const ort = (S) => ({ x: S.ox, z: S.oz, r: reich(SG, S.plan.slots.length) });
+        const seed = Math.floor(this._rollGenome("grenze:" + paar, "grenzstein").axis("stein") * 4294967296) >>> 0;
+        const halbM = AnazhRealm.WEGENETZ.breiteM / 2;
+        const wege = [{ pts, halbM, nass }];
+        for (const S of [Sa, Sb]) {
+            const G = S.netzGrund || (S.netzGrund = this._wegeNetzGrund(S.plan, S.ox, S.oz));
+            for (const [i, j] of G.naehte) wege.push({ pts: [G.knoten[i], G.knoten[j]], halbM });
+            for (const w of (S.plan.roads || []).concat(S.plan.feldwege || []))
+                wege.push({
+                    pts: (w.pts || []).map((q) => ({ x: S.ox + q.x, z: S.oz + q.z })),
+                    halbM: (w.w || 2 * halbM) / 2,
+                });
+        }
+        const grenze = AnazhRealm.Gesetz("fachwerk:grenzeAmWeg");
+        let g = null;
+        for (let n = 0; n < wege.length && !g; n++)
+            g = grenze(wege[n].pts, ort(Sa), ort(Sb), wege[n].halbM, seed, wege[n].nass || null);
+        const y = g ? this.getTerrainHeightAt(g.x, g.z) : NaN;
+        if (!g || !Number.isFinite(y) || !this._landAt(g.x, g.z, 0.2)) {
+            this.log(
+                `GRENZE: am Weg ${paar} steht kein Stein — ${g ? "seine Stelle trägt kein Land" : "der Weg kreuzt kein Reich"}`,
+                "INFO"
+            );
+            return null;
+        }
+        return this.spawnArchitecture(
+            typ,
+            { x: g.x, y: y + 0.5, z: g.z },
+            {
+                seed,
+                rotationY: g.th,
+                studioOv: { __gestalt: g.gestalt },
+                silent: true,
+                precise: true,
+                ausGesetz: true,
+            }
+        );
     }
 
     // DIE BRÜCKE LIEGT (fahrzeug.K2): je Spanne {a, b} ({x, z, y} der Widerlager in der Welt) die Jochfelder des Gesetzes (fachwerk

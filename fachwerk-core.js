@@ -5603,6 +5603,41 @@
         }
         return P;
     }
+    // DIE GRENZE AM WEG (ort-ausstattung, Leiter mensch.macht.grenze): der Feldweg `pts` ([{x, z}], Welt) zwischen den Orten A und
+    // B ({x, z, r}: die Mitte und ihr Reich, `siedlungsReich`) kreuzt die Grenze, wo die Nähe nach dem Reich wechselt (d_A/r_A =
+    // d_B/r_B: die Stadt reicht weiter als das Dorf, die Grenze liegt näher am kleinen Ort), auf dem Lauf interpoliert; liegt die
+    // Stelle im Wasser (`nass` je Punkt), steht der Stein am ersten trockenen Punkt dahinter. Er steht `GRENZSTEIN_GESETZ.wegM`
+    // neben dem Rand des Wegs (`halbM` seine halbe Breite), die Seite und die Gestalt (der Kopf) nach `seed`, die Stirnen (±z)
+    // längs des Wegs, je eine zu einem Ort, die Weisung (x) in der Flucht der Grenze. Rückgabe {x, z, th, gestalt} oder null
+    // (der Weg verlässt das Reich nicht). Leser: der Feldweg zwischen zwei Orten (der Wirt, `_grenzSteinSetzen`).
+    function grenzeAmWeg(pts, A, B, halbM, seed, nass) {
+        if (!pts || pts.length < 2 || !(A.r > 0) || !(B.r > 0)) return null;
+        var f = function (p) {
+            return Math.hypot(p.x - A.x, p.z - A.z) / A.r - Math.hypot(p.x - B.x, p.z - B.z) / B.r;
+        };
+        var n = pts.length,
+            s = seed >>> 0;
+        for (var i = 1; i < n; i++) {
+            var fa = f(pts[i - 1]),
+                fb = f(pts[i]);
+            if (fa < 0 === fb < 0) continue;
+            var t = fa / (fa - fb),
+                k = i;
+            if (nass) {
+                while (k < n && (nass[k - 1] || nass[k])) k++;
+                if (k === n) return null; // jenseits der Grenze nur Wasser: der Weg trägt keinen Stein
+                if (k !== i) t = 0;
+            }
+            var p = pts[k - 1],
+                q = pts[k],
+                l = Math.hypot(q.x - p.x, q.z - p.z) || 1,
+                tx = (q.x - p.x) / l,
+                tz = (q.z - p.z) / l,
+                ab = (s & 1 ? 1 : -1) * (halbM + GRENZSTEIN_GESETZ.wegM);
+            return { x: p.x + (q.x - p.x) * t + tz * ab, z: p.z + (q.z - p.z) * t - tx * ab, th: Math.atan2(tx, tz), gestalt: 1 + ((s >>> 1) % AUSSTATTUNG.grenzstein.gestalten) };
+        }
+        return null;
+    }
     // DIE FELDER EINER SPANNE a → b ({x, z, y}): so viele Jochfelder, wie die Spanne verlangt (feldM je Feld, die Reihe mittig
     // über ihr — sie reicht an beiden Enden gleich weit auf das Ufer), je Feld seine Mitte, die Oberkante seiner Bahn (linear
     // zwischen den Widerlagern, um einbindM unter ihnen; jenseits die Höhe des Widerlagers) und seine Gier (das Feld liegt längs
@@ -7508,6 +7543,10 @@
         // Wand, die Inschrift im Stein; je Gestalt EIN Wort in EINER Form (`schildArt`), gesetzt von `ortAusstattung`. Es hängt
         // an der Wand wie die Wandlaterne (+x zur Wand, die Wand in armM); der Tritt ist die Platte an der Wand.
         schild: { lab: "Schild · Ausleger, Tafel, Inschrift", gestalten: 24, siteTag: "wand", salz: 0x7b3e, tritt: { typ: "kreis", r: 0.12 } },
+        // DER GRENZSTEIN (ort-ausstattung, rein additiv): das Zeichen am Feldweg, wo das Reich eines Orts an das des nächsten stößt
+        // (`grenzeAmWeg`) — je Gestalt einer von drei Köpfen (gefast · Giebel · flach), auf jeder Stirn (±z, je eine zu einem Ort)
+        // das Kreuz, auf dem Kopf die Weisung in der Flucht der Grenze (x); 0,2 m im Grund.
+        grenzstein: { lab: "Grenzstein · Kopf, Kreuz, Weisung", gestalten: 3, siteTag: "weg", salz: 0x8c4f, tritt: { typ: "kasten", ex: 0.2, ez: 0.13 } },
     };
     // B4 — die Regler der Ausstattung (die Werkstatt baut ihre Slider daraus, der ov-Kanal liest dieselben ids).
     var AUS_PARAMS = [
@@ -9250,11 +9289,91 @@
         dazu(huelleTeil("box", m.x0, m.x1, m.y0, m.y0 + m.bh, -m.d / 2, m.d / 2, F(brett)));
         dazu(huelleTeil("box", m.x0 - 0.05, A, m.yA - 0.0175, m.yA + 0.0175, -0.0175, 0.0175, F("metall")));
     }
+    // ═══ DER ORT WEIST SICH AUS (ort-ausstattung) — DER GRENZSTEIN: wo das Reich eines Orts an das des nächsten stößt ═══
+    // Der Stein steht am Feldweg zweier Orte (`grenzeAmWeg`), `grundM` im Grund: der Schaft b × h × d, je Gestalt sein Kopf (0 ein
+    // schmalerer Block, 1 der Giebel mit dem Grat in der Flucht der Grenze, 2 flach), auf jeder Stirn das Kreuz, auf dem Kopf die
+    // Weisung (die Rille, dunkel wie die verwitterte Kerbe). Nah gefast mit Kreuz und Weisung, die L1 scharf samt Kreuz, fern der
+    // Wurf aus Schaft und Kopf.
+    // Band: OWL historische Grenzsteine (GR026) — 70 cm über dem Boden, 40 cm breit, 25 cm tief
+    var GRENZSTEIN_GESETZ = { hoeheM: 0.7, breiteM: 0.4, tiefeM: 0.25, grundM: 0.2, kreuzM: 0.16, balkenM: 0.035, rilleM: 0.02, wegM: 0.45 };
+    function grenzsteinMass(G, gestalt) {
+        var S = GRENZSTEIN_GESETZ,
+            d = S.tiefeM * G,
+            h = S.hoeheM * G,
+            kopf = (gestalt >>> 0) % 3,
+            kh = kopf === 1 ? d / 2 : kopf === 0 ? 0.08 * G : 0;
+        return { b: S.breiteM * G, d: d, h: h, kopf: kopf, hS: h - kh, kh: kh, g: S.grundM, kr: S.kreuzM * G, ba: S.balkenM * G, ri: S.rilleM, bk: kopf === 0 ? 0.82 : 1 };
+    }
+    // die Blöcke des Steins (EINE Form für Bau und Hülle): der Schaft bis zur Schulter, darauf der Kopf; `fa` die Fase
+    function grenzsteinBloecke(m, fa) {
+        var B = [ausSetze(ausKiste(m.b, m.hS + m.g, m.d, fa), 0, (m.hS - m.g) / 2, 0)];
+        if (m.kopf === 0) B.push(ausSetze(ausKiste(m.b * m.bk, m.kh, m.d * m.bk, fa), 0, m.hS + m.kh / 2, 0));
+        else if (m.kopf === 1) B.push(ausSetze(ausKiste(m.b, m.d * Math.SQRT1_2, m.d * Math.SQRT1_2, fa), 0, m.hS, 0, Math.PI / 4, 0, 0));
+        return B;
+    }
+    function grenzsteinTeile(m, fein, kol, seed) {
+        var T = [],
+            ton = ausTon(ausZufall(seed, 0xb3), 0.07, 0.02),
+            kerbe = ausAuf([0.1, 0.092, 0.082], "stein", kol),
+            yK = m.hS - m.kr * 0.75;
+        grenzsteinBloecke(m, fein ? 0.012 : 0).forEach(function (geo) {
+            T.push({ geo: geo, rolle: "stein", ton: ton });
+        });
+        [1, -1].forEach(function (sz) {
+            var z = sz * (m.d / 2 + 0.003);
+            T.push({ geo: ausSetze(ausKiste(m.ba, m.kr, 0.006, 0), 0, yK, z), rolle: "stein", ton: kerbe });
+            T.push({ geo: ausSetze(ausKiste(m.kr * 0.7, m.ba, 0.006, 0), 0, yK + m.kr * 0.12, z), rolle: "stein", ton: kerbe });
+        });
+        if (fein) T.push({ geo: ausSetze(ausKiste(m.b * m.bk * 0.9, 0.004, m.ri, 0), 0, m.h + 0.002, 0), rolle: "stein", ton: kerbe });
+        return T;
+    }
+    function ausGrenzstein(g, p, seed, stufe, kol) {
+        var m = grenzsteinMass(p.groesse, ((seed >>> 0) ^ AUSSTATTUNG.grenzstein.salz) >>> 0),
+            W = p.verwitterung;
+        grenzsteinTeile(m, stufe === 0, kol, seed).forEach(function (t) {
+            ausFaerbe(t.geo, t.rolle, W, function () {
+                return { ton: t.ton };
+            });
+            ausTeil(g, t.geo, t.rolle);
+        });
+    }
+    // Der Wurf des Grenzsteins (Stufe 3): der Schaft ab dem Grund und der Kopf als Kästen (je 12 Dreiecke) — der Giebel ein
+    // Kasten über den vier Ecken seines Rauten-Schnitts
+    function grenzsteinWurf(wahl, p, flaeche) {
+        var m = grenzsteinMass(p.groesse, wahl.gestalt);
+        var kasten = function (e) {
+            return [[e(0, 0, 0), e(1, 0, 0), e(1, 1, 0), e(0, 1, 0)], [e(0, 0, 1), e(0, 1, 1), e(1, 1, 1), e(1, 0, 1)], [e(0, 0, 0), e(0, 1, 0), e(0, 1, 1), e(0, 0, 1)], [e(1, 0, 0), e(1, 0, 1), e(1, 1, 1), e(1, 1, 0)], [e(0, 0, 0), e(0, 0, 1), e(1, 0, 1), e(1, 0, 0)], [e(0, 1, 0), e(1, 1, 0), e(1, 1, 1), e(0, 1, 1)]];
+        };
+        var achsen = function (x0, x1, ya, yb, z0, z1) {
+            return kasten(function (i, j, k) {
+                return [i ? x1 : x0, j ? yb : ya, k ? z1 : z0];
+            });
+        };
+        var P = achsen(-m.b / 2, m.b / 2, 0, m.hS, -m.d / 2, m.d / 2);
+        if (m.kopf === 0) P = P.concat(achsen((-m.b * m.bk) / 2, (m.b * m.bk) / 2, m.hS, m.h, (-m.d * m.bk) / 2, (m.d * m.bk) / 2));
+        else if (m.kopf === 1) {
+            var R = [[[0, -1], [-1, 0]], [[1, 0], [0, 1]]];
+            P = P.concat(
+                kasten(function (i, j, k) {
+                    var q = R[j][k];
+                    return [i ? m.b / 2 : -m.b / 2, m.hS + (q[0] * m.d) / 2, (q[1] * m.d) / 2];
+                })
+            );
+        }
+        flaeche(P);
+    }
+    function grenzsteinHuelle(wahl, p, dazu, F) {
+        var m = grenzsteinMass(p.groesse, wahl.gestalt);
+        dazu(huelleTeil("box", -m.b / 2, m.b / 2, 0, m.h, -m.d / 2, m.d / 2, F("stein")));
+    }
     // DIE STÜCKE DES ORTS (ort-ausstattung) in den Tafeln der Ausstattung: ihr Wurf, ihre Hülle, ihre Farben — die Gestalt trägt
     // ihr Wort (ihr Motiv, ihre Epoche) im Samen (`ausWahl`: gestalt = sd ^ salz), Bau, Wurf und Hülle lesen DIESELBE Maß-Funktion.
-    var ORT_STUECK_WURF = { schild: schildWurf },
-        ORT_STUECK_HUELLE = { schild: schildHuelle },
+    var ORT_STUECK_WURF = { schild: schildWurf, grenzstein: grenzsteinWurf },
+        ORT_STUECK_HUELLE = { schild: schildHuelle, grenzstein: grenzsteinHuelle },
         ORT_STUECK_FARBE = {
+            grenzstein: function (pick) {
+                return { stein: pick([0xa8a294, 0x9c9282, 0x8a8a86]) }; // Kalkstein, Sandstein, Granit (wie der Grabstein)
+            },
             schild: function (pick) {
                 return { holz: pick([0x6e5a44, 0x765f48]), metall: pick([0x5e625e, 0x62605c]), stein: pick([0xb4ab9a, 0xa89f8e]) };
             },
@@ -9389,6 +9508,7 @@
     }
     var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, grabstein: ausGrabstein, sitzbank: ausSitzbank, podestleiter: ausPodestleiter, jochfeld: ausJochfeld, trockengraben: ausTrockengraben };
     AUS_BAU.schild = ausSchild; // ort-ausstattung (rein additiv)
+    AUS_BAU.grenzstein = ausGrenzstein;
     // DER LEIB EINER LEUCHTE (schatten.K5, rein additiv): der Halbmesser ihres Glas-Kopfs um den Licht-Mittelpunkt `yL` (die Mitte
     // des Kopfs) — der Boden des Kopfs liegt `yL − yK0` unter dem Licht (die Platte der Stufe 3 genau dort, Halbweite kb/2 + 0,02),
     // die Eck-Stäbe in kb/2, die Haube über `yK1`. Was im Leib liegt, wirft das eigene Licht nicht: die Welt stellt die nahe Ebene
@@ -9552,6 +9672,9 @@
     // das Schild (ort-ausstattung): die Maße seines Worts trägt die Gestalt (`schildMass` über `ausWahl`); hier die Wand
     AUS_MASS.schild = function () {
         return { A: LICHT_GESETZ.wandlaterne.armM };
+    };
+    AUS_MASS.grenzstein = function (G) {
+        return grenzsteinMass(G, 0);
     };
     // ── DIE GERÄTE (w4-koerper-park): die Maße (Norm, Meter, Ursprung am Boden in der Mitte, +z die Front), der Bau je Stufe, die
     //    Substanz, der Wurf, die Hülle und das Angebot — alle aus DERSELBEN Maß-Funktion (`AUS_MASS[id]`). ──
@@ -14291,6 +14414,8 @@
         brueckenAmWeg: brueckenAmWeg, // fahrzeug.K2 — die Spannen der Brücken eines Wegs (der Feldweg zwischen zwei Orten)
         brueckenFelder: brueckenFelder, // fahrzeug.K2 — die Jochfelder einer Spanne (der Wirt legt sie als Werke)
         wegUeberBruecken: wegUeberBruecken, // fahrzeug.K2 — der Weg über dem Wasser auf der Achse seiner Brücke (Netz und Feldweg)
+        grenzeAmWeg: grenzeAmWeg, // ort-ausstattung (Leiter mensch.macht.grenze) — wo der Feldweg zweier Orte ihre Grenze kreuzt: der Stein daneben
+        GRENZSTEIN_GESETZ: GRENZSTEIN_GESETZ, // ort-ausstattung — der Grenzstein (Höhe, Breite, Tiefe, Grund, Kreuz, Weisung, Abstand zum Weg)
         siedlungsGroesse: siedlungsGroesse,
         siedlungsReich: siedlungsReich,
         siedlungsEpoche: siedlungsEpoche,
