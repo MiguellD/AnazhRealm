@@ -1,7 +1,7 @@
 {
  "sha": "eba9bf8fbb8ca7c694b78237cb5b1ab04b8df698",
  "geraet": "gtx",
- "zeit": "2026-11-24T17:20:45.450Z",
+ "zeit": "2026-11-24T17:22:12.249Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.grenze#1": {
@@ -630,6 +630,75 @@
    },
    "zeit": "2026-11-24T17:20:45.450Z",
    "abdruck": "b2ca939fc27a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.geist.absicht#2": {
+   "gruen": true,
+   "zahl": "S2 GRÜN · Anteil sichtbarer Fortschritt nach 1 Spieljahr 0.72 (Soll ≥ 0.5) · Umfang 1356 (Soll ≥ 1000 Bewohner) · 100 Befragte über die 1356 Bewohner der Stadt verteilt; ein Spieljahr später (der Kalender der Welt + jahrK 2400) steigt die Prozent-Zahl ihres Ziels im Lebenslauf bei 72, 28 gleich; Ziele {\"meister\":45,\"lehre\":35,\"geselle\":20} · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.22,
+   "gpu": "nvidia/pascal",
+   "konsum": "k20aae71bfd79",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6a02e1b6563c",
+   "s": 13.1,
+   "fremd": {
+    "s": 15.1,
+    "takte": 7,
+    "fremdS": 6.03,
+    "kerne": 0.399,
+    "fensterKerne": 0.462,
+    "namen": [
+     [
+      "Explorer.EXE",
+      1.61
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.97
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.58
+     ]
+    ],
+    "dienerS": 2.75,
+    "diener": [
+     [
+      "System",
+      1.17
+     ],
+     [
+      "dwm.exe",
+      0.8
+     ]
+    ],
+    "geraetS": 5.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.25
+     ],
+     [
+      "svchost.exe",
+      1.33
+     ],
+     [
+      "SearchIndexer.exe",
+      0.16
+     ]
+    ],
+    "eigenS": 27.45,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T17:22:12.249Z",
+   "abdruck": "4d36fe5002d4",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
