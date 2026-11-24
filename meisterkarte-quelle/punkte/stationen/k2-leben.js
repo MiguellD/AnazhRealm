@@ -4180,6 +4180,10 @@ L.perspektive("wasser", (() => {
     };
     const gut = (werte, n, extra) => ({ werte, zeuge: Object.assign({ antworten: n, streuung: 1.7 }, extra || {}) });
     const flach = (werte) => ({ werte, zeuge: { antworten: 0, streuung: 0 } });
+    // DAS BAND DER SICHT JE GEWÄSSERTYP (bild#1, m): EINE Quelle — das Soll der Sprosse und der Fächer der Mess (über `u.band`) lesen es
+    // (Davies-Colley & Smith 2001, JAWRA 37:1085: schwarze Scheibe klarer Bäche 5–20 m, Tieflandfluss 1–1,5 m; Carlson 1977, Limnol.
+    // Oceanogr. 22:361: oligo- bis mesotrophe Seen, Sichttiefe 2–16 m bei Trophie-Index 20–50)
+    const BI_BAND = { bach: [5, 20], see: [2, 16], fluss: [1, 1.5] };
     return {
         leitern: {
             // ═══ LEBENSRÄUME: welche der 15 Wasser-Lebensräume die Welt trägt, mit welcher Fauna ═══
@@ -4572,8 +4576,9 @@ L.perspektive("wasser", (() => {
             },
             // ═══ DAS BILD UNTER WASSER: Sicht, Leib, Licht, Farbe, Tiefe ═══
             [BI]: {
-                sek: 10,
+                sek: 34,
                 mutiert: true,
+                faecher: true,
                 pfad: PFAD,
                 ungefahren: "die Bilder (S2 Fischleib, S6 Riff, S7 Szenen) und die Pixel der Lichtfinger — swiftshader schießt nicht",
                 mess: async function (H, U, M) {
@@ -4623,7 +4628,7 @@ L.perspektive("wasser", (() => {
                             r._applyDayNightToScene();
                             return { unter: !!s.kameraUnterWasser, art: r._wasserArtAt(x, z), sichtM: R3(r._luftSichtM(y)), farbe: luft.U.farbe.value.toArray().map(R3), beta: R3(luft.U.beta.value) };
                         };
-                        const aus = { tiefeM: R3(tief.d), fluss, laeufe: { regionen: regionen.length, breitM: R3(breitM), flussAbM: R3(hi) } };
+                        const aus = { tiefeM: R3(tief.d), tiefOrt: Number.isFinite(tief.d) ? [tief.x, tief.z] : null, fluss, laeufe: { regionen: regionen.length, breitM: R3(breitM), flussAbM: R3(hi) } };
                         try {
                             if (O.bach) {
                                 const bb = r._voxelSurfaceY(O.bach.x, O.bach.z);
@@ -4678,6 +4683,107 @@ L.perspektive("wasser", (() => {
                         return aus;
                     };
                     const B = await seite(bild, { tiefen: [1, 5, 10, 15, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000] });
+                    // DER FÄCHER DER SICHT (S1, M4): die Kamera an jeder Wasser-Adresse in der Mitte der Säule (Grund `_voxelSurfaceY`, Spiegel
+                    // `_koerperWasser`), das Medium setzt DERSELBE Schreiber wie im Spiel (`_dayNightApplyLuft`: unter Wasser β = c(550) des
+                    // Körpers der Art `_wasserArtAt`), die Sicht liest der Leser der Linsen (`_luftSichtM`). Adressen: 40 Punkte der Läufe der
+                    // geladenen Hydro-Kacheln, 9 im Fenster des Sees, 9 im Meer und der breiteste Lauf in 12 fernen Kacheln (Ring 5 und 10 km um
+                    // die Mess-Wiese) — dort, wo die Welt einen Fluss tragen müsste. Je Adresse das Band ihres Typs (u.band, EINE Quelle mit dem Soll).
+                    // Das Meer ist kein Typ des Bands (der Richter nennt Bach, See, Fluss) — seine Sicht steht als Zeuge daneben
+                    const BI1_AN = async (r, T, a, mit) => {
+                        const s = r.state, cam = s.camera, O = mit.O;
+                        const R3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                        const laeufe = (filt) => {
+                            const regionen = [s.hydrosphere].concat(s.hydroTiles ? [...s.hydroTiles.values()] : []).filter((h) => h && h.ready);
+                            const pts = [];
+                            for (const h of regionen) for (const rv of h.rivers || []) for (const q of rv.points || []) if (!q.inLake && filt(q)) pts.push(q);
+                            return pts;
+                        };
+                        let x, z, breite = null;
+                        if (a.saat === "lauf") {
+                            const pts = laeufe(() => true);
+                            if (!pts.length) return { fehlt: "kein Lauf in den geladenen Hydro-Kacheln (state.hydroTiles)" };
+                            const q = pts[Math.floor(((a.ort + 0.5) * pts.length) / mit.laufN)];
+                            [x, z, breite] = [q.x, q.z, q.width];
+                        } else if (a.saat === "weit") {
+                            const [cx, cz] = mit.weit[a.ort];
+                            await __weltDa(() => !r._ensureHydroTilesAround(cx, cz, 0));
+                            const h2 = r.constructor.HYDROSPHERE.regionSize / 2;
+                            const pts = laeufe((q) => Math.abs(q.x - cx) <= h2 && Math.abs(q.z - cz) <= h2);
+                            if (!pts.length) return { fehlt: "kein Lauf in der Hydro-Kachel um " + Math.round(cx) + ", " + Math.round(cz) };
+                            const q = pts.reduce((m, p) => (p.width > m.width ? p : m), pts[0]);
+                            [x, z, breite] = [q.x, q.z, q.width];
+                        } else {
+                            // der See: seine Mitte und je vier Punkte 15 m und 30 m davon (sein Ufer liegt 50 m östlich); das Meer: ein Gitter
+                            // ±100 m um die tiefste Stelle des Meers der Mess-Wiese (die Suche der Mess, `tiefOrt`)
+                            const m = a.saat === "see" ? O.see && O.see.mitte : mit.meer;
+                            if (!m) return { fehlt: "kein " + a.saat + " am Gesetz nächst der Mess-Wiese (scripts/lib/wasser-linse.cjs __wasserOrte, Suche tiefOrt)" };
+                            if (a.saat === "see") {
+                                const rr = a.ort === 0 ? 0 : a.ort <= 4 ? 15 : 30, th = ((a.ort - 1) * Math.PI) / 2 + (a.ort > 4 ? Math.PI / 4 : 0);
+                                [x, z] = [m[0] + rr * Math.cos(th), m[1] + rr * Math.sin(th)];
+                            } else [x, z] = [m[0] + ((a.ort % 3) - 1) * 100, m[1] + (Math.floor(a.ort / 3) - 1) * 100];
+                        }
+                        await __weltDa(() => !r._ensureHydroTilesAround(x, z, 0));
+                        const grund = r._voxelSurfaceY(x, z);
+                        const spiegel = r._koerperWasser(x, z, grund);
+                        const o = { x: R3(x), z: R3(z), art: r._wasserArtAt(x, z), breite: R3(breite), tiefe: R3(spiegel - grund) };
+                        if (!(spiegel > grund + 0.02)) return Object.assign(o, { trocken: true });
+                        const y = (grund + spiegel) / 2;
+                        const alt = cam.position.clone();
+                        try {
+                            cam.position.set(x, y, z);
+                            cam.updateMatrixWorld(true);
+                            r._dayNightApplyLuft();
+                            Object.assign(o, { unter: !!s.kameraUnterWasser, sichtM: R3(r._luftSichtM(y)) });
+                        } finally {
+                            cam.position.copy(alt);
+                            cam.updateMatrixWorld(true);
+                            r._dayNightApplyLuft();
+                        }
+                        // der TYP des Orts (nie der Körper, den das Spiel wählt): ein Punkt im See ist See, ein Lauf die Art seiner Breite
+                        // (gelaende-core gewaesserArt), das Meer trägt kein Band; dann wie weit die Sicht außerhalb des Bands des Typs liegt
+                        // (|ln| des Verhältnisses zur nächsten Grenze, 0 im Band)
+                        o.typ = a.saat === "see" ? "see" : a.saat === "meer" ? null : __gelaendeCore.gewaesserArt(breite);
+                        const b = o.unter && o.typ && mit.band[o.typ];
+                        if (b) o.abseits = R3(o.sichtM < b[0] ? Math.log(b[0] / o.sichtM) : o.sichtM > b[1] ? Math.log(o.sichtM / b[1]) : 0);
+                        return o;
+                    };
+                    const uS = Object.values(U).find((u) => u.mass === "sicht");
+                    let R1 = null;
+                    if (uS)
+                        try {
+                            const LN = 40;
+                            const mz = [-280, -1046];
+                            const weit = [5000, 10000].flatMap((d) => [0, 1, 2, 3, 4, 5].map((k) => [Math.round(mz[0] + d * Math.cos((k * Math.PI) / 3)), Math.round(mz[1] + d * Math.sin((k * Math.PI) / 3))]));
+                            const O1 = await H.seite("return await window.__wasserOrte({});");
+                            const unterTyp = (typ) => (q, w) => w.unter && w.typ === typ;
+                            R1 = await FAECHER((c) => H.seite(c), {
+                                gesetz: { fn: BI1_AN, export: "stamm/bild-himmel.js:2672 _dayNightApplyLuft (unter Wasser β = WASSER_GESETZ.koerper[_wasserArtAt].c[1]) → :2509 _luftSichtM · stamm/wasser-hydro.js:651 _wasserArtAt → gelaende-core.js:762 gewaesserArt", leser: "stamm/bild-himmel.js:2722 (das Spektrum des Mediums, scene.fogNode jedes Materials) · stamm/bild-himmel.js:2509 _luftSichtM (die Linsen, die Fern-Wasser-Reichweite)" },
+                                adressen: { dazu: Array.from({ length: LN }, (_, k) => ({ saat: "lauf", ort: k })).concat(Array.from({ length: 9 }, (_, k) => ({ saat: "see", ort: k })), Array.from({ length: 9 }, (_, k) => ({ saat: "meer", ort: k })), weit.map((_, k) => ({ saat: "weit", ort: k }))) },
+                                mit: { O: O1, laufN: LN, weit, meer: B.tiefOrt, band: uS.band },
+                                ms: 20000,
+                                masse: {
+                                    nass: { wie: "anzahl", feld: "tiefe", nur: (q, w) => !w.trocken },
+                                    unterAnteil: { wie: "anteil", feld: "unter", nur: (q, w) => !w.trocken },
+                                    unterWasser: { wie: "anzahl", feld: "sichtM", nur: (q, w) => w.unter },
+                                    sichtBachM: { wie: "mittel", feld: "sichtM", nur: unterTyp("bach") },
+                                    sichtSeeM: { wie: "mittel", feld: "sichtM", nur: unterTyp("see") },
+                                    sichtFlussM: { wie: "mittel", feld: "sichtM", nur: unterTyp("fluss") },
+                                    sichtMeerM: { wie: "mittel", feld: "sichtM", nur: (q, w) => w.unter && q.saat === "meer" },
+                                    sichtenJeArt: { wie: (v, aus) => { const o = {}; aus.forEach((e) => { if (e.w.unter) (o[e.w.art] = o[e.w.art] || new Set()).add(e.w.sichtM); }); return Object.fromEntries(Object.entries(o).map(([k, m]) => [k, [...m]])); } },
+                                    artenJeOrt: { wie: (v, aus) => { const o = {}; aus.forEach((e) => ((o[e.a.saat] = o[e.a.saat] || {}), (o[e.a.saat][e.w.art] = (o[e.a.saat][e.w.art] || 0) + 1))); return o; } },
+                                    breitesterLaufM: { wie: "max", feld: "breite" },
+                                    koerperFremd: { wie: (v, aus) => aus.filter((e) => e.w.unter && e.w.typ && e.w.art !== e.w.typ).map((e) => e.a.saat + " " + Math.round(e.w.x) + "," + Math.round(e.w.z) + " liest " + e.w.art) },
+                                    tiefen: { wie: (v, aus) => { const o = {}; aus.forEach((e) => { if (Number.isFinite(e.w.tiefe) && !e.w.trocken) { const k = e.a.saat === "weit" ? "lauf" : e.a.saat; (o[k] = o[k] || []).push(e.w.tiefe); } }); return Object.fromEntries(Object.entries(o).map(([k, t]) => [k, [Math.min(...t), Math.max(...t)]])); } },
+                                },
+                                schlecht: { feld: "abseits", richtung: "max" },
+                                pose: (q, w) => "die Kamera unter Wasser bei " + Math.round(w.x) + ", " + Math.round(w.z) + " (" + q.saat + ", Körper " + w.art + ", Säule " + w.tiefe + " m), Blick waagrecht: Sicht " + w.sichtM + " m",
+                                ungemessen: ["die Sicht im Bild (der Kontrast der schwarzen Scheibe an der Pose, Bildpflicht) — ungemessen bis zum Gerät"],
+                            });
+                            const gebandet = R1.je.filter((e) => e.w.abseits != null);
+                            R1.werte.imBandProzent = gebandet.length ? Math.round((1000 * gebandet.filter((e) => e.w.abseits === 0).length) / gebandet.length) / 10 : undefined;
+                        } catch (e) {
+                            R1 = { fehlerText: String((e && e.message) || e).slice(0, 200) };
+                        }
                     const arten = ["bach", "see", "fluss"].filter((k) => B[k] && B[k].unter);
                     const sichten = arten.map((k) => B[k].sichtM);
                     const streu = new Set(sichten).size > 1 ? 1 : 0;
@@ -4697,11 +4803,29 @@ L.perspektive("wasser", (() => {
                         const u = U[nr];
                         let roh;
                         if (u.mass === "sicht") {
+                            // die Werte trägt der Fächer allein (kein Zwilling der festen Pose); warf er, steht er beim Namen
+                            const RW = (R1 && R1.werte) || null;
+                            const typen = RW ? ["bach", "see", "fluss"].filter((k) => RW["sicht" + k[0].toUpperCase() + k.slice(1) + "M"] != null) : [];
+                            const sichten = RW ? [].concat(...Object.values(RW.sichtenJeArt)) : [];
+                            const R2 = (v) => (Number.isFinite(v) ? Math.round(v * 100) / 100 : v);
+                            // das Einzugsgebiet des breitesten Laufs aus dem EINEN Gesetz der Breite (gelaende-core.js:749 flussBreite, w = 2 + 4,7 · A^0,37)
+                            const einzugKm2 = RW && RW.breitesterLaufM > 2 ? Math.pow((RW.breitesterLaufM - 2) / 4.7, 1 / 0.37) : null;
                             roh = {
-                                werte: { sichtBachM: B.bach ? B.bach.sichtM : undefined, sichtSeeM: B.see ? B.see.sichtM : undefined, sichtFlussM: B.fluss ? B.fluss.sichtM : undefined },
-                                zeuge: { antworten: arten.length + (B.oben && B.oben.unter === false ? 1 : 0), streuung: streu, oben: B.oben ? B.oben.unter : null },
+                                werte: {
+                                    sichtBachM: RW ? R2(RW.sichtBachM) : undefined,
+                                    sichtSeeM: RW ? R2(RW.sichtSeeM) : undefined,
+                                    sichtFlussM: RW && RW.sichtFlussM != null ? R2(RW.sichtFlussM) : undefined,
+                                    imBandProzent: RW ? RW.imBandProzent : undefined,
+                                    ...(RW ? { sichtMeerM: R2(RW.sichtMeerM), unterWasser: RW.unterWasser, nass: RW.nass, unterProzent: RW.unterAnteil != null ? Math.round(1000 * RW.unterAnteil) / 10 : null, sichten: Object.entries(RW.sichtenJeArt).map(([k, v]) => k + " " + v.join("/") + " m").join(" · "), koerper: Object.entries(RW.artenJeOrt).map(([k, o]) => k + " → " + Object.entries(o).map(([a, n]) => a + " " + n).join("/")).join(", "), koerperFremd: RW.koerperFremd.length ? RW.koerperFremd.join(" · ") : "keiner", saeule: Object.entries(RW.tiefen).map(([k, t]) => k + " " + t.map(R2).join("–") + " m").join(" · "), breitesterLaufM: R2(RW.breitesterLaufM), einzugKm2: R2(einzugKm2) } : {}),
+                                },
+                                zeuge: { antworten: typen.length + (B.oben && B.oben.unter === false ? 1 : 0), streuung: new Set(sichten).size > 1 ? 1 : 0, oben: B.oben ? B.oben.unter : null, faecher: R1 && R1.gemessen, fehler: R1 && (R1.fehlerText || (R1.fehler && R1.fehler.length ? R1.fehler[0].fehler : null)) },
+                                ...(R1 && R1.akte ? { akte: R1.akte } : {}),
                             };
-                            if (!B.fluss) roh.nicht = "kein Fluss am Messort: der breiteste Lauf in " + B.laeufe.regionen + " geladenen Hydro-Regionen um die Mess-Wiese ist " + B.laeufe.breitM + " m, ein Fluss beginnt bei " + B.laeufe.flussAbM + " m (gelaende-core.js:762 gewaesserArt) — gemessen Bach und See";
+                            const offen = [];
+                            if (!RW) offen.push("der Fächer der Sicht warf: " + ((R1 && R1.fehlerText) || "ohne Antwort"));
+                            else if (RW.sichtFlussM == null)
+                                offen.push("kein Fluss in der Welt: der breiteste Lauf in " + RW.nass + " nassen Adressen (40 Läufe nah, 12 ferne Kacheln im Ring 5 und 10 km) ist " + R2(RW.breitesterLaufM) + " m ≙ Einzugsgebiet " + R2(einzugKm2) + " km² (gelaende-core.js:749 flussBreite) — ein Fluss beginnt bei 100 km² = " + B.laeufe.flussAbM + " m (gelaende-core.js:761 GEWAESSER_ART.bachBisKm2, :762 gewaesserArt); jeder Lauf ist ein Bach");
+                            if (offen.length) roh.nicht = offen.join(" · ");
                         } else if (u.mass === "leib") {
                             roh = {
                                 werte: { poseAbstandM: B.pose ? 1 : undefined, dreieckeJeFisch: B.fischLeib.dreiecke, artenImWasser: 1 },
@@ -4743,26 +4867,32 @@ L.perspektive("wasser", (() => {
                 },
                 sprossen: {
                     1: {
-                        u: { mass: "sicht" },
+                        u: { mass: "sicht", band: BI_BAND },
                         soll: [
-                            K.soll(BI, 1, "Sichtweite in m an fester Pose gegen das Band des Gewässertyps", { key: "sichtBachM", rel: "band", zahl: 5, bis: 20, einheit: "m", refQuelle: "klare Bäche: schwarze Scheibe 5–20 m (Davies-Colley & Smith 2001; dieselbe Quelle wie diag-wasser-leben K5)" }),
-                            K.soll(BI, 1, "Sichtweite in m an fester Pose gegen das Band des Gewässertyps", { key: "sichtSeeM", rel: "band", zahl: 2, bis: 16, einheit: "m", refQuelle: "oligo- bis mesotrophe Seen: Sichttiefe 2–16 m (Carlson 1977, Trophie-Index 20–50)" }),
-                            K.soll(BI, 1, "Sichtweite in m an fester Pose gegen das Band des Gewässertyps", { key: "sichtFlussM", rel: "band", zahl: 1, bis: 1.5, einheit: "m", refQuelle: "Tieflandfluss: schwarze Scheibe 1–1,5 m (Davies-Colley & Smith 2001)" }),
+                            K.soll(BI, 1, "Sichtweite in m an fester Pose gegen das Band des Gewässertyps", { key: "sichtBachM", rel: "band", zahl: BI_BAND.bach[0], bis: BI_BAND.bach[1], einheit: "m", refQuelle: "klare Bäche: schwarze Scheibe 5–20 m (Davies-Colley & Smith 2001, JAWRA 37:1085; dieselbe Quelle wie diag-wasser-leben K5) — das Mittel des Fächers über jede Adresse unter Wasser vom Typ Bach (ein Lauf unter 100 km², gelaende-core gewaesserArt seiner Breite)" }),
+                            K.soll(BI, 1, "Sichtweite in m an fester Pose gegen das Band des Gewässertyps", { key: "sichtSeeM", rel: "band", zahl: BI_BAND.see[0], bis: BI_BAND.see[1], einheit: "m", refQuelle: "oligo- bis mesotrophe Seen: Sichttiefe 2–16 m (Carlson 1977, Limnol. Oceanogr. 22:361, Trophie-Index 20–50) — das Mittel des Fächers über jede Adresse unter Wasser im See (der Ort, nie der Körper, den das Spiel dort wählt)" }),
+                            K.soll(BI, 1, "Sichtweite in m an fester Pose gegen das Band des Gewässertyps", { key: "sichtFlussM", rel: "band", zahl: BI_BAND.fluss[0], bis: BI_BAND.fluss[1], einheit: "m", refQuelle: "Tieflandfluss: schwarze Scheibe 1–1,5 m (Davies-Colley & Smith 2001) — das Mittel des Fächers über jede Adresse unter Wasser vom Typ Fluss (ein Lauf ab 100 km²)" }),
+                            K.soll(BI, 1, "Sichtweite in m an fester Pose gegen das Band des Gewässertyps", { key: "imBandProzent", rel: "≥", zahl: 90, einheit: "%", refQuelle: "jede Adresse des Fächers unter Wasser gegen das Band IHRES Typs (BI_BAND: Davies-Colley & Smith 2001; Carlson 1977) — GEWÄHLT: ≥ 90 % der Adressen im Band" }),
                         ],
                         zeuge: (roh) => {
                             const z = roh.zeuge || {};
+                            if (z.fehler) return "der Fächer der Sicht warf: " + z.fehler;
+                            if (!(z.faecher >= 30)) return "nur " + (z.faecher || 0) + " Adressen des Fächers gemessen (Soll ≥ 30: Läufe, See, Meer, ferne Kacheln)";
                             if (!(z.antworten >= 4)) return "nur " + (z.antworten || 0) + " Medien gemessen (Bach, See, Fluss unter Wasser und die Kontrolle darüber)";
                             if (z.oben !== false) return "die Kontrolle über dem Spiegel liest auch Wasser (das Medium folgt der Kamera nicht)";
                             if (!(z.streuung > 0)) return "alle Gewässer tragen dieselbe Sicht (ein Körper für alle)";
                             return null;
                         },
-                        taeter: "stamm/bild-himmel.js _applyDayNightToScene (WASSER_GESETZ.koerper je Art)",
-                        nicht: "kein Fluss am Messort",
+                        taeter: "gelaende-core.js:749 flussBreite · :761 GEWAESSER_ART.bachBisKm2 (kein Lauf der Welt erreicht 100 km², jede Adresse liest „bach“) · foundry-core.js:151 WASSER_GESETZ.koerper (ein c je Art)",
+                        leser: "stamm/bild-himmel.js:2672 _dayNightApplyLuft — unter Wasser β = c(550) des Körpers der Art (_wasserArtAt) · :2509 _luftSichtM (die Linsen lesen dieselbe Uniform)",
+                        nicht: "kein Fluss in der Welt",
                         unklar: "der Richter nennt kein Band — die Station setzt Bach 5–20 m, See 2–16 m, Fluss 1–1,5 m aus Davies-Colley & Smith 2001 und Carlson 1977",
-                        gruen: gut({ sichtBachM: 12, sichtSeeM: 8, sichtFlussM: 1.2 }, 4, { oben: false }),
+                        gruen: gut({ sichtBachM: 12, sichtSeeM: 8, sichtFlussM: 1.2, imBandProzent: 96 }, 4, { oben: false, faecher: 70 }),
                         attrappen: [
-                            { name: "drei Sichten ohne Kamera unter Wasser", roh: flach({ sichtBachM: 12, sichtSeeM: 8, sichtFlussM: 1.2 }) },
-                            { name: "ein Körper für alle (keine Streuung)", roh: { werte: { sichtBachM: 12, sichtSeeM: 12, sichtFlussM: 1.2 }, zeuge: { antworten: 4, streuung: 0, oben: false } } },
+                            { name: "drei Sichten ohne Kamera unter Wasser", roh: flach({ sichtBachM: 12, sichtSeeM: 8, sichtFlussM: 1.2, imBandProzent: 96 }) },
+                            { name: "ein Körper für alle (keine Streuung)", roh: { werte: { sichtBachM: 12, sichtSeeM: 12, sichtFlussM: 1.2, imBandProzent: 96 }, zeuge: { antworten: 4, streuung: 0, oben: false, faecher: 70 } } },
+                            { name: "die feste Pose ohne Fächer (eine Adresse je Typ)", roh: { werte: { sichtBachM: 12, sichtSeeM: 8, sichtFlussM: 1.2, imBandProzent: 100 }, zeuge: { antworten: 4, streuung: 1, oben: false, faecher: 3 } } },
+                            { name: "die Welt ohne Fluss (Bach und See im Band)", roh: { werte: { sichtBachM: 19.56, sichtSeeM: 8.32, imBandProzent: 100 }, zeuge: { antworten: 3, streuung: 1, oben: false, faecher: 70 } } },
                         ],
                     },
                     2: {
