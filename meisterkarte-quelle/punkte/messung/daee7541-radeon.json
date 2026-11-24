@@ -1,0 +1,2562 @@
+{
+ "sha": "daee7541bfcc7a5a5346b886ab4498ad73120925",
+ "geraet": "radeon",
+ "zeit": "2026-11-24T12:06:48.622Z",
+ "host": "MiguellD",
+ "je": {
+  "karte2.mensch.macht.megastadt#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: keine Wache, keine Streife: 0 Bauten mit der Rolle Wache in 1 Plänen, 7 Fahrer am Steuer fahren die Trassen, keiner fährt aus einer Wache (stamm/siedlung-verkehr.js:431) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.14,
+   "grund": "ROT: S1 ROT: fehlender Leser: keine Wache, keine Streife: 0 Bauten mit der Rolle Wache in 1 Plänen, 7 Fahrer am Steuer fahren die Trassen, keiner fährt aus einer Wache (stamm/siedlung-verkehr.js:431) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "kadbf8040e7ab",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2a0c25dc18cb",
+   "s": 8,
+   "fremd": {
+    "s": 9.5,
+    "takte": 4,
+    "fremdS": 14.48,
+    "kerne": 1.533,
+    "fensterKerne": 1.533,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28580-profil-Ij0fYF --no-p",
+      10.78
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.69
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      0.47
+     ]
+    ],
+    "dienerS": 3.25,
+    "diener": [
+     [
+      "dwm.exe",
+      1.16
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.16
+     ]
+    ],
+    "geraetS": 3.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.78
+     ],
+     [
+      "svchost.exe",
+      1.2
+     ],
+     [
+      "SearchIndexer.exe",
+      0.05
+     ]
+    ],
+    "eigenS": 19,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-24T11:40:15.384Z",
+   "abdruck": "257e78a817bd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.koennen#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: fehlender Leser: keine Übung: kein Bewohner trägt Stunden der Übung, die Leib-Werte lesen nur die Größe (koerper-core.js:5455) · gemessen 477 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.25,
+   "grund": "ROT: S2 ROT: fehlender Leser: keine Übung: kein Bewohner trägt Stunden der Übung, die Leib-Werte lesen nur die Größe (koerper-core.js:5455) · gemessen 477 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "kd5b30da3e5e2",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2a0c25dc18cb",
+   "s": 14.9,
+   "fremd": {
+    "s": 19.4,
+    "takte": 8,
+    "fremdS": 50.5,
+    "kerne": 2.606,
+    "fensterKerne": 3.017,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28580-profil-Ij0fYF --no-p",
+      19.67
+     ],
+     [
+      "node.exe scripts/stamm-umzug.cjs --nach-karte",
+      12.08
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.3
+     ]
+    ],
+    "dienerS": 10.19,
+    "diener": [
+     [
+      "System",
+      3.7
+     ],
+     [
+      "WmiPrvSE.exe",
+      3.11
+     ]
+    ],
+    "geraetS": 19.48,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      12.95
+     ],
+     [
+      "svchost.exe",
+      5.19
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 48.84,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-24T11:42:33.138Z",
+   "abdruck": "bcf877b0ecdb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.geist.absicht#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: fehlender Leser: kein Ziel über Monate: der Satz des Bewohners trägt kein Ziel, keinen Vorrat, keinen Fortschritt (477 Bewohner der Stadt) (stamm/siedlung-bewohner.js:887) · gemessen 477 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.23,
+   "grund": "ROT: S2 ROT: fehlender Leser: kein Ziel über Monate: der Satz des Bewohners trägt kein Ziel, keinen Vorrat, keinen Fortschritt (477 Bewohner der Stadt) (stamm/siedlung-bewohner.js:887) · gemessen 477 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "kd5b30da3e5e2",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2a0c25dc18cb",
+   "s": 13.1,
+   "fremd": {
+    "s": 16.6,
+    "takte": 7,
+    "fremdS": 34.56,
+    "kerne": 2.085,
+    "fensterKerne": 2.11,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28580-profil-Ij0fYF --no-p",
+      17.05
+     ],
+     [
+      "node scripts/format-teile.cjs --selftest stamm phyto-core.js voxel-worker.js speicher-fade",
+      4.14
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.56
+     ]
+    ],
+    "dienerS": 8.7,
+    "diener": [
+     [
+      "dwm.exe",
+      3.38
+     ],
+     [
+      "System",
+      2.81
+     ]
+    ],
+    "geraetS": 13.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.11
+     ],
+     [
+      "svchost.exe",
+      4.03
+     ],
+     [
+      "SearchIndexer.exe",
+      0.09
+     ]
+    ],
+    "eigenS": 34.02,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-24T11:44:19.821Z",
+   "abdruck": "2c56489b3c28",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.kunst#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: Umfang nicht erzeugbar: Meister und Anfänger in 3 Künsten: 1365 Bewohner mit Können-Profil, jeder Leib gleich geschickt (gemessen 1365) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.23,
+   "grund": "ROT: S1 ROT: Umfang nicht erzeugbar: Meister und Anfänger in 3 Künsten: 1365 Bewohner mit Können-Profil, jeder Leib gleich geschickt (gemessen 1365) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "kddd34283a20f",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k30dc08bee01f",
+   "s": 13.8,
+   "fremd": {
+    "s": 14.9,
+    "takte": 6,
+    "fremdS": 74.31,
+    "kerne": 4.989,
+    "fensterKerne": 4.876,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-25520-profil-dnnQMd --no-p",
+      46.75
+     ],
+     [
+      "node scripts/diag-kamera-laub.cjs --selftest",
+      14.86
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.02
+     ]
+    ],
+    "dienerS": 7.81,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      2.84
+     ],
+     [
+      "System",
+      2.64
+     ]
+    ],
+    "geraetS": 11.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.06
+     ],
+     [
+      "svchost.exe",
+      4.27
+     ],
+     [
+      "SearchIndexer.exe",
+      0.8
+     ]
+    ],
+    "eigenS": 46.45,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-24T11:51:39.471Z",
+   "abdruck": "37e19d97647b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.geist.gespraech#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: fehlender Leser: kein Bewohner ist ansprechbar: der Name des Gesprächs sucht nur state.creatures (0 von 1365 Bewohnern im Ruf, 0 mit Namen, 0 Wesen mit Namen) (stamm/feld-nexus.js:1281) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.32,
+   "grund": "ROT: S2 ROT: fehlender Leser: kein Bewohner ist ansprechbar: der Name des Gesprächs sucht nur state.creatures (0 von 1365 Bewohnern im Ruf, 0 mit Namen, 0 Wesen mit Namen) (stamm/feld-nexus.js:1281) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "kd5b30da3e5e2",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k30dc08bee01f",
+   "s": 18.8,
+   "fremd": {
+    "s": 21.6,
+    "takte": 9,
+    "fremdS": 63.14,
+    "kerne": 2.924,
+    "fensterKerne": 3.64,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-25520-profil-dnnQMd --no-p",
+      46.91
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.14
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.45
+     ]
+    ],
+    "dienerS": 10.67,
+    "diener": [
+     [
+      "System",
+      3.78
+     ],
+     [
+      "WmiPrvSE.exe",
+      3.58
+     ]
+    ],
+    "geraetS": 20.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.39
+     ],
+     [
+      "svchost.exe",
+      6.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.67
+     ]
+    ],
+    "eigenS": 37.23,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-24T11:53:08.829Z",
+   "abdruck": "899501ce89ec",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.seuche#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: Umfang nicht erzeugbar: keine Krankheit: 0 von 1365 Bewohnern tragen ein Feld der Krankheit, keiner kann erkranken (gemessen 0) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.22,
+   "grund": "ROT: S1 ROT: Umfang nicht erzeugbar: keine Krankheit: 0 von 1365 Bewohnern tragen ein Feld der Krankheit, keiner kann erkranken (gemessen 0) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "kd5b30da3e5e2",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k30dc08bee01f",
+   "s": 12.9,
+   "fremd": {
+    "s": 17.4,
+    "takte": 7,
+    "fremdS": 106.83,
+    "kerne": 6.15,
+    "fensterKerne": 7.002,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-25520-profil-dnnQMd --no-p",
+      74.38
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28432-profil-a1PNBd --no-p",
+      10.08
+     ],
+     [
+      "chrome.exe --type=gpu-process --no-sandbox --headless=new --noerrdialogs --user-data-dir=a",
+      4.83
+     ]
+    ],
+    "dienerS": 10.06,
+    "diener": [
+     [
+      "System",
+      4.45
+     ],
+     [
+      "WmiPrvSE.exe",
+      2.94
+     ]
+    ],
+    "geraetS": 22.45,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      12.81
+     ],
+     [
+      "svchost.exe",
+      8.11
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 29.73,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-24T11:54:48.979Z",
+   "abdruck": "17638632a3f6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: Umfang nicht erzeugbar: nur der Spieler trägt eine Klinge (die leere Hand): 6 von 1365 Bewohnern bewaffnet, kein zweiter Kämpfer für einen Zweikampf (gemessen 7, Soll 2 Bewaffnete im Zweikampf) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.14,
+   "grund": "ROT: S1 ROT: Umfang nicht erzeugbar: nur der Spieler trägt eine Klinge (die leere Hand): 6 von 1365 Bewohnern bewaffnet, kein zweiter Kämpfer für einen Zweikampf (gemessen 7, Soll 2 Bewaffnete im Zweikampf) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "kd5b30da3e5e2",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k30dc08bee01f",
+   "s": 7.9,
+   "fremd": {
+    "s": 9.4,
+    "takte": 4,
+    "fremdS": 14.34,
+    "kerne": 1.523,
+    "fensterKerne": 1.523,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-25520-profil-dnnQMd --no-p",
+      10.5
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.7
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.48
+     ]
+    ],
+    "dienerS": 2.83,
+    "diener": [
+     [
+      "dwm.exe",
+      1.03
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.98
+     ]
+    ],
+    "geraetS": 3.61,
+    "geraet": [
+     [
+      "svchost.exe",
+      1.95
+     ],
+     [
+      "MsMpEng.exe",
+      1.58
+     ],
+     [
+      "SearchIndexer.exe",
+      0.08
+     ]
+    ],
+    "eigenS": 17.83,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-24T11:56:21.642Z",
+   "abdruck": "bf253a3ed167",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Saaten der Namen 1 verfehlt ≥ 2 — Täter: die Namen der Bewohner (stamm/siedlung-bewohner.js) und der Orte (fachwerk-core ORTSNAME) · Namen richtig zugeordnet 1 (Soll ≥ 0.9) · Saaten der Namen 1 (Soll ≥ 2) · Umfang 601 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.2,
+   "grund": "ROT: S1 ROT an Saaten der Namen 1 verfehlt ≥ 2 — Täter: die Namen der Bewohner (stamm/siedlung-bewohner.js) und der Orte (fachwerk-core ORTSNAME) · Namen richtig zugeordnet 1 (Soll ≥ 0.9) · Saaten der Namen 1 (Soll ≥ 2) · Umfang 601 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "kd5b30da3e5e2",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k30dc08bee01f",
+   "s": 11.6,
+   "fremd": {
+    "s": 16.7,
+    "takte": 7,
+    "fremdS": 69.97,
+    "kerne": 4.197,
+    "fensterKerne": 4.551,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-25520-profil-dnnQMd --no-p",
+      58.58
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.86
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.19
+     ]
+    ],
+    "dienerS": 6.67,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      2.52
+     ],
+     [
+      "System",
+      2.08
+     ]
+    ],
+    "geraetS": 10.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.34
+     ],
+     [
+      "svchost.exe",
+      4.55
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 28.28,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-24T11:57:48.727Z",
+   "abdruck": "bfd211beed4c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.stadt.siedlungsnetz#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: Umfang nicht erzeugbar: ein Land von 10³ km, gesehen aus 100 km bei Nacht: die Sitzung trägt Orte bis 0.01 km vom Spieler (1 Siedlungen) (gemessen 0.01) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.2,
+   "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: ein Land von 10³ km, gesehen aus 100 km bei Nacht: die Sitzung trägt Orte bis 0.01 km vom Spieler (1 Siedlungen) (gemessen 0.01) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "kd5b30da3e5e2",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k30dc08bee01f",
+   "s": 11.5,
+   "fremd": {
+    "s": 14.5,
+    "takte": 6,
+    "fremdS": 37.81,
+    "kerne": 2.603,
+    "fensterKerne": 2.625,
+    "namen": [
+     [
+      "node.exe scripts/diag-haus-welt.cjs --selftest --teil=2",
+      13.42
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28448-profil-OmxwO2 --no-p",
+      5.03
+     ],
+     [
+      "chrome.exe --allow-pre-commit-input --disable-background-networking --disable-background-t",
+      3.98
+     ]
+    ],
+    "dienerS": 9.28,
+    "diener": [
+     [
+      "System",
+      4.83
+     ],
+     [
+      "WmiPrvSE.exe",
+      2.64
+     ]
+    ],
+    "geraetS": 23.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      16.78
+     ],
+     [
+      "svchost.exe",
+      6.22
+     ],
+     [
+      "SearchIndexer.exe",
+      0.53
+     ]
+    ],
+    "eigenS": 28.38,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-24T11:59:21.852Z",
+   "abdruck": "cac2e3a5ed10",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.wehrbau#3": {
+   "gruen": false,
+   "zahl": "S3 ROT an Ring als Straße 0.024 verfehlt ≥ 0.7 — Täter: fachwerk-core.js exportSettlement: die Straßen des jüngeren Jahrs kennen den alten Ring nicht (die Mauer steht oder fällt, nie wird sie Gasse) · Ring als Straße 0.024 (Soll ≥ 0.7) · Umfang 32 (Soll ≥ 32 Saaten mit Mauerring) · 32 Saaten mit Ring 1700 (von 38), Deckung des alten Rings durch die Straßen 1900 ≤ 4 m: 1:0.05 2:0.00 3:0.04 4:0.04 5:0.07 6:0.01 8:0.03 9:0.02 10:0.03 11:0.00 12:0.00 13:0.00 · 43328 ms · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.34,
+   "grund": "ROT: S3 ROT an Ring als Straße 0.024 verfehlt ≥ 0.7 — Täter: fachwerk-core.js exportSettlement: die Straßen des jüngeren Jahrs kennen den alten Ring nicht (die Mauer steht oder fällt, nie wird sie Gasse) · Ring als Straße 0.024 (Soll ≥ 0.7) · Umfang 32 (Soll ≥ 32 Saaten mit Mauerring) · 32 Saaten mit Ring 1700 (von 38), Deckung des alten Rings durch die Straßen 1900 ≤ 4 m: 1:0.05 2:0.00 3:0.04 4:0.04 5:0.07 6:0.01 8:0.03 9:0.02 10:0.03 11:0.00 12:0.00 13:0.00 · 43328 ms · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k4330f65b4531",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k30dc08bee01f",
+   "s": 79.6,
+   "fremd": {
+    "s": 84.9,
+    "takte": 32,
+    "fremdS": 1318.17,
+    "kerne": 15.528,
+    "fensterKerne": 18.184,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28448-profil-OmxwO2 --no-p",
+      1082.3
+     ],
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      113.14
+     ],
+     [
+      "node.exe scripts/diag-haus-welt.cjs --selftest --teil=2",
+      24.58
+     ]
+    ],
+    "dienerS": 81.2,
+    "diener": [
+     [
+      "System",
+      50.61
+     ],
+     [
+      "WmiPrvSE.exe",
+      16.47
+     ]
+    ],
+    "geraetS": 93.19,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      48.14
+     ],
+     [
+      "svchost.exe",
+      42.31
+     ],
+     [
+      "SearchIndexer.exe",
+      2.25
+     ]
+    ],
+    "eigenS": 150.84,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-24T12:00:56.831Z",
+   "abdruck": "fd2a68b960eb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k2a0c25dc18cb": "jVVNj5swEP0vOXbLms9gLO3BWaImlbqblSr1PIYxsCEQ2RC6qfrfKwgkAfbQOSHrzcybN8/mz+II0R4SfHzXZbFgiy+LrwsNJzQ0qhOqx3e9YIsgsmx0GL8E4Zx/a2GRyo6VJnkmCIgC0gMataowyx+jLg0EujFlpFnzZEeIJGcSNvwaz/zpaVomFxiXRgUSr0U8GkuPTYG1TkCgAbXsGvdg06RLGxjpgob8NSTXaH5wvnOlu6PhpJiAIh4zD5aejx7bNpyv5yzjDLAy8qzQQ18r9gNpsrtesxwFjXEGTHNUfRJSy3LFQHbVStLKNEmUea31qBl1Ys+mjJBgik1QZ1FaGUdVCix6uAhs3wK2amZzJMfakPeMQAigYqp1ClgkqEYcTCeSS4uR33RadA8HVGAUkA5amo5vi5s2hJDNnEveEe9aDMRjy/dsa5TYLvUiMN8ONiKn9nhzRQznYXKzGn+bNdRRmqnDWCrpom060/l1CjEqY1/q6oqkLgDS/kaEhL/x1lxTY+nbUEMeANA7oxBK+GamoS5l1YBCIznWg1lc9HyP8WTmLF3B4dCjPOm4TjQboGoNfk/D8x1Jl4yQh17OmTyX62CcMcuHJCldN/DY88qdgk8KDgaIRGVSDlsXXiSDz0zaYF4ZoiyrQRJBUSIjDinuF/3S8FXC17cVfg8/SvrrY+/wcbzw9WcdSlVdpxVLU7pMdpNGU/JNpiqjgSgd4LYUCMFUxDOqHBMcySh8GrTWbqIbndAdPh5Gxj3PtnzOsBW40LUelhyBKzzWO7yL7fj5aVDtBRT7PiGKLWsZs87sr3xzp8qGb3+au4b/X6z5W9vkiBE5qlJm7YtIUqh1Cnl1+zX8/Qc=",
+  "kadbf8040e7ab": "bVRNj5swFPwvOXbLOnwFY2kPTomUSG03Ofb4bJ6BDYHIhtCm6n+vIJAE2HdAAuZ5xvPG/rs4gzxCgq8fpiwWbPFl8XVh4IKWQX1B/fphFmwRSttBl7W/pM7OlSF5JgiIAtITWrWuMMtfZQcFgV5MGWk2PNkTosiVRM3b27Q1FxiXVgUK740+jZU/46hNAgItqFVH1oOXS7pygJGuaMTfI3Kv5gfne095expNFhNQxGO14coP0Ge7P5xv+ExlnAFWVp4VZuC14yBUS/bENevR0FhXwDRH3TchtW1PDGLXnPPOmkmjymtjRmTUjX2HMkLCKTZBk8m0ss66FFj0cBE6gQ1sPXc7OdeWelYEQgAVU69TwCJBPdKwdKVa2Yz8ptNFj3BCDVYB6eDl0g0c8fCGELKda8k74R3FIDy2A9+xR43tUMmlNZjveF/dO93eEcP3KOGPOswIjUwzfRpbpTx0li77PpdnUohRW8fSVHc09QCQsp6N8ANvAzYNl3lsbOgDAPoUFkIJ3858NKWqGtBoJed6CIyHfuAzznczcAWnU4/yleu5cjpEU7Uhf5bhB66iK0bIy+2QzDd9OxLWFbN8aFLK88LZabxoOFkgEp0pNUxd+FKFn4W0wbyyRFlWgx2CokJGXFI8D/pn09q6eZph1JRy8y058HFt+FR3x1Dq6r5TsVoqj6kuOHKGznRlNSDTAe4ogdBKn83kijrHBEc2ioCGbbwb2atsUxD014B6GYX3Ol8xw9bgwtRmGLIET/jsk5E0qI8CimMPlLFtr+Iufut3vh2bEh32NGqPyajcpPUzSte3779ujxvJGSU561Jl7W1IUqhNCnn1uP7//Qc=",
+  "kd5b30da3e5e2": "bVVdj5swEPwveWzLOXwFY+kenCNSTmp7uac+r80auBCIbAhtqv73yiQkAW7fgma849lZ5+/iCHIPGT59mLpasMWXxbeFgRM6BvUJ9dOHWbBFLF0PfcYvRTjnLxYmdXFsDCkLQUBUkB/QaXWDRfkkexoIDFLKSLfh2Y4QRc4k6Z6fp9RSYFo7DSi8EUOaqpBNga3JQKADreqbXcHLJV15wEhfNOFvCblVRznfBSrY0WRymIAqHauNV2GEIXvtON/wmcq0AGycsqjM0NdNo1gt2b3XjxlHQ+ecAfMS9ZWE1HUDMYhdWzutNROiKltjRs2on4YeZYTEU2yGppB54xx1LbC6wkXsRS6w9dzt7Ng66lERCAFUTL3OAasM9UjD0pdq5TLym04P3cMBNTgV5IOXSz/yxN0bQsh2rqXshfctBuGpG4WeOyLaoZKTNZi/8iGC9jfd3hDD9yTj93qfNTQyL/RhbJUK0Fv67PtcnskhRe3sa9Pc0DQAQHrdhITwd24DNg2XuV9s4AEAfQgLoYRvZz6aWjUdaHSyYzsEJsAwChnnrzNwA4fDFRUqP/DldIimsSF/lBFGvqIrRsjXy5LML31ZCeeMRTmQlAqCeLaNJw0HB0SmC6WGqYtQqvizkHZYNo6o62awQ1BUyIhPqsdB/+ysrZuHGSZdLX/9yTo+rg2f6u471Lq53VSslipgqg+OnKEL3TgdyHyAe0ogWOmzmZxRl5jhyEYR0djGu1MX3Wf7zETXZ0B9HYX3PD+xQGtwZVozDFlCIEL2yUg61HsB1f4KlKnrrtI+fus3vh158pK872hi12RUfmb9TPL15bu0SzK8VUeU5KhrVdjXkOTQmhzK5v5X8O8/",
+  "k30dc08bee01f": "jVVNj5swEP0vObZlzWcwlvbgLFGTQ3ezUqWexzAGNgSQDaGbqv+9goUkwB46J2S9mXnz5tn8WVUQHSHBhzddFiu2+rL6ttJwRkOjOqN6eNMrtgoiy0aH8Y8gnPPvHSxSWVVrkmeCgCggPaHRqBqz/CHq00CgG1NG2i1PDoRIciFhy6/xxB8f52VygXFp1CDxWsSjsfTYHNjoBAQa0Mi+8QA2Tbq2gZE+aMhfQnKN9gfnB1e6BxrOigko4inzYO356LF9y/l2yTLOAGsjzwo99rViP5Amu+u1yFHQGhfANEc1JCG1LFeMZDedJJ1Ms0SZN1pPmlEn9mzKCAnm2AR1FqW1UalSYDHARWD7FrBNu5gjqRpD3jMCIYCKudYpYJGgmnAwnUiuLUZ+03nRI5xQgVFAOmppOr4tbtoQQnZLLnlPvG8xEo8t37OtSWK31A+B+X60ETl3x7srYjwPk5vV+OuioY7STJ2mUkkXbdOZz69TiFEZx1LXVyR1AZAONyIk/JV35pobS9+GGvMAgN4ZhVDCdwsNdSnrFhQaSdWMZnHR8z3Gk4WzdA2n04DypOM60WKAujP4PQ3PdyRdM0K+DnIu5Pm4DsYFs3xMktJ1A489bdw5+KzgZIBIVCbluHXhRTL4zKQt5rUhyrIeJREUJTLikOJ+0c8t3yR8e1vhIXwv6a/3o8On8cy3n3UoVX2dVqxN6TLZTxrNybeZqo0WonSE21IgBHMRL6hyTHAio/Bp0Fm7jW50Qnf8+Dox7mWx5UuGncCFbvS45Ahc4bHB4X3sp89Pi+oooDgOCVFsWeuY9WZ/4bs7VXZ8/9M8tPz/YstfuyYVRqRSpcy6F5Gk0OgU8vr2a/j7Dw==",
+  "kddd34283a20f": "bVTLjqMwEPwXjjvLOLyCsTQHZ4mUkfaRHPfYNm1gQiCyIayy2n9fQSAJMH1AAqpd5eqy/1pnkEdI8fXDVKXFrC/WV8vABW2D+oL69cNYzIqk46LHul9S5+fakCIXBEQJ2QntRteYF6+yh4JAP6GMtFue7glR5Eri9u1t3loITCq7BoX3xoAmKlhwNCYFgTY0qicbwKsVXbvASF805r9icq/2B+d7X/l7Gs8WE1AmU7XROggxYO8t51u+UJnkgLVd5KUZeZ0kjNSKPXEtejS09hUwK1APTUgdxxej2A3nvLdm1qiKxpgJGfWSwKWMkGiOTdHkMqvts64ElgNcRG7oANss3U7Pja2eFYEQQMXc6wywTFFPNKw8qdYOI3/ofNEjnFCDXUI2ernyQlc8vCGE7JZail54TzEKT5wwcJ1JYzdUcukM5u98qP6d7u6I8Xuc8kcdFoRGZrk+Ta1SProrj31fyjMZJKjtY2XqO5r6AEjZwEb4gXcBm4fLPDY29gEAfQoLoYTvFj6aStUtaLTTczMGxscgDBjn7wtwDafTgAqU53tyPkRTdyF/lhGEnqJrRsjL7ZAsN307EvYV82JsUsr3o8VpvGg42SBSnSs1Tl0EUkWfhbTForZFVdWjHYKiQkY8Uj4P+mfb2bp9mmHcVnL7LT3waW35XHfPUOn6vlOxXimfqT44coHOdW23ILMR7iqB0ElfzOSKusAUJzaKkEZdvFs5qOxSEA7XgHqZhPe6XDHHzuDSNGYcsgRfBOyTkbSojwLK4wCUieOskz5+m198NzUlPuxp3B2TSXlp52ecbW7ff98eN5IzSnLWlcq725Bk0JgMivpx/f/7Dw==",
+  "k4330f65b4531": "bVVNj9owEP0vHLvNmnwRx9IezGYlttpq4dTz2BknWUKC7IS0VP3vlYEASZhb0JuZ5zdvhr+zPcgtZPj8ZepqxmbfZt9nBg7oGNQH1M9fZsZmsXQ99Bk/B+Gcv1qY1MW+MaQsBAFRQb5Dp9UNFuWzPKWBwCCljHRvPFsTosiRJB2/xht/eRmXKQWmtdOAwmuRkKYqZGNgazIQ6ECrTo0v4PmcLjxg5BQ04Z8JuUZHOV8HKljTxDYfFRRQpUP28SKMMGTv3UOmaQHYOGVRmb63m0axmrNbv5+THA2dcwTMS9SXJKSuG4ie8NLKYqUaJaqyNWbQjPpp6FFGSDzGZmgKmTfOXtcCqwtcxF7kAlt2k3dk+9ZR94xACKBirHcOWGWoBxzmvlQLl5HfdFx0CzvU4FSQ91rO/cgTN20IIaspl/JE/NSiJ566Uei5g0Q7WHKwAvP33kqnb7q6Ivrfk+xmN76ZNDQyL/RuKJUK0Jv77GNKz+SQona2tWmuaBoAIL1sRkL4hluTJePM28P6PACgd2YhlPDVREdTq6YDjU62b3vDBBhGIeP8fQJuYLe7oELlB74cD9E01uT3NMLIV3TBCHk6L8r00eeVcI5YlH2SUkEQTzbyoGHngMh0oVQ/dRFKFT8yaYdl44i6bno5BEWFVo7qftDr7nwnbpF0tfz1J7u7Iv0pedSh1s31pWIxVwFTJ+PICbrQjdOBzHu4pwSCpT6ZyRF1iRkOZBQRja29O3XmfbSnJrqcAfU0MO9xWrFAK3BlWtMPWUIgQvZgJB3qrYBqewHK1HUXKfvBOV9+8tVAk9dks6YJGYffWT0/8uVZQ2mXpL9Ve5Rkr2tV2GtIcmhNDmVz+2v49x8="
+ },
+ "ungemessen": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 67 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT k4-geh 58.6 s) · Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t  | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && — Heap ungemessen",
+   "exit": 1,
+   "minuten": 1.12,
+   "grund": "Deckel 67 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT k4-geh 58.6 s) · Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t  | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && — Heap ungemessen",
+   "s": 67.4,
+   "fremd": {
+    "s": 76.2,
+    "takte": 26,
+    "fremdS": 876.94,
+    "kerne": 11.51,
+    "fensterKerne": 14.559,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28448-profil-OmxwO2 --no-p",
+      711.25
+     ],
+     [
+      "node.exe scripts/diag-haus-welt.cjs --selftest --teil=2",
+      25.03
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      20.81
+     ]
+    ],
+    "dienerS": 78.55,
+    "diener": [
+     [
+      "System",
+      37.09
+     ],
+     [
+      "dwm.exe",
+      25.77
+     ]
+    ],
+    "geraetS": 100.98,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      62.81
+     ],
+     [
+      "svchost.exe",
+      35.23
+     ],
+     [
+      "SearchIndexer.exe",
+      2.42
+     ]
+    ],
+    "eigenS": 366.64,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 11.704,
+     "nach": 17.017,
+     "station": 18.012
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 283.6,
+     "alle": 955.1,
+     "cpuEin": 219,
+     "tor": {
+      "ruhig": true,
+      "kerne": 4.61,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       0.08,
+       0.3,
+       0.48,
+       1.59,
+       3.7,
+       8.32
+      ]
+     },
+     "spanne": [
+      1795521917020,
+      1795521919192
+     ]
+    },
+    "nach": {
+     "ein": 231.6,
+     "alle": 1474.5,
+     "cpuEin": 187,
+     "tor": {
+      "ruhig": true,
+      "kerne": 4.8,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       2.2,
+       4.29,
+       4.39,
+       6.69,
+       3.52,
+       4.2
+      ]
+     },
+     "spanne": [
+      1795521986651,
+      1795521989967
+     ]
+    },
+    "ruhe": {
+     "ein": 82.4,
+     "alle": 260.1,
+     "n": 1064,
+     "von": "2026-11-17"
+    },
+    "f": 5.669,
+    "fEin": 3.442,
+    "fAlle": 5.669,
+    "verdraengt": 1.209,
+    "schwankt": true,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-24T12:05:17.018Z",
+   "abdruck": "3edd6aee31ec",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 67 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT k4-geh 58.6 s) · Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t  | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && — Heap ungemessen",
+   "exit": 1,
+   "minuten": 1.12,
+   "grund": "Deckel 67 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT k4-geh 58.6 s) · Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t  | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && — Heap ungemessen",
+   "s": 67.4,
+   "fremd": {
+    "s": 76.2,
+    "takte": 26,
+    "fremdS": 876.94,
+    "kerne": 11.51,
+    "fensterKerne": 14.559,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28448-profil-OmxwO2 --no-p",
+      711.25
+     ],
+     [
+      "node.exe scripts/diag-haus-welt.cjs --selftest --teil=2",
+      25.03
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      20.81
+     ]
+    ],
+    "dienerS": 78.55,
+    "diener": [
+     [
+      "System",
+      37.09
+     ],
+     [
+      "dwm.exe",
+      25.77
+     ]
+    ],
+    "geraetS": 100.98,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      62.81
+     ],
+     [
+      "svchost.exe",
+      35.23
+     ],
+     [
+      "SearchIndexer.exe",
+      2.42
+     ]
+    ],
+    "eigenS": 366.64,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 11.704,
+     "nach": 17.017,
+     "station": 18.012
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 283.6,
+     "alle": 955.1,
+     "cpuEin": 219,
+     "tor": {
+      "ruhig": true,
+      "kerne": 4.61,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       0.08,
+       0.3,
+       0.48,
+       1.59,
+       3.7,
+       8.32
+      ]
+     },
+     "spanne": [
+      1795521917020,
+      1795521919192
+     ]
+    },
+    "nach": {
+     "ein": 231.6,
+     "alle": 1474.5,
+     "cpuEin": 187,
+     "tor": {
+      "ruhig": true,
+      "kerne": 4.8,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       2.2,
+       4.29,
+       4.39,
+       6.69,
+       3.52,
+       4.2
+      ]
+     },
+     "spanne": [
+      1795521986651,
+      1795521989967
+     ]
+    },
+    "ruhe": {
+     "ein": 82.4,
+     "alle": 260.1,
+     "n": 1064,
+     "von": "2026-11-17"
+    },
+    "f": 5.669,
+    "fEin": 3.442,
+    "fAlle": 5.669,
+    "verdraengt": 1.209,
+    "schwankt": true,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-24T12:05:17.018Z",
+   "abdruck": "3b784d3ffb80",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.technik#2": {
+   "gruen": false,
+   "zahl": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 29324 nach 12.9 min · letzte Zeile: SITZUNG Ort stadt vor karte2.mensch.wirtschaft.technik#2: 16.9 s (562 Takte, 98 Chunks, nach der Wanderung von karte2.mensch.geist.absicht#2) · die laufende Probe",
+   "exit": 3221226505,
+   "minuten": 12.75,
+   "grund": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 29324 nach 12.9 min · letzte Zeile: SITZUNG Ort stadt vor karte2.mensch.wirtschaft.technik#2: 16.9 s (562 Takte, 98 Chunks, nach der Wanderung von karte2.mensch.geist.absicht#2) · die laufende Probe",
+   "ungemessen": true,
+   "zeit": "2026-11-24T11:46:13.109Z",
+   "bahn": "tod",
+   "host": "MiguellD"
+  },
+  "karte2.erleben.spieler.wegfindung#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.wegfindung) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.73,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.wegfindung) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 40.2,
+   "fremd": {
+    "s": 46.9,
+    "takte": 14,
+    "fremdS": 684.27,
+    "kerne": 14.591,
+    "fensterKerne": 19.442,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28448-profil-OmxwO2 --no-p",
+      575.7
+     ],
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      27.67
+     ],
+     [
+      "node.exe scripts/diag-haus-welt.cjs --selftest --teil=2",
+      16.2
+     ]
+    ],
+    "dienerS": 36.34,
+    "diener": [
+     [
+      "System",
+      15.92
+     ],
+     [
+      "dwm.exe",
+      11.58
+     ]
+    ],
+    "geraetS": 44.5,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.3
+     ],
+     [
+      "svchost.exe",
+      16.97
+     ],
+     [
+      "SearchIndexer.exe",
+      1.59
+     ]
+    ],
+    "eigenS": 174,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-24T12:03:43.281Z",
+   "abdruck": "3bddb9a59f44",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.stimme#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:43.044Z",
+   "abdruck": "f0f7353bbe7b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.planet.kosmos.systeme#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:43.182Z",
+   "abdruck": "934903ffb9e9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.same.massstab.spanne#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:43.313Z",
+   "abdruck": "2be4c703545f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.erleben.spieler.gemeinsam#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:43.701Z",
+   "abdruck": "2c32cf62903e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.planet.kosmos.himmelsmechanik#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:44.016Z",
+   "abdruck": "c91f97507ed2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.planet.kosmos.sternhimmel#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:44.016Z",
+   "abdruck": "f972f2980d44",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.himmelsmechanik#1",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.same.preis.takt#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:44.285Z",
+   "abdruck": "99ff8c872f75",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.fahrzeug.medium#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:44.636Z",
+   "abdruck": "aacab6a06d8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.erleben.bild.nacht#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:44.780Z",
+   "abdruck": "0a8640cb44c5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.erleben.bild.nacht#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:44.780Z",
+   "abdruck": "0c4617c417a6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.bild.nacht#1",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.same.preis.ausdauer#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:44.977Z",
+   "abdruck": "d73938ad5063",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.sport.koerper#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:45.202Z",
+   "abdruck": "997154640bb9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.leben.tiere.masse#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:45.361Z",
+   "abdruck": "5f316e994d1d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.planet.kosmos.welten#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:45.595Z",
+   "abdruck": "6805cdf2a85c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.geist.netz#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:45.771Z",
+   "abdruck": "430a65b79cc4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.macht.recht#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:45.892Z",
+   "abdruck": "2c9130abcfb3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.menge.kollektiv#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:46.073Z",
+   "abdruck": "18a5a366a051",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.wirtschaft.handel#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:46.177Z",
+   "abdruck": "06fe69b88136",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.fahrzeug.lenker#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:46.288Z",
+   "abdruck": "b6c3c3996fb0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.kultur.verstaendigung#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:46.418Z",
+   "abdruck": "9b1c46fdbef1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.nahrung.flur#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:46.528Z",
+   "abdruck": "41b423495801",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.nahrung.tier#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:46.616Z",
+   "abdruck": "d671153922bf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.nahrung.hand#3": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:46.687Z",
+   "abdruck": "9cb35a29e774",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.nahrung.frucht#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:46.764Z",
+   "abdruck": "c23e51a638e2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.fahrzeug.maschine#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:46.854Z",
+   "abdruck": "00c4f15506dc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.wirtschaft.markt#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:46.936Z",
+   "abdruck": "a3728eb098fe",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.menge.bevoelkerung#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.209Z",
+   "abdruck": "7cd224169c08",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.leben.tiere.bewegung#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.295Z",
+   "abdruck": "3403695e1231",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.leben.wasser.bild#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.364Z",
+   "abdruck": "fb537917da92",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.leben.wasser.netz#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.364Z",
+   "abdruck": "ed0a899208a5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.wasser.bild#1",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.leben.oeko.netz#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.438Z",
+   "abdruck": "ceb67a6f26e5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.leben.oeko.sukzession#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.438Z",
+   "abdruck": "6cc4546e5d39",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.oeko.netz#2",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.leben.evolution.erbe#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.528Z",
+   "abdruck": "56bd3d34c9fb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.leben.evolution.fremde-physik#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.528Z",
+   "abdruck": "3d09062ce5dc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.erbe#1",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.leben.evolution.zivilisation#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.528Z",
+   "abdruck": "afe12fddda7c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.erbe#1",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.planet.kopplung.land-meer-luft#3": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.597Z",
+   "abdruck": "16d1a8e18709",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.planet.kopplung.land-meer-luft#4": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.597Z",
+   "abdruck": "ce439d45ecf3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.planet.kopplung.bahn-klima#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.597Z",
+   "abdruck": "6845b529d34f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.planet.kopplung.wetter-welt#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.597Z",
+   "abdruck": "044d5466c273",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.planet.kopplung.stadtklima#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.597Z",
+   "abdruck": "b5991ee0a170",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.planet.kopplung.gegenwart#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.597Z",
+   "abdruck": "8239054ecee1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.planet.kopplung.gegenwart#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.597Z",
+   "abdruck": "3364eedee43e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.leben.kopplung.evolution-planet#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.669Z",
+   "abdruck": "99afa01bf350",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.leben.kopplung.stadt-im-netz#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.669Z",
+   "abdruck": "1ba1688e3227",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.kopplung.evolution-planet#1",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.same.kopplung.aufwaerts#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.743Z",
+   "abdruck": "0a6772643477",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.same.kopplung.ereignis#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.743Z",
+   "abdruck": "b0f00dcbbf88",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.same.kopplung.gewalt#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.743Z",
+   "abdruck": "47ad0509727a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.same.kopplung.kohaerenz#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.743Z",
+   "abdruck": "d0a0a97b71a5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.same.kopplung.zeitreise#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.743Z",
+   "abdruck": "87a6d08058b9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.same.kopplung.terraform#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.743Z",
+   "abdruck": "8dcb369fb653",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.erleben.kopplung.wahrnehmung#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.834Z",
+   "abdruck": "34aa5fc96862",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.leben.pflanzen.biome#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.918Z",
+   "abdruck": "0e2470c9b605",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.leben.pflanzen.jahreslauf#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.918Z",
+   "abdruck": "6d6808ba92ef",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.biome#1",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.leben.pflanzen.kraft#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:47.918Z",
+   "abdruck": "5e8f1b8e5230",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.pflanzen.biome#1",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.same.physik.feuer#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:48.010Z",
+   "abdruck": "7b30f40cd9b8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.same.massstab.sprung#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:48.107Z",
+   "abdruck": "7f54477500db",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.kopplung.leib#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:48.189Z",
+   "abdruck": "0cf7c4e58ad0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.mensch.kopplung.kultur#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:48.189Z",
+   "abdruck": "8446bfc95780",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#1",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.same.preis.ankunft#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:48.298Z",
+   "abdruck": "624782505670",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.same.entfaltung.schirm#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:48.361Z",
+   "abdruck": "a16a54631e99",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.erleben.spieler.hand#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:48.434Z",
+   "abdruck": "94ecb21f3b9a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.erleben.schoepfen.satz#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:48.501Z",
+   "abdruck": "8a4236ccba5f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.same.preis.eingabe#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:48.563Z",
+   "abdruck": "efc887d0020e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  },
+  "karte2.planet.relief.grossform#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-24T12:06:48.622Z",
+   "abdruck": "9d14fbd22724",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 2
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-24T11:46:19.563Z",
+  "ordner": "sitzung-20261124-124619",
+  "port": 7804,
+  "warten": 1.1,
+  "bootS": 7.9,
+  "grundstellungS": [],
+  "proben": 9,
+  "freigaben": [],
+  "offen": [
+   "karte2.erleben.klang.stimme#1",
+   "karte2.planet.kosmos.systeme#1",
+   "karte2.same.massstab.spanne#1",
+   "karte2.erleben.spieler.gemeinsam#1",
+   "karte2.planet.kosmos.himmelsmechanik#1",
+   "karte2.planet.kosmos.sternhimmel#1",
+   "karte2.same.preis.takt#1",
+   "karte2.mensch.fahrzeug.medium#2",
+   "karte2.erleben.bild.nacht#1",
+   "karte2.erleben.bild.nacht#2",
+   "karte2.same.preis.ausdauer#1",
+   "karte2.mensch.sport.koerper#1",
+   "karte2.leben.tiere.masse#1",
+   "karte2.planet.kosmos.welten#1",
+   "karte2.mensch.geist.netz#1",
+   "karte2.mensch.macht.recht#1",
+   "karte2.mensch.menge.kollektiv#2",
+   "karte2.mensch.wirtschaft.handel#2",
+   "karte2.mensch.fahrzeug.lenker#1",
+   "karte2.mensch.kultur.verstaendigung#1",
+   "karte2.mensch.nahrung.flur#2",
+   "karte2.mensch.nahrung.tier#2",
+   "karte2.mensch.nahrung.hand#3",
+   "karte2.mensch.nahrung.frucht#1",
+   "karte2.mensch.fahrzeug.maschine#2",
+   "karte2.mensch.wirtschaft.markt#2",
+   "karte2.mensch.menge.bevoelkerung#1",
+   "karte2.leben.tiere.bewegung#1",
+   "karte2.leben.wasser.bild#1",
+   "karte2.leben.wasser.netz#1",
+   "karte2.leben.oeko.netz#2",
+   "karte2.leben.oeko.sukzession#1",
+   "karte2.leben.evolution.erbe#1",
+   "karte2.leben.evolution.fremde-physik#1",
+   "karte2.leben.evolution.zivilisation#1",
+   "karte2.planet.kopplung.land-meer-luft#3",
+   "karte2.planet.kopplung.land-meer-luft#4",
+   "karte2.planet.kopplung.bahn-klima#2",
+   "karte2.planet.kopplung.wetter-welt#2",
+   "karte2.planet.kopplung.stadtklima#1",
+   "karte2.planet.kopplung.gegenwart#1",
+   "karte2.planet.kopplung.gegenwart#2",
+   "karte2.leben.kopplung.evolution-planet#1",
+   "karte2.leben.kopplung.stadt-im-netz#2",
+   "karte2.same.kopplung.aufwaerts#1",
+   "karte2.same.kopplung.ereignis#2",
+   "karte2.same.kopplung.gewalt#1",
+   "karte2.same.kopplung.kohaerenz#1",
+   "karte2.same.kopplung.zeitreise#1",
+   "karte2.same.kopplung.terraform#1",
+   "karte2.erleben.kopplung.wahrnehmung#2",
+   "karte2.leben.pflanzen.biome#1",
+   "karte2.leben.pflanzen.jahreslauf#2",
+   "karte2.leben.pflanzen.kraft#2",
+   "karte2.same.physik.feuer#2",
+   "karte2.same.massstab.sprung#1",
+   "karte2.mensch.kopplung.leib#1",
+   "karte2.mensch.kopplung.kultur#2",
+   "karte2.same.preis.ankunft#2",
+   "karte2.same.entfaltung.schirm#1",
+   "karte2.erleben.spieler.hand#1",
+   "karte2.erleben.schoepfen.satz#1",
+   "karte2.same.preis.eingabe#2",
+   "karte2.planet.relief.grossform#1"
+  ],
+  "orte": [
+   {
+    "ort": "stadt-voll",
+    "vor": "karte2.mensch.sport.kunst#1",
+    "s": 133,
+    "takte": 1523,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "felder": [
+   {
+    "probe": "profiband.K4#1",
+    "weg": [
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr",
+     "__impostorRttBaked",
+     "__flussBibliothekS",
+     "__zensusCalls",
+     "__k4",
+     "__k4iv"
+    ]
+   },
+   {
+    "probe": "karte2.mensch.macht.wehrbau#3",
+    "weg": [
+     "__nahSpeicher",
+     "__imSchuss",
+     "__letzteSpiegel"
+    ]
+   }
+  ],
+  "wirt": [
+   {
+    "probe": "profiband.K4#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r._feuchteLeser",
+     "r._knotenRate",
+     "r.state.weather",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "r._knotenRate": "neu: function (N, ro) { const t0 = performance.now(); const s = kr.apply(this, argume",
+     "r.state.weather": "neu: () => wert",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [
+     "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+     "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+     "return window.__k4 || null",
+     "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+     "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+     "/* __punkteFelder */ return (function probeFelder(gib, sitzung, grundSeite) { if (!gib) { window.__punkteFel"
+    ],
+    "heap": [
+     null,
+     null
+    ],
+    "ungemessen": "den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return window.__k4 || null — Heap ungemessen"
+   },
+   {
+    "probe": "karte2.mensch.sport.kunst#1",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._feuchteLeser",
+     "r.state.weather",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "r.state.weather": "neu: () => wert",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     473.2,
+     501.4
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.mensch.geist.gespraech#2",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._feuchteLeser",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     480.2,
+     533.1
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.mensch.menge.seuche#1",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._feuchteLeser",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     502.7,
+     559.9
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.mensch.macht.krieg#1",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._feuchteLeser",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     505.4,
+     563.9
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.mensch.kultur.sprache#1",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._feuchteLeser",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     520.3,
+     555.7
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.mensch.stadt.siedlungsnetz#2",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._feuchteLeser",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     505,
+     564.9
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.mensch.macht.wehrbau#3",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._feuchteLeser",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     507.9,
+     549.2
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.erleben.spieler.wegfindung#1",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._feuchteLeser",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     523,
+     443.5
+    ],
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "profiband.K4#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.mensch.sport.kunst#1",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.mensch.geist.gespraech#2",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.mensch.menge.seuche#1",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.mensch.macht.krieg#1",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.mensch.kultur.sprache#1",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.mensch.stadt.siedlungsnetz#2",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.mensch.macht.wehrbau#3",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "haenger": [
+   {
+    "probe": "profiband.K4#1",
+    "zurueck": 9
+   }
+  ],
+  "wanderung": [
+   {
+    "probe": "karte2.erleben.spieler.wegfindung#1",
+    "ort": "stadt-voll",
+    "m": 1871.65,
+    "dreh": 3.641
+   }
+  ],
+  "grund": "die Welt trägt nicht mehr vor karte2.erleben.klang.stimme#1: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":13,\"nachher\":0,\"fehlt\":[\"Yune ×3\",\"Nox ×2\",\"Kai\",\"Joro\"],\"neu\":[],\"anders\":[]},\"worldMeta.kalender\":{\"vorher\":2,\"nachher\":2,\"fehlt\":[\"0.10099999999394\"],\"neu\":[\"0.10099999999393816\"],\"anders\":[]},\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.011003442226975088,50],[\\\"-8,-8\\\",-0.056294492221610606,50], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.011003442226975088,50],[\\\"-8,-8\\\",-0.056294492221610606,50],\",\"weather\":\"undefined → \\\"sunny\\\"\"} — offen: karte2.erleben.klang.stimme#1, karte2.planet.kosmos.systeme#1, karte2.same.massstab.spanne#1, karte2.erleben.spieler.gemeinsam#1, karte2.planet.kosmos.himmelsmechanik#1, karte2.planet.kosmos.sternhimmel#1, karte2.same.preis.takt#1, karte2.mensch.fahrzeug.medium#2, karte2.erleben.bild.nacht#1, karte2.erleben.bild.nacht#2, karte2.same.preis.ausdauer#1, karte2.mensch.sport.koerper#1, karte2.leben.tiere.masse#1, karte2.planet.kosmos.welten#1, karte2.mensch.geist.netz#1, karte2.mensch.macht.recht#1, karte2.mensch.menge.kollektiv#2, karte2.mensch.wirtschaft.handel#2, karte2.mensch.fahrzeug.lenker#1, karte2.mensch.kultur.verstaendigung#1, karte2.mensch.nahrung.flur#2, karte2.mensch.nahrung.tier#2, karte2.mensch.nahrung.hand#3, karte2.mensch.nahrung.frucht#1, karte2.mensch.fahrzeug.maschine#2, karte2.mensch.wirtschaft.markt#2, karte2.mensch.menge.bevoelkerung#1, karte2.leben.tiere.bewegung#1, karte2.leben.wasser.bild#1, karte2.leben.wasser.netz#1, karte2.leben.oeko.netz#2, karte2.leben.oeko.sukzession#1, karte2.leben.evolution.erbe#1, karte2.leben.evolution.fremde-physik#1, karte2.leben.evolution.zivilisation#1, karte2.planet.kopplung.land-meer-luft#3, karte2.planet.kopplung.land-meer-luft#4, karte2.planet.kopplung.bahn-klima#2, karte2.planet.kopplung.wetter-welt#2, karte2.planet.kopplung.stadtklima#1, karte2.planet.kopplung.gegenwart#1, karte2.planet.kopplung.gegenwart#2, karte2.leben.kopplung.evolution-planet#1, karte2.leben.kopplung.stadt-im-netz#2, karte2.same.kopplung.aufwaerts#1, karte2.same.kopplung.ereignis#2, karte2.same.kopplung.gewalt#1, karte2.same.kopplung.kohaerenz#1, karte2.same.kopplung.zeitreise#1, karte2.same.kopplung.terraform#1, karte2.erleben.kopplung.wahrnehmung#2, karte2.leben.pflanzen.biome#1, karte2.leben.pflanzen.jahreslauf#2, karte2.leben.pflanzen.kraft#2, karte2.same.physik.feuer#2, karte2.same.massstab.sprung#1, karte2.mensch.kopplung.leib#1, karte2.mensch.kopplung.kultur#2, karte2.same.preis.ankunft#2, karte2.same.entfaltung.schirm#1, karte2.erleben.spieler.hand#1, karte2.erleben.schoepfen.satz#1, karte2.same.preis.eingabe#2, karte2.planet.relief.grossform#1",
+  "ciBlicke": 11,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 11397,
+   "frameP95": 58.65,
+   "taktP95": 56.34,
+   "vramMax": 231.4,
+   "seiten": 2,
+   "marken": 2,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.erleben.spieler.wegfindung#1",
+     "m": 1872,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 957,
+   "luecken": 4,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 1043.6,
+  "minuten": 18.72
+ },
+ "fortsetzung": [
+  {
+   "start": "2026-11-24T12:05:03.030Z",
+   "ordner": "sitzung-20261124-130503",
+   "port": 7804,
+   "warten": 0.05,
+   "bootS": 7.6,
+   "grundstellungS": [],
+   "proben": 1,
+   "freigaben": [],
+   "offen": [
+    "karte2.erleben.klang.stimme#1",
+    "karte2.planet.kosmos.systeme#1",
+    "karte2.same.massstab.spanne#1",
+    "karte2.erleben.spieler.gemeinsam#1",
+    "karte2.planet.kosmos.himmelsmechanik#1",
+    "karte2.planet.kosmos.sternhimmel#1",
+    "karte2.same.preis.takt#1",
+    "karte2.mensch.fahrzeug.medium#2",
+    "karte2.erleben.bild.nacht#1",
+    "karte2.erleben.bild.nacht#2",
+    "karte2.same.preis.ausdauer#1",
+    "karte2.mensch.sport.koerper#1",
+    "karte2.leben.tiere.masse#1",
+    "karte2.planet.kosmos.welten#1",
+    "karte2.mensch.geist.netz#1",
+    "karte2.mensch.macht.recht#1",
+    "karte2.mensch.menge.kollektiv#2",
+    "karte2.mensch.wirtschaft.handel#2",
+    "karte2.mensch.fahrzeug.lenker#1",
+    "karte2.mensch.kultur.verstaendigung#1",
+    "karte2.mensch.nahrung.flur#2",
+    "karte2.mensch.nahrung.tier#2",
+    "karte2.mensch.nahrung.hand#3",
+    "karte2.mensch.nahrung.frucht#1",
+    "karte2.mensch.fahrzeug.maschine#2",
+    "karte2.mensch.wirtschaft.markt#2",
+    "karte2.mensch.menge.bevoelkerung#1",
+    "karte2.leben.tiere.bewegung#1",
+    "karte2.leben.wasser.bild#1",
+    "karte2.leben.wasser.netz#1",
+    "karte2.leben.oeko.netz#2",
+    "karte2.leben.oeko.sukzession#1",
+    "karte2.leben.evolution.erbe#1",
+    "karte2.leben.evolution.fremde-physik#1",
+    "karte2.leben.evolution.zivilisation#1",
+    "karte2.planet.kopplung.land-meer-luft#3",
+    "karte2.planet.kopplung.land-meer-luft#4",
+    "karte2.planet.kopplung.bahn-klima#2",
+    "karte2.planet.kopplung.wetter-welt#2",
+    "karte2.planet.kopplung.stadtklima#1",
+    "karte2.planet.kopplung.gegenwart#1",
+    "karte2.planet.kopplung.gegenwart#2",
+    "karte2.leben.kopplung.evolution-planet#1",
+    "karte2.leben.kopplung.stadt-im-netz#2",
+    "karte2.same.kopplung.aufwaerts#1",
+    "karte2.same.kopplung.ereignis#2",
+    "karte2.same.kopplung.gewalt#1",
+    "karte2.same.kopplung.kohaerenz#1",
+    "karte2.same.kopplung.zeitreise#1",
+    "karte2.same.kopplung.terraform#1",
+    "karte2.erleben.kopplung.wahrnehmung#2",
+    "karte2.leben.pflanzen.biome#1",
+    "karte2.leben.pflanzen.jahreslauf#2",
+    "karte2.leben.pflanzen.kraft#2",
+    "karte2.same.physik.feuer#2",
+    "karte2.same.massstab.sprung#1",
+    "karte2.mensch.kopplung.leib#1",
+    "karte2.mensch.kopplung.kultur#2",
+    "karte2.same.preis.ankunft#2",
+    "karte2.same.entfaltung.schirm#1",
+    "karte2.erleben.spieler.hand#1",
+    "karte2.erleben.schoepfen.satz#1",
+    "karte2.same.preis.eingabe#2",
+    "karte2.planet.relief.grossform#1"
+   ],
+   "orte": [],
+   "wegeTueren": [],
+   "felder": [
+    {
+     "probe": "profiband.K4#1",
+     "weg": [
+      "__weltaktSpionBuch",
+      "__wetterSpionBuch",
+      "__buehneUhr",
+      "__impostorRttBaked",
+      "__flussBibliothekS",
+      "__zensusCalls",
+      "__k4",
+      "__k4iv"
+     ]
+    }
+   ],
+   "wirt": [
+    {
+     "probe": "profiband.K4#1",
+     "anders": [
+      "r._bildZeit",
+      "r._wolkenZeit",
+      "r._weltaktGehalten",
+      "r._setWeather",
+      "r._feuchteLeser",
+      "r._knotenRate",
+      "r.state.weather",
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "r._bildZeit": "neu: () => S.T",
+      "r._wolkenZeit": "neu: () => S.T",
+      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+      "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+      "r._knotenRate": "neu: function (N, ro) { const t0 = performance.now(); const s = kr.apply(this, argume",
+      "r.state.weather": "neu: () => wert",
+      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [
+      "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+      "const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t ",
+      "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+      "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+      "return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st &&",
+      "/* __punkteFelder */ return (function probeFelder(gib, sitzung, grundSeite) { if (!gib) { window.__punkteFel"
+     ],
+     "heap": [
+      null,
+      null
+     ],
+     "ungemessen": "den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t  | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && — Heap ungemessen"
+    }
+   ],
+   "messHalt": [
+    {
+     "probe": "profiband.K4#1",
+     "halt": -1000000000,
+     "zurueck": 0
+    }
+   ],
+   "grund": "die Welt trägt nicht mehr vor karte2.erleben.klang.stimme#1: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"neu\":[],\"anders\":[]}} — offen: karte2.erleben.klang.stimme#1, karte2.planet.kosmos.systeme#1, karte2.same.massstab.spanne#1, karte2.erleben.spieler.gemeinsam#1, karte2.planet.kosmos.himmelsmechanik#1, karte2.planet.kosmos.sternhimmel#1, karte2.same.preis.takt#1, karte2.mensch.fahrzeug.medium#2, karte2.erleben.bild.nacht#1, karte2.erleben.bild.nacht#2, karte2.same.preis.ausdauer#1, karte2.mensch.sport.koerper#1, karte2.leben.tiere.masse#1, karte2.planet.kosmos.welten#1, karte2.mensch.geist.netz#1, karte2.mensch.macht.recht#1, karte2.mensch.menge.kollektiv#2, karte2.mensch.wirtschaft.handel#2, karte2.mensch.fahrzeug.lenker#1, karte2.mensch.kultur.verstaendigung#1, karte2.mensch.nahrung.flur#2, karte2.mensch.nahrung.tier#2, karte2.mensch.nahrung.hand#3, karte2.mensch.nahrung.frucht#1, karte2.mensch.fahrzeug.maschine#2, karte2.mensch.wirtschaft.markt#2, karte2.mensch.menge.bevoelkerung#1, karte2.leben.tiere.bewegung#1, karte2.leben.wasser.bild#1, karte2.leben.wasser.netz#1, karte2.leben.oeko.netz#2, karte2.leben.oeko.sukzession#1, karte2.leben.evolution.erbe#1, karte2.leben.evolution.fremde-physik#1, karte2.leben.evolution.zivilisation#1, karte2.planet.kopplung.land-meer-luft#3, karte2.planet.kopplung.land-meer-luft#4, karte2.planet.kopplung.bahn-klima#2, karte2.planet.kopplung.wetter-welt#2, karte2.planet.kopplung.stadtklima#1, karte2.planet.kopplung.gegenwart#1, karte2.planet.kopplung.gegenwart#2, karte2.leben.kopplung.evolution-planet#1, karte2.leben.kopplung.stadt-im-netz#2, karte2.same.kopplung.aufwaerts#1, karte2.same.kopplung.ereignis#2, karte2.same.kopplung.gewalt#1, karte2.same.kopplung.kohaerenz#1, karte2.same.kopplung.zeitreise#1, karte2.same.kopplung.terraform#1, karte2.erleben.kopplung.wahrnehmung#2, karte2.leben.pflanzen.biome#1, karte2.leben.pflanzen.jahreslauf#2, karte2.leben.pflanzen.kraft#2, karte2.same.physik.feuer#2, karte2.same.massstab.sprung#1, karte2.mensch.kopplung.leib#1, karte2.mensch.kopplung.kultur#2, karte2.same.preis.ankunft#2, karte2.same.entfaltung.schirm#1, karte2.erleben.spieler.hand#1, karte2.erleben.schoepfen.satz#1, karte2.same.preis.eingabe#2, karte2.planet.relief.grossform#1",
+   "ciBlicke": 3,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 138,
+    "frameP95": 100.51,
+    "taktP95": 94.76,
+    "vramMax": 139.2,
+    "seiten": 3,
+    "marken": 1,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [],
+    "zapfen": 80,
+    "luecken": 2,
+    "letzteLuecke": "kein Renderer"
+   },
+   "fahrtS": 101.2,
+   "minuten": 1.83
+  }
+ ]
+}
