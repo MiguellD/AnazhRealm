@@ -538,6 +538,10 @@ const PROBE_RUFE = [
         ],
     ],
     ["[gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen, gate:tag-achse:echt, gate:apparat]"],
+    // DER DECKEL JE PROBE (kreatur-takt, 24.11.): ein Tor, das in der Cloud länger misst als PROBE_DECKEL_S (spec/ci/ci-zeiten.json
+    // skripte), weist der Einlass ab, auch als zeit: — gate:kreatur-takt (742 + 937 + 596 s) brach auf der GTX 1050 dreimal stumm am Deckel
+    ["[gpu-probe: gate:kreatur-takt]"],
+    ["[gpu-probe: zeit:gate:kreatur-takt, bild:wiese]"],
 ];
 
 // Klinge 7, DER STEMPEL ERBT (stempel-erbt-probe, 22.11.): der Einlass fährt hier gegen eine GESTELLTE API (kein Netz im Gate:
@@ -645,8 +649,8 @@ const kopfMutante = (alt, neu) => (z) => {
 let treiberDatei = null;
 const einlassLaeufe = new Map();
 // die Fälle eines Quelltexts (und einer Mutante des Richters) in EINEM Kind, je Prozess einmal: → je Fall { aus, code, fehler }
-function einlassFahren(js, faelle, kopfQuelle = "") {
-    const schluessel = JSON.stringify([js, faelle, kopfQuelle]);
+function einlassFahren(js, faelle, kopfQuelle = "", deckel = "") {
+    const schluessel = JSON.stringify([js, faelle, kopfQuelle, deckel]);
     if (einlassLaeufe.has(schluessel)) return einlassLaeufe.get(schluessel);
     if (!treiberDatei) {
         treiberDatei = path.join(require("os").tmpdir(), `einlass-treiber-${process.pid}.cjs`);
@@ -656,6 +660,7 @@ function einlassFahren(js, faelle, kopfQuelle = "") {
     const env = { ...process.env, GITHUB_OUTPUT: "", GITHUB_STEP_SUMMARY: "", GITHUB_SHA: ERB.K, GITHUB_RUN_ID: "900" };
     Object.assign(env, { GITHUB_REPOSITORY: "o/r", GITHUB_API_URL: "https://api.gestellt.invalid", GH_TOKEN: "t" });
     Object.assign(env, { EINLASS_JS_TEXT: js, EINLASS_FAELLE: JSON.stringify(faelle), EINLASS_KOPF_QUELLE: kopfQuelle });
+    env.PROBE_DECKEL_S = deckel; // der Deckel je Probe aus dem env der Datei (gpu-probe.yml), nie aus der Hülle des Gates
     const r = require("child_process").spawnSync(process.execPath, [treiberDatei], { cwd: ROOT, env, encoding: "utf8" });
     let aus;
     try {
@@ -665,6 +670,96 @@ function einlassFahren(js, faelle, kopfQuelle = "") {
     }
     einlassLaeufe.set(schluessel, aus);
     return aus;
+}
+
+// Klinge 7, DER VORFAHRT-BLICK (24.11., spiegel-eis 2adc05ed, Lauf 45368225622: ein 502 der API gab nach 81 s nach — ROT ohne
+// Verhalten). Das Gesetz am echten Text des Beins: (1) der Blick (VORFAHRT_JS, gegen eine GESTELLTE API in einem Kind) liest 5xx
+// und Netzfehler dreimal neu, 4xx nie; ein gescheiterter Blick schreibt seine Zeile auf stderr und NICHTS auf stdout, ein
+// gelesener Karten-Job steht auf stdout. (2) Der EINE Lauf (die Hüllen-Funktionen vorfahrt · lauf des Beins, in bash gefahren):
+// „Blick wirft 502“ → die Probe misst zu Ende, die Zeile liegt in $BLICK; „echt-Job wartet“ → NACHGEGEBEN, der Baum fällt.
+const BLICK_FAELLE = [
+    // [Name, Fall der gestellten API, Soll: Rufe, stdout, stderr]
+    ["Blick wirft 502", "502", 4, /^$/, /Vorfahrt-Blick gescheitert: 502 /],
+    ["502, dann frei", "502-frei", 3, /^$/, /^$/],
+    ["Netzfehler", "netz", 4, /^$/, /Vorfahrt-Blick gescheitert: ECONNRESET /],
+    ["404", "404", 1, /^$/, /Vorfahrt-Blick gescheitert: 404 /],
+    ["echt-Job wartet", "wartet", 2, /^Karten-Job „echt gtx1050“ \(Lauf 7\) wartet auf diesen Läufer \(gtx1050-gpu\)$/, /^$/],
+];
+// die gestellte API des Blicks (kein Netz im Gate): je Fall die Antwort je Ruf, die Zahl der Rufe geht in BLICK_RUFE
+function blickStub() {
+    let rufe = 0;
+    const fall = process.env.BLICK_FALL;
+    const antwort = (status, j) => ({ ok: status === 200, status, json: async () => j });
+    globalThis.fetch = async (u) => {
+        rufe++;
+        if (fall === "502" || (fall === "502-frei" && rufe === 1)) return antwort(502);
+        if (fall === "404") return antwort(404);
+        if (fall === "netz") throw Object.assign(new TypeError("fetch failed"), { cause: { code: "ECONNRESET" } });
+        if (u.includes("/l/7/jobs")) return antwort(200, { jobs: [{ status: "queued", name: "echt gtx1050", labels: ["self-hosted", "gtx1050-gpu"] }] }); // prettier-ignore
+        const wartet = fall === "wartet" && u.includes("status=queued");
+        return antwort(200, { workflow_runs: wartet ? [{ id: 7, jobs_url: "https://api.gestellt.invalid/l/7/jobs" }] : [] });
+    };
+    process.on("exit", () => process.env.BLICK_RUFE && require("fs").writeFileSync(process.env.BLICK_RUFE, String(rufe)));
+}
+const blickLaeufe = new Map();
+function blickGesetz(run) {
+    const cp = require("child_process");
+    const os = require("os");
+    const js = /VORFAHRT_JS='([\s\S]*?)'\n/.exec(run)?.[1];
+    const [a, b] = [run.indexOf('BLICK="$OUT/vorfahrt-blick.txt"'), run.indexOf("# BILD an der Kamera des Spiels")];
+    if (!js || a < 0 || b < a || !js.includes("const abstand = 2000;"))
+        return ["Vorfahrt-Blick: das Bein trägt VORFAHRT_JS (const abstand = 2000) oder den EINEN Lauf (BLICK= … lauf) nicht"];
+    const schluessel = js + run.slice(a, b);
+    if (blickLaeufe.has(schluessel)) return blickLaeufe.get(schluessel);
+    const v = [];
+    blickLaeufe.set(schluessel, v);
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "blick-"));
+    const unix = (p) => p.split(path.sep).join("/");
+    const stub = path.join(tmp, "stub.cjs");
+    const schnell = js.replace("const abstand = 2000;", "const abstand = 1;");
+    fs.writeFileSync(stub, `"use strict";\n(${blickStub.toString()})();\n`);
+    const env = (fall, mehr) => ({ ...process.env, GH_TOKEN: "t", GITHUB_API_URL: "https://api.gestellt.invalid", GITHUB_REPOSITORY: "o/r", RUNNER_NAME: "gtx1050-desktop", BLICK_FALL: fall, ...mehr }); // prettier-ignore
+    try {
+        for (const [name, fall, rufe, aus, err] of BLICK_FAELLE) {
+            const zaehler = path.join(tmp, "rufe.txt");
+            const r = cp.spawnSync(process.execPath, ["--require", stub, "-e", schnell], { env: env(fall, { BLICK_RUFE: zaehler }), encoding: "utf8" }); // prettier-ignore
+            const n = Number(fs.existsSync(zaehler) ? fs.readFileSync(zaehler, "utf8") : NaN);
+            const [o, e] = [String(r.stdout).trim(), String(r.stderr).trim()];
+            if (!aus.test(o)) v.push(`Vorfahrt-Blick „${name}“: stdout „${o.slice(0, 120)}“ — ${o ? "ein gescheiterter Blick gibt nach" : "der gelesene Vorfahrt-Fall bleibt stumm"}`); // prettier-ignore
+            if (!err.test(e)) v.push(`Vorfahrt-Blick „${name}“: stderr „${e.slice(0, 120)}“ — der Blick nennt sein Scheitern nicht (oder ein gelesener Fall scheitert)`); // prettier-ignore
+            if (n !== rufe) v.push(`Vorfahrt-Blick „${name}“: ${n} Rufe statt ${rufe} — 5xx und Netzfehler dreimal mit Abstand neu, 4xx nie`);
+        }
+        if (v.length) return v; // der Blick selbst ist benannt: der Lauf erbt seinen Fehler
+        // der EINE Lauf in bash, beide Fälle nebeneinander, der Blick fällt je 1 s (im Bein je 30 s): unter „Blick wirft 502“ misst
+        // das Kind seine 8 s zu Ende; unter „echt-Job wartet“ fällt ein Kind von 20 s am ersten Blick (die Dauer ist der Zeuge)
+        const lauf = [
+            'OUT="$1"; LOG="$OUT/l.log"; DECKEL=60; BLICK_TAKT=1; mkdir -p "$OUT"',
+            "ci_wartet() { return 1; }",
+            'node() { command node --require "$BLICK_STUB" "$@"; }',
+            run.slice(a, b),
+            ': > "$BLICK"',
+            'lauf sleep "$2"',
+            'echo "RC=$RC T=$SECONDS GRUND=$GRUND BLICK=$(grep -ac "Vorfahrt-Blick gescheitert: 502" "$BLICK")"',
+        ];
+        const beide = [
+            'T="$1"',
+            'BLICK_FALL=502 bash "$T/lauf.sh" "$T/a" 8 > "$T/a.txt" 2>&1 &',
+            'BLICK_FALL=wartet bash "$T/lauf.sh" "$T/b" 20 > "$T/b.txt" 2>&1 &',
+            "wait",
+        ];
+        fs.writeFileSync(path.join(tmp, "lauf.sh"), lauf.join("\n") + "\n");
+        fs.writeFileSync(path.join(tmp, "beide.sh"), beide.join("\n") + "\n");
+        const r = cp.spawnSync("bash", [unix(path.join(tmp, "beide.sh")), unix(tmp)], { env: env("", { VORFAHRT_JS: schnell, BLICK_STUB: unix(stub) }), encoding: "utf8" }); // prettier-ignore
+        const lies = (n) => (fs.existsSync(path.join(tmp, n)) ? fs.readFileSync(path.join(tmp, n), "utf8").trim() : `bash antwortete nicht (${r.error?.message || r.stderr || r.status})`); // prettier-ignore
+        const [f502, wartet] = [lies("a.txt"), lies("b.txt")];
+        if (!/^RC=0 T=\d+ GRUND= BLICK=[1-9]/m.test(f502)) v.push(`Vorfahrt-Lauf „Blick wirft 502“: ${f502.slice(-160)} — die Probe misst nicht zu Ende, oder die Zeile des Blicks fehlt in $BLICK`); // prettier-ignore
+        if (!/^RC=\d+ T=([0-9]|1[0-5]) GRUND=NACHGEGEBEN: Karten-Job „echt gtx1050“/m.test(wartet)) v.push(`Vorfahrt-Lauf „echt-Job wartet“: ${wartet.slice(-160)} — der gelesene Vorfahrt-Fall gibt nicht nach`); // prettier-ignore
+    } catch (e) {
+        v.push(`Vorfahrt-Blick: der Treiber brach (${e.message.slice(0, 160)})`);
+    } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+    }
+    return v;
 }
 
 function probeGesetz(doc) {
@@ -683,7 +778,15 @@ function probeGesetz(doc) {
     }
     const e = doc.jobs.einlass.steps.at(-1);
     // (die Mutanten des Richters zielen auf das Erbe: diese Rufe fahren mit dem echten scripts/ci-kopf.cjs, ihr Kopf trägt Inhalt)
-    const rufe = einlassFahren(e.env.EINLASS_JS, PROBE_RUFE.map(([m]) => ({ m, tafel: ERB_INHALT })));
+    // DER DECKEL JE PROBE ist EINE Zahl (env PROBE_DECKEL_S der Datei): das Bein liest sie, nie eine eigene
+    const deckel = String(doc.env?.PROBE_DECKEL_S ?? "");
+    const P = (doc.jobs.probe?.steps || []).find((x) => /^Proben/.test(x.name || ""));
+    if (!(Number(deckel) > 0) || !/\bDECKEL=\$PROBE_DECKEL_S\b/.test(P?.run) || /\bDECKEL=\d/.test(P?.run))
+        v.push(`Deckel: das Bein hält seine Proben nicht an PROBE_DECKEL_S (${deckel || "fehlt"})`);
+    v.push(...blickGesetz(P?.run || ""));
+    if (!P?.run?.includes("${BL:+ — $BL}") || !P.run.includes("${BL:+ · $BL}"))
+        v.push("Vorfahrt-Blick: Kopf oder Post nennen den gescheiterten Blick nicht ($BL)");
+    const rufe = einlassFahren(e.env.EINLASS_JS, PROBE_RUFE.map(([m]) => ({ m, tafel: ERB_INHALT })), "", deckel);
     for (const [i, [m, matrix]] of PROBE_RUFE.entries()) {
         const { aus } = rufe[i];
         if (
@@ -694,7 +797,7 @@ function probeGesetz(doc) {
     }
     // DER STEMPEL ERBT: je Fall das Soll (geerbt ohne Matrix · die Matrix des Rufs · ROT ohne Ausgang), dazu das Recht, Läufe zu
     // lesen, und der Post, der „GEERBT von <eltern-sha8>“ schreibt und GRÜN urteilt
-    const erbe = einlassFahren(e.env.EINLASS_JS, ERB_FAELLE.map(([, m, tafel]) => ({ m, tafel })), doc.__kopfQuelle);
+    const erbe = einlassFahren(e.env.EINLASS_JS, ERB_FAELLE.map(([, m, tafel]) => ({ m, tafel })), doc.__kopfQuelle, deckel);
     for (const [i, [name, , , soll]] of ERB_FAELLE.entries()) {
         const r = erbe[i];
         const ok = soll === "rot" ? r.code !== 0 && r.aus === "" : r.code === 0 && r.aus === soll;
@@ -1064,6 +1167,15 @@ function selftest() {
             ],
             // die GL-Wand (22.11., z662): der Einlass bis dahin — das Bein gpu-probe fährt nur die Proben des Rufs
             ["ohne GL-Wand", (z) => { const e = z.jobs.einlass.steps.at(-1).env; e.EINLASS_JS = e.EINLASS_JS.replace("aufProbe.push(GL)", "0"); }, /Einlass \[gpu-probe: zeit:gate:ego-schatten, bild:wiese@0\.3, gate:apparat\] → matrix=/], // prettier-ignore
+            // der Deckel je Probe (kreatur-takt, 24.11.): der Einlass bis dahin — jedes Tor fuhr, auch eines, das kein Deckel hält
+            ["Einlass ohne Deckel", (z) => { const e = z.jobs.einlass.steps.at(-1).env; e.EINLASS_JS = e.EINLASS_JS.replace("cloud[s[1]]?.s > deckel", "false"); }, /Einlass \[gpu-probe: gate:kreatur-takt\] → m/], // prettier-ignore
+            ["Deckel als Zahl im Bein", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace("DECKEL=$PROBE_DECKEL_S", "DECKEL=480"); }, /Deckel: das Bein/], // prettier-ignore
+            // der Vorfahrt-Blick (24.11.): der Stand bis dahin — ein 502 stand auf stdout und gab nach; dazu ein Blick ohne Geduld,
+            // ein Lauf, der den gelesenen Fall überhört, und ein Kopf, der den gescheiterten Blick verschweigt
+            ["Blick gibt bei 502 nach", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = mutiert(s.run, "console.error(`Vorfahrt-Blick gescheitert", "console.log(`Vorfahrt-Blick gescheitert"); }, /Vorfahrt-Blick „Blick wirft 502“: stdout .* ein gescheiterter Blick gibt nach/], // prettier-ignore
+            ["Blick ohne Geduld", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = mutiert(s.run, "for (let n = 0; n <= 3; n++)", "for (let n = 0; n <= 0; n++)"); }, /Vorfahrt-Blick „Blick wirft 502“: 1 Rufe statt 4/], // prettier-ignore
+            ["Lauf überhört die Vorfahrt", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = mutiert(s.run, '[ -n "$v" ] && GRUND="NACHGEGEBEN: $v"', ":"); }, /Vorfahrt-Lauf „echt-Job wartet“/], // prettier-ignore
+            ["Kopf verschweigt den Blick", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = mutiert(s.run, "${BL:+ — $BL}", ""); }, /Vorfahrt-Blick: Kopf oder Post nennen/], // prettier-ignore
             // Klinge 9: die alte Zeile bis w28-probe-urteil — der Exit allein urteilt, der Kopf ohne Grund, kein BEKANNT im Post
             ["Exit allein", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace(/UG=\$\(node scripts\/lib\/urteil-zeile[\s\S]*?esac\n/, 'elif [ "$RC" = 0 ]; then U=GRÜN; else U=ROT; fi\n'); }, /Klinge 9: der Kopf der Probe urteilt am Exit allein/], // prettier-ignore
             ["Kopf ohne Grund", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace(/\$\{GRUND:\+ — \$\{GRUND:0:240\}\}/, ""); }, /Klinge 9: der Kopf nennt den Grund/], // prettier-ignore
