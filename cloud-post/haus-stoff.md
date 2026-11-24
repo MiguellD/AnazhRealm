@@ -127,3 +127,11 @@ Je Merkmal im Bild, gegen die Fotos:
   - Golden haeuser.json neu geprägt: 221 von 258 Fällen, die Ecken-Zahl je Fall ist gleich. Darunter die 56 Hütten-Fälle (holzhuette,
     alpenchalet, skandinavisch, norwegisch, russisch, schwarzwald, japanisch je s7/s12345 × L0–L3). Golden siedlung.json neu geprägt
     (7/12 „Villaalto“ und 12345/6 „Grünbach“). Die Pläne weichen höchstens um 4·10^-9 m vom alten Stand ab, Slots und Namen sind gleich.
+- **Stand beim Halt (24.11., 15:45).**
+  - gate:settlement Lauf 2 am Kopf 2b13e5e9: Selbsttest grün, Golden siedlung.json gemintet. Danach exit 1 ohne rote Zeile in Teil O
+    (nach „B/C Selbsttest“). Parallel lief haus-welt 2/2, deshalb vermutlich ein getöteter Prozess oder Speicher. Lauf 3 läuft allein
+    (Log scratchpad/hd/st3.log). Die zwei planHash-Werte stehen noch aus. Kein Push ohne grünes gate:settlement.
+  - schwarzwald L2 „7 852 / 7 392 gegen 7 000 Tris“ (welt-boot KOSTEN in Teil B, in Lauf 1 und Lauf 2): buildInstance schwarzwald L2
+    zählt an main 499f8b57 und am Kopf gleich viel (s1 3 148 · s7 3 232 · s12345 2 766). Der Überschuss entsteht am Welt-Bau (mit `ov`
+    des Plans) und ist am Preset nicht neu. Offen: derselbe Welt-Fall an main · Messname gate:asset-contract · Leser welt-boot KOSTEN.
+  - haus-welt 2/2 am Kopf noch nicht zu Ende gelaufen (abgebrochen für den Alleinlauf).
