@@ -1,5 +1,32 @@
 # Post an ort-ausstattung
 
+## 24.11. 06:38 — Koordinator: MEIN BLICK auf `bild:ort-zeichen` (b3bf1523, GTX 1050, ROT) — das Schild muss TRAGEN, der Richter bleibt
+
+Ich habe Bild und Maske selbst angesehen (probe-post/ort-ausstattung/b3bf1523-ort-zeichen-rot.png, 1920 × 1080, Blick 6 m):
+
+- **Was da ist:** über der Tür steht „KAUFHAUS“, dunkles Gold auf schwarzer Platte, rund 118 × 13 px = 0,08 % des Bilds — die Platte
+  hat Türbreite (~1,1 m) und ~12 cm Höhe, die Buchstaben ~8 cm. Lesbar erst im Vierfach-Zoom. Ein Hauszeichen (Relief) sehe ich
+  im Rahmen NICHT. An einem dreigeschossigen Kaufhaus ist das ein Klingelschild, kein Ort, der sich ausweist.
+- **Zwei Täter, beide beim Namen:** (1) die MASKE färbt das Schild als `bauSatz` (rot wie die Wand) — die Familie `schild|relief`
+  erreicht das Bild nicht, darum 0,0 %; (2) selbst mit Familie trüge es 0,08 % < 0,2 %. Die Schwelle 0,2 % BLEIBT — sie ist richtig.
+- **Der Schnitt (Macher, EIN Gesetz, kein Sonderfall je Rolle):** die Größe des Schilds ist eine Funktion der LESE-ENTFERNUNG des
+  Orts, nicht der Türbreite. Quelle mit Zahl: die Sichtbarkeits-Tafel der Schilder-Zunft — 1 Zoll Buchstabenhöhe je 10 Fuß für
+  die beste Wirkung (≈ 8,3 mm je Meter), lesbar bis etwa das Dreifache. Über eine Gasse von 12 m heißt das ≥ 10 cm, über einen
+  Platz von 30 m ≥ 25 cm Buchstabenhöhe; das Band über der Ladenfront (Fascia) trägt die Schrift mit Rand, also 1,6–2 × so hoch,
+  und spannt die Achse der Tür samt Nachbarfeld, nicht nur das Türblatt. Im Spiel gerechnet (1080 Zeilen, ~935 px je Radiant):
+  20 cm Schrift sind bei 15 m 12 px — die Untergrenze, an der man sie im Gehen liest; 8 cm sind dort 5 px.
+  Die Lese-Entfernung liest das Gesetz aus dem, was der Plan schon trägt (Breite der Gasse vor der Tür, Rand des Platzes) —
+  eine Zahl je Ort aus dem Plan, kein Feld je Haus.
+- **Kontrast:** Schrift gegen Platte ≥ 4,5 : 1 in der Leuchtdichte (die Lesbarkeits-Schwelle der Barrierefreiheit für Text) —
+  heute dunkles Gold auf Schwarz, geschätzt 2 : 1. Hell auf dunkel oder dunkel auf hell, aus dem Stoff der Kultur gewählt.
+- **Das Hauszeichen** steht im Rahmen des Messorts: entweder der Messort blickt so, dass Schild UND Zeichen im Bild sind, oder
+  der Name des Messorts verspricht es nicht. Sage a, tue a.
+- **Abgabe:** EIN Push „Vorprüfung ort-ausstattung 3 …“ mit dem Fixture-Schnitt (Post vom 24.11. weiter unten), dem Merge von
+  `origin/karte-nennt-klasse`, dem Schild nach dem Lese-Gesetz, der Familie in der Maske — Marken
+  `[gpu-probe: bild:ort-zeichen, gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen] [ci voll]`, der Bericht im
+  selben Commit mit dem Bildpaar vorher (b3bf1523) ↔ nachher und den Zahlen: Anteil f:schild im Bild, Schrift-Höhe in px bei 6 m
+  und 15 m, Kontrast. Bei Grün sehe ich das Bild an und stemple.
+
 ## 24.11. 06:33 — GPU-PROBE b3bf1523 auf gtx1050-desktop: ROT in 751 s (bild:ort-zeichen ROT 315 s — "fehler": "ABNAHME ROT [kein f:(schild|relief) im Bild: 0.0 % < 0.2 %] auf gtx1050-desktop · beweis auf gtx1050-desktop · Sicht 0.0 % auf gtx1050-desktop · Ziel Blickziel im Bild frei 6 m auf gtx1050-desktop · Luma 94 σ 41.6 schwarz 2.4 % weiß 0.0 % auf gtx1050-desktop · Stand 18.546.387 auf gtx1050-desktop · Bühne summer sunny 0.50 Tiere auf gtx1050-desktop · gate:webgl-probe GRÜN 138 s auf gtx1050-desktop) → probe-post/ort-ausstattung/b3bf1523.md
 
 ## 24.11. 06:19 — KOORDINATOR: Nachtrag zum Auftrag von 06:07 — merge `origin/karte-nennt-klasse` statt `origin/main`
