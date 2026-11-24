@@ -93,3 +93,19 @@ DER SCHNITT (EINE Welle, Wurzel lesen statt raten; jede Regel mit Selbsttest und
 BEWEIS: EINE Fahrt der 15 genannten Stationen + megastadt#1 + sprache#1 + koennen#2 an einem Gerät, Urteile gegen Ungemessene vorher
 (heute: 0 von 18) ↔ nachher. Hast du kein Standardgerät frei, liefere den Zweig `pm-sitzung-traegt` — ich fahre die Fahrt an der Radeon.
 NEUE REIHENFOLGE GTX 1050: (1) dieser Schnitt → (2) Stations-Probe `station:` → (3) GIT_DIR → (4) Tat-Wertung → klima-aufwind.
+
+## NACHTRAG 24.11. 18:01 — DIE WURZEL BEIM NAMEN: eine Ende-Station zieht profiband.K4 in jede Sitzung (GTX 1050, Scheibe 1 ZUERST)
+- BEFUND (pm-Baum der Radeon, Kopf eba9bf8f): `karte2.same.preis.ausdauer#1` trägt `PB_PROBE_DAUER` (`stationen/g6.js:2496`, `stellung: "ende"`).
+  `punkte.cjs:4519–4521` stellt darum jeden Anfang des Geräts — profiband.K4#1/#2 (`PB_PROBE_GLAETTE`, g6.js:2490) — in die Auswahl der
+  Runde, die Reihe der Sitzung (punkte.cjs:3693) setzt ihn an den Anfang JEDER Sitzung, auch jeder Folge-Sitzung. Die Front trägt profiband.*
+  nicht (ohne_band), die Mess-Datei der Radeon aber 81 Ids = 79 + 2. Bricht K4 ab (Last aus den eigenen Schleifen des Diensts; Wirt-Wache
+  „den Kontext der Probe hält noch“), hängt der Ortswechsel der nächsten Station die ganze Frist aus, die Sitzung startet neu, wieder K4.
+- GEGENPROBE: drei Einzel-Läufe `--nur` am selben Kopf (17:37 · 17:42 · 17:47): 0 Zeilen profiband.K4, drei Urteile (netz#1 GRÜN,
+  absicht#2 GRÜN, gespraech#2 ROT mit Täter). Runden-Sitzungen: 59 von 640 Zeilen K4 (die tragende), 106 von 182 (gebrochen).
+- SCHEIBE 1 (allein, Zweig `pm-sitzung-traegt`, Ziel 18:50): (a) ein Anfang fährt je FAHRT einmal — nach Urteil oder Abbruch steht er in
+  keiner Folge-Sitzung mehr vorn, sein Ende sagt UNGEMESSEN „kein Anfang in dieser Sitzung“ mit `offen`; (b) ein abgebrochener Anfang
+  kostet keine fremde Station — die nächste Station fährt nie in der Welt, die seine Probe noch hält (Neustart VOR ihr, ohne dass ihre
+  Frist läuft). Selbsttest-Fall + Mutante. Die übrigen Punkte folgen als Scheibe 2.
+- Der Front-Schnitt ist gebucht: koordination 3fc2bd60 (`zug/dienst/front.sh`); der runde.cjs-Schnitt setzt darauf, samt runde.cjs:402/416
+  (erdbau#1 und fluid#1 fallen dort aus der Reihe, Station gelaende.K2#1).
+- Sehe ich um 18:50 keinen Zweig, schneidet der Koordinator Scheibe 1 lokal und nennt den Commit hier.
