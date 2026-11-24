@@ -1,7 +1,7 @@
 {
  "sha": "447eaea65297f44ca4135f8c4009685fa949045f",
  "geraet": "gtx",
- "zeit": "2026-11-24T04:09:14.118Z",
+ "zeit": "2026-11-24T04:10:35.615Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.fahrzeug.medium#2": {
@@ -279,6 +279,76 @@
    },
    "zeit": "2026-11-24T04:09:14.118Z",
    "abdruck": "2be4c703545f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.systeme#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT Leser fehlt: der Mond hat keine eigene Bahn: welt-licht.js:814 mondRichtung = −Sonne, stamm/bild-himmel.js:2793 (stets Vollmond, keine Phase je Woche) — Planeten: 8 mit eigener Bahn, Himmel gegen Ephemeride über 365 Tage max 0.022° (Soll ≤ 0,5°) · Fächer 365/365 Adressen (365 Zeiten) in 44 ms · Leser stamm/bild-himmel.js:327 · Gesetz welt-licht.js:2020 kosmosZeit (Kepler, kBahn) · schlechteste {\"saat\":null,\"ort\":null,\"zeit\":138.999} abw 0.022038914891139672 · Bild dort Himmel bei Nacht am Tag 138.999 (worldMeta.tag + Uhr), Blick zum Planeten der größten Abweichung · ungemessen: Mondphase je Woche im Bildpaar (am Gerät; der Mond der Welt hat keine Phase) (verlangt 1 Planeten mit eigener Bahn, die Welt erzeugte 8)",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "ROT: S1 · ROT Leser fehlt: der Mond hat keine eigene Bahn: welt-licht.js:814 mondRichtung = −Sonne, stamm/bild-himmel.js:2793 (stets Vollmond, keine Phase je Woche) — Planeten: 8 mit eigener Bahn, Himmel gegen Ephemeride über 365 Tage max 0.022° (Soll ≤ 0,5°) · Fächer 365/365 Adressen (365 Zeiten) in 44 ms · Leser stamm/bild-himmel.js:327 · Gesetz welt-licht.js:2020 kosmosZeit (Kepler, kBahn) · schlechteste {\"saat\":null,\"ort\":null,\"zeit\":138.999} abw 0.022038914891139672 · Bild dort Himmel bei Nacht am Tag 138.999 (worldMeta.tag + Uhr), Blick zum Planeten der größten Abweichung · ungemessen: Mondphase je Woche im Bildpaar (am Gerät; der Mond der Welt hat keine Phase) (verlangt 1 Planeten mit eigener Bahn, die Welt erzeugte 8)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k15942408cb93",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2b071f9725eb",
+   "s": 1,
+   "fremd": {
+    "s": 4.4,
+    "takte": 2,
+    "fremdS": 3.31,
+    "kerne": 0.756,
+    "fensterKerne": 0.756,
+    "namen": [
+     [
+      "sh.exe n0611/kandidat.sh gtx-447eaea6 x listen/kandidat-gtx-447eaea6.txt",
+      0.88
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.66
+     ],
+     [
+      "git.exe read-tree b936e5076202dedc2b667d17e5590ecc94a1af2a",
+      0.47
+     ]
+    ],
+    "dienerS": 1.39,
+    "diener": [
+     [
+      "dwm.exe",
+      0.69
+     ],
+     [
+      "System",
+      0.45
+     ]
+    ],
+    "geraetS": 1.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.05
+     ],
+     [
+      "svchost.exe",
+      0.38
+     ],
+     [
+      "SearchIndexer.exe",
+      0.11
+     ]
+    ],
+    "eigenS": 7.64,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-24T04:10:35.615Z",
+   "abdruck": "934903ffb9e9",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
