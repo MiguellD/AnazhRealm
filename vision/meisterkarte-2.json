@@ -12079,10 +12079,10 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 10,
+    "heute": 11,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 3.7,
+    "anteilHeute": 4.1,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -14859,7 +14859,7 @@
        "richter": "100 Saaten: Laufzeit, Pegel, Höhendämpfung folgen der Atmosphären-Zeile in ≥ 95 %; Vakuum: Luftschall 0"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "kern",
      "beleg": "RT60 Feld 0,283 · Wald 0,649 · Gasse 1,522 · Höhle 3,195 s, Verdeckung Haus −11,2 dB (§32.K3 2/2); Klang-Takt Radeon p95 0,25 ms > 0,2 (§32.K5 1/2); kein HRTF, kein Medienwechsel. — KARTE: Kern 2 — am Abgriff gemessen (klang.K3); Bild-Preis in der Szene nicht gemessen; das alte Klang-Budget (an der Radeon 0,25 ms gegen 0,2) ist kein Preis mehr (R8).",
@@ -20089,11 +20089,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 79,
+  "heute": 80,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
-  "anteilHeute": 4.2,
+  "anteilHeute": 4.3,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 51,
-  "nachwache": 28
+  "nachwache": 29
  },
  "zusammengelegt": [
   {
