@@ -1,8 +1,8 @@
 # Vorprüfung fahrzeug-gattung — das Boot am Anleger aus dem Gesetz des Fahrzeugs, der Steg aus dem Zimmerwerk
 
-ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 83 von 1 718 (Stand `vision/karte-2-stand.json` im Zweig `punkte-maschine`;
+ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 91 von 1 718 (Stand `vision/karte-2-stand.json` im Zweig `punkte-maschine`;
 diese Abgabe bucht keine Sprosse, gebucht wird, wenn der Richter sie grün misst). Zweig `fahrzeug-gattung`
-auf main a8dd22b5 (die Tafeln maßen gegen bf9be26c).
+auf main 2d6a0447 (Vorprüfung 2; die Tafeln unten maßen gegen bf9be26c, der Stand der Vorprüfung 2 steht am Ende).
 
 **Die Stufe:** der Anleger am Dorf am Wasser, der Steg und das Boot. Der Leiterwagen steht als Gattung im Kern und im
 Asset-Vertrag; im Spiel steht er noch nicht (siehe Offen).
@@ -111,36 +111,46 @@ nennt denselben Täter „wachsen skala 5.9958“ und „schwarm kohaesion 0.031
 | die Räder des Leiterwagens: europäische Maße unbelegt | nur US-Museumsmaße | `radR`, `radVorn` | FUND-REGISTER (Zweig koordination) |
 | das Boot trägt den Spieler nicht über das Wasser | das Fahr-Gesetz liest `art.medium` wasser noch nicht (der Kern nennt es, die Fahrt fährt an Land) | `exportDrive.art` | `gate:vehicle-drive` |
 
-## Stand beim Kontowechsel (24.11. 15:40, kein Push)
+## Vorprüfung 2 (24.11., auf main 2d6a0447)
 
-Lokal grün auf 5febf0d4: fahr-leben (FK 63 Läufe, FK2, L9 boot und karren: Kopf offen, Anker 0,00, außen 0), asset-contract (Gestalten-Lügen 0),
-regler-wirkt Teil 1 (134/134), kreatur-takt Teil 1/3 (EXIT 0). Rot: settlement O Auto-Dorf „fremde Bauten im Erdbau 2“
-(`fahrzeug_kompakt_fwd`, `fahrzeug_suv` am Zweit-Dorf −7,−7), in zwei lokalen Läufen gleich; auf 86697613 (CI) und main 499f8b57 (CI) grün.
-Täter unbenannt: der nächste Handgriff ist der Lauf mit den Orten der fremden Wagen (`fremdOrt`: Lage, Wende, Anleger) gegen den Anleger;
-danach die Familien-Schritte aus check.yml (vehicle-contract, nervensystem-vehicle, vehicle-drive, gegenstand-stoff, garage-labor,
-boot-rettung, boot-stage, erstarren, welt-boot, warm-start, mp-sync, hitch-telemetrie Teil 1; Läufer: scratchpad `w/familie.sh`).
-Leser: `gate:settlement`.
+**Geschnitten:**
+- Merge main 2d6a0447, sechs Konflikte: `AUS_BAU` trägt `stegfeld` und die Ausstattung von main; der Ausscher-Bogen des Verkehrs
+  (`stamm/siedlung-verkehr.js`) liest die Tafel `gattungen` von main, gefiltert auf die Flotte (`FLOTTE[g] > 0`): Boot und Leiterwagen
+  fahren nie im Ring, Wendekreis und `hlMax` bleiben die der sechs Straßen-Gattungen; v1 `recipes.json` und `render-config.json` neu
+  geprägt (`MINT_NUR_DATEN=1`) — der Unterschied zu main sind genau `art` je Motorwagen, `boot`, `karren`, `stegfeld`, `steg`
+  und die Budgets von boot, karren, stegfeld; `world-params.json` byte-gleich.
+- `gate:settlement` Teil O: ein Wagen des Verkehrs (`_verkehrWagen`) zählt nie als fremder Bau — die Zählung liest den Zustand des
+  Eintrags statt des Augenblicks, in dem der fahrende Wagen über den Erdbau des Zweit-Dorfs rollt (die zwei roten Läufe von drei).
+  Selbst-Schein am Grund eines Hauses: Werk 1, Wagen 0, ohne Zustand 1.
+- `gate:garage-labor` G9/G12 fragen die Art der Gattung: die Zeit-Achse (Ordnung, Bänder) gilt der Gattung mit Motor
+  (`exportDrive.art.motor`), Boot und Leiterwagen tragen an jeder Stufe ihren Muskel (Tempo gleich über die sechs Stufen, an Land
+  > 0, das Boot an Land 0); der schwere Stempel aus Radstand, Spur, Dach (G12) gilt der Gattung auf Rädern. Mutante „carPhys ohne
+  Muskel“ ROT beim Namen. Die Mutanten-Anker folgen dem Kern (der ungesicherte Stand im Baum, gesichert in 4aabf46b, 4 + / 2 −).
 
-Nachtrag 15:47: Der Verdacht C3 fällt am Code. Der C3-Schnitt ist ein Filter allein in der Linse (`anleger.includes(e.type)` in `allHaus`).
-Er berührt weder die Vergabe der Stellplätze noch die Schleife „fremde Bauten“ von Teil O; diese zählt jeden Eintrag ohne Fundament auf
-dem Erdbau, die fahrenden Wagen eingeschlossen, auf 86697613 und auf diesem Kopf gleich. Im Spiel geändert sind seit 86697613 nur
-vehicle-core (Sitz, `art`, Lasur, Stufe 1 von boot und karren; die Bauten der Autos sind byte-gleich, v3 20 von 20) und main (w28-auge-der-art).
-Neu geprägt in v1: recipes.json bei 8 Fahrzeugen (gt, supersport, limousine, kompakt_fwd, suv, transporter, boot, karren: der
-Antriebs-Export trägt `art`), manifest.json ihr Hash. wolf, fox, bear und deer kommen aus main.
-Der Lauf mit den Orten der Wagen (Lage, Stellplatz, Anleger) ist gestartet und reicht nicht bis zum Halt. Das Log liegt unter scratchpad `w/sechs/settlement-dbg.log`.
-Die Änderung an der Linse ist nicht eingecheckt; der Handgriff steht in `fremdOrt`.
+**Gemessen (Radeon, lokal):**
 
-Nachtrag 15:52: Der Verdacht auf den Heil-Commit 3bbb5b23 fällt an der Uhr. Beide roten Läufe von Teil O sind vor seinem Einmischen
-gelaufen, auf 495fff72 (main a8dd22b5 eingemischt um 13:54): settlement.log um 14:12, settlement2.log um 15:34, das Einmischen 5febf0d4 um 15:36.
-welt-boot.cjs war in beiden Läufen der Stand von a8dd22b5. Der Täter liegt zwischen 86697613 und 495fff72: die Fahrzeug-Schnitte dieses
-Zweigs, main a8dd22b5 oder das Pflücken von 28240b1b.
+| Pflicht | Ergebnis |
+|---|---|
+| check:statik · format:check · lint · stamm-umzug --nach-karte · gate:betriebsgesetz | EXIT 0 |
+| vehicle-contract · nervensystem-vehicle · vehicle-drive · gegenstand-stoff · boot-rettung · erstarren · welt-boot · warm-start · mp-sync · hitch Teil 1 | EXIT 0 |
+| fahr-leben (1 924 s) · asset-contract · regler-wirkt Teil 1 · fachwerk-contract · nervensystem-fachwerk · boot-stage | EXIT 0 |
+| settlement (allein, Port 4436, 610 s) | EXIT 0, Teil O „der Ort hält jede Zahl“, fremdArten {} |
+| garage-labor (Karte) | vorher ROT (G9 ordnung boot 0 ≥ 0, karren 5,7 ≥ 5,7; G12 form boot Masse × 1) → GRÜN |
 
-Nachtrag 16:0x: Der dritte Lauf, mit `fremdOrt` (nur gelesen, nicht eingecheckt), auf 62419de5 ist ganz GRÜN: „O Auto-Dorf: der Ort hält jede Zahl — gehalten“,
-fremdArten {}, gate:settlement EXIT 0. Teil O stand damit zweimal rot (auf 495fff72) und einmal grün (mit 3bbb5b23). Die zwei roten Wagen
-sind fahrende Wagen des Verkehrs; ob einer im Augenblick der Zählung auf dem Erdbau des zweiten Dorfs steht, hängt am Takt des Laufs.
-Ein Täter in diesem Zweig ist nicht belegt. Das ist ein Wackler der Zählung: sie zählt fahrende Wagen als Bauten.
-Leser: `gate:settlement` (Teil O, die Schleife „fremde Bauten“). Offen bleiben die 12 Familien-Schritte vor dem Push.
+**Bild (Radeon, echte GPU, Werkbank `--echt`, 1280 × 720, Uhr 0,5, Kamera 14919,03/−0,80/−9346,52 → 14911,59/−2,80/−9341,92, fov 40):**
+main: Ufer, Schilf, Wasser, kein Steg, kein Boot; dieser Kopf: der Steg mit Bohlen-Deck, Pfosten und zwei Holmen, längs an ihm
+der Kahn — flach, lang, schräger Steven, Dollbord-Leiste, Duchten. Was ein Bootsbauer bemängelt: der Rumpf trägt eine einheitlich
+orange Lasur ohne Faser und ohne Plankennaht (der Steg trägt sie), Spanten und Bodenwrangen sind von außen nicht zu lesen, die zwei
+Riemen liegen nicht sichtbar im Boot. Band (Gesetz zitiert Keweloh; dazu): Spreewaldkahn höchstens 9,50 m lang, 1,90 m breit
+(Brandenburger Verwaltungsvorschrift) — der Kahn des Gesetzes 8,29 × 0,96 m liegt darin.
 
-Halt-Block: gate:settlement nie zeitgleich mit einem zweiten Baum — fester Port 4436 (`SETTLEMENT_PORT`). Meine Logs nennen nur die
-Seite http://127.0.0.1:4436, nie den Prozess, der den Server stellte. Ob die zwei roten Läufe gegen den Server des Haus-Baums
-(AnazhRealm-front-pl) maßen, belegen sie weder dafür noch dagegen. Gewertet wird Teil O am dritten Lauf (62419de5, GRÜN, fremdArten {}).
+**Station `karte2.mensch.fahrzeug.gestalt#1` (Einzel-Lauf, Radeon):** main 2d6a0447 ↔ dieser Kopf 796d3be0: je 6 Fahrzeug-Typen,
+21 Wagen (Soll ≥ 5 Gattungen erfüllt), S1 „auge“ — ROT, „GRÜN erst mit dem Urteil am Gerät (Blindpaar)“; Preis GRÜN (p95 25,13 ↔
+33,38 ms). Das alte Urteil „3 Fahrzeug-Typen“ (30e01e75) ist überholt. Die Station zählt die Typen `fahrzeug_*` in
+`r.state.architectures` am Messort `stadt-voll` (Zweig `punkte-maschine`, `meisterkarte-quelle/punkte/stationen/k2-mensch-fahrzeug.js`
+Zeile 43 und 86); der Kahn liegt am Dorf am Wasser und zählt dort nicht — er muss es nicht, die Stadt trägt die fünf Gattungen der
+Straße schon.
+
+**Offen, mit Leser:** das Augen-Urteil der Straße (Blindpaar) — Sprosse `mensch.fahrzeug.gestalt#1`; Lasur, Plankennaht und
+sichtbare Riemen des Kahns — `gate:vehicle-drive` A9 (Messname `B`, `lack`); der Leiterwagen geht mit 5,7 km/h hinter dem Pferd,
+das Band der Rinder liegt bei 1,7–3,5 km/h ziehend (ODA R5198) — FUND-REGISTER (Zweig koordination), Messname `kmh` karren.
