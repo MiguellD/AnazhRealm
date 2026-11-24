@@ -586,6 +586,11 @@ function zugStelle(doc, skripte, r6 = R6) {
         const ab = r6.r6Abhaengig(linse || "");
         for (const k of ab.kerne)
             if (!r6.r6Urteil(a, { diff: new Map([[k, []]]), bekannt: () => 1 }, () => ab).laeuft) nie.push(`Diff ${k}`);
+        // … und ein WELT-TOR (die Seite der Linse lädt Stamm und Kerne; ci-klasse `weltTueren`) auf JEDEM Laufzeit-Byte
+        // (ruhe-gesetz): der Zusatz von gate:koerper-stand ruhte, als w28-auge-der-art stamm/bild-kosten.js änderte — keine
+        // geänderte Zeile nannte eines seiner Glieder. Ein Welt-Tor ruht nur, wenn der Diff kein Laufzeit-Byte trägt.
+        if (ab.welt && !r6.r6Urteil(a, { diff: new Map([["stamm/bild-kosten.js", []]]), bekannt: () => 1 }, () => ab).laeuft)
+            nie.push("Diff stamm/bild-kosten.js");
         if (ab.blind.length)
             v.push(`(Z) KERN: „${linse}" baut im Faden über „${ab.blind[0]}" — der Ruhe-Schlüssel liest seine Kerne nicht (ci-klasse r6Kerne)`); // prettier-ignore
         if (nie.length) v.push(`(Z) NIE: „${a}" liefe nie mehr (${nie.join(" · ")})`);
@@ -1595,7 +1600,7 @@ function selbsttestEinlass() {
 
 function selbsttestZug() {
     const [doc, sk] = [yaml.load(ausDatei(path.join(root, DATEI))), jsonLesen("package.json").scripts];
-    const leer = () => ({ code: new Map(), text: "", kerne: new Set(), blind: [], namen: new Set(), zeilen: [] });
+    const leer = () => ({ code: new Map(), text: "", kerne: new Set(), blind: [], welt: false, namen: new Set(), zeilen: [] });
     const z = [
         ["die echte check.yml", R6, /^$/],
         [
@@ -1613,6 +1618,12 @@ function selbsttestZug() {
             "der Kern einer Linse weckt ihren Selbsttest nicht",
             { ...R6, r6Urteil: (a, kx) => R6.r6Urteil(a, kx, (l) => ({ ...R6.r6Abhaengig(l), kerne: new Set() })) },
             /NIE: „node scripts\/diag-(mensch-anatomie|tier-anatomie|ofen-contract)[^„]*Diff (foundry|phyto|tetrapoda|koerper)-core\.js/,
+        ],
+        // (ruhe-gesetz) der Schlüssel vor dem Schnitt: ein Welt-Tor ruht, obwohl der Diff ein Laufzeit-Byte trägt
+        [
+            "ein Welt-Tor ruht bei einem Diff am Stamm",
+            { ...R6, r6Urteil: (a, kx) => R6.r6Urteil(a, kx, (l) => ({ ...R6.r6Abhaengig(l), welt: false })) },
+            /NIE: „node scripts\/diag-koerper-stand[^„]*Diff stamm\/bild-kosten\.js/,
         ],
         // … und der Faden über eine Liste, die der Schlüssel nicht lesen kann (kein Literal, keine Liste der Bibliothek, kein Kern)
         [
