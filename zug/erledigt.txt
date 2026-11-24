@@ -2369,3 +2369,4 @@ omen-gtx-gtx-a8dd22b5-w161431-1-a8dd22b5 UNGEMESSEN 0 GRÜN / 0 ROT / 13 UNGEMES
 2026-11-24 16:39 RUNDE 22 ALARM radeon: RADEON: 1 Messungen ungepusht seit 00:00 — durch 77/77, Station -, Kopf a8dd22b5; die Runde setzt an derselben Station fort — gesehen von radeon (radeon-dienst)
 2026-11-24 16:42 RUNDE 22 ALARM gtx: OMEN: 4 Messungen ungepusht seit 04:58 — halt 39/239, Station karte2.planet.kopplung.gegenwart#2, Kopf a8dd22b5; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
 2026-11-24 16:43 landung Runde 22 am a8dd22b5: misst 38 von 239 Stationen (vorn; 39 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+2026-11-24 16:47 RUNDE 22 SPRUNG am a8dd22b5 → Runde 23 am eba9bf8f (gtx laeuft 39/239, radeon durch 77/77): Konto 19: z718 w28-ort-ausstattung (vier Ansprueche), dazu neu zu messen: elf im Sitzungs-Absturz 14:23 ungemessene Ansprueche und kraft#2 / jahreslauf#2 (altes Radeon-ROT vom 21.11.)
