@@ -208,3 +208,41 @@ dem Brief: GOLDENE DEFINITION zuerst, der Stand oben, die Brief-Pflichten aus Ab
 Nächste Betreff-Datei `betreff-lage-34.txt`. Uhrzeiten nur aus `date`.
 
 **Karte 2 gebucht 83 von 1 718.** Sieben Landungen heute (z711–z717), zwei Ansprüche gebucht (eis#2, gesehen#3), Runde 22 misst am a8dd22b5.
+
+## 12. REFLEXION UND ENTSCHEIDE 15:47 (auf sein Wort: „du hast zu entscheiden … der account nach euch soll besser werden … handeln“)
+
+**Die Zahl:** sieben Landungen, Karte 2 blieb bei 83 von 1 718; alles Sichtbare (Haus im Klima, Schilder, Boot und Steg, Dach,
+Tagesgang) stand am Abend noch VOR main. Ich habe Landungen gezählt statt Sprossen und Bild. Die sechs Handgriffe dazu stehen im
+Gedächtnis `reflexion-konto18-2411` — lies sie vor dem ersten Stempel.
+
+**Entschieden (nicht mehr fragen):**
+- Auslagerungsdatei am OMEN: bleibt systemverwaltet, niemand fasst sie an, keine Klick-Datei. Den Platz auf C: hält der
+  Platten-Dienst (24,7 GB frei); die Frage an den Schöpfer war ein Fehler von mir.
+- klima-aufwind (GTX 1050) landet so nicht: Sprung im Gesicht p99 158 → 320 mm bei Soll ≤ 40. Erst die Hebung stetig zwischen den
+  100-km-Schritten der Luft.
+- Das Ruhe-Gesetz der Selbsttests ließ EINEN belegten Täter schlafend landen (mensch-nah → R4; „auge-der-art → koerper-stand K6“ ist NICHT belegt: K6 ist eine Zeile des Hauptlaufs, der an jedem Zweig lief — Korrektur GTX 1050 15:50, K6 ist ein Wackler mit 1 von 2 an gleichen Bytes; main 499f8b57
+  ist rot an Mensch-Anatomie und Welt-Wache). Bestellt bei GTX 1050, VOR klima-aufwind: ein Welt-Tor ruht nur, wenn der Diff kein
+  Laufzeit-Byte trägt; Selbsttest in gate:ci-deckung.
+
+**Besitzer für das, was ich nur als „Wurzel offen“ schrieb:**
+- Stand-Takt zählt Schritte statt Wanduhr → OMEN `scherbe-liegt` (bestellt, `auftrag/2411-wackler-vorrang.md`).
+- EIN Golden je Rezept statt einer Sammel-Datei (jede Landung kollidiert sonst mit jedem wartenden Macher; heute ort-ausstattung 3,
+  und haus-stoff prägt 221 von 258 Fällen neu) → OMEN nach scherbe-liegt, Zweig `golden-je-rezept`, FUND-REGISTER-Zeile e1a5288c.
+- Die Radeon-Sitzung liest den Runden-Kopf an jeder Stations-Grenze (heute 55 min an der alten Liste gemessen) → dein ERSTER
+  lokaler Arbeiter auf der Radeon; ohne GPU, Selbsttest: Kopf wechselt mitten in der Liste → die Sitzung endet an der Grenze.
+- Die Familien-Schritte aus den berührten Dateien → derselbe Arbeiter danach: `familie-fahrzeug.sh` im Werkzeug ist das Muster
+  (12 Schritte von Hand gewählt); das Werkzeug druckt sie aus check.yml.
+
+**Der Gigantenschritt, den ich nicht tat:** `bash S/buendel.sh <name> <kopf> <kopf> …` (Trockenlauf; `--schub` schiebt) — EINE
+Batterie und EIN Stempel für mehrere grün-reife Köpfe. Trocken gefahren mit ort-ausstattung 5 + sport-regeln 998254be: mischt ohne
+Konflikt. Noch nie im Zug; der erste echte Lauf ist die Probe. Morgen zuerst: anatomie-r4-heil + ort-ausstattung 5 einzeln (ihre
+Batterien laufen schon), danach sport-regeln 3 + haus-stoff + fahrzeug-gattung + haus-dach als EIN Bündel, sobald Settlement O bei
+Haus und Fahrzeug grün ist. EIN Runden-Sprung je Bündel; für eine Werkzeug-Landung keiner — die Runde 22 muss durchlaufen, sonst
+bucht niemand die Ansprüche von heute (gtx stand um 15:44 bei 5 von 239).
+
+**Die Reihenfolge der Woche (aus der Karte 2 und der Front-Tafel, kein neuer Plan):** Tag 1 main spielen + drei Bilder, die zwei
+Stempel, das Bündel, Runde 22 zu Ende, Ansprüche buchen. Tag 2–3 die sichtbaren Fronten in dieser Folge: Haus (Gefach und Farbe je
+Kultur, Sockel am Hang, Dach) · Boot und Leiterwagen (`_bauFrei` sperrt 8 von 8 Toren, Stationen zählen 0) · der Tagesgang der
+Bewohner im Bild. Ab Tag 4 nach der Hebel-Folge der Front-Tafel: buchen → Preis-Wurzel → Apparat-rot → Fähigkeits-Welle. Ehrlich
+zum 17.12.: 1 635 Sprossen in 23 Tagen sind 71 je Tag; heute waren es 0. Das Tempo ändern nur Bündel, eine Runde, die durchläuft,
+und Tore, die nicht schlafen — eine Zahl dafür ist noch nicht gemessen.
