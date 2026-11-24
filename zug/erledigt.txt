@@ -2269,3 +2269,4 @@ omen-gtx-gtx-447eaea6-2-447eaea6 ROT 1 GRÜN / 3 ROT / 1 UNGEMESSEN · ROT karte
 2026-11-24 06:21 PLATTE 8.7 GB — angehalten (C: frei < 10 GB; die Landungs-Schleife steht, weiter erst ab 15 GB; Löschen entscheidet der Schöpfer)
 2026-11-24 06:23 PLATTE 19.9 GB — weiter (ab 15 GB; die Landungs-Schleife startet neu und nimmt ihre Liste auf)
 2026-11-24 06:25 landung Runde 15 am 9d4319c0: misst 52 von 241 Stationen (vorn; 8 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+2026-11-24 06:42 RUNDE 15 ALARM gtx: ohne Fortschritt seit 17 min (laeuft, 8/241, Station karte2.erleben.spieler.wegfindung#1, Kopf 9d4319c0) — gesehen von radeon (radeon-dienst)
