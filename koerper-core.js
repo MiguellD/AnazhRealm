@@ -5344,12 +5344,14 @@
     //    Wenn-Kette aus drei Berufen (markt → der Platz, feld → der nächste Acker, hof und jeder Rest → die eigene Tür), kein
     //    Fremder ging je zu Schmiede, Burg, Scheune oder Gasthaus: an der Metropole (dorf 7 300, 1 083 Bewohner) standen um
     //    10 Uhr 67 % ohne Ziel vor ihrer Tür, um 13 Uhr 50 % (Probe zielplan, gate:kreatur-takt).
-    //    DER MORGENGANG (mensch.K3): die ersten morgenPlatzH Stunden nach dem Aufstehen geht jeder über den Markt — jeder
-    //    Tag trägt so 4–10 Wege, keiner bleibt an seiner Tür. DER BESUCH (mensch.K3 Staffel 2, ≥ 100 m Weg je Tag): die
+    //    DER MORGENGANG (mensch.K3, mensch.menge.bild#2): die letzten morgenPlatzH Stunden vor dem Werk geht jeder über den
+    //    Markt (`_morgenGang`: der Weg zum Werk führt über ihn) — jeder Tag trägt so 4–10 Wege, keiner bleibt an seiner Tür.
+    //    DER BESUCH (mensch.K3 Staffel 2, ≥ 100 m Weg je Tag): die
     //    Bindung nennt die Tür eines anderen Hauses — ein Ort, der Besuch bietet, mindestens besuchFernM von der eigenen Tür
     //    und vom Markt seines Morgengangs (der Tag trägt den Weg), nah genug, dass er ankommt (wegM.besuch); der Mensch
     //    steht dort besuchH Stunden — nach dem Werk, wo der Abend sie trägt (eine halbe Stunde vor der Ruhe), sonst nach dem
-    //    Morgengang, wo die Zeit bis zum Werk sie trägt. Bis w28-ziel-plan wählte der Wirt die Tür (`besuchStand`: fern von
+    //    Morgengang, zwischen Markt und Werk, wo die Zeit bis zum Werk sie trägt. Bis w28-ziel-plan wählte der Wirt die Tür
+    //    (`besuchStand`: fern von
     //    Tür und Platz, höchstens 60 m von ihnen und dem Werk — mit dem Werk an einem Ort der Stadt trug keine Tür mehr das
     //    Maß, die Suche ging jede Tür durch: die Liste der Metropole rechnete 49 statt 5 s). Das Tempo des Gangs ist das Gesetz des Leibs (koerper
     //    `leibGehen`, Fr 0,25). Leser: der Wirt (`_bewohnerListe`, `_bewohnerSoll`) und gate:kreatur-takt bewohner · zielplan. ──
@@ -5689,6 +5691,19 @@
         if (!post && Z.werkNachH) w1 = Math.max((R.werk || G.werk)[1] + j("werk1"), Math.min(w1, ruhe - G.besuchH));
         return { R: R, wach: wach, w0: w0, w1: w1, morgenH: morgenH, mittagAmWerk: mittagAmWerk, m0: m0, m1: m1, ruhe: ruhe, abendTreffH: Z.abendTreffH };
     }
+    // DER WEG ZUM WERK FÜHRT ÜBER DEN MARKT (mensch.K3 der Morgengang · mensch.menge.bild#2): das Fenster [von, bis) seines Gangs über
+    // den Markt sind die letzten `morgenH` Stunden vor dem Werk — davor ist er daheim, danach (mit dem Besuch des Morgens, `bM`,
+    // erst nach ihm) am Werk. Wer vor dem Werk keine `morgenH` Stunden wach ist (der Posten der Frühschicht, der Spätaufsteher),
+    // geht wie bisher gleich nach dem Aufstehen über den Markt und tritt danach an. Die Fußgänger-Zählungen der Innenstädte
+    // tragen ihre erste Spitze des Tags in der Stunde vor dem Beginn der Arbeit (City of Melbourne, Pedestrian Counting System,
+    // stündlich seit 2009: werktags 8–9 Uhr) — der Markt füllt sich mit dem Weg zur Arbeit. Bis hier lag der Gang gleich nach dem
+    // Aufstehen, und vom Markt ging jeder erst heim, dann zum Werk: am Messort stadt-voll hatten um 7 Uhr 296 Menschen den Platz
+    // zum Ziel, um 8 Uhr 8 — die Station mensch.menge.bild#2 sah um 8 Uhr 47 Menschen im Bild, 21 gehend (Soll 100 und 40).
+    // Die Zahl der Wege bleibt je Mensch dieselbe (drinnen → Markt → vor der Tür → Werk wurde drinnen → vor der Tür → Markt → Werk).
+    function _morgenGang(T, bM) {
+        var bis = Math.max(T.w0 - (bM ? TAGES_GESETZ.besuchH : 0), T.wach + T.morgenH);
+        return [bis - T.morgenH, bis];
+    }
     // DIE GÄNGE DES TAGS (mensch.K3, 4–10 Wege je Tag): wie oft der Plan der Stunde (`tagesPlan`, die EINE Quelle) den Ort eines
     // Menschen wechselt — gelesen je Abschnitt zwischen den Wenden seines Tags (`_tagesWenden`) und den Grenzen seiner Auftritte
     // (orte.spiel), rund um die Uhr, trocken und gesund; ein Ort ist der gereichte Ort mit drinnen oder davor (die Orte eines
@@ -5698,7 +5713,10 @@
         var G = TAGES_GESETZ,
             T = _tagesWenden(same, rolle),
             v = T.R.versatzH || 0;
-        var t = [T.wach, T.wach + T.morgenH, T.wach + T.morgenH + G.besuchH, T.w0, T.m0, T.m1, T.w1, T.w1 + G.besuchH, T.ruhe];
+        // (die Grenzen des Gangs über den Markt mit und ohne den Besuch des Morgens — eine Grenze ohne Wechsel zählt keinen Weg)
+        var mO = _morgenGang(T, false),
+            mB = _morgenGang(T, true);
+        var t = [T.wach, mO[0], mO[1], mB[0], mB[1], mB[1] + G.besuchH, T.w0, T.m0, T.m1, T.w1, T.w1 + G.besuchH, T.ruhe];
         if (T.abendTreffH != null) t.push(T.w1 + T.abendTreffH, T.w1 + G.besuchH + T.abendTreffH);
         (orte.spiel || []).forEach(function (e) {
             t.push(e.von, e.bis);
@@ -5751,10 +5769,11 @@
         };
         var bA = besuch && w1 + G.besuchH <= ruhe - 0.5;
         var bM = besuch && !bA && wach + morgenH + G.besuchH <= w0;
+        var M = _morgenGang(T, bM);
         if (h < wach || h >= ruhe) return aus("heim", "schlaf", true);
-        if (h < wach + morgenH) return aus("platz", "morgen", false);
-        if (bM && h < wach + morgenH + G.besuchH) return aus("besuch", "besuch", false);
-        if (h < w0) return aus("heim", "morgen", false);
+        if (h < M[0]) return aus("heim", "morgen", false);
+        if (h < M[1]) return aus("platz", "morgen", false);
+        if (bM && h < M[1] + G.besuchH) return aus("besuch", "besuch", false);
         // der Mittag: am Tisch seiner Bindung — ohne einen isst er daheim (drinnen)
         if (h >= m0 && h < m1 && !mittagAmWerk) return aus("mahl", "mittag", !orte.mahl);
         if (h < w1) return aus("werk", R.spiel ? "spiel" : "arbeit", false);

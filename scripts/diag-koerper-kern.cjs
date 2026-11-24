@@ -203,6 +203,40 @@ const verbKlassen = (P, H, stunde = 12, O = { heim: {}, werk: {}, platz: {}, mah
     return Object.entries(z).filter(([, k]) => k >= 0.1 * n).map(([h, k]) => `${h} ${Math.round((100 * k) / n)} %`); // prettier-ignore
 };
 
+// DER WEG ZUM WERK FÜHRT ÜBER DEN MARKT (menge-bild, koerper `_morgenGang` im `tagesPlan`; Leser: der Wirt `_bewohnerSoll`, die
+// Station mensch.menge.bild#2 um 8 Uhr am Markt): 2000 Samen eines Wohnhauses, je Same sein Aufstehen und sein Werk aus dem Plan
+// selbst (die erste Stunde nicht im Schlaf, die erste am Werk, je 0,05 h) — wer vor dem Werk mehr als `morgenPlatzH` Stunden wach
+// ist, steht 0,1 h vor dem Werk am Markt und 0,1 h nach dem Aufstehen daheim; Soll ≥ 95 % für beide. Bis menge-bild lag der Gang
+// gleich nach dem Aufstehen, vom Markt ging jeder heim und dann zum Werk: am Messort stadt-voll hatten um 7 Uhr 296 den Platz zum
+// Ziel, um 8 Uhr 8 (die Station sah 47 im Bild, 21 gehend). Täter (Selbsttest): „nachDemAufstehen" (der Stand vor menge-bild).
+const MORGEN_ORTE = { heim: { o: "heim" }, werk: { o: "werk" }, platz: { o: "platz" }, mahl: { o: "mahl" }, abend: { o: "abend" }, besuch: null };
+const morgenWenden = (P, s, O) => {
+    let [wach, w0] = [null, null];
+    for (let h = 3; h < 14 && w0 == null; h += 0.05) {
+        const p = P(s, "wohnhaus", h, O);
+        if (wach == null && p.akt !== "schlaf") wach = h;
+        if (p.akt === "arbeit") w0 = h;
+    }
+    return { wach, w0 };
+};
+const morgenGang = (P, mh, O = MORGEN_ORTE) => {
+    let [n, amMarkt, daheim] = [0, 0, 0];
+    for (let s = 0; s < 2000; s++) {
+        const { wach, w0 } = morgenWenden(P, s, O);
+        if (wach == null || w0 == null || w0 - wach < mh + 0.2) continue;
+        n++;
+        if (P(s, "wohnhaus", w0 - 0.1, O).ort === O.platz) amMarkt++;
+        if (P(s, "wohnhaus", wach + 0.1, O).ort === O.heim) daheim++;
+    }
+    return { n, markt: n ? amMarkt / n : 0, daheim: n ? daheim / n : 0 };
+};
+// der Täter „nachDemAufstehen": der Gang über den Markt gleich nach dem Aufstehen, danach daheim bis zum Werk (der Stand vor menge-bild)
+const nachDemAufstehenVon = (P, mh) => (s, r, h, O) => {
+    const { wach, w0 } = morgenWenden(P, s, O);
+    if (wach == null || w0 == null || h < wach || h >= w0) return P(s, r, h, O);
+    return h < wach + mh ? { ort: O.platz, wo: "platz", akt: "morgen", drinnen: false } : { ort: O.heim, wo: "heim", akt: "morgen", drinnen: false };
+};
+
 // TEIL S — DER STOSS IM GANG (physik.K5, koerper-core `leibStossLesen` · `leibStossSchritt`): der Leib geht (vor, 4,5 m/s,
 // Bein 0,85 m) auf ebenem Grund im EINEN Bewegungs-Takt (`leibPlan` → Lage += v·dt → `leibLandung`, die Folge des Wirts), nach
 // 1,5 s wirken 200 N × 0,2 s quer (Δv = F·dt/m je Takt in die Geschwindigkeit, zwischen Kontakt und Plan — wie der Stoß eines
@@ -972,12 +1006,16 @@ if (SELBSTTEST) {
     // die Regel-Grammatik: das Gesetz hält, jeder Täter fällt ROT beim Namen
     const eGut = !spielUrteil(core).rot.length;
     const spielTaeter = [["gewuerfelt", "E1 die Rangfolge des Laufs"], ["immer", "E2 der Stärkere siegt"], ["ohneRegel", "E3 das Brett spielt gegen die Regel"], ["starr", "E4 die Zuschauer folgen"], ["ohneTag", "E5 der Tag liest das Programm nicht"], ["eng", "E6 die Stände des Abends"], ["ohneWeg", "E7 der Abend trägt den Weg nicht"]].map(([m, z]) => [eGut && spielUrteil(core, m).rot.some((r) => r.startsWith(z)), `Spiel ${m} ${z}`]); // prettier-ignore
-    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...verbenTaeter, ...spielTaeter])
+    // der Morgengang: das Gesetz hält, der Stand vor menge-bild (der Markt gleich nach dem Aufstehen) fällt ROT beim Namen
+    const mh = core.TAGES_GESETZ.morgenPlatzH;
+    const mGut = morgenGang(core.tagesPlan, mh), mAlt = morgenGang(nachDemAufstehenVon(core.tagesPlan, mh), mh);
+    const morgenTaeter = [[mGut.n >= 500 && mGut.markt >= 0.95 && mGut.daheim >= 0.95 && mAlt.markt < 0.95, "Morgengang nachDemAufstehen M1 der Weg zum Werk führt nicht über den Markt"]];
+    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...verbenTaeter, ...spielTaeter, ...morgenTaeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle einundvierzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, sechs Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, sieben Täter der Regel-Grammatik).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle zweiundvierzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, sechs Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, sieben Täter der Regel-Grammatik, der Täter des Morgengangs).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -999,6 +1037,9 @@ if (!sk.rot.length) console.log(`  STOFFSTROM Halde ${sk.halde0.toFixed(1)} → 
 const sp = spielUrteil(core);
 for (const z of sp.rot) st.rot.push("SPIEL " + z + " — Täter: koerper SPIEL_GESETZ · spielProgramm · spielKampf · spielBrett · spielGeschehen · tagesPlan");
 if (!sp.rot.length) console.log(`  SPIEL ${sp.laeufe} Läufe (${sp.laeufer} Läufer): ρ Laufzeit ↔ Leib ${sp.rho.toFixed(3)} (je Lauf ${sp.rhoLauf.toFixed(3)}) · ${sp.kaempfe} Gänge des Zweikampfs: der Stärkere siegt ${(100 * sp.quote).toFixed(1)} % · ${sp.partien} Partien am Brett, ${sp.zuege} Züge, ${sp.widrig} regelwidrig, ${sp.siege} mit Reihe · Ring bis ${sp.zuschauerMax} Zuschauer, Blick am Geschehen ${(100 * sp.blick).toFixed(1)} % von ${sp.proben} (seitab ${(100 * sp.seitab).toFixed(1)} % von ${sp.seit}) · der Tag stellt ${sp.e5}/${sp.e5n} Auftritte · der Raum des Stands: ${sp.raumN} Paare ≥ ${sp.standM} m, das nächste ${sp.raumMin.toFixed(2)} m · der Abend trägt den Weg: ${sp.wegeN} Gäste an ${sp.wegeAbende} Abenden, höchstens ${sp.wegeMax} Wege (${sp.wegeKurz}× sah der Kern ein Stück unter 0,05 h)`); // prettier-ignore
+const mg = morgenGang(core.tagesPlan, core.TAGES_GESETZ.morgenPlatzH);
+if (mg.n < 500 || mg.markt < 0.95 || mg.daheim < 0.95) st.rot.push(`MORGEN M1 der Weg zum Werk führt nicht über den Markt: ${(100 * mg.markt).toFixed(1)} % vor dem Werk am Markt, ${(100 * mg.daheim).toFixed(1)} % nach dem Aufstehen daheim, von ${mg.n} Samen (Soll ≥ 95 % und ≥ 500) — Täter: koerper _morgenGang · tagesPlan`);
+console.log(`  MORGEN der Weg zum Werk über den Markt: ${(100 * mg.markt).toFixed(1)} % 0,1 h vor dem Werk am Markt, ${(100 * mg.daheim).toFixed(1)} % 0,1 h nach dem Aufstehen daheim (${mg.n} von 2000 Samen mit mehr als einer Stunde vor dem Werk)`);
 const kn = koennenUrteil(core);
 for (const z of kn.rot) st.rot.push("KÖNNEN " + z + " — Täter: koerper leibKoennen");
 const vb = verbenUrteil(core);
