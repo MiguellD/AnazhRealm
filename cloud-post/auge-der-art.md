@@ -1,7 +1,31 @@
-# Vorprüfung auge-der-art 2 — das Auge der Art aus dem Leib, Entdeckung ≠ Alarm
+# Vorprüfung auge-der-art 3 — das Auge der Art aus dem Leib, Entdeckung ≠ Alarm
 
-ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 78 von 1 718. Diese Abgabe bucht keine Sprosse — gebucht wird
+ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 82 von 1 718. Diese Abgabe bucht keine Sprosse — gebucht wird
 erst, wenn der Richter im Zweig `punkte-maschine` sie grün misst (Stationen im Zweig `pm-auge-der-art`).
+
+**Der Stempel-Satz:**
+
+- **Geschnitten:** EIN Sinnes-Gesetz im Kern (`tetrapoda-core.js` `SINNES_GESETZ`), Entdeckung ≠ Alarm. Das Auge sagt, OB ein Tier
+  sieht; `auraReichM` 21 m und die Fluchtdistanz der Gattung sagen, AB WANN es flieht.
+- **Gemessen:** die Hirsch-Flucht 3,4 km → 372 m, der Wolf ruht 0,600 (vorher 0,014), das Rudel 16 von 60.
+- **Offen:** gesehen#1/#2, genom#1/#2 und sicht#1 stehen ROT an der GTX (Tabelle unten), dazu die Nase.
+
+**auge-der-art 3 — der Merge gegen main:** `merge-tree` von 380dc644 gegen main f18576b6 war KONFLIKT. Er lag allein in drei
+GOLDEN, kein Code (`recipes.json`, `manifest.json`, v7 `daten.json`). Danach kamen main a3af6df0 (w28-wind-saison) und 5ef0404b
+(w28-mensch-nah, Runde 19) ohne Konflikt.
+
+- Die Rechnung je Pfad: unsere Seite änderte wolf · fox · bear · deer (`furcht.noticeRadius` fort), main änderte mensch (der Schwung
+  des Gangs). Kein Pfad stand doppelt.
+- `MINT_NUR_DATEN` prägte `recipes.json` im gemergten Code byte-gleich der Rechnung (sha c27b569b); world-params und render-config
+  blieben gleich, das Manifest trägt den neuen Hash.
+- v7 `daten.json` neu gemintet, gleich der Rechnung: koerper 1827ac1f (main) · tetrapoda 9115267c (auge-der-art) · klang d238984e.
+- Pflicht-Gates auf der CPU (Idle, neben der GTX-Liste) am Merge mit f18576b6, alle exit 0 (am Kopf mit 5ef0404b fuhren sie
+  noch einmal): check:statik 547 s · format:check 13 s · lint 11 s (0 Fehler,
+  4 Warnungen in Dateien von main) · `stamm-umzug --nach-karte` 7 s (5 232 Glieder, 0 Abweichungen) · gate:betriebsgesetz 9 s ·
+  gate:kreatur-leben 92 s.
+- `gate:kreatur-takt` fährt nicht mehr in der GPU-Probe: das Tor braucht keine GPU und liegt über dem Deckel 480 s. An der GTX 1060
+  lief Teil 1/3 zweimal GRÜN (580 s, 563 s), das ganze Tor braucht dort ~1 700 s; die GTX 1050 riss 1 134 s > 960 s, die Cloud misst
+  2 275 s in drei Teilen. Die Probe trägt gate:kreatur-leben und bild:wiese@0.5.
 
 **Geschnitten:** EIN Sinnes-Gesetz im Kern (`tetrapoda-core.js` `SINNES_GESETZ`):
 
