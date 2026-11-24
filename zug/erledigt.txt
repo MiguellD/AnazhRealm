@@ -2277,3 +2277,4 @@ omen-gtx-gtx-447eaea6-2-447eaea6 ROT 1 GRÜN / 3 ROT / 1 UNGEMESSEN · ROT karte
 2026-11-24 07:03 RUNDE 15 ALARM gtx: PLATTE 8.5 GB frei (< 10 GB) — die Landung wird angehalten, weiter ab 15 GB, Löschen entscheidet der Schöpfer — laeuft 15/241, Station karte2.leben.evolution.fremde-physik#1, Kopf 9d4319c0; die Runde setzt an derselben Station fort — gesehen von platte-dienst
 2026-11-24 07:03 PLATTE 8.5 GB — angehalten (C: frei < 10 GB; die Landungs-Schleife steht, weiter erst ab 15 GB; Löschen entscheidet der Schöpfer)
 2026-11-24 07:05 PLATTE 20.0 GB — weiter (ab 15 GB; die Landungs-Schleife startet neu und nimmt ihre Liste auf)
+2026-11-24 07:06 RUNDE 15 ALARM gtx: OMEN: 4 Messungen ungepusht seit 04:58 — laeuft 15/241, Station karte2.leben.evolution.fremde-physik#1, Kopf 9d4319c0; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
