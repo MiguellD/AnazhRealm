@@ -5567,11 +5567,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 33,
-    "kern": 4,
-    "kernDazu": 4,
-    "anteilHeute": 5.8,
-    "anteilKern": 0.6
+    "heute": 32,
+    "kern": 5,
+    "kernDazu": 5,
+    "anteilHeute": 5.7,
+    "anteilKern": 0.7
    },
    "perspektiven": [
     {
@@ -11228,8 +11228,8 @@
        "richter": "Fremdwelt-Probe (R10): Sinn und Glaube der Art aus dem Werk gelesen Rang ≥ 0,7"
       }
      ],
-     "heute": 1,
-     "kern": 0,
+     "heute": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "Nie gemessen; keine Station der alten Karte misst Kunst am Bau oder im Raum.",
      "alt": []
@@ -20089,10 +20089,10 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 92,
+  "heute": 91,
   "davonKopplungen": 33,
-  "kern": 5,
-  "kernDazu": 5,
+  "kern": 6,
+  "kernDazu": 6,
   "anteilHeute": 4.9,
   "anteilKern": 0.1,
   "kapitel": 7,
@@ -20103,8 +20103,8 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 53,
-  "nachwache": 39
+  "beide": 54,
+  "nachwache": 37
  },
  "zusammengelegt": [
   {
