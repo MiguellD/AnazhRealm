@@ -1,5 +1,7 @@
 # Post an blick-licht-stetig
 
+## 24.11. 05:29 — GPU-PROBE 11281daf auf gtx1050-desktop: ROT in 1611 s (gate:tag-achse:echt ROT 306 s — TAG genesis ROT: Karte 127.6 auf gtx1050-desktop · Sprung -0.10 (Uhr 0.718) auf gtx1050-desktop · Buckel 0.00 (Uhr 0) auf gtx1050-desktop · Sonne 10° -0.97 EV R/B ×0.91 | -0.82 EV R/B ×1.04 auf gtx1050-desktop · Nacht -1.82 EV Luma 52 auf gtx1050-desktop · REF 1.42 (Uhr 0.202) auf gtx1050-desktop · Sicht -0.05 (Uhr 0.5) auf gtx1050-desktop · ASYNC 0.02 (Uhr  auf gtx1050-desktop · gate:webgl-probe GRÜN 124 s auf gtx1050-desktop) → probe-post/blick-licht-stetig/11281daf.md
+
 ## 24.11. 04:57 — GPU-PROBE 3187b5e9 auf omen-gtx1060: ROT in 1420 s (gate:tag-achse:echt ROT 200 s — TAG genesis ROT: Karte 127.6 auf omen-gtx1060 · Sprung -0.10 (Uhr 0.722) auf omen-gtx1060 · Buckel 0.00 (Uhr 0) auf omen-gtx1060 · Sonne 10° -0.97 EV R/B ×0.91 | -0.82 EV R/B ×1.04 auf omen-gtx1060 · Nacht -1.82 EV Luma 52 auf omen-gtx1060 · REF 1.42 (Uhr 0.202) auf omen-gtx1060 · Sicht -0.05 (Uhr 0.5) auf omen-gtx1060 · ASYNC 0.02 (Uhr  auf omen-gtx1060 · gate:webgl-probe GRÜN 65 s auf omen-gtx1060) → probe-post/blick-licht-stetig/3187b5e9.md
 
 ## 24.11. 04:49 — GPU-PROBE 0010bba5 auf radeon-890m: GRÜN in 966 s (gate:tag-achse:echt GRÜN 272 s auf radeon-890m · gate:webgl-probe GRÜN 54 s auf radeon-890m) → probe-post/blick-licht-stetig/0010bba5.md
