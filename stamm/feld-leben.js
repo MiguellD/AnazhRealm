@@ -1842,7 +1842,7 @@ class AnazhRealm_feld_leben {
         // DIE LAVA (stoffe.K3-2) glüht in der glut ihrer Zelle, bis sie erkaltet (`_lavaAt`)
         const lava = this._lavaAt(x, z, uhr);
         // DAS WERK STÖRT (same.kopplung.aufwaerts#1): die Bauten des Menschen senken es in ihrer Zone (`_werkStoerungAt`)
-        const werk = this._werkStoerungAt(x, z);
+        const werk = this._werkStoerungAt(x, z, uhr);
         let emotion = e;
         if (imp) {
             emotion = {};
@@ -1863,52 +1863,45 @@ class AnazhRealm_feld_leben {
         };
     }
 
-    // DIE STÖRUNG DER WERKE an (x, z) (same.kopplung.aufwaerts#1, tetrapoda `stoerung`): Σ der Zonen der gebauten Werke im Umkreis
-    // `reichM`, gekappt. Gespeichert ist nur das Werk selbst (sein Eintrag in `architectures`, `werk`); die Zone ist eine Funktion
-    // seines Orts und seiner Grundfläche (`_grundrissVon`). Der Index (`_werkWirk`, Zellen der Kante `reichM`) trägt die stehenden
-    // Werke — die Frage kostet die 3 × 3 Zellen um den Ort, nie die Welt; ohne Werk keine Frage.
-    _werkStoerungAt(x, z) {
-        const W = this._werkWirk;
-        if (!W || !W.n) return 0;
+    // DIE STÖRUNG DER WERKE an (x, z) zur Welt-Uhr `uhr` (same.kopplung.aufwaerts#1, tetrapoda `stoerung`): Σ der Zonen der
+    // gebauten Werke im Umkreis `reichM`, gekappt. Das Werk ist eine TAT der Welt (`bauen`, sein Abriss `abriss`, `_werkAkt`):
+    // gestempelt mit der Welt-Uhr des Akts (`stempel`), gespeichert im Gedächtnis der Taten (`worldMeta.taten`) und mit ihm
+    // geladen — die Zone ist eine Funktion von Ort, Grundfläche (`fl`) und Stempel, nie gespeichert. Jeder Leser zu einer Uhr
+    // vor dem Stempel (der Takt des Felds) sieht das Werk nicht, nach dem Stempel des Abrisses nicht mehr. Die Frage kostet die
+    // 3 × 3 Zellen der Kante `reichM` um den Ort (`_tatIndex`.werk), nie die Welt.
+    _werkStoerungAt(x, z, uhr = this.state.spielZeit) {
+        const I = this._tatIndex();
+        if (!I.werk.size) return 0;
         const LG = AnazhRealm._lebensraumGesetz();
         const R = LG.S.reichM;
         const [cx, cz] = [Math.floor(x / R), Math.floor(z / R)];
         let s = 0;
         for (let i = -1; i <= 1; i++)
             for (let j = -1; j <= 1; j++) {
-                const zelle = W.zellen.get((cx + i) * 2097152 + cz + j);
-                if (zelle) for (const w of zelle) s += LG.stoerung(Math.hypot(w.x - x, w.z - z), w.a, LG.S);
+                const zelle = I.werk.get((cx + i) * 2097152 + cz + j);
+                if (!zelle) continue;
+                for (const a of zelle) {
+                    if (!(a.stempel <= uhr)) continue;
+                    const ab = I.abriss.get(a.id);
+                    if (ab != null && ab <= uhr) continue;
+                    s += LG.stoerung(Math.hypot(a.x - x, a.z - z), a.fl, LG.S);
+                }
             }
         return Math.min(LG.S.kappe, s);
     }
 
-    // Ein Werk tritt in die Zone ein (der Eintritt jedes Baus, `spawnArchitecture`): ein gebautes Werk mit Grundriss, das steht
-    // (kein Wagen) — die Grundfläche aus dem Grundriss (halbe Maße). Austritt: `removeArchitecture`; das Laden leert den Index.
-    _werkWirkEin(e) {
+    // DER AKT DES WERKS (same.kopplung.aufwaerts#1): ein gebautes Werk mit Grundriss, das steht (kein Wagen), tritt als FELD-AKT
+    // in die EINE Folge (`_feldAkt`) — zur Welt-Uhr des Programms (`ctx.uhr`: der Stempel des Absenders, wo es von einem Mitspieler
+    // kam), sonst jetzt; sein Programm reist selbst (`dslRun`), darum reist der Akt nicht. Er wirkt als Tat (`_feldAktWirkt` →
+    // `_tatSchreiben` `bauen` / `abriss`). Rufer: der Setz-Op `spawn_studio` (Bau) und `remove_architecture` (Abriss).
+    _werkAkt(e, ctx, ein) {
         if (!e || e.werk !== true || e._fahrAchseX || !e.position) return false;
         const g = this._grundrissVon(e);
         if (!g) return false;
-        const R = AnazhRealm._lebensraumGesetz().S.reichM;
-        const W = this._werkWirk || (this._werkWirk = { n: 0, zellen: new Map(), je: new Map() });
-        const w = { x: e.position.x, z: e.position.z, a: 4 * g.ex * g.ez };
-        const k = Math.floor(w.x / R) * 2097152 + Math.floor(w.z / R);
-        if (!W.zellen.has(k)) W.zellen.set(k, []);
-        W.zellen.get(k).push(w);
-        W.je.set(e, [k, w]);
-        W.n++;
-        return true;
-    }
-
-    _werkWirkAus(e) {
-        const W = this._werkWirk;
-        const kw = W && W.je.get(e);
-        if (!kw) return false;
-        const zelle = W.zellen.get(kw[0]);
-        zelle.splice(zelle.indexOf(kw[1]), 1);
-        if (!zelle.length) W.zellen.delete(kw[0]);
-        W.je.delete(e);
-        W.n--;
-        return true;
+        const r2 = (v) => Math.round(v * 100) / 100;
+        const w = ctx && ctx.uhr != null ? ctx.uhr : this.state.spielZeit;
+        const akt = { art: ein ? "werk" : "werkAus", w, x: r2(e.position.x), z: r2(e.position.z), a: r2(4 * g.ex * g.ez), id: String(e.id) }; // prettier-ignore
+        return this._feldAkt(akt, false, true, !!(ctx && ctx.akt));
     }
 
     // === DIE LEBENDIGE WERTUNG: Wohl-Maß + gleitende Baseline ===
@@ -2180,6 +2173,11 @@ class AnazhRealm_feld_leben {
             return zahl(f.x) && zahl(f.z)
                 ? this._feldAkt({ art: "brand", w, x: f.x, z: f.z }, false, sofort, true)
                 : false;
+        // der offene Akt eines Werks (`_werkAkt`, aus dem Stand nachgeholt): Ort, Fläche und Kennung
+        if (f.art === "werk" || f.art === "werkAus")
+            return zahl(f.x) && zahl(f.z) && zahl(f.a) && f.a > 0 && typeof f.id === "string" && f.id.length <= 96
+                ? this._feldAkt({ art: f.art, w, x: f.x, z: f.z, a: f.a, id: f.id }, false, sofort, true)
+                : false;
         const key = typeof f.key === "string" && /^-?\d+,-?\d+$/.test(f.key) ? f.key : null;
         const id = typeof f.id === "string" && f.id.length <= 96 ? f.id : null;
         if (!key || !id) return false;
@@ -2421,6 +2419,9 @@ class AnazhRealm_feld_leben {
             for (const [k, w] of gewirkt) if (w < jetzt - 2 * AnazhRealm.AKT_NACHHOL_S) gewirkt.delete(k);
         if (akt.art === "leben") return void this._depositLife(akt.x, akt.z, akt.a, akt.w);
         if (akt.art === "brand") return this._brandFangen(akt.x, akt.z, akt.ein, akt.w);
+        // das Werk wird Tat am Stempel seines Akts (`_werkAkt`): auf jeder Seite dieselbe Zeile im Gedächtnis der Welt
+        if (akt.art === "werk" || akt.art === "werkAus")
+            return void this._tatSchreiben(akt.art === "werk" ? "bauen" : "abriss", akt.x, akt.z, { h: Math.round(this._weltStunde(akt.w) * 1e4) / 1e4, id: akt.id, fl: akt.a, stempel: akt.w }); // prettier-ignore
         const R = this._bestandRegion(akt.key, false, 0, Infinity, null, akt.w);
         if (akt.art === "annahme") {
             const offen = this._annahmeOffen && this._annahmeOffen.get(akt.id);
@@ -2832,6 +2833,8 @@ class AnazhRealm_feld_leben {
                 lava: [], // die Lava-Taten (das Licht fragt sie, `_leuchtQuellen`)
                 brand: [], // die Aschen (die Boden-Decke malt sie, `_ascheStufeMalen`; die Sukzession weckt sie)
                 bestellen: [], // die bestellten Stücke der Äcker (der Körper des Ackers legt sie, `_ackerKoerperTakt`)
+                werk: new Map(), // die gebauten Werke je Zelle der Kante STOERUNG_GESETZ.reichM (`_werkStoerungAt`)
+                abriss: new Map(), // je Werk (id) der Stempel seines Abrisses
             };
         const N = AnazhRealm.TAT_NARBE;
         J.baut = true; // der Nährstoff jeder neuen Tat liest nur die Taten vor ihr (`_naehrstoffAt`)
@@ -2845,6 +2848,14 @@ class AnazhRealm_feld_leben {
             if (a.tat === "lava") J.lava.push(a);
             if (a.tat === "brand") J.brand.push(a);
             if (a.tat === "bestellen") J.bestellen.push(a);
+            if (a.tat === "bauen" && Number.isFinite(a.stempel) && a.fl > 0) {
+                const R = AnazhRealm._lebensraumGesetz().S.reichM;
+                const kz = Math.floor(a.x / R) * 2097152 + Math.floor(a.z / R);
+                if (!J.werk.has(kz)) J.werk.set(kz, []);
+                J.werk.get(kz).push(a);
+            }
+            if (a.tat === "abriss" && Number.isFinite(a.stempel) && !(J.abriss.get(a.id) <= a.stempel))
+                J.abriss.set(a.id, a.stempel);
             if (a.tat === "ernten" && typeof a.kachel === "string") {
                 if (!J.kachel.has(a.kachel)) J.kachel.set(a.kachel, new Set());
                 J.kachel.get(a.kachel).add(a.id);
@@ -3264,6 +3275,8 @@ AnazhRealm.TAT_NARBE = Object.freeze({
     brand: Object.freeze({ tiefe: 0.3, stunden: 72, naehr: 0.4 }), // die Asche (`_brandSchritt`): solange sie liegt, brennt die Zelle nicht; sie düngt
     lava: Object.freeze({ tiefe: 0.5, stunden: Infinity }), // die Lava (`_lavaGiessen`): erstarrt bleibt sie Stein
     riss: Object.freeze({ tiefe: 0.03, stunden: 24, naehr: 0.2 }), // ein Tod von Spieler-Hand (`_creatureCombatDeath`): ein Leben fehlt dem Ort, sein Leichnam nährt ihn
+    bauen: Object.freeze({ tiefe: 0, stunden: Infinity }), // ein gebautes Werk (`_werkAkt`): seine Störungszone senkt das Leben, bis sein Abriss kommt (`_werkStoerungAt`)
+    abriss: Object.freeze({ tiefe: 0, stunden: Infinity }), // der Abriss eines Werks: von seinem Stempel an wirkt das Werk nicht mehr
     bestellen: Object.freeze({ tiefe: 0, stunden: Infinity }), // ein Stück Acker, gepflügt und gesät (`_ackerBestellen`): es trägt seine Frucht ab seiner Stunde (phyto ackerStand)
     aas: Object.freeze({ tiefe: 0, stunden: 24, naehr: 0.2 }), // der Leichnam jedes Tods des Bestands (`_aasTat`, keine Tat: ein Feld des Lebens): er nährt wie der des Risses; das Leben gibt der Tod selbst (`_bestandStirbt`)
     max: 0.6,
