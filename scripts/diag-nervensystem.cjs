@@ -57,6 +57,12 @@ const NEUN_SOLL = [
     ["der Wirt nennt die Art nie", (m) => m.nennt === 0],
 ];
 const neunTaeter = (m) => NEUN_SOLL.filter(([, ok]) => !ok({ kosten: [], lod: [], ...m })).map(([n]) => n);
+// DIE ART ALS BEZEICHNER (rein): der Wirt „nennt“ die Art des neunten Buchs, wo ihr NAME steht — als Schlüssel, Wert oder Teil
+// einer id (`grenzstein`, "stele_0") —, nie, wo ein Wort der Sprache ihn als Teil trägt (die Quellen-Zeile der Grenze im Fachwerk:
+// „Hauptgrenzsteine … Historie der Grenzsteine“ fiel am 24.11. als „der Wirt nennt die Art“ ROT, Batterie am 352488da). Ein
+// Buchstabe davor oder dahinter macht ein anderes Wort; Unterstrich, Ziffer, Anführung und Punkt sind Grenzen eines Bezeichners.
+const ART_NAME = /(?<![a-zäöüß])(?:stele|meilenstein|grenzstein|obelisk)(?![a-zäöüß])/gi;
+const nenntZahl = (text) => (String(text).match(ART_NAME) || []).length;
 // S — DIE RATSCHEN (30.10., beim Namen): die Werke des Wirts ohne Gesetzbuch und die Teile ohne Ziel (der Waldboden: sein Buch
 // bringt keine Wirts-Zeile B7, die Streu trägt ihn). Sie fallen nur — ein neuer Name taucht auf (ROT), ein geheilter fällt hier.
 // `donnerfass` (front-druckwelle, 22.11.) ist das `fass` des Wirts mit einer Ladung Donnerkorn: der Baum kennt keine Abstammung
@@ -147,6 +153,18 @@ hauptLauf(async () => {
         const main = { regler: 7, bauplaene: 0, ort: "weg", nennt: 0 }; // gemessen an f7dd313c
         check("Selbsttest E: gesund ist grün", !neunTaeter(gut).length, neunTaeter(gut).join(" · "));
         check("Selbsttest E: main nennt den Register-Chokepoint", /_kindPolicyVereinen/.test(neunTaeter(main)[0]));
+        // die Art als Bezeichner: das Wort der Sprache zählt nicht, der Name im Wirt zählt — jeder Täter-Text ROT beim Namen
+        const nn = [
+            ["// Band: Hauptgrenzsteine 250–600 m (Historie der Grenzsteine); Stelen, Obelisken, Meilensteine am Weg", 0],
+            ['type: "grenzstein"', 1],
+            ["st.blueprints.stele_0 = { studioGestalt: 0 }", 1],
+            ["if (kind === 'obelisk' || id === \"meilenstein\") return STELE.hoch;", 3],
+        ].map(([t, soll]) => [t, soll, nenntZahl(t)]);
+        check(
+            "Selbsttest E3: die Art zählt als Bezeichner — das Wort der Sprache grün, Schlüssel · Wert · id ROT beim Namen",
+            nn.every(([, soll, ist]) => soll === ist) && neunTaeter({ ...gut, nennt: nenntZahl(nn[1][0]) })[0] === "der Wirt nennt die Art nie",
+            nn.map(([t, soll, ist]) => ist + "/" + soll + " „" + t.slice(0, 28) + "“").join(" · ")
+        );
         const rot = (m) => wege({ ...gut, ...m }).flatMap((w) => (w.ok ? [] : [w.weg]));
         const r = [rot({}), rot({ p2p: { bau: "x", stand: "s" } }), rot({ ki: { bau: "k" } })].join("|");
         check(
@@ -383,12 +401,7 @@ hauptLauf(async () => {
         "cores.manifest.json",
         ...MANIFEST.flatMap((k) => k.scripts.concat(k.bruecke || [])),
     ].map(lies);
-    e.nennt = (
-        wirt
-            .concat(stammText(ROOT))
-            .join("\n")
-            .match(/stele|meilenstein|grenzstein|obelisk/gi) || []
-    ).length;
+    e.nennt = nenntZahl(wirt.concat(stammText(ROOT)).join("\n"));
     await browser.close();
     server.close();
     // der Atlas (`npm run atlas -- --find neuntes`, dazu die Art in jedem Buch): die EINE Quelle
