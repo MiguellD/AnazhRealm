@@ -339,7 +339,7 @@ function uferWaermeBefunde(nische, artVon) {
 // DER FINDLING DES EISES (Karte 2 planet.kopplung.gegenwart#1/#6, die Station „Merkmale ohne Ursache = 0"): der Erratiker liegt am
 // flachen Grund nur, wo die Eis-Zeit des Orts (`ort.eis`) 1 ist — die Linse zieht `_rockGeologyClass` aus dem Stamm und fragt sie
 // über die Hänge an der Heimat (eis 0) und an einem Ort unter dem Eis (eis 1); die Eis-Zeit der Heimat fragt sie den Planeten
-// (planet-core `ortEisZeit` am Anker des Welt-Samens).
+// (planet-core `planetOrt` am Anker des Welt-Samens: `ortEisZeit` liest dort das Jahresmittel des Orts).
 const findlingStamm = (mutiere) => {
     const t = stammLib.text(ROOT);
     const x = stammLib.glieder(t).find((y) => y.name === "_rockGeologyClass" && !y.statisch);
@@ -371,11 +371,11 @@ function findlingBefunde(wirtVon) {
     const PC = globalThis.__planetCore;
     const plan = PC.planetPlan("anazh-realm-seed", PC.PLANET_ERDE);
     const A = PC.planetAnker(plan, 0, GC.ortGesetz(null));
-    const eisAnker = PC.ortEisZeit(plan, A.breite);
+    const eisAnker = PC.planetOrt(PC.planetScheibe(plan, 0), A.breite, A.laenge, GC.ortGesetz(null)).eis.zeit;
     ok(
         "Findling: die Eis-Zeit der Heimat ist die ihres Ankers auf dem Planeten",
         eisAnker === GC.ortGesetz(null).eis,
-        `Anker ${((A.breite * 180) / Math.PI).toFixed(1)}° · Eisgrenze ${((PC.planetKlimaGlobal(plan, 0).eisBreite * 180) / Math.PI).toFixed(1)}° · Planet ${eisAnker}, Heimat ${GC.ortGesetz(null).eis}`
+        `Anker ${((A.breite * 180) / Math.PI).toFixed(1)}° · Jahresmittel ${(0.5 * (A.sommerC + A.winterC)).toFixed(1)} °C (Eis-Linie −10 °C) · Planet ${eisAnker}, Heimat ${GC.ortGesetz(null).eis}`
     );
     const F = findlingBefunde(() => findlingStamm());
     for (const b of F.out) console.log("      FINDLING " + b);

@@ -1113,8 +1113,11 @@ function tafelGanzSelbsttest() {
 // mittags dazu die 18-%-Karte waagrecht 2,5 m vor dem Auge (ihre Luma, der Anker). Ein Spion zählt die Schreiber der
 // Belichtung. Die Uhr läuft die GANZE Bahn in 0,01, um den Horizont in 0,002 nach (`tagFeinUhren`).
 const TAG_UHREN = Array.from({ length: 100 }, (_, i) => i / 100);
-// `--kurz` (gate:tag-achse:echt): Mitternacht, Mittag, der Buckel 0,33, die Sonne 10° beider Seiten und der Horizont
-const TAG_UHREN_KURZ = [0, 0.25, 0.27, 0.28, 0.33, 0.5, 0.72, 0.73, 0.75];
+// `--kurz` (gate:tag-achse:echt): Mitternacht, Mittag, der Buckel 0,33, die Sonne 10° beider Seiten und der Horizont — dazu
+// (licht-stetig) die Wachen der Dämmerung beider Seiten: die bürgerliche (−6°, 0,232/0,234 · 0,766/0,768; die Nachtastung füllt
+// von dort bis zum Horizont) und die astronomische (−18°, 0,2/0,202 · 0,798/0,8). Bis licht-stetig war die Wand dort blind: das
+// Bild sprang bei −18° bis 1,89 EV (das zweite Dämmerlicht, GTX 1feab29c) und brach bei −6° um 0,45 EV ein, die Wand blieb grün
+const TAG_UHREN_KURZ = [0, 0.2, 0.202, 0.232, 0.234, 0.25, 0.27, 0.28, 0.33, 0.5, 0.72, 0.73, 0.75, 0.766, 0.768, 0.798, 0.8];
 function tagKurve(o) {
     return (async () => {
         const T = window.THREE;
@@ -1185,20 +1188,15 @@ function tagKurve(o) {
             for (let i = (H / 2) * W * 4, j = 0; i < W * H * 4; i += 4) a[j++] = vor(luma709([lin[u8[i]], lin[u8[i + 1]], lin[u8[i + 2]]]));
             return a;
         };
-        const flaeche = async (u8, kAn) => {
-            const dl = st.directionalLight;
-            const csm = st.csmNode;
-            const L = dl.position.clone().sub(dl.target.position).normalize();
-            const rref = (luma709([dl.color.r, dl.color.g, dl.color.b]) * dl.intensity * Math.max(0, L.y)) / Math.max(luma709(r._himmelE || [0, 0, 0]), 1e-9);
-            if (!(rref > 0) || !csm || !csm.lights?.length) return null;
-            const an = szene(u8);
-            const schuss = async () => szene((await window.__ausgabeAufnahme(W, H, 1, { satz: "messung", rueckstrahl: "halten" })).u8);
-            const i0 = dl.intensity;
+        // der Schuss unter der gehaltenen Kamera und dem stehenden Rückstrahl (Szenen-Luma je Pixel der unteren Hälfte) und der
+        // Schalter jedes Schattens (Kaskaden, Horizont- und Wolken-Karte): `frei` und die Beiträge des Täter-Passes teilen beide
+        const schuss = async () => szene((await window.__ausgabeAufnahme(W, H, 1, { satz: "messung", rueckstrahl: "halten" })).u8);
+        const schattenSchalter = (csm) => {
             const staerke = csm.lights.map((l) => l.shadow.intensity);
             const karten = [st.horizontKarte, st.wolkenKarte].filter(Boolean);
             const aktiv = karten.map((K) => K.U.aktiv.value);
             const takte = ["_horizontKarteTakt", "_wolkenKarteTakt"].map((m) => [m, Object.hasOwn(r, m), r[m]]);
-            const schatten = (an) => {
+            return (an) => {
                 csm.lights.forEach((l, i) => (l.shadow.intensity = an ? staerke[i] : 0));
                 karten.forEach((K, i) => (K.U.aktiv.value = an ? aktiv[i] : 0));
                 for (const [m, eigen, f] of takte)
@@ -1206,6 +1204,16 @@ function tagKurve(o) {
                     else if (eigen) r[m] = f;
                     else delete r[m];
             };
+        };
+        const flaeche = async (u8, kAn) => {
+            const dl = st.directionalLight;
+            const csm = st.csmNode;
+            const L = dl.position.clone().sub(dl.target.position).normalize();
+            const rref = (luma709([dl.color.r, dl.color.g, dl.color.b]) * dl.intensity * Math.max(0, L.y)) / Math.max(luma709(r._himmelE || [0, 0, 0]), 1e-9);
+            if (!(rref > 0) || !csm || !csm.lights?.length) return null;
+            const an = szene(u8);
+            const i0 = dl.intensity;
+            const schatten = schattenSchalter(csm);
             let aus, frei;
             k = kAn;
             haltK = true;
@@ -1236,6 +1244,70 @@ function tagKurve(o) {
             // unter 2 % der Fläche erreicht die Sonne kein Bild, das einen Schatten trüge: ohne Urteil
             if (zahl < 0.02 * an.length) return null;
             return [+(summe / zahl).toFixed(4), n.map((x) => +(x / an.length).toFixed(4)), +(zahl / an.length).toFixed(3)];
+        };
+        // DER TÄTER-PASS (licht-stetig, `o.taeter`): je Zeile die Beiträge zum Bild unter derselben Kamera und demselben Boden —
+        // das Mittel der Szenen-Luma der unteren Hälfte (Tonkurve zurück, im Maß k · L) mit allem (`an`), ohne jeden Schatten
+        // (`frei`), ohne das Richtlicht (`aus`: Sonne oder Mond), ohne die Lampen (die Plätze des Pools und die Glut), ohne die Sterne
+        // (das Feld und das Sternen-Licht der Tafeln, `U.nachtE`), dazu ohne den Himmel (die Einheit der Tafeln 0: Kuppel, Umgebung,
+        // Luft). Sonne = frei − aus, Wurf = an − frei, Lampen und Sterne je an − ohne, Himmel ohne die Sterne; der Rest ist, was keiner
+        // trägt (der stehende Rückstrahl, Glut ohne Pool). Das Urteil zerlegt damit jede reißende Stufe (`tagTaeter`).
+        const teile = async (kAn) => {
+            const mittel = (a) => a.reduce((s, v) => s + v, 0) / a.length;
+            const dl = st.directionalLight;
+            const csm = st.csmNode;
+            const A = st.atmoLut;
+            const atmo = st.atmoUniforms;
+            const su = st.starFieldUniforms;
+            const i0 = dl.intensity;
+            const schatten = csm && csm.lights?.length ? schattenSchalter(csm) : null;
+            // die Lampen schreibt `_leuchtTakt` je Bild neu (`_loopRender`): der Schalter läuft hinter ihm und legt jeden Platz in
+            // seinen leeren Stand (Farbe 0, kein Himmels-Ersatz, kein Kern) und jede Glut auf 0
+            const leuchtEigen = [Object.hasOwn(r, "_leuchtTakt"), r._leuchtTakt];
+            const lampen = (an) => {
+                if (an) return leuchtEigen[0] ? (r._leuchtTakt = leuchtEigen[1]) : delete r._leuchtTakt;
+                r._leuchtTakt = function () {
+                    leuchtEigen[1].call(this);
+                    if (!atmo) return;
+                    atmo.lichtFarbe.forEach((u, i) => (u.value.set(0, 0, 0, 0), (atmo.lichtErsatz[i].value = 0), (atmo.lichtKern[i].value = 0)));
+                    for (const g of Object.values(atmo.lichtGlut)) g.value.setRGB(0, 0, 0);
+                };
+            };
+            const nachtVor = A ? A.U.nachtE.value.clone() : null;
+            const lichtVor = A ? A.U.licht.value : null;
+            const sternVor = su && su.opacity ? su.opacity.value : null;
+            const m = {};
+            k = kAn;
+            haltK = true;
+            try {
+                m.an = mittel(await schuss());
+                if (schatten) schatten(false);
+                m.frei = mittel(await schuss());
+                if (schatten) schatten(true);
+                dl.intensity = 0;
+                m.aus = mittel(await schuss());
+                dl.intensity = i0;
+                lampen(false);
+                m.lampen = mittel(await schuss());
+                lampen(true);
+                if (A) A.U.nachtE.value.set(0, 0, 0);
+                if (sternVor != null) su.opacity.value = 0;
+                m.sterne = mittel(await schuss());
+                if (A) A.U.licht.value = 0;
+                m.himmel = mittel(await schuss());
+            } finally {
+                if (schatten) schatten(true);
+                dl.intensity = i0;
+                lampen(true);
+                r._leuchtTakt();
+                if (A) A.U.nachtE.value.copy(nachtVor), (A.U.licht.value = lichtVor);
+                if (sternVor != null) su.opacity.value = sternVor;
+                haltK = false;
+                r._himmelSprung = true;
+                r._applyDayNightToScene();
+            }
+            const T = { k: kAn, an: m.an, sonne: m.frei - m.aus, wurf: m.an - m.frei, lampen: m.an - m.lampen, sterne: m.an - m.sterne, himmel: m.sterne - m.himmel };
+            T.rest = T.an - T.sonne - T.wurf - T.lampen - T.sterne - T.himmel;
+            return Object.fromEntries(Object.entries(T).map(([n, v]) => [n, +v.toPrecision(5)]));
         };
         try {
             for (const u of o.uhren) {
@@ -1272,6 +1344,7 @@ function tagKurve(o) {
                 };
                 if (o.png) z.png = __png(u8, W, H);
                 zeilen.push(z);
+                if (o.taeter) z.teile = await teile(kAn);
                 if (u === 0.5) {
                     // DER ANKER: die 18-%-Karte waagrecht, 2,5 m vor dem Auge, 0,6 m unter ihm, ohne Schatten — das Licht der Welt
                     // durch die Belichtung und die Tonkurve, gezählt 3 Pixel in ihrer Mitte
@@ -1361,6 +1434,33 @@ function tagFeinUhren(zeilen) {
         return horizont || reisst ? Array.from({ length: Math.round((b.uhr - a.uhr) / 0.002) - 1 }, (_, j) => +(a.uhr + 0.002 * (j + 1)).toFixed(3)) : [];
     });
 }
+// DER TÄTER EINER STUFE (licht-stetig, rein): die Stufe des Bilds zwischen zwei Zeilen des Täter-Passes (`teile`) in ihre Beiträge
+// — die Belichtung log2(k_b ÷ k_a), jeder Beitrag des Lichts sein Zuwachs im Licht L = Beitrag ÷ k gegen das mittlere Licht beider
+// Zeilen (in EV; ihre Summe ist die Stufe des Lichts, mit der Belichtung die des Bilds). Der Träger ist der größte Beitrag in der
+// Richtung der Stufe. Bis licht-stetig nannte die Wand nur Uhr und EV: wer die Stufe trug (die Klippe des Dämmerlichts bei −18°,
+// der Einbruch bei −6°), las der Arbeiter aus Rohdaten der Station.
+const TAG_BEITRAEGE = { belichtung: "Belichtung", sonne: "Sonne", wurf: "Wurf", himmel: "Himmel", sterne: "Sterne", lampen: "Lampen", rest: "Rest" };
+function tagTaeter(a, b) {
+    const [A, B] = [a.teile, b.teile];
+    const L = (A.an / A.k + B.an / B.k) / 2;
+    const ev = { belichtung: Math.log2(B.k / A.k) };
+    for (const n of Object.keys(TAG_BEITRAEGE).slice(1)) ev[n] = (B[n] / B.k - A[n] / A.k) / (Math.LN2 * L);
+    const stufe = Math.log2(B.an / A.an);
+    const [traeger] = Object.keys(ev)
+        .filter((n) => Math.sign(ev[n]) === Math.sign(stufe))
+        .sort((x, y) => Math.abs(ev[y]) - Math.abs(ev[x]));
+    return { stufe, ev, traeger: traeger || "rest" };
+}
+// die Uhren des Täter-Passes: beide Zeilen jedes Schritts, der nach dem Urteil reißt (unter 0,0105 der Uhr über `sprung` EV)
+function tagTaeterUhren(zeilen) {
+    const z = [...zeilen].sort((a, b) => a.uhr - b.uhr);
+    const u = new Set();
+    z.forEach((x, i) => {
+        const a = z[i - 1];
+        if (a && x.uhr - a.uhr < 0.0105 && Math.abs(Math.log2(Math.max(x.Y, 1e-9) / Math.max(a.Y, 1e-9))) > TAG_SOLL.sprung) u.add(a.uhr).add(x.uhr);
+    });
+    return [...u].sort((a, b) => a - b);
+}
 function tagKurveUrteil(welt) {
     const S = TAG_SOLL;
     const R = require("../../spec/farbe/tag-ref.json").zeilen;
@@ -1388,9 +1488,19 @@ function tagKurveUrteil(welt) {
         // der Schritt zur Zeile davor (0 über eine Lücke) und die Spitze eines Maßes [Wert, Uhr]: der größte Betrag
         const schritt = (x, a) => (a && x.uhr - a.uhr < 0.0105 ? e(x) - e(a) : 0);
         const spitze = (f) => alle.reduce((m, x, i) => (Math.abs(f(x, alle[i - 1])) > Math.abs(m[0]) ? [f(x, alle[i - 1]), x.uhr] : m), [0, 0]);
+        // der Täter jeder reißenden Stufe (licht-stetig): ihre Zeilen im Täter-Pass (`m.taeter`), zerlegt in die Beiträge
+        const taeter = (a, b) => {
+            if (!m.taeter) return "";
+            const [ta, tb] = [a, b].map((x) => m.taeter.find((t) => t.uhr === x.uhr && t.teile));
+            if (!ta || !tb) return " — ohne Täter-Pass";
+            const t = tagTaeter(ta, tb);
+            const s = (v) => (v >= 0 ? "+" : "") + r2(v);
+            const liste = Object.entries(TAG_BEITRAEGE).map(([n, w]) => `${w} ${s(t.ev[n])}`).join(" · ");
+            return ` — trägt ${TAG_BEITRAEGE[t.traeger]} ${s(t.ev[t.traeger])} (Täter-Pass ${s(t.stufe)} EV: ${liste})`;
+        };
         alle.forEach((x, i) => {
             const d = schritt(x, alle[i - 1]);
-            if (Math.abs(d) > S.sprung) rot("SPRUNG", `Uhr ${alle[i - 1].uhr} → ${x.uhr} ${r2(d)} EV`);
+            if (Math.abs(d) > S.sprung) rot("SPRUNG", `Uhr ${alle[i - 1].uhr} → ${x.uhr} ${r2(d)} EV${taeter(alle[i - 1], x)}`);
             if (e(x) > S.buckel) rot("BUCKEL", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(e(x))} EV über dem Mittag`);
             if (Math.abs(ref(x)) > S.ref) rot("REF", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(ref(x))} Stufen neben der REF`);
             if (!(x.lesung <= S.lesung)) rot("ASYNC", `Uhr ${x.uhr} die Lesung nach ${x.lesung} Bildern (Schranke ${S.lesung})`);
@@ -1480,6 +1590,19 @@ function tagKurveSelbsttest() {
         if (fall === "MUTANT-BLIND") m.mutant = { lesung: 2 };
         if (fall === "SCHREIBER") m.schreiber._tickPortalMembranes = 1;
         if (fall === "BLIND") m.zeilen = [];
+        // DER TÄTER (licht-stetig): der Sprung Uhr 0,276 (+0,26 EV) im Täter-Pass — ein Beitrag mit Schalter trägt ihn (die
+        // Belichtung ×1,2 über allem Licht, jeder andere +0,2 des Lichts); die Wand nennt ihn beim Namen. Ohne Zeilen des Passes:
+        // „ohne Täter-Pass“
+        if (/^TAETER/.test(fall)) {
+            const n = fall.split("-")[1];
+            z(0.276).Y *= 1.2;
+            const teile = { k: 1, an: 1, sonne: 0.4, wurf: -0.1, himmel: 0.5, sterne: 0.05, lampen: 0.1, rest: 0.05 };
+            const schalter = (t) => {
+                if (n === "belichtung") return Object.fromEntries(Object.entries(t).map(([s, v]) => [s, v * 1.2]));
+                return { ...t, [n]: t[n] + 0.2, an: t.an + 0.2 };
+            };
+            m.taeter = n ? [0.274, 0.276, 0.278].map((uhr) => ({ uhr, teile: uhr === 0.276 ? schalter(teile) : teile })) : [];
+        }
         return tagKurveUrteil({ wiese: m }).befunde.join();
     };
     const gesetz = (mutante) => {
@@ -1515,6 +1638,9 @@ function tagKurveSelbsttest() {
         [nur(kurve(T.kopf, "FEIN-OHNE"), /SPRUNG/), "SPRUNG wiese: Uhr 0.4 → 0.41 0.30 EV"],
         [nur(kurve(T.kopf, "FEIN-SPRUNG"), /SPRUNG/), "SPRUNG wiese: Uhr 0.408 → 0.41 0.30 EV"],
         [nur(kurve(T.kopf, "FEIN-RAMPE"), /SPRUNG/), ""],
+        // DER TÄTER (licht-stetig): jeder Beitrag mit Schalter trägt die Stufe beim Namen, die Wand ohne Täter-Pass sagt es
+        ...Object.entries(TAG_BEITRAEGE).map(([n, w]) => [nur(kurve(T.kopf, `TAETER-${n}`), /SPRUNG/), new RegExp(`^SPRUNG wiese: Uhr 0\\.274 → 0\\.276 0\\.\\d\\d EV — trägt ${w} \\+0\\.\\d\\d \\(Täter-Pass \\+0\\.26 EV: `)]),
+        [nur(kurve(T.kopf, "TAETER"), /SPRUNG/), /^SPRUNG wiese: Uhr 0\.274 → 0\.276 0\.\d\d EV — ohne Täter-Pass,/],
         [gesetz(), ""],
         [gesetz({ steigung: 1, stufen: [[10, 0], [-20, 0]] }), /GESETZ Sonne 10°/],
     ];
@@ -3851,6 +3977,9 @@ module.exports = {
     tagKurveUrteil,
     tagKurveSelbsttest,
     tagFeinUhren,
+    tagTaeter,
+    tagTaeterUhren,
+    TAG_BEITRAEGE,
     TAG_UHREN,
     TAG_UHREN_KURZ,
     kronenObenUrteil,

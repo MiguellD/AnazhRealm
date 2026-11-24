@@ -1516,7 +1516,11 @@ function planetOrtAuftrag(msg) {
                 spendeVerh: d.klima.spendeVerh,
             },
             meer: { waterLevelM: d.meer.waterLevelM },
-            wetter: { regenQuote: d.wetter.regenQuote, sturmQuote: d.wetter.sturmQuote },
+            wetter: {
+                regenQuote: d.wetter.regenQuote,
+                sturmQuote: d.wetter.sturmQuote,
+                nebelQuote: d.wetter.nebelQuote,
+            },
             wuchs: { decke: d.wuchs.decke, wald: d.wuchs.wald },
             eis: { zeit: d.eis.zeit },
             wildnis: Object.assign({}, d.wildnis),

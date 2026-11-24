@@ -629,7 +629,9 @@ class AnazhRealm_gelaende_kollision {
     // darüber (gate:koerper-stand K4: das Tier stieg an einer Tanne 0,6 m je Takt, jede der 2803 Fugen trug).
     // DER STAB (siedlung.K1): eine Box, deren Grundfläche schmaler ist als ein Fuß (`PLAYER_STAB`), trägt ebenso keinen
     // Leib — Brüstung, Geländer, Türblatt bleiben Wand. Vorher stieg die Kapsel auf jeder Treppe neben der Schacht-Brüstung
-    // auf deren Holm (Hub 0,56–0,59 m in einem Schritt, gate:haus-welt W10).
+    // auf deren Holm (Hub 0,56–0,59 m in einem Schritt, gate:haus-welt W10). Eine TRITTFLÄCHE des Gesetzbuchs (`tritt`) ist nie
+    // Stab: der Schwebebalken (fachwerk `schwebebalken`, 0,10 m) trägt den Fuß, den sein Verb führt (koerper `balancieren`) —
+    // bis nerv-bewegung ging der Spieler durch ihn hindurch (die Sohle 0,38 m unter seiner Oberkante, das Verb 0 von 1).
     _blockerFugen(boxes) {
         const R = AnazhRealm.PLAYER_WALL_RADIUS;
         const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
@@ -668,6 +670,7 @@ class AnazhRealm_gelaende_kollision {
         for (const a of boxes) {
             const ob = a.obb;
             let gedeckt =
+                a.tritt !== true &&
                 (ob ? 2 * Math.min(ob.hx, ob.hz) : Math.min(a.maxX - a.minX, a.maxZ - a.minZ)) < AnazhRealm.PLAYER_STAB;
             let eckenDa = false;
             for (const b of gedeckt ? [] : boxes) {

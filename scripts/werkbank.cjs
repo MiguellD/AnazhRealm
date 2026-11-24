@@ -3863,7 +3863,7 @@ hauptLauf(async () => {
         // `--datei f.json` die Messung.
         const halt = await eigeneWelt();
         const welt = {};
-        const kurve =(uhren, png) => evalRuf(`return await __tagKurve(${JSON.stringify({ uhren, png })});`);
+        const kurve = (uhren, png, taeter) => evalRuf(`return await __tagKurve(${JSON.stringify({ uhren, png, taeter })});`);
         try {
             for (const wahl of String(opt("--orte", "genesis,wiese")).split(",")) {
                 const [ort, sicht = "ego"] = wahl.split(":");
@@ -3876,6 +3876,12 @@ hauptLauf(async () => {
                 }
                 const f = m.zeilen && (await kurve(LL.tagFeinUhren(m.zeilen), false)).ergebnis;
                 if (f) (m.fein = f.zeilen), Object.assign(m.schreiber, f.schreiber);
+                // DER TÄTER-PASS (licht-stetig): an beiden Uhren jedes reißenden Schritts das Bild in seine Beiträge zerlegt
+                // (`teile`: Sonne, Wurf, Himmel, Sterne, Lampen unter der gehaltenen Kamera) — das Urteil nennt den Träger der Stufe
+                const tu = LL.tagTaeterUhren((m.zeilen || []).concat(m.fein || []));
+                const t = tu.length && (await kurve(tu, false, true)).ergebnis;
+                if (tu.length) m.taeter = (t && t.zeilen) || []; // ohne Zeilen nennt die Wand die Stufe „ohne Täter-Pass“
+                if (t) Object.assign(m.schreiber, t.schreiber);
             }
         } finally {
             if (halt) await halt();

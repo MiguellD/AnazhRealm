@@ -16,7 +16,9 @@ var __weltLicht = (function () {
         );
 
     // DIE TAFELN DER EINEN ATMOSPHÄRE (D3, Hillaire 2020; `atmoTafeln`): Größen (Texel) und Marsch-Schritte. Transmittance
-    // 256×64 und Ψ_ms 32×32 je Medium, die Himmels-Sicht 192×108 je Stufe der Sonne, die Umgebung 128×64 (Equirekt, PMREM).
+    // 256×64 und Ψ_ms 64×32 je Medium (cos Sonnen-Zenit quadratisch dicht um den Horizont wie die Bestrahlungs-Tafel: bei −5°
+    // ein Texel 1,15° statt 3,6° — die Dämmerung knickt nirgends, licht-stetig), die Himmels-Sicht 192×108 je Stufe der Sonne,
+    // die Umgebung 128×64 (Equirekt, PMREM).
     // mediumStufe: die Stufe des Mediums im Logarithmus der Extinktion (`_atmoMediumJetzt`) — 2 % halten den Zenit-Durchlass
     // der klaren Luft (Aerosol-Tiefe 0,18) unter einer 8-bit-Stufe; ein Übergang klar → Sturm (Faktor 13) sind 130 Stufen.
     // flug: so viele Stufen darf das Medium wandern, solange die Tafel im Flug ist (`_waagrechtIrradianz`) — der steilste Anstieg im
@@ -26,7 +28,7 @@ var __weltLicht = (function () {
         mediumStufe: 0.02,
         flug: 8,
         durchlass: Object.freeze([256, 64]),
-        mehrfach: Object.freeze([32, 32]),
+        mehrfach: Object.freeze([64, 32]),
         himmel: Object.freeze([192, 108]),
         umgebung: Object.freeze([128, 64]),
         bestrahlung: Object.freeze([65, 1]),
@@ -57,20 +59,15 @@ var __weltLicht = (function () {
     // Kompensations-Steigung des Tags (1 = volle Adaption, 0 = feste Blende), `stufen` die Knoten [Grad, Stufen] der Tag-Achse
     // für Dämmerung und Nacht, `gleitung` [oben, unten] das Band, in dem die Kamera von der Steigung auf sie gleitet; `nachtGrad`
     // (S7) die Tiefe der Sonne, in der das Nacht-Auge der Post-Kette ganz steht. Die Messungen stehen am Stamm (bild-himmel.js).
-    // DER NACHT-KNOTEN (`nachtKnotenE`, w28-nacht-licht): die weiteste Blende der Kamera — ihr Lichtmesser liest nie weniger als die
-    // Beleuchtungsstärke der Vollmond-Nacht des Gesetzes (Welt-Einheiten, wie `_waagrechtIrradianz`), darunter steht die Belichtung,
-    // und das Bild fällt mit dem Licht (UE: die Untergrenze der Auto-Belichtung, Min EV100). Bis w28-nacht-licht normierte sie JEDES
-    // Licht auf die Karte −2,17 Stufen: die Nacht war ein abgedunkelter Tag — Wände ohne Quelle so hell wie die Gasse unter der
-    // Laterne (Stadt 00 Uhr, Radeon: Wand 107 : angestrahlt 138 Luma, 1,75 : 1 linear), 00 Uhr kaum dunkler als 20 Uhr. Der Wert ist
-    // E des Vollmonds im Zenit (`MOND_E` 0,462, k 1,85): der hohe Mond trägt die Karte auf die Stufe der Nacht (Mitternacht,
-    // Dorf: E 0,54, k 1,59), unter dem Knoten (tiefer Mond, Wald, Wolke) fällt das Bild. Mit dem halben Knoten (0,231) öffnete die
-    // Kamera am tiefen Mond bis k 3,7–4,8: die Wand unter der Laterne stand um 20 Uhr heller als am Mittag (Y 0,395, Radeon). Bis w28-nacht-bilanz stand er auf dem
-    // gemessenen Licht von main (0,68: Mond + das Sternen-Licht als Füllung E 0,30, `STERNENLICHT`); unter dem Knoten steht die
-    // Kamera — fällt das Licht (der Mond tiefer am
-    // Himmel), fällt das Bild, und Laterne, Fenster und Feuer tragen die Nacht. Der Knoten wächst vom Horizont bis zum Ende der bürgerlichen
-    // Dämmerung (`nachtKnotenGrad`, −6°: die Nacht der Tag-Achse ist ganz) logarithmisch ein — dort trägt das Dämmerlicht
-    // (`nachtHimmel`) so viel wie der Vollmond. Bis w28-nacht-bilanz wuchs er erst von −6° bis −20° ein: am tiefen Mond (05 Uhr,
-    // Sonne −15°) öffnete die Kamera auf k 3,9–4,8, und die Laterne überstrahlte ihre Wand.
+    // DER BODEN DES MESSERS (`nachtKnotenE` × der Mond der Stunde, licht-stetig): die weiteste Blende der Kamera — ihr Lichtmesser
+    // liest nie weniger als das Licht des Vollmonds ohne Wolken-Decke zu DIESER Stunde, E des Monds im Zenit (`MOND_E`) × der Sinus
+    // seiner Höhe × sein Durchlass (`belichtung`, das sechste Wort); darunter steht die Belichtung, und das Bild fällt mit dem Licht
+    // (UE: die Untergrenze der Auto-Belichtung, Min EV100) — Wald, Wolke, Gasse ohne Laterne. Unter offenem Himmel folgt die Kamera
+    // dem Mond, wie die REF es misst (spec/farbe/tag-ref.json, USNO Circular 171: −20° 0,096 lx und −90° 0,397 lx stehen beide auf
+    // −2,17 Stufen), und Laterne, Fenster und Feuer tragen die Nacht (der Messer liest ihren Pool, `_poolAmAuge`). Bis licht-stetig
+    // war der Boden der Mond im Zenit, ab −6° fest (0,26 lx): die Dämmerung der Tafeln (0,43–0,52 Dekaden je Grad, wie Brown 1952)
+    // fiel um −8,6° unter ihn, und das Bild der Wiese fiel mit dem Licht — gerechnet 3 EV in 2,5° (GTX 1feab29c: Tafeln + Mond
+    // 0,37 lx bei −8,6°, 0,03 lx bei −12°); um 05 Uhr (Mond 18°, 0,056 lx) stand das Bild 2,2 EV unter Mitternacht.
     // DIE EINE SKALA (licht-eine-skala): 1 Welt-Einheit Licht = `EINHEIT_LX` lx Beleuchtungsstärke bzw. cd/m² Leuchtdichte —
     // der Maßstab, in dem die Sonne geeicht steht (spec/farbe/tag-ref.json: 117 970 lx bei 75° Sonnenhöhe; die Welt trägt dort
     // waagrecht 7,33 Einheiten — Sonne 6,01 + Himmel 1,41 bei 74,2° gerechnet 7,42). JEDE Quelle trägt ihren physikalischen
@@ -93,7 +90,6 @@ var __weltLicht = (function () {
         gleitung: Object.freeze([12, 8]),
         stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
         nachtKnotenE: MOND_E,
-        nachtKnotenGrad: -6,
         nachtGrad: -32,
         // DER WEG ZU WEISS (nacht-lichter): über Bild-Weiß zieht die Kurve den Ton zu seinem größten Kanal — `kappe` ist der höchste
         // Anteil (weit über Weiß), `stufen` die Stufen über Weiß, nach denen die Hälfte erreicht ist — im QUADRAT der Stufen: am Knie
@@ -177,8 +173,7 @@ var __weltLicht = (function () {
     // DAS STERNEN-LICHT (w28-nacht-bilanz) — der Nachthimmel ohne Mond (Luftleuchten und Sterne) im Maß der REF der Kamera
     // (spec/farbe/tag-ref.json, USNO Circular 171: der Nachthimmel 0,0005 lx neben dem Vollmond, zusammen 0,397 lx): `r/g/b` der
     // Ton des Gesetzes (`ATMO_GESETZ.nacht.himmel`, auf Luma 1), `leuchtdichte` seine Zenit-Leuchtdichte in Welt-Einheiten —
-    // 0,0005 lx ÷ `EINHEIT_LX`, durch π (die Halbkugel); `daemmer` das Dämmerlicht am Ende der bürgerlichen Dämmerung (die REF:
-    // 3 lx bei −6°). Bis licht-eine-skala standen beide als Anteile des Mondes im Maßstab der Nacht. Bis hier trug der Himmel die Zahl des
+    // 0,0005 lx ÷ `EINHEIT_LX`, durch π (die Halbkugel). Bis licht-eine-skala stand es als Anteil des Mondes im Maßstab der Nacht. Bis hier trug der Himmel die Zahl des
     // Gesetzes als Leuchtdichte (Luma 0,095, E 0,30 neben dem Mond 0,43 — das 510-Fache dieses Maßes): GEMESSEN (Radeon, Dorf,
     // 00 Uhr, main 3552f058, Ausgabe-Y) trug es die Wand ohne Quelle zu 72 % (0,0279 → 0,0078 ohne es; ohne die ganze Umgebung
     // 0,0011, ohne Ambient 0,0161, ohne Himmel-Boden 0,0222, ohne Mond 0,0199) und den Himmel zu 90 % (0,0860 → 0,0082: grau
@@ -192,20 +187,18 @@ var __weltLicht = (function () {
                 g: n[1] / y,
                 b: n[2] / y,
                 leuchtdichte: 0.0005 / EINHEIT_LX / Math.PI,
-                daemmer: 3 / EINHEIT_LX / Math.PI,
             };
         })(KERN.ATMO_GESETZ.nacht.himmel)
     );
     // DER HIMMEL DER NACHTSEITE OHNE MOND je Sonnenhöhe (Zenit-Leuchtdichte, Welt-Einheiten; `achse` die EINE Tag-Achse): das
-    // Sternen-Licht, wie die Sterne erscheinen (1 − Dämmerung), und DAS DÄMMERLICHT — die blaue Stunde: die Kuppel nach
-    // Sonnenuntergang, die in der Welt der gestauchten Nacht (der Mond 1/13 der Sonne statt 1/400 000) kein Strahl der Tafeln
-    // trägt. Es blendet mit dem Kanal der Nacht ein (`nacht`: 0 über dem Horizont, 1 bei −6°), trägt am Ende der
-    // bürgerlichen Dämmerung so viel wie der Vollmond im Zenit (`daemmer`; die REF: 3 lx bei −6°, gleich dem Vollmond bei −8°)
-    // und fällt mit der Dämmerung der Tag-Achse bis −18° auf 0, während der Mond steigt. Die tiefe Nacht trägt es nie.
-    const DAEMMER_ENDE = tagAchse(Math.sin((-6 * Math.PI) / 180)).daemmerung;
+    // Sternen-Licht, wie die Sterne erscheinen (1 − Dämmerung). DIE DÄMMERUNG TRAGEN DIE TAFELN (licht-stetig): ihr Himmel unter
+    // dem Horizont fällt 0,43–0,52 Dekaden je Grad (gemessen am Messer, GTX 1feab29c, Wiese: 96 lx bei −3,6°, 11 lx −5,8°, 2,1 lx
+    // −7,2°, 0,37 lx −8,6°) — wie die Natur (Brown 1952 in USNO Circular 171: 3 lx bei −6°, 0,008 lx bei −12°, rund 0,4 Dekaden je
+    // Grad). Bis licht-stetig lag darauf ein zweites Dämmerlicht (3 lx bei −6°, linear in der Dämmerung der Tag-Achse bis −18° auf
+    // 0): bei −12° trug es 1,3 lx statt 0,008 und fiel im letzten Schritt der Uhr vor −18° ganz — das Bild sprang dort bis
+    // 1,89 EV (GTX 1feab29c, Wiese 0,2 → 0,202 +1,75 EV). Die tiefe Nacht trägt der Mond.
     function nachtHimmel(achse) {
-        const d = Math.max(0, Math.min(1, achse.daemmerung));
-        return STERNENLICHT.leuchtdichte * (1 - d) + STERNENLICHT.daemmer * achse.nacht * Math.min(1, d / DAEMMER_ENDE);
+        return STERNENLICHT.leuchtdichte * (1 - Math.max(0, Math.min(1, achse.daemmerung)));
     }
     // DIE GPU-LEINE (Welt `_gpuLeineFrei`, Bühne `buehneZeichnet`): höchstens so viele Bilder zugleich auf der GPU unterwegs — mehr
     // ist nur Eingabe-Verzug (gemessen 04.10.: 600 ms bei ≈ 10 Frames in der Schlange), nie mehr Durchsatz.
@@ -383,20 +376,38 @@ var __weltLicht = (function () {
             const dMin = float(RT).sub(r);
             const dMax = rho.add(H);
             const xmu = d.sub(dMin).div(max(dMax.sub(dMin), 1e-4));
-            const t = texture(rtT.texture, vec2(subUv(xmu, Z.durchlass[0]), subUv(rho.div(H), Z.durchlass[1]))).level(
+            const tau = texture(rtT.texture, vec2(subUv(xmu, Z.durchlass[0]), subUv(rho.div(H), Z.durchlass[1]))).level(
                 float(0)
             ).rgb;
-            return select(amBoden(r, mu), vec3(0), t);
+            return select(amBoden(r, mu), vec3(0), exp(tau.negate()));
         };
+        // DIE TAFELN MISCHEN IM LOGARITHMUS (licht-stetig): das Licht der Dämmerung fällt exponentiell mit der Sonnenhöhe (0,4–0,5
+        // Dekaden je Grad, Brown 1952 / USNO Circular 171), der Filter der GPU mischt zwei Texel linear. Ψ_ms trug 32 Texel linear
+        // über cos Sonnen-Zenit — um den Horizont 3,6° weit, die Luft unten im Schatten der Erde lebt dort allein von ihm: linear im
+        // Licht gemischt, knickte das Himmelslicht an jedem Texel (Sonne −5,38°: das Bild stieg je 0,002 der Uhr 0,82, dann 1,67 EV,
+        // Radeon 7ef6fb25 — Täter-Pass „Himmel“ +0,49 → +1,05; im Logarithmus gemischt blieb der Knick der Steigung, wiese Uhr 0,766
+        // −0,10 EV, GTX f53f05ea — darum liegt Ψ_ms quadratisch dicht um den Horizont, `msLage`). Die Durchlass-Tafel trägt die
+        // optische Tiefe τ (der Filter mischt sie linear, exakt für das exponentielle Gesetz) und Ψ_ms den Logarithmus über dem Boden
+        // ihrer Auflösung (2^−24, die kleinste Stufe des Halb-Floats); ihr EINER Leser (`durchlass`, `mehrfach`) kehrt die Ablage um.
+        // Dasselbe Gesetz mischt die Bestrahlungs-Tafel auf der CPU (`bestrahlung`).
+        const MS_BODEN = 2 ** -24;
+        // die Lage von cos Sonnen-Zenit in Ψ_ms (u ∈ [0, 1]): quadratisch um den Horizont, μ = c·|c| mit c = 2u − 1 — dieselbe Lage
+        // wie die Bestrahlungs-Tafel (`bestrahlung`); `passMehrfach` legt jeden Texel an ihre Umkehr
+        const msLage = (mus) => mus.sign().mul(mus.abs().min(1).sqrt()).add(1).mul(0.5);
         // Ψ_ms in Zeilen LINEAR in der Höhe (Hillaire): die zweite Zeile liegt bei 3,2 km. Quadratisch (w = √(h/H), Zeilen bei 0,
         // 0,10, 0,42, 0,94 km — w4-ferne-blau, Duv −0,001 am Horizont) löste die Grenzschicht des Dunsts auf und hob im dichten
         // Dunst des Regens das Licht des Himmels: das Regenbild stieg über das der Sonne (werkbank licht --naesse, Radeon: Wiese
         // 0,966 → 1,012, Dorf 0,951 → 1,050; gate:naesse:echt ROT) — heil-w4-ferne-blau.
         const mehrfach = (h, mus) =>
-            texture(
-                rtMS.texture,
-                vec2(subUv(mus.add(1).mul(0.5), Z.mehrfach[0]), subUv(h.div(RT - RG), Z.mehrfach[1]))
-            ).level(float(0)).rgb;
+            max(
+                exp(
+                    texture(
+                        rtMS.texture,
+                        vec2(subUv(msLage(mus), Z.mehrfach[0]), subUv(h.div(RT - RG), Z.mehrfach[1]))
+                    ).level(float(0)).rgb
+                ).sub(MS_BODEN),
+                vec3(0)
+            );
         const phaseR = (nu) =>
             nu
                 .mul(nu)
@@ -440,12 +451,13 @@ var __weltLicht = (function () {
                 const hi = max(sqrt(t.mul(t).add(r.mul(mu).mul(t).mul(2)).add(r.mul(r))).sub(RG), 0);
                 tau.addAssign(ext(hi).mul(dt));
             });
-            return vec4(exp(tau.negate()), 1);
+            return vec4(tau, 1); // die optische Tiefe: `durchlass` liest exp(−τ)
         });
         // ── Ψ_ms: je (cos Sonnen-Zenit, Höhe) die Mehrfachstreuung (Hillaire Gl. 5–9), 8 × 8 Richtungen, Boden = die Erde (`ATMO_ERDE`) ──
         const passMehrfach = Fn(() => {
             const q = uv();
-            const mus = ausUv(q.x, Z.mehrfach[0]).mul(2).sub(1).toVar();
+            const cMs = ausUv(q.x, Z.mehrfach[0]).mul(2).sub(1).toVar();
+            const mus = cMs.mul(cMs.abs()).toVar();
             const h = max(ausUv(q.y, Z.mehrfach[1]).mul(RT - RG), 0.001).toVar();
             const r = h.add(RG).toVar();
             const sun = vec3(sqrt(max(float(1).sub(mus.mul(mus)), 0)), mus, 0).toVar();
@@ -507,7 +519,8 @@ var __weltLicht = (function () {
                 Fsum.addAssign(F);
             });
             const fms = Fsum.div(64);
-            return vec4(Lsum.div(64).div(max(fms.oneMinus(), vec3(1e-4))), 1);
+            // der Logarithmus über dem Boden der Auflösung: `mehrfach` liest exp(x) − 2^−24
+            return vec4(T.log(max(Lsum.div(64).div(max(fms.oneMinus(), vec3(1e-4))), vec3(0)).add(MS_BODEN)), 1);
         });
         // ── die Himmels-Sicht: Richtung ↔ Texel (Azimut absolut, Breite quadratisch um den Horizont des Auges) ──
         const horizontEl = () => T.acos(float(RG).div(U.hKm.add(RG))).negate();
@@ -740,17 +753,16 @@ var __weltLicht = (function () {
     // Anker (`belichtungAnker`), `e` der Sinus der Sonnenhöhe, `stufen` die Stufen der Kamera (die Welt reicht ihr Glied
     // `AnazhRealm._belichtungStufen`, an dem die Linsen den Schein der Kamera prüfen). → die Belichtung k: die 18-%-Karte unter
     // dem Anker auf `zielKarte` und die Stufen der Kamera gegen ihn; `B` die Eichung (wie `belichtungStufen`). Der Lichtmesser
-    // liest in der Nacht nie unter dem Nacht-Knoten (`nachtKnotenE`): er ist ein BODEN des Messers (UE: Min EV100), der vom
-    // Horizont bis `nachtKnotenGrad` mit der Nacht der Tag-Achse wächst (smoothstep, C¹ an beiden Enden) — darunter steht die
-    // Blende, das Bild fällt mit dem Licht; darüber folgt die Kamera dem Licht. Bis w28-licht-stetig zog ein geometrisches Mittel
-    // E^(1−t) · Knoten^t mit t linear ab dem Horizont jede Uhr der Dämmerung zum Knoten, auch wo das Licht weit darunter lag (die
-    // Sonne 0°: E 0,056, Knoten 0,462 — 3 EV): die Kamera knickte am Horizont, das Bild sprang je 0,002 der Uhr um 0,50 EV
-    // (Wiese, Radeon 71839b1e: k 19,9 → 27,7 bei Sonne −0,72° → 0°) und fiel dazwischen in ein Tal (−2°: 0,9 EV unter dem
-    // Horizont). Der Boden lässt das Licht der Dämmerung durch, wo es über ihm liegt; Mittag und Nacht ab −6° rechnen gleich.
-    function belichtung(w, EA, e, stufen, B = BELICHTUNG) {
+    // liest nie unter seinem BODEN (UE: Min EV100): `mond` ist das Licht des Vollmonds ohne Wolken-Decke relativ zum Zenit
+    // (der Sinus seiner Höhe × sein Durchlass durch die Luft jetzt, 0 unter dem Horizont; die Welt reicht ihn, `_belichtungAusLicht`), der Boden
+    // `nachtKnotenE` × `mond` — darunter steht die Blende, das Bild fällt mit dem Licht; darüber folgt die Kamera dem Licht. Der
+    // Boden ist eine stetige Funktion der Uhr (er steigt und sinkt mit dem Mond) und liegt unter offenem Himmel nie über dem Licht:
+    // die Dämmerung fällt nie durch ihn (bis licht-stetig: fest ab −6°, siehe `BELICHTUNG`). Bis w28-licht-stetig zog ein
+    // geometrisches Mittel E^(1−t) · Knoten^t mit t linear ab dem Horizont jede Uhr der Dämmerung zum Knoten (Wiese, Radeon
+    // 71839b1e: 0,50 EV je 0,002 der Uhr bei Sonne −0,72° → 0°).
+    function belichtung(w, EA, e, stufen, B = BELICHTUNG, mond = 0) {
         const h = (Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI;
-        const s = Math.max(0, Math.min(1, h / B.nachtKnotenGrad));
-        const E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], B.nachtKnotenE * s * s * (3 - 2 * s), 1e-12);
+        const E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], B.nachtKnotenE * Math.max(0, mond), 1e-12);
         return Math.max(B.min, (B.zielKarte * 2 ** (stufen || belichtungStufen)(h, E / EA)) / ((0.18 / Math.PI) * E));
     }
 
@@ -891,6 +903,13 @@ var __weltLicht = (function () {
     // DER HIMMEL ÜBER DEM ORT, SYNCHRON (S7; rgb, E einer waagrechten Fläche): die Bestrahlungs-Tafel `T` ({W, werte}) an der Sonne
     // und am Mond der Uniforms `U` der Tafeln, das Sternen-Licht — in derselben Zusammensetzung wie die Farbe des Himmels
     // (`himmelFarbe`: E0 × Tönung, der Mond in `mondE`, die Sterne in `nachtE`) → `out`.
+    // ZWISCHEN ZWEI TEXELN mischt sie GEOMETRISCH (licht-stetig): das Licht der Dämmerung fällt exponentiell mit der Sonnenhöhe
+    // (0,4–0,5 Dekaden je Grad, Brown 1952 / USNO Circular 171; die Tafel selbst trägt 0,43–0,52), ein Texel liegt am Ende der
+    // bürgerlichen Dämmerung 1,2° weit — das Licht fällt dort je Texel um das 3,4-Fache. Linear im Licht gemischt, stieg der
+    // Messer am Anfang jedes Texels doppelt, an seinem Ende halb so steil wie das Licht: die Belichtung fiel 1,52 und 1,09 EV,
+    // wo das Bild 1,1 und 1,4 stieg (genesis Uhr 0,232 → 0,236, GTX, Täter-Pass „Belichtung“). Im Logarithmus gemischt, über dem
+    // Boden der Auflösung der Tafel (2^−24, die kleinste Stufe ihres Halb-Floats), folgt er der Steigung des Lichts in jedem Texel.
+    const TAFEL_BODEN = 2 ** -24;
     function bestrahlung(T, U, out) {
         const W = T.W,
             w = T.werte;
@@ -898,7 +917,9 @@ var __weltLicht = (function () {
             const x = ((Math.sign(mu) * Math.sqrt(Math.min(1, Math.abs(mu))) + 1) / 2) * (W - 2);
             const i = Math.max(0, Math.min(W - 3, Math.floor(x)));
             const f = Math.max(0, Math.min(1, x - i));
-            return w[i * 3 + c] * (1 - f) + w[(i + 1) * 3 + c] * f;
+            const a = Math.max(0, w[i * 3 + c]) + TAFEL_BODEN;
+            const b = Math.max(0, w[(i + 1) * 3 + c]) + TAFEL_BODEN;
+            return Math.max(0, a * (b / a) ** f - TAFEL_BODEN);
         };
         const ms = U.sonne.value.y,
             mm = U.mond.value.y;
