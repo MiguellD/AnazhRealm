@@ -1,6 +1,6 @@
 # Vorprüfung probe-deckel-einlass — EIN Deckel je Probe, der Einlass kennt die Zeit je Tor, ein gescheiterter Vorfahrt-Blick gibt nicht nach
 
-ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 82 von 1 718 (diese Karte bucht keine Sprosse: ein Prozess-Schnitt am
+ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 83 von 1 718 (diese Karte bucht keine Sprosse: ein Prozess-Schnitt am
 Einlass der GPU-Probe, Auftrag kreatur-takt des Koordinators vom 24.11.).
 
 **Geschnitten:** der Deckel je Probe ist EINE Zahl (`PROBE_DECKEL_S` 480 im env von `.github/workflows/gpu-probe.yml`; das Bein liest
@@ -36,3 +36,19 @@ Statik-Kette fuhr vor ihm).
 **Offen:** kein Teil von gate:kreatur-takt fährt mehr als Probe — sein Richter sind die drei Teile der Cloud-Batterie; wer die
 Kreatur am Gerät sehen will, fährt die Linse an der Werkbank (`--werkbank <port>`). Die Tafel `skripte` altert mit der Batterie:
 ihr Schreiber ist derselbe Lauf, der `schritte` schreibt.
+
+**Nachtrag Zeichen-Ratsche (Koordinator 12:47, Auftrag `auftrag/2411-gtx-ratsche-zahl.md` im Zweig `koordination`; der Schnitt ist der
+EINE Commit 28240b1bf über dem Merge von main bf9be26c):** gate:pruefbuehne-licht fiel seit z713 (main bf5a1542) an jedem Kopf, der
+main trägt — „S0 Boden-Programm: 108011 Zeichen WGSL (Budget ≤ 104162)“. Geschnitten: in `scripts/diag-pruefbuehne.cjs` fällt
+`zeichenMax` aus dem Budget von S0 (es trägt nur noch `bindungInFunktionMax` 0); die Zeile „S0 BODEN-PROGRAMM“ nennt die Zahl und
+den Zuwachs gegen den gebuchten Stand (`S0_ZEICHEN.stand` 108 011) — laut, ohne Urteil; im Selbsttest fällt der Größen-Teil des
+K17-Falls (er fällt weiter am Weg), neu Fall e: das gezeichnete Programm, 4 664 Zeichen größer, trägt keinen Befund, seine Zeile
+nennt „ZUWACHS +4664“, und die Mutante „die Ratsche urteilt“ fällt an derselben Probe. In `scripts/lib/shader-kosten.cjs` fällt die
+Grenze `zeichenMax` (Grep: kein zweiter Leser). Tor bleibt, was bricht: die Bindung, der Weg der Pipeline, die Abtastungen,
+gate:webgl-probe. Gemessen: dieselbe Probe kalt 701 ms bei 108 011 und 1 081 ms bei 103 347 Zeichen (beide Radeon 890M, die
+Zahlen des Auftrags); auf der GTX 1050 gate:pruefbuehne-licht GRÜN in 78 s — 108 011 Zeichen ±0, Pipeline asynchron, kalt Median
+1 933 ms (÷ K17 derselben Sitzung 0,77), Selbsttest c · a+b · d · e getroffen; `npm run check:statik` GRÜN, format:check GRÜN,
+lint 0 Fehler. Der Commit trägt nur die zwei Dateien; ihr Vorbild ist an main, ort-ausstattung, haus-gefuege, haus-gestalt,
+haus-stoff, haus-ziegel-putz, fahrzeug-gattung und sport-regeln byte-gleich (Blob-Vergleich) — er überträgt sich dort unverändert.
+Offen: sechs Kommentare im Stamm (siedlung-wege, stoff-material) sagen weiter „jedes Zeichen zählt (`S0_ZEICHEN`)“ — die Zahl
+steht, das Tor nicht mehr; unberührt, damit der Commit nur die Dateien des Schnitts trägt.
