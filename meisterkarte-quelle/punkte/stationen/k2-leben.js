@@ -951,6 +951,16 @@ L.perspektive("pflanzen", (() => {
                                 r._saisonPraesenz(k / 52, o);
                                 kurve.push([o.x, o.y, o.z]);
                             }
+                            // DER KALENDER JE ART (jahreslauf#2): derselbe Leser, den das Bild liest (`_saisonPraesenz` mit der Art)
+                            const jeArt = {};
+                            for (const a of A.reihe) {
+                                const ka = [];
+                                for (let k = 0; k < 52; k++) {
+                                    const q = r._saisonPraesenz(k / 52, {}, a);
+                                    ka.push([q.x, q.y]);
+                                }
+                                jeArt[a] = ka;
+                            }
                             const su = r._ensureSeasonUniforms();
                             const vor = { phase: st.seasonPhase, season: st.season, anker: r._saisonAnker ? Object.assign({}, r._saisonAnker) : null, auto: st.autoSeason };
                             let sommer = null;
@@ -995,8 +1005,8 @@ L.perspektive("pflanzen", (() => {
                                     andere++;
                                     if (Math.abs(x.delta.klima.sommerPhase - 0.5) < 1e-6) gegen++;
                                 }
-                            return { kurve, sommer, winter, zurueck, kurven, arten: [...arten], ankerBreite: anker.breite, sommerPhase: r._gelaende().ort.klimaHeute.sommerPhase, andere, gegen, version: anker.version };
-                        }, { punkte: 200 });
+                            return { kurve, jeArt, sommer, winter, zurueck, kurven, arten: [...arten], ankerBreite: anker.breite, sommerPhase: r._gelaende().ort.klimaHeute.sommerPhase, andere, gegen, version: anker.version };
+                        }, { punkte: 200, reihe: U[2] ? U[2].reihe : [] });
                     } catch (e) {
                         fehler = String((e && e.message) || e).slice(0, 200);
                     }
@@ -1021,7 +1031,22 @@ L.perspektive("pflanzen", (() => {
                     }
                     const reihe = U[2].reihe;
                     const laub = reihe.filter((a) => w.arten.includes(a));
-                    const kalender = laub.map(() => austrieb);
+                    // DER KALENDER JE ART (jahreslauf#2): die erste Woche nach der kahlen Krone, in der das Laub der Art oder ihre
+                    // EIGENE Blüte (sie weicht von der Blüte des Bestands ab) ≥ 0,5 steht — die Leitphase des Netzes (Hasel und Erle
+                    // in der Blüte, Birke, Buche, Eiche in der Blattentfaltung). Bis jahreslauf#2 trug jede Art denselben Austrieb.
+                    const woche = (a) => {
+                        const k = w.jeArt && w.jeArt[a];
+                        if (!k) return 99;
+                        const eigen = k.some((q, i) => Math.abs(q[1] - w.kurve[i][1]) > 1e-6);
+                        const xa = k.map((q) => q[0]);
+                        const t0 = xa.indexOf(Math.min(...xa));
+                        for (let s = 1; s <= 52; s++) {
+                            const i = (t0 + s) % 52;
+                            if (xa[i] >= 0.5 || (eigen && k[i][1] >= 0.5)) return i;
+                        }
+                        return 99;
+                    };
+                    const kalender = laub.map(woche);
                     const rk = (v) => {
                         const o = v.map((q, i) => [q, i]).sort((a, b) => a[0] - b[0]);
                         const R = new Array(v.length);
@@ -1058,9 +1083,9 @@ L.perspektive("pflanzen", (() => {
                     });
                     const rEin = pearson(x, ein);
                     const zeuge = { wochen: w.kurve.length, sommerLaub: w.sommer, winterLaub: w.winter, arten: laub.length, zurueck: w.zurueck, version: w.version };
-                    const eine = "EINE Präsenz des Laubs für jede Art (" + w.kurven + " Kurve: stamm/bild-himmel.js _saisonPraesenz → uLaubPraesenz)";
+                    const eine = "die Präsenz je Art liest nur die Wärme des Orts am Meer (stamm/bild-himmel.js _saisonPraesenz · _laubJahr, " + w.kurven + " Uniform der Präsenz)";
                     const roh = {
-                        2: { werte: { rang, arten: laub.length, kalender: new Set(kalender).size }, zeuge },
+                        2: { werte: { rang, arten: laub.length, kalender: new Set(kalender).size }, zeuge: Object.assign({ kalenderJeArt: Object.fromEntries(laub.map((a, i) => [a, kalender[i]])) }, zeuge) },
                         3: { werte: { wochen: bluehWochen ? 52 : 0, bluehKurven: w.kurven }, zeuge, nicht: "Blüte und Frucht an 10² Arten: " + eine + ", die Blüte ist dieselbe Kurve (y), keine Frucht und keine Mast" },
                         4: { werte: { tageJe100m: 0, austriebWoche: austrieb }, zeuge, nicht: "die Präsenz liest nur die Phase des Jahrs — Höhe und Breite verschieben den Kalender nicht (" + eine + ")" },
                         5: { werte: { gegenHalbkugelProzent: w.andere ? (100 * w.gegen) / w.andere : null }, zeuge, nicht: "kein Orbit-Zeitraffer (scripts/werkbank.cjs /bild ohne Orbit-Pose) und keine NDVI-Kurve je Biom: " + eine + ", keine Trockenzeit, kein Monsun" },
