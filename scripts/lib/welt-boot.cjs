@@ -655,13 +655,18 @@ const OFEN_KERNE = ["phyto-core.js", "koerper-core.js", "tetrapoda-core.js", "fo
 // THREE ist die Engine des Fadens (`ENGINE_THREE`, je Scope eine eigene Kopie des Namensraums) — der Faden rechnet auf
 // three r184, kein Linsen-Scope auf einer zweiten three. Vor den Quellen steht der Samen-Baum (samen-core.js, die erste Zeile
 // des Manifests: jeder Faden lädt ihn vor jedem Kern).
+// DIE QUELLEN EINES FADENS (anatomie-r4-heil — die EINE Liste: `fadenScope` lädt sie, der Ruhe-Schlüssel der Batterie liest sie,
+// ci-klasse `r6Kerne`): der Samen-Baum zuerst, vor jedem Kern die Kerne, die er beim Namen liest (KERN_LIEST)
+function fadenQuellen(quellen) {
+    const mit = quellen.flatMap((f) => [...(KERN_LIEST[f] || []).filter((d) => !quellen.includes(d)), f]);
+    return mit.includes("samen-core.js") ? mit : ["samen-core.js", ...mit];
+}
 function fadenScope(quellen) {
     const sb = { console, Math, performance: { now: () => Date.now() }, setTimeout, clearTimeout };
     sb.self = sb.globalThis = sb.window = sb;
     sb.THREE = ENGINE_THREE();
     require("vm").createContext(sb);
-    const mit = quellen.flatMap((f) => [...(KERN_LIEST[f] || []).filter((d) => !quellen.includes(d)), f]);
-    for (const f of mit.includes("samen-core.js") ? mit : ["samen-core.js", ...mit])
+    for (const f of fadenQuellen(quellen))
         require("vm").runInContext((QUELL_TEXT[f] ||= ausDatei(f)), sb, {
             filename: f,
         });
@@ -2301,6 +2306,7 @@ module.exports = {
     os,
     vm: require("vm"),
     studioKern,
+    fadenQuellen,
     fadenScope,
     scanWarteWand,
     ROOT,
