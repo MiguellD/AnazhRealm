@@ -34,6 +34,114 @@ const LANDMARKE_AN = async (r, T, a) => {
     return { n13, imBild, treffer: imBild > 0 ? 1 : 0, geladen: (st.architectures || []).length, x: p.x, z: p.z };
 };
 
+// ─────────── DIE GESETZE DER SPIELER-ADRESSEN (BUEHNE Spieler, M4: der Richter stellt keine Spieler auf) ───────────
+// Je Adresse (Saat × Ort × Zeit × Rolle) ruft die Funktion, was das Spiel an dieser Adresse liest; sie rechnet nichts nach. Jede
+// reist als Text in die Seite (H.seite.NAME) und sieht nur r, T, a.
+
+// DIE FREIE LAGE (erleben.bild.kamera#1): a = { saat, lage: [dx, dy, dz] vom Leib, gier, kontrolle? }. Ob die Welt an einer Lage
+// gezeichnet ist, sagt `_chunkGezeichnet` (stamm/gelaende-fern.js:1468) am Eintrag der Chunk-Karte `state.voxelChunks` — dieselbe
+// Frage, die die Maske des Fern-Rings stellt (`_fernRingMaske` :1497). Eine Kamera in RUHE an der Lage trüge den Ring derselben Stufe
+// um sich (`_voxelChunkConfig(0)`, stamm/gelaende-boden.js:2856: ringRadius × Spanne); gezählt wird je Boden-Probe (6 m) dieses
+// Rings im waagrechten Kegel der Lage (Bildwinkel der Welt-Kamera × Seitenverhältnis, die Richtung aus `_blickVorn`
+// stamm/koerper-bewegung.js:1645 — wie der Blick des ersten Bilds `_imErstenBlick` stamm/dirigent-ankunft.js:1065), ob ihr Chunk
+// gezeichnet ist. Die Lücke ist der Anteil ohne. Die Kamera wird nie bewegt (das zöge `_lodAuge` und den Strom).
+const KAMERA_AN = async (r, T, a) => {
+    const st = r.state;
+    if (!st.worldMeta || a.saat !== st.worldMeta.seed) return { fehlt: "die Residenz der Chunks lebt nur für die geladene Saat (state.voxelChunks, stamm/gelaende-chunks.js:2803 _tickVoxelChunkStreaming)" };
+    if (!st.voxelChunks || !st.playerMesh) return { fehlt: "die Welt trägt keine Chunk-Karte (state.voxelChunks) oder keinen Leib" };
+    const cfg = r._voxelChunkConfig(0), span = cfg.span, reich = (cfg.ringRadius + 0.5) * span;
+    const p = st.playerMesh.position, cam = st.camera;
+    const x0 = p.x + a.lage[0], z0 = p.z + a.lage[2];
+    const halb = Math.atan(Math.tan(((cam && cam.fov > 0 ? cam.fov : 75) * Math.PI) / 360) * (cam && cam.aspect > 0 ? cam.aspect : 16 / 9));
+    const v = r._blickVorn(a.gier, 0);
+    let n = 0, luecke = 0;
+    for (let dx = -reich; dx <= reich; dx += 6)
+        for (let dz = -reich; dz <= reich; dz += 6) {
+            const d = Math.hypot(dx, dz);
+            if (d < 2 || d > reich || Math.acos(Math.max(-1, Math.min(1, (dx * v.x + dz * v.z) / d))) > halb) continue;
+            n++;
+            if (!r._chunkGezeichnet(st.voxelChunks.get(Math.floor((x0 + dx) / span) + "," + Math.floor((z0 + dz) / span)))) luecke++;
+        }
+    return { n, luecke_pct: n ? +((100 * luecke) / n).toFixed(2) : null, chunks: st.voxelChunks.size, ring: cfg.ringRadius, span };
+};
+
+// WAS AN EINEM ORT STEHT (erleben.sinn.staunen#1): a = { saat, radius, mutante? } um den Leib. Gelesen wird, was die Welt dort trägt
+// und zeichnet: die Werke `state.architectures` (der Wurf der Natur `_vegetationSampleSpawn` stamm/vegetation-baum.js:1482, die
+// Bauten über `spawnArchitecture` stamm/siedlung-satz.js:1257; gezeichnet bis 150 m vom Spieler, stamm/dirigent-ankunft.js:1233), die
+// Arten der Natur (`_istNatur`, `_lodSpecies`), die Bau-Arten und die Wesen `state.creatures`. „statisch“ sind Natur und Bau: kein
+// Gesetz bewegt sie; ein Wesen wird relativ zum Spieler geboren (`_kreaturGeburtsOrt` stamm/kreatur-leben.js:1785).
+const STAUNEN_AN = async (r, T, a) => {
+    const st = r.state;
+    if (!st.worldMeta || a.saat !== st.worldMeta.seed)
+        return { fehlt: "was an einem Ort steht, ist keine Funktion der Saat: Streu, Wald und Siedlung lesen die geladene Welt (stamm/vegetation-streu.js:28 _saatJe, stamm/siedlung-ort.js:1433)" };
+    if (!st.playerMesh) return { fehlt: "kein Leib an der Ankunft" };
+    const p = st.playerMesh.position, d = (q) => Math.hypot(q.x - p.x, q.z - p.z);
+    const A = (st.architectures || []).filter((e) => e && e.position && d(e.position) <= a.radius);
+    const natur = [...new Set(A.filter((e) => r._istNatur(e)).map((e) => e._lodSpecies || e.type))];
+    const bau = [...new Set(A.filter((e) => !r._istNatur(e)).map((e) => e.type))];
+    const wesen = [...new Set((st.creatures || []).filter((c) => c && c.position && d(c.position) <= a.radius).map((c) => (c.userData && (c.userData.soul || c.userData.kind)) || "wesen"))];
+    return { dinge: natur.length + bau.length + wesen.length, statisch: natur.length + bau.length, natur: natur.length, bau: bau.length, wesen: wesen.length, werke: A.length, namen: natur.concat(bau, wesen).slice(0, 16).join(",") };
+};
+
+// DIE ANKUNFT EINES NEULINGS (erleben.sinn.sog#1): a = { saat, kontrolle? }. Der Ort der Ankunft ist EIN Plan des Ort-Gesetzes
+// (`genesisLayout(genesisSaat(saat), welten)`, fachwerk-core.js:13075 — rein in der Saat; Leser: der Voxel-Faden voxel-worker.js:1375).
+// Was der Neuling zuerst hört, ist der erste Satz des Begleiters (Pool `firstSpawn` stamm/dirigent-kern.js:458 → „begleiter.erstes“,
+// stamm/daten.js:2833; gesprochen von `grokMarkFirstSpawn` stamm/werkstatt-hud.js:101). Das Prädikat: nennt dieser Satz eine Tat —
+// eine Taste der Belegung (`_formatBindingCode` über KEYBINDING_ACTIONS) oder einen Satz der Hilfe (`hilfe` der Muster, wie
+// `_hilfeZeilen` stamm/feld-leben.js:1664 sie liest)? An der Kontrolle steht statt des Grußes die Hilfe selbst: dort muss es tragen.
+const SOG_AN = async (r, T, a) => {
+    const st = r.state, K = r.constructor, FC = globalThis.__fachwerkCore;
+    if (!FC || typeof FC.genesisLayout !== "function") return { fehlt: "der Kern trägt kein Ort-Gesetz der Ankunft (fachwerk-core genesisLayout)" };
+    const plan = FC.genesisLayout(FC.genesisSaat(a.saat), r._genesisWelten());
+    const hilfe = r._hilfeZeilen().map((z) => r._t(z[0], z[1]));
+    const gruss = a.kontrolle ? hilfe.join(" ") : r._t(st.grok.pool.firstSpawn[0][0]);
+    const kb = st.keybindings || K.DEFAULT_KEYBINDINGS;
+    const tasten = [];
+    for (const x of K.KEYBINDING_ACTIONS) for (const t of String(r._formatBindingCode(kb[x] || K.DEFAULT_KEYBINDINGS[x]) || "").split(" / ")) if (t.trim()) tasten.push(t.trim().toLowerCase());
+    const probier = [];
+    for (const q of (r.chatDslPatterns || []).concat(r.chatSystemPatterns || [])) if (Array.isArray(q.hilfe)) for (const b of q.hilfe) probier.push(String(b).toLowerCase());
+    const g = gruss.toLowerCase();
+    const frei = (t) => new RegExp("(^|[^\\p{L}\\p{N}])" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "($|[^\\p{L}\\p{N}])", "u").test(g);
+    const taste = tasten.find(frei) || null, satz = probier.find((b) => g.includes(b)) || null;
+    return { nennt: taste || satz ? 1 : 0, taste, satz, tore: (plan.tore || []).length, stationen: (plan.stationen || []).length, gruss: gruss.slice(0, 80) };
+};
+
+// DER ERSTE WUNSCH EINES NEULINGS (erleben.schoepfen.gespraech#1): a = { satz, sprache }. Die Kette, die das Spiel liest: der Satz →
+// das Programm (`parseChatToDsl` stamm/feld-sprache.js:545; Leser `_chatTryDslParse` stamm/feld-leben.js:910 → `dslRun`; ohne
+// Programm die KI `maybeAnswerWithLlm` :1603) → das Werk (`spawn_studio` → `_spawnStudioWerk` stamm/feld-dsl.js:2028 über
+// `_studioBlueprintForWord` stamm/studio-wort.js:289, Same baseSeed + i) → der Code (`_werkCode({ programm: _werkReise(name) })`
+// stamm/netz-identitaet.js:617/666, wie `teileWerk` :651 ihn ohne Dialog baut). „eigen“: der Code trägt den Samen des gesetzten Werks
+// (sonst steht beim Empfänger ein anderes). Der Same-Zähler `worldMeta.bauSame`, den der Parser hochzählt, kehrt zurück.
+const NEULING_AN = async (r, T, a) => {
+    const st = r.state, wm = st.worldMeta || {}, bs = JSON.stringify(wm.bauSame || {});
+    let p = null;
+    try {
+        p = r.parseChatToDsl(a.satz);
+    } finally {
+        wm.bauSame = JSON.parse(bs);
+    }
+    const prog = p && Array.isArray(p.program) ? p.program : null;
+    const nein = (weg, erschafft) => ({ ganz: 0, erschafft: erschafft ? 1 : 0, teilt: 0, eigen: 0, weg });
+    if (!prog) {
+        const llm = st.llm || {}, defs = r.llmProviderDefs ? r.llmProviderDefs() : {}, def = defs[llm.provider], cfg = (llm.providerConfig || {})[llm.provider] || {};
+        const ki = !def ? "llm.fehler.provider" : !llm.enabled ? "llm.fehler.aus" : def.requiresKey && !cfg.apiKey ? "llm.fehler.schluessel" : null;
+        if (!ki) return { fehlt: "der Satz geht an die KI (stamm/feld-leben.js:1603 maybeAnswerWithLlm) — der Richter ruft kein Modell" };
+        return nein("kein Programm, die KI fehlt (" + ki + ")");
+    }
+    if (prog[0] !== "spawn_studio") return nein("Verb " + prog[0] + ", kein Werk");
+    const name = r._studioBlueprintForWord(String(prog[1] == null ? "" : prog[1]));
+    if (!name) return nein("das Wort „" + prog[1] + "“ trägt kein Werk");
+    if (!(st.blueprints && st.blueprints[name])) return nein("das Werk " + name + " hat keinen Bauplan (teileWerk: unbekannt)", true);
+    if (!st.vibePass || !st.vibePass.ready) return { fehlt: "der Vibe-Pass ist nicht bereit (stamm/netz-identitaet.js:655 no_vibepass)" };
+    const c = await r._werkCode({ programm: r._werkReise(name) });
+    if (!c || !c.ok) return nein("der Code fällt: " + (c && c.grund), true);
+    const pr = JSON.parse(c.huelle).programm;
+    const sp = Array.isArray(pr) && pr[0] === "chain" ? pr.find((x) => Array.isArray(x) && x[0] === "spawn_blueprint") : pr;
+    const seedCode = Array.isArray(sp) && sp[3] != null ? Number(sp[3]) >>> 0 : null, seedWerk = prog[4] != null ? Number(prog[4]) >>> 0 : null;
+    const eigen = seedCode != null && seedCode === seedWerk ? 1 : 0;
+    return { ganz: eigen, erschafft: 1, teilt: 1, eigen, weg: eigen ? "ganz" : "geteilt mit Same " + seedCode + ", gesetzt mit " + seedWerk, name, zeichen: c.code.length };
+};
+
 // ═══════════════════════════════════════ Perspektive spieler ═══════════════════════════════════════
 {
     // ─────────── erleben.spieler.praesenz — Präsenz: der Leib antwortet ───────────
@@ -1632,7 +1740,8 @@ const LANDMARKE_AN = async (r, T, a) => {
         leiter({
             leiter: "erleben.schoepfen.gespraech",
             sek: 15,
-            pfad: ["stamm/netz-p2p.js", "stamm/dienst.js", "stamm/feld-nexus.js", "stamm/feld-leben.js", "spec/abnahme/*"],
+            seite: { FAECHER, NEULING_AN },
+            pfad: ["stamm/netz-p2p.js", "stamm/dienst.js", "stamm/feld-sprache.js", "stamm/studio-wort.js", "stamm/netz-identitaet.js", "stamm/feld-dsl.js", "stamm/feld-nexus.js", "stamm/feld-leben.js", "spec/abnahme/*"],
             welt: [{ wort: "gelesen", ab: 1, was: "Leser der Welt, die die Probe las (Spieler, Stand der KI)" }],
             sprossen: {
                 1: {
@@ -1682,9 +1791,46 @@ const LANDMARKE_AN = async (r, T, a) => {
                 const kiText = t.ki ? "; der LLM-Lauf fehlt: " + t.ki + " (Anbieter " + t.anbieter + ", stamm/dienst.js:93–96)" : "";
                 const korrektur = require("fs").readdirSync("spec/abnahme").filter((f) => /korrektur|dialog/i.test(f)).length;
                 const urteile = (nr, erzeugt, was, fehlt) => (erzeugt >= P.sprossen[nr].umfang.verlangt ? L.leser(nr, fehlt, erzeugt) : L.umfang(nr, erzeugt, was));
-                await L.je(1, async () =>
-                    urteile(1, t.spieler, "die Sitzung trägt " + t.spieler + " Spieler (die Werkbank, kein Neuling am Gerät) — 20 Neulinge ab 10 Jahren verlangt (R11)", "erste Schöpfung eines Neulings in 5 min: kein Leser der Zeit bis zum geteilten Werk je Spieler (stamm/netz-p2p.js:406)")
-                );
+                // S1 ÜBER DEN FÄCHER (vorher „Umfang nicht erzeugbar“: 1 Spieler): der Richter stellt keine Neulinge auf. Die Adresse eines
+                // Neulings ist sein erster Wunsch (Rolle Neuling × Sprache): die Schöpfungs-Sätze des Korpus im Spiel-Baum
+                // (spec/abnahme/ki-korpus.json, die Sätze mit Werk oder Wesen, deutsch und englisch). Je Satz die Kette, die das Spiel liest
+                // (NEULING_AN): erschafft er ein Werk, teilt der Code genau dieses? Die Mutante („lass es regnen“) erschafft keines.
+                await L.je(1, async () => {
+                    const s1 = P.sprossen[1];
+                    const K = require(require("path").resolve("spec/abnahme/ki-korpus.json"));
+                    const schoepf = (S, sprache) => Object.entries(S || {}).filter(([, e]) => e && (e.werk || e.wesen)).map(([satz]) => ({ satz, sprache }));
+                    const saetze = schoepf(K.saetze, "de").concat(schoepf(K.en && K.en.saetze, "en"));
+                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.NEULING_AN, export: "stamm/feld-sprache.js:545 parseChatToDsl → stamm/studio-wort.js:289 _studioBlueprintForWord → stamm/netz-identitaet.js:617 _werkCode(_werkReise)", leser: "stamm/feld-leben.js:910 _chatTryDslParse · stamm/netz-identitaet.js:651 teileWerk" },
+                        adressen: { dazu: saetze.concat([{ satz: "lass es regnen", sprache: "de", mutante: true }]) },
+                        ms: Math.max(3000, Math.floor((L.rest() - 4) * 1000)),
+                        masse: {
+                            neulinge: { wie: "anzahl", nur: (a) => !a.mutante },
+                            ganz: { wie: "mittel", feld: "ganz", nur: (a) => !a.mutante },
+                            erschafft: { wie: "summe", feld: "erschafft", nur: (a) => !a.mutante },
+                            teilt: { wie: "summe", feld: "teilt", nur: (a) => !a.mutante },
+                            mutante: { wie: "max", feld: "ganz", nur: "mutante" },
+                            wege: { wie: (v) => [...new Set(v)].slice(0, 6).join(" | "), feld: "weg", nur: (a) => !a.mutante },
+                        },
+                        schlecht: { feld: "ganz", richtung: "min" },
+                        pose: (a) => "der Satz „" + a.satz + "“ an der Wiese, Ego — das gesetzte Werk und dasselbe beim Empfänger des Codes",
+                        ungemessen: ["die Uhr des Neulings (5 min bis zum geteilten Werk) und Neulinge ab 10 Jahren: Panel (R11)", "das Bildpaar Werk ↔ Werk beim Empfänger: ungemessen bis zum Gerät"],
+                    });
+                    L.zeile("gespraech S1: " + R.akte.slice(0, 500));
+                    if (R.werte.mutante != null && R.werte.mutante !== 0) throw new Error("die Mutante („lass es regnen“) teilt ein eigenes Werk — das Prädikat ist blind");
+                    const w = R.werte;
+                    if (!w.neulinge) return L.leser(1, "der erste Wunsch eines Neulings: " + (R.fehlt || "kein Satz gemessen") + " · " + R.akte);
+                    const pct = +(100 * w.ganz).toFixed(1);
+                    const kette = w.neulinge + " Neulinge (" + saetze.length + " Schöpfungs-Sätze des Korpus): " + w.erschafft + " erschaffen ein Werk, " + w.teilt + " teilen einen Code, " + Math.round(w.ganz * w.neulinge) + " genau ihr Werk — Wege: " + w.wege;
+                    if (pct < s1.soll[0].wert)
+                        return L.gemessen(1, { anteil_pct: pct }, {
+                            erzeugt: w.neulinge,
+                            welt: { gelesen: R.gemessen },
+                            taeter:
+                                kette + "; der Code trägt den Samen der Werkstatt (`_werkReise` → `_werkSame`, stamm/netz-identitaet.js:666), das Werk den Samen des Satzes (stamm/feld-dsl.js:2078 baseSeed + i) — geteilt wird nie das gesetzte Werk, Teilen kennt nur den Bauplan der Werkstatt (stamm/werkstatt-vorschau.js:2413) · " + R.akte,
+                        });
+                    L.leser(1, "die Uhr bis zum geteilten Werk je Neuling: kein Leser (der letzte Chat-Akt `state.dsl.lastUserAt` stamm/feld-leben.js:932 ist keine Uhr der Schöpfung); Neulinge ab 10 Jahren: Panel (R11) — " + kette + " · " + R.akte, w.neulinge);
+                });
                 await L.je(2, async () => L.umfang(2, 0, "kein Korrektur-Korpus im Spiel-Baum (spec/abnahme: " + korrektur + " Dateien), 0 Dialoge liefen" + kiText));
                 await L.je(3, async () => L.umfang(3, +(H.sek() / 60).toFixed(2), "die Leiter fährt " + H.sek() + " s, kein Gespräch einer Stunde" + kiText));
                 await L.je(4, async () => L.umfang(4, 1, "der Lauf der Leiter ist eine Sitzung — 10 Sitzungen über Wochen verlangt"));
@@ -2511,7 +2657,8 @@ const LANDMARKE_AN = async (r, T, a) => {
         leiter({
             leiter: "erleben.sinn.sog",
             sek: 15,
-            pfad: ["stamm/netz-p2p.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js"],
+            seite: { FAECHER, SOG_AN },
+            pfad: ["stamm/netz-p2p.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js", "fachwerk-core.js", "stamm/daten.js", "stamm/feld-leben.js"],
             welt: [{ wort: "gelesen", ab: 1, was: "Leser der Welt, die die Probe las (Spieler, Welten)" }],
             sprossen: {
                 1: {
@@ -2569,7 +2716,36 @@ const LANDMARKE_AN = async (r, T, a) => {
                 const keineZeit = "kein Leser der Spielzeit je Spieler: der Spieler trägt keine Uhr seines Spiels (stamm/dirigent-kern.js:687 state.player)";
                 const keineKehr =
                     "kein Leser der Wiederkehr: der Speicher hält je Welt nur `lastPlayed` (stamm/speicher-welten.js:254 worldsIndexUpsert, " + t.mitLastPlayed + " von " + t.welten + " Welten), keine Folge der Besuche je Spieler";
-                await L.je(1, async () => urteile(1, t.peers, "die Sitzung trägt " + t.peers + " fremde Spieler (state.p2p.peers) neben der Werkbank — 12 blinde Neulinge verlangt", keineZeit));
+                // S1 ÜBER DEN FÄCHER (vorher „Umfang nicht erzeugbar“: 0 fremde Spieler): der Richter stellt keine Neulinge auf, er liest
+                // je Adresse eines Neulings (12 Saaten, Rolle Neuling an der Ankunft) das Gesetz der Ankunft und ihr erstes Wort — führt es
+                // zu einer ersten Tat? Die Kontrolle (die Hilfe statt des Grußes) muss tragen, sonst ist das Prädikat blind.
+                await L.je(1, async () => {
+                    const v = P.sprossen[1].umfang.verlangt;
+                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.SOG_AN, export: "fachwerk-core.js:13075 genesisLayout + der Pool firstSpawn (stamm/dirigent-kern.js:458 → stamm/daten.js:2833)", leser: "stamm/werkstatt-hud.js:101 grokMarkFirstSpawn · voxel-worker.js:1375" },
+                        adressen: { saaten: Array.from({ length: v }, (_, i) => P.leiter + "-s1-" + (i + 1)), dazu: [{ saat: P.leiter + "-kontrolle", kontrolle: true }] },
+                        ms: Math.max(3000, Math.floor((L.rest() - 4) * 1000)),
+                        masse: {
+                            saaten: { wie: "anzahl", nur: (a) => !a.kontrolle },
+                            nennt: { wie: "summe", feld: "nennt", nur: (a) => !a.kontrolle },
+                            kontrolle: { wie: "max", feld: "nennt", nur: "kontrolle" },
+                            tore: { wie: "min", feld: "tore", nur: (a) => !a.kontrolle },
+                            gruss: { wie: "erste", feld: "gruss", nur: (a) => !a.kontrolle },
+                        },
+                        schlecht: { feld: "nennt", richtung: "min" },
+                        pose: (a) => "die Ankunft der Saat " + a.saat + ", Ego, das erste Wort des Begleiters im Bild",
+                        ungemessen: ["weiter nach 10 min und die Uhr der ersten Tat: Panel blinder Neulinge (R11)", "das Bild der Ankunft: ungemessen bis zum Gerät"],
+                    });
+                    L.zeile("sog S1: " + R.akte.slice(0, 500));
+                    if (R.werte.kontrolle !== 1) throw new Error("die Kontrolle (die Hilfe als erstes Wort) nennt keine Tat — das Prädikat ist blind (" + R.akte.slice(0, 200) + ")");
+                    const w = R.werte;
+                    if (!w.saaten) return L.leser(1, "die Ankunft eines Neulings: " + (R.fehlt || "keine Saat gemessen") + " · " + R.akte);
+                    const tat =
+                        w.nennt < w.saaten
+                            ? "kein Gesetz der ersten Tat: das erste Wort des Begleiters „" + w.gruss + "“ (stamm/daten.js:2833) nennt an " + (w.saaten - w.nennt) + " von " + w.saaten + " Saaten keine Taste und keinen Satz der Hilfe; die Hilfe (`_hilfeZeilen` stamm/feld-leben.js:1664) kommt nur auf „hilfe“ (:1009)"
+                            : "die erste Tat in ≤ 2 min: das erste Wort nennt sie an " + w.nennt + " von " + w.saaten + " Saaten";
+                    L.leser(1, tat + "; " + keineZeit + " — weiter nach 10 min: Panel (R11) · " + R.akte, w.saaten);
+                });
                 await L.je(2, async () => L.leser(2, "freiwillige Spielzeit ohne Auftrag: " + keineZeit + "; die Sitzung trägt " + t.spieler + " Spieler"));
                 await L.je(3, async () => L.leser(3, "Wiederkehr am Folgetag und nach 7 Tagen: " + keineKehr));
                 await L.je(4, async () => L.umfang(4, +(H.sek() / 3600).toFixed(4), "die Leiter spielt " + H.sek() + " s — 10 Stunden verlangt; " + keineZeit));
@@ -2590,6 +2766,7 @@ const LANDMARKE_AN = async (r, T, a) => {
         leiter({
             leiter: "erleben.sinn.staunen",
             sek: 30,
+            seite: { FAECHER, STAUNEN_AN },
             pfad: ["stamm/vegetation-baum.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-ort.js", "stamm/bild-himmel.js", "stamm/kreatur-leben.js", "stamm/feld-leben.js", "stamm/netz-p2p.js"],
             welt: [{ wort: "gelesen", ab: 1, was: "Leser der Welt, die die Probe las (Bauten, Bewohner, Wesen, Himmel)" }],
             sprossen: {
@@ -2678,12 +2855,54 @@ const LANDMARKE_AN = async (r, T, a) => {
                 };
                 const t = await L.ev("return (" + vielFn + ")(r);");
                 L.zeile("staunen Welt " + JSON.stringify(t));
-                const dinge = t.arten + t.bauArten + t.wesenArten;
                 const keinAugenblick =
                     "kein Leser eines Augenblicks: kein Gesetz nennt einen Augenblick (Sonnenaufgang über dem Meer, Herde am Horizont, Stadt bei Nacht), keine Verweildauer des Blicks und kein freiwilliges Standbild je Spieler — der Haken säße am Blick (`_kreaturImBlick`, stamm/kreatur-leben.js:1798)";
-                await L.je(1, async () =>
-                    L.umfang(1, +(H.sek() / 60).toFixed(2), "die Leiter steht " + H.sek() + " s an einem Ort, " + t.peers + " fremde Spieler, kein blinder; im Umkreis 150 m trägt die Welt " + dinge + " verschiedene Dinge (" + t.arten + " Arten der Natur, " + t.bauArten + " Bau-Arten, " + t.wesenArten + " Arten der Wesen)")
-                );
+                // S1 ÜBER DEN FÄCHER (vorher „Umfang nicht erzeugbar“: 30 min an einem Ort, kein blinder Spieler): der Richter fragt, was
+                // die Welt an der Adresse des Neulings trägt — der Ort der Ankunft mit dem Horizont des Gezeichneten (150 m) und der nahe
+                // Ort (50 m); die Mutante (3 m) muss unter 10 fallen. Gemessen urteilt S1 nur, wo schon die Welt das Soll nicht trägt
+                // (die Obergrenze dessen, was ein Spieler nennen kann); sonst bleibt das Nennen ein Panel (R11) beim Namen.
+                await L.je(1, async () => {
+                    const s1 = P.sprossen[1].soll;
+                    const saat = await L.ev("return r.state.worldMeta && r.state.worldMeta.seed;", 10);
+                    // was an einem Ort steht, zählt erst, wenn die Welt steht (`_weltSteht` stamm/dirigent-takt.js:795): eine Welt, die
+                    // noch lädt, ist keine leere — höchstens 10 s, sonst kein Urteil beim Namen
+                    let steht = false;
+                    for (let i = 0; i < 20 && !(steht = await L.ev("return r._weltSteht();", 10)); i++) await H.schlaf(500);
+                    if (!steht) throw new Error("die Welt steht nicht (`_weltSteht` stamm/dirigent-takt.js:795 nach 10 s) — was an der Ankunft steht, ist unterwegs, kein Urteil");
+                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.STAUNEN_AN, export: "state.architectures (stamm/vegetation-baum.js:1482 _vegetationSampleSpawn · stamm/siedlung-satz.js:1257 spawnArchitecture) und state.creatures", leser: "stamm/dirigent-ankunft.js:1233" },
+                        adressen: { dazu: [{ saat, radius: 150 }, { saat, radius: 50 }, { saat, radius: 3, mutante: true }] },
+                        ms: Math.max(3000, Math.floor((L.rest() - 10) * 1000)),
+                        masse: {
+                            dinge: { wie: "max", feld: "dinge", nur: (a) => !a.mutante },
+                            statisch: { wie: "max", feld: "statisch", nur: (a) => !a.mutante },
+                            nah: { wie: "min", feld: "dinge", nur: (a) => !a.mutante },
+                            mutante: { wie: "max", feld: "dinge", nur: "mutante" },
+                            orte: { wie: "anzahl", nur: (a) => !a.mutante },
+                        },
+                        schlecht: { feld: "dinge", richtung: "min" },
+                        pose: (a) => "der Ort der Ankunft, Ego, Umkreis " + a.radius + " m (das Bild der Schätzfrage)",
+                        ungemessen: [
+                            "die Zeit 0–30 min am Ort: Wetter (`wetterAt` phyto-core.js:4804) und Tagesplan (`tagesPlan` koerper-core.js:5630) sind Funktionen der Zeit, die Dinge des Orts nicht — kein Verzeichnis Ding × Ort × Zeit",
+                            "das Nennen blinder Spieler: Panel (R11); das Bild: ungemessen bis zum Gerät",
+                        ],
+                    });
+                    L.zeile("staunen S1: " + R.akte.slice(0, 500));
+                    if (R.werte.mutante != null && R.werte.mutante >= s1[0].wert) throw new Error("die Mutante (Umkreis 3 m) zählt " + R.werte.mutante + " Dinge — das Maß trennt nicht");
+                    if (!R.werte.orte) return L.leser(1, "was an einem Ort steht: " + (R.fehlt || "kein Ort gemessen") + " · " + R.akte);
+                    const w = R.werte;
+                    if (w.dinge < s1[0].wert || w.statisch < s1[1].wert)
+                        return L.gemessen(1, { dinge: w.dinge, wiedergefunden: w.statisch }, {
+                            erzeugt: 0,
+                            welt: { gelesen: R.gemessen },
+                            taeter: "an der Ankunft trägt die Welt " + w.dinge + " verschiedene Dinge, " + w.statisch + " davon ohne Gesetz der Bewegung (Natur und Bau) — die Obergrenze dessen, was ein Spieler nennen und wiederfinden kann; der Fächer trägt keine Zeit (0 von 30 min) · " + R.akte,
+                        });
+                    L.leser(
+                        1,
+                        "blinde Spieler nennen und finden wieder: Panel (R11) — die Welt trägt an der Ankunft " + w.dinge + " Dinge (nah " + w.nah + "), " + w.statisch +
+                            " ohne Gesetz der Bewegung; über 30 min kein Verzeichnis Ding × Ort × Zeit (ein Wesen wird relativ zum Spieler geboren, `_kreaturGeburtsOrt` stamm/kreatur-leben.js:1785) · " + R.akte
+                    );
+                });
                 // ── S2 · die Vielfalt am Ort: das Bild für die Schätzfrage, die Zählung daneben in der Zeile ──
                 await L.je(2, async () => {
                     L.zeile("staunen S2 gezählt " + JSON.stringify({ arten: t.arten, bauArten: t.bauArten, gesichter: t.gesichter, wesen: t.wesen, werke: t.werke }));
@@ -4005,7 +4224,8 @@ const LANDMARKE_AN = async (r, T, a) => {
             leiter: "erleben.bild.kamera",
             sek: 40,
             mutiert: true,
-            pfad: ["stamm/dirigent-kern.js", "stamm/dirigent-takt.js", "stamm/koerper-bewegung.js", "stamm/siedlung-bewohner.js", "scripts/werkbank.cjs", "spec/profiband/haushalt.json"],
+            seite: { FAECHER, KAMERA_AN },
+            pfad: ["stamm/dirigent-kern.js", "stamm/dirigent-takt.js", "stamm/koerper-bewegung.js", "stamm/siedlung-bewohner.js", "stamm/gelaende-fern.js", "stamm/gelaende-boden.js", "stamm/gelaende-chunks.js", "scripts/werkbank.cjs", "spec/profiband/haushalt.json"],
             welt: [{ wort: "gezaehlt", ab: 1, was: "in der Welt gezählte Größe der Kamera" }],
             sprossen: {
                 1: {
@@ -4064,10 +4284,48 @@ const LANDMARKE_AN = async (r, T, a) => {
                 );
                 L.zeile("Kamera der Sitzung: " + JSON.stringify(z));
                 const modi = "die Welt nimmt keine Sicht außer Ego und Third (gefragt: frei, foto, kino, karte, zuschauen, wiederholung — genommen: " + (z.genommen.join(", ") || "keine") + "; stamm/dirigent-kern.js:1237 setCameraMode)";
+                // S1 ÜBER DEN FÄCHER (stationen/faecher.js; vorher „Umfang nicht erzeugbar“, weil keine freie Kamera steht): der Richter
+                // stellt keine Kamera auf, er fragt das Gesetz der Residenz an 20 freien Lagen (5 Abstände × 4 Richtungen um den Leib,
+                // der Blick zurück auf ihn) — trüge die Welt dort den Boden, den eine ruhende Kamera an der Lage hätte? Vier Kontrollen am
+                // Leib selbst müssen tragen (sonst zeichnet die Welt gar nicht, kein Urteil); die schlechteste Lage ist die Pose des Bilds.
                 await L.je(1, async () => {
-                    if (!z.genommen.includes("frei"))
-                        return L.umfang(1, z.genommen.filter((m) => m === "frei").length, "keine freie Kamera des Spielers: " + modi + "; die Kamera-Führung (kameraFuehren, stamm/dirigent-kern.js:1232) setzt nur ein Studio, kein Standbild der Welt");
-                    L.leser(1, "Lücke im Standbild aus freier Lage: kein Leser (scripts/werkbank.cjs:2110 /bild zählt keine Lücke)");
+                    const v = P.sprossen[1].umfang.verlangt;
+                    const lagen = [];
+                    for (const dM of [30, 120, 400, 1500, 4000])
+                        for (let k = 0; k < 4; k++) {
+                            const g = (k * Math.PI) / 2;
+                            lagen.push({ saat: z.saat, d: dM, gier: g + Math.PI, lage: [Math.sin(g) * dM, 2, Math.cos(g) * dM] });
+                        }
+                    const kontrollen = [0, 1, 2, 3].map((k) => ({ saat: z.saat, d: 0, gier: (k * Math.PI) / 2, lage: [0, 2, 0], kontrolle: true }));
+                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.KAMERA_AN, export: "stamm/gelaende-fern.js:1468 _chunkGezeichnet über state.voxelChunks (Spanne und Ring: stamm/gelaende-boden.js:2856 _voxelChunkConfig)", leser: "stamm/gelaende-fern.js:1497 _fernRingMaske" },
+                        adressen: { dazu: lagen.slice(0, v).concat(kontrollen) },
+                        ms: Math.max(4000, Math.floor((L.rest() - 8) * 1000)),
+                        masse: {
+                            lagen: { wie: "anzahl", nur: (a) => !a.kontrolle },
+                            luecke: { wie: "max", feld: "luecke_pct", nur: (a) => !a.kontrolle },
+                            kontrolle: { wie: "max", feld: "luecke_pct", nur: "kontrolle" },
+                            proben: { wie: "summe", feld: "n" },
+                            ring: { wie: "erste", feld: "ring" },
+                        },
+                        schlecht: { feld: "luecke_pct", richtung: "max" },
+                        pose: (a) => "freie Lage " + a.d + " m vom Leib, Blick zurück (Gier " + +a.gier.toFixed(2) + "), 2 m über dem Grund — das Standbild dort",
+                        ungemessen: ["Schärfe und Licht wie im Spiel: ungemessen bis zum Gerät (kein Bild ohne GPU)", "Bauten ab 150 m vom Spieler (stamm/dirigent-ankunft.js:1233) und der Fern-Ring (gröber, kein Ersatz des Bodens)"],
+                    });
+                    L.zeile("kamera S1: " + R.akte.slice(0, 500));
+                    if (R.werte.lagen < v || R.werte.luecke == null) return L.leser(1, "Lücke an freien Lagen: " + (R.fehlt || "keine Lage gemessen") + " — " + R.gemessen + " von " + R.adressen + " Adressen · " + R.akte, R.werte.lagen);
+                    if (!(R.werte.kontrolle <= P.sprossen[1].soll[0].wert)) throw new Error("die Kontrolle am Leib zeigt " + R.werte.kontrolle + " % Lücke (" + R.werte.proben + " Proben, " + z.saat + ") — die Welt zeichnet am Spieler nicht, kein Urteil an freien Lagen");
+                    const s = R.schlecht && R.schlecht.a;
+                    const frei = "keine freie Kamera: " + modi + "; die Führung `kameraFuehren` (stamm/dirigent-kern.js:1232) setzt nur ein Studio";
+                    if (R.werte.luecke > P.sprossen[1].soll[0].wert)
+                        return L.gemessen(1, { luecke_pct: R.werte.luecke }, {
+                            erzeugt: R.werte.lagen,
+                            welt: { gezaehlt: R.werte.proben },
+                            taeter:
+                                "die Welt lädt den Boden nur um den Leib (Ring " + R.werte.ring + " Chunks, `_tickVoxelChunkStreaming` stamm/gelaende-chunks.js:2803, `_pruneDistantVoxelChunks` stamm/gelaende-fern.js:5) — keine zweite Quelle des Ladens an der Kamera; schlechteste Lage " +
+                                (s ? s.d + " m" : "?") + " mit " + R.werte.luecke + " % Lücke; " + frei + " · " + R.akte,
+                        });
+                    L.leser(1, frei + " — an " + R.werte.lagen + " freien Lagen trüge der Boden (Lücke höchstens " + R.werte.luecke + " %); Schärfe und Licht: ungemessen bis zum Gerät · " + R.akte, R.werte.lagen);
                 });
                 await L.je(2, async () => L.leser(2, "Umfang nicht erzeugbar (der Umfang „Foto“ trägt keine Zahl): kein Foto mit Brennweite, Blende, Belichtungszeit — " + modi + "; keine Schärfentiefe im Bild"));
                 await L.je(3, async () =>

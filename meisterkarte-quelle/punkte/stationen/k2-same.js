@@ -45,6 +45,27 @@ const AUGE_AN = async (r, T, a) => {
     return { near: c.near, far: c.far, auge: +(c.position.y - r.getTerrainHeightAt(c.position.x, c.position.z)).toFixed(2) };
 };
 
+// DIE TAT EINES SPIELERS (same.entfaltung.akte#2, das Gesetz des Fächers): a.tat = { x, y, z, r, mode } — genau die Form, die
+// `_addVoxelEdit` (stamm/gelaende-chunks.js:3038) in `worldMeta.voxelEdits` legt — oder a.ankunft; mit.taten: alle Taten des Fächers
+// in Setz-Reihenfolge. Je Tat das Gesetz ihrer Wirkung (gelaende-core `mitEdits` gelaende-core.js:2596, Leser `_mitEdits`
+// stamm/gelaende-boden.js:1568) an ihrer Mitte: kippt sie allein den Boden (fest ↔ Luft gegen die Kappe ohne Tat), und bleibt sie im
+// Stand ALLER Taten? Die Ankunft: die Edit-Karte des Kerns (`editKarte` :7348, Leser `_voxelEditKarte` stamm/gelaende-boden.js:1527)
+// über allen Taten — wie viele trägt der Chunk der Ankunft samt Rand (`editsNah`), mit ↔ ohne. Die Welt ändert sich nie (kein Edit).
+const AKTE_AN = async (r, T, a, mit) => {
+    const G = globalThis.__gelaendeCore;
+    if (!G || typeof G.mitEdits !== "function" || typeof G.editKarte !== "function") return { fehlt: "der Kern trägt kein Gesetz der Edits (gelaende-core mitEdits · editKarte)" };
+    if (a.ankunft) {
+        const span = r._voxelChunkConfig().span, p = r.state.playerMesh.position;
+        let n = 0;
+        const gen = () => ++n;
+        const [cx, cz] = [Math.floor(p.x / span), Math.floor(p.z / span)];
+        return { mit: G.editsNah(G.editKarte(null, mit.taten, span, gen), cx, cz).length, ohne: G.editsNah(G.editKarte(null, [], span, gen), cx, cz).length };
+    }
+    const e = a.tat, b = r._terrainBaseDensityAt(e.x, e.y, e.z);
+    const kappe = Math.sign(G.mitEdits(b, e.x, e.y, e.z, [])), allein = Math.sign(G.mitEdits(b, e.x, e.y, e.z, [e])), imStand = Math.sign(G.mitEdits(b, e.x, e.y, e.z, mit.taten));
+    return { wirkt: allein !== kappe ? 1 : 0, bleibt: allein !== kappe && imStand === allein ? 1 : 0, mode: e.mode };
+};
+
 const KARTE2_DATEI = path.join(__dirname, "..", "..", "..", "vision", "meisterkarte-2.json");
 let karte2 = null;
 const leiterDerKarte = (id) => {
@@ -2683,8 +2704,10 @@ LEITERN.push(
         leiter({
             leiter: "same.entfaltung.akte",
             sek: 60,
+            seite: { FAECHER, AKTE_AN },
             pfad: [
                 "scripts/werkbank.cjs",
+                "gelaende-core.js",
                 "spec/profiband/haushalt.json",
                 "scripts/lib/welt-boot.cjs",
                 "scripts/lib/ausgabe-aufnahme.cjs",
@@ -2754,11 +2777,45 @@ LEITERN.push(
                 );
                 L.zeile("die Sitzung: " + JSON.stringify(w));
                 const taten = w.edits + w.werk, spieler = 1 + w.peers;
-                await L.je(2, async () =>
-                    taten >= 1000
-                        ? L.leser(2, "Median je Tat und Ankunft mit ↔ ohne Taten: kein Leser nennt die Bytes je Tat im Stand (Haken: der Stand je Tat neben `__stand`, scripts/lib/welt-boot.cjs:446)", taten)
-                        : L.umfang(2, taten, "die Sitzung trägt " + taten + " Taten des Spielers (" + w.edits + " Edits, " + w.werk + " Werke) — 10³ Edits und die Ankunft ohne sie (ein zweiter Neustart) trägt die Minute der Leiter nicht")
-                );
+                // S2 ÜBER DEN FÄCHER (vorher „Umfang nicht erzeugbar“: 0 Taten der Sitzung): der Richter setzt keine Tat. Die Adresse eines
+                // Spielers ist seine Tat — 10³ Edits in der Form von `_addVoxelEdit` (40 × 25 Stellen im Abstand 3 m um den Leib, Graben
+                // 0,5 m unter und Füllen 0,5 m über dem Grund, Radius 1 · 2 · 3,5 m im Wechsel) und die Ankunft. Je Tat das Gesetz ihrer
+                // Wirkung (AKTE_AN); die Mutante (ein Graben 6 m über dem Grund, in der Luft) darf nicht wirken.
+                await L.je(2, async () => {
+                    const v = P.sprossen[2].umfang.verlangt;
+                    const satz = await L.ev(
+                        "const p = r.state.playerMesh.position, T0 = [], H = (x, z) => r.getTerrainHeightAt(x, z);" +
+                            " for (let i = 0; i < " + v + "; i++) { const x = p.x + ((i % 40) - 19.5) * 3, z = p.z + (Math.floor(i / 40) - 12) * 3, f = i % 2 === 1, h = H(x, z);" +
+                            " T0.push({ x: +x.toFixed(2), y: +(h + (f ? 0.5 : -0.5)).toFixed(2), z: +z.toFixed(2), r: [1, 2, 3.5][i % 3], mode: f ? 'fill' : 'carve' }); }" +
+                            " return { taten: T0, luft: { x: p.x, y: +(H(p.x, p.z) + 6).toFixed(2), z: p.z, r: 1, mode: 'carve' } };",
+                        20
+                    );
+                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.AKTE_AN, export: "gelaende-core.js:2596 mitEdits · :7348 editKarte", leser: "stamm/gelaende-boden.js:1568 _mitEdits · :1527 _voxelEditKarte" },
+                        adressen: { dazu: satz.taten.map((tat) => ({ tat })).concat([{ ankunft: true }, { tat: satz.luft, mutante: true }]) },
+                        mit: { taten: satz.taten },
+                        ms: Math.max(4000, Math.floor((L.rest() - 20) * 1000)),
+                        masse: {
+                            taten: { wie: "anzahl", nur: (a) => !!a.tat && !a.mutante },
+                            wirkt: { wie: "summe", feld: "wirkt", nur: (a) => !!a.tat && !a.mutante },
+                            bleibt: { wie: "summe", feld: "bleibt", nur: (a) => !!a.tat && !a.mutante },
+                            mutante: { wie: "max", feld: "wirkt", nur: "mutante" },
+                            ankunft: { wie: "erste", nur: "ankunft" },
+                        },
+                        schlecht: { feld: "bleibt", richtung: "min" },
+                        pose: (a) => (a.tat ? "die Tat " + a.tat.mode + " r " + a.tat.r + " m an (" + a.tat.x + ", " + a.tat.z + "), Ego vor ↔ nach dem Neustart" : "die Ankunft"),
+                        ungemessen: ["Bildpaar vor ↔ nach dem Neustart: ungemessen bis zum Gerät", "die Bytes je Tat: kein Kodierer EINER Tat aus der Seite (der Packer ist eine Closure, stamm/speicher-welten.js:1966)"],
+                    });
+                    L.zeile("akte S2: " + R.akte.slice(0, 500));
+                    if (R.werte.mutante !== 0) throw new Error("die Mutante (ein Graben 6 m in der Luft) wirkt — das Prädikat ist blind (" + R.akte.slice(0, 200) + ")");
+                    const an = R.werte.ankunft || {};
+                    L.leser(
+                        2,
+                        "Median je Tat: kein Kodierer EINER Tat, den die Seite rufen kann — der Stand packt die Edits in einer Closure des Generators (stamm/speicher-welten.js:1966 `packen`: 4 × Float64 und 1 Byte Modus), der Faden hängt sie an (speicher-faden.js:96 `editsAnhaengen`); kein Leser der Bytes je Tat im Stand — an " +
+                            R.werte.taten + " Tat-Adressen kippt " + R.werte.wirkt + " den Boden an ihrer Mitte, " + R.werte.bleibt + " bleiben im Stand aller Taten; die Ankunft trägt " + an.mit + " Taten im Chunk samt Rand (ohne " + an.ohne + "); Bildpaar: ungemessen bis zum Gerät · " + R.akte,
+                        R.werte.taten
+                    );
+                });
                 await L.je(3, async () =>
                     spieler >= 2 ? L.leser(3, "Bild zweier Gäste: kein Leser legt das Bild je Peer an derselben Pose nebeneinander", spieler) : L.umfang(3, spieler, "die Sitzung trägt einen Peer (state.p2p.peers " + w.peers + ")")
                 );
