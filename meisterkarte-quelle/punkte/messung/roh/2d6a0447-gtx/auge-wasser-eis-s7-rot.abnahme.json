@@ -1,0 +1,157 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.405",
+  "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133"
+ },
+ "buehne": {
+  "saison": "winter",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 35,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.0841,
+  "taeter": {
+   "Laub baum_erle": 0.0841
+  },
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.3038,
+   "taeter": {
+    "Laub baum_erle": 0.1563,
+    "Laub baum_eiche": 0.1424,
+    "bauSatz": 0.0052
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   436.368,
+   -0.418,
+   10676.978
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 103.6,
+  "sigma": 33.8,
+  "schwarz": 0.0001,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 8.4 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_erle 8.4 % · Vordergrund 30.4 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_erle 15.6 %, Laub baum_eiche 14.2 %, bauSatz 0.5 % · kein nahWiese im Bild: 12.8 % < 15.0 %] · beweis · Sicht 8.4 % (Laub baum_erle 8.4 %) · Ziel Blickziel im Bild frei 20 m · Luma 103.6 σ 33.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.405 · Bühne winter sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt nahWiese 12.8 % (≥ 15.0 %) h 97° Luma 93",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 8.4 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_erle 8.4 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 30.4 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_erle 15.6 %, Laub baum_eiche 14.2 %, bauSatz 0.5 %"
+  }
+ ],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "imBild.nahWiese",
+    "grund": "kein nahWiese im Bild: 12.8 % < 15.0 %"
+   }
+  ],
+  "zeile": "Inhalt nahWiese 12.8 % (≥ 15.0 %) h 97° Luma 93"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^nahWiese([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 7
+  },
+  "misch": 7578,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1041,
+   "wechsel": 664678
+  },
+  "rinde": null,
+  "toene": [
+   "nahWiese:L1=255/80/80",
+   "nahWiese:L2=80/255/80",
+   "nahWiese:Lf=80/120/255"
+  ],
+  "klassen": {
+   "nahWiese:L1": {
+    "objekte": 2,
+    "pixel": 85252,
+    "farbe": [
+     0.14089,
+     0.12965,
+     0.04311
+    ]
+   },
+   "nahWiese:L2": {
+    "objekte": 2,
+    "pixel": 145566,
+    "farbe": [
+     0.11339,
+     0.09145,
+     0.03192
+    ]
+   },
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 34766,
+    "farbe": [
+     0.19859,
+     0.16348,
+     0.06444
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\2d6a0447-gtx\\auge-wasser-eis-s7-rot.maske.png"
+ }
+}
