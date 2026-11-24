@@ -1,0 +1,16 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@PUNKTE@@ ZEIT leben.evolution.stammbaum 18.6 s
+@@PUNKTE@@ ZEIT leben.evolution.erbe 45.8 s
+@@PUNKTE@@ ZEIT leben.evolution.muster 98.1 s
+@@PUNKTE@@ ZEIT leben.evolution.zeitreise 129.1 s
+@@PUNKTE@@ ZEIT leben.evolution.bauplan 151.4 s
+@@PUNKTE@@ ZEIT leben.evolution.fremde-physik 158.9 s
+@@PUNKTE@@ ZEIT leben.evolution.zivilisation 164.8 s
+@@PUNKTE@@ ZEIT leben.evolution.mikroben 174.8 s
+@@PUNKTE@@ ZEIT leben.evolution.fossil 174.8 s
+@@PUNKTE@@ PROBE 174.8 s · Exit 0
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
