@@ -1,9 +1,24 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-**STAND 24.11. 10:42 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
+**STAND 24.11. 10:58 (Konto 18, Koordinator Fable an der Radeon; OMEN und GTX 1050 auf Opus; der Schöpfer ist seit ~02:05 für Stunden weg) — Karte 2 gebucht 78 von 1 718 (`karte-2-stand.json`: kern 3 · beide 51 · nachwache 27).**
 - KURS: die FRONT führt (`vision/front-tafel.md`, 296 Fronten) und DIE TIEFE DER GESETZE (`vision/TIEFE-DER-GESETZE.md`, M1–M6). FERN heißt „fern von grün“: der
   Richter nennt dort den Täter schon — das ist die Bau-Liste. SCHÖPFER 24.11. ~02:00: „wir bauen gerade wieder nur richter, messen statt zu bauen“ →
   nie mehr Richter- als Macher-Karten; Macher-Wellen aus FERN/NAH.
+- NACHTRAG 10:58 (gilt VOR allem darunter): main a3af6df0 (z711 `w28-wind-saison`, 10:39). GESTEMPELT, warten auf den Zug: `w28-mensch-nah`
+  28e4f478 (10:27) · `w28-saison-schatten` b931d665 (10:54) · `w28-klima-hebung` 119cc162 (10:57). IN DER BATTERIE: `tat-aufwaerts` 03d2bba8
+  (GPU-Probe grün, Code-Check Versuch 4) · `sport-regeln` 998254be (dreimal vom Vorfahrt-Wächter abgebrochen, abgebrochen ist nicht rot; vor dem
+  Stempel bild:stadt-voll@0.773 ansehen) · `spiegel-eis` 3 **2adc05ed** (nur das Eis, ohne Anleger; die GPU-Probe fiel 10:51 an einem 502 der
+  GitHub-API beim Vorfahrt-Blick — „NACHGEGEBEN nach 81 s“, kein Verhalten; Neulauf seit 10:56; der Klassen-Schnitt steht als
+  `auftrag/2411-gtx-vorfahrt-blick.md` bei der GTX 1050 im Zweig `probe-deckel-einlass`). Sätze: `satz-<zweig>.txt` im Scratch.
+  ZWEI GESTALT-MACHER LAUFEN (Obergrenze der Radeon): `haus-gestalt` (Baum AnazhRealm-front-pl, `mensch.bau.bauen#1`, Port 4790) und
+  `fahrzeug-gattung` (Baum AnazhRealm-acker, `mensch.fahrzeug.gestalt#1` — Boot und Karren als Gattung des Fahrzeug-Studios, der Steg als
+  Zimmerwerk; Port 4890; die Mechanik aus dem lokalen Zweig `anleger-gestalt` 2c04ae52). Dazu EIN Zuarbeiter ohne GPU und ohne Repo
+  (general-purpose mit Web-Zugang): er schreibt `quellen/fachwerk.md` und `quellen/boot-karren.md` in den Scratch — Maße mit URL, URSACHE je
+  Merkmal, bis zu sechs Referenz-Fotos je Thema (Freigabe „Ja, nur ansehen“). GRUND: die laufende Sitzung lädt die abgeglichene champion.md
+  NICHT neu (ein champion von 10:25 meldete „WebSearch/WebFetch: nein“); erst die nächste Sitzung hat die Web-Werkzeuge im champion.
+  `auge-der-art` 3: Auftrag `auftrag/2411-omen-auge-3.md` an OMEN, kein Bericht bis 10:58; der Satz fehlt noch (Zahlen im Auftrag).
+  RUNDE 18 am f18576b6: gtx läuft 2/240 (Fortschritt 10:53), radeon läuft 1/73 (10:48). EIN Sprung nach der Landung von mensch-nah.
+  VERBRAUCH 10:55: 79 % alle Modelle, 71 % Fable (10:36: 76 % / 69 %) — etwa 9 % je Stunde mit drei Opus-Arbeitern; Wechsel bei 98 %.
 - NACHTRAG 10:42 (gilt VOR allem darunter): der Schöpfer 10:36: „fahre fort in deinem tempo, werde nach 98% den account wechseln. Sei dem
   nächsten ein vorbild“ — also volle Fahrt bis 98 % (um 10:36: alle Modelle 76 %, Fable 69 %, Kontext der Sitzung 72 %). ÜBERGABE liegt:
   `UEBERGABE-2026-11-24.md` + Werkzeug `bericht/2411-werkzeug/` (koordination a35e5cc3).
