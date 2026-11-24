@@ -55,7 +55,7 @@
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-h2-13';
+  const VERSION = 'planet-h2-14';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -270,6 +270,18 @@
   const BILD_ART = Object.freeze({ verstreut: 0, versammelt: 1, geloest: 2 });
 
   const T_START = -4000, T_ENDE = 1000, TAU_W = 20, TAU_A = 120;
+  // klima-hebung: DIE HEBUNG EINES GEBIRGES FOLGT DER KONVERGENZ. Die Endhöhe eines Bogens oder Kamms ist h∞ = hoeheKm · min(1,6;
+  // konv/25) (konv in mm/a = km/Ma, wie bisher); sein Tempo am Anfang ist u0 = anteil · konv — die Verkürzung verdickt die Kruste, die
+  // Isostasie hebt die Oberfläche um ~ein Sechstel der Verdickung (Garzione et al. 2007), Krustendicke 35 km auf ~300 km Breite:
+  // u0 ≈ konv · 35/300/6 ≈ konv/50; Anden ~1 mm/a bei ~70 mm/a, Taiwan 5–10 mm/a bei 82 mm/a, Nord-Altiplano 2,5 ± 1 km in ~4 Ma
+  // (Garzione et al. 2008) → gesetzt 1/40. Die Reife ist 1 − e^(−Alter·u0/h∞): bei konv 25 mm/a 0,63 mm/a, Zeitkonstante 8 Ma; bei
+  // 80 mm/a 2 mm/a, 4 Ma. Vorher war sie 1 − e^(−Alter/20 Ma) für JEDE Rate, je Scheibe fest: an 494 konvergenten Land-Punkten
+  // (12 Saaten) hob die Zeit-Achse 30 m je 10⁶ a, Spearman Hebung ↔ Rate 0,03 (Zensus klima-front 24.11.)
+  const HEBUNG = Object.freeze({ anteil: 1 / 40, hoeheKm: 5 });
+  function hebungReife(konv, alterMa) {
+    if (!(konv > 0) || !(alterMa > 0)) return 0;
+    return 1 - kexp(-alterMa * HEBUNG.anteil * konv / (HEBUNG.hoeheKm * Math.min(1.6, konv / 25)));
+  }
   const RAMPE0 = 0.04, RAMPE1 = 0.25;   // innen-Rampe im Krustenfeld (Schelf → Inneres)
   const BEZUG_MA = 100, BEZUG_TAKT = 20;  // Erosionsbasis: Bezugs-Spiegel = Mittel des Selbst-Spiegels über 100 Ma in Stützen je 20 Ma (K7)
   const EIS_DICKE_KM = 2.0, EIS_RHO = 0.917;   // Eisschild: mittlere Dicke gesetzt (Antarktis ~2,1 km, Literatur, ungeprüft); Dichte Eis/Wasser
@@ -741,7 +753,6 @@
         const mx = plan.schollen[8 * s], my = plan.schollen[8 * s + 1], mz = plan.schollen[8 * s + 2], rs = plan.schollen[8 * s + 3];
         qDreh(qm, 4, mx, my, mz, Cw, 0); tangente(mx, my, mz, tb);
         const geschw = wi * R / vor.dauer; // km/Ma am Äquator des Pols
-        const reife = 1 - kexp(-vor.dauer / TAU_W);
         for (let f = 0; f < 32; f++) {
           const th = (f + 0.5) / 32 * TAU, ct = kcos(th), st = ksin(th);
           const dx = ct * tb[0] + st * tb[3], dy = ct * tb[1] + st * tb[4], dz = ct * tb[2] + st * tb[5];
@@ -764,7 +775,7 @@
           const front = (vx * ox + vy * oy + vz * oz) / (vl * ol);
           if (front < 0.35) continue;
           const s0 = Math.min(1.6, geschw * vl / 25); // dieselbe Rate-Norm wie der lebende Bogen (K5)
-          rand[2 * (s * 32 + f)] = plan.bilder[b]; rand[2 * (s * 32 + f) + 1] = 4.4 * s0 * reife * gS * glatt(0.35, 0.7, front);
+          rand[2 * (s * 32 + f)] = plan.bilder[b]; rand[2 * (s * 32 + f) + 1] = 4.4 * s0 * hebungReife(geschw * vl, vor.dauer) * gS * glatt(0.35, 0.7, front);
         }
       }
     }
@@ -850,7 +861,7 @@
     const sgrp = new Int32Array(nS); for (let s = 0; s < nS; s++) sgrp[s] = A.grp[s];
     const S = {
       plan, zeitMa: t, b, abschnitt: A, nS, nG, nO, nP, R, sw, sm, sr, sAus, sgrp, qS, pz, pom, rho,
-      bFest, nbStart: null, nbList: null, ketten: null, kettenN: 0, reife: 1 - kexp(-(t - A.t0 + 1) / TAU_W), Q: ohneQ ? 0 : plan.Q, meerKm: 0, refKm: 0, kuesteF: 0,
+      bFest, nbStart: null, nbList: null, ketten: null, kettenN: 0, alterMa: t - A.t0 + 1, Q: ohneQ ? 0 : plan.Q, meerKm: 0, refKm: 0, kuesteF: 0,
       // B0 EINE Gestalt je Scheibe: jedes Feld, das ein späterer Leser setzt, steht hier — vorher wuchs die Scheibe Feld um Feld in
       // wechselnder Folge (Meer, Ketten, Mantel, Nachklang, Tafeln), und jeder Leser im Punkt-Pfad sah mehrere Gestalten (polymorph):
       // 6,11 → 4,60 µs je Punkt an erde-01, kein Byte bewegt
@@ -1470,7 +1481,7 @@
     const dCo = ownKont ? W_.dC[own] * R : 1e9;
     const wkI = ownKont ? 1 - glatt(500, 900, dCo) : 0;
     const nb0 = S.nbStart[own], nb1 = S.nbStart[own + 1];
-    const reife = S.reife; // 1 − e^(−Dauer/τw), je Scheibe fest
+    const alterMa = S.alterMa; // das Alter des Abschnitts (+1 Ma): die Reife je Rand liest seine Konvergenz (hebungReife)
     // B0 Jenseits der Schablonen (> 1 300 km) liest ein Rand nur das Alter (invA) und — als nächster — den Namen: die Relativbewegung
     // braucht dort nur der EINE nächste Rand (der erste im Gang mit kleinstem Abstand). Vorher rechnete jeder Rand, der im Gang den
     // laufenden Kleinsten unterbot, sie neu (auf dem Mond 7,3 Paar-Rechnungen je Punkt, davon 1,25 jenseits der Schablonen).
@@ -1498,7 +1509,7 @@
       // B1 die Tore der Schablonen sind stetig: jede Schablone geht mit ihrer Stärke (s ∝ konv, dv ∝ offen, tr) und mit ihrem Abstand
       // gegen 0, bevor ein Tor schließt (vorher sprangen sie bei konv bzw. offen = 0,5 um bis 100 m, bei 700 · 250 · 200 km um Meter)
       if (konv > 0) {
-        const s = Math.min(1.6, konv / 25) * reife * gS;
+        const s = Math.min(1.6, konv / 25) * hebungReife(konv, alterMa) * gS;
         const wa = wkI * wkJ, wb = wkI * (1 - wkJ), wc = (1 - wkI) * wkJ, wd = (1 - wkI) * (1 - wkJ);
         let sub = 0; // Ozean/Ozean: welche Seite taucht ab (Paar-Hash)
         if (wd > 0) { const lo = own < j ? own : j; sub = planetZufall(k, 210, S.b * 4096 + lo * 64 + (own < j ? j : own), 0) < 0.5 ? lo : (own < j ? j : own); }
