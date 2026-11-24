@@ -6,15 +6,15 @@ ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 77 von 1 718 (d
 Name, Familie, Freunde, Alter, Übung, Ziel, Krankheit und Waffe beim Lesen über die EINE Tafel geteilter Getter `BEWOHNER_SATZ`
 (:4533, kein Feld je Kopf, kein Prototyp), und seine Leser hängen daran: der Ruf und die Persona (stamm/feld-nexus.js:1284, :1181),
 der Besuch bei Freunden in der nächsten Dunbar-Schicht (:1161), die Wache am Tor und am Platz (:1207) mit der Waffe in der Hand
-(:1450), die zur Tat naht (:2466), das Können im Werk (:1288), der Kranke als Eingang des Kern-Plans (koerper-core.js:5642/5662 — nur der Leser des Satzes,
+(:1450), die zur Tat naht (:2466), das Können im Werk (:1288), der Kranke als Eingang des Kern-Plans (koerper-core.js:5677/5697 — nur der Leser des Satzes,
 die Akt-Tafel steht, der Posten hält seine Schicht; der Wirt reicht `b.krank` neben dem Regen an der Tür, :2637, am Tag der
 Prozesse `_weltTag`, :307 — die Vertretung am Steuer und der Tag der Sicht der Wiederkehr fielen im Merge als Zwilling) — und in derselben Welle fielen zwei
 Klassen: die zehn Stand-Ströme mit dem Zähler hinten (der Zähler steht vorn) und die Stände eines Menschen, die keinen Gang
 auseinander lagen (`BEWOHNER.gangM` 2 m, :4572, gestellt in `frei`/`standAm` :732/:1023, die Linse liest dieselbe Zahl,
 scripts/lib/kreatur-mensch.cjs:196, ihr Blick ordnet den Stand nach seinem Anker, :607, ihr Soll ist das des Wirts, :983); die Probe des
-Tags (zielplan, scripts/diag-kreatur-leben.cjs) liest den Satz: der Kranke ist daheim (:1275), der Stand am Platz steht an seinem Rand
-(:1305), der Posten am Tor ist ein Ort des Werks im Ring des Wirts (:1337, `LEBENSLAUF.wache.ring` :4526), die Stunde ist die des
-Menschen — Uhr − `versatzH`, die Nacht nur für den, den der Kern-Plan schlafen legt (:1254) —, mit den Tätern platzfern · torfern.
+Tags (zielplan, scripts/diag-kreatur-leben.cjs) liest den Satz: der Kranke ist daheim (:1286), der Stand am Platz steht an seinem Rand
+(:1316), der Posten am Tor ist ein Ort des Werks im Ring des Wirts (:1348, `LEBENSLAUF.wache.ring` :4526), die Stunde ist die des
+Menschen — Uhr − `versatzH`, die Nacht nur für den, den der Kern-Plan schlafen legt (:1265) —, mit den Tätern platzfern · torfern.
 **Gemessen (stadt-voll, 1 391 Bewohner, Null-Renderer der Werkbank; main a8a9ab16 → Kopf, nach dem Merge mit main 60e8909d gemessen; die Linsen lokal headless):**
 sprache#1 Namen 0 → 1 391 von 1 391 (1 391 voll eindeutig, 278 Familien; Steintal 0 → 89 von 89); gespraech#2 Ruf trifft 0 →
 1 391 (Steintal 0 → 89); netz#1 Besuche bei Freunden 0 → 1 387 von 1 387 (Anteil 0 → 1,0; 4 von 1 391 ohne Haus der Seinen in
@@ -32,7 +32,7 @@ Dienst naht 6 von 6 Proben auf 1,5 m vor die Tat, Soll = Nahpunkt 0 m; der Gang:
 89, stadt-voll 21 → 0 von 1 391, das Kind auf seinem Morgen-Stand Steintal 22 → 0, die Wege des Tags 3–9 → 4–9 (Dorf und Stadt,
 Strecke ≥ 205 m), der Blick der Stehenden 0,974 → 0,968; die gehaltene Liste nach GC 14,4 → 14,4 MB, ihr Bau 6,06 → 6,25 s;
 gate:kreatur-takt bewohner ✅, zielplan ✅, VK ✅, `npm run check` EXIT 0, gate:betriebsgesetz ✅; am Kopf 306c13eb (Merge mit main
-9d4319c0 durch den Koordinator) der Code-Check GRÜN und die GPU-Probe GRÜN (Radeon 890M, pruefbuehne-licht · weltbild-frost:echt ·
+9d4319c0 durch den Koordinator, gemergt nach main als w28-bewohner-satz2, V18.546.396) der Code-Check GRÜN und die GPU-Probe GRÜN (Radeon 890M, pruefbuehne-licht · weltbild-frost:echt ·
 studio-begehen · tag-achse:echt · webgl-probe), lokal dort zielplan 7 von 7 Tätern mit denselben Zahlen und gate:stand-takt grün.
 **Ehrlich offen:** zielplan um 18 Uhr 1 von 145 ohne Ziel — patrizierhaus #22772 steht fern seines Hauses ohne voranzugehen
 (am Kopf 3c9bed7f ebenso, dort mit #128612 zwei; die Bewegung, nicht der Satz — scripts/diag-kreatur-leben.cjs „steht fern");
