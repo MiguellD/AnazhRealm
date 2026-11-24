@@ -4184,8 +4184,9 @@ L.perspektive("wasser", (() => {
         leitern: {
             // ═══ LEBENSRÄUME: welche der 15 Wasser-Lebensräume die Welt trägt, mit welcher Fauna ═══
             [LR]: {
-                sek: 35,
+                sek: 48,
                 mutiert: true,
+                faecher: true,
                 pfad: PFAD,
                 ungefahren: "die Bilder der Auge-Sprossen (S2–S4: Klassifikator und Tauchbild) — swiftshader schießt nicht",
                 mess: async function (H, U, M) {
@@ -4317,6 +4318,82 @@ L.perspektive("wasser", (() => {
                         return { O, hab, artFelder, koerper, tiere, landImWasser, ufer, tief: { d: R2(tief.d), x: tief.x, z: tief.z, streuung: R2(tiefStreu), punkte: hs.length }, gezeit, pose, meerPose, planet };
                     };
                     const W = await seite(inventar, { saaten: Math.max(...Object.values(U).map((u) => u.saaten || 0)), uferR: 60 });
+                    // DER FÄCHER DER LEBENSRÄUME (S2, M4): die Stände des EINEN Fisch-Gesetzes (`_fischZelle` → tetrapoda-core FISCH_GESETZ
+                    // fischStand) an 40 Punkten der Bäche (über die Flüsse der geladenen Hydro-Kacheln gestreut), 9 Fenstern im See und 9 im
+                    // Küstenflachwasser — je Adresse der Körper des Wassers (`_wasserArtAt`), die Stände, ihre Fische, die Felder des Stands
+                    // (trägt er eine Art?) und die Strömung an ihm. Dazu die Ufer-Flora: die Nah-Streu (`_nahStreuKachel`) an jedem Ufer-Punkt
+                    // — sie wirft nur auf GEZEICHNETEM Boden (`_bodenSichtChunks`), jenseits des Chunk-Rings ist sie keine Funktion der Adresse
+                    const LR2_AN = async (r, T, a, mit) => {
+                        const s = r.state, A = r.constructor, O = mit.O, F = A._fischGesetz().F;
+                        if (!r._fischKarte) r._fischTakt(0);
+                        let x, z;
+                        if (a.saat === "bach") {
+                            const regionen = [s.hydrosphere].concat(s.hydroTiles ? [...s.hydroTiles.values()] : []).filter((h) => h && h.ready);
+                            const pts = [];
+                            for (const h of regionen) for (const rv of h.rivers || []) for (const q of rv.points || []) if (!q.inLake) pts.push(q);
+                            if (!pts.length) return { fehlt: "kein Fluss in den geladenen Hydro-Kacheln (state.hydroTiles)" };
+                            const q = pts[Math.floor(((a.ort + 0.5) * pts.length) / mit.bachN)];
+                            [x, z] = [q.x, q.z];
+                        } else {
+                            const m = a.saat === "see" ? O.see && O.see.mitte : O.kueste;
+                            if (!m) return { fehlt: "kein " + a.saat + " am Gesetz nächst der Mess-Wiese (scripts/lib/wasser-linse.cjs __wasserOrte)" };
+                            const st = a.saat === "see" ? 30 : 40;
+                            [x, z] = [m[0] + ((a.ort % 3) - 1) * st, m[1] + (Math.floor(a.ort / 3) - 1) * st];
+                        }
+                        await __weltDa(() => !r._ensureHydroTilesAround(x, z, 64));
+                        const [ix0, iz0] = [Math.floor(x / F.zelleM), Math.floor(z / F.zelleM)];
+                        const o = { x: Math.round(x), z: Math.round(z), art: r._wasserArtAt(x, z), nass: 0, staende: 0, fische: 0, ohneStrom: 0, felder: [] };
+                        const fk = { saat: r._fischKarte.saat };
+                        const felder = new Set();
+                        for (let i = -3; i <= 3; i++)
+                            for (let j = -3; j <= 3; j++) {
+                                if (r._nassAt((ix0 + i + 0.5) * F.zelleM, (iz0 + j + 0.5) * F.zelleM)) o.nass++;
+                                const c = r._fischZelle(fk, { ix: ix0 + i, iz: iz0 + j });
+                                if (!c.stand) continue;
+                                Object.keys(c.stand).forEach((k) => felder.add(k));
+                                o.staende++;
+                                o.fische += c.stand.n;
+                                const w = r._waterFlowAt(c.stand.x, c.stand.z);
+                                if (!(w && Math.hypot(w.x, w.z) >= F.minMs)) o.ohneStrom++;
+                            }
+                        o.felder = [...felder].filter((k) => !["x", "y", "z", "u", "n"].includes(k));
+                        // die Ufer-Flora: die Kachel der Nah-Streu am Punkt (null = ihr Boden ist nicht gezeichnet)
+                        const arten = r._nahStreuArten();
+                        const KA = A.NAH_STREU.kachel;
+                        const kk = arten ? r._nahStreuKachel(Math.floor(x / KA), Math.floor(z / KA), arten) : null;
+                        o.uferGezeichnet = !!kk;
+                        if (kk) o.uferFlora = (kk.items || []).some((it) => arten[it.art] && arten[it.art].zeile.ufer);
+                        return o;
+                    };
+                    let R2 = null;
+                    if (Object.values(U).some((u) => u.mass === "ufer"))
+                        try {
+                            const BN = 40;
+                            R2 = await FAECHER((c) => H.seite(c), {
+                                gesetz: { fn: LR2_AN, export: "stamm/kreatur-fauna.js:566 _fischZelle → tetrapoda-core.js FISCH_GESETZ fischStand · stamm/wasser-hydro.js:651 _wasserArtAt (der Körper) · stamm/vegetation-wiese.js:1534 _nahStreuKachel (die Ufer-Flora, Schilf `zeile.ufer`)", leser: "stamm/kreatur-fauna.js:465 _fischTakt (der Pool tier:fisch zeichnet den Stand) · stamm/vegetation-wiese.js:1796 _tickNahStreu (die Nah-Streu zeichnet die Kachel)" },
+                                adressen: { dazu: Array.from({ length: BN }, (_, k) => ({ saat: "bach", ort: k })).concat(Array.from({ length: 9 }, (_, k) => ({ saat: "see", ort: k })), Array.from({ length: 9 }, (_, k) => ({ saat: "kueste", ort: k }))) },
+                                mit: { O: W.O, bachN: BN },
+                                ms: 12000,
+                                masse: {
+                                    lebensraeumeMitFisch: { wie: "verschieden", feld: "a.saat", nur: (q, w) => w.staende > 0 },
+                                    staende: { wie: "summe", feld: "staende" },
+                                    fische: { wie: "summe", feld: "fische" },
+                                    artFelder: { wie: (v) => [...new Set([].concat(...v))], feld: "felder" },
+                                    seeOhneStrom: { wie: "summe", feld: "ohneStrom", nur: (q) => q.saat === "see" },
+                                    seeStaende: { wie: "summe", feld: "staende", nur: (q) => q.saat === "see" },
+                                    staendeJe: { wie: (v, aus) => { const o = {}; aus.forEach((e) => (o[e.a.saat] = (o[e.a.saat] || 0) + e.w.staende)); return o; } },
+                                    koerper: { wie: (v, aus) => { const o = {}; aus.forEach((e) => ((o[e.a.saat] = o[e.a.saat] || {}), (o[e.a.saat][e.w.art] = (o[e.a.saat][e.w.art] || 0) + 1))); return o; } },
+                                    uferPunkte: { wie: "anzahl", feld: "uferGezeichnet" },
+                                    uferGezeichnet: { wie: (v) => v.filter(Boolean).length, feld: "uferGezeichnet" },
+                                    uferMitFlora: { wie: (v) => v.filter(Boolean).length, feld: "uferFlora" },
+                                },
+                                schlecht: { feld: "fische", richtung: "max" },
+                                pose: (q, w) => "unter Wasser am dichtesten Stand (" + q.saat + " bei " + w.x + ", " + w.z + ", Körper " + w.art + "): " + w.fische + " Fische in " + w.staende + " Ständen — dieselbe Forelle wie im Bach",
+                                ungemessen: ["der Klassifikator der Lebensräume im Unterwasserbild — ungemessen bis zum Gerät"],
+                            });
+                        } catch (e) {
+                            R2 = { fehlerText: String((e && e.message) || e).slice(0, 200) };
+                        }
                     const hab = W.hab || {};
                     const hn = Object.keys(hab);
                     const mitFisch = hn.filter((k) => hab[k].staende > 0);
@@ -4332,13 +4409,32 @@ L.perspektive("wasser", (() => {
                         let roh;
                         if (u.mass === "ufer") {
                             const auge = await M.auge("wasser-lr-s" + nr, W.pose || { ort: "wiese" });
+                            const RW = (R2 && R2.werte) || null;
+                            // die Fauna je Lebensraum am Fächer: eine EIGENE Fauna verlangt ein Feld der Art am Stand — ohne es ist jeder Stand
+                            // derselbe Leib (die Bachforelle), gleich in wie vielen Lebensräumen er steht
+                            const mitF = RW ? RW.lebensraeumeMitFisch : mitFisch.length;
+                            const felderF = RW ? RW.artFelder : W.artFelder;
+                            const eigenF = felderF.length ? mitF : mitF ? 1 : 0;
+                            const ufG = RW ? RW.uferGezeichnet : W.ufer.gebaut, ufM = RW ? RW.uferMitFlora : W.ufer.mitFlora;
+                            const kText = RW ? Object.entries(RW.koerper).map(([k, o]) => k + " → Körper " + Object.keys(o).join("/")).join(", ") : art;
                             roh = {
-                                werte: { uferProzent: W.ufer.gebaut ? Math.round((1000 * W.ufer.mitFlora) / W.ufer.gebaut) / 10 : undefined, habitateMitEigenerFauna: eigene, habitateMitFisch: mitFisch.length, landImWasser: W.landImWasser },
-                                zeuge: { antworten: W.ufer.gebaut + fischGezaehlt, streuung: streuFisch, uferPunkte: W.ufer.punkte, tiere: W.tiere },
+                                werte: {
+                                    uferProzent: ufG ? Math.round((1000 * ufM) / ufG) / 10 : undefined,
+                                    habitateMitEigenerFauna: eigenF,
+                                    habitateMitFisch: mitF,
+                                    // ein leerer Bestand ist kein Beweis: ohne Tier kein Landtier im Wasser — ungemessen, nie ✓
+                                    landImWasser: W.tiere > 0 ? W.landImWasser : undefined,
+                                    ...(RW ? { staendeJe: Object.entries(RW.staendeJe).map(([k, n]) => k + " " + n).join(" · "), staende: RW.staende, fische: RW.fische, seeOhneStromProzent: RW.seeStaende ? Math.round((1000 * RW.seeOhneStrom) / RW.seeStaende) / 10 : null, koerper: kText, uferPunkte: RW.uferPunkte } : {}),
+                                },
+                                zeuge: { antworten: ufG + (RW ? RW.fische : fischGezaehlt), streuung: streuFisch, uferPunkte: RW ? RW.uferPunkte : W.ufer.punkte, tiere: W.tiere, faecher: R2 && R2.gemessen, fehler: R2 && (R2.fehlerText || (R2.fehler && R2.fehler.length ? R2.fehler[0].fehler : null)) },
                                 auge,
+                                ...(R2 && R2.akte ? { akte: R2.akte } : {}),
                             };
-                            if (eigene < 3)
-                                roh.nicht = "keine eigene Fauna in See und Küstenflachwasser: der Stand des FISCH_GESETZ trägt keine Art (Felder " + (W.artFelder.join("/") || "x/y/z/u/n") + ") — " + art + ", dieselbe Bachforelle überall";
+                            const offen = [];
+                            if (eigenF < 3) offen.push("keine eigene Fauna in See und Küstenflachwasser: der Stand des FISCH_GESETZ trägt keine Art (Felder " + (felderF.join("/") || "x/y/z/u/n") + ") — " + kText + ", dieselbe Bachforelle überall");
+                            if (!(W.tiere > 0)) offen.push("Landarten im Wasser ungemessen: der Bestand der Tiere (state.faunaBestand, stamm/kreatur-leben.js) trägt in der Sitzung 0 Tiere");
+                            if (!ufG) offen.push("die Ufer-Stichprobe ist keine Funktion der Adresse: die Nah-Streu (stamm/vegetation-wiese.js:1534 _nahStreuKachel) wirft nur auf gezeichnetem Boden (:1544 _bodenSichtChunks → null jenseits des Chunk-Rings), 0 von " + (RW ? RW.uferPunkte : W.ufer.punkte) + " Ufer-Punkten gezeichnet");
+                            if (offen.length) roh.nicht = offen.join(" · ");
                         } else if (u.mass === "kueste") {
                             const auge = await M.auge("wasser-lr-s" + nr, W.meerPose || { ort: "wiese" });
                             roh = {
@@ -4387,13 +4483,20 @@ L.perspektive("wasser", (() => {
                         soll: [
                             K.soll(LR, 2, "Klassifikator erkennt den Lebensraum ≥ 80 %", { key: "klassifikatorProzent", einheit: "%" }),
                             K.soll(LR, 2, "Ufer-Stichprobe ≥ 90 %", { key: "uferProzent", einheit: "%" }),
+                            // am Gesetz (der Fächer der Lebensräume): drei Lebensräume mit EIGENER Fauna (der Umfang) und kein Landtier im Wasser
+                            // (die Tiefe) — der Klassifikator sieht nur, was das Gesetz an den Stand legt
+                            K.soll(LR, 2, "Klassifikator erkennt den Lebensraum ≥ 80 %", { key: "habitateMitEigenerFauna", rel: "≥", zahl: 3, quelleFeld: "umfang", quelleWort: "3 von 15", einheit: "Lebensräume" }),
+                            K.soll(LR, 2, "Ufer-Stichprobe ≥ 90 %", { key: "landImWasser", rel: "≤", zahl: 0, quelleFeld: "tiefe", quelleWort: "Landarten im Wasser 0", einheit: "Tiere" }),
                         ],
                         auge: { pose: "unter Wasser im Bach der Mess-Wiese (__wasserOrte bach), 2 m vor der Mitte, halbe Säule", vorbild: "eingefrorener Klassifikator der Lebensräume (R11) gegen Unterwasser-Fotos von Bach, See und Küstenflachwasser" },
-                        taeter: "tetrapoda-core.js FISCH_GESETZ / fischStand (EIN Leib, keine Art je Lebensraum)",
+                        taeter: "tetrapoda-core.js FISCH_GESETZ / fischStand (EIN Leib, keine Art je Lebensraum) · stamm/vegetation-wiese.js:1544 _nahStreuKachel → _bodenSichtChunks (die Ufer-Flora nur auf gezeichnetem Boden)",
                         nicht: "See und Küste tragen dieselbe Bachforelle — keine eigene Fauna",
-                        leser: "stamm/kreatur-fauna.js:562 _fischZelle — der Stand trägt keine Art je Lebensraum (See, Küste)",
-                        gruen: gut({ klassifikatorProzent: 86, uferProzent: 93, habitateMitEigenerFauna: 3 }, 40),
-                        attrappen: [{ name: "Ufer 93 % ohne einen Punkt am Ufer", roh: flach({ klassifikatorProzent: 86, uferProzent: 93 }) }],
+                        leser: "stamm/kreatur-fauna.js:566 _fischZelle — der Stand trägt keine Art je Lebensraum (See, Küste)",
+                        gruen: gut({ klassifikatorProzent: 86, uferProzent: 93, habitateMitEigenerFauna: 3, landImWasser: 0 }, 40),
+                        attrappen: [
+                            { name: "Ufer 93 % ohne einen Punkt am Ufer", roh: flach({ klassifikatorProzent: 86, uferProzent: 93, habitateMitEigenerFauna: 3, landImWasser: 0 }) },
+                            { name: "dieselbe Forelle in drei Lebensräumen", roh: gut({ klassifikatorProzent: 86, uferProzent: 93, habitateMitEigenerFauna: 1, landImWasser: 0 }, 40) },
+                        ],
                     },
                     3: {
                         u: { mass: "kueste", saaten: 50, fehlt: "kein Kelpwald, kein Seegras, keine Mangrove, keine Gezeitenzone" },
