@@ -631,10 +631,12 @@ class AnazhRealm_werkstatt_hof {
         if (idx >= 0 && Array.isArray(this.state.creatureEmotions))
             prof.emotion = this.state.creatureEmotions[idx] || "happy";
         // Die REICHERE, gemessene zweite Lesart (§G.2) — kontinuierliches Scheu/Mut.
+        // die Scheu liest seit auge-der-art das Auge der Art und die Luft der Welt (_kreaturSiehtM → _luftSichtM): bricht das Gesetz,
+        // steht der Bruch beim Namen im Buch der Brüche wie bei den Werten — nie still (bis hier `catch { /* optional */ }`)
         try {
             if (typeof this._creatureWariness === "function") prof.wariness = this._creatureWariness(creature) || 0;
-        } catch {
-            /* wariness optional */
+        } catch (e) {
+            this._bruchMelden("Kreatur-Profil: die Scheu bricht — " + ((e && e.message) || e));
         }
         // Mood-Label aus beiden Quellen (froh/trübe × neugierig/wachsam/scheu) — ehrlich geerdet. Jedes Wort ist eine Kennung,
         // gezeigt wird ihr Name der Tafel (`WESEN_STIMMUNG`, `EMOTION_LABEL`) in der Sprache von jetzt.

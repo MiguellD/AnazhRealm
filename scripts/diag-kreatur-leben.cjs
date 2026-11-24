@@ -267,7 +267,7 @@ async function lebenBuehnen() {
         const mittel = (a) => rund(a.reduce(addiere, 0) / a.length, 3);
         return {
             erinnert,
-            witterungM: A._verhaltenGesetz().furcht.noticeRadius,
+            fleeRadiusM: A._verhaltenGesetz().furcht.fleeRadius,
             ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) },
             brand: {
                 flieht: mittel(brand.feuer),
@@ -3018,11 +3018,12 @@ function lebenUrteil(name, z, soll) {
         `das Gedächtnis reist nicht über den Speicherstand: geschlagen ${G.erinnerungen}, gefüttert ${F.erinnerungen}`
     );
     soll(K.medianM >= 5, `der Kontroll-Hirsch hält keinen Abstand (Median ${K.medianM} m, vakuös)`);
-    // DER MENSCH IST DER SUPER-RÄUBER (leben.tiere.mensch S1): das Wild flieht den gehenden Fremden jenseits der Witterung der
-    // Aura (VERHALTEN.furcht.noticeRadius) — vorher floh der Hirsch erst bei 14 m, Wolf und Bär nie
+    // DER MENSCH IST DER SUPER-RÄUBER (leben.tiere.mensch S1): das Wild flieht den gehenden Fremden jenseits des Flucht-Radius
+    // der Aura (VERHALTEN.furcht.fleeRadius) — vorher floh der Hirsch erst bei 14 m, Wolf und Bär nie. Die Reichweite der Aura
+    // selbst ist seit auge-der-art die Distanz, in der das Auge der Art den Spieler sieht (kein EINER noticeRadius mehr).
     soll(
-        [K, baerRuhig, W, Fu].every((R) => R.fluchtM > z.witterungM),
-        `das Wild flieht den Menschen nicht: Hirsch ab ${K.fluchtM} m, Bär ${baerRuhig.fluchtM} m, Wolf ${W.fluchtM} m, Fuchs ${Fu.fluchtM} m (Soll > ${z.witterungM} m)`
+        [K, baerRuhig, W, Fu].every((R) => R.fluchtM > z.fleeRadiusM),
+        `das Wild flieht den Menschen nicht: Hirsch ab ${K.fluchtM} m, Bär ${baerRuhig.fluchtM} m, Wolf ${W.fluchtM} m, Fuchs ${Fu.fluchtM} m (Soll > ${z.fleeRadiusM} m)`
     );
     soll(
         G.fluchtM >= 2 * K.fluchtM,
@@ -3207,6 +3208,91 @@ if (V) {
     }
     check("Aktions-Profile nutzen nur bekannte MOTION-Felder", fremd.length === 0, fremd.join(","));
     // (die Blöcke des Buchs prüft der EINE Leser _verhaltenGesetz beim Boot, die Rezepte der Umschlag: gate:studio-vertrag)
+}
+// ── DIE STÖRUNGSZONE DES BAUS (same.kopplung.aufwaerts#1, tetrapoda `STOERUNG_GESETZ` · `stoerung`, Leser feld-leben `auraAt` über
+// `_werkStoerungAt`): ein Haus (100 m²) senkt das Leben an jedem der zehn Orte der Station (60 … 1 000 m) um mehr als ihre Auflösung
+// (r3: 0,0005), fallend mit dem Abstand, jenseits `reichM` nichts. Bis hier trug der Kern kein Gesetz: die Tat ohne Leser
+// (GTX 6066c757: orteGeaendert 0 von 10). Selbsttest: die Zone, die vor 1 km endet, fällt ROT ──
+{
+    const RADIEN = [60, 120, 200, 300, 400, 500, 650, 800, 900, 1000];
+    const zone = (K) => {
+        if (!K || typeof K.stoerung !== "function" || !K.STOERUNG_GESETZ) return { fehler: "tetrapoda stoerung fehlt — die Tat ohne Leser (auraAt liest kein Werk)" };
+        const S = K.STOERUNG_GESETZ;
+        const w = RADIEN.map((d) => K.stoerung(d, 100, S));
+        const unter = RADIEN.filter((d, i) => !(w[i] >= 0.0005));
+        if (unter.length) return { fehler: "die Zone eines Hauses unter der Auflösung bei " + unter.join(", ") + " m" };
+        if (!w.every((v, i) => !i || v < w[i - 1])) return { fehler: "die Zone fällt nicht mit dem Abstand: " + w.map((v) => v.toFixed(4)).join(" ") };
+        if (K.stoerung(S.reichM, 100, S) !== 0) return { fehler: "jenseits reichM wirkt das Werk noch" };
+        if (!(K.stoerung(60, 2.56, S) < w[0] / 10)) return { fehler: "ein kleines Werk (2,6 m²) wiegt wie ein Haus" };
+        return { w };
+    };
+    const Z = zone(core);
+    check("Die Störungszone des Baus: ein Haus senkt das Leben an allen 10 Orten bis 1 km, fallend, jenseits reichM nichts", !!Z.w, Z.fehler || "");
+    // der Täter ist das GESETZ mit kurzer Reichweite: `stoerung` nimmt sein Gesetz als Argument, der Kern rechnet ihn selbst (kein Quelltext)
+    const M = Z.w ? zone({ stoerung: core.stoerung, STOERUNG_GESETZ: Object.freeze({ ...core.STOERUNG_GESETZ, reichM: 900 }) }) : { w: "das Gesetz fehlt" };
+    check("Die Störungszone, Selbsttest: die Zone, die vor 1 km endet, fällt ROT", !M.w && /unter der Auflösung bei (\d+, )*1000 m/.test(M.fehler || ""), M.w ? "der Täter blieb grün" : M.fehler);
+    if (Z.w) console.log("  Störungszone Haus 100 m² an den Orten der Station: " + Z.w.map((v) => v.toFixed(4)).join(" "));
+}
+// ── DAS WERK IST EINE TAT IM FELD (same.kopplung.aufwaerts#1, gate:mp-sync (f)): Bau und Abriss treten als gestempelter Akt durch den
+// EINEN Eingang (`_feldAkt` → `_tatSchreiben` „bauen“/„abriss“), die Zone liest der Leser aus den Taten der Welt am Takt des Lesers
+// (`_werkStoerungAt`: stempel ≤ uhr). Zwei Seiten im Stamm (dieselbe Ladung wie gate:blocker-netz): (1) B lädt neu, während das Werk
+// steht — die Taten reisen mit der Welt, B liest gleich wie A, bevor irgendein Respawn lief; (2) der Bau kommt auf B drei Takte später
+// an — B liest an jedem Takt ab dem Stempel gleich wie A, davor wie vor dem Bau. Der Täter (bis 75c7730a): das Werk am Neben-Index,
+// gefüllt von Haken am Ort und Takt der Seite (Leben 154/197 Zellen) — er fällt in beiden Fällen ROT ──
+{
+    const { AnazhRealm: KL } = require("./lib/stamm.cjs").ladeKlasse(root);
+    const P = { x: 45, z: 0 }; // BÜHNE: der Gleichlauf zweier Seiten hängt nicht am Ort, beide tragen dieselbe Saat und dasselbe Werk
+    const ORTE = [60, 120, 200, 300, 400, 500, 650, 800, 900, 1000].map((m, k) => [P.x + m * Math.cos(k * 2.39996), P.z + m * Math.sin(k * 2.39996)]);
+    const haus = () => ({ id: "haus-mp", werk: true, position: { x: P.x, y: 0, z: P.z }, obb: { ex: 5, ez: 5, cx: P.x, cz: P.z }, x: P.x, z: P.z });
+    // der Täter: der Haken füllt einen Neben-Index am Takt der Seite, der Leser liest ihn statt der Taten
+    const nebenIndex = (s) => {
+        s._neben = [];
+        s._werkAkt = function (e, ctx, ein) {
+            if (ein) this._neben.push({ x: e.position.x, z: e.position.z, fl: 100, t: this.state.spielZeit });
+            return true;
+        };
+        s._werkStoerungAt = function (x, z, uhr = this.state.spielZeit) {
+            const LG = KL._lebensraumGesetz();
+            let v = 0;
+            for (const a of this._neben) if (a.t <= uhr) v += LG.stoerung(Math.hypot(a.x - x, a.z - z), a.fl, LG.S);
+            return Math.min(LG.S.kappe, v);
+        };
+    };
+    const seite = (uhr, meta, mutant) => {
+        const s = Object.create(KL.prototype);
+        s.state = { worldMeta: meta ? jsonKlon(meta) : KL._weltGeburt({ taten: [], seed: "anazh-realm-seed" }), spielZeit: uhr, dayLengthMinutes: KL.DAY_LENGTH_DEFAULT_MINUTES };
+        Object.assign(s.state, { playerMesh: { position: { x: 0, y: 0, z: 0 } }, architectures: [], player: { emotions: {} }, faunaLifecycle: {} });
+        for (const m of ["_scheduleEditSave", "_weltRegt", "_nahStreuTat", "_aktSenden"]) s[m] = () => {};
+        s._feldFolgeSteht = () => true; // die warme Welt: die nahen Regionen stehen bis zum Stempel (ihre Folge prüft gate:mp-sync)
+        if (mutant) nebenIndex(s);
+        return s;
+    };
+    const r3 = (v) => Math.round(v * 1e3) / 1e3;
+    const lies = (s, uhr) => ORTE.map(([x, z]) => r3(s.auraAt(x, z, 0, uhr).lebendig));
+    const ungleich = (X, Y) => X.filter((v, i) => v !== Y[i]).length;
+    const W0 = 1000;
+    const T = KL._bestandGesetz().B.taktS;
+    const fall = (mutant) => {
+        // (1) B lädt neu, während das Werk steht
+        const A = seite(W0 + T, null, mutant); // A steht einen Takt nach dem Bau, der Bau trägt den Stempel W0
+        const leer = lies(A, W0);
+        A._werkAkt(haus(), { uhr: W0 }, true);
+        const B = seite(W0 + T, A.state.worldMeta, mutant);
+        const a1 = lies(A, W0 + T);
+        const neu = { wirkt: ungleich(leer, a1), ab: ungleich(a1, lies(B, W0 + T)) };
+        // (2) der Bau kommt auf B drei Takte später an (der Stempel des Programms: ctx.akt.w)
+        const C = seite(W0 + 3 * T, null, mutant);
+        C._werkAkt(haus(), { uhr: W0, akt: { w: W0, von: "A" } }, true);
+        const spaet = [W0 - T, W0, W0 + T, W0 + 3 * T].reduce((n, u) => n + ungleich(lies(A, u), lies(C, u)), 0);
+        return { neu, spaet };
+    };
+    const E = fall(false);
+    check("Das Werk als Tat: B lädt neu, während das Werk steht — B liest gleich wie A (10 Orte, das Werk wirkt an allen)", E.neu.wirkt === 10 && E.neu.ab === 0, "Werk wirkt an " + E.neu.wirkt + "/10, B weicht an " + E.neu.ab + "/10 ab");
+    check("Das Werk als Tat: der Bau kommt auf B drei Takte später an — B liest an jedem Takt gleich wie A (4 Takte × 10 Orte)", E.spaet === 0, "B weicht an " + E.spaet + "/40 ab");
+    const M2 = fall(true);
+    check("Das Werk als Tat, Selbsttest: das Werk am Neben-Index fällt im Neuladen ROT", M2.neu.wirkt === 10 && M2.neu.ab > 0, M2.neu.ab > 0 ? "B weicht an " + M2.neu.ab + "/10 ab" : "der Täter blieb grün");
+    check("Das Werk als Tat, Selbsttest: das Werk am Neben-Index fällt beim späten Bau ROT", M2.spaet > 0, M2.spaet > 0 ? "B weicht an " + M2.spaet + "/40 ab" : "der Täter blieb grün");
+    console.log("  Werk als Tat: Neuladen " + E.neu.ab + "/10 · spät " + E.spaet + "/40 abweichend — Neben-Index " + M2.neu.ab + "/10 · " + M2.spaet + "/40");
 }
 // ── die Größe ist das Gesetz des Lebens (leben-core `__lebenCore`, leben-erbe): die Spanne des Gesetzes umschließt das Art-Mittel
 // (das Neugeborene unten, das größte Erwachsene bei +4σ oben) — bis leben-erbe vier Größen-Bänder im Buch der Tiere ──
