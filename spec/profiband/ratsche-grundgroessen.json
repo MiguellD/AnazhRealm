@@ -42,7 +42,6 @@
             "stamm/werkstatt-hof.js": ["DirectionalLight ×4", "AmbientLight ×2"],
             "stamm/werkstatt-sozial.js": ["DirectionalLight ×2", "AmbientLight"],
             "stamm/dirigent-ankunft.js": ["toneMappingExposure"],
-            "worlds/fachwerk/fachwerk.js": ["toneMappingExposure ×2", "DirectionalLight", "HemisphereLight ×2"],
             "worlds/huelle/huelle.js": ["DirectionalLight", "toneMapping ×2"],
             "worlds/koerperstudio/koerperstudio.js": ["toneMappingExposure ×2", "DirectionalLight ×2", "HemisphereLight"],
             "worlds/terrain/phytogenesis.js": ["toneMappingExposure", "DirectionalLight ×4", "HemisphereLight ×2", "toneMapping"],
