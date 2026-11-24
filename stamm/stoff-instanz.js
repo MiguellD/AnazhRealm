@@ -292,12 +292,23 @@ class AnazhRealm_stoff_instanz {
     // (`typ.bluete`) um die Präsenz der Blüte, alles andere steht — im Winter (0,06) ist die Krone kahl, im Frühling (0,72) treibt
     // sie aus. Mitte und Lage im Raum der Vorlage (r184 rechnet den positionNode vor der Instanz, Lehre 22), im Satz der
     // Nah-Streu beide in Welt-Lage (`_satzBlockEcken`); die Präsenz fährt `_tickSeason` (`uLaubPraesenz`, `_saisonPraesenz`).
+    // JE ART (leben.pflanzen.jahreslauf#2): Laub und Blüte rechnet der Stoff aus der Wärme des Jahrs (`uLaubJahr`, `_laubJahr`) und
+    // den Schwellen seiner Art (der Stoff-Wert `userData.jahrArt` = phyto-core `phaenoArt`, `_foundryTreeMaterial`) nach DEMSELBEN
+    // Gesetz wie die CPU (`_saisonPraesenz` mit Art: phyto-core `laubImJahr` · `bluehImJahr`); eine Art ohne Blüte-Zeile (−1) trägt
+    // die Blüte des SAISON_GESETZ (`uLaubPraesenz.y`). Bis jahreslauf#2 las jede Art dieselbe Präsenz (`uLaubPraesenz.x`).
     _jahrLage(T) {
         const SG = AnazhRealm._saisonGesetz();
-        const p = this._ensureSeasonUniforms().uLaubPraesenz;
+        const su = this._ensureSeasonUniforms();
+        const p = su.uLaubPraesenz;
+        const J = su.uLaubJahr;
+        const P = globalThis.__phytoCore;
+        const A = AnazhRealm._windTsl(T);
+        const art = this._stoffWert(T, "userData.jahrArt", "vec2");
+        const laub = P.laubImJahr(A, J.x, art.x, J.y, SG.stuetzen[3].pr);
+        const bluete = T.select(art.y.lessThan(0), p.y, P.bluehImJahr(A, J.x, art.y));
         const typ = T.attribute("aType", "float");
         const ist = (n) => typ.sub(n).abs().lessThan(0.5);
-        const pres = T.select(ist(SG.typ.laub), p.x, T.select(ist(SG.typ.bluete), p.y, T.float(1)));
+        const pres = T.select(ist(SG.typ.laub), laub, T.select(ist(SG.typ.bluete), bluete, T.float(1)));
         return T.mix(T.attribute("aCenter", "vec3"), T.positionLocal, pres.clamp(0, 1));
     }
     // DIE INSTANZ-MATRIX OHNE KAPAZITÄT IM SHADER — der EINE Bau jeder InstancedMesh der Welt: r184 legt
