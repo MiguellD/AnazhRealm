@@ -839,6 +839,7 @@ const FORBIDDEN = [
     ...["_foundryRuheDeckel", "FOUNDRY_RUHE_BYTES", "_foundryRuheMs"].map((t) => [t, "foundry-halten — der Cache hält nichts über seine Leser hinaus (_foundryOhneLeser)"]), // prettier-ignore
     // sonnenbahn — DIE LICHT-SCHÄFTE SIND KEIN STELLGLIED: ihr Pegel ist Licht (`GODRAY.pegel` × Gate × Sicht, `_loopRender`); der
     // Hebel des Reglers fiel (er sparte zwischen 0 und 0,8 nichts und pumpte die Mess-Wiese um 0,14 EV mit der Bildzeit)
+    ["nachtGrad", "sonnenbahn — das Nacht-Auge steht im letzten Anker der EINEN Tag-Achse (GRENZGROESSE, −18°), keine eigene Tiefe"],
     ...["_godrayScale", "PERF_GODRAY_MAX"].map((t) => [t, "sonnenbahn — der Pegel der Schäfte ist Licht, nie Last (GODRAY.pegel)", ["scripts/playtest.cjs", "scripts/diag-post-kette.cjs"]]), // prettier-ignore
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 

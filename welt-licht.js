@@ -57,8 +57,9 @@ var __weltLicht = (function () {
     // PBR Neutral), `zielKarte` das k·L der 18-%-Karte, das DIESE Kurve auf Mittelgrau legt (sRGB 118; `kartenEichung(kurve, 0)`
     // in scripts/lib/licht-linsen.cjs rechnet es nach). `min` ist nur die Wand gegen ein entartetes Licht. `steigung` ist die
     // Kompensations-Steigung des Tags (1 = volle Adaption, 0 = feste Blende), `stufen` die Knoten [Grad, Stufen] der Tag-Achse
-    // für Dämmerung und Nacht, `gleitung` [oben, unten] das Band, in dem die Kamera von der Steigung auf sie gleitet; `nachtGrad`
-    // (S7) die Tiefe der Sonne, in der das Nacht-Auge der Post-Kette ganz steht. Die Messungen stehen am Stamm (bild-himmel.js).
+    // für Dämmerung und Nacht, `gleitung` [oben, unten] das Band, in dem die Kamera von der Steigung auf sie gleitet. Das Nacht-Auge der Post-Kette
+    // steht ganz im letzten Anker der EINEN Tag-Achse (`GRENZGROESSE`, astronomische Nacht −18°, USNO): darunter streut keine Sonne
+    // mehr in den Himmel (sonnenbahn: die eigene Tiefe −32° ließ es im Sommer am Anker nachts bei 0,72). Die Messungen am Stamm.
     // DER BODEN DES MESSERS (`nachtKnotenE` × der Mond der Stunde, licht-stetig): die weiteste Blende der Kamera — ihr Lichtmesser
     // liest nie weniger als das Licht des Vollmonds ohne Wolken-Decke zu DIESER Stunde, E des Monds im Zenit (`MOND_E`) × der Sinus
     // seiner Höhe × sein Durchlass (`belichtung`, das sechste Wort); darunter steht die Belichtung, und das Bild fällt mit dem Licht
@@ -90,7 +91,6 @@ var __weltLicht = (function () {
         gleitung: Object.freeze([12, 8]),
         stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
         nachtKnotenE: MOND_E,
-        nachtGrad: -32,
         // DER WEG ZU WEISS (nacht-lichter): über Bild-Weiß zieht die Kurve den Ton zu seinem größten Kanal — `kappe` ist der höchste
         // Anteil (weit über Weiß), `stufen` die Stufen über Weiß, nach denen die Hälfte erreicht ist — im QUADRAT der Stufen: am Knie
         // (Weiß) steigt der Weg ohne Knick (gate:post-kette KNIE). Gebunden an das Feuer: der KERN (3 000 K bei k 20 000) hält mit 0,14
@@ -876,7 +876,7 @@ var __weltLicht = (function () {
         // Ersatz-Lichter, die er blendete (Ambient, Hemisphäre), fielen in licht-eine-skala.
         const nachtE = Math.sin((-6 * Math.PI) / 180);
         const hN = 0;
-        const nG = BELICHTUNG.nachtGrad;
+        const nG = A[A.length - 1][0];
         return {
             e,
             grenze,

@@ -1359,7 +1359,7 @@ class AnazhRealm_bild_himmel {
     //   grenze      die Grenzgröße (die Sterne erscheinen, wie sie im Himmel erscheinen), linear zwischen den Ankern;
     //   daemmerung  1 im hellen Tag … 0 in astronomischer Nacht (im Maß der Grenzgröße): das Sternen-Licht leuchtet in ihrem Rest;
     //   tag         das Nacht-Auge der Post-Kette (mesopisch): 1 über dem Horizont (wo `nacht` beginnt), linear über die Höhe
-    //               der Sonne bis `BELICHTUNG.nachtGrad` auf 0 — es gleitet, wo die Nacht beginnt;
+    //               der Sonne bis zum letzten Anker (astronomische Nacht −18°) auf 0 — es gleitet, wo die Nacht beginnt;
     //   nacht       die Nacht der Zeitpläne (Leuchtquellen, Horizont der Körper, Klang): 0 über dem Horizont,
     //               1 ab −6° (die bürgerliche Dämmerung) — über dem Horizont tragen Sonne und Himmel allein (ferne.K4);
     //   hell        die Leuchtdichte des Tageshimmels relativ zum Mittag (0,045 Nacht … 1), die Blässe des Mondes liest sie.
@@ -3806,9 +3806,9 @@ AnazhRealm.LEGACY_LICHT = __weltLicht.LEGACY_LICHT; // welt-licht.js — π
 // je Uhr das Histogramm der Szene vor der Tonkurve): s 0,75 legt die Sonne 10° morgens und abends 0,67 EV unter den Mittag (die
 // Karte selbst −0,87 Stufen, im Bild −1,17 EV: die Wiese als Dach fällt flacher als eine waagrechte Fläche), die Nacht −2,17
 // Stufen 3,14 EV darunter bei Luma 44; die Dämmerung fällt 1,3 Stufen über 30° — unter 0,1 EV je 0,72° Sonne auch im Fuß der
-// Kurve (6,25·x²), wo das Bild doppelt so steil fällt wie die Stufe. `nachtGrad` (S7) ist die Tiefe der Sonne, in der das
-// Nacht-Auge der Post-Kette ganz steht (der Kanal `tag` der Tag-Achse).
-AnazhRealm.BELICHTUNG = __weltLicht.BELICHTUNG; // welt-licht.js — kurve Neutral · zielKarte 0,22 · min 0,05 · steigung 0,75 · gleitung [12, 8] · stufen [10, −0,87] [−20, −2,17] · nachtGrad −32
+// Kurve (6,25·x²), wo das Bild doppelt so steil fällt wie die Stufe. Das Nacht-Auge der Post-Kette (der Kanal `tag`) steht
+// ganz im letzten Anker der Tag-Achse (`GRENZGROESSE`: astronomische Nacht −18°).
+AnazhRealm.BELICHTUNG = __weltLicht.BELICHTUNG; // welt-licht.js — kurve Neutral · zielKarte 0,22 · min 0,05 · steigung 0,75 · gleitung [12, 8] · stufen [10, −0,87] [−20, −2,17]
 // Mindestabstand zwischen zwei Neuzeichnungen der Umgebung (PMREM) in WELT-Zeit (`spielZeit`, ms). E0 und Tönung zeichnen sie
 // nicht mehr neu (`_umgebungLicht`), es bleiben Sonne, Mond, Medium und Höhe des Auges. Bis w4-licht-uhr 6 000 ms Wanduhr: der
 // Himmel je Einheit E0 wächst im Übergang klar → Regen mit dem Medium (0,163 → 0,335, etwa β^0,35), die Umgebung zog ihm in
