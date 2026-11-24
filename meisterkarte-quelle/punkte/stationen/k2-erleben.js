@@ -142,6 +142,30 @@ const NEULING_AN = async (r, T, a) => {
     return { ganz: eigen, erschafft: 1, teilt: 1, eigen, weg: eigen ? "ganz" : "geteilt mit Same " + seedCode + ", gesetzt mit " + seedWerk, name, zeichen: c.code.length };
 };
 
+// EIN ZIEL DER HAND (erleben.spieler.hand#1, das Gesetz des Fächers): a = { pitch, gier } — ein Strahl vom Auge der Welt-Kamera
+// (Ego, nie bewegt) in die Richtung `_blickVorn(gier, pitch)` (stamm/koerper-bewegung.js:1645), 30 m wie `_raycastWorldHit(30)`.
+// Der TREFFER ist, wo die Tat wirkt: `_fieldRaycast` (stamm/gelaende-chunks.js:2339, der Strahl durch das Dichtefeld samt Edits —
+// derselbe, den `tryMouseBreak` stamm/kampf.js:2371 über `_runRaycast` stamm/gelaende-boden.js:3281 liest). Das ZIEL ist, was das
+// Fadenkreuz zeigt: der Schnitt desselben Strahls mit den gezeichneten Gelände-Meshes (`_chunkGezeichnet`, binnen 45 m) — gemessen
+// mit dem Raycaster von THREE an der Geometrie, die die Welt zeichnet (das Messgerät, kein Gesetz). Die Zelle ist der Schritt der
+// feinen Stufe (`_voxelChunkConfig(0).step`, stamm/gelaende-boden.js:2856).
+const HAND_AN = async (r, T, a) => {
+    const st = r.state;
+    if (!st.voxelChunks || !st.voxelChunks.size || !st.camera) return { fehlt: "die Welt trägt keine gebauten Chunks (state.voxelChunks leer) — kein gezeichnetes Ziel" };
+    const c = st.camera.position, v = r._blickVorn(a.gier, a.pitch), weit = 30;
+    const hit = r._fieldRaycast(c.x, c.y, c.z, c.x + v.x * weit, c.y + v.y * weit, c.z + v.z * weit, { durchPflanzen: true });
+    const meshes = [];
+    for (const e of st.voxelChunks.values()) if (r._chunkGezeichnet(e) && e.mesh.position && Math.hypot(e.mesh.position.x - c.x, e.mesh.position.z - c.z) < 45 + 64) meshes.push(e.mesh);
+    if (!meshes.length) return { fehlt: "kein gezeichneter Chunk binnen 45 m um das Auge (`_chunkGezeichnet` stamm/gelaende-fern.js:1468)" };
+    for (const m of meshes) m.updateMatrixWorld(true);
+    const z = new T.Raycaster(new T.Vector3(c.x, c.y, c.z), new T.Vector3(v.x, v.y, v.z).normalize(), 0, weit).intersectObjects(meshes, true)[0];
+    const step = r._voxelChunkConfig(0).step, trifft = !!(hit && hit.hit);
+    if (!trifft && !z) return { leer: 1 };
+    if (!trifft || !z) return { zellen: 99, d_m: null, step, nur: trifft ? "Treffer ohne gezeichnetes Ziel" : "gezeichnetes Ziel ohne Treffer" };
+    const d = Math.hypot(hit.x - z.point.x, hit.y - z.point.y, hit.z - z.point.z);
+    return { zellen: +(d / step).toFixed(3), d_m: +d.toFixed(3), step, dy: +(hit.y - z.point.y).toFixed(3) };
+};
+
 // EIN SATZ DES KORPUS (erleben.schoepfen.satz#1, das Gesetz des Fächers): a = { satz, still } — ein Satz des eingefrorenen Korpus
 // (spec/abnahme/ki-korpus.json; still: der Satz verlangt keine Tat). Der Weg, den das Spiel liest (stamm/feld-leben.js:671–673): erst
 // die Regel (`_regelAusSatz` stamm/feld-sprache.js:568), dann das Programm (`parseChatToDsl` :545); ohne beides die KI
@@ -407,7 +431,8 @@ const FERNE_AN = async (r, T, a) => {
             leiter: "erleben.spieler.hand",
             sek: 60,
             mutiert: true,
-            pfad: ["scripts/werkbank.cjs", "scripts/lib/haenger-linse.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "spec/profiband/haushalt.json", "stamm/kampf.js", "stamm/vegetation-wiese.js", "stamm/bau-buch.js", "stamm/koerper-bewegung.js", "stamm/koerper-seele.js", "stamm/werkstatt-bauen.js", "stamm/gelaende-boden.js"],
+            seite: { FAECHER, HAND_AN },
+            pfad: ["scripts/werkbank.cjs", "stamm/gelaende-chunks.js", "stamm/gelaende-fern.js", "scripts/lib/haenger-linse.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "spec/profiband/haushalt.json", "stamm/kampf.js", "stamm/vegetation-wiese.js", "stamm/bau-buch.js", "stamm/koerper-bewegung.js", "stamm/koerper-seele.js", "stamm/werkstatt-bauen.js", "stamm/gelaende-boden.js"],
             welt: [{ wort: "wirkungen", ab: 1, was: "Wirkungen der Hand an einem Stoff der Welt" }],
             sprossen: {
                 1: {
@@ -415,6 +440,7 @@ const FERNE_AN = async (r, T, a) => {
                         { wort: "wirkung_p95_ms", richtung: "≤", wert: 50, wortlaut: "Eingabe → erstes Bild mit Wirkung p95 ≤ 50 ms", feld: "richter" },
                         { wort: "treffer_zellen", richtung: "≤", wert: 1, wortlaut: "Trefferpunkt = Zielpunkt ± 1 Zelle", feld: "richter" },
                     ],
+                    welt: [{ wort: "strahlen", ab: 1, was: "Ziel-Strahlen, an denen Treffer und gezeichnetes Ziel gemessen wurden" }],
                 },
                 2: {
                     auge: {
@@ -471,10 +497,38 @@ const FERNE_AN = async (r, T, a) => {
                 const S = z.stoffe.length;
                 const paare = z.werkzeuge * S;
                 const paarText = z.werkzeuge + " Werkzeuge der Hand (die leere Hand + " + z.halt + " Baupläne „hold“, stamm/kampf.js:1843; geprüft " + z.geprueft + " von " + z.bauplaene + ") × " + S + " Stoffe des Bodens (" + z.stoffe.join(", ") + ") = " + paare + " Paare";
-                // S1 · setzen und brechen: die Tasten trägt die Welt, den Leser der Wirkung nicht
+                // S1 · setzen und brechen: die Tasten trägt die Welt, den Leser der Wirkung nicht. TREFFER ↔ ZIEL ÜBER DEN FÄCHER: 20 Ziele
+                // (Neigung −10° … −60° × 4 Richtungen) und die schlechte Pose (der streifende Strahl, −4°) — je Ziel der Treffer der Tat
+                // gegen das gezeichnete Ziel (HAND_AN); über 1 Zelle urteilt S1 gemessen, sonst bleibt die Wirkung je Bild beim Namen
                 await L.je(1, async () => {
                     if (!(z.brechen && z.setzen)) throw new Error("die Tasten-Tafel trägt brechen " + z.brechen + " · setzen " + z.setzen + " (stamm/werkstatt-bauen.js:3634)");
-                    L.leser(1, "Eingabe → erstes Bild mit Wirkung: die Latenz-Linse kennt kein Verb setzen (scripts/werkbank.cjs:1894) und misst an Kamera, Leib und Hand, nie die Wirkung am Stoff (scripts/lib/haenger-linse.cjs:1181); Trefferpunkt ↔ Zielpunkt: kein Leser, der die Zelle des Edits gegen das Ziel des Fadenkreuzes hält (stamm/kampf.js:2349)");
+                    const ziele = [];
+                    for (const g of [-10, -20, -30, -45, -60]) for (let k = 0; k < 4; k++) ziele.push({ pitch: (g * Math.PI) / 180, gier: (k * Math.PI) / 2 });
+                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+                        gesetz: { fn: H.seite.HAND_AN, export: "stamm/gelaende-chunks.js:2339 _fieldRaycast (gegen die gezeichneten Meshes, `_chunkGezeichnet` stamm/gelaende-fern.js:1468)", leser: "stamm/kampf.js:2371 tryMouseBreak → stamm/gelaende-boden.js:3281 _runRaycast" },
+                        adressen: { dazu: ziele.concat([{ pitch: (-4 * Math.PI) / 180, gier: 0, streif: true }]) },
+                        ms: Math.max(3000, Math.floor((L.rest() - 30) * 1000)),
+                        masse: {
+                            ziele: { wie: "anzahl", nur: (a, w) => !w.leer },
+                            zellen: { wie: "max", feld: "zellen" },
+                            mittel: { wie: "mittel", feld: "d_m" },
+                            ueber: { wie: "anzahl", nur: (a, w) => w.zellen > 1 },
+                            streif: { wie: "erste", feld: "zellen", nur: "streif" },
+                        },
+                        schlecht: { feld: "zellen", richtung: "max" },
+                        pose: (a) => "wiese ego, Blick " + Math.round((a.pitch * 180) / Math.PI) + "° (Gier " + +a.gier.toFixed(2) + ") auf das Ziel — Fadenkreuz und Grube im Bild",
+                        ungemessen: ["Eingabe → erstes Bild mit Wirkung p95: ungemessen bis zum Gerät (kein Leser der Wirkung je Bild)", "beide Geräte: die Sitzung fährt eines"],
+                    });
+                    L.zeile("hand S1: " + R.akte.slice(0, 500));
+                    const w = R.werte, s1 = P.sprossen[1].soll;
+                    if (w.ziele && w.zellen > s1[1].wert)
+                        return L.gemessen(1, { treffer_zellen: w.zellen }, {
+                            welt: { strahlen: w.ziele },
+                            taeter:
+                                "die Tat trifft das Dichtefeld (`_fieldRaycast` stamm/gelaende-chunks.js:2339), das Fadenkreuz zeigt das Mesh — an " + w.ueber + " von " + w.ziele + " Zielen über 1 Zelle (" + (R.schlecht ? R.schlecht.w.d_m + " m" : "?") + ", streifend " + w.streif + " Zellen); kein Raycast gegen das Gelände-Mesh im Spiel; Wirkung je Bild p95: ungemessen bis zum Gerät · " + R.akte,
+                        });
+                    const treff = w.ziele ? "Treffer ↔ Ziel an " + w.ziele + " Zielen höchstens " + w.zellen + " Zellen (mittel " + w.mittel + " m)" : "Treffer ↔ Ziel: " + (R.fehlt || "kein Ziel gemessen");
+                    L.leser(1, "Eingabe → erstes Bild mit Wirkung: die Latenz-Linse kennt kein Verb setzen (scripts/werkbank.cjs:1894) und misst an Kamera, Leib und Hand, nie die Wirkung am Stoff (scripts/lib/haenger-linse.cjs:1181); " + treff + " (kein Raycast gegen das Gelände-Mesh im Spiel, der Fächer misst es mit THREE) · " + R.akte);
                 });
                 await L.je(3, async () => {
                     if (paare < P.sprossen[3].umfang.verlangt) return L.umfang(3, paare, paarText + " — und Kraft und Winkel sind kein Parameter des Spielers");
