@@ -11,6 +11,14 @@ run-name: GPU-Probe ${{ github.ref_name }} ${{ github.sha }}
 #   bild:<ort>[@<uhr>]      ein Messort der Orts-Tafel (spec/profiband/haushalt.json `messorte`): Werkbank `start --ort` und
 #                           `umstellen --ort`, dann `bild` an der Kamera des Spiels (ihr Ort, ihre Richtung bis zum Blick des Orts),
 #                           aus dem Ausgabe-Pfad, die Uhr 0..1 (ohne: Mittag); das Beweisbild urteilt selbst (ABNAHME) — auf gpu-probe
+#   station:karte2.<leiter>#<n>[+karte2.<leiter>#<n>…][@<ref>]
+#                           DIE STATION DER SPROSSE (Auftrag Umsatz 24.11.: am Tag buchten 5 von 33 beanspruchten Sprossen, kein Macher
+#                           sah das Urteil seiner Station vor der Landung — alle 1 640 Stationen der Karte 2 brauchen ein Gerät): die
+#                           Punkte-Maschine am Ref (Vorgabe koordination, ein pm-Zweig trägt die neue Messfunktion) misst die Sprossen am
+#                           Kopf in EINER warmen Sitzung (`punkte.cjs run --sha <kopf> --geraet radeon|gtx --nur …`) — nur auf gpu-zeit
+#                           (OMEN = gtx, Radeon = radeon: die Geräte der Maschine); je Sprosse ihr Urteil mit Zahl im Post. Die Namen
+#                           prüft der Einlass gegen die Karte am Ref (vision/meisterkarte-2.json), höchstens
+#                           (PROBE_DECKEL_S − STATION_GRUND_S) ÷ STATION_JE_S Sprossen je Probe. Das Vorurteil des Machers — es bucht nie.
 # WANN gate: UND WANN zeit: — ein Gate, dessen Urteil eine ZEIT trägt (ms, Bild über 33 ms, Haupt-Faden, Takt-Budget, Ankunft in
 # Sekunden: z. B. gate:geh-zerlegung, gate:ankunft), ruft `zeit:` — der dritte Läufer (gtx1050-desktop, i7-950 von 2009) liegt mit
 # dem Haupt-Faden 3- bis 8-mal über jedem Budget, sein ms-Urteil ist ROT gleich welcher Code. Bilder und Gates, die ZÄHLEN oder
@@ -20,7 +28,7 @@ run-name: GPU-Probe ${{ github.ref_name }} ${{ github.sha }}
 # Rufs `gate:webgl-probe` (W5 jedes Programm linkt im WebGL2-Rückfall, W6 ≤ 16 Sampler-Einheiten je Stoff; an der Radeon 45 s) —
 # eine neue Karte im Stoff (die Licht-Karte: der Fern-Ring trug 17) fiel bis dahin erst im echt-Job des Zugs an der GTX 1050,
 # nach dem Stempel. Kein neues Bein: ein Ruf nur mit `zeit:` weckt keinen Probe-Läufer; die Grenze von vier gilt den Proben des Rufs.
-# Nur diese drei Formen, die Namen gegen package.json und die Tafel geprüft — der EINE Leser ist der Schritt `einlass` unten
+# Nur diese vier Formen, die Namen gegen package.json, die Orts-Tafel und die Karte 2 geprüft — der EINE Leser ist der Schritt `einlass` unten
 # (EINLASS_JS; gate:apparat Klinge 7 FÄHRT ihn mit freien Befehlen, fremden Namen und gemischten Rufen und hält dieses Gesetz mit
 # Mutanten): nie ein freier Befehl aus der Message, das Repo ist öffentlich.
 # Drei Jobs: einlass (ubuntu: eine abgewiesene Probe weckt nie eine GPU; er teilt den Ruf in die Arten gpu-probe und gpu-zeit) →
@@ -43,8 +51,12 @@ permissions:
 # Einlass weist ein Tor ab, das schon in der Cloud länger misst (spec/ci/ci-zeiten.json `skripte`, scripts/ci-zeiten.cjs) — sein
 # Richter ist die Cloud-Batterie. gate:kreatur-takt (Null-Welt, 742 + 937 + 596 s in drei Teilen der Cloud) brach auf der GTX 1050
 # dreimal stumm am Deckel 960 s (1 134 · 1 127 · 1 115 s) und hielt das Schloss je 19 min, auf der OMEN am Deckel 480 s.
+# DIE STATION (Auftrag Umsatz): ihr Deckel ist der Aufbau (Baum der Maschine, Spiel-Baum am Kopf, die warme Sitzung) und je Sprosse
+# eine Minute — die Grenze je Probe folgt aus dem EINEN Deckel oben.
 env:
     PROBE_DECKEL_S: 480
+    STATION_GRUND_S: 120
+    STATION_JE_S: 60
 
 # DIE NEUESTE PROBE JE ZWEIG (09.11.: 17 Proben in der Schlange, fahrt-planer allein mit vier überholten Köpfen): je Zweig läuft
 # höchstens eine Probe, und eine wartende wird von der nächsten ersetzt. Die laufende Probe hält ihr Schloss bis zum Ende
@@ -91,7 +103,7 @@ jobs:
             # Commit ohne Inhalt (EIN Elter, derselbe Baum, scripts/ci-kopf.cjs `kopfKette`, bis KETTE tief) und trägt das Ende seiner
             # Kette einen Lauf `completed/success`, dessen Ruf jede Probe dieses Rufs nennt, bleibt die Matrix leer — kein Bein, der
             # Post schreibt „GEERBT von <eltern-sha8>“. Jeder andere Fall fährt; ein Fehler der API ist ROT wie im Richter.
-            - name: Einlass (nur gate:<npm-skript>, zeit:gate:<npm-skript> und bild:<ort>[@<uhr>], die Namen gegen package.json und die Orts-Tafel; der Stempel erbt)
+            - name: Einlass (nur gate:<npm-skript>, zeit:gate:<npm-skript>, bild:<ort>[@<uhr>] und station:karte2.<leiter>#<n>[+…][@<ref>], die Namen gegen package.json, die Orts-Tafel und die Karte 2; der Stempel erbt)
               id: einlass
               env:
                   KOPF_NACHRICHT: ${{ github.event.head_commit.message }}
@@ -108,9 +120,17 @@ jobs:
                       const cloud = require("./spec/ci/ci-zeiten.json").skripte;
                       if (!(deckel > 0) || !cloud) throw new Error(`der Deckel je Probe (PROBE_DECKEL_S ${process.env.PROBE_DECKEL_S}) oder die Zeit je Tor (spec/ci/ci-zeiten.json skripte) fehlt`);
                       let grund = n === 1 ? "" : `${n} Marken [gpu-probe: …] auf einer Zeile, genau eine`;
+                      // DIE STATION: je Probe ihre Sprossen und ihr Ref (Vorgabe koordination); die Grenze folgt aus dem EINEN Deckel,
+                      // die Namen prüft die Karte am Ref (unten, vor dem Erbe)
+                      const [sGrund, sJe] = [Number(process.env.STATION_GRUND_S), Number(process.env.STATION_JE_S)];
+                      const sMax = Math.floor((deckel - sGrund) / sJe);
+                      if (!(sMax >= 1)) throw new Error(`die Zahlen der Station (STATION_GRUND_S ${process.env.STATION_GRUND_S}, STATION_JE_S ${process.env.STATION_JE_S}) tragen unter dem Deckel ${deckel} s keine Sprosse`);
+                      const stationen = [];
                       for (const p of proben) {
                           const b = /^bild:([a-z][a-z0-9-]*)(?:@(?:0(?:\.\d{1,3})?|1(?:\.0{1,3})?))?$/.exec(p);
                           const s = /^(?:zeit:)?(gate:[a-z0-9][a-z0-9:-]*)$/.exec(p);
+                          const st = /^station:(karte2\.[a-z0-9-]+(?:\.[a-z0-9-]+)*#[1-9]\d{0,2}(?:\+karte2\.[a-z0-9-]+(?:\.[a-z0-9-]+)*#[1-9]\d{0,2})*)(?:@([A-Za-z0-9][A-Za-z0-9._/-]{0,79}))?$/.exec(p);
+                          const [ids, ref] = st ? [st[1].split("+"), st[2] || "koordination"] : [[], ""];
                           const g = s
                               ? !skripte[s[1]]
                                   ? "kein npm-Skript in package.json"
@@ -118,17 +138,26 @@ jobs:
                                     `misst in der Cloud ${cloud[s[1]].s} s (spec/ci/ci-zeiten.json), der Deckel je Probe ist ${deckel} s — kein Läufer hält es, sein Richter ist die Cloud-Batterie (check.yml, [ci voll])`
                               : b
                                 ? !orte.includes(b[1]) && `kein Messort der Orts-Tafel (${orte.join(", ")})`
-                                : "weder gate:<npm-skript>, zeit:gate:<npm-skript> noch bild:<ort>[@<uhr 0..1>]";
+                                : st
+                                  ? ids.length > sMax
+                                      ? `${ids.length} Sprossen, höchstens ${sMax} je Probe (Deckel ${deckel} s = ${sGrund} s Aufbau + ${sJe} s je Sprosse)`
+                                      : new Set(ids).size !== ids.length
+                                        ? "eine Sprosse zweimal"
+                                        : /\.\.|\/\/|\/$|\.lock$/.test(ref) && `der Ref „${ref}“ ist kein Zweig-Name`
+                                  : "weder gate:<npm-skript>, zeit:gate:<npm-skript>, bild:<ort>[@<uhr 0..1>] noch station:karte2.<leiter>#<n>[+…][@<ref>]";
+                          if (st && !g) stationen.push({ p, ref, ids });
                           if (g && !grund) grund = `„${p.slice(0, 80)}“: ${g}`;
                       }
                       if (!grund && proben.length > 4) grund = `${proben.length} Proben, höchstens 4 je Push`;
                       const GL = "gate:webgl-probe";
                       if (!grund && !skripte[GL]) grund = `die GL-Wand ${GL} fehlt in package.json`;
-                      const aufProbe = proben.filter((p) => !p.startsWith("zeit:"));
+                      // zeit: und station: fahren nur auf einem Band-Gerät (gpu-zeit: OMEN und Radeon sind die Geräte der Maschine)
+                      const band = (p) => p.startsWith("zeit:") || p.startsWith("station:");
+                      const aufProbe = proben.filter((p) => !band(p));
                       if (aufProbe.length && !aufProbe.includes(GL)) aufProbe.push(GL);
                       const arten = [
                           ["gpu-probe", aufProbe],
-                          ["gpu-zeit", proben.filter((p) => p.startsWith("zeit:"))],
+                          ["gpu-zeit", proben.filter(band)],
                       ]
                           .filter(([, l]) => l.length)
                           .map(([label, l]) => ({ label, plan: l.join(" ") }));
@@ -141,10 +170,38 @@ jobs:
                           }
                       };
                       const summe = (t) => env.GITHUB_STEP_SUMMARY && fs.appendFileSync(env.GITHUB_STEP_SUMMARY, t + "\n");
-                      if (grund) aus(`abgewiesen=${grund}`);
-                      else {
+                      const basis = `${env.GITHUB_API_URL || "https://api.github.com"}/repos/${env.GITHUB_REPOSITORY}`;
+                      // DIE KARTE AM REF prüft jede Sprosse: die Rohfassung der Datei (nie die JSON-Hülle der API — sie trägt den Inhalt
+                      // nur bis 1 MB, die Karte hat 0,8), 5xx und Netzfehler dreimal neu; ein Ref ohne Karte und eine fremde Sprosse weisen
+                      // ab (keine GPU), jeder andere Fehler der API ist ROT wie im Richter
+                      const karteAm = async (ref) => {
+                          const u = `${basis}/contents/vision/meisterkarte-2.json?ref=${encodeURIComponent(ref)}`;
+                          for (let v = 1; ; v++) {
+                              const r = await fetch(u, { headers: { Authorization: `Bearer ${env.GH_TOKEN}`, Accept: "application/vnd.github.raw" } }).catch(() => null);
+                              if ((!r || r.status >= 500) && v < 4) {
+                                  await new Promise((s) => setTimeout(s, 3000 * v));
+                                  continue;
+                              }
+                              if (r && r.status === 404) return null;
+                              if (!r || !r.ok) throw new Error(`die Karte 2 am Ref ${ref}: ${r ? r.status : "kein Netz"}`);
+                              const k = JSON.parse(await r.text());
+                              return new Set(k.gruppen.flatMap((gr) => gr.kriterien.flatMap((kr) => kr.sprossen.map((s) => `karte2.${kr.id}#${s.nr}`))));
+                          }
+                      };
+                      const sprossenGrund = async () => {
+                          const je = new Map();
+                          for (const { p, ref, ids } of stationen) {
+                              if (!je.has(ref)) je.set(ref, await karteAm(ref));
+                              const karte = je.get(ref);
+                              if (!karte) return `„${p.slice(0, 80)}“: der Ref „${ref}“ trägt keine Karte 2 (vision/meisterkarte-2.json)`;
+                              const fremd = ids.find((id) => !karte.has(id));
+                              if (fremd) return `„${p.slice(0, 80)}“: ${fremd} ist keine Sprosse der Karte 2 am Ref ${ref}`;
+                          }
+                          return "";
+                      };
+                      const erbe = () => {
                           const K = require("./scripts/ci-kopf.cjs");
-                          const api = K.apiMit(`${env.GITHUB_API_URL || "https://api.github.com"}/repos/${env.GITHUB_REPOSITORY}`, env.GH_TOKEN);
+                          const api = K.apiMit(basis, env.GH_TOKEN);
                           K.probeErbeLesen(api, { sha: env.GITHUB_SHA, lauf: env.GITHUB_RUN_ID, proben, rufVon })
                               .then((u) => {
                                   if (u.erbt) {
@@ -162,7 +219,17 @@ jobs:
                                   console.error(`❌ Einlass: die Erb-Frage scheiterte — ${e.message}`);
                                   process.exitCode = 1;
                               });
-                      }
+                      };
+                      if (grund) aus(`abgewiesen=${grund}`);
+                      else if (!stationen.length) erbe();
+                      else
+                          sprossenGrund().then(
+                              (g) => (g ? aus(`abgewiesen=${g}`) : erbe()),
+                              (e) => {
+                                  console.error(`❌ die Karte der Station: ${e.message}`);
+                                  process.exitCode = 1;
+                              }
+                          );
               run: node -e "$EINLASS_JS"
 
     # EIN Job, je Art des Einlasses ein Bein (die Matrix ist sein Ausgang, nie eine Liste hier): label gpu-probe oder gpu-zeit,
@@ -206,9 +273,12 @@ jobs:
                   [ -d "$B/.git" ] || git init -q "$B"
                   cd "$B"
                   git remote get-url origin > /dev/null 2>&1 || git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
-                  git fetch -q --depth=1 --no-tags origin "$GITHUB_SHA"
+                  # --no-filter: der Maschinen-Baum der Station holt blob-los (station_probe) und macht den Klon zum Teil-Klon — der
+                  # Spiel-Baum bleibt ganz; die Bäume unter .claude/worktrees/ (Maschine, Spiel-Baum der Maschine mit seiner Verbindung
+                  # zu node_modules) fegt nie git clean, sie stellen sich selbst
+                  git fetch -q --depth=1 --no-filter --no-tags origin "$GITHUB_SHA"
                   git checkout -q -f --detach FETCH_HEAD
-                  git clean -q -ffdx -e node_modules
+                  git clean -q -ffdx -e node_modules -e /.claude/worktrees/
                   L=$(git hash-object package-lock.json)
                   t=$SECONDS
                   if [ "$(cat node_modules/.probe-lock 2> /dev/null)" = "$L" ]; then
@@ -225,6 +295,24 @@ jobs:
               timeout-minutes: 55 # bis drei Proben am doppelten Deckel des dritten Läufers (3 × 960 s) plus Aufbau
               env:
                   GH_TOKEN: ${{ github.token }}
+                  # DER DURCHREICHER DER STATION (gpu-lauf-ci.sh, neben gpu-schloss.sh geschrieben): punkte.cjs nimmt das Schloss jeder
+                  # Sitzung über PUNKTE_GPU_LAUF — der Start-Hook hält es schon für DIESEN Job, gpu-lauf.sh wartete ewig auf ihn. Hält der
+                  # Job es nicht, ist es BLOCKIERT (Exit 75: die Sprosse bleibt ungemessen); sonst die Zeile, an der schlossNehmen das
+                  # Schloss erkennt, und der Befehl mit GPU_LAUF_HAELT=ci (die Ordnung der Schlösser). gate:apparat fährt ihn (Klinge 7)
+                  DURCH_SH: |
+                      #!/bin/bash
+                      # gpu-lauf-ci.sh <name> <befehl…> — der Durchreicher der Station (gpu-probe.yml)
+                      . "${BASH_SOURCE[0]%/*}/gpu-schloss.sh" || { echo "SCHLOSS BLOCKIERT: keine Schloss-Bibliothek neben gpu-lauf-ci.sh"; exit 75; }
+                      n=$1
+                      shift
+                      w=$(schloss_erster)
+                      if [ -z "$GPU_LAUF_ICH" ] || [ "$w" != "$GPU_LAUF_ICH" ]; then
+                          echo "SCHLOSS BLOCKIERT von ${w:-niemand} (gpu-lauf-ci.sh $n: der Job ${GPU_LAUF_ICH:-?} hält es nicht)"
+                          exit 75
+                      fi
+                      echo "gpu-lauf: Schloss $n (ci, gehalten vom Job $GPU_LAUF_ICH)" >&2
+                      export GPU_LAUF_HAELT=ci
+                      exec "$@"
               run: |
                   set +e
                   cd "$BAUM"
@@ -262,6 +350,12 @@ jobs:
                   WER=$(schloss_erster)
                   echo "Schloss $GPU_SCHLOSS hält „${WER:-niemand}“" | tee -a "$OUT/ergebnis.md"
                   [ "$WER" = "$ICH" ] || rot_ende "das GPU-Schloss hält „${WER:-niemand}“, nicht dieser Job (der Start-Hook des Läufers nahm es nicht)"
+                  # der Durchreicher der Station neben der Bibliothek (Windows-Pfad mit /: node und bash lesen ihn beide), der Halter
+                  # ist dieser Job; das Gerät der Punkte-Maschine heißt nach dem Läufer (die OMEN misst als gtx)
+                  DURCH="$(cygpath -m "$OUT/..")/gpu-lauf-ci.sh"
+                  printf '%s\n' "$DURCH_SH" > "$DURCH"
+                  export GPU_LAUF_ICH="$ICH"
+                  case "$RUNNER_NAME" in *radeon*) G=radeon ;; *omen*) G=gtx ;; *) G= ;; esac
                   # die Zeilen des Hooks zu diesem Job (hook.log): wie lange er auf das Schloss wartete
                   grep -a "ci-runner $GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT " "$GPU_HOOK_LOG" 2> /dev/null | tr -d '\r' | sed 's/^/- Hook /' | tee -a "$OUT/ergebnis.md"
                   echo >> "$OUT/ergebnis.md"
@@ -364,11 +458,31 @@ jobs:
                       wait $wb
                       return $rc
                   }
+                  # DIE STATION (station:karte2.<leiter>#<n>[+…][@<ref>]): die Maschine (punkte.cjs) am Ref, nur ihr Ordner, die Karte 2
+                  # (die Richter) und die Ablagen der Referenz (die Ruhe des Rechners), dünn wie punkte-farm.yml, als Baum NEBEN dem
+                  # Spiel-Baum (spielRepo: der Klon über der Maschine); dann EIN `run --nur` am Kopf-SHA — jede Probe-Station in EINER warmen
+                  # Sitzung, ihr Schloss reicht der Durchreicher durch. Die Mess-Datei bleibt im Wegwerf-Baum: die Probe bucht nie
+                  station_probe() {
+                      local M="$BAUM/.claude/worktrees/pm-probe"
+                      git -C "$BAUM" worktree remove -f -f "$M" > /dev/null 2>&1
+                      rm -rf "$M"
+                      git -C "$BAUM" worktree prune
+                      git -C "$BAUM" fetch -q --depth=1 --filter=blob:none --no-tags origin "+refs/heads/$1:refs/remotes/origin/pm-probe" || { echo "ROT: der Ref $1 ist nicht holbar"; return 1; }
+                      git -C "$BAUM" worktree add -q --detach --no-checkout "$M" origin/pm-probe || { echo "ROT: kein Baum der Maschine am Ref $1"; return 1; }
+                      git -C "$M" sparse-checkout set --no-cone '/meisterkarte-quelle/' '!/meisterkarte-quelle/punkte/messung/*' '/meisterkarte-quelle/punkte/messung/referenz-*.json' '/vision/meisterkarte-2.json' '/vision/richter-tafel.json' '/vision/richter-akte.cjs' '/vision/buche-2.cjs' &&
+                          git -C "$M" reset -q --hard || { echo "ROT: der Baum der Maschine am Ref $1 checkt nicht aus"; return 1; }
+                      echo "Maschine am Ref $1 $(git -C "$M" rev-parse --short=9 HEAD) · Gerät $3 · Sprossen $2"
+                      PUNKTE_GPU_LAUF="$DURCH" PUNKTE_WER=probe node "$M/meisterkarte-quelle/punkte/punkte.cjs" run --sha "$GITHUB_SHA" --geraet "$3" --nur "$2" --bahnen 1
+                  }
                   URTEIL=GRÜN
                   KOPF=
                   BEKANNT=
+                  D0=$DECKEL
                   for p in $PLAN; do
-                      LOG="$OUT/$(echo "$p" | tr ':@' '--').log"
+                      LOG="$OUT/$(echo "$p" | tr ':@#+/' '-----' | cut -c1-80).log"
+                      DECKEL=$D0
+                      SID=
+                      GL=240
                       t=$SECONDS
                       : > "$BLICK"
                       GRUND=$(vorfahrt)
@@ -396,6 +510,23 @@ jobs:
                                   BILD="$SHA8-$o${u:+-$u}.png"
                                   lauf bild_probe "$o" "$u" "$OUT/$BILD"
                                   ;;
+                              # DIE STATION: ihr Deckel ist Aufbau + je Sprosse (der Einlass hielt ihn unter PROBE_DECKEL_S), ihr Urteil liest
+                              # der EINE Leser je Sprosse (--stationen): GRÜN nur, wenn JEDE genannte Sprosse GRÜN steht — OFFEN ist ROT
+                              station:*)
+                                  o=${p#station:}
+                                  r=koordination
+                                  case "$o" in *@*) r=${o#*@} && o=${o%@*} ;; esac
+                                  SID=${o//+/,}
+                                  k=$(tr ',' '\n' <<< "$SID" | wc -l)
+                                  DECKEL=$((STATION_GRUND_S + STATION_JE_S * k))
+                                  GL=$((80 + 120 * k))
+                                  if [ -n "$G" ]; then
+                                      lauf station_probe "$r" "$SID" "$G"
+                                  else
+                                      GRUND="der Läufer $RUNNER_NAME ist kein Gerät der Punkte-Maschine (radeon|gtx)"
+                                      echo "ROT: $GRUND" > "$LOG"
+                                  fi
+                                  ;;
                           esac
                       fi
                       d=$((SECONDS - t))
@@ -415,7 +546,7 @@ jobs:
                                   U=ROT
                                   GRUND="kein Hardware-Adapter: $ADAPTER"
                               else
-                                  UG=$(node scripts/lib/urteil-zeile.cjs --log "$LOG" --rc "$RC")
+                                  UG=$(node scripts/lib/urteil-zeile.cjs --log "$LOG" --rc "$RC"${SID:+ --stationen "$SID"})
                                   U=${UG%%$'\t'*}
                                   GRUND=${UG#*$'\t'}
                                   case "$U" in GRÜN | BEKANNT | ROT) ;; *) U=ROT && GRUND="der Leser des Urteils (scripts/lib/urteil-zeile.cjs) antwortete nicht: ${UG:0:200}" ;; esac
@@ -423,8 +554,10 @@ jobs:
                               ;;
                       esac
                       case "$U" in ROT) URTEIL=ROT ;; NACHGEGEBEN) [ "$URTEIL" = GRÜN ] && URTEIL=NACHGEGEBEN ;; BEKANNT) BEKANNT="$BEKANNT${BEKANNT:+ · }$p: ${GRUND#ROT wie an main (bekannt): }" ;; esac
-                      KOPF="$KOPF${KOPF:+ · }$p $U $d s${GRUND:+ — ${GRUND:0:240}}${BL:+ — $BL}"
+                      KOPF="$KOPF${KOPF:+ · }$p $U $d s${GRUND:+ — ${GRUND:0:$GL}}${BL:+ — $BL}"
                       Z=$(grep -E "✅|❌|⛔|ROT|GRÜN|GRUEN|ABSTURZ|Error|ABNAHME|Kamera des Spiels|NACHGEGEBEN|DECKEL" "$LOG" | tail -n 10 | cut -c1-600)
+                      # die Station: je Sprosse ihre Zeile (punkte.cjs stationsZeile), der Ref der Maschine, der Plan des Laufs
+                      [ -n "$SID" ] && Z=$(grep -aE '^\s*(GRÜN|ROT |OFFEN) karte2\.|^Maschine am Ref |^Punkte-Maschine: |DECKEL|NACHGEGEBEN|Error|ROT:' "$LOG" | tail -n 24 | cut -c1-600)
                       [ -n "$Z" ] || Z=$(tail -n 10 "$LOG" | cut -c1-600)
                       {
                           echo "### $p — $U · $d s"

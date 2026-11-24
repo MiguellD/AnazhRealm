@@ -8,7 +8,8 @@
 //                    beim Namen — der Exit trägt, was die Zeile sagt (sonst stünde die Zeile als Vermerk ohne ROT/❌).
 //   probeUrteil(...) (der Kopf der GPU-Probe, gpu-probe.yml) Log UND Exit: GRÜN nur ohne ROTE Zeile und mit Exit 0; jede ROTE
 //                    Zeile reißt, und der Kopf nennt die erste; BEKANNT heißt nur die Ratsche des Messorts (ORT_BEKANNT unten).
-// CLI (gpu-probe.yml): node scripts/lib/urteil-zeile.cjs --log <datei> --rc <exit>
+//   stationsUrteil(...) (die Stations-Probe) die Zeilen der Punkte-Maschine je gerufener Sprosse, dazu probeUrteil.
+// CLI (gpu-probe.yml): node scripts/lib/urteil-zeile.cjs --log <datei> --rc <exit> [--stationen <id>,<id>…]
 //   → EINE Zeile `<U>\t<grund>`, U ∈ GRÜN · BEKANNT · ROT. Gate: gate:apparat Klinge 9 (Selbsttest mit Mutanten).
 "use strict";
 
@@ -74,6 +75,33 @@ function probeUrteil({ text, rc }) {
     return { u: "ROT", grund: rot[0].slice(0, 220) };
 }
 
+// DIE STATIONS-PROBE (`station:karte2.<leiter>#<n>[+…][@<ref>]`, Auftrag Umsatz 24.11.: kein Macher sah das Urteil seiner Station vor
+// der Landung): das Urteil sind die Zeilen der Punkte-Maschine je gerufener Sprosse (punkte.cjs `stationsZeile`: „  GRÜN <id> · <zahl>
+// · …“, „  ROT  <id> · …“, „  OFFEN <id> · <grund> · …“). GRÜN nur, wenn JEDE gerufene Sprosse ihre GRÜN-Zeile trägt UND das Log sonst
+// kein ROT (probeUrteil); eine OFFENE (ungemessen ist kein Vorurteil) oder fehlende Sprosse ist ROT beim Namen. Der Grund nennt jede
+// Sprosse mit Urteil und Zahl — er steht im Kopf des Posts und oben in cloud-post/<zweig>.md.
+const STATION_ZEILE = /^\s*(GRÜN|ROT|OFFEN)\s+(karte2\.[a-z0-9.-]+#\d+) · (.*)$/;
+// Die Zeile einer gerufenen Sprosse urteilt an ihrem Kopf-Wort (ihre Zahl darf „ROT“ als Maß tragen); jede andere Zeile liest probeUrteil.
+function stationsUrteil({ text, rc, ids }) {
+    const je = new Map();
+    const rest = [];
+    for (const z of String(text).split(/\r?\n/)) {
+        const m = STATION_ZEILE.exec(z);
+        if (m && ids.includes(m[2])) je.set(m[2], { u: m[1], zahl: m[3].split(" · ")[0].trim() });
+        else rest.push(z);
+    }
+    const teile = ids.map((id) =>
+        je.has(id) ? `${je.get(id).u} ${id} (${je.get(id).zahl.slice(0, 60)})` : `OHNE ZEILE ${id}`
+    );
+    const alle = ids.length > 0 && ids.every((id) => je.get(id)?.u === "GRÜN");
+    const p = probeUrteil({ text: rest.join("\n"), rc });
+    if (alle && p.u !== "ROT") return { u: "GRÜN", grund: teile.join(" · ") };
+    // vorn steht der Täter des Laufs, wenn die Sprossen ihn nicht tragen: ein ROT neben grünen Sprossen, eine ROTE Zeile daneben,
+    // oder ein Lauf ohne eine einzige Sprossen-Zeile (die Maschine kam nicht an)
+    const vorn = p.u === "ROT" && (alle || !je.size || rotZeilen(rest.join("\n")).length);
+    return { u: "ROT", grund: (vorn ? `${p.grund} — ` : "") + teile.join(" · ") };
+}
+
 // DIE URTEILS-WACHE am Prozess-Ende (einmal je Prozess): jede gedruckte Zeile (console.log/error/warn/info) läuft durch
 // `istRotZeile`; endet der Prozess mit 0 nach einer ROTEN Zeile, steht der Grund auf stderr und der Exit wird 1
 // Ein Selbsttest (`--selftest`/`--selbsttest`) zeigt seine Mutanten ROT und urteilt am eigenen Ende (selbsttestEnde, urteilEnde):
@@ -127,7 +155,7 @@ function mass(art, ok, befund) {
     return true;
 }
 
-module.exports = { istRotZeile, rotZeilen, probeUrteil, wache, mass, alsSelbsttest };
+module.exports = { istRotZeile, rotZeilen, probeUrteil, stationsUrteil, wache, mass, alsSelbsttest };
 
 if (require.main === module) {
     const fs = require("fs");
@@ -139,6 +167,7 @@ if (require.main === module) {
     } catch (e) {
         text = `❌ das Log der Probe ist nicht lesbar: ${e.message}`;
     }
-    const r = probeUrteil({ text, rc: opt("--rc") ?? 1 });
+    const ids = opt("--stationen") ? opt("--stationen").split(",").filter(Boolean) : null;
+    const r = ids ? stationsUrteil({ text, rc: opt("--rc") ?? 1, ids }) : probeUrteil({ text, rc: opt("--rc") ?? 1 });
     console.log(`${r.u}\t${r.grund.replace(/[\t\r\n]+/g, " ")}`);
 }

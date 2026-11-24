@@ -15,12 +15,14 @@
 // schläft fest ab 1 s, ehe sie liest (zweite Schneide, abdruck-am-takt: die Tafel `SCHLAF_REST` nennt jede bleibende Stelle).
 // Sechste Aufgabe (Klinge 6, D2-N1/N2): jede Linse schneidet einen Block über den EINEN Schneider (stammLib.rumpf) und
 // trifft eine Stelle des Stamms über die EINE Engstelle (stammLib.ersetze/treffer), nie am ersten Text-Treffer.
-// Siebte Aufgabe (Klinge 7, w22-gpu-probe, w26-probe-zeit): der Einlass der GPU-Probe lässt nur gate:, zeit:gate: und bild:
-// durch, zeit: nur auf die Band-Geräte; ihr Artefakt trägt den Versuch im Namen, der Post urteilt am jüngsten je Bein; der
+// Siebte Aufgabe (Klinge 7, w22-gpu-probe, w26-probe-zeit, Umsatz 24.11.): der Einlass der GPU-Probe lässt nur gate:, zeit:gate:,
+// bild: und station: (Sprossen der Karte 2 am Ref, gegen eine gestellte Karte; der Durchreicher des Schlosses in bash gefahren)
+// durch, zeit: und station: nur auf die Band-Geräte; ihr Artefakt trägt den Versuch im Namen, der Post urteilt am jüngsten je Bein; der
 // Stempel ohne Inhalt erbt die Probe seines grün geprobten Elters (ERB_FAELLE gegen eine gestellte API, je Bedingung eine Mutante).
 // Achte Aufgabe (Klinge 8, w27-gpu-wahl-heil): jede Linse liest einen GPU-Puffer über die EINE Puffer-Lesung, nie am Rohen.
 // Neunte Aufgabe (Klinge 9, w28-probe-urteil, Lehre 6): eine gedruckte ROTE Zeile ist Urteil — der Kopf der GPU-Probe urteilt Log UND
-// Exit über scripts/lib/urteil-zeile.cjs (BEKANNT heißt nur die Ratsche des Messorts, sichtbar im Kopf), die Wache am
+// Exit über scripts/lib/urteil-zeile.cjs (BEKANNT heißt nur die Ratsche des Messorts, sichtbar im Kopf; die Station je Sprosse,
+// OFFEN ist ROT), die Wache am
 // Prozess-Ende macht aus ❌ bei Exit 0 Exit 1; Mutanten: die alte Zeile `elif RC=0 → GRÜN`, der Kopf ohne Grund, BEKANNT still.
 //
 // Selbst-Test: --selftest beweist alle acht Klingen (kein vakuöses Grün; der Grün-Satz nennt nur die Zahl, die Klingen
@@ -499,8 +501,10 @@ function scanTasten(dateien) {
 // KLINGE 7 (w22-gpu-probe, w26-probe-zeit): DER EINLASS DER GPU-PROBE (.github/workflows/gpu-probe.yml). Die Kopf-Commit-Message
 // trägt GENAU eine Marke `[gpu-probe: <spec>]` auf einer Zeile, <spec> höchstens vier Proben (die Pflicht-Wände eines Wurzel-Schnitts,
 // zug.cjs PROBE_PFLICHT: Bau 2 · Haus 1 · Licht 1 — bis saat-argument drei), Komma-getrennt, jede in einer von
-// DREI Formen: `gate:<npm-skript>` (ein Skript aus package.json), `zeit:gate:<npm-skript>` (dasselbe Skript, nur auf einem
-// Band-Gerät) und `bild:<ort>[@<uhr>]` (ein Messort aus spec/profiband/haushalt.json, die Uhr 0..1) — nie ein freier Befehl: die
+// VIER Formen: `gate:<npm-skript>` (ein Skript aus package.json), `zeit:gate:<npm-skript>` (dasselbe Skript, nur auf einem
+// Band-Gerät), `bild:<ort>[@<uhr>]` (ein Messort aus spec/profiband/haushalt.json, die Uhr 0..1) und
+// `station:karte2.<leiter>#<n>[+…][@<ref>]` (Sprossen der Karte 2 am Ref, nur auf einem Band-Gerät, höchstens so viele, wie der
+// Deckel trägt: (PROBE_DECKEL_S − STATION_GRUND_S) ÷ STATION_JE_S; die Karte am Ref nennt jede) — nie ein freier Befehl: die
 // Probe fährt auf eigenen Rechnern, das Repo ist öffentlich. Der EINE Leser steht im Workflow selbst (Schritt `einlass`, env
 // EINLASS_JS, `node -e "$EINLASS_JS"`; er schreibt `abgewiesen=<grund>` oder `plan=<proben>` + `matrix=<die Arten>`, je EINE
 // Zeile — ein Umbruch schmuggelte sonst einen weiteren Ausgang), und diese Linse FÄHRT genau ihn mit jedem Ruf von PROBE_RUFE
@@ -542,6 +546,26 @@ const PROBE_RUFE = [
     // skripte), weist der Einlass ab, auch als zeit: — gate:kreatur-takt (742 + 937 + 596 s) brach auf der GTX 1050 dreimal stumm am Deckel
     ["[gpu-probe: gate:kreatur-takt]"],
     ["[gpu-probe: zeit:gate:kreatur-takt, bild:wiese]"],
+    // DIE STATION (Umsatz 24.11.): nur auf dem Band-Gerät, neben einem Bild; mehrere Sprossen an einem Zweig der Maschine; eine
+    // Sprosse, die die Karte am Ref nicht trägt, ein Ref ohne Karte, mehr Sprossen als der Deckel trägt, eine Sprosse zweimal, ein
+    // Ref mit „..“ und eine Sprosse ohne Leiter weisen ab
+    [
+        "[gpu-probe: station:karte2.mensch.geist.gespraech#2, bild:wiese]",
+        [
+            { label: "gpu-probe", plan: "bild:wiese gate:webgl-probe" },
+            { label: "gpu-zeit", plan: "station:karte2.mensch.geist.gespraech#2" },
+        ],
+    ],
+    [
+        "[gpu-probe: station:karte2.mensch.geist.gespraech#1+karte2.planet.wasser.eis#2@pm-leser-welle]",
+        [{ label: "gpu-zeit", plan: "station:karte2.mensch.geist.gespraech#1+karte2.planet.wasser.eis#2@pm-leser-welle" }],
+    ],
+    ["[gpu-probe: station:karte2.mensch.geist.gespraech#9]"],
+    ["[gpu-probe: station:karte2.planet.wasser.eis#1@nicht-da]"],
+    [`[gpu-probe: station:${[1, 2, 3, 4, 5, 6, 7].map((n) => `karte2.planet.wasser.eis#${n}`).join("+")}]`],
+    ["[gpu-probe: station:karte2.planet.wasser.eis#1+karte2.planet.wasser.eis#1]"],
+    ["[gpu-probe: station:karte2.planet.wasser.eis#1@a/../koordination]"],
+    ["[gpu-probe: station:gespraech#2]"],
 ];
 
 // Klinge 7, DER STEMPEL ERBT (stempel-erbt-probe, 22.11.): der Einlass fährt hier gegen eine GESTELLTE API (kein Netz im Gate:
@@ -570,8 +594,15 @@ function erbTafel({ kopf = {}, elterRuf = "bild:wiese@0.5, gate:apparat", lauf =
         { id: 900, head_sha: ERB.K, event: "push", status: "in_progress", conclusion: null, created_at: erbZeit(0) },
         { id: 800, head_sha: ERB.E, event: "push", created_at: erbZeit(10), ...lauf },
     ];
-    return { commits, laeufe, fehler };
+    return { commits, laeufe, fehler, karte: { koordination: ERB_KARTE, "pm-leser-welle": ERB_KARTE } };
 }
+// die Karte 2 der gestellten API (DIE STATION): zwei Leitern mit ihren Sprossen, an koordination und am Zweig pm-leser-welle
+const ERB_KARTE = {
+    gruppen: [
+        { kriterien: [{ id: "mensch.geist.gespraech", sprossen: [{ nr: 1 }, { nr: 2 }] }] },
+        { kriterien: [{ id: "planet.wasser.eis", sprossen: [1, 2, 3, 4, 5, 6, 7].map((nr) => ({ nr })) }] },
+    ],
+};
 const ERB_GEERBT = `geerbt=${ERB.E}\nlauf=800\n`;
 const ERB_INHALT = erbTafel({ kopf: { tree: "t2" } });
 const faehrt = (plan) => `matrix=${JSON.stringify({ include: [{ label: "gpu-probe", plan }] })}\n`;
@@ -602,10 +633,23 @@ async function einlassTreiber() {
         require.cache[kopfPfad] = m;
     }
     let T = null;
+    let offen = 0; // Rufe der gestellten API, deren Antwort noch aussteht (die Karte der Station fragt VOR dem Erbe)
     const antwort = (status, body) => ({ ok: status < 300, status, json: async () => body, text: async () => JSON.stringify(body) }); // prettier-ignore
     globalThis.fetch = async (url) => {
+        offen++;
+        try {
+            return await stelle(url);
+        } finally {
+            offen--;
+        }
+    };
+    const stelle = async (url) => {
         const u = new URL(url);
         if (T.fehler) return antwort(T.fehler, { message: "gestellt" });
+        if (/\/contents\/vision\/meisterkarte-2\.json$/.test(u.pathname)) {
+            const k = T.karte?.[u.searchParams.get("ref")];
+            return k ? antwort(200, k) : antwort(404, { message: "Not Found" });
+        }
         const c = /\/git\/commits\/([0-9a-f]{40})$/.exec(u.pathname);
         if (c) return T.commits[c[1]] ? antwort(200, T.commits[c[1]]) : antwort(404, { message: "Not Found" });
         if (!/\/actions\/workflows\/gpu-probe\.yml\/runs$/.test(u.pathname)) return antwort(404, { message: u.pathname });
@@ -625,8 +669,12 @@ async function einlassTreiber() {
         console.error = (...a) => void (r.fehler ||= a.join(" "));
         try {
             new Function("require", process.env.EINLASS_JS_TEXT)(req);
-            if (urteil) await urteil.catch(() => {});
-            await new Promise((s) => setImmediate(s));
+            // bis drei ruhige Runden ohne offenen Ruf: die Frage nach der Karte, dann das Erbe und seine Folgen
+            for (let i = 0, ruhig = 0; i < 400 && ruhig < 3; i++) {
+                if (urteil) await urteil.catch(() => {});
+                await new Promise((s) => setImmediate(s));
+                ruhig = offen ? 0 : ruhig + 1;
+            }
         } catch (e) {
             r.fehler ||= e.message;
             process.exitCode = 1;
@@ -649,8 +697,8 @@ const kopfMutante = (alt, neu) => (z) => {
 let treiberDatei = null;
 const einlassLaeufe = new Map();
 // die Fälle eines Quelltexts (und einer Mutante des Richters) in EINEM Kind, je Prozess einmal: → je Fall { aus, code, fehler }
-function einlassFahren(js, faelle, kopfQuelle = "", deckel = "") {
-    const schluessel = JSON.stringify([js, faelle, kopfQuelle, deckel]);
+function einlassFahren(js, faelle, kopfQuelle = "", deckel = "", station = ["", ""]) {
+    const schluessel = JSON.stringify([js, faelle, kopfQuelle, deckel, station]);
     if (einlassLaeufe.has(schluessel)) return einlassLaeufe.get(schluessel);
     if (!treiberDatei) {
         treiberDatei = path.join(require("os").tmpdir(), `einlass-treiber-${process.pid}.cjs`);
@@ -661,6 +709,7 @@ function einlassFahren(js, faelle, kopfQuelle = "", deckel = "") {
     Object.assign(env, { GITHUB_REPOSITORY: "o/r", GITHUB_API_URL: "https://api.gestellt.invalid", GH_TOKEN: "t" });
     Object.assign(env, { EINLASS_JS_TEXT: js, EINLASS_FAELLE: JSON.stringify(faelle), EINLASS_KOPF_QUELLE: kopfQuelle });
     env.PROBE_DECKEL_S = deckel; // der Deckel je Probe aus dem env der Datei (gpu-probe.yml), nie aus der Hülle des Gates
+    [env.STATION_GRUND_S, env.STATION_JE_S] = station.map((x) => String(x ?? "")); // ebenso die Zahlen der Station
     const r = require("child_process").spawnSync(process.execPath, [treiberDatei], { cwd: ROOT, env, encoding: "utf8" });
     let aus;
     try {
@@ -762,6 +811,49 @@ function blickGesetz(run) {
     return v;
 }
 
+// Klinge 7, DIE STATION IM BEIN (Umsatz 24.11.): der Fall `station:*)` fährt station_probe am Deckel Aufbau + je Sprosse, die
+// Maschine misst in EINEM `run --nur` am Kopf-SHA mit dem Durchreicher als PUNKTE_GPU_LAUF, das Urteil liest der EINE Leser je
+// Sprosse (--stationen) — und der Durchreicher selbst (env DURCH_SH, in bash gefahren gegen eine gestellte Schloss-Bibliothek):
+// hält der Job das Schloss, steht die Zeile, an der schlossNehmen (punkte.cjs) es erkennt, und der Befehl fährt mit
+// GPU_LAUF_HAELT=ci; hält es ein anderer, Exit 75 „SCHLOSS BLOCKIERT von …“, und der Befehl fährt nie
+const durchLaeufe = new Map();
+function stationsBein(P) {
+    const [run, sh] = [P.run || "", P.env?.DURCH_SH || ""];
+    const v = [];
+    if (!/station:\*\)[\s\S]*?DECKEL=\$\(\(STATION_GRUND_S \+ STATION_JE_S \* k\)\)[\s\S]*?lauf station_probe "\$r" "\$SID" "\$G"/.test(run)) // prettier-ignore
+        v.push("Station: das Bein fährt station: nicht am Deckel Aufbau + je Sprosse über station_probe");
+    if (!/PUNKTE_GPU_LAUF="\$DURCH" PUNKTE_WER=probe node "\$M\/meisterkarte-quelle\/punkte\/punkte\.cjs" run --sha "\$GITHUB_SHA" --geraet "\$3" --nur "\$2" --bahnen 1\n/.test(run)) // prettier-ignore
+        v.push("Station: die Maschine misst nicht am Kopf-SHA mit dem Durchreicher (PUNKTE_GPU_LAUF) in EINEM Lauf");
+    if (!run.includes(`printf '%s\\n' "$DURCH_SH" > "$DURCH"`) || !run.includes('export GPU_LAUF_ICH="$ICH"'))
+        v.push("Station: das Bein schreibt den Durchreicher nicht neben die Schloss-Bibliothek, oder er kennt den Halter nicht");
+    if (!run.includes('--rc "$RC"${SID:+ --stationen "$SID"})'))
+        v.push("Station: das Urteil der Station liest nicht je Sprosse (urteil-zeile --stationen)");
+    if (!sh) return [...v, "Station: der Durchreicher (env DURCH_SH) fehlt"];
+    if (!durchLaeufe.has(sh)) {
+        const w = [];
+        durchLaeufe.set(sh, w);
+        const tmp = fs.mkdtempSync(path.join(require("os").tmpdir(), "durch-"));
+        const unix = (p) => p.split(path.sep).join("/");
+        try {
+            fs.writeFileSync(path.join(tmp, "gpu-lauf-ci.sh"), sh);
+            fs.writeFileSync(path.join(tmp, "gpu-schloss.sh"), 'schloss_erster() { printf "%s\\n" "$HALTER"; }\n');
+            const fahr = (halter) =>
+                require("child_process").spawnSync("bash", [unix(path.join(tmp, "gpu-lauf-ci.sh")), "punkte-gtx-sitzung", "bash", "-c", 'echo "BEFEHL HAELT=$GPU_LAUF_HAELT"'], { env: { ...process.env, HALTER: halter, GPU_LAUF_ICH: "ci-runner 7/1 probe", GPU_LAUF_HAELT: "" }, encoding: "utf8" }); // prettier-ignore
+            const [eigen, fremd] = [fahr("ci-runner 7/1 probe"), fahr("hand welt-wache (Claude)")];
+            const zeig = (r) => `Exit ${r.status} · stdout „${String(r.stdout).trim().slice(0, 80)}“ · stderr „${String(r.stderr).trim().slice(0, 80)}“`; // prettier-ignore
+            if (eigen.status !== 0 || !/^gpu-lauf: Schloss punkte-gtx-sitzung /m.test(eigen.stderr) || String(eigen.stdout).trim() !== "BEFEHL HAELT=ci") // prettier-ignore
+                w.push(`Durchreicher „der Job hält das Schloss“: ${zeig(eigen)} — Soll Exit 0, die Zeile „gpu-lauf: Schloss …“ und der Befehl mit GPU_LAUF_HAELT=ci`); // prettier-ignore
+            if (fremd.status !== 75 || !/^SCHLOSS BLOCKIERT von hand welt-wache/m.test(fremd.stdout) || /BEFEHL/.test(fremd.stdout))
+                w.push(`Durchreicher „ein anderer hält es“: ${zeig(fremd)} — Soll Exit 75 „SCHLOSS BLOCKIERT von …“, der Befehl fährt nie`); // prettier-ignore
+        } catch (e) {
+            w.push(`Durchreicher: der Treiber brach (${e.message.slice(0, 160)})`);
+        } finally {
+            fs.rmSync(tmp, { recursive: true, force: true });
+        }
+    }
+    return [...v, ...durchLaeufe.get(sh)];
+}
+
 function probeGesetz(doc) {
     const an = Object.keys(doc.on) + "";
     const v = an === "push" ? [] : [`Auslöser ${an}`];
@@ -786,7 +878,8 @@ function probeGesetz(doc) {
     v.push(...blickGesetz(P?.run || ""));
     if (!P?.run?.includes("${BL:+ — $BL}") || !P.run.includes("${BL:+ · $BL}"))
         v.push("Vorfahrt-Blick: Kopf oder Post nennen den gescheiterten Blick nicht ($BL)");
-    const rufe = einlassFahren(e.env.EINLASS_JS, PROBE_RUFE.map(([m]) => ({ m, tafel: ERB_INHALT })), "", deckel);
+    const station = [doc.env?.STATION_GRUND_S, doc.env?.STATION_JE_S];
+    const rufe = einlassFahren(e.env.EINLASS_JS, PROBE_RUFE.map(([m]) => ({ m, tafel: ERB_INHALT })), "", deckel, station);
     for (const [i, [m, matrix]] of PROBE_RUFE.entries()) {
         const { aus } = rufe[i];
         if (
@@ -797,7 +890,7 @@ function probeGesetz(doc) {
     }
     // DER STEMPEL ERBT: je Fall das Soll (geerbt ohne Matrix · die Matrix des Rufs · ROT ohne Ausgang), dazu das Recht, Läufe zu
     // lesen, und der Post, der „GEERBT von <eltern-sha8>“ schreibt und GRÜN urteilt
-    const erbe = einlassFahren(e.env.EINLASS_JS, ERB_FAELLE.map(([, m, tafel]) => ({ m, tafel })), doc.__kopfQuelle, deckel);
+    const erbe = einlassFahren(e.env.EINLASS_JS, ERB_FAELLE.map(([, m, tafel]) => ({ m, tafel })), doc.__kopfQuelle, deckel, station); // prettier-ignore
     for (const [i, [name, , , soll]] of ERB_FAELLE.entries()) {
         const r = erbe[i];
         const ok = soll === "rot" ? r.code !== 0 && r.aus === "" : r.code === 0 && r.aus === soll;
@@ -821,9 +914,10 @@ function probeGesetz(doc) {
     const post = JSON.stringify(doc.jobs.post.steps);
     if (
         /\$RC"? = 0 \]; then U=GRÜN/.test(lauf) ||
-        !/node scripts\/lib\/urteil-zeile\.cjs --log "\$LOG" --rc "\$RC"\)/.test(lauf)
+        !/node scripts\/lib\/urteil-zeile\.cjs --log "\$LOG" --rc "\$RC"(?:\$\{SID:\+ --stationen "\$SID"\})?\)/.test(lauf)
     )
         v.push("Klinge 9: der Kopf der Probe urteilt am Exit allein — Log UND Exit über scripts/lib/urteil-zeile.cjs");
+    v.push(...stationsBein(P || {}));
     if (!/KOPF="\$KOPF\$\{KOPF:\+ · \}\$p \$U \$d s\$\{GRUND:\+/.test(lauf))
         v.push("Klinge 9: der Kopf nennt den Grund der Probe nicht");
     if (!/ROT wie an main \(bekannt\): \$BEK/.test(post)) v.push("Klinge 9: das BEKANNTE ROT fehlt dem Kopf des Posts");
@@ -922,6 +1016,31 @@ const URTEIL_FAELLE = [
     ],
     ["tier-gang: Etikett-Zeilen bei Exit 1", ETIKETT_LOG.replace(/\n[^\n]*$/, ""), 1, "gtx", "ROT"],
 ];
+// Klinge 9, DIE STATION (stationsUrteil): je [Name, Log der Maschine, Exit, Urteil] an den Sprossen a.b#1 und a.b#2 — GRÜN nur, wenn
+// JEDE ihre GRÜN-Zeile trägt (ihre Zahl darf „ROT“ als Maß nennen) und sonst nichts ROT ist; OFFEN (ungemessen) und eine fehlende
+// Zeile sind ROT beim Namen
+const STATION_IDS = ["karte2.a.b#1", "karte2.a.b#2"];
+const STATION_KOPF = "Punkte-Maschine: 2 Station(en) in 1 Läufen auf gtx am 0123abcd · Sitzung";
+// je [Name, Log, Exit, Urteil, was der Grund nennt]
+const STATION_FAELLE = [
+    ["beide GRÜN, die Zahl nennt ROT als Maß", `${STATION_KOPF}\n  GRÜN karte2.a.b#1 · 3 von 3 · Sitzung · Exit 0 · 1.2 min\n  GRÜN karte2.a.b#2 · ROT-Anteil 0.0 % · Sitzung · Exit 0 · 0.9 min`, 0, "GRÜN", /^GRÜN karte2\.a\.b#1 \(3 von 3\) · GRÜN karte2\.a\.b#2 /], // prettier-ignore
+    ["eine OFFEN", `${STATION_KOPF}\n  GRÜN karte2.a.b#1 · 3 von 3 · Sitzung · Exit 0 · 1.2 min\n  OFFEN karte2.a.b#2 · GPU-Schloss blockiert · Sitzung · ungemessen, \`run --offen\` misst neu`, 0, "ROT", /OFFEN karte2\.a\.b#2 \(GPU-Schloss blockiert\)/], // prettier-ignore
+    ["eine ohne Zeile", `${STATION_KOPF}\n  GRÜN karte2.a.b#1 · 3 von 3 · Sitzung · Exit 0 · 1.2 min`, 0, "ROT", /OHNE ZEILE karte2\.a\.b#2/],
+    ["eine ROT", `${STATION_KOPF}\n  ROT  karte2.a.b#1 · pop 0.4 % · Sitzung · Exit 1 · 1 min\n  GRÜN karte2.a.b#2 · x · Sitzung · Exit 0 · 1 min`, 1, "ROT", /^ROT karte2\.a\.b#1 \(pop 0\.4 %\)/], // prettier-ignore
+    ["beide GRÜN, ein Wurf daneben", `${STATION_KOPF}\n  GRÜN karte2.a.b#1 · x · Sitzung · Exit 0 · 1 min\n  GRÜN karte2.a.b#2 · x · Sitzung · Exit 0 · 1 min\n❌ die Sitzung starb beim Abbau`, 0, "ROT", /^❌ die Sitzung starb beim Abbau — GRÜN karte2\.a\.b#1/], // prettier-ignore
+    ["beide GRÜN, Exit 1", `${STATION_KOPF}\n  GRÜN karte2.a.b#1 · x · Sitzung · Exit 0 · 1 min\n  GRÜN karte2.a.b#2 · x · Sitzung · Exit 0 · 1 min`, 1, "ROT", /^Exit 1 ohne ROTE Zeile/], // prettier-ignore
+    ["die Maschine kam nicht an", "ROT: der Ref pm-x ist nicht holbar", 1, "ROT", /^ROT: der Ref pm-x ist nicht holbar — OHNE ZEILE karte2\.a\.b#1 · OHNE ZEILE karte2\.a\.b#2$/], // prettier-ignore
+];
+function stationsFall(U) {
+    if (typeof U.stationsUrteil !== "function") return ["Klinge 9: der Leser kennt die Station nicht (stationsUrteil)"];
+    const v = [];
+    for (const [name, text, rc, soll, nennt] of STATION_FAELLE) {
+        const r = U.stationsUrteil({ text, rc, ids: STATION_IDS });
+        if (r.u !== soll || !nennt.test(r.grund))
+            v.push(`Klinge 9: Station „${name}“ → ${r.u} (${String(r.grund).slice(0, 160)}) statt ${soll} mit ${nennt}`);
+    }
+    return v;
+}
 // je Leser (der echte, im Selbsttest die Mutante): der Fall a071dc5e urteilt GRÜN — sonst steht die Wolf-Zeile als Grund
 function etikettFall(U) {
     const r = U.probeUrteil({ text: ETIKETT_LOG, rc: 0 });
@@ -941,15 +1060,20 @@ function urteilFaelle() {
         v.push("Klinge 9: die ROTE Zeile einer Station gilt als bekannt");
     // der Aufruf, den gpu-probe.yml fährt (w28-tor-bruch c7d0aad4 strich den CLI-Block: der Leser schwieg, jede Probe wäre ROT
     // „antwortete nicht“): ein Log mit ❌ → `ROT\t…`, die Meldung des Maßes allein → `GRÜN\t`
-    const cli = (z) => {
+    const cli = (z, ...mehr) => {
         const f = require("path").join(require("os").tmpdir(), `urteil-cli-${process.pid}.log`);
         require("fs").writeFileSync(f, z);
-        const o = require("child_process").spawnSync(process.execPath, [require.resolve("./lib/urteil-zeile.cjs"), "--log", f, "--rc", "0"], { encoding: "utf8" }).stdout; // prettier-ignore
+        const o = require("child_process").spawnSync(process.execPath, [require.resolve("./lib/urteil-zeile.cjs"), "--log", f, "--rc", "0", ...mehr], { encoding: "utf8" }).stdout; // prettier-ignore
         require("fs").rmSync(f, { force: true });
         return o;
     };
     if (!/^ROT\t/.test(cli("  ❌ Q kaputt\n")) || !/^GRÜN\t/.test(cli("  MELDET Maß 1 am Lande-Tor — ZEIT ROT x\n")))
         v.push("Klinge 9: der CLI-Leser (node scripts/lib/urteil-zeile.cjs --log …) antwortet nicht `<U>\\t<grund>`");
+    v.push(...stationsFall(U));
+    // der Aufruf der Station (gpu-probe.yml `--stationen "$SID"`): beide GRÜN → GRÜN, eine OFFEN → ROT
+    const sCli = (z) => cli(z, "--stationen", STATION_IDS.join(","));
+    if (!/^GRÜN\t/.test(sCli(STATION_FAELLE[0][1])) || !/^ROT\t.*OFFEN karte2\.a\.b#2/.test(sCli(STATION_FAELLE[1][1])))
+        v.push("Klinge 9: der CLI-Leser urteilt die Station nicht je Sprosse (--stationen)");
     // die Wache am Prozess-Ende: ❌ bei Exit 0 wird 1, ohne ROTE Zeile bleibt 0, im Selbsttest wacht sie nicht
     const w = (z, ...a) =>
         require("child_process").spawnSync(process.execPath, [
@@ -1178,7 +1302,7 @@ function selftest() {
             ["Kopf verschweigt den Blick", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = mutiert(s.run, "${BL:+ — $BL}", ""); }, /Vorfahrt-Blick: Kopf oder Post nennen/], // prettier-ignore
             // Klinge 9: die alte Zeile bis w28-probe-urteil — der Exit allein urteilt, der Kopf ohne Grund, kein BEKANNT im Post
             ["Exit allein", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace(/UG=\$\(node scripts\/lib\/urteil-zeile[\s\S]*?esac\n/, 'elif [ "$RC" = 0 ]; then U=GRÜN; else U=ROT; fi\n'); }, /Klinge 9: der Kopf der Probe urteilt am Exit allein/], // prettier-ignore
-            ["Kopf ohne Grund", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace(/\$\{GRUND:\+ — \$\{GRUND:0:240\}\}/, ""); }, /Klinge 9: der Kopf nennt den Grund/], // prettier-ignore
+            ["Kopf ohne Grund", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = mutiert(s.run, /\$\{GRUND:\+ — \$\{GRUND:0:\$GL\}\}/, ""); }, /Klinge 9: der Kopf nennt den Grund/], // prettier-ignore
             ["bekannt still", (z) => { const s = z.jobs.post.steps.find((x) => /^Post/.test(x.name || "")); s.run = s.run.replace(/ROT wie an main \(bekannt\): \$BEK/, ""); }, /Klinge 9: das BEKANNTE ROT/], // prettier-ignore
             // der Versuch: der Stand bis 20.11. — EIN Name je Bein über alle Versuche, der Post am festen Ordner
             ["Artefakt ohne Versuch", (z) => { z.jobs.probe.steps.find((x) => /upload-artifact/.test(x.uses || "")).with.name = "probe-${{ matrix.label }}"; }, /Versuch: das Artefakt/], // prettier-ignore
@@ -1195,6 +1319,14 @@ function selftest() {
             ["Einlass ohne Erbe (der Stand bis stempel-erbt-probe)", (z) => { const e = z.jobs.einlass.steps.at(-1).env; e.EINLASS_JS = mutiert(e.EINLASS_JS, "if (u.erbt) {", "if (false) {"); }, /Erbe \(1\) leer über grünem Elter/], // prettier-ignore
             ["Einlass ohne Recht auf die Läufe", ["jobs.einlass.permissions"], /Erbe: der Einlass liest keine Läufe/],
             ["Post ohne Erbe", (z) => { const s = z.jobs.post.steps.find((x) => /^Post/.test(x.name || "")); s.run = mutiert(s.run, 'if [ -n "$GEERBT" ]; then', "if false; then"); }, /Erbe: der Post schreibt/], // prettier-ignore
+            // DIE STATION (Umsatz 24.11.): auf dem Probe-Bein, ohne die Karte am Ref, ohne die Grenze des Deckels, ein Durchreicher ohne
+            // Blick auf den Halter, ein Urteil am Exit statt je Sprosse, ein Deckel ohne die Sprossen
+            ["Station auf dem Probe-Bein", (z) => { const e = z.jobs.einlass.steps.at(-1).env; e.EINLASS_JS = mutiert(e.EINLASS_JS, '(p) => p.startsWith("zeit:") || p.startsWith("station:")', '(p) => p.startsWith("zeit:")'); }, /Einlass \[gpu-probe: station:karte2\.mensch\.geist\.gespraech#2, bild:wiese\] → matrix=/], // prettier-ignore
+            ["Station ohne Karte", (z) => { const e = z.jobs.einlass.steps.at(-1).env; e.EINLASS_JS = mutiert(e.EINLASS_JS, "const fremd = ids.find((id) => !karte.has(id));", "const fremd = null;"); }, /Einlass \[gpu-probe: station:karte2\.mensch\.geist\.gespraech#9\] → matrix=/], // prettier-ignore
+            ["Station ohne Grenze", (z) => { const e = z.jobs.einlass.steps.at(-1).env; e.EINLASS_JS = mutiert(e.EINLASS_JS, "ids.length > sMax", "false"); }, /Einlass \[gpu-probe: station:karte2\.planet\.wasser\.eis#1\+karte2\.planet\.wasser\.eis#2\+[^\]]*#7\] → matrix=/], // prettier-ignore
+            ["Durchreicher ohne Halter", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.env.DURCH_SH = mutiert(s.env.DURCH_SH, '[ "$w" != "$GPU_LAUF_ICH" ]', "false"); }, /Durchreicher „ein anderer hält es“/], // prettier-ignore
+            ["Station am Exit", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = mutiert(s.run, '${SID:+ --stationen "$SID"}', ""); }, /Station: das Urteil der Station liest nicht je Sprosse/], // prettier-ignore
+            ["Station am Deckel der Probe", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = mutiert(s.run, "DECKEL=$((STATION_GRUND_S + STATION_JE_S * k))", ":"); }, /Station: das Bein fährt station: nicht am Deckel/], // prettier-ignore
         ],
         probeGesetz,
         { fehler: fails, gruen: require("js-yaml").load(ausDatei(PROBE_DATEI)) }
@@ -1230,6 +1362,14 @@ function selftest() {
             `Klinge 9: die Mutante ohne die Etikett-Ausnahme bleibt GRÜN oder ungenannt (${mRot.join(" · ") || "Anker fehlt"})`
         );
     else console.log(`  ✅ Selbsttest „ohne Etikett-Ausnahme" → rot: ${mRot[0]}`);
+    // Klinge 9, die Mutante der Station: OFFEN zählt wie GRÜN (ungemessen als Vorurteil) — der Fall „eine OFFEN“ nennt sie beim Namen
+    const offenGruen = lesQ.replace('ids.every((id) => je.get(id)?.u === "GRÜN")', 'ids.every((id) => je.get(id)?.u !== "ROT")');
+    const sMutante = new module.constructor(lesPfad);
+    if (offenGruen !== lesQ) sMutante._compile(offenGruen, lesPfad);
+    const sRot = offenGruen !== lesQ ? stationsFall(sMutante.exports) : [];
+    if (sRot.length !== 2 || !sRot.some((z) => /Station „eine OFFEN“ → GRÜN/.test(z)) || stationsFall(require(lesPfad)).length)
+        fails.push(`Klinge 9: die Mutante „OFFEN wie GRÜN“ bleibt GRÜN oder ungenannt (${sRot.join(" · ") || "Anker fehlt"})`);
+    else console.log(`  ✅ Selbsttest „OFFEN wie GRÜN" → rot: ${sRot[0]}`);
     urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle neun Klingen feuern");
 }
 
