@@ -362,6 +362,24 @@
             ]
         },
         {
+            "id": "ort-zeichen",
+            "titel": "Der Ort weist sich aus (ort-ausstattung, Leitern mensch.kultur.schrift und bildkunst): die volle Stadt wie stadt-voll — am Anlauf sagt der Spieler „dorf 7 300“, die Metropole steht am Anker —, dann steht er vor der Tür-Wand des Sonderbaus nächst dem Platz, die Schild und Hauszeichen trägt, und blickt auf beide (`ortPose` „zeichen“, `_ortPose`: aus dem Plan, hier steht keine Zahl von ihr); das Bild zeigt sie (`imBild` f:schild, f:relief).",
+            "ortPose": "zeichen",
+            "anlauf": [400, 400],
+            "imBild": { "bauSatz": 0.02, "f:(schild|relief)": 0.002 },
+            "dorfZug": true,
+            "ortTakt": [],
+            "gruendung": { "wort": "dorf 7 300", "anker": [836.0867207453832, 438.24283067541955] },
+            "bahn": [
+                [836.2, 438.5],
+                [854.1, 436.4],
+                [872, 434.5],
+                [889.6, 431.2],
+                [895.4, 429.5],
+                [927.2, 420.9]
+            ]
+        },
+        {
             "id": "hochhaus-dach",
             "titel": "Das Hochhaus-Dach (der Stadt-Gipfel): die Metropole der Epoche moderne aus dem Rang-Gesetz (Zelle 2,−14, 216 Häuser, Türme bis 23 Geschosse); der Spieler schwingt am Platz ein und steht dann auf dem Dach des höchsten Turms (Klinker, 21 Geschosse), der Blick über die Türme zum Platz.",
             "spieler": [
@@ -409,7 +427,8 @@
         "bewohner": { "luma": [10, 245] },
         "portal-membran": { "luma": [10, 250] },
         "fern-ring": { "luma": [15, 245] },
-        "f:(kompakt_fwd|limousine|suv|transporter|gt|supersport)": { "luma": [5, 250] }
+        "f:(kompakt_fwd|limousine|suv|transporter|gt|supersport)": { "luma": [5, 250] },
+        "f:(schild|relief)": { "luma": [5, 250] }
     },
     "klassen": [
         {

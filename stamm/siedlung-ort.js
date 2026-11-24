@@ -982,6 +982,45 @@ class AnazhRealm_siedlung_ort {
                 ),
                 { warten: true }
             ); // der nächste Takt fährt die Wagen weiter
+        // DIE REGEL „zeichen" (ort-ausstattung, Leitern mensch.kultur.schrift · bildkunst: der Ort weist sich aus): der Sonderbau
+        // nächst dem Stand, dessen Tür-Wand im Plan ein Schild trägt (`gegenstaende` art schild mit `slot`, sein Hauszeichen, wo
+        // die Rolle eines hat) — das Auge steht je `ZEICHEN_POSE.abstandM` vor der Mitte der Stücke auf der Normalen ihrer Wand
+        // (von der Mitte des Grundrisses durch die Stücke), außer jeder Spur, jedem Grundriss, Baum, Stand, Brunnen, jeder Laterne
+        // und dem Markt (`steht`), die Sichtlinie quert keinen fremden Grundriss; der Blick auf die Stücke. Aus dem Plan, nie eine
+        // Zahl der Spec; ohne freies Schild bricht sie beim Namen
+        if (regel === "zeichen") {
+            const G = p.gegenstaende || [];
+            const tafeln = G.filter((q) => q && q.art === "schild" && Number.isInteger(q.slot) && p.slots[q.slot]?.obb)
+                .map((q) => {
+                    const z = G.find((w) => w && w.art === "relief" && w.slot === q.slot);
+                    const m = z ? { x: (q.x + z.x) / 2, z: (q.z + z.z) / 2 } : { x: q.x, z: q.z };
+                    return { slot: q.slot, x: S.ox + m.x, z: S.oz + m.z, o: p.slots[q.slot].obb, zeichen: !!z };
+                })
+                .sort(
+                    (a, b) =>
+                        b.zeichen - a.zeichen || Math.hypot(a.x - M.x, a.z - M.z) - Math.hypot(b.x - M.x, b.z - M.z)
+                );
+            const inObb = (m, { x, z, obb: o }) => { const [c, s, dx, dz] = [Math.cos(o.phi || 0), Math.sin(o.phi || 0), m.x - x, m.z - z]; return Math.abs(dx * c - dz * s) < o.ex && Math.abs(dx * s + dz * c) < o.ez; }; // prettier-ignore
+            const quert = (q, e, eigen) => [...Array(19)].some((_, i) => { const t = (i + 1) / 20, m = { x: q.x + (e.x - q.x) * t, z: q.z + (e.z - q.z) * t }; return bau.some((b) => b.obb !== eigen && inObb(m, b)); }); // prettier-ignore
+            for (const T of tafeln) {
+                const [nx, nz] = [T.x - S.ox - T.o.cx, T.z - S.oz - T.o.cz];
+                const l = Math.hypot(nx, nz) || 1;
+                for (const a of AnazhRealm.ZEICHEN_POSE.abstandM) {
+                    const q = { x: T.x + (nx / l) * a, z: T.z + (nz / l) * a };
+                    if (this._verkehrAufSpur(S, q.x, q.z) || steht(q) || quert(q, T, T.o)) continue;
+                    return {
+                        x: q.x,
+                        z: q.z,
+                        gier: this._blickGierZu(T.x - q.x, T.z - q.z),
+                        ziel: { x: T.x, z: T.z },
+                        slot: T.slot,
+                    };
+                }
+            }
+            throw new Error(
+                `_ortPose: kein Schild mit freiem Stand vor seiner Wand (${tafeln.length} Schilde der Siedlung ${S.key || "?"})`
+            );
+        }
         // die Bäume, Stände und Brunnen des Plans (ein Marktstand 8 m vor dem Auge verdeckte das Gasthaus der Stadt) und DER
         // BESTAND DER WELT um den Platz, soweit er Natur ist (`_istNatur`): der wilde Wurf steht in keinem Plan. Er ist erst
         // gebaut, wenn der Spieler am Platz steht: die Probe fragt den Blick dort ein zweites Mal. Die Hindernisse sind Kreise
@@ -3951,3 +3990,6 @@ AnazhRealm.SIEDLUNG_KALT_SATZ = Object.freeze(["chat.befehl.dorf.kalt"]); // ein
 // bleibt `SICHT_GELAENDE_M` unter ihm — das Maß, um das der gebaute Boden vom Gesetz abweicht (Surface-Nets ±0,2 m, Lehre 22)
 AnazhRealm.SICHT_SCHRITT_M = 0.5;
 AnazhRealm.SICHT_GELAENDE_M = 0.25;
+// DER STAND VOR DEM SCHILD (`_ortPose` „zeichen"): die Abstände vor der Wand, der erste freie gilt — 8 m zuerst (näher als 8 m
+// füllte eine Fassade 24–36 % des Bilds als Vordergrund, die Regel „trasse"), dann nach und nach weiter weg und wieder näher
+AnazhRealm.ZEICHEN_POSE = Object.freeze({ abstandM: Object.freeze([8, 7, 9, 6, 10, 5, 11, 12]) });
