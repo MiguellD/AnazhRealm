@@ -2379,3 +2379,4 @@ omen-gtx-gtx-eba9bf8f-w172429-1-eba9bf8f ROT 0 GRÜN / 2 ROT / 0 UNGEMESSEN · R
 2026-11-24 17:47 RUNDE 23 ALARM gtx: ohne Fortschritt seit 16 min (halt, 3/238, Station karte2.mensch.kultur.schrift#1, Kopf eba9bf8f) — gesehen von gtx (landung-dienst)
 2026-11-24 17:47 RUNDE 23 ALARM gtx: OMEN: 4 Messungen ungepusht seit 04:58 — halt 3/238, Station karte2.mensch.kultur.schrift#1, Kopf eba9bf8f; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
 2026-11-24 17:47 landung Runde 23 am eba9bf8f: misst 76 von 238 Stationen (vorn; 3 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+2026-11-24 17:51 RUNDE 23 ALARM radeon: ohne Fortschritt seit 16 min (laeuft, 375/79, Station -, Kopf eba9bf8f) — gesehen von gtx (landung-dienst)
