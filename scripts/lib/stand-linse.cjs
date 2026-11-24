@@ -680,6 +680,17 @@ function druckUrteil(D, v) {
     if (!D.ohr || !(D.ohr.dp > 0) || !(D.ohr.dauer > 0)) v.push("DRUCK-OHR: das Ohr hörte die Welle nicht (`_substanzKlang` „knall“ mit Überdruck und Dauer am Ort des Hörers)");
     // (Lehre 17: `null <= x` ist wahr — ein fehlender Wert ist ROT, nie still grün)
     if (D.verzug == null || !(D.verzug <= DRUCK_VERZUG_S)) v.push(`DRUCK-VERZUG: die letzte Frist fiel ${D.verzug} s nach ihrer Ankunft (Soll ≤ ${DRUCK_VERZUG_S} s) — der Takt hält die Grenze seines Rückstands nicht (\`_tickDruck\`, \`DRUCK.verzugS\`)`);
+    // DAS BUDGET DES TAKTS IN BRÜCHEN (scherbe-liegt): je Bild höchstens `DRUCK.bruecheJeBild` Werke über dem Soll des Rückstands —
+    // an der Uhr des Läufers (`brueche`) und unter stehender Uhr (`uhr`: drei Böcke im Kreis, eine Welle von Hand): bis scherbe-liegt
+    // fielen Fristen, bis `performance.now()` 4 ms über dem Anfang des Takts stand, das Bild eines Bruchs hing am Läufer (DRUCK-SCHLAF
+    // an ort-ausstattung 4 rot in 2 von 3 Versuchen an gleichen Bytes)
+    const [BR, BU] = [D.brueche, D.uhr];
+    if (!BR || !BU) v.push("LEER: die Probe maß das Budget des Takts nicht (je Takt der Welle die fälligen und die gefallenen Werke)");
+    else {
+        if (!(BR.ueber <= 0)) v.push(`DRUCK-BUDGET: ein Bild der Welle trug ${BR.ueber} Brüche über dem Gesetz (\`DRUCK.bruecheJeBild\` und das Soll des Rückstands, \`_tickDruck\`)`);
+        if (!(BU.zugleich >= 2)) v.push(`BLIND: unter stehender Uhr sah kein Takt zwei fällige Werke (${BU.zugleich}) — die drei Böcke der Welle von Hand standen nicht zugleich an`);
+        else if (!(BU.ueber <= 0)) v.push(`DRUCK-WANDUHR: unter stehender Uhr trug ein Bild ${BU.ueber} Brüche über dem Gesetz — das Budget des Takts liest die Wanduhr, das Bild eines Bruchs hängt am Läufer (\`_tickDruck\`)`);
+    }
     if (!(D.scherben > 0)) v.push("LEER: die Welle der Probe brach keine Scheibe — keine Scherbe, deren Schlaf die Linse misst");
     else if (D.schlafS == null || !(D.schlafS <= DRUCK_SCHLAF_S)) v.push(`DRUCK-SCHLAF: die letzte der ${D.scherben} Scherben schlief ${D.schlafS == null ? `nie (${D.wach} liegen nach 10 s wach)` : `nach ${D.schlafS} s`} (Soll ≤ ${DRUCK_SCHLAF_S} s)`);
     const ruhe = D.nachher && D.nachher.sims.druck ? D.nachher.sims.druck.summe : NaN;

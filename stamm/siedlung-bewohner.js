@@ -1136,9 +1136,9 @@ class AnazhRealm_siedlung_bewohner {
             const satz = {
                     sied: S,
                     heim: sl.seed >>> 0, rolle, beruf, same, epoche,
-                    orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null },
+                    orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null, spiel: null },
                     seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
-                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, satzOrt: u,
+                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, gangTempo: u, satzOrt: u,
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
                     blick: u, begegnet: u, kopfY: u,
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
@@ -1884,6 +1884,7 @@ class AnazhRealm_siedlung_bewohner {
                 S.liste.forEach((b, i) => Object.assign(b, { nr: i, ruht: false, rk: undefined, uhr: 0, uhrAb: 0 }));
                 for (const b of S.liste) this._bewohnerRasterLage(S, b);
             }
+            this._spielTag(S, stunde); // das Spiel des Abends: das Programm des Tags, der Punkt des Geschehens dieser Stunde
             const koepfe = (S.koepfe = this._bewohnerKoepfe || (this._bewohnerKoepfe = []));
             koepfe.length = 0;
             for (const b of S.aktiv) koepfe.push(b);
@@ -2150,6 +2151,22 @@ class AnazhRealm_siedlung_bewohner {
                 }
                 const dK = b.uhrAb === S.taktUhr ? delta : S.taktUhr + delta - b.uhrAb; // seine Zeit seit seinem letzten Takt
                 [b.uhr, b.animDt, b.uhrAb] = [b.uhr + dK, (b.animDt || 0) + dK, S.taktUhr + delta];
+                // DER ZUSCHAUER FERN WENDET DEN LEIB (koerper `spielGeschehen`, `_spielTag`): wem das Auge keinen Kopf zeigt (jenseits
+                // der Nah-Wahl), der wendet sich mit dem Leib dem Geschehen zu, sobald es mehr als `fernBlickRad` neben seinem Blick
+                // liegt — nah trägt es der Kopf (`_bewohnerKopf`)
+                if (
+                    !istNah &&
+                    b.drehen == null &&
+                    b.da &&
+                    !b.weg &&
+                    !b.drinnen &&
+                    b.akt === "zuschauen" &&
+                    S.spielJetzt
+                ) {
+                    const a = Math.atan2(S.spielJetzt.x - g.position.x, S.spielJetzt.z - g.position.z);
+                    const dw = a - g.rotation.y - Math.PI * 2 * Math.round((a - g.rotation.y) / (Math.PI * 2));
+                    if (Math.abs(dw) > BW.fernBlickRad) b.drehen = a;
+                }
                 // DER BLICK AM ZIEL: wer steht, wendet sich seinem Ziel zu (`_bewohnerDrehen`)
                 if (b.drehen != null && this._bewohnerDrehen(b, delta, echt, S)) {
                     bewegt.push(b);
@@ -2385,8 +2402,12 @@ class AnazhRealm_siedlung_bewohner {
             !b.drinnen &&
             (b.d2 < (BW.begegnungM + (war ? BW.nahHystM : 0)) ** 2 || (b.platz && b.platz === this._bewohnerSpieler));
         let soll = 0;
-        if (b.begegnet) {
-            const a = Math.atan2(p.x - g.position.x, p.z - g.position.z);
+        // DER ZUSCHAUER FOLGT DEM GESCHEHEN (koerper `spielGeschehen`, `_spielTag`): wer im Ring steht und keinem Spieler begegnet,
+        // wendet den Kopf dem Punkt zu, an dem der Gang gerade läuft — der Erste auf der Bahn, die Ringer —, jenseits mit dem Leib
+        const sp = !b.begegnet && b.da && b.akt === "zuschauen" ? b.sied.spielJetzt : null;
+        const auf = b.begegnet ? p : sp;
+        if (auf) {
+            const a = Math.atan2(auf.x - g.position.x, auf.z - g.position.z);
             let da = a - g.rotation.y;
             da -= Math.PI * 2 * Math.round(da / (Math.PI * 2));
             const voll = BW.kopfMaxRad + BW.rumpfMaxRad;
@@ -2484,6 +2505,77 @@ class AnazhRealm_siedlung_bewohner {
         this._bewohnerZiel(b, stunde, true);
         this._bewohnerWecken(S, b);
         return true;
+    }
+
+    // DAS SPIEL DES ABENDS (koerper SPIEL_GESETZ, Meisterkarte 2 mensch.sport.regeln#1 · mannschaft#1 · arena#1 · geistspiel#1): je
+    // Tag der Welt EIN Programm für den Platz der Siedlung (`_spielProgramm`), je Takt der Punkt des Geschehens seiner Stunde
+    // (koerper `spielGeschehen`, in der Welt: `S.spielJetzt`) — der Kopf des Zuschauers folgt ihm (`_bewohnerKopf`). Der Wirt
+    // rechnet keine Regel: Teilnehmer, Gänge, Sieger und Stände sind das Gesetz des Kerns, er stellt sie auf den Boden.
+    _spielTag(S, stunde) {
+        const KC = window.__koerperCore;
+        if (!KC || typeof KC.spielProgramm !== "function") return AnazhRealm._kernPflichtBruch("koerper:spielProgramm");
+        const tag = Math.floor(this._weltTag());
+        const sek = this._bewohnerStundeSek();
+        if (S.spielTag !== tag || S.spielSek !== sek || S.spielListe !== S.liste) [S.spielTag, S.spielSek, S.spielListe, S.spiel] = [tag, sek, S.liste, this._spielProgramm(S, tag, sek)]; // prettier-ignore
+        const g = S.spiel && KC.spielGeschehen(S.spiel.programm, stunde, sek);
+        S.spielJetzt = g ? S.spiel.welt(g.x, g.z) : null;
+    }
+    // DAS PROGRAMM DES TAGS an der Siedlung S: das Feld ist der Platz ihres Plans (seine lange Achse, `randM` und der Ring der Zuschauer
+    // innerhalb seines Rechtecks), die Gäste sind, wer seinen Abend auf ihm hat (die Bindung `abend`; wer einen Posten hält, steht
+    // an ihm), ihre Leiber und ihre Übung tragen sie aus dem Satz (`koennen`, `genom`, der Lebenslauf `uebung`). Jeder Auftritt des
+    // Kerns wird ein Stand in der Welt — wo der Grund ihn nicht trägt (ein Bau, kein Land), fällt er, und der Gast bleibt an seinem
+    // Ort des Abends (auch im Stück des Platzes: dem Tritt eines Marktstands, dem Kreis eines Brunnens, fachwerk `imPlatzStueck`).
+    // Liefert { programm, welt(u, w), wer, gaeste, feld } oder null (kein Platz, zu wenige Gäste, ein Feld ohne Lauf) — die Gäste und
+    // das Feld trägt es mit, das Programm eines anderen Tags ist dieselbe Funktion des Kerns (die Station der Karte liest es so).
+    _spielProgramm(S, tag, sek) {
+        const KC = window.__koerperCore;
+        const pz = S.plan.platz;
+        const L0 = S.liste || [];
+        for (const b of L0) b.orte.spiel = null;
+        if (!pz || !L0.length) return null;
+        const F = KC.SPIEL_GESETZ.feld;
+        const lang = pz.ex >= pz.ez;
+        const rand = F.randM + F.ringM;
+        const [L, B] = [2 * Math.max(pz.ex, pz.ez) - 2 * rand, Math.min(F.breiteMaxM, 2 * Math.min(pz.ex, pz.ez) - 2 * rand)]; // prettier-ignore
+        const [pc, ps, mx, mz] = [Math.cos(pz.phi || 0), Math.sin(pz.phi || 0), S.ox + pz.cx, S.oz + pz.cz];
+        // das Feld (u längs, w quer) im Rechteck des Platzes (wie `platzStand`) und in der Welt
+        const welt = (u, w) => {
+            const [lx, lz] = lang ? [u, w] : [w, u];
+            return { x: mx + lx * pc + lz * ps, z: mz - lx * ps + lz * pc };
+        };
+        const o0 = welt(0, 0);
+        const blick = (b) => ((q) => Math.atan2(q.x - o0.x, q.z - o0.z))(welt(Math.sin(b), Math.cos(b)));
+        const R = Math.max(pz.ex, pz.ez) + AnazhRealm.BEWOHNER.platzRandM;
+        const RO = KC.TAGES_GESETZ.rollen;
+        const [gaeste, wer] = [[], []];
+        for (const b of L0) {
+            const a = b.orte.abend;
+            if (!a || !b.koennen || !b.genom || (RO[b.rolle] && RO[b.rolle].regenfest)) continue;
+            if (Math.hypot(a.x - mx, a.z - mz) > R) continue;
+            const d = this._dialsAusGenom(b.genom);
+            const P = KC.labProportionen(d);
+            const U = b.uebung;
+            gaeste.push({ same: b.same, rolle: b.rolle, mann: d.gender >= 0.5, alterJ: b.alter, masse: d.mass, beinM: (P.thighLen + P.calfLen) * KC.leibMassstab(), kraft: b.koennen.kraft, kampf: U.kampf.koennen, brett: U.brett.koennen, orte: b.orte }); // prettier-ignore
+            wer.push(b);
+        }
+        const programm = KC.spielProgramm(S.plan.seed >>> 0, tag, gaeste, { L, B }, sek);
+        if (!programm) return null;
+        const FC = window.__fachwerkCore;
+        const traegt = (q) =>
+            this._landAt(q.x, q.z) &&
+            !FC.imPlatzStueck(S.plan, q.x - S.ox, q.z - S.oz, AnazhRealm.BEWOHNER.saumM, false) &&
+            !["haus", "bau"].includes(this._imGrundriss(q.x, q.z, 0.5));
+        programm.auftritte.forEach((A, i) => {
+            const auf = [];
+            for (const e of A) {
+                const q = welt(e.x, e.z);
+                if (traegt(q)) auf.push({ von: e.von, bis: e.bis, akt: e.akt, x: q.x, z: q.z, blick: blick(e.blick), tempo: e.tempo || 0 }); // prettier-ignore
+            }
+            if (!auf.length) return;
+            wer[i].orte.spiel = auf;
+            this._bewohnerWecken(S, wer[i]);
+        });
+        return { programm, welt, wer, gaeste, feld: { L, B } };
     }
 
     // DER ORT DES WEICHENS (`_bewohnerWeichen`), ohne ihn zu setzen: wohin der Zeuge b vor der Tat am Ort o wiche — `{ ort, soll }`
@@ -2740,6 +2832,14 @@ class AnazhRealm_siedlung_bewohner {
         const ziel = soll.ziel;
         if (tuer && b.weichen && ziel !== b.weichen.ort) b.weichen = null; // sein Tag holt ihn zurück: das Weichen endet
         b.akt = soll.akt;
+        // DER LÄUFER LÄUFT (koerper SPIEL_GESETZ): auf dem Weg ins Ziel seines Laufs trägt ihn das Tempo seiner Leistung (der Auftritt
+        // `tempo`) — geliehen: danach geht er das Tempo seines Gangs, wie es vor dem Lauf war (`gangTempo`); das Tempo des Gangs setzt
+        // allein die Geburt (`_bewohnerGeburt`). Bis sport-regeln 3 setzte jedes Ziel das Tempo neu aus dem Gesetz, ein Zwilling der
+        // Geburt: der Täter bewohner-koennen der Kreatur-Linse (der Stand vor dem Gesetz) blieb unsichtbar
+        const lauf = !!(ziel && ziel.tempo > 0);
+        if (lauf && b.gangTempo == null) b.gangTempo = b.tempo;
+        if (lauf) b.tempo = ziel.tempo;
+        else if (b.gangTempo != null) [b.tempo, b.gangTempo] = [b.gangTempo, null];
         if (ziel === b.ziel) return false;
         // DIE LAGE DES TAGS (mensch.K2 Staffel 2: sein Tag ist f(Same, t)): der neue Weg beginnt, wo ihn die Ankunft begänne
         // (`_bewohnerAnkunft`, derselbe Weg ohne Zuschauer) — an der Wende `w` (der Takt bemerkt sie bis planH später) so weit
@@ -4509,8 +4609,10 @@ AnazhRealm.LEBENSLAUF = Object.freeze({
         amateurH: 2000,
         ueberJ: 15,
         alpha: 0.4,
-        kuenste: Object.freeze(["handwerk", "tanz", "kampf"]),
-        ab: Object.freeze({ handwerk: 17, tanz: 5, kampf: 15 }), // die Lehre (unten) · die Übung der Kindheit · die Waffenpflicht ab 15 (Winchester)
+        kuenste: Object.freeze(["handwerk", "tanz", "kampf", "brett"]),
+        // die Lehre (unten) · die Übung der Kindheit · die Waffenpflicht ab 15 (Winchester) · das Brett ab 7 (ANGENOMMEN: das Alter, in
+        // dem ein Kind die Regel eines Brettspiels trägt — keine Quelle hier; das Brett ist Kunst der Liebhaber, nie ein Werk)
+        ab: Object.freeze({ handwerk: 17, tanz: 5, kampf: 15, brett: 7 }),
     }),
     // Statute of Artificers 1563: die Lehre dauert sieben Jahre und endet nicht vor dem 24. Lebensjahr
     ziel: Object.freeze({ lehreJ: 7, bisJ: 24 }),
@@ -4631,6 +4733,9 @@ AnazhRealm.BEWOHNER = Object.freeze({
     kopfMaxRad: 1.2,
     rumpfMaxRad: 0.45,
     kopfRadS: 4.5,
+    // der Zuschauer jenseits der Nah-Wahl wendet den Leib, liegt das Geschehen mehr als 15° neben seinem Blick (ANGENOMMEN: die Hälfte
+    // der ± 30°, in denen ein Blick dem Geschehen folgt — keine Quelle; `_tickBewohner`)
+    fernBlickRad: Math.PI / 12,
     spielerRaumM: 0.5,
     zeugeM: 25,
     // die Ringe der Zellen des Lebens-Rasters (LIFE_FIELD.cell), über die der Fliehende den nächsten Ort ohne Gefahr sucht
