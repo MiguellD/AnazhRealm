@@ -1260,6 +1260,10 @@ async function lebenBuehnen() {
                 (heimVon.get("haus#" + b.heim) || {}).rolle || "wohnhaus",
             ];
             const wagen = !!b.amSteuer || (!!b.wagen && !o);
+            // DER KRANKE IST DAHEIM (mensch.menge.seuche#1): sein Lebenslauf (`b.krank`, am Tag der Prozesse) setzt ihn zu jeder
+            // Stunde vor seine Tür oder hinein — sein Ort ist sein Haus; der Posten hält seine Schicht und misst wie jeder. Bis
+            // bewohner-satz las die Probe den Satz nicht: die Kranken des Tags zählten ohne Ziel (Stadt 10 Uhr 3 von 145, 3c9bed7f)
+            if (b.krank && eigen) return true;
             const werk = wagen || (!!o && o.rolle !== "wohnhaus" && (hr === "wohnhaus" || !o.haus || o.rolle === hr));
             if (h === 6 || h === 23) return (eigen && drinnen) || wagen || (!!o && o.rolle !== "wohnhaus");
             return h === 10 ? werk : h === 13 ? werk || (eigen && drinnen) : !!o || wagen;
@@ -1286,6 +1290,35 @@ async function lebenBuehnen() {
             RG.quer0M + RG.alle / RG.jeStufe - 1
         );
         const standVon = (b, ziel) => Object.values(b.orte).find((q) => q && q.anker && ab(q, ziel) < 0.05);
+        // DER ORT EINES STANDS AM PLATZ IST DER PLATZ (bewohner-satz): der Stand, den der Wirt dem Platz gibt (`platzStand`), trägt
+        // dessen Mitte als Marke (`anker`); die Schranke ist sein Rand (`platzRandM` + 2 m, wie `ortVon`), jenseits steht er „fern
+        // von seiner Marke" (Täter zielplan-platzfern). Bis hier las die Probe nur die Marke der Tür: der Stand am Rand des Platzes
+        // zählte als „an der Kirche" (die nächste Tür mit Rolle bis 20 m) — Stadt 10 Uhr 1 von 145 (3c9bed7f), mit dem eigenen
+        // Stand des Spiels jedes Kinds 6 von 145
+        const mitte = pz && { x: S.ox + pz.cx, z: S.oz + pz.cz };
+        const platzRandM = A.BEWOHNER.platzRandM + 2;
+        const vomPlatz = (p) => {
+            const [c, sn, dx, dz] = [Math.cos(pz.phi || 0), Math.sin(pz.phi || 0), p.x - mitte.x, p.z - mitte.z];
+            return Math.hypot(Math.max(0, Math.abs(dx * c - dz * sn) - pz.ex), Math.max(0, Math.abs(dx * sn + dz * c) - pz.ez));
+        };
+        // Täter (Selbsttest): der erste Stand am Platz, der dem Werk eines Gesunden gehört, steht mit seinem Ursprung (`ur`) jenseits
+        // des Rands — auf dem ersten Punkt, den der Wirt dort trägt (keine Wand, keine Spur: sonst geht der Mensch ohne ihn,
+        // `_bewohnerOhneStand`, und der Täter fiele an der Wache des Wirts statt an der Linse)
+        if (taeter === "zielplan-platzfern") {
+            const st = S.liste.map((b) => !b.krank && b.orte.werk).find((q) => q && q.anker && mitte && ab(q.anker, mitte) < 0.05); // prettier-ignore
+            const frei = (p) => !r._bewohnerWand(p, p, true, A.BEWOHNER.standRandM) && !(S.verkehr && r._verkehrAufSpur(S, p.x, p.z)); // prettier-ignore
+            const R = Math.hypot(pz.ex, pz.ez) + platzRandM;
+            let p = null;
+            for (let d = 8; !p && d <= 48; d += 4)
+                for (let i = 0; !p && i < 16; i++) {
+                    const q = { x: mitte.x + Math.cos((i * Math.PI) / 8) * (R + d), z: mitte.z + Math.sin((i * Math.PI) / 8) * (R + d) };
+                    if (frei(q)) p = q;
+                }
+            const alt = { x: st.x, z: st.z, ur: st.ur && { x: st.ur.x, z: st.ur.z } };
+            Object.assign(st, { x: p.x, z: p.z });
+            if (st.ur) Object.assign(st.ur, { x: p.x, z: p.z });
+            restore.push(() => (Object.assign(st, { x: alt.x, z: alt.z }), alt.ur && Object.assign(st.ur, alt.ur)));
+        }
         // Täter (Selbsttest): die Marke eines Werk-Stands nennt die fernste Tür der Stadt, er steht, wo er stand
         if (taeter === "zielplan-fremd") {
             const st = S.liste.map((b) => b.orte.werk).find((q) => q && q.anker);
@@ -1337,13 +1370,20 @@ async function lebenBuehnen() {
                 const tuer = st && tueren.find((q) => ab(q, st.anker) < 0.05);
                 const fernM = tuer ? ab(st.ur || st, tuer.ein) : 0;
                 if (fernM > ringM && !fern.some((f) => f.st === st)) fern.push({ st, text: `${wer(b)}: ${q3(fernM)} m von ${tuer.k}` }); // prettier-ignore
+                const amPlatz = !tuer && !!st && !!mitte && ab(st.anker, mitte) < 0.05;
+                const platzM = amPlatz ? vomPlatz(st.ur || st) : 0;
+                if (platzM > platzRandM && !fern.some((f) => f.st === st)) fern.push({ st, text: `${wer(b)}: ${q3(platzM)} m vom Platz` }); // prettier-ignore
                 // (der Stand neben dem eigenen Wagen ist der Ort des Fahrers, `_verkehrAnlegen` — kein Haus daneben; am Steuer
                 // ist es der Wagen selbst, `_bewohnerSoll`: kein Haus, an dem er vorbeifährt)
                 const o = tuer
                     ? { k: tuer.k, rolle: tuer.rolle, haus: true }
-                    : b.wagen && (ziel === b.orte.werk || ziel === (b.wagen.entry && b.wagen.entry.position))
-                      ? null
-                      : ortVon(ziel, "haus#" + b.heim);
+                    : amPlatz
+                      ? platzM <= platzRandM
+                          ? { k: "platz", rolle: "platz" }
+                          : null
+                      : b.wagen && (ziel === b.orte.werk || ziel === (b.wagen.entry && b.wagen.entry.position))
+                        ? null
+                        : ortVon(ziel, "haus#" + b.heim);
                 const dort = b.amSteuer || (drinnen ? !!b.drinnen : !b.weg && ab(b.leib.position, ziel) < 1.5);
                 // voran: wer geht, dessen Rest-Weg schrumpfte in den 5 s (oder er ging eben los, wartet in der Tür)
                 const voran = !!b.weg && (rest0.get(b) == null || b.wegRest < rest0.get(b) - 0.5 || b.hinaus);
@@ -1513,6 +1553,7 @@ async function lebenBuehnen() {
             bruchN: bruch.length,
             bruch: bruch.slice(0, 3),
             ringM: q3(ringM),
+            platzRandM: q3(platzRandM),
             fehlt,
             fernN: fern.length,
             fern: fern.slice(0, 3),
@@ -2556,7 +2597,7 @@ function lebenUrteil(name, z, soll) {
             !z.fehlt.length,
             `Lose des Plans stehen nicht: ${z.fehlt.length} von ${z.haeuser} (${z.fehlt.join(" · ")})`
         );
-        soll(!z.fernN, `Stand fern von seiner Tür (Ring ${z.ringM} m): ${z.fernN} (${z.fern.join(" · ")})`);
+        soll(!z.fernN, `Stand fern von seiner Marke (Tür: Ring ${z.ringM} m, Platz: Rand ${z.platzRandM} m): ${z.fernN} (${z.fern.join(" · ")})`); // prettier-ignore
         // der Stand hängt nahe seiner Tür am Netz (pendler-anschluss): über das Netz höchstens umweg × Luftlinie + nahtM
         const [J, JL] = [z.jenseits, z.jenseitsLeben];
         const JR = J.n || !JL.n ? J : JL; // die Liste, die fällt: die neu gestellte zuerst, sonst die nach dem Tag
@@ -2881,7 +2922,8 @@ module.exports = {
         zielplan: [
             ["zielplan-planlos", /Bewohner ohne Ziel/],
             ["zielplan-einort", /Rollen ohne Ziel-Ort/],
-            ["zielplan-fremd", /Stand fern von seiner Tür/],
+            ["zielplan-fremd", /Stand fern von seiner Marke.*m von haus#/],
+            ["zielplan-platzfern", /Stand fern von seiner Marke.*m vom Platz/],
             ["zielplan-los", /steht nicht: fiel still/, []],
             ["zielplan-jenseits", /Stand jenseits der Wand: [1-9]/, []],
         ],
