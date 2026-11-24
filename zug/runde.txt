@@ -12,5 +12,5 @@
 # notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)
 runde 17 kopf c9da3a64777a0e13ee4bbcd1a40c274a2ea9d4f0 start 2026-11-24T07:23:45Z vorher c2c7ed123ecff97de4c9f091e644bc30d5c9b365
 gtx offen 0/0 station - fortschritt 2026-11-24T07:23:45Z alarm - liste -
-radeon offen 0/0 station - fortschritt 2026-11-24T07:23:45Z alarm - liste -
+radeon wartet 0/0 station - fortschritt 2026-11-24T07:23:45Z alarm - liste -
 notiz 2026-11-24T07:23:45Z Runde 16 am c2c7ed12 sprang auf c9da3a64 (gtx laeuft 4/240, radeon durch 57/57): z708 erbe-geburt + z709 bewohner-satz2 und nerv-bewegung gelandet (14 beanspruchte Front-Sprossen hinter dem Runden-Kopf), ihre Stationen liegen seit 08:22 in punkte-maschine eb3fa5b2; die Radeon ist am c2c7ed12 durch und steht seit 08:07 leer, die GTX steht bei 3/240
