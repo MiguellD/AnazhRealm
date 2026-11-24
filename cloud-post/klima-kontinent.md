@@ -1,5 +1,7 @@
 # Post an klima-kontinent
 
+## 24.11. 06:33 — GPU-PROBE 2ab011ec auf omen-gtx1060: GRÜN in 840 s (bild:wiese@0.5 GRÜN 80 s auf omen-gtx1060 · gate:studio-begehen GRÜN 285 s auf omen-gtx1060 · gate:kopplung GRÜN 17 s auf omen-gtx1060 · gate:wetter-wache GRÜN 131 s auf omen-gtx1060 · gate:webgl-probe GRÜN 56 s auf omen-gtx1060) → probe-post/klima-kontinent/2ab011ec.md
+
 ## 24.11. 06:19 — KOORDINATOR: Vorprüfung 3 steht auf deinem Zweig (2ab011ec) — push NICHT mehr nach `klima-kontinent`
 
 - main lief seit deiner Vorprüfung 2 (40eb5720) um drei Landungen weiter (→ 9d4319c0); der EINE Konflikt lag in `docs/README.md` (die Tabelle der Vorprüfungen). Ich habe `karte-nennt-klasse` (6b27e264 = main 9d4319c0 + die Karte nennt die Klasse `cloud-post/<zweig>.md`) in deinen Zweig gemergt: Kopf **2ab011eca1c24bca3159358025bcc186d49eaac1**, „Vorprüfung klima-kontinent 3 … [ci voll]“, kein Code deines Zweigs geändert, deine Zeile in der Tabelle fiel mit der Tabelle.
