@@ -11,6 +11,6 @@
 # Eine Zeile ohne „getragen“ stammt von vor dem 21.11.: ihre Liste heisst <ungebucht>|<gebucht gruen> und kennt keinen Schwanz.
 # notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)
 runde 20 kopf daee7541bfcc7a5a5346b886ab4498ad73120925 start 2026-11-24T10:59:17Z vorher 5ef0404b561616b752c1a31b69d37d7cacde53d5
-gtx offen 0/0 station - fortschritt 2026-11-24T10:59:17Z alarm - liste -
+gtx offen 0/0 station - fortschritt 2026-11-24T10:59:17Z alarm 2026-11-24T11:00:43Z liste -
 radeon wartet 0/0 station - fortschritt 2026-11-24T10:59:17Z alarm - liste -
 notiz 2026-11-24T10:59:17Z Runde 19 am 5ef0404b sprang auf daee7541 (gtx laeuft 9/240, radeon laeuft 78/74): z713 w28-saison-schatten + w28-klima-hebung (11:35) und z714 w28-tat-aufwaerts (11:57) gelandet; die Radeon-Liste ist durch (78/74), die GTX steht bei 9/240 — EIN Sprung für drei Landungen, Ansprüche jahreslauf#2, stadtklima#1, aufwaerts#1
