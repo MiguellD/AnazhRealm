@@ -3966,8 +3966,8 @@ AnazhRealm.BESTAND_REGION = Object.freeze({
 // Stands, gate:tier-gang Satz Wolf im Schritt 0,054, mit 32 0,033), die Bänder sind die Gangarten der GANG_FOLGE, gebacken an der Froude-Zahl `froude` (die Mitte
 // jeder Gangart: Schritt unter froudeTrab 0,5, Trab bis froudeGalopp 2,5, Galopp darüber); `einschwingen` Gang-Schritte vor dem
 // Zyklus, dann `vorlauf` Zyklen im Schritt des Backens (der Einschwung des Schritt-Wechsels liegt vor den Posen, nie in ihnen:
-// gate:tier-gang Satz im Trab Wolf/Fuchs/Bär/Wesen 0,018–0,053 → 0,013–0,018), `backJeTakt` Schritte je Takt (Lehre 14), `cap`
-// Instanzen je Senke, `leerTakte` bis ein leerer Satz geht.
+// gate:tier-gang Satz im Trab Wolf/Fuchs/Bär/Wesen 0,020/0,033/0,036/0,026 → 0,014/0,010/0,015/0,014 an der Hysterese 0,2),
+// `backJeTakt` Schritte je Takt (Lehre 14), `cap` Instanzen je Senke, `leerTakte` bis ein leerer Satz geht.
 AnazhRealm.KREATUR_SATZ = Object.freeze({
     nahLeiber: 4,
     phasen: 32,
