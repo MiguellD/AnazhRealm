@@ -1198,14 +1198,13 @@ async function lebenBuehnen() {
     });
     // ── zielplan (mensch Breite: „Bewohner folgen Tagesplänen mit Zielen — Arbeit, Markt, Hafen, Heimweg —, je Ziel ein Ort“):
     // die Stadt am Messort (`--ort stadt-voll`: die Metropole; sonst stadt), ein Tag an fünf Stunden (6 · 10 · 13 · 18 · 23 Uhr:
-    // der Sprung der Uhr stellt jeden, wo sein Tag ihn sieht, dann 5 s Takt mit der Uhr des Spiels). DER RICHTER LIEST DEN PLAN,
-    // nie die Liste des Wirts: die Orte sind die Türen der Slots mit ihrer Rolle, der Platz und die Äcker; das Ziel jedes
-    // Bewohners (der Punkt, auf den er geht oder an dem er steht) fällt in den Ort, in dem es liegt. Es PASST zur Stunde: nachts
-    // das eigene Haus (drinnen) oder ein Haus mit Rolle (die Nachtschicht), zur Arbeit ein Werk-Ort — der Platz, ein Acker, ein
-    // Haus mit Rolle (wer in einem Haus mit Rolle wohnt: ein Haus SEINER Rolle), am Steuer der Wagen —, mittags ein Werk-Ort
-    // oder der eigene Tisch (drinnen), abends jeder Ort. Gezählt je Stunde: am passenden Ort angekommen (≤ 1,5 m, drinnen an
-    // der Tür) · unterwegs zu ihm (sein Rest-Weg schrumpft) · OHNE ZIEL (sein Ziel passt nicht, oder er kommt nicht voran); über
-    // den Tag die Ziel-Orte, die ein Fremder erreichte (nicht sein eigenes Haus), je Rolle des Plans. ──
+    // der Sprung der Uhr stellt jeden, wo sein Tag ihn sieht, dann 5 s Takt mit der Uhr des Spiels). DIE ART DES ZIELS IST DER
+    // ORT SEINES PLANS: der Richter fragt die EINE Quelle, den Kern (koerper `tagesPlan` → { ort, wo, drinnen }, `planVon`), nie
+    // eine eigene Stunden-Tafel und nie die nächste Tür. Gezählt je Stunde: am Ort seines Plans angekommen (≤ 1,5 m, drinnen an
+    // der Tür) · unterwegs zu ihm (sein Rest-Weg schrumpft) · OHNE ZIEL (sein Ziel ist nicht der Ort seines Plans, oder er kommt
+    // nicht voran) · am Werk (sein Plan nennt `werk`, und er ist dort); nach dem Sprung, vor dem ersten Takt: jeder, dessen Ziel
+    // NEBEN seinem Plan steht (Soll 0). Die Geometrie bleibt die SCHRANKE: die Orte, die ein Fremder am Tag erreichte (nicht sein
+    // eigenes Haus), je Rolle des Plans — die Türen der Slots mit ihrer Rolle, der Platz und die Äcker (`ortVon`). ──
     await buehne("zielplan", async (restore) => {
         dorf.hier = true; // eine eigene Stadt am Messort, nie das Start-Dorf
         const G = await stadtAm((opts && opts.ort) || "stadt", "zielplan");
@@ -1220,7 +1219,6 @@ async function lebenBuehnen() {
             const e = sl.tuer && window.__fachwerkCore.eingangVon(sl), ez = e && e.hof ? e.z : t.z; // prettier-ignore
             return { x: S.ox + sl.x + t.x * c + t.z * sn, z: S.oz + sl.z - t.x * sn + t.z * c, ein: { x: S.ox + sl.x + t.x * c + ez * sn, z: S.oz + sl.z - t.x * sn + ez * c }, rolle: rolleVon(sl), k: "haus#" + (sl.seed >>> 0), si, mitte: { x: S.ox + sl.x, z: S.oz + sl.z } }; // prettier-ignore
         });
-        const heimVon = new Map(tueren.map((t) => [t.k, t]));
         // im gedrehten Rechteck q (Mitte, Halbachsen, phi) samt Rand — der Platz dreht wie der Wirt ihn liest, der Acker längs phi
         const im = (q, x, z, rand, acker) => {
             const [c, sn, dx, dz] = [Math.cos(q.phi || 0), Math.sin(q.phi || 0), x - S.ox - q.cx, z - S.oz - q.cz];
@@ -1250,20 +1248,29 @@ async function lebenBuehnen() {
                 feld(1)
             );
         };
-        // (der Fahrer: sein Werk ist sein Wagen — am Steuer oder am Stand neben ihm; der Frühaufsteher geht schon über den Platz;
-        // die Nachtschicht, `versatzH` des Tages-Gesetzes, lebt die Gegen-Stunde: um 10 und 13 Uhr schläft sie, um 23 arbeitet sie)
-        const NACHT = { 6: 18, 10: 23, 13: 23, 18: 6, 23: 10 };
-        const passt = (o, uhr, b, drinnen) => {
-            const h = (window.__koerperCore.TAGES_GESETZ.rollen[b.rolle] || {}).versatzH ? NACHT[uhr] : uhr;
-            const [eigen, hr] = [
-                !!o && o.k === "haus#" + b.heim,
-                (heimVon.get("haus#" + b.heim) || {}).rolle || "wohnhaus",
-            ];
-            const wagen = !!b.amSteuer || (!!b.wagen && !o);
-            const werk = wagen || (!!o && o.rolle !== "wohnhaus" && (hr === "wohnhaus" || !o.haus || o.rolle === hr));
-            if (h === 6 || h === 23) return (eigen && drinnen) || wagen || (!!o && o.rolle !== "wohnhaus");
-            return h === 10 ? werk : h === 13 ? werk || (eigen && drinnen) : !!o || wagen;
+        // DAS ZIEL AUS DEM PLAN DES KERNS (bewohner-satz): der Plan der Stunde (koerper `tagesPlan` aus Same, Rolle, seinen Orten,
+        // dem Regen an seiner Tür — `_wetterFeldAm`, der Leser des Wirts — und dem Feld `krank`) in den benannten Übersetzungen
+        // des Wirts, hier eigens gelesen (`_bewohnerSoll` decken die Täter): drinnen ist das Ziel die Tür, am Steuer ist das Werk
+        // der Wagen, vor der Front des Brands hält er den Ort ohne Gefahr, solange der Brand lebt (`b.brand`), der Zeuge weicht
+        // bis zur Wende (`b.weichen`). Bis hier richtete eine Stunden-Tafel (`passt`: um 10 am Werk, um 13 Werk oder daheim
+        // drinnen, um 6 und 23 daheim; die Nachtschicht über die Tafel `NACHT`) die Art der NÄCHSTEN Tür — ein Zwilling von
+        // `tagesPlan`, der den Posten der Wache, das Spiel des Kinds, den Stand des Kaufmanns, den Kranken vor seiner Tür und
+        // den Abend bis zur Ruhe nicht kannte: CI am Kopf 7f1a426e 10 Uhr 8 %, 13 Uhr 7 %, 23 Uhr 3 % „ohne Ziel", jeder Genannte
+        // an seinem gebundenen Ort (mit der EINEN Quelle 0 · 0 · 0).
+        const [KC, nassAus] = [window.__koerperCore, {}];
+        const uhrH = () => ((((Number.isFinite(s.timeOfDay) ? s.timeOfDay : 0.5) % 1) + 1) % 1) * 24; // wie der Takt des Wirts
+        const planVon = (b, stunde) => {
+            const o = b.orte;
+            const P = KC.tagesPlan(b.same, b.rolle, stunde, o, r._wetterFeldAm(o.tuer.x, o.tuer.z, undefined, nassAus).rain, b.krank); // prettier-ignore
+            const ziel = P.drinnen ? o.tuer : b.amSteuer && P.ort === o.werk ? b.wagen.entry.position : P.ort;
+            if (b.brand && r._brandLebt()) return { ziel: b.brand.ort, wo: P.wo, drinnen: false };
+            const W = b.weichen;
+            const weicht = !!W && ziel === W.plan && (((stunde - W.ab) % 24) + 24) % 24 < W.dauer;
+            return { ziel: weicht ? W.ort : ziel, wo: P.wo, drinnen: !weicht && P.drinnen };
         };
+        // sein Ziel IST der Ort des Plans (die Lage wie `standVon`, drinnen wie der Plan); beim Namen: sein Plan und sein Ziel
+        const istZiel = (b, P) => !!b.ziel && ab(b.ziel, P.ziel) < 0.05 && !!b.drinnenSoll === P.drinnen;
+        const nennen = (b, P) => `${wer(b)}${b.krank ? " (krank)" : ""}: Plan ${P.wo}${P.drinnen ? " drinnen" : ""}, sein Ziel ${["tuer", ...A.BEWOHNER.staende].find((k) => b.ziel && b.orte[k] && ab(b.orte[k], b.ziel) < 0.05) || (b.amSteuer ? "wagen" : "kein Ort seines Plans")}`; // prettier-ignore
         // Täter (Selbsttest): keiner trägt einen Plan — jeder steht den ganzen Tag vor seiner Tür · jeder Plan nennt den Platz
         if (taeter === "zielplan-planlos") decke("_bewohnerSoll", () => (b) => ({ ziel: b.orte.heim, drinnen: false, akt: "ohne" })); // prettier-ignore
         if (taeter === "zielplan-einort")
@@ -1271,6 +1278,23 @@ async function lebenBuehnen() {
                 const z = alt.call(r, b, h);
                 return z.drinnen ? z : { ziel: b.orte.platz || b.orte.heim, drinnen: false, akt: z.akt };
             });
+        // Täter (Selbsttest): der Wirt reicht das Feld `krank` nicht an den Plan — auf SEINEM Ruf fehlt dem Kern der Eingang, der
+        // Kranke geht zur Arbeit. Er greift an jedem Tag der Welt-Uhr: der Täter legt EINEN beim Namen krank (im Lebenslauf, dem
+        // EINEN Leser von Wirt und Probe — der erste ohne Posten, dessen Plan um 10 Uhr ein Werk fern seiner Tür nennt), dazu
+        // jeder, den der Messtag krank trägt
+        if (taeter === "zielplan-krank") {
+            const opfer = S.liste.find((b) => !(KC.TAGES_GESETZ.rollen[b.rolle] || {}).regenfest && b.orte.werk !== b.orte.heim && planVon(b, 10).wo === "werk"); // prettier-ignore
+            decke("_bewohnerLauf", (alt) => (Si, b, feld, tag) => (feld === "krank" && b === opfer) || alt.call(r, Si, b, feld, tag)); // prettier-ignore
+            const [kern, ohne] = [KC.tagesPlan, (sa, ro, st, o, nass) => kern(sa, ro, st, o, nass)];
+            decke("_bewohnerSoll", (alt) => (b, h) => {
+                KC.tagesPlan = ohne;
+                try {
+                    return alt.call(r, b, h);
+                } finally {
+                    KC.tagesPlan = kern;
+                }
+            });
+        }
         // DER ORT EINES STANDS VOR EINER TÜR IST DIE TÜR, FÜR DIE DER WIRT IHN LEGTE (w28-stadt-grammatik): der Stand trägt sie
         // (`anker`, `_bewohnerListe` ringStand; ihr Leser im Spiel: die Seite der Fahrbahn, `_bewohnerStandPruefen`). Bis hier riet
         // die Probe die NÄCHSTE Tür (`ortVon`: die eigene oder ein Haus mit Rolle bis 20 m) — im lockeren Dorf trifft das, in der
@@ -1324,15 +1348,24 @@ async function lebenBuehnen() {
         // DER TAG IST EIN TEIL (Kreatur-Takt 22.11.): fünf Stunden zu 300 Takten — die Täter des Plans (das Los, die Wand) lesen
         // ihn nicht und nehmen den Tag des Grund-Laufs
         const tag = await teil("tag", async () => {
-        const [je, fremd, fern] = [{}, new Map(), []];
+        const [je, fremd, fern, neben] = [{}, new Map(), [], new Map()];
         for (const h of [6, 10, 13, 18, 23]) {
             await uhrAuf(h, `zielplan: ${h} Uhr`, da, 4 * nH);
+            // NACH DEM SPRUNG steht jeder auf dem Ziel seines Plans zur Stunde der Uhr (`_bewohnerAnkunft`) — vor dem ersten Takt
+            // liegt keine Wende dazwischen: wer NEBEN seinem Plan steht, ist der Täter beim Namen (ein Kopf reicht)
+            const h0 = uhrH();
+            const vor = new Map(liste().map((b) => [b, planVon(b, h0)]));
+            for (const [b, P] of vor) if (!istZiel(b, P) && !neben.has(b)) neben.set(b, `${h} Uhr ${nennen(b, P)}`);
             const rest0 = new Map(liste().map((b) => [b, b.weg ? b.wegRest : null]));
             for (let k = 0; k < 300; k++) (r._uhrSetzen((s.timeOfDay + 1 / 60 / tagS) % 1, "uhr"), leute(1 / 60));
-            const z = { am: 0, unterwegs: 0, ohne: 0, n: 0, wer: [] };
+            const [z, h1] = [{ am: 0, unterwegs: 0, ohne: 0, werk: 0, n: 0, wer: [] }, uhrH()];
             for (const b of liste()) {
                 const ziel = b.ziel || b.leib.position;
                 const drinnen = !!b.drinnenSoll;
+                // SEIN PLAN AM ENDE DER 300 TAKTE — wer in ihnen eine Wende überschritt, trägt das Ziel der Stunde davor oder
+                // danach (der Wirt liest je `planH`), sonst keines
+                const nach = planVon(b, h1);
+                const P = [nach, vor.get(b)].find((q) => q && istZiel(b, q));
                 const st = standVon(b, ziel);
                 const tuer = st && tueren.find((q) => ab(q, st.anker) < 0.05);
                 const fernM = tuer ? ab(st.ur || st, tuer.ein) : 0;
@@ -1348,18 +1381,19 @@ async function lebenBuehnen() {
                 // voran: wer geht, dessen Rest-Weg schrumpfte in den 5 s (oder er ging eben los, wartet in der Tür)
                 const voran = !!b.weg && (rest0.get(b) == null || b.wegRest < rest0.get(b) - 0.5 || b.hinaus);
                 z.n++;
-                if (!passt(o, h, b, drinnen) || !(dort || voran || b.hinaus)) {
+                if (!P || !(dort || voran || b.hinaus)) {
                     z.ohne++;
-                    if (z.wer.length < 3) z.wer.push(`${wer(b)} → ${o ? o.k : "kein Ort"}${dort ? "" : voran ? " (geht)" : " (steht fern)"}`); // prettier-ignore
+                    if (z.wer.length < 3) z.wer.push(`${nennen(b, nach)}${dort ? "" : voran ? " (geht)" : " (steht fern)"}`); // prettier-ignore
                 } else if (dort) z.am++;
                 else z.unterwegs++;
-                // der Ziel-Ort, den ein Fremder erreichte: ein Werk-Ort (kein Wohnhaus), nicht sein eigenes Haus
-                if (dort && o && o.rolle !== "wohnhaus" && o.k !== "haus#" + b.heim && passt(o, h, b, drinnen))
-                    fremd.set(o.k, o.rolle);
+                // am Werk: sein Plan nennt `werk`, und er ist dort (das Kind: der Ort seines Spiels)
+                if (P && dort && P.wo === "werk") z.werk++;
+                // der Ziel-Ort, den ein Fremder erreichte: der Ort seines Plans, kein Wohnhaus, nicht sein eigenes Haus
+                if (P && dort && o && o.rolle !== "wohnhaus" && o.k !== "haus#" + b.heim) fremd.set(o.k, o.rolle);
             }
-            je[h] = { am: q3(z.am / z.n), unterwegs: q3(z.unterwegs / z.n), ohne: q3(z.ohne / z.n), wer: z.wer };
+            je[h] = { am: q3(z.am / z.n), unterwegs: q3(z.unterwegs / z.n), ohne: q3(z.ohne / z.n), werk: q3(z.werk / z.n), wer: z.wer }; // prettier-ignore
         }
-        return { je, fremd: [...fremd], fern: fern.map((f) => f.text) };
+        return { je, fremd: [...fremd], fern: fern.map((f) => f.text), neben: [...neben.values()], krank: liste().filter((b) => b.krank).length }; // prettier-ignore
         });
         const [je, fremd, fern] = [tag.je, new Map(tag.fremd), tag.fern];
         // DER STAND HÄNGT NAHE SEINER TÜR AM NETZ (pendler-anschluss): wer zu einem Stand vor einer Tür geht, geht über das
@@ -1480,7 +1514,7 @@ async function lebenBuehnen() {
         // zog keinen — am alten Wurf zog eine von zwei Scheunen genau einen. Die Probe fragt den Kern selbst (`tagesBindung`, je
         // Mensch `GESETZ_PROBEN` Samen) und fordert den Fremden nur, wo das Gesetz die Leere unwahrscheinlich macht (`GESETZ_LEER`):
         // die Rolle, die der Wurf leer lassen darf, nennt sie mit ihrer Wahrscheinlichkeit, nie still.
-        const [KC, TC, GESETZ_PROBEN] = [window.__koerperCore, globalThis.__tetrapodaCore, 200];
+        const [TC, GESETZ_PROBEN] = [globalThis.__tetrapodaCore, 200];
         const orteK = KC.tagesOrte(plan, (si) => tueren.some((t) => t.si === si && hausAn(t)));
         const siVon = new Map(tueren.map((t) => [t.k, t.si]));
         // die Nähe der Wahl ist der Weg, wie der Wirt ihn misst (koerper `tagesWege` über das Netz des Orts, pendler-anschluss)
@@ -1516,6 +1550,9 @@ async function lebenBuehnen() {
             fehlt,
             fernN: fern.length,
             fern: fern.slice(0, 3),
+            nebenN: tag.neben.length,
+            neben: tag.neben.slice(0, 3),
+            krank: tag.krank,
             jenseits,
             jenseitsLeben,
             jenseitsSoll: JENSEITS,
@@ -2564,7 +2601,12 @@ function lebenUrteil(name, z, soll) {
             J.N > 0 && !J.n && !JL.n,
             `Stand jenseits der Wand: ${JR.n} von ${JR.N} Ständen vor einer Tür erreichen sie über das Netz erst nach mehr als ${z.jenseitsSoll.umweg} × der Luftlinie + ${z.jenseitsSoll.nahtM} m (${JR === J ? "die Liste neu gestellt" : "die Liste nach dem Tag"}: ${JR.erste.join(" · ")})` // prettier-ignore
         );
-        soll(z.je[10].am >= 0.5, `um 10 Uhr am Werk-Ort angekommen: ${Math.round(z.je[10].am * 100)} % (Soll ≥ 50 %)`);
+        // die EINE Quelle: nach dem Sprung der Uhr steht JEDER auf dem Ziel seines Kern-Plans — ein Kopf daneben ist der Täter
+        soll(
+            !z.nebenN,
+            `Ziel neben dem Plan des Kerns: ${z.nebenN} von ${z.gesamt} nach dem Sprung der Uhr (Soll 0; ${z.neben.join(" · ")}; krank am Messtag ${z.krank})`
+        );
+        soll(z.je[10].werk >= 0.5, `um 10 Uhr am Werk-Ort angekommen: ${Math.round(z.je[10].werk * 100)} % (Soll ≥ 50 %)`);
         // die Leere, die das Gesetz trägt (`gesetzLeer` ≥ GESETZ_LEER: der Wurf lässt die Rolle so oft ohne Fremden), fällt nicht —
         // sie steht benannt in der Zeile; jede andere leere Rolle ist der Täter
         const GL = z.gesetzLeer || {};
@@ -2882,6 +2924,7 @@ module.exports = {
             ["zielplan-planlos", /Bewohner ohne Ziel/],
             ["zielplan-einort", /Rollen ohne Ziel-Ort/],
             ["zielplan-fremd", /Stand fern von seiner Tür/],
+            ["zielplan-krank", /Ziel neben dem Plan des Kerns: [1-9][^;]*; \d+ Uhr [^·]*\(krank\)/],
             ["zielplan-los", /steht nicht: fiel still/, []],
             ["zielplan-jenseits", /Stand jenseits der Wand: [1-9]/, []],
         ],
