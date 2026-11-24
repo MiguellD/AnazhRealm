@@ -2159,12 +2159,15 @@ class AnazhRealm_bild_kosten {
     // des Resolve, `laufPxSetzen`). Alles nur beim Wechsel: aus ist die Kette der Graph ohne Zugang, Knoten für Knoten.
     _zugangTakt(ppu) {
         const Z = this.state.zugang || {};
-        const art = AnazhRealm.FARBSICHT.arten.includes(Z.farbsicht) ? Z.farbsicht : "aus";
+        // DAS AUGE DER ART (`_augeDerArt`) geht der Farbsicht vor: die Kette zeichnet dann durch die Zapfen seines Taxons
+        const auge = this.state.augeDerArt || null;
+        const art = auge ? "auge:" + auge.taxon : AnazhRealm.FARBSICHT.arten.includes(Z.farbsicht) ? Z.farbsicht : "aus";
         const pp = this.state.postProcessing;
         if (pp && ppu && ppu.ausgabe && ppu._farbArt !== art) {
-            const m = AnazhRealm._farbsichtMatrix(art);
+            const m = auge ? null : AnazhRealm._farbsichtMatrix(art);
             if (m) (ppu.farbFehler.value.set(...m.fehler), ppu.farbSchub.value.set(...m.schub));
-            const ziel = m ? ppu.ausgabe.farbsicht : ppu.ausgabe.aus;
+            if (auge) ppu.augeBild.value.set(...auge.bild[0], ...auge.bild[1], ...auge.bild[2]);
+            const ziel = auge ? ppu.ausgabe.auge : m ? ppu.ausgabe.farbsicht : ppu.ausgabe.aus;
             if (pp.outputNode !== ziel) {
                 pp.outputNode = ziel;
                 pp.needsUpdate = true;
@@ -2174,6 +2177,18 @@ class AnazhRealm_bild_kosten {
         const traa = this.state.traaNode;
         if (traa && traa.laufPxSetzen)
             traa.laufPxSetzen(Z.unschaerfe === false ? AnazhRealm.ZUGANG.laufPxAus : traa.maxVelocityLength);
+    }
+
+    // DAS AUGE DER ART (auge-der-art, tetrapoda SINNES_GESETZ): die Welt durch die Zapfen eines Taxons (`canidae` · `cervidae` ·
+    // `ursidae` · `haplorhini` · `apis` …) oder `null` = das Auge des Spielers. Der EINE Schreiber von `state.augeDerArt`;
+    // ein Taxon ohne Gesetz bricht beim Namen (fail-closed). Gelesen von `_zugangTakt` (die Ausgabe der Kette) — der Richter
+    // ist das Bildpaar an derselben Pose (Mensch ↔ Art).
+    _augeDerArt(taxon) {
+        if (taxon == null) return (this.state.augeDerArt = null);
+        const K = globalThis.__tetrapodaCore;
+        const F = K && K.augeFang ? K.augeFang(taxon, AnazhRealm.FARBSICHT.lms) : null;
+        if (!F) throw new Error("AUGE DER ART: das Taxon " + taxon + " trägt kein Gesetz (tetrapoda SINNES_GESETZ.taxa)");
+        return (this.state.augeDerArt = F);
     }
 
     // DAS AUGE DER NACHT ALS EIN GLIED (K66, w28-brand-kern; `NACHT_AUGE`): ohne Farbe → die Uniform der Nacht (0 = Tag … 1 =
@@ -2397,6 +2412,9 @@ class AnazhRealm_bild_kosten {
                 // `_farbsichtMatrix`) — `_zugangTakt` stellt sie beim Wechsel und hängt ihre Ausgabe (`ausgabe.farbsicht`) ein.
                 farbFehler: uniform(new THREE.Vector3()),
                 farbSchub: uniform(new THREE.Vector3()),
+                // DAS AUGE DER ART (auge-der-art): das Bild seiner Zapfen (tetrapoda `augeFang(…).bild`, 3 × 3 linear-sRGB) —
+                // `_zugangTakt` stellt es beim Wechsel und hängt seine Ausgabe (`ausgabe.auge`) ein
+                augeBild: uniform(new THREE.Matrix3()),
             };
             this.state.postProcessingUniforms = u;
             // V8 (Kür) — die EINE benannte Godray-Quelle (Gesetz #0): der Frame-Code (`_loopRender`)
@@ -2548,6 +2566,8 @@ class AnazhRealm_bild_kosten {
                     .add(farbsichtDelta)
                     .max(vec3(0, 0, 0))
                     .div(VB.k),
+                // die Welt durch die Zapfen einer Art: der Himmel mit (das Tier sieht ihn), dieselbe Skala ÷ k
+                auge: u.augeBild.mul(gesehen).max(vec3(0, 0, 0)).div(VB.k),
             };
 
             // Die Ausgabe-Wandlung (die Tonkurve Khronos PBR Neutral + sRGB, `_ensureRenderer`) macht die Pipeline selbst im
