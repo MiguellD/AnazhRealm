@@ -1,0 +1,107 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.405",
+  "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 3.51,
+   "deckung": 0.026,
+   "taeter": {
+    "Leib bewohner": 0.026
+   },
+   "leib": {
+    "deckung": 0.026,
+    "taeter": {
+     "Leib bewohner": 0.026
+    }
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 7.02,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   840.03,
+   57.17,
+   444.44
+  ],
+  "blick": [
+   0.91249,
+   -0.07118,
+   -0.40285
+  ]
+ },
+ "seitenfehler": 0,
+ "leiber": {
+  "nahM": 6,
+  "n": 4,
+  "halb": 0,
+  "teile": 23,
+  "ganz": true,
+  "fehlt": []
+ },
+ "bild": {
+  "w": 1280,
+  "h": 720,
+  "mittel": 102.6,
+  "sigma": 29.6,
+  "schwarz": 0.0007,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 1,
+  "gewaehlt": 0,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     840.03,
+     57.17,
+     444.44
+    ],
+    "rot": [],
+    "ms": 1433
+   }
+  ],
+  "ms": 1433
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Leib im Vordergrund 2.6 % (Leib bewohner 2.6 %) · Leiber näher als 6 m: 4 von 4 ganz (23 Teile) · Ziel Blickziel im Bild frei 7.02 m · Luma 102.6 σ 29.6 schwarz 0.1 % weiß 0.0 % · Stand 18.546.405 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+ "rot": [],
+ "urteil": "GRÜN"
+}
