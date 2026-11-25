@@ -2223,8 +2223,9 @@ class AnazhRealm_siedlung_verkehr {
     // DIE VORFAHRT AN DER KREUZUNG (Welle Knoten der Großstadt; fachwerk VERKEHR_GESETZ `luecke`, `verkehrsNetz` → `vorrang`): wer
     // einem Weg im Konflikt weicht (`Z.weicht`: Rang der Wege, links vor entgegen, rechts vor links), fährt nur in eine LÜCKE — keiner,
     // dem er weicht, ist frühestens binnen t_c an seiner Haltelinie (er beschleunigt mit `folgeA` bis `tempoMs`; wer an ihr wartet,
-    // ist jetzt dort) — und, solange einer naht, nie früher als t_f nach dem Vorigen seines Arms (`Z.folge`, seine Einfahrt). Wer im
-    // Warte-Graphen übergangen ist (`gesperrt`), geht nicht vor. DER STROM, NIE DIE REIHE: Vorfahrt hat nur der Erste seines Arms —
+    // ist jetzt dort; rechts vor links: binnen t_f nach ihm selbst) — und, solange einer naht, nie früher als t_f nach dem Vorigen
+    // seines Arms (`Z.folge`, seine Einfahrt). Wer im Warte-Graphen übergangen ist (`gesperrt`), geht nicht vor.
+    // DER STROM, NIE DIE REIHE: Vorfahrt hat nur der Erste seines Arms —
     // hinter einem, der selbst noch vor dem Ort steht, kommt keiner vor ihm an — und wer steht, nur, wenn er fahren KANN (er wartet
     // auf keinen Halter, keinen Platz, weicht keinem); wer fährt, ist Strom, wie er fährt. Bis hier wich der Weichende auch dem
     // Zweiten der Reihe, und rechts vor links schloss sich ein Kreis, den kein Übergehen löste (stadt-voll 10 Uhr am Markt 836/438:
@@ -2259,6 +2260,9 @@ class AnazhRealm_siedlung_verkehr {
             const dA = (V.tempoMs * V.tempoMs - v * v) / (2 * VG.folgeA);
             return d <= dA ? (-v + Math.sqrt(v * v + 2 * VG.folgeA * d)) / VG.folgeA : (V.tempoMs - v) / VG.folgeA + (d - dA) / V.tempoMs;
         };
+        // RECHTS VOR LINKS ist eine Reihenfolge (t_c null, fachwerk `vorrang`): dem von rechts lässt er die Fahrt, wenn der binnen
+        // t_f nach ihm an seiner Linie ist — zugleich kommt; wer später kommt, wartet auf ihn
+        const tW = W.entry && W.entry._fahr ? ankunft(z.ein - V.vorM - W.F.s - W.hl, Math.max(0, W.entry._fahr.vlong)) : 0;
         let [best, tBest, strom] = [null, Infinity, false];
         for (const O of Z.nahe[1]) {
             if (O === W || O.gesperrt || O.zustand !== "faehrt" || !O.F || !O.entry || !O.entry._fahr) continue;
@@ -2269,7 +2273,7 @@ class AnazhRealm_siedlung_verkehr {
             if ((steht(O) && !kann(O)) || (L && L.zonen && steht(L) && (offen(L) || {}).hat === false)) continue;
             const t = ankunft(zO.ein - V.vorM - O.F.s - O.hl, Math.max(0, O.entry._fahr.vlong));
             strom = true;
-            if (t < t0[1] && t < tBest) [best, tBest] = [O, t];
+            if (t < (t0[1] === null ? tW + t0[2] : t0[1]) && t < tBest) [best, tBest] = [O, t];
         }
         if (best) return best;
         // DIE FOLGEZEITLÜCKE gilt, solange einer naht: die Wartepflicht entsteht am Berechtigten (StVO § 8, rechts vor links ohne

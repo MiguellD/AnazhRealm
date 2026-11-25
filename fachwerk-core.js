@@ -6159,7 +6159,8 @@
     // DIE VORFAHRT aus demselben Gesetz: der Rang der Wege (`WEGE_KLASSE`, je Strecke `rang`), an jeder Kreuzung je Paar im Konflikt,
     // wer weicht (`verkehrsNetz` → `vorrang`), und die Lückenannahme `luecke` je Bewegung des Weichenden [t_c Grenzzeitlücke,
     // t_f Folgezeitlücke in s] — HCM 2000 Kap. 17 (TWSC, Basiswerte; PTV Visum Hilfe Tab. 106/107): Linksabbieger des Hauptstroms
-    // 4,1/2,2, Nebenstrom rechts 6,2/3,3, geradeaus 6,5/4,0, links 7,1/3,5. Leser: der Wirt `_verkehrZonen` (`_verkehrVorfahrt`)
+    // 4,1/2,2, Nebenstrom rechts 6,2/3,3, geradeaus 6,5/4,0, links 7,1/3,5; rechts vor links (gleicher Rang) trägt nur t_f, das
+    // Fenster des Zugleich (`vorrang`). Leser: der Wirt `_verkehrZonen` (`_verkehrVorfahrt`)
     var VERKEHR_GESETZ = { folgeT: 1.5, folgeS0: 2, folgeA: 0.73, folgeB: 1.67,
       luecke: { hauptLinks: [4.1, 2.2], nebenRechts: [6.2, 3.3], nebenGerade: [6.5, 4.0], nebenLinks: [7.1, 3.5] }, hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, stossM: 3.1, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
       wendeRandM: 1.2, wendeAbM: [7, 80], abzweigM: 2, abzweigAussenM: 0.3, abzweigZulaufM: 10, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
@@ -6348,11 +6349,15 @@
             if(o(a,b,c)*o(a,b,d)<0&&o(c,d,a)*o(c,d,b)<0) return 0; m=Math.min(m,pq(a,c,d),pq(b,c,d),pq(c,a,b),pq(d,a,b)); } return m; };
         for(let i=0;i<woerter.length;i++) for(let j=i+1;j<woerter.length;j++){ const g=2*V.halbM+(Z[i].krumm?aus:0)+(Z[j].krumm?aus:0);
           if(abst(Z[i].P,Z[j].P)<g) K.konflikt.push(woerter[i]+"|"+woerter[j], woerter[j]+"|"+woerter[i]); }
-        // DIE VORFAHRT (Welle Knoten der Großstadt, `vorrang`: „w1|w2" → [t_c, t_f] — w1 lässt w2 die Lücke): je Paar im Konflikt
+        // DIE VORFAHRT (Welle Knoten der Großstadt, `vorrang`: „w1|w2" → [t_c | null, t_f] — w1 lässt w2 die Fahrt): je Paar im Konflikt
         // geht vor, wer vom Weg des höheren Rangs kommt (`rang` der Strecke, `WEGE_KLASSE`); bei gleichem Rang lässt, wer links
-        // abbiegt, den Entgegenkommenden fahren (StVO § 9 Abs. 3), sonst geht vor, wer von rechts kommt (§ 8 Abs. 1). Wer weicht,
-        // fährt nur in eine Lücke von `t_c` und folgt, solange einer naht, dem Vorigen seines Arms nach `t_f` (`luecke`, HCM nach Bewegung) — gleicher
-        // Arm, zwei Linksabbieger gegeneinander, zwei Geradeaus gegeneinander: keiner weicht, die Reihe der Frage gilt
+        // abbiegt, den Entgegenkommenden fahren (StVO § 9 Abs. 3), sonst geht vor, wer von rechts kommt (§ 8 Abs. 1). Wer dem
+        // höheren Rang oder dem Entgegenkommenden weicht, fährt nur in eine Lücke von `t_c` (HCM TWSC: der Nebenstrom gegen den
+        // Hauptstrom); RECHTS VOR LINKS ist eine Reihenfolge, keine Grenzzeitlücke (t_c null): er lässt dem von rechts die Fahrt,
+        // der zugleich kommt — binnen `t_f` nach ihm an der Linie. Solange einer naht, folgt er dem Vorigen seines Arms nach `t_f`
+        // (`luecke`, HCM nach Bewegung) — gleicher Arm, zwei Linksabbieger gegeneinander, zwei Geradeaus gegeneinander: keiner
+        // weicht, die Reihe der Frage gilt. Bis hier band t_c auch rechts vor links: am Markt 836/438 (vier Arme vom Rang 0)
+        // wartete Wagen 1 am Westarm 48 s der Minute 9 auf eine Lücke von 7,1 s (stadt-voll 10 Uhr, Reisetempo 0,543)
         K.vorrang={};
         const arm=(wort)=>{ const [si,so]=wort.split(">").map(Number), a=strecken[si], b=strecken[so], rein=a.b===ki?a.spur[0]:a.spur[1], raus=b.a===ki?b.spur[0]:b.spur[1];
           const u=richtung(rein,true), w=richtung(raus,false), d=u.x*w.x+u.z*w.z, c=u.x*w.z-u.z*w.x;   /*rechts der Fahrt (+): (−u.z, u.x) — die Spur liegt dort*/
@@ -6362,7 +6367,9 @@
           if(a.si===b.si) continue;
           const gegen=a.u.x*b.u.x+a.u.z*b.u.z<-0.7;
           const weicht=a.rang!==b.rang ? a.rang>b.rang : gegen ? a.zug==='links'&&b.zug!=='links' : (b.p.x-K.x)*(-a.u.z)+(b.p.z-K.z)*a.u.x>0;
-          if(weicht) K.vorrang[k]=a.rang===b.rang&&gegen ? V.luecke.hauptLinks : V.luecke[a.zug==='rechts'?'nebenRechts':a.zug==='gerade'?'nebenGerade':'nebenLinks']; } });
+          if(!weicht) continue;
+          const [tc,tf]=a.rang===b.rang&&gegen ? V.luecke.hauptLinks : V.luecke[a.zug==='rechts'?'nebenRechts':a.zug==='gerade'?'nebenGerade':'nebenLinks'];
+          K.vorrang[k]=[a.rang===b.rang&&!gegen?null:tc, tf]; } });
       // DER ÜBERGANG (die Wende): aus der Lage P in Richtung u (Einheit) auf den Kreis (Mitte c, Radius rho) in seinem Umlauf `dir`
       // (+1: der Winkel atan2(z, x) wächst) — ein Bogen vom Radius R (links oder rechts herum), dann die Gerade, die beide Kreise in der
       // Richtung der Fahrt berührt (gleicher Umlauf: außen, sonst innen). Liefert JEDEN solchen Weg {L, pts (nach P je Meter, bis an

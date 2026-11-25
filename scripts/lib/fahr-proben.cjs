@@ -1221,10 +1221,12 @@ async function probeLeben(expected) {
                             const zL = L && L.zonen && L.entry && L.entry._fahr && L.zonen.find((y) => y.Z === z.Z && !y.weg);
                             if (!(vO > 1) || (zL && !zL.hat && L.entry._fahr.vlong < 0.5)) continue;
                             const luecke = Math.max(0, zO.ein - VV.vorM - O.F.s - O.hl) / vO;
-                            const rest = luecke + dtK - t0[1];
-                            strom = strom || luecke <= t0[1];
+                            // die Frist: t_c, rechts vor links t_f (er steht mit dem Bug an der Linie: der von rechts kam nicht zugleich)
+                            const frist = t0[1] === null ? t0[2] : t0[1];
+                            const rest = luecke + dtK - frist;
+                            strom = strom || luecke <= frist;
                             if (rest < 0) VF.genommen++;
-                            if (rest < VF.knapp[0]) VF.knapp = [+rest.toFixed(2), +luecke.toFixed(2), t0[1], W.nr + ">" + O.nr, z.wort + "|" + zO.wort, k]; // prettier-ignore
+                            if (rest < VF.knapp[0]) VF.knapp = [+rest.toFixed(2), +luecke.toFixed(2), frist, W.nr + ">" + O.nr, z.wort + "|" + zO.wort, k]; // prettier-ignore
                         }
                         const arm = Math.round(z.Z.x) + "/" + Math.round(z.Z.z) + ":" + z.wort.split(">")[0];
                         const vor = VF.arm.get(arm);
