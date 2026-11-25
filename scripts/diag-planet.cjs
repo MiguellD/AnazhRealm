@@ -541,11 +541,11 @@ function saatZeit(samen) {
   return out;
 }
 // R2 ort.delta.null: am Anker (t = 0) ist jedes Feld von planetOrt().delta Object.is(…, 0), das Verhältnis der Spende und des Wuchses (Krautschicht,
-// Wald) genau 1 und jede der 81 Stützen 0
-function deltaNull(dl) { if (!dl || !dl.leit) return false; const z = (v) => Object.is(v, 0);
+// Wald) genau 1 (die 81 Leit-Stützen fielen mit gegenwart#2: kein Leser)
+function deltaNull(dl) { if (!dl || !dl.wildnis) return false; const z = (v) => Object.is(v, 0);
   return Object.values(dl.wildnis).every(z) && z(dl.meer.waterLevelM) && ['sommer', 'winter', 'tagAmp', 'sommerPhase'].every(f => z(dl.klima[f])) && dl.klima.spendeVerh === 1 &&
     !!dl.wuchs && dl.wuchs.decke === 1 && dl.wuchs.wald === 1 && !!dl.eis && z(dl.eis.zeit) &&
-    ['windX', 'windZ', 'regenQuote', 'sturmQuote', 'nebelQuote'].every(f => z(dl.wetter[f])) && Array.from(dl.leit.huelleM).every(z) && Array.from(dl.leit.landC).every(z); }
+    ['windX', 'windZ', 'regenQuote', 'sturmQuote', 'nebelQuote'].every(f => z(dl.wetter[f])); }
 // R3 zeit.reise: 256 Orte je Saat, t0 = 0 → t1 = −100 Ma mit planetOrtDerZeit; Kruste bleibt Kruste; hin und zurück (Kruste) ≤ 10⁻⁹ rad
 // (Sehne der Einheitsvektoren); wo die Rückreise eine andere Scholle findet (Überdeckung zweier Krusten), steht es beim Namen
 function zeitReise(plan, samen, Q = P) { const t0 = 0, t1 = -100, S1 = Q.planetScheibe(plan, t1), k = Q.planetHash('zeitreise|' + samen), o = {}, b = {}, q = {};
@@ -1280,10 +1280,10 @@ function selbsttest() {
     const sv = schrittVerhaeltnis(iouSchritte(mk, Wz, Hz)); zeile('zeit.schritt feuert', sv < 0.9, 'gepflanzt: Kontinent springt um 100 Pixel in einem Schritt → kleinster ÷ Median ' + sv.toFixed(3) + ' → ROT'); }
   { const Wi = 512, Hi = 256, mI0 = new Uint8Array(Wi * Hi), mI1 = new Uint8Array(Wi * Hi); for (let r2 = 100; r2 < 160; r2++) for (let i = 100; i < 200; i++) { mI0[r2 * Wi + i] = 1; mI1[r2 * Wi + i] = 1; } mI1[128 * Wi + 300] = 1;
     const dI = kuestenVersatz(mI1, mI0, Wi, Hi, 6371), gI = ohnePartnerNachGroesse(mI1, Wi, Hi, 6371, dI); zeile('zeit.insel teilt', gI.klein > 0 && gI.gross === 0, 'gepflanzt: Insel aus einem Pixel taucht auf → ohne Partner an Stücken ≥ 10⁴ km² ' + gI.gross + ' · darunter ' + gI.klein); }
-  { const dl = { wildnis: { land: 0 }, meer: { waterLevelM: 0 }, klima: { sommer: 0, winter: 0, tagAmp: 0, sommerPhase: 0, spendeVerh: 1 }, wetter: { windX: 0, windZ: 0, regenQuote: 0, sturmQuote: 0, nebelQuote: 0 }, wuchs: { decke: 1, wald: 1 }, eis: { zeit: 0 }, leit: { huelleM: new Float64Array(81), landC: new Float64Array(81) } };
-    const vorher = deltaNull(dl); dl.leit.huelleM[40] = 1e-12; zeile('ort.delta.null feuert', vorher && !deltaNull(dl), 'gepflanzt: eine Leit-Stütze 10⁻¹² m neben dem Anker → ROT');
+  { const dl = { wildnis: { land: 0 }, meer: { waterLevelM: 0 }, klima: { sommer: 0, winter: 0, tagAmp: 0, sommerPhase: 0, spendeVerh: 1 }, wetter: { windX: 0, windZ: 0, regenQuote: 0, sturmQuote: 0, nebelQuote: 0 }, wuchs: { decke: 1, wald: 1 }, eis: { zeit: 0 } };
+    const vorher = deltaNull(dl); dl.meer.waterLevelM = 1e-12; zeile('ort.delta.null feuert', vorher && !deltaNull(dl), 'gepflanzt: der Spiegel 10⁻¹² m neben dem des Ankers → ROT');
     // Reise, Welle 3: der Wuchs ist ein Verhältnis-Feld — gepflanzt: am Anker trägt der Wald 0,999 statt 1 → ROT
-    dl.leit.huelleM[40] = 0; const vorW = deltaNull(dl); dl.wuchs.wald = 0.999; zeile('ort.delta.wuchs feuert', vorW && !deltaNull(dl), 'gepflanzt: das Wald-Verhältnis am Anker 0,999 → ROT'); }
+    dl.meer.waterLevelM = 0; const vorW = deltaNull(dl); dl.wuchs.wald = 0.999; zeile('ort.delta.wuchs feuert', vorW && !deltaNull(dl), 'gepflanzt: das Wald-Verhältnis am Anker 0,999 → ROT'); }
   // Reise K: die Jahres-Phase ist ein Δ-Feld. erde-01 trägt seinen Anker auf der Süd-Halbkugel — dort ist das Δ am Anker +0 (die Heimat
   // behält ihre Phase), jenseits des Äquators 0,5 (Jahreszeiten-Vertrag: 0 oder 0,5, die Phase der wärmeren Jahreszeit); gepflanzt: die
   // Phase als Ort − Tafel (absolut gelesen) gäbe am Süd-Anker 0,5 → ROT
