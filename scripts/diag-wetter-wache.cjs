@@ -583,7 +583,7 @@ function ortSelbsttest() {
 // (planetKlima tJahrC < KLIMA.tEisC, −10 °C nach North 1975), trug das Eis des Quartärs — eis.zeit 1 an 100 % (Grönland, Tibet,
 // Antarktis: Hochland und Inneres, nicht die Breite allein).
 // Der Selbsttest pflanzt je Klinge ihren Täter in den Kern (EINE Zeile, ohne git): ohne Sperre und Föhn, ohne Auftrieb im Nebel,
-// ohne den Winter der Meeresluft, ks nur an der Grenze von heute, das Eis nur nach der Breite — jeder fällt ROT an genau seiner
+// ohne den Winter der Küsten, ks nur an der Grenze von heute, das Eis nur nach der Breite — jeder fällt ROT an genau seiner
 // Klinge und nennt sein Gesetz.
 // Leser: `lmlRot`.
 const LML_SAATEN = ["anazh-realm-seed", "zsp-0", "zsp-1", "zsp-2", "zsp-3", "zsp-4"];
@@ -591,7 +591,8 @@ const LML_SOLL = { kamm: 2, nebelAnteil: 0.7, spanneK: 5, gipfelAnteil: 0.95, ei
 const LML_TAETER = [
     ["kamm", "ohne Sperre und Föhn", /sperreKm: 2\.5,/, "sperreKm: 1e9, schattenKm: 1e9,", "planetKlimaR"],
     ["nebel", "ohne Auftrieb im Nebel", /auftrieb = glatt\(0, KLIMA\.nebelTaupunktK, -dTj\);/, "auftrieb = 0;", "planetKlimaR"],
-    ["spanne", "ohne den Winter der Meeresluft", /westWinterK: 14, westSommerK: -2,/, "westWinterK: 0, westSommerK: 0,", "planetKlimaR"],
+    // kuesten-kontrast: seit die Ostküste ihren Winter trägt (ostWinterK −12, Kaspi & Schneider 2011), hält sie allein 4,8 K — der Täter nimmt beide Küsten
+    ["spanne", "ohne den Winter der Küsten (Meeresluft und Rand-Strom)", /westWinterK: 14, westSommerK: -2, ostWinterK: -12, ostSommerK: -2,/, "westWinterK: 0, westSommerK: 0, ostWinterK: 0, ostSommerK: 0,", "planetKlimaR"],
     ["gipfel", "ks nur an der Grenze von heute", /const konv = Math\.max\(st, /, "const konv = Math.max(0, ", "ortRoh ks"],
     ["eis", "das Eis nur nach der Breite", /if \(G\.T0 \+ G\.T2 \* p2 \+ ab < KLIMA\.tEisC\) return 1;/, "if ((breite < 0 ? -breite : breite) >= G.eisBreite) return 1;", "ortEisZeit"], // prettier-ignore
 ];
