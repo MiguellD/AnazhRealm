@@ -4045,10 +4045,10 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         // liegenden Platte ist ein eigenes Gesetz —, bis alle schlafen, höchstens 10 s. Zuerst je Mutante (warm: der
                         // Warmstart erbt über die Fläche, bias: der Bias-Gang löst die Reibung mit), bis eine Saat nie schläft (höchstens
                         // 60); dann der echte Löser über dieselben Saaten
-                        const P = Object.getPrototypeOf(r);
+                        const PR = Object.getPrototypeOf(r);
                         const MUT = {
-                            warm: ["_freiKontaktBereit", P._freiKontaktBereit.toString(), "const gilt = l !== undefined && l[3] * n0 + l[4] * n1 + l[5] * n2 >= AnazhRealm.FREI.warmCos;", "const gilt = l !== undefined;"],
-                            bias: ["_freiGang", P._freiGang.toString(), "const dMax = prall !== undefined || (mitFeder && !warm) ? 1 : 3;", "const dMax = prall !== undefined ? 1 : 3;"],
+                            warm: ["_freiKontaktBereit", PR._freiKontaktBereit.toString(), "const gilt = l !== undefined && l[3] * n0 + l[4] * n1 + l[5] * n2 >= AnazhRealm.FREI.warmCos;", "const gilt = l !== undefined;"],
+                            bias: ["_freiGang", PR._freiGang.toString(), "const dMax = prall !== undefined || (mitFeder && !warm) ? 1 : 3;", "const dMax = prall !== undefined ? 1 : 3;"],
                         }; // prettier-ignore
                         const haufen = (saaten, m) => {
                             if (m && m[1].split(m[2]).length !== 2) return null;
