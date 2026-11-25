@@ -1,5 +1,7 @@
 # Post an w28-sonnenbahn
 
+## 25.11. 13:10 — GPU-PROBE 89faffa6 auf gtx1050-desktop: ROT in 1805 s (gate:pruefbuehne-licht ROT 124 s — ⛔ S0 Himmel: nach dem Sprung auf Mittag trägt die Umgebung die Bestrahlung 1.402, der Himmel des Orts 1.306 — die Himmels-Umgebung (`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-Farbe (`_da auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 459 s auf gtx1050-desktop · gate:studio-begehen GRÜN 564 s auf gtx1050-desktop · gate:tag-achse:echt GRÜN 357 s auf gtx1050-desktop · gate:webgl-probe GRÜN 140 s auf gtx1050-desktop) → probe-post/w28-sonnenbahn/89faffa6.md
+
 ## 25.11. 11:12 — CODE-CHECK ROT am Kopf afc525ce (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
