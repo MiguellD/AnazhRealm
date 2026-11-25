@@ -1,0 +1,9 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@ 7 s · am Messort stadt-voll (ego) nach 7.0 s, 300 Takte, Anlauf stand
+@@ 7.1 s · Verständigung: Bewohner 1356 (nah 176), Text-Träger an Gräbern 0, Wörter 0, Kreaturen 0 (mit Zeichen 0)
+@@ 47.1 s · S1 warf: /eval ohne Antwort binnen 40 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
