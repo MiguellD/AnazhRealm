@@ -1,7 +1,7 @@
 {
  "sha": "b1f0de0e0068399caba1583bb70c5f9cd598d1a6",
  "geraet": "gtx",
- "zeit": "2026-11-25T02:04:53.127Z",
+ "zeit": "2026-11-25T02:08:20.247Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.mannschaft#1": {
@@ -1471,6 +1471,218 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.kopplung.ereignis#2": {
+   "gruen": false,
+   "zahl": "S2 brennendHa 1,024 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 100 % gegen Soll = 100 % ✓ · der Zeuge der Welt fehlt: nur 39 ↔ 23 Bilder mit ↔ ohne Brand (Soll je 30) · Täter: stamm/siedlung-bewohner.js `_bewohnerSoll` (liest kein Brand-Feld) · stamm/feld-brand.js `_tickBrand` (die Kosten der Front)",
+   "exit": 0,
+   "minuten": 4.05,
+   "grund": "ROT: S2 brennendHa 1,024 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 100 % gegen Soll = 100 % ✓ · der Zeuge der Welt fehlt: nur 39 ↔ 23 Bilder mit ↔ ohne Brand (Soll je 30) · Täter: stamm/siedlung-bewohner.js `_bewohnerSoll` (liest kein Brand-Feld) · stamm/feld-brand.js `_tickBrand` (die Kosten der Front)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kb13c5e7173dc",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc8656c5b0fae",
+   "s": 242.9,
+   "fremd": {
+    "s": 246.7,
+    "takte": 114,
+    "fremdS": 41.89,
+    "kerne": 0.17,
+    "fensterKerne": 0.435,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      8.75
+     ],
+     [
+      "Explorer.EXE",
+      6.28
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.5
+     ]
+    ],
+    "dienerS": 52.33,
+    "diener": [
+     [
+      "System",
+      28.63
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.44
+     ]
+    ],
+    "geraetS": 87.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      56.83
+     ],
+     [
+      "svchost.exe",
+      26.98
+     ],
+     [
+      "SearchIndexer.exe",
+      1.58
+     ]
+    ],
+    "eigenS": 680.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T02:08:20.247Z",
+   "abdruck": "b0f00dcbbf88",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.gewalt#1": {
+   "gruen": false,
+   "zahl": "S1 die Messung der Leiter warf nach 3,075 s: /eval: {\"ms\":3042,\"fehler\":\"planet: koerper ist kein Objekt (string)\",\"stapel\":[\"at #evaluate (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\Executio · Täter: stamm/feld-brand.js `_brandEntfachen` (gerufen nur von der Tat: Brennglas, Unfall, Lava — kein Blitz im Gewitter)",
+   "exit": 0,
+   "minuten": 4.05,
+   "grund": "ROT: S1 die Messung der Leiter warf nach 3,075 s: /eval: {\"ms\":3042,\"fehler\":\"planet: koerper ist kein Objekt (string)\",\"stapel\":[\"at #evaluate (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\Executio · Täter: stamm/feld-brand.js `_brandEntfachen` (gerufen nur von der Tat: Brennglas, Unfall, Lava — kein Blitz im Gewitter)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kb13c5e7173dc",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc8656c5b0fae",
+   "s": 242.9,
+   "fremd": {
+    "s": 246.7,
+    "takte": 114,
+    "fremdS": 41.89,
+    "kerne": 0.17,
+    "fensterKerne": 0.435,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      8.75
+     ],
+     [
+      "Explorer.EXE",
+      6.28
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.5
+     ]
+    ],
+    "dienerS": 52.33,
+    "diener": [
+     [
+      "System",
+      28.63
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.44
+     ]
+    ],
+    "geraetS": 87.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      56.83
+     ],
+     [
+      "svchost.exe",
+      26.98
+     ],
+     [
+      "SearchIndexer.exe",
+      1.58
+     ]
+    ],
+    "eigenS": 680.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T02:08:20.247Z",
+   "abdruck": "47ad0509727a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.zeitreise#1": {
+   "gruen": true,
+   "zahl": "S1 baumAnteilProzent 16,667 % gegen Soll ≤ 30 % ✓ · stuempfe 10 gegen Soll ≥ 10 ✓ · Zeuge: zehn Fällungen über die Ernte, Taten im Feld, der Gegenlauf ohne Fällung bleibt Wald",
+   "exit": 0,
+   "minuten": 4.05,
+   "gpu": "nvidia/pascal",
+   "konsum": "kb13c5e7173dc",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc8656c5b0fae",
+   "s": 242.9,
+   "fremd": {
+    "s": 246.7,
+    "takte": 114,
+    "fremdS": 41.89,
+    "kerne": 0.17,
+    "fensterKerne": 0.435,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      8.75
+     ],
+     [
+      "Explorer.EXE",
+      6.28
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.5
+     ]
+    ],
+    "dienerS": 52.33,
+    "diener": [
+     [
+      "System",
+      28.63
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.44
+     ]
+    ],
+    "geraetS": 87.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      56.83
+     ],
+     [
+      "svchost.exe",
+      26.98
+     ],
+     [
+      "SearchIndexer.exe",
+      1.58
+     ]
+    ],
+    "eigenS": 680.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T02:08:20.247Z",
+   "abdruck": "87a6d08058b9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1490,7 +1702,8 @@
   "ka17ddb0000f6": "rVVNr6M2FP0vWXbKMwQIxtIsnEeqpO1oMtJsZnltXwMvBCIbQpuq/30ECS8B0moq9S6QkO7HOcfn2n8tTiAPkOLLm63KBVv8tPh5YeGMjkVzRvPyZhdsEUtviT7j1yCc89cuTZr8VFuickidg0GoG+MUKLB8kX2ZjsWKRoz8z8G/8Md445xv1vzjx3+CVMOhviFyUcTKY+uU83ZcUeSCgCghO6LTmBrz4lYCAgNFGWk3PN0TosmFJO19+uZJm0KgqpwaNL43CanSIZsmNjYFgQ40uh88gHTpagk32WjCPyd37u0nzveBDvY04Zxrns6mCyjVmEG8CiMM2e7Pp2hVDlg7RV7aYb6noli77GHmrMZA61wAswLNrQip5wViAL3upOnkmhTqorF2NIz6KlxSRkg8zU3R5jKrnZOp7pYS8TLygK3bGY/01Dj6EREIAVRMNc8AyxTNCIPrS73yGPmDTpse4IgGnBKyQUvXj5ZiZOntHMvgvCOWVg6lSqtA0v+8Df/SfqRMLCJXIuM/HA9b9PrjVelus57AKfpj6gUdwCgvCpfehCtNyLmzE98Nzfp/ur1v9i2S9BHnjL+VWW6OY/o6wKXrs9/natkMFBrnUNn6PdvHKHDFVaxdcp27p1Ni9k5scCsA0IfVIJTw7cw1ttJ1Cwad9NQM6xFgGIWM890suYbjcXC3j65yn55hyzdPKks1ghdEK0RkhHy4XhlzMa4Xg3PBvBiKtA6COGSv62CafDZwdECkJtf63WWh1PGzdW2xqB1RVcNV63tR5PudVOWjCfb93bl7YJakX4JPv/B2Myb8G9+e0xnnfkpl6gF8KFauDpju2cpZdm5qpwWZDelLLRA6+LMzu6ApMMWRnCKicbfsrbwh7VwS3S5F/WFk7su8Y46d0KVt7GACCYEI2ZOjadEcBJSHW6JUnrdS7FfO+foz34502X119zQhs+j125fr69v0rf+88n7ICSU5mUrn3dtAMmhsBkU9evGvKQ1q0WBWYuetOq9KLO9Zf38H",
   "k2da3db26e082": "bVXbjqJAEP0XH3eWaa7SdDIP7WCie8lisj9QDdXAiGC6cdi42X/fgLYKWG+YU1WnTp0u/y6OkO4hx9cP3dQLtviy+LrQ8ImWRvWJ6vVDL9giSh0XPcYvQTjn7z0sVeWx1aQqBQFRQ3FA66RaLKvXdEgDgX5GGenWPE8IkeRM4o7fYs3f3qZlKoFZY7Ug8VYkoJkM2BR40jkItOAkh8ZXsG3TpQuMDEFj/ismt+go54kv/YTGPKHrSUEBdTZmHy2DEAO27Z4yzUrA1qrKWpveThZG0mb3fj9nOQo66wxYVKiuSUgdxxeG8KqXpZdqkiirk9ajZtTLApcyQqIpNkddpkVrHVUjsL7CReSGDrBVN5sjP54s+cgIhAAqpnoXgHWOasTB9lK5dBj5Q6dF93BABVYNhdHS9kJX3LUhhGzmXKqB+NDCEM+cMHCdUWK/WPLZC8y3xkrDN93cEOb3OL/bje9mDXValOowlkr66Noe+zGnpwvIUFn7Rrc3tIehb4vLy9jGl74JXU0z74OZ/QEAfTALoYRvZjrqRrYdKLTy48kYxscgDBjn2xm4hcPB7NtDO7MZfxIdXz/JrLMRPT9cIiIj5OXygOZiXJ6KdcayMklS+n4UsPeVPwV/KjhYIHJVSmkcIYJURs8M3GHVWqJpWiOxE4ae10tVP5ogGS7J9mGyON/5bbXq1uOBt/EuyWf8hy6Nag35QCxt6TM5GCudoUvVWh2khYG7UiD09Gc7O6OqMMeRnCKkUW//Tl64f/SnKLyeCfkyMvd5XrHEXuhan7QxQQq+CNiT1XSo9gLq/RWYZo6zzNg3zvnqF9+MdPn+2078mMyi12+bFKtB3/eU7+Lc3LIjpuSoGln215IUcNIFVO39r+Pffw==",
   "k8af6a8c3e36c": "bVVdj5swEPwveWzLmc9gLN2Dc0RKpGsv99AfsIY1cCEQ2XD0UvW/V5A4CZB9A80ws7Nr83dxhGQPGT596LpasMW3xY+Fhk+0NKpPVE8fesEWUeK46DH+zvsinPOXHpao4thoUhaCgKggP6DVqgaL8ikZaCDQTykj3ZpnO0IkOZG4e36eUkuBaW01IPFKDGgqAzYFtjoDgRa0chC7gG2bLl1gZCga87eYXKujnO986e9oPPmYgCodu42WQYgB235xvuYzl2kB2FhlUWmj66RhJG120/o54yjorBNgXqK6kJA6ji+M2VUfZx/NhCjLVuuRGPXSwKWMkGiKzVAXSd5YR1ULrC5wEbmhA2w1Tzs7tpa8dwRCABXTrHPAKkM18mB7iVw6vXc52NdfO/mHcr7iU5E9HFCBVUFusrW90BW3rAghm7m3cmhkkDSNpE4YuM6I2A+ZfPaB8y2/1PBMN1eEeR9n/FbvM0Gd5IU6jKOTPrq2x17n9nQOKSprX+vmivYw9G3Bhu9v47Pujq6mzFtjZp4AQO+Wh1DCN3SmWMumA4VWdmzNAvkYhAHjfDsDN3A4mPl7aKc247NaP2BV6ciaHy4RkRHy/XyQ5kGcj411wqI0JCl9P5qd2E8FBwtEpgopzSaIIJHRo0XusGwsUdeNidYJQ8/rI6ruh/+rG7K+6ynO3v2mXHXrcavb2VoOCrVqjOlALG3pMzksUzJDF6qxOkhyA3elQIjYA+gJVYkZjmIUIY36le/Oh4Wc+qsovFwV8vtooU+zyZ8K7AOudKvN4BPwRcAejKRDtRdQ7S/AJHWcZcpeOeerN765S6TjL/HvHY37ozMqL+uze8n5+X3SZ2rusyMm5KhqWfQ3Jsmh1TmUze138e8/",
-  "k9cb3154b4f98": "bVVdb6MwEPwvebweNZ/BWOqDU3JKTq1KpXu5xzWsgYZAZEM55XT//QSEJED3IVKi2d3xzNj5uzpBfIAUHz90Va7Y6tvq+0rDJxoa1Seqxw+9Yqsgtmx0GB+KcM6fO1is8lOtSZELAqKE7IhGo2rMi8e4bwOBbkIZabc8jQiR5EzCll9ry5+e5mMKgUll1CDxOsSjifTYHNjoFAQa0Mh+8QVsmnRtAyN90ZC/heRa7SvnkSvdiIY8otvZQAFlMmUfrD0fPbZvv2Sa5IC1UeSlHndbiR9Ik93tW/QoaI0zYFagujQhtSxXjIQ3nSydVLNGWTRaT5ZRJ/FsyggJ5tgUdR5ntXFSlcDyAheB7VvANu3iHOmpMeQ9IxACqJjrnQGWKaoJB9OJ5dpi5A+dDz3AERUYJWSjlqbj2+KmDSFkt+RS9MT7FSPxxPI925o0dsaSz05gvh+j1H+nuyti/D1Mb3Hj74uFOs5ydZxKJV20TYe9LOnpDBJUxqHS9RXtoO+aYrgZ+3DYG9HNvPN2sNE/AKB3YSGU8N1CR13JugWFRnpqxsC46Pke43y/ANdwPI5+O2gm5txEXXchv6fh+mtEZIQ8DBdleejhShhnzIuxSUrXDTz2vHHn4E8FRwNEqnIpR+eFF8vgq6C2WNSGqKp6lNLyfcfpJCnvzY76F2N/52OYvruvP3i75ZPacx6lC/79lkrVI3lPrE3pMtkHKF6gc1UbLcTZCLelQOjoL7w5oyowxYmcwqdBF/M2vjDt0uBfngP5MAnxeTkxx07oUjd6NDsGV3jsC2taVAcB5eECjBPLWifsJ+d888Z3U11+mZEbkkV1+u1fss3wIv8ePoYlJ4zJSVUy715FkkGjMyjq21/Ev/8="
+  "k9cb3154b4f98": "bVVdb6MwEPwvebweNZ/BWOqDU3JKTq1KpXu5xzWsgYZAZEM55XT//QSEJED3IVKi2d3xzNj5uzpBfIAUHz90Va7Y6tvq+0rDJxoa1Seqxw+9Yqsgtmx0GB+KcM6fO1is8lOtSZELAqKE7IhGo2rMi8e4bwOBbkIZabc8jQiR5EzCll9ry5+e5mMKgUll1CDxOsSjifTYHNjoFAQa0Mh+8QVsmnRtAyN90ZC/heRa7SvnkSvdiIY8otvZQAFlMmUfrD0fPbZvv2Sa5IC1UeSlHndbiR9Ik93tW/QoaI0zYFagujQhtSxXjIQ3nSydVLNGWTRaT5ZRJ/FsyggJ5tgUdR5ntXFSlcDyAheB7VvANu3iHOmpMeQ9IxACqJjrnQGWKaoJB9OJ5dpi5A+dDz3AERUYJWSjlqbj2+KmDSFkt+RS9MT7FSPxxPI925o0dsaSz05gvh+j1H+nuyti/D1Mb3Hj74uFOs5ydZxKJV20TYe9LOnpDBJUxqHS9RXtoO+aYrgZ+3DYG9HNvPN2sNE/AKB3YSGU8N1CR13JugWFRnpqxsC46Pke43y/ANdwPI5+O2gm5txEXXchv6fh+mtEZIQ8DBdleejhShhnzIuxSUrXDTz2vHHn4E8FRwNEqnIpR+eFF8vgq6C2WNSGqKp6lNLyfcfpJCnvzY76F2N/52OYvruvP3i75ZPacx6lC/79lkrVI3lPrE3pMtkHKF6gc1UbLcTZCLelQOjoL7w5oyowxYmcwqdBF/M2vjDt0uBfngP5MAnxeTkxx07oUjd6NDsGV3jsC2taVAcB5eECjBPLWifsJ+d888Z3U11+mZEbkkV1+u1fss3wIv8ePoYlJ4zJSVUy715FkkGjMyjq21/Ev/8=",
+  "kb13c5e7173dc": "bVVdb6MwEPwvebweNZ/BWOqDUyoldz2VSv0Da1gDDYHIhnCX0/33ExCSAN03olnveGa8+bs6QryHFB8/dVWu2Orb6vtKwwkNjeqE6vFTr9gqiC0bHcaHIpzz5w4Wq/xYa1LkgoAoITug0aga8+Ix7ttAoJtQRtoXnkaESHImYcuv9cKfnubHFAKTyqhB4vUQjybSY3Ngo1MQaEAj+8EXsGnStQ2M9EVD/haSa7WU88iVbkRDHlHJ08V0AWUyvUGw9nz02K79km2SA9ZGkZd6nG8lfiBNdpv5a9GjoDXOgFmB6tKE1LJcMZLedNJ0cs0aZdFoPRlGncSzKSMkmGNT1Hmc1cZRVQLLC1wEtm8B27SLe6THxpD3jEAIoGKueQZYpqgmHEwnlmuLkd90fugeDqjAKCEbtTQd3xY3bQgh2yWXoifejxiJJ5bv2daksTOXnDqB+W6MU/9Nt1fE+HuY3iLH3xcDdZzl6jCVSrpomw57XdLTGSSojH2l6yvaQd81xfA6duEwN6KbeeftYqN/AEDvwkIo4duFjrqSdQsKjfTYjIFx0fM9xvluAa7hcBj9dtBMzLmJuu5Cfk/D9deIyAh5GB7L8tLDkzDOmBdjk5SuG3jseePOwScFBwNEqnIpR+eFF8vgq6C2WNSGqKp6lNLyfcfpJCnvzY76rbG78zFM39262LQvfFK78D1avut+SqXqkbwn1qZ0mewDFC/QuaqNFuJshNtSIHT0F96cURWY4kRO4dOgi3krB+7nbu34l3UgHyYhPi9PzLETutSNHs2OwRUe+8KaFtVeQLm/AOPEstYJ+8E537zx7USXnx9mREOyqE6/3Wu5GbZy3OlK/gw764gxOapK5t1WJBk0OoOivv1N/PsP"
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
@@ -2128,6 +2341,200 @@
    "abdruck": "0e2470c9b605",
    "port": 7804,
    "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.aufwaerts#1": {
+   "gruen": false,
+   "zahl": "der Deckel der Leiter riss nach 45,02 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 45,02 s vor dem Wert der Sprosse · der Deckel der Leiter 45 s) · Täter: @@PUNKTE@@ PROBE 242.7 s · Exit 0",
+   "exit": 0,
+   "minuten": 4.05,
+   "grund": "der Deckel der Leiter riss nach 45,02 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 45,02 s vor dem Wert der Sprosse · der Deckel der Leiter 45 s) · Täter: @@PUNKTE@@ PROBE 242.7 s · Exit 0",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 242.9,
+   "fremd": {
+    "s": 246.7,
+    "takte": 114,
+    "fremdS": 41.89,
+    "kerne": 0.17,
+    "fensterKerne": 0.435,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      8.75
+     ],
+     [
+      "Explorer.EXE",
+      6.28
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.5
+     ]
+    ],
+    "dienerS": 52.33,
+    "diener": [
+     [
+      "System",
+      28.63
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.44
+     ]
+    ],
+    "geraetS": 87.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      56.83
+     ],
+     [
+      "svchost.exe",
+      26.98
+     ],
+     [
+      "SearchIndexer.exe",
+      1.58
+     ]
+    ],
+    "eigenS": 680.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T02:08:20.247Z",
+   "abdruck": "0a6772643477",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.kohaerenz#1": {
+   "gruen": false,
+   "zahl": "der Deckel der Leiter riss nach 40,092 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 40,092 s vor dem Wert der Sprosse · der Deckel der Leiter 40 s) · Täter: @@PUNKTE@@ PROBE 242.7 s · Exit 0",
+   "exit": 0,
+   "minuten": 4.05,
+   "grund": "der Deckel der Leiter riss nach 40,092 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 40,092 s vor dem Wert der Sprosse · der Deckel der Leiter 40 s) · Täter: @@PUNKTE@@ PROBE 242.7 s · Exit 0",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 242.9,
+   "fremd": {
+    "s": 246.7,
+    "takte": 114,
+    "fremdS": 41.89,
+    "kerne": 0.17,
+    "fensterKerne": 0.435,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      8.75
+     ],
+     [
+      "Explorer.EXE",
+      6.28
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.5
+     ]
+    ],
+    "dienerS": 52.33,
+    "diener": [
+     [
+      "System",
+      28.63
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.44
+     ]
+    ],
+    "geraetS": 87.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      56.83
+     ],
+     [
+      "svchost.exe",
+      26.98
+     ],
+     [
+      "SearchIndexer.exe",
+      1.58
+     ]
+    ],
+    "eigenS": 680.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T02:08:20.247Z",
+   "abdruck": "d0a0a97b71a5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.terraform#1": {
+   "gruen": false,
+   "zahl": "der Deckel der Leiter riss nach 20,016 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,016 s vor dem Wert der Sprosse · der Deckel der Leiter 20 s) · Täter: @@PUNKTE@@ PROBE 242.7 s · Exit 0",
+   "exit": 0,
+   "minuten": 4.05,
+   "grund": "der Deckel der Leiter riss nach 20,016 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,016 s vor dem Wert der Sprosse · der Deckel der Leiter 20 s) · Täter: @@PUNKTE@@ PROBE 242.7 s · Exit 0",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 242.9,
+   "fremd": {
+    "s": 246.7,
+    "takte": 114,
+    "fremdS": 41.89,
+    "kerne": 0.17,
+    "fensterKerne": 0.435,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      8.75
+     ],
+     [
+      "Explorer.EXE",
+      6.28
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.5
+     ]
+    ],
+    "dienerS": 52.33,
+    "diener": [
+     [
+      "System",
+      28.63
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.44
+     ]
+    ],
+    "geraetS": 87.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      56.83
+     ],
+     [
+      "svchost.exe",
+      26.98
+     ],
+     [
+      "SearchIndexer.exe",
+      1.58
+     ]
+    ],
+    "eigenS": 680.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T02:08:20.247Z",
+   "abdruck": "8dcb369fb653",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
    "modus": "session"
   }
  }
