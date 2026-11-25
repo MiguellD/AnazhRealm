@@ -1,13 +1,13 @@
 {
-  "stand": "2026-11-24",
-  "kopf": "aa93733f",
-  "version": "V18.546.410",
+  "stand": "2026-11-25",
+  "kopf": "6c210411",
+  "version": "V18.546.411",
   "skala": "2.0",
   "summe": 219,
   "max": 330,
   "maschine": {
-    "kopf": "aa93733f",
-    "zeit": "2026-11-24T23:56:48.794Z",
+    "kopf": "6c210411",
+    "zeit": "2026-11-25T00:08:44.811Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -3794,7 +3794,7 @@
           "punkte": 1,
           "staffel": "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
           "messung": "`werkbank haenger 60 --regler frei --wandern bahn` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`). Der Regler ist der des Spielers (R8): ohne Angabe fährt `haenger` voll; `--wandern kreis` kennt der Kopf nicht.",
-          "beleg": "Maschine: gehalten: Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms an d39e0d6e radeon · gehalten: Gehen 107 Bilder · max 66.64 ms · 14.02 % > 33 ms · Fahrt 92 Bilder · max 75.03 ms · 19.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.02 % > 33 ms | Fahrt: 19.57 % > 33 ms an d39e0d6e gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 4171973a: Last: Referenz f 1,626 (Faden 1,626 · alle Kerne 1,286; vor 108,6/295,3 ms, nach 135,6/336,7 ms, Ruhe 83,4/261,9 ms seit 2026-11-17) · fremd: git pack-objects --exclude-promisor-objects-best-effort pa · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an 2d6a0447: Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | const st = r.state; clearInterval(w",
+          "beleg": "Maschine: gehalten: Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms an d39e0d6e radeon · gehalten: Gehen 107 Bilder · max 66.64 ms · 14.02 % > 33 ms · Fahrt 92 Bilder · max 75.03 ms · 19.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.02 % > 33 ms | Fahrt: 19.57 % > 33 ms an d39e0d6e gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an b1f0de0e: Last: Referenz f 1,526 (Faden 1,526 · alle Kerne 1,397; vor 127,3/365,2 ms, nach 112,1/298 ms, Ruhe 83,4/261,5 ms seit 2026-11-17) · fremd: node.exe fahrbahn-alt.cjs micha/AnazhRealm-front-pl 95,0 CPU · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an 2d6a0447: Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | const st = r.state; clearInterval(w",
           "schlupfloch": "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt; den Regler auf voll stellen, um den Spieler-Takt zu meiden: R8 fährt den Regler des Spielers.",
           "aenderung": "Gemessen 0 → 1 (M29, e5003509, GTX, Regler des Spielers): kein Schnitt, die Messung am Kopf; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an b0b2d8ed gemessen (M34) 22.10. 0 → 1.; nach R6 (stadt-takt, fahrt-takt-Folge-Morphs, 16dd81d0) 23.10. 1 → 0.",
           "maschine": true
@@ -4605,8 +4605,8 @@
       "was": "Mess-Takt 2 an 4a5f5e2c (Züge 26 und 28b: Gelände K1/K4 im Kern, Huf, Herde, Treffer-kalt, Temperatur aus EINER Quelle mit Stefan-Eis, Werkstatt-Bühnen über _buehneRenderer, Fahr-Gesetz in der Welt, Tore-Abdruck; headless 63/2, Radeon in Ruhe nachgemessen, GTX 28/8): gelaende.K1 und K4 → 2, feld.K2, tore.K3, fahrzeug.K1 und K4 → 2, speicher.K4 je +1; leib.K1 2 → 1 (zwei Hiebe ohne Treffer-Ereignis an der Radeon, Karte leib-k1-hieb)."
     },
     {
-      "stand": "2026-11-24",
-      "kopf": "aa93733f",
+      "stand": "2026-11-25",
+      "kopf": "6c210411",
       "summe": 219,
       "max": 330,
       "skala": "2.0",
@@ -4614,7 +4614,7 @@
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 24.11.2026, Kopf main aa93733f (V18.546.410)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 25.11.2026, Kopf main 6c210411 (V18.546.411)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
