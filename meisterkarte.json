@@ -1,13 +1,13 @@
 {
   "stand": "2026-11-25",
-  "kopf": "486a6685",
-  "version": "V18.546.413",
+  "kopf": "967bd422",
+  "version": "V18.546.414",
   "skala": "2.0",
   "summe": 219,
   "max": 330,
   "maschine": {
-    "kopf": "486a6685",
-    "zeit": "2026-11-25T06:20:40.098Z",
+    "kopf": "967bd422",
+    "zeit": "2026-11-25T06:31:19.287Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -4606,7 +4606,7 @@
     },
     {
       "stand": "2026-11-25",
-      "kopf": "486a6685",
+      "kopf": "967bd422",
       "summe": 219,
       "max": 330,
       "skala": "2.0",
@@ -4614,7 +4614,7 @@
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 25.11.2026, Kopf main 486a6685 (V18.546.413)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 25.11.2026, Kopf main 967bd422 (V18.546.414)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
