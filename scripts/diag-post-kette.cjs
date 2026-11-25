@@ -340,7 +340,12 @@ const kanalAbstand = (a, b) => (a && b ? +Math.max(...[0, 1, 2].map((c) => Math.
 // (`_flammenLicht(r, cdM2)`, `_leuchtTakt`) bei der Leuchtdichte, deren Stärke × Belichtung `quelleBild` trägt: die Lage der Probe
 // vor der Welle (Stärke 17,177 × k 1,505 = 25,85 Welt-Einheiten in 1 m, c5713056), an der die Bänder (k1) gemessen sind. Das
 // Bild des Kopfs bei der Leuchtdichte des Gesetzes misst die Probe daneben als Auskunft (`gesetz`, kein Urteil).
-const RAUCH_PROBE = { uhr: 0, abstandM: 4.5, wandM: 6, radiusM: 1, deck: 0.45, licht: [0, -2, 3], flammeM: 2, quelleBild: 25.85, versatz: 0.5, streck: 1, rand: 0.8, wand: 0.3, stoerer: 0.05, frames: 6, staubSink: 0.19 };
+// DER EIGENE ORT (rauch-buehne): das Auge `ueberBodenM` über dem Boden der Bühne, in freier Luft — der Ort, an dem die Bänder
+// geeicht sind (die Bühne vor w28-spiegel-eis: y0 = eisNull − 7 = 94,74 m über dem Boden 90,31 m). Bis hier stand die Probe auf der
+// Bühne und folgte ihrer Eis-Linie: mit EIS.uebergang 13 sank sie 12,9 m in die Erde, das Muster des Rauchs steht in der Welt
+// (`_rauchStoff`), der Ballen las ein anderes Stück Rauschen (UNTERSEITE 6,07 → 2,84, ZUG 2,042 → 1,604, GTX 1050 und 1060).
+// Die Probe zeichnet nur ihre Schicht: die Eis-Linie hat hier keinen Leser.
+const RAUCH_PROBE = { uhr: 0, ueberBodenM: 4.43, abstandM: 4.5, wandM: 6, radiusM: 1, deck: 0.45, licht: [0, -2, 3], flammeM: 2, quelleBild: 25.85, versatz: 0.5, streck: 1, rand: 0.8, wand: 0.3, stoerer: 0.05, frames: 6, staubSink: 0.19 };
 // GEMESSEN (swiftshader, c5713056, Leinwand 321×241, der Lauf zweimal Zahl für Zahl gleich) — der Kopf und, im selben Lauf, jede
 // Mutante; der Selbsttest urteilt an genau diesen Zahlen (grün am Kopf, rot an jeder Mutanten-Zahl an seiner Stelle). Auf der
 // Karte (GTX 1050, ein Lauf): unten ÷ oben 5,97 / flach 3,28 · Korrelation 0,749 / −0,318 · Höhe zu Breite 2 / 0,926 / 0,926.
@@ -624,6 +629,14 @@ function urteil(z) {
     const b = z.buehne || {};
     if (!(b.wasserY < b.eisNull))
         v.push(`BÜHNE: ihr Wasser (${b.wasserY} m) liegt über der Eis-Linie (${b.eisNull} m) — Saum und Wasser messen Eis`);
+    // DIE BÜHNE IN DER LUFT (rauch-buehne): ihr Wasser (y0 − 3) steht über dem Boden des Orts. Die Formel in `buehne`
+    // (y0 = min(boden + 160, eisNull − 7)) legte sie seit w28-spiegel-eis (EIS.uebergang 20 → 13: eisNull über Genesis 101,74 →
+    // 88,86 m) 8,45 m in die Erde (Wasser 78,86 m, Boden 90,31 m) — jede Probe auf ihr maß unter dem Grund, und keine Zeile sagte es
+    if (!(b.wasserY > b.boden))
+        v.push(
+            `BÜHNE: im Boden — ihr Wasser (${b.wasserY} m) liegt unter dem Boden des Orts (${b.boden} m; die Eis-Linie ${b.eisNull} m, ` +
+                "y0 = min(boden + 160, eisNull − 7) in `buehne`) — Saum, Wasser, Zunge, Flamme, Tor und Knie messen in der Erde"
+        );
     const w = z.wasser;
     const abst = (a, b) => (a && b ? Math.max(...[0, 1, 2].map((c) => Math.abs(a[c] - b[c]))) : NaN);
     if (!w) v.push("WASSER: die Probe Abbild gegen r184s Viewport-Tiefe lief nicht");
@@ -998,6 +1011,9 @@ function selbsttest() {
         ["Wasser-Probe blind", (z) => (z.wasser.ohneGrund = z.wasser.abbild), /Probe ist blind/],
         // stoffe-k3-phasen a3b87db1: die Bühne 160 m über Genesis (247,3 m) über der Eis-Linie 157,1 m
         ["Bühne im Eis", ["buehne.wasserY=", 247.3], /über der Eis-Linie/],
+        // rauch-buehne, die Mutante „uebergang 13 mit der alten Formel“: w28-spiegel-eis (fe8045224b) über Genesis — eisNull 88,86 m
+        // unter dem Boden 90,31 m, y0 = eisNull − 7 = 81,86 m, das Wasser 78,86 m
+        ["Bühne im Boden (uebergang 13, die alte Formel)", (z) => Object.assign(z.buehne, { wasserY: 78.86, eisNull: 88.86 }), /BÜHNE: im Boden — ihr Wasser \(78\.86 m\) liegt unter dem Boden des Orts \(90\.3 m/],
         ["Wasser nicht umgehängt", (z) => (z.wasser.umgehaengt = [0, 1]), /nicht umgehängt/],
         ["Wasser-Probe fehlt", ["wasser"], /lief nicht/],
         ["Saum auf ungerader Leinwand (Gegenprüfung 0710-3: 37 von 561 Kanten-Pixeln bis +25 Luma)", ["saum", { abweichend: 14, dMax: 25 }], /Nachbar-Block/],
@@ -2507,7 +2523,7 @@ function rauchProbe(ort, P) {
         out.zugang = await page.evaluate(zugangProbe);
         log(`Zugang: ${JSON.stringify(out.zugang)}`);
         // (k) der Rauch zuletzt: er stellt die Nacht und baut drei Stoffe (Kopf und zwei Mutanten)
-        out.rauch = await page.evaluate(rauchProbe, b, RAUCH_PROBE);
+        out.rauch = await page.evaluate(rauchProbe, { x: b.x, y: b.boden + RAUCH_PROBE.ueberBodenM, z: b.z }, RAUCH_PROBE);
         // (k4) der GANZE Stamm (Lehre 12): die Attribute des Rauchs liest nur das EINE Bild (`fehlt.wo` nennt den Zwilling)
         if (out.rauch.leser)
             out.rauch.leser.zwilling = STAMM.fehlt({ ausser: ["_rauchZeichnen", "_rauchStoff"] }, /["'`]a(?:Rauch|Zug)["'`]/) ? null : STAMM.fehlt.wo;
