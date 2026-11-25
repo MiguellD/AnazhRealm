@@ -1286,8 +1286,7 @@ class AnazhRealm_siedlung_bewohner {
             const I = { heim: P.heimI, platz: am(platzI), spiel: am(platzI), werk, mahl: am(B.mahl), abend: am(B.abend), besuch: am(B.besuch) }; // prettier-ignore
             const wegeM = new Map();
             const ids = [...new Set(Object.values(I).filter((j) => j !== null))];
-            for (const x of ids)
-                for (const y of ids) if (x < y) wegeM.set(x * 65536 + y, wegZu(orte[x], orte[y], y));
+            for (const x of ids) for (const y of ids) if (x < y) wegeM.set(x * 65536 + y, wegZu(orte[x], orte[y], y));
             [b.ortI, b.wegeM] = [I, wegeM];
             if (i % 64 === 0) yield;
         }
@@ -2756,7 +2755,18 @@ class AnazhRealm_siedlung_bewohner {
         const o = b.orte;
         const k = b.kette;
         const v = b.gangTempo ?? b.tempo;
-        if (k && k.regen === regen && k.krank === b.krank && k.rolle === b.rolle && k.werk === o.werk && k.platz === o.platz && k.besuch === o.besuch && k.spiel === o.spiel && k.v === v) // prettier-ignore
+        if (
+            k &&
+            k.regen === regen &&
+            k.krank === b.krank &&
+            k.rolle === b.rolle &&
+            k.werk === o.werk &&
+            k.platz === o.platz &&
+            k.besuch === o.besuch &&
+            k.spiel === o.spiel &&
+            k.v === v
+        )
+            // prettier-ignore
             return k.K;
         const [I, W, sek] = [b.ortI, b.wegeM, this._bewohnerStundeSek()];
         const geh = (von, nach) => {
