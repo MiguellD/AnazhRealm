@@ -2808,7 +2808,7 @@ class AnazhRealm_siedlung_bewohner {
         const k = b.kette;
         const v = b.gangTempo ?? b.tempo;
         // prettier-ignore
-        if (k && k.regen === regen && k.krank === b.krank && k.rolle === b.rolle && k.werk === o.werk && k.platz === o.platz && k.besuch === o.besuch && k.spiel === o.spiel && k.einkauf === o.einkauf && k.v === v) return k.K;
+        if (k && k.regen === regen && k.krank === b.krank && k.rolle === b.rolle && k.werk === o.werk && k.platz === o.platz && k.besuch === o.besuch && k.spiel === o.spiel && k.einkauf === o.einkauf && k.einkaufFuer === o.einkaufFuer && k.v === v) return k.K;
         const [I, W, sek] = [b.ortI, b.wegeM, this._bewohnerStundeSek()];
         // DER WEG OHNE NETZ ZÄHLT BEIM NAMEN, nie still als null Gehzeit: ein Ort seines Tags ohne Index (`ohne.ort`) oder ohne Weg
         // im Netz (`tagesWege` → Infinity, `ohne.netz`) trägt die Kette als Zahl mit dem Paar der Orte (`K.ohne`) — die Probe liest sie
@@ -2824,7 +2824,7 @@ class AnazhRealm_siedlung_bewohner {
         };
         const K = KC.tagesKette(b.same, b.rolle, o, regen, b.krank, geh);
         K.ohne = ohne;
-        if (v > 0) b.kette = { K, regen, krank: b.krank, rolle: b.rolle, werk: o.werk, platz: o.platz, besuch: o.besuch, spiel: o.spiel, einkauf: o.einkauf, v }; // prettier-ignore
+        if (v > 0) b.kette = { K, regen, krank: b.krank, rolle: b.rolle, werk: o.werk, platz: o.platz, besuch: o.besuch, spiel: o.spiel, einkauf: o.einkauf, einkaufFuer: o.einkaufFuer, v }; // prettier-ignore
         return K;
     }
     _bewohnerSoll(b, stunde) {

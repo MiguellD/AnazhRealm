@@ -10,8 +10,8 @@
 // kein eigener Ort, der Plan nennt die Tür). Je Bewohner `tagesPlan` alle 15 min über 24 h. EIN BLINDER ZUORDNER (er liest
 // den Zug nie, nur seinen Tag und die Rolle seines Hauses) ordnet jeden nach drei Kennzahlen: Stunden am Werk über dem Maß
 // seiner Rolle, Stunden am Treff außer Haus, Stunden daheim in der Freizeit — die Zeit-Art je Akt aus dem Kern (koerper
-// TAGES_GESETZ.zeitArt: arbeit · bedarf · haushalt · frei; ein Akt ohne Art ist ROT, die Anker schlaf · morgen · mittag ·
-// abendbrot = bedarf und arbeit = arbeit stehen fest). DIE KASKADE (Entscheid des Koordinators 25.11.): Werk über dem Maß
+// TAGES_GESETZ.zeitArt: arbeit · bedarf · haushalt · frei; ein Akt ohne Art ist ROT, die Anker schlaf · morgen · mittag =
+// bedarf und arbeit = arbeit stehen fest). DIE KASKADE (Entscheid des Koordinators 25.11.): Werk über dem Maß
 // ≥ 1,5 h → fleißig · Treff ≥ 2 h → gesellig · der Anteil seiner Freizeit daheim (frei daheim ÷ alle Freizeit) ≥ Q + 0,15
 // UND frei daheim ≥ 2 h → häuslich · sonst ausgeglichen. Q = 0,74 ist der Anteil der Freizeit, den Erwachsene im Mittel
 // daheim verbringen: ATUS 2019 Table 11A (15 J und älter, Freizeit und Sport 5,19 h je Tag) — Fernsehen 2,81 · Lesen 0,27 ·
@@ -93,7 +93,7 @@ function tagDesDorfs(K) {
 const FREI_DAHEIM_Q = 0.74;
 const HAEUSLICH_AB = FREI_DAHEIM_Q + 0.15;
 // die festen Anker der Zeit-Art (der Kern darf sie nicht verbiegen) und die Arten der Tafel
-const ZEIT_ANKER = { schlaf: "bedarf", morgen: "bedarf", mittag: "bedarf", abendbrot: "bedarf", arbeit: "arbeit" };
+const ZEIT_ANKER = { schlaf: "bedarf", morgen: "bedarf", mittag: "bedarf", arbeit: "arbeit" };
 const ZEIT_ARTEN = new Set(["arbeit", "bedarf", "haushalt", "frei"]);
 // DER BLINDE ZUORDNER: liest nur den Tag (die Worte), die Rolle des Hauses und die Zeit-Art des Kerns — nie den Zug
 function zuordnen(P, K = KC) {
@@ -129,7 +129,7 @@ function zeitTafelRot(K) {
     const ohne = Object.keys(K.TAGES_GESETZ.haltung || {}).filter((a) => !ZEIT_ARTEN.has(A[a]));
     if (ohne.length) rot.push(`Zeit-Art fehlt: ${ohne.join(" · ")} (koerper TAGES_GESETZ.zeitArt)`);
     const krumm = Object.keys(ZEIT_ANKER).filter((a) => A[a] !== ZEIT_ANKER[a]);
-    if (krumm.length) rot.push(`Zeit-Art verbogen: ${krumm.map((a) => a + " = " + A[a]).join(" · ")} (Anker: schlaf · morgen · mittag · abendbrot = bedarf, arbeit = arbeit)`);
+    if (krumm.length) rot.push(`Zeit-Art verbogen: ${krumm.map((a) => a + " = " + A[a]).join(" · ")} (Anker: schlaf · morgen · mittag = bedarf, arbeit = arbeit)`);
     return rot;
 }
 

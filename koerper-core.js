@@ -5351,8 +5351,8 @@
     //    DER BEGINN DES WERKS je Mensch aus der Verteilung der Abfahrten zur Arbeit (`werkAb`: [von, bis, Anteil %] — US Census, ACS
     //    2009, Table B „Time of Departure to Go to Work“); das Werk dauert so lange wie das des Gesetzes (werk[1] − werk[0]); die
     //    Rollen mit eigenen Stunden behalten sie. AUFSTEHEN UND ZU BETT IM HAUS: der Morgen bis zum Aufbruch ist drinnen, ebenso
-    //    der Abend nach der Bank vor der Tür (`_bankWende`: eine Stunde aus dem Samen zwischen Heimkehr und Ruhe). DIE HEIMKEHR
-    //    STREUT: der geteilte Abend am Treff dauert abendTreffH × 0,5–1,5, der Mittag liegt in 12 ± 1 Uhr.
+    //    der Abend nach der Bank vor der Tür (`_bankWende`: eine Stunde aus dem Samen in höchstens bankH nach der Heimkehr). DIE HEIMKEHR
+    //    STREUT: der geteilte Abend am Treff dauert abendTreffH ± 0,25 h, der Mittag liegt in 12 ± 1 Uhr.
     //    DER EINKAUF DES HAUSHALTS (`einkauf`, mensch.menge.bild#2): je Haushalt — die Leute hinter einer Tür — geht EINER am
     //    Markt-Morgen zum Markt (der Wirt fragt den Kern, `tagesEinkaeufer`). Der Markt öffnet um `auf` mit Fahne und Glocke, bis
     //    zum Schluss um 11 Uhr kaufen die Bürger „zur Nothdurfft ihrer Haushaltung“, die Fürkäufer erst danach (Marktordnung
@@ -5379,9 +5379,9 @@
         ruhe: 22,
         streuH: 0.5,
         besuchH: 0.75,
-        // DER FEIERABEND IM HAUS (tages-gesetz, `_feierabend`): wer vom Werk heimkommt, geht hinein zum Abendbrot — so viele
-        // Stunden (ANGENOMMEN: die Mahlzeit des Abends im Haushalt, eine halbe Stunde) —, dann zum Treff oder vor seine Tür
-        abendbrotH: 0.5,
+        // die Bank vor der Tür (`_bankWende`): höchstens so viele Stunden sitzt er nach der Heimkehr draußen (ANGENOMMEN; Band: die
+        // Gänge zu Fuß ab 18 Uhr, NHTS 2017 22 % von 18 bis 6 Uhr — National Academies 2025, „Improving Pedestrian Safety at Night“)
+        bankH: 1,
         // der Markt-Morgen: die Öffnung und der Schluss (Uhr), wie lange er je Erwachsenem seines Haushalts bleibt
         einkauf: Object.freeze({ auf: 7, schluss: 11, dauerH: 0.5 }),
         // die Abfahrten zur Arbeit je Band [von, bis, Anteil %] (ACS 2009 Table B: vor 5 Uhr 4,1 · 5–6 8,3 · 6–7 18,9 · 7–8 28,1 ·
@@ -5488,7 +5488,7 @@
         // time“, HETUS 5–7); der Weg zwischen zwei Orten (HETUS 9) ist kein Akt des Plans. Bis hier las der Zuordner jede wache
         // Viertelstunde im Haus als Freizeit: mit dem Morgen im Haus (tages-gesetz) trug der Ausgeglichene 5,53 h „daheim“ und
         // fiel häuslich (gate:mensch-zuege ausgeglichen 7/16)
-        zeitArt: Object.freeze({ schlaf: "bedarf", morgen: "bedarf", mittag: "bedarf", abendbrot: "bedarf", arbeit: "arbeit", einkauf: "haushalt", besuch: "frei", abend: "frei", spiel: "frei", wettkampf: "frei", zweikampf: "frei", brett: "frei", zuschauen: "frei" }), // prettier-ignore
+        zeitArt: Object.freeze({ schlaf: "bedarf", morgen: "bedarf", mittag: "bedarf", arbeit: "arbeit", einkauf: "haushalt", besuch: "frei", abend: "frei", spiel: "frei", wettkampf: "frei", zweikampf: "frei", brett: "frei", zuschauen: "frei" }), // prettier-ignore
         // DER REGEN TREIBT INS HAUS (mensch.kopplung.leben S1 der Karte 2; Leser: `tagesPlan`, sein Wirt `_bewohnerSoll` reicht
         // den Regen der Welt, den Kanal `rain` des EINEN Wetter-Felds 0–1): steht der Regen am Ort über der Schwelle eines
         // Menschen (`ab` ± `streuH` aus seinem Samen — das Dorf flieht nicht im selben Atemzug, der Übergang des Worts leert den
@@ -5814,22 +5814,16 @@
     // Menschen liegen je einen Gang auseinander, der Wirt bindet sie so), jeder Wechsel ein Weg. Leser: `spielProgramm` (der
     // Abend trägt den Weg), die Linse gate:koerper-kern E7.
     // DIE BANK VOR DER TÜR (tages-gesetz): wer heimkommt (nach dem Besuch des Abends und dem geteilten Abend am Treff), sitzt erst
-    // vor seiner Tür und geht zu einer Stunde aus dem Samen zwischen Heimkehr und Ruhe hinein, gleich verteilt — zur Ruhe ist er
-    // drinnen, ihr Gang über die Schwelle verteilt sich über den Abend. Bis tages-gesetz saß jeder bis zur Ruhe vor der Tür, die
-    // Ruhe war ein Weg: an stadt-voll um 22 Uhr 1 100 Wege in der Stunde (die dritte Spitze der Station rhythmus#2)
-    // DER FEIERABEND (tages-gesetz, TAGES_GESETZ.abendbrotH): die Heimkehr vom Werk — nach dem Besuch des Abends, wo der Abend ihn
-    // trägt (bA) — und das Ende des Abendbrots im Haus (ab, nie nach der Ruhe); ab ihm der Abend am Treff oder vor der Tür. Bis
-    // hier ging er vom Werk geradewegs zum Treff oder auf die Bank, und der Tag ohne Besuch und ohne Mittag außer Haus trug drei
-    // Wege (Haus → Werk → Treff → Haus, mensch.K3 4–10: an der Station mensch.K2#2 einer von 89 mit 3, im Dorf der Linse 27 von 100)
-    function _feierabend(T, orte) {
-        var G = TAGES_GESETZ,
-            bA = !!orte.besuch && T.w1 + G.besuchH <= T.ruhe - 0.5,
-            heim = bA ? T.w1 + G.besuchH : T.w1;
-        return { bA: bA, heim: heim, ab: Math.max(heim, Math.min(T.ruhe, heim + G.abendbrotH)) };
-    }
+    // vor seiner Tür und geht zu einer Stunde aus dem Samen hinein, gleich verteilt über höchstens bankH nach der Heimkehr — zur
+    // Ruhe ist er drinnen, ihr Gang über die Schwelle folgt der Heimkehr. Bis tages-gesetz saß jeder bis zur Ruhe vor der Tür, die
+    // Ruhe war ein Weg: an stadt-voll um 22 Uhr 1 100 Wege in der Stunde (die dritte Spitze der Station rhythmus#2); danach bis
+    // zur Ruhe gleich verteilt, die Schwelle staute sich vor ihr: im Kern-Spike um 21 Uhr 372 Wege bei der Hälfte der Spitze
+    // 354, die dritte Spitze kam wieder, ab 18 Uhr 30,8 % der Wege (Band `bankH`: 22 %)
     function _bankWende(T, same, orte) {
-        var ab = _feierabend(T, orte).ab + (T.abendTreffH != null ? T.abendTreffH : 0);
-        return ab + _tagZahl(same, "bank") * Math.max(0, T.ruhe - ab);
+        var G = TAGES_GESETZ,
+            bA = orte.besuch && T.w1 + G.besuchH <= T.ruhe - 0.5,
+            ab = (bA ? T.w1 + G.besuchH : T.w1) + (T.abendTreffH != null ? T.abendTreffH : 0);
+        return ab + _tagZahl(same, "bank") * Math.max(0, Math.min(G.bankH, T.ruhe - ab));
     }
     function tagesGaenge(same, rolle, orte) {
         var G = TAGES_GESETZ,
@@ -5840,9 +5834,7 @@
             mB = _morgenGang(T, true);
         var t = [T.wach, mO[0], mO[1], mB[0], mB[1], mB[1] + G.besuchH, T.w0, T.m0, T.m1, T.w1, T.w1 + G.besuchH, T.ruhe];
         t.push(_bankWende(T, same, orte));
-        var F = _feierabend(T, orte);
-        t.push(F.ab);
-        if (T.abendTreffH != null) t.push(F.ab + T.abendTreffH);
+        if (T.abendTreffH != null) t.push(T.w1 + T.abendTreffH, T.w1 + G.besuchH + T.abendTreffH);
         (orte.spiel || []).forEach(function (e) {
             t.push(e.von, e.bis);
         });
@@ -5886,9 +5878,7 @@
             mB = _morgenGang(T, true);
         var t = [T.wach, mO[0], mO[1], mB[0], mB[1], mB[1] + G.besuchH, T.w0, T.m0, T.m1, T.w1, T.w1 + G.besuchH, T.ruhe];
         t.push(_bankWende(T, same, orte));
-        var F = _feierabend(T, orte);
-        t.push(F.ab);
-        if (T.abendTreffH != null) t.push(F.ab + T.abendTreffH);
+        if (T.abendTreffH != null) t.push(T.w1 + T.abendTreffH, T.w1 + G.besuchH + T.abendTreffH);
         (orte.spiel || []).forEach(function (e) {
             t.push(e.von, e.bis);
         });
@@ -5926,6 +5916,11 @@
             var g = j && vor.ort !== e.p.ort ? Math.max(0, geh(vor.wo, e.p.wo) || 0) : 0;
             if (rel - g < ank - 1e-9) eng++;
             var auf = Math.max(rel - g, ank);
+            // DER KAUF SCHRUMPFT NIE (tages-gesetz): den Markt verlässt der Einkäufer erst nach der Dauer seines Einkaufs ab seiner
+            // Ankunft (morgenH) — ist der Weg zum Werk länger als die Zeit bis zum Werk, beginnt das Werk später. Bis hier fraß der
+            // Weg den Kauf (der Tag dauert 60 min, die Stunde 150 s, der Weg zum Platz bis 1,4 Spielstunden): an stadt-voll standen
+            // um 8 Uhr 49 Einkäufer am Platz, 88 im Akt einkauf von 294 (Kern-Spike: am Platz 87 → 110)
+            if (j && vor.akt === "einkauf") auf = Math.max(auf, ank + T.morgenH);
             ank = auf + g;
             gehSumme += g;
             kette.push({ auf: auf, p: e.p });
@@ -5963,8 +5958,7 @@
             if (krank && !drinnen && !posten && (o || heim) !== heim) return { ort: heim, wo: "heim", akt: "abend", drinnen: false };
             return { ort: o || heim, wo: o ? wo : "heim", akt: akt, drinnen: !!drinnen };
         };
-        var F = _feierabend(T, orte),
-            bA = F.bA;
+        var bA = besuch && w1 + G.besuchH <= ruhe - 0.5;
         var bM = besuch && !bA && (T.e0 != null ? T.e0 : wach) + morgenH + G.besuchH <= w0;
         var M = _morgenGang(T, bM);
         if (h < wach || h >= ruhe) return aus("heim", "schlaf", true);
@@ -5985,10 +5979,8 @@
         for (var si = 0; sp && si < sp.length; si++) if (h >= sp[si].von && h < sp[si].bis) return aus("spiel", sp[si].akt, false, sp[si]);
         // der geteilte Abend (zuege `abendTreffH`): die ersten Stunden seines Abends am Treff, dann daheim vor seiner Tür — ab der
         // Wende der Bank (`_bankWende`) drinnen; wessen Abend daheim ist (ohne Treff oder die eigene Tür als Treff), ebenso
-        // der Feierabend im Haus (`_feierabend`): heim zum Abendbrot, drinnen (sein Akt „abendbrot“: Zeit des Bedarfs, `zeitArt`)
-        if (h < F.ab) return aus("heim", "abendbrot", true);
         var drin = h >= _bankWende(T, same, orte);
-        if (T.abendTreffH != null && h >= F.ab + T.abendTreffH) return aus("heim", "abend", drin);
+        if (T.abendTreffH != null && h >= (bA ? w1 + G.besuchH : w1) + T.abendTreffH) return aus("heim", "abend", drin);
         return aus("abend", "abend", (!orte.abend || orte.abend === heim) && drin);
     }
 
