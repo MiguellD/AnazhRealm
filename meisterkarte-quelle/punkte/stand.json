@@ -885,7 +885,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 486a6685: die Seite warf: (b)(d) 19.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
+     "grund": "Station seit der Messung geändert — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
      "gehalten": true
     },
     {
@@ -7726,7 +7726,7 @@
   },
   "karte2.erleben.schoepfen.satz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.schoepfen.satz#1 radeon: ungemessen (R10) — zuletzt an f63a69ef: Last: Referenz f 2,147 (Faden 2,053 · alle Kerne 2,147; vor 151,3/320,9 ms, nach 171,2/562,8 ms, Ruhe 83,4/262,1 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir= · karte2.erleben.schoepfen.satz#1 gtx: ungemessen (R10) — zuletzt an 486a6685: Last: Referenz f 1,252 (Faden 1,252 · alle Kerne 1,247; vor 111,9/281,2 ms, nach 93,7/279,9 ms, Ruhe 89,4/225,5 ms seit 2026-11-24) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · karte2.erleben.schoepfen.satz#2 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#2 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#3 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#3 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#4 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#4 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#5 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#5 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#6 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#6 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#7 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#7 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#8 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#8 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#9 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#9 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.schoepfen.satz#1 radeon: ungemessen (R10) — zuletzt an f63a69ef: Last: Referenz f 2,147 (Faden 2,053 · alle Kerne 2,147; vor 151,3/320,9 ms, nach 171,2/562,8 ms, Ruhe 83,4/262,1 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir= · karte2.erleben.schoepfen.satz#1 gtx: ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.erleben.schoepfen.satz#2 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#2 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#3 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#3 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#4 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#4 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#5 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#5 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#6 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#6 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#7 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#7 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#8 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#8 gtx: ungemessen (R10) · karte2.erleben.schoepfen.satz#9 radeon: ungemessen (R10) · karte2.erleben.schoepfen.satz#9 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.schoepfen.satz#1",
@@ -7744,7 +7744,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 486a6685: Last: Referenz f 1,252 (Faden 1,252 · alle Kerne 1,247; vor 111,9/281,2 ms, nach 93,7/279,9 ms, Ruhe 89,4/225,5 ms seit 2026-11-24) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+     "grund": "ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
      "ungemessen": true,
      "beide": true
     },
@@ -10157,7 +10157,7 @@
   },
   "karte2.erleben.spieler.hand": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.hand#1 radeon: ungemessen (R10) — zuletzt an f63a69ef: Last: Referenz f 1,712 (Faden 1,712 · alle Kerne 1,283; vor 142,8/336,3 ms, nach 121,1/321,3 ms, Ruhe 83,4/262,1 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir= · karte2.erleben.spieler.hand#1 gtx: ungemessen (R10) — zuletzt an 486a6685: Last: Referenz f 1,793 (Faden 1,793 · alle Kerne 1,642; vor 160,3/349,7 ms, nach 132,8/370,2 ms, Ruhe 89,4/225,5 ms seit 2026-11-24) · fremd: Explorer.EXE 3,9 CPU-s · Claude.exe --type=renderer --user · karte2.erleben.spieler.hand#2 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#2 gtx: ungemessen (R10) · karte2.erleben.spieler.hand#3 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.hand#4 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#4 gtx: ungemessen (R10) · karte2.erleben.spieler.hand#5 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#5 gtx: Station seit der Messung geändert · karte2.erleben.spieler.hand#6 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.hand#1 radeon: ungemessen (R10) — zuletzt an f63a69ef: Last: Referenz f 1,712 (Faden 1,712 · alle Kerne 1,283; vor 142,8/336,3 ms, nach 121,1/321,3 ms, Ruhe 83,4/262,1 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir= · karte2.erleben.spieler.hand#1 gtx: ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.erleben.spieler.hand#2 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#2 gtx: ungemessen (R10) · karte2.erleben.spieler.hand#3 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.hand#4 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#4 gtx: ungemessen (R10) · karte2.erleben.spieler.hand#5 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#5 gtx: Station seit der Messung geändert · karte2.erleben.spieler.hand#6 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.hand#1",
@@ -10175,7 +10175,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 486a6685: Last: Referenz f 1,793 (Faden 1,793 · alle Kerne 1,642; vor 160,3/349,7 ms, nach 132,8/370,2 ms, Ruhe 89,4/225,5 ms seit 2026-11-24) · fremd: Explorer.EXE 3,9 CPU-s · Claude.exe --type=renderer --user",
+     "grund": "ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
      "ungemessen": true,
      "beide": true
     },
@@ -12106,7 +12106,7 @@
   },
   "karte2.leben.kopplung.evolution-planet": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.evolution-planet#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f63a69ef: der Deckel der Leiter riss nach 20,01 s, ehe anteilImRaum der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,01 s, ehe anteilImRaum der Sprosse stand · d · karte2.leben.kopplung.evolution-planet#1 gtx: ungemessen (R10) — zuletzt an 486a6685: der Deckel der Leiter riss nach 20,015 s, ehe anteilImRaum der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,015 s, ehe anteilImRaum der Sprosse stand · · karte2.leben.kopplung.evolution-planet#2 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#2 gtx: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#4 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#5 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#5 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#6 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.evolution-planet#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f63a69ef: der Deckel der Leiter riss nach 20,01 s, ehe anteilImRaum der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,01 s, ehe anteilImRaum der Sprosse stand · d · karte2.leben.kopplung.evolution-planet#1 gtx: ungemessen (R10) — zuletzt an f63a69ef: der Deckel der Leiter riss nach 20,015 s, ehe anteilImRaum der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,015 s, ehe anteilImRaum der Sprosse stand · · karte2.leben.kopplung.evolution-planet#2 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#2 gtx: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#4 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#5 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#5 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#6 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.leben.kopplung.evolution-planet#1",
@@ -12125,7 +12125,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 486a6685: der Deckel der Leiter riss nach 20,015 s, ehe anteilImRaum der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,015 s, ehe anteilImRaum der Sprosse stand ·",
+     "grund": "ungemessen (R10) — zuletzt an f63a69ef: der Deckel der Leiter riss nach 20,015 s, ehe anteilImRaum der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,015 s, ehe anteilImRaum der Sprosse stand ·",
      "ungemessen": true,
      "beide": true
     },
@@ -12359,7 +12359,7 @@
   },
   "karte2.leben.kopplung.stadt-im-netz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.stadt-im-netz#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an f63a69ef: der Deckel der Leiter riss nach 30,027 s, ehe fangR der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 30,027 s, ehe fangR der Sprosse stand · der Deckel de · karte2.leben.kopplung.stadt-im-netz#2 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#3 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#4 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#5 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#5 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#6 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#6 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#7 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#7 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#8 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.stadt-im-netz#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an f63a69ef: der Deckel der Leiter riss nach 30,027 s, ehe fangR der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 30,027 s, ehe fangR der Sprosse stand · der Deckel de · karte2.leben.kopplung.stadt-im-netz#2 gtx: ungemessen (R10) — zuletzt an f63a69ef: der Raffer trug die Seite antwortete nicht: /eval: {\"ms\":154153,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\ 0 von 1 Takten in 0 s — am Budget d · karte2.leben.kopplung.stadt-im-netz#3 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#4 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#5 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#5 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#6 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#6 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#7 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#7 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#8 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.kopplung.stadt-im-netz#2",
@@ -12377,7 +12377,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an f63a69ef: der Raffer trug die Seite antwortete nicht: /eval: {\"ms\":154153,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\ 0 von 1 Takten in 0 s — am Budget d",
      "ungemessen": true
     },
     {
@@ -12628,7 +12628,7 @@
   },
   "karte2.leben.oeko.netz": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–1.81× · außer Band 0 · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.oeko.netz#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +31) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.leben.oeko.netz#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/kreatur-proben.cjs +6) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.oeko.netz#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +11) — zuletzt an e1a54023: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.oeko.netz#3 radeon: ungemessen (R10) · karte2.leben.oeko.netz#3 gtx: ungemessen (R10) · karte2.leben.oeko.netz#4 radeon: ungemessen (R10) · karte2.leben.oeko.netz#4 gtx: ungemessen (R10) · karte2.leben.oeko.netz#5 radeon: ungemessen (R10) · karte2.leben.oeko.netz#5 gtx: ungemessen (R10) · karte2.leben.oeko.netz#6 radeon: ungemessen (R10) · karte2.leben.oeko.netz#6 gtx: ungemessen (R10) · karte2.leben.oeko.netz#7 radeon: ungemessen (R10) · karte2.leben.oeko.netz#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–1.81× · außer Band 0 · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.oeko.netz#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +31) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.leben.oeko.netz#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/kreatur-proben.cjs +6) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.oeko.netz#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +11) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.leben.oeko.netz#3 radeon: ungemessen (R10) · karte2.leben.oeko.netz#3 gtx: ungemessen (R10) · karte2.leben.oeko.netz#4 radeon: ungemessen (R10) · karte2.leben.oeko.netz#4 gtx: ungemessen (R10) · karte2.leben.oeko.netz#5 radeon: ungemessen (R10) · karte2.leben.oeko.netz#5 gtx: ungemessen (R10) · karte2.leben.oeko.netz#6 radeon: ungemessen (R10) · karte2.leben.oeko.netz#6 gtx: ungemessen (R10) · karte2.leben.oeko.netz#7 radeon: ungemessen (R10) · karte2.leben.oeko.netz#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.oeko.netz#1",
@@ -12668,7 +12668,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +11) — zuletzt an e1a54023: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +11) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -13531,7 +13531,7 @@
   },
   "karte2.leben.pflanzen.biome": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.pflanzen.biome#1 radeon: Station seit der Messung geändert · karte2.leben.pflanzen.biome#1 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#2 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#2 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#3 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#4 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#5 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: S1 uferProzent 100 % gegen Soll ≥ 90 % ✓ · waermeAussen 0 Pflanzen gegen Soll = 0 Pflanzen ✓ · Zeuge: der Bestand am Spieler, Wasser und Temperatur an jeder Pflanze, der Wald-Faden am Gipfel an 0ee3ed8c gtx — offen: karte2.leben.pflanzen.biome#1 radeon: Station seit der Messung geändert · karte2.leben.pflanzen.biome#2 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#2 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#3 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#4 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#5 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.pflanzen.biome#1",
@@ -13546,11 +13546,11 @@
     {
      "id": "karte2.leben.pflanzen.biome#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 uferProzent 100 % gegen Soll ≥ 90 % ✓ · waermeAussen 0 Pflanzen gegen Soll = 0 Pflanzen ✓ · Zeuge: der Bestand am Spieler, Wasser und Temperatur an jeder Pflanze, der Wald-Faden am Gipfel",
+     "sha": "0ee3ed8c160b928de9d9d67d38ae193a2e33f9fc",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -15077,7 +15077,7 @@
   },
   "karte2.leben.wasser.bild": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.wasser.bild#1 radeon: ungemessen (R10) — zuletzt an f63a69ef: der Deckel der Leiter riss nach 10,084 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,084 s, ehe sichtFlussM der Sprosse stand · d · karte2.leben.wasser.bild#1 gtx: ungemessen (R10) — zuletzt an 486a6685: der Deckel der Leiter riss nach 10,01 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,01 s, ehe sichtFlussM der Sprosse stand · der · karte2.leben.wasser.bild#2 radeon: ungemessen (R10) · karte2.leben.wasser.bild#2 gtx: ungemessen (R10) · karte2.leben.wasser.bild#3 radeon: ungemessen (R10) · karte2.leben.wasser.bild#3 gtx: ungemessen (R10) · karte2.leben.wasser.bild#4 radeon: ungemessen (R10) · karte2.leben.wasser.bild#4 gtx: ungemessen (R10) · karte2.leben.wasser.bild#5 radeon: ungemessen (R10) · karte2.leben.wasser.bild#5 gtx: ungemessen (R10) · karte2.leben.wasser.bild#6 radeon: ungemessen (R10) · karte2.leben.wasser.bild#6 gtx: ungemessen (R10) · karte2.leben.wasser.bild#7 radeon: ungemessen (R10) · karte2.leben.wasser.bild#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.wasser.bild#1 radeon: ungemessen (R10) — zuletzt an f63a69ef: der Deckel der Leiter riss nach 10,084 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,084 s, ehe sichtFlussM der Sprosse stand · d · karte2.leben.wasser.bild#1 gtx: ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.leben.wasser.bild#2 radeon: ungemessen (R10) · karte2.leben.wasser.bild#2 gtx: ungemessen (R10) · karte2.leben.wasser.bild#3 radeon: ungemessen (R10) · karte2.leben.wasser.bild#3 gtx: ungemessen (R10) · karte2.leben.wasser.bild#4 radeon: ungemessen (R10) · karte2.leben.wasser.bild#4 gtx: ungemessen (R10) · karte2.leben.wasser.bild#5 radeon: ungemessen (R10) · karte2.leben.wasser.bild#5 gtx: ungemessen (R10) · karte2.leben.wasser.bild#6 radeon: ungemessen (R10) · karte2.leben.wasser.bild#6 gtx: ungemessen (R10) · karte2.leben.wasser.bild#7 radeon: ungemessen (R10) · karte2.leben.wasser.bild#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.wasser.bild#1",
@@ -15095,7 +15095,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 486a6685: der Deckel der Leiter riss nach 10,01 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,01 s, ehe sichtFlussM der Sprosse stand · der",
+     "grund": "ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
      "ungemessen": true,
      "beide": true
     },
@@ -15325,7 +15325,7 @@
   },
   "karte2.leben.wasser.netz": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 fischHubJePegelHub 0,845 × Pegel-Hub gegen Soll ≥ 0,8 × Pegel-Hub ✓ · fluchtAbstandM 8,365 m gegen Soll ≥ 3 m ✓ · Zeuge: die Welt geändert an 2d6a0447 gtx — offen: karte2.leben.wasser.netz#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.leben.wasser.netz#2 radeon: ungemessen (R10) — zuletzt an f63a69ef: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.wasser.netz#2 gtx: ungemessen (R10) — zuletzt an 486a6685: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera, ...rest) { const  · zeichner.renderer._renderScen · karte2.leben.wasser.netz#3 radeon: ungemessen (R10) · karte2.leben.wasser.netz#3 gtx: ungemessen (R10) · karte2.leben.wasser.netz#4 radeon: ungemessen (R10) · karte2.leben.wasser.netz#4 gtx: ungemessen (R10) · karte2.leben.wasser.netz#5 radeon: ungemessen (R10) · karte2.leben.wasser.netz#5 gtx: ungemessen (R10) · karte2.leben.wasser.netz#6 radeon: ungemessen (R10) · karte2.leben.wasser.netz#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 fischHubJePegelHub 0,845 × Pegel-Hub gegen Soll ≥ 0,8 × Pegel-Hub ✓ · fluchtAbstandM 8,365 m gegen Soll ≥ 3 m ✓ · Zeuge: die Welt geändert an 2d6a0447 gtx — offen: karte2.leben.wasser.netz#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.leben.wasser.netz#2 radeon: ungemessen (R10) — zuletzt an f63a69ef: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.wasser.netz#2 gtx: ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.leben.wasser.netz#3 radeon: ungemessen (R10) · karte2.leben.wasser.netz#3 gtx: ungemessen (R10) · karte2.leben.wasser.netz#4 radeon: ungemessen (R10) · karte2.leben.wasser.netz#4 gtx: ungemessen (R10) · karte2.leben.wasser.netz#5 radeon: ungemessen (R10) · karte2.leben.wasser.netz#5 gtx: ungemessen (R10) · karte2.leben.wasser.netz#6 radeon: ungemessen (R10) · karte2.leben.wasser.netz#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.wasser.netz#1",
@@ -15363,7 +15363,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 486a6685: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera, ...rest) { const  · zeichner.renderer._renderScen",
+     "grund": "ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
      "ungemessen": true
     },
     {
@@ -17617,7 +17617,7 @@
   },
   "karte2.mensch.kopplung.kultur": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.kultur#1 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#1 gtx: ungemessen (R10) · karte2.mensch.kopplung.kultur#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/kreatur-proben.cjs +6) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.mensch.kopplung.kultur#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +17) — zuletzt an e1a54023: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state, A = AnazhRealm, alt = { g: st.gravity, halt: st.weatherEffectTime }; — Heap nach der Rücknahme 192.5 →  · karte2.mensch.kopplung.kultur#3 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#3 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#4 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#4 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#5 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#5 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#6 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#6 gtx: ungemessen (R10) · karte2.mensch.kopplung.kultur#7 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.kultur#1 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#1 gtx: ungemessen (R10) · karte2.mensch.kopplung.kultur#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/kreatur-proben.cjs +6) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.mensch.kopplung.kultur#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +17) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.kopplung.kultur#3 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#3 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#4 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#4 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#5 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#5 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#6 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#6 gtx: ungemessen (R10) · karte2.mensch.kopplung.kultur#7 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kopplung.kultur#1",
@@ -17655,7 +17655,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +17) — zuletzt an e1a54023: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state, A = AnazhRealm, alt = { g: st.gravity, halt: st.weatherEffectTime }; — Heap nach der Rücknahme 192.5 → ",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +17) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -17869,7 +17869,7 @@
   },
   "karte2.mensch.kopplung.leib": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.leib#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/kreatur-proben.cjs +5) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.mensch.kopplung.leib#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +13) — zuletzt an e1a54023: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state, A = AnazhRealm, alt = { g: st.gravity, halt: st.weatherEffectTime }; — Heap nach der Rücknahme 192.5 →  · karte2.mensch.kopplung.leib#2 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#2 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#3 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#3 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#4 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#4 gtx: ungemessen (R10) · karte2.mensch.kopplung.leib#5 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#5 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#6 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.leib#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/kreatur-proben.cjs +5) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.mensch.kopplung.leib#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +13) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.kopplung.leib#2 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#2 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#3 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#3 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#4 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#4 gtx: ungemessen (R10) · karte2.mensch.kopplung.leib#5 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#5 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#6 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kopplung.leib#1",
@@ -17888,7 +17888,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +13) — zuletzt an e1a54023: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state, A = AnazhRealm, alt = { g: st.gravity, halt: st.weatherEffectTime }; — Heap nach der Rücknahme 192.5 → ",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +13) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -30467,7 +30467,7 @@
   },
   "karte2.planet.relief.grossform": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.planet.relief.grossform#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +37) — zuletzt an 486a6685: Deckel 355 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · karte2.planet.relief.grossform#2 radeon: ungemessen (R10) · karte2.planet.relief.grossform#2 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#3 radeon: ungemessen (R10) · karte2.planet.relief.grossform#3 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#4 radeon: ungemessen (R10) · karte2.planet.relief.grossform#4 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#5 radeon: ungemessen (R10) · karte2.planet.relief.grossform#5 gtx: ungemessen (R10) · karte2.planet.relief.grossform#6 radeon: ungemessen (R10) · karte2.planet.relief.grossform#6 gtx: ungemessen (R10) · karte2.planet.relief.grossform#7 radeon: ungemessen (R10) · karte2.planet.relief.grossform#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.planet.relief.grossform#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +37) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.planet.relief.grossform#2 radeon: ungemessen (R10) · karte2.planet.relief.grossform#2 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#3 radeon: ungemessen (R10) · karte2.planet.relief.grossform#3 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#4 radeon: ungemessen (R10) · karte2.planet.relief.grossform#4 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#5 radeon: ungemessen (R10) · karte2.planet.relief.grossform#5 gtx: ungemessen (R10) · karte2.planet.relief.grossform#6 radeon: ungemessen (R10) · karte2.planet.relief.grossform#6 gtx: ungemessen (R10) · karte2.planet.relief.grossform#7 radeon: ungemessen (R10) · karte2.planet.relief.grossform#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.relief.grossform#1",
@@ -30485,7 +30485,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +37) — zuletzt an 486a6685: Deckel 355 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +37) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -33147,7 +33147,7 @@
   },
   "karte2.same.entfaltung.schirm": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.schirm#1 radeon: Station seit der Messung geändert — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.same.entfaltung.schirm#1 gtx: ungemessen (R10) — zuletzt an 486a6685: Deckel 139 s gerissen: Stille seit 15 s nach 160.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego-geht 145.8 s) · karte2.same.entfaltung.schirm#2 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#2 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#3 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#3 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#4 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#4 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#5 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#5 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#6 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#6 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#7 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.schirm#1 radeon: Station seit der Messung geändert — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.same.entfaltung.schirm#1 gtx: ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.same.entfaltung.schirm#2 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#2 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#3 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#3 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#4 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#4 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#5 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#5 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#6 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#6 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#7 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.entfaltung.schirm#1",
@@ -33165,7 +33165,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 486a6685: Deckel 139 s gerissen: Stille seit 15 s nach 160.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego-geht 145.8 s)",
+     "grund": "ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
      "ungemessen": true,
      "beide": true
     },
@@ -35409,7 +35409,7 @@
   },
   "karte2.same.massstab.sprung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.massstab.sprung#1 radeon: ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.same.massstab.sprung#1 gtx: ungemessen (R10) — zuletzt an 486a6685: Last: Referenz f 1,258 (Faden 1,258 · alle Kerne 1,226; vor 112,5/276,4 ms, nach 100,3/270,3 ms, Ruhe 89,4/225,5 ms seit 2026-11-25) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrj · karte2.same.massstab.sprung#2 radeon: ungemessen (R10) · karte2.same.massstab.sprung#2 gtx: ungemessen (R10) · karte2.same.massstab.sprung#3 radeon: ungemessen (R10) · karte2.same.massstab.sprung#3 gtx: ungemessen (R10) · karte2.same.massstab.sprung#4 radeon: ungemessen (R10) · karte2.same.massstab.sprung#4 gtx: Station seit der Messung geändert · karte2.same.massstab.sprung#5 radeon: ungemessen (R10) · karte2.same.massstab.sprung#5 gtx: Station seit der Messung geändert · karte2.same.massstab.sprung#6 radeon: ungemessen (R10) · karte2.same.massstab.sprung#6 gtx: Station seit der Messung geändert · karte2.same.massstab.sprung#7 radeon: ungemessen (R10) · karte2.same.massstab.sprung#7 gtx: Station seit der Messung geändert · karte2.same.massstab.sprung#8 radeon: ungemessen (R10) · karte2.same.massstab.sprung#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.massstab.sprung#1 radeon: ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.same.massstab.sprung#1 gtx: ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.same.massstab.sprung#2 radeon: ungemessen (R10) · karte2.same.massstab.sprung#2 gtx: ungemessen (R10) · karte2.same.massstab.sprung#3 radeon: ungemessen (R10) · karte2.same.massstab.sprung#3 gtx: ungemessen (R10) · karte2.same.massstab.sprung#4 radeon: ungemessen (R10) · karte2.same.massstab.sprung#4 gtx: Station seit der Messung geändert · karte2.same.massstab.sprung#5 radeon: ungemessen (R10) · karte2.same.massstab.sprung#5 gtx: Station seit der Messung geändert · karte2.same.massstab.sprung#6 radeon: ungemessen (R10) · karte2.same.massstab.sprung#6 gtx: Station seit der Messung geändert · karte2.same.massstab.sprung#7 radeon: ungemessen (R10) · karte2.same.massstab.sprung#7 gtx: Station seit der Messung geändert · karte2.same.massstab.sprung#8 radeon: ungemessen (R10) · karte2.same.massstab.sprung#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.massstab.sprung#1",
@@ -35427,7 +35427,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 486a6685: Last: Referenz f 1,258 (Faden 1,258 · alle Kerne 1,226; vor 112,5/276,4 ms, nach 100,3/270,3 ms, Ruhe 89,4/225,5 ms seit 2026-11-25) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrj",
+     "grund": "ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
      "ungemessen": true,
      "beide": true
     },
@@ -35561,7 +35561,7 @@
   },
   "karte2.same.physik.feuer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.feuer#1 radeon: ungemessen (R10) · karte2.same.physik.feuer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +19) · karte2.same.physik.feuer#2 radeon: ungemessen (R10) — zuletzt an f63a69ef: Last: Referenz f 2,407 (Faden 2,276 · alle Kerne 2,407; vor 133,8/461,3 ms, nach 189,8/630,8 ms, Ruhe 83,4/262,1 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir= · karte2.same.physik.feuer#2 gtx: ungemessen (R10) — zuletzt an 486a6685: Last: Referenz f 1,238 (Faden 1,208 · alle Kerne 1,238; vor 89,8/241,2 ms, nach 108/279,1 ms, Ruhe 89,4/225,5 ms seit 2026-11-24) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfj · karte2.same.physik.feuer#3 radeon: ungemessen (R10) · karte2.same.physik.feuer#3 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#4 radeon: ungemessen (R10) · karte2.same.physik.feuer#4 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#5 radeon: ungemessen (R10) · karte2.same.physik.feuer#5 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#6 radeon: ungemessen (R10) · karte2.same.physik.feuer#6 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#7 radeon: ungemessen (R10) · karte2.same.physik.feuer#7 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#8 radeon: ungemessen (R10) · karte2.same.physik.feuer#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.feuer#1 radeon: ungemessen (R10) · karte2.same.physik.feuer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +19) · karte2.same.physik.feuer#2 radeon: ungemessen (R10) — zuletzt an f63a69ef: Last: Referenz f 2,407 (Faden 2,276 · alle Kerne 2,407; vor 133,8/461,3 ms, nach 189,8/630,8 ms, Ruhe 83,4/262,1 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir= · karte2.same.physik.feuer#2 gtx: ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.same.physik.feuer#3 radeon: ungemessen (R10) · karte2.same.physik.feuer#3 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#4 radeon: ungemessen (R10) · karte2.same.physik.feuer#4 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#5 radeon: ungemessen (R10) · karte2.same.physik.feuer#5 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#6 radeon: ungemessen (R10) · karte2.same.physik.feuer#6 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#7 radeon: ungemessen (R10) · karte2.same.physik.feuer#7 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#8 radeon: ungemessen (R10) · karte2.same.physik.feuer#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.feuer#1",
@@ -35599,7 +35599,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 486a6685: Last: Referenz f 1,238 (Faden 1,208 · alle Kerne 1,238; vor 89,8/241,2 ms, nach 108/279,1 ms, Ruhe 89,4/225,5 ms seit 2026-11-24) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfj",
+     "grund": "ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
      "ungemessen": true
     },
     {
@@ -36603,7 +36603,7 @@
   },
   "karte2.same.preis.ankunft": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.33 s · 7.37 s · 7.87 s · 7.56 s (max 9.33 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.preis.ankunft#2 radeon: ungemessen (R10) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.preis.ankunft#2 gtx: ungemessen (R10) — zuletzt an 486a6685: Last: Referenz f 1,359 (Faden 1,359 · alle Kerne 1,352; vor 119,5/266,2 ms, nach 121,4/304,7 ms, Ruhe 89,3/225,4 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrj · karte2.same.preis.ankunft#3 radeon: ungemessen (R10) · karte2.same.preis.ankunft#3 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#4 radeon: ungemessen (R10) · karte2.same.preis.ankunft#4 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#5 radeon: ungemessen (R10) · karte2.same.preis.ankunft#5 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#6 radeon: ungemessen (R10) · karte2.same.preis.ankunft#6 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#7 radeon: ungemessen (R10) · karte2.same.preis.ankunft#7 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#8 radeon: ungemessen (R10) · karte2.same.preis.ankunft#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.33 s · 7.37 s · 7.87 s · 7.56 s (max 9.33 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.preis.ankunft#2 radeon: ungemessen (R10) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.preis.ankunft#2 gtx: ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.same.preis.ankunft#3 radeon: ungemessen (R10) · karte2.same.preis.ankunft#3 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#4 radeon: ungemessen (R10) · karte2.same.preis.ankunft#4 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#5 radeon: ungemessen (R10) · karte2.same.preis.ankunft#5 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#6 radeon: ungemessen (R10) · karte2.same.preis.ankunft#6 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#7 radeon: ungemessen (R10) · karte2.same.preis.ankunft#7 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#8 radeon: ungemessen (R10) · karte2.same.preis.ankunft#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.ankunft#1",
@@ -36642,7 +36642,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 486a6685: Last: Referenz f 1,359 (Faden 1,359 · alle Kerne 1,352; vor 119,5/266,2 ms, nach 121,4/304,7 ms, Ruhe 89,3/225,4 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrj",
+     "grund": "ungemessen (R10) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
      "ungemessen": true
     },
     {
@@ -37596,7 +37596,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 346,
+  "konsum": 347,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37765,10 +37765,10 @@
    "karte2.leben.kopplung.stadt-im-netz#2 radeon",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3275
+  "ohne": 3274
  },
  "kopfVoll": "0ee3ed8c160b928de9d9d67d38ae193a2e33f9fc",
- "zeit": "2026-11-25T20:04:13.708Z",
+ "zeit": "2026-11-25T20:12:05.482Z",
  "vorher": "0ee3ed8c",
  "bilanz": {
   "gewinn": [],

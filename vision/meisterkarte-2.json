@@ -2985,10 +2985,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 19,
+    "heute": 20,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 9.4,
+    "anteilHeute": 9.9,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -3170,7 +3170,7 @@
        "richter": "1 000 Saaten × 10 Punkte: Konsistenz ≥ 95 %, Blindbewertung „lebendige Welt“ ≥ 80 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Waldgrenze unter dem Sommer-Schnee und Feuchte-Arten GRÜN, aber die Palme folgt dem Rauschen `lebendig` (stamm/feld-leben.js) statt Wärme: ROT an Sprosse 1; ein Klimafeld Temperatur × Niederschlag fehlt.",
@@ -20092,11 +20092,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 115,
+  "heute": 116,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
-  "anteilHeute": 5.9,
+  "anteilHeute": 6,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20107,7 +20107,7 @@
   },
   "gliederLeitern": 9,
   "beide": 60,
-  "nachwache": 55
+  "nachwache": 56
  },
  "zusammengelegt": [
   {
