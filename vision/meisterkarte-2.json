@@ -5567,11 +5567,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 41,
-    "kern": 3,
-    "kernDazu": 3,
-    "anteilHeute": 7,
-    "anteilKern": 0.4
+    "heute": 43,
+    "kern": 2,
+    "kernDazu": 2,
+    "anteilHeute": 7.4,
+    "anteilKern": 0.3
    },
    "perspektiven": [
     {
@@ -6274,8 +6274,8 @@
        "richter": "Zweiwahl-Blindtest Spiel ↔ Video ≤ 60 %"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "kern",
      "beleg": "Gehen, Sprint ~6,8 m/s, Sprung ~0,53 m, Klettern, Schwimmen, 6 Geräte-Verben über EINEN Löser (koerper-core.js:497–556, 5089–5130); Fuß 3,4/3,1 cm ROT (leib.K2) — KARTE: Kern 1 — Tempo und Sprung an beiden Geräten gebucht (leib.K2); Bild-Preis in Bewegung an der Radeon ROT (gehend 66 % der Bilder über 33 ms).",
      "alt": [
@@ -8761,7 +8761,7 @@
        "richter": "Körpergröße und Gang aus 100 Räumen ≥ 70 %"
       }
      ],
-     "heute": 1,
+     "heute": 2,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Tür → Keller → Dachboden ganz in 1 von 8 Gängen, headless (siedlung.K1); Raumteilung mit Herd (fachwerk-core.js:576–620)",
@@ -20089,12 +20089,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 103,
+  "heute": 105,
   "davonKopplungen": 33,
-  "kern": 3,
-  "kernDazu": 3,
-  "anteilHeute": 5.3,
-  "anteilKern": 0.1,
+  "kern": 2,
+  "kernDazu": 2,
+  "anteilHeute": 5.4,
+  "anteilKern": 0,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 57,
-  "nachwache": 46
+  "nachwache": 48
  },
  "zusammengelegt": [
   {
