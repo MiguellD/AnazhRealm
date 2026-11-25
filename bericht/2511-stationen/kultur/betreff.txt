@@ -1,0 +1,28 @@
+Station mensch.kopplung.kultur S2: der Plan bestellt mit dem Klima des Orts (DP.klima über _siedlungKlima an der Tafel ortGesetz), die Ursache streut über 32 Land-Orte des Planeten nass ↔ trocken — vorher nahm S2 das Wetter des Moments, das den Plan nie erreicht [skip ci]
+
+Entscheid des Koordinators (25.11.): ein Dach folgt dem Klima des ORTS, nicht dem Wetter des Moments. Die Welt legt das Klima des
+Orts in den Auftrag des Plans (stamm/siedlung-ort.js:1690 _zellEingang → :1554 _siedlungKlima: winter, sommer, spendeVerh aus
+gelaende-core ortGesetz), fachwerk-core DORF liest es (regionImKlima :5465, ortDeckung :241, sockelImWasser :5486). S2 bestellte bisher
+{seed, nH} ohne klima unter __wetterSetzen sunny/rainy — der Regen-Kanal erreicht den Plan nicht (Mutation 0 %).
+
+Der Schnitt: S2 fragt den Faden an 384 Lagen des Planeten der Welt (−60 … 60° × 15°, planet-ort wie die Reise), bildet je Land-Ort die
+Tafel ortGesetz aus der Antwort (der Teil wie stamm/netz-portal.js _reiseBetreten) und nimmt das Klima über `_siedlungKlima` der Welt an
+dieser Tafel — kein eigener Klima-Satz. Die Land-Orte nach der Wasser-Spende sortiert, 32 im Rang gleich verteilt; je Zelle der Plan
+unter dem Klima ihres Orts (ort), des Orts 16 Ränge weiter (mut: nass ↔ trocken) und noch einmal unter ihrem (gegen). Der Niederschlag
+ist die Spende des Orts relativ zur Heimat (spendeVerh — die Zahl, die der Plan liest). r = Pearson Spende ↔ mittlere Dach-Neigung über
+ort und mut, Mutation = ort ↔ mut je Saat, Gegenlauf = ort ↔ gegen. Soll r ≥ 0,5 und Mutation ≥ 90 % wörtlich, Zeuge wörtlich;
+taeter, nicht und leser der Sprosse folgen dem neuen Leser, pfad trägt gelaende-core.js.
+
+Gemessen: Node-Probe am Kern 0ee3ed8c (probe.cjs, probe.txt): 129 Land-Orte, Spende 0 … 6,14, r 0,057, Mutation 75 %, Gegenlauf 32/32;
+vorher ohne klima Mutation 0 %. Hand-Lauf Radeon am main 0ee3ed8c (25.11. 21:55–22:06): ROT am Gesetz — r 0,039 gegen ≥ 0,5,
+Mutation 93,75 % (✓), Gegenlauf 32 von 32 gleich, 129 Land-Orte von 384 Lagen, Streuung der Spende 6,14, Dach trocken 30,0° ↔ nass
+29,2°; Fächer 96 Adressen in 11,9 s, Leiter 25,5 s gegen den Deckel 60 s, Preis GRÜN p95 25,4 ms, Heap 298,3 MB.
+Katalog: punkte.cjs liste am Kandidaten gleich dem Kopf 72d5702c (1 976 Stationen · 420 Kriterien · fehlt 15 · Fehler 2).
+
+Das Band der Profis: die Dachneigung folgt dem Schnee, nicht dem Regen — rund 200 Holzbauten Nordchinas (8.–18. Jh., Science Advances
+2021): steiler in kalten Zeiten, flacher in warm-nassen; im Südwesten Chinas über 400 Jahre (Buildings 2023) tragen Temperatur und Wind
+die Neigung besser als der Niederschlag. Das Spiel zeigt dasselbe: nordische Hütten 38,7–43,3° bei −16 … −29 °C Winter, die nassen
+Tropen-Orte 22,6–26,6°.
+
+Offen: r 0,039 < 0,5 — das Dach liest die Spende nur über das Reet (ortDeckung, spendeVerh ≥ 1 und Holzbau), Leser: leiter
+mensch.kopplung.kultur#2 (fachwerk-core DORF, ein Macher).
