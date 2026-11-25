@@ -686,7 +686,8 @@ class AnazhRealm_siedlung_verkehr {
     // (`_verkehrQuerung`): ein Wagen beansprucht sie, wenn er an seinem Ort ist, bevor er sie verlassen hat (samt `querRandS`), und
     // nicht schon vorbei, wenn er hineintritt; ohne Zeit, was ein Halter durch seinen Ort fährt und die Lücke im Strom. Wer schon
     // auf der Fahrbahn oder in einer beanspruchten Bahn ist, hält seine Reservierung und geht zu Ende — der Wagen wartet die Dauer
-    // seiner Querung (`_verkehrFolge`). Bis w27-verkehr-leib fragte er nur den nächsten Schritt (0,1 s) gegen die Bahn eines Wagens
+    // seiner Querung (`_verkehrFolge`) —, nie in die Bahn eines anderen, die der beansprucht: an ihrem Rand wartet er (tages-gesetz 4,
+    // unten). Bis w27-verkehr-leib fragte er nur den nächsten Schritt (0,1 s) gegen die Bahn eines Wagens
     // binnen `lueckeS` (höchstens `vorrangM`): wer die erste Spur betrat, stand in ihr vor dem Wagen der zweiten, und der Wagen der
     // ersten hielt vor ihm (stadt-voll 10 Uhr: Halte vor Querenden ~250 Wagen-Sekunden je Stunde). Liefert true (er wartet am Rand),
     // das Tempo, mit dem er eine Bahn quer räumt (unten), oder false.
@@ -699,7 +700,7 @@ class AnazhRealm_siedlung_verkehr {
         // der billige Filter zuerst (Lehre 25): wer nicht an die Fahrbahn tritt, fragt keinen Wagen; wer von außen auf sie tritt,
         // fragt seine ganze Querung, wer auf ihr geht, jede Bahn, in die er tritt (die Kreuzung: Fahrbahn von Rand zu Rand)
         if (!(sp > 0) || !this._verkehrAufSpur(S, nx, nz)) return false;
-        let [traf, drin, tritt, raeum] = [false, false, !this._verkehrAufSpur(S, x, z, 0) && this._verkehrAufSpur(S, nx, nz, 0), null]; // prettier-ignore
+        let [traf, tritt, raeum] = [false, !this._verkehrAufSpur(S, x, z, 0) && this._verkehrAufSpur(S, nx, nz, 0), null]; // prettier-ignore
         for (const W of S.verkehr.wagen) {
             const e = W.entry;
             const F = W.F;
@@ -743,9 +744,8 @@ class AnazhRealm_siedlung_verkehr {
                 (v * (Q[1] + V.querRandS) > d && d + 2 * (W.hl + R) > v * Q[0]);
             if (!belegt) continue;
             if (Math.abs(bQ) <= B) {
-                // er steht schon in der Bahn, die einer beansprucht: verlässt er sie in der Dauer einer Querung, geht er hinüber;
-                // sonst RÄUMT ER SIE QUER (er gibt sie frei), nie längs
-                drin = true;
+                // er steht schon in der Bahn, die einer beansprucht: verlässt er sie in der Dauer einer Querung, geht er hinüber —
+                // nie in die Bahn eines anderen, die der beansprucht (unten); sonst RÄUMT ER SIE QUER (er gibt sie frei), nie längs
                 if (d > 0 && Q[1] > (2 * B) / sp + V.querRandS) raeum = { q: bQ, B, nx: -(c.z - a.z) / l, nz: (c.x - a.x) / l }; // prettier-ignore
                 continue;
             }
@@ -755,7 +755,8 @@ class AnazhRealm_siedlung_verkehr {
         // DER LEIB GIBT DIE BAHN FREI (w27-verkehr-leib): wer vor dem Bug in ihr steht oder längs geht, tritt mit seinem Tempo quer
         // aus ihr an den Rand neben der Fahrbahn (dort fährt kein Wagen) — auf seiner Seite, nie über die Linie —, wo keine Wand
         // den Schritt schneidet und auf ihm kein Leib näher als zwei Kapseln steht; und wartet dort, bis die Bahn frei ist (oben).
-        // Trägt seine Seite nicht, geht er seinen Weg, und der Wagen umfährt ihn (`_verkehrFolge`). Bis hier ging er, wohin sein Weg
+        // Trägt seine Seite nicht, geht er seinen Weg — nie in eine Bahn, die ein anderer beansprucht (unten) —, und der Wagen umfährt
+        // ihn (`_verkehrFolge`). Bis hier ging er, wohin sein Weg
         // und sein Ausweichen ihn führten: an der Kreuzung am Markt tänzelten #7:58:0 und #7:54:4 längs der Bahn ihres Halters
         // (stadt-voll 10 Uhr, 22–49 s, die Kreuzung stand, „fahrend je Minute“ 0 m)
         if (raeum) {
@@ -769,9 +770,15 @@ class AnazhRealm_siedlung_verkehr {
                 !this._bewohnerWand({ x, z }, p) &&
                 this._bewohnerNaechster(S, b, p.x, p.z) >= K &&
                 this._bewohnerNaechster(S, b, m.x, m.z) >= K;
-            return frei && { vx: ux * sp, vz: uz * sp };
+            if (frei) return { vx: ux * sp, vz: uz * sp };
         }
-        return traf && tritt && !drin;
+        // DIE BAHN DES ANDEREN (tages-gesetz 4): wer in der Bahn des einen steht oder sie nicht räumen kann, betritt nie die Bahn,
+        // die ein anderer beansprucht — er wartet an ihrem Rand: der Wagen der Bahn, in der er steht, fährt nie schneller, als er vor
+        // ihm noch hielte (`_verkehrFolge`, `querHaltM`), der andere sieht ihn erst in seiner Bahn. Bis hier hob die eine Bahn das
+        // Warten vor der anderen auf, und wer die seine nicht räumen konnte, ging seinen Weg: stadt-voll 10 Uhr ging das Kind
+        // 7:288:5 längs in der Bahn eines Wagens, trat 3 m vor dem Bug des Wagens 7 (8,2 m/s) in dessen Bahn und stand dort — der
+        // Wagen bremste bis 4,4 m/s, „berührt Bewohner 11×“
+        return traf && tritt;
     }
 
     // DER WAGEN STEHT AUF SEINEM PLATZ: das Werk des Gesetzes (`fahrzeug_<typ>`, ausGesetz, präzise — die Wende ist sein Platz),
@@ -2135,6 +2142,12 @@ class AnazhRealm_siedlung_verkehr {
         const rechts = noetig + q;
         const off = rechts <= V.umfahrMaxM ? -rechts : noetig - q;
         const kern = W.hl + R + 1;
+        // DIE RAMPE LIEGT VOR DEM WAGEN (tages-gesetz 4): seine neue Linie beginnt an ihm (`_verkehrLinie`) — schert sie schon an
+        // ihm aus, beginnt sie neben ihm, quer zu seiner Gier, und kein Einschlag trägt den Leib auf sie. Wer dem Stehenden näher
+        // ist als Kern und Rampe, umfährt von hier nie: er wartet, der Leib tritt beiseite (`_bewohnerPlatz`). Bis hier galt die
+        // Rampe um den Stehenden, wo immer der Wagen stand: SUV 17 hielt 4,3 m vor ihm an der Wende 854/407 (stadt-voll 10 Uhr),
+        // die Linie begann 66° neben seiner Gier, er fuhr in ihr, und nach 0,88 m ragte seine Ecke 0,612 m über das Band
+        if (u.s - F.s < kern + V.umfahrRampeM) return false;
         const w = (s) => {
             const d = Math.abs(s - u.s);
             return d <= kern ? 1 : d >= kern + V.umfahrRampeM ? 0 : 1 - (d - kern) / V.umfahrRampeM;
