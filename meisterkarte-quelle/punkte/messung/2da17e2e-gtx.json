@@ -1,7 +1,7 @@
 {
  "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
  "geraet": "gtx",
- "zeit": "2026-11-25T22:50:05.090Z",
+ "zeit": "2026-11-25T22:50:21.187Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.kopplung.land-meer-luft#4": {
@@ -1051,6 +1051,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.erleben.bild.nacht#1",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.energie#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: Umfang nicht erzeugbar: eine Mühle im Ort: keine Architektur mit Rad oder Segel in der Stadt (338 Häuser, Rollen 20) — kein Mehl (gemessen 0, Soll 1 Mühle im Ort) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.88,
+   "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: eine Mühle im Ort: keine Architektur mit Rad oder Segel in der Stadt (338 Häuser, Rollen 20) — kein Mehl (gemessen 0, Soll 1 Mühle im Ort) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "ka5307346fa45",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k106fb7d8e509",
+   "s": 52.7,
+   "fremd": {
+    "s": 56.8,
+    "takte": 26,
+    "fremdS": 28.16,
+    "kerne": 0.496,
+    "fensterKerne": 0.904,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.88
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      5.75
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.38
+     ]
+    ],
+    "dienerS": 17.16,
+    "diener": [
+     [
+      "dwm.exe",
+      7.16
+     ],
+     [
+      "System",
+      6.83
+     ]
+    ],
+    "geraetS": 19.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      12.55
+     ],
+     [
+      "svchost.exe",
+      6.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.44
+     ]
+    ],
+    "eigenS": 159.2,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T22:50:21.187Z",
+   "abdruck": "6b0d7fff60ff",
+   "port": 7804,
+   "bahn": "sitzung",
    "modus": "session"
   }
  },
