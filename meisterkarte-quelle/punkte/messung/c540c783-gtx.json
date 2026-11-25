@@ -1,7 +1,7 @@
 {
  "sha": "c540c783d2370aa52fb5c11cee726d93fa629dca",
  "geraet": "gtx",
- "zeit": "2026-11-25T04:16:29.980Z",
+ "zeit": "2026-11-25T04:20:06.120Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#3": {
@@ -628,6 +628,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.menge.seuche#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 verfehlt ≥ 1 — Täter: koerper-core.js tagesHaltung(akt, rolle) — die Haltung kennt den Kranken nicht: er sitzt im Akt des Abends wie ein Gesunder (kein Stand des Kranken in TAGES_GESETZ.haltung, kein Husten) · Anteil der Viertelstunden, in denen der Krank-Tag vom gesunden Tag abweicht 0.4416 (Soll > 0) · Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 (Soll ≥ 1) · Umfang 43 (Soll ≥ 1 Person krank) · 43 von 1356 Bewohnern heute krank (b.krank, der Lebenslauf am Tag der Prozesse); 43 gemessen: der Krank-Tag (_bewohnerSoll) gegen den gesunden (koerper tagesPlan, krank falsch) in 0.4416 der Viertelstunden anders, 0 am Posten ohne Abweichung; um 10 Uhr 43 daheim, Akte {\"abend\":10,\"morgen\":32,\"schlaf · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.29,
+   "grund": "ROT: S1 ROT an Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 verfehlt ≥ 1 — Täter: koerper-core.js tagesHaltung(akt, rolle) — die Haltung kennt den Kranken nicht: er sitzt im Akt des Abends wie ein Gesunder (kein Stand des Kranken in TAGES_GESETZ.haltung, kein Husten) · Anteil der Viertelstunden, in denen der Krank-Tag vom gesunden Tag abweicht 0.4416 (Soll > 0) · Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 (Soll ≥ 1) · Umfang 43 (Soll ≥ 1 Person krank) · 43 von 1356 Bewohnern heute krank (b.krank, der Lebenslauf am Tag der Prozesse); 43 gemessen: der Krank-Tag (_bewohnerSoll) gegen den gesunden (koerper tagesPlan, krank falsch) in 0.4416 der Viertelstunden anders, 0 am Posten ohne Abweichung; um 10 Uhr 43 daheim, Akte {\"abend\":10,\"morgen\":32,\"schlaf · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k1dfbbaaf4f29",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k009b199ff4e6",
+   "s": 17.1,
+   "fremd": {
+    "s": 19.5,
+    "takte": 9,
+    "fremdS": 3.47,
+    "kerne": 0.178,
+    "fensterKerne": 0.213,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.27
+     ],
+     [
+      "Explorer.EXE",
+      0.53
+     ],
+     [
+      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
+      0.22
+     ]
+    ],
+    "dienerS": 2.75,
+    "diener": [
+     [
+      "System",
+      1.19
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.92
+     ]
+    ],
+    "geraetS": 6.78,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.3
+     ],
+     [
+      "svchost.exe",
+      2.13
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.14
+     ]
+    ],
+    "eigenS": 36.44,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T04:20:06.120Z",
+   "abdruck": "79d51260ec8a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -640,7 +710,8 @@
   "k286f336190e5": "bVTbcpswFPwXPzZVxNUIzeRBLunYM03rfMIRHAExBo8EoXWn/94BW7GBnCeb2dVZdlf8XZ0gPUCOj2+mqVd89WX1dWXgHYlB/Y768c2s+CpOXQ99Li5DhRDfBliqy1NraFVKCrKG4oik0y2W1WM60kBikDFO+2eR7ylV9EyT/ulpTq0kZg1pQaElOuiHDPkc2JkcJBLo1LjMgh229oDTcVgifiX0Y/oXIfaBCvYsmR0moc6mauN1GGHId3+EeBYLlVkJ2JKqrI3d62ZRrBx+t2vB0dCTM2BRob6SkLluIK3YzWDnYM2MqKrOmMky5mehxzil8RyboynToiUn3Uisr3AZe5ELfLN0Oz91RN0rAimBybnXBWCdo55ocPxUrV1Of7P5oQc4ogZSQ2G9dPzIkzdvKKXbpZZqFD6usMIzNwo9d0IcQqXvg8FiJ2wFh/9s+4Gwz5Nc3OZ1sdCkRamPU6tUgJ7j8x9LeaaADDU5NKb9QPsYBY683IRdctm7Z5s58/ZiNj8AYHdloYyK7cJH06i2B40kP3W2MAGGUciF2C3ALRyPNm8fncyZh2jaoeT3MoJojYic0ofLJVm+9OVKkDOWlSUpFQRxOD/8XcORgMx1qZRNXYapij8raY9VS2TTtNZGN4p8n1Of1vdB/+xHX+8yTPLX4OW7yJ/FZHZirnvc0OjWig7l2lEBV2Nx0gW61C3pIS0s3FMSIeafQM+oK8xxYqOMWDzUu0/vlAb2x8OkvOdFyucSB4Nr0xkbcgqBDPknkfSoDxLqwxWYZq67zsb6bX6J7dSU5HXPkuGaTMYfvUsKcT34hCk96UaVwxeQFtCZAqr29vn/9x8=",
   "ka0adac890897": "dVTbjpswEP0XHnfrNQQIYGkfnBApUS/KfsIYxsCGALLN0qbqv1eQsAnQziOcmTlz5nh+Ww0kJ8jw5V3XlcWsJ+uLpeEDiUb1gerlXVvMihJnhS7jb7yPI+d828MSVTRG07IQFEQF+RlJqwwW5UsypIFALw0Z7XY8O1Iq6YXGHf+MLX99nZcpBaY1MSBxLGKj64fI5sBWZyCQQCuHxjfw0wwmoEqnnKK1H6DPDr843y37pwWgIWVR6bGikwaRtBkdo/u+yFHQkQtgXqK6JWHoOJ64JYWbfthegFmiLFutJ81CN/VXIaM0mmMz1EWSG9KoWmB1g4toFTjANt1ijqxpiXxkBEJAKOYq5oBVhmrCwXYTuXYY/RnOi57gjApIBfmope0GK3HXhlK6X3IpB+JDi+o/a9JJXqjzdDjp4cp22bdlQZ1Dioqcam0+0S4Gni3Y4KtDTK8+DTfzzDuVUXEACB/WS0PK94vJdS1NBwpJ1rTjij30A59xfliADZzP44ZctFN7Lrs2vS0faXjBGhEZpc/x1WWLoa8mJhcsyjFJSs+LfLbdeHPwh4IzAZGpQspxV8JPZPQva3VYGiLq2oxSOkHgur0k1eNmfwwv93B/vjzO3jxTbrodn8RXvjlmC/5Dl1qZkbwv1rb0mBymTRboQhnSQZKP8JUUCD39xW4uqErMcCKnCMKoN2Ynr9wvIefH4PaA5fPjWPSyrFhgL3SlWz0uOwFP+FeX3A7YYXo8OlQnAdXplpCkjrNOWczjjD7v9hN9tvHbMYw/C41Bs17Hfb65fk96fWn3veMHPti4wYRKUAKpgYwolJOL3f9tVC2L/uLRHFqdQ2nukD9/AQ==",
   "k9b8cacb2c000": "bVXbcpswFPwXHpsQcTVCM3mQSzr2TNM6n3AER0CNgZEgtO703ztgKzaQ82QzuzrL7sr+a7WQHiHHp1+6qS1mfbEerbaCGjs7bdT42GKWhxAGHqsd8kD6AyGDm/Nt/mw9Whre0dao3lFdoHHqeugzfhnCOf86wlJVtp0mVSkIiBqKE9q96rCsntKJBgKDjDIyvPD8QIgkZ5IMz89LaiUwa+wOJBqig35IkS2Bvc5BoA29nJYZsEM3HjAyDU34z4R8zPDK+SGQwYEmi8ME1NlcbbwJIwzZ/g/nL3ylMisBO7sqa232ulkUS4fd7VpxFAz2GbCoUF1JSF03EEbsdrRztGZBlFWv9WwZ9bPQo4yQeInNUZdp0dmtagTWV7iIvcgFtl27nbe9Le8VgRBAxdLrArDOUc00OH4qNy4jv+ny0COcUIFdQ2G8dPzIEzdvCCG7tZZqEj6tMMIzNwo9d0YcQyXvo8F8z00Fx+9094Ewz5Oc3+ZttVCnRalOc6tkgJ7js+9rebqADJV9bHT3gfYxChxxuQn75LL3QLdL5u3FTH4AQO/KQijhu5WPupHdAArtvO1NYQIMo5Bxvl+BOzidTN4+OpmzDFF3Y8nvZQTRBhEZIQ+XS7J+6cuVsM9YVoYkZRDE4fLwdwUnG0SuSilN6iJMZfxZSQesOls0TWdsdKPI9xnxSX0f9I9h8vUuwyR/C16/8fyFz2bPl7qnDY3qjOhQbBwZMDkVJ12hS9XZA6SFgXtSIMTsE+gZVYU5zmwUEY3Heg/pndLAfHiYlfe8Svlc4mhwrXttQk4hECH7JJIB1VFAfbwC08x1N9lUv+1PvpubkrwdaDJek9n4k3e7gl8PbjElrWpkOf4CkgJ6XUDV3f4p/v0H",
-  "k8177748f7dbe": "bVVdj5swEPwveeyVM5/BWLoH5zgpkdpe8hPWsAYuBJANoU3V/15B4kuA2zfQzO4wszZ/Vw0kR8jw+UPX1Yqtvq2+rzSc0dKozqieP/SKraLEcdFj/MCH2nPOXwdYooqm1aQsBAFRQX5Cq1MtFuVzMtJAoJ9SRvo3nu0JkeRC4v7lZU4tBaa11YJEQ7TRCyiyObDTGQi0oJPjMAO26doFRsaiMX+PyWf1lPO9L/09jWfNBFTpVG20DkIM2O4P5298oTItAFurLCpt5jppGEmb3Wf9XHAU9NYFMC9R3UhIHccXRuxmsHOwZkaUZaf1ZBj10sCljJBojs1QF0neWo2qBVY3uIjc0AG2WbqdNZ0lHxWBEEDF3OscsMpQTTTYXiLXDiO/6bzpEU6owKogN17aXuiKuzeEkO1SSzkKH0cY4akTBq4zIQ6hkvNgMN/xW43PdPuJMO/jjN/rsBiok7xQp6lV0kfX9tiPpTydQ4rKOta6/UR7GPq2YGP/XXydu6ebOfP+YSY/AKAPy0Io4duFj7qWbQ8KrazpzML4GIQB43y3ALdwOpm8PbRTex6iboclf5Thh2tEZIQ8XQ/J8qOvR8K6YFEakpS+HwXz5mcFJwtEpgopTeoiSGT01ZL2WLaWqOvW2OiEoecx4pHqMehf/ejrQ4ZxdvDbctO/8Unt+Fz3OKFWrREdiLUtfSbHxUkW6EK1Vg9JbuCuFAiD9EUmF1QlZjixUYQ0Gta7l1fdl+GaCW/XgHyaLO9l2bHAweBKd9qEnIAvAvZFJD2qo4DqeAMmqeOs03H9Nu98O/HkNT7saTwck0l52eDdNt9c3yeDp+auajAhjaplMdyGJIdO51C291/Bv/8="
+  "k8177748f7dbe": "bVVdj5swEPwveeyVM5/BWLoH5zgpkdpe8hPWsAYuBJANoU3V/15B4kuA2zfQzO4wszZ/Vw0kR8jw+UPX1Yqtvq2+rzSc0dKozqieP/SKraLEcdFj/MCH2nPOXwdYooqm1aQsBAFRQX5Cq1MtFuVzMtJAoJ9SRvo3nu0JkeRC4v7lZU4tBaa11YJEQ7TRCyiyObDTGQi0oJPjMAO26doFRsaiMX+PyWf1lPO9L/09jWfNBFTpVG20DkIM2O4P5298oTItAFurLCpt5jppGEmb3Wf9XHAU9NYFMC9R3UhIHccXRuxmsHOwZkaUZaf1ZBj10sCljJBojs1QF0neWo2qBVY3uIjc0AG2WbqdNZ0lHxWBEEDF3OscsMpQTTTYXiLXDiO/6bzpEU6owKogN17aXuiKuzeEkO1SSzkKH0cY4akTBq4zIQ6hkvNgMN/xW43PdPuJMO/jjN/rsBiok7xQp6lV0kfX9tiPpTydQ4rKOta6/UR7GPq2YGP/XXydu6ebOfP+YSY/AKAPy0Io4duFj7qWbQ8KrazpzML4GIQB43y3ALdwOpm8PbRTex6iboclf5Thh2tEZIQ8XQ/J8qOvR8K6YFEakpS+HwXz5mcFJwtEpgopTeoiSGT01ZL2WLaWqOvW2OiEoecx4pHqMehf/ejrQ4ZxdvDbctO/8Unt+Fz3OKFWrREdiLUtfSbHxUkW6EK1Vg9JbuCuFAiD9EUmF1QlZjixUYQ0Gta7l1fdl+GaCW/XgHyaLO9l2bHAweBKd9qEnIAvAvZFJD2qo4DqeAMmqeOs03H9Nu98O/HkNT7saTwck0l52eDdNt9c3yeDp+auajAhjaplMdyGJIdO51C291/Bv/8=",
+  "k1dfbbaaf4f29": "bVXbbqMwFPyXPG6XmmswlvrglK4SabtNpf2BYzgGGgKRDWGV1f77ChI3XHqeEjTjM8yMk7+rEyQHyPDxQ9fViq2+rb6vNJzR0qjOqB4/9IqtosRx0WP8OoRz/tzDElWcGk3KQhAQFeRHtFrVYFE+JgMNBPopZaR74dmeEEkuJO6enubUUmBaWw1INEQbvYAimwNbnYFAC1o5LDNgm65dYGQYGvO3mHxO98r53pf+nsazwwRU6VRttA5CDNiu4/yFL1SmBWBjlUWlzV4nDSNps9GuBUdBZ10A8xLVjYTUcXxhxG56O3trZkRZtlpPllEvDVzKCInm2Ax1keSNdVK1wOoGF5EbOsA2S7ezU2vJsSIQAqiYe50DVhmqiQbbS+TaYeQPnR96gCMqsCrIjZe2F7ri7g0hZLvUUg7ChxVGeOqEgetMiH2o5NwbzHfcVLD/TrefCPM8zvh93hcLdZIX6ji1Svro2h77uZSnc0hRWYdaN59oD0PfFtebsIuve/d0M2feX8zkBwB0VBZCCd8ufNS1bDpQaGWn1hTGxyAMGOe7BbiB49Hk7aGd2vMQddOXfCzDD9eIyAh5uF6S5Utfr4R1waI0JCl9PwrY8yabg88KjhaITBVSmuRFkMjoq6J2WDaWqOvGWOmEoecx4pFqHPavbvB2lGOcvfuvP3j3wiez43M5w4ZaNUZ4INa29JkcypMs0IVqrA6S3MBdKRB66YtcLqhKzHBipQhp1Fe8S0ZKffPhYVLgy/LEAnuTK91qE3QCvgjYF7F0qA4CqsMNmKSOs06HCm7e+HbqyW97T+P+qkzGy3rv4nwzfv589e+ECTmpWhb9LyLJodU5lM397+Dffw=="
  },
  "ungemessen": {
   "karte2.erleben.klang.stimme#1": {
