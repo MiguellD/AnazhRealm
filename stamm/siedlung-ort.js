@@ -8,14 +8,15 @@ class AnazhRealm_siedlung_ort {
     // der Satz („am Wasser"), die Natur-Wand (Wald, Unterholz, Streu, Hof-Baum, Bau-Phantom), die Siedlung samt Fundament,
     // Wege, Zäune, Brunnen, Stände, der Ort des Dorfs und der Spawn. Billige Beweise zuerst (Lehre 25): kein Wasser des
     // Gesetzes in der Spalte, oder Fels über seinem Spiegel + Marge — Land ohne Spalten-Scan.
+    // Das Gesetz fragt den Spiegel des LANDS (`_landSpiegelAt`, das höchste Hochwasser): das Watt trägt nie ein Werk.
     _landAt(x, z, marge = 0) {
         if (this._nassAt(x, z, marge)) return false;
-        const oben = this._atlasWaterLevelAt(x, z, -1e9);
+        const oben = this._landSpiegelAt(x, z, -1e9);
         if (!(oben > -Infinity)) return true;
         if (this._felsUeber(x, z, oben + marge)) return true;
         const boden = this._voxelSurfaceY(x, z);
         if (boden === null || !Number.isFinite(boden)) return false;
-        return !(boden < this._atlasWaterLevelAt(x, z, boden) + marge);
+        return !(boden < this._landSpiegelAt(x, z, boden) + marge);
     }
 
     // DAS LAND EINES FUNDAMENTS (Schau-2 wasser-wahrheit, Gegenprüfung): steht der Grundriss `fp` {ex, ez, ox, oz} (bau-lokal)

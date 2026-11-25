@@ -63,7 +63,7 @@ const state = {
     ort: null, // die Tafel des Orts (`ortGesetz`), gesetzt mit jedem vollen Stand
     baseHeight: 0,
     waterLevel: 0,
-    hydrosphere: null, // { ready, originX, originZ, cell, dim, kanal, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear, water:{waterY, waterKind, waterLauf} }
+    hydrosphere: null, // { ready, originX, originZ, cell, dim, kanal, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear, water:{waterY, waterKind, waterLauf, wattK} }
     hydroTiles: null, // A3 (V18.132) — Map key → tile, die fernen Kacheln (gleicher Feld-Satz wie hydrosphere)
     hydroWelt: null, // die Welt der Regionen (`_hydroWelt` des Mains): eine neue im Stand räumt sie
     hydroBand: null, // V9.91 — { top, bottom } für Cell-Klassifikation-Skip
@@ -1361,7 +1361,7 @@ function ortNass(msg, E, x, z, L = state) {
     const he = E ? G.erdbauY(E, x, z, h0) : h0;
     const h = G.gewaesserForm(he, 0, hydrosphereCarveAt(x, z), hydrosphereLakeAt(x, z));
     if (Math.abs(h - he) > msg.W.bodenTolM) return true;
-    return h < atlasWaterLevelAt(x, z, h) + msg.M;
+    return h < landWaterLevelAt(x, z, h) + msg.M;
 }
 
 // DER GENESIS-ORT IM FADEN (Pflicht F, der Prüfplatz · B: der Plan ist der erste Auftrag nach der Heimat-Hydrosphäre): der
@@ -1383,7 +1383,7 @@ function genesisPlan(msg) {
         if (surf === null || !Number.isFinite(surf)) return false;
         const makro = terrainColumnContext(x, z).surf;
         if (Number.isFinite(makro) && surf < makro - 6) return false;
-        if (surf < atlasWaterLevelAt(x, z, surf) + 1.5) return false;
+        if (surf < landWaterLevelAt(x, z, surf) + 1.5) return false;
         let lo = Infinity;
         let hi = -Infinity;
         for (let k = 0; k <= 12; k++) {
@@ -1813,7 +1813,7 @@ function waldCtx(msg) {
             bodenY = voxelSurfaceY(x, z);
             return bodenY;
         },
-        waterYAt: (x, z) => atlasWaterLevelAt(x, z, x === bodenX && z === bodenZ ? bodenY : voxelSurfaceY(x, z)),
+        waterYAt: (x, z) => landWaterLevelAt(x, z, x === bodenX && z === bodenZ ? bodenY : voxelSurfaceY(x, z)),
         slopeAt: bodenSteilheit,
         feuchteAt: (x, z, sy) => feuchteAt(x, z, sy),
         ortFrei: (x, z, T) => ortFrei(x, z, T),
@@ -1921,6 +1921,8 @@ function applyStateSnapshot(snap) {
     if (typeof snap.schneeVersatz === "number") state.schneeVersatz = snap.schneeVersatz;
     // Der Pegel der Binnen-Gewässer (stoffe.K3-2), den der Main trägt (`_pegelGilt`) — dieselbe Tafel (null: nichts steigt).
     if (snap.pegel !== undefined) state.pegel = snap.pegel;
+    // Die Gezeit des Meers (planet.wasser.gezeiten), die der Main trägt (`_gezeitGilt`: { stunde, k }) — derselbe Träger.
+    if (snap.gezeit !== undefined) state.gezeit = snap.gezeit;
     // Der Wiesen-Grund des Mains (K53, `WIESEN_GRUND`: Farbe, Wache, Fleck) — dieselben Zahlen.
     if (snap.wiesenGrund) state.wiesenGrund = snap.wiesenGrund;
     if (typeof snap.regionSize === "number") state.regionSize = snap.regionSize;
@@ -2087,12 +2089,20 @@ function hydroAntwort(h, daten) {
             waterY: h.water.waterY.slice(),
             waterKind: h.water.waterKind.slice(),
             waterLauf: h.water.waterLauf.slice(),
+            // die Flut-Schwelle des Watts je Zelle (gelaende-core `hydroWatt`, die Gezeit)
+            wattK: h.water.wattK.slice(),
         },
     };
     const region = Object.assign(rest, felder, { kanal, fluesse: rivers.length, seen: lakes.length });
     if (daten) region.daten = new self.TextEncoder().encode(JSON.stringify({ rivers, lakes }));
     const transfer = [kanal.seg, kanal.ab, kanal.idx, felder.lakeBedCell, felder.lakeW, felder.lakeNear]
-        .concat(felder.water.waterY, felder.water.waterKind, felder.water.waterLauf, daten ? region.daten : [])
+        .concat(
+            felder.water.waterY,
+            felder.water.waterKind,
+            felder.water.waterLauf,
+            felder.water.wattK,
+            daten ? region.daten : []
+        )
         .map((a) => a.buffer);
     return { region, transfer };
 }
@@ -2356,6 +2366,11 @@ function waterLevelAt(x, z, aus) {
 }
 function atlasWaterLevelAt(x, z, terrainTopY, aus) {
     return G.atlasSpiegel(state, x, z, terrainTopY, aus);
+}
+// der Spiegel des LANDS (gelaende-core `landSpiegel`: das höchste Hochwasser) — was bleibt, fragt ihn: der Wald, der Genesis-Ort, das
+// Wasser des Orts
+function landWaterLevelAt(x, z, terrainTopY) {
+    return G.landSpiegel(state, x, z, terrainTopY);
 }
 
 // der Fluss-Spiegel quer über einer Spalte, die ein Schnitt berührt (F3, `G.schnittSpiegel`)
@@ -3640,6 +3655,8 @@ function bodenFarbe(x, y, z, out, fussM) {
     const aboveFluss = !ab && uf.fluss !== null ? y - uf.fluss : null;
     let schlick = ss(-0.5, -4, aboveWater);
     if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
+    // Das Watt (die Gezeit, gelaende-core wattSchlick): wo das Meer den Grund mehr als ein Achtel der Zeit deckt, liegt Schlick
+    if (uf.watt) schlick = Math.max(schlick, G.wattSchlick(aboveWater));
     const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
     let flussStrand = false;
     if (ab)
@@ -4769,7 +4786,7 @@ function kammKrone(msg) {
             [bx, bz, by] = [x, z, law(x, z)];
             return by;
         },
-        waterYAt: (x, z) => atlasWaterLevelAt(x, z, x === bx && z === bz ? by : law(x, z)),
+        waterYAt: (x, z) => landWaterLevelAt(x, z, x === bx && z === bz ? by : law(x, z)),
         slopeAt: (x, z) => Math.hypot((law(x + 2, z) - law(x - 2, z)) / 4, (law(x, z + 2) - law(x, z - 2)) / 4),
         feuchteAt: (x, z, sy) => feuchteAt(x, z, sy),
         ortFrei: (x, z, T) => ortFrei(x, z, T),

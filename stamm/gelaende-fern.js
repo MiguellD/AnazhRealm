@@ -324,8 +324,16 @@ class AnazhRealm_gelaende_fern {
         // DAS FERN-WASSER TRÄGT DEN PEGEL (wetter.K3): sein Spiegel ist der des Gesetzes samt der Tafel des Pegels (`_pegelGilt`) —
         // wechselt sie, baut es neu. Bis hier baute es nur am Anker: nach einem Regen stand es bis zum nächsten Sprung 0,2 m unter
         // dem Spiegel, den das nahe Wasser zeichnet (gate:fern-wasser „nasse Vertices bei Atlas-L−drop 0,0 %").
+        // … und die Gezeit des Meers (planet.wasser.gezeiten, `_gezeitGilt`: der Träger wechselt mit der Stufe des Spiegels)
         const pegel = this._pegelGilt();
-        if (m && m.builtRing === ringR && Math.abs(m.builtOutR - outR) < F.rebuildDelta && m.pegel === pegel) {
+        const gezeit = this._gezeitGilt();
+        if (
+            m &&
+            m.builtRing === ringR &&
+            Math.abs(m.builtOutR - outR) < F.rebuildDelta &&
+            m.pegel === pegel &&
+            m.gezeit === gezeit
+        ) {
             const dx = pm.x - m.anchorX,
                 dz = pm.z - m.anchorZ;
             if (dx * dx + dz * dz < F.reanchorDist * F.reanchorDist) return; // steady: No-op
@@ -428,6 +436,7 @@ class AnazhRealm_gelaende_fern {
             builtRing: ringR,
             builtOutR: outR,
             pegel,
+            gezeit,
             quads: indices.length / 6,
             builtMs: +(performance.now() - t0).toFixed(1),
         };
@@ -2452,6 +2461,7 @@ AnazhRealm.ZELL_GEDAECHTNISSE = Object.freeze([
     { name: "_freistandMemo", karte: (r) => r._freistandMemo, zelle: 1, reichweite: (r) => r._streuReichweite() },
     // der Pegel und die Platten-Treffer je Chunk
     { name: "_pegelOrte", karte: (r) => r._pegelOrte, zelle: (r) => r._voxelChunkConfig(0).span },
+    { name: "_gezeitOrte", karte: (r) => r._gezeitOrte, zelle: (r) => r._voxelChunkConfig(0).span },
     { name: "_chunkIdbHitByKey", karte: (r) => r.state._chunkIdbHitByKey, zelle: (r) => r._voxelChunkConfig(0).span },
     // das flüchtige Gedächtnis der Tritte (den Pfad trägt der Stand), behalten so weit, wie die Leute eines lebenden Orts treten
     // (`_trittReichweite`)

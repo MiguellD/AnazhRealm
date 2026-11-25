@@ -7072,7 +7072,49 @@
                 waterY[idx] = waterLevel;
             }
         }
-        return { waterY, waterKind, waterLauf };
+        return { waterY, waterKind, waterLauf, wattK: hydroWatt(ctx) };
+    }
+
+    // DAS WATT (GEZEIT, karte2.planet.wasser.gezeiten #1): je Zelle die FLUT-SCHWELLE k — das Meer erreicht sie, sobald sein Spiegel
+    // k Stufen der Gezeit (`GEZEIT.stufe`) über dem Ruhe-Spiegel steht: der niedrigste Sattel des Wegs vom Ozean (Priority-Flood in
+    // Eimern der Stufe, 8 Nachbarn wie die Ozean-Maske), bis zum höchsten Hochwasser (`GEZEIT.hoch`). 0: nie (der Ozean selbst, das
+    // Land über dem Hochwasser, die Mulde hinter einem höheren Deich). Jede Schwelle liegt über dem Ruhe-Spiegel (k ≥ 1): ohne Gezeit
+    // flutet keine Zelle (byte-neutral). Leser: `meerKoerper` über `atlasSpiegel`.
+    function hydroWatt(ctx) {
+        const { dim, surf, isOcean, waterLevel } = ctx;
+        const n = dim * dim;
+        const wattK = new Uint8Array(n);
+        const erreicht = Uint8Array.from(isOcean);
+        let offen = [];
+        for (let idx = 0; idx < n; idx++) if (isOcean[idx]) offen.push(idx);
+        const K = Math.ceil(GEZEIT.hoch / GEZEIT.stufe);
+        for (let k = 1; k <= K && offen.length; k++) {
+            const schwelle = waterLevel + k * GEZEIT.stufe;
+            const stapel = offen;
+            const bleibt = [];
+            while (stapel.length) {
+                const c = stapel.pop();
+                const ci = c % dim;
+                const cj = (c / dim) | 0;
+                let rand = false;
+                for (let dj = -1; dj <= 1; dj++)
+                    for (let di = -1; di <= 1; di++) {
+                        const ni = ci + di;
+                        const nj = cj + dj;
+                        if ((di === 0 && dj === 0) || ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                        const nb = ni + nj * dim;
+                        if (erreicht[nb]) continue;
+                        if (surf[nb] <= schwelle) {
+                            erreicht[nb] = 1;
+                            wattK[nb] = k;
+                            stapel.push(nb);
+                        } else rand = true;
+                    }
+                if (rand) bleibt.push(c);
+            }
+            offen = bleibt;
+        }
+        return wattK;
     }
 
     // ═══ DIE 3D-DICHTE, DIE EDIT-KARTE UND DER WASSER-SPIEGEL (Karte gelaende-k1k4, Lehre 7: Gesetz statt Spiegel) ═══
@@ -7763,7 +7805,69 @@
     // in der Klasse des Sees, `waterLauf`). Leser: `atlasSpiegel`, `wasserSpiegel` und die Wasser-Linsen.
     function koerperY(L, h, i) {
         const y = h.water.waterY[i];
-        return h.water.waterKind[i] === 2 ? y + pegelHub(L, y, h.water.waterLauf[i]) : y;
+        const k = h.water.waterKind[i];
+        return k === 2 ? y + pegelHub(L, y, h.water.waterLauf[i]) : k === 1 ? y + gezeitHub(L) : y;
+    }
+
+    // DIE GEZEIT (karte2.planet.wasser.gezeiten #1/#2, Zensus Rang 6 „Nordsee-Watt“): der Spiegel des MEERS schwingt an der Welt-Uhr —
+    // die Summe der zwei halbtägigen Partialtiden der harmonischen Analyse (Doodson 1921): M2 (der Mond, 12,4206012 h) und S2 (die
+    // Sonne, 12,0000 h), η(t) = −Σ A · sin(2π t / T), t die Stunden des Tags der Prozesse (`L.gezeit.stunde`: der Wirt reicht
+    // `_weltStunde`, der Faden bekommt sie im Stand). Die Schwebung der zwei ist der Spring-Nipp-Takt T_M2·T_S2 / (T_M2 − T_S2) =
+    // 14,765 d (der halbe synodische Monat). DIE AMPLITUDEN der Pegel Cuxhaven (Deutsche Bucht; de.wikipedia „Gezeiten“, Tidenhub
+    // Nipp 2,54 m · Spring 3,48 m): A_M2 = (Spring + Nipp) / 4 = 1,505 m, A_S2 = (Spring − Nipp) / 4 = 0,235 m — der mittlere Hub
+    // 3,01 m. Die Welt beginnt im Mittel, die Ebbe läuft, zur Springtide (t = 0: η = 0 — die Geburt jeder Welt, `_weltGeburt`, rechnet
+    // byte-gleich wie vor der Gezeit; das erste Niedrigwasser nach 3,1 h, der erste steigende Durchgang durchs Mittel nach 6,2 h). DIE STUFE (`stufe`): der Spiegel geht in Schritten von 5 cm — die gezeichneten Chunks am Meer bauen nur
+    // neu, wenn er eine Stufe wechselt (`_pegelTakt` mit der Marke `_gezeitMarke`: der Preis folgt dem Schirm, nie der Welt). `hoch` das höchste Hochwasser
+    // (die Flut-Schwelle des Watts, `hydroWatt`). Ohne Träger (`L.gezeit`: jede Lage ohne Uhr — der Export, die Saat einer
+    // fremden Welt, jede Linse ohne Zeit) steht der Spiegel: η = 0. Nur das Meer trägt sie — See und Fluss gehen ihren Pegel.
+    const GEZEIT = Object.freeze({
+        teile: Object.freeze([
+            Object.freeze({ name: "M2", stunden: 12.4206012, amp: 1.505 }),
+            Object.freeze({ name: "S2", stunden: 12, amp: 0.235 }),
+        ]),
+        stufe: 0.05,
+        hoch: 1.74,
+    });
+    // der Hub η des Meers in Stufen (ganze Zahl) zur Stunde `t` (die Stunden des Tags der Prozesse)
+    function gezeitStufe(t) {
+        if (!Number.isFinite(t)) throw new Error("gelaende-core gezeitStufe: die Stunde der Welt-Uhr fehlt");
+        let eta = 0;
+        for (const p of GEZEIT.teile) eta -= p.amp * Math.sin((2 * Math.PI * t) / p.stunden);
+        return Math.round(eta / GEZEIT.stufe);
+    }
+    // der Hub des Meers über seinem Ruhe-Spiegel (m) an der Lage — 0 ohne Träger
+    function gezeitHub(L) {
+        const g = L.gezeit;
+        return g ? g.k * GEZEIT.stufe : 0;
+    }
+    // der Träger der Gezeit zur Stunde `t`: { stunde, k } — der Wirt legt ihn in die Lage, der Faden bekommt ihn im Stand
+    function gezeitStand(t) {
+        return Object.freeze({ stunde: t, k: gezeitStufe(t) });
+    }
+    // der Spiegel des MEERS jenseits der Regionen (der Ozean ist global, V17.117) — der Ruhe-Spiegel samt der Gezeit
+    function meerSpiegel(L) {
+        return (typeof L.waterLevel === "number" ? L.waterLevel : 0) + gezeitHub(L);
+    }
+    // der Spiegel des Körpers der Zelle i (Meer, See, das geflutete Watt) oder −Infinity: das Watt trägt das Meer, sobald die
+    // Gezeit seine Flut-Schwelle erreicht (`hydroWatt`)
+    function meerKoerper(L, h, i) {
+        const k = h.water.waterKind[i];
+        if (k === 1 || k === 2) return koerperY(L, h, i);
+        const w = h.water.wattK;
+        const g = L.gezeit;
+        return w && g && w[i] > 0 && w[i] <= g.k ? meerSpiegel(L) : -Infinity;
+    }
+    // DAS WATT IM BILD (der Bezug der Ufer-Bänder): der Anteil der Zeit, die der Grund `a` Meter über dem Ruhe-Spiegel unter Wasser
+    // liegt (die Überflutungs-Dauer der Küsten-Ökologie) — unter dem Sinus der mittleren Tide A_M2: acos(a / A) / π, 1 unter dem
+    // Niedrigwasser, 0 über dem Hochwasser. Der Schlick des Watts liegt, wo das Meer den Grund mehr als ein Achtel der Zeit deckt
+    // (voll ab der Hälfte); Leser: die Boden-Farbe im Stamm (`_bodenFarbeAt`) und im Faden (`bodenFarbe`) über `aus.watt`
+    // (`wasserSpiegel`: der Bezug ist das Meer, und die Lage trägt die Gezeit).
+    function wattSchlick(a) {
+        const A = GEZEIT.teile[0].amp;
+        const t = Math.max(-1, Math.min(1, a / A));
+        const p = Math.acos(t) / Math.PI;
+        const u = Math.max(0, Math.min(1, (p - 0.125) / (0.5 - 0.125)));
+        return u * u * (3 - 2 * u);
     }
     // DER BEZUG DER UFER-BÄNDER an (x, z): MAX aus Meer (`waterLevel`, Default überall), See (3×3 der Zellen — die Dilatation
     // gegen den quantisierten Becken-Rand) und Fluss-Spiegel. `aus` (optional) trägt die beiden Bezüge getrennt: `see`
@@ -7789,6 +7893,8 @@
         }
         const river = flussAm(L, x, z);
         if (aus) {
+            // `watt`: der Bezug ist das Meer, und die Lage trägt die Gezeit (der Schlick des Watts, `wattSchlick`)
+            if (L.gezeit) aus.watt = level === (typeof L.waterLevel === "number" ? L.waterLevel : 0) ? 1 : 0;
             aus.see = level;
             aus.fluss = river ? river.surfaceY : null;
             aus.ufer = river ? river.ufer : 0;
@@ -7811,9 +7917,9 @@
             const cj = Math.floor((z - h.originZ) / h.cell);
             if (ci >= 0 && cj >= 0 && ci < dim && cj < dim) {
                 inRegion = true;
-                const wK = h.water.waterKind;
-                const here = wK[ci + cj * dim];
-                if (here === 1 || here === 2) level = koerperY(L, h, ci + cj * dim);
+                // der Körper der Zelle (Meer, See, das geflutete Watt: `meerKoerper`)
+                const here = meerKoerper(L, h, ci + cj * dim);
+                if (here > -Infinity) level = here;
                 else {
                     let rim = -Infinity;
                     for (let dj = -1; dj <= 1; dj++) {
@@ -7821,21 +7927,39 @@
                             const ni = ci + di;
                             const nj = cj + dj;
                             if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
-                            const nk = wK[ni + nj * dim];
-                            if ((nk === 1 || nk === 2) && koerperY(L, h, ni + nj * dim) > rim) rim = koerperY(L, h, ni + nj * dim);
+                            const nk = meerKoerper(L, h, ni + nj * dim);
+                            if (nk > rim) rim = nk;
                         }
                     }
                     if (Number.isFinite(terrainTopY) && rim > -Infinity && terrainTopY < rim) level = rim;
                 }
             }
         }
-        if (h && h.ready && !inRegion) level = typeof L.waterLevel === "number" ? L.waterLevel : 0;
+        if (h && h.ready && !inRegion) level = meerSpiegel(L);
         const stau = stauSpiegel(L, x, z, terrainTopY);
         if (stau > level) level = stau;
         if (aus) aus.koerper = level;
         const river = flussAm(L, x, z);
         if (river && river.surfaceY > level && (terrainTopY !== -Infinity || river.centerness > 0)) level = river.surfaceY;
         return level;
+    }
+    // DER SPIEGEL DES LANDS (planet.wasser.gezeiten): was BLEIBT — der Wurf des Walds, der Platz des Orts, Weg, Zaun und Bau —
+    // fragt den Spiegel zum HÖCHSTEN Hochwasser (`lageHochwasser`: das Meer `hoch` über dem Ruhe-Spiegel, das ganze Watt geflutet
+    // — Land ist, was über der Springflut liegt, wie die Salzwiese über dem Watt); nur das Wasser, das jetzt da ist (der Körper,
+    // sein Bild, der Leib darin), liest die Gezeit der Stunde über `atlasSpiegel`. Die Welt ist eine FUNKTION: ein Wurf bei Ebbe
+    // stünde sonst auf dem Grund des Meers, bei Flut fehlte er — je nach der Stunde, in der ein Chunk gebaut wird. Ohne Träger
+    // (die Lage ohne Uhr) steht das Meer, ihr Land ist das der Lage. Der Pegel der Seen bleibt in der Lage (er ist ihr Wetter).
+    // Leser: `_landAt` und der Wald im Stamm, im Faden der Wald, der Genesis-Ort und das Wasser des Orts (`ortNass`).
+    const GEZEIT_HOCH = Object.freeze({ stunde: null, k: Math.round(GEZEIT.hoch / GEZEIT.stufe) });
+    const LAGE_HOCHWASSER = new WeakMap();
+    function lageHochwasser(L) {
+        if (!L.gezeit) return L;
+        let v = LAGE_HOCHWASSER.get(L);
+        if (!v) LAGE_HOCHWASSER.set(L, (v = Object.create(L, { gezeit: { value: GEZEIT_HOCH } })));
+        return v;
+    }
+    function landSpiegel(L, x, z, terrainTopY, aus) {
+        return atlasSpiegel(lageHochwasser(L), x, z, terrainTopY, aus);
     }
 
     // ── DAS WELT-FELD (Leben C2a2: EINE Quelle für Stamm und jeden Faden) ───────────────────────────────────────────────────
@@ -8087,5 +8211,15 @@
         stauUeberlauf: stauUeberlauf,
         stauWerkY: stauWerkY,
         stauFelder: stauFelder,
+        GEZEIT: GEZEIT,
+        gezeitStufe: gezeitStufe,
+        gezeitHub: gezeitHub,
+        gezeitStand: gezeitStand,
+        meerSpiegel: meerSpiegel,
+        meerKoerper: meerKoerper,
+        wattSchlick: wattSchlick,
+        hydroWatt: hydroWatt,
+        lageHochwasser: lageHochwasser,
+        landSpiegel: landSpiegel,
     });
 })(typeof self !== "undefined" ? self : globalThis);
