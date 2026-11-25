@@ -254,6 +254,7 @@ function selbsttest() {
                 spieler: { R: 16, dv: 1.005 },
                 ohr: { dp: 18281.248, dauer: 0.008 },
                 mutante: { raeumt: 4, bruch: [3254, 6318, 3516, 1832], bild: { geburt: [70, 92.148], neubau: [16, 172.125], stand: [1, 57.296] }, staub: { aussen: 180, masseG: 2400, sollG: 1200 } },
+                haufen: { saaten: 21, echt: { saat: 7, schlafS: 0.95, nie: 0 }, mutanten: { schlaf: { saat: 20, schlafS: null, n: 21 } } },
                 nachher: simPh(0, 60),
             }))([
                 { art: "welle", einheiten: 2245, blick: 71, netz: 4136 },
@@ -799,6 +800,23 @@ function selbsttest() {
         // der erste Lauf an 52 Werken: 53 von 208 Scherben lagen nach der Welle wach (sie hielten einander, `_freiVier`)
         ["die Scherben schlafen nicht ein", ["simWecken.druck", { wach: 5, schlafS: null }], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nie \(5 liegen nach 10 s wach\) \(Soll ≤ 3 s\)/],
         ["die letzte Scherbe schläft nach 6 s", ["simWecken.druck.schlafS=", 6], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 6 s \(Soll ≤ 3 s\)/],
+        // ROT nennt seinen Beweis (die Flocke der CI, 8,267 s): die Uhren an der Probe, der Wind am Ort, je beim Soll wachem Körper Ort,
+        // Tempo, Auflage (Neigung und Reibung seines Grunds) und Alter, vorn der Ort der Probe O, seine Neigung und die Reste früherer
+        // Marken — ein Lauf ohne Beweis sagt es
+        [
+            "die letzte Scherbe schläft nach 6 s, die Probe nennt ihren Beweis",
+            // BÜHNE: der Ort eines erfundenen Beweises im Selbsttest — die Zeile setzt nichts, sie prüft den Wortlaut des Urteils
+            ["simWecken.druck", { schlafS: 6, schlafBeweis: { ort: { x: -310.5, z: -1044.25, y: 28.9, grad: 4.25, fremd: 3, fremdWach: 1 }, welt: 12345.5, sim: 345.25, takte: 4516, sprungN: 1, sprungS: 2.5, verworfenS: 0, windMS: 3.21, amSoll: 2, wach: [{ art: "Scherbe", p: [1.5, 20.25, -3], tempo: 0.042, auf: "Grund + 1 Körper", grund: { grad: 3.75, mu: 0.6 }, alterS: 5.9, ruheS: 0.4, schlafS: 6 }, { art: "Kiste", p: [4, 20.1, 6], tempo: 0.011, auf: "Grund", grund: null, alterS: null, ruheS: 1.25, schlafS: 4.5 }] } }], // prettier-ignore
+            /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 6 s \(Soll ≤ 3 s\) — Beweis: Ort O \(-310.50, -1044.25\) Grund 28.90 m, Neigung 4.3°, 3 fremde freie Körper ≤ 30 m \(1 wach\) · Welt-Uhr 12345.50 s · Sim-Uhr 345.25 s · 4516 Takte seit dem Boot · 1 Sprünge der Welt-Uhr \(2.50 s\) · verworfene Sim-Zeit 0.000 s · Wind am Ort 3.21 m\/s · 2 wach beim Soll: Scherbe \[1.5, 20.25, -3\] 0.042 m\/s auf Grund \+ 1 Körper \(Grund 3.8°, μ 0.60\), 5.90 s alt, 0.40 s ruhig, schlief nach 6.00 s; Kiste \[4, 20.1, 6\] 0.011 m\/s auf Grund, \? s alt, 1.25 s ruhig, schlief nach 4.50 s$/,
+        ],
+        ["ROT ohne Beweis sagt es", ["simWecken.druck.schlafS=", 6], /\(Soll ≤ 3 s\) — ohne Beweis \(die Probe trug keinen\)$/],
+        // DER HAUFEN (die Ruhe der freien Körper): die Saat 20 schlief unter dem Tempo-Gesetz der Ruhe nie (eine Platte wippte im
+        // Grenz-Zyklus über ruheMs) — die Mutante muss ihre Saat finden, das Gesetz jede schlafen lassen
+        ["ein Haufen schläft nie", ["simWecken.druck.haufen.echt", { saat: 20, schlafS: null, nie: 1 }], /HAUFEN-SCHLAF: von 21 Haufen aus sechs Platten schliefen 1 nie, der späteste nach \? s \(Saat 20, Soll ≤ 3 s\) — die Ruhe liest das Tempo des Augenblicks/],
+        ["ein Haufen schläft spät", ["simWecken.druck.haufen.echt", { saat: 4, schlafS: 3.5 }], /HAUFEN-SCHLAF: von 21 Haufen aus sechs Platten schliefen 0 nie, der späteste nach 3.5 s \(Saat 4, Soll ≤ 3 s\)/],
+        ["die Mutante schlaf schläft überall im Soll", ["simWecken.druck.haufen.mutanten.schlaf", { saat: null, schlafS: null, n: 300 }], /BLIND: die Mutante schlaf \(das Tempo des Augenblicks statt der Kugeln\) schlief in allen 300 Saaten binnen 3 s — der Haufen trifft sie nicht/],
+        ["die Mutante schlaf läuft nicht", ["simWecken.druck.haufen.mutanten.schlaf"], /BLIND: die Mutante schlaf \(das Tempo des Augenblicks statt der Kugeln\) lief nicht \(der Löser trägt ihren Anker nicht mehr\)/],
+        ["kein Haufen", ["simWecken.druck.haufen"], /LEER: die Probe legte keinen Haufen/],
         ["die Welle der Probe bricht keine Scheibe", ["simWecken.druck.scherben=", 0], /LEER: die Welle der Probe brach keine Scheibe/],
         ["die Welle schläft nicht", ["simWecken.druck.nachher=", simPh(2, 60, "druck")], /DRUCK-RUHE: nach der Welle arbeitet ihr Takt — 120 Einheiten/],
         [
@@ -1449,8 +1467,11 @@ async function brandSeite(MESS) {
 //   N5 (w28-brand-saum) — die Front ist ein geschlossener Saum: in demselben Bild stehen die Flammen der Herd-Zelle längs ihrer
 //   Front im Median ihrer Paare ≤ `NARBE_SAUM` × die volle Breite ihrer Zungen auseinander (2 × `BRAND.bild.breite` × Länge ×
 //   rMax der Zunge `FLAMME.zunge`, wie `_brandFlammenZeichnen`; die Länge die ruhende nach Byram 0,0775·I^0,46 aus `f.I`, nicht
-//   die pulsende `f.lang`; ≥ 8 Paare). Gemessen 1,187 (0,427 m bei 0,36 m); die Mutante (`abstandMinM` 0,5 m, die Tafel zur
-//   Laufzeit ersetzt) 1,6 (1,123 m bei 0,702 m): die kleinen Zungen der Flanken stehen als einzelne Punkte.
+//   die pulsende `f.lang`; ≥ 8 Paare). Gemessen 0,956 (0,594 m bei 0,621 m, brand-feld: die Flammen nach dem Bogen ihrer
+//   Front); die Mutante (`abstandMinM` 1 m, die Tafel zur Laufzeit ersetzt) 1,863 (1 m bei 0,537 m): die kleinen Zungen der
+//   Flanken stehen als einzelne Punkte. N5-AUGE: das Auge zählt nicht — die Herd-Zelle allein im Bild (`_brandGlutUm` reicht nur
+//   sie, kein Budget weitet), das Auge 6 m und 40 m von ihrer Mitte: gleich viele Flammen (≥ 8), gemessen 32 und 32; der Stand
+//   bis brand-feld (je Ellipse 96·12 m ÷ d Winkel) trug 25 und 16.
 //   N6 (w28-brand-zunge) — die Zungen pulsen: in demselben Bild streut die Länge der Flammen der Herd-Zelle je ihrer Byram-Länge
 //   (q = `f.lang` ÷ 0,0775·I^0,46) mit σ ≥ `NARBE_PULS` (≥ 8 Flammen). Gemessen σ 0,246 bei der Bild-Uhr 0 (q 0,652 … 1,35; der
 //   Ort-Term des Takts trägt allein), 0,259 nach 1,3 s; erwartet puls/√2 = 0,247. Die Mutante (`BRAND.bild.puls` 0) σ 0: die
@@ -1559,7 +1580,8 @@ function narbeUrteil(b) {
         s.mutante === 0 ? "" : `MUTANTE-N4: ohne Asche-Decke zählt die Linse ${s.mutante} Abrufe zeile("asche") — sie zählt einen anderen Leser`,
         n.paare >= 8 && n.mass > 0 ? "" : `N5-LEER: keine Messung des Saums: ${n.paare} Paare benachbarter Flammen in der Herd-Zelle (${n.flammen} Flammen; verlangt ≥ 8)`,
         !(n.mass > NARBE_SAUM) ? "" : `N5-SAUM: die Front steht als einzelne Punkte: Flammen-Abstand ${n.abstand} m > Zungen-Breite ${n.breite} m × ${NARBE_SAUM} (Verhältnis ${n.mass} im Median von ${n.paare} Paaren, BRAND.bild.abstandMinM ${n.minM} m)`,
-        n.mutante?.paare >= 8 && n.mutante?.mass > NARBE_SAUM ? "" : `MUTANTE-N5: mit abstandMinM 0,5 m liest die Linse Flammen-Abstand ${n.mutante?.abstand} m bei Zungen-Breite ${n.mutante?.breite} m (Verhältnis ${n.mutante?.mass}, ${n.mutante?.paare} Paare) — sie sieht die Lücken nicht`,
+        n.auge?.nah >= 8 && n.auge.fern === n.auge.nah ? "" : `N5-AUGE: das Auge zählt die Flammen: die Herd-Zelle allein im Bild trägt ${n.auge?.nah} aus ${n.auge?.nahM} m, ${n.auge?.fern} aus ${n.auge?.fernM} m (verlangt gleich viele, ≥ 8: ihre Front trägt sie — stamm/feld-brand.js _brandBild → _brandFrontGang)`,
+        n.mutante?.paare >= 8 && n.mutante?.mass > NARBE_SAUM ? "" : `MUTANTE-N5: mit abstandMinM 1 m liest die Linse Flammen-Abstand ${n.mutante?.abstand} m bei Zungen-Breite ${n.mutante?.breite} m (Verhältnis ${n.mutante?.mass}, ${n.mutante?.paare} Paare) — sie sieht die Lücken nicht`,
         z.flammen >= 8 && (z.sigma > 0 || z.sigma === 0) ? "" : `N6-LEER: keine Messung des Pulses: ${z.flammen} Flammen in der Herd-Zelle (σ ${z.sigma}; verlangt ≥ 8)`,
         !(z.sigma < NARBE_PULS) ? "" : `N6-BAND: die Front steht als Band gleicher Höhe: σ ${z.sigma} < ${NARBE_PULS} (Länge je Byram-Länge ${z.min} … ${z.max} über ${z.flammen} Flammen, BRAND.bild.puls ${z.puls})`,
         z.mutante?.flammen >= 8 && z.mutante?.sigma < NARBE_PULS ? "" : `MUTANTE-N6: ohne Puls liest die Linse σ ${z.mutante?.sigma} über ${z.mutante?.flammen} Flammen — sie misst nicht den Puls`,
@@ -1760,8 +1782,34 @@ async function narbeSeite(MESS) {
             return { flammen: F.length, paare: paare.length, abstand: r3(d), breite: r3(w), mass: r3(d / w), weit: r3(1 + 1.25 * Bb.flamme.rausch[2]), minM: Bb.abstandMinM };
         };
         const N5 = (aus.n5 = saum());
-        // die Mutante: die Tafel des Bilds mit dem Mindest-Abstand 0,5 m (der Stand bis w28-brand-saum)
-        C.BRAND = Object.freeze({ ...B, bild: Object.freeze({ ...B.bild, abstandMinM: 0.5 }) });
+        // DAS AUGE ZÄHLT NICHT (brand-feld): die Herd-Zelle allein im Bild (`_brandGlutUm` reicht nur sie — ihre Front unter dem
+        // Budget, kein Winkel weitet), das Auge 6 m und 40 m von ihrer Mitte (`_lodAuge`, 1,7 m über dem Boden): ihre Flammen
+        // stehen auf ihrer Front, gleich viele aus jedem Auge
+        {
+            const [mx, mz] = [(hx + 0.5) * cs, (hz + 0.5) * cs];
+            r._brandGlutUm = function (x, z, w, fn) {
+                return P._brandGlutUm.call(this, x, z, w, (b) => void (b.cx === hx && b.cz === hz && fn(b)));
+            };
+            const zaehle = (m) => {
+                const [x, z] = [mx + 0.6 * m, mz + 0.8 * m];
+                const auge = new THREE.Vector3(x, r._voxelSurfaceY(x, z) + 1.7, z);
+                r._lodAuge = () => auge;
+                r._bildZeit = 0;
+                r._brandBild(0.1);
+                return (r._brandFlammen || []).filter((f) => Math.floor(f.x / cs) === hx && Math.floor(f.z / cs) === hz).length;
+            };
+            try {
+                N5.auge = { nah: zaehle(6), fern: zaehle(40), nahM: 6, fernM: 40 };
+            } finally {
+                delete r._brandGlutUm;
+                delete r._lodAuge;
+            }
+            bild();
+        }
+        // die Mutante: die Tafel des Bilds mit dem Mindest-Abstand 1 m — bis brand-feld 0,5 m (der Stand bis w28-brand-saum);
+        // seit die Flammen nach dem Bogen ihrer Front stehen (`_brandFrontGang`), trägt die Herd-Zelle die Zungen von Spitze
+        // und Flanken, nicht mehr die überzählte Ferse: ihr Median ist 0,538 m breit, 0,5 m schließt den Saum (0,958)
+        C.BRAND = Object.freeze({ ...B, bild: Object.freeze({ ...B.bild, abstandMinM: 1 }) });
         try {
             bild();
             N5.mutante = saum();
@@ -2455,7 +2503,7 @@ if (SELBSTTEST) {
                     n2: { dauer: 52.4, ecken: 45.8, kopf: 31.5, mutante: { dauer: 31.5, ecken: 45.8, kopf: 31.5 } },
                     n3: { lichter: 4, flammen: 60, gemessen: 4, max: 0, mitte: false, mutante: { lichter: 4, flammen: 60, gemessen: 4, max: 5.3, mitte: true } },
                     n4: { abrufe: 1, gebaut: true, rauheit: 0.96, mutante: 0 },
-                    n5: { flammen: 27, paare: 26, abstand: 0.427, breite: 0.36, mass: 1.187, weit: 2, minM: 0.2, mutante: { flammen: 22, paare: 21, abstand: 1.123, breite: 0.702, mass: 1.6, weit: 2, minM: 0.5 } },
+                    n5: { flammen: 32, paare: 31, abstand: 0.594, breite: 0.621, mass: 0.956, weit: 2, minM: 0.2, auge: { nah: 32, fern: 32, nahM: 6, fernM: 40 }, mutante: { flammen: 14, paare: 13, abstand: 1, breite: 0.537, mass: 1.863, weit: 2, minM: 1 } },
                     n6: { flammen: 27, sigma: 0.246, min: 0.652, max: 1.35, puls: 0.35, uhr: 0.259, mutante: { flammen: 27, sigma: 0, min: 1, max: 1, puls: 0 } },
                     n7: { quellen: 4, max: 3.2, min: 2.3, tag: 3.2, mutanteTon: { nacht: 2.1, tag: 6.3 }, kern: 2, zeit: 0, herd: 45, belichtung: 1.5, soll: 2.929, mutante: { quellen: 4, max: 0.012, min: 0.008, kern: 0.76, zeit: 4, herd: 45, belichtung: 1.5, soll: 2.929 } },
                     // die Masse (N8): die Zahlen der Mess-Wiese am Kopf front-brand, die Mutante mit der Deckung ohne Masse
@@ -2471,6 +2519,9 @@ if (SELBSTTEST) {
                     l6: { regler: { dStunde: 0, dTemp: 0, dUhr: 0, dAschen: 0 }, sprung: { s: 600, dStunde: 4, tempVor: 1377, tempNach: 900, dBrandUhr: 600, schritte: 30, leer: 0, zuend: 110, takte: 40, aschen: 35 }, mutanteSicht: { regler: { dStunde: 4, dTemp: -400, dUhr: 0, dAschen: 0 } }, mutanteSchleife: { sprung: { schritte: 600, leer: 500 } } },
                 },
                 [["N1-LEER", "n1.brennt", false], ["N1-LEER", "n1.s", 3], ["N1-LEER", "n1.fernAn", 12], ["N1-WARTET", "n1.zuend", 0], ["N1-QUADRAT", "n1.fern", 0.9], ["MUTANTE-N1-WARTET", "n1.mutanteWartet.zuend", 1], ["MUTANTE-N1-QUADRAT", "n1.mutanteQuadrat.fern", 0], ["N2-ENDE", "n2.dauer", 31.5], ["MUTANTE-N2", "n2.mutante.dauer", 52.4], ["MUTANTE-N2", "n2.mutante", null], ["N3-LEER", "n3.gemessen", 0], ["N3-LICHT", "n3.max", 5.3, "n3.mitte", true], ["MUTANTE-N3", "n3.mutante.max", 0], ["N4-LEER", "n4.gebaut", false], ["N4-ZEILE", "n4.abrufe", 0], ["MUTANTE-N4", "n4.mutante", 1], ["N5-LEER", "n5.paare", 2], ["N5-LEER", "n5.mass", null], ["N5-SAUM", "n5.mass", 1.6, "n5.abstand", 1.123, "n5.breite", 0.702], ["MUTANTE-N5", "n5.mutante.mass", 1.187], ["MUTANTE-N5", "n5.mutante.paare", 2], ["MUTANTE-N5", "n5.mutante", null], ["N6-LEER", "n6.flammen", 3], ["N6-LEER", "n6.sigma", null], ["N6-BAND", "n6.sigma", 0, "n6.min", 1, "n6.max", 1], ["MUTANTE-N6", "n6.mutante.sigma", 0.246], ["MUTANTE-N6", "n6.mutante.flammen", 3], ["MUTANTE-N6", "n6.mutante", null], ["N7-UHR", "n7.tag", 16], ["MUTANTE-N7-TON", "n7.mutanteTon.tag", 2.2], ["N7-LEER", "n7.quellen", 0], ["N7-LEER", "n7.herd", 1], ["N7-SCHEIN", "n7.max", 460], ["N7-SCHEIN", "n7.zeit", 4], ["N7-DUNKEL", "n7.max", 1], ["MUTANTE-N7", "n7.mutante.max", 3.2], ["MUTANTE-N7", "n7.mutante.zeit", 0], ["MUTANTE-N7", "n7.mutante", null],
+                    // der Zähler des Auges (der Stand von main 0692960c: je Ellipse N = 96·12 m ÷ d Winkel, mindestens 4): die
+                    // Herd-Zelle allein im Bild trug 25 Flammen aus 6 m, 16 aus 40 m → ROT
+                    ["N5-AUGE", "n5.auge.fern", 16], ["N5-AUGE", "n5.auge", null],
                     // die Täter der Masse (N8): der Stand von main 9502aa0e — die Zelle ohne Masse, das Gesetz ohne Buch, die Tat ohne
                     // Asche, die Ballen ohne Masse (optische Masse 219,31 m² bei 1,223 kg Strom; im Steigen × 1,575, halbe Last × 1,704)
                     ["N8-LEER", "n8.fahne.voll.ballen", 0], ["N8-LEER", "n8.ausgebrannt", false], ["N8-LEER", "n8.fahne.halb", null], ["N8-HOLZ", "n8.kg", null], ["N8-HOLZ", "n8.kg", 66.7], ["N8-BILANZ", "n8.buch", null], ["N8-BILANZ", "n8.buch.ende.rauch", 33.349], ["N8-BILANZ", "n8.buch.mitte.brannte", 33.349], ["N8-ASCHE", "n8.tat", null], ["N8-ASCHE", "n8.tat", 0],
@@ -3501,6 +3552,76 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                     const [uhr, jahr] = [st.weatherEffectTime, st.autoSeason];
                     st.weatherEffectTime = -1e9;
                     st.autoSeason = false;
+                    // (der Haufen fährt VOR der Sim-Linse — sie hüllt jedes Glied des Prototyps, die Mutanten bauen auf dem Rumpf — und
+                    // vor der Welle: auf leerem Grund, nicht auf ihren Scherben)
+                    let HAUFEN = null;
+                    // DER HAUFEN (DRUCK-SCHLAF, die Ruhe der freien Körper): je Saat sechs Quarz-Platten 12 × 12 × 0,4 cm über dem Ort der
+                    // Probe (der Ort des Fasses: dort lag der Haufen der Flocke), Lage und Drehung aus der Saat, der Löser direkt im
+                    // festen Schritt (die Sim-Uhr je Saat ab 0, danach zurück) OHNE Wind — der Haufen misst den Löser, die Luft der
+                    // liegenden Platte ist ein eigenes Gesetz —, bis alle schlafen, höchstens 10 s. Zuerst die Mutante (schlaf: die Ruhe
+                    // liest das Tempo des Augenblicks statt der Kugeln der Testpunkte, `_freiRuhig`), bis eine Saat das Soll reißt (nie
+                    // oder später als DRUCK-SCHLAF, höchstens 300); dann das Gesetz über dieselben Saaten
+                    const proto = Object.getPrototypeOf(r);
+                    const MUT = {
+                        schlaf: ["_freiRuhig", proto._freiRuhig.toString(), "let ruhig = KG[3] >= 0;", "return Math.max(Math.hypot(K.v[0], K.v[1], K.v[2]), Math.hypot(K.w[0], K.w[1], K.w[2]) * K.rad) < AnazhRealm.FREI.ruheMs; let ruhig = 0;"],
+                    }; // prettier-ignore
+                    // die Mutante als Skript der Seite (ihre CSP trägt kein 'unsafe-eval', blob: ist erlaubt): der Rumpf als Glied eines Objekts
+                    const mutBau = (rumpf) =>
+                        new Promise((ok, nein) => {
+                            const el = document.createElement("script");
+                            el.src = URL.createObjectURL(new Blob([`window.__haufenMut = ({${rumpf}});`], { type: "text/javascript" }));
+                            el.onload = () => (URL.revokeObjectURL(el.src), el.remove(), ok(window.__haufenMut));
+                            el.onerror = () => nein(new Error("die Mutante des Haufens lud nicht"));
+                            document.head.appendChild(el);
+                        });
+                    const haufen = async (saaten, m) => {
+                        if (m && m[1].split(m[2]).length !== 2) return null;
+                        const eigen = {};
+                        for (const g of ["_windAt", ...(m ? [m[0]] : [])]) eigen[g] = Object.prototype.hasOwnProperty.call(r, g) ? r[g] : null;
+                        const [sim0, name, cs] = [st._simZeit, "_druck_platte", AnazhRealm.LIFE_FIELD.cell];
+                        const [SOLL, H] = [window.__druckSchlafS, { nieSaat: null, spaetSaat: null, schlafS: 0, nie: 0, n: 0, bruch: null, bruchS: null }];
+                        try {
+                            if (m) r[m[0]] = (await mutBau(m[1].replace(m[2], m[3])))[m[0]];
+                            r._windAt = (x, z, t, aus) => Object.assign(aus || {}, { x: 1, z: 0, staerke: 0, boe: 0, form: 1, ms: 0 });
+                            st.blueprints[name] = AnazhRealm._etikett({ name, builtIn: false, vomGesetz: true, frei: true, parts: [{ shape: "box", material: "quarz", size: { x: 0.12, y: 0.004, z: 0.12 }, position: { x: 0, y: 0.002, z: 0 } }] }); // prettier-ignore
+                            for (let k = 0; k < saaten && !(m && H.bruch != null); k++) {
+                                let s = 1 + k * 7919;
+                                const R = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+                                const ks = [];
+                                for (let i = 0; i < 6; i++) {
+                                    const [x, z] = [MESS.x - cs - 0.3 + (R() - 0.5) * 0.16, MESS.z + 1 + (R() - 0.5) * 0.16];
+                                    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler((R() - 0.5) * 0.5, R() * 2 * Math.PI, (R() - 0.5) * 0.5, "YXZ"));
+                                    const g = r._koerperBodenUnter(x, r._voxelSurfaceY(x, z) + 2, z);
+                                    const e = r.spawnArchitecture(name, { x, y: g + 0.52 + i * 0.014, z }, { precise: true, silent: true, seed: 9000 + k * 10 + i, drehung: [q.w, q.x, q.y, q.z] });
+                                    if (e) ks.push(e);
+                                }
+                                st._simZeit = 0;
+                                let t = null;
+                                for (let i = 1; i <= 600 && t == null; i++) {
+                                    st._simZeit += 1 / 60;
+                                    r._freiSchritt(1 / 60);
+                                    if (ks.every((e) => e._frei && e._frei.schlaf)) t = +(i / 60).toFixed(3);
+                                }
+                                for (const e of ks) r.removeArchitecture(e, { still: true });
+                                H.n++;
+                                if (t == null) (H.nie++, H.nieSaat == null && (H.nieSaat = k));
+                                if (H.bruch == null && (t == null || t > SOLL)) [H.bruch, H.bruchS] = [k, t];
+                                else if (t > H.schlafS) [H.schlafS, H.spaetSaat] = [t, k];
+                            }
+                        } finally {
+                            delete st.blueprints[name];
+                            st._simZeit = sim0;
+                            for (const g in eigen) eigen[g] ? (r[g] = eigen[g]) : delete r[g];
+                        }
+                        return { n: H.n, nie: H.nie, saat: H.nieSaat ?? H.spaetSaat, schlafS: H.nie ? null : H.schlafS, bruch: H.bruch, bruchS: H.bruchS };
+                    };
+                    {
+                        const HS = await haufen(300, MUT.schlaf);
+                        const bis = HS && HS.bruch != null ? HS.bruch + 1 : 0;
+                        const HE = await haufen(bis || 60, null);
+                        const mu = (H) => H && { saat: H.bruch, schlafS: H.bruchS, n: H.n };
+                        HAUFEN = { saaten: HE.n, echt: { saat: HE.saat, schlafS: HE.schlafS, nie: HE.nie }, mutanten: { schlaf: mu(HS) } };
+                    }
                     const S = window.__simLinseAn();
                     const simPhase = async (n, schritt) => {
                         const fs = [];
@@ -3646,6 +3767,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 // die freien Körper der Probe außer der Kiste: die Scherben in der Welt; `geburt`: je Werk die, die seine Frist gebar
                                 const freie = () => st.architectures.filter((e) => e._frei && !bautenVor.has(e) && e !== kiste);
                                 const geburt = new Map();
+                                const geborenAm = new Map(); // je Scherbe die Welt-Uhr ihrer Geburt (das Alter im Beweis von DRUCK-SCHLAF)
                                 // DIE LAGE IM BILD (druckwelle-bild): das Bild eines freien Körpers (sein Mesh: Drehung, und wo es seinen
                                 // Schwerpunkt zeichnet) gegen die Lage, die der Löser hält (`_frei.q`, `_frei.p`) — hier gerechnet, ohne Ruf
                                 // in den Stamm (ein Ruf zählte im Takt der Welle mit). Drei Augenblicke: `geburt` jede Scherbe, vor dem ersten
@@ -3710,11 +3832,26 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                     mess(e, () => P._druckTrifft.call(this, f));
                                     const neu = freie().filter((x) => !vor.has(x));
                                     e.scherben = neu.length;
-                                    for (const x of neu) bildLage("geburt", x);
+                                    for (const x of neu) bildLage("geburt", x), geborenAm.set(x, st.spielZeit);
                                     if (f.q && neu.length) geburt.set(f.q, neu);
                                 };
                                 r._druckEnde = function (w) {
                                     mess({ art: "ende" }, () => P._druckEnde.call(this, w));
+                                };
+                                // DIE UHREN DER PROBE (der Beweis von DRUCK-SCHLAF, gedruckt nur im ROT): die Sprünge der Welt-Uhr
+                                // (`_weltUhrNimm`) und die Sim-Zeit, die der feste Schritt am Deckel verwirft (`FIXED_MAX_STEPS`: der Rest
+                                // des Akkumulators fällt, `_loopFixedStep`) — hier gerechnet, ohne Ruf in den Stamm
+                                const U = { sprungN: 0, sprungS: 0, verworfenS: 0 };
+                                r._weltUhrNimm = function (t) {
+                                    const vor = st.spielZeit;
+                                    P._weltUhrNimm.call(this, t);
+                                    if (st.spielZeit > vor) (U.sprungN++, (U.sprungS += st.spielZeit - vor));
+                                };
+                                r._loopFixedStep = function (realDt, ...a) {
+                                    const acc = st._fixedAccumulator || 0;
+                                    const n = P._loopFixedStep.call(this, realDt, ...a);
+                                    if (n >= AnazhRealm.FIXED_MAX_STEPS && !st._fixedAccumulator) U.verworfenS += acc + realDt - n * AnazhRealm.FIXED_DT;
+                                    return n;
                                 };
                                 // DAS BUDGET DES TAKTS (scherbe-liegt): je Takt der Welle die fälligen Werke (`zugleich`: wie viele zugleich warteten)
                                 // und die gefallenen über dem Gesetz (`ueber`: mehr als `DRUCK.bruecheJeBild` und das Soll des Rückstands) — hier
@@ -3761,7 +3898,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                             delete this._werkPoseZeigen;
                                         }
                                     };
-                                const eigen = ["_tickDruck", "_ladungUmsatz", "_druckWelle", "_druckStaub", "_druckTrifft", "_druckEnde", "_druckStoss", "_substanzKlang", "_grundrissRaeumen", "_rebuildArchitectureMesh", "_brandZellen", "_brandNarbeFn"];
+                                const eigen = ["_tickDruck", "_ladungUmsatz", "_druckWelle", "_druckStaub", "_druckTrifft", "_druckEnde", "_druckStoss", "_substanzKlang", "_grundrissRaeumen", "_rebuildArchitectureMesh", "_brandZellen", "_brandNarbeFn", "_weltUhrNimm", "_loopFixedStep"];
                                 const [kiste0, kisteR] = [kiste._frei.p.slice(), Array.from(kiste._frei.R)];
                                 const wachN = () => st.architectures.filter((e) => e._frei && !e._frei.schlaf && !bautenVor.has(e)).length;
                                 const loesche = () => (st.brandFeld && (r._brandRest = st.brandFeld.clear()), (st.worldMeta.taten.length = taten0)); // das Feuer des Funkens: von Hand, ohne Asche
@@ -3808,9 +3945,41 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                             // die Scherben schlafen ein: der Takt läuft, bis keine mehr wach liegt (höchstens 10 s Spielzeit)
                                             D.scherben = freie().length;
                                             D.zaehler = w.scherben;
-                                            while (st.spielZeit - tW < 10 && wachN() > 0) bild();
+                                            // DER BEWEIS (nur im ROT): ab dem Soll (`__druckSchlafS`, das EINE Soll der Linse) je noch wachem
+                                            // Körper der Probe Ort, Tempo, Auflage (Grund: ein Kontakt mit der Welt; Körper: wach an Nachbarn) und
+                                            // Alter in seinem letzten wachen Takt, und wann er danach schlief — gelesen am Löser, ohne Ruf in den Stamm
+                                            const sollS = window.__druckSchlafS;
+                                            const wachOhne = () => st.architectures.filter((e) => e._frei && !e._frei.schlaf && !bautenVor.has(e));
+                                            const lage = (x) => {
+                                                const K = x._frei;
+                                                const auf = [K.welt && "Grund", K.nachbarn.length && `${K.nachbarn.length} Körper`].filter(Boolean).join(" + ") || "frei";
+                                                // die Ebene seines Grunds (`_freiGrund`, `K.grund`): ihre Neigung und ihre Reibung, wie der Löser sie liest
+                                                const G = K.grund;
+                                                const grund = G && Number.isFinite(G.a) ? { grad: r3((Math.atan(Math.hypot(G.b, G.c)) * 180) / Math.PI), mu: r3(G.mu) } : null;
+                                                return { art: x === kiste ? "Kiste" : "Scherbe", p: Array.from(K.p, (v) => +v.toFixed(2)), tempo: r3(K.tempo), auf, grund, alterS: geborenAm.has(x) ? r3(st.spielZeit - geborenAm.get(x)) : null, ruheS: r3(K.ruhe), schlafS: null };
+                                            };
+                                            let amSoll = null;
+                                            while (st.spielZeit - tW < 10 && wachN() > 0) {
+                                                bild();
+                                                if (!amSoll && st.spielZeit - tW > sollS) amSoll = new Map();
+                                                if (amSoll) {
+                                                    for (const x of wachOhne()) amSoll.set(x, lage(x));
+                                                    for (const [x, s] of amSoll) if (s.schlafS == null && (!x._frei || x._frei.schlaf)) s.schlafS = r3(st.spielZeit - tW);
+                                                }
+                                            }
                                             D.wach = wachN();
                                             D.schlafS = D.wach ? null : r3(st.spielZeit - tW);
+                                            if (amSoll && (D.wach || !(D.schlafS <= sollS))) {
+                                                const je = [...amSoll.values()].sort((a, b) => (b.schlafS == null) - (a.schlafS == null) || b.schlafS - a.schlafS);
+                                                // der Ort der Probe O und die Neigung des Gesetzes dort (die Regel von `_freiGrund`: die Höhe unter
+                                                // vier Punkten im Abstand ½ m); die Reste früherer Marken: freie Körper von vor der Probe binnen 30 m um O
+                                                const yO = r._voxelSurfaceY(O.x, O.z) + 1;
+                                                const h = (dx, dz) => r._koerperBodenUnter(O.x + dx, yO, O.z + dz);
+                                                const neigung = (Math.atan(Math.hypot(h(0.5, 0) - h(-0.5, 0), h(0, 0.5) - h(0, -0.5))) * 180) / Math.PI; // je 1 m
+                                                const fremd = st.architectures.filter((e) => e._frei && bautenVor.has(e) && Math.hypot(e._frei.p[0] - O.x, e._frei.p[2] - O.z) <= 30);
+                                                const ort = { x: r3(O.x), z: r3(O.z), y: r3(h(0, 0)), grad: r3(neigung), fremd: fremd.length, fremdWach: fremd.filter((e) => !e._frei.schlaf).length };
+                                                D.schlafBeweis = { ort, welt: r3(st.spielZeit), sim: r3(st._simZeit), takte: st.weltTakt, sprungN: U.sprungN, sprungS: r3(U.sprungS), verworfenS: r3(U.verworfenS), windMS: r3(r._windAt(O.x, O.z, st._simZeit, {}).ms), amSoll: amSoll.size, wach: je.slice(0, 6) };
+                                            }
                                             // das Bild schlafender Scherben neu gebaut, wie der Cull-Takt es baut (höchstens 16: die Probe bleibt kurz)
                                             for (const x of freie().filter((x) => x._frei.schlaf && x.mesh).slice(0, 16)) {
                                                 r._cullArchitectureMesh(x);
@@ -3974,6 +4143,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             staub: DM.staub ? { aussen: DM.staub.aussen, masseG: DM.staub.masseG, sollG: DM.staub.sollG } : null,
                             ms: DM.ms,
                         };
+                        W.druck.haufen = HAUFEN;
                         // DAS FENSTER ZÄHLT SCHRITTE DES BRANDS, nie Bilder (linse-brand-schritte): die Uhr der Welt geht erst einen
                         // Schritt weiter, wenn der vorige ganz ist (`_brandRest` leer) — ein langsamer Läufer geht denselben Schritt in
                         // mehr Bildern, nie weniger Schritte, und jedes Bild ohne Rest zeigt den ganzen Schritt (`jeBild(vor, ganz)`).

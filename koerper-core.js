@@ -6452,7 +6452,12 @@
         // Punkte ab einem Winkel aus dem Samen (`stoffstromOrte`; wo es liegt, sagt die Geologie des Wirts); halde: die Form des
         // Haufens (`stoffstromHaldeForm`) — der Porenanteil gebrochenen Gesteins (lose geschüttet 0,35–0,45) und sein
         // Schüttwinkel (gebrochenes Erz 35–40°): die Halde ist ein Kegel ihres Volumens, sie schrumpft mit jedem Kilogramm.
+        // DER RENNOFEN (energie#1): reiseH die Stunden der Arbeit einer OFENREISE — sie lädt `esseKgJeStunde · reiseH` Erz und
+        // die Kohle seines Feuers (schmiede `STOFFSTROM.feuer`, der Wirt reicht `kohleJeErz`) und gibt am Ende die Luppe (WIRG:
+        // ≈ 5 h je Reise, 2015 5–6 h; Cleere 1969 10,5 h für 91 kg); der Kohle-Stapel am Ofen trägt wie die Halde `haldeTage`
+        // Tage der Arbeit seiner Öfen (ein eigener Wurf aus dem Samen, „kohle") — ohne Köhler im Tag des Orts wächst keiner nach.
         stoffstrom: Object.freeze({
+            reiseH: 5,
             esseKgJeStunde: 5,
             barrenKg: 5,
             werkzeugStunden: 3,
@@ -6658,7 +6663,13 @@
     //    `erz`, Eisen = Luppe + Barren · barrenKg (im Ofen und wohin ihn Wagen und Tausch trugen) + Anbruch + Werkzeug ·
     //    werkzeugKg. Leser: der Wirt (`_stoffstromAnlegen`, `_stoffstromFassen`, `_stoffstromZensus`, `_stoffstromBild`) und
     //    gate:koerper-kern STOFFSTROM.
-    function stoffstromHalter(oefen, h, ausbeute, werkzeugKg, haendeMax, same) {
+    //    DER RENNOFEN BRENNT KOHLE (Meisterkarte 2 mensch.wirtschaft.energie#1): die Esse verhüttet in OFENREISEN — eine Reise
+    //    lädt zu ihrem Beginn das Erz der Halde und die Kohle ihres Feuers vom Stapel am Ofen (`kohleJeErz` kg je kg Erz, schmiede
+    //    `STOFFSTROM.feuer`), brennt `reiseH` Stunden der Arbeit (die Last ihres Erzes zu `esseKgJeStunde`) und gibt an ihrem Ende
+    //    die Luppe. Trägt der Stapel keine Kohle, beginnt keine Reise: der Ofen steht kalt, es entsteht keine Luppe und kein Barren
+    //    (`kalt` die Stunden der Arbeit ohne Feuer). Bücher dazu: `kohle` (verbrannt, kg), `reisen` (beendet), `imOfen` (Erz im
+    //    Schacht je Ofen) — Kohle des Stapels vorher − nachher = `kohle` = `erz` · kohleJeErz.
+    function stoffstromHalter(oefen, h, ausbeute, werkzeugKg, haendeMax, same, kohleJeErz) {
         var G = BESTAND_GESETZ.stoffstrom,
             tag = 0,
             null0 = function () {
@@ -6667,6 +6678,7 @@
                 });
             };
         if (!(ausbeute > 0 && ausbeute < 1)) throw new Error("STOFFSTROM: die Ausbeute " + ausbeute + " ist kein Anteil des Erzes");
+        if (!(kohleJeErz > 0)) throw new Error("STOFFSTROM: der Rennofen hat kein Feuer — ohne Kohle je Erz (" + kohleJeErz + ") brennt keine Ofenreise");
         if (!(werkzeugKg > 0 && werkzeugKg <= G.barrenKg)) throw new Error("STOFFSTROM: ein Werkzeug von " + werkzeugKg + " kg passt nicht in einen Barren");
         for (var i = 0; i < oefen.length; i++) {
             var O = oefen[i];
@@ -6674,13 +6686,50 @@
                 throw new Error("STOFFSTROM: der Ofen " + i + " ist kein Werk, das nichts aus dem Nichts herstellt");
             for (var k = 0; k < O.fenster.length; k++) tag += O.fenster[k][1] - O.fenster[k][0];
         }
-        var u = _tagZahl(same, "halde"),
-            kg = (G.haldeTage[0] + (G.haldeTage[1] - G.haldeTage[0]) * u) * tag * G.esseKgJeStunde;
+        var tage = function (wort) {
+                var u = _tagZahl(same, wort);
+                return (G.haldeTage[0] + (G.haldeTage[1] - G.haldeTage[0]) * u) * tag * G.esseKgJeStunde;
+            },
+            kg = tage("halde"),
+            kohle = tage("kohle") * kohleJeErz;
         return {
             art: "stoffstrom", h: Math.floor(h / G.schrittH) * G.schrittH, oefen: oefen, ausbeute: ausbeute, werkzeugKg: werkzeugKg,
             haldeKg: kg, halde0: kg, luppe: null0(), anbruch: null0(), arbeit: null0(), lager: null0(), haende: 0,
             haendeMax: Math.max(0, haendeMax | 0), erz: 0, eisen: 0, barren: 0, werkzeug: 0,
+            kohleJeErz: kohleJeErz, kohleKg: kohle, kohle0: kohle, kohle: 0, reisen: 0, reise: null0(), imOfen: null0(), kalt: 0,
         };
+    }
+    // DIE OFENREISEN EINES OFENS über `w` Stunden seiner Arbeit (der Schritt des Rasters): beginnt keine Reise, steht er kalt
+    function _ofenreisen(K, i, w, G) {
+        var t = w;
+        while (t > 1e-12) {
+            if (!(K.reise[i] > 1e-12)) {
+                // die Ladung: so viel Erz, wie die Halde trägt und die Kohle des Stapels brennt — ohne Kohle keine Reise
+                var e = Math.min(K.haldeKg, G.esseKgJeStunde * G.reiseH, K.kohleKg / K.kohleJeErz);
+                if (!(e > 1e-9)) {
+                    K.kalt += t;
+                    return;
+                }
+                var k = e * K.kohleJeErz;
+                K.haldeKg = Math.max(0, K.haldeKg - e);
+                K.kohleKg = Math.max(0, K.kohleKg - k);
+                K.erz += e;
+                K.kohle += k;
+                K.imOfen[i] = e;
+                K.reise[i] = e / G.esseKgJeStunde;
+            }
+            var s = Math.min(t, K.reise[i]);
+            K.reise[i] -= s;
+            t -= s;
+            if (K.reise[i] <= 1e-12) {
+                var fe = K.imOfen[i] * K.ausbeute; // die Luppe der Reise (die Ausbeute des Stoff-Gesetzes)
+                K.reise[i] = 0;
+                K.imOfen[i] = 0;
+                K.luppe[i] += fe;
+                K.eisen += fe;
+                K.reisen++;
+            }
+        }
     }
     // endet ein Fenster der Arbeit (`fenster`, Stunden des Tags) in (t0, t1]? — die Stunde, zu der die Schmiede ihre Werkzeuge gibt
     function _fensterEnde(fenster, t0, t1) {
@@ -6705,13 +6754,7 @@
                 var O = K.oefen[i],
                     w = bestandStunden(O.fenster, t0, t1);
                 if (w > 0) {
-                    var e = Math.min(K.haldeKg, w * G.esseKgJeStunde);
-                    if (e > 0) {
-                        K.haldeKg -= e;
-                        K.erz += e;
-                        K.luppe[i] += e * K.ausbeute;
-                        K.eisen += e * K.ausbeute;
-                    }
+                    _ofenreisen(K, i, w, G);
                     while (K.luppe[i] >= G.barrenKg - 1e-9 && bestandGib(O, O.ware, 1, t1) === 1) {
                         K.luppe[i] -= G.barrenKg;
                         K.barren++;

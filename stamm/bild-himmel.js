@@ -2610,7 +2610,7 @@ class AnazhRealm_bild_himmel {
     // DAS SPEKTRUM DER LUFT (ferne-luft): die Extinktion je Kanal relativ zu β (550 nm, der Koschmieder-Anker) aus dem Medium
     // der EINEN Atmosphäre — Rayleigh je Kanal (`ATMO_GESETZ.rayleighTiefe`, blau ~5× rot) und das Aerosol je Kanal nach
     // Ångström (`ATMO_GESETZ.mieAngstroem`, blau 1,34 × grün, rot 0,76 ×): blau verlischt zuerst, mit der Weglänge wird die
-    // Luft vor dem Fernen blau. Unter Wasser (`wasser`: der Körper seiner Art, `WASSER_GESETZ.koerper`) die Strahl-Schwächung c
+    // Luft vor dem Fernen blau. Unter Wasser (`wasser`: das Medium seines Gewässers, `_wasserMedium`) die Strahl-Schwächung c
     // je Kanal relativ zu β — rot verlischt zuerst. Bis w12-unterwasser das Spektrum der Look-Zahl `wK` (eine Absorption über der
     // normierten Tiefe des Studio-Spiegels, nie je Meter) und ein β aus einer Stamm-Sichtweite von 30 m (`LUFT.unterwasserM`) — das
     // Studio zog seinen Nebel auf 0,3–7,5 m: Labor ≠ Welt. Bis
@@ -2805,9 +2805,10 @@ class AnazhRealm_bild_himmel {
             this._luftSonneTakt(U);
             U.unterWasser.value = kameraUnterWasser ? 1 : 0;
             if (kameraUnterWasser) {
-                // Unter Wasser: DIESELBE Formel, Wasser-Trübung ohne Höhen-Abnahme (H → ∞), aus der EINEN Wasser-Wahrheit
-                // (WASSER_GESETZ.koerper, je Art — der Bach klar, der See dazwischen, der Fluss trüb; die Art urteilt EIN Gesetz,
-                // `_wasserArtAt` → gelaende-core `gewaesserArt`, dasselbe ruft das Terrain-Studio; bis w13-bach-klar entschied
+                // Unter Wasser: DIESELBE Formel, Wasser-Trübung ohne Höhen-Abnahme (H → ∞), aus dem EINEN Medium des Wassers
+                // (`_wasserMedium` am Ort der Kamera: das Gewässer der Hydrosphäre — Bach, See, Fluss, Meer — und sein Abfluss,
+                // die Optik des Gesetzes über der Stoff-Zeile des Wassers, gelaende-core `gewaesserOptik`; bis unter-wasser die
+                // Hand-Tafel WASSER_GESETZ.koerper, das Meer im Körper des Sees; bis w13-bach-klar entschied
                 // dieser Leser selbst „im Kanal → fluss": Sicht am Bach 1,1 m). Die Farbe ist das Licht in der Tiefe der Kamera
                 // unter dem örtlichen Spiegel (`_koerperWasser`, die Wahrheit, die sie eben unter Wasser nannte): Beer-Lambert
                 // exp(−kd · Tiefe) × das Tageslicht —
@@ -2816,11 +2817,8 @@ class AnazhRealm_bild_himmel {
                 // Nacht darüber. β ist der 550-nm-Kanal der Strahl-Schwächung c (die Sicht des klaren Sees ~8 m, seine Secchi-Tiefe). Bis w12-unterwasser
                 // trug die Farbe die festen ersten 0,3 m (Radeon: Szenen-Luma 2,5 m ÷ 0,5 m = 1,24, kein Abfall) und β eine
                 // Stamm-Sichtweite von 30 m (`LUFT.unterwasserM`): ein blauer Filter vor klarer Sicht auf Berge und Himmel.
-                const WGu =
-                    AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) ||
-                    AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
                 const p = cam.position;
-                const WK = WGu.koerper[this._wasserArtAt(p.x, p.z)];
+                const WK = this._wasserMedium(p.x, p.z);
                 const tiefe = Math.max(0, this._koerperWasser(p.x, p.z, p.y) - p.y);
                 const e = this._himmelsIrradianz();
                 const tagesLicht = e ? 0.2126 * e.mitte[0] + 0.7152 * e.mitte[1] + 0.0722 * e.mitte[2] : 0;

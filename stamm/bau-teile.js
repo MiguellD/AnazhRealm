@@ -2943,7 +2943,8 @@ class AnazhRealm_bau_teile {
         if (F.wasser !== alt) this._gefaessWasserZeigen(e, F);
     }
     // Der Spiegel in der Schale: eine Fläche über der Mulde auf der Höhe ihres Wassers, im Stoff des Wasser-Gesetzes (die
-    // Farbe der flachen Schicht, Beer-Lambert exp(−wK · flach), `terrain:WASSER_GESETZ`); leer ist sie fort.
+    // Farbe der flachen Schicht, Beer-Lambert exp(−a · flach): der Regen in der Schale ist die reine Phase — die Absorption
+    // der Stoff-Zeile wasser, schmiede `STOFF_GESETZ.medium`, ohne Trübung; bis unter-wasser die Look-Zahl `wK`); leer ist sie fort.
     _gefaessWasserZeigen(e, F) {
         if (!(F.wasser > 0) || !this.state.scene) return this._gefaessLeeren(F);
         if (!F.mesh) {
@@ -2951,7 +2952,7 @@ class AnazhRealm_bau_teile {
                 const WG =
                     AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) ||
                     AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
-                const f = WG.wK.map((k) => Math.exp(-k * WG.flach));
+                const f = globalThis.__schmiedeCore.STOFF_GESETZ.medium("wasser").a.map((k) => Math.exp(-k * WG.flach));
                 this._gefaessStoff = new THREE.MeshStandardNodeMaterial({
                     roughness: 0.06,
                     metalness: 0,

@@ -3122,27 +3122,26 @@
     // im Schluss ineinander, die Deckung ist die Vereinigung ihrer Flächen Σ: 1 − e^(−Σ). Genähert (flach, Stand −0,2…0,8,
     // gepflanzt gegen Modell): 0 / 0 · 0,32 / 0,38 · 0,48 / 0,53 · 0,77 / 0,70 · 0,83 / 0,73 — UNSICHER ±0,1. Bis w28-laub-kante
     // (Matérn II, (1 − e^(−λA))/A, die Summe der Flächen) sättigte das Modell wie der Wald bei 1/A.
-    // Die Kronen: T = Art-Krone × Größe (forestTreeSize über ihre Quantile samt der Überhälter). Befund 11.10.: das Dach las die
+    // Die Kronen: T = Art-Krone × Größe — die Größe folgt dem Lebenslauf des Bestands (FOREST_ERTRAG): im Fleck der Phase u trägt
+    // jede Art ihre Tafel-Größe (`forestErtragGroesse`), die Flecken einer Fläche sind gleichverteilt über u; die Deckung ist das
+    // Mittel der Deckung je Phase (`_deckNP` Phasen in der Mitte ihrer Klasse), in jeder Phase der Matérn-Faktor je Art.
+    // Befund 11.10.: das Dach las die
     // Geburt (0,90) als Deckung, der gepflanzte Bestand deckt 0,16 — die Ferne stand als geschlossenes Grün vor offenem Wald.
-    // kronen = [[Gewicht, Kronen-Radius bei Größe 1], …] (die Arten-Mischung am Ort); F = { cell, dartsPerCell, pack }.
-    // OHNE GARBAGE, JEDE GRÖSSE EINMAL (K60): die Fern-Farbe ruft die Deckung je Abtastung einer Masche (Radeon kalt bis zum
-    // ersten Bild ~70 000 Rufe, 1,3 s Selbstzeit, dazu der Sammler) — bis K60 legte jeder Ruf 61 + 300 kleine Arrays an und
-    // rechnete 60 Exponentiale je Art, obwohl die 60 Quantile nur 16 Größen tragen (12 Quantile, die Überhälter sind die
-    // Quantil-Größe oder eine der 4 festen). Jetzt leben Anteile und Größen in festen Puffern dieses Kerns, der Matérn-Faktor
-    // (1 − e^(−λA))/A wird je Art und Größe EINMAL gerechnet, und jede Summe läuft in DERSELBEN Folge aus DENSELBEN
-    // Rechnungen wie zuvor — bitgleich (Byte-Beweis K60: 300 000 Fälle samt Rand, NaN und 7 Arten, 0 ungleich).
-    const _deckNQ = 12;
-    const _deckNU = 4;
-    const _deckG = _deckNQ * (1 + _deckNU);
-    const _deckAnteil = new Float64Array(_deckG); // der Anteil je Quantil in der Folge der Summe (fest)
-    for (let i = 0; i < _deckNQ; i++) {
-        _deckAnteil[i * (1 + _deckNU)] = 0.95 / _deckNQ;
-        for (let j = 0; j < _deckNU; j++) _deckAnteil[i * (1 + _deckNU) + 1 + j] = 0.05 / _deckNQ / _deckNU;
+    // kronen = [[Gewicht, Kronen-Radius bei Größe 1, Art], …] (die Arten-Mischung am Ort; die Art nennt ihre Tafel, KERN-PFLICHT);
+    // F = { cell, dartsPerCell, pack }. OHNE GARBAGE (K60): die Fern-Farbe ruft die Deckung je Abtastung einer Masche (Radeon kalt
+    // bis zum ersten Bild ~70 000 Rufe) — die Größen je Art und Phase rechnet der Kern EINMAL je Art (`_deckGroessen`), je Ruf
+    // nur die Summen: je Phase und Art EIN Logarithmus, je Phase EIN Exponential.
+    const _deckNP = 12;
+    const _deckGroessen = new Map();
+    function _deckGroessenVon(sp) {
+        let g = _deckGroessen.get(sp);
+        if (!g) {
+            g = new Float64Array(_deckNP);
+            for (let p = 0; p < _deckNP; p++) g[p] = forestErtragGroesse(sp, (p + 0.5) / _deckNP);
+            _deckGroessen.set(sp, g);
+        }
+        return g;
     }
-    const _deckStufe = new Uint8Array(_deckG); // je Quantil seine Größe: 0..11 die Quantil-Größe, 12..15 ein fester Überhälter
-    const _deckWert = new Float64Array(_deckNQ + _deckNU); // die geklemmte Größe je Stufe (je Ruf aus sd)
-    const _deckFaktor = new Float64Array(_deckNQ + _deckNU); // der Matérn-Faktor je Stufe (je Art)
-    const _deckHat = new Uint8Array(_deckNQ + _deckNU);
     function forestKronenDeckung(sd, geburt, kronen, F, st, schnee, ort, wald, hang) {
         // der Bestand am Standort (FOREST_PACK.bestand, `st` der Stand): Lichtung und Schluss wie in planForestCell / forestSteht;
         // die Waldgrenze im Schnee des Sommers und im Klima des Orts (`forestWaldgrenze`, `schnee` der Anteil des Gelände-Kerns zur
@@ -3157,53 +3156,30 @@
         let wSumme = 0;
         for (let k = 0; k < kronen.length; k++) wSumme += kronen[k][0] > 0 ? kronen[k][0] : 0;
         if (!(wSumme > 0)) return 0;
-        // Die Größen-Verteilung (forestTreeSize): ue gleichverteilt auf [0, 1 − 0,52·sd], s = 0,55 + 1,45·ue^1,45; mit 5 % ein
-        // Überhälter max(s, 1,3 + 0,55·u). 12 × 4 Quantile, geklemmt auf [0,5; 1,95].
-        const NQ = _deckNQ;
-        const NU = _deckNU;
-        const oben = 1 - 0.52 * (sd < 0 ? 0 : sd > 1 ? 1 : sd);
-        const V = _deckWert;
-        const S = _deckStufe;
-        const klemme = (v) => (v < 0.5 ? 0.5 : v > 1.95 ? 1.95 : v);
-        for (let j = 0; j < NU; j++) V[NQ + j] = klemme(1.3 + 0.55 * ((j + 0.5) / NU));
-        for (let i = 0; i < NQ; i++) {
-            const s = 0.55 + 1.45 * Math.pow(((i + 0.5) / NQ) * oben, 1.45);
-            V[i] = klemme(s);
-            S[i * (1 + NU)] = i;
-            // max(s, c) ist s, wo s nicht unter c liegt (auch NaN und Gleichstand), sonst c
-            for (let j = 0; j < NU; j++) S[i * (1 + NU) + 1 + j] = s < 1.3 + 0.55 * ((j + 0.5) / NU) ? NQ + j : i;
-        }
-        let mT = 0;
-        let mT2 = 0;
-        for (let k = 0; k < kronen.length; k++) {
-            const w = kronen[k][0] > 0 ? kronen[k][0] / wSumme : 0;
-            if (!(w > 0)) continue;
-            for (let g = 0; g < _deckG; g++) {
-                const tw = w * _deckAnteil[g];
-                const t = kronen[k][1] * V[S[g]];
-                mT += tw * t;
-                mT2 += tw * t * t;
+        const NP = _deckNP;
+        const P2 = Math.PI * F.pack * F.pack * schluss * schluss;
+        let summe = 0;
+        for (let p = 0; p < NP; p++) {
+            let mT = 0;
+            let mT2 = 0;
+            for (let k = 0; k < kronen.length; k++) {
+                const w = kronen[k][0] > 0 ? kronen[k][0] / wSumme : 0;
+                if (!(w > 0)) continue;
+                const t = kronen[k][1] * _deckGroessenVon(kronen[k][2])[p];
+                mT += w * t;
+                mT2 += w * t * t;
             }
-        }
-        let deckung = 0;
-        const H = _deckHat;
-        const Q = _deckFaktor;
-        for (let k = 0; k < kronen.length; k++) {
-            const w = kronen[k][0] > 0 ? kronen[k][0] / wSumme : 0;
-            if (!(w > 0)) continue;
-            H.fill(0);
-            for (let g = 0; g < _deckG; g++) {
-                const st = S[g];
-                const t = kronen[k][1] * V[st];
-                if (!H[st]) {
-                    const A = Math.PI * F.pack * F.pack * schluss * schluss * (t * t + 2 * t * mT + mT2);
-                    Q[st] = Math.log1p(lambda * A) / A;
-                    H[st] = 1;
-                }
-                deckung += w * _deckAnteil[g] * Math.PI * t * t * Q[st];
+            let deckung = 0;
+            for (let k = 0; k < kronen.length; k++) {
+                const w = kronen[k][0] > 0 ? kronen[k][0] / wSumme : 0;
+                if (!(w > 0)) continue;
+                const t = kronen[k][1] * _deckGroessenVon(kronen[k][2])[p];
+                const A = P2 * (t * t + 2 * t * mT + mT2);
+                deckung += w * Math.PI * t * t * (Math.log1p(lambda * A) / A);
             }
+            summe += 1 - Math.exp(-licht * deckung);
         }
-        return 1 - Math.exp(-licht * deckung);
+        return summe / NP;
     }
 
     // DIE NISCHE EINES ORTS (EINE Formel für den gepflanzten und den fernen Wald): Klima, Bestands-Mosaik, Feuchte,
@@ -3272,19 +3248,195 @@
         return W;
     }
 
-    // reverse-J Größe + Selbstausdünnung + seltene Überhälter. RNG-REIHENFOLGE heilig
-    // (Host-Determinismus): ue → Überhälter-Wurf → optional Überhälter-s → clamp.
-    // Byte-same Lab plantForest + Host planForestCell. Der Span ist `FOREST_PACK.groesse` (die untere Klemme stand bei 0,5
-    // unter dem Boden der Kurve 0,55 — jede Größe gleich).
-    function forestTreeSize(rng, sd) {
-        const G = FOREST_PACK.groesse;
-        const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
-        const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
-        let ue = clamp01(rng() * (1 - 0.52 * sd));
-        let s = G[0] + 1.45 * Math.pow(ue, 1.45);
-        if (rng() < 0.05) s = Math.max(s, 1.3 + rng() * 0.55);
-        s = clamp(s, G[0], G[1]);
-        return s;
+    // DER LEBENSLAUF DES BESTANDS (Bahn mischwald, karte2.leben.pflanzen.lebenslauf#1): der Wald ist ein Mosaik gleichaltriger
+    // Flecken (Mosaik-Zyklus; die Kante `fleck` GEWÄHLT, unbelegt), jeder Fleck in seiner Phase u ∈ [0, 1) (`forestFleckPhase`,
+    // gleichverteilt: der Normalwald). Jede Art durchläuft in ihm ihre Ertragstafel von der Größe, in der der Wald sie zeichnet
+    // (FOREST_PACK.groesse[0], Alter A₀), bis zum Ende der Tafel: A = A₀ + u·(A_end − A₀), die Größe s = h(A) / hoeheM — die Höhe
+    // folgt der Tafel. Die Stammzahl folgt der Selbst-Ausdünnung, die der Wald schon trägt (Matérn III, `forestDachFenster`):
+    // gleichaltrige Kronen T = Krone·s dünnen sich mit dem Alter aus, N ~ D^−1,6 (Reineke 1933, J. Agric. Res. 46: 627–638:
+    // log N = −1,605·log D + k). Wer in der Konkurrenz starb und vor `tau` Jahren noch stand, STEHT als Totholz (`forestStehende`).
+    // Die Tafeln: WBR 86 Tab. 3 (Niedersachsen), Bestandesmittelhöhen, untere Grenzwerte je Leistungsklasse — Eiche JÜTTNER 1955,
+    // Buche SCHOBER 1967 (auch Karst, „sonstige Laubbäume“ → Buche), Birke SCHWAPPACH 1903/26, Erle MITSCHERLICH 1945 (die Weide
+    // der Erlen-Nische), Fichte WIEDEMANN 1936/42 (auch Kiefer-Nische), Tanne SCHMIDT 1955. `r` = h(A)/hoeheM in 5-Jahres-Schritten
+    // ab `ab` (hoeheM: die Höhe der Größe 1, foundry PRESETS; gate:phyto-core hält beide gleich). DIE BONITÄT `kl`: die Klasse,
+    // deren Tafel-Ende die Mitte der Natur-Spanne trägt (nordstern §4.5, gate:pflanzen-nah H: Buche 30–45 · Fichte 30–50 · Eiche
+    // 15–35 · Birke 15–25 m; Fichte über der obersten Klasse → Lkl 13); die Tanne ohne Spanne: hoeheM im Alter 100; die Solitäre
+    // (Weide, Karst) tragen die Form der untersten Klasse, Größe 1 im Alter 100. `tau`: die Standzeit des Totholz, 45 a Zerfall
+    // (Buche 30–60 a) × 1/(1 + 5) aus stehend : liegend = 1 : 5 (Commarmot et al. 2013, Uholka-Inventur, WSL). Der Mammut steht
+    // außerhalb der Tafel (sein Wurf `forestMammutRoll`; WBR führt Seqg unter der Fichte, 39,9 m liegen über Lkl 13).
+    const FOREST_ERTRAG = Object.freeze({
+        fleck: 40,
+        tau: 7.5,
+        schritt: 5,
+        kurven: Object.freeze({
+            eiche: Object.freeze({
+                tafel: "eiche",
+                kl: 4.03,
+                hoeheM: 15.55,
+                ab: 15,
+                r: Object.freeze([
+                    0.1496, 0.1954, 0.2734, 0.3514, 0.4356, 0.5321, 0.6157, 0.6931, 0.764, 0.8348, 0.8991, 0.9567,
+                    1.002, 1.047, 1.0918, 1.1304, 1.169, 1.2076, 1.2461, 1.2847, 1.3231, 1.3615, 1.3936, 1.4196, 1.4455,
+                    1.4712, 1.4907, 1.504, 1.5171, 1.5299, 1.5428, 1.5559, 1.5687, 1.5816, 1.5882, 1.5949, 1.6013,
+                    1.6077,
+                ]),
+            }),
+            fichte: Object.freeze({
+                tafel: "fichte",
+                kl: 13,
+                hoeheM: 26.2,
+                ab: 15,
+                r: Object.freeze([
+                    0.1985, 0.2786, 0.3588, 0.4504, 0.5534, 0.6489, 0.7443, 0.8244, 0.9008, 0.9618, 1.0153, 1.0649,
+                    1.1107, 1.1527, 1.1908, 1.2252, 1.2595, 1.2901, 1.3206, 1.3473, 1.3664, 1.3855, 1.4008, 1.4122,
+                    1.4237, 1.4351,
+                ]),
+            }),
+            tanne: Object.freeze({
+                tafel: "tanne",
+                kl: 10,
+                hoeheM: 26.9,
+                ab: 20,
+                r: Object.freeze([
+                    0.1375, 0.223, 0.316, 0.4089, 0.5019, 0.5799, 0.6506, 0.71, 0.7584, 0.803, 0.8401, 0.8736, 0.9033,
+                    0.9294, 0.9554, 0.9777, 1, 1.0186, 1.0372, 1.0558, 1.0743, 1.0892, 1.1041, 1.119, 1.1338,
+                ]),
+            }),
+            birke: Object.freeze({
+                tafel: "birke",
+                kl: 4,
+                hoeheM: 13,
+                ab: 10,
+                r: Object.freeze([
+                    0.3, 0.4462, 0.5769, 0.7, 0.8231, 0.9308, 1.0308, 1.1231, 1.2, 1.2769, 1.3462, 1.4, 1.4538, 1.5,
+                    1.5385,
+                ]),
+            }),
+            weide: Object.freeze({
+                tafel: "erle",
+                kl: 4,
+                hoeheM: 7,
+                ab: 15,
+                r: Object.freeze([
+                    0.2186, 0.3934, 0.4699, 0.5355, 0.5847, 0.6284, 0.6721, 0.7158, 0.7541, 0.7923, 0.8251, 0.8579,
+                    0.8907, 0.9235, 0.9508, 0.9672, 0.9836, 1,
+                ]),
+            }),
+            buche: Object.freeze({
+                tafel: "buche",
+                kl: 8.64,
+                hoeheM: 23.55,
+                ab: 20,
+                r: Object.freeze([
+                    0.1719, 0.2422, 0.3406, 0.4268, 0.5198, 0.6159, 0.7021, 0.7839, 0.8534, 0.9155, 0.975, 1.0329,
+                    1.0866, 1.136, 1.1854, 1.2306, 1.2731, 1.3113, 1.348, 1.3819, 1.4144, 1.4426, 1.468, 1.492, 1.5175,
+                    1.5372, 1.5584, 1.5796, 1.5924,
+                ]),
+            }),
+            karst: Object.freeze({
+                tafel: "buche",
+                kl: 3,
+                hoeheM: 8.5,
+                ab: 35,
+                r: Object.freeze([
+                    0.0226, 0.0902, 0.203, 0.2932, 0.3759, 0.4662, 0.5714, 0.6541, 0.7293, 0.7895, 0.8496, 0.9023,
+                    0.9549, 1, 1.0602, 1.1053, 1.1579, 1.188, 1.2105, 1.2481, 1.2707, 1.3008, 1.3308, 1.3383, 1.3534,
+                    1.3684,
+                ]),
+            }),
+        }),
+        // die Art des Walds (Wirts-Name) → ihre Kurve; „sonstige Laubbäume“ (WBR) → Buche; der Mammut trägt keine
+        art: Object.freeze({
+            baum_kiefer: "fichte",
+            baum_fichte: "fichte",
+            baum_tanne: "tanne",
+            baum_eiche: "eiche",
+            baum_birke: "birke",
+            baum_erle: "weide",
+            baum_weide: "weide",
+            baum_buche: "buche",
+            baum_karst: "karst",
+        }),
+        sonst: "buche",
+        ohne: Object.freeze(["mammut", "baum_mammut"]),
+    });
+    const _ertragMemo = new Map();
+    // DIE KURVE EINER ART (Wirts- oder Labor-Name) mit ihren Rändern: A₀ (die Größe groesse[0]), A_end (das Tafel-Ende), R(A), A(R);
+    // null für den Mammut (außerhalb der Tafel)
+    function forestErtragKurve(sp) {
+        let K = _ertragMemo.get(sp);
+        if (K !== undefined) return K;
+        const E = FOREST_ERTRAG;
+        if (E.ohne.indexOf(sp) >= 0) K = null;
+        else {
+            const name = E.kurven[sp] ? sp : E.art[sp] || E.sonst;
+            const C = E.kurven[name];
+            const r = C.r;
+            const ab = C.ab;
+            const st = E.schritt;
+            const n = r.length;
+            // R(A): linear in den Schritten der Tafel, unter ihrem ersten Alter zur Höhe 0 bei A = 0, über ihrem Ende ihr Ende
+            const R = (A) => {
+                if (A <= ab) return A > 0 ? (r[0] * A) / ab : 0;
+                const f = (A - ab) / st;
+                const k = Math.floor(f);
+                return k >= n - 1 ? r[n - 1] : r[k] + (r[k + 1] - r[k]) * (f - k);
+            };
+            // A(R): das Alter einer Größe (die Tafel steigt streng), über dem Ende ihr Ende
+            const alter = (s) => {
+                if (s <= r[0]) return s > 0 ? (s / r[0]) * ab : 0;
+                for (let k = 1; k < n; k++)
+                    if (s <= r[k]) return ab + (k - 1 + (s - r[k - 1]) / (r[k] - r[k - 1])) * st;
+                return ab + (n - 1) * st;
+            };
+            const a0 = alter(FOREST_PACK.groesse[0]);
+            K = Object.freeze({ name, tafel: C.tafel, R, alter, a0, aEnd: ab + (n - 1) * st });
+        }
+        _ertragMemo.set(sp, K);
+        return K;
+    }
+    // DIE GRÖSSE EINER ART IN DER PHASE u ihres Flecks (KERN-PFLICHT: ohne Phase, für den Mammut oder ohne Art bricht sie laut)
+    function forestErtragGroesse(sp, u) {
+        const K = forestErtragKurve(sp);
+        if (!K || !(u >= 0 && u <= 1))
+            throw new Error(
+                `phyto-core: die Größe der Ertragstafel braucht Art und Phase (${sp}, u ${u}, KERN-PFLICHT)`
+            );
+        return K.R(K.a0 + u * (K.aEnd - K.a0));
+    }
+    // DIE PHASE DES FLECKS am Ort (x, z): das Mosaik ist ein Voronoi gezitterter Saat-Punkte im Raster `fleck` (je Raster-Zelle ein
+    // Punkt und seine Phase aus dem Welt-Samen, mulberry32), die Phase des nächsten Punkts (3 × 3 Zellen) — rein, ohne rng des Darts.
+    function forestFleckPhase(x, z, seedInt) {
+        const L = FOREST_ERTRAG.fleck;
+        const gx = Math.floor(x / L);
+        const gz = Math.floor(z / L);
+        let best = Infinity;
+        let u = 0;
+        for (let a = -1; a <= 1; a++)
+            for (let b = -1; b <= 1; b++) {
+                const cx = gx + a;
+                const cz = gz + b;
+                const h = mulberry32(
+                    (Math.imul(cx, 73856093) ^ Math.imul(cz, 19349663) ^ Math.imul(seedInt | 0, 83492791)) >>> 0
+                );
+                const px = (cx + h()) * L - x;
+                const pz = (cz + h()) * L - z;
+                const d2 = px * px + pz * pz;
+                const v = h();
+                if (d2 < best) {
+                    best = d2;
+                    u = v;
+                }
+            }
+        return u;
+    }
+    // DIE GRÖSSE EINES DARTS: die Tafel seiner Art in der Phase seines Flecks (`forestErtragGroesse`). RNG-REIHENFOLGE heilig
+    // (Host-Determinismus): die Würfe der reverse-J-Größe (ue, der Überhälter-Wurf, seine Größe bei 5 %) bleiben im Strom, ihre
+    // Zahl fällt — jeder Ort, jede Art und jeder Vorrang eines Darts bleibt, wie er war; nur seine Größe folgt dem Lebenslauf.
+    function forestTreeSize(rng, sp, u) {
+        rng();
+        if (rng() < 0.05) rng();
+        return forestErtragGroesse(sp, u);
     }
     // Mammut-Promotion. Species-Gate (Lab weide / Host baum_erle) bleibt Caller-lokal —
     // NUR dann aufrufen, sonst ändert sich die Host-rng-Reihenfolge (prio/keep/totRoll/rotY).
@@ -3298,10 +3450,10 @@
         }
         return { promote: promote, s: s };
     }
-    // Convenience: size first (inkl. Überhälter), then mammut — SAME order as today.
+    // Convenience: size first (die Tafel der Art `sp` in der Phase `u`), then mammut — SAME order as today.
     // Nur aufrufen wenn Species Mammut erlaubt (nicht weide/baum_erle).
-    function forestSizeAndMammut(rng, sd, clim) {
-        let s = forestTreeSize(rng, sd);
+    function forestSizeAndMammut(rng, sd, clim, sp, u) {
+        let s = forestTreeSize(rng, sp, u);
         const m = forestMammutRoll(rng, sd, clim);
         if (m.promote) s = m.s;
         return { s: s, mammut: m.promote };
@@ -3807,6 +3959,11 @@
     // den geborenen Dart selbst; Zwischen- und Unterstand (`forestSchicht` < 1) ein Abbild mit `alter`, der Größe `s` seiner
     // Schicht (nie unter FOREST_PACK.groesse[0] — der Wirt setzt sie, wie sie ist) und der Krone T·alter.
     // `nurDach`: nur die Kronen des Dachs (die Kamm-Krone der Ferne — kein Unterstand reicht über das Dach in den Himmel).
+    // DAS STEHENDE TOTHOLZ (Bahn mischwald): ein Dart, der heute weder im Dach noch in der Schicht steht, aber vor
+    // FOREST_ERTRAG.tau Jahren im Dach stand (dasselbe Urteil über die Kronen jener Zeit, `forestVorher`), starb in der
+    // Konkurrenz — er STEHT als `baum_totholz` in der Größe, die er zuletzt trug (die Tafel seiner Art bei A − tau; die Gestalt
+    // `totholz`: kahler Stamm, gebrochen bei 42–68 % ihrer Höhe), ohne Krone (T 0: er schirmt nichts). Der Tod ist eine Folge des
+    // Gesetzes, kein Wurf. Ein Dart, der vor tau Jahren noch unter der Größe des Walds war, stand nie als Baum (kein Totholz).
     function forestStehende(gx, gz, geboren, pk, nurDach) {
         // die Zellen ±FOREST_URTEIL_REICH, die Fenster und Schirm dieser Zelle lesen, je EINMAL beim Rufer geholt (sein
         // Gedächtnis trägt Schlüssel-Text: je Dart der Schicht 59 Rufe)
@@ -3824,15 +3981,41 @@
         const own = geboren(gx, gz);
         const out = [];
         const S = nurDach ? forestDachFenster(gx, gz, geboren, pk) : null;
+        const G0 = FOREST_PACK.groesse[0];
+        let V = null; // das Dach vor tau Jahren (erst gefragt, wenn ein Dart heute nicht steht)
         for (let k = 0; k < own.length; k++) {
             const d = own[k];
             if (d.gelichtet) continue; // die Lichtung nahm ihn nach dem Wuchs (`planForestCell`)
             const a = S ? +S.has(d) : forestSchicht(d, gx, gz, geboren, pk);
             if (a === 1) out.push(d);
-            else if (a > 0)
-                out.push(Object.assign({}, d, { s: Math.max(d.s * a, FOREST_PACK.groesse[0]), T: d.T * a, alter: a }));
+            else if (a > 0) out.push(Object.assign({}, d, { s: Math.max(d.s * a, G0), T: d.T * a, alter: a }));
+            else if (!S) {
+                const K = forestErtragKurve(d.sp);
+                const sv = K ? K.R(K.alter(d.s) - FOREST_ERTRAG.tau) : 0;
+                if (!(sv >= G0)) continue;
+                if (!V) V = forestDachFenster(gx, gz, (cx, cz) => forestVorher(geboren(cx, cz)), pk);
+                if (V.has(forestVorher(own)[k])) out.push(Object.assign({}, d, { sp: "baum_totholz", s: sv, T: 0 }));
+            }
         }
         return out;
+    }
+    // DIE GEBORENEN EINER ZELLE VOR tau JAHREN (FOREST_ERTRAG): dieselben Darts — Ort, Vorrang, Schluss — mit der Krone ihrer Art
+    // bei A − tau (T · R(A − tau) / R(A), isometrisch wie T = Krone · s), je Feld der Geborenen EINMAL (rein je Feld-Objekt).
+    // Der Mammut (außerhalb der Tafel) trägt seine Krone unverändert.
+    const _vorherMemo = typeof WeakMap === "function" ? new WeakMap() : null;
+    function forestVorher(arr) {
+        let v = _vorherMemo ? _vorherMemo.get(arr) : undefined;
+        if (v) return v;
+        const tau = FOREST_ERTRAG.tau;
+        v = new Array(arr.length);
+        for (let i = 0; i < arr.length; i++) {
+            const d = arr[i];
+            const K = forestErtragKurve(d.sp);
+            const f = K ? K.R(K.alter(d.s) - tau) / d.s : 1;
+            v[i] = { x: d.x, z: d.z, s: d.s * f, T: d.T * f, prio: d.prio, schluss: d.schluss, gelichtet: d.gelichtet };
+        }
+        if (_vorherMemo) _vorherMemo.set(arr, v);
+        return v;
     }
 
     // DIE KAMM-KRONE (ferne.K3, w10-ferne): die Bäume DESSELBEN Bestands (`planForestCell` → `forestStehende`), deren Krone über
@@ -4083,10 +4266,10 @@
             }
             // Nur die Weide-Nische (baum_erle) steht im nassen Saum; der Rest würde versaufen.
             if (sp !== "baum_erle" && above <= 1.2) continue;
-            // GRÖSSE + optional Mammut via phyto-core Helper.
-            // RNG-Ordnung unverändert: size (ue/Überhälter) zuerst; Mammut-Roll nur wenn
+            // GRÖSSE + optional Mammut via phyto-core Helper: die Ertragstafel der Art in der Phase ihres Flecks (der Lebenslauf
+            // des Bestands, FOREST_ERTRAG). RNG-Ordnung unverändert: size (ue/Überhälter) zuerst; Mammut-Roll nur wenn
             // sp !== baum_erle (Species-Gate Caller-lokal — sonst Drift an prio/keep/…).
-            let s = forestTreeSize(rng, sd);
+            let s = forestTreeSize(rng, sp, forestFleckPhase(x, z, seedInt));
             let T = (F.crown[sp] || 4.0) * s; // Auto-Arten ohne Kronen-Eintrag → generischer 4-m-Radius
             // MAMMUT-Nische (baum_mammut, selten + riesig) an dichten, trockenen Kernen.
             if (sp !== "baum_erle") {
@@ -7982,6 +8165,12 @@
         forestNicheWeights: forestNicheWeights,
         forestNische: forestNische,
         forestTreeSize: forestTreeSize,
+        // der Lebenslauf des Bestands (Bahn mischwald): die Tafeln, die Kurve je Art, die Größe in der Phase, die Phase des Flecks
+        FOREST_ERTRAG: FOREST_ERTRAG,
+        forestErtragKurve: forestErtragKurve,
+        forestErtragGroesse: forestErtragGroesse,
+        forestFleckPhase: forestFleckPhase,
+        forestVorher: forestVorher,
         forestMammutRoll: forestMammutRoll,
         forestSizeAndMammut: forestSizeAndMammut,
         FOREST_TOPOLOGY: FOREST_TOPOLOGY,

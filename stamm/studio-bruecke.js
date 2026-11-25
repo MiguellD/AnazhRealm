@@ -3317,8 +3317,9 @@ AnazhRealm.STREU_NAMEN = Object.freeze({
     baum_kiefer: "fichte",
     // Wald-Nischen (_forestCellDarts) auf Vorlagen-Arten: baum_erle → weide. Buche und Karst-Baum sind seit 04.10.
     // eigene Studio-Arten (die Aliase auf Mammut und belaubte Eiche fielen), die Mammut-Nische des Wald-Generators
-    // heißt baum_mammut. Stehendes Totholz hat in der Welt keinen Erzeuger (der Alias baum_totholz → eiche fiel
-    // 05.10. mit der Grammatik-Art); die Studio-Art totholz pflanzt der Labor-Wald.
+    // heißt baum_mammut. Das stehende Totholz pflanzt der Wald selbst (phyto-core `forestStehende`: wer in der Konkurrenz
+    // starb, steht als baum_totholz) — es löst über die generische Regel auf die Studio-Art totholz (der Alias baum_totholz →
+    // eiche fiel 05.10. mit der Grammatik-Art).
     baum_erle: "weide",
     baum_buche: "buche",
     baum_karst: "karst",
