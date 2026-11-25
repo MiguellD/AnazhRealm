@@ -576,7 +576,11 @@ function hausFall(id, seed, ersatz3, tuerDefekt, glasDefekt, tonDefekt) {
     });
     z.stoff = [1, 2].map((s) => stoffJeBauteil(Bk, FC.koerperListe(Bk), teilJe[0], teilJe[s]));
     const wurfJe = {}; // je Werfer-Stufe einmal gerechnet (alle Stufen zeigen auf dieselbe)
-    for (const s of [0, 1, 2]) {
+    // DAS WURF-GESETZ (E1, haus-labor-welt), gelesen am Budget des Kerns — kein Stufen-Literal: jede gezeigte Stufe wirft eine
+    // GRÖBERE (nie sich selbst: die L0 warf 31 660–101 716 Dreiecke je Kaskade); die erste wirft ihre Gestalt in einer gezeigten
+    // Stufe, nie den Fernkörper der NUR-WURF-Stufe (der trägt weder Veranda noch Absatz: K4 16,32 → 12,68 %, GTX 1050)
+    const gezeigt = STUFEN_HAUS.filter((s) => !(B[s] && B[s].nurWurf));
+    for (const s of gezeigt) {
         const w = B[s] ? B[s].schatten : undefined;
         if (!Number.isInteger(w)) {
             z.wurf[s] = 0;
@@ -585,9 +589,14 @@ function hausFall(id, seed, ersatz3, tuerDefekt, glasDefekt, tonDefekt) {
         }
         const wv = werf[w];
         z.kosten[s] = { stufe: w, tris: anzahl(wv) };
-        const soll = B[w] && B[w].nurWurf ? B[w].tris : null;
-        if (w !== 3) z.befund.push(`L${s} wirft sich selbst über L${w} (${anzahl(wv)} Dreiecke je Kaskade)`);
-        else if (soll != null && anzahl(wv) > soll) z.befund.push(`Stufe 3 wirft ${anzahl(wv)} > ${soll} Dreiecke`);
+        const soll = B[w] ? B[w].tris : null;
+        if (w === s) z.befund.push(`L${s} wirft sich selbst (${anzahl(wv)} Dreiecke je Kaskade)`);
+        else if (w < s) z.befund.push(`L${s} wirft feiner als sich selbst über L${w} (${anzahl(wv)} Dreiecke je Kaskade)`);
+        else if (s === gezeigt[0] && B[w].nurWurf)
+            z.befund.push(
+                `das nahe Haus L${s} wirft den Fernkörper der Stufe ${w} (${anzahl(wv)} Dreiecke) — seine Gestalt fehlt im Wurf`
+            );
+        else if (soll != null && anzahl(wv) > soll) z.befund.push(`Stufe ${w} wirft ${anzahl(wv)} > ${soll} Dreiecke`);
         if (wurfJe[w] == null) wurfJe[w] = Math.min(...SONNEN.map(([h, az]) => wurfIou(wv, werf[0], sonne(h, az), 0.1)));
         z.wurf[s] = wurfJe[w];
     }
@@ -766,6 +775,19 @@ function selbsttest() {
     const z2 = hausFall("holzhuette", 1);
     LOD.budget.haus[2].schatten = alt;
     if (!hausUrteil(z2).some((x) => /L2 wirft nicht/.test(x))) fehler.push("W: eine Stufe ohne Werfer ist nicht rot");
+    // DAS WURF-GESETZ E1 beim Täter: die L0 wirft sich selbst (die Kosten vor S3) — und die L0 wirft den Fernkörper der NUR-WURF-
+    // Stufe (das Gesetz vor haus-labor-welt: weder Veranda noch Absatz im Wurf)
+    const erste = LOD.budget.haus[STUFEN_HAUS[0]].schatten;
+    const nurWurf = STUFEN_HAUS.find((s) => LOD.budget.haus[s] && LOD.budget.haus[s].nurWurf);
+    for (const [mutant, muster, wort] of [
+        [STUFEN_HAUS[0], /^L0 wirft sich selbst/, "die L0, die sich selbst wirft,"],
+        [nurWurf, /^das nahe Haus L0 wirft den Fernkörper/, "die L0, die den Fernkörper wirft,"],
+    ]) {
+        LOD.budget.haus[STUFEN_HAUS[0]].schatten = mutant;
+        const zm = hausFall("viktorianisch", 1);
+        LOD.budget.haus[STUFEN_HAUS[0]].schatten = erste;
+        if (!hausUrteil(zm).some((x) => muster.test(x))) fehler.push(`W: ${wort} ist nicht rot`);
+    }
     // T: das Blatt noch einmal aufs Scharnier gesetzt
     const doppelt = (g0) => {
         for (const w of g0.children)
@@ -905,10 +927,10 @@ function selbsttest() {
     const st = selbsttest();
     for (const f of st) rot.push("SELBSTTEST " + f);
     console.log(
-        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G), S8, das halbe Dach der Hülle fern (H)"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
+        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer und die L0, die sich selbst oder den Fernkörper wirft (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G), S8, das halbe Dach der Hülle fern (H)"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
     );
     wandEnde(
         rot,
-        "jede Stufe wirft den grundriss-treuen Fernkörper, zeigt sich erst ≤ 1 px von der L0, kein Querfirst, der Körper liegt innen, jedes Türblatt sitzt an seinem Scharnier, jedes Fenster ist Glas in jeder Stufe."
+        "jede Stufe wirft eine gröbere, das nahe Haus seine Gestalt, die fernen den grundriss-treuen Fernkörper, zeigt sich erst ≤ 1 px von der L0, kein Querfirst, der Körper liegt innen, jedes Türblatt sitzt an seinem Scharnier, jedes Fenster ist Glas in jeder Stufe."
     );
 })();
