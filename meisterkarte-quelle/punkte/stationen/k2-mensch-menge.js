@@ -627,7 +627,9 @@ module.exports = (F) => [
         pfad: PFAD,
         bestehend: { 1: "mensch.K2#2" },
         sprossen: {
-            2: { umfang: um(1000, "Wege je Stunde an der Spitze"), masse: [band("spitzen", "Spitzen der Wege je Stunde", 2, 2), ge("verhaeltnis", "Spitze zu Tal", 3)] },
+            // der Umfang „10³ Wege/h (Stadt)“ ist eine Klasse der Stadt (Entscheid des Koordinators 25.11. 06:05): ≥ 10³ Bewohner UND an der
+            // Spitze ≥ 10^2,5 = 316 Wege je Stunde — eine Stadt der Klasse trägt quellentreu 340–710 Wege in der Spitzen-Stunde
+            2: { umfang: um(1000, "Bewohner der Stadt"), masse: [her(ge("spitze", "Wege je Stunde an der Spitze (Umfang der Stadt)", 316), "der Umfang „10³ Wege/h (Stadt)“ als Klasse der Zehnerpotenz: die Spitzen-Stunde der Stadt trägt ≥ 10^2,5 = 316 Wege"), band("spitzen", "Spitzen der Wege je Stunde", 2, 2), ge("verhaeltnis", "Spitze zu Tal", 3)] },
             3: nicht(um(10000, "Wege je Stunde"), [le("ks", "KS-Abstand der Pendeldistanz", 0.15), ge("saaten", "Anteil Saaten im Band", 0.8)], "10⁴ Wege je Stunde"),
             4: nicht(um(100000, "Wege je Tag an einem Knoten"), [band("dichte8", "Dichte um 8 Uhr in P je m²", 2, 4), lt("dichte3", "Dichte um 3 Uhr in P je m²", 0.05)], "10⁵ Wege je Tag an einem Knoten"),
             5: nicht(um(1000000, "Wege je Tag"), [ge("durchgaenge", "Durchgänge je Tag", 1000000), ge("ganglinie", "Ganglinie in der realen Form (1 = ja)", 1)], "10⁶ Wege je Tag"),
@@ -653,7 +655,7 @@ module.exports = (F) => [
                 const w = await wege();
                 H.zeile("S2 " + w.stunden + " Stunden, Wege je Stunde " + JSON.stringify(w.je));
                 if (w.stunden < 24) throw new Error("der Tag reichte in der Frist nur " + w.stunden + " von 24 Stunden — ungemessen, nie ein halber Tag als Urteil");
-                K.zahl(2, { n: w.max, werte: { spitzen: w.spitzen, verhaeltnis: w.verhaeltnis }, beleg: "Wege je Stunde 0–" + (w.stunden - 1) + " Uhr " + JSON.stringify(w.je) + ", Spitzen um " + JSON.stringify(w.spitzenUm) + " Uhr, " + w.bewohner + " Bewohner, " + w.wegeTag + " Wege am Tag", taeter: w.spitzen !== 2 ? "koerper-core.js TAGES_GESETZ: die Wenden des Tags (wach, Werk, Mittag, Werk-Ende, Ruhe) tragen " + w.spitzen + " Spitzen" : null });
+                K.zahl(2, { n: w.bewohner, werte: { spitze: w.max, spitzen: w.spitzen, verhaeltnis: w.verhaeltnis }, beleg: "Wege je Stunde 0–" + (w.stunden - 1) + " Uhr " + JSON.stringify(w.je) + ", Spitzen um " + JSON.stringify(w.spitzenUm) + " Uhr, " + w.bewohner + " Bewohner, " + w.wegeTag + " Wege am Tag", taeter: w.spitzen !== 2 ? "koerper-core.js TAGES_GESETZ: die Wenden des Tags (wach, Werk, Mittag, Werk-Ende, Ruhe) tragen " + w.spitzen + " Spitzen" : null });
             });
             for (const [n, fehlt, tag] of [[3, "10⁴ Wege je Stunde", false], [4, "10⁵ Wege je Tag an einem Knoten", true], [5, "10⁶ Wege je Tag", true], [6, "10⁷ Wege je Tag einer Megaregion", true], [7, "10⁸–10⁹ Wege je Tag eines Planeten", true]])
                 await K.schritt(n, async () => {
@@ -663,8 +665,12 @@ module.exports = (F) => [
         },
         proben: {
             2: [
-                { name: "der Tag der Wenden: 4 Spitzen (Morgen, Mittag, Abend, Ruhe) — ROT an den Spitzen", j: mut("mensch.menge.rhythmus", 2, 1100, { spitzen: 4, verhaeltnis: 5 }), gruen: false, zahl: /ROT an Spitzen der Wege je Stunde 4 verfehlt 2–2/ },
-                { name: "Attrappe: flache Ganglinie (Spitze zu Tal 1,2) — ROT am Verhältnis", j: mut("mensch.menge.rhythmus", 2, 1100, { spitzen: 2, verhaeltnis: 1.2 }), gruen: false, zahl: /ROT an Spitze zu Tal 1\.2 verfehlt ≥ 3/ },
+                { name: "der Tag der Wenden: 4 Spitzen (Morgen, Mittag, Abend, Ruhe) — ROT an den Spitzen", j: mut("mensch.menge.rhythmus", 2, 1356, { spitze: 1100, spitzen: 4, verhaeltnis: 5 }), gruen: false, zahl: /ROT an Spitzen der Wege je Stunde 4 verfehlt 2–2/ },
+                { name: "Attrappe: flache Ganglinie (Spitze zu Tal 1,2) — ROT am Verhältnis", j: mut("mensch.menge.rhythmus", 2, 1356, { spitze: 1100, spitzen: 2, verhaeltnis: 1.2 }), gruen: false, zahl: /ROT an Spitze zu Tal 1\.2 verfehlt ≥ 3/ },
+                { name: "das Dorf statt der Stadt (477 Bewohner) — ROT am Umfang", j: mut("mensch.menge.rhythmus", 2, 477, { spitze: 650, spitzen: 2, verhaeltnis: 8.6 }), gruen: false, zahl: /ROT an Umfang 477 < 1000 Bewohner der Stadt/ },
+                { name: "die Stadt (1 356 Bewohner), Spitze 910 Wege/h, 2 Spitzen, Spitze zu Tal 3", j: mut("mensch.menge.rhythmus", 2, 1356, { spitze: 910, spitzen: 2, verhaeltnis: 3 }), gruen: true },
+                { name: "die flache Spitze (300 Wege/h < 10^2,5) — ROT am Umfang der Spitze", j: mut("mensch.menge.rhythmus", 2, 1356, { spitze: 300, spitzen: 2, verhaeltnis: 8.6 }), gruen: false, zahl: /ROT an Wege je Stunde an der Spitze \(Umfang der Stadt\) 300 verfehlt ≥ 316/ },
+                { name: "3 Spitzen (6 · 18 · 22 Uhr) — ROT an den Spitzen", j: mut("mensch.menge.rhythmus", 2, 1356, { spitze: 1470, spitzen: 3, verhaeltnis: 5 }), gruen: false, zahl: /ROT an Spitzen der Wege je Stunde 3 verfehlt 2–2/ },
             ],
         },
     }),
