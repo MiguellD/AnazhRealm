@@ -3532,14 +3532,23 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         warm: ["_freiKontaktBereit", PR._freiKontaktBereit.toString(), "const gilt = l !== undefined && l[3] * n0 + l[4] * n1 + l[5] * n2 >= AnazhRealm.FREI.warmCos;", "const gilt = l !== undefined;"],
                         bias: ["_freiGang", PR._freiGang.toString(), "const dMax = prall !== undefined || (mitFeder && !warm) ? 1 : 3;", "const dMax = prall !== undefined ? 1 : 3;"],
                     }; // prettier-ignore
-                    const haufen = (saaten, m) => {
+                    // die Mutante als Skript der Seite (ihre CSP trägt kein 'unsafe-eval', blob: ist erlaubt): der Rumpf als Glied eines Objekts
+                    const mutBau = (rumpf) =>
+                        new Promise((ok, nein) => {
+                            const el = document.createElement("script");
+                            el.src = URL.createObjectURL(new Blob([`window.__haufenMut = ({${rumpf}});`], { type: "text/javascript" }));
+                            el.onload = () => (URL.revokeObjectURL(el.src), el.remove(), ok(window.__haufenMut));
+                            el.onerror = () => nein(new Error("die Mutante des Haufens lud nicht"));
+                            document.head.appendChild(el);
+                        });
+                    const haufen = async (saaten, m) => {
                         if (m && m[1].split(m[2]).length !== 2) return null;
                         const eigen = {};
                         for (const g of ["_windAt", ...(m ? [m[0]] : [])]) eigen[g] = Object.prototype.hasOwnProperty.call(r, g) ? r[g] : null;
                         const [sim0, name, cs] = [st._simZeit, "_druck_platte", AnazhRealm.LIFE_FIELD.cell];
                         const H = { nieSaat: null, spaetSaat: null, schlafS: 0, nie: 0, n: 0 };
                         try {
-                            if (m) r[m[0]] = eval(`({${m[1].replace(m[2], m[3])}})`)[m[0]];
+                            if (m) r[m[0]] = (await mutBau(m[1].replace(m[2], m[3])))[m[0]];
                             r._windAt = (x, z, t, aus) => Object.assign(aus || {}, { x: 1, z: 0, staerke: 0, boe: 0, form: 1, ms: 0 });
                             st.blueprints[name] = AnazhRealm._etikett({ name, builtIn: false, vomGesetz: true, frei: true, parts: [{ shape: "box", material: "quarz", size: { x: 0.12, y: 0.004, z: 0.12 }, position: { x: 0, y: 0.002, z: 0 } }] }); // prettier-ignore
                             for (let k = 0; k < saaten && !(m && H.nieSaat != null); k++) {
@@ -3573,9 +3582,9 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         return { n: H.n, nie: H.nie, saat: H.nieSaat ?? H.spaetSaat, schlafS: H.nie ? null : H.schlafS };
                     };
                     {
-                        const [HW, HB] = [haufen(60, MUT.warm), haufen(60, MUT.bias)];
+                        const [HW, HB] = [await haufen(60, MUT.warm), await haufen(60, MUT.bias)];
                         const bis = Math.max(...[HW, HB].map((H) => (H && H.nie ? H.saat + 1 : 0)));
-                        const HE = haufen(bis || 60, null);
+                        const HE = await haufen(bis || 60, null);
                         const mu = (H) => H && { saat: H.nie ? H.saat : null, schlafS: H.schlafS, n: H.n };
                         HAUFEN = { saaten: HE.n, echt: { saat: HE.saat, schlafS: HE.schlafS, nie: HE.nie }, mutanten: { warm: mu(HW), bias: mu(HB) } };
                     }
