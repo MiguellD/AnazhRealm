@@ -5,6 +5,45 @@
 Linsen gate:koerper-kern (M1 · M2 · M5), gate:mensch-zuege und gate:kreatur-takt zielplan (die Stunde aus dem Akt, die Ganglinie
 des Tags).
 
+## Der Heil-Kopf (tages-gesetz 4, 25.11.): die CI des Kopfs 20451ac6 stand ROT in voll 4/18
+
+Die Zeile der CI: „❌ VK (Leiter mensch.netz.verkehr) der Verkehr der Stadt um 10 Uhr — berührt Bewohner 11×“. Lokal am Kopf samt
+main f63a69ef (Merge b04af94e, Selbsttest gate:koerper-kern 52 Täter) dieselbe Zeile, deterministisch: das Kind 7:288:5 in Wagen 7
+bei 838/432, Bild 33148–33188, 6,5 m vor dem Stand des Richters (836,2/438,5). Beide Schnitte liegen in stamm/siedlung-verkehr.js.
+
+1. **Wer in einer Bahn stand, betrat die Bahn des anderen** (`_verkehrVorrang`). Das Kind ging längs in der Bahn eines Wagens, die
+   der beanspruchte, und trat 3 m vor dem Bug von Wagen 7 (8,2 m/s) in dessen Bahn: Wagen 7 traf und trat (Q[0] 0,03 s), und doch gab
+   der Vorrang „frei“. Die eine Bahn hob das Warten vor der anderen auf (`return traf && tritt && !drin`). Der Wagen bremste bis
+   4,4 m/s und stand auf dem Kind. Schnitt: das Warten am Rand der Bahn, die ein anderer beansprucht, gilt immer (`return traf &&
+   tritt`). Wer in einer Bahn steht, räumt sie quer, wenn er die Querung schafft, sonst geht er seinen Weg, nie in die Bahn eines
+   anderen. Berührt Leib 11 → 0.
+2. **Die Rampe des Umfahrens begann neben dem Wagen** (`_verkehrUmfahren`). Mit Schnitt 1 stand eine neue Zeile ROT: Ausscheren
+   über dem Band 0,612 m, SUV 17 an der Wende 854/407 (10 Uhr). Er hielt 4,3 m vor dem stehenden Leib. Die Rampe (Kern hl + R + 1,
+   `umfahrRampeM` 6 m) lag um den Leib, wo immer der Wagen stand. Die neue Linie begann an ihm 66° neben seiner Gier, und nach
+   0,88 m ragte seine Ecke 0,612 m über das Band. Schnitt an der Wurzel der Linie: wer dem Stehenden näher ist als Kern + Rampe,
+   umfährt nie, er wartet, und der Leib tritt beiseite (`_bewohnerPlatz`). Eine „weiter“-Linie beginnt so nie quer zur Gier.
+3. **Die Fahr-Linse lokal GRÜN** (Kopf b04af94e mit beiden Schnitten, stadt-voll, 600 s je Stunde, ein Hand-Lauf an der
+   Stations-Grenze), wörtlich:
+   - „✅ VK-V (mensch.K2) die Stunde ohne Vorgeschichte: dieselbe Saat, dasselbe Bild — {"stunde":10,"bilder":[1200,1200],"erst":-1,"einAnkunft":false,"wer":[]}“
+   - „✅ VK (Leiter mensch.netz.verkehr) der Verkehr der Stadt um 10 Uhr“
+   - „✅ VK (Leiter mensch.netz.verkehr) der Verkehr der Stadt um 23 Uhr“
+
+| stadt-voll | Kopf 3 + main (vorher) | Schnitt 1 | Kopf 4 (beide Schnitte) |
+|---|---|---|---|
+| berührt Bewohner 10 Uhr | 11 (7:288:5 in Wagen 7) | 0 | 0 |
+| Ausscheren über dem Band 10 Uhr | 0,036 m (SUV 14) | 0,612 m (SUV 17, ROT) | 0,025 m |
+| Ausscheren über dem Band 23 Uhr | — (die Stunde lief nach dem ROT nicht) | 0,026 m | 0,026 m |
+| knapp (Wagen an Wagen) 10 · 23 Uhr | 0,30 · — | 0,31 · 0,33 | 0,32 · 0,33 |
+| Ziele erreicht 10 · 23 Uhr | 164 · — | 163 · 163 | 163 · 163 |
+| langsamste Minute 10 Uhr | 138 m (Wagen 7) | 121 m (Wagen 7) | 121 m (Wagen 7) |
+| Sim-Takt je Schritt 10 · 23 Uhr | 0,975 ms · — | 0,959 · 0,930 ms | 1,021 · 0,936 ms |
+
+Wagen 21 von Soll 21 je Stunde, keiner fest, kein Stoß, kein Wagen in Wagen, keiner ohne Schlüssel im Ort. Ehrlich offen: die
+langsamste Minute fiel 138 → 121 m. Das ist der Preis des Wartens am Rand der anderen Bahn (Schnitt 1); der Boden der Linse
+(`weg60M` 30 m) hält.
+
+BILD-PLATZHALTER
+
 ## Der Heil-Kopf (tages-gesetz 3, 25.11.): die CI des Kopfs 1d2f7e03 stand ROT an zwei Aufträgen dieses Zweigs
 
 1. **Die Fahr-Linse des Lebens (voll 4/18): die Akte stand in `_bewohnerNetz`.** Gemessen an stadt-voll (Villaalto, lokal, niedrige
