@@ -2985,10 +2985,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 18,
+    "heute": 19,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 8.8,
+    "anteilHeute": 9.4,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -3308,7 +3308,7 @@
        "richter": "100 Planeten: Phänologie folgt der Einstrahlung, r ≥ 0,8"
       }
      ],
-     "heute": 1,
+     "heute": 2,
      "kern": 0,
      "fuss": "kern",
      "beleg": "Alte Vegetation K5 2/2 im echten Bild: Krone Winter 0,037 × Sommer (Radeon), 0,113 (GTX); Wiese niedriger; Mess-Wiese, GTX stehend p95 16,8 ms. — KARTE: Kern 1 — Richter an beiden Geräten grün (vegetation.K5); Bild-Preis nur an der GTX belegt, die Radeon fehlt.",
@@ -20090,7 +20090,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 113,
+  "heute": 114,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
@@ -20105,7 +20105,7 @@
   },
   "gliederLeitern": 9,
   "beide": 60,
-  "nachwache": 53
+  "nachwache": 54
  },
  "zusammengelegt": [
   {
