@@ -2942,66 +2942,84 @@ async function wasserBank(o = {}) {
 }
 
 // ── Q6: die Leser der EINEN Wasser-Wahrheit ──
-// Je Spalte jedes geladenen Chunks (LOD 0) an zwei Orten — dem See der Mess-Wiese und der Küste des Meeres (−88/−880:
-// dort taucht die 3D-Rauheit das Gelände unter den Meeresspiegel, die Zellen fluten es als Küsten-Aquifer) — gegen die
-// EINE Wahrheit am Körper (`_koerperWasser` über dem Boden `_voxelSurfaceY`):
+// Je Spalte jedes geladenen Chunks (LOD 0) an zwei Orten — dem Ostufer des Sees der Mess-Wiese und dem Küsten-Anker
+// (`__wasserOrte`) — gegen die EINE Wahrheit am Körper (`_koerperWasser` über dem Boden `_voxelSurfaceY`):
 //   KLANG     die Spalten-Probe (`_nassAt`) an echtem Wasser: ihr billiger Beweis (Obergrenze, Fels darüber) irrt nie.
-//   KÜSTE     das Sheet: wo die Zellen Wasser über dem Boden zeichnen (oberste WATER-Zelle über der obersten FEST-Zelle,
-//             ihr Spiegel über dem Boden) und der Atlas Land sagt, trägt der Körper es — er las dort nichts.
+//   KÜSTE     wo das GESETZ zur Zeit der Probe Wasser nennt, steht Wasser im Bild (K12, Richter-Entscheid 25.11.): je Spalte des
+//             Meers (gelaende-core `gewaesserAm`) mit dem Spiegel des Gesetzes samt der Gezeit an der Lage (`_atlasWaterLevelAt`)
+//             über dem Boden zeichnet das Sheet Wasser über dem Boden (`_wasserBildAt`), und der Körper trägt es. Die Wasserlinie
+//             wandert mit der Tide, die Stichprobe mit ihr: vom Küsten-Anker seewärts (zum Meer-Anker und darüber hinaus,
+//             `SEEWAERTS_SCHRITT_M` je Schritt bis `SEEWAERTS_REICH_M`), bis ≥ 20 Spalten stehen — sonst LEER beim Namen mit Stufe
+//             und Reichweite. Bis zum Schnitt fragte die Linse die Zellen des Küsten-Aquifers am Ruhe-Spiegel: bei Ebbe (Stufe
+//             −35) 124 von 164 Spalten „trocken“, wo das Bild das Wasser 1,05 m unter dem Boden zeichnete (−4,75 m, Boden −3,7 m)
+//             und der Körper dasselbe las; bei Flut 0 Spalten. `o.ohneTide` (der Selbsttest): der Spiegel ohne die Gezeit.
 // Ob Ufer-Scheu und Trink-Ziel der Wahrheit folgen, prüft die Mutation (K12 M) am Verhalten.
 async function wasserLeser(o = {}) {
     if (!st.hydrosphere || !st.hydrosphere.ready) return { fehler: "keine Hydrosphäre" };
-    const { dim, dimY, step, span, floorDrop } = r._voxelChunkConfig(0);
-    const oy = (st.terrainBaseHeight || 0) - floorDrop;
-    const dq = dim * dim;
-    // DER SPIEGEL DES MEERS ZUR ZEIT DER PROBE (planet.wasser.gezeiten): das Sheet zeichnet das Meer und seinen Aquifer am Spiegel,
-    // den das Gesetz zur Stunde nennt — der Ruhe-Spiegel und der Hub der Gezeit (gelaende-core `gezeitHub` an der Lage, die den
-    // Träger der Welt trägt). Am Ruhe-Spiegel urteilte die Linse an der Uhr: bei Ebbe (Stufe −35) 124 von 164 Punkten „trocken“,
-    // wo das Bild das Wasser 1,05 m unter dem Boden zeichnet (`_wasserBildAt` −4,75 m, Boden −3,7 m) und der Körper trocken steht
-    const tisch = (typeof st.waterLevel === "number" ? st.waterLevel : 0) + window.__gelaendeCore.gezeitHub(r._gelaende());
+    const [SEEWAERTS_SCHRITT_M, SEEWAERTS_REICH_M] = [120, 1200];
+    const { dim, step, span } = r._voxelChunkConfig(0);
+    const GK = window.__gelaendeCore;
+    const L = r._gelaende();
+    const ruhe = typeof st.waterLevel === "number" ? st.waterLevel : 0;
     const aus = {
         orte: [],
         spalten: 0,
         nass: 0,
         klang: 0,
-        kueste: { sichtbar: 0, trocken: 0 },
+        kueste: { sichtbar: 0, trocken: 0, stufe: L.gezeit ? L.gezeit.k : null, reichM: 0 },
     };
     const bsp = { klang: [], kueste: [] };
     const R1 = wasserRund(1);
-    for (const [px, pz] of o.orte || (({ see, kueste }) => [see.ufer, kueste])(await window.__wasserOrte({}))) {
+    const gezaehlt = new Set();
+    const lies = async (px, pz, klang) => {
         await window.__wasserStrom([px, pz], 3);
-        aus.orte.push([px, pz, st.voxelChunks.size]);
+        aus.orte.push([R1(px), R1(pz), st.voxelChunks.size]);
         const pcx = Math.floor(px / span),
             pcz = Math.floor(pz / span);
         for (const [key, e] of st.voxelChunks) {
             if (!e || !e.waterCells || e.lod !== 0) continue;
             const [cx, cz] = key.split(",").map(Number);
             if (Math.abs(cx - pcx) > 3 || Math.abs(cz - pcz) > 3) continue;
-            const cells = e.waterCells;
+            const kueste = !gezaehlt.has(key);
+            gezaehlt.add(key);
+            if (!klang && !kueste) continue;
             for (let k = 0; k < dim; k++)
                 for (let i = 0; i < dim; i++) {
                     const x = cx * span + (i + 0.5) * step,
                         z = cz * span + (k + 0.5) * step;
                     const boden = r._voxelSurfaceY(x, z);
                     if (!Number.isFinite(boden)) continue;
-                    aus.spalten++;
                     const w = r._koerperWasser(x, z, boden);
                     const nass = boden < w - 0.05;
-                    if (nass) aus.nass++;
-                    if (r._nassAt(x, z) !== nass) {
-                        aus.klang++;
-                        if (bsp.klang.length < 4) bsp.klang.push([R1(x), R1(z), R1(boden), R1(w)]);
+                    if (klang) {
+                        aus.spalten++;
+                        if (nass) aus.nass++;
+                        if (r._nassAt(x, z) !== nass) {
+                            aus.klang++;
+                            if (bsp.klang.length < 4) bsp.klang.push([R1(x), R1(z), R1(boden), R1(w)]);
+                        }
                     }
-                    const sc = r._caColumnScan(cells, null, i + k * dim, dq, dimY);
-                    if (!(sc.floodTopJ >= 0 && sc.floodTopJ > sc.solidTopJ)) continue;
-                    if (r._atlasWaterLevelAt(x, z, boden) > -Infinity) continue;
-                    if (!(Math.min(tisch, oy + (sc.floodTopJ + 1) * step) > boden + 0.05)) continue;
+                    if (!kueste || GK.gewaesserAm(L, x, z).art !== "meer") continue;
+                    const spiegel = o.ohneTide ? ruhe : r._atlasWaterLevelAt(x, z, boden);
+                    if (!(spiegel > boden + 0.05)) continue;
                     aus.kueste.sichtbar++;
-                    if (!nass) {
+                    const bild = r._wasserBildAt(x, z);
+                    if (!(bild > boden + 0.05) || !nass) {
                         aus.kueste.trocken++;
-                        if (bsp.kueste.length < 4) bsp.kueste.push([R1(x), R1(z), R1(boden), R1(tisch)]);
+                        if (bsp.kueste.length < 4) bsp.kueste.push([R1(x), R1(z), R1(boden), R1(spiegel), bild == null ? null : R1(bild)]);
                     }
                 }
+        }
+    };
+    for (const [px, pz] of o.orte) await lies(px, pz, true);
+    // SEEWÄRTS: vom Küsten-Anker über den Meer-Anker hinaus, bis die Stichprobe steht
+    if (o.kueste && o.meer) {
+        const [kx, kz] = o.kueste;
+        const d0 = Math.hypot(o.meer[0] - kx, o.meer[1] - kz);
+        const [ux, uz] = d0 > 0 ? [(o.meer[0] - kx) / d0, (o.meer[1] - kz) / d0] : [0, 0];
+        for (let d = SEEWAERTS_SCHRITT_M; d0 > 0 && aus.kueste.sichtbar < 20 && d <= SEEWAERTS_REICH_M; d += SEEWAERTS_SCHRITT_M) {
+            aus.kueste.reichM = d;
+            await lies(kx + ux * d, kz + uz * d, false);
         }
     }
     aus.beispiele = bsp;
