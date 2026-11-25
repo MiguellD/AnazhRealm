@@ -1567,6 +1567,13 @@ var __weltLicht = (function () {
     // `KM` = Math als Bindung des Moduls: im Faden-Kontext (node vm, `fadenScope`) ist jeder Griff an den globalen `Math` ein Abfang
     // des Kontexts — der Himmel kostete so 233 statt 63 ms (spike kosmos-umfang, anazh-realm-seed).
     const KM = Math;
+    // DIE GESAMT-LEUCHTKRAFT-FUNKTION der Sonnen-Umgebung (nacht-himmel): Flynn, Holmberg, Portinari, Fuchs & Jahreiß 2006 (MNRAS 372,
+    // 1149, Tab. 3: die 50-pc-Probe des CNS4, Φ = Sterne je 20-pc-Kugel und Größenklasse, gesamt und nur Hauptreihe) als
+    // [M_V, Φ, Φ(MS)]; M_V −2 zählt keinen Stern (Tab. 3: „--“). Die Riesen III–IV sind Φ − Φ(MS). Gegen sie steht der Rest je Stufe.
+    const KOSMOS_GESAMT = Object.freeze({
+        volumen: (4 / 3) * KM.PI * 20 * 20 * 20,
+        stufen: Object.freeze([[-3, 0.06, 0.06], [-2, 0, 0], [-1, 1.1, 0.6], [0, 3.3, 1.7], [1, 11.3, 6.1], [2, 16.7, 14.3], [3, 35.3, 30.9]].map(Object.freeze)),
+    });
     const KOSMOS = Object.freeze({
         // die schwächste Größe im Feld: die Grenzgröße der tiefen Nacht (`GRENZGROESSE`, −18° → +6) plus die halbe Klasse, um die
         // der Stern-Knoten der Welt unter seiner Grenze noch leuchtet (`_buildStarField`: die Schwelle ½ Klasse unter der Grenze)
@@ -1599,10 +1606,13 @@ var __weltLicht = (function () {
         //     pc⁻³), sech² mit z_d 150 pc (§ 5.1), M_V = M_J + 1,82: die Farbe V − J des roten Klumpens (Ruiz-Dern 2018, A&A 609, A116,
         //     Tab. 1: V − J = −0,028 + 0,880 (G − K_s), bei G − K_s = M_G − M_Ks = 0,495 + 1,606) für den ganzen Ast. Bis nacht-himmel
         //     2,4 · 10⁻⁴ pc⁻³ bei 300 pc, M_V −0,5…1,5 gleichverteilt.
-        //   M III — der Rest der Riesen nach Bovy 2017 (Gl. 24: 3,9 · 10⁻⁴ pc⁻³ über −4 < M_J < 2,5, abzüglich Tab. 2), sech² 150 pc;
-        //     seine Spanne M_V ungeprüft.
-        // OHNE QUELLE (aus dem Gedächtnis nach Allen, Astrophysical Quantities, ungeprüft; die Leuchtkraft-Funktion flach): B V spät,
-        // K V, M V, Überriesen, Weiße Zwerge. Zwischen B V früh (Reed: B2V bei M_V −2,2) und B V spät (ab −1,5) liegt eine Lücke.
+        //   DER REST je Stufe (`rest`, `kRest`): was keine eigene Quelle hat, ist Φ_gesamt − Σ der belegten Klassen desselben Asts
+        //     (Zwerge V, Riesen III–IV) gegen die gemessene GESAMT-Leuchtkraft-Funktion `KOSMOS_GESAMT` (Flynn 2006) — er ersetzt
+        //     B V spät (8,5 · 10⁻⁵ pc⁻³, −1,5…0,5, 70 pc) und M III (1,2 · 10⁻⁵, −2…−0,5) und füllt die fehlenden B/A/F III–IV; seine
+        //     Säule je Band aus Flynn 2006 Tab. 2 (Σ/ρ0 → sech² mit z_d = Σ/(4ρ0): Zwerge M_V < 2,5 · 2,5–3 · 3–4 und die Riesen).
+        //     T_eff, Masse und Lichtwechsel der Reste stehen aus den alten Zeilen (B V spät, F V, G/K III–IV, M III), ungeprüft.
+        // OHNE QUELLE (aus dem Gedächtnis nach Allen, Astrophysical Quantities, ungeprüft; die Leuchtkraft-Funktion flach): K V, M V,
+        // Überriesen, Weiße Zwerge; gegen die Gesamt-Funktion ungeprüft ist M_V ≥ 3,5 (Jahreiß & Wielen 1997 ungelesen) und M_V < −3,5.
         klassen: Object.freeze(
             [
                 [
@@ -1615,6 +1625,7 @@ var __weltLicht = (function () {
                     30,
                     [],
                     {
+                        ast: "V",
                         lf: [[-5.2, 3.1], [-5.1, 1.6], [-5.05, 1.7], [-5, 4], [-4.9, 9.4], [-4.8, 13.4], [-4.6, 4.3]].map(
                             ([M, rho]) => [M, rho * 1.0317e-9]
                         ),
@@ -1630,11 +1641,12 @@ var __weltLicht = (function () {
                     9,
                     [],
                     {
+                        ast: "V",
                         lf: [[-4.4, 12.2], [-4.25, 5.1], [-4.1, 33.1], [-3.9, 23.5], [-3.7, 94.3], [-3.56, 0.9], [-3.35, 110.4],
                             [-3, 440.2], [-2.6, 241.1], [-2.2, 1447.7]].map(([M, rho]) => [M, rho * 1.0317e-9]),
                     },
                 ],
-                ["B V spät", 8.5e-5, 70, -1.5, 0.5, 13000, 3.5, []],
+                ["Rest V", null, 0.9 / (4 * 0.0031), null, null, 13000, 3.5, [], { profil: "sech2", rest: { ast: "V", von: -3.5, bis: 2.5 } }],
                 [
                     "A V",
                     null,
@@ -1646,6 +1658,7 @@ var __weltLicht = (function () {
                     [],
                     {
                         profil: "sech2",
+                        ast: "V",
                         lf: [[1.34, 0.38], [1.48, 0.38], [1.55, 0.41], [1.76, 0.69], [1.84, 0.75], [1.89, 0.35], [2.07, 0.6],
                             [2.29, 1.01], [2.3, 0.63], [2.51, 0.65]].map(([M, n]) => [M, n * 1e-4]),
                     },
@@ -1661,6 +1674,7 @@ var __weltLicht = (function () {
                     [],
                     {
                         profil: "sech2",
+                        ast: "V",
                         lf: [[2.79, 1.19], [2.99, 1.41], [3.08, 1.23], [3.23, 0.88], [3.4, 1.48], [3.7, 2.54], [3.87, 3.19],
                             [4.01, 2.41], [4.15, 2.54], [4.45, 4.46]].map(([M, n]) => [M, n * 1e-4]),
                     },
@@ -1676,6 +1690,7 @@ var __weltLicht = (function () {
                     [],
                     {
                         profil: "sech2",
+                        ast: "V",
                         lf: [[4.5, 4.1], [4.79, 4.21], [4.86, 4.76], [4.94, 2.05], [4.98, 1.49], [5.13, 2.51], [5.18, 2.59],
                             [5.32, 2.39], [5.55, 4.67], [5.76, 5.22]].map(([M, n]) => [M, n * 1e-4]),
                     },
@@ -1693,27 +1708,31 @@ var __weltLicht = (function () {
                     [],
                     {
                         profil: "sech2",
+                        ast: "III",
                         lf: [0.05, 0.05, 0.06, 0.05, 0.12, 0.3, 0.44, 0.26, 0.17, 0.11, 0.1, 0.13, 0.15, 0.16, 0.22, 0.22, 0.3, 0.3,
                             0.31, 0.27].map((n, q) => [-2.375 + 0.25 * q + 1.82, n * 1e-4]),
                     },
                 ],
                 [
-                    "M III",
-                    1.2e-5,
-                    150,
-                    -2,
-                    -0.5,
-                    3500,
-                    1.4,
+                    "Rest III",
+                    null,
+                    0.4 / (4 * 0.0006),
+                    null,
+                    null,
+                    4700,
+                    1.5,
                     [
                         ["halbregelmaessig", 0.4, 40, 200, 0.2, 1.2],
                         ["mira", 0.06, 150, 500, 2.5, 6],
                     ],
-                    { profil: "sech2" },
+                    { profil: "sech2", rest: { ast: "III", von: -3.5, bis: 3.5 } },
                 ],
                 ["Überriesen", 1e-7, 60, -8, -5, 9000, 15, [["cepheide", 0.15, 3, 45, 0.4, 1.2]]],
                 ["Weiße Zwerge", 5e-3, 300, 11, 16, 10000, 0.6, []],
-            ].map(([name, n, hz, Mlo, Mhi, T, masse, wechsel, art]) => {
+                ["Rest V 2,5–3", null, 0.6 / (4 * 0.0015), null, null, 6600, 1.3, [], { profil: "sech2", rest: { ast: "V", von: 2.5, bis: 3 } }],
+                ["Rest V 3–3,5", null, 1.1 / (4 * 0.002), null, null, 6600, 1.3, [], { profil: "sech2", rest: { ast: "V", von: 3, bis: 3.5 } }],
+            ].map(([name, n, hz, Mlo, Mhi, T, masse, wechsel, art], _, alle) => {
+                if (art && art.rest) art = { ...art, lf: kRest(art.rest, alle) };
                 const lf = art && art.lf ? Object.freeze(art.lf.map((p) => Object.freeze(p))) : null;
                 const Ms = lf && lf.map((p) => p[0]);
                 return Object.freeze({
@@ -1785,6 +1804,27 @@ var __weltLicht = (function () {
         let s = 0;
         for (const [M, n] of c.lf) if (M >= a && (M < b || q === z - 1)) s += n;
         return s / c.n;
+    }
+    // DER REST je Stufe b der Gesamt-Funktion (nacht-himmel): Φ des Asts (V: Φ(MS), III: Φ − Φ(MS)) je pc³ minus die Summe der
+    // belegten Klassen desselben Asts mit M_V in [b − ½, b + ½); je halbe Stufe die Hälfte, nur in [von, bis) der Rest-Klasse. Wo die
+    // belegten Klassen über Φ liegen (Rest < 0: B V früh bei M_V −2, Zwerge bei 2), bleibt der Überschuss stehen, nie verteilt
+    // (`kGesamtBilanz` nennt ihn). Ein leerer Rest ist ROT.
+    function kGesamtBilanz(alle, ast) {
+        return KOSMOS_GESAMT.stufen.map(([b, phi, phiV]) => {
+            let belegt = 0;
+            for (const z of alle) {
+                const art = z[8];
+                if (art && art.ast === ast && art.lf) for (const [M, n] of art.lf) if (M >= b - 0.5 && M < b + 0.5) belegt += n;
+            }
+            return { b, phi: (ast === "V" ? phiV : phi - phiV) / KOSMOS_GESAMT.volumen, belegt };
+        });
+    }
+    function kRest(rest, alle) {
+        const lf = [];
+        for (const { b, phi, belegt } of kGesamtBilanz(alle, rest.ast))
+            for (const h of [b - 0.25, b + 0.25]) if (phi > belegt && h >= rest.von && h < rest.bis) lf.push([h, (phi - belegt) / 2]);
+        if (!lf.length) throw new Error("kosmos: der Rest " + rest.ast + " " + rest.von + "…" + rest.bis + " ist leer");
+        return lf;
     }
     // ∫∫ exp(−√(x² + y²)/hR) dx dy über das Rechteck: Gauß 2×2 je Zelle ≤ hR (größere Zellen teilen sich)
     const KG = 0.5 / KM.sqrt(3);
@@ -2103,13 +2143,15 @@ var __weltLicht = (function () {
     function kosmosSystem(K, i) {
         const st = kosmosStern(K, i),
             SY = KOSMOS.system;
-        const lo = i % 4294967296 >>> 0,
-            hi = KM.floor(i / 4294967296) >>> 0;
-        const a0 = (K.s ^ 0x51ed270b) >>> 0;
+        const heimat = i === K.heim.i;
+        // DER STROM des Systems: je Stern aus Saat und Index; das Heim-System aus seinem EIGENEN Strom der Saat (nacht-himmel, Lehre 7)
+        // — der Index des Heim-Sterns hängt an der Tafel der Klassen, ein Tafel-Schnitt würfelte bis dahin die Planeten der Heimat neu
+        const lo = heimat ? 0 : i % 4294967296 >>> 0,
+            hi = heimat ? 0 : KM.floor(i / 4294967296) >>> 0;
+        const a0 = (K.s ^ (heimat ? 0x2f6b9d13 : 0x51ed270b)) >>> 0;
         let z = 0;
         const w = () => kU(a0, z++, lo, hi);
         const L = KM.pow(10, -0.4 * (st.M - 4.83));
-        const heimat = i === K.heim.i;
         const jahrE = 365.256; // das siderische Jahr der Erde um die Sonne (1 AE, 1 M☉): Kepler P² ∝ a³/M
         const aAnker = heimat ? KM.cbrt(KM.pow(K.heim.jahrTage / jahrE, 2) * st.masse) : (0.5 + 2 * w()) * KM.sqrt(L);
         const nIn = SY.innen[0] + KM.floor(w() * (SY.innen[1] - SY.innen[0] + 1));
