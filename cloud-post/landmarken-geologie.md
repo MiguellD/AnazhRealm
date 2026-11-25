@@ -88,6 +88,12 @@ Heimat felsturm 1356 auf 1,9 km², das Gesetz erwartet …`; die Feuerstelle zur
   Zacken-Wald; Draw-Calls und Tris dort vorher↔nachher misst die Probe (hier keine GPU).
 - gate:fahr-leben L1 im Browser (die neue Geometrie am Hangfuß).
 
+## Prüfung vor der Abgabe
+
+Basis main 2da17e2e (unbewegt seit dem Abzweig), `git merge-tree --write-tree origin/main HEAD` eine Zeile, `npm run
+check:statik` Exit 0, gate:betriebsgesetz grün (Karte 2 118 von 1 718), gate:studio-vertrag grün, format:check und lint ohne
+neuen Befund, Selbsttest der Fahr-Linse grün, Modul-Karte (`diag-atlas --check`) grün.
+
 ## Fragen
 
 Keine, die die Abgabe hält. Ob die Therme eine neue Leiter bekommt, setzt der Schöpfer.
