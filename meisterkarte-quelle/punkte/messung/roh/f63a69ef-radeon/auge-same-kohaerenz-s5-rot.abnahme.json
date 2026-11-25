@@ -1,0 +1,83 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.420",
+  "sha": "f63a69ef8086b12e4ed913535b7314068383c87f"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 41,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "Laub baum_tanne",
+  "vorAbstand": 90.55,
+  "leiber": null,
+  "abstand": 107.7,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   184,
+   130,
+   231
+  ],
+  "blick": [
+   -0.74278,
+   -0.55709,
+   -0.37139
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 85,
+  "sigma": 35,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_tanne in 90.55 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 107.7 m · Luma 85 σ 35 schwarz 0.0 % weiß 0.0 % · Stand 18.546.420 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von Laub baum_tanne in 90.55 m"
+  }
+ ],
+ "urteil": "ROT"
+}
