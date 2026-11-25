@@ -6376,7 +6376,7 @@
   },
   "karte2.erleben.klang.stimme": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.stimme#1 radeon: ungemessen (R10) — zuletzt an 4171973a: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschien · karte2.erleben.klang.stimme#1 gtx: Station seit der Messung geändert — zuletzt an 2d6a0447: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschien · karte2.erleben.klang.stimme#2 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#2 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#3 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#3 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#4 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#4 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#5 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#5 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.stimme#1 radeon: ungemessen (R10) — zuletzt an 4171973a: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschien · karte2.erleben.klang.stimme#1 gtx: Station seit der Messung geändert — zuletzt an b1f0de0e: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschien · karte2.erleben.klang.stimme#2 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#2 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#3 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#3 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#4 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#4 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#5 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#5 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.klang.stimme#1",
@@ -6394,7 +6394,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2d6a0447: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschien",
+     "grund": "Station seit der Messung geändert — zuletzt an b1f0de0e: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschien",
      "ungemessen": true,
      "beide": true
     },
@@ -10660,7 +10660,7 @@
   },
   "karte2.erleben.spieler.wegfindung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.wegfindung#1 radeon: Konsum seit der Messung geändert (R6: planet-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an eba9bf8f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"n · karte2.erleben.spieler.wegfindung#1 gtx: Konsum seit der Messung geändert (R6: planet-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) · karte2.erleben.spieler.wegfindung#2 radeon: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#3 radeon: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#4 radeon: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#4 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#5 radeon: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#5 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#6 radeon: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#7 radeon: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.wegfindung#1 radeon: Konsum seit der Messung geändert (R6: planet-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an eba9bf8f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"n · karte2.erleben.spieler.wegfindung#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, stamm/dirigent-takt.js) · karte2.erleben.spieler.wegfindung#2 radeon: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#3 radeon: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#4 radeon: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#4 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#5 radeon: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#5 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#6 radeon: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#7 radeon: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.wegfindung#1",
@@ -10679,7 +10679,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: planet-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +15)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, stamm/dirigent-takt.js)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -29405,7 +29405,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an 4171973a: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.162,0.164,0. (128 Uhren) · 60.3 s · 426.7 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an 4171973a: Last: Referenz f 1,242 (Faden 1,118 · alle Kerne 1,242; vor 100,4/271,4 ms, nach 95,3/282,6 ms, Ruhe 89,8/227,6 ms seit 2026-11-23) · fremd: LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLight · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an 4171973a: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.162,0.164,0. (128 Uhren) · 60.3 s · 426.7 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an b1f0de0e: Last: Referenz f 1,456 (Faden 1,072 · alle Kerne 1,456; vor 84,6/206 ms, nach 96,2/330 ms, Ruhe 89,7/226,6 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc  · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -29423,7 +29423,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 4171973a: Last: Referenz f 1,242 (Faden 1,118 · alle Kerne 1,242; vor 100,4/271,4 ms, nach 95,3/282,6 ms, Ruhe 89,8/227,6 ms seit 2026-11-23) · fremd: LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLight",
+     "grund": "ungemessen (R10) — zuletzt an b1f0de0e: Last: Referenz f 1,456 (Faden 1,072 · alle Kerne 1,456; vor 84,6/206 ms, nach 96,2/330 ms, Ruhe 89,7/226,6 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc ",
      "ungemessen": true,
      "beide": true
     },
@@ -29942,7 +29942,7 @@
   },
   "karte2.planet.kosmos.systeme": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.systeme#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/shader-kosten.cjs +6) — zuletzt an eba9bf8f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"n · karte2.planet.kosmos.systeme#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +8) · karte2.planet.kosmos.systeme#2 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#3 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#4 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#5 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#6 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#7 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.systeme#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/shader-kosten.cjs +6) — zuletzt an eba9bf8f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"n · karte2.planet.kosmos.systeme#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs) · karte2.planet.kosmos.systeme#2 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#3 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#4 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#5 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#6 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#7 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.systeme#1",
@@ -29961,7 +29961,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +8)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -35220,7 +35220,7 @@
   },
   "karte2.same.massstab.spanne": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.massstab.spanne#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +5) — zuletzt an eba9bf8f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"n · karte2.same.massstab.spanne#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +6) · karte2.same.massstab.spanne#2 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#2 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#3 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#3 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#4 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#4 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#5 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#5 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#6 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#6 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#7 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#7 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#8 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#8 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#9 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#9 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.massstab.spanne#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +5) — zuletzt an eba9bf8f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"n · karte2.same.massstab.spanne#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/albedo-tafel.cjs) · karte2.same.massstab.spanne#2 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#2 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#3 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#3 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#4 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#4 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#5 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#5 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#6 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#6 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#7 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#7 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#8 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#8 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#9 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#9 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.massstab.spanne#1",
@@ -35239,7 +35239,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/albedo-tafel.cjs)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -37749,7 +37749,7 @@
   "ohne": 3293
  },
  "kopfVoll": "6c210411408dfc377be50c4fde5e20bc61ca7063",
- "zeit": "2026-11-25T00:42:38.958Z",
+ "zeit": "2026-11-25T00:52:05.881Z",
  "vorher": "6c210411",
  "bilanz": {
   "gewinn": [],
