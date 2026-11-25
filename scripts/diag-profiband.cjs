@@ -29,7 +29,7 @@
 //       unverformt (nur ein Anteil, der Block affin, je Büschel die Ebene des Gesetzes), die Lücke des Strahls bis zur Kappe,
 //       die Büschel je Pixel ≤ 2× der Übergabe
 //   P-Ferne-Halm DIE HALM-HÖHE DER FERNE (wiese-fern, tiere.K5#1): bei 20 · 30 · 40 m 0,9–1,1× der nahen, die Fläche s² in der
-//       Breite (`_wieseFernHalm`), der Stoff `_halmFerne` liest ihn
+//       Breite (`_wieseFernHalm`); den Konsum des Stoffs beweist das Bild
 //   H9  DAS SOLL DES TURMS (hochhaus-dach-speicher) am Kern des Werk-Fadens: die Fern-Stufen L2 · L3 · L1 eines frischen
 //       Klinker-Turms (modern, 22 Geschosse) legen zusammen höchstens die Ecken seiner Stufe 0 an — der Warm-Pfad `sollTon`
 //       baut die Stufe 0 je Bau einmal, nie je Auftrag (der Müll von 1,1–1,7 GB je Auftrag brach den Renderer der Metropole)
@@ -748,8 +748,8 @@ function ferneWand(A) {
 // P-Ferne-Halm — DIE HALM-HÖHE DER FERNE (wiese-fern, tiere.K5#1): der Halm der Ferne (`_wieseFernHalm`, der Stoff `_halmFerne`
 // liest ihn) steht bei 20 · 30 · 40 m flach (Q = d) so hoch wie der nahe — Höhe im Band 0,9–1,1 der Nähe — und trägt die Fläche
 // der Größe `skala` (`_wieseFern`) in der Breite: Breite × Höhe ≥ s² (Nilson 1971: die Lücke hängt allein an der Fläche). Bis
-// wiese-fern wuchs das Büschel gleichförmig (Höhe × s: 1,23 · 1,85 · 2,47) und verdeckte den Hirsch bis an den Rücken. Der Stoff
-// ohne den Halm der Ferne ist rot (er liest ihn beim Namen).
+// wiese-fern wuchs das Büschel gleichförmig (Höhe × s: 1,23 · 1,85 · 2,47) und verdeckte den Hirsch bis an den Rücken. Den
+// Konsum des Stoffs beweist das Bild (die Deckung 30–60 m je Gesetz, `werkbank bild --abstand --kanten 30,60`), kein Quelltext.
 function ferneHalmWand(A) {
     const Z = A.constructor("return globalThis")().__phytoCore.WIND_ZAHLEN;
     const je = [20, 30, 40].map((d) => {
@@ -757,11 +757,10 @@ function ferneHalmWand(A) {
             H = A._wieseFernHalm(Z, s);
         return { d, s, hoehe: H.hoehe, flaeche: (H.breite * H.hoehe) / (s * s) };
     });
-    const liest = /_wieseFernHalm\(/.test(String(A.prototype._halmFerne));
     const r2 = (x) => x.toFixed(2).replace(".", ",");
-    const zeile = `Halm-Höhe der Ferne ${je.map((j) => `${j.d} m ${r2(j.hoehe)}×`).join(" · ")} der nahen · Fläche ${je.map((j) => r2(j.flaeche)).join(" · ")} × s² · der Stoff ${liest ? "liest" : "liest NICHT"} _wieseFernHalm`; // prettier-ignore
-    const rot = je.some((j) => !(j.hoehe >= 0.9 && j.hoehe <= 1.1) || !(j.flaeche >= 0.99)) || !liest;
-    return { errs: rot ? [`P-Ferne-Halm: ${zeile} (Soll 0,9–1,1× · ≥ 1 × s² · liest) — Täter _wieseFernHalm`] : [], je, liest, zeile }; // prettier-ignore
+    const zeile = `Halm-Höhe der Ferne ${je.map((j) => `${j.d} m ${r2(j.hoehe)}×`).join(" · ")} der nahen · Fläche ${je.map((j) => r2(j.flaeche)).join(" · ")} × s²`; // prettier-ignore
+    const rot = je.some((j) => !(j.hoehe >= 0.9 && j.hoehe <= 1.1) || !(j.flaeche >= 0.99));
+    return { errs: rot ? [`P-Ferne-Halm: ${zeile} (Soll 0,9–1,1× · ≥ 1 × s²) — Täter _wieseFernHalm`] : [], je, zeile }; // prettier-ignore
 }
 
 // P-Fächer — DER FÄCHER DER NAH-WIESE (stufe-ein-auge) an der echten Klasse: die Kacheln der Nähe stehen im Sicht-Kegel des EINEN
@@ -1821,10 +1820,9 @@ function selbsttest() {
             return !(r.errs.length && rot(r));
         });
         t(`Ferne der Wiese: das Gesetz hält, je Glied ein Mutant rot ${ferneWand(A).errs}${stillF.map((m) => " — still " + m[0])}`, !ferneWand(A).errs.length && !stillF.length); // prettier-ignore
-        // P-Ferne-Halm: die gleichförmige Skala (bis wiese-fern, Höhe × s bis 2,5) und der Stoff ohne den Halm der Ferne → ROT beim Namen
+        // P-Ferne-Halm: die gleichförmige Skala (bis wiese-fern, Höhe × s bis 2,5) → ROT beim Namen
         const hGleich = ferneHalmWand(klasseVon(stammLib.ersetze(st, "_wieseFernHalm", "return { breite: A.mul(s, s), hoehe: A.k(1) };", "return { breite: s, hoehe: s };"))); // prettier-ignore
-        const hOhne = ferneHalmWand(klasseVon(stammLib.ersetze(st, "_halmFerne", "const H = AnazhRealm._wieseFernHalm(A, G.skala);", "const H = { breite: G.skala, hoehe: G.skala };"))); // prettier-ignore
-        t(`Halm-Höhe der Ferne: ${ferneHalmWand(A).zeile}; gleichförmige Skala → ${hGleich.errs.length ? "ROT" : "still"} (${hGleich.zeile}); Stoff ohne den Halm → ${hOhne.errs.length ? "ROT" : "still"}`, !ferneHalmWand(A).errs.length && hGleich.errs.some((e) => /Halm-Höhe der Ferne 20 m 1,2\d× · 30 m 1,8\d× · 40 m 2,\d+×.*Täter _wieseFernHalm/.test(e)) && hOhne.errs.some((e) => /liest NICHT _wieseFernHalm/.test(e))); // prettier-ignore
+        t(`Halm-Höhe der Ferne: ${ferneHalmWand(A).zeile}; gleichförmige Skala → ${hGleich.errs.length ? "ROT" : "still"} (${hGleich.zeile})`, !ferneHalmWand(A).errs.length && hGleich.errs.some((e) => /Halm-Höhe der Ferne 20 m 1,2\d× · 30 m 1,8\d× · 40 m 2,\d+×.*Täter _wieseFernHalm/.test(e))); // prettier-ignore
         // die Ordnung ohne den Bayer-Rang der Zelle (die PCG allein, bis w19-saum-lai) reißt das Teil-Gitter
         // P-Fächer: der Fächer hält; der RING (jede Kachel im Fächer) macht „hinter dem Auge“ rot, der Saum ohne Dreh-Rate die Drehung
         const fRing = faecherWand(
