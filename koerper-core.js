@@ -5357,9 +5357,10 @@
     //    Markt-Morgen zum Markt (der Wirt fragt den Kern, `tagesEinkaeufer`). Der Markt öffnet um `auf` mit Fahne und Glocke, bis
     //    zum Schluss um 11 Uhr kaufen die Bürger „zur Nothdurfft ihrer Haushaltung“, die Fürkäufer erst danach (Marktordnung
     //    Amberg 1847: April–September 7–11 Uhr, Oktober–März 8–11 Uhr; Laschinger 2024, Verh. Hist. Verein Oberpfalz 164,
-    //    S. 103–123). Der Beginn des Einkaufs streut gleich verteilt über die Marktzeit (`streuH`, ANGENOMMEN: die Ordnung nennt
-    //    den Rahmen, keine Verteilung); er bleibt `dauerH` (Einkauf und Anstehen je Tag: Pskow 1965 0,50 h; Szalai 1975, Futures
-    //    7:394, Table 5), dann trägt er die Ware heim und geht zum Werk. Die Leute des Markts (`marktAuf`: der Händler, der
+    //    S. 103–123). Der Beginn des Einkaufs streut gleich verteilt über die Marktzeit bis zum Schluss (`schluss`, ANGENOMMEN:
+    //    die Ordnung nennt den Rahmen, keine Verteilung); er bleibt `dauerH` je Erwachsenem seines Haushalts (Einkauf und Anstehen
+    //    je Tag und Befragtem: Pskow 1965 0,50 h; Szalai 1975, Futures 7:394, Table 5 — der EINE Einkäufer trägt die Zeit aller,
+    //    die Summe des Budgets bleibt; `tagesEinkaufFuer`), dann trägt er die Ware heim und geht zum Werk. Die Leute des Markts (`marktAuf`: der Händler, der
     //    Kaufmann, das Kontor) stehen ab der Öffnung dort. Bis hier ging jeder Mensch jeden Morgen über den Markt (morgenPlatzH
     //    1 h): an stadt-voll 1 356 Gänge zu 295 Haushalten.
     //    DER BESUCH (mensch.K3 Staffel 2, ≥ 100 m Weg je Tag): die
@@ -5381,9 +5382,8 @@
         // DER FEIERABEND IM HAUS (tages-gesetz, `_feierabend`): wer vom Werk heimkommt, geht hinein zum Abendbrot — so viele
         // Stunden (ANGENOMMEN: die Mahlzeit des Abends im Haushalt, eine halbe Stunde) —, dann zum Treff oder vor seine Tür
         abendbrotH: 0.5,
-        // der Markt-Morgen: die Öffnung (Uhr), über wie viele Stunden der Beginn des Einkaufs streut (bis dauerH vor dem Schluss um
-        // 11 Uhr), wie lange er bleibt
-        einkauf: Object.freeze({ auf: 7, streuH: 3.5, dauerH: 0.5 }),
+        // der Markt-Morgen: die Öffnung und der Schluss (Uhr), wie lange er je Erwachsenem seines Haushalts bleibt
+        einkauf: Object.freeze({ auf: 7, schluss: 11, dauerH: 0.5 }),
         // die Abfahrten zur Arbeit je Band [von, bis, Anteil %] (ACS 2009 Table B: vor 5 Uhr 4,1 · 5–6 8,3 · 6–7 18,9 · 7–8 28,1 ·
         // 8–9 16,6 · 9–12 10,4; die Abfahrten ab 12 Uhr, 13,8 %, fährt das Band nicht — die späte Schicht tragen nur die Rollen
         // mit Versatz, der Nachtfahrer und der Nachtwächter —, die Anteile gelten normiert über die Bänder bis 12 Uhr)
@@ -5755,8 +5755,11 @@
     }
     // DIE WENDEN SEINES TAGS MIT SEINEN ORTEN (tages-gesetz): der Einkäufer seines Haushalts (orte.einkauf = der Markt, an dem er
     // kauft) kauft VOR seinem Werk — er beginnt um e0 = auf + u · s (u aus dem Samen), gleich verteilt über die Spanne
-    // s = min(streuH, w0 − dauer − auf) zwischen der Öffnung und dem letzten Beginn, der sein Werk noch trägt; er bleibt
-    // dauerH × dem Mal seines Zugs (`morgenMal`), wacht wenigstens besuchH davor und tritt sein Werk nach dem Einkauf an.
+    // s = min(schluss, w0) − dauer − auf zwischen der Öffnung und dem letzten Beginn, den der Schluss und sein Werk noch tragen;
+    // er bleibt dauer = dauerH × die Erwachsenen seines Haushalts (orte.einkaufFuer, der Wirt aus `tagesEinkaufFuer`; höchstens
+    // die Marktzeit) × dem Mal seines Zugs (`morgenMal`), wacht wenigstens besuchH davor und tritt sein Werk nach dem Einkauf an.
+    // Bis hier kaufte er eine halbe Stunde, als kaufte er für sich allein: an stadt-voll standen um 8 Uhr 20 Menschen im Einkauf
+    // (3 am Platz der Station mensch.menge.bild#2, im Bild 48 · gehend 7).
     // Beginnt sein Werk vor der Öffnung + dauer, kauft er zur Öffnung und beginnt das Werk danach (s = 0). Bis hier ging, wessen
     // Werk vor dem Einkauf begann, vom Werk zum Markt und zurück: an der Station mensch.K2#2 stand um 10 Uhr keiner am Amboss
     // der Schmiede (koerper rollen.schmiede: Werk 7–18 Uhr, der einzige Schmied ihres Hauses war ihr Einkäufer). Jeder andere
@@ -5767,8 +5770,9 @@
         var K = TAGES_GESETZ.einkauf,
             Z = TAGES_GESETZ.zuege[tagesZug(same)],
             U = Object.assign({}, T);
-        U.morgenH = K.dauerH * (Z.morgenMal != null ? Z.morgenMal : 1);
-        var e0 = K.auf + _tagZahl(same, "einkauf") * Math.max(0, Math.min(K.streuH, T.w0 - U.morgenH - K.auf));
+        var fuer = Math.max(1, orte.einkaufFuer || 1);
+        U.morgenH = Math.min(K.schluss - K.auf, K.dauerH * fuer) * (Z.morgenMal != null ? Z.morgenMal : 1);
+        var e0 = K.auf + _tagZahl(same, "einkauf") * Math.max(0, Math.min(K.schluss, T.w0) - U.morgenH - K.auf);
         U.e0 = e0;
         U.w0 = Math.max(T.w0, e0 + U.morgenH);
         U.wach = Math.min(T.wach, e0 - TAGES_GESETZ.besuchH);
@@ -5777,6 +5781,12 @@
     // DER EINKÄUFER EINES HAUSHALTS (der Wirt `_einkaufAnlegen`, je Tür): glieder = [{same, rolle}] der Leute hinter ihr → der Index
     // dessen, der am Markt-Morgen einkauft: der Erwachsene, dessen Werk am spätesten beginnt (ihm trägt der Morgen den Markt);
     // ein Posten (regenfest) nur, wenn kein anderer da ist; nie ein Kind — ein Haus nur mit Kindern: −1 (keiner)
+    // FÜR WIE VIELE ER KAUFT (der Wirt `_einkaufAnlegen` → orte.einkaufFuer): die Erwachsenen hinter seiner Tür — jeder außer dem Kind
+    function tagesEinkaufFuer(glieder) {
+        var n = 0;
+        for (var i = 0; i < glieder.length; i++) if (!(TAGES_GESETZ.rollen[glieder[i].rolle] || {}).spiel) n++;
+        return n;
+    }
     function tagesEinkaeufer(glieder) {
         var b = -1,
             bw = -Infinity;
@@ -11319,6 +11329,7 @@
         tagesPlan: tagesPlan,
         tagesKette: tagesKette,
         tagesEinkaeufer: tagesEinkaeufer,
+        tagesEinkaufFuer: tagesEinkaufFuer,
         tagesZiel: tagesZiel,
         tagesZug: tagesZug,
         tagesHaltung: tagesHaltung,

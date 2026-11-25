@@ -2775,15 +2775,18 @@ class AnazhRealm_siedlung_bewohner {
     // spätesten beginnt; wer einen Posten hat, nur, wenn kein anderer da ist). Gewählt, wenn jede Rolle steht (nach dem Händler
     // am Stand, der Wache und dem Fahrer am Steuer), unter denen mit Stand am Platz — die Liste gab ihn dem Einkäufer nach der
     // Rolle seines Hauses zuerst (`_bewohnerListe`). Sein Ort ist sein Stand am Platz (`orte.einkauf`), die Kette liest den Weg
-    // dorthin wie zum Markt (`ortI.einkauf`); ein Haushalt ohne Stand am Platz kauft nicht (laut gezählt: `S.ohneEinkauf`). Bis
+    // dorthin wie zum Markt (`ortI.einkauf`); er kauft für die Erwachsenen seines Hauses (`orte.einkaufFuer`, koerper
+    // `tagesEinkaufFuer`); ein Haushalt ohne Stand am Platz kauft nicht (laut gezählt: `S.ohneEinkauf`). Bis
     // hier ging jeder Mensch jeden Morgen über den Markt (morgenPlatzH 1 h): an stadt-voll 1 356 Gänge, um 8 Uhr 140 mit dem Markt
     // zum Ziel, und die Leute des Markts standen erst mit ihrem Werk dort.
     _einkaufAnlegen(S) {
         const KC = window.__koerperCore;
         if (typeof KC.tagesEinkaeufer !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesEinkaeufer");
+        if (typeof KC.tagesEinkaufFuer !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesEinkaufFuer");
         const H = new Map();
         for (const b of S.liste) {
             b.orte.einkauf = null;
+            b.orte.einkaufFuer = 0;
             const L = H.get(b.orte.tuer);
             if (L) L.push(b);
             else H.set(b.orte.tuer, [b]);
@@ -2792,8 +2795,10 @@ class AnazhRealm_siedlung_bewohner {
         for (const L of H.values()) {
             const mit = L.filter((b) => b.orte.platz);
             const w = KC.tagesEinkaeufer(mit.map((b) => ({ same: b.same, rolle: b.rolle })));
-            if (w >= 0) mit[w].orte.einkauf = mit[w].orte.platz;
-            else if (KC.tagesEinkaeufer(L.map((b) => ({ same: b.same, rolle: b.rolle }))) >= 0) S.ohneEinkauf++;
+            if (w >= 0) {
+                mit[w].orte.einkauf = mit[w].orte.platz;
+                mit[w].orte.einkaufFuer = KC.tagesEinkaufFuer(L.map((b) => ({ same: b.same, rolle: b.rolle })));
+            } else if (KC.tagesEinkaeufer(L.map((b) => ({ same: b.same, rolle: b.rolle }))) >= 0) S.ohneEinkauf++;
         }
     }
     _bewohnerKette(b, regen) {
