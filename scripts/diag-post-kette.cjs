@@ -290,9 +290,12 @@ function tslZahl(k = null) {
         smoothstep: (a, b, x) => new Z(zip((e0, e1, v) => ((t) => t * t * (3 - 2 * t))(Math.min(1, Math.max(0, (v - e0) / (e1 - e0)))), w(a), w(b), w(x))),
         // three r184 `luminance`: die Koeffizienten des Arbeits-Farbraums (linear sRGB, Rec. 709)
         luminance: (c) => new Z(0.2126 * w(c)[0] + 0.7152 * w(c)[1] + 0.0722 * w(c)[2]),
+        // die Belichtung des Renderers, wo ein Glied sie liest (gelesen, nie geschrieben) — ohne `k` wirft der Leser beim Namen
+        get toneMappingExposure() {
+            if (k == null) throw new Error("tslZahl: das Glied liest die Belichtung des Renderers — die Rechen-Form trägt keine (`tslZahl(k)`)");
+            return new Z(k);
+        },
     };
-    // die Belichtung des Renderers (`toneMappingExposure`), wo ein Glied sie liest — ohne sie wirft der Leser beim Namen
-    if (k != null) TSL.toneMappingExposure = new Z(k);
     return { TSL };
 }
 // DAS AUGE DER NACHT IN ZAHLEN (sonnenbahn 3): die helle Wand der Probe steht unter dem Auge der Nacht (`nightFactor` 1), sein
@@ -1648,26 +1651,22 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe, knieProbe) {
                 return u8;
             };
             // DIE LAGE DER SONNE IM BILD (w28-lichtschacht): der Schwerpunkt der hellsten Pixel (die Scheibe) gegen die Lage, auf
-            // die der Marsch zielt (`sunScreenPos`, `_schirmUV`) — beide in `screenUV` (oben links). DIE SCHEIBE RELATIV
-            // (sonnenbahn 3, Entscheid des Koordinators 25.11.): der Schwerpunkt der Pixel über dem Rang 99,9 % des Bilds (`RANG`),
-            // aus dem BILD gemessen, nie aus `_schirmUV` gerechnet — bis hier zählte er jedes Pixel bis 2 Luma unter dem hellsten
-            const RANG = 0.999;
+            // die der Marsch zielt (`sunScreenPos`, `_schirmUV`) — beide in `screenUV` (oben links)
             const hellste = (a) => {
                 const l = (i) => 0.2126 * a[i] + 0.7152 * a[i + 1] + 0.0722 * a[i + 2];
-                const alle = [];
-                for (let i = 0; i < a.length; i += 4) alle.push(l(i));
-                const schwelle = alle.slice().sort((x, y) => x - y)[Math.min(alle.length - 1, Math.floor(RANG * alle.length))];
+                let m = 0;
+                for (let i = 0; i < a.length; i += 4) m = Math.max(m, l(i));
                 let sx = 0,
                     sy = 0,
                     n = 0;
-                alle.forEach((v, p) => {
-                    if (v >= schwelle) {
+                for (let i = 0; i < a.length; i += 4)
+                    if (l(i) >= m - 2) {
+                        const p = i / 4;
                         sx += (p % 64) + 0.5;
                         sy += Math.floor(p / 64) + 0.5;
                         n++;
                     }
-                });
-                return { lage: [+(sx / n / 64).toFixed(3), +(sy / n / 48).toFixed(3)], px: n, schwelle: +schwelle.toFixed(1) };
+                return [+(sx / n / 64).toFixed(3), +(sy / n / 48).toFixed(3)];
             };
             // der Anteil der Pixel, die sich in einem Kanal um mindestens 4/255 ändern
             const diff = (a, b) => {
@@ -1697,7 +1696,7 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe, knieProbe) {
                 staerke: staerke == null ? null : +staerke.toFixed(3),
                 aenderungPct: diff(mit1, ohne),
                 rauschenPct: diff(mit1, mit2),
-                lage: ((h) => ({ ziel: ziel ? [+ziel.x.toFixed(3), +ziel.y.toFixed(3)] : null, sonne: h.lage, px: h.px, schwelle: h.schwelle }))(hellste(ohne)),
+                lage: { ziel: ziel ? [+ziel.x.toFixed(3), +ziel.y.toFixed(3)] : null, sonne: hellste(ohne) },
                 schacht: {
                     schritte: r.constructor.GODRAY ? r.constructor.GODRAY.schritte : null,
                     laeufeMit: l1 - l0,
@@ -2721,7 +2720,7 @@ function rauchProbe(ort, P) {
         if (out.godray && out.godray.schacht) delete out.godray.schacht.wgsl;
         if (out.godray)
             log(
-                `Godrays mit der Sonne im Bild: Stärke ${out.godray.staerke} · ${out.godray.aenderungPct} % der Pixel geändert (Rausch-Boden ${out.godray.rauschenPct} %) · Lage: Marsch-Ziel ${out.godray.lage && out.godray.lage.ziel} ↔ Scheibe ${out.godray.lage && out.godray.lage.sonne} (screenUV; ${out.godray.lage && out.godray.lage.px} Pixel ab Luma ${out.godray.lage && out.godray.lage.schwelle}, Rang 99,9 %) · ` +
+                `Godrays mit der Sonne im Bild: Stärke ${out.godray.staerke} · ${out.godray.aenderungPct} % der Pixel geändert (Rausch-Boden ${out.godray.rauschenPct} %) · Lage: Marsch-Ziel ${out.godray.lage && out.godray.lage.ziel} ↔ Scheibe ${out.godray.lage && out.godray.lage.sonne} (screenUV) · ` +
                     `Schacht: ${JSON.stringify(out.godray.schacht)}, Fragment ${out.schacht ? `${out.schacht.proben} Proben · ${out.schacht.ladungen} Ladungen` : "fehlt"}`
             );
     } catch (e) {
