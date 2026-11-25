@@ -24,7 +24,10 @@
 // vor dem Zug: der Same verschob jede Wende nur um ±streuH), der Ausgeglichene ohne sein Gesetz (`{}`: das Los band ihn den
 // ganzen Abend an Treff oder Haus) und der Häusliche mit dem Los am Abend (treffMal 0,1) fallen ROT an ihrer Zeile — dazu der
 // Morgen als Freizeit gezählt (zeitArt morgen = frei: ROT am Anker; an ausgeglichen nicht) und der Häusliche mit zwei Abenden
-// Treff je Woche (2/7 seines Abends am Treff, 1,3 h je Tag: sein Anteil unter dem Schnitt, ROT an häuslich).
+// Treff je Woche (2/7 seines Abends am Treff, 1,3 h je Tag: sein Anteil unter dem Schnitt, ROT an häuslich). DER TISCH DES
+// HEIMWERKERS (der Zug nimmt dem Tag keinen Weg, mensch.K3 4–10): 100 Fleißige, deren Werk ihr Heim ist, essen am Mittag an
+// ihrem Tisch (Akt „mittag“), nie am Werk vor der eigenen Tür; Täter: der Kern ohne `_amHeim` in `_tagesWendenOrt` (am
+// Start-Dorf trug der Fleißige im Rathaus 3 Wege, Station mensch.K2#2) → ROT an „Heimwerker ohne Tisch“.
 // ============================================================================
 "use strict";
 const fs = require("fs");
@@ -155,7 +158,24 @@ function urteil(K, zugVon) {
         T.ok += ok;
         for (const k in kz) T[k] += kz[k];
     });
-    return { t20: t20 / 20, t100: t100 / 100, tafel, leute, ohneArt: [...ohneArt], zeitRot: zeitTafelRot(K) };
+    return { t20: t20 / 20, t100: t100 / 100, tafel, leute, ohneArt: [...ohneArt], zeitRot: zeitTafelRot(K), heim: heimwerker(K, zugVon) };
+}
+
+// DER TISCH DES HEIMWERKERS: 100 Fleißige (der Zug aus dem Kern der Linse) im Wohnhaus, das Werk ist ihr Heim, ohne Tisch,
+// Treff und Besuch — wer am Mittag keine Viertelstunde im Akt „mittag“ trägt, isst am Werk vor seiner Tür
+function heimwerker(K, zugVon) {
+    const heim = { name: "heim" };
+    const O = { heim, werk: heim, platz: null, mahl: null, abend: null, besuch: null };
+    let [n, ohne] = [0, 0];
+    for (let s = 0; n < 100 && s < 4000; s++) {
+        const same = (Math.imul(s + 1, 0x9e3779b1) ^ 0x2545f491) >>> 0;
+        if (zugVon(same) !== "fleissig") continue;
+        n++;
+        let tisch = false;
+        for (let q = 0; q < 96 && !tisch; q++) tisch = K.tagesPlan(same, "wohnhaus", q / 4, O, 0).akt === "mittag";
+        if (!tisch) ohne++;
+    }
+    return { n, ohne };
 }
 
 // DER KERN MIT EINEM TÄTER: dieselbe Quelle, EINE Stelle getauscht (frischer Kontext) — null, wenn die Stelle fehlt
@@ -199,6 +219,12 @@ const TAETER = [
         ersatz: "haeuslich: Object.freeze({ daheimTreff: 0.5, morgenMal: 0.5, abendTreffH: 1.3 })",
         faellt: /haeuslich \d+\/\d+ < 0,6/,
     },
+    {
+        name: "der Fleißige am eigenen Haus isst am Werk (ohne den Tisch des Heimwerkers)",
+        stelle: "_amHeim(orte.werk, orte.heim)) T =",
+        ersatz: "false) T =",
+        faellt: /Heimwerker ohne Tisch/,
+    },
 ];
 // DAS URTEIL: die Zeilen, an denen der Tag ROT fällt
 function rotVon(a) {
@@ -213,6 +239,7 @@ function rotVon(a) {
     if (aus) rot.push(`${aus} Häusliche mit dem Abend außer Haus`);
     if (a.ohneArt.length) rot.push(`Akt ohne Zeit-Art im Tag: ${a.ohneArt.join(" · ")} (koerper TAGES_GESETZ.zeitArt)`);
     rot.push(...a.zeitRot);
+    if (!(a.heim.n >= 100) || a.heim.ohne) rot.push(`Heimwerker ohne Tisch: ${a.heim.ohne} von ${a.heim.n} Fleißigen am eigenen Haus essen am Werk (koerper _tagesWendenOrt, _amHeim)`);
     return rot;
 }
 
@@ -400,7 +427,7 @@ const a = urteil(KC, zugVon);
 const b = urteil(KC, zugVon);
 const gleich = JSON.stringify(a.leute.map((P) => P.worte)) === JSON.stringify(b.leute.map((P) => P.worte));
 console.log(`  ZÜGE ${zeile(a)}`);
-console.log(`  Treffer erste 20: ${a.t20.toFixed(2)} · alle 100: ${a.t100.toFixed(2)} · bit-gleich: ${gleich}`);
+console.log(`  Treffer erste 20: ${a.t20.toFixed(2)} · alle 100: ${a.t100.toFixed(2)} · bit-gleich: ${gleich} · Heimwerker am Tisch ${a.heim.n - a.heim.ohne} von ${a.heim.n}`);
 const rot = rotVon(a);
 if (!gleich) rot.push("zwei Läufe, verschiedene Worte (der Tag ist nicht rein)");
 if (rot.length) rot.push("Täter: koerper TAGES_GESETZ.zuege / tagesPlan / tagesBindung");

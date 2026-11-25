@@ -5379,6 +5379,9 @@
         ruhe: 22,
         streuH: 0.5,
         besuchH: 0.75,
+        // der Gang: zwei Orte eines Menschen liegen wenigstens so weit auseinander, sonst ist die Wende kein Weg (der Wirt bindet
+        // sie so, BEWOHNER.gangM; der Richter gate:kreatur-takt bewohner „Wege“); näher am Heim ist ein Ort sein Heim (`_amHeim`)
+        gangM: 2,
         // die Bank vor der Tür (`_bankWende`): höchstens so viele Stunden sitzt er nach der Heimkehr draußen (ANGENOMMEN; Band: die
         // Gänge zu Fuß ab 18 Uhr, NHTS 2017 22 % von 18 bis 6 Uhr — National Academies 2025, „Improving Pedestrian Safety at Night“)
         bankH: 1,
@@ -5775,6 +5778,13 @@
     // lebt die Wenden seines Samens. Leser: `tagesPlan`, `tagesGaenge`, `tagesKette`
     function _tagesWendenOrt(same, rolle, orte) {
         var T = _tagesWenden(same, rolle);
+        // DER TISCH DES HEIMWERKERS (tages-gesetz; der Zug nimmt dem Tag keinen Weg, mensch.K3 4–10): wessen Werk an seinem Heim
+        // liegt (derselbe Ort oder keinen Gang `gangM` von ihm), isst am Mittag an seinem Tisch wie jeder ohne den Zug — die
+        // Brotzeit am Werk des Fleißigen (zuege `mittagAmWerk`) gilt fern vom Haus; die Rolle mit dem Mittag am Werk (Wirt,
+        // Händler, Posten) hält ihn. Bis hier nahm der Zug dem Heimwerker den Gang des Mittags: am Start-Dorf trug der
+        // Fleißige im Rathaus (rathaus #952) 3 Wege (Station mensch.K2#2, gate:kreatur-takt bewohner); an der Stadt liegt das Werk
+        // bei 29 von 1 356 keinen Gang vom Heim
+        if (orte && T.mittagAmWerk && !(TAGES_GESETZ.rollen[rolle] || {}).mittagAmWerk && _amHeim(orte.werk, orte.heim)) T = Object.assign({}, T, { mittagAmWerk: false });
         if (!orte || !orte.einkauf) return T;
         var K = TAGES_GESETZ.einkauf,
             Z = TAGES_GESETZ.zuege[tagesZug(same)],
@@ -5786,6 +5796,10 @@
         U.w0 = Math.max(T.w0, e0 + U.morgenH);
         U.wach = Math.min(T.wach, e0 - TAGES_GESETZ.besuchH);
         return U;
+    }
+    // liegt der Ort a am Heim h: derselbe Ort oder näher als ein Gang (TAGES_GESETZ.gangM)
+    function _amHeim(a, h) {
+        return !!a && !!h && (a === h || Math.hypot(a.x - h.x, a.z - h.z) < TAGES_GESETZ.gangM);
     }
     // DER EINKÄUFER EINES HAUSHALTS (der Wirt `_einkaufAnlegen`, je Tür): glieder = [{same, rolle}] der Leute hinter ihr → der Index
     // dessen, der am Markt-Morgen einkauft: der Erwachsene, dessen Werk am spätesten beginnt (ihm trägt der Morgen den Markt);
