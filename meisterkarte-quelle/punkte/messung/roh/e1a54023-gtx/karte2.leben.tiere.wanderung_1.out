@@ -1,0 +1,29 @@
+$ C:/Program Files/Git/bin/bash.exe -c S=$(( 7804 )); W=$(( 7804 + 20000 )); export WERKBANK_PORT=$W
+L=$(printf %s "${PUNKTE_SITZUNG_LOG:-}" | tr '\\' /); grep -m1 -o '\[linse-gpu\][^[:cntrl:]]*' "$L" 2>/dev/null || echo '[linse-gpu] ungenannt'
+if [ "${PUNKTE_TEIL:-1/2}" = 1/2 ]; then node scripts/diag-kreatur-takt.cjs --werkbank $W --proben tagesbudget; echo '@@PUNKTE@@ TEIL WEITER'; else node scripts/diag-kreatur-takt.cjs --werkbank $W --proben jagdkreis; fi
+[linse-gpu] nvidia/pascal
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27804) =====
+
+  ✅ tagesbudget {"budget":{"deer":{"ruhen":0.399,"nahrung":0.503,"ziehen":0.098},"bear":{"ruhen":0.445,"nahrung":0.403,"ziehen":0.152},"fox":{"ruhen":0.597,"nahrung":0,"ziehen":0.403},"wolf":{"ruhen":0.598,"nahrung":0,"ziehen":0.402}},"soll":{"deer":{"ruhen":0.4,"nahrung":0.5,"ziehen":0.1},"bear":{"ruhen":0.45,"nahrung":0.4,"ziehen":0.15},"fox":{"ruhen":0.6,"nahrung":0,"ziehen":0.4},"wolf":{"ruhen":0.6,"nahrung":0,"ziehen":0.4}},"ruhe":[652261,7352],"truenke":[10,10,10,8,9,10,10,10,10,10,10,9],"amWasser":116,"wander":[{"g":"deer","leineM":8,"punkte":1440,"flaecheM2":149.6,"anteil":0.992,"anker":[-170.8,113.7],"traegt":0.845,"erreicht":0.845},{"g":"deer","leineM":8,"punkte":1440,"flaecheM2":112.5,"anteil":0.995,"anker":[-69.5,-86.4],"traegt":0.956,"erreicht":0.956},{"g":"deer","leineM":8,"punkte":1440,"flaecheM2":146.5,"anteil":0.999,"anker":[121.3,-75],"traegt":0.997,"erreicht":0.997},{"g":"bear","leineM":28,"punkte":1440,"flaecheM2":1484.8,"anteil":1,"anker":[-179,-163.6],"traegt":0.864,"erreicht":0.558},{"g":"bear","leineM":28,"punkte":1440,"flaecheM2":1619.3,"anteil":0.992,"anker":[-91.6,3.9],"traegt":0.814,"erreicht":0.814},{"g":"bear","leineM":28,"punkte":1440,"flaecheM2":1820.3,"anteil":1,"anker":[-4.1,-180.1],"traegt":0.877,"erreicht":0.707},{"g":"fox","leineM":8,"punkte":1440,"flaecheM2":190.3,"anteil":0.958,"anker":[-171.3,113.9],"traegt":0.836,"erreicht":0.836},{"g":"fox","leineM":8,"punkte":1440,"flaecheM2":202.2,"anteil":0.982,"anker":[-69.2,-86.2],"traegt":0.946,"erreicht":0.946},{"g":"fox","leineM":8,"punkte":1440,"flaecheM2":212.7,"anteil":0.995,"anker":[121.7,-75.2],"traegt":0.997,"erreicht":0.997},{"g":"wolf","leineM":24.67,"punkte":1440,"flaecheM2":1691.3,"anteil":0.985,"anker":[166.3,-94.1],"traegt":0.931,"erreicht":0.931},{"g":"wolf","leineM":24.67,"punkte":1440,"flaecheM2":1445.5,"anteil":0.966,"anker":[165.4,-205.8],"traegt":0.744,"erreicht":0.741},{"g":"wolf","leineM":24.67,"punkte":1440,"flaecheM2":1578.8,"anteil":0.968,"anker":[-127.9,19.5],"traegt":0.732,"erreicht":0.703}],"durstAus":0}
+
+  (114 s)
+
+✅ GRÜN — tagesbudget
+@@PUNKTE@@ TEIL WEITER
+[linse-gpu] nvidia/pascal
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27804) =====
+
+  ✅ jagdkreis {"riss":{"quote":{"einWolf":{"jagden":20,"risse":0,"erschoepft":20,"band":[0,0.1],"hp0":167},"rudel":{"jagden":60,"risse":24,"erschoepft":36,"band":[0.2,0.4],"hp0":167},"kitz":{"jagden":20,"risse":20,"erschoepft":0,"band":[0.6,1],"hp0":60}},"rissS":41.5,"fleisch0":null,"fleischEnde":null,"fressS":0,"rudelKg":0,"rudelVoll":0,"gaeste":[]}}
+
+  (134 s)
+
+✅ GRÜN — jagdkreis
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable
+tr: warning: an unescaped backslash at end of string is not portable
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
