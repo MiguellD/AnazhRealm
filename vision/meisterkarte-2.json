@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 40,
+    "heute": 41,
     "kern": 3,
     "kernDazu": 3,
-    "anteilHeute": 6.8,
+    "anteilHeute": 7,
     "anteilKern": 0.4
    },
    "perspektiven": [
@@ -10330,7 +10330,7 @@
        "richter": "Waffe getauscht → Form-Cluster wechselt ≥ 0,7"
       }
      ],
-     "heute": 2,
+     "heute": 3,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "mauerRing 30 Ecken, Tore, Türme (fachwerk-core.js:4481); ummauerte Stadt vom Hügel in 7/8 Saaten an beiden Geräten (siedlung.K2) — KARTE: 0 — die ummauerte Stadt vom Hügel zählt bei mensch.stadt.siedlungsnetz (R9); Ring ohne Schwebe-Spalt bei Mittag und Dämmerung nie gerichtet.",
@@ -20089,7 +20089,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 102,
+  "heute": 103,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
@@ -20103,7 +20103,7 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 56,
+  "beide": 57,
   "nachwache": 46
  },
  "zusammengelegt": [
