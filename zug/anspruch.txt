@@ -91,3 +91,5 @@ w28-sonnenbahn2 karte2.erleben.spieler.zeit#1
 w28-brand-feld karte2.same.kopplung.stoerung#1,karte2.same.kopplung.kaskade#1
 # 730 (main f63a69ef, 25.11. 18:06): z736 w28-rennofen (der Rennofen des Gutsdorfs brennt Holzkohle; der Kohle-Stapel liest sich im Bild blass wie Sand: halb, 80 %) — echte Station an der Radeon von Hand am Kopf 27215015 GRÜN (mensch.wirtschaft.energie#1: Holzstapel je Schmelze −25 gegen Soll < 0, Barren ohne Holz 0 gegen Soll ≤ 0, 75 Ofenreisen; Preis GRÜN, p95 33,46 ms; Station am Messort dorf auf punkte-maschine 205de11b)
 w28-rennofen karte2.mensch.wirtschaft.energie#1
+# 731 (main fbbd597c, 25.11. 19:32): z737 w28-mischwald (der Wald wächst in Flecken verschiedener Phase, Totholz steht und bricht) — echte Station karte2.leben.pflanzen.lebenslauf#1 im Hand-Lauf an der Radeon am main fbbd597c GRÜN (Dach-Höhen gegen die Ertragstafel WBR 86 Tab. 3: KS 0,061 gegen Soll ≤ 0,15; Reineke-Steigung −1,470 im Band −1,766…−1,445; 2 346 Bäume in 10 Patch-Phasen auf 23,04 ha; Preis GRÜN p95 25,14 ms, Heap 268,9 MB; Station pm 5ce9e0d1)
+w28-mischwald karte2.leben.pflanzen.lebenslauf#1
