@@ -471,6 +471,8 @@ const FORBIDDEN = [
     ["neugierStoppM", "Welle LF rudel — die Neugier hält am Paar-Raum", ["tetrapoda-core.js"]],
     ["scentProbeM", "Welle LF rudel — die Witterung wählt die Beute an der Nase", ["tetrapoda-core.js"]],
     ["this._scentAt(cx + probeStep", "Welle LF rudel — kein Gradient der Witterung"],
+    ["S.minDirectional", "witterung-windab — die Witterung ist eine Fahne windab, gegen den Wind 0 (kein Rest-Sockel)"],
+    ["S.windFactor", "witterung-windab — die Fahne liest das Tempo des Winds (σ, v(θ)), kein Richtungs-Faktor"],
     ["fleeSpeedBoost", "Welle LF rudel — die Flucht ist der Sprint der Gestalt", ["tetrapoda-core.js"]],
     ["strikeRange", "Welle LF kampf — der Biss ist der Ansprung (_kreaturBissReich)", ["tetrapoda-core.js"]],
     ["pirschStoppM", "Welle LF kampf — die Hetze hält in der Weite des Ansprungs", ["tetrapoda-core.js"]],

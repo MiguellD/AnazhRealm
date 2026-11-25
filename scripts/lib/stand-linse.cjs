@@ -528,6 +528,25 @@ const [DRUCK_STAUB_MASSE, DRUCK_STAUB_BILD, DRUCK_STAUB_HOCH] = [0.05, 0.002, 0.
 const DRUCK_VERZUG_S = 0.35;
 const [DRUCK_BILD_GRAD, DRUCK_BILD_MM] = [0.1, 1]; // das Bild der Scherbe gegen die Lage ihres Körpers
 const DRUCK_SCHLAF_S = 3;
+// DER BEWEIS VON DRUCK-SCHLAF (nur im ROT, nur Ausgabe — das Urteil liest ihn nie): die Uhren an der Probe (Welt-Uhr, Sim-Uhr, die
+// Takte seit dem Boot, die Sprünge der Welt-Uhr und die Sim-Zeit, die der feste Schritt am Deckel verwarf), der Wind am Ort und je
+// Körper, der beim Soll noch wach lag, Ort, Tempo, Auflage (die Neigung und Reibung seines Grunds) und Alter in seinem letzten
+// wachen Takt; vorn der Ort der Probe O, die Neigung des Gesetzes dort und die Reste früherer Marken (freie Körper binnen 30 m)
+function druckSchlafBeweis(B) {
+    if (!B) return " — ohne Beweis (die Probe trug keinen)";
+    const z = (v, n = 1) => (v == null ? "?" : (+v).toFixed(n));
+    const O = B.ort || {};
+    const je = (B.wach || []).map(
+        (s) =>
+            `${s.art} [${s.p.join(", ")}] ${z(s.tempo, 3)} m/s auf ${s.auf}${s.grund ? ` (Grund ${z(s.grund.grad, 1)}°, μ ${z(s.grund.mu, 2)})` : ""}, ` +
+            `${z(s.alterS, 2)} s alt, ${z(s.ruheS, 2)} s ruhig, ${s.schlafS == null ? "wach" : `schlief nach ${z(s.schlafS, 2)} s`}`
+    );
+    return (
+        ` — Beweis: Ort O (${z(O.x, 2)}, ${z(O.z, 2)}) Grund ${z(O.y, 2)} m, Neigung ${z(O.grad, 1)}°, ${O.fremd ?? "?"} fremde freie Körper ≤ 30 m (${O.fremdWach ?? "?"} wach) · ` +
+        `Welt-Uhr ${z(B.welt, 2)} s · Sim-Uhr ${z(B.sim, 2)} s · ${B.takte} Takte seit dem Boot · ${B.sprungN} Sprünge der Welt-Uhr (${z(B.sprungS, 2)} s) · ` +
+        `verworfene Sim-Zeit ${z(B.verworfenS, 3)} s · Wind am Ort ${z(B.windMS, 2)} m/s · ${B.amSoll} wach beim Soll: ${je.join("; ") || "keiner"}`
+    );
+}
 const druckSoll = (e) =>
     e.art === "umsatz"
         ? DRUCK_UMSATZ
@@ -692,7 +711,21 @@ function druckUrteil(D, v) {
         else if (!(BU.ueber <= 0)) v.push(`DRUCK-WANDUHR: unter stehender Uhr trug ein Bild ${BU.ueber} Brüche über dem Gesetz — das Budget des Takts liest die Wanduhr, das Bild eines Bruchs hängt am Läufer (\`_tickDruck\`)`);
     }
     if (!(D.scherben > 0)) v.push("LEER: die Welle der Probe brach keine Scheibe — keine Scherbe, deren Schlaf die Linse misst");
-    else if (D.schlafS == null || !(D.schlafS <= DRUCK_SCHLAF_S)) v.push(`DRUCK-SCHLAF: die letzte der ${D.scherben} Scherben schlief ${D.schlafS == null ? `nie (${D.wach} liegen nach 10 s wach)` : `nach ${D.schlafS} s`} (Soll ≤ ${DRUCK_SCHLAF_S} s)`);
+    else if (D.schlafS == null || !(D.schlafS <= DRUCK_SCHLAF_S)) v.push(`DRUCK-SCHLAF: die letzte der ${D.scherben} Scherben schlief ${D.schlafS == null ? `nie (${D.wach} liegen nach 10 s wach)` : `nach ${D.schlafS} s`} (Soll ≤ ${DRUCK_SCHLAF_S} s)${druckSchlafBeweis(D.schlafBeweis)}`);
+    // DER HAUFEN (die Ruhe der freien Körper): je Saat sechs Quarz-Platten auf dem Ort der Probe, gestreut, der Löser im festen
+    // Schritt ohne Wind — jeder Haufen schläft im Soll von DRUCK-SCHLAF. Die Mutante (schlaf: die Ruhe liest das Tempo des
+    // Augenblicks statt der Kugeln der Testpunkte, `_freiRuhig`) sucht ihre Saat, die das Soll reißt; das Gesetz geht dieselben
+    // Saaten. Bis zum Schnitt schliefen 297 von 300 Haufen binnen 3 s, 3 nie (Saat 20, 84, 264: eine Platte wippte im Grenz-Zyklus).
+    const H = D.haufen;
+    if (!H || !H.echt || !(H.saaten > 0)) v.push("LEER: die Probe legte keinen Haufen (sechs Platten je Saat am Ort der Probe) — der Schlaf des Lösers ungemessen");
+    else {
+        if (!(H.echt.nie === 0) || H.echt.schlafS == null || !(H.echt.schlafS <= DRUCK_SCHLAF_S))
+            v.push(`HAUFEN-SCHLAF: von ${H.saaten} Haufen aus sechs Platten schliefen ${H.echt.nie} nie, der späteste nach ${H.echt.schlafS ?? "?"} s (Saat ${H.echt.saat}, Soll ≤ ${DRUCK_SCHLAF_S} s) — die Ruhe liest das Tempo des Augenblicks: ein Haufen im Grenz-Zyklus reißt ruheMs je Zyklus (\`_freiRuhig\`, die Kugeln der Testpunkte)`);
+        for (const [k, was] of [["schlaf", "das Tempo des Augenblicks statt der Kugeln"]]) {
+            const M = H.mutanten && H.mutanten[k];
+            if (!M || M.saat == null) v.push(`BLIND: die Mutante ${k} (${was}) ${M ? `schlief in allen ${M.n} Saaten binnen ${DRUCK_SCHLAF_S} s` : "lief nicht (der Löser trägt ihren Anker nicht mehr)"} — der Haufen trifft sie nicht`);
+        }
+    }
     const ruhe = D.nachher && D.nachher.sims.druck ? D.nachher.sims.druck.summe : NaN;
     if (!(ruhe === 0)) v.push(`DRUCK-RUHE: nach der Welle arbeitet ihr Takt — ${ruhe} Einheiten`);
 }
@@ -1242,5 +1275,6 @@ module.exports = {
         `window.__simLinseAn = () => (${simLinseAn.toString()})(${JSON.stringify(SIMS)}, ${JSON.stringify(AKTE)});` +
         `window.__simPhase = ${simPhase.toString()};` +
         `window.__standPhase = ${standPhase.toString()};` +
-        `window.__standLauf = ${standLauf.toString()};`,
+        `window.__standLauf = ${standLauf.toString()};` +
+        `window.__druckSchlafS = ${DRUCK_SCHLAF_S};`,
 };

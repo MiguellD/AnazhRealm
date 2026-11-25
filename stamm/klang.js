@@ -836,15 +836,41 @@ class AnazhRealm_klang {
     // Begegnung. Gerechnet in der Klang-Werkstatt (`rufPuffer`), gespielt über den EINEN Weg zum Ohr (`rufSpielen`). Bis
     // klang-leib sprach kein Bewohner. Kosten: die Leiber der Siedlungen im Nah-Ring (AUTO_SETTLEMENT.nearM), je Takt ein
     // Abstand je Leib — nie die Bewohner der Welt.
+    // DIE MENGE (markt-klang, erleben.klang.getuemmel#1 — klang:MENGE): wessen Akt redet (`mengeRedet`), ist ein Sprecher im
+    // Wechsel von Rede und Pause (ITU-T P.59) auf der Uhr des Klangs; seine Stimme hebt der Lärm des letzten Takts (Lombard,
+    // `mengeAnstrengung`), der Lärm der am Sprecher (`mengeLaerm`: die Rede der anderen in der Scheibe). Der Deckel des Mischers
+    // (UMWELT.stimmenMax): die lautesten Sprecher klingen, je ein Teil ihrer Rede (`mengeSilben`) als Laut ihres Leibs, bis ihre
+    // Rede endet. Bis markt-klang sprach die Menge in seltenen Einzel-Lauten (am Markt von stadt-voll 176 Leiber in 30 m, im
+    // Graphen nur Wind und Vogel), und jeder Laut duckte die Musik (61,5 % der Zeit gesenkt).
     _bewohnerLautTakt(dt) {
         const alle = this._bewohnerSiedlungen;
         const pm = this.state.playerMesh;
         if (!(dt > 0) || !alle || !alle.size || !pm) return;
-        const ST = AnazhRealm._umweltGesetz().kern.STIMME;
+        const { kern, UMWELT } = AnazhRealm._umweltGesetz();
+        const ST = kern.STIMME;
+        const R = kern.MENGE.rede;
         const H = ST.pegel.hoerweiteM;
         const reich = AnazhRealm.AUTO_SETTLEMENT.nearM + H;
         const p = pm.position;
         const gruss = this._bewohnerGruss || (this._bewohnerGruss = new WeakSet());
+        const rede = this._mengeRede || (this._mengeRede = new WeakMap());
+        const s = this.state.symphony;
+        const M =
+            s.menge ||
+            (s.menge = {
+                laermDbA: -Infinity,
+                ohrDbA: -Infinity,
+                lombardDb: 0,
+                sprecher: 0,
+                klingen: 0,
+                rest: 0,
+                kandidaten: [],
+            });
+        const jetzt = s.ctx ? s.ctx.currentTime : 0;
+        const zug = () => this._klangZug("umwelt") / 4294967296;
+        const kand = M.kandidaten;
+        kand.length = 0;
+        let [energie, quelle, klingen, sprecher] = [0, 0, 0, 0];
         for (const S of alle.values()) {
             if (!S.liste || (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2 > reich * reich) continue;
             for (const b of S.liste) {
@@ -853,6 +879,7 @@ class AnazhRealm_klang {
                 const d = Math.hypot(g.position.x - p.x, g.position.z - p.z);
                 if (!(d < H)) {
                     gruss.delete(b);
+                    rede.delete(b);
                     continue;
                 }
                 if (d < ST.grussM && !gruss.has(b)) {
@@ -861,10 +888,53 @@ class AnazhRealm_klang {
                     continue;
                 }
                 if (d > 2 * ST.grussM) gruss.delete(b);
+                const stufe = kern.mengeRedet(b.akt, b.rolle);
+                if (stufe != null) {
+                    // Rede und Pause: der erste Blick trifft ihn im Anteil der Rede (P.59), danach wechselt er auf der Uhr
+                    let z = rede.get(b);
+                    if (!z || z.bis < jetzt - 30) {
+                        const spricht = zug() < R.sprechSek / (R.sprechSek + R.pauseSek);
+                        rede.set(
+                            b,
+                            (z = {
+                                spricht,
+                                bis: jetzt + kern.mengeDauer(spricht, zug()),
+                                klingtBis: z ? z.klingtBis : 0,
+                            })
+                        );
+                    }
+                    while (z.bis <= jetzt) {
+                        z.spricht = !z.spricht;
+                        z.bis += kern.mengeDauer(z.spricht, zug());
+                    }
+                    if (z.klingtBis > jetzt) klingen++;
+                    if (!z.spricht) continue;
+                    sprecher++;
+                    const an = kern.mengeAnstrengung(stufe, M.laermDbA);
+                    const db = kern.rufPegel({ leib: true, d, anstrengungDb: an });
+                    energie += Math.pow(10, db / 10);
+                    quelle += Math.pow(10, (kern.MENGE.stufen.sprech + an) / 10);
+                    if (!(z.klingtBis > jetzt)) kand.push({ b, z, db, an });
+                    continue;
+                }
                 const [laut, rate] = ST.akte[b.akt] || ST.sonst;
-                if (this._klangZug("umwelt") / 4294967296 < (rate / 60) * dt) this._bewohnerLaut(b, laut);
+                if (zug() < (rate / 60) * dt) this._bewohnerLaut(b, laut);
             }
         }
+        // DER DECKEL: die lautesten Sprecher in Rede, die noch nicht klingen, bekommen ihre Stimme — je ein Teil bis zum Ende ihrer Rede
+        kand.sort((a, c) => c.db - a.db);
+        let rest = 0;
+        for (const k of kand) {
+            const silben = klingen < UMWELT.stimmenMax ? kern.mengeSilben(k.z.bis - jetzt) : 0;
+            if (silben && this._bewohnerLaut(k.b, kern.MENGE.laut, { silben, anstrengungDb: k.an })) {
+                k.z.klingtBis = jetzt + kern.mengeSek(silben);
+                klingen++;
+            } else rest += Math.pow(10, k.db / 10);
+        }
+        M.laermDbA = quelle > 0 ? kern.mengeLaerm(10 * Math.log10(quelle)) : -Infinity;
+        M.ohrDbA = energie > 0 ? kern.mengeDbA(10 * Math.log10(energie)) : -Infinity;
+        M.lombardDb = kern.mengeLombard(M.laermDbA);
+        [M.sprecher, M.klingen, M.rest] = [sprecher, klingen, energie > 0 ? rest / energie : 0];
     }
     // DER DONNER (klang-leib, erleben.kopplung.ein-ereignis#2): der Blitz ist ein Ereignis des EINEN Wetters — eine Poisson-Folge
     // mit der Dichte blitzJeKm2Min × dem Anteil des Sturms am Ort (`_blitzAnteilAm`), gezogen durch Verdünnung (Lewis & Shedler
@@ -917,8 +987,11 @@ class AnazhRealm_klang {
         um.werkstatt.postMessage({ typ: "ruf", ruf });
         return ruf;
     }
-    // Ein Laut des Bewohners `b` (STIMME.laute): zählt jeden (headless messbar); nur ein hörbarer geht an die Werkstatt.
-    _bewohnerLaut(b, laut) {
+    // Ein Laut des Bewohners `b` (STIMME.laute): zählt jeden (headless messbar); nur ein hörbarer geht an die Werkstatt. Die
+    // Rede der Menge (`rede`: ihre Silben und die Anstrengung der Stimme, klang:MENGE) trägt der Ruf zum Gesetz. Kein Laut der
+    // Menge duckt die Musik (ihr Gerede und ihr Gruß sind Raum): bis markt-klang griff jeder den Duck-Bus — am Markt von
+    // stadt-voll 50 Laute in 30 s, die Musik 61,5 % der Zeit gesenkt, die Station las den Duck aus einem schon gesenkten Bus.
+    _bewohnerLaut(b, laut, rede = null) {
         const s = this.state.symphony;
         s.bewohnerLaute = (s.bewohnerLaute || 0) + 1;
         const um = s.umwelt;
@@ -936,10 +1009,10 @@ class AnazhRealm_klang {
             verdeckung: this._klangVerdeckung(pm, g),
             temperatur: um.lage && Number.isFinite(um.lage.luft) ? um.lage.luft : this._temperaturAt(pm.position.y, 0),
         };
+        if (rede) [ruf.silben, ruf.anstrengungDb] = [rede.silben, rede.anstrengungDb];
         if (!(um.kern.rufPegel(ruf) >= AnazhRealm._umweltGesetz().UMWELT.hoerschwelleDb)) return null;
         um.rufeBestellt++;
         um.werkstatt.postMessage({ typ: "ruf", ruf });
-        this._musikDuck("ruf");
         this._untertitel("laut", laut, null, ruf.pan);
         return ruf;
     }
@@ -956,6 +1029,16 @@ class AnazhRealm_klang {
             stimmen: um.graph.zensus(),
             leiber: { gehoert: this._umweltLage().voegel.length, gezeichnet: P ? P.mesh.count / je : 0 },
             tierRufe: this.state.symphony.tierRufe || 0,
+            // DIE MENGE (klang:MENGE): Sprecher in Rede, ihre klingenden Stimmen, der Lärm am Sprecher und die Menge am Ohr (dB(A)),
+            // der Lombard-Hub und der Anteil der Energie, den der Deckel dem Ohr nimmt
+            menge: (({ laermDbA, ohrDbA, lombardDb, sprecher, klingen, rest } = this.state.symphony.menge || {}) => ({
+                laermDbA,
+                ohrDbA,
+                lombardDb,
+                sprecher: sprecher || 0,
+                klingen: klingen || 0,
+                rest: rest || 0,
+            }))(),
             werkstatt: {
                 laeuft: !!um.werkstatt,
                 bestellt: um.bestellt,
@@ -2477,7 +2560,16 @@ AnazhRealm._umweltGesetz = function () {
         kern.fahrtMischung &&
         kern.fahrtAmOhr &&
         kern.fahrtImOhr &&
-        kern.FAHRT
+        kern.FAHRT &&
+        kern.MENGE &&
+        kern.mengeRedet &&
+        kern.mengeDbA &&
+        kern.mengeLaerm &&
+        kern.mengeLombard &&
+        kern.mengeAnstrengung &&
+        kern.mengeSilben &&
+        kern.mengeSek &&
+        kern.mengeDauer
     ) {
         AnazhRealm._umweltGesetzMemo = { UMWELT: U, kern };
         return AnazhRealm._umweltGesetzMemo;

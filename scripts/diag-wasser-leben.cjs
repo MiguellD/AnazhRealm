@@ -479,13 +479,18 @@ function urteil(b) {
             if (!(f.wechsel > 0 && f.glut >= 0.5 && f.kelvin > 798 && f.esse)) rot("H1 KALT", g);
             else if (kt.glut || kt.kelvin || !(kt.wechsel > 0 && kt.T - kt.luft < 50) || !(g.feld >= 5)) rot("H2 GLUT", g);
             if (!k.peer || !(Math.abs(k.peer.lehne) > 0.05)) rot("K7 MITSPIELER", k.peer || null);
-            // K5 die Kamera 3 m unter dem Spiegel des Sees und im Bach sieht Unterwasser, 10 m darüber die Luft; TRÜBUNG (w13-bach-klar):
-            // unter Wasser liest das Medium den Körper der Art, die das Gesetz dem Wasser gibt (gelaende-core `gewaesserArt`) — der
-            // See ein See, der Bach ein Bach, je die Sicht des Gesetzes (± 1 %), der Bach klar (die Literatur unabhängig vom Gesetz)
-            const { see = {}, oben = {}, bach = {} } = k.medium || {};
-            if (!see.unter || oben.unter !== false || !bach.unter) rot("K5 MEDIUM", k.medium || null);
-            else if (see.art + bach.art !== "seebach" || [see, bach].some((x) => !(Math.abs(x.sichtM / x.soll - 1) <= 0.01)) || !(bach.sichtM >= S.bachSicht))
+            // K5 die Kamera 3 m unter dem Spiegel des Sees, im Bach und im Meer sieht Unterwasser, 10 m darüber die Luft; TRÜBUNG
+            // (w13-bach-klar, unter-wasser): unter Wasser liest das Medium der Welt das Gewässer, das die Hydrosphäre dem Ort gibt
+            // (gelaende-core `gewaesserAm`) — der See ein See, der Bach ein Bach, das Meer ein Meer (Welt und Kern), je die Sicht
+            // des Gesetzes (`gewaesserOptik`, ± 1 %), der Bach klar (die Literatur unabhängig vom Gesetz); EIN KÖRPER: zwei Typen
+            // mit derselben Strahl-Schwächung c sind ein Wasser (bis unter-wasser zeichnete der Körper des Sees das Meer)
+            const typen = ["see", "bach", "meer"];
+            const M = k.medium || {};
+            if (!typen.every((t) => M[t] && M[t].unter) || !M.oben || M.oben.unter !== false) rot("K5 MEDIUM", k.medium || null);
+            else if (typen.some((t) => M[t].art !== t || M[t].kern !== t || !(Math.abs(M[t].sichtM / M[t].soll - 1) <= 0.01)) || !(M.bach.sichtM >= S.bachSicht))
                 rot("K5 TRÜBUNG", k.medium);
+            else if (new Set(typen.map((t) => JSON.stringify(M[t].c))).size < typen.length || typen.some((t) => !Array.isArray(M[t].c)))
+                rot("K5 EIN KÖRPER", typen.map((t) => [t, M[t].c]));
         }
     }
     // K9 DAS LICHT AM WASSER: mit dem echten Renderer (der Himmel der EINEN Atmosphäre lebt auf der GPU, D3) — im Bild-Lauf:
@@ -746,7 +751,12 @@ function selbsttest() {
             lage: { fussUnterSpiegelP50: 1.2, sollFussUnterSpiegel: 1.224, augenUnter: 0 },
             kraulen: { mps: 0.97, soll: 0.977, anteil: 0.99 },
             eintauchen: { landung: { material: "wasser" }, eintauchVy: -10.6 },
-            medium: { see: { unter: true, art: "see", sichtM: 15.65, soll: 15.65 }, oben: { unter: false }, bach: { unter: true, art: "bach", sichtM: 19.56, soll: 19.56 } },
+            medium: {
+                see: { unter: true, art: "see", kern: "see", abfluss: 1, sichtM: 3.689, soll: 3.689, c: [1.176, 1.061, 1.509] },
+                oben: { unter: false },
+                bach: { unter: true, art: "bach", kern: "bach", abfluss: 1, sichtM: 9.033, soll: 9.033, c: [0.548, 0.433, 0.881] },
+                meer: { unter: true, art: "meer", kern: "meer", abfluss: 1, sichtM: 2.915, soll: 2.915, c: [1.544, 1.342, 1.329] },
+            },
             tier: ["wesen", "wolf", "fuchs", "baer"].flatMap((seele) =>
                 [8, 120].map((abstand) => ({
                     seele,
@@ -855,7 +865,20 @@ function selbsttest() {
         // (4,2 m) trug die Trübung eines Tieflandflusses, Sicht 1,118 m statt 19,56 (luftwasser.K3#2: 0 von 16 Fischen); dazu
         // der Bach, den das Gesetz selbst trüb nennt (die Art „fluss", Sicht = Soll)
         ["K5 TRÜBUNG", ["koerper.medium.bach.sichtM=", 1.118]],
-        ["K5 TRÜBUNG", ["koerper.medium.bach", { art: "fluss", sichtM: 1.118, soll: 1.118 }]],
+        ["K5 TRÜBUNG", ["koerper.medium.bach", { art: "fluss", kern: "fluss", sichtM: 1.118, soll: 1.118 }]],
+        // unter-wasser an main ff88b82d: jedes stehende Wasser war „see" — das Meer vor der Küste trug den Körper des Sees
+        // (Welt und Kern nannten es „see", Sicht 8,32 m); dazu das Meer, das die Welt als See liest, während der Kern es Meer nennt
+        ["K5 TRÜBUNG", ["koerper.medium.meer", { art: "see", kern: "see", sichtM: 8.32, soll: 8.32 }]],
+        ["K5 TRÜBUNG", ["koerper.medium.meer.art=", "see"]],
+        ["K5 MEDIUM", ["koerper.medium.meer.unter=", false]],
+        // die Mutante der Bahn: alle drei Gewässer gleich trüb (eine Zeile des Gesetzes für jedes Wasser — Sicht = Soll, die Arten
+        // stimmen, der Bach klar): EIN KÖRPER beim Namen
+        [
+            "K5 EIN KÖRPER",
+            (b) => {
+                for (const t of ["see", "bach", "meer"]) Object.assign(b.koerper.medium[t], { sichtM: 9.033, soll: 9.033, c: [0.548, 0.433, 0.881] });
+            },
+        ],
         ["K6 AM GRUND", ["koerper.tier.1", { amGrund: true, sohleUnterSpiegel: 8 }]],
         ["K6 LAGE", ["koerper.tier.0", { sohleUnterSpiegel: 0.3, wasserlinie: 0.87 }]],
         ["K6 LEER", ["koerper.tier=", []]],

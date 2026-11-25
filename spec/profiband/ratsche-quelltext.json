@@ -112,6 +112,10 @@
             "zweck": "Struktur: die Sprach-Wand (gate:sprache, spielgang.K5) liest index.html — Schlüssel statt Text; die Tafel lädt über den Stamm",
             "datei": 1
         },
+        "scripts/diag-stand-takt.cjs": {
+            "zweck": "Messung: die Mutante der Ruhe der freien Körper (HAUFEN-SCHLAF, Marke druck) — der Rumpf von `_freiRuhig` live getauscht (die Ruhe liest das Tempo des Augenblicks statt der Kugeln der Testpunkte), an EINER Anker-Zeile gebaut; fehlt sie, ist die Linse BLIND",
+            "seite": 1
+        },
         "scripts/diag-streu-wahrheit.cjs": {
             "zweck": "Messung: führt phyto-core und foundry-core im vm aus (Kern-Daten, Karten-Codec) und liest die Emitter je Art am Kern",
             "datei": 2

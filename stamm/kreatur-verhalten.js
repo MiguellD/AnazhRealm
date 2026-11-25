@@ -186,13 +186,18 @@ class AnazhRealm_kreatur_verhalten {
     // Gradienten des Felds über vier Proben: nah an der Quelle wog der Wind-Winkel bis zwölfmal mehr als der Abstand, der
     // Gradient zeigte vom Ziel fort (Leben-Schau 07.10.: ein Wolf 1200 Takte „jagd", 0,3 m bewegt, 0 Bisse in 3600 Takten).
     // Kein Ziel → null (der Aufrufer wandert neutral). Nur pfad; verängstigt (wariness ≥ fleeThreshold), satt oder
-    // erschöpft jagt nicht (`_kreaturJagdBereit`).
+    // erschöpft jagt nicht (`_kreaturJagdBereit`). DIE WITTERUNG FINDET, DAS AUGE HÄLT (witterung-windab): gefunden wird nur in
+    // der Fahne windab (`_scentNase`); wer seine Beute schon hat, behält sie ohne Witterung, solange er sie sieht (`_kreaturHaelt`) —
+    // das Rudel auf dem Ring um sie steht auch gegen den Wind — und jedes Glied des Verbands jagt mit, was eines wittert.
     _creatureScentHuntDir(creature, wariness) {
         const ud = creature.userData || {};
+        const alt = ud._beute;
         ud._beute = null;
         if (!this._kreaturJagdBereit(creature, wariness)) return null;
         const VG = AnazhRealm._verhaltenGesetz();
-        const scentRange = VG.jagd.scentRangeM;
+        // DIE NASE (`_scentNase`): gewittert ist, was die Schwelle trägt — windab bis zu R·(1 + 1/i), gegen den Wind nichts
+        const N = this._scentNase(VG.jagd.scentRangeM);
+        const scentRange = N.reichM;
         const cx = creature.position.x;
         const cz = creature.position.z;
         const quelle =
@@ -212,19 +217,33 @@ class AnazhRealm_kreatur_verhalten {
             // DER RISS NENNT DIE BEUTE (oekologie.K2, `_kreaturRiss`): das Opfer, das der Bestand im Nah-Kreis diesem Jäger
             // oder seinem Verband zusprach, ist das Ziel, wo es auch steht
             const von = other.userData && other.userData._rissVon;
-            if ((fern && !von) || !this._kreaturIstBeute(creature, other)) continue;
+            if (fern && !von) continue;
             if (von && (von === creature || (ud.verband != null && von.userData.verband === ud.verband))) {
+                if (!this._kreaturIstBeute(creature, other)) continue;
                 best = other;
                 break;
             }
             if (fern) continue;
             quelle[0].x = other.position.x;
             quelle[0].z = other.position.z;
+            // die Beute-Frage erst, wo die Witterung trägt (Lehre 25: billige Filter zuerst — in der Nasen-Weite 334 m stehen
+            // 54 Leiber je Frage, die Fahne trifft wenige)
             const witterung = this._scentAt(cx, cz, quelle);
-            if (witterung > bestS) {
+            if (witterung >= N.schwelle && witterung > bestS && this._kreaturIstBeute(creature, other)) {
                 bestS = witterung;
                 best = other;
             }
+        }
+        if (!best && alt && (alt === spieler || creatures.includes(alt)) && this._kreaturIstBeute(creature, alt))
+            if (this._kreaturHaelt(creature, alt, VG.jagd.scentRangeM)) best = alt;
+        // DAS RUDEL JAGT ALS EINES: die Fahne trifft nie das ganze Rudel (der Kegel windab), wer nichts wittert, jagt die Beute
+        // eines Glieds seines Verbands mit, sobald er sie hält (`_kreaturHaelt`: in R und im Blick) — wie die Witterung bis
+        // witterung-windab jedes Glied in R von jeder Seite fand (das Band der Quote je Jagd des Rudels, MacNulty 2012)
+        const glieder = best ? null : this._kreaturVerbandGlieder(creature);
+        for (let i = 0; glieder && !best && i < glieder.length; i++) {
+            const b = glieder[i] !== creature && glieder[i].userData._beute;
+            if (b && (b === spieler || creatures.includes(b)) && this._kreaturIstBeute(creature, b))
+                if (this._kreaturHaelt(creature, b, VG.jagd.scentRangeM)) best = b;
         }
         if (!best) return null;
         ud._beute = best;
@@ -264,10 +283,14 @@ class AnazhRealm_kreatur_verhalten {
         const hunger = voll > 0 && this._kreaturMagen(creature) < (frass ? voll : VG.aas.hungerAnteil * voll);
         if (!hunger || this._kreaturDiet(creature) <= VG.temperament.gattung.pflanzDiet)
             return this._kreaturFrisstNicht(creature);
-        const R = VG.jagd.scentRangeM;
+        // DIE NASE DER JAGD (`_scentNase`, Schwelle je kg Fleisch): gefunden in der Fahne windab, gehalten im Blick
+        const N = this._scentNase(VG.jagd.scentRangeM);
+        const R = N.reichM;
         const cx = creature.position.x,
             cz = creature.position.z;
         const quelle = this._aasQuelle || (this._aasQuelle = [{ x: 0, z: 0, strength: 1 }]);
+        const alt = ud._aas;
+        ud._aas = null;
         let best = null,
             bestS = 0;
         for (const k of L) {
@@ -280,12 +303,23 @@ class AnazhRealm_kreatur_verhalten {
             quelle[0].z = k.position.z;
             quelle[0].strength = K.fleisch;
             const w = this._scentAt(cx, cz, quelle);
-            if (w > bestS) {
+            if (w >= N.schwelle * K.fleisch && w > bestS) {
                 bestS = w;
                 best = k;
             }
         }
+        // DAS AUGE HÄLT, DAS RUDEL FRISST ALS EINES: ohne Witterung behält der Fresser den Kadaver, den er schon hat, seinen
+        // eigenen Riss (die Beute der Jagd IST der Kadaver, derselbe Leib — der Jäger auf der Luv-Seite seines Risses wittert ihn
+        // nie) und den Kadaver eines Glieds seines Verbands, solange er ihn hält (`_kreaturHaelt`: in R und im Blick)
+        const glieder = best ? null : this._kreaturVerbandGlieder(creature);
+        for (let i = -2, n = glieder ? glieder.length : 0; !best && i < n; i++) {
+            const k = i === -2 ? alt : i === -1 ? ud._beute : glieder[i] !== creature && glieder[i].userData._aas;
+            if (!k || !L.includes(k) || !(k.userData.kadaver && k.userData.kadaver.fleisch > 0)) continue;
+            if (this._gehegeVon(k) !== this._gehegeVon(creature)) continue; // nie durch den Rand
+            if (this._kreaturHaelt(creature, k, VG.jagd.scentRangeM)) best = k;
+        }
         if (!best) return this._kreaturFrisstNicht(creature);
+        ud._aas = best;
         const lE = this._kreaturLeib(creature, hueftL, this._aasLeibE || (this._aasLeibE = {}));
         const lK = this._kreaturLeib(best, 0, this._aasLeibK || (this._aasLeibK = {}));
         const dx = best.position.x - cx,
@@ -321,6 +355,15 @@ class AnazhRealm_kreatur_verhalten {
             if (ud._verhaltenAktion && ud._verhaltenAktion.name === "fressen") ud._verhaltenAktion = null;
         }
         return false;
+    }
+
+    // DAS AUGE HÄLT (witterung-windab): ein Ziel, das der Leib schon hat (die Beute der Jagd, der Kadaver), behält er ohne
+    // Witterung, solange es in R (jagd.scentRangeM) liegt und sein Auge es sieht (`_kreaturSiehtM`: Farbe gegen Boden, Luft der
+    // Welt) — die Witterung findet, das Auge hält. Ohne diese Hand verlor der Jäger auf dem Ring gegen den Wind und der Fresser
+    // auf der Luv-Seite des Kadavers sein Ziel, sobald die Fahne ihn nicht mehr traf.
+    _kreaturHaelt(creature, ziel, R) {
+        const d = Math.hypot(ziel.position.x - creature.position.x, ziel.position.z - creature.position.z);
+        return d <= R && d <= this._kreaturSiehtM(creature, ziel);
     }
 
     // IST DAS BEUTE für diesen Jäger? Nicht wild (wild jagt nicht wild) und höchstens jagd.beuteMasse ×
@@ -2854,6 +2897,7 @@ class AnazhRealm_kreatur_verhalten {
         // SCHLUSS-WELLE — das EINE Verhaltens-Gesetz für den ganzen Tick
         // (memoisiert, fail-closed): Freude-Tempo/Hüpf-Höhen · Herde · Wasser.
         const VGL = AnazhRealm._verhaltenGesetz();
+        this._scentTakt(); // der Wind je Quelle einmal je Takt (`_scentAt`)
         // DER TAKT-INDEX lebt am Wirt (`_kreaturTaktI`): fällt mitten im Takt ein Tier, das er schon getragen hat (ein Biss
         // tötet die Beute), rückt _kreaturAusListe ihn nach — das nächste Tier läuft, keines doppelt, keines übersprungen.
         for (this._kreaturTaktI = 0; this._kreaturTaktI < this.state.creatures.length; this._kreaturTaktI++) {

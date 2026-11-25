@@ -235,8 +235,17 @@ class AnazhRealm_bild_sicht {
     // Gesetzes, f0 0,02 → n 1,329 für jede Farbe) — der Körper zeigt R∞/n², den Fresnel (1 − F) legt der Blick darauf
     // (`_wasserBlick`). Bis A12-n1 trat er unverdünnt aus: 1,77× zu hell, das Blau des Körpers deckte das Bild im Spiegel
     // (der See zu blau, spiegelTreue an der Tafel 0,52).
+    // DIE ZAHLEN DES KÖRPERS (unter-wasser): `wK` die Absorption a je Kanal, `koerperStreu` die Rückstreuung b_b (je Kanal oder
+    // eine Zahl für alle) — die Welt reicht das Medium ihres Gewässers (`_wasserMedium`: a, bb aus gelaende-core
+    // `gewaesserOptik`); bis unter-wasser die Look-Zahl `wK` und b_b 0,1 für jedes Wasser.
     static _wasserKoerper(WG, n) {
-        return WG.wK.map((k, i) => (0.33 * WG.koerperStreu) / (k + WG.koerperStreu) / (n[i] * n[i]));
+        const bb = (i) => (Array.isArray(WG.koerperStreu) ? WG.koerperStreu[i] : WG.koerperStreu);
+        return WG.wK.map((k, i) => (0.33 * bb(i)) / (k + bb(i)) / (n[i] * n[i]));
+    }
+    // der Körper des Gewässer-Typs `art` (R∞/n² je Kanal) bei mittlerem Abfluss — der Wasser-Stoff, die Ferne
+    _wasserKoerperArt(art) {
+        const M = this._wasserMedium(0, 0, art);
+        return AnazhRealm._wasserKoerper({ wK: M.a, koerperStreu: M.bb }, this._wasserOptik().n);
     }
 
     // DAS SPIEGEL-FELD (D10, der See spiegelt die Welt): n × n Zellen à texel m um das Auge aus dem GEBAUTEN Boden des Workers
@@ -1278,11 +1287,10 @@ class AnazhRealm_bild_sicht {
         const flussWegB = phaseB.mul(uFlowPeriod).mul(uFlowSpeed);
         const LAGE_B = vec2(17.3, 31.7); // die zweite Lage liest ein anderes Stück desselben Rauschens
         // DER WASSER-KÖRPER: was die optisch tiefe Wassersäule zurückstreut — R∞ = 0,33 · b_b / (a + b_b) je Kanal
-        // (Gordon 1975; a = die Absorption wK des Gesetzes, b_b = seine Rückstreuung `koerperStreu`, 1/m): 0,005/0,016/
-        // 0,025, ein dunkles Blaugrün, im Licht des Orts 3–4× dunkler als die Wiese. Bis 05.10. stand hier das tiefe
+        // (Gordon 1975; a und b_b das Medium des Gewässers, `_wasserMedium`, unten je Ecke gemischt: `koerperAlbedo`). Bis
+        // unter-wasser die Look-Zahl wK mit b_b 0,1 für jedes Wasser: 0,005/0,016/0,025. Bis 05.10. stand hier das tiefe
         // Anzeige-Blau des Studios (exp(−wK·tief), als sRGB-Absicht dekodiert 0,0003/0,027/0,107): aus 45 m ein
         // leuchtendes Königsblau. Schaum: weiß, eine diffuse Fläche.
-        const koerperAlbedo = vec3(...AnazhRealm._wasserKoerper(WG, this._wasserOptik().n));
         const uFoam = uniform(new THREE.Color().setRGB(WG.schaum.farbe[0], WG.schaum.farbe[1], WG.schaum.farbe[2]));
         // Das Licht des Orts (unten, am Ort des Fragments: `licht`) und der Glanz in der Rayleigh-Sonnenfarbe (uSunCol × uLight = die
         // Sonne selbst).
@@ -1484,10 +1492,21 @@ class AnazhRealm_bild_sicht {
         const wegM = max(sceneLin.sub(fragLin), float(0.0))
             .mul(_tiefeM)
             .mul(length(cameraPosition.sub(vWorldPos)).div(_fragTiefeM));
-        // DER DURCHLASS (Beer-Lambert, WASSER_GESETZ.wK je Kanal): der Weg vom Grund zum Auge plus der Weg des
+        // DAS GEWÄSSER DER ECKE (unter-wasser): der Körper und sein Durchlass je Typ aus dem EINEN Medium (`_wasserMedium`:
+        // R∞ und K_d der Optik des Gesetzes, dieselbe, die die Kamera unter dem Spiegel liest), gemischt nach dem, was die Ecke
+        // vom Gewässer weiß — der Ozean-Anteil `aWave` (das Meer) und die Strömung (`riverness`, 0 See … 1 Lauf; die Ecke kennt
+        // die Breite des Laufs nicht: jeder Lauf trägt hier den Körper des Bachs, bei mittlerem Abfluss); stehend der See. Bis
+        // unter-wasser trug jedes Wasser über dem Spiegel die Look-Zahl `wK` (6,5/2,0/1,2) und b_b 0,1: ein Körper für alle.
+        const fmag = length(aFlowV);
+        const riverness = smoothstep(float(0.04), float(0.5), fmag);
+        const typ = (art) => [vec3(...this._wasserKoerperArt(art)), vec3(...this._wasserMedium(0, 0, art).kd)];
+        const [tSee, tLauf, tMeer] = ["see", "bach", "meer"].map(typ);
+        const jeTyp = (i) => mix(mix(tSee[i], tLauf[i], riverness), tMeer[i], aWaveV.clamp(0.0, 1.0));
+        const koerperAlbedo = jeTyp(0);
+        // DER DURCHLASS (Beer-Lambert, K_d des Gewässers je Kanal): der Weg vom Grund zum Auge plus der Weg des
         // Lichts vom Spiegel zum Grund (die Säulen-Tiefe aDepth) — am Ufer scheint der Grund durch (T → 1), im
-        // Tiefen deckt der Wasser-Körper (T → 0; 1 m grün 0,14).
-        const durchlass = exp(vec3(WG.wK[0], WG.wK[1], WG.wK[2]).mul(wegM.add(aDepthV)).negate());
+        // Tiefen deckt der Wasser-Körper (T → 0).
+        const durchlass = exp(jeTyp(1).mul(wegM.add(aDepthV)).negate());
         const T = dot(durchlass, vec3(0.2126, 0.7152, 0.0722));
 
         // DER SCHAUM IST DAS GESETZ: WASSER_GESETZ.schaum kennt das Ufer und den Kamm, das Studio schäumt nur dort —
@@ -1495,7 +1514,6 @@ class AnazhRealm_bild_sicht {
         // (aSlope). Bis V18.531 lag ein Strähnen-Schaum ohne Gesetz über jedem Fluss (Schwelle 0,44 unter dem Rausch-
         // Mittel: ~60 % der Fläche bis 0,7 gedeckt, gate:wasser-leben B1) und ein Ufer-Band aus dem Attribut `aShore`,
         // das jeder Schreiber mit 0 füllte (je Pixel zwei Rauschen und ein Sinus für ×0).
-        const fmag = length(aFlowV);
         const fdir = aFlowV.div(max(fmag, float(0.0001)));
         // Die Fluss-Phase im Bild: je Lage der Weg stromab × der örtliche Strömungs-Anteil fmag (0 im See). Das Muster
         // lebt STABIL in Welt-XZ und wird nur verschoben — nie `dot(xz, fdir)`: |xz| ist ein Hebelarm, eine kleine
@@ -1523,7 +1541,6 @@ class AnazhRealm_bild_sicht {
             .mul(windF)
             .max(1e-3);
         const crest = smoothstep(kappeQ.sub(0.03), kappeQ.add(0.03), vWave.div(duenungMax)).mul(aWaveV);
-        const riverness = smoothstep(float(0.04), float(0.5), fmag);
         const foam = crest.mul(WG.schaum.kamm).mul(float(1.0).sub(riverness));
 
         // Uferlinien-Schaum aus der Tiefe: ein heller Saum genau am Wasser-Rand, pro Pixel terrain-folgend.

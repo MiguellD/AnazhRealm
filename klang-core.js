@@ -1458,7 +1458,9 @@
         var r = ruf || {}, T = r.leib ? STIMME.pegel : r.blitz ? DONNER.pegel : UMWELT.tier, d = typeof r.d === "number" ? r.d : T.dRef;
         if (!r.leib && !r.blitz) return tierRufPegel(d);
         if (!(d < (r.blitz ? DONNER.hoerweiteM : T.hoerweiteM))) return -Infinity;
-        return T.refDb - 20 * Math.log10(Math.max(d, T.dMin) / T.dRef);
+        // die Anstrengung der Stimme (DIE MENGE, markt-klang): der Sprecher hebt sie ueber die Sprechstimme (dB, Lombard)
+        var an = r.leib && typeof r.anstrengungDb === "number" && isFinite(r.anstrengungDb) ? r.anstrengungDb : 0;
+        return T.refDb + an - 20 * Math.log10(Math.max(d, T.dMin) / T.dRef);
     }
     // Den gerechneten Ruf spielen: Puffer → der Weg zum Ohr (`raumWeg`: Luft, Kopf; die Laufzeit ueber den Weg ist sein
     // Einsatz, d / c(T) nach dem Ruf) → Gain (Pegel am Ohr) → ausgang; null unter der Hoerschwelle.
@@ -1608,8 +1610,10 @@
     function stimmPuffer(ruf) {
         var S = STIMME, Q = S.quelle, r = ruf || {}, sr = S.sr, rnd = umweltRng((r.saat >>> 0) || 11);
         var leib = stimmLeib(r.leib), Lt = S.laute[r.laut] || S.laute.gruss;
+        // die Rede der Menge (MENGE.rede) bestellt ihre Silben nach der Dauer (`mengeSilben`), sonst traegt der Laut seine Zahl
+        var nS = typeof r.silben === "number" && r.silben >= 1 ? Math.min(MENGE.silbenMax, Math.round(r.silben)) : Lt.silben;
         var silben = [], t = 0;
-        for (var i = 0; i < Lt.silben; i++) {
+        for (var i = 0; i < nS; i++) {
             var v = r.vokal && STIMME_FORM.mann[r.vokal] ? r.vokal : Lt.vokale[Math.floor(rnd() * Lt.vokale.length) % Lt.vokale.length];
             var sek = Lt.sek[0] + (Lt.sek[1] - Lt.sek[0]) * rnd();
             silben.push({ v: v, von: t, bis: t + sek, F: roehre(leib.traktM, stimmForm(v, leib.mann)) });
@@ -1657,6 +1661,85 @@
         SYNTHESE.samples += n;
         SYNTHESE.rufe++;
         return { sr: sr, daten: eiche(x, UMWELT.texturRmsDb), f0: leib.f0, formanten: silben[0].F, traktM: leib.traktM, laut: r.laut || "gruss" };
+    }
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DIE MENGE (markt-klang, erleben.klang.getuemmel#1, rein additiv): der Markt klingt aus seiner MENGE, nie aus einer
+    //  Schleife. Jeder Bewohner in Hoerweite, dessen Akt redet (`akte`, koerper TAGES_GESETZ: am Tisch, zu Besuch, am Abend,
+    //  im Spiel, am Feld, am Brett; am Werk die Rollen des Markts, `rollen`), ist ein SPRECHER im Wechsel von Rede und Pause —
+    //  das An-Aus-Modell des Gespraechs (ITU-T P.59 1993: Rede 1,004 s, Pause 1,587 s im Mittel ueber Englisch, Italienisch
+    //  und Japanisch, 38,53 % Rede; die Dauern hier exponentiell um ihr Mittel — die Form der P.59-Verteilung traegt das
+    //  Gesetz nicht). Seine Rede ist ein Laut SEINES Leibs (`stimmPuffer`, die Silben nach der Dauer, `mengeSilben`), sein
+    //  Pegel das Stimm-Gesetz (`rufPegel`) + seine Anstrengung (`ruf.anstrengungDb`, `mengeAnstrengung`).
+    //  DIE STUFEN der Stimme in 1 m auf der Achse: die Sprechstimme (STIMME.pegel: refDb in dRef) ist die normale, 60 dB(A)
+    //  (Forum Acusticum 2025, Beitrag 654: „60 dBA which is representative of a normal vocal effort at 1 m on-axis"); die
+    //  laute 74 dB(A) (ANSI S3.5, Acoustics Today Jan. 2007 S. 31) — mit ihr ruft der Haendler am Stand (die Wochenmaerkte:
+    //  „vendors shout", Goek Tokgoez, Fiebig & Altinsoy 2023). Daraus die EICHUNG Welt-Bus ↔ dB(A) (`mengeDbA`).
+    //  LOMBARD: im Laerm hebt der Sprecher die Stimme, ueber dem Knick 48,3 dB(A) um 0,5 dB je dB (Bottalico, Passione,
+    //  Graetzer & Hunter 2016, JASA 140: „change point … at Ln 48.3 dBA … nearly 0.5 dB per dBA"; darunter 0,24 dB/dB —
+    //  getragen vom Bezug der Sprechstimme), hoechstens bis zur lauten Stimme (der Schrei liegt jenseits des Gesetzes). Der
+    //  Laerm ist der AM SPRECHER (`mengeLaerm`), nie der am Ohr des Spielers: die Rede der anderen, gleich dicht auf der
+    //  Scheibe der Hoerweite H, ab dem Gegenueber in r0 (`gespraechM`: die Stufen gelten in 1 m) — I = Σ I_i(1 m) ·
+    //  2·ln(H / r0) / H², das Integral von 1/r² ueber die Flaeche. Der eigene Laut und der Naechste am Ohr heben die Menge
+    //  nicht; ihre Anstrengung des letzten Takts traegt den naechsten (Fixpunkt, der Hub 0,5 dB je dB zieht ihn an).
+    //  DER DECKEL des Mischers (UMWELT.stimmenMax, „die lautesten gewinnen"): die lautesten Sprecher in Rede klingen je als
+    //  EINE Stimme ihres Leibs, der Rest traegt nur den Laerm (seine Energie fehlt dem Ohr, der Zensus nennt sie: `rest`).
+    //  DER MARKT IST EICHUNG, nie Sonderfall: Wochenmaerkte L_Aeq 52,9–74,1 dB(A) (Goek Tokgoez et al. 2023: Berlin
+    //  61,3–74,1, Dresden 52,9–68,1); gate:klang-zensus (Mk) misst ihn am Ort stadt-voll mit demselben Gesetz wie jedes Dorf.
+    //  Kein Laut der Menge duckt die Musik (ihr Gerede und ihr Gruss sind Raum): die Musik weicht dem Gespraech, dem eigenen
+    //  Schritt und dem Ruf des Tiers (MUSIK.duck).
+    // ═══════════════════════════════════════════════════════════════════════
+    // prettier-ignore
+    var MENGE = {
+        rede: { sprechSek: 1.004, pauseSek: 1.587 },
+        laut: "plaudern", silbenMax: 7,
+        stufen: { sprech: 60, laut: 74 },             // dB(A) in 1 m auf der Achse
+        gespraechM: 1,                                 // das Gegenueber: die Entfernung der Stufen
+        lombard: { abDbA: 48.3, dbJeDb: 0.5 },
+        // wer redet und mit welcher Stufe: die Akte (b.akt) — und am Werk (Akt arbeit) die Rollen des Markts
+        akte: { mittag: "sprech", besuch: "sprech", abend: "sprech", spiel: "sprech", zuschauen: "sprech", brett: "sprech" },
+        rollen: { haendler: "laut", kaufhaus: "sprech", kontor: "sprech" },
+        markt: { lAeqDbA: [52.9, 74.1] }
+    };
+    // die Stufe eines Sprechers (dB ueber der Sprechstimme) nach Akt und Rolle — null: er redet nicht
+    function mengeRedet(akt, rolle) {
+        var M = MENGE, st = akt === "arbeit" ? M.rollen[rolle] : M.akte[akt];
+        return st && typeof M.stufen[st] === "number" ? M.stufen[st] - M.stufen.sprech : null;
+    }
+    // der Pegel am Welt-Bus (dB, die Sprechstimme in dRef) als dB(A): die Sprechstimme traegt in dRef sprech − 20·lg(dRef / 1 m)
+    function mengeDbA(busDb) {
+        var P = STIMME.pegel;
+        return busDb - P.refDb + MENGE.stufen.sprech - 20 * Math.log10(P.dRef);
+    }
+    // der Laerm am Sprecher (dB(A)) aus der Summe der Quellen in 1 m (quelleDbA = 10·lg Σ 10^(L_i/10)), gleich dicht in der
+    // Scheibe der Hoerweite, ab dem Gegenueber: + 10·lg(2·ln(H / r0) / H²)
+    function mengeLaerm(quelleDbA) {
+        var H = STIMME.pegel.hoerweiteM, r0 = MENGE.gespraechM;
+        return quelleDbA + 10 * Math.log10((2 * Math.log(H / r0)) / (H * H));
+    }
+    // Lombard: der Hub der Stimme (dB) im Laerm lnDbA
+    function mengeLombard(lnDbA) {
+        var L = MENGE.lombard;
+        return isFinite(lnDbA) ? Math.max(0, (lnDbA - L.abDbA) * L.dbJeDb) : 0;
+    }
+    // die Anstrengung (dB ueber der Sprechstimme): die Stufe + Lombard, hoechstens die laute Stimme
+    function mengeAnstrengung(stufeDb, lnDbA) {
+        var S = MENGE.stufen;
+        return Math.min(S.laut - S.sprech, stufeDb + mengeLombard(lnDbA));
+    }
+    // die Silben einer Rede von sek Sekunden (je Silbe ihr mittleres Mass + die Pause des Lauts), 1 … silbenMax
+    function mengeSilben(sek) {
+        var Lt = STIMME.laute[MENGE.laut], je = (Lt.sek[0] + Lt.sek[1]) / 2 + Lt.pause;
+        return Math.max(1, Math.min(MENGE.silbenMax, Math.round(sek / je)));
+    }
+    // die Sekunden einer gesprochenen Silbenzahl (die Dauer, die der Laut traegt — der Wirt plant den naechsten Teil danach)
+    function mengeSek(silben) {
+        var Lt = STIMME.laute[MENGE.laut];
+        return silben * ((Lt.sek[0] + Lt.sek[1]) / 2 + Lt.pause) - Lt.pause;
+    }
+    // die Dauer des naechsten Zustands aus u in (0, 1]: Rede (spricht) oder Pause, exponentiell um ihr Mittel (P.59)
+    function mengeDauer(spricht, u) {
+        var R = MENGE.rede;
+        return -(spricht ? R.sprechSek : R.pauseSek) * Math.log(Math.max(1e-9, Math.min(1, u)));
     }
     // ═══════════════════════════════════════════════════════════════════════
     //  DER DONNER (klang-leib, erleben.kopplung.ein-ereignis#2, rein additiv): ein Ereignis des EINEN Wetters. Der Blitz
@@ -2381,6 +2464,16 @@
         stimmLeib: stimmLeib,
         stimmFormanten: stimmFormanten,
         stimmPuffer: stimmPuffer,
+        // markt-klang (rein additiv) — die Menge: Rede und Pause (P.59), Stufen der Stimme, Lombard, die Eichung in dB(A)
+        MENGE: MENGE,
+        mengeRedet: mengeRedet,
+        mengeDbA: mengeDbA,
+        mengeLaerm: mengeLaerm,
+        mengeLombard: mengeLombard,
+        mengeAnstrengung: mengeAnstrengung,
+        mengeSilben: mengeSilben,
+        mengeSek: mengeSek,
+        mengeDauer: mengeDauer,
         ohrLaufzeit: ohrLaufzeit,
         // klang-leib (rein additiv) — das Raum-Gesetz: Laufzeit ueber den Weg, Luft nach ISO 9613-1, das Ohr
         SCHALLWEG: SCHALLWEG,

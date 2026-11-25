@@ -1027,7 +1027,11 @@ je Lage über `landformRegler` —, das Flussnetz mit den Kanten `NETZ_KANTE`, s
 den benannten Seen `benannteSeen`, die Arbeit des Netzes `netzZaehler` (Knoten und gebaute Talprofile je Ebene, das
 Einzugsgebiet ohne Leser — der Leser ist die Gelände-Linse „netz“), die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, die Art des Gewässers
 `GEWAESSER_ART`/`gewaesserArt` (w13-bach-klar: see · bach · fluss nach der LAWA-Größenklasse, Bach < 100 km² Einzugsgebiet,
-über die Breite — sie wählt `WASSER_GESETZ.koerper` in Welt und Studio), der Mäander `MAEANDER`, das
+über die Breite), das Gewässer am Ort `gewaesserAm` (unter-wasser: der Typ aus der Hydrosphäre — Lauf nach der Breite, sonst
+Meer oder See der Zelle — und der Abfluss Q/Q̄ aus dem Pegel), die Optik der Gewässer `GEWAESSER_OPTIK`/`gewaesserOptik`
+(unter-wasser: je Kanal Absorption, Streuung, Strahl-Schwächung, Rückstreuung und K_d des Typs über der Stoff-Zeile des
+Wassers, schmiede `STOFF_GESETZ.medium`; die Klarheit aus der Mitte seines Bands, der Schwebstoff mit dem Abfluss — sie
+trägt das Medium unter und über dem Spiegel in Welt und Studio), der Mäander `MAEANDER`, das
 Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die Schneegrenze `SCHNEE`/`schnee`, die
 Temperatur `TEMPERATUR`/`temperatur` (stoffe.K3: Höhe × Saison × Uhr; das Feld in Wellen `temperaturFeld`, mit der Trägheit
 eines Körpers, ausgewertet von `temperaturAus` unter dem Wetter `WOLKE`, wetter.K4: die Wolke dämpft den Tagesgang, der Regen

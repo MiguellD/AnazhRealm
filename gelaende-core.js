@@ -755,13 +755,100 @@
     // (LAWA; Pottgiesser & Sommerhäuser 2008, UBA-Steckbriefe: Bach < 100 km² Einzugsgebiet, kleiner Fluss 100–1 000 km²),
     // in die Breite gelegt durch das EINE Gesetz der Breite (`flussBreite`, 100 km² ≈ 27,8 m). `breiteM` ist die Bankvoll-Breite
     // des Laufs an der Stelle (`flussAm(...).breite`, im Studio die Breite seines Bachs), 0 oder null für stehendes Wasser.
-    // Die Art wählt den Körper des Wassers (foundry-core `WASSER_GESETZ.koerper[art]`: Trübung je Art). Leser: der Stamm
-    // (`_wasserArtAt`, das Medium der Kamera) und das Terrain-Studio (`waterArtAt`). Bis w13-bach-klar entschied jeder Leser
+    // Die Art wählt die Optik des Wassers (`gewaesserOptik`: Trübung je Art; bis unter-wasser foundry-core `WASSER_GESETZ.koerper[art]`).
+    // Leser: das Gewässer der Hydrosphäre (`gewaesserAm` → der Stamm, `_wasserArtAt`, `_wasserMedium`) und das Terrain-Studio (`waterArtAt`). Bis w13-bach-klar entschied jeder Leser
     // selbst („im Kanal → fluss"): der Bach der Mess-Wiese (4,4 m, ~0,2 km²) trug die Trübung eines Tieflandflusses, Sicht 1,1 m.
     const GEWAESSER_ART = Object.freeze({ bachBisKm2: 100 });
     function gewaesserArt(breiteM) {
         if (!(breiteM > 0)) return "see";
         return breiteM < flussBreite(GEWAESSER_ART.bachBisKm2 * 1e6) ? "bach" : "fluss";
+    }
+
+    // DAS GEWÄSSER AN (x, z) (unter-wasser) → { art, abfluss } aus der Hydrosphäre: ein Lauf an der Stelle (`flussAm`) trägt
+    // seine Art nach der Breite (`gewaesserArt`) und seinen Abfluss Q/Q̄ (Manning umgekehrt aus dem Pegel: (1 + Hub/T)^(1/0,6),
+    // `pegelBett`); sonst die Zelle des Wasser-Felds — Ozean (`waterKind` 1) „meer", See (2) „see" (die Mitte, sonst ihre 3 × 3
+    // gegen den quantisierten Rand, wie `wasserSpiegel`), jenseits jeder Region der Ozean des Defaults „meer"; Wasser ohne Lauf
+    // und Becken (die Flut des Automaten) steht: „see". Bis unter-wasser war jedes stehende Wasser „see" — der Körper des Sees
+    // zeichnete das Meer. Leser: der Wirt (`_wasserArtAt`, `_wasserMedium`).
+    function gewaesserAm(L, x, z) {
+        const rv = flussAm(L, x, z);
+        if (rv) {
+            const tf = rv.hub ? pegelBett(L)[0] : 1;
+            return { art: gewaesserArt(rv.breite), abfluss: rv.hub ? Math.pow(Math.max(0, 1 + rv.hub / tf), 1 / 0.6) : 1 };
+        }
+        const h = hydroRegion(L, x, z);
+        if (!(h && h.ready && h.water && h.water.waterKind)) return { art: "see", abfluss: 1 };
+        const ci = Math.floor((x - h.originX) / h.cell);
+        const cj = Math.floor((z - h.originZ) / h.cell);
+        if (ci < 0 || cj < 0 || ci >= h.dim || cj >= h.dim) return { art: "meer", abfluss: 1 };
+        const W = h.water.waterKind;
+        let kind = W[ci + cj * h.dim];
+        for (let j = cj - 1; !kind && j <= cj + 1; j++)
+            for (let i = ci - 1; !kind && i <= ci + 1; i++)
+                if (i >= 0 && j >= 0 && i < h.dim && j < h.dim) kind = W[i + j * h.dim];
+        return { art: kind === 1 ? "meer" : "see", abfluss: 1 };
+    }
+
+    // DIE OPTIK DER GEWÄSSER (unter-wasser) — EIN Gesetz je Typ für den Blick unter und über dem Spiegel: je Kanal die Absorption
+    // a = a_w + a_g, die Streuung b = b_w + b_p, die Strahl-Schwächung c = a + b (die Sicht: −ln C/c, Koschmieder), die
+    // Rückstreuung b_b = ½ b_w + B_p · b_p (sie trägt den Körper von oben, R∞ nach Gordon 1975 im Wirt: `_wasserKoerper`) und
+    // der Abfall des Lichts mit der Tiefe K_d (Kirk 1984). Die reine Phase (a_w, b_w) ist die Stoff-Zeile des Wassers (schmiede `STOFF_GESETZ.medium`, der Aufrufer
+    // reicht sie: `stoff(salz)`), der gelöste Stoff CDOM a_g(λ) = a_g(440) · e^(−S(λ − 440)) und der Schwebstoff
+    // b_p(λ) = b_p* · SS · (555/λ)^n die Trübung des Typs. DIE KLARHEIT DES TYPS ist, was die Literatur an ihm misst — die Mitte
+    // (geometrisch) seines Bands bei 550 nm: die Secchi-Tiefe z = 6/c (Gordon & Wouters 1978; c·SD ≈ 6, Aarup 2002) senkrecht; die
+    // schwarze Scheibe y = Ψ/c (Ψ = 4,8: Davies-Colley 1988, Zaneveld & Pegau 2003) ist die WAAGRECHTE Sicht selbst, gelesen an
+    // der Schwelle des Auges (C ≈ 0,8 %) — die Sicht der Welt liest dieselbe Größe an ihrer Schwelle (`kontrast`, Koschmieder
+    // −ln C/c): der Anker liegt in der Mitte beider Schwellen, √(Ψ · −ln C), und das Band gilt in beiden Lesarten. Der Schwebstoff SS₀
+    // ist, was nach reiner Phase und CDOM fehlt. Der Strom trägt ihn: im Lauf SS = SS₀ · (Q/Q̄)^β (die Abfluss-Kurve C = a·Q^b,
+    // Syvitski 2000: b 0,2–2,0; gemäßigt-humid 1,4–2,5, Reid & Frostick 1987 — β die untere Grenze, in beiden Bändern) — der Regen
+    // trübt den Bach, die Dürre klärt ihn. Die Absorption der Partikel fällt (keine belegte Zahl je Masse; mineralischer
+    // Schwebstoff: c ≈ b, Davies-Colley 2024 c* ≈ 0,5 m²/g, Babin 2003 b_p* 0,5).
+    const GEWAESSER_OPTIK = Object.freeze({
+        psiScheibe: 4.8,
+        psiSecchi: 6,
+        arten: Object.freeze({
+            // klare Bäche: schwarze Scheibe 5–20 m (Davies-Colley & Smith 2001)
+            bach: Object.freeze({ band: Object.freeze([5, 20]), mass: "scheibe", fliesst: true, salz: false }),
+            // oligo- bis mesotrophe Seen: TSI 20–50 (Carlson 1977, TSI = 60 − 14,41 · ln SD) → Secchi 16–2 m
+            see: Object.freeze({ band: Object.freeze([2, 16]), mass: "secchi", fliesst: false, salz: false }),
+            // Tieflandfluss: schwarze Scheibe 1–1,5 m (Davies-Colley & Smith 2001)
+            fluss: Object.freeze({ band: Object.freeze([1, 1.5]), mass: "scheibe", fliesst: true, salz: false }),
+            // das Küstenmeer: Secchi der zentralen Ostsee im Sommer heute 4–5 m (HELCOM 2009, Fleming-Lehtinen & Kaartokallio)
+            meer: Object.freeze({ band: Object.freeze([4, 5]), mass: "secchi", fliesst: false, salz: true }),
+        }),
+        // CDOM [a_g(440) 1/m, S 1/nm]: das klarste Binnenwasser 0,42 dekadisch (Kirk 1976) × ln 10, S 0,0176 (Babin 2003);
+        // das Meer im Mittel 0,06, S 0,015 (Davies-Colley 1992)
+        cdom: Object.freeze({ suess: Object.freeze([0.967, 0.0176]), salz: Object.freeze([0.06, 0.015]) }),
+        bpSpez: 0.5, // m²/g bei 555 nm, mineralisch (Babin 2003, Case 2)
+        bpExp: 0, // große Partikel streuen grau (Morel & Prieur 1977 rechnen n = 0; Mobley 2013: n 0–1)
+        bpRueck: 0.0183, // B_p, das Petzold-Mittel (Mobley 2002; gemessen 0,005–0,035, Boss 2004)
+        rating: 1.4,
+        kirk: Object.freeze({ mu0: 0.856, G: 0.162 }), // K_d(av) im diffusen Licht (Kirk 1984)
+    });
+    // → { a, b, bb, c, kd, ss } je Kanal (1/m; ss g/m³) des Typs `art`; `stoff(salz)` die reine Phase je Kanal ({ a, b, bb }),
+    // `kanalNm` die Kanäle (nm), `abfluss` Q/Q̄ des Laufs (`gewaesserAm`; stehendes Wasser trägt keinen Strom), `kontrast` die
+    // Schwelle der Sicht der Welt (foundry-core `ATMO_GESETZ.luft.kontrast`).
+    function gewaesserOptik(art, stoff, kanalNm, abfluss, kontrast) {
+        const G = GEWAESSER_OPTIK;
+        const A = G.arten[art];
+        if (!A) throw new Error("gelaende-core gewaesserOptik: kein Gewässer-Typ " + art);
+        if (!(kontrast > 0 && kontrast < 1)) throw new Error("gelaende-core gewaesserOptik: keine Schwelle der Sicht (kontrast)");
+        const w = stoff(A.salz);
+        const [ag, S] = A.salz ? G.cdom.salz : G.cdom.suess;
+        const aG = kanalNm.map((l, k) => w.a[k] + ag * Math.exp(-S * (l - 440)));
+        // der Anker bei 550 nm (der grüne Kanal): c des Bands, der Schwebstoff ist der Rest
+        const g = kanalNm.reduce((m, l, k) => (Math.abs(l - 550) < Math.abs(kanalNm[m] - 550) ? k : m), 0);
+        const psi = A.mass === "scheibe" ? Math.sqrt(G.psiScheibe * -Math.log(kontrast)) : G.psiSecchi;
+        const cAnker = psi / Math.sqrt(A.band[0] * A.band[1]);
+        const bpEins = (l) => G.bpSpez * Math.pow(555 / l, G.bpExp);
+        const ss0 = (cAnker - aG[g] - w.b[g]) / bpEins(kanalNm[g]);
+        if (!(ss0 >= 0)) throw new Error("gelaende-core gewaesserOptik: " + art + " ist klarer als reines Wasser mit CDOM");
+        const ss = A.fliesst && abfluss > 0 ? ss0 * Math.pow(abfluss, G.rating) : ss0;
+        const b = kanalNm.map((l, k) => w.b[k] + ss * bpEins(l));
+        const bb = kanalNm.map((l, k) => w.bb[k] + G.bpRueck * ss * bpEins(l));
+        const c = aG.map((a, k) => a + b[k]);
+        const kd = aG.map((a, k) => Math.sqrt(a * a + G.kirk.G * a * b[k]) / G.kirk.mu0);
+        return { a: aG, b, bb, c, kd, ss };
     }
 
     // DER MÄANDER (K16, Prüfung Runde 2: „ein linealgerader Fluss — der Kern hat keinen Mäander-Term"): die Bahn eines Fluss-
@@ -7536,6 +7623,7 @@
             centerness: Math.max(0, 1 - bestD / Math.max(bestHalfW, 1)),
             ufer,
             breite: 2 * bestHalfW,
+            hub, // der Pegel über dem Ruhe-Spiegel — er trägt den Abfluss (`gewaesserAm`)
         };
     }
     // DER SPIEGEL QUER: der Spiegel des nächsten Segments an (x, z), auch jenseits der Krone (der Fluss-Spiegel liegt quer
@@ -8172,6 +8260,9 @@
         flussBreite: flussBreite,
         GEWAESSER_ART: GEWAESSER_ART,
         gewaesserArt: gewaesserArt,
+        gewaesserAm: gewaesserAm,
+        GEWAESSER_OPTIK: GEWAESSER_OPTIK,
+        gewaesserOptik: gewaesserOptik,
         VERSION: VERSION,
         STUDIO_VERTRAG: 1, // G4.3 — EINE Versions-Semantik
         FUNKTION: 1, // studio-vertrag §9 — ein Gesetz-Kern: reine Funktionen, keine Rezepte, keine Gestalt

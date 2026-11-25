@@ -736,13 +736,40 @@ class AnazhRealm_wasser_hydro {
         return globalThis.__gelaendeCore.flussAm(this._gelaende(), x, z);
     }
 
-    // DIE ART DES WASSERS an (x, z) (w13-bach-klar) — der EINE Leser der Welt: das Gesetz des Kerns (gelaende-core
-    // `gewaesserArt`) über der Breite des Laufs an der Stelle (`_hydroRiverAt(...).breite`), sonst stehendes Wasser. Sie wählt
-    // den Körper des Wassers (`WASSER_GESETZ.koerper[art]`, die Trübung je Art: bach · see · fluss). Leser: das Medium der
-    // Kamera (`_applyDayNightToScene`). Bis dahin entschied der Leser selbst („im Kanal → fluss"): Sicht am Bach 1,1 m.
+    // DIE ART DES WASSERS an (x, z) (w13-bach-klar, unter-wasser) — der EINE Leser der Welt: das Gewässer der Hydrosphäre
+    // (gelaende-core `gewaesserAm`: der Lauf nach seiner Breite, sonst die Zelle — Meer, See). Leser: das Medium der Kamera
+    // (`_wasserMedium`), die Linsen. Bis w13-bach-klar entschied der Leser selbst („im Kanal → fluss"): Sicht am Bach 1,1 m; bis
+    // unter-wasser war jedes stehende Wasser „see" — der Körper des Sees zeichnete das Meer.
     _wasserArtAt(x, z) {
-        const rv = this._hydroRiverAt(x, z);
-        return globalThis.__gelaendeCore.gewaesserArt(rv ? rv.breite : 0);
+        return globalThis.__gelaendeCore.gewaesserAm(this._gelaende(), x, z).art;
+    }
+
+    // DAS MEDIUM DES WASSERS (unter-wasser) — der EINE Leser der Optik für den Blick unter und über dem Spiegel: das Gesetz der
+    // Gewässer (gelaende-core `gewaesserOptik`) über der Stoff-Zeile des Wassers (schmiede `STOFF_GESETZ.medium`, Süß- und
+    // Meerwasser) an den Kanälen des Bilds → { art, abfluss, a, b, bb, c, kd, ss } je Kanal. `x, z` liest das Gewässer an der
+    // Stelle (Art und Abfluss des Laufs: der Regen trübt den Bach), `art` allein den Typ bei mittlerem Abfluss (der Wasser-Stoff
+    // über dem Spiegel: seine Ecken kennen den Lauf nicht). Je Typ und Abfluss EIN Objekt (das Spektrum der Luft rechnet nur je
+    // Wechsel neu, `_dayNightApplyLuft`). Bis unter-wasser trug die Welt zwei Hand-Tafeln: unter dem Spiegel
+    // `WASSER_GESETZ.koerper` je Art (das Meer im Körper des Sees), darüber die Look-Zahl `wK` (für jedes Wasser dieselbe).
+    _wasserMedium(x, z, art) {
+        const K = globalThis.__gelaendeCore;
+        const g = art ? { art, abfluss: 1 } : K.gewaesserAm(this._gelaende(), x, z);
+        const memo = this._wasserMediumMemo || (this._wasserMediumMemo = new Map());
+        const key = g.art + ":" + g.abfluss;
+        let m = memo.get(key);
+        if (!m) {
+            const SG = globalThis.__schmiedeCore.STOFF_GESETZ;
+            const o = K.gewaesserOptik(
+                g.art,
+                (salz) => SG.medium("wasser", salz),
+                SG.KANAL.map((l) => l * 1e9),
+                g.abfluss,
+                AnazhRealm.LUFT.kontrast
+            );
+            if (memo.size > 64) memo.clear();
+            memo.set(key, (m = Object.freeze(Object.assign({ art: g.art, abfluss: g.abfluss }, o))));
+        }
+        return m;
     }
 
     // DER SPIEGEL QUER (Gegenprüfung 07.10., Runde 3): der Spiegel des nächsten Fluss-Segments an (x, z), auch jenseits der

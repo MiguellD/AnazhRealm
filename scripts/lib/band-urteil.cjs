@@ -55,8 +55,25 @@ function ortOf(haushalt, id) {
 const ratscheDatei = (ortId, geraet, sicht) => `ratsche-${ortId}-${geraet}-${sicht}.json`;
 // Ein Toggle-Ort (`bank`, die Prüfbühne) richtet die GPU-Zeit eines Schalters, nie das Band. Jeder andere Ort misst das Band (E an
 // JEDEM Messort) und wählt seine Ratsche; Pflicht (H2b) ist sie an den Orten ohne Anlauf — ein Ort mit Anlauf (`anlauf`: die Stadt,
-// die der Spieler gründet, Dach und Gipfel über der erwachten Stadt) urteilt `ungemessen`, bis die Serie seine Ratsche prägt.
-const istBandOrt = (o) => o.bank === undefined && o.anlauf === undefined;
+// die der Spieler gründet, Dach und Gipfel über der erwachten Stadt) urteilt `ungemessen`, bis die Serie seine Ratsche prägt. Ebenso
+// ein Ort, dessen Serie offen steht (`serie.offen`, der Grund beim Namen: Küste und Ufer der Szenen, messort-zeit) — das Schema
+// (`messortePruefen`) nennt ihn ROT, sobald eine Ratsche des Orts liegt: dann fällt das Offen, und H2b fordert sie.
+const istBandOrt = (o) => o.bank === undefined && o.anlauf === undefined && o.serie === undefined;
+// Die Orte mit offener Serie (H2b nennt sie in seiner Zeile): Ort und Grund.
+const serieOffen = (haushalt) =>
+    (haushalt.messorte || []).filter((o) => o.serie !== undefined).map((o) => ({ ort: o.id, grund: o.serie && o.serie.offen }));
+
+// DIE ZEIT EINES ORTS (`zeit`, messort-zeit): eine Szene ist ein Messort mit Ort, Uhr, Tag und Wetter. Ihr EINER Leser
+// (`werkbank umstellen --ort`) spricht sie mit den Worten des Spielers — hier stehen sie: die Sätze des Chats („setze uhrzeit
+// <uhr>“, „setze wetter <wetter>“, danach das Wort des Orts `wort`, ein Satz des Spielers) und der Welt-Akt des Tags (`set_season`
+// <tag>: das Programm, das die Welt-KI zum Wort „fruehling“ schreibt — einen Chat-Satz für die Jahreszeit kennt das Spiel nicht).
+// gate:profiband H17 liest die Sätze mit dem Parser des Stamms: jede Größe der Zeit steht in genau einem Wort.
+function ortZeitWorte(zeit) {
+    return {
+        saetze: [`setze uhrzeit ${zeit.uhr}`, `setze wetter ${zeit.wetter}`, ...(zeit.wort ? [zeit.wort] : [])],
+        akte: [["set_season", zeit.tag]],
+    };
+}
 
 function ladeSpec(ortId, wahl) {
     const haushalt = jsonLesen(path.join(SPEC, "haushalt.json"));
@@ -189,6 +206,37 @@ function messortePruefen(h) {
             if (!spanne(w.rand) || !spanne(w.fern)) f.push(`${o.id}: wiese.rand / wiese.fern ist kein [von, bis] (m)`);
             else if (!(w.rand[0] > w.ring)) f.push(`${o.id}: wiese.rand beginnt im Ring (${w.rand[0]} ≤ ${w.ring} m)`);
             if (!w.quelle) f.push(`${o.id}: wiese.quelle fehlt`);
+        }
+        // DIE ZEIT (`zeit`, messort-zeit): die Uhr 0..1, der Tag als Wort der Jahreszeit, das Wetter als Wort des Chats und das
+        // Wort des Orts (ein Satz des Spielers oder null) — ob der Stamm sie versteht, urteilt gate:profiband H17 mit seinem Parser.
+        if (o.zeit !== undefined) {
+            const z = o.zeit || {};
+            if (!(typeof z.uhr === "number" && z.uhr >= 0 && z.uhr <= 1)) f.push(`${o.id}: zeit.uhr ${z.uhr} ist keine Uhr 0..1`);
+            if (typeof z.tag !== "string" || !z.tag) f.push(`${o.id}: zeit.tag ist kein Wort der Jahreszeit`);
+            if (typeof z.wetter !== "string" || !z.wetter) f.push(`${o.id}: zeit.wetter ist kein Wort des Wetters`);
+            if (z.wort !== null && (typeof z.wort !== "string" || !z.wort))
+                f.push(`${o.id}: zeit.wort ist weder ein Satz des Spielers noch null`);
+        }
+        // DER BELEG EINES ORTS AM WASSER (`beleg`, messort-zeit): die Art (kueste: das Meer und der Watt-Hang `hangMax`; ufer: der
+        // Fluss und der Jungwuchs `aesungMin`), Höhe, Spiegel und Abstand mit ihrer Toleranz und die Quelle — das Urteil am Ort
+        // spricht gate:profiband H1 (am Gesetz, mit den Zahlen) und `werkbank umstellen --ort` (in der Welt, die Art).
+        if (o.beleg !== undefined) {
+            const b = o.beleg || {};
+            const art = { kueste: "hangMax", ufer: "aesungMin" }[b.art];
+            const zahl = ["hoehe", "spiegel", "abstand", "toleranz", art || "hangMax"];
+            const fehlt = zahl.filter((k) => typeof b[k] !== "number" || !Number.isFinite(b[k]));
+            if (!art) f.push(`${o.id}: beleg.art ${b.art} ist keine Art (kueste, ufer)`);
+            if (fehlt.length) f.push(`${o.id}: beleg ohne Zahl ${fehlt.join(", ")}`);
+            if (!b.quelle) f.push(`${o.id}: beleg.quelle fehlt`);
+        }
+        // DIE OFFENE SERIE (`serie.offen`): der Grund beim Namen; sie gilt nur an einem Ort, der sonst eine Ratsche fordert, und nur,
+        // solange keine Ratsche des Orts liegt
+        if (o.serie !== undefined) {
+            if (!o.serie || typeof o.serie.offen !== "string" || !o.serie.offen) f.push(`${o.id}: serie ohne offen (den Grund)`);
+            if (o.bank !== undefined || o.anlauf !== undefined)
+                f.push(`${o.id}: serie offen an einem Ort, der keine Ratsche fordert (bank, anlauf)`);
+            const da = fs.existsSync(SPEC) ? fs.readdirSync(SPEC).filter((d) => d.startsWith(`ratsche-${o.id}-`)) : [];
+            if (da.length) f.push(`${o.id}: die Serie steht (${da.join(", ")}) — serie.offen fällt, H2b fordert die Ratsche`);
         }
         // DER TOGGLE-ORT (1110-6): ein Ort mit `bank` richtet keine Band-Klasse, sondern die GPU-Zeit eines Schalters unter
         // 0,3 ms — eine geborene Welt (`welt`, relativ zu spec/), feste Stellgrößen des Reglers (`stell`), feste Posen und die
@@ -1271,6 +1319,8 @@ module.exports = {
     ortGier,
     ortGestellt,
     ortSoll,
+    ortZeitWorte,
+    serieOffen,
     messortePruefen,
     schreibeRatsche,
     haushaltPruefen,

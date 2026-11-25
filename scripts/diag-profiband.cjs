@@ -250,17 +250,62 @@ function buendelReiheWand(A) {
 // H1 DIE WIESE: jeder Messort mit Wiesen-Gesetz (`wiese`) hält es am GESETZ — der Wirt ohne Browser ist die echte Klasse im
 // vm (scripts/lib/welt-orte.cjs `wirtAmGesetz`), gemessen von derselben Funktion, die `werkbank umstellen --ort` in der Welt ruft
 // (`wieseMessen`): Hang, Wasser, Kronen-Deckung, Waldrand, Blick und Horizont; das Gras der gebauten Boden-Karte urteilt die
-// Welt.
+// Welt. DER BELEG (messort-zeit): jeder Ort am Wasser (`beleg`, Art kueste oder ufer) ist eine Funktion des Gelände-Kerns — der
+// Wirt mit Wasser (die Heim-Region der Hydrosphäre, der Ruhe-Spiegel) misst Höhe, Spiegel und Abstand längs des Blicks
+// (`belegMessen`, dieselbe Funktion wie in der Welt) und urteilt Art und Zahl (`belegUrteil`): rückt der Kern das Ufer, steht der
+// Ort beim Namen ROT, nie still an anderem Gelände.
 let _wirt = null;
+let _wasserWirt = null;
 function wieseAmGesetz(haushalt) {
     const WO = require("./lib/welt-orte.cjs");
     if (!_wirt) _wirt = WO.wirtAmGesetz(root);
-    const aus = { befunde: [], messungen: [] };
+    const aus = { befunde: [], messungen: [], belege: [] };
     for (const o of haushalt.messorte || []) {
+        if (o.beleg) {
+            if (!_wasserWirt) _wasserWirt = WO.wirtAmGesetz(root, true);
+            // die Kacheln der Hydrosphäre um den Ort, wie die Welt sie um den Spieler hält (der Blick und 64 m Polster)
+            const weit = Math.hypot(o.blick[0] - o.spieler[0], o.blick[1] - o.spieler[1]) + 64;
+            const w = _wasserWirt.wasserUm(o.spieler[0], o.spieler[1], weit);
+            const m = WO.belegMessen(w, o.spieler[0], o.spieler[1], o.blick, WO.belegSichtAmGesetz(w));
+            aus.belege.push(Object.assign({ ort: o.id }, m));
+            for (const x of WO.belegUrteil(m, o.beleg, true)) aus.befunde.push(`${o.id}: ${x}`);
+        }
         if (!o.wiese) continue;
         const m = WO.wieseMessen(_wirt, o.spieler[0], o.spieler[1], o.blick, o.wiese);
         aus.messungen.push(Object.assign({ ort: o.id }, m));
         for (const x of WO.wieseUrteil(m, o.wiese)) aus.befunde.push(`${o.id}: ${x}`);
+    }
+    return aus;
+}
+
+// H17 DIE ZEIT DER ORTE (messort-zeit): ein Ort mit `zeit` ist eine Szene, und ihr EINER Leser (`werkbank umstellen --ort`) stellt
+// sie mit den Worten des Spielers (band-urteil `ortZeitWorte`). Hier liest der Parser des Stamms (`parseChatToDsl`, der Chat der
+// echten Klasse) diese Worte: die Uhr steht in genau EINEM `set_time_of_day` mit der Uhr des Orts, das Wetter in genau einem
+// `weather` (ein Wort der Tafel `WETTER_WOERTER`), der Tag in genau einem `set_season` (ein Wort der `JAHRESZEITEN`), und das Wort
+// des Orts ist ein Satz des Spielers. Ob die Welt sie nahm, prüft der Leser selbst in der Seite (laut, nie still). `worte`: der
+// Leser (der Selbsttest reicht einen Täter).
+function zeitWand(haushalt, A, worte = BAND.ortZeitWorte) {
+    const aus = { errs: [], zeilen: [] };
+    const w = weltVon(A, {});
+    const flach = (p) => (Array.isArray(p) ? [p, ...p.slice(1).flatMap(flach)] : []);
+    for (const o of haushalt.messorte || []) {
+        if (!o.zeit) continue;
+        const W = worte(o.zeit);
+        const prog = [...W.akte];
+        for (const s of W.saetze) {
+            const p = w.parseChatToDsl(s);
+            if (!p) aus.errs.push(`H17 ${o.id}: „${s}“ ist kein Satz des Spielers`);
+            else prog.push(p.program);
+        }
+        const ops = (op) => prog.flatMap(flach).filter((p) => p[0] === op);
+        const [uhr, wetter, tag] = ["set_time_of_day", "weather", "set_season"].map(ops);
+        if (uhr.length !== 1 || uhr[0][1] !== o.zeit.uhr)
+            aus.errs.push(`H17 ${o.id}: zeit.uhr ${o.zeit.uhr} — kein Wort stellt die Uhr (${uhr.map((p) => p[1]).join(", ") || "kein Uhr-Wort"})`);
+        if (wetter.length !== 1 || !A.WETTER_WOERTER.includes(wetter[0][1]))
+            aus.errs.push(`H17 ${o.id}: zeit.wetter „${o.zeit.wetter}“ — kein Wort stellt das Wetter (${wetter.map((p) => p[1]).join(", ") || "kein Wetter-Wort"})`);
+        if (tag.length !== 1 || !A.JAHRESZEITEN[String(tag[0][1]).toLowerCase()])
+            aus.errs.push(`H17 ${o.id}: zeit.tag „${o.zeit.tag}“ — kein Akt stellt die Jahreszeit`);
+        aus.zeilen.push(`${o.id} Uhr ${o.zeit.uhr} · ${wetter[0] ? wetter[0][1] : "?"} · ${tag[0] ? tag[0][1] : "?"} (${W.saetze.length} Sätze, ${W.akte.length} Akt)`);
     }
     return aus;
 }
@@ -1487,6 +1532,63 @@ function selbsttest() {
             wGefallen.some((x) => /kein Fernblick/.test(x)) &&
             !wieseAmGesetz(haushalt).befunde.length
     );
+    // S20c — DER BELEG (messort-zeit): die Küste des Haushalts hält am Gesetz; mit 1 m Höhe zu viel, mit einem kurzen Blick
+    // landeinwärts (kein Wasser binnen 6 m) und als Ufer gelesen (kein Fluss) ist sie ROT, ohne Quelle bricht das Schema.
+    const b20 = (f) => {
+        const h = jsonKlon(haushalt);
+        h.messorte = h.messorte.filter((o) => o.id === "kueste");
+        f(h.messorte[0]);
+        return h;
+    };
+    const bAm = (f) => wieseAmGesetz(b20(f)).befunde;
+    // DIE MÜNDUNG (25.11.): die erste Küste stand in der Welt in einem Fluss — der Wirt mit den Kacheln um den Ort nennt ihn, der
+    // Täter (der Wirt nur mit der Heim-Region, `wasserUm` ohne Kachel) las dort Meer
+    const muendung = (o) => {
+        // BÜHNE: die erste Wahl der Küste, in der Welt eine Mündung
+        o.spieler = [1191.1, 9928.8];
+        o.blick = [1480.9, 10006.4];
+    };
+    const WO = require("./lib/welt-orte.cjs");
+    const ohneKachel = WO.wirtAmGesetz(root, true);
+    ohneKachel.wasserUm = () => ohneKachel;
+    const mTaeter = b20(muendung).messorte[0];
+    // DAS BILD DES WASSERS (25.11.): in der Welt liest der Spiegel des Körpers den Automaten, das Meer der Küste steht dort bei
+    // −2,9999999999999996 — die Art hält auf 1 cm; der Täter (die Art auf Gleichheit, der Stand vor dem Schnitt) nennt es „see"
+    const haelt = !bAm(() => {}).length;
+    const kq = b20(() => {}).messorte[0];
+    const bildWirt = Object.create(_wasserWirt);
+    bildWirt._koerperWasser = (x, z, g) => _wasserWirt._koerperWasser(x, z, g) + 4e-16;
+    const gleich = (0, eval)(
+        "(" + WO.belegMessen.toString().replace("Math.abs(spiegel - r.state.waterLevel) <= 0.01", "spiegel === r.state.waterLevel") + ")"
+    );
+    // DER WALD AM WATT (25.11.): die zweite Wahl der Küste stand im Erlen-Wald — das Bild zeigte Laub statt Meer; der Beleg zählt
+    // die Kronen der Ego-Sicht (`belegSicht`, die Messung der Wiese), ein Beleg ohne Sicht ist ungemessen
+    const imWald = (o) => {
+        // BÜHNE: die zweite Wahl der Küste, in der Welt ein Erlen-Wald vor dem Auge
+        o.spieler = [859.3, 10430.3];
+        o.blick = [1141, 10480];
+        Object.assign(o.beleg, { hoehe: -2.45, spiegel: -3, abstand: 35 });
+    };
+    const ohneSicht = WO.belegUrteil(WO.belegMessen(_wasserWirt, kq.spieler[0], kq.spieler[1], kq.blick), kq.beleg, false);
+    t(
+        "Beleg: die Küste hält, auch im Bild des Wassers der Welt (Meer bei −3 + 4e-16; die Art auf Gleichheit nennt es see → rot); die Küste im Erlen-Wald → rot (Kronen in der Ego-Sicht), ohne Sicht ungemessen → rot; Höhe +1 m, Blick landeinwärts, als Ufer gelesen, die Mündung der ersten Wahl → rot (der Täter-Wirt ohne die Kacheln des Orts liest dort Meer); ohne Quelle bricht das Schema",
+        haelt &&
+            bAm(imWald).some((x) => /^kueste: Beleg .*: der Blick zum Wasser ist nicht frei — [1-9]\d* Krone/.test(x)) &&
+            bAm(imWald).length === 1 &&
+            ohneSicht.length === 1 &&
+            /der Blick ist nicht gemessen/.test(ohneSicht[0]) &&
+            WO.belegMessen(bildWirt, kq.spieler[0], kq.spieler[1], kq.blick).wasser === "meer" &&
+            gleich !== WO.belegMessen &&
+            gleich(bildWirt, kq.spieler[0], kq.spieler[1], kq.blick).wasser === "see" &&
+            bAm(muendung).some((x) => /kueste: Küste .*: längs des Blicks steht kein Meer \(fluss bei 0 m\)/.test(x)) &&
+            WO.belegMessen(ohneKachel, mTaeter.spieler[0], mTaeter.spieler[1], mTaeter.blick).wasser === "meer" &&
+            bAm((o) => (o.beleg.hoehe += 1)).some((x) => /kueste: Beleg .*: hoehe -?[\d.]+ am Gesetz, der Haushalt sagt/.test(x)) &&
+            bAm((o) => (o.blick = [1.02 * o.spieler[0] - 0.02 * o.blick[0], 1.02 * o.spieler[1] - 0.02 * o.blick[1]])).some((x) =>
+                /kueste: Beleg: nicht gemessen \(kein Wasser längs des Blicks/.test(x)
+            ) &&
+            bAm((o) => Object.assign(o.beleg, { art: "ufer", aesungMin: 0 })).some((x) => /längs des Blicks fließt kein Fluss \(meer/.test(x)) &&
+            BAND.messortePruefen(b20((o) => delete o.beleg.quelle)).some((x) => /kueste: beleg\.quelle fehlt/.test(x))
+    );
     // S23 — ein Anker ohne Methoden-Namen bricht das Schema; der echte Anker ist einer.
     const h23c = jsonKlon(haushalt);
     h23c.messorte[1].anker = "36 0";
@@ -1494,6 +1596,26 @@ function selbsttest() {
         "Messorte: ein Anker ohne Methoden-Namen bricht das Schema, der echte ist _genesisMitte",
         BAND.messortePruefen(h23c).some((x) => /anker ist kein Methoden-Name/.test(x)) &&
             haushalt.messorte[1].anker === "_genesisMitte"
+    );
+    // S23z — DIE ZEIT DER ORTE (messort-zeit, H17): eine Szene mit Uhr 0,3, Nebel und Herbst. Der Leser ohne den Uhr-Satz stellt
+    // die Uhr nicht → ROT beim Ort; der Leser von main stellt Uhr, Wetter und Tag. Das Schema: eine Uhr außerhalb 0..1, ein
+    // fehlendes Wort und eine offene Serie, deren Ratsche schon liegt (die Mess-Wiese), sind ROT.
+    const hz = jsonKlon(haushalt);
+    hz.messorte = [{ id: "szene", zeit: { uhr: 0.3, tag: "herbst", wetter: "nebel", wort: null } }];
+    const ohneUhr = (z) => {
+        const W = BAND.ortZeitWorte(z);
+        return { saetze: W.saetze.filter((s) => !/uhrzeit/.test(s)), akte: W.akte };
+    };
+    const hzKaputt = jsonKlon(haushalt);
+    Object.assign(hzKaputt.messorte[0], { zeit: { uhr: 1.5, tag: "herbst", wetter: "nebel" }, serie: { offen: "selbsttest" } });
+    t(
+        "Täter: ein Messort mit zeit.uhr, den `umstellen --ort` nicht stellt (seine Worte ohne den Uhr-Satz) → ROT `H17 szene: zeit.uhr 0.3 — kein Wort stellt die Uhr`; der Leser von main stellt Uhr, Wetter und Tag; Uhr 1,5, Wort fehlt, Serie offen an der gemessenen Wiese → ROT",
+        zeitWand(hz, A, ohneUhr).errs.some((e) => /H17 szene: zeit\.uhr 0\.3 — kein Wort stellt die Uhr \(kein Uhr-Wort\)/.test(e)) &&
+            !zeitWand(hz, A).errs.length &&
+            /szene Uhr 0\.3 · foggy · herbst/.test(zeitWand(hz, A).zeilen[0]) &&
+            ["zeit.uhr 1.5 ist keine Uhr", "zeit.wort ist weder", "die Serie steht \\(ratsche-wiese-"].every((m) =>
+                BAND.messortePruefen(hzKaputt).some((x) => new RegExp(m).test(x))
+            )
     );
 
     // S24 — die Orts-Wache: ein Lauf zählt für die Ratsche eines Orts nur, wenn er in dessen Zustand stand (Aufstellung,
@@ -2041,6 +2163,9 @@ function main() {
     for (const f of h.fehler) errs.push("H1 " + f);
     const wiese = wieseAmGesetz(haushalt);
     for (const f of wiese.befunde) errs.push("H1 " + f);
+    const zw = zeitWand(haushalt, klasseVon());
+    errs.push(...zw.errs);
+    console.log(`H17 die Zeit der Orte: ${zw.zeilen.join(" · ") || "kein Ort mit Zeit"} (${zw.errs.length ? "ROT" : "grün"})`);
     // H2 je Ort × Gerät × Sicht: jede Ratsche trägt das Schema (ein Toggle-Ort mit `bank` trägt keine — H1 prüft sein Schema).
     const ratschen = BAND.ratschenAlle(haushalt);
     for (const e of ratschen.filter((x) => x.ratsche))
@@ -2170,9 +2295,10 @@ function main() {
         `✅ DIE BAND-WAND steht — H1 Haushalt ${h.summe.befehle}/${haushalt.band.befehle} Befehle · ` +
             `${h.summe.dreiecke}/${haushalt.band.dreiecke} Dreiecke in ${haushalt.klassen.length} Klassen (keine Sammelzeile) · ` +
             `H2 Ratsche ${haushalt.klassen.length} Klassen × ${paesse.length} Pässe je Ort × Gerät × Sicht · ` +
-            `H2b ${ratschen.length} Ratschen frisch an V${version}${messungen.length ? ` gegen ${messungen.length} Messungen` : ""} · ` +
+            `H2b ${ratschen.length} Ratschen frisch an V${version}${messungen.length ? ` gegen ${messungen.length} Messungen` : ""}` +
+            `${BAND.serieOffen(haushalt).length ? `, die Serie offen an ${BAND.serieOffen(haushalt).map((s) => `${s.ort} (${s.grund})`).join(", ")}` : ""} · ` +
             `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen · ` +
-            `Messorte ${ortZeile} · H1 Wiese am Gesetz ${wiese.messungen.map((m) => `${m.ort} ${m.x}/${m.z} Hang ${m.hang}° · Krone ${m.krone} · Kranz ${m.kranz} · Horizont ${m.horizont}°`).join("; ")} · H7 die Zeichen-Reihe (Bündel @global · Regionen, lose Bau · Boden · Fern · Himmel) und die Reihe im Bündel (Stufe).`
+            `Messorte ${ortZeile} · H1 Wiese am Gesetz ${wiese.messungen.map((m) => `${m.ort} ${m.x}/${m.z} Hang ${m.hang}° · Krone ${m.krone} · Kranz ${m.kranz} · Horizont ${m.horizont}°`).join("; ")}${wiese.belege.length ? ` · H1 Beleg am Gesetz ${wiese.belege.map((m) => `${m.ort} Höhe ${m.hoehe} · ${m.wasser} ${m.spiegel} in ${m.abstand} m · Hang ${m.hang}°${m.breite ? ` · Breite ${m.breite}` : ""} · Äsung ${m.aesung} · Kronen im Blick ${m.imBlick}`).join("; ")}` : ""} · H7 die Zeichen-Reihe (Bündel @global · Regionen, lose Bau · Boden · Fern · Himmel) und die Reihe im Bündel (Stufe).`
     );
 }
 
