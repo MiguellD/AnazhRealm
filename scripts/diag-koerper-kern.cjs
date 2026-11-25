@@ -605,6 +605,12 @@ function verbenUrteil(C0, mutante = null) {
 // stoffstrom-kette: die Schmiede stellte 0,5 Eisen je Stunde aus dem Nichts her), „das Eisen entsteht aus dem Nichts" (das Werk
 // stellt her), „die Kette erzeugt Eisen" (ein Barren ohne Luppe), „die Halde schrumpft nicht", „kein Werkzeug in der Hand", „die
 // Verhüttung erzeugt Masse". Leser: der Wirt (`_stoffstromAnlegen`, `_stoffstromFassen`, `_stoffstromZensus`, `_stoffstromBild`).
+// DER RENNOFEN BRENNT KOHLE (energie#1, schmiede `STOFFSTROM.feuer`): D8 ohne Brennstoff kein Barren — dieselbe Kette mit leerem
+// Kohle-Stapel gießt über sieben Tage keinen Barren, keine Luppe, die Halde bleibt, der Ofen steht kalt; D9 der Stapel sinkt je
+// Ofenreise um die Kohle ihres Erzes (Stapel vorher − nachher = verbrannt = Erz · kohleJeErz, je Reise > 0); D10 das Feuer trägt
+// die Reduktion (Kohle je kg Erz ≥ ihr Kohlenstoff der Verhüttung) und seine Energie ist die Zeile der Kohle (Kohlenstoff × ΔfH
+// CO₂). Täter: „Barren ohne Kohle" (der Ofen brennt ohne Stapel — der Stand vor rennofen: 34 Barren aus 941,7 kg Erz bei 0 kg
+// Kohle), „der Stapel sinkt nicht".
 function stoffstromUrteil(C0, S0, mutante = null) {
     const C = Object.assign({}, C0);
     const ST = S0 && S0.STOFFSTROM ? Object.assign({}, S0.STOFFSTROM) : null;
@@ -629,7 +635,18 @@ function stoffstromUrteil(C0, S0, mutante = null) {
             K.haldeKg = K.halde0;
             return n;
         };
-    if (mutante === "ohneHand") C.stoffstromHalter = (o, h, a, w, m, s) => C0.stoffstromHalter(o, h, a, w, 0, s);
+    if (mutante === "ohneHand") C.stoffstromHalter = (o, h, a, w, m, s, k) => C0.stoffstromHalter(o, h, a, w, 0, s, k);
+    if (mutante === "ohneKohle")
+        C.stoffstromFassen = (K, h) => {
+            K.kohleKg = Infinity; // der Ofen brennt ohne Stapel
+            return C0.stoffstromFassen(K, h);
+        };
+    if (mutante === "stapelVoll")
+        C.stoffstromFassen = (K, h) => {
+            const n = C0.stoffstromFassen(K, h);
+            K.kohleKg = K.kohle0;
+            return n;
+        };
     if (mutante === "bilanz" && ST)
         ST.verhuettung = (kg, erz) => Object.assign({}, S0.STOFFSTROM.verhuettung(kg, erz), { eisen: S0.STOFFSTROM.verhuettung(kg, erz).eisen * 1.1 });
     const h0 = 3 * 24 + 6;
@@ -652,37 +669,44 @@ function stoffstromUrteil(C0, S0, mutante = null) {
     const ausbeute = ST.ausbeute(ST.erz);
     if (!(ausbeute > 0 && ausbeute < 1)) rot.push(`D5 die Ausbeute ${ausbeute} ist kein Anteil des Erzes`);
     const werkzeugKg = ST.werkEisen(ST.werkzeug);
-    const lauf = (schritt) => {
+    // D10 das Feuer trägt die Reduktion, seine Energie ist die Zeile der Kohle
+    const F = typeof ST.feuer === "function" ? ST.feuer(1, ST.erz) : null;
+    if (!F || !(F.kohle >= F.reduktion) || !(F.energie > 0))
+        rot.push(`D10 das Feuer trägt die Reduktion nicht: Kohle je kg Erz ${F ? F.kohle : "—"} kg, ihr Kohlenstoff der Verhüttung ${F ? F.reduktion.toFixed(4) : "—"} kg, Energie ${F ? F.energie : "—"} J (schmiede STOFFSTROM.feuer)`);
+    const kohleJeErz = F ? F.kohle : 0;
+    const lauf = (schritt, leer = false) => {
         const oefen = [ofen(4242), ofen(12345)];
         let K = null;
         try {
-            K = C.stoffstromHalter(oefen, h0, ausbeute, werkzeugKg, 12, 7);
+            K = C.stoffstromHalter(oefen, h0, ausbeute, werkzeugKg, 12, 7, kohleJeErz);
         } catch (e) {
             return { fehler: String((e && e.message) || e) };
         }
-        const tage = [];
+        if (leer) [K.kohleKg, K.kohle0] = [0, 0]; // der Gegenlauf: der Stapel am Ofen ist leer
+        const tage = [], stapel = [];
         for (let h = h0 + schritt; h <= h0 + 7 * 24 + 1e-9; h += schritt) {
             C.stoffstromFassen(K, h);
             const d = Math.floor((h - h0 - 1e-9) / 24);
             tage[d] = K.haldeKg;
+            stapel[d] = K.kohleKg;
         }
         C.stoffstromFassen(K, h0 + 7 * 24);
-        return { K, oefen, tage };
+        return { K, oefen, tage, stapel };
     };
     const L = lauf(1);
     if (L.fehler) {
         rot.push(`D0 die Esse schmilzt kein Erz: der Kern legt keine Kette an (${L.fehler})`);
         return { rot };
     }
-    const { K, oefen, tage } = L;
+    const { K, oefen, tage, stapel } = L;
     const he = h0 + 7 * 24;
-    // D1 die Halde schrumpft
+    // D1 die Halde schrumpft (an jedem Tag, solange sie trägt und der Stapel ein Feuer)
     let vor = K.halde0, stieg = 0, flach = 0;
-    for (const x of tage) {
+    tage.forEach((x, d) => {
         if (x > vor + 1e-9) stieg++;
-        if (x > vor - 1e-9 && vor > 1e-9) flach++;
+        if (x > vor - 1e-9 && vor > 1e-9 && (d ? stapel[d - 1] : K.kohle0) > 1e-9) flach++;
         vor = x;
-    }
+    });
     if (stieg || flach || !(K.haldeKg < K.halde0))
         rot.push(`D1 die Halde schrumpft nicht: ${K.halde0.toFixed(1)} → ${K.haldeKg.toFixed(1)} kg, ${flach} Tage ohne Abbau, ${stieg} Tage steigend`);
     // D2 Barren am Ofen
@@ -694,13 +718,22 @@ function stoffstromUrteil(C0, S0, mutante = null) {
     const G = B.stoffstrom;
     const sum = (a) => a.reduce((x, y) => x + y, 0);
     const imEisen = sum(K.luppe) + barren * G.barrenKg + sum(K.anbruch) + K.werkzeug * K.werkzeugKg;
-    if (Math.abs(K.halde0 - K.haldeKg - K.erz) > 1e-9 || Math.abs(K.eisen - K.erz * K.ausbeute) > 1e-9 || Math.abs(imEisen - K.eisen) > 1e-9)
-        rot.push(`D4 die Kette erzeugt Eisen: Halde ${(K.halde0 - K.haldeKg).toFixed(4)} kg ab, Erz ${K.erz.toFixed(4)} kg verhüttet, Eisen der Luppen ${K.eisen.toFixed(4)} kg (Soll ${(K.erz * K.ausbeute).toFixed(4)}), im Ofen, im Anbruch und in den Werkzeugen ${imEisen.toFixed(4)} kg`);
+    const fertig = K.erz - sum(K.imOfen || []); // das Erz der beendeten Reisen (der Rest liegt im Schacht)
+    if (Math.abs(K.halde0 - K.haldeKg - K.erz) > 1e-9 || Math.abs(K.eisen - fertig * K.ausbeute) > 1e-9 || Math.abs(imEisen - K.eisen) > 1e-9)
+        rot.push(`D4 die Kette erzeugt Eisen: Halde ${(K.halde0 - K.haldeKg).toFixed(4)} kg ab, Erz ${K.erz.toFixed(4)} kg geladen (${fertig.toFixed(4)} verhüttet), Eisen der Luppen ${K.eisen.toFixed(4)} kg (Soll ${(fertig * K.ausbeute).toFixed(4)}), im Ofen, im Anbruch und in den Werkzeugen ${imEisen.toFixed(4)} kg`);
+    // D9 der Stapel sinkt je Ofenreise
+    const ab = K.kohle0 - K.kohleKg;
+    if (!(K.reisen >= 1) || !(ab > 1e-9) || Math.abs(ab - K.kohle) > 1e-9 || Math.abs(K.kohle - K.erz * kohleJeErz) > 1e-9)
+        rot.push(`D9 der Stapel sinkt nicht je Ofenreise: ${K.reisen} Reisen, Stapel ${(K.kohle0 || 0).toFixed(1)} → ${(K.kohleKg || 0).toFixed(1)} kg, verbrannt ${(K.kohle || 0).toFixed(3)} kg (Soll Erz ${K.erz.toFixed(3)} kg × ${kohleJeErz})`);
+    // D8 ohne Brennstoff kein Barren: der Gegenlauf mit leerem Stapel
+    const O = lauf(1, true);
+    if (O.fehler || O.K.barren > 0 || O.K.eisen > 1e-9 || O.K.haldeKg < O.K.halde0 - 1e-9 || !(O.K.kalt > 0))
+        rot.push(`D8 Barren ohne Kohle: mit leerem Stapel ${O.fehler || `${O.K.barren} Barren gegossen, ${O.K.eisen.toFixed(2)} kg Luppe, Halde ${O.K.halde0.toFixed(1)} → ${O.K.haldeKg.toFixed(1)} kg, ${(O.K.kalt || 0).toFixed(1)} h kalt`} — die Esse verhüttet ohne Feuer (koerper stoffstromFassen)`);
     // D7 die Kette ist eine Funktion der Zeit
     const M = lauf(0.37);
-    const gleich = !M.fehler && Math.abs(M.K.haldeKg - K.haldeKg) < 1e-9 && M.K.werkzeug === K.werkzeug && M.K.haende === K.haende && M.K.barren === K.barren;
+    const gleich = !M.fehler && Math.abs(M.K.haldeKg - K.haldeKg) < 1e-9 && Math.abs(M.K.kohleKg - K.kohleKg) < 1e-9 && M.K.reisen === K.reisen && M.K.werkzeug === K.werkzeug && M.K.haende === K.haende && M.K.barren === K.barren;
     if (!gleich) rot.push(`D7 die Kette hängt am Rufmuster: in 0,37-h-Rufen Halde ${M.K ? M.K.haldeKg.toFixed(3) : "—"} kg, ${M.K ? M.K.werkzeug : "—"} Werkzeuge gegen ${K.haldeKg.toFixed(3)} kg, ${K.werkzeug}`);
-    return { rot, halde0: K.halde0, halde: K.haldeKg, barren, haende: K.haende, werkzeug: K.werkzeug, gegossen: K.barren, erz: K.erz, eisen: K.eisen, ausbeute, werkzeugKg };
+    return { rot, halde0: K.halde0, halde: K.haldeKg, barren, haende: K.haende, werkzeug: K.werkzeug, gegossen: K.barren, erz: K.erz, eisen: K.eisen, ausbeute, werkzeugKg, kohle0: K.kohle0, kohleKg: K.kohleKg, kohle: K.kohle, reisen: K.reisen, kalt: K.kalt, mj: F ? F.energie / 1e6 : 0, gegen: O.K ? O.K.barren : null };
 }
 
 // TEIL E — DIE REGEL-GRAMMATIK (Meisterkarte 2 mensch.sport.regeln#1 · mannschaft#1 · arena#1 · geistspiel#1; koerper
@@ -1044,7 +1077,7 @@ if (SELBSTTEST) {
     // die Stoffstrom-Kette: das Gesetz hält, jeder Täter fällt ROT beim Namen
     const sc = globalThis.__schmiedeCore;
     const sGut = !stoffstromUrteil(core, sc).rot.length;
-    const stoffTaeter = [["ohneKette", "D0 die Esse schmilzt kein Erz"], ["ausNichts", "D6 das Eisen entsteht aus dem Nichts"], ["erzeugt", "D4 die Kette erzeugt Eisen"], ["haldeVoll", "D1 die Halde schrumpft nicht"], ["ohneHand", "D3 kein Werkzeug in der Hand"], ["bilanz", "D5 die Verhüttung erzeugt Masse"]].map(([m, z]) => [sGut && stoffstromUrteil(core, sc, m).rot.some((r) => r.startsWith(z)), z]);
+    const stoffTaeter = [["ohneKette", "D0 die Esse schmilzt kein Erz"], ["ausNichts", "D6 das Eisen entsteht aus dem Nichts"], ["erzeugt", "D4 die Kette erzeugt Eisen"], ["haldeVoll", "D1 die Halde schrumpft nicht"], ["ohneHand", "D3 kein Werkzeug in der Hand"], ["bilanz", "D5 die Verhüttung erzeugt Masse"], ["ohneKohle", "D8 Barren ohne Kohle"], ["stapelVoll", "D9 der Stapel sinkt nicht"]].map(([m, z]) => [sGut && stoffstromUrteil(core, sc, m).rot.some((r) => r.startsWith(z)), z]);
     // die Verben aus der Gestalt: das Gesetz hält, jeder Täter fällt ROT beim Namen
     const vGut = !verbenUrteil(core).rot.length;
     const verbenTaeter = [["Literal", "V1 Gehen"], ["Literal", "V3 Sprung"], ["refKg", "V6 die Masse kürzt sich nicht"], ["gleitet", "V5 der Sprint ist kein Punkt des Gangs"], ["Tafel", "V7 die Verb-Tafel"], ["Prosa", "V7 die Verb-Tafel"], ["Stufe", "V8 die Gang-Pose"]].map(([m, z]) => [vGut && verbenUrteil(core, m).rot.some((r) => r.startsWith(z)), `Verben ${m} ${z}`]);
@@ -1060,7 +1093,7 @@ if (SELBSTTEST) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle vierundvierzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, sechs Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, der Täter des Morgengangs).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle sechsundvierzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, acht Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, der Täter des Morgengangs).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -1078,7 +1111,7 @@ for (const z of ak.rot) st.rot.push("ACKER " + z + " — Täter: koerper scheune
 if (!ak.rot.length) console.log(`  ACKER Scheune: ${ak.ernten} Ernten in 5 Tagen, steigt an ${ak.steigt}, fällt an ${ak.faellt} Tagen, am Ende ${ak.voll.toFixed(2)} · Frucht bis ${ak.hoch.toFixed(2)} m`);
 const sk = stoffstromUrteil(core, globalThis.__schmiedeCore);
 for (const z of sk.rot) st.rot.push("STOFFSTROM " + z + " — Täter: koerper stoffstromHalter · stoffstromFassen · schmiede STOFFSTROM");
-if (!sk.rot.length) console.log(`  STOFFSTROM Halde ${sk.halde0.toFixed(1)} → ${sk.halde.toFixed(1)} kg in 7 Tagen (Erz ${sk.erz.toFixed(1)} kg, Ausbeute ${sk.ausbeute.toFixed(4)}, Eisen ${sk.eisen.toFixed(2)} kg) · ${sk.gegossen} Barren gegossen, ${sk.barren} am Ofen · ${sk.werkzeug} Werkzeuge zu je ${sk.werkzeugKg.toFixed(3)} kg Eisen, ${sk.haende} in der Hand`);
+if (!sk.rot.length) console.log(`  STOFFSTROM Halde ${sk.halde0.toFixed(1)} → ${sk.halde.toFixed(1)} kg in 7 Tagen (Erz ${sk.erz.toFixed(1)} kg, Ausbeute ${sk.ausbeute.toFixed(4)}, Eisen ${sk.eisen.toFixed(2)} kg) · ${sk.gegossen} Barren gegossen, ${sk.barren} am Ofen · ${sk.werkzeug} Werkzeuge zu je ${sk.werkzeugKg.toFixed(3)} kg Eisen, ${sk.haende} in der Hand · RENNOFEN ${sk.reisen} Ofenreisen, Kohle-Stapel ${sk.kohle0.toFixed(1)} → ${sk.kohleKg.toFixed(1)} kg (${sk.kohle.toFixed(1)} kg verbrannt, ${(sk.kohle * sk.mj).toFixed(0)} MJ, ${((sk.kohle * sk.mj) / Math.max(1e-9, sk.eisen)).toFixed(1)} MJ je kg Luppe), ${sk.kalt.toFixed(1)} h kalt · Gegenlauf ohne Kohle ${sk.gegen} Barren`);
 const sp = spielUrteil(core);
 for (const z of sp.rot) st.rot.push("SPIEL " + z + " — Täter: koerper SPIEL_GESETZ · spielProgramm · spielKampf · spielBrett · spielGeschehen · tagesPlan");
 if (!sp.rot.length) console.log(`  SPIEL ${sp.laeufe} Läufe (${sp.laeufer} Läufer): ρ Laufzeit ↔ Leib ${sp.rho.toFixed(3)} (je Lauf ${sp.rhoLauf.toFixed(3)}) · ${sp.kaempfe} Gänge des Zweikampfs: der Stärkere siegt ${(100 * sp.quote).toFixed(1)} % · ${sp.partien} Partien am Brett, ${sp.zuege} Züge, ${sp.widrig} regelwidrig, ${sp.siege} mit Reihe · Ring bis ${sp.zuschauerMax} Zuschauer, Blick am Geschehen ${(100 * sp.blick).toFixed(1)} % von ${sp.proben} (seitab ${(100 * sp.seitab).toFixed(1)} % von ${sp.seit}) · der Tag stellt ${sp.e5}/${sp.e5n} Auftritte · der Raum des Stands: ${sp.raumN} Paare ≥ ${sp.standM} m, das nächste ${sp.raumMin.toFixed(2)} m · der Abend trägt den Weg: ${sp.wegeN} Gäste an ${sp.wegeAbende} Abenden, höchstens ${sp.wegeMax} Wege (${sp.wegeKurz}× sah der Kern ein Stück unter 0,05 h)`); // prettier-ignore
