@@ -13526,7 +13526,7 @@
   },
   "karte2.leben.pflanzen.biome": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.pflanzen.biome#1 radeon: ungemessen (R10) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.pflanzen.biome#1 gtx: Station seit der Messung geändert — zuletzt an e1a54023: der Deckel der Leiter riss nach 30,034 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 30,034 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.leben.pflanzen.biome#2 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#2 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#3 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#4 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#5 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.pflanzen.biome#1 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#1 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#2 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#2 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#3 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#4 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#5 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.pflanzen.biome#1",
@@ -13534,7 +13534,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+     "grund": "ungemessen (R10)",
      "ungemessen": true,
      "beide": true
     },
@@ -13544,7 +13544,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an e1a54023: der Deckel der Leiter riss nach 30,034 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 30,034 s vor dem Wert der Sprosse · der Deckel der Leiter",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
      "beide": true
     },
@@ -13758,7 +13758,7 @@
   },
   "karte2.leben.pflanzen.jahreslauf": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S2 rang 0,975 gegen Soll ≥ 0,8 ✓ · Zeuge: der Kalender der Laub-Arten des Bestands, das Jahr der Welt Winter ↔ Sommer an e1a54023 gtx — offen: karte2.leben.pflanzen.jahreslauf#2 radeon: Station seit der Messung geändert — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.pflanzen.jahreslauf#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#3 gtx: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#4 gtx: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#5 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.jahreslauf#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S2 rang 0,975 gegen Soll ≥ 0,8 ✓ · Zeuge: der Kalender der Laub-Arten des Bestands, das Jahr der Welt Winter ↔ Sommer an e1a54023 gtx — offen: karte2.leben.pflanzen.jahreslauf#2 radeon: Station seit der Messung geändert · karte2.leben.pflanzen.jahreslauf#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#3 gtx: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#4 gtx: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#5 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.jahreslauf#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.jahreslauf#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.leben.pflanzen.jahreslauf#2",
@@ -13766,7 +13766,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -13775,9 +13775,8 @@
      "gruen": true,
      "zahl": "S2 rang 0,975 gegen Soll ≥ 0,8 ✓ · Zeuge: der Kalender der Laub-Arten des Bestands, das Jahr der Welt Winter ↔ Sommer",
      "sha": "e1a54023c9a9e6fd30a824fd89087d3bb7ae854e",
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, voxel-worker.js) — zuletzt an 2d6a0447: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Yune ×3\",\"Nox ×2\",\"Kai\",\"Lera\"],\"neu\":[],\"anders\":[]}}) — of",
-     "gehalten": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     },
     {
      "id": "karte2.leben.pflanzen.jahreslauf#3",
@@ -13855,7 +13854,7 @@
   },
   "karte2.leben.pflanzen.kraft": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S2 laufzeitAbw 6,117 % gegen Soll ≤ 20 % ✓ · Zeuge: der EINE Wind an Gras und Krone 100 m windab, Ruhe ↔ Sturm, die Laufzeit gegen den mittleren Wind (Taylor 1938) · gemessen vor dem Wurf der Leiter nach 12,028 s: der Deckel der Leiter 12 s an e1a54023 gtx — offen: karte2.leben.pflanzen.kraft#2 radeon: Station seit der Messung geändert — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.pflanzen.kraft#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#3 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#4 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#5 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S2 laufzeitAbw 6,117 % gegen Soll ≤ 20 % ✓ · Zeuge: der EINE Wind an Gras und Krone 100 m windab, Ruhe ↔ Sturm, die Laufzeit gegen den mittleren Wind (Taylor 1938) · gemessen vor dem Wurf der Leiter nach 12,028 s: der Deckel der Leiter 12 s an e1a54023 gtx — offen: karte2.leben.pflanzen.kraft#2 radeon: Station seit der Messung geändert · karte2.leben.pflanzen.kraft#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#3 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#4 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#5 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.leben.pflanzen.kraft#2",
@@ -13863,7 +13862,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -13872,9 +13871,8 @@
      "gruen": true,
      "zahl": "S2 laufzeitAbw 6,117 % gegen Soll ≤ 20 % ✓ · Zeuge: der EINE Wind an Gras und Krone 100 m windab, Ruhe ↔ Sturm, die Laufzeit gegen den mittleren Wind (Taylor 1938) · gemessen vor dem Wurf der Leiter nach 12,028 s: der Deckel der Leiter 12 s",
      "sha": "e1a54023c9a9e6fd30a824fd89087d3bb7ae854e",
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js) — zuletzt an 2d6a0447: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Yune ×3\",\"Nox ×2\",\"Kai\",\"Lera\"],\"neu\":[],\"anders\":[]}}) — of",
-     "gehalten": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     },
     {
      "id": "karte2.leben.pflanzen.kraft#3",
@@ -20543,7 +20541,7 @@
   },
   "karte2.mensch.macht.recht": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.recht#1 radeon: ungemessen (R10) — zuletzt an e1a54023: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eva · karte2.mensch.macht.recht#1 gtx: Station seit der Messung geändert — zuletzt an e1a54023: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eva · karte2.mensch.macht.recht#2 radeon: ungemessen (R10) · karte2.mensch.macht.recht#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#3 radeon: ungemessen (R10) · karte2.mensch.macht.recht#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#4 radeon: ungemessen (R10) · karte2.mensch.macht.recht#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#5 radeon: ungemessen (R10) · karte2.mensch.macht.recht#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#6 radeon: ungemessen (R10) · karte2.mensch.macht.recht#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#7 radeon: ungemessen (R10) · karte2.mensch.macht.recht#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.recht#1 radeon: ungemessen (R10) — zuletzt an e1a54023: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eva · karte2.mensch.macht.recht#1 gtx: Station seit der Messung geändert — zuletzt an f63a69ef: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eva · karte2.mensch.macht.recht#2 radeon: ungemessen (R10) · karte2.mensch.macht.recht#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#3 radeon: ungemessen (R10) · karte2.mensch.macht.recht#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#4 radeon: ungemessen (R10) · karte2.mensch.macht.recht#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#5 radeon: ungemessen (R10) · karte2.mensch.macht.recht#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#6 radeon: ungemessen (R10) · karte2.mensch.macht.recht#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#7 radeon: ungemessen (R10) · karte2.mensch.macht.recht#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.macht.recht#1",
@@ -20561,7 +20559,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an e1a54023: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eva",
+     "grund": "Station seit der Messung geändert — zuletzt an f63a69ef: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eva",
      "ungemessen": true,
      "beide": true
     },
@@ -37569,7 +37567,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 344,
+  "konsum": 342,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37738,10 +37736,10 @@
    "karte2.leben.kopplung.stadt-im-netz#2 radeon",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3277
+  "ohne": 3279
  },
  "kopfVoll": "fbbd597c60b84b072be2c9db3a9ebbbe98213269",
- "zeit": "2026-11-25T18:33:13.255Z",
+ "zeit": "2026-11-25T18:41:46.029Z",
  "vorher": "fbbd597c",
  "bilanz": {
   "gewinn": [],
