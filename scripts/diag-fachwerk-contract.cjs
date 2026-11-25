@@ -1424,6 +1424,47 @@ function raumLinse() {
         check("Die Grenze im Land: derselbe Same dieselben Steine; ohne freies Land kein Stein, jeder Stand gezählt", zwei[0] === zwei[1] && leer.steine.length === 0 && leer.fehlt > 0);
     }
 
+    // 10c) DER GEFALLENE RING WIRD GASSE (mensch.macht.wehrbau#3, `ringGasse`): je Same 1 … der Ort der Gründung im Mittelalter,
+    //      sein Ring im letzten Jahr der Mauern (MAUER_BIS - 1) und seine Straßen im Jahr der Welt 1900. Die Mauer ist gefallen, auch
+    //      wo die Chronik früher endet (das Jahr der Welt urteilt), jeder Punkt des alten Rings (5 je Segment) liegt ≤ 4 m an einer
+    //      Straße, die Ringstraße quert kein Haus; ein Jahr vor MAUER_BIS trägt nie eine.
+    {
+        const ep = FC.epocheImJahr(1320);
+        const dSeg = (px, pz, a, b) => {
+            const [dx, dz] = [b.x - a.x, b.z - a.z];
+            const t = Math.max(0, Math.min(1, ((px - a.x) * dx + (pz - a.z) * dz) / (dx * dx + dz * dz || 1)));
+            return Math.hypot(px - a.x - t * dx, pz - a.z - t * dz);
+        };
+        const R = { fiel: 0, steht: [], deck: [], quer: 0, falsch: [] };
+        for (let seed = 1; seed <= 16; seed++) {
+            const A = FC.exportSettlement({ seed, epoche: ep, jahr: FC.MAUER_BIS - 1 });
+            if (A.roads.some((r) => r.ring)) R.falsch.push(seed + ": Ringstraße vor MAUER_BIS");
+            if (!A.mauer) continue;
+            const B = FC.exportSettlement({ seed, epoche: ep, jahr: 1900 });
+            const ring = B.roads.filter((r) => r.ring);
+            if (B.mauer) R.steht.push(seed + " (Schnitt " + B.jahr + ")");
+            else R.fiel++;
+            let [tot, hit] = [0, 0];
+            for (const s of A.mauer.segs)
+                for (let k = 0; k <= 4; k++) {
+                    const [px, pz] = [s.x0 + ((s.x1 - s.x0) * k) / 4, s.z0 + ((s.z1 - s.z0) * k) / 4];
+                    let best = Infinity;
+                    for (const rd of B.roads) for (let i = 1; i < rd.pts.length; i++) best = Math.min(best, dSeg(px, pz, rd.pts[i - 1], rd.pts[i]));
+                    tot++;
+                    if (best <= 4) hit++;
+                }
+            R.deck.push(+(hit / tot).toFixed(3));
+            for (const rd of ring) for (const q of rd.pts) if (B.slots.some((sl) => FC.distPunktOBB(q.x, q.z, sl.obb) < rd.w / 2 - 1e-6)) R.quer++;
+        }
+        console.log("RINGGASSE " + JSON.stringify(R));
+        check(
+            `Der gefallene Ring wird Gasse: ${R.fiel} Mauern im Jahr der Welt 1900 gefallen, ${R.steht.length} stehen (Soll 0), je Ort der alte Ring an der Straße (min ${Math.min(...R.deck)} ≥ 0,9)`,
+            R.fiel >= 8 && !R.steht.length && Math.min(...R.deck) >= 0.9 && !R.falsch.length,
+            R.falsch.concat(R.steht.map((x) => "Mauer zu viel: " + x)).join(" · ")
+        );
+        check(`Die Ringstraße quert kein Haus (${R.quer} Punkte in einem Grundriss)`, R.quer === 0);
+    }
+
     // 11) PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Probe-Fall baut noch einmal, während die
     //     Transzendenten von Math um ±1 ULP verschoben rechnen. Math.pow kippt kein Byte (die gemessene Klasse, V8 12.4
     //     der CI ≠ V8 13.6 lokal); die übrigen halten ihre Ratsche (spec/asset-contract/plattform-ratsche.json). Die

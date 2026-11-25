@@ -1643,6 +1643,134 @@ function tagKurveSelbsttest() {
         [nur(kurve(T.kopf, "TAETER"), /SPRUNG/), /^SPRUNG wiese: Uhr 0\.274 → 0\.276 0\.\d\d EV — ohne Täter-Pass,/],
         [gesetz(), ""],
         [gesetz({ steigung: 1, stufen: [[10, 0], [-20, 0]] }), /GESETZ Sonne 10°/],
+        ...raumBlendeSelbsttest(),
+    ];
+}
+
+// DIE BELICHTUNG IM RAUM (w28-haus-innen-lesbar, headless, EIN Lader; Familie der Tag-Kurve: `licht --laub --selbsttest`).
+// (1) DAS GESETZ (welt-licht `belichtungRaum`) am Band seiner Quelle: die Karte im Raum gegen die Karte im Schatten vor der Tür
+// (Himmel 21 400 lx) steht bei 300 lx −0,61, bei 100 lx −0,98, bei 10 lx −2,41 Stufen (Krawczyk, Myszkowski, Seidel 2005: der
+// Schlüssel α(L) = 1,03 − 2 ÷ (2 + log10(L + 1))); an der Schwelle stetig, ohne Licht am Boden des Messers, nachts keine Öffnung,
+// das Feld der Öffnungen schließt unter einer halben Stufe. (2) DER LESER im Stamm an einem Wirt ohne Bild, über den EINEN
+// Schreiber (`_dayNightApplyBelichtung` → `_belichtungAusLicht`, `_raumBlendeTakt`): draußen bitgleich das Gesetz des Orts, im
+// Raum die Karte im Band — mit und ohne Sonne im Bild dieselbe —, über die Schwelle mit τ `RAUM.blendeS` hinein und
+// `RAUM.blendeHellS` hinaus, danach wieder bitgleich. DIE TÄTER BEIM NAMEN, in den Leser gespielt: ALT (w28-innenlicht, main
+// b1f0de0e: die Steigung des Tags über die fehlenden Stufen — 300 lx standen −1,54 Stufen), VOLL (die volle Adaption: jeder Raum
+// liest wie draußen), BODENLOS (kein Boden des Messers), NACHT (der Boden schließt die Nacht).
+const RAUM_BAND = [[300, -0.61, 0.3], [100, -0.98, 0.35], [10, -2.41, 0.5]];
+let raumWirt = null;
+function raumBlendeUrteil(fall, root = __dirname + "/../..") {
+    const vm = require("vm");
+    const K = raumWirt && raumWirt.root === root ? raumWirt : (raumWirt = Object.assign(require("./stamm.cjs").ladeKlasse(root), { root }));
+    const { AnazhRealm: A, ctx } = K;
+    const WL0 = K.WL || (K.WL = vm.runInContext("__weltLicht", ctx));
+    const B = WL0.BELICHTUNG, LX = WL0.EINHEIT_LX, KN = B.nachtKnotenE;
+    const E = 21400 / LX;
+    const key = (x) => 1.03 - 2 / (2 + Math.log10((0.18 / Math.PI) * x * LX + 1));
+    const taeter = {
+        ALT: (k, e, er, f = 0) => (er < e ? k * Math.max(2 ** (B.stufen[B.stufen.length - 1][1] / (1 - B.steigung)), er / e + f) ** -B.steigung : k),
+        VOLL: (k, e, er) => (er < e ? (k * e) / Math.max(er, 1e-12) : k),
+        BODENLOS: (k, e, er, f = 0, b = B) => WL0.belichtungRaum(k, e, er, f, Object.assign({}, b, { nachtKnotenE: 0 })),
+        NACHT: (k, e, er, f = 0) => {
+            if (!(er < e)) return k;
+            const r = Math.max(e ** f * Math.max(er, 1e-12) ** (1 - f), KN);
+            return (k * (e / r) * key(r)) / key(e);
+        },
+    };
+    const WL = fall ? Object.assign({}, WL0, { belichtungRaum: taeter[fall] }) : WL0;
+    const bef = [];
+    const band = (wer, s) => RAUM_BAND.filter(([lx]) => s(lx) != null).forEach(([lx, soll, tol]) => Math.abs(s(lx) - soll) <= tol || bef.push(`${wer} ${lx} lx: die Karte ${s(lx).toFixed(2)} Stufen gegen die Karte davor (Band ${soll} ± ${tol})`));
+    if (typeof WL.belichtungRaum !== "function") bef.push("RAUM GESETZ: welt-licht trägt kein belichtungRaum");
+    else {
+        const mal = (er, f, e = E) => WL.belichtungRaum(1, e, er, f || 0, B);
+        band("RAUM", (lx) => Math.log2((lx / LX / E) * mal(lx / LX)));
+        if (!(Math.abs(Math.log2(mal(E * 0.999))) < 0.01) || mal(E) !== 1) bef.push(`RAUM SCHWELLE: an der Schwelle öffnet die Kamera ${Math.log2(mal(E * 0.999)).toFixed(2)} Stufen`);
+        const [b0, b1] = [mal(0), mal(KN)];
+        if (!Number.isFinite(b0) || b0 !== b1) bef.push(`RAUM BODEN: ohne Licht öffnet die Kamera ${b0.toExponential(2)}-fach, am Boden des Messers ${b1.toExponential(2)}-fach`);
+        const n = mal(KN * 0.01, 0, KN * 0.5);
+        if (n !== 1) bef.push(`RAUM NACHT: unter dem Boden des Messers stellt der Raum die Blende ${Math.log2(n).toFixed(2)} Stufen`);
+        const f = Math.log2(mal(300 / LX, 0.05) / mal(300 / LX));
+        if (!(f < 0 && f > -0.5)) bef.push(`RAUM FELD: 5 % Öffnungen im Feld stellen die Blende ${f.toFixed(2)} Stufen (Band −0,5 … 0)`);
+    }
+    // DER LESER: ein Wirt mit dem Messer des Mittags (Himmel 21 400 lx, die Sonne 6 Einheiten im Bild), der Raum mit `lx` am Auge
+    const r = Object.create(A.prototype);
+    const lage = { D: null, feld: 0, sicht: 1 };
+    const [SONNE, EA, e] = [6, 7.75, Math.sin((74 * Math.PI) / 180)];
+    let uhr = 0;
+    const [uhrVor, wlVor] = [ctx.performance, ctx.__weltLicht];
+    Object.assign(ctx, { performance: { now: () => uhr }, __weltLicht: WL });
+    try {
+        Object.assign(r, {
+            state: { renderer: {}, directionalLight: { color: { r: 1, g: 1, b: 1 }, intensity: SONNE }, camera: { position: vm.runInContext("new THREE.Vector3()", ctx) } },
+            _waagrechtIrradianz(out) {
+                const so = this._belichtungSonne || (this._belichtungSonne = [0, 0, 0]);
+                for (let i = 0; i < 3; i++) out[i] = E + (so[i] = SONNE * lage.sicht);
+                return out;
+            },
+            _belichtungAnker: () => EA,
+            _poolAmAuge: (w, aus) => Object.assign(aus, w),
+            _mondDurchlass: () => 1,
+            _bildSichtSteht: () => true,
+            _dachTakt() {},
+            _raumSonneTakt() {},
+            _raumAmAuge() {
+                this._raumFeldAmAuge = lage.feld;
+                return lage.D;
+            },
+        });
+        // `takte` Takte des EINEN Schreibers, je `dt` s, das Auge je Takt `gang` m weiter → die Belichtung am Renderer
+        const takt = (takte, dt, gang) => {
+            for (let i = 0; i < takte; i++) {
+                uhr += dt * 1000;
+                r.state.camera.position.x += gang;
+                r._dayNightApplyBelichtung({ e });
+            }
+            return r.state.renderer.toneMappingExposure;
+        };
+        const ort = (x) => WL0.belichtung([x, x, x], EA, e, (h, q) => A._belichtungStufen(h, q), A.BELICHTUNG, 0);
+        const [kOrt, kSchatten] = [ort(E + SONNE), ort(E)];
+        const draussen = takt(2, 0.1, 0);
+        if (draussen !== kOrt) bef.push(`RAUM LESER: draußen ${draussen} statt des Gesetzes des Orts ${kOrt}`);
+        const raum = {};
+        for (const [lx] of RAUM_BAND) {
+            Object.assign(lage, { D: lx / 21400, sicht: 1 });
+            raum[lx] = takt(2, 0.1, 10);
+            lage.sicht = 0;
+            const ohne = takt(2, 0.1, 0);
+            if (!(Math.abs(ohne / raum[lx] - 1) < 1e-9)) bef.push(`RAUM LESER ${lx} lx: die Sonne im Bild stellt die Blende im Raum (${raum[lx].toFixed(3)} gegen ${ohne.toFixed(3)})`);
+        }
+        band("RAUM LESER", (lx) => Math.log2((lx / 21400) * (raum[lx] / kSchatten)));
+        // die Schwelle: aus dem Raum (10 lx) ins Freie nach `blendeHellS`, aus dem Freien in den Raum nach `blendeS` je 1 − 1/e des Wegs
+        const weg = (k, von, nach) => Math.log2(k / von) / Math.log2(nach / von);
+        const R = A.RAUM;
+        Object.assign(lage, { D: null, sicht: 1 });
+        const hinaus = weg(takt(Math.round(R.blendeHellS / 0.05) + 1, 0.05, 0.1), raum[10], kOrt);
+        const frei = takt(80, 0.1, 0.1);
+        if (frei !== kOrt) bef.push(`RAUM LESER: nach dem Raum ${frei} statt des Gesetzes des Orts ${kOrt}`);
+        lage.D = 10 / 21400;
+        const hinein = weg(takt(Math.round(R.blendeS / 0.05) + 1, 0.05, 0.1), kOrt, raum[10]);
+        for (const [wer, w, tau] of [["hinaus", hinaus, R.blendeHellS], ["hinein", hinein, R.blendeS]])
+            if (!(Math.abs(w - (1 - 1 / Math.E)) <= 0.03)) bef.push(`RAUM LESER SCHWELLE ${wer}: nach ${tau} s ${(w * 100).toFixed(0)} % des Wegs in Stufen (Soll 63 ± 3)`);
+        // die offene Halle (Raum-Licht 1: der Kasten ohne Haus-Hülle — Marktstand, Brunnen, Tor; `_dachTakt`): der Messer liest
+        // ohne Richtlicht, die Blende öffnet nicht
+        Object.assign(lage, { D: 1, sicht: 1 });
+        const halle = takt(2, 0.1, 10);
+        if (!(Math.abs(halle / kSchatten - 1) < 1e-9)) bef.push(`RAUM LESER HALLE: unter der offenen Halle ${halle.toFixed(3)} statt des Gesetzes ohne Richtlicht ${kSchatten.toFixed(3)}`);
+    } catch (x) {
+        bef.push(`RAUM LESER: ${String(x && x.message).slice(0, 160)}`);
+    } finally {
+        Object.assign(ctx, { performance: uhrVor, __weltLicht: wlVor });
+    }
+    return bef.join();
+}
+function raumBlendeSelbsttest(root) {
+    const u = (f) => raumBlendeUrteil(f, root);
+    return [
+        [u(), ""],
+        [u("ALT"), /(^|,)RAUM 300 lx: die Karte -1\.54 Stufen.*,RAUM LESER 300 lx: die Karte -1\.54 Stufen/],
+        [u("VOLL"), /(^|,)RAUM 300 lx: die Karte -?0\.00 Stufen.*,RAUM BODEN: .*,RAUM LESER 10 lx: die Karte -?0\.00 Stufen/],
+        [u("BODENLOS"), /(^|,)RAUM BODEN: ohne Licht öffnet die Kamera /],
+        [u("NACHT"), /(^|,)RAUM NACHT: unter dem Boden des Messers stellt der Raum die Blende -/],
     ];
 }
 
