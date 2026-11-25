@@ -68,6 +68,8 @@ const WIDERSPRUCH_AUS = process.env.RUNDE_MUTANTE === "widerspruch-aus";
 const NACHWACHE_AUS = process.env.RUNDE_MUTANTE === "nachwache-aus";
 // die Mutante der Front ohne die Tafel der Richter (die Station der Sprosse): nur `selbsttest` setzt sie
 const TAFEL_AUS = process.env.RUNDE_MUTANTE === "tafel-aus";
+// die Mutante ohne das Erbe der Stelle (Selbsttest „DIE STELLE DER STATION“): eine getragene Station hat wieder keine Stelle, die Reihe wirft
+const STELLE_AUS = process.env.RUNDE_MUTANTE === "stelle-aus";
 const WER = { GIT_AUTHOR_NAME: "MiguellD", GIT_AUTHOR_EMAIL: "87209049+MiguellD@users.noreply.github.com",
     GIT_COMMITTER_NAME: "MiguellD", GIT_COMMITTER_EMAIL: "87209049+MiguellD@users.noreply.github.com" };
 const jetzt = () => (process.env.RUNDE_JETZT ? new Date(process.env.RUNDE_JETZT) : new Date());
@@ -491,6 +493,7 @@ if (was === "lies") {
         }
         return { F, K1, hinter };
     };
+    const traegt = new Map(); // bestehende Station → die Front-Sprossen, die sie urteilt (unten gefüllt; `stelleVon` liest sie)
     if (opt("karte")) {
         let k;
         try { k = JSON.parse(fs.readFileSync(opt("karte"), "utf8")); if (!Array.isArray(k.gruppen)) throw new Error("ohne gruppen"); } catch (e) { console.error("reihe: die Front ohne lesbare Karte (--karte " + opt("karte") + "): " + String(e.message).slice(0, 120)); process.exit(6); }
@@ -508,7 +511,6 @@ if (was === "lies") {
         else process.stderr.write("Front der Karte 2: ohne Tafel der Richter (" + tafelDatei + ") — nur karte2.*-Stationen tragen die Front\n");
         const stationen = new Map();
         for (const z of zeilen) { const sid = "karte2." + z.leiter + "#" + z.sprosse; if (z.station && z.station !== sid) stationen.set(sid, [...(stationen.get(sid) || []), z.station]); }
-        const traegt = new Map();
         for (const sid of F) for (const st of stationen.get(sid) || []) traegt.set(st, [...(traegt.get(st) || []), sid]);
         for (const st of traegt.keys()) F.add(st);
         ids = ids.filter((id) => F.has(id));
@@ -539,7 +541,19 @@ if (was === "lies") {
     // zuletzt gemessene): K1 ordnet nach der STELLE, die jüngste Anspruchs-Zeile zuerst, in einer Zeile deren Reihe; ord („am längsten
     // nicht gemessen“) entscheidet nur bei Gleichstand. Eine Sprosse, die die Karte schon als Punkt trägt (heute ≥ Nummer), steht nie in
     // K1: sie liegt nicht in der Front (oben ids.filter, die eine Stelle) — am 23.11. 7 von 34 Anspruchs-Einträgen.
-    const k1 = (xs) => ord(xs).map((id, i) => ({ id, i, s: stelle.get(id) })).sort((a, b) => b.s.n - a.s.n || a.s.p - b.s.p || a.i - b.i).map((x) => x.id);
+    // DIE STELLE DER STATION (Koordinator 25.11.; BLOCK der OMEN 05:46 an der Runde 29: seit dem Anspruch 726 warf die Reihe an BEIDEN
+    // Geräten „Cannot read properties of undefined (reading 'n')“ — siedlung.K1#2 trägt karte2.mensch.bau.innen#2 und stand als K1 neben
+    // karte2.mensch.macht.wehrbau#1): `stelle` kennt nur die Ids der Anspruchs-Zeilen; eine bestehende Station, die den Anspruch ihrer
+    // Sprosse trägt, ERBT deren Stelle (die jüngste Zeile unter ihren Sprossen). Der Fall „DIE STATION DER SPROSSE“ im Selbsttest trug nur
+    // EINE K1 — der Vergleich lief nie. Eine K1 ohne Stelle steht beim Namen am Ende von K1 (die Reihe ist Ordnung, kein Urteil: sie
+    // hält kein Gerät an). Selbsttest „DIE STELLE DER STATION“: die Mutante ohne das Erbe (RUNDE_MUTANTE=stelle-aus) wirft wieder
+    const stelleVon = (id) => {
+        if (stelle.has(id) || STELLE_AUS) return stelle.get(id);
+        const s = (traegt.get(id) || []).map((sid) => stelle.get(sid)).filter(Boolean).sort((a, b) => b.n - a.n || a.p - b.p)[0];
+        if (!s) process.stderr.write("reihe: K1 ohne Stelle: " + id + " — keine Anspruchs-Zeile nennt sie oder eine ihrer Sprossen; sie steht am Ende von K1\n");
+        return s || { n: -1, p: 0 };
+    };
+    const k1 = (xs) => ord(xs).map((id, i) => ({ id, i, s: stelleVon(id) })).sort((a, b) => b.s.n - a.s.n || a.s.p - b.s.p || a.i - b.i).map((x) => x.id);
     const vorn = [...k1(je.K1), ...ord(je.K2), ...ord(je.K3)], schwanz = [...ord(je.K4), ...ord(je.K5), ...ord(je.K6)];
     process.stderr.write("Reihe " + g + ": " + Object.entries(je).map(([k, v]) => k + " " + v.length).join(" · ") + " → vorn " + vorn.length + " | Schwanz " + schwanz.length + "\n");
     console.log(vorn.join(",") + "|" + schwanz.join(","));
@@ -858,8 +872,21 @@ if (was === "lies") {
     fs.rmSync(tb, { recursive: true, force: true });
     const ok2 = os1 === "n.a#1,n.f#1,n.b#1" && os2 === "n.b#1" && zs === "3 3 0 6";
     console.log((ok2 ? "GRÜN" : "ROT") + " NACHWACHE-SCHULD: offen --anders gtx „" + os1 + "“ (Soll n.a#1,n.f#1,n.b#1 — die Schuld vorn) · Mutante ohne die Regel „" + os2 + "“ (Soll n.b#1) · zaehle „" + zs + "“ (Soll 3 3 0 6)");
+    // DIE STELLE DER STATION (25.11., BLOCK der OMEN an der Runde 29): ZWEI K1 — die bestehende gelaende.K2#1 trägt den JÜNGEREN Anspruch
+    // (Zeile 2: x.fluid#1), karte2.x.zwei#1 den älteren (Zeile 1) → die Station steht an der Stelle ihrer Sprosse, vor der älteren. Die
+    // Mutante ohne das Erbe (RUNDE_MUTANTE=stelle-aus) wirft wie bis zum 25.11.: Exit ≠ 0, leere Reihe
+    const karteS = path.join(tmp, "karte-stelle.json"), anspS = path.join(tmp, "anspruch-stelle.txt");
+    fs.writeFileSync(karteS, JSON.stringify({ gruppen: [{ kriterien: [{ id: "x.erdbau", heute: 0, sprossen: [{ nr: 1 }, { nr: 2 }] }, { id: "x.fluid", heute: 0, sprossen: [{ nr: 1 }] }, { id: "x.zwei", heute: 0, sprossen: [{ nr: 1 }] }] }] }));
+    fs.writeFileSync(anspS, "w28-zwei karte2.x.zwei#1\nw28-graben karte2.x.fluid#1\n");
+    const stelleR = (env) => {
+        const r = cp.spawnSync(process.execPath, [__filename, "reihe", tmp, "gtx", "karte2.x.zwei#1,andere.K1#1,gelaende.K2#1", "--karte", karteS, "--tafel", tafel, "--anspruch", anspS], { encoding: "utf8", env: { ...process.env, ...env }, windowsHide: true });
+        return { vorn: liste(String(r.stdout || "").trim().split("|")[0]), exit: r.status };
+    };
+    const sJ = stelleR({ RUNDE_MUTANTE: "" }), sM = stelleR({ RUNDE_MUTANTE: "stelle-aus" });
+    const okS = sJ.exit === 0 && sJ.vorn.join(",") === "gelaende.K2#1,karte2.x.zwei#1" && sM.exit !== 0 && !sM.vorn.length;
+    console.log((okS ? "GRÜN" : "ROT") + " DIE STELLE DER STATION: vorn " + (sJ.vorn.join(",") || "-") + " (Exit " + sJ.exit + ") · Mutante ohne das Erbe: vorn " + (sM.vorn.join(",") || "-") + " (Exit " + sM.exit + ")");
     fs.rmSync(tmp, { recursive: true, force: true });
-    process.exit(ok && okF && okZ && ok2 ? 0 : 1);
+    process.exit(ok && okF && okZ && ok2 && okS ? 0 : 1);
 } else {
     console.log("runde.cjs lies|anlegen|stand|durch|weiter|alarm|reihe|offen|faelle|paare|bestand|selbsttest — siehe Kopf der Datei");
     process.exit(2);
