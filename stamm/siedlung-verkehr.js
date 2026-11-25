@@ -839,12 +839,17 @@ class AnazhRealm_siedlung_verkehr {
     // Umfahren um den Spieler 14,5° schräg zur Linie, seine Ecke ragte 0,92 statt 0,62 m aus ihr, und die Folge sah die Nase des
     // wartenden Kompakts „frei“ — 0,07 m Wagen an Wagen (stadt-voll 23 Uhr, 844/435). Leser: die Linie (`F.rund`), das Fenster der
     // Folge (`_verkehrFolge`).
-    _verkehrAusscheren(W, k) {
+    // DAS AUSSCHEREN HAT EINE SEITE (tages-gesetz 2; fachwerk `engen`: „nur zur Bahn hin, die außerhalb seines Bogens liegt“):
+    // `seite` „aussen“ die Ecke an Bug oder Heck, „innen“ die Flanke an der Hinterachse, sonst die größere. Bis hier galt die
+    // größere auf beiden Seiten: im Bogen der Sackgasse vor der Wende 746/573 (stadt-voll 10 Uhr, Kopf 99b234d7) sah Wagen 9, der
+    // links bog, den Entgegenkommenden 8 auf seiner Innenseite im Weg (quer 1,55 m gegen hw 0,95 + rund 0,5 + begegnung 0,1), 8 ihn
+    // außen (1,89 gegen 1,95 m) — beide standen ab Sekunde 30, die Stadt dahinter (Warte-Kreis „8>9“ 570 s, 10 Ankünfte statt 160)
+    _verkehrAusscheren(W, k, seite) {
         if (!(k > 0)) return 0;
         const R = 1 / k;
         const Rr = Math.sqrt(Math.max(0, R * R - W.c * W.c));
         const aussen = Math.max(Math.hypot(W.c + W.bug, Rr + W.hw), Math.hypot(W.c + W.heck, Rr + W.hw)) - R - W.hw;
-        return Math.max(aussen, R - Rr);
+        return seite === "aussen" ? aussen : seite === "innen" ? R - Rr : Math.max(aussen, R - Rr);
     }
 
     // IM BLICK DER KAMERA: die Kugel (Mitte `m` — die Lage des Wagens oder sein letztes Bild —, Radius r) schneidet das Frustum
@@ -1574,13 +1579,19 @@ class AnazhRealm_siedlung_verkehr {
         W.F = F;
         // die Ausscherung je Punkt (`_verkehrFolge`, `rundAn`): der Leib im Bogen (`_verkehrAusscheren`), κ die schärfste Krümmung
         // binnen seiner halben Länge um ihn (höchstens die des Wendekreises) — einmal je Linie, nie je Ecke und Leib
+        // JE SEITE (`rundL`, `rundR` — links und rechts der Fahrt, `ks` links +): außen am Bogen die Ecke, innen die Flanke; `rund`
+        // bleibt die größere (der Ort, der Arm, das Umfahren fragen die Hülle ohne Seite)
         const kR = globalThis.__fachwerkCore.VERKEHR_GESETZ.kurveR;
-        F.rund = F.k.map((_, i) => {
-            let k = 0;
-            for (let j = i; j >= 0 && F.bogen[i] - F.bogen[j] <= W.hl; j--) if (F.k[j] > k) k = F.k[j];
-            for (let j = i + 1; j < F.k.length && F.bogen[j] - F.bogen[i] <= W.hl; j++) if (F.k[j] > k) k = F.k[j];
-            return this._verkehrAusscheren(W, Math.min(2 * k, 1 / kR));
-        });
+        [F.rund, F.rundL, F.rundR] = [[], [], []];
+        for (let i = 0; i < F.k.length; i++) {
+            let [k, j0] = [0, i];
+            for (let j = i; j >= 0 && F.bogen[i] - F.bogen[j] <= W.hl; j--) if (F.k[j] > k) [k, j0] = [F.k[j], j];
+            for (let j = i + 1; j < F.k.length && F.bogen[j] - F.bogen[i] <= W.hl; j++) if (F.k[j] > k) [k, j0] = [F.k[j], j];
+            const kk = Math.min(2 * k, 1 / kR);
+            const [au, inn] = [this._verkehrAusscheren(W, kk, "aussen"), this._verkehrAusscheren(W, kk, "innen")];
+            const links = F.ks[j0] > 0; // er biegt links: außen ist rechts
+            [F.rundL[i], F.rundR[i], F.rund[i]] = [links ? inn : au, links ? au : inn, Math.max(au, inn)];
+        }
         // DER LEIB AUS SEINER LAGE (fahrzeug-gattungen 2): die neue Linie beginnt am Wagen, sein Leib aber steht, wie er stand.
         // Das Einspur-Modell ohne Schlupf hinten (der Fahr-Satz): die Hinterachse rollt, wohin der Leib zeigt — sie folgt dem
         // Schwerpunkt auf seiner Schleppkurve im Abstand c, die Schräge gegen die Linie fällt je c um 1/e, ihr Grenzwert im Bogen
@@ -1603,17 +1614,21 @@ class AnazhRealm_siedlung_verkehr {
                 for (const [u, w] of AnazhRealm._verkehrEcken) {
                     if (!u || !w) continue;
                     const [x, z] = [P.x + fx * W.hl * u + fz * W.hw * w, P.z + fz * W.hl * u - fx * W.hw * w];
-                    let [bq, bj] = [Infinity, -1];
+                    let [bq, bj, br] = [Infinity, -1, false];
                     for (let j = j0; j < j1; j++) {
                         const [p, q] = [F.pts[j], F.pts[j + 1]];
                         const [dx, dz] = [q.x - p.x, q.z - p.z];
                         const t0 = ((x - p.x) * dx + (z - p.z) * dz) / (dx * dx + dz * dz || 1);
                         if ((j === 0 && t0 < 0) || (j === n - 2 && t0 > 1)) continue; // ohne Fuß auf der Linie (vor ihrem Anfang, hinter ihrem Ende)
                         const t = Math.max(0, Math.min(1, t0));
-                        const d = Math.hypot(x - p.x - dx * t, z - p.z - dz * t);
-                        if (d < bq) [bq, bj] = [d, j];
+                        const [ox, oz] = [x - p.x - dx * t, z - p.z - dz * t];
+                        const d = Math.hypot(ox, oz);
+                        if (d < bq) [bq, bj, br] = [d, j, -dz * ox + dx * oz > 0]; // rechts der Fahrt (+): (−tz, tx)
                     }
-                    if (bj >= 0 && bq - W.hw > F.rund[bj]) F.rund[bj] = bq - W.hw;
+                    if (bj < 0) continue;
+                    const S = br ? F.rundR : F.rundL;
+                    if (bq - W.hw > S[bj]) S[bj] = bq - W.hw;
+                    if (bq - W.hw > F.rund[bj]) F.rund[bj] = bq - W.hw;
                 }
             }
         }
@@ -1874,7 +1889,7 @@ class AnazhRealm_siedlung_verkehr {
         // ein Punkt (x, z) auf der Linie voraus zwischen den Punkten `vonI` und `bisI`: Weg und Abstand quer (null: nicht im
         // Fenster)
         const auf = (x, z, bisI = j1, vonI = F.i) => {
-            let [bq, bs, bi] = [Infinity, 0, -1];
+            let [bq, bs, bi, br] = [Infinity, 0, -1, false];
             for (let i = vonI; i < bisI; i++) {
                 const a = F.pts[i];
                 const b = F.pts[i + 1];
@@ -1889,9 +1904,10 @@ class AnazhRealm_siedlung_verkehr {
                     bq = q2;
                     bs = F.bogen[i] + t * Math.sqrt(l2);
                     bi = i;
+                    br = -dz * qx + dx * qz > 0; // rechts der Fahrt (+): (−tz, tx)
                 }
             }
-            return bi < 0 ? null : { s: bs, quer: Math.sqrt(bq), i: bi };
+            return bi < 0 ? null : { s: bs, quer: Math.sqrt(bq), i: bi, rechts: br };
         };
         // er hält `abstandM` hinter dem Punkt, an dem der vor ihm hielte (v² = vO² + 2·b·(Lücke − Abstand); wer näher ist als der
         // Abstand, fährt langsamer als der vor ihm, im Maß der Lücke — ohne Lücke steht er, nie in ihn)
@@ -1929,7 +1945,9 @@ class AnazhRealm_siedlung_verkehr {
         }
         const kurveR = globalThis.__fachwerkCore.VERKEHR_GESETZ.kurveR;
         const rund = this._verkehrAusscheren(W, Math.min(2 * kMax, 1 / kurveR));
-        const rundAn = (i) => F.rund[i];
+        // DIE SEITE DES ANDEREN (`_verkehrAusscheren`): außen am Bogen ragt die Ecke, innen nur die Flanke an der Hinterachse —
+        // gefragt auf der Seite, auf der sein Punkt neben der Linie liegt (`auf`: `rechts`)
+        const rundAn = (i, rechts) => (rechts === undefined ? F.rund[i] : rechts ? F.rundR[i] : F.rundL[i]);
         const rand = W.hw + V.seitM + 3;
         // nur wer in den Zellen der Belegung um das Fenster steht (`_verkehrBelegung`, samt dem Weg eines Schritts), nie die Stadt
         const BM = V.belegungM;
@@ -1982,14 +2000,14 @@ class AnazhRealm_siedlung_verkehr {
                 if (!q || q.s <= F.s || (a && q.s >= a.s)) continue;
                 const b = F.pts[Math.min(F.pts.length - 1, q.i + 1)];
                 const t = Math.atan2(b.x - F.pts[q.i].x, b.z - F.pts[q.i].z);
-                if (q.quer > W.hw + rundAn(q.i) + (ruht || Math.cos(ry - t) < -0.5 ? V.begegnungM : V.seitM)) continue;
+                if (q.quer > W.hw + rundAn(q.i, q.rechts) + (ruht || Math.cos(ry - t) < -0.5 ? V.begegnungM : V.seitM)) continue;
                 [a, lt] = [q, t];
             }
             if (!a) continue;
             const of = o._fahr;
             const vO = of && O.zustand === "faehrt" ? Math.max(0, of.vlong * Math.cos(ry - lt)) : 0;
             const gap = a.s - F.s - W.hl;
-            const d = { gap, v: vO, s: a.s, O, quer: a.quer, rund: rundAn(a.i) };
+            const d = { gap, v: vO, s: a.s, O, quer: a.quer, rund: rundAn(a.i, a.rechts) };
             if (!W.vorne || gap < W.vorne.gap) W.vorne = d;
             // DER VORDERE IN SEINER RICHTUNG (`vorder`: sein Weg liegt längs der Linie, wie die Begegnung entgegen cos < −0,5): der
             // Kopf der Reihe vor ihm, die der Stauraum und der Kopf der Wartenden lesen (`_verkehrZonen`) — wer seine Linie quert,
@@ -2016,7 +2034,7 @@ class AnazhRealm_siedlung_verkehr {
             // Begegnung, wer quert oder vor ihm geht, braucht den Seitenraum (bis w27-verkehr-leib jeder: wer am Rand entgegenkam,
             // hielt ihn, ~150 Wagen-Sekunden je Stunde, stadt-voll 10 Uhr)
             const sp = Math.hypot(vx || 0, vz || 0);
-            const B = W.hw + R + rundAn(a.i) + (sp < V.umfahrMs || (vx || 0) * tx + (vz || 0) * tz < -0.5 * sp ? V.begegnungM : V.seitM); // prettier-ignore
+            const B = W.hw + R + rundAn(a.i, a.rechts) + (sp < V.umfahrMs || (vx || 0) * tx + (vz || 0) * tz < -0.5 * sp ? V.begegnungM : V.seitM); // prettier-ignore
             if (a.quer > B) return;
             // wer quert, ist nach `tAus` aus seiner Bahn (quer zur Linie am Fußpunkt, rechts +: (−tz, tx)) — der Wagen wartet die
             // Dauer der Querung; wer steht oder ihr folgt, hält ihn, bis er beiseite tritt (unten)

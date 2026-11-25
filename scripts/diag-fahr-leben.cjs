@@ -2760,6 +2760,9 @@ hauptLauf(async () => {
             const brueche = [
                 // stadt-voll 10 Uhr ohne die Regel des Warte-Graphen: 8 hinter 17, 17 hinter 8, 235 s ab Bild 21900
                 [{ graph: { kreise: [["8>17", 235, 21900, 35940, "8-wagen > 17-wagen"]] } }, /Warte-Kreis \["8>17",235/],
+                // der Kreis zweier Wagen beim Ort (tages-gesetz 2, `--mutante-kreis`: das Ausscheren ohne Seite): Bug an Bug im Bogen
+                // der Sackgasse vor der Wende 746/573, je Wagen Mitte, Gier, Tempo, der vor ihm [Lücke, quer, Nr.], Orte, Weg der Linie
+                [{ graph: { kreise: [["8>9", 570, 1800, 35940, "8-wagen(747/555) > 9-wagen(748/548)", [[8, 747.2, 555.3, 178, 0, [1.61, 1.89, 9], "enge@779/514", "37/177.8", "strecke"], [9, 748, 547.9, -38, 0, [2.36, 1.55, 8], "wende@746/573,enge@779/514,kreuzung@836/438", "0/351.1", "strecke"]]]] } }, /Warte-Kreis \["8>9",570,1800,35940,"8-wagen\(747\/555\) > 9-wagen\(748\/548\)",\[\[8,747.2,555.3,178/], // prettier-ignore
                 [{ graph: undefined }, /Warte-Kreis ungezählt/],
                 // der Zweig w27-ort-pose-voll am 11.11.: jeder Sim-Schritt warf im gewickelten `_verkehrSchritt`
                 [{ wurf: [36000, "Cannot read properties of undefined (reading 'call')"] }, /der Takt warf 36000× .*reading 'call'/],
@@ -2953,7 +2956,7 @@ hauptLauf(async () => {
             // `--taeter` (pflicht.C#1): um 10 Uhr 130 s (zwei volle Minuten), Wagen 0 ohne Fahrer, Wagen 1 neben der Trasse, Wagen 2
             // in Wagen 3, der erste gemessene Fahrer auf dem Dach, und keiner umfährt den stehenden Spieler in der Kreuzung — jeder
             // beim Namen (der letzte als Kopf der Reihe der kürzesten Minute, `spieler`)
-            { verkehr: { ...VERKEHR, mutanteArbeit: schalter("--mutante-arbeit"), mutanteSprung: schalter("--mutante-sprung"), mutanteOhr: schalter("--mutante-ohr"), ...(STUNDE != null && { stunden: [STUNDE] }), ...(SEK != null && { sek: SEK }), ...(schalter("--platz") && { stand: "platz" }), ...(TAETER && { stunden: [10], sek: 130, taeter: 1, zwillingS: 0 }) } }, // prettier-ignore
+            { verkehr: { ...VERKEHR, mutanteArbeit: schalter("--mutante-arbeit"), mutanteSprung: schalter("--mutante-sprung"), mutanteOhr: schalter("--mutante-ohr"), mutanteKreis: schalter("--mutante-kreis"), ...(STUNDE != null && { stunden: [STUNDE] }), ...(SEK != null && { sek: SEK }), ...(schalter("--platz") && { stand: "platz" }), ...(TAETER && { stunden: [10], sek: 130, taeter: 1, zwillingS: 0 }) } }, // prettier-ignore
             (o) => {
                 const vg = o.verkehr && o.verkehr.vorgeschichte;
                 if (!TAETER) check("VK-V (mensch.K2) die Stunde ohne Vorgeschichte: dieselbe Saat, dasselbe Bild", !vorgeschichteVerdict(vg).length, vorgeschichteVerdict(vg).join(" · ") || JSON.stringify(vg)); // prettier-ignore

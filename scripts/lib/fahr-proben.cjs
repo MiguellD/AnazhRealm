@@ -980,6 +980,13 @@ async function probeLeben(expected) {
                         delete VK.belegung.get;
                     }
                 };
+            // DER KREIS ZWEIER WAGEN (tages-gesetz 2, `mutanteKreis`): das Ausscheren ohne Seite — jede Seite der Linie trägt die
+            // größere (die Ecke außen), wie bis hier; im Bogen der Sackgasse vor der Wende 746/573 stehen zwei Entgegenkommende Bug
+            // an Bug (stadt-voll 10 Uhr, Kopf 99b234d7: Warte-Kreis „8>9“ ab Sekunde 30)
+            if (o.mutanteKreis)
+                r._verkehrAusscheren = function (W, kk) {
+                    return P._verkehrAusscheren.call(this, W, kk);
+                };
             r._verkehrSchritt = function (dt) {
                 const t0 = performance.now();
                 P._verkehrSchritt.call(this, dt);
@@ -1036,9 +1043,11 @@ async function probeLeben(expected) {
             // sein Fahrer, trägt ihn eine 3D-Stufe (gezeichnet, nie Stufe 2) — „Wagen ohne Bild mit gezeichnetem Fahrer"; gröber,
             // als das Gesetz ihm dort zuweist (`_chooseLODForDistance` mit seiner Hysterese, ohne Bild im Radius des Culls gröber
             // als jede Stufe: 9), obwohl die Stufe des Gesetzes gedockt bereitliegt (kein Laden, ein altes Urteil) — „bewegter
-            // Eintrag mit veralteter Stufe" [Nr., Probe, m, Stufe, Soll]; der Bewegte urteilt im Takt seines Schritts, jede Probe
+            // Eintrag mit veralteter Stufe" [Nr., Probe, m, Stufe, Soll, Ort x, z, s seit der ersten Probe, die sie veraltet sah —
+            // tages-gesetz 2: der Beweis beim Namen]; der Bewegte urteilt im Takt seines Schritts, jede Probe
             // gilt. `nah`: Proben diesseits der Karten-Grenze (thresh12 − Hysterese); ohne sie misst die Probe nichts.
             const [LD, SK] = [A.LOD_DISTANCES, { nah: 0, ohneBild: 0, ohneBildOrte: [], ohneFahrer: 0, ohneFahrerOrte: [], veraltet: 0, veraltetOrte: [] }]; // prettier-ignore
+            const veraltetSeit = new Map(); // je Wagen die erste Probe seiner veralteten Stufe (ihr Alter)
             // DER RICHTER VON Leiter mensch.netz.verkehr (pflicht.C#1): DER BEWOHNER AM STEUER — die wenigsten fahrenden Wagen mit einem
             // Bewohner am Steuer in einer Probe [Zahl, Probe, wer nicht fuhr]; DIE WEGE-KARTE — je fahrendem Wagen, ob seine Mitte auf
             // dem Boden liegt, den die Stadt als Weg malt (Straße samt Gehweg, Abbieger, Wende, Platz: der EINE Leser ihrer Formen,
@@ -1079,12 +1088,22 @@ async function probeLeben(expected) {
                     const G = (T.graph = T.graph || { kreise: new Map(), grund: {}, steht: 0, proben: 0, leiber: {} });
                     G.proben++;
                     const kanten = new Map();
+                    // DIE LAGE IM KREIS (tages-gesetz 2): je Wagen bei der ersten Probe seines Kreises Mitte, Gier, Tempo, der vor
+                    // ihm [Lücke, quer, Nr.], seine offenen Orte (* hält) und sein Weg auf der Linie — der Kreis zweier Wagen
+                    // Bug an Bug hieß bis hier nur „8-wagen > 9-wagen“, ohne Ort
+                    const lageImKreis = (nr) => {
+                        const W = VK.wagen.find((X) => X.nr === nr);
+                        const e = W && W.entry;
+                        if (!e) return [nr];
+                        const z1 = (v) => +v.toFixed(1);
+                        return [nr, z1(e.position.x), z1(e.position.z), Math.round(((e._rideYaw || 0) * 180) / Math.PI), e._fahr ? +e._fahr.vlong.toFixed(2) : null, W.vorne ? [+W.vorne.gap.toFixed(2), +W.vorne.quer.toFixed(2), W.vorne.O.nr] : null, W.zonen.filter((q) => !q.weg).slice(0, 3).map((q) => `${q.Z.art}${q.hat ? "*" : ""}@${Math.round(q.Z.x)}/${Math.round(q.Z.z)}`).join(","), W.F ? `${z1(W.F.s)}/${z1(W.F.lang)}` : null, W.letzter ? W.letzter.art : null]; // prettier-ignore
+                    };
                     for (const W of VK.wagen) {
                         if (W.zustand !== "faehrt" || !W.entry || !W.entry._fahr || !(W.entry._fahr.vlong < 0.5)) continue;
                         G.steht++;
                         let a = [];
                         let art = W.grund || "ohne";
-                        if (W.grund === "wagen" && W.wer) a = [[W.wer, "wagen", ""]];
+                        if (W.grund === "wagen" && W.wer) a = [[W.wer, "wagen", `${Math.round(W.entry.position.x)}/${Math.round(W.entry.position.z)}`]]; // prettier-ignore
                         else if (W.grund === "ort" && W.wartet) {
                             a = W.wartet.auf;
                             art = "ort:" + ([...new Set(a.map((x) => x[1]))].join("+") || "leer");
@@ -1107,7 +1126,7 @@ async function probeLeben(expected) {
                                     const key = rot.map((x) => x[0]).join(">");
                                     if (!gesehen.has(key)) {
                                         gesehen.add(key);
-                                        const K = G.kreise.get(key) || { k0: k, n: 0, wie: rot.map((x) => `${x[0]}-${x[1]}${x[2] ? "(" + x[2] + ")" : ""}`).join(" > ") }; // prettier-ignore
+                                        const K = G.kreise.get(key) || { k0: k, n: 0, wie: rot.map((x) => `${x[0]}-${x[1]}${x[2] ? "(" + x[2] + ")" : ""}`).join(" > "), lage: rot.map((x) => lageImKreis(x[0])) }; // prettier-ignore
                                         K.n++;
                                         K.kL = k;
                                         G.kreise.set(key, K);
@@ -1158,8 +1177,10 @@ async function probeLeben(expected) {
                         r._lodTreeVisHeight(e) || 0
                     );
                     const im = sv < 9 || Math.hypot(L[n].x - sp.x, L[n].z - sp.z) <= st.architectureCullingRadius;
-                    if (im && soll < sv && r._foundryStufeBereit(e, r._foundryPresetForEntry(e), soll))
-                        SK.veraltet++ < 4 && SK.veraltetOrte.push([W.nr, k, d | 0, sv, soll]);
+                    if (im && soll < sv && r._foundryStufeBereit(e, r._foundryPresetForEntry(e), soll)) {
+                        if (!veraltetSeit.has(W)) veraltetSeit.set(W, k);
+                        SK.veraltet++ < 4 && SK.veraltetOrte.push([W.nr, k, d | 0, sv, soll, ...ort2(L[n]), +((k - veraltetSeit.get(W)) / 60).toFixed(2)]); // prettier-ignore
+                    } else veraltetSeit.delete(W);
                     // OHNE SCHLÜSSEL IM ORT: in Kreuzung und Enge keiner, in der Wende keiner, der fährt (wer im Platz auf den
                     // Schlüssel wartet, steht zu Recht in ihr) — bis w4-verkehr-c2 fragte die Probe nur die Kreuzung, und der Wagen,
                     // der ohne Schlüssel in die Enge vor der Wende fuhr, stand dort Bug an Bug mit ihrem Halter
@@ -1243,24 +1264,27 @@ async function probeLeben(expected) {
                     while (i1 < F.pts.length - 1 && F.bogen[i1] < F.s + W.hl + 2) i1++;
                     for (const [u, w] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
                         const [x, z] = [L.x + L.fx * W.hl * u + L.fz * W.hw * w, L.z + L.fz * W.hl * u - L.fx * W.hw * w];
-                        let [bq, bi, bt, rand] = [Infinity, -1, 0, false];
+                        let [bq, bi, bt, rand, br] = [Infinity, -1, 0, false, false];
                         for (let i = i0; i < i1; i++) {
                             const [p, q] = [F.pts[i], F.pts[i + 1]];
                             const [dx, dz] = [q.x - p.x, q.z - p.z];
                             const t0 = ((x - p.x) * dx + (z - p.z) * dz) / (dx * dx + dz * dz || 1);
                             const t = Math.max(0, Math.min(1, t0));
-                            const d = Math.hypot(x - p.x - dx * t, z - p.z - dz * t);
-                            if (d < bq) [bq, bi, bt, rand] = [d, i, Math.atan2(dx, dz), (i === i0 && t0 < 0) || (i === i1 - 1 && t0 > 1)];
+                            const [ox, oz] = [x - p.x - dx * t, z - p.z - dz * t];
+                            const d = Math.hypot(ox, oz);
+                            if (d < bq) [bq, bi, bt, rand, br] = [d, i, Math.atan2(dx, dz), (i === i0 && t0 < 0) || (i === i1 - 1 && t0 > 1), -dz * ox + dx * oz > 0]; // prettier-ignore
                         }
                         // eine Ecke vor dem Anfang der Linie oder hinter ihrem Ende hat keinen Fuß auf ihr (die neue Linie beginnt am
                         // Wagen, `_verkehrLinie`: sein Heck liegt hinter ihrem ersten Punkt) — der Abstand zum Endpunkt wäre seine Länge
-                        const ueber = bi < 0 || rand ? -Infinity : bq - W.hw - F.rund[bi];
+                        // (je Seite, tages-gesetz 2: außen am Bogen die Ecke, innen die Flanke — `F.rundR` / `F.rundL`, die Folge fragt sie)
+                        const rS = bi < 0 ? 0 : (br ? F.rundR : F.rundL)[bi];
+                        const ueber = bi < 0 || rand ? -Infinity : bq - W.hw - rS;
                         if (ueber > m.aussch[0])
-                            m.aussch = [+ueber.toFixed(3), W.nr, W.typ, k, ...ort2(L), +F.rund[bi].toFixed(3), +((((Math.atan2(L.fx, L.fz) - bt) * 180) / Math.PI + 540) % 360 - 180).toFixed(1)]; // prettier-ignore
+                            m.aussch = [+ueber.toFixed(3), W.nr, W.typ, k, ...ort2(L), +rS.toFixed(3), +((((Math.atan2(L.fx, L.fz) - bt) * 180) / Math.PI + 540) % 360 - 180).toFixed(1), br ? "rechts" : "links"]; // prettier-ignore
                     }
                 }
             }
-            for (const n of ["_verkehrSchritt", "_verkehrUmfahren", "_verkehrFolge", "_verkehrBild", "_fahrtVerkehr"]) delete r[n];
+            for (const n of ["_verkehrSchritt", "_verkehrUmfahren", "_verkehrFolge", "_verkehrBild", "_fahrtVerkehr", "_verkehrAusscheren"]) delete r[n];
             if (sy.fahrt) for (const s of sy.fahrt.values()) s.stop(0);
             Object.assign(sy, KL.vor);
             if (zwilling) {
@@ -1353,7 +1377,7 @@ async function probeLeben(expected) {
                     steht: T.graph.steht,
                     grund: T.graph.grund,
                     leiber: Object.entries(T.graph.leiber).sort((a, b) => b[1] - a[1]).slice(0, 6),
-                    kreise: [...T.graph.kreise.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 12).map(([key, K]) => [key, K.n, K.k0, K.kL, K.wie]), // prettier-ignore
+                    kreise: [...T.graph.kreise.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 12).map(([key, K]) => [key, K.n, K.k0, K.kL, K.wie, K.lage]), // prettier-ignore
                     nKreise: T.graph.kreise.size,
                     ende: VK.wagen.map((W) => [W.nr, W.zustand, W.grund, W.entry && W.entry._fahr ? +W.entry._fahr.vlong.toFixed(1) : null, W.ziele, W.wartet ? W.wartet.auf.map((x) => x[0].nr + x[1][0]).join(",") : W.wer ? (W.wer.nr != null ? "w" + W.wer.nr : "L") : ""]), // prettier-ignore
                 },

@@ -87,7 +87,7 @@ Block B, Phase 3, 11:17:31–11:33:12, im Baum des Kopfs eb2de14f. probeUrteil (
 | gate:pruefbuehne-licht (Probe) | 0 | GRÜN · S0 Nacht luma 21,8 · Gesetz 22,76 |
 | gate:weltbild-frost:echt (Probe) | 0 | GRÜN · die Frost-Wand steht |
 | gate:studio-begehen (Probe) | 0 | GRÜN |
-| probe-tag (die Regeln aus zug.cjs) | 0 | PROBE-TAG OK · 11 Dateien, keine Überschneidung mit 78ed3167 · Tag gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen (3 von höchstens 4) |
+| probe-tag (die Pflicht-Regeln des Zugs, Zweig koordination) | 0 | PROBE-TAG OK · 11 Dateien, keine Überschneidung mit 78ed3167 · Tag gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen (3 von höchstens 4) |
 
 Das Tag trägt die drei Pflicht-Wände von Bau und Haus (der Beitrag fasst stamm/siedlung-bewohner.js an), 3 von höchstens 4.
 

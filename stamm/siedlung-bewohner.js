@@ -2032,7 +2032,8 @@ class AnazhRealm_siedlung_bewohner {
                 if (
                     b.hinaus &&
                     this._bewohnerNaechster(S, b, b.orte.tuer.x, b.orte.tuer.z) >= BW.tuerFreiM &&
-                    this._bewohnerNaechster(S, b, b.orte.vor.x, b.orte.vor.z) >= BW.tuerFreiM
+                    this._bewohnerNaechster(S, b, b.orte.vor.x, b.orte.vor.z) >= BW.tuerFreiM &&
+                    !this._bewohnerImHof(S, b) // der Hof-Gang trägt einen zur Zeit
                 ) {
                     b.hinaus = false;
                     b.drinnen = false;
@@ -2089,7 +2090,16 @@ class AnazhRealm_siedlung_bewohner {
                     this._bewohnerWeg(S, b);
                     wege++;
                 }
-                if (b.weg) {
+                // DER HOF-GANG TRÄGT EINEN ZUR ZEIT (`_bewohnerImHof`): wer vor dem Tor seines Hofs hinein will (sein nächster Punkt ist
+                // das Tor, danach der Punkt vor der Tür, er ist näher als 3 m), wartet, solange einer auf der Achse hinausgeht
+                const ein = b.orte.ein;
+                const vorTor =
+                    !!b.weg && !!ein && b.wi + 1 < b.weg.length &&
+                    Math.hypot(b.weg[b.wi].x - ein.x, b.weg[b.wi].z - ein.z) < 0.01 &&
+                    b.weg[b.wi + 1] === b.orte.vor &&
+                    Math.hypot(g.position.x - ein.x, g.position.z - ein.z) < 3 &&
+                    !!this._bewohnerImHof(S, b, true); // prettier-ignore
+                if (b.weg && !vorTor) {
                     b.gehDt = (b.gehDt || 0) + delta;
                     const div = Math.max(
                         1,
@@ -3823,6 +3833,33 @@ class AnazhRealm_siedlung_bewohner {
                 return true;
             }
         return false;
+    }
+
+    // DER HOF-GANG TRÄGT EINEN ZUR ZEIT (tages-gesetz 2; der Hof `orte.ein`, `_bewohnerWeg`): die Achse vom Punkt vor der Tür bis
+    // vor das Tor des Hof-Hauses (± 1,5 m, wie `_bewohnerWeg` den Hof misst) liegt zwischen den Mauern des Hofs, dort weicht keiner
+    // aus. Wer außer b auf ihr geht — `hinaus`: nur wer zum Tor geht (sein nächster Punkt ist das Tor) —: der erste,
+    // sonst null. Leser: die Tür (wer hinaus soll, tritt erst aus ihr, wenn die Achse frei ist) und der Gang (wer hinein will,
+    // wartet vor dem Tor, solange einer auf ihr hinausgeht). Bis hier fragte die Tür nur ihren Punkt und den vor ihr: um 8,45 Uhr
+    // trat das Kind von haus_provenzalisch #81761 auf die 9 m lange Achse, auf der der Werkstatt-Mann heimging, beide standen
+    // Bug an Bug zwischen den Mauern (Stadt, Kopf 99b234d7: 2 Steckenbleiber, Wahl 0/0, jede Richtung eine Wand)
+    _bewohnerImHof(S, b, hinaus = false) {
+        const o = b.orte;
+        if (!o.ein || !S.raster) return null;
+        const [M, R] = [AnazhRealm.BEWOHNER.rasterM, 1.5];
+        const [a, e] = [o.tuer, o.ein];
+        const [lx, lz] = [e.x - a.x, e.z - a.z];
+        const L2 = lx * lx + lz * lz;
+        if (!(L2 > 0)) return null;
+        const amTor = (w) => w.weg && w.wi < w.weg.length && Math.hypot(w.weg[w.wi].x - e.x, w.weg[w.wi].z - e.z) < 0.01;
+        for (let i = Math.floor((Math.min(a.x, e.x) - R) / M); i <= Math.floor((Math.max(a.x, e.x) + R) / M); i++)
+            for (let j = Math.floor((Math.min(a.z, e.z) - R) / M); j <= Math.floor((Math.max(a.z, e.z) + R) / M); j++)
+                for (const w of S.raster.get(i * 2097152 + j) || []) {
+                    if (w === b || w.drinnen || !w.leib || !w.weg || (hinaus && !amTor(w))) continue; // wer im Hof steht, sperrt ihn nie
+                    const [px, pz] = [w.leib.position.x - a.x, w.leib.position.z - a.z];
+                    const t = (px * lx + pz * lz) / L2;
+                    if (t > -0.05 && t < 1 && (px * lz - pz * lx) ** 2 < R * R * L2) return w; // im Hof, nie jenseits des Tors
+                }
+        return null;
     }
 
     // DER NÄCHSTE LEIB um (x, z) im Raster seiner Siedlung (`S.raster`), außer b: sein Abstand (Infinity: keiner nah).
