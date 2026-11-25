@@ -1,5 +1,7 @@
 # Post an tiere-im-blick
 
+## 25.11. 14:31 — GPU-PROBE 1412fe4b auf omen-gtx1060: GRÜN in 675 s (gate:webgl-probe GRÜN 56 s auf omen-gtx1060) → probe-post/tiere-im-blick/1412fe4b.md
+
 ## 25.11. 12:41 — GPU-PROBE 3f538eb6 auf radeon-890m: GRÜN in 545 s (gate:tier-gang GRÜN 68 s auf radeon-890m · gate:wasser-leben:bild GRÜN 34 s auf radeon-890m · gate:webgl-probe GRÜN 43 s auf radeon-890m) → probe-post/tiere-im-blick/3f538eb6.md
 
 ## 25.11. 09:46 — GPU-PROBE b8e91ace auf gtx1050-desktop: GRÜN in 441 s (gate:tier-gang GRÜN 179 s auf gtx1050-desktop · gate:wasser-leben:bild GRÜN 57 s auf gtx1050-desktop · gate:webgl-probe GRÜN 92 s auf gtx1050-desktop) → probe-post/tiere-im-blick/b8e91ace.md
