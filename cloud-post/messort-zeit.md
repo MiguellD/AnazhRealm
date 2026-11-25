@@ -57,6 +57,10 @@ die Art in der Welt (die Welt trägt den Pegel, der die Flüsse hebt; die Zahl i
   `hydroRegion`). Linse S20c (gate:profiband): die Mündung → ROT „kein Meer (fluss bei 0 m)“, und der Wirt ohne Kachel liest dort
   „meer“ — der Täter beim Namen. Weiter in S20c: Höhe +1 m → ROT mit Zahl, ein Blick ohne Wasser → ROT, Art `ufer` am Meer → ROT,
   `quelle` fehlt → ROT.
+- **Das Meer im Bild des Wassers.** Die neue Küste hielt am Gesetz, und die Welt nannte das Wasser in 35 m „see“ (nach 1 214 s):
+  dort liest der Spiegel des Körpers den Automaten (`_wasserBildAt`), und das Meer steht bei −2,9999999999999996, der Wirt ohne
+  Chunks liest den Atlas, genau −3. Die Art fragte nach Gleichheit. Wurzel: `belegMessen` urteilt Meer wie Fluss auf 1 cm. Linse
+  S20c: der Wirt im Bild des Wassers (−3 + 4e‑16) hält, die Art auf Gleichheit (der Stand davor) nennt dort „see“ → ROT.
 
 __BILDER__
 
