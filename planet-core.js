@@ -43,7 +43,7 @@
  *   planetOrt(scheibe, φ, λ, ortGesetz, aus?, heimat?) → { anker, wildnis (LANDFORM_REGLER, geklemmt), meer.waterLevelM, klima (TEMPERATUR-Felder
  *                                     + spendeMm), wetter (Rahmen für wetterAt), biom, wuchs (die Pflanzen-Deckung des Klimas:
  *                                     Krautschicht und Wald, dieselbe Rechnung wie die Farbe des Atlas), eis, vulkan, rand,
- *                                     stauchung s_v, delta }. Der Ort kostet, was er fragt: 1 Punkt + 1 Klima (kein Feld ohne Leser).
+ *                                     stauchung s_v, delta }. Der Ort kostet, was er fragt: 1 Relief-Punkt + das Klima (kein Feld ohne Leser).
  *   ortGesetz ist die EINE Tafel des Gelände-Kerns (gelaende-core `ortGesetz()`: kuehlungKJeM, meerUnterBasisM, regler,
  *   klimaHeute samt spendeMm im Jahr der Tafel) — kein Aufrufer baut sie nach. s_v = 0,0065 / kuehlungKJeM wird daraus GELESEN,
  *   nie kopiert.
@@ -2663,8 +2663,13 @@
   const ANKER_PROBEN = [512, 2048, 8192, 32768];
   function planetAnker(plan, zeitMa, og) {
     pruefOrtGesetz(og); pruefJahr(plan.koerper, og);
+    return ankerAmSchluessel(plan, zeitMa, og, ortGesetzSchluessel(og));
+  }
+  // der Anker zum Schlüssel des Ort-Gesetzes, den der Aufrufer EINMAL baute (planetOrt: ein Schlüssel je Ort, nicht zwei — 2 378 Zeichen,
+  // 14 µs je Bau; gemessen 29 von 76 µs je Ort der Gipfel-Suche, Karte 2 planet.kopplung.gegenwart#2)
+  function ankerAmSchluessel(plan, zeitMa, og, schluessel) {
     const M = memoVon(plan); if (!M.anker) M.anker = new Map();
-    const kh = og.klimaHeute, key = zeitMa + '|' + ortGesetzSchluessel(og);
+    const kh = og.klimaHeute, key = zeitMa + '|' + schluessel;
     if (M.anker.has(key)) return M.anker.get(key);
     const S = planetScheibe(plan, zeitMa), R = S.R, G = planetKlimaGlobal(plan, zeitMa);
     const tMitte = 0.5 * (kh.sommer + kh.winter);
@@ -2758,11 +2763,12 @@
   }
   function ortKopie(o) { return { wildnis: Object.assign({}, o.wildnis), meer: Object.assign({}, o.meer), klima: Object.assign({}, o.klima), wetter: Object.assign({}, o.wetter),
     wuchs: Object.assign({}, o.wuchs), eis: Object.assign({}, o.eis) }; }
-  function ortAnkerRoh(plan, og) {
+  // der Anker der Heimat und sein roher Ort, EIN Memo je Schlüssel: { anker, roh }
+  function ortAnkerRoh(plan, og, schluessel) {
     const M = memoVon(plan); if (!M.ortAnker) M.ortAnker = new Map();
-    const key = ortGesetzSchluessel(og);
-    let a = M.ortAnker.get(key); if (a) return a;
-    const A = planetAnker(plan, 0, og); a = ortKopie(ortRoh(planetScheibe(plan, 0), A.breite, A.laenge, og, {})); M.ortAnker.set(key, a); return a;
+    let a = M.ortAnker.get(schluessel); if (a) return a;
+    const A = ankerAmSchluessel(plan, 0, og, schluessel);
+    a = { anker: A, roh: ortKopie(ortRoh(planetScheibe(plan, 0), A.breite, A.laenge, og, {}, plan, A)) }; M.ortAnker.set(schluessel, a); return a;
   }
   // DIE HEIMAT EINES ANDEREN KÖRPERS (Karte 2 planet.kopplung.bahn-klima#2): `heimat` (optional) ist der Plan, dessen Anker die Welt
   // trägt — derselbe Samen (dieselbe Geografie), ein anderer Körper (Neigung, Tag). Das Δ misst den Ort des Körpers gegen den Anker
@@ -2776,7 +2782,7 @@
   function planetOrt(S, breite, laenge, og, aus, heimat) {
     pruefScheibe(S); pruefOrtGesetz(og); pruefJahr(S.plan.koerper, og);
     const hp = heimatPlan(S.plan, heimat, og);
-    const a = ortAnkerRoh(hp, og), o = ortRoh(S, breite, laenge, og, aus || {}, hp);
+    const H = ortAnkerRoh(hp, og, ortGesetzSchluessel(og)), a = H.roh, o = ortRoh(S, breite, laenge, og, aus || {}, hp, H.anker);
     const d = (o.delta && o.delta.wildnis) ? o.delta : { wildnis: {}, meer: {}, klima: {}, wetter: {}, wuchs: {} };
     if (!d.wuchs) d.wuchs = {};
     for (const id in o.wildnis) d.wildnis[id] = o.wildnis[id] - a.wildnis[id];
@@ -2800,9 +2806,10 @@
     d.eis = { zeit: o.eis.zeit - a.eis.zeit };
     o.delta = d; return o;
   }
-  function ortRoh(S, breite, laenge, og, aus, heimat) {
-    const plan = S.plan, kp = plan.koerper, kh = og.klimaHeute, R = S.R, hp = heimat || plan;
-    const anker = planetAnker(hp, 0, og), S0 = planetScheibe(hp, 0);
+  // ortRoh liest den Anker der Heimat `hp`, den sein Aufrufer am Schlüssel des Ort-Gesetzes fand (planetOrt, ortAnkerRoh)
+  function ortRoh(S, breite, laenge, og, aus, hp, anker) {
+    const plan = S.plan, kp = plan.koerper, kh = og.klimaHeute, R = S.R;
+    const S0 = planetScheibe(hp, 0);
     const sv = 0.0065 / og.kuehlungKJeM;                                   // Stauchung: gelesen aus dem Ort-Gesetz, nie gesetzt
     const o = aus || {};
     planetPunkt(S, breite, laenge, 16, _orP);                    // Band ≥ 32 km (K8): fuss 16 km
