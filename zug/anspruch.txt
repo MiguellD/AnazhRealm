@@ -93,3 +93,5 @@ w28-brand-feld karte2.same.kopplung.stoerung#1,karte2.same.kopplung.kaskade#1
 w28-rennofen karte2.mensch.wirtschaft.energie#1
 # 731 (main fbbd597c, 25.11. 19:32): z737 w28-mischwald (der Wald wächst in Flecken verschiedener Phase, Totholz steht und bricht) — echte Station karte2.leben.pflanzen.lebenslauf#1 im Hand-Lauf an der Radeon am main fbbd597c GRÜN (Dach-Höhen gegen die Ertragstafel WBR 86 Tab. 3: KS 0,061 gegen Soll ≤ 0,15; Reineke-Steigung −1,470 im Band −1,766…−1,445; 2 346 Bäume in 10 Patch-Phasen auf 23,04 ha; Preis GRÜN p95 25,14 ms, Heap 268,9 MB; Station pm 5ce9e0d1)
 w28-mischwald karte2.leben.pflanzen.lebenslauf#1
+# 732 (main 0ee3ed8c, 25.11. 20:40): z740 w28-witterung-windab (die Witterung ist eine Fahne im Wind: gegen den Wind 0, windab 50 → 252 m bei 4 m/s) — echte Station karte2.erleben.sinne.geruch#1 im Hand-Lauf an der Radeon am Kopf 6321e5c8 GRÜN (suchzeit_faktor_aus 3,2 und suchzeit_faktor_wind 3,2 bei Soll ≥ 3 — eine Untergrenze am Deckel der Gegenläufe; Preis GRÜN, p95 33,67 ms, Heap 266,2 MB); OMENs gezielter Lauf am main 0ee3ed8c ist erbeten
+w28-witterung-windab karte2.erleben.sinne.geruch#1
