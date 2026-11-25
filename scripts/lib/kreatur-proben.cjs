@@ -3092,20 +3092,28 @@ async function kreaturProben(r, T, opts) {
                 const hetzer = new Set();
                 const magenVor = new Map();
                 let riss = false;
-                for (let k = 0, ende = 5400; k < ende; k++) {
+                // DAS FENSTER IST DAS GESETZ (witterung-windab): die Jagd endet dauerS nach ihrer ersten Hetze (`_kreaturJagdEndet`),
+                // die Pirsch davor zählt nicht — die Probe sieht bis zur ersten Hetze + dauerS + 5 s, mindestens 90 s. Bis hier
+                // endete sie fest nach 90 s: Rudel #35 kreiste 50 s auf dem Ring (größte Lücke 140–154° > 135°, rudelPlatz),
+                // hetzte ab 65 s und hieß „ohne Ende", 25 s nach Beginn seiner Hetze (3 von 4 Läufen)
+                const fensterT = Math.ceil((A._jagdGesetz().J.dauerS + 5) / dt);
+                for (let k = 0, ende = 5400, hetzeK = null; k < ende; k++) {
                     ruhigSpieler();
                     takt(dt);
                     for (const c of woelfe) if (c.userData._motionZustand === "hetzen") hetzer.add(c);
+                    if (hetzeK === null && hetzer.size) [hetzeK, ende] = [k, Math.max(ende, k + fensterT)];
                     if (!riss && s.leichname.includes(beute)) {
                         riss = true;
                         if (szene === "rudel" && R.rissS === null) R.rissS = rund(k * dt, 1);
                         if (!mahl) break;
                         R.fleisch0 = beute.userData.kadaver ? rund(beute.userData.kadaver.fleisch, 1) : null;
-                        // die Gäste 30 m windab des Kadavers, 18 m zu beiden Seiten (bis hier 30 m westlich): in seiner Fahne
+                        // die Gäste 30 m windab des Kadavers, 6 m zu beiden Seiten (bis hier 30 m westlich, 18 m zu beiden
+                        // Seiten): 11° neben der Achse seiner Fahne, im Kegel bis 10 m/s an der Nase (18 m: 31°, außerhalb
+                        // schon ab 1,1 m/s — die Gäste kamen nie)
                         const kw = r._windAt(beute.position.x, beute.position.z, s._simZeit);
                         for (const [seele, q] of [
-                            ["fuchs", 18],
-                            ["baer", -18],
+                            ["fuchs", 6],
+                            ["baer", -6],
                         ]) {
                             const [gx, gz] = [kw.x * 30 - kw.z * q, kw.z * 30 + kw.x * q];
                             const g = tier(land(beute.position.x + gx - P0.x, beute.position.z + gz - P0.z), seele);

@@ -1621,11 +1621,16 @@ class AnazhRealm_koerper_seele {
     // fällt sie mit dem Winkel bis 0 am Rand des Kegels (halber Winkel asin(σ/u), im starken Wind asin(i) = 10°); gegen den
     // Wind ist sie 0, sobald u > σ (0,51 m/s). Bis witterung-windab: windMod = max(0,2; 0,4 + 0,6·max(0, cosθ)) ohne Tempo —
     // gegen den Wind 40 % Rest, der Wolf fand das Reh von jeder Seite geradewegs (Station geruch#1: Faktor 1 bei gedrehtem Wind).
+    // DER WIND JE QUELLE EINMAL JE TAKT (Kosten an Änderung): im Kreatur-Takt (`_kreaturTaktI` gesetzt, `_scentTakt` leert ihn
+    // vor der Tier-Schleife) liest jede Quelle ihren Wind einmal, jeder weitere Jäger desselben Takts nimmt ihn aus dem Gedächtnis
+    // (Schlüssel: die Lage auf 1/8 m) — außerhalb des Takts frisch. Bis hier las jeder der 16 Wölfe den Wind jedes Leibs in
+    // seiner Nasen-Weite neu (54 je Frage, 1,66 µs je Wind: 60 % der Jäger-Frage).
     _scentAt(x, z, sources) {
         if (!Array.isArray(sources) || sources.length === 0) return 0;
         const S = AnazhRealm.SCENT;
         const t = this.state._simZeit;
-        const wind = this._scentWindAus || (this._scentWindAus = {});
+        const T = this._kreaturTaktI != null ? this._scentWindTaktM : null;
+        const aus = this._scentWindAus || (this._scentWindAus = {});
         // die fernste Witterung jeder Quelle in jedem Wind: 4 Mischlängen windab der gesättigten Fahne (e⁻⁴ < 2 %)
         const fernM = 4 * S.rangeM * (1 + 1 / S.turbulenz);
         let total = 0;
@@ -1641,7 +1646,17 @@ class AnazhRealm_koerper_seele {
                 total += strength; // an der Quelle selbst
                 continue;
             }
-            this._rauchWindAt(src.x, src.z, t, S.hoeheM, null, wind);
+            let wind = aus;
+            if (T) {
+                const k = Math.round(src.x * 8) * 67108864 + Math.round(src.z * 8);
+                wind = T.get(k);
+                if (!wind) {
+                    const P = this._scentWindPool;
+                    wind = P[T.size] || (P[T.size] = {});
+                    this._rauchWindAt(src.x, src.z, t, S.hoeheM, null, wind);
+                    T.set(k, wind);
+                }
+            } else this._rauchWindAt(src.x, src.z, t, S.hoeheM, null, wind);
             const u = Math.max(0, wind.ms);
             const sig = Math.hypot(S.meanderMS, S.turbulenz * u);
             const cos = (dx * wind.x + dz * wind.z) / dist; // + = der Empfänger liegt windab
@@ -1653,6 +1668,12 @@ class AnazhRealm_koerper_seele {
             total += strength * (q / sig) * Math.exp(-(dist / S.rangeM) * (sig / v));
         }
         return total;
+    }
+    // der Takt der Nase beginnt (updateCreatures, vor der Tier-Schleife): das Wind-Gedächtnis des letzten Takts fällt, die
+    // Wind-Hüllen bleiben im Pool (keine Allokation je Frame)
+    _scentTakt() {
+        if (!this._scentWindTaktM) [this._scentWindTaktM, this._scentWindPool] = [new Map(), []];
+        this._scentWindTaktM.clear();
     }
     // DIE NASE DER TIERE (Jagd und Aas, dieselbe): die Schwelle, ab der ein Leib die Witterung einer Quelle der Stärke 1 merkt —
     // das Feld in Windstille am Rand R (jagd.scentRangeM, exp(−50/80) = 0,535: ohne Wind wittert die Nase genau R im Kreis, wie
