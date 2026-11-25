@@ -961,7 +961,7 @@
             if (q.k === 0 && q.nass) {
                 // DER GRUND DES SEES (fluss-fuellung): die Tiefe unter dem Spiegel aus der Grundhöhe, der Spiegel auf der Sohle
                 // des Überlaufs (der Endsee: auf seiner Grundhöhe)
-                q.bed = q.nass.endsee ? hp : seeW(N, q.nass) - (q.nass.spiegel - hp);
+                q.bed = q.nass.endsee ? hp : seeW(N, q.nass) - Math.min(2, q.nass.spiegel - hp);
                 continue;
             }
             const tx = f ? f.x : q.aus.x;
