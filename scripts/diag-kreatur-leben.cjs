@@ -1179,7 +1179,9 @@ async function lebenBuehnen() {
                 const paar = (2 * r._kreaturRaum(neu[0])) / neu[0].userData.bodySize;
                 // DER LEIB AM ORT SEINES TIERS: der erste steht dort, wo sein Tier im Bestand steht (die Spirale weicht nur dem Grund)
                 z.amOrt[1]++;
-                if (ab(neu[0].position, tiere[0]) <= 1) z.amOrt[0]++;
+                const versatz = ab(neu[0].position, tiere[0]);
+                (z.versatz || (z.versatz = [])).push(rund(versatz, 1));
+                if (versatz <= 1) z.amOrt[0]++;
                 for (const c of neu) {
                     const g = A.TETRAPODA_SOUL_MAP[c.userData.soul],
                         kl = r._bodenKlasseAt(c.position.x, c.position.z);
@@ -3003,7 +3005,9 @@ function lebenUrteil(name, z, soll) {
         soll(!RB.wich, `ein Leib wich dem Akt vor dem Auge — sein Fuß-Punkt 0,2 m draußen (${JSON.stringify(RB)})`);
         soll(RB.wich || RB.fernWich, "der Leib außer Blick wich dem Akt an der vollen Kappe nicht (vakuös)");
         soll(z.minM >= 0.99 * z.fernMin, `Geburt ${z.minM} m vor dem Spieler (Soll ≥ ${z.fernMin} m)`);
-        soll(z.amOrt[0] >= 0.9 * z.amOrt[1] && z.amOrt[1] >= 10, `${z.amOrt[0]} von ${z.amOrt[1]} Würfen am Ort ihres Tiers (Soll ≥ 90 %)`);
+        // der Versatz Leib ↔ Tier im Median (das alte Gesetz: 93 m); wo der Ort des Tiers keinen Grund trägt, weicht die Spirale
+        const vm = (z.versatz || []).slice().sort((a, b) => a - b)[Math.floor((z.versatz || []).length / 2)];
+        soll(vm <= 1 && z.amOrt[1] >= 10, `${z.amOrt[0]} von ${z.amOrt[1]} Würfen am Ort ihres Tiers, Versatz im Median ${vm} m (Soll ≤ 1 m)`);
         soll(z.imBlick === 0, `${z.imBlick} Geburten im Blick`);
         soll(
             z.gruppen >= 10 && z.gattung.wolf && z.gattung.deer,

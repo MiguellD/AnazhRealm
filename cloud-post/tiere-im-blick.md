@@ -15,9 +15,9 @@
 ## Je Sprosse, vorher ↔ nachher
 | Sprosse | vorher (main 486a6685) | nachher (Kopf) | Station am Kopf |
 |---|---|---|---|
-| karte2.leben.tiere.arten#1 | Arten im Bild 0 / 0 (Werkbank, Zensus der Station wörtlich, gleiche Seite, altes Gesetz) | 2 / 3 (Hirsch 43/35, Bär 3/3, Fuchs 0/3) | siehe Schlussbericht |
-| tiere.K5#1 (leben.oeko.vielfalt#1) | ego Kreis 0 im Blick | ego Kreis 0 im Blick (Leib 31 m, außerhalb des Kegels erschienen) | siehe Schlussbericht |
-| karte2.leben.tiere.wanderung#1 | min 0,47 (Bär), Hirsch 0,51–0,60 | min 0,60, Hirsch 0,61–0,71, Bär 0,60–0,75, 12 von 12 | siehe Schlussbericht |
+| karte2.leben.tiere.arten#1 | Arten im Bild 0 / 0 (Werkbank, Zensus der Station wörtlich, gleiche Seite, altes Gesetz) | 2 / 3 (Hirsch 43/35, Bär 3/3, Fuchs 0/3) | ROT: 4 Arten (Akte 5b36f69a: 2) gegen ≥ 5, spielStunden 0,013 gegen ≥ 1, minPx und biome ✓ |
+| tiere.K5#1 (leben.oeko.vielfalt#1) | ego Kreis 0 im Blick | ego Kreis 0 im Blick (Leib 31 m, außerhalb des Kegels erschienen) | ROT: ego 0 (Akte c445936d: 0), third 0 (Akte: 2 Bären), Bestand bis 18 |
+| karte2.leben.tiere.wanderung#1 | min 0,47 (Bär), Hirsch 0,51–0,60 | min 0,60, Hirsch 0,61–0,71, Bär 0,60–0,75, 12 von 12 | GRÜN: Hirsch 0,56–0,71, Bär 0,59–0,75, Fuchs 0,85–1,06, im Lebensraum ≥ 0,97; keine Akte (Preis-Lauf 0 Bilder) |
 
 Abdruck (`werkbank abdruck --gegen 486a668592`): wiese tiere 0 → 16, dorf 5 → 14.
 
@@ -32,7 +32,7 @@ Abdruck (`werkbank abdruck --gegen 486a668592`): wiese tiere 0 → 16, dorf 5 �
 | Leiber als Leib (≤ 100 m / gesamt) | 0 / 19 | 8 / 20 |
 
 ## Die Linse (gate:kreatur-takt, Probe lebensraum)
-Neues Soll „Würfe am Ort ihres Tiers ≥ 90 %“; Täter `geburt-fern` (das alte Gesetz wörtlich) macht sie ROT beim Namen. Leser: `_bestandErscheint`, `_bestandLeibOrt`.
+Neues Soll „Versatz Leib ↔ Tier im Median ≤ 1 m“ (am Kopf 111 von 128 Würfen am Ort, Median 0 m); Täter `geburt-fern` (das alte Gesetz wörtlich) ROT beim Namen: „0 von 71 Würfen am Ort ihres Tiers, Versatz im Median 82,9 m“. Selbsttest lebensraum: Täter 5 von 5 rot beim Namen, der Grund ROT allein am alten Soll unten (Geburt 4,6 m gegen ≥ 130 m). Leser: `_bestandErscheint`, `_bestandLeibOrt`.
 
 ## Soll zum Entscheid (nicht geändert)
 `scripts/diag-kreatur-leben.cjs` lebensraum: `soll(z.minM >= 0.99 * z.fernMin, …)` mit `fernMin = CREATURE_SPAWN_FAR_MIN` (130 m) schreibt die alte Regel fest und steht am Kopf ROT. Vorschlag: `fernMin` → `A.CREATURE_SPAWN_CLEAR_M` (der Leib nie im Schritt des Spielers), Quelle: das Gehege-Gesetz und die 200-px-Reichweite oben.
@@ -44,3 +44,10 @@ Neues Soll „Würfe am Ort ihres Tiers ≥ 90 %“; Täter `geburt-fern` (das a
 960 × 540 in `cloud-post/tiere-im-blick-bild/`; Originale (1920 × 1080) unter
 `C:/Users/micha/AppData/Local/Temp/claude/9fd86081514dce1c/9c27a074-223e-48c0-a5af-60ae0385359b/scratchpad/tiere-bild/`.
 Wiese −280,4/−1045,6, Ich-Sicht 12:00: vorher und nachher nach vorn gleich (kein Tier im Kegel); im Rundblick nachher Hirschrücken und Fuchsohren im hohen Gras (rund2, rund3).
+
+## Offen (mit Grund und Messnamen)
+- tiere.K5#1: der Leib erscheint außer Blick, der Gang nach vorn trifft kein Tier im Kegel (ego 0); Leser: Sprosse leben.oeko.vielfalt#1.
+- arten#1: 4 von 5 Arten; Luft (Singvogel nur singend 5–14 m) und Wasser (Forelle) tragen keine Maske ≥ 200 px; spielStunden braucht den Stations-Diff oben; Leser: karte2.leben.tiere.arten#1.
+- wanderung#1 GRÜN ohne Akte: der Preis-Lauf zählte 0 Bilder; Leser: pm-Preis-Lauf (punkte.cjs karte2PreisLauf).
+- 13 % der Würfe stehen 25–178 m neben ihrem Tier, wo dessen Ort keinen Grund trägt; Leser: gate:kreatur-takt lebensraum (versatz).
+- CPU-Takt p95 27,5 → 37,7 ms an der Wiese, ein Lauf je Seite; Leser: werkbank lauf (cpuTaktMs).
