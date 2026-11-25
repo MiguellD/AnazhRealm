@@ -17587,10 +17587,10 @@
     "kriterien": 33,
     "sprossen": 213,
     "heute": 17,
-    "kern": 1,
-    "kernDazu": 1,
+    "kern": 3,
+    "kernDazu": 3,
     "anteilHeute": 8,
-    "anteilKern": 0.3
+    "anteilKern": 1
    },
    "perspektiven": [
     {
@@ -19561,7 +19561,7 @@
       }
      ],
      "heute": 1,
-     "kern": 0,
+     "kern": 1,
      "fuss": "gemessen",
      "beleg": "Kette regen → nässe → stoff → brand → licht, Tiefe 4 mit Festhalte-Probe (feld.K1) — headless; Bruch, Fluid mit Impuls und Beben fehlen als Glieder.",
      "alt": [
@@ -19787,7 +19787,7 @@
       }
      ],
      "heute": 1,
-     "kern": 0,
+     "kern": 1,
      "fuss": "gemessen",
      "beleg": "Brand schwärzt, Asche düngt, Sukzession r = 0,825 (stoffe.K5) — Mechanik headless; Tier-, Wasser-, Siedlungs-Antwort fehlt.",
      "alt": [
@@ -20095,10 +20095,10 @@
   "sprossen": 1718,
   "heute": 118,
   "davonKopplungen": 33,
-  "kern": 3,
-  "kernDazu": 3,
+  "kern": 5,
+  "kernDazu": 5,
   "anteilHeute": 6.1,
-  "anteilKern": 0.1,
+  "anteilKern": 0.2,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
