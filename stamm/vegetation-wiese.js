@@ -735,9 +735,10 @@ class AnazhRealm_vegetation_wiese {
     // Grund auf der Tiefe h · d/e hinter sich — der Strahl sieht Grund mit exp(−n · w · h · d/e), die Lücke radius/Q hält n · d
     // und damit die Deckung der Übergabe. Wo die Kappe den Anteil unter die Lücke drückt (Q > 16,2 m), fehlte der Ferne bis
     // hier die Deckung: aus Augenhöhe endete das hohe Gras bei 15–20 m auf flachem Grund. Jetzt trägt das Büschel, was die
-    // Kappe an Zahl nimmt, in seiner GRÖSSE: es wächst gleichförmig um s = √(min(1, Lücke)/Anteil) um seinen Fuß (w · h × s²,
-    // bis `skalaMax`) — die Gestalt bleibt die des Studios (nie gestreckt, nie gespreizt), die Dreiecke hängen weiter allein an
-    // der Kappe, von oben deckt die Fläche s² dieselbe Lücke. Stetig: an der Kappe s = 1.
+    // Kappe an Zahl nimmt, in seiner FLÄCHE: s = √(min(1, Lücke)/Anteil) (w · h × s², bis `skalaMax`) — seit wiese-fern in der
+    // Breite jedes Halms, nie in der Höhe (`_wieseFernHalm`: Breite s², Höhe 1; bis dahin wuchs das Büschel gleichförmig um s und
+    // stand ab 40 m 1,85 m hoch), die Füße bleiben die des Studios, die Dreiecke hängen weiter allein an der Kappe, von oben
+    // deckt die Fläche s² dieselbe Lücke. Stetig: an der Kappe s = 1.
     // Bis w28-wiese-schale streckte das Gesetz das Büschel waagrecht um s = max(Q/radius, (Q/fuss)³) bis `streckMax` 14 (die
     // Füße seiner Halme gespreizt, je Büschel begrenzt von `_wieseFernGrenzen` über einem Gitter des Bodens), und eine SCHALE aus
     // Karten (`nahWiese:Lf:schale`, w22-wiese-nachzug: je Boden-Punkt eine senkrechte Karte 2,3 m × 0,7 m mit elf Zacken, bis
@@ -753,6 +754,16 @@ class AnazhRealm_vegetation_wiese {
         const offen = A.min(A.k(1), luecke);
         const skala = A.min(A.k(F.skalaMax), A.sqrt(A.max(A.k(1), A.mul(offen, A.pow(kappe, A.k(-1))))));
         return { anteil: A.mul(A.min(offen, kappe), saum), skala };
+    }
+
+    // DER HALM DER FERNE (rein, über der Algebra A — der Stoff `_halmFerne` in TSL, die Linse gate:profiband P-Ferne-Halm in
+    // Zahlen): die Ferne tauscht Zahl gegen BREITE, nie gegen Höhe. Die Deckung im Blick hängt allein an der Fläche der Halme
+    // (Nilson 1971: Lücke exp(−G · LAI / cos θ), G = 0,5 nach Ross 1976 — die Fläche, nie ihre Teilung), also trägt der Halm die
+    // Fläche s² der Größe `skala` (`_wieseFern`) in seiner Breite: `breite` × `hoehe` = s², `hoehe` 1 — die ferne Wiese steht
+    // so hoch wie die nahe (Spitze 0,74 m). Bis wiese-fern wuchs das Büschel gleichförmig um s (Höhe × s): bei 30 m stand die
+    // Spitze 1,37 m, ab 40 m 1,85 m über dem Grund und verdeckte den Hirsch bis an den Rücken (Bauch 0,93 m, tiere.K5#1).
+    static _wieseFernHalm(A, s) {
+        return { breite: A.mul(s, s), hoehe: A.k(1) };
     }
 
     // DIE GESETZE DER FERNE ALS WGSL (w25-gpu-wahl, die Wahl der GPU: Art 6 die Büschel der Ferne, `PASS_WAHL_WGSL`):
