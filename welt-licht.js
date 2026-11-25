@@ -1534,7 +1534,6 @@ var __weltLicht = (function () {
         if (!sonne || B.sonne.intensity !== B.staerke) fremd.add(`die Sonne ${B.sonne.intensity} statt ${B.staerke}`);
         if (R.toneMappingExposure !== B.belichtung || R.toneMapping !== globalThis.THREE[BELICHTUNG.kurve])
             fremd.add(`die Belichtung ${R.toneMappingExposure} statt ${B.belichtung}`);
-        if (tonStufen().n !== B.tonStufen) fremd.add(`die Stufen hinter dem Fuß ${tonStufen().n} statt ${B.tonStufen}`);
         if (
             szene.environmentNode !== B.knoten ||
             szene.environmentIntensity !== 1 ||
@@ -1542,6 +1541,7 @@ var __weltLicht = (function () {
             szene.backgroundIntensity !== 1
         )
             fremd.add("ein Himmel neben dem Knoten des Gesetzes");
+        if (tonStufen().n !== B.tonStufen) fremd.add(`die Stufen hinter dem Fuß ${tonStufen().n} statt ${B.tonStufen}`);
         if (fremd.size)
             throw new Error(`DIE BÜHNE DER WELT zeichnet unter dem Licht der Welt allein: ${[...fremd].join(" · ")}`);
         if (q) {
