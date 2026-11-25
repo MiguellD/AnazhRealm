@@ -1136,13 +1136,14 @@ class AnazhRealm_siedlung_bewohner {
             const satz = {
                     sied: S,
                     heim: sl.seed >>> 0, rolle, beruf, same, epoche,
-                    orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null, spiel: null },
+                    orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null, spiel: null, einkauf: null },
                     seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
                     genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, gangTempo: u, satzOrt: u,
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
                     blick: u, begegnet: u, kopfY: u,
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
                     drehen: u, platz: u, weichen: null, brand: null, gegner: null,
+                    ortI: null, wegeM: null, kette: null,
                     weg: u, wi: u, linie: u, tag: u, wegRest: u, wegRestAb: u, gegangen: u, gehDt: u, gehTakt: u, rueck: u,
                     tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, grundGx: 0, grundGz: 0, _gait: u, _gaitW: u, walkPhase: u,
                     wagen: u, amSteuer: u, bestand: null, bestandBild: null, werkzeug: null,
@@ -1258,6 +1259,36 @@ class AnazhRealm_siedlung_bewohner {
                 wer.rolle = wer.beruf = rolle;
                 wer.orte.werk = st;
             }
+        }
+        // DIE WEGE SEINES TAGS (die Ankunft zur Stunde, koerper `tagesKette`): je Wo eines Menschen der Ort des Plans, an dem sein
+        // Stand liegt (der Markt und das Spiel des Abends am Platz, der Händler und die Wache am Platz an ihm, die Wache am Tor
+        // am nächsten Ort ihres Postens), und je Paar seiner Orte die Länge des Wegs über das Netz — dieselbe Quelle, nach der er
+        // gebunden wurde (`tagesWege`), einmal gemessen; die Gehzeit rechnet die Kette aus ihr und dem Tempo seines Gangs
+        const platzI = orte.findIndex((o) => o.art === "platz");
+        const amOrt = (st) => {
+            let [best, dMin] = [null, Infinity];
+            for (const [i, o] of orte.entries()) {
+                const d = Math.hypot(o.x + S.ox - st.x, o.z + S.oz - st.z);
+                if (d < dMin) [best, dMin] = [i, d];
+            }
+            return best;
+        };
+        for (const [i, b] of liste.entries()) {
+            const P = besuche[i];
+            const B = P.bind || {};
+            const am = (j) => (Number.isInteger(j) && j >= 0 ? j : null);
+            const werk =
+                b.rolle === "haendler" || (b.orte.werk && b.orte.werk === b.orte.platz)
+                    ? am(platzI)
+                    : WL.rollen.includes(b.rolle) && b.orte.werk
+                      ? amOrt(b.orte.werk)
+                      : (am(B.werk) ?? P.heimI);
+            const I = { heim: P.heimI, platz: am(platzI), spiel: am(platzI), einkauf: am(platzI), werk, mahl: am(B.mahl), abend: am(B.abend), besuch: am(B.besuch) }; // prettier-ignore
+            const wegeM = new Map();
+            const ids = [...new Set(Object.values(I).filter((j) => j !== null))];
+            for (const x of ids) for (const y of ids) if (x < y) wegeM.set(x * 65536 + y, wegZu(orte[x], orte[y], y));
+            [b.ortI, b.wegeM] = [I, wegeM];
+            if (i % 64 === 0) yield;
         }
         this._bestandAnlegen(liste);
         this._scheuneAnlegen(S, liste, tueren);
@@ -2285,6 +2316,7 @@ class AnazhRealm_siedlung_bewohner {
                 this._bewohnerGenome(S);
                 this._bewohnerWacheSetzen(S);
                 if (S.plan.staedtisch) this._verkehrAnlegen(S); // die Wagen der Stadt und ihre Fahrer (Leiter mensch.netz.verkehr)
+                this._einkaufAnlegen(S); // der Einkäufer je Haushalt (koerper `tagesEinkaeufer`), wenn jede Rolle steht
                 S.listeWerk = this._bewohnerStandPruefen(S, null);
                 continue;
             }
@@ -2713,6 +2745,58 @@ class AnazhRealm_siedlung_bewohner {
     // Stand neben dem Platz ist nur der Ort, an dem er ein- und aussteigt. Bis hier nannte das Soll den Stand, während der Leib im
     // Wagen fuhr: zwei Orte für einen Menschen (bevoelkerung#1, main 7de938ab, Radeon: der Fahrer an Ort 0 und 1 zu jeder der
     // vier Uhren 5–18 m neben seinem Soll, ungezählt).
+    // DIE KETTE SEINES TAGS (koerper `tagesKette`, die Ankunft zur Stunde): der Aufbruch je Abschnitt um die Gehzeit seines Wegs
+    // davor — die Länge über das Netz (`wegeM`, `_bewohnerListe`) ÷ das Tempo seines Gangs (`gangTempo` hält es während eines
+    // Laufs) ÷ die Sekunden der Stunde (`_bewohnerStundeSek`). Gemerkt, solange ihre Eingänge stehen: der Regen an seiner Tür,
+    // das Feld seines Lebenslaufs, seine Rolle, sein Werk, sein Stand am Platz, sein Besuch, das Spiel des Abends, sein Einkauf.
+    // Vor seiner Geburt (kein Leib, kein Tempo) geht er keinen Weg: die Kette ohne Gehzeit, ungemerkt.
+    // DER EINKAUF DES HAUSHALTS (koerper TAGES_GESETZ.einkauf, `tagesEinkaeufer`): je Haushalt — die Leute hinter EINER Tür — geht
+    // EINER am Markt-Morgen zum Markt; der Kern wählt ihn aus Samen und Rolle der Seinen (der Erwachsene, dessen Werk am
+    // spätesten beginnt; wer einen Posten hat, nur, wenn kein anderer da ist). Gewählt, wenn jede Rolle steht: nach dem Händler
+    // am Stand, der Wache und dem Fahrer am Steuer. Sein Ort ist sein Stand am Platz (`orte.einkauf`), die Kette liest den Weg
+    // dorthin wie zum Markt (`ortI.einkauf`). Bis hier ging jeder Mensch jeden Morgen über den Markt (morgenPlatzH 1 h): an
+    // stadt-voll 1 356 Gänge, um 8 Uhr 140 mit dem Markt zum Ziel, und die Leute des Markts standen erst mit ihrem Werk dort.
+    _einkaufAnlegen(S) {
+        const KC = window.__koerperCore;
+        if (typeof KC.tagesEinkaeufer !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesEinkaeufer");
+        const H = new Map();
+        for (const b of S.liste) {
+            b.orte.einkauf = null;
+            const L = H.get(b.orte.tuer);
+            if (L) L.push(b);
+            else H.set(b.orte.tuer, [b]);
+        }
+        for (const L of H.values()) {
+            const w = KC.tagesEinkaeufer(L.map((b) => ({ same: b.same, rolle: b.rolle })));
+            if (w >= 0 && L[w].orte.platz) L[w].orte.einkauf = L[w].orte.platz;
+        }
+    }
+    _bewohnerKette(b, regen) {
+        const KC = window.__koerperCore;
+        if (typeof KC.tagesKette !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesKette");
+        const o = b.orte;
+        const k = b.kette;
+        const v = b.gangTempo ?? b.tempo;
+        // prettier-ignore
+        if (k && k.regen === regen && k.krank === b.krank && k.rolle === b.rolle && k.werk === o.werk && k.platz === o.platz && k.besuch === o.besuch && k.spiel === o.spiel && k.einkauf === o.einkauf && k.v === v) return k.K;
+        const [I, W, sek] = [b.ortI, b.wegeM, this._bewohnerStundeSek()];
+        // DER WEG OHNE NETZ ZÄHLT BEIM NAMEN, nie still als null Gehzeit: ein Ort seines Tags ohne Index (`ohne.ort`) oder ohne Weg
+        // im Netz (`tagesWege` → Infinity, `ohne.netz`) trägt die Kette als Zahl mit dem Paar der Orte (`K.ohne`) — die Probe liest sie
+        const ohne = { ort: 0, netz: 0, wo: [] };
+        const geh = (von, nach) => {
+            if (!(v > 0)) return 0;
+            const [i, j] = [I && I[von], I && I[nach]];
+            if (i == null || j == null) return (ohne.ort++, ohne.wo.push(von + ">" + nach), 0);
+            if (i === j) return 0;
+            const m = W.get(Math.min(i, j) * 65536 + Math.max(i, j));
+            if (Number.isFinite(m)) return m / (v * sek);
+            return (ohne.netz++, ohne.wo.push(von + ">" + nach), 0);
+        };
+        const K = KC.tagesKette(b.same, b.rolle, o, regen, b.krank, geh);
+        K.ohne = ohne;
+        if (v > 0) b.kette = { K, regen, krank: b.krank, rolle: b.rolle, werk: o.werk, platz: o.platz, besuch: o.besuch, spiel: o.spiel, einkauf: o.einkauf, v }; // prettier-ignore
+        return K;
+    }
     _bewohnerSoll(b, stunde) {
         const KC = window.__koerperCore;
         if (!KC || typeof KC.tagesPlan !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesPlan");
@@ -2727,7 +2811,7 @@ class AnazhRealm_siedlung_bewohner {
         // DER KRANKE BLEIBT DAHEIM (mensch.menge.seuche#1): das Feld seines Lebenslaufs am Tag der Prozesse (`b.krank`) ist ein
         // Eingang des Plans — der Kern setzt ihn vor seine Tür, der Posten (Fahrer, Wache) hält seine Schicht: kein Wagen der
         // Stadt steht, keine Vertretung, die den Plan eines Zweiten liest (VK am Kopf e0714e46: „die Stadt steht nach 39102 Takten")
-        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, regen, b.krank);
+        const soll = KC.tagesZiel(this._bewohnerKette(b, regen), stunde);
         const ort = b.amSteuer && soll.ort === o.werk ? b.wagen.entry.position : soll.ort;
         const ziel = soll.drinnen ? o.tuer : ort;
         // DIE FRONT DES BRANDS (`_bewohnerBrandSchau`, das EINE Brand-Feld): wer vor ihr floh, hält den Ort ohne Gefahr, solange
@@ -4670,7 +4754,7 @@ AnazhRealm.BEWOHNER_TAKT_PUFFER = Object.freeze([
 AnazhRealm.BEWOHNER = Object.freeze({
     gestalten: 8,
     huellenJeTakt: 8,
-    staende: Object.freeze(["heim", "platz", "werk", "mahl", "abend", "besuch"]),
+    staende: Object.freeze(["heim", "platz", "werk", "mahl", "abend", "besuch", "einkauf"]),
     restMax: 0.03,
     restBau: Object.freeze([0.06, 0.03, 0.07, -0.02]),
     platzAnteil: 0.45,
