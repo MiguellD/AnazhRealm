@@ -1,0 +1,82 @@
+{
+ "sha": "e1a54023c9a9e6fd30a824fd89087d3bb7ae854e",
+ "geraet": "gtx",
+ "zeit": "2026-11-25T14:40:39.364Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.mensch.sport.koennen#2": {
+   "gruen": false,
+   "zahl": "S2 ROT an R² Güte ↔ Potenzgesetz der Übung 0 verfehlt ≥ 0.8 — Täter: stamm/siedlung-bewohner.js _bestandAnlegen — die Rate des Werks liest das Können EINMAL beim Bau der Liste (`b.bestand.rate *= b.uebung.handwerk.koennen`): über die Stunden der Übung eines Menschen steht seine Güte still · R² Güte ↔ Potenzgesetz der Übung 0 (Soll ≥ 0.8) · Umfang 100 (Soll ≥ 100 Übungsstunden eines Bewohners) · ein feld über 5419–5519 Übungsstunden (der Kalender der Welt rückt): die Güte seines Werks (b.bestand.rate ÷ jeStunde) 0.8781 → 0.8781, das Können seines Lebenslaufs 0.8781 → 0.8845; Querschnitt 25 Hersteller {\"feld\":27} über 0–35780 h: R² 1, α 0.4 (Gesetz 0.4) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.29,
+   "grund": "ROT: S2 ROT an R² Güte ↔ Potenzgesetz der Übung 0 verfehlt ≥ 0.8 — Täter: stamm/siedlung-bewohner.js _bestandAnlegen — die Rate des Werks liest das Können EINMAL beim Bau der Liste (`b.bestand.rate *= b.uebung.handwerk.koennen`): über die Stunden der Übung eines Menschen steht seine Güte still · R² Güte ↔ Potenzgesetz der Übung 0 (Soll ≥ 0.8) · Umfang 100 (Soll ≥ 100 Übungsstunden eines Bewohners) · ein feld über 5419–5519 Übungsstunden (der Kalender der Welt rückt): die Güte seines Werks (b.bestand.rate ÷ jeStunde) 0.8781 → 0.8781, das Können seines Lebenslaufs 0.8781 → 0.8845; Querschnitt 25 Hersteller {\"feld\":27} über 0–35780 h: R² 1, α 0.4 (Gesetz 0.4) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k57f8ad5e72ec",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc3d36042cafd",
+   "s": 16.6,
+   "fremd": {
+    "s": 19.6,
+    "takte": 9,
+    "fremdS": 4.28,
+    "kerne": 0.218,
+    "fensterKerne": 0.263,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.84
+     ],
+     [
+      "Explorer.EXE",
+      0.66
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.44
+     ]
+    ],
+    "dienerS": 4.27,
+    "diener": [
+     [
+      "dwm.exe",
+      1.91
+     ],
+     [
+      "System",
+      1.13
+     ]
+    ],
+    "geraetS": 5.88,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.23
+     ],
+     [
+      "svchost.exe",
+      1.38
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.14
+     ]
+    ],
+    "eigenS": 51.81,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T14:40:39.364Z",
+   "abdruck": "27df9043949a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k57f8ad5e72ec": "bVXbbqMwEP2XPO4uNddgLPXBWbpqpO02/YQxjIGGALIhVFntv68gccsl84KEzvEcnzMDfzcNJEfI8OFd19WGbb5tfmw0nNHSqM6oHt71hm2ixHHRY/xahHP+c4AlqmhaTcpCEBAV5Ce0OtViUT4kI01uwQ4EI/0Tzw6ESHIhcf/4uKSWAtPaakGiIdroBRTZEtjpDARa0MmxmQHbdOsCI2PRmL/G5LP6F84PvvQPNF4cJqBK52qjbRBiwPY95098pTItAFurLCpt+jppGEmbTXqtOAp66wKYl6huJKSO4wsjdjfYOVizIMqy03rWjHpp4FJGSLTEZqiLJG+tRtUCqxtcRG7oANut3c6azpJTRSAEULH0OgesMlQzDbaXyK3DyAddHnqEEyqwKsiNl7YXuuLLG0LI81pLOQofWxjhvh8hdWfEIVRyHgzmez4p/0AI+SDUoOL+9n6CuROkTvJCneZ2SR9d22O/1xJ1Dikq61jr9hPtYejb4roN+5iMzwPdLZlflzMZAgCdDAyhhD+vvNS1bHtQaGVNZ4bGxyAMGOf7FbiF08lk7qGd2ssgdTsM+lSGH24RkRHy/boo60tf18K6YFEakpS+HwXLw88KThaITBVSmuRFkMjo3qD2WLaWqOvW2OiEoecx4pFqGvafMcZp0nH25r/84tkTn9WeL3WPHWrVGtGB2NrSZ3IcnmSFLlRr9ZDkBu5KgRCxO9ALqhIznNkoHQfcdEBPlJrZi7/PBviySvlS4GBwpTttQk7AFwG7E0mP6iigOt6AoSvD5Pox3r3y57kp8duBxsOqzMobvYtzfju4wYQ0qpbF8BUkOXQ6h7L9+gX8+w8=",
+  "kc3d36042cafd": "jVXbcpswEP0XPzYl4iIMaCYPcvDUTieN2+kPrGAFxBg8EoSMO/33DrblcMlD94WXs9qz5xyJP4sjJHvI8P5V19WCLb4svi40vKGlUb2hun/VC7aIEsdFj/FLEc75tx6WqOLYaFIWgoCoID+g1aoGi/I+ObfJJdi+YKRb82xHiCQnEnf8Vo/84WF6TCkwra0GJJpDbPT8ENkU2OoMBFrQyvNgA7bDpQuMnCuM+UtMbtU9c76jku7CeHKYgCodM4+WfoA+23acr+cs0wKwscqi0maukwaRtNlg1qxHQWedAPMS1bUJQ8ehwpBd9ZL0Mk0aZdlqPRoWeqnvhoyQaIrNUBdJ3lhHVQusrnARuYEDbNXN9siOrSWHjEAICMVU6xywylCNONheIpcOI+/h9NA9HFCBVUFutLS9wBUf2hBCNnMu5Zn4eYQhTmmEoTtq7E29CMy3fFB0Rwh5J6FBmZjRAeYTI3WSF+owlktSdG1vqoHOIUVl7Wvd3JAeBtQWl1uxjcn5uwtX086PxYx/ABAOwkJCwjczHXUtmw4UWtmxNYGh6Ac+49ksXbqBw8H47aGd2rMFmj7kQxo0WCIiI+TuKulMnsuVsE5YlKZJSkojnz2u6BT8puBggchUIaVxXviJjD4LaodlY4m6boyUThB4HiMeqYZm/+j4I+fPAxPj8hdtyqe7NR/Vd/702YRaNYa4L5a2pEyeN02m5LtCNVYHSW7grhQI0VTEE6oSMxzJKB0H3JSRLhmwNLmL70bhPc1cPhXYC1zpVhuTE6DCZ9eUX8I1Tm6Hai+g2l8bAlcGSf84xxl/4ZuBKhu+/W3vOv5/teY/+yFHTMhR1bLoX0WSQ6tzKJuP38Pffw=="
+ }
+}
