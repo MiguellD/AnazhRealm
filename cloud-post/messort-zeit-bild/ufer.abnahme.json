@@ -1,0 +1,95 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.419",
+  "sha": "a89988d12e7c45b7bed983e41c65f059cd022fb9"
+ },
+ "buehne": {
+  "saison": "spring",
+  "wetter": "sunny",
+  "uhr": 0.35,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 360
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "google swiftshader",
+  "leinwand": [
+   640,
+   360
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -118,
+   24.33,
+   -838
+  ],
+  "blick": [
+   0.67045,
+   0,
+   0.74195
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 640,
+  "h": 360,
+  "mittel": 146.9,
+  "sigma": 57.2,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 1,
+  "gewaehlt": 0,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -118,
+     24.33,
+     -838
+    ],
+    "rot": [],
+    "ms": 9826
+   }
+  ],
+  "ms": 9826
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 146.9 σ 57.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.419 · Bühne spring sunny 0.35 Tiere gehalten · Gerät WebGPU google swiftshader · Blick-Wahl 1 Posen",
+ "rot": [],
+ "urteil": "GRÜN"
+}

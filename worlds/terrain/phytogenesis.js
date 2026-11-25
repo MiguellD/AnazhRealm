@@ -1059,12 +1059,23 @@ function waterSurfaceAt(x, z) {
     if (s[0] < W.SW) return s[1];
     return null;
 }
-// Die Art des Wassers an (x, z) fuer den Koerper unter Wasser (WASSER_GESETZ.koerper): das EINE Gesetz der Welt (gelaende-core `gewaesserArt`,
-// w13-bach-klar) ueber der Breite des Bachs (2 * SW), Teich und Meer stehen — bis dahin entschied das Studio selbst („Bach → fluss", Sicht 1,1 m)
+// Die Art des Wassers an (x, z) fuer die Optik unter Wasser (gelaende-core `gewaesserOptik`): das EINE Gesetz der Welt (`gewaesserArt`,
+// w13-bach-klar) ueber der Breite des Bachs (2 * SW), der Teich steht („see"), das Meer ist sein eigener Typ (unter-wasser: bis dahin trug es
+// den Koerper des Sees) — bis w13-bach-klar entschied das Studio selbst („Bach → fluss", Sicht 1,1 m)
 function waterArtAt(x, z) {
     const W = water();
+    if (seaward(x, z) > 0) return "meer";
     const teich = Math.hypot(x - W.pondLo.x, z - W.pondLo.z) < W.pondLo.rs || Math.hypot(x - W.pondHi.x, z - W.pondHi.z) < W.pondHi.rs;
-    return window.__gelaendeCore.gewaesserArt(!teich && !(seaward(x, z) > 0) && _streamDH(x, z)[0] < W.SW ? 2 * W.SW : 0);
+    return window.__gelaendeCore.gewaesserArt(!teich && _streamDH(x, z)[0] < W.SW ? 2 * W.SW : 0);
+}
+// Das Medium des Wassers der Art (unter-wasser): dasselbe Gesetz wie die Welt (`_wasserMedium`) — die Optik der Gewaesser (gelaende-core
+// `gewaesserOptik`) ueber der Stoff-Zeile des Wassers (schmiede `STOFF_GESETZ.medium`) an den Kanaelen des Bilds, je Art EINMAL; der Bach des
+// Labors traegt keinen Pegel (mittlerer Abfluss)
+const _waterMedium = {};
+function waterMediumOf(art) {
+    if (_waterMedium[art]) return _waterMedium[art];
+    const SG = window.__schmiedeCore.STOFF_GESETZ;
+    return (_waterMedium[art] = window.__gelaendeCore.gewaesserOptik(art, (salz) => SG.medium("wasser", salz), SG.KANAL.map((l) => l * 1e9), 1, ATMO_GESETZ.luft.kontrast));
 }
 function waterDepress(x, z) {
     const W = water();
@@ -1271,29 +1282,18 @@ function plantForest(R, seedInt) {
         if (_de < openWaterM) continue; // im offenen Wasser waechst NICHTS
         if (_de < wetSaumM && sp !== "weide") continue; // nur die Weide steht im nassen Saum; der Rest wuerde versaufen -> sie verstehen das Wasser
         if (seaward(x, z) > seawardWeideM && sp !== "weide") continue; // MEER: nasser Strand-Saum -> nur Weide (Baeume kennen die Feuchtigkeit)
-        // Größe + Mammut: shared reverse-J / Überhälter / Mammut-Roll (phyto-core). Fail-soft = inline.
+        // Größe + Mammut (phyto-core): die Ertragstafel der Art in der Phase ihres Flecks (der Lebenslauf des Bestands,
+        // FOREST_ERTRAG) und der Mammut-Wurf — derselbe Kern wie der Wald der Welt, ohne Kern bricht das Labor laut.
         // Species-ids bleiben Lab-lokal (mammut/weide). RNG-Ordnung: size first, then mammut iff not weide.
-        let s, crown;
-        if (_coreN && typeof _coreN.forestTreeSize === "function") {
-            s = _coreN.forestTreeSize(rng, sd);
-            crown = CROWN[sp] * s;
-            if (sp !== "weide" && typeof _coreN.forestMammutRoll === "function") {
-                const m = _coreN.forestMammutRoll(rng, sd, clim);
-                if (m.promote) {
-                    sp = "mammut";
-                    s = m.s;
-                    crown = CROWN.mammut * s;
-                }
-            }
-        } else {
-            let ue = clamp(rng() * (1 - 0.52 * sd), 0, 1);
-            s = 0.55 + 1.45 * Math.pow(ue, 1.45);
-            if (rng() < 0.05) s = Math.max(s, 1.3 + rng() * 0.55); // seltene Überhälter (Altbestand)
-            s = clamp(s, 0.5, 1.95);
-            crown = CROWN[sp] * s;
-            if (sp !== "weide" && sd > 0.72 && clim > 0.5 && rng() < 0.02) {
+        if (!_coreN || typeof _coreN.forestTreeSize !== "function" || typeof _coreN.forestMammutRoll !== "function")
+            throw new Error("Labor-Wald: phyto-core forestTreeSize/forestMammutRoll fehlen (KERN-PFLICHT)");
+        let s = _coreN.forestTreeSize(rng, sp, _coreN.forestFleckPhase(x, z, seedInt));
+        let crown = CROWN[sp] * s;
+        if (sp !== "weide") {
+            const m = _coreN.forestMammutRoll(rng, sd, clim);
+            if (m.promote) {
                 sp = "mammut";
-                s = 0.85 + rng() * 0.4;
+                s = m.s;
                 crown = CROWN.mammut * s;
             }
         }
@@ -3528,8 +3528,8 @@ function updateWorld(dt) {
         _camUnder = _ws !== null && camera.position.y < _ws - 0.12;
         if (_camUnder) {
             const dl = 0.2 + 0.8 * atm.lum; // Tageslicht dringt ein: nachts fast schwarz, mittags tuerkis
-            // W10 + w12-unterwasser: die EINE Wasser-Wahrheit (WASSER_GESETZ.koerper je Art, dieselbe Zeile wie die Welt, stamm/bild-himmel.js): die Farbe ist das Licht in der Tiefe der Kamera unter dem Spiegel (Beer-Lambert exp(-kd*Tiefe)), die Sicht endet am 550-nm-Kanal der Strahl-Schwaechung c nach Koschmieder (ATMO_GESETZ.luft.kontrast) — bis dahin die festen ersten 0,3 m der Look-Zahl wK und ein Nebel 0,3–7,5 m, die Welt sah 30 m
-            const _uw = WASSER_GESETZ.koerper[waterArtAt(camera.position.x, camera.position.z)],
+            // W10 + w12-unterwasser + unter-wasser: die EINE Wasser-Wahrheit (das Medium der Art, `waterMediumOf` — dasselbe Gesetz wie die Welt, stamm/bild-himmel.js): die Farbe ist das Licht in der Tiefe der Kamera unter dem Spiegel (Beer-Lambert exp(-kd*Tiefe)), die Sicht endet am 550-nm-Kanal der Strahl-Schwaechung c nach Koschmieder (ATMO_GESETZ.luft.kontrast) — bis dahin die festen ersten 0,3 m der Look-Zahl wK und ein Nebel 0,3–7,5 m, die Welt sah 30 m
+            const _uw = waterMediumOf(waterArtAt(camera.position.x, camera.position.z)),
                 _uwT = _ws - camera.position.y;
             _w3.setRGB(Math.exp(-_uw.kd[0] * _uwT), Math.exp(-_uw.kd[1] * _uwT), Math.exp(-_uw.kd[2] * _uwT)).multiplyScalar(dl);
             scene.fog.color.copy(_w3);

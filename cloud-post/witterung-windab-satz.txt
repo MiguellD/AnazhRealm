@@ -1,0 +1,1 @@
+Witterung windab: gegen den Wind ist die Fahne 0, windab reicht sie bei 4 m/s 50 → 252 m — Station geruch#1 suchzeit_faktor_wind 1,0 → 3,2 (headless, Wiese), Linse witterung Suchzeit gegen ↔ windab 1,0 → ≥ 6,9×; Windstille bleibt exp(−r/80), 50 m.

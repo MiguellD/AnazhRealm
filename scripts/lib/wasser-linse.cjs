@@ -281,35 +281,55 @@ async function wasserKoerper(o = {}) {
         if (cam) {
             const camAlt = cam.position.clone();
             const augenAlt = st.playerEyesUnderwater;
-            // (c) DIE ART DES WASSERS (w13-bach-klar): die Kamera in der halben Säule des Bachs der Mess-Wiese (der Fluss-Ort) —
-            // unter dem Spiegel liest das Medium den Körper SEINER Art: die Sicht (`_luftSichtM`, der CPU-Leser derselben
-            // Uniforms) gegen das Gesetz, die Art des Kerns (gelaende-core `gewaesserArt` über `flussAm(...).breite`) wählt die
-            // Zeile `WASSER_GESETZ.koerper`, Sicht = −ln(kontrast) ÷ c(550).
-            const WK = A.Gesetz("terrain:WASSER_GESETZ").koerper;
+            // (c) DAS GEWÄSSER DER KAMERA (w13-bach-klar, unter-wasser): die Kamera 3 m unter dem See, in der halben Säule des
+            // Bachs der Mess-Wiese (der Fluss-Ort) und des Meers vor der Küste — unter dem Spiegel liest das Medium der Welt
+            // (`luft.wasser`, `_wasserMedium`) das Gewässer der Hydrosphäre: `art` ist, was die Welt trägt, `kern` die Art des
+            // Kerns am Ort (gelaende-core `gewaesserAm`), die Sicht (`_luftSichtM`, der CPU-Leser derselben Uniforms) gegen das
+            // Gesetz (`gewaesserOptik` über der Stoff-Zeile des Wassers, schmiede `STOFF_GESETZ.medium`, beim Abfluss des Orts):
+            // Sicht = −ln(kontrast) ÷ c(550).
             const GK = window.__gelaendeCore;
+            const SG = window.__schmiedeCore.STOFF_GESETZ;
             const fl = o.fluss || (await window.__wasserOrte({})).fluss;
+            const meer = o.meer || (await window.__wasserOrte({})).meer;
             // der Bach liegt Kilometer hinter dem See: seine Kachel räumt das Register, sobald sie die Reichweite ihrer Leser um
             // den Spieler verlässt (`ZELL_GEDAECHTNISSE` hydroTiles) — der Leser an fernem Ort bestellt die Wahrheit, ehe er fragt
-            await __weltDa(() => !r._ensureHydroTilesAround(fl.x, fl.z, 0));
-            const bb = r._voxelSurfaceY(fl.x, fl.z);
+            const saeule = async ([x, z]) => {
+                await __weltDa(() => !r._ensureHydroTilesAround(x, z, 0));
+                const bb = r._voxelSurfaceY(x, z);
+                return (bb + r._koerperWasser(x, z, bb)) / 2;
+            };
             const modus = (x, z, camY, augen) => {
                 cam.position.set(x, camY, z);
                 cam.updateMatrixWorld(true);
                 st.playerEyesUnderwater = augen;
                 r._applyDayNightToScene();
-                const art = GK.gewaesserArt((GK.flussAm(r._gelaende(), x, z) || {}).breite);
+                const unter = luft.U.hoehe.value >= 1e8;
+                if (!unter) return { unter };
+                const g = GK.gewaesserAm(r._gelaende(), x, z);
+                const c = GK.gewaesserOptik(
+                    g.art,
+                    (salz) => SG.medium("wasser", salz),
+                    SG.KANAL.map((l) => l * 1e9),
+                    g.abfluss,
+                    A.LUFT.kontrast
+                ).c;
                 return {
-                    unter: luft.U.hoehe.value >= 1e8,
-                    art,
+                    unter,
+                    art: luft.wasser && luft.wasser.art,
+                    kern: g.art,
+                    abfluss: R(g.abfluss),
                     sichtM: R(r._luftSichtM(camY)),
-                    soll: R(-Math.log(A.LUFT.kontrast) / WK[art].c[1]),
+                    soll: R(-Math.log(A.LUFT.kontrast) / c[1]),
+                    c: luft.wasser ? Array.from(luft.wasser.c, (v) => R(v)) : null,
                 };
             };
+            const [yBach, yMeer] = [await saeule([fl.x, fl.z]), await saeule(meer)];
             try {
                 aus.medium = {
                     see: modus(mx, mz, spiegel - 3, false),
                     oben: modus(mx, mz, spiegel + 10, true),
-                    bach: modus(fl.x, fl.z, (bb + r._koerperWasser(fl.x, fl.z, bb)) / 2, false),
+                    bach: modus(fl.x, fl.z, yBach, false),
+                    meer: modus(meer[0], meer[1], yMeer, false),
                 };
             } finally {
                 cam.position.copy(camAlt);

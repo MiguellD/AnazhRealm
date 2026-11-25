@@ -914,6 +914,13 @@ async function kreaturProben(r, T, opts) {
                         return o;
                     }
             );
+        // DIE JAGD IN DER WINDSTILLE (witterung-windab): diese Bühne liest den Riss, nicht den Wind — in der Stille ist die
+        // Fahne das Radial-Gesetz exakt (Probe witterung, ruhe 0: die Kante 50 m von jeder Seite). Im Wind der Welt hetzt das
+        // Rudel das Kitz windauf in seiner Fahne weiter (Hetze 5,5–6,5 k → 17–21 k Takte), die Risse fallen 70–145 m windauf,
+        // jenseits des Nah-Kreises; die Jagd im Wind lesen witterung, jagdkreis, mahl und rudel
+        decke("_windAt", (alt) => function (x, z, t, o) {
+            return Object.assign(alt.call(this, x, z, t, o), { staerke: 0, ms: 0 });
+        });
         const dt = 1 / 60;
         const geschoben = kontaktZaehler();
         // K13: das Raster liegt schon auf dem ZIEL (die äußerste Hülle: der Fehler sitzt vor dem Jagd-Weg) — er bekommt eine Peilung, die vom Wolf aus genau längs einer
@@ -3066,14 +3073,18 @@ async function kreaturProben(r, T, opts) {
                 s.emotionField = undefined;
                 const w = (2 * Math.PI * o) / n;
                 const ort = frei(-60 + Math.cos(w) * 80, 40 + Math.sin(w) * 80, 25) || land(-60, 40);
-                pm.set(ort.x + 150, pm.y, ort.z + 20);
+                // DIE JAGD BEGINNT IN DER WITTERUNG (witterung-windab: gegen den Wind wittert kein Wolf): das Rudel steht windab der
+                // Beute, je Jagd um ±17° geschwenkt (bis hier rings um sie, o · 0,7 rad); der Spieler 151 m quer zum Wind
+                const wd = r._windAt(ort.x, ort.z, s._simZeit);
+                const wa = Math.atan2(wd.z, wd.x) + 0.3 * Math.sin(o * 0.7);
+                pm.set(ort.x - wd.z * 151, pm.y, ort.z + wd.x * 151);
                 const beute = tier(ort, "wesen", gr);
                 ruhig(beute);
                 if (taeter === "jagd-hp") beute.userData.hp *= 0.1; // der alte Schleichweg: die verwundete Beute
                 Q.hp0 = Math.round(beute.userData.hp);
                 const woelfe = [];
                 for (let i = 0; i < nW; i++) {
-                    const a = Math.PI + (i - (nW - 1) / 2) * 0.5 + o * 0.7;
+                    const a = wa + (i - (nW - 1) / 2) * 0.5;
                     woelfe.push(tier({ x: ort.x + Math.cos(a) * 25, y: ort.y, z: ort.z + Math.sin(a) * 25 }, "wolf"));
                 }
                 woelfe.forEach(ruhig);
@@ -3081,20 +3092,31 @@ async function kreaturProben(r, T, opts) {
                 const hetzer = new Set();
                 const magenVor = new Map();
                 let riss = false;
-                for (let k = 0, ende = 5400; k < ende; k++) {
+                // DAS FENSTER IST DAS GESETZ (witterung-windab): die Jagd endet dauerS nach ihrer ersten Hetze (`_kreaturJagdEndet`),
+                // die Pirsch davor zählt nicht — die Probe sieht bis zur ersten Hetze + dauerS + 5 s, mindestens 90 s. Bis hier
+                // endete sie fest nach 90 s: Rudel #35 kreiste 50 s auf dem Ring (größte Lücke 140–154° > 135°, rudelPlatz),
+                // hetzte ab 65 s und hieß „ohne Ende", 25 s nach Beginn seiner Hetze (3 von 4 Läufen)
+                const fensterT = Math.ceil((A._jagdGesetz().J.dauerS + 5) / dt);
+                for (let k = 0, ende = 5400, hetzeK = null; k < ende; k++) {
                     ruhigSpieler();
                     takt(dt);
                     for (const c of woelfe) if (c.userData._motionZustand === "hetzen") hetzer.add(c);
+                    if (hetzeK === null && hetzer.size) [hetzeK, ende] = [k, Math.max(ende, k + fensterT)];
                     if (!riss && s.leichname.includes(beute)) {
                         riss = true;
                         if (szene === "rudel" && R.rissS === null) R.rissS = rund(k * dt, 1);
                         if (!mahl) break;
                         R.fleisch0 = beute.userData.kadaver ? rund(beute.userData.kadaver.fleisch, 1) : null;
-                        for (const [seele, dz] of [
-                            ["fuchs", 18],
-                            ["baer", -18],
+                        // die Gäste 30 m windab des Kadavers, 6 m zu beiden Seiten (bis hier 30 m westlich, 18 m zu beiden
+                        // Seiten): 11° neben der Achse seiner Fahne, im Kegel bis 10 m/s an der Nase (18 m: 31°, außerhalb
+                        // schon ab 1,1 m/s — die Gäste kamen nie)
+                        const kw = r._windAt(beute.position.x, beute.position.z, s._simZeit);
+                        for (const [seele, q] of [
+                            ["fuchs", 6],
+                            ["baer", -6],
                         ]) {
-                            const g = tier(land(beute.position.x - 30 - P0.x, beute.position.z + dz - P0.z), seele);
+                            const [gx, gz] = [kw.x * 30 - kw.z * q, kw.z * 30 + kw.x * q];
+                            const g = tier(land(beute.position.x + gx - P0.x, beute.position.z + gz - P0.z), seele);
                             ruhig(g);
                             R.gaeste.push({ seele, c: g, kommtS: null, frissS: 0 });
                         }
@@ -3137,6 +3159,164 @@ async function kreaturProben(r, T, opts) {
     };
     for (const mahl of [false, true]) await buehne(mahl ? "mahl" : "jagdkreis", (restore) => jagdkreis(restore, mahl));
 
+    // ── witterung (Karte 2 erleben.sinne.geruch#1, witterung-windab): DIE WITTERUNG IST EINE FAHNE WINDAB — das Geruch-Feld
+    // (`_scentAt`) am EINEN Wind (`_windAt`, auf der Bühne geliehen: Richtung und Tempo fest, die Böe 1). (A) das Gesetz an der
+    // Funktion: in der Windstille das Radial-Gesetz exp(−r/rangeM), gegen den Wind 0, quer fallend mit dem Winkel, die Reichweite
+    // windab (bis zur Kante der Windstille, exp(−scentRangeM/rangeM)) wächst mit dem Wind und sättigt unter R·(1 + 1/i) — die
+    // Mischung verdünnt. (B) die Suche am ECHTEN Takt wie die Station (Wolf 40 m vom Reh, gefunden in 8 m, Deckel 90 s, der
+    // Spieler 70 m quer zum Wind): der Wind aus vier Richtungen, je Lauf Suchzeit, der Takt der Witterung und die Bahn (Weg, der
+    // Anteil quer zum Wind, die größte Abweichung von der Linie Wolf → Reh) ──
+    await buehne("witterung", async () => {
+        r.setGameMode("pfad");
+        ruhigSpieler();
+        const S = A.SCENT;
+        const R = A._verhaltenGesetz().jagd.scentRangeM;
+        // DER ALTE WEG als Täter (bis witterung-windab): radial × Richtungs-Faktor mit Rest-Sockel 0,4 gegen den Wind, ohne Tempo
+        // des Winds — und die alte Nase: jede Witterung > 0 in scentRangeM
+        if (taeter === "witterung-sockel") {
+            decke(
+                "_scentAt",
+                () =>
+                    function (x, z, q) {
+                        let sum = 0;
+                        for (const src of q) {
+                            const [dx, dz] = [x - src.x, z - src.z];
+                            const d = Math.hypot(dx, dz);
+                            if (d > 4 * S.rangeM) continue;
+                            const w = this._windAt(src.x, src.z, this.state._simZeit);
+                            const dot = d > 1e-3 ? (dx * w.x + dz * w.z) / d : 0;
+                            sum += (src.strength ?? 1) * Math.exp(-d / S.rangeM) * Math.max(0.2, 0.4 + 0.6 * Math.max(0, dot)); // prettier-ignore
+                        }
+                        return sum;
+                    }
+            );
+            decke("_scentNase", () => (Rn) => ({ R: Rn, schwelle: Number.MIN_VALUE, reichM: Rn }));
+        }
+        // der Wind der Welt am Ort der Bühne in Nasen-Höhe (die Zeile; die Station misst ihn, die Probe leiht ihren)
+        const M = frei(0, 70, 30);
+        if (!M) throw new Error("kein freies Feld (30 m ohne Hülle und Wasser) um den Spieler");
+        const weltMs = rund(r._rauchWindAt(M.x, M.z, s._simZeit, 1, null, {}).ms, 2);
+        const W = { x: 1, z: 0, ms: 0 };
+        const sturm = globalThis.__phytoCore.WIND_FELD.sturmMS;
+        decke(
+            "_windAt",
+            () => (x, z, t, o) => Object.assign(o || {}, { x: W.x, z: W.z, staerke: W.ms / sturm, boe: 1, form: 1, ms: W.ms })
+        );
+        const gesetz = await teil("gesetz", () => {
+            const q = [{ x: M.x, z: M.z, strength: 1 }];
+            // die Witterung im Winkel `deg` zur Richtung windab (der Wind zieht nach +x), `rM` von der Quelle
+            const am = (deg, rM) => {
+                const a = (deg * Math.PI) / 180;
+                return r._scentAt(M.x + Math.cos(a) * rM, M.z + Math.sin(a) * rM, q);
+            };
+            const G = { ruhe: 0, gegen: [], quer: [], reich: [], kanteM: R, deckeM: rund(R * (1 + 1 / S.turbulenz), 1) };
+            W.ms = 0;
+            for (const deg of [0, 90, 180, 270])
+                for (const rM of [10, 40, 80]) G.ruhe = Math.max(G.ruhe, Math.abs(am(deg, rM) - Math.exp(-rM / S.rangeM)));
+            for (const ms of [2, 4, 8]) {
+                W.ms = ms;
+                for (const rM of [10, 40]) G.gegen.push(am(180, rM));
+            }
+            W.ms = 4;
+            for (const deg of [0, 5, 10, 20, 45, 90]) G.quer.push(rund(am(deg, 20), 4));
+            const kante = Math.exp(-R / S.rangeM);
+            for (const ms of [0, 2, 4, 8, 16]) {
+                W.ms = ms;
+                let rM = 0;
+                while (rM < 400 && am(0, rM + 1) >= kante) rM++;
+                G.reich.push(rM);
+            }
+            return G;
+        });
+        await stelle({ gesetz }, "gesetz");
+        // (C) DAS RUDEL JAGT ALS EINES: zwei Wölfe EINES Verbands, einer 20 m windab des Rehs (in der Fahne), einer 20 m quer
+        // (außerhalb des Kegels, er wittert nichts) — der Quere jagt mit, sobald der Windab-Wolf wittert (`_kreaturHaelt`).
+        // Täter: der Verband teilt nichts (jedes Glied jagt nur, was es selbst wittert)
+        const rudel = await teil("rudel", () => {
+            if (taeter === "witterung-allein") decke("_kreaturVerbandGlieder", () => () => null);
+            leer(1);
+            Object.assign(r, { _creatureAiFrame: 0, _faunaStroeme: null });
+            Object.assign(W, { x: 1, z: 0, ms: 4 });
+            const sp = neben(M.x, M.z - 70);
+            pm.set(sp.x, sp.y, sp.z);
+            const reh = tier(neben(M.x, M.z), "wesen", 0.6);
+            const [a, b] = [tier(neben(M.x + 20, M.z), "wolf"), tier(neben(M.x, M.z + 20), "wolf")];
+            [reh, a, b].forEach(ruhig);
+            r._kreaturVerbinden([a, b]);
+            const q = [{ x: M.x, z: M.z, strength: 1 }];
+            const kante = Math.exp(-R / S.rangeM);
+            const o = { windabS: null, querS: null, querWittert: rund(r._scentAt(b.position.x, b.position.z, q) / kante, 3) };
+            for (let k = 0; k < 600 && o.querS === null; k++) {
+                ruhigSpieler();
+                takt(1 / 60);
+                if (o.windabS === null && a.userData._beute === reh) o.windabS = rund((k + 1) / 60, 2);
+                if (o.querS === null && b.userData._beute === reh) o.querS = rund((k + 1) / 60, 2);
+            }
+            leer(1);
+            return o;
+        });
+        await stelle({ gesetz, rudel }, "rudel");
+        const suche = await teil("suche", () => {
+            const dt = 1 / 60;
+            // die Linie Wolf → Reh nach Norden; der Wind zieht (wx, wz): windab — vom Reh zum Wolf (der Wolf in der Fahne),
+            // gegen — vom Wolf zum Reh, quer von links und rechts
+            const e = { x: 0, z: -1 };
+            const reh0 = neben(M.x + e.x * 20, M.z + e.z * 20);
+            const wolf0 = neben(M.x - e.x * 20, M.z - e.z * 20);
+            const L = {};
+            for (const [art, wx, wz] of [
+                ["windab", -e.x, -e.z],
+                ["quer+", -e.z, e.x],
+                ["gegen", e.x, e.z],
+                ["quer-", e.z, -e.x],
+            ]) {
+                leer(1);
+                Object.assign(s, { _creatureNetSeq: 1e6, creatureAnimationTime: 100 });
+                Object.assign(r, { _creatureAiFrame: 0, _faunaStroeme: null });
+                Object.assign(W, { x: wx, z: wz, ms: 4 });
+                const sp = neben(M.x - wz * 70, M.z + wx * 70);
+                pm.set(sp.x, sp.y, sp.z);
+                if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                const wolf = tier(wolf0, "wolf");
+                const reh = tier(reh0, "wesen", 0.6);
+                ruhig(wolf);
+                ruhig(reh);
+                const alt = wolf.position.clone();
+                const B = { fundS: null, witterS: null, wegM: 0, quer: 0, seitM: 0, minD: ab(wolf.position, reh.position), spieler: 0 }; // prettier-ignore
+                let k = 0;
+                for (; k < 5400; k++) {
+                    ruhigSpieler();
+                    takt(dt);
+                    const [dx, dz] = [wolf.position.x - alt.x, wolf.position.z - alt.z];
+                    B.wegM += Math.hypot(dx, dz);
+                    B.quer += Math.abs(-dx * wz + dz * wx);
+                    alt.copy(wolf.position);
+                    const [lx, lz] = [wolf.position.x - wolf0.x, wolf.position.z - wolf0.z];
+                    B.seitM = Math.max(B.seitM, Math.abs(-lx * e.z + lz * e.x));
+                    if (B.witterS === null && wolf.userData._beute === reh) B.witterS = rund((k + 1) * dt, 2);
+                    if (wolf.userData._beute === s.playerMesh) B.spieler++;
+                    const d = s.creatures.includes(reh) ? ab(wolf.position, reh.position) : 0;
+                    B.minD = Math.min(B.minD, d);
+                    if (d <= 8) {
+                        B.fundS = rund((k + 1) * dt, 2);
+                        k++;
+                        break;
+                    }
+                }
+                L[art] = Object.assign(B, {
+                    bisS: rund(k * dt, 2),
+                    wegM: rund(B.wegM, 1),
+                    quer: B.wegM > 0 ? rund(B.quer / B.wegM, 2) : 0,
+                    seitM: rund(B.seitM, 1),
+                    minD: rund(B.minD, 1),
+                });
+            }
+            leer(1);
+            return { laeufe: L, ms10: 4, msNase: rund(r._rauchWindAt(M.x, M.z, s._simZeit, 1, null, {}).ms, 2), weltMs };
+        });
+        return { gesetz, rudel, suche };
+    });
+
     // ── rudel: DER SPIELER IST BEUTE im Wolfsrevier (oekologie.K4) — ein Rudel aus dem Wurf (`_kreaturWurf`, die Leine am
     // Wurf-Ort), der stehende Spieler 45 m vom Wurf-Ort (in der Witterung scentRangeM; die Neugier liest das Auge der Art);
     // höchstens 10 Spielminuten am echten Takt, davor je 2 s Frieden und leerer Anker. Die Ereignisse in Sekunden der Kreatur-Uhr: die
@@ -3152,7 +3332,9 @@ async function kreaturProben(r, T, opts) {
         kamera(1, 0);
         const woelfe = r._kreaturWurf({ x: heim.x, z: heim.z }, "wolf", "happy", r._faunaRng("rudel"), 7);
         woelfe.forEach(ruhig);
-        pm.copy(neben(heim.x + 45, heim.z));
+        // der Spieler 45 m windauf des Wurf-Orts: das Rudel steht in seiner Fahne (witterung-windab; bis hier 45 m östlich)
+        const wd = r._windAt(heim.x, heim.z, s._simZeit);
+        pm.copy(neben(heim.x - wd.x * 45, heim.z - wd.z * 45));
         s.player.hp = 1e9;
         // DAS RUDEL AM SPIELER: die Wölfe, die ihn jetzt pirschen oder hetzen (wer unter der halben Masse des Spielers wiegt,
         // jagt ihn nie — jagd.beuteMasse); die größte Winkel-Lücke des Rudels um ihn in Grad
@@ -4001,6 +4183,7 @@ const PROBEN = [
     "abstand",
     "jagdkreis",
     "mahl",
+    "witterung",
     "rudel",
     "querhang",
     "ferngang",
@@ -4329,6 +4512,45 @@ function urteil(name, z) {
             `die Lage im Leerlauf: der Leib steht ${z.steht}, ${z.fenster} Fenster ohne Zeit, Tafel ${z.tafel} von ${z.soll}`
         );
     }
+    if (name === "witterung") {
+        // DIE FAHNE WINDAB (Karte 2 erleben.sinne.geruch#1): das Gesetz an der Funktion, dann die Suche am Takt
+        const G = z.gesetz;
+        const gegen = Math.max(...G.gegen);
+        soll(G.ruhe <= 1e-9, `die Windstille trägt nicht das Radial-Gesetz exp(−r/80): Abweichung ${G.ruhe}`);
+        soll(gegen === 0, `gegen den Wind > 0: ${gegen} in 10 · 40 m bei 2 · 4 · 8 m/s (Soll 0, kein Rest-Sockel)`);
+        soll(
+            G.quer.every((v, i) => i === 0 || v <= G.quer[i - 1]) && G.quer[0] > G.quer[3] && G.quer.at(-1) === 0,
+            `quer fällt die Witterung nicht mit dem Winkel: ${G.quer.join(" · ")} bei 0 · 5 · 10 · 20 · 45 · 90° in 20 m (Soll fallend, quer 0)`
+        );
+        soll(
+            G.reich[0] === G.kanteM && G.reich.every((v, i) => i === 0 || v > G.reich[i - 1]) && G.reich.at(-1) <= G.deckeM,
+            `die Reichweite windab wächst nicht mit dem Wind oder sättigt nicht: ${G.reich.join(" · ")} m bei 0 · 2 · 4 · 8 · 16 m/s (Soll Windstille ${G.kanteM} m, wachsend, ≤ ${G.deckeM} m)`
+        );
+        const P = z.rudel;
+        soll(!!P, "das Rudel fehlt");
+        if (P)
+            soll(
+                P.windabS !== null && P.querS !== null && P.querS <= P.windabS + 1 && P.querWittert < 1,
+                `das Rudel jagt nicht als eines: windab gewittert ${P.windabS} s, der Wolf quer (Witterung ${P.querWittert} der Kante) jagt mit ${P.querS} s (Soll ≤ 1 s danach, quer unter der Kante)`
+            );
+        const L = z.suche && z.suche.laeufe;
+        soll(!!L, "die Suche fehlt");
+        if (L) {
+            const W = L.windab;
+            const zeit = (l) => l.fundS ?? l.bisS;
+            const f = W.fundS ? +(zeit(L.gegen) / W.fundS).toFixed(2) : null;
+            soll(
+                W.fundS !== null && W.witterS !== null && W.wegM <= 1.3 * 32,
+                `windab findet der Wolf das Reh nicht gerade: gefunden ${W.fundS} s, gewittert ${W.witterS} s, Weg ${W.wegM} m (Soll ≤ 1,3 × 32 m)`
+            );
+            soll(
+                f !== null && f >= 3,
+                `die Suchzeit gegen den Wind ist ${f}× die windab (${zeit(L.gegen)} gegen ${W.fundS} s, Soll ≥ 3×)`
+            );
+            const jagdSpieler = Object.keys(L).filter((k) => L[k].spieler > 0);
+            soll(!jagdSpieler.length, `der Wolf jagt den Spieler statt das Reh: ${jagdSpieler.join(", ")}`);
+        }
+    }
     if (name === "jagdkreis" || name === "mahl") {
         const R = z.riss;
         // DAS BAND DER NATUR (MacNulty et al. 2012, `Q.band` aus der Probe): ein Wolf reißt den gesunden Hirsch selten, vier ein
@@ -4557,6 +4779,12 @@ const TAETER = {
         ["jagd-aas", /kein Kadaver/],
         ["jagd-duft", /kein Geruch/],
         ["jagd-mager", /das Rudel frisst nicht/],
+    ],
+    // der alte Weg (radial × Richtungs-Faktor, Rest-Sockel 0,4 gegen den Wind, die Nase jede Witterung > 0): er hält am Gesetz;
+    // der Verband, der nichts teilt: er hält am Rudel
+    witterung: [
+        ["witterung-sockel", /gegen den Wind > 0/],
+        ["witterung-allein", /das Rudel jagt nicht als eines/],
     ],
     rudel: [
         ["rudel", /umstellt nicht/],

@@ -26,10 +26,13 @@
 //  (St) DIE STIMME AUS DEM LEIB (klang-leib): Grundton und Formanten am Abgriff gegen Peterson & Barney 1952, ±15 %.
 //  (Dn) DER DONNER AUS DEM BLITZ (klang-leib): der Einsatz am Abgriff gegen d/c(T) vom nächsten Punkt des Kanals, ±2 %.
 //  (Db) DER BLITZ FOLGT DEM FELD AM ORT (klang-leib): der Anteil des Sturms im Feld am Ort, exakt im Kern, fern wortfrei.
+//  (Mk) DER MARKT AUS SEINER MENGE (markt-klang): nach dem Zensus auf derselben Seite am Ort stadt-voll (an `marktSeite`; allein:
+//      `--markt [--sek n]`, 600 = die 10 Minuten der Karte): Stimmen zugleich, L_Aeq gegen die Wochenmärkte, Spitze, Duck am
+//      Bus, wer duckt, Lombard; Täter S24–S27.
 //  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S23 unten), Stubs restauriert.
 //  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
 //  (U) GESEHEN = GEHÖRT am Bach und im Regen: der eigene Lauf `--gesehen` (an `gesehenSeite`, klang.K2 Staffel 2).
-//   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>] | --gesehen] [--json <datei>]
+//   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>] | --gesehen | --markt [--sek <n>]] [--json <datei>]
 //   (KLANG_WURZEL=<baum> misst einen anderen Arbeitsbaum unter derselben Linse)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
@@ -1918,6 +1921,347 @@ async function gesehen(page, erg) {
     return !rot.length && feuert ? 0 : 1;
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// (Mk) DER MARKT AUS SEINER MENGE (markt-klang, erleben.klang.getuemmel#1 — klang:MENGE): der Markt der Metropole (Messort
+// stadt-voll, „dorf 7 300“ am Anker, die Pose `platz` des Profi-Bands, 10 Uhr) am Abgriff der Spitzen-Wand (`s.spitze.ausgang`)
+// über `--sek` Sekunden Klang (Vorgabe 30; 600 = die 10 Minuten der Karte), die Musik spielt. Je 250 ms: die Stimmen
+// zugleich (der Graph · die klingenden Laute der Werkstatt · die Fahrt), der Pegel am Abgriff (A-bewertet über die Terz-Bänder,
+// IEC 61672) und der Gain des Duck-Busses. L_Aeq in dB(A) über die EICHUNG des Gesetzes (`mengeDbA`: die Sprechstimme 60 dB(A)
+// in 1 m), am Abgriff gelesen: der Gain von Master und Welt-Bus heraus, die A-Bewertung der Sprechstimme selbst (ihr Laut,
+// `stimmPuffer`) heraus. DER DUCK wie die Station (der Mess-Ton 15 kHz −60 dBFS durch den Duck-Bus, `_musikDuck("gespraech", 30)`)
+// und am Gain des Busses — der Gain ist das Urteil, die Linie die Zeugin. SOLL: ≥ 7 Stimmen zugleich im Median · L_Aeq im Band
+// der Wochenmärkte (MENGE.markt) · Spitze ≤ 0 dBFS · Duck 8–12 dB am Bus · kein Laut der Menge duckt · die Menge spricht (Sprecher
+// in Rede, ihr Lärm über dem Knick hebt die Stimme: Lombard). Selbst-Test: S24 der Duck 13,27 dB (die Zahl der Station) · S25 die
+// Menge stumm · S26 die Menge duckt die Musik · S27 Lombard aus — je beim Namen.
+const MARKT = argv.includes("--markt");
+const MARKT_SEK = Number(argOpt("--sek")) || 30;
+const FRIST = Math.max(600000, (MARKT_SEK + 400) * 1000); // die Protokoll-Frist trägt den längsten Lauf einer Seite
+async function marktSeite(o) {
+    const s = r.state, pm = s.playerMesh.position;
+    const K = window.__klangCore;
+    const leute = (dt) => (r._bewohnerWerkTakt(Infinity), r._tickBewohner(dt));
+    const W = window.__markt || (window.__markt = {});
+    const __handTakt = () => {
+        try {
+            r._gameLoopTick(performance.now());
+        } catch (e) {
+            r._loopErrorBoundary(e);
+        }
+    };
+    // DIE STADT (einmal je Seite): das Wort am Anker, bis jeder Bewohner seinen Leib trägt; die Pose des Platzes; die Uhr
+    if (!W.S) {
+        const H = await (await fetch("spec/profiband/haushalt.json")).json();
+        const M = H.messorte.find((m) => m.id === o.ort);
+        const w = M.gruendung.wort.split(" ");
+        const [seed, nH, [ax, az]] = [+w[1], +w[2], M.gruendung.anker];
+        const S0 = () => [...(r._bewohnerSiedlungen || new Map()).values()].find((q) => q.plan.seed === seed && Math.hypot(q.ox - ax, q.oz - az) < 200);
+        if (!S0()) await r.spawnSettlement({ seed, nH, position: { x: ax, y: 0, z: az } });
+        const S = S0();
+        if (!S) return { fehler: `keine Stadt aus „${M.gruendung.wort}“ am Anker` };
+        pm.set(S.ox, r.getTerrainHeightAt(S.ox, S.oz) + 1, S.oz);
+        const da = () => !!S.liste && S.liste.every((b) => b.leib && !b.ankunft);
+        for (let i = 0; i < 4 * nH && !da(); i++) (__handTakt(), leute(0), await sleep(2));
+        let [pose, warum] = [null, ""];
+        for (let i = 0; i < 4000 && !pose; i++)
+            try {
+                pose = r._ortPose([ax, az], "platz");
+            } catch (e) {
+                warum = e.message;
+                if (!e.warten) break;
+                (__handTakt(), leute(1 / 60), await sleep(2));
+            }
+        if (!pose) return { fehler: `keine Pose am Platz: ${warum}` };
+        pm.set(pose.x, r.getTerrainHeightAt(pose.x, pose.z) + 1, pose.z);
+        for (const t of [o.uhr + 12, o.uhr]) (r._uhrSetzen((t % 24) / 24, "regler"), leute(0));
+        for (let i = 0; i < 4 * nH && !da(); i++) leute(0);
+        for (let i = 0; i < 300; i++) (__handTakt(), i % 10 || (await sleep(1)));
+        if (!s.symphony || !s.symphony.enabled) r.initSymphony();
+        Object.assign(W, { S, pose, liste: S.liste.length });
+    }
+    const nahListe = () => W.S.liste.filter((b) => b.leib && b.leib.position && !b.drinnen && Math.hypot(b.leib.position.x - pm.x, b.leib.position.z - pm.z) < K.STIMME.pegel.hoerweiteM);
+    const nahBei = () => nahListe().length;
+    const sy = s.symphony, ctx = sy.ctx, um = sy.umwelt, SR = ctx.sampleRate, N = 4096;
+    if (um.kern !== K) return { fehler: "der Kern der Umwelt ist nicht __klangCore — die Mutanten träfen ins Leere" };
+    if (ctx.state !== "running") await ctx.resume();
+    // DIE MUTANTEN (Selbst-Test), zurück im finally
+    const zurueck = [];
+    const tausche = (o2, k, v) => {
+        const [a, eigen] = [o2[k], Object.prototype.hasOwnProperty.call(o2, k)];
+        zurueck.push(() => (eigen ? (o2[k] = a) : delete o2[k]));
+        o2[k] = v;
+    };
+    const DG = r.constructor._musikGesetz().duck; // die Tafel, die der Duck liest (`_musikDuck`)
+    if (o.mut === "duck") tausche(DG.gespraech, "db", -13.27);
+    if (o.mut === "stumm") tausche(K, "mengeRedet", () => null);
+    if (o.mut === "lombard") tausche(K.MENGE.lombard, "dbJeDb", 0);
+    const duckGesetz = Object.entries(DG).filter(([, v]) => v && typeof v.db === "number").map(([k, v]) => [k, v.db]);
+    if (o.mut === "duckt")
+        tausche(r, "_bewohnerLaut", ((alt) => function (b, laut, rede) {
+            const ruf = alt.call(this, b, laut, rede);
+            if (ruf) this._musikDuck("ruf");
+            return ruf;
+        })(r._bewohnerLaut));
+    // die Zeugen: jeder gespielte Ruf (Einsatz, Ende, Rede?), jeder Duck nach Art — und wer ihn griff (ein Laut der Menge?)
+    const rufe = [], ducks = {};
+    let inMenge = false;
+    tausche(r, "_bewohnerLaut", ((alt) => function () {
+        inMenge = true;
+        try {
+            return alt.apply(this, arguments);
+        } finally {
+            inMenge = false;
+        }
+    })(r._bewohnerLaut));
+    tausche(um.kern, "rufSpielen", ((alt) => function (c, aus, ruf) {
+        const e = alt.apply(this, arguments);
+        if (e) rufe.push({ t0: e.einsatz, t1: e.einsatz + e.sek, rede: !!(ruf && ruf.silben), an: (ruf && ruf.anstrengungDb) || 0 });
+        return e;
+    })(um.kern.rufSpielen));
+    tausche(r, "_musikDuck", ((alt) => function (art) {
+        const k = inMenge ? "menge" : art;
+        ducks[k] = (ducks[k] || 0) + 1;
+        return alt.apply(this, arguments);
+    })(r._musikDuck));
+    // die Terz-Bänder 25 Hz … 20 kHz, ihre A-Bewertung (IEC 61672)
+    const mitten = [];
+    for (let k = -16; k <= 13; k++) mitten.push(1000 * Math.pow(2, k / 3));
+    const aW = mitten.map((f) => {
+        const f2 = f * f;
+        const ra = (12194 ** 2 * f2 * f2) / ((f2 + 20.6 ** 2) * Math.sqrt((f2 + 107.7 ** 2) * (f2 + 737.9 ** 2)) * (f2 + 12194 ** 2));
+        return Math.pow(10, (20 * Math.log10(ra) + 2.0) / 10);
+    });
+    const bandVon = (sr, n) => {
+        const bb = new Int16Array(n / 2).fill(-1);
+        for (let i = 1; i < n / 2; i++)
+            for (let b = 0; b < mitten.length; b++) if ((i * sr) / n >= mitten[b] / Math.pow(2, 1 / 6) && (i * sr) / n < mitten[b] * Math.pow(2, 1 / 6)) bb[i] = b;
+        return bb;
+    };
+    const aAnteil = (band) => {
+        let [ea, el] = [0, 0];
+        for (let b = 0; b < band.length; b++) (ea += band[b] * aW[b], el += band[b]);
+        return el > 0 ? ea / el : 0;
+    };
+    // DIE A-BEWERTUNG DER SPRECHSTIMME (die Eichung liest sie heraus): ihr Laut im Gesetz, Hann-Fenster je 4096, eine DFT der Bänder
+    const ref = K.stimmPuffer({ leib: K.STIMME.bezug, laut: K.MENGE.laut, silben: 6, saat: 7 });
+    const rb = new Float64Array(mitten.length), rbb = bandVon(ref.sr, N);
+    const fft = (re, im) => {
+        for (let i = 1, j = 0; i < N; i++) {
+            let b = N >> 1;
+            for (; j & b; b >>= 1) j ^= b;
+            j ^= b;
+            if (i < j) ([re[i], re[j]] = [re[j], re[i]], [im[i], im[j]] = [im[j], im[i]]);
+        }
+        for (let l = 2; l <= N; l <<= 1)
+            for (let i = 0; i < N; i += l)
+                for (let k = 0; k < l / 2; k++) {
+                    const w = (-2 * Math.PI * k) / l, [c, sn] = [Math.cos(w), Math.sin(w)], [a, b] = [i + k, i + k + l / 2];
+                    const [xr, xi] = [re[b] * c - im[b] * sn, re[b] * sn + im[b] * c];
+                    [re[b], im[b], re[a], im[a]] = [re[a] - xr, im[a] - xi, re[a] + xr, im[a] + xi];
+                }
+    };
+    for (let a0 = 0; a0 + N <= ref.daten.length; a0 += N / 2) {
+        const [re, im] = [new Float64Array(N), new Float64Array(N)];
+        for (let n = 0; n < N; n++) re[n] = ref.daten[a0 + n] * (0.5 - 0.5 * Math.cos((2 * Math.PI * n) / N));
+        fft(re, im);
+        for (let i = 1; i < N / 2; i++) if (rbb[i] >= 0) rb[rbb[i]] += re[i] * re[i] + im[i] * im[i];
+    }
+    const aSprache = 10 * Math.log10(aAnteil(rb));
+    const an = ctx.createAnalyser();
+    an.fftSize = N;
+    an.smoothingTimeConstant = 0;
+    sy.spitze.ausgang.connect(an);
+    const td = new Float32Array(N), fd = new Float32Array(N / 2), bb = bandVon(SR, N);
+    const proben = [], spek = [];
+    let [spitze, eZ, eA, nE] = [0, 0, 0, 0];
+    const D0 = { ...ducks };
+    let laeuft = true;
+    const spiel = () => laeuft && (__handTakt(), requestAnimationFrame(spiel));
+    requestAnimationFrame(spiel);
+    // die Menge tritt aus den Häusern auf den Platz (die Uhr sprang auf o.uhr): gemessen wird, sobald sie in Hörweite steht —
+    // über das EINE Warten (`__weltDa`, ohne Frist: hängt es, nennt die Stall-Akte die Bedingung)
+    const tW = ctx.currentTime;
+    await window.__weltDa(() => nahBei() > 0);
+    const wartete = +(ctx.currentTime - tW).toFixed(1);
+    const tA = ctx.currentTime;
+    const probe = () => {
+        an.getFloatTimeDomainData(td);
+        let [p, e] = [0, 0];
+        for (let i = 0; i < N; i++) ((p = Math.max(p, Math.abs(td[i]))), (e += td[i] * td[i]));
+        spitze = Math.max(spitze, p);
+        an.getFloatFrequencyData(fd);
+        const band = new Float64Array(mitten.length);
+        for (let i = 1; i < N / 2; i++) if (bb[i] >= 0) band[bb[i]] += Math.pow(10, fd[i] / 10);
+        const ea = (e / N) * aAnteil(band);
+        const lz = 10 * Math.log10(e / N + 1e-20);
+        [eZ, eA, nE] = [eZ + e / N, eA + ea, nE + 1];
+        if (o.spek) spek.push(Array.from(band, (v) => +(10 * Math.log10(v + 1e-20)).toFixed(1)));
+        const jetzt = ctx.currentTime;
+        const graph = um.graph.zensus().filter((v) => v.an).length;
+        const fliegen = rufe.filter((q) => q.t0 <= jetzt && q.t1 > jetzt);
+        const m = sy.menge || {};
+        const redner = nahListe().filter((b) => b.genom && !b.amSteuer && K.mengeRedet(b.akt, b.rolle) != null).length;
+        proben.push({
+            t: +(jetzt - tA).toFixed(2),
+            la: +(10 * Math.log10(ea + 1e-20)).toFixed(1),
+            l: +lz.toFixed(1),
+            p: +(20 * Math.log10(p + 1e-12)).toFixed(1),
+            graph,
+            rede: fliegen.filter((q) => q.rede).length,
+            laute: fliegen.filter((q) => !q.rede).length,
+            fahrt: sy.fahrt ? sy.fahrt.size : 0,
+            sprecher: m.sprecher || 0,
+            redner,
+            laerm: Number.isFinite(m.laermDbA) ? +m.laermDbA.toFixed(1) : null,
+            ohr: Number.isFinite(m.ohrDbA) ? +m.ohrDbA.toFixed(1) : null,
+            lombard: +(m.lombardDb || 0).toFixed(2),
+            rest: +(m.rest || 0).toFixed(3),
+            duck: +sy.lofi.duck.gain.value.toFixed(3),
+        });
+    };
+    // DER DUCK wie die Station: der Mess-Ton durch den Duck-Bus, Linie und Gain vor und 300 ms nach dem Gespräch
+    const duckProbe = async () => {
+        const Lf = sy.lofi, an2 = ctx.createAnalyser();
+        an2.fftSize = 4096;
+        an2.smoothingTimeConstant = 0;
+        const k = Math.round(15000 / (SR / an2.fftSize));
+        const ton = ctx.createOscillator(), tonG = ctx.createGain();
+        ton.frequency.value = (k * SR) / an2.fftSize;
+        tonG.gain.value = 1e-3;
+        ton.connect(tonG);
+        tonG.connect(Lf.duck);
+        Lf.duck.connect(an2);
+        ton.start();
+        const f2 = new Float32Array(an2.frequencyBinCount);
+        const linie = async () => {
+            let q = 0;
+            for (let i = 0; i < 3; i++) (await sleep(60), an2.getFloatFrequencyData(f2), (q += Math.pow(10, f2[k] / 10)));
+            return 10 * Math.log10(q / 3);
+        };
+        await sleep(200);
+        for (let i = 0; i < 60 && Lf.duckBis > ctx.currentTime; i++) await sleep(50);
+        const frei = !(Lf.duckBis > ctx.currentTime);
+        const [l0, g0] = [await linie(), Lf.duck.gain.value];
+        r._musikDuck("gespraech", 30);
+        await sleep(300);
+        const [l1, g1] = [await linie(), Lf.duck.gain.value];
+        ton.stop();
+        tonG.disconnect();
+        Lf.duck.disconnect(an2);
+        return { linieDb: +(l0 - l1).toFixed(2), busDb: +(20 * Math.log10(g0 / g1)).toFixed(2), g0: +g0.toFixed(4), frei };
+    };
+    const duckProben = [];
+    try {
+        const iv = setInterval(probe, 250);
+        let naechster = 3;
+        while (ctx.currentTime - tA < o.sek) {
+            await sleep(200);
+            if (ctx.currentTime - tA > naechster && duckProben.length < o.ducks)
+                (duckProben.push(await duckProbe()), (naechster += o.sek / o.ducks));
+        }
+        clearInterval(iv);
+    } finally {
+        laeuft = false;
+        sy.spitze.ausgang.disconnect(an);
+        while (zurueck.length) zurueck.pop()();
+    }
+    const G = 20 * Math.log10(sy.masterGain.gain.value * um.bus.gain.value);
+    const dbA = (lTap) => +(lTap - G - aSprache + K.mengeDbA(0)).toFixed(2);
+    const zugleich = proben.map((q) => q.graph + q.rede + q.laute + q.fahrt).sort((a, b) => a - b);
+    const nahe = nahBei();
+    const duckNach = Object.fromEntries(Object.entries(ducks).map(([k, v]) => [k, v - (D0[k] || 0)]));
+    return {
+        mut: o.mut || null,
+        ort: [+W.pose.x.toFixed(1), +W.pose.z.toFixed(1)],
+        uhr: +(s.timeOfDay * 24).toFixed(2),
+        sek: +(ctx.currentTime - tA).toFixed(1),
+        liste: W.liste,
+        nahe,
+        wartete,
+        lAeqDbA: dbA(10 * Math.log10(eA / nE)),
+        leqDbfs: +(10 * Math.log10(eZ / nE)).toFixed(2),
+        spitzeDbfs: +(20 * Math.log10(spitze)).toFixed(2),
+        zugleichP50: rang(zugleich),
+        zugleichMax: zugleich[zugleich.length - 1],
+        zugleichMin: zugleich[0],
+        redeMax: Math.max(...proben.map((q) => q.rede)),
+        sprecherP50: rang(proben.map((q) => q.sprecher).sort(aufsteigend)),
+        rednerP50: rang(proben.map((q) => q.redner).sort(aufsteigend)),
+        redeAnteilP50: +rang(proben.filter((q) => q.redner > 0).map((q) => q.sprecher / q.redner).sort(aufsteigend))?.toFixed(3),
+        redeSoll: +(K.MENGE.rede.sprechSek / (K.MENGE.rede.sprechSek + K.MENGE.rede.pauseSek)).toFixed(3),
+        laermDbA: proben.length ? proben[proben.length - 1].laerm : null,
+        lombardDb: Math.max(...proben.map((q) => q.lombard)),
+        anMax: +Math.max(0, ...rufe.filter((q) => q.rede).map((q) => q.an)).toFixed(2),
+        restP50: rang(proben.map((q) => q.rest).sort(aufsteigend)),
+        duckGesetz,
+        rufe: rufe.length,
+        rede: rufe.filter((q) => q.rede).length,
+        ducks: duckNach,
+        duckAnteil: +(proben.filter((q) => q.duck < 0.99).length / proben.length).toFixed(3),
+        duckProben,
+        aSprache: +aSprache.toFixed(2),
+        mitten: o.spek ? mitten.map((f) => +f.toFixed(1)) : undefined,
+        proben: o.spek ? proben : undefined,
+        spek: o.spek ? spek : undefined,
+    };
+}
+// DAS URTEIL des Markts: je verfehltes Soll EINE Zeile mit Täter-Namen
+function marktUrteil(m) {
+    const rot = [];
+    if (m.fehler) return [`Mk markt: ${m.fehler}`];
+    const K = m.gesetz;
+    const [lo, hi] = K.markt;
+    // die Menge redet im Anteil des Gesetzes (P.59: Rede / (Rede + Pause)); die Hälfte ist die Wand (der Median über n Redner
+    // streut um √(p(1−p)/n) — bei 10 Rednern 0,15)
+    if (!(m.sprecherP50 > 0) || !(m.redeAnteilP50 >= m.redeSoll / 2))
+        rot.push(`Mk Menge stumm: im Median ${m.sprecherP50} Sprecher in Rede von ${m.rednerP50} Rednern in Hörweite (Anteil ${m.redeAnteilP50}, P.59 trägt ${m.redeSoll}; klang:MENGE mengeRedet)`);
+    if (!(m.zugleichP50 >= 7)) rot.push(`Mk zugleich: ${m.zugleichP50} Stimmen im Median (max ${m.zugleichMax}), Soll ≥ 7 — Rede ${m.redeMax} zugleich`);
+    if (!(m.lAeqDbA >= lo && m.lAeqDbA <= hi)) rot.push(`Mk L_Aeq ${m.lAeqDbA} dB(A) außerhalb der Wochenmärkte ${lo}–${hi} (MENGE.markt)`);
+    if (!(m.spitzeDbfs <= 0)) rot.push(`Mk Spitze ${m.spitzeDbfs} dBFS hinter der Wand`);
+    for (const [art, db] of m.duckGesetz) if (db < -12) rot.push(`Mk Duck-Gesetz: MUSIK.duck.${art} senkt ${-db} dB, tiefer als 12`);
+    const bus = m.duckProben.map((d) => d.busDb);
+    for (const d of bus) if (!(d >= 8 && d <= 12)) rot.push(`Mk Duck ${d} dB am Bus bei Stimme (MUSIK.duck.gespraech), Soll 8–12`);
+    if (!bus.length) rot.push("Mk Duck: keine Probe des Busses");
+    const menge = m.ducks.menge || 0;
+    if (menge > 0) rot.push(`Mk die Menge duckt die Musik: ${menge}× \`_musikDuck("ruf")\` aus Lauten der Menge in ${m.sek} s (Bus ${Math.round(m.duckAnteil * 100)} % gesenkt)`);
+    if (m.laermDbA > K.lombardAb && !(m.lombardDb > 0 && m.anMax > 0))
+        rot.push(`Mk Lombard aus: Lärm ${m.laermDbA} dB(A) am Sprecher über dem Knick ${K.lombardAb}, die Stimme hebt sich um ${m.lombardDb} dB (Rede bis ${m.anMax} dB)`);
+    return rot;
+}
+async function markt(page, erg) {
+    const lauf = async (mut, sek, ducks) => {
+        const m = await page.evaluate(marktSeite, { ort: "stadt-voll", uhr: 10, sek, ducks, mut, spek: !!JSON_AUS && !mut });
+        const g = await page.evaluate(() => ({ markt: __klangCore.MENGE.markt.lAeqDbA, lombardAb: __klangCore.MENGE.lombard.abDbA }));
+        return Object.assign(m, { gesetz: g });
+    };
+    const m = (erg.markt = await lauf(null, MARKT_SEK, Math.max(2, Math.round(MARKT_SEK / 20))));
+    const rot = marktUrteil(m);
+    const { proben, spek, mitten, ...kopf } = m;
+    console.log(`── (Mk) DER MARKT AUS SEINER MENGE: ${JSON.stringify(kopf)}`);
+    let fehl = [];
+    if (SELBSTTEST) {
+        console.log("\n── SELBST-TEST (Mk)");
+        for (const [mut, re, was] of [
+            ["duck", /^Mk Duck 13\.27 dB/, "S24: der Duck 13,27 dB"],
+            ["stumm", /^Mk Menge stumm/, "S25: die Menge stumm"],
+            ["duckt", /^Mk die Menge duckt/, "S26: die Menge duckt die Musik"],
+            ["lombard", /^Mk Lombard aus/, "S27: Lombard aus"],
+        ]) {
+            const u = marktUrteil(await lauf(mut, 8, 1));
+            const t = u.find((z) => re.test(z));
+            if (!t) fehl.push(`${was} bleibt unbemerkt (${u.join(" · ") || "GRÜN"})`);
+            else console.log(`   ${was} → ${t}`);
+        }
+        for (const t of fehl) console.log("   ❌ " + t);
+        if (!fehl.length) console.log("   ✅ S24–S27 nennen jeden Täter beim Namen");
+    }
+    console.log("");
+    if (rot.length) {
+        console.log(`❌ ROT — ${rot.length} Befund(e) am Markt:`);
+        for (const t of rot) console.log("   " + t);
+    } else console.log("✅ GRÜN — der Markt klingt aus seiner Menge");
+    return !rot.length && !fehl.length ? 0 : 1;
+}
+
 // DER ZENSUS (O · Z · G · H · S · K · E · L · W · A · P) an den Orten aus dem Gesetz.
 async function zensus(page, browser, ergebnis) {
     await page.evaluate(AUSGABE_INSTALL);
@@ -2212,14 +2556,14 @@ async function zensus(page, browser, ergebnis) {
     const browser = await starteBrowser({
         art: ECHT ? "echt" : "null",
         headless: !ECHT,
-        frist: 600000,
+        frist: FRIST,
         zusatz: ["--autoplay-policy=no-user-gesture-required"],
     });
     let exit = 1;
     const ergebnis = {};
     try {
         const page = await browser.newPage();
-        page.setDefaultTimeout(590000);
+        page.setDefaultTimeout(FRIST - 10000);
         if (!ECHT) await nullRenderer(page);
         // der Quellen-Abgriff kostet je Quelle einen Stapel — der Takt misst ohne ihn
         if (!TAKT) await page.evaluateOnNewDocument(quellenAbgriff);
@@ -2229,7 +2573,18 @@ async function zensus(page, browser, ergebnis) {
             ? takt(page, ergebnis)
             : GESEHEN
               ? gesehen(page, ergebnis)
-              : zensus(page, browser, ergebnis));
+              : MARKT
+                ? markt(page, ergebnis)
+                : zensus(page, browser, ergebnis).then(async (z) => {
+                      // der Markt auf einer FRISCHEN Seite: die Bühne des Zensus (ausgabe-aufnahme `buehne`) hält danach Tag,
+                      // Bild-Zeit und Wetter — auf ihr hörte die Wand eine erstarrte Menge (2 Sprecher in Rede statt 47)
+                      await page.close().catch(() => {});
+                      const p2 = await browser.newPage();
+                      p2.setDefaultTimeout(FRIST - 10000);
+                      await nullRenderer(p2);
+                      await warteAufWelt(p2, 180000, server);
+                      return (await markt(p2, ergebnis)) || z;
+                  }));
     } catch (e) {
         console.log("FEHLER:", e?.stack || e);
     } finally {

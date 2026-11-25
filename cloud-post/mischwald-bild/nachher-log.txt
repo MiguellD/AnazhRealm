@@ -1,0 +1,80 @@
+$ umstellen --ort wiese --sicht ego
+{
+ "ms": 125110,
+ "fehler": "DIE WELT STEHT NICHT nach 3756 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DIE WELT HÄNGT: die Welt nach 3756 Takten — das erste Weltbild fehlt: der Horizont wird gemalt · das Licht des Orts wird gemessen · 452 Bäume und Bauten wachsen · 2 Wald-Stücke warten auf ihre Gestalt · 16 ferne Bäume werden gemalt · offen {\"foundry\":0,\"chunks\":0,\"wald\":162,\"karten\":16,\"spiegel\":0,\"felder\":0,\"leiber\":0,\"dorf\":0,\"leib\":0,\"ankunft\":0,\"stau\":0,\"horizont\":0,\"blende\":0,\"huellen\":0,\"zeichnung\":0,\"tore\":0,\"alter\":0,\"wesen\":10,\"bau\":0,\"leute\":0} ohne Bau-Ereignis · Wald: Saat 0 [] · Plan 0 · Pflanz-Warten 0 · Würfe 162 (außer Blick 162) · Nachwuchs 0 · Karten: fimp:tanne|3:pnull,fimp:fichte|3:pnull,fimp:strauch|1:pnull,fimp:totholz|1:pnull,fimp:birke|3:pnull,fimp:eiche|2:pnull,fimp:tanne|2:pnull,fimp:tanne|1:pnull,fimp:fichte|2:pnull,fimp:birke|1:pnull,fimp:fichte|1:pnull,fimp:birke|2:pnull,fimp:eiche|3:pnull,fimp:eiche|1:pnull,fimp:mammut|1:pnull,fimp:karst|1:pnull · halbe - · Wesen des Stands 0 · Geburten 10 · Leine false · Zeichnung ganz · Tore ohne Fenster 0 · Weltbild fehlt: der Horizont wird gemalt,das Licht des Orts wird gemessen,452 Bäume und Bauten wachsen,2 Wald-Stücke warten auf ihre Gestalt,16 ferne Bäume werden gemalt · Lade-Takt false · Frist ohne Ende · Hunger knoten 0/0,strom 0/0,abraeumen 0/0,stream 0/0,morphFolge 1/1,waterIso 1/1,waldPlan 1/1,bewohner 1/1,nahWiese 1/1,scatterDeco 1/1,dorf 1/1,pflanz 1/1,huellen 1/1,stufen 1/1,karte 1/1,streuLod 1/1,horizont 1/1,boden 1/1,todLage 1/1 · nach der Frist stream 14.4 ms)",
+ "stapel": [
+  "weltStehtNach (pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(%2Fhome%2Fuser%2FAnazhRealm%2Fscripts%2Flib%2Fwelt-boot.cjs%3A1532%3A102):1077:15)",
+  "at weltStehtNach ( at page.<computed> [as evaluate] (/home/user/AnazhRealm/scripts/lib/welt-boot.cjs:1532:102), <anonymous>:1076:14)",
+  "at #evaluate (/home/user/AnazhRealm/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/ExecutionContext.js:391:56)",
+  "at async ExecutionContext.evaluate (/home/user/AnazhRealm/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/ExecutionContext.js:277:16)"
+ ]
+}
+
+
+$ zaehlen
+{
+ "ms": 6,
+ "fehler": "OperationError: A valid external Instance reference no longer exists.",
+ "stapel": [
+  "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(%2Fhome%2Fuser%2FAnazhRealm%2Fscripts%2Flib%2Fwelt-boot.cjs%3A1532%3A102):184:28",
+  "drawZensus (pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(%2Fhome%2Fuser%2FAnazhRealm%2Fscripts%2Flib%2Fwelt-boot.cjs%3A1532%3A102):340:7)",
+  "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(%2Fhome%2Fuser%2FAnazhRealm%2Fscripts%2Flib%2Fwelt-boot.cjs%3A1532%3A102):16:32",
+  "at #evaluate (/home/user/AnazhRealm/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/ExecutionContext.js:391:56)"
+ ]
+}
+
+
+$ eval return [r._voxelSurfaceY(-182.34193243090795, -1025.9883864861815), r._voxelSurfaceY(-143.11870540327115, -1018.1437410806542)]
+{
+ "ms": 4,
+ "ergebnis": [
+  24.546074538761133,
+  23.365068953820373
+ ]
+}
+
+
+$ umstellen -182.34193243090795 -1025.9883864861815
+{
+ "ms": 107903,
+ "fehler": "DIE WELT STEHT NICHT nach 3760 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DIE WELT HÄNGT: die Welt nach 3760 Takten — das erste Weltbild fehlt: der Horizont wird gemalt · das Licht des Orts wird gemessen · 795 Bäume und Bauten wachsen · 3 Wald-Stücke warten auf ihre Gestalt · 17 ferne Bäume werden gemalt · offen {\"foundry\":0,\"chunks\":0,\"wald\":374,\"karten\":17,\"spiegel\":0,\"felder\":0,\"leiber\":0,\"dorf\":0,\"leib\":0,\"ankunft\":0,\"stau\":0,\"horizont\":0,\"blende\":0,\"huellen\":0,\"zeichnung\":0,\"tore\":0,\"alter\":0,\"wesen\":10,\"bau\":0,\"leute\":0} ohne Bau-Ereignis · Wald: Saat 0 [] · Plan 0 · Pflanz-Warten 0 · Würfe 374 (außer Blick 374) · Nachwuchs 0 · Karten: fimp:totholz|1:pnull,fimp:fichte|2:pnull,fimp:tanne|2:pnull,fimp:birke|2:pnull,fimp:strauch|1:pnull,fimp:eiche|1:pnull,fimp:tanne|1:pnull,fimp:birke|1:pnull,fimp:tanne|3:pnull,fimp:eiche|2:pnull,fimp:fichte|1:pnull,fimp:fichte|3:pnull,fimp:eiche|3:pnull,fimp:birke|3:pnull,fimp:mammut|1:pnull,fimp:weide|1:pnull,fimp:karst|1:pnull · halbe - · Wesen des Stands 0 · Geburten 10 · Leine false · Zeichnung ganz · Tore ohne Fenster 0 · Weltbild fehlt: der Horizont wird gemalt,das Licht des Orts wird gemessen,795 Bäume und Bauten wachsen,3 Wald-Stücke warten auf ihre Gestalt,17 ferne Bäume werden gemalt · Lade-Takt false · Frist ohne Ende · Hunger knoten 0/0,strom 0/0,abraeumen 0/0,stream 0/0,morphFolge 1/1,waterIso 1/1,waldPlan 1/1,bewohner 1/1,nahWiese 1/1,scatterDeco 1/1,dorf 1/1,pflanz 1/1,huellen 1/1,stufen 1/1,karte 1/1,streuLod 1/1,horizont 1/1,boden 1/1,todLage 1/1 · nach der Frist stream 14.4 ms)",
+ "stapel": [
+  "weltStehtNach (pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(%2Fhome%2Fuser%2FAnazhRealm%2Fscripts%2Flib%2Fwelt-boot.cjs%3A1532%3A102):1077:15)",
+  "at weltStehtNach ( at page.<computed> [as evaluate] (/home/user/AnazhRealm/scripts/lib/welt-boot.cjs:1532:102), <anonymous>:1076:14)",
+  "at #evaluate (/home/user/AnazhRealm/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/ExecutionContext.js:391:56)",
+  "at async ExecutionContext.evaluate (/home/user/AnazhRealm/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/ExecutionContext.js:277:16)"
+ ]
+}
+
+
+$ bild -182.34193243090795 26.246074538761132 -1025.9883864861815 -143.11870540327115 29.365068953820373 -1018.1437410806542 --datei /home/user/AnazhRealm/cloud-post/mischwald-bild/nachher-ego30.png --w 1280 --h 720
+{
+ "ms": 177561,
+ "fehler": "DIE WELT STEHT NICHT nach 3601 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DIE WELT HÄNGT: die Welt nach 3601 Takten — das erste Weltbild fehlt: der Horizont wird gemalt · das Licht des Orts wird gemessen · 795 Bäume und Bauten wachsen · 3 Wald-Stücke warten auf ihre Gestalt · 17 ferne Bäume werden gemalt · offen {\"foundry\":0,\"chunks\":0,\"wald\":374,\"karten\":17,\"spiegel\":0,\"felder\":0,\"leiber\":0,\"dorf\":0,\"leib\":0,\"ankunft\":0,\"stau\":0,\"horizont\":0,\"blende\":0,\"huellen\":0,\"zeichnung\":0,\"tore\":0,\"alter\":0,\"wesen\":10,\"bau\":0,\"leute\":0} ohne Bau-Ereignis · Wald: Saat 0 [] · Plan 0 · Pflanz-Warten 0 · Würfe 374 (außer Blick 374) · Nachwuchs 0 · Karten: fimp:totholz|1:pnull,fimp:fichte|2:pnull,fimp:tanne|2:pnull,fimp:birke|2:pnull,fimp:strauch|1:pnull,fimp:eiche|1:pnull,fimp:tanne|1:pnull,fimp:birke|1:pnull,fimp:tanne|3:pnull,fimp:eiche|2:pnull,fimp:fichte|1:pnull,fimp:fichte|3:pnull,fimp:eiche|3:pnull,fimp:birke|3:pnull,fimp:mammut|1:pnull,fimp:weide|1:pnull,fimp:karst|1:pnull · halbe - · Wesen des Stands 0 · Geburten 10 · Leine false · Zeichnung ganz · Tore ohne Fenster 0 · Weltbild fehlt: der Horizont wird gemalt,das Licht des Orts wird gemessen,795 Bäume und Bauten wachsen,3 Wald-Stücke warten auf ihre Gestalt,17 ferne Bäume werden gemalt · Lade-Takt false · Frist ohne Ende · Hunger knoten 0/0,strom 0/0,abraeumen 0/0,stream 0/0,morphFolge 1/1,waterIso 1/1,waldPlan 1/1,bewohner 1/1,nahWiese 1/1,scatterDeco 1/1,dorf 1/1,pflanz 1/1,huellen 1/1,stufen 1/1,karte 1/1,streuLod 1/1,horizont 1/1,boden 1/1,todLage 1/1 · nach der Frist stream 14.4 ms)",
+ "stapel": [
+  "weltStehtNach (pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(%2Fhome%2Fuser%2FAnazhRealm%2Fscripts%2Flib%2Fwelt-boot.cjs%3A1532%3A102):1077:15)",
+  "async weltStehtWarten (pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(%2Fhome%2Fuser%2FAnazhRealm%2Fscripts%2Flib%2Fwelt-boot.cjs%3A1532%3A102):2557:36)",
+  "at weltStehtNach ( at page.<computed> [as evaluate] (/home/user/AnazhRealm/scripts/lib/welt-boot.cjs:1532:102), <anonymous>:1076:14)",
+  "at #evaluate (/home/user/AnazhRealm/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/ExecutionContext.js:391:56)"
+ ]
+}
+
+
+$ zaehlen -182.34193243090795 26.246074538761132 -1025.9883864861815 -143.11870540327115 29.365068953820373 -1018.1437410806542
+{
+ "ms": 6,
+ "fehler": "OperationError: A valid external Instance reference no longer exists.",
+ "stapel": [
+  "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(%2Fhome%2Fuser%2FAnazhRealm%2Fscripts%2Flib%2Fwelt-boot.cjs%3A1532%3A102):184:28",
+  "drawZensus (pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(%2Fhome%2Fuser%2FAnazhRealm%2Fscripts%2Flib%2Fwelt-boot.cjs%3A1532%3A102):340:7)",
+  "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(%2Fhome%2Fuser%2FAnazhRealm%2Fscripts%2Flib%2Fwelt-boot.cjs%3A1532%3A102):16:32",
+  "at #evaluate (/home/user/AnazhRealm/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/ExecutionContext.js:391:56)"
+ ]
+}
+
+
+$ eval const p={x:-182.34193243090795,z:-1025.9883864861815}; let n=0,t=0; for (const e of r.state.architectures){ if (Math.hypot(e.position.x-p.x,e.position.z-p.z)>30) continue; if (/totholz/.test(e.type)) t++; else if (/^(grown_)?baum_/.test(e._lodSpecies||e.type)) n++; } return JSON.stringify({baeume30:n, totholz30:t})
+{
+ "ms": 4,
+ "ergebnis": "{\"baeume30\":98,\"totholz30\":32}"
+}

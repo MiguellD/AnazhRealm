@@ -179,6 +179,9 @@ var WASSER_GESETZ = {
     // b(550) 0,34 /m (Kirk 2011: klare Seen 0,2-0,5 /m) mit 550/Lambda (rot 650, blau 450 nm) — die Sicht des Sees (Koschmieder,
     // `_luftSichtM`) 8,3 m an der Secchi-Referenz des klaren Sees (~8 m). Bis hier trug er c(550) 0,25 (b ~0,1 /m: die Partikel des
     // Bachs) und sah 15,6 m weit, doppelt so weit wie seine Secchi-Tiefe.
+    // unter-wasser (additiv): Welt und Studio lesen diese Zeile nicht mehr — das Medium je Gewaesser-Typ ist EIN Gesetz (gelaende-core
+    // `gewaesserOptik` ueber der Stoff-Zeile des Wassers, schmiede `STOFF_GESETZ.medium`); sie bleibt fuer die Station k2-leben (ihr Leser
+    // `koerper[art]`), bis der Kandidat (cloud-post/unter-wasser-station) sie abloest.
     koerper: { see: { kd: [0.45, 0.15, 0.3], c: [0.67, 0.47, 0.67] }, fluss: { kd: [2.0, 1.3, 1.7], c: [4.0, 3.5, 3.8] }, bach: { kd: [0.4, 0.1, 0.19], c: [0.45, 0.2, 0.3] } },
     // K2 (rein additiv) — DIE WELLE DER WELT (Welt-Leser; das Studio-GLSL liest sie nicht): der Hub des Hydro-Stoffs. Duenung der
     // offenen See (drei Rausch-Oktaven je +-0,5, Gewichte duenung) und Kraeuseln ((Rausch + oktave*Rausch - mitte) * kraeusel *

@@ -384,4 +384,85 @@ function findlingBefunde(wirtVon) {
     ok("Findling Selbsttest: der Findling am flachen Grund ohne Eis fällt an _rockGeologyClass", /^_rockGeologyClass: \d+ Findlinge von \d+ Hängen an der Heimat ohne Eis/.test(M), M);
 }
 
+// DER LEBENSLAUF DES BESTANDS (Bahn mischwald, karte2.leben.pflanzen.lebenslauf#1; phyto-core FOREST_ERTRAG): der Plan
+// (`planForestCell`) und das EINE Urteil (`forestStehende`) — dieselben Rufe wie Haupt-Faden (`_forestCellDarts`), Wald-Faden
+// (`waldDarts`), Kamm und Labor — auf je einem geschlossenen Bestand (52 ha, Stand 0,15: ohne Lichtung, voller Schluss):
+//   die Tafel: je Art die Höhe der Größe 1 = foundry PRESETS hoeheM, r streng steigend, Größe groesse[0] bei u = 0, nie über groesse[1];
+//   die Höhe: jeder Baum des Dachs trägt die Größe seiner Tafel in der Phase seines Flecks (byte-genau);
+//   die Selbst-Ausdünnung: log N gegen log Dq über die Phasen der Flecken (10 Klassen, N je ha Fleck-Fläche, das Dach — der
+//     Unterstand ist eine jüngere Kohorte) liegt im Band Reineke −1,605 ± 10 % (Reineke 1933, J. Agric. Res. 46: 627–638); D ∝ s
+//     (die Gestalt skaliert isometrisch, der BHD₁ je Art gleich gesetzt — die Steigung trägt der Fleck, nicht die Art);
+//   der Tod steht: wer in der Konkurrenz starb und vor tau Jahren stand, steht als `baum_totholz`.
+// Selbsttest: ohne den Tod (jeder Geborene steht) fällt die Steigung beim Namen.
+{
+    const PK = mainCore;
+    const FE = PK.FOREST_ERTRAG;
+    const G = PK.FOREST_PACK.groesse;
+    const FOREST = stammLib.ladeKlasse(ROOT).AnazhRealm.FOREST;
+    const SAMEN = 1129275025;
+    const NZ = 60;
+    const BAND = [-1.605 * 1.1, -1.605 * 0.9];
+    const presets = vm.runInContext("(() => { const o = {}; for (const k in PRESETS) o[k] = PRESETS[k].ph && PRESETS[k].ph.hoeheM; return o; })()", fsb);
+    const tafel = [];
+    for (const [art, k] of Object.entries(FE.kurven)) {
+        if (presets[art] !== k.hoeheM) tafel.push(`${art}: hoeheM ${k.hoeheM} ≠ foundry PRESETS ${presets[art]}`);
+        for (let i = 1; i < k.r.length; i++) if (!(k.r[i] > k.r[i - 1])) tafel.push(`${art}: r[${i}] ${k.r[i]} steigt nicht`);
+        const lo = PK.forestErtragGroesse("baum_" + art, 0);
+        const hi = PK.forestErtragGroesse("baum_" + art, 1);
+        if (Math.abs(lo - G[0]) > 1e-9 || !(hi <= G[1])) tafel.push(`${art}: Größe ${lo.toFixed(3)}…${hi.toFixed(3)} außerhalb ${G.join("…")}`);
+    }
+    ok("Ertragstafel: je Art die Höhe der Größe 1 aus foundry PRESETS, r steigt, die Größe in groesse", tafel.length === 0, tafel[0] || `${Object.keys(FE.kurven).length} Tafeln`);
+    const bestand = (fc, stehende) => {
+        const ctx = { F: FOREST, baseH: 0, extras: [], fbm: () => fc, stand: () => 0.15, schnee: () => 0, ort: () => Infinity, wuchs: GC.ortGesetz(null).wuchs,
+            surfaceYAt: () => 30, waterYAt: () => 0, slopeAt: () => 0, feuchteAt: () => 0.3, ortFrei: () => true }; // prettier-ignore
+        const K = new Map();
+        const geboren = (cx, cz) => K.get(cx + "," + cz) || K.set(cx + "," + cz, PK.planForestCell(cx, cz, SAMEN, ctx)).get(cx + "," + cz);
+        const NB = 10;
+        const fl = new Float64Array(NB);
+        const n = new Float64Array(NB);
+        const d2 = new Float64Array(NB);
+        const klasse = (x, z) => Math.min(NB - 1, Math.floor(PK.forestFleckPhase(x, z, SAMEN) * NB));
+        for (let x = 1; x < NZ * FOREST.cell; x += 2) for (let z = 1; z < NZ * FOREST.cell; z += 2) fl[klasse(x, z)] += 4;
+        let tot = 0;
+        let alle = 0;
+        let falsch = null;
+        for (let a = 0; a < NZ; a++)
+            for (let b = 0; b < NZ; b++)
+                for (const d of stehende(a, b, geboren)) {
+                    alle++;
+                    if (d.sp === "baum_totholz") tot++;
+                    if (d.sp === "baum_totholz" || d.alter < 1) continue;
+                    const soll = PK.forestErtragKurve(d.sp) ? PK.forestErtragGroesse(d.sp, PK.forestFleckPhase(d.x, d.z, SAMEN)) : d.s;
+                    if (d.s !== soll && !falsch) falsch = `${d.sp} (${d.x.toFixed(1)}, ${d.z.toFixed(1)}): s ${d.s} ≠ Tafel ${soll}`;
+                    const k = klasse(d.x, d.z);
+                    n[k]++;
+                    d2[k] += d.s * d.s;
+                }
+        const P = [];
+        for (let k = 0; k < NB; k++) if (n[k] > 10) P.push([Math.log10(Math.sqrt(d2[k] / n[k])), Math.log10(n[k] / (fl[k] / 1e4))]);
+        const mx = P.reduce((s, p) => s + p[0], 0) / P.length;
+        const my = P.reduce((s, p) => s + p[1], 0) / P.length;
+        let sxy = 0;
+        let sxx = 0;
+        for (const p of P) (sxy += (p[0] - mx) * (p[1] - my)), (sxx += (p[0] - mx) ** 2);
+        return { steigung: sxy / sxx, tot: alle ? tot / alle : 0, falsch, haDach: n.reduce((s, v) => s + v, 0) / ((NZ * FOREST.cell) ** 2 / 1e4) };
+    };
+    const urteil = (fc, stehende) => {
+        const B = bestand(fc, stehende);
+        const out = [];
+        if (!(B.steigung >= BAND[0] && B.steigung <= BAND[1])) out.push(`forestStehende: Reineke-Steigung ${B.steigung.toFixed(3)} außerhalb ${BAND.map((v) => v.toFixed(3)).join("…")} (Bestand ${fc})`);
+        if (B.falsch) out.push("planForestCell: die Höhe folgt nicht der Tafel — " + B.falsch);
+        if (!(B.tot > 0)) out.push(`forestStehende: kein Totholz steht (Bestand ${fc})`);
+        return { B, out };
+    };
+    const echt = (gx, gz, geboren) => PK.forestStehende(gx, gz, geboren, FOREST.pack);
+    for (const [name, fc] of [["Laub", 0.6], ["Nadel", 0.9]]) {
+        const U = urteil(fc, echt);
+        ok(`Bestand ${name}: die Höhe folgt der Tafel, die Stammzahl der Reineke-Geraden, der Tod steht`, U.out.length === 0, U.out[0] || `Steigung ${U.B.steigung.toFixed(3)} · Totholz ${(100 * U.B.tot).toFixed(1)} % · Dach ${U.B.haDach.toFixed(0)}/ha`);
+    }
+    const ohneTod = (gx, gz, geboren) => geboren(gx, gz).filter((d) => !d.gelichtet);
+    const M = urteil(0.6, ohneTod).out.join(" | ");
+    ok("Bestand Selbsttest: ohne den Tod (jeder Geborene steht) fällt die Steigung an forestStehende", /^forestStehende: Reineke-Steigung -?\d/.test(M), M || "die Mutante blieb grün");
+}
+
 wandEnde(errs, "PHYTO-KERN: der Wuchs trägt die Gesetze, Main + Worker aus EINER Quelle (Gesetz #0).");

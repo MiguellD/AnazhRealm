@@ -357,16 +357,20 @@ function buehne(o) {
     // die Bühne bindet die Welt selbst: ihr Selbsttest ruft sie in Node mit einem gestellten `window` (`buehneSelbsttest`)
     const r = window.anazhRealm;
     const st = r.state;
-    const w = o?.wetter || "sunny";
+    // DIE ZEIT DES ORTS (messort-zeit): steht die Welt an einem Ort mit Zeit, hält die Bühne ohne Wort der Zelle, was die Welt dort
+    // nahm (`__ortZeit`: Uhr, Wetter, Saison nach den Worten des Spielers — ihr EINER Leser ist `werkbank umstellen --ort`); ohne
+    // Ort mit Zeit Mittag, Sonne und Sommer
+    const z = window.__ortZeit || null;
+    const w = o?.wetter || z?.wetter || "sunny";
     // DIE UHR DER BÜHNE (w4-himmel-uhr): das Wort der Zelle (`o.uhr` 0..1 — werkbank `bild --uhr`, `licht --uhr`, die Zellen am
-    // Spawn), ohne Wort Mittag. Bis dahin hielt die Bühne nur Mittag: die Licht-Bilanz (`__lichtBilanz`) maß um 0,3 und 0 den
-    // Mittag, der Schuss setzte seine Stunde erst danach. Die fehlende Uhr prüft `== null` zuerst (`Number(null) === 0`, Lehre
-    // 17), ein Wort außerhalb [0, 1] bricht laut, ehe die Bühne etwas setzt
-    const uhr = o?.uhr == null ? 0.5 : o.uhr;
+    // Spawn), ohne Wort die Uhr des Orts, sonst Mittag. Bis dahin hielt die Bühne nur Mittag: die Licht-Bilanz (`__lichtBilanz`) maß
+    // um 0,3 und 0 den Mittag, der Schuss setzte seine Stunde erst danach. Die fehlende Uhr prüft `== null` zuerst
+    // (`Number(null) === 0`, Lehre 17), ein Wort außerhalb [0, 1] bricht laut, ehe die Bühne etwas setzt
+    const uhr = o?.uhr == null ? (z ? z.uhr : 0.5) : o.uhr;
     if (!(typeof uhr === "number" && uhr >= 0 && uhr <= 1)) throw new Error(`DIE BÜHNE: die Uhr ${uhr} gilt nicht`);
     window.__weltaktSpion();
     st.autoSeason = false;
-    const s = r.setSeason(o?.saison || "sommer");
+    const s = r.setSeason(o?.saison || z?.saison || "sommer");
     // … über den EINEN Schreiber der Uhr (`_uhrSetzen`, das Wort des Reglers): die Bühne BESTELLT die Stunde bei der Welt — der Anker
     // des Gangs, der Sprung des Himmels und die Wahl des Licht-Pools folgen ihr. Bis beobachter-ein-weg schrieb sie `state.timeOfDay`
     // daneben (und einen `state.world`, den es nicht gibt)
@@ -374,7 +378,7 @@ function buehne(o) {
     // … und der Pool der Leuchtquellen zu seinem Fixpunkt (bis 31.10. wartete `bild` ihn ab, bis zu 20 × 50 ms je Schuss): jede
     // Gewählte hält ihren Platz mit Blende 1, jede Abgewählte fällt mit 0 — danach ändert kein Takt mehr etwas (die Bild-Uhr steht,
     // die Wahl am stehenden Auge)
-    if (o?.uhr != null)
+    if (o?.uhr != null || z)
         for (let i = 0, P; i < 3; i++)
             if ((r._leuchtTakt(), (P = r._leuchtPool)))
                 P.halter.forEach((h, j) => (P.blende[j] = h && P.wahl.some((w) => w.id === h.id) ? 1 : 0));
@@ -473,6 +477,13 @@ function buehneSelbsttest() {
         };
         const ist = [0.3, null, "nacht"].map((u) => uhr({ uhr: u })).join(" ");
         if (ist !== "0.3 0.5 laut/0.5") v.push(`die Uhr der Bühne: ${ist}`);
+        // DIE ZEIT DES ORTS (messort-zeit): ohne Wort der Zelle hält die Bühne Uhr, Wetter und Saison, die die Welt am Ort nahm
+        // (`__ortZeit`), das Wort der Zelle geht vor
+        const saison = [];
+        r.setSeason = (s) => saison.push(s) > 0;
+        window.__ortZeit = { uhr: 0.3, wetter: "foggy", saison: "autumn" };
+        const amOrt = [uhr({}), r.state.weather, saison.at(-1), uhr({ uhr: 0.6, wetter: "sunny", saison: "winter" }), r.state.weather, saison.at(-1)];
+        if (amOrt.join(" ") !== "0.3 foggy autumn 0.6 sunny winter") v.push(`die Zeit des Orts in der Bühne: ${amOrt.join(" ")}`);
     } finally {
         global.window = w0;
     }

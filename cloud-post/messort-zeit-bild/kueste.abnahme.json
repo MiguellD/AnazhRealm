@@ -1,0 +1,107 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.419",
+  "sha": "503d817a9199fa3c671b78df639b41c049ce8f5b"
+ },
+ "buehne": {
+  "saison": "autumn",
+  "wetter": "cloudy",
+  "uhr": 0.7,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 360
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "google swiftshader",
+  "leinwand": [
+   640,
+   360
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 7.54,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 15.08,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -201.732,
+   7.687,
+   10557.872
+  ],
+  "blick": [
+   -0.07413,
+   -0.52896,
+   0.8454
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 640,
+  "h": 360,
+  "mittel": 59.1,
+  "sigma": 24.2,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 2,
+  "gewaehlt": 33,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -215.7,
+     -0.29,
+     10555.3
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Boden-Schicht in 5.93 m"
+    ],
+    "ms": 3809
+   },
+   {
+    "k": 33,
+    "kamera": [
+     -201.732,
+     7.687,
+     10557.872
+    ],
+    "rot": [],
+    "ms": 110569
+   }
+  ],
+  "ms": 114377
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 15.08 m · Luma 59.1 σ 24.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.419 · Bühne autumn cloudy 0.70 Tiere gehalten · Gerät WebGPU google swiftshader · Blick-Wahl 2 Posen",
+ "rot": [],
+ "urteil": "GRÜN"
+}
