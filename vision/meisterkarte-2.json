@@ -17586,10 +17586,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 12,
+    "heute": 13,
     "kern": 1,
     "kernDazu": 1,
-    "anteilHeute": 6.2,
+    "anteilHeute": 6.6,
     "anteilKern": 0.3
    },
    "perspektiven": [
@@ -17918,7 +17918,7 @@
        "richter": "Dachneigung ↔ Schneelast r ≥ 0,5; Innenhof, Stelzen, Windturm ≥ 3× häufiger in ihrer Klimazone"
       }
      ],
-     "heute": 2,
+     "heute": 3,
      "kern": 0,
      "kernSprossen": [],
      "fuss": "kern",
@@ -17930,6 +17930,7 @@
      ],
      "heuteSprossen": [
       1,
+      2,
       3
      ]
     },
@@ -20089,7 +20090,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 107,
+  "heute": 108,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
@@ -20103,7 +20104,7 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 57,
+  "beide": 58,
   "nachwache": 50
  },
  "zusammengelegt": [
