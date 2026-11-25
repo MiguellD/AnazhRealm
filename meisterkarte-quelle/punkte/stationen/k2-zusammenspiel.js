@@ -439,7 +439,7 @@ L.perspektive("planet", (() => {
             // ════════ land-meer-luft — EIN Klima aus Gebirge, Meer und Luft ════════
             // Der Planet-Faden an der Heimat-Saat und den Saaten „zsp-0 …“: Breitenkreise ±42°/52° im 3°-Takt (Kamm = Land ≥ 800 m, lokales Maximum),
             // Luv = West (Westwind-Zone), Lee = Ost; der Niederschlag am Ort ist der nasse Anteil des Wetters (phyto-core `wetterAt` über 400 Zeiten mit
-            // dem Δ regenQuote/sturmQuote des Orts — derselbe Weg wie `_wetterAmOrt`). Gegenlauf: flache Paare ohne Kamm (Verhältnis → 1). S2 Rang der
+            // dem GANZEN Δ des Orts, regenQuote/sturmQuote/nebelQuote — derselbe Weg wie `_wetterAmOrt`). Gegenlauf: flache Paare ohne Kamm (Verhältnis → 1). S2 Rang der
             // Trockenheit gegen Meeresabstand und Schatten, Gegenlauf mit vertauschtem Prädiktor; S3 Nebel an Westküsten der Subtropen gegen Umland; S4
             // West- gegen Ostküste gleicher Breite; S5 das Lee der 40 höchsten Kämme −1 Ma ↔ 0 (die gehobenen),
             // Gegenlauf flaches Land über dieselbe Zeit; S6 Widersprüche Klima ↔ Relief an 20 Orten je Saat.
@@ -458,13 +458,15 @@ L.perspektive("planet", (() => {
                         const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
                         const ort = (samen, b, l, t) => r._planetAuftrag({ type: "planet-ort", samen, breite: b, laenge: ((((l + 180) % 360) + 360) % 360) - 180, zeitMa: t || 0 });
                         const nassJe = new Map();
+                        // DAS Δ GANZ (w2-nebel-delta): `wetterAt` liest das Δ des Orts, wie der Faden es reicht (voxel-worker planetOrtAuftrag,
+                        // die Felder von planet-core ORT_DELTA_WETTER samt nebelQuote) — der Schlüssel trägt JEDES seiner Felder, die Station
+                        // schneidet keins ab (ohne nebelQuote wirft `wetterAt` beim Namen, phyto-core wetterVersatz)
                         const nass = (d, art) => {
-                            const k = d.regenQuote.toFixed(4) + "|" + d.sturmQuote.toFixed(4) + "|" + (art || "n");
+                            const k = Object.keys(d).sort().map((f) => f + ":" + d[f].toFixed(4)).join("|") + "|" + (art || "n");
                             if (nassJe.has(k)) return nassJe.get(k);
-                            const o = { regenQuote: d.regenQuote, sturmQuote: d.sturmQuote };
                             let n = 0;
                             for (let i = 0; i < 400; i++) {
-                                const z = PC.wetterAt(ws, 0, 0, i * 97.3, o).zeile;
+                                const z = PC.wetterAt(ws, 0, 0, i * 97.3, d).zeile;
                                 if (art === "nebel" ? z === "nebel" : z === "regen" || z === "sturm") n++;
                             }
                             nassJe.set(k, n / 400);
@@ -658,6 +660,12 @@ L.perspektive("planet", (() => {
                         leser: "phyto-core.js:4804 — wetterAt wählt nebel aus der Feuchte-Welle, das Δ des Orts verschiebt nur Regen und Sturm",
                         gruen: { werte: { anteilProzent: 75, nebelFaktor: 2.6, wuesteProzent: 70 }, zeuge: PZ(10, 40) },
                         attrappen: [{ name: "Nebel 2,6× ohne Küsten des Planeten", roh: { werte: { anteilProzent: 75, nebelFaktor: 2.6, wuesteProzent: 70 }, zeuge: {} } }],
+                        // quelle: Namib, Walvis Bay ~140 Nebeltage/a gegen Gobabeb ~94 im Wüsten-Inneren (1,5×; Wikipedia „Gobabeb“), weiter landein
+                        // an der Großen Randstufe ~0 — das Umland der Station liegt 9° landein, dort ist ≥ 2× im Band
+                        proben: [
+                            { name: "das Δ ohne nebelQuote: die Messung wirft beim Namen → ROT", roh: { werte: {}, zeuge: PZ(10, 40), nicht: "die Messung warf: wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)" }, gruen: false },
+                            { name: "der Nebel am Ostrand 1,0× Umland → ROT", roh: { werte: { anteilProzent: 0, nebelFaktor: 1.0, wuesteProzent: 70 }, zeuge: PZ(10, 40) }, gruen: false },
+                        ],
                     },
                     4: {
                         u: {},
