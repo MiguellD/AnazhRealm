@@ -1,0 +1,41 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+  … gang 3/17 haus_tudor
+  … gang 4/17 haus_niedersaechsisch
+  … gang 8/17 haus_renaissance
+  … gang 11/17 haus_renaissance
+  … gang 14/17 haus_hanseatisch
+  … gang 17/17 haus_viktorianisch
+  … bild 1/17 haus_gotisch
+  … bild 2/17 haus_alemannisch
+  … bild 3/17 haus_tudor
+  … bild 4/17 haus_niedersaechsisch
+  … bild 5/17 haus_tudor
+  … bild 7/17 haus_tudor
+  … bild 8/17 haus_renaissance
+  … bild 9/17 haus_franzoesisch
+  … bild 10/17 haus_renaissance
+  … bild 11/17 haus_renaissance
+  … bild 12/17 haus_franzoesisch
+  … bild 14/17 haus_hanseatisch
+  … bild 15/17 haus_viktorianisch
+  … bild 16/17 haus_renaissance
+  haus_gotisch · Gang Hub 0.20 m · innen 0.04966217472572898 ÷ außen 0.058113298786768006 = 0.855
+  haus_alemannisch · Gang Hub 0.20 m · innen 0.09829694575927417 ÷ außen 0.015112554399906098 = 6.504
+  haus_tudor · Gang Hub 0.20 m · innen 0.08000761976711622 ÷ außen 0.014935463376594826 = 5.357
+  haus_niedersaechsisch · Gang Hub 0.20 m · innen 0.03319632623563256 ÷ außen 0.08091221926040743 = 0.41
+  haus_tudor · Gang Hub 0.20 m · innen 0.0808401977742869 ÷ außen 0.02047906322318943 = 3.947
+  haus_tudor · Gang Hub 0.20 m · innen 0.019098540685480475 ÷ außen 0.08961524929100968 = 0.213
+  haus_tudor · Gang Hub 0.20 m · innen 0.23175954448555125 ÷ außen 0.06939592369829106 = 3.34
+  haus_renaissance · Gang Hub 0.20 m · innen 0.20390102784072411 ÷ außen 0.025830918446628458 = 7.894
+  haus_franzoesisch · Gang Hub 0.20 m · innen 0.2662962473431971 ÷ außen 0.12641822929429583 = 2.106
+  haus_renaissance · Gang Hub 0.20 m · innen 0.0901450010738057 ÷ außen 0.12021871521203122 = 0.75
+  haus_renaissance · Gang Hub 0.20 m · innen 0.025523302181777778 ÷ außen 0.08133192676252031 = 0.314
+  haus_franzoesisch · Gang Hub 0.20 m · innen 0.07208583568163474 ÷ außen 0.06296031310881336 = 1.145
+  haus_renaissance · Gang Hub 0.20 m · innen 0.21805280792821655 ÷ außen 0.025803493645190103 = 8.451
+  haus_hanseatisch · Gang Hub 0.20 m · innen 0.018704026206164567 ÷ außen 0.018197410999398905 = 1.028
+  haus_viktorianisch · Gang Hub 0.20 m · innen 0.02220367340140256 ÷ außen 0.017358231566912682 = 1.279
+  haus_renaissance · Gang Hub 0.20 m · innen 0.06007258137934514 ÷ außen 0.0081029816099795 = 7.414
+  haus_viktorianisch · Gang Hub 0.20 m · innen 0.02180574947740432 ÷ außen 0.02732745876168827 = 0.798
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

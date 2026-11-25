@@ -1,7 +1,7 @@
 {
  "sha": "486a6685925d51302752c756d7d47654d83922d1",
  "geraet": "gtx",
- "zeit": "2026-11-25T06:34:09.194Z",
+ "zeit": "2026-11-25T06:34:20.400Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.gespraech#2": {
@@ -353,6 +353,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": true,
+   "zahl": "17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 17 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.213 · Median 1.279 (Soll ≥ 0,15)",
+   "exit": 0,
+   "minuten": 3.83,
+   "gpu": "nvidia/pascal",
+   "konsum": "kd496f9db399b",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k440f272d39e8",
+   "s": 229.6,
+   "fremd": {
+    "s": 233.7,
+    "takte": 107,
+    "fremdS": 111.42,
+    "kerne": 0.477,
+    "fensterKerne": 0.961,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      22.53
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      8.92
+     ]
+    ],
+    "dienerS": 46.17,
+    "diener": [
+     [
+      "System",
+      18.3
+     ],
+     [
+      "dwm.exe",
+      14.89
+     ]
+    ],
+    "geraetS": 100.78,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      70.14
+     ],
+     [
+      "svchost.exe",
+      26.13
+     ],
+     [
+      "SearchIndexer.exe",
+      2.34
+     ]
+    ],
+    "eigenS": 659.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T06:34:20.400Z",
+   "abdruck": "cb29c3000449",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -362,7 +431,8 @@
   "k4a356876d3f2": "bVVdb6MwEPwvebyWGgIEY6kPTqnUSHfX9CesYQ00BCIbwimn++8nk7jho/sSCc14xzO7zt/VCdID5Pj0qZt6xVY/Vo8rDWd0NKozqqdPvWKrOPXW6DN+LcI5fzGwVJWnVpOqFAREDcURnU61WFZP6UADgUFGGelfeb4nRJILSfrn5zm1Epg1TgsSLdFFP6TI5sBO5yDQgU4OzSzYpZs1MDIUTfh7Qr6qp5zvAxnsaTI7TECdTdXGmzDCkO16zl/5QmVWArZOVdba9vWyKJYuu/f6teAo6J0LYFGhupGQel4grNitsdNYMyPKqtN60oz6WbimjJB4js1Rl2nROifVCKxvcBGvIw/Ydul2fuocOVYEQgAVc68LwDpHNdHg+qnceIz8ofNDD3BEBU4NhfXS9aO1uHtDCHlbaqkG4UMLK9wVMvSnRBMqORuD+Y6Piu7NN/JgUdv++j0dYV6WQeq0KNVxapcMcO367OdSoi4gQ+UcGt1+oX2MAldct2GXkOF3T7dz5v1yNkMAoKOBIZTwt4WXupFtDwqd/NTZoQkwjELG+W4BbuF4tJn76GbuPEjdmkEfywiiDSIyQh6ui7K89HUtnAuWlSVJGQRxOD/8rODogMhVKaVNXoSpjL8b1B6r1hFN01obvSjyfUZ8Uo/D/j3EOE46yT+Cttr2r3xSOz7XPXRoVGtFh2LjyoDJYXjSBbpUrdNDWlj4WgoEI32RyQVVhTlObBQRjc2I9/Kq+2Kemuj2FMiH8ZXIZXliicbgWnfahpxCIEL2TSQ9qoOA+nADppnnbbJh/Lbv/G3iyUvysaeJWZVJ+bnxLiluK5IaT+17dcKUnFQjS/MikgI6XUDV3v8O/v0H",
   "k440f272d39e8": "jVVdb5tAEPwvfqxLDgyY46Q8nINVO1Uat+of2IM9IMZg3UGoXPW/V2BfwkdUdV9AaOZ2dnaA34szxEdI8e5FV+WCLT4tPi80vKKlUb2iunvRC7YIY2eFLuPXIpzzLx0sVvm51qTIBQFRQnZCq1E15sVd3NNAoJdQRtotTw+ESHIhUcvf6oHf30+PKQQmlVWDRHOIja5PkU2BjU5BoAWN7BsbsE3XK2CkLxrx54i8VfvE+cGT3oFGk8MElMlYebj2A/TZvuV8O1eZ5IC1VeSlNn2dJAilzQa9ZhwFrXUBzApUNxJSx/GEEbvpLOlsmhBl0Wg9akbdxF9RRkg4xaao8zirrbOqBJY3uAhXgQNs087mSM+NJYeKQAigYup1BlimqEYabDeWa4eRX3R66BFOqMAqITNe2m6wEu/eEEJ2cy1FL7xvYYTbQvrumNgt9Wow3/NB0UP3jCwNanOLWcz/GTcdZ7k6je2SHq5sd+qBziBBZR0rXb8hXQw8W1zfin1E+uuBbqbM98HM/gCADsJCKOG7mY+6knULCq303JjAeOgHPuPpLF26htPJ7NtFO7FnA9RdyIcyvGCNiIyQ5c3SmT3XV8K6YF4YkpSeF/rsYeNNwa8KThaIVOVSms0LP5bhR0FtsagtUVW1sdIJAtdlxCXlcNnfWv7A+dNgh1Hxw6uLx+WWj+orf/yoQ6VqI9wXa1t6TPaTxlPxba5qq4U4M/CVFAjh1MQLqgJTHNkoAhp28W4HWYs8c7McjkMusy1fcuwMLnWjzZJj8ITPbim/hmuc3BbVUUB5vBHixHHWCeM8Svkz3w1c2fH9T/vQ8v+rLf/eNTljTM6qknn3VSQZNDqDon7/Pfz5Cw==",
   "kb77ca9cef780": "bVVdc5swEPwvfmxKBAaM0Ewe5JCZeKZtnJ9wghMQY/BIYFp3+t87wlbMR+6R2dWtdu/E39UJ0gPk+Pihm3rFVt9W31cazuhoVGdUjx96xVZx6q3RZ/ydm9pzzp8NLFXlqdWkKgUBUUNxRKdTLZbVYzrQQGCQUUb6F57vCZHkQpL+6WlOrQRmjdOCREt00Q8psjmw0zkIdKCTQzMLdulmDYwMRRP+lpDP6inn+0AGe5rMDhNQZ1O18SaMMGS7P5y/8IXKrARsnaqste3rZVEsXXbv9XPBUdA7F8CiQnUjIfW8QFixW2OnsWZGlFWn9aQZ9bNwTRkh8Ryboy7TonVOqhFY3+AiXkcesO3S7fzUOXKsCIQAKuZeF4B1jmqiwfVTufEY+U3nhx7giAqcGgrrpetHa3H3hhDyutRSDcKHFla4K2ToT4kmVHI2BvMdHxXdm2/kwaK2/fV7OsI8L4PUaVGq49QuGeDa9dmPpURdQIbKOTS6/UT7GAWuYEODXUKuO0G3c+b9cjZDAKCjgSGU8NeFl7qRbQ8KnfzU2aEJMIxCxvluAW7heLSZ++hm7jxI3ZpBH8sIog0iMkIerouyvPR1LZwLlpUlSRkEcTg//Kzg6IDIVSmlTV6EqYy/GtQeq9YRTdNaG70o8n1GfFKPw/41xDhOOsnfg7ba9i98Ujs+1z10aFRrRYdi48qAyWF40gW6VK3TQ1pY+FoKBCN9kckFVYU5TmwUEY3NiPfyqvtinpro9hTIh/GVyGV5YonG4Fp32oacQiBC9kUkPaqDgPpwA6aZ522yYfy2b/x14slz8r6niVmVSfm58S4pbiuSGk/te3XClJxUI0vzIpICOl1A1d5/B//+Aw==",
-  "kcd80ff0458ff": "dVTbcpswEP0XPyZVBAYMaCYPcnDHnl7G+YQVrIAYg0cSoXWn/94BW7GBdF9g4Jzds2dX+rM4QXqAHJ/edFMv2OJh8WWh4R2JRvWO6ulNL9giTt0leoxfgnLOX3pYqsqT0bQqBQVRQ3FE0iqDZfWUDjQQ6GcRo92G53tKJT3TpOMf8cKfn6dpKoFZQwxItEkc9III2RTY6hwEEmjlUPgKfpjABNTZWFO8CkIM2O4355t5/awENKQqa20zulkYS4dRG92PGUdBR86ARYXqSsLIdX1xJUXrvtnegAlRVq3Wo2KRlwXLiFEaT7E56jItDDmpRmB9hYt4GbrA1t2sj/zUEnmvCISASExdLADrHNVIg+OlcuUy+iuaJj3AERWQGgrrpeOFS3HzhlK6nWupBuFDifo/Y9JpUarjuDnp49Lx2Pd5Ql1AhoocGm0+0B6GviMuG7pL6PDcR+sp8ybFOg4A0d14aUT5dta5bqTpQCHJT60dsY9BGDDOdzOwgePRTshDJ3OmtmvTr+W9DD9cISKj9DG5bNms6csSkzOWlSVJ6ftxwF7W/hT8ruBIQOSqlNLOSgSpjD9brQ4rQ0TTGGulG4ae11tS30/253Byd7fjy5P81f/xlecbPopvfL3PZ/qHKo0yVnwgVo70mRy6TWfoUhnSQVpY+FIKhJh9Aj2jqjDHkZ0ijOJ+Mbv0Tq1vXx7v26Ln2bTPJfZG17rVdtgp+CK4bMn1AtuNL48O1UFAfbgS0sx1VxlLeJLTx812bFDyuo+Sj0Q26ODjtuDj7x3f8WGNT5hSCUogNZAThXJ0Y/d/T6qRZX/j0QJaXUBlbpC//wA="
+  "kcd80ff0458ff": "dVTbcpswEP0XPyZVBAYMaCYPcnDHnl7G+YQVrIAYg0cSoXWn/94BW7GBdF9g4Jzds2dX+rM4QXqAHJ/edFMv2OJh8WWh4R2JRvWO6ulNL9giTt0leoxfgnLOX3pYqsqT0bQqBQVRQ3FE0iqDZfWUDjQQ6GcRo92G53tKJT3TpOMf8cKfn6dpKoFZQwxItEkc9III2RTY6hwEEmjlUPgKfpjABNTZWFO8CkIM2O4355t5/awENKQqa20zulkYS4dRG92PGUdBR86ARYXqSsLIdX1xJUXrvtnegAlRVq3Wo2KRlwXLiFEaT7E56jItDDmpRmB9hYt4GbrA1t2sj/zUEnmvCISASExdLADrHNVIg+OlcuUy+iuaJj3AERWQGgrrpeOFS3HzhlK6nWupBuFDifo/Y9JpUarjuDnp49Lx2Pd5Ql1AhoocGm0+0B6GviMuG7pL6PDcR+sp8ybFOg4A0d14aUT5dta5bqTpQCHJT60dsY9BGDDOdzOwgePRTshDJ3OmtmvTr+W9DD9cISKj9DG5bNms6csSkzOWlSVJ6ftxwF7W/hT8ruBIQOSqlNLOSgSpjD9brQ4rQ0TTGGulG4ae11tS30/253Byd7fjy5P81f/xlecbPopvfL3PZ/qHKo0yVnwgVo70mRy6TWfoUhnSQVpY+FIKhJh9Aj2jqjDHkZ0ijOJ+Mbv0Tq1vXx7v26Ln2bTPJfZG17rVdtgp+CK4bMn1AtuNL48O1UFAfbgS0sx1VxlLeJLTx812bFDyuo+Sj0Q26ODjtuDj7x3f8WGNT5hSCUogNZAThXJ0Y/d/T6qRZX/j0QJaXUBlbpC//wA=",
+  "kd496f9db399b": "bVVdc5swEPwvfmyqCAwYoZk8yCGdeKZpnJ9wghMQY/BIYFp3+t87YCvhI/fEMLu61e4d/F2dIDlAhvfvpq5WfPVt9X1l4IzEoD6jvn83K76KEneNHhfX2gshHntYootTY2hZSAqygvyIpNUNFuV9MtBAop8yTrsnke0pVfRC4+7hYU4tJaY1aUChJTroBQz5HNiaDCQSaNXQzIIdtlkDp0OxWLzG9KO6FyH2vvL3LJ4dJqFKp2qjTRBiwHd/hHgSC5VpAdiQsqiM7eumYaQcPuq14GjoyAUwL1HfSMhc15dW7La3s7dmRlRla8ykGfPSYM04pdEcm6EpkrwhJ11LrG5wGa1DF/h26XZ2aokaKwIpgcm51zlglaGeaHC8RG1cTn+z+aEHOKIGUkFuvXS8cC0/vaGUPi+1lIPwoYUV7kgVeFNiHyo99waLnRgV2/fv6J1Fbbvr+2SEeVwGaZK80MepXcrHtePxn0uJJocUNTnUpvlAexj6jrxuwy6m151g2znz83I2QwBgo4GhjIrnhZemVk0HGkl2au3Q+BiEARditwA3cDzazD10UmcepGn6QR/L8MMNInJK766Lsrz0dS3IBYvSkpTy/SiYH37WcCQgM10oZZOXQaKirwa1w7Ihsq4ba6Mbhp7HqUercdi/hhjHScfZm//yQ2RPYlI7Mdc9dKh1Y0UHcuMon6theJIFutAN6SDJLXytJELEqbfI5IK6xAwnNsqQRf2Id6N5i337cDe+Er0sTyywN7gyrbEhJ+DLgH8RSYf6IKE63IBJ6rqbdBi/7at4npoSv+1Z3K/KpLzBuzi334MTJvSka1X0X0GaQ2tyKJvPX8C//w=="
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
