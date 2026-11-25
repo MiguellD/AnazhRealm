@@ -1,7 +1,7 @@
 {
  "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
  "geraet": "gtx",
- "zeit": "2026-11-25T22:20:07.672Z",
+ "zeit": "2026-11-25T22:25:13.059Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.kopplung.land-meer-luft#4": {
@@ -701,6 +701,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.planet.kosmos.systeme#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT Leser fehlt: der Mond hat keine eigene Bahn: welt-licht.js:814 mondRichtung = −Sonne, stamm/bild-himmel.js:2793 (stets Vollmond, keine Phase je Woche) — Planeten: 8 mit eigener Bahn, Himmel gegen Ephemeride über 365 Tage max 0.022° (Soll ≤ 0,5°) · Fächer 365/365 Adressen (365 Zeiten) in 41 ms · Leser stamm/bild-himmel.js:327 · Gesetz welt-licht.js:2020 kosmosZeit (Kepler, kBahn) · schlechteste {\"saat\":null,\"ort\":null,\"zeit\":138.999} abw 0.022038914891139672 · Bild dort Himmel bei Nacht am Tag 138.999 (worldMeta.tag + Uhr), Blick zum Planeten der größten Abweichung · ungemessen: Mondphase je Woche im Bildpaar (am Gerät; der Mond der Welt hat keine Phase) (verlangt 1 Planeten mit eigener Bahn, die Welt erzeugte 8)",
+   "exit": 0,
+   "minuten": 0.42,
+   "grund": "ROT: S1 · ROT Leser fehlt: der Mond hat keine eigene Bahn: welt-licht.js:814 mondRichtung = −Sonne, stamm/bild-himmel.js:2793 (stets Vollmond, keine Phase je Woche) — Planeten: 8 mit eigener Bahn, Himmel gegen Ephemeride über 365 Tage max 0.022° (Soll ≤ 0,5°) · Fächer 365/365 Adressen (365 Zeiten) in 41 ms · Leser stamm/bild-himmel.js:327 · Gesetz welt-licht.js:2020 kosmosZeit (Kepler, kBahn) · schlechteste {\"saat\":null,\"ort\":null,\"zeit\":138.999} abw 0.022038914891139672 · Bild dort Himmel bei Nacht am Tag 138.999 (worldMeta.tag + Uhr), Blick zum Planeten der größten Abweichung · ungemessen: Mondphase je Woche im Bildpaar (am Gerät; der Mond der Welt hat keine Phase) (verlangt 1 Planeten mit eigener Bahn, die Welt erzeugte 8)",
+   "gpu": "nvidia/pascal",
+   "konsum": "ke1c30bf785b8",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k05a87765fff2",
+   "s": 24.1,
+   "fremd": {
+    "s": 28.5,
+    "takte": 13,
+    "fremdS": 16.91,
+    "kerne": 0.593,
+    "fensterKerne": 1.119,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.56
+     ],
+     [
+      "Claude.exe",
+      2.44
+     ],
+     [
+      "Explorer.EXE",
+      2.09
+     ]
+    ],
+    "dienerS": 7.53,
+    "diener": [
+     [
+      "System",
+      3.81
+     ],
+     [
+      "dwm.exe",
+      1.59
+     ]
+    ],
+    "geraetS": 11.97,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.41
+     ],
+     [
+      "svchost.exe",
+      2.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.34
+     ]
+    ],
+    "eigenS": 112.81,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T22:25:13.059Z",
+   "abdruck": "934903ffb9e9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -714,7 +784,8 @@
   "k5df3d39a68a4": "bVXbbqMwEP2XPG6XmotZjKU+OKVSI21X6SeMYQw0BCIb4iqr/fcVJKRcOo/ojM/xOePh7+YE6QFyfPwwTb3hmx+bnxsDZ3QM6jPqxw+z4Zs49XwMuHgXfe2FEM89LNXlqTWkKiUBWUNxRKfTLZbVYzq0qV/ghpIT+yLyPSGKXEhin56WrZXErHFaUDg2uhiEDPkS2JkcJDrQqYHsBg5pjL88ToZiiXhLyL0+mRB7S+yevS4Ok1Bnc7Xo+ZICF3YnhHhfqsxKwNapytqMvF4Wxcrldy77turRYJ0LYFGhHkmY51E5it32dvbWLBpV1RkzI2NBFvqMExIvsTmaMi1a56QbifUNLmM/8oBv127np85RU0UgJTC59LoArHPUMw1ukKre6E+2PPQAR9Tg1FDcoLEbRL788oYQ8rrWUg3CB4pROKUxMn/W2IdKzr3BYicmRfd9wISNqMTevk8wL2JFatKi1Me5XYqi7wb891qiKSBD7Rwa097RAUbUlXwg2CXk+ibYdtn5dbkxQwBgk4EhjIjXlZemUa0FjU5+6sahoRhGIRditwK3cDyOmQfoZu4ySNP2gz6VEYU0pMAJebg+lPWlr8/CuWBZjU1KURqHy8PPGo4OyFyXSo3JyzBV8XeDarFqHdk07WijF0VBwElA6mnYf4YYp0kn+Tttq619EbPaiaXugaHR7f2F+lHkpVzlCSOEqSW61K1jIS1GuK8kQi99lckFdYU5zmxUngd+xolVV90f/aqJbqtAPcwG+LI+scTe4Np0Zgw5BSpD/k0kFvVBQn0Y912YhX48jN/2bVjGk3l/zhVNCLFs9plu3WHTPIirh1srxMP+KuqEKTnpRpX9RiQFdKaAqv36Hfz7Dw==",
   "ke37c16fa5ebf": "bVXbbqMwEP0XHrelw8UUsNQHp3TVSNtV+gljGAMbApENpcpq/30FCWmAzguSdWbm+JwZ89c6YrrHnB7+mKa2uPXDureOFdbU2mmjh2OLWx4FLmO8duAOuh1A7+Zikz9Z95bBD7IN6Q/SZ2icuh75XJwDhBDPAyzV5bE1UJUSUNZYHMjudEtl9ZCOaeoRnUBy6F9EvgNQcIKkf3paplaSssZuUdGU6JAfRMSXwM7kKMnGTo3NLuCAxfTochgjSsRbAtfoUyF2PfS76HVRTGKdzdmS60mGXPTbZyHelyyzEqm1q7I2U183C2Pl8K9eb6scjb19Qioq0lOTyHWZnMhuBjkHaRaJquqMmTWL/CzwIg4QL7E5mTItWvuoG0n1BS5jL3SRb9Zq58fOVreMUEqM5FLrAqnOSc84OH6qBqE/o2XRPR5Io11jcYHGjh968ksbAHhdc6lG4mOLiThjMUXeLHEwFT4GgcVW3ATbAcAnRBMq6S/nN5gXsWpq0qLUh7lcipHn+PzXmqIpMCNt7xvTXtE+hcyR523YJjB+d9Fmmfl1uclDRIxuBgYiEK8rLU2j2h412fmxm4aGURAGXIjtCtzi4TB57pOTOUsjTTsM+i2NMGABQw5wd16U9aXPa2GfqKymJKUYi4Nl8Q+NBxtlrkulJudlkKr4u0HtqWpt2TTtJKMbhr7PwYf61uzfo423Tif5O3v7KfIXMYutWPIeOzS6vW6oF4ZuylWeRACRWqJL3do9psUE95QkjDn06bLwiXRFOc1kVK6LXsbHJ+bKdJq95G42wKeVy6eSBoFr05nJ5BSZDPg3lvSk9xLr/fTeBVngxeP4bd7Ebi7Kc65YAtBHs1O2cYTYiPzusg5HSuGoG1UOryAU2JkCq/brb/HvPw==",
   "k0fee5808ff42": "bVXbbqMwEP2XPG6XmotZjKU+mFKpkbar9BPGMAYaApFN4iqr/fcVJKRcOo/ojM/xOePh7+YI2R4KfPwwbbPhmx+bnxsDZ3QM6jPqxw+z4Zs483wMuHgXfe2EEM89LNPVsTOkriQB2UB5QOekO6zqx2xoU7/ADSUn9kUUO0IUuZDUPj0tW2uJeet0oHBsdDEIGfIl8GQKkOjASQ1kN3BIY/zlcTIUS8VbSu71yYTYWWJ37HVxmIQmn6tFz5cUuLDbZyHelyrzCrBz6qoxI6+XR7Fy+Z3Lvq16NFjnAljWqEcS5nlUjmKT3s7emkWjqk/GzMhYkIc+44TES2yBpsrKzjnqVmJzg8vYjzzgydrt4nhy1FQRSAlMLr0uAZsC9UyDG2SqN/qTLQ/dwwE1OA2UN2jsBpEvv7whhLyutdSD8IFiFE5pjMyfNfahknNvsNiKSdFdHzBhIyq1t+8TzItYkZqsrPRhbpei6LsB/72WaErIUTv71nR3dIARdSUfCLYpub4Jliw7vy43ZggAbDIwhBHxuvLStKqzoNEpjqdxaCiGUciF2K7AHRwOY+YBurm7DNJ0/aBPZUQhDSlwQh6uD2V96euzcC5Y1WOTUpTG4fLws4aDA7LQlVJj8jLMVPzdoFqsO0e2bTfa6EVREHASkGYa9p8hxmnSafFOuzqxL2JWW7HUPTC0uru/UD+KvIyrImWEMLVEV7pzLGTlCPeVROilrzK5oK6xwJmNyvPAzzmx6qr70q+a6LYK1MNsgC/rEyvsDW7MyYwhZ0BlyL+JxKLeS2j2474L89CPh/FL3oZlPJn350LRlBDLZp9p4gqRiOJBXD1MrBAPu6uoI2bkqFtV9RuRlHAyJdTd1+/g338=",
-  "k44b0ab85cc0b": "fVVdb6MwEPwvebweNR/mAEt92DQ9NaeLlP6ENayBhkBkk1DldP/9BKmTANXtCy+zu+OZsfmzOGC6w5we301TL8Ti2+L7wuCJHEP6RPrx3SzEIkk9nwIBl2IA8NzDUl0eWsOqUjKUNRZ7co66pbJ6TIc29QPdUArWvUC+ZUyxM1t1cK0XeHqajqkkZY3ToiI7xKUgjElMgUeToyQHj2pY/AkOeUI/PMGGilewWbFrdSnAtmPdNn4FgPVkoMQ6G7Mnz5ccBXTrZ4C3KdOsRGqdqqyN3e1lUaJccdu3mfVo7JwzUlGRtktiz+PSEl72svRSTRpVdTRmtCwOstCPBWPJFJuTKdOidQ66kVR/wmXiRx6KZTdTPD8cHXXPCKXEWE71LpDqnPSIgxukqhf7I54O3eGeNDo1Fp/QxA0iX960YYy9zrlUA/FhhSXOeUKxP2rsjWWnXmBYw13xLWPsg8UWZaPG4b+RM2lR6v1YLsXJdwPxe07RFJiRdnaNaa/ogCLuysvtWK/Y8N3Gy2nn7XDWQ0SM7wLDYgavMy1No9oONTn54WhDwymMQgGwnoFb3O+t5wG5mTs10rR90O9pRCEPOQrGHi6XZX7oy7VwzlRWtkkpzpNwOvykce+gzHWplHVehqlKvgpqR1XryKZprYxeFAVBL0d9b/Z2sPHe6VX+xjc/IX+BUa1hynvY0Oj2ekP9KPJSofJVzFispuhSt06HaWHhvpKEiWBdOh18Jl1RTiMZleehn4nhmbkytdlbPYwCfJ65fC6pF7g2R2NNTpHLUHxhSUd6J7He2TcvzEI/Eb8AYLmB7ViU51zxFZvVhwuwhPzh7TL4QCk76EaV/SvICjyaAqv29kv4+w8="
+  "k44b0ab85cc0b": "fVVdb6MwEPwvebweNR/mAEt92DQ9NaeLlP6ENayBhkBkk1DldP/9BKmTANXtCy+zu+OZsfmzOGC6w5we301TL8Ti2+L7wuCJHEP6RPrx3SzEIkk9nwIBl2IA8NzDUl0eWsOqUjKUNRZ7co66pbJ6TIc29QPdUArWvUC+ZUyxM1t1cK0XeHqajqkkZY3ToiI7xKUgjElMgUeToyQHj2pY/AkOeUI/PMGGilewWbFrdSnAtmPdNn4FgPVkoMQ6G7Mnz5ccBXTrZ4C3KdOsRGqdqqyN3e1lUaJccdu3mfVo7JwzUlGRtktiz+PSEl72svRSTRpVdTRmtCwOstCPBWPJFJuTKdOidQ66kVR/wmXiRx6KZTdTPD8cHXXPCKXEWE71LpDqnPSIgxukqhf7I54O3eGeNDo1Fp/QxA0iX960YYy9zrlUA/FhhSXOeUKxP2rsjWWnXmBYw13xLWPsg8UWZaPG4b+RM2lR6v1YLsXJdwPxe07RFJiRdnaNaa/ogCLuysvtWK/Y8N3Gy2nn7XDWQ0SM7wLDYgavMy1No9oONTn54WhDwymMQgGwnoFb3O+t5wG5mTs10rR90O9pRCEPOQrGHi6XZX7oy7VwzlRWtkkpzpNwOvykce+gzHWplHVehqlKvgpqR1XryKZprYxeFAVBL0d9b/Z2sPHe6VX+xjc/IX+BUa1hynvY0Oj2ekP9KPJSofJVzFispuhSt06HaWHhvpKEiWBdOh18Jl1RTiMZleehn4nhmbkytdlbPYwCfJ65fC6pF7g2R2NNTpHLUHxhSUd6J7He2TcvzEI/Eb8AYLmB7ViU51zxFZvVhwuwhPzh7TL4QCk76EaV/SvICjyaAqv29kv4+w8=",
+  "ke1c30bf785b8": "bVXbbqMwEP2XPG6XDhdTwFIfnNJVI21W6SeMYQw0BCIbQpXV/vsKGpIAnRck68zM8Tkz5u/qiMkeM3r8MHW14qsfq58rgyeyDOkT6ccPs+KrKHFc8rj4ChBCvPSwRBfHxkBZSEBZYX4gq9UNFeVjMqSpJ7R9yaF7FdkOQMEZ4u75eZ5aSkprq0FFY6JNnh8SnwNbk6EkC1s1NLuAfRbRk8NhiDAW2xiu0SVC7DroduHbrJjEKp2yJceVDLnoNi9CvM9ZpgVSY5VFZca+ThpEyua3XttFjsbOOiPlJemxSeg4TI5k172cvTSzRFW2xkyahV7quyEHiObYjEyR5I111LWk6gKXkRs4yNdLtbNja6l7RiglhnKudY5UZaQnHGwvUb3Qn+G86B4PpNGqML9AI9sLXHnTBgDellzKgfjQYiTOWEShO0nsTYVTL7DYiLtgOwD4hHBExd3l/A7zKhZNTZIX+jCVSzFybY//XlI0OaakrX1tmivao4DZ8msbNjEM3124nmfeLjd6iIjh3cBACOJtoaWpVdOhJis7tuPQMPIDnwuxWYAbPBxGzz2yU3tupGn6Qb+nEfjMZ8gBHr4WZXnpr7WwzlSUY5JSjEX+vPhJ48FCmelCqdF56Scq+m5QOyobS9Z1M8roBIHncfCgujf7z2DjvdNx9s62v0T2KiaxEXPeQ4daN9cNdYPASbjK4hAgVHN0oRurwyQf4a6ShBGHLpkXPpMuKaOJjMpx0E358MRcmY6zFz9MBvi8cPlcUC9wZVozmpwgkz7/xpKO9F5itR/fOz/13WgYv/VW7KaivGSKxQBdODlla1uItcgeLutwpASOulZF/wpCjq3JsWxuv4B//wE="
  },
  "sitzung": {
   "start": "2026-11-25T22:19:28.121Z",
