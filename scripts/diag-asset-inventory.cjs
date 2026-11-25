@@ -163,10 +163,13 @@ hauptLauf(async () => {
             brand: { b: "substanz", why: "brand (die Flammen und die Fahne des Brands, je ein Satz)" },
             druck: { b: "substanz", why: "druck (der Staub der Druckwelle, ein Satz)" },
             funken: { b: "substanz", why: "funken (Späne eines Treffers, ein Satz)" },
+            // Stadtmauer und Zaun der Siedlungen (mauer-im-stoff, `_einfriedungArt`): EIN Satz im Bau-Stoff der Welt, die Gestalt aus
+            // dem Gesetzbuch (fachwerk `mauerNetz` · `zaunNetz`) — bis dahin zwei Pools der Kiste
+            "siedlung-einfriedung": { b: "substanz", why: "siedlung-einfriedung (Mauer und Zaun, ein Satz im Bau-Stoff)" },
         };
-        // die Pools (`AnazhRealm._poolKennung`, gestempelt bei jeder Erzeugung, auch beim Verdoppeln): Zaun und Mauer der
+        // die Pools (`AnazhRealm._poolKennung`, gestempelt bei jeder Erzeugung, auch beim Verdoppeln): Acker und Frucht der
         // Siedlungen, die Fauna (Vogel, Fisch, Bestäuber) — Substanz, ihr Grund ist ihr Name
-        for (const k of ["siedlung-zaun", "siedlung-mauer", "siedlung-acker", "siedlung-frucht", "vogel", "tier:fisch", "tier:bestaeuber"])
+        for (const k of ["siedlung-acker", "siedlung-frucht", "vogel", "tier:fisch", "tier:bestaeuber"])
             INVENTAR[k] = { b: "substanz", why: k + " (ein Pool)" };
         const chainOf = (node) => {
             const c = [];
@@ -371,14 +374,14 @@ hauptLauf(async () => {
                 st.scene.add(fake4);
                 grassSet.add(fake4); // wie ein Eintrag in st.voxelChunkGrass (der Zensus-Schnappschuss)
                 injected.push(fake4);
-                // DER SIEDLUNGS-POOL: ein Zaun-Pool, der nur seinen Namen trägt, ist ein UNBEKANNTER Emitter (rot) —
+                // DER SIEDLUNGS-POOL: ein Acker-Pool, der nur seinen Namen trägt, ist ein UNBEKANNTER Emitter (rot) —
                 // derselbe Pool aus der Kennung des Stamms (`_poolKennung`) ist Bau-Substanz.
                 const fake5 = new THREE.InstancedMesh(geo, mat, 3);
                 fake5.count = 3;
-                fake5.name = "siedlung-zaun";
+                fake5.name = "siedlung-acker";
                 st.scene.add(fake5);
                 injected.push(fake5);
-                const mitKennung = AnazhRealm._poolKennung(new THREE.InstancedMesh(geo, mat, 3), "siedlung-zaun");
+                const mitKennung = AnazhRealm._poolKennung(new THREE.InstancedMesh(geo, mat, 3), "siedlung-acker");
                 mitKennung.count = 3;
                 st.scene.add(mitKennung);
                 injected.push(mitKennung);
@@ -397,16 +400,16 @@ hauptLauf(async () => {
                     studioGestaltWirt: c4.b === "verletzung",
                 };
                 const z2 = census();
-                const zaunWhy = INVENTAR["siedlung-zaun"].why;
+                const poolWhy = INVENTAR["siedlung-acker"].why;
                 o.selftest = {
                     before: o.zensus.buckets.verletzung,
                     after: z2.buckets.verletzung,
                     fired: z2.buckets.verletzung === o.zensus.buckets.verletzung + 5,
                     // der Siedlungs-Pool: ohne Stempel rot beim Namen, mit der Kennung des Stamms Substanz
-                    poolOhne: z2.violations.some((v) => v.name === "siedlung-zaun" && /UNBEKANNTER/.test(v.label)),
+                    poolOhne: z2.violations.some((v) => v.name === "siedlung-acker" && /UNBEKANNTER/.test(v.label)),
                     poolMit:
                         !!mitKennung &&
-                        (z2.detail.substanz[zaunWhy] || 0) === (o.zensus.detail.substanz[zaunWhy] || 0) + 1,
+                        (z2.detail.substanz[poolWhy] || 0) === (o.zensus.detail.substanz[poolWhy] || 0) + 1,
                     // N4.3 — die Tuft-Wand feuert NAMENTLICH (nicht nur der Zähler):
                     tuftWallFired: z2.violations.some((v) => /foundryGras/.test(v.label)),
                 };
