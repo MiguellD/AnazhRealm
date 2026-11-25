@@ -1452,9 +1452,10 @@ function neigungZeile(Q, og, ohneHeimat) {
 // (voxel-worker.js planetOrtAuftrag: planetOrt + planetPunkt fuss 16, die Felder, die er sendet), die Saaten der Station (Samen des
 // Spiels, zsp-0 …). Die Linse nennt die Kosten je Saat beim Namen — Plan · Meer · Anker · Orte in ms, Relief-Punkte (punktKern) je Ort
 // am gezählten Kern, die Hülle des Klimas daneben — und urteilt in Rufen, nie in Wanduhr-Sekunden (Lehre 26): Punkte je Ort ≤ 2, die Antworten bit-gleich dem Kern vor
-// dem Schnitt (FRAGE_SHA, eingefroren am Kern 0ee3ed8c planet-h2-14: 924 ms je Saat, 84 Relief-Punkte je Ort — 81 davon Leit-Stützen ohne Leser).
+// dem Schnitt (FRAGE_SHA, eingefroren am Kern von main 2da17e2e7 planet-h2-14 mit dem Küsten-Kontrast: 863 ms je Saat, 84 Relief-Punkte je Ort — 81
+// davon Leit-Stützen ohne Leser; ein Gesetz, das eine Antwort bewegt, friert die SHA neu ein, vorher ↔ nachher am selben Gang).
 const FRAGE_SAATEN = 100, FRAGE_PUNKTE_JE_ORT = 2;
-const FRAGE_SHA = { alle: '91edc616f37caa5f14e08705660847efec255aff2458507150a4986089baaf96', erste: '6810031941011de685e1f8c8fdc4317e352bed2e6b4719d804912526bb7fe48b' };
+const FRAGE_SHA = { alle: '22ec9a313b0ea9bfdf6c88e60e4d98d7dfcc2fd935cdaa9d8939d44ffad04028', erste: 'b7ff79ae9e8b46219c72b0d9b29e1ac9c60c184db8514c7e6bf8352f9d8613f5' };
 const frageSaat = (i) => (i === 0 ? 'anazh-realm-seed' : 'zsp-' + (i - 1));
 const FRAGE_ORTE = (() => { const L = []; for (let b = -66; b <= 66; b += 6) for (let l = -180; l < 180; l += 6) L.push([b, l]); return L; })();
 // die Antwort des Fadens als Zahlen in fester Folge (wörtlich planetOrtAuftrag) — bit-genau gehasht, nie über JSON (−0, NaN)
