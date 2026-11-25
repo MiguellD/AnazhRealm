@@ -319,12 +319,12 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 30dd564bd6 */ const K = {"budge
     console.log("PROFIBAND " + JSON.stringify(zus));
 })(process.argv[1], process.argv[2]).catch((e) => { console.log("PROBE ROT: " + String((e && e.stack) || e).split("\n").slice(0, 3).join(" | ")); process.exitCode = 1; }); glaette C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\f63a69ef-gtx\profiband.K4_1.json
 [linse-gpu] nvidia/pascal
-@@PUNKTE@@ ZEIT anfang 42.3 s
-@@PUNKTE@@ ZEIT k4-geh 47.0 s
-@@PUNKTE@@ ZEIT k4-fahrt 56.7 s
-@@PUNKTE@@ ZEIT strom 56.7 s
-@@PUNKTE@@ ZEIT strom-gelesen 56.7 s (277 Bilder)
-PROFIBAND {"art":"glaette","sekunden":56.7,"uhrS":98,"schritte":[["anfang",42.2],["k4-geh",4.8],["k4-fahrt",9.7]],"offen":[],"fehler":{},"strom":{"bloecke":68,"bilder":277,"seiten":1,"fehler":0,"verloren":0},"glaette":{"k4-geh":{"n":100,"frame":50.08,"p99":83.33,"max":83.33,"ueber33":9,"ueber100":0,"takt":42.94,"vram":134.4,"gpu":6.59,"gpuN":11,"befehle":127,"dreiecke":342279,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":4,"sattel":"0","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"v":5}},"k4-fahrt":{"n":47,"frame":116.64,"p99":166.67,"max":166.67,"ueber33":35,"ueber100":6,"takt":112.89,"vram":142.5,"gpu":8.04,"gpuN":10,"befehle":178,"dreiecke":602644,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":2,"sattel":"101","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"wagen":"werkbank-fahrt","aus":null,"ein":"werkbank-fahrt"}}},"anfang":true}
+@@PUNKTE@@ ZEIT anfang 39.8 s
+@@PUNKTE@@ ZEIT k4-geh 44.4 s
+@@PUNKTE@@ ZEIT k4-fahrt 53.8 s
+@@PUNKTE@@ ZEIT strom 53.8 s
+@@PUNKTE@@ ZEIT strom-gelesen 53.9 s (269 Bilder)
+PROFIBAND {"art":"glaette","sekunden":53.9,"uhrS":98,"schritte":[["anfang",39.8],["k4-geh",4.6],["k4-fahrt",9.4]],"offen":[],"fehler":{},"strom":{"bloecke":67,"bilder":269,"seiten":1,"fehler":0,"verloren":0},"glaette":{"k4-geh":{"n":93,"frame":50.02,"p99":83.34,"max":83.34,"ueber33":14,"ueber100":0,"takt":47.23,"vram":135.4,"gpu":6.62,"gpuN":11,"befehle":124,"dreiecke":344097,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":3,"sattel":"0","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"v":5}},"k4-fahrt":{"n":49,"frame":100.01,"p99":166.65,"max":166.65,"ueber33":34,"ueber100":3,"takt":85.95,"vram":139.8,"gpu":8.98,"gpuN":10,"befehle":185,"dreiecke":694907,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":2,"sattel":"101","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"wagen":"werkbank-fahrt","aus":null,"ein":"werkbank-fahrt"}}},"anfang":true}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
