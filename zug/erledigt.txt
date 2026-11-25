@@ -2516,3 +2516,4 @@ omen-gtx-gtx-486a6685-w101113-1-486a6685 ROT 0 GRÜN / 2 ROT / 8 UNGEMESSEN · R
 2026-11-25 10:55 RUNDE 29 ALARM gtx: ohne Fortschritt seit 16 min (halt, 68/242, Station karte2.planet.relief.grossform#1, Kopf 486a6685) — gesehen von radeon (radeon-dienst)
 2026-11-25 11:55 RUNDE 29 ALARM gtx: ohne Fortschritt seit 76 min (halt, 68/242, Station karte2.planet.relief.grossform#1, Kopf 486a6685) — gesehen von radeon (radeon-dienst)
 2026-11-25 12:13 RUNDE 29 ALARM gtx: OMEN: 62 Messungen ungepusht seit 04:58 — halt 68/242, Station karte2.planet.relief.grossform#1, Kopf 486a6685; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
+2026-11-25 12:13 landung Runde 29 am 486a6685: misst 4 von 242 Stationen (vorn; 69 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
