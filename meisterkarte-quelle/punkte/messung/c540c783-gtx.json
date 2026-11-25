@@ -1,7 +1,7 @@
 {
  "sha": "c540c783d2370aa52fb5c11cee726d93fa629dca",
  "geraet": "gtx",
- "zeit": "2026-11-25T03:56:07.789Z",
+ "zeit": "2026-11-25T04:16:29.980Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#3": {
@@ -703,6 +703,70 @@
    },
    "zeit": "2026-11-25T03:56:07.789Z",
    "abdruck": "f0f7353bbe7b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.recht#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "exit": 2,
+   "minuten": 0.81,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 47.7,
+   "fremd": {
+    "s": 51.7,
+    "takte": 24,
+    "fremdS": 6.17,
+    "kerne": 0.119,
+    "fensterKerne": 0.161,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.58
+     ],
+     [
+      "Explorer.EXE",
+      0.95
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.42
+     ]
+    ],
+    "dienerS": 4.64,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.81
+     ],
+     [
+      "System",
+      1.8
+     ]
+    ],
+    "geraetS": 12.78,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.69
+     ],
+     [
+      "svchost.exe",
+      3.69
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.14
+     ]
+    ],
+    "eigenS": 76.66,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T04:16:29.980Z",
+   "abdruck": "2c9130abcfb3",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
