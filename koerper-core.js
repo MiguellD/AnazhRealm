@@ -5480,6 +5480,15 @@
         // (das Spiel des Abends, SPIEL_GESETZ: der Läufer gebeugt in der Kraft, der Ringer in der Haltung des Kampfs — die Hände vor
         // dem Leib, der Stand breit —, am Brett über den Tisch, der Zuschauer jubelt)
         haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", zweikampf: "fight", brett: "pwalk", zuschauen: "joy" }), // prettier-ignore
+        // DIE ZEIT-ART JE AKT (tages-gesetz, Entscheid des Koordinators 25.11.; Leser: gate:mensch-zuege `zuordnen`, die Station
+        // mensch.geist.absicht#1): jeder Akt des Tags (`tagesPlan`, das Spiel des Abends) trägt GENAU EINE Art seiner Zeit — die
+        // Hauptgruppen der Zeitbudget-Forschung: arbeit (Szalai 1972 „work“; HETUS 2008 Guidelines, Eurostat, Code 1 Erwerb),
+        // bedarf (persönlicher Bedarf: Schlaf, Aufstehen und Körperpflege, Mahlzeit — Szalai „personal needs“, HETUS 0),
+        // haushalt (der Einkauf — HETUS 36 Einkaufen und Dienste), frei (Besuch, Treff, Bank, Spiel und Zuschauen — Szalai „free
+        // time“, HETUS 5–7); der Weg zwischen zwei Orten (HETUS 9) ist kein Akt des Plans. Bis hier las der Zuordner jede wache
+        // Viertelstunde im Haus als Freizeit: mit dem Morgen im Haus (tages-gesetz) trug der Ausgeglichene 5,53 h „daheim“ und
+        // fiel häuslich (gate:mensch-zuege ausgeglichen 7/16)
+        zeitArt: Object.freeze({ schlaf: "bedarf", morgen: "bedarf", mittag: "bedarf", abendbrot: "bedarf", arbeit: "arbeit", einkauf: "haushalt", besuch: "frei", abend: "frei", spiel: "frei", wettkampf: "frei", zweikampf: "frei", brett: "frei", zuschauen: "frei" }), // prettier-ignore
         // DER REGEN TREIBT INS HAUS (mensch.kopplung.leben S1 der Karte 2; Leser: `tagesPlan`, sein Wirt `_bewohnerSoll` reicht
         // den Regen der Welt, den Kanal `rain` des EINEN Wetter-Felds 0–1): steht der Regen am Ort über der Schwelle eines
         // Menschen (`ab` ± `streuH` aus seinem Samen — das Dorf flieht nicht im selben Atemzug, der Übergang des Worts leert den
@@ -5976,8 +5985,8 @@
         for (var si = 0; sp && si < sp.length; si++) if (h >= sp[si].von && h < sp[si].bis) return aus("spiel", sp[si].akt, false, sp[si]);
         // der geteilte Abend (zuege `abendTreffH`): die ersten Stunden seines Abends am Treff, dann daheim vor seiner Tür — ab der
         // Wende der Bank (`_bankWende`) drinnen; wessen Abend daheim ist (ohne Treff oder die eigene Tür als Treff), ebenso
-        // der Feierabend im Haus (`_feierabend`): heim zum Abendbrot, drinnen
-        if (h < F.ab) return aus("heim", "abend", true);
+        // der Feierabend im Haus (`_feierabend`): heim zum Abendbrot, drinnen (sein Akt „abendbrot“: Zeit des Bedarfs, `zeitArt`)
+        if (h < F.ab) return aus("heim", "abendbrot", true);
         var drin = h >= _bankWende(T, same, orte);
         if (T.abendTreffH != null && h >= F.ab + T.abendTreffH) return aus("heim", "abend", drin);
         return aus("abend", "abend", (!orte.abend || orte.abend === heim) && drin);

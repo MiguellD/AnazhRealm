@@ -9,12 +9,22 @@
 // 100 Bewohner (5 je Haus) über das echte `tagesBindung` gebunden, die Orte gestellt wie der Wirt sie stellt (daheim heißt:
 // kein eigener Ort, der Plan nennt die Tür). Je Bewohner `tagesPlan` alle 15 min über 24 h. EIN BLINDER ZUORDNER (er liest
 // den Zug nie, nur seinen Tag und die Rolle seines Hauses) ordnet jeden nach drei Kennzahlen: Stunden am Werk über dem Maß
-// seiner Rolle, Stunden am Treff außer Haus, Stunden daheim in der Freizeit. Soll: Treffer ≥ 0,6 an den ersten 20 und über
+// seiner Rolle, Stunden am Treff außer Haus, Stunden daheim in der Freizeit — die Zeit-Art je Akt aus dem Kern (koerper
+// TAGES_GESETZ.zeitArt: arbeit · bedarf · haushalt · frei; ein Akt ohne Art ist ROT, die Anker schlaf · morgen · mittag ·
+// abendbrot = bedarf und arbeit = arbeit stehen fest). DIE KASKADE (Entscheid des Koordinators 25.11.): Werk über dem Maß
+// ≥ 1,5 h → fleißig · Treff ≥ 2 h → gesellig · der Anteil seiner Freizeit daheim (frei daheim ÷ alle Freizeit) ≥ Q + 0,15
+// UND frei daheim ≥ 2 h → häuslich · sonst ausgeglichen. Q = 0,74 ist der Anteil der Freizeit, den Erwachsene im Mittel
+// daheim verbringen: ATUS 2019 Table 11A (15 J und älter, Freizeit und Sport 5,19 h je Tag) — Fernsehen 2,81 · Lesen 0,27 ·
+// Ruhe 0,31 · Spiel und Computer 0,43 = 3,82 h der Freizeit des Hauses (Band 0,74–0,80 mit dem halben Geselligen 0,64 daheim;
+// ANGENOMMEN: die Zuordnung der Tätigkeit zum Ort — ATUS veröffentlicht keine Tafel der Freizeit je Ort). Bis hier hieß
+// häuslich: ≥ 5,4 h wach daheim, und der Morgen im Haus zählte als Freizeit. Soll: Treffer ≥ 0,6 an den ersten 20 und über
 // alle 100; bit-gleich (zwei Läufe, dasselbe Wort je Same und Stunde). Dazu ALTER (generationen S1, unten). JE ZUG (mensch-zahlen): jeder der vier Züge wird zu
 // ≥ 0,6 erkannt — der Anteil über alle trug einen Zug ohne Gesetz mit (ausgeglichen 2 von 16 bei 0,71 über alle) —, und kein
 // Häuslicher trägt seinen Abend außer Haus. Täter (Selbsttest): der Kern mit `tagesZug` → immer „ausgeglichen" (der Stand
 // vor dem Zug: der Same verschob jede Wende nur um ±streuH), der Ausgeglichene ohne sein Gesetz (`{}`: das Los band ihn den
-// ganzen Abend an Treff oder Haus) und der Häusliche mit dem Los am Abend (treffMal 0,1) fallen ROT an ihrer Zeile.
+// ganzen Abend an Treff oder Haus) und der Häusliche mit dem Los am Abend (treffMal 0,1) fallen ROT an ihrer Zeile — dazu der
+// Morgen als Freizeit gezählt (zeitArt morgen = frei: ROT am Anker; an ausgeglichen nicht) und der Häusliche mit zwei Abenden
+// Treff je Woche (2/7 seines Abends am Treff, 1,3 h je Tag: sein Anteil unter dem Schnitt, ROT an häuslich).
 // ============================================================================
 "use strict";
 const fs = require("fs");
@@ -79,26 +89,48 @@ function tagDesDorfs(K) {
     return leute;
 }
 
-// DER BLINDE ZUORDNER: liest nur den Tag (die Worte) und die Rolle des Hauses — nie den Zug
-function zuordnen(P) {
-    const G = KC.TAGES_GESETZ;
+// der Anteil der Freizeit daheim im Mittel der Erwachsenen (ATUS 2019 Table 11A, Kopf) und der Schnitt des Häuslichen darüber
+const FREI_DAHEIM_Q = 0.74;
+const HAEUSLICH_AB = FREI_DAHEIM_Q + 0.15;
+// die festen Anker der Zeit-Art (der Kern darf sie nicht verbiegen) und die Arten der Tafel
+const ZEIT_ANKER = { schlaf: "bedarf", morgen: "bedarf", mittag: "bedarf", abendbrot: "bedarf", arbeit: "arbeit" };
+const ZEIT_ARTEN = new Set(["arbeit", "bedarf", "haushalt", "frei"]);
+// DER BLINDE ZUORDNER: liest nur den Tag (die Worte), die Rolle des Hauses und die Zeit-Art des Kerns — nie den Zug
+function zuordnen(P, K = KC) {
+    const G = K.TAGES_GESETZ;
+    const A = G.zeitArt || {};
     const R = G.rollen[P.rolle] || {};
     const W = R.werk || G.werk;
     const mass = W[1] - W[0] - (R.mittagAmWerk ? 0 : G.mittag[1] - G.mittag[0]);
-    let werk = 0,
-        treff = 0,
-        heimFrei = 0;
+    let [werk, treff, heimFrei, heimWach, ausFrei] = [0, 0, 0, 0, 0];
+    const ohneArt = new Set();
     for (const w of P.worte) {
         const [wo, akt] = w.split(":");
-        if (akt === "arbeit") werk += 0.25;
-        else if (akt !== "schlaf" && wo === "abend") treff += 0.25;
-        else if (akt !== "schlaf" && wo === "heim") heimFrei += 0.25;
+        const art = A[akt];
+        if (!ZEIT_ARTEN.has(art)) ohneArt.add(akt);
+        if (art === "arbeit") werk += 0.25;
+        if (akt !== "schlaf" && wo === "heim") heimWach += 0.25;
+        if (art !== "frei") continue;
+        if (wo === "abend") treff += 0.25;
+        if (wo === "heim") heimFrei += 0.25;
+        else ausFrei += 0.25;
     }
-    const kz = { werkUeber: werk - mass, treff, heimFrei };
-    if (kz.werkUeber >= 1.5) return ["fleissig", kz];
-    if (treff >= 2) return ["gesellig", kz];
-    if (heimFrei >= 5.4) return ["haeuslich", kz];
-    return ["ausgeglichen", kz];
+    const anteil = heimFrei + ausFrei > 0 ? heimFrei / (heimFrei + ausFrei) : 0;
+    const kz = { werkUeber: werk - mass, treff, heimFrei, heimWach, anteil };
+    if (kz.werkUeber >= 1.5) return ["fleissig", kz, ohneArt];
+    if (treff >= 2) return ["gesellig", kz, ohneArt];
+    if (anteil >= HAEUSLICH_AB && heimFrei >= 2) return ["haeuslich", kz, ohneArt];
+    return ["ausgeglichen", kz, ohneArt];
+}
+// DIE TAFEL DER ZEIT-ART: jeder Akt der Haltung (`haltung`) trägt eine Art, die Anker stehen fest
+function zeitTafelRot(K) {
+    const A = K.TAGES_GESETZ.zeitArt || {};
+    const rot = [];
+    const ohne = Object.keys(K.TAGES_GESETZ.haltung || {}).filter((a) => !ZEIT_ARTEN.has(A[a]));
+    if (ohne.length) rot.push(`Zeit-Art fehlt: ${ohne.join(" · ")} (koerper TAGES_GESETZ.zeitArt)`);
+    const krumm = Object.keys(ZEIT_ANKER).filter((a) => A[a] !== ZEIT_ANKER[a]);
+    if (krumm.length) rot.push(`Zeit-Art verbogen: ${krumm.map((a) => a + " = " + A[a]).join(" · ")} (Anker: schlaf · morgen · mittag · abendbrot = bedarf, arbeit = arbeit)`);
+    return rot;
 }
 
 function urteil(K, zugVon) {
@@ -106,22 +138,24 @@ function urteil(K, zugVon) {
     let t20 = 0,
         t100 = 0;
     const tafel = {};
+    const ohneArt = new Set();
     leute.forEach((P, n) => {
         const ist = zugVon(P.same);
-        const [rat, kz] = zuordnen(P);
+        const [rat, kz, oa] = zuordnen(P, K);
+        for (const a of oa) ohneArt.add(a);
         P.ist = ist;
         P.rat = rat;
         P.kz = kz;
         const ok = ist === rat;
         t100 += ok;
         if (n < 20) t20 += ok;
-        tafel[ist] = tafel[ist] || { n: 0, ok: 0, werkUeber: 0, treff: 0, heimFrei: 0 };
+        tafel[ist] = tafel[ist] || { n: 0, ok: 0, werkUeber: 0, treff: 0, heimFrei: 0, heimWach: 0, anteil: 0 };
         const T = tafel[ist];
         T.n++;
         T.ok += ok;
         for (const k in kz) T[k] += kz[k];
     });
-    return { t20: t20 / 20, t100: t100 / 100, tafel, leute };
+    return { t20: t20 / 20, t100: t100 / 100, tafel, leute, ohneArt: [...ohneArt], zeitRot: zeitTafelRot(K) };
 }
 
 // DER KERN MIT EINEM TÄTER: dieselbe Quelle, EINE Stelle getauscht (frischer Kontext) — null, wenn die Stelle fehlt
@@ -153,6 +187,18 @@ const TAETER = [
         ersatz: "treffMal: 0.1,",
         faellt: /Häusliche mit dem Abend außer Haus/,
     },
+    {
+        name: "der Morgen als Freizeit gezählt (zeitArt morgen = frei)",
+        stelle: /morgen: "bedarf"/,
+        ersatz: 'morgen: "frei"',
+        faellt: /Zeit-Art verbogen: morgen = frei/,
+    },
+    {
+        name: "der Häusliche mit zwei Abenden Treff je Woche (2/7 seines Abends, 1,3 h)",
+        stelle: /haeuslich: Object\.freeze\(\{ treffMal: 0, morgenMal: 0\.5 \}\)/,
+        ersatz: "haeuslich: Object.freeze({ daheimTreff: 0.5, morgenMal: 0.5, abendTreffH: 1.3 })",
+        faellt: /haeuslich \d+\/\d+ < 0,6/,
+    },
 ];
 // DAS URTEIL: die Zeilen, an denen der Tag ROT fällt
 function rotVon(a) {
@@ -165,6 +211,8 @@ function rotVon(a) {
     }
     const aus = a.leute.filter((P) => P.ist === "haeuslich" && P.abendAus).length;
     if (aus) rot.push(`${aus} Häusliche mit dem Abend außer Haus`);
+    if (a.ohneArt.length) rot.push(`Akt ohne Zeit-Art im Tag: ${a.ohneArt.join(" · ")} (koerper TAGES_GESETZ.zeitArt)`);
+    rot.push(...a.zeitRot);
     return rot;
 }
 
@@ -178,7 +226,7 @@ const zeile = (u) =>
         const T = u.tafel[z];
         if (!T) return `${z} 0`;
         const f = (x) => (x / T.n).toFixed(2);
-        return `${z} ${T.ok}/${T.n} (Werk+ ${f(T.werkUeber)} h · Treff ${f(T.treff)} h · daheim ${f(T.heimFrei)} h)`;
+        return `${z} ${T.ok}/${T.n} (Werk+ ${f(T.werkUeber)} h · Treff ${f(T.treff)} h · daheim frei ${f(T.heimFrei)} h · daheim wach ${f(T.heimWach)} h · Anteil frei daheim ${f(T.anteil)})`;
     }).join(" | ");
 
 // ── ALTER (Meisterkarte 2 mensch.geist.generationen S1: „Altersanteile im Band der Epoche, Mittelalter ≥ 35 % Kinder"): das Gesetz
