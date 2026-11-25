@@ -16211,7 +16211,7 @@
   },
   "karte2.mensch.fahrzeug.lenker": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.lenker#1 radeon: ungemessen (R10) — zuletzt an 486a6685: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 104.7 von 2500000000000 s in 4290  · karte2.mensch.fahrzeug.lenker#1 gtx: ungemessen (R10) — zuletzt an 1feab29c: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 45.8 von 2500000000000 s in 15435 · karte2.mensch.fahrzeug.lenker#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#2 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.lenker#1 radeon: ungemessen (R10) — zuletzt an 486a6685: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 104.7 von 2500000000000 s in 4290  · karte2.mensch.fahrzeug.lenker#1 gtx: ungemessen (R10) — zuletzt an 486a6685: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181.1 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 97.1 von 2500000000000 s in 160 · karte2.mensch.fahrzeug.lenker#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#2 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.lenker#1",
@@ -16229,7 +16229,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 1feab29c: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 45.8 von 2500000000000 s in 15435",
+     "grund": "ungemessen (R10) — zuletzt an 486a6685: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181.1 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 97.1 von 2500000000000 s in 160",
      "ungemessen": true,
      "beide": true
     },
@@ -30072,7 +30072,7 @@
   },
   "karte2.planet.kosmos.welten": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 486a6685: Last: Referenz f 1,711 (Faden 1,711 · alle Kerne 1,477; vor 112/314,3 ms, nach 142,7/384,9 ms, Ruhe 83,4/260,6 ms seit 2026-11-17) · fremd: node scripts/diag-ci-deckung.cjs --selftest 18,2 CPU-s · nod · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 1,498 (Faden 1,259 · alle Kerne 1,498; vor 105,5/242,9 ms, nach 113,3/344 ms, Ruhe 90/229,7 ms seit 2026-11-21) · fremd: node.exe scripts/diag-profiband.cjs 12,7 CPU-s · Claude.exe -- · karte2.planet.kosmos.welten#2 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#3 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#4 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#5 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#6 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 486a6685: Last: Referenz f 1,711 (Faden 1,711 · alle Kerne 1,477; vor 112/314,3 ms, nach 142,7/384,9 ms, Ruhe 83,4/260,6 ms seit 2026-11-17) · fremd: node scripts/diag-ci-deckung.cjs --selftest 18,2 CPU-s · nod · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an 486a6685: Last: Referenz f 1,374 (Faden 1,374 · alle Kerne 1; vor 86,5/201,1 ms, nach 122,8/213,5 ms, Ruhe 89,4/225,4 ms seit 2026-11-24) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc · karte2.planet.kosmos.welten#2 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#3 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#4 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#5 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#6 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.welten#1",
@@ -30090,7 +30090,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 1feab29c: Last: Referenz f 1,498 (Faden 1,259 · alle Kerne 1,498; vor 105,5/242,9 ms, nach 113,3/344 ms, Ruhe 90/229,7 ms seit 2026-11-21) · fremd: node.exe scripts/diag-profiband.cjs 12,7 CPU-s · Claude.exe --",
+     "grund": "ungemessen (R10) — zuletzt an 486a6685: Last: Referenz f 1,374 (Faden 1,374 · alle Kerne 1; vor 86,5/201,1 ms, nach 122,8/213,5 ms, Ruhe 89,4/225,4 ms seit 2026-11-24) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc",
      "ungemessen": true,
      "beide": true
     },
@@ -37747,7 +37747,7 @@
   "ohne": 3280
  },
  "kopfVoll": "78ed31677dd35df5fc3aed589de8b24344201ac6",
- "zeit": "2026-11-25T08:59:09.761Z",
+ "zeit": "2026-11-25T09:06:36.531Z",
  "vorher": "78ed3167",
  "bilanz": {
   "gewinn": [],
