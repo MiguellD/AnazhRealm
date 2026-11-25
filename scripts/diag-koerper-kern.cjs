@@ -236,6 +236,50 @@ const nachDemAufstehenVon = (P, mh) => (s, r, h, O) => {
     if (wach == null || w0 == null || h < wach || h >= w0) return P(s, r, h, O);
     return h < wach + mh ? { ort: O.platz, wo: "platz", akt: "morgen", drinnen: false } : { ort: O.heim, wo: "heim", akt: "morgen", drinnen: false };
 };
+// DIE ANKUNFT ZUR STUNDE (menge-bild, koerper `tagesKette` · `tagesZiel`; Leser: der Wirt `_bewohnerSoll` — und über ihn die
+// Wende und die Ankunft): 2000 Samen eines Wohnhauses mit Besuch, jeder Weg zwischen zwei Orten `gehH` Stunden — je Abschnitt
+// mit Weg nennt das Ziel zur halben Gehzeit vor der Wende schon den neuen Ort (M3: der Aufbruch liegt um die Gehzeit davor),
+// kein Aufbruch liegt vor der Ankunft am vorigen Ort, und das Ziel jeder Stunde ist ein Abschnitt der Kette; `eng` zählt die
+// Abschnitte, deren Aufenthalt der Weg frisst. M4: kein Leser im Stamm liest den Plan mit eigener Uhr (`tagesPlan(` ohne die
+// Kette). Täter (Selbsttest): „zurWende" (der Aufbruch zur Wende, der Stand vor menge-bild) · „eigeneUhr" (ein Leser des Plans).
+const ANKUNFT_ORTE = { heim: { o: "heim" }, werk: { o: "werk" }, platz: { o: "platz" }, mahl: { o: "mahl" }, abend: { o: "abend" }, besuch: { o: "besuch" } };
+const ankunftUrteil = (C, gehH, mutante = null) => {
+    const geh = (von, nach) => (von === nach ? 0 : gehH);
+    let [n, frueh, monoton, eng, ohneAbschnitt] = [0, 0, 0, 0, 0];
+    for (let s = 0; s < 2000; s++) {
+        const K = C.tagesKette(s, "wohnhaus", ANKUNFT_ORTE, 0, false, mutante === "zurWende" ? () => 0 : geh);
+        eng += K.eng;
+        const L = K.kette;
+        let ank = 0;
+        for (let i = 1; i < L.length; i++) {
+            const g = L[i - 1].p.ort !== L[i].p.ort ? gehH : 0;
+            if (L[i].auf < ank - 1e-9) monoton++;
+            ank = L[i].auf + g;
+        }
+        // je Wende mit Weg, deren Aufenthalt davor die ganze Gehzeit trägt: zur halben Gehzeit vor der Wende ist der neue Ort das Ziel
+        const T = C.tagesKette(s, "wohnhaus", ANKUNFT_ORTE, 0, false, () => 0).kette;
+        for (let i = 2; i < T.length - 1; i++) {
+            if (T[i - 1].p.ort === T[i].p.ort || T[i].auf - T[i - 1].auf < 2 * gehH) continue;
+            n++;
+            const h = (((T[i].auf - gehH / 2 + K.A + K.v) % 24) + 24) % 24;
+            const z = C.tagesZiel(K, h);
+            if (z.ort === T[i].p.ort) frueh++;
+            if (!L.some((e) => e.p === z)) ohneAbschnitt++;
+        }
+    }
+    return { n, frueh: n ? frueh / n : 0, monoton, eng, ohneAbschnitt };
+};
+// M4: wer im Stamm liest den Plan der Stunde selbst (der EINE Leser ist die Kette, `tagesZiel`)
+const eigeneUhr = (texte) => {
+    const wer = [];
+    for (const [datei, t] of texte) t.split("\n").forEach((z, i) => /\btagesPlan\(/.test(z) && !/^\s*\/\//.test(z) && wer.push(`${datei}:${i + 1}`));
+    return wer;
+};
+const stammTexte = () => {
+    const fs = require("fs"), path = require("path");
+    const d = path.join(__dirname, "..", "stamm");
+    return fs.readdirSync(d).filter((n) => n.endsWith(".js")).map((n) => [`stamm/${n}`, fs.readFileSync(path.join(d, n), "utf8")]);
+};
 
 // TEIL S — DER STOSS IM GANG (physik.K5, koerper-core `leibStossLesen` · `leibStossSchritt`): der Leib geht (vor, 4,5 m/s,
 // Bein 0,85 m) auf ebenem Grund im EINEN Bewegungs-Takt (`leibPlan` → Lage += v·dt → `leibLandung`, die Folge des Wirts), nach
@@ -1054,13 +1098,15 @@ if (SELBSTTEST) {
     // der Morgengang: das Gesetz hält, der Stand vor menge-bild (der Markt gleich nach dem Aufstehen) fällt ROT beim Namen
     const mh = core.TAGES_GESETZ.morgenPlatzH;
     const mGut = morgenGang(core.tagesPlan, mh), mAlt = morgenGang(nachDemAufstehenVon(core.tagesPlan, mh), mh);
-    const morgenTaeter = [[mGut.n >= 500 && mGut.markt >= 0.95 && mGut.daheim >= 0.95 && mAlt.markt < 0.95, "Morgengang nachDemAufstehen M1 der Weg zum Werk führt nicht über den Markt"]];
+    const ankGut = ankunftUrteil(core, 0.4), ankWende = ankunftUrteil(core, 0.4, "zurWende");
+    const uGut = eigeneUhr(stammTexte()), uTaeter = eigeneUhr([["stamm/probe.js", "        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, regen, b.krank);"]]);
+    const morgenTaeter = [[mGut.n >= 500 && mGut.markt >= 0.95 && mGut.daheim >= 0.95 && mAlt.markt < 0.95, "Morgengang nachDemAufstehen M1 der Weg zum Werk führt nicht über den Markt"], [ankGut.n >= 1000 && ankGut.frueh >= 0.99 && !ankGut.monoton && !ankGut.ohneAbschnitt && ankWende.frueh < 0.5, "Ankunft zurWende M3 der Aufbruch liegt nicht um die Gehzeit vor der Wende"], [!uGut.length && uTaeter.length === 1, "Ankunft eigeneUhr M4 ein Leser liest den Plan mit eigener Uhr"]]; // prettier-ignore
     for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...verbenTaeter, ...spielTaeter, ...morgenTaeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle vierundvierzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, sechs Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, der Täter des Morgengangs).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle sechsundvierzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, sechs Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, drei Täter des Morgengangs und der Ankunft zur Stunde).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -1085,6 +1131,12 @@ if (!sp.rot.length) console.log(`  SPIEL ${sp.laeufe} Läufe (${sp.laeufer} Läu
 const mg = morgenGang(core.tagesPlan, core.TAGES_GESETZ.morgenPlatzH);
 if (mg.n < 500 || mg.markt < 0.95 || mg.daheim < 0.95) st.rot.push(`MORGEN M1 der Weg zum Werk führt nicht über den Markt: ${(100 * mg.markt).toFixed(1)} % vor dem Werk am Markt, ${(100 * mg.daheim).toFixed(1)} % nach dem Aufstehen daheim, von ${mg.n} Samen (Soll ≥ 95 % und ≥ 500) — Täter: koerper _morgenGang · tagesPlan`);
 console.log(`  MORGEN der Weg zum Werk über den Markt: ${(100 * mg.markt).toFixed(1)} % 0,1 h vor dem Werk am Markt, ${(100 * mg.daheim).toFixed(1)} % 0,1 h nach dem Aufstehen daheim (${mg.n} von 2000 Samen mit mehr als einer Stunde vor dem Werk)`);
+const an = typeof core.tagesKette === "function" ? ankunftUrteil(core, 0.4) : null;
+const uhrLeser = eigeneUhr(stammTexte());
+if (!an) st.rot.push("ANKUNFT M3 der Kern trägt keine Kette des Tags (koerper tagesKette · tagesZiel)");
+else if (an.n < 1000 || an.frueh < 0.99 || an.monoton || an.ohneAbschnitt) st.rot.push(`ANKUNFT M3 der Aufbruch liegt nicht um die Gehzeit vor der Wende: ${(100 * an.frueh).toFixed(1)} % von ${an.n} Wenden (Soll ≥ 99 %), ${an.monoton} Aufbrüche vor der Ankunft, ${an.ohneAbschnitt} Ziele ohne Abschnitt (Soll 0) — Täter: koerper tagesKette · tagesZiel`);
+if (uhrLeser.length) st.rot.push(`ANKUNFT M4 ein Leser liest den Plan mit eigener Uhr: ${uhrLeser.join(", ")} (Soll: der EINE Leser ist die Kette, tagesZiel) — Täter: der Leser`);
+if (an) console.log(`  ANKUNFT zur Stunde (je Weg 0,4 h): ${(100 * an.frueh).toFixed(1)} % von ${an.n} Wenden brechen um die Gehzeit davor auf · ${an.monoton} vor der Ankunft · ${an.eng} Abschnitte, deren Aufenthalt der Weg frisst (2000 Samen) · Leser mit eigener Uhr im Stamm: ${uhrLeser.length}`);
 const kn = koennenUrteil(core);
 for (const z of kn.rot) st.rot.push("KÖNNEN " + z + " — Täter: koerper leibKoennen");
 const vb = verbenUrteil(core);

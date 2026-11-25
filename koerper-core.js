@@ -5363,6 +5363,11 @@
         streuH: 0.5,
         morgenPlatzH: 1,
         besuchH: 0.75,
+        // wegBudgetH = so viele Stunden geht ein Mensch an einem Tag (das Band der Ankunft zur Stunde, `tagesKette`): das Budget
+        // der Wegezeit liegt über Städte, Länder und Jahrhunderte bei gut einer Stunde je Tag (Zahavi 1979, The UMOT Project:
+        // 1,1 h; Marchetti 1994, Anthropological invariants in travel behavior: rund 1 h, vom Dorf zu Fuß bis zur Metropole) —
+        // ein Weg, der den Aufenthalt an seinem Ziel frisst, liegt jenseits des Bands
+        wegBudgetH: 1.1,
         // wegeMax = so viele Wege trägt ein Tag höchstens (der Morgengang: 4–10 Wege je Tag, mensch.K3) — der Abend des Spiels
         // (`spielProgramm`) vergibt nur Stände, die der Tag noch trägt (`tagesGaenge`)
         wegeMax: 10,
@@ -5743,6 +5748,74 @@
             if (wo[k][0] !== q[0] || wo[k][1] !== q[1]) n++;
         }
         return n;
+    }
+    // DIE ANKUNFT ZUR STUNDE (mensch.menge.bild#2, Entscheid des Koordinators 25.11.): der Plan (`tagesPlan`) nennt, wo ein Mensch
+    // zu einer Stunde IST; wer dorthin geht, bricht um die Gehzeit seines Wegs davor auf. `tagesKette` legt die Abschnitte seines
+    // Tags (die Wenden wie `tagesGaenge`, je Abschnitt der Plan seiner Mitte) ab dem Schlaf hintereinander; je Abschnitt
+    // `geh(von, nach)` = die Gehzeit in Stunden vom Ort des vorigen zum Ort dieses (der Wirt: die Länge seines Wegs über das Netz,
+    // `tagesWege`, ÷ das Tempo seines Gangs ÷ die Sekunden der Stunde) — der Aufbruch liegt um sie vor der Wende, nie vor der
+    // eigenen Ankunft am vorigen Ort (monoton): ist der Weg länger als der Aufenthalt davor, schrumpft dieser (`eng` zählt die
+    // Abschnitte, bei denen das geschieht). `tagesZiel(K, stunde)` = der Plan des Abschnitts, zu dem er zur Stunde unterwegs ist
+    // oder an dem er steht — der EINE Leser der Ziel-Kette im Wirt (`_bewohnerSoll`, und darüber die Wende und die Ankunft). Bis
+    // hier brach jeder zur Wende auf: der Tag dauert 60 min, die Stunde 150 s, der Weg zum Platz an stadt-voll bis 300 m (≈ 214 s)
+    // — um 8 Uhr sah der Plan 287 Menschen am Markt, 93 standen dort, 193 gingen noch (131 davon ≥ 50 m fort).
+    function tagesKette(same, rolle, orte, nass, krank, geh) {
+        var G = TAGES_GESETZ,
+            T = _tagesWenden(same, rolle),
+            v = T.R.versatzH || 0;
+        var mO = _morgenGang(T, false),
+            mB = _morgenGang(T, true);
+        var t = [T.wach, mO[0], mO[1], mB[0], mB[1], mB[1] + G.besuchH, T.w0, T.m0, T.m1, T.w1, T.w1 + G.besuchH, T.ruhe];
+        if (T.abendTreffH != null) t.push(T.w1 + T.abendTreffH, T.w1 + G.besuchH + T.abendTreffH);
+        (orte.spiel || []).forEach(function (e) {
+            t.push(e.von, e.bis);
+        });
+        var u = t
+            .map(function (x) {
+                return ((x % 24) + 24) % 24;
+            })
+            .sort(function (a, b) {
+                return a - b;
+            });
+        // die Abschnitte: je Wende der Plan seiner Mitte; ein Abschnitt am selben Ort mit demselben Akt setzt den vorigen fort
+        var ab = [];
+        for (var i = 0; i < u.length; i++) {
+            var a = u[i],
+                b = i + 1 < u.length ? u[i + 1] : u[0] + 24;
+            if (b - a < 1e-9) continue;
+            var p = tagesPlan(same, rolle, (a + b) / 2 + v, orte, nass, krank);
+            var q = ab.length ? ab[ab.length - 1].p : null;
+            if (q && q.ort === p.ort && q.drinnen === p.drinnen && q.akt === p.akt) continue;
+            ab.push({ ab: a, p: p });
+        }
+        // der Anker: der Schlaf (drinnen daheim — kein Weg führt aus ihm); ohne ihn der erste Abschnitt
+        var s0 = 0;
+        for (var k = 0; k < ab.length; k++) if (ab[k].p.akt === "schlaf") s0 = k;
+        var A = ab.length ? ab[s0].ab : 0,
+            n = ab.length,
+            kette = [],
+            ank = 0,
+            eng = 0,
+            gehSumme = 0;
+        for (var j = 0; j <= n; j++) {
+            var e = ab[(s0 + j) % n],
+                rel = j === n ? 24 : (((e.ab - A) % 24) + 24) % 24;
+            var vor = j ? ab[(s0 + j - 1) % n].p : e.p;
+            var g = j && vor.ort !== e.p.ort ? Math.max(0, geh(vor.wo, e.p.wo) || 0) : 0;
+            if (rel - g < ank - 1e-9) eng++;
+            var auf = Math.max(rel - g, ank);
+            ank = auf + g;
+            gehSumme += g;
+            kette.push({ auf: auf, p: e.p });
+        }
+        return { A: A, v: v, kette: kette, eng: eng, gehH: gehSumme };
+    }
+    function tagesZiel(K, stunde) {
+        var h = (((Number(stunde) - K.v - K.A) % 24) + 24) % 24,
+            L = K.kette,
+            z = L[0];
+        for (var i = 1; i < L.length && L[i].auf <= h; i++) z = L[i];
+        return z.p;
     }
     function tagesPlan(same, rolle, stunde, orte, nass, krank) {
         var G = TAGES_GESETZ;
@@ -11133,6 +11206,8 @@
         tagesWege: tagesWege,
         tagesGaenge: tagesGaenge,
         tagesPlan: tagesPlan,
+        tagesKette: tagesKette,
+        tagesZiel: tagesZiel,
         tagesZug: tagesZug,
         tagesHaltung: tagesHaltung,
         // mensch.sport regeln · mannschaft · arena · geistspiel #1 — DIE REGEL-GRAMMATIK (Leser: _spielTag, tagesPlan orte.spiel, _bewohnerKopf)

@@ -1143,6 +1143,7 @@ class AnazhRealm_siedlung_bewohner {
                     blick: u, begegnet: u, kopfY: u,
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
                     drehen: u, platz: u, weichen: null, brand: null, gegner: null,
+                    ortI: null, wegeM: null, kette: null,
                     weg: u, wi: u, linie: u, tag: u, wegRest: u, wegRestAb: u, gegangen: u, gehDt: u, gehTakt: u, rueck: u,
                     tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, grundGx: 0, grundGz: 0, _gait: u, _gaitW: u, walkPhase: u,
                     wagen: u, amSteuer: u, bestand: null, bestandBild: null, werkzeug: null,
@@ -1258,6 +1259,37 @@ class AnazhRealm_siedlung_bewohner {
                 wer.rolle = wer.beruf = rolle;
                 wer.orte.werk = st;
             }
+        }
+        // DIE WEGE SEINES TAGS (die Ankunft zur Stunde, koerper `tagesKette`): je Wo eines Menschen der Ort des Plans, an dem sein
+        // Stand liegt (der Markt und das Spiel des Abends am Platz, der Händler und die Wache am Platz an ihm, die Wache am Tor
+        // am nächsten Ort ihres Postens), und je Paar seiner Orte die Länge des Wegs über das Netz — dieselbe Quelle, nach der er
+        // gebunden wurde (`tagesWege`), einmal gemessen; die Gehzeit rechnet die Kette aus ihr und dem Tempo seines Gangs
+        const platzI = orte.findIndex((o) => o.art === "platz");
+        const amOrt = (st) => {
+            let [best, dMin] = [null, Infinity];
+            for (const [i, o] of orte.entries()) {
+                const d = Math.hypot(o.x + S.ox - st.x, o.z + S.oz - st.z);
+                if (d < dMin) [best, dMin] = [i, d];
+            }
+            return best;
+        };
+        for (const [i, b] of liste.entries()) {
+            const P = besuche[i];
+            const B = P.bind || {};
+            const am = (j) => (Number.isInteger(j) && j >= 0 ? j : null);
+            const werk =
+                b.rolle === "haendler" || (b.orte.werk && b.orte.werk === b.orte.platz)
+                    ? am(platzI)
+                    : WL.rollen.includes(b.rolle) && b.orte.werk
+                      ? amOrt(b.orte.werk)
+                      : (am(B.werk) ?? P.heimI);
+            const I = { heim: P.heimI, platz: am(platzI), spiel: am(platzI), werk, mahl: am(B.mahl), abend: am(B.abend), besuch: am(B.besuch) }; // prettier-ignore
+            const wegeM = new Map();
+            const ids = [...new Set(Object.values(I).filter((j) => j !== null))];
+            for (const x of ids)
+                for (const y of ids) if (x < y) wegeM.set(x * 65536 + y, wegZu(orte[x], orte[y], y));
+            [b.ortI, b.wegeM] = [I, wegeM];
+            if (i % 64 === 0) yield;
         }
         this._bestandAnlegen(liste);
         this._scheuneAnlegen(S, liste, tueren);
@@ -2713,6 +2745,30 @@ class AnazhRealm_siedlung_bewohner {
     // Stand neben dem Platz ist nur der Ort, an dem er ein- und aussteigt. Bis hier nannte das Soll den Stand, während der Leib im
     // Wagen fuhr: zwei Orte für einen Menschen (bevoelkerung#1, main 7de938ab, Radeon: der Fahrer an Ort 0 und 1 zu jeder der
     // vier Uhren 5–18 m neben seinem Soll, ungezählt).
+    // DIE KETTE SEINES TAGS (koerper `tagesKette`, die Ankunft zur Stunde): der Aufbruch je Abschnitt um die Gehzeit seines Wegs
+    // davor — die Länge über das Netz (`wegeM`, `_bewohnerListe`) ÷ das Tempo seines Gangs (`gangTempo` hält es während eines
+    // Laufs) ÷ die Sekunden der Stunde (`_bewohnerStundeSek`). Gemerkt, solange ihre Eingänge stehen: der Regen an seiner Tür,
+    // das Feld seines Lebenslaufs, seine Rolle, sein Werk, sein Stand am Platz, sein Besuch, das Spiel des Abends. Vor seiner Geburt
+    // (kein Leib, kein Tempo) geht er keinen Weg: die Kette ohne Gehzeit, ungemerkt.
+    _bewohnerKette(b, regen) {
+        const KC = window.__koerperCore;
+        if (typeof KC.tagesKette !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesKette");
+        const o = b.orte;
+        const k = b.kette;
+        const v = b.gangTempo ?? b.tempo;
+        if (k && k.regen === regen && k.krank === b.krank && k.rolle === b.rolle && k.werk === o.werk && k.platz === o.platz && k.besuch === o.besuch && k.spiel === o.spiel && k.v === v) // prettier-ignore
+            return k.K;
+        const [I, W, sek] = [b.ortI, b.wegeM, this._bewohnerStundeSek()];
+        const geh = (von, nach) => {
+            const [i, j] = [I && I[von], I && I[nach]];
+            if (!(v > 0) || i == null || j == null || i === j) return 0;
+            const m = W.get(Math.min(i, j) * 65536 + Math.max(i, j));
+            return Number.isFinite(m) ? m / (v * sek) : 0;
+        };
+        const K = KC.tagesKette(b.same, b.rolle, o, regen, b.krank, geh);
+        if (v > 0) b.kette = { K, regen, krank: b.krank, rolle: b.rolle, werk: o.werk, platz: o.platz, besuch: o.besuch, spiel: o.spiel, v }; // prettier-ignore
+        return K;
+    }
     _bewohnerSoll(b, stunde) {
         const KC = window.__koerperCore;
         if (!KC || typeof KC.tagesPlan !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesPlan");
@@ -2727,7 +2783,7 @@ class AnazhRealm_siedlung_bewohner {
         // DER KRANKE BLEIBT DAHEIM (mensch.menge.seuche#1): das Feld seines Lebenslaufs am Tag der Prozesse (`b.krank`) ist ein
         // Eingang des Plans — der Kern setzt ihn vor seine Tür, der Posten (Fahrer, Wache) hält seine Schicht: kein Wagen der
         // Stadt steht, keine Vertretung, die den Plan eines Zweiten liest (VK am Kopf e0714e46: „die Stadt steht nach 39102 Takten")
-        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, regen, b.krank);
+        const soll = KC.tagesZiel(this._bewohnerKette(b, regen), stunde);
         const ort = b.amSteuer && soll.ort === o.werk ? b.wagen.entry.position : soll.ort;
         const ziel = soll.drinnen ? o.tuer : ort;
         // DIE FRONT DES BRANDS (`_bewohnerBrandSchau`, das EINE Brand-Feld): wer vor ihr floh, hält den Ort ohne Gefahr, solange
