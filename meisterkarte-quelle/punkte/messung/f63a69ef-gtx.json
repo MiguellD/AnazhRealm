@@ -1,7 +1,7 @@
 {
  "sha": "f63a69ef8086b12e4ed913535b7314068383c87f",
  "geraet": "gtx",
- "zeit": "2026-11-25T20:47:49.197Z",
+ "zeit": "2026-11-25T21:03:25.389Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#2": {
@@ -3665,146 +3665,228 @@
   },
   "karte2.same.entfaltung.schirm#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\9a35b1f8-a1e7-4581-9c39-9b02cc472eed.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\pun) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\9a35b1f8-a1e7-4581-9c39-9b02cc472eed.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\pun) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-25T20:04:00.350Z",
+   "zahl": "Deckel 139 s gerissen: Stille seit 15 s nach 164.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego-geht 149.4 s)",
+   "exit": 1,
+   "minuten": 2.75,
+   "grund": "Deckel 139 s gerissen: Stille seit 15 s nach 164.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego-geht 149.4 s)",
+   "s": 164.7,
+   "fremd": {
+    "s": 169.1,
+    "takte": 77,
+    "fremdS": 88.48,
+    "kerne": 0.523,
+    "fensterKerne": 1.368,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.89
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      13.81
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.83
+     ]
+    ],
+    "dienerS": 64.72,
+    "diener": [
+     [
+      "dwm.exe",
+      33.66
+     ],
+     [
+      "System",
+      21.41
+     ]
+    ],
+    "geraetS": 79.77,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      54.02
+     ],
+     [
+      "svchost.exe",
+      21.75
+     ],
+     [
+      "SearchIndexer.exe",
+      2.28
+     ]
+    ],
+    "eigenS": 465.67,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.609,
+     "nach": 0.391,
+     "station": 2.513
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 109.4,
+     "alle": 329.7,
+     "cpuEin": 110,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.84,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       6.27,
+       5.89,
+       4.4,
+       3.02,
+       2.49,
+       3.01
+      ]
+     },
+     "spanne": [
+      1795640605392,
+      1795640605982
+     ]
+    },
+    "nach": {
+     "ein": 159.2,
+     "alle": 340.1,
+     "cpuEin": 172,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.91,
+      "s": 2,
+      "soll": 3,
+      "reihe": [
+       5.08,
+       3.43,
+       3.73,
+       2.61,
+       3.24,
+       2.88
+      ]
+     },
+     "spanne": [
+      1795640772692,
+      1795640773398
+     ]
+    },
+    "ruhe": {
+     "ein": 89.2,
+     "alle": 223.5,
+     "n": 1190,
+     "von": "2026-11-25"
+    },
+    "f": 1.785,
+    "fEin": 1.785,
+    "fAlle": 1.522,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-25T21:03:25.389Z",
    "abdruck": "a16a54631e99",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-25T18:02:02.916Z",
-  "ordner": "sitzung-20261125-190202",
+  "start": "2026-11-25T21:02:44.484Z",
+  "ordner": "sitzung-20261125-220244",
   "port": 7804,
   "warten": 0.02,
   "bootS": 6.3,
-  "grundstellungS": [
-   0.1
-  ],
-  "proben": 2,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "karte2.same.kopplung.stoerung#1",
-    "s": 28,
-    "takte": 651,
+    "ort": null,
+    "vor": "karte2.same.entfaltung.schirm#1",
+    "s": 28.5,
+    "takte": 909,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": "stadt-voll",
-    "vor": "karte2.mensch.wirtschaft.energie#1",
-    "s": 124.7,
-    "takte": 1459,
-    "chunks": 81,
-    "nach": "der Grundstellung"
    }
   ],
   "wegeTueren": [],
   "felder": [
    {
-    "probe": "karte2.same.kopplung.stoerung#1",
+    "probe": "karte2.same.entfaltung.schirm#1",
     "weg": [
-     "__nahSpeicher",
-     "__imSchuss"
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr",
+     "__bandDecke",
+     "__zensusCalls"
     ]
    }
   ],
   "wirt": [
    {
-    "probe": "karte2.same.kopplung.stoerung#1",
+    "probe": "karte2.same.entfaltung.schirm#1",
     "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
      "window.__wieseMessen",
      "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     227.8,
-     265.7
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.mensch.wirtschaft.energie#1",
-    "anders": [
-     "r._weltStunde",
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "r._weltStunde": "neu: _weltStunde(uhr) { return AnazhRealm.WELT_GESETZ_ERDE.kalender.tagStunden * this",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     500.2,
-     499.8
+     191.9,
+     286.3
     ],
     "ungemessen": null
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.same.kopplung.stoerung#1",
-    "gehalten": [
-     "skala",
-     "spiegel",
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.mensch.wirtschaft.energie#1",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
+    "probe": "karte2.same.entfaltung.schirm#1",
+    "halt": -1000000000,
+    "zurueck": 0
    }
   ],
-  "wanderung": [
-   {
-    "probe": "karte2.mensch.wirtschaft.energie#1",
-    "ort": "stadt-voll",
-    "m": 2081.08,
-    "dreh": 0.342
-   }
-  ],
-  "ciBlicke": 3,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 4678,
-   "frameP95": 33.41,
-   "taktP95": 19.81,
-   "vramMax": 154.3,
+   "bilder": 555,
+   "frameP95": 33.39,
+   "taktP95": 23.25,
+   "vramMax": 129.8,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.mensch.wirtschaft.energie#1",
-     "m": 2135,
+     "probe": "karte2.same.entfaltung.schirm#1",
+     "m": 1089,
      "ringVor": 4,
-     "ringMin": 0
+     "ringMin": -1
     }
    ],
-   "zapfen": 347,
-   "luecken": 4,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 201,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 405.4,
-  "minuten": 6.88
+  "fahrtS": 205.6,
+  "minuten": 3.56
  }
 }
