@@ -1481,7 +1481,17 @@ function planetAnker(msg) {
     const plan = planetPlanVon(msg.samen);
     const P = self.__planetCore;
     const A = P.planetAnker(plan, 0, G.ortGesetz());
-    return { samen: msg.samen, version: P.VERSION, breite: A.breite, laenge: A.laenge, kuesteKm: A.kuesteKm };
+    // der Körper reist mit: die Sonnenbahn der Welt liest Schiefe und Drehsinn des Planeten (`_sonnenBahn`)
+    const K = plan.koerper;
+    return {
+        samen: msg.samen,
+        version: P.VERSION,
+        breite: A.breite,
+        laenge: A.laenge,
+        kuesteKm: A.kuesteKm,
+        neigungRad: K.neigungRad,
+        drehsinn: K.drehsinn,
+    };
 }
 // DER ORT AUF DEM PLANETEN IM FADEN (Reise, Schnitt 3): EIN Auftrag für Ort UND Zeit — die Scheibe zur Zeit `zeitMa` (die Zeit ist
 // der dritte Parameter derselben Funktion, kein eigener Pfad), `planetOrt` an der Lage (Grad) → NUR das Δ zum Anker (die

@@ -25,7 +25,7 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { fehlerText, statikServer, nullRenderer, ortZug, starteBrowser, hauptLauf, argOpt: opt, booteWelt, jsonSchreiben, jsonKlon, ausDatei, path, stammLib, SELBSTTEST, mass } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, nullRenderer, ortZug, starteBrowser, hauptLauf, sleep, argOpt: opt, booteWelt, jsonSchreiben, jsonKlon, ausDatei, path, stammLib, SELBSTTEST, mass } = require("./lib/welt-boot.cjs");
 const liesText = (datei) => ausDatei(datei);
 const { messort } = require("./lib/welt-orte.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
@@ -828,15 +828,19 @@ async function kernLesen(page, plan) {
         }
         return out;
     }, plan);
-    // jeder Voxel-Faden: die Leser seines Chunk-Baus, sobald er die Edits trägt
+    // jeder Voxel-Faden: die Leser seines Chunk-Baus, sobald er die Edits trägt. Der Planet-Faden (sonnenbahn 2, K6: geboren
+    // mit seinem ersten Leser, dieselbe Quelle `_quelleStand().url`, Name „planet“) baut keine Chunks und trägt nie Edits — bis
+    // hier wartete die Probe auf sie in ihm und stürzte (`sleep` lebt nicht im Faden: ReferenceError, EXIT 2). Gewartet wird von
+    // hier aus mit dem EINEN `sleep` (welt-boot), der Faden antwortet nur auf Fragen
     seite.faden = [];
     for (const w of page.workers()) {
-        if (!(await w.evaluate(`typeof terrainDensityAt === "function" && !!(${KERN_HILFE})`).catch(() => false))) continue;
+        if (!(await w.evaluate(`typeof terrainDensityAt === "function" && self.name !== "planet" && !!(${KERN_HILFE})`).catch(() => false))) continue;
+        for (let t = 0; t < 200 && (await w.evaluate("state.voxelEdits.length")) < plan.edits.length; t++) await sleep(25);
         seite.faden.push(
-            await w.evaluate(async (b, n) => {
-                for (let t = 0; t < 200 && state.voxelEdits.length < n; t++) await sleep(25);
-                return __kern.lies(b, terrainDensityAt, (x, y, z) => waterLevelAt(x, z), (x, y, z) => atlasWaterLevelAt(x, z, y), hydroRiverAt);
-            }, plan.punkte, plan.edits.length)
+            await w.evaluate(
+                (b) => __kern.lies(b, terrainDensityAt, (x, y, z) => waterLevelAt(x, z), (x, y, z) => atlasWaterLevelAt(x, z, y), hydroRiverAt),
+                plan.punkte
+            )
         );
     }
     const f64 = (W) => W && W.map((a) => Float64Array.from(a, Number));
@@ -2173,21 +2177,30 @@ function fadenSeite(bytesQ, huelleQ) {
     });
 }
 // ── K6 DER PLANET IM FADEN (Reise) ──
-// Die Welt kennt ihren Ort: der Satz „reise“ der Konsole gebiert den Planet-Faden (`_planetAuftrag`: schlank, OHNE den Stand der
-// Welt) und sagt den Anker des Samens des Planeten (`_planetSamen`; voxel-worker `planetAnker` am Ort-Gesetz `ortGesetz()`).
-// ROT beim Namen: der Wirt trägt keinen Leser (`_planetAnker` fehlt) · der Faden rechnete einen anderen Samen als den des Planeten
-// (Gegner F1) · der Anker im Faden ist nicht der Anker des Kerns in node (Float64-Bitmuster, Version) · der Planet-Faden stand vor
-// dem Satz (die Welt bestellte ihn ohne Leser, Gegner F8) · der Planet-Faden bekam eine Nachricht des Welt-Stands (`state-set`,
+// Die Welt kennt ihren Ort: ihr erster LESER gebiert den Planet-Faden (`_planetAuftrag`: schlank, OHNE den Stand der Welt) — der
+// Satz „reise“ der Konsole oder die Frage der Sonne nach dem Ort der Welt (`_sonnenAnkerFragen`, sonnenbahn) —, der Faden trägt
+// ihn beim Namen (`geweckt`), und der Satz sagt den Anker des Samens des Planeten (`_planetSamen`; voxel-worker `planetAnker` am
+// Ort-Gesetz `ortGesetz()`). ROT beim Namen: der Wirt trägt keinen Leser (`_planetAnker` fehlt) · der Faden rechnete einen
+// anderen Samen als den des Planeten (Gegner F1) · der Anker im Faden ist nicht der Anker des Kerns in node (Float64-Bitmuster,
+// Version) · der Planet-Faden stand vor seinem ersten Leser (weder Satz noch Sonne weckte ihn: die Welt bestellte ihn ohne Leser,
+// Gegner F8) · der Planet-Faden bekam eine Nachricht des Welt-Stands (`state-set`,
 // `state-update`, `hydro`, `hydro-an`: er rechnete die Welt mit, Gegner F2) · der Haupt-Faden trägt den Kern (`__planetCore`) ·
 // der Satz „reise“ sagt die Lage nicht. Die Zeit im Faden (`__planetMs` aus `fadenHuelle`) ist ein Lesewert, kein Urteil.
 // `--selftest` (Gegner F9: jeder Täter ist in die WELT gepflanzt und geht durch denselben Leser): ein fremder Samen im echten
-// Faden, eine Nachricht des Stands an den echten Faden, der Faden, der vor dem zweiten Satz schon steht, der Kern im Haupt-Faden
+// Faden, eine Nachricht des Stands an den echten Faden, der Faden ohne Leser (er stirbt und wird ohne Leser neu geboren), der Kern im Haupt-Faden
 // und der Satz „reise heim“ (er sagt keine Lage) — dazu ein Wirt ohne Leser.
 async function planetSeite(mutant) {
     if (typeof r._planetAnker !== "function" || typeof r._planetAuftrag !== "function") return { fehlt: true };
     const bits = (x) => Array.from(new Uint8Array(new Float64Array([x]).buffer), (b) => b.toString(16).padStart(2, "0")).join("");
     const planetSamen = r._planetSamen();
+    if (mutant) {
+        // DER TÄTER „Faden ohne Leser“: der echte Faden stirbt und wird ohne Leser neu geboren (ein Auftrag, den niemand liest)
+        if (r._planetFadenStand) r._planetFadenStand.worker.terminate();
+        r._planetFadenStand = null;
+        r._planetAuftrag({ type: "planet-anker", samen: planetSamen });
+    }
     const vorSatz = !!r._planetFadenStand;
+    const geweckt = r._planetFadenStand ? r._planetFadenStand.geweckt : null;
     const F = window.__faden || {};
     const posten = () => (F.planetPost = F.planetPost || []);
     // jede Nachricht an den Planet-Faden beim Typ (der Haken am echten Faden, nach seiner Geburt)
@@ -2237,6 +2250,7 @@ async function planetSeite(mutant) {
         kuesteKm: a.kuesteKm,
         bits: bits(a.breite) + bits(a.laenge),
         vorSatz,
+        geweckt,
         stand,
         geburtMs,
         haupt,
@@ -2260,6 +2274,8 @@ function planetSoll(wurzel, samen) {
         lage: [`${grad(A.breite)}° ${A.breite < 0 ? "S" : "N"}`, `${grad(A.laenge)}° ${A.laenge < 0 ? "W" : "O"}`, `${A.kuesteKm.toFixed(0)} km`],
     };
 }
+// die Leser des Planeten beim Namen (stamm `PLANET_LESER`): der Satz „reise“ · die Frage der Sonne (`_sonnenAnkerFragen`)
+const PLANET_LESER = ["Satz", "Sonne"];
 function planetUrteil(spiel, soll) {
     if (!spiel || spiel.fehlt) return ["die Welt kennt ihren Ort nicht — der Wirt trägt keinen Leser des Planeten (`_planetAnker` fehlt)"];
     const rot = [];
@@ -2271,7 +2287,10 @@ function planetUrteil(spiel, soll) {
         rot.push(
             `der Anker im Faden (${grad(spiel.breite)} · ${grad(spiel.laenge)}) ist nicht der Anker des Kerns in node (${grad(soll.breite)} · ${grad(soll.laenge)}) — die Bytes weichen ab`
         );
-    if (spiel.vorSatz) rot.push("der Planet-Faden stand VOR dem Satz — die Welt zahlt den Planeten ohne Leser");
+    if (!PLANET_LESER.includes(spiel.geweckt))
+        rot.push(
+            `der Planet-Faden stand vor seinem ersten LESER — geweckt von ${spiel.geweckt == null ? "niemandem" : "„" + spiel.geweckt + "“"}, weder ${PLANET_LESER.join(" noch ")}: Faden ohne Leser, die Welt zahlt den Planeten ohne Leser`
+        );
     if (spiel.stand.length) rot.push(`der Planet-Faden bekam den Stand der Welt (${spiel.stand.join(", ")}) — er rechnet die Welt mit`);
     if (spiel.haupt) rot.push("der Haupt-Faden trägt den Kern (`__planetCore`) — der Planet lebt nur im Faden");
     const fehlt = soll.lage.filter((t) => !String(spiel.zeile).includes(t));
@@ -2284,7 +2303,7 @@ function planetZeile(ist, soll, rot) {
         const g = (x) => ((x * 180) / Math.PI).toFixed(3) + "°";
         const geb = typeof ist.geburtMs === "number" ? ist.geburtMs.toFixed(1) + " ms" : "ungemessen";
         console.log(
-            `  Planet (K6): Anker im Faden ${g(ist.breite)} · ${g(ist.laenge)}, Küste ${ist.kuesteKm.toFixed(1)} km, Kern ${ist.version}, Samen „${ist.samen}“ — der Kern in node ${ist.bits === soll.bits ? "trägt dieselben Bytes" : "WEICHT AB"} · Faden vor dem Satz ${ist.vorSatz ? "JA" : "nein"}, Nachrichten des Stands an ihn ${ist.stand.length}, seine Geburt hielt den Haupt-Faden ${geb} · im Faden ${ist.ms == null ? "ungemessen" : ist.ms.toFixed(0) + " ms (Laden + Plan + Scheibe + Anker)"} · der Satz: „${ist.zeile}“`
+            `  Planet (K6): Anker im Faden ${g(ist.breite)} · ${g(ist.laenge)}, Küste ${ist.kuesteKm.toFixed(1)} km, Kern ${ist.version}, Samen „${ist.samen}“ — der Kern in node ${ist.bits === soll.bits ? "trägt dieselben Bytes" : "WEICHT AB"} · geweckt von ${ist.geweckt == null ? "NIEMANDEM" : "„" + ist.geweckt + "“"} (Leser: ${PLANET_LESER.join(" · ")}; vor dem Satz ${ist.vorSatz ? "stand er" : "stand er nicht"}), Nachrichten des Stands an ihn ${ist.stand.length}, seine Geburt hielt den Haupt-Faden ${geb} · im Faden ${ist.ms == null ? "ungemessen" : ist.ms.toFixed(0) + " ms (Laden + Plan + Scheibe + Anker)"} · der Satz: „${ist.zeile}“`
         );
     }
     for (const t of rot) console.log(`  ⛔ K6: ${t}`);
@@ -2293,10 +2312,10 @@ function planetZeile(ist, soll, rot) {
 async function planetSelbst(page, ist, soll) {
     const M = ist.fehlt ? [] : planetUrteil(await page.evaluate(planetSeite, true), soll);
     const ohne = planetUrteil({ fehlt: true }, null);
-    const taeter = ["rechnete den Samen", "die Bytes weichen ab", "VOR dem Satz", "bekam den Stand der Welt", "Haupt-Faden trägt den Kern", "sagt die Lage nicht"];
+    const taeter = ["rechnete den Samen", "die Bytes weichen ab", "Faden ohne Leser", "bekam den Stand der Welt", "Haupt-Faden trägt den Kern", "sagt die Lage nicht"];
     const sieht = taeter.every((t) => M.some((x) => x.includes(t))) && ohne.some((x) => x.includes("kennt ihren Ort nicht"));
     console.log(
-        `  ${sieht ? "✅" : "⛔"} SELBSTTEST K6: fremder Samen im Faden, Stand an den Faden, Faden vor dem Satz, Kern im Haupt-Faden, Satz ohne Lage, Wirt ohne Leser ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR (" + M.length + " von " + taeter.length + " genannt)"}`
+        `  ${sieht ? "✅" : "⛔"} SELBSTTEST K6: fremder Samen im Faden, Stand an den Faden, Faden ohne Leser, Kern im Haupt-Faden, Satz ohne Lage, Wirt ohne Leser ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR (" + M.length + " von " + taeter.length + " genannt)"}`
     );
     return sieht;
 }
@@ -2599,7 +2618,7 @@ async function faden(page, url) {
         if (!planetIst.fehlt) rotK6 = (await wuchsProbe(page)) || rotK6;
         // K7 DIE SIEDLUNG DES ORTS (w28-reise-ort): der leere Ort, die Wüste und heim
         if (!planetIst.fehlt) rotK6 = (await siedlungProbe(page)) || rotK6;
-        console.log(`\n${rotK6 ? "⛔ PLANET ROT" : "✅ PLANET GRÜN: der Anker im Faden = der Kern, der Faden schlank und geboren mit dem Satz, der Satz sagt die Lage · K7 der trockene Ort trägt weder den Wald noch die Wiese der Heimat, heim byte-gleich; der leere Ort trägt weder Prüfplatz noch Dorf noch Baum, der Hof-Baum der Wüste steht nur am Wasser"}\n`);
+        console.log(`\n${rotK6 ? "⛔ PLANET ROT" : "✅ PLANET GRÜN: der Anker im Faden = der Kern, der Faden schlank und geboren mit seinem ersten Leser, der Satz sagt die Lage · K7 der trockene Ort trägt weder den Wald noch die Wiese der Heimat, heim byte-gleich; der leere Ort trägt weder Prüfplatz noch Dorf noch Baum, der Hof-Baum der Wüste steht nur am Wasser"}\n`);
         return rotK6 ? 1 : 0;
     }
     await fenster("gang");
@@ -2741,7 +2760,7 @@ async function faden(page, url) {
         rot = rot || !(await planetSelbst(page, planetIst, planetSollWert));
     }
     console.log(
-        `\n${rot ? "⛔ FADEN ROT" : "✅ FADEN GRÜN: K4 0 synchrone Bauten außerhalb der Sync-Stellen · K5 " + mb(proMin.fahrt) + " MB/min ≤ 5 in der Fahrt · K6 der Anker des Planeten im Faden = der Kern, der Faden schlank und geboren mit dem Satz"}\n`
+        `\n${rot ? "⛔ FADEN ROT" : "✅ FADEN GRÜN: K4 0 synchrone Bauten außerhalb der Sync-Stellen · K5 " + mb(proMin.fahrt) + " MB/min ≤ 5 in der Fahrt · K6 der Anker des Planeten im Faden = der Kern, der Faden schlank und geboren mit seinem ersten Leser"}\n`
     );
     return rot ? 1 : 0;
 }

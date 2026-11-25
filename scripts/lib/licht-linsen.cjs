@@ -1708,7 +1708,8 @@ function raumBlendeUrteil(fall, root = __dirname + "/../..") {
                 return out;
             },
             _belichtungAnker: () => EA,
-            _poolAmAuge: (w, aus) => Object.assign(aus, w),
+            _poolAmBild: (w, aus) => Object.assign(aus, w),
+            _sonnenAnkerFragen() {},
             _mondDurchlass: () => 1,
             _bildSichtSteht: () => true,
             _dachTakt() {},

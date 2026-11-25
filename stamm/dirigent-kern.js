@@ -1966,12 +1966,27 @@ class AnazhRealm {
         return globalThis.__fachwerkCore.laterneGlasJeLuma(L);
     }
 
-    // DER POOL AM AUGE (nacht-lichter, der Lichtmesser): die Beleuchtungsstärke, die die Leuchten des Orts auf eine waagrechte
-    // Fläche am Auge werfen (rgb, Welt-Einheiten, zu `w` addiert in `aus`) — dieselbe Stärke, derselbe Abfall, dieselbe Farbe wie
-    // im Stoff (`_leuchtTakt`, fachwerk `lichtAbfall`), ohne Flackern (der Messer mittelt), × cos θ der Quelle über der Fläche
-    // (unter dem Auge 0). Das Licht des Auges und der Himmels-Ersatz zählen nicht: der Messer misst die Lichter des Orts.
-    // Leser: die Belichtung (`_belichtungAusLicht`). Bis nacht-lichter las der Messer nur Sonne, Mond und Himmel — unter der
-    // Laterne stand die Blende des Mondlichts, jede Wand in ihrem Licht 2 100-mal über Bild-Weiß.
+    // DER POOL AM BODEN DES BILDS (sonnenbahn 2, abend-brand — der Lichtmesser): die Beleuchtungsstärke, die die Leuchten des
+    // Orts auf die Flächen werfen, die das Bild zeigt (rgb, Welt-Einheiten, zu `w` addiert in `aus`), gelesen an den Punkten des
+    // Messers (`rueckstrahlLeser.punkte`: je Kachel des GANZEN Bilds EIN Punkt der letzten Messung, der Himmel keiner), je Punkt
+    // dieselbe Stärke, derselbe Abfall, dieselbe Farbe wie im Stoff (`_leuchtTakt`, fachwerk `lichtAbfall`), ohne Flackern (der
+    // Messer mittelt), auf der waagrechten Karte (× cos θ der Quelle über dem Punkt — M1, wie die Sonne mit dem Sinus ihrer Höhe).
+    // Das Licht des Auges und der Himmels-Ersatz zählen nicht: der Messer misst die Lichter des Orts. DAS FENSTER DES MESSERS
+    // (`MESSER_FENSTER`, das Band der Profis): je Kachel das Verhältnis ihres Lichts (Himmel + Pool) zum Licht des Himmels, in
+    // Blenden (log₂; der Himmel und jeder Boden ohne Pool 0), gemittelt zwischen dem 10. und dem 90. Perzentil — wie die
+    // Auto-Belichtung von Unreal ihr Log-Histogramm über den ganzen Schirm (`FCameraExposureSettings` LowPercent 10 /
+    // HighPercent 90): die Glut und die Punkte an ihrem Leib (der Kern des Abfalls) führen nicht. Gemessen (GTX 1050, Prüfbühne,
+    // das Feuer aus 2 m, je k Boden 1–3 m · Feuerkreis · Sättigung): 20 000 → 39,6 · 0,255 · 0,776; 30 000 → 51,3 · 0,315 · 0,702;
+    // 50 000 → 71,3 · 0,403 · 0,639. Das Fenster über das ganze Bild schließt 2,53 Stufen (k 26 054 gegen die Nacht ohne Feuer
+    // 150 415): Boden 46,9 (main 73,5), Feuerkreis 0,293, Sättigung 0,727. Das Flächen-Mittel der unteren Bildhälfte schloss 4,69
+    // Stufen (Boden 18, Feuerkreis 0,127), ihr Fenster 4,11 (Boden 23,4, Sättigung 0,902): die Kamera der Nacht gleicht jedes
+    // Licht über dem Mond ganz aus, und die untere Hälfte des Bilds sah nur den Kreis des Feuers. Am Tag trägt der Pool neben der
+    // Sonne nichts: das Verhältnis ist 1, die Kurve des Tags bleibt. Ohne Messung (kein Bild: der Null-Renderer, vor der ersten
+    // Lesung) trägt er keinen Pool — es gibt keinen Boden, den er läse. Leser: die Belichtung (`_belichtungAusLicht`). Bis
+    // nacht-lichter las der Messer nur Sonne, Mond und Himmel (unter der Laterne jede Wand 2 100-mal über Bild-Weiß); bis
+    // sonnenbahn 2 las er den Pool auf einer waagrechten Fläche AM AUGE (`_poolAmAuge`, jede Quelle unter dem Auge 0): das Feuer
+    // am Boden war ihm blind — die Belichtung des S0-Schusses mit und ohne Feuer 149 434,762, das Feuer +53 % über main, die
+    // Abend-Stadt brannte aus (Wort des Koordinators 25.11.: der Sonderweg „nur über dem Auge“ fällt).
     // DIE WAHL DES ORTS ZUR UHR, NIE DIE BLENDE DES BILDS (licht.K1: die Kamera folgt dem Licht des Orts, steht die Uhr, stehen
     // Leuchten UND Messer im selben Bild): der Messer stellt eine fällige Wahl selbst (`_leuchtWahl` — nach dem Uhr-Wort liest er
     // vor dem nächsten Licht-Takt) und liest die gewählten Quellen in voller Stärke; die Blende (`blendeS`) ist der Übergang des
@@ -1979,7 +1994,7 @@ class AnazhRealm {
     // Tags) fand die Wahl der alten Stunde: unter der Bühne kamen die Laternen erst mit dem nächsten Schuss in die Belichtung
     // (gate:tag-achse:echt, genesis Uhr 0, Radeon: Bild 1–7 nach dem Wort Pool 0, k 50 721; `frisch` Pool 7,96e-6, k 34 391 —
     // ASYNC 0,56 EV, Soll 0,05).
-    _poolAmAuge(w, aus) {
+    _poolAmBild(w, aus) {
         aus[0] = w[0];
         aus[1] = w[1];
         aus[2] = w[2];
@@ -1988,24 +2003,62 @@ class AnazhRealm {
         const cam = this.state.camera;
         if (!pool || !cam) return aus;
         this._leuchtWahl(pool, cam);
-        const cp = cam.position;
-        const c = this._poolAugeC || (this._poolAugeC = new THREE.Color());
+        const L = this.state.rueckstrahlLeser;
+        const P = L && L.punkte;
+        if (!P || !(P.n > 0)) return aus;
+        const c = this._poolBildC || (this._poolBildC = new THREE.Color());
         const FC = globalThis.__fachwerkCore;
+        const X = P.xyz;
+        // je Punkt sein Pool (Luma, Welt-Einheiten) — gesammelt über jede Quelle, dann das Fenster über die Punkte
+        const je =
+            this._poolBildJe && this._poolBildJe.length >= P.n
+                ? this._poolBildJe
+                : (this._poolBildJe = new Float64Array(P.kacheln || P.n));
+        je.fill(0, 0, P.n);
+        let farbig = 0;
         // DIE GANZE WAHL (nacht-lichter-2): der Messer liest jede Quelle, die leuchtet — die Plätze UND die Karte (`pool.alle`);
-        // bis hier las er nur die `plaetze` Gewählten, und unter 42 Laternen der Gasse stand die Blende von vieren
+        // bis nacht-lichter-2 las er nur die `plaetze` Gewählten, und unter 42 Laternen der Gasse stand die Blende von vieren.
+        // Die Kosten folgen dem Schirm (höchstens eine Kachel je Punkt) und der Wahl, nie der Welt: jenseits der Reichweite fällt
+        // ein Punkt vor dem Gesetz
         for (const q of pool.alle) {
             if (q.quelle === "auge" || q.L.ersatz) continue;
-            const dy = q.y - cp.y;
-            const d = Math.hypot(q.x - cp.x, dy, q.z - cp.z);
-            if (!(dy > 0)) continue;
-            const e = this._leuchtStaerke(q, 0, true) * FC.lichtAbfall(q.L, d) * (dy / d);
-            if (!(e > 0)) continue;
+            const I = this._leuchtStaerke(q, 0, true);
+            if (!(I > 0)) continue;
+            const R = q.L.reichweiteM;
             this._lichtLinear(q.L, c);
-            aus[0] += c.r * e;
-            aus[1] += c.g * e;
-            aus[2] += c.b * e;
-            this._poolE += e;
+            const lu = I * (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b);
+            for (let i = 0; i < P.n; i++) {
+                const dy = q.y - X[3 * i + 1];
+                if (!(dy > 0)) continue;
+                const d = Math.hypot(q.x - X[3 * i], dy, q.z - X[3 * i + 2]);
+                if (!(d < R)) continue;
+                const e = FC.lichtAbfall(q.L, d) * (dy / d);
+                if (e > 0) ((je[i] += lu * e), farbig++);
+            }
         }
+        if (!farbig) return aus;
+        // das Fenster: log₂((Himmel + Pool) ÷ Himmel) je Kachel des Bilds, sortiert, gemittelt zwischen den Perzentilen — eine
+        // Kachel ohne Punkt (der Himmel) trägt das Licht des Himmels allein: 0 Stufen
+        const wl = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], 1e-12);
+        const N = Math.max(P.n, P.kacheln || 0);
+        const st =
+            this._poolBildStufen && this._poolBildStufen.length >= N
+                ? this._poolBildStufen
+                : (this._poolBildStufen = new Float64Array(N));
+        for (let i = 0; i < N; i++) st[i] = i < P.n ? Math.log2(1 + je[i] / wl) : 0;
+        const reihe = st.subarray(0, N).sort();
+        const [lo, hi] = AnazhRealm.MESSER_FENSTER;
+        const a = Math.min(N - 1, Math.floor(lo * N));
+        const b = Math.max(a + 1, Math.ceil(hi * N));
+        let s = 0;
+        for (let i = a; i < b; i++) s += reihe[i];
+        const e = wl * (2 ** (s / (b - a)) - 1);
+        if (!(e > 0)) return aus;
+        // der Pool des Messers ist Licht ohne eigene Farbe (die Belichtung liest die Luma): gleich auf jeden Kanal
+        aus[0] += e;
+        aus[1] += e;
+        aus[2] += e;
+        this._poolE = e;
         return aus;
     }
 
@@ -2052,7 +2105,7 @@ class AnazhRealm {
     // DIE STÄRKE einer Quelle zur Bild-Uhr t (K11, A9; licht-eine-skala P8): ihre Lichtstärke in Candela (`L.cd`, lx in 1 m)
     // × Flackern × Schaltplan × Masse ÷ die Einheit der EINEN Skala (`EINHEIT_LX`) — die EINE Stelle, an der ein Pool-Licht in
     // den Maßstab der Welt tritt. Ein Datum ohne `cd` bricht laut. Bis hier lief die Zahl des Labors × π × Zeitplan: das
-    // Herdfeuer trug nachts × 45 (2,3 Mio. lx in 1 m im einen Maßstab). `ruhig`: ohne Flackern (der Lichtmesser, `_poolAmAuge`).
+    // Herdfeuer trug nachts × 45 (2,3 Mio. lx in 1 m im einen Maßstab). `ruhig`: ohne Flackern (der Lichtmesser, `_poolAmBild`).
     _leuchtStaerke(q, t, ruhig) {
         const L = q.L;
         if (!(L.cd >= 0))
@@ -2267,7 +2320,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.416";
+AnazhRealm.VERSION = "18.546.419";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([
@@ -2284,6 +2337,10 @@ AnazhRealm.WELTBILD_TERME = Object.freeze([
     "karten",
     "dorf",
 ]);
+// DAS FENSTER DES LICHTMESSERS (`_poolAmBild`): die Perzentile der Punkte des Bilds, zwischen denen der Messer ihre Blenden
+// mittelt — das Band der Profis (Unreal `FCameraExposureSettings`: LowPercent 10, HighPercent 90 — das Log-Histogramm der
+// Belichtung, gemittelt zwischen ihnen)
+AnazhRealm.MESSER_FENSTER = Object.freeze([0.1, 0.9]);
 // DER EINE MELDER (`_bruchMelden`, K22): dieselbe Bruch-Meldung wieder meldet sich höchstens alle BRUCH_WIEDER_MS mit ihrem
 // Zähler; das Buch hält die jüngsten BRUCH_BUCH_MAX Meldungen
 AnazhRealm.BRUCH_WIEDER_MS = 2000;

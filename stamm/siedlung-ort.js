@@ -1745,7 +1745,8 @@ class AnazhRealm_siedlung_ort {
         const i =
             k === "start" ? this._autoSettlementStartInfo() : m ? this._autoSettlementCellInfo(+m[1], +m[2]) : null;
         // DIE WAHRHEIT VOR DEM URTEIL (wie `_autoSettlementZelle`): die Stelle fragt das Wasser um die Probe-Ringe — fehlt eine
-        // Hydro-Kachel, ist sie bestellt, und der Ort ist offen (undefined, nichts gemerkt)
+        // Hydro-Kachel, ist sie bestellt, und der Ort ist offen (undefined, nichts gemerkt); das Start-Dorf fragt sie selbst
+        if (i === undefined) return undefined;
         const um = Math.max(...AnazhRealm.AUTO_SETTLEMENT.siteProbeR) * AnazhRealm._siedlungGesetz().cellM;
         if (i && k !== "start" && this._ensureHydroTilesAround(i.x, i.z, um)) return undefined;
         const s = i && (k === "start" ? i : this._autoSettlementFindSite(i));
@@ -2084,6 +2085,7 @@ class AnazhRealm_siedlung_ort {
     // (`_genesisMitte`), auf den Ringen am Rand seines Reichs (1, 1,5 und 2 × fachwerk `siedlungsReich`: die Ankunft bleibt frei) —
     // wo der Grund es nährt (`_autoSettlementSiteOk` → `_ortNaehrt`: in der Wüste am Wasser) und der Mensch baut (`siedlung.bau`,
     // der Rang aus seiner Saat: auf dem Eis und vor seiner Zeit keins). In der Heimat wartet es auf den Plan wie bisher.
+    // → {key, seed, nH, x, z} · null (kein Start-Dorf) · undefined (offen: die Wahrheit des Wassers um die Ringe fehlt noch)
     _autoSettlementStartInfo() {
         // ZENSUS 17.07. — die Dorf-Größe ist fachwerk-Gesetz (SIEDLUNG.nHMin/nHSpan); kaltes Buch → kein Start-Dorf.
         const S = AnazhRealm._siedlungGesetz();
@@ -2102,8 +2104,17 @@ class AnazhRealm_siedlung_ort {
         const phase = (((h >>> 8) & 0xff) / 255) * 2 * Math.PI;
         const W = P ? { x: P.ort.x + P.viertel.x, z: P.ort.z + P.viertel.z } : { x: M.x, z: M.z };
         const orte = P ? [W] : [];
-        const reich = P ? 0 : AnazhRealm.Gesetz("fachwerk:siedlungsReich")(S, S.nHMin + S.nHSpan - 1);
-        for (const r of P ? AnazhRealm.AUTO_SETTLEMENT.startRingeM : [reich, 1.5 * reich, 2 * reich])
+        const R = AnazhRealm.Gesetz("fachwerk:siedlungsReich")(S, S.nHMin + S.nHSpan - 1);
+        const reich = P ? 0 : R;
+        const ringe = P ? AnazhRealm.AUTO_SETTLEMENT.startRingeM : [reich, 1.5 * reich, 2 * reich];
+        // DIE WAHRHEIT VOR DEM URTEIL (wie jede Zelle, `_zellOrt` und `_autoSettlementZelle`, gate:settlement C-K3): die Wasser-Wand
+        // jeder Stelle (`_landAt`) und ihr Grund (`_ortNaehrt`, im Reich um sie) lesen die Hydrosphäre und ihre Kacheln — steht die
+        // Heimat nicht oder fehlt eine Kachel um die Ringe, ist sie bestellt, und das Start-Dorf ist OFFEN (undefined: kein Urteil,
+        // nichts gemerkt). Bis hier urteilte es als einziges der Klasse über die halb geladene Welt: am Boot null, dieselbe Saat
+        // nach dem Laden ein Dorf (gate:weltgrenze saat, 25.11., voll 13/18) — und ein früher Ruf merkte die Welt hoffnungslos.
+        const hs = this.state.hydrosphere;
+        if (!hs || !hs.ready || this._ensureHydroTilesAround(W.x, W.z, Math.max(...ringe) + R)) return undefined;
+        for (const r of ringe)
             for (let i = 0; i < 8; i++) {
                 const a = phase + (i / 8) * 2 * Math.PI;
                 orte.push({ x: W.x + Math.cos(a) * r, z: W.z + Math.sin(a) * r });
@@ -2885,6 +2896,7 @@ class AnazhRealm_siedlung_ort {
         if (!p || !this._dorfTaktLebt() || this._autoSettlementQueue || this._autoSettlementPendingKey) return false;
         if (!this._autoSettlementChannelLive() || !this._startDorfFaellig(p)) return false;
         const si = this._autoSettlementStartInfo();
+        if (si === undefined) return false; // offen: die Wahrheit um die Ringe ist bestellt, der Takt fragt wieder
         if (!si) {
             this._autoSettlementStartHopeless = true; // Instanz-Feld (die _editSaveTimer-Klasse)
             return false;
@@ -3183,18 +3195,16 @@ class AnazhRealm_siedlung_ort {
         return true;
     }
     // DIE MAUER WÄCHST MIT (siedlung.K4 Staffel 2, `_ortWaechst`): wechselt die Mauer des Plans `plan` mit seinem Jahr (der Ring
-    // des Schnitts wächst mit der Stadt, nach MAUER_BIS fällt er), fallen ihre Streifen (Maß 0, der Pool behält die Plätze) und
-    // ihre Linie in der Wege-Karte, und die Mauer seines Plans steht neu
+    // des Schnitts wächst mit der Stadt, nach MAUER_BIS fällt er), fallen ihre Stücke aus dem Satz der Einfriedung
+    // (`_einfriedungFaellt`) und ihre Linie in der Wege-Karte, und die Mauer seines Plans steht neu
     _stlMauerNeu(plan) {
-        const [wk, P] = [this._wegeKarteEnsure(), this.state.stlMauer];
-        const null4 = this._stlMauerNull || (this._stlMauerNull = new THREE.Matrix4().makeScale(0, 0, 0));
+        const wk = this._wegeKarteEnsure();
         for (let i = wk.siedlungen.length - 1; i >= 0; i--) {
             const b = wk.siedlungen[i];
             if (b.mauerVon !== plan) continue;
             wk.siedlungen.splice(i, 1);
             if (wk.raeumen.includes(b)) wk.raeumen.splice(wk.raeumen.indexOf(b), 1);
-            for (let k = b.streifen[0]; P && k < b.streifen[1]; k++) P.mesh.setMatrixAt(k, null4);
-            if (P) P.mesh.instanceMatrix.needsUpdate = true;
+            for (const k of b.stuecke) this._einfriedungFaellt(k);
             this._grundrissFaellt(b.x0, b.z0, b.x1, b.z1);
         }
         return this._stlMauerBuild(plan, plan.ort);

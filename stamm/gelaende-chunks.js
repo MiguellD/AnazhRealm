@@ -636,15 +636,17 @@ class AnazhRealm_gelaende_chunks {
     // DER PLANET-FADEN (Reise, Gegner F2 und F8): ein schlanker Faden aus der EINEN Quelle (`_fadenQuelle`) — OHNE den Stand der
     // Welt, ohne Regionen, ohne Zustands-Nachrichten: der Planet ist eine reine Funktion seines Samens und liest keinen Weltzustand
     // (bis hier war er ein voller Neben-Faden, `_nebenFaden`, und rechnete jede Hydro-Kachel der Sitzung ein zweites Mal, 134–282
-    // ms je Kachel). Geboren mit dem ersten Satz, der ihn fragt (`reise`), nie mit der Welt: die Ankunft und jede Welt ohne Satz
-    // zahlen ihn nicht (bis hier bestellte jede Weltgeburt den Anker, 0,4–0,9 s im Faden). Er lebt über den Welt-Wechsel (er trägt
-    // keinen Stand; der Kern merkt Plan, Scheiben und Anker je Samen — die zweite Reise rechnet keinen Plan neu). → das Versprechen
-    // der Antwort; ein Wurf des Fadens bricht beim Namen.
-    _planetAuftrag(msg) {
+    // ms je Kachel). Geboren mit seinem ersten LESER, nie mit der Welt: `leser` nennt ihn (`PLANET_LESER`: der Satz „reise“ der
+    // Konsole · die Frage der Sonne nach dem Ort der Welt, `_sonnenAnkerFragen`), der Faden trägt ihn als `geweckt` — ein Faden
+    // ohne Leser ist der Bruch, den gate:worker-dichte K6 beim Namen nennt. Er lebt über den Welt-Wechsel (er trägt keinen Stand; der
+    // Kern merkt Plan, Scheiben und Anker je Samen — die zweite Reise rechnet keinen Plan neu). → das Versprechen der Antwort; ein
+    // Wurf des Fadens bricht beim Namen.
+    _planetAuftrag(msg, leser) {
         let f = this._planetFadenStand;
         if (!f) {
             const worker = new Worker(this._quelleStand().url, { name: "planet" });
-            f = this._planetFadenStand = { worker, pending: new Map(), next: 1 };
+            const geweckt = AnazhRealm.PLANET_LESER.includes(leser) ? leser : null;
+            f = this._planetFadenStand = { worker, pending: new Map(), next: 1, geweckt };
             worker.onmessage = (e) => {
                 const m = e.data;
                 const p = m && m.requestId ? f.pending.get(m.requestId) : null;
@@ -675,15 +677,17 @@ class AnazhRealm_gelaende_chunks {
     }
     // DER ORT DER WELT AUF IHREM PLANETEN (Reise): der Anker — der Punkt des Planeten, an dem das Ort-Gesetz der Heimat wahr ist
     // (planet-core `planetAnker` am Samen des Planeten `_planetSamen` und am Ort-Gesetz `ortGesetz()`), gerechnet im Planet-Faden
-    // (`_planetAuftrag`) → das Versprechen von { samen, version, breite, laenge (rad), kuesteKm }, EINES je Samen und Sitzung.
-    // Leser: der Satz „reise“ der Konsole (`chatSystemPatterns`).
-    _planetAnker() {
+    // (`_planetAuftrag`) → das Versprechen von { samen, version, breite, laenge (rad), kuesteKm }, EINES je Samen und Sitzung:
+    // der Merker `_planetAnkerJe` gehört dem Wirt (`WELT_GRENZE.wirt`, der Anker ist eine reine Funktion des Samens) — das zweite
+    // Boot derselben Welt liest ihn und weckt den Faden nicht neu (bis sonnenbahn 2 fiel er mit jeder Welt, jede Ankunft fragte den
+    // Faden). Leser (`leser`, `PLANET_LESER`): der Satz „reise“ der Konsole (`chatSystemPatterns`) · die Sonne (`_sonnenAnkerFragen`).
+    _planetAnker(leser) {
         const samen = this._planetSamen();
         const je = this._planetAnkerJe || (this._planetAnkerJe = new Map());
         if (!je.has(samen))
             je.set(
                 samen,
-                this._fadenQuelle().then(() => this._planetAuftrag({ type: "planet-anker", samen }))
+                this._fadenQuelle().then(() => this._planetAuftrag({ type: "planet-anker", samen }, leser))
             );
         const p = je.get(samen);
         p.catch(() => je.get(samen) === p && je.delete(samen));
@@ -3483,6 +3487,9 @@ AnazhRealm.FADEN_QUELLE = Object.freeze({
         tetrapoda: "tetrapoda-core.js",
     }),
 });
+// DIE LESER DES PLANETEN (`_planetAuftrag`, `_planetAnker`): wer den Planet-Faden wecken darf — der Satz „reise“ der Konsole und
+// die Frage der Sonne nach dem Ort der Welt (`_sonnenAnkerFragen`). Ein Faden ohne einen von ihnen trägt `geweckt` null.
+AnazhRealm.PLANET_LESER = Object.freeze(["Satz", "Sonne"]);
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
 // Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.
 AnazhRealm.DIRTY_IM_FLUG = 3;

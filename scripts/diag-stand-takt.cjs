@@ -1466,8 +1466,11 @@ async function brandSeite(MESS) {
 //   N5 (w28-brand-saum) — die Front ist ein geschlossener Saum: in demselben Bild stehen die Flammen der Herd-Zelle längs ihrer
 //   Front im Median ihrer Paare ≤ `NARBE_SAUM` × die volle Breite ihrer Zungen auseinander (2 × `BRAND.bild.breite` × Länge ×
 //   rMax der Zunge `FLAMME.zunge`, wie `_brandFlammenZeichnen`; die Länge die ruhende nach Byram 0,0775·I^0,46 aus `f.I`, nicht
-//   die pulsende `f.lang`; ≥ 8 Paare). Gemessen 1,187 (0,427 m bei 0,36 m); die Mutante (`abstandMinM` 0,5 m, die Tafel zur
-//   Laufzeit ersetzt) 1,6 (1,123 m bei 0,702 m): die kleinen Zungen der Flanken stehen als einzelne Punkte.
+//   die pulsende `f.lang`; ≥ 8 Paare). Gemessen 0,956 (0,594 m bei 0,621 m, brand-feld: die Flammen nach dem Bogen ihrer
+//   Front); die Mutante (`abstandMinM` 1 m, die Tafel zur Laufzeit ersetzt) 1,863 (1 m bei 0,537 m): die kleinen Zungen der
+//   Flanken stehen als einzelne Punkte. N5-AUGE: das Auge zählt nicht — die Herd-Zelle allein im Bild (`_brandGlutUm` reicht nur
+//   sie, kein Budget weitet), das Auge 6 m und 40 m von ihrer Mitte: gleich viele Flammen (≥ 8), gemessen 32 und 32; der Stand
+//   bis brand-feld (je Ellipse 96·12 m ÷ d Winkel) trug 25 und 16.
 //   N6 (w28-brand-zunge) — die Zungen pulsen: in demselben Bild streut die Länge der Flammen der Herd-Zelle je ihrer Byram-Länge
 //   (q = `f.lang` ÷ 0,0775·I^0,46) mit σ ≥ `NARBE_PULS` (≥ 8 Flammen). Gemessen σ 0,246 bei der Bild-Uhr 0 (q 0,652 … 1,35; der
 //   Ort-Term des Takts trägt allein), 0,259 nach 1,3 s; erwartet puls/√2 = 0,247. Die Mutante (`BRAND.bild.puls` 0) σ 0: die
@@ -1576,7 +1579,8 @@ function narbeUrteil(b) {
         s.mutante === 0 ? "" : `MUTANTE-N4: ohne Asche-Decke zählt die Linse ${s.mutante} Abrufe zeile("asche") — sie zählt einen anderen Leser`,
         n.paare >= 8 && n.mass > 0 ? "" : `N5-LEER: keine Messung des Saums: ${n.paare} Paare benachbarter Flammen in der Herd-Zelle (${n.flammen} Flammen; verlangt ≥ 8)`,
         !(n.mass > NARBE_SAUM) ? "" : `N5-SAUM: die Front steht als einzelne Punkte: Flammen-Abstand ${n.abstand} m > Zungen-Breite ${n.breite} m × ${NARBE_SAUM} (Verhältnis ${n.mass} im Median von ${n.paare} Paaren, BRAND.bild.abstandMinM ${n.minM} m)`,
-        n.mutante?.paare >= 8 && n.mutante?.mass > NARBE_SAUM ? "" : `MUTANTE-N5: mit abstandMinM 0,5 m liest die Linse Flammen-Abstand ${n.mutante?.abstand} m bei Zungen-Breite ${n.mutante?.breite} m (Verhältnis ${n.mutante?.mass}, ${n.mutante?.paare} Paare) — sie sieht die Lücken nicht`,
+        n.auge?.nah >= 8 && n.auge.fern === n.auge.nah ? "" : `N5-AUGE: das Auge zählt die Flammen: die Herd-Zelle allein im Bild trägt ${n.auge?.nah} aus ${n.auge?.nahM} m, ${n.auge?.fern} aus ${n.auge?.fernM} m (verlangt gleich viele, ≥ 8: ihre Front trägt sie — stamm/feld-brand.js _brandBild → _brandFrontGang)`,
+        n.mutante?.paare >= 8 && n.mutante?.mass > NARBE_SAUM ? "" : `MUTANTE-N5: mit abstandMinM 1 m liest die Linse Flammen-Abstand ${n.mutante?.abstand} m bei Zungen-Breite ${n.mutante?.breite} m (Verhältnis ${n.mutante?.mass}, ${n.mutante?.paare} Paare) — sie sieht die Lücken nicht`,
         z.flammen >= 8 && (z.sigma > 0 || z.sigma === 0) ? "" : `N6-LEER: keine Messung des Pulses: ${z.flammen} Flammen in der Herd-Zelle (σ ${z.sigma}; verlangt ≥ 8)`,
         !(z.sigma < NARBE_PULS) ? "" : `N6-BAND: die Front steht als Band gleicher Höhe: σ ${z.sigma} < ${NARBE_PULS} (Länge je Byram-Länge ${z.min} … ${z.max} über ${z.flammen} Flammen, BRAND.bild.puls ${z.puls})`,
         z.mutante?.flammen >= 8 && z.mutante?.sigma < NARBE_PULS ? "" : `MUTANTE-N6: ohne Puls liest die Linse σ ${z.mutante?.sigma} über ${z.mutante?.flammen} Flammen — sie misst nicht den Puls`,
@@ -1777,8 +1781,34 @@ async function narbeSeite(MESS) {
             return { flammen: F.length, paare: paare.length, abstand: r3(d), breite: r3(w), mass: r3(d / w), weit: r3(1 + 1.25 * Bb.flamme.rausch[2]), minM: Bb.abstandMinM };
         };
         const N5 = (aus.n5 = saum());
-        // die Mutante: die Tafel des Bilds mit dem Mindest-Abstand 0,5 m (der Stand bis w28-brand-saum)
-        C.BRAND = Object.freeze({ ...B, bild: Object.freeze({ ...B.bild, abstandMinM: 0.5 }) });
+        // DAS AUGE ZÄHLT NICHT (brand-feld): die Herd-Zelle allein im Bild (`_brandGlutUm` reicht nur sie — ihre Front unter dem
+        // Budget, kein Winkel weitet), das Auge 6 m und 40 m von ihrer Mitte (`_lodAuge`, 1,7 m über dem Boden): ihre Flammen
+        // stehen auf ihrer Front, gleich viele aus jedem Auge
+        {
+            const [mx, mz] = [(hx + 0.5) * cs, (hz + 0.5) * cs];
+            r._brandGlutUm = function (x, z, w, fn) {
+                return P._brandGlutUm.call(this, x, z, w, (b) => void (b.cx === hx && b.cz === hz && fn(b)));
+            };
+            const zaehle = (m) => {
+                const [x, z] = [mx + 0.6 * m, mz + 0.8 * m];
+                const auge = new THREE.Vector3(x, r._voxelSurfaceY(x, z) + 1.7, z);
+                r._lodAuge = () => auge;
+                r._bildZeit = 0;
+                r._brandBild(0.1);
+                return (r._brandFlammen || []).filter((f) => Math.floor(f.x / cs) === hx && Math.floor(f.z / cs) === hz).length;
+            };
+            try {
+                N5.auge = { nah: zaehle(6), fern: zaehle(40), nahM: 6, fernM: 40 };
+            } finally {
+                delete r._brandGlutUm;
+                delete r._lodAuge;
+            }
+            bild();
+        }
+        // die Mutante: die Tafel des Bilds mit dem Mindest-Abstand 1 m — bis brand-feld 0,5 m (der Stand bis w28-brand-saum);
+        // seit die Flammen nach dem Bogen ihrer Front stehen (`_brandFrontGang`), trägt die Herd-Zelle die Zungen von Spitze
+        // und Flanken, nicht mehr die überzählte Ferse: ihr Median ist 0,538 m breit, 0,5 m schließt den Saum (0,958)
+        C.BRAND = Object.freeze({ ...B, bild: Object.freeze({ ...B.bild, abstandMinM: 1 }) });
         try {
             bild();
             N5.mutante = saum();
@@ -2472,7 +2502,7 @@ if (SELBSTTEST) {
                     n2: { dauer: 52.4, ecken: 45.8, kopf: 31.5, mutante: { dauer: 31.5, ecken: 45.8, kopf: 31.5 } },
                     n3: { lichter: 4, flammen: 60, gemessen: 4, max: 0, mitte: false, mutante: { lichter: 4, flammen: 60, gemessen: 4, max: 5.3, mitte: true } },
                     n4: { abrufe: 1, gebaut: true, rauheit: 0.96, mutante: 0 },
-                    n5: { flammen: 27, paare: 26, abstand: 0.427, breite: 0.36, mass: 1.187, weit: 2, minM: 0.2, mutante: { flammen: 22, paare: 21, abstand: 1.123, breite: 0.702, mass: 1.6, weit: 2, minM: 0.5 } },
+                    n5: { flammen: 32, paare: 31, abstand: 0.594, breite: 0.621, mass: 0.956, weit: 2, minM: 0.2, auge: { nah: 32, fern: 32, nahM: 6, fernM: 40 }, mutante: { flammen: 14, paare: 13, abstand: 1, breite: 0.537, mass: 1.863, weit: 2, minM: 1 } },
                     n6: { flammen: 27, sigma: 0.246, min: 0.652, max: 1.35, puls: 0.35, uhr: 0.259, mutante: { flammen: 27, sigma: 0, min: 1, max: 1, puls: 0 } },
                     n7: { quellen: 4, max: 3.2, min: 2.3, tag: 3.2, mutanteTon: { nacht: 2.1, tag: 6.3 }, kern: 2, zeit: 0, herd: 45, belichtung: 1.5, soll: 2.929, mutante: { quellen: 4, max: 0.012, min: 0.008, kern: 0.76, zeit: 4, herd: 45, belichtung: 1.5, soll: 2.929 } },
                     // die Masse (N8): die Zahlen der Mess-Wiese am Kopf front-brand, die Mutante mit der Deckung ohne Masse
@@ -2488,6 +2518,9 @@ if (SELBSTTEST) {
                     l6: { regler: { dStunde: 0, dTemp: 0, dUhr: 0, dAschen: 0 }, sprung: { s: 600, dStunde: 4, tempVor: 1377, tempNach: 900, dBrandUhr: 600, schritte: 30, leer: 0, zuend: 110, takte: 40, aschen: 35 }, mutanteSicht: { regler: { dStunde: 4, dTemp: -400, dUhr: 0, dAschen: 0 } }, mutanteSchleife: { sprung: { schritte: 600, leer: 500 } } },
                 },
                 [["N1-LEER", "n1.brennt", false], ["N1-LEER", "n1.s", 3], ["N1-LEER", "n1.fernAn", 12], ["N1-WARTET", "n1.zuend", 0], ["N1-QUADRAT", "n1.fern", 0.9], ["MUTANTE-N1-WARTET", "n1.mutanteWartet.zuend", 1], ["MUTANTE-N1-QUADRAT", "n1.mutanteQuadrat.fern", 0], ["N2-ENDE", "n2.dauer", 31.5], ["MUTANTE-N2", "n2.mutante.dauer", 52.4], ["MUTANTE-N2", "n2.mutante", null], ["N3-LEER", "n3.gemessen", 0], ["N3-LICHT", "n3.max", 5.3, "n3.mitte", true], ["MUTANTE-N3", "n3.mutante.max", 0], ["N4-LEER", "n4.gebaut", false], ["N4-ZEILE", "n4.abrufe", 0], ["MUTANTE-N4", "n4.mutante", 1], ["N5-LEER", "n5.paare", 2], ["N5-LEER", "n5.mass", null], ["N5-SAUM", "n5.mass", 1.6, "n5.abstand", 1.123, "n5.breite", 0.702], ["MUTANTE-N5", "n5.mutante.mass", 1.187], ["MUTANTE-N5", "n5.mutante.paare", 2], ["MUTANTE-N5", "n5.mutante", null], ["N6-LEER", "n6.flammen", 3], ["N6-LEER", "n6.sigma", null], ["N6-BAND", "n6.sigma", 0, "n6.min", 1, "n6.max", 1], ["MUTANTE-N6", "n6.mutante.sigma", 0.246], ["MUTANTE-N6", "n6.mutante.flammen", 3], ["MUTANTE-N6", "n6.mutante", null], ["N7-UHR", "n7.tag", 16], ["MUTANTE-N7-TON", "n7.mutanteTon.tag", 2.2], ["N7-LEER", "n7.quellen", 0], ["N7-LEER", "n7.herd", 1], ["N7-SCHEIN", "n7.max", 460], ["N7-SCHEIN", "n7.zeit", 4], ["N7-DUNKEL", "n7.max", 1], ["MUTANTE-N7", "n7.mutante.max", 3.2], ["MUTANTE-N7", "n7.mutante.zeit", 0], ["MUTANTE-N7", "n7.mutante", null],
+                    // der Zähler des Auges (der Stand von main 0692960c: je Ellipse N = 96·12 m ÷ d Winkel, mindestens 4): die
+                    // Herd-Zelle allein im Bild trug 25 Flammen aus 6 m, 16 aus 40 m → ROT
+                    ["N5-AUGE", "n5.auge.fern", 16], ["N5-AUGE", "n5.auge", null],
                     // die Täter der Masse (N8): der Stand von main 9502aa0e — die Zelle ohne Masse, das Gesetz ohne Buch, die Tat ohne
                     // Asche, die Ballen ohne Masse (optische Masse 219,31 m² bei 1,223 kg Strom; im Steigen × 1,575, halbe Last × 1,704)
                     ["N8-LEER", "n8.fahne.voll.ballen", 0], ["N8-LEER", "n8.ausgebrannt", false], ["N8-LEER", "n8.fahne.halb", null], ["N8-HOLZ", "n8.kg", null], ["N8-HOLZ", "n8.kg", 66.7], ["N8-BILANZ", "n8.buch", null], ["N8-BILANZ", "n8.buch.ende.rauch", 33.349], ["N8-BILANZ", "n8.buch.mitte.brannte", 33.349], ["N8-ASCHE", "n8.tat", null], ["N8-ASCHE", "n8.tat", 0],

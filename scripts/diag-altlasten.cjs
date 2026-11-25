@@ -24,6 +24,7 @@ const F_KLANG_REGEN = "Welle 5 Klang — Regen = UMWELT.stimmen.regen aus dem ra
 const F_SLOPE = "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)";
 const F_GROB_TOR = "Integration L — das Grob-Tor liest den Leib (_trefferErreichbar)";
 const F_K11 = "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)";
+const F_EINFRIEDUNG = "mauer-im-stoff — Mauer und Zaun im Satz der Einfriedung (_einfriedungLege, der Bau-Stoff der Welt)";
 const FORBIDDEN = [
     ["tickPhoenixDeath", "W1a — der Tod ist feld-nativ (_playerDeathRespawn)"],
     ["triggerPhoenixDeath", "W1a"],
@@ -372,6 +373,16 @@ const FORBIDDEN = [
     ["_stlWegeEnsurePool", "V18.530 — _stlZaunEnsurePool"],
     ["_stlWegeDisposePool", "V18.530 — _stlWegeDispose (Zaun-Pool + Wege-Karte)"],
     ["state.stlWege", "V18.530 — state.stlZaun / state.wegeKarte"],
+    // mauer-im-stoff: Stadtmauer und Zaun zeichnen im Satz der Einfriedung (der Bau-Stoff der Welt, die Gestalt aus fachwerk
+    // `mauerNetz` · `zaunNetz`) — die Kiste mit Instanz-Farbe und ihre zwei Pools fielen
+    ["_stlZaunAddStrip", F_EINFRIEDUNG],
+    ["_stlZaunEnsurePool", F_EINFRIEDUNG],
+    ["_stlMauerEnsurePool", F_EINFRIEDUNG],
+    ["_stlStreifen", F_EINFRIEDUNG],
+    [".stlZaun", F_EINFRIEDUNG],
+    [".stlMauer", F_EINFRIEDUNG],
+    ['"siedlung-zaun"', F_EINFRIEDUNG],
+    ['"siedlung-mauer"', F_EINFRIEDUNG],
     ["wk.formen", "Integration 05.10. — wk.siedlungen (Formen je Siedlung, Hülle)"],
     ["Math.max(f.ex, f.ez)", "Integration 05.10. — _wegeFormRadius: die Diagonale des gedrehten Kastens"],
     ["kronendach: Object.freeze", "Integration 05.10. — _fernFarbeTeile (Art × kronenSchatten), uSeasonMul"],
@@ -846,6 +857,10 @@ const FORBIDDEN = [
     // foundry-halten — DER CACHE HÄLT NICHTS ÜBER SEINE LESER HINAUS: der Ruhe-Deckel (jeder Untätige 60 s über seinen letzten
     // Leser hinaus, bis 64 MB) fiel; ein losgelassener Körper fällt im nächsten Takt, ein Leser ohne Senke nach der Gnade einer Hülle
     ...["_foundryRuheDeckel", "FOUNDRY_RUHE_BYTES", "_foundryRuheMs"].map((t) => [t, "foundry-halten — der Cache hält nichts über seine Leser hinaus (_foundryOhneLeser)"]), // prettier-ignore
+    // sonnenbahn — DIE LICHT-SCHÄFTE SIND KEIN STELLGLIED: ihr Pegel ist Licht (`GODRAY.pegel` × Gate × Sicht, `_loopRender`); der
+    // Hebel des Reglers fiel (er sparte zwischen 0 und 0,8 nichts und pumpte die Mess-Wiese um 0,14 EV mit der Bildzeit)
+    ["nachtGrad", "sonnenbahn — das Nacht-Auge steht im letzten Anker der EINEN Tag-Achse (GRENZGROESSE, −18°), keine eigene Tiefe"],
+    ...["_godrayScale", "PERF_GODRAY_MAX"].map((t) => [t, "sonnenbahn — der Pegel der Schäfte ist Licht, nie Last (GODRAY.pegel)", ["scripts/playtest.cjs", "scripts/diag-post-kette.cjs"]]), // prettier-ignore
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
