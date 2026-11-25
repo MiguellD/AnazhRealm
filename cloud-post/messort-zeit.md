@@ -6,7 +6,8 @@ ZWISCHENSTAND · Karte 2 gebucht 105 von 1 718 (diese Abgabe bucht keine Sprosse
 spricht sie mit den Worten des Spielers, prüft, was die Welt nahm, und wartet nach dem Sprung der Uhr auf das Licht des Orts. Dazu
 zwei neue Orte als Funktion des Gelände-Kerns mit Beleg (Höhe, Spiegel, Abstand): `kueste` und `ufer`.
 **Gemessen.** __GEMESSEN__
-**Ehrlich offen.** __OFFEN__
+**Ehrlich offen.** Der Inhalt im Bild (`imBild`) und die Serie je Gerät × Sicht (8 Ratschen) messen erst auf echter GPU; die
+Jahreszeit stellt ein Welt-Akt, kein Chat-Satz; das Watt kennt keine Gezeit; `quelle` ist nur Kandidat (Liste unten).
 
 ## Schnitt 1 — die Zeit des Orts, EIN Leser
 
@@ -95,4 +96,17 @@ der Stationen: eine Soll-Zeile, deren Wortlaut „gegen <Name>“ sagt, ohne `qu
 
 ## Ehrlich offen
 
-__OFFEN_LISTE__
+- **Der Inhalt im Bild (`imBild`) ist ungeurteilt.** Die Klasse der Teilung misst in 1920 × 1080; unter swiftshader in diesem
+  Container stand der Klassen-Schuss der Küste nach 43 min noch in der GPU (der Takt der Welt bei 481, ein Bild-Takt 12 ms, der
+  GPU-Prozess bei 367 % CPU), und ich brach ihn ab. Die Bilder unten kommen aus demselben Ausgabe-Pfad in der Leinwand der Sitzung,
+  ohne Teilung. `imBild` (kueste: bodenSatz, wasserSatz; ufer: nahWiese, wasserSatz) urteilt erst die echte GPU.
+- **Die Serie je Gerät × Sicht:** 2 Orte × 2 Geräte × 2 Sichten = 8 Ratschen ungemessen, beim Namen offen (`serie.offen`,
+  gate:profiband H2b). Sie misst auf echter GPU (Lehre 17).
+- **Die Jahreszeit hat keinen Satz des Spielers:** der Parser kennt `setze uhrzeit` und `setze wetter`, die Jahreszeit stellt der
+  Welt-Akt `set_season` (das Programm, das die Welt-KI zu „fruehling“ schreibt). Der Leser bleibt EINER, der Weg ist DSL, nicht Chat.
+- **Das Watt fällt nie trocken:** das Gesetz kennt keine Gezeiten; das Watt ist ein flacher Hang um den Ruhe-Spiegel des Meeres.
+- **Der Pegel der Flüsse:** der Beleg misst am Ruhe-Spiegel (der Wirt ohne Kalender, `_pegelTafelGilt` null); die Welt hebt die
+  Flüsse mit dem Pegel, darum urteilt die Welt nur die Art, die Zahlen urteilt H1 am Gesetz.
+- **`quelle` ist nur Kandidat:** die Stationen im Zweig `punkte-maschine` blieben unberührt.
+- **Werkzeug:** Chrome 158 (swiftshader) stürzt in diesem Container ab; die Werkbank lief auf chrome-headless-shell 148 (der Pin von
+  puppeteer). Die Küste hat zwei Äsungs-Werte: 0,851 am Gesetz, 0,826 in der Welt (die Küste urteilt keine Äsung).
