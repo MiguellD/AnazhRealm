@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 43,
+    "heute": 44,
     "kern": 2,
     "kernDazu": 2,
-    "anteilHeute": 7.4,
+    "anteilHeute": 7.5,
     "anteilKern": 0.3
    },
    "perspektiven": [
@@ -7829,7 +7829,7 @@
        "richter": "Kenner lesen die Saat-Parameter aus Luft- und Straßenbild ≥ 70 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Kern-Verdichtung (fachwerk-core.js:4632), Gewerbe-Hallen am Rand (:3693) im Code, Richter nie gefahren; kein Bodenwert (Grep 0)",
@@ -20090,11 +20090,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 108,
+  "heute": 109,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
-  "anteilHeute": 5.5,
+  "anteilHeute": 5.6,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20104,7 +20104,7 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 58,
+  "beide": 59,
   "nachwache": 50
  },
  "zusammengelegt": [
