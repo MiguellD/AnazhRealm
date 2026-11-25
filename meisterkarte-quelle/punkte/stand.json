@@ -885,7 +885,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 31ea3847: die Seite warf: (b)(d) 18.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
+     "grund": "Station seit der Messung geändert — zuletzt an 486a6685: die Seite warf: (b)(d) 19.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
      "gehalten": true
     },
     {
@@ -11312,7 +11312,7 @@
   },
   "karte2.leben.evolution.fremde-physik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) — zuletzt an 486a6685: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.evolution.fremde-physik#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/albedo-tafel.cjs) — zuletzt an 486a6685: die Fahrt riss 1800 s (der Rest 400 s unter dem Grund-Deckel 539 s von karte2.leben.evolution.fremde-physik#1) — offen, UNGEMESSEN · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) — zuletzt an 486a6685: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.leben.evolution.fremde-physik#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/albedo-tafel.cjs) — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: if (!window.__fehlt) { window.__codeOf = ((oK) => (f) => oK(String(f)))(function ohneKommentare(src, ohneLiterale = fals — Heap nach der Rücknahme 194.9 →  · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.fremde-physik#1",
@@ -11330,7 +11330,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/albedo-tafel.cjs) — zuletzt an 486a6685: die Fahrt riss 1800 s (der Rest 400 s unter dem Grund-Deckel 539 s von karte2.leben.evolution.fremde-physik#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/albedo-tafel.cjs) — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: if (!window.__fehlt) { window.__codeOf = ((oK) => (f) => oK(String(f)))(function ohneKommentare(src, ohneLiterale = fals — Heap nach der Rücknahme 194.9 → ",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -37746,7 +37746,7 @@
   "ohne": 3279
  },
  "kopfVoll": "78ed31677dd35df5fc3aed589de8b24344201ac6",
- "zeit": "2026-11-25T09:25:08.800Z",
+ "zeit": "2026-11-25T09:33:14.541Z",
  "vorher": "78ed3167",
  "bilanz": {
   "gewinn": [],
