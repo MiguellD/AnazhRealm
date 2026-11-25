@@ -6097,6 +6097,29 @@
         if (!O || !O.klimaHeute) throw new Error("gelaende-core: die Lage trägt kein Ort-Gesetz (`ort`, die Tafel `ortGesetz`)");
         return O;
     }
+    // DIE LANDMARKE FOLGT DER GEOLOGIE (landmarken-geologie): wie dicht eine Fels-Landmarke steht, ist ein Gesetz des Orts, nie ein
+    // Wurf der Streu — je km² aus der Gesteinsklasse (`stil` der Großform: das Tafelland aus harter und weicher Lage, der Sandstein
+    // der Schichtstufe) und dem Klima des Orts (`wuchs.decke`: die Krautschicht aus Niederschlag gegen Verdunstung, trocken = 1 − decke).
+    //   felsbogen  nur im Tafelland: feucht 0,85 je km² (Red River Gorge, USFS: > 100 Bögen auf 117 km²) bis trocken 6,5 je km²
+    //              (Arches, NPS: > 2 000 Bögen auf 310 km², die dichteste Bogen-Landschaft der Erde)
+    //   felsturm   im Tafelland 1,4 je km² (Elbsandstein: > 1 000 freie Gipfel auf 700 km²), sonst der Tor auf Kuppe und Rücken
+    //              0,17 je km² (Dartmoor, DNPA: > 160 Tors auf 954 km²)
+    // Die Glut wirft kein Gesetz des Orts: ein Feuer ohne Menschen ist keine Landmarke (die Feuerstelle ist Bau). → { felsbogen,
+    // felsturm } je km² an (x, z). Leser: die Saat des Wirts (`_landmarkeChunk`) und ihr Richter (scripts/diag-phyto-tree.cjs).
+    const LANDMARKE = Object.freeze({
+        felsbogen: Object.freeze({ feucht: 0.85, trocken: 6.5 }),
+        felsturm: Object.freeze({ tafel: 1.4, sockel: 0.17 }),
+    });
+    function landmarke(L, x, z, aus) {
+        const o = aus || {};
+        const stil = grossformAus(L, x, z).stil;
+        const trocken = 1 - Math.min(1, Math.max(0, ortDer(L).wuchs.decke));
+        const B = LANDMARKE.felsbogen,
+            T = LANDMARKE.felsturm;
+        o.felsbogen = stil * (B.feucht + (B.trocken - B.feucht) * trocken);
+        o.felsturm = stil * T.tafel + (1 - stil) * T.sockel;
+        return o;
+    }
     // DAS ERBGUT DES ORTS (Reise, Schnitt 2): der Wildnis-Term der Heimat (ihre Normalform `heimTerme`, `erbgutNormal`) plus das
     // Δ der Regler des Orts, je Regler geklemmt auf seine Zeile (fehlt er der Heimat: sein def) — EIN Wildnis-Term, die Bühnen-Terme
     // der Heimat (Insel, Rampe, …) stehen an ihren Orten und reisen nicht. Die Geburt der Reise-Welt schreibt es EINMAL in ihr Gesetz
@@ -8145,6 +8168,8 @@
         glutAus: glutAus,
         lava: lava,
         grossform: grossformAus,
+        LANDMARKE: LANDMARKE,
+        landmarke: landmarke,
         landformRegler: landformRegler,
         netzZaehler: netzZaehler,
         benannteSeen: benannteSeen,
