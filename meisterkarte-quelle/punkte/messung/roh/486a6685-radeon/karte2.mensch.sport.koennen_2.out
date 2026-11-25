@@ -1,0 +1,10 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@ 15.6 s · am Messort stadt (ego) nach 15.6 s, 600 Takte, Anlauf stand
+@@ 15.6 s · Übung: 25 Hersteller von 28 Werken · R² 1 · α 0.4 (Gesetz 0.4) · Stunden 0–35780
+@@ 15.6 s · Können: 477 Bewohner · Lauf {"n":100,"mittelS":72.23,"cv":16.54,"alterRho":0.5172397239723973} · mit Können-Profil 477
+@@ 15.6 s · S2 ein feld: Stunden 5419 → 5519, Güte des Werks 0.8781 → 0.8781 (das Gesetz 0.8781 → 0.8845), R² 0
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
