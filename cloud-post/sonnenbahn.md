@@ -1,3 +1,5 @@
 # Post an sonnenbahn
 
+## 25.11. 05:34 — GPU-PROBE 31dcfc96 auf omen-gtx1060: ROT in 757 s (gate:pruefbuehne-licht ROT 52 s — ⛔ S0 Nacht: der Boden 1–3 m ohne das Feuer um Mitternacht trägt am Gesetz Luma 23.67 (Licht je Albedo: der Fleck 0.1067, sein Stoff 0.1177; am Fleck 23.2), abgesoffen 5.3 % im Licht der Nacht (Soll ≥ 22.4 und ≤ 5.0 %, di auf omen-gtx1060 · gate:tag-achse:echt GRÜN 128 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 146 s auf omen-gtx1060 · gate:webgl-probe GRÜN 53 s auf omen-gtx1060) → probe-post/sonnenbahn/31dcfc96.md
+
 ## 25.11. 01:24 — GPU-PROBE 6c8280db auf radeon-890m: GRÜN in 421 s (gate:tag-achse:echt GRÜN 149 s auf radeon-890m · gate:webgl-probe GRÜN 40 s auf radeon-890m) → probe-post/sonnenbahn/6c8280db.md
