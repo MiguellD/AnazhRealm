@@ -40,14 +40,17 @@ die Art in der Welt (die Welt trägt den Pegel, der die Flüsse hebt; die Zahl i
 
 | Ort | Spieler | Blick | Höhe | Wasser | Spiegel | Abstand | Hang | Breite | Äsung | Zeit |
 |---|---|---|---|---|---|---|---|---|---|---|
-| kueste | 859,3 / 10 430,3 | 1 141 / 10 480 | −2,45 m | Meer | −3,00 m | 35 m | 0,90° | — | 0,851 | 0,7 · herbst · bewoelkt |
+| kueste | −215,7 / 10 555,3 | −29,3 / 10 777,5 | −2,39 m | Meer | −3,00 m | 40 m | 0,88° | — | 0,068 | 0,7 · herbst · bewoelkt |
 | ufer | −118 / −838 | −91,8 / −809 | 22,23 m | Fluss | 21,96 m | 4,75 m | 3,29° | 8,65 m | 0,799 | 0,35 · fruehling · sonne |
 
-- **kueste.** 10,5 km vom Ursprung: von 120 Strahlen aus dem Ursprung trägt Strahl 87 das breiteste Watt; in seiner Umgebung
-  (±1,5 km, Raster 25 m) die Stelle 0,2–0,8 m über dem Meer, ohne Fluss am Ort, mit dem Meer als erstem Wasser in 30–120 m und
-  dem breitesten Watt längs des Blicks (476 m zwischen +1,5 m und −1,5 m um den Spiegel, 0,36°). Der Hang des Belegs (0,90°) hält
-  die Klasse „flach“ 0–2° der Kartierung des Harle-Seegatts (Mascioli et al. 2023, Journal of Maps 19,
-  https://doi.org/10.1080/17445647.2022.2154175); `hangMax` 2 ist diese Klasse.
+- **kueste.** 10,6 km vom Ursprung: von 120 Strahlen aus dem Ursprung trägt Strahl 87 das breiteste Watt; in seiner Umgebung
+  (±1,5 km, Raster 25 m, mit den Kacheln der Hydrosphäre um jede Stelle) die Stelle 0,2–0,8 m über dem Meer, ohne Fluss am Ort,
+  mit dem Meer als erstem Wasser in 30–120 m, ohne Krone in der Ego-Sicht (das Gesetz der Mess-Wiese, `belegSicht`) und mit dem
+  breitesten Watt längs des Blicks: 306 m zwischen +1,5 m und −1,5 m um den Spiegel, 0,56°. 10 Stellen hielten mit freiem Blick,
+  13 fielen als verstellt (18 s). Am Ort: kein Baum im Ring von 25 m, der Korridor bis 30 m hinter dem Wasserrand (±20°) frei,
+  der Horizont −0,27°, 200 m hinter dem Rand 5,04 m unter null. Der Hang des Belegs (0,88°) hält die Klasse „flach“ 0–2° der
+  Kartierung des Harle-Seegatts (Mascioli et al. 2023, Journal of Maps 19, https://doi.org/10.1080/17445647.2022.2154175);
+  `hangMax` 2 ist diese Klasse. Die Äsung 0,07 ist das kahle Watt.
 - **ufer.** In der Heim-Region die offene Bank am Fluss (`flussRand` 4,3 m halbe Breite): Wiesen-Probe ohne Krone im Ring,
   Waldrand im Kranz, 0,27 m über dem Ruhe-Spiegel, das Wasser 4,75 m vor dem Spieler, der Blick quer zum Gegenufer.
   `aesungMin` 0,5 ist die Hälfte des vollen Lebens des Felds.
@@ -62,6 +65,13 @@ die Art in der Welt (die Welt trägt den Pegel, der die Flüsse hebt; die Zahl i
   dort liest der Spiegel des Körpers den Automaten (`_wasserBildAt`), und das Meer steht bei −2,9999999999999996, der Wirt ohne
   Chunks liest den Atlas, genau −3. Die Art fragte nach Gleichheit. Wurzel: `belegMessen` urteilt Meer wie Fluss auf 1 cm. Linse
   S20c: der Wirt im Bild des Wassers (−3 + 4e‑16) hält, die Art auf Gleichheit (der Stand davor) nennt dort „see“ → ROT.
+- **Der Wald am Watt.** Diese zweite Küste (859,3 / 10 430,3) hielt dann auch in der Welt — und ihr Bild zeigte Laub: der Ort stand
+  im Erlen-Wald (Krone 0,897, 6 Kronen in der Ego-Sicht, eine Erle 0,9 m vor dem Auge), die Blick-Wahl der Kamera floh auf 7,55 m.
+  Der Beleg maß Höhe, Wasser und Abstand, nie den Blick. Wurzel: `belegMessen` misst die Sicht mit dem Gesetz der Mess-Wiese
+  (`belegSicht` → `wieseMessen` imBlick: Kronen in 15 m im Sektor ±55° oder über dem Auge), am Gesetz (`belegSichtAmGesetz`,
+  die Kacheln um den Ort vorgerechnet, sonst bricht der Faden des Walds im Wirt) wie in der Welt (`window.__belegSicht`);
+  `belegUrteil` nennt jede Krone im Blick ROT, eine ungemessene Sicht ebenso. Linse S20c: der Wald-Ort → ROT „der Blick zum
+  Wasser ist nicht frei — 6 Krone(n)“, der Beleg ohne Sicht → ROT „der Blick ist nicht gemessen“.
 
 __BILDER__
 
@@ -109,4 +119,4 @@ der Stationen: eine Soll-Zeile, deren Wortlaut „gegen <Name>“ sagt, ohne `qu
   Flüsse mit dem Pegel, darum urteilt die Welt nur die Art, die Zahlen urteilt H1 am Gesetz.
 - **`quelle` ist nur Kandidat:** die Stationen im Zweig `punkte-maschine` blieben unberührt.
 - **Werkzeug:** Chrome 158 (swiftshader) stürzt in diesem Container ab; die Werkbank lief auf chrome-headless-shell 148 (der Pin von
-  puppeteer). Die Küste hat zwei Äsungs-Werte: 0,851 am Gesetz, 0,826 in der Welt (die Küste urteilt keine Äsung).
+  puppeteer).
