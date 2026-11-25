@@ -1,7 +1,7 @@
 {
  "sha": "486a6685925d51302752c756d7d47654d83922d1",
  "geraet": "gtx",
- "zeit": "2026-11-25T12:10:07.986Z",
+ "zeit": "2026-11-25T12:10:50.000Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.gespraech#2": {
@@ -4907,17 +4907,132 @@
   },
   "karte2.same.entfaltung.schirm#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\a42b2333-d205-4d25-862b-0394b1ead12c.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\pun) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\a42b2333-d205-4d25-862b-0394b1ead12c.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\pun) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-25T12:10:07.986Z",
+   "zahl": "Deckel 139 s gerissen: Stille seit 15 s nach 160.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego-geht 145.8 s)",
+   "exit": 1,
+   "minuten": 2.68,
+   "grund": "Deckel 139 s gerissen: Stille seit 15 s nach 160.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego-geht 145.8 s)",
+   "s": 161.1,
+   "fremd": {
+    "s": 169,
+    "takte": 77,
+    "fremdS": 78.59,
+    "kerne": 0.465,
+    "fensterKerne": 0.848,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      27.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      17.66
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.94
+     ]
+    ],
+    "dienerS": 62.83,
+    "diener": [
+     [
+      "dwm.exe",
+      34.55
+     ],
+     [
+      "System",
+      18.95
+     ]
+    ],
+    "geraetS": 72.86,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      47.67
+     ],
+     [
+      "svchost.exe",
+      21.91
+     ],
+     [
+      "SearchIndexer.exe",
+      1.77
+     ]
+    ],
+    "eigenS": 456.98,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.546,
+     "nach": 0.66,
+     "station": 1.342
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 145.4,
+     "alle": 263,
+     "cpuEin": 156,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.97,
+      "s": 2,
+      "soll": 3,
+      "reihe": [
+       6.45,
+       5.58,
+       3.62,
+       3.16,
+       2.74,
+       3
+      ]
+     },
+     "spanne": [
+      1795608652008,
+      1795608652641
+     ]
+    },
+    "nach": {
+     "ein": 106.5,
+     "alle": 547.4,
+     "cpuEin": 94,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.7,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       8.63,
+       4.68,
+       4.46,
+       2.68,
+       2.72,
+       2.7
+      ]
+     },
+     "spanne": [
+      1795608813728,
+      1795608814542
+     ]
+    },
+    "ruhe": {
+     "ein": 89.4,
+     "alle": 225.4,
+     "n": 1190,
+     "von": "2026-11-24"
+    },
+    "f": 2.429,
+    "fEin": 1.626,
+    "fAlle": 2.429,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-25T12:10:50.000Z",
    "abdruck": "a16a54631e99",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   }
  },
  "sitzung": {
@@ -4990,5 +5105,103 @@
   },
   "fahrtS": 266.2,
   "minuten": 4.58
- }
+ },
+ "fortsetzung": [
+  {
+   "start": "2026-11-25T12:10:11.435Z",
+   "ordner": "sitzung-20261125-131011",
+   "port": 7804,
+   "warten": 0.02,
+   "bootS": 6.3,
+   "grundstellungS": [],
+   "proben": 1,
+   "freigaben": [],
+   "orte": [
+    {
+     "ort": null,
+     "vor": "karte2.same.entfaltung.schirm#1",
+     "s": 29.6,
+     "takte": 835,
+     "chunks": 81,
+     "nach": null
+    }
+   ],
+   "wegeTueren": [],
+   "felder": [
+    {
+     "probe": "karte2.same.entfaltung.schirm#1",
+     "weg": [
+      "__weltaktSpionBuch",
+      "__wetterSpionBuch",
+      "__buehneUhr",
+      "__bandDecke",
+      "__zensusCalls"
+     ]
+    }
+   ],
+   "wirt": [
+    {
+     "probe": "karte2.same.entfaltung.schirm#1",
+     "anders": [
+      "r._bildZeit",
+      "r._wolkenZeit",
+      "r._weltaktGehalten",
+      "r._setWeather",
+      "r.state.weather",
+      "window.__wieseMessen",
+      "window.__wieseUrteil",
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "r._bildZeit": "neu: () => S.T",
+      "r._wolkenZeit": "neu: () => S.T",
+      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+      "r.state.weather": "neu: () => wert",
+      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [],
+     "heap": [
+      192.2,
+      281
+     ],
+     "ungemessen": null
+    }
+   ],
+   "messHalt": [
+    {
+     "probe": "karte2.same.entfaltung.schirm#1",
+     "halt": -1000000000,
+     "zurueck": 0
+    }
+   ],
+   "ciBlicke": 2,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 577,
+    "frameP95": 33.35,
+    "taktP95": 21.74,
+    "vramMax": 131.6,
+    "seiten": 1,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "karte2.same.entfaltung.schirm#1",
+      "m": 1092,
+      "ringVor": 4,
+      "ringMin": 0
+     }
+    ],
+    "zapfen": 199,
+    "luecken": 0,
+    "letzteLuecke": null
+   },
+   "fahrtS": 204.7,
+   "minuten": 3.48
+  }
+ ]
 }
