@@ -79,3 +79,5 @@ w28-sport-regeln karte2.mensch.sport.geistspiel#1,karte2.same.physik.reaktion#2
 w28-grenze-im-land karte2.mensch.macht.grenze#1
 # 724 (main b1f0de0e, 25.11. 00:24): z724 00:24 w28-sport-wurzel (die Mannschaft spielt im Ring der Arena, im Ring 1 → 34) — echte Stationen an der GTX 1060 am Kopf 4d4a74ab GRÜN (regeln#1 · mannschaft#1 · arena#1), der gelandete Code ist byte-gleich
 w28-sport-wurzel karte2.mensch.sport.regeln#1,karte2.mensch.sport.mannschaft#1,karte2.mensch.sport.arena#1
+# 725 (main c540c783, 25.11. 03:28): z727 w28-ring-wird-gasse (der gefallene Ring wird Gasse und steht in der Wege-Liste, bevor Mast und Baum sie lesen) — echte Station an der Radeon am Kopf 39718a18 GRÜN (wehrbau#3 Ring als Straße 0,844); wehrbau#1 am geheilten Richter (Zweig punkte-maschine 8cb8ed00: Wand und Turm aus der Form des Plans — Hand-Lauf Radeon am main 6c210411: Palisade 21/21 Segmente, Türme 3/3, die Akte fiel UNGEMESSEN an der Wirt-Wache)
+w28-ring-wird-gasse karte2.mensch.macht.wehrbau#3,karte2.mensch.macht.wehrbau#1
