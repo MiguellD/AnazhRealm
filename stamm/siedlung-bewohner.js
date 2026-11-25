@@ -2755,27 +2755,23 @@ class AnazhRealm_siedlung_bewohner {
         const o = b.orte;
         const k = b.kette;
         const v = b.gangTempo ?? b.tempo;
-        if (
-            k &&
-            k.regen === regen &&
-            k.krank === b.krank &&
-            k.rolle === b.rolle &&
-            k.werk === o.werk &&
-            k.platz === o.platz &&
-            k.besuch === o.besuch &&
-            k.spiel === o.spiel &&
-            k.v === v
-        )
-            // prettier-ignore
-            return k.K;
+        // prettier-ignore
+        if (k && k.regen === regen && k.krank === b.krank && k.rolle === b.rolle && k.werk === o.werk && k.platz === o.platz && k.besuch === o.besuch && k.spiel === o.spiel && k.v === v) return k.K;
         const [I, W, sek] = [b.ortI, b.wegeM, this._bewohnerStundeSek()];
+        // DER WEG OHNE NETZ ZÄHLT BEIM NAMEN, nie still als null Gehzeit: ein Ort seines Tags ohne Index (`ohne.ort`) oder ohne Weg
+        // im Netz (`tagesWege` → Infinity, `ohne.netz`) trägt die Kette als Zahl mit dem Paar der Orte (`K.ohne`) — die Probe liest sie
+        const ohne = { ort: 0, netz: 0, wo: [] };
         const geh = (von, nach) => {
+            if (!(v > 0)) return 0;
             const [i, j] = [I && I[von], I && I[nach]];
-            if (!(v > 0) || i == null || j == null || i === j) return 0;
+            if (i == null || j == null) return (ohne.ort++, ohne.wo.push(von + ">" + nach), 0);
+            if (i === j) return 0;
             const m = W.get(Math.min(i, j) * 65536 + Math.max(i, j));
-            return Number.isFinite(m) ? m / (v * sek) : 0;
+            if (Number.isFinite(m)) return m / (v * sek);
+            return (ohne.netz++, ohne.wo.push(von + ">" + nach), 0);
         };
         const K = KC.tagesKette(b.same, b.rolle, o, regen, b.krank, geh);
+        K.ohne = ohne;
         if (v > 0) b.kette = { K, regen, krank: b.krank, rolle: b.rolle, werk: o.werk, platz: o.platz, besuch: o.besuch, spiel: o.spiel, v }; // prettier-ignore
         return K;
     }
