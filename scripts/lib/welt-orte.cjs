@@ -161,7 +161,11 @@ function wieseMessen(r, x, z, blick, S, nurBoden) {
 // dem Stamm lädt, dann der Stamm) und eine frisch geborene Welt ohne Bau — `ensureWorldMeta` gibt ihr Saat und Genese-Version,
 // gelaende-core `GRUND` Basis und Meer. Er misst das Gesetz (Höhe, Land, Wald); was nur der Bau trägt (die Boden-Karte des
 // Grases, die Hydro-Kacheln eines gebauten Rings), misst nur die Welt.
-function wirtAmGesetz(root) {
+// `mitWasser`: dazu die Heim-Region der Hydrosphäre, wie der Faden sie als erste rechnet (voxel-worker `hydroRegion("heim",
+// null)`: gelaende-core `hydrosphaere` über dem Boden des Netzes, ohne Kanal) — der Wirt des Belegs der Orte am Wasser. Er
+// trägt den RUHE-Spiegel: keine Tafel des Pegels (`_pegelGilt` null — die Welt hebt Fluss und See mit Schmelze und Regen ihrer
+// Uhr, ein Wirt ohne Kalender trägt keine).
+function wirtAmGesetz(root, mitWasser) {
     const { AnazhRealm: A, ctx } = require("./stamm.cjs").ladeKlasse(
         root || require("path").join(__dirname, "..", "..")
     );
@@ -169,7 +173,80 @@ function wirtAmGesetz(root) {
     const w = Object.create(A.prototype);
     w.state = { worldMeta: {}, terrainBaseHeight: G.basis, waterLevel: G.basis - G.meerUnterBasis };
     w.ensureWorldMeta();
+    if (mitWasser) w._pegelTafelGilt = null;
+    if (mitWasser)
+        w.state.hydrosphere = ctx.__gelaendeCore.hydrosphaere(
+            w._gelaende(),
+            A.HYDROSPHERE,
+            (x, z) => w._voxelSurfaceY(x, z),
+            null
+        );
     return w;
+}
+
+// DER BELEG EINES ORTS AM WASSER (messort-zeit): ein Ort mit Beleg (`messorte[].beleg`, Art `kueste` oder `ufer`) ist eine
+// Funktion des Gelände-Kerns — gemessen an EINER Funktion mit zwei Wirten (in der Seite die Welt nach der Aufstellung, ohne
+// Browser der Wirt mit Wasser, gate:profiband H1): vom Spieler längs des Blicks bis zum ersten nassen Punkt (`_nassAt`, das
+// EINE Urteil „ist hier Wasser"):
+//   hoehe    — der Boden am Spieler (`_voxelSurfaceY`, m)
+//   spiegel  — der Spiegel des Wassers dort (`_koerperWasser` über seinem Grund, m); `wasser` „fluss", wo der Fluss ihn trägt
+//              (`_waterLevelAt` … `aus.fluss`), sonst „meer" (der Spiegel der Welt, `state.waterLevel`) oder „see"
+//   abstand  — der Weg dorthin (m); `hang` die Neigung von Spieler zu Wasser, atan((hoehe − spiegel) / abstand) in Grad
+//   breite   — die Breite des Flusses an seinem Rand (`_hydroDistAt`: 2 · halfW), nur am Fluss
+//   aesung   — die Äsung am Spieler (`_kreaturNahrung`, das Leben des Felds: der Jungwuchs, den der Fraß liest), 0..1
+function belegMessen(r, x, z, blick) {
+    const r2 = (v) => Math.round(v * 100) / 100;
+    const V = (px, pz) => r._voxelSurfaceY(px, pz);
+    const l = Math.hypot(blick[0] - x, blick[1] - z);
+    const [ux, uz] = [(blick[0] - x) / l, (blick[1] - z) / l];
+    let d = null;
+    for (let s = 0; s <= l; s += 0.25)
+        if (r._nassAt(x + ux * s, z + uz * s)) {
+            d = s;
+            break;
+        }
+    if (d === null) return { x, z, fehler: `kein Wasser längs des Blicks binnen ${Math.round(l)} m` };
+    const [wx, wz] = [x + ux * d, z + uz * d];
+    const spiegel = r._koerperWasser(wx, wz, V(wx, wz));
+    const hoehe = V(x, z);
+    const aus = {};
+    r._waterLevelAt(wx, wz, aus);
+    const wasser =
+        aus.fluss != null && aus.fluss >= spiegel - 0.01 ? "fluss" : spiegel === r.state.waterLevel ? "meer" : "see";
+    const fr = wasser === "fluss" ? r._hydroDistAt(wx, wz) : null;
+    return {
+        x,
+        z,
+        hoehe: r2(hoehe),
+        spiegel: r2(spiegel),
+        abstand: r2(d),
+        hang: Math.round(((Math.atan((hoehe - spiegel) / Math.max(d, 0.25)) * 180) / Math.PI) * 1000) / 1000,
+        wasser,
+        breite: fr ? r2(2 * fr.halfW) : null,
+        aesung: Math.round(r._kreaturNahrung(x, z) * 1000) / 1000,
+    };
+}
+
+// DAS URTEIL DES BELEGS (rein): je verletztem Teil ein Befund beim Namen. Die Art urteilt in jedem Wirt (`kueste`: das Meer
+// längs des Blicks, der Hang ≤ `hangMax` — das Watt; `ufer`: ein Fluss, die Äsung ≥ `aesungMin` — der Jungwuchs); die Zahlen
+// (Höhe, Spiegel, Abstand ± `toleranz`) urteilen am Gesetz (`mitZahl`, gate:profiband H1) — die Welt hebt den Fluss mit ihrem
+// Pegel (gelaende-core `pegelTafel`: Schmelze und Regen), der Wirt trägt den Ruhe-Spiegel.
+function belegUrteil(m, B, mitZahl) {
+    if (!m || m.fehler) return [`Beleg: nicht gemessen (${(m && m.fehler) || "keine Messung"})`];
+    const f = [];
+    const wo = `${m.x}/${m.z}`;
+    if (B.art === "kueste") {
+        if (m.wasser !== "meer") f.push(`Küste ${wo}: längs des Blicks steht kein Meer (${m.wasser} bei ${m.abstand} m)`);
+        if (!(m.hang <= B.hangMax)) f.push(`Küste ${wo}: kein Watt — der Hang zum Wasser ${m.hang}° über ${B.hangMax}°`);
+    } else if (B.art === "ufer") {
+        if (m.wasser !== "fluss") f.push(`Ufer ${wo}: längs des Blicks fließt kein Fluss (${m.wasser} bei ${m.abstand} m)`);
+        if (!(m.aesung >= B.aesungMin)) f.push(`Ufer ${wo}: kein Jungwuchs — Äsung ${m.aesung} unter ${B.aesungMin}`);
+    } else f.push(`Beleg ${wo}: keine Art „${B.art}" (kueste, ufer)`);
+    if (mitZahl)
+        for (const k of ["hoehe", "spiegel", "abstand"])
+            if (!(Math.abs(m[k] - B[k]) <= B.toleranz))
+                f.push(`Beleg ${wo}: ${k} ${m[k]} am Gesetz, der Haushalt sagt ${B[k]} (± ${B.toleranz})`);
+    return f;
 }
 
 // DAS URTEIL DER WIESE (rein): je verletztem Teil ein Befund beim Namen; `gras` urteilt, wo es gemessen ist — fordert der
@@ -513,12 +590,17 @@ const WIESE_INSTALL =
     `window.__wieseGesetz = ${JSON.stringify(WIESE.wiese)};` +
     `window.__wieseMessen = ${wieseMessen.toString()};` +
     `window.__wieseUrteil = ${wieseUrteil.toString()};`;
+const BELEG_INSTALL =
+    `window.__belegMessen = ${belegMessen.toString()};` + `window.__belegUrteil = ${belegUrteil.toString()};`;
 module.exports = {
     messort,
     wieseMessen,
     wieseUrteil,
+    belegMessen,
+    belegUrteil,
     wirtAmGesetz,
     WIESE_INSTALL,
+    BELEG_INSTALL,
     WELT_MITTE,
     WELT_ORTE_INSTALL:
         `window.__messWiese = [${WIESE.x}, ${WIESE.z}];` +

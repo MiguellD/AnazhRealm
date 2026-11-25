@@ -417,6 +417,50 @@
             "imBild": { "bodenSatz": 0.05, "fern-ring": 0.02 },
             "dorfZug": true,
             "ortTakt": []
+        },
+        {
+            "id": "kueste",
+            "titel": "Die Küste (messort-zeit): ein Ufer des Meeres mit flachem Watt-Hang, gefunden am Gelände-Kern — von 120 Strahlen aus dem Ursprung (Strahl k im Winkel k · 2,39996 rad) trägt Strahl 87 das breiteste Watt (470 m zwischen 1,5 m über und 1,5 m unter dem Spiegel, 0,37°). Der Spieler steht 10,0 km vom Ursprung auf dem Watt, 0,38 m über dem Meer; der Blick geht dorthin, wo das Wasser am nächsten beginnt (50 m), und weiter über die flache See. Die Zeit: Abend im Herbst unter Wolken — das Streiflicht auf dem Watt. Der Beleg (`beleg`) misst Höhe, Spiegel und Abstand am Gesetz (gate:profiband H1) und die Art in der Welt (`werkbank umstellen --ort`).",
+            "spieler": [1191.1, 9928.8],
+            "blick": [1480.9, 10006.4],
+            "imBild": { "bodenSatz": 0.05, "wasserSatz": 0.05 },
+            "dorfZug": false,
+            "ortTakt": [],
+            "zeit": { "uhr": 0.7, "tag": "herbst", "wetter": "bewoelkt", "wort": null },
+            "beleg": {
+                "art": "kueste",
+                "hoehe": -2.62,
+                "spiegel": -3,
+                "abstand": 49.75,
+                "toleranz": 0.05,
+                "hangMax": 2,
+                "quelle": "gemessen am Gelände-Kern (scripts/lib/welt-orte.cjs `belegMessen`, der Wirt mit Wasser), 25.11.; der Watt-Hang hält die Klasse „flach“ 0–2° der Kartierung des Harle-Seegatts im Wattenmeer (Mascioli et al. 2023, Journal of Maps 19, https://doi.org/10.1080/17445647.2022.2154175)"
+            },
+            "serie": {
+                "offen": "die Ratschen-Serie je Gerät × Sicht (2 × 2) steht aus — sie misst auf echter GPU (Lehre 17), der Arbeiter dieses Orts trug nur swiftshader"
+            }
+        },
+        {
+            "id": "ufer",
+            "titel": "Das Flussufer (messort-zeit): die offene Bank am Fluss der Heim-Region, gefunden am Gelände-Kern (`flussRand`: 4,3 m halbe Breite, Wiesen-Gesetz-Probe ohne Krone im Ring, Waldrand im Kranz) — der Spieler steht 0,27 m über dem Spiegel, das Wasser beginnt 4,75 m vor ihm, der Blick quer über den Fluss zum Gegenufer; um ihn die Nah-Wiese und der Jungwuchs (die Äsung des Felds, `_kreaturNahrung`). Die Zeit: Morgen im Frühling bei Sonne. Der Beleg (`beleg`) misst Höhe, Spiegel und Abstand am Gesetz (gate:profiband H1) und die Art in der Welt (`werkbank umstellen --ort`).",
+            "spieler": [-118, -838],
+            "blick": [-91.8, -809],
+            "imBild": { "nahWiese": 0.05, "wasserSatz": 0.02 },
+            "dorfZug": false,
+            "ortTakt": [],
+            "zeit": { "uhr": 0.35, "tag": "fruehling", "wetter": "sonne", "wort": null },
+            "beleg": {
+                "art": "ufer",
+                "hoehe": 22.23,
+                "spiegel": 21.96,
+                "abstand": 4.75,
+                "toleranz": 0.05,
+                "aesungMin": 0.5,
+                "quelle": "gemessen am Gelände-Kern (scripts/lib/welt-orte.cjs `belegMessen`, der Wirt mit Wasser, Ruhe-Spiegel ohne Pegel), 25.11.; die Äsung 0,80 — die Schwelle 0,5 ist die Hälfte des vollen Lebens des Felds"
+            },
+            "serie": {
+                "offen": "die Ratschen-Serie je Gerät × Sicht (2 × 2) steht aus — sie misst auf echter GPU (Lehre 17), der Arbeiter dieses Orts trug nur swiftshader"
+            }
         }
     ],
     "inhaltBand": {
@@ -429,7 +473,8 @@
         "fern-ring": { "luma": [15, 245] },
         "f:(kompakt_fwd|limousine|suv|transporter|gt|supersport)": { "luma": [5, 250] },
         "f:schild": { "luma": [5, 250] },
-        "f:relief": { "luma": [5, 250] }
+        "f:relief": { "luma": [5, 250] },
+        "wasserSatz": { "luma": [10, 245] }
     },
     "klassen": [
         {
