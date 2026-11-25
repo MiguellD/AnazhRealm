@@ -44,6 +44,7 @@ const DAUER_S = {
     jagdkreis: 281,
     // (w4-stationen-schnell-a: an derselben Maschine jagdkreis 50 + 79 s, mahl 11 + 30 s — mahl im Maß von jagdkreis)
     mahl: 89,
+    witterung: 60,
     rudel: 7,
     querhang: 13,
     ferngang: 1,

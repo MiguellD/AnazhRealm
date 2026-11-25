@@ -186,13 +186,18 @@ class AnazhRealm_kreatur_verhalten {
     // Gradienten des Felds über vier Proben: nah an der Quelle wog der Wind-Winkel bis zwölfmal mehr als der Abstand, der
     // Gradient zeigte vom Ziel fort (Leben-Schau 07.10.: ein Wolf 1200 Takte „jagd", 0,3 m bewegt, 0 Bisse in 3600 Takten).
     // Kein Ziel → null (der Aufrufer wandert neutral). Nur pfad; verängstigt (wariness ≥ fleeThreshold), satt oder
-    // erschöpft jagt nicht (`_kreaturJagdBereit`).
+    // erschöpft jagt nicht (`_kreaturJagdBereit`). DIE WITTERUNG FINDET, DAS AUGE HÄLT (witterung-windab): gefunden wird nur in
+    // der Fahne windab (`_scentNase`); wer seine Beute schon hat, behält sie ohne Witterung, solange er sie sieht (`_kreaturHaelt`) —
+    // das Rudel auf dem Ring um sie steht auch gegen den Wind.
     _creatureScentHuntDir(creature, wariness) {
         const ud = creature.userData || {};
+        const alt = ud._beute;
         ud._beute = null;
         if (!this._kreaturJagdBereit(creature, wariness)) return null;
         const VG = AnazhRealm._verhaltenGesetz();
-        const scentRange = VG.jagd.scentRangeM;
+        // DIE NASE (`_scentNase`): gewittert ist, was die Schwelle trägt — windab bis zu R·(1 + 1/i), gegen den Wind nichts
+        const N = this._scentNase(VG.jagd.scentRangeM);
+        const scentRange = N.reichM;
         const cx = creature.position.x;
         const cz = creature.position.z;
         const quelle =
@@ -221,11 +226,13 @@ class AnazhRealm_kreatur_verhalten {
             quelle[0].x = other.position.x;
             quelle[0].z = other.position.z;
             const witterung = this._scentAt(cx, cz, quelle);
-            if (witterung > bestS) {
+            if (witterung >= N.schwelle && witterung > bestS) {
                 bestS = witterung;
                 best = other;
             }
         }
+        if (!best && alt && (alt === spieler || creatures.includes(alt)) && this._kreaturIstBeute(creature, alt))
+            if (this._kreaturHaelt(creature, alt, VG.jagd.scentRangeM)) best = alt;
         if (!best) return null;
         ud._beute = best;
         const dx = best.position.x - cx,
@@ -264,10 +271,14 @@ class AnazhRealm_kreatur_verhalten {
         const hunger = voll > 0 && this._kreaturMagen(creature) < (frass ? voll : VG.aas.hungerAnteil * voll);
         if (!hunger || this._kreaturDiet(creature) <= VG.temperament.gattung.pflanzDiet)
             return this._kreaturFrisstNicht(creature);
-        const R = VG.jagd.scentRangeM;
+        // DIE NASE DER JAGD (`_scentNase`, Schwelle je kg Fleisch): gefunden in der Fahne windab, gehalten im Blick
+        const N = this._scentNase(VG.jagd.scentRangeM);
+        const R = N.reichM;
         const cx = creature.position.x,
             cz = creature.position.z;
         const quelle = this._aasQuelle || (this._aasQuelle = [{ x: 0, z: 0, strength: 1 }]);
+        const alt = ud._aas;
+        ud._aas = null;
         let best = null,
             bestS = 0;
         for (const k of L) {
@@ -280,12 +291,15 @@ class AnazhRealm_kreatur_verhalten {
             quelle[0].z = k.position.z;
             quelle[0].strength = K.fleisch;
             const w = this._scentAt(cx, cz, quelle);
-            if (w > bestS) {
+            if (w >= N.schwelle * K.fleisch && w > bestS) {
                 bestS = w;
                 best = k;
             }
         }
+        if (!best && alt && L.includes(alt) && alt.userData.kadaver && alt.userData.kadaver.fleisch > 0)
+            if (this._kreaturHaelt(creature, alt, VG.jagd.scentRangeM)) best = alt;
         if (!best) return this._kreaturFrisstNicht(creature);
+        ud._aas = best;
         const lE = this._kreaturLeib(creature, hueftL, this._aasLeibE || (this._aasLeibE = {}));
         const lK = this._kreaturLeib(best, 0, this._aasLeibK || (this._aasLeibK = {}));
         const dx = best.position.x - cx,
@@ -321,6 +335,15 @@ class AnazhRealm_kreatur_verhalten {
             if (ud._verhaltenAktion && ud._verhaltenAktion.name === "fressen") ud._verhaltenAktion = null;
         }
         return false;
+    }
+
+    // DAS AUGE HÄLT (witterung-windab): ein Ziel, das der Leib schon hat (die Beute der Jagd, der Kadaver), behält er ohne
+    // Witterung, solange es in R (jagd.scentRangeM) liegt und sein Auge es sieht (`_kreaturSiehtM`: Farbe gegen Boden, Luft der
+    // Welt) — die Witterung findet, das Auge hält. Ohne diese Hand verlor der Jäger auf dem Ring gegen den Wind und der Fresser
+    // auf der Luv-Seite des Kadavers sein Ziel, sobald die Fahne ihn nicht mehr traf.
+    _kreaturHaelt(creature, ziel, R) {
+        const d = Math.hypot(ziel.position.x - creature.position.x, ziel.position.z - creature.position.z);
+        return d <= R && d <= this._kreaturSiehtM(creature, ziel);
     }
 
     // IST DAS BEUTE für diesen Jäger? Nicht wild (wild jagt nicht wild) und höchstens jagd.beuteMasse ×
