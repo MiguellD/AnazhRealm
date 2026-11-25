@@ -688,11 +688,13 @@ async function saatKennzahlen() {
     const anker = await r._planetAnker();
     const hoehen = [];
     for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) hoehen.push(Math.round(r.getTerrainHeightAt(i * 400, j * 400) * 100) / 100);
-    // DAS START-DORF urteilt erst über der Wahrheit des Wassers um seine Ringe (`_autoSettlementStartInfo`: undefined = offen, die
-    // Kacheln sind bestellt). Befund 25.11. (sonnenbahn Kopf 1, voll 13/18): Wechsel 3 trug das Dorf, der Boot null — das Urteil las
-    // `_landAt` vor den Kacheln der Hydrosphäre, und die Probe las am Boot früher, seit der Anker der Sonne mit der Ankunft stand (bis
-    // dahin wartete sie hier 1–3 s auf den Planet-Faden); das Spiel merkte so eine Welt als hoffnungslos
-    await __weltDa((w) => w._autoSettlementStartInfo() !== undefined);
+    // DAS START-DORF urteilt erst nach dem Buch und über der Wahrheit des Wassers um seine Ringe (`_autoSettlementStartInfo`:
+    // undefined = offen, die Kacheln sind bestellt). Befund 25.11. (sonnenbahn Kopf 1 und 4, voll 13/18): Wechsel 3 trug das Dorf,
+    // der Boot null — das Urteil las `_landAt` vor den Kacheln der Hydrosphäre (Kopf 1), und die Probe fragte vor dem Buch (Kopf 4):
+    // das Gesetz der Siedlung ist ein Merker der Klasse (`_siedlungGesetz`, aus dem Buch), kalt am ersten Boot, warm bei der
+    // Rückkehr. Die Probe fragt wie das Spiel erst nach dem Buch (`_autoSettlementChannelLive`, der Wächter jedes Siedlungs-Urteils);
+    // sie liest am Boot früher, seit der Anker der Sonne mit der Ankunft steht (bis dahin wartete sie hier 1–3 s auf den Planet-Faden)
+    await __weltDa((w) => w._autoSettlementChannelLive() && w._autoSettlementStartInfo() !== undefined);
     const dorf = r._autoSettlementStartInfo();
     // DIE SONNE DER WELT (sonnenbahn 2): ihr Anker gehört der Welt — mittags steht die Sonne, wo das Gesetz sie an der Breite DIESER
     // Welt stellt (die Heimat am Anker ihres Planeten, eine Reise-Welt am Ort ihres Teils), nie an der Breite einer Welt davor

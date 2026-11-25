@@ -1,4 +1,4 @@
-# sonnenbahn 4 — Vorprüfung (ZWISCHENSTAND)
+# sonnenbahn 5 — Vorprüfung (ZWISCHENSTAND)
 
 Zweig `sonnenbahn`, Basis origin/main 967bd422 (V18.546.414). Die Wurzel ändert JEDES Nachtbild der Welt: der Fuß der Tonkurve
 steht am Schlüssel der Belichtung, die Stufen der Tag-Achse kommen hinter ihm. Diese Abgabe bucht keine Sprosse; gebucht wird, was der
@@ -73,6 +73,13 @@ liest den Pool im ganzen Bild, sonnenbahn 2).
   - Die Zeile druckt jetzt „im Licht → ROT“. Keine andere neue Zeile der Welle trägt ROT.
   - Lokal (GTX 1050): gate:pruefbuehne-licht Exit 0, der Leser des Probe-Kopfs (`scripts/lib/urteil-zeile.cjs`, `probeUrteil`) über
     das Log GRÜN, 0 rote Zeilen. Farbton netto 28,1°.
+- **Kopf 5 heilt den Wettlauf der Weltgrenze.** Der Code-Check von Kopf 4 (Lauf 45573545353, voll 13/18) las in der Fahrt saat
+  am ersten Boot kein Start-Dorf, bei der Rückkehr dasselbe Dorf.
+  - Ursache im Messweg: die Probe fragte das Urteil des Start-Dorfs vor dem Buch. Das Gesetz der Siedlung ist ein Merker der Klasse
+    aus dem Buch: am schnellen ersten Boot der CI (1 669 ms) kalt, bei der Rückkehr warm.
+  - Der Schnitt: die Probe wartet auf denselben Wächter wie jedes Siedlungs-Urteil des Spiels (`_autoSettlementChannelLive`). Der
+    Stamm bleibt unberührt; die übrigen Kennzahlen der Fahrt sind Gesetze der Saat und lesen kein Buch.
+  - Der Wettlauf provoziert (Buch 3 s kalt am ersten Boot, swiftshader): Kopf 4 ROT mit genau der Zeile der CI, mit Schnitt GRÜN.
 - gate:post-kette, RAUCH WAND: GRÜN auf beiden Geräten.
   - GTX 1050 und GTX 1060 messen gleich: hell 150,77 · 150,77 · 150,76 · 150,76 im Band 145,70–155,70.
   - Der Mutant K0F (alter Fuß) misst 143,38–143,41 und fällt ROT.
