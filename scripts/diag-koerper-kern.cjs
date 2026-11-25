@@ -1020,7 +1020,7 @@ function spielUrteil(C0, mutante = null) {
     if (!(e5n > 0 && e5 === e5n)) rot.push(`E5 der Tag liest das Programm nicht: ${e5} von ${e5n} Auftritten stehen im Plan der Stunde (koerper tagesPlan orte.spiel)`);
     // E8 der Platz zieht seine Nachbarschaft (sport-wurzel, koerper `spielGaesteWahl`): ein kleiner Treff wie an stadt-voll (12 mit dem
     // Abend am Platz) und 140 Nachbarn mit dem Abend daheim binnen 95 m, dazu 60 daheim jenseits von 120 m und 30 an einem fernen Treff —
-    // Gäste sind die 152 des Platzes, und an jedem von fünf Abenden läuft ein Lauf, ein Gang und ≥ 10 stehen im Ring. Der Täter
+    // Gäste sind die 152 des Platzes ohne die Häuslichen (sie empfangen, koerper zuege `empfaengt`), und an jedem von fünf Abenden läuft ein Lauf, ein Gang und ≥ 10 stehen im Ring. Der Täter
     // „nurTreff“: die Wahl vor sport-wurzel (nur wer den Abend am Platz hat — 40 Tage ohne Lauf und Gang an stadt-voll)
     // E9 der Zweikampf trägt seinen Gegner (sport-wurzel: EIN Akt, zwei Leser — die Siegquote des Sports und der Krieg, krieg#1 zählt,
     // wer einen Gegner trägt): jeder Gang des Ringens stellt beide in den Akt „zweikampf“, jeden mit dem Index des anderen
@@ -1036,8 +1036,11 @@ function nachbarUrteil(C0, nurTreff) {
     const leiber = spielGaeste(C0, 242, 21);
     const um = (i, r0, r1) => ((a, r) => ({ x: r * Math.cos(a), z: r * Math.sin(a) }))(2 * Math.PI * z("a" + i), r0 + (r1 - r0) * z("r" + i));
     const fernTreff = um(999, 200, 200); // der Treff eines anderen Platzes, 200 m fort
-    const kand = leiber.map((g, i) => (i < 12 ? { abend: um(i, 0, 15), heim: um(i + 500, 60, 200) } : i < 152 ? { abend: null, heim: um(i, 20, 95) } : i < 212 ? { abend: null, heim: um(i, 120, 300) } : { abend: fernTreff, heim: um(i, 150, 250) })); // prettier-ignore
+    const kand = leiber.map((g, i) => Object.assign(i < 12 ? { abend: um(i, 0, 15), heim: um(i + 500, 60, 200) } : i < 152 ? { abend: null, heim: um(i, 20, 95) } : i < 212 ? { abend: null, heim: um(i, 120, 300) } : { abend: fernTreff, heim: um(i, 150, 250) }, { same: g.same })); // prettier-ignore
     const wahl = nurTreff ? kand.map((k, i) => (k.abend && Math.hypot(k.abend.x, k.abend.z) <= 20 ? i : -1)).filter((i) => i >= 0) : C0.spielGaesteWahl(kand, 0, 0, 20); // prettier-ignore
+    // (wer empfängt — der Häusliche, koerper zuege `empfaengt` —, ist kein Nachbar: das Soll zählt die Nachbarn ohne ihn)
+    const Z = C0.TAGES_GESETZ.zuege;
+    const soll = 12 + kand.filter((k, i) => i >= 12 && i < 152 && !Z[C0.tagesZug(k.same)].empfaengt).length;
     const gaeste = wahl.map((i) => Object.assign({}, leiber[i], { orte: Object.assign({}, leiber[i].orte, { abend: kand[i].abend ? leiber[i].orte.abend : null }) })); // prettier-ignore
     const abende = [];
     for (let tag = 1; tag <= 5; tag++) {
@@ -1048,8 +1051,8 @@ function nachbarUrteil(C0, nurTreff) {
         abende.push({ lauf: n("lauf"), ringen: n("ringen"), ring });
     }
     const leer = abende.filter((a) => !(a.lauf >= 1 && a.ringen >= 1 && a.ring >= 10)).length;
-    const zeile = `${wahl.length} Gäste (Soll 152: 12 vom Treff, 140 Nachbarn binnen 95 m), Abende ${abende.map((a) => `${a.lauf} Läufe · ${a.ringen} Gänge · ${a.ring} im Ring`).join(" | ")}`; // prettier-ignore
-    return { fehlt: wahl.length !== 152 || leer ? `${zeile} — ${leer} von 5 Abenden ohne Lauf, Gang oder Ring von 10 (koerper spielGaesteWahl, SPIEL_GESETZ.programm.nachbarM)` : null, zeile }; // prettier-ignore
+    const zeile = `${wahl.length} Gäste (Soll ${soll}: 12 vom Treff, ${soll - 12} der 140 Nachbarn binnen 95 m, die nicht empfangen), Abende ${abende.map((a) => `${a.lauf} Läufe · ${a.ringen} Gänge · ${a.ring} im Ring`).join(" | ")}`; // prettier-ignore
+    return { fehlt: wahl.length !== soll || leer ? `${zeile} — ${leer} von 5 Abenden ohne Lauf, Gang oder Ring von 10 (koerper spielGaesteWahl, SPIEL_GESETZ.programm.nachbarM)` : null, zeile }; // prettier-ignore
 }
 // E7: je Gast mit einem Auftritt die Wege seines Tags am Plan (planWege) und im Kern (tagesGaenge)
 function wegePruefen(C0, P, gaeste, tag, W) {

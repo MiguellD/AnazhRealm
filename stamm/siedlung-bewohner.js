@@ -2611,7 +2611,7 @@ class AnazhRealm_siedlung_bewohner {
         const RO = KC.TAGES_GESETZ.rollen;
         const [gaeste, wer] = [[], []];
         const kand = L0.filter((b) => b.koennen && b.genom && !(RO[b.rolle] && RO[b.rolle].regenfest));
-        const wo = kand.map((b) => ({ abend: b.orte.abend, heim: b.orte.heim }));
+        const wo = kand.map((b) => ({ abend: b.orte.abend, heim: b.orte.heim, same: b.same }));
         for (const i of KC.spielGaesteWahl(wo, mx, mz, R)) {
             const b = kand[i];
             const d = this._dialsAusGenom(b.genom);

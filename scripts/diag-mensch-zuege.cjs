@@ -158,7 +158,7 @@ function urteil(K, zugVon) {
         T.ok += ok;
         for (const k in kz) T[k] += kz[k];
     });
-    return { t20: t20 / 20, t100: t100 / 100, tafel, leute, ohneArt: [...ohneArt], zeitRot: zeitTafelRot(K), heim: heimwerker(K, zugVon) };
+    return { t20: t20 / 20, t100: t100 / 100, tafel, leute, ohneArt: [...ohneArt], zeitRot: zeitTafelRot(K), heim: heimwerker(K, zugVon), rollen: rollenDerStadt(K) }; // prettier-ignore
 }
 
 // DER TISCH DES HEIMWERKERS: 100 Fleißige (der Zug aus dem Kern der Linse) im Wohnhaus, das Werk ist ihr Heim, ohne Tisch,
@@ -177,6 +177,81 @@ function heimwerker(K, zugVon) {
     }
     return { n, ohne };
 }
+
+// DIE ROLLEN DER STADT (absicht-zug; die Station mensch.geist.absicht#1 liest die ersten 100 der Stadt — Wirt, Händler, Fahrer, Wache,
+// Kind —, das Dorf oben trägt nur Wohnhaus, Gasthaus und Kirche): je Rolle des Gesetzes (TAGES_GESETZ.rollen, dazu das Wohnhaus) 100
+// Samen im Dorf — wer eine Rolle mit Haus trägt, wohnt in ihrem Slot, jeder andere in einem Wohnhaus —, derselbe blinde Zuordner,
+// dasselbe Soll je Zug (≥ 0,6). Das Kind, das hilft, arbeitet höchstens kindArbeitMaxH Stunden (das Band des Gesetzes). OFFEN steht,
+// was die Quelle trägt und die Kaskade nicht liest — mit der Zahl, unter die es nicht fällt; erreicht es das Soll, ist die Zeile
+// zu streichen (ROT: keine stale Liste)
+const ROLLEN_OFFEN = {
+    // die Wache steht 14 h am Posten (6–20 Uhr, der Nachtwächter 18–8): die Quelle trägt die lange Schicht (Manteltarifvertrag
+    // Sicherheitsdienstleistungen NRW vom 16.01.2017, § 2: Regelarbeitszeit im Mittel 228 h je Monat, 24-Stunden-Dienste); ihr Abend
+    // bis zur Ruhe (22 ± 0,5 Uhr) trägt um 2 h, die Kaskade verlangt ≥ 2 h frei daheim — die Hälfte der Häuslichen liegt darunter
+    "waechter haeuslich": [19, 33],
+};
+function rollenDerStadt(K) {
+    const G = K.TAGES_GESETZ;
+    const ROLLEN = ["wohnhaus", ...Object.keys(G.rollen)];
+    const slots = [];
+    for (let i = 0; i < 18; i++) {
+        const a = (i / 18) * Math.PI * 2,
+            r = i % 2 ? 34 : 22;
+        slots.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, rolle: "wohnhaus" });
+    }
+    slots.push({ x: 12, z: 6, rolle: "gasthaus" }, { x: -14, z: 9, rolle: "kirche" });
+    for (const R of ROLLEN) if (!slots.some((s) => s.rolle === R)) slots.push({ x: 8 + slots.length, z: -6, rolle: R });
+    const orte = K.tagesOrte({ slots, platz: { cx: 0, cz: 0 }, staende: [{}, {}], felder: [{ cx: 70, cz: 0, ex: 15 }, { cx: 0, cz: -75, ex: 15 }] }); // prettier-ignore
+    const tafel = {};
+    let kindMax = 0;
+    for (const R of ROLLEN) {
+        const sR = orte.findIndex((o) => o.art === R);
+        const T = (tafel[R] = {});
+        for (let k = 0; k < 100; k++) {
+            const same = (Math.imul(k + 1 + 1000 * ROLLEN.indexOf(R), 0x9e3779b1) ^ 0x5bd1e995) >>> 0;
+            const s = sR >= 0 && R !== "wohnhaus" && R !== "kind" ? sR : k % 18;
+            const B = K.tagesBindung(TC, same, R, s, orte, null);
+            const stelle = (wo) => (B[wo] < 0 || (B[wo] === s && wo !== "werk") ? null : { name: wo, i: B[wo] });
+            const werk = stelle("werk") && (B.werk !== s || R !== "wohnhaus") ? stelle("werk") : null;
+            const O = { heim: { name: "heim" }, werk, platz: stelle("platz"), mahl: stelle("mahl"), abend: stelle("abend"), besuch: stelle("besuch") }; // prettier-ignore
+            const worte = [];
+            let arbeit = 0;
+            for (let q = 0; q < 96; q++) {
+                const p = K.tagesPlan(same, R, q / 4, O, 0);
+                worte.push(`${p.wo}:${p.akt}:${+p.drinnen}`);
+                if (p.akt === "arbeit") arbeit += 0.25;
+            }
+            if (R === "kind") kindMax = Math.max(kindMax, arbeit);
+            const ist = K.tagesZug(same);
+            const z = (T[ist] = T[ist] || { n: 0, ok: 0, als: {} });
+            const rat = zuordnen({ rolle: R, worte }, K)[0];
+            z.n++;
+            if (rat === ist) z.ok++;
+            else z.als[rat] = (z.als[rat] || 0) + 1;
+        }
+    }
+    return { tafel, kindMax, kindBand: G.kindArbeitMaxH };
+}
+function rollenRot(u) {
+    const rot = [],
+        offen = [];
+    for (const [R, T] of Object.entries(u.tafel))
+        for (const z of ZUEGE) {
+            const Z = T[z];
+            if (!Z) continue;
+            const was = `${R} ${z} ${Z.ok}/${Z.n}`;
+            const O = ROLLEN_OFFEN[`${R} ${z}`];
+            if (O && Z.ok / Z.n >= 0.6) rot.push(`${was} ≥ 0,6 — die offene Zeile ist geheilt, streiche sie (ROLLEN_OFFEN)`);
+            else if (O && Z.ok / Z.n >= O[0] / O[1]) offen.push(`${was} (offen, nie unter ${O[0]}/${O[1]})`);
+            else if (Z.ok / Z.n < 0.6) rot.push(`${was} < 0,6 (gelesen als ${JSON.stringify(Z.als)})`);
+        }
+    if (!(u.kindBand > 0) || u.kindMax > u.kindBand) rot.push(`das Kind arbeitet ${u.kindMax} h > ${u.kindBand} h (koerper TAGES_GESETZ.kindArbeitMaxH)`);
+    return { rot, offen };
+}
+const rollenZeile = (u) =>
+    Object.entries(u.tafel)
+        .map(([R, T]) => `${R} ${ZUEGE.map((z) => (T[z] ? `${T[z].ok}/${T[z].n}` : "—")).join("·")}`)
+        .join(" | ") + ` (je Rolle ${ZUEGE.join("·")}) · das Kind arbeitet höchstens ${u.kindMax} h (Band ${u.kindBand} h)`;
 
 // DER KERN MIT EINEM TÄTER: dieselbe Quelle, EINE Stelle getauscht (frischer Kontext) — null, wenn die Stelle fehlt
 function kernMitTaeter(stelle, ersatz) {
@@ -199,7 +274,7 @@ const TAETER = [
         name: "der Ausgeglichene ohne Gesetz (kein geteilter Abend)",
         stelle: /ausgeglichen: Object\.freeze\(\{[^}]*abendTreffH[^}]*\}\)/,
         ersatz: "ausgeglichen: Object.freeze({})",
-        faellt: /ausgeglichen \d+\/\d+ < 0,6/,
+        faellt: /^ausgeglichen \d+\/\d+ < 0,6/,
     },
     {
         name: "der Häusliche mit dem Los am Abend (treffMal 0,1)",
@@ -215,15 +290,40 @@ const TAETER = [
     },
     {
         name: "der Häusliche mit zwei Abenden Treff je Woche (2/7 seines Abends, 1,3 h)",
-        stelle: /haeuslich: Object\.freeze\(\{ treffMal: 0, morgenMal: 0\.5 \}\)/,
-        ersatz: "haeuslich: Object.freeze({ daheimTreff: 0.5, morgenMal: 0.5, abendTreffH: 1.3 })",
-        faellt: /haeuslich \d+\/\d+ < 0,6/,
+        stelle: /haeuslich: Object\.freeze\(\{ treffMal: 0, morgenMal: 0\.5,/,
+        ersatz: "haeuslich: Object.freeze({ daheimTreff: 0.5, morgenMal: 0.5, abendTreffH: 1.3,",
+        faellt: /^haeuslich \d+\/\d+ < 0,6/,
     },
     {
         name: "der Fleißige am eigenen Haus isst am Werk (ohne den Tisch des Heimwerkers)",
         stelle: "_amHeim(orte.werk, orte.heim)) T =",
         ersatz: "false) T =",
         faellt: /Heimwerker ohne Tisch/,
+    },
+    // DIE TÄTER DER ROLLEN (absicht-zug, die Abfrage je Person an der Kaskade der Station): das Gesetz vor dem Zug je Rolle
+    {
+        name: "der Wirt ohne Teildienst (10–23 Uhr ohne freie Stunde)",
+        stelle: ", teildienst: Object.freeze([14, 3])",
+        ersatz: "",
+        faellt: /^gasthaus haeuslich \d+\/\d+ < 0,6/,
+    },
+    {
+        name: "der Posten ohne Fleiß (wer regenfest steht, hält nur seine Schicht)",
+        stelle: "var vor = Z.werkVorH || 0,\n            nach = Z.werkNachH || 0;",
+        ersatz: "var vor = R.regenfest ? 0 : Z.werkVorH || 0,\n            nach = R.regenfest ? 0 : Z.werkNachH || 0;",
+        faellt: /^(haendler|fahrer|waechter) fleissig \d+\/\d+ < 0,6/,
+    },
+    {
+        name: "das Kind ohne seinen Zug (es spielt immer am Ort des Spiels)",
+        stelle: "var kind = R.spiel ? Z.kind : null;",
+        ersatz: "var kind = null;",
+        faellt: /^kind (fleissig|haeuslich) \d+\/\d+ < 0,6/,
+    },
+    {
+        name: "der Fleiß gekappt an der Ruhe (der fleißige Wirt verliert sein Maß)",
+        stelle: "            w0 -= spaet;\n",
+        ersatz: "",
+        faellt: /^gasthaus fleissig \d+\/\d+ < 0,6/,
     },
 ];
 // DAS URTEIL: die Zeilen, an denen der Tag ROT fällt
@@ -240,6 +340,7 @@ function rotVon(a) {
     if (a.ohneArt.length) rot.push(`Akt ohne Zeit-Art im Tag: ${a.ohneArt.join(" · ")} (koerper TAGES_GESETZ.zeitArt)`);
     rot.push(...a.zeitRot);
     if (!(a.heim.n >= 100) || a.heim.ohne) rot.push(`Heimwerker ohne Tisch: ${a.heim.ohne} von ${a.heim.n} Fleißigen am eigenen Haus essen am Werk (koerper _tagesWendenOrt, _amHeim)`);
+    rot.push(...rollenRot(a.rollen).rot);
     return rot;
 }
 
@@ -391,7 +492,7 @@ if (SELBSTTEST) {
         ["die Wahl ohne Lebensphase", ALTER_STAMM, kernMit(/if \(Ja < A\.kindJ !== Jt < A\.kindJ\) return d \+ A\.phase;\n[^\n]*\n/, ""), /Erwachsenen/], // prettier-ignore
         ["der Wuchs ohne Höhe", ALTER_STAMM, kernMit(/g\.kh \*= w\.hoehe;/, ""), /Wuchs außer Band/],
         ["das Kind ohne Reife", ALTER_STAMM, kernMit(/return J < ALTER_GESETZ\.erwachsenJ \? 0\.5 \+ \(s - 0\.5\) \* wuchs\(J\)\.reife : s;/, "return s;"), /Form eines Geschlechts/], // prettier-ignore
-        ["das Spiel vor der eigenen Tür", ALTER_STAMM, kernMit(/R\.spiel \? wahl\("spiel", H, "werk", null\)/, "R.spiel ? heimI"), /das Kind der Schmiede/], // prettier-ignore
+        ["das Spiel vor der eigenen Tür", ALTER_STAMM, kernMit(/spielt \? \(kind === "daheim" \? heimI : wahl\("spiel", H, "werk", null\)\)/, "spielt ? heimI"), /das Kind der Schmiede/], // prettier-ignore
     ];
     for (const [name, T, K, soll] of taeter) {
         if (!K || (T === ALTER_STAMM && K === KC)) {
@@ -428,6 +529,9 @@ const b = urteil(KC, zugVon);
 const gleich = JSON.stringify(a.leute.map((P) => P.worte)) === JSON.stringify(b.leute.map((P) => P.worte));
 console.log(`  ZÜGE ${zeile(a)}`);
 console.log(`  Treffer erste 20: ${a.t20.toFixed(2)} · alle 100: ${a.t100.toFixed(2)} · bit-gleich: ${gleich} · Heimwerker am Tisch ${a.heim.n - a.heim.ohne} von ${a.heim.n}`);
+console.log(`  ROLLEN DER STADT ${rollenZeile(a.rollen)}`);
+const rollenOffen = rollenRot(a.rollen).offen;
+if (rollenOffen.length) console.log(`  OFFEN (die Quelle trägt die Schicht, ROLLEN_OFFEN): ${rollenOffen.join(" · ")}`);
 const rot = rotVon(a);
 if (!gleich) rot.push("zwei Läufe, verschiedene Worte (der Tag ist nicht rein)");
 if (rot.length) rot.push("Täter: koerper TAGES_GESETZ.zuege / tagesPlan / tagesBindung");
