@@ -356,6 +356,10 @@ async function kreaturProben(r, T, opts) {
             const f = (x - Math.floor(x)) * G.n;
             const k0 = Math.floor(f);
             const zs = G.baender * G.n + hs;
+            // (der Stand in der Zeit, stand-lebt: die Zeile k0 seiner Uhr und die nächste seines Zyklus um den Bruch von w, wie der Knoten)
+            const HZ = G.standZeilen || 1;
+            const zs1 = zs - (hs % HZ) + (((hs % HZ) + 1) % HZ);
+            const ts = HZ > 1 ? a.aGang.getW(inst) - Math.floor(a.aGang.getW(inst)) : 0;
             const z0 = r0 + k0;
             const z1 = r0 + ((k0 + 1) % G.n);
             // der Knochen j, Zeile r, Spalte c der Matrix in der Pose-Zeile z (drei Texel je Knochen)
@@ -369,7 +373,8 @@ async function kreaturProben(r, T, opts) {
                 for (let r = 0; r < 3; r++)
                     for (let s = 0; s < 4; s++) {
                         const lauf = el(z0, j, r, s) + (f - k0) * (el(z1, j, r, s) - el(z0, j, r, s));
-                        o[r] += g * roh[s] * (el(zs, j, r, s) + w * (lauf - el(zs, j, r, s)));
+                        const st = el(zs, j, r, s) + ts * (el(zs1, j, r, s) - el(zs, j, r, s));
+                        o[r] += g * roh[s] * (st + w * (lauf - st));
                     }
             }
             return vL.set(o[0], o[1], o[2]);
