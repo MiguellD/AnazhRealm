@@ -353,7 +353,7 @@ function klimaGang(FC) {
             d = FC.deckungVon({ stil: st });
         if (g < FC.DECKUNG_GESETZ[d].grad) unter.push(`stil ${st}: Grenze ${g}° unter ${d} ${FC.DECKUNG_GESETZ[d].grad}°`);
     }
-    return { je, aus, r4, unter, sockel: sockelGang(FC), dach: dachGang(FC) };
+    return { je, aus, r4, unter, sockel: sockelGang(FC), dach: dachGang(FC), schnee: schneeGang(FC) };
 }
 function klimaUrteil(K, check) {
     const fremd = Object.entries(K.aus)
@@ -381,6 +381,7 @@ function klimaUrteil(K, check) {
         K.unter.slice(0, 6).join(" · ")
     );
     if (K.dach) dachUrteil(K.dach, check);
+    if (K.schnee) schneeUrteil(K.schnee, check);
 }
 // R6/R7 (haus-dach): DIE DECKUNG FOLGT DEM ORT, DIE NEIGUNG DER DECKUNG — R6 die Wand: kein Bau trägt eine Deckung unter ihrer
 // Regeldachneigung (Reet 45°, Mönch-Nonne 40°, Biber 30°, Schiefer 26,5°, Schindel 22°, Hohlziegel 16,7°; fachwerk DECKUNG_GESETZ);
@@ -415,6 +416,27 @@ function dachUrteil(D, check) {
         n.kulturen === t.kulturen ? "" : "die Vorlage wechselt"
     );
 }
+// R8 (dach-regen): DER SCHNEE HEBT DAS DACH — 32 Saaten × 21 Orts-Klimata (Winter 10 … −12 °C × Spende 0,5 / 1 / 1,5): die mittlere
+// Dachneigung des Dorfs folgt dem Schneefall des Orts (fachwerk `schneefallVon`, Li u. a. 2021 Science Advances: HSR 25 → 35 % bei
+// 0,2 → 0,35 mm/Tag, −0,074 mm/Tag/K), Soll r ≥ 0,5; vor dem Gesetz r 0,250 (der subpolare Ort deckte flacher als die Heimat: 44,4°
+// gegen 50,3°, die Spende änderte nichts). Die Mutante „der Schnee hebt das Dach nicht“ fällt in R8.
+const SCHNEE_ORTE = [10, 6, 2, -1, -4, -8, -12].flatMap((w) => [0.5, 1, 1.5].map((v) => ({ winter: w, sommer: w < 0 ? 16 : 24, spendeVerh: v })));
+function schneeGang(FC) {
+    const xs = [], ys = [];
+    for (const k of SCHNEE_ORTE)
+        for (let s = 1; s <= 32; s++) {
+            const hs = FC.DORF({ seed: s, nH: 18, klima: k }).houses.map((h) => h.p || h).filter((p) => isFinite(p.pitchDeg));
+            xs.push(FC.schneefallVon(k));
+            ys.push(hs.reduce((a, p) => a + p.pitchDeg, 0) / Math.max(1, hs.length));
+        }
+    const n = xs.length, mx = xs.reduce((a, b) => a + b) / n, my = ys.reduce((a, b) => a + b) / n;
+    let sxy = 0, sxx = 0, syy = 0;
+    for (let i = 0; i < n; i++) (sxy += (xs[i] - mx) * (ys[i] - my)), (sxx += (xs[i] - mx) ** 2), (syy += (ys[i] - my) ** 2);
+    return { n, r: +(sxy / Math.sqrt(sxx * syy)).toFixed(3), ohne: +(ys.slice(0, 96).reduce((a, b) => a + b) / 96).toFixed(1), meist: +(ys.slice(-32).reduce((a, b) => a + b) / 32).toFixed(1) };
+}
+function schneeUrteil(S, check) {
+    check(`R8 der Schnee hebt das Dach: r(Schneefall, Neigung) ${S.r} über ${S.n} Dörfer (Soll ≥ 0,5), der schneereichste Ort ${S.meist}° gegen ${S.ohne}° ohne Schnee`, S.r >= 0.5 && S.n === 672);
+}
 const KLIMA_TAETER = {
     "der Kern liest das Klima nicht": [
         ["var im = Z.filter(function (z) { return klimaAbstand(z, klima) === 0; });", "var im = Z.slice();"],
@@ -428,11 +450,13 @@ KLIMA_TAETER["die alte Grenze (stroh 38°, die Deckung zählt nicht)"] = [
     ["glas: 4, klinker: 22, stroh: 45 };", "glas: 4, klinker: 22, stroh: 38 };"],
 ];
 KLIMA_TAETER["die Deckung liest den Ort nicht"] = [["if (klima.winter >= 4) return \"hohlziegel\";", "return d;"]];
+KLIMA_TAETER["der Schnee hebt das Dach nicht"] = [["var dh = SCHNEE_GESETZ.hsrJeMm * Math.max(0, schneefallVon(klima) - SCHNEE_GESETZ.ab);", "var dh = 0;"]];
 const KLIMA_SOLL = {
     "der Kern liest das Klima nicht": "R1",
     "der Sockel liest das Wasser nicht": "R5",
     "die alte Grenze (stroh 38°, die Deckung zählt nicht)": "R6",
     "die Deckung liest den Ort nicht": "R7",
+    "der Schnee hebt das Dach nicht": "R8",
 };
 
 
