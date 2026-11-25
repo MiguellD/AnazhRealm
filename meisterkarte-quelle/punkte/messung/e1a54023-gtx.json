@@ -1,7 +1,7 @@
 {
  "sha": "e1a54023c9a9e6fd30a824fd89087d3bb7ae854e",
  "geraet": "gtx",
- "zeit": "2026-11-25T17:01:19.577Z",
+ "zeit": "2026-11-25T17:06:04.257Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#2": {
@@ -3340,6 +3340,70 @@
    "bahn": "sitzung",
    "modus": "session",
    "offen": 1
+  },
+  "karte2.mensch.fahrzeug.lenker#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 78 von 2500000000000 s in 13985 Takten, 171.8 s Wand (12.3 ms je Takt)",
+   "exit": 0,
+   "minuten": 3.02,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 78 von 2500000000000 s in 13985 Takten, 171.8 s Wand (12.3 ms je Takt)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 181.1,
+   "fremd": {
+    "s": 184.3,
+    "takte": 85,
+    "fremdS": 96.55,
+    "kerne": 0.524,
+    "fensterKerne": 1.629,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      28.97
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      13.75
+     ],
+     [
+      "node scripts/diag-koerper-kern.cjs --selftest",
+      11.63
+     ]
+    ],
+    "dienerS": 46.17,
+    "diener": [
+     [
+      "System",
+      18.67
+     ],
+     [
+      "dwm.exe",
+      16.42
+     ]
+    ],
+    "geraetS": 75.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      48.23
+     ],
+     [
+      "svchost.exe",
+      21.84
+     ],
+     [
+      "SearchIndexer.exe",
+      3.98
+     ]
+    ],
+    "eigenS": 303.39,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T17:06:04.257Z",
+   "abdruck": "b6c3c3996fb0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
