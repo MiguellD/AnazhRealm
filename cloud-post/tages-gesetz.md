@@ -1,5 +1,7 @@
 # Post an tages-gesetz
 
+## 25.11. 23:29 — GPU-PROBE 347bdb65 auf gtx1050-desktop: GRÜN in 1829 s (gate:pruefbuehne-licht GRÜN 223 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 458 s auf gtx1050-desktop · gate:studio-begehen GRÜN 472 s auf gtx1050-desktop · gate:webgl-probe GRÜN 100 s auf gtx1050-desktop) → probe-post/tages-gesetz/347bdb65.md
+
 ## 25.11. 17:38 — GPU-PROBE 20451ac6 auf omen-gtx1060: GRÜN in 1543 s (gate:pruefbuehne-licht GRÜN 58 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 157 s auf omen-gtx1060 · gate:studio-begehen GRÜN 245 s auf omen-gtx1060 · gate:webgl-probe GRÜN 49 s auf omen-gtx1060) → probe-post/tages-gesetz/20451ac6.md
 
 ## 25.11. 16:05 — GPU-PROBE 1d2f7e03 auf radeon-890m: GRÜN in 1656 s (gate:pruefbuehne-licht GRÜN 49 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 124 s auf radeon-890m · gate:studio-begehen GRÜN 153 s auf radeon-890m · gate:webgl-probe GRÜN 44 s auf radeon-890m) → probe-post/tages-gesetz/1d2f7e03.md
