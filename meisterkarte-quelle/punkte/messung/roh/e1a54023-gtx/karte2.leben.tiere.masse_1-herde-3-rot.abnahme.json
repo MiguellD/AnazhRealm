@@ -1,0 +1,148 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.418",
+  "sha": "e1a54023c9a9e6fd30a824fd89087d3bb7ae854e"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.1545,
+   "taeter": {
+    "Gelände": 0.1545
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "an Punkt 1 Boden-Schicht",
+  "vorAbstand": 20.47,
+  "leiber": null,
+  "abstand": 43.47,
+  "gestalt": [
+   "tier:wesen 0",
+   "tier:wesen 1",
+   "tier:wesen 2",
+   "tier:wesen 3",
+   "tier:wesen 4"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -576.43,
+   39.62,
+   -925.16
+  ],
+  "blick": [
+   0.7577,
+   -0.0184,
+   0.65235
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 104.9,
+  "sigma": 29.1,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 1,
+  "gewaehlt": 0,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -576.43,
+     39.62,
+     -925.16
+    ],
+    "rot": [],
+    "ms": 688
+   }
+  ],
+  "ms": 688
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel Herde verdeckt von an Punkt 1 Boden-Schicht in 20.47 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.47 m · Luma 104.9 σ 29.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.418 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+ "rot": [
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Herde verdeckt von an Punkt 1 Boden-Schicht in 20.47 m"
+  }
+ ],
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 5,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1375,
+   "wechsel": 775662
+  },
+  "rinde": null,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:bestaeuber=80/255/80",
+   "tier:wesen=80/120/255"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 111
+   },
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 7
+   },
+   "tier:wesen": {
+    "objekte": 55,
+    "pixel": 108
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e1a54023-gtx\\karte2.leben.tiere.masse_1-herde-3-rot.maske.png"
+ }
+}

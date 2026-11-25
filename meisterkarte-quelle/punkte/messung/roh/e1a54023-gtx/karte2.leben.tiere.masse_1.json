@@ -1,0 +1,146 @@
+{
+ "serie": [
+  {
+   "schuss": 1,
+   "abstand": 46.8,
+   "spieler": 43,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 1994,
+   "kamera": [
+    -584.5,
+    59.9,
+    -864.89,
+    -550.33,
+    41.54,
+    -890.99
+   ],
+   "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 46.75 m · Luma 100.8 σ 38.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.418 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 2 Posen",
+   "fehler": null,
+   "klassen": {
+    "tier-satz": 36,
+    "tier:bestaeuber": 27,
+    "tier:wesen": 169
+   },
+   "pulk": {
+    "glieder": 5,
+    "sichtbar": 5,
+    "je": [
+     74,
+     61,
+     54,
+     82,
+     68
+    ],
+    "flecken": 1,
+    "kruemel": 3,
+    "pixel": 232,
+    "leibPx": 35.1
+   },
+   "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e1a54023-gtx\\karte2.leben.tiere.masse_1-herde-1.png",
+   "bisS": 65
+  },
+  {
+   "schuss": 2,
+   "abstand": 43,
+   "spieler": 43,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 2024,
+   "kamera": [
+    -576.43,
+    39.62,
+    -925.16,
+    -546.91,
+    40.09,
+    -893.89
+   ],
+   "abnahme": null,
+   "fehler": "ABNAHME ROT [Ziel Herde verdeckt von an Punkt 1 Gelände in 49.93 m · Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 51.44 m · Luma 101.2 σ 38.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.418 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e1a54023-gtx\\karte2.leben.tiere.masse_1-herde-2-rot.png",
+   "klassen": null,
+   "pulk": null,
+   "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e1a54023-gtx\\karte2.leben.tiere.masse_1-herde-2.png",
+   "bisS": 70.9
+  },
+  {
+   "schuss": 3,
+   "abstand": 43.5,
+   "spieler": 43.5,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 2054,
+   "kamera": [
+    -576.43,
+    39.62,
+    -925.16,
+    -543.49,
+    38.82,
+    -896.8
+   ],
+   "abnahme": null,
+   "fehler": "ABNAHME ROT [Ziel Herde verdeckt von an Punkt 1 Boden-Schicht in 20.47 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.47 m · Luma 104.9 σ 29.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.418 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e1a54023-gtx\\karte2.leben.tiere.masse_1-herde-3-rot.png",
+   "klassen": null,
+   "pulk": null,
+   "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e1a54023-gtx\\karte2.leben.tiere.masse_1-herde-3.png",
+   "bisS": 80.4
+  }
+ ],
+ "zeiten": {
+  "herdeS": 28.4,
+  "szeneS": 28.7
+ },
+ "szene": {
+  "kamera": [
+   -576.43,
+   39.62,
+   -925.16,
+   -550.33,
+   41.54,
+   -890.99
+  ],
+  "abstand": 43,
+  "punkte": [
+   [
+    -550.96,
+    42.14,
+    -890.48
+   ],
+   [
+    -549.8,
+    41.21,
+    -892.9
+   ],
+   [
+    -549.75,
+    42.23,
+    -888.72
+   ],
+   [
+    -552.76,
+    42.44,
+    -891.82
+   ],
+   [
+    -548.37,
+    41.04,
+    -891.02
+   ]
+  ],
+  "glieder": 5,
+  "fliehen": 5,
+  "takte": 1994,
+  "hang": {
+   "x": -550.6,
+   "z": -889.6,
+   "neigung": 21.2,
+   "lebensraum": false
+  },
+  "wurf": 5,
+  "fluchtBei": 14.2
+ },
+ "ende": {
+  "ende": true,
+  "max": 20,
+  "takt": true
+ }
+}
