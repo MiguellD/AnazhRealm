@@ -71,7 +71,7 @@ Heimat felsturm 1356 auf 1,9 km², das Gesetz erwartet …`; die Feuerstelle zur
 - Andere Gates (stoss-Station, weg-boden TRITT, Prüfbühne, Klang-Zensus, Kollisions-Bild) setzen ihre Feuerstelle bzw. ihre
   Exemplare selbst — unberührt. Der Dorf-Brand zündet über `_brandZuenden`, nie an der Feuerstelle (`stamm/feld-brand.js`).
 - Goldens: keine Spec trägt eine Zahl dieser Arten (nur die Albedo-Tafel die Farbe der Feuerstelle).
-- Karte 2, gelesen in `vision/meisterkarte-2.json`: Glut/Feuer lesen leben.oeko.sukzession#1, same.kopplung.stoerung#1,
+- Karte 2, gelesen in der Meisterkarte 2 (Zweig `punkte-maschine`): Glut/Feuer lesen leben.oeko.sukzession#1, same.kopplung.stoerung#1,
   same.kopplung.kaskade#1, same.kopplung.gewalt#1, same.kopplung.ereignis#1, mensch.wirtschaft.energie#1 — keine liest die
   Feuerstelle des Felds, keine gebuchte fällt. FRONT-Kandidat: erleben.spieler.wegfindung#1 („Turm, Fels, Gipfel vom Rauschen
   der Ferne trennbar"): vorher 585 Landmarken je km² (Rauschen), nachher 0,5 je km² an Zufalls-Orten — im Ring 1–3 km
