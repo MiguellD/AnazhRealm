@@ -1,0 +1,8 @@
+F Rang 2, Block 4 — Hand-Lauf Radeon am main 0ee3ed8c, 25.11. 22:53–23:02 (hand.log), Stationen am pm 72d5702c
+
+erleben.sinne.gesehen#3   GRÜN — unterschied_pct 77,8 (Soll ≥ 30); Akte erleben.sinne.gesehen.3.0ee3ed8c-radeon.json: Richter GRÜN · Preis GRÜN
+                          p95 33,6 ms · Heap 269,3 MB · Referenz f 1,325 (akten/).
+same.kopplung.aufwaerts#1 ROT — sichtHoeheM 400 (≥ 400 ✓), orteGeaendert 2 (≥ 10 ✗); Täter stamm/feld-leben.js `_tatSchreiben` / phyto-core
+                          forestStandDensity (die Tat verschiebt keinen Elternknoten). Akte ROT, Preis UNGEMESSEN unter Last ×1,87.
+
+Offen mit Adresse: aufwaerts#1 → leiter same.kopplung.aufwaerts#1 (ein Macher an feld-leben `_tatSchreiben`).
