@@ -628,9 +628,9 @@ class AnazhRealm_koerper_frei {
         this._freiWarm = neu;
         this._freiWarmNeu = alt;
         // die Lage am Ende des Schritts (die Ruhe liest ihre Testpunkte), dann die Ruhe (`_freiRuhig`): ruhig ist, wessen drei
-        // Testpunkte binnen FREI.ruheMs · FREI.ruheS bleiben; er schläft nach FREI.ruheS, ruhen seine Nachbarn
+        // Testpunkte binnen ½ FREI.ruheMs · FREI.ruheS bleiben; er schläft nach FREI.ruheS, ruhen seine Nachbarn
         for (const K of W) this._freiLage(K);
-        for (const K of W) K.ruhe = this._freiRuhig(K, F.ruheMs * F.ruheS) ? K.ruhe + dt : 0;
+        for (const K of W) K.ruhe = this._freiRuhig(K, 0.5 * F.ruheMs * F.ruheS) ? K.ruhe + dt : 0;
         for (const K of W) {
             let still = K.ruhe >= F.ruheS;
             for (let j = 0; still && j < K.nachbarn.length; j++)
@@ -646,7 +646,10 @@ class AnazhRealm_koerper_frei {
     // DIE RUHE EINES KÖRPERS (Jolt, J. Rouwe: Body.cpp `UpdateSleepStateInternal`, der Rand `max_movement` =
     // mPointVelocitySleepThreshold · mTimeBeforeSleep in PhysicsSystem.cpp): drei Testpunkte — der Schwerpunkt und die Mitten der
     // Flächen seiner zwei größten Achsen —, je eine Kugel, die jeden ihrer Orte seit der letzten Unruhe umschließt (Jolt
-    // `Sphere::EncapsulatePoint`); wächst eine über `rand`, beginnen Kugeln und Ruhe am Ort von jetzt. Vorher las die Ruhe das
+    // `Sphere::EncapsulatePoint`); wächst eine über `rand`, beginnen Kugeln und Ruhe am Ort von jetzt. Der Rand ist der HALBE Weg
+    // (½ ruheMs · ruheS): ein gerader Weg der Länge v · ruheS spannt eine Kugel vom Radius v · ruheS / 2 — so schläft, was gerade
+    // geht, erst unter ruheMs (Jolts Wort „velocity lower than this value“; sein Rand, der ganze Weg, ließe das Doppelte schlafen),
+    // und was beschränkt wippt, schläft. Vorher las die Ruhe das
     // Tempo des Augenblicks: ein Haufen aus sechs Platten, der in einem Grenz-Zyklus wippt (Platte 12 der Saat 174 auf EINEM
     // Punkt, 1,6 mm alle 7 Schritte, Spitze 0,0505 m/s), riss ruheMs je Zyklus einmal und schlief nie.
     _freiRuhig(K, rand) {
@@ -1489,7 +1492,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_koerper_frei]);
 // ζ 10) und das höchste Tempo, mit dem sie eine Durchdringung herausdrückt (m/s); der Spalt (m), ab dem ein Punkt vor einer
 // Fläche schon ein Kontakt ist (Boden und Bau; Körper an Körper enger — ein weiter Spalt hielt die Kiste über der Seite der
 // unteren), dazu sein Weg im Schritt; ab prallMs Aufprall prallt der Körper mit der Stoß-Zahl des Starren; ruhig, solange seine
-// drei Testpunkte binnen ruheMs · ruheS bleiben (Jolt: 0,03 m/s · 0,5 s, derselbe Rand 1,5 cm), nach ruheS schläft er; ein Fass trägt je Rand rundPunkte Punkte; die Hülle stempelt neu nach huelleM Weg (dazwischen folgt sie an Ort und Stelle); Grund und
+// drei Testpunkte binnen ½ ruheMs · ruheS (0,75 cm) bleiben (`_freiRuhig`, die Kugeln nach Jolt), nach ruheS schläft er; ein Fass trägt je Rand rundPunkte Punkte; die Hülle stempelt neu nach huelleM Weg (dazwischen folgt sie an Ort und Stelle); Grund und
 // Bauten gelten umweltM (m) Weg (`_freiUmwelt`).
 // Die Kosten je Schritt mit 100 wachen Kisten (Median; physik.K3#2, Null-Renderer an der Mess-Wiese): das Trümmerfeld (aus 2–4 m
 // gefallen) main 4,8 → 0,7 ms, der Haufen 4 hoch main 8,8 → 1,2 ms; die Bank (Node, flacher Boden) 4,2 → 0,93 ms; der Schlaf
