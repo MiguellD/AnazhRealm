@@ -387,7 +387,7 @@ class AnazhRealm_feld_brand {
     // Stärke, die das Gesetz ihm gibt — `sturmMS` bei Böe 1 ist Beaufort (WIND_FELD), also ohne die wandernde Böe und ihre Drift
     // (`_windWob`), die die Front über die Querung einer Zelle (zwei Böen-Perioden) mittelt; die Böe des Zünd-Augenblicks gehalten
     // streute die Köpfe an EINER Pose 0,10–1,14 m/s, ihr Mittel 0,7 statt der Beaufort-Stärke hielt sie bei 0,51 —, in 10 m Höhe
-    // (÷ 1,15 auf 20 ft) auf Flammenhöhe (Albini–Baughman 1979 aus der Tiefe des Betts, gedeckelt bei 0,9·I_R), und der Hang (das
+    // (÷ 1,15 auf 20 ft) auf Flammenhöhe (Albini–Baughman 1979 aus der Tiefe des Betts, ohne Wind-Grenze), und der Hang (das
     // Gefälle der Oberfläche über die Zelle) addieren als Vektoren zum effektiven φ (BehavePlus). R ist das Tempo der Spitze in
     // m/s längs (px, pz); die Ellipse (Anderson 1983, L/B aus dem effektiven Wind) gibt R(θ) = R·(1 − ecc)/(1 − ecc·cos θ), gegen
     // den Wind das Rückfeuer R·(1 − ecc)/(1 + ecc). tr: die Verweilzeit der Flamme (384/σ min). Die Gleichungen in ihren
@@ -423,7 +423,7 @@ class AnazhRealm_feld_brand {
         const u =
             ((w.ms / 1.15 / (w.boe * this._windWob(t))) * 196.85 * 1.83) /
             Math.log((20 + 0.36 * tiefe) / (0.13 * tiefe));
-        const phiW = C * Math.min(0.9 * IR, u) ** Bw * q ** -E;
+        const phiW = C * u ** Bw * q ** -E;
         const [gx, gz] = [f.gx, f.gz];
         const phiS = (5.275 * beta ** -0.3 * (gx * gx + gz * gz)) / (Math.hypot(gx, gz) || 1);
         const [vx, vz] = [phiW * w.x + phiS * gx, phiW * w.z + phiS * gz];
@@ -431,7 +431,16 @@ class AnazhRealm_feld_brand {
         const mph = ((phi * q ** E) / C) ** (1 / Bw) / 88;
         const lb = Math.min(B.lbMax, 0.936 * Math.exp(0.2566 * mph) + 0.461 * Math.exp(-0.1548 * mph) - 0.397);
         const ecc = Math.sqrt(Math.max(0, lb * lb - 1)) / lb;
-        return { R: R0 * (1 + phi) * 0.00508, ecc, px: phi ? vx / phi : 1, pz: phi ? vz / phi : 0, tr: 23040 / sig };
+        // DIE SPITZE LÄUFT NIE SCHNELLER ALS IHR WIND (Andrews, Cruz & Rothermel 2013, Int. J. Wildland Fire 22: 959–969, die
+        // Schlüsse: „neither the original nor the improved revised wind limit be imposed … modelled rate of spread not exceed the
+        // effective midflame wind speed"): R ≤ U_eff (ft/min, mph × 88), wo er weht — die Spitze ohne Wind trägt ihr R0. Bis
+        // brand-feld deckelte die Wind-Grenze Rothermels (U ≤ 0,9·I_R) den Wind des Betts: das volle Gras der Mess-Wiese (Zeile
+        // gras = Modell 1, 0,17 kg/m², σ 11 483) lief bei 15 m/s in 10 m 2,65 m/s, die Herd-Zelle −248/−1080 (ein Drittel Bett,
+        // Anteil 0,34) ab 4 m/s nie schneller als 0,28 m/s — ohne sie voll 4,68 m/s (281 m/min), der Herd 0,33 · 0,73 · 1,33 m/s
+        // bei 4 · 6 · 8,1 m/s, im Band der Grasbrände, gegen das Andrews 2013 (Abb. 7) Modell 1 ohne Grenze stellt:
+        // McArthur 1969, Cheney et al. 1998 und Gould 2005 messen 100–390 m/min bei 30–55 km/h in 10 m, die Grenzen deckeln bei 115–160
+        const R = Math.min(R0 * (1 + phi), Math.max(R0, mph * 88));
+        return { R: R * 0.00508, ecc, px: phi ? vx / phi : 1, pz: phi ? vz / phi : 0, tr: 23040 / sig };
     }
 
     // DAS ENTFACHEN IST EIN AKT DER SEITE (feld.K2#2, `_feldAkt`): was eine Seite entzündet (das Brennglas, die Probe), fängt auf jeder
@@ -706,6 +715,148 @@ class AnazhRealm_feld_brand {
         return (b.ort = { x, y, z, phase, brand: true, id: "brand:" + b.cx + "," + b.cz });
     }
 
+    // DER BOGEN DER FRONT EINER ZELLE (brand-feld) → [die Tafel ihrer Einheits-Front, gemerkt je Zelle; ∫ ds/a für `weit`]: die
+    // Ellipse r(θ) = (1 − e)/(1 − e·cos θ) um ihren Brennpunkt (die Spitze bei x = 1; die Front ist sie × τ·R) in `bogenTafel`
+    // Stücken ihrer EXZENTRISCHEN Anomalie E (x = c + a·cos E, y = b·sin E, a = 1/(1 + e), c = e·a, b = a·√(1 − e²): dicht an
+    // den Spitzen, wo sie sich krümmt; die Spitze ist E = 0, das Stück M/2). Je Ecke i: `x`, `y`, `r` = |(x, y)|, `L` die
+    // Byram-Länge aus R(θ) = R·r(θ), `s` ihr Bogen ab der Ferse, `a` der
+    // Abstand ihrer Flammen nach dem Gesetz — max(`abstandMinM`, `abstand` × L), er hängt an θ,
+    // nie an der Uhr —, `phi` ∫ ds/max(a, weit) ab der Spitze (je m der Einheit; die Front zählt × τ·R), `kreis` je `bogenBlock`
+    // Stücke [Mitte x, y, Radius] für den Schnitt mit der Zelle.
+    _brandBogen(b, weit) {
+        const B = AnazhRealm.BRAND.bild;
+        const [M, Q, e] = [B.bogenTafel, B.bogenBlock, b.ecc];
+        const integriere = (T, w, phi) => {
+            const [S, A] = [T.s, T.a];
+            phi[M / 2] = 0;
+            for (let i = M / 2; i < M; i++)
+                phi[i + 1] = phi[i] + ((S[i + 1] - S[i]) * (1 / Math.max(A[i], w) + 1 / Math.max(A[i + 1], w))) / 2;
+            for (let i = M / 2; i > 0; i--)
+                phi[i - 1] = phi[i] - ((S[i] - S[i - 1]) * (1 / Math.max(A[i], w) + 1 / Math.max(A[i - 1], w))) / 2;
+            return phi;
+        };
+        const W = this._brandBoegen || (this._brandBoegen = new WeakMap());
+        let T = W.get(b);
+        if (!T || T.bild !== B || T.e !== e || T.R !== b.R || T.iw !== b.iw) {
+            // die Tafel entsteht, wenn die Zelle ins Bild tritt, und rechnet in ihren Feldern neu, wenn sie neu zündet (R, ecc,
+            // iw) — ohne Feld-Literale: sie läuft selten, also kalt, und im Stoß, wenn ein Ring Zellen zugleich ins Bild tritt
+            if (!T || T.bild !== B) {
+                T = { bild: B, kreis: new Float64Array(3 * Math.ceil(M / Q)) };
+                for (const k of ["x", "y", "r", "L", "s", "a", "phi"]) T[k] = new Float64Array(M + 1);
+                W.set(b, T);
+            }
+            [T.e, T.R, T.iw, T.aMin, T.phiWeit] = [e, b.R, b.iw, Infinity, undefined];
+            const ha = 1 / (1 + e);
+            const hb = Math.sqrt(1 - e * e) * ha;
+            const c = 0.0775 * Math.pow(b.iw * b.R, 0.46); // die Byram-Länge bei r = 1, die Spitze
+            const { x: X, y: Y, r: Rr, L, s: S, a: A, kreis } = T;
+            for (let i = 0; i <= M; i++) {
+                const E = Math.PI * ((2 * i) / M - 1); // von der Ferse (E = −π) über die Spitze (0) zurück
+                X[i] = e * ha + ha * Math.cos(E);
+                Y[i] = hb * Math.sin(E);
+                Rr[i] = Math.hypot(X[i], Y[i]); // r(θ): R(θ) = R·r
+                L[i] = c * Math.pow(Rr[i], 0.46); // die Byram-Länge dort
+                S[i] = i ? S[i - 1] + Math.hypot(X[i] - X[i - 1], Y[i] - Y[i - 1]) : 0;
+                A[i] = Math.max(B.abstandMinM, B.abstand * L[i]);
+                if (A[i] < T.aMin) T.aMin = A[i];
+            }
+            for (let q = 0; q < M; q += Q) {
+                const qe = q + Q < M ? q + Q : M;
+                let x0 = Infinity;
+                let x1 = -Infinity;
+                let y0 = Infinity;
+                let y1 = -Infinity;
+                for (let i = q; i <= qe; i++) {
+                    if (X[i] < x0) x0 = X[i];
+                    if (X[i] > x1) x1 = X[i];
+                    if (Y[i] < y0) y0 = Y[i];
+                    if (Y[i] > y1) y1 = Y[i];
+                }
+                // der Kreis um die Ecken des Blocks, um den Bogen eines Stücks über seine Sehne geweitet
+                const k = 3 * (q / Q);
+                kreis[k] = (x0 + x1) / 2;
+                kreis[k + 1] = (y0 + y1) / 2;
+                kreis[k + 2] = Math.hypot(x1 - x0, y1 - y0) / 2 + (S[qe] - S[q]) / Q;
+            }
+            integriere(T, 0, T.phi);
+        }
+        if (!(weit > T.aMin)) return [T, T.phi];
+        // das Budget weitet in Stufen von `weitStufe` (aufgerundet: nie mehr Flammen als das Budget): Φ rechnet neu, wenn Auge
+        // oder Budget eine Stufe gehen — nicht je Bild, und die Flammen kriechen nicht mit jedem Schritt des Auges
+        const w = T.aMin * Math.pow(1 + B.weitStufe, Math.ceil(Math.log(weit / T.aMin) / Math.log(1 + B.weitStufe)));
+        if (T.phiWeit !== w) [T.phiWeit, T.phiW] = [w, integriere(T, w, T.phiW || new Float64Array(M + 1))];
+        return [T, T.phiW];
+    }
+
+    // DER GANG DER FRONT EINER ZELLE (brand-feld) zur Uhr t: die Ellipse jedes ihrer Eintritte (`ein`, sonst der EINE Punkt) nach
+    // ihrem Bogen — die Einheits-Front der Zelle (`_brandBogen`) × τ·R, nur die Blöcke, deren Kreis die Zelle schneidet. Ohne
+    // `stell` → ℓ in m: die Länge ihrer Front, die in der Zelle, auf ihrem Bett (≥ ½) und unverzehrt (`_brandWeg`) liegt. Mit
+    // `stell(x, z, s, Rt, lang)` → die Zahl ihrer Flammen: sie stehen, wo die FLAMMEN-ZAHL Φ = τ·R·∫ ds/a ab der Spitze eine ganze
+    // Zahl trifft — je Flamme der Abstand ihres Gesetzes (a, mindestens `weit`, das Budget des Bilds), die Spitze trägt die
+    // Flamme 0 und steht mit ihr still, wächst die Front, treten neue an der Ferse dazu; die Naht dort hält ≥ a (die zweite
+    // Flanke endet ½ Flamme früher). `s` der Bogen ab der Spitze in m (der Takt der Zunge), `stell` → false bricht ab.
+    _brandFrontGang(b, t, weit, stell) {
+        const [K, B] = [AnazhRealm.LIFE_FIELD.cell, AnazhRealm.BRAND.bild];
+        const tau = t - b.t0;
+        if (!(tau > 0 && b.R > 0)) return 0;
+        const [T, phi] = this._brandBogen(b, weit);
+        const [x0, z0, [px, pz], TR, M, Q] = [b.cx * K, b.cz * K, b.kopf, tau * b.R, B.bogenTafel, B.bogenBlock];
+        // die Maske des Betts und der verzehrte Weg je Zelle einmal (die Tafel trägt sie, solange Bett und Eintritte bleiben)
+        if (T.bettVon !== b.bett) [T.bettVon, T.bett] = [b.bett, this._brandBettFn(b.bett, b.cx, b.cz)];
+        if (T.einVon !== b.ein || T.kopfVon !== b.kopf)
+            [T.einVon, T.kopfVon, T.weg] = [b.ein, b.kopf, b.ein && this._brandWeg(b, b.ecc, px, pz)];
+        const [E, bett, weg, reich] = [b.ein || [b.ex, b.ez], T.bett, T.weg, TR * (1 - b.ecc)];
+        const drin = (x, z) => x >= x0 && x < x0 + K && z >= z0 && z < z0 + K;
+        const sicht = (x, z) => drin(x, z) && !(bett && bett(x, z) < 0.5) && !(weg && weg(x, z) < reich - 0.01);
+        const H = TR * phi[M]; // die Flammen einer Flanke von der Spitze zur Ferse
+        const [Tx, Ty, Tr, TL, Ts, kreis] = [T.x, T.y, T.r, T.L, T.s, T.kreis];
+        // der heiße Gang ohne Feld-Literale und ohne Winkel-Funktion je Flamme (die Tafel trägt Ort, r und Länge je Ecke, das
+        // Stück dazwischen ist 1/`bogenTafel` der Front — die Sehne liegt auf dem Bogen): er läuft je Bild über jede Zelle im Bild
+        let aus = 0;
+        for (let j = 0; j < E.length; j += 2) {
+            const ex = E[j];
+            const ez = E[j + 1];
+            for (let q = 0; q < M; q += Q) {
+                const qe = q + Q < M ? q + Q : M;
+                // ein Block ohne ganze Zahl Φ trägt keine Flamme (fern, wo das Budget den Abstand weitet, fast jeder)
+                let k = Math.ceil(TR * phi[q]);
+                if (stell && k >= TR * phi[qe]) continue;
+                const k3 = 3 * (q / Q);
+                const mx = ex + TR * (px * kreis[k3] - pz * kreis[k3 + 1]);
+                const mz = ez + TR * (pz * kreis[k3] + px * kreis[k3 + 1]);
+                const dx = Math.max(x0 - mx, 0, mx - x0 - K);
+                const dz = Math.max(z0 - mz, 0, mz - z0 - K);
+                const rk = TR * kreis[k3 + 2];
+                if (dx * dx + dz * dz > rk * rk) continue;
+                for (let i = q; i < qe; i++) {
+                    if (!stell) {
+                        const x = ex + TR * (px * Tx[i] - pz * Ty[i]);
+                        const z = ez + TR * (pz * Tx[i] + px * Ty[i]);
+                        if (sicht(x, z)) aus += TR * (Ts[i + 1] - Ts[i]);
+                        continue;
+                    }
+                    const f1 = TR * phi[i + 1];
+                    if (k >= f1) continue; // k läuft mit: die nächste ganze Zahl Φ ab diesem Stück
+                    const f0 = TR * phi[i];
+                    for (; k < f1; k++) {
+                        if (k < 0 && -k > H - 0.5) continue;
+                        const v = (k - f0) / (f1 - f0);
+                        const lx = Tx[i] + (Tx[i + 1] - Tx[i]) * v;
+                        const ly = Ty[i] + (Ty[i + 1] - Ty[i]) * v;
+                        const x = ex + TR * (px * lx - pz * ly);
+                        const z = ez + TR * (pz * lx + px * ly);
+                        if (!sicht(x, z)) continue;
+                        const Rt = b.R * (Tr[i] + (Tr[i + 1] - Tr[i]) * v); // R(θ) = R·r(θ) der Einheits-Front
+                        const s = TR * (Ts[i] + (Ts[i + 1] - Ts[i]) * v - Ts[M / 2]);
+                        aus++;
+                        if (stell(x, z, s, Rt, TL[i] + (TL[i + 1] - TL[i]) * v) === false) return aus;
+                    }
+                }
+            }
+        }
+        return aus;
+    }
+
     // DAS BILD DES BRANDS (stoffe.K2#2): jede glühende Zelle um das Auge (`_brandGlutUm` bis `BRAND.bild.weiteM` — dieselben
     // Zellen in demselben Zustand, den Licht, Ohr und Asche lesen) zeichnet ihre FLAMMEN auf ihrer Front und ihren RAUCH als
     // Fahne. DIE FRONT einer Zelle zur Spielzeit t ist die Ellipse ihres Eintritts (`_brandZuenden`: der Brennpunkt am Eintritt,
@@ -735,19 +886,8 @@ class AnazhRealm_feld_brand {
         // Tälern im Abstand ihrer Länge (Finney et al. 2015), und jede Zunge pufft mit f = 1,5/√D Hz über der Tiefe D = R(θ)·tr
         // ihrer Flammen-Zone (Cetegen & Ahmed 1993); die Spitze geht dabei um ± `puls` um die Byram-Länge (Zukoski: die
         // Spanne der Intermittenz). Bis hier atmete sie mit dem Herdfeuer-Licht (± 18 % in 6–10 Hz, acht Phasen): aus der Nähe
-        // ein flaches oranges Band. Die Winkel der Front je Abtastung N EINMAL (cos, sin, gemerkt an der Instanz).
+        // ein flaches oranges Band.
         const [puls, uhr] = [B.puls, 9.42 * (this._bildZeit || 0)];
-        const tafeln = this._brandWinkel || (this._brandWinkel = new Map());
-        const tafel = (N) => {
-            if (!tafeln.has(N))
-                tafeln.set(
-                    N,
-                    Array.from({ length: 2 * N + 2 }, (_, i) =>
-                        Math[i % 2 ? "sin" : "cos"](Math.PI * ((2 * (i >> 1)) / N - 1))
-                    )
-                );
-            return tafeln.get(N);
-        };
         // DIE EINE WIND-UHR DES BRANDS: Front (`_brandTempo`), Flammen und Fahne lesen den Wind zur Welt-Uhr `t` — die Bild-Uhr
         // (A9) trägt nur das Flackern und die Zeit des Shaders, sie wählt nie den Wind. Bis w13-brand-wind zog die Fahne zur
         // Bild-Uhr (der Wanduhr der Seite): nach dem Laden eines Stands (`_weltUhrNimm`) lagen beide Stunden auseinander, und
@@ -772,49 +912,66 @@ class AnazhRealm_feld_brand {
                 Z.push(e);
             });
         Z.sort((u, v) => u[0] - v[0]);
-        for (const [d, b] of Z) {
+        // DIE FLAMMEN SIND DIE FRONT DES FELDS (brand-feld): jede Zelle geht die Ellipse jedes ihrer Eintritte nach ihrer BOGENLÄNGE
+        // ab (`_brandFrontGang`) und trägt eine Flamme je Abstand ihres Gesetzes — `abstand` × ihre Byram-Länge, mindestens
+        // `abstandMinM` —, wo die Front in der Zelle, auf ihrem Bett und unverzehrt liegt: so viele Flammen, wie die Front lang
+        // ist. DAS BUDGET IST EIN WINKEL: trägt die Front aller Zellen im Bild mehr als `flammenMax` (die Schranke Σ Eintritte ×
+        // min(Umfang, 4 Kanten) ÷ `abstandMinM`), misst der Gang ihre Längen ℓ in der Zelle, und der Abstand wächst je Zelle mit
+        // ihrem Abstand zum Auge, ψ·d, ψ = Σ ℓ/d ÷ `flammenMax` — der Winkel der Front, den das Auge sieht, gleich auf das Budget
+        // verteilt: nah fein, fern grob, jede Zelle mit Front trägt Flammen und Rauch. Bis brand-feld zählte das AUGE die Flammen:
+        // je Ellipse N = 96·12 m ÷ d Winkel, mindestens 4 — die Herd-Zelle der Narbe trug 25 Flammen 0,42 m auseinander, fern fiel
+        // die Front eines großen Herds auf 4 Punkte je Ellipse
+        const fern = (d) => Math.max(d, K / 2); // das Auge in der Zelle sieht ihre Front im Mittel ½ Zelle fern
+        let [psi, schranke, gemessen] = [0, 0, Z.length];
+        for (const [, b] of Z) {
+            const p = (t - b.t0) * b.R * (1 - b.ecc);
+            const [a, c] = [p / (1 - b.ecc * b.ecc), p / Math.sqrt(1 - b.ecc * b.ecc)];
+            const umfang = Math.PI * (3 * (a + c) - Math.sqrt((3 * a + c) * (a + 3 * c))); // Ramanujan
+            schranke += (((b.ein ? b.ein.length : 2) / 2) * Math.min(umfang, 4 * K)) / B.abstandMinM;
+            if (schranke > B.flammenMax) break;
+        }
+        const laenge = this._brandLaengen || (this._brandLaengen = []);
+        if (schranke > B.flammenMax) {
+            // ℓ je Zelle einmal je `schrittS` der Welt-Uhr, gemessen zur Mitte der Spanne, die es trägt (die Kosten trägt die
+            // Änderung, Gebot 7, wie der Strom der Fahne), die Sekunden der Zellen versetzt (je Bild messen wenige, nie alle
+            // zugleich) — je Bild wiegt nur der Abstand zum Auge neu
+            const S = AnazhRealm.BRAND.schrittS;
+            let n = 0;
+            for (gemessen = 0; gemessen < Z.length && n < B.zellenMax; gemessen++) {
+                const b = Z[gemessen][1];
+                if (!(t >= b.laengeVon && t < b.laengeVon + S)) {
+                    const fase = (S * ((((b.cx * 7 + b.cz * 13) % 16) + 16) % 16)) / 16; // die Sekunde der Zelle beginnt versetzt
+                    const von = Math.floor((t - fase) / S) * S + fase;
+                    [b.laenge, b.laengeVon] = [this._brandFrontGang(b, (t + von + S) / 2, 0, null), von];
+                }
+                if ((laenge[gemessen] = b.laenge) > 0) (n++, (psi += b.laenge / fern(Z[gemessen][0])));
+            }
+            psi /= B.flammenMax;
+        }
+        for (let iz = 0; iz < gemessen; iz++) {
             if (fl.length >= B.flammenMax || qu.length >= B.zellenMax) break;
-            const [x0, z0, xc, zc] = [b.cx * K, b.cz * K, (b.cx + 0.5) * K, (b.cz + 0.5) * K];
-            const [px, pz] = b.kopf;
+            if (psi > 0 && !(laenge[iz] > 0)) continue;
+            const [d, b] = Z[iz];
+            const [xc, zc] = [(b.cx + 0.5) * K, (b.cz + 0.5) * K];
             const w = wind(xc, zc);
             const u = w.ms * B.flammenWind;
             const n0 = fl.length;
-            // die Front fern gröber abgetastet (die Kosten tragen der Schirm und die Nähe, Gebot 7), eine junge nach ihrem Umfang
-            // (höchstens 2π·R·Alter, je Flamme mindestens `abstandMinM`)
-            const umfang = Math.ceil((2 * Math.PI * b.R * (t - b.t0)) / B.abstandMinM);
-            const N = Math.max(B.winkelMin, Math.min(B.winkel, Math.round((B.winkel * B.nahM) / d), umfang));
-            const wt = tafel(N);
-            let [s, naechste, vx, vz] = [0, 0, null, null];
-            const bett = this._brandBettFn(b.bett, b.cx, b.cz); // die Flamme steht, wo Bett liegt
-            const [E, weg] = [b.ein || [b.ex, b.ez], b.ein && this._brandWeg(b, b.ecc, px, pz)]; // je Eintritt seine Ellipse, gezeichnet, wo keine andere sie schon verzehrte
-            for (let j = 0; j < E.length; j += 2)
-                for (let i = 0; i <= N; i++) {
-                    if (!i) [s, naechste, vx, vz] = [0, 0, null, null];
-                    const [c, sn] = [wt[2 * i], wt[2 * i + 1]];
-                    const Rt = (b.R * (1 - b.ecc)) / (1 - b.ecc * c);
-                    const r = (t - b.t0) * Rt;
-                    const [x, z] = [E[j] + r * (px * c - pz * sn), E[j + 1] + r * (pz * c + px * sn)];
-                    if (weg && weg(x, z) < (t - b.t0) * b.R * (1 - b.ecc) - 0.01) continue;
-                    if (vx !== null) s += Math.sqrt((x - vx) * (x - vx) + (z - vz) * (z - vz));
-                    [vx, vz] = [x, z];
-                    if (x < x0 || x >= x0 + K || z < z0 || z >= z0 + K || (bett && bett(x, z) < 0.5)) continue;
-                    if (s < naechste) continue;
-                    const lang = 0.0775 * Math.pow(b.iw * Rt, 0.46);
-                    naechste = s + Math.max(B.abstandMinM, B.abstand * lang);
-                    const phase = (((x * 12.9898 + z * 78.233) % 6.2832) + 6.2832) % 6.2832;
-                    const f = vorrat[fl.length] || (vorrat[fl.length] = {});
-                    f.x = x;
-                    f.y = b.y + b.gx * (x - xc) + b.gz * (z - zc);
-                    f.z = z;
-                    const takt = (Math.PI * s) / lang - uhr / Math.sqrt(Math.max(0.05, Rt * b.tr)) + Math.sin(phase);
-                    f.lang = lang * (1 + puls * Math.sin(takt));
-                    f.kipp = Math.atan(u / Math.sqrt(9.81 * lang));
-                    f.wx = w.x;
-                    f.wz = w.z;
-                    f.dreh = phase;
-                    f.I = b.iw * Rt;
-                    fl.push(f);
-                }
+            this._brandFrontGang(b, t, psi * fern(d), (x, z, s, Rt, lang) => {
+                const phase = (((x * 12.9898 + z * 78.233) % 6.2832) + 6.2832) % 6.2832;
+                const f = vorrat[fl.length] || (vorrat[fl.length] = {});
+                f.x = x;
+                f.y = b.y + b.gx * (x - xc) + b.gz * (z - zc);
+                f.z = z;
+                const takt = (Math.PI * s) / lang - uhr / Math.sqrt(Math.max(0.05, Rt * b.tr)) + Math.sin(phase);
+                f.lang = lang * (1 + puls * Math.sin(takt));
+                f.kipp = Math.atan(u / Math.sqrt(9.81 * lang));
+                f.wx = w.x;
+                f.wz = w.z;
+                f.dreh = phase;
+                f.I = b.iw * Rt;
+                fl.push(f);
+                return fl.length < B.flammenMax;
+            });
             if (fl.length > n0) {
                 // `holz`: was die Front der Zelle seit ihrem letzten Bild verzehrte (kg) — ihr Rauch. Ihr Strom (`_brandStrom`, kg/s),
                 // gemessen einmal je `schrittS` der Welt-Uhr zur Mitte dieser Sekunde (die Kosten trägt die Änderung, Gebot 7), mal
@@ -1770,8 +1927,9 @@ AnazhRealm.BRAND = Object.freeze({
     mindestJeBild: 8, // … und mindestens so viele Aschen und Zündungen (ein kleiner Brand geht seinen Schritt in einem Bild)
     blockZellen: 4, // die Leser fragen die glühenden Zellen je Block von 4 × 4 Zellen (64 m, `_brandGlutUm`)
     hoerM: 256, // so weit hört das Ohr den Brand knistern (`_glutAmOhr`)
-    // das Bild (`_brandBild`): bis `weiteM` um das Auge, die Front in `winkel` Schritten abgetastet (jenseits von `nahM` je
-    // Abstand gröber, nie unter `winkelMin`), je Flamme ein Abstand von
+    // das Bild (`_brandBild`): bis `weiteM` um das Auge, die Front nach ihrem Bogen gegangen (`_brandFrontGang`: die
+    // Einheits-Front in `bogenTafel` Stücken, je `bogenBlock` ein Kreis gegen die Zelle; das Budget weitet ihren Abstand in Stufen
+    // von `weitStufe`), je Flamme im Mittel ein Abstand von
     // `abstand` × ihrer Länge (mindestens `abstandMinM`), höchstens `flammenMax` je Bild aus höchstens `zellenMax` Zellen, die
     // nächsten zuerst (ein Brand von 2 000 Zellen kostet das Bild, nie die Welt); die Spitze der Zunge pulst um ± `puls` ihrer Länge; `flammenWind` der Wind auf Flammenhöhe je Wind
     // in 10 m (Albini–Baughman 1979, offenes Gras); die Zunge `breite` × Länge breit, ihre Deckung
@@ -1783,9 +1941,9 @@ AnazhRealm.BRAND = Object.freeze({
     // EINE Rauch-Bild der Welt (`_rauchZeichnen`, RAUCH_BILD), sein Muster steigt mit `steigMs` m/s
     bild: Object.freeze({
         weiteM: 160,
-        winkel: 96,
-        winkelMin: 4,
-        nahM: 12,
+        bogenTafel: 256,
+        bogenBlock: 8,
+        weitStufe: 0.05,
         abstand: 0.45,
         abstandMinM: 0.2,
         flammenMax: 384,
