@@ -67,6 +67,9 @@ const SOLL = {
     glut: [2 / 3, 3 / 2],
     glasTag: [1 / 4, 4],
     glasFarbe: 0.15,
+    // S8 DER STUFEN-STOFF: die Albedo je Bauteil Stufe n ↔ Stufe 0 als ΔE*ab (CIE 1976, D65) — 2,3 ist der eben merkliche
+    // Unterschied (Mahy, Van Eycken & Oosterlinck 1994, Color Res. Appl. 19: 105)
+    stoff: 2.3,
 };
 
 // ── T: DER TÜRBLATT-FANG — die Flügel, die der Bau anlegt (`tueren()`: userData.door + side), bevor die L1 sie an Ort und
@@ -496,6 +499,46 @@ function glasUrteil(G, f) {
 //    sieht — die EINE Rechnung des Kerns (`sichtTon`: Z-Puffer, 9 Blicke, Stoff und Metall) über den Rollen der Stufe
 //    (`buildStufe`, der Bau hinter buildInstance). Soll: Stufe/L0 im Band `stufenToleranz` der Albedo-Tafel (dieselbe Zahl wie
 //    die Welt-Seite). Vor dem Akt: hochhaus L1/L0 0,777, volle_moderne L2/L0 0,824.
+//    DIE STUFE TRÄGT DEN STOFF IHRER ROLLE (haus-stufe-stoff): dieselbe Rechnung in den Flächen der EINEN Körper-Liste (`sichtTon`
+//    mit der Karte des Baus, `koerperKarte`: je Teil und Klasse, was ein Auge dort an Wänden bzw. Dächern sieht), zusammengefasst je
+//    BAUTEIL — Wand, Dach, Schornstein —, die Farbe der Stufe gegen die der L0 als ΔE*ab (bei der Leuchtdichte, die die Bauteile
+//    zusammen in der L0 tragen — das Ganze urteilt der Stufen-Ton). Soll: ≤ `SOLL.stoff`. Vor dem Akt trug die
+//    Stufe EINEN grauen Faktor je Klasse: viktorianisch L2 Wand ΔE 6,0, Schornstein bis 15,9 (hollaendisch). Der Leser ist die Welt:
+//    der Satz der Häuser jenseits von 26 m zeichnet genau diese Ecken-Farben.
+const { cielab } = require("./lib/abnahme-urteil.cjs");
+const STOFF_PIXEL = 4; // eine Fläche unter vier gesehenen Pixeln urteilt nicht (wie der Kern: TON_PIXEL)
+function stoffJeBauteil(B, liste, t0, tn) {
+    const km = (B.masse || []).find((m) => m.art === "kamin");
+    const amKamin = (t) => !!km && t.art === "box" && Math.abs(t.c[0] - (km.x0 + km.x1) / 2) < 0.01 && Math.abs(t.c[2] - (km.z0 + km.z1) / 2) < 0.01;
+    const A = {};
+    for (let r = 0; r * 4 < t0.length; r++) {
+        const n0 = t0[r * 4 + 3],
+            nn = tn[r * 4 + 3];
+        if (!(n0 >= STOFF_PIXEL && nn >= STOFF_PIXEL)) continue;
+        const b = amKamin(liste[r >> 1].teil) ? "Schornstein" : r & 1 ? "Dach" : "Wand";
+        const a = A[b] || (A[b] = { w: 0, c0: [0, 0, 0], cn: [0, 0, 0] });
+        a.w += n0;
+        for (let c = 0; c < 3; c++) {
+            a.c0[c] += t0[r * 4 + c];
+            a.cn[c] += (tn[r * 4 + c] / nn) * n0;
+        }
+    }
+    // das Ganze urteilt der Stufen-Ton (die Zeile davor); hier steht jedes Bauteil gegen die anderen: die Stufe bei der Leuchtdichte,
+    // die ihre Bauteile zusammen in der L0 tragen (am Turm aus Glas hebt der Kern die Körper, weil die Fern-Fassade keinen Ton trägt)
+    let y0 = 0,
+        yn = 0;
+    for (const b in A) {
+        y0 += luma(A[b].c0);
+        yn += luma(A[b].cn);
+    }
+    const aus = {};
+    for (const b in A) {
+        const l0 = cielab(A[b].c0.map((x) => x / A[b].w)),
+            ln = cielab(A[b].cn.map((x) => ((x / A[b].w) * y0) / yn));
+        aus[b] = Math.hypot(l0[0] - ln[0], l0[1] - ln[1], l0[2] - ln[2]);
+    }
+    return aus;
+}
 
 // ── Ein Haus-Fall → seine Zahlen ──
 function hausFall(id, seed, ersatz3, tuerDefekt, glasDefekt, tonDefekt) {
@@ -522,10 +565,16 @@ function hausFall(id, seed, ersatz3, tuerDefekt, glasDefekt, tonDefekt) {
     const z = { id, seed, wurf: {}, kosten: {}, befund: [] };
     if (glasDefekt) glasDefekt(g, M.H);
     z.glas = [0, 1, 2].map((s) => glasJeStufe(g[s], M.H.windows || []));
+    const Bk = FC.massBau(p),
+        karte = FC.koerperKarte(Bk),
+        teilJe = [];
     z.ton = [0, 1, 2].map((s) => {
-        const a = FC.sichtTon(tonDefekt ? tonDefekt(FC.buildStufe(p, s), s) : FC.buildStufe(p, s)).alle;
+        const G = tonDefekt ? tonDefekt(FC.buildStufe(p, s), s) : FC.buildStufe(p, s);
+        const a = FC.sichtTon(G).alle;
+        teilJe[s] = FC.sichtTon(G, karte).teil;
         return luma(a) / a[3];
     });
+    z.stoff = [1, 2].map((s) => stoffJeBauteil(Bk, FC.koerperListe(Bk), teilJe[0], teilJe[s]));
     const wurfJe = {}; // je Werfer-Stufe einmal gerechnet (alle Stufen zeigen auf dieselbe)
     for (const s of [0, 1, 2]) {
         const w = B[s] ? B[s].schatten : undefined;
@@ -564,6 +613,9 @@ function hausUrteil(z) {
     for (const s of [1, 2])
         if (!(Math.abs(z.ton[s] / z.ton[0] - 1) <= require("../spec/farbe/albedo-tafel.json").stufenToleranz))
             f.push(`Stufen-Ton L${s}/L0 ${f3(z.ton[s] / z.ton[0])}`);
+    for (const s of [1, 2])
+        for (const b in z.stoff[s - 1])
+            if (!(z.stoff[s - 1][b] <= SOLL.stoff)) f.push(`Stufen-Stoff L${s} ${b} ΔE ${z.stoff[s - 1][b].toFixed(1)} > ${SOLL.stoff}`);
     for (const s of [0, 1, 2]) {
         const weg = z.tuer[s].filter((d) => !(d <= SOLL.tuer));
         if (weg.length)
@@ -684,6 +736,27 @@ function selbsttest() {
     const z = hausFall("alemannisch", 1, aufgeblaeht, null, null, dunkler);
     const u = hausUrteil(z);
     if (!u.some((x) => /^Stufen-Ton L2/.test(x))) fehler.push("S8: L2 × 0,8 nicht rot");
+    // S8 DER STUFEN-STOFF: ein Übertrag, der nur die Helligkeit trägt — jede Ecke der L2 behält ihre Leuchtdichte und nimmt den
+    // Farbton ihrer Rolle (der graue Faktor vor haus-stufe-stoff); der Täter ist die Wand aus Backstein
+    const kolV = FC.hausParams(FC.PRESETS.viktorianisch, null).col;
+    const nurHell = (G, s) => {
+        if (s !== 2) return G;
+        for (const rolle in G) {
+            const r = G[rolle],
+                b = r && r.col && FC._colFor(rolle, kolV),
+                yb = b && luma(b);
+            for (let i = 0; yb > 0 && i < r.col.length; i += 3) {
+                const y = luma([r.col[i], r.col[i + 1], r.col[i + 2]]) / yb;
+                r.col[i] = b[0] * y;
+                r.col[i + 1] = b[1] * y;
+                r.col[i + 2] = b[2] * y;
+            }
+        }
+        return G;
+    };
+    const uV = hausUrteil(hausFall("viktorianisch", 7, null, null, null, nurHell));
+    if (!uV.some((x) => /^Stufen-Stoff L2 Wand/.test(x))) fehler.push("S8: ein Übertrag, der nur die Helligkeit trägt (viktorianisch, Wand der L2), ist nicht rot");
+    if (uV.some((x) => /^Stufen-Ton L2/.test(x))) fehler.push("S8: der Mutant »nur Helligkeit« ändert die Leuchtdichte (er soll nur den Farbton nehmen)");
     if (!u.some((x) => /Aufblähung/.test(x))) fehler.push("A: ein aufgeblähter Körper (Massen-Hülle) ist nicht rot");
     if (!u.some((x) => /First der Stufe 3 quer/.test(x))) fehler.push("F: ein quer gedeckter Körper ist nicht rot");
     if (!u.some((x) => /^Wand /.test(x))) fehler.push("I: eine Wand vor der Grundriss-Ebene ist nicht rot");
@@ -800,6 +873,14 @@ function selbsttest() {
     console.log(
         `  Glas je Stufe (G, Soll Glut ${f3(SOLL.glut[0])}–${f3(SOLL.glut[1])}, Tag ${f3(SOLL.glasTag[0])}–${SOLL.glasTag[1]}, Farbe ≤ ${SOLL.glasFarbe}): ${glasZeile}`
     );
+    const stoffZeile = [1, 2]
+        .map((s) => {
+            const d = zeilen.flatMap((z) => Object.entries(z.stoff[s - 1]).map(([b, v]) => [v, `${z.id}/s${z.seed} ${b}`]));
+            const m = d.reduce((a, b) => (b[0] > a[0] ? b : a), [0, "—"]);
+            return `L${s} Median ${median(d.map((x) => x[0])).toFixed(1)} · max ${m[0].toFixed(1)} (${m[1]})`;
+        })
+        .join(" · ");
+    console.log(`  Stoff je Bauteil (S8, Soll ΔE*ab zur L0 ≤ ${SOLL.stoff}): ${stoffZeile}`);
     console.log(
         `  Ausstattung ${aus.length}: ` +
             aus
