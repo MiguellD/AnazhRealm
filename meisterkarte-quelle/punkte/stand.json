@@ -1,5 +1,5 @@
 {
- "kopf": "e1a54023",
+ "kopf": "804ca10c",
  "je": {
   "affekt.K1": {
    "punkte": 1,
@@ -3561,7 +3561,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +235)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +236)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3597,7 +3597,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +235)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +236)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3607,7 +3607,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +235)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +236)",
      "gehalten": true,
      "r6": "naehe"
     }
@@ -6375,7 +6375,7 @@
   },
   "karte2.erleben.klang.stimme": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.stimme#1 radeon: ungemessen (R10) — zuletzt an 0692960c: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschien · karte2.erleben.klang.stimme#1 gtx: Station seit der Messung geändert — zuletzt an 486a6685: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschien · karte2.erleben.klang.stimme#2 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#2 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#3 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#3 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#4 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#4 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#5 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#5 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.stimme#1 radeon: ungemessen (R10) — zuletzt an 0692960c: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschien · karte2.erleben.klang.stimme#1 gtx: Station seit der Messung geändert — zuletzt an e1a54023: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschien · karte2.erleben.klang.stimme#2 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#2 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#3 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#3 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#4 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#4 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#5 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#5 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.klang.stimme#1",
@@ -6393,7 +6393,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 486a6685: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschien",
+     "grund": "Station seit der Messung geändert — zuletzt an e1a54023: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschien",
      "ungemessen": true,
      "beide": true
     },
@@ -10795,7 +10795,7 @@
   },
   "karte2.erleben.spieler.zeit": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.zeit#1 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#1 gtx: Konsum seit der Messung geändert (R6: planet-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) · karte2.erleben.spieler.zeit#2 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.zeit#3 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.zeit#4 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#4 gtx: Station seit der Messung geändert · karte2.erleben.spieler.zeit#5 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#5 gtx: Station seit der Messung geändert · karte2.erleben.spieler.zeit#6 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.zeit#7 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#7 gtx: Station seit der Messung geändert · karte2.erleben.spieler.zeit#8 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#8 gtx: Station seit der Messung geändert · karte2.erleben.spieler.zeit#9 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#9 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.zeit#1 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#1 gtx: Konsum seit der Messung geändert (R6: planet-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 93 s von karte2.erleben.spieler.zeit#1) — offen, UNGEMESSEN · karte2.erleben.spieler.zeit#2 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.zeit#3 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.zeit#4 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#4 gtx: Station seit der Messung geändert · karte2.erleben.spieler.zeit#5 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#5 gtx: Station seit der Messung geändert · karte2.erleben.spieler.zeit#6 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.zeit#7 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#7 gtx: Station seit der Messung geändert · karte2.erleben.spieler.zeit#8 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#8 gtx: Station seit der Messung geändert · karte2.erleben.spieler.zeit#9 radeon: ungemessen (R10) · karte2.erleben.spieler.zeit#9 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.zeit#1",
@@ -10813,7 +10813,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: planet-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +17)",
+     "grund": "Konsum seit der Messung geändert (R6: planet-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 93 s von karte2.erleben.spieler.zeit#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -13529,7 +13529,7 @@
   },
   "karte2.leben.pflanzen.biome": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.pflanzen.biome#1 radeon: ungemessen (R10) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.pflanzen.biome#1 gtx: Station seit der Messung geändert — zuletzt an 486a6685: der Deckel der Leiter riss nach 30,009 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 30,009 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.leben.pflanzen.biome#2 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#2 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#3 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#4 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#5 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.pflanzen.biome#1 radeon: ungemessen (R10) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.pflanzen.biome#1 gtx: Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 199 s von karte2.leben.pflanzen.biome#1) — offen, UNGEMESSEN · karte2.leben.pflanzen.biome#2 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#2 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#3 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#4 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#5 gtx: Station seit der Messung geändert · karte2.leben.pflanzen.biome#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.biome#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.pflanzen.biome#1",
@@ -13547,7 +13547,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 486a6685: der Deckel der Leiter riss nach 30,009 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 30,009 s vor dem Wert der Sprosse · der Deckel der Leiter",
+     "grund": "Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 199 s von karte2.leben.pflanzen.biome#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -13778,7 +13778,7 @@
      "gruen": true,
      "zahl": "S2 rang 0,975 gegen Soll ≥ 0,8 ✓ · Zeuge: der Kalender der Laub-Arten des Bestands, das Jahr der Welt Winter ↔ Sommer",
      "sha": "486a6685925d51302752c756d7d47654d83922d1",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/albedo-tafel.cjs +5) — zuletzt an 2d6a0447: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Yune ×3\",\"Nox ×2\",\"Kai\",\"Lera\"],\"neu\":[],\"anders\":[]}}) — of",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/albedo-tafel.cjs +5) — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 199 s von karte2.leben.pflanzen.biome#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -13875,7 +13875,7 @@
      "gruen": true,
      "zahl": "S2 laufzeitAbw 6,117 % gegen Soll ≤ 20 % ✓ · Zeuge: der EINE Wind an Gras und Krone 100 m windab, Ruhe ↔ Sturm, die Laufzeit gegen den mittleren Wind (Taylor 1938)",
      "sha": "486a6685925d51302752c756d7d47654d83922d1",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/albedo-tafel.cjs +5) — zuletzt an 2d6a0447: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Yune ×3\",\"Nox ×2\",\"Kai\",\"Lera\"],\"neu\":[],\"anders\":[]}}) — of",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/albedo-tafel.cjs +5) — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 199 s von karte2.leben.pflanzen.biome#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -14940,7 +14940,7 @@
   },
   "karte2.leben.tiere.wanderung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.wanderung#1 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +105) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.tiere.wanderung#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, save-server.js +33) — zuletzt an c445936d: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 44985637417/1 probe' nach 2708 s Warten) — ungemessen · karte2.leben.tiere.wanderung#2 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#2 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#3 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#3 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#4 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#4 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#5 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#5 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#6 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#6 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#7 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.wanderung#1 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +105) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.tiere.wanderung#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, save-server.js +33) — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 550 s von karte2.leben.tiere.wanderung#1) — offen, UNGEMESSEN · karte2.leben.tiere.wanderung#2 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#2 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#3 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#3 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#4 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#4 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#5 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#5 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#6 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#6 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#7 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.tiere.wanderung#1",
@@ -14959,7 +14959,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, save-server.js +33) — zuletzt an c445936d: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 44985637417/1 probe' nach 2708 s Warten) — ungemessen",
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, save-server.js +33) — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 550 s von karte2.leben.tiere.wanderung#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -20550,7 +20550,7 @@
   },
   "karte2.mensch.macht.recht": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.recht#1 radeon: ungemessen (R10) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.mensch.macht.recht#1 gtx: Station seit der Messung geändert — zuletzt an 486a6685: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eva · karte2.mensch.macht.recht#2 radeon: ungemessen (R10) · karte2.mensch.macht.recht#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#3 radeon: ungemessen (R10) · karte2.mensch.macht.recht#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#4 radeon: ungemessen (R10) · karte2.mensch.macht.recht#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#5 radeon: ungemessen (R10) · karte2.mensch.macht.recht#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#6 radeon: ungemessen (R10) · karte2.mensch.macht.recht#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#7 radeon: ungemessen (R10) · karte2.mensch.macht.recht#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.recht#1 radeon: ungemessen (R10) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.mensch.macht.recht#1 gtx: Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 85 s von karte2.mensch.macht.recht#1) — offen, UNGEMESSEN · karte2.mensch.macht.recht#2 radeon: ungemessen (R10) · karte2.mensch.macht.recht#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#3 radeon: ungemessen (R10) · karte2.mensch.macht.recht#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#4 radeon: ungemessen (R10) · karte2.mensch.macht.recht#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#5 radeon: ungemessen (R10) · karte2.mensch.macht.recht#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#6 radeon: ungemessen (R10) · karte2.mensch.macht.recht#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#7 radeon: ungemessen (R10) · karte2.mensch.macht.recht#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.macht.recht#1",
@@ -20568,7 +20568,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 486a6685: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eva",
+     "grund": "Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 85 s von karte2.mensch.macht.recht#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -21608,7 +21608,7 @@
   },
   "karte2.mensch.menge.seuche": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.seuche#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/zerlege-linse.cjs +8) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.mensch.menge.seuche#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/werkbank.cjs +7) · karte2.mensch.menge.seuche#2 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#2 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#3 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#3 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#4 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#4 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#5 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#5 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#6 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.seuche#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/zerlege-linse.cjs +8) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.mensch.menge.seuche#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/werkbank.cjs +7) — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 110 s von karte2.mensch.menge.seuche#1) — offen, UNGEMESSEN · karte2.mensch.menge.seuche#2 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#2 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#3 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#3 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#4 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#4 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#5 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#5 gtx: Station seit der Messung geändert · karte2.mensch.menge.seuche#6 radeon: ungemessen (R10) · karte2.mensch.menge.seuche#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.menge.seuche#1",
@@ -21627,7 +21627,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/werkbank.cjs +7)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/werkbank.cjs +7) — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 110 s von karte2.mensch.menge.seuche#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -28046,7 +28046,7 @@
   },
   "karte2.planet.kopplung.bahn-klima": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.84 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.416 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.841 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.242 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kopplung.bahn-klima#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +3) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.kopplung.bahn-klima#2 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.bahn-klima#3 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#4 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#5 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#6 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.84 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.416 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.841 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.242 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kopplung.bahn-klima#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +3) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.kopplung.bahn-klima#2 gtx: Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 486 s von karte2.planet.kopplung.land-meer-luft#3) — offen, UNGEMESSEN · karte2.planet.kopplung.bahn-klima#3 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#4 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#5 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#6 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.bahn-klima#1",
@@ -28086,7 +28086,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → ",
+     "grund": "Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 486 s von karte2.planet.kopplung.land-meer-luft#3) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -28281,7 +28281,7 @@
   },
   "karte2.planet.kopplung.gegenwart": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S6 ohneUrsache 0 gegen Soll = 0 ✓ · Zeuge: die Welt geändert an 1feab29c gtx — offen: karte2.planet.kopplung.gegenwart#1 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +3) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.kopplung.gegenwart#1 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.gegenwart#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +3) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.kopplung.gegenwart#2 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.gegenwart#3 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#3 gtx: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#5 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#6 radeon: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S6 ohneUrsache 0 gegen Soll = 0 ✓ · Zeuge: die Welt geändert an 1feab29c gtx — offen: karte2.planet.kopplung.gegenwart#1 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +3) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.kopplung.gegenwart#1 gtx: Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 486 s von karte2.planet.kopplung.land-meer-luft#3) — offen, UNGEMESSEN · karte2.planet.kopplung.gegenwart#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +3) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.kopplung.gegenwart#2 gtx: Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 486 s von karte2.planet.kopplung.land-meer-luft#3) — offen, UNGEMESSEN · karte2.planet.kopplung.gegenwart#3 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#3 gtx: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#5 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#6 radeon: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.gegenwart#1",
@@ -28300,7 +28300,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → ",
+     "grund": "Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 486 s von karte2.planet.kopplung.land-meer-luft#3) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -28320,7 +28320,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → ",
+     "grund": "Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 486 s von karte2.planet.kopplung.land-meer-luft#3) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -28533,7 +28533,7 @@
   },
   "karte2.planet.kopplung.land-meer-luft": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.land-meer-luft#1 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#1 gtx: Station seit der Messung geändert · karte2.planet.kopplung.land-meer-luft#2 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#2 gtx: Station seit der Messung geändert · karte2.planet.kopplung.land-meer-luft#3 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +3) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.kopplung.land-meer-luft#3 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.land-meer-luft#4 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +3) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.kopplung.land-meer-luft#4 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.land-meer-luft#5 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.land-meer-luft#6 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.land-meer-luft#1 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#1 gtx: Station seit der Messung geändert · karte2.planet.kopplung.land-meer-luft#2 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#2 gtx: Station seit der Messung geändert · karte2.planet.kopplung.land-meer-luft#3 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +3) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.kopplung.land-meer-luft#3 gtx: Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 486 s von karte2.planet.kopplung.land-meer-luft#3) — offen, UNGEMESSEN · karte2.planet.kopplung.land-meer-luft#4 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +3) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.kopplung.land-meer-luft#4 gtx: Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 486 s von karte2.planet.kopplung.land-meer-luft#3) — offen, UNGEMESSEN · karte2.planet.kopplung.land-meer-luft#5 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.land-meer-luft#6 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.land-meer-luft#1",
@@ -28589,7 +28589,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → ",
+     "grund": "Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 486 s von karte2.planet.kopplung.land-meer-luft#3) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -28608,7 +28608,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → ",
+     "grund": "Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 486 s von karte2.planet.kopplung.land-meer-luft#3) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -28785,7 +28785,7 @@
   },
   "karte2.planet.kopplung.stadtklima": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.stadtklima#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +3) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.kopplung.stadtklima#1 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.stadtklima#2 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#2 gtx: ungemessen (R10) · karte2.planet.kopplung.stadtklima#3 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#4 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#5 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#6 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.stadtklima#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +3) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.kopplung.stadtklima#1 gtx: Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 486 s von karte2.planet.kopplung.land-meer-luft#3) — offen, UNGEMESSEN · karte2.planet.kopplung.stadtklima#2 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#2 gtx: ungemessen (R10) · karte2.planet.kopplung.stadtklima#3 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#4 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#5 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#6 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.stadtklima#1",
@@ -28804,7 +28804,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → ",
+     "grund": "Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 486 s von karte2.planet.kopplung.land-meer-luft#3) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -28902,7 +28902,7 @@
   },
   "karte2.planet.kopplung.wetter-welt": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.143 (0.0463/0.3233, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.144 (0.0465/0.3229, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG ROT (licht.K5) · [linse-gpu] nvidia/pascal an b7ed8419 gtx · gehalten: S3 lumaVerh 0,717 gegen Soll 0,5–0,8 ✓ · rPfuetze 0,676 gegen Soll ≥ 0,5 ✓ · Zeuge: die Welt geändert an 1feab29c gtx — offen: karte2.planet.kopplung.wetter-welt#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/albedo-tafel.cjs +4) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.kopplung.wetter-welt#2 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.wetter-welt#3 radeon: Station seit der Messung geändert · karte2.planet.kopplung.wetter-welt#4 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.wetter-welt#5 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.wetter-welt#6 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.143 (0.0463/0.3233, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.144 (0.0465/0.3229, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG ROT (licht.K5) · [linse-gpu] nvidia/pascal an b7ed8419 gtx · gehalten: S3 lumaVerh 0,717 gegen Soll 0,5–0,8 ✓ · rPfuetze 0,676 gegen Soll ≥ 0,5 ✓ · Zeuge: die Welt geändert an 1feab29c gtx — offen: karte2.planet.kopplung.wetter-welt#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/albedo-tafel.cjs +4) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.planet.kopplung.wetter-welt#2 gtx: Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 486 s von karte2.planet.kopplung.land-meer-luft#3) — offen, UNGEMESSEN · karte2.planet.kopplung.wetter-welt#3 radeon: Station seit der Messung geändert · karte2.planet.kopplung.wetter-welt#4 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.wetter-welt#5 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.wetter-welt#6 radeon: ungemessen (R10) · karte2.planet.kopplung.wetter-welt#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.wetter-welt#1",
@@ -28942,7 +28942,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → ",
+     "grund": "Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 486 s von karte2.planet.kopplung.land-meer-luft#3) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29405,7 +29405,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an 0692960c: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.162,0.164,0. (128 Uhren) · 61.9 s · 412.0 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/zerlege-linse.cjs, scripts/werkbank.cjs +11) — zuletzt an 0692960c: Last: Referenz f 1,282 (Faden 1,197 · alle Kerne 1,282; vor 86,4/199,4 ms, nach 106,9/288,9 ms, Ruhe 89,3/225,4 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an 0692960c: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.162,0.164,0. (128 Uhren) · 61.9 s · 412.0 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/zerlege-linse.cjs, scripts/werkbank.cjs +11) — zuletzt an e1a54023: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 54.4 s · 630.6 s) · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -29423,7 +29423,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/zerlege-linse.cjs, scripts/werkbank.cjs +11) — zuletzt an 0692960c: Last: Referenz f 1,282 (Faden 1,197 · alle Kerne 1,282; vor 86,4/199,4 ms, nach 106,9/288,9 ms, Ruhe 89,3/225,4 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/zerlege-linse.cjs, scripts/werkbank.cjs +11) — zuletzt an e1a54023: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 54.4 s · 630.6 s)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -33797,7 +33797,7 @@
   },
   "karte2.same.kopplung.aufwaerts": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.aufwaerts#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/albedo-tafel.cjs +12) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.kopplung.aufwaerts#1 gtx: Station seit der Messung geändert — zuletzt an 486a6685: der Deckel der Leiter riss nach 45,018 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 45,018 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.aufwaerts#2 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#2 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#3 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#3 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#4 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#4 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#5 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#5 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#6 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#6 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#7 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#7 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#8 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.aufwaerts#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/albedo-tafel.cjs +13) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.kopplung.aufwaerts#1 gtx: Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN · karte2.same.kopplung.aufwaerts#2 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#2 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#3 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#3 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#4 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#4 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#5 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#5 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#6 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#6 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#7 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#7 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#8 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.aufwaerts#1",
@@ -33805,7 +33805,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/albedo-tafel.cjs +12) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/albedo-tafel.cjs +13) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -33816,7 +33816,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 486a6685: der Deckel der Leiter riss nach 45,018 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 45,018 s vor dem Wert der Sprosse · der Deckel der Leiter",
+     "grund": "Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -34066,7 +34066,7 @@
   },
   "karte2.same.kopplung.ereignis": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Guss -268,-1046: Glut R/G 2.483 (Soll ≥ 2), Luma 0.122, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.98 (Soll ≤ 1,25), Luma 0.062, Stoff stein · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: Guss -268,-1046: Glut R/G 2.733 (Soll ≥ 2), Luma 0.119, glut-Achse 1 · erstarrt nach 1 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 1 Schritten = 0.007 h Welt (Soll 1–60), Schuss bei 0.492 h, Gesetz-glut 0 (Soll 0): R/G 0.989 (Soll ≤ 1,25), Luma 0.053, Stoff stein · Brand am Guss 8 Zellen, auf seiner Uhr 20000 s, danach um den Guss 0 brennend (die Front lebt fern: 34 Zellen) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.kopplung.ereignis#2 radeon: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/bild-himmel.js, stamm/dirigent-regler.js +6) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.kopplung.ereignis#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/zerlege-linse.cjs, scripts/werkbank.cjs +9) — zuletzt an 486a6685: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera, ...rest) { const ) — kein Urteil, UNGEMESSEN (die · karte2.same.kopplung.ereignis#3 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#3 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#4 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#4 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#5 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#5 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#6 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#6 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#7 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: Guss -268,-1046: Glut R/G 2.483 (Soll ≥ 2), Luma 0.122, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.98 (Soll ≤ 1,25), Luma 0.062, Stoff stein · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: Guss -268,-1046: Glut R/G 2.733 (Soll ≥ 2), Luma 0.119, glut-Achse 1 · erstarrt nach 1 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 1 Schritten = 0.007 h Welt (Soll 1–60), Schuss bei 0.492 h, Gesetz-glut 0 (Soll 0): R/G 0.989 (Soll ≤ 1,25), Luma 0.053, Stoff stein · Brand am Guss 8 Zellen, auf seiner Uhr 20000 s, danach um den Guss 0 brennend (die Front lebt fern: 34 Zellen) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.kopplung.ereignis#2 radeon: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/bild-himmel.js, stamm/dirigent-regler.js +7) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.kopplung.ereignis#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/zerlege-linse.cjs, scripts/werkbank.cjs +10) — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN · karte2.same.kopplung.ereignis#3 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#3 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#4 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#4 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#5 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#5 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#6 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#6 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#7 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.ereignis#1",
@@ -34096,7 +34096,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/bild-himmel.js, stamm/dirigent-regler.js +6) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/bild-himmel.js, stamm/dirigent-regler.js +7) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -34106,7 +34106,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/zerlege-linse.cjs, scripts/werkbank.cjs +9) — zuletzt an 486a6685: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera, ...rest) { const ) — kein Urteil, UNGEMESSEN (die",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/zerlege-linse.cjs, scripts/werkbank.cjs +10) — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -34204,7 +34204,7 @@
   },
   "karte2.same.kopplung.gewalt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.gewalt#1 radeon: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/bild-himmel.js, stamm/dirigent-takt.js +2) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.kopplung.gewalt#1 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/zerlege-linse.cjs +6) — zuletzt an 486a6685: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera, ...rest) { const ) — kein Urteil, UNGEMESSEN (die · karte2.same.kopplung.gewalt#2 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#2 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#3 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#3 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#4 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#4 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#5 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#5 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#6 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.gewalt#1 radeon: Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/bild-himmel.js, stamm/dirigent-takt.js +3) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.kopplung.gewalt#1 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/zerlege-linse.cjs +7) — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN · karte2.same.kopplung.gewalt#2 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#2 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#3 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#3 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#4 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#4 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#5 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#5 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#6 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.gewalt#1",
@@ -34212,7 +34212,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/bild-himmel.js, stamm/dirigent-takt.js +2) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/bild-himmel.js, stamm/dirigent-takt.js +3) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -34223,7 +34223,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/zerlege-linse.cjs +6) — zuletzt an 486a6685: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera, ...rest) { const ) — kein Urteil, UNGEMESSEN (die",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/zerlege-linse.cjs +7) — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -34456,7 +34456,7 @@
   },
   "karte2.same.kopplung.kohaerenz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kohaerenz#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +5) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.kopplung.kohaerenz#1 gtx: Station seit der Messung geändert — zuletzt an 486a6685: der Deckel der Leiter riss nach 40,049 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 40,049 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.kohaerenz#2 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#2 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kohaerenz#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +5) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.kopplung.kohaerenz#1 gtx: Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN · karte2.same.kopplung.kohaerenz#2 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#2 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kohaerenz#1",
@@ -34475,7 +34475,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 486a6685: der Deckel der Leiter riss nach 40,049 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 40,049 s vor dem Wert der Sprosse · der Deckel der Leiter",
+     "grund": "Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -34725,7 +34725,7 @@
   },
   "karte2.same.kopplung.terraform": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.terraform#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/albedo-tafel.cjs +6) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.kopplung.terraform#1 gtx: Station seit der Messung geändert — zuletzt an 486a6685: der Deckel der Leiter riss nach 20,073 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,073 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.terraform#2 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#2 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#3 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#3 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#4 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#4 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#5 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#5 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#6 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.terraform#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/albedo-tafel.cjs +6) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.kopplung.terraform#1 gtx: Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN · karte2.same.kopplung.terraform#2 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#2 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#3 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#3 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#4 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#4 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#5 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#5 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#6 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.terraform#1",
@@ -34744,7 +34744,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 486a6685: der Deckel der Leiter riss nach 20,073 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,073 s vor dem Wert der Sprosse · der Deckel der Leiter",
+     "grund": "Station seit der Messung geändert — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -34842,7 +34842,7 @@
   },
   "karte2.same.kopplung.zeitreise": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.zeitreise#1 radeon: Station seit der Messung geändert — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.same.kopplung.zeitreise#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +11) — zuletzt an 2d6a0447: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Yune ×3\",\"Nox ×2\",\"Kai\",\"Lera\"],\"neu\":[],\"anders\":[]}}) — of · karte2.same.kopplung.zeitreise#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/werkbank.cjs, stamm/bild-himmel.js +7) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.kopplung.zeitreise#2 gtx: ungemessen (R10) — zuletzt an 486a6685: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera, ...rest) { const ) — kein Urteil, UNGEMESSEN (die · karte2.same.kopplung.zeitreise#3 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#3 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#4 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#4 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#5 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#5 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#6 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#6 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#7 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.zeitreise#1 radeon: Station seit der Messung geändert — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.same.kopplung.zeitreise#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +11) — zuletzt an 2d6a0447: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":14,\"nachher\":0,\"fehlt\":[\"Yune ×3\",\"Nox ×2\",\"Kai\",\"Lera\"],\"neu\":[],\"anders\":[]}}) — of · karte2.same.kopplung.zeitreise#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/werkbank.cjs, stamm/bild-himmel.js +7) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.same.kopplung.zeitreise#2 gtx: ungemessen (R10) — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN · karte2.same.kopplung.zeitreise#3 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#3 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#4 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#4 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#5 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#5 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#6 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#6 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#7 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.zeitreise#1",
@@ -34881,7 +34881,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 486a6685: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera, ...rest) { const ) — kein Urteil, UNGEMESSEN (die",
+     "grund": "ungemessen (R10) — zuletzt an e1a54023: die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -37760,8 +37760,8 @@
   ],
   "ohne": 3276
  },
- "kopfVoll": "e1a54023c9a9e6fd30a824fd89087d3bb7ae854e",
- "zeit": "2026-11-25T15:00:59.811Z",
+ "kopfVoll": "804ca10c34be5af14c89fe81a6f53d54f46d8c67",
+ "zeit": "2026-11-25T15:13:05.876Z",
  "vorher": "e1a54023",
  "bilanz": {
   "gewinn": [],
