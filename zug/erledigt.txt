@@ -2495,3 +2495,6 @@ omen-gtx-gtx-486a6685-w062814-1-486a6685 ROT 0 GRÜN / 2 ROT / 0 UNGEMESSEN · R
 2026-11-25 06:46 landung Runde 29 am 486a6685: misst 61 von 242 Stationen (vorn; 12 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
 2026-11-25 07:04 RUNDE 29 ALARM gtx: ohne Fortschritt seit 17 min (laeuft, 12/242, Station karte2.mensch.macht.megastadt#1, Kopf 486a6685) — gesehen von gtx (landung-dienst)
 omen-gtx-gtx-486a6685-w064640-1-486a6685 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN karte2.planet.kosmos.himmelsmechanik#1 ‖ karte2.planet.kosmos.himmelsmechanik#1 UNGEMESSEN roh: Last: Referenz f 1,613 (Faden 1,118 · alle Kerne 1,112 · Stoß in der Station 7,35 Kerne fremd → 1,613; vor 100,1/251,5 ms, nach 90/234,3 ms, Ruhe 89,5/226,1 ms seit 2026-11-17) · fremd: grep.exe -o [^ (punkte-maschine af41f53f messung/486a6685-gtx.json)
+2026-11-25 07:28 RUNDE 29 ALARM gtx: ohne Fortschritt seit 22 min (halt, 13/242, Station karte2.planet.kosmos.himmelsmechanik#1, Kopf 486a6685) — gesehen von gtx (landung-dienst)
+2026-11-25 07:29 landung Runde 29 am 486a6685: misst 55 von 242 Stationen (vorn; 18 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+2026-11-25 07:31 RUNDE 29 ALARM radeon: ohne Fortschritt seit 16 min (laeuft, 19/73, Station -, Kopf 486a6685) — gesehen von gtx (landung-dienst)
