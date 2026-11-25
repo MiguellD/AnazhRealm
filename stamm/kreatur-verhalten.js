@@ -1439,8 +1439,9 @@ class AnazhRealm_kreatur_verhalten {
             // laufende Nummer, nie die netId (Welle SAMEN)
             const idNum = this._leibNummer(leit);
             // der Weg dieses Slots im Tempo der Tätigkeit, die das Tier zeigt (äsen schleicht), wenigstens sein Raum
-            const blick = Math.max(this._kreaturRaum(creature), mag * stride * this._kreaturTaetigkeitTempo(creature));
-            const Z = LU ? zielL : this._kreaturWanderZiel(creature, idNum, slot, blick, leash);
+            const weg = mag * stride * this._kreaturTaetigkeitTempo(creature);
+            const blick = Math.max(this._kreaturRaum(creature), weg);
+            const Z = LU ? zielL : this._kreaturWanderZiel(creature, idNum, slot, blick, leash, weg);
             if (LU) ud._wanderZielVon = zielL;
             else ud._wanderZielPunkt = Z;
             const h = Math.sin((idNum * 131 + slot) * 12.9898) * 43758.5453;
