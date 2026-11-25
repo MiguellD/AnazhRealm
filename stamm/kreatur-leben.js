@@ -1912,9 +1912,15 @@ class AnazhRealm_kreatur_leben {
             // Gesetzes, `spanne()`) — auch der erste; ohne Bestand trägt er die Los-Nummer seines Platzes (`_leibLos`, Welle SAMEN)
             const los = tiere ? null : this._leibLos(ort, soul, geboren.length);
             const bs = tiere ? this._bestandBs(tiere[geboren.length]) : AnazhRealm._lebenKern().spanne()[1];
-            if (gattung && this._kreaturLeibImBlick(x, z, gattung, bs)) continue;
+            // der Leib des Bestands erscheint nach seinem Gesetz (`_bestandErscheint`: an seinem Ort, ohne Ferne); die Geburt fern
+            if (
+                tiere
+                    ? !this._bestandErscheint(x, z, gattung, bs)
+                    : gattung && this._kreaturLeibImBlick(x, z, gattung, bs)
+            )
+                continue;
             if (k > 0) {
-                const fern = Math.hypot(x - p.x, z - p.z) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN;
+                const fern = !!tiere || Math.hypot(x - p.x, z - p.z) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN;
                 if (!fern || !this._kreaturGrundFrei(x, z) || (imRaum && !lebt(x, z))) continue;
                 if (!geboren.some((g) => Math.hypot(g.position.x - x, g.position.z - z) <= fenster * abstand)) continue;
             }
@@ -2821,9 +2827,13 @@ class AnazhRealm_kreatur_leben {
         if (t.gau) this._gauMerken(t);
     }
 
-    // DIE GRUPPE WIRD GEZEICHNET: ihr erster Leib steht am nächsten Ort der Spirale um den Anker, der fern vom Spieler, außer
-    // Blick (der Leib als Kugel, `_kreaturLeibImBlick`), auf freiem Grund und im Lebensraum liegt (`_bestandLeibOrt`), die übrigen im Wurf um ihn (`_kreaturWurf` mit den Tieren — Raum, Fenster, Lebensraum
-    // der Herde); der Verband bindet alle gezeichneten Glieder. Liefert die neuen Leiber.
+    // DIE GRUPPE WIRD GEZEICHNET — DER LEIB STEHT, WO SEIN TIER STEHT (tiere-im-blick; das Gesetz des Geheges, `_gehegeLeiber`):
+    // ihr erster Leib steht am ersten Ort der Spirale um ihr Tier, der freien Grund und ihren Lebensraum trägt (`_bestandLeibOrt`),
+    // die übrigen im Wurf um ihn (`_kreaturWurf` mit den Tieren — Raum, Fenster, Lebensraum der Herde); steht er dort im Blick,
+    // wartet die Gruppe als Zahl, bis der Blick geht — bei der ANKUNFT erscheint jeder (`_bestandErscheint`). Der Verband bindet
+    // alle gezeichneten Glieder. Liefert die neuen Leiber. Bis hier suchte die Spirale den nächsten Ort ≥ CREATURE_SPAWN_FAR_MIN
+    // (130 m, die Boot-Regel V18.315) vom Spieler und außer Blick: an der Mess-Wiese stand die Herde, deren Tier 31 m fern steht,
+    // 135–174 m fern, der nächste Leib im Median 93 m — die Ich-Sicht sah in 600 Spiel-s Gang kein Tier (tiere.K5#1).
     _bestandLeiber(fehlt, gruppe = fehlt) {
         const ort = this._bestandLeibOrt(fehlt[0]);
         if (!ort) return [];
@@ -2836,21 +2846,38 @@ class AnazhRealm_kreatur_leben {
         return neu;
     }
     _bestandLeibOrt(t) {
-        const p = this.state.playerMesh.position;
         const LG = AnazhRealm._lebensraumGesetz();
         const lebt = (x, z) => LG.lebensraum(t.g, this._bodenKlasseAt(x, z), LG.L) > 0;
         const imRaum = lebt(t.x, t.z);
         for (let k = 0; k < 64; k++) {
             const x = t.x + Math.cos(k * 2.39996) * 25 * Math.sqrt(k);
             const z = t.z + Math.sin(k * 2.39996) * 25 * Math.sqrt(k);
-            if (
-                Math.hypot(x - p.x, z - p.z) < AnazhRealm.CREATURE_SPAWN_FAR_MIN ||
-                this._kreaturLeibImBlick(x, z, t.g, this._bestandBs(t))
-            )
-                continue;
-            if (this._kreaturGrundFrei(x, z) && (!imRaum || lebt(x, z))) return { x, z };
+            if (!this._kreaturGrundFrei(x, z) || (imRaum && !lebt(x, z))) continue;
+            return this._bestandErscheint(x, z, t.g, this._bestandBs(t)) ? { x, z } : null;
         }
         return null;
+    }
+    // DARF EIN LEIB DES BESTANDS AN (x, z) ERSCHEINEN? Nie im Raum des Spielers (CREATURE_SPAWN_CLEAR_M); bei der Ankunft überall
+    // (das Bild ist neu, `_bestandAnkunftTakt`), sonst nur außer Blick (der Leib als Kugel samt Rand, `_kreaturLeibImBlick`).
+    // Die Profis halten den Bestand in einer Blase um den Spieler an seinem Ort (theHunter: Call of the Wild, Leib ab 384 m,
+    // fällt bei 416 m); ein Rothirsch deckt 200 px am Maß 1280×720 erst diesseits von ~31 m, ein Bär von ~38 m.
+    _bestandErscheint(x, z, g, bs) {
+        const p = this.state.playerMesh.position;
+        if (Math.hypot(x - p.x, z - p.z) < AnazhRealm.CREATURE_SPAWN_CLEAR_M) return false;
+        return this._bestandAnkunft > 0 || !this._kreaturLeibImBlick(x, z, g, bs);
+    }
+    // DIE ANKUNFT: springt der Spieler zwischen zwei Takten weiter als die halbe Seite einer Region (der Boot, ein Stand, ein
+    // Ort-Wechsel, ein Sprung der Welt-Uhr — `_bestandSprung`), ist das Bild neu — ankunftTakte Takte lang zeichnet die Zeichnung
+    // je Takt (sonst je taktS) und jeder Leib erscheint an seinem Ort, auch im Blick (`_bestandErscheint`). Die Kosten hängen an
+    // der Änderung: höchstens leiberJeTakt Leiber je Takt. Liefert, ob die Ankunft läuft.
+    _bestandAnkunftTakt() {
+        const p = this.state.playerMesh.position;
+        const l = this._bestandLage || (this._bestandLage = { x: NaN, z: NaN });
+        if (!(Math.hypot(p.x - l.x, p.z - l.z) <= this._bestandSeite() / 2))
+            this._bestandAnkunft = AnazhRealm.BESTAND_REGION.ankunftTakte;
+        else if (this._bestandAnkunft > 0) this._bestandAnkunft--;
+        [l.x, l.z] = [p.x, p.z];
+        return this._bestandAnkunft > 0;
     }
     // EIN TIER WIRD LEIB: sein Stand kehrt wieder (`_restoreCreatureFromSnapshot` — Gedächtnis, Wunde, Bindung), ein Tier ohne
     // Stand wird gegossen (Seele, Größe); Alter, Anker und Name sind die des Tiers. Die Größe ist die seines Erbes zur Zeit
@@ -2903,9 +2930,11 @@ class AnazhRealm_kreatur_leben {
         if ((this._faunaUhrSprung ?? wu) !== (this._faunaUhrSprung = wu)) this._bestandSprung();
         this._gauTakt(); // der Leser des Gaus bestellt das Bild der Gattungen des Gesetzes (Leben C2b)
         this._feldTakt();
-        // zwischen zwei Takten zeichnet nur die Ankunft eines Geheges (`_gehegeKommtAn`: seine Tiere stehen im selben Bild)
+        // zwischen zwei Takten zeichnet nur die Ankunft: die des Spielers (`_bestandAnkunftTakt`) und die eines Geheges
+        // (`_gehegeKommtAn`: seine Tiere stehen im selben Bild)
+        const ankunft = !!st.playerMesh && this._bestandAnkunftTakt();
         if (st.spielZeit - (L.lastTick || 0) < B.taktS)
-            return void (this._gehegeKommtAn() && this._bestandVerkoerpern());
+            return void ((ankunft || this._gehegeKommtAn()) && this._bestandVerkoerpern());
         L.lastTick = st.spielZeit;
         this._bestandAdoptieren();
         // DIE OFFENEN RISSE (oekologie.K2): ein Leib, den ein Riss im Nah-Kreis seinem Jäger nannte (sein Tier starb im Gesetz),
@@ -2943,6 +2972,7 @@ class AnazhRealm_kreatur_leben {
                 [ud._gauWartet, ud._gauWartetOrt, ud._bestand.leib, ud._bestand] = [ud._bestand.id, { x: ud._bestand.x, z: ud._bestand.z }, null, null]; // prettier-ignore
         }
         [this._gauBildStand, this._gauMerk, this._gauJaegerOrt] = [null, null, null];
+        this._bestandAnkunft = AnazhRealm.BESTAND_REGION.ankunftTakte; // das Bild der neuen Uhr ist eine Ankunft
         for (const R of Object.values(this._bestandRegionen().regionen))
             for (const t of R.tiere) {
                 t._ohneOrt = undefined;
@@ -3461,13 +3491,17 @@ class AnazhRealm_kreatur_leben {
         const g = this._kreaturGattung(creature);
         const traegt = (x, z) => LG.lebensraum(g, this._bodenKlasseAt(x, z), LG.L) > 0 && !this._nassAt(x, z);
         if (!LG.L.gattung[g] || !traegt(a.x, a.z)) return { x: a.x, z: a.z, revier: true, frei: true };
+        // die Leine als Mitte, Sechseck bei 0,5 und um 30° gedreht bei 0,9 Leinen (gleiche Fläche je Punkt): bis tiere-im-blick
+        // nur das Sechseck bei 0,7 — der Rand blieb ungefragt, der erste Bär der Probe tagesbudget ankerte, wo sein Lebensraum
+        // 0,53 der Scheibe erreichbar trug (0,47 × π·Leine²)
         const anteil = (cx, cz) => {
             let n = traegt(cx, cz) ? 1 : 0;
-            for (let k = 0; k < 6; k++) {
-                const w = (k * Math.PI) / 3;
-                n += traegt(cx + Math.cos(w) * leash * 0.7, cz + Math.sin(w) * leash * 0.7) ? 1 : 0;
+            for (let k = 0; k < 12; k++) {
+                const w = (k * Math.PI) / 6;
+                const f = leash * (k & 1 ? 0.9 : 0.5);
+                n += traegt(cx + Math.cos(w) * f, cz + Math.sin(w) * f) ? 1 : 0;
             }
-            return n / 7;
+            return n / 13;
         };
         let best = { x: a.x, z: a.z, s: anteil(a.x, a.z) };
         for (let ring = 1; ring <= 3 && best.s < 1; ring++)
@@ -3486,9 +3520,14 @@ class AnazhRealm_kreatur_leben {
     // Leine·√u), deterministisch aus netId × der Zahl der Ziele (sin-Hash wie der Kurs), der erste von sechs Würfen, den das Revier
     // trägt (`_kreaturRevierTraegt`) und — steht das Netz des Reviers (`_kreaturRevierNetz`) — zu dem vom Tier aus ein Weg durch
     // den Lebensraum führt (sein Feld, `_kreaturNetzFeld`); sonst der Anker, auch über eine Lücke. Es gilt, bis das Tier es auf
-    // `blick` erreicht (dann null: es streift dort) oder 4 Leinen in Schritten zu `blick` vergangen sind. Ein Ziel von vorher
-    // bekommt sein Feld, sobald das Netz steht. Liefert das Ziel { x, z, n, bis, feld } oder null.
-    _kreaturWanderZiel(creature, idNum, slot, blick, leash) {
+    // `blick` erreicht (dann null: es streift dort) oder das Tier seinen WEG darauf ging — den Abstand zu ihm und einen halben
+    // Umweg (`rest`, je Slot weniger `weg`, der Weg dieses Slots im Tempo seiner Tätigkeit). Bis tiere-im-blick galt es 4 Leinen
+    // in Schritten zu `blick` — doch `blick` ist wenigstens der Raum des Tiers (Hirsch 1,17 m), sein Weg im Äsen 0,3 m je Slot:
+    // das Ziel fiel nach rund einer Leine Weg, das äsende Wild kam selten an den Rand seiner Leine (headless, Probe tagesbudget,
+    // 24 Spielstunden: Hirsch 0,51–0,60 × π·Leine², Bär 0,47–0,72, der ziehende Fuchs 0,93); 4 Leinen WEG hielten den Bären an
+    // fünf Zielen je Tag (0,28–0,47). Ein Ziel von vorher bekommt sein Feld, sobald das Netz steht. Liefert das Ziel
+    // { x, z, n, rest, feld } oder null.
+    _kreaturWanderZiel(creature, idNum, slot, blick, leash, weg = blick) {
         if (!(blick > 0)) return null;
         const ud = creature.userData;
         const p = creature.position;
@@ -3498,7 +3537,7 @@ class AnazhRealm_kreatur_leben {
             const kz = N ? this._kreaturNetzZelle(N, x, z) : -1;
             return kz >= 0 && N.zelle[kz] >= 2 ? this._kreaturNetzFeld(N, kz) : null;
         };
-        if (Z && slot < Z.bis) {
+        if (Z && (Z.rest -= weg) > 0) {
             if (N && Z.feld === undefined) Z.feld = feldZu(Z.x, Z.z);
             return Math.hypot(Z.x - p.x, Z.z - p.z) > blick ? Z : null;
         }
@@ -3520,7 +3559,7 @@ class AnazhRealm_kreatur_leben {
             if (feld === undefined || (feld && this._kreaturNetzStufe(N, feld, kp) >= 0)) ziel = { x, z, feld };
         }
         if (!ziel) ziel = { x: a.x, z: a.z, feld: N ? feldZu(a.x, a.z) : undefined };
-        ud._wanderZiel = Object.assign(ziel, { n, bis: slot + Math.ceil((4 * leash) / blick) });
+        ud._wanderZiel = Object.assign(ziel, { n, rest: 1.5 * Math.hypot(ziel.x - p.x, ziel.z - p.z) + blick });
         return ud._wanderZiel;
     }
 
@@ -3962,6 +4001,8 @@ AnazhRealm.BESTAND_REGION = Object.freeze({
     aufholS: 3600,
     aufholJeTakt: 20,
     leiberJeTakt: 3,
+    // die Takte der Ankunft (`_bestandAnkunftTakt`): eine Kappe von 20 Leibern zu leiberJeTakt je Takt steht nach 7 Takten
+    ankunftTakte: 60,
 });
 // DER TIER-SATZ (profiband.K1, `_tickTierSatz`): `nahLeiber` Tiere leben im Nah-Kreis als Leib, jedes andere steht im Satz seiner
 // Gestalt — `phasen` Posen je Band (der Knoten legt zwischen zwei Zeilen linear: mit 16 glitt der Stand-Fuß an den Kanten des
