@@ -1,0 +1,132 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.413",
+  "sha": "486a6685925d51302752c756d7d47654d83922d1"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.02,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 33,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   130,
+   94.35,
+   30
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 37.1,
+  "sigma": 14.8,
+  "schwarz": 0.054,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME ROT [kein bodenSatz im Bild: 2.6 % < 5.0 %] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 37.1 σ 14.8 schwarz 5.4 % weiß 0.0 % · Stand 18.546.413 · Bühne summer sunny 0.02 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt bodenSatz 2.6 % (≥ 5.0 %), fern-ring 3.2 % (≥ 2.0 %) (Nacht: Farbe ungefordert)",
+ "rot": [],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "imBild.bodenSatz",
+    "grund": "kein bodenSatz im Bild: 2.6 % < 5.0 %"
+   }
+  ],
+  "zeile": "Inhalt bodenSatz 2.6 % (≥ 5.0 %), fern-ring 3.2 % (≥ 2.0 %) (Nacht: Farbe ungefordert)"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^bodenSatz([-_:].*)?$|^fern-ring([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 35,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1037,
+   "wechsel": 607771
+  },
+  "rinde": null,
+  "toene": [
+   "bodenSatz=255/80/80",
+   "fern-ring=80/255/80"
+  ],
+  "klassen": {
+   "bodenSatz": {
+    "objekte": 1,
+    "pixel": 52972,
+    "farbe": [
+     0.00816,
+     0.00923,
+     0.00708
+    ]
+   },
+   "fern-ring": {
+    "objekte": 4,
+    "pixel": 67172,
+    "farbe": [
+     0.0106,
+     0.01157,
+     0.01162
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\486a6685-gtx\\auge-erleben-bild-s4-rot.maske.png"
+ }
+}
