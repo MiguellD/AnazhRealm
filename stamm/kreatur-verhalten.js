@@ -188,7 +188,7 @@ class AnazhRealm_kreatur_verhalten {
     // Kein Ziel → null (der Aufrufer wandert neutral). Nur pfad; verängstigt (wariness ≥ fleeThreshold), satt oder
     // erschöpft jagt nicht (`_kreaturJagdBereit`). DIE WITTERUNG FINDET, DAS AUGE HÄLT (witterung-windab): gefunden wird nur in
     // der Fahne windab (`_scentNase`); wer seine Beute schon hat, behält sie ohne Witterung, solange er sie sieht (`_kreaturHaelt`) —
-    // das Rudel auf dem Ring um sie steht auch gegen den Wind.
+    // das Rudel auf dem Ring um sie steht auch gegen den Wind — und jedes Glied des Verbands jagt mit, was eines wittert.
     _creatureScentHuntDir(creature, wariness) {
         const ud = creature.userData || {};
         const alt = ud._beute;
@@ -233,6 +233,15 @@ class AnazhRealm_kreatur_verhalten {
         }
         if (!best && alt && (alt === spieler || creatures.includes(alt)) && this._kreaturIstBeute(creature, alt))
             if (this._kreaturHaelt(creature, alt, VG.jagd.scentRangeM)) best = alt;
+        // DAS RUDEL JAGT ALS EINES: die Fahne trifft nie das ganze Rudel (der Kegel windab), wer nichts wittert, jagt die Beute
+        // eines Glieds seines Verbands mit, sobald er sie hält (`_kreaturHaelt`: in R und im Blick) — wie die Witterung bis
+        // witterung-windab jedes Glied in R von jeder Seite fand (das Band der Quote je Jagd des Rudels, MacNulty 2012)
+        const glieder = best ? null : this._kreaturVerbandGlieder(creature);
+        for (let i = 0; glieder && !best && i < glieder.length; i++) {
+            const b = glieder[i] !== creature && glieder[i].userData._beute;
+            if (b && (b === spieler || creatures.includes(b)) && this._kreaturIstBeute(creature, b))
+                if (this._kreaturHaelt(creature, b, VG.jagd.scentRangeM)) best = b;
+        }
         if (!best) return null;
         ud._beute = best;
         const dx = best.position.x - cx,

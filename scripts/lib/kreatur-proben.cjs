@@ -914,6 +914,13 @@ async function kreaturProben(r, T, opts) {
                         return o;
                     }
             );
+        // DIE JAGD IN DER WINDSTILLE (witterung-windab): diese Bühne liest den Riss, nicht den Wind — in der Stille ist die
+        // Fahne das Radial-Gesetz exakt (Probe witterung, ruhe 0: die Kante 50 m von jeder Seite). Im Wind der Welt hetzt das
+        // Rudel das Kitz windauf in seiner Fahne weiter (Hetze 5,5–6,5 k → 17–21 k Takte), die Risse fallen 70–145 m windauf,
+        // jenseits des Nah-Kreises; die Jagd im Wind lesen witterung, jagdkreis, mahl und rudel
+        decke("_windAt", (alt) => function (x, z, t, o) {
+            return Object.assign(alt.call(this, x, z, t, o), { staerke: 0, ms: 0 });
+        });
         const dt = 1 / 60;
         const geschoben = kontaktZaehler();
         // K13: das Raster liegt schon auf dem ZIEL (die äußerste Hülle: der Fehler sitzt vor dem Jagd-Weg) — er bekommt eine Peilung, die vom Wolf aus genau längs einer
@@ -3066,14 +3073,18 @@ async function kreaturProben(r, T, opts) {
                 s.emotionField = undefined;
                 const w = (2 * Math.PI * o) / n;
                 const ort = frei(-60 + Math.cos(w) * 80, 40 + Math.sin(w) * 80, 25) || land(-60, 40);
-                pm.set(ort.x + 150, pm.y, ort.z + 20);
+                // DIE JAGD BEGINNT IN DER WITTERUNG (witterung-windab: gegen den Wind wittert kein Wolf): das Rudel steht windab der
+                // Beute, je Jagd um ±17° geschwenkt (bis hier rings um sie, o · 0,7 rad); der Spieler 151 m quer zum Wind
+                const wd = r._windAt(ort.x, ort.z, s._simZeit);
+                const wa = Math.atan2(wd.z, wd.x) + 0.3 * Math.sin(o * 0.7);
+                pm.set(ort.x - wd.z * 151, pm.y, ort.z + wd.x * 151);
                 const beute = tier(ort, "wesen", gr);
                 ruhig(beute);
                 if (taeter === "jagd-hp") beute.userData.hp *= 0.1; // der alte Schleichweg: die verwundete Beute
                 Q.hp0 = Math.round(beute.userData.hp);
                 const woelfe = [];
                 for (let i = 0; i < nW; i++) {
-                    const a = Math.PI + (i - (nW - 1) / 2) * 0.5 + o * 0.7;
+                    const a = wa + (i - (nW - 1) / 2) * 0.5;
                     woelfe.push(tier({ x: ort.x + Math.cos(a) * 25, y: ort.y, z: ort.z + Math.sin(a) * 25 }, "wolf"));
                 }
                 woelfe.forEach(ruhig);
@@ -3090,11 +3101,14 @@ async function kreaturProben(r, T, opts) {
                         if (szene === "rudel" && R.rissS === null) R.rissS = rund(k * dt, 1);
                         if (!mahl) break;
                         R.fleisch0 = beute.userData.kadaver ? rund(beute.userData.kadaver.fleisch, 1) : null;
-                        for (const [seele, dz] of [
+                        // die Gäste 30 m windab des Kadavers, 18 m zu beiden Seiten (bis hier 30 m westlich): in seiner Fahne
+                        const kw = r._windAt(beute.position.x, beute.position.z, s._simZeit);
+                        for (const [seele, q] of [
                             ["fuchs", 18],
                             ["baer", -18],
                         ]) {
-                            const g = tier(land(beute.position.x - 30 - P0.x, beute.position.z + dz - P0.z), seele);
+                            const [gx, gz] = [kw.x * 30 - kw.z * q, kw.z * 30 + kw.x * q];
+                            const g = tier(land(beute.position.x + gx - P0.x, beute.position.z + gz - P0.z), seele);
                             ruhig(g);
                             R.gaeste.push({ seele, c: g, kommtS: null, frissS: 0 });
                         }
@@ -3207,6 +3221,33 @@ async function kreaturProben(r, T, opts) {
             return G;
         });
         await stelle({ gesetz }, "gesetz");
+        // (C) DAS RUDEL JAGT ALS EINES: zwei Wölfe EINES Verbands, einer 20 m windab des Rehs (in der Fahne), einer 20 m quer
+        // (außerhalb des Kegels, er wittert nichts) — der Quere jagt mit, sobald der Windab-Wolf wittert (`_kreaturHaelt`).
+        // Täter: der Verband teilt nichts (jedes Glied jagt nur, was es selbst wittert)
+        const rudel = await teil("rudel", () => {
+            if (taeter === "witterung-allein") decke("_kreaturVerbandGlieder", () => () => null);
+            leer(1);
+            Object.assign(r, { _creatureAiFrame: 0, _faunaStroeme: null });
+            Object.assign(W, { x: 1, z: 0, ms: 4 });
+            const sp = neben(M.x, M.z - 70);
+            pm.set(sp.x, sp.y, sp.z);
+            const reh = tier(neben(M.x, M.z), "wesen", 0.6);
+            const [a, b] = [tier(neben(M.x + 20, M.z), "wolf"), tier(neben(M.x, M.z + 20), "wolf")];
+            [reh, a, b].forEach(ruhig);
+            r._kreaturVerbinden([a, b]);
+            const q = [{ x: M.x, z: M.z, strength: 1 }];
+            const kante = Math.exp(-R / S.rangeM);
+            const o = { windabS: null, querS: null, querWittert: rund(r._scentAt(b.position.x, b.position.z, q) / kante, 3) };
+            for (let k = 0; k < 600 && o.querS === null; k++) {
+                ruhigSpieler();
+                takt(1 / 60);
+                if (o.windabS === null && a.userData._beute === reh) o.windabS = rund((k + 1) / 60, 2);
+                if (o.querS === null && b.userData._beute === reh) o.querS = rund((k + 1) / 60, 2);
+            }
+            leer(1);
+            return o;
+        });
+        await stelle({ gesetz, rudel }, "rudel");
         const suche = await teil("suche", () => {
             const dt = 1 / 60;
             // die Linie Wolf → Reh nach Norden; der Wind zieht (wx, wz): windab — vom Reh zum Wolf (der Wolf in der Fahne),
@@ -3265,7 +3306,7 @@ async function kreaturProben(r, T, opts) {
             leer(1);
             return { laeufe: L, ms10: 4, msNase: rund(r._rauchWindAt(M.x, M.z, s._simZeit, 1, null, {}).ms, 2), weltMs };
         });
-        return { gesetz, suche };
+        return { gesetz, rudel, suche };
     });
 
     // ── rudel: DER SPIELER IST BEUTE im Wolfsrevier (oekologie.K4) — ein Rudel aus dem Wurf (`_kreaturWurf`, die Leine am
@@ -3283,7 +3324,9 @@ async function kreaturProben(r, T, opts) {
         kamera(1, 0);
         const woelfe = r._kreaturWurf({ x: heim.x, z: heim.z }, "wolf", "happy", r._faunaRng("rudel"), 7);
         woelfe.forEach(ruhig);
-        pm.copy(neben(heim.x + 45, heim.z));
+        // der Spieler 45 m windauf des Wurf-Orts: das Rudel steht in seiner Fahne (witterung-windab; bis hier 45 m östlich)
+        const wd = r._windAt(heim.x, heim.z, s._simZeit);
+        pm.copy(neben(heim.x - wd.x * 45, heim.z - wd.z * 45));
         s.player.hp = 1e9;
         // DAS RUDEL AM SPIELER: die Wölfe, die ihn jetzt pirschen oder hetzen (wer unter der halben Masse des Spielers wiegt,
         // jagt ihn nie — jagd.beuteMasse); die größte Winkel-Lücke des Rudels um ihn in Grad
@@ -4475,6 +4518,13 @@ function urteil(name, z) {
             G.reich[0] === G.kanteM && G.reich.every((v, i) => i === 0 || v > G.reich[i - 1]) && G.reich.at(-1) <= G.deckeM,
             `die Reichweite windab wächst nicht mit dem Wind oder sättigt nicht: ${G.reich.join(" · ")} m bei 0 · 2 · 4 · 8 · 16 m/s (Soll Windstille ${G.kanteM} m, wachsend, ≤ ${G.deckeM} m)`
         );
+        const P = z.rudel;
+        soll(!!P, "das Rudel fehlt");
+        if (P)
+            soll(
+                P.windabS !== null && P.querS !== null && P.querS <= P.windabS + 1 && P.querWittert < 1,
+                `das Rudel jagt nicht als eines: windab gewittert ${P.windabS} s, der Wolf quer (Witterung ${P.querWittert} der Kante) jagt mit ${P.querS} s (Soll ≤ 1 s danach, quer unter der Kante)`
+            );
         const L = z.suche && z.suche.laeufe;
         soll(!!L, "die Suche fehlt");
         if (L) {
@@ -4722,8 +4772,12 @@ const TAETER = {
         ["jagd-duft", /kein Geruch/],
         ["jagd-mager", /das Rudel frisst nicht/],
     ],
-    // der alte Weg (radial × Richtungs-Faktor, Rest-Sockel 0,4 gegen den Wind, die Nase jede Witterung > 0): er hält am Gesetz
-    witterung: [["witterung-sockel", /gegen den Wind > 0/]],
+    // der alte Weg (radial × Richtungs-Faktor, Rest-Sockel 0,4 gegen den Wind, die Nase jede Witterung > 0): er hält am Gesetz;
+    // der Verband, der nichts teilt: er hält am Rudel
+    witterung: [
+        ["witterung-sockel", /gegen den Wind > 0/],
+        ["witterung-allein", /das Rudel jagt nicht als eines/],
+    ],
     rudel: [
         ["rudel", /umstellt nicht/],
         ["rudel-beute", /pirscht den Spieler nicht/],
