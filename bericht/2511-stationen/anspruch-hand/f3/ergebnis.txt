@@ -1,0 +1,17 @@
+F Rang 2, Block 3 — Hand-Lauf Radeon am main 0ee3ed8c, 25.11. 22:33–22:53 (hand.log), Stationen am pm 72d5702c (diese fünf Leitern unverändert)
+
+planet.kosmos.systeme#1   ROT — Leser fehlt: der Mond hat keine eigene Bahn (welt-licht.js:814 mondRichtung = −Sonne, stamm/bild-himmel.js:2793 stets
+                          Vollmond); die 8 Planeten mit eigener Bahn gegen die Ephemeride über 365 Tage max 0,022° (≤ 0,5° ✓). Akte ROT, Preis GRÜN
+                          p95 25,24 ms, Heap 265,5 MB.
+erleben.klang.stimme#1    UNGEMESSEN — die Station wirft „Leser erschienen (stimmFormanten) — S1 misst ihn noch nicht“: der Täter-Leser ist gebaut,
+                          die Station misst ihn nicht. Keine Akte.
+mensch.macht.recht#1      UNGEMESSEN — /eval ohne Antwort binnen 40 s (Probe-Fehler am Deckel der Leiter). Keine Akte.
+leben.evolution.fremde-physik#1 UNGEMESSEN — Wirt-Wache: der Kontext der Probe blieb gehalten (__codeOf), Heap +141,9 MB > 64 nach der Rücknahme;
+                          die Probe sah ROT „keine Saat trägt ihr g … der Faden baut jeden Planeten mit PLANET_ERDE (voxel-worker.js:1429)“ — der
+                          Text ist am 0ee3ed8c überholt wie bei bahn-klima#2 (voxel-worker.js:1468 planetPlanVon liest den Körper). Keine Akte.
+mensch.kopplung.leib#1    UNGEMESSEN — Wirt-Wache: Kontext gehalten, Heap +72,8 MB > 64; die Probe sah ROT lagenDelta 0 (> 0 ✗). Keine Akte.
+
+Offen mit Adresse: systeme#1 → leiter planet.kosmos.systeme#1 (die Bahn des Monds, ein Macher an welt-licht) · stimme#1 → leiter
+erleben.klang.stimme#1 (die Station liest stimmFormanten — Stations-Arbeit wie gewalt/getuemmel) · recht#1 → leiter mensch.macht.recht#1 (Sekunden
+der Leiter gegen den Deckel 40 s) · fremde-physik#1, leib#1 → die Wirt-Wache der Sitzung (gehaltener Kontext, `run --offen` misst neu); der
+überholte Text „PLANET_ERDE fest“ → leiter leben.evolution.fremde-physik#1.
