@@ -1,7 +1,7 @@
 {
  "sha": "b1f0de0e0068399caba1583bb70c5f9cd598d1a6",
  "geraet": "gtx",
- "zeit": "2026-11-25T01:11:23.377Z",
+ "zeit": "2026-11-25T01:14:14.563Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.mannschaft#1": {
@@ -979,6 +979,218 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.evolution.erbe#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: die größte Herde trägt 4 Tiere (tetrapoda-core.js:289 herde.wurf), und ein Tier trägt nur die Größe — kein Muster, keine Narbe, kein Gang je Individuum · wiedererkanntProzent 0 % gegen Soll ≥ 90 % ✗ · herde 4 gegen Soll ≥ 100 ✗ · spieltage 1 gegen Soll ≥ 1 ✓ · Täter: tetrapoda-core.js VERHALTEN.herde.wurf (Herde 3–7) / stamm/kreatur-leben.js (ein Tier trägt nur bs)",
+   "exit": 0,
+   "minuten": 2.92,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: die größte Herde trägt 4 Tiere (tetrapoda-core.js:289 herde.wurf), und ein Tier trägt nur die Größe — kein Muster, keine Narbe, kein Gang je Individuum · wiedererkanntProzent 0 % gegen Soll ≥ 90 % ✗ · herde 4 gegen Soll ≥ 100 ✗ · spieltage 1 gegen Soll ≥ 1 ✓ · Täter: tetrapoda-core.js VERHALTEN.herde.wurf (Herde 3–7) / stamm/kreatur-leben.js (ein Tier trägt nur bs)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k986baadb55ac",
+   "konsumN": 32,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k029c57d27e4c",
+   "s": 175,
+   "fremd": {
+    "s": 178.3,
+    "takte": 83,
+    "fremdS": 32.66,
+    "kerne": 0.183,
+    "fensterKerne": 0.363,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.28
+     ],
+     [
+      "Explorer.EXE",
+      5.59
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.48
+     ]
+    ],
+    "dienerS": 23.89,
+    "diener": [
+     [
+      "System",
+      14.38
+     ],
+     [
+      "WmiPrvSE.exe",
+      6.58
+     ]
+    ],
+    "geraetS": 57.27,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      38.02
+     ],
+     [
+      "svchost.exe",
+      16.66
+     ],
+     [
+      "SearchIndexer.exe",
+      1.31
+     ]
+    ],
+    "eigenS": 293.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T01:14:14.563Z",
+   "abdruck": "a337c41ec459",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.fremde-physik#1": {
+   "gruen": false,
+   "zahl": "S1 Umfang nicht erzeugbar: keine Saat trägt ihr g: die Schwere setzt das Gesetz der Welt (state.gravity), der Faden baut jeden Planeten mit PLANET_ERDE (voxel-worker.js:1429; planet-core.js:319 g der Saat ungelesen) — 1 Saat je g; das Quer-Maß des Leibs unter g × 0.3 / 1 / 3: 0.0073 / 0 · saatenJeG 1 gegen Soll ≥ 50 ✗ · steigung 0 gegen Soll 0,75–1 ✗ · gMin 0,3 gegen Soll ≤ 0,3 ✓ · gMax 3 gegen Soll ≥ 3 ✓ · Täter: stamm/koerper-leib.js _buildCreatureGroup (der Guss liest keine Schwere)",
+   "exit": 0,
+   "minuten": 2.92,
+   "grund": "ROT: S1 Umfang nicht erzeugbar: keine Saat trägt ihr g: die Schwere setzt das Gesetz der Welt (state.gravity), der Faden baut jeden Planeten mit PLANET_ERDE (voxel-worker.js:1429; planet-core.js:319 g der Saat ungelesen) — 1 Saat je g; das Quer-Maß des Leibs unter g × 0.3 / 1 / 3: 0.0073 / 0 · saatenJeG 1 gegen Soll ≥ 50 ✗ · steigung 0 gegen Soll 0,75–1 ✗ · gMin 0,3 gegen Soll ≤ 0,3 ✓ · gMax 3 gegen Soll ≥ 3 ✓ · Täter: stamm/koerper-leib.js _buildCreatureGroup (der Guss liest keine Schwere)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k986baadb55ac",
+   "konsumN": 32,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k029c57d27e4c",
+   "s": 175,
+   "fremd": {
+    "s": 178.3,
+    "takte": 83,
+    "fremdS": 32.66,
+    "kerne": 0.183,
+    "fensterKerne": 0.363,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.28
+     ],
+     [
+      "Explorer.EXE",
+      5.59
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.48
+     ]
+    ],
+    "dienerS": 23.89,
+    "diener": [
+     [
+      "System",
+      14.38
+     ],
+     [
+      "WmiPrvSE.exe",
+      6.58
+     ]
+    ],
+    "geraetS": 57.27,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      38.02
+     ],
+     [
+      "svchost.exe",
+      16.66
+     ],
+     [
+      "SearchIndexer.exe",
+      1.31
+     ]
+    ],
+    "eigenS": 293.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T01:14:14.563Z",
+   "abdruck": "3d09062ce5dc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.erbe#2",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.zivilisation#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: Sozialität evolviert nicht: die Herde ist ein Wurf aus VERHALTEN.herde.wurf (deer 3–7) — keine Selektion; 0 Regionen gelesen · saaten 1 gegen Soll ≥ 100 ✗ · rho ungemessen gegen Soll > 0 ✗ · Täter: tetrapoda-core.js VERHALTEN.herde.wurf (Herdengröße fest)",
+   "exit": 0,
+   "minuten": 2.92,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: Sozialität evolviert nicht: die Herde ist ein Wurf aus VERHALTEN.herde.wurf (deer 3–7) — keine Selektion; 0 Regionen gelesen · saaten 1 gegen Soll ≥ 100 ✗ · rho ungemessen gegen Soll > 0 ✗ · Täter: tetrapoda-core.js VERHALTEN.herde.wurf (Herdengröße fest)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k986baadb55ac",
+   "konsumN": 32,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k029c57d27e4c",
+   "s": 175,
+   "fremd": {
+    "s": 178.3,
+    "takte": 83,
+    "fremdS": 32.66,
+    "kerne": 0.183,
+    "fensterKerne": 0.363,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.28
+     ],
+     [
+      "Explorer.EXE",
+      5.59
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.48
+     ]
+    ],
+    "dienerS": 23.89,
+    "diener": [
+     [
+      "System",
+      14.38
+     ],
+     [
+      "WmiPrvSE.exe",
+      6.58
+     ]
+    ],
+    "geraetS": 57.27,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      38.02
+     ],
+     [
+      "svchost.exe",
+      16.66
+     ],
+     [
+      "SearchIndexer.exe",
+      1.31
+     ]
+    ],
+    "eigenS": 293.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T01:14:14.563Z",
+   "abdruck": "fd36414e8031",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.erbe#2",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -993,7 +1205,8 @@
   "k60c6354b42d7": "bVVdj5swEPwveeyVM5/BWLoH54iUSG0v+QlrWAMXApENoU3V/15B4iTA7RvWjHc8szZ/FydIDpDh66euqwVbfFt8X2g4o6VRnVG9fuoFW0SJ46LH+J73teOcv/ewRBWnRpOyEAREBfkRrVY1WJSvyUADgX5KGenWPNsRIsmFxN3b25RaCkxrqwGJd2JAUxmwKbDVGQi0oJVDsxvYtunSBUaGojH/iMm9Osr5zpf+jsaTzQRU6VhttAxCDNj2D+drPlOZFoCNVRaVNn2dNIykzR69fs44CjrrApiXqG4kpI7jCyN21dvZWzMhyrLVetSMemngUkZINMVmqIskb6yTqgVWN7iI3NABtpq7nZ1aSz4rAiGAiqnXOWCVoRppsL1ELh1GftPppgc4ogKrgtx4aXuhKx7eEEI2cy3lIHxoYYSnThi4zojYh0rOvcF8y281fNPNHWHW44w/aj9rqJO8UMexVdJH1/bYj7k8nUOKyjrUurmjPQx9W7Bh/2187bujqynzcTCTHwDQp2EhlPDNzEddy6YDhVZ2as3A+BiEAeN8OwM3cDyavD20U3saom76IX+W4YdLRGSEvFwvyfzQ1ythXbAoDUlK349mt/Gs4GiByFQhpUldBImMvhrSDsvGEnXdGBudMPQ8RjxSPQf9qxt8fcowzvZ+U666NR/Vlk91Dx1q1RjRgVja0mdyGJxkhi5UY3WQ5AbuSoHQS59lckFVYoYjG0VIo368O3nVfemfmfD2DMiX0fBe5jsW2Btc6VabkBPwRcC+iKRDdRBQHW7AJHWcZTqM3+qDb0aevMf7HY37azIqL+u92+Sr63rSe2reqhMm5KRqWfSvIcmh1TmUzeNX8O8/",
   "k2985b3760c80": "bVRNj5swFPwvObb1ms9gLO3BEVslUrebPfb4DM/AhgCyIbSp+t8rSEgC7DsgYeZ5hpln/13VEB8gxacPU5Urvvqy+rYycEJiUJ9QP32YFV+Fse2gy/tPsc7rxtAilxRkCdkRSasbzIuneICCRC9hnHYvIt1TquiZRt3z87y1kJhUpAGFt0afJcpfcLQmBYkEWjWQXcGWxdYOcDoUi8RbRG/VvQqx95S3Z9FsMwllMlUbrv0Afb77I8SLWKhMcsCGFHlpRl47CUJl8QeuRY+GjpwBswL1tQmZbXtyFLsRQgzWzBpV0RozIWNu4juMUxrOsSmaPM4aUutKYnmFy9AJbOCbpdtp3RL1qAikBCbnXmeAZYp6osFyY7W2Of3N5pse4IgaSAnZ6KXlBo68e0Mp3S61FIPwgWIUntiB79iTxj5UeuoNFjtxreGdbW+IcT1Kxb3eF4QmznJ9nFqlPHQsl/9YyjMZJKjJoTLNDe1i4FmSD/vvogvvnm3mnfcfG/MDAPYwLJRRsV34aCrVdKCRpHU7DoyHfuBzIXYLcAPH45i3i1ZizUM0TT/kjzK8YI2InNKvl0Oy/OnLkSBnzIuxSSnPCxen8aThSECmOldqTF36sQo/G9IOi4bIqmpGG+0gcF1OXVo+Bv2zG3x9yDBK373X7yJ9EZPaibnugaHSzSjal2tLeVwNgxMv0LluSAdxNsIdJRFCTt1FJmfUBaY4sVEGLOzHu4uvKvspCK7XgPo6Gd7zcscce4NL05ox5Bg86fNPIulQHySUhyswTmx7nQzjt3kT26kp0fueRf0xmZQ7eLfNNpf1X5fHhaTGmNa6Unl/G9IMWpNB0dyv/3//AQ==",
   "ke0433a4e9da4": "bVXbbqMwFPyXPG6XmmswlvrglK4SabtNpf2BYzgGGgKRDWWV1f77ChInXHqeEjTjM8yMk7+rEyQHyPDxQ9fViq2+rb6vNHyipVF9onr80Cu2ihLHRY/xyxDO+XMPS1RxajQpC0FAVJAf0WpVg0X5mAw0EOinlJHuhWd7QiQ5k7h7eppTS4FpbTUg8UYMaCoDNge2OgOBFrRyWHYF2zZdu8DIMDTmbzG5TffK+d6X/p7Gs8MEVOlUbbQOQgzYruP8hS9UpgVgY5VFpc1eJw0jabPRrgVHQWedAfMS1ZWE1HF8YcRuejt7a2ZEWbZaT5ZRLw1cygiJ5tgMdZHkjXVStcDqCheRGzrANku3s1NrybEiEAKomHudA1YZqokG20vk2mHkD50feoAjKrAqyI2Xthe64u4NIWS71FIOwocVRnjqhIHrTIh9qOSzN5jvuKlg/51ubwjzPM74fd4XC3WSF+o4tUr66Noe+7mUp3NIUVmHWjc3tIehb4vLTdjFl717upkz7y9m8gMAOioLoYRvFz7qWjYdKLSyU2sK42MQBozz3QLcwPFo8vbQTu15iLrpSz6W4YdrRGSEPFwuyfKlL1fCOmNRGpKUvh8F7HmTzcGfCo4WiEwVUprkRZDI6Kuidlg2lqjrxljphKHnMeKRahz2r27wdpRjnL37rz9498Ins+NzOcOGWjVGeCDWtvSZHMqTLNCFaqwOktzAXSkQeumLXM6oSsxwYqUIadRXvEtGSn3z4WFS4PPyxAJ7kyvdahN0Ar4I2BexdKgOAqrDFZikjrNOhwpu3vh26slve0/j/qpMxst67+J8M37+fPHvhAk5qVoW/S8iyaHVOZTN/e/g338=",
-  "kf94f9d33d57a": "bVXbjpswEP2XPHbLmmswlvbBWVZK1MsmUn9gDGNgQyCyIbSp+u+VSUgC7LwFnTNzfM7Y+bs4QrKHDJ8/dF0t2OLL4utCwwktjeqE6vlDL9giShwXPcZ33BThnL8aWKKKY6NJWQgCooL8gFarGizK56SngUA/pYx0bzzbEiLJmcTdy8uUWgpMa6sBiTdiQFMZsCmw1RkItKCV/bAr2Lbp0gVG+qIxf4/JrTrK+daX/pbGk2YCqnSsNloGIQZs84fzNz5TmRaAjVUWlR7mOmkYSZvdZ/2YcRR01hkwL1FdSUgdxxeD2JWx01gzIcqy1Xo0jHpp4FJGSDTFZqiLJG+so6oFVle4iNzQAbaau50dW0s+KgIhgIqp1zlglaEaabC9RC4dRn7TadM9HFCBVUE+eGl7oSvu3hBC1nMtZS+8HzEIT50wcJ0R0YRKTsZgvuHX6n/T9Q0xfI8zfq/dbKBO8kIdxlZJH13bY9/n8nQOKSprX+vmhvYw9G3B+v6b+DJ3S1dT5v1gQ34AQB+WhVDC1zMfdS2bDhRa2bEdFsbHIAwY55sZuIHDYcjbQzu1pyHqxiz5oww/XCIiI+Tpcknmh75cCeuMRTmQpPT9KGCvK38KPik4WCAyVUg5JC+CREafLWoHWk82yomcZBlO0p5URznZjrdh2hjLxhJ13QwZOWHoeYx4pHrk/ez60B4WJM52flOuujc+qg2fnrOfUKtm0B2IpS19Jnt9yQxdqMbqIMkHuCsFgvFkFvgZVYkZjkwRIY3M3enkRffZvGHh1Qz5NDLnPO9YoEmv0q0eNigBXwTsk7w7VHsB1f4KTFLHWab9bq/e+Xrkybdf9pbG5g6OysuMd+t8dfmeGE+Hh/CICTmqWhbmqSU5tDqHsrn/z/z7Dw=="
+  "kf94f9d33d57a": "bVXbjpswEP2XPHbLmmswlvbBWVZK1MsmUn9gDGNgQyCyIbSp+u+VSUgC7LwFnTNzfM7Y+bs4QrKHDJ8/dF0t2OLL4utCwwktjeqE6vlDL9giShwXPcZ33BThnL8aWKKKY6NJWQgCooL8gFarGizK56SngUA/pYx0bzzbEiLJmcTdy8uUWgpMa6sBiTdiQFMZsCmw1RkItKCV/bAr2Lbp0gVG+qIxf4/JrTrK+daX/pbGk2YCqnSsNloGIQZs84fzNz5TmRaAjVUWlR7mOmkYSZvdZ/2YcRR01hkwL1FdSUgdxxeD2JWx01gzIcqy1Xo0jHpp4FJGSDTFZqiLJG+so6oFVle4iNzQAbaau50dW0s+KgIhgIqp1zlglaEaabC9RC4dRn7TadM9HFCBVUE+eGl7oSvu3hBC1nMtZS+8HzEIT50wcJ0R0YRKTsZgvuHX6n/T9Q0xfI8zfq/dbKBO8kIdxlZJH13bY9/n8nQOKSprX+vmhvYw9G3B+v6b+DJ3S1dT5v1gQ34AQB+WhVDC1zMfdS2bDhRa2bEdFsbHIAwY55sZuIHDYcjbQzu1pyHqxiz5oww/XCIiI+Tpcknmh75cCeuMRTmQpPT9KGCvK38KPik4WCAyVUg5JC+CREafLWoHWk82yomcZBlO0p5URznZjrdh2hjLxhJ13QwZOWHoeYx4pHrk/ez60B4WJM52flOuujc+qg2fnrOfUKtm0B2IpS19Jnt9yQxdqMbqIMkHuCsFgvFkFvgZVYkZjkwRIY3M3enkRffZvGHh1Qz5NDLnPO9YoEmv0q0eNigBXwTsk7w7VHsB1f4KTFLHWab9bq/e+Xrkybdf9pbG5g6OysuMd+t8dfmeGE+Hh/CICTmqWhbmqSU5tDqHsrn/z/z7Dw==",
+  "k986baadb55ac": "rVXdjps8EH2XXLb1GgIEY6kXZom06Y+alb4XGJsxsCEQ2bC0qfruFUnYBMgntVLnCqT5OXPmzPjn4gBqBxk+vNi6WvDFu8WHhYVXJBbNK5qHF7vgi0i5S/S4eBa9USHEY++mTHFoLE0LyMjOIDStISVKrB7UKUxHcsVCTv+xibG9CCHWsfj48QZSWUgKsoJ8j6Q1DRblBRJI9FPGabcW2ZZSTY806a651nfSlBLTmjSg8S1JwFId8KljazOQSKDVp8IXZ8dhqyVcSGCJ+JZcO+mYEFtf+1uWiC3TIptVl1Cl4w6iVRBiwDfdXbRpAdiQsqjsUN9Nw0g71yF0X2cxBjpyBMxLNJcgZK7rywF03FPT0zUJ1GVr7agY89JgyTil0dQ3Q1uovCEHU18FIqNl6AKPu1kf2aEl+hYRSAlMTjnPAasMzQiD4ym9cjn9zqZJd7BHA6SCfODS8cKlHAn0aY5lkPYeK6uG0FSnvmJ/re3k/9OPmIlk6Cjk4o/t+fr5+OdRYiPiCZzyNKYToQOY1A2DpTvplSX0tZeT2Ay5Tv/sabanSXaLc9a/VXlh9uP2tY9Lx+Nf5mzZHFI0ZFfb5s3bw9B35JmsTXKuu2XTxuy1sUGtAMBuVoMyKp5mqrG1bjowSLJDO6yHj0EYcCE2M+cG9vtB3R46qXN3hp1Y34ms0hE8P1whIqf0/flkzMk4HwZyxKIcgrT2/Sjgj7E/dX41sCcgM1No/aayQOno3rp2WDZE1nUzUOyGoef1VFW3Ith2ZxFdLcme/aaMu/VEZ/Hzdn7dTlVq0wzgA7lytM/1SVhq5l2YhnSg8sF9qSVCD382syOaEjMc0SlDFvXL3ukz9mN/fMPLUdTvR+I+zjMW2BNd2dYOIlDgy4DfGU2HZieh2l0cVeq6q5R/EkLE38TTiJfP/zlbltCZ9fxtvlTx+W1SPa/0x/lyH1DRg6l10b8NNIfW5lA21/f7128="
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {

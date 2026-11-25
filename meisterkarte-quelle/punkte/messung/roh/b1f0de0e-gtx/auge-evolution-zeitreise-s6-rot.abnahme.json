@@ -1,0 +1,142 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.409",
+  "sha": "b1f0de0e0068399caba1583bb70c5f9cd598d1a6"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.2454,
+  "taeter": {
+   "Rinde baum_tanne": 0.2454
+  },
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.3958,
+   "taeter": {
+    "Rinde baum_tanne": 0.3177,
+    "Laub baum_eiche": 0.0642,
+    "Laub grown_busch_hazel_v0": 0.0139
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [
+   "baum_birke 2482",
+   "baum_kiefer 2485"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -184.266,
+   99.967,
+   -61.702
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 57,
+  "sigma": 39.6,
+  "schwarz": 0.0011,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 24.5 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde baum_tanne 24.5 % · Vordergrund 39.6 % näher als 8 m (der halbe Ziel-Abstand): Rinde baum_tanne 31.8 %, Laub baum_eiche 6.4 %, Laub grown_busch_hazel_v0 1.4 % · kein nahWiese im Bild: 1.6 % < 15.0 %] · beweis · Sicht 24.5 % (Rinde baum_tanne 24.5 %) · Ziel Blickziel im Bild frei 20 m · Luma 57 σ 39.6 schwarz 0.1 % weiß 0.0 % · Stand 18.546.409 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt nahWiese 1.6 % (≥ 15.0 %) h 110° Luma 112",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 24.5 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde baum_tanne 24.5 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 39.6 % näher als 8 m (der halbe Ziel-Abstand): Rinde baum_tanne 31.8 %, Laub baum_eiche 6.4 %, Laub grown_busch_hazel_v0 1.4 %"
+  }
+ ],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "imBild.nahWiese",
+    "grund": "kein nahWiese im Bild: 1.6 % < 15.0 %"
+   }
+  ],
+  "zeile": "Inhalt nahWiese 1.6 % (≥ 15.0 %) h 110° Luma 112"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^nahWiese([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1374,
+   "wechsel": 1142138
+  },
+  "rinde": null,
+  "toene": [
+   "nahWiese:L1=255/80/80",
+   "nahWiese:L2=80/255/80",
+   "nahWiese:Lf=80/120/255"
+  ],
+  "klassen": {
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 34126,
+    "farbe": [
+     0.15683,
+     0.1831,
+     0.02934
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b1f0de0e-gtx\\auge-evolution-zeitreise-s6-rot.maske.png"
+ }
+}
