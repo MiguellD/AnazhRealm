@@ -1789,8 +1789,11 @@ async function lichtLauf() {
                         // des Eingangs unter dem Median
                         const fussVon = (P) => {
                             if (!P || !mond) return null;
-                            const ton = (x) => (x < 0.08 ? 6.25 * x * x : x - 0.04);
-                            const tonInv = (y) => (y < 0.04 ? Math.sqrt(y / 6.25) : y + 0.04);
+                            // die Kurve der Seite (welt-licht `tonKurve`, sonnenbahn 3): grau der Fuß am Schlüssel (× 2^−n), sein
+                            // Abzug × 2^n — n die Stufen hinter dem Fuß an der Stunde des Schusses (`tonStufen`)
+                            const m = 2 ** __weltLicht.tonStufen().n;
+                            const ton = (x) => m * (x / m < 0.08 ? 6.25 * (x / m) ** 2 : x / m - 0.04);
+                            const tonInv = (y) => m * (y / m < 0.04 ? Math.sqrt(y / m / 6.25) : y / m + 0.04);
                             const [xs, ys] = [[], []];
                             ringe(NACHT.ring, (i) => {
                                 if (!(hell[i + 3] > 0) || !(luma709(mond, i) > 0)) return;
@@ -1810,6 +1813,7 @@ async function lichtLauf() {
                             }
                             return {
                                 n: xs.length,
+                                stufen: +Math.log2(m).toFixed(3),
                                 eingang: +(s * xm).toFixed(4),
                                 bild: +(bild / xs.length).toFixed(4),
                                 kurve: +(kurve / xs.length).toFixed(4),
@@ -1903,7 +1907,7 @@ async function lichtLauf() {
                 (T ? `Tag (Sonne ${T.hoehe}°, Uhr ${T.uhr}) ${T.v} (Umgebung ${T.u} · Richtlicht ${T.d}, Lesung ${T.richt > 0 ? (T.himmel / T.richt).toFixed(3) : "—"}) · ` : "Tag — · ") +
                 `IES klar bei ${ergebnis.nacht.mondHoehe}° ${ies.toFixed(3)} · die Abgesoffenen im Licht des Mondes tragen ${L1.nacht.schwarzU ?? "—"} × die Umgebung und ${L1.nacht.schwarzD ?? "—"} × das Richtlicht des Medians` +
                     (L1.nacht.fuss
-                        ? ` · DER FUSS: der Median steht im Eingang der Kurve auf ${L1.nacht.fuss.eingang} (Fuß 6,25 · x² unter 0,08), Luma 4 liegt ${L1.nacht.fuss.schwelleEV} Blenden des Eingangs unter ihm — abgesoffen im Licht: das Bild ${(100 * L1.nacht.fuss.bild).toFixed(1)} %, die Kurve aus dem Licht der Lampen ${(100 * L1.nacht.fuss.kurve).toFixed(1)} %, die Gerade durch den Median ${(100 * L1.nacht.fuss.gerade).toFixed(1)} % (${L1.nacht.fuss.n} Pixel)`
+                        ? ` · DER FUSS: der Median steht im Eingang der Kurve auf ${L1.nacht.fuss.eingang} (Fuß 6,25 · x² unter 0,08 am Schlüssel, ${L1.nacht.fuss.stufen} Stufen hinter ihm), Luma 4 liegt ${L1.nacht.fuss.schwelleEV} Blenden des Eingangs unter ihm — abgesoffen im Licht: das Bild ${(100 * L1.nacht.fuss.bild).toFixed(1)} %, die Kurve aus dem Licht der Lampen ${(100 * L1.nacht.fuss.kurve).toFixed(1)} %, die Gerade durch den Median ${(100 * L1.nacht.fuss.gerade).toFixed(1)} % (${L1.nacht.fuss.n} Pixel)`
                         : "")
         );
     }

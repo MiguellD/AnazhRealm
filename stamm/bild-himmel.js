@@ -2229,6 +2229,7 @@ class AnazhRealm_bild_himmel {
     // zum Deckel der Nacht: die Sonne in 7° stand an der Wiese einmal 0,16, einmal 1,29 EV unter dem Mittag (Radeon).
     _dayNightApplyBelichtung(achse) {
         if (achse) {
+            this._tonSonneE = achse.e; // die Sonnenhöhe der Stufen hinter dem Fuß der Kurve (unten, `tonStufenSetzen`)
             const k = this._belichtungAusLicht(achse.e);
             this._raumBlendeTakt();
             if (k == null) return;
@@ -2248,7 +2249,12 @@ class AnazhRealm_bild_himmel {
         const b = this._messBlende,
             g = this._belichtungGesetz > 0 ? this._belichtungGesetz : b && b.vor > 0 ? b.vor : null;
         const k = b && b.k != null ? b.k : g != null ? g * (b ? b.mal : 1) : null;
-        if (k != null && this.state.renderer) this.state.renderer.toneMappingExposure = k;
+        if (k != null && this.state.renderer) {
+            this.state.renderer.toneMappingExposure = k;
+            // DER FUSS AM SCHLÜSSEL (welt-licht `tonKurve`): mit der Belichtung die Stufen der Tag-Achse hinter dem Fuß — dieselbe
+            // Sonnenhöhe, aus der das Gesetz sie in k legt (`belichtungNachFuss`); eine bestellte Blende hält die Stunde
+            __weltLicht.tonStufenSetzen(this._tonSonneE ?? 1, AnazhRealm.BELICHTUNG);
+        }
     }
 
     // DIE BLENDE DES BEOBACHTERS: eine Messung STELLT die Belichtung nie selbst, sie bestellt sie bei der Welt — `{ k }` hält sie
@@ -2345,8 +2351,8 @@ class AnazhRealm_bild_himmel {
         // ohne Lesung des Himmels hält die Blende (das Gesetz des Raums liest die Leuchtdichte, nicht nur ein Verhältnis) — auch
         // ihr Ort bleibt: der Sprung des Auges gilt mit der ersten Lesung
         if (!w0 || !so0) return;
-        // DER MESSER IM RAUM: `hi` der Himmel auf der Karte, `pool` die Leuchten am Auge (`_poolAmAuge`) — sie stehen im Raum wie
-        // davor; das Feld des Messers (`_raumFeldAmAuge`, der Anteil der Öffnungen an der Oberfläche × Durchlass) mittelt die
+        // DER MESSER IM RAUM: `hi` der Himmel auf der Karte, `pool` die Leuchten am Boden des Bilds (`_poolAmBild`, derselbe Pool,
+        // den die Belichtung liest: je Kachel des ganzen Bilds) — sie stehen im Raum wie davor; das Feld des Messers (`_raumFeldAmAuge`, der Anteil der Öffnungen an der Oberfläche × Durchlass) mittelt die
         // Öffnungen mit: die Belichtung hält sie im Bild, der Raum ohne Öffnung misst nur sich
         const mp = this._belichtungMitPool;
         const pool = mp ? Math.max(0, lu(mp) - lu(w0)) : 0;

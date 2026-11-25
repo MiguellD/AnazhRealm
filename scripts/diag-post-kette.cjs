@@ -189,11 +189,12 @@ const quelle = () => (quelle.q ||= ((sb) => ({ FW: sb.__fachwerkCore, W: sb.__we
 // x − 6,25·x² unter 0,08 (sonst − 0,04) am kleinsten Kanal, über der Schulter `schulter` der GRÖSSTE Kanal gestaucht
 // (neu = 1 − (1 − S)² ÷ (Spitze + 1 − 2S), c × neu ÷ Spitze), kein Zug zu Weiß. Die Zahl `schulter` reicht der Rufer aus
 // `BELICHTUNG` der Seite (`fl.kurve`) bzw. aus welt-licht.js. MUTANTEN: `kanalweise` (M1, jeder Kanal für sich gestaucht),
-// `sprung` (A3, die Kurve springt über der Schulter um so viel).
-function tonKurveJs(farbe, schulter, mut = {}) {
+// `sprung` (A3, die Kurve springt über der Schulter um so viel). `n` die Stufen hinter dem Fuß (welt-licht `belichtungNachFuss`,
+// sonnenbahn 3: der Fuß liest die Farbe am Schlüssel × 2^−n, sein Abzug geht × 2^n) — jede Probe hier steht an der Bühne des Mittags, n 0.
+function tonKurveJs(farbe, schulter, mut = {}, n = 0) {
     const [S, d] = [schulter, 1 - schulter];
-    const x = Math.min(...farbe);
-    const c = farbe.map((v) => v - (x < 0.08 ? x - 6.25 * x * x : 0.04));
+    const x = Math.min(...farbe) * 2 ** -n;
+    const c = farbe.map((v) => v - (x < 0.08 ? x - 6.25 * x * x : 0.04) * 2 ** n);
     const stauch = (sp) => (sp >= S ? (1 - (d * d) / (sp + d - S) + (mut.sprung || 0)) / sp : 1);
     if (mut.kanalweise) return c.map((v) => v * stauch(v));
     const sp = Math.max(...c);

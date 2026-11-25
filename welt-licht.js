@@ -108,14 +108,21 @@ var __weltLicht = (function () {
     // weiß (gate:post-kette (j2), GTX 1050). Dieser Zug FIEL ganz (am Bild entschieden: eine Grenze 0,012 statt 0 änderte
     // Herd, Dorf-Nacht und Sonnen-Scheibe nicht sichtbar). Ein grauer Eingang bleibt grau: die Eichung der Karte und jede
     // Rückrechnung am Grau gelten weiter; der Tag steht zahlengleich (Wiese Mittag Luma 89,88 = 89,88).
+    // DER FUSS AM SCHLÜSSEL (sonnenbahn 3, Entscheid des Koordinators 25.11.): der Fuß liest die Farbe an der Belichtung des
+    // Schlüssels (k ÷ 2^n, die Karte auf `zielKarte` ohne die Stufen der Tag-Achse), die Stufen n (`belichtungNachFuss`, die Uniform
+    // `tonStufen`) kommen HINTER ihm, die Schulter danach — der Fuß gehört zum Schlüssel, die Schulter zum Schirm. Am Tag (n = 0)
+    // dieselbe Funktion Zahl für Zahl (× 1). Bis hier legte die Kurve den Fuß an das ganze k: die Nacht (n −2,17) stand mit ihrem
+    // Median im Eingang 0,035 ganz im Fuß, jede Blende des Bodens wurde zwei — S0, GTX 1050, Mond 22°: Luma 4 lag 1,31 Blenden unter
+    // dem Median, abgesoffen im Licht 5,6 % (die Kurve aus dem Licht der Lampen 7,5 %, die Gerade durch den Median 0,0 %).
     function tonKurve(THREE, B = BELICHTUNG) {
         const T = THREE.TSL;
         const S = B.schulter;
         const d = 1 - S;
+        const F = tonStufen(THREE);
         return T.Fn(([farbe, k]) => {
             const c = farbe.mul(k).toVar();
-            const x = T.min(c.r, T.min(c.g, c.b));
-            c.subAssign(T.select(x.lessThan(0.08), x.sub(x.mul(x).mul(6.25)), 0.04));
+            const x = T.min(c.r, T.min(c.g, c.b)).mul(F.teil);
+            c.subAssign(T.select(x.lessThan(0.08), x.sub(x.mul(x).mul(6.25)), 0.04).mul(F.mal));
             const spitze = T.max(c.r, T.max(c.g, c.b));
             const ueber = spitze.greaterThanEqual(S);
             const p = spitze.max(S);
@@ -135,6 +142,23 @@ var __weltLicht = (function () {
     // der Post-Kette (`_vorBelichtung`), gate:post-kette.
     function deckeln(T, rgb, B = BELICHTUNG) {
         return rgb.mul(T.float(B.deckel).div(T.max(rgb.r, T.max(rgb.g, rgb.b)).max(B.deckel)));
+    }
+    // DIE STUFEN HINTER DEM FUSS als Uniform der EINEN Kurve (EINE je Seite: jeder Renderer und jeder Leser der Kurve liest sie):
+    // `n` die Zahl, `mal` = 2^n und `teil` = 2^−n ihre Uniformen — gebaut mit der ersten Kurve (`tonKurve` reicht THREE; ein Leser
+    // ohne Kurve, der Wirt einer Linse im Rechen-Raum, trägt nur die Zahl). Geschrieben NUR von den Schreibern der Belichtung
+    // (`tonStufenSetzen`: die Welt in `_dayNightApplyBelichtung`, die Bühne in `buehne`), mit der Belichtung im selben Zug.
+    const _tonStufen = { n: 0, mal: null, teil: null };
+    function tonStufen(THREE) {
+        const F = _tonStufen;
+        if (THREE && !F.mal) [F.mal, F.teil] = [THREE.TSL.uniform(2 ** F.n), THREE.TSL.uniform(2 ** -F.n)];
+        return F;
+    }
+    // die Stufen bei der Sonnenhöhe e (Sinus, wie `belichtung`) — am Tag genau 0 (die Uniformen 1 und 1)
+    function tonStufenSetzen(e, B = BELICHTUNG) {
+        const F = _tonStufen;
+        F.n = belichtungNachFuss((Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI, B);
+        if (F.mal) [F.mal.value, F.teil.value] = [2 ** F.n, 2 ** -F.n];
+        return F.n;
     }
     // DER EINE SETZER: die Kurve in die Tafel des Renderers (einmal je Renderer) und auf seinen Platz
     const _tonKurveAn = new WeakSet();
@@ -735,6 +759,18 @@ var __weltLicht = (function () {
     // Tag-Achse (`stufen`, linear in h zwischen den Knoten, außen gehalten); dazwischen linear in h gemischt. `B` die Eichung (die
     // Welt reicht ihre, `AnazhRealm.BELICHTUNG` — an ihr spielen die Linsen ihre Täter ein, scripts/lib/licht-linsen.cjs).
     function belichtungStufen(h, q, B = BELICHTUNG) {
+        return belichtungGleitung(h, B) * (1 - B.steigung) * Math.log2(q) + belichtungNachFuss(h, B);
+    }
+    // das Gewicht der Steigung bei der Sonnenhöhe h: 1 über `gleitung[0]`, 0 unter `gleitung[1]`, dazwischen linear
+    function belichtungGleitung(h, B = BELICHTUNG) {
+        const [oben, unten] = B.gleitung;
+        return Math.max(0, Math.min(1, (h - unten) / (oben - unten)));
+    }
+    // DIE STUFEN NACH DEM FUSS (sonnenbahn 3, Entscheid des Koordinators 25.11.): der Anteil der Knoten der Tag-Achse an den Stufen
+    // der Kamera — (1 − Gleitung) × die Stufen der Knoten bei h; am Tag (über `gleitung[0]`) genau 0, in der Nacht der ganze Knoten
+    // (−2,17 bei −20°, die REF). Die Tonkurve legt sie HINTER ihren Fuß (`tonKurve`): der Fuß gehört zum Schlüssel der Belichtung,
+    // die Schulter zum Schirm. Die Steigung des Tags bleibt im Schlüssel.
+    function belichtungNachFuss(h, B = BELICHTUNG) {
         const K = B.stufen;
         let n = K[K.length - 1][1];
         if (h >= K[0][0]) n = K[0][1];
@@ -744,9 +780,7 @@ var __weltLicht = (function () {
                     n = K[i][1] + ((K[i - 1][1] - K[i][1]) * (h - K[i][0])) / (K[i - 1][0] - K[i][0]);
                     break;
                 }
-        const [oben, unten] = B.gleitung;
-        const t = Math.max(0, Math.min(1, (h - unten) / (oben - unten)));
-        return t * (1 - B.steigung) * Math.log2(q) + (1 - t) * n;
+        return (1 - belichtungGleitung(h, B)) * n;
     }
 
     // DIE BELICHTUNG AUS DEM LICHT (licht.K1, H1): `w` die Beleuchtungsstärke einer waagrechten Fläche des Orts (rgb), `EA` der
@@ -1463,6 +1497,7 @@ var __weltLicht = (function () {
             E[1] += sonne.color.g * I;
             E[2] += sonne.color.b * I;
             B.belichtung = R.toneMappingExposure = belichtung(E, A.belichtung, s[1]);
+            B.tonStufen = tonStufenSetzen(s[1]); // die Stufen hinter dem Fuß der Kurve an der Stunde der Bühne (`tonKurve`)
             return B;
         });
         return B;
@@ -1499,6 +1534,7 @@ var __weltLicht = (function () {
         if (!sonne || B.sonne.intensity !== B.staerke) fremd.add(`die Sonne ${B.sonne.intensity} statt ${B.staerke}`);
         if (R.toneMappingExposure !== B.belichtung || R.toneMapping !== globalThis.THREE[BELICHTUNG.kurve])
             fremd.add(`die Belichtung ${R.toneMappingExposure} statt ${B.belichtung}`);
+        if (tonStufen().n !== B.tonStufen) fremd.add(`die Stufen hinter dem Fuß ${tonStufen().n} statt ${B.tonStufen}`);
         if (
             szene.environmentNode !== B.knoten ||
             szene.environmentIntensity !== 1 ||
@@ -2238,6 +2274,8 @@ var __weltLicht = (function () {
         deckeln,
         tonKurve,
         tonKurveSetzen,
+        tonStufen,
+        tonStufenSetzen,
         GRENZGROESSE,
         GPU_FRAMES_IM_FLUG,
         EINHEIT_LX,
@@ -2249,6 +2287,7 @@ var __weltLicht = (function () {
         umgebungRichtung,
         atmoTafeln,
         belichtungStufen,
+        belichtungNachFuss,
         belichtung,
         belichtungRaum,
         belichtungAnker,
