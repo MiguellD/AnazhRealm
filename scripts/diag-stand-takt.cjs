@@ -800,11 +800,12 @@ function selbsttest() {
         ["die Scherben schlafen nicht ein", ["simWecken.druck", { wach: 5, schlafS: null }], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nie \(5 liegen nach 10 s wach\) \(Soll ≤ 3 s\)/],
         ["die letzte Scherbe schläft nach 6 s", ["simWecken.druck.schlafS=", 6], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 6 s \(Soll ≤ 3 s\)/],
         // ROT nennt seinen Beweis (die Flocke der CI, 8,267 s): die Uhren an der Probe, der Wind am Ort, je beim Soll wachem Körper Ort,
-        // Tempo, Auflage und Alter — ein Lauf ohne Beweis sagt es
+        // Tempo, Auflage (Neigung und Reibung seines Grunds) und Alter, vorn der Ort der Probe O, seine Neigung und die Reste früherer
+        // Marken — ein Lauf ohne Beweis sagt es
         [
             "die letzte Scherbe schläft nach 6 s, die Probe nennt ihren Beweis",
-            ["simWecken.druck", { schlafS: 6, schlafBeweis: { welt: 12345.5, sim: 345.25, takte: 4516, sprungN: 1, sprungS: 2.5, verworfenS: 0, windMS: 3.21, amSoll: 2, wach: [{ art: "Scherbe", p: [1.5, 20.25, -3], tempo: 0.042, auf: "Grund + 1 Körper", alterS: 5.9, ruheS: 0.4, schlafS: 6 }, { art: "Kiste", p: [4, 20.1, 6], tempo: 0.011, auf: "Grund", alterS: null, ruheS: 1.25, schlafS: 4.5 }] } }], // prettier-ignore
-            /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 6 s \(Soll ≤ 3 s\) — Beweis: Welt-Uhr 12345.50 s · Sim-Uhr 345.25 s · 4516 Takte seit dem Boot · 1 Sprünge der Welt-Uhr \(2.50 s\) · verworfene Sim-Zeit 0.000 s · Wind am Ort 3.21 m\/s · 2 wach beim Soll: Scherbe \[1.5, 20.25, -3\] 0.042 m\/s auf Grund \+ 1 Körper, 5.90 s alt, 0.40 s ruhig, schlief nach 6.00 s; Kiste \[4, 20.1, 6\] 0.011 m\/s auf Grund, \? s alt, 1.25 s ruhig, schlief nach 4.50 s$/,
+            ["simWecken.druck", { schlafS: 6, schlafBeweis: { ort: { x: -310.5, z: -1044.25, y: 28.9, grad: 4.25, fremd: 3, fremdWach: 1 }, welt: 12345.5, sim: 345.25, takte: 4516, sprungN: 1, sprungS: 2.5, verworfenS: 0, windMS: 3.21, amSoll: 2, wach: [{ art: "Scherbe", p: [1.5, 20.25, -3], tempo: 0.042, auf: "Grund + 1 Körper", grund: { grad: 3.75, mu: 0.6 }, alterS: 5.9, ruheS: 0.4, schlafS: 6 }, { art: "Kiste", p: [4, 20.1, 6], tempo: 0.011, auf: "Grund", grund: null, alterS: null, ruheS: 1.25, schlafS: 4.5 }] } }], // prettier-ignore
+            /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 6 s \(Soll ≤ 3 s\) — Beweis: Ort O \(-310.50, -1044.25\) Grund 28.90 m, Neigung 4.3°, 3 fremde freie Körper ≤ 30 m \(1 wach\) · Welt-Uhr 12345.50 s · Sim-Uhr 345.25 s · 4516 Takte seit dem Boot · 1 Sprünge der Welt-Uhr \(2.50 s\) · verworfene Sim-Zeit 0.000 s · Wind am Ort 3.21 m\/s · 2 wach beim Soll: Scherbe \[1.5, 20.25, -3\] 0.042 m\/s auf Grund \+ 1 Körper \(Grund 3.8°, μ 0.60\), 5.90 s alt, 0.40 s ruhig, schlief nach 6.00 s; Kiste \[4, 20.1, 6\] 0.011 m\/s auf Grund, \? s alt, 1.25 s ruhig, schlief nach 4.50 s$/,
         ],
         ["ROT ohne Beweis sagt es", ["simWecken.druck.schlafS=", 6], /\(Soll ≤ 3 s\) — ohne Beweis \(die Probe trug keinen\)$/],
         ["die Welle der Probe bricht keine Scheibe", ["simWecken.druck.scherben=", 0], /LEER: die Welle der Probe brach keine Scheibe/],
@@ -3840,7 +3841,10 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                             const lage = (x) => {
                                                 const K = x._frei;
                                                 const auf = [K.welt && "Grund", K.nachbarn.length && `${K.nachbarn.length} Körper`].filter(Boolean).join(" + ") || "frei";
-                                                return { art: x === kiste ? "Kiste" : "Scherbe", p: Array.from(K.p, (v) => +v.toFixed(2)), tempo: r3(K.tempo), auf, alterS: geborenAm.has(x) ? r3(st.spielZeit - geborenAm.get(x)) : null, ruheS: r3(K.ruhe), schlafS: null };
+                                                // die Ebene seines Grunds (`_freiGrund`, `K.grund`): ihre Neigung und ihre Reibung, wie der Löser sie liest
+                                                const G = K.grund;
+                                                const grund = G && Number.isFinite(G.a) ? { grad: r3((Math.atan(Math.hypot(G.b, G.c)) * 180) / Math.PI), mu: r3(G.mu) } : null;
+                                                return { art: x === kiste ? "Kiste" : "Scherbe", p: Array.from(K.p, (v) => +v.toFixed(2)), tempo: r3(K.tempo), auf, grund, alterS: geborenAm.has(x) ? r3(st.spielZeit - geborenAm.get(x)) : null, ruheS: r3(K.ruhe), schlafS: null };
                                             };
                                             let amSoll = null;
                                             while (st.spielZeit - tW < 10 && wachN() > 0) {
@@ -3855,7 +3859,14 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                             D.schlafS = D.wach ? null : r3(st.spielZeit - tW);
                                             if (amSoll && (D.wach || !(D.schlafS <= sollS))) {
                                                 const je = [...amSoll.values()].sort((a, b) => (b.schlafS == null) - (a.schlafS == null) || b.schlafS - a.schlafS);
-                                                D.schlafBeweis = { welt: r3(st.spielZeit), sim: r3(st._simZeit), takte: st.weltTakt, sprungN: U.sprungN, sprungS: r3(U.sprungS), verworfenS: r3(U.verworfenS), windMS: r3(r._windAt(O.x, O.z, st._simZeit, {}).ms), amSoll: amSoll.size, wach: je.slice(0, 6) };
+                                                // der Ort der Probe O und die Neigung des Gesetzes dort (die Regel von `_freiGrund`: die Höhe unter
+                                                // vier Punkten im Abstand ½ m); die Reste früherer Marken: freie Körper von vor der Probe binnen 30 m um O
+                                                const yO = r._voxelSurfaceY(O.x, O.z) + 1;
+                                                const h = (dx, dz) => r._koerperBodenUnter(O.x + dx, yO, O.z + dz);
+                                                const neigung = (Math.atan(Math.hypot(h(0.5, 0) - h(-0.5, 0), h(0, 0.5) - h(0, -0.5))) * 180) / Math.PI; // je 1 m
+                                                const fremd = st.architectures.filter((e) => e._frei && bautenVor.has(e) && Math.hypot(e._frei.p[0] - O.x, e._frei.p[2] - O.z) <= 30);
+                                                const ort = { x: r3(O.x), z: r3(O.z), y: r3(h(0, 0)), grad: r3(neigung), fremd: fremd.length, fremdWach: fremd.filter((e) => !e._frei.schlaf).length };
+                                                D.schlafBeweis = { ort, welt: r3(st.spielZeit), sim: r3(st._simZeit), takte: st.weltTakt, sprungN: U.sprungN, sprungS: r3(U.sprungS), verworfenS: r3(U.verworfenS), windMS: r3(r._windAt(O.x, O.z, st._simZeit, {}).ms), amSoll: amSoll.size, wach: je.slice(0, 6) };
                                             }
                                             // das Bild schlafender Scherben neu gebaut, wie der Cull-Takt es baut (höchstens 16: die Probe bleibt kurz)
                                             for (const x of freie().filter((x) => x._frei.schlaf && x.mesh).slice(0, 16)) {

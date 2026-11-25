@@ -530,13 +530,20 @@ const [DRUCK_BILD_GRAD, DRUCK_BILD_MM] = [0.1, 1]; // das Bild der Scherbe gegen
 const DRUCK_SCHLAF_S = 3;
 // DER BEWEIS VON DRUCK-SCHLAF (nur im ROT, nur Ausgabe — das Urteil liest ihn nie): die Uhren an der Probe (Welt-Uhr, Sim-Uhr, die
 // Takte seit dem Boot, die Sprünge der Welt-Uhr und die Sim-Zeit, die der feste Schritt am Deckel verwarf), der Wind am Ort und je
-// Körper, der beim Soll noch wach lag, Ort, Tempo, Auflage und Alter in seinem letzten wachen Takt
+// Körper, der beim Soll noch wach lag, Ort, Tempo, Auflage (die Neigung und Reibung seines Grunds) und Alter in seinem letzten
+// wachen Takt; vorn der Ort der Probe O, die Neigung des Gesetzes dort und die Reste früherer Marken (freie Körper binnen 30 m)
 function druckSchlafBeweis(B) {
     if (!B) return " — ohne Beweis (die Probe trug keinen)";
     const z = (v, n = 1) => (v == null ? "?" : (+v).toFixed(n));
-    const je = (B.wach || []).map((s) => `${s.art} [${s.p.join(", ")}] ${z(s.tempo, 3)} m/s auf ${s.auf}, ${z(s.alterS, 2)} s alt, ${z(s.ruheS, 2)} s ruhig, ${s.schlafS == null ? "wach" : `schlief nach ${z(s.schlafS, 2)} s`}`);
+    const O = B.ort || {};
+    const je = (B.wach || []).map(
+        (s) =>
+            `${s.art} [${s.p.join(", ")}] ${z(s.tempo, 3)} m/s auf ${s.auf}${s.grund ? ` (Grund ${z(s.grund.grad, 1)}°, μ ${z(s.grund.mu, 2)})` : ""}, ` +
+            `${z(s.alterS, 2)} s alt, ${z(s.ruheS, 2)} s ruhig, ${s.schlafS == null ? "wach" : `schlief nach ${z(s.schlafS, 2)} s`}`
+    );
     return (
-        ` — Beweis: Welt-Uhr ${z(B.welt, 2)} s · Sim-Uhr ${z(B.sim, 2)} s · ${B.takte} Takte seit dem Boot · ${B.sprungN} Sprünge der Welt-Uhr (${z(B.sprungS, 2)} s) · ` +
+        ` — Beweis: Ort O (${z(O.x, 2)}, ${z(O.z, 2)}) Grund ${z(O.y, 2)} m, Neigung ${z(O.grad, 1)}°, ${O.fremd ?? "?"} fremde freie Körper ≤ 30 m (${O.fremdWach ?? "?"} wach) · ` +
+        `Welt-Uhr ${z(B.welt, 2)} s · Sim-Uhr ${z(B.sim, 2)} s · ${B.takte} Takte seit dem Boot · ${B.sprungN} Sprünge der Welt-Uhr (${z(B.sprungS, 2)} s) · ` +
         `verworfene Sim-Zeit ${z(B.verworfenS, 3)} s · Wind am Ort ${z(B.windMS, 2)} m/s · ${B.amSoll} wach beim Soll: ${je.join("; ") || "keiner"}`
     );
 }
