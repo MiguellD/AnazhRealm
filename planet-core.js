@@ -2792,8 +2792,18 @@
     // Leser bildet Heimat + Δ; „Sommer“ heißt, was daraus wärmer ist, und die Phase folgt ihm (Δ 0 oder 0,5): Spanne ≥ 0 an jedem
     // Ort. Vorher reiste Sommer − Sommer und Winter − Winter: die Rest-Spanne des Ankers (roh − Heimat, bis +1,1 K) zog in den Tropen
     // den Sommer unter den Winter (46 von 1 814 Land-Zielen, gelaende-core `schneePegel` las „friert immer“) und sprang am Äquator.
+    // DIE SPANNE REIST ALS VERHÄLTNIS (Karte 2 planet.kopplung.bahn-klima#2): das Mittel des Gangs reist als Differenz, seine halbe
+    // Spanne als Verhältnis zu der des Ankers (wie die Spende, `spendeVerh`) — der Ort trägt die Spanne der Heimat × r, r = Spanne
+    // des Orts ÷ Spanne des Ankers. Die Einstrahlung, die den Gang treibt, ist an jeder Breite außerhalb der Polarkreise
+    // S0·sin φ·sin ε (die Differenz der Tagesmittel zur Sonnwende, Berger 1978) — ohne Neigung 0, bei 45° das 1,78-Fache der Erde.
+    // Vorher reiste die Spanne als Differenz: der Rest des Ankers (Spanne der Heimat − Spanne des Ankers, an manchen Saaten 13 K)
+    // blieb jedem Körper — Neigung 0 trug an den 20 Saaten der Station bis 63 % der Spanne mit dem Körper der Erde.
     const kh = og.klimaHeute, gleich = o.klima.sommerPhase === a.klima.sommerPhase;
-    const dWarm = (gleich ? o.klima.sommer : o.klima.winter) - a.klima.sommer, dKalt = (gleich ? o.klima.winter : o.klima.sommer) - a.klima.winter;
+    const oW = gleich ? o.klima.sommer : o.klima.winter, oK = gleich ? o.klima.winter : o.klima.sommer;
+    const aHalb = 0.5 * (a.klima.sommer - a.klima.winter);
+    if (!(aHalb > 0)) throw new Error('planetOrt: der Anker der Heimat trägt keinen Jahres-Gang (halbe Spanne ' + aHalb + ' K) — die Spanne des Orts reist als Verhältnis zu ihr');
+    const dMitte = 0.5 * (oW + oK) - 0.5 * (a.klima.sommer + a.klima.winter), dSpanne = 0.5 * (kh.sommer - kh.winter) * (0.5 * (oW - oK) / aHalb - 1);
+    const dWarm = dMitte + dSpanne, dKalt = dMitte - dSpanne;
     if (kh.sommer + dWarm >= kh.winter + dKalt) { d.klima.sommer = dWarm; d.klima.winter = dKalt; d.klima.sommerPhase = 0; }
     else {
       d.klima.sommer = (kh.winter + dKalt) - kh.sommer; d.klima.winter = (kh.sommer + dWarm) - kh.winter; d.klima.sommerPhase = 0.5;
