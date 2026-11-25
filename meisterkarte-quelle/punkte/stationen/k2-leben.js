@@ -345,7 +345,7 @@ L.perspektive("pflanzen", (() => {
 
             // ══ BIOME: Ufer, Wärme und Gipfel am Spieler; 50 Hänge des Wald-Fadens; Kontinent, Planet und 100 Saaten des Planet-Fadens ══
             [B_ID]: {
-                sek: 30,
+                sek: 60,
                 pfad: PFAD_PLANET.concat(["stamm/bild-himmel.js", "stamm/wasser-hydro.js", "stamm/gelaende-boden.js"]),
                 ungefahren: "das Bild am Gipfel und im Luftbild, das Orbitbild gegen das Satellitenmosaik, die Blindbewertung „lebendige Welt“",
                 mess: async function (H, U, M) {
