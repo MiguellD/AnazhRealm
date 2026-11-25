@@ -42,7 +42,25 @@ Wagen 21 von Soll 21 je Stunde, keiner fest, kein Stoß, kein Wagen in Wagen, ke
 langsamste Minute fiel 138 → 121 m. Das ist der Preis des Wartens am Rand der anderen Bahn (Schnitt 1); der Boden der Linse
 (`weg60M` 30 m) hält.
 
-BILD-PLATZHALTER
+**main 2da17e2e ist eingemergt** (aeef8efe, z737–z741). Es überschneidet sich mit diesem Zweig nur in spec/stamm/modul-karte.json,
+ohne Konflikt. Die Laufzeit-Dateien des Beitrags (koerper-core.js · stamm/siedlung-bewohner.js · stamm/siedlung-verkehr.js) fasst
+main nicht an.
+
+**Das Bildpaar (GTX 1060, dasselbe Auge für main 2da17e2e und Kopf, 960 × 540).** Je Stunde ein Boot stadt-voll, der Spieler am
+Stand des Richters, die Uhr gesprungen, 25 s im Takt des Spiels, dann ein Schuss. Für „main“ lagen die vier Laufzeit-Dateien von
+main im Baum (dazu spec/stamm/modul-karte.json); die Rücknahme lief, danach war der Baum sauber. Mein erstes Auge, 13 m über der
+Kreuzung, stand mit 33,7 % Haus im Vordergrund (ABNAHME ROT). Das Auge wählte deshalb die Blick-Wahl der Werkbank am ersten Schuss
+(2 Posen): 21 m über der Kreuzung am Markt, [833,1 · 77,2 · 427,9] auf [845,2 · 56,0 · 437,5]. Alle vier Bilder: ABNAHME GRÜN.
+
+- **10 Uhr** (`cloud-post/tages-gesetz-bild/main-verkehr-10_00.jpg` ↔ `kopf-verkehr-10_00.jpg`). Binnen 40 m der Kreuzung main
+  8 Wagen, Kopf 7, alle fahrend; draußen binnen 25 m main 104, Kopf 85 Leiber; Luma 94,2 ↔ 94,1. Mein Auge: dieselbe Kreuzung,
+  der Markt in beiden voll, unten queren Gehende. Am Kopf steht der orange Wagen in der Kreuzung, bei main fährt er auf der Straße
+  nach Westen.
+- **23 Uhr** (`main-verkehr-23_00.jpg` ↔ `kopf-verkehr-23_00.jpg`). 7 Wagen binnen 40 m, alle fahrend; draußen 7 ↔ 6 Leiber;
+  Luma 53,8 ↔ 53,8. Mein Auge: die Nacht unter den Laternen, Scheinwerfer an, der Markt leer, die zwei Bilder kaum zu
+  unterscheiden (der Transporter in der Kreuzung bei main ein Stück weiter).
+
+Den Kontakt selbst zeigt kein Bild: er lag bei Bild 33 148 der 600 s. Sein Richter ist die Fahr-Linse (oben).
 
 ## Der Heil-Kopf (tages-gesetz 3, 25.11.): die CI des Kopfs 1d2f7e03 stand ROT an zwei Aufträgen dieses Zweigs
 
