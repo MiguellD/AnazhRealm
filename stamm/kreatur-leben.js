@@ -2874,11 +2874,8 @@ class AnazhRealm_kreatur_leben {
             this._gattungLeib(g).beinL * bs,
             this._geburtsLeib || (this._geburtsLeib = {})
         ).hoehe;
-        const d = Math.hypot(
-            x - cam.position.x,
-            this.getTerrainHeightAt(x, z) + 0.5 * h - cam.position.y,
-            z - cam.position.z
-        );
+        // die waagrechte Strecke zur Kamera (kürzer als die schräge: die Schwelle hält eher zurück)
+        const d = Math.hypot(x - cam.position.x, z - cam.position.z);
         return (h * AnazhRealm._brennweite(this._schirm().hoehe)) / d <= AnazhRealm.BESTAND_REGION.erscheinenPx;
     }
     // DIE ANKUNFT: springt der Spieler zwischen zwei Takten weiter als die halbe Seite einer Region (der Boot, ein Stand, ein
