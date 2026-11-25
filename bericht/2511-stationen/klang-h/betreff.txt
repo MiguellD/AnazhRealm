@@ -1,0 +1,24 @@
+Station erleben.klang.getuemmel S1: die Klang-Linse misst EINMAL 600 s am Markt in der Sitzung (g6.js marktLauf: marktSeite und marktUrteil aus diag-klang-zensus am SHA), die Station liest ihren Spruch; die Leiter trägt S1 als bestehend — 10 min trägt keine Leiter (Deckel 45 s, dauer_min 0,234) [skip ci]
+
+Entscheid des Koordinators (25.11.): die 10 min misst EINMAL die Linse `--markt --sek 600` am Gerät, die Station liest ihren
+Spruch für denselben Kopf und dasselbe Gerät über den bestehenden Weg; fehlt die Zeile, UNGEMESSEN beim Namen, nie GRÜN.
+
+Der bestehende Weg für eine Messung über dem Deckel einer Leiter: eine Station der Gruppe g1–g6 mit eigener Probe und eigenem
+Deckel, die Leiter nennt die Sprosse in `bestehend` (wie erleben.spieler.praesenz S1, g5.js PRAESENZ 420 s). Die Probe fährt in der
+EINEN Welt der Sitzung (sitzungBefehl, wie landschaftLauf): `h.skript` liest `marktSeite` und `marktUrteil` aus
+scripts/diag-klang-zensus.cjs am SHA (EINE Quelle, kein Zwilling), die Seite hört 600 s Audio-Uhr am Messort stadt-voll (10 Uhr,
+Musik an, Spitze am Abgriff der Wand, Stimmen zugleich, Duck-Bus mit dem Mess-Ton, 30 Duck-Proben), der Spruch nennt jede verfehlte
+Zeile beim Namen. `messort("stadt-voll")` im Befehl: die Sitzung stellt die Probe vor dem Deckel an den Markt (ORT_MUSTER).
+
+Das Urteil liest den Spruch an den Worten der Sprosse: Spitze ≤ 0 dBFS · Dauer ≥ 10 min (Audio-Uhr) · Duck 8–12 dB an jeder
+Probe des Busses · ≥ 7 Stimmen zugleich im Median. Die übrigen Zeilen der Linse (L_Aeq der Wochenmärkte, Lombard, die Menge)
+stehen als Zeugen in der Zahl. Ohne Zeile MARKT kein Urteil. 9 Proben der Station (GRÜN · L_Aeq allein · 14 s · Spitze 0,4 ·
+Duck 13,27 · kein Bus · 6 Stimmen · keine Stadt · keine Zeile) urteilen je wie gesetzt.
+Fällt: S1 in der Leiter (getuemmelSeite, 14 s an der Wiese im Regen) und `mutiert` der Leiter (S2–S6 lesen nur den Zensus).
+Soll-Texte unverändert; die Tafel-Zeile getuemmel#1 „gleich“ bleibt (derselbe Schlüssel).
+
+Gemessen (Hand-Lauf Radeon am main 0ee3ed8c, 25.11. 21:06–21:34): 600,1 s Audio-Uhr am Markt in 610,6 s Probe (Deckel 780 s), Spitze
+−2,71 dBFS, Duck 10,00 dB an 30 von 30 Proben, Stimmen zugleich P50 6 (max 25) gegen ≥ 7 — der Spruch der Linse ROT allein an „Mk
+zugleich“; die Sitzung UNGEMESSEN unter fremder Last (Referenz f 1,678, git pack-objects 379,6 CPU-s), keine Akte.
+Vorher (die Leiter, 14 s an der Wiese bzw. am Markt): dauer_min 0,234.
+Katalog: punkte.cjs liste am Kandidaten gleich dem Kopf (1 976 Stationen · 420 Kriterien · fehlt 15 · Fehler 2).
