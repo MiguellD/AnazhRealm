@@ -1,7 +1,7 @@
 {
  "sha": "486a6685925d51302752c756d7d47654d83922d1",
  "geraet": "radeon",
- "zeit": "2026-11-25T08:34:04.535Z",
+ "zeit": "2026-11-25T08:51:36.942Z",
  "host": "MiguellD",
  "je": {
   "karte2.mensch.macht.wehrbau#4": {
@@ -1265,6 +1265,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.handel#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: Umfang nicht erzeugbar: 10 Routen zwischen Orten: 0 der 21 Wagen außerhalb ihres Plans — die Wagen fahren zwischen den Wenden EINER Stadt (1 Siedlung(en)) (gemessen 0, Soll 10 Routen zwischen Orten) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.06,
+   "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: 10 Routen zwischen Orten: 0 der 21 Wagen außerhalb ihres Plans — die Wagen fahren zwischen den Wenden EINER Stadt (1 Siedlung(en)) (gemessen 0, Soll 10 Routen zwischen Orten) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k7ec5841110f2",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k440f272d39e8",
+   "s": 63.2,
+   "fremd": {
+    "s": 63.9,
+    "takte": 27,
+    "fremdS": 44.38,
+    "kerne": 0.694,
+    "fensterKerne": 1.17,
+    "namen": [
+     [
+      "silentConfig",
+      7.47
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      6.89
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      6.23
+     ]
+    ],
+    "dienerS": 33.75,
+    "diener": [
+     [
+      "dwm.exe",
+      13.7
+     ],
+     [
+      "WmiPrvSE.exe",
+      9.86
+     ]
+    ],
+    "geraetS": 35,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.8
+     ],
+     [
+      "svchost.exe",
+      10.91
+     ],
+     [
+      "SearchIndexer.exe",
+      2.52
+     ]
+    ],
+    "eigenS": 192.78,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T08:51:36.942Z",
+   "abdruck": "06fe69b88136",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1286,7 +1356,8 @@
   "k030cd07783b4": "rVVNj5tIEP0vPu4s02DANC3l0NhejXcThUi55FgN1cAYg9UNZuMo/z0Cw5gPJ8pK2weQ0KuuV69eFd9WZ4iOkODzqy6LFVv9sfpzpeGChkZ1QfX8qlds5UfWGm3Gb4dwzrctLFLZudIkziAxjgqhqpWRo8DiOerCpC821GPkfz78Ex+fV875PuDv3v2MUgXHqmdkovBjiwUJ5800Is8EAVFAekKjVhVmeR8CAp2YMtLseRISIsmV7Jp79v2Da3KBcWlUIDF/y2u7FNkcWOsEBBpQyy7xADbpZg29bHTHP+7utTcfOA8d6YR0xzmXPFlkF1DE0wr8jeuhyw5fH7KNM8DKyLNCD/mt2POlyUY5FzEKGuMKmOao+iCkluWIgXTQStPKNQuUea31JBm1Y3dNGSH+HJugzqK0Ms6qvFtK+GvPAhY0izqSc23IMSMQAqiYa54CFgmqCQfTjuTGYuRfOr/0CCdUYBSQDlqatrcWE0u/LLkMzjthoaMhNJaxE9H/PA2/uH6ijC88M0LGf/uMpmj7+1HJYR/M6ORdmzpBBzKmkK4tZrXSHbm0duKH8YU0bL+RpwEV9MMVjTDbpW11lGbqNJVAOrg2bfZ+qZhOIUZlHEtdvaFt9BxT3AQ77Ej3Dum8OH0vbnAsANDReBBK+MvCObqUVQMKjeRcDyPioOu5jPPDAlzB6TQ43EYzNh/2seH7B5FFPKHneBtEZIQ83dbGUozbcjCumOVDkJSO47tsGzhz8EXByQCRqEzKN6e5kfQfjWyDeWWIshzWrW15nm23UhVjI4Rdi8cu2CWfnA9/8WY/Lfgf/nJJFjV3WUpVDeRdsTGlw2RXbbRAZ6oyGojSAb6WAqGlv+jZFVWOCU7kFB7124Fvej+2azf0+sUon8ZlkevyxgxboQtd68EEETjCZQ9a06A6CiiOPTCKLWsTs78558FH/jLR5fDZDOmOLE6z50ETFv0IfekeW94lOWNEzqqUWft/ICnUOoW8mvz1b5AapagxLbD1VpWVBRZ31Pcf",
   "k06ff66462a1f": "bVVdb6MwEPwvebweNQQIxlIfnBCpkXrX9CesYQ00BCIbwjWn++8nSNzwkX1BQjPs7OzY/F2cID5Ais+fuioXbPFj8XOh4YyWRnVG9fypF2wRxs4SXcY/eFeEc77pYLHKT7UmRS4IiBKyI1qNqjEvnuOeBgK9hDLSbnm6J0SSC4nal5cptRCYVFYNEg3RRtenyKbARqcg0IJG9s0M2KarJTDSF434e0S+q6Wc7z3p7Wk0+ZiAMhmrDVd+gD7bfXG+5TOVSQ5YW0VeatPXSYJQ2uze69eMo6C1LoBZgepGQuo4njBi152dnTUToiwarUfNqJv4S8oICafYFHUeZ7V1UpXA8gYX4TJwgK3nbqenxpJDRSAEUDH1OgMsU1QjDbYby5XTaZe9fP21l38o52s+bXKAIyqwSsiMt7YbLMXdK0LI61xb0Q/StzSD2EL67pjYLZmcO8P5jg+K7rt35Mmg1u31fTzAbOaL1XGWq+PYPunh0nbZ21yiziBBZR0qXX+jXQw8W7C+wS4i/XNP11PmfTizUwCggwARSvgrnXWsZN2CQis9NSZEHvqBzzjfzcA1HI8mAy7aic34rLYPWGUykuYFK0RkhDxdD9PciOvRsS6YF4YkpeeF/jRJZwVHC0SqcilNGoQfy/BRmFssaktUVW2sdYLAdTuLymEAfverHW4/Sj+8uli32/Gou1k0+w6Vqo1oX6xs6THZByqeoXNVWy3EmYEvpUAI2QPoBVWBKY5sFAENu9i31wNDLt11FNyuC/k0HIlcZpu/5NgZXOpGm8XH4AmfPVhJi+ogoDzcgHHiOKuEvXHO1+/8deBIyzfRx55G3fEZlZt23m0y3ppTE6XmTjthTE6qknl3a5IMGp1BUd9/Gf/+Aw==",
   "k48e7cfd8295f": "bVVdb5swFP0veVznGgIEY6kPTunUSO2WSXvZ4zVcAw2ByIYwZdp/nyBxy0fvA0jWub7H5xzD39UJkgNkeP9m6mrFV19WX1cGzkgM6jPq+zez4qsocdfocXEtKoR47GGJLk6NoWUhKcgK8iOSVjdYlPfJ0AYS/ZRx2j2JbE+pohcadw8P89ZSYlqTBhTaRge9gCGfA1uTgUQCrRqGWbDDNmvgdCgWix8xfa/uVYi9r/w9i2ebSajSKdtoE4QY8F0nxJNYsEwLwIaURWXsXDcNI+Xw0axFj4aOXADzEvWtCZnr+tKS3fZy9tLMGlXZGjMZxrw0WDNOaTTHZmiKJG/ISdcSqxtcRuvQBb5dqp2dWqLGjEBKYHKudQ5YZagnHBwvURuX0z9svukBjqiBVJBbLR0vXMsPbSilz0su5UB8GGGJO1IF3rSxN5Wee4HFToyK7fs1emdR2+66nowwj0sjTZIX+jiVS/m4djz+sqRockhRk0Ntmne0h6HvyOtt2MV0eO/Zdt75cTjrIQCwUWAoo+J5oaWpVdOBRpKdWhsaH4Mw4ELsFuAGjkfruYdO6syNNE0f9DENP9wgIqf07npRloe+XgtywaK0TUr5fhTwx202B581HAnITBdKWfdlkKjos7B2WDZE1nVjpXTD0PM49Wg1Nvz7YOXY7Tj76b9+E92TmNROzOkME2rdWOKB3DjK52oIULJAF7ohHSS5ha+VROipL3y5oC4xw4mUMmRRH/Pulrm4T0J4+xyou/GR6GW5Y4G9yJVpjTU6AV8G/BNbOtQHCdXhBkxS192kQwS3P8TzVJNfzp7FdF7eoN1Lfrsmv6+P65ATJvSka1X0X0WaQ2tyKJuPX8K//w==",
-  "k6742757b7e00": "bVXbjpswEP2XPHbLGgIEY2kfzGalTbtVU6k/MIYxsCEQ2RCqVP33yiTecNl5QYrOzJw5Z8b5uzpBeoAcH991U6/Y6svq60rDGR2N6ozq8V2v2CpOvTX6jF+DcM6fDSxV5anVpCoFAVFDcUSnUy2W1WM6pIHAIKOM9C883xMiyYVse/4RL/zpaV6mEpg1TgsSbREX/ZAimwM7nYNABzo5NLZgl27WwMgQdMt/bslH9JTzfSCDPd2a5rOCAupsyj7ehBGGbNd/yjQrAVunKmtte3tZFEuX3fv9WOQo6J0LYFGhuiUh9bxAWMKJkcVINUuUVaf1pBn1s3BNGSHxHJujLtOidU6qEVjf4CJeRx6wpF/MkZ86R44ZgRBAxVzvArDOUU04uH4qNx4jf+i86AGOqMCpobBaun60FndtCCGvSy7VQHxoYYm7Qob+NNEYS85GYL7jo6B78xt5sKjktmrpCPO8NFKnRamOU7lkgGvXZ29LirqADJVzaHT7gfYxClxxvY7dlgzfPU3mmffhrIcAQEcLQyjhrwstdSPbHhQ6+amzSxNgGIWM890C3MLxaD330c3cuZG6NYs+phFEG0RkhDxcj2U59PUsnAuWlU2SMgjikD0n+Rx8VnB0QOSqlNK6L8JUxp8ta49V64imaa2UXhT5vpGkHhu+H6wcu73NfwVtlfQvfBI7PqczdGhUa4mHYuPKgMlhgdIFulSt00NaWPhaCgRDfeHLBVWFOU6kFBGNzZr38sr7Yp6c6PYcyIfxSOSyrFiiEbnWnbZGpxCIkH1iS4/qIKA+3IBp5nmbjH3jnCc/+etEk++/3T011kaT/v6g3VtxO5PUaGrfrBOm5KQaWZpXkRTQ6QKq9v4X8e8/"
+  "k6742757b7e00": "bVXbjpswEP2XPHbLGgIEY2kfzGalTbtVU6k/MIYxsCEQ2RCqVP33yiTecNl5QYrOzJw5Z8b5uzpBeoAcH991U6/Y6svq60rDGR2N6ozq8V2v2CpOvTX6jF+DcM6fDSxV5anVpCoFAVFDcUSnUy2W1WM6pIHAIKOM9C883xMiyYVse/4RL/zpaV6mEpg1TgsSbREX/ZAimwM7nYNABzo5NLZgl27WwMgQdMt/bslH9JTzfSCDPd2a5rOCAupsyj7ehBGGbNd/yjQrAVunKmtte3tZFEuX3fv9WOQo6J0LYFGhuiUh9bxAWMKJkcVINUuUVaf1pBn1s3BNGSHxHJujLtOidU6qEVjf4CJeRx6wpF/MkZ86R44ZgRBAxVzvArDOUU04uH4qNx4jf+i86AGOqMCpobBaun60FndtCCGvSy7VQHxoYYm7Qob+NNEYS85GYL7jo6B78xt5sKjktmrpCPO8NFKnRamOU7lkgGvXZ29LirqADJVzaHT7gfYxClxxvY7dlgzfPU3mmffhrIcAQEcLQyjhrwstdSPbHhQ6+amzSxNgGIWM890C3MLxaD330c3cuZG6NYs+phFEG0RkhDxcj2U59PUsnAuWlU2SMgjikD0n+Rx8VnB0QOSqlNK6L8JUxp8ta49V64imaa2UXhT5vpGkHhu+H6wcu73NfwVtlfQvfBI7PqczdGhUa4mHYuPKgMlhgdIFulSt00NaWPhaCgRDfeHLBVWFOU6kFBGNzZr38sr7Yp6c6PYcyIfxSOSyrFiiEbnWnbZGpxCIkH1iS4/qIKA+3IBp5nmbjH3jnCc/+etEk++/3T011kaT/v6g3VtxO5PUaGrfrBOm5KQaWZpXkRTQ6QKq9v4X8e8/",
+  "k7ec5841110f2": "bVVdb6MwEPwvebyeawgQjKU+OKGnRrpeU+n+wBrWQEMgsiGccrr/foLULR/dF5A14x3PrOHv6gzJETK8fzN1teKrb6vvKwMXJAb1BfX9m1nxVZS4a/S4uBUVQux6WKKLc2NoWUgKsoL8hKTVDRblfTLQQKKfMk67R5EdKFX0SuPu4WFOLSWmNWlAoSU66AUM+RzYmgwkEmjV0MyCHbZZA6dDsVi8xPSjumchDr7yDyyebSahSqdqo00QYsD3nRCPYqEyLQAbUhaVsX3dNIyUw0e9FhwNHbkC5iXqdxIy1/WlFbvt7eytmRFV2Rozaca8NFgzTmk0x2ZoiiRvyFnXEqt3uIzWoQt8u3Q7O7dEjRWBlMDk3OscsMpQTzQ4XqI2Lqd/2HzTI5xQA6kgt146XriWn95QSp+WWspB+NDCCnekCrwpsQ+VXnqDxV6Mih36NXpnUdvutp6MMLtlkCbJC32a2qV8XDse/7mUaHJIUZNjbZoPtIeh78jbbdjHdHge2HbO/DyczRAA2GhgKKPiaeGlqVXTgUaSnVs7ND4GYcCF2C/ADZxONnMPndSZB2maftDHMvxwg4ic0rvbRVke+nYtyBWL0pKU8v0o4LttNgdfNJwIyEwXStn0ZZCo6Kth7bBsiKzrxlrphqHncerRahz4ryHKcdpx9uo//xDdo5jUXszlDB1q3Vjhgdw4yudqGKBkgS50QzpIcgtfK4nQS1/kckVdYoYTK2XIon7Mu9HMxb59uRsfiV6XOxbYm1yZ1tigE/BlwL+IpUN9lFAd34FJ6rqbdBjB7Yt4mnry2zmwuL8uk/Ky3rs4347Xdzf/zpjQs65V0X8VaQ6tyaFsPn8J//4D"
  },
  "ungemessen": {
   "profiband.K4#1": {
@@ -2254,6 +2325,134 @@
    },
    "zeit": "2026-11-25T08:34:04.535Z",
    "abdruck": "b6c3c3996fb0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.verstaendigung#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 50.6 s · S1 warf: /eval ohne Antwort binnen 40 s",
+   "exit": 0,
+   "minuten": 0.86,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 50.6 s · S1 warf: /eval ohne Antwort binnen 40 s",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 50.7,
+   "fremd": {
+    "s": 54,
+    "takte": 23,
+    "fremdS": 144.03,
+    "kerne": 2.667,
+    "fensterKerne": 3.269,
+    "namen": [
+     [
+      "silentConfig",
+      102.47
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.39
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh mauer-gate-fachwerk-contract-m bash -c npm run -s gate:fachw",
+      4.94
+     ]
+    ],
+    "dienerS": 25.73,
+    "diener": [
+     [
+      "System",
+      12.17
+     ],
+     [
+      "WmiPrvSE.exe",
+      8.22
+     ]
+    ],
+    "geraetS": 38.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.09
+     ],
+     [
+      "svchost.exe",
+      14.92
+     ],
+     [
+      "SearchIndexer.exe",
+      2.83
+     ]
+    ],
+    "eigenS": 88.55,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T08:46:22.173Z",
+   "abdruck": "55183cc3768b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.recht#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:630:28) |     at ClientRequest.emit (node:events:509:28) |     at Socket.emitRequestTimeout (node:_http_client:948:9)",
+   "exit": 2,
+   "minuten": 0.85,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:630:28) |     at ClientRequest.emit (node:events:509:28) |     at Socket.emitRequestTimeout (node:_http_client:948:9)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 50.7,
+   "fremd": {
+    "s": 52.5,
+    "takte": 22,
+    "fremdS": 88.5,
+    "kerne": 1.687,
+    "fensterKerne": 2.108,
+    "namen": [
+     [
+      "silentConfig",
+      29.95
+     ],
+     [
+      "rg --no-config --hidden --no-follow --glob !.git --glob !.svn --glob !.hg --glob !.bzr --g",
+      12.02
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.42
+     ]
+    ],
+    "dienerS": 32.66,
+    "diener": [
+     [
+      "System",
+      16.94
+     ],
+     [
+      "WmiPrvSE.exe",
+      8.77
+     ]
+    ],
+    "geraetS": 229.95,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      208.25
+     ],
+     [
+      "svchost.exe",
+      18.59
+     ],
+     [
+      "SearchIndexer.exe",
+      2.42
+     ]
+    ],
+    "eigenS": 74.2,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T08:49:09.209Z",
+   "abdruck": "2c9130abcfb3",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
