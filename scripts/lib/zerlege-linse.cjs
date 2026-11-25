@@ -528,10 +528,12 @@ function lauf(k) {
                     const kand = [];
                     for (const c of st.creatures) {
                         const u = c.userData, blick = u._tierBaum && !r._kreaturAusserBlick(c, fr, 0);
-                        if (!alt.has(c)) alt.add(c), (kreis.imBlick += blick ? 1 : 0);
-                        if (!blick) continue;
                         const d = v.set(c.position.x, c.position.y + u._ruheKugelH, c.position.z).distanceTo(cam.position);
                         const f = H / (2 * d * Math.tan((cam.fov * Math.PI) / 360)), neu = !kreis.gesehen.has(c) && s >= naechst;
+                        // sichtbar erschienen: im Blick UND höher als die Erkennens-Schwelle (Johnson 1958: 4,0 ± 0,8 Linienpaare,
+                        // die Oberkante 4,8 = 9,6 px über der Höhe) — ein Punkt im Blick ist kein Schlupfloch (tiere-im-blick 2)
+                        if (!alt.has(c)) alt.add(c), (kreis.imBlick += blick && 2 * u._ruheKugelH * f > 9.6 ? 1 : 0);
+                        if (!blick) continue;
                         v.project(cam);
                         kand.push({ c, d, rp: u._ruheKugelR * f, x: ((v.x + 1) * W) / 2, y: ((1 - v.y) * H) / 2, px: 0, neu: neu && 4 * (u._ruheKugelR - u._ruheKugelH) * u._ruheKugelH * f * f >= soll });
                     }

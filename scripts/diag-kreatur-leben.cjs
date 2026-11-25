@@ -1128,6 +1128,11 @@ async function lebenBuehnen() {
             decke("_pickFaunaSoulAtPlayer", () => (x, z, rng) => A.CREATURE_SOUL_NAMES[Math.floor(rng() * 4)]);
         if (taeter === "geburt") decke("_bestandLeibOrt", () => () => ({ x: pm.x + 15, z: pm.z }));
         // der Täter: das Gesetz vor tiere-im-blick — der Leib ≥ 130 m vom Spieler, die Spirale sucht fern und außer Blick
+        // der Täter: das Erscheinen ohne die Schwelle des Schirms — im Blick erscheint jeder Leib, auch nah (Pop-in vor dem Auge)
+        if (taeter === "erscheinen-nah")
+            decke("_bestandErscheint", () => function (x, zz) {
+                return Math.hypot(x - pm.x, zz - pm.z) >= A.CREATURE_SPAWN_CLEAR_M;
+            });
         if (taeter === "geburt-fern") {
             decke("_bestandErscheint", (alt) => function (x, zz, g, bs) {
                 return Math.hypot(x - pm.x, zz - pm.z) >= A.CREATURE_SPAWN_FAR_MIN && alt.call(r, x, zz, g, bs);
@@ -1157,7 +1162,8 @@ async function lebenBuehnen() {
         Object.assign(z, {
             imBlick: 0,
             fensterMax: 0,
-            fernMin: A.CREATURE_SPAWN_FAR_MIN,
+            nahMin: A.CREATURE_SPAWN_CLEAR_M,
+            sichtbarPx: 0,
             baer: { fluss: [0, 0], sonst: [0, 0] },
         });
         const p0 = pm.clone();
@@ -1190,7 +1196,14 @@ async function lebenBuehnen() {
                     z.gattung[g] = (z.gattung[g] || 0) + 1;
                     z.klasse[kl] = (z.klasse[kl] || 0) + 1;
                     z.minM = Math.min(z.minM, rund(ab(c.position, pm), 1));
-                    if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) z.imBlick++;
+                    // KEIN LEIB ERSCHEINT SICHTBAR (Richter-Entscheid tiere-im-blick 2): im Blick zählt er nur, wo seine Höhe am Schirm
+                    // die Erkennens-Schwelle übersteigt (Johnson 1958: 4,0 ± 0,8 Linienpaare, die Oberkante 9,6 px)
+                    if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) {
+                        const hoehe = r._kreaturLeib(c, 0, {}).hoehe;
+                        const px = (hoehe * A._brennweite(r._schirm().hoehe)) / s.camera.position.distanceTo(c.position);
+                        if (px > 9.6) z.imBlick++;
+                        z.sichtbarPx = rund(Math.max(z.sichtbarPx, px), 1);
+                    }
                     const nn = Math.min(...neu.filter((o) => o !== c).map((o) => ab(c.position, o.position) / paar));
                     if (nn < Infinity) z.fensterMax = rund(Math.max(z.fensterMax, nn), 2);
                 }
@@ -3004,11 +3017,11 @@ function lebenUrteil(name, z, soll) {
         soll(RB.punktImBlick === false && RB.leibAusser === false, `LEER: kein Leib am Rand des Blicks: ${JSON.stringify(z.rand)}`); // prettier-ignore
         soll(!RB.wich, `ein Leib wich dem Akt vor dem Auge — sein Fuß-Punkt 0,2 m draußen (${JSON.stringify(RB)})`);
         soll(RB.wich || RB.fernWich, "der Leib außer Blick wich dem Akt an der vollen Kappe nicht (vakuös)");
-        soll(z.minM >= 0.99 * z.fernMin, `Geburt ${z.minM} m vor dem Spieler (Soll ≥ ${z.fernMin} m)`);
+        soll(z.minM >= 0.99 * z.nahMin, `Geburt ${z.minM} m vor dem Spieler (Soll ≥ ${z.nahMin} m)`);
         // der Versatz Leib ↔ Tier im Median (das alte Gesetz: 93 m); wo der Ort des Tiers keinen Grund trägt, weicht die Spirale
         const vm = (z.versatz || []).slice().sort((a, b) => a - b)[Math.floor((z.versatz || []).length / 2)];
         soll(vm <= 1 && z.amOrt[1] >= 10, `${z.amOrt[0]} von ${z.amOrt[1]} Würfen am Ort ihres Tiers, Versatz im Median ${vm} m (Soll ≤ 1 m)`);
-        soll(z.imBlick === 0, `${z.imBlick} Geburten im Blick`);
+        soll(z.imBlick === 0, `${z.imBlick} Geburten sichtbar im Blick (> 9,6 px Höhe, größte ${z.sichtbarPx} px)`);
         soll(
             z.gruppen >= 10 && z.gattung.wolf && z.gattung.deer,
             `keine Gruppe: ${z.gruppen} von ${z.geburten} Würfen`
@@ -3154,7 +3167,8 @@ module.exports = {
                 "lebensraum",
                 /Geburten außerhalb des Lebensraums[\s\S]*Gegenprobe Geburten außerhalb[\s\S]*der Bär sucht den Fluss nicht/,
             ],
-            ["geburt", /vor dem Spieler/],
+            ["geburt", /Würfen am Ort ihres Tiers/],
+            ["erscheinen-nah", /Geburten sichtbar im Blick/],
             ["geburt-fern", /Würfen am Ort ihres Tiers/],
             ["geburt-einzeln", /keine Gruppe/],
             ["weichen-rand", /ein Leib wich dem Akt vor dem Auge/],

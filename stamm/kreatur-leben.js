@@ -2857,14 +2857,29 @@ class AnazhRealm_kreatur_leben {
         }
         return null;
     }
-    // DARF EIN LEIB DES BESTANDS AN (x, z) ERSCHEINEN? Nie im Raum des Spielers (CREATURE_SPAWN_CLEAR_M); bei der Ankunft überall
-    // (das Bild ist neu, `_bestandAnkunftTakt`), sonst nur außer Blick (der Leib als Kugel samt Rand, `_kreaturLeibImBlick`).
-    // Die Profis halten den Bestand in einer Blase um den Spieler an seinem Ort (theHunter: Call of the Wild, Leib ab 384 m,
-    // fällt bei 416 m); ein Rothirsch deckt 200 px am Maß 1280×720 erst diesseits von ~31 m, ein Bär von ~38 m.
+    // DARF EIN LEIB DES BESTANDS AN (x, z) ERSCHEINEN? KEIN LEIB ERSCHEINT SICHTBAR: nie im Raum des Spielers
+    // (CREATURE_SPAWN_CLEAR_M); bei der Ankunft überall (das Bild ist neu, `_bestandAnkunftTakt`); sonst außer Blick (der Leib als
+    // Kugel samt Rand, `_kreaturLeibImBlick`) ODER im Blick so fern, dass seine Höhe am Schirm ≤ erscheinenPx Bildpunkte misst
+    // (Johnson 1958: ein Ziel ERKENNT das Auge ab 4,0 ± 0,8 Linienpaaren = 8 px über seiner kritischen Ausdehnung, darunter ist es
+    // ein Punkt). Bis tiere-im-blick 2 erschien kein Leib im Blick: was dem Gehenden vor die Augen kam, stand im Kegel und erschien
+    // nie — die Ich-Sicht sah in 600 Spiel-s Gang 0 Tiere (tiere.K5#1). Ein Rothirsch misst 8 px Höhe am Maß 720 Zeilen bei ~76 m.
     _bestandErscheint(x, z, g, bs) {
         const p = this.state.playerMesh.position;
         if (Math.hypot(x - p.x, z - p.z) < AnazhRealm.CREATURE_SPAWN_CLEAR_M) return false;
-        return this._bestandAnkunft > 0 || !this._kreaturLeibImBlick(x, z, g, bs);
+        if (this._bestandAnkunft > 0 || !this._kreaturLeibImBlick(x, z, g, bs)) return true;
+        const cam = this.state.camera;
+        const stell = this._geburtsStell || (this._geburtsStell = { rotation: { y: 0 } });
+        const h = this._kreaturLeib(
+            stell,
+            this._gattungLeib(g).beinL * bs,
+            this._geburtsLeib || (this._geburtsLeib = {})
+        ).hoehe;
+        const d = Math.hypot(
+            x - cam.position.x,
+            this.getTerrainHeightAt(x, z) + 0.5 * h - cam.position.y,
+            z - cam.position.z
+        );
+        return (h * AnazhRealm._brennweite(this._schirm().hoehe)) / d <= AnazhRealm.BESTAND_REGION.erscheinenPx;
     }
     // DIE ANKUNFT: springt der Spieler zwischen zwei Takten weiter als die halbe Seite einer Region (der Boot, ein Stand, ein
     // Ort-Wechsel, ein Sprung der Welt-Uhr — `_bestandSprung`), ist das Bild neu — ankunftTakte Takte lang zeichnet die Zeichnung
@@ -4003,6 +4018,8 @@ AnazhRealm.BESTAND_REGION = Object.freeze({
     leiberJeTakt: 3,
     // die Takte der Ankunft (`_bestandAnkunftTakt`): eine Kappe von 20 Leibern zu leiberJeTakt je Takt steht nach 7 Takten
     ankunftTakte: 60,
+    // die Höhe (px am Schirm), bis zu der ein Leib im Blick erscheinen darf (`_bestandErscheint`; Johnson 1958, Erkennen 4 Linienpaare)
+    erscheinenPx: 8,
 });
 // DER TIER-SATZ (profiband.K1, `_tickTierSatz`): `nahLeiber` Tiere leben im Nah-Kreis als Leib, jedes andere steht im Satz seiner
 // Gestalt — `phasen` Posen je Band (der Knoten legt zwischen zwei Zeilen linear: mit 16 glitt der Stand-Fuß an den Kanten des
