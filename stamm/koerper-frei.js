@@ -100,6 +100,8 @@ class AnazhRealm_koerper_frei {
             welt: false,
             schlaf: entry.ruht === true,
             ruhe: 0,
+            // die Kugeln der drei Testpunkte der Ruhe (`_freiRuhig`: je Mitte und Radius; −1: neu beginnen)
+            kugel: Float64Array.of(0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, -1),
             stempel: null,
         });
         delete entry.ruht;
@@ -617,28 +619,18 @@ class AnazhRealm_koerper_frei {
         neu.clear();
         for (let k = 0, c = 0; k < n; k++, c += CS) {
             if (!(G[c + 48] > 0)) continue;
-            const w = alt.get(G[c + 74]) || new Float64Array(6);
+            const w = alt.get(G[c + 74]) || new Float64Array(3);
             w[0] = G[c + 48];
             w[1] = G[c + 49];
             w[2] = G[c + 50];
-            // die Normale, unter der der Impuls galt (`_freiKontaktBereit` prüft sie)
-            w[3] = G[c];
-            w[4] = G[c + 1];
-            w[5] = G[c + 2];
             neu.set(G[c + 74], w);
         }
         this._freiWarm = neu;
         this._freiWarmNeu = alt;
-        // die Ruhe: ruhig ist, wessen Punkte langsamer als FREI.ruheMs gehen; er schläft nach FREI.ruheS, ruhen seine Nachbarn
-        for (const K of W) {
-            const v = K.v;
-            const w = K.w;
-            const tempo = Math.max(
-                Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]),
-                Math.sqrt(w[0] * w[0] + w[1] * w[1] + w[2] * w[2]) * K.rad
-            );
-            K.ruhe = tempo < F.ruheMs ? K.ruhe + dt : 0;
-        }
+        // die Lage am Ende des Schritts (die Ruhe liest ihre Testpunkte), dann die Ruhe (`_freiRuhig`): ruhig ist, wessen drei
+        // Testpunkte binnen FREI.ruheMs · FREI.ruheS bleiben; er schläft nach FREI.ruheS, ruhen seine Nachbarn
+        for (const K of W) this._freiLage(K);
+        for (const K of W) K.ruhe = this._freiRuhig(K, F.ruheMs * F.ruheS) ? K.ruhe + dt : 0;
         for (const K of W) {
             let still = K.ruhe >= F.ruheS;
             for (let j = 0; still && j < K.nachbarn.length; j++)
@@ -648,10 +640,57 @@ class AnazhRealm_koerper_frei {
                 K.v[0] = K.v[1] = K.v[2] = K.w[0] = K.w[1] = K.w[2] = 0;
             }
         }
-        for (const K of W) {
-            this._freiLage(K);
-            this._freiZeigen(K);
+        for (const K of W) this._freiZeigen(K);
+    }
+
+    // DIE RUHE EINES KÖRPERS (Jolt, J. Rouwe: Body.cpp `UpdateSleepStateInternal`, der Rand `max_movement` =
+    // mPointVelocitySleepThreshold · mTimeBeforeSleep in PhysicsSystem.cpp): drei Testpunkte — der Schwerpunkt und die Mitten der
+    // Flächen seiner zwei größten Achsen —, je eine Kugel, die jeden ihrer Orte seit der letzten Unruhe umschließt (Jolt
+    // `Sphere::EncapsulatePoint`); wächst eine über `rand`, beginnen Kugeln und Ruhe am Ort von jetzt. Vorher las die Ruhe das
+    // Tempo des Augenblicks: ein Haufen aus sechs Platten, der in einem Grenz-Zyklus wippt (Platte 12 der Saat 174 auf EINEM
+    // Punkt, 1,6 mm alle 7 Schritte, Spitze 0,0505 m/s), riss ruheMs je Zyklus einmal und schlief nie.
+    _freiRuhig(K, rand) {
+        const KG = K.kugel;
+        const H = K.halb;
+        const R = K.R;
+        const p = K.p;
+        const T = this._freiRuhPunkte || (this._freiRuhPunkte = new Float64Array(9));
+        // die kleinste Achse fällt (Jolt `GetSleepTestPoints`)
+        const lo = H[0] < H[1] ? (H[2] < H[0] ? 2 : 0) : H[2] < H[1] ? 2 : 1;
+        for (let i = 0; i < 3; i++) {
+            const a = i === 1 ? (lo === 0 ? 1 : 0) : lo === 2 ? 1 : 2;
+            const h = i === 0 ? 0 : H[a];
+            T[i * 3] = p[0] + R[a] * h;
+            T[i * 3 + 1] = p[1] + R[3 + a] * h;
+            T[i * 3 + 2] = p[2] + R[6 + a] * h;
         }
+        let ruhig = KG[3] >= 0; // ein geweckter Körper (Radius −1) beginnt seine Kugeln neu
+        for (let i = 0; i < 3 && ruhig; i++) {
+            const o = i * 4;
+            const dx = T[i * 3] - KG[o];
+            const dy = T[i * 3 + 1] - KG[o + 1];
+            const dz = T[i * 3 + 2] - KG[o + 2];
+            const d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 > KG[o + 3] * KG[o + 3]) {
+                // der neue Durchmesser ist der alte Radius plus der Abstand, die Mitte rückt um den Zuwachs zum Punkt
+                const d = Math.sqrt(d2);
+                const r = 0.5 * (KG[o + 3] + d);
+                const f = (r - KG[o + 3]) / d;
+                KG[o] += f * dx;
+                KG[o + 1] += f * dy;
+                KG[o + 2] += f * dz;
+                KG[o + 3] = r;
+            }
+            ruhig = KG[o + 3] <= rand;
+        }
+        if (!ruhig)
+            for (let i = 0; i < 3; i++) {
+                KG[i * 4] = T[i * 3];
+                KG[i * 4 + 1] = T[i * 3 + 1];
+                KG[i * 4 + 2] = T[i * 3 + 2];
+                KG[i * 4 + 3] = 0;
+            }
+        return ruhig;
     }
 
     // DIE ORDNUNG DES SWEEPS längs x (Sweep-and-Prune): die Reihe des vorigen Schritts lebt weiter, wer ging, fällt, wer kam,
@@ -961,6 +1000,7 @@ class AnazhRealm_koerper_frei {
     _freiWecken(K) {
         K.schlaf = false;
         K.ruhe = 0;
+        K.kugel[3] = -1;
     }
 
     // EIN KONTAKT in den Puffer (`_freiG`, je Kontakt FREI_KONTAKT Zahlen, er wächst und lebt weiter): Körper a (wach, sein Platz im
@@ -1066,14 +1106,10 @@ class AnazhRealm_koerper_frei {
         G[c + 56] = 0;
         G[c + 60] = X[a + 27];
         G[c + 61] = b >= 0 ? X[b + 27] : 0;
-        // DER WARMSTART JE MERKMAL (FREI.warmCos): der Schlüssel nennt den Punkt, nie seine Fläche — die Ecke an der Kante einer
-        // 4-mm-Platte springt zwischen Deck- und Seitenfläche (90°), und ihr Trage-Impuls lief längs der Seite weiter. Der Impuls
-        // gilt nur, steht die Normale des vorigen Schritts noch. Vorher: 37 302 gedrehte Normalen in 300 Haufen, 12 070 mit Impuls.
         const l = alt.get(G[c + 74]);
-        const gilt = l !== undefined && l[3] * n0 + l[4] * n1 + l[5] * n2 >= AnazhRealm.FREI.warmCos;
-        G[c + 48] = gilt ? l[0] : 0;
-        G[c + 49] = gilt ? l[1] : 0;
-        G[c + 50] = gilt ? l[2] : 0;
+        G[c + 48] = l ? l[0] : 0;
+        G[c + 49] = l ? l[1] : 0;
+        G[c + 50] = l ? l[2] : 0;
     }
 
     // DIE PACKUNG der wachen Körper (EIN Puffer, kein Objekt je Körper im Gang): je Körper FREI_KOERPER Zahlen — v, ω, Lage, Lage
@@ -1145,8 +1181,8 @@ class AnazhRealm_koerper_frei {
 
     // DER GANG über alle Kontakte im Puffer: je Kontakt die Normale (λ ≥ 0, akkumuliert) — die Trennung jetzt aus dem Weg
     // beider Anker seit dem Beginn des Schritts; ein Spalt darf sich in diesem Teil-Schritt schließen, eine Durchdringung drückt
-    // die Feder heraus (`mitFeder`, mit höchstens `schub`; die Entspannung ohne sie) —, dann, nur ohne Feder, die Reibung der
-    // zwei Tangenten im Kegel |λt| ≤ μ λn. `warm`: statt zu lösen gibt der Gang die gesammelten Impulse noch einmal (der Warmstart jedes
+    // die Feder heraus (`mitFeder`, mit höchstens `schub`; die Entspannung ohne sie) —, dann die Reibung der zwei Tangenten im
+    // Kegel |λt| ≤ μ λn. `warm`: statt zu lösen gibt der Gang die gesammelten Impulse noch einmal (der Warmstart jedes
     // Teil-Schritts). `prall` (e): der Stoß des Aufpralls nach den Teil-Schritten. Die Bewegung beider Körper lebt je Kontakt in
     // Variablen (einmal gelesen, einmal geschrieben): vorher las und schrieb jede der drei Richtungen sie neu, 109 ns je Kontakt.
     _freiGang(G, n, X, invH, mitFeder, schub, warm, prall) {
@@ -1210,11 +1246,7 @@ class AnazhRealm_koerper_frei {
                 x1 = X[b + 4];
                 x2 = X[b + 5];
             }
-            // DER BIAS-GANG OHNE REIBUNG (Box2D v3, E. Catto, contact_solver.c, Commit 8c65dcb9 „bias stage no longer applies
-            // friction“): mit Feder löst der Gang nur die Normale, die Reibung löst die Entspannung starr; der Warmstart gibt beide.
-            // Vorher löste der Bias-Gang die Reibung gegen das Tempo der Feder mit: mit dem Warmstart je Merkmal schliefen 293 von
-            // 300 Haufen aus sechs Platten binnen 3 s (2 nie, der späteste 9,75 s), mit dem Gang ohne Reibung 300 (der späteste 2,6 s).
-            const dMax = prall !== undefined || (mitFeder && !warm) ? 1 : 3;
+            const dMax = prall !== undefined ? 1 : 3;
             for (let d = 0, o = c; d < dMax; d++, o += 15) {
                 const li = c + 48 + d;
                 let dl = G[li];
@@ -1456,8 +1488,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_koerper_frei]);
 // mit Feder je Teil-Schritt; die Feder des Kontakts (Hertz, Dämpfung ζ; der starre Gegner mit doppelter Hertz — Box2D v3: 30 Hz,
 // ζ 10) und das höchste Tempo, mit dem sie eine Durchdringung herausdrückt (m/s); der Spalt (m), ab dem ein Punkt vor einer
 // Fläche schon ein Kontakt ist (Boden und Bau; Körper an Körper enger — ein weiter Spalt hielt die Kiste über der Seite der
-// unteren), dazu sein Weg im Schritt; ab prallMs Aufprall prallt der Körper mit der Stoß-Zahl des Starren; ruhig unter ruheMs
-// (jeder Punkt), nach ruheS schläft er; ein Fass trägt je Rand rundPunkte Punkte; die Hülle stempelt neu nach huelleM Weg (dazwischen folgt sie an Ort und Stelle); Grund und
+// unteren), dazu sein Weg im Schritt; ab prallMs Aufprall prallt der Körper mit der Stoß-Zahl des Starren; ruhig, solange seine
+// drei Testpunkte binnen ruheMs · ruheS bleiben (Jolt: 0,03 m/s · 0,5 s, derselbe Rand 1,5 cm), nach ruheS schläft er; ein Fass trägt je Rand rundPunkte Punkte; die Hülle stempelt neu nach huelleM Weg (dazwischen folgt sie an Ort und Stelle); Grund und
 // Bauten gelten umweltM (m) Weg (`_freiUmwelt`).
 // Die Kosten je Schritt mit 100 wachen Kisten (Median; physik.K3#2, Null-Renderer an der Mess-Wiese): das Trümmerfeld (aus 2–4 m
 // gefallen) main 4,8 → 0,7 ms, der Haufen 4 hoch main 8,8 → 1,2 ms; die Bank (Node, flacher Boden) 4,2 → 0,93 ms; der Schlaf
@@ -1478,9 +1510,6 @@ AnazhRealm.FREI = Object.freeze({
     prallMs: 0.5,
     ruheMs: 0.05,
     ruheS: 0.3,
-    // DER WARMSTART JE MERKMAL: ein Punkt erbt seinen Impuls nur, steht seine Normale binnen 5° (Jolt
-    // `mContactNormalCosMaxDeltaRotation`, J. Rouwe, PhysicsSettings.h: cos 5°; Box2D trägt die Bezugsfläche in der Kennung)
-    warmCos: 0.996195,
     rundPunkte: 16,
     // der Fuss je Rand trägt, sobald die Achse weiter als 45° von der Normale des Grunds steht (das Fass liegt eher, als es steht)
     fussLiegt: Math.SQRT1_2,

@@ -254,7 +254,7 @@ function selbsttest() {
                 spieler: { R: 16, dv: 1.005 },
                 ohr: { dp: 18281.248, dauer: 0.008 },
                 mutante: { raeumt: 4, bruch: [3254, 6318, 3516, 1832], bild: { geburt: [70, 92.148], neubau: [16, 172.125], stand: [1, 57.296] }, staub: { aussen: 180, masseG: 2400, sollG: 1200 } },
-                haufen: { saaten: 21, echt: { saat: 7, schlafS: 0.95, nie: 0 }, mutanten: { warm: { saat: 20, schlafS: null, n: 21 }, bias: { saat: 20, schlafS: null, n: 21 } } },
+                haufen: { saaten: 21, echt: { saat: 7, schlafS: 0.95, nie: 0 }, mutanten: { schlaf: { saat: 20, schlafS: null, n: 21 } } },
                 nachher: simPh(0, 60),
             }))([
                 { art: "welle", einheiten: 2245, blick: 71, netz: 4136 },
@@ -809,12 +809,12 @@ function selbsttest() {
             /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 6 s \(Soll ≤ 3 s\) — Beweis: Ort O \(-310.50, -1044.25\) Grund 28.90 m, Neigung 4.3°, 3 fremde freie Körper ≤ 30 m \(1 wach\) · Welt-Uhr 12345.50 s · Sim-Uhr 345.25 s · 4516 Takte seit dem Boot · 1 Sprünge der Welt-Uhr \(2.50 s\) · verworfene Sim-Zeit 0.000 s · Wind am Ort 3.21 m\/s · 2 wach beim Soll: Scherbe \[1.5, 20.25, -3\] 0.042 m\/s auf Grund \+ 1 Körper \(Grund 3.8°, μ 0.60\), 5.90 s alt, 0.40 s ruhig, schlief nach 6.00 s; Kiste \[4, 20.1, 6\] 0.011 m\/s auf Grund, \? s alt, 1.25 s ruhig, schlief nach 4.50 s$/,
         ],
         ["ROT ohne Beweis sagt es", ["simWecken.druck.schlafS=", 6], /\(Soll ≤ 3 s\) — ohne Beweis \(die Probe trug keinen\)$/],
-        // DER HAUFEN (der Löser der Ruhe): die Saat 20 schlief unter dem Löser vor dem Schnitt nie (eine Platte kippte alle 13–16
-        // Schritte) — jede Mutante muss ihre Saat finden, der echte Löser jede schlafen lassen
-        ["ein Haufen schläft nie", ["simWecken.druck.haufen.echt", { saat: 20, schlafS: null, nie: 1 }], /HAUFEN-SCHLAF: von 21 Haufen aus sechs Platten schliefen 1 nie, der späteste nach \? s \(Saat 20, Soll ≤ 3 s\) — der Löser lässt eine Platte kippen: der Warmstart erbt über die Fläche/],
+        // DER HAUFEN (die Ruhe der freien Körper): die Saat 20 schlief unter dem Tempo-Gesetz der Ruhe nie (eine Platte wippte im
+        // Grenz-Zyklus über ruheMs) — die Mutante muss ihre Saat finden, das Gesetz jede schlafen lassen
+        ["ein Haufen schläft nie", ["simWecken.druck.haufen.echt", { saat: 20, schlafS: null, nie: 1 }], /HAUFEN-SCHLAF: von 21 Haufen aus sechs Platten schliefen 1 nie, der späteste nach \? s \(Saat 20, Soll ≤ 3 s\) — die Ruhe liest das Tempo des Augenblicks/],
         ["ein Haufen schläft spät", ["simWecken.druck.haufen.echt", { saat: 4, schlafS: 3.5 }], /HAUFEN-SCHLAF: von 21 Haufen aus sechs Platten schliefen 0 nie, der späteste nach 3.5 s \(Saat 4, Soll ≤ 3 s\)/],
-        ["die Mutante warm schläft überall im Soll", ["simWecken.druck.haufen.mutanten.warm", { saat: null, schlafS: null, n: 300 }], /BLIND: die Mutante warm \(der Warmstart über die Fläche\) schlief in allen 300 Saaten binnen 3 s — der Haufen trifft sie nicht/],
-        ["die Mutante bias läuft nicht", ["simWecken.druck.haufen.mutanten.bias"], /BLIND: die Mutante bias \(die Reibung im Bias-Gang\) lief nicht \(der Löser trägt ihren Anker nicht mehr\)/],
+        ["die Mutante schlaf schläft überall im Soll", ["simWecken.druck.haufen.mutanten.schlaf", { saat: null, schlafS: null, n: 300 }], /BLIND: die Mutante schlaf \(das Tempo des Augenblicks statt der Kugeln\) schlief in allen 300 Saaten binnen 3 s — der Haufen trifft sie nicht/],
+        ["die Mutante schlaf läuft nicht", ["simWecken.druck.haufen.mutanten.schlaf"], /BLIND: die Mutante schlaf \(das Tempo des Augenblicks statt der Kugeln\) lief nicht \(der Löser trägt ihren Anker nicht mehr\)/],
         ["kein Haufen", ["simWecken.druck.haufen"], /LEER: die Probe legte keinen Haufen/],
         ["die Welle der Probe bricht keine Scheibe", ["simWecken.druck.scherben=", 0], /LEER: die Welle der Probe brach keine Scheibe/],
         ["die Welle schläft nicht", ["simWecken.druck.nachher=", simPh(2, 60, "druck")], /DRUCK-RUHE: nach der Welle arbeitet ihr Takt — 120 Einheiten/],
@@ -3554,16 +3554,15 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                     // (der Haufen fährt VOR der Sim-Linse — sie hüllt jedes Glied des Prototyps, die Mutanten bauen auf dem Rumpf — und
                     // vor der Welle: auf leerem Grund, nicht auf ihren Scherben)
                     let HAUFEN = null;
-                    // DER HAUFEN (DRUCK-SCHLAF, der Löser der Ruhe): je Saat sechs Quarz-Platten 12 × 12 × 0,4 cm über dem Ort der
+                    // DER HAUFEN (DRUCK-SCHLAF, die Ruhe der freien Körper): je Saat sechs Quarz-Platten 12 × 12 × 0,4 cm über dem Ort der
                     // Probe (der Ort des Fasses: dort lag der Haufen der Flocke), Lage und Drehung aus der Saat, der Löser direkt im
                     // festen Schritt (die Sim-Uhr je Saat ab 0, danach zurück) OHNE Wind — der Haufen misst den Löser, die Luft der
-                    // liegenden Platte ist ein eigenes Gesetz —, bis alle schlafen, höchstens 10 s. Zuerst je Mutante (warm: der
-                    // Warmstart erbt über die Fläche, bias: der Bias-Gang löst die Reibung mit), bis eine Saat das Soll reißt (nie oder
-                    // später als DRUCK-SCHLAF, höchstens 300); dann der echte Löser über dieselben Saaten
+                    // liegenden Platte ist ein eigenes Gesetz —, bis alle schlafen, höchstens 10 s. Zuerst die Mutante (schlaf: die Ruhe
+                    // liest das Tempo des Augenblicks statt der Kugeln der Testpunkte, `_freiRuhig`), bis eine Saat das Soll reißt (nie
+                    // oder später als DRUCK-SCHLAF, höchstens 300); dann das Gesetz über dieselben Saaten
                     const PR = Object.getPrototypeOf(r);
                     const MUT = {
-                        warm: ["_freiKontaktBereit", PR._freiKontaktBereit.toString(), "const gilt = l !== undefined && l[3] * n0 + l[4] * n1 + l[5] * n2 >= AnazhRealm.FREI.warmCos;", "const gilt = l !== undefined;"],
-                        bias: ["_freiGang", PR._freiGang.toString(), "const dMax = prall !== undefined || (mitFeder && !warm) ? 1 : 3;", "const dMax = prall !== undefined ? 1 : 3;"],
+                        schlaf: ["_freiRuhig", PR._freiRuhig.toString(), "let ruhig = KG[3] >= 0;", "return Math.max(Math.hypot(K.v[0], K.v[1], K.v[2]), Math.hypot(K.w[0], K.w[1], K.w[2]) * K.rad) < AnazhRealm.FREI.ruheMs; let ruhig = 0;"],
                     }; // prettier-ignore
                     // die Mutante als Skript der Seite (ihre CSP trägt kein 'unsafe-eval', blob: ist erlaubt): der Rumpf als Glied eines Objekts
                     const mutBau = (rumpf) =>
@@ -3616,11 +3615,11 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         return { n: H.n, nie: H.nie, saat: H.nieSaat ?? H.spaetSaat, schlafS: H.nie ? null : H.schlafS, bruch: H.bruch, bruchS: H.bruchS };
                     };
                     {
-                        const [HW, HB] = [await haufen(300, MUT.warm), await haufen(300, MUT.bias)];
-                        const bis = Math.max(...[HW, HB].map((H) => (H && H.bruch != null ? H.bruch + 1 : 0)));
+                        const HS = await haufen(300, MUT.schlaf);
+                        const bis = HS && HS.bruch != null ? HS.bruch + 1 : 0;
                         const HE = await haufen(bis || 60, null);
                         const mu = (H) => H && { saat: H.bruch, schlafS: H.bruchS, n: H.n };
-                        HAUFEN = { saaten: HE.n, echt: { saat: HE.saat, schlafS: HE.schlafS, nie: HE.nie }, mutanten: { warm: mu(HW), bias: mu(HB) } };
+                        HAUFEN = { saaten: HE.n, echt: { saat: HE.saat, schlafS: HE.schlafS, nie: HE.nie }, mutanten: { schlaf: mu(HS) } };
                     }
                     const S = window.__simLinseAn();
                     const simPhase = async (n, schritt) => {

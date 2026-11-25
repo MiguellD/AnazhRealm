@@ -113,7 +113,7 @@
             "datei": 1
         },
         "scripts/diag-stand-takt.cjs": {
-            "zweck": "Messung: die zwei Mutanten des Lösers der Ruhe (HAUFEN-SCHLAF, Marke druck) — die Rümpfe von `_freiKontaktBereit` (der Warmstart erbt über die Fläche) und `_freiGang` (der Bias-Gang löst die Reibung mit) live getauscht, je an EINER Anker-Zeile gebaut; fehlt sie, ist die Linse BLIND",
+            "zweck": "Messung: die Mutante der Ruhe der freien Körper (HAUFEN-SCHLAF, Marke druck) — der Rumpf von `_freiRuhig` live getauscht (die Ruhe liest das Tempo des Augenblicks statt der Kugeln der Testpunkte), an EINER Anker-Zeile gebaut; fehlt sie, ist die Linse BLIND",
             "seite": 2
         },
         "scripts/diag-streu-wahrheit.cjs": {
