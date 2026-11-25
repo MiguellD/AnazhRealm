@@ -813,7 +813,7 @@ function selbsttest() {
         // Schritte) — jede Mutante muss ihre Saat finden, der echte Löser jede schlafen lassen
         ["ein Haufen schläft nie", ["simWecken.druck.haufen.echt", { saat: 20, schlafS: null, nie: 1 }], /HAUFEN-SCHLAF: von 21 Haufen aus sechs Platten schliefen 1 nie, der späteste nach \? s \(Saat 20, Soll ≤ 3 s\) — der Löser lässt eine Platte kippen: der Warmstart erbt über die Fläche/],
         ["ein Haufen schläft spät", ["simWecken.druck.haufen.echt", { saat: 4, schlafS: 3.5 }], /HAUFEN-SCHLAF: von 21 Haufen aus sechs Platten schliefen 0 nie, der späteste nach 3.5 s \(Saat 4, Soll ≤ 3 s\)/],
-        ["die Mutante warm schläft überall", ["simWecken.druck.haufen.mutanten.warm", { saat: null, schlafS: 0.9, n: 60 }], /BLIND: die Mutante warm \(der Warmstart über die Fläche\) schlief in allen 60 Saaten — der Haufen trifft sie nicht/],
+        ["die Mutante warm schläft überall im Soll", ["simWecken.druck.haufen.mutanten.warm", { saat: null, schlafS: null, n: 300 }], /BLIND: die Mutante warm \(der Warmstart über die Fläche\) schlief in allen 300 Saaten binnen 3 s — der Haufen trifft sie nicht/],
         ["die Mutante bias läuft nicht", ["simWecken.druck.haufen.mutanten.bias"], /BLIND: die Mutante bias \(die Reibung im Bias-Gang\) lief nicht \(der Löser trägt ihren Anker nicht mehr\)/],
         ["kein Haufen", ["simWecken.druck.haufen"], /LEER: die Probe legte keinen Haufen/],
         ["die Welle der Probe bricht keine Scheibe", ["simWecken.druck.scherben=", 0], /LEER: die Welle der Probe brach keine Scheibe/],
@@ -3525,8 +3525,8 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                     // Probe (der Ort des Fasses: dort lag der Haufen der Flocke), Lage und Drehung aus der Saat, der Löser direkt im
                     // festen Schritt (die Sim-Uhr je Saat ab 0, danach zurück) OHNE Wind — der Haufen misst den Löser, die Luft der
                     // liegenden Platte ist ein eigenes Gesetz —, bis alle schlafen, höchstens 10 s. Zuerst je Mutante (warm: der
-                    // Warmstart erbt über die Fläche, bias: der Bias-Gang löst die Reibung mit), bis eine Saat nie schläft (höchstens
-                    // 60); dann der echte Löser über dieselben Saaten
+                    // Warmstart erbt über die Fläche, bias: der Bias-Gang löst die Reibung mit), bis eine Saat das Soll reißt (nie oder
+                    // später als DRUCK-SCHLAF, höchstens 300); dann der echte Löser über dieselben Saaten
                     const PR = Object.getPrototypeOf(r);
                     const MUT = {
                         warm: ["_freiKontaktBereit", PR._freiKontaktBereit.toString(), "const gilt = l !== undefined && l[3] * n0 + l[4] * n1 + l[5] * n2 >= AnazhRealm.FREI.warmCos;", "const gilt = l !== undefined;"],
@@ -3546,12 +3546,12 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         const eigen = {};
                         for (const g of ["_windAt", ...(m ? [m[0]] : [])]) eigen[g] = Object.prototype.hasOwnProperty.call(r, g) ? r[g] : null;
                         const [sim0, name, cs] = [st._simZeit, "_druck_platte", AnazhRealm.LIFE_FIELD.cell];
-                        const H = { nieSaat: null, spaetSaat: null, schlafS: 0, nie: 0, n: 0 };
+                        const [SOLL, H] = [window.__druckSchlafS, { nieSaat: null, spaetSaat: null, schlafS: 0, nie: 0, n: 0, bruch: null, bruchS: null }];
                         try {
                             if (m) r[m[0]] = (await mutBau(m[1].replace(m[2], m[3])))[m[0]];
                             r._windAt = (x, z, t, aus) => Object.assign(aus || {}, { x: 1, z: 0, staerke: 0, boe: 0, form: 1, ms: 0 });
                             st.blueprints[name] = AnazhRealm._etikett({ name, builtIn: false, vomGesetz: true, frei: true, parts: [{ shape: "box", material: "quarz", size: { x: 0.12, y: 0.004, z: 0.12 }, position: { x: 0, y: 0.002, z: 0 } }] }); // prettier-ignore
-                            for (let k = 0; k < saaten && !(m && H.nieSaat != null); k++) {
+                            for (let k = 0; k < saaten && !(m && H.bruch != null); k++) {
                                 let s = 1 + k * 7919;
                                 const R = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
                                 const ks = [];
@@ -3572,6 +3572,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 for (const e of ks) r.removeArchitecture(e, { still: true });
                                 H.n++;
                                 if (t == null) (H.nie++, H.nieSaat == null && (H.nieSaat = k));
+                                if (H.bruch == null && (t == null || t > SOLL)) [H.bruch, H.bruchS] = [k, t];
                                 else if (t > H.schlafS) [H.schlafS, H.spaetSaat] = [t, k];
                             }
                         } finally {
@@ -3579,13 +3580,13 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             st._simZeit = sim0;
                             for (const g in eigen) eigen[g] ? (r[g] = eigen[g]) : delete r[g];
                         }
-                        return { n: H.n, nie: H.nie, saat: H.nieSaat ?? H.spaetSaat, schlafS: H.nie ? null : H.schlafS };
+                        return { n: H.n, nie: H.nie, saat: H.nieSaat ?? H.spaetSaat, schlafS: H.nie ? null : H.schlafS, bruch: H.bruch, bruchS: H.bruchS };
                     };
                     {
-                        const [HW, HB] = [await haufen(60, MUT.warm), await haufen(60, MUT.bias)];
-                        const bis = Math.max(...[HW, HB].map((H) => (H && H.nie ? H.saat + 1 : 0)));
+                        const [HW, HB] = [await haufen(300, MUT.warm), await haufen(300, MUT.bias)];
+                        const bis = Math.max(...[HW, HB].map((H) => (H && H.bruch != null ? H.bruch + 1 : 0)));
                         const HE = await haufen(bis || 60, null);
-                        const mu = (H) => H && { saat: H.nie ? H.saat : null, schlafS: H.schlafS, n: H.n };
+                        const mu = (H) => H && { saat: H.bruch, schlafS: H.bruchS, n: H.n };
                         HAUFEN = { saaten: HE.n, echt: { saat: HE.saat, schlafS: HE.schlafS, nie: HE.nie }, mutanten: { warm: mu(HW), bias: mu(HB) } };
                     }
                     const S = window.__simLinseAn();

@@ -714,7 +714,7 @@ function druckUrteil(D, v) {
     else if (D.schlafS == null || !(D.schlafS <= DRUCK_SCHLAF_S)) v.push(`DRUCK-SCHLAF: die letzte der ${D.scherben} Scherben schlief ${D.schlafS == null ? `nie (${D.wach} liegen nach 10 s wach)` : `nach ${D.schlafS} s`} (Soll ≤ ${DRUCK_SCHLAF_S} s)${druckSchlafBeweis(D.schlafBeweis)}`);
     // DER HAUFEN (der Löser der Ruhe): je Saat sechs Quarz-Platten auf dem Ort der Probe, gestreut, der Löser im festen Schritt
     // ohne Wind — jeder Haufen schläft im Soll von DRUCK-SCHLAF. Je Mutante (warm: der Warmstart erbt über die Fläche, bias: der
-    // Bias-Gang löst die Reibung mit) sucht ihre Saat, die nie schläft; der echte Löser geht dieselben Saaten. Bis zum Schnitt
+    // Bias-Gang löst die Reibung mit) sucht ihre Saat, die das Soll reißt; der echte Löser geht dieselben Saaten. Bis zum Schnitt
     // schliefen 296 von 300 Haufen binnen 3 s, 4 nie (Saat 20, 84, 148, 264: eine Platte kippte alle 13–16 Schritte).
     const H = D.haufen;
     if (!H || !H.echt || !(H.saaten > 0)) v.push("LEER: die Probe legte keinen Haufen (sechs Platten je Saat am Ort der Probe) — der Schlaf des Lösers ungemessen");
@@ -723,7 +723,7 @@ function druckUrteil(D, v) {
             v.push(`HAUFEN-SCHLAF: von ${H.saaten} Haufen aus sechs Platten schliefen ${H.echt.nie} nie, der späteste nach ${H.echt.schlafS ?? "?"} s (Saat ${H.echt.saat}, Soll ≤ ${DRUCK_SCHLAF_S} s) — der Löser lässt eine Platte kippen: der Warmstart erbt über die Fläche (\`_freiKontaktBereit\`) oder der Bias-Gang löst die Reibung mit (\`_freiGang\`)`);
         for (const [k, was] of [["warm", "der Warmstart über die Fläche"], ["bias", "die Reibung im Bias-Gang"]]) {
             const M = H.mutanten && H.mutanten[k];
-            if (!M || M.saat == null) v.push(`BLIND: die Mutante ${k} (${was}) ${M ? `schlief in allen ${M.n} Saaten` : "lief nicht (der Löser trägt ihren Anker nicht mehr)"} — der Haufen trifft sie nicht`);
+            if (!M || M.saat == null) v.push(`BLIND: die Mutante ${k} (${was}) ${M ? `schlief in allen ${M.n} Saaten binnen ${DRUCK_SCHLAF_S} s` : "lief nicht (der Löser trägt ihren Anker nicht mehr)"} — der Haufen trifft sie nicht`);
         }
     }
     const ruhe = D.nachher && D.nachher.sims.druck ? D.nachher.sims.druck.summe : NaN;
