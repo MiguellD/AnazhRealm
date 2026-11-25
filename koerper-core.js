@@ -5402,10 +5402,15 @@
         // wegTagM = so weit geht ein Mensch an einem Tag wenigstens (mensch.K3 Staffel 2: ≥ 100 m je Bewohner und Tag) — der
         // Häusliche empfängt nur, wessen Gang zum Werk und zurück so weit trägt (`tagesBindung`)
         wegTagM: 100,
-        // DAS KIND, DAS HILFT (zuege `kind: "hilft"`): sein Werk dauert die Stunden seiner Rolle + den Fleiß, das Mittag am Tisch —
-        // 8,5 h; das Band: das Fabrikgesetz von 1833 (Großbritannien, 3 & 4 Will. IV c. 103) erlaubte Kindern von 9 bis 13 Jahren
-        // höchstens 9 Stunden Arbeit je Tag und 48 je Woche, den 13- bis 18-Jährigen 12 — es begrenzte, was die Werkstätten der
-        // Zeit von Kindern nahmen
+        // DAS KIND, DAS HILFT (zuege `kind: "hilft"`, `tagesBindung`): das fleißige Kind hilft am Werk SEINES Hauses — nie an einem
+        // fremden Werk, die Tätigkeit heißt „hilft“, nie die des Meisters („arbeit“) —, erst ab kindHilftAbJ Jahren, kindHilftH Stunden
+        // am Tag; jedes andere spielt. Die Quelle (The Peel Web, „Factory legislation“, historyhome.co.uk): das Fabrikgesetz von 1833
+        // (3 & 4 Will. IV c. 103) ließ kein Kind unter 9 in die Fabrik und Kinder unter 13 höchstens 9 h je Tag und 48 je Woche
+        // arbeiten (kindArbeitMaxH: die OBERGRENZE, die Linse gate:mensch-zuege liest sie); das Gesetz von 1844 setzte Kinder unter
+        // 13 auf höchstens 6½ h je Tag — das Halbzeit-System, der halbe Tag am Werk (kindHilftH; die Form des Tags, als Mittel
+        // ungeeicht) — und senkte das Alter auf 8 (das Alter hier aus 1833, wie die Obergrenze)
+        kindHilftAbJ: 9,
+        kindHilftH: 6.5,
         kindArbeitMaxH: 9,
         rollen: Object.freeze({
             schmiede: Object.freeze({ werk: Object.freeze([7, 18]) }),
@@ -5496,7 +5501,7 @@
         // jeder Bewohner stand zu jeder Stunde in derselben Haltung.
         // (das Spiel des Abends, SPIEL_GESETZ: der Läufer gebeugt in der Kraft, der Ringer in der Haltung des Kampfs — die Hände vor
         // dem Leib, der Stand breit —, am Brett über den Tisch, der Zuschauer jubelt)
-        haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", zweikampf: "fight", brett: "pwalk", zuschauen: "joy" }), // prettier-ignore
+        haltung: Object.freeze({ arbeit: "pwalk", hilft: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", zweikampf: "fight", brett: "pwalk", zuschauen: "joy" }), // prettier-ignore
         // DIE ZEIT-ART JE AKT (tages-gesetz, Entscheid des Koordinators 25.11.; Leser: gate:mensch-zuege `zuordnen`, die Station
         // mensch.geist.absicht#1): jeder Akt des Tags (`tagesPlan`, das Spiel des Abends) trägt GENAU EINE Art seiner Zeit — die
         // Hauptgruppen der Zeitbudget-Forschung: arbeit (Szalai 1972 „work“; HETUS 2008 Guidelines, Eurostat, Code 1 Erwerb),
@@ -5504,8 +5509,9 @@
         // haushalt (der Einkauf — HETUS 36 Einkaufen und Dienste), frei (Besuch, Treff, Bank, Spiel und Zuschauen — Szalai „free
         // time“, HETUS 5–7); der Weg zwischen zwei Orten (HETUS 9) ist kein Akt des Plans. Bis hier las der Zuordner jede wache
         // Viertelstunde im Haus als Freizeit: mit dem Morgen im Haus (tages-gesetz) trug der Ausgeglichene 5,53 h „daheim“ und
-        // fiel häuslich (gate:mensch-zuege ausgeglichen 7/16)
-        zeitArt: Object.freeze({ schlaf: "bedarf", morgen: "bedarf", mittag: "bedarf", arbeit: "arbeit", einkauf: "haushalt", besuch: "frei", abend: "frei", spiel: "frei", wettkampf: "frei", zweikampf: "frei", brett: "frei", zuschauen: "frei" }), // prettier-ignore
+        // fiel häuslich (gate:mensch-zuege ausgeglichen 7/16). Das Kind, das am Werk seines Hauses hilft („hilft“), arbeitet: die
+        // mithelfenden Familienangehörigen zählen zu den Erwerbstätigen (ILO, ICSE-93, Gruppe 5 „contributing family workers“)
+        zeitArt: Object.freeze({ schlaf: "bedarf", morgen: "bedarf", mittag: "bedarf", arbeit: "arbeit", hilft: "arbeit", einkauf: "haushalt", besuch: "frei", abend: "frei", spiel: "frei", wettkampf: "frei", zweikampf: "frei", brett: "frei", zuschauen: "frei" }), // prettier-ignore
         // DER REGEN TREIBT INS HAUS (mensch.kopplung.leben S1 der Karte 2; Leser: `tagesPlan`, sein Wirt `_bewohnerSoll` reicht
         // den Regen der Welt, den Kanal `rain` des EINEN Wetter-Felds 0–1): steht der Regen am Ort über der Schwelle eines
         // Menschen (`ab` ± `streuH` aus seinem Samen — das Dorf flieht nicht im selben Atemzug, der Übergang des Worts leert den
@@ -5660,7 +5666,9 @@
     // {werk, platz, mahl, abend, besuch}: je Bedürfnis der Index seines Orts (platz: der Markt seines Einkaufs) — heimI heißt daheim (das Werk: der eigene Hof), −1 keiner.
     // weg(von, o, i) = der Weg, den er von `von` (ein Ort aus `orte`) zum Ort o GEHT (der Wirt: das Wege-Netz des Plans; Infinity:
     // keiner) — die Nähe jeder Wahl misst ihn (tetrapoda `zielWahl` `weg`), ohne ihn die Luftlinie.
-    function tagesBindung(TC, same, rolle, heimI, orte, ohne, weg) {
+    // jahre = das Alter des Menschen (der Wirt: `_bewohnerJahre`) — das Kind hilft erst ab TAGES_GESETZ.kindHilftAbJ; ohne Alter hilft keins.
+    // Liefert dazu hilft = das Kind hilft am Werk seines Hauses (der Wirt reicht es dem Plan als orte.hilft).
+    function tagesBindung(TC, same, rolle, heimI, orte, ohne, weg, jahre) {
         var G = TAGES_GESETZ,
             H = orte[heimI],
             Z = G.zuege[tagesZug(same)];
@@ -5715,8 +5723,10 @@
         }
         // (das Kind, `rollen.kind.spiel`: sein Werk ist der Ort seines Spiels — die Wahl nach dem Angebot `spiel`, das eigene
         // Haus bietet keins; in der Form seines Zugs, `zuege.kind`: das häusliche spielt daheim — kein Ort, der Plan nennt die
-        // Tür —, das fleißige hilft am Werk seines Hauses oder am Werk seiner Wahl nach dem Angebot `arbeit`)
+        // Tür —, das fleißige hilft am Werk seines Hauses, nie an einem fremden — ohne Werk im Haus oder unter kindHilftAbJ spielt es)
         var kind = R.spiel ? Z.kind : null;
+        // (das helfende Kind hilft nur am Werk seines eigenen Hauses und erst ab kindHilftAbJ — sonst spielt es, TAGES_GESETZ.kindHilftAbJ)
+        if (kind === "hilft" && !(eigen && jahre >= G.kindHilftAbJ)) kind = null;
         var spielt = R.spiel && kind !== "hilft";
         var werk = am >= 0 ? am : spielt ? (kind === "daheim" ? heimI : wahl("spiel", H, "werk", null)) : eigen ? heimI : wahl("arbeit", H, "werk", null);
         if (werk < 0) werk = heimI;
@@ -5731,6 +5741,7 @@
         }
         return {
             werk: spielt && kind === "daheim" ? -1 : werk,
+            hilft: kind === "hilft",
             platz: platz,
             mahl: wahl("mahl", orte[werk], "mahl", G.daheim, null, G.amWerk),
             abend: wahl("treff", H, "abend", daheimAbend, null, null, treffMal),
@@ -5848,6 +5859,12 @@
         // Fleißige im Rathaus (rathaus #952) 3 Wege (Station mensch.K2#2, gate:kreatur-takt bewohner); an der Stadt liegt das Werk
         // bei 29 von 1 356 keinen Gang vom Heim
         if (orte && T.mittagAmWerk && !(TAGES_GESETZ.rollen[rolle] || {}).mittagAmWerk && _amHeim(orte.werk, orte.heim)) T = Object.assign({}, T, { mittagAmWerk: false });
+        // DAS KIND, DAS HILFT (orte.hilft aus `tagesBindung`): kindHilftH Stunden am Werk seines Hauses ab dem Beginn seines Werks,
+        // das Mittag am Tisch dazwischen (TAGES_GESETZ.kindHilftH, das Halbzeit-System 1844)
+        if (orte && orte.hilft) {
+            var hH = TAGES_GESETZ.kindHilftH;
+            T = Object.assign({}, T, { w1: T.w0 + hH + (T.m0 >= T.w0 && T.m0 < T.w0 + hH ? T.m1 - T.m0 : 0) });
+        }
         if (!orte || !orte.einkauf) return T;
         var K = TAGES_GESETZ.einkauf,
             Z = TAGES_GESETZ.zuege[tagesZug(same)],
@@ -6058,7 +6075,7 @@
             if (T.pTreffH != null && h >= T.p0 + T.pTreffH) return aus("heim", "abend", true);
             return aus("abend", "abend", !orte.abend || orte.abend === heim);
         }
-        if (h < w1) return aus("werk", R.spiel && T.Z.kind !== "hilft" ? "spiel" : "arbeit", false);
+        if (h < w1) return aus("werk", R.spiel ? (orte.hilft ? "hilft" : "spiel") : "arbeit", false);
         if (bA && h < w1 + G.besuchH) return besuch ? aus("besuch", "besuch", false) : aus("heim", "besuch", true);
         // DAS SPIEL DES ABENDS (SPIEL_GESETZ, `spielProgramm`): wer Gast des Treffs am Platz ist, steht in den Stunden seines
         // Auftritts (orte.spiel: [{von, bis, akt, x, z, blick}], der Wirt stellt sie aus dem Programm des Tags) am Feld — als
