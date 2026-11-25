@@ -1,7 +1,7 @@
 {
  "sha": "486a6685925d51302752c756d7d47654d83922d1",
  "geraet": "gtx",
- "zeit": "2026-11-25T08:53:54.822Z",
+ "zeit": "2026-11-25T08:56:09.124Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.gespraech#2": {
@@ -3217,6 +3217,70 @@
    "bahn": "sitzung",
    "modus": "session",
    "offen": 1
+  },
+  "karte2.mensch.fahrzeug.lenker#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181.1 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 97.1 von 2500000000000 s in 16085 Takten, 172.9 s Wand (10.8 ms je Takt)",
+   "exit": 0,
+   "minuten": 3.02,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181.1 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 97.1 von 2500000000000 s in 16085 Takten, 172.9 s Wand (10.8 ms je Takt)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 181.2,
+   "fremd": {
+    "s": 185.6,
+    "takte": 86,
+    "fremdS": 75.56,
+    "kerne": 0.407,
+    "fensterKerne": 0.872,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      17.27
+     ],
+     [
+      "find.exe . -path ./node_modules -prune -o -type f -newermt 2026-11-25 09:30 ! -newermt 202",
+      13.66
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6.38
+     ]
+    ],
+    "dienerS": 35.2,
+    "diener": [
+     [
+      "System",
+      17.22
+     ],
+     [
+      "dwm.exe",
+      8.59
+     ]
+    ],
+    "geraetS": 67.56,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.91
+     ],
+     [
+      "svchost.exe",
+      23.16
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 288.08,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T08:56:09.124Z",
+   "abdruck": "b6c3c3996fb0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  }
 }
