@@ -3424,7 +3424,22 @@
             var holz = RHO.holz * Math.PI * tp.schaftR * tp.schaftR * m.S.xGripEnd;
             return ((m.M - holz) / metallRho(tp)) * SG.zeile("eisen").rho;
         }
-        return { erz: "erz", werkzeug: "beil", verhuettung: verhuettung, ausbeute: function (erz) { return verhuettung(1, erz).eisen; }, werkEisen: werkEisen };
+        // DAS FEUER DER OFENREISE (Meisterkarte 2 mensch.wirtschaft.energie#1, additiv): ohne Brennstoff keine Luppe. Erz und
+        //   Holzkohle gehen zu gleichen Gewichten in den Schacht (WIRG, Experimental Bloomery 4: „equal weights of ore and
+        //   charcoal", 15–20 kg je Ofenreise in ≈ 5 h; Cleere 1969, Horam, Schmelze 2: 91 kg Erz, 98,6 kg Kohle ohne Vorwärmung →
+        //   8,8 kg Luppe, 63 kg Schlacke) — `kohleJeErz` kg Kohle je kg Erz. Die Kohle der Reduktion (`verhuettung`.kohle) ist ein
+        //   Teil von ihr, der Rest ist die Wärme des Schachts. Die Energie liest die Zeile der Kohle (`glut`: Kohlenstoff, Formel C)
+        //   mit der Bildungs-Enthalpie ihres Brands zu CO₂ (NIST-JANAF: ΔfH° CO₂ −393,51 kJ/mol → 32,8 MJ je kg C). `kohleTon` die
+        //   kalte Kohle im Stapel (sRGB; linear 0,06/0,04/0,03 — die Albedo der Kohle am Rand der Glut, fachwerk-Feuer).
+        //   Leser: der Bestand (der Wirt reicht `kohleJeErz` an koerper `stoffstromHalter`), die Station energie#1, gate:koerper-kern D8–D10.
+        var FEUER = { kohleJeErz: 1, co2Bildung: 393.51e3, kohleTon: 0x453830 };
+        function feuer(kg, erz) {
+            var C = SG.zeile("glut").formel;
+            if (!C || C.C !== 1 || Object.keys(C).length !== 1) throw new Error("STOFFSTROM: die Kohle des Feuers ist kein Kohlenstoff");
+            var e = Math.max(0, +kg || 0), k = e * FEUER.kohleJeErz;
+            return { erz: e, kohle: k, reduktion: verhuettung(e, erz).kohle, energie: ((k * 1000) / SG.molMasse(C)) * FEUER.co2Bildung };
+        }
+        return { erz: "erz", werkzeug: "beil", verhuettung: verhuettung, ausbeute: function (erz) { return verhuettung(1, erz).eisen; }, werkEisen: werkEisen, FEUER: FEUER, feuer: feuer, kohle: "glut" };
     })();
     // ════ DAS FUNDAMENT — {E, σ_y, K_IC, ρ} real (SI). Härte=3σ_y (Tabor). Resilienz=σ_y²/2E. ════
     //   E, ρ und der Kohlenstoff SIND die Zeile des Stoff-Gesetzes (ein Zugriff: sie folgen aus Eisen + Zementit bzw. Kupfer +
