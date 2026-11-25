@@ -2102,7 +2102,7 @@ class AnazhRealm_vegetation_baum {
     // liegt bis 1,8 m neben dem Haus-Ursprung, das Hof-Haus 4 m), gedreht in den Rahmen des Hauses. Das FUNDAMENT eines
     // Eintrags oder der Optionen eines Werks (die Siedlung reicht es aus der obb des Exports). Beide tragen `saum`: das Haus
     // eines Orts steht auf der Platte seines Erdbaus, dem Grundriss samt dem Saum des Orts-Gesetzes (fachwerk
-    // `ORT_GESETZ.saumM`). Die HÜLLE eines Hauses (bis sie kommt, trägt es keinen: `_hausHuelleKommt`). Mit `art` (der Typ eines
+    // `ORT_GESETZ.saumM`). Die HÜLLE eines Hauses (bis sie kommt, ihr Gesetz: `_hausHuelleKommt`). Mit `art` (der Typ eines
     // Werks VOR seinem Bau, `seed` sein Same) spricht danach das Gesetzbuch der Architektur: ein HAUS misst seinen Mass-Bau
     // (fachwerk `massBau(hausParams(Rezept, Stempel))` mit der Gestalt seines Samens — dieselbe Zeile, aus der der Export sein
     // obb und seine Tür nimmt, und der Bau, den der Worker für diesen Samen baut: `_foundryVariantFor`), die AUSSTATTUNG ihre
@@ -2142,7 +2142,7 @@ class AnazhRealm_vegetation_baum {
         // DIE HÜLLE TRÄGT DEN GRUNDRISS (K16, gate:kamera-leib K2): ein Haus ohne Fundament-Zeile (gesetzt vom Spieler, der KI,
         // einer Probe) hatte keinen — die Natur wuchs hinein (eine Kiefer im haus_alemannisch der Mess-Wiese). Die festen Boxen
         // der Studio-Hülle (`_hausHuelleSetzen`) sind sein Grundriss, gemerkt je Hülle (bauen.K5: der Hof des Hof-Hauses liegt
-        // außerhalb seines Kerns). EINE HÜLLE JE HAUS (eine-huelle): bis sie kommt, trägt das Haus keinen — der Kern seiner
+        // außerhalb seines Kerns). EINE HÜLLE JE HAUS (eine-huelle): bis sie kommt, spricht ihr Gesetz (unten) — der Kern seiner
         // Tür-Zeile (W × D) war ein zweiter Grundriss desselben Hauses; die Hülle räumt bei ihrer Ankunft (`_grundrissRaeumen`).
         const hu = e._hausHuelle;
         if (hu) {
@@ -2172,6 +2172,17 @@ class AnazhRealm_vegetation_baum {
                     : null;
             e._grundrissHuelle = { hu, fp };
             if (fp) return fp;
+        }
+        // BIS DIE HÜLLE KOMMT, SPRICHT IHR GESETZ (same.kopplung.aufwaerts#1): ein Haus ohne Fundament-Zeile, dessen Hülle noch
+        // kommt (`_hausHuelleKommt`), misst den Mass-Bau seiner Art und seines Samens — die Zeile, aus der der Worker die Hülle
+        // baut. Bis hier trug das Haus des Spielers und der KI im Zug seines Baus keinen Grundriss: sein Akt fiel still
+        // (`_werkAkt`, 0 Taten, 0 von 10 Orten im Umkreis), die Räumung seines Grunds wartete auf die Hülle.
+        if (art === undefined && this._hausHuelleKommt(e)) {
+            const m = e._grundrissArt;
+            if (m) return m.fp;
+            const fp = this._grundrissVon(e, e.type, e.seed);
+            if (fp) e._grundrissArt = { fp };
+            return fp;
         }
         if (art !== undefined) {
             const g = this._grundrissGesetz(art);

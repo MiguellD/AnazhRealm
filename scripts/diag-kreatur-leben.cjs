@@ -3335,6 +3335,56 @@ if (V) {
     check("Das Werk als Tat, Selbsttest: das Werk am Neben-Index fällt beim späten Bau ROT", M2.spaet > 0, M2.spaet > 0 ? "B weicht an " + M2.spaet + "/40 ab" : "der Täter blieb grün");
     console.log("  Werk als Tat: Neuladen " + E.neu.ab + "/10 · spät " + E.spaet + "/40 abweichend — Neben-Index " + M2.neu.ab + "/10 · " + M2.spaet + "/40");
 }
+// ── DAS HAUS DES SPIELERS IST EINE TAT, BEVOR SEINE HÜLLE KOMMT (same.kopplung.aufwaerts#1, Leser `_werkAkt` → `_grundrissVon`):
+// ein Haus, wie der Setz-Op es stempelt (Art, Same, ohne Fundament-Zeile, die Hülle kommt noch), trägt den Grundriss des Mass-Baus
+// seiner Art (fachwerk `massBau`), sein Akt schreibt die Tat `bauen`, und die Zone wirkt an allen zehn Orten der Station. Der Täter
+// (bis w2-tat-umkreis): bis die Hülle kam, trug das Haus keinen Grundriss — der Akt fiel still (Radeon: 0 Taten, 0 von 10 Orten).
+// Selbsttest: der Stamm ohne das Gesetz vor der Hülle fällt ROT, sein Akt bricht beim Namen ──
+{
+    const SL = require("./lib/stamm.cjs");
+    const lauf = (taeter) => {
+        const { AnazhRealm: KL, ctx } = SL.ladeKlasse(root, taeter ? { monolith: SL.ersetze(SL.text(root), taeter) } : {});
+        // das Buch ist warm (die Foundry trägt die Zeile des Hauses, die Gestalten aus dem Gesetzbuch der Architektur)
+        KL._studioRenderConfig = { lod: ctx.__fachwerkCore.PORTAL_RENDER_CONFIG.lod };
+        const P = { x: 45, z: 0 };
+        const ORTE = [60, 120, 200, 300, 400, 500, 650, 800, 900, 1000].map((m, k) => [P.x + m * Math.cos(k * 2.39996), P.z + m * Math.sin(k * 2.39996)]);
+        const s = Object.create(KL.prototype);
+        s.state = { worldMeta: KL._weltGeburt({ taten: [], seed: "anazh-realm-seed" }), spielZeit: 1100, dayLengthMinutes: KL.DAY_LENGTH_DEFAULT_MINUTES };
+        Object.assign(s.state, { playerMesh: { position: { x: 0, y: 0, z: 0 } }, architectures: [], player: { emotions: {} }, faunaLifecycle: {} });
+        for (const m of ["_scheduleEditSave", "_weltRegt", "_nahStreuTat", "_aktSenden"]) s[m] = () => {};
+        s._feldFolgeSteht = () => true;
+        s._foundryEnabled = () => true;
+        s._foundry = { ready: true, recipes: { alemannisch: { kind: "haus" } } };
+        const r3 = (v) => Math.round(v * 1e3) / 1e3;
+        const lies = () => ORTE.map(([x, z]) => r3(s.auraAt(x, z, 0, 1100).lebendig));
+        const haus = { id: "haus-spieler", type: "haus_alemannisch", seed: 7, werk: true, position: { x: P.x, y: 0, z: P.z }, rotationY: 0.4 };
+        const vor = lies();
+        let fehler = null;
+        let g = null;
+        try {
+            g = s._grundrissVon(haus);
+            s._werkAkt(haus, { uhr: 1000 }, true);
+        } catch (e) {
+            fehler = String(e.message || e);
+        }
+        const nach = lies();
+        const taten = (s.state.worldMeta.taten || []).filter((t) => t.tat === "bauen" && t.fl > 0).length;
+        return { g, fehler, taten, wirkt: vor.filter((v, i) => v !== nach[i]).length };
+    };
+    const E = lauf(null);
+    check(
+        "Das Haus des Spielers vor der Hülle: Grundriss aus dem Mass-Bau, eine Tat, die Zone an allen 10 Orten",
+        !E.fehler && !!E.g && E.g.ex > 1 && E.g.ez > 1 && E.taten === 1 && E.wirkt === 10,
+        E.fehler || "Grundriss " + JSON.stringify(E.g) + " · Taten " + E.taten + " · wirkt an " + E.wirkt + "/10"
+    );
+    const M = lauf([["_grundrissVon", "if (art === undefined && this._hausHuelleKommt(e)) {", "if (false) {"]]);
+    check(
+        "Das Haus des Spielers vor der Hülle, Selbsttest: der Stamm ohne das Gesetz vor der Hülle fällt ROT (der Akt bricht beim Namen)",
+        !M.g && M.taten === 0 && /trägt keinen Grundriss/.test(M.fehler || ""),
+        M.g ? "der Täter blieb grün" : M.fehler || "der Akt fiel still"
+    );
+    if (E.g) console.log("  Haus vor der Hülle: Grundriss " + (2 * E.g.ex).toFixed(2) + " × " + (2 * E.g.ez).toFixed(2) + " m · Taten " + E.taten + " · wirkt an " + E.wirkt + "/10 — ohne Gesetz: " + (M.fehler ? "bricht beim Namen" : "still"));
+}
 // ── die Größe ist das Gesetz des Lebens (leben-core `__lebenCore`, leben-erbe): die Spanne des Gesetzes umschließt das Art-Mittel
 // (das Neugeborene unten, das größte Erwachsene bei +4σ oben) — bis leben-erbe vier Größen-Bänder im Buch der Tiere ──
 require(path.join(root, "leben-core.js"));
