@@ -3256,6 +3256,38 @@ async function kreaturProben(r, T, opts) {
             return o;
         });
         await stelle({ gesetz, rudel }, "rudel");
+        // DIE BEUTE WITTERT (jagd-quote): dieselbe Fahne, dieselbe Nase — ein pirschender Wolf 30 m luvwärts des Rehs (das Reh in
+        // seiner Fahne) fällt ihm auf, derselbe Wolf windab (das Reh luvwärts) nicht. Gefragt am Gesetz (`_creatureWarinessEigen`,
+        // der Wolf in der Jäger-Liste des Takts, das Auge sieht ihn pirschend erst ab pirschSichtM), ohne Takt. Täter: die Beute
+        // ohne Nase — ihre Fahne (`_furchtQuelle`) trägt nichts, wie bis jagd-quote.
+        const beute = await teil("beute", () => {
+            if (taeter === "beute-ohne-nase")
+                decke("_scentAt", (alt) => function (x, z, q) {
+                    return q === this._furchtQuelle ? 0 : alt.call(this, x, z, q);
+                });
+            const NAT = A._verhaltenGesetz().furcht;
+            const o = { abstandM: 30, fluchtM: null };
+            for (const [art, dx] of [
+                ["luv", -30],
+                ["lee", 30],
+            ]) {
+                leer(1);
+                Object.assign(W, { x: 1, z: 0, ms: 4 });
+                const sp = neben(M.x, M.z - 70);
+                pm.set(sp.x, sp.y, sp.z);
+                const reh = tier(neben(M.x, M.z), "wesen", 0.6);
+                const wolf = tier(neben(M.x + dx, M.z), "wolf");
+                [reh, wolf].forEach(ruhig);
+                wolf.userData._motionZustand = "jagd";
+                r._kreaturJaeger = [wolf];
+                o.fluchtM = rund(r._kreaturFluchtDistanzM(reh), 1);
+                o[art] = r._creatureWarinessEigen(reh) >= NAT.combatFearWariness;
+            }
+            r._kreaturJaeger = [];
+            leer(1);
+            return o;
+        });
+        await stelle({ gesetz, rudel, beute }, "beute");
         const suche = await teil("suche", () => {
             const dt = 1 / 60;
             // die Linie Wolf → Reh nach Norden; der Wind zieht (wx, wz): windab — vom Reh zum Wolf (der Wolf in der Fahne),
@@ -3314,7 +3346,7 @@ async function kreaturProben(r, T, opts) {
             leer(1);
             return { laeufe: L, ms10: 4, msNase: rund(r._rauchWindAt(M.x, M.z, s._simZeit, 1, null, {}).ms, 2), weltMs };
         });
-        return { gesetz, rudel, suche };
+        return { gesetz, rudel, beute, suche };
     });
 
     // ── rudel: DER SPIELER IST BEUTE im Wolfsrevier (oekologie.K4) — ein Rudel aus dem Wurf (`_kreaturWurf`, die Leine am
@@ -4533,6 +4565,13 @@ function urteil(name, z) {
                 P.windabS !== null && P.querS !== null && P.querS <= P.windabS + 1 && P.querWittert < 1,
                 `das Rudel jagt nicht als eines: windab gewittert ${P.windabS} s, der Wolf quer (Witterung ${P.querWittert} der Kante) jagt mit ${P.querS} s (Soll ≤ 1 s danach, quer unter der Kante)`
             );
+        const Bt = z.beute;
+        soll(!!Bt, "die Beute-Probe fehlt");
+        if (Bt)
+            soll(
+                Bt.luv === true && Bt.lee === false,
+                `die Beute wittert nicht: der pirschende Wolf ${Bt.abstandM} m luvwärts ${Bt.luv ? "gemerkt" : "ungemerkt"}, windab ${Bt.lee ? "gemerkt" : "ungemerkt"} (Soll luvwärts gemerkt — dieselbe Fahne wie die des Jägers, Mech 1966 —, windab ungemerkt; Fluchtdistanz ${Bt.fluchtM} m)`
+            );
         const L = z.suche && z.suche.laeufe;
         soll(!!L, "die Suche fehlt");
         if (L) {
@@ -4781,10 +4820,11 @@ const TAETER = {
         ["jagd-mager", /das Rudel frisst nicht/],
     ],
     // der alte Weg (radial × Richtungs-Faktor, Rest-Sockel 0,4 gegen den Wind, die Nase jede Witterung > 0): er hält am Gesetz;
-    // der Verband, der nichts teilt: er hält am Rudel
+    // der Verband, der nichts teilt: er hält am Rudel; die Beute ohne Nase (ihre Fahne trägt nichts): sie hält an der Beute
     witterung: [
         ["witterung-sockel", /gegen den Wind > 0/],
         ["witterung-allein", /das Rudel jagt nicht als eines/],
+        ["beute-ohne-nase", /die Beute wittert nicht/],
     ],
     rudel: [
         ["rudel", /umstellt nicht/],

@@ -66,7 +66,16 @@ class AnazhRealm_kreatur_furcht {
         // Fluchtdistanz ihrer Gattung (`_kreaturFluchtDistanzM`, das Feldmaß — dasselbe der Glut und der Flucht vor dem Menschen).
         // Bis hier war der Flucht-Radius die ganze Sichtweite: der Hirsch floh einen hetzenden Wolf ab 1 066 m und lief
         // fluchtRadius = r + 2,2 r ≈ 3,4 km weit (gate:kreatur-takt an der GTX 595 s über dem Deckel 480 s).
-        const sichtPirsch = AnazhRealm._verhaltenGesetz().jagd.pirschSichtM;
+        // DIE BEUTE WITTERT (jagd-quote): dieselbe Fahne windab (`_scentAt`) und dieselbe Nase (`_scentNase`, jagd.scentRangeM)
+        // wie der Jäger — wer windab eines Jägers in ihrer Fluchtdistanz steht, merkt ihn, pirschend wie hetzend, und flieht.
+        // Mech 1966 (Isle Royale, Fauna Series 7): der letzte Reiz kommt über den Geruch, in 7 Jagden (11 Elche) merkten die
+        // Elche die Wölfe zuerst und verließen sofort den Ort; darum ziehen Wölfe gegen den Wind auf ihre Beute. Bis jagd-quote
+        // trug nur der Jäger die Nase (witterung-windab): das Rudel umstellte den Hirsch auf dem Ring, auch luvwärts, ungemerkt
+        // bis pirschSichtM — die Rudel-Quote stieg über ihr Band (113 von 240 Jagden).
+        const VG = AnazhRealm._verhaltenGesetz();
+        const sichtPirsch = VG.jagd.pirschSichtM;
+        const nase = this._scentNase(VG.jagd.scentRangeM);
+        const quelle = this._furchtQuelle || (this._furchtQuelle = [{ x: 0, z: 0, strength: 1 }]);
         let best = Infinity;
         let J = null;
         let sichtJ = 0;
@@ -76,9 +85,15 @@ class AnazhRealm_kreatur_furcht {
             const d = Math.hypot(j.position.x - creature.position.x, j.position.z - creature.position.z);
             if (!(d < best)) continue;
             const hetzt = j.userData && j.userData._motionZustand === "hetzen";
-            if (hetzt && fluchtM < 0) fluchtM = this._kreaturFluchtDistanzM(creature);
+            if (fluchtM < 0) fluchtM = this._kreaturFluchtDistanzM(creature);
             // das Auge wird nur gefragt, wo es zählt: in der Fluchtdistanz (die Kosten folgen der Nähe, nie dem Bestand)
-            const sicht = !hetzt ? sichtPirsch : d < fluchtM ? Math.min(fluchtM, this._kreaturSiehtM(creature, j)) : 0;
+            let sicht = !hetzt ? sichtPirsch : d < fluchtM ? Math.min(fluchtM, this._kreaturSiehtM(creature, j)) : 0;
+            // die Nase ebenso nur in der Fluchtdistanz, und nur, wo das Auge ihn nicht schon hat (Lehre 25: billige Filter zuerst)
+            if (!(d < sicht) && d < fluchtM) {
+                quelle[0].x = j.position.x;
+                quelle[0].z = j.position.z;
+                if (this._scentAt(creature.position.x, creature.position.z, quelle) >= nase.schwelle) sicht = fluchtM;
+            }
             if (d < sicht) [best, J, sichtJ] = [d, j, sicht];
         }
         // Ein jagender Jäger im Blick wiegt wie ein Treffer (combatFearWariness): die Beute flieht, solange sie ihn sieht
