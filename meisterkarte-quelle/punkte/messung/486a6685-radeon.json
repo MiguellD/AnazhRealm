@@ -1,7 +1,7 @@
 {
  "sha": "486a6685925d51302752c756d7d47654d83922d1",
  "geraet": "radeon",
- "zeit": "2026-11-25T08:07:27.174Z",
+ "zeit": "2026-11-25T08:34:04.535Z",
  "host": "MiguellD",
  "je": {
   "karte2.mensch.macht.wehrbau#4": {
@@ -2190,6 +2190,70 @@
    "ungemessen": true,
    "zeit": "2026-11-25T07:19:00.015Z",
    "abdruck": "6805cdf2a85c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.fahrzeug.lenker#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 104.7 von 2500000000000 s in 4290 Takten, 40.9 s Wand (9.5 ms je Takt)",
+   "exit": 0,
+   "minuten": 0.81,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 104.7 von 2500000000000 s in 4290 Takten, 40.9 s Wand (9.5 ms je Takt)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 48.2,
+   "fremd": {
+    "s": 51.4,
+    "takte": 22,
+    "fremdS": 39.16,
+    "kerne": 0.762,
+    "fensterKerne": 0.942,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh mauer-gate-weg-boden-m bash -c npm run -s gate:weg-boden",
+      4.81
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh tiere-gang bash scratchpad/gpu-tiere3.sh",
+      4.47
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      4.06
+     ]
+    ],
+    "dienerS": 24.77,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.5
+     ],
+     [
+      "System",
+      6.88
+     ]
+    ],
+    "geraetS": 35,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.34
+     ],
+     [
+      "svchost.exe",
+      12.11
+     ],
+     [
+      "SearchIndexer.exe",
+      1.97
+     ]
+    ],
+    "eigenS": 112.33,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T08:34:04.535Z",
+   "abdruck": "b6c3c3996fb0",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
