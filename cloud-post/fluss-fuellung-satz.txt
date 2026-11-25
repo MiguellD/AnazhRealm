@@ -1,1 +1,1 @@
-fluss-fuellung ZWISCHENSTAND: Becken füllen und laufen über (ein Gesetz im Gelände-Kern, fensterfrei maxDiff 0) — ±12 km 0→2 Flusssysteme, ±100 km 1→86, Becken-Land 70 %→0 %, See 40,96 km²; offen: Linse beta 3/12 rot, Faden-Stau, Hydrosphäre ohne netzSee.
+fluss-fuellung ZWISCHENSTAND: Becken füllen und laufen über (ein Gesetz im Gelände-Kern, fensterfrei maxDiff 0) — ±12 km 0→2 Flusssysteme, ±100 km 1→86, Becken-Land 70 %→0 %, See 40,96 km²; offen: Gelände-Linse 8/12, wasser-leben N2-Anker, Faden-Stau, kein Merge.
