@@ -57,9 +57,9 @@ const WELTEN = [
     { id: "fluid", manifest: true, wort: "flut", zusatz: stromZeichnet, mitgebracht: "pass" },
     { id: "terrain", manifest: true, wort: "fichte", mitgebracht: "pass" },
     // die Lehren auf Knopf (w11-fahrzeug): erst gezeichnete Maß-Schilder tragen das Sprite-Quad, das ein Neubau zerstören kann (K6)
-    { id: "garage", wort: "supersport", ui: { sel: "#presets button.on", feld: "text", soll: "Supersport" }, zusatz: probefahrt, vorher: "lehrenB" },
+    { id: "garage", wort: "supersport", ui: { sel: "#presets button.on", feld: "text", soll: "Supersport" }, zusatz: probefahrt, vorher: "lehrenB", sonne: true },
     { id: "portale", wort: "maschine", ui: { sel: "#presets button.active", feld: "text", soll: "Maschine" } },
-    { id: "schmiede", wort: "degen", ui: { sel: "#presets button.on", feld: "text", soll: "Degen" } },
+    { id: "schmiede", wort: "degen", ui: { sel: "#presets button.on", feld: "text", soll: "Degen" }, sonne: true },
     { id: "fachwerk", wort: "tudor", ui: { sel: "#pK", feld: "value", soll: "tudor" } },
     { id: "klang", wort: "trap", ui: { sel: "#presets .presetBtn.active", feld: "text", soll: "Trap" } },
     { id: "koerperstudio", wort: "wut", ui: { sel: "#emotions button.active", feld: "text", soll: "Wut" } },
@@ -144,6 +144,43 @@ async function mitgebrachtPruefen(page, fr, art) {
     if (!sicht.tools.includes("⚒ " + MITGEBRACHT.werkzeug)) notiz.push("das eigene Werkzeug fehlt im Panel");
     if (sicht.vibe !== "Vibe-Pass · " + pl.fingerprint) notiz.push(`die Vibe-Zeile zeigt „${sicht.vibe}"`);
     return { ok: !notiz.length, notiz };
+}
+
+// K7 — DIE SONNE DER BÜHNE IST DIE DER WELT (sonnenbahn 2, `sonne` in WELTEN: die Welten auf der Bühne der Hülle): die Heimat reicht
+// beim Betreten die Bahn ihrer Sonne im Himmel (`_portalSendEnter` → `msg.himmel.bahn`), die Hülle baut das Licht auf ihr
+// (`B.himmel` → welt-licht.js `himmelBahn`) — zur Uhr der Bühne steht ihre Sonne ≤ 1° neben der Sonne der Welt (die Gier der
+// Bühne gedreht). Bis sonnenbahn 2 las die Bühne `o.bahn`, das kein Schreiber setzte: sie stand am Ort der Bühne (15,8°, ohne
+// Saison), die Welt am Anker ihres Planeten.
+const SONNE_GRAD = 1;
+async function sonneDerBuehne(page, fr) {
+    const b = await fr.evaluate(async () => {
+        const B = window.AnazhHuelle && AnazhHuelle.buehneDerSeite;
+        if (!B) return null;
+        await B.steht;
+        const W = B.welt;
+        return W ? { s: [W.richtung.x, W.richtung.y, W.richtung.z], uhr: B.uhrIst(), gier: (W.himmel && W.himmel.gier) || 0, bahn: W.bahn } : null;
+    });
+    if (!b) return { ok: false, notiz: ["die Bühne der Welt steht nicht (`AnazhHuelle.buehneDerSeite`) — die Sonne ist ungeprüft"] };
+    const w = await page.evaluate((uhr) => {
+        const bahn = r._sonnenBahn();
+        return { s: __weltLicht.sonnenRichtung(__weltLicht.sonnenWinkel(uhr), bahn), bahn };
+    }, b.uhr);
+    const [c, sn] = [Math.cos(b.gier), Math.sin(b.gier)];
+    const s = [c * w.s[0] - sn * w.s[2], w.s[1], sn * w.s[0] + c * w.s[2]];
+    const n = (v) => Math.hypot(v[0], v[1], v[2]);
+    const cos = (s[0] * b.s[0] + s[1] * b.s[1] + s[2] * b.s[2]) / (n(s) * n(b.s));
+    const grad = (Math.acos(Math.max(-1, Math.min(1, cos))) * 180) / Math.PI;
+    if (grad <= SONNE_GRAD) return { ok: true, notiz: [], grad };
+    const g = (x) => ((x * 180) / Math.PI).toFixed(2) + "°";
+    const bn = (B) => (B ? `Breite ${g(B.breite)} · Deklination ${g(B.dekl)}` : "—");
+    return {
+        ok: false,
+        grad,
+        notiz: [
+            `die Sonne der Bühne steht ${grad.toFixed(2)}° neben der Sonne der Welt zur Uhr ${b.uhr.toFixed(4)} (Soll ≤ ${SONNE_GRAD}°; ` +
+                `die Bühne ${bn(b.bahn)}, die Welt ${bn(w.bahn)}) — die Bahn reist nicht mit dem Himmel des Betretens (\`msg.himmel.bahn\`)`,
+        ],
+    };
 }
 
 // K8 — was der Spieler trägt: die Teile des Abdrucks, die Zeile, mit der die Hülle den Reisenden hält (die Fundstelle des
@@ -242,6 +279,13 @@ const TAETER = {
     // die garage vor dem Schnitt: ihr Neubau zerstört das EINE Sprite-Quad von three (r184 behält den zerstörten Puffer) → K6 rot
     "worlds/garage/garage.js": [["if(o.geometry&&!o.isSprite)o.geometry.dispose();", "if(o.geometry)o.geometry.dispose();"]],
 };
+// die Heimat vor sonnenbahn 2: der Himmel des Betretens trägt die Bahn ihrer Sonne nicht → die Bühne der garage steht am Ort der
+// Bühne (K7 rot, die Sonne beim Grad)
+const BAHN_REIST = ["                bahn: { ...this._sonnenBahn() },\n", ""];
+{
+    const d = stammLib.dateiMit(ROOT, BAHN_REIST[0]) || stammLib.dateien(ROOT)[0];
+    (TAETER[d] = TAETER[d] || []).push(BAHN_REIST);
+}
 // Die Soll-Welten verlieren ihr Manifest: der Server antwortet 404 → K1 rot, die Welt beim Namen.
 const TAETER_WEG = ["worlds/skeleton/manifest.json", "worlds/terrain/manifest.json"];
 // Ein Manifest ohne Soll-Zeile: die garage (kein `manifest` in WELTEN) liefert eins → K1 rot.
@@ -629,6 +673,12 @@ async function pruefeWelt(page, welt, lies) {
         aus.k.K7 = k7.ok;
         aus.notiz.push(...k7.notiz);
     }
+    if (welt.sonne) {
+        const k7 = await sonneDerBuehne(page, hinFrame);
+        aus.k.K7 = aus.k.K7 !== false && k7.ok;
+        aus.sonneGrad = k7.grad;
+        aus.notiz.push(...k7.notiz);
+    }
     const endlich = ruhig && z.enters <= 3;
     aus.k.K2 = endlich && still;
     if (!still) aus.notiz.push("die Welt spricht aus ihrem ersten Bild, nicht als Antwort");
@@ -830,6 +880,11 @@ async function selbsttest() {
         ]),
         ["K1 rot: fluid meldet ihr Manifest ohne „flut“ (die Heimat lernt das Wort nicht)", by.fluid && by.fluid.k.K1 === false && by.fluid.notiz.some((n) => /es fehlen flut/.test(n)), by.fluid ? by.fluid.notiz.filter((n) => /Manifest/.test(n)).join("") : ""],
         ["K6 rot: der Neubau der garage zerstört das Sprite-Quad — die GPU verwirft den Submit", by.garage && by.garage.k.K6 === false && by.garage.notiz.some((n) => /while destroyed/.test(n)), by.garage ? by.garage.notiz.filter((n) => /GPU/.test(n)).join("") : ""],
+        [
+            "K7 rot: der Himmel des Betretens trägt die Bahn der Sonne nicht — die Bühne der garage steht nicht unter der Sonne der Welt",
+            by.garage && by.garage.k.K7 === false && by.garage.notiz.some((n) => /Sonne der Bühne steht/.test(n)),
+            by.garage ? by.garage.notiz.filter((n) => /Sonne der Bühne/.test(n)).join("") : "",
+        ],
         ["K1 rot: garage trägt ein manifest.json ohne Soll-Zeile", by.garage && by.garage.k.K1 === false && by.garage.notiz.some((n) => /ohne Soll-Zeile/.test(n)), by.garage ? by.garage.notiz.filter((n) => /Soll-Zeile/.test(n)).join("") : ""],
         ["Soll-Wand rot: ein Manifest im Baum, dessen Welt WELTEN nicht kennt (fluid ohne Zeile)", manifestOhneZeile(WELTEN.filter((w) => w.id !== "fluid")).join() === "fluid", ""],
         [

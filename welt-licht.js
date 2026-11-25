@@ -57,14 +57,15 @@ var __weltLicht = (function () {
     // PBR Neutral), `zielKarte` das k·L der 18-%-Karte, das DIESE Kurve auf Mittelgrau legt (sRGB 118; `kartenEichung(kurve, 0)`
     // in scripts/lib/licht-linsen.cjs rechnet es nach). `min` ist nur die Wand gegen ein entartetes Licht. `steigung` ist die
     // Kompensations-Steigung des Tags (1 = volle Adaption, 0 = feste Blende), `stufen` die Knoten [Grad, Stufen] der Tag-Achse
-    // für Dämmerung und Nacht, `gleitung` [oben, unten] das Band, in dem die Kamera von der Steigung auf sie gleitet; `nachtGrad`
-    // (S7) die Tiefe der Sonne, in der das Nacht-Auge der Post-Kette ganz steht. Die Messungen stehen am Stamm (bild-himmel.js).
+    // für Dämmerung und Nacht, `gleitung` [oben, unten] das Band, in dem die Kamera von der Steigung auf sie gleitet. Das Nacht-Auge der Post-Kette
+    // steht ganz im letzten Anker der EINEN Tag-Achse (`GRENZGROESSE`, astronomische Nacht −18°, USNO): darunter streut keine Sonne
+    // mehr in den Himmel (sonnenbahn: die eigene Tiefe −32° ließ es im Sommer am Anker nachts bei 0,72). Die Messungen am Stamm.
     // DER BODEN DES MESSERS (`nachtKnotenE` × der Mond der Stunde, licht-stetig): die weiteste Blende der Kamera — ihr Lichtmesser
     // liest nie weniger als das Licht des Vollmonds ohne Wolken-Decke zu DIESER Stunde, E des Monds im Zenit (`MOND_E`) × der Sinus
     // seiner Höhe × sein Durchlass (`belichtung`, das sechste Wort); darunter steht die Belichtung, und das Bild fällt mit dem Licht
     // (UE: die Untergrenze der Auto-Belichtung, Min EV100) — Wald, Wolke, Gasse ohne Laterne. Unter offenem Himmel folgt die Kamera
     // dem Mond, wie die REF es misst (spec/farbe/tag-ref.json, USNO Circular 171: −20° 0,096 lx und −90° 0,397 lx stehen beide auf
-    // −2,17 Stufen), und Laterne, Fenster und Feuer tragen die Nacht (der Messer liest ihren Pool, `_poolAmAuge`). Bis licht-stetig
+    // −2,17 Stufen), und Laterne, Fenster und Feuer tragen die Nacht (der Messer liest ihren Pool am Bild, `_poolAmBild`). Bis licht-stetig
     // war der Boden der Mond im Zenit, ab −6° fest (0,26 lx): die Dämmerung der Tafeln (0,43–0,52 Dekaden je Grad, wie Brown 1952)
     // fiel um −8,6° unter ihn, und das Bild der Wiese fiel mit dem Licht — gerechnet 3 EV in 2,5° (GTX 1feab29c: Tafeln + Mond
     // 0,37 lx bei −8,6°, 0,03 lx bei −12°); um 05 Uhr (Mond 18°, 0,056 lx) stand das Bild 2,2 EV unter Mitternacht.
@@ -90,7 +91,6 @@ var __weltLicht = (function () {
         gleitung: Object.freeze([12, 8]),
         stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
         nachtKnotenE: MOND_E,
-        nachtGrad: -32,
         // DER WEG ZU WEISS (nacht-lichter): über Bild-Weiß zieht die Kurve den Ton zu seinem größten Kanal — `kappe` ist der höchste
         // Anteil (weit über Weiß), `stufen` die Stufen über Weiß, nach denen die Hälfte erreicht ist — im QUADRAT der Stufen: am Knie
         // (Weiß) steigt der Weg ohne Knick (gate:post-kette KNIE). Gebunden an das Feuer: der KERN (3 000 K bei k 20 000) hält mit 0,14
@@ -108,14 +108,21 @@ var __weltLicht = (function () {
     // weiß (gate:post-kette (j2), GTX 1050). Dieser Zug FIEL ganz (am Bild entschieden: eine Grenze 0,012 statt 0 änderte
     // Herd, Dorf-Nacht und Sonnen-Scheibe nicht sichtbar). Ein grauer Eingang bleibt grau: die Eichung der Karte und jede
     // Rückrechnung am Grau gelten weiter; der Tag steht zahlengleich (Wiese Mittag Luma 89,88 = 89,88).
+    // DER FUSS AM SCHLÜSSEL (sonnenbahn 3, Entscheid des Koordinators 25.11.): der Fuß liest die Farbe an der Belichtung des
+    // Schlüssels (k ÷ 2^n, die Karte auf `zielKarte` ohne die Stufen der Tag-Achse), die Stufen n (`belichtungNachFuss`, die Uniform
+    // `tonStufen`) kommen HINTER ihm, die Schulter danach — der Fuß gehört zum Schlüssel, die Schulter zum Schirm. Am Tag (n = 0)
+    // dieselbe Funktion Zahl für Zahl (× 1). Bis hier legte die Kurve den Fuß an das ganze k: die Nacht (n −2,17) stand mit ihrem
+    // Median im Eingang 0,035 ganz im Fuß, jede Blende des Bodens wurde zwei — S0, GTX 1050, Mond 22°: Luma 4 lag 1,31 Blenden unter
+    // dem Median, abgesoffen im Licht 5,6 % (die Kurve aus dem Licht der Lampen 7,5 %, die Gerade durch den Median 0,0 %).
     function tonKurve(THREE, B = BELICHTUNG) {
         const T = THREE.TSL;
         const S = B.schulter;
         const d = 1 - S;
+        const F = tonStufen(THREE);
         return T.Fn(([farbe, k]) => {
             const c = farbe.mul(k).toVar();
-            const x = T.min(c.r, T.min(c.g, c.b));
-            c.subAssign(T.select(x.lessThan(0.08), x.sub(x.mul(x).mul(6.25)), 0.04));
+            const x = T.min(c.r, T.min(c.g, c.b)).mul(F.teil);
+            c.subAssign(T.select(x.lessThan(0.08), x.sub(x.mul(x).mul(6.25)), 0.04).mul(F.mal));
             const spitze = T.max(c.r, T.max(c.g, c.b));
             const ueber = spitze.greaterThanEqual(S);
             const p = spitze.max(S);
@@ -135,6 +142,23 @@ var __weltLicht = (function () {
     // der Post-Kette (`_vorBelichtung`), gate:post-kette.
     function deckeln(T, rgb, B = BELICHTUNG) {
         return rgb.mul(T.float(B.deckel).div(T.max(rgb.r, T.max(rgb.g, rgb.b)).max(B.deckel)));
+    }
+    // DIE STUFEN HINTER DEM FUSS als Uniform der EINEN Kurve (EINE je Seite: jeder Renderer und jeder Leser der Kurve liest sie):
+    // `n` die Zahl, `mal` = 2^n und `teil` = 2^−n ihre Uniformen — gebaut mit der ersten Kurve (`tonKurve` reicht THREE; ein Leser
+    // ohne Kurve, der Wirt einer Linse im Rechen-Raum, trägt nur die Zahl). Geschrieben NUR von den Schreibern der Belichtung
+    // (`tonStufenSetzen`: die Welt in `_dayNightApplyBelichtung`, die Bühne in `buehne`), mit der Belichtung im selben Zug.
+    const _tonStufen = { n: 0, mal: null, teil: null };
+    function tonStufen(THREE) {
+        const F = _tonStufen;
+        if (THREE && !F.mal) [F.mal, F.teil] = [THREE.TSL.uniform(2 ** F.n), THREE.TSL.uniform(2 ** -F.n)];
+        return F;
+    }
+    // die Stufen bei der Sonnenhöhe e (Sinus, wie `belichtung`) — am Tag genau 0 (die Uniformen 1 und 1)
+    function tonStufenSetzen(e, B = BELICHTUNG) {
+        const F = _tonStufen;
+        F.n = belichtungNachFuss((Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI, B);
+        if (F.mal) [F.mal.value, F.teil.value] = [2 ** F.n, 2 ** -F.n];
+        return F.n;
     }
     // DER EINE SETZER: die Kurve in die Tafel des Renderers (einmal je Renderer) und auf seinen Platz
     const _tonKurveAn = new WeakSet();
@@ -735,6 +759,18 @@ var __weltLicht = (function () {
     // Tag-Achse (`stufen`, linear in h zwischen den Knoten, außen gehalten); dazwischen linear in h gemischt. `B` die Eichung (die
     // Welt reicht ihre, `AnazhRealm.BELICHTUNG` — an ihr spielen die Linsen ihre Täter ein, scripts/lib/licht-linsen.cjs).
     function belichtungStufen(h, q, B = BELICHTUNG) {
+        return belichtungGleitung(h, B) * (1 - B.steigung) * Math.log2(q) + belichtungNachFuss(h, B);
+    }
+    // das Gewicht der Steigung bei der Sonnenhöhe h: 1 über `gleitung[0]`, 0 unter `gleitung[1]`, dazwischen linear
+    function belichtungGleitung(h, B = BELICHTUNG) {
+        const [oben, unten] = B.gleitung;
+        return Math.max(0, Math.min(1, (h - unten) / (oben - unten)));
+    }
+    // DIE STUFEN NACH DEM FUSS (sonnenbahn 3, Entscheid des Koordinators 25.11.): der Anteil der Knoten der Tag-Achse an den Stufen
+    // der Kamera — (1 − Gleitung) × die Stufen der Knoten bei h; am Tag (über `gleitung[0]`) genau 0, in der Nacht der ganze Knoten
+    // (−2,17 bei −20°, die REF). Die Tonkurve legt sie HINTER ihren Fuß (`tonKurve`): der Fuß gehört zum Schlüssel der Belichtung,
+    // die Schulter zum Schirm. Die Steigung des Tags bleibt im Schlüssel.
+    function belichtungNachFuss(h, B = BELICHTUNG) {
         const K = B.stufen;
         let n = K[K.length - 1][1];
         if (h >= K[0][0]) n = K[0][1];
@@ -744,9 +780,7 @@ var __weltLicht = (function () {
                     n = K[i][1] + ((K[i - 1][1] - K[i][1]) * (h - K[i][0])) / (K[i - 1][0] - K[i][0]);
                     break;
                 }
-        const [oben, unten] = B.gleitung;
-        const t = Math.max(0, Math.min(1, (h - unten) / (oben - unten)));
-        return t * (1 - B.steigung) * Math.log2(q) + (1 - t) * n;
+        return (1 - belichtungGleitung(h, B)) * n;
     }
 
     // DIE BELICHTUNG AUS DEM LICHT (licht.K1, H1): `w` die Beleuchtungsstärke einer waagrechten Fläche des Orts (rgb), `EA` der
@@ -835,17 +869,55 @@ var __weltLicht = (function () {
     // freigibt). Mit dem Dichte-Profil der Krone fiel der Sprung auf 0,15–0,18 EV (Soll 0,1): die Bahn bleibt draußen, bis der
     // Messer den Wurf der Waldkante so stetig liest, wie das Bild ihn zeigt (32 Strahlen kippen gemeinsam). Seit laub-messer liest
     // er die Sicht des Bildes selbst (`_bildSonnenSicht`, 18 432 Proben der unteren Bildhälfte); seine eigenen Gestalten sind gefallen.
-    function sonnenRichtung(winkel) {
-        const x = Math.cos(winkel);
-        const y = Math.sin(winkel);
-        const z = Math.sin(winkel * 0.5) * 0.4;
-        const l = Math.hypot(x, y, z) || 1;
-        return [x / l, y / l, z / l];
+    // DIE BAHN (Meeus Kap. 13): am Stundenwinkel H — 0 am Mittag, westwärts, `winkel` der Uhr − π/2 im Drehsinn des Körpers —,
+    // der Breite φ des Ankers und der Deklination δ (`sonnenBahn`): sin h = sin φ sin δ + cos φ cos δ cos H, Osten = −cos δ sin H,
+    // Norden = cos φ sin δ − sin φ cos δ cos H. Die Achsen der Welt: x Osten, y oben, −z Norden (die Mittagssonne der Nordhalbkugel
+    // steht über +z, wie bis hier).
+    // DER ORT DER BÜHNE (die Studios, die Hülle `B.stunden`: sie tragen keinen Ort der Welt): die Gleiche (δ = 0) an der Breite, an der
+    // die Mittagssonne der Bühne steht, wo sie bis sonnenbahn stand — 74,21° (die alte Bahn, Neigung 0,4 × sin ½w: tan(90° − h) = 0,4 √½),
+    // im Süden, Aufgang im Osten zur Uhr 0,25. Die Welt reicht ihre Bahn (`_sonnenBahn`), die Bühne der Welt dieselbe: sie reist
+    // mit dem Himmel der Welt (`himmelBahn`).
+    const BUEHNE_BAHN = Object.freeze({ breite: Math.atan(0.4 * Math.SQRT1_2), dekl: 0, drehsinn: 1 });
+    // DIE BAHN IM HIMMEL DER WELT (sonnenbahn 2): der Zustand des Himmels, den die Welt am Tor reicht (stamm `_portalSendEnter`,
+    // `msg.himmel.bahn` = `_sonnenBahn()`), trägt die Bahn ihrer Sonne — die Bühne, die Stunden der Hülle (`B.stunden`) und jede
+    // Sonde lesen sie hier; ohne Himmel der Welt (ein Studio für sich) der Ort der Bühne. Fail-closed: eine Bahn, die nicht ganz
+    // aus Zahlen ist, bricht laut. Bis hier las die Bühne ein Argument `o.bahn`, das kein Rufer reichte — jede Studio-Bühne stand
+    // bei 74,21° im Süden, die Welt (Anker −50,5°, Sommer) bei 55,82° im Norden.
+    function himmelBahn(himmel) {
+        const b = himmel && himmel.bahn;
+        if (b == null) return BUEHNE_BAHN;
+        if (![b.breite, b.dekl, b.drehsinn].every(Number.isFinite))
+            throw new Error("DIE BÜHNE DER WELT: die Bahn der Sonne { breite, dekl, drehsinn } aus Zahlen, nie " + JSON.stringify(b));
+        return Object.freeze({ breite: b.breite, dekl: b.dekl, drehsinn: b.drehsinn < 0 ? -1 : 1 });
+    }
+    const gleicheBahn = (a, b) => a.breite === b.breite && a.dekl === b.dekl && a.drehsinn === b.drehsinn;
+    function sonnenRichtung(winkel, bahn = BUEHNE_BAHN) {
+        if (!bahn || !Number.isFinite(bahn.breite) || !Number.isFinite(bahn.dekl))
+            throw new Error("DIE SONNENBAHN: ohne Breite und Deklination steht keine Sonne (`sonnenBahn`)");
+        const H = (winkel - Math.PI / 2) * (bahn.drehsinn < 0 ? -1 : 1);
+        const sp = Math.sin(bahn.breite),
+            cp = Math.cos(bahn.breite),
+            sd = Math.sin(bahn.dekl),
+            cd = Math.cos(bahn.dekl),
+            cH = Math.cos(H);
+        return [-cd * Math.sin(H), sp * sd + cp * cd * cH, sp * cd * cH - cp * sd];
+    }
+    // DIE BAHN DER SONNE aus dem Ort und dem Jahr: die Breite φ des Ankers (rad), die Saison-Phase p (0 die Gleiche des Frühlings ·
+    // 0,25 die Sonnwende des Sommers · 0,5 · 0,75 — die Phasen der Saison-Worte 0,125 · 0,375 · 0,625 · 0,875) und der Körper
+    // (Schiefe ε `neigungRad`, `drehsinn`, planet-core `planetPlan(...).koerper`): δ = asin(sin ε · sin 2πp), auf der Südhalbkugel
+    // gespiegelt — das Saison-Wort ist das des Orts, sein Sommer steht über seinem Pol.
+    function sonnenBahn(breite, phase, koerper) {
+        const hem = breite < 0 ? -1 : 1;
+        return {
+            breite,
+            dekl: hem * Math.asin(Math.sin(koerper.neigungRad) * Math.sin(2 * Math.PI * phase)),
+            drehsinn: koerper.drehsinn < 0 ? -1 : 1,
+        };
     }
     // DER MOND steht der Sonne voll gegenüber (der Vollmond) — EINE Formel für sein Licht und seinen Körper (w28-nacht-licht: der
     // Körper rechnete seine Lage in einer eigenen Kopie mit dem Winkel + π)
-    function mondRichtung(winkel) {
-        return sonnenRichtung(winkel).map((v) => -v);
+    function mondRichtung(winkel, bahn = BUEHNE_BAHN) {
+        return sonnenRichtung(winkel, bahn).map((v) => -v);
     }
 
     // DIE EINE TAG-ACHSE (S7, W7): jede Größe des Lichts über den Tag ist EINE Funktion der Sonnenhöhe e = sin(Höhe) — die Kanäle
@@ -873,7 +945,7 @@ var __weltLicht = (function () {
         // Ersatz-Lichter, die er blendete (Ambient, Hemisphäre), fielen in licht-eine-skala.
         const nachtE = Math.sin((-6 * Math.PI) / 180);
         const hN = 0;
-        const nG = BELICHTUNG.nachtGrad;
+        const nG = A[A.length - 1][0];
         return {
             e,
             grenze,
@@ -1257,8 +1329,10 @@ var __weltLicht = (function () {
         const AR = KERN.ATMO_RECHNUNG;
         const M = AR.medium(G, AR.betaKlar(G), ATMO_BODEN);
         const winkel = sonnenWinkel(uhr);
-        const s = sonnenRichtung(winkel);
-        const m = mondRichtung(winkel);
+        // die Bahn der Bühne: die der Welt, die sie zeichnet — sie reist mit ihrem Himmel (`himmelBahn`), sonst der Ort der Bühne
+        const bahn = himmelBahn(o.himmel);
+        const s = sonnenRichtung(winkel, bahn);
+        const m = mondRichtung(winkel, bahn);
         const achse = tagAchse(s[1]);
         if (!(achse.nacht === 0 && achse.daemmerung === 1))
             throw new Error(
@@ -1355,6 +1429,7 @@ var __weltLicht = (function () {
             sonne,
             staerke: sonne.intensity,
             richtung: new THREE.Vector3(s[0], s[1], s[2]),
+            bahn, // die Bahn ihrer Sonne (`himmelBahn`): die Linse der Studios liest sie gegen die der Welt
             tafeln: A,
             umgebung,
             knoten,
@@ -1377,6 +1452,14 @@ var __weltLicht = (function () {
                 throw new Error(
                     "DIE BÜHNE DER WELT: der Himmel { ort [x, z], zug [x, y], zeit, deckung, gier } aus Zahlen, nie " +
                         JSON.stringify(z)
+                );
+            // die Bahn steht mit dem Licht (Tafeln, Umgebung, Sonne): ein Himmel auf einer anderen Bahn baut das Licht neu (die
+            // Hülle: `B.himmel` → `B.uhr`), nie still unter der alten Sonne
+            if (!gleicheBahn(himmelBahn(h), bahn))
+                throw new Error(
+                    "DIE BÜHNE DER WELT: der Himmel trägt eine andere Bahn als das Licht, das steht (" +
+                        JSON.stringify(h.bahn) +
+                        ") — eine neue Bahn baut das Licht neu"
                 );
             H.auge.value.set(ort[0], 0, ort[1]);
             H.zug.value.set(zug[0], zug[1]);
@@ -1414,6 +1497,7 @@ var __weltLicht = (function () {
             E[1] += sonne.color.g * I;
             E[2] += sonne.color.b * I;
             B.belichtung = R.toneMappingExposure = belichtung(E, A.belichtung, s[1]);
+            B.tonStufen = tonStufenSetzen(s[1]); // die Stufen hinter dem Fuß der Kurve an der Stunde der Bühne (`tonKurve`)
             return B;
         });
         return B;
@@ -1457,6 +1541,7 @@ var __weltLicht = (function () {
             szene.backgroundIntensity !== 1
         )
             fremd.add("ein Himmel neben dem Knoten des Gesetzes");
+        if (tonStufen().n !== B.tonStufen) fremd.add(`die Stufen hinter dem Fuß ${tonStufen().n} statt ${B.tonStufen}`);
         if (fremd.size)
             throw new Error(`DIE BÜHNE DER WELT zeichnet unter dem Licht der Welt allein: ${[...fremd].join(" · ")}`);
         if (q) {
@@ -2189,6 +2274,8 @@ var __weltLicht = (function () {
         deckeln,
         tonKurve,
         tonKurveSetzen,
+        tonStufen,
+        tonStufenSetzen,
         GRENZGROESSE,
         GPU_FRAMES_IM_FLUG,
         EINHEIT_LX,
@@ -2200,12 +2287,16 @@ var __weltLicht = (function () {
         umgebungRichtung,
         atmoTafeln,
         belichtungStufen,
+        belichtungNachFuss,
         belichtung,
         belichtungRaum,
         belichtungAnker,
         e0,
         sonnenWinkel,
         sonnenRichtung,
+        sonnenBahn,
+        BUEHNE_BAHN,
+        himmelBahn,
         mondRichtung,
         tafelLicht,
         tagAchse,

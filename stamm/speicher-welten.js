@@ -2755,6 +2755,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_speicherOhnePlatte",
         "_nebenFaeden",
         "_planetFadenStand", // der Planet-Faden (Reise): ohne Stand der Welt, er merkt Plan und Scheiben je Samen
+        "_planetAnkerJe", // der Anker je Samen (`_planetAnker`): eine reine Funktion des Samens, das zweite Boot liest ihn
         "_quelle",
         "_bodenFaden",
         "_hydroWelt",
@@ -2836,6 +2837,10 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_bewohnerSiedlungen",
         "_portalLeuchte",
         "_leuchtPool",
+        // der Anker der Sonne gehört der Welt (`_sonnenAnkerFragen`): eine Reise-Welt steht an der Breite ihres Teils, eine andere
+        // Saat auf ihrem Planeten — die Frage fällt mit, die neue Welt fragt neu (der Merker je Samen am Wirt antwortet sofort)
+        "_sonnenAnker",
+        "_sonnenAnkerFrage",
     ]),
 });
 // must-preserve (taille-spec §2): Größen-Wand für unbekannte Felder (ein Riesen-Feld ist ein

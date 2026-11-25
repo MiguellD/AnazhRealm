@@ -1193,6 +1193,9 @@ class AnazhRealm_bild_himmel {
         // der Anker des Jahrs zur Zeit des Worts (`uhr`, die Tat-Uhr seines Akts — beim Mitspieler dieselbe, feld.K2#2)
         const k = this._kalenderZeit(Number.isFinite(uhr) ? uhr : this.state.spielZeit);
         this._saisonAnker = { anker: phaseFor[key], k, phase: phaseFor[key] };
+        // die Deklination der Sonne sprang mit der Phase (`_sonnenBahn`): der Himmel malt neu, der Licht-Pool wählt neu
+        this._himmelSprung = true;
+        if (this._leuchtPool) this._leuchtPool.t = -Infinity;
         return true;
     }
     // ==================== WETTER: sichtbarer Regen ====================
@@ -1356,7 +1359,7 @@ class AnazhRealm_bild_himmel {
     //   grenze      die Grenzgröße (die Sterne erscheinen, wie sie im Himmel erscheinen), linear zwischen den Ankern;
     //   daemmerung  1 im hellen Tag … 0 in astronomischer Nacht (im Maß der Grenzgröße): das Sternen-Licht leuchtet in ihrem Rest;
     //   tag         das Nacht-Auge der Post-Kette (mesopisch): 1 über dem Horizont (wo `nacht` beginnt), linear über die Höhe
-    //               der Sonne bis `BELICHTUNG.nachtGrad` auf 0 — es gleitet, wo die Nacht beginnt;
+    //               der Sonne bis zum letzten Anker (astronomische Nacht −18°) auf 0 — es gleitet, wo die Nacht beginnt;
     //   nacht       die Nacht der Zeitpläne (Leuchtquellen, Horizont der Körper, Klang): 0 über dem Horizont,
     //               1 ab −6° (die bürgerliche Dämmerung) — über dem Horizont tragen Sonne und Himmel allein (ferne.K4);
     //   hell        die Leuchtdichte des Tageshimmels relativ zum Mittag (0,045 Nacht … 1), die Blässe des Mondes liest sie.
@@ -1611,8 +1614,49 @@ class AnazhRealm_bild_himmel {
     // DIE RICHTUNG ZUR SONNE zum Winkel der Uhr: die EINE Sonnenbahn (`__weltLicht.sonnenRichtung`, die auch die Bühne der Studios
     // liest — bis w28-nacht-licht stand hier ihre Kopie)
     _dayNightSunDirection(angle) {
-        const [x, y, z] = __weltLicht.sonnenRichtung(angle);
+        const [x, y, z] = __weltLicht.sonnenRichtung(angle, this._sonnenBahn());
         return new THREE.Vector3(x, y, z);
+    }
+
+    // DIE BAHN DER SONNE JETZT (sonnenbahn, Meeus Kap. 13): die Breite der Welt auf ihrem Planeten — die Heimat am Anker
+    // (`_planetAnker`, im Planet-Faden gerechnet), eine Reise-Welt am Ort ihres Teils (`ort.teil.breite`, Grad) —, der Körper des
+    // Planeten (Schiefe und Drehsinn, mit dem Anker) und die Saison-Phase der Welt (`seasonPhase`) → `__weltLicht.sonnenBahn`.
+    // Ein reiner Leser: bis der Anker antwortet (`_sonnenAnkerFragen`), steht die Sonne am Ort der Bühne (`BUEHNE_BAHN`).
+    // Bis sonnenbahn kannte die Bahn weder Breite noch Saison: 46,13° gegen die Ephemeride (erleben.spieler.zeit#1, c1236fa8).
+    _sonnenBahn() {
+        const A = this._sonnenAnker;
+        if (!A) return __weltLicht.BUEHNE_BAHN;
+        const p = typeof this.state.seasonPhase === "number" ? this.state.seasonPhase : 0.375;
+        return __weltLicht.sonnenBahn(A.breite, p, A.koerper);
+    }
+
+    // DER ANKER DER SONNE (sonnenbahn): der EINE Schreiber von `_sonnenAnker` — fragt den Planet-Faden (`_planetAnker`) EINMAL je
+    // WELT nach dem Ort der Welt auf ihrem Planeten (die Heimat am Anker, eine Reise-Welt am Ort ihres Teils, `ort.teil.breite` in
+    // Grad) und nach dem Körper (Schiefe, Drehsinn); mit der Antwort springt der Himmel EINMAL (`_himmelSprung`). Anker und Frage
+    // fallen mit der Welt (`WELT_GRENZE.gedaechtnis`), der Merker des Ankers je Samen nicht (`_planetAnkerJe`, am Wirt): das zweite
+    // Boot derselben Welt liest ihn, der Faden rechnet nichts neu; eine Antwort, die nach dem Wechsel kommt, gehört der alten Welt und schreibt
+    // nichts (die Frage ist nicht mehr die der Welt) — bis sonnenbahn 2 hing die Frage an der Seite, und eine Reise-Welt trug die
+    // Mittagshöhe der Heimat (Kopf 1, voll 13/18). Rufer: die
+    // Belichtung, solange die Ankunft auf ihr Licht wartet (`_belichtungSteht`, Term „licht“) — nie ein Leser der Sonne: im Versuch
+    // eines stummen Fangs schickte der Leser dem Faden einen Auftrag (die Stoff-Wand, `_workshopRenderRecipeStats` → `_sonnenRichtung`).
+    // Antwortet der Faden nicht, bricht die Frage EINMAL beim Namen, der Term „licht“ bleibt offen und der Deckel der Ankunft nennt ihn.
+    _sonnenAnkerFragen() {
+        if (this._sonnenAnkerFrage) return;
+        const frage = (this._sonnenAnkerFrage = { teil: this._gelaende().ort.teil });
+        this._planetAnker("Sonne").then(
+            (a) => {
+                if (this._sonnenAnkerFrage !== frage) return;
+                const t = frage.teil;
+                this._sonnenAnker = {
+                    breite: t ? (t.breite * Math.PI) / 180 : a.breite,
+                    koerper: { neigungRad: a.neigungRad, drehsinn: a.drehsinn },
+                };
+                this._himmelSprung = true;
+            },
+            (e) =>
+                this._sonnenAnkerFrage === frage &&
+                this._bruchMelden("SONNE: der Anker des Planeten antwortet nicht — " + String((e && e.message) || e))
+        );
     }
 
     // Die Richtung ZUR Sonne jetzt (Einheitsvektor; y ≤ 0 unter dem Horizont) — dieselbe Quelle wie Licht und Skybox.
@@ -2185,6 +2229,7 @@ class AnazhRealm_bild_himmel {
     // zum Deckel der Nacht: die Sonne in 7° stand an der Wiese einmal 0,16, einmal 1,29 EV unter dem Mittag (Radeon).
     _dayNightApplyBelichtung(achse) {
         if (achse) {
+            this._tonSonneE = achse.e; // die Sonnenhöhe der Stufen hinter dem Fuß der Kurve (unten, `tonStufenSetzen`)
             const k = this._belichtungAusLicht(achse.e);
             this._raumBlendeTakt();
             if (k == null) return;
@@ -2192,14 +2237,24 @@ class AnazhRealm_bild_himmel {
             // die Belichtung steht erst mit der Sicht des Bildes (`_bildSichtSteht`, laub-messer): der Messer misst die Schatten der
             // Stunde am Bild, seine Lesung kommt ein bis zwei Bilder später — der Ladeschirm der Ankunft weicht nach der Lesung
             // (`_weltbildLuecken`, Term „licht“), nie mit der Belichtung ohne Schatten; steht sie einmal, bleibt der Term zu
-            if (!this.state._belichtungSteht) this.state._belichtungSteht = this._bildSichtSteht();
+            // — und erst, wenn die Sonne an ihrem Ort steht (`_sonnenAnker`, sonnenbahn): vor dem Anker steht sie am Ort der Bühne.
+            // Gefragt wird in JEDEM Licht-Takt (EINMAL je Welt, danach ein Feld-Test): auch eine Welt, die am Ort geladen wird und
+            // den Term „licht“ der Seite schon zu fand, fragt ihren Anker (sonst stünde ihre Sonne still am Ort der Bühne)
+            this._sonnenAnkerFragen();
+            if (!this.state._belichtungSteht)
+                this.state._belichtungSteht = !!this._sonnenAnker && this._bildSichtSteht();
         }
         // die Blende eines Beobachters (`_blendeBestellen`) über dem Gesetz: fest `k` oder das Gesetz mal `mal` — ohne Gesetz (eine
         // Bühne ohne Himmel des Orts) die Blende, die vor der Bestellung stand
         const b = this._messBlende,
             g = this._belichtungGesetz > 0 ? this._belichtungGesetz : b && b.vor > 0 ? b.vor : null;
         const k = b && b.k != null ? b.k : g != null ? g * (b ? b.mal : 1) : null;
-        if (k != null && this.state.renderer) this.state.renderer.toneMappingExposure = k;
+        if (k != null && this.state.renderer) {
+            this.state.renderer.toneMappingExposure = k;
+            // DER FUSS AM SCHLÜSSEL (welt-licht `tonKurve`): mit der Belichtung die Stufen der Tag-Achse hinter dem Fuß — dieselbe
+            // Sonnenhöhe, aus der das Gesetz sie in k legt (`belichtungNachFuss`); eine bestellte Blende hält die Stunde
+            __weltLicht.tonStufenSetzen(this._tonSonneE ?? 1, AnazhRealm.BELICHTUNG);
+        }
     }
 
     // DIE BLENDE DES BEOBACHTERS: eine Messung STELLT die Belichtung nie selbst, sie bestellt sie bei der Welt — `{ k }` hält sie
@@ -2225,10 +2280,10 @@ class AnazhRealm_bild_himmel {
         this._belichtungGelesen = !!w;
         const EA = w && this._belichtungAnker();
         if (!EA) return null;
-        // DER MESSER LIEST DIE LICHTER DES ORTS (nacht-lichter): zum Himmel die Plätze des Licht-Pools auf derselben waagrechten
-        // Fläche am Auge (`_poolAmAuge`) — unter der Laterne schließt die Blende, wie das Auge es tut. `_belichtungE` bleibt die
-        // Lesung des Himmels (Regen, Raum und Wurf lesen sie).
-        const wp = this._poolAmAuge(w, this._belichtungMitPool || (this._belichtungMitPool = [0, 0, 0]));
+        // DER MESSER LIEST DIE LICHTER DES ORTS (nacht-lichter): zum Himmel der Licht-Pool am Boden, den das Bild zeigt
+        // (`_poolAmBild`: dieselben Punkte, deren Sonnen-Sicht er liest) — unter der Laterne und am Feuer schließt die Blende, wie
+        // das Auge es tut. `_belichtungE` bleibt die Lesung des Himmels (Regen, Raum und Wurf lesen sie).
+        const wp = this._poolAmBild(w, this._belichtungMitPool || (this._belichtungMitPool = [0, 0, 0]));
         // das Gesetz der Kamera (welt-licht.js `belichtung`) mit den Stufen am Glied der Welt (die Linsen prüfen ihren Schein dort)
         // und dem Boden des Messers: der Vollmond (er steht der Sonne gegenüber, Höhe −e) ohne Wolken-Decke zu dieser Stunde,
         // derselbe Durchlass wie sein Richtlicht (`_dayNightApplyDirectionalLight`) — unter offenem Himmel liegt er nie über dem Licht
@@ -2296,8 +2351,8 @@ class AnazhRealm_bild_himmel {
         // ohne Lesung des Himmels hält die Blende (das Gesetz des Raums liest die Leuchtdichte, nicht nur ein Verhältnis) — auch
         // ihr Ort bleibt: der Sprung des Auges gilt mit der ersten Lesung
         if (!w0 || !so0) return;
-        // DER MESSER IM RAUM: `hi` der Himmel auf der Karte, `pool` die Leuchten am Auge (`_poolAmAuge`) — sie stehen im Raum wie
-        // davor; das Feld des Messers (`_raumFeldAmAuge`, der Anteil der Öffnungen an der Oberfläche × Durchlass) mittelt die
+        // DER MESSER IM RAUM: `hi` der Himmel auf der Karte, `pool` die Leuchten am Boden des Bilds (`_poolAmBild`, derselbe Pool,
+        // den die Belichtung liest: je Kachel des ganzen Bilds) — sie stehen im Raum wie davor; das Feld des Messers (`_raumFeldAmAuge`, der Anteil der Öffnungen an der Oberfläche × Durchlass) mittelt die
         // Öffnungen mit: die Belichtung hält sie im Bild, der Raum ohne Öffnung misst nur sich
         const mp = this._belichtungMitPool;
         const pool = mp ? Math.max(0, lu(mp) - lu(w0)) : 0;
@@ -3799,9 +3854,9 @@ AnazhRealm.LEGACY_LICHT = __weltLicht.LEGACY_LICHT; // welt-licht.js — π
 // je Uhr das Histogramm der Szene vor der Tonkurve): s 0,75 legt die Sonne 10° morgens und abends 0,67 EV unter den Mittag (die
 // Karte selbst −0,87 Stufen, im Bild −1,17 EV: die Wiese als Dach fällt flacher als eine waagrechte Fläche), die Nacht −2,17
 // Stufen 3,14 EV darunter bei Luma 44; die Dämmerung fällt 1,3 Stufen über 30° — unter 0,1 EV je 0,72° Sonne auch im Fuß der
-// Kurve (6,25·x²), wo das Bild doppelt so steil fällt wie die Stufe. `nachtGrad` (S7) ist die Tiefe der Sonne, in der das
-// Nacht-Auge der Post-Kette ganz steht (der Kanal `tag` der Tag-Achse).
-AnazhRealm.BELICHTUNG = __weltLicht.BELICHTUNG; // welt-licht.js — kurve Neutral · zielKarte 0,22 · min 0,05 · steigung 0,75 · gleitung [12, 8] · stufen [10, −0,87] [−20, −2,17] · nachtGrad −32
+// Kurve (6,25·x²), wo das Bild doppelt so steil fällt wie die Stufe. Das Nacht-Auge der Post-Kette (der Kanal `tag`) steht
+// ganz im letzten Anker der Tag-Achse (`GRENZGROESSE`: astronomische Nacht −18°).
+AnazhRealm.BELICHTUNG = __weltLicht.BELICHTUNG; // welt-licht.js — kurve Neutral · zielKarte 0,22 · min 0,05 · steigung 0,75 · gleitung [12, 8] · stufen [10, −0,87] [−20, −2,17]
 // Mindestabstand zwischen zwei Neuzeichnungen der Umgebung (PMREM) in WELT-Zeit (`spielZeit`, ms). E0 und Tönung zeichnen sie
 // nicht mehr neu (`_umgebungLicht`), es bleiben Sonne, Mond, Medium und Höhe des Auges. Bis w4-licht-uhr 6 000 ms Wanduhr: der
 // Himmel je Einheit E0 wächst im Übergang klar → Regen mit dem Medium (0,163 → 0,335, etwa β^0,35), die Umgebung zog ihm in
