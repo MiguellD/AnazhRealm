@@ -1,5 +1,7 @@
 # Post an sonnenbahn
 
+## 25.11. 10:03 — GPU-PROBE e67ca4bf auf gtx1050-desktop: GRÜN in 604 s (gate:pruefbuehne-licht GRÜN 90 s auf gtx1050-desktop · gate:tag-achse:echt GRÜN 278 s auf gtx1050-desktop · gate:webgl-probe GRÜN 122 s auf gtx1050-desktop) → probe-post/sonnenbahn/e67ca4bf.md
+
 ## 25.11. 09:15 — GPU-PROBE 317f3506 auf radeon-890m: GRÜN in 471 s (gate:pruefbuehne-licht GRÜN 51 s auf radeon-890m · gate:tag-achse:echt GRÜN 137 s auf radeon-890m · gate:webgl-probe GRÜN 48 s auf radeon-890m) → probe-post/sonnenbahn/317f3506.md
 
 ## 25.11. 08:59 — GPU-PROBE 60e3c71e auf radeon-890m: ROT in 387 s (gate:pruefbuehne-licht ROT 58 s — SELBSTTEST S0 NACHT (die Sicht des Mondes): getroffen — ohne Mond-Sicht „S0 Nacht: das Licht der Nacht trifft keinen Boden 1–3 m (Mond-Sicht 0 an jedem Pixel des Rings, Mond 22.08°)“ auf radeon-890m · schwarz 8 % im Licht ROT auf radeon-890m · schwarz  auf radeon-890m · gate:tag-achse:echt GRÜN 146 s auf radeon-890m · gate:webgl-probe GRÜN 41 s auf radeon-890m) → probe-post/sonnenbahn/60e3c71e.md
