@@ -4605,7 +4605,7 @@ function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt, jahr) {
     if (!FERN_KRONEN.length || FERN_KRONEN.C !== C) {
         FERN_KRONEN.length = 0;
         for (const art of ["baum_kiefer", "baum_tanne", "baum_eiche", "baum_birke", "baum_erle"])
-            FERN_KRONEN.push([0, C[art]]);
+            FERN_KRONEN.push([0, C[art], art]); // die Art nennt ihre Ertragstafel (phyto-core FOREST_ERTRAG)
         FERN_KRONEN.C = C;
     }
     for (let i = 0; i < 5; i++) FERN_KRONEN[i][0] = w[i];
