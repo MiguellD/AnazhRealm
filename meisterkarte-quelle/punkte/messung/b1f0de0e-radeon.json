@@ -1,7 +1,7 @@
 {
  "sha": "b1f0de0e0068399caba1583bb70c5f9cd598d1a6",
  "geraet": "radeon",
- "zeit": "2026-11-25T02:14:46.120Z",
+ "zeit": "2026-11-25T02:37:40.150Z",
  "host": "MiguellD",
  "je": {
   "karte2.mensch.sport.regeln#1": {
@@ -1615,6 +1615,783 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.planet.kopplung.land-meer-luft#3": {
+   "gruen": false,
+   "zahl": "S3 die Messung der Leiter warf nach 0,444 s: /eval: {\"ms\":435,\"fehler\":\"wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)\",\"stapel\":[\"wetterVersatz (http://localhost:7804/phyto-core.js?v=18.546.409:4803:19)\",\"at #evalu · Täter: phyto-core.js wetterAt (die Zeile Nebel liest kein Meer, kein Auftrieb)",
+   "exit": 0,
+   "minuten": 1.62,
+   "grund": "ROT: S3 die Messung der Leiter warf nach 0,444 s: /eval: {\"ms\":435,\"fehler\":\"wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)\",\"stapel\":[\"wetterVersatz (http://localhost:7804/phyto-core.js?v=18.546.409:4803:19)\",\"at #evalu · Täter: phyto-core.js wetterAt (die Zeile Nebel liest kein Meer, kein Auftrieb)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k1c301776f242",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc8656c5b0fae",
+   "s": 96.6,
+   "fremd": {
+    "s": 101.3,
+    "takte": 42,
+    "fremdS": 231.78,
+    "kerne": 2.289,
+    "fensterKerne": 10.138,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      131.94
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf c540c783d2370aa52fb5c11cee726d93fa629dca",
+      25.7
+     ],
+     [
+      "git stash create",
+      13.88
+     ]
+    ],
+    "dienerS": 44.3,
+    "diener": [
+     [
+      "System",
+      24.34
+     ],
+     [
+      "WmiPrvSE.exe",
+      13.84
+     ]
+    ],
+    "geraetS": 137.34,
+    "geraet": [
+     [
+      "svchost.exe",
+      51.39
+     ],
+     [
+      "MsMpEng.exe",
+      32.53
+     ],
+     [
+      "SearchIndexer.exe",
+      30.05
+     ]
+    ],
+    "eigenS": 209.05,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T02:31:05.243Z",
+   "abdruck": "16d1a8e18709",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.land-meer-luft#4": {
+   "gruen": false,
+   "zahl": "S4 die Messung der Leiter warf nach 0,444 s: /eval: {\"ms\":435,\"fehler\":\"wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)\",\"stapel\":[\"wetterVersatz (http://localhost:7804/phyto-core.js?v=18.546.409:4803:19)\",\"at #evalu · Täter: planet-core.js planetKlimaR (Meeresströmung als Lesart der Küstenseite)",
+   "exit": 0,
+   "minuten": 1.62,
+   "grund": "ROT: S4 die Messung der Leiter warf nach 0,444 s: /eval: {\"ms\":435,\"fehler\":\"wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)\",\"stapel\":[\"wetterVersatz (http://localhost:7804/phyto-core.js?v=18.546.409:4803:19)\",\"at #evalu · Täter: planet-core.js planetKlimaR (Meeresströmung als Lesart der Küstenseite)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k1c301776f242",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc8656c5b0fae",
+   "s": 96.6,
+   "fremd": {
+    "s": 101.3,
+    "takte": 42,
+    "fremdS": 231.78,
+    "kerne": 2.289,
+    "fensterKerne": 10.138,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      131.94
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf c540c783d2370aa52fb5c11cee726d93fa629dca",
+      25.7
+     ],
+     [
+      "git stash create",
+      13.88
+     ]
+    ],
+    "dienerS": 44.3,
+    "diener": [
+     [
+      "System",
+      24.34
+     ],
+     [
+      "WmiPrvSE.exe",
+      13.84
+     ]
+    ],
+    "geraetS": 137.34,
+    "geraet": [
+     [
+      "svchost.exe",
+      51.39
+     ],
+     [
+      "MsMpEng.exe",
+      32.53
+     ],
+     [
+      "SearchIndexer.exe",
+      30.05
+     ]
+    ],
+    "eigenS": 209.05,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T02:31:05.243Z",
+   "abdruck": "ce439d45ecf3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.bahn-klima#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: der Planet-Faden liest den Körper der Saat nicht (voxel-worker.js:1429 planetPlanVon: P.PLANET_ERDE fest): Neigung 3.096° → Amplitude 7.22 K, Neigung 35.786° → 14.813 K, Erd-Saat 19.523 K (Spanne der Saaten 17.48 K: das Relief der Saat unter dem Körper der Erd · amp0Prozent 37 % gegen Soll ≤ 10 % ✗ · amp45Faktor 0,759 gegen Soll ≥ 2 ✗ · schneelinieVersatzM ungemessen gegen Soll > 0 m ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":3546,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h) · Täter: voxel-worker.js planetPlanVon (PLANET_ERDE fest)",
+   "exit": 0,
+   "minuten": 1.62,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: der Planet-Faden liest den Körper der Saat nicht (voxel-worker.js:1429 planetPlanVon: P.PLANET_ERDE fest): Neigung 3.096° → Amplitude 7.22 K, Neigung 35.786° → 14.813 K, Erd-Saat 19.523 K (Spanne der Saaten 17.48 K: das Relief der Saat unter dem Körper der Erd · amp0Prozent 37 % gegen Soll ≤ 10 % ✗ · amp45Faktor 0,759 gegen Soll ≥ 2 ✗ · schneelinieVersatzM ungemessen gegen Soll > 0 m ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":3546,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h) · Täter: voxel-worker.js planetPlanVon (PLANET_ERDE fest)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k1c301776f242",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc8656c5b0fae",
+   "s": 96.6,
+   "fremd": {
+    "s": 101.3,
+    "takte": 42,
+    "fremdS": 231.78,
+    "kerne": 2.289,
+    "fensterKerne": 10.138,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      131.94
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf c540c783d2370aa52fb5c11cee726d93fa629dca",
+      25.7
+     ],
+     [
+      "git stash create",
+      13.88
+     ]
+    ],
+    "dienerS": 44.3,
+    "diener": [
+     [
+      "System",
+      24.34
+     ],
+     [
+      "WmiPrvSE.exe",
+      13.84
+     ]
+    ],
+    "geraetS": 137.34,
+    "geraet": [
+     [
+      "svchost.exe",
+      51.39
+     ],
+     [
+      "MsMpEng.exe",
+      32.53
+     ],
+     [
+      "SearchIndexer.exe",
+      30.05
+     ]
+    ],
+    "eigenS": 209.05,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T02:31:05.243Z",
+   "abdruck": "6845b529d34f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.wetter-welt#2": {
+   "gruen": true,
+   "zahl": "S2 streuungGrad 0 ° gegen Soll ≤ 20 ° ✓ · Zeuge: die Welt geändert · Bild (Beleg) fehlt (/bild: {\"ms\":3988,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h)",
+   "exit": 0,
+   "minuten": 1.62,
+   "gpu": "amd/rdna-3",
+   "konsum": "k1c301776f242",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc8656c5b0fae",
+   "s": 96.6,
+   "fremd": {
+    "s": 101.3,
+    "takte": 42,
+    "fremdS": 231.78,
+    "kerne": 2.289,
+    "fensterKerne": 10.138,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      131.94
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf c540c783d2370aa52fb5c11cee726d93fa629dca",
+      25.7
+     ],
+     [
+      "git stash create",
+      13.88
+     ]
+    ],
+    "dienerS": 44.3,
+    "diener": [
+     [
+      "System",
+      24.34
+     ],
+     [
+      "WmiPrvSE.exe",
+      13.84
+     ]
+    ],
+    "geraetS": 137.34,
+    "geraet": [
+     [
+      "svchost.exe",
+      51.39
+     ],
+     [
+      "MsMpEng.exe",
+      32.53
+     ],
+     [
+      "SearchIndexer.exe",
+      30.05
+     ]
+    ],
+    "eigenS": 209.05,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T02:31:05.243Z",
+   "abdruck": "044d5466c273",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.stadtklima#1": {
+   "gruen": false,
+   "zahl": "S1 abweichungGrad 1,976 ° gegen Soll ≤ 20 ° ✓ · der Zeuge der Welt fehlt: die Pfütze trocknet im Schatten nicht später (Trocken-Zeit Schatten ÷ Sonne 0) · Täter: stamm/stoff-material.js _windAt (liest keine Häuser)",
+   "exit": 0,
+   "minuten": 1.62,
+   "grund": "ROT: S1 abweichungGrad 1,976 ° gegen Soll ≤ 20 ° ✓ · der Zeuge der Welt fehlt: die Pfütze trocknet im Schatten nicht später (Trocken-Zeit Schatten ÷ Sonne 0) · Täter: stamm/stoff-material.js _windAt (liest keine Häuser)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k1c301776f242",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc8656c5b0fae",
+   "s": 96.6,
+   "fremd": {
+    "s": 101.3,
+    "takte": 42,
+    "fremdS": 231.78,
+    "kerne": 2.289,
+    "fensterKerne": 10.138,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      131.94
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf c540c783d2370aa52fb5c11cee726d93fa629dca",
+      25.7
+     ],
+     [
+      "git stash create",
+      13.88
+     ]
+    ],
+    "dienerS": 44.3,
+    "diener": [
+     [
+      "System",
+      24.34
+     ],
+     [
+      "WmiPrvSE.exe",
+      13.84
+     ]
+    ],
+    "geraetS": 137.34,
+    "geraet": [
+     [
+      "svchost.exe",
+      51.39
+     ],
+     [
+      "MsMpEng.exe",
+      32.53
+     ],
+     [
+      "SearchIndexer.exe",
+      30.05
+     ]
+    ],
+    "eigenS": 209.05,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T02:31:05.243Z",
+   "abdruck": "b5991ee0a170",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.gegenwart#1": {
+   "gruen": false,
+   "zahl": "S1 ursacheProzent 44,1 % gegen Soll = 100 % ✗ · Täter: stamm/vegetation-baum.js:1433 _rockGeologyClass (der Findling liest die Eis-Zeit des Planeten, ort.eis — nicht die Geschichte des Orts)",
+   "exit": 0,
+   "minuten": 1.62,
+   "grund": "ROT: S1 ursacheProzent 44,1 % gegen Soll = 100 % ✗ · Täter: stamm/vegetation-baum.js:1433 _rockGeologyClass (der Findling liest die Eis-Zeit des Planeten, ort.eis — nicht die Geschichte des Orts)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k1c301776f242",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc8656c5b0fae",
+   "s": 96.6,
+   "fremd": {
+    "s": 101.3,
+    "takte": 42,
+    "fremdS": 231.78,
+    "kerne": 2.289,
+    "fensterKerne": 10.138,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      131.94
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf c540c783d2370aa52fb5c11cee726d93fa629dca",
+      25.7
+     ],
+     [
+      "git stash create",
+      13.88
+     ]
+    ],
+    "dienerS": 44.3,
+    "diener": [
+     [
+      "System",
+      24.34
+     ],
+     [
+      "WmiPrvSE.exe",
+      13.84
+     ]
+    ],
+    "geraetS": 137.34,
+    "geraet": [
+     [
+      "svchost.exe",
+      51.39
+     ],
+     [
+      "MsMpEng.exe",
+      32.53
+     ],
+     [
+      "SearchIndexer.exe",
+      30.05
+     ]
+    ],
+    "eigenS": 209.05,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T02:31:05.243Z",
+   "abdruck": "8239054ecee1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.gegenwart#2": {
+   "gruen": false,
+   "zahl": "S2 gipfelProzent 98,6 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: nur 12 Saaten (Soll 100) · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze)",
+   "exit": 0,
+   "minuten": 1.62,
+   "grund": "ROT: S2 gipfelProzent 98,6 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: nur 12 Saaten (Soll 100) · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k1c301776f242",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc8656c5b0fae",
+   "s": 96.6,
+   "fremd": {
+    "s": 101.3,
+    "takte": 42,
+    "fremdS": 231.78,
+    "kerne": 2.289,
+    "fensterKerne": 10.138,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      131.94
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf c540c783d2370aa52fb5c11cee726d93fa629dca",
+      25.7
+     ],
+     [
+      "git stash create",
+      13.88
+     ]
+    ],
+    "dienerS": 44.3,
+    "diener": [
+     [
+      "System",
+      24.34
+     ],
+     [
+      "WmiPrvSE.exe",
+      13.84
+     ]
+    ],
+    "geraetS": 137.34,
+    "geraet": [
+     [
+      "svchost.exe",
+      51.39
+     ],
+     [
+      "MsMpEng.exe",
+      32.53
+     ],
+     [
+      "SearchIndexer.exe",
+      30.05
+     ]
+    ],
+    "eigenS": 209.05,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T02:31:05.243Z",
+   "abdruck": "3364eedee43e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session"
+  },
+  "karte2.leben.kopplung.evolution-planet#1": {
+   "gruen": false,
+   "zahl": "S1 anteilImRaum ungemessen gegen Soll ≥ 0,9 ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":19103,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Natur baum) · Täter: stamm/kreatur-leben.js _pickFaunaSoulAtPlayer (die Gattung aus der Boden-Klasse)",
+   "exit": 0,
+   "minuten": 2.67,
+   "grund": "ROT: S1 anteilImRaum ungemessen gegen Soll ≥ 0,9 ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":19103,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Natur baum) · Täter: stamm/kreatur-leben.js _pickFaunaSoulAtPlayer (die Gattung aus der Boden-Klasse)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k9e94fcea11c2",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc8656c5b0fae",
+   "s": 159.8,
+   "fremd": {
+    "s": 160.8,
+    "takte": 68,
+    "fremdS": 132.27,
+    "kerne": 0.823,
+    "fensterKerne": 1.56,
+    "namen": [
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      17.59
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      16.03
+     ],
+     [
+      "git.exe checkout 2b07e63c -- :(glob)vision/* vision/richter vorrat/klasse-offen.json",
+      12.84
+     ]
+    ],
+    "dienerS": 68.23,
+    "diener": [
+     [
+      "System",
+      30.09
+     ],
+     [
+      "WmiPrvSE.exe",
+      27.45
+     ]
+    ],
+    "geraetS": 269.78,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      90.75
+     ],
+     [
+      "svchost.exe",
+      84.88
+     ],
+     [
+      "MsMpEng.exe",
+      60.8
+     ]
+    ],
+    "eigenS": 344.91,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T02:34:20.338Z",
+   "abdruck": "99afa01bf350",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.aufwaerts#1": {
+   "gruen": false,
+   "zahl": "S1 sichtHoeheM 400 m gegen Soll ≥ 400 m ✓ · orteGeaendert 1 gegen Soll ≥ 10 ✗ · Täter: stamm/feld-leben.js `_tatSchreiben` / phyto-core `forestStandDensity` (die Tat verschiebt keinen Elternknoten: Pegel, Wuchs, Wild um das Haus bleiben)",
+   "exit": 0,
+   "minuten": 2.73,
+   "grund": "ROT: S1 sichtHoeheM 400 m gegen Soll ≥ 400 m ✓ · orteGeaendert 1 gegen Soll ≥ 10 ✗ · Täter: stamm/feld-leben.js `_tatSchreiben` / phyto-core `forestStandDensity` (die Tat verschiebt keinen Elternknoten: Pegel, Wuchs, Wild um das Haus bleiben)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k4b55c85442b3",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc8656c5b0fae",
+   "s": 163.4,
+   "fremd": {
+    "s": 166.2,
+    "takte": 66,
+    "fremdS": 694.86,
+    "kerne": 4.181,
+    "fensterKerne": 14.136,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      512.42
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      24.7
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.48
+     ]
+    ],
+    "dienerS": 172.14,
+    "diener": [
+     [
+      "System",
+      75.86
+     ],
+     [
+      "WmiPrvSE.exe",
+      63.55
+     ]
+    ],
+    "geraetS": 301.86,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      113.58
+     ],
+     [
+      "svchost.exe",
+      101.06
+     ],
+     [
+      "SearchIndexer.exe",
+      58.13
+     ]
+    ],
+    "eigenS": 527.73,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T02:37:40.150Z",
+   "abdruck": "0a6772643477",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.kohaerenz#1": {
+   "gruen": false,
+   "zahl": "S1 Umfang nicht erzeugbar: die Hydrosphäre lebt nur für die Saat der Welt (gelaende-core.js:6107 hydrosphaere im Faden über seiner Lage, voxel-worker.js:1997; der Planet-Faden antwortet ohne Flusslauf) — an der Saat der Welt: 50 von 50 Punkten bergab in Senke oder Meer, rückwärts steige · anteilProzent 100 % gegen Soll ≥ 95 % ✓ · Täter: gelaende-core.js hydroRegion (die Flüsse) · stamm/gelaende-boden.js `_hydroFor`",
+   "exit": 0,
+   "minuten": 2.73,
+   "grund": "ROT: S1 Umfang nicht erzeugbar: die Hydrosphäre lebt nur für die Saat der Welt (gelaende-core.js:6107 hydrosphaere im Faden über seiner Lage, voxel-worker.js:1997; der Planet-Faden antwortet ohne Flusslauf) — an der Saat der Welt: 50 von 50 Punkten bergab in Senke oder Meer, rückwärts steige · anteilProzent 100 % gegen Soll ≥ 95 % ✓ · Täter: gelaende-core.js hydroRegion (die Flüsse) · stamm/gelaende-boden.js `_hydroFor`",
+   "gpu": "amd/rdna-3",
+   "konsum": "k4b55c85442b3",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc8656c5b0fae",
+   "s": 163.4,
+   "fremd": {
+    "s": 166.2,
+    "takte": 66,
+    "fremdS": 694.86,
+    "kerne": 4.181,
+    "fensterKerne": 14.136,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      512.42
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      24.7
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.48
+     ]
+    ],
+    "dienerS": 172.14,
+    "diener": [
+     [
+      "System",
+      75.86
+     ],
+     [
+      "WmiPrvSE.exe",
+      63.55
+     ]
+    ],
+    "geraetS": 301.86,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      113.58
+     ],
+     [
+      "svchost.exe",
+      101.06
+     ],
+     [
+      "SearchIndexer.exe",
+      58.13
+     ]
+    ],
+    "eigenS": 527.73,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T02:37:40.150Z",
+   "abdruck": "d0a0a97b71a5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.terraform#1": {
+   "gruen": false,
+   "zahl": "S1 Umfang nicht erzeugbar: am Fächer 10 Orte mit dem Wort „rainy“: Ziel 0.4203477358052692 → 0.6, Lee (13200 m windab) 0.3877924876149691 → 0.03864752245371885, fern 0.5173054669085317 → 0.5173054669085317, Lee der Karte (0.05°) 0.32857256060028517 → 0.39349934307603096; der Planet träg · zielMehr 0,18 gegen Soll > 0 ✓ · leeWeniger -0,349 gegen Soll < 0 ✓ · bilanzVerh 0,79 gegen Soll 1 ± 10 % ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":10192,\"fehler\":\"ABNAHME ROT [Sicht verdeckt 11.0 % (Laub · Rinde · ) · Täter: stamm/bild-himmel.js `_weatherFieldFor` (Mess-Kopf 8544438f: der Regen ist ein Wort ohne Ort; main 60e8909d trägt `_wetterFeldAm`)",
+   "exit": 0,
+   "minuten": 2.73,
+   "grund": "ROT: S1 Umfang nicht erzeugbar: am Fächer 10 Orte mit dem Wort „rainy“: Ziel 0.4203477358052692 → 0.6, Lee (13200 m windab) 0.3877924876149691 → 0.03864752245371885, fern 0.5173054669085317 → 0.5173054669085317, Lee der Karte (0.05°) 0.32857256060028517 → 0.39349934307603096; der Planet träg · zielMehr 0,18 gegen Soll > 0 ✓ · leeWeniger -0,349 gegen Soll < 0 ✓ · bilanzVerh 0,79 gegen Soll 1 ± 10 % ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":10192,\"fehler\":\"ABNAHME ROT [Sicht verdeckt 11.0 % (Laub · Rinde · ) · Täter: stamm/bild-himmel.js `_weatherFieldFor` (Mess-Kopf 8544438f: der Regen ist ein Wort ohne Ort; main 60e8909d trägt `_wetterFeldAm`)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k4b55c85442b3",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc8656c5b0fae",
+   "s": 163.4,
+   "fremd": {
+    "s": 166.2,
+    "takte": 66,
+    "fremdS": 694.86,
+    "kerne": 4.181,
+    "fensterKerne": 14.136,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      512.42
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      24.7
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.48
+     ]
+    ],
+    "dienerS": 172.14,
+    "diener": [
+     [
+      "System",
+      75.86
+     ],
+     [
+      "WmiPrvSE.exe",
+      63.55
+     ]
+    ],
+    "geraetS": 301.86,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      113.58
+     ],
+     [
+      "svchost.exe",
+      101.06
+     ],
+     [
+      "SearchIndexer.exe",
+      58.13
+     ]
+    ],
+    "eigenS": 527.73,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T02:37:40.150Z",
+   "abdruck": "8dcb369fb653",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1641,7 +2418,10 @@
   "k32307ac2fbc1": "bVXbjpswEP2XPHbLmmswlvbBWSIl6rbNSv2BMYyBDYHIhtCm6r9X3JIA60d0zsyZ4+Ph7+oM0RESfP7QZbFiqy+rrysNFzQ0qguq5w+9Yqsgsmx0GO8P4Zy/trBIZedKkzwTBEQB6QmNWlWY5c9RRwOBbkwZabY8ORAiyZWEDb+dV/7yMi+TC4xLowKJtyIejaXH5sBaJyDQgFp2jQewadK1DYx0h4b8Z0hup6GcH1zpHmg4KyagiKfKg7Xno8f2fzjfLlXGGWBl5Fmhx75W7AfSZPde3xccBY1xBUxzVAMJqWW5YhS7aS1pbZoRZV5rPWlGndizKSMkmGMT1FmUVsZZlQKLAS4C27eAbZrFHMm5NuSjIhACqJh7nQIWCaqJBtOJ5Npi5DedFz3CCRUYBaSjl6bj2+LuDSFkt9SSd8K7FqPw2PI925oQ20vtDeb7MUbk0n7e3RDj9zC5R42/LxrqKM3UaWqVdNE2Hfa2lKdTiFEZx1JXN7SDvmuK/lXsw77vgW7mzPtg4/0BAH0IC6GE7xY+6lJWDSg0knM9BsZFz/cY5/sFuILTabxvB83YZPyT0/DtJ8winshz/TUiMkKeBqsXZvRPxbhilo8kKV038Njrxp2DLwpOBohEZVKOiRBeJIPPAtxgXhmiLKvRYsv3HYcRhxSPIfjRbZH9w2Rh8u5W+abZTgf+xjeHZKG/61KqahTvibUpXSa7aaMFOlOV0UCUjnBbCoRW/uLOrqhyTHBip/Bp0Ma/kb32a7uG/GFNyKdJuK/Lihm2Rhe61mMIInCFx4ZX0IdvuqIaVEcBxXEgRLFlrWPWevT2xHdTf36Zh/ZFNVPbSNL6GKab/nvUcknzvWmbnDEiZ1XKrN2aJIVap5BX99/Hv/8=",
   "kc4f396607610": "bVVNj5swFPwvOXbLms9gLO3BWVIlUrfNSr30+AzPwIZAZMNSpep/ryBxEiDvgIQ14zeeN4a/iyMke8jw+UPX1YItviy+LjR8oqVRfaJ6/tALtogSx0WP8XMRzvlrD0tUcWw0KQtBQFSQH9BqVYNF+ZwMNBDop5SRbs2zHSGSnEjcvbxMqaXAtLYakHglBjSVAZsCW52BQAtaOTS7gG2bLl1gZCga858xuVb3xvnOl/6OxpPNBFTpWG20DEIM2LbjfM1nKtMCsLHKotKmr5OGkbTZXa8ZR0FnnQDzEtWFhNRxfGHErno7e2smRFm2Wo+aUS8NXMoIiabYDHWR5I11VLXA6gIXkRs6wFZzt7Nja8l7RSAEUDH1OgesMlQjDbaXyKXDyB863XQPB1RgVZAbL20vdMXNG0LIZq6lHIQPLYzw1AkD1xkR+6GSz95gvuUmgv073VwRZj3O+K3eZw11khfqMLZK+ujaHvs+l6dzSFFZ+1o3V7SHoW+L803Yxue+O7qaMm8HM/MDAHoXFkIJ38x81LVsOlBoZcfWBMbHIAwY59sZuIHDwczbQzu1GX9QHV8/YFbpSJ4fLhGREfJ0vjxzM85XxTphURqSlL4fBex1lU3BnwoOFohMFVKaRIggkdGjAHdYNpao68ZY7ISh5zHikeo+BD+6wfO7k8XZu//2jXfr8YG3fCpn6FCrxggPxNKWPpNDqJIZulCN1UGSG7grBUIvfTavE6oSMxxZKUIa9dHvkovKPiHh5RMhn0bBPs13LLA3udKtNgFIwBcBezCWDtVeQLW/AJPUcZbpkIHVT74Ze/LL3tG4v0Kj8rLeuzhfndd/D4/Xs39HTMhR1bLov5Qkh1bnUDa338S//w==",
   "k3ea7f1fdcb10": "bVXbbqMwFPyXPLbrmmsAS31wSlfJqlWptD9wDMdAQyCyIayy2n9fQULCpecJ0BzPeObY/F0dId5Dik9fuipXbPWw+rHScEKiUZ1QPX3pFVsFsWmhzfilKOf8pYPFKj/WmiY5pKTOUZEUyvQp7lseRoAiFxRECdkBSaNqzIsrCAQ6ic9o+8rTiFJJzzRs+a1e+fPzfJlCYFKRGiTeFnH9RLpsDmx0CgIJNLInvoINw19bwGhffsg/Qnqr9p3zyJFO5Ic88mOeLtgFlMl0B8Ha9dBlu/ZbtUkOWJMiL/XAbyZeIA024lz0KGjJGTArUF2b0DdNRwyiN501nV2zRlk0Wk/IfDtxLZ9RGsyxKeo8zmpyVJXA8goXgeWZwDbtYh/psSFyrAiEAF/MPc8AyxTVRINhx3JtMvrHny+6hwMqICVkg5eG7Vni7g2ldLvUUvTCe4pBeGJ6rmVOGrtw6akzmO+Gcerf/e0NMXwP0/vI8c8FoY6zXB2mVkkHLcNmb0t5OoMEFdlXur6hbfQcQ1yOzy688Eb+Zt5539iQHwD4o2GhPuXbhY+6knULCkl6bIaBcdD1XMb5bgGu4XAY8rbRSIx5iLruhnwsw/HWiMgofbwcluWmL0eCnDEvhiYpHSdw2cvGmYNPCg4ERKpyKYfkhRvL4LtBbbGoiaiqerDS9Dzb7iwpx2FH/a2xG+UYpp/O+0/evvJJ7TiPlue6Z6lUPYh3xdqQDpP9AMULdK5q0kKcDXBLCoRO/iKbM6oCU5zYKTw/6Ma8jUdqneHhcTLE5+WKOXZGl7rRQ9gxOMJl30TTotoLKPdXYJyY5jphvzjnmw++nfry24ickC6q82/3lm1GtzJ/4T3JEWN6VJXMu1uRZtDoDIr6/h/59x8=",
-  "ka1b678f63c5d": "bVVdb6MwEPwvebyWms9gLPXBlEqJ1LuSn7CGNdAQiGwIdzndfz9BQhKg+waa2R1m1ubv6gjJHjJ8+dJ1tWKrH6vnlYYTGhrVCdXLl16xVZBYNjqM73hfMef8rYclqjg2mpSFICAqyA9otKrBonxJBhoIdFPKSPfOs5gQSc4k6l5f59RSYFobDUi8ET2aSo/Nga3OQKABrRyGXcGmSdc2MDIUjfhnRG7VUc5jV7oxjWbNBFTpVG2w9nz02Lbj/J0vVKYFYGOURaXHuVbqB9Jk91k/FxwFnXEGzEtUVxJSy3LFKDbs7eytmRFl2Wo9GUad1LMpIySYYzPURZI3xlHVAqsrXAS2bwELl25nx9aQj4pACKBi7nUOWGWoJhpMJ5Fri5HfdN50DwdUYFSQj16ajm+LuzeEkM1SSzkIH0aMwlPL92xrQuxDJafeYL7l1xqe6eaGGN9HGb/XbjFQJ3mhDlOrpIu26bCPpTydQ4rK2Ne6uaEd9F1TsKH/NrrMjWk4Z94/bMwPAOjDshBK+Gbho65l04FCIzu248K46Pke43y7ADdwOIx5O2im5jxE3fRL/ijD9deIyAh5uhyS5UdfjoRxxqIcSVK6buCxt9Cdg08KDgaITBVSjskLL5HBd4vagdazjbICK1n7s7Rn1VFO4uk2zBtj2RiirpsxI8v3HYcRh1SPvF/dENrDgkTZzm3KsHvnk9qGXZwtjBmm1KoZtXtibUqXyUFjskAXqjE6SPIRbkuB0PuyCP2MqsQMJ8YInwb9+enkRfu5v8f8qyHyaWLQedmxwD7BSrd63KIEXOGxbzLvUO0FVPsrMEkta50O+x1+8s3El7doF9OILGrw7yMPB3950vtK/lwuwyMm5KhqWfTXLcmh1TmUzf1f8+8/"
+  "ka1b678f63c5d": "bVVdb6MwEPwvebyWms9gLPXBlEqJ1LuSn7CGNdAQiGwIdzndfz9BQhKg+waa2R1m1ubv6gjJHjJ8+dJ1tWKrH6vnlYYTGhrVCdXLl16xVZBYNjqM73hfMef8rYclqjg2mpSFICAqyA9otKrBonxJBhoIdFPKSPfOs5gQSc4k6l5f59RSYFobDUi8ET2aSo/Nga3OQKABrRyGXcGmSdc2MDIUjfhnRG7VUc5jV7oxjWbNBFTpVG2w9nz02Lbj/J0vVKYFYGOURaXHuVbqB9Jk91k/FxwFnXEGzEtUVxJSy3LFKDbs7eytmRFl2Wo9GUad1LMpIySYYzPURZI3xlHVAqsrXAS2bwELl25nx9aQj4pACKBi7nUOWGWoJhpMJ5Fri5HfdN50DwdUYFSQj16ajm+LuzeEkM1SSzkIH0aMwlPL92xrQuxDJafeYL7l1xqe6eaGGN9HGb/XbjFQJ3mhDlOrpIu26bCPpTydQ4rK2Ne6uaEd9F1TsKH/NrrMjWk4Z94/bMwPAOjDshBK+Gbho65l04FCIzu248K46Pke43y7ADdwOIx5O2im5jxE3fRL/ijD9deIyAh5uhyS5UdfjoRxxqIcSVK6buCxt9Cdg08KDgaITBVSjskLL5HBd4vagdazjbICK1n7s7Rn1VFO4uk2zBtj2RiirpsxI8v3HYcRh1SPvF/dENrDgkTZzm3KsHvnk9qGXZwtjBmm1KoZtXtibUqXyUFjskAXqjE6SPIRbkuB0PuyCP2MqsQMJ8YInwb9+enkRfu5v8f8qyHyaWLQedmxwD7BSrd63KIEXOGxbzLvUO0FVPsrMEkta50O+x1+8s3El7doF9OILGrw7yMPB3950vtK/lwuwyMm5KhqWfTXLcmh1TmUzf1f8+8/",
+  "k1c301776f242": "bVVdb6MwEPwvPF5LzWcwlvrglJySU6vSn7CGNXAhENlQTjndfz9BQhIg+wRo1jOeWZu/xhGSPWT48lvXlcGMH8azcSyhwsZMatV/NpjhIPiewyqLPJE2JqSzM77OXo1nQ8M3mhrVN6ozNExsB13Gz0U45289LFHFsdGkLAQBUUF+QLNVDRblSzK0gUAvpYx0G57FhEhyIlHHr7Xhr6/zZUqBaW02IPG6iE9T6bM5sNUZCDShlQPxBWxZdOUAI0PRiH9G5FrdB+exJ72YRjymkmcLdgFVOt1BuPID9Nmue6g2LQAbsywqPfLbaRBKi91xLnoUdOYJMC9RXZqQ2rYnRtHr3prerlmjLFutJ2TUTX2HMkLCOTZDXSR5Yx5VLbC6wEXoBDawdbfYR3ZsTXmvCIQAKuae54BVhmqiwXITubIZ+UPni+7hgArMCvLRS8sNHHHzhhCyXWopB+EDxSg8tQPfsSeNfbjkuzeY78ZxGt7p9ooYv0fZbeT414JQJ3mhDlOrpIeO5bL3pTydQ4rK3Ne6uaJdDDxLnE/HLjrzxnQ977xtbMwPAOjdsBBK+Hbho65l04FCMzu248B46Ac+43y3ADdwOIx5u2il1jxE3fRDfi/DC1aIyAh5Oh+W5abPR8I8YVGOTVJ6Xuizt7U3B38rOJggMlVIOSYv/ESGjwa1w7IxRV03o5V2ELhub0l1H3Y83Bq7uxyj7Mv7+MmzDZ/UjvN4ea4Hllo1o3hfrCzpMTkMULJAF6oxO0jyEe5IgRCyB9ATqhIznNgpAhr2Y94ld2q98eFpMsSnRdqnAnujK93qMewEPOGzB9F0qPYCqv0FmKS2vUrZL875+pNvp8ZEXzGNyKK6Dee794rf3cr8jQ8kR0zIUdWy6G9FkkOrcyib2x/l338=",
+  "k9e94fcea11c2": "dVVdc5swEPwvfmxKxKcRmsmDHDJjt8nEmfYPnOAExBg8EoTWnf73DtiyDaT3hmdPt9pdnf8sDpDsIMP7d11XC7b4svi60PCBlkb1ger+XS/YIkocFz3G33hfhHP+2MMSVRwaTcpCEBAV5Hu0WtVgUd4nQxsI9FPKSPfEsy0hkhxJ3PFLPfGHh+kxpcC0thqQeDkkoKkM2BTY6gwEWtDKYfAZbNt06QIjQ9GYv8bkUh3lfOtLf0tjzrnk2Wy6gCod3yBaBiEG7D9s0wKwscqi0ma+k4aRtNl15susR0FnHQHzEtW5Canj+MKQXvXDerkmjbJstR4No14auJQREk2xGeoiyRvroGqB1RkuIjd0gK262T2yQ2vJW0YgBFAx1TwHrDJUIw62l8ilw8gvOj10B3tUYFWQGy1tL3TFVRtCyHrOpRyIDyMM8dQJA9cZNfbmko9eYL4xcRq+6fqCML/H2TVy/G02UCd5ofZjqaSPru2x5zk9nUOKytrVurmgPQx9Wwwh4Zv4NHdLV9PO68WMfwBAb8JCKOHrmY66lk0HCq3s0JrA+BiEfSo3M3AD+73x20M7tacm6qYP+S0NP1wiIiPk7vRY5pc+PQnriEVpmqT0/Shgjyt/Cv5QsLdAZKqQ0jgvgkRGnwW1w7KxRF03RkonDD2PkZBUt2Zvh62xufEx7n74Tbnqnvi0tvN3PUypVWPIB2JpS5/JIUDJDF2oxuogyQ3clQKhpz/z5oiqxAxHcoqQRn3MO3nifuzXTnheB/JuFOLj/MQCe6Er3WpjdgK+CNgn1nSodgKq3RmYpI6zTNk3zvnqla9Honz/aW9pTGbVvXDOn6vVaSsn/WMhv08764AJOahaFv1WJDm0Ooeyuf5N/P0H",
+  "k4b55c85442b3": "bVXbbqMwFPyXPG6XmmswlvrglKySVavSTziGY6AhENlQVlntv68gIeGS8wRojmc8c2z+rk4QHyDF5y9dlSu2+rH6udLwjYZG9Y3q+Uuv2CqILRsdxi9FOOevHSxW+anWpMgFAVFCdkSjUTXmxXPct4FAN6GMtFueRoRIciZhy2+15S8v82UKgUll1CDxtohHE+mxObDRKQg0oJE98RVsmnRtAyN90ZB/hORW7TvnkSvdiIY8opKnC3YBZTLdQbD2fPTYvn2oNskBa6PISz3wW4kfSJONOBc9ClrjDJgVqK5NSC3LFYPoTWdNZ9esURaN1hMy6iSeTRkhwRybos7jrDZOqhJYXuEisH0L2KZd7CM9NYYcKwIhgIq55xlgmaKaaDCdWK4tRv7Q+aIHOKICo4Rs8NJ0fFvcvSGE7JZail54TzEITyzfs61JYxcu+e4M5vthnPp3urshhu9heh85/rkg1HGWq+PUKumibTrsbSlPZ5CgMg6Vrm9oB33XFJfTsQ8vvBHdzDvvGxvyAwA6GhZCCd8tfNSVrFtQaKSnZhgYFz3fY5zvF+AajschbwfNxJyHqOtuyMcyXH+NiIyQp8thWW76ciSMM+bF0CSl6wYee924c/C3gqMBIlW5lEPywotl8GhQWyxqQ1RVPVhp+b7jdJaU47Cj/tbYj3IM00/3/RdPt3xSe86j5bnuWSpVD+I9sTaly2Q/QPECnavaaCHOBrgtBULAHkDPqApMcWKn8GnQjXkbj9S6w8PTZIjPi7TPOXZGl7rRQ9gxuMJjD6JpUR0ElIcrME4sa52w35zzzQffTY0JPyMakkW1W873byUf3cr8lfckJ4zJSVUy725FkkGjMyjq+2/i338="
  },
  "ungemessen": {
   "profiband.K4#1": {
@@ -2747,6 +3527,452 @@
    "bahn": "sitzung",
    "zwilling": "karte2.leben.wasser.bild#1",
    "modus": "session"
+  },
+  "karte2.leben.kopplung.stadt-im-netz#2": {
+   "gruen": false,
+   "zahl": "der Raffer trug die Seite antwortete nicht: /eval: {\"ms\":74194,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\ 0 von 1 Takten in 0 s — am Budget der Leiter (die Leiter lief 30,015 s) — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Raffer trug die Seite antwortete nicht: /eval: {\"ms\":74194,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\ 0 von 1 Takten in 0 s — am Budget der Leiter (die Leiter lief 30,015 s)) · Täter: @@PUNKTE@@ PROBE 159.7 s · Exit 0",
+   "exit": 0,
+   "minuten": 2.67,
+   "grund": "der Raffer trug die Seite antwortete nicht: /eval: {\"ms\":74194,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\ 0 von 1 Takten in 0 s — am Budget der Leiter (die Leiter lief 30,015 s) — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Raffer trug die Seite antwortete nicht: /eval: {\"ms\":74194,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\ 0 von 1 Takten in 0 s — am Budget der Leiter (die Leiter lief 30,015 s)) · Täter: @@PUNKTE@@ PROBE 159.7 s · Exit 0",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 159.8,
+   "fremd": {
+    "s": 160.8,
+    "takte": 68,
+    "fremdS": 132.27,
+    "kerne": 0.823,
+    "fensterKerne": 1.56,
+    "namen": [
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      17.59
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      16.03
+     ],
+     [
+      "git.exe checkout 2b07e63c -- :(glob)vision/* vision/richter vorrat/klasse-offen.json",
+      12.84
+     ]
+    ],
+    "dienerS": 68.23,
+    "diener": [
+     [
+      "System",
+      30.09
+     ],
+     [
+      "WmiPrvSE.exe",
+      27.45
+     ]
+    ],
+    "geraetS": 269.78,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      90.75
+     ],
+     [
+      "svchost.exe",
+      84.88
+     ],
+     [
+      "MsMpEng.exe",
+      60.8
+     ]
+    ],
+    "eigenS": 344.91,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T02:34:20.338Z",
+   "abdruck": "1ba1688e3227",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.kopplung.evolution-planet#1",
+   "modus": "session"
+  },
+  "breite.siedlung#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T02:37:02.171Z",
+   "abdruck": "cd5ba7853ffa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.erleben.kopplung.wahrnehmung#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T02:37:02.209Z",
+   "abdruck": "34aa5fc96862",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.leben.pflanzen.biome#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T02:37:02.241Z",
+   "abdruck": "0e2470c9b605",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.physik.feuer#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T02:37:02.271Z",
+   "abdruck": "7b30f40cd9b8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.massstab.sprung#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T02:37:02.302Z",
+   "abdruck": "7f54477500db",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.mensch.kopplung.leib#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T02:37:02.334Z",
+   "abdruck": "0cf7c4e58ad0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.mensch.kopplung.kultur#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T02:37:02.334Z",
+   "abdruck": "8446bfc95780",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.preis.ankunft#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T02:37:02.368Z",
+   "abdruck": "624782505670",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.entfaltung.schirm#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T02:37:02.422Z",
+   "abdruck": "a16a54631e99",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.erleben.spieler.hand#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T02:37:02.457Z",
+   "abdruck": "94ecb21f3b9a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.erleben.schoepfen.satz#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T02:37:02.497Z",
+   "abdruck": "8a4236ccba5f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.preis.eingabe#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T02:37:02.527Z",
+   "abdruck": "efc887d0020e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "gelaende.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T02:37:02.574Z",
+   "abdruck": "d09f55f9774b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.relief.grossform#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T02:37:02.609Z",
+   "abdruck": "9d14fbd22724",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
   }
+ },
+ "sitzung": {
+  "start": "2026-11-25T02:30:29.752Z",
+  "ordner": "sitzung-20261125-033029",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 4.7,
+  "grundstellungS": [
+   3.2
+  ],
+  "proben": 2,
+  "freigaben": [],
+  "offen": [
+   "karte2.same.kopplung.aufwaerts#1",
+   "karte2.same.kopplung.kohaerenz#1",
+   "karte2.same.kopplung.terraform#1",
+   "breite.siedlung#1",
+   "karte2.erleben.kopplung.wahrnehmung#2",
+   "karte2.leben.pflanzen.biome#1",
+   "karte2.same.physik.feuer#2",
+   "karte2.same.massstab.sprung#1",
+   "karte2.mensch.kopplung.leib#1",
+   "karte2.mensch.kopplung.kultur#2",
+   "karte2.same.preis.ankunft#2",
+   "karte2.same.entfaltung.schirm#1",
+   "karte2.erleben.spieler.hand#1",
+   "karte2.erleben.schoepfen.satz#1",
+   "karte2.same.preis.eingabe#2",
+   "gelaende.K2#1",
+   "karte2.planet.relief.grossform#1"
+  ],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "karte2.planet.kopplung.land-meer-luft#3",
+    "s": 24.6,
+    "takte": 1066,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "karte2.leben.kopplung.evolution-planet#1",
+    "s": 16.2,
+    "takte": 643,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "karte2.leben.kopplung.evolution-planet#1",
+    "wege": "wege +2 [-1.2,-31.2,206.5,0/2] [-27.7,-58.3,231.6,16/91]",
+    "s": 3.2
+   }
+  ],
+  "felder": [
+   {
+    "probe": "karte2.planet.kopplung.land-meer-luft#3",
+    "weg": [
+     "__dorfDerProbe",
+     "__rafferEnde",
+     "__rafferKurz",
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr",
+     "__imSchuss",
+     "__nahSpeicher",
+     "__letzteSpiegel",
+     "__letzteTeilung"
+    ]
+   }
+  ],
+  "wirt": [
+   {
+    "probe": "karte2.planet.kopplung.land-meer-luft#3",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__raffer",
+     "window.__rafferRest",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
+     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
+     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     193.1,
+     538.5
+    ],
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "karte2.planet.kopplung.land-meer-luft#3",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.planet.kopplung.land-meer-luft#3",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "anOrt": [
+   {
+    "vor": "karte2.leben.kopplung.evolution-planet#1",
+    "anders": [
+     "playerPathBuckets"
+    ],
+    "wie": {
+     "playerPathBuckets": "{\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w → {\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w"
+    }
+   }
+  ],
+  "felderBlind": [
+   {
+    "probe": "karte2.leben.kopplung.evolution-planet#1",
+    "wann": "nach",
+    "fehler": "ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp"
+   }
+  ],
+  "wirtBlind": [
+   {
+    "probe": "karte2.leben.kopplung.evolution-planet#1",
+    "wann": "nach",
+    "fehler": "ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp"
+   }
+  ],
+  "zeichnerBlind": [
+   {
+    "probe": "karte2.leben.kopplung.evolution-planet#1",
+    "wann": "nach",
+    "fehler": "ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp"
+   }
+  ],
+  "grund": "die Welt trägt nicht mehr vor karte2.same.kopplung.aufwaerts#1: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\ — offen: karte2.same.kopplung.aufwaerts#1, karte2.same.kopplung.kohaerenz#1, karte2.same.kopplung.terraform#1, breite.siedlung#1, karte2.erleben.kopplung.wahrnehmung#2, karte2.leben.pflanzen.biome#1, karte2.same.physik.feuer#2, karte2.same.massstab.sprung#1, karte2.mensch.kopplung.leib#1, karte2.mensch.kopplung.kultur#2, karte2.same.preis.ankunft#2, karte2.same.entfaltung.schirm#1, karte2.erleben.spieler.hand#1, karte2.erleben.schoepfen.satz#1, karte2.same.preis.eingabe#2, gelaende.K2#1, karte2.planet.relief.grossform#1",
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 2771,
+   "frameP95": 33.5,
+   "taktP95": 18.72,
+   "vramMax": 127.8,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.planet.kopplung.land-meer-luft#3",
+     "m": 17778,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "karte2.leben.kopplung.evolution-planet#1",
+     "m": 443,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 277,
+   "luecken": 16,
+   "letzteLuecke": "ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\623439ed-7d51-4a28-a489-9583b09f61d4.dmp"
+  },
+  "fahrtS": 388,
+  "minuten": 6.59
  }
 }
