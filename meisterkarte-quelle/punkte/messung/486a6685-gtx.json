@@ -1,7 +1,7 @@
 {
  "sha": "486a6685925d51302752c756d7d47654d83922d1",
  "geraet": "gtx",
- "zeit": "2026-11-25T06:43:32.226Z",
+ "zeit": "2026-11-25T06:48:29.214Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.gespraech#2": {
@@ -773,6 +773,70 @@
    },
    "zeit": "2026-11-25T06:34:09.194Z",
    "abdruck": "f0f7353bbe7b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.recht#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "exit": 2,
+   "minuten": 0.81,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 48.4,
+   "fremd": {
+    "s": 51.6,
+    "takte": 24,
+    "fremdS": 9.33,
+    "kerne": 0.181,
+    "fensterKerne": 0.324,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.78
+     ],
+     [
+      "Explorer.EXE",
+      1.06
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.03
+     ]
+    ],
+    "dienerS": 6.69,
+    "diener": [
+     [
+      "System",
+      2.25
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.97
+     ]
+    ],
+    "geraetS": 15.19,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.94
+     ],
+     [
+      "svchost.exe",
+      4.7
+     ],
+     [
+      "SearchIndexer.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 72.86,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T06:48:29.214Z",
+   "abdruck": "2c9130abcfb3",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
