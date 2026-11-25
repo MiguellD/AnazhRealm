@@ -4,7 +4,7 @@
 1. Der Leib eines wilden Tiers erschien bis Vorprüfung 1 nur ≥ 130 m vom Spieler und auf einer Spirale weg von seinem Tier (Versatz im Median 93 m); seit Welle 1 steht er am Ort seines Tiers, wie im Gehege (`_gehegeLeiber`).
 2. Welle 1 ließ ihn nur außer Blick erscheinen: was der Gehende vor sich in Reichweite bekam, stand im Kegel und erschien nie — der Kegel vor ihm blieb leer.
 3. Welle 2: KEIN LEIB ERSCHEINT SICHTBAR — außer Blick, ODER im Blick so fern, dass seine Höhe am Schirm ≤ 8 px misst (`_bestandErscheint` in stamm/kreatur-leben.js, `BESTAND_REGION.erscheinenPx`; Strecke aus Leib-Höhe, Brennweite des Schirms `_brennweite(_schirm().hoehe)` und Abstand zur Kamera).
-4. Ein Rothirsch (1,68 m) erscheint so im Blick ab ~76 m (720 Zeilen) und wächst, während der Spieler auf ihn zugeht; die Ankunft (60 Takte) zeichnet jeden Leib wie zuvor.
+4. Ein Rothirsch (1,68 m) erscheint so im Blick ab ~76 m (720 Zeilen) und wächst, während der Spieler auf ihn zugeht; die Ankunft (ein Sprung des Spielers, ein Stand, eine neue Uhr) zeichnet das ganze Bild in EINEM Ruf, jeden Leib an seinem Ort.
 5. Die Wanderung hält ihr Ziel bis 1,5 × Weg + Blick (`_kreaturWanderZiel`), der Revier-Anteil liest 13 Punkte (`_kreaturRevier`).
 
 ## Das Band (Quelle mit Zahl)
