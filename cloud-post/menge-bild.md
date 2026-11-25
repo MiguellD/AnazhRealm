@@ -29,7 +29,7 @@ koerper-core.js von main 6c210411 (der einzige Laufzeit-Unterschied des Kopfs). 
 Das Bildpaar liegt im Zweig, 960 × 540, JPEG: `cloud-post/menge-bild-bild/vor-08_00.jpg` ↔ `cloud-post/menge-bild-bild/nach-08_00.jpg`.
 
 **Die Stationen vorher ↔ nachher (GTX 1060).** Die Stationen an der GTX liefen als echte Station der Punkte-Maschine am Gerät gtx
-(OMEN-Handlauf `punkte.cjs run --nur`). Die headless-Stationen liefen mit DEM BEFEHL DER STATION (`node scripts/diag-kreatur-takt.cjs
+(OMEN-Handlauf der Maschine, `run --nur` je Station). Die headless-Stationen liefen mit DEM BEFEHL DER STATION (`node scripts/diag-kreatur-takt.cjs
 --proben …`) im Baum des Kopfs, nicht mit der Maschine. Die Farm der Maschine nimmt keinen Baum ohne Zweig; „main“ heißt dort:
 koerper-core.js von main 6c210411 im selben Baum.
 
@@ -60,6 +60,6 @@ fasst den Ort 3 und die Wache nicht an.
 | gate:kreatur-takt --selftest --teil=1/3 | 0 | 46 von 46 Tätern rot beim Namen, Grund 8 von 8 grün (723 s). Ein erster Lauf war ROT im Grund (bewohner alsLeib 5 > 4), die Wiederholung im eigenen Fenster grün |
 | gate:kreatur-takt --selftest --teil=2/3 | 0 | 55 Täter, Grund 15 von 15 |
 | gate:kreatur-takt --selftest --teil=3/3 | 0 | 44 Täter, Grund 12 von 12 |
-| probe-tag (die Regeln aus zug.cjs) | 0 | PROBE-TAG OK · 5 Dateien, keine Überschneidung mit 6c210411 · Tag bild:stadt-voll@0.333, gate:kamera-leib:echt (2 von höchstens 4) |
+| probe-tag (die Regeln des Zugs) | 0 | PROBE-TAG OK · 5 Dateien, keine Überschneidung mit 6c210411 · Tag bild:stadt-voll@0.333, gate:kamera-leib:echt (2 von höchstens 4) |
 
 **Offen.** bild#2 bleibt ROT bis zur Welle `tages-gesetz` (Markt als eigener Akt, Ankunft zur Stunde im Gesetz).
