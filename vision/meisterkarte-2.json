@@ -17586,11 +17586,11 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 11,
-    "kern": 1,
-    "kernDazu": 1,
-    "anteilHeute": 5.8,
-    "anteilKern": 0.3
+    "heute": 12,
+    "kern": 0,
+    "kernDazu": 0,
+    "anteilHeute": 6.2,
+    "anteilKern": 0
    },
    "perspektiven": [
     {
@@ -20006,8 +20006,8 @@
        "richter": "100 Taten: Sichtbarkeit auf B zur richtigen Zeit"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "Lichtung bleibt über Reload, 138/138 Pflanzen nach 1 Spieljahr (feld.K4, stoffe.K5) — headless; rückwärts klemmt _werkAlter die Zeit auf 0: ein Werk vor seinem Akt erscheint ungealtert statt abwesend.",
      "alt": [
@@ -20089,10 +20089,10 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 101,
+  "heute": 102,
   "davonKopplungen": 33,
-  "kern": 4,
-  "kernDazu": 4,
+  "kern": 3,
+  "kernDazu": 3,
   "anteilHeute": 5.3,
   "anteilKern": 0.1,
   "kapitel": 7,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 56,
-  "nachwache": 45
+  "nachwache": 46
  },
  "zusammengelegt": [
   {
