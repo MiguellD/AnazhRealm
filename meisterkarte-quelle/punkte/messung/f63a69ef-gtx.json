@@ -1,7 +1,7 @@
 {
  "sha": "f63a69ef8086b12e4ed913535b7314068383c87f",
  "geraet": "gtx",
- "zeit": "2026-11-25T19:39:28.415Z",
+ "zeit": "2026-11-25T19:42:08.970Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#2": {
@@ -2329,6 +2329,70 @@
    "ungemessen": true,
    "zeit": "2026-11-25T19:39:28.415Z",
    "abdruck": "6805cdf2a85c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.verstaendigung#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 49.2 s · S1 warf: /eval ohne Antwort binnen 40 s",
+   "exit": 0,
+   "minuten": 0.82,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 49.2 s · S1 warf: /eval ohne Antwort binnen 40 s",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 49.4,
+   "fremd": {
+    "s": 51.8,
+    "takte": 24,
+    "fremdS": 6.34,
+    "kerne": 0.123,
+    "fensterKerne": 0.173,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.05
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.63
+     ],
+     [
+      "Explorer.EXE",
+      0.42
+     ]
+    ],
+    "dienerS": 5.45,
+    "diener": [
+     [
+      "System",
+      2.33
+     ],
+     [
+      "WmiPrvSE.exe",
+      2.2
+     ]
+    ],
+    "geraetS": 16.78,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      11.31
+     ],
+     [
+      "svchost.exe",
+      5.17
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.11
+     ]
+    ],
+    "eigenS": 82.13,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T19:42:08.970Z",
+   "abdruck": "55183cc3768b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
