@@ -3150,15 +3150,19 @@
     // Stein vor die Hinterfüllung, sein Ton ist ein Ton der Fassade. Ein Haus aus Backstein (`H.raum` backstein) ist innen, was es außen ist.
     function wandVonInnen(raum, kol){ if(!raum||raum==='backstein') return null; const rc=innenTon(raum,kol)||_colFor(raum,kol); return role=>role==='backstein'?rc:null; }
     // ═══════════════════════════════════════════════════════════════════════
-    //  DER STUFEN-TON (S8, material.K3): jede ferne Stufe zeigt die Albedo der nahen — gemessen, nie aus Rollen-Tönen
-    //  vermutet. `sichtTon` ist die EINE Rechnung: was ein Auge von außen sieht (Z-Puffer, orthografisch, 9 Blicke —
-    //  8 Seiten im Wechsel 14° und 31° über dem Horizont, dazu von oben, je 64²), je Blick-Klasse (wand |n.y| < 0,25,
-    //  flach sonst) die mittlere Vertex-Farbe der tragenden Stoffe (Stoff und Metall; Glas und Glut tragen keinen Ton),
-    //  übertragen wird die Leuchtdichte je Klasse.
-    //  Das Soll misst sich im Warm-Pfad (`B.sichtTon`, sollTon); die Stufe 2 und die Hülle (Stufe 3, Fernform
-    //  `__fern`) messen sich selbst und tragen je Klasse den Faktor Soll/Ist (`tonUebertrag`). Bis S8 kam der Ton der L2
-    //  aus Rollen-Farben × EINEM Wand-Ton (`wandTonAus`, Fenster 2,6..Traufe): der Giebel trug die Dach-Farbe, das
-    //  Erdgeschoss den Ton des Obergeschosses — L2/L0 0,704 (gotisch) bis 1,108 (pueblo), 31 von 64 Häusern im Band.
+    //  DER STUFEN-STOFF (S8, material.K3): jede ferne Stufe zeigt je BAUTEIL den Stoff der nahen — gemessen, nie aus
+    //  Rollen-Tönen vermutet. `sichtTon` ist die EINE Rechnung: was ein Auge von außen sieht (Z-Puffer, orthografisch,
+    //  9 Blicke — 8 Seiten im Wechsel 14° und 31° über dem Horizont, dazu von oben, je 64²), die Vertex-Farbe der tragenden
+    //  Stoffe (Stoff und Metall; Glas und Glut tragen keinen Ton) je Teil der EINEN Körper-Liste und Blick-Klasse (wand
+    //  |n.y| < 0,25, flach sonst): die Liste ist die Karte (`koerperKarte`), in deren Flächen Soll und Stufe sich messen.
+    //  Das Soll misst sich im Warm-Pfad (`B.sichtTon`, sollTon); der Körper der Stufe 2 und der Turm-Stufe 1 trägt je Teil
+    //  und Klasse die FARBE Soll/Ist in drei Kanälen (`tonUebertrag`), die Hülle (Stufe 3, Fernform `__fern`) je Teil die
+    //  Farbe ihres Solls (`koerperTeile`); wo die Liste den Stoff eines Teils nur vermutet, nennt ihn das Soll. Das Ganze
+    //  hält EINE graue Zahl über der ganzen Stufe (`tonFaktoren`: 0,97..1,03; am Turm aus Glas bis 2 — offen, huelle#2).
+    //  Band: Albedo je Bauteil Stufe n ↔ Stufe 0 ΔE*ab ≤ 2,3 (Mahy, Van Eycken & Oosterlinck 1994: 2,3 = eben merklich).
+    //  Bis haus-stufe-stoff trug jede Ecke der Stufe EINEN grauen Faktor je Klasse (die Leuchtdichte Soll/Ist) über Rollen-
+    //  Farben × EINEM Wand-Ton: der Backstein stand ab 26 m olivbraun (viktorianisch Wand ΔE 6,0), der Schornstein als
+    //  grauer Stein (ΔE bis 15,9), das echte Teil der Stufe dunkelte mit (Lattung × 0,77) — 96 Häuser, Wand p95 8,3.
     // ═══════════════════════════════════════════════════════════════════════
     var SICHT_N = 64;
     // Die Achsen stehen als Zahlen (cos/sin von 22,5° + k · 45°), normiert mit der Wurzel: plattformgleich (IEEE rundet
@@ -3181,26 +3185,21 @@
     function _sichtKlasse(ny, l) {
         return l > 0 && Math.abs(ny / l) < 0.25 ? 0 : 1;
     }
-    // geoms (je Rolle { pos, nrm, col, idx }, Welt-Lage) → { k: [[r, g, b, n] wand, [r, g, b, n] flach], alle: [r, g, b, n] }
-    function sichtTon(geoms) {
-        var Gs = [],
-            tri = [],
+    // Das Netz der Messung: die Dreiecke der Netze `Gs` ([{ pos, idx }] — je vier Zahlen: Netz und drei Ecken), ihre Blick-Klasse
+    // (aus der Fläche, nie aus dem Blick — einmal, nicht je Pixel) und der Rahmen ihres Kastens (Mitte `m`, Halbmesser `rad`).
+    function _sichtNetz(Gs) {
+        var tri = [],
             lo = [Infinity, Infinity, Infinity],
             hi = [-Infinity, -Infinity, -Infinity];
-        for (var rolle in geoms) {
-            var G = geoms[rolle];
-            if (!G || !G.idx || !G.idx.length || !_tonTraegt(rolle)) continue;
-            for (var i = 0; i + 2 < G.idx.length; i += 3) tri.push(Gs.length, G.idx[i], G.idx[i + 1], G.idx[i + 2]);
-            Gs.push(G);
+        for (var g = 0; g < Gs.length; g++) {
+            var G = Gs[g];
+            for (var i = 0; i + 2 < G.idx.length; i += 3) tri.push(g, G.idx[i], G.idx[i + 1], G.idx[i + 2]);
             for (var v = 0; v < G.pos.length; v += 3)
                 for (var c = 0; c < 3; c++) {
                     if (G.pos[v + c] < lo[c]) lo[c] = G.pos[v + c];
                     if (G.pos[v + c] > hi[c]) hi[c] = G.pos[v + c];
                 }
         }
-        var aus = { k: [[0, 0, 0, 0], [0, 0, 0, 0]], alle: [0, 0, 0, 0] };
-        if (!tri.length) return aus;
-        // die Blick-Klasse je Dreieck (aus seiner Fläche, nie aus dem Blick) — einmal, nicht je Pixel
         var kl = new Int8Array(tri.length / 4);
         for (var t0 = 0; t0 < tri.length; t0 += 4) {
             var P0 = Gs[tri[t0]].pos,
@@ -3214,13 +3213,18 @@
                 nz = e1[0] * e2[1] - e1[1] * e2[0];
             kl[t0 / 4] = _sichtKlasse(ny, Math.sqrt(nx * nx + ny * ny + nz * nz));
         }
-        var mx = (lo[0] + hi[0]) / 2,
-            my = (lo[1] + hi[1]) / 2,
-            mz = (lo[2] + hi[2]) / 2;
         var dx = hi[0] - lo[0],
             dy = hi[1] - lo[1],
             dz = hi[2] - lo[2];
-        var rad = Math.max(0.5, Math.sqrt(dx * dx + dy * dy + dz * dz) / 2);
+        return { tri: tri, kl: kl, m: [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2], rad: Math.max(0.5, Math.sqrt(dx * dx + dy * dy + dz * dz) / 2) };
+    }
+    // Der EINE Z-Puffer der Messung: die Dreiecke `tri` im Rahmen `R` ({ m, rad }); je Blick ruft er `les(b, ti, wb)` — je Pixel das
+    // vorderste Dreieck (sein Platz in `tri`, −1: leer) und zwei seiner Gewichte (das dritte ist ihr Rest).
+    function _sichtRaster(Gs, tri, R, les) {
+        var mx = R.m[0],
+            my = R.m[1],
+            mz = R.m[2],
+            rad = R.rad;
         var N = SICHT_N,
             zb = new Float64Array(N * N),
             ti = new Int32Array(N * N),
@@ -3290,7 +3294,83 @@
                         }
                     }
             }
-            for (var k2 = 0; k2 < N * N; k2++) {
+            les(b, ti, wb);
+        }
+    }
+    // DIE KARTE DER MESSUNG: die Teile der EINEN Liste (`koerperListe`, nackt wie die Hülle) in der Lage des Baus (`bauOrtWrap`: Gier,
+    // Ort und Boden), je Blick und Pixel das Teil und die Klasse seiner Fläche (2 · Teil + Klasse, −1: kein Körper) — die Abbildung
+    // Körper ↔ Soll (das »mapping image«, mit dem der Farb-Guss einer Proxy-Stufe ihre Ecken aus dem Vorbild färbt). Sie kommt aus dem
+    // Bau allein: Soll und Stufe lesen dieselbe Karte, auch wenn vom Soll längst nur vier Zahlen je Teil stehen (der Turm, `SOLL_TON`).
+    function koerperKarte(B) {
+        var alle = koerperListe(B).map(function (x) {
+            return x.teil;
+        });
+        var q = B.q || {},
+            cs = Math.cos(q.phi || 0),
+            sn = Math.sin(q.phi || 0),
+            Gs = [];
+        for (var k = 0; k < alle.length; k++) {
+            var G = { pos: [], nrm: [], idx: [] };
+            _teilGitter(alle[k], alle, G);
+            for (var j = 0; j < G.pos.length; j += 3) {
+                var x = G.pos[j],
+                    z = G.pos[j + 2];
+                G.pos[j] = x * cs + z * sn + (q.x || 0);
+                G.pos[j + 1] += q.y || 0;
+                G.pos[j + 2] = -x * sn + z * cs + (q.z || 0);
+            }
+            Gs.push(G);
+        }
+        var Z = _sichtNetz(Gs),
+            NN = SICHT_N * SICHT_N;
+        var karte = { m: Z.m, rad: Z.rad, n: alle.length, id: new Int16Array(SICHT_BLICKE.length * NN).fill(-1) };
+        if (Z.tri.length)
+            _sichtRaster(Gs, Z.tri, Z, function (b, ti) {
+                for (var p = 0; p < NN; p++) if (ti[p] >= 0) karte.id[b * NN + p] = 2 * Z.tri[ti[p]] + Z.kl[ti[p] / 4];
+            });
+        return karte;
+    }
+    // geoms (je Rolle { pos, col, idx }, Welt-Lage) → { k: [[r, g, b, n] wand, [r, g, b, n] flach], alle: [r, g, b, n] } im Rahmen der Geoms.
+    // Mit `karte` (in ihrem Rahmen) dazu `teil`: je Teil der Liste und Klasse [r, g, b, n] — alles, was das Auge in der Fläche des Teils
+    // sieht — und `rolle`: je Teil der Stoff, den über die Hälfte seiner Fläche zeigt (sonst null). Mit `marke` (je Rolle je Ecke das
+    // Teil, dessen Körper sie ist; −1: kein Körper) statt `rolle` `eigen`: was davon der Körper des Teils selbst zeigt, und `paar`:
+    // je Fläche und fremdem Körper [r, g, b, n], was der Körper eines ANDEREN Teils (oder der anderen Klasse) in ihr zeigt, und `je`:
+    // je Körper [r, g, b] alles, was das Auge von ihm sieht (in jeder Fläche und außerhalb der Karte).
+    function sichtTon(geoms, karte, marke) {
+        var Gs = [],
+            Rn = [];
+        for (var rolle in geoms) {
+            var G = geoms[rolle];
+            if (!G || !G.idx || !G.idx.length || !_tonTraegt(rolle)) continue;
+            Gs.push(G);
+            Rn.push(rolle);
+        }
+        var aus = { k: [[0, 0, 0, 0], [0, 0, 0, 0]], alle: [0, 0, 0, 0] };
+        if (karte) {
+            aus.teil = new Float64Array(karte.n * 8);
+            if (marke) {
+                aus.eigen = new Float64Array(karte.n * 8);
+                aus.paar = new Float64Array(karte.n * karte.n * 16);
+                aus.je = new Float64Array(karte.n * 6);
+            } else aus.rolle = [];
+        }
+        var Z = _sichtNetz(Gs),
+            tri = Z.tri,
+            kl = Z.kl,
+            NN = SICHT_N * SICHT_N,
+            nR = Rn.length;
+        if (!tri.length) return aus;
+        var eig = marke ? new Int16Array(tri.length / 4) : null;
+        if (eig)
+            for (var t0 = 0; t0 < tri.length; t0 += 4) {
+                var mk = marke[Rn[tri[t0]]],
+                    k0 = mk ? mk[tri[t0 + 1]] : -1;
+                eig[t0 / 4] = k0 >= 0 ? 2 * k0 + kl[t0 / 4] : -1;
+            }
+        var zahl = karte && !marke ? new Float64Array(karte.n * nR) : null,
+            cv = [0, 0, 0];
+        _sichtRaster(Gs, tri, karte || Z, function (b, ti, wb) {
+            for (var k2 = 0; k2 < NN; k2++) {
                 var t2 = ti[k2];
                 if (t2 < 0) continue;
                 var C2 = Gs[tri[t2]].col,
@@ -3302,13 +3382,36 @@
                     v1 = wb[k2 * 2 + 1],
                     v2 = 1 - v0 - v1;
                 for (var ch = 0; ch < 3; ch++) {
-                    var cv = v0 * C2[c0 + ch] + v1 * C2[c1 + ch] + v2 * C2[c2 + ch];
-                    S[ch] += cv;
-                    aus.alle[ch] += cv;
+                    cv[ch] = v0 * C2[c0 + ch] + v1 * C2[c1 + ch] + v2 * C2[c2 + ch];
+                    S[ch] += cv[ch];
+                    aus.alle[ch] += cv[ch];
                 }
                 S[3]++;
                 aus.alle[3]++;
+                // eine Wand steht für Wände, ein Dach für Dächer: in der Fläche eines Teils zählt, was seine Klasse trägt (die Ziegel vor dem
+                // Fuß des Schornsteins, das Vordach vor der Wand sind nicht ihr Stoff)
+                var r = karte ? karte.id[b * NN + k2] : -1,
+                    e = eig ? eig[t2 / 4] : -1;
+                for (ch = 0; e >= 0 && ch < 3; ch++) aus.je[e * 3 + ch] += cv[ch];
+                if (r < 0 || kl[t2 / 4] !== (r & 1)) continue;
+                var E = e === r ? aus.eigen : null,
+                    pa = e >= 0 && e !== r ? (r * 2 * karte.n + e) * 4 : -1;
+                for (ch = 0; ch < 3; ch++) {
+                    aus.teil[r * 4 + ch] += cv[ch];
+                    if (E) E[r * 4 + ch] += cv[ch];
+                    if (pa >= 0) aus.paar[pa + ch] += cv[ch];
+                }
+                aus.teil[r * 4 + 3]++;
+                if (E) E[r * 4 + 3]++;
+                if (pa >= 0) aus.paar[pa + 3]++;
+                if (zahl) zahl[(r >> 1) * nR + tri[t2]]++;
             }
+        });
+        for (var p = 0; zahl && p < karte.n; p++) {
+            var n = aus.teil[p * 8 + 3] + aus.teil[p * 8 + 7],
+                am = -1;
+            for (var q = 0; q < nR; q++) if (zahl[p * nR + q] * 2 > n) am = q;
+            aus.rolle.push(am >= 0 && n >= TON_PIXEL ? Rn[am] : null);
         }
         return aus;
     }
@@ -3360,7 +3463,7 @@
                 // DAS SOLL DES TURMS IST EINE ZAHL DES BAUS (hochhaus-dach-speicher): seine Stufe 0 — ein Turm aus Backstein trägt
                 // 2,8 Mio. Ecken (modern, 22 Geschosse) — baut der Faden je Bau EINMAL, nie je Stufe und Auftrag (L1, L2 und der
                 // Wurf L3 desselben Hauses fragten es dreimal, je Messung bis 1 000 MB lebend); der Schlüssel ist, was die Messung
-                // liest (der Plan und der Ort des Baus), der Wert vier Zahlen je Klasse
+                // liest (der Plan und der Ort des Baus), der Wert vier Zahlen je Teil der Liste und Klasse
                 var sk = JSON.stringify([B.p, B.q]);
                 if (SOLL_TON.has(sk)) return (B.sichtTon = SOLL_TON.get(sk));
                 // je Teil des Stapels gebacken (stapelBau `backe`), aus dem Bake nur, was die Messung liest (`sollTeil`)
@@ -3390,7 +3493,7 @@
                 st.g.traverse(function (o) {
                     if (o.geometry) o.geometry.dispose();
                 });
-                B.sichtTon = sichtTon(g);
+                B.sichtTon = sichtTon(g, koerperKarte(B));
                 g = null;
                 if (SOLL_TON.size >= SOLL_TON_PLAETZE) SOLL_TON.delete(SOLL_TON.keys().next().value);
                 SOLL_TON.set(sk, B.sichtTon);
@@ -3400,51 +3503,110 @@
                 B.frag = null;
                 B.fragStufe = undefined;
             }
-            B.sichtTon = sichtTon(g);
+            B.sichtTon = sichtTon(g, koerperKarte(B));
         }
         return B.sichtTon;
     }
     function turmBau(B) {
         return (B.p.storeys || 1) >= 6;
     }
-    // Der Faktor je Klasse: die Leuchtdichte Soll/Ist (Rec. 709 — der Farbton jeder Stufe bleibt ihr eigener: die Scheibe der L2
-    // zeigt den Raum dahinter in seiner Farbe, gate:haus-fern G), eine Klasse unter 1 % der gesehenen Pixel trägt den Faktor
-    // des Ganzen; auf dem Raster 2^-10 — eine Drift der Eingänge um 1 ULP kippt fast nie einen Faktor (Plattform-Probe).
-    // DAS GANZE HÄLT (material.K3): sieht die Stufe ihre Klassen in anderen Anteilen als ihr Soll (die Glas-Fassade der L2
-    // verdeckt die Wand, die das Metall-Raster der L0 trägt: volle_moderne Wand 48 % gegen 66 %), träfe jede Klasse ihren Ton
-    // und das Ganze nicht (L2/L0 0,824) — beide Faktoren tragen darum das Verhältnis Soll/Ist des Ganzen nach der Klassen-Wahl:
-    // die Wand bleibt im Verhältnis zum Dach, die Albedo der Stufe ist die ihres Solls.
+    // DER FAKTOR JE TEIL UND KLASSE, in drei Kanälen (haus-stufe-stoff): in der Fläche jedes Teils der Karte zeigt die Stufe, was ihr
+    // Soll dort zeigt — Soll-Mittel × Pixel der Stufe = Körper × Faktor + was die Stufe dort sonst zeichnet: ihre echten Teile und
+    // Fern-Fenster in ihrer eigenen Farbe (kein Faktor färbt sie), die Körper ANDERER Teile mit deren Faktor (`paar`; darum `TON_LAEUFE` Läufe über alle
+    // Flächen, jeder mit den Faktoren des vorigen). Der Faktor bleibt im Band ½..2 um Soll-Mittel/Körper-Mittel (was die Stufe sonst
+    // zeichnet, verschiebt ihn, es färbt ihn nie um) und in 1/64..16, auf dem Raster 2^-10 — eine Drift der Eingänge um 1 ULP kippt
+    // fast nie einen Faktor (Plattform-Probe). Ein Körper, den das Auge nur in der Fläche eines ANDEREN Teils sieht (der Deckel der
+    // Wand unter einer Lücke der Dachhaut), trägt die Farbe, die das Soll dort zeigt, wo er am meisten steht; eine Fläche unter
+    // `TON_PIXEL` gesehenen Pixeln bleibt, wie ihr Stoff sie färbt (der Stoff des Teils kommt aus dem Soll).
+    var TON_PIXEL = 4,
+        TON_LAEUFE = 4;
     function tonFaktoren(soll, ist) {
-        var Y = function (s) {
-            return (0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2]) / s[3];
+        var S = soll.teil,
+            I = ist.teil,
+            E = ist.eigen,
+            P = ist.paar,
+            R = I.length / 4,
+            F = [],
+            r,
+            c,
+            e;
+        if (S.length !== I.length) throw new Error("fachwerk: das Soll des Stufen-Stoffs kennt " + S.length / 8 + " Teile, die Stufe " + R / 2);
+        var band = function (x) {
+            return Math.min(16, Math.max(1 / 64, x));
         };
-        var roh = function (s, i) {
-            return s[3] && i[3] && Y(i) > 0 ? Y(s) / Y(i) : 1;
+        var misst = function (q) {
+            return S[q * 4 + 3] >= TON_PIXEL && E[q * 4 + 3] >= TON_PIXEL;
         };
-        var q = [0, 1].map(function (k) {
-            return soll.k[k][3] >= 0.01 * soll.alle[3] && ist.k[k][3] >= 0.01 * ist.alle[3] ? roh(soll.k[k], ist.k[k]) : roh(soll.alle, ist.alle);
-        });
-        var nach = 0;
-        for (var k = 0; k < 2; k++) if (ist.k[k][3]) nach += Y(ist.k[k]) * ist.k[k][3] * q[k];
-        nach = ist.alle[3] ? nach / ist.alle[3] : 0;
-        var ganz = soll.alle[3] && nach > 0 ? Y(soll.alle) / nach : 1;
-        return q.map(function (x) {
-            x = Math.round(Math.min(4, Math.max(0.25, x * ganz)) * 1024) / 1024;
-            return [x, x, x];
-        });
+        for (e = 0; e < R; e++) {
+            var f1 = [1, 1, 1],
+                wo = -1;
+            for (r = 0; !misst(e) && r < R; r++) if (S[r * 4 + 3] >= TON_PIXEL && P[(r * R + e) * 4 + 3] >= TON_PIXEL && (wo < 0 || P[(r * R + e) * 4 + 3] > P[(wo * R + e) * 4 + 3])) wo = r;
+            for (c = 0; wo >= 0 && c < 3; c++) {
+                var pe = (wo * R + e) * 4;
+                if (P[pe + c] > 0) f1[c] = band(((S[wo * 4 + c] / S[wo * 4 + 3]) * P[pe + 3]) / P[pe + c]);
+            }
+            F.push(f1);
+        }
+        for (var lauf = 0; lauf < TON_LAEUFE; lauf++)
+            for (r = 0; r < R; r++) {
+                if (!misst(r)) continue;
+                var a = r * 4,
+                    f = [1, 1, 1];
+                for (c = 0; c < 3; c++) {
+                    if (!(E[a + c] > 0)) continue;
+                    var mittel = S[a + c] / S[a + 3],
+                        f0 = (mittel * E[a + 3]) / E[a + c],
+                        rest = I[a + c] - E[a + c];
+                    for (e = 0; e < R; e++) rest += P[(r * R + e) * 4 + c] * (F[e][c] - 1);
+                    f[c] = band(Math.min(2 * f0, Math.max(f0 / 2, (mittel * I[a + 3] - rest) / E[a + c])));
+                }
+                F[r] = f;
+            }
+        // DAS GANZE HÄLT (material.K3): sieht die Stufe ihre Flächen in anderen Anteilen als ihr Soll (die Glas-Fassade der L2 trägt
+        // keinen Ton und verdeckt die Wand, die das Metall-Raster der L0 trägt: hochhaus Wand 4 240 von 8 445 Pixeln gegen 10 102 von
+        // 12 800), träfe jedes Teil seinen Stoff und das Ganze nicht (L2/L0 0,748) — die ganze Stufe trägt darum EINE graue Zahl im
+        // Band ½..2, die Leuchtdichte Soll/Stufe nach den Faktoren: sie färbt nichts um und verschiebt kein Teil gegen ein anderes
+        // (ein Haus aus tragenden Stoffen: 0,97..1,03)
+        var Y = function (A, i, g) {
+            return 0.2126 * A[i] * g[0] + 0.7152 * A[i + 1] * g[1] + 0.0722 * A[i + 2] * g[2];
+        };
+        var eins = [1, 1, 1],
+            nach = Y(ist.alle, 0, eins);
+        for (e = 0; e < R; e++) nach += Y(ist.je, e * 3, F[e]) - Y(ist.je, e * 3, eins);
+        var ganz = soll.alle[3] && nach > 0 ? Math.round(Math.min(2, Math.max(0.5, ((Y(soll.alle, 0, eins) / soll.alle[3]) * ist.alle[3]) / nach)) * 1024) / 1024 : 1;
+        return {
+            ganz: ganz,
+            teil: F.map(function (f3) {
+                return f3.map(function (x) {
+                    return Math.round(band(x * ganz) * 1024) / 1024;
+                });
+            }),
+        };
     }
-    // Die Stufe trägt den Ton ihres Solls: jede Ecke der tragenden Stoffe × den Faktor ihrer Klasse (nach ihrer Normale).
-    function tonUebertrag(geoms, soll) {
-        if (!soll || !soll.alle[3]) return geoms;
-        var F = tonFaktoren(soll, sichtTon(geoms));
+    // Der Körper der Stufe trägt den Stoff seines Solls: jede Ecke eines Körper-Teils (`marken`, lod2Koerper: Rolle, Teil, von, n) ×
+    // den Faktor ihres Teils und ihrer Klasse (nach ihrer Normale); die echten Teile und die Fern-Fenster der Stufe behalten ihre
+    // Farbe und tragen mit dem Körper die EINE graue Zahl des Ganzen.
+    function tonUebertrag(geoms, B, marken) {
+        var soll = B.sichtTon;
+        if (!soll || !soll.teil || !soll.alle[3] || !marken || !marken.length) return geoms;
+        var marke = {};
+        for (var i = 0; i < marken.length; i++) {
+            var m = marken[i];
+            if (!marke[m.rolle]) marke[m.rolle] = new Int16Array(geoms[m.rolle].vo).fill(-1);
+            marke[m.rolle].fill(m.teil, m.von, m.von + m.n);
+        }
+        var T = tonFaktoren(soll, sichtTon(geoms, koerperKarte(B), marke)),
+            F = T.teil,
+            grau = [T.ganz, T.ganz, T.ganz];
         for (var rolle in geoms) {
-            var G = geoms[rolle];
+            var G = geoms[rolle],
+                mk = marke[rolle];
             if (!G || !G.col || !_tonTraegt(rolle)) continue;
-            for (var v = 0; v < G.col.length; v += 3) {
+            for (var v = 0, w = 0; w < G.vo; v += 3, w++) {
                 var n0 = G.nrm[v],
                     n1 = G.nrm[v + 1],
                     n2 = G.nrm[v + 2];
-                var f = F[_sichtKlasse(n1, Math.sqrt(n0 * n0 + n1 * n1 + n2 * n2))];
+                var f = mk && mk[w] >= 0 ? F[2 * mk[w] + _sichtKlasse(n1, Math.sqrt(n0 * n0 + n1 * n1 + n2 * n2))] : grau;
                 G.col[v] *= f[0];
                 G.col[v + 1] *= f[1];
                 G.col[v + 2] *= f[2];
@@ -3491,7 +3653,7 @@
     // `wandVonInnen`: Gefach und Balken, Blockholz wie außen, der Backstein der Ausfachung im Wand-Stoff des Raums — gegen den Raum,
     // den der Strahl der L0 durchs Fenster trifft: hollaendisch 0,295/0,076/0,042 zu 0,294/0,072/0,039, italienisch
     // 0,703/0,565/0,351 zu 0,626/0,511/0,322); der Turm ohne Flächen-Stufe trägt den Wand-Stoff seines Stils (`H.raum`), wie sein
-    // Körper (`_wandFaktor`). Vorher stand dort Putz für jeden Stil (Farbe gegen die L0 bis 0,34, gate:haus-fern G), danach der
+    // Körper (`_wandRolle`). Vorher stand dort Putz für jeden Stil (Farbe gegen die L0 bis 0,34, gate:haus-fern G), danach der
     // Wand-Ton von AUSSEN: der Stein der Ausfachung färbte den Raum, und das wahre Steinmaß (Einheit E8, mehr Stein in der Fuge der
     // L1) trieb alemannisch/s7 auf 0,153 gegen die L0 (64 Fälle: max 0,153 → 0,104, Median 0,025 → 0,023, 54 unverändert).
     // Der Körper bakt im Stoff des Putzes: sein Ton ist der Faktor auf den Putz.
@@ -3678,20 +3840,13 @@
             })
         );
     }
-    // Die Wand-Rolle des Fernkörpers (die Stil-Hülle) und ihre Farbe: der Rollen-Ton × der GEMESSENE Fassaden-Ton
-    // (`B.wandTon`, aus der Stufe-1-Fassade — dieselbe Klemme 0,25..1,7 wie der Bake der L2).
+    // Die Wand-Rolle des Fernkörpers (die Stil-Hülle): der Stoff, in dem der Körper seine Wand zeichnet — ihre Farbe trägt der
+    // Stufen-Stoff aus dem Soll (`tonUebertrag`, `koerperTeile`).
     function _wandRolle(p) {
         return p.stil === "klinker" ? "backstein" : p.stil === "huette" ? "holz" : p.stil === "glas" ? "glasfern" : p.stil === "alt" ? "gefach" : "putz";
     }
-    function _wandFaktor(B, wr) {
-        if (!B.wandTon) return null;
-        var base = _colFor(wr, B.p.col);
-        return [0, 1, 2].map(function (i) {
-            return Math.min(1.7, Math.max(0.25, B.wandTon[i] / (base[i] || 0.01)));
-        });
-    }
-    // DIE EINE LISTE: je Masse des Baus ihre Teile — [{ teil, rolle, faktor }] (rolle = der Stoff des Gesetzbuchs, aus
-    // dem die Farbe kommt; der L2-Bake zeichnet mit ihm, `faktor` = der Wand-Ton). Haus-lokal (B.q trägt die Lage).
+    // DIE EINE LISTE: je Masse des Baus ihre Teile — [{ teil, rolle }] (rolle = der Stoff des Gesetzbuchs, aus
+    // dem die Farbe kommt; der L2-Bake zeichnet mit ihm). Haus-lokal (B.q trägt die Lage).
     // DIE ZEILE IST DER BAU-REGLER (Lehre 19): die Teile stehen nach RANG (`KOERPER_RANG`: Hauptkörper und Dach zuerst, die
     // Treppe zuletzt), und die Liste nimmt ein Teil nur, solange ihr Gitter in der Budget-Zeile der Stufe 3 bleibt (tris)
     // und der Welt-March ihre Teile trägt (24) — ein Teil, das nicht mehr passt, fällt, ein kleineres danach darf noch.
@@ -3724,24 +3879,21 @@
         var MS = B.masse;
         if (!Array.isArray(MS) || !MS.length) throw new Error("koerperListe: der Bau trägt keine Massen (B.masse)");
         var wr = _wandRolle(p);
-        var wf = _wandFaktor(B, wr);
-        var farbe = function (rolle, faktor) {
-            var b = _colFor(rolle, col);
-            return faktor ? [b[0] * faktor[0], b[1] * faktor[1], b[2] * faktor[2]] : b;
+        var farbe = function (rolle) {
+            return _colFor(rolle, col);
         };
         var aus = [];
         var rang = 0;
-        var dazu = function (teil, rolle, faktor, haut) {
-            if (teil) aus.push({ teil: teil, rolle: rolle, faktor: faktor || null, rang: rang, i: aus.length, haut: haut || null });
+        var dazu = function (teil, rolle, haut) {
+            if (teil) aus.push({ teil: teil, rolle: rolle, rang: rang, i: aus.length, haut: haut || null });
         };
         // `ring` (der Hauptkörper, nur der L2-Bake `lod2Koerper`): die Wand-Haut — der Ständer-Ring der L0 steht so weit vor dem Grundriss
         var wand = function (x0, x1, y0, y1, z0, z1, rolle, ring) {
-            var r = rolle || wr,
-                f = rolle ? null : wf;
-            dazu(huelleTeil("box", x0 + IW, x1 - IW, y0, y1, z0 + IW, z1 - IW, farbe(r, f)), r, f, ring > 0 ? { ring: ring + IW } : null);
+            var r = rolle || wr;
+            dazu(huelleTeil("box", x0 + IW, x1 - IW, y0, y1, z0 + IW, z1 - IW, farbe(r)), r, ring > 0 ? { ring: ring + IW } : null);
         };
         var keil = function (x0, x1, y0, y1, z0, z1, first, walm, rolle, haut) {
-            dazu(huelleTeil("keil", x0, x1, y0, y1, z0, z1, farbe(rolle), walm > 0 ? { first: first, walm: _hr(walm) } : { first: first }), rolle, null, haut);
+            dazu(huelleTeil("keil", x0, x1, y0, y1, z0, z1, farbe(rolle), walm > 0 ? { first: first, walm: _hr(walm) } : { first: first }), rolle, haut);
         };
         // Satteldach über [x0,x1] × [z0,z1] (schon nach innen gerückt), der First in der Mitte längs `achse`, die Traufe
         // auf yFuss, der First auf yFirst; zwei Halbkeile. `haut` (nur der L2-Bake, `lod2Koerper`): die Dachhaut über dem
@@ -3891,7 +4043,7 @@
             } else if (m.art === "rund") {
                 var rr = m.rad - IW,
                     hoch = m.y1 - m.y0;
-                if (hoch >= 2 * rr) dazu(huelleKapsel([0, m.y0 + rr, 0], [0, m.y1 - rr, 0], rr, farbe(wr, wf)), wr, wf);
+                if (hoch >= 2 * rr) dazu(huelleKapsel([0, m.y0 + rr, 0], [0, m.y1 - rr, 0], rr, farbe(wr)), wr);
                 else wand(-rr * 0.7071, rr * 0.7071, m.y0, m.y1 - ID, -rr * 0.7071, rr * 0.7071);
                 if (m.zwiebel) {
                     var rk = m.rad * 0.85;
@@ -4118,10 +4270,16 @@
         return geoms;
     }
     // Der L2-Körper: dieselbe Liste mit den Rollen-Stoffen des Gesetzbuchs gebakt (Kontakt-AO, Material-Illusion, Welt-
-    // UV — `bakeLOD`), in der Lage des Baus (B.q). Die Wand trägt den gemessenen Ton als Vertex-Faktor.
+    // UV — `bakeLOD`), in der Lage des Baus (B.q). DER STOFF DES TEILS (haus-stufe-stoff): die Wand trägt den Stoff ihres Stils
+    // (`_wandRolle`), das Dach den seiner Deckung (`dachRolle` der Massen) — beide nennt der Bau; jedes andere Teil (Schornstein,
+    // Anbau, Turm, Sockel: die Liste vermutete Stein und Holz) trägt den Stoff, den sein Soll über die Hälfte seiner Fläche zeigt
+    // (`sollTon().rolle`), und den der Liste, wo das Soll keinen nennt. Zurück kommen die MARKEN: je Netz des Körpers seine Rolle,
+    // sein Teil der Liste und der Lauf seiner Ecken in den Geoms (von, n) — `tonUebertrag` färbt genau sie.
     // prettier-ignore
     function lod2Koerper(B, geoms){
-  const liste=koerperListe(B), alle=liste.map(x=>x.teil), grp2=new THREE.Group(), wr=_wandRolle(B.p||{}), wf=_wandFaktor(B, wr);
+  const liste=koerperListe(B), alle=liste.map(x=>x.teil), grp2=new THREE.Group(), wr=_wandRolle(B.p||{}), soll=sollTon(B), marken=[], lauf={};
+  const dachR=((B.masse||[]).find(m=>m.art==='haupt')||{}).dachRolle||'ziegel';
+  const stoff=(x,k)=>{ const r=soll.rolle&&soll.rolle[k]; return x.rolle===wr||x.rolle===dachR||!r||!M[r]?x.rolle:r; };
   // DAS GEFÜGE DER FERNEN WAND (w28-haus-stoff, VERBAND_GESETZ.fachwerk): die Wand und der Giebel des Fachwerk-Stils (`alt`) tragen je
   // Ecke ihre Lage im Gefüge (`aWand`, `_wandLage`) — die Welt webt daraus Ständer und Riegel als Funktion; bis hier stand das Haus ab
   // dieser Stufe als Kasten im Mittel aus Balken und Gefach. `rahmen`: die Wand, deren Gefüge das Teil trägt.
@@ -4129,13 +4287,14 @@
   const wandUnter=t=>{ const k=kasten(t); let best=null, bf=0;   // die Wand unter einem Giebel: die mit der größten gemeinsamen Grundfläche
     for(const w of waende){ const f=Math.max(0,Math.min(k[1],w[1])-Math.max(k[0],w[0]))*Math.max(0,Math.min(k[5],w[5])-Math.max(k[4],w[4])); if(f>bf){ bf=f; best=w; } }
     return best||k; };
-  const netz=(G, rolle, faktor, rahmen)=>{ if(!G.pos.length) return;
+  const netz=(G, rolle, teil, rahmen)=>{ if(!G.pos.length) return;
     const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(G.pos,3)); bg.setAttribute('normal',new THREE.Float32BufferAttribute(G.nrm,3)); bg.setIndex(G.idx);
     if(rahmen) bg.setAttribute('aWand',new THREE.Float32BufferAttribute(_wandLage(G, rahmen),3));
-    if(faktor){ const n=G.pos.length/3, att=new Float32Array(n*3); for(let i=0;i<n;i++){ att[i*3]=faktor[0]; att[i*3+1]=faktor[1]; att[i*3+2]=faktor[2]; } bg.setAttribute('color',new THREE.Float32BufferAttribute(att,3)); }
-    grp2.add(new THREE.Mesh(bg, M[rolle]||M.putz)); };
+    const mat=M[rolle]||M.putz, r=_roleByMat.get(mat)||'holz', n=G.pos.length/3; if(lauf[r]==null) lauf[r]=geoms[r]?geoms[r].vo:0;
+    marken.push({rolle:r, teil:teil, von:lauf[r], n:n}); lauf[r]+=n;
+    grp2.add(new THREE.Mesh(bg, mat)); };
   if(gefuege) for(const x of liste) if(x.rolle===wr&&x.teil.art==='box') waende.push(kasten(x.teil));
-  for(const x of liste){
+  for(let k=0;k<liste.length;k++){ const x=liste[k];
     // DIE DACHHAUT IST EINE HAUT (w15-lod-umriss): der Keil mit Haut legt nur seine Schrägen gehoben und um den Ortgang verlängert
     // (mit ihrer Untersicht, der Überstand von unten); seine Giebel stehen im Körper-Keil in der Wand-Ebene, im Stoff und Ton der Wand
     // wie der Giebel der L0. Bis hier stand der GANZE Keil gehoben vor der Wand: der Giebel trug den Stoff des Dachs um den Ortgang vor
@@ -4144,13 +4303,15 @@
       _teilGitter(_mitHaut(x), alle, H, false, n=>n[1]>0.02?2:0);
       _teilGitter(x.teil, alle, H, false, n=>n[1]>0.02?1:0);   // der Körper unter der Haut schließt den Raum zwischen Haut und Giebel (die Walm-Seiten)
       _teilGitter(x.teil, alle, Gi, false, n=>Math.abs(n[1])<=0.02&&Math.abs(amX?n[0]:n[2])>0.98?1:0);
-      netz(H, x.rolle, x.faktor); netz(Gi, wr, wf, gefuege?wandUnter(x.teil):null); continue; }
+      netz(H, stoff(x,k), k); netz(Gi, wr, k, gefuege?wandUnter(x.teil):null); continue; }
     // DIE WAND TRÄGT IHREN RING (w25-lod-pop-3, lod.K5): die Wand des Hauptkörpers steht im Ständer-Ring der L0 (`ring`, 6 cm vor dem
     // Grundriss), nie 1,5 cm dahinter — die Hochhaus-L1 stand an jeder Ecke 7,5 cm innen (4,0 px am Haushalt 12 m).
     const t=x.haut&&x.haut.ring&&x.teil.art==='box'?Object.assign({},x.teil,{h:_hr3([x.teil.h[0]+x.haut.ring,x.teil.h[1],x.teil.h[2]+x.haut.ring])}):x.teil;
-    const G={pos:[],nrm:[],idx:[]}; _teilGitter(t, alle, G, true); netz(G, x.rolle, x.faktor, gefuege&&x.rolle===wr&&t.art==='box'?kasten(t):null); }
+    const G={pos:[],nrm:[],idx:[]}; _teilGitter(t, alle, G, true); netz(G, stoff(x,k), k, gefuege&&x.rolle===wr&&t.art==='box'?kasten(t):null); }
   const wrap=bauOrtWrap(B); wrap.add(grp2); wrap.updateMatrixWorld(true);
   bakeLOD(grp2, B.p.col, geoms, 0);
+  for(const r in lauf) if(geoms[r].vo!==lauf[r]) throw new Error('fachwerk: der Körper der Stufe trägt in '+r+' '+geoms[r].vo+' Ecken, seine Marken '+lauf[r]);
+  return marken;
 }
     // Die Hülle eines Baus in der EINEN Form: die Liste des Fernkörpers (Stufe 3, rolle "sicht").
     function huelleVonBau(B) {
@@ -4159,28 +4320,24 @@
             teile: koerperTeile(B),
         };
     }
-    // DIE TEILE DER HÜLLE IM TON IHRES SOLLS (S8, `sollTon`): je Teil seine Farbe × den Faktor seiner Blick-Klassen (`tonFaktoren`
-    // der Hülle gegen `B.sichtTon`), gewichtet nach den Flächen, die ein Auge an ihm sieht — der Kasten vier Wände und
-    // den Deckel, Keil und Kapsel ihre Schräge. Gitter (Stufe 3) und Fernform (`__fern`, der Welt-March) lesen DIESE Liste.
+    // DIE TEILE DER HÜLLE IM STOFF IHRES SOLLS (S8, `sollTon`): je Teil die Farbe, die sein Soll in seiner Fläche zeigt (beide Klassen,
+    // gewichtet nach dem, was ein Auge an ihm sieht) — ein Teil unter `TON_PIXEL` gesehenen Pixeln bleibt in der Farbe seiner Rolle.
+    // Gitter (Stufe 3) und Fernform (`__fern`, der Welt-March) lesen DIESE Liste.
     function koerperTeile(B) {
         if (B.koerperTeile) return B.koerperTeile;
-        var soll = sollTon(B);
-        var teile = koerperListe(B).map(function (x) {
-            return x.teil;
+        var S = sollTon(B).teil;
+        var teile = koerperListe(B).map(function (x, k) {
+            var t = x.teil,
+                n = S ? S[k * 8 + 3] + S[k * 8 + 7] : 0;
+            if (!t.farbe || !(n >= TON_PIXEL)) return t;
+            var neu = Object.assign({}, t);
+            neu.farbe = _hr3(
+                [0, 1, 2].map(function (c) {
+                    return (S[k * 8 + c] + S[k * 8 + 4 + c]) / n;
+                })
+            );
+            return neu;
         });
-        if (soll.alle[3]) {
-            var F = tonFaktoren(soll, sichtTon(huelleGeoms(teile, {}, B.q)));
-            teile = teile.map(function (t) {
-                if (!t.farbe) return t;
-                var aw = t.art === "box" ? 4 * t.h[1] * (t.h[0] + t.h[2]) : 0,
-                    af = t.art === "box" ? t.h[0] * t.h[2] : 1,
-                    n = Object.assign({}, t);
-                n.farbe = _hr3([0, 1, 2].map(function (c) {
-                    return (t.farbe[c] * (aw * F[0][c] + af * F[1][c])) / (aw + af);
-                }));
-                return n;
-            });
-        }
         return (B.koerperTeile = teile);
     }
     // Die Solids eines Baus (Zahlen-Zeile [x0,y0,z0,x1,y1,z1]…, Welle L) in der EINEN Form: je Box ein Teil, rolle "fest"; die
@@ -4312,17 +4469,16 @@
     function fragFuer(B, stufe){                                                                 // GEBÄUDE-FRAGMENT-GESETZ: jedes Gebäude bakt seine Stufe EINMAL — der Chunk mischt nur noch.
   if(B.frag&&B.fragStufe===stufe) return B.frag;                                             // Ein Slot je Gebäude: Stufenwechsel verdrängt, Demotion trifft den warmen Cache
   if(stufe>=2||(stufe===1&&turmBau(B))) sollTon(B);                                           // DER WARM-PFAD (S8): jede Körper-Stufe baut auf ihrem gemessenen Soll (Wand-Ton, Sicht-Ton)
-  const geoms={};
+  const geoms={}; let marken=null;
   if(stufe===3){ huelleGeoms(koerperTeile(B), geoms, B.q); }                         // VOGEL = DIE STUFE 3 des Vertrags (nurWurf): die EINE Liste als EIN Gitter in EINEM Stoff
-  else if(stufe===2&&(B.p.storeys||1)>=6){ lod2Koerper(B, geoms); fensterFern(B.fenster||fensterVon(stapelBau(Object.assign({},B.p,{nur:MASSNUR}),LOD1F)), B, geoms); }   // ferner Turm: der Körper der Liste + seine Fenster, KEIN build
+  else if(stufe===2&&(B.p.storeys||1)>=6){ marken=lod2Koerper(B, geoms); fensterFern(B.fenster||fensterVon(stapelBau(Object.assign({},B.p,{nur:MASSNUR}),LOD1F)), B, geoms); }   // ferner Turm: der Körper der Liste + seine Fenster, KEIN build
   else { const turm=(B.p.storeys||1)>=6;
     const wrap=bauOrtWrap(B);
     const st=stapelBau(stufe===1?Object.assign({},B.p,{flaechig:1}):B.p, stufe===1?LOD1S:LOD1F, (stufe===2)?DESTNUR:(turm?TURMNUR:L1NUR),   // Stufe 2 = DESTNUR (6.7x); Turm-Stufe 1 ohne Paneel-Masse; Stufe 1 = FLÄCHEN-STUFE (Gefach-Fläche + Ziegel-Band je Reihe)
       teil=>{ if(!teil.parent) wrap.add(teil); wrap.updateMatrixWorld(true);                 // WELTMATRIX-GESETZ: ohne Update bakt der Wrapper bei (0,0)
         bakeLOD(teil, B.p.col, geoms, stufe===2?KULLVOL:0, true); });                         // LÜCKENLOS: Türen/Fenster werden Teil des Bakes; der Stapel bäckt je Teil (stapelBau `backe`)
     if(stufe===1&&!turm){                                                                      // FENSTER-SCHLAF-GESETZ: die Nacht hat Rhythmus — der Würfel je Fenster lebt im Bau (fensterSchlaeft), jede Stufe gleich
-      if(!B.wandTon){ const eY=(B.dims&&B.dims.eaveY)||6;                                     // WANDTON einmalig aus der ECHTEN Fassade messen (AO-freies Fenster 2.6..eY) — VOR dem Innenkörper: der Ton der Fassade, nie der des Raums (K38: er maß den Körper mit, hollaendisch 0,295/0,076/0,042 → 0,353/0,159/0,121)
-        B.wandTon=wandTonAus(geoms, AO_KNIE, Math.max(3.4,eY));
+      if(B.innenTon===undefined){ const eY=(B.dims&&B.dims.eaveY)||6;                         // DER RAUM-TON einmalig aus der ECHTEN Fassade messen (AO-freies Fenster 2.6..eY) — VOR dem Innenkörper: der Ton der Fassade, nie der des Raums (K38: er maß den Körper mit, hollaendisch 0,295/0,076/0,042 → 0,353/0,159/0,121); den Ton der Wand von AUSSEN trägt der Stufen-Stoff je Teil (`sollTon`)
         B.innenTon=wandTonAus(geoms, AO_KNIE, Math.max(3.4,eY), wandVonInnen(st.H&&st.H.raum, B.p.col)); }   // dieselben Flächen von INNEN: der Raum hinter dem Glas (`_innenFaktor`)
       const rf=_innenFaktor(B, st.H&&st.H.raum), innen=new THREE.Group();                     // INNENDÄMMER-GESETZ: der Innenkörper ist GEDIMMTER RAUM, nicht Void-Schwarz — durch Laibungen und Geschoss-Schlitze las sich Schwarz, promoviert wurde es weiß (Michis Sprung); jetzt verschatteter Raum, der Promotions-Wechsel flüstert
       const fpx=(B.fp&&B.fp.length)?B.fp:[{x0:-((B.dims&&B.dims.W)||8)/2,x1:((B.dims&&B.dims.W)||8)/2,z0:-((B.dims&&B.dims.D)||8)/2,z1:((B.dims&&B.dims.D)||8)/2,eY:(B.dims&&B.dims.eaveY)||6}];
@@ -4332,9 +4488,9 @@
           lg.setAttribute('color', new THREE.Float32BufferAttribute(att,3));
           const li=new THREE.Mesh(lg, M.putz); li.position.set((f2.x0+f2.x1)/2, lh/2+0.05, (f2.z0+f2.z1)/2); innen.add(li); } }
       wrap.add(innen); wrap.updateMatrixWorld(true); bakeLOD(innen, B.p.col, geoms, 0, true); }
-    if(stufe===2||turm){ lod2Koerper(B, geoms); fensterFern(fensterVon(st), B, geoms); }
+    if(stufe===2||turm){ marken=lod2Koerper(B, geoms); fensterFern(fensterVon(st), B, geoms); }
     st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); }); }
-  if(stufe===2||(stufe===1&&turmBau(B))) tonUebertrag(geoms, B.sichtTon);                     // jede Körper-Stufe (die 2, die Turm-1) trägt den Ton ihres Solls
+  if(marken) tonUebertrag(geoms, B, marken);                                                 // jede Körper-Stufe (die 2, die Turm-1): ihr Körper trägt je Teil den Stoff seines Solls
   B.frag=geoms; B.fragStufe=stufe; return B.frag; }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -15551,6 +15707,7 @@
         bakeLOD: bakeLOD,
         wandTonAus: wandTonAus,
         sichtTon: sichtTon,
+        koerperKarte: koerperKarte,
         stapelBau: stapelBau,
         fensterFern: fensterFern,
         fensterSchlaeft: fensterSchlaeft,
