@@ -1278,7 +1278,7 @@ class AnazhRealm_siedlung_bewohner {
         const staende = [...freiAb.keys()];
         const markt = liste
             .filter((b) => !ganz.has(b.orte.platz))
-            .map((b) => ({ b, f: KC.tagesMarkt(b.same, b.rolle) }))
+            .map((b) => ({ b, f: KC.tagesMarkt(b.same, b.rolle, b.orte.besuch) }))
             .sort((x, y) => x.f[0] - y.f[0]);
         for (const [i, { b, f }] of markt.entries()) {
             if (i % 64 === 0) yield;

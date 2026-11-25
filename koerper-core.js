@@ -5705,15 +5705,21 @@
         var bis = Math.max(T.w0 - (bM ? TAGES_GESETZ.besuchH : 0), T.wach + T.morgenH);
         return [bis - T.morgenH, bis];
     }
+    // WANN DER BESUCH LIEGT (der Plan der Stunde und das Fenster des Markts lesen dieselbe Regel): am Abend nach dem Werk, wenn
+    // die Zeit bis zur Ruhe ihn trägt (`bA`), sonst am Morgen zwischen Markt und Werk, wenn die Zeit bis zum Werk ihn trägt (`bM`)
+    function _besuchWann(T, besuch) {
+        var G = TAGES_GESETZ;
+        var bA = !!besuch && T.w1 + G.besuchH <= T.ruhe - 0.5;
+        return { bA: bA, bM: !!besuch && !bA && T.wach + T.morgenH + G.besuchH <= T.w0 };
+    }
     // DAS FENSTER DES MARKTS EINES MENSCHEN (mensch.menge.bild#2): [von, bis) in Stunden der Uhr (samt dem Versatz seiner Rolle) —
-    // sein Gang über den Markt mit und ohne den Besuch des Morgens (`_morgenGang`), vereint. Leser: der Wirt teilt den Stand am
-    // Platz nach ihm (`_bewohnerListe`): wer zu dieser Stunde nicht am Markt steht, teilt seinen Stand mit ihm.
-    function tagesMarkt(same, rolle) {
+    // die Stunde, in der der Plan ihn am Markt sieht (`_morgenGang`, mit dem Besuch des Morgens, wenn er einen hat). Leser: der
+    // Wirt vergibt die Stände am Platz nach ihm (`_bewohnerListe`).
+    function tagesMarkt(same, rolle, besuch) {
         var T = _tagesWenden(same, rolle),
-            v = T.R.versatzH || 0,
-            mO = _morgenGang(T, false),
-            mB = _morgenGang(T, true);
-        return [Math.min(mO[0], mB[0]) + v, Math.max(mO[1], mB[1]) + v];
+            M = _morgenGang(T, _besuchWann(T, besuch).bM),
+            v = T.R.versatzH || 0;
+        return [M[0] + v, M[1] + v];
     }
     // DIE GÄNGE DES TAGS (mensch.K3, 4–10 Wege je Tag): wie oft der Plan der Stunde (`tagesPlan`, die EINE Quelle) den Ort eines
     // Menschen wechselt — gelesen je Abschnitt zwischen den Wenden seines Tags (`_tagesWenden`) und den Grenzen seiner Auftritte
@@ -5778,8 +5784,9 @@
             if (krank && !drinnen && !posten && (o || heim) !== heim) return { ort: heim, wo: "heim", akt: "abend", drinnen: false };
             return { ort: o || heim, wo: o ? wo : "heim", akt: akt, drinnen: !!drinnen };
         };
-        var bA = besuch && w1 + G.besuchH <= ruhe - 0.5;
-        var bM = besuch && !bA && wach + morgenH + G.besuchH <= w0;
+        var BW = _besuchWann(T, besuch),
+            bA = BW.bA,
+            bM = BW.bM;
         var M = _morgenGang(T, bM);
         if (h < wach || h >= ruhe) return aus("heim", "schlaf", true);
         if (h < M[0]) return aus("heim", "morgen", false);
