@@ -1,0 +1,55 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-leben.js	2026-11-25 15:24:15.711420726 +0000
++++ b/meisterkarte-quelle/punkte/stationen/k2-leben.js	2026-11-25 15:24:56.741434680 +0000
+@@ -3896,8 +3896,7 @@
+                         if (O.see) hab.see = await fenster(O.see.mitte[0], O.see.mitte[1], 5);
+                         if (O.meer) hab.meer = await fenster(O.meer[0], O.meer[1], 5);
+                         const artFelder = [...felder].filter((k) => !["x", "y", "z", "u", "n"].includes(k));
+-                        const WG = A.Gesetz("terrain:WASSER_GESETZ", null);
+-                        const koerper = WG ? Object.keys(WG.koerper) : [];
++                        const koerper = Object.keys(__gelaendeCore.GEWAESSER_OPTIK.arten);
+                         let landImWasser = 0;
+                         let tiere = 0;
+                         const FB = s.faunaBestand;
+@@ -4154,7 +4153,6 @@
+                         const A = r.constructor;
+                         const R3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                         const O = await window.__wasserOrte({});
+-                        const WG = A.Gesetz("terrain:WASSER_GESETZ", null);
+                         const wl = Number.isFinite(s.waterLevel) ? s.waterLevel : 0;
+                         const cam = s.camera;
+                         const camAlt = cam.position.clone();
+@@ -4229,7 +4227,7 @@
+                         const namen = Object.keys(s.hydroSurfaceUniforms || {}).concat(Object.keys(luft.U));
+                         aus.uniforms = namen.length;
+                         aus.lichtTraeger = namen.filter((k) => /kaustik|caustic|finger|godray|strahl/i.test(k));
+-                        aus.koerper = WG ? Object.keys(WG.koerper).map((k) => [k].concat(A._wasserKoerper({ wK: WG.koerper[k].kd, koerperStreu: WG.koerperStreu }, r._wasserOptik().n).map(R3))) : [];
++                        aus.koerper = Object.keys(__gelaendeCore.GEWAESSER_OPTIK.arten).map((k) => [k].concat(r._wasserKoerperArt(k).map(R3)));
+                         aus.amOrt = [O.bach && r._wasserArtAt(O.bach.x, O.bach.z), O.see && r._wasserArtAt(O.see.mitte[0], O.see.mitte[1]), O.meer && r._wasserArtAt(O.meer[0], O.meer[1])];
+                         const P = s.fischPool;
+                         const g = P && P.mesh.geometry;
+@@ -4290,14 +4288,14 @@
+                             roh = {
+                                 werte: { koerperTypen: B.koerper.length, typenAmOrt: typen },
+                                 zeuge: { antworten: B.koerper.length, streuung: new Set(B.koerper.map((k) => k.slice(1).join())).size > 1 ? 1 : 0 },
+-                                nicht: B.koerper.length + " feste Wasser-Körper (" + B.koerper.map((k) => k[0]).join("/") + ") statt 14 Jerlov-Typen; das Meer liest den Körper „" + B.amOrt[2] + "“ — keine Farbe aus Plankton und Schwebstoff am Ort",
++                                nicht: B.koerper.length + " Wasser-Körper aus dem Gesetz der Gewässer (" + B.koerper.map((k) => k[0]).join("/") + ", gelaende-core gewaesserOptik) statt 14 Jerlov-Typen; das Meer liest den Körper „" + B.amOrt[2] + "“ — Schwebstoff je Typ und Abfluss, kein Plankton (Chlorophyll) am Ort",
+                             };
+                         } else if (u.mass === "tiefe") {
+                             const t10 = tiefe.find((e) => e.d === 10);
+                             roh = {
+                                 werte: { fehlerJe100mProzent: je100.length ? Math.max(...je100.map(fehler)) : undefined, fehler10mProzent: t10 ? fehler(t10) : undefined, tiefeMaxM: B.tiefeM, stufen100m: je100.length },
+                                 zeuge: { antworten: je100.length, streuung: new Set(tiefe.map((e) => e.farbe.join())).size > 1 ? 1 : 0 },
+-                                nicht: "die Welt trägt am Meer höchstens " + B.tiefeM + " m Wasser — kein Abstieg 0 → 1 000 m, keine Biolumineszenz" + (t10 ? "; bei 10 m trägt das Auge " + t10.farbe.join("/") + " (Grün vor Blau, das Meer liest den See-Körper)" : ""),
++                                nicht: "die Welt trägt am Meer höchstens " + B.tiefeM + " m Wasser — kein Abstieg 0 → 1 000 m, keine Biolumineszenz" + (t10 ? "; bei 10 m trägt das Auge " + t10.farbe.join("/") : ""),
+                             };
+                         } else {
+                             roh = {
+@@ -4326,7 +4324,7 @@
+                             if (!(z.streuung > 0)) return "alle Gewässer tragen dieselbe Sicht (ein Körper für alle)";
+                             return null;
+                         },
+-                        taeter: "stamm/bild-himmel.js _applyDayNightToScene (WASSER_GESETZ.koerper je Art)",
++                        taeter: "stamm/wasser-hydro.js _wasserMedium (gelaende-core gewaesserOptik je Gewässer-Typ)",
+                         nicht: "kein Fluss am Messort",
+                         unklar: "der Richter nennt kein Band — die Station setzt Bach 5–20 m, See 2–16 m, Fluss 1–1,5 m aus Davies-Colley & Smith 2001 und Carlson 1977",
+                         gruen: gut({ sichtBachM: 12, sichtSeeM: 8, sichtFlussM: 1.2 }, 4, { oben: false }),
