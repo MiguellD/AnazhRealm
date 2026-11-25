@@ -1,1 +1,1 @@
-Im Verkehr der Stadt löst sich der Warte-Kreis zweier Wagen (vorher standen ab Sekunde 30 alle 21 Wagen, jetzt keiner), keine Ecke ragt mehr über ihr Band (0,374 → 0,036 m), und kein Bewohner tritt mehr 80 m vor seiner Tür ins Haus (1 → 0).
+Das Wege-Netz der Stadt sucht seine Naht nur noch unter den nahen Paaren seines Grunds (bis 25 m, einmal je Siedlung) statt bei jedem Bau Teil 0 × alle 2 467 Knoten (60–105 ms je Bau, dieselbe Reihe in 200 Zufalls-Netzen), die Tür-Regel plant nie neu (0 in 300 s), und main 804ca10c ist eingemergt.

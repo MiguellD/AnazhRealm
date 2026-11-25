@@ -4067,7 +4067,31 @@ class AnazhRealm_siedlung_bewohner {
         // (`grund`: der Grund, in dem jede Knoten-Zahl dieses Netzes gilt — die Tür am Netz, ihre Längen, `_bewohnerAnTuer`)
         const N = { knoten, kanten, grund: G, baeume: new Map(), frei: erbe || new Map(), stand: S.wache.stand };
         const teil = new Int32Array(knoten.length);
-        const N2 = AnazhRealm.BEWOHNER.naehtM ** 2;
+        // DIE NAHEN PAARE DES GRUNDS (`G.nahPaare`, je Siedlung einmal wie der Grund): je zwei Knoten, die höchstens `naehtM`
+        // auseinander liegen (`ab` die Knoten je Paar, `d` das Quadrat ihres Abstands) — über ein Raster der Naht-Weite, je Knoten
+        // die neun Zellen um ihn. Bis hier prüfte jeder Bau Teil 0 × alle Knoten: an Villaalto 2 467 Knoten in 18 Teilen ohne
+        // freie Naht, jeder neue Stand, der eine Kante kippte, suchte sie ganz — die Kosten hingen an der Weltgröße (Gebot 7).
+        const nah = G.nahPaare || (G.nahPaare = (() => {
+            const R = AnazhRealm.BEWOHNER.naehtM;
+            const zelle = new Map();
+            const am = (q) => [Math.floor(q.x / R), Math.floor(q.z / R)];
+            for (const [i, q] of knoten.entries()) {
+                const k = am(q).join();
+                if (zelle.has(k)) zelle.get(k).push(i);
+                else zelle.set(k, [i]);
+            }
+            const [ab, d] = [[], []];
+            for (const [i, q] of knoten.entries()) {
+                const [cx, cz] = am(q);
+                for (let u = -1; u <= 1; u++)
+                    for (let v = -1; v <= 1; v++)
+                        for (const j of zelle.get(cx + u + "," + (cz + v)) || []) {
+                            const e = j > i && (q.x - knoten[j].x) ** 2 + (q.z - knoten[j].z) ** 2;
+                            if (e !== false && e <= R * R) (ab.push(i, j), d.push(e));
+                        }
+            }
+            return { ab: Int32Array.from(ab), d: Float64Array.from(d) };
+        })()); // prettier-ignore
         for (;;) {
             teil.fill(-1);
             let n = 0;
@@ -4088,17 +4112,15 @@ class AnazhRealm_siedlung_bewohner {
                 n++;
             }
             if (n < 2) break;
-            // der kürzeste freie Schritt aus dem Teil des ersten Knotens hinaus
+            // der kürzeste freie Schritt aus dem Teil des ersten Knotens hinaus: die nahen Paare, deren eines Ende im Teil 0 liegt
+            // und das andere nicht, in der Reihe (d, i, j) — dieselbe, in der die Suche über Teil 0 × alle Knoten sie fand
             const paare = [];
-            for (let i = 0; i < knoten.length; i++) {
-                if (teil[i] !== 0) continue;
-                for (let j = 0; j < knoten.length; j++) {
-                    if (teil[j] === 0) continue;
-                    const d = (knoten[i].x - knoten[j].x) ** 2 + (knoten[i].z - knoten[j].z) ** 2;
-                    if (d <= N2) paare.push([d, i, j]);
-                }
+            for (let p = 0; p < nah.d.length; p++) {
+                const [a, b] = [nah.ab[2 * p], nah.ab[2 * p + 1]];
+                if ((teil[a] === 0) !== (teil[b] === 0))
+                    paare.push(teil[a] === 0 ? [nah.d[p], a, b] : [nah.d[p], b, a]);
             }
-            paare.sort((p, q) => p[0] - q[0]);
+            paare.sort((p, q) => p[0] - q[0] || p[1] - q[1] || p[2] - q[2]);
             const naht = paare.find(([, i, j]) => this._bewohnerKante(N, i, j));
             if (!naht) {
                 this._bruchMelden(

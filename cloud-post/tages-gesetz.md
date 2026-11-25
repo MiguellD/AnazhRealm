@@ -5,6 +5,20 @@
 Linsen gate:koerper-kern (M1 · M2 · M5), gate:mensch-zuege und gate:kreatur-takt zielplan (die Stunde aus dem Akt, die Ganglinie
 des Tags).
 
+## Der Heil-Kopf (tages-gesetz 3, 25.11.): die CI des Kopfs 1d2f7e03 stand ROT an zwei Aufträgen dieses Zweigs
+
+1. **Die Fahr-Linse des Lebens (voll 4/18): die Akte stand in `_bewohnerNetz`.** Gemessen an stadt-voll (Villaalto, lokal, niedrige
+   Priorität): 10 Uhr 300 s 4 638 Rufe, EIN Bau, 65 Stände ohne gekippte Kante, 156 ms zusammen; 23 Uhr 104 s 2 032 Rufe, 147 ms. Die
+   Tür-Regel plant nie neu (0 in 300 s) — die Hypothese „jeder ohne freien Stand sucht jede Runde“ fiel an der Zahl. Der Bau: 2 467
+   Knoten in 18 Teilen, keine Naht frei; die Naht-Suche prüfte Teil 0 × alle Knoten, 60–105 von 92–169 ms je Bau, und jeder Stand,
+   der eine Kante kippt, suchte sie ganz. Schnitt: die nahen Paare des Grunds (bis `naehtM` 25 m, Raster, je Siedlung einmal,
+   `G.nahPaare`) in derselben Reihe (d, i, j) — 200 Zufalls-Netze, 45 749 Paare, 0 ungleich. Ehrlich offen: den Stall der CI zeigt
+   die Stadt lokal nicht (die Akte urteilt auch in grünen Läufen, Kreatur-Linse Teil 3: JS-SCHLEIFE in `updateCreatures`, der Puls
+   kehrt zurück); der Richter ist die CI dieses Kopfs.
+2. **Die Kreatur-Linse Teil 3 (voll 12/18)** am Kopf samt Schnitt lokal GRÜN: Täter 44 von 44 rot beim Namen, Grund 12 von 12, 1 015 s.
+   zielplan trug 301 s (DAUER_S 80) — offen, ob die CI daran riss; ihre rote Zeile steht nicht im Satz.
+3. **main 804ca10c (Brand-Feld) ist eingemergt**, spec/stamm/modul-karte.json ohne Konflikt (zwei Zeilen, je eine Seite).
+
 ## Der Heil-Kopf (tages-gesetz 2, 25.11.): die CI des Kopfs 99b234d7 stand ROT an vier Aufträgen
 
 1. **Der Warte-Kreis zweier Wagen ist ein Fehler des Verkehrs an main; das Tages-Gesetz hat ihn nur geweckt.** stamm/siedlung-verkehr.js
