@@ -2985,10 +2985,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 16,
+    "heute": 17,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 7.9,
+    "anteilHeute": 8.3,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -3962,7 +3962,7 @@
        "richter": "Klima-Zeitraffer: Zugscheide verschiebt sich mit der Isotherme"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Leine 18 m × Körpergröße (tetrapoda-core.js:225), Wildwechsel zur Tränke aus Durst — headless; Streifgebiet im Fenster nie gemessen; keine Wanderung.",
@@ -12079,10 +12079,10 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 12,
+    "heute": 13,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 4.5,
+    "anteilHeute": 4.8,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -12524,7 +12524,7 @@
        "richter": "N = 100 (Planet, Datum): Ankunft ≤ 5 s; Gleiten über 21 Dekaden ohne Ladebild; zweimal gesprungen = dieselbe Welt (Bild-Diff ≤ 1 %); an 8 Stich-Dekaden Bildvergleich gegen Referenz der Skala; am frühesten Halt ein Himmel ohne Sterne, dann die ersten"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Tag-Länge 1–60 min (stamm/daten.js:135-150), Saison per Wort setzbar (stamm/bild-himmel.js:885-929, Sprung, kein Raffer); Ephemeride ungemessen; Raffer nur in Prüfläufen (stamm/dirigent-takt.js:1045), keine Zeitlupe, kein Epochen-Sprung. — KARTE: 0 — die Sonnenbahn gegen die Ephemeride ist ungemessen.",
@@ -20089,11 +20089,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 105,
+  "heute": 107,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
-  "anteilHeute": 5.4,
+  "anteilHeute": 5.5,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20104,7 +20104,7 @@
   },
   "gliederLeitern": 9,
   "beide": 57,
-  "nachwache": 48
+  "nachwache": 50
  },
  "zusammengelegt": [
   {
