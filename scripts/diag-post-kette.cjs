@@ -211,6 +211,125 @@ const srgb8 = (v) => {
     const l = Math.min(1, Math.max(0, v));
     return 255 * (l <= 0.0031308 ? 12.92 * l : 1.055 * Math.pow(l, 1 / 2.4) - 0.055);
 };
+// DIE EINE TONKURVE IN ZAHLEN (sonnenbahn 3, Entscheid des Koordinators 25.11.): die Probe RUFT welt-licht `tonKurve` — dieselbe
+// Funktion, die Welt und Bühne an den Schirm legen — auf einer Rechen-Form von TSL (`tslZahl`: jede Operation, die die Kurve
+// nutzt, auf Zahl und Tripel; eine Operation, die sie nicht kennt, wirft beim Namen). Keine Kopie der Formel: ändert der
+// Baustein seine Kurve, rechnet die Probe die neue. `n` die Stufen hinter dem Fuß (die Uniformen `tonStufen` der Rechen-Form,
+// wie der Schreiber sie setzt), `k` die Belichtung.
+function tslZahl(k = null) {
+    const w = (x) => (x instanceof Z ? x.v : x);
+    const zip = (f, ...a) => (a.some(Array.isArray) ? [0, 1, 2].map((i) => f(...a.map((x) => (Array.isArray(x) ? x[i] : x)))) : f(...a));
+    class Z {
+        constructor(v) {
+            this.v = v;
+        }
+        get r() {
+            return new Z(this.v[0]);
+        }
+        get g() {
+            return new Z(this.v[1]);
+        }
+        get b() {
+            return new Z(this.v[2]);
+        }
+        toVar() {
+            return new Z(zip((x) => x, this.v));
+        }
+        mul(b) {
+            return new Z(zip((x, y) => x * y, this.v, w(b)));
+        }
+        div(b) {
+            return new Z(zip((x, y) => x / y, this.v, w(b)));
+        }
+        add(b) {
+            return new Z(zip((x, y) => x + y, this.v, w(b)));
+        }
+        sub(b) {
+            return new Z(zip((x, y) => x - y, this.v, w(b)));
+        }
+        max(b) {
+            return new Z(zip(Math.max, this.v, w(b)));
+        }
+        lessThan(b) {
+            return new Z(zip((x, y) => x < y, this.v, w(b)));
+        }
+        greaterThanEqual(b) {
+            return new Z(zip((x, y) => x >= y, this.v, w(b)));
+        }
+        negate() {
+            return new Z(zip((x) => -x, this.v));
+        }
+        clamp(a, b) {
+            return new Z(zip((x, lo, hi) => Math.min(hi, Math.max(lo, x)), this.v, w(a), w(b)));
+        }
+        dot(b) {
+            const [x, y] = [this.v, w(b)];
+            return new Z(x[0] * y[0] + x[1] * y[1] + x[2] * y[2]);
+        }
+        subAssign(b) {
+            this.v = zip((x, y) => x - y, this.v, w(b));
+            return this;
+        }
+    }
+    const TSL = {
+        Fn: (f) => (...a) => f(a),
+        float: (x) => new Z(w(x)),
+        vec3: (...a) => new Z(a.length === 1 ? zip((x) => x, Array.isArray(w(a[0])) ? w(a[0]) : [0, 1, 2].map(() => w(a[0]))) : a.map(w)),
+        uniform: (x) => {
+            const u = new Z(x);
+            Object.defineProperty(u, "value", { get: () => u.v, set: (y) => (u.v = y) });
+            return u;
+        },
+        min: (a, b) => new Z(zip(Math.min, w(a), w(b))),
+        max: (a, b) => new Z(zip(Math.max, w(a), w(b))),
+        select: (c, a, b) => new Z(zip((q, x, y) => (q ? x : y), w(c), w(a), w(b))),
+        log2: (a) => new Z(zip(Math.log2, w(a))),
+        log: (a) => new Z(zip(Math.log, w(a))),
+        exp2: (a) => new Z(zip((x) => 2 ** x, w(a))),
+        mix: (a, b, t) => new Z(zip((x, y, s) => x + (y - x) * s, w(a), w(b), w(t))),
+        smoothstep: (a, b, x) => new Z(zip((e0, e1, v) => ((t) => t * t * (3 - 2 * t))(Math.min(1, Math.max(0, (v - e0) / (e1 - e0)))), w(a), w(b), w(x))),
+        // three r184 `luminance`: die Koeffizienten des Arbeits-Farbraums (linear sRGB, Rec. 709)
+        luminance: (c) => new Z(0.2126 * w(c)[0] + 0.7152 * w(c)[1] + 0.0722 * w(c)[2]),
+    };
+    // die Belichtung des Renderers (`toneMappingExposure`), wo ein Glied sie liest — ohne sie wirft der Leser beim Namen
+    if (k != null) TSL.toneMappingExposure = new Z(k);
+    return { TSL };
+}
+// DAS AUGE DER NACHT IN ZAHLEN (sonnenbahn 3): die helle Wand der Probe steht unter dem Auge der Nacht (`nightFactor` 1), sein
+// skotopisches Grau hebt sie — gemessen (GTX 1050, Kopf 3): ohne Auge 146,80 = die Kurve des Gesetzes 146,85, mit Auge 150,77, der
+// Bloom 0,00. Die Probe RUFT `_nachtAuge` (stamm/bild-kosten.js; der Rumpf und `NACHT_AUGE` aus dem Stamm-Text über
+// scripts/lib/stamm.cjs) auf der Rechen-Form, an der Stelle der Kette: gesehen = Bild + Auge(Bild) (`nurBeiStaerke`), das Bild
+// vor-belichtet (L × k). Keine Kopie des Auges: ändert der Stamm es, rechnet die Probe das neue.
+const nachtAugeZahl = (bild, k, nf) => {
+    const q = (nachtAugeZahl.q ||= (() => {
+        const t = STAMM.text(require("path").resolve(__dirname, ".."));
+        const { args, rumpf } = STAMM.methodeAm(t, "_nachtAuge");
+        const na = t.match(/AnazhRealm\.NACHT_AUGE = (Object\.freeze\(\{[\s\S]*?\}\));/);
+        if (!na) throw new Error("RAUCH: `AnazhRealm.NACHT_AUGE` steht nicht im Stamm");
+        return { args, rumpf, NA: new Function(`return ${na[1]};`)() };
+    })());
+    const Z = tslZahl(k);
+    const auge = new Function("THREE", "AnazhRealm", "__weltLicht", `return function (${q.args}) {${q.rumpf}};`)(Z, { NACHT_AUGE: q.NA }, quelle().W);
+    const wirt = { _nachtAugeU: Z.TSL.uniform(nf), _vorBelichtung: () => ({ k: Z.TSL.toneMappingExposure }) };
+    const d = nf !== 0 ? auge.call(wirt, Z.TSL.vec3(...bild)).v : [0, 0, 0];
+    return bild.map((x, i) => x + d[i]);
+};
+const tonKurveZahl = (farbe, k, n) => {
+    const q = (tonKurveZahl.q ||= ((Z) => ({ Z, fn: quelle().W.tonKurve(Z), F: quelle().W.tonStufen(Z) }))(tslZahl()));
+    [q.F.mal.value, q.F.teil.value] = [2 ** n, 2 ** -n];
+    return q.fn(q.Z.TSL.vec3(...farbe), q.Z.TSL.float(k)).v;
+};
+// (k0) DIE MITTE DER HELLEN WAND AUS DEM GESETZ: die Wand `RAUCH_PROBE.wand` ÷ k (ihr Stoff in der Probe) durch die EINE Kurve bei
+// k und n der Probe, sRGB 8 Bit, Luma 709 — wie die Ecken des Bilds gemessen werden
+const rauchWandMitte = (k, n, nf) => {
+    const gesehen = nachtAugeZahl([0, 1, 2].map(() => RAUCH_PROBE.wand), k, nf);
+    const c = tonKurveZahl(gesehen.map((x) => x / k), k, n).map(srgb8);
+    return +(0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]).toFixed(2);
+};
+const wandMitteZeile = (ra) =>
+    Number.isFinite(ra.k) && ra.k > 0 && Number.isFinite(ra.n)
+        ? `${rauchWandMitte(ra.k, ra.n, ra.nf)} ± ${RAUCH_BAND.eckeHellBreite} = welt-licht \`tonKurve\` hinter \`_nachtAuge\` (nightFactor ${ra.nf}) an der Wand ${RAUCH_PROBE.wand} bei k ${ra.k}, n ${ra.n}`
+        : `ungemessen (k ${ra.k}, n ${ra.n})`;
 // DAS SOLL DER FLAMME am Schirm (j2): Temperatur K, Wurzel K0 (`BRAND.bild.flamme.kelvin[0]` der Seite), Belichtung k, die Kurve
 // der Seite `kz` ({ schulter, deckel })
 function flammenSoll(K, K0, k, kz, mut) {
@@ -352,12 +471,15 @@ const RAUCH_PROBE = { uhr: 0, saison: "winter", abstandM: 4.5, wandM: 6, radiusM
 // SEIT licht-eine-skala (GTX 1050, cd2cd289c, k 47 140, die Quelle 3,511 cd/m² über `quelleBild`): unten 54,18 / oben 8,92 = 6,07 ·
 // flach 61,51 / 19,35 = 3,18 · ohne Quelle 0,01 / 1,2 · Korrelation 0,75 / −0,311 · Höhe zu Breite 2,042 / 0,909 / 0,909 · Wand hell
 // 143,4 — jede Zeile im Band der Welle davor; bei der Leuchtdichte des Gesetzes (15 000 cd/m²) unten 254,15 / oben 114,12 (die Klemme).
+// SEIT sonnenbahn 3 (GTX 1050, Kopf 3, Uhr 0 Winter): k 55 896, n −2,17 · Wand hell 150,77 (die Mitte aus dem Gesetz 150,70: Auge der
+// Nacht + Kurve) · MUTANTE-K0F der alte Fuß 143,39 · ohne Auge der Nacht 146,80 (die Kurve allein 146,85) — k, n, die Ecken der hellen
+// Wand und MUTANTE-K0F stehen hier an diesem Lauf, der Rest wie oben.
 const RAUCH_GEMESSEN = {
     kopf: {
         gpuFehler: [],
         uhr: 0,
         nf: 1,
-        k: 1.505,
+        k: 55896.388,
         leinwand: [321, 241],
         radiusPx: 34.9,
         licht: [{ quelle: "brand", staerke: 17.177, blende: 1, reichweite: 23.68 }],
@@ -365,7 +487,9 @@ const RAUCH_GEMESSEN = {
         mutWand: [0, 0, 33.02, 33.01],
         dunkel: { unten: 0.24, oben: 1, grund: 0, ecken: [0, 0, 0, 0], px: 4496 },
         mutUnten: { unten: 47.5, oben: 14.5, grund: 0, ecken: [0, 0, 0, 0], px: 4496 },
-        koerper: { gleich: 0.749, px: 1491, hub: 0.0964, wand: 139.1, ecken: [139.04, 139.04, 139.03, 139.04], boden: 1 },
+        n: -2.17,
+        koerper: { gleich: 0.749, px: 1491, hub: 0.0964, wand: 150.8, ecken: [150.77, 150.77, 150.76, 150.76], boden: 1 },
+        mutFuss: [143.38, 143.41, 143.39, 143.39],
         mutKoerper: { gleich: -0.316, px: 1491, hub: 0.0783, wand: 139.1 },
         zug: { tempo: 1.667, quer: { form: 2, hoch: 96, breit: 48, masse: 0.122 }, laengs: { form: 0.926, hoch: 50, breit: 54, masse: 0.094 } },
         mutZug: { quer: { form: 0.926, hoch: 50, breit: 54, masse: 0.094 } },
@@ -387,8 +511,10 @@ const RAUCH_GEMESSEN = {
 // MUTANTE-K2 −0,316; `boden` derselbe Ballen zweimal (1), `hubMin` die Streuung des Musters (0,096), `kPxMin` gemeinsame Pixel
 // (1491), `pxMin` der Radius im Bild (34,9). (k3) Höhe zu Breite: `quer` Kopf 2,00 (96 Zeilen / 48 Spalten; die Tafel streckt um
 // 1 Radius: 1 + 1), `laengs` 0,926 (50 / 54 — der runde Ballen misst nicht 1: das Muster der Welt franst seinen Rand), MUTANTE-K3
-// 0,926; `masseMin` die Deckung über seiner Scheibe (0,094).
-const RAUCH_BAND = { unten: [4.8, 7.2], lichtMin: 20, gleich: 0.5, boden: 0.95, hubMin: 0.03, pxMin: 25, kPxMin: 1000, masseMin: 0.05, quer: [1.7, 2.3], laengs: [0.8, 1.15], eckeSchwarz: 1, eckeHell: [134, 144] };
+// 0,926; `masseMin` die Deckung über seiner Scheibe (0,094). (k0) `eckeHellBreite`: ± Luma um die Mitte der hellen Wand AUS DEM
+// GESETZ (`rauchWandMitte`: welt-licht `tonKurve`, gerufen bei k und n der Probe) — bis sonnenbahn 3 stand dort die Eichung
+// [134, 144] am alten Fuß (gemessen 139,1); unter dem Fuß am Schlüssel und dem Auge der Nacht steht die Wand der Winter-Mitternacht (n −2,17) bei 150,70.
+const RAUCH_BAND = { unten: [4.8, 7.2], lichtMin: 20, gleich: 0.5, boden: 0.95, hubMin: 0.03, pxMin: 25, kPxMin: 1000, masseMin: 0.05, quer: [1.7, 2.3], laengs: [0.8, 1.15], eckeSchwarz: 1, eckeHellBreite: 5 };
 const rauchVerh = (u) => (u ? +((u.unten - u.grund) / Math.max(0.5, u.oben - u.grund)).toFixed(2) : NaN);
 const RAUCH_ORT = "stamm/siedlung-bewohner.js `_rauchStoff`";
 // (k) DAS URTEIL ÜBER DEN RAUCH: je Zeile der Täter (Datei, Glied, Zahl); eine Mutante, die ihr Band nicht reißt, ist „blind".
@@ -483,14 +609,25 @@ function rauchUrteil(ra) {
     // Quelle), hell steht in ihrem Ton. Reißt eine Ecke, steht etwas im Bild, das nicht zur Probe gehört, oder die Post-Kette hebt
     // das Schwarz: die Zeilen (k1)–(k3) lesen dann eine falsche Wand
     const [ws, wh] = [ra.unten && ra.unten.ecken, ra.koerper && ra.koerper.ecken];
+    // die Mitte der hellen Wand aus dem Gesetz (`rauchWandMitte`: das Auge der Nacht, dann die EINE Kurve), nie eine Eichung am
+    // Fuß von gestern
+    const mitte = Number.isFinite(ra.k) && ra.k > 0 && Number.isFinite(ra.n) ? rauchWandMitte(ra.k, ra.n, ra.nf) : null;
+    const hell = mitte == null ? null : [+(mitte - B.eckeHellBreite).toFixed(2), +(mitte + B.eckeHellBreite).toFixed(2)];
+    if (mitte == null) v.push(`RAUCH: WAND — k ${ra.k} und n ${ra.n} der Probe sind nicht gemessen: die Mitte der hellen Wand (welt-licht \`tonKurve\`) steht ohne Eingang`);
     if (![ws, wh].every((e) => Array.isArray(e) && e.length === 4 && e.every(Number.isFinite))) v.push("RAUCH: WAND — die Ecken des Bilds sind nicht gemessen");
     else
         ["oben links", "oben rechts", "unten links", "unten rechts"].forEach((ecke, i) => {
             if (!(ws[i] <= B.eckeSchwarz))
                 v.push(`RAUCH: WAND — die Ecke ${ecke} zeigt vor der SCHWARZEN Wand Luma ${ws[i]} (Soll ≤ ${B.eckeSchwarz}; alle vier ${JSON.stringify(ws)}) — dort steht etwas im Bild, das nicht zur Probe gehört (scripts/diag-post-kette.cjs \`rauchProbe\`: die Schicht der Probe hält die Welt nicht fern), oder die Post-Kette / die Umkehr von \`_nachtAuge\` (stamm/bild-kosten.js) hebt das Schwarz`);
-            if (!im(wh[i], B.eckeHell))
-                v.push(`RAUCH: WAND — die Ecke ${ecke} zeigt vor der HELLEN Wand Luma ${wh[i]} außerhalb ${B.eckeHell[0]}–${B.eckeHell[1]} (alle vier ${JSON.stringify(wh)}) — dort steht etwas vor der Wand, oder ihr Ton (\`RAUCH_PROBE.wand\` ÷ Belichtung) kommt nicht durch die Tonkurve wie gemessen; die Deckung von (k2) und (k3) teilt durch diese Zahl`);
+            if (hell && !im(wh[i], hell))
+                v.push(`RAUCH: WAND — die Ecke ${ecke} zeigt vor der HELLEN Wand Luma ${wh[i]} außerhalb ${hell[0]}–${hell[1]} (Mitte ${mitte} = welt-licht \`tonKurve\` hinter \`_nachtAuge\` an der Wand ${P.wand} bei k ${ra.k}, n ${ra.n}, nightFactor ${ra.nf}; alle vier ${JSON.stringify(wh)}) — dort steht etwas vor der Wand, oder ihr Ton (\`RAUCH_PROBE.wand\` ÷ Belichtung) kommt nicht durch die Tonkurve wie gemessen; die Deckung von (k2) und (k3) teilt durch diese Zahl`);
         });
+    // MUTANTE-K0F: die Kurve mit dem alten Fuß (Abzug 0,04 statt 0,04·2^n) vor derselben hellen Wand — sie muss das Band der Mitte
+    // aus dem Gesetz verlassen, sonst urteilt die Probe nur sich selbst
+    const mf = ra.mutFuss;
+    if (!(Array.isArray(mf) && mf.length === 4 && mf.every(Number.isFinite))) v.push("RAUCH: WAND — MUTANTE-K0F (die Kurve mit dem alten Fuß) ist nicht gemessen");
+    else if (hell && mf.every((x) => im(x, hell)))
+        v.push(`RAUCH: WAND — MUTANTE-K0F (die Kurve mit dem alten Fuß: Abzug 0,04 statt 0,04·2^n bei n ${ra.n}) zeigt vor der hellen Wand ${JSON.stringify(mf)} im Band ${hell[0]}–${hell[1]} — die Probe sieht den Fuß der Kurve nicht und urteilt nur sich selbst (blind)`);
     const wm = ra.mutWand;
     if (!(Array.isArray(wm) && wm.length === 4 && wm.every(Number.isFinite))) v.push("RAUCH: WAND — MUTANTE-K0 (der Störer in der Schicht der Probe) ist nicht gemessen");
     else if (!(Math.max(wm[2], wm[3]) > B.eckeSchwarz))
@@ -578,7 +715,7 @@ function rauchZeilen(ra) {
     const j = JSON.stringify;
     return [
         `Rauch (Uhr ${ra.uhr}, nightFactor ${ra.nf}, Belichtung ${ra.k}, Leinwand ${ra.leinwand.join("×")}, Radius ${ra.radiusPx} Pixel) · Licht-Pool ${j(ra.licht)}`,
-        `Rauch (k0) WAND: die Ecken (oben links, oben rechts, unten links, unten rechts) schwarz ${j(ra.unten.ecken)} (Soll ≤ ${B.eckeSchwarz}) · hell ${j(ra.koerper.ecken)} (Soll ${B.eckeHell[0]}–${B.eckeHell[1]}) · MUTANTE-K0 der Störer in der Schicht der Probe: ${j(ra.mutWand)}`,
+        `Rauch (k0) WAND: die Ecken (oben links, oben rechts, unten links, unten rechts) schwarz ${j(ra.unten.ecken)} (Soll ≤ ${B.eckeSchwarz}) · hell ${j(ra.koerper.ecken)} (Soll ${wandMitteZeile(ra)}) · MUTANTE-K0F der alte Fuß (Abzug 0,04 statt 0,04·2^n): ${j(ra.mutFuss)} · MUTANTE-K0 der Störer in der Schicht der Probe: ${j(ra.mutWand)}`,
         `Rauch (k1) UNTERSEITE: unten ${ra.unten.unten} / oben ${ra.unten.oben} (Wand ${ra.unten.grund}) = ${rauchVerh(ra.unten)} (Soll ${B.unten[0]}–${B.unten[1]}) · ohne Quelle unten ${ra.dunkel.unten} / oben ${ra.dunkel.oben} · MUTANTE-K1 woelbung 0: unten ${ra.mutUnten.unten} / oben ${ra.mutUnten.oben} = ${rauchVerh(ra.mutUnten)} · Quelle ${ra.quelleCd} cd/m² bei k ${ra.k} · AUSKUNFT bei der Leuchtdichte des Gesetzes (Stärke ${ra.gesetz ? ra.gesetz.staerke : "—"}): unten ${ra.gesetz ? ra.gesetz.unten : "—"} / oben ${ra.gesetz ? ra.gesetz.oben : "—"}`,
         `Rauch (k2) EIN KÖRPER: Korrelation ${ra.koerper.gleich} (Soll ≥ ${B.gleich}; ${ra.koerper.px} Pixel, Hub ${ra.koerper.hub}, Wand ${ra.koerper.wand}, derselbe zweimal ${ra.koerper.boden}) · MUTANTE-K2 am Ballen: ${ra.mutKoerper.gleich} (${ra.mutKoerper.px} Pixel, Hub ${ra.mutKoerper.hub})`,
         `Rauch (k3) ZUG ${ra.zug.tempo} m/s: quer ${j(ra.zug.quer)} (Soll ${B.quer[0]}–${B.quer[1]}) · längs ${j(ra.zug.laengs)} (Soll ${B.laengs[0]}–${B.laengs[1]}) · MUTANTE-K3 ohne Streckung: quer ${j(ra.mutZug.quer)}`,
@@ -1097,7 +1234,10 @@ function selbsttest() {
         // (GTX 1050, b7b0f8fe: Ecken-Mittel 16,51 vor Schwarz, 86 vor Hell; der Zug z598 maß 9,69 an der GTX 1060)
         ["Welt im Bild vor der schwarzen Wand (z598)", ["rauch.unten.ecken=", [0, 0, 33.02, 33.01]], /RAUCH: WAND — die Ecke unten links zeigt vor der SCHWARZEN Wand Luma 33.02 .*das nicht zur Probe gehört/],
         ["die Post-Kette hebt das Schwarz der Wand", ["rauch.unten.ecken=", [9.69, 9.69, 9.69, 9.69]], /RAUCH: WAND — die Ecke oben rechts zeigt vor der SCHWARZEN Wand Luma 9.69/],
-        ["Welt im Bild vor der hellen Wand", ["rauch.koerper.ecken=", [139.04, 139.04, 33.02, 33.01]], /RAUCH: WAND — die Ecke unten rechts zeigt vor der HELLEN Wand Luma 33.01 außerhalb 134–144/],
+        ["Welt im Bild vor der hellen Wand", ["rauch.koerper.ecken=", [150.77, 150.77, 33.02, 33.01]], /RAUCH: WAND — die Ecke unten rechts zeigt vor der HELLEN Wand Luma 33\.01 außerhalb 145\.7–155\.7 \(Mitte 150\.7 = welt-licht `tonKurve` hinter `_nachtAuge` an der Wand 0\.3 bei k 55896\.388, n -2\.17, nightFactor 1/],
+        ["der Kopf mit dem alten Fuß (die Zahl von MUTANTE-K0F)", (z) => (z.rauch.koerper.ecken = jsonKlon(RM.kopf.mutFuss)), /RAUCH: WAND — die Ecke oben links zeigt vor der HELLEN Wand Luma 143\.38 außerhalb 145\.7–155\.7/],        ["MUTANTE-K0F reißt nicht (blind)", (z) => (z.rauch.mutFuss = jsonKlon(RM.kopf.koerper.ecken)), /RAUCH: WAND — MUTANTE-K0F .*urteilt nur sich selbst \(blind\)/],
+        ["MUTANTE-K0F ungemessen", ["rauch.mutFuss"], /RAUCH: WAND — MUTANTE-K0F .*nicht gemessen/],
+        ["die Stufen der Probe ungemessen", ["rauch.n"], /RAUCH: WAND — k 55896\.388 und n undefined der Probe sind nicht gemessen/],
         ["MUTANTE-K0 reißt nicht (blind)", ["rauch.mutWand=", [0, 0, 0, 0]], /RAUCH: WAND — MUTANTE-K0 .*blind/],
         ["Ecken der Wand ungemessen", ["rauch.unten.ecken"], /RAUCH: WAND — die Ecken des Bilds sind nicht gemessen/],
         ["MUTANTE-K0 ungemessen", ["rauch.mutWand"], /RAUCH: WAND — MUTANTE-K0 .*nicht gemessen/],
@@ -1508,22 +1648,26 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe, knieProbe) {
                 return u8;
             };
             // DIE LAGE DER SONNE IM BILD (w28-lichtschacht): der Schwerpunkt der hellsten Pixel (die Scheibe) gegen die Lage, auf
-            // die der Marsch zielt (`sunScreenPos`, `_schirmUV`) — beide in `screenUV` (oben links)
+            // die der Marsch zielt (`sunScreenPos`, `_schirmUV`) — beide in `screenUV` (oben links). DIE SCHEIBE RELATIV
+            // (sonnenbahn 3, Entscheid des Koordinators 25.11.): der Schwerpunkt der Pixel über dem Rang 99,9 % des Bilds (`RANG`),
+            // aus dem BILD gemessen, nie aus `_schirmUV` gerechnet — bis hier zählte er jedes Pixel bis 2 Luma unter dem hellsten
+            const RANG = 0.999;
             const hellste = (a) => {
                 const l = (i) => 0.2126 * a[i] + 0.7152 * a[i + 1] + 0.0722 * a[i + 2];
-                let m = 0;
-                for (let i = 0; i < a.length; i += 4) m = Math.max(m, l(i));
+                const alle = [];
+                for (let i = 0; i < a.length; i += 4) alle.push(l(i));
+                const schwelle = alle.slice().sort((x, y) => x - y)[Math.min(alle.length - 1, Math.floor(RANG * alle.length))];
                 let sx = 0,
                     sy = 0,
                     n = 0;
-                for (let i = 0; i < a.length; i += 4)
-                    if (l(i) >= m - 2) {
-                        const p = i / 4;
+                alle.forEach((v, p) => {
+                    if (v >= schwelle) {
                         sx += (p % 64) + 0.5;
                         sy += Math.floor(p / 64) + 0.5;
                         n++;
                     }
-                return [+(sx / n / 64).toFixed(3), +(sy / n / 48).toFixed(3)];
+                });
+                return { lage: [+(sx / n / 64).toFixed(3), +(sy / n / 48).toFixed(3)], px: n, schwelle: +schwelle.toFixed(1) };
             };
             // der Anteil der Pixel, die sich in einem Kanal um mindestens 4/255 ändern
             const diff = (a, b) => {
@@ -1553,7 +1697,7 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe, knieProbe) {
                 staerke: staerke == null ? null : +staerke.toFixed(3),
                 aenderungPct: diff(mit1, ohne),
                 rauschenPct: diff(mit1, mit2),
-                lage: { ziel: ziel ? [+ziel.x.toFixed(3), +ziel.y.toFixed(3)] : null, sonne: hellste(ohne) },
+                lage: ((h) => ({ ziel: ziel ? [+ziel.x.toFixed(3), +ziel.y.toFixed(3)] : null, sonne: h.lage, px: h.px, schwelle: h.schwelle }))(hellste(ohne)),
                 schacht: {
                     schritte: r.constructor.GODRAY ? r.constructor.GODRAY.schritte : null,
                     laeufeMit: l1 - l0,
@@ -2323,6 +2467,9 @@ function rauchProbe(ort, P) {
             wandU.value = 0;
             aus.licht = licht(true);
             aus.k = +rend.toneMappingExposure.toFixed(3);
+            // die Stufen hinter dem Fuß der Kurve an der Stunde der Probe (welt-licht `tonStufen`) — das Urteil (k0) legt mit k und n
+            // die Mitte der hellen Wand aus dem Gesetz (`rauchWandMitte`)
+            aus.n = __weltLicht.tonStufen().n;
             aus.unten = await haelften();
             // AUSKUNFT: derselbe Kopf bei der Leuchtdichte des Gesetzes (`FEUER_LEUCHTDICHTE`) — was das Auge der Nacht am Rauch über
             // einem Feuer von 2 m sieht (kein Urteil: das Verhältnis steht dort an der Klemme)
@@ -2339,6 +2486,21 @@ function rauchProbe(ort, P) {
             aus.dunkel = await haelften();
             wandU.value = P.wand;
             aus.koerper = await koerper(true);
+            // MUTANTE-K0F: die Kurve mit dem alten Fuß (Abzug 0,04 statt 0,04·2^n) — die Uniformen der Stufen (`tonStufen`) fest auf 1,
+            // was der Schreiber der Welt je Bild auch setzt (die Kurve vor sonnenbahn 3, Zahl für Zahl); dieselbe helle Wand, dieselbe
+            // Lage des Ballens, ein Bild. Das Urteil (k0) verlangt, dass ihre Ecken das Band der Mitte aus dem Gesetz verlassen
+            {
+                const F = __weltLicht.tonStufen();
+                if (!F.mal || !F.teil) throw new Error("RAUCH: MUTANTE-K0F — die Kurve trägt keine Uniformen der Stufen (welt-licht `tonStufen`)");
+                const vor = [F.mal.value, F.teil.value];
+                for (const u of [F.mal, F.teil]) Object.defineProperty(u, "value", { configurable: true, get: () => 1, set: () => {} });
+                try {
+                    zeichne([ballen(mitten[0])]);
+                    aus.mutFuss = runde4(await schuss());
+                } finally {
+                    [F.mal, F.teil].forEach((u, i) => Object.defineProperty(u, "value", { configurable: true, enumerable: true, writable: true, value: vor[i] }));
+                }
+            }
             const tempo = (P.streck * P.radiusM) / tafelVor.zug[0]; // m/s: die Tafel streckt um `streck` Radien
             aus.zug = { tempo: +tempo.toFixed(3), quer: await umriss([0, tempo, 0]), laengs: await umriss([0, 0, -tempo]) };
             // MUTANTE-K3: die Tafel ohne Streckung (der Satz liest `zug` je Bild — derselbe Stoff, derselbe Ballen)
@@ -2559,7 +2721,7 @@ function rauchProbe(ort, P) {
         if (out.godray && out.godray.schacht) delete out.godray.schacht.wgsl;
         if (out.godray)
             log(
-                `Godrays mit der Sonne im Bild: Stärke ${out.godray.staerke} · ${out.godray.aenderungPct} % der Pixel geändert (Rausch-Boden ${out.godray.rauschenPct} %) · Lage: Marsch-Ziel ${out.godray.lage && out.godray.lage.ziel} ↔ Scheibe ${out.godray.lage && out.godray.lage.sonne} (screenUV) · ` +
+                `Godrays mit der Sonne im Bild: Stärke ${out.godray.staerke} · ${out.godray.aenderungPct} % der Pixel geändert (Rausch-Boden ${out.godray.rauschenPct} %) · Lage: Marsch-Ziel ${out.godray.lage && out.godray.lage.ziel} ↔ Scheibe ${out.godray.lage && out.godray.lage.sonne} (screenUV; ${out.godray.lage && out.godray.lage.px} Pixel ab Luma ${out.godray.lage && out.godray.lage.schwelle}, Rang 99,9 %) · ` +
                     `Schacht: ${JSON.stringify(out.godray.schacht)}, Fragment ${out.schacht ? `${out.schacht.proben} Proben · ${out.schacht.ladungen} Ladungen` : "fehlt"}`
             );
     } catch (e) {

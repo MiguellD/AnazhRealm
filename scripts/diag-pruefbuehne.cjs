@@ -22,7 +22,7 @@
 //       mittags aus; die Fenster-Glut nachts an, mittags aus; JEDER beleuchtete Stoff trägt den Pool (Bauer im Stamm und
 //       Stoffe der Szene), EIN Punktlicht-Gesetz, kein Punktlicht der Szene. Der Selbsttest nimmt der Feuerstelle ihr
 //       Datum, dem Plan den Leser und schmuggelt einen Stoff und einen Bauer ohne Pool ein — die Probe nennt jeden.
-//   (7) DAS BILD DER S0-PROBE (`--licht`, K11 + K11b): echter Renderer, Ausgabe-Pfad — der Feuerkreis aus 2 m (Luma) und
+//   (7) DAS BILD DER S0-PROBE (`--licht`, K11 + K11b): echter Renderer, Ausgabe-Pfad — der Feuerkreis aus 2 m (Luma netto: mit minus ohne Pool bei gehaltener Blende) und
 //       der Farbton des Lichts des Feuers auf dem Boden 1–3 m (28–45° netto, die Farbtemperatur des Gesetzes) bei der
 //       Sättigung, die das Auge der Nacht sieht (≤ 0,75 brutto, K66); `--bild` legt die Bilder der Schüsse ab (die Figur
 //       und das Feuer aus 6 m fielen 08.11. ohne Leser). Selbsttest: der Pool leer, das Feuer bis K11b (Glut-Palette, die Stärke des Welt-Feuers), das Auge des Tages. DIE NACHT
@@ -818,7 +818,32 @@ const S0_GESTALT_INSTALL = () => {
     };
 };
 const S0_NAH_M = 4;
+// DER FEUERKREIS NETTO (Entscheid des Koordinators 25.11., sonnenbahn 3): der Kreis aus 2 m zählt das Licht des Pools — der Kreis
+// MIT Pool minus der Kreis OHNE Pool bei GEHALTENER Blende (das k des sauberen Schusses, `gehalten`, ein weiterer Schuss in derselben
+// Welt), Soll netto ≥ S0_LUMA_2M. Brutto las er bis hier die Nacht mit: der Messer belichtet ohne das Feuer nach (k 26 069 → 150 415),
+// und seit dem Fuß am Schlüssel trug die Nacht allein 0,1508 — ein Feuer, das nichts beleuchtet, hätte bestanden. Das Urteil der
+// NACHT (der Boden lesbar ohne Feuer) liest weiter den nachbelichteten Schuss: zwei Fragen, zwei Schüsse. Hielt die Blende nicht,
+// ist die Probe blind (Befund).
 const S0_LUMA_2M = 0.15;
+function s0KreisNetto(mit, ohne) {
+    if (!mit || mit.fehler) return { netto: null, befund: null };
+    if (!ohne || ohne.fehler || !(ohne.kreis >= 0))
+        return { netto: null, befund: "S0 Bild: der Kreis netto ist ungemessen — der Schuss ohne Pool bei gehaltener Blende fehlt" };
+    if (!(Math.abs(ohne.belichtung - mit.belichtung) <= 1e-3 * mit.belichtung))
+        return {
+            netto: null,
+            befund: `S0 Bild: die Blende hielt nicht — der Schuss ohne Pool steht bei k ${ohne.belichtung}, das Feuer bei ${mit.belichtung} (\`_blendeBestellen\`)`,
+        };
+    const netto = +(mit.kreis - ohne.kreis).toFixed(4);
+    return {
+        netto,
+        befund:
+            netto >= S0_LUMA_2M
+                ? null
+                : `S0 Bild: der Feuerkreis aus 2 m trägt netto Luma ${netto} (brutto ${mit.kreis}, ohne Pool ${ohne.kreis} bei k ${mit.belichtung}; Soll ≥ ${S0_LUMA_2M}) — das Licht der Feuerstelle ` +
+                  "(fachwerk LICHT_GESETZ.feuer über `_leuchtStaerke` in den Licht-Pool `_lichtPoolTerm`) trägt den Boden nicht",
+    };
+}
 // DER FARBTON DES FEUERS (K11b, Auge V18.542: „der Boden glüht lava-rot"): ein Holzfeuer leuchtet warm-orange (Schwarzkörper
 // ≈ 1 800–2 000 K) — der Boden 1–3 m um die Feuerstelle trägt in der Ausgabe den Farbton 28–45°. Die Sättigung (HSV, Soll
 // der Karte ≤ 0,75) ist eine WAND: das Auge der Nacht sieht mesopisch
@@ -1377,13 +1402,13 @@ async function lichtLauf() {
                     return window.__s0Gestalt(e);
                 })
             );
-        // die Schüsse: das Feuer um Mitternacht (sauber), die Nacht ohne das Feuer (`S0_NACHT`, unten) — und im
-        // Selbsttest das Feuer bis K11b, die Nacht unter der Kamera 2 Stufen tiefer und das Auge des Tages. Die Nacht ohne Feuer ist
-        // zugleich der Schein „der Pool leer" (der Kreis fällt ohne das Feuer): EIN Schuss, zwei Urteile
-        const schuesse = ergebnis.sauber ? [] : [false, "nacht", ...(SELBSTTEST ? ["farbe", "kamera", "tag", "messer"] : [])];
+        // die Schüsse: das Feuer um Mitternacht (sauber), die Nacht ohne das Feuer (`S0_NACHT`, unten), der Pool leer bei der
+        // GEHALTENEN Blende des sauberen Schusses (`gehalten`, der Kreis netto: oben `S0_LUMA_2M`) — und im Selbsttest das Feuer bis
+        // K11b, die Nacht unter der Kamera 2 Stufen tiefer und das Auge des Tages
+        const schuesse = ergebnis.sauber ? [] : [false, "nacht", "gehalten", ...(SELBSTTEST ? ["farbe", "kamera", "tag", "messer"] : [])];
         for (const schein of schuesse) {
             ergebnis[schein || "sauber"] = await phase(schein ? "Schuss " + schein : "Schuss", () =>
-                page.evaluate(async (schein, nahM, palette, NACHT) => {
+                page.evaluate(async (schein, nahM, palette, NACHT, kHalt) => {
                     const s = st;
                     const T = window.THREE;
                     const rend = s.renderer;
@@ -1403,7 +1428,15 @@ async function lichtLauf() {
                     const h = 360;
                     const alt = r._leuchtTakt;
                     const ohneFeuer = schein === "nacht" || schein === "kamera";
-                    if (ohneFeuer)
+                    // DER POOL LEER BEI GEHALTENER BLENDE (Entscheid des Koordinators 25.11.): derselbe leere Pool wie die Nacht, die
+                    // Blende bei der Welt bestellt (`_blendeBestellen`, nie am Renderer) auf das k des sauberen Schusses — die Albedo-
+                    // und L1-Lampen der Nacht fährt er nicht
+                    const ohnePool = ohneFeuer || schein === "gehalten";
+                    if (schein === "gehalten") {
+                        if (!(kHalt > 0)) throw new Error("S0 Schuss gehalten: der saubere Schuss trägt keine Belichtung");
+                        r._blendeBestellen({ k: kHalt });
+                    }
+                    if (ohnePool)
                         r._leuchtTakt = function () {
                             alt.call(this);
                             for (const u of this.state.atmoUniforms.lichtLage) u.value.w = 0;
@@ -1412,7 +1445,7 @@ async function lichtLauf() {
                     // Pools im Bild (oben: jede `lichtLage` w 0 — Feuer, Esse, Tor, Laterne), der Messer liest denselben leeren Pool
                     // (`_leuchtQuellen` ohne Quelle). Bis hier war der Messer dem Feuer unter dem Auge blind, die Uniforms allein trugen
                     // es; ein Messer, der nur das Feuer verlor, las Esse (5,7 m) und Tor im leeren Bild: k 35 017, die Nacht am Gesetz 1,55
-                    if (ohneFeuer) {
+                    if (ohnePool) {
                         r._leuchtQuellen = () => [];
                         if (r._leuchtPool) r._leuchtPool.t = -Infinity;
                     }
@@ -1618,10 +1651,11 @@ async function lichtLauf() {
                         }
                     } finally {
                         r._leuchtTakt = alt;
-                        if (ohneFeuer) {
+                        if (ohnePool) {
                             delete r._leuchtQuellen;
                             if (r._leuchtPool) r._leuchtPool.t = -Infinity;
                         }
+                        if (schein === "gehalten") r._blendeBestellen(null);
                         if (schein === "messer") delete r._poolAmBild;
                         if (schein === "tag") {
                             delete r._applyDayNightToScene;
@@ -1842,7 +1876,10 @@ async function lichtLauf() {
                         uhr: +zeit.toFixed(4),
                         lichtFarbe: eigen ? eigen.farbe.map((c) => +(c / Math.max(...eigen.farbe)).toFixed(3)) : null,
                         kelvin: FC.LICHT_GESETZ.feuer.kelvin == null ? null : FC.LICHT_GESETZ.feuer.kelvin,
-                        belichtung: +rend.toneMappingExposure.toFixed(3),
+                        // die Belichtung des GEZÄHLTEN Bilds (`auf.info.licht`, die Aufnahme liest sie beim Zeichnen) — nie der
+                        // Renderer danach: der Schuss „gehalten“ gibt die Blende im finally oben dem Gesetz zurück (k 150 415 statt
+                        // des gehaltenen 26 054 stand bis hier in der Zeile)
+                        belichtung: +auf.info.licht.k.toFixed(3),
                         poolE: typeof r._poolE === "number" ? +r._poolE.toPrecision(4) : null,
                         punkteN: s.rueckstrahlLeser && s.rueckstrahlLeser.punkte ? s.rueckstrahlLeser.punkte.n : null,
                         nacht: s.postProcessingUniforms ? +s.postProcessingUniforms.nightFactor.value.toFixed(3) : null,
@@ -1854,7 +1891,7 @@ async function lichtLauf() {
                         boden: [...bodenWgsl.keys()],
                         png: __png(u8, w, h),
                     };
-                }, schein, ECHT ? 0 : S0_NAH_M, S0_TON.palette, S0_NACHT)
+                }, schein, ECHT ? 0 : S0_NAH_M, S0_TON.palette, S0_NACHT, ergebnis.sauber ? ergebnis.sauber.belichtung : null)
             );
             zeit(schein ? `der Schuss (${schein}) aufgenommen` : "das Feuer aufgenommen");
         }
@@ -1887,9 +1924,10 @@ async function lichtLauf() {
             kamera: "SCHEIN (die Kamera der Nacht 2 Stufen tiefer)",
             tag: "SCHEIN (das Auge des Tages)",
             messer: "SCHEIN (der Messer blind für den Pool am Boden des Bilds)",
+            gehalten: "OHNE POOL (die Blende des Feuers gehalten)",
         }[k];
         console.log(
-            `  S0 BILD ${wer}: Uhr ${e.uhr} · Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, Soll ≥ ${S0_LUMA_2M}) · Boden 1–3 m Luma ${e.grund && e.grund.luma} abgesoffen ${e.grund && e.grund.schwarz}${e.gesetz ? ` · am Gesetz Luma ${e.gesetz.luma} (q02 ${e.gesetz.q02} · q05 ${e.gesetz.q05} · q10 ${e.gesetz.q10}; Albedo Fleck ${e.gesetz.aRing} → Stoff ${e.gesetz.aStoff}, k ${e.gesetz.k})${e.gesetz.schwarz ? ` · schwarz ${e.gesetz.schwarz.n} Pixel: Licht je Albedo am Stoff ${e.gesetz.schwarz.licht}, Albedo ${e.gesetz.schwarz.albedo} × Ring` : ""}${e.gesetz.schatten ? ` · Mondschatten ${(100 * e.gesetz.schatten.anteil).toFixed(1)} % des Bodens (${e.gesetz.schatten.n} Pixel), sein Licht ${e.gesetz.schatten.ev == null ? "0 (schwarz)" : e.gesetz.schatten.ev + " EV"} gegen das Median-Licht, Mond ${e.mondHoehe}° · abgesoffen im Licht der Nacht ${e.gesetz.imLicht.schwarz == null ? "—" : (100 * e.gesetz.imLicht.schwarz).toFixed(1) + " %"} von ${e.gesetz.imLicht.n} Pixeln mit Mond-Sicht` : ""}` : ""} Farbton ${e.ton && e.ton.hue}° Sättigung ${e.ton && e.ton.sat} sRGB ${JSON.stringify(e.ton && e.ton.rgb)} (Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°, ≤ ${S0_TON.satMax}) · Himmel ${e.himmel} Sternen-Licht ${e.stern} · Richtlicht waagrecht ${e.mond} bei ${e.mondHoehe}° (Himmel : Richtlicht ${e.mond > 0 && e.himmel != null ? (e.himmel / e.mond).toFixed(3) : "—"}) · Lichtfarbe linear ${JSON.stringify(e.lichtFarbe)} · kelvin ${e.kelvin} · Belichtung ${e.belichtung} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
+            `  S0 BILD ${wer}: Uhr ${e.uhr} · Feuerkreis aus 2 m Luma ${e.kreis} brutto (${e.punkte} Punkte; das Urteil liest ihn netto, S0 KREIS) · Boden 1–3 m Luma ${e.grund && e.grund.luma} abgesoffen ${e.grund && e.grund.schwarz}${e.gesetz ? ` · am Gesetz Luma ${e.gesetz.luma} (q02 ${e.gesetz.q02} · q05 ${e.gesetz.q05} · q10 ${e.gesetz.q10}; Albedo Fleck ${e.gesetz.aRing} → Stoff ${e.gesetz.aStoff}, k ${e.gesetz.k})${e.gesetz.schwarz ? ` · schwarz ${e.gesetz.schwarz.n} Pixel: Licht je Albedo am Stoff ${e.gesetz.schwarz.licht}, Albedo ${e.gesetz.schwarz.albedo} × Ring` : ""}${e.gesetz.schatten ? ` · Mondschatten ${(100 * e.gesetz.schatten.anteil).toFixed(1)} % des Bodens (${e.gesetz.schatten.n} Pixel), sein Licht ${e.gesetz.schatten.ev == null ? "0 (schwarz)" : e.gesetz.schatten.ev + " EV"} gegen das Median-Licht, Mond ${e.mondHoehe}° · abgesoffen im Licht der Nacht ${e.gesetz.imLicht.schwarz == null ? "—" : (100 * e.gesetz.imLicht.schwarz).toFixed(1) + " %"} von ${e.gesetz.imLicht.n} Pixeln mit Mond-Sicht` : ""}` : ""} Farbton ${e.ton && e.ton.hue}° Sättigung ${e.ton && e.ton.sat} sRGB ${JSON.stringify(e.ton && e.ton.rgb)} (Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°, ≤ ${S0_TON.satMax}) · Himmel ${e.himmel} Sternen-Licht ${e.stern} · Richtlicht waagrecht ${e.mond} bei ${e.mondHoehe}° (Himmel : Richtlicht ${e.mond > 0 && e.himmel != null ? (e.himmel / e.mond).toFixed(3) : "—"}) · Lichtfarbe linear ${JSON.stringify(e.lichtFarbe)} · kelvin ${e.kelvin} · Belichtung ${e.belichtung} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
         );
     }
     // L1 (Wort des Koordinators 25.11. 05:30, Lesewert): Umgebung ÷ Richtlicht am Boden unter dem Mond gegen dasselbe unter der
@@ -1949,11 +1987,15 @@ async function lichtLauf() {
             );
     if (himmel.sauber) befunde.push(...himmel.sauber.befunde);
     else befunde.push("S0 Himmel: die Probe lief nicht");
-    if (sauber && !sauber.fehler && !(sauber.kreis >= S0_LUMA_2M))
-        befunde.push(
-            `S0 Bild: der Feuerkreis aus 2 m trägt Luma ${sauber.kreis} (Soll ≥ ${S0_LUMA_2M}) — das Licht der Feuerstelle ` +
-                "(fachwerk LICHT_GESETZ.feuer über `_leuchtStaerke` in den Licht-Pool `_lichtPoolTerm`) trägt den Boden nicht"
+    const gehalten = ergebnis.gehalten;
+    const kreis = s0KreisNetto(sauber, gehalten);
+    if (sauber && !sauber.fehler)
+        console.log(
+            `  S0 KREIS (der Feuerkreis aus 2 m netto: mit minus ohne Pool bei gehaltener Blende): brutto ${sauber.kreis} · ohne Pool ` +
+                `${gehalten && gehalten.kreis} bei k ${gehalten && gehalten.belichtung} (das Feuer ${sauber.belichtung}) · netto ${kreis.netto} ` +
+                `(Soll ≥ ${S0_LUMA_2M}) · AUSKUNFT der Farbton netto bei gehaltener Blende ${JSON.stringify(s0TonNetto(sauber, gehalten))}`
         );
+    if (sauber && !sauber.fehler && kreis.befund) befunde.push(kreis.befund);
     const ton = s0Ton(sauber, ergebnis.nacht);
     if (sauber && !sauber.fehler) console.log(`  S0 TON (Farbton netto: mit minus ohne Feuer · Sättigung brutto): ${JSON.stringify(ton)}`);
     if (sauber && !sauber.fehler && !s0TonPasst(ton))
@@ -2007,10 +2049,13 @@ async function lichtLauf() {
     let pass = befunde.length === 0;
     for (const bf of befunde) console.log(`    ⛔ ${bf}`);
     if (SELBSTTEST) {
+        // der Pool leer fährt DENSELBEN Weg (`s0KreisNetto`): sein Schuss ist die Nacht ohne Pool, sein Partner ohne Pool bei seiner
+        // gehaltenen Blende derselbe Schuss — ein Feuer, das nichts beleuchtet, trägt netto 0, brutto die nachbelichtete Nacht
         const sc = ergebnis.nacht;
-        const getroffen = sc && !sc.fehler && sc.kreis < S0_LUMA_2M && sauber && sc.kreis < sauber.kreis;
+        const leer = sc && !sc.fehler ? s0KreisNetto(sc, sc) : null;
+        const getroffen = !!(leer && leer.befund && leer.netto < S0_LUMA_2M);
         console.log(
-            `  SELBSTTEST S0 BILD (der Pool leer): ${getroffen ? `getroffen — der Kreis fällt ${sauber.kreis} → ${sc.kreis} (unter ${S0_LUMA_2M}): der Licht-Pool trägt ihn` : "BLIND"}`
+            `  SELBSTTEST S0 BILD (der Pool leer): ${getroffen ? `getroffen — ein Feuer, das nichts beleuchtet: brutto ${sc.kreis} (die nachbelichtete Nacht), netto ${leer.netto} (unter ${S0_LUMA_2M}): das Urteil liest den Pool netto` : "BLIND " + JSON.stringify(leer)}`
         );
         const fb = ergebnis.farbe;
         // das Feuer bis K11b reißt am Farbton (netto), das Auge des Tages an der Sättigung (brutto) bei Farbton im Band
