@@ -1,11 +1,12 @@
-# Übergabe-Blatt mauer-im-stoff — die Stadtmauer steht als gemauerter Stein im Bau-Stoff der Welt (WIP, Stab-Wechsel 25.11.)
+# Bericht mauer-im-stoff — die Stadtmauer steht als gemauerter Stein im Bau-Stoff der Welt (Vorprüfung, 25.11.)
 
-**ZWISCHENSTAND, WIP. Der Schnitt ist gebaut, lädt und zeichnet; offen sind die Station von Hand, der Rest der Gates am Kopf und
-der Kopf-Commit der Vorprüfung.** Gebaut und gemessen auf main c540c783 (V18.546.412), danach main 967bd422 (V18.546.414, mit der
-Ring-Gasse 39718a18) per Merge-Commit eingezogen. Zweig `mauer-im-stoff`: Kern und Labor · Welt und Linse · Merge · dieses Blatt
-mit Bildern. Gerät: Radeon 890M, Werkbank `--echt` 1280 × 720, Messort stadt-voll, Stadt Villaalto (1238, mediterran, Steinring:
-19 Segmente, 3 Türme, 4 Tore). Mittag = Uhr 0,5 (Sonne 74° hoch), Abend = Uhr 0,72 (Sonne 10° über dem Horizont), nach dem
-Uhr-Wechsel 30 s Ruhe. Karte 2: 105 von 1 718 (Stand-Datei); dieser Zweig bucht keine Sprosse, er hält `wehrbau#1` bis `#3`.
+**ZWISCHENSTAND.** Gebaut und gemessen auf main c540c783 (V18.546.412), danach main 967bd422 (V18.546.414, mit der Ring-Gasse
+39718a18) und main 78ed3167 (V18.546.415) per Merge-Commit eingezogen. Zweig `mauer-im-stoff`: Kern und Labor · Welt und Linse ·
+zwei Merges · dieses Blatt mit Bildern. Gerät: Radeon 890M, Werkbank `--echt`, Messort stadt-voll, Stadt Villaalto (1238,
+mediterran, Steinring: 19 Segmente, 3 Türme, 4 Tore). Mittag = Uhr 0,5 (Sonne 74° hoch), Abend = Uhr 0,72, Nacht = Uhr 0, nach
+jedem Uhr-Wechsel 30 s Ruhe. Karte 2: 105 von 1 718 (Stand-Datei); dieser Zweig bucht keine Sprosse und meldet keinen Anspruch,
+er hält `wehrbau#1` bis `#3`. Die Fortsetzung am Kopf auf main 78ed3167 (Station, ABAB, Bildpaare, Tore) steht in (c) unter „Am
+Kopf auf main 78ed3167“.
 
 ## (a) DER AUFTRAG
 
@@ -61,7 +62,9 @@ Wort; er nennt Namen, die mit diesem Schnitt fielen, darum steht er als Text-Dat
 
 ## (c) GEMESSEN
 
-**Das Urteil der echten Station je Sprosse: NICHT gefahren** (`wehrbau#1`, `#2`, `#3`; Grund und Port in „Die Naht zur Station“).
+**Das Urteil der echten Station je Sprosse** (Hand-Lauf am Kopf ac2e5d90 mit dem geheilten Kandidaten, Radeon; Einzelheiten unter
+„Am Kopf auf main 78ed3167“): `wehrbau#1` ROT allein an „frei im Schuss 0/19“ — main 78ed3167 mit der ungeheilten Station trägt
+dasselbe ROT Zahl für Zahl; `wehrbau#2` GRÜN 0,75; `wehrbau#3` GRÜN 0,844.
 
 ### Die Wurzel (gemessen an main c540c783, vor dem ersten Schnitt)
 
@@ -205,8 +208,7 @@ und Zweig `punkte-maschine`, `meisterkarte-quelle/punkte/stationen/k2-mensch-mac
 
 **Mein Port derselben Rechnung auf dem Leser** (kein Urteil der Station, eine Eval über die Werkbank am laufenden Spiel), Villaalto:
 geplant 19 · gebaut 19 · Wände 19 · Türme 3 von 3 · Spalt unter dem Fuß −1,406 m (die alte Fassung: −1,128 m) · 424 Teile in 22
-Stücken. **Die echte Station habe ich NICHT von Hand gefahren:** ohne den geheilten Stand liest sie den gefallenen Pool. Der
-nächste Arbeiter braucht vom Koordinator den Aufruf und den geheilten Stand, dann fährt er `#1`, `#2`, `#3` am Kopf nach.
+Stücken. Die echte Station am Kopf mit dem geheilten Kandidaten: unter „Am Kopf auf main 78ed3167“.
 
 ### Gates lokal (jedes einzeln unter dem GPU-Schloss, Radeon)
 
@@ -258,6 +260,71 @@ des Akts (an main in zwei von drei Läufen 5 und 15 Stück, alle neben dem Ort);
 fremden Felsbogens ist nicht gemessen, die Zuordnung zum Schnitt nicht bewiesen und nicht widerlegt: der Schnitt berührt weder
 den Wurf der Landmarken noch den Erdbau noch `_ortFrei`.
 
+### Am Kopf auf main 78ed3167 (Fortsetzung 25.11. ab 09:59 Uhr)
+
+Merge von main 78ed3167 (keine gemeinsame Datei), Kopf ac2e5d90; danach EXIT 0: `stamm-umzug --nach-karte` (keine Änderung),
+`diag-atlas --check`, `stamm:lint`, `npm run check:statik`.
+
+**Kosten als ABAB** (je Boot: Werkbank `--echt` frisch gegen den eigenen save-server der Seite — main 78ed3167 als eigener Baum
+auf :4398, Kopf auf :4399 —, `umstellen --ort stadt-voll`, `zaehlen`, `lauf 15`; je Boot EIN Zeit-Schloss, 10:15 bis 10:41 Uhr):
+
+| Boot | main p95 · p50 · cpuTakt p50 (ms) | Kopf p95 · p50 · cpuTakt p50 (ms) |
+|---|---|---|
+| 1 | 67,01 · 42,70 · 43,32 | 41,92 · 25,18 · 19,46 |
+| 2 | 33,88 · 25,16 · 19,62 | 33,46 · 25,04 · 16,67 |
+| 3 | 83,71 · 34,21 · 31,09 | 42,11 · 33,40 · 25,88 |
+| 4 | 33,83 · 25,15 · 17,12 | 58,64 · 41,79 · 36,40 |
+| **Median** | **50,45** · 29,69 | **42,02** · 29,29 |
+
+Der Median des Kopfs liegt 8,4 ms UNTER main: die Regel „Kopf ≤ main + 0,5 ms“ hält. Das Gerät trug fremde Last (cpuTakt p50 je
+Boot 16,7 bis 43,3 ms); die Boots ohne Last (cpuTakt < 20 ms) lesen main 33,88 · 33,83 ↔ Kopf 33,46. Befehle im Mittel main
+167,5 ↔ Kopf 167, Dreiecke im Mittel 1 298 650 ↔ 1 298 842 (Median je Seite). Der Draw-Zähler je Boot: `siedlung-mauer` 4 Draws
+· 4 080 Dreiecke (main) ↔ `siedlung-einfriedung` 3 Draws · 4 206 Dreiecke (Kopf).
+
+**Die Station, Kandidat und Hand-Lauf.** Der geheilte Stand liegt als Kandidat (nicht geschoben) unter
+`C:\Users\micha\AppData\Local\Temp\claude\9fd86081514dce1c\9c27a074-223e-48c0-a5af-60ae0385359b\scratchpad\stationen-kandidat-mauer\`
+(die Stationen `g5` und `k2-mensch-macht`, dazu `diff.txt` und `beweis.txt`; Basis Zweig `punkte-maschine` d263941a): `STADT_STAND` und
+`STADT_MAUER` (Zweig `punkte-maschine`, `stationen/g5.js`) und `MACHT` (Zweig `punkte-maschine`, `stationen/k2-mensch-macht.js`)
+lesen `r._mauerGebaut(plan)` statt `r.state.stlMauer`; Wand und Turm beim Namen (`art`), „im Ort“ über `box.stuecke`; kein Soll,
+kein Urteil, kein Proben-Text geändert. Beweis: `node --check` beider Dateien 0 · der Katalog-Lauf `punkte liste` nur die zwei bekannten ROT
+`gelaende.K2#1/#2` · 86 Proben der Stationen `siedlung.K2` und `wehrbau#1..#8`, 0 falsch · der Wortlaut `STADT_MAUER` am laufenden
+Kopf: echt 19/19, Türme 3/3, Spalt −1,406 m, frei 12/19 (Kamera aussen-mittel); Mutante „der Leser verschweigt eine Wand“ 18/19;
+Mutante „eine Wand 0,3 m gehoben“ Spalt +0,216 m.
+
+| Sprosse | Akte vorher (jüngste je Gerät) | Kopf ac2e5d90, Kandidat | main 78ed3167, Station ungeheilt |
+|---|---|---|---|
+| `wehrbau#1` | GRÜN Radeon d39e0d6e (17.11.), GTX 31ea3847 (21.11.): 21/21, frei 21/21 | ROT: ✅ 19/19, 4 Tore, Türme 3/3 · ✅ Spalt −1,406 m · ❌ frei im Schuss 0/19 (im Rahmen 19) · beide Abnahmen GRÜN | ROT: ✅ 19/19, 4 Tore, Türme 3/3 · ✅ Spalt −1,128 m · ❌ frei 0/19 (im Rahmen 19) · beide Abnahmen GRÜN |
+| `wehrbau#2` | GRÜN Radeon 447eaea6 (24.11.) | GRÜN 0,75 (Soll ≥ 0,7), 4 Stichjahre | GRÜN 0,75 |
+| `wehrbau#3` | GRÜN Radeon c540c783 (25.11.) | GRÜN 0,844 (Soll ≥ 0,7), 32 Saaten | GRÜN 0,844 |
+
+Das ROT von `#1` ist nicht der Schnitt: main trägt es mit dem alten Leser Zahl für Zahl. In der Sitzung mit `#2`/`#3` steht die
+Welt am Messort stadt-voll, die Wahl der Stadt nimmt Villaalto, und keine Krone steht vom höchsten Acker frei im Schuss (die
+Sitzung meldet „DER ORT IM DECKEL … wehrbau#1 2082 m“); die Akten vorher maßen eine andere Stadt (21 Segmente bei −476/−1301).
+
+**Bildpaare** (main 78ed3167 ↔ Kopf, identische Kamera, 960 × 540, `--wahl 0`; im Zweig unter `cloud-post/mauer-im-stoff-bild/`;
+lineare Leuchtdichte Y und Kontrast = Streuung ÷ Mittel im Fenster der Mauer):
+
+| Paar | Kamera | main Y · Kontrast | Kopf Y · Kontrast | Abnahme (beide gleich) |
+|---|---|---|---|---|
+| `paar-sonne-main.jpg` ↔ `paar-sonne-kopf.jpg` | 836,2 46 616,5 → 834 47,8 610,8, Uhr 0,5 | 0,0779 · 0,169 | 0,0721 · 0,547 | GRÜN |
+| `paar-schatten-main.jpg` ↔ `paar-schatten-kopf.jpg` | 855,9 47 606,7 → 818 47,6 611,4, Uhr 0,5 | 0,0175 · 0,249 | 0,0199 · 0,418 | ROT: Vordergrund (Haus und Mauer näher als 8 m, gewollt) |
+| `paar-nacht-main.jpg` ↔ `paar-nacht-kopf.jpg` | 861,2 47,4 601,2 → 868,2 48 604,8, Uhr 0 (Laterne `laterne_dorf` 8,3 m vor der Wand) | 0,0463 · 0,222 | 0,0467 · 0,402 | ROT: Blickziel hinter dem Haus links |
+
+**Tore am Kopf ac2e5d90** (je eines unter dem Schloss, `probeUrteil` über das Log): `gate:pruefbuehne-licht` EXIT 0 GRÜN ·
+`gate:albedo-tafel` EXIT 0 GRÜN · `gate:studio-begehen` EXIT 0 GRÜN · `bild:stadt-voll@0.5` (die Funktion `bild_probe` aus
+gpu-probe.yml, `--echt` gegen :4399) EXIT 0 GRÜN, ABNAHME GRÜN · `gate:nacht-licht:echt` EXIT 0 GRÜN (stadt-voll 11/12 = 0,917,
+dorf 5/5) · `gate:settlement --selftest` EXIT 0 GRÜN · `gate:settlement` allein dreimal EXIT 1 mit je 120 GRÜN und 12 rot aus
+dem EINEN Rennen des Teils O (Zelle −4,−4, das Dorf entsteht nicht; `C-K3` trägt dort `null`), die zwei Zeilen „B: DIE MAUER IM
+STOFF DER WELT“ und „B: DER LESER DES GEBAUTEN“ je GRÜN (220 Teile, 4 024 von 4 024 Ecken, 2 von 13 Haus-Teilen im selben
+Stoff-Objekt).
+
+**Die Linse „fremde Bauten im Erdbau“ (Felsbogen), 6 Läufe am Kopf:** allein misst sie nie (das Dorf fehlt, s. o.). Darum lief
+`gate:settlement` sechsmal mit einem Vorlader NUR im Speicher (`node -r` mit dem Helfer `oa-fenster` aus dem Sitzungs-Ordner), der das Warte-Fenster
+des Teils O von 8 auf 60 Ruhe-Takte dehnt und jeden fremden Bau mit Art, Id und Ort meldet; kein Richter-Text im Repo änderte
+sich. Ergebnis: **0 von 6** — sechsmal EXIT 0 mit 133 GRÜN und 0 rot, das Dorf der Zelle −4,−4 steht in jedem Lauf, `O-FREMD`
+meldet in Akt und Auto-Dorf je `fremd 0` (Läufe 12:22 bis 13:19 Uhr, je 393 bis 1 116 s mit Warten am Schloss).
+`gate:weltbild-frost:echt` (Pflicht-Wand des Beitrags an `stamm/siedlung-ort.js`) EXIT 0, probeUrteil GRÜN, 0 rote Zeilen.
+
 ## (d) GELESEN
 
 **Die eigene Quelle (Datei und Symbol).** `stamm/siedlung-wege.js`: `_kistenPool` (die Kiste mit Instanz-Farbe, bleibt für
@@ -276,32 +343,14 @@ Halbkugel, der Ton der Untersicht trägt 0,5 (sie las vorher heller als die Wand
 Zinne); Ton der Untersicht 0,5 aus F = 0,49. Kein Band wurde: die Höhe der Brustwehr (die Quelle nennt keine Zahl, das Gesetz
 trägt 0,9 m als eigene Setzung, mannshoch mit der Zinne 1,9 m).
 
-## (e) DER NÄCHSTE SCHRITT (in dieser Reihenfolge)
+## (e) DER NÄCHSTE SCHRITT (für den Koordinator)
 
-1. **Die Station von Hand.** Frag den Koordinator nach dem Aufruf und dem geheilten Stand der Station; die Heilung steht Zeile
-   für Zeile in „Die Naht zur Station“ (Zweig `punkte-maschine`, `meisterkarte-quelle/punkte/stationen/g5.js`, `STADT_MAUER`).
-   Erwartet am Kopf: `#1` Wände 19 von 19, Türme 3 von 3, Spalt unter dem Fuß ≤ 0,05 m (der Port misst −1,406 m: der Fuß steht im
-   Boden); `#2` und `#3` GRÜN wie an main. Ohne Heilung liest die Station den Pool, der mit diesem Schnitt fiel, und ist am Kopf ROT.
-2. **Der Rest der Gates am Kopf**, jedes einzeln unter dem Schloss, erwartet je EXIT 0: `npm run -s gate:fachwerk-contract` ·
-   `npm run -s gate:studio-begehen` · `npm run -s gate:studio-huelle` · `npm run -s gate:albedo-tafel` · `npm run -s
-   gate:pruefbuehne-licht` · `npm run -s gate:haus-fern` · `npm run -s gate:chunk-satz` · `npm run -s gate:pruefbuehne` · `npm run
-   -s gate:nervensystem-fachwerk` · `node scripts/diag-haus-welt.cjs --selftest --teil=1/2` und `--teil=2/2` (mit
-   `GPU_LAUF_MAX_S=1800`, je 9 und 13 min) · `npm run -s gate:nacht-licht:echt` · `node scripts/diag-hitch-telemetrie.cjs --teil=1`.
-   Die ersten elf standen am Schnitt auf c540c783 auf EXIT 0, die letzten zwei liefen noch nie.
-3. **`gate:settlement` ganz** (`npm run -s gate:settlement`, 6 min): erwartet allein EXIT 1 mit 12 rot aus dem EINEN Rennen des
-   Teils O (Befund in (c)), unter Last GRÜN. Die zwei Zeilen „B: DIE MAUER IM STOFF DER WELT“ und „B: DER LESER DES GEBAUTEN“
-   müssen GRÜN sein (220 Teile, 4 024 von 4 024 Ecken). Der Täter des Rennens ist Richter-Code und gehört dem Koordinator.
-4. **Der Abdruck:** `node scripts/werkbank.cjs abdruck --gegen <sha von origin/main>` nennt genau die zehn Dateien des Schnitts
-   (`git diff --stat origin/main HEAD`: 10 Dateien, 655 Einfügungen, 166 Löschungen, dazu dieses Blatt und die Bilder).
-5. **main prüfen:** `git fetch origin main`, dann `git merge-tree --write-tree origin/main HEAD` mit exit 0 (Stand 09:26 Uhr: main
-   78ed3167, exit 0, keine gemeinsame Datei); bei Konflikt ein Merge-Commit, kein Rebase.
-6. **Statik am Kopf:** `npm run check:statik` · `npm run format:check` · `npm run lint` · `node scripts/stamm-umzug.cjs
-   --nach-karte`, je EXIT 0 (am gemergten Stand um 08:20 Uhr je 0).
-7. **Der Kopf der Vorprüfung:** dieses Blatt wird der Bericht (das Urteil der Station in (c), die Abschnitte (e) bis (g) fallen
-   weg), Titel: „Vorprüfung mauer-im-stoff 1 (auf main <sha8>): die Stadtmauer steht als gemauerter Stein im Bau-Stoff der Welt
-   — Kontrast in der Schattenfläche 0,007 → 0,425, Draws 4 → 3, die Kisten-Pools von Mauer und Zaun fielen [gpu-probe:
-   gate:pruefbuehne-licht, gate:albedo-tafel, gate:studio-begehen, bild:stadt-voll@0.5] [ci voll]“, Rumpf als ZWISCHENSTAND mit
-   Geschnitten, Gemessen, Offen samt Adresse und „Karte 2 gebucht <n> von 1 718“.
+1. **Die Station landen:** der Kandidat liegt als Datei, Diff und Beweis im Sitzungs-Ordner
+   (`…\scratchpad\stationen-kandidat-mauer\`: die Stationen `g5` und `k2-mensch-macht`, `diff.txt`, `beweis.txt`); nur der Leser zieht von
+   `r.state.stlMauer` auf `r._mauerGebaut(plan)`, das Urteil und jeder Soll-Text bleiben byte-gleich. Ohne ihn liest die Station
+   am gelandeten Kopf den gefallenen Pool und meldet `#1` mit „die Mauer der Stadt steht nicht“.
+2. **`wehrbau#1` am Ort:** ROT an main wie am Kopf (frei im Schuss 0 von 19, Villaalto unter dem höchsten Acker). Die Wahl der Stadt
+   und die Kamera gehören der Station, nicht dieser Welle.
 
 ## (f) SACKGASSEN (nicht zweimal bauen)
 
@@ -325,36 +374,32 @@ trägt 0,9 m als eigene Setzung, mannshoch mit der Zinne 1,9 m).
   Ein Urteil gilt nur allein unter dem Schloss.
 - **Die Messung von 05:10 Uhr (p95 50,3 ms):** lief unter doppelter Geräte-Last und zählt nicht.
 
-## (g) APPARAT (Stand 09:55 Uhr)
+## (g) APPARAT (Stand 13:20 Uhr)
 
-- **Beendet, nur eigene PIDs:** der eigene Server auf Port 4399, die Werkbank auf Steuer-Port 4795 (seit 08:53 Uhr), beide
-  Gate-Ketten. Am GPU-Schloss hält und wartet kein Lauf mit dem Namen `mauer-…`.
-- **Nicht meiner, nicht angefasst:** ein Prozess `node save-server.js` vom 25.11. 06:30 Uhr (Windows-PID 30952), Besitzer nicht
-  bewiesen.
-- **Baum:** `C:/Users/micha/AnazhRealm-leben`, Zweig `mauer-im-stoff`, nach dem WIP-Commit ohne offene Änderung; der Upstream
-  ist `origin/mauer-im-stoff`.
-- **Logs und Helfer (Laptop, Sitzungs-Ordner, kann nach einem Neustart fehlen):**
-  `C:\Users\micha\AppData\Local\Temp\claude\9fd86081514dce1c\9c27a074-223e-48c0-a5af-60ae0385359b\scratchpad\mauer\` mit `log\`
-  (je Gate eine Ausgabe, die Liste der EXIT-Zeilen), den Bildern in voller Größe (`v2\` vorher, `n3\` nachher, `n5\` Palisade,
-  `n6\` am gemergten Kopf) und den Skripten der Bild-Serien. Nichts davon braucht der nächste Schritt zwingend: die Kameras stehen
-  in (c), die Linse lebt im Gate.
-- **Abschluss-Zeile der Commits:** dieser Stand trägt die Zeile der Sitzung (Claude Fable 5.2), der Brief nennt Claude Opus 5.5;
-  der nächste Arbeiter schließt mit der Zeile seiner Sitzung.
+- **Beendet, nur eigene PIDs:** die eigenen Server auf Port 4399 und 4398, die Werkbank auf Steuer-Port 4795, die Gate-Kette; der
+  Hilfs-Baum `main-baum` (Worktree von main 78ed3167) ist entfernt. Am GPU-Schloss hält und wartet kein Lauf `mauer-…`.
+- **Nicht meiner, nicht angefasst:** ein Prozess `node save-server.js` vom 25.11. 06:30 Uhr (Windows-PID 30952).
+- **Baum:** `C:/Users/micha/AnazhRealm-leben`, Zweig `mauer-im-stoff`, Upstream `origin/mauer-im-stoff`.
+- **Logs und Helfer (Sitzungs-Ordner, kann nach einem Neustart fehlen):**
+  `C:\Users\micha\AppData\Local\Temp\claude\9fd86081514dce1c\9c27a074-223e-48c0-a5af-60ae0385359b\scratchpad\mauer2\` (`log\` je
+  Lauf, `bild\` die Bilder als PNG, `oa-fenster` der Vorlader der Felsbogen-Läufe, `fenster` die Leuchtdichte im Fenster).
 
 ## Offen, mit Adresse
 
-- **Die Station von Hand ist nicht gefahren.** Leser: `karte2.mensch.macht.wehrbau#1` (dazu `#2`, `#3`). Grund: die Station
-  im Zweig `punkte-maschine` liest den gefallenen Pool; am Kopf ist sie ROT, bis sie auf `_mauerGebaut` umzieht (die Naht oben).
-- **Der Grenzstein liest weiter dunkel** (Y 0,0135 bei Boden 0,0664). Leser: FUND-REGISTER `[stoff grenze]` (Zweig
-  `koordination`). Grund: andere Wurzel, `markstein_dorf` ist Foundry-Architektur im Bau-Stoff, kein Kisten-Pool.
-- **Die Helligkeit der Schattenseite stellt die Licht-Kette**, nicht der Stoff (Schatten ÷ Sonne 0,31 für jede Fläche; der
-  Sockel des Hauses im selben Bild liest wie die Mauer). Leser: FUND-REGISTER `[stoff mauer]` (Zweig `koordination`): die Zeile
-  „pechschwarz, glatte Platte, Quader ohne Dach und Zinne“ fällt mit diesem Schnitt, der Rest ist Licht.
-- **Der Schwanz im ersten Lauf nach der Ankunft** (p99 50 ms in zwei von fünf Läufen nach dem Schnitt, 6 von 600 Bildern; p95
-  einmal 41,8 ms; am gemergten Kopf in zwei von zwei Läufen nicht). Leser: `gate:hitch-telemetrie` und die Probe
-  `bild:stadt-voll@0.5` des Kopfs. Grund: fünf gegen zwei Läufe trennen Schnitt und Streuung der Welt nicht.
-- **`gate:settlement` Teil O (Auto-Dorf) ist am Laptop ein Rennen, an main c540c783 ebenso** (Abschnitt oben). Leser:
-  `gate:settlement` (der Richter des Koordinators) und FUND-REGISTER (Zweig `koordination`), neue Zeile `[linse settlement O]`.
-- **Der Turm steht 0,25 m über der Zinnen-Oberkante** (Turm 8,4 m, Zinnen 8,15 m, darüber das Zeltdach). Kein Soll geändert;
-  Leser: FUND-REGISTER `[stoff mauer]` (Zweig `koordination`), als Zahl für das Gesetzbuch der Wehr.
+- **Der Kandidat der Station ist nicht gelandet.** Leser: `karte2.mensch.macht.wehrbau#1` bis `#3` (Station des Koordinators, Zweig
+  `punkte-maschine`). Grund: nach `punkte-maschine` schiebt nur der Koordinator.
+- **`wehrbau#1` ROT am Ort, an main ebenso** (frei im Schuss 0 von 19). Leser: die Station `wehrbau#1`. Grund: Stadt und Kamera der
+  Station, kein Bild-Fehler der Mauer (Wände 19 von 19, Türme 3 von 3).
+- **`gate:settlement` Teil O ist allein ein Rennen** (dreimal 12 rot an der Zelle −4,−4; mit gedehntem Fenster GRÜN). Leser:
+  `gate:settlement` und FUND-REGISTER `[linse settlement O]` (Zweig `koordination`).
+- **Der Felsbogen („fremde Bauten im Erdbau 1“) zeigte sich nicht:** 0 von 6 Läufen am Kopf mit gedehntem Fenster. Leser:
+  `gate:settlement` Teil O (Zeilen „O Akt“ / „O Auto-Dorf“), Messname `O-FREMD`; Ort, Samen und Bild gibt es erst beim ersten
+  Treffer.
+- **Der Grenzstein liest weiter dunkel** (Y 0,0135 bei Boden 0,0664). Leser: FUND-REGISTER `[stoff grenze]`. Grund: andere
+  Wurzel, `markstein_dorf` ist Foundry-Architektur, kein Kisten-Pool.
+- **Die Helligkeit der Schattenseite stellt die Licht-Kette** (Schatten ÷ Sonne 0,31 für jede Fläche). Leser: FUND-REGISTER
+  `[stoff mauer]`.
+- **Der Turm steht 0,25 m über der Zinnen-Oberkante** (Turm 8,4 m, Zinnen 8,15 m). Leser: FUND-REGISTER `[stoff mauer]`.
+- **Zwei der drei Bildpaare urteilen ROT an beiden Seiten** (Schatten: Vordergrund näher als 8 m; Nacht: Blickziel hinter dem
+  Haus). Leser: `bild:stadt-voll@0.5` als Probe des Kopfs; die Werte im Fenster stehen in (c).
 - **Nicht Teil dieser Welle, wie bestellt:** die Vogel-Pools und die Massen der Stadt-Ferne (`_kistenPool` bleibt ihr Stoff).
