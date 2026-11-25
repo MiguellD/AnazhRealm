@@ -329,14 +329,22 @@ class AnazhRealm_wasser_hydro {
         return this._pegelMarkeVon(this._pegelGilt(), cx, cz) + this._gezeitMarke(this._gezeitGilt(), cx, cz);
     }
     // DIE GEZEIT DES MEERS (planet.wasser.gezeiten #1/#2, gelaende-core `GEZEIT`): der Träger { stunde, k } zur Welt-Uhr — die
-    // Welt-Stunde (`_weltStunde`, der Tag der Prozesse: die Uhr des Spielers bewegt kein Meer), k die Stufe des Hubs. Der Träger
-    // wechselt nur mit der Stufe (`_pegelTakt`: je Sekunde der Welt-Uhr gefragt); die Lage liest ihn (`_gelaende().gezeit`),
-    // der Faden bekommt ihn im Stand.
+    // Stunde der Gezeit (`_gezeitStunde`), k die Stufe des Hubs. Der Träger wechselt nur mit der Stufe (`_pegelTakt`: je Sekunde
+    // der Welt-Uhr gefragt); die Lage liest ihn (`_gelaende().gezeit`), der Faden bekommt ihn im Stand.
     _gezeitStand() {
-        const t = this._weltStunde();
+        const t = this._gezeitStunde();
         const alt = this._gezeitTraeger;
         if (alt && alt.k === globalThis.__gelaendeCore.gezeitStufe(t)) return alt;
         return globalThis.__gelaendeCore.gezeitStand(t);
+    }
+    // DIE STUNDE DER GEZEIT: die Kalender-Zeit (`_kalenderZeit`: die Welt-Uhr, sie reist mit dem Stand, geht nie zurück, stetig
+    // über den Regler der Tag-Länge) in Stunden des Kalenders seit der Welt-Uhr 0 — jede Geburt beginnt im Mittel (η = 0, byte-
+    // gleich wie vor der Gezeit), auch ein Stand von vor dem Schnitt (sein Null-Punkt `tagNull` eicht den Tag der Prozesse auf den
+    // Tag der Sicht, die Prüfbühne bootete so zur Stunde 12, +0,30 m an ihrer Furt). Die Uhr des Spielers bewegt kein Meer.
+    // Leser: `_gezeitStand` und die Linse (gate:worker-dichte --gezeit).
+    _gezeitStunde() {
+        const K = this._kalender();
+        return (K.tagStunden * this._kalenderZeit()) / K.normS;
     }
     _gezeitGilt() {
         if (this._gezeitTraeger === undefined) this._gezeitTraeger = this._gezeitStand();

@@ -937,7 +937,8 @@ async function kernProbe(page, url) {
 // Cuxhaven: Tidenhub Spring 3,48 m · Nipp 2,54 m; Periode M2 12,4206 h, Schwebung 14,765 d), über 30 Tage der Spring-Nipp-Takt.
 // DAS LAND steht zeitlos: der Spiegel des Lands (Stamm `_landSpiegelAt`, Faden `landWaterLevelAt` — gelaende-core `landSpiegel`,
 // der Leser jedes Werks, das gesetzt wird: Wald, Genesis-Ort, `_landAt`) liegt in jeder Viertelstunde Wort für Wort gleich.
-// Das Urteil nennt den Täter: STEHT (der Hub fiel) · HUB · PERIODE · SCHWEBUNG · SPIEGEL (Stamm ≠ Faden) · WATT · LAND · TRÄGER.
+// DIE GEBURT: zur Welt-Uhr 0 steht das Meer im Mittel, auch unter dem Null-Punkt eines alten Stands (`tagNull` 0,5, die Prüfbühne).
+// Das Urteil nennt den Täter: STEHT (der Hub fiel) · HUB · PERIODE · SCHWEBUNG · SPIEGEL (Stamm ≠ Faden) · WATT · LAND · GEBURT · TRÄGER.
 // Selbsttest: „Spiegel steht“ in Wirt und Faden MUSS STEHT nennen, nur im Faden MUSS SPIEGEL nennen, „Land mit Uhr“ MUSS LAND nennen.
 const GEZEIT_ORT = Object.freeze({ x: 0, z0: 10430, dz: 40, n: 11, name: "Nordsee-Watt (Zensus Rang 6)" });
 const GEZEIT_SOLL = Object.freeze({ periodeH: 12.4206, periodeTol: 0.01, spring: 3.48, nipp: 2.54, hubTol: 0.05, schwebungD: 14.765, schwebungTol: 0.02, fensterH: 24.84, schrittH: 0.25, tage: 31 });
@@ -953,6 +954,14 @@ async function gezeitLesen(page) {
         if (!L0.gezeit) return { traeger: false };
         const normS = r._kalender().normS;
         const basis = st.spielZeit;
+        // die Geburt: zur Welt-Uhr 0 steht das Meer im Mittel — auch ein Stand mit dem Null-Punkt eines alten Tags (`tagNull` 0,5:
+        // die Prüfbühne bootet so, ihre Furt liegt 0,6 m tief im Meer)
+        const wm = st.worldMeta;
+        const tagNull = wm.tagNull;
+        st.spielZeit = 0;
+        wm.tagNull = 0.5;
+        const geburt = { k: r._gezeitStand().k, stunde: r._gezeitStand().stunde };
+        [st.spielZeit, wm.tagNull] = [basis, tagNull];
         // die Uhr der Probe: die Stunde h nach dem Anfang (der Tag der Prozesse über `spielZeit`), der Takt des Pegels trägt die Stufe
         window.__gezeitUhr = (h, takt) => ((st.spielZeit = basis + (h * normS) / 24), takt && r._pegelTakt(), r._gelaende().gezeit);
         window.__gezeitBasis = basis;
@@ -960,7 +969,7 @@ async function gezeitLesen(page) {
         const ks = [];
         for (let h = 0; h <= S.tage * 24 + 1e-9; h += S.schrittH) ks.push((__gezeitUhr(h, false), r._gezeitStand().k));
         __gezeitUhr(0, true);
-        return { traeger: true, h0: L0.gezeit.stunde, stufe: globalThis.__gelaendeCore.GEZEIT.stufe, punkte, ks };
+        return { traeger: true, h0: L0.gezeit.stunde, stufe: globalThis.__gelaendeCore.GEZEIT.stufe, punkte, ks, geburt };
     }, GEZEIT_ORT, GEZEIT_SOLL);
     if (!seite.traeger) return seite;
     const faeden = [];
@@ -981,7 +990,7 @@ async function gezeitLesen(page) {
                 const p = { h, k: g.k, stamm: P.map(([x, z, y]) => r._atlasWaterLevelAt(x, z, y)), land: land(), nass: P.map(([x, z, y]) => (r._nassAt(x, z, -0.05, y) ? 1 : 0)).join("") };
                 // die Gegen-Tide: derselbe Augenblick unter dem Träger eine halbe M2 später (der Pegel der Seen und Flüsse geht weiter
                 // an der Uhr — das Land fragt ihn; die Gezeit nie)
-                r._gezeitTraeger = G.gezeitStand(r._weltStunde() + G.GEZEIT.teile[0].stunden / 2);
+                r._gezeitTraeger = G.gezeitStand(g.stunde + G.GEZEIT.teile[0].stunden / 2);
                 [p.kGegen, p.landGegen] = [r._gezeitTraeger.k, land()];
                 r._gezeitTraeger = g;
                 return p;
@@ -1021,24 +1030,25 @@ function gezeitUrteil(s) {
     const hub = Math.max(...meer) - Math.min(...meer);
     const d = gezeitDurchgaenge(meer, S.schrittH);
     const periode = d.length >= 2 ? (d[d.length - 1] - d[0]) / (d.length - 1) : NaN;
-    // der Spring-Nipp-Takt: der Hub je Tide (Hoch − Niedrig je M2-Fenster), seine Minima (Nipp) liegen um die Schwebung auseinander
-    const fenster = Math.round(S.periodeH / S.schrittH);
+    // der Spring-Nipp-Takt: der Hub im gleitenden Fenster zweier Tiden (Hoch − Niedrig in 2 · M2, je Viertelstunde), seine
+    // steigenden Durchgänge (Nipp → Spring) liegen um die Schwebung auseinander
+    const fenster = Math.round((2 * S.periodeH) / S.schrittH);
     const hubJe = [];
-    for (let i = 0; i + fenster <= s.ks.length; i += fenster) {
+    for (let i = 0; i + fenster <= s.ks.length; i++) {
         const t = s.ks.slice(i, i + fenster);
         hubJe.push((Math.max(...t) - Math.min(...t)) * s.stufe);
     }
     const springM = Math.max(...hubJe);
     const nippM = Math.min(...hubJe);
     // die steigenden Durchgänge der Hülle durch ihre Mitte (von Nipp zu Spring), mit einer Hysterese von zwei Stufen gegen das
-    // Zittern der quantisierten Fenster — je Schwebung einer
-    const [mitte, band, fensterD] = [(springM + nippM) / 2, 2 * s.stufe, (fenster * S.schrittH) / 24];
+    // Zittern der quantisierten Fenster — je Schwebung einer (die Zeit: die Mitte des Fensters)
+    const [mitte, band, schrittD] = [(springM + nippM) / 2, 2 * s.stufe, S.schrittH / 24];
     const steigt = [];
     for (let i = 1, unten = false; i < hubJe.length; i++) {
         if (hubJe[i - 1] < mitte - band) unten = true;
         if (unten && hubJe[i - 1] < mitte && hubJe[i] >= mitte) {
             const [a, b] = [hubJe[i - 1] - mitte, hubJe[i] - mitte];
-            steigt.push((i - 1 + a / (a - b)) * fensterD);
+            steigt.push((i - 1 + a / (a - b) + fenster / 2) * schrittD);
             unten = false;
         }
     }
@@ -1076,7 +1086,7 @@ function gezeitUrteil(s) {
     const hoch = s.proben.reduce((a, p) => (p.k > a.k ? p : a));
     // das Watt ist nie Land: jeder Punkt, den das Hochwasser deckt, liegt unter dem Spiegel des Lands (dieselbe Marge −5 cm)
     const wattLand = s.punkte.filter(([, , y], i) => hoch.nass[i] === "1" && !(land0[i] > y - 0.05)).length;
-    const z = { hub, periode, durchgaenge: d.length, springM, nippM, schwebung, nippe: steigt.length, spiegel: { werte, ab, maxDiff, faeden: s.faden.length }, land: { werte: s.proben.length * land0.length, gegen, zieht: landZieht, ab: landAb, meer: land0[land0.length - 1], erst: landErst, wattLand, nass: s.punkte.map(([, , y], i) => (land0[i] > y - 0.05 ? 1 : 0)).join("") }, watt: { tief: tief.nass, hoch: hoch.nass, kTief: tief.k, kHoch: hoch.k, nassTief: nassZahl(tief), nassHoch: nassZahl(hoch) } };
+    const z = { geburt: s.geburt, hub, periode, durchgaenge: d.length, springM, nippM, schwebung, nippe: steigt.length, spiegel: { werte, ab, maxDiff, faeden: s.faden.length }, land: { werte: s.proben.length * land0.length, gegen, zieht: landZieht, ab: landAb, meer: land0[land0.length - 1], erst: landErst, wattLand, nass: s.punkte.map(([, , y], i) => (land0[i] > y - 0.05 ? 1 : 0)).join("") }, watt: { tief: tief.nass, hoch: hoch.nass, kTief: tief.k, kHoch: hoch.k, nassTief: nassZahl(tief), nassHoch: nassZahl(hoch) } };
     const [ox, oz] = s.punkte[s.punkte.length - 1];
     const ort = `am Meer (${ox}|${oz})`;
     if (!(hub >= 0.5)) rot.push(["STEHT", `DER SPIEGEL STEHT: Hub ${hub.toFixed(2)} m ${ort} über ${S.fensterH} h — gelaende-core \`gezeitHub\` (Soll ${S.nipp}–${S.spring} m, Pegel Cuxhaven)`]);
@@ -1087,6 +1097,7 @@ function gezeitUrteil(s) {
     if (!s.faden.length) rot.push(["SPIEGEL", "SPIEGEL: kein Voxel-Faden antwortete"]);
     else if (ab) rot.push(["SPIEGEL", `SPIEGEL: ${ab} von ${werte} Werten Stamm-Leser \`_atlasWaterLevelAt\` ≠ Faden \`atlasWaterLevelAt\` (maxDiff ${maxDiff.toFixed(3)} m)`]);
     if (!(z.watt.nassHoch - z.watt.nassTief >= 2)) rot.push(["WATT", `WATT: das Profil ${GEZEIT_ORT.name} trägt bei Niedrigwasser ${z.watt.nassTief} und bei Hochwasser ${z.watt.nassHoch} nasse Punkte (\`_nassAt\`) — das Watt fällt nicht trocken`]);
+    if (s.geburt.k !== 0) rot.push(["GEBURT", `GEBURT: zur Welt-Uhr 0 mit dem Null-Punkt tagNull 0,5 steht das Meer auf Stufe ${s.geburt.k} (Stunde ${s.geburt.stunde}) — die Uhr der Gezeit liest den Tag der Prozesse statt der Kalender-Zeit (\`_gezeitStunde\`); die Prüfbühne bootet so`]);
     if (landZieht || landAb || wattLand || !Number.isFinite(z.land.meer) || gegen < s.proben.length / 2) rot.push(["LAND", `LAND: der Spiegel des Lands folgt der Gezeit in ${landZieht} von ${z.land.werte} Werten (zuerst ${landErst || "—"}; ${gegen} von ${s.proben.length} Proben mit anderer Gegen-Stufe), das Hochwasser deckt ${wattLand} Punkte, die er Land nennt, Faden \`landWaterLevelAt\` ≠ Stamm \`_landSpiegelAt\` in ${landAb}, am Meer ${z.land.meer} — gelaende-core \`landSpiegel\` (das höchste Hochwasser, \`lageHochwasser\`)`]);
     return { rot: rot.map((x) => x[1]), namen: rot.map((x) => x[0]), z };
 }
@@ -1109,6 +1120,7 @@ async function gezeitProbe(page, url) {
         console.log(`  Spring-Nipp über ${GEZEIT_SOLL.tage} d: Schwebung ${z.schwebung.toFixed(3)} d aus ${z.nippe} Durchgängen der Hülle (Soll ${GEZEIT_SOLL.schwebungD} d) · Hub Spring ${z.springM.toFixed(2)} m · Nipp ${z.nippM.toFixed(2)} m`);
         console.log(`  Spiegel Stamm ↔ Faden: ${z.spiegel.werte} Werte in ${z.spiegel.faeden} Fäden, abweichend ${z.spiegel.ab} (maxDiff ${z.spiegel.maxDiff})`);
         console.log(`  Land (\`_landSpiegelAt\` = Faden \`landWaterLevelAt\`): ${z.land.werte} Werte, unter der Gegen-Tide (${z.land.gegen} Proben mit anderer Stufe) anders ${z.land.zieht} · Faden ≠ Stamm ${z.land.ab} · am Meer ${z.land.meer} m · Profil ${z.land.nass} (Hochwasser ${z.watt.hoch}, Watt als Land ${z.land.wattLand})`);
+        console.log(`  Geburt (Welt-Uhr 0, tagNull 0,5): Stufe ${z.geburt.k} zur Stunde ${z.geburt.stunde}`);
         console.log(`  Watt (z ${GEZEIT_ORT.z0}–${GEZEIT_ORT.z0 + GEZEIT_ORT.dz * (GEZEIT_ORT.n - 1)}, je ${GEZEIT_ORT.dz} m): Niedrigwasser k ${z.watt.kTief} ${z.watt.tief} (${z.watt.nassTief} nass) · Hochwasser k ${z.watt.kHoch} ${z.watt.hoch} (${z.watt.nassHoch} nass)`);
     }
     for (const b of u.rot) console.log("  ⛔", b);

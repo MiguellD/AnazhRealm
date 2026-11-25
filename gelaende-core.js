@@ -7811,12 +7811,12 @@
 
     // DIE GEZEIT (karte2.planet.wasser.gezeiten #1/#2, Zensus Rang 6 „Nordsee-Watt“): der Spiegel des MEERS schwingt an der Welt-Uhr —
     // die Summe der zwei halbtägigen Partialtiden der harmonischen Analyse (Doodson 1921): M2 (der Mond, 12,4206012 h) und S2 (die
-    // Sonne, 12,0000 h), η(t) = −Σ A · sin(2π t / T), t die Stunden des Tags der Prozesse (`L.gezeit.stunde`: der Wirt reicht
-    // `_weltStunde`, der Faden bekommt sie im Stand). Die Schwebung der zwei ist der Spring-Nipp-Takt T_M2·T_S2 / (T_M2 − T_S2) =
+    // Sonne, 12,0000 h), η(t) = −Σ A · sin(2π t / T), t die Stunden der Welt-Uhr (`L.gezeit.stunde`: der Wirt reicht
+    // `_gezeitStunde`, die Kalender-Zeit seit der Welt-Uhr 0; der Faden bekommt sie im Stand). Die Schwebung der zwei ist der Spring-Nipp-Takt T_M2·T_S2 / (T_M2 − T_S2) =
     // 14,765 d (der halbe synodische Monat). DIE AMPLITUDEN der Pegel Cuxhaven (Deutsche Bucht; de.wikipedia „Gezeiten“, Tidenhub
     // Nipp 2,54 m · Spring 3,48 m): A_M2 = (Spring + Nipp) / 4 = 1,505 m, A_S2 = (Spring − Nipp) / 4 = 0,235 m — der mittlere Hub
-    // 3,01 m. Die Welt beginnt im Mittel, die Ebbe läuft, zur Springtide (t = 0: η = 0 — die Geburt jeder Welt, `_weltGeburt`, rechnet
-    // byte-gleich wie vor der Gezeit; das erste Niedrigwasser nach 3,1 h, der erste steigende Durchgang durchs Mittel nach 6,2 h). DIE STUFE (`stufe`): der Spiegel geht in Schritten von 5 cm — die gezeichneten Chunks am Meer bauen nur
+    // 3,01 m. Die Welt beginnt im Mittel, die Ebbe läuft, zur Springtide (t = 0: η = 0 — die Geburt jeder Welt rechnet byte-gleich wie
+    // vor der Gezeit; das erste Niedrigwasser nach 3,1 h, der erste steigende Durchgang durchs Mittel nach 6,2 h). DIE STUFE (`stufe`): der Spiegel geht in Schritten von 5 cm — die gezeichneten Chunks am Meer bauen nur
     // neu, wenn er eine Stufe wechselt (`_pegelTakt` mit der Marke `_gezeitMarke`: der Preis folgt dem Schirm, nie der Welt). `hoch` das höchste Hochwasser
     // (die Flut-Schwelle des Watts, `hydroWatt`). Ohne Träger (`L.gezeit`: jede Lage ohne Uhr — der Export, die Saat einer
     // fremden Welt, jede Linse ohne Zeit) steht der Spiegel: η = 0. Nur das Meer trägt sie — See und Fluss gehen ihren Pegel.
@@ -7828,7 +7828,7 @@
         stufe: 0.05,
         hoch: 1.74,
     });
-    // der Hub η des Meers in Stufen (ganze Zahl) zur Stunde `t` (die Stunden des Tags der Prozesse)
+    // der Hub η des Meers in Stufen (ganze Zahl) zur Stunde `t` (die Stunden der Welt-Uhr)
     function gezeitStufe(t) {
         if (!Number.isFinite(t)) throw new Error("gelaende-core gezeitStufe: die Stunde der Welt-Uhr fehlt");
         let eta = 0;
@@ -7861,7 +7861,8 @@
     // liegt (die Überflutungs-Dauer der Küsten-Ökologie) — unter dem Sinus der mittleren Tide A_M2: acos(a / A) / π, 1 unter dem
     // Niedrigwasser, 0 über dem Hochwasser. Der Schlick des Watts liegt, wo das Meer den Grund mehr als ein Achtel der Zeit deckt
     // (voll ab der Hälfte); Leser: die Boden-Farbe im Stamm (`_bodenFarbeAt`) und im Faden (`bodenFarbe`) über `aus.watt`
-    // (`wasserSpiegel`: der Bezug ist das Meer, und die Lage trägt die Gezeit).
+    // (`wasserSpiegel`: die Lage trägt die Gezeit, die Zelle ist Meer oder erreicht die Flut, `hydroWatt` — eine Niederung im
+    // Land, eine Furt nahe dem Meeresspiegel, bleibt ihr Boden).
     function wattSchlick(a) {
         const A = GEZEIT.teile[0].amp;
         const t = Math.max(-1, Math.min(1, a / A));
@@ -7875,12 +7876,17 @@
     // fragt jeder Leser `atlasSpiegel` (über den Körper des Stamms).
     function wasserSpiegel(L, x, z, aus) {
         let level = typeof L.waterLevel === "number" ? L.waterLevel : 0;
+        let watt = 0;
         const h = hydroRegion(L, x, z);
         if (h && h.ready && h.water && h.water.waterKind) {
             const dim = h.dim;
             const ci = Math.floor((x - h.originX) / h.cell);
             const cj = Math.floor((z - h.originZ) / h.cell);
             const wK = h.water.waterKind;
+            // das Watt der Zelle: das Meer selbst oder eine Zelle, die die Flut erreicht (`hydroWatt`) — nie die Niederung im Land
+            const i0 = ci + cj * dim;
+            const wattK = h.water.wattK;
+            if (ci >= 0 && cj >= 0 && ci < dim && cj < dim) watt = wK[i0] === 1 || (wattK && wattK[i0] > 0) ? 1 : 0;
             for (let dj = -1; dj <= 1; dj++) {
                 for (let di = -1; di <= 1; di++) {
                     const ni = ci + di;
@@ -7893,8 +7899,8 @@
         }
         const river = flussAm(L, x, z);
         if (aus) {
-            // `watt`: der Bezug ist das Meer, und die Lage trägt die Gezeit (der Schlick des Watts, `wattSchlick`)
-            if (L.gezeit) aus.watt = level === (typeof L.waterLevel === "number" ? L.waterLevel : 0) ? 1 : 0;
+            // `watt`: die Lage trägt die Gezeit, die Zelle ist Meer oder Watt und der Bezug ist das Meer (der Schlick, `wattSchlick`)
+            if (L.gezeit) aus.watt = watt && level === (typeof L.waterLevel === "number" ? L.waterLevel : 0) ? 1 : 0;
             aus.see = level;
             aus.fluss = river ? river.surfaceY : null;
             aus.ufer = river ? river.ufer : 0;
