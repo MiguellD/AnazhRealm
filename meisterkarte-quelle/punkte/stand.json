@@ -11083,7 +11083,7 @@
   },
   "karte2.leben.evolution.erbe": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 ekRegression 0,54 gegen Soll 0,2–0,8 ✓ · generationen 13 gegen Soll ≥ 10 ✓ · Zeuge: Geburten im Zeitraffer, Kind mit Eltern; Mutante „Erbe aus“ → ≈ 0 an 2d6a0447 gtx — offen: karte2.leben.evolution.erbe#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.leben.evolution.erbe#2 radeon: ungemessen (R10) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.leben.evolution.erbe#2 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#3 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#3 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#4 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#4 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#5 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#5 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#6 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 ekRegression 0,54 gegen Soll 0,2–0,8 ✓ · generationen 13 gegen Soll ≥ 10 ✓ · Zeuge: Geburten im Zeitraffer, Kind mit Eltern; Mutante „Erbe aus“ → ≈ 0 an 2d6a0447 gtx — offen: karte2.leben.evolution.erbe#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.leben.evolution.erbe#2 radeon: ungemessen (R10) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.leben.evolution.erbe#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs) · karte2.leben.evolution.erbe#3 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#3 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#4 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#4 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#5 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#5 gtx: ungemessen (R10) · karte2.leben.evolution.erbe#6 radeon: ungemessen (R10) · karte2.leben.evolution.erbe#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.erbe#1",
@@ -11121,8 +11121,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.leben.evolution.erbe#3",
@@ -11316,7 +11317,7 @@
   },
   "karte2.leben.evolution.fremde-physik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.leben.evolution.fremde-physik#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/stamm.cjs +1) · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.leben.evolution.fremde-physik#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs) · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.fremde-physik#1",
@@ -11334,7 +11335,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/stamm.cjs +1)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -11969,7 +11970,7 @@
   },
   "karte2.leben.evolution.zivilisation": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 rEltern 0,212 gegen Soll > 0 ✓ · scheuDelta 19,84 gegen Soll > 0 ✓ · Zeuge: Tiere mit ihrer Fluchtdistanz an 2d6a0447 gtx — offen: karte2.leben.evolution.zivilisation#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.leben.evolution.zivilisation#2 radeon: ungemessen (R10) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.leben.evolution.zivilisation#2 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#3 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#3 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#4 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#4 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#5 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#5 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#6 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#6 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#7 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 rEltern 0,212 gegen Soll > 0 ✓ · scheuDelta 19,84 gegen Soll > 0 ✓ · Zeuge: Tiere mit ihrer Fluchtdistanz an 2d6a0447 gtx — offen: karte2.leben.evolution.zivilisation#1 radeon: ungemessen (R10) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.leben.evolution.zivilisation#2 radeon: ungemessen (R10) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.leben.evolution.zivilisation#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, stamm/siedlung-ort.js +1) · karte2.leben.evolution.zivilisation#3 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#3 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#4 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#4 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#5 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#5 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#6 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#6 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#7 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.zivilisation#1",
@@ -12007,8 +12008,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs, stamm/siedlung-ort.js +1)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.leben.evolution.zivilisation#3",
@@ -22455,7 +22457,7 @@
   },
   "karte2.mensch.nahrung.tier": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Abstand p95 zum Spieler über den Hang (m) 4.04 (Soll ≤ 5) · Anstieg des Wegs über den Hang (m) 8.09 (Soll > 0) · Umfang 1 (Soll ≥ 1 an den Spieler gebundenes Tier) · Hang 29.5°, bond 0.12 → 0.4119, Aufgabe follow_player, Gegenlauf: das ungebundene Tier 62.96 m; Bestand 9 Tiere, 0 zahm · [linse-gpu] nvidia/pascal an 30e01e75 gtx — offen: karte2.mensch.nahrung.tier#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +8) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.mensch.nahrung.tier#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +13) · karte2.mensch.nahrung.tier#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#6 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#7 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Abstand p95 zum Spieler über den Hang (m) 4.04 (Soll ≤ 5) · Anstieg des Wegs über den Hang (m) 8.09 (Soll > 0) · Umfang 1 (Soll ≥ 1 an den Spieler gebundenes Tier) · Hang 29.5°, bond 0.12 → 0.4119, Aufgabe follow_player, Gegenlauf: das ungebundene Tier 62.96 m; Bestand 9 Tiere, 0 zahm · [linse-gpu] nvidia/pascal an 30e01e75 gtx — offen: karte2.mensch.nahrung.tier#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +8) — zuletzt an 2d6a0447: die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN · karte2.mensch.nahrung.tier#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs) · karte2.mensch.nahrung.tier#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#6 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#7 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.tier#1",
@@ -22493,7 +22495,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +13)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/albedo-tafel.cjs)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -37578,7 +37580,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 329,
+  "konsum": 331,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37746,10 +37748,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3293
+  "ohne": 3291
  },
  "kopfVoll": "6c210411408dfc377be50c4fde5e20bc61ca7063",
- "zeit": "2026-11-25T01:13:21.505Z",
+ "zeit": "2026-11-25T01:20:59.988Z",
  "vorher": "6c210411",
  "bilanz": {
   "gewinn": [],
