@@ -1,7 +1,7 @@
 {
  "sha": "486a6685925d51302752c756d7d47654d83922d1",
  "geraet": "gtx",
- "zeit": "2026-11-25T11:14:32.954Z",
+ "zeit": "2026-11-25T11:16:48.117Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.gespraech#2": {
@@ -4773,6 +4773,70 @@
    "ungemessen": true,
    "zeit": "2026-11-25T11:14:32.954Z",
    "abdruck": "2c32cf62903e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.verstaendigung#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48.1 s · S1 warf: /eval ohne Antwort binnen 40 s",
+   "exit": 0,
+   "minuten": 0.8,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48.1 s · S1 warf: /eval ohne Antwort binnen 40 s",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 48.2,
+   "fremd": {
+    "s": 51.5,
+    "takte": 24,
+    "fremdS": 18.34,
+    "kerne": 0.356,
+    "fensterKerne": 0.861,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.23
+     ],
+     [
+      "node.exe scripts/diag-betriebsgesetz.cjs",
+      4.14
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.63
+     ]
+    ],
+    "dienerS": 7.02,
+    "diener": [
+     [
+      "System",
+      3.56
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.91
+     ]
+    ],
+    "geraetS": 18.44,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      12.3
+     ],
+     [
+      "svchost.exe",
+      5.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 76.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T11:16:48.117Z",
+   "abdruck": "55183cc3768b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
