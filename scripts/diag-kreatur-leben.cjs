@@ -1147,7 +1147,7 @@ async function lebenBuehnen() {
             });
         }
         // die Bühne misst die Zeichnung im Gang, nie die Ankunft (`_bestandAnkunftTakt`: dort erscheint jeder Leib, auch im Blick)
-        aufraeumen.push(leihe(r, { _bestandAnkunft: 0 }));
+        aufraeumen.push(leihe(r, { _bestandAnkunft: false }));
         if (taeter === "geburt-einzeln")
             decke(
                 "_creatureNaturalBirth",

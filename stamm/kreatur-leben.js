@@ -2866,7 +2866,7 @@ class AnazhRealm_kreatur_leben {
     _bestandErscheint(x, z, g, bs) {
         const p = this.state.playerMesh.position;
         if (Math.hypot(x - p.x, z - p.z) < AnazhRealm.CREATURE_SPAWN_CLEAR_M) return false;
-        if (this._bestandAnkunft > 0 || !this._kreaturLeibImBlick(x, z, g, bs)) return true;
+        if (this._bestandAnkunft || !this._kreaturLeibImBlick(x, z, g, bs)) return true;
         const cam = this.state.camera;
         const stell = this._geburtsStell || (this._geburtsStell = { rotation: { y: 0 } });
         const h = this._kreaturLeib(
@@ -2878,18 +2878,28 @@ class AnazhRealm_kreatur_leben {
         const d = Math.hypot(x - cam.position.x, z - cam.position.z);
         return (h * AnazhRealm._brennweite(this._schirm().hoehe)) / d <= AnazhRealm.BESTAND_REGION.erscheinenPx;
     }
-    // DIE ANKUNFT: springt der Spieler zwischen zwei Takten weiter als die halbe Seite einer Region (der Boot, ein Stand, ein
-    // Ort-Wechsel, ein Sprung der Welt-Uhr — `_bestandSprung`), ist das Bild neu — ankunftTakte Takte lang zeichnet die Zeichnung
-    // je Takt (sonst je taktS) und jeder Leib erscheint an seinem Ort, auch im Blick (`_bestandErscheint`). Die Kosten hängen an
-    // der Änderung: höchstens leiberJeTakt Leiber je Takt. Liefert, ob die Ankunft läuft.
+    // DIE ANKUNFT: springt der Spieler zwischen zwei Rufen weiter als die halbe Seite einer Region (der Boot, ein Stand, ein
+    // Ort-Wechsel, ein Sprung der Welt-Uhr — `_bestandSprung`), ist das Bild neu — in DIESEM Ruf zeichnet die Zeichnung das ganze
+    // Bild bis zur Kappe (je Runde eine Gruppe, bis keine mehr kommt), und jeder Leib erscheint an seinem Ort, auch im Blick
+    // (`_bestandErscheint`). Die Ankunft ist EIN Ruf, nie eine Zahl von Bildern: bis tiere-im-blick 4 zählte sie 60 Rufe des
+    // Takts herab und zeichnete je Ruf eine Gruppe — headless läuft der Takt an der Wanduhr, und wie viele Gruppen im Blick
+    // erschienen, bevor das Rudel pirschte, hing an ihr (Probe rudel im Teil 1: Lücke beim Biss 112° · 183° · 194° · 360°,
+    // main 75° in jedem Lauf). Liefert, ob der Spieler ankam.
     _bestandAnkunftTakt() {
-        const p = this.state.playerMesh.position;
+        const st = this.state,
+            p = st.playerMesh.position;
         const l = this._bestandLage || (this._bestandLage = { x: NaN, z: NaN });
-        if (!(Math.hypot(p.x - l.x, p.z - l.z) <= this._bestandSeite() / 2))
-            this._bestandAnkunft = AnazhRealm.BESTAND_REGION.ankunftTakte;
-        else if (this._bestandAnkunft > 0) this._bestandAnkunft--;
+        const neu = !(Math.hypot(p.x - l.x, p.z - l.z) <= this._bestandSeite() / 2);
         [l.x, l.z] = [p.x, p.z];
-        return this._bestandAnkunft > 0;
+        if (!neu) return false;
+        this._bestandAnkunft = true;
+        try {
+            for (let k = 0, n = -1; k < st.maxCreatures && n !== st.creatures.length; k++)
+                ((n = st.creatures.length), this._bestandVerkoerpern());
+        } finally {
+            this._bestandAnkunft = false;
+        }
+        return true;
     }
     // EIN TIER WIRD LEIB: sein Stand kehrt wieder (`_restoreCreatureFromSnapshot` — Gedächtnis, Wunde, Bindung), ein Tier ohne
     // Stand wird gegossen (Seele, Größe); Alter, Anker und Name sind die des Tiers. Die Größe ist die seines Erbes zur Zeit
@@ -2942,11 +2952,11 @@ class AnazhRealm_kreatur_leben {
         if ((this._faunaUhrSprung ?? wu) !== (this._faunaUhrSprung = wu)) this._bestandSprung();
         this._gauTakt(); // der Leser des Gaus bestellt das Bild der Gattungen des Gesetzes (Leben C2b)
         this._feldTakt();
-        // zwischen zwei Takten zeichnet nur die Ankunft: die des Spielers (`_bestandAnkunftTakt`) und die eines Geheges
-        // (`_gehegeKommtAn`: seine Tiere stehen im selben Bild)
-        const ankunft = !!st.playerMesh && this._bestandAnkunftTakt();
+        // zwischen zwei Takten zeichnet nur die Ankunft: die des Spielers (`_bestandAnkunftTakt`: das ganze Bild in diesem Ruf)
+        // und die eines Geheges (`_gehegeKommtAn`: seine Tiere stehen im selben Bild)
+        if (st.playerMesh) this._bestandAnkunftTakt();
         if (st.spielZeit - (L.lastTick || 0) < B.taktS)
-            return void ((ankunft || this._gehegeKommtAn()) && this._bestandVerkoerpern());
+            return void (this._gehegeKommtAn() && this._bestandVerkoerpern());
         L.lastTick = st.spielZeit;
         this._bestandAdoptieren();
         // DIE OFFENEN RISSE (oekologie.K2): ein Leib, den ein Riss im Nah-Kreis seinem Jäger nannte (sein Tier starb im Gesetz),
@@ -2984,7 +2994,7 @@ class AnazhRealm_kreatur_leben {
                 [ud._gauWartet, ud._gauWartetOrt, ud._bestand.leib, ud._bestand] = [ud._bestand.id, { x: ud._bestand.x, z: ud._bestand.z }, null, null]; // prettier-ignore
         }
         [this._gauBildStand, this._gauMerk, this._gauJaegerOrt] = [null, null, null];
-        this._bestandAnkunft = AnazhRealm.BESTAND_REGION.ankunftTakte; // das Bild der neuen Uhr ist eine Ankunft
+        this._bestandLage = null; // das Bild der neuen Uhr ist eine Ankunft (`_bestandAnkunftTakt`)
         for (const R of Object.values(this._bestandRegionen().regionen))
             for (const t of R.tiere) {
                 t._ohneOrt = undefined;
@@ -4013,8 +4023,6 @@ AnazhRealm.BESTAND_REGION = Object.freeze({
     aufholS: 3600,
     aufholJeTakt: 20,
     leiberJeTakt: 3,
-    // die Takte der Ankunft (`_bestandAnkunftTakt`): eine Kappe von 20 Leibern zu leiberJeTakt je Takt steht nach 7 Takten
-    ankunftTakte: 60,
     // die Höhe (px am Schirm), bis zu der ein Leib im Blick erscheinen darf (`_bestandErscheint`; Johnson 1958, Erkennen 4 Linienpaare)
     erscheinenPx: 8,
 });
