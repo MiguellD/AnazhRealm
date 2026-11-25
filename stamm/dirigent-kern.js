@@ -2320,11 +2320,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-// DAS FENSTER DES LICHTMESSERS (`_poolAmBild`): die Perzentile der Punkte des Bilds, zwischen denen der Messer ihre Blenden
-// mittelt — das Band der Profis (Unreal `FCameraExposureSettings`: LowPercent 10, HighPercent 90 — das Log-Histogramm der
-// Belichtung, gemittelt zwischen ihnen)
-AnazhRealm.MESSER_FENSTER = Object.freeze([0.1, 0.9]);
-AnazhRealm.VERSION = "18.546.415";
+AnazhRealm.VERSION = "18.546.416";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([
@@ -2341,6 +2337,10 @@ AnazhRealm.WELTBILD_TERME = Object.freeze([
     "karten",
     "dorf",
 ]);
+// DAS FENSTER DES LICHTMESSERS (`_poolAmBild`): die Perzentile der Punkte des Bilds, zwischen denen der Messer ihre Blenden
+// mittelt — das Band der Profis (Unreal `FCameraExposureSettings`: LowPercent 10, HighPercent 90 — das Log-Histogramm der
+// Belichtung, gemittelt zwischen ihnen)
+AnazhRealm.MESSER_FENSTER = Object.freeze([0.1, 0.9]);
 // DER EINE MELDER (`_bruchMelden`, K22): dieselbe Bruch-Meldung wieder meldet sich höchstens alle BRUCH_WIEDER_MS mit ihrem
 // Zähler; das Buch hält die jüngsten BRUCH_BUCH_MAX Meldungen
 AnazhRealm.BRUCH_WIEDER_MS = 2000;
