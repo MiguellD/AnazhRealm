@@ -691,6 +691,9 @@ L.perspektive("pflanzen", (() => {
                     let w = null;
                     let fehler = null;
                     try {
+                        // DER MESSORT DER STATION (S1 „Ego im Wald am Rand der Mess-Wiese“): der Spieler steht an der Wiese, ehe die Seite
+                        // um ihn misst — nie, wo die Sitzung ihn zuletzt ließ (Hand-Lauf 25.11. am Kopf 3ed41fa9 maß, wo er stand)
+                        await H.ruf("/umstellen", { ort: "wiese", sicht: "ego" });
                         w = await seite(async function (r, T, A) {
                             const st = r.state;
                             const p = st.playerMesh.position;
@@ -764,10 +767,89 @@ L.perspektive("pflanzen", (() => {
                                 st.spielZeit = sz0;
                             }
                             const zurueck = st.spielZeit === sz0;
+                            // DAS DACH GEGEN DIE ERTRAGSTAFEL (S1; Entscheid des Koordinators 25.11.: die Mess-Funktion der Bahn mischwald ist die
+                            // Station — cloud-post/mischwald-station/lebenslauf-s1.js am Kopf 3ed41fa9, wörtlich): das Fenster A.dachM × A.dachM um
+                            // den Spieler aus dem Wald-Faden (dieselbe Bestellung wie die Orte oben), die Fläche je Phase der Flecken (phyto-core
+                            // forestFleckPhase) im Raster A.dachRasterM. Ohne die Tafel im Kern wirft die Messung beim Namen.
+                            // hoehenAbstand: KS der Dach-Höhen (s · hoeheM der Art; Unterstand alter < 1 und Totholz nicht in der Tafel) gegen den
+                            // Normalwald der Ertragstafel (WBR 86 Tab. 3, Niedersachsen — phyto-core FOREST_ERTRAG.kurven), das Alter gleichverteilt
+                            // über die Tafel, die Stammzahl je Alter nach Reineke (Gewicht h^−1,605), gemischt nach dem Anteil der Art im Dach.
+                            const hoehenAbstand = (darts, PC) => {
+                                const HM = {};
+                                for (const [a, k] of Object.entries(PC.FOREST_ERTRAG.kurven)) HM[a] = k.hoeheM;
+                                const dach = darts.filter((d) => d.sp !== "baum_totholz" && !(d.alter < 1) && PC.forestErtragKurve(d.sp));
+                                if (dach.length < 30) return { hoehenAbstand: null, nicht: "nur " + dach.length + " Bäume im Dach" };
+                                const h = dach.map((d) => d.s * HM[PC.forestErtragKurve(d.sp).name]).sort((a, b) => a - b);
+                                const anteil = new Map();
+                                for (const d of dach) {
+                                    const n = PC.forestErtragKurve(d.sp).name;
+                                    anteil.set(n, (anteil.get(n) || 0) + 1 / dach.length);
+                                }
+                                const ref = [];
+                                for (const [n, wA] of anteil) {
+                                    const Kv = PC.forestErtragKurve("baum_" + n) || PC.forestErtragKurve(n);
+                                    const pts = [];
+                                    for (let Al = Kv.a0; Al <= Kv.aEnd; Al += 1) pts.push(Kv.R(Al) * HM[n]);
+                                    const g = pts.map((x) => Math.pow(x, -1.605));
+                                    const G = g.reduce((s, v) => s + v, 0);
+                                    pts.forEach((x, i) => ref.push([x, (wA * g[i]) / G]));
+                                }
+                                ref.sort((a, b) => a[0] - b[0]);
+                                const Fref = (x) => {
+                                    let s = 0;
+                                    for (const [v, wv] of ref) if (v <= x) s += wv; else break;
+                                    return s;
+                                };
+                                let ks = 0;
+                                for (let i = 0; i < h.length; i++) ks = Math.max(ks, Math.abs((i + 1) / h.length - Fref(h[i])), Math.abs(i / h.length - Fref(h[i] - 1e-9)));
+                                return { hoehenAbstand: ks, baeumeDach: h.length };
+                            };
+                            // reinekeSteigung: log N je ha Fleck-Fläche gegen log Dq über die Phasen der Flecken (10 Klassen, je Klasse > 10 Dach-Bäume)
+                            const reinekeSteigung = (darts, PC, si, flaeche) => {
+                                const NB = 10;
+                                const n = new Float64Array(NB);
+                                const d2 = new Float64Array(NB);
+                                for (const d of darts) {
+                                    if (d.sp === "baum_totholz" || d.alter < 1 || !PC.forestErtragKurve(d.sp)) continue;
+                                    const k = Math.min(NB - 1, Math.floor(PC.forestFleckPhase(d.x, d.z, si) * NB));
+                                    n[k]++;
+                                    d2[k] += d.s * d.s;
+                                }
+                                const P = [];
+                                for (let k = 0; k < NB; k++) if (n[k] > 10 && flaeche[k] > 0) P.push([Math.log10(Math.sqrt(d2[k] / n[k])), Math.log10(n[k] / (flaeche[k] / 1e4))]);
+                                const mx = P.reduce((s, p) => s + p[0], 0) / P.length;
+                                const my = P.reduce((s, p) => s + p[1], 0) / P.length;
+                                let sxy = 0;
+                                let sxx = 0;
+                                for (const p of P) (sxy += (p[0] - mx) * (p[1] - my)), (sxx += (p[0] - mx) ** 2);
+                                return { reinekeSteigung: sxy / sxx, klassen: P.length };
+                            };
+                            const PC = globalThis.__phytoCore;
+                            if (!(PC.FOREST_ERTRAG && PC.forestErtragKurve && PC.forestFleckPhase)) throw new Error("phyto-core trägt die Ertragstafel nicht (FOREST_ERTRAG · forestErtragKurve · forestFleckPhase)");
+                            const kd = Math.round(A.dachM / C);
+                            const gxd = gx0 - (kd >> 1);
+                            const gzd = gz0 - (kd >> 1);
+                            const zd = [];
+                            for (let a = 0; a < kd; a++) for (let b = 0; b < kd; b++) zd.push(gxd + a, gzd + b);
+                            const WD = await r._voxelWorkerWaldDarts(new Int32Array(zd), seedInt, extras, null, "probe-lebenslauf-dach-" + seedInt);
+                            const dachDarts = [];
+                            for (let i = 0, o = 0; i < WD.anzahl.length; i++)
+                                for (let m = 0; m < WD.anzahl[i]; m++, o += 13) {
+                                    const d = { x: WD.werte[o], z: WD.werte[o + 1], sp: WD.arten[WD.werte[o + 2]], s: WD.werte[o + 3] };
+                                    if (WD.werte[o + 12] < 1) d.alter = WD.werte[o + 12];
+                                    dachDarts.push(d);
+                                }
+                            const flaeche = new Array(10).fill(0);
+                            const rs = A.dachRasterM;
+                            for (let x = gxd * C + rs / 2; x < (gxd + kd) * C; x += rs)
+                                for (let z = gzd * C + rs / 2; z < (gzd + kd) * C; z += rs) flaeche[Math.min(9, Math.floor(PC.forestFleckPhase(x, z, seedInt) * 10))] += rs * rs;
+                            const hA = hoehenAbstand(dachDarts, PC);
+                            const rS = reinekeSteigung(dachDarts, PC, seedInt, flaeche);
+                            const dachS1 = { hoehenAbstand: hA.hoehenAbstand, baeumeDach: hA.baeumeDach || 0, nicht: hA.nicht || null, reinekeSteigung: Number.isFinite(rS.reinekeSteigung) ? rS.reinekeSteigung : null, klassen: rS.klassen, stehendTot: dachDarts.filter((d) => d.sp === "baum_totholz").length, darts: dachDarts.length, zellen: kd * kd, ha: (kd * C * kd * C) / 1e4, spieler: [Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10] };
                             const pflanzen = [];
                             for (const d of ortDarts.slice(0, A.orte)) for (const x of d) pflanzen.push([x[4], x[3], x[2]]);
-                            return { lok: lok.length, hist, totholz, orte: orte.map((o) => [o[1], o[2]]), lage, pflanzen: pflanzen.slice(0, 4000), zurueck, jahrS, flaecheM2: A.fenster * A.fenster * C * C, ortZahl: A.orte };
-                        }, { lokalM: 150, klassen: [0.55, 0.8, 1.05, 1.3, 1.55, 2.0], orte: 20, orteViele: 100, fenster: 8, regionM: 5000, jahre: [0, 10, 50, 100, 150, 500] });
+                            return { lok: lok.length, hist, totholz, dachS1, orte: orte.map((o) => [o[1], o[2]]), lage, pflanzen: pflanzen.slice(0, 4000), zurueck, jahrS, flaecheM2: A.fenster * A.fenster * C * C, ortZahl: A.orte };
+                        }, { lokalM: 150, klassen: [0.55, 0.8, 1.05, 1.3, 1.55, 2.0], orte: 20, orteViele: 100, fenster: 8, regionM: 5000, jahre: [0, 10, 50, 100, 150, 500], dachM: 480, dachRasterM: 4 });
                     } catch (e) {
                         fehler = String((e && e.message) || e).slice(0, 200);
                     }
@@ -833,7 +915,11 @@ L.perspektive("pflanzen", (() => {
                     const zeit = (J) => ({ baeume, jahre: J, gleich: gleichAb(J), zurueck: w.zurueck });
                     const keineUhr = "der Bestand ist keine Funktion der Zeit: " + baeume + " Bäume an " + N + " Orten blieben über 500 Jahre der Prozess-Uhr byte-gleich (phyto-core planForestCell liest keine Uhr; _baumAlter altert nur Taten)";
                     const roh = {
-                        1: { werte: { baeumeLokal: w.lok, reverseJ: w.hist[0] >= w.hist[1] && w.hist[1] >= w.hist[2] ? 1 : 0, totholz: w.totholz, staemmeJeHa: Math.round((w.lok / (Math.PI * 150 * 150)) * 10000) }, zeuge: zeit(0) },
+                        1: {
+                            werte: { hoehenAbstand: w.dachS1.hoehenAbstand, reinekeSteigung: w.dachS1.reinekeSteigung, baeumeDach: w.dachS1.baeumeDach, totholzStehend: w.dachS1.stehendTot, baeumeLokal: w.lok, totholz: w.totholz },
+                            zeuge: { baeume: w.dachS1.baeumeDach, klassen: w.dachS1.klassen, darts: w.dachS1.darts, zellen: w.dachS1.zellen, ha: w.dachS1.ha, spieler: w.dachS1.spieler, jahre: 0, gleich: false },
+                            ...(w.dachS1.nicht ? { nicht: w.dachS1.nicht } : {}),
+                        },
                         2: { werte: { jahreMitFormwechsel: formJahre }, zeuge: zeit(150), ...(formJahre < 150 ? { nicht: "die Pflanze wechselt ihre Form über 150 Jahre nicht — ihr Alter ist die Schicht des Bestands (phyto-core forestSchicht), keine Funktion der Zeit" } : {}) },
                         3: { werte: { staemmeVerh: s0[0] ? s150[0] / s0[0] : null, basalVerh: s0[2] ? s150[2] / s0[2] : null, staemmeJeHa: Math.round(s0[0] / (besetzt * ha || 1)) }, zeuge: zeit(150), ...(gleichAb(150) ? { nicht: keineUhr } : {}) },
                         4: { werte: { orte: besetzt, jahre: 50, orteImBandProzent: besetzt ? (100 * imBand) / besetzt : null, staemmeVerh50: s0[0] ? s50[0] / s0[0] : null }, zeuge: zeit(50), ...(gleichAb(50) ? { nicht: keineUhr } : {}) },
@@ -850,12 +936,30 @@ L.perspektive("pflanzen", (() => {
                 sprossen: {
                     1: {
                         u: { auge: { ort: "wiese" } },
-                        soll: [ohneZahl(LL_ID, 1, "Höhenhistogramm aus dem Bild gegen Ertragstafel", "hoehenAbstand")],
-                        auge: { pose: "Ego im Wald am Rand der Mess-Wiese", vorbild: "Höhenhistogramm des Bestands gegen die Ertragstafel (Prüfer-Satz R11, die Schwelle fehlt dem Richter)" },
-                        taeter: "phyto-core.js forestTreeSize (reverse-J als statischer Parameter)",
-                        unklar: "der Richter nennt keine Schwelle — Vorschlag: Kolmogorow-Smirnow-Abstand Höhenhistogramm ↔ Ertragstafel ≤ 0,15.",
-                        gruen: { werte: { hoehenAbstand: 0.1, baeumeLokal: 300, reverseJ: 1 }, zeuge: { baeume: 300, jahre: 0, gleich: false } },
-                        attrappen: [{ name: "das Histogramm ohne Bestand", roh: { werte: { hoehenAbstand: 0.1 }, zeuge: { baeume: 0 } } }],
+                        // DIE ZAHL DES SATZES (Entscheid des Koordinators 25.11., die Mess-Funktion der Bahn mischwald): das Höhenhistogramm des Dachs
+                        // gegen die Ertragstafel als KS-Abstand ≤ 0,15 (der Vorschlag der Station seit 18.11.) UND die Stammzahl der Flecken gegen
+                        // die Selbstdurchforstung — quelle: WBR 86 Tab. 3 Bestandesmittelhöhen (Niedersachsen), eingefroren in phyto-core
+                        // FOREST_ERTRAG; Reineke 1933 (J. Agric. Res. 46: 627–638) log N = −1,605 · log Dq + k, Band ± 10 % = −1,766 … −1,445
+                        soll: [
+                            K.soll(LL_ID, 1, "Höhenhistogramm aus dem Bild gegen Ertragstafel", { key: "hoehenAbstand", rel: "≤", zahl: 0.15, refQuelle: "Kolmogorow-Smirnow-Abstand der Dach-Höhen gegen den Normalwald der Ertragstafel WBR 86 Tab. 3 (phyto-core FOREST_ERTRAG) ≤ 0,15", einheit: "KS" }),
+                            K.soll(LL_ID, 1, "Höhenhistogramm aus dem Bild gegen Ertragstafel", { key: "reinekeSteigung", rel: "band", zahl: -1.766, bis: -1.445, refQuelle: "Reineke 1933: log N je ha gegen log Dq über die Phasen der Flecken −1,605 ± 10 %", einheit: "Steigung" }),
+                        ],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (z.fehler) return "die Messung warf: " + z.fehler;
+                            if (!(z.baeume >= 300)) return "nur " + (z.baeume || 0) + " Bäume im Dach des Fensters (Soll ≥ 300)";
+                            if (!(z.klassen >= 5)) return "nur " + (z.klassen || 0) + " Phasen der Flecken mit > 10 Dach-Bäumen (Soll ≥ 5) — keine Linie der Selbstdurchforstung";
+                            return null;
+                        },
+                        auge: { pose: "Ego im Wald am Rand der Mess-Wiese", vorbild: "Höhenhistogramm des Bestands gegen die Ertragstafel (die Zahl richtet, das Bild ist Beleg)" },
+                        taeter: "phyto-core.js FOREST_ERTRAG · forestErtragGroesse (die Höhe der Art in der Phase ihres Flecks) · forestStehende (Selbstdurchforstung)",
+                        gruen: { werte: { hoehenAbstand: 0.051, reinekeSteigung: -1.454, baeumeDach: 3900, totholzStehend: 471 }, zeuge: { baeume: 3900, klassen: 10, darts: 4400, zellen: 900, ha: 23, jahre: 0, gleich: false } },
+                        attrappen: [{ name: "das Histogramm ohne Bestand", roh: { werte: { hoehenAbstand: 0.1, reinekeSteigung: -1.6 }, zeuge: { baeume: 0, klassen: 10 } } }],
+                        proben: [
+                            { name: "ein Kreis ohne Patch-Phasen → ROT", roh: { werte: { hoehenAbstand: 0.05, reinekeSteigung: null }, zeuge: { baeume: 3900, klassen: 0, darts: 4400, zellen: 900, ha: 23, jahre: 0, gleich: false } }, gruen: false },
+                            { name: "die Tafel nur als Name, Dach ohne Bezug (main e1a54023: KS 0,293) → ROT", roh: { werte: { hoehenAbstand: 0.293, reinekeSteigung: -1.6 }, zeuge: { baeume: 3900, klassen: 10, jahre: 0, gleich: false } }, gruen: false },
+                            { name: "Matérn gesättigt, Steigung −2,0 → ROT", roh: { werte: { hoehenAbstand: 0.05, reinekeSteigung: -2.0 }, zeuge: { baeume: 3900, klassen: 10, jahre: 0, gleich: false } }, gruen: false },
+                        ],
                     },
                     2: {
                         u: { auge: { ort: "wiese" } },

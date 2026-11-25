@@ -1041,7 +1041,7 @@
   { "station": "karte2.leben.pflanzen.biome#4", "leiter": "leben.pflanzen.biome", "sprosse": 4, "richter": "gleich" },
   { "station": "karte2.leben.pflanzen.biome#5", "leiter": "leben.pflanzen.biome", "sprosse": 5, "richter": "gleich" },
   { "station": "karte2.leben.pflanzen.biome#6", "leiter": "leben.pflanzen.biome", "sprosse": 6, "richter": "fehlt", "grund": "R11 Panel: „Blindbewertung „lebendige Welt““ — der Richter-Satz verlangt ein menschliches Urteil (≥ 12 blinde Menschen im 2AFC über ≥ 40 Paare oder ein daran geeichtes, eingefrorenes Modell); die Station legt das Bild und nennt ihre Zahlen, GRÜN nie" },
-  { "station": "karte2.leben.pflanzen.lebenslauf#1", "leiter": "leben.pflanzen.lebenslauf", "sprosse": 1, "richter": "fehlt", "grund": "Korpus fehlt: Ertragstafel eines realen Bestands für „Höhenhistogramm … gegen Ertragstafel“ (die Karte nennt dazu keine Schwelle, R6) — mit Quelle eingefroren im Repo (R11); bis dahin GRÜN nie" },
+  { "station": "karte2.leben.pflanzen.lebenslauf#1", "leiter": "leben.pflanzen.lebenslauf", "sprosse": 1, "richter": "gleich" },
   { "station": "karte2.leben.pflanzen.lebenslauf#2", "leiter": "leben.pflanzen.lebenslauf", "sprosse": 2, "richter": "fehlt", "grund": "R11 Panel: „Bildreihe gegen Fotoreihe derselben Art“ — der Richter-Satz verlangt ein menschliches Urteil (≥ 12 blinde Menschen im 2AFC über ≥ 40 Paare oder ein daran geeichtes, eingefrorenes Modell); die Station legt das Bild und nennt ihre Zahlen, GRÜN nie" },
   { "station": "karte2.leben.pflanzen.lebenslauf#3", "leiter": "leben.pflanzen.lebenslauf", "sprosse": 3, "richter": "gleich" },
   { "station": "karte2.leben.pflanzen.lebenslauf#4", "leiter": "leben.pflanzen.lebenslauf", "sprosse": 4, "richter": "gleich" },
