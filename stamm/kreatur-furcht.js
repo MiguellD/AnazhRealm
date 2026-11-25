@@ -75,7 +75,9 @@ class AnazhRealm_kreatur_furcht {
         const VG = AnazhRealm._verhaltenGesetz();
         const sichtPirsch = VG.jagd.pirschSichtM;
         const nase = this._scentNase(VG.jagd.scentRangeM);
-        const quelle = this._furchtQuelle || (this._furchtQuelle = [{ x: 0, z: 0, strength: 1 }]);
+        // DIE FAHNE TRÄGT IHRE LAUFZEIT (jagd-quote 2): die Quelle ist die Spur des Jägers (`_duftSpur`), gerochen wird er dort,
+        // wo er stand, als seine Front aufbrach — ein Jäger ohne Spur hat noch keine Fahne (`_scentAt`, die leere Spur)
+        const quelle = this._furchtQuelle || (this._furchtQuelle = [{ x: 0, z: 0, strength: 1, spur: null }]);
         let best = Infinity;
         let J = null;
         let sichtJ = 0;
@@ -84,6 +86,11 @@ class AnazhRealm_kreatur_furcht {
             if (j === creature || !j.position) continue;
             const d = Math.hypot(j.position.x - creature.position.x, j.position.z - creature.position.z);
             if (!(d < best)) continue;
+            // GEFÜRCHTET WIRD NUR DER EIGENE JÄGER (jagd-quote 2, Auge wie Nase): wessen Beute das Tier nicht ist
+            // (`_kreaturIstBeute`: wild, ein anderes Gehege, schwerer als jagd.beuteMasse × seine Masse), den flieht es nicht. Bis hier
+            // floh der Bär (335 kg, nie Beute des 64-kg-Wolfs) das Rudel am Riss per Nase auf 28 m und kam nie an den Kadaver
+            // (Bühne mahl: Fuchs und Bär „folgen dem Kadaver nicht“, main 18,5 · 15,9 s).
+            if (!this._kreaturIstBeute(j, creature)) continue;
             const hetzt = j.userData && j.userData._motionZustand === "hetzen";
             if (fluchtM < 0) fluchtM = this._kreaturFluchtDistanzM(creature);
             // das Auge wird nur gefragt, wo es zählt: in der Fluchtdistanz (die Kosten folgen der Nähe, nie dem Bestand)
@@ -92,6 +99,7 @@ class AnazhRealm_kreatur_furcht {
             if (!(d < sicht) && d < fluchtM) {
                 quelle[0].x = j.position.x;
                 quelle[0].z = j.position.z;
+                quelle[0].spur = (j.userData && j.userData._duftSpur) || AnazhRealm.DUFT_SPUR_LEER;
                 if (this._scentAt(creature.position.x, creature.position.z, quelle) >= nase.schwelle) sicht = fluchtM;
             }
             if (d < sicht) [best, J, sichtJ] = [d, j, sicht];

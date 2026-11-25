@@ -2831,6 +2831,8 @@ class AnazhRealm_kreatur_verhalten {
         for (const c of this.state.creatures) {
             const u = c && c.userData;
             if (!u) continue;
+            // die Spur seines Leibs (die Laufzeit der Fahne, `_scentSpur`): jeder Leib riecht, nicht erst der jagende
+            if (c.position) this._duftSpurSchreiben(c);
             const zj = u._motionZustand;
             const jagt = zj === "jagd" || zj === "hetzen";
             if (jagt) jaeger.push(c);
