@@ -46,8 +46,8 @@ die Art in der Welt (die Welt trägt den Pegel, der die Flüsse hebt; die Zahl i
 - **kueste.** 10,6 km vom Ursprung: von 120 Strahlen aus dem Ursprung trägt Strahl 87 das breiteste Watt; in seiner Umgebung
   (±1,5 km, Raster 25 m, mit den Kacheln der Hydrosphäre um jede Stelle) die Stelle 0,2–0,8 m über dem Meer, ohne Fluss am Ort,
   mit dem Meer als erstem Wasser in 30–120 m, ohne Krone in der Ego-Sicht (das Gesetz der Mess-Wiese, `belegSicht`) und mit dem
-  breitesten Watt längs des Blicks: 306 m zwischen +1,5 m und −1,5 m um den Spiegel, 0,56°. 10 Stellen hielten mit freiem Blick,
-  13 fielen als verstellt (18 s). Am Ort: kein Baum im Ring von 25 m, der Korridor bis 30 m hinter dem Wasserrand (±20°) frei,
+  breitesten Watt längs des Blicks: 306 m zwischen +1,5 m und −1,5 m um den Spiegel, 0,56°. 10 Stellen hielten ohne Krone im
+  Blick, 13 fielen als verstellt (18 s). Am Ort: kein Baum im Ring von 25 m, der Korridor bis 30 m hinter dem Wasserrand (±20°) frei,
   der Horizont −0,27°, 200 m hinter dem Rand 5,04 m unter null. Der Hang des Belegs (0,88°) hält die Klasse „flach“ 0–2° der
   Kartierung des Harle-Seegatts (Mascioli et al. 2023, Journal of Maps 19, https://doi.org/10.1080/17445647.2022.2154175);
   `hangMax` 2 ist diese Klasse. Die Äsung 0,07 ist das kahle Watt.
@@ -72,8 +72,39 @@ die Art in der Welt (die Welt trägt den Pegel, der die Flüsse hebt; die Zahl i
   die Kacheln um den Ort vorgerechnet, sonst bricht der Faden des Walds im Wirt) wie in der Welt (`window.__belegSicht`);
   `belegUrteil` nennt jede Krone im Blick ROT, eine ungemessene Sicht ebenso. Linse S20c: der Wald-Ort → ROT „der Blick zum
   Wasser ist nicht frei — 6 Krone(n)“, der Beleg ohne Sicht → ROT „der Blick ist nicht gemessen“.
+- **Das Schilf vor dem Auge.** Die dritte Küste hält am Gesetz und in der Welt, ohne Krone im Blick — und das Auge sieht das
+  Meer nur als Band über Halmen und Schilf (Bild unten: die Abnahme an der Pose des Auges ROT „verdeckt von Boden-Schicht in
+  5.93 m“, die Blick-Wahl hob die Kamera auf 7,7 m). Gemessen am Gesetz: das Ufer-Band des Schilfs (foundry-core `schilf`,
+  `ufer` [−0,6, −0,3, 0,3, 0,9] m über dem Spiegel, 40 je 100 m²) trägt längs des Blicks von 22 m hinter dem Spieler bis
+  60 m vor ihm Gewicht (82 m, davon 28 m voll; am Spieler 0,467), die Wasserlinie bei 40 m liegt in seiner Mitte. Auf einem
+  Watt von ≤ 2° entkommt dem keine Pose: näher am Wasser steht das Auge tiefer im Gürtel, höher am Hang bleibt über den
+  Spitzen ein Band von unter 2°. Die Wurzel liegt im Gesetz der Welt — das Band gilt am Meer wie am See, Salz kennt es nicht —,
+  in einem Kern außerhalb dieses Auftrags (Byte-Beweis, Lehre 11). `imBlick` zählt Kronen, nie die Boden-Schicht; Beleg,
+  Kommentar und Titel sagen genau das.
 
-__BILDER__
+## Die Bilder — `umstellen --ort`, dann `werkbank bild` an der Kamera des Spiels (Ausgabe-Pfad)
+
+Werkbank auf dem Kopf nach dem Merge von main 804ca10c (V18.546.419), swiftshader, chrome-headless-shell 148, Leinwand der
+Sitzung 640 × 360 (die Klasse in 1920 × 1080 steht hier nicht, siehe offen). Je Ort zuerst `umstellen --ort`, dann die Kamera
+des Spiels (`_loopCamera`) als Pose, Blickziel 20 m voraus, die Blick-Wahl der Werkbank (Standard 42 Posen).
+
+| Ort | umstellen | die Welt nahm | Beleg in der Welt | Bild |
+|---|---|---|---|---|
+| kueste | Exit 0, 614 s, 344 Takte | Uhr 0,7 · cloudy · autumn | −2,39 m · meer −3 in 40 m · 0,879° · Äsung 0,068 · 0 Kronen | `kueste.jpg`: Abnahme GRÜN, Pose 33 von 2 versuchten (7,7 m hoch), 130 s |
+| ufer | Exit 0, 896 s, 462 Takte | Uhr 0,35 · sunny · spring | 22,23 m · fluss 21,96 in 4,75 m · 3,28° · 8,65 m breit · Äsung 0,799 · 0 Kronen | `ufer.jpg`: Abnahme GRÜN an der Pose des Auges (1 Pose), 30 s |
+| kueste, Auge | (zweiter Lauf, 619 s) | dieselbe | dieselbe | `kueste-auge-rot.jpg`: `--wahl 0`, Abnahme ROT „Blickziel verdeckt von Boden-Schicht in 5.93 m“ |
+
+Die Belege der Welt sind die Zahlen des Gesetzes (H1) bis auf die zweite Stelle (Hang am Ufer 3,28° ↔ 3,286°).
+
+![kueste — Watt, Meer, Abend im Herbst unter Wolken; Pose der Blick-Wahl 7,7 m über dem Grund](messort-zeit-bild/kueste.jpg)
+
+![kueste — an der Pose des Auges: Halme und Schilf, das Meer als Band am Horizont](messort-zeit-bild/kueste-auge-rot.jpg)
+
+![ufer — Gras der Bank, der Fluss mit Schilf, das Gegenufer mit Mischwald, Morgen im Frühling bei Sonne](messort-zeit-bild/ufer.jpg)
+
+Mein Blick: die Küste zeigt im gehobenen Bild das Watt in Herbstfarben, das Meer mit dem Wolkenspiegel und die ferne Küste;
+am Auge Schilf und Halme. Das Ufer zeigt die Bank, den Fluss, Rohrkolben im Flachwasser und das Gegenufer — der Fluss spiegelt
+den Morgenhimmel fast weiß (das Bild Luma 146,9), ungeurteilt, weil die Klasse `wasserSatz` erst die echte GPU misst.
 
 ## Die neun bestehenden Orte — `umstellen --ort wiese` vorher ↔ nachher
 
@@ -110,6 +141,9 @@ der Stationen: eine Soll-Zeile, deren Wortlaut „gegen <Name>“ sagt, ohne `qu
   Container stand der Klassen-Schuss der Küste nach 43 min noch in der GPU (der Takt der Welt bei 481, ein Bild-Takt 12 ms, der
   GPU-Prozess bei 367 % CPU), und ich brach ihn ab. Die Bilder unten kommen aus demselben Ausgabe-Pfad in der Leinwand der Sitzung,
   ohne Teilung. `imBild` (kueste: bodenSatz, wasserSatz; ufer: nahWiese, wasserSatz) urteilt erst die echte GPU.
+- **Die Küste am Auge:** das Meer steht hinter dem Gürtel des Schilfs (oben); `imBild` der Küste (`wasserSatz` 0,05) an der
+  Pose des Auges ist auf echter GPU eher ROT als GRÜN. Die Wurzel ist das Ufer-Band des Schilfs am Meer, ein Kern außerhalb
+  dieses Auftrags.
 - **Die Serie je Gerät × Sicht:** 2 Orte × 2 Geräte × 2 Sichten = 8 Ratschen ungemessen, beim Namen offen (`serie.offen`,
   gate:profiband H2b). Sie misst auf echter GPU (Lehre 17).
 - **Die Jahreszeit hat keinen Satz des Spielers:** der Parser kennt `setze uhrzeit` und `setze wetter`, die Jahreszeit stellt der

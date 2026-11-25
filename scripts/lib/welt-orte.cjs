@@ -216,9 +216,12 @@ function wirtAmGesetz(root, mitWasser) {
 //   breite   — die Breite des Flusses an seinem Rand (`_hydroDistAt`: 2 · halfW), nur am Fluss
 //   aesung   — die Äsung am Spieler (`_kreaturNahrung`, das Leben des Felds: der Jungwuchs, den der Fraß liest), 0..1
 //   imBlick  — die Kronen in der Ego-Sicht, gezählt von `sicht(x, z, blick)` (`belegSicht`: DIE Messung der Wiese, `wieseMessen`
-//              … imBlick, mit dem Gesetz der Mess-Wiese `blickFrei`/`blickWinkel`) — der Blick zum Wasser ist frei. Die erste
-//              Küste 859,3/10 430,3 stand im Erlen-Wald (Kronen-Deckung 0,897, 6 Kronen im Blick, eine Erle 0,9 m vom Spieler):
-//              das Bild zeigte Birkenlaub statt Meer, die Blick-Wahl floh auf 7,5 m Höhe (25.11.)
+//              … imBlick, mit dem Gesetz der Mess-Wiese `blickFrei`/`blickWinkel`) — keine Krone steht zwischen Auge und Wasser.
+//              Die zweite Küste 859,3/10 430,3 stand im Erlen-Wald (Kronen-Deckung 0,897, 6 Kronen im Blick, eine Erle 0,9 m vom
+//              Spieler): das Bild zeigte Birkenlaub statt Meer, die Blick-Wahl floh auf 7,5 m Höhe (25.11.). Die Boden-Schicht
+//              (Halm, Streu) zählt `imBlick` nicht: an der Küste −215,7/10 555,3 steht vor dem Auge der Gürtel des Schilfs (sein
+//              Ufer-Band, foundry-core `schilf`, gilt am Meer wie am See: 82 m längs des Blicks), die Abnahme des Bilds an der
+//              Pose des Auges nennt ihn „verdeckt von Boden-Schicht in 5.93 m“
 function belegSicht(r, wm, S) {
     return (x, z, blick) => wm(r, x, z, blick, S).imBlick;
 }
@@ -628,7 +631,7 @@ const WIESE_INSTALL =
     `window.__wieseGesetz = ${JSON.stringify(WIESE.wiese)};` +
     `window.__wieseMessen = ${wieseMessen.toString()};` +
     `window.__wieseUrteil = ${wieseUrteil.toString()};`;
-// der Beleg in der Seite: dieselbe Messung der Wiese für den freien Blick (`__belegSicht(r, __wieseMessen, __wieseGesetz)`)
+// der Beleg in der Seite: dieselbe Messung der Wiese für die Kronen im Blick (`__belegSicht(r, __wieseMessen, __wieseGesetz)`)
 const BELEG_INSTALL =
     WIESE_INSTALL +
     `window.__belegSicht = ${belegSicht.toString()};` +
@@ -641,7 +644,7 @@ module.exports = {
     belegSicht,
     belegMessen,
     belegUrteil,
-    // der freie Blick am Gesetz: die Messung der Wiese mit dem Gesetz der Mess-Wiese (EINE Quelle, haushalt `wiese`). Der Wald
+    // die Kronen im Blick am Gesetz: die Messung der Wiese mit dem Gesetz der Mess-Wiese (EINE Quelle, haushalt `wiese`). Der Wald
     // fragt die Feuchte der Hydrosphäre in seinem Urteils-Reich (`_forestCellDarts` → `_ensureHydroTilesAround`, WALD_PLAN.urteil
     // Zellen): der Wirt (`wasserUm`) hält die Kacheln bis zum Kranz der Messung und das Reich darüber, ehe er fragt — ohne Faden
     // bestellte er sie, und die Bestellung brach (HYDRO-FADEN)
