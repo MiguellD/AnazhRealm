@@ -4740,7 +4740,7 @@ const PRESETS = {
         kind: "tree",
         panel: "plant",
         s: { api: 0.92, delta: 2.05, slim: 0.72, trop: 0.1, leaf: 0.7 },
-        ph: { hoeheM: 26.2, hd: 70, krone: "fichte" }, // Welt-Maß (K20): Fichte im Bestand (Altbestand 30–50 m)
+        ph: { hoeheM: 26.2, krone: "fichte" }, // Welt-Maß (K20): Fichte im Bestand (Altbestand 30–50 m)
     },
     birke: {
         kind: "tree",
@@ -4758,13 +4758,13 @@ const PRESETS = {
         kind: "tree",
         panel: "plant",
         s: { api: 0.95, delta: 2.35, slim: 0.18, trop: 0.05, leaf: 0.88 },
-        ph: { hoeheM: 39.9, hd: 18, krone: "mammut" }, // Welt-Maß (K20): der Mammutbaum, Solitär-Riese: gedrungen
+        ph: { hoeheM: 39.9, krone: "mammut" }, // Welt-Maß (K20): der Mammutbaum, Solitär-Riese: gedrungen
     },
     tanne: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.9, delta: 2.1, slim: 0.74, trop: 0.05, leaf: 0.78 },
-        ph: { hoeheM: 26.9, hd: 65, krone: "tanne" }, // Welt-Maß (K20): Weißtanne im Bestand (30–50 m)
+        ph: { hoeheM: 26.9, krone: "tanne" }, // Welt-Maß (K20): Weißtanne im Bestand (30–50 m)
     },
     strauch: {
         kind: "shrub",

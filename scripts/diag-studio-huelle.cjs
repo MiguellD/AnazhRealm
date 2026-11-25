@@ -72,8 +72,9 @@ const ENGINE_EINE = "/vendor/three.webgpu.min.js";
 // der Seite der Welt (/index.html, gelesen als Text) lädt die EINE Bühne (AnazhHuelle.buehne) — bis w28-studio-seiten war jede
 // Anfrage an /stamm/ ROT, also jede Seite auf der Bühne (garage, schmiede, portale).
 const WELT_GELADEN = /^\/stamm\/dirigent-ankunft\.js$/;
-// Die portale fiel aus ihr mit w28-studio-seiten (AnazhHuelle.studio: das Werk der Welt auf der EINEN Bühne).
-const ENGINE_RATSCHE = { fachwerk: "r128", koerperstudio: "r128", tetrapoda: "r128", terrain: "r128", fluid: "r183", translated: "r130" };
+// Die portale fiel aus ihr mit w28-studio-seiten (AnazhHuelle.studio: das Werk der Welt auf der EINEN Bühne), die fachwerk mit
+// fachwerk-buehne (ihr r128, ihr Licht und die GLSL-Blende fielen in derselben Welle).
+const ENGINE_RATSCHE = { koerperstudio: "r128", tetrapoda: "r128", terrain: "r128", fluid: "r183", translated: "r130" };
 // H6 OHNE BROWSER (w28-studio-seiten): dieselbe Ratsche am Text der Studio-Seite — ein `<script src>` auf eine Engine-Kopie
 // (`…/lib/three*.js`, das r160-UMD `vendor/three.min.js`) ist fremd; der Gang (--engine) zählt dazu die dynamischen Anfragen.
 // Gezählt: die Studios auf der EINEN Engine und die, deren Werk die Bühne der Welt zeichnet (`AnazhHuelle.studio`).
@@ -330,7 +331,7 @@ function selbsttest() {
         ["H11 die schmiede zeichnet an der Bühne der Hülle vorbei (ihr Anschluss bis w28-studio-welt)", "worlds/schmiede/schmiede.js", "BUEHNE.bild(cam);", "if(__weltLicht.buehneZeichnet(BUEHNE.welt,scene,R))R.render(scene,cam);", /^H11 worlds\/schmiede\/schmiede\.js:\d+ .*: ein eigener Bühnen-Anschluss/],
         ["H11 die garage baut ihren Renderer selbst", "worlds/garage/garage.js", "const R=BUEHNE.renderer;", "const R=new THREE.WebGPURenderer({antialias:true});", /^H11 worlds\/garage\/garage\.js:\d+ .*: ein eigener Bühnen-Anschluss/],
         ["H6 die portale lädt wieder das r128 des Labors (am Text der Seite)", "worlds/portale/index.html", '<script type="importmap">', '<script src="../terrain/lib/three-r128.min.js"></script>\n<script type="importmap">', /^H6 worlds\/portale\/index\.html: lädt eine fremde Engine \(\.\.\/terrain\/lib\/three-r128/],
-        ["H6 die fachwerk lädt keine Kopie mehr (die Ratsche zieht an, am Text der Seite)", "worlds/fachwerk/index.html", '<script src="../terrain/lib/three-r128.min.js"></script>', "", /^H6 worlds\/fachwerk\/index\.html: lädt keine fremde Engine mehr \(r128 fiel\)/],
+        ["H6 die fachwerk lädt wieder das r128 des Labors (am Text der Seite)", "worlds/fachwerk/index.html", '<script type="importmap">', '<script src="../terrain/lib/three-r128.min.js"></script>\n<script type="importmap">', /^H6 worlds\/fachwerk\/index\.html: lädt eine fremde Engine \(\.\.\/terrain/],
         ["H12 die Tor-Seite schreibt doorAngle 0 in jeden Takt (das Tor steht zu statt in der Fern-Pose)", "worlds/portale/porta.js", "return anteil(t.zf >= 0 ? doorAngle : doorAngleB);", "return (t.zf >= 0 ? doorAngle : doorAngleB) / DOOR_OPEN;",/^H12 worlds\/portale\/porta\.js: ohne Taste stehen die Flügel bei 0 \/ 0 statt in der Ruhe/],
         ["H12 der Flügel-Rückruf verwirft die Ruhe (ruheAnteil bleibt 0)", "worlds/portale/porta.js", "ruheAnteil = ruhe;", "", /^H12 worlds\/portale\/porta\.js: ohne Taste stehen die Flügel bei 0 \/ 0/],
         ["H5 eine Quelle der garage ändert sich, ihr Panorama bleibt (veraltet)", "worlds/garage/garage.js", /$/, "\n/* ein neuer Look */", /^H5 garage: das Panorama ist veraltet/], // ankerfrei: ein Kommentar am Ende der Quelle
@@ -370,7 +371,7 @@ function selbsttest() {
     const r128 = "/worlds/terrain/lib/three-r128.min.js";
     // die Bühne der Welt liest die Liste der Seite der Welt und lädt den Stamm ohne seine Ankunft (AnazhHuelle.buehne) — GRÜN
     const buehne = [...eine, "/index.html", "/stamm/dirigent-kern.js", "/stamm/siedlung-tor.js"];
-    const netz = Object.fromEntries([...STUDIOS, ...NEBENWELTEN].map((id) => [id, ENGINE_RATSCHE[id] ? [r128] : ["garage", "schmiede", "portale"].includes(id) ? buehne : []]));
+    const netz = Object.fromEntries([...STUDIOS, ...NEBENWELTEN].map((id) => [id, ENGINE_RATSCHE[id] ? [r128] : ["garage", "schmiede", "portale", "fachwerk"].includes(id) ? buehne : []]));
     // jedes Studio mit Sitzung (H3), jede Leiste unter ihrem Deckel und mit dem Maß des Werks (H4, H10), der Klang je Ort
     const zeile = { werkBuehne: 2, werkWelt: 2 };
     const wahr = (leiste, gezeichnet, stufe = 0, deckel = 62000, mehr) => ({ kosten: [{ ...zeile, stufe, leiste, gezeichnet, deckel, ...mehr }] });
@@ -383,7 +384,7 @@ function selbsttest() {
         ["H6 die garage auf r184 ohne WebGPU", { garage: ["/vendor/three.module.min.js"] }, /^H6 garage: three aus vendor\/ ohne/],
         ["H6 die klang lädt das r160-UMD", { klang: ["/vendor/three.min.js"] }, /^H6 klang: die Seite lädt eine fremde Engine \(\/vendor\/three\.min\.js/],
         ["H6 die garage aufgelöst in die Welt (index.html?studio=garage)", { garage: [...buehne, "/stamm/dirigent-ankunft.js"] }, /^H6 garage: die Seite lädt die Welt \(\/stamm\/dirigent-ankunft\.js\)/],
-        ["H6 die fachwerk lädt keine Kopie mehr (die Ratsche zieht an)", { fachwerk: eine }, /^H6 fachwerk: lädt keine fremde Engine mehr/],
+        ["H6 die fachwerk lädt wieder r128 (sie fiel aus der Ratsche, fachwerk-buehne)", { fachwerk: [r128, ...eine] }, /^H6 fachwerk: die Seite lädt eine fremde Engine/],
         ["H6 die portale lädt wieder r128 (sie fiel aus der Ratsche, w28-studio-seiten)", { portale: [r128, ...eine] }, /^H6 portale: die Seite lädt eine fremde Engine/],
         ["H3 die garage schreibt den offenen Zug nicht (Strg+Z stumm, 83df2052)", {}, /^H3 garage: Strg\+Z wirkt nicht/, { garage: { folge: [..."122222"] } }],
         ["H3 das Strg+Umschalt+Z der portale wiederholt nicht", {}, /^H3 portale: Strg\+Umschalt\+Z wirkt/, { portale: { folge: [..."121111"] } }],
