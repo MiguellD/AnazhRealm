@@ -1,0 +1,1 @@
+Knoten der Großstadt: Folge und Vorfahrt aus EINEM VERKEHR_GESETZ (IDM T 1,5 s, Lücke t_c/t_f nach HCM, Rang aus WEGE_KLASSE), abstandM fällt — stadt-voll 10 Uhr VK ROT → GRÜN, Zeitlücke 1,9 → 2,74 s; offen: Reisetempo 0,666 < 0,8, Wagen im Bild, P · Marktplatz
