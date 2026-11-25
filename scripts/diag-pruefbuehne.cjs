@@ -1521,6 +1521,7 @@ async function lichtLauf() {
                             const lichter = [];
                             sc.traverse((o) => o.isLight && lichter.push([o, o.intensity]));
                             const [envA, amb, luftZ, haken] = [sc.environment, new T.AmbientLight(0xffffff, 0), zl.ohneLuft(), objs.get];
+                            let envZurueck = envA; // die Umgebung, die nach den Lampen der Linse wieder gilt (L1 springt die Uhr)
                             objs.get = roh;
                             sc.add(amb);
                             try {
@@ -1535,18 +1536,81 @@ async function lichtLauf() {
                                 albedoBild = { hell, dunkel: await zl.lies() };
                                 // DIE SICHT DES MONDES (sonnenbahn 2, Wort des Koordinators 25.11.): dasselbe Ziel allein unter dem
                                 // Richtlicht der Nacht (die Lampe aus, die Umgebung still) — ein Pixel ohne sein Licht liegt im Schatten
-                                // des Mondes (Geometrie, kein Bruch der Kette); abgesoffen zählt nur der Boden, den es TRIFFT
+                                // des Mondes (Geometrie, kein Bruch der Kette); abgesoffen zählt nur der Boden, den es TRIFFT.
+                                // DIE UMGEBUNG STILL heißt ihre Einheit 0 (`U.licht` der Tafeln): die Umgebung der Stoffe ist der Knoten
+                                // der Szene (`scene.environmentNode`, r184 `getEnvironmentNode` nimmt ihn vor `scene.environment`) — bis
+                                // sonnenbahn 3 leuchtete sie in die Sicht des Mondes, und der Mond selbst lag unverstärkt (Albedo · E ÷ π
+                                // ≈ 1e-7) im Halb-Float des Ziels unter seiner kleinsten normalen Zahl: × G = 1 ÷ (Himmel + Richtlicht)
                                 const dlI = lichter.find(([l]) => l === dl);
+                                const UL = r._atmoLutBau().U.licht;
                                 if (dl && dlI && dlI[1] > 0) {
+                                    const lA = UL.value;
+                                    try {
+                                        UL.value = 0;
+                                        dl.intensity = dlI[1] * (himmelL + mondL > 0 ? 1 / (himmelL + mondL) : 1);
+                                        for (let i = 0; i < 2; i++) zl.zeichne(cam);
+                                        albedoBild.mond = await zl.lies();
+                                    } finally {
+                                        dl.intensity = 0;
+                                        UL.value = lA;
+                                    }
+                                }
+                                // L1 (Wort des Koordinators 25.11. 05:30): EINE Atmosphäre, der Mond ist nur die schwächere Lampe — am
+                                // Boden das Licht der Umgebung allein gegen das des Richtlichts allein, unter dem Mond und unter der Sonne
+                                // in derselben Höhe. Die Umgebung der Stoffe ist der Knoten der Szene (`scene.environmentNode`, r184
+                                // `getEnvironmentNode`: er gilt vor `scene.environment`) — sie bleibt an, das Richtlicht kommt dazu:
+                                // Richtlicht = beide − Umgebung. Beide × G = 1 ÷ (Himmel + Richtlicht) der Lesung, die Umgebung über die
+                                // Einheit der Tafeln (`U.licht`, nur `_atmoTakt` schreibt sie): ein Pixel der Nacht (Albedo · E ÷ π ≈ 1e-7)
+                                // läge im Halb-Float des Ziels unter seiner kleinsten normalen Zahl
+                                const paar = async (G) => {
+                                    const [dI, lA] = [dl.intensity, UL.value];
+                                    try {
+                                        for (const [l] of lichter) l.intensity = 0;
+                                        UL.value = lA * G;
+                                        for (let i = 0; i < 2; i++) zl.zeichne(cam);
+                                        const umgebung = await zl.lies();
+                                        dl.intensity = dI * G;
+                                        for (let i = 0; i < 2; i++) zl.zeichne(cam);
+                                        return { umgebung, beide: await zl.lies() };
+                                    } finally {
+                                        dl.intensity = 0;
+                                        UL.value = lA;
+                                    }
+                                };
+                                if (schein === "nacht" && dl && dlI && dlI[1] > 0 && himmelL + mondL > 0) {
                                     dl.intensity = dlI[1];
-                                    for (let i = 0; i < 2; i++) zl.zeichne(cam);
-                                    albedoBild.mond = await zl.lies();
-                                    dl.intensity = 0;
+                                    albedoBild.l1 = { nacht: await paar(1 / (himmelL + mondL)) };
+                                    // die Sonne in der Höhe des Mondes, am Vormittag (die Höhe steigt bis Mittag)
+                                    const hoeheBei = (t) => r._dayNightSunDirection(r._sonnenWinkel(t)).y;
+                                    const ziel = Math.sin((mondHoehe * Math.PI) / 180);
+                                    let [a, b] = [0.5, 0.5];
+                                    while (a > 0 && hoeheBei(a) >= ziel) a -= 0.01;
+                                    for (let i = 0; i < 40; i++) {
+                                        const m = (a + b) / 2;
+                                        if (hoeheBei(m) < ziel) a = m;
+                                        else b = m;
+                                    }
+                                    await uhr(b);
+                                    const envT = r._himmelsIrradianz();
+                                    const dyT = dl.position.clone().sub(dl.target.position).normalize().y;
+                                    const hT = ziffern(Math.PI * luma709(envT.oben));
+                                    const rT = ziffern(luma709([dl.color.r, dl.color.g, dl.color.b]) * dl.intensity * Math.max(0, dyT));
+                                    await zl.ruhe(cam, "S0 L1 Tag");
+                                    albedoBild.l1.tag = Object.assign(await paar(1 / (hT + rT)), {
+                                        uhr: +b.toFixed(5),
+                                        hoehe: +((Math.asin(dyT) * 180) / Math.PI).toFixed(2),
+                                        himmel: hT,
+                                        richt: rT,
+                                    });
+                                    await uhr(zeit);
+                                    envZurueck = sc.environment;
+                                    sc.environment = null;
+                                    for (const [l] of lichter) l.intensity = 0;
                                 }
                             } finally {
                                 sc.remove(amb);
                                 for (const [l, i] of lichter) l.intensity = i;
-                                sc.environment = envA;
+                                sc.environment = envZurueck;
                                 luftZ();
                                 zl.rt.dispose();
                                 objs.get = haken;
@@ -1689,7 +1753,77 @@ async function lichtLauf() {
                               }
                             : null;
                         const imLicht = mond ? { n: nLicht, schwarz: nLicht ? +(nLichtSchwarz / nLicht).toFixed(4) : null } : null;
-                        gesetz = { luma: q(0.5), q02: q(0.02), q05: q(0.05), q10: q(0.1), q90: q(0.9), aRing: +aRing.toFixed(4), aStoff: +aStoff.toFixed(4), k: +k.toFixed(3), punkte: je.length / 9, schwarz, schatten, imLicht };
+                        // L1 AM BODEN: je Pixel des Rings die Umgebung allein und das Richtlicht allein je Albedo — ihre Mediane und ihr
+                        // Verhältnis; nachts dazu die Umgebung an den Abgesoffenen im Licht des Mondes gegen ihren Median (fehlt ihnen
+                        // der Himmel des Orts, oder fehlt er dem ganzen Boden)
+                        const l1Von = (P) => {
+                            if (!P) return null;
+                            const [uJe, dJe, uSchwarz, dSchwarz] = [[], [], [], []];
+                            ringe(NACHT.ring, (i) => {
+                                if (!(hell[i + 3] > 0)) return;
+                                const a = luma709([hell[i] - dunkel[i], hell[i + 1] - dunkel[i + 1], hell[i + 2] - dunkel[i + 2]]);
+                                if (!(a > NACHT.albedoMin)) return;
+                                uJe.push(luma709(P.umgebung, i) / a);
+                                dJe.push((luma709(P.beide, i) - luma709(P.umgebung, i)) / a);
+                                if (mond && luma709(mond, i) > 0 && luma709(u8, i) < 4) {
+                                    uSchwarz.push(luma709(P.umgebung, i) / a);
+                                    dSchwarz.push((luma709(P.beide, i) - luma709(P.umgebung, i)) / a);
+                                }
+                            });
+                            [uJe, dJe, uSchwarz, dSchwarz].forEach((x) => x.sort(aufsteigend));
+                            const [u, d] = [rang(uJe, 0.5), rang(dJe, 0.5)];
+                            return {
+                                u: +u.toPrecision(4),
+                                d: +d.toPrecision(4),
+                                v: d > 0 ? +(u / d).toFixed(3) : null,
+                                n: uJe.length,
+                                schwarzU: uSchwarz.length && u > 0 ? +(rang(uSchwarz, 0.5) / u).toFixed(3) : null,
+                                schwarzD: dSchwarz.length && d > 0 ? +(rang(dSchwarz, 0.5) / d).toFixed(3) : null,
+                            };
+                        };
+                        // DER FUSS DER TONKURVE (L1 trägt nicht, 25.11.): je Pixel des Rings mit Mond-Sicht sein lineares Licht der
+                        // Lampen (Umgebung + Richtlicht, `beide`) durch die Tonkurve der Ausgabe (Khronos PBR Neutral, welt-licht.js
+                        // `tonKurve`: grau 6,25 · x² unter 0,08, darüber x − 0,04), die Blende EINMAL aus dem Median des Bilds —
+                        // sagt die Kurve die Abgesoffenen des Bilds voraus, liegt der Täter im Licht des Bodens UND im Fuß der Kurve;
+                        // daneben die Gerade durch denselben Median (ein Fuß ohne Quadrat) und die Schwelle Luma 4 in Blenden
+                        // des Eingangs unter dem Median
+                        const fussVon = (P) => {
+                            if (!P || !mond) return null;
+                            const ton = (x) => (x < 0.08 ? 6.25 * x * x : x - 0.04);
+                            const tonInv = (y) => (y < 0.04 ? Math.sqrt(y / 6.25) : y + 0.04);
+                            const [xs, ys] = [[], []];
+                            ringe(NACHT.ring, (i) => {
+                                if (!(hell[i + 3] > 0) || !(luma709(mond, i) > 0)) return;
+                                const a = luma709([hell[i] - dunkel[i], hell[i + 1] - dunkel[i + 1], hell[i + 2] - dunkel[i + 2]]);
+                                if (!(a > NACHT.albedoMin)) return;
+                                xs.push(luma709(P.beide, i));
+                                ys.push(srgbLin(luma709(u8, i)));
+                            });
+                            if (!xs.length) return null;
+                            const [xm, ym, y4] = [rang([...xs].sort(aufsteigend), 0.5), rang([...ys].sort(aufsteigend), 0.5), srgbLin(4)];
+                            const s = tonInv(ym) / xm;
+                            let [kurve, gerade, bild] = [0, 0, 0];
+                            for (let j = 0; j < xs.length; j++) {
+                                if (ton(s * xs[j]) < y4) kurve++;
+                                if ((xs[j] / xm) * ym < y4) gerade++;
+                                if (ys[j] < y4) bild++;
+                            }
+                            return {
+                                n: xs.length,
+                                eingang: +(s * xm).toFixed(4),
+                                bild: +(bild / xs.length).toFixed(4),
+                                kurve: +(kurve / xs.length).toFixed(4),
+                                gerade: +(gerade / xs.length).toFixed(4),
+                                schwelleEV: +Math.log2(tonInv(y4) / tonInv(ym)).toFixed(2),
+                            };
+                        };
+                        const L1 = albedoBild.l1
+                            ? {
+                                  nacht: Object.assign(l1Von(albedoBild.l1.nacht), { fuss: fussVon(albedoBild.l1.nacht) }),
+                                  tag: albedoBild.l1.tag ? Object.assign(l1Von(albedoBild.l1.tag), { uhr: albedoBild.l1.tag.uhr, hoehe: albedoBild.l1.tag.hoehe, himmel: albedoBild.l1.tag.himmel, richt: albedoBild.l1.tag.richt }) : null,
+                              }
+                            : null;
+                        gesetz = { luma: q(0.5), q02: q(0.02), q05: q(0.05), q10: q(0.1), q90: q(0.9), aRing: +aRing.toFixed(4), aStoff: +aStoff.toFixed(4), k: +k.toFixed(3), punkte: je.length / 9, schwarz, schatten, imLicht, l1: L1 };
                     }
                     return {
                         gesetz,
@@ -1752,6 +1886,25 @@ async function lichtLauf() {
         }[k];
         console.log(
             `  S0 BILD ${wer}: Uhr ${e.uhr} · Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, Soll ≥ ${S0_LUMA_2M}) · Boden 1–3 m Luma ${e.grund && e.grund.luma} abgesoffen ${e.grund && e.grund.schwarz}${e.gesetz ? ` · am Gesetz Luma ${e.gesetz.luma} (q02 ${e.gesetz.q02} · q05 ${e.gesetz.q05} · q10 ${e.gesetz.q10}; Albedo Fleck ${e.gesetz.aRing} → Stoff ${e.gesetz.aStoff}, k ${e.gesetz.k})${e.gesetz.schwarz ? ` · schwarz ${e.gesetz.schwarz.n} Pixel: Licht je Albedo am Stoff ${e.gesetz.schwarz.licht}, Albedo ${e.gesetz.schwarz.albedo} × Ring` : ""}${e.gesetz.schatten ? ` · Mondschatten ${(100 * e.gesetz.schatten.anteil).toFixed(1)} % des Bodens (${e.gesetz.schatten.n} Pixel), sein Licht ${e.gesetz.schatten.ev == null ? "0 (schwarz)" : e.gesetz.schatten.ev + " EV"} gegen das Median-Licht, Mond ${e.mondHoehe}° · abgesoffen im Licht der Nacht ${e.gesetz.imLicht.schwarz == null ? "—" : (100 * e.gesetz.imLicht.schwarz).toFixed(1) + " %"} von ${e.gesetz.imLicht.n} Pixeln mit Mond-Sicht` : ""}` : ""} Farbton ${e.ton && e.ton.hue}° Sättigung ${e.ton && e.ton.sat} sRGB ${JSON.stringify(e.ton && e.ton.rgb)} (Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°, ≤ ${S0_TON.satMax}) · Himmel ${e.himmel} Sternen-Licht ${e.stern} · Richtlicht waagrecht ${e.mond} bei ${e.mondHoehe}° (Himmel : Richtlicht ${e.mond > 0 && e.himmel != null ? (e.himmel / e.mond).toFixed(3) : "—"}) · Lichtfarbe linear ${JSON.stringify(e.lichtFarbe)} · kelvin ${e.kelvin} · Belichtung ${e.belichtung} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
+        );
+    }
+    // L1 (Wort des Koordinators 25.11. 05:30, Lesewert): Umgebung ÷ Richtlicht am Boden unter dem Mond gegen dasselbe unter der
+    // Sonne in derselben Höhe — EINE Atmosphäre, der Mond die schwächere Lampe. Das Band der Profis: das Tageslicht des klaren
+    // Himmels nach IES (Lighting Handbook, RP-5: Himmel auf der Waagrechten 0,8 + 15,5 · √sin α klx, die Sonne senkrecht
+    // 127,5 · e^(−0,21 ÷ sin α) klx) bei der Höhe des Schusses
+    const L1 = ergebnis.nacht && ergebnis.nacht.gesetz && ergebnis.nacht.gesetz.l1;
+    if (L1 && L1.nacht) {
+        const sa = Math.sin((ergebnis.nacht.mondHoehe * Math.PI) / 180);
+        const ies = (0.8 + 15.5 * Math.sqrt(sa)) / (127.5 * Math.exp(-0.21 / sa) * sa);
+        const T = L1.tag;
+        console.log(
+            `  S0 L1 (Umgebung ÷ Richtlicht am Boden, Median je Pixel des Rings): Nacht (Mond ${ergebnis.nacht.mondHoehe}°) ${L1.nacht.v} ` +
+                `(Umgebung ${L1.nacht.u} · Richtlicht ${L1.nacht.d}, Lesung ${ergebnis.nacht.himmel && ergebnis.nacht.mond ? (ergebnis.nacht.himmel / ergebnis.nacht.mond).toFixed(3) : "—"}) · ` +
+                (T ? `Tag (Sonne ${T.hoehe}°, Uhr ${T.uhr}) ${T.v} (Umgebung ${T.u} · Richtlicht ${T.d}, Lesung ${T.richt > 0 ? (T.himmel / T.richt).toFixed(3) : "—"}) · ` : "Tag — · ") +
+                `IES klar bei ${ergebnis.nacht.mondHoehe}° ${ies.toFixed(3)} · die Abgesoffenen im Licht des Mondes tragen ${L1.nacht.schwarzU ?? "—"} × die Umgebung und ${L1.nacht.schwarzD ?? "—"} × das Richtlicht des Medians` +
+                    (L1.nacht.fuss
+                        ? ` · DER FUSS: der Median steht im Eingang der Kurve auf ${L1.nacht.fuss.eingang} (Fuß 6,25 · x² unter 0,08), Luma 4 liegt ${L1.nacht.fuss.schwelleEV} Blenden des Eingangs unter ihm — abgesoffen im Licht: das Bild ${(100 * L1.nacht.fuss.bild).toFixed(1)} %, die Kurve aus dem Licht der Lampen ${(100 * L1.nacht.fuss.kurve).toFixed(1)} %, die Gerade durch den Median ${(100 * L1.nacht.fuss.gerade).toFixed(1)} % (${L1.nacht.fuss.n} Pixel)`
+                        : "")
         );
     }
     // DIE NACHT ohne das Feuer (oben `S0_NACHT`)
