@@ -9424,7 +9424,7 @@
   },
   "karte2.erleben.sinne.gesehen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.sinne.gesehen#1 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#1 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#2 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#2 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#3 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#3 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#4 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#4 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#5 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#5 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#6 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: S3 · GRÜN ✅ unterschied_pct 77,1 (Soll ≥ 30) an 2da17e2e gtx — offen: karte2.erleben.sinne.gesehen#1 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#1 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#2 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#2 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#3 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#4 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#4 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#5 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#5 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#6 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.sinne.gesehen#1",
@@ -9476,11 +9476,11 @@
     {
      "id": "karte2.erleben.sinne.gesehen#3",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "S3 · GRÜN ✅ unterschied_pct 77,1 (Soll ≥ 30)",
+     "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.sinne.gesehen#4",
@@ -37590,7 +37590,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 352,
+  "konsum": 353,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37759,10 +37759,10 @@
    "karte2.leben.kopplung.stadt-im-netz#2 radeon",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3269
+  "ohne": 3268
  },
  "kopfVoll": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
- "zeit": "2026-11-25T22:19:44.525Z",
+ "zeit": "2026-11-25T22:26:16.492Z",
  "vorher": "2da17e2e",
  "bilanz": {
   "gewinn": [],
