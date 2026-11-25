@@ -820,8 +820,22 @@ var __weltLicht = (function () {
     // steht über +z, wie bis hier).
     // DER ORT DER BÜHNE (die Studios, die Hülle `B.stunden`: sie tragen keinen Ort der Welt): die Gleiche (δ = 0) an der Breite, an der
     // die Mittagssonne der Bühne steht, wo sie bis sonnenbahn stand — 74,21° (die alte Bahn, Neigung 0,4 × sin ½w: tan(90° − h) = 0,4 √½),
-    // im Süden, Aufgang im Osten zur Uhr 0,25. Die Welt reicht ihre Bahn (`_sonnenBahn`), die Bühne der Welt dieselbe (`o.bahn`).
+    // im Süden, Aufgang im Osten zur Uhr 0,25. Die Welt reicht ihre Bahn (`_sonnenBahn`), die Bühne der Welt dieselbe: sie reist
+    // mit dem Himmel der Welt (`himmelBahn`).
     const BUEHNE_BAHN = Object.freeze({ breite: Math.atan(0.4 * Math.SQRT1_2), dekl: 0, drehsinn: 1 });
+    // DIE BAHN IM HIMMEL DER WELT (sonnenbahn 2): der Zustand des Himmels, den die Welt am Tor reicht (stamm `_portalSendEnter`,
+    // `msg.himmel.bahn` = `_sonnenBahn()`), trägt die Bahn ihrer Sonne — die Bühne, die Stunden der Hülle (`B.stunden`) und jede
+    // Sonde lesen sie hier; ohne Himmel der Welt (ein Studio für sich) der Ort der Bühne. Fail-closed: eine Bahn, die nicht ganz
+    // aus Zahlen ist, bricht laut. Bis hier las die Bühne ein Argument `o.bahn`, das kein Rufer reichte — jede Studio-Bühne stand
+    // bei 74,21° im Süden, die Welt (Anker −50,5°, Sommer) bei 55,82° im Norden.
+    function himmelBahn(himmel) {
+        const b = himmel && himmel.bahn;
+        if (b == null) return BUEHNE_BAHN;
+        if (![b.breite, b.dekl, b.drehsinn].every(Number.isFinite))
+            throw new Error("DIE BÜHNE DER WELT: die Bahn der Sonne { breite, dekl, drehsinn } aus Zahlen, nie " + JSON.stringify(b));
+        return Object.freeze({ breite: b.breite, dekl: b.dekl, drehsinn: b.drehsinn < 0 ? -1 : 1 });
+    }
+    const gleicheBahn = (a, b) => a.breite === b.breite && a.dekl === b.dekl && a.drehsinn === b.drehsinn;
     function sonnenRichtung(winkel, bahn = BUEHNE_BAHN) {
         if (!bahn || !Number.isFinite(bahn.breite) || !Number.isFinite(bahn.dekl))
             throw new Error("DIE SONNENBAHN: ohne Breite und Deklination steht keine Sonne (`sonnenBahn`)");
@@ -1260,8 +1274,8 @@ var __weltLicht = (function () {
         const AR = KERN.ATMO_RECHNUNG;
         const M = AR.medium(G, AR.betaKlar(G), ATMO_BODEN);
         const winkel = sonnenWinkel(uhr);
-        // die Bahn der Bühne: die der Welt, die sie zeichnet (`o.bahn`), sonst ihr eigener Ort (`BUEHNE_BAHN`)
-        const bahn = o.bahn || BUEHNE_BAHN;
+        // die Bahn der Bühne: die der Welt, die sie zeichnet — sie reist mit ihrem Himmel (`himmelBahn`), sonst der Ort der Bühne
+        const bahn = himmelBahn(o.himmel);
         const s = sonnenRichtung(winkel, bahn);
         const m = mondRichtung(winkel, bahn);
         const achse = tagAchse(s[1]);
@@ -1360,6 +1374,7 @@ var __weltLicht = (function () {
             sonne,
             staerke: sonne.intensity,
             richtung: new THREE.Vector3(s[0], s[1], s[2]),
+            bahn, // die Bahn ihrer Sonne (`himmelBahn`): die Linse der Studios liest sie gegen die der Welt
             tafeln: A,
             umgebung,
             knoten,
@@ -1382,6 +1397,14 @@ var __weltLicht = (function () {
                 throw new Error(
                     "DIE BÜHNE DER WELT: der Himmel { ort [x, z], zug [x, y], zeit, deckung, gier } aus Zahlen, nie " +
                         JSON.stringify(z)
+                );
+            // die Bahn steht mit dem Licht (Tafeln, Umgebung, Sonne): ein Himmel auf einer anderen Bahn baut das Licht neu (die
+            // Hülle: `B.himmel` → `B.uhr`), nie still unter der alten Sonne
+            if (!gleicheBahn(himmelBahn(h), bahn))
+                throw new Error(
+                    "DIE BÜHNE DER WELT: der Himmel trägt eine andere Bahn als das Licht, das steht (" +
+                        JSON.stringify(h.bahn) +
+                        ") — eine neue Bahn baut das Licht neu"
                 );
             H.auge.value.set(ort[0], 0, ort[1]);
             H.zug.value.set(zug[0], zug[1]);
@@ -2212,6 +2235,7 @@ var __weltLicht = (function () {
         sonnenRichtung,
         sonnenBahn,
         BUEHNE_BAHN,
+        himmelBahn,
         mondRichtung,
         tafelLicht,
         tagAchse,

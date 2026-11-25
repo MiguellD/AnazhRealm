@@ -1440,6 +1440,8 @@ async function lichtLauf() {
                     let albedoBild = null;
                     let himmelL = null;
                     let sternL = null;
+                    let mondL = null;
+                    let mondHoehe = null;
                     window.__s0Still = false; // der Schuss zeichnet
                     // die Nah-Bühne (oben): auf swiftshader zeichnet der Schuss die Nähe des Feuers
                     const nahLos = nahM ? window.__s0Nah(new T.Vector3(f.x, g, f.z), nahM) : null;
@@ -1476,10 +1478,18 @@ async function lichtLauf() {
                         }
                         // das Licht des Himmels im Schuss (der Täter der Nacht beim Namen): die Bestrahlung der Umgebung von oben
                         // und das Sternen-Licht der EINEN Atmosphäre (Zenit-Leuchtdichte, Welt-Einheiten) bei der Sonne des Schusses
+                        // — in geltenden Ziffern: die Nacht liegt um 1e-5 Welt-Einheiten, vier Stellen nach dem Komma druckten 0 (25.11.,
+                        // main und Kopf der Sonnenbahn: „Himmel 0 Sternen-Licht 0“); daneben das Richtlicht (der Mond) auf der Waagrechten
+                        // und der Anteil des Himmels daran — das zweite Licht des Mondschattens
                         const env = r._himmelsIrradianz();
                         const sonneY = r._dayNightSunDirection(r._sonnenWinkel(s.timeOfDay)).y;
-                        himmelL = env ? +(Math.PI * luma709(env.oben)).toFixed(4) : null;
-                        sternL = +luma709(r._atmoSternenLicht(sonneY)).toFixed(4);
+                        const ziffern = (x) => +x.toPrecision(4);
+                        himmelL = env ? ziffern(Math.PI * luma709(env.oben)) : null;
+                        sternL = ziffern(luma709(r._atmoSternenLicht(sonneY)));
+                        const dl = s.directionalLight;
+                        const dy = dl ? dl.position.clone().sub(dl.target.position).normalize().y : 0;
+                        mondL = dl ? ziffern(luma709([dl.color.r, dl.color.g, dl.color.b]) * dl.intensity * Math.max(0, dy)) : null;
+                        mondHoehe = +((Math.asin(Math.max(-1, Math.min(1, dy))) * 180) / Math.PI).toFixed(2);
                         // DIE ALBEDO AM ORT (oben `S0_NACHT`, Licht je Albedo): ohne das Feuer an derselben Kamera zwei Bilder ins lineare
                         // Ziel unter der Lampe der Linse (weißes Umgebungslicht π, die übrigen Lichter, der Himmel und die Luft still).
                         // Die Lampe ist eine Licht-Variante der Linse, kein Programm des Spiels: ihr Boden-Programm zählt das
@@ -1605,20 +1615,32 @@ async function lichtLauf() {
                         const [aRing, aStoff] = [alb(NACHT.ring), alb(NACHT.stoffM)];
                         const k = aRing > 0 ? aStoff / aRing : 0;
                         const je = [];
+                        // DIE ABGESOFFENEN BEIM GRUND (25.11., Sonnenbahn: der Mond in 22° statt 74°): je Pixel unter Luma 4 sein Licht je
+                        // Albedo (am Stoff, wie `je`) und seine Albedo gegen die des Rings — dunkel vom LICHT (der Schatten ohne zweites
+                        // Licht) oder vom STOFF (das Korn der Mulde)
+                        const [sJe, sA] = [[], []];
                         ringe(NACHT.ring, (i) => {
                             if (!(hell[i + 3] > 0)) return;
                             const a = luma709([hell[i] - dunkel[i], hell[i + 1] - dunkel[i + 1], hell[i + 2] - dunkel[i + 2]]);
-                            if (a > NACHT.albedoMin) je.push(255 * linSrgb(Math.min(1, (srgbLin(luma709(u8, i)) / a) * aStoff)));
+                            if (!(a > NACHT.albedoMin)) return;
+                            const l = 255 * linSrgb(Math.min(1, (srgbLin(luma709(u8, i)) / a) * aStoff));
+                            je.push(l);
+                            if (luma709(u8, i) < 4) sJe.push(l), sA.push(a / (aRing || 1));
                         });
+                        sJe.sort(aufsteigend);
+                        sA.sort(aufsteigend);
                         // DER EINE RANG (welt-boot `rang`, in jeder Seite derselbe Text): der Median und die Quantile der Mulden
                         je.sort(aufsteigend);
                         const q = (p) => (je.length ? +rang(je, p).toFixed(2) : null);
-                        gesetz = { luma: q(0.5), q10: q(0.1), q90: q(0.9), aRing: +aRing.toFixed(4), aStoff: +aStoff.toFixed(4), k: +k.toFixed(3), punkte: je.length / 9 };
+                        const schwarz = sJe.length ? { n: sJe.length, licht: +rang(sJe, 0.5).toFixed(2), albedo: +rang(sA, 0.5).toFixed(3) } : null;
+                        gesetz = { luma: q(0.5), q02: q(0.02), q05: q(0.05), q10: q(0.1), q90: q(0.9), aRing: +aRing.toFixed(4), aStoff: +aStoff.toFixed(4), k: +k.toFixed(3), punkte: je.length / 9, schwarz };
                     }
                     return {
                         gesetz,
                         himmel: himmelL,
                         stern: sternL,
+                        mond: mondL,
+                        mondHoehe,
                         kreis: nk ? +(lk / nk).toFixed(4) : null,
                         punkte: nk / 9,
                         ton,
@@ -1670,7 +1692,7 @@ async function lichtLauf() {
             tag: "SCHEIN (das Auge des Tages)",
         }[k];
         console.log(
-            `  S0 BILD ${wer}: Uhr ${e.uhr} · Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, Soll ≥ ${S0_LUMA_2M}) · Boden 1–3 m Luma ${e.grund && e.grund.luma} abgesoffen ${e.grund && e.grund.schwarz}${e.gesetz ? ` · am Gesetz Luma ${e.gesetz.luma} (Albedo Fleck ${e.gesetz.aRing} → Stoff ${e.gesetz.aStoff}, k ${e.gesetz.k})` : ""} Farbton ${e.ton && e.ton.hue}° Sättigung ${e.ton && e.ton.sat} sRGB ${JSON.stringify(e.ton && e.ton.rgb)} (Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°, ≤ ${S0_TON.satMax}) · Himmel ${e.himmel} Sternen-Licht ${e.stern} · Lichtfarbe linear ${JSON.stringify(e.lichtFarbe)} · kelvin ${e.kelvin} · Belichtung ${e.belichtung} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
+            `  S0 BILD ${wer}: Uhr ${e.uhr} · Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, Soll ≥ ${S0_LUMA_2M}) · Boden 1–3 m Luma ${e.grund && e.grund.luma} abgesoffen ${e.grund && e.grund.schwarz}${e.gesetz ? ` · am Gesetz Luma ${e.gesetz.luma} (q02 ${e.gesetz.q02} · q05 ${e.gesetz.q05} · q10 ${e.gesetz.q10}; Albedo Fleck ${e.gesetz.aRing} → Stoff ${e.gesetz.aStoff}, k ${e.gesetz.k})${e.gesetz.schwarz ? ` · abgesoffen ${e.gesetz.schwarz.n} Pixel: Licht je Albedo am Stoff ${e.gesetz.schwarz.licht}, Albedo ${e.gesetz.schwarz.albedo} × Ring` : ""}` : ""} Farbton ${e.ton && e.ton.hue}° Sättigung ${e.ton && e.ton.sat} sRGB ${JSON.stringify(e.ton && e.ton.rgb)} (Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°, ≤ ${S0_TON.satMax}) · Himmel ${e.himmel} Sternen-Licht ${e.stern} · Richtlicht waagrecht ${e.mond} bei ${e.mondHoehe}° (Himmel : Richtlicht ${e.mond > 0 && e.himmel != null ? (e.himmel / e.mond).toFixed(3) : "—"}) · Lichtfarbe linear ${JSON.stringify(e.lichtFarbe)} · kelvin ${e.kelvin} · Belichtung ${e.belichtung} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
         );
     }
     // DIE NACHT ohne das Feuer (oben `S0_NACHT`)

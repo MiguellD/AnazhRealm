@@ -2333,10 +2333,15 @@
                 if (d && software(d.adapterInfo)) R._samples = 0;
                 return lichtAn();
             });
-        // DER HIMMEL DER HEIMAT: die Welt reicht beim Betreten ihren Himmel am Tor; kommt er vor dem Licht, nimmt es ihn beim Bau
+        // DER HIMMEL DER HEIMAT: die Welt reicht beim Betreten ihren Himmel am Tor; kommt er vor dem Licht, nimmt es ihn beim Bau.
+        // Er trägt die Bahn ihrer Sonne (`himmelBahn`, sonnenbahn 2): eine andere Bahn als die des Lichts, das steht, baut das
+        // Licht an derselben Uhr neu (`B.uhr`) — die Sonne der Bühne ist die der Welt
         B.himmel = (z) => {
+            const neu = !!B.welt && JSON.stringify(wurzel.__weltLicht.himmelBahn(z)) !== JSON.stringify(B.welt.bahn);
             himmel = z;
-            if (B.welt) B.welt.himmelSetzen(z), zielen();
+            if (!B.welt) return;
+            if (neu) return void B.uhr(uhr);
+            B.welt.himmelSetzen(z), zielen();
         };
         // DIE UHR DER WELT: das Licht entsteht an der neuen Stunde neu (Tafeln, Umgebung, Sonne, Belichtung); bis es liegt,
         // zeichnet die Bühne nichts. Der Knoten der Umgebung ist neu — jedes Programm baut der Vorbau neu.
@@ -2366,7 +2371,7 @@
             const L = wurzel.__weltLicht;
             const tag = [];
             for (let i = 0; i <= 400; i++) {
-                const s = L.sonnenRichtung(L.sonnenWinkel(i / 400));
+                const s = L.sonnenRichtung(L.sonnenWinkel(i / 400), L.himmelBahn(himmel)); // die Bahn der Welt (`himmelBahn`)
                 const a = L.tagAchse(s[1]);
                 if (a.nacht === 0 && a.daemmerung === 1 && (Math.asin(s[1]) * 180) / Math.PI >= (hoehe == null ? 15 : hoehe)) tag.push(i / 400);
             }

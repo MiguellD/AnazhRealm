@@ -2836,6 +2836,10 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_bewohnerSiedlungen",
         "_portalLeuchte",
         "_leuchtPool",
+        // der Anker der Sonne gehört der Welt (`_sonnenAnkerFragen`): eine Reise-Welt steht an der Breite ihres Teils, eine andere
+        // Saat auf ihrem Planeten — die Frage fällt mit, die neue Welt fragt neu (der Merker des Kerns je Samen antwortet sofort)
+        "_sonnenAnker",
+        "_sonnenAnkerFrage",
     ]),
 });
 // must-preserve (taille-spec §2): Größen-Wand für unbekannte Felder (ein Riesen-Feld ist ein

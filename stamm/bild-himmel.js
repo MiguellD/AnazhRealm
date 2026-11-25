@@ -1631,8 +1631,11 @@ class AnazhRealm_bild_himmel {
     }
 
     // DER ANKER DER SONNE (sonnenbahn): der EINE Schreiber von `_sonnenAnker` — fragt den Planet-Faden (`_planetAnker`) EINMAL je
-    // Seite nach dem Ort der Welt auf ihrem Planeten (die Heimat am Anker, eine Reise-Welt am Ort ihres Teils, `ort.teil.breite` in
-    // Grad) und nach dem Körper (Schiefe, Drehsinn); mit der Antwort springt der Himmel EINMAL (`_himmelSprung`). Rufer: die
+    // WELT nach dem Ort der Welt auf ihrem Planeten (die Heimat am Anker, eine Reise-Welt am Ort ihres Teils, `ort.teil.breite` in
+    // Grad) und nach dem Körper (Schiefe, Drehsinn); mit der Antwort springt der Himmel EINMAL (`_himmelSprung`). Anker und Frage
+    // fallen mit der Welt (`WELT_GRENZE.gedaechtnis`); eine Antwort, die nach dem Wechsel kommt, gehört der alten Welt und schreibt
+    // nichts (die Frage ist nicht mehr die der Welt) — bis sonnenbahn 2 hing die Frage an der Seite, und eine Reise-Welt trug die
+    // Mittagshöhe der Heimat (Kopf 1, voll 13/18). Rufer: die
     // Belichtung, solange die Ankunft auf ihr Licht wartet (`_belichtungSteht`, Term „licht“) — nie ein Leser der Sonne: im Versuch
     // eines stummen Fangs schickte der Leser dem Faden einen Auftrag (die Stoff-Wand, `_workshopRenderRecipeStats` → `_sonnenRichtung`).
     // Antwortet der Faden nicht, bricht die Frage EINMAL beim Namen, der Term „licht“ bleibt offen und der Deckel der Ankunft nennt ihn.
@@ -1641,6 +1644,7 @@ class AnazhRealm_bild_himmel {
         const frage = (this._sonnenAnkerFrage = { teil: this._gelaende().ort.teil });
         this._planetAnker().then(
             (a) => {
+                if (this._sonnenAnkerFrage !== frage) return;
                 const t = frage.teil;
                 this._sonnenAnker = {
                     breite: t ? (t.breite * Math.PI) / 180 : a.breite,
@@ -1648,7 +1652,9 @@ class AnazhRealm_bild_himmel {
                 };
                 this._himmelSprung = true;
             },
-            (e) => this._bruchMelden("SONNE: der Anker des Planeten antwortet nicht — " + String((e && e.message) || e))
+            (e) =>
+                this._sonnenAnkerFrage === frage &&
+                this._bruchMelden("SONNE: der Anker des Planeten antwortet nicht — " + String((e && e.message) || e))
         );
     }
 
@@ -2229,11 +2235,12 @@ class AnazhRealm_bild_himmel {
             // die Belichtung steht erst mit der Sicht des Bildes (`_bildSichtSteht`, laub-messer): der Messer misst die Schatten der
             // Stunde am Bild, seine Lesung kommt ein bis zwei Bilder später — der Ladeschirm der Ankunft weicht nach der Lesung
             // (`_weltbildLuecken`, Term „licht“), nie mit der Belichtung ohne Schatten; steht sie einmal, bleibt der Term zu
-            // — und erst, wenn die Sonne an ihrem Ort steht (`_sonnenAnker`, sonnenbahn): vor dem Anker steht sie am Ort der Bühne
-            if (!this.state._belichtungSteht) {
-                this._sonnenAnkerFragen();
+            // — und erst, wenn die Sonne an ihrem Ort steht (`_sonnenAnker`, sonnenbahn): vor dem Anker steht sie am Ort der Bühne.
+            // Gefragt wird in JEDEM Licht-Takt (EINMAL je Welt, danach ein Feld-Test): auch eine Welt, die am Ort geladen wird und
+            // den Term „licht“ der Seite schon zu fand, fragt ihren Anker (sonst stünde ihre Sonne still am Ort der Bühne)
+            this._sonnenAnkerFragen();
+            if (!this.state._belichtungSteht)
                 this.state._belichtungSteht = !!this._sonnenAnker && this._bildSichtSteht();
-            }
         }
         // die Blende eines Beobachters (`_blendeBestellen`) über dem Gesetz: fest `k` oder das Gesetz mal `mal` — ohne Gesetz (eine
         // Bühne ohne Himmel des Orts) die Blende, die vor der Bestellung stand
