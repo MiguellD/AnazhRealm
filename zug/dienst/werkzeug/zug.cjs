@@ -788,6 +788,14 @@ function siegel(s) {
     const m = s.match(SIEGEL_CI) || s.match(SIEGEL_CS);
     return m ? m[0] : null;
 }
+// SIEGEL IM VERLAUF, VOR DER BATTERIE (26.11., z742: der grüne Stempel w28-tages-gesetz fiel im Bau an „bis zum Schluss 11 Uhr“ in einem
+// WIP-Betreff — 50 min Batterie und 18 min Zug standen vor dem Urteil, sechs Köpfe dahinter). Dieselbe Wand wie der Bau (siegel über das,
+// was der Merge brächte), nur früher: probe-tag ruft jeder Arbeiter vor dem Vorprüf-Kopf, die Wache bei jeder Ankunft, bereit() je Takt.
+// log = git log --format="%h %s%x00%B%x01" <basis>..<sha>
+function siegelImVerlauf(log) {
+    const sc = log.split("\x01").find((m) => siegel(m));
+    return sc ? `Siegel-Wort „${siegel(sc)}" im Commit ${sc.trim().split("\0")[0].slice(0, 100)} — der Zug hält diesen Verlauf draussen: den Baum als EINEN Commit auf main abgeben (neuer Zweig-Name)` : null;
+}
 const undListe = (a) => (a.length < 2 ? a.join("") : `${a.slice(0, -1).join(", ")} und ${a[a.length - 1]}`);
 function laufe(cmd, args, env = {}) {
     const o = { cwd: ZUG, encoding: "utf8", maxBuffer: 1 << 26, env: { ...process.env, ...env } };
@@ -1916,7 +1924,7 @@ function probeTag(args) {
     if (!spec) throw new Error("Aufruf: probe-tag <zweig@sha> [--basis <ref>]");
     const sha = spec.includes("@") ? spec.split("@")[1] : spec;
     const betreff = git(["log", "-1", "--format=%s", sha], VOLL);
-    const rot = probeTagEinlass(betreff);
+    const rot = probeTagEinlass(betreff) || siegelImVerlauf(git(["log", "--format=%h %s%x00%B%x01", `${basis}..${sha}`], VOLL));
     if (rot) {
         console.log(`PROBE-TAG ROT: ${rot}`);
         return 3;
@@ -2103,6 +2111,11 @@ function selbsttestTaeter(pr) {
             probeTagEinlass(vier) === null && probeTagFehlt(["stamm/siedlung-ort.js", "samen-core.js", "stamm/bild-himmel.js"], vier) === null &&
             /^Probe-Tag ohne .*gate:tag-achse:echt.* \(Beitrag fasst /.test(probeTagFehlt(["stamm/siedlung-ort.js", "samen-core.js", "stamm/bild-himmel.js"], "Abgabe w28-l: x [gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen] [ci voll]") || "") &&
             probeTagEinlass("Abgabe w28-l: x [gpu-probe: gate:a, bild:wiese, gate:b] [ci voll]") === null && probeTagEinlass("Abgabe w28-l: x [ci voll]") === null);
+    // der gepflanzte Täter: ein WIP-Betreff mit dem Sach-Wort (z742); der saubere Verlauf und das Wort als Teil eines längeren Worts gehen durch
+    pr("Siegel im Verlauf: probe-tag nennt den Commit beim Namen (WIP-Betreff mit dem Wort der Wand als Sach-Wort → ROT), ein sauberer Verlauf und das Wort im Kompositum gehen durch, das Großbuchstaben-Siegel nur groß",
+        /^Siegel-Wort „Schluss" im Commit 73fef2f082 WIP tages-gesetz: /.test(siegelImVerlauf("347bdb6552 Vorprüfung tages-gesetz 4: x\0Vorprüfung tages-gesetz 4: x\n\x01\n73fef2f082 WIP tages-gesetz: dauerH 0,5 bis zum Schluss 11 Uhr [skip ci]\0WIP tages-gesetz: dauerH 0,5 bis zum Schluss 11 Uhr [skip ci]\n\x01\n") || "") &&
+            siegelImVerlauf("aaaaaaaaaa WIP x: die Ladenschlusszeit 11 Uhr, rund 20 im Einkauf\0WIP x: die Ladenschlusszeit 11 Uhr, rund 20 im Einkauf\n\x01\n") === null &&
+            /^Siegel-Wort „RUND" /.test(siegelImVerlauf("bbbbbbbbbb WIP y: alles RUND\0WIP y: alles RUND\n\x01\n") || "") && siegelImVerlauf("") === null);
     const b = taeterUrteil({ zid: "z637", stempel, waende, geraete: ["omen"], lauf: gestellt(() => false) });
     pr("Täter-Suche (b) kein Stempel allein rot → KEIN TÄTER AN DIESER KARTE (das rote Bein omen beim Namen), kein neuer Kopf",
         !b.neu.length && b.zeilen.filter((z) => /^UNSCHULDIG /.test(z)).length === 3 && b.zeilen[3] === "KEIN TÄTER AN DIESER KARTE (radeon): kein Stempel allein rot — Kombination oder Gerät (rot fiel am Bein omen), nichts gestempelt");
