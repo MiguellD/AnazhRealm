@@ -54,8 +54,9 @@ class AnazhRealm_stoff_material {
     // springen — an der Übergabe (a = 1) steht jedes, wie die Nähe es legt. Diesseits der Übergabe (d < radius) wählt die GPU
     // dasselbe Büschel als Nah-Wiese — hier steht es nicht. EIN Knoten für jede Vorlage (EIN Programm); der Wind schwingt mit
     // dem Büschel (× v).
-    // DAS BÜSCHEL WIRD NIE VERFORMT (w28-wiese-schale): seine Halme stehen, wo das Studio sie setzt, in Neigung, Höhe und Breite —
-    // nur hält jeder Halm quer mindestens einen Pixel (Ghost of Tsushima: das Blatt hält mindestens EINEN Pixel der Szene): längs
+    // DAS BÜSCHEL WÄCHST NIE IN DIE HÖHE (wiese-fern): die Fläche, die die Kappe an Zahl nimmt, trägt es WAAGRECHT
+    // (`_wieseFernHalm`: Füße und Breite der Halme × s², die Höhe × 1 — die Spitze 0,74 m wie die Nähe; Spike 1 nur mit der
+    // Breite, die Füße am Ort: die Halme deckten einander, 30–60 m 77,7 % statt 97,1 %), und quer hält jeder mindestens einen Pixel (Ghost of Tsushima: das Blatt hält mindestens EINEN Pixel der Szene): längs
     // seiner Breiten-Richtung t = Y × n (u wächst längs t, wie im Halm-Stoff `_halmStoff`; uv.x zählt die Adern seiner halben
     // Breite, u · aderM je Welt-Meter) rückt jede Ecke höchstens bis zum halben Pixel an ihrem Abstand (`_halmFernePixel`, aus dem
     // EINEN Schirm `_schirm` × der Szenen-Skala), die Spitze (u = 0) und die Ähre bleiben. Bis w28-wiese-schale spreizte der Stoff
@@ -81,6 +82,8 @@ class AnazhRealm_stoff_material {
             const o = AnazhRealm._wieseOrdnung(ank.x, ank.z, AnazhRealm._wortAlgebra(T));
             const A = AnazhRealm._windTsl(T);
             const G = AnazhRealm._wieseFern(A, d, AnazhRealm._wieseFuss(A, v0.x, v0.y, v0.z, n.x, n.y, n.z, auge.w)); // prettier-ignore
+            // der Halm der Ferne (`_wieseFernHalm`): das Büschel waagrecht × breite (Füße und Breite der Halme), senkrecht × hoehe
+            const H = AnazhRealm._wieseFernHalm(A, G.skala);
             const [anteil, s] = [G.anteil, G.skala];
             const v = anteil
                 .mul(1 + F.rand)
@@ -99,14 +102,17 @@ class AnazhRealm_stoff_material {
             const u = T.uv().x;
             const halb = u.abs().mul(globalThis.__phytoCore.HALM_GESETZ.aderM / sk);
             const pixHalb = v0.length().mul(this._halmFernePixel).mul(0.5).div(naht.skala.mul(s).max(1e-6));
+            // die halbe Breite des Halms vor dem Maß: höchstens bis zum halben Pixel ÷ skala — waagrecht × breite (s²) steht er
+            // dann max(eigene × s², Pixel × s) breit: die Fläche, die er gleichförmig (Pixel × s in der Höhe) trug
             const breit = T.sign(u).mul(pixHalb.sub(halb).max(0)).mul(T.step(c.y, 1e-4));
             const lage = T.positionLocal.add(t.mul(breit));
             // die Gestalt des Halms im Jahr, wie die Nähe (vegetation.K5#2, `_halmImJahr`): um seinen Fuß
             const ha = this._ensureSeasonUniforms().uLaubPraesenz.z;
             const sway = this._windSwayOffset(T, { hoehe: T.positionGeometry.y.mul(sk).mul(ha) });
             const jahr = this._halmImJahr(T, T.vec3(c.x, 0, c.z), lage);
-            // die Deckung im Blick (`_wieseFern` skala): das Büschel wächst gleichförmig um seinen Fuß, sein Wiegen mit ihm
-            this._halmFerneKnoten = jahr.add(sway).mul(v.mul(s));
+            // die Gestalt um den Fuß des Büschels: waagrecht × breite — die Füße streuen mit der Breite der Halme (keine Klumpung,
+            // Nilsons Ω = 1) —, senkrecht × hoehe (1: so hoch wie die Nähe), ihr Wiegen mit ihr
+            this._halmFerneKnoten = jahr.add(sway).mul(T.vec3(H.breite, H.hoehe, H.breite).mul(v));
             this._halmFerneStoffe = new Map();
         }
         // der Klon trägt die Stoff-Werte des Halms (Zahlen; `userData` als Kopie, `_stoffWert` liest sie am Stoff)

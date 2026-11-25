@@ -399,14 +399,11 @@ class AnazhRealm_dirigent_regler {
         // jede Stufe legte `maxFar` und mit ihm den Saum und den Rast jeder Kaskade neu (`_kaskadenSaum`, `_kaskadeSchritt`), die
         // Texel der Kaskade 15–108 m sprangen, und die Schatten der ganzen Wiese wechselten im Stand (lod.K2#1, Radeon, Uhr
         // gehalten: 6 600–7 800 Pop-Pixel je Schritt mit dem Regler, 550–660 ohne ihn).
-        // Godray-Hebel unter dem EINEN Regler (`effArch`): die Licht-Schäfte sind reine Optik und geben
-        // zuerst nach — Kopfraum → PERF_GODRAY_MAX, anhaltende Last → 0. `_loopRender` liest `_godrayScale`
-        // × Sonnen-Sichtbarkeit. Headless → MAX.
-        if (st.renderer && st.renderer._isHeadlessNull) {
-            st._godrayScale = AnazhRealm.PERF_GODRAY_MAX;
-        } else {
-            st._godrayScale = lerp(0, AnazhRealm.PERF_GODRAY_MAX, effArch);
-        }
+        // DIE LICHT-SCHÄFTE SIND KEIN STELLGLIED (sonnenbahn): ihr Pegel ist Licht (`GODRAY.pegel` × `_godrayFrameGate` × Sonne
+        // im Bild, `_loopRender`). Bis hier zog der Regler ihn mit `effArch` zwischen 0 und 0,8 — die Stufe kostet aber nur, wenn
+        // sie zeigt (`nurBeiStaerke`: 0 oder 20 Abtastungen je Pixel), dazwischen sparte er nichts und pumpte das Bild mit der
+        // Bildzeit: GTX 1050, Mess-Wiese Ego, Uhr 0,72, die Sonne im Blick — Y 0,1089 … 0,1200 (0,14 EV) bei gleicher Uhr,
+        // Kamera und Belichtung, je nach Stand des Reglers; die Tag-Achse riss dort (SPRUNG wiese −0,15 EV, c2e77db1).
         // Streaming ist RÜCKSTAU-getrieben, nicht fps-getrieben: bei Bau-Rückstau MAX Budget — sonst
         // drosselte der PID genau den Bau, der das hohe frameMs erzeugt (er pendelt, das Laden stockt).
         // Die Qualität (Cull/Schatten/Wasser) regelt der PID weiter; der per-Frame-Zeit-Deckel schützt vor
@@ -2122,10 +2119,6 @@ AnazhRealm._forceWebGL = function () {
 AnazhRealm.PERF_PHASES = Object.freeze(["streaming", "waterIso", "archCulling", "creatures", "physics", "render"]);
 // Die DECKE: über dieser Frame-Zeit drosselt der Regler die Qualität (≈59 fps); der Wachstums-Boden
 // liegt PERF_HEADROOM_MS darunter.
-// V8 (Kür) — der GODRAY-Pegel-Ceiling: der Perf-Regler skaliert `_godrayScale` zwischen 0
-// (anhaltende Last → Schäfte aus) und diesem Max (Kopfraum → volle Optik). Reine Optik, also
-// gibt sie unter Render-Last früh nach; 0.8 ist ein sichtbarer, aber nicht überstrahlender Pegel.
-AnazhRealm.PERF_GODRAY_MAX = 0.8;
 AnazhRealm.PERF_TARGET_MS = 17;
 // DIE EINMESSUNG DER SKALA (w28-bild-preis, `_szeneSkalaMessen`): je Fenster von `fensterMs` gezeichneter Bild-Zeit (≥ 10 s:
 // höchstens ein Schritt je Fenster) urteilt die Sitzung ihr Bild — p95 über `zielMs` (34: die Preis-Treppe am Raster des

@@ -488,7 +488,9 @@ class AnazhRealm_netz_portal {
         if (!po || !po.iframe || !po.iframe.contentWindow) return;
         const msg = { type: "enter", avatar: this._portalEnterPayload() };
         // DER HIMMEL REIST MIT (w27-studio-mesh, studios.K4): der Zustand des Himmels am Spieler — Ort des Auges auf der Wolken-Schicht,
-        // Bild-Uhr, Zug und Deckung (`_himmelUniformen`) — eine Bühne der Welt steht drüben unter ihm (welt-licht.js `himmelSetzen`)
+        // Bild-Uhr, Zug und Deckung (`_himmelUniformen`) — eine Bühne der Welt steht drüben unter ihm (welt-licht.js `himmelSetzen`) —
+        // und die Bahn ihrer Sonne (sonnenbahn 2, `_sonnenBahn`: Breite des Ankers, Deklination der Saison, Drehsinn): die Sonne
+        // der Bühne ist die der Welt (welt-licht.js `himmelBahn`)
         const hu = this.state.skyboxUniforms;
         if (hu)
             msg.himmel = {
@@ -496,6 +498,7 @@ class AnazhRealm_netz_portal {
                 zug: hu.zug.value.toArray(),
                 zeit: hu.time.value,
                 deckung: hu.cloudCover.value,
+                bahn: { ...this._sonnenBahn() },
             };
         // Eine übersetzte Welt trägt ihre deklarative Szene (sanitiert in customWorlds); der Renderer in
         // worlds/translated/ baut sie auf. Die Szene ist DATEN — gerendert, nie ausgeführt.

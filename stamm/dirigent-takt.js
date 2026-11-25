@@ -2552,7 +2552,7 @@ class AnazhRealm_dirigent_takt {
         }
         // Godray-Frame-Steuerung: Sonnen-Screen-Position + Pegel; headless fehlt `godrayUniforms` evtl.
         // Die Himmelskörper hängen schon an der Kamera (`_followCelestialBodies`) → `.project(camera)` gibt
-        // die NDC-Lage. Pegel = `_godrayScale` (perf) × `_godrayFrameGate` (Wetter/Höhe) × Sichtbarkeit
+        // die NDC-Lage. Pegel = `GODRAY.pegel` (das Licht, nie die Last) × `_godrayFrameGate` (Wetter/Höhe) × Sichtbarkeit
         // (Sonne vor der Kamera, im Bild, über dem Horizont).
         if (this.state.godrayUniforms && this.state.sunMesh && this.state.camera) {
             const gu = this.state.godrayUniforms;
@@ -2580,7 +2580,7 @@ class AnazhRealm_dirigent_takt {
             const sunVisible = sm(0.02, 0.25, facing) * onScreen;
             const weatherSun = this._weatherFieldFor(this.state.weather).sun;
             const gate = this._godrayFrameGate(sunDir.y, weatherSun);
-            gu.strength.value = (this.state._godrayScale ?? 1) * gate * sunVisible;
+            gu.strength.value = AnazhRealm.GODRAY.pegel * gate * sunVisible;
         }
         // WebGPURenderer.init() ist async, der Loop läuft sofort — Render-Frames überspringen, bis
         // rendererReady.

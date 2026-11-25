@@ -2422,8 +2422,8 @@ class AnazhRealm_bild_kosten {
                 augeBild: uniform(new THREE.Matrix3()),
             };
             this.state.postProcessingUniforms = u;
-            // V8 (Kür) — die EINE benannte Godray-Quelle (Gesetz #0): der Frame-Code (`_loopRender`)
-            // + der Perf-Lever (`_nexusPerfActuate` via `_godrayScale`) lesen NUR diese Uniforms.
+            // V8 (Kür) — die EINE benannte Godray-Quelle (Gesetz #0): der EINE Schreiber ist der Frame-Code (`_loopRender`,
+            // `GODRAY.pegel` × Gate × Sicht); der Regler stellt sie nicht (sonnenbahn).
             this.state.godrayUniforms = {
                 sunScreenPos: u.godraySun,
                 strength: u.godrayStrength,
@@ -3109,8 +3109,10 @@ AnazhRealm.ZEIT_GAMMA_RUHE = 1.25;
 // `an[1]` löst es die Klemme, voll nur in Ruhe (unter `ruhePx` Ausgabe-Pixeln Bewegung je Frame).
 AnazhRealm.FLACKER = Object.freeze({ kante: 0.02, rate: 0.125, an: Object.freeze([0.3, 0.6]), ruhePx: 2 });
 // DER LICHTSCHACHT (`_godrayStufe`, w28-lichtschacht): der Radial-Marsch der Godrays läuft in `skala` × Ausgabe (je Achse), mit
-// `schritte` Abtastungen von Farbe und Tiefe je Texel; die Ausgabe liest ihn bilinear.
-AnazhRealm.GODRAY = Object.freeze({ skala: 0.25, schritte: 20 });
+// `schritte` Abtastungen von Farbe und Tiefe je Texel; die Ausgabe liest ihn bilinear. `pegel`: die Stärke der Schäfte bei voller
+// Sicht (× `_godrayFrameGate` × Sonne im Bild, `_loopRender`) — Licht, nie Last (sonnenbahn: bis hier zog der Regler sie zwischen
+// 0 und 0,8 mit der Bildzeit, `_godrayScale`; die Stufe kostet nur, wenn sie zeigt, dazwischen sparte er nichts und pumpte das Bild).
+AnazhRealm.GODRAY = Object.freeze({ skala: 0.25, schritte: 20, pegel: 0.8 });
 // Der Kamera-Sprung der zeitlichen Auflösung (K68, `_traaReprojektion`): weiter in EINEM Frame beginnt die Geschichte neu und
 // läuft als Mittel an — der Wagen bei 200 km/h und 15 fps legt 3,7 m je Frame zurück, ein Tor oder ein Umsetzen viele Meter.
 AnazhRealm.ZEIT_SPRUNG_M = 6;

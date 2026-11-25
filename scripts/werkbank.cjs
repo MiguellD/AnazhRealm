@@ -8,7 +8,7 @@
 //                                                           mit `anlauf` schwingt der Ort dort ein (Gründung, Stadt), `dach` stellt aufs Dach
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                      [--uhr 0..1] [--wetter rainy] [--saison winter] Bühne + echter Frame (Ausgabe-Pfad)
-//                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]] [--fov v]
+//                                      [--klasse <regex>] [--spieler] [--abstand [--kanten 30,60]] [--ist <id>[:L<n>|:wirkung]] [--fov v]
 //                                      [--zeit Δt] [--bewegung KeyW[:m]] | bild --selbsttest  DIE SICHTBARE BÖE (vegetation.K2): Luma-Varianz 0–15 m am Kamm
 //                                                           und im Tal der Böe über dem Rausch-Boden bei Wind 0
 //                                                           DIE KLASSEN IM BILD (spec/abnahme/soll-tafel.json): Teilung, Rauschen und Maße je Klasse;
@@ -643,14 +643,14 @@ function popGang(treueLicht, wurfWechsel, kachelLoch, groesseWechsel) {
             }
             return m;
         };
-        // die Größe im Stoff (v · s) je Büschel einer Fracht am Auge `A` (`_wieseAuge`): das Gesetz der Ferne in Zahlen
+        // die Größe im Stoff (v · hoehe, `_wieseFernHalm`) je Büschel einer Fracht am Auge `A` (`_wieseAuge`): das Gesetz der Ferne in Zahlen
         const groesse = (liste, A) => {
             const AR = r.constructor, NW = AR.NAH_WIESE, Z = globalThis.__phytoCore.WIND_ZAHLEN;
             return liste.map(([zelle, x, y2, z, gx, gz, o]) => {
                 const d = Math.hypot(x - A.x, z - A.z);
                 const G = AR._wieseFern(Z, d, AR._wieseFuss(Z, x - A.x, y2 - A.y, z - A.z, -gx, 1, -gz, A.h));
                 const v = Math.max(0, Math.min(1, (G.anteil * (1 + NW.fern.rand) - o) / Math.max(1e-6, G.anteil * NW.fern.rand)));
-                return [zelle, d < NW.radius ? 0 : v * G.skala];
+                return [zelle, d < NW.radius ? 0 : v * AR._wieseFernHalm(Z, G.skala).hoehe];
             });
         };
         const aus = { schritte: [], popPixel: 0, kosten: [], wurf: [], groesse: { kacheln: 0, bueschel: 0, sprung: [] } };
@@ -1955,7 +1955,8 @@ async function starte() {
                         // die Bänder: die festen Ringe des Gesetzes (vegetation.K1: 2–5 · 5–10 · 10–20 · 20–40 m) und der Ring der Nah-Wiese
                         // (ihr Radius in DIESER Welt) sind Kanten
                         const ring = r.constructor.NAH_WIESE ? r.constructor.NAH_WIESE.radius : null;
-                        const baender = [...new Set([0, 2, 5, 10, 20, 40, ring, 80, 200].filter((x) => x != null))].sort(
+                        // `--kanten a,b`: weitere Kanten für EINE Messung (wiese-fern: die Deckung der Ferne 30–60 m)
+                        const baender = [...new Set([0, 2, 5, 10, 20, 40, ring, 80, 200, ...(k.kanten || [])].filter((x) => x != null))].sort( // prettier-ignore
                             (a, b2) => a - b2
                         );
                         const zahl = {},
@@ -3686,6 +3687,7 @@ hauptLauf(async () => {
             ort: opt("--ort"),
             spieler: argv.includes("--spieler"),
             abstand: argv.includes("--abstand"),
+            kanten: opt("--kanten") ? opt("--kanten").split(",").map(Number) : null,
             gesicht: opt("--gesicht"),
             arm: opt("--arm"),
             ist: opt("--ist"),
