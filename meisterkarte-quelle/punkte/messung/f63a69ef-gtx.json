@@ -1,7 +1,7 @@
 {
  "sha": "f63a69ef8086b12e4ed913535b7314068383c87f",
  "geraet": "gtx",
- "zeit": "2026-11-25T19:42:08.970Z",
+ "zeit": "2026-11-25T19:56:21.509Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#2": {
@@ -2393,6 +2393,70 @@
    },
    "zeit": "2026-11-25T19:42:08.970Z",
    "abdruck": "55183cc3768b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.fahrzeug.lenker#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 78.1 von 2500000000000 s in 15445 Takten, 172.7 s Wand (11.2 ms je Takt)",
+   "exit": 0,
+   "minuten": 3.03,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 78.1 von 2500000000000 s in 15445 Takten, 172.7 s Wand (11.2 ms je Takt)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 181.1,
+   "fremd": {
+    "s": 183.8,
+    "takte": 85,
+    "fremdS": 39.47,
+    "kerne": 0.215,
+    "fensterKerne": 0.596,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.8
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.73
+     ],
+     [
+      "Explorer.EXE",
+      3.91
+     ]
+    ],
+    "dienerS": 29.77,
+    "diener": [
+     [
+      "System",
+      13.69
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.86
+     ]
+    ],
+    "geraetS": 65.11,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      38.08
+     ],
+     [
+      "svchost.exe",
+      20.72
+     ],
+     [
+      "SearchIndexer.exe",
+      4.72
+     ]
+    ],
+    "eigenS": 295.92,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T19:56:21.509Z",
+   "abdruck": "b6c3c3996fb0",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
