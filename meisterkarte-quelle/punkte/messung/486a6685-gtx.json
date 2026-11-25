@@ -1,7 +1,7 @@
 {
  "sha": "486a6685925d51302752c756d7d47654d83922d1",
  "geraet": "gtx",
- "zeit": "2026-11-25T05:47:48.615Z",
+ "zeit": "2026-11-25T06:34:09.194Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.gespraech#2": {
@@ -498,6 +498,70 @@
    "ungemessen": true,
    "zeit": "2026-11-25T05:47:48.615Z",
    "abdruck": "c91f97507ed2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.stimme#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschienen (stimmFormanten) — S1 misst ihn noch nicht",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschienen (stimmFormanten) — S1 misst ihn noch nicht",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 0.1,
+   "fremd": {
+    "s": 2.2,
+    "takte": 1,
+    "fremdS": 1.17,
+    "kerne": 0.535,
+    "fensterKerne": 0.535,
+    "namen": [
+     [
+      "Explorer.EXE",
+      0.34
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.23
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.23
+     ]
+    ],
+    "dienerS": 0.41,
+    "diener": [
+     [
+      "System",
+      0.17
+     ],
+     [
+      "dwm.exe",
+      0.14
+     ]
+    ],
+    "geraetS": 0.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.39
+     ],
+     [
+      "svchost.exe",
+      0.27
+     ],
+     [
+      "SearchIndexer.exe",
+      0.05
+     ]
+    ],
+    "eigenS": 4.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T06:34:09.194Z",
+   "abdruck": "f0f7353bbe7b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
