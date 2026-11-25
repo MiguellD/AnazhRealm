@@ -32,6 +32,7 @@ class AnazhRealm_siedlung_verkehr {
         const VG = FC.VERKEHR_GESETZ;
         const von = FC.verkehrVon(S.plan);
         const VK = (S.verkehr = {
+            uhr: 0,
             wagen: [],
             zonen: [],
             strecken: [],
@@ -334,7 +335,17 @@ class AnazhRealm_siedlung_verkehr {
             if (fahrbarAn(ki).length >= 3)
                 VK.kpZone.set(
                     ki,
-                    Object.assign(zone("kreuzung", K.x, K.z, K.r, K.konflikt || []), { arme: arme(ki, K) })
+                    // DIE VORFAHRT DES GESETZES (fachwerk `verkehrsNetz` → `vorrang`, je Wort, wem es weicht: [das andere, t_c,
+                    // t_f]) und je Arm der Vorige, der wich (`folge`: [Wagen, die Uhr der Stadt bei der Einfahrt]) — `_verkehrVorfahrt`
+                    Object.assign(zone("kreuzung", K.x, K.z, K.r, K.konflikt || []), {
+                        arme: arme(ki, K),
+                        vorrang: K.vorrang,
+                        weicht: Object.entries(K.vorrang).reduce((m, [k, t]) => {
+                            const [w1, w2] = k.split("|");
+                            return m.set(w1, (m.get(w1) || []).concat([[w2, t[0], t[1]]]));
+                        }, new Map()),
+                        folge: new Map(),
+                    })
                 );
         // die Enge samt einer Wagenlänge davor (`engeRandM`): wer ihr entgegenkommt, wartet, wo der in ihr an ihm vorbeikommt — nur
         // wo eine gefahrene Spur sie trägt (`_verkehrSpur`): eine Enge hinter dem Abzweig der Wende fährt keiner, ihre Bahnen hinein
@@ -1105,7 +1116,6 @@ class AnazhRealm_siedlung_verkehr {
     // trägt, fährt er vom Platz.
     _verkehrAnkunft(S, W) {
         const V = AnazhRealm.VERKEHR;
-        const VG = globalThis.__fachwerkCore.VERKEHR_GESETZ;
         const F = W.F;
         const e = W.entry;
         const fz = e._fahr;
@@ -1319,6 +1329,14 @@ class AnazhRealm_siedlung_verkehr {
                 },
             });
         }
+        // die Folgezeitlücke jedes Arms und die Uhr der Stadt beginnen neu (`_verkehrVorfahrt`: die Einfahrt des Vorigen, die Wagen
+        // um die Kreuzung im Schritt — die Stunde ohne Vorgeschichte)
+        S.verkehr.uhr = 0;
+        for (const Z of S.verkehr.zonen)
+            if (Z.folge) {
+                Z.folge.clear();
+                Z.nahe = null;
+            }
     }
 
     // DIE ROUTE IM VORAUS: die nächsten Züge (Strecke in einer Richtung, Wende, aus dem Platz, in den Platz) nach dem letzten
@@ -1723,6 +1741,7 @@ class AnazhRealm_siedlung_verkehr {
         for (const S of alle.values()) {
             const VK = S.verkehr;
             if (!VK || !VK.wagen.length) continue;
+            VK.uhr += dt; // die Uhr der Stadt (die Folgezeitlücke der Vorfahrt, `_verkehrVorfahrt`): jeder Schritt, ob einer fährt oder parkt
             this._verkehrBelegung(VK);
             const faellig = VK.faellig || (VK.faellig = []);
             faellig.length = 0;
@@ -1869,6 +1888,7 @@ class AnazhRealm_siedlung_verkehr {
     // Zeit befährt (`_verkehrZonen`).
     _verkehrFolge(S, W, sp, h) {
         const V = AnazhRealm.VERKEHR;
+        const VG = globalThis.__fachwerkCore.VERKEHR_GESETZ;
         const F = W.F;
         const e = W.entry;
         const fz = e._fahr;
@@ -2200,6 +2220,66 @@ class AnazhRealm_siedlung_verkehr {
         if (erster !== W || !W.wer) return null;
         return { O: W.wer, F: W.F, bis: W.F.s + 2 * (W.hl + W.wer.hl) + globalThis.__fachwerkCore.VERKEHR_GESETZ.folgeS0 };
     }
+    // DIE VORFAHRT AN DER KREUZUNG (Welle Knoten der Großstadt; fachwerk VERKEHR_GESETZ `luecke`, `verkehrsNetz` → `vorrang`): wer
+    // einem Weg im Konflikt weicht (`Z.weicht`: Rang der Wege, links vor entgegen, rechts vor links), fährt nur in eine LÜCKE — keiner,
+    // dem er weicht, ist frühestens binnen t_c an seiner Haltelinie (er beschleunigt mit `folgeA` bis `tempoMs`; wer an ihr wartet,
+    // ist jetzt dort) — und, solange einer naht, nie früher als t_f nach dem Vorigen seines Arms (`Z.folge`, seine Einfahrt). Wer im
+    // Warte-Graphen übergangen ist (`gesperrt`), geht nicht vor. DER STROM, NIE DIE REIHE: Vorfahrt hat nur der Erste seines Arms —
+    // hinter einem, der selbst noch vor dem Ort steht, kommt keiner vor ihm an — und wer steht, nur, wenn er fahren KANN (er wartet
+    // auf keinen Halter, keinen Platz, weicht keinem); wer fährt, ist Strom, wie er fährt. Bis hier wich der Weichende auch dem
+    // Zweiten der Reihe, und rechts vor links schloss sich ein Kreis, den kein Übergehen löste (stadt-voll 10 Uhr am Markt 836/438:
+    // Wagen 3 wich 19 hinter dem übergangenen 1, ab Sekunde 15 standen 21 von 21). Die Folgezeitlücke misst die Uhr der Stadt
+    // (`VK.uhr`), nie die des Vorigen: dessen Uhr steht, sobald er parkt. Die Wagen um die Kreuzung sammelt EIN Gang je
+    // `vorfahrtTaktS` (die Zellen der Belegung binnen r + (größtes t_c + Takt) × `tempoMs`, `Z.nahe`; Lage und Tempo liest jede Frage
+    // frisch), gezählt in `zahl.arbeit.paare` — bis hier ging jede Frage die Zellen ab, am Markt fast die ganze Stadt (6,92 geprüfte
+    // Wagen je Blick, Soll ≤ 5,25). Liefert den, dem er die Lücke lässt (seine Kante „vorfahrt“), sonst null
+    _verkehrVorfahrt(S, W, z) {
+        const Z = z.Z;
+        const weicht = Z.art === "kreuzung" && z.wort ? Z.weicht.get(z.wort) : null;
+        if (!weicht) return null;
+        const V = AnazhRealm.VERKEHR;
+        const VG = globalThis.__fachwerkCore.VERKEHR_GESETZ;
+        const VK = S.verkehr;
+        if (!Z.nahe || VK.uhr - Z.nahe[0] >= V.vorfahrtTaktS) {
+            const tc = Math.max(...Object.values(VG.luecke).map((x) => x[0]));
+            const [R, BM, nahe] = [Z.r + (tc + V.vorfahrtTaktS) * V.tempoMs, V.belegungM, []];
+            for (let ix = Math.floor((Z.x - R) / BM); ix <= Math.floor((Z.x + R) / BM); ix++)
+                for (let iz = Math.floor((Z.z - R) / BM); iz <= Math.floor((Z.z + R) / BM); iz++) {
+                    const l = VK.belegung.get(ix * 2097152 + iz);
+                    if (l) for (const O of l) if (O.zustand === "faehrt" && O.F && O.entry && O.entry._fahr) nahe.push(O);
+                }
+            VK.zahl.arbeit.paare += nahe.length;
+            Z.nahe = [VK.uhr, nahe];
+        }
+        const offen = (X) => X.zonen.find((y) => y.Z === Z && !y.weg);
+        const steht = (X) => !(X.entry && X.entry._fahr && X.entry._fahr.vlong >= 0.5);
+        const kann = (X) => !X.weicht && !(X.wartet && X.wartet.auf.some((a) => a[1] === "halter" || a[1] === "platz" || a[1] === "weicht"));
+        const ankunft = (d, v) => {
+            if (d <= 0) return 0;
+            const dA = (V.tempoMs * V.tempoMs - v * v) / (2 * VG.folgeA);
+            return d <= dA ? (-v + Math.sqrt(v * v + 2 * VG.folgeA * d)) / VG.folgeA : (V.tempoMs - v) / VG.folgeA + (d - dA) / V.tempoMs;
+        };
+        let [best, tBest, strom] = [null, Infinity, false];
+        for (const O of Z.nahe[1]) {
+            if (O === W || O.gesperrt || O.zustand !== "faehrt" || !O.F || !O.entry || !O.entry._fahr) continue;
+            const zO = offen(O);
+            const t0 = zO && zO.wort && !zO.hat && weicht.find((x) => x[0] === zO.wort);
+            if (!t0) continue;
+            const L = O.vorder && O.vorder.O;
+            if ((steht(O) && !kann(O)) || (L && L.zonen && steht(L) && (offen(L) || {}).hat === false)) continue;
+            const t = ankunft(zO.ein - V.vorM - O.F.s - O.hl, Math.max(0, O.entry._fahr.vlong));
+            strom = true;
+            if (t < t0[1] && t < tBest) [best, tBest] = [O, t];
+        }
+        if (best) return best;
+        // DIE FOLGEZEITLÜCKE gilt, solange einer naht: die Wartepflicht entsteht am Berechtigten (StVO § 8, rechts vor links ohne
+        // Zeichen) — naht einer, dem er weicht, teilt er die Lücke mit dem Vorigen seines Arms und folgt ihm erst nach t_f; naht
+        // keiner, folgt er ihm nach dem IDM. Das HCM misst t_f am Zeichen, wo jeder hält; der Markt trägt keins. Bis hier band t_f
+        // jeden Folger auch ohne Strom, je Arm höchstens einer in 3,3–4,0 s (stadt-voll 10 Uhr, 120 s: Arbeit 5,98 geprüfte Wagen
+        // je Blick in den Reihen, Soll ≤ 5,25; danach 5,47)
+        const vor = Z.folge.get(z.wort.split(">")[0]);
+        return strom && vor && vor[0] !== W && VK.uhr - vor[1] < Math.max(...weicht.map((x) => x[2])) ? vor[0] : null;
+    }
     _verkehrZonen(S, W, v) {
         const V = AnazhRealm.VERKEHR;
         const s0 = globalThis.__fachwerkCore.VERKEHR_GESETZ.folgeS0;
@@ -2219,7 +2299,8 @@ class AnazhRealm_siedlung_verkehr {
         const n = kreis ? kreis.length : 0;
         const nrn = (wer) => (kreis || []).filter(wer).map(([X]) => X.nr);
         const halter = nrn(([X]) => !!X.F && X.zonen.some((z) => z.hat && !z.weg));
-        const koepfe = nrn((_, i) => kreis[(i + n - 1) % n][1] === "kopf");
+        // (wem einer die Lücke lässt, `vorfahrt`, ist ein Kopf wie der der Reihe: übergangen geht er nicht vor, `_verkehrVorfahrt`)
+        const koepfe = nrn((_, i) => kreis[(i + n - 1) % n][1] === "kopf" || kreis[(i + n - 1) % n][1] === "vorfahrt");
         // DER KREIS AUS WAGEN-KANTEN LÖST SICH (tages-gesetz 2; die Verklemmung, Rang nach Zeitstempel): wartet jeder im Kreis nur
         // auf den Wagen vor seinem Bug, löst kein Ort ihn — EINER fährt (`_verkehrKreisDurch`), der Halter behält seine Kette. Bis
         // hier löste der Graph nur Kreise über Halter und Kopf: im Bogen vor der Wende 746/573 standen zwei Entgegenkommende Bug
@@ -2340,9 +2421,16 @@ class AnazhRealm_siedlung_verkehr {
         // Spitze, wer zuerst fragte — auch hinter einem, der nach ihm kam: beide warteten aufeinander), außer dem, den der
         // Warte-Graph übergeht (`gesperrt`, oben)
         const kopf = Z.warte.find((o) => o === W || (!o.gesperrt && !(o.vorder && o.vorder.O.reihe.has(Z))));
-        // vor dem Kopf vorbei nur, wer ihm nicht im Weg ist (verträglich mit ihm: der Kopf wartet nie länger seinetwegen)
-        if (!W.weicht && kette.every(darf) && (drinnen || !kopf || kopf === W || vertraeglich(z0, kopf)) && platz) {
+        // vor dem Kopf vorbei nur, wer ihm nicht im Weg ist (verträglich mit ihm: der Kopf wartet nie länger seinetwegen) — ODER
+        // WEM DER KOPF WEICHT (der Rang des Gesetzes, nie die Reihe der Frage: `Z.vorrang`, das Wort des Kopfs gegen seines)
+        const wortVon = (o) => (o.zonen.find((y) => y.Z === Z && !y.weg) || {}).wort;
+        const kopfWeicht = !!(kopf && Z.vorrang && z0.wort && Z.vorrang[wortVon(kopf) + "|" + z0.wort]);
+        // DIE LÜCKE (`_verkehrVorfahrt`): wem er weicht, der binnen t_c an der Linie ist — oder der Vorige seines Arms vor t_f
+        let lasse = null;
+        for (const z of kette) if (!lasse && !drinnen) lasse = this._verkehrVorfahrt(S, W, z);
+        if (!W.weicht && !lasse && kette.every(darf) && (drinnen || !kopf || kopf === W || kopfWeicht || vertraeglich(z0, kopf)) && platz) {
             for (const z of kette) {
+                if (z.Z.weicht && z.wort && z.Z.weicht.has(z.wort)) z.Z.folge.set(z.wort.split(">")[0], [W, S.verkehr.uhr]);
                 z.hat = true;
                 const zurueck = z.Z.halter.includes(W) && z.Z.richtung !== null && z.Z.richtung !== z.dir;
                 if (!z.Z.halter.includes(W)) z.Z.halter.push(W);
@@ -2359,7 +2447,8 @@ class AnazhRealm_siedlung_verkehr {
             if (!darf(z))
                 for (const o of z.Z.halter)
                     if (o !== W && !W.wartet.auf.some((a) => a[0] === o)) W.wartet.auf.push([o, "halter", wo]);
-        if (kopf && kopf !== W && !drinnen && !vertraeglich(z0, kopf)) W.wartet.auf.push([kopf, "kopf", wo]);
+        if (kopf && kopf !== W && !drinnen && !kopfWeicht && !vertraeglich(z0, kopf)) W.wartet.auf.push([kopf, "kopf", wo]);
+        if (lasse && !W.wartet.auf.some((a) => a[0] === lasse)) W.wartet.auf.push([lasse, "vorfahrt", wo]);
         if (!platz && W.vorder) W.wartet.auf.push([W.vorder.O, "platz", wo]);
         AnazhRealm._verkehrReihe(Z, W, true);
         return halt;
@@ -2624,6 +2713,7 @@ AnazhRealm.VERKEHR = Object.freeze({
     ausBlick: 4,
     belegungM: 16,
     belegungRandM: 2,
+    vorfahrtTaktS: 0.25,
     umfahrMs: 0.3,
     umfahrNachS: 4,
     umfahrRandM: 0.25,

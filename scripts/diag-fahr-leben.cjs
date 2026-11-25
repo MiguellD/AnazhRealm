@@ -990,7 +990,12 @@ const TAKT_EICH = { eichN: 6000, k8: Math.round((0.05 / EICH_RUHE_MS) * 1000) };
 // (`paare` × Soll der Wagen), eine Suche des Warte-Graphen im Mittel höchstens `kreis` Schritte (die Tiefe seines Gangs). Gemessen
 // 600 s: 10 Uhr 4,17 Wagen je Blick, 3,03 Schritte je Suche, 23 Uhr 3,91 / 2,89; die Mutante 222,73 Wagen je Blick bei 0,755 ms (die Wanduhr sah sie nicht)
 const ARBEIT = { paare: 0.25, kreis: 12 };
-const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, ohrM: 40, ohrK: 4, ohrMs: 0.35, ruckM: 0.15, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2, leibS: 20, zwillingS: 20 };
+// DER KNOTEN DER GROSSSTADT (knoten-grossstadt, Zensus Szene 1; `knoten` [x, z, r] in fahr-proben): der Bogen vor der Wende
+// 746/573, wo der Warte-Kreis „8>9“ stand (Kopf 99b234d7: Wagen 8 heraus bei 747/555, Wagen 9 hinein bei 748/548, Bug an Bug)
+// DIE FOLGE MIT ZEITLÜCKE (knoten-grossstadt; das IDM, Treiber/Hennecke/Helbing 2000: T 1,5 s, s0 2 m): die Zeitlücke zum Vorderen
+// im Median im Band der Station lenker#1 (`luecke` [von, bis] s), ihr 5-%-Quantil ≥ `luecke05` s — der feste Abstand 2,5 m hielt bei
+// 8,3 m/s 0,3 s, und der Median sah es nicht (er liegt in der freien Folge bis `folgeM`)
+const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, ohrM: 40, ohrK: 4, ohrMs: 0.35, ruckM: 0.15, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2, leibS: 20, zwillingS: 20, knoten: [747, 552, 20], luecke: [1, 3], luecke05: 1 }; // prettier-ignore
 // DIE STUNDE OHNE VORGESCHICHTE (mensch.K2, w28-verkehr-takt; `vorgeschichte` in fahr-proben): die erste Stunde zuerst als
 // Zwilling (`zwillingS` Sekunden), dann ihr Lauf — jedes Bild bitgenau wie im Zwilling [Bilder beider Läufe, das erste Bild, das
 // sich trennt]. Am 11.11. (main e6f0cf7e) trennte sich 10 Uhr nach 300 Bildern Vorlauf in Bild 307 (Gehende) und 2197 (Wagen),
@@ -1026,6 +1031,14 @@ const verkehrVerdict = (m) =>
         // Kopf der Reihe, Platz hinter dem Ort; `W.wer`: der Wagen vor ihm) — ein Kreis, der länger als `leibS` steht, ist der Stau
         // beim Namen [Schlüssel, Sekunden, erste, letzte Probe, wer auf wen wo]. Ungezählt ist ROT
         [!!m.graph && !m.graph.kreise.some((k) => k[1] > VERKEHR.leibS), `Warte-Kreis ${m.graph ? JSON.stringify(m.graph.kreise.find((k) => k[1] > VERKEHR.leibS)) : "ungezählt"}`], // prettier-ignore
+        // DIE FOLGE UND DIE VORFAHRT AUS EINEM GESETZ (knoten-grossstadt; fachwerk VERKEHR_GESETZ): die Zeitlücke zum Vorderen in der
+        // Formel der Station lenker#1 [Median, p05, Proben] (`--mutante-folge`: folgeT 0 — der feste Abstand); an der Kreuzung fährt,
+        // wer weicht (Rang der Wege aus WEGE_KLASSE, links vor entgegen, rechts vor links), nur in eine Lücke ≥ t_c und nie vor t_f
+        // nach dem Vorigen seines Arms (HCM 2000 Kap. 17) [genommen, Folge, Einfahrten, Proben mit gelassener Lücke, die knappste:
+        // Rest s, Lücke s, t_c, wer>wem, Wörter, Probe] — keine Einfahrt oder keiner ließ eine Lücke ist ungezählt und ROT
+        // (`--mutante-luecke`: `_verkehrVorfahrt` still)
+        [!!m.lenker && m.lenker.zeitluecke >= VERKEHR.luecke[0] && m.lenker.zeitluecke <= VERKEHR.luecke[1] && m.lenker.p05 >= VERKEHR.luecke05, `Zeitlücke zum Vorderen ${m.lenker ? JSON.stringify([m.lenker.zeitluecke, m.lenker.p05, m.lenker.luecken]) : "ungezählt"} (Soll Median ${VERKEHR.luecke.join("–")} s, p05 ≥ ${VERKEHR.luecke05} s; IDM T 1,5 s)`], // prettier-ignore
+        [!!m.vorfahrt && m.vorfahrt.ein > 0 && m.vorfahrt.lassen > 0 && !m.vorfahrt.genommen && !m.vorfahrt.folge, `Vorfahrt ${m.vorfahrt ? JSON.stringify([m.vorfahrt.genommen, m.vorfahrt.folge, m.vorfahrt.ein, m.vorfahrt.lassen, m.vorfahrt.knapp, m.vorfahrt.folgeKnapp]) : "ungezählt"} (Soll: 0 Lücken < t_c, 0 Folgen < t_f, solange einer naht; die Lücke gelassen > 0) [genommen, Folgen, Einfahrten, gelassen, die knappste Lücke, die knappste Folge: s, t_f, wer>wer, Arm, Probe]`], // prettier-ignore
         [m.sitz[0] > 0 && !m.sitz[1], `Fahrer nicht im Sitz ${JSON.stringify(m.sitz)}`],
         // DAS BILD GLEITET (w28-verkehr-bild, `_verkehrGleit`): je Bild weicht der gezeichnete Weg eines fahrenden Wagens im Blick
         // höchstens `ruckM` von dem ab, den sein Tempo in der Zeit des Bilds trägt [m, Wagen, Probe, Stufe k, m/s, a, ms, …];
@@ -2756,8 +2769,16 @@ hauptLauf(async () => {
                 graph: { kreise: [] },
                 bildRuck: { max: [0.107, 9, 658, 4, 7.6], n: 14172 },
                 ohr: { stimmen: [2, 4], nah: 1800, stumm: 0, ms95: 0.3 },
+                lenker: { reisetempo: 0.75, zeitluecke: 1.9, p05: 1.2, luecken: 8e4 },
+                vorfahrt: { lassen: 300, ein: 120, genommen: 0, folge: 0, knapp: [0.1, 7.3, 7.1, "4>9", "0>2|1>3", 9000] },
             };
             const brueche = [
+                // knoten-grossstadt: die Folge ohne Zeitlücke (`--mutante-folge`), die Einfahrt ohne Lücke (`--mutante-luecke`)
+                [{ lenker: { zeitluecke: 1.7, p05: 0.31, luecken: 8e4 } }, /Zeitlücke zum Vorderen \[1.7,0.31,80000\]/],
+                [{ lenker: undefined }, /Zeitlücke zum Vorderen ungezählt/],
+                [{ vorfahrt: { lassen: 0, ein: 120, genommen: 7, folge: 2, knapp: [-3.2, 3.9, 7.1, "4>9", "0>2|1>3", 9000] } }, /Vorfahrt \[7,2,120,0,\[-3.2,3.9,7.1,"4>9"/], // prettier-ignore
+                [{ vorfahrt: { lassen: 0, ein: 0, genommen: 0, folge: 0, knapp: null } }, /Vorfahrt \[0,0,0,0,null,/],
+                [{ vorfahrt: undefined }, /Vorfahrt ungezählt/],
                 // stadt-voll 10 Uhr ohne die Regel des Warte-Graphen: 8 hinter 17, 17 hinter 8, 235 s ab Bild 21900
                 [{ graph: { kreise: [["8>17", 235, 21900, 35940, "8-wagen > 17-wagen"]] } }, /Warte-Kreis \["8>17",235/],
                 // der Kreis ohne Lösung → ROT beim Ort (tages-gesetz 2, im Spiel `--mutante-kreis`: der Rang still): Bug an Bug im Bogen
@@ -2956,7 +2977,7 @@ hauptLauf(async () => {
             // `--taeter` (pflicht.C#1): um 10 Uhr 130 s (zwei volle Minuten), Wagen 0 ohne Fahrer, Wagen 1 neben der Trasse, Wagen 2
             // in Wagen 3, der erste gemessene Fahrer auf dem Dach, und keiner umfährt den stehenden Spieler in der Kreuzung — jeder
             // beim Namen (der letzte als Kopf der Reihe der kürzesten Minute, `spieler`)
-            { verkehr: { ...VERKEHR, mutanteArbeit: schalter("--mutante-arbeit"), mutanteSprung: schalter("--mutante-sprung"), mutanteOhr: schalter("--mutante-ohr"), mutanteKreis: schalter("--mutante-kreis"), ...(STUNDE != null && { stunden: [STUNDE] }), ...(SEK != null && { sek: SEK }), ...(schalter("--platz") && { stand: "platz" }), ...(TAETER && { stunden: [10], sek: 130, taeter: 1, zwillingS: 0 }) } }, // prettier-ignore
+            { verkehr: { ...VERKEHR, mutanteArbeit: schalter("--mutante-arbeit"), mutanteSprung: schalter("--mutante-sprung"), mutanteOhr: schalter("--mutante-ohr"), mutanteKreis: schalter("--mutante-kreis"), mutanteFolge: schalter("--mutante-folge"), mutanteLuecke: schalter("--mutante-luecke"), ...(STUNDE != null && { stunden: [STUNDE] }), ...(SEK != null && { sek: SEK }), ...(schalter("--platz") && { stand: "platz" }), ...(TAETER && { stunden: [10], sek: 130, taeter: 1, zwillingS: 0 }) } }, // prettier-ignore
             (o) => {
                 const vg = o.verkehr && o.verkehr.vorgeschichte;
                 if (!TAETER) check("VK-V (mensch.K2) die Stunde ohne Vorgeschichte: dieselbe Saat, dasselbe Bild", !vorgeschichteVerdict(vg).length, vorgeschichteVerdict(vg).join(" · ") || JSON.stringify(vg)); // prettier-ignore

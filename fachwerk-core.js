@@ -6155,8 +6155,13 @@
     // das Intelligent Driver Model (Treiber, Hennecke & Helbing 2000, Phys. Rev. E 62:1805; die Kalibrierung der Stadt nach Treiber:
     // Wunsch-Zeitlücke folgeT 1,5 s, Mindestabstand folgeS0 2 m, Beschleunigung folgeA 0,73 m/s², bequeme Verzögerung folgeB
     // 1,67 m/s²): sein Wunschabstand s* = s0 + v·T + v·Δv/(2√(a·b)). Leser: der Wirt `_verkehrFolge` (der Deckel der Folge, s* = Lücke)
-    // und jeder Raum, den ein Stehender hält (s0). Bis hier hielt er festen `abstandM` 2,5 m (stamm VERKEHR): bei 8,3 m/s 0,3 s
-    var VERKEHR_GESETZ = { folgeT: 1.5, folgeS0: 2, folgeA: 0.73, folgeB: 1.67, hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, stossM: 3.1, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
+    // und jeder Raum, den ein Stehender hält (s0). Bis hier hielt er festen `abstandM` 2,5 m (stamm VERKEHR): bei 8,3 m/s 0,3 s.
+    // DIE VORFAHRT aus demselben Gesetz: der Rang der Wege (`WEGE_KLASSE`, je Strecke `rang`), an jeder Kreuzung je Paar im Konflikt,
+    // wer weicht (`verkehrsNetz` → `vorrang`), und die Lückenannahme `luecke` je Bewegung des Weichenden [t_c Grenzzeitlücke,
+    // t_f Folgezeitlücke in s] — HCM 2000 Kap. 17 (TWSC, Basiswerte; PTV Visum Hilfe Tab. 106/107): Linksabbieger des Hauptstroms
+    // 4,1/2,2, Nebenstrom rechts 6,2/3,3, geradeaus 6,5/4,0, links 7,1/3,5. Leser: der Wirt `_verkehrZonen` (`_verkehrVorfahrt`)
+    var VERKEHR_GESETZ = { folgeT: 1.5, folgeS0: 2, folgeA: 0.73, folgeB: 1.67,
+      luecke: { hauptLinks: [4.1, 2.2], nebenRechts: [6.2, 3.3], nebenGerade: [6.5, 4.0], nebenLinks: [7.1, 3.5] }, hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, stossM: 3.1, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
       wendeRandM: 1.2, wendeAbM: [7, 80], abzweigM: 2, abzweigAussenM: 0.3, abzweigZulaufM: 10, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
     function verkehrVon(plan){
       const sl=(plan&&plan.slots)||[], N=plan&&plan.staedtisch?Math.ceil(sl.length/VERKEHR_GESETZ.hausJeWagen):0, slots=[];
@@ -6248,20 +6253,26 @@
       // ungekürzt durch ihn (Radius 0)
       const ketten=[], gegangen=new Set();
       for(const [g,K] of kpVon) for(const h0 of nach.get(g)){ if(gegangen.has(g+">"+h0)) continue;
-        const P=[mitte.get(g)]; let [vor,jetzt]=[g,h0];
-        while(!kpVon.has(jetzt)){ P.push(mitte.get(jetzt)); const N=[...nach.get(jetzt)].filter(h=>h!==vor); if(N.length!==1) break; [vor,jetzt]=[jetzt,N[0]]; }
+        const P=[mitte.get(g)], wege=[]; let [vor,jetzt]=[g,h0];
+        while(!kpVon.has(jetzt)){ P.push(mitte.get(jetzt)); for(const i of glieder.get(jetzt)) wege.push(kn[i].ri); const N=[...nach.get(jetzt)].filter(h=>h!==vor); if(N.length!==1) break; [vor,jetzt]=[jetzt,N[0]]; }
         if(!kpVon.has(jetzt)) continue;
         P.push(mitte.get(jetzt)); gegangen.add(g+">"+h0); gegangen.add(jetzt+">"+vor);
+        if(!wege.length){ const a=new Set(glieder.get(g).map(i=>kn[i].ri)); for(const i of glieder.get(jetzt)) if(a.has(kn[i].ri)) wege.push(kn[i].ri); }
         const M=[P[0]]; for(let i=1;i<P.length;i++){ const m=Math.max(1,Math.ceil(Math.hypot(P[i].x-P[i-1].x,P[i].z-P[i-1].z))); for(let t=1;t<=m;t++) M.push({x:P[i-1].x+(P[i].x-P[i-1].x)*t/m, z:P[i-1].z+(P[i].z-P[i-1].z)*t/m}); }
         let L=0; for(let i=1;i<M.length;i++) L+=Math.hypot(M[i].x-M[i-1].x,M[i].z-M[i-1].z);
         const J=kpVon.get(jetzt);
         if(L<V.kreuzM&&(kreuzungen[K].ende||kreuzungen[J].ende)) continue;
-        ketten.push({K, J, M, L}); }
+        // DER RANG DER STRECKE (Welle Knoten der Großstadt): die Klasse des Wegs, dem ihre Punkte am häufigsten gehören
+        // (`WEGE_KLASSE` nach der Generation, ein Feldweg des Plans 3) — der Leser ist die Vorfahrt der Kreuzung (`vorrang`, unten)
+        const nR=(plan.roads||[]).length, rangVon=(ri)=>ri>=nR?3:Math.max(0,Math.min(2,(plan.roads[ri].gen|0))), zahlR=[0,0,0,0];
+        for(const ri of wege) zahlR[rangVon(ri)]++;
+        const rang=wege.length?zahlR.indexOf(Math.max(...zahlR)):2;
+        ketten.push({K, J, M, L, rang}); }
       const zahl=kreuzungen.map(()=>0); for(const c of ketten){ zahl[c.K]++; zahl[c.J]++; }
       kreuzungen.forEach((K,ki)=>{ K.r=zahl[ki]<=2?0:Math.max(K.r,V.kurveR+V.spurM); });
       const strecken=[];
       const AUSWEICH=[0]; for(let d=0.25;d<=V.ausweichM+1e-9;d+=0.25) AUSWEICH.push(d,...(d<=V.einweichM+1e-9?[-d]:[]));
-      for(const {K, J, M, L} of ketten){
+      for(const {K, J, M, L, rang} of ketten){
         const id=strecken.length, A=kreuzungen[K], B=kreuzungen[J];
         let ok=true, stelle=null;
         // die Spur je Punkt der Mitte und ihr Abstand zu ihr (`off`, NaN: in der Kreuzung gekürzt)
@@ -6280,7 +6291,7 @@
           if(eng) (lauf||(lauf=[])).push(M[i]);
           else if(lauf){ const c={x:0,z:0}; for(const q of lauf){ c.x+=q.x/lauf.length; c.z+=q.z/lauf.length; }
             let r=0; for(const q of lauf) r=Math.max(r,Math.hypot(q.x-c.x,q.z-c.z)); engen.push({x:c.x, z:c.z, r:r+V.spurM+V.halbM}); lauf=null; } }
-        strecken.push({a:K, b:J, laenge:L, mitte:M, spur:[hin.S,her.S], frei:ok&&hin.S.length>1&&her.S.length>1, stelle, engen});
+        strecken.push({a:K, b:J, laenge:L, mitte:M, spur:[hin.S,her.S], frei:ok&&hin.S.length>1&&her.S.length>1, stelle, engen, rang, klasse:rang<3?WEGE_KLASSE[rang]:'feldweg'});
         A.strecken.push(id); B.strecken.push(id); }
       // DIE WENDE an jedem Ende: der Kreis, die Bahn (Spur hinein, der lange Bogen, Spur heraus) und die Plätze an ihm
       const R2=new Map(), zM=V.zelleM, key=(x,z)=>Math.floor(x/zM)*2097152+Math.floor(z/zM);
@@ -6336,7 +6347,22 @@
         const abst=(A,B)=>{ let m=Infinity; for(let i=1;i<A.length;i++) for(let j=1;j<B.length;j++){ const a=A[i-1], b=A[i], c=B[j-1], d=B[j];
             if(o(a,b,c)*o(a,b,d)<0&&o(c,d,a)*o(c,d,b)<0) return 0; m=Math.min(m,pq(a,c,d),pq(b,c,d),pq(c,a,b),pq(d,a,b)); } return m; };
         for(let i=0;i<woerter.length;i++) for(let j=i+1;j<woerter.length;j++){ const g=2*V.halbM+(Z[i].krumm?aus:0)+(Z[j].krumm?aus:0);
-          if(abst(Z[i].P,Z[j].P)<g) K.konflikt.push(woerter[i]+"|"+woerter[j], woerter[j]+"|"+woerter[i]); } });
+          if(abst(Z[i].P,Z[j].P)<g) K.konflikt.push(woerter[i]+"|"+woerter[j], woerter[j]+"|"+woerter[i]); }
+        // DIE VORFAHRT (Welle Knoten der Großstadt, `vorrang`: „w1|w2" → [t_c, t_f] — w1 lässt w2 die Lücke): je Paar im Konflikt
+        // geht vor, wer vom Weg des höheren Rangs kommt (`rang` der Strecke, `WEGE_KLASSE`); bei gleichem Rang lässt, wer links
+        // abbiegt, den Entgegenkommenden fahren (StVO § 9 Abs. 3), sonst geht vor, wer von rechts kommt (§ 8 Abs. 1). Wer weicht,
+        // fährt nur in eine Lücke von `t_c` und folgt, solange einer naht, dem Vorigen seines Arms nach `t_f` (`luecke`, HCM nach Bewegung) — gleicher
+        // Arm, zwei Linksabbieger gegeneinander, zwei Geradeaus gegeneinander: keiner weicht, die Reihe der Frage gilt
+        K.vorrang={};
+        const arm=(wort)=>{ const [si,so]=wort.split(">").map(Number), a=strecken[si], b=strecken[so], rein=a.b===ki?a.spur[0]:a.spur[1], raus=b.a===ki?b.spur[0]:b.spur[1];
+          const u=richtung(rein,true), w=richtung(raus,false), d=u.x*w.x+u.z*w.z, c=u.x*w.z-u.z*w.x;   /*rechts der Fahrt (+): (−u.z, u.x) — die Spur liegt dort*/
+          return {si, rang:a.rang, u, p:rein[rein.length-1], zug:d>0.7?'gerade':c>0?'rechts':'links'}; };
+        const AW={}; for(const w of woerter) AW[w]=arm(w);
+        for(const k of K.konflikt){ const [w1,w2]=k.split("|"), a=AW[w1], b=AW[w2];
+          if(a.si===b.si) continue;
+          const gegen=a.u.x*b.u.x+a.u.z*b.u.z<-0.7;
+          const weicht=a.rang!==b.rang ? a.rang>b.rang : gegen ? a.zug==='links'&&b.zug!=='links' : (b.p.x-K.x)*(-a.u.z)+(b.p.z-K.z)*a.u.x>0;
+          if(weicht) K.vorrang[k]=a.rang===b.rang&&gegen ? V.luecke.hauptLinks : V.luecke[a.zug==='rechts'?'nebenRechts':a.zug==='gerade'?'nebenGerade':'nebenLinks']; } });
       // DER ÜBERGANG (die Wende): aus der Lage P in Richtung u (Einheit) auf den Kreis (Mitte c, Radius rho) in seinem Umlauf `dir`
       // (+1: der Winkel atan2(z, x) wächst) — ein Bogen vom Radius R (links oder rechts herum), dann die Gerade, die beide Kreise in der
       // Richtung der Fahrt berührt (gleicher Umlauf: außen, sonst innen). Liefert JEDEN solchen Weg {L, pts (nach P je Meter, bis an

@@ -984,6 +984,10 @@ async function probeLeben(expected) {
             // (`_verkehrKreisDurch` → null) — im Bogen der Sackgasse vor der Wende 746/573 stehen zwei Entgegenkommende Bug an Bug
             // (stadt-voll 10 Uhr, Kopf 99b234d7: Warte-Kreis „8>9“ ab Sekunde 30)
             if (o.mutanteKreis) r._verkehrKreisDurch = () => null;
+            // DIE FOLGE UND DIE VORFAHRT AUS EINEM GESETZ (knoten-grossstadt; fachwerk VERKEHR_GESETZ): `mutanteFolge` — die
+            // Zeitlücke still (folgeT 0, s0 der alte feste Abstand 2,5 m); `mutanteLuecke` — die Lücke still (`_verkehrVorfahrt` → null)
+            if (o.mutanteFolge) Object.assign(globalThis.__fachwerkCore.VERKEHR_GESETZ, { folgeT: 0, folgeS0: 2.5 });
+            if (o.mutanteLuecke) r._verkehrVorfahrt = () => null;
             // die Lage des Leibs beim Bau seiner Linie (tages-gesetz 2, der Beweis des Ausscherens): Gier, Ort und ob sie eine Fahrt
             // beginnt (`anfang`) — gelesen in der Zeile „Ausscheren über dem Band“
             r._verkehrLinie = function (S2, W, zuege, anfang) {
@@ -1075,6 +1079,19 @@ async function probeLeben(expected) {
             // der fünfte Täter: die Stadt fließt nicht um den stehenden Spieler (kein Wagen umfährt ihn) — die Minute nennt ihn
             if (o.taeter) r._verkehrUmfahren = () => false;
             const [abdruck, lagen] = [[], []];
+            // DER KNOTEN DER GROSSSTADT (knoten-grossstadt, Zensus Szene 1, `o.knoten` [x, z, r]): je Probe am Knoten Fluss (Wagen,
+            // die ihn ganz durchfuhren, je Stunde), mittleres Tempo im Kreis gegen das Reisetempo (`tempoMs`), die Schlange (wer
+            // binnen r + 30 m unter 0,5 m/s auf Wagen oder Ort wartet: Zahl und Meter Straße samt Lücke), Bug an Bug (zwei
+            // Entgegenkommende im Kreis, der Abstand ihrer Nasen, die Sekunden, die beide so stehen) und die Folge (Lücke Bug–Heck
+            // und Zeitlücke im Filter der Station lenker#1); dazu DIE FORMEL DER STATION lenker#1 über die ganze Stadt (Weg ÷ Zeit in
+            // Fahrt ÷ `tempoMs`, Median der Zeitlücke zum `vorder` bei v > 2, vO > 1, Lücke < `folgeM`)
+            const KN = o.knoten && { x: o.knoten[0], z: o.knoten[1], r: o.knoten[2], innen: new Set(), durch: 0, vS: 0, nS: 0, schlange: [0, 0, 0], nSchl: 0, bug: [Infinity], bugS: 0, gaps: [], luecken: [] }; // prettier-ignore
+            const LK = { t: tMs, fahrS: 0, weg0: new Map(VK.wagen.map((W) => [W, W.weg || 0])), luecken: [], proben: 0 };
+            // DIE VORFAHRT (knoten-grossstadt; fachwerk `vorrang`, `_verkehrVorfahrt`): je Probe, wer an einer Kreuzung auf einem Weg,
+            // der weicht, neu den Schlüssel hält (die Einfahrt), und die Lücke, die er nahm — die Zeit, bis der nächste, dem er weicht,
+            // mit seinem Tempo an dessen Haltelinie wäre (wer fährt, über 1 m/s), gegen t_c, die Frist der Probe gutgeschrieben; je Arm
+            // die Folge der Weichenden gegen t_f; und wie oft einer die Lücke ließ (seine Kante „vorfahrt“ im Warte-Graphen)
+            const VF = { lassen: 0, ein: 0, genommen: 0, folge: 0, knapp: [Infinity], hat: new Map(), arm: new Map(), folgeKnapp: null }; // prettier-ignore
             for (let k = 0; k < sek * 60; k++, i++) {
                 const tv = tMs;
                 frame(i);
@@ -1153,6 +1170,86 @@ async function probeLeben(expected) {
                 const L = fahrend.map(lage);
                 const nicht = VK.wagen.filter((W) => !fahrend.includes(W) || !W.b.amSteuer || !W.b.leib);
                 if (VK.wagen.length - nicht.length < T.st[0]) T.st = [VK.wagen.length - nicht.length, k, ...nicht.map((W) => [W.nr, W.zustand])]; // prettier-ignore
+                const dtK = (tMs - LK.t) / 1000;
+                LK.t = tMs;
+                LK.proben++;
+                const VV = A.VERKEHR;
+                const folgt = (W, v) => W.vorder && v > 2 && W.vorder.gap > 0 && W.vorder.gap < VV.folgeM && W.vorder.v > 1;
+                for (const W of fahrend) {
+                    const fz = W.entry._fahr;
+                    if (!fz) continue;
+                    LK.fahrS += dtK;
+                    if (folgt(W, fz.speed)) LK.luecken.push(W.vorder.gap / fz.speed);
+                }
+                for (const W of fahrend) {
+                    if (W.wartet && W.wartet.auf.some((a) => a[1] === "vorfahrt")) VF.lassen++;
+                    // die Einfahrt je Wagen und Ort (der Bau seiner Linie tauscht die Einträge seiner Orte, ihr Schlüssel bleibt);
+                    // wer vor der ersten Probe einfuhr oder mit dem Bug schon im Ort steht (er muss hinaus), nimmt keine Lücke
+                    const [war, jetzt] = [VF.hat.get(W) || new Set(), new Set()];
+                    VF.hat.set(W, jetzt);
+                    for (const z of W.zonen) {
+                        const weicht = !z.weg && z.hat && z.wort && z.Z.weicht && z.Z.weicht.get(z.wort);
+                        if (!weicht) continue;
+                        jetzt.add(z.Z);
+                        if (war.has(z.Z) || LK.proben <= 1 || !W.F || W.F.s + W.hl > z.ein) continue;
+                        VF.ein++;
+                        let strom = false; // die Wartepflicht entsteht am Berechtigten: t_f bindet den Folger nur, solange einer naht
+                        for (const O of fahrend) {
+                            const zO = O !== W && O.F && O.entry._fahr && O.zonen.find((y) => y.Z === z.Z && !y.weg);
+                            const t0 = zO && zO.wort && !zO.hat && weicht.find((x) => x[0] === zO.wort);
+                            const vO = t0 ? Math.max(0, O.entry._fahr.vlong) : 0;
+                            // der Strom ist der Erste seines Arms: hinter einem, der vor dem Ort steht, kommt keiner an
+                            const L = O.vorder && O.vorder.O;
+                            const zL = L && L.zonen && L.entry && L.entry._fahr && L.zonen.find((y) => y.Z === z.Z && !y.weg);
+                            if (!(vO > 1) || (zL && !zL.hat && L.entry._fahr.vlong < 0.5)) continue;
+                            const luecke = Math.max(0, zO.ein - VV.vorM - O.F.s - O.hl) / vO;
+                            const rest = luecke + dtK - t0[1];
+                            strom = strom || luecke <= t0[1];
+                            if (rest < 0) VF.genommen++;
+                            if (rest < VF.knapp[0]) VF.knapp = [+rest.toFixed(2), +luecke.toFixed(2), t0[1], W.nr + ">" + O.nr, z.wort + "|" + zO.wort, k]; // prettier-ignore
+                        }
+                        const arm = Math.round(z.Z.x) + "/" + Math.round(z.Z.z) + ":" + z.wort.split(">")[0];
+                        const vor = VF.arm.get(arm);
+                        const tf = Math.max(...weicht.map((x) => x[2]));
+                        if (strom && vor && vor[0] !== W && tMs / 1000 - vor[1] + dtK < tf) [VF.folge, VF.folgeKnapp] = [VF.folge + 1, [+(tMs / 1000 - vor[1]).toFixed(2), tf, vor[0].nr + ">" + W.nr, arm, k]]; // prettier-ignore
+                        VF.arm.set(arm, [W, tMs / 1000]);
+                    }
+                }
+                if (KN) {
+                    const im = [];
+                    for (const W of fahrend) {
+                        const e = W.entry;
+                        const d = Math.hypot(e.position.x - KN.x, e.position.z - KN.z);
+                        const v = e._fahr ? Math.max(0, e._fahr.vlong) : 0;
+                        if (d < KN.r) {
+                            KN.innen.add(W);
+                            [KN.vS, KN.nS] = [KN.vS + v, KN.nS + 1];
+                            im.push([W, v]);
+                            if (e._fahr && folgt(W, e._fahr.speed)) KN.gaps.push(W.vorder.gap), KN.luecken.push(W.vorder.gap / e._fahr.speed); // prettier-ignore
+                        } else if (d > KN.r + 2 && KN.innen.delete(W)) KN.durch++;
+                    }
+                    let [n, m2] = [0, 0];
+                    for (const W of fahrend) {
+                        const e = W.entry;
+                        if (!e._fahr || !(e._fahr.vlong < 0.5) || !(W.grund === "wagen" || W.grund === "ort")) continue;
+                        if (Math.hypot(e.position.x - KN.x, e.position.z - KN.z) > KN.r + 30) continue;
+                        n++;
+                        m2 += 2 * W.hl + (W.vorder ? Math.max(0, Math.min(10, W.vorder.gap)) : 0);
+                    }
+                    KN.nSchl += n;
+                    if (m2 > KN.schlange[1]) KN.schlange = [n, +m2.toFixed(1), k];
+                    let bugJetzt = false;
+                    for (let a = 0; a < im.length; a++)
+                        for (let b = a + 1; b < im.length; b++) {
+                            const [A1, B1] = [lage(im[a][0]), lage(im[b][0])];
+                            if (A1.fx * B1.fx + A1.fz * B1.fz > -0.5) continue;
+                            if ((B1.x - A1.x) * A1.fx + (B1.z - A1.z) * A1.fz <= 0 || (A1.x - B1.x) * B1.fx + (A1.z - B1.z) * B1.fz <= 0) continue; // prettier-ignore
+                            const nase = Math.hypot(A1.x + A1.fx * A1.hl - B1.x - B1.fx * B1.hl, A1.z + A1.fz * A1.hl - B1.z - B1.fz * B1.hl); // prettier-ignore
+                            if (nase < KN.bug[0]) KN.bug = [+nase.toFixed(2), im[a][0].nr + "|" + im[b][0].nr, k, ...ort2(A1)];
+                            if (nase < 5 && im[a][1] < 0.5 && im[b][1] < 0.5) bugJetzt = true;
+                        }
+                    if (bugJetzt) KN.bugS += dtK;
+                }
                 // DER BEWOHNER AM STEUER je fahrendem Wagen; die längste Fahrt zu einem Ziel (die Uhr des Wagens seit dem Anfang der
                 // Fahrt, `_verkehrAngekommen`); DIE FAHRBAHN: je Gehenden, ob seine Mitte in der Bahn eines Wagens liegt (das EINE
                 // Gesetz der Straße, `_verkehrAufSpur` mit dem halben Wagen)
@@ -1390,6 +1487,16 @@ async function probeLeben(expected) {
                     ende: VK.wagen.map((W) => [W.nr, W.zustand, W.grund, W.entry && W.entry._fahr ? +W.entry._fahr.vlong.toFixed(1) : null, W.ziele, W.wartet ? W.wartet.auf.map((x) => x[0].nr + x[1][0]).join(",") : W.wer ? (W.wer.nr != null ? "w" + W.wer.nr : "L") : ""]), // prettier-ignore
                 },
                 stand: [+sx.toFixed(2), +sz.toFixed(2)],
+                lenker: (() => {
+                    const weg = VK.wagen.reduce((s, W) => s + Math.max(0, (W.weg || 0) - (LK.weg0.get(W) || 0)), 0);
+                    const l = LK.luecken.sort((a, b) => a - b);
+                    return { reisetempo: LK.fahrS > 0 ? +(weg / LK.fahrS / A.VERKEHR.tempoMs).toFixed(3) : 0, zeitluecke: l.length ? +l[l.length >> 1].toFixed(2) : null, p05: l.length ? +l[Math.floor(l.length * 0.05)].toFixed(2) : null, luecken: l.length, wegM: Math.round(weg), fahrS: Math.round(LK.fahrS) }; // prettier-ignore
+                })(),
+                vorfahrt: { lassen: VF.lassen, ein: VF.ein, genommen: VF.genommen, folge: VF.folge, knapp: Number.isFinite(VF.knapp[0]) ? VF.knapp : null, folgeKnapp: VF.folgeKnapp }, // prettier-ignore
+                knoten: KN && (() => {
+                    const med = (x) => (x.sort((a, b) => a - b), x.length ? +x[x.length >> 1].toFixed(2) : null);
+                    return { ort: [KN.x, KN.z, KN.r], flussH: Math.round((KN.durch * 3600) / sek), durch: KN.durch, tempoMs: KN.nS ? +(KN.vS / KN.nS).toFixed(2) : null, reise: KN.nS ? +(KN.vS / KN.nS / A.VERKEHR.tempoMs).toFixed(3) : null, schlangeMax: KN.schlange, schlangeMittel: +(KN.nSchl / Math.max(1, LK.proben)).toFixed(2), bug: Number.isFinite(KN.bug[0]) ? KN.bug : null, bugS: +KN.bugS.toFixed(1), luecke: med(KN.gaps), zeitluecke: med(KN.luecken), folgen: KN.gaps.length }; // prettier-ignore
+                })(),
             };
         }
         wurfAus();
