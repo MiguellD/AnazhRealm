@@ -1,0 +1,12 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js	2026-11-25 21:18:14.614079402 +0000
++++ b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js	2026-11-25 21:18:14.628222601 +0000
+@@ -1710,7 +1710,8 @@
+                         aus.ms = r3(performance.now() - t0);
+                         return aus;
+                     };
+-                    const w = await S(seite, { saaten: 12, budgetMs: 22000 });
++                    // S2 fragt 100 Saaten (der Zeuge: Soll 100); die Frist trägt S1 davor und S3–S5 danach unter der Kappe sek 40
++                    const w = await S(seite, { saaten: 100, budgetMs: 34000 });
+                     const aus = M.teil || {};
+                     const s1 = w.s1;
+                     // S1 AM FÄCHER (M4): Orte des Planeten polwärts 36° × heute — je Ort die Eis-Zeit, die der Findling liest (planet-ort

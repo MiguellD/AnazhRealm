@@ -1,0 +1,1 @@
+Die Gipfel-Suche kostet, was sie fragt: planetOrt rechnet 2 statt 84 Relief-Punkte je Ort, je Saat 863 → 179 ms in node, 100 Saaten 86 → 18 s, bit-gleich (SHA 22ec9a31); die Station fragt noch 12 Saaten (Kandidat 100), auf der GTX 1050 hält die 40-s-Kappe nicht (≈ 46 s, Meer 271 ms je Saat).
