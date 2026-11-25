@@ -1,0 +1,83 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.413",
+  "sha": "486a6685925d51302752c756d7d47654d83922d1"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 945,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": false,
+  "ndc": [
+   -4.171,
+   5.978
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 176.33,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   208,
+   50.05,
+   144
+  ],
+  "blick": [
+   0.16991,
+   0.98546,
+   0
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 125.2,
+  "sigma": 31.9,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel Blickziel nicht im Bild (ndc [-4.171,5.978])] · beweis · Sicht 0.0 % · Ziel Blickziel NICHT im Bild frei 176.33 m · Luma 125.2 σ 31.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.413 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [
+  {
+   "feld": "ziel.imBild",
+   "grund": "Ziel Blickziel nicht im Bild (ndc [-4.171,5.978])"
+  }
+ ],
+ "urteil": "ROT"
+}
