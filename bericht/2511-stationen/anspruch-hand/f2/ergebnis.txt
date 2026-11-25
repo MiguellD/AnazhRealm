@@ -1,0 +1,20 @@
+F Rang 2, Block 2 — Hand-Lauf Radeon am main 0ee3ed8c, 25.11. 22:07–22:31 (hand.log; Baum wartete 9 min auf die Sperre pid 1336, verwaist gelöst)
+Stationen am pm b698b286 = 72d5702c (die Leitern dieser fünf unverändert; im Hand-Baum liegen die Kandidaten gewalt/gegenwart/kultur und g6/k2-erleben getuemmel — andere Leitern)
+
+same.preis.ausdauer#1   UNGEMESSEN — profiband.K4#1 (die Quelle des Dauer-Laufs) hielt den Kontext der Probe (Wirt-Wache: stromSeite), die Seite lud
+                        vor dem Grund neu, die Dauer misst nie über ein Neuladen; dazu fremde Last (Referenz f 1,273: zwei fremde chrome-Renderer
+                        59,2 + 57,3 CPU-s, node diag-kreatur-leben 53,7 CPU-s). Die Probe sah Gehen 58 Bilder, 74,14 % > 33 ms. Keine Akte.
+erleben.bild.nacht#2    ROT — bodenfleck_anteil 0,923 (≥ 0,9 ✓), 495 Leuchtquellen (≥ 100 ✓), gasse_dev_median — (≤ 0,5 ✗): kein Fotosatz nächtlicher
+                        Gassen im Baum, kein Leser des Histogramms. Akte ROT, Preis GRÜN p95 33,5 ms, Heap 512,4 MB.
+same.kopplung.ereignis#2 ROT — brennendHa 1,024 (≥ 1 ✓), meidenProzent 100 (= 100 ✓), der Zeuge der Welt fehlt: 24 ↔ 15 Bilder mit ↔ ohne Brand
+                        (Soll je 30). Täter laut Station: siedlung-bewohner `_bewohnerSoll`, feld-brand `_tickBrand`. Akte ROT, Preis GRÜN p95 25,24 ms.
+same.kopplung.kohaerenz#1 ROT — Umfang nicht erzeugbar: die Hydrosphäre lebt nur für die Saat der Welt (gelaende-core.js:6107, voxel-worker.js:1997);
+                        an der Saat der Welt 50 von 50 Punkten bergab (anteil 100 % ≥ 95 % ✓). Täter gelaende-core hydroRegion. Akte ROT.
+planet.kopplung.bahn-klima#2 ROT — amp0Prozent 37 % (≤ 10 % ✗), amp45Faktor 0,759 (≥ 2 ✗), Schneelinie ungemessen; Neigung 3,1° → 7,22 K, 35,8° →
+                        14,81 K, Erd-Saat 19,52 K, Spanne der Saaten 17,48 K. Der Text der Station nennt „planetPlanVon: PLANET_ERDE fest“ — am
+                        0ee3ed8c liest voxel-worker.js:1468 planetPlanVon den Körper (planetKoerper); die Amplitude folgt der Neigung (7,22 ↔ 14,81 K),
+                        das ROT liegt am Relief der Saat (17,48 K Spanne zwischen den Saaten) gegen den Vergleich mit der Erd-Saat. Akte ROT.
+
+Offen mit Adresse: ausdauer#1 → pm-front-widerspruch (Halter) und leiter same.preis.ausdauer#1 (die Wirt-Wache an profiband.K4#1 stromSeite) ·
+nacht#2 → pm-nacht-front (Korpus nächtlicher Gassen) · ereignis#2 → leiter same.kopplung.ereignis#2 · kohaerenz#1 → leiter same.kopplung.kohaerenz#1 ·
+bahn-klima#2 → leiter planet.kopplung.bahn-klima#2 (der Täter-Text der Station ist am 0ee3ed8c überholt; die Messung vergleicht Saaten mit eigenem Relief).
