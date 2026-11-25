@@ -305,11 +305,12 @@ function tslZahl(k = null) {
 // vor-belichtet (L × k). Keine Kopie des Auges: ändert der Stamm es, rechnet die Probe das neue.
 const nachtAugeZahl = (bild, k, nf) => {
     const q = (nachtAugeZahl.q ||= (() => {
-        const t = STAMM.text(require("path").resolve(__dirname, ".."));
-        const { args, rumpf } = STAMM.methodeAm(t, "_nachtAuge");
-        const na = t.match(/AnazhRealm\.NACHT_AUGE = (Object\.freeze\(\{[\s\S]*?\}\));/);
-        if (!na) throw new Error("RAUCH: `AnazhRealm.NACHT_AUGE` steht nicht im Stamm");
-        return { args, rumpf, NA: new Function(`return ${na[1]};`)() };
+        const root = require("path").resolve(__dirname, "..");
+        const { args, rumpf } = STAMM.methodeAm(STAMM.text(root), "_nachtAuge");
+        // die Außen-Konstante aus der geladenen Klasse (`ladeKlasse`), nie aus einem Treffer im Stamm-Text
+        const NA = STAMM.ladeKlasse(root).AnazhRealm.NACHT_AUGE;
+        if (!NA) throw new Error("RAUCH: `AnazhRealm.NACHT_AUGE` trägt die Klasse nicht");
+        return { args, rumpf, NA };
     })());
     const Z = tslZahl(k);
     const auge = new Function("THREE", "AnazhRealm", "__weltLicht", `return function (${q.args}) {${q.rumpf}};`)(Z, { NACHT_AUGE: q.NA }, quelle().W);
