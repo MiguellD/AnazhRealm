@@ -181,7 +181,7 @@ function heimwerker(K, zugVon) {
 // DIE ROLLEN DER STADT (absicht-zug; die Station mensch.geist.absicht#1 liest die ersten 100 der Stadt — Wirt, Händler, Fahrer, Wache,
 // Kind —, das Dorf oben trägt nur Wohnhaus, Gasthaus und Kirche): je Rolle des Gesetzes (TAGES_GESETZ.rollen, dazu das Wohnhaus) 100
 // Samen im Dorf — wer eine Rolle mit Haus trägt, wohnt in ihrem Slot, jeder andere in einem Wohnhaus —, derselbe blinde Zuordner,
-// dasselbe Soll je Zug (≥ 0,6). Das Kind, das hilft, arbeitet höchstens kindArbeitMaxH Stunden (das Band des Gesetzes). OFFEN steht,
+// dasselbe Soll je Zug (≥ 0,6); das Kind wohnt reihum in jedem Haus und trägt ein Alter (1–14 J). OFFEN steht,
 // was die Quelle trägt und die Kaskade nicht liest — mit der Zahl, unter die es nicht fällt; erreicht es das Soll, ist die Zeile
 // zu streichen (ROT: keine stale Liste)
 const ROLLEN_OFFEN = {
@@ -203,25 +203,21 @@ function rollenDerStadt(K) {
     for (const R of ROLLEN) if (!slots.some((s) => s.rolle === R)) slots.push({ x: 8 + slots.length, z: -6, rolle: R });
     const orte = K.tagesOrte({ slots, platz: { cx: 0, cz: 0 }, staende: [{}, {}], felder: [{ cx: 70, cz: 0, ex: 15 }, { cx: 0, cz: -75, ex: 15 }] }); // prettier-ignore
     const tafel = {};
-    let kindMax = 0;
     for (const R of ROLLEN) {
         const sR = orte.findIndex((o) => o.art === R);
         const T = (tafel[R] = {});
         for (let k = 0; k < 100; k++) {
             const same = (Math.imul(k + 1 + 1000 * ROLLEN.indexOf(R), 0x9e3779b1) ^ 0x5bd1e995) >>> 0;
-            const s = sR >= 0 && R !== "wohnhaus" && R !== "kind" ? sR : k % 18;
-            const B = K.tagesBindung(TC, same, R, s, orte, null);
+            const s = R === "kind" ? k % slots.length : sR >= 0 && R !== "wohnhaus" ? sR : k % 18;
+            const B = K.tagesBindung(TC, same, R, s, orte, null, null, R === "kind" ? 1 + (k % 14) : undefined);
             const stelle = (wo) => (B[wo] < 0 || (B[wo] === s && wo !== "werk") ? null : { name: wo, i: B[wo] });
             const werk = stelle("werk") && (B.werk !== s || R !== "wohnhaus") ? stelle("werk") : null;
-            const O = { heim: { name: "heim" }, werk, platz: stelle("platz"), mahl: stelle("mahl"), abend: stelle("abend"), besuch: stelle("besuch") }; // prettier-ignore
+            const O = { heim: { name: "heim" }, werk, platz: stelle("platz"), mahl: stelle("mahl"), abend: stelle("abend"), besuch: stelle("besuch"), hilft: !!B.hilft }; // prettier-ignore
             const worte = [];
-            let arbeit = 0;
             for (let q = 0; q < 96; q++) {
                 const p = K.tagesPlan(same, R, q / 4, O, 0);
                 worte.push(`${p.wo}:${p.akt}:${+p.drinnen}`);
-                if (p.akt === "arbeit") arbeit += 0.25;
             }
-            if (R === "kind") kindMax = Math.max(kindMax, arbeit);
             const ist = K.tagesZug(same);
             const z = (T[ist] = T[ist] || { n: 0, ok: 0, als: {} });
             const rat = zuordnen({ rolle: R, worte }, K)[0];
@@ -230,7 +226,7 @@ function rollenDerStadt(K) {
             else z.als[rat] = (z.als[rat] || 0) + 1;
         }
     }
-    return { tafel, kindMax, kindBand: G.kindArbeitMaxH };
+    return { tafel };
 }
 function rollenRot(u) {
     const rot = [],
@@ -245,13 +241,12 @@ function rollenRot(u) {
             else if (O && Z.ok / Z.n >= O[0] / O[1]) offen.push(`${was} (offen, nie unter ${O[0]}/${O[1]})`);
             else if (Z.ok / Z.n < 0.6) rot.push(`${was} < 0,6 (gelesen als ${JSON.stringify(Z.als)})`);
         }
-    if (!(u.kindBand > 0) || u.kindMax > u.kindBand) rot.push(`das Kind arbeitet ${u.kindMax} h > ${u.kindBand} h (koerper TAGES_GESETZ.kindArbeitMaxH)`);
     return { rot, offen };
 }
 const rollenZeile = (u) =>
     Object.entries(u.tafel)
         .map(([R, T]) => `${R} ${ZUEGE.map((z) => (T[z] ? `${T[z].ok}/${T[z].n}` : "—")).join("·")}`)
-        .join(" | ") + ` (je Rolle ${ZUEGE.join("·")}) · das Kind arbeitet höchstens ${u.kindMax} h (Band ${u.kindBand} h)`;
+        .join(" | ") + ` (je Rolle ${ZUEGE.join("·")})`;
 
 // DER KERN MIT EINEM TÄTER: dieselbe Quelle, EINE Stelle getauscht (frischer Kontext) — null, wenn die Stelle fehlt
 function kernMitTaeter(stelle, ersatz) {
@@ -444,11 +439,39 @@ function alterUrteil(T, K) {
     }).length;
     // die Reife: Kind-Gestalten unter 10 J tragen die Form keines Geschlechts (sex an der Mitte, koerper alterGeschlecht)
     const reifeRot = gestalten.filter((G) => jahreG(G) < 10 && Math.abs(G.sex - 0.5) > 0.06).map((G) => [+jahreG(G).toFixed(1), +G.sex.toFixed(3)]); // prettier-ignore
-    // das Kind im Haus der Schmiede: um 10 Uhr spielt es am Ort seines Spiels (der Platz), nie an der Esse seines Hauses
+    // DAS KIND DER SCHMIEDE UND DES WOHNHAUSES (Entscheid des Koordinators 25.11.): 200 Kinder von 1 bis 14 J, je die Hälfte in der
+    // Schmiede und im Wohnhaus — das fleißige hilft am Werk SEINES Hauses (Akt „hilft“, nie „arbeit“, ab kindHilftAbJ, höchstens
+    // kindArbeitMaxH), keines an fremdem Werk; das nicht fleißige spielt um 10 Uhr am Platz (das häusliche daheim, zuege.haeuslich
+    // `kind: "daheim"`). Bis hier stand EIN Kind (Same 4242) in der Probe: „nie arbeit“ — der Zug kannte kein helfendes Kind
+    const G = K.TAGES_GESETZ;
     const orte = K.tagesOrte({ slots: [{ x: 0, z: 0, rolle: "schmiede" }, { x: 30, z: 0, rolle: "wohnhaus" }], platz: { cx: 15, cz: 20 } }); // prettier-ignore
-    const B = K.tagesBindung(TC, 4242, "kind", 0, orte, null);
-    const spielOrt = orte[B.werk] && orte[B.werk].art;
-    const spiel = K.tagesPlan(4242, "kind", 10, { heim: { name: "heim" }, werk: { name: "werk" }, platz: { name: "platz" } }, 0);
+    const kinder2 = { n: 0, hilft: 0, spielt: 0, daheim: 0, hilftMaxH: 0, hilftAbJ: Infinity, meister: [], fremd: [], jung: [], ohneSpiel: [], zuLang: [] }; // prettier-ignore
+    for (let k = 0; k < 200; k++) {
+        const same = (Math.imul(k + 4242, 0x9e3779b1) ^ 0x2545f491) >>> 0;
+        const [heimI, jahre] = [k % 2, 1 + (k % 14)];
+        const B = K.tagesBindung(TC, same, "kind", heimI, orte, null, null, jahre);
+        const O = { heim: { name: "heim" }, werk: B.werk >= 0 ? { name: "werk" } : null, platz: { name: "platz" }, hilft: !!B.hilft }; // prettier-ignore
+        let [hilftH, meister] = [0, false];
+        for (let q = 0; q < 96; q++) {
+            const p = K.tagesPlan(same, "kind", q / 4, O, 0);
+            if (p.akt === "hilft") hilftH += 0.25;
+            if (p.akt === "arbeit") meister = true;
+        }
+        const zehn = K.tagesPlan(same, "kind", 10, O, 0);
+        const wer = `${same} (${jahre} J, ${orte[heimI].art})`;
+        kinder2.n++;
+        if (meister) kinder2.meister.push(wer);
+        if (B.hilft) {
+            kinder2.hilft++;
+            kinder2.hilftMaxH = Math.max(kinder2.hilftMaxH, hilftH);
+            kinder2.hilftAbJ = Math.min(kinder2.hilftAbJ, jahre);
+            if (B.werk !== heimI) kinder2.fremd.push(wer);
+            if (!(jahre >= G.kindHilftAbJ)) kinder2.jung.push(wer);
+            if (!(hilftH <= G.kindArbeitMaxH)) kinder2.zuLang.push(`${wer} ${hilftH} h`);
+        } else if (K.tagesZug(same) === "haeuslich") kinder2.daheim++;
+        else if (zehn.akt === "spiel" && orte[B.werk] && orte[B.werk].art === "platz") kinder2.spielt++;
+        else kinder2.ohneSpiel.push(`${wer}: ${zehn.akt} an ${(orte[B.werk] && orte[B.werk].art) || "der Tür"}`);
+    }
     return {
         bewohner: leute.length,
         anteil: kinder / leute.length,
@@ -461,8 +484,8 @@ function alterUrteil(T, K) {
         wuchsRot,
         rand,
         reifeRot,
-        kindWerk: spielOrt === "platz" && spiel.akt === "spiel",
-        spielAkt: `${spiel.akt} an ${spielOrt}`,
+        kinder2,
+        kindBand: [G.kindHilftAbJ, G.kindHilftH, G.kindArbeitMaxH],
     };
 }
 function alterRot(u) {
@@ -476,12 +499,20 @@ function alterRot(u) {
     if (u.reifeRot.length)
         rot.push(`Kind-Gestalten unter 10 J mit der Form eines Geschlechts ${JSON.stringify(u.reifeRot)} (J, sex) — Täter: koerper alterGeschlecht / alterLeib (reife)`); // prettier-ignore
     if (u.rand) rot.push(`${u.rand} Kind-Gestalten am Rand des Kopf-Knotens der Menge — Täter: koerper LEIB_RAUM kopf`);
-    if (!u.kindWerk) rot.push(`das Kind der Schmiede um 10 Uhr: ${u.spielAkt} — Täter: koerper tagesBindung / tagesPlan rollen.kind`);
+    const k2 = u.kinder2;
+    const kt = "Täter: koerper tagesBindung / tagesPlan rollen.kind, TAGES_GESETZ.kindHilftAbJ · kindArbeitMaxH";
+    if (!(u.kindBand[0] > 0 && u.kindBand[1] > 0 && u.kindBand[2] > 0)) rot.push(`das Band des helfenden Kinds fehlt (koerper TAGES_GESETZ.kindHilftAbJ · kindHilftH · kindArbeitMaxH)`); // prettier-ignore
+    if (!(k2.hilft > 0 && k2.spielt > 0)) rot.push(`die Kinder blind: ${k2.hilft} helfen, ${k2.spielt} spielen am Platz (${kt})`);
+    if (k2.meister.length) rot.push(`${k2.meister.length} Kinder im Akt des Meisters („arbeit“): ${k2.meister.slice(0, 3).join(" · ")} (${kt})`);
+    if (k2.fremd.length) rot.push(`${k2.fremd.length} Kinder an fremdem Werk: ${k2.fremd.slice(0, 3).join(" · ")} (${kt})`);
+    if (k2.jung.length) rot.push(`${k2.jung.length} Kinder helfen unter ${u.kindBand[0]} J: ${k2.jung.slice(0, 3).join(" · ")} (${kt})`);
+    if (k2.zuLang.length) rot.push(`${k2.zuLang.length} Kinder arbeiten länger als ${u.kindBand[2]} h: ${k2.zuLang.slice(0, 3).join(" · ")} (${kt})`);
+    if (k2.ohneSpiel.length) rot.push(`${k2.ohneSpiel.length} Kinder spielen um 10 Uhr nicht am Platz: ${k2.ohneSpiel.slice(0, 3).join(" · ")} (${kt})`); // prettier-ignore
     return rot;
 }
 const ALTER_STAMM = stammLib.text(path.join(__dirname, ".."));
 const alterZeile = (u) =>
-    `${u.bewohner} Bewohner der Epoche ${ALTER_JAHR}: unter 15 J ${(u.anteil * 100).toFixed(1)} % an der Gestalt (eigen ${(u.eigen * 100).toFixed(1)} %), Alter ${u.jung.toFixed(1)}–${u.alt.toFixed(1)} J, die Gestalten ${JSON.stringify(u.gestalten)}, Kinder in Erwachsenen-Gestalt ${u.kindInErwachsen}, Kind-Gestalten am Kopf-Rand der Menge ${u.rand}, Kind-Gestalten ohne Reife ${u.reifeRot.length}, Wuchs ${u.wuchs.map((w) => `${w.J} J ${w.hoehe}/${w.soll} Kopf ${w.kopf}/${w.kopfSoll}`).join(" · ")}`; // prettier-ignore
+    `${u.bewohner} Bewohner der Epoche ${ALTER_JAHR}: unter 15 J ${(u.anteil * 100).toFixed(1)} % an der Gestalt (eigen ${(u.eigen * 100).toFixed(1)} %), Alter ${u.jung.toFixed(1)}–${u.alt.toFixed(1)} J, die Gestalten ${JSON.stringify(u.gestalten)}, Kinder in Erwachsenen-Gestalt ${u.kindInErwachsen}, Kind-Gestalten am Kopf-Rand der Menge ${u.rand}, Kind-Gestalten ohne Reife ${u.reifeRot.length}, Wuchs ${u.wuchs.map((w) => `${w.J} J ${w.hoehe}/${w.soll} Kopf ${w.kopf}/${w.kopfSoll}`).join(" · ")} · KINDER ${u.kinder2.n}: ${u.kinder2.hilft} helfen am Werk ihres Hauses (höchstens ${u.kinder2.hilftMaxH} h, Band ${u.kindBand[2]} h; ab ${u.kinder2.hilftAbJ} J, Band ${u.kindBand[0]} J), ${u.kinder2.spielt} spielen um 10 Uhr am Platz, ${u.kinder2.daheim} häusliche daheim`; // prettier-ignore
 
 if (SELBSTTEST) {
     let fails = 0;
@@ -492,7 +523,10 @@ if (SELBSTTEST) {
         ["die Wahl ohne Lebensphase", ALTER_STAMM, kernMit(/if \(Ja < A\.kindJ !== Jt < A\.kindJ\) return d \+ A\.phase;\n[^\n]*\n/, ""), /Erwachsenen/], // prettier-ignore
         ["der Wuchs ohne Höhe", ALTER_STAMM, kernMit(/g\.kh \*= w\.hoehe;/, ""), /Wuchs außer Band/],
         ["das Kind ohne Reife", ALTER_STAMM, kernMit(/return J < ALTER_GESETZ\.erwachsenJ \? 0\.5 \+ \(s - 0\.5\) \* wuchs\(J\)\.reife : s;/, "return s;"), /Form eines Geschlechts/], // prettier-ignore
-        ["das Spiel vor der eigenen Tür", ALTER_STAMM, kernMit(/spielt \? \(kind === "daheim" \? heimI : wahl\("spiel", H, "werk", null\)\)/, "spielt ? heimI"), /das Kind der Schmiede/], // prettier-ignore
+        ["das Spiel vor der eigenen Tür", ALTER_STAMM, kernMit(/spielt \? \(kind === "daheim" \? heimI : wahl\("spiel", H, "werk", null\)\)/, "spielt ? heimI"), /spielen um 10 Uhr nicht am Platz/], // prettier-ignore
+        ["das Kind an fremdem Werk (das Haus ohne Werk)", ALTER_STAMM, kernMit("!(eigen && jahre >= G.kindHilftAbJ)", "!(jahre >= G.kindHilftAbJ)"), /Kinder an fremdem Werk/], // prettier-ignore
+        ["das Kind ohne Altersgrenze", ALTER_STAMM, kernMit("!(eigen && jahre >= G.kindHilftAbJ)", "!eigen"), /Kinder helfen unter/],
+        ["das Kind im Akt des Meisters", ALTER_STAMM, kernMit('R.spiel ? (orte.hilft ? "hilft" : "spiel")', 'R.spiel ? (orte.hilft ? "arbeit" : "spiel")'), /im Akt des Meisters/], // prettier-ignore
     ];
     for (const [name, T, K, soll] of taeter) {
         if (!K || (T === ALTER_STAMM && K === KC)) {
@@ -521,7 +555,7 @@ if (SELBSTTEST) {
             fails++;
         }
     }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle ${TAETER.length} Täter des Zugs und die ${taeter.length} des Alters (Alter wie vorher, Wahl ohne Lebensphase, Wuchs ohne Höhe, Kind ohne Reife, Spiel vor der Tür) fallen ROT an ihrer Zeile.`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle ${TAETER.length} Täter des Zugs und die ${taeter.length} des Alters (Alter wie vorher, Wahl ohne Lebensphase, Wuchs ohne Höhe, Kind ohne Reife, Spiel vor der Tür, Kind an fremdem Werk, ohne Altersgrenze, im Akt des Meisters) fallen ROT an ihrer Zeile.`);
 }
 
 const a = urteil(KC, zugVon);

@@ -1042,7 +1042,7 @@ class AnazhRealm_siedlung_bewohner {
         const binden = function* (P, namen) {
             for (let v = 0, neu = true; neu && v < 8; v++) {
                 // (`freund`: ein Haus, das Besuch bietet, nimmt ihn nur, wenn dort einer der Seinen wohnt — unten, der Besuch)
-                P.bind = KC.tagesBindung(TC, P.same, P.rolle, P.heimI, orte, (o, i) => P.voll.has(i) || (i !== P.heimI && ortTeil[i] !== P.heimTeil) || (P.freund && i !== P.heimI && o.bietet && o.bietet.besuch > 0 && !P.freund.has(i)), wegZu); // prettier-ignore
+                P.bind = KC.tagesBindung(TC, P.same, P.rolle, P.heimI, orte, (o, i) => P.voll.has(i) || (i !== P.heimI && ortTeil[i] !== P.heimTeil) || (P.freund && i !== P.heimI && o.bietet && o.bietet.besuch > 0 && !P.freund.has(i)), wegZu, P.jahre); // prettier-ignore
                 neu = false;
                 for (const wo of namen) {
                     const i = P.bind[wo];
@@ -1082,11 +1082,13 @@ class AnazhRealm_siedlung_bewohner {
                 S.listeRest--;
                 const g = this._rollGenome(`${plan.seed >>> 0}:${si}:${k}`, "bewohner");
                 // SEIN ALTER (koerper ALTER_GESETZ: die Epoche des Plans, sein Platz im Haushalt — die erste Person erwachsen): wer
-                // jünger ist als kindJ, trägt die Rolle des Kinds (TAGES_GESETZ.rollen.kind: das Spiel vor der Tür, kein Werk)
+                // jünger ist als kindJ, trägt die Rolle des Kinds (TAGES_GESETZ.rollen.kind: das Spiel; sein Alter geht in die Bindung — das fleißige hilft am Werk seines Hauses erst ab kindHilftAbJ)
                 const epoche = { jahr: plan.jahr, rang: k, n };
-                const kind =
-                    this._bewohnerJahre(this._rollGenome(`${plan.seed >>> 0}:${si}:${k}`, "humanoid"), epoche) <
-                    KC.ALTER_GESETZ.kindJ;
+                const jahre = this._bewohnerJahre(
+                    this._rollGenome(`${plan.seed >>> 0}:${si}:${k}`, "humanoid"),
+                    epoche
+                );
+                const kind = jahre < KC.ALTER_GESETZ.kindJ;
                 const heim = yield* ringStand(g, "", ex, ez, ux, uz, null, false, { x: tx, z: tz });
                 if (!heim) {
                     this._bruchMelden(
@@ -1094,7 +1096,7 @@ class AnazhRealm_siedlung_bewohner {
                     );
                     continue;
                 }
-                geboren.push({ sl, si, k, g, rolle: kind ? "kind" : rolle, epoche, tuer, vor, ein, heimI, heim, platz: null }); // prettier-ignore
+                geboren.push({ sl, si, k, g, rolle: kind ? "kind" : rolle, jahre, epoche, tuer, vor, ein, heimI, heim, platz: null }); // prettier-ignore
             }
         }
         // DER STAND AM MARKT GEHT ZUERST AN DEN EINKÄUFER (tages-gesetz, koerper `tagesEinkaeufer`): je Haushalt — die Leute hinter
@@ -1118,7 +1120,7 @@ class AnazhRealm_siedlung_bewohner {
         for (const P of zuerst) P.platz = yield* platzStand(P.g);
         for (const P of geboren) if (!zuerst.has(P)) P.platz = yield* platzStand(P.g);
         yield* anschliessen();
-        for (const { sl, si, k, g, rolle, epoche, tuer, vor, ein, heimI, heim, platz } of geboren) {
+        for (const { sl, si, k, g, rolle, jahre, epoche, tuer, vor, ein, heimI, heim, platz } of geboren) {
             yield;
             const same = Math.floor(g.axis("tag") * 4294967296) >>> 0;
             // DIE BINDUNG (`binden`): das Werk, der Tisch, der Abend — der Besuch folgt, wenn jeder steht
@@ -1126,6 +1128,7 @@ class AnazhRealm_siedlung_bewohner {
                 g,
                 same,
                 rolle,
+                jahre,
                 heimI,
                 heim,
                 heimTeil: teilVon(heim),
@@ -1156,7 +1159,7 @@ class AnazhRealm_siedlung_bewohner {
             const satz = {
                     sied: S,
                     heim: sl.seed >>> 0, rolle, beruf, same, epoche,
-                    orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null, spiel: null, einkauf: null },
+                    orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null, spiel: null, einkauf: null, hilft: !!bind.hilft },
                     seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
                     genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, gangTempo: u, satzOrt: u,
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
