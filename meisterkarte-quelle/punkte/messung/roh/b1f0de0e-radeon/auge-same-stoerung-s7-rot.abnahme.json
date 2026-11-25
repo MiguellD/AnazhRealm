@@ -1,0 +1,147 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.409",
+  "sha": "b1f0de0e0068399caba1583bb70c5f9cd598d1a6"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": false,
+  "ndc": [
+   3.053,
+   6.512
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 42.36,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   202,
+   74.743,
+   130
+  ],
+  "blick": [
+   -0.75526,
+   -0.50351,
+   -0.41959
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 89.8,
+  "sigma": 35.2,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel Blickziel nicht im Bild (ndc [3.053,6.512]) · nahWiese farblos (C* 2.6 < 5, Soll Farbton 70–160°)] · beweis · Sicht 0.0 % · Ziel Blickziel NICHT im Bild frei 42.36 m · Luma 89.8 σ 35.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.409 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Inhalt nahWiese 43.4 % (≥ 15.0 %) h 103° Luma 95",
+ "rot": [
+  {
+   "feld": "ziel.imBild",
+   "grund": "Ziel Blickziel nicht im Bild (ndc [3.053,6.512])"
+  }
+ ],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "band.nahWiese",
+    "grund": "nahWiese farblos (C* 2.6 < 5, Soll Farbton 70–160°)"
+   }
+  ],
+  "zeile": "Inhalt nahWiese 43.4 % (≥ 15.0 %) h 103° Luma 95"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^nahWiese([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0.056564,
+   "pixel": 117291,
+   "max": 355
+  },
+  "misch": 2054852,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 3379,
+   "wechsel": 1155236
+  },
+  "rinde": null,
+  "toene": [
+   "nahWiese:L1=255/80/80",
+   "nahWiese:L2=80/255/80",
+   "nahWiese:Lf=80/120/255"
+  ],
+  "klassen": {
+   "nahWiese:L1": {
+    "objekte": 2,
+    "pixel": 128624,
+    "farbe": [
+     0.13126,
+     0.13776,
+     0.12143
+    ]
+   },
+   "nahWiese:L2": {
+    "objekte": 2,
+    "pixel": 45214,
+    "farbe": [
+     0.12146,
+     0.08644,
+     0.0568
+    ]
+   },
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 725553,
+    "farbe": [
+     0.11274,
+     0.11167,
+     0.10371
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b1f0de0e-radeon\\auge-same-stoerung-s7-rot.maske.png"
+ }
+}
