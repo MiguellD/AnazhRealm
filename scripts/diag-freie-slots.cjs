@@ -151,8 +151,6 @@ async function welt() {
                         nenne(ref.key, `Slot ${ref.slot} trägt nicht die Instanz von ${e.type}#${e.id} (Abstand ${d.toFixed(3)})`, g.mesh, 1);
                 }
             }
-            const Z = st.stlZaun;
-            if (Z?.mesh) senke("siedlung-zaun", Z.mesh, Z.top);
             const nw = st.nahWiese;
             // eine Senke der Nah-Wiese zieht in der Wahl der GPU: bis ihre Arena sie nimmt, zählt sie 0 (`_nahWieseBestand`)
             if (nw) for (const a of nw.senken.values()) senke(a.name, a.mesh, a.mesh?.__arena ? a.anzahl : 0);

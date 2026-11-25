@@ -24,6 +24,7 @@ const F_KLANG_REGEN = "Welle 5 Klang — Regen = UMWELT.stimmen.regen aus dem ra
 const F_SLOPE = "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)";
 const F_GROB_TOR = "Integration L — das Grob-Tor liest den Leib (_trefferErreichbar)";
 const F_K11 = "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)";
+const F_EINFRIEDUNG = "mauer-im-stoff — Mauer und Zaun im Satz der Einfriedung (_einfriedungLege, der Bau-Stoff der Welt)";
 const FORBIDDEN = [
     ["tickPhoenixDeath", "W1a — der Tod ist feld-nativ (_playerDeathRespawn)"],
     ["triggerPhoenixDeath", "W1a"],
@@ -372,6 +373,16 @@ const FORBIDDEN = [
     ["_stlWegeEnsurePool", "V18.530 — _stlZaunEnsurePool"],
     ["_stlWegeDisposePool", "V18.530 — _stlWegeDispose (Zaun-Pool + Wege-Karte)"],
     ["state.stlWege", "V18.530 — state.stlZaun / state.wegeKarte"],
+    // mauer-im-stoff: Stadtmauer und Zaun zeichnen im Satz der Einfriedung (der Bau-Stoff der Welt, die Gestalt aus fachwerk
+    // `mauerNetz` · `zaunNetz`) — die Kiste mit Instanz-Farbe und ihre zwei Pools fielen
+    ["_stlZaunAddStrip", F_EINFRIEDUNG],
+    ["_stlZaunEnsurePool", F_EINFRIEDUNG],
+    ["_stlMauerEnsurePool", F_EINFRIEDUNG],
+    ["_stlStreifen", F_EINFRIEDUNG],
+    [".stlZaun", F_EINFRIEDUNG],
+    [".stlMauer", F_EINFRIEDUNG],
+    ['"siedlung-zaun"', F_EINFRIEDUNG],
+    ['"siedlung-mauer"', F_EINFRIEDUNG],
     ["wk.formen", "Integration 05.10. — wk.siedlungen (Formen je Siedlung, Hülle)"],
     ["Math.max(f.ex, f.ez)", "Integration 05.10. — _wegeFormRadius: die Diagonale des gedrehten Kastens"],
     ["kronendach: Object.freeze", "Integration 05.10. — _fernFarbeTeile (Art × kronenSchatten), uSeasonMul"],

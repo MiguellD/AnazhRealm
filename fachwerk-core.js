@@ -6772,6 +6772,187 @@
             bollwerk: F.bollwerk,
         };
     }
+    // ════════════ DIE GESTALT DER WEHR IM STOFF (mauer-im-stoff; additiv — MAUER_FORM, mauerGestalt und der Export bleiben byte-gleich) ════════════
+    // Bis hier stand die Wehr als Kiste: je Segment EIN Quader von 37 m in einer Farbe, der Turm ein Quader mit einem Quader als Dach
+    // (Labor: BoxGeometry; Welt: der Kisten-Pool mit Instanz-Farbe, ohne Verband und Fuge). Ab hier liefert das Gesetzbuch die GESTALT
+    // jedes Stuecks als Netz: die Welt legt es in den Satz ihres Bau-Stoffs (`_stlMauerBuild` — Verband, Fuge und Gefuege webt der Stoff
+    // aus Lage und Nummer der Ecke), das Labor zeichnet dasselbe Netz (buildDorf). Ein Stueck ist eine Liste von TEILEN: je Teil eine
+    // Einheits-Form (`mauerEinheit`, im Wuerfel [-0,5; 0,5]^3) und EINE affine Matrix `m` (Spalten wie three) — seine Ecken sind
+    // m * Form, nichts sonst (der Leser der Welt `_mauerGebaut` nennt dieselbe Matrix, die Linse rechnet den Puffer daraus nach).
+    // DER RAHMEN des Stuecks: x quer (`aussen` +1: +x zeigt vom Ort weg), y ueber der Sehne (0 = der Boden an ihrer Mitte), z laengs.
+    // DER HANG (`steig` = Hoehe je Meter laengs): die Teile der Wand scheren (y += steig * z) — Stoss, Pfahl und Zinne stehen lotrecht,
+    // die Krone folgt dem Hang, zwei Stuecke treffen sich an ihrer Ecke in EINER Hoehe (die starre Kiste kippte mit dem Hang: an 11 Grad
+    // stand ihre obere Ecke 1,4 m neben dem Stoss).
+    // DIE ZINNE: Piper, Burgenkunde (Nachdruck 1994, S. 329): Zinnen 0,76-2,35 m breit, 1-2 m hoch; de Caboga, Die Burg im Mittelalter
+    // (1982): 0,70-2 m breit, 1-1,40 m hoch; die Scharte anfangs so breit wie die Zinne, spaeter enger. Daraus: breit 1,2 * hoch 1,0 ueber
+    // der Brustwehr 0,9 (die Brustwehr ohne Quelle, am Mann gestellt: Zinne und Brustwehr decken ihn stehend, 1,9 m) * Scharte ab 0,8.
+    var MAUER_GESTALT = {
+        zinne: { breit: 1.2, luecke: 0.8, hoch: 1.0, brust: 0.9, dick: 0.45 },
+        // die Untersicht des Wehrgangs (sein Ueberstand vor der Wand): der Anteil des Bodenlichts, den sie sieht. Formfaktor zweier Flaechen
+        // im rechten Winkel an EINER Kante, F = (1 + H - sqrt(1 + H * H)) / 2 mit H = Wand / Ueberstand (Incropera, DeWitt: Fundamentals of
+        // Heat and Mass Transfer, 4. Aufl. 1996, Tab. 13.1): 5,6 m Wand vor 0,2 m Ueberstand -> die Wand deckt 0,49 ihrer Halbkugel. Der Ton der Untersicht
+        // traegt diesen Anteil (die Licht-Kette der Welt kennt die Wand daneben nicht: die Untersicht las heller als die Wand im Schatten)
+        untersicht: 0.5,
+        // der Pfahl der Palisade: seine Spitze (m) und um wie viel die Koepfe einer Reihe schwanken (m, mittelfrei um wand.hoch) — am Bild gestellt
+        stamm: { spitze: 0.45, wechsel: 0.3 },
+        // der Zaun: die Masse des Labors bis hier (Pfosten 0,09 * 1,0 alle ~1,6 m, zwei Riegel 0,07 * 0,06 auf 0,55 und 0,9 m); `fuss`: so tief steht der Pfosten im Boden
+        zaun: { pfosten: 0.09, hoch: 1.0, feld: 1.6, fuss: 0.3, riegel: [0.55, 0.9], riegelHoch: 0.07, riegelDick: 0.06 },
+        // die Toene ohne Zeile in DEFCOL und die Rauheit je Rolle: die Zahlen von `materials()` (M.lattung, M.gras; `roughness` der Rolle)
+        ton: { lattung: 0x967852, gras: 0x5b7a3a },
+        rau: { stein: 0.96, ziegel: 0.82, holz: 0.88, stamm: 0.95, lattung: 0.9, gras: 1 },
+    };
+    // ein Wurf 0..1 aus Saat und Nummer (ganze Zahlen: jedes Geraet wuerfelt dieselben Pfaehle)
+    function _mgWurf(saat, k) {
+        var h = (Math.imul((saat | 0) ^ 0x9e3779b9, 0x85ebca6b) + Math.imul(k + 1, 0xc2b2ae35)) | 0;
+        h ^= h >>> 15; h = Math.imul(h, 0x2c1b3c6d); h ^= h >>> 12; h = Math.imul(h, 0x297a2d39); h ^= h >>> 15;
+        return (h >>> 0) / 4294967296;
+    }
+    // eine ebene Flaeche (3 oder 4 Ecken) in ein Netz: die Normale aus ihren Ecken, zur Seite `aus` gewandt, gegen den Uhrzeiger von dort
+    function _mgFlaeche(G, P, aus) {
+        var a = P[0], b = P[1], c = P[2];
+        var nx = (b[1] - a[1]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[1] - a[1]), ny = (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]), nz = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+        var l = Math.hypot(nx, ny, nz) || 1, vor = nx * aus[0] + ny * aus[1] + nz * aus[2] >= 0, s = vor ? 1 / l : -1 / l, v0 = G.pos.length / 3, i;
+        for (i = 0; i < P.length; i++) { G.pos.push(P[i][0], P[i][1], P[i][2]); G.nrm.push(nx * s, ny * s, nz * s); }
+        if (vor) G.idx.push(v0, v0 + 1, v0 + 2); else G.idx.push(v0, v0 + 2, v0 + 1);
+        if (P.length === 4) { if (vor) G.idx.push(v0, v0 + 2, v0 + 3); else G.idx.push(v0, v0 + 3, v0 + 2); }
+    }
+    // DIE EINHEITS-FORMEN im Wuerfel [-0,5; 0,5]^3 -> { pos, nrm, idx }: `kasten` (sechs Flaechen) * `rumpf` (ohne Boden) * `mantel` (die
+    // vier Seiten) * `platte` (nur der Deckel) * `boden` (nur die Untersicht) * `zelt` (das Zeltdach: vier Flaechen zur Spitze und der Boden, sein Ueberstand zeigt ihn) *
+    // `pfahlreihe` (arg { n, saat, spitze, wechsel }: n Pfaehle laengs z, je ein Sechskant-Schaft mit runden Normalen und gespitztem Kopf,
+    // 24 Ecken und 18 Dreiecke; `spitze` und `wechsel` als Anteil der Hoehe, der Kopf des Pfahls k steht wechsel * Wurf(saat, k) unter dem Deckel)
+    function mauerEinheit(form, arg) {
+        var G = { pos: [], nrm: [], idx: [] }, h = 0.5, i, j, k;
+        var Q = {
+            xp: [[h, -h, -h], [h, h, -h], [h, h, h], [h, -h, h]], xn: [[-h, -h, -h], [-h, -h, h], [-h, h, h], [-h, h, -h]],
+            yp: [[-h, h, -h], [-h, h, h], [h, h, h], [h, h, -h]], yn: [[-h, -h, -h], [h, -h, -h], [h, -h, h], [-h, -h, h]],
+            zp: [[-h, -h, h], [h, -h, h], [h, h, h], [-h, h, h]], zn: [[-h, -h, -h], [-h, h, -h], [h, h, -h], [h, -h, -h]],
+        };
+        var N = { xp: [1, 0, 0], xn: [-1, 0, 0], yp: [0, 1, 0], yn: [0, -1, 0], zp: [0, 0, 1], zn: [0, 0, -1] };
+        var F = { kasten: ["xp", "xn", "yp", "yn", "zp", "zn"], rumpf: ["xp", "xn", "yp", "zp", "zn"], mantel: ["xp", "xn", "zp", "zn"], platte: ["yp"], boden: ["yn"] }[form];
+        if (F) { for (i = 0; i < F.length; i++) _mgFlaeche(G, Q[F[i]], N[F[i]]); return G; }
+        if (form === "zelt") {
+            var A = [0, h, 0], B = Q.yn;
+            _mgFlaeche(G, [B[0], B[1], A], [0, 0.5, -1]); _mgFlaeche(G, [B[1], B[2], A], [1, 0.5, 0]);
+            _mgFlaeche(G, [B[2], B[3], A], [0, 0.5, 1]); _mgFlaeche(G, [B[3], B[0], A], [-1, 0.5, 0]);
+            _mgFlaeche(G, B, N.yn);
+            return G;
+        }
+        if (form === "pfahlreihe") {
+            var n = arg && arg.n | 0, sp = arg && arg.spitze, we = arg && arg.wechsel;
+            if (!(n > 0) || !(sp > 0) || !(we >= 0) || !(sp + we < 1)) throw new Error("fachwerk mauerEinheit: die Pfahlreihe braucht { n, saat, spitze, wechsel }");
+            var w3 = 0.8660254037844386, rz = h / n;
+            var C = [[w3, 0.5], [0, 1], [-w3, 0.5], [-w3, -0.5], [0, -1], [w3, -0.5]];                 // die sechs Mantellinien (30 Grad + 60 Grad * j, von +x nach +z)
+            var Mi = [[0.5, w3], [-0.5, w3], [-1, 0], [-0.5, -w3], [0.5, -w3], [1, 0]];                // die Mitten der sechs Flaechen des Kopfs
+            for (k = 0; k < n; k++) {
+                var zc = -h + (k + 0.5) / n, top = h - we * _mgWurf(arg.saat, k), sch = top - sp, v0 = G.pos.length / 3;
+                for (j = 0; j < 6; j++) {                                                               // der Schaft: je Mantellinie unten und oben, die Normale des Ovals
+                    var gx = C[j][0] / h, gz = C[j][1] / rz, gl = Math.hypot(gx, gz);
+                    G.pos.push(h * C[j][0], -h, zc + rz * C[j][1], h * C[j][0], sch, zc + rz * C[j][1]);
+                    G.nrm.push(gx / gl, 0, gz / gl, gx / gl, 0, gz / gl);
+                }
+                for (j = 0; j < 6; j++) { var a = v0 + 2 * j, b = v0 + 2 * ((j + 1) % 6); G.idx.push(a, a + 1, b + 1, a, b + 1, b); }
+                for (j = 0; j < 6; j++) {                                                               // der Kopf: sechs Flaechen vom Rand zur Spitze, die Normale des Kegels
+                    var kx = C[j][0] / h, kz = C[j][1] / rz, kl = Math.hypot(kx, 1 / sp, kz);
+                    G.pos.push(h * C[j][0], sch, zc + rz * C[j][1]); G.nrm.push(kx / kl, 1 / sp / kl, kz / kl);
+                }
+                for (j = 0; j < 6; j++) {
+                    var mx = Mi[j][0] / h, mz = Mi[j][1] / rz, ml = Math.hypot(mx, 1 / sp, mz);
+                    G.pos.push(0, top, zc); G.nrm.push(mx / ml, 1 / sp / ml, mz / ml);
+                }
+                for (j = 0; j < 6; j++) G.idx.push(v0 + 12 + j, v0 + 18 + j, v0 + 12 + ((j + 1) % 6));
+            }
+            return G;
+        }
+        throw new Error("fachwerk mauerEinheit: unbekannte Form " + form);
+    }
+    // die Matrix eines Kastens im Rahmen des Stuecks: Mitte (cx, cy, cz), Masse (sx quer, sy hoch, sz laengs), geschert um `steig`
+    function _mgKasten(steig, cx, cy, cz, sx, sy, sz) { return [sx, 0, 0, 0, 0, sy, 0, 0, 0, steig * sz, sz, 0, cx, cy + steig * cz, cz, 1]; }
+    // EIN TEIL in das Netz seines Stoffs: die Lage m * Form, die Normale ueber die Kofaktoren von m (normiert), der Ton der Rolle (linear),
+    // die Nummer ihres Verbands oder Gefueges (Holz: die Faser laengs `achse` — der Pfahl lotrecht —, mit der Ton-Klasse je Pfahl), die
+    // Hoehe der Ecke ueber der Sehne (`lage`, 1 + m: der Stoff liest daraus den Fuss, wie am Haus `_eckLage`) und das uv des Labors (die
+    // Karte misst 2 m, VERBAND_GESETZ.pxJeM); `ton` (0..1, sonst 1): der Anteil des Tons, den das Teil traegt (die Untersicht)
+    function _mgTeil(S, art, form, stoff, m, arg, achse, ton) {
+        var E = mauerEinheit(form, arg), T = MAUER_GESTALT, q = ton > 0 && ton < 1 ? ton : 1;
+        var N = S.netz[stoff] || (S.netz[stoff] = { stoff: stoff, rau: T.rau[stoff], pos: [], nrm: [], farbe: [], nr: [], lage: [], uv: [], idx: [], teile: [] });
+        if (!(N.rau > 0)) throw new Error("fachwerk mauerNetz: die Rolle " + stoff + " traegt keine Rauheit (MAUER_GESTALT.rau)");
+        var v0 = N.pos.length / 3, n = E.pos.length / 3, i, c = T.ton[stoff] != null ? _linHex(T.ton[stoff]) : _colFor(stoff);
+        var reihe = gefuegeReihe(stoff), FA = GEFUEGE_GESETZ.faser, faser = reihe === GEFUEGE_GESETZ.rolle.holz, ax = achse || [0, 1, 0];
+        var jeEcke = form === "pfahlreihe" ? 24 : n, nrTeil = S.zahl++;
+        var a = m[0], b = m[4], cc = m[8], d = m[1], e = m[5], f = m[9], g = m[2], h = m[6], k = m[10];
+        var K = [e * k - f * h, f * g - d * k, d * h - e * g, cc * h - b * k, a * k - cc * g, b * g - a * h, b * f - cc * e, cc * d - a * f, a * e - b * d];
+        for (i = 0; i < n; i++) {
+            var x = E.pos[i * 3], y = E.pos[i * 3 + 1], z = E.pos[i * 3 + 2], ux = E.nrm[i * 3], uy = E.nrm[i * 3 + 1], uz = E.nrm[i * 3 + 2];
+            var px = a * x + b * y + cc * z + m[12], py = d * x + e * y + f * z + m[13], pz = g * x + h * y + k * z + m[14];
+            var nx = K[0] * ux + K[1] * uy + K[2] * uz, ny = K[3] * ux + K[4] * uy + K[5] * uz, nz = K[6] * ux + K[7] * uy + K[8] * uz, nl = Math.hypot(nx, ny, nz) || 1;
+            nx /= nl; ny /= nl; nz /= nl;
+            N.pos.push(px, py, pz); N.nrm.push(nx, ny, nz); N.farbe.push(c[0] * q, c[1] * q, c[2] * q);
+            N.nr.push(faser ? faserNummer(ax[0], ax[1], ax[2], nx, ny, nz, Math.floor(_mgWurf(S.saat ^ 0x51f15e, nrTeil * 4096 + Math.floor(i / jeEcke)) * FA.toene)) : reihe);
+            N.lage.push(1 + py - S.steig * pz, 0);
+            var liegt = Math.abs(ny) > 0.7;
+            N.uv.push((liegt || Math.abs(nz) > Math.abs(nx) ? px : pz) / 2, (liegt ? pz : py) / 2);
+        }
+        for (i = 0; i < E.idx.length; i++) N.idx.push(E.idx[i] + v0);
+        N.teile.push({ art: art, form: form, arg: arg || null, stoff: stoff, m: m, v0: v0, n: n, ton: q });
+    }
+    function _mgAus(S) {
+        var aus = [], s, N;
+        for (s in S.netz) { N = S.netz[s]; aus.push({ stoff: N.stoff, rau: N.rau, pos: new Float32Array(N.pos), nrm: new Float32Array(N.nrm), farbe: new Float32Array(N.farbe), nr: new Float32Array(N.nr), lage: new Float32Array(N.lage), uv: new Float32Array(N.uv), idx: new Uint32Array(N.idx), teile: N.teile }); }
+        return aus;
+    }
+    // DAS NETZ EINES STUECKS DER WEHR -> je Stoff { stoff, rau, pos, nrm, farbe (linear), nr (Verband/Gefuege je Ecke), lage, uv, idx, teile }.
+    // `M` = die Gestalt des Rings (`mauerGestalt`), `stueck` = { art: "wand", lang, fuss, steig, aussen, saat } oder { art: "turm", fuss, saat }.
+    // Die WAND: der Steinring traegt den Wehrgang (die Krone des Gesetzes, seine Untersicht im Ton `untersicht`), aussen darauf Brustwehr und Zinnen; die Palisade ist eine Reihe
+    // von Pfaehlen (einer je `wand.dick`); die Bastion ist der Wall mit begruenter Krone und der Brustwehr aussen (`krone.aussen`).
+    // Der TURM: der Rumpf mit dem Zeltdach im Kasten des Gesetzes (`dach`); das Bollwerk der Bastion die Raute mit der Brustwehr auf den
+    // zwei Flanken vor dem Ring (-x und +z: der Wirt dreht sie um atan2(x, z) + 45 Grad, diese Ecke zeigt vom Ort weg).
+    function mauerNetz(M, stueck) {
+        if (!M || !M.wand || !M.art || !stueck) throw new Error("fachwerk mauerNetz: die Mauer traegt keine Form (mauerGestalt) oder das Stueck fehlt");
+        var G = MAUER_GESTALT, W = M.wand, K = M.krone, T = M.turm, D = M.dach, BW = M.bollwerk, Z = G.zinne, i;
+        var fuss = stueck.fuss > 0 ? stueck.fuss : 0, au = stueck.aussen < 0 ? -1 : 1;
+        var S = { netz: {}, steig: stueck.art === "wand" ? stueck.steig || 0 : 0, saat: stueck.saat | 0, zahl: 0 }, st = S.steig;
+        if (stueck.art === "wand") {
+            if (!(stueck.lang > 0)) throw new Error("fachwerk mauerNetz: die Wand braucht ihre Laenge");
+            var L = stueck.lang + W.ueber, H = W.hoch + fuss, yM = (W.hoch - fuss) / 2;
+            if (gefuegeReihe(M.stoff) === GEFUEGE_GESETZ.rolle.holz) {
+                var oben = W.hoch + G.stamm.wechsel / 2, Hs = oben + fuss;
+                _mgTeil(S, "wand", "pfahlreihe", M.stoff, _mgKasten(st, 0, (oben - fuss) / 2, 0, W.dick, Hs, L), { n: Math.max(1, Math.round(L / W.dick)), saat: S.saat, spitze: G.stamm.spitze / Hs, wechsel: G.stamm.wechsel / Hs });
+            } else {
+                _mgTeil(S, "wand", "mantel", M.stoff, _mgKasten(st, 0, yM, 0, W.dick, H, L));
+                if (K && K.aussen) {
+                    _mgTeil(S, "wallkrone", "platte", "gras", _mgKasten(st, 0, yM, 0, W.dick, H, L));
+                    _mgTeil(S, "krone", "rumpf", M.stoff, _mgKasten(st, (au * (W.dick - K.dick)) / 2, K.y, 0, K.dick, K.hoch, L));
+                } else if (K) {
+                    var y0 = K.y + K.hoch / 2, xb = (au * (K.dick - Z.dick)) / 2, nz = Math.max(1, Math.floor(L / (Z.breit + Z.luecke))), p = L / nz;
+                    _mgTeil(S, "krone", "rumpf", M.stoff, _mgKasten(st, 0, K.y, 0, K.dick, K.hoch, L));
+                    _mgTeil(S, "untersicht", "boden", M.stoff, _mgKasten(st, 0, K.y, 0, K.dick, K.hoch, L), null, null, G.untersicht);
+                    _mgTeil(S, "brustwehr", "rumpf", M.stoff, _mgKasten(st, xb, y0 + Z.brust / 2, 0, Z.dick, Z.brust, L));
+                    for (i = 0; i < nz; i++) _mgTeil(S, "zinne", "rumpf", M.stoff, _mgKasten(st, xb, y0 + Z.brust + Z.hoch / 2, -L / 2 + (i + 0.5) * p, Z.dick, Z.hoch, Z.breit));
+                } else _mgTeil(S, "wandkopf", "platte", M.stoff, _mgKasten(st, 0, yM, 0, W.dick, H, L));
+            }
+        } else if (stueck.art === "turm" && BW) {
+            var bb = BW.vor * Math.SQRT2, Hb = BW.hoch + fuss, yb = (BW.hoch - fuss) / 2;
+            _mgTeil(S, "turm", "mantel", M.stoff, _mgKasten(0, 0, yb, 0, bb, Hb, bb));
+            _mgTeil(S, "wallkrone", "platte", "gras", _mgKasten(0, 0, yb, 0, bb, Hb, bb));
+            if (K) {
+                _mgTeil(S, "krone", "rumpf", M.stoff, _mgKasten(0, -(bb - K.dick) / 2, BW.hoch + K.hoch / 2, 0, K.dick, K.hoch, bb));
+                _mgTeil(S, "krone", "rumpf", M.stoff, _mgKasten(0, K.dick / 2, BW.hoch + K.hoch / 2, (bb - K.dick) / 2, bb - K.dick, K.hoch, K.dick));
+            }
+        } else if (stueck.art === "turm" && T) {
+            var dach = D && M.dachStoff ? M.dachStoff : null;
+            _mgTeil(S, "turm", dach ? "mantel" : "rumpf", M.stoff, _mgKasten(0, 0, (T.hoch - fuss) / 2, 0, T.breit, T.hoch + fuss, T.breit));
+            if (dach) _mgTeil(S, "dach", "zelt", dach, _mgKasten(0, 0, D.y, 0, D.breit, D.hoch, D.breit), null, [1, 0, 0]);   // das Holzdach: die Faser liegt (nie Hirnholz auf der flachen Dachseite)
+        } else throw new Error("fachwerk mauerNetz: das Stueck " + stueck.art + " traegt diese Form nicht (" + M.art + ")");
+        return _mgAus(S);
+    }
+    // DAS NETZ EINES ZAUNS der Laenge `lang` am Hang `steig`: Pfosten (holz) alle ~`feld` Meter und zwei Riegel (lattung, die Faser laengs)
+    // — im Rahmen des Stuecks wie die Wand; Welt (`_stlWegeRaten`) und Labor (buildDorf) zeichnen dieses Netz.
+    function zaunNetz(lang, steig, saat) {
+        if (!(lang > 0)) throw new Error("fachwerk zaunNetz: der Zaun braucht seine Laenge");
+        var Zn = MAUER_GESTALT.zaun, S = { netz: {}, steig: steig || 0, saat: saat | 0, zahl: 0 }, np = Math.max(2, Math.round(lang / Zn.feld) + 1), q;
+        for (q = 0; q < np; q++) _mgTeil(S, "pfosten", "rumpf", "holz", _mgKasten(S.steig, 0, (Zn.hoch - Zn.fuss) / 2, -lang / 2 + (lang * q) / (np - 1), Zn.pfosten, Zn.hoch + Zn.fuss, Zn.pfosten));
+        for (q = 0; q < Zn.riegel.length; q++) _mgTeil(S, "riegel", "kasten", "lattung", _mgKasten(S.steig, 0, Zn.riegel[q], 0, Zn.riegelDick, Zn.riegelHoch, lang), null, [0, S.steig, 1]);
+        return _mgAus(S);
+    }
     // ════════════ dorfLayout v5 — GRAPH-WACHSTUM + MAUER ════════════
     // prettier-ignore
     function dorfLayout(plan, ext, seed, H){
@@ -15471,6 +15652,11 @@
         MAUER_FORM: MAUER_FORM, // die Form der Wehr im Jahr: Palisade, Steinring, Bastion (Leser: mauerGestalt)
         mauerForm: mauerForm,
         mauerGestalt: mauerGestalt, // der Ring in der Form seiner Zeit (Leser: exportSettlement, das Labor)
+        MAUER_GESTALT: MAUER_GESTALT, // Zinne, Pfahl und Zaun in Metern (Leser: mauerNetz, zaunNetz, gate:settlement)
+        gefuegeReihe: gefuegeReihe, // die Nummer des Verbands oder Gefüges einer Rolle (Leser: gate:settlement, die Mauer im Stoff)
+        mauerEinheit: mauerEinheit, // die Einheits-Form eines Teils (Leser: die Linse Leser ↔ Puffer in gate:settlement)
+        mauerNetz: mauerNetz, // das Netz eines Stücks der Wehr je Stoff (Leser: die Welt `_stlMauerBuild`, das Labor buildDorf)
+        zaunNetz: zaunNetz, // das Netz eines Zauns (Leser: die Welt `_stlWegeRaten`, das Labor buildDorf)
         WACHSTUM: WACHSTUM, // das Wachstum in Spielzeit (Staffel 2; Leser: der Wirt, gate:settlement W)
         wachstum: wachstum,
         REGION_HIST: REGION_HIST,

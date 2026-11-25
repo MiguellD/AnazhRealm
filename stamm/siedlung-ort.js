@@ -3183,18 +3183,16 @@ class AnazhRealm_siedlung_ort {
         return true;
     }
     // DIE MAUER WÄCHST MIT (siedlung.K4 Staffel 2, `_ortWaechst`): wechselt die Mauer des Plans `plan` mit seinem Jahr (der Ring
-    // des Schnitts wächst mit der Stadt, nach MAUER_BIS fällt er), fallen ihre Streifen (Maß 0, der Pool behält die Plätze) und
-    // ihre Linie in der Wege-Karte, und die Mauer seines Plans steht neu
+    // des Schnitts wächst mit der Stadt, nach MAUER_BIS fällt er), fallen ihre Stücke aus dem Satz der Einfriedung
+    // (`_einfriedungFaellt`) und ihre Linie in der Wege-Karte, und die Mauer seines Plans steht neu
     _stlMauerNeu(plan) {
-        const [wk, P] = [this._wegeKarteEnsure(), this.state.stlMauer];
-        const null4 = this._stlMauerNull || (this._stlMauerNull = new THREE.Matrix4().makeScale(0, 0, 0));
+        const wk = this._wegeKarteEnsure();
         for (let i = wk.siedlungen.length - 1; i >= 0; i--) {
             const b = wk.siedlungen[i];
             if (b.mauerVon !== plan) continue;
             wk.siedlungen.splice(i, 1);
             if (wk.raeumen.includes(b)) wk.raeumen.splice(wk.raeumen.indexOf(b), 1);
-            for (let k = b.streifen[0]; P && k < b.streifen[1]; k++) P.mesh.setMatrixAt(k, null4);
-            if (P) P.mesh.instanceMatrix.needsUpdate = true;
+            for (const k of b.stuecke) this._einfriedungFaellt(k);
             this._grundrissFaellt(b.x0, b.z0, b.x1, b.z1);
         }
         return this._stlMauerBuild(plan, plan.ort);
