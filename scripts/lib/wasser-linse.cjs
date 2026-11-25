@@ -2954,7 +2954,11 @@ async function wasserLeser(o = {}) {
     const { dim, dimY, step, span, floorDrop } = r._voxelChunkConfig(0);
     const oy = (st.terrainBaseHeight || 0) - floorDrop;
     const dq = dim * dim;
-    const tisch = typeof st.waterLevel === "number" ? st.waterLevel : 0;
+    // DER SPIEGEL DES MEERS ZUR ZEIT DER PROBE (planet.wasser.gezeiten): das Sheet zeichnet das Meer und seinen Aquifer am Spiegel,
+    // den das Gesetz zur Stunde nennt — der Ruhe-Spiegel und der Hub der Gezeit (gelaende-core `gezeitHub` an der Lage, die den
+    // Träger der Welt trägt). Am Ruhe-Spiegel urteilte die Linse an der Uhr: bei Ebbe (Stufe −35) 124 von 164 Punkten „trocken“,
+    // wo das Bild das Wasser 1,05 m unter dem Boden zeichnet (`_wasserBildAt` −4,75 m, Boden −3,7 m) und der Körper trocken steht
+    const tisch = (typeof st.waterLevel === "number" ? st.waterLevel : 0) + window.__gelaendeCore.gezeitHub(r._gelaende());
     const aus = {
         orte: [],
         spalten: 0,
