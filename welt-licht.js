@@ -1569,11 +1569,28 @@ var __weltLicht = (function () {
     const KM = Math;
     // DIE GESAMT-LEUCHTKRAFT-FUNKTION der Sonnen-Umgebung (nacht-himmel): Flynn, Holmberg, Portinari, Fuchs & Jahreiß 2006 (MNRAS 372,
     // 1149, Tab. 3: die 50-pc-Probe des CNS4, Φ = Sterne je 20-pc-Kugel und Größenklasse, gesamt und nur Hauptreihe) als
-    // [M_V, Φ, Φ(MS)]; M_V −2 zählt keinen Stern (Tab. 3: „--“). Die Riesen III–IV sind Φ − Φ(MS). Gegen sie steht der Rest je Stufe.
+    // [M_V, N50, N50(MS), Φ, Φ(MS)]; M_V −2 zählt keinen Stern (Tab. 3: „--“). Die Riesen III–IV sind Φ − Φ(MS). DIE NAHT (Koordinator
+    // 25.11., ohne Hand): eine Stufe gilt nach Flynn, wo seine 50 pc ≥ `traegt` Sterne halten; darunter nach der Großvolumen-Funktion
+    // `KOSMOS_GROSS`. Gegen die geltende Funktion steht der Rest je Stufe (`kRest`).
     const KOSMOS_GESAMT = Object.freeze({
         volumen: (4 / 3) * KM.PI * 20 * 20 * 20,
-        stufen: Object.freeze([[-3, 0.06, 0.06], [-2, 0, 0], [-1, 1.1, 0.6], [0, 3.3, 1.7], [1, 11.3, 6.1], [2, 16.7, 14.3], [3, 35.3, 30.9]].map(Object.freeze)),
+        traegt: 10,
+        stufen: Object.freeze(
+            [[-3, 1, 1, 0.06, 0.06], [-2, 0, 0, 0, 0], [-1, 17, 9, 1.1, 0.6], [0, 51, 26, 3.3, 1.7], [1, 176, 96, 11.3, 6.1],
+                [2, 261, 224, 16.7, 14.3], [3, 552, 483, 35.3, 30.9]].map(Object.freeze)
+        ),
     });
+    // DIE GROSSVOLUMEN-FUNKTION des leuchtstarken Endes: Bahcall & Soneira 1980 (ApJS 44, 73, Gl. 1: φ(M) = n* 10^(β(M−M*)) /
+    // [1 + 10^(−(α−β)δ(M−M*))]^(1/δ) Sterne pc⁻³ mag⁻¹ für M_b ≤ M ≤ 15, darunter 0; n* = 4,03 · 10⁻³, M* = +1,28, M_b = −6, α = 0,74,
+    // β = 0,04, 1/δ = 3,40 — „uncertain for M_V ≲ −3 because of the paucity of objects“). Ihre Skalenhöhe e^(−|z|/H): H ≈ 90 pc flach
+    // für die hellen Sterne, abgelesen aus Fig. 2 („we adopt the relation shown in Figure 2 for all stars“).
+    const KOSMOS_GROSS = Object.freeze({ n: 4.03e-3, Mstern: 1.28, Mb: -6, alpha: 0.74, beta: 0.04, einsDurchDelta: 3.4, hz: 90 });
+    function kPhiGross(M) {
+        const G = KOSMOS_GROSS;
+        if (M < G.Mb) return 0;
+        const d = 1 / G.einsDurchDelta;
+        return (G.n * KM.pow(10, G.beta * (M - G.Mstern))) / KM.pow(1 + KM.pow(10, -(G.alpha - G.beta) * d * (M - G.Mstern)), G.einsDurchDelta);
+    }
     const KOSMOS = Object.freeze({
         // die schwächste Größe im Feld: die Grenzgröße der tiefen Nacht (`GRENZGROESSE`, −18° → +6) plus die halbe Klasse, um die
         // der Stern-Knoten der Welt unter seiner Grenze noch leuchtet (`_buildStarField`: die Schwelle ½ Klasse unter der Grenze)
@@ -1590,8 +1607,10 @@ var __weltLicht = (function () {
         // gemessene Sonnen-Umgebung (die Quellen unten); bis nacht-himmel würfelte die Saat darüber einen Faktor 0,7–1,4 ohne Quelle
         // (anazh-realm-seed 0,734) — die Zahl der Sterne am Himmel hing an ihm (Saaten a–d: Zählkurve 15–100 % neben dem Katalog)
         scheibe: Object.freeze({ hR: [2000, 3500], log10N: [10.5, 11.5], heimZ: 20 }),
-        // DER STAUB: Auslöschung in der Ebene je pc und seine Skalenhöhe (V-Band; 1 mag/kpc, 100 pc — gesetzt, Lehrbuch-Wert)
-        staub: Object.freeze({ magJePc: 0.001, hoehePc: 100 }),
+        // DER STAUB (V-Band): Bahcall & Soneira 1980 Gl. (7)+(8) — A(b, d) = 0,165 (1,192 − tan b) csc b · [1 − e^(−d sin b / H)] für
+        // b ≤ 50°, darüber 0 (Sandage 1972), die Schicht e^(−|z|/H) mit H = 100 pc; in der Ebene 0,165 · 1,192 / H je pc (`magJePc`, das
+        // Band liest sie). Bis nacht-himmel 1 mag/kpc ohne Quelle, ohne den Schwund zum Pol.
+        staub: Object.freeze({ pol: 0.165, sandage: 1.192, bMaxGrad: 50, hoehePc: 100, magJePc: (0.165 * 1.192) / 100 }),
         // DIE KLASSEN: Raumdichte in der Ebene am Heim-Ort (pc⁻³), Skalenhöhe (pc) und ihr Profil, absolute Größe M_V von–bis, T_eff (K),
         // Masse (M☉), Lichtwechsel [Art, Anteil, Periode d von–bis, Amplitude mag von–bis], die Leuchtkraft-Funktion; die Bedeckung
         // (`bedeckung`) trägt jede Klasse. DIE GEMESSENE SONNEN-UMGEBUNG (nacht-himmel) — eine Klasse mit Quelle trägt ihre
@@ -1727,10 +1746,11 @@ var __weltLicht = (function () {
                     ],
                     { profil: "sech2", rest: { ast: "III", von: -3.5, bis: 3.5 } },
                 ],
-                ["Überriesen", 1e-7, 60, -8, -5, 9000, 15, [["cepheide", 0.15, 3, 45, 0.4, 1.2]]],
+                ["Überriesen", (1e-7 * 2) / 3, 60, -8, -6, 9000, 15, [["cepheide", 0.15, 3, 45, 0.4, 1.2]]],
                 ["Weiße Zwerge", 5e-3, 300, 11, 16, 10000, 0.6, []],
                 ["Rest V 2,5–3", null, 0.6 / (4 * 0.0015), null, null, 6600, 1.3, [], { profil: "sech2", rest: { ast: "V", von: 2.5, bis: 3 } }],
                 ["Rest V 3–3,5", null, 1.1 / (4 * 0.002), null, null, 6600, 1.3, [], { profil: "sech2", rest: { ast: "V", von: 3, bis: 3.5 } }],
+                ["Rest hell", null, KOSMOS_GROSS.hz, null, null, 20000, 9, [], { rest: { ast: "alle", von: -6, bis: 3.5 } }],
             ].map(([name, n, hz, Mlo, Mhi, T, masse, wechsel, art], _, alle) => {
                 if (art && art.rest) art = { ...art, lf: kRest(art.rest, alle) };
                 const lf = art && art.lf ? Object.freeze(art.lf.map((p) => Object.freeze(p))) : null;
@@ -1809,20 +1829,37 @@ var __weltLicht = (function () {
     // belegten Klassen desselben Asts mit M_V in [b − ½, b + ½); je halbe Stufe die Hälfte, nur in [von, bis) der Rest-Klasse. Wo die
     // belegten Klassen über Φ liegen (Rest < 0: B V früh bei M_V −2, Zwerge bei 2), bleibt der Überschuss stehen, nie verteilt
     // (`kGesamtBilanz` nennt ihn). Ein leerer Rest ist ROT.
+    // Je Eintrag eine Stufe [lo, hi) mit ihrem Φ (pc⁻³) und der Summe der belegten Klassen darin: die Äste V und III auf den Stufen,
+    // die Flynn trägt (je ganze Stufe, der Rest halb auf ihre Hälften); der Ast "alle" auf den halben Stufen der Großvolumen-Funktion
+    // von M_b bis zur ersten getragenen Flynn-Stufe (dort zählen die belegten Klassen beider Äste).
     function kGesamtBilanz(alle, ast) {
-        return KOSMOS_GESAMT.stufen.map(([b, phi, phiV]) => {
-            let belegt = 0;
+        const G = KOSMOS_GESAMT;
+        const belegt = (lo, hi) => {
+            let s = 0;
             for (const z of alle) {
                 const art = z[8];
-                if (art && art.ast === ast && art.lf) for (const [M, n] of art.lf) if (M >= b - 0.5 && M < b + 0.5) belegt += n;
+                if (art && art.lf && (ast === "alle" ? art.ast : art.ast === ast)) for (const [M, n] of art.lf) if (M >= lo && M < hi) s += n;
             }
-            return { b, phi: (ast === "V" ? phiV : phi - phiV) / KOSMOS_GESAMT.volumen, belegt };
-        });
+            return s;
+        };
+        const getragen = G.stufen.filter((r) => r[1] >= G.traegt);
+        if (ast !== "alle")
+            return getragen.map(([b, , , phi, phiV]) => ({ lo: b - 0.5, hi: b + 0.5, phi: (ast === "V" ? phiV : phi - phiV) / G.volumen, belegt: belegt(b - 0.5, b + 0.5) }));
+        const aus = [];
+        for (let lo = KOSMOS_GROSS.Mb; lo < getragen[0][0] - 0.5 - 1e-9; lo += 0.5) {
+            let phi = 0;
+            for (let q = 0; q < 50; q++) phi += kPhiGross(lo + (q + 0.5) * 0.01) * 0.01;
+            aus.push({ lo, hi: lo + 0.5, phi, belegt: belegt(lo, lo + 0.5) });
+        }
+        return aus;
     }
     function kRest(rest, alle) {
         const lf = [];
-        for (const { b, phi, belegt } of kGesamtBilanz(alle, rest.ast))
-            for (const h of [b - 0.25, b + 0.25]) if (phi > belegt && h >= rest.von && h < rest.bis) lf.push([h, (phi - belegt) / 2]);
+        for (const { lo, hi, phi, belegt } of kGesamtBilanz(alle, rest.ast)) {
+            if (!(phi > belegt)) continue;
+            const teile = hi - lo > 0.75 ? [lo + 0.25, lo + 0.75] : [lo + 0.25];
+            for (const h of teile) if (h >= rest.von && h < rest.bis) lf.push([h, (phi - belegt) / teile.length]);
+        }
         if (!lf.length) throw new Error("kosmos: der Rest " + rest.ast + " " + rest.von + "…" + rest.bis + " ist leer");
         return lf;
     }
@@ -2122,7 +2159,9 @@ var __weltLicht = (function () {
     function kStaub(d, sb) {
         const D = KOSMOS.staub,
             a = KM.abs(sb);
-        return a * d < 1e-3 * D.hoehePc ? D.magJePc * d : (D.magJePc * D.hoehePc * (1 - KM.exp((-d * a) / D.hoehePc))) / a;
+        if (a >= KM.sin((D.bMaxGrad * KM.PI) / 180)) return 0;
+        const f = 1 - a / KM.sqrt(1 - a * a) / D.sandage; // Sandages Schwund zum Pol: (1,192 − tan b) / 1,192
+        return f * (a * d < 1e-3 * D.hoehePc ? D.magJePc * d : (D.magJePc * D.hoehePc * (1 - KM.exp((-d * a) / D.hoehePc))) / a);
     }
     // DIE HELLIGKEIT DES LICHTWECHSELS am Tag t (mag über dem Maximum)
     function kWechsel(v, t) {
