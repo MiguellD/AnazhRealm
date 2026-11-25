@@ -1,4 +1,4 @@
-# sonnenbahn 3 — Vorprüfung (ZWISCHENSTAND)
+# sonnenbahn 4 — Vorprüfung (ZWISCHENSTAND)
 
 Zweig `sonnenbahn`, Basis origin/main 967bd422 (V18.546.414). Die Wurzel ändert JEDES Nachtbild der Welt: der Fuß der Tonkurve
 steht am Schlüssel der Belichtung, die Stufen der Tag-Achse kommen hinter ihm. Diese Abgabe bucht keine Sprosse; gebucht wird, was der
@@ -66,7 +66,13 @@ liest den Pool im ganzen Bild, sonnenbahn 2).
 ## Tore
 
 - GTX 1050 am Kopf: gate:pruefbuehne-licht GRÜN (S0 netto 0,3138, Farbton netto 28,1°).
-- check:statik GRÜN am Kopf (993 s).
+- check:statik GRÜN an Kopf 3 (993 s). Kopf 4 ändert nur eine gedruckte Zeile; check:statik läuft dafür nach der Regel des
+  Koordinators nicht neu.
+- **Kopf 4 heilt den BLOCK von Kopf 3.** Die Radeon-Probe (Lauf 45571669607) las die Selbsttest-Zeile „S0 NACHT (die Sicht des
+  Mondes)“ als ROT: dort stand „im Licht ROT“ ohne Melde-Wort.
+  - Die Zeile druckt jetzt „im Licht → ROT“. Keine andere neue Zeile der Welle trägt ROT.
+  - Lokal (GTX 1050): gate:pruefbuehne-licht Exit 0, der Leser des Probe-Kopfs (`scripts/lib/urteil-zeile.cjs`, `probeUrteil`) über
+    das Log GRÜN, 0 rote Zeilen. Farbton netto 28,1°.
 - gate:post-kette, RAUCH WAND: GRÜN auf beiden Geräten.
   - GTX 1050 und GTX 1060 messen gleich: hell 150,77 · 150,77 · 150,76 · 150,76 im Band 145,70–155,70.
   - Der Mutant K0F (alter Fuß) misst 143,38–143,41 und fällt ROT.

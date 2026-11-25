@@ -2188,7 +2188,7 @@ async function lichtLauf() {
             imLicht.some((b) => /abgesoffen 8\.0 % im Licht der Nacht .*`_mikroStoff`/.test(b)) &&
             imSchatten.length === 0;
         console.log(
-            `  SELBSTTEST S0 NACHT (die Sicht des Mondes): ${sichtGetroffen ? `getroffen — ohne Mond-Sicht „${ohneSicht[0].split(" — ")[0]}“ · schwarz 8 % im Licht ROT · schwarz 8 % allein im Schatten grün` : "BLIND " + JSON.stringify([ohneSicht, imLicht, imSchatten])}`
+            `  SELBSTTEST S0 NACHT (die Sicht des Mondes): ${sichtGetroffen ? `getroffen — ohne Mond-Sicht „${ohneSicht[0].split(" — ")[0]}“ · schwarz 8 % im Licht → ROT · schwarz 8 % allein im Schatten grün`: "BLIND " + JSON.stringify([ohneSicht, imLicht, imSchatten])}`
         );
         const mm = messerUrteil(ergebnis.messer, nacht);
         const messerGetroffen = !!mm.befund && /`_poolAmBild`/.test(mm.befund) && mm.ev != null;
