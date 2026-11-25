@@ -2,7 +2,7 @@
 
 ZWISCHENSTAND · Karte 2: 108 von 1 718 gebucht (gate:betriebsgesetz am Kopf; diese Sprosse bucht der Richter, nicht die Bahn).
 
-## Was die Station liest (wörtlich, `k2-leben.js` aus `punkte-maschine` 33ad82bf, Z. 684–858)
+## Was die Station liest (wörtlich, die Station k2-leben im Zweig `punkte-maschine`, 33ad82bf, Z. 684–858)
 
 - **Leser:** `[LL_ID]` mit `LL_ID = "leben.pflanzen.lebenslauf"`, `mess` (sek 20, `pfad: PFAD_WALD.concat(["stamm/feld-leben.js", "stamm/bild-himmel.js"])`), das Auge `u: { auge: { ort: "wiese" } }` — „Ego im Wald am Rand der Mess-Wiese“.
 - **Messfunktion (S1):** im Kreis `lokalM: 150` um den Spieler über `st.architectures`:
@@ -83,12 +83,12 @@ Gates nachher, auf main e1a54023 (EXIT explizit):
 - **Außerhalb der Tafel:** der Mammut (eigener Wurf, WBR führt Seqg nur unter Fichte). Eine Nadel-AUTO-Art wüchse auf der Buchen-Tafel („sonstige Laubbäume“ → Buche).
 - **Unterstand:** Er stirbt unsichtbar (kein Totholz aus `forestSchicht`), Seneszenz ist nicht modelliert.
 - **Bildpaar, Tris und Zeichen-Rufe am Messort, vorher ↔ nachher: offen.** swiftshader-WebGPU ist in diesem Container tot (oben). Das Gesetz kostet am Schirm nur Instanzen: Totholz ersetzt Lebende, das Fenster trägt −1,1 % stehende Dinge, binnen 30 m am Hotspot +20 %. An echter GPU ungemessen. Die GPU-Probe im Kopf: `[gpu-probe: bild:wiese, gate:fernwald]`.
-- **zug.cjs fehlt:** `artifacts/profiband/werkzeug/zug.cjs` steht in keinem lesbaren Zweig (main, integ-probe, zug-a, zug-b, koordination, punkte-maschine; .gitignore führt darin nur den Messplatz-Blick). PROBE_PFLICHT und `zug.sh probe-tag` liefen darum nicht; die Proben wählte ich nach den Pfaden.
+- **Das Zug-Werkzeug fehlt:** der Zug (`artifacts/profiband/werkzeug/`, PROBE_PFLICHT) steht in keinem lesbaren Zweig (main, integ-probe, zug-a, zug-b, koordination, punkte-maschine; .gitignore führt darin nur den Messplatz-Blick). PROBE_PFLICHT und sein `probe-tag` liefen darum nicht; die Proben wählte ich nach den Pfaden.
 - **Fremde Datei, nicht meine Bahn:** In `stamm/vegetation-wiese.js:3400` spricht ein Kommentar noch von „forestTreeSize Überhälter bis 1,95“ (Nah-Wiese, Bahn eines anderen Arbeiters).
 
 ## Quellen (an der Quelle geprüft)
 
 - Reineke 1933, J. Agric. Res. 46: 627–638 (−1,605); die Neubewertung: Pretzsch & Biber, „A re-evaluation of Reineke's rule and stand density index“: https://portal.fis.tum.de/en/publications/a-re-evaluation-of-reinekes-rule-and-stand-density-index/
-- WBR 86, Tab. 3 Bestandesmittelhöhen (Niedersachsen): https://www.strassenbau.niedersachsen.de/download/44269/6.2_Anlage_3_Ertragstafeln_-_Bestandesmittelhoehen.pdf
+- WBR 86, Tab. 3 Bestandesmittelhöhen (Niedersachsen): https://www.strassenbau.niedersachsen.de/download/44269/6.2%5FAnlage%5F3%5FErtragstafeln%5F-%5FBestandesmittelhoehen.pdf
 - Commarmot et al. 2013, Inventory of the largest primeval beech forest in Europe (Uholka): https://www.slf.ch/fileadmin/user_upload/WSL/Mitarbeitende/hobi/Inventory_Report_2013.pdf
 - Blaschke et al. 2012, LWF aktuell 86 (Totholz): https://lfl.bayern.de/mam/cms04/biodiversitaet/dateien/a86_totholz.pdf
