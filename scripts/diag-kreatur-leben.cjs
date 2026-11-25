@@ -3377,7 +3377,7 @@ if (V) {
         !E.fehler && !!E.g && E.g.ex > 1 && E.g.ez > 1 && E.taten === 1 && E.wirkt === 10,
         E.fehler || "Grundriss " + JSON.stringify(E.g) + " · Taten " + E.taten + " · wirkt an " + E.wirkt + "/10"
     );
-    const M = lauf([["_grundrissVon", "if (art === undefined && this._hausHuelleKommt(e)) {", "if (false) {"]]);
+    const M = lauf([["_grundrissVon", "if (hausGesetz) {", "if (false) {"]]);
     check(
         "Das Haus des Spielers vor der Hülle, Selbsttest: der Stamm ohne das Gesetz vor der Hülle fällt ROT (der Akt bricht beim Namen)",
         !M.g && M.taten === 0 && /trägt keinen Grundriss/.test(M.fehler || ""),

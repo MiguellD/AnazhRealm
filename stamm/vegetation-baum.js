@@ -2177,12 +2177,25 @@ class AnazhRealm_vegetation_baum {
         // kommt (`_hausHuelleKommt`), misst den Mass-Bau seiner Art und seines Samens — die Zeile, aus der der Worker die Hülle
         // baut. Bis hier trug das Haus des Spielers und der KI im Zug seines Baus keinen Grundriss: sein Akt fiel still
         // (`_werkAkt`, 0 Taten, 0 von 10 Orten im Umkreis), die Räumung seines Grunds wartete auf die Hülle.
-        if (art === undefined && this._hausHuelleKommt(e)) {
-            const m = e._grundrissArt;
-            if (m) return m.fp;
-            const fp = this._grundrissVon(e, e.type, e.seed);
-            if (fp) e._grundrissArt = { fp };
-            return fp;
+        // OB DIE ART EIN HAUS-GESETZ TRÄGT, ist eine Funktion ihres Typs und des Buchs: gemerkt je Art (`_hausArt`, Schlüssel das
+        // Buch `_foundry.recipes`), der Grundriss je Werk (`_grundrissArt`) — die Frist eines brechenden Werks fragte je Grundriss
+        // eines Nachbarn das Preset seiner Art (stand-takt DRUCK-SOLL, Bruch in 24 m: main 1663, mit dem Frager je Ruf 2137 Einheiten,
+        // Soll 1758). Ohne Foundry kein Buch, also kein Gesetz; ein Werk mit Gesetz ohne Grundriss bricht in `_werkAkt` beim Namen.
+        if (art === undefined && !hu && typeof e.type === "string") {
+            const buch = this._foundry && this._foundry.recipes;
+            if (!this._hausArt || this._hausArtBuch !== buch) [this._hausArtBuch, this._hausArt] = [buch, new Map()];
+            let hausGesetz = this._hausArt.get(e.type);
+            if (hausGesetz === undefined) {
+                const g = this._grundrissGesetz(e.type);
+                this._hausArt.set(e.type, (hausGesetz = !!(g && g.rec.kind === "haus")));
+            }
+            if (hausGesetz) {
+                const m = e._grundrissArt;
+                if (m) return m.fp;
+                const fp = this._grundrissVon(e, e.type, e.seed);
+                if (fp) e._grundrissArt = { fp };
+                return fp;
+            }
         }
         if (art !== undefined) {
             const g = this._grundrissGesetz(art);
