@@ -1,7 +1,7 @@
 {
  "sha": "486a6685925d51302752c756d7d47654d83922d1",
  "geraet": "gtx",
- "zeit": "2026-11-25T09:28:49.934Z",
+ "zeit": "2026-11-25T09:32:42.595Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.gespraech#2": {
@@ -4571,6 +4571,69 @@
    "ungemessen": true,
    "zeit": "2026-11-25T09:28:49.934Z",
    "abdruck": "7f54477500db",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.relief.grossform#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 355 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 5.92,
+   "grund": "Deckel 355 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 355.2,
+   "fremd": {
+    "s": 358,
+    "takte": 163,
+    "fremdS": 158.44,
+    "kerne": 0.443,
+    "fensterKerne": 0.8,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      48.63
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      30.08
+     ],
+     [
+      "Explorer.EXE",
+      13.13
+     ]
+    ],
+    "dienerS": 95.36,
+    "diener": [
+     [
+      "System",
+      46.63
+     ],
+     [
+      "dwm.exe",
+      26.92
+     ]
+    ],
+    "geraetS": 169.11,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      107.94
+     ],
+     [
+      "svchost.exe",
+      54.28
+     ],
+     [
+      "SearchIndexer.exe",
+      3.06
+     ]
+    ],
+    "eigenS": 1228.11,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T09:32:42.595Z",
+   "abdruck": "9d14fbd22724",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
