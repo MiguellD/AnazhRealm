@@ -1236,7 +1236,7 @@ class AnazhRealm_feld_leben {
                         ]);
                         return null;
                     }
-                    return this._planetAnker().then(
+                    return this._planetAnker("Satz").then(
                         (a) => {
                             const grad = (rad) => (rad * 180) / Math.PI;
                             const w = this._reiseWorte(grad(a.breite), grad(a.laenge), 0, a);
@@ -1293,9 +1293,9 @@ class AnazhRealm_feld_leben {
                     }
                     const samen = this._planetSamen();
                     return Promise.all([
-                        this._planetAnker(),
+                        this._planetAnker("Satz"),
                         this._fadenQuelle().then(() =>
-                            this._planetAuftrag({ type: "planet-ort", samen, breite, laenge, zeitMa })
+                            this._planetAuftrag({ type: "planet-ort", samen, breite, laenge, zeitMa }, "Satz")
                         ),
                     ]).then(
                         ([a, o]) => {

@@ -364,10 +364,10 @@
                     {
                         "groesse": "lichtVerhaeltnis",
                         "uhr": 0.5,
-                        "sonne": 74.21,
+                        "sonne": 55.82,
                         "rechnung": {
                             "art": "klarerTag",
-                            "mittag": 74.21,
+                            "mittag": 55.82,
                             "diffus": [0.08, 0.2]
                         },
                         "einheit": "E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte, Mittag klar",
@@ -376,7 +376,7 @@
                     {
                         "groesse": "umgebungAzimut",
                         "uhr": 0.5,
-                        "sonne": 74.21,
+                        "sonne": 55.82,
                         "band": [1.2, null],
                         "einheit": "E(Himmel) an der senkrechten 18-%-Karte zur Sonne / von der Sonne weg, Mittag klar",
                         "quelle": "der klare Himmel ist zur Sonne heller (Mie-Hof, Rayleigh-Phase): Hillaire 2020 (CGF 39(4)) mit dem Welt-Gesetz 1,33–1,67 (scripts/diag-atmo-hillaire.cjs, Spike D3 110c3f99); Plan D3 (koordination auftrag/durchbruch-1510.md) ≥ 1,2"
@@ -384,10 +384,10 @@
                     {
                         "groesse": "lichtVerhaeltnis",
                         "uhr": 0.3,
-                        "sonne": 17.96,
+                        "sonne": 23.93,
                         "rechnung": {
                             "art": "klarerTag",
-                            "mittag": 74.21,
+                            "mittag": 55.82,
                             "diffus": [0.08, 0.2]
                         },
                         "einheit": "dasselbe, tiefe Sonne klar",
@@ -396,7 +396,7 @@
                     {
                         "groesse": "lichtVerhaeltnis",
                         "uhr": 0,
-                        "sonne": -74.21,
+                        "sonne": -23.15,
                         "rechnung": {
                             "art": "mondNacht",
                             "diffus": [0.08, 0.2],
@@ -409,7 +409,7 @@
                     {
                         "groesse": "mondTon",
                         "uhr": 0,
-                        "sonne": -74.21,
+                        "sonne": -23.15,
                         "rechnung": {
                             "art": "kelvinTon",
                             "kelvin": [4100, 25000],
