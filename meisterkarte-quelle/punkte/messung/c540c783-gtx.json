@@ -1,0 +1,81 @@
+{
+ "sha": "c540c783d2370aa52fb5c11cee726d93fa629dca",
+ "geraet": "gtx",
+ "zeit": "2026-11-25T02:34:19.506Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.mensch.macht.wehrbau#3": {
+   "gruen": true,
+   "zahl": "S3 GRÜN · Ring als Straße 0.844 (Soll ≥ 0.7) · Umfang 32 (Soll ≥ 32 Saaten mit Mauerring) · 32 Saaten mit Ring 1700 (von 38), Deckung des alten Rings durch die Straßen 1900 ≤ 4 m: 1:0.98 2:0.97 3:1.00 4:1.00 5:0.07 6:0.98 8:1.00 9:1.00 10:0.98 11:0.94 12:1.00 13:1.00 · 17889 ms · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.61,
+   "gpu": "nvidia/pascal",
+   "konsum": "kbf235d78957d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k009b199ff4e6",
+   "s": 35.8,
+   "fremd": {
+    "s": 38.8,
+    "takte": 18,
+    "fremdS": 15.61,
+    "kerne": 0.402,
+    "fensterKerne": 0.554,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.84
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      2.66
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.77
+     ]
+    ],
+    "dienerS": 5.36,
+    "diener": [
+     [
+      "System",
+      2.38
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.36
+     ]
+    ],
+    "geraetS": 13.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.77
+     ],
+     [
+      "svchost.exe",
+      3.89
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 80.14,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T02:34:19.506Z",
+   "abdruck": "fd2a68b960eb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kbf235d78957d": "bVVdb6MwEPwvebyWms9gLPXBOXpKTq2a/oQ1rIGGQGRDOOV0//0EiZMA2SeIZnfGM2vyd3GAZAcZvnzrulqwxY/F80LDES2N6ojq5Vsv2CJKHBc9xs9FOOc/e1iiikOjSVkIAqKCfI9WqxosypdkaAOBfkoZ6d54tiVEkhOJO36tN/76Oh1TCkxrqwGJZoiNXkCRTYGtzkCgBa0ciA3YpksXGBmKxvwzJtfqPjjf+tLf0rgnnwwUUKVj9dEyCDFgm+6h0rQAbKyyqLThdtIwkja745v1KOisE2Beoro0IXUcXxjBq96W3qpJoyxbrUdk1EsDlzJCoik2Q10keWMdVC2wusBF5IYOsFU3O0d2aC15rwiEACqmfueAVYZqpMH2Erl0GPlDp0N3sEcFVgW58dL2QlfcvCGErOdaykH4QGGEp04YuM6osQ+WHHuD+cas0vBO11eE+T3ObuvGv2aEOskLtR9bJX10bY+9z+XpHFJU1q7WzRXtYejb4nwzNvGZd0tX087bwUx+AEDvloVQwtczH3Utmw4UWtmhNQvjYxAGjPPNDNzAfm/y9tBO7WmIuumX/F6GHy4RkRHydL4o80Ofr4R1wqI0TVL6fhRMhx8V7C0QmSqkNKmLIJHRoyXtsGwsUdeNsdEJQ8/r7ajug94OX4vNXYZx9uV//OLZGx/Vhk91Dwy1aozoQCxt6TM5LE4yQxeqsTpIcgN3pUCI2APoCVWJGY5sFCGN+vXukjulvnl4Gi3vaZbyqcDe4Eq32oScgC8C9iCSDtVOQLW7AJPUcZYp+805X33y9diU+GtLYzItr+u9e8/5ZfABE3JQtSz6LyDJodU5lM3t7+Dffw==",
+  "k009b199ff4e6": "jVVdj5swEPwveezVZz4DWLoH54iaXHW9XNU/sIY1cCEQ2RCqVP3vFUmcBLiH7hNCs57Z2TH8me0h2UKGjx+6rmZs9mX2dabhgESjOqB6/NAzNosS20GX8XNRzvm3HpaoYt9oWhaCgqgg3yFpVYNF+Zic2kCgl4aMdkuebSiV9Ejjjl/rmT89jY8pBaY1aUCiOcRC1w+RjYGtzkAggVaeiA3YCucOMHqqMOZvMb1W98r5xpPeJoxHhwmo0qHyaO4H6LN1x/lyqjItABtSFpU2vHYaRNJid1yTHgUdOQLmJapLE4a27QkjdtFb0ts0apRlq/WALHRT3wkZpdEYm6Eukrwhe1ULrC5wETmBDWzRTebI9i2R94pACAjF2OscsMpQDTRYbiLnNqO/w/GhW9ihAlJBbry03MARN28opauplvIk/ERhhKd24Dv2oLFf6tlgvjYxoof+9eqKMO/j7BY1/j4h1EleqN3QKumhY7nj+XUOKSqyrXVzRboYeJY434h1fObchItx520oszsACO+CQkPKVxMPdS2bDhSSbN+asHjoBz7j2SRZuoHdzuzaRSu1JgM0fcDvZXjBHBEZpQ8XOyf2nK8DOWJRmiYpPS/y2fPCG4MPCnYERKYKKc3WhZ/I6LOQdlg2RNR1Y6y0g8B1GXVpdb/oHx1/5vz1tsK3uPzpNeXLw5IP6jt/+YyhVo0R7ou5JT0mT5MmY/FdoRrSQZIbuCMFQjQ28YiqxAwHNoogjPpod8lNTuyZh4dBcI+TLR8L7A2udKvNkhPwhM8uCT+Ha/j56VBtBVTbS0OS2vY8Zaewv/HVnSsrvv5lbTr+f7Xk7z3JHhO6V7Us+i8izaHVOZTN7dfw9x8="
+ }
+}
