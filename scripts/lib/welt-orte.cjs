@@ -232,8 +232,15 @@ function belegMessen(r, x, z, blick) {
     const hoehe = V(x, z);
     const aus = {};
     r._waterLevelAt(wx, wz, aus);
+    // die Art auf 1 cm wie der Fluss: in der Welt liest der Spiegel des Körpers das Bild des Wassers (`_wasserBildAt`, der
+    // Automat), und das Meer der Küste steht dort bei −2,9999999999999996 statt −3 (der Wirt ohne Chunks liest den Atlas, genau
+    // −3) — der Vergleich auf Gleichheit nannte es „see" (umstellen --ort kueste ROT nach 1 214 s, 25.11.)
     const wasser =
-        aus.fluss != null && aus.fluss >= spiegel - 0.01 ? "fluss" : spiegel === r.state.waterLevel ? "meer" : "see";
+        aus.fluss != null && aus.fluss >= spiegel - 0.01
+            ? "fluss"
+            : Math.abs(spiegel - r.state.waterLevel) <= 0.01
+              ? "meer"
+              : "see";
     const fr = wasser === "fluss" ? r._hydroDistAt(wx, wz) : null;
     return {
         x,

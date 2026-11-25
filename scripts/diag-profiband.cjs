@@ -1531,9 +1531,21 @@ function selbsttest() {
     const ohneKachel = WO.wirtAmGesetz(root, true);
     ohneKachel.wasserUm = () => ohneKachel;
     const mTaeter = b20(muendung).messorte[0];
+    // DAS BILD DES WASSERS (25.11.): in der Welt liest der Spiegel des Körpers den Automaten, das Meer der Küste steht dort bei
+    // −2,9999999999999996 — die Art hält auf 1 cm; der Täter (die Art auf Gleichheit, der Stand vor dem Schnitt) nennt es „see"
+    const haelt = !bAm(() => {}).length;
+    const kq = b20(() => {}).messorte[0];
+    const bildWirt = Object.create(_wasserWirt);
+    bildWirt._koerperWasser = (x, z, g) => _wasserWirt._koerperWasser(x, z, g) + 4e-16;
+    const gleich = (0, eval)(
+        "(" + WO.belegMessen.toString().replace("Math.abs(spiegel - r.state.waterLevel) <= 0.01", "spiegel === r.state.waterLevel") + ")"
+    );
     t(
-        "Beleg: die Küste hält; Höhe +1 m, Blick landeinwärts, als Ufer gelesen, die Mündung der ersten Wahl → rot (der Täter-Wirt ohne die Kacheln des Orts liest dort Meer); ohne Quelle bricht das Schema",
-        !bAm(() => {}).length &&
+        "Beleg: die Küste hält, auch im Bild des Wassers der Welt (Meer bei −3 + 4e-16; die Art auf Gleichheit nennt es see → rot); Höhe +1 m, Blick landeinwärts, als Ufer gelesen, die Mündung der ersten Wahl → rot (der Täter-Wirt ohne die Kacheln des Orts liest dort Meer); ohne Quelle bricht das Schema",
+        haelt &&
+            WO.belegMessen(bildWirt, kq.spieler[0], kq.spieler[1], kq.blick).wasser === "meer" &&
+            gleich !== WO.belegMessen &&
+            gleich(bildWirt, kq.spieler[0], kq.spieler[1], kq.blick).wasser === "see" &&
             bAm(muendung).some((x) => /kueste: Küste .*: längs des Blicks steht kein Meer \(fluss bei 0 m\)/.test(x)) &&
             WO.belegMessen(ohneKachel, mTaeter.spieler[0], mTaeter.spieler[1], mTaeter.blick).wasser === "meer" &&
             bAm((o) => (o.beleg.hoehe += 1)).some((x) => /kueste: Beleg .*: hoehe -?[\d.]+ am Gesetz, der Haushalt sagt/.test(x)) &&
