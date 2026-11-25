@@ -120,7 +120,7 @@ const KLASSE = {
     "leben.pflanzen.kraft#3": [P, "Bildreihe Durchgang gegen Video derselben Lage"],
     "leben.pflanzen.kraft#4": [K, "Sturm-Statistik (Anteil geworfener Bäume über Windstärke)"],
     "leben.pflanzen.kraft#5": [P, "Blindtest Sturm-Video ↔ Spiel"],
-    "leben.pflanzen.lebenslauf#1": [K, "Ertragstafel eines realen Bestands für „Höhenhistogramm … gegen Ertragstafel“ (die Karte nennt dazu keine Schwelle, R6)"],
+    "leben.pflanzen.lebenslauf#1": [Z, "das Höhenhistogramm des Dachs gegen die Ertragstafel WBR 86 Tab. 3 (eingefroren mit Quelle in phyto-core FOREST_ERTRAG): KS ≤ 0,15 und Reineke 1933 −1,605 ± 10 % (Entscheid 25.11.); das Bild ist Beleg"],
     "leben.pflanzen.lebenslauf#2": [P, "Bildreihe gegen Fotoreihe derselben Art"],
     "leben.pflanzen.lebenslauf#6": [K, "Chronosequenz-Band des Bioms (und " + R10 + ")"],
     "leben.tiere.arten#2": [P, "Blind-Panel „echt möglich“"],
