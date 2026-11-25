@@ -1,7 +1,7 @@
 {
  "sha": "e1a54023c9a9e6fd30a824fd89087d3bb7ae854e",
  "geraet": "radeon",
- "zeit": "2026-11-25T16:28:47.916Z",
+ "zeit": "2026-11-25T16:51:20.183Z",
  "host": "MiguellD",
  "je": {
   "karte2.mensch.macht.wehrbau#4": {
@@ -353,6 +353,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#1": {
+   "gruen": false,
+   "zahl": "89 Bewohner, 20 Stichproben (5 Orte × 4 Uhren) + 6 Fahrer am Steuer (6 sitzen), Σ Soll 21 · ✗ 10 Uhr Ort 3 Ist 0/Soll 1 · 15 Uhr Ort 3 Ist 0/Soll 1 · 20 Uhr Ort 3 Ist 0/Soll 1 · Ankunft 3 Uhr 1.5 s/10 Uhr 1.5 s/15 Uhr 1.5 s/20 Uhr 0 s · am Steuer im Kreis: 10 Uhr Ort 1 ×1, 15 Uhr Ort 1 ×1, 20 Uhr Ort 1 ×1 · doppelt 0 Hüllen / 0 Samen · third · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.25,
+   "grund": "ROT: 89 Bewohner, 20 Stichproben (5 Orte × 4 Uhren) + 6 Fahrer am Steuer (6 sitzen), Σ Soll 21 · ✗ 10 Uhr Ort 3 Ist 0/Soll 1 · 15 Uhr Ort 3 Ist 0/Soll 1 · 20 Uhr Ort 3 Ist 0/Soll 1 · Ankunft 3 Uhr 1.5 s/10 Uhr 1.5 s/15 Uhr 1.5 s/20 Uhr 0 s · am Steuer im Kreis: 10 Uhr Ort 1 ×1, 15 Uhr Ort 1 ×1, 20 Uhr Ort 1 ×1 · doppelt 0 Hüllen / 0 Samen · third · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k282eefc47aef",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kc3d36042cafd",
+   "s": 74.9,
+   "fremd": {
+    "s": 78.6,
+    "takte": 31,
+    "fremdS": 236.66,
+    "kerne": 3.013,
+    "fensterKerne": 3.527,
+    "namen": [
+     [
+      "node scripts/diag-kreatur-leben.cjs",
+      84.36
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf 804ca10c34be5af14c89fe81a6f53d54f46d8c67",
+      70.52
+     ],
+     [
+      "git stash create",
+      9.11
+     ]
+    ],
+    "dienerS": 86.08,
+    "diener": [
+     [
+      "System",
+      40.89
+     ],
+     [
+      "WmiPrvSE.exe",
+      28.86
+     ]
+    ],
+    "geraetS": 67.27,
+    "geraet": [
+     [
+      "svchost.exe",
+      35.81
+     ],
+     [
+      "MsMpEng.exe",
+      28.88
+     ],
+     [
+      "SearchIndexer.exe",
+      1.47
+     ]
+    ],
+    "eigenS": 342.08,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T16:51:20.183Z",
+   "abdruck": "7cd224169c08",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -362,149 +432,150 @@
   "k98b8325ffab4": "bVVdb6MwEPwvebweNZ/BWOqDUyo10t01/QlrWAMNgcg2ocrp/vsJEjcBui9IaMY7zKyXv6sjZHso8PFDt82KrX6sfq40nNDRqE6oHj/0iq2SzPMxYPxShHP+PMAyVR2NJnUlCIgGygM6nTJY1Y/ZSJNrcCPBSP/Cix0hkpxJ2j89zam1wLx1DEi0RBeDiCKbAztdgEAHOjk2s2CXrn1gZCya8reUfFVPOd+FMtzRdHaYgCafqk3WUYwR2/acv/CFyrwCNE5dNdr29fI4kS679fq94CjonTNgWaO6kpB6Xiis2M1g52DNjCjrTutJMxrkkU8ZIckcW6CustI4R9UKbK5wkfixB2yzdLs4do68VwRCABVzr0vApkA10eAGmVx7jHzS+aF7OKACp4HSeukGsS9u3hBCXpda6lH42MIKD8MEqT8hDqGS02Aw3/K7CneEkE9CLSrtr+/vMN8EqbOyUoepXTJE3w3Yr6VEXUKOytm32nyhA4xDV1xuwzYl43NHN3Pm7eNshgBA7waGUMJfF17qVpoeFDrFsbNDE2IUR4zz7QJs4HCwmQfo5u48SG2GQb+XEcZrRGSEPFwuyvKjL9fCOWNVW5KUYZhE88NPCg4OiEJVUtrkRZTJ5LtB7bE2jmhbY2304jgIGAlIcx/2nzHG+6TT4j009aZ/4ZPa8rnusUOrjBUdibUrQybH4ckW6EoZp4estHBfCoRB+iKTM6oaC5zYKD0P/JyRXl50n4dVE19XgXyYDPB5eWKFg8GN7rQNOYNQROybSHpUewHN/gqMfRlnl2W8eeOvE0+e0/cdTYerMqmgGLxLy83lfTZ4avfVETNyVK2sho1ISuh0CbW5/Q7+/Qc=",
   "k6f0521ac75e4": "bVVdb5swFP0veVznms8AlvrglE6NtG6ZtJc9XsM10BCIbAhVpv33CYhbPnofQLLO8T2cc23+bs6QHCHD+1ddVxu2+bL5utFwQaJRXVDdv+oN20SJ7aDL+FiUc/7YwxJVnBtNy0JQEBXkJyStarAo75OBJrdg+YLR7olnB0olvdK4e3hYUkuBaU0akGiIFrp+iGwJbHUGAgm0cmhmwFa4dYDRocKY/4zpe3UvnB886R3CeLGZgCqdq422foA+23ecP/GVyrQAbEhZVNr0tdMgkhab9FpxFHTkCpiXqG4kDG3bE0bsrrezt2ZBlGWr9axZ6Ka+EzJKoyU2Q10keUPOqhZY3eAicgIb2G7tdnZuiZwqAiEgFEuvc8AqQzXTYLmJ3NqMvoXLTY9wQgWkgtx4abmBIz68oZQ+r7WUg/ChhRHueRGGzozYh0ovvcF8zyflHSilbzQ0qLi7rU8wnwSpk7xQp7ld0kPHctn3tUSdQ4qKHGvdvKNdDDxLjKdhH9PhfQh3S+bHx5kMASCcDAwNKX9eealr2XSgkGTn1gyNh37gM873K3ADp5PJ3EUrtZZB6qYf9KkML9giIqP0bjwo648ejwW5YlEakpSeF/nscZctwRcFJwIiU4WUJn3hJzL6bFg7LBsi6roxVtpB4LqMurSaBv5jiHKadpz98l6+8e6Jz2rPl3KGDrVqjHBfbC3pMTkMULJCF6ohHSS5gTtSIPTSV7lcUZWY4cxKadvgpIx2yU1lPwnB7TqQd7Mhvq53LLA3udKtNkEn4AmffRJLh+oooDregIEjg2S8kHc/+fPck9/WIYz74zIrN+u9i/PduP5nfIxNzpjQs6pl0d+KNIdW51A2H7+Ef/8B",
   "kd70e3d384328": "bVRNb6MwEP0vOW7XNR8mgKUeHJFVK2232eMexzAGGgKRDaXKav/7ChK3fHQOIMGbmcd7z/zdnCE9Qo73r6apN3zzbfN9Y+ANiUH9hvr+1Wz4Jk5dD30+vEp1eW4NrUpJQdZQnJB0usWyuk9HqNqCE0hO+73ID5QqeqFJ//CwbK0kZg1pQaFtdNAPIlzt6EwOEgl0alxmwU609YDTsaJEvCT0o/pnIQ5MsUOULIZJqLM523gbhBhwIYTYixXLrARsSVXWxu51szBWDp/sWvVo6MkFsKhQ35owcl0mLdndsGyQZtGoqs6Y2bLIzwIv4pTGS2yOpkyLlpx1I7G+wWXshS7w3Vrt/NwRNWUEUkIkl1oXgHWOesbB8VO1dTl9j5ZDj3BCDaSGwmrp+KEnP7WhlD6uuVQj8XGFJc5YjJE3axxMpW+DwOJJTIodKKXvNLKopL89n2C+MNKkRalPc7kUQ8/x+c81RVNAhpocG9N+oH0MmSPHoIinhI73Q7Rbdn5+nPUQAKJJYGhExeNKS9OotgeNJD93NjQMg3BI5tMK3MLpZD330cmcpZGmHYI+pcHCLSJySu+uB2X90ddjQS5YVrZJKcbiYDn8TcOJgMx1qZR1Xgapir8Kao9VS2TTtFZGNwx9n9MLradm/xptnDqd5L/Z8w+R75c8x4mNbi3JQG4dxbgaw5Ku0KVuSQ9pYeGekggxp/7KgwvqCnOcyaZcF7yM0z69sRpcD29HX93NAntZTyxxELQ2nbGmpsBkwL+woEd9lFAfb8DQU2Hqj3HbvYhHMatEHFgyHI1Z+fl+eFfsrs//XC/XJWdM6Vk3qhz+gLSAzhRQtZ+//H//AQ==",
-  "ka0555826a324": "bVVdb6MwEPwvebweNZ/BWOqDUyI1Uu+aPt7jGtZAQyCyIbQ53X8/QeImQPYFCc2w49lZ83dxgGQHGT5+6LpasMWPxc+FhiNaGtUR1eOHXrBFlDgueoyfi3DOn3tYoopDo0lZCAKignyPVqsaLMrHZKDJJdiBYKRb82xLiCQnEndPT1NqKTCtrQYkGqKNXkCRTYGtzkCgBa0cmhmwTZcuMDIUjflbTL6ro5xvfelvaTz5mIAqHauNlkGIAdt8cb7mM5VpAdhYZVFp09dJw0ja7Nrr14yjoLNOgHmJ6kJC6ji+MGJXvZ29NROiLFutR82olwYuZYREU2yGukjyxjqoWmB1gYvIDR1gq7nb2aG15K0iEAKomHqdA1YZqpEG20vk0um1y0G+/trKT8r5ik+b7GCPCqwKcuOt7YWuuHpFCHmZayuHgwwtzUF8P0Lqjoj9kMmxN5xv+E35W0LIJ6EGFXeX9zeYO4PVSV6o/dg+6aNre+w1m6NzSFFZu1o332gPQ98W5+3YxGR4bulqyrwezswUAOhNgAgl/IXOOtay6UChlR1aEyIfgzBgnG9m4Ab2e5MBD+3UZnxW6zusKh1J88MlIjJCHs7LNJ/VeXWsExalIUnp+1EwTdJRwd4CkalCSpMGESQyuhfmDsvGEnXdGGudMPS83qLqNgC/h9HeTj/O3v2mXHXr8VE3s2gOHWrVGNGBWNrSZ3IIVDJDF6qxOkhyA3elQIgY6f5MoSdUJWY4slE6DrgpI915Ycipv47Cy3UhH0ahPs0mfyqwN7jSrTaDT8AXAbszkg7VTkC1uwBDV4aJx14556s3/nLjSMef4/ctjfv1GZWXDd7l/Pw+6T01d9oBE3JQtSz6W5Pk0Oocyub6y/j3Hw=="
+  "k2172890a1f1d": "bVVdb6MwEPwvebyWms9gLPXBKZEaqXdNf8Ia1kBDILIhtDndfz9B4iZA9gUJzbCzs2Pzd3GAZAcZPn3qulqwxa/F40LDES2N6ojq6VMv2CJKHBc9xj94X4Rz/tLDElUcGk3KQhAQFeR7tFrVYFE+JQNNLsEOBCPdmmdbQiQ5kbh7fp5SS4FpbTUg0RBt9AKKbApsdQYCLWjl0MyAbbp0gZGhaMzfY/JTHeV860t/S+PJxwRU6VhttAxCDNjmm/M1n6lMC8DGKotKm75OGkbSZtdev2ccBZ11AsxLVBcSUsfxhRG76u3srZkQZdlqPWpGvTRwKSMkmmIz1EWSN9ZB1QKrC1xEbugAW83dzg6tJW8VgRBAxdTrHLDKUI002F4il06vXQ7y9fdWflHOV3zaZAd7VGBVkBtvbS90xdUrQsjrXFs5DDK0NIP4foTUHRH7JZNjbzjf8Jvyt4SQL0INKu4u728wdxark7xQ+7F90kfX9tjbXKLOIUVl7Wrd/KA9DH1bsKHBJibDc0tXU+Z1OLNTAKA3ASKU8Fc661jLpgOFVnZoTYh8DMKAcb6ZgRvY700GPLRTm/FZre+wqnQkzQ+XiMgIeTgfprkR56NjnbAoDUlK34+CaZKOCvYWiEwVUpo0iCCR0b0wd1g2lqjrxljrhKHn9RZVtwH4M6z2dvtx9uE35apbj0fdzKI5dKhVY0QHYmlLn8khUMkMXajG6iDJDdyVAiFid6AnVCVmOLJROg64KSPd+cCQU38dhZfrQj6MQn2abf5UYG9wpVttFp+ALwJ2ZyUdqp2AancBhq4ME4+9cc5X7/z1xpGOv8QfWxr3x2dUXtZ795Lz8/uk99TcaQdMyEHVsuhvTZJDq3Mom+sv499/",
+  "kc3d36042cafd": "jVXbcpswEP0XPzYl4iIMaCYPcvDUTieN2+kPrGAFxBg8EoSMO/33DrblcMlD94WXs9qz5xyJP4sjJHvI8P5V19WCLb4svi40vKGlUb2hun/VC7aIEsdFj/FLEc75tx6WqOLYaFIWgoCoID+g1aoGi/I+ObfJJdi+YKRb82xHiCQnEnf8Vo/84WF6TCkwra0GJJpDbPT8ENkU2OoMBFrQyvNgA7bDpQuMnCuM+UtMbtU9c76jku7CeHKYgCodM4+WfoA+23acr+cs0wKwscqi0maukwaRtNlg1qxHQWedAPMS1bUJQ8ehwpBd9ZL0Mk0aZdlqPRoWeqnvhoyQaIrNUBdJ3lhHVQusrnARuYEDbNXN9siOrSWHjEAICMVU6xywylCNONheIpcOI+/h9NA9HFCBVUFutLS9wBUf2hBCNnMu5Zn4eYQhTmmEoTtq7E29CMy3fFB0Rwh5J6FBmZjRAeYTI3WSF+owlktSdG1vqoHOIUVl7Wvd3JAeBtQWl1uxjcn5uwtX086PxYx/ABAOwkJCwjczHXUtmw4UWtmxNYGh6Ac+49ksXbqBw8H47aGd2rMFmj7kQxo0WCIiI+TuKulMnsuVsE5YlKZJSkojnz2u6BT8puBggchUIaVxXviJjD4LaodlY4m6boyUThB4HiMeqYZm/+j4I+fPAxPj8hdtyqe7NR/Vd/702YRaNYa4L5a2pEyeN02m5LtCNVYHSW7grhQI0VTEE6oSMxzJKB0H3JSRLhmwNLmL70bhPc1cPhXYC1zpVhuTE6DCZ9eUX8I1Tm6Hai+g2l8bAlcGSf84xxl/4ZuBKhu+/W3vOv5/teY/+yFHTMhR1bLoX0WSQ6tzKJuP38Pffw==",
+  "k282eefc47aef": "bVVdb5swFP0veVxHzYcJYKkPTunUaN2WSXvZ4zVcAw2ByIbSZdp/nyC45aP3IZGic+89PufY+bs5Q3KEDG+fdV1t2ObT5vNGwwtaGtULqttnvWGbKHFc9Bi/FuGc3/ewRBXnRpOyEAREBfkJrVY1WJS3ydAmt2D7gpHugWcHQiS5kLjjb3XP7+6WY0qBaW01INEMsdHzQ2RLYKszEGhBK4fFBmyHWxcYGSqM+Y+YvFX3jfMDlfQQxothAqp0zjza+gH6bP+H84c1y7QAbKyyqLTZ66RBJG022bXqUdBZF8C8RDU2Yeg4VBiyu16SXqZFoyxbrWfLQi/13ZAREi2xGeoiyRvrrGqB1QgXkRs4wHbd6hzZubXklBEIAaFYap0DVhmqGQfbS+TWYeQ1XA49wgkVWBXkRkvbC1zxrg0h5HHNpRyIDysMcUojDN1ZY2/qVWC+55OiB0LIKwkNysSMTjAfGKmTvFCnuVySomt77GlNUeeQorKOtW7e0B4G1BbXm7GPyfB9CHfLzvfDGQ8BIJwEhoSEP6601LVsOlBoZefWhIaiH/iM8/0K3MDpZDz30E7tpZG66YM+pUGDLSIyQm5GWVeHvl4L64JFaZqkpDTy2f2OLsEvCk4WiEwVUhr3hZ/I6KOwdlg2lqjrxkjpBIHnMeKRamr498HKqdtx9pN++8K7Bz6rr3x3yFb8hy21agx5X2xtSZkcTpus0IVqrA6S3MBdKRB6+itvLqhKzHAmp3QccFNGumRk2qchGJ8EeTML8mU9scBe6Eq32pidABU+GxN/Ddk8xR2qo4DqODYErgyS/qGOs6cb/jjTZ//LPvS3p5vLRrJexzjfXX//PX50/ZIzJuSsaln0LyTJodU5lM37X8W//w=="
  },
  "ungemessen": {
   "profiband.K4#1": {
    "gruen": false,
-   "zahl": "Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return window.__k4 || null — Heap ungemessen — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 121 Bilder · max 92.21 ms · 83.47 % > 33 ms · Fahrt 85 Bilder · max 142.3 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 83.47 % > 33 ms | Fahrt: 5 Bild(er) > 100 ms (max 142.3)",
+   "zahl": "Last: Referenz f 1,639 (Faden 1,506 · alle Kerne 1,479 · Stoß in der Station 15,33 Kerne fremd → 1,639; vor 119,3/388 ms, nach 125,6/314,2 ms, Ruhe 83,4/262,4 ms seit 2026-11-17) · fremd: git pack-objects --exclude-promisor-objects-best-effort pack/pack 124,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 10,1 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 40,0 CPU-s · svchost.exe 22,8 CPU-s · SearchIndexer.exe 1,8 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 117,1, entlastet ≥ 58,53 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 29 Bilder · max 192.59 ms · 100.00 % > 33 ms · Fahrt 41 Bilder · max 117.06 ms · 97.56 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 9 Bild(er) > 100 ms (max 192.59), 100.00 % > 33 ms | Fahrt) · Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && — Heap ungemessen",
    "exit": 0,
-   "minuten": 0.58,
+   "minuten": 0.84,
+   "grund": "Last: Referenz f 1,639 (Faden 1,506 · alle Kerne 1,479 · Stoß in der Station 15,33 Kerne fremd → 1,639; vor 119,3/388 ms, nach 125,6/314,2 ms, Ruhe 83,4/262,4 ms seit 2026-11-17) · fremd: git pack-objects --exclude-promisor-objects-best-effort pack/pack 124,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 10,1 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 40,0 CPU-s · svchost.exe 22,8 CPU-s · SearchIndexer.exe 1,8 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 117,1, entlastet ≥ 58,53 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 29 Bilder · max 192.59 ms · 100.00 % > 33 ms · Fahrt 41 Bilder · max 117.06 ms · 97.56 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 9 Bild(er) > 100 ms (max 192.59), 100.00 % > 33 ms | Fahrt) · Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && — Heap ungemessen",
    "mass": [
     {
-     "wort": "Gehen Frame max ms",
-     "wert": 92.21,
+     "wort": "Fahrt Frame max ms",
+     "wert": 117.06,
      "soll": 100
     }
    ],
    "gpu": "amd/rdna-3",
-   "konsum": "ka0555826a324",
+   "konsum": "k2172890a1f1d",
    "konsumN": 29,
    "konsumSeite": false,
    "konsumGanz": {
     "gelesen": 2
    },
-   "konsumBoot": "k2bc4137a3e27",
-   "s": 34.9,
+   "konsumBoot": "kc3d36042cafd",
+   "s": 49.9,
    "fremd": {
-    "s": 36.5,
-    "takte": 15,
-    "fremdS": 44.45,
-    "kerne": 1.219,
-    "fensterKerne": 1.697,
+    "s": 55.5,
+    "takte": 22,
+    "fremdS": 192.73,
+    "kerne": 3.471,
+    "fensterKerne": 9.99,
     "namen": [
      [
-      "node.exe punkte.cjs liste --kopf 804ca10c34be5af14c89fe81a6f53d54f46d8c67",
-      10.83
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      124.64
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      5.78
+      10.08
      ],
      [
       "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
-      3.84
+      4.75
      ]
     ],
-    "dienerS": 19.88,
+    "dienerS": 62.75,
     "diener": [
      [
-      "dwm.exe",
-      7.3
+      "System",
+      37.52
      ],
      [
-      "WmiPrvSE.exe",
-      5.95
+      "dwm.exe",
+      13.66
      ]
     ],
-    "geraetS": 35.41,
+    "geraetS": 65,
     "geraet": [
      [
       "MsMpEng.exe",
-      19.55
+      39.97
      ],
      [
       "svchost.exe",
-      13.66
+      22.8
      ],
      [
       "SearchIndexer.exe",
-      1.88
+      1.75
      ]
     ],
-    "eigenS": 98.38,
+    "eigenS": 283.72,
     "rechnerKerne": 24,
     "spannen": {
-     "vor": 0.692,
-     "nach": 2.514,
-     "station": 2.514
+     "vor": 0.862,
+     "nach": 2.992,
+     "station": 15.328
     }
    },
    "referenz": {
     "vor": {
-     "ein": 102.5,
-     "alle": 261.1,
-     "cpuEin": 110,
+     "ein": 119.3,
+     "alle": 388,
+     "cpuEin": 125,
      "tor": {
       "ruhig": true,
-      "kerne": 5.66,
+      "kerne": 4.84,
       "s": 0,
       "soll": 6,
       "reihe": [
-       4.24,
-       3.83,
-       3.3,
-       3.81,
-       7.9,
-       5.27
+       0.66,
+       0.34,
+       0.93,
+       3.78,
+       8.07,
+       2.3
       ]
      },
      "spanne": [
-      1795624088253,
-      1795624088737
+      1795625404558,
+      1795625405281
      ]
     },
     "nach": {
-     "ein": 105.8,
-     "alle": 278.7,
-     "cpuEin": 110,
+     "ein": 125.6,
+     "alle": 314.2,
+     "cpuEin": 124,
      "tor": {
       "ruhig": true,
-      "kerne": 2.37,
+      "kerne": 4.43,
       "s": 0,
       "soll": 6,
       "reihe": [
-       4.39,
-       2.07,
-       3.39,
-       1.84,
-       2.48,
-       2.78
+       3.98,
+       4.2,
+       4.3,
+       3.68,
+       3.95,
+       5.64
       ]
      },
      "spanne": [
-      1795624123723,
-      1795624124261
+      1795625455895,
+      1795625456511
      ]
     },
     "ruhe": {
      "ein": 83.4,
      "alle": 262.4,
-     "n": 1194,
+     "n": 1192,
      "von": "2026-11-17"
     },
-    "f": 1.269,
-    "fEin": 1.269,
-    "fAlle": 1.062,
+    "f": 1.506,
+    "fEin": 1.506,
+    "fAlle": 1.479,
     "verdraengt": 1,
     "schwankt": false,
     "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
     "umfeld": "sitzung"
    },
-   "grund": "Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return window.__k4 || null — Heap ungemessen — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 121 Bilder · max 92.21 ms · 83.47 % > 33 ms · Fahrt 85 Bilder · max 142.3 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 83.47 % > 33 ms | Fahrt: 5 Bild(er) > 100 ms (max 142.3)",
-   "wiederholt": "GRÜN trotz Last: Referenz f 1,459 (Faden 1,459 · alle Kerne 1,396; vor 121,7/366,4 ms, nach 102,2/256 ms, Ruhe 83,4/262,4 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 11,6 CPU-s · git stash create 8,6 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 7,3 CPU-s · Gerät (Grund-",
    "ungemessen": true,
-   "zeit": "2026-11-25T16:27:09.449Z",
+   "zeit": "2026-11-25T16:50:04.556Z",
    "abdruck": "3edd6aee31ec",
    "port": 7804,
    "bahn": "sitzung",
@@ -512,149 +583,148 @@
   },
   "profiband.K4#2": {
    "gruen": false,
-   "zahl": "Last: Referenz f 1,269 (Faden 1,269 · alle Kerne 1,062; vor 102,5/261,1 ms, nach 105,8/278,7 ms, Ruhe 83,4/262,4 ms seit 2026-11-17) · fremd: node.exe punkte.cjs liste --kopf 804ca10c34be5af14c89fe81a6f53d54f46d8c67 10,8 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,8 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 3,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 19,6 CPU-s · svchost.exe 13,7 CPU-s · SearchIndexer.exe 1,9 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 142,3, entlastet ≥ 71,15 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 121 Bilder · max 92.21 ms · 83.47 % > 33 ms · Fahrt 85 Bilder · max 142.3 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 83.47 % > 33 ms | Fahrt: 5 Bild(er) > 100 ms (max 142.3), 1) · Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return window.__k4 || null — Heap ungemessen",
+   "zahl": "Last: Referenz f 1,639 (Faden 1,506 · alle Kerne 1,479 · Stoß in der Station 15,33 Kerne fremd → 1,639; vor 119,3/388 ms, nach 125,6/314,2 ms, Ruhe 83,4/262,4 ms seit 2026-11-17) · fremd: git pack-objects --exclude-promisor-objects-best-effort pack/pack 124,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 10,1 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 40,0 CPU-s · svchost.exe 22,8 CPU-s · SearchIndexer.exe 1,8 CPU-s — unscharf unter Last: Gehen Frame max ms roh 192,6, entlastet ≥ 96,3 (÷ 2, Karte), Schwelle ≤ 100 · Fahrt Frame max ms roh 117,1, entlastet ≥ 58,53 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 29 Bilder · max 192.59 ms · 100.00 % > 33 ms · Fahrt 41 Bilder · max 117.06 ms · 97.56 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 9 Bild(er) > 100 ms (max 192.59), 100.00 % > 33 ms | Fahrt) · Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && — Heap ungemessen",
    "exit": 0,
-   "minuten": 0.58,
-   "grund": "Last: Referenz f 1,269 (Faden 1,269 · alle Kerne 1,062; vor 102,5/261,1 ms, nach 105,8/278,7 ms, Ruhe 83,4/262,4 ms seit 2026-11-17) · fremd: node.exe punkte.cjs liste --kopf 804ca10c34be5af14c89fe81a6f53d54f46d8c67 10,8 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,8 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 3,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 19,6 CPU-s · svchost.exe 13,7 CPU-s · SearchIndexer.exe 1,9 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 142,3, entlastet ≥ 71,15 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 121 Bilder · max 92.21 ms · 83.47 % > 33 ms · Fahrt 85 Bilder · max 142.3 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 83.47 % > 33 ms | Fahrt: 5 Bild(er) > 100 ms (max 142.3), 1) · Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return window.__k4 || null — Heap ungemessen",
+   "minuten": 0.84,
+   "grund": "Last: Referenz f 1,639 (Faden 1,506 · alle Kerne 1,479 · Stoß in der Station 15,33 Kerne fremd → 1,639; vor 119,3/388 ms, nach 125,6/314,2 ms, Ruhe 83,4/262,4 ms seit 2026-11-17) · fremd: git pack-objects --exclude-promisor-objects-best-effort pack/pack 124,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 10,1 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 40,0 CPU-s · svchost.exe 22,8 CPU-s · SearchIndexer.exe 1,8 CPU-s — unscharf unter Last: Gehen Frame max ms roh 192,6, entlastet ≥ 96,3 (÷ 2, Karte), Schwelle ≤ 100 · Fahrt Frame max ms roh 117,1, entlastet ≥ 58,53 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 29 Bilder · max 192.59 ms · 100.00 % > 33 ms · Fahrt 41 Bilder · max 117.06 ms · 97.56 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 9 Bild(er) > 100 ms (max 192.59), 100.00 % > 33 ms | Fahrt) · Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && — Heap ungemessen",
    "mass": [
     {
      "wort": "Gehen Frame max ms",
-     "wert": 92.21,
+     "wert": 192.59,
      "soll": 100
     },
     {
      "wort": "Fahrt Frame max ms",
-     "wert": 142.3,
+     "wert": 117.06,
      "soll": 100
     }
    ],
    "gpu": "amd/rdna-3",
-   "konsum": "ka0555826a324",
+   "konsum": "k2172890a1f1d",
    "konsumN": 29,
    "konsumSeite": false,
    "konsumGanz": {
     "gelesen": 2
    },
-   "konsumBoot": "k2bc4137a3e27",
-   "s": 34.9,
+   "konsumBoot": "kc3d36042cafd",
+   "s": 49.9,
    "fremd": {
-    "s": 36.5,
-    "takte": 15,
-    "fremdS": 44.45,
-    "kerne": 1.219,
-    "fensterKerne": 1.697,
+    "s": 55.5,
+    "takte": 22,
+    "fremdS": 192.73,
+    "kerne": 3.471,
+    "fensterKerne": 9.99,
     "namen": [
      [
-      "node.exe punkte.cjs liste --kopf 804ca10c34be5af14c89fe81a6f53d54f46d8c67",
-      10.83
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      124.64
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      5.78
+      10.08
      ],
      [
       "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
-      3.84
+      4.75
      ]
     ],
-    "dienerS": 19.88,
+    "dienerS": 62.75,
     "diener": [
      [
-      "dwm.exe",
-      7.3
+      "System",
+      37.52
      ],
      [
-      "WmiPrvSE.exe",
-      5.95
+      "dwm.exe",
+      13.66
      ]
     ],
-    "geraetS": 35.41,
+    "geraetS": 65,
     "geraet": [
      [
       "MsMpEng.exe",
-      19.55
+      39.97
      ],
      [
       "svchost.exe",
-      13.66
+      22.8
      ],
      [
       "SearchIndexer.exe",
-      1.88
+      1.75
      ]
     ],
-    "eigenS": 98.38,
+    "eigenS": 283.72,
     "rechnerKerne": 24,
     "spannen": {
-     "vor": 0.692,
-     "nach": 2.514,
-     "station": 2.514
+     "vor": 0.862,
+     "nach": 2.992,
+     "station": 15.328
     }
    },
    "referenz": {
     "vor": {
-     "ein": 102.5,
-     "alle": 261.1,
-     "cpuEin": 110,
+     "ein": 119.3,
+     "alle": 388,
+     "cpuEin": 125,
      "tor": {
       "ruhig": true,
-      "kerne": 5.66,
+      "kerne": 4.84,
       "s": 0,
       "soll": 6,
       "reihe": [
-       4.24,
-       3.83,
-       3.3,
-       3.81,
-       7.9,
-       5.27
+       0.66,
+       0.34,
+       0.93,
+       3.78,
+       8.07,
+       2.3
       ]
      },
      "spanne": [
-      1795624088253,
-      1795624088737
+      1795625404558,
+      1795625405281
      ]
     },
     "nach": {
-     "ein": 105.8,
-     "alle": 278.7,
-     "cpuEin": 110,
+     "ein": 125.6,
+     "alle": 314.2,
+     "cpuEin": 124,
      "tor": {
       "ruhig": true,
-      "kerne": 2.37,
+      "kerne": 4.43,
       "s": 0,
       "soll": 6,
       "reihe": [
-       4.39,
-       2.07,
-       3.39,
-       1.84,
-       2.48,
-       2.78
+       3.98,
+       4.2,
+       4.3,
+       3.68,
+       3.95,
+       5.64
       ]
      },
      "spanne": [
-      1795624123723,
-      1795624124261
+      1795625455895,
+      1795625456511
      ]
     },
     "ruhe": {
      "ein": 83.4,
      "alle": 262.4,
-     "n": 1194,
+     "n": 1192,
      "von": "2026-11-17"
     },
-    "f": 1.269,
-    "fEin": 1.269,
-    "fAlle": 1.062,
+    "f": 1.506,
+    "fEin": 1.506,
+    "fAlle": 1.479,
     "verdraengt": 1,
     "schwankt": false,
     "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
     "umfeld": "sitzung"
    },
    "ungemessen": true,
-   "wiederholt": "Last: Referenz f 1,459 (Faden 1,459 · alle Kerne 1,396; vor 121,7/366,4 ms, nach 102,2/256 ms, Ruhe 83,4/262,4 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 11,6 CPU-s · git stash create 8,6 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 7,3 CPU-s · Gerät (Grund-Last, nie f",
-   "zeit": "2026-11-25T16:27:09.449Z",
+   "zeit": "2026-11-25T16:50:04.556Z",
    "abdruck": "3b784d3ffb80",
    "port": 7804,
    "bahn": "sitzung",
@@ -1010,12 +1080,12 @@
    "minuten": 0,
    "grund": "die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st ) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-25T16:28:47.916Z",
+   "zeit": "2026-11-25T16:51:00.183Z",
    "abdruck": "d73938ad5063",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1
+   "offen": 2
   }
  }
 }
