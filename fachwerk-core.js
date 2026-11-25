@@ -6485,6 +6485,91 @@
   if(gatePts.length<2){ const t=(gatePts[0]?gatePts[0].th:0)+Math.PI; gatePts.push({x:Math.cos(t)*Rw, z:Math.sin(t)*Rw, th:t}); }
   let s=((Math.round((seed||1)*577+13)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
   return mauerRing(Rw, gatePts, rnd); }
+    // DER GEFALLENE RING WIRD GASSE (mensch.macht.wehrbau#3): faellt die Mauer (die Entfestigung nach MAUER_BIS), legt die Stadt auf
+    // ihre Spur die Ringstrasse — die Linie des Rings im letzten Jahr der Mauer (derselbe Ring, `exportSettlement` am Jahr
+    // MAUER_BIS - 1), ueber jedes Tor im Bogen geschlossen, so breit wie `anteilR` seines Radius, nie schmaler als die Hauptstrasse
+    // (DORF_NORM.strasseW); wo ein Haus der Gegenwart auf ihr steht, setzt sie aus. Das Band der Profis: der ganze Ring wurde
+    // Strasse (Wien 1857: 57 m auf dem Glacis um die Altstadt, Radius ~950 m → 0,06; Koeln 1881: 32–114 m, 0,03–0,10; der Abriss
+    // der Wallanlagen 1802–1812 und die Pariser Boulevards 1670 auf der Linie der Mauer Karls V.). `luecke`: ein Spalt bis zu so
+    // vielen rad ist ein Tor (mauerRing gA 0,30 je Seite), ein groesserer (die Ecke einer Kachel ohne Rand) beginnt eine neue Linie.
+    // Leser: exportSettlement (`roads`), die Welt malt sie wie jede Gasse (`_stlWegeBuild`).
+    var RING_GASSE = { anteilR: 0.06, luecke: 1.2, schrittM: 3 };
+    function ringGasse(m, slots) {
+        if (!m || !Array.isArray(m.segs) || !m.segs.length) return [];
+        var G = RING_GASSE,
+            w = Math.max(DORF_NORM.strasseW, G.anteilR * m.R),
+            winkel = function (a, b) {
+                var d = Math.atan2(b.z, b.x) - Math.atan2(a.z, a.x);
+                return Math.atan2(Math.sin(d), Math.cos(d));
+            },
+            // von a nach b im Bogen um die Mitte (der Radius linear) in Schritten ≤ schrittM, ohne a, mit b
+            bogen = function (L, a, b) {
+                var t0 = Math.atan2(a.z, a.x), dt = winkel(a, b), ra = Math.hypot(a.x, a.z), rb = Math.hypot(b.x, b.z);
+                var n = Math.max(1, Math.ceil((Math.abs(dt) * Math.max(ra, rb) + Math.abs(rb - ra)) / G.schrittM));
+                for (var k = 1; k <= n; k++) {
+                    var f = k / n, t = t0 + dt * f, r = ra + (rb - ra) * f;
+                    L.push({ x: Math.cos(t) * r, z: Math.sin(t) * r });
+                }
+            };
+        var linien = [], L = null;
+        for (var i = 0; i < m.segs.length; i++) {
+            var s = m.segs[i], a = { x: s.x0, z: s.z0 };
+            if (L) {
+                var e = L[L.length - 1];
+                if (Math.hypot(a.x - e.x, a.z - e.z) > 0.01) {
+                    if (Math.abs(winkel(e, a)) > G.luecke) L = null;
+                    else bogen(L, e, a);
+                }
+            }
+            if (!L) linien.push((L = [a]));
+            for (var k = 1, n = Math.max(1, Math.ceil(Math.hypot(s.x1 - s.x0, s.z1 - s.z0) / G.schrittM)); k <= n; k++)
+                L.push({ x: s.x0 + ((s.x1 - s.x0) * k) / n, z: s.z0 + ((s.z1 - s.z0) * k) / n }); // das Segment gerade
+        }
+        // der Ring schliesst sich: das Ende der letzten Linie an den Anfang der ersten (ueber das Tor bei 0 rad)
+        var A0 = linien[0][0], Z = L[L.length - 1];
+        if (Math.abs(winkel(Z, A0)) <= G.luecke) {
+            if (Math.hypot(A0.x - Z.x, A0.z - Z.z) > 0.01) bogen(L, Z, A0);
+            if (linien.length > 1) linien[linien.length - 1] = L.concat(linien.shift().slice(1));
+        }
+        var aus = [],
+            frei = function (q) {
+                for (var j = 0; j < slots.length; j++) if (slots[j].obb && distPunktOBB(q.x, q.z, slots[j].obb) < w / 2) return false;
+                return true;
+            },
+            gasse = function (P) {
+                if (P.length < 2) return;
+                // im Takt des Layouts (DS = schrittM): Punkt k liegt bei k · schrittM, der letzte am Ende (`at` und der Export lesen so)
+                var R = [{ x: P[0].x, z: P[0].z }], rest = G.schrittM;
+                for (var k = 1; k < P.length; k++) {
+                    var a = P[k - 1], b = P[k], d = Math.hypot(b.x - a.x, b.z - a.z), t = 0;
+                    while (d - t >= rest - 1e-9) {
+                        t += rest;
+                        R.push({ x: a.x + ((b.x - a.x) * t) / d, z: a.z + ((b.z - a.z) * t) / d });
+                        rest = G.schrittM;
+                    }
+                    rest -= d - t;
+                }
+                if (rest < G.schrittM - 1e-6) R.push({ x: P[P.length - 1].x, z: P[P.length - 1].z });
+                if (R.length < 2) return;
+                P = R;
+                var len = 0;
+                for (var k = 0; k < P.length; k++) {
+                    var q = P[Math.min(k + 1, P.length - 1)], p = P[k === P.length - 1 ? k - 1 : k];
+                    P[k].th = Math.atan2(q.z - p.z, q.x - p.x);
+                    if (k) len += Math.hypot(P[k].x - P[k - 1].x, P[k].z - P[k - 1].z);
+                }
+                aus.push({ pts: P, w: w, gen: 0, len: len, quer: false, ring: true });
+            };
+        linien.forEach(function (P) {
+            var cur = [];
+            for (var k = 0; k < P.length; k++) {
+                if (frei(P[k])) cur.push(P[k]);
+                else gasse(cur), (cur = []);
+            }
+            gasse(cur);
+        });
+        return aus;
+    }
     // DIE FORM DER WEHR IM JAHR (mensch.macht.wehrbau#2, front-stoff, additiv): der Ring (`mauerRing`, `schnittMauer`, `kachelMauer`)
     // traegt die Wehr seiner Zeit. In Mitteleuropa die PALISADE bis ins 12. Jh. (die Pfahlwand aus Eichenstaemmen auf dem Wall der
     // ottonischen und salischen Orte, Holztuerme ueber den Toren), ab 1150 der STEINRING (die Stadtmauer der Staufer- und Hansezeit:
@@ -6827,11 +6912,14 @@
         mn=Math.min(mn,distPunktOBB(wx,wz,fo)); } if(Math.hypot(fcx,fcz)<Rw+3&&mn<1.5)ok=false; }
       if(ok) felder.push(fo); } }
   const mauer=walled?mauerRing(Rw, gatePts, rnd):null;
+  if(plan.ringFiel) for(const rg of ringGasse(plan.ringFiel, pl.filter(q=>q&&q.obb))) roads.push(rg);   /*DER GEFALLENE RING IST EIN WEG DES LAYOUTS (mensch.macht.wehrbau#3, `ringGasse`): er steht in der EINEN Wege-Liste, bevor Baum, Laterne, Mast, Wandlaterne, Brunnen und Saum sie lesen — bis hier haengte der Export ihn nach der Ausstattung an, und an 128 Exporten ab 1750 standen 242 Laternen und Baeume in seiner Fahrbahn*/
   let X0=1e9,X1=-1e9,Z0=1e9,Z1=-1e9;
   obbs.forEach(q2=>{ const o=q2.o, rr=Math.hypot(o.ex,o.ez); X0=Math.min(X0,o.cx-rr);X1=Math.max(X1,o.cx+rr);Z0=Math.min(Z0,o.cz-rr);Z1=Math.max(Z1,o.cz+rr); });
   roads.forEach(rd=>{ for(let u=0;u<=(rd.len||0);u+=DS){ const q=at(rd,u); X0=Math.min(X0,q.x-rd.w);X1=Math.max(X1,q.x+rd.w);Z0=Math.min(Z0,q.z-rd.w);Z1=Math.max(Z1,q.z+rd.w); } });
   if(mauer){ X0=Math.min(X0,-Rw-8);X1=Math.max(X1,Rw+8);Z0=Math.min(Z0,-Rw-8);Z1=Math.max(Z1,Rw+8); }
   feldwege.forEach(fw=>fw.pts.forEach(q=>{ X0=Math.min(X0,q.x-4);X1=Math.max(X1,q.x+4);Z0=Math.min(Z0,q.z-4);Z1=Math.max(Z1,q.z+4); }));
+  const wegAchse=roads.map(rd=>rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS));   /*DIE ACHSE JEDES WEGS, WIE DER EXPORT SIE TRAEGT — Baum und Laterne lesen sie*/
+  const wegNah=(P,x,z,h)=>{ for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((x-A.x)*dx+(z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(x-A.x-dx*t, z-A.z-dz*t)<h) return true; } return false; };
   const trees=[]; let tries=0;
   while(trees.length<Math.min(30,6+n)&&tries<520){ tries++; const wb=samenOrt('baum:'+tries);   /*JE VERSUCH SEIN STROM (Welle SAMEN): ein Haus, das rueckt, verwirft einen Versuch — die Wuerfe der uebrigen bleiben (bis hier zog jeder Versuch aus `rnd`, und ein verworfener verschob jeden Baum danach)*/
     let tx,tz;
@@ -6840,7 +6928,7 @@
     else { tx=X0-6+wb()*(X1-X0+12); tz=Z0-6+wb()*(Z1-Z0+12); }
     let ok=true;
     for(const q2 of obbs) if(distPunktOBB(tx,tz,q2.o)<1.2){ok=false;break;}
-    if(ok) for(const rd of roads){ for(let u=0;u<=(rd.len||0);u+=DS){ const q=at(rd,u); if(Math.hypot(tx-q.x,tz-q.z)<rd.w/2+0.9){ok=false;break;} } if(!ok)break; }
+    if(ok&&roads.some((rd,r)=>wegNah(wegAchse[r],tx,tz,rd.w/2+0.9)))ok=false;   /*DER BAUM MEIDET DEN WEG, WIE DER EXPORT IHN TRAEGT (`wegAchse`, die Achse der Laterne): bis hier fragte er nur die Punkte je DS bis `len` — der Baum stand mitten im langen Schluss-Stueck eines Wegs (14 m an 1/mittelalter@1900) und auf dem Punkt hinter `len`*/
     if(ok&&platzObb&&distPunktOBB(tx,tz,platzObb)<(platz&&platz.typ==='weg'?0.8:-1))ok=false;
     if(ok&&felder.some(f=>distPunktOBB(tx,tz,f)<0.8))ok=false;
     if(ok&&brunnen.some(b2=>Math.hypot(tx-b2.x,tz-b2.z)<3.5))ok=false;
@@ -6849,7 +6937,7 @@
     if(ok) trees.push({x:tx,z:tz,h:2.6+wb()*1.8}); }
   const laternen=[], marken=[];                                                               // LATERNEN-GESETZ: die moderne Stadt leuchtet; die Marken des Dorf-Lichts (jeder Meter Weg) liest die Wandlaterne (wandLaternen)
   const LATERNE_WAND=laterneWandM();   /*DIE LATERNE VOR DER WAND (K66): ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr — (h²+k²)/(d²+k²) ≤ 2, d ≥ 2,55 m; bis K66 stand sie 0,45 m vor dem Grundriss, die Giebelwand trug nachts das Sechsfache*/
-  const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), h:wegRand(rd)})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2}))); for(const wl of laterneWege) wl.K=wegKasten(wl.pts);   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/
+  const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map((rd,r)=>({pts:wegAchse[r], h:wegRand(rd)})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2}))); for(const wl of laterneWege) wl.K=wegKasten(wl.pts);   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/
   const laterneImWeg=(x,z)=>laterneWege.some(wl=>{ const P=wl.pts, h=wl.h+LATERNE_FUSS; if(fernKasten(x,z,wl.K,h)) return false; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((x-A.x)*dx+(z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(x-A.x-dx*t, z-A.z-dz*t)<h) return true; } return false; });
   let kreuzT=null; const laterneInKreuzung=(x,z)=>{ const VG=VERKEHR_GESETZ; if(!kreuzT){ const zt=plan.schnitt||plan; kreuzT=zt.staedtisch?verkehrsNetz({roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w})), feldwege},0,0,true).kreuzungen.filter(K=>!K.ende&&K.r>0):[]; }
     return kreuzT.some(K=>Math.hypot(x-K.x,z-K.z)<K.r+VG.halbM+VG.abbiegRandM+LATERNE_FUSS); };   /*DIE KREUZUNG DER TRASSEN TRAEGT KEINE LATERNE (Leiter mensch.netz.verkehr): in der Stadt (sie traegt Verkehr) ist jede Kreuzung des Netzes der Wagen (`verkehrsNetz` ueber den Wegen, wie der Export sie traegt, ohne Sperren) Fahrbahn bis zu ihrem Radius samt halbem Wagen und Abbiege-Rand — dort ziehen die Bogen der Abbieger, der Fuss bleibt draussen. Bis hier standen am Markt jeder Metropole Laternen 4,5–8,3 m von der Mitte der Kreuzung: an stadt-voll verbot das Gesetz 7 von 12 Abbiegern, in die Strecke einer Wende fuehrte keiner, 10 von 20 Wagen erreichten in 10 min kein Ziel*/
@@ -6888,7 +6976,7 @@
     plan.houses.forEach((h,i)=>{ const q=pl[i]; if(h.viertel&&q&&q.obb&&Math.abs(q.obb.cz)<5000) (V[h.viertel]=V[h.viertel]||[]).push(q.obb); });
     viertel=Object.keys(V).map(rolle=>{ const L=V[rolle], x=L.reduce((a,o)=>a+o.cx,0)/L.length, z=L.reduce((a,o)=>a+o.cz,0)/L.length;
       return {rolle, x, z, r:L.reduce((a,o)=>Math.max(a,Math.hypot(o.cx-x,o.cz-z)+Math.hypot(o.ex,o.ez)),0), lose:L.length}; }); }
-  return Object.assign({pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, quer:rd.quer||false, vor:rd.vor||undefined, treppe:rd.treppe||undefined})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
+  return Object.assign({pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, quer:rd.quer||false, vor:rd.vor||undefined, treppe:rd.treppe||undefined, ring:rd.ring||undefined})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
           feldwege, platz, brunnen, fences, felder, staende, spawn:{x:sp.x,z:sp.z}, trees, jitAmp, DS, mauer,
           laternen, marken, laterneNeben, wegRand,
           graph:{nV:G.nodes.length+sack, nE:roads.length, zyklen:Math.max(0,nzyk)},
@@ -12211,12 +12299,18 @@
             erbe: kw ? kw.erbe : dp.erbe && typeof dp.erbe === "object" ? dp.erbe : undefined, // die Kachel einer Stadt: Region, Jahr und Spanne ihrer Mitte (`viertelWort`)
             klima: dp.klima, // das Klima des Orts (REGION_KLIMA): der Wirt nennt es, ein Plan ohne Ort (das Labor) nicht
         });
+        // DIE MAUER STEHT IM JAHR DER WELT (mensch.macht.wehrbau#3, das EINE Urteil jeder Mauer des Exports: die Kachel, das Layout,
+        // der Schnitt): die Entfestigung ist ein Gesetz der Welt-Zeit, nicht des Schnitts — steht das Jahr der Welt (`dp.jahr`,
+        // ungeklemmt) bei MAUER_BIS oder darüber, ist die Mauer gefallen, auch wo die Chronik des Orts früher endet (er behält die
+        // Häuser seines letzten Schnitts); ohne es urteilt das Jahr des Schnitts. Das Band: vollständig erhalten blieben in
+        // Deutschland drei Ringe (Rothenburg, Nördlingen, Dinkelsbühl) von 3 000–5 000 Städten des 15. Jh. — unter 0,1 %, kein Wurf.
+        var mauerSteht = Math.max(kachel ? plan.jahr : plan.schnitt.jahr, isFinite(dp.jahr) ? Number(dp.jahr) : -Infinity) < MAUER_BIS;
         var kNetz = null,
             kRand = null;
         if (kachel) {
             kNetz = kachelNetz(kachel.samen, kachel.i, kachel.k);
             kRand = kachelRand(kachel.samen, kachel.nH, kachel.i, kachel.k, epo);
-            var kMauer = plan.staedtisch && plan.jahr < MAUER_BIS;
+            var kMauer = plan.staedtisch && mauerSteht;
             var kh = kNetz.m / 2,
                 kd = 400;
             var aussen = function (rand, cx, cz, ex, ez, nx, nz) {
@@ -12277,9 +12371,21 @@
         // EIN Layout der Lose von…bis (um den Kern `kern`: die Kreuzung als Kern, ihr eigener Same, die Höhe am Haus) samt der
         // Wahrheit des Labors (buildDorf): U6c — reihenSnap rückt die Reihe zusammen (Slot-x/z/obb), brandwand markiert
         // hp.brandwand (reist als ov.brandwand); DER BRUNNEN WEICHT DEM HAUS (S4-N4) und DIE WANDLATERNE (K66-2) nach dem Snap
+        // DER GEFALLENE RING (`ringGasse`, mensch.macht.wehrbau#3): fiel die Mauer, trägt das Layout den Ring, den der Ort im letzten
+        // Jahr der Mauern trug, als Weg — die Kachel ihre Rand-Mauer (`kachelMauer`), jeder andere Ort, der vor MAUER_BIS ummauert
+        // stand, den Ring seines Exports am Jahr MAUER_BIS - 1; er geht in die Wege-Liste, bevor die Ausstattung sie liest
+        var ringFiel = mauerSteht
+            ? null
+            : kachel
+            ? plan.staedtisch && (plan.jahr < MAUER_BIS || (plan.chronik && plan.chronik.gr0 < MAUER_BIS))
+                ? kachelMauer(kNetz, kRand)
+                : null
+            : (plan.chronik ? plan.chronik.gr0 : plan.jahr) < MAUER_BIS
+            ? exportSettlement(Object.assign({}, dp, { jahr: MAUER_BIS - 1 })).mauer
+            : null;
         var teil = function (von, bis, kern, ort) {
             var Bt = Bs.slice(von, bis),
-                p = Object.assign({}, plan, { houses: plan.houses.slice(von, bis), lose: plan.lose.slice(von, bis) });
+                p = Object.assign({}, plan, { houses: plan.houses.slice(von, bis), lose: plan.lose.slice(von, bis), ringFiel: kern ? null : ringFiel });
             var H =
                 Htr && kern
                     ? function (x, z) {
@@ -12348,14 +12454,13 @@
         }
         // die Mauer der Gestalt (das Layout) oder die des Schnitts (`schnittMauer`: der Schnitt einer Chronik vor MAUER_BIS, staedtisch)
         // die Kachel einer Stadt trägt die Mauer nur an ihren Rand-Kanten (`kachelMauer`), in der Zeit der Mauern
-        var mz = kachel
-            ? plan.staedtisch && plan.jahr < MAUER_BIS
+        var mz = !mauerSteht
+            ? null
+            : kachel
+            ? plan.staedtisch
                 ? kachelMauer(kNetz, kRand)
                 : null
-            : lay.mauer ||
-              (plan.chronik && plan.schnitt.staedtisch && plan.schnitt.jahr < MAUER_BIS
-                  ? schnittMauer(slots, lay.roads, plan.seed)
-                  : null);
+            : lay.mauer || (plan.chronik && plan.schnitt.staedtisch ? schnittMauer(slots, lay.roads, plan.seed) : null);
         var aus = {
             seed: plan.seed,
             name: plan.name,
@@ -15205,6 +15310,8 @@
         epocheBei: epocheBei, // die Epoche eines Jahrs (Tracht, Kirche; Leser: DORF, gate:settlement J)
         epocheImJahr: epocheImJahr, // die Epoche des Jahrs eines Satzes (Leser: der Wirt, „dorf … 1560")
         MAUER_BIS: MAUER_BIS, // bis zu diesem Jahr steht die Mauer der Stadt (Leser: gate:settlement J)
+        RING_GASSE: RING_GASSE, // der gefallene Ring als Straße (Leser: exportSettlement, gate:fachwerk-contract 10c)
+        ringGasse: ringGasse,
         MAUER_FORM: MAUER_FORM, // die Form der Wehr im Jahr: Palisade, Steinring, Bastion (Leser: mauerGestalt)
         mauerForm: mauerForm,
         mauerGestalt: mauerGestalt, // der Ring in der Form seiner Zeit (Leser: exportSettlement, das Labor)
