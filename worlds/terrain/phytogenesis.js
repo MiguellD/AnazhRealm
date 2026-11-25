@@ -1059,12 +1059,23 @@ function waterSurfaceAt(x, z) {
     if (s[0] < W.SW) return s[1];
     return null;
 }
-// Die Art des Wassers an (x, z) fuer den Koerper unter Wasser (WASSER_GESETZ.koerper): das EINE Gesetz der Welt (gelaende-core `gewaesserArt`,
-// w13-bach-klar) ueber der Breite des Bachs (2 * SW), Teich und Meer stehen — bis dahin entschied das Studio selbst („Bach → fluss", Sicht 1,1 m)
+// Die Art des Wassers an (x, z) fuer die Optik unter Wasser (gelaende-core `gewaesserOptik`): das EINE Gesetz der Welt (`gewaesserArt`,
+// w13-bach-klar) ueber der Breite des Bachs (2 * SW), der Teich steht („see"), das Meer ist sein eigener Typ (unter-wasser: bis dahin trug es
+// den Koerper des Sees) — bis w13-bach-klar entschied das Studio selbst („Bach → fluss", Sicht 1,1 m)
 function waterArtAt(x, z) {
     const W = water();
+    if (seaward(x, z) > 0) return "meer";
     const teich = Math.hypot(x - W.pondLo.x, z - W.pondLo.z) < W.pondLo.rs || Math.hypot(x - W.pondHi.x, z - W.pondHi.z) < W.pondHi.rs;
-    return window.__gelaendeCore.gewaesserArt(!teich && !(seaward(x, z) > 0) && _streamDH(x, z)[0] < W.SW ? 2 * W.SW : 0);
+    return window.__gelaendeCore.gewaesserArt(!teich && _streamDH(x, z)[0] < W.SW ? 2 * W.SW : 0);
+}
+// Das Medium des Wassers der Art (unter-wasser): dasselbe Gesetz wie die Welt (`_wasserMedium`) — die Optik der Gewaesser (gelaende-core
+// `gewaesserOptik`) ueber der Stoff-Zeile des Wassers (schmiede `STOFF_GESETZ.medium`) an den Kanaelen des Bilds, je Art EINMAL; der Bach des
+// Labors traegt keinen Pegel (mittlerer Abfluss)
+const _waterMedium = {};
+function waterMediumOf(art) {
+    if (_waterMedium[art]) return _waterMedium[art];
+    const SG = window.__schmiedeCore.STOFF_GESETZ;
+    return (_waterMedium[art] = window.__gelaendeCore.gewaesserOptik(art, (salz) => SG.medium("wasser", salz), SG.KANAL.map((l) => l * 1e9), 1, ATMO_GESETZ.luft.kontrast));
 }
 function waterDepress(x, z) {
     const W = water();
@@ -3528,8 +3539,8 @@ function updateWorld(dt) {
         _camUnder = _ws !== null && camera.position.y < _ws - 0.12;
         if (_camUnder) {
             const dl = 0.2 + 0.8 * atm.lum; // Tageslicht dringt ein: nachts fast schwarz, mittags tuerkis
-            // W10 + w12-unterwasser: die EINE Wasser-Wahrheit (WASSER_GESETZ.koerper je Art, dieselbe Zeile wie die Welt, stamm/bild-himmel.js): die Farbe ist das Licht in der Tiefe der Kamera unter dem Spiegel (Beer-Lambert exp(-kd*Tiefe)), die Sicht endet am 550-nm-Kanal der Strahl-Schwaechung c nach Koschmieder (ATMO_GESETZ.luft.kontrast) — bis dahin die festen ersten 0,3 m der Look-Zahl wK und ein Nebel 0,3–7,5 m, die Welt sah 30 m
-            const _uw = WASSER_GESETZ.koerper[waterArtAt(camera.position.x, camera.position.z)],
+            // W10 + w12-unterwasser + unter-wasser: die EINE Wasser-Wahrheit (das Medium der Art, `waterMediumOf` — dasselbe Gesetz wie die Welt, stamm/bild-himmel.js): die Farbe ist das Licht in der Tiefe der Kamera unter dem Spiegel (Beer-Lambert exp(-kd*Tiefe)), die Sicht endet am 550-nm-Kanal der Strahl-Schwaechung c nach Koschmieder (ATMO_GESETZ.luft.kontrast) — bis dahin die festen ersten 0,3 m der Look-Zahl wK und ein Nebel 0,3–7,5 m, die Welt sah 30 m
+            const _uw = waterMediumOf(waterArtAt(camera.position.x, camera.position.z)),
                 _uwT = _ws - camera.position.y;
             _w3.setRGB(Math.exp(-_uw.kd[0] * _uwT), Math.exp(-_uw.kd[1] * _uwT), Math.exp(-_uw.kd[2] * _uwT)).multiplyScalar(dl);
             scene.fog.color.copy(_w3);

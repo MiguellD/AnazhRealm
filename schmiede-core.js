@@ -2953,6 +2953,36 @@
         function kanaele(z) {
             return KANAL.map(function (l) { return brechzahl(z.n, z.abbe, l); });
         }
+        // DAS MEDIUM DES STOFFS (unter-wasser, additiv): was die reine Phase dem Licht je Meter nimmt — die Absorption a(λ) und die
+        // Streuung b(λ) (1/m) an den Kanälen des Bilds. Das Wasser: a nach Pope & Fry 1997 (die Tafel der integrierenden
+        // Kugel, omlc pope97.txt in 1/cm, hier × 100; die Stützstellen um R · G · B, linear dazwischen), b nach Smith & Baker 1981
+        // (Tab. I: b(500) Süßwasser 0,0022, Meerwasser 0,0029 — Morel & Prieur 1977: „etwa 30 % höher“) mit λ^−4,32 (Morel
+        // 1974); die reine Phase streut symmetrisch, ihr Rückstreu-Anteil ist ½ (Smith & Baker 1981, Mobley 2002). Leser: die Optik
+        // der Gewässer (gelaende-core `gewaesserOptik`) über den Wirt (`_wasserMedium`) und das Labor des Geländes.
+        var MEDIUM = {
+            wasser: {
+                a: [[462.5, 0.01005], [465, 0.01011], [547.5, 0.0537], [550, 0.0565], [610, 0.2644], [612.5, 0.2665]],
+                b500: 0.0022, b500Salz: 0.0029, bExp: -4.32, rueck: 0.5
+            }
+        };
+        // → { a, b, bb } je Kanal (1/m); `salz` das Meerwasser. Ein Kanal außerhalb der Stützstellen bricht (keine Ausdehnung
+        // der Tafel ins Ungemessene).
+        function medium(name, salz) {
+            var M = MEDIUM[name];
+            if (!M) throw new Error("STOFF_GESETZ.medium: kein Medium " + name);
+            var a = KANAL.map(function (l) {
+                var nm = l * 1e9;
+                for (var i = 1; i < M.a.length; i++) {
+                    var p = M.a[i - 1];
+                    var q = M.a[i];
+                    if (nm >= p[0] && nm <= q[0]) return p[1] + ((nm - p[0]) / (q[0] - p[0])) * (q[1] - p[1]);
+                }
+                throw new Error("STOFF_GESETZ.medium " + name + ": " + nm + " nm liegt außerhalb der Tafel");
+            });
+            var b0 = salz ? M.b500Salz : M.b500;
+            var b = KANAL.map(function (l) { return b0 * Math.pow((l * 1e9) / 500, M.bExp); });
+            return { a: a, b: b, bb: b.map(function (v) { return v * M.rueck; }) };
+        }
         // DER REGENBOGEN: der Winkel des Haupt-Bogens um den Gegenpunkt der Sonne (Descartes: die kleinste Ablenkung eines
         // Strahls mit EINER Spiegelung im Tropfen, cos²i = (n² − 1)/3) in Grad — je Farbe ein anderer, weil n(λ) es ist
         function bogenGrad(n) {
@@ -3346,7 +3376,8 @@
             bogenGrad: bogenGrad, schall: schall, tragSpannung: tragSpannung, verbinde: verbinde,
             DRUCK: DRUCK, druckwelle: druckwelle, druckRadius: druckRadius, plattenBeta: plattenBeta, stossFaktor: stossFaktor,
             plattenLast: plattenLast, plattenBruch: plattenBruch, ankerAbweichung: ankerAbweichung,
-            druckTafel: druckTafel, halmZahlen: halmZahlen, halmWinkel: halmWinkel, staubLast: staubLast
+            druckTafel: druckTafel, halmZahlen: halmZahlen, halmWinkel: halmWinkel, staubLast: staubLast,
+            MEDIUM: MEDIUM, medium: medium
         };
     })();
     // ════ DER STOFFSTROM (Meisterkarte 2 mensch.wirtschaft.stoffstrom#1, additiv) — Erz → Barren → Werkzeug, die Masse bleibt ════

@@ -1734,12 +1734,12 @@ class AnazhRealm_gelaende_fern {
             eis: this._eisDeckung(_T, U, _T.positionWorld.y, _T.float(AnazhRealm.FAR_WATER.depth)),
         }).eigen;
     }
-    // Der Wasser-Körper R∞ des Gesetzes für die CPU-Leser der Ferne (`_wasserKoerper`, EINE Formel mit dem Wasser-Stoff).
+    // Der Wasser-Körper R∞ des Gesetzes für die CPU-Leser der Ferne (`_wasserKoerper`, EINE Formel mit dem Wasser-Stoff): das
+    // Medium des Meers (`_wasserKoerperArt`) — das Fern-Wasser ist der Ozean, jenseits des Rings kennt die Ferne kein Gewässer
+    // je Punkt; bis unter-wasser die Look-Zahl `wK` für jedes Wasser.
     _fernWasserKoerper() {
         if (this._fernWasserR) return this._fernWasserR;
-        const WG =
-            AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
-        return (this._fernWasserR = AnazhRealm._wasserKoerper(WG, this._wasserOptik().n));
+        return (this._fernWasserR = this._wasserKoerperArt("meer"));
     }
 
     // DAS EINE WASSER (1110-2, die Ufer-Klumpen): der Ring trägt das Wasser nur, wo kein Wasser-Stoff es trägt. Lebt das
