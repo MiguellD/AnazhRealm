@@ -1137,8 +1137,8 @@ class AnazhRealm_koerper_frei {
 
     // DER GANG über alle Kontakte im Puffer: je Kontakt die Normale (λ ≥ 0, akkumuliert) — die Trennung jetzt aus dem Weg
     // beider Anker seit dem Beginn des Schritts; ein Spalt darf sich in diesem Teil-Schritt schließen, eine Durchdringung drückt
-    // die Feder heraus (`mitFeder`, mit höchstens `schub`; die Entspannung ohne sie) —, dann die Reibung der zwei Tangenten im
-    // Kegel |λt| ≤ μ λn. `warm`: statt zu lösen gibt der Gang die gesammelten Impulse noch einmal (der Warmstart jedes
+    // die Feder heraus (`mitFeder`, mit höchstens `schub`; die Entspannung ohne sie) —, dann, nur ohne Feder, die Reibung der
+    // zwei Tangenten im Kegel |λt| ≤ μ λn. `warm`: statt zu lösen gibt der Gang die gesammelten Impulse noch einmal (der Warmstart jedes
     // Teil-Schritts). `prall` (e): der Stoß des Aufpralls nach den Teil-Schritten. Die Bewegung beider Körper lebt je Kontakt in
     // Variablen (einmal gelesen, einmal geschrieben): vorher las und schrieb jede der drei Richtungen sie neu, 109 ns je Kontakt.
     _freiGang(G, n, X, invH, mitFeder, schub, warm, prall) {
@@ -1202,7 +1202,11 @@ class AnazhRealm_koerper_frei {
                 x1 = X[b + 4];
                 x2 = X[b + 5];
             }
-            const dMax = prall !== undefined ? 1 : 3;
+            // DER BIAS-GANG OHNE REIBUNG (Box2D v3, E. Catto, contact_solver.c, Commit 8c65dcb9 „bias stage no longer applies
+            // friction“): mit Feder löst der Gang nur die Normale, die Reibung löst die Entspannung starr; der Warmstart gibt beide.
+            // Vorher löste der Bias-Gang die Reibung gegen das Tempo der Feder mit, der Warmstart trug ihren Dreh in jeden
+            // Teil-Schritt (+0,02–0,036 ω·rad, Saat 20 des Haufens: eine Platte kippte alle 13–16 Schritte und weckte ihre Insel).
+            const dMax = prall !== undefined || (mitFeder && !warm) ? 1 : 3;
             for (let d = 0, o = c; d < dMax; d++, o += 15) {
                 const li = c + 48 + d;
                 let dl = G[li];

@@ -254,6 +254,7 @@ function selbsttest() {
                 spieler: { R: 16, dv: 1.005 },
                 ohr: { dp: 18281.248, dauer: 0.008 },
                 mutante: { raeumt: 4, bruch: [3254, 6318, 3516, 1832], bild: { geburt: [70, 92.148], neubau: [16, 172.125], stand: [1, 57.296] }, staub: { aussen: 180, masseG: 2400, sollG: 1200 } },
+                haufen: { saaten: 21, echt: { saat: 7, schlafS: 0.95, nie: 0 }, mutante: { saat: 20, schlafS: null } },
                 nachher: simPh(0, 60),
             }))([
                 { art: "welle", einheiten: 2245, blick: 71, netz: 4136 },
@@ -808,6 +809,13 @@ function selbsttest() {
             /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 6 s \(Soll ≤ 3 s\) — Beweis: Ort O \(-310.50, -1044.25\) Grund 28.90 m, Neigung 4.3°, 3 fremde freie Körper ≤ 30 m \(1 wach\) · Welt-Uhr 12345.50 s · Sim-Uhr 345.25 s · 4516 Takte seit dem Boot · 1 Sprünge der Welt-Uhr \(2.50 s\) · verworfene Sim-Zeit 0.000 s · Wind am Ort 3.21 m\/s · 2 wach beim Soll: Scherbe \[1.5, 20.25, -3\] 0.042 m\/s auf Grund \+ 1 Körper \(Grund 3.8°, μ 0.60\), 5.90 s alt, 0.40 s ruhig, schlief nach 6.00 s; Kiste \[4, 20.1, 6\] 0.011 m\/s auf Grund, \? s alt, 1.25 s ruhig, schlief nach 4.50 s$/,
         ],
         ["ROT ohne Beweis sagt es", ["simWecken.druck.schlafS=", 6], /\(Soll ≤ 3 s\) — ohne Beweis \(die Probe trug keinen\)$/],
+        // DER HAUFEN (der Bias-Gang): die Saat 20 schlief unter dem Gang vor dem Schnitt nie (eine Platte kippte alle 13–16
+        // Schritte, die Reibung des Bias-Gangs gab ihr Dreh) — die Mutante muss ihre Saat finden, der echte Gang jede schlafen lassen
+        ["ein Haufen schläft nie", ["simWecken.druck.haufen.echt", { saat: 20, schlafS: null, nie: 1 }], /HAUFEN-SCHLAF: von 21 Haufen aus sechs Platten schliefen 1 nie, der späteste nach \? s \(Saat 20, Soll ≤ 3 s\) — der Bias-Gang `_freiGang` löst die Reibung mit der Feder/],
+        ["ein Haufen schläft spät", ["simWecken.druck.haufen.echt", { saat: 4, schlafS: 3.5 }], /HAUFEN-SCHLAF: von 21 Haufen aus sechs Platten schliefen 0 nie, der späteste nach 3.5 s \(Saat 4, Soll ≤ 3 s\)/],
+        ["die Mutante des Gangs schläft überall", ["simWecken.druck.haufen.mutante", { saat: null, schlafS: 0.9 }], /BLIND: die Mutante des Gangs \(die Reibung im Bias-Gang\) schlief in allen 21 Saaten — der Haufen trifft den Bias-Gang nicht/],
+        ["die Mutante des Gangs läuft nicht", ["simWecken.druck.haufen.mutante"], /BLIND: die Mutante des Gangs \(die Reibung im Bias-Gang\) lief nicht \(der Gang trägt seinen Anker nicht mehr\)/],
+        ["kein Haufen", ["simWecken.druck.haufen"], /LEER: die Probe legte keinen Haufen/],
         ["die Welle der Probe bricht keine Scheibe", ["simWecken.druck.scherben=", 0], /LEER: die Welle der Probe brach keine Scheibe/],
         ["die Welle schläft nicht", ["simWecken.druck.nachher=", simPh(2, 60, "druck")], /DRUCK-RUHE: nach der Welle arbeitet ihr Takt — 120 Einheiten/],
         [
@@ -4031,6 +4039,57 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             staub: DM.staub ? { aussen: DM.staub.aussen, masseG: DM.staub.masseG, sollG: DM.staub.sollG } : null,
                             ms: DM.ms,
                         };
+                        // DER HAUFEN (DRUCK-SCHLAF, der Bias-Gang `_freiGang`): je Saat sechs Quarz-Platten 12 × 12 × 0,4 cm über
+                        // dem Ort der Probe (der Ort des Fasses: dort lag der Haufen der Flocke), Lage und Drehung aus der Saat, der Löser
+                        // direkt im festen Schritt (die Sim-Uhr je Saat ab 0, danach zurück), bis alle schlafen, höchstens 10 s. Zuerst die
+                        // Mutante — der Gang vor dem Schnitt, der Bias-Gang löst die Reibung mit —, bis eine Saat nie schläft
+                        // (höchstens 60); dann der echte Gang über dieselben Saaten
+                        const haufen = (saaten, mutante) => {
+                            const [P, eigen] = [Object.getPrototypeOf(r), Object.prototype.hasOwnProperty.call(r, "_freiGang") ? r._freiGang : null];
+                            if (mutante) {
+                                const [alt, src] = ["const dMax = prall !== undefined || (mitFeder && !warm) ? 1 : 3;", P._freiGang.toString()];
+                                if (src.split(alt).length !== 2) return null;
+                                r._freiGang = eval(`({${src.replace(alt, "const dMax = prall !== undefined ? 1 : 3;")}})`)._freiGang;
+                            }
+                            const [sim0, name, cs] = [st._simZeit, "_druck_platte", AnazhRealm.LIFE_FIELD.cell];
+                            st.blueprints[name] = AnazhRealm._etikett({ name, builtIn: false, vomGesetz: true, frei: true, parts: [{ shape: "box", material: "quarz", size: { x: 0.12, y: 0.004, z: 0.12 }, position: { x: 0, y: 0.002, z: 0 } }] }); // prettier-ignore
+                            const H = { nieSaat: null, spaetSaat: null, schlafS: 0, nie: 0, n: 0 };
+                            try {
+                                for (let k = 0; k < saaten && !(mutante && H.nieSaat != null); k++) {
+                                    let s = 1 + k * 7919;
+                                    const R = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+                                    const ks = [];
+                                    for (let i = 0; i < 6; i++) {
+                                        const [x, z] = [MESS.x - cs - 0.3 + (R() - 0.5) * 0.16, MESS.z + 1 + (R() - 0.5) * 0.16];
+                                        const q = new THREE.Quaternion().setFromEuler(new THREE.Euler((R() - 0.5) * 0.5, R() * 2 * Math.PI, (R() - 0.5) * 0.5, "YXZ"));
+                                        const g = r._koerperBodenUnter(x, r._voxelSurfaceY(x, z) + 2, z);
+                                        const e = r.spawnArchitecture(name, { x, y: g + 0.52 + i * 0.014, z }, { precise: true, silent: true, seed: 9000 + k * 10 + i, drehung: [q.w, q.x, q.y, q.z] });
+                                        if (e) ks.push(e);
+                                    }
+                                    st._simZeit = 0;
+                                    let t = null;
+                                    for (let i = 1; i <= 600 && t == null; i++) {
+                                        st._simZeit += 1 / 60;
+                                        r._freiSchritt(1 / 60);
+                                        if (ks.every((e) => e._frei && e._frei.schlaf)) t = +(i / 60).toFixed(3);
+                                    }
+                                    for (const e of ks) r.removeArchitecture(e, { still: true });
+                                    H.n++;
+                                    if (t == null) (H.nie++, H.nieSaat == null && (H.nieSaat = k));
+                                    else if (t > H.schlafS) [H.schlafS, H.spaetSaat] = [t, k];
+                                }
+                            } finally {
+                                delete st.blueprints[name];
+                                st._simZeit = sim0;
+                                if (mutante) eigen ? (r._freiGang = eigen) : delete r._freiGang;
+                            }
+                            return { n: H.n, nie: H.nie, saat: H.nieSaat ?? H.spaetSaat, schlafS: H.nie ? null : H.schlafS };
+                        };
+                        {
+                            const HM = haufen(60, true);
+                            const HE = haufen(HM && HM.nie ? HM.saat + 1 : 60, false);
+                            W.druck.haufen = { saaten: HE.n, echt: { saat: HE.saat, schlafS: HE.schlafS, nie: HE.nie }, mutante: HM && { saat: HM.nie ? HM.saat : null, schlafS: HM.schlafS } };
+                        }
                         // DAS FENSTER ZÄHLT SCHRITTE DES BRANDS, nie Bilder (linse-brand-schritte): die Uhr der Welt geht erst einen
                         // Schritt weiter, wenn der vorige ganz ist (`_brandRest` leer) — ein langsamer Läufer geht denselben Schritt in
                         // mehr Bildern, nie weniger Schritte, und jedes Bild ohne Rest zeigt den ganzen Schritt (`jeBild(vor, ganz)`).
