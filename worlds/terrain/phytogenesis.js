@@ -1271,29 +1271,18 @@ function plantForest(R, seedInt) {
         if (_de < openWaterM) continue; // im offenen Wasser waechst NICHTS
         if (_de < wetSaumM && sp !== "weide") continue; // nur die Weide steht im nassen Saum; der Rest wuerde versaufen -> sie verstehen das Wasser
         if (seaward(x, z) > seawardWeideM && sp !== "weide") continue; // MEER: nasser Strand-Saum -> nur Weide (Baeume kennen die Feuchtigkeit)
-        // Größe + Mammut: shared reverse-J / Überhälter / Mammut-Roll (phyto-core). Fail-soft = inline.
+        // Größe + Mammut (phyto-core): die Ertragstafel der Art in der Phase ihres Flecks (der Lebenslauf des Bestands,
+        // FOREST_ERTRAG) und der Mammut-Wurf — derselbe Kern wie der Wald der Welt, ohne Kern bricht das Labor laut.
         // Species-ids bleiben Lab-lokal (mammut/weide). RNG-Ordnung: size first, then mammut iff not weide.
-        let s, crown;
-        if (_coreN && typeof _coreN.forestTreeSize === "function") {
-            s = _coreN.forestTreeSize(rng, sd);
-            crown = CROWN[sp] * s;
-            if (sp !== "weide" && typeof _coreN.forestMammutRoll === "function") {
-                const m = _coreN.forestMammutRoll(rng, sd, clim);
-                if (m.promote) {
-                    sp = "mammut";
-                    s = m.s;
-                    crown = CROWN.mammut * s;
-                }
-            }
-        } else {
-            let ue = clamp(rng() * (1 - 0.52 * sd), 0, 1);
-            s = 0.55 + 1.45 * Math.pow(ue, 1.45);
-            if (rng() < 0.05) s = Math.max(s, 1.3 + rng() * 0.55); // seltene Überhälter (Altbestand)
-            s = clamp(s, 0.5, 1.95);
-            crown = CROWN[sp] * s;
-            if (sp !== "weide" && sd > 0.72 && clim > 0.5 && rng() < 0.02) {
+        if (!_coreN || typeof _coreN.forestTreeSize !== "function" || typeof _coreN.forestMammutRoll !== "function")
+            throw new Error("Labor-Wald: phyto-core forestTreeSize/forestMammutRoll fehlen (KERN-PFLICHT)");
+        let s = _coreN.forestTreeSize(rng, sp, _coreN.forestFleckPhase(x, z, seedInt));
+        let crown = CROWN[sp] * s;
+        if (sp !== "weide") {
+            const m = _coreN.forestMammutRoll(rng, sd, clim);
+            if (m.promote) {
                 sp = "mammut";
-                s = 0.85 + rng() * 0.4;
+                s = m.s;
                 crown = CROWN.mammut * s;
             }
         }

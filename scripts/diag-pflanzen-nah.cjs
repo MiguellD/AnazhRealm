@@ -846,17 +846,14 @@ function umrissUrteil(mips) {
     return { v, m };
 }
 // (H) DER HÖHEN-ZENSUS: die Welt-Höhe einer Art = Höhe der gelieferten L0 × Welt-Skala × Größe des Wald-Gesetzes
-// (phyto-core forestTreeSize); der Altbestand sind die herrschenden Bäume (Größe p75 … p98 über die Bestandsdichte).
+// (phyto-core `forestErtragGroesse`: die Ertragstafel der Art in der Phase ihres Flecks); der Altbestand sind die Flecken im
+// letzten Viertel ihres Lebenslaufs (Phase 0,75 … 0,98, gleichverteilt: die Größen p75 … p98 der Art).
 // Die Spannen der Natur (Steckbriefe; nordstern §4.5): Buche 30–45, Fichte 30–50, Stieleiche 15–35, Birke 15–25 m.
 // H/D: Höhe durch den Stamm-Durchmesser in Brusthöhe (1,3 m Welt) — scale-frei, Bestand 40–100.
 const HOEHE_SPANNE = { buche: [30, 45], fichte: [30, 50], eiche: [15, 35], birke: [15, 25] };
 const HD_BESTAND = [40, 100];
-function altbestandGroesse() {
-    const rng = PC.mulberry32(0x2545f491);
-    const s = [];
-    for (let i = 0; i < 4000; i++) s.push(PC.forestTreeSize(rng, i / 4000));
-    s.sort(aufsteigend);
-    return [rang(s, 0.75), rang(s, 0.98)];
+function altbestandGroesse(art) {
+    return [PC.forestErtragGroesse(art, 0.75), PC.forestErtragGroesse(art, 0.98)];
 }
 // Der Durchmesser des Stamms in Brusthöhe (Welt-Meter) aus dem QUERSCHNITT der Rinde in der Ebene y: jedes Rinden-Dreieck,
 // das die Ebene kreuzt, trägt eine Strecke; Strecken mit gemeinsamem Kanten-Punkt (auf 1e-5 gerundet, auch über getrennte
@@ -966,8 +963,8 @@ function solitaerUrteil(roh, skala) {
 function hoehenUrteil(roh, skala) {
     const v = [],
         m = {};
-    const [s0, s1] = altbestandGroesse();
     for (const [art, sp] of Object.entries(HOEHE_SPANNE)) {
+        const [s0, s1] = altbestandGroesse(art);
         const f = roh[`${art}-s1-L0`];
         if (!f) {
             v.push(`Höhe: ${art} nicht gebaut`);
@@ -978,13 +975,12 @@ function hoehenUrteil(roh, skala) {
             hi = h1 * s1;
         const D = brustDurchmesser(f.T, 1.3, skala(art));
         const hd = D > 0 ? h1 / D : 0;
-        m[art] = `${lo.toFixed(1)}–${hi.toFixed(1)} m (Größe 1: ${h1.toFixed(1)} m) · H/D ${hd.toFixed(0)}`;
+        m[art] = `${lo.toFixed(1)}–${hi.toFixed(1)} m (Größe 1: ${h1.toFixed(1)} m, Altbestand ${s0.toFixed(2)}–${s1.toFixed(2)}) · H/D ${hd.toFixed(0)}`;
         if (lo < sp[0] - 0.5 || hi > sp[1] + 0.5)
             v.push(`Höhe ${art}: Altbestand ${lo.toFixed(1)}–${hi.toFixed(1)} m außerhalb ${sp[0]}–${sp[1]} m`);
         if (!(hd >= HD_BESTAND[0] && hd <= HD_BESTAND[1]))
             v.push(`H/D ${art}: ${hd.toFixed(0)} außerhalb ${HD_BESTAND.join("–")}`);
     }
-    m.groesse = `${s0.toFixed(2)}–${s1.toFixed(2)}`;
     return { v, m };
 }
 // (H) DIE KRONE DES PFLANZ-GESETZES (T2): der Abstand des Walds liest die gewachsene Krone (phyto-core FOREST_PACK.crown) — je
@@ -1323,7 +1319,7 @@ hauptLauf(async () => {
                 .join("\n")
     );
     console.log(
-        `Höhen (Altbestand, Größe ${hz.m.groesse}):\n` +
+        `Höhen (Altbestand, die Ertragstafel je Art):\n` +
             Object.keys(HOEHE_SPANNE)
                 .map((a) => `  ${a}: ${hz.m[a]} (Natur ${HOEHE_SPANNE[a].join("–")} m)`)
                 .join("\n")

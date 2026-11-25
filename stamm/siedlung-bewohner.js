@@ -1388,15 +1388,50 @@ class AnazhRealm_siedlung_bewohner {
             .map((b) => [b, Math.hypot(b.orte.tuer.x - w.x, b.orte.tuer.z - w.z)])
             .sort((a, b) => a[1] - b[1])
             .map((e) => e[0]);
+        // DER RENNOFEN BRENNT KOHLE (energie#1): je kg Erz die Kohle des Feuers (schmiede `STOFFSTROM.feuer`) — ohne sie keine Luppe
+        const F = ST.feuer(1, ST.erz);
         const K = KC.stoffstromHalter(
             schmiede.map((b) => b.bestand),
             this._weltStunde(),
             ST.ausbeute(),
             ST.werkEisen(ST.werkzeug),
             haende.length,
-            S.plan.seed >>> 0
+            S.plan.seed >>> 0,
+            F.kohle
         );
-        S.stoffstrom = { K, lager, schmiede, haende, gegeben: 0, rho: SC.STOFF_GESETZ.zeile(ST.erz).rho, bild: null };
+        // DER KOHLE-STAPEL AM OFEN: neben dem Schmied des ersten Ofens, gegenüber seinen Barren (`_bestandKisten` stellt sie zur
+        // Rechten seines Blicks), der volle Schüttkegel der Kohle (die Dichte der Zeile `glut`) — der erste Fuß der Ringe um das
+        // Werk, der frei von Haus und Bau ist, zuerst auch frei vom Weg; der Boden darunter ist das gezeichnete Mesh (Lehre 22)
+        const rhoKohle = SC.STOFF_GESETZ.zeile(ST.kohle).rho;
+        const R = KC.stoffstromHaldeForm(K.kohle0, rhoKohle).r;
+        const [sx, sz] = [-Math.cos(w.blick), Math.sin(w.blick)];
+        let stapel = null;
+        let notfall = null;
+        for (let ring = 0; ring < 4 && !stapel; ring++)
+            for (const g of [0, -1, 1, -2, 2, -3, 3, 4]) {
+                const [c, n] = [Math.cos((g * Math.PI) / 4), Math.sin((g * Math.PI) / 4)];
+                const d = AnazhRealm.BESTAND_BILD.seiteM + R * (1 + ring);
+                const P = { x: w.x + (sx * c - sz * n) * d, z: w.z + (sx * n + sz * c) * d };
+                const art = this._imGrundriss(P.x, P.z, R);
+                if (!art) {
+                    stapel = P;
+                    break;
+                }
+                if (!notfall && art !== "haus" && art !== "bau") notfall = P;
+            }
+        S.stoffstrom = {
+            K,
+            lager,
+            schmiede,
+            haende,
+            gegeben: 0,
+            rho: SC.STOFF_GESETZ.zeile(ST.erz).rho,
+            rhoKohle,
+            mjJeKohle: F.energie / F.kohle / 1e6,
+            stapel: stapel || notfall,
+            bild: null,
+            stapelBild: null,
+        };
         const von = this._stoffstromVon || (this._stoffstromVon = new WeakMap());
         for (const b of schmiede) von.set(b.bestand, S.stoffstrom);
     }
@@ -1417,9 +1452,9 @@ class AnazhRealm_siedlung_bewohner {
         return n;
     }
 
-    // DER ZENSUS DER KETTE (der Leser der Station mensch.wirtschaft.stoffstrom#1 und der Konsum-Probe): die Halde (kg, und zur Geburt
-    // der Liste), die Barren an den Öfen (der Bestand jedes Ofens zur Stunde), die Werkzeuge in den Händen der Leute, die Bücher
-    // der Kette; ohne Kette null.
+    // DER ZENSUS DER KETTE (der Leser der Stationen mensch.wirtschaft.stoffstrom#1 und energie#1 und der Konsum-Probe): die Halde (kg,
+    // und zur Geburt der Liste), die Barren an den Öfen (der Bestand jedes Ofens zur Stunde), die Werkzeuge in den Händen der Leute,
+    // die Bücher der Kette, der Kohle-Stapel und die Ofenreisen samt der Energie ihrer Kohle; ohne Kette null.
     _stoffstromZensus(S) {
         const Z = S && S.stoffstrom;
         if (!Z) return null;
@@ -1441,6 +1476,16 @@ class AnazhRealm_siedlung_bewohner {
             eisenKg: +K.eisen.toFixed(3),
             barrenGegossen: K.barren,
             werkzeugKg: +K.werkzeugKg.toFixed(3),
+            kohleKg: +K.kohleKg.toFixed(1),
+            kohle0Kg: +K.kohle0.toFixed(1),
+            kohleVerbranntKg: +K.kohle.toFixed(3),
+            kohleJeErz: K.kohleJeErz,
+            reisen: K.reisen,
+            imOfenKg: +K.imOfen.reduce((a, x) => a + x, 0).toFixed(3),
+            imSchacht: K.imOfen.filter((x) => x > 0).length,
+            kaltH: +K.kalt.toFixed(2),
+            energieMJ: +(K.kohle * Z.mjJeKohle).toFixed(1),
+            stapel: Z.stapel ? { x: +Z.stapel.x.toFixed(1), z: +Z.stapel.z.toFixed(1) } : null,
             stunde: +h.toFixed(3),
         };
     }
@@ -1472,34 +1517,45 @@ class AnazhRealm_siedlung_bewohner {
         return null;
     }
 
-    // DAS BILD DER HALDE (nah, `BESTAND_BILD.nahM` vom Auge): der Schüttkegel ihres Erzes (koerper `stoffstromHaldeForm`, die Dichte der
-    // Zeile `erz` des Stoff-Gesetzes) am Ort der Geologie, gebaut aus dem EINEN Bau-Pfad (`_buildFromBlueprint`, ein Kegel aus
-    // Stein — der Fels, aus dem es gebrochen ist) und skaliert auf seine Form: er schrumpft mit jedem Kilogramm, das die Esse nimmt.
+    // DAS BILD DER HALDE UND DES STAPELS (nah, `BESTAND_BILD.nahM` vom Auge): der Schüttkegel des Erzes am Ort der Geologie und der
+    // der Kohle am Ofen (koerper `stoffstromHaldeForm`, die Dichte ihrer Zeile im Stoff-Gesetz — `erz`, `glut`), gebaut aus dem EINEN
+    // Bau-Pfad (`_buildFromBlueprint`, ein Kegel: Stein, der Fels, aus dem das Erz gebrochen ist; Holz im Ton der kalten Kohle,
+    // `STOFFSTROM.FEUER.kohleTon` — der Stoff `glut` leuchtet) und skaliert auf seine Form: beide schrumpfen mit jeder Ofenreise.
     _stoffstromBild(S, p) {
         const Z = S.stoffstrom;
         if (!Z || !this.state.scene) return;
-        const nah = Math.hypot(Z.lager.x - p.x, Z.lager.z - p.z) < AnazhRealm.BESTAND_BILD.nahM;
-        if (!nah) {
-            if (Z.bild) Z.bild.visible = false;
-            return;
-        }
+        const KC = window.__koerperCore;
+        const ST = globalThis.__schmiedeCore.STOFFSTROM;
         this._stoffstromFassen(Z);
-        const F = window.__koerperCore.stoffstromHaldeForm(Z.K.haldeKg, Z.rho);
-        if (!Z.bild) {
-            const y = this._bodenSichtAt(Z.lager.x, Z.lager.z);
-            if (y == null) return; // der Boden, auf dem sie liegt, ist das gezeichnete Mesh (Lehre 22) — das Bild wartet auf den Takt
-            const kegel = {
-                shape: "cone",
-                material: "stein",
-                size: { x: 2, y: 1, z: 2 },
-                position: { x: 0, y: 0.5, z: 0 },
-            };
-            Z.bild = this._buildFromBlueprint({ name: "halde", parts: [kegel] });
-            Z.bild.position.set(Z.lager.x, y, Z.lager.z);
-            this.state.scene.add(Z.bild);
+        const kegel = [
+            ["bild", "halde", Z.lager, Z.K.haldeKg, Z.rho, { material: "stein" }],
+            [
+                "stapelBild",
+                "kohlestapel",
+                Z.stapel,
+                Z.K.kohleKg,
+                Z.rhoKohle,
+                { material: "holz", color: ST.FEUER.kohleTon },
+            ],
+        ];
+        for (const [feld, name, ort, kg, rho, stoff] of kegel) {
+            if (!ort) continue;
+            if (Math.hypot(ort.x - p.x, ort.z - p.z) >= AnazhRealm.BESTAND_BILD.nahM) {
+                if (Z[feld]) Z[feld].visible = false;
+                continue;
+            }
+            const F = KC.stoffstromHaldeForm(kg, rho);
+            if (!Z[feld]) {
+                const y = this._bodenSichtAt(ort.x, ort.z);
+                if (y == null) continue; // der Boden, auf dem er liegt, ist das gezeichnete Mesh (Lehre 22) — das Bild wartet auf den Takt
+                const teil = { shape: "cone", ...stoff, size: { x: 2, y: 1, z: 2 }, position: { x: 0, y: 0.5, z: 0 } };
+                Z[feld] = this._buildFromBlueprint({ name, parts: [teil] });
+                Z[feld].position.set(ort.x, y, ort.z);
+                this.state.scene.add(Z[feld]);
+            }
+            Z[feld].scale.set(F.r, F.h, F.r);
+            Z[feld].visible = F.r > 0;
         }
-        Z.bild.scale.set(F.r, F.h, F.r);
-        Z.bild.visible = F.r > 0;
     }
 
     // DER TAUSCH (markt S1: Spieler ↔ Bewohner, nur, was er hat): die Taste des Verbs (`einsteigen`, E) vor einem Stand, dessen
@@ -1673,11 +1729,13 @@ class AnazhRealm_siedlung_bewohner {
                 b.bestandBild = null;
             }
         const Z = S.stoffstrom;
-        if (Z && Z.bild) {
-            this.state.scene.remove(Z.bild);
-            this._disposeSoulGroup(Z.bild);
-            Z.bild = null;
-        }
+        if (Z)
+            for (const feld of ["bild", "stapelBild"])
+                if (Z[feld]) {
+                    this.state.scene.remove(Z[feld]);
+                    this._disposeSoulGroup(Z[feld]);
+                    Z[feld] = null;
+                }
     }
 
     // DIE HÄUSER STEHEN MIT IHRER HÜLLE (siedlung.K3): die Liste entsteht, wenn jedes Haus ihres Plans seine Studio-Hülle trägt
