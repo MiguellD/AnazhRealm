@@ -22,6 +22,10 @@ zwei neue Orte als Funktion des Gelände-Kerns mit Beleg (Höhe, Spiegel, Abstan
   Sprung der Uhr ist der Himmel der neuen Stunde frisch (`_himmelFrisch`), und das Einschwingen wartet auf das Licht des Orts.
 - `/bild` urteilt den Inhalt an der Uhr, die die Bühne hält (`AA.inhaltUrteil(…, uhr)`): ein Abend-Bild wird nicht am Mittag
   gerichtet.
+- Die Ausgabe von `umstellen` trägt die Zeit des Orts unter `ortZeit` (wie `__ortZeit`). Unter `zeit` brach der erste Lauf an
+  `ufer` nach 869 s am Ende mit TypeError ab: das Ende jedes Befehls liest `zeit.rot` als Urteil der Böe (`bild --zeit`), und die
+  Ausgabe ging verloren. `befehlUrteil` nennt eine Ausgabe mit `zeit` ohne `rot` ROT beim Namen und druckt sie; die Täter-Zeile
+  steht im Selbsttest von `werkbank bild` (in check:statik), das Ende von main stürzt an ihr mit Exit 2.
 - Die Linse (Familie gate:profiband, kein neues Gate): H17 liest die Worte jedes Orts mit dem Parser des Stamms. Täter-Zeile S23z
   im Selbsttest: ein Messort mit `zeit.uhr`, den `umstellen --ort` nicht stellt (ohne Uhr-Satz) → ROT.
 
