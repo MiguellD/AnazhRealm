@@ -1,53 +1,50 @@
-# tiere-im-blick, Vorprüfung 1 (auf main 486a6685), ZWISCHENSTAND
+# tiere-im-blick, Vorprüfung 3 (auf main 967bd422), ZWISCHENSTAND
 
-## Das fehlende Gesetz (fünf Sätze)
-1. Der wilde Bestand hielt jedes Tier an seinem Ort (`_bestandRegionen`), sein Leib aber erschien nach der Boot-Regel V18.315 nur ≥ `CREATURE_SPAWN_FAR_MIN` 130 m vom Spieler, verschoben auf einer Spirale weg von seinem Tier.
-2. Die Herde, deren Tier 31 m vor der Mess-Wiese steht, stand darum als Leib 135–174 m fern (Median 93 m Versatz zum eigenen Tier), und in der Ich-Sicht lag nie ein Tier in Bildreichweite (200 px Maske: Hirsch ≤ 31 m, Bär ≤ 38 m bei 1280×720).
-3. Das Gesetz, das fehlte, steht im Gehege längst (`_gehegeLeiber`): der Leib steht, wo sein Tier steht, bei der Ankunft erscheint jeder Leib, sonst nie im Blick.
-4. Es gilt jetzt auch im wilden Bestand an EINEM Chokepoint, `_bestandErscheint` (stamm/kreatur-leben.js), gelesen von `_bestandLeibOrt` und `_kreaturWurf`; die Ankunft (`_bestandAnkunftTakt`, 60 Takte nach Ankunft oder Sprung) lässt den Leib auch im Blick erscheinen.
-5. Die Wanderung hielt ihr Ziel nur eine feste Zahl Schritte (`slot < Z.bis`) und kehrte vor der Ankunft um; jetzt hält das Ziel bis 1,5 × Weg + Blick (`_kreaturWanderZiel`), der Revier-Anteil liest 13 statt 7 Punkte (`_kreaturRevier`).
+## Das Gesetz (fünf Sätze)
+1. Der Leib eines wilden Tiers erschien bis Vorprüfung 1 nur ≥ 130 m vom Spieler und auf einer Spirale weg von seinem Tier (Versatz im Median 93 m); seit Welle 1 steht er am Ort seines Tiers, wie im Gehege (`_gehegeLeiber`).
+2. Welle 1 ließ ihn nur außer Blick erscheinen: was der Gehende vor sich in Reichweite bekam, stand im Kegel und erschien nie — der Kegel vor ihm blieb leer.
+3. Welle 2: KEIN LEIB ERSCHEINT SICHTBAR — außer Blick, ODER im Blick so fern, dass seine Höhe am Schirm ≤ 8 px misst (`_bestandErscheint` in stamm/kreatur-leben.js, `BESTAND_REGION.erscheinenPx`; Strecke aus Leib-Höhe, Brennweite des Schirms `_brennweite(_schirm().hoehe)` und Abstand zur Kamera).
+4. Ein Rothirsch (1,68 m) erscheint so im Blick ab ~76 m (720 Zeilen) und wächst, während der Spieler auf ihn zugeht; die Ankunft (60 Takte) zeichnet jeden Leib wie zuvor.
+5. Die Wanderung hält ihr Ziel bis 1,5 × Weg + Blick (`_kreaturWanderZiel`), der Revier-Anteil liest 13 Punkte (`_kreaturRevier`).
 
 ## Das Band (Quelle mit Zahl)
-- Dichte Rothirsch im schottischen Bergland: 84 % der Fläche > 5 je km², 65 % > 8 je km², Jagdreviere um 15 je km² (Scottish Environment Link, Deer Task Force; walkhighlands).
-- Streifgebiet Hindin: 2,75–7,1 km², Mittel 4,3 km² (Exmoor-Telemetrie, wildlifeonline).
-- Sicht im Spiel der Spitzenklasse: theHunter zeichnet Wild bis 384/416 m; bei uns trägt ein Leib 200 px erst ab Hirsch 31 m / Bär 38 m, also muss der Leib dort stehen, wo sein Tier steht.
+- Erscheinen: Johnson 1958 — Entdecken 1,0 ± 0,25, Erkennen 4,0 ± 0,8, Identifizieren 6,4 ± 1,5 Linienpaare über der kritischen Ausdehnung (50 % Wahrscheinlichkeit); Gesetz 4 Linienpaare = 8 px, Richter die Oberkante 4,8 = 9,6 px.
+- Dichte Rothirsch: > 5 je km² auf 84 % der schottischen Bergfläche, Jagdreviere ~15 je km²; Streifgebiet Hindin 2,75–7,1 km² (Exmoor).
 
-## Je Sprosse, vorher ↔ nachher
-| Sprosse | vorher (main 486a6685) | nachher (Kopf) | Station am Kopf |
+## Je Sprosse: echte Station am Kopf 99f687f3 (Radeon, Hand-Lauf; dazu der Kopf 4a439789)
+| Sprosse | Akte vorher | 99f687f3 · 4a439789 | Urteil |
 |---|---|---|---|
-| karte2.leben.tiere.arten#1 | Arten im Bild 0 / 0 (Werkbank, Zensus der Station wörtlich, gleiche Seite, altes Gesetz) | 2 / 3 (Hirsch 43/35, Bär 3/3, Fuchs 0/3) | ROT: 4 Arten (Akte 5b36f69a: 2) gegen ≥ 5, spielStunden 0,013 gegen ≥ 1, minPx und biome ✓ |
-| tiere.K5#1 (leben.oeko.vielfalt#1) | ego Kreis 0 im Blick | ego Kreis 0 im Blick (Leib 31 m, außerhalb des Kegels erschienen) | ROT: ego 0 (Akte c445936d: 0), third 0 (Akte: 2 Bären), Bestand bis 18 |
-| karte2.leben.tiere.wanderung#1 | min 0,47 (Bär), Hirsch 0,51–0,60 | min 0,60, Hirsch 0,61–0,71, Bär 0,60–0,75, 12 von 12 | GRÜN: Hirsch 0,56–0,71, Bär 0,59–0,75, Fuchs 0,85–1,06, im Lebensraum ≥ 0,97; keine Akte (Preis-Lauf 0 Bilder) |
+| tiere.K5#1 (leben.oeko.vielfalt#1) | ego 0 Sichtungen, 0 Masken (c445936d) | ego 0 Sichtungen, 12 Masken; third 0, 33 Masken · ego 1 (Hirsch 204 px, 31 m), 22 Masken; third 2 (Bär 372/262 px); im Blick erschienen 0 / 0 in beiden | ROT (Soll ≥ 3 je Sicht) |
+| karte2.leben.tiere.arten#1 | 2 Arten (5b36f69a) | 3 · 3 Arten (am Kopf 7bbf1495: 4) | ROT (Soll ≥ 5; spielStunden 0,013 gegen ≥ 1) |
+| karte2.leben.tiere.wanderung#1 | min 0,47 (5b36f69a) | Hirsch 0,56–0,71, Bär 0,59–0,75, Fuchs 0,85–1,06, Wolf 0,76–0,88 | GRÜN, keine Akte (Preis-Lauf 0 Bilder) |
 
-Abdruck (`werkbank abdruck --gegen 486a668592`): wiese tiere 0 → 16, dorf 5 → 14.
+Werkbank, Ich-Sicht Kreis 600 Spiel-s an der Wiese, gleiche Seite: Tiere mit möglicher Maske ≥ 200 px altes Gesetz 0 ↔ neues 5 / 2; Leib-Box ≥ 400 px 0 ↔ 3 / 1.
 
-## Kosten an der Wiese (Radeon, `werkbank lauf 30 --tiere frei`, gleiche Seite, je ein Lauf)
-| | altes Gesetz | neues Gesetz |
-|---|---|---|
-| Bild-Zeit p95 | 49,88 ms | 50,68 ms |
-| GPU p95 | 14,02 ms | 14,40 ms |
-| CPU-Takt p95 | 27,47 ms | 37,72 ms |
-| Zeichen-Rufe p95 | 120 | 126 |
-| Dreiecke p95 | 380 693 | 409 338 |
-| Leiber als Leib (≤ 100 m / gesamt) | 0 / 19 | 8 / 20 |
+## Kosten an der Wiese (Radeon, `werkbank lauf 30 --tiere frei`, ABAB)
+| Lauf | CPU-Takt p95 | Bild p95 | GPU p95 | Zeichen-Rufe | Dreiecke |
+|---|---|---|---|---|---|
+| A alt | 12,91 ms | 33,54 | 9,34 | 120 | 393 772 |
+| B neu | 12,65 ms | 33,49 | 7,22 | 121 | 407 610 |
+| A alt | 10,66 ms | 33,41 | 6,68 | 121 | 389 581 |
+| B neu | 12,90 ms | 33,58 | 5,81 | 121 | 390 559 |
 
-## Die Linse (gate:kreatur-takt, Probe lebensraum)
-Neues Soll „Versatz Leib ↔ Tier im Median ≤ 1 m“ (am Kopf 111 von 128 Würfen am Ort, Median 0 m); Täter `geburt-fern` (das alte Gesetz wörtlich) ROT beim Namen: „0 von 71 Würfen am Ort ihres Tiers, Versatz im Median 82,9 m“. Selbsttest lebensraum: Täter 5 von 5 rot beim Namen, der Grund ROT allein am alten Soll unten (Geburt 4,6 m gegen ≥ 130 m). Leser: `_bestandErscheint`, `_bestandLeibOrt`.
+Der Anstieg 27,5 → 37,7 ms der Vorprüfung 1 (ein Lauf je Seite) steht nicht: alt 10,7–12,9, neu 12,7–12,9 ms; kein Schnitt. Leiber als Leib: 19–20 auf beiden Seiten (Kappe 20), nah ≤ 50 m alt 0–5 ↔ neu 4–7.
 
-## Soll zum Entscheid (nicht geändert)
-`scripts/diag-kreatur-leben.cjs` lebensraum: `soll(z.minM >= 0.99 * z.fernMin, …)` mit `fernMin = CREATURE_SPAWN_FAR_MIN` (130 m) schreibt die alte Regel fest und steht am Kopf ROT. Vorschlag: `fernMin` → `A.CREATURE_SPAWN_CLEAR_M` (der Leib nie im Schritt des Spielers), Quelle: das Gehege-Gesetz und die 200-px-Reichweite oben.
+## Die Linse (gate:kreatur-takt, Probe lebensraum, Richter-Entscheid Welle 2)
+Sollen: Versatz Leib ↔ Tier im Median ≤ 1 m · Abstand ≥ `CREATURE_SPAWN_CLEAR_M` · 0 Geburten sichtbar im Blick (> 9,6 px Höhe). Selbsttest: Grund GRÜN, Täter 6 von 6 ROT beim Namen — `erscheinen-nah` „2 Geburten sichtbar im Blick (> 9,6 px Höhe, größte 10.3 px)“, `geburt-fern` „3 von 71 Würfen am Ort ihres Tiers, Versatz im Median 70.7 m“. Der Kreis-Zähler `imBlick` der Station (scripts/lib/zerlege-linse.cjs `kreisGang`) zählt nach demselben Entscheid nur sichtbar Erschienene (> 9,6 px).
 
-## Stations-Diff-Vorschlag arten#1
-`spielStunden ≥ 1` bei festen 40 Takten je Ort ist am Gerät nicht erzeugbar (gemessen 0,013 h). Vorschlag: die Station rafft die Zeit (Takt-Deckel × 5, 100 Takte je Ort) und misst `spielStunden` aus dem Delta von `state.spielZeit`.
+## Fund: das Gras verdeckt das Tier (kein Schnitt in dieser Welle)
+Halm der Nah-Wiese: Spitze 0,74 m (p90 0,61 m). Die Ferne vergrößert jedes Büschel gleichförmig um `skala` (`_wieseFern`, stamm/vegetation-wiese.js, `NAH_WIESE.fern.skalaMax` 2,5): flach bei 20 m × 1,23, 30 m × 1,85, ab 40 m × 2,5 — die Spitze steht dort 1,37 m bzw. 1,85 m. Hirsch: Bauch 0,93 m (Beinlänge), Höhe 1,68 m. Ab ~20 m reicht das Gras über den Bauch, ab ~40 m bis an den Rücken: der Hirsch liest als Rücken im Gras (Bilder rund2, rund3 der Vorprüfung 1). Leser: Zeile im FUND-REGISTER (Zweig koordination), Sprosse tiere.K5#1.
 
-## Bilder
-960 × 540 in `cloud-post/tiere-im-blick-bild/`; Originale (1920 × 1080) unter
-`C:/Users/micha/AppData/Local/Temp/claude/9fd86081514dce1c/9c27a074-223e-48c0-a5af-60ae0385359b/scratchpad/tiere-bild/`.
-Wiese −280,4/−1045,6, Ich-Sicht 12:00: vorher und nachher nach vorn gleich (kein Tier im Kegel); im Rundblick nachher Hirschrücken und Fuchsohren im hohen Gras (rund2, rund3).
+## arten#1: die fünfte Art
+Am nächsten liegt der Singvogel (Werkbank: 235–280 angetroffen in 40 Takten, 0 im Bild). Ihm fehlt die Nähe: gezeichnet wird er nur singend in 5–14 m Höhe in der Krone; 200 px trägt ein Vogel von 0,15 m erst unter ~5 m. Danach die Forelle (29 angetroffen, unter dem Spiegel).
 
 ## Offen (mit Grund und Messnamen)
-- tiere.K5#1: der Leib erscheint außer Blick, der Gang nach vorn trifft kein Tier im Kegel (ego 0); Leser: Sprosse leben.oeko.vielfalt#1.
-- arten#1: 4 von 5 Arten; Luft (Singvogel nur singend 5–14 m) und Wasser (Forelle) tragen keine Maske ≥ 200 px; spielStunden braucht den Stations-Diff oben; Leser: karte2.leben.tiere.arten#1.
-- wanderung#1 GRÜN ohne Akte: der Preis-Lauf zählte 0 Bilder; Leser: pm-Preis-Lauf (punkte.cjs karte2PreisLauf).
-- 13 % der Würfe stehen 25–178 m neben ihrem Tier, wo dessen Ort keinen Grund trägt; Leser: gate:kreatur-takt lebensraum (versatz).
-- CPU-Takt p95 27,5 → 37,7 ms an der Wiese, ein Lauf je Seite; Leser: werkbank lauf (cpuTaktMs).
+- 13 % der Würfe stehen 25–178 m neben ihrem Tier. Ursache gemessen (42 Fälle): 36 liegen im Reich eines kommenden Orts (`_imReichEinesOrts`), 6 im Grundriss. Der Schreiber des Bestands-Orts (`_creatureNaturalBirth` in stamm/kreatur-leben.js) fragt nach feld.K2#2 nur die Saat; das Reich hängt am Sitzungs-Stand (Gedächtnis der Zellen, kaltes Buch). Heilung am Schreiber braucht ein reines Reich des Gesetzes in stamm/siedlung-ort.js. Leser: gate:kreatur-takt lebensraum (versatz).
+- tiere.K5#1 ego 0–1 von 3 (12–22 Masken, davon 0–1 ≥ 200 px): das Gras der Ferne (Fund oben). Leser: Sprosse leben.oeko.vielfalt#1.
+- arten#1 3–4 von 5. Leser: Sprosse karte2.leben.tiere.arten#1.
+
+## Bilder
+Gang nach vorn (Radeon, `--echt`, Wiese, gleiche Kamera, Start bei Genesis, W 662 Takte von 31 auf 13,9 m an den Ort des nächsten Hirschs): gang-altgesetz — leer, nächster Leib 72 m außer Bild; gang-neugesetz — vier Hirsche 13–17 m, mit Hals und Kopf lesbar. Wiese-ego-rund1–4: Vorprüfung 1.
+960 × 540 in `cloud-post/tiere-im-blick-bild/`; Originale (1920 × 1080) unter
+C:/Users/micha/AppData/Local/Temp/claude/9fd86081514dce1c/9c27a074-223e-48c0-a5af-60ae0385359b/scratchpad/tiere-bild/ und …/scratchpad/tiere-bild2/.
