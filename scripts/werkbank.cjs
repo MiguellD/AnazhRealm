@@ -111,7 +111,7 @@ const ZL = require("./lib/zerlege-linse.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
 // DIE WIESE des Messorts: die EINE Messung und ihr Urteil, in die Seite getragen beim Umstellen
-const { WIESE_INSTALL } = require("./lib/welt-orte.cjs");
+const { WIESE_INSTALL, BELEG_INSTALL } = require("./lib/welt-orte.cjs");
 // DER VRAM-ABGRIFF (jede GPU-Allokation beim Namen, dazu der Grund des Ziel-Zensus) — EINE Quelle für Werkbank und Gates.
 const { vramAbgriff } = require("./lib/vram-abgriff.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
@@ -249,6 +249,13 @@ const umstellen = (o) => rufe("/umstellen", o);
 const ergebnis = (a) => a.ergebnis || { fehler: a.fehler || "kein Ergebnis" };
 // DAS ENDE eines Befehls: die Antwort (ein Satz oder das JSON) und der Exit — 0 nur, wenn `gruen`; ein Fehler ist nie grün
 const endeMit = (t, gruen) => (console.log(typeof t === "string" ? t : JSON.stringify(t, null, 1)), process.exit(gruen ? 0 : 1));
+// DAS URTEIL AM ENDE EINES BEFEHLS: `fehler` als Zeichenkette ist sein Versagen, `zeit` das Urteil der Böe (`bild --zeit`, `zeit.rot`).
+// Eine Ausgabe, die unter `zeit` anderes trägt, ist ROT beim Namen, und ihr Inhalt steht trotzdem da — bis 25.11. brach das Ende
+// mit TypeError ab und verlor sie (`umstellen --ort ufer` nach 869 s, die Zeit des Orts unter `zeit`; sie heißt `ortZeit`)
+const befehlUrteil = (o) =>
+    o?.zeit != null && !Array.isArray(o.zeit.rot)
+        ? { gruen: false, befund: "die Ausgabe trägt `zeit` ohne das Urteil der Böe (`zeit.rot`) — die Zeit eines Orts heißt `ortZeit`" }
+        : { gruen: !!o && !(typeof o.fehler === "string" || o.zeit?.rot.length) };
 // `--eigen`: die Welt als Kind von `start` am EINEN Tor (welt-boot `werkbankTor`, bereit am Ereignis), gestoppt am Ende
 const eigeneWelt = async (zusatz, tor) => (hat("eigen") ? ((tor = werkbankTor(PORT, zusatz)), await tor.bereit, tor.stop) : null);
 // `--datei`: das Ergebnis dorthin; das Ende eines Urteils `{ urteil, befunde }` unter seinem Namen
@@ -281,6 +288,16 @@ function boeSelbsttest() {
     for (const [n, kv, tv, b, soll] of [[0.5, 3006, 843, 0, ""], [0.5, 1e-3, 0, 1e-3, "ueber,lauf"], [0.5, 30, 28, 20, "ueber,lauf"], [0.5, 90, 50, 40, ""], [0.5, 1470, 1427, 0, "lauf"], [0.01, 3006, 843, 0, "nah"]]) {
         const rot = boeUrteil({ nahAnteil: n, kamm: { v: kv, boden: b }, tal: { v: tv, boden: b } }).rot.join();
         if (rot !== soll) f.push(`${soll} ≠ ${rot}`);
+    }
+    // das Ende des Befehls liest `zeit` nur als Urteil der Böe — Täter: `umstellen` mit der Zeit des Orts unter `zeit` → ROT beim Namen
+    for (const [n, o, gruen, befund] of [
+        ["Böe grün", { zeit: { rot: [] } }, true, false],
+        ["Böe rot", { zeit: { rot: ["lauf"] } }, false, false],
+        ["Ort mit ortZeit", { ort: { id: "ufer" }, ortZeit: { uhr: 0.35, wetter: "sunny" } }, true, false],
+        ["Täter: die Zeit des Orts unter zeit", { ort: { id: "ufer" }, zeit: { worte: ["setze uhrzeit 0.35"], uhr: 0.35 } }, false, true],
+    ]) {
+        const u = befehlUrteil(o);
+        if (u.gruen !== gruen || !!u.befund !== befund) f.push(`Ende ${n}: ${JSON.stringify(u)}`);
     }
     return f;
 }
@@ -968,6 +985,8 @@ async function starte() {
                         );
                 }
                 window.__ortTakt = o?.takt || [];
+                // die Zeit des Orts (unten, nach den Worten) — bis dahin hält die Bühne Mittag, Sonne und Sommer
+                window.__ortZeit = null;
                 // DIE STELLGRÖSSEN des Orts (Toggle-Ort, haushalt.json `stell`): der Regler hält sie je Takt fest — sonst
                 // wanderten Lade-Ring (und mit ihm der Laub-Rand, `_laubRand`) je Sitzung (der Ring wächst nur bei Kopfraum und vollem Ring,
                 // `_activeRingRadius`) und mit ihnen die Bank. `ring` setzt Ziel UND aktiven Ring, wie der Null-Renderer es tut.
@@ -1040,6 +1059,49 @@ async function starte() {
                 }
                 if (o) window.__anazhAutoSettlement = o.dorfZug; // der Zug des Orts (haushalt.json `dorfZug`)
                 if (o?.kamera) r.setCameraMode(o.kamera);
+                // DIE ZEIT DES ORTS (haushalt.json `zeit`, messort-zeit): eine Szene ist ein Ort mit Uhr, Tag und Wetter, und dies ist ihr
+                // EINER Leser. Er spricht sie mit den Worten des Spielers (band-urteil `ortZeitWorte`): die Sätze gehen durch den Chat
+                // (`processChatCommand` → DSL, Quelle „human“), der Tag durch den Welt-Akt `set_season` (das Programm der Welt-KI zum
+                // Wort „fruehling“). Der Halt der Messung (`_messHalt`) verweigert jeden Welt-Akt und jedes Wetter-Wort: er weicht nur
+                // für die Worte, wie in der Bühne (`__wetterSetzen`), und der Übergang des Wetters fällt. Dann prüft der Leser die
+                // Welt, nie die Worte: Uhr, Wetter und Saison, die sie nahm, gegen die Zeit des Orts — sonst bricht er laut. Die Bühne
+                // hält danach, was die Welt nahm (`__ortZeit`, ausgabe-aufnahme `buehne`), je Takt und in jedem Bild. NACH DEM SPRUNG
+                // DER UHR WARTET ER, BIS DAS BILD STEHT: der Himmel der neuen Stunde frisch (wie `__weltStehtWarten` vor dem Schuss),
+                // und das Einschwingen unten wartet auf das Licht des Orts (`_bildSichtSteht` in `_weltSteht`) — sonst trüge die
+                // Belichtung die Stunde davor, und der Boden brennt aus.
+                let zeit = null;
+                if (o?.zeit) {
+                    const Z = o.zeit;
+                    for (const s of Z.saetze)
+                        if (!r.parseChatToDsl(s)) throw new Error(`Messort ${o.ort}: „${s}“ ist kein Satz des Spielers (zeit)`);
+                    const halt = st.weatherEffectTime;
+                    st.weatherEffectTime = 0;
+                    const log = [];
+                    try {
+                        for (const s of Z.saetze) r.processChatCommand(s);
+                        for (const a of Z.akte) log.push(...(r.dslRun(a, { source: "human" })?.log || []));
+                    } finally {
+                        st.weatherEffectTime = halt;
+                        window.__wetterHalten();
+                    }
+                    window.__uebergangFaellt(r);
+                    const soll = {
+                        uhr: Z.soll.uhr,
+                        wetter: r.parseChatToDsl(`setze wetter ${Z.soll.wetter}`).program[1],
+                        saison: AnazhRealm.JAHRESZEITEN[String(Z.soll.tag).toLowerCase()],
+                    };
+                    const ist = { uhr: st.timeOfDay, wetter: st.weather, saison: st.season };
+                    const bruch = Object.keys(soll)
+                        .filter((k) => (k === "uhr" ? !(Math.abs(ist.uhr - soll.uhr) <= 1e-9) : ist[k] !== soll[k]))
+                        .map((k) => `${k} ${ist[k]}, der Ort will ${soll[k]}`);
+                    if (bruch.length)
+                        throw new Error(`Messort ${o.ort}: die Zeit steht nicht — ${bruch.join(" · ")} (Log ${JSON.stringify(log).slice(0, 300)})`);
+                    window.__ortZeit = ist;
+                    r._applyDayNightToScene();
+                    await r._himmelFrisch();
+                    r._applyDayNightToScene();
+                    zeit = Object.assign({ worte: [...Z.saetze, ...Z.akte.map((a) => JSON.stringify(a))] }, window.__ortZeit);
+                }
                 // eingeschwungen, wenn der Ring an seinem Ziel gebaut ist, dann DIE WELT STEHT (A9, `__weltStehtNach` hält den Regler) —
                 // in Bau-Ereignissen, nie an der Wanduhr. Der Ort schwingt unter REGLER VOLL ein (die Bedingung der Messung, E): der Ring
                 // steht an seinem Ziel, gehalten wie `stell.ring`, nie nach der Last der Nachbarn auf der geteilten GPU (A9, Mess-Wiese:
@@ -1156,6 +1218,10 @@ async function starte() {
                     // der Weg des Spielers: „gegangen“ (über den Anlauf: gegründet oder die Stadt fehlte) · „stand“ (die Stadt stand
                     // am Anker, kein Anlauf) · null (ein Ort ohne Anlauf)
                     anlauf: o?.anlauf ? (gegruendet ? "stand" : "gegangen") : null,
+                    // die Zeit des Orts: seine Worte und was die Welt nahm (nur ein Ort mit `zeit` trägt sie) — unter `ortZeit` wie
+                    // `__ortZeit`: der Schlüssel `zeit` ist das Urteil der Böe (`bild --zeit`, `zeit.rot` am Ende des Befehls), und
+                    // unter ihm brach `umstellen --ort ufer` nach 869 s am Ende mit TypeError ab (25.11.)
+                    ...(zeit && { ortZeit: zeit }),
                 };
             },
             x,
@@ -2365,6 +2431,8 @@ async function starte() {
                             bahn: ort.bahn || null,
                             anlauf: ort.anlauf || null,
                             dach: ort.dach || null,
+                            // die Zeit des Orts (`zeit`): die Worte des EINEN Lesers und die Zeit, gegen die er die Welt prüft
+                            zeit: ort.zeit ? Object.assign(BAND.ortZeitWorte(ort.zeit), { soll: ort.zeit }) : null,
                         });
                         aktStand = o.spieler;
                         // DIE WIESE: ein Ort mit Wiesen-Gesetz (`wiese`) hält es in der Welt, die eben stand — dieselbe
@@ -2387,7 +2455,28 @@ async function starte() {
                             if (wiese.befunde.length)
                                 throw new Error(`Messort ${ort.id} ist keine Wiese: ${wiese.befunde.join(" · ")}`);
                         }
-                        return send(Object.assign({ ort: ort.id, sicht, pose: pose ? pose.id : null, welt, spieler: stelle.spieler, wiese }, o));
+                        // DER BELEG: ein Ort am Wasser (`beleg`, messort-zeit) hält seine Art in der Welt, die eben stand —
+                        // dieselbe Messung wie gate:profiband H1 (scripts/lib/welt-orte.cjs `belegMessen`): das Meer und der
+                        // Watt-Hang, der Fluss und der Jungwuchs. Die Zahlen urteilt H1 am Gesetz (die Welt hebt den Fluss mit
+                        // ihrem Pegel); hier stehen sie in der Antwort. Ein Ort, der seinen Beleg nicht trägt, bricht laut.
+                        let beleg = null;
+                        if (ort.beleg && !pose) {
+                            beleg = await page.evaluate(
+                                (install, x, z, blick, B) => {
+                                    (0, eval)(install + "\n//# sourceURL=werkbank/beleg.js");
+                                    const m = __belegMessen(r, x, z, blick, __belegSicht(r, __wieseMessen, __wieseGesetz));
+                                    return { messung: m, befunde: __belegUrteil(m, B, false) };
+                                },
+                                BELEG_INSTALL,
+                                ort.spieler[0],
+                                ort.spieler[1],
+                                ort.blick,
+                                ort.beleg
+                            );
+                            if (beleg.befunde.length)
+                                throw new Error(`Messort ${ort.id} trägt seinen Beleg nicht: ${beleg.befunde.join(" · ")}`);
+                        }
+                        return send(Object.assign({ ort: ort.id, sicht, pose: pose ? pose.id : null, welt, spieler: stelle.spieler, wiese, ...(beleg && { beleg }) }, o));
                     }
                     aktOrt = null;
                     aktSicht = null;
@@ -2449,7 +2538,9 @@ async function starte() {
                     const m = o.abnahme;
                     const kopfAlt = m.ok ? "ABNAHME GRÜN" : `ABNAHME ROT [${m.rot.map((q) => q.grund).join(" · ")}]`;
                     const rot = m.rot.map((q) => ({ schluessel: AA.rotSchluessel(q, m), grund: q.grund }));
-                    const iu = inhalt && AA.inhaltUrteil(inhalt, spec.haushalt.inhaltBand, o.klasse?.klassen, m.bild.w * m.bild.h, b.uhr);
+                    // die Uhr des Bilds: das Wort der Zelle, sonst die Zeit des Orts, die die Bühne hält (`__ortZeit`), sonst Mittag
+                    const uhrBild = b.uhr != null ? b.uhr : await page.evaluate(() => (window.__ortZeit ? window.__ortZeit.uhr : null));
+                    const iu = inhalt && AA.inhaltUrteil(inhalt, spec.haushalt.inhaltBand, o.klasse?.klassen, m.bild.w * m.bild.h, uhrBild);
                     if (iu) rot.push(...iu.rot), (m.inhalt = iu);
                     const U = AA.ortUrteil(rot, spec?.ort.bekannt, b.ort);
                     [m.zeile, m.urteil] = [U.kopf + m.zeile.slice(kopfAlt.length) + (iu ? ` · ${iu.zeile}` : ""), U.u];
@@ -3570,7 +3661,7 @@ hauptLauf(async () => {
     else if (cmd === "umstellen")
         o = await umstellen({ x: a[0], z: a[1], ort: opt("--ort"), pose: opt("--pose"), sicht: opt("--sicht") });
     else if (cmd === "bild" && SELBST) {
-        selbsttestEnde(boeSelbsttest(), "die Zeit-Linse (`--zeit`) misst ΔY² im Nah-Feld, nennt die Böe der Mess-Wiese GRÜN, Wind 0 am Rausch-Boden, einen Sinus je Schicht an der Laufzeit und ein Bild ohne Nah-Feld beim Namen ROT");
+        selbsttestEnde(boeSelbsttest(), "die Zeit-Linse (`--zeit`) misst ΔY² im Nah-Feld, nennt die Böe der Mess-Wiese GRÜN, Wind 0 am Rausch-Boden, einen Sinus je Schicht an der Laufzeit und ein Bild ohne Nah-Feld beim Namen ROT; das Ende des Befehls nennt die Zeit eines Orts unter `zeit` ROT beim Namen");
         // DIE BILD-LINSEN (w28-linse-wahr): Leib vor der Linse, leeres Ziel, Inhalt des Orts, Leinwand, der Punkt, der durchfällt, die Ratsche,
         // der Leib ganz (leib-nah-ganz)
         selbsttestEnde(await AA.bildLinsenSelbsttest(), "die Bild-Linsen nennen den Leib vor der Linse, das leere Ziel, Gras in Magenta, die hochgerechnete Leinwand, den Fuß unter dem Bild, den Baum des Samens ohne Stufe, den Baum, der nach dem Sprung im Saum seines Orts fällt, und den nahen Leib ohne sein Teil ROT beim Namen, jede Mutante von main besteht nicht");
@@ -4563,5 +4654,7 @@ hauptLauf(async () => {
     // `fehler` als Zeichenkette ist das Versagen des Befehls; als Liste ist es das Konsolen-Buch der Sitzung (pageerror und
     // WebGPU-Meldungen, auch INFO) — ein Buch urteilt nicht, und `[]` ist wahr: status · wache · stand · lauf endeten immer mit 1.
     // `bild --zeit`: die Böe ROT (`zeit.rot`) endet mit Exit 1
-    endeMit(o, !(o && (typeof o.fehler === "string" || o.zeit?.rot.length)));
+    const u = befehlUrteil(o);
+    if (u.befund) console.error("ROT: " + u.befund);
+    endeMit(o, u.gruen);
 });
