@@ -398,13 +398,23 @@ function validateManifest(m, kern) {
                 if (!(Number.isInteger(z.draws) && z.draws >= 1)) zv(`.draws muss eine ganze Zahl ≥ 1 sein`);
                 if (!(z.schatten === false || (Number.isInteger(z.schatten) && stufen.includes(z.schatten))))
                     zv(`.schatten muss eine deklarierte Stufe oder false sein`);
-                // Der Zwilling wirft selbst (der Host zieht ihn als Schatten-Gestalt; ein Kreis 0→1→0 liefe endlos).
-                else if (
-                    z.schatten !== false &&
-                    z.schatten !== st &&
-                    !(B[k][z.schatten] && B[k][z.schatten].schatten === z.schatten)
-                )
-                    zv(`.schatten — der Zwilling (Stufe ${z.schatten}) wirft nicht selbst`);
+                // Die Kette des Wurfs endet an einer Stufe, die sich selbst wirft (der Host zieht den Zwilling als Schatten-Gestalt;
+                // ein Kreis 0→1→0 liefe endlos). Eine Wurf-Stufe, die über eine dritte wirft, übergibt ihre eigene Gestalt
+                // (haus-labor-welt: die Haus-L0 wirft die Stufe 2, diese die Stufe 3) — der Wirt hält dieselbe Regel
+                // (`_foundryBudgetZeile`).
+                else if (z.schatten !== false && z.schatten !== st) {
+                    const weg = [st];
+                    let w = z.schatten;
+                    while (Number.isInteger(w) && B[k][w] && B[k][w].schatten !== w && !weg.includes(w)) {
+                        weg.push(w);
+                        w = B[k][w].schatten;
+                    }
+                    if (!(Number.isInteger(w) && B[k][w] && B[k][w].schatten === w))
+                        zv(
+                            `.schatten — der Zwilling (Stufe ${z.schatten}) wirft nicht selbst, und seine Kette ` +
+                                `(${weg.concat(w).join(" → ")}) endet an keiner Stufe, die sich selbst wirft`
+                        );
+                }
                 if ("karte" in z) {
                     if (z.karte !== true) zv(`.karte ist nur als true erlaubt`);
                     // die Karte wirft sich selbst (w14-lod-sprung): ohne Wurf fiel der Schatten des Baums am Wechsel vom Boden

@@ -2310,8 +2310,16 @@ class AnazhRealm_studio_bruecke {
         if (!art) return AnazhRealm._kernPflichtBruch("phyto:lod.budget." + rec.kind);
         const z = art[stufe];
         const w = z ? z.schatten : undefined;
-        // Ein Zwilling (w ≠ stufe) muss selbst werfen — sonst kreiste der Zwillings-Zug (B2c-Validator: dieselbe Regel).
-        if (!(w === false || (Number.isInteger(w) && art[w] && (w === stufe || art[w].schatten === w))))
+        // DIE KETTE DES WURFS endet an einer Stufe, die sich selbst wirft — ohne Kreis (B2c-Validator: dieselbe Regel); sonst
+        // kreiste der Zwillings-Zug. Eine Wurf-Stufe, die über eine dritte wirft (die Haus-L0 wirft die Stufe 2, diese die Stufe 3),
+        // übergibt ihre eigene Gestalt (`_foundryFlattenFor`). Bis haus-labor-welt musste jeder Zwilling selbst werfen.
+        let k = w;
+        const weg = new Set([stufe]);
+        while (Number.isInteger(k) && art[k] && art[k].schatten !== k && !weg.has(k)) {
+            weg.add(k);
+            k = art[k].schatten;
+        }
+        if (!(w === false || (Number.isInteger(k) && art[k] && art[k].schatten === k)))
             return AnazhRealm._kernPflichtBruch("phyto:lod.budget." + rec.kind + "[" + stufe + "].schatten");
         return z;
     }
@@ -2346,8 +2354,9 @@ class AnazhRealm_studio_bruecke {
         entry._stufenGrenzen = grenzen.length ? { erste: st[0], grenzen, h } : null;
         return entry._stufenGrenzen;
     }
-    // Ist die Stufe der Zwilling einer anderen Stufe ihrer Art (B2c `schatten`: Baum L0 → L1)? Dann wirft sie über die
-    // Zwillings-Leaves (`_foundryFlattenFor`: EIN Werfer je Gestalt), nie über ihre Teile.
+    // Ist die Stufe der Zwilling einer anderen Stufe ihrer Art (B2c `schatten`: Baum L0 → L1, Haus L0 → 2)? Dann übergibt sie ihre
+    // Gestalt als Zwilling (`_foundryFlattenFor`, `zwilling`); wirft sie selbst, über dieselben Leaves (EIN Werfer je Gestalt), nie
+    // über ihre Teile.
     _foundryWurfQuelle(preset, lod) {
         const st = this._foundryKindStages(preset);
         if (!st) return false;

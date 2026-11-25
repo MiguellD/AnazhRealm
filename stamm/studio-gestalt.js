@@ -1223,8 +1223,11 @@ class AnazhRealm_studio_gestalt {
         }
         // die verschmolzenen Flat-Geometrien gehören der Gruppe (_foundryFlatVerschmelzen)
         const fl = g._foundryFlat;
+        // … und die Zwillinge, die nur `zwilling` trägt (die Gestalt einer Stufe, die über eine dritte wirft, `_foundryWurfGestalt`)
+        const eigene = fl && Array.isArray(fl.leaves) ? fl.leaves : [];
+        const nurZwilling = fl && Array.isArray(fl.zwilling) ? fl.zwilling.filter((lf) => !eigene.includes(lf)) : [];
         if (fl && Array.isArray(fl.leaves))
-            for (const lf of fl.leaves) {
+            for (const lf of eigene.concat(nurZwilling)) {
                 // DAS EIGENTUM DES LEAFS: ein Leaf gehört der Gruppe, aus der es gebaut ist (`_srcGroup`). Die L0 trägt die
                 // Zwillings-Leaves ihrer Wurf-Stufe — DIESELBEN Objekte (`_foundryFlattenFor`) —, deren Geometrie fällt mit
                 // der Wurf-Stufe, nie mit der L0. Befund (Gegenprüfung S3 R2): der L0-Kehraus gab die gestempelte Gestalt
@@ -1273,6 +1276,36 @@ class AnazhRealm_studio_gestalt {
         if (g.boundingSphere) z.boundingSphere = g.boundingSphere.clone();
         if (g.boundingBox) z.boundingBox = g.boundingBox.clone();
         lf._schattenGeom = z;
+        return z;
+    }
+    // DIE GESTALT IM STOFF DER KETTE (haus-labor-welt): der Zwilling einer Stufe, die selbst über eine dritte wirft (die Haus-Stufe 2
+    // über ihre Stufe 3), wirft für ihre Besteller (die L0) im Wurf-Stoff dieser Kette — dem EINEN Schatten-Stoff (fachwerk
+    // `wurfStoff`, kind "schatten"): dieselbe Lage, derselbe Index, dieselben Stempel der Blende, dazu die Ecken, die der Stoff liest —
+    // die Deckung 1, die Atlas-Lage 0 und, liest er das Jahr, die stehende Ecke (`JAHR_STEHT`, wie `_foundryBuildMesh` sie jedem Wurf
+    // gibt). So liegt er im Wurf-Satz der Stufe 3 (`_bauSatzArt`: EIN Befehl je Kaskade für jeden Werfer). Mit dem Stoff seiner Stufe
+    // fehlte dem Satz die Deckung (`_satzBlock`: „Attribut aDeckt fehlt“ — gemessen 25.11.: die Welt hing nach 3 833 Takten).
+    _foundryWurfGestalt(lf, stoff) {
+        const T = THREE;
+        const g = lf.geom;
+        const A = g.attributes;
+        const n = A.position.count;
+        const z = new T.BufferGeometry();
+        for (const k of ["position", "aLodLevel", "aH0", "aH0L"]) if (A[k]) z.setAttribute(k, A[k]);
+        z.setAttribute("aDeckt", new T.BufferAttribute(new Float32Array(n).fill(1), 1));
+        const uv = new Float32Array(n * 2);
+        if (stoff.userData && stoff.userData.jahr === true)
+            AnazhRealm._jahrEcken(
+                z,
+                uv,
+                A.position.isInterleavedBufferAttribute ? AnazhRealm._sichtDicht(A.position) : A.position.array,
+                new Float32Array(n).fill(AnazhRealm.JAHR_STEHT)
+            );
+        else z.setAttribute("uv", new T.BufferAttribute(uv, 2));
+        if (g.index) z.setIndex(g.index);
+        z.drawRange.start = g.drawRange.start;
+        z.drawRange.count = g.drawRange.count;
+        if (g.boundingSphere) z.boundingSphere = g.boundingSphere.clone();
+        if (g.boundingBox) z.boundingBox = g.boundingBox.clone();
         return z;
     }
     // DIE EINE STUFEN-KLAMMER der Geometrie-Stufen (`_foundryDeclaredStage`, Vertrags-Daten `PORTAL_RENDER_CONFIG.lod.kindStages`,
@@ -1325,9 +1358,10 @@ class AnazhRealm_studio_gestalt {
             this._foundryZug(key, preset, variant, lod, entryOv, entry.position || entry.wo, {
                 // Wirft die Stufe mit einer ANDEREN Gestalt (Budget `schatten`: der L0-Baum wirft seine L1), reist diese
                 // im selben Zug davor — sonst stellte sie sich erst nach der Ankunft ans Ende der Worker-Schlange, und die
-                // Stufe wartete doppelt.
+                // Stufe wartete doppelt. Auch das geprägte Werk (ov: jedes Haus des Dorfs, das Werk der Werkstatt): bis
+                // haus-labor-welt wärmte der Zug seine Wurf-Stufe nie vor, die L0 wartete nach ihrer Ankunft auf die Stufe 2
+                // und diese auf die Stufe 3 — drei Fahrten der Schlange hintereinander.
                 vor: () => {
-                    if (entryOv) return;
                     const _wurf = this._foundryBudgetZeile(preset, lod).schatten;
                     if (_wurf !== false && _wurf !== lod) this._foundryFlattenFor(entry, preset, _wurf);
                 },
@@ -1356,15 +1390,37 @@ class AnazhRealm_studio_gestalt {
             // je Gestalt und Teil in jeder Kaskade, gleich ob der Baum nah (L0) oder mittel (L1) steht. Befund (Mess-
             // Wiese, werkbank zaehlen 05.10.): k0 zeichnete je Baum-Gestalt zwei Gruppen derselben L1-Geometrie (die
             // L1 selbst und den Zwilling ihrer L0) — f:tanne:L1 8 Befehle in k0 bei 4 im Hauptbild.
+            // DIE WURF-STUFE ÜBERGIBT IHRE EIGENE GESTALT (haus-labor-welt, E1): wirft eine andere Stufe mit dieser, trägt
+            // ihr Flat diese Gestalt als Zwilling (`zwilling`) — gleich, ob sie selbst wirft. Wirft sie selbst (Baum-L1, die
+            // NUR-WURF-Stufe 3), sind es dieselben Leaves, mit denen sie wirft (W6); wirft sie über eine dritte (die Haus-Stufe
+            // 2 über ihre Stufe 3), trägt NUR `zwilling` sie — die gezeigte Stufe wirft nie doppelt —, im Stoff ihrer Kette
+            // (`_foundryWurfGestalt`). Bis hier gab nur eine Stufe, die selbst warf, ihre Gestalt: die L0 des Hauses, die die
+            // Stufe 2 wirft, hätte über deren Flat wieder den Fernkörper der Stufe 3 geworfen (94 Dreiecke, ohne Veranda).
             const wurf = this._foundryBudgetZeile(preset, lod).schatten;
-            const zwillingsQuelle = wurf === lod && this._foundryWurfQuelle(preset, lod);
+            const istQuelle = this._foundryWurfQuelle(preset, lod);
+            const zwillingsQuelle = wurf === lod && istQuelle;
+            const fremdQuelle = wurf !== lod && istQuelle;
             let schatten = null;
             if (wurf !== false && wurf !== lod) {
                 const fw = this._foundryFlattenFor(entry, preset, wurf);
                 if (fw === null) return null;
-                if (fw && fw.instanceable && fw.lod === wurf && Array.isArray(fw.leaves) && fw.leaves.length)
+                if (fw && fw.instanceable && fw.lod === wurf && Array.isArray(fw.zwilling) && fw.zwilling.length)
                     schatten = fw;
             }
+            // der Stoff der Kette: der Wurf-Stoff des Zwillings, mit dem diese Stufe wirft (fail-closed: die Kette endet an einer
+            // Stufe, die selbst wirft — `_foundryBudgetZeile`; ein Zwilling ohne werfendes Teil ist ein Bruch, nie still kein Wurf)
+            const kette = fremdQuelle && schatten ? schatten.zwilling.find((lf) => lf.castShadow !== false) : null;
+            if (fremdQuelle && !kette)
+                AnazhRealm._kernPflichtBruch(
+                    "phyto:lod.budget." +
+                        preset +
+                        "[" +
+                        lod +
+                        "].schatten (die Wurf-Stufe " +
+                        wurf +
+                        " wirft ohne Zwilling)"
+                );
+            const wurfStoff = kette ? kette.mat : null;
             // DIE KOSTEN-REGEL (`_wurfVonBilligerer`, N5): ist die Wurf-Stufe eine NUR-WURF-Stufe, wirft ihr Zwilling nur,
             // wo er weniger Dreiecke trägt als die werfenden Teile dieser Stufe — sonst wirft die Stufe selbst. Der Flat
             // trägt die Kosten (`wurfKosten`: eigen · zwilling · von = die werfende Stufe).
@@ -1378,8 +1434,8 @@ class AnazhRealm_studio_gestalt {
                     const mal = rad && Array.isArray(rad.raeder) && rad.raeder.length ? rad.raeder.length : 1;
                     eigen += AnazhRealm._geomDreiecke(c.geometry) * mal;
                 }
-                for (const lf of schatten.leaves)
-                    if (lf.shadowTwin && lf.castShadow !== false) zwilling += AnazhRealm._geomDreiecke(lf.geom);
+                for (const lf of schatten.zwilling)
+                    if (lf.castShadow !== false) zwilling += AnazhRealm._geomDreiecke(lf.geom);
                 const von = AnazhRealm._wurfVonBilligerer(eigen, zwilling);
                 wurfKosten = { eigen, zwilling, von: von === "zwilling" ? wurf : lod };
                 if (von !== "zwilling") schatten = null;
@@ -1452,11 +1508,30 @@ class AnazhRealm_studio_gestalt {
                         );
                     }
             }
+            // die Gestalt dieser Stufe für ihre Besteller: die Zwillinge, mit denen sie selbst wirft, oder — wirft sie über eine
+            // dritte — ihre werfenden Teile im Stoff der Kette, nur hier (das Eigentum: die Gestalt gehört dem Zwilling, `_eigen`)
+            const zwilling = zwillingsQuelle
+                ? leaves.filter((lf) => lf.shadowTwin)
+                : fremdQuelle
+                  ? leaves
+                        .filter((lf) => lf.teilWirft)
+                        .map((lf) =>
+                            Object.assign({}, lf, {
+                                leafKey: lf.leafKey + "#S",
+                                geom: this._foundryWurfGestalt(lf, wurfStoff),
+                                mat: wurfStoff,
+                                castShadow: true,
+                                shadowTwin: true,
+                                _eigen: true,
+                                _schattenGeom: null,
+                            })
+                        )
+                  : null;
             if (schatten && leaves.length) {
                 // Die Zwillings-Leaves der Wurf-Stufe, DIESELBEN Objekte (EIN Werfer je Gestalt); die Cache-Gruppe der
                 // Wurf-Stufe bleibt gepinnt, solange dieser Flat lebt (`_disposeFoundryGroupGeom` gibt sie zurück).
-                for (const lf of schatten.leaves) if (lf.shadowTwin) leaves.push(lf);
-                const quelle = schatten.leaves[0]._srcGroup;
+                for (const lf of schatten.zwilling) leaves.push(lf);
+                const quelle = schatten.zwilling[0]._srcGroup;
                 if (quelle) {
                     quelle._liveRefs = (quelle._liveRefs || 0) + 1;
                     group._schattenQuelle = quelle;
@@ -1473,6 +1548,7 @@ class AnazhRealm_studio_gestalt {
                       fern: group._fern || null,
                       mass: group._mass || null,
                       wurfKosten,
+                      zwilling: zwilling && zwilling.length ? zwilling : null,
                   }
                 : false;
         }

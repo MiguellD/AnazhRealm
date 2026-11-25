@@ -122,8 +122,10 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   `false` wirft nicht) und für die Nah-Wiese, die Gelenk-Gestalt liest sie über `_ofenZeile` (den Leser von
   `_ofenBudget`; `_gelenkGestalt` → der EINE Stufen-Schalter `_gelenkStufe`) — kein Stufen-Literal im Host; fail-closed (KERN-PFLICHT) bei
   fehlender Zeile — auch bei einer Art ohne Budget: seit W8 trägt jede Art mit Gestalt ihre Zeilen (die
-  Wirt-Stufen-Tafel `_WIRT_WURF` ist gefallen, `gate:altlasten`). Ein Zwilling wirft selbst (der Validator hält
-  es: kein Zwillings-Kreis).
+  Wirt-Stufen-Tafel `_WIRT_WURF` ist gefallen, `gate:altlasten`). Die Kette des Wurfs endet an einer Stufe, die sich
+  selbst wirft (der Validator hält es: kein Zwillings-Kreis); eine Wurf-Stufe übergibt ihre EIGENE Gestalt als Zwilling,
+  gleich ob sie selbst wirft — wirft sie über eine dritte (die Haus-L0 wirft die Stufe 2, diese die Stufe 3), wirft ihr
+  Zwilling im Wurf-Stoff dieser Kette und liegt im Wurf-Satz `bauWurf` (`_foundryWurfGestalt`, haus-labor-welt).
 - **Monoton:** `tris` fällt je Stufe streng, `draws` steigt nie.
 - `karte: true` (nur die letzte Stufe, sie wirft sich selbst — `schatten` ist ihre Stufe; ohne Wurf fiel der Schatten des
   Baums am Wechsel L1 → Karte vom Boden, w14-lod-sprung): die Stufe IST die Karte des EINEN Bäckers (`_karteWeltBacken`; das Labor zeigt ihre Bytes, pipeline.K2),
