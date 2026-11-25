@@ -805,6 +805,7 @@ function selbsttest() {
         // Marken — ein Lauf ohne Beweis sagt es
         [
             "die letzte Scherbe schläft nach 6 s, die Probe nennt ihren Beweis",
+            // BÜHNE: der Ort eines erfundenen Beweises im Selbsttest — die Zeile setzt nichts, sie prüft den Wortlaut des Urteils
             ["simWecken.druck", { schlafS: 6, schlafBeweis: { ort: { x: -310.5, z: -1044.25, y: 28.9, grad: 4.25, fremd: 3, fremdWach: 1 }, welt: 12345.5, sim: 345.25, takte: 4516, sprungN: 1, sprungS: 2.5, verworfenS: 0, windMS: 3.21, amSoll: 2, wach: [{ art: "Scherbe", p: [1.5, 20.25, -3], tempo: 0.042, auf: "Grund + 1 Körper", grund: { grad: 3.75, mu: 0.6 }, alterS: 5.9, ruheS: 0.4, schlafS: 6 }, { art: "Kiste", p: [4, 20.1, 6], tempo: 0.011, auf: "Grund", grund: null, alterS: null, ruheS: 1.25, schlafS: 4.5 }] } }], // prettier-ignore
             /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 6 s \(Soll ≤ 3 s\) — Beweis: Ort O \(-310.50, -1044.25\) Grund 28.90 m, Neigung 4.3°, 3 fremde freie Körper ≤ 30 m \(1 wach\) · Welt-Uhr 12345.50 s · Sim-Uhr 345.25 s · 4516 Takte seit dem Boot · 1 Sprünge der Welt-Uhr \(2.50 s\) · verworfene Sim-Zeit 0.000 s · Wind am Ort 3.21 m\/s · 2 wach beim Soll: Scherbe \[1.5, 20.25, -3\] 0.042 m\/s auf Grund \+ 1 Körper \(Grund 3.8°, μ 0.60\), 5.90 s alt, 0.40 s ruhig, schlief nach 6.00 s; Kiste \[4, 20.1, 6\] 0.011 m\/s auf Grund, \? s alt, 1.25 s ruhig, schlief nach 4.50 s$/,
         ],
@@ -3560,9 +3561,9 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                     // liegenden Platte ist ein eigenes Gesetz —, bis alle schlafen, höchstens 10 s. Zuerst die Mutante (schlaf: die Ruhe
                     // liest das Tempo des Augenblicks statt der Kugeln der Testpunkte, `_freiRuhig`), bis eine Saat das Soll reißt (nie
                     // oder später als DRUCK-SCHLAF, höchstens 300); dann das Gesetz über dieselben Saaten
-                    const PR = Object.getPrototypeOf(r);
+                    const proto = Object.getPrototypeOf(r);
                     const MUT = {
-                        schlaf: ["_freiRuhig", PR._freiRuhig.toString(), "let ruhig = KG[3] >= 0;", "return Math.max(Math.hypot(K.v[0], K.v[1], K.v[2]), Math.hypot(K.w[0], K.w[1], K.w[2]) * K.rad) < AnazhRealm.FREI.ruheMs; let ruhig = 0;"],
+                        schlaf: ["_freiRuhig", proto._freiRuhig.toString(), "let ruhig = KG[3] >= 0;", "return Math.max(Math.hypot(K.v[0], K.v[1], K.v[2]), Math.hypot(K.w[0], K.w[1], K.w[2]) * K.rad) < AnazhRealm.FREI.ruheMs; let ruhig = 0;"],
                     }; // prettier-ignore
                     // die Mutante als Skript der Seite (ihre CSP trägt kein 'unsafe-eval', blob: ist erlaubt): der Rumpf als Glied eines Objekts
                     const mutBau = (rumpf) =>
