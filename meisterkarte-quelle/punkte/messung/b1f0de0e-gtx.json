@@ -1,7 +1,7 @@
 {
  "sha": "b1f0de0e0068399caba1583bb70c5f9cd598d1a6",
  "geraet": "gtx",
- "zeit": "2026-11-25T00:18:54.353Z",
+ "zeit": "2026-11-25T00:23:55.176Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.mannschaft#1": {
@@ -487,6 +487,76 @@
    },
    "zeit": "2026-11-25T00:18:54.353Z",
    "abdruck": "aacab6a06d8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.megastadt#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (2 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 7 Fahrer am Steuer · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.21,
+   "grund": "ROT: S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (2 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 7 Fahrer am Steuer · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k6df78ed2fe06",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k029c57d27e4c",
+   "s": 12.3,
+   "fremd": {
+    "s": 15.2,
+    "takte": 7,
+    "fremdS": 11.11,
+    "kerne": 0.732,
+    "fensterKerne": 0.703,
+    "namen": [
+     [
+      "OneDrive.exe background launchedViaOneDriveLauncher",
+      7.92
+     ],
+     [
+      "Explorer.EXE",
+      0.72
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.45
+     ]
+    ],
+    "dienerS": 2.09,
+    "diener": [
+     [
+      "System",
+      0.83
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.69
+     ]
+    ],
+    "geraetS": 4.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      2.89
+     ],
+     [
+      "svchost.exe",
+      1.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 28.86,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T00:23:55.176Z",
+   "abdruck": "ff636cfdbfc5",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
