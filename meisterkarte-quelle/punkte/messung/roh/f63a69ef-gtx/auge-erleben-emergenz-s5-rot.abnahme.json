@@ -1,0 +1,133 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.420",
+  "sha": "f63a69ef8086b12e4ed913535b7314068383c87f"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 100,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.2188,
+   "taeter": {
+    "fscatter:geroell:L0": 0.2188
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "an Punkt 1 Rinde grown_busch_hazel_v1",
+  "vorAbstand": 8.74,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   213.592,
+   99.584,
+   28.46
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 106,
+  "sigma": 29.1,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel Blickziel verdeckt von an Punkt 1 Rinde grown_busch_hazel_v1 in 8.74 m · kein bauSatz im Bild: 0.0 % < 2.0 % · kein f:(kompakt_fwd|limousine|suv|transporter|gt|supersport) im Bild: 0.0 % < 0.5 %] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 20 m · Luma 106 σ 29.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.420 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt bauSatz 0.0 % (≥ 2.0 %) Luma 112, f:(kompakt_fwd|limousine|suv|transporter|gt|supersport) 0.0 % (≥ 0.5 %)",
+ "rot": [
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von an Punkt 1 Rinde grown_busch_hazel_v1 in 8.74 m"
+  }
+ ],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "imBild.bauSatz",
+    "grund": "kein bauSatz im Bild: 0.0 % < 2.0 %"
+   },
+   {
+    "schluessel": "imBild.f:(kompakt_fwd|limousine|suv|transporter|gt|supersport)",
+    "grund": "kein f:(kompakt_fwd|limousine|suv|transporter|gt|supersport) im Bild: 0.0 % < 0.5 %"
+   }
+  ],
+  "zeile": "Inhalt bauSatz 0.0 % (≥ 2.0 %) Luma 112, f:(kompakt_fwd|limousine|suv|transporter|gt|supersport) 0.0 % (≥ 0.5 %)"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^bauSatz([-_:].*)?$|^f:(kompakt_fwd|limousine|suv|transporter|gt|supersport)([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0.000086,
+   "pixel": 178,
+   "max": 49
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1107,
+   "wechsel": 588756
+  },
+  "rinde": null,
+  "toene": [
+   "bauSatz=255/80/80"
+  ],
+  "klassen": {
+   "bauSatz": {
+    "objekte": 49,
+    "pixel": 1008,
+    "farbe": [
+     0.23934,
+     0.1659,
+     0.0192
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\f63a69ef-gtx\\auge-erleben-emergenz-s5-rot.maske.png"
+ }
+}

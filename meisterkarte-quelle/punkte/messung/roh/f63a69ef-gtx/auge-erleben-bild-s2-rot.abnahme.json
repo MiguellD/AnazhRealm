@@ -1,0 +1,129 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.420",
+  "sha": "f63a69ef8086b12e4ed913535b7314068383c87f"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.2188,
+   "taeter": {
+    "fscatter:geroell:L0": 0.2188
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "an Punkt 1 Rinde grown_busch_hazel_v1",
+  "vorAbstand": 8.74,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   213.592,
+   99.584,
+   28.46
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 106.9,
+  "sigma": 26.8,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel Blickziel verdeckt von an Punkt 1 Rinde grown_busch_hazel_v1 in 8.74 m · kein bauSatz im Bild: 0.7 % < 2.0 %] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 20 m · Luma 106.9 σ 26.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.420 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt bauSatz 0.7 % (≥ 2.0 %) Luma 111",
+ "rot": [
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von an Punkt 1 Rinde grown_busch_hazel_v1 in 8.74 m"
+  }
+ ],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "imBild.bauSatz",
+    "grund": "kein bauSatz im Bild: 0.7 % < 2.0 %"
+   }
+  ],
+  "zeile": "Inhalt bauSatz 0.7 % (≥ 2.0 %) Luma 111"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^bauSatz([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0.000993,
+   "pixel": 2060,
+   "max": 310
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 714,
+   "wechsel": 596971
+  },
+  "rinde": null,
+  "toene": [
+   "bauSatz=255/80/80"
+  ],
+  "klassen": {
+   "bauSatz": {
+    "objekte": 49,
+    "pixel": 13550,
+    "farbe": [
+     0.17965,
+     0.17603,
+     0.01747
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\f63a69ef-gtx\\auge-erleben-bild-s2-rot.maske.png"
+ }
+}
