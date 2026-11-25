@@ -838,7 +838,7 @@ if (was === "lies") {
     const ruf = (...a) => cp.spawnSync(process.execPath, [__filename, ...a], { encoding: "utf8", windowsHide: true, env: { ...process.env, RUNDE_MUTANTE: "" } });
     const zr = ruf("zaehle", tmp, "-", "radeon", "cccccccc", LZ, "--anders", "gtx"), orf = ruf("offen", tmp, "-", "radeon", "cccccccc", LZ, "--anders", "gtx");
     const ur = path.join(tmp, "ur.git"), kl = path.join(tmp, "kl"), K40 = "c".repeat(40);
-    const g0 = (cwd, ...a) => cp.execFileSync("git", a, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, ...WER } });
+    const g0 = (cwd, ...a) => cp.execFileSync("git", a, { cwd, encoding: "utf8", maxBuffer: 1 << 26, stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, ...WER } });
     g0(tmp, "init", "-q", "--bare", ur);
     g0(tmp, "init", "-q", "-b", ZWEIG, kl);
     fs.mkdirSync(path.join(kl, path.dirname(DATEI)), { recursive: true });
