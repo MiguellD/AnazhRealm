@@ -1,7 +1,7 @@
 {
  "sha": "486a6685925d51302752c756d7d47654d83922d1",
  "geraet": "gtx",
- "zeit": "2026-11-25T06:43:32.226Z",
+ "zeit": "2026-11-25T06:56:14.286Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.gespraech#2": {
@@ -561,6 +561,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.menge.seuche#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 verfehlt ≥ 1 — Täter: koerper-core.js tagesHaltung(akt, rolle) — die Haltung kennt den Kranken nicht: er sitzt im Akt des Abends wie ein Gesunder (kein Stand des Kranken in TAGES_GESETZ.haltung, kein Husten) · Anteil der Viertelstunden, in denen der Krank-Tag vom gesunden Tag abweicht 0.4416 (Soll > 0) · Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 (Soll ≥ 1) · Umfang 43 (Soll ≥ 1 Person krank) · 43 von 1356 Bewohnern heute krank (b.krank, der Lebenslauf am Tag der Prozesse); 43 gemessen: der Krank-Tag (_bewohnerSoll) gegen den gesunden (koerper tagesPlan, krank falsch) in 0.4416 der Viertelstunden anders, 0 am Posten ohne Abweichung; um 10 Uhr 43 daheim, Akte {\"abend\":10,\"morgen\":32,\"schlaf · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.3,
+   "grund": "ROT: S1 ROT an Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 verfehlt ≥ 1 — Täter: koerper-core.js tagesHaltung(akt, rolle) — die Haltung kennt den Kranken nicht: er sitzt im Akt des Abends wie ein Gesunder (kein Stand des Kranken in TAGES_GESETZ.haltung, kein Husten) · Anteil der Viertelstunden, in denen der Krank-Tag vom gesunden Tag abweicht 0.4416 (Soll > 0) · Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 (Soll ≥ 1) · Umfang 43 (Soll ≥ 1 Person krank) · 43 von 1356 Bewohnern heute krank (b.krank, der Lebenslauf am Tag der Prozesse); 43 gemessen: der Krank-Tag (_bewohnerSoll) gegen den gesunden (koerper tagesPlan, krank falsch) in 0.4416 der Viertelstunden anders, 0 am Posten ohne Abweichung; um 10 Uhr 43 daheim, Akte {\"abend\":10,\"morgen\":32,\"schlaf · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k8ecf7cca3b85",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k440f272d39e8",
+   "s": 17.9,
+   "fremd": {
+    "s": 21.4,
+    "takte": 10,
+    "fremdS": 3.11,
+    "kerne": 0.145,
+    "fensterKerne": 0.155,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.88
+     ],
+     [
+      "Explorer.EXE",
+      0.56
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.48
+     ]
+    ],
+    "dienerS": 3.38,
+    "diener": [
+     [
+      "dwm.exe",
+      1.23
+     ],
+     [
+      "System",
+      1.08
+     ]
+    ],
+    "geraetS": 4.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.09
+     ],
+     [
+      "svchost.exe",
+      1.19
+     ],
+     [
+      "SearchIndexer.exe",
+      0.13
+     ]
+    ],
+    "eigenS": 36.73,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T06:52:10.377Z",
+   "abdruck": "79d51260ec8a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -573,7 +643,9 @@
   "kcd80ff0458ff": "dVTbcpswEP0XPyZVBAYMaCYPcnDHnl7G+YQVrIAYg0cSoXWn/94BW7GBdF9g4Jzds2dX+rM4QXqAHJ/edFMv2OJh8WWh4R2JRvWO6ulNL9giTt0leoxfgnLOX3pYqsqT0bQqBQVRQ3FE0iqDZfWUDjQQ6GcRo92G53tKJT3TpOMf8cKfn6dpKoFZQwxItEkc9III2RTY6hwEEmjlUPgKfpjABNTZWFO8CkIM2O4355t5/awENKQqa20zulkYS4dRG92PGUdBR86ARYXqSsLIdX1xJUXrvtnegAlRVq3Wo2KRlwXLiFEaT7E56jItDDmpRmB9hYt4GbrA1t2sj/zUEnmvCISASExdLADrHNVIg+OlcuUy+iuaJj3AERWQGgrrpeOFS3HzhlK6nWupBuFDifo/Y9JpUarjuDnp49Lx2Pd5Ql1AhoocGm0+0B6GviMuG7pL6PDcR+sp8ybFOg4A0d14aUT5dta5bqTpQCHJT60dsY9BGDDOdzOwgePRTshDJ3OmtmvTr+W9DD9cISKj9DG5bNms6csSkzOWlSVJ6ftxwF7W/hT8ruBIQOSqlNLOSgSpjD9brQ4rQ0TTGGulG4ae11tS30/253Byd7fjy5P81f/xlecbPopvfL3PZ/qHKo0yVnwgVo70mRy6TWfoUhnSQVpY+FIKhJh9Aj2jqjDHkZ0ijOJ+Mbv0Tq1vXx7v26Ln2bTPJfZG17rVdtgp+CK4bMn1AtuNL48O1UFAfbgS0sx1VxlLeJLTx812bFDyuo+Sj0Q26ODjtuDj7x3f8WGNT5hSCUogNZAThXJ0Y/d/T6qRZX/j0QJaXUBlbpC//wA=",
   "kd496f9db399b": "bVVdc5swEPwvfmyqCAwYoZk8yCGdeKZpnJ9wghMQY/BIYFp3+t87YCvhI/fEMLu61e4d/F2dIDlAhvfvpq5WfPVt9X1l4IzEoD6jvn83K76KEneNHhfX2gshHntYootTY2hZSAqygvyIpNUNFuV9MtBAop8yTrsnke0pVfRC4+7hYU4tJaY1aUChJTroBQz5HNiaDCQSaNXQzIIdtlkDp0OxWLzG9KO6FyH2vvL3LJ4dJqFKp2qjTRBiwHd/hHgSC5VpAdiQsqiM7eumYaQcPuq14GjoyAUwL1HfSMhc15dW7La3s7dmRlRla8ykGfPSYM04pdEcm6EpkrwhJ11LrG5wGa1DF/h26XZ2aokaKwIpgcm51zlglaGeaHC8RG1cTn+z+aEHOKIGUkFuvXS8cC0/vaGUPi+1lIPwoYUV7kgVeFNiHyo99waLnRgV2/fv6J1Fbbvr+2SEeVwGaZK80MepXcrHtePxn0uJJocUNTnUpvlAexj6jrxuwy6m151g2znz83I2QwBgo4GhjIrnhZemVk0HGkl2au3Q+BiEARditwA3cDzazD10UmcepGn6QR/L8MMNInJK766Lsrz0dS3IBYvSkpTy/SiYH37WcCQgM10oZZOXQaKirwa1w7Ihsq4ba6Mbhp7HqUercdi/hhjHScfZm//yQ2RPYlI7Mdc9dKh1Y0UHcuMon6theJIFutAN6SDJLXytJELEqbfI5IK6xAwnNsqQRf2Id6N5i337cDe+Er0sTyywN7gyrbEhJ+DLgH8RSYf6IKE63IBJ6rqbdBi/7at4npoSv+1Z3K/KpLzBuzi334MTJvSka1X0X0GaQ2tyKJvPX8C//w==",
   "k6c8eadcce3ea": "bVXbbqMwEP2XPG6XGgIEY6kPTlMp0V6aSvsDYzMGGgKRDWE3q/33FSRuuHReIqFzPMfnzDh/FyeQB0jx8d1U5YItviy+Lgyc0TGoz6gf382CLWLpLdFn/I13RTjnzx1M6vxUG1LkgoAoITui0+ga8+JR9jQQGCSUkfaFp3tCFLmQTfv0NKUWApPKqUGhJbrohxTZFNiYFAQ60Ki+mQW7dLUERvqiG/66IR/VUs73gQr2dDM5TECZjNXGqzDCkO3+cP7CZyqTHLB2irw0tq+XRLFy2b3XjxlHQ+tcALMC9Y2E1PMCYcWuOzs7ayZEVTTGjJpRPwmXlBEST7EpmlxmtXPSlcDyBhfxMvKAredup6fGUUNFIARQMfU6AyxT1CMNri/VymPkN50eeoAjanBKyKyXrh8txd0bQsh2rqXohfctrHBXqNAfE7tQybkzmO/4oOi++0YeLGrdXr/LAeZ5HqSRWa6PY7tUgEvXZ9/nEk0GCWrnUJn6A+1jFLiC9Q12G9L/7ul6yrxfzmYIAHQwMIQSvp15aSpVt6DRSU+NHZoAwyhknO9m4BqOR5u5j27iToM0dTfoQxlBtEJERsjDdVHml76uhXPBvLAkpYIgDtnzOpiCzxqODohU50rZ9EUoVfzZsLZgzGSqvNiTq2iS+KRaysl+PBHTg7GoHVFVtc3IiyLfZ8Qn5ZD3s5+R4Rht0regLtbtCx/Vjk/v2XeodG11h2LlqoCpXp+coXNdOy3IzMKXSiB0nswCv6AuMMWRKSKicbc/rbrqvnTvWHQzQz0Mr0Qu8xNz7NIrTWPsBEkIRMg+ybtFfRBQHm5AmXjeKulne/3KtyNPvv1y93TT7eGo/LTzbpvd9k92ntrH8ISSnHSl8u65JRk0JoOivv/X/PsP",
-  "k0bc88aa17455": "bVXbbqMwEP2XPG6XGgIEY6kPTqmUSHtJP2EMY6AhENkQVlntv69M4oZL5yUSOsdzfM6M83d1hvQIOT5/6KZesdW31feVhgs6GtUF1fOHXrFVnHpr9Bm/FeGcvxpYqspzq0lVCgKihuKETqdaLKvndKCBwCCjjPRvPD8QIsmVJP3Ly5xaCcwapwWJluiiH1Jkc2CncxDoQCeHZhbs0s0aGBmKJvx3Qj6rp5wfAhkcaDI7TECdTdXGmzDCkO17zt/4QmVWArZOVdba9vWyKJYue/T6ueAo6J0rYFGhupOQel4grNitsdNYMyPKqtN60oz6WbimjJB4js1Rl2nROmfVCKzvcBGvIw/Ydul2fu4cOVYEQgAVc68LwDpHNdHg+qnceIz8ofNDj3BCBU4NhfXS9aO1eHhDCNkttVSD8KGFFe4KGfpTogmVXIzBfM9HRQ/mG3myqG1/+56OMK/LIHValOo0tUsGuHZ99mMpUReQoXKOjW4/0T5GgStu27BPyPB7oNs583E5myEA0NHAEEr4buGlbmTbg0InP3d2aAIMo5Bxvl+AWzidbOY+upk7D1K3ZtDHMoJog4iMkKfboiwvfVsL54plZUlSBkEczg+/KDg5IHJVSmmTF2Eq468GtceqdUTTtNZGL4p8nxGf1OOwfw0xjpNO8vegrbb9G5/Uns91Dx0a1VrRodi4MmByGJ50gS5V6/SQFha+lgLBSF9kckVVYY4TG0VEYzPivbzpvpqnJro/BfJpfCVyXZ5YojG41p22IacQiJB9EUmP6iigPt6BaeZ5m2wYv+1vvpt48pq8H2hiVmVSfm682xX3FUmNp/a9OmNKzqqRpXkRSQGdLqBqH38H//4D"
+  "k0bc88aa17455": "bVXbbqMwEP2XPG6XGgIEY6kPTqmUSHtJP2EMY6AhENkQVlntv69M4oZL5yUSOsdzfM6M83d1hvQIOT5/6KZesdW31feVhgs6GtUF1fOHXrFVnHpr9Bm/FeGcvxpYqspzq0lVCgKihuKETqdaLKvndKCBwCCjjPRvPD8QIsmVJP3Ly5xaCcwapwWJluiiH1Jkc2CncxDoQCeHZhbs0s0aGBmKJvx3Qj6rp5wfAhkcaDI7TECdTdXGmzDCkO17zt/4QmVWArZOVdba9vWyKJYue/T6ueAo6J0rYFGhupOQel4grNitsdNYMyPKqtN60oz6WbimjJB4js1Rl2nROmfVCKzvcBGvIw/Ydul2fu4cOVYEQgAVc68LwDpHNdHg+qnceIz8ofNDj3BCBU4NhfXS9aO1eHhDCNkttVSD8KGFFe4KGfpTogmVXIzBfM9HRQ/mG3myqG1/+56OMK/LIHValOo0tUsGuHZ99mMpUReQoXKOjW4/0T5GgStu27BPyPB7oNs583E5myEA0NHAEEr4buGlbmTbg0InP3d2aAIMo5Bxvl+AWzidbOY+upk7D1K3ZtDHMoJog4iMkKfboiwvfVsL54plZUlSBkEczg+/KDg5IHJVSmmTF2Eq468GtceqdUTTtNZGL4p8nxGf1OOwfw0xjpNO8vegrbb9G5/Uns91Dx0a1VrRodi4MmByGJ50gS5V6/SQFha+lgLBSF9kckVVYY4TG0VEYzPivbzpvpqnJro/BfJpfCVyXZ5YojG41p22IacQiJB9EUmP6iigPt6BaeZ5m2wYv+1vvpt48pq8H2hiVmVSfm682xX3FUmNp/a9OmNKzqqRpXkRSQGdLqBqH38H//4D",
+  "k8ecf7cca3b85": "bVVNj5swEP0vOXbLms9gLO3BCVslUrebSr30OIYxsCEQ2RCqVP3vFSTe5WPnkEjojef5vTfwd3WG5AgZPr7pulqx1ZfV15WGC1oa1QXV45tesVWUOC56jN+KcM63PSxRxbnRpCwEAVFBfkKrVQ0W5WMytIFAP6WMdM88OxAiyZXE3dPTvLUUmNZWAxJNo41eQJHNga3OQKAFrRyGGbBN1y4wMhSN+WtM3qt74fzgS/9A49lhAqp0yjZaByEGbN9x/swXLNMCsLHKotJmrpOGkbTZaNaiR0FnXQHzEtW9Canj+MKQ3fRy9tLMGmXZaj0ZRr00cCkjJJpjM9RFkjfWWdUCqztcRG7oANss1c7OrSXHjEAIoGKudQ5YZagmHGwvkWuHkT90fugRTqjAqiA3Wtpe6IoPbQghuyWXciA+jDDEbSEDb9rYm0ouvcB8z0dFD/0z8mBQm+72PBlhtksjdZIX6jSVS/ro2h77vqSoc0hRWcdaN+9oD0PfFrdt2Mdk+D/Qzbzz43LGQwCgo8AQSvhuoaWuZdOBQis7tyY0PgZhwDjfL8ANnE7Gcw/t1J4bqZs+6GMafrhGREbIw21Rlpe+rYV1xaI0TVL6fhSw7Sabgy8KThaITBVSGvdFkMjos7B2WDaWqOvGSOmEoecx4pFqbPiPwcqx23H203/5xrtnPqk9n9MZJtSqMcQDsbalz+QQoGSBLlRjdZDkBu5KgdBTX/hyRVVihhMpRUijPubdPXNxn4Tw/jqQD+MrkevyxAJ7kSvdamN0Ar4I2Ce2dKiOAqrjHZikjrNOhwhuXvluqskv+0Djfl0m5WW9drv8via/h5/tTb8zJuSsaln0b0WSQ6tzKJuPT8K//w==",
+  "k704402772c56": "bVXbbqMwEP0XHjel5hocS30wTaVmLyqV9gfGMAY2BCLbhN2s9t9XkNAE6LwgWWc8Z86ZMX+tI6R7yPHxl25qi1lfrAfrWEGNxk4b1R9bzPIQwsBjtUNWpE0I6dycx/mT9WBpOKGtUZ1QXaCb1PXQZ/wShHP+3MNSVR6NJlUpCIgaigParTJYVo/pkAYCg4wy0r3wPCFEkjPZdvwjXvjT0/yaSmDW2AYkjpc46IcU2RzY6hwE2tDKofAIdujaA0aGoFv+tiUf0VHOk0AGCd3yhEqeL6oLqLNpB5t1GGHIdt2nbLMS0NhVWeuxvptFG+mwW80fixwFnX0GLCpU1ySkrhuIkXTcS9PLNUuUVav1pBj1s9CjjJDNHJujLtPC2EfVCKyvcLHxIhdY3C36yI+tLe8ZgRBAxVzzArDOUU04OH4q1y4jv+n80j0cUIFdQzFq6fiRJ27aEEJel1yqgfhQYiTuCBn608TeXHLqBeY7fhc06c/IakTF13FL7zDPSyN1WpTqMJVLBug5Pvu+pKgLyFDZ+0abD7SPUeCIy4bstmT4JjSeZ96aGz0EAHo3MIQS/rrQUjfSdKDQzo/tODQBhlHION8twAYOh9FzH53MmRupTT/o9zSCaI2IjJDVZWGWTV/Wwj5jWY1JUgbBJmTPcTAHnxQcbBC5KqUc3RdhKjefDWuHlbFF05hRSjeKfL+XpL43PBmsvHd7m78Hpoq7Fz6J3fY9We72UKVRZiQfirUjAyaHIUoX6FIZu4O0GOGeFAg9/YU3Z1QV5jiRU0R00496Jy/cz/3TE12fBLm6b4uclzeW2Atd61aPZqcQiJB9Yk2Hai+g3l+Baea664x95ZzHb/x1osu3n05Ct2QRvX67pL6uStrrSv5c3q0jpuSoGln2LyMpoNUFVOb2V/n3Hw=="
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
@@ -776,6 +848,691 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.macht.recht#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "exit": 2,
+   "minuten": 0.81,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 48.4,
+   "fremd": {
+    "s": 51.6,
+    "takte": 24,
+    "fremdS": 9.33,
+    "kerne": 0.181,
+    "fensterKerne": 0.324,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.78
+     ],
+     [
+      "Explorer.EXE",
+      1.06
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.03
+     ]
+    ],
+    "dienerS": 6.69,
+    "diener": [
+     [
+      "System",
+      2.25
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.97
+     ]
+    ],
+    "geraetS": 15.19,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.94
+     ],
+     [
+      "svchost.exe",
+      4.7
+     ],
+     [
+      "SearchIndexer.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 72.86,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T06:48:29.214Z",
+   "abdruck": "2c9130abcfb3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.aufwaerts#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 586 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 586 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T06:53:46.431Z",
+   "abdruck": "0a6772643477",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.kopplung.ereignis#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 586 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 586 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T06:53:46.431Z",
+   "abdruck": "b0f00dcbbf88",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.kopplung.gewalt#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 586 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 586 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T06:53:46.431Z",
+   "abdruck": "47ad0509727a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.kopplung.kohaerenz#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 586 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 586 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T06:53:46.431Z",
+   "abdruck": "d0a0a97b71a5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.kopplung.zeitreise#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 586 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 586 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T06:53:46.431Z",
+   "abdruck": "61f315feef7e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.same.kopplung.terraform#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 586 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 586 s unter dem Grund-Deckel 609 s von karte2.same.kopplung.aufwaerts#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T06:53:46.431Z",
+   "abdruck": "8dcb369fb653",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.planet.kopplung.land-meer-luft#3": {
+   "gruen": false,
+   "zahl": "Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → 531.7 MB (+337.8 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: S3 die Messung der Leiter warf nach 0,663 s: /eval: {\"ms\":657,\"fehler\":\"wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)\",\"stapel\":[\"wetterVersatz (http://localhost:7804/phyto-core.js?v=18.546)",
+   "exit": 0,
+   "minuten": 1.95,
+   "grund": "Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → 531.7 MB (+337.8 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: S3 die Messung der Leiter warf nach 0,663 s: /eval: {\"ms\":657,\"fehler\":\"wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)\",\"stapel\":[\"wetterVersatz (http://localhost:7804/phyto-core.js?v=18.546)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k704402772c56",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k440f272d39e8",
+   "s": 116.6,
+   "fremd": {
+    "s": 118.9,
+    "takte": 55,
+    "fremdS": 30.75,
+    "kerne": 0.259,
+    "fensterKerne": 0.518,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6.09
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.66
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.48
+     ]
+    ],
+    "dienerS": 22.53,
+    "diener": [
+     [
+      "System",
+      11.73
+     ],
+     [
+      "WmiPrvSE.exe",
+      4.97
+     ]
+    ],
+    "geraetS": 38.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      23.58
+     ],
+     [
+      "svchost.exe",
+      12.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 256.84,
+    "rechnerKerne": 12
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-25T06:54:14.566Z",
+   "abdruck": "16d1a8e18709",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.land-meer-luft#4": {
+   "gruen": false,
+   "zahl": "Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → 531.7 MB (+337.8 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: S4 die Messung der Leiter warf nach 0,663 s: /eval: {\"ms\":657,\"fehler\":\"wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)\",\"stapel\":[\"wetterVersatz (http://localhost:7804/phyto-core.js?v=18.546)",
+   "exit": 0,
+   "minuten": 1.95,
+   "grund": "Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → 531.7 MB (+337.8 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: S4 die Messung der Leiter warf nach 0,663 s: /eval: {\"ms\":657,\"fehler\":\"wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)\",\"stapel\":[\"wetterVersatz (http://localhost:7804/phyto-core.js?v=18.546)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k704402772c56",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k440f272d39e8",
+   "s": 116.6,
+   "fremd": {
+    "s": 118.9,
+    "takte": 55,
+    "fremdS": 30.75,
+    "kerne": 0.259,
+    "fensterKerne": 0.518,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6.09
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.66
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.48
+     ]
+    ],
+    "dienerS": 22.53,
+    "diener": [
+     [
+      "System",
+      11.73
+     ],
+     [
+      "WmiPrvSE.exe",
+      4.97
+     ]
+    ],
+    "geraetS": 38.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      23.58
+     ],
+     [
+      "svchost.exe",
+      12.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 256.84,
+    "rechnerKerne": 12
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-25T06:54:14.566Z",
+   "abdruck": "ce439d45ecf3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.bahn-klima#2": {
+   "gruen": false,
+   "zahl": "Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → 531.7 MB (+337.8 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: S2 Umfang nicht erzeugbar: der Planet-Faden liest den Körper der Saat nicht (voxel-worker.js:1429 planetPlanVon: P.PLANET_ERDE fest): Neigung 3.096° → Amplitude 7.22 K, Neigung 35.786° → 14.813 K, Erd-Saat 19.523 K (Spanne der Saaten 17.48 )",
+   "exit": 0,
+   "minuten": 1.95,
+   "grund": "Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → 531.7 MB (+337.8 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: S2 Umfang nicht erzeugbar: der Planet-Faden liest den Körper der Saat nicht (voxel-worker.js:1429 planetPlanVon: P.PLANET_ERDE fest): Neigung 3.096° → Amplitude 7.22 K, Neigung 35.786° → 14.813 K, Erd-Saat 19.523 K (Spanne der Saaten 17.48 )",
+   "gpu": "nvidia/pascal",
+   "konsum": "k704402772c56",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k440f272d39e8",
+   "s": 116.6,
+   "fremd": {
+    "s": 118.9,
+    "takte": 55,
+    "fremdS": 30.75,
+    "kerne": 0.259,
+    "fensterKerne": 0.518,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6.09
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.66
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.48
+     ]
+    ],
+    "dienerS": 22.53,
+    "diener": [
+     [
+      "System",
+      11.73
+     ],
+     [
+      "WmiPrvSE.exe",
+      4.97
+     ]
+    ],
+    "geraetS": 38.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      23.58
+     ],
+     [
+      "svchost.exe",
+      12.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 256.84,
+    "rechnerKerne": 12
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-25T06:54:14.566Z",
+   "abdruck": "6845b529d34f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.wetter-welt#2": {
+   "gruen": false,
+   "zahl": "Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → 531.7 MB (+337.8 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: S2 streuungGrad 0 ° gegen Soll ≤ 20 ° ✓ · Zeuge: die Welt geändert · Bild (Beleg) fehlt (/bild: {\"ms\":4000,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h))",
+   "exit": 0,
+   "minuten": 1.95,
+   "gpu": "nvidia/pascal",
+   "konsum": "k704402772c56",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k440f272d39e8",
+   "s": 116.6,
+   "fremd": {
+    "s": 118.9,
+    "takte": 55,
+    "fremdS": 30.75,
+    "kerne": 0.259,
+    "fensterKerne": 0.518,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6.09
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.66
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.48
+     ]
+    ],
+    "dienerS": 22.53,
+    "diener": [
+     [
+      "System",
+      11.73
+     ],
+     [
+      "WmiPrvSE.exe",
+      4.97
+     ]
+    ],
+    "geraetS": 38.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      23.58
+     ],
+     [
+      "svchost.exe",
+      12.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 256.84,
+    "rechnerKerne": 12
+   },
+   "ungemessen": true,
+   "grund": "Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → 531.7 MB (+337.8 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: S2 streuungGrad 0 ° gegen Soll ≤ 20 ° ✓ · Zeuge: die Welt geändert · Bild (Beleg) fehlt (/bild: {\"ms\":4000,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h))",
+   "zeit": "2026-11-25T06:54:14.566Z",
+   "abdruck": "044d5466c273",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.stadtklima#1": {
+   "gruen": false,
+   "zahl": "Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → 531.7 MB (+337.8 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: S1 abweichungGrad 1,976 ° gegen Soll ≤ 20 ° ✓ · der Zeuge der Welt fehlt: die Pfütze trocknet im Schatten nicht später (Trocken-Zeit Schatten ÷ Sonne 0) · Täter: stamm/stoff-material.js _windAt (liest keine Häuser))",
+   "exit": 0,
+   "minuten": 1.95,
+   "grund": "Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → 531.7 MB (+337.8 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: S1 abweichungGrad 1,976 ° gegen Soll ≤ 20 ° ✓ · der Zeuge der Welt fehlt: die Pfütze trocknet im Schatten nicht später (Trocken-Zeit Schatten ÷ Sonne 0) · Täter: stamm/stoff-material.js _windAt (liest keine Häuser))",
+   "gpu": "nvidia/pascal",
+   "konsum": "k704402772c56",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k440f272d39e8",
+   "s": 116.6,
+   "fremd": {
+    "s": 118.9,
+    "takte": 55,
+    "fremdS": 30.75,
+    "kerne": 0.259,
+    "fensterKerne": 0.518,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6.09
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.66
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.48
+     ]
+    ],
+    "dienerS": 22.53,
+    "diener": [
+     [
+      "System",
+      11.73
+     ],
+     [
+      "WmiPrvSE.exe",
+      4.97
+     ]
+    ],
+    "geraetS": 38.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      23.58
+     ],
+     [
+      "svchost.exe",
+      12.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 256.84,
+    "rechnerKerne": 12
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-25T06:54:14.566Z",
+   "abdruck": "b5991ee0a170",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.gegenwart#1": {
+   "gruen": false,
+   "zahl": "Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → 531.7 MB (+337.8 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: S1 ursacheProzent 44,1 % gegen Soll = 100 % ✗ · Täter: stamm/vegetation-baum.js:1433 _rockGeologyClass (der Findling liest die Eis-Zeit des Planeten, ort.eis — nicht die Geschichte des Orts) · gemessen vor dem Wurf der Leiter nach 40,004 s:)",
+   "exit": 0,
+   "minuten": 1.95,
+   "grund": "Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → 531.7 MB (+337.8 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: S1 ursacheProzent 44,1 % gegen Soll = 100 % ✗ · Täter: stamm/vegetation-baum.js:1433 _rockGeologyClass (der Findling liest die Eis-Zeit des Planeten, ort.eis — nicht die Geschichte des Orts) · gemessen vor dem Wurf der Leiter nach 40,004 s:)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k704402772c56",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k440f272d39e8",
+   "s": 116.6,
+   "fremd": {
+    "s": 118.9,
+    "takte": 55,
+    "fremdS": 30.75,
+    "kerne": 0.259,
+    "fensterKerne": 0.518,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6.09
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.66
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.48
+     ]
+    ],
+    "dienerS": 22.53,
+    "diener": [
+     [
+      "System",
+      11.73
+     ],
+     [
+      "WmiPrvSE.exe",
+      4.97
+     ]
+    ],
+    "geraetS": 38.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      23.58
+     ],
+     [
+      "svchost.exe",
+      12.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 256.84,
+    "rechnerKerne": 12
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-25T06:54:14.566Z",
+   "abdruck": "8239054ecee1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session"
+  },
+  "karte2.planet.kopplung.gegenwart#2": {
+   "gruen": false,
+   "zahl": "Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → 531.7 MB (+337.8 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: S2 gipfelProzent 98,6 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: nur 12 Saaten (Soll 100) · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze) · gemessen vor dem Wurf der Leiter nach 40,004 s: der Deckel der Leite)",
+   "exit": 0,
+   "minuten": 1.95,
+   "grund": "Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 → 531.7 MB (+337.8 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: S2 gipfelProzent 98,6 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: nur 12 Saaten (Soll 100) · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze) · gemessen vor dem Wurf der Leiter nach 40,004 s: der Deckel der Leite)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k704402772c56",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k440f272d39e8",
+   "s": 116.6,
+   "fremd": {
+    "s": 118.9,
+    "takte": 55,
+    "fremdS": 30.75,
+    "kerne": 0.259,
+    "fensterKerne": 0.518,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6.09
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.66
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.48
+     ]
+    ],
+    "dienerS": 22.53,
+    "diener": [
+     [
+      "System",
+      11.73
+     ],
+     [
+      "WmiPrvSE.exe",
+      4.97
+     ]
+    ],
+    "geraetS": 38.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      23.58
+     ],
+     [
+      "svchost.exe",
+      12.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 256.84,
+    "rechnerKerne": 12
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-25T06:54:14.566Z",
+   "abdruck": "3364eedee43e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.land-meer-luft#3",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.leib#1": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 438 s unter dem Grund-Deckel 455 s von karte2.mensch.kopplung.leib#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 438 s unter dem Grund-Deckel 455 s von karte2.mensch.kopplung.leib#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T06:56:14.286Z",
+   "abdruck": "0cf7c4e58ad0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1
+  },
+  "karte2.mensch.kopplung.kultur#2": {
+   "gruen": false,
+   "zahl": "die Fahrt riss 1800 s (der Rest 438 s unter dem Grund-Deckel 455 s von karte2.mensch.kopplung.leib#1) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Fahrt riss 1800 s (der Rest 438 s unter dem Grund-Deckel 455 s von karte2.mensch.kopplung.leib#1) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-25T06:56:14.286Z",
+   "abdruck": "8446bfc95780",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#1",
+   "modus": "session",
+   "offen": 1
   }
  }
 }
