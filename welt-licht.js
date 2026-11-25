@@ -1579,42 +1579,155 @@ var __weltLicht = (function () {
         // Sichtweite (die schwache Stufe einer Klasse sieht man nur nah — der Himmel steigt nie in Kästen, deren hellster möglicher
         // Stern unter der Grenze bleibt)
         stufeMag: 0.5,
-        // die Scheibe: Skalenlänge (pc) und Sternzahl (log10) aus der Saat; die Dichte am Heim-Ort relativ zur Tafel
-        scheibe: Object.freeze({ hR: [2000, 3500], log10N: [10.5, 11.5], heimDichte: [0.7, 1.4], heimZ: 20 }),
+        // die Scheibe: Skalenlänge (pc) und Sternzahl (log10) aus der Saat. Der Heim-Ort steht auf der Dichte der Tafel: sie IST die
+        // gemessene Sonnen-Umgebung (die Quellen unten); bis nacht-himmel würfelte die Saat darüber einen Faktor 0,7–1,4 ohne Quelle
+        // (anazh-realm-seed 0,734) — die Zahl der Sterne am Himmel hing an ihm (Saaten a–d: Zählkurve 15–100 % neben dem Katalog)
+        scheibe: Object.freeze({ hR: [2000, 3500], log10N: [10.5, 11.5], heimZ: 20 }),
         // DER STAUB: Auslöschung in der Ebene je pc und seine Skalenhöhe (V-Band; 1 mag/kpc, 100 pc — gesetzt, Lehrbuch-Wert)
         staub: Object.freeze({ magJePc: 0.001, hoehePc: 100 }),
-        // DIE KLASSEN: Raumdichte am Heim-Ort (pc⁻³), Skalenhöhe (pc), absolute Größe M_V von–bis, T_eff (K), Masse (M☉), Lichtwechsel
-        // [Art, Anteil, Periode d von–bis, Amplitude mag von–bis]. Gesetzt nach den Raumdichten der Sonnenumgebung (Allen,
-        // Astrophysical Quantities, aus dem Gedächtnis, ungeprüft); die Bedeckung (`bedeckung`) trägt jede Klasse.
+        // DIE KLASSEN: Raumdichte in der Ebene am Heim-Ort (pc⁻³), Skalenhöhe (pc) und ihr Profil, absolute Größe M_V von–bis, T_eff (K),
+        // Masse (M☉), Lichtwechsel [Art, Anteil, Periode d von–bis, Amplitude mag von–bis], die Leuchtkraft-Funktion; die Bedeckung
+        // (`bedeckung`) trägt jede Klasse. DIE GEMESSENE SONNEN-UMGEBUNG (nacht-himmel) — eine Klasse mit Quelle trägt ihre
+        // Leuchtkraft-Funktion als Punkte [M_V, n pc⁻³] (je Unterklasse, `lf`): n ist ihre Summe, die Spanne M eine halbe Stufe um den
+        // ersten und letzten Punkt, je Größen-Stufe ihr Anteil (`kStufenAnteil`):
+        //   O V, B V früh — Reed 2005 (AJ 130, 1652, Tab. 2: ρ_plane je M_V der O3–B2-Zwerge, Summe 2 446 kpc⁻³, korrigiert × 1,0317 →
+        //     2 524 kpc⁻³), e^(−|z|/h), h = 45 pc (Reed 2000, dort zitiert). Bis nacht-himmel 1,5 · 10⁻⁵ pc⁻³ (sechsmal so dicht), 60 pc.
+        //   A V, F V, G V — Bovy 2017 (MNRAS 470, 1360, Gaia DR1, Tab. 1: n je Unterklasse A0V…G9V an ihrem M_V; Σ 5,85 · 21,33 ·
+        //     33,99 · 10⁻⁴ pc⁻³), sech²(z / 2z_d), z_d das n-Mittel der Tafel (51 · 90 · 135 pc; G4V–G9V ohne z_d). Bis nacht-himmel
+        //     5 · 25 · 63 · 10⁻⁴ pc⁻³ bei e^(−|z|/h) 120 · 190 · 300 pc.
+        //   G/K III–IV — Bovy 2017 (Tab. 2: die Leuchtkraft-Funktion der Riesen je M_J in 0,25-mag-Stufen, −2,5 < M_J < 2,5, Σ 3,78 · 10⁻⁴
+        //     pc⁻³), sech² mit z_d 150 pc (§ 5.1), M_V = M_J + 1,82: die Farbe V − J des roten Klumpens (Ruiz-Dern 2018, A&A 609, A116,
+        //     Tab. 1: V − J = −0,028 + 0,880 (G − K_s), bei G − K_s = M_G − M_Ks = 0,495 + 1,606) für den ganzen Ast. Bis nacht-himmel
+        //     2,4 · 10⁻⁴ pc⁻³ bei 300 pc, M_V −0,5…1,5 gleichverteilt.
+        //   M III — der Rest der Riesen nach Bovy 2017 (Gl. 24: 3,9 · 10⁻⁴ pc⁻³ über −4 < M_J < 2,5, abzüglich Tab. 2), sech² 150 pc;
+        //     seine Spanne M_V ungeprüft.
+        // OHNE QUELLE (aus dem Gedächtnis nach Allen, Astrophysical Quantities, ungeprüft; die Leuchtkraft-Funktion flach): B V spät,
+        // K V, M V, Überriesen, Weiße Zwerge. Zwischen B V früh (Reed: B2V bei M_V −2,2) und B V spät (ab −1,5) liegt eine Lücke.
         klassen: Object.freeze(
             [
-                ["O V", 2e-8, 50, -6, -4.5, 35000, 30, []],
-                ["B V früh", 1.5e-5, 60, -4.5, -1.5, 20000, 9, []],
+                [
+                    "O V",
+                    null,
+                    45,
+                    null,
+                    null,
+                    35000,
+                    30,
+                    [],
+                    {
+                        lf: [[-5.2, 3.1], [-5.1, 1.6], [-5.05, 1.7], [-5, 4], [-4.9, 9.4], [-4.8, 13.4], [-4.6, 4.3]].map(
+                            ([M, rho]) => [M, rho * 1.0317e-9]
+                        ),
+                    },
+                ],
+                [
+                    "B V früh",
+                    null,
+                    45,
+                    null,
+                    null,
+                    20000,
+                    9,
+                    [],
+                    {
+                        lf: [[-4.4, 12.2], [-4.25, 5.1], [-4.1, 33.1], [-3.9, 23.5], [-3.7, 94.3], [-3.56, 0.9], [-3.35, 110.4],
+                            [-3, 440.2], [-2.6, 241.1], [-2.2, 1447.7]].map(([M, rho]) => [M, rho * 1.0317e-9]),
+                    },
+                ],
                 ["B V spät", 8.5e-5, 70, -1.5, 0.5, 13000, 3.5, []],
-                ["A V", 5e-4, 120, 0.5, 2.5, 8500, 2, []],
-                ["F V", 2.5e-3, 190, 2.5, 4.2, 6600, 1.3, []],
-                ["G V", 6.3e-3, 300, 4.2, 5.8, 5700, 0.95, []],
+                [
+                    "A V",
+                    null,
+                    51,
+                    null,
+                    null,
+                    8500,
+                    2,
+                    [],
+                    {
+                        profil: "sech2",
+                        lf: [[1.34, 0.38], [1.48, 0.38], [1.55, 0.41], [1.76, 0.69], [1.84, 0.75], [1.89, 0.35], [2.07, 0.6],
+                            [2.29, 1.01], [2.3, 0.63], [2.51, 0.65]].map(([M, n]) => [M, n * 1e-4]),
+                    },
+                ],
+                [
+                    "F V",
+                    null,
+                    90,
+                    null,
+                    null,
+                    6600,
+                    1.3,
+                    [],
+                    {
+                        profil: "sech2",
+                        lf: [[2.79, 1.19], [2.99, 1.41], [3.08, 1.23], [3.23, 0.88], [3.4, 1.48], [3.7, 2.54], [3.87, 3.19],
+                            [4.01, 2.41], [4.15, 2.54], [4.45, 4.46]].map(([M, n]) => [M, n * 1e-4]),
+                    },
+                ],
+                [
+                    "G V",
+                    null,
+                    135,
+                    null,
+                    null,
+                    5700,
+                    0.95,
+                    [],
+                    {
+                        profil: "sech2",
+                        lf: [[4.5, 4.1], [4.79, 4.21], [4.86, 4.76], [4.94, 2.05], [4.98, 1.49], [5.13, 2.51], [5.18, 2.59],
+                            [5.32, 2.39], [5.55, 4.67], [5.76, 5.22]].map(([M, n]) => [M, n * 1e-4]),
+                    },
+                ],
                 ["K V", 1e-2, 330, 5.8, 8.8, 4400, 0.7, []],
                 ["M V", 5e-2, 350, 8.8, 16, 3200, 0.3, []],
-                ["G/K III", 2.4e-4, 300, -0.5, 1.5, 4700, 1.5, []],
+                [
+                    "G/K III–IV",
+                    null,
+                    150,
+                    null,
+                    null,
+                    4700,
+                    1.5,
+                    [],
+                    {
+                        profil: "sech2",
+                        lf: [0.05, 0.05, 0.06, 0.05, 0.12, 0.3, 0.44, 0.26, 0.17, 0.11, 0.1, 0.13, 0.15, 0.16, 0.22, 0.22, 0.3, 0.3,
+                            0.31, 0.27].map((n, q) => [-2.375 + 0.25 * q + 1.82, n * 1e-4]),
+                    },
+                ],
                 [
                     "M III",
                     1.2e-5,
-                    300,
+                    150,
                     -2,
                     -0.5,
                     3500,
                     1.4,
                     [
-                    ["halbregelmaessig", 0.4, 40, 200, 0.2, 1.2],
-                    ["mira", 0.06, 150, 500, 2.5, 6],
-                ],
+                        ["halbregelmaessig", 0.4, 40, 200, 0.2, 1.2],
+                        ["mira", 0.06, 150, 500, 2.5, 6],
+                    ],
+                    { profil: "sech2" },
                 ],
                 ["Überriesen", 1e-7, 60, -8, -5, 9000, 15, [["cepheide", 0.15, 3, 45, 0.4, 1.2]]],
                 ["Weiße Zwerge", 5e-3, 300, 11, 16, 10000, 0.6, []],
-            ].map(([name, n, hz, Mlo, Mhi, T, masse, wechsel]) =>
-                Object.freeze({ name, n, hz, M: Object.freeze([Mlo, Mhi]), T, masse, wechsel: Object.freeze(wechsel) })
-            )
+            ].map(([name, n, hz, Mlo, Mhi, T, masse, wechsel, art]) => {
+                const lf = art && art.lf ? Object.freeze(art.lf.map((p) => Object.freeze(p))) : null;
+                const Ms = lf && lf.map((p) => p[0]);
+                return Object.freeze({
+                    name,
+                    n: lf ? lf.reduce((a, p) => a + p[1], 0) : n,
+                    hz,
+                    profil: (art && art.profil) || "exp",
+                    M: Object.freeze(lf ? [KM.min(...Ms) - 0.25, KM.max(...Ms) + 0.25] : [Mlo, Mhi]),
+                    T,
+                    masse,
+                    wechsel: Object.freeze(wechsel),
+                    lf,
+                });
+            })
         ),
         bedeckung: Object.freeze(["bedeckung", 0.01, 1, 12, 0.2, 1.5]),
         // DAS SYSTEM: Planeten innen/außen um den Anker, Abstand der Bahnen als Perioden-Verhältnis, die Schneegrenze (AE · √L)
@@ -1654,6 +1767,24 @@ var __weltLicht = (function () {
     function kIz(z0, z1, h) {
         const F = (z) => (z >= 0 ? h * (1 - KM.exp(-z / h)) : -h * (1 - KM.exp(z / h)));
         return F(z1) - F(z0);
+    }
+    // DAS HÖHEN-PROFIL DER KLASSE c (nacht-himmel): e^(−|z|/h) (Reed) oder sech²(z / 2z_d) (Bovy 2017, Gl. 15, die Haupt-Komponente):
+    // ∫ von z0 bis z1 und die Säule über alle z (2h bzw. 4z_d) — der Baum teilt die Höhe danach, die Zahl der Klasse ist Dichte × Säule
+    function kIzK(c, z0, z1) {
+        if (c.profil !== "sech2") return kIz(z0, z1, c.hz);
+        const h2 = 2 * c.hz;
+        return h2 * (KM.tanh(z1 / h2) - KM.tanh(z0 / h2));
+    }
+    const kSaeule = (c) => (c.profil === "sech2" ? 4 : 2) * c.hz;
+    // DER ANTEIL DER GRÖSSEN-STUFE q von z an der Klasse c (nacht-himmel): mit Leuchtkraft-Funktion die Summe ihrer Punkte in der
+    // Stufe ÷ n (der Punkt auf der Kante zählt zur oberen), ohne gleich je Stufe (flach, wie bis nacht-himmel jede Klasse)
+    function kStufenAnteil(c, q, z) {
+        if (!c.lf) return 1 / z;
+        const a = c.M[0] + ((c.M[1] - c.M[0]) * q) / z,
+            b = c.M[0] + ((c.M[1] - c.M[0]) * (q + 1)) / z;
+        let s = 0;
+        for (const [M, n] of c.lf) if (M >= a && (M < b || q === z - 1)) s += n;
+        return s / c.n;
     }
     // ∫∫ exp(−√(x² + y²)/hR) dx dy über das Rechteck: Gauß 2×2 je Zelle ≤ hR (größere Zellen teilen sich)
     const KG = 0.5 / KM.sqrt(3);
@@ -1736,8 +1867,8 @@ var __weltLicht = (function () {
         ];
     }
     const KOSMOS_MEMO = new Map();
-    // DIE GALAXIE DER SAAT: Skalenlänge, Sternzahl, Dichte am Heim-Ort → der Heim-Radius R0 (die Scheibe trägt dort genau die
-    // gewürfelte Dichte: N = Σ_c n_c · 2h_z,c · 2π hR² · e^(R0/hR)); je Stufe (Klasse × Größen-Stufe, `stufeMag`) ihre Zahl (größter
+    // DIE GALAXIE DER SAAT: Skalenlänge und Sternzahl → der Heim-Radius R0 (die Scheibe trägt dort genau die Dichte der Tafel, die
+    // Sonnen-Umgebung: N = Σ_c n_c · Säule_c · 2π hR² · e^(R0/hR), die Säule 2h oder 4z_d nach dem Profil, `kSaeule`); je Stufe (Klasse × Größen-Stufe, `stufeMag`) ihre Zahl (größter
     // Rest, Σ = N) und ihr Index-Bereich. `heim` = der Körper des Heim-Planeten, den die Welt trägt ({ jahrTage }, das Jahr des
     // Ort-Gesetzes).
     function kosmos(saat, heim) {
@@ -1751,18 +1882,19 @@ var __weltLicht = (function () {
         const u = (k) => kU(s, 0x6a1a, k, 0);
         const hR = S.hR[0] + (S.hR[1] - S.hR[0]) * u(1);
         const N = KM.round(KM.pow(10, S.log10N[0] + (S.log10N[1] - S.log10N[0]) * u(2)));
-        const f = S.heimDichte[0] + (S.heimDichte[1] - S.heimDichte[0]) * u(3);
-        const flaeche = KL.reduce((a, c) => a + c.n * f * 2 * c.hz, 0);
+        // die Säule aller Klassen am Heim-Ort (pc⁻²): der Heim-Ort steht auf der Dichte der Tafel (u(3) trug bis nacht-himmel den Faktor)
+        const flaeche = KL.reduce((a, c) => a + c.n * kSaeule(c), 0);
         const R0 = hR * KM.log(N / (flaeche * 2 * KM.PI * hR * hR));
         const zHeim = (u(4) - 0.5) * 2 * S.heimZ;
-        // die Stufen: je Klasse gleich breite Größen-Stufen (≤ stufeMag), die Zahl der Klasse gleich über ihre Stufen (M gleichverteilt)
+        // die Stufen: je Klasse gleich breite Größen-Stufen (≤ stufeMag), die Zahl der Klasse über ihre Stufen nach ihrer
+        // Leuchtkraft-Funktion (`kStufenAnteil`; ohne gleich), M gleichverteilt in der Stufe
         const stufen = [];
         KL.forEach((c, k) => {
             const z = KM.max(1, KM.ceil((c.M[1] - c.M[0]) / KOSMOS.stufeMag - 1e-9));
             for (let q = 0; q < z; q++)
-                stufen.push({ k, q, M: [c.M[0] + ((c.M[1] - c.M[0]) * q) / z, c.M[0] + ((c.M[1] - c.M[0]) * (q + 1)) / z], teil: z });
+                stufen.push({ k, q, M: [c.M[0] + ((c.M[1] - c.M[0]) * q) / z, c.M[0] + ((c.M[1] - c.M[0]) * (q + 1)) / z], anteil: kStufenAnteil(c, q, z) });
         });
-        const roh = stufen.map((S) => (N * KL[S.k].n * 2 * KL[S.k].hz) / (flaeche / f) / S.teil);
+        const roh = stufen.map((S) => ((N * KL[S.k].n * kSaeule(KL[S.k])) / flaeche) * S.anteil);
         const zahl = roh.map(KM.floor);
         let rest = N - zahl.reduce((a, b) => a + b, 0);
         for (const e of roh.map((r, si) => [r - KM.floor(r), si]).sort((a, b) => b[0] - a[0] || a[1] - b[1]))
@@ -1780,7 +1912,7 @@ var __weltLicht = (function () {
             saat,
             s,
             heim: { jahrTage: heim.jahrTage },
-            galaxie: { hR, R0, zHeim, N, heimDichte: f, kasten: B },
+            galaxie: { hR, R0, zHeim, N, kasten: B },
             stufen: Object.freeze(stufen),
             klassen: KL.map((c, k) => {
                 const eigen = stufen.filter((S) => S.k === k);
@@ -1839,9 +1971,9 @@ var __weltLicht = (function () {
             hiR = tiefe < 32 ? hi : (hi | (1 << (tiefe - 32))) >>> 0;
         let wL, wR;
         if (achse === 4) {
-            const h = KOSMOS.klassen[k].hz;
-            wL = kIz(L[4], L[5], h);
-            wR = kIz(R[4], R[5], h);
+            const c = KOSMOS.klassen[k];
+            wL = kIzK(c, L[4], L[5]);
+            wR = kIzK(c, R[4], R[5]);
         } else {
             wL = kGewichtXY(K, L[0], L[1], L[2], L[3]);
             wR = kGewichtXY(K, R[0], R[1], R[2], R[3]);
@@ -2178,11 +2310,12 @@ var __weltLicht = (function () {
     }
     // DAS BAND DER GALAXIE (stern-bild): das ungelöste Licht der Scheibe — die Sterne der Funktion, die schwächer als `feldGrenze`
     // stehen (10¹¹ gegen die 9 000 Punkte des Felds), als Flächen-Helligkeit je Richtung. KEINE Textur: das Integral derselben
-    // Dichte, die den Baum der Sterne teilt (je Klasse n · heimDichte · e^(−(R−R0)/hR) · e^(−|z|/hz)), über den Sehstrahl, gedämpft
+    // Dichte, die den Baum der Sterne teilt (je Klasse n · e^(−(R−R0)/hR) · Höhen-Profil), über den Sehstrahl, gedämpft
     // vom Staub der Funktion (`KOSMOS.staub`, derselbe wie `kStaub`), je Klasse ab der Weite `s0`, in der ihr mittlerer Stern
-    // (Licht-Mittel über ihre Spanne M) unter die Feldgrenze fällt — davor steht er als Punkt im Feld. Geschlossen: R(s) ≈ R0 + s·c
+    // (Licht-Mittel über ihre Stufen nach der Leuchtkraft-Funktion) unter die Feldgrenze fällt — davor steht er als Punkt im Feld. Geschlossen: R(s) ≈ R0 + s·c
     // (c der Anteil des Strahls nach außen), der Staub e^(−κ·min(s, hd/|sin b|)). Gegen das Integral in 5-pc-Schritten (Saat
-    // anazh-realm-seed, 56 Richtungen): höchstens Faktor 1,18. `kosmosBand(K)` → die Zahlen; `kosmosBandLicht(B, g)` → cd/m² in der
+    // anazh-realm-seed, 56 Richtungen): höchstens Faktor 1,18. Das sech²-Profil (Bovy) trägt das Band als e^(−|z|/h) gleicher Säule
+    // und gleicher Dichte in der Ebene (h = 2z_d): die Ebene und die Säule stimmen, der Übergang dazwischen ist genähert. `kosmosBand(K)` → die Zahlen; `kosmosBandLicht(B, g)` → cd/m² in der
     // galaktischen Richtung g (Einheit); `kosmosBandKnoten(U, d)` → derselbe Ausdruck als TSL (Welt-Einheiten, U aus
     // `kosmosBandUniformen`, d die Welt-Richtung; `U.lage` dreht sie in die Galaxie).
     function kosmosBand(K) {
@@ -2190,15 +2323,19 @@ var __weltLicht = (function () {
         const H = K.heim.stern,
             S = KOSMOS.staub,
             G = KOSMOS.feldGrenze,
-            f = K.galaxie.heimDichte,
             l = 0.4 * KM.LN10;
         const R0 = KM.hypot(H.x, H.y);
-        const klassen = KOSMOS.klassen.map((c) => {
-            const L = (KM.exp(-l * c.M[0]) - KM.exp(-l * c.M[1])) / l / (c.M[1] - c.M[0]); // ⟨10^(−0,4 M)⟩ der Klasse
+        const klassen = KOSMOS.klassen.map((c, k) => {
+            // ⟨10^(−0,4 M)⟩ der Klasse: je Stufe ihr Anteil (die Leuchtkraft-Funktion) × das Mittel über ihre Spanne
+            let L = 0;
+            for (const si of K.klassen[k].stufen) {
+                const St = K.stufen[si];
+                L += (St.anteil * (KM.exp(-l * St.M[0]) - KM.exp(-l * St.M[1]))) / l / (St.M[1] - St.M[0]);
+            }
             return Object.freeze({
-                // cd/m² je pc Sehstrahl: n · f Sterne je pc³ × ihr Licht in 10 pc (lx) × (10 pc)² je sr
-                a: c.n * f * KOSMOS.sternLx0 * L * 100,
-                hz: c.hz,
+                // cd/m² je pc Sehstrahl: n Sterne je pc³ × ihr Licht in 10 pc (lx) × (10 pc)² je sr
+                a: c.n * KOSMOS.sternLx0 * L * 100,
+                hz: kSaeule(c) / 2,
                 s0: KM.pow(10, (G + 2.5 * KM.log10(L) + 5) / 5),
                 kelvin: c.T,
             });

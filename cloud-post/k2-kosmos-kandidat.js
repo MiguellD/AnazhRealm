@@ -248,8 +248,10 @@ const LEITERN = [];
                     if (!mag || mag.length !== n) throw new Error("das Sternfeld trägt keine Größenklassen (userData.mags " + (mag ? mag.length + " von " + n : "fehlt") + ", stamm/bild-himmel.js:578)");
                     const nS = r._kosmosJetzt().H.n; // die Sterne des Felds; dahinter die Planeten des Heim-Systems
                     const GR = [3, 4, 5, 6, 6.5], zaehl = GR.map((g) => { let c = 0; for (let i = 0; i < nS; i++) if (mag[i] < g) c++; return c; });
+                    // DER UMFANG „~9 000 Sterne bis mag 6“ in der Lesart des Richters (Koordinator 25.11.): der Himmel des bloßen Auges bis
+                    // zur Grenzgröße einer dunklen Nacht — BSC5, 9 095 Sterne bis V 6,5 (Wikipedia „Bright Star Catalogue“); gezählt bis 6,5
                     let hell = 0;
-                    for (let i = 0; i < nS; i++) if (mag[i] <= 6) hell++;
+                    for (let i = 0; i < nS; i++) if (mag[i] < 6.5) hell++;
                     const R = [], D = [];
                     for (let i = 0; i < n; i++) {
                         const x = a[i * 16 + 12], y = a[i * 16 + 13], zz = a[i * 16 + 14], l = Math.hypot(x, y, zz) || 1;
@@ -310,7 +312,7 @@ const LEITERN = [];
                             welt: { gezaehlt: z.nS },
                             taeter:
                                 "N(< " + schlimm.g + ") = " + schlimm.c + " Sterne gegen " + schlimm.ref + " im Katalog (" + schlimm.pct + " %) — die Größe je Punkt aus der Kosmos-Funktion (welt-licht.js kosmosHimmel: M + Entfernungsmodul + Staub, KOSMOS.klassen); " +
-                                z.hell + " Sterne bis mag 6 im Feld (userData.mags, stamm/bild-himmel.js:578), im Bild der tiefen Nacht (Grenzgröße 6, der Punkt blendet ½ Klasse darunter aus, stamm/bild-himmel.js:503 gesehen) stehen " + z.zaehl[z.zaehl.length - 1][1] + " Sterne heller als 6,5; " + z.planetGewandert + " von " + z.wandel + " Planeten und " + (z.gewandert - z.planetGewandert) + " von " + z.nS + " Sternen wandern über 100 Tage gegen das Feld (stamm/bild-himmel.js:642 _kosmosFeldZeit)",
+                                z.hell + " Sterne heller als 6,5 im Feld (userData.mags, stamm/bild-himmel.js:578; das Bild der tiefen Nacht zeigt sie, Grenzgröße 6, der Punkt blendet ½ Klasse darunter aus, stamm/bild-himmel.js:503 gesehen); " + z.planetGewandert + " von " + z.wandel + " Planeten und " + (z.gewandert - z.planetGewandert) + " von " + z.nS + " Sternen wandern über 100 Tage gegen das Feld (stamm/bild-himmel.js:642 _kosmosFeldZeit)",
                             beleg: abw,
                         }
                     )
