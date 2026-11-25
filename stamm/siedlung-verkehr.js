@@ -368,7 +368,7 @@ class AnazhRealm_siedlung_verkehr {
             for (let i = 1; i < w.bahn.length; i++)
                 if (!w.engZonen.some((Z) => Math.hypot(w.bahn[i].x - Z.x, w.bahn[i].z - Z.z) < Z.r))
                     L += Math.hypot(w.bahn[i].x - w.bahn[i - 1].x, w.bahn[i].z - w.bahn[i - 1].z);
-            w.zone.platz = Math.max(1, Math.floor(L / (VG.parkL + V.abstandM)));
+            w.zone.platz = Math.max(1, Math.floor(L / (VG.parkL + VG.folgeS0)));
         }
         // DIE FAHRER: je Wagen des Gesetzes zwei — bei Tag die erste Person seines Hauses, bei Nacht die zweite (der Nachtfahrer,
         // koerper-core TAGES_GESETZ: am Platz wechselt die Schicht, der Wagen fährt bei Tag und bei Nacht); steht das Haus nicht
@@ -1105,6 +1105,7 @@ class AnazhRealm_siedlung_verkehr {
     // trägt, fährt er vom Platz.
     _verkehrAnkunft(S, W) {
         const V = AnazhRealm.VERKEHR;
+        const VG = globalThis.__fachwerkCore.VERKEHR_GESETZ;
         const F = W.F;
         const e = W.entry;
         const fz = e._fahr;
@@ -1863,8 +1864,8 @@ class AnazhRealm_siedlung_verkehr {
     }
 
     // DER DECKEL DES FAHRERS (m/s): das Tempo der Stadt (`tempoMs`), der Wagen vor ihm in seiner Spur (der Weg bis zu seinem Heck
-    // samt `abstandM`, sein Tempo und der Bremsweg `bremsMs2`), wer in seiner Spur steht oder geht (Bewohner, Spieler: bis
-    // `abstandM` vor ihm hält er; wer steht, macht ihm nach `platzS` Platz, `_bewohnerPlatz`), und der nächste Ort, den einer zur
+    // samt der Zeitlücke des Gesetzes, fachwerk VERKEHR_GESETZ `folgeT` · `folgeS0`, sein Tempo und der Bremsweg `bremsMs2`), wer in
+    // seiner Spur steht oder geht (Bewohner, Spieler: bis `folgeS0` vor ihm hält er; wer steht, macht ihm nach `platzS` Platz, `_bewohnerPlatz`), und der nächste Ort, den einer zur
     // Zeit befährt (`_verkehrZonen`).
     _verkehrFolge(S, W, sp, h) {
         const V = AnazhRealm.VERKEHR;
@@ -1905,17 +1906,25 @@ class AnazhRealm_siedlung_verkehr {
             }
             return bi < 0 ? null : { s: bs, quer: Math.sqrt(bq), i: bi };
         };
-        // er hält `abstandM` hinter dem Punkt, an dem der vor ihm hielte (v² = vO² + 2·b·(Lücke − Abstand); wer näher ist als der
-        // Abstand, fährt langsamer als der vor ihm, im Maß der Lücke — ohne Lücke steht er, nie in ihn)
+        // DIE FOLGE MIT ZEITLÜCKE (fachwerk VERKEHR_GESETZ, das IDM): er fährt höchstens so schnell, dass sein Wunschabstand
+        // s* = s0 + v·T + v·(v − vO)/(2√(a·b)) die Lücke nicht übersteigt (die Lösung von s* = Lücke) — im Gleichgewicht hält er T
+        // Sekunden —, nie schneller, als er bis s0 hinter dem Punkt bremsen kann, an dem der vor ihm hielte (v² = vO² + 2·b·(Lücke − s0));
+        // wer näher ist als s0, fährt langsamer als der vor ihm, im Maß der Lücke — ohne Lücke steht er, nie in ihn. Bis hier hielt er
+        // `abstandM` 2,5 m ohne Zeitlücke: bei 8,3 m/s 0,3 s (das Band der Station lenker#1: 1–3 s)
+        const cI = 1 / (2 * Math.sqrt(VG.folgeA * VG.folgeB));
         // DIE RAUM-ZEIT DER QUERUNG (`tAus`, `_verkehrQuerung`): verlässt der Leib die Bahn, bevor der Wagen an seinem Ort ist, fährt
         // er so, dass er erst `querRandS` danach dort ankommt (Lücke durch Zeit), nie schneller, als er vor dem Leib noch hielte, wenn
         // der stehen bliebe (`querHaltM` vor seiner Kapsel) — er wartet die Dauer der Querung, nie bis zum Stand
         const halt = (gap, vO, grund, wer = null, tAus = Infinity) => {
+            const bI = VG.folgeT - cI * vO;
             let w =
-                gap > V.abstandM
-                    ? Math.sqrt(vO * vO + 2 * V.bremsMs2 * (gap - V.abstandM))
+                gap > VG.folgeS0
+                    ? Math.min(
+                          (-bI + Math.sqrt(bI * bI + 4 * cI * (gap - VG.folgeS0))) / (2 * cI),
+                          Math.sqrt(vO * vO + 2 * V.bremsMs2 * (gap - VG.folgeS0))
+                      )
                     : gap > 0
-                      ? vO * (gap / V.abstandM)
+                      ? vO * (gap / VG.folgeS0)
                       : 0;
             if (tAus < Infinity)
                 w = Math.max(w, Math.min(gap / (tAus + V.querRandS), Math.sqrt(2 * V.bremsMs2 * Math.max(0, gap - V.querHaltM)))); // prettier-ignore
@@ -2055,7 +2064,7 @@ class AnazhRealm_siedlung_verkehr {
             // wartete der Wagen vor jedem `platzS`, der Querende wie der Stehende (stadt-voll 10 Uhr: ~210 Halte vor Leibern je
             // Stunde, die Reihen dahinter 640–760 Wagen-Sekunden)
             const frage = tAus === Infinity && !(W.warteS > 0);
-            if (leib && gap < V.abstandM + 1 && v < 0.5 && ((W.warteS += h) > V.platzS || frage)) {
+            if (leib && gap < VG.folgeS0 + 1 && v < 0.5 && ((W.warteS += h) > V.platzS || frage)) {
                 let [i0, i2] = [a.i, a.i + 1];
                 while (i0 > 0 && F.bogen[a.i] - F.bogen[i0] < V.platzBahnM) i0--;
                 while (i2 < F.pts.length - 1 && F.bogen[i2] - F.bogen[a.i] < V.platzBahnM) i2++;
@@ -2070,7 +2079,7 @@ class AnazhRealm_siedlung_verkehr {
         // des ganzen Fensters — bis hier fragte er das Rechteck: in der Gasse am Markt der Löwenanteil seines Sim-Takts
         const BW = AnazhRealm.BEWOHNER;
         const RS = S.raster;
-        const bis = F.s + W.hl + (v * v) / (2 * V.bremsMs2) + V.abstandM + V.leuteRandM;
+        const bis = F.s + W.hl + (v * v) / (2 * V.bremsMs2) + VG.folgeS0 + V.leuteRandM;
         let jL = F.i;
         while (jL < j1 && F.bogen[jL] <= bis) jL++;
         if (RS && j1 > F.i) {
@@ -2189,10 +2198,11 @@ class AnazhRealm_siedlung_verkehr {
         for (const [X] of kreis)
             if (!erster || haelt(X) > haelt(erster) || (haelt(X) === haelt(erster) && X.nr < erster.nr)) erster = X;
         if (erster !== W || !W.wer) return null;
-        return { O: W.wer, F: W.F, bis: W.F.s + 2 * (W.hl + W.wer.hl) + AnazhRealm.VERKEHR.abstandM };
+        return { O: W.wer, F: W.F, bis: W.F.s + 2 * (W.hl + W.wer.hl) + globalThis.__fachwerkCore.VERKEHR_GESETZ.folgeS0 };
     }
     _verkehrZonen(S, W, v) {
         const V = AnazhRealm.VERKEHR;
+        const s0 = globalThis.__fachwerkCore.VERKEHR_GESETZ.folgeS0;
         const F = W.F;
         const vor = F.s + W.hl;
         // DER WARTE-GRAPH (w28-verkehr-graph; Coffman 1971: ein Stau ist ein Kreis im Graphen „wer wartet auf wen“): steht er
@@ -2241,7 +2251,7 @@ class AnazhRealm_siedlung_verkehr {
             const z = W.zonen[k];
             if (z.weg) continue;
             if (
-                z.ein - voll[voll.length - 1].aus < 2 * W.hl + V.abstandM &&
+                z.ein - voll[voll.length - 1].aus < 2 * W.hl + s0 &&
                 !voll.some((y) => y.Z === z.Z && y.dir === z.dir)
             )
                 voll.push(z);
@@ -2255,7 +2265,7 @@ class AnazhRealm_siedlung_verkehr {
             W.weicht = kreis[n - 1][0];
         }
         if (W.weicht && !W.zonen.some((z) => !z.weg && W.weicht.reihe.has(z.Z))) W.weicht = null;
-        const rand = 2 * W.hl + V.abstandM + globalThis.__fachwerkCore.VERKEHR_GESETZ.parkL;
+        const rand = 2 * W.hl + s0 + globalThis.__fachwerkCore.VERKEHR_GESETZ.parkL;
         if (W.letzter && W.letzter.art !== "ein" && F.lang < voll[voll.length - 1].aus + rand) W.kurz = true;
         // DER STAURAUM (jede Kette bleibt frei — wer in sie fährt, muss aus ihr hinaus können; SUMO „keep clear“): hinter ihrem Ende
         // braucht er Platz, wo die Reihe vor ihm STEHEN WIRD, nicht wo sie fährt — jeder vor ihm hält, wo er steht (unter 1 m/s), an
@@ -2277,8 +2287,8 @@ class AnazhRealm_siedlung_verkehr {
                 [s, vO, O] = [s + 2 * O.hl + O.vorder.gap, O.vorder.v, O.vorder.O];
             }
             for (let k = reihe.length - 1; k >= 0; k--)
-                stopp = Math.min(reihe[k][1], stopp - V.abstandM - 2 * reihe[k][0].hl);
-            return stopp > ende + 2 * W.hl + V.abstandM;
+                stopp = Math.min(reihe[k][1], stopp - s0 - 2 * reihe[k][0].hl);
+            return stopp > ende + 2 * W.hl + s0;
         };
         // DER STAURAUM GILT BIS ZUR EINFAHRT: wer seine Kette hält, aber noch vor ihr halten kann, prüft ihn bis dorthin — füllt sich
         // der Raum hinter ihr, seit er sie bekam (ein Wagen bog vor ihm ein, die Reihe vor der nächsten Enge wuchs), gibt er sie
@@ -2546,8 +2556,8 @@ AnazhRealm._verkehrEcken = Object.freeze([
 // quer): der Wagen kam mit 7 m/s in den Abbieger, und jede Korrektur der Linie ließ ihn schleudern · bodenM = das Raster des gemerkten Bodens der Spur (`_verkehrBoden`), bodenRandM = so weit neben jedem Stück der Spur backt er ihn vorab (`_verkehrBodenBacken`), backMs = so lange backt er ihn je Bild (`_verkehrBodenPumpe`) · kurveM = so weit mittelt die Linie seines Fahrers (`_fahrerLinie`; seine Spuren, Bögen und Kreise sind Gesetz — über die ±8 m des Wegenetzes schrumpfte der Kreis der Wende von 6,5 auf 5 m, der Knick am Ende der Strecke schnitt 2 m in die Gegenspur)
 // · radFeinM = so nah federt jedes Rad einzeln auf seinem Boden ·
 // standM = der Stand des Fahrers neben der Tür seines Wagens · einsteigM = so nah an ihm steigt er ein · tempoMs = das
-// Tempo der Stadt (30 km/h) · folgeM = so weit sieht der Fahrer voraus (Wagen, Leiber) · abstandM = so weit hält er hinter
-// einem Wagen und vor einem Leib · seitM = der Raum quer neben ihm · begegnungM = so viel Raum braucht er zwischen sich und
+// Tempo der Stadt (30 km/h) · folgeM = so weit sieht der Fahrer voraus (Wagen, Leiber; den Abstand und die Zeitlücke der Folge
+// trägt fachwerk VERKEHR_GESETZ `folgeT` · `folgeS0`) · seitM = der Raum quer neben ihm · begegnungM = so viel Raum braucht er zwischen sich und
 // einem, der ihm entgegenkommt · bremsMs2 = so fest bremst er für die Folge und vor einem
 // Ort · vorM = die Haltelinie vor einem Ort · frageM = so viel vor seinem Bremsweg fragt er den Ort · platzS = so lange
 // wartet er auf einen, der in seiner Spur steht, dann macht der ihm Platz (neben der Bahn je `platzBahnM` um seinen Fußpunkt) ·
@@ -2602,7 +2612,6 @@ AnazhRealm.VERKEHR = Object.freeze({
     einsteigM: 1.5,
     tempoMs: 8.3,
     folgeM: 40,
-    abstandM: 2.5,
     seitM: 0.3,
     begegnungM: 0.1,
     bremsMs2: 3.5,

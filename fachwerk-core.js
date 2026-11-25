@@ -6151,7 +6151,12 @@
     // `hangMax` liegen und deren Bahn auf jeder Fläche, die sie kreuzt, binnen `flaecheM` deren Höhe trägt, und legt sie als
     // Boden (`verkehrsBoden`). `wendeAbM` reicht bis 80 m (höchstens die halbe Strecke): bis w12-verkehr 40 — an der Stadt des
     // Worts (stadt-voll, 836,09/438,24) trug das Ende im Osten in 40 m keinen freien Kreis, mit ihm 3 statt 1 Wende, 21 Plätze für 20.
-    var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, stossM: 3.1, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
+    // DIE FOLGE (Welle Knoten der Großstadt, mensch.netz.verkehr#2): der Wagen folgt dem vor ihm mit ZEITLÜCKE, nie mit festem Abstand —
+    // das Intelligent Driver Model (Treiber, Hennecke & Helbing 2000, Phys. Rev. E 62:1805; die Kalibrierung der Stadt nach Treiber:
+    // Wunsch-Zeitlücke folgeT 1,5 s, Mindestabstand folgeS0 2 m, Beschleunigung folgeA 0,73 m/s², bequeme Verzögerung folgeB
+    // 1,67 m/s²): sein Wunschabstand s* = s0 + v·T + v·Δv/(2√(a·b)). Leser: der Wirt `_verkehrFolge` (der Deckel der Folge, s* = Lücke)
+    // und jeder Raum, den ein Stehender hält (s0). Bis hier hielt er festen `abstandM` 2,5 m (stamm VERKEHR): bei 8,3 m/s 0,3 s
+    var VERKEHR_GESETZ = { folgeT: 1.5, folgeS0: 2, folgeA: 0.73, folgeB: 1.67, hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, stossM: 3.1, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
       wendeRandM: 1.2, wendeAbM: [7, 80], abzweigM: 2, abzweigAussenM: 0.3, abzweigZulaufM: 10, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
     function verkehrVon(plan){
       const sl=(plan&&plan.slots)||[], N=plan&&plan.staedtisch?Math.ceil(sl.length/VERKEHR_GESETZ.hausJeWagen):0, slots=[];
