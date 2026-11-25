@@ -1043,7 +1043,7 @@ async function gezeitRing(page, steht) {
                 r._tickFernRing(st.playerMesh.position);
                 fr = st.fernRing;
                 if (fr && fr.cursor >= fr.totalVerts && !fr.einhaengen.length && !fr.flug) break;
-                await new Promise((f) => setTimeout(f, 20));
+                await sleep(20); // das EINE Warten der Seite (welt-boot WARTEN_SEITE), nie ein eigenes Versprechen
             }
             if (!fr || fr.cursor < fr.totalVerts) return { gebaut: false, cursor: fr ? fr.cursor : null, punkte: fr ? fr.totalVerts : null };
             const bauMs = Math.round(performance.now() - t0);
