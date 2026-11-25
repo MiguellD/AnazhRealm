@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 38,
+    "heute": 40,
     "kern": 3,
     "kernDazu": 3,
-    "anteilHeute": 6.5,
+    "anteilHeute": 6.8,
     "anteilKern": 0.4
    },
    "perspektiven": [
@@ -7436,7 +7436,7 @@
        "richter": "20 Zufallsfestplätze: Gedränge an erzwungenen Stellen ≥ 0,9"
       }
      ],
-     "heute": 0,
+     "heute": 2,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Ausweichen ohne Berührung (mensch.K3, headless), Preis unbelegt; kein Fundamentaldiagramm, kein Engpass",
@@ -20089,11 +20089,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 99,
+  "heute": 101,
   "davonKopplungen": 33,
   "kern": 4,
   "kernDazu": 4,
-  "anteilHeute": 5.2,
+  "anteilHeute": 5.3,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20103,8 +20103,8 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 55,
-  "nachwache": 44
+  "beide": 56,
+  "nachwache": 45
  },
  "zusammengelegt": [
   {
