@@ -1,0 +1,1 @@
+Im Verkehr der Stadt löst sich der Warte-Kreis zweier Wagen (vorher standen ab Sekunde 30 alle 21 Wagen, jetzt keiner), keine Ecke ragt mehr über ihr Band (0,374 → 0,036 m), und kein Bewohner tritt mehr 80 m vor seiner Tür ins Haus (1 → 0).
