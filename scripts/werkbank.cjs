@@ -249,6 +249,13 @@ const umstellen = (o) => rufe("/umstellen", o);
 const ergebnis = (a) => a.ergebnis || { fehler: a.fehler || "kein Ergebnis" };
 // DAS ENDE eines Befehls: die Antwort (ein Satz oder das JSON) und der Exit — 0 nur, wenn `gruen`; ein Fehler ist nie grün
 const endeMit = (t, gruen) => (console.log(typeof t === "string" ? t : JSON.stringify(t, null, 1)), process.exit(gruen ? 0 : 1));
+// DAS URTEIL AM ENDE EINES BEFEHLS: `fehler` als Zeichenkette ist sein Versagen, `zeit` das Urteil der Böe (`bild --zeit`, `zeit.rot`).
+// Eine Ausgabe, die unter `zeit` anderes trägt, ist ROT beim Namen, und ihr Inhalt steht trotzdem da — bis 25.11. brach das Ende
+// mit TypeError ab und verlor sie (`umstellen --ort ufer` nach 869 s, die Zeit des Orts unter `zeit`; sie heißt `ortZeit`)
+const befehlUrteil = (o) =>
+    o?.zeit != null && !Array.isArray(o.zeit.rot)
+        ? { gruen: false, befund: "die Ausgabe trägt `zeit` ohne das Urteil der Böe (`zeit.rot`) — die Zeit eines Orts heißt `ortZeit`" }
+        : { gruen: !!o && !(typeof o.fehler === "string" || o.zeit?.rot.length) };
 // `--eigen`: die Welt als Kind von `start` am EINEN Tor (welt-boot `werkbankTor`, bereit am Ereignis), gestoppt am Ende
 const eigeneWelt = async (zusatz, tor) => (hat("eigen") ? ((tor = werkbankTor(PORT, zusatz)), await tor.bereit, tor.stop) : null);
 // `--datei`: das Ergebnis dorthin; das Ende eines Urteils `{ urteil, befunde }` unter seinem Namen
@@ -281,6 +288,16 @@ function boeSelbsttest() {
     for (const [n, kv, tv, b, soll] of [[0.5, 3006, 843, 0, ""], [0.5, 1e-3, 0, 1e-3, "ueber,lauf"], [0.5, 30, 28, 20, "ueber,lauf"], [0.5, 90, 50, 40, ""], [0.5, 1470, 1427, 0, "lauf"], [0.01, 3006, 843, 0, "nah"]]) {
         const rot = boeUrteil({ nahAnteil: n, kamm: { v: kv, boden: b }, tal: { v: tv, boden: b } }).rot.join();
         if (rot !== soll) f.push(`${soll} ≠ ${rot}`);
+    }
+    // das Ende des Befehls liest `zeit` nur als Urteil der Böe — Täter: `umstellen` mit der Zeit des Orts unter `zeit` → ROT beim Namen
+    for (const [n, o, gruen, befund] of [
+        ["Böe grün", { zeit: { rot: [] } }, true, false],
+        ["Böe rot", { zeit: { rot: ["lauf"] } }, false, false],
+        ["Ort mit ortZeit", { ort: { id: "ufer" }, ortZeit: { uhr: 0.35, wetter: "sunny" } }, true, false],
+        ["Täter: die Zeit des Orts unter zeit", { ort: { id: "ufer" }, zeit: { worte: ["setze uhrzeit 0.35"], uhr: 0.35 } }, false, true],
+    ]) {
+        const u = befehlUrteil(o);
+        if (u.gruen !== gruen || !!u.befund !== befund) f.push(`Ende ${n}: ${JSON.stringify(u)}`);
     }
     return f;
 }
@@ -1201,8 +1218,10 @@ async function starte() {
                     // der Weg des Spielers: „gegangen“ (über den Anlauf: gegründet oder die Stadt fehlte) · „stand“ (die Stadt stand
                     // am Anker, kein Anlauf) · null (ein Ort ohne Anlauf)
                     anlauf: o?.anlauf ? (gegruendet ? "stand" : "gegangen") : null,
-                    // die Zeit des Orts: seine Worte und was die Welt nahm (nur ein Ort mit `zeit` trägt sie)
-                    ...(zeit && { zeit }),
+                    // die Zeit des Orts: seine Worte und was die Welt nahm (nur ein Ort mit `zeit` trägt sie) — unter `ortZeit` wie
+                    // `__ortZeit`: der Schlüssel `zeit` ist das Urteil der Böe (`bild --zeit`, `zeit.rot` am Ende des Befehls), und
+                    // unter ihm brach `umstellen --ort ufer` nach 869 s am Ende mit TypeError ab (25.11.)
+                    ...(zeit && { ortZeit: zeit }),
                 };
             },
             x,
@@ -3641,7 +3660,7 @@ hauptLauf(async () => {
     else if (cmd === "umstellen")
         o = await umstellen({ x: a[0], z: a[1], ort: opt("--ort"), pose: opt("--pose"), sicht: opt("--sicht") });
     else if (cmd === "bild" && SELBST) {
-        selbsttestEnde(boeSelbsttest(), "die Zeit-Linse (`--zeit`) misst ΔY² im Nah-Feld, nennt die Böe der Mess-Wiese GRÜN, Wind 0 am Rausch-Boden, einen Sinus je Schicht an der Laufzeit und ein Bild ohne Nah-Feld beim Namen ROT");
+        selbsttestEnde(boeSelbsttest(), "die Zeit-Linse (`--zeit`) misst ΔY² im Nah-Feld, nennt die Böe der Mess-Wiese GRÜN, Wind 0 am Rausch-Boden, einen Sinus je Schicht an der Laufzeit und ein Bild ohne Nah-Feld beim Namen ROT; das Ende des Befehls nennt die Zeit eines Orts unter `zeit` ROT beim Namen");
         // DIE BILD-LINSEN (w28-linse-wahr): Leib vor der Linse, leeres Ziel, Inhalt des Orts, Leinwand, der Punkt, der durchfällt, die Ratsche,
         // der Leib ganz (leib-nah-ganz)
         selbsttestEnde(await AA.bildLinsenSelbsttest(), "die Bild-Linsen nennen den Leib vor der Linse, das leere Ziel, Gras in Magenta, die hochgerechnete Leinwand, den Fuß unter dem Bild, den Baum des Samens ohne Stufe, den Baum, der nach dem Sprung im Saum seines Orts fällt, und den nahen Leib ohne sein Teil ROT beim Namen, jede Mutante von main besteht nicht");
@@ -4633,5 +4652,7 @@ hauptLauf(async () => {
     // `fehler` als Zeichenkette ist das Versagen des Befehls; als Liste ist es das Konsolen-Buch der Sitzung (pageerror und
     // WebGPU-Meldungen, auch INFO) — ein Buch urteilt nicht, und `[]` ist wahr: status · wache · stand · lauf endeten immer mit 1.
     // `bild --zeit`: die Böe ROT (`zeit.rot`) endet mit Exit 1
-    endeMit(o, !(o && (typeof o.fehler === "string" || o.zeit?.rot.length)));
+    const u = befehlUrteil(o);
+    if (u.befund) console.error("ROT: " + u.befund);
+    endeMit(o, u.gruen);
 });
