@@ -17587,10 +17587,10 @@
     "kriterien": 33,
     "sprossen": 213,
     "heute": 12,
-    "kern": 0,
-    "kernDazu": 0,
+    "kern": 1,
+    "kernDazu": 1,
     "anteilHeute": 6.2,
-    "anteilKern": 0
+    "anteilKern": 0.3
    },
    "perspektiven": [
     {
@@ -20007,7 +20007,7 @@
       }
      ],
      "heute": 1,
-     "kern": 0,
+     "kern": 1,
      "fuss": "gemessen",
      "beleg": "Lichtung bleibt über Reload, 138/138 Pflanzen nach 1 Spieljahr (feld.K4, stoffe.K5) — headless; rückwärts klemmt _werkAlter die Zeit auf 0: ein Werk vor seinem Akt erscheint ungealtert statt abwesend.",
      "alt": [
@@ -20091,10 +20091,10 @@
   "sprossen": 1718,
   "heute": 105,
   "davonKopplungen": 33,
-  "kern": 2,
-  "kernDazu": 2,
+  "kern": 3,
+  "kernDazu": 3,
   "anteilHeute": 5.4,
-  "anteilKern": 0,
+  "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
