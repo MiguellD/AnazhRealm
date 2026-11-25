@@ -1,0 +1,85 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.418",
+  "sha": "e1a54023c9a9e6fd30a824fd89087d3bb7ae854e"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 37,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0035,
+   "taeter": {
+    "Laub baum_eiche": 0.0035
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "Rinde baum_eiche",
+  "vorAbstand": 15.66,
+  "leiber": null,
+  "abstand": 44.09,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   198.706,
+   108.498,
+   29.037
+  ],
+  "blick": [
+   -0.68041,
+   -0.27217,
+   -0.68041
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 104,
+  "sigma": 51.6,
+  "schwarz": 0.0013,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel Blickziel verdeckt von Rinde baum_eiche in 15.66 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 44.09 m · Luma 104 σ 51.6 schwarz 0.1 % weiß 0.0 % · Stand 18.546.418 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von Rinde baum_eiche in 15.66 m"
+  }
+ ],
+ "urteil": "ROT"
+}
