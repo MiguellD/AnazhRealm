@@ -2324,7 +2324,7 @@ function _stammZonen(Ziel, zonen) {
 // mittelt — das Band der Profis (Unreal `FCameraExposureSettings`: LowPercent 10, HighPercent 90 — das Log-Histogramm der
 // Belichtung, gemittelt zwischen ihnen)
 AnazhRealm.MESSER_FENSTER = Object.freeze([0.1, 0.9]);
-AnazhRealm.VERSION = "18.546.414";
+AnazhRealm.VERSION = "18.546.415";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([
