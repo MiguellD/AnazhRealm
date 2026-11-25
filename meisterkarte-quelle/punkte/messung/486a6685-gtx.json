@@ -1,0 +1,82 @@
+{
+ "sha": "486a6685925d51302752c756d7d47654d83922d1",
+ "geraet": "gtx",
+ "zeit": "2026-11-25T05:02:45.062Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.mensch.geist.gespraech#2": {
+   "gruen": false,
+   "zahl": "S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.18,
+   "grund": "ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k9ea2eed1c648",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "ka190f91872ff",
+   "s": 9.9,
+   "fremd": {
+    "s": 13.2,
+    "takte": 6,
+    "fremdS": 5.05,
+    "kerne": 0.383,
+    "fensterKerne": 0.37,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.95
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      0.84
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.83
+     ]
+    ],
+    "dienerS": 2.95,
+    "diener": [
+     [
+      "dwm.exe",
+      1.2
+     ],
+     [
+      "System",
+      0.92
+     ]
+    ],
+    "geraetS": 5.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.48
+     ],
+     [
+      "svchost.exe",
+      1.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.19
+     ]
+    ],
+    "eigenS": 35.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T05:02:45.062Z",
+   "abdruck": "73cec9f86a69",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k9ea2eed1c648": "bVVdb6MwEPwvebzWNQQIxlIfnNJTI12v6U9YwxpoCEQ2hFNO999PkLjlo/sCsma845k1/F2dIDlAhg8fpq5WfPVjdb8ycEZiUJ9RP3yYFV9FibtGj4trUSHEUw9LdHFqDC0LSUFWkB+RtLrBonxIBhpI9FPGafcssj2lil5o3D0+zqmlxLQmDSi0RAe9gCGfA1uTgUQCrRqaWbDDNmvgdCgWi7eYflb3KsTeV/6exbPNJFTpVG20CUIM+K4T4lksVKYFYEPKojK2r5uGkXL4qNeCo6EjF8C8RH0jIXNdX1qx297O3poZUZWtMZNmzEuDNeOURnNshqZI8oacdC2xusFltA5d4Nul29mpJWqsCKQEJude54BVhnqiwfEStXE5/cPmmx7giBpIBbn10vHCtfzyhlL6stRSDsKHFla4I1XgTYl9qPTcGyx2YlRs36/RO4vadtf1ZIR5WgZpkrzQx6ldyse14/FfS4kmhxQ1OdSm+UR7GPqOvN6GXUyH555t58yvw9kMAYCNBoYyKl4WXppaNR1oJNmptUPjYxAGXIjdAtzA8Wgz99BJnXmQpukHfSzDDzeIyCm9u16U5aGv14JcsCgtSSnfj4L55mcNRwIy04VSNnkZJCr6blA7LBsi67qxNrph6HmcerQah/17iHGcdJy9+68/RfYsJrUTc91Dh1o3VnQgN47yuRqGJ1mgC92QDpLcwtdKIkT8G+gFdYkZTmyUIYv6Ee9G8xb79uVufCR6WaR8KbA3uDKtsSEn4MuAfxNJh/ogoTrcgEnqupt0GL/tm3iZmhK/71ncX5VJeYN3cS5uG58woSddq6L/CtIcWpND2Xz9Av79Bw==",
+  "ka190f91872ff": "jVVdj5swEPwveWzKGQIEY+kenCNqctU1adU/sIY1cCEQ2XBUqfrfK5L4wsep6r6A0Ix3dnaA37MTxAdI8eFVV+WMzT7NPs80vKGlUb2henjVMzYLY2eBLuPXIpzzLx0sVvmp1qTIBQFRQnZEq1E15sVDfKGBQC+hjLRrnu4JkeRMopa/1xN/fBwfUwhMKqsGieYQG12fIhsDG52CQAsaeWlswDZdLoCRS9GI7yLyXu0L53tPensajQ4TUCZD5eHSD9Bn25bz9VRlkgPWVpGX2vR1kiCUNuv1mnAUtNYZMCtQ3UhIHccTRuyqs6SzaUSURaP1oBl1E39BGSHhGJuizuOstk6qElje4CJcBA6wVTuZIz01luwrAiGAirHXGWCZohposN1YLh1GftHxoQc4ogKrhMx4abvBQty9IYRsplqKi/BLCyPcFtJ3h8RuqVeD+Zb3iu67Z2RuUKtbzGL+z7jpOMvVcWiX9HBhu2MPdAYJKutQ6fod6WLg2eL6Vmwjcrnu6WrMvA9m9gcAtBcWQgnfTHzUlaxbUGilp8YExkM/8BlPJ+nSNRyPZt8u2ok9GaDuQt6X4QVLRGSEzG+WTuy5vhLWGfPCkKT0vNBnTytvDH5TcLRApCqX0mxe+LEMPwpqi0VtiaqqjZVOELguIy4p+8v+1vInzl/uO9xFxQ+vLp7naz6or/z5ow6Vqo1wXyxt6TF5mTQei29zVVstxJmBL6RACMcmnlEVmOLARhHQsIt328ta5JmbeX8ccp5s+ZxjZ3CpG22WHIMnfHZL+TVcw+S2qA4CysONECeOs0wY51HKd3zTc2XDtz/tfcv/r9b8e9fkhDE5qUrm3VeRZNDoDIr6/nv48xc="
+ }
+}
