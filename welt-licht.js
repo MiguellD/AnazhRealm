@@ -766,6 +766,27 @@ var __weltLicht = (function () {
         return Math.max(B.min, (B.zielKarte * 2 ** (stufen || belichtungStufen)(h, E / EA)) / ((0.18 / Math.PI) * E));
     }
 
+    // DIE BELICHTUNG IM RAUM (rein, w28-haus-innen-lesbar): `k` und `E` die Belichtung und die Lesung des Messers am Ort OHNE
+    // das Richtlicht (im Raum erreicht es ihn nicht; Luma, Welt-Einheiten), `ER` das Licht des Raums auf derselben Karte, `feld`
+    // der Anteil der Öffnungen im Feld des Auges. Das Auge steht auf dem Raum: die Kamera gleicht die fehlenden Stufen ganz aus
+    // (E ÷ r) und legt die Karte auf den Schlüssel der Leuchtdichte des Raums gegen den des Lichts davor — der Raum mit 300 lx
+    // (EN 17037: das Ziel des Tageslichts, Quotient 2,2 % unter 13 900 lx) steht 0,6 Stufen unter der Karte im Schatten vor
+    // der Tür, der mit 100 lx 1,0, der mit 10 lx 2,4: ein Raum liest als Raum, ein dunkler als dunkel. Das Feld mittelt
+    // logarithmisch (das geometrische Mittel der Leuchtdichten): die Öffnung zählt mit ihrem Flächen-Anteil, sie darf ausbrennen.
+    // Der Messer liest nie unter seinem BODEN (`nachtKnotenE`, der Vollmond im Zenit — und nie über dem Licht davor): darunter
+    // steht die Blende, der Raum fällt mit seinem Licht. Der Raum ohne Öffnung bleibt dunkel, nachts trägt ihn nur die Lampe.
+    // Bis hier trug der Raum die Steigung des Tags über seine fehlenden Stufen (w28-innenlicht: 1 − `steigung` blieb unausgeglichen,
+    // die Öffnungen zählten linear): 300 lx standen 1,5 Stufen unter der Karte davor und im Fuß der Tonkurve — Radeon b1f0de0e,
+    // Start-Dorf, Mittag: Median des dunkelsten Innen-Blicks 0,003–0,031 in 12 von 15 Häusern mit Blick.
+    // Quelle: Krawczyk, Myszkowski, Seidel 2005 („Perceptual Effects in Real-time Tone Mapping“): α(L) = 1,03 − 2 ÷ (2 + log10(L + 1)), L in cd/m²
+    function belichtungRaum(k, E, ER, feld = 0, B = BELICHTUNG) {
+        if (!(E > 0) || !(ER < E)) return k;
+        const f = Math.max(0, Math.min(1, feld));
+        const r = Math.max(E ** f * Math.max(ER, 1e-12) ** (1 - f), Math.min(E, B.nachtKnotenE));
+        const a = (x) => 1.03 - 2 / (2 + Math.log10((0.18 / Math.PI) * x * EINHEIT_LX + 1));
+        return (k * (E / r) * a(r)) / a(E);
+    }
+
     // DER ANKER DER KAMERA (S7, H1): E der waagrechten Karte unter der Zenit-Sonne der klaren Luft — E0 (`KEY_BASE` ·
     // `LEGACY_LICHT`) × (ihr Durchlass, `ATMO_RECHNUNG.sonne`, e = 1, Bezug der Luft, + `himmel`: der Himmel der Bestrahlungs-
     // Tafel derselben Luft, ihr Anker `tafelAnker`). `G` das Gesetz der Luft, `R` seine Rechnung.
@@ -2229,6 +2250,7 @@ var __weltLicht = (function () {
         atmoTafeln,
         belichtungStufen,
         belichtung,
+        belichtungRaum,
         belichtungAnker,
         e0,
         sonnenWinkel,

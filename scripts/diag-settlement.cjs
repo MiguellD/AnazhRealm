@@ -120,7 +120,8 @@ function rangZensus(FC, o = {}) {
 // moderne ergibt stadt und trägt den Turm. `ohneErbe` (die Mutante): jede Epoche ein eigener Plan (ihr eigener Same). `nH`
 // (J3): die Zelle der Welt trägt ihre Zahl (das Rang-Gesetz, „dorf 7 300") und ihre Legende — ihre Gestalt am Ende jeder Epoche
 // geschnitten; bis w3w schaltete die Zahl die Chronik ab. DIE MAUER (J4): der Schnitt steht ummauert genau dann, wenn er
-// städtisch vor MAUER_BIS steht, kein Haus in ihr.
+// städtisch ist und das Jahr der Welt (das Jahr des Auftrags, ohne es das des Schnitts) vor MAUER_BIS liegt (mensch.macht.wehrbau#3:
+// die Entfestigung urteilt die Welt-Zeit, auch wo die Chronik früher endet), kein Haus in ihr.
 const JAHRESRINGE = ["mittelalter", "hanse", "gruenderzeit", "moderne"];
 // die Überdeckung je Slot: der Anteil der 3 × 3 Punkte jedes Grundrisses des älteren Plans, die ein Grundriss des jüngeren trägt
 const ueberdeckung = (FC, alt, jung) =>
@@ -153,6 +154,7 @@ function jahresringe(FC, o = {}) {
         if (P.every((x, k) => ep(x, k) === JAHRESRINGE[k])) J.voll = (J.voll || 0) + 1;
         P.forEach((x, k) => {
             const fehl = (w) => J.fehl.push(`${seed}/${JAHRESRINGE[k]}: ${w}`);
+            const welt = dp(JAHRESRINGE[k], k).jahr; // das Jahr der Welt des Auftrags (ohne Zahl keins: dann urteilt der Schnitt)
             if (JSON.stringify(x.kleidung) !== JSON.stringify(FC.EPOCHEN[ep(x, k)].tracht))
                 fehl(`Kleidung ${JSON.stringify(x.kleidung)}`);
             if (k === 3 && ep(x, k) === "moderne" && (x.groesse !== heute || kirchen < epochen || !x.slots.some((s) => s.rolle === "turm")))
@@ -164,8 +166,8 @@ function jahresringe(FC, o = {}) {
                     )
                 )
             );
-            if (!!x.mauer !== (x.staedtisch && x.jahr < FC.MAUER_BIS) || quer)
-                fehl(`Mauer ${x.mauer ? (quer ? "durch ein Haus" : "zu viel") : "fehlt"} (${x.groesse} ${x.jahr})`);
+            if (!!x.mauer !== (x.staedtisch && Math.max(x.jahr, welt ?? -Infinity) < FC.MAUER_BIS) || quer)
+                fehl(`Mauer ${x.mauer ? (quer ? "durch ein Haus" : "zu viel") : "fehlt"} (${x.groesse}, Ort der Welt ${welt ?? "—"}, Schnitt ${x.jahr})`);
             for (const s of x.slots)
                 if (
                     s.baujahr > x.jahr + x.spanne ||
@@ -1551,13 +1553,20 @@ hauptLauf(async () => {
             ((x) => ({ ...x, kleidung: null, mauer: null, slots: [{ ...x.slots[1], rolle: "turm", baujahr: 1455 }] }))(
                 FC.exportSettlement(dp)
             );
+        // die Mutante der Welt-Zeit (mensch.macht.wehrbau#3): der Kern urteilt die Mauer am Jahr des Schnitts — der Ort der Welt
+        // 1900, dessen Chronik in der Hanse endet, trüge seine Mauer
+        const mutWelt = (dp) =>
+            ((x) => (x.mauer || !(x.staedtisch && x.jahr < FC.MAUER_BIS) ? x : { ...x, mauer: { segs: [], towers: [], R: 0 } }))(
+                FC.exportSettlement(dp)
+            );
         const zahl = { nH: 24, saaten: [1, 2, 3, 5] };
-        const [J, J0, Jm, Jz, Jz0] = [
+        const [J, J0, Jm, Jz, Jz0, Jw] = [
             {},
             { ohneErbe: 1 },
             { ex: mut, saaten: [5] },
             zahl,
             { ...zahl, ohneErbe: 1 },
+            { ...zahl, ex: mutWelt, saaten: [1] },
         ].map((o) => jahresringe(FC, o));
         const fehl = [...J.fehl, ...Jz.fehl];
         console.log(
@@ -1575,12 +1584,13 @@ hauptLauf(async () => {
             Math.min(J.min, Jz.min) >= 0.8 && Math.max(J0.min, Jz0.min) < 0.8
         );
         check(
-            `J2 EPOCHE: ${fehl.length} Brüche, die Mutante ${Jm.fehl.length}; ${J.voll || 0} von 8 Saaten tragen die ganze Achse bis zur Moderne (Soll ≥ 1)`,
+            `J2 EPOCHE: ${fehl.length} Brüche, die Mutanten ${Jm.fehl.length} · ${Jw.fehl.length}; ${J.voll || 0} von 8 Saaten tragen die ganze Achse bis zur Moderne (Soll ≥ 1)`,
             !fehl.length &&
                 J.voll >= 1 &&
                 /turm \S+ 1455/.test(Jm.fehl) &&
                 /Kleidung null/.test(Jm.fehl) &&
-                /Mauer fehlt/.test(Jm.fehl),
+                /Mauer fehlt/.test(Jm.fehl) &&
+                /Mauer zu viel \(\S+, Ort der Welt \d+, Schnitt \d+\)/.test(Jw.fehl),
             fehl.slice(0, 6).join(" · ")
         );
         if (nur("j")) wandEnde(errs, "DIE JAHRESRINGE STEHEN (Teil J).");
