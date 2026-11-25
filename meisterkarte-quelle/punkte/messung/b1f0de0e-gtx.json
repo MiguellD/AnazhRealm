@@ -1,7 +1,7 @@
 {
  "sha": "b1f0de0e0068399caba1583bb70c5f9cd598d1a6",
  "geraet": "gtx",
- "zeit": "2026-11-25T00:44:30.178Z",
+ "zeit": "2026-11-25T01:00:30.610Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.mannschaft#1": {
@@ -770,6 +770,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.menge.seuche#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 verfehlt ≥ 1 — Täter: koerper-core.js tagesHaltung(akt, rolle) — die Haltung kennt den Kranken nicht: er sitzt im Akt des Abends wie ein Gesunder (kein Stand des Kranken in TAGES_GESETZ.haltung, kein Husten) · Anteil der Viertelstunden, in denen der Krank-Tag vom gesunden Tag abweicht 0.4416 (Soll > 0) · Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 (Soll ≥ 1) · Umfang 43 (Soll ≥ 1 Person krank) · 43 von 1356 Bewohnern heute krank (b.krank, der Lebenslauf am Tag der Prozesse); 43 gemessen: der Krank-Tag (_bewohnerSoll) gegen den gesunden (koerper tagesPlan, krank falsch) in 0.4416 der Viertelstunden anders, 0 am Posten ohne Abweichung; um 10 Uhr 43 daheim, Akte {\"abend\":10,\"morgen\":32,\"schlaf · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.28,
+   "grund": "ROT: S1 ROT an Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 verfehlt ≥ 1 — Täter: koerper-core.js tagesHaltung(akt, rolle) — die Haltung kennt den Kranken nicht: er sitzt im Akt des Abends wie ein Gesunder (kein Stand des Kranken in TAGES_GESETZ.haltung, kein Husten) · Anteil der Viertelstunden, in denen der Krank-Tag vom gesunden Tag abweicht 0.4416 (Soll > 0) · Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 (Soll ≥ 1) · Umfang 43 (Soll ≥ 1 Person krank) · 43 von 1356 Bewohnern heute krank (b.krank, der Lebenslauf am Tag der Prozesse); 43 gemessen: der Krank-Tag (_bewohnerSoll) gegen den gesunden (koerper tagesPlan, krank falsch) in 0.4416 der Viertelstunden anders, 0 am Posten ohne Abweichung; um 10 Uhr 43 daheim, Akte {\"abend\":10,\"morgen\":32,\"schlaf · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "ke0433a4e9da4",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k029c57d27e4c",
+   "s": 16.9,
+   "fremd": {
+    "s": 19.3,
+    "takte": 9,
+    "fremdS": 5.63,
+    "kerne": 0.291,
+    "fensterKerne": 0.32,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.38
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      0.86
+     ],
+     [
+      "Explorer.EXE",
+      0.64
+     ]
+    ],
+    "dienerS": 2.44,
+    "diener": [
+     [
+      "System",
+      1.09
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.7
+     ]
+    ],
+    "geraetS": 7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.31
+     ],
+     [
+      "svchost.exe",
+      1.38
+     ],
+     [
+      "SearchIndexer.exe",
+      0.2
+     ]
+    ],
+    "eigenS": 32.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T01:00:30.610Z",
+   "abdruck": "79d51260ec8a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -782,7 +852,8 @@
   "k2d7826476982": "dVTRcpswEPwXPyZVBAYMaCYPcnDHnjYd5xNOcAJiDIwkQutO/70DNraB5F5gYPdub++kv4sa4gOk+PSuq3LBFg+LbwsNH0g0qg9UT+96wRZhbC/RYfwclHP+0sFilddG0yIXFEQJ2RFJowzmxVPc00CgmwSMthue7imV9ESjll/jhT8/T9MUApOKGJB4TeIFifTYFNjoFAQSaGRf+AJ+mMAElMlYU7jyfPTY7g/nm3n9JAc0pMhLPWS0Ez+UFqNDtK8zjoKWnACzAtWFhIFtu+JCCtZds50BE6IsGq1HxQIn8ZYBozScYlPUeZwZUqtKYHmBi3Dp28DW7ayPtG6IvFcEQkAgpi5mgGWKaqTBcmK5shn9HUyTHuCICkgJ2eCl5fhLcfOGUrqdayl64X2J8osx6TjL1XHcnHRxaTns5zyhziBBRQ6VNle0g75rifOG7iLaP/fBesq8SRkcB4Dgbrw0oHw761xX0rSgkKR1M4zYRc/3GOe7GdjA8ThMyEErsaa2a9Ot5b0M118hIqP0MTpv2azp8xKTE+bFQJLSdUOPvazdKfhDwZGASFUu5TAr4cUy/Gy1WiwMEVVlBitt33eczpLyfrK/+pO7ux1fHqVv7ut3nm74KH7w9T6d6e+rVMoM4j2xsqTLZN9tPEPnypAW4myAL6VACNkn0BOqAlMc2Sn8IOwWs43v1LrDy+N9W/Q0m/Ypx87oUjd6GHYMrvDOW3K5wHbjy6NFdRBQHi6EOLHtVcIiHqX0cbMdGxS97YPommgI2vu4zfj4e8t3vF/jGmMqQQmkBlKiUI5u7O5vrSqZdzcezaDRGRTmBvn3Hw==",
   "k6a2b98a5bb38": "bVXbjpswFPwXHrvrNdcAlvbBEVslUreb/YRjOAYaApENoU3Vf68gcRJgzxOXOZ5h5tj8tY6Q7iHHl1+6qS1mfbOerWMFNbYkbdTw2GKWixD4Lqtt+kS7HaW9k/N1/mo9WxpOSDSqE6oLNE4dFz02vEpVeWw1rUpBQdRQHJB0qsWyeklHKAj0s4jR/o3nO0olPdOkf32dt1YCs4a0IPHWGESZDBYcnc5BIIFOjmRXsG1HKxcYHStK+EdCb9W/c77zpb+LktliAupsqjZeBSEGbPuH8ze+UJmVgC2pylobXicLY2mzB65Fj4KenAGLCtW1CSPH8YURu+acj9bMGmXVaT0hi7wscCNGaTzH5qjLtGjJUTUC6ytcxG7oAFsv3c6PHZGPikAIiMTc6wKwzlFNNNheKlcOo7+j+aJ7OKACUkNhvLS90BV3byilm6WWahQ+UhjhmRMGrjNpHEKlp8FgvuXXGu+jzQ1hnic5v9fnglCnRakOU6ukj67tsR9LebqADBXZN7q9oT0MfVuwcf1tcuHdRet55/3DTH4AED0MC40o3yx81I1se1BI8mNnBsbHIAwY59sFuIXDweTtoZ3Z8xB1Owz5oww/XCEio/TpskmWH33ZEuSMZWWapPT9eLEbTwoOBESuSilN6iJIZfzVkPZYtUQ0TWtsdMLQ8xj1aP0Y9M9+9PUhwyT/9N+/8/yNT2rL57pHhka1RnQgVrb0mRwHJ12gS9WSHtLCwF0pEAbpi0zOqCrMcWKjCKN4GO8+fVDqm4unyfCelyuWOBhc606bkFPwRcC+iKRHtRdQ76/ANHOcVTaO3/qDb6amJJ+7KBm2yaS80btNYc6CI6b0qBpZDicgLaDTBVTt/e/w7z8=",
   "k60c6354b42d7": "bVVdj5swEPwveeyVM5/BWLoH54iUSG0v+QlrWAMXApENoU3V/15B4iTA7RvWjHc8szZ/FydIDpDh66euqwVbfFt8X2g4o6VRnVG9fuoFW0SJ46LH+J73teOcv/ewRBWnRpOyEAREBfkRrVY1WJSvyUADgX5KGenWPNsRIsmFxN3b25RaCkxrqwGJd2JAUxmwKbDVGQi0oJVDsxvYtunSBUaGojH/iMm9Osr5zpf+jsaTzQRU6VhttAxCDNj2D+drPlOZFoCNVRaVNn2dNIykzR69fs44CjrrApiXqG4kpI7jCyN21dvZWzMhyrLVetSMemngUkZINMVmqIskb6yTqgVWN7iI3NABtpq7nZ1aSz4rAiGAiqnXOWCVoRppsL1ELh1GftPppgc4ogKrgtx4aXuhKx7eEEI2cy3lIHxoYYSnThi4zojYh0rOvcF8y281fNPNHWHW44w/aj9rqJO8UMexVdJH1/bYj7k8nUOKyjrUurmjPQx9W7Bh/2187bujqynzcTCTHwDQp2EhlPDNzEddy6YDhVZ2as3A+BiEAeN8OwM3cDyavD20U3saom76IX+W4YdLRGSEvFwvyfzQ1ythXbAoDUlK349mt/Gs4GiByFQhpUldBImMvhrSDsvGEnXdGBudMPQ8RjxSPQf9qxt8fcowzvZ+U666NR/Vlk91Dx1q1RjRgVja0mdyGJxkhi5UY3WQ5AbuSoHQS59lckFVYoYjG0VIo368O3nVfemfmfD2DMiX0fBe5jsW2Btc6VabkBPwRcC+iKRDdRBQHW7AJHWcZTqM3+qDb0aevMf7HY37azIqL+u92+Sr63rSe2reqhMm5KRqWfSvIcmh1TmUzeNX8O8/",
-  "k2985b3760c80": "bVRNj5swFPwvObb1ms9gLO3BEVslUrebPfb4DM/AhgCyIbSp+t8rSEgC7DsgYeZ5hpln/13VEB8gxacPU5Urvvqy+rYycEJiUJ9QP32YFV+Fse2gy/tPsc7rxtAilxRkCdkRSasbzIuneICCRC9hnHYvIt1TquiZRt3z87y1kJhUpAGFt0afJcpfcLQmBYkEWjWQXcGWxdYOcDoUi8RbRG/VvQqx95S3Z9FsMwllMlUbrv0Afb77I8SLWKhMcsCGFHlpRl47CUJl8QeuRY+GjpwBswL1tQmZbXtyFLsRQgzWzBpV0RozIWNu4juMUxrOsSmaPM4aUutKYnmFy9AJbOCbpdtp3RL1qAikBCbnXmeAZYp6osFyY7W2Of3N5pse4IgaSAnZ6KXlBo68e0Mp3S61FIPwgWIUntiB79iTxj5UeuoNFjtxreGdbW+IcT1Kxb3eF4QmznJ9nFqlPHQsl/9YyjMZJKjJoTLNDe1i4FmSD/vvogvvnm3mnfcfG/MDAPYwLJRRsV34aCrVdKCRpHU7DoyHfuBzIXYLcAPH45i3i1ZizUM0TT/kjzK8YI2InNKvl0Oy/OnLkSBnzIuxSSnPCxen8aThSECmOldqTF36sQo/G9IOi4bIqmpGG+0gcF1OXVo+Bv2zG3x9yDBK373X7yJ9EZPaibnugaHSzSjal2tLeVwNgxMv0LluSAdxNsIdJRFCTt1FJmfUBaY4sVEGLOzHu4uvKvspCK7XgPo6Gd7zcscce4NL05ox5Bg86fNPIulQHySUhyswTmx7nQzjt3kT26kp0fueRf0xmZQ7eLfNNpf1X5fHhaTGmNa6Unl/G9IMWpNB0dyv/3//AQ=="
+  "k2985b3760c80": "bVRNj5swFPwvObb1ms9gLO3BEVslUrebPfb4DM/AhgCyIbSp+t8rSEgC7DsgYeZ5hpln/13VEB8gxacPU5Urvvqy+rYycEJiUJ9QP32YFV+Fse2gy/tPsc7rxtAilxRkCdkRSasbzIuneICCRC9hnHYvIt1TquiZRt3z87y1kJhUpAGFt0afJcpfcLQmBYkEWjWQXcGWxdYOcDoUi8RbRG/VvQqx95S3Z9FsMwllMlUbrv0Afb77I8SLWKhMcsCGFHlpRl47CUJl8QeuRY+GjpwBswL1tQmZbXtyFLsRQgzWzBpV0RozIWNu4juMUxrOsSmaPM4aUutKYnmFy9AJbOCbpdtp3RL1qAikBCbnXmeAZYp6osFyY7W2Of3N5pse4IgaSAnZ6KXlBo68e0Mp3S61FIPwgWIUntiB79iTxj5UeuoNFjtxreGdbW+IcT1Kxb3eF4QmznJ9nFqlPHQsl/9YyjMZJKjJoTLNDe1i4FmSD/vvogvvnm3mnfcfG/MDAPYwLJRRsV34aCrVdKCRpHU7DoyHfuBzIXYLcAPH45i3i1ZizUM0TT/kjzK8YI2InNKvl0Oy/OnLkSBnzIuxSSnPCxen8aThSECmOldqTF36sQo/G9IOi4bIqmpGG+0gcF1OXVo+Bv2zG3x9yDBK373X7yJ9EZPaibnugaHSzSjal2tLeVwNgxMv0LluSAdxNsIdJRFCTt1FJmfUBaY4sVEGLOzHu4uvKvspCK7XgPo6Gd7zcscce4NL05ox5Bg86fNPIulQHySUhyswTmx7nQzjt3kT26kp0fueRf0xmZQ7eLfNNpf1X5fHhaTGmNa6Unl/G9IMWpNB0dyv/3//AQ==",
+  "ke0433a4e9da4": "bVXbbqMwFPyXPG6XmmswlvrglK4SabtNpf2BYzgGGgKRDWWV1f77ChInXHqeEjTjM8yMk7+rEyQHyPDxQ9fViq2+rb6vNHyipVF9onr80Cu2ihLHRY/xyxDO+XMPS1RxajQpC0FAVJAf0WpVg0X5mAw0EOinlJHuhWd7QiQ5k7h7eppTS4FpbTUg8UYMaCoDNge2OgOBFrRyWHYF2zZdu8DIMDTmbzG5TffK+d6X/p7Gs8MEVOlUbbQOQgzYruP8hS9UpgVgY5VFpc1eJw0jabPRrgVHQWedAfMS1ZWE1HF8YcRuejt7a2ZEWbZaT5ZRLw1cygiJ5tgMdZHkjXVStcDqCheRGzrANku3s1NrybEiEAKomHudA1YZqokG20vk2mHkD50feoAjKrAqyI2Xthe64u4NIWS71FIOwocVRnjqhIHrTIh9qOSzN5jvuKlg/51ubwjzPM74fd4XC3WSF+o4tUr66Noe+7mUp3NIUVmHWjc3tIehb4vLTdjFl717upkz7y9m8gMAOioLoYRvFz7qWjYdKLSyU2sK42MQBozz3QLcwPFo8vbQTu15iLrpSz6W4YdrRGSEPFwuyfKlL1fCOmNRGpKUvh8F7HmTzcGfCo4WiEwVUprkRZDI6Kuidlg2lqjrxljphKHnMeKRahz2r27wdpRjnL37rz9498Ins+NzOcOGWjVGeCDWtvSZHMqTLNCFaqwOktzAXSkQeumLXM6oSsxwYqUIadRXvEtGSn3z4WFS4PPyxAJ7kyvdahN0Ar4I2BexdKgOAqrDFZikjrNOhwpu3vh26slve0/j/qpMxst67+J8M37+fPHvhAk5qVoW/S8iyaHVOZTN/e/g338="
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
@@ -982,6 +1053,70 @@
    },
    "zeit": "2026-11-25T00:44:27.301Z",
    "abdruck": "f0f7353bbe7b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.recht#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "exit": 2,
+   "minuten": 0.81,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 47.7,
+   "fremd": {
+    "s": 51.7,
+    "takte": 24,
+    "fremdS": 14.8,
+    "kerne": 0.286,
+    "fensterKerne": 0.389,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.11
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2
+     ],
+     [
+      "Explorer.EXE",
+      1.69
+     ]
+    ],
+    "dienerS": 6.27,
+    "diener": [
+     [
+      "System",
+      2.88
+     ],
+     [
+      "WmiPrvSE.exe",
+      2.14
+     ]
+    ],
+    "geraetS": 18.14,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      12.38
+     ],
+     [
+      "svchost.exe",
+      4.59
+     ],
+     [
+      "SearchIndexer.exe",
+      0.84
+     ]
+    ],
+    "eigenS": 77.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T00:56:51.114Z",
+   "abdruck": "2c9130abcfb3",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
