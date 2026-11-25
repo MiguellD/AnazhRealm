@@ -262,6 +262,62 @@ const MUEHLE = async (r, T, arg) => {
     };
 };
 
+// DER RENNOFEN AM MESSORT (energie S1 „Ofen kostet Holz“, Zweig rennofen 2721501, cloud-post/rennofen-station/energie-1.js wörtlich): der Wirt
+// `_stoffstromZensus` an der nächsten Kette, sieben gestaffelte Tage weit, der Gegenlauf dieselbe Kette des Kerns mit leerem Stapel
+const RENNOFEN = async (r, T, arg) => {
+    const KC = window.__koerperCore;
+    const ST = globalThis.__schmiedeCore.STOFFSTROM;
+    const pm = r.state.playerMesh.position;
+    const alle = () => [...(r._bewohnerSiedlungen || new Map()).values()].filter((S) => S && S.plan);
+    await window.__gebautNach("die Kette des Rennofens am Messort (energie)", {
+        fertig: () => alle().some((S) => Array.isArray(S.liste) && S.liste.length > 0),
+    });
+    const SL = alle()
+        .filter((S) => S.stoffstrom)
+        .sort((a, b) => Math.hypot(a.ox - pm.x, a.oz - pm.z) - Math.hypot(b.ox - pm.x, b.oz - pm.z));
+    if (!SL.length) return { ketten: 0, reisen: 0, tage: 0 };
+    const S = SL[0];
+    const Z = S.stoffstrom;
+    const tage = Math.max(1, (arg && arg.tage) || 7);
+    const echt = r._weltStunde;
+    const h0 = echt.call(r);
+    let a = null;
+    let b = null;
+    try {
+        r._weltStunde = () => h0;
+        a = r._stoffstromZensus(S);
+        r._weltStunde = () => h0 + 24 * tage;
+        b = r._stoffstromZensus(S);
+    } finally {
+        r._weltStunde = echt;
+    }
+    // DER GEGENLAUF: dieselbe Kette des Kerns an Abzügen derselben Öfen, der Stapel leer — gießt sie einen Barren, brennt der Ofen ohne Kohle
+    const oefen = Z.K.oefen.map((O) => structuredClone(O));
+    const G = KC.stoffstromHalter(oefen, h0, Z.K.ausbeute, Z.K.werkzeugKg, 0, S.plan.seed >>> 0, ST.feuer(1, ST.erz).kohle);
+    [G.kohleKg, G.kohle0] = [0, 0];
+    KC.stoffstromFassen(G, h0 + 24 * tage);
+    // je SCHMELZE: die Ofenreisen, die der Zeitraum geladen hat (die beendeten und die im Schacht) — der Stapel gibt beim Laden
+    const reisen = b.reisen + b.imSchacht - (a.reisen + a.imSchacht);
+    return {
+        ketten: SL.length,
+        tage,
+        reisen,
+        holz: reisen > 0 ? +((b.kohleKg - a.kohleKg) / reisen).toFixed(3) : 0,
+        ohneHolz: G.barren,
+        ohneHolzLuppeKg: +G.eisen.toFixed(3),
+        kohle0Kg: a.kohleKg,
+        kohleKg: b.kohleKg,
+        kohleVerbranntKg: +(b.kohleVerbranntKg - a.kohleVerbranntKg).toFixed(3),
+        erzKg: +(b.erzKg - a.erzKg).toFixed(3),
+        eisenKg: +(b.eisenKg - a.eisenKg).toFixed(3),
+        energieMJ: +(b.energieMJ - a.energieMJ).toFixed(1),
+        haldeKg: [a.haldeKg, b.haldeKg],
+        barren: [a.barren, b.barren],
+        werkzeug: [a.werkzeug, b.werkzeug],
+        kaltH: b.kaltH,
+    };
+};
+
 // STEHT DIE PROBE SCHON AM ORT? (markt S1 · handel S1, 22.11.): die Sitzung stellt jede Probe vor ihrem Deckel an ihren Messort
 // (punkte.cjs probeOrt liest `K.messort("stadt-voll")` aus dem Befehl); ein zweites `/umstellen` derselben Stadt geht über den Anlauf
 // (400, 400) und die Gründung neu und kostete an der Radeon 42 und 52 s von 54 (Zweig front-wirtschaft d157e52f, zweimal gemessen) —
@@ -838,7 +894,6 @@ module.exports = (F) => [
             };
             const kraft = () => Object.entries(z().slotRollen).filter(([k]) => /kraftwerk|zeche|dampf|umspann/i.test(k)).reduce((a, [, v]) => a + v, 0);
             H.zeile("Energie: " + (Z ? Z.schmieden + " Schmieden, " + Z.muehlen + " Mühlen im Ort, " + Z.laternen + " Laternen, Kraftwerke " + kraft() : "kein Zensus (" + zf + ")"));
-            await K.schritt(1, async () => K.leser(1, { n: z().schmieden, fehlt: "kein Brennstoff: das Feuer der Esse ist eine Konstante (feuerK 1573 K), es frisst kein Holz, und keine Schmelze gibt einen Barren (" + z().schmieden + " Schmieden)", wo: "stamm/feld-leben.js:3121" }));
             await K.schritt(3, async () => K.nicht(3, { n: kraft(), fehlt: "Kohle und Dampf mit Übergang: " + kraft() + " Zechen/Dampfwerke im Plan, keine Energie je Arbeitendem" }));
             await K.schritt(4, async () => K.nicht(4, { n: kraft(), fehlt: "Strom mit Kraftwerk: " + kraft() + " Kraftwerke — die " + z().laternen + " Laternen hängen an keinem Netz, kein Werk an einer Leitung" }));
             await K.schritt(5, async () => {
@@ -859,8 +914,17 @@ module.exports = (F) => [
                     taeter: m.flauteDreh > 0 ? "das Rad dreht ohne Wind (stamm/koerper-leib.js _animateCompoundMotion: rad t·0,7)" : !(m.sturmDreh > 0) ? "die Mühle steht im Wind" : "kein Mehl im Ort (kein Bestand der Mühle)",
                 });
             });
+            // S1 ZULETZT AM ORT DER KARTE („P · Dorf“): die Metropole stadt-voll trägt keine Schmiede (Bericht stoffstrom-kette) — der Messort
+            // dorf trägt Schmiede und Rennofen-Kette (Hand-Lauf 25.11. am Kopf 2721501, Radeon: der Ort -4,-4 mit 6 Öfen, 75 Ofenreisen in 7 Tagen, je Schmelze −25 kg, ohne Kohle 0 Barren); der Leser des Wirts an der nächsten Kette (RENNOFEN)
+            await K.schritt(1, async () => {
+                await K.messort("dorf");
+                const o = await ruf("RENNOFEN", { tage: 7 });
+                H.zeile("Rennofen: " + o.ketten + " Ketten, " + o.reisen + " Ofenreisen in " + o.tage + " Tagen, Stapel " + o.kohle0Kg + " → " + o.kohleKg + " kg, je Schmelze " + o.holz + " kg, Gegenlauf ohne Kohle " + o.ohneHolz + " Barren");
+                if (!o.ketten) return K.leser(1, { n: 0, fehlt: "kein Rennofen am Messort dorf: keine Kette (ohne Schmiede oder ohne Fels binnen 420 m trägt der Ort keine)", wo: "stamm/siedlung-bewohner.js _stoffstromAnlegen" });
+                K.zahl(1, { n: o.reisen, werte: { holz: o.holz, ohneHolz: o.ohneHolz }, beleg: o.reisen + " Ofenreisen, " + o.kohleVerbranntKg + " kg Kohle für " + o.erzKg + " kg Erz, " + o.energieMJ + " MJ", taeter: o.ohneHolz > 0 ? "Barren ohne Kohle (koerper stoffstromFassen)" : !(o.holz < 0) ? "der Stapel sinkt nicht je Ofenreise" : null });
+            });
         },
-        seite: { STADT, MUEHLE },
+        seite: { STADT, MUEHLE, RENNOFEN },
         sprossen: {
             1: { umfang: { soll: 1, wort: "Feuer mit Brennstoff (Schmelze)" }, masse: [{ key: "holz", wort: "Änderung des Holzstapels je Schmelze", soll: 0, richtung: "<" }, { key: "ohneHolz", wort: "Gegenlauf: Barren ohne Holz", soll: 0, richtung: "≤" }], erwartet: "leser", fehlt: "kein Brennstoff", wo: "stamm/feld-leben.js:3121" },
             2: { umfang: { soll: 1, wort: "Mühle im Ort" }, masse: [{ key: "flauteDreh", wort: "Drehung der Mühle in der Flaute (rad/s)", soll: 0, richtung: "≤" }, { key: "windDreh", wort: "Drehung der Mühle im Wind (rad/s)", soll: 0, richtung: ">" }, { key: "mehl", wort: "Änderung des Mehls im Ort nach der Flaute", soll: 0, richtung: "<" }], erwartet: "nicht", fehlt: "keine Mühle im Ort" },
@@ -870,6 +934,11 @@ module.exports = (F) => [
             6: { umfang: { soll: 20, wort: "Saaten über Sonnensysteme" }, masse: [{ key: "r", wort: "besiedelte Zone ↔ Energie (r)", soll: 0.7, richtung: "≥" }], erwartet: "nicht", fehlt: "20 Saaten" },
         },
         proben: {
+            1: [
+                { name: "der Rennofen des Dorfs: 15 Ofenreisen, je Schmelze −25 kg, ohne Kohle 0 Barren", j: { leiter: "mensch.wirtschaft.energie", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 15, werte: { holz: -25, ohneHolz: 0 } } } }, gruen: true },
+                { name: "der volle Stapel sinkt nicht (je Schmelze 0 kg) → ROT", j: { leiter: "mensch.wirtschaft.energie", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 15, werte: { holz: 0, ohneHolz: 0 }, taeter: "der Stapel sinkt nicht je Ofenreise" } } }, gruen: false, zahl: /ROT an Änderung des Holzstapels je Schmelze 0 / },
+                { name: "Barren ohne Kohle (main e1a54023: 34 Barren bei leerem Stapel) → ROT", j: { leiter: "mensch.wirtschaft.energie", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 15, werte: { holz: -25, ohneHolz: 34 }, taeter: "Barren ohne Kohle (koerper stoffstromFassen)" } } }, gruen: false, zahl: /ROT an Gegenlauf: Barren ohne Holz 34 / },
+            ],
             2: [{ name: "ATTRAPPE: das Rad dreht in Flaute und Sturm gleich (der Leerlauf t·0,7)", j: { leiter: "mensch.wirtschaft.energie", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 1, werte: { flauteDreh: 0.7, windDreh: 0.7, mehl: -2 } } } }, gruen: false, zahl: /ROT an Drehung der Mühle in der Flaute \(rad\/s\) 0\.7 / }],
         },
     }),
