@@ -1,0 +1,150 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.413",
+  "sha": "486a6685925d51302752c756d7d47654d83922d1"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 41,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.1096,
+  "taeter": {
+   "Rinde baum_birke": 0.108,
+   "Laub baum_birke": 0.0015
+  },
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.2569,
+   "taeter": {
+    "Rinde baum_birke": 0.1111,
+    "Rinde baum_tanne": 0.0486,
+    "Rinde baum_kiefer": 0.0278,
+    "Laub baum_birke": 0.0243
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   184,
+   50.03,
+   231
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 57.7,
+  "sigma": 36.7,
+  "schwarz": 0.0009,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 11.0 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde baum_birke 10.8 %, Laub baum_birke 0.1 % · Vordergrund 25.7 % näher als 8 m (der halbe Ziel-Abstand): Rinde baum_birke 11.1 %, Rinde baum_tanne 4.9 %, Rinde baum_kiefer 2.8 % · kein nahWiese im Bild: 2.9 % < 15.0 %] · beweis · Sicht 11.0 % (Rinde baum_birke 10.8 %, Laub baum_birke 0.1 %) · Ziel Blickziel im Bild frei 20 m · Luma 57.7 σ 36.7 schwarz 0.1 % weiß 0.0 % · Stand 18.546.413 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Inhalt nahWiese 2.9 % (≥ 15.0 %) h 115° Luma 105",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 11.0 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde baum_birke 10.8 %, Laub baum_birke 0.1 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 25.7 % näher als 8 m (der halbe Ziel-Abstand): Rinde baum_birke 11.1 %, Rinde baum_tanne 4.9 %, Rinde baum_kiefer 2.8 %"
+  }
+ ],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "imBild.nahWiese",
+    "grund": "kein nahWiese im Bild: 2.9 % < 15.0 %"
+   }
+  ],
+  "zeile": "Inhalt nahWiese 2.9 % (≥ 15.0 %) h 115° Luma 105"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^nahWiese([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 316,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 2372,
+   "wechsel": 1154346
+  },
+  "rinde": null,
+  "toene": [
+   "nahWiese:L1=255/80/80",
+   "nahWiese:L2=80/255/80",
+   "nahWiese:Lf=80/120/255"
+  ],
+  "klassen": {
+   "nahWiese:L2": {
+    "objekte": 2,
+    "pixel": 23224,
+    "farbe": [
+     0.06269,
+     0.09132,
+     0.01964
+    ]
+   },
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 36170,
+    "farbe": [
+     0.16756,
+     0.20886,
+     0.04815
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\486a6685-radeon\\auge-same-kohaerenz-s6-rot.maske.png"
+ }
+}
