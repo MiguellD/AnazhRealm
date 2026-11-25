@@ -1,0 +1,10 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 7.8 s · am Messort stadt-voll (ego) nach 7.8 s, 230 Takte, Anlauf stand
+@@ 7.8 s · Energie: 1 Schmieden, 0 Mühlen im Ort, 449 Laternen, Kraftwerke 0
+@@ 55.1 s · am Messort dorf (ego) nach 47.3 s, 1556 Takte
+@@ 55.1 s · Rennofen: 2 Ketten, 75 Ofenreisen in 7 Tagen, Stapel 3071.9 → 1196.9 kg, je Schmelze -25 kg, Gegenlauf ohne Kohle 0 Barren
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
