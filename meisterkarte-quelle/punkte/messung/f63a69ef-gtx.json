@@ -1,7 +1,7 @@
 {
  "sha": "f63a69ef8086b12e4ed913535b7314068383c87f",
  "geraet": "gtx",
- "zeit": "2026-11-25T20:41:10.917Z",
+ "zeit": "2026-11-25T20:41:39.281Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#2": {
@@ -3328,17 +3328,133 @@
   },
   "gelaende.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\9a35b1f8-a1e7-4581-9c39-9b02cc472eed.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\pun) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\9a35b1f8-a1e7-4581-9c39-9b02cc472eed.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\pun) — offen, UNGEMESSEN",
+   "zahl": "die Seite warf: (b)(d) 16.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 1,726 (Faden 1,392 · alle Kerne 1,726; vor 124,2/300,4 ms, nach 120,9/385,7 ms, Ruhe 89,2/223,5 ms seit 2026-11-25) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,7 CPU-s · Explorer.EXE 3,3 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 1,6 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 12,7 CPU-s · svchost.exe 5,7 CPU-s · SearchIndexer.exe 0,5 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 16.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "exit": 1,
+   "minuten": 0.38,
+   "grund": "die Seite warf: (b)(d) 16.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 1,726 (Faden 1,392 · alle Kerne 1,726; vor 124,2/300,4 ms, nach 120,9/385,7 ms, Ruhe 89,2/223,5 ms seit 2026-11-25) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,7 CPU-s · Explorer.EXE 3,3 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 1,6 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 12,7 CPU-s · svchost.exe 5,7 CPU-s · SearchIndexer.exe 0,5 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 16.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "konsumFehlt": "1 Prozess(e) ohne Ende (hart getötet oder ohne Antwort): 20612",
+   "s": 22.8,
+   "fremd": {
+    "s": 48.5,
+    "takte": 22,
+    "fremdS": 17.73,
+    "kerne": 0.366,
+    "fensterKerne": 0.622,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.66
+     ],
+     [
+      "Explorer.EXE",
+      3.27
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.58
+     ]
+    ],
+    "dienerS": 12.91,
+    "diener": [
+     [
+      "System",
+      7.58
+     ],
+     [
+      "dwm.exe",
+      2.73
+     ]
+    ],
+    "geraetS": 19.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      12.69
+     ],
+     [
+      "svchost.exe",
+      5.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 187.78,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.687,
+     "nach": 0.278,
+     "station": 0.752
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 124.2,
+     "alle": 300.4,
+     "cpuEin": 125,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.02,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       3.12,
+       2.73,
+       2.32,
+       2.75,
+       0.16,
+       3.19
+      ]
+     },
+     "spanne": [
+      1795639299281,
+      1795639299883
+     ]
+    },
+    "nach": {
+     "ein": 120.9,
+     "alle": 385.7,
+     "cpuEin": 125,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.59,
+      "s": 20.1,
+      "soll": 3,
+      "reihe": [
+       3.71,
+       4.32,
+       3.84,
+       2.74,
+       3.21,
+       1.81
+      ]
+     },
+     "spanne": [
+      1795639342798,
+      1795639343511
+     ]
+    },
+    "ruhe": {
+     "ein": 89.2,
+     "alle": 223.5,
+     "n": 1196,
+     "von": "2026-11-25"
+    },
+    "f": 1.726,
+    "fEin": 1.392,
+    "fAlle": 1.726,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
    "ungemessen": true,
-   "zeit": "2026-11-25T20:04:00.246Z",
+   "zeit": "2026-11-25T20:41:39.281Z",
    "abdruck": "47cc56a17829",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.same.massstab.sprung#1": {
    "gruen": false,
