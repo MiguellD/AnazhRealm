@@ -1,0 +1,26 @@
+Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend. Arbeite als `champion` (IPERKA).
+
+SPROSSE: `karte2.planet.kopplung.land-meer-luft#3` · `karte2.planet.kopplung.land-meer-luft#4` — ZWEIG `w2-nebel-delta` (eigener Zweig von origin/main 804ca10c oder jünger).
+ROTE ZEILE planet.kopplung.land-meer-luft#3 (Soll: „an ≥ 70 % der Ostrand-Ströme Nebelhäufigkeit ≥ 2× Umland, Küstenwüste daneben“), GTX 1060 · Kopf e1a54023 · 2026-11-25 15:29 UTC, wörtlich: „S3 die Messung der Leiter warf nach 0,361 s: /eval: {"ms":255,"fehler":"wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)","stapel":["wetterVersatz (http://localhost:7804/phyto-core.js?v=18.546.418:4813:19)","at #evalu · Täter: phyto-core.js wetterAt (die Zeile Nebel liest kein Meer, kein Auftrieb)“
+ROTE ZEILE planet.kopplung.land-meer-luft#4 (Soll: „Temperatur unterscheidet sich ≥ 5 K mit richtigem Vorzeichen, 10 Saaten“), GTX 1060 · Kopf e1a54023 · 2026-11-25 15:29 UTC, wörtlich: „S4 die Messung der Leiter warf nach 0,361 s: /eval: {"ms":255,"fehler":"wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)","stapel":["wetterVersatz (http://localhost:7804/phyto-core.js?v=18.546.418:4813:19)","at #evalu · Täter: planet-core.js planetKlimaR (Meeresströmung als Lesart der Küstenseite)“
+
+INFORMIEREN
+- Station zuerst: punkte-maschine `meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js` (Leiter B = land-meer-luft :19; das Δ des Orts für `wetterAt` gebaut um :363–365; S3/S4 Soll um :655) — Soll, Umfang, Messe und Zeugen wörtlich in den Bericht. Steht dort `leser`/`nicht`, gehört die Mess-Funktion als Kandidat unter `cloud-post/w2-nebel-delta-station/` zur Abgabe (Soll und Richter-Text bleiben unberührt).
+- Eigene Quelle: phyto-core.js:4797–4815 (`wetterAt`, der Nebel am Ort: ohne `nebelQuote` im Δ wirft es, gewollt); die Erzeuger des vollen Δ: planet-core.js:2741 ORT_DELTA_WETTER und :2846 `nebelQuote: K.nebel`, gelaende-core.js:5996. Der Befund steht schon in cloud-post/klima-kontinent.md:98–105 (main): „Die Station … baut das Δ für `wetterAt` als `{ regenQuote, sturmQuote }`. Es muss das Δ ganz reichen (mit `nebelQuote`, dazu der Schlüssel in :363).“
+- Wirklichkeit mit Zahl (an der Quelle prüfen, nie kopieren — Zahl wird Band): Küstennebel an Ostrand-Strömen (Atacama, Namib, Kalifornien): Nebeltage ein Vielfaches des Binnenlands — Cereceda et al. 2008 (Atmospheric Research, Atacama-Nebel) und Koračin et al. 2014 (Marine fog, Review, Atmospheric Research); an der Quelle prüfen, ob „≥ 2× Umland an ≥ 70 % der Ströme“ im Band liegt.
+
+TÄTER-MESSUNG VOR DEM SCHNITT (≤ 15 min, node/headless genügt): die Stations-Funktion der S3 in node gegen den Kern von main 804ca10c fahren (wie `scripts/diag-wetter-wache.cjs` `lmlRot`): mit dem Δ `{ regenQuote, sturmQuote }` wirft sie die Zeile der Station wörtlich; mit dem vollen Δ aus planet-core `ORT_DELTA_WETTER` läuft sie durch und nennt anteilProzent und Nebel-Faktor (klima-kontinent nannte 4,46× an 77,1 %).
+
+DER EINE SCHNITT: die Station reicht das Δ des Orts GANZ an `wetterAt` (die Felder aus planet-core `ORT_DELTA_WETTER`, ein Schlüssel, keine Kopie) — als Stations-Kandidat; das Spiel bleibt byte-gleich, `wetterAt` wirft weiter beim Namen.
+NICHT FALLEN DARF: land-meer-luft hat heute keine gebuchte Sprosse (Glieder []); die gebuchten Leitern derselben Station (wetter-welt #1–#3, gegenwart #6) dürfen sich am Kandidaten nicht bewegen — ihre Zahlen vorher ↔ nachher in den Bericht.
+
+BEWEIS
+- Zahl vorher ↔ nachher, gleiche Bedingung: S3 anteilProzent und Nebel-Faktor, S4 ihr Wert — vorher „warf nach 0,361 s“, nachher Zahl gegen Soll.
+- Linse in bestehender Familie mit Mutante, Selbsttest-Zeile mit „→ ROT“: der Selbsttest der Station (proben der k2-zusammenspiel-Leiter): Mutante „das Δ ohne nebelQuote → ROT (wirft beim Namen)“ und „der Nebel am Ostrand 1,0× Umland → ROT“.
+- Kosten: Wanduhr der Leiter vorher ↔ nachher (Deckel der Leiter 40 s: die Station darf ihn nicht reißen).
+- Bild (Pose für die Radeon — die Bahn schießt es nicht selbst): keines nötig (Zahl); die Station bleibt ohne Pixel urteilbar.
+
+ABGABE
+- Vorprüf-Kopf mit `[ci voll]`, vorher `npm run check:statik` und `git merge-tree` gegen origin/main; Dateien NUR: punkte-maschine stationen/k2-zusammenspiel.js (nur als Kandidat unter cloud-post/w2-nebel-delta-station/), cloud-post/w2-nebel-delta*.md (+ Linse/Spec der Familie). Nicht anfassen: stamm/siedlung-bewohner.js, stamm/siedlung-verkehr.js, koerper-core.js TAGES_GESETZ, stamm/feld-brand.js, stamm/koerper-seele.js, gelaende-core.js wasserSpiegel, welt-licht.js, stamm/bild-himmel.js, phyto-core.js forest*, die Dateien der sieben Nachbar-Bahnen (stamm/vegetation-baum.js, planet-core.js, stamm/vegetation-streu.js, fachwerk-core.js, voxel-worker.js, stamm/feld-leben.js, stamm/stoff-dach.js).
+- `cloud-post/w2-nebel-delta.md` (drei Sätze: geschnitten · gemessen · offen mit Adresse) und `cloud-post/w2-nebel-delta-satz.txt` (≤ 300 Zeichen). Nicht auf die CI warten. Keine GPU, keine Browser-Batterie, nur eigene PIDs, nie git stash.
+- Die Bahn gilt erst an der GEBUCHTEN Sprosse — sag im Satz, was der echten Station dann noch fehlt: der Kandidat muss in punkte-maschine landen (Entscheid des Koordinators), dann misst die Runde S3/S4 an GTX und Radeon.
