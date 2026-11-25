@@ -2526,3 +2526,4 @@ omen-gtx-gtx-486a6685-w130500-1-486a6685 UNGEMESSEN 0 GRÜN / 0 ROT / 2 UNGEMESS
 2026-11-25 13:53 RUNDE 30 ALARM gtx: ohne Fortschritt seit 17 min (offen, 0/0, Station -, Kopf 0692960c) — gesehen von radeon (radeon-dienst)
 2026-11-25 14:15 RUNDE 30 ALARM gtx: OMEN: 62 Messungen ungepusht seit 04:58 — offen 0/0, Station -, Kopf 0692960c; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
 2026-11-25 14:15 landung Runde 30 am 0692960c: misst 58 von 241 Stationen (vorn; 9 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+2026-11-25 14:23 RUNDE 30 ALARM radeon: ohne Fortschritt seit 17 min (laeuft, 9/67, Station -, Kopf 0692960c) — gesehen von gtx (landung-dienst)
