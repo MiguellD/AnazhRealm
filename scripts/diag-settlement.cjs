@@ -132,6 +132,78 @@ const ueberdeckung = (FC, alt, jung) =>
                 .map(([x, z]) => jung.slots.some((t) => FC.distPunktOBB(b.cx + x, b.cz + z, t.obb) < 1e-6))
         )
     );
+// DIE GESTALT DER WEHR (mauer-im-stoff, fachwerk `mauerNetz` · `zaunNetz` · MAUER_GESTALT): je Form ihrer Zeit (MAUER_FORM.zeit)
+// das Netz eines Wand-Stücks am Hang und eines Turms, dazu ein Zaun — jedes Dreieck zur Normale seiner Ecken gewunden, keine
+// entartete Fläche, der Fuß `fuss` unter der Sehne, der Kopf in der Höhe des Gesetzes; die Zinne im Band der Quelle (Piper,
+// Burgenkunde, Nachdruck 1994, S. 329: 0,76–2,35 m breit, 1–2 m hoch; de Caboga, Die Burg im Mittelalter, 1982: 0,70–2 m breit,
+// 1–1,40 m hoch; die Scharte höchstens so breit wie die Zinne). `o.mut`: die Mutante dreht ein Dreieck des ersten Netzes.
+function wehrGestalt(FC, o = {}) {
+    // BÜHNE: der Ring ist die Eingabe des Kerns in node (keine Welt, kein Ort) — nur seine Maße zählen
+    const ring = { R: 100, segs: [{ x0: 100, z0: 0, x1: 100, z1: 36 }], towers: [{ x: 100, z: 0 }], gates: [] };
+    const G = FC.MAUER_GESTALT;
+    const aus = { formen: [], fehl: [] };
+    let gedreht = !o.mut;
+    const pruef = (wer, netze, unten, oben, spiel = 0) => {
+        let [tris, falsch, lo, hi] = [0, 0, Infinity, -Infinity];
+        for (const N of netze) {
+            const idx = Array.from(N.idx);
+            if (!gedreht) {
+                [idx[1], idx[2]] = [idx[2], idx[1]];
+                gedreht = true;
+            }
+            for (let i = 1; i < N.pos.length; i += 3) [lo, hi] = [Math.min(lo, N.pos[i]), Math.max(hi, N.pos[i])];
+            for (let t = 0; t < idx.length; t += 3) {
+                const [a, b, c] = [idx[t], idx[t + 1], idx[t + 2]].map((i) => [N.pos[i * 3], N.pos[i * 3 + 1], N.pos[i * 3 + 2]]);
+                const [u, v] = [b.map((x, k) => x - a[k]), c.map((x, k) => x - a[k])];
+                const g = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+                tris++;
+                if (
+                    !(Math.hypot(...g) > 1e-9) ||
+                    [idx[t], idx[t + 1], idx[t + 2]].some((i) => g[0] * N.nrm[i * 3] + g[1] * N.nrm[i * 3 + 1] + g[2] * N.nrm[i * 3 + 2] <= 0)
+                )
+                    falsch++;
+            }
+        }
+        if (falsch) aus.fehl.push(`${wer}: ${falsch} von ${tris} Dreiecken gegen ihre Normale oder entartet`);
+        if (Math.abs(lo - unten) > 1e-4 || hi > oben + 1e-4 || hi < oben - spiel - 1e-4)
+            aus.fehl.push(`${wer}: Fuß ${lo.toFixed(3)} · Kopf ${hi.toFixed(3)} (Soll ${unten.toFixed(3)} · ${oben.toFixed(3)})`);
+        return tris;
+    };
+    const fuss = 1.5;
+    for (const [ab] of FC.MAUER_FORM.zeit) {
+        const jahr = Number.isFinite(ab) ? ab + 1 : 900;
+        const M = FC.mauerGestalt(ring, "mitteleuropa", jahr);
+        const [W, K, T, D, BW] = [M.wand, M.krone, M.turm, M.dach, M.bollwerk];
+        const holz = FC.gefuegeReihe(M.stoff) === FC.GEFUEGE_GESETZ.rolle.holz;
+        const kopf = holz
+            ? W.hoch + G.stamm.wechsel / 2
+            : K
+              ? K.y + K.hoch / 2 + (K.aussen ? 0 : G.zinne.brust + G.zinne.hoch)
+              : W.hoch;
+        const wand = FC.mauerNetz(M, { art: "wand", lang: 36, fuss, steig: 0, aussen: 1, saat: 7 });
+        const hang = FC.mauerNetz(M, { art: "wand", lang: 36, fuss, steig: 0.2, aussen: -1, saat: 7 });
+        const turm = FC.mauerNetz(M, { art: "turm", fuss, saat: 3 });
+        const teile = wand.flatMap((N) => N.teile.map((x) => x.art));
+        const zinnen = teile.filter((a) => a === "zinne").length;
+        if (M.art === "steinring" && zinnen !== Math.floor((36 + W.ueber) / (G.zinne.breit + G.zinne.luecke)))
+            aus.fehl.push(`steinring: ${zinnen} Zinnen auf 36 m`);
+        const L = 36 + W.ueber;
+        aus.formen.push({
+            art: M.art,
+            jahr,
+            wand: pruef(M.art + " Wand", wand, -fuss, kopf, holz ? G.stamm.wechsel : 0),
+            hang: pruef(M.art + " Wand am Hang", hang, -fuss - 0.1 * L, kopf + 0.1 * L, 0.5),
+            turm: pruef(M.art + " Turm", turm, -fuss, BW ? BW.hoch + (K ? K.hoch : 0) : D && M.dachStoff ? D.y + D.hoch / 2 : T.hoch),
+            teile: [...new Set(teile)].join("+"),
+            zinnen,
+        });
+    }
+    const zh = 0.1 * (6 + G.zaun.pfosten / 2); // der Hub des Hangs am letzten Pfosten (12 m, 0,1 je Meter)
+    aus.zaun = pruef("Zaun", FC.zaunNetz(12, 0.1, 5), -G.zaun.fuss - zh, G.zaun.hoch + zh);
+    const Z = G.zinne;
+    aus.band = Z.breit >= 0.7 && Z.breit <= 2.35 && Z.hoch >= 1 && Z.hoch <= 2 && Z.luecke > 0 && Z.luecke <= Z.breit;
+    return aus;
+}
 function jahresringe(FC, o = {}) {
     const J = { paare: [], fehl: [] };
     for (const seed of o.saaten || [1, 2, 3, 5, 7, 11, 13, 17]) {
@@ -1593,6 +1665,12 @@ hauptLauf(async () => {
                 /Mauer zu viel \(\S+, Ort der Welt \d+, Schnitt \d+\)/.test(Jw.fehl),
             fehl.slice(0, 6).join(" · ")
         );
+        const [WG, WGm] = [wehrGestalt(FC), wehrGestalt(FC, { mut: 1 })];
+        check(
+            `J3 DIE GESTALT DER WEHR (fachwerk mauerNetz): ${WG.formen.map((x) => `${x.art} ${x.wand} + ${x.turm} Dreiecke (${x.teile}${x.zinnen ? ", " + x.zinnen + " Zinnen" : ""})`).join(" · ")} · Zaun ${WG.zaun} — jedes zu seiner Normale gewunden, Fuß und Kopf im Gesetz, die Zinne im Band der Quelle (0,70–2,35 m breit, 1–2 m hoch, Scharte ≤ Zinne); die Mutante mit einem gedrehten Dreieck fällt (${WGm.fehl.length})`,
+            WG.formen.length === 3 && !WG.fehl.length && WG.band === true && WGm.fehl.length === 1,
+            [...WG.fehl, ...WGm.fehl].slice(0, 4).join(" · ")
+        );
         if (nur("j")) wandEnde(errs, "DIE JAHRESRINGE STEHEN (Teil J).");
     }
     if (!nur("z") && !ww) {
@@ -2384,14 +2462,21 @@ hauptLauf(async () => {
         const eB = e1.find((e) => e.studioOv && ovA && e.studioOv.rolle !== ovA.rolle);
         const ovB = eB ? r._artifactStudioOv(eB) : null;
         res.ovKeysSplit = !!(ovA && ovB && r._studioOvHash(ovA) !== r._studioOvHash(ovB));
-        // DER ERLEBNIS-HEBEL (Schicht-Vollendung): die Hof-Bäume und Marktstände des Plans stehen, die Zäune laufen über den
-        // Zaun-Pool, die Äcker in die Wege-Karte; ohne die Schichten hebt er keins davon (die Zähne). Die Probe räumt ihre Bauten.
+        // DER ERLEBNIS-HEBEL (Schicht-Vollendung): die Hof-Bäume und Marktstände des Plans stehen, Zäune und Mauer liegen im Satz
+        // der Einfriedung (`_einfriedungLege`), die Äcker in der Wege-Karte; ohne die Schichten hebt er keins davon (die Zähne).
+        // Die Probe räumt ihre Bauten und zählt das GEBAUTE: die Stücke des Satzes (Zaun) und die Teile des Lesers (`_mauerGebaut`:
+        // Wand und Krone je Segment, Turm und Dach je Turm — die Zählung der Streifen des Pools bis mauer-im-stoff).
+        const einfriedung = () => [...(st.einfriedung || new Map()).keys()];
+        const mauerZahl = () =>
+            r._mauerGebaut().filter((x) => /^(wand|turm|dach)$/.test(x.art) || (x.art === "krone" && /:w\d+$/.test(x.stueck)))
+                .length;
         const erlebnis = (p, key) => {
             const n0 = st.architectures.length;
             const wk = r._wegeKarteEnsure();
             const b0 = wk.siedlungen.length;
-            const m0 = (st.stlMauer || {}).top | 0;
-            const zaeune = __rufe(r, "_spawnSettlementErlebnis", r, "_stlZaunAddStrip", [p, o1, { key }]);
+            for (const k of einfriedung()) r._einfriedungFaellt(k);
+            __rufe(r, "_spawnSettlementErlebnis", r, "_einfriedungLege", [p, o1, { key }]);
+            const zaeune = einfriedung().filter((k) => k.startsWith("zaun:")).length;
             const neu = st.architectures.slice(n0);
             neu.forEach((e) => r.removeArchitecture(e));
             const aecker = wk.siedlungen.slice(b0).some((b) => b.formen.some((fo) => fo.kanal === 1));
@@ -2402,7 +2487,7 @@ hauptLauf(async () => {
                 zaeune,
                 aecker,
                 plan: plan_,
-                mauer: ((st.stlMauer || {}).top | 0) - m0,
+                mauer: mauerZahl(),
             };
         };
         // Die Stände stehen nur auf einem Markt-Platz; der Plan des Samens 7 hat keinen — zwei Stände an Hof-Baum-Plätzen des Plans.
@@ -2417,15 +2502,134 @@ hauptLauf(async () => {
             ? erlebnis(Object.assign({}, v2, { trees: [], staende: [], fences: [], felder: [] }), "__probe2")
             : null;
         // DIE STADTMAUER (siedlung.K2): der Erlebnis-Hebel legt die Mauer des Exports der Stadt (Same 9, 36 Häuser) in den
-        // Mauer-Pool — Wand und Krone je Segment, Turm und Dach je Turm, in der Form ihrer Zeit (fachwerk `mauerGestalt`: die
-        // Palisade ohne Krone, die Bastion mit Bollwerken ohne Dach); er wirft, die Natur weicht ihrer Linie
+        // Satz der Einfriedung — Wand und Krone je Segment, Turm und Dach je Turm, in der Form ihrer Zeit (fachwerk `mauerGestalt`:
+        // die Palisade ohne Krone, die Bastion mit Bollwerken ohne Dach); er wirft, die Natur weicht ihrer Linie
         const vS = await r._ortWahl(await r._foundryRequestSettlement({ seed: 9, nH: 36 }), o1);
         const g = vS.mauer.segs[0];
         res.stadt = Object.assign(erlebnis(vS, "__mauer"), {
             soll: vS.mauer.segs.length * (vS.mauer.krone ? 2 : 1) + vS.mauer.towers.length * (vS.mauer.dach ? 2 : 1),
-            wirft: st.stlMauer.mesh.castShadow,
+            wirft: st.chunkSaetze.get("siedlung-einfriedung").mesh.castShadow,
             natur: r._aufWeg(o1.x + (g.x0 + g.x1) / 2, o1.z + (g.z0 + g.z1) / 2, 0.5),
         });
+        // DIE MAUER IM STOFF DER WELT (mauer-im-stoff, Gebot 10): was die Mauer ZEICHNET, gelesen am Puffer ihres Satzes — nie am
+        // Quelltext. (a) Kein Instanz-Pool der Kiste zeichnet Mauer oder Zaun (der Täter beim Namen: `siedlung-mauer inst×n`, der
+        // weiße Stoff mit Instanz-Farbe, ohne Verband); (b) ihr Satz zeichnet im Bau-Stoff der Häuser: derselbe Stoff, den der
+        // Wirt den Teilen eines Hauses für ihren Satz gibt (`hausStoffe`); (c) jede Ecke trägt die Nummer des Verbands oder
+        // Gefüges ihrer Rolle (`aRegler.w` × 127 gegen fachwerk `gefuegeReihe`; Holz: die Faser ab `GEFUEGE_GESETZ.faser.ab` oder
+        // Hirnholz) und den Ton ihrer Rolle; (d) die Gestalt der Form ihrer Zeit steht (Steinring: Zinnen je Wand, das Zeltdach
+        // je Turm; Palisade: die Pfahlreihe; Bastion: die Wallkrone). DER LESER GEGEN DEN PUFFER: jedes Teil von `_mauerGebaut`
+        // steht im Puffer, wo seine Matrix es nennt (m × Einheits-Form, fachwerk `mauerEinheit`), und jede Ecke der Mauer im
+        // Puffer gehört einem Teil des Lesers. `mutant`: "flach" nimmt einem Bereich im Puffer den Verband (und stellt ihn
+        // zurück), "zwilling" lässt den Satz in einem zweiten Stoff zeichnen (und stellt den EINEN zurück), "geist" hängt dem
+        // Leser ein Teil an, das nicht gezeichnet wird.
+        // DER BAU-STOFF DER HÄUSER, wie der Wirt ihn ihrem Satz gibt: das Flat eines Hauses der Probe (Stufe 0, der EINE Chokepoint
+        // `_foundryFlattenFor`), je Teil der Stoff seines Satzes (`_bauSatzArt`: der Weg jeder Instanz-Gruppe eines Hauses). Unter
+        // dem Null-Renderer zeichnet kein Haus — sein Satz-Stoff steht trotzdem fest; die Probe nimmt die Satz-Arten wieder, die
+        // sie dabei eintrug.
+        const hausE = e1[0];
+        const hausPreset = hausE ? r._foundryPresetForEntry(hausE) : null;
+        let hausFlat = false;
+        if (hausPreset) await __weltDa(() => (hausFlat = r._foundryFlattenFor(hausE, hausPreset, 0)) !== null);
+        const artenVor = new Set((st.satzStoffe || new Map()).keys());
+        const hausStoffe = ((hausFlat && hausFlat.leaves) || []).map((lf) => {
+            const art = r._bauSatzArt(lf, null, lf.castShadow !== undefined ? !!lf.castShadow : true);
+            return art ? st.satzStoffe.get(art).mat : null;
+        });
+        for (const k of [...(st.satzStoffe || new Map()).keys()]) if (!artenVor.has(k)) st.satzStoffe.delete(k);
+        const mauerLinse = (mutant = null) => {
+            const FCk = globalThis.__fachwerkCore;
+            const s = st.chunkSaetze ? st.chunkSaetze.get("siedlung-einfriedung") : null;
+            const kisten = [];
+            st.scene.traverse((o) => {
+                if (o.isInstancedMesh && /^siedlung-(mauer|zaun)/.test(o.name) && o.count > 0)
+                    kisten.push(`${o.name} inst×${o.count}`);
+            });
+            if (!s || typeof r._mauerGebaut !== "function")
+                return { kisten, teile: 0, grund: "kein Satz der Einfriedung, kein Leser" };
+            const teile = r._mauerGebaut();
+            if (mutant === "geist" && teile.length) {
+                const g = Object.assign({}, teile[teile.length - 1]);
+                g.m = g.m.slice();
+                g.m[12] += 5;
+                teile.push(g);
+            }
+            const A = s.mesh.geometry.attributes;
+            const [pos, reg, col] = [A.position.array, A.aRegler.array, A.color.array];
+            const stoff = s.mesh.material;
+            if (mutant === "zwilling") s.mesh.material = Object.create(stoff);
+            const hausTeile = hausStoffe.filter((m) => m === s.mesh.material).length;
+            s.mesh.material = stoff;
+            const flach = mutant === "flach" && teile.length ? s.bloecke.get(teile[0].bereich) : null;
+            const alt = flach ? reg.slice(flach.vStart * 4, (flach.vStart + flach.vAnzahl) * 4) : null;
+            if (flach) for (let i = 0; i < flach.vAnzahl; i++) reg[(flach.vStart + i) * 4 + 3] = 0;
+            const GG = FCk.GEFUEGE_GESETZ;
+            const aus = {
+                kisten,
+                teile: teile.length,
+                hausTeile,
+                hausVon: hausStoffe.length,
+                ohneVerband: 0,
+                tonAb: 0,
+                lageAb: 0,
+                fremd: 0,
+                arten: {},
+                formen: {},
+                ecken: 0,
+                imPuffer: 0,
+            };
+            // (die Farbe des Satzes als Zahl: ein Float16Array liefert sie, ein Puffer aus rohen Halb-Zahlen (Uint16) wird gewandelt;
+            // sRGB → linear wie fachwerk `_linHex`)
+            const halb = (h) => {
+                if (!(col instanceof Uint16Array)) return h;
+                const [e, f] = [(h >> 10) & 31, h & 1023];
+                return (h >> 15 ? -1 : 1) * (e === 0 ? f * 2 ** -24 : 2 ** (e - 15) * (1 + f / 1024));
+            };
+            const lin = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+            for (const x of teile) {
+                aus.arten[x.art] = (aus.arten[x.art] || 0) + 1;
+                aus.formen[x.form] = (aus.formen[x.form] || 0) + 1;
+                const b = s.bloecke.get(x.bereich);
+                if (!b) {
+                    aus.fremd++;
+                    continue;
+                }
+                const E = FCk.mauerEinheit(x.form, x.arg);
+                const reihe = FCk.gefuegeReihe(x.stoff);
+                const holz = reihe === GG.rolle.holz;
+                const ton = FCk.MAUER_GESTALT.ton[x.stoff];
+                // (die Untersicht des Wehrgangs trägt den Anteil des Gesetzes, jedes andere Teil den vollen Ton — aus dem Gesetz, nie
+                // aus dem Wort des Lesers)
+                const anteil = x.art === "untersicht" ? FCk.MAUER_GESTALT.untersicht : 1;
+                const soll = (ton != null ? [16, 8, 0].map((sh) => lin(((ton >> sh) & 255) / 255)) : FCk._colFor(x.stoff)).map(
+                    (c) => c * anteil
+                );
+                const m = x.m;
+                aus.ecken += x.n;
+                for (let i = 0; i < x.n; i++) {
+                    const v = b.vStart + x.v0 + i;
+                    const [ex, ey, ez] = [E.pos[i * 3], E.pos[i * 3 + 1], E.pos[i * 3 + 2]];
+                    let ab = 0;
+                    for (let k = 0; k < 3; k++)
+                        ab = Math.hypot(ab, m[k] * ex + m[4 + k] * ey + m[8 + k] * ez + m[12 + k] - pos[v * 3 + k]);
+                    aus.lageAb = Math.max(aus.lageAb, ab);
+                    const nr = reg[v * 4 + 3];
+                    if (holz ? !(nr === GG.faser.hirn || nr >= GG.faser.ab) : nr !== reihe || !(reihe > 0 || x.stoff === "gras"))
+                        aus.ohneVerband++;
+                    for (let k = 0; k < 3; k++) aus.tonAb = Math.max(aus.tonAb, Math.abs(halb(col[v * 4 + k]) - soll[k]));
+                }
+            }
+            for (const [k, b] of s.bloecke) if (k.startsWith("mauer:")) aus.imPuffer += b.vAnzahl;
+            if (flach) reg.set(alt, flach.vStart * 4);
+            aus.lageAb = +aus.lageAb.toFixed(5);
+            aus.tonAb = +aus.tonAb.toFixed(4);
+            return aus;
+        };
+        res.mauerStoff = Object.assign(mauerLinse(), {
+            form: vS.mauer.art,
+            segs: vS.mauer.segs.length,
+            towers: vS.mauer.towers.length,
+        });
+        res.mauerMutant = { flach: mauerLinse("flach"), zwilling: mauerLinse("zwilling"), geist: mauerLinse("geist") };
         // DORF-IN-TERRAIN — der Footprint reist als entry.fundament (der Grundriss der Wände und des Erdbaus eines Altstands);
         // das Podest fiel mit dem Erdbau: keine Fundament-Box, kein Sockel-Pool.
         res.fundamentTravels = e1.length > 0 && e1.every((e) => e.fundament && Number.isFinite(e.fundament.ex));
@@ -3885,7 +4089,7 @@ hauptLauf(async () => {
     const eh = out.erlebnis || {};
     const el = out.erlebnisLeer || {};
     check(
-        // Hof-Bäume, Marktstände, Zäune über den Zaun-Pool, Äcker in der Wege-Karte
+        // Hof-Bäume, Marktstände, Zäune im Satz der Einfriedung, Äcker in der Wege-Karte
         "B: der Erlebnis-Hebel hebt die Schichten des Plans — ohne sie keine",
         eh.baeume > 0 &&
             eh.staende > 0 &&
@@ -3902,6 +4106,35 @@ hauptLauf(async () => {
         `B: DIE STADTMAUER (siedlung.K2) — ${sm.mauer}/${sm.soll} Streifen, wirft, die Natur weicht; Dorf ${eh.mauer}`,
         sm.mauer >= 0.8 * sm.soll && sm.wirft && sm.natur && !eh.mauer,
         sm
+    );
+    // DIE MAUER IM STOFF DER WELT und DER LESER GEGEN DEN PUFFER (mauer-im-stoff): beide Zeilen mit ihrer Mutante
+    const ms = out.mauerStoff || {};
+    const mm = out.mauerMutant || {};
+    const gestalt = (x) =>
+        ({
+            steinring: x.arten.zinne >= ms.segs && x.formen.zelt === ms.towers,
+            palisade: x.formen.pfahlreihe > 0 && x.formen.pfahlreihe === x.arten.wand,
+            bastion: x.arten.wallkrone > 0,
+        })[ms.form] === true;
+    const imStoff = (x) =>
+        !!x &&
+        !!x.arten &&
+        x.kisten.length === 0 &&
+        x.teile > 0 &&
+        x.hausTeile > 0 &&
+        x.ohneVerband === 0 &&
+        x.tonAb <= 0.004 &&
+        gestalt(x);
+    const leserTreu = (x) => !!x && x.teile > 0 && x.fremd === 0 && x.lageAb <= 0.001 && x.ecken === x.imPuffer;
+    check(
+        `B: DIE MAUER IM STOFF DER WELT (${ms.form}) — keine Kiste mit Instanz-Farbe zeichnet sie${ms.kisten && ms.kisten.length ? " (Täter: " + ms.kisten.join(", ") + ")" : ""}, ihr Satz zeichnet im Bau-Stoff der Häuser (${ms.hausTeile} von ${ms.hausVon} Teilen eines Hauses ziehen denselben Stoff in ihren Satz), ${ms.ecken} Ecken tragen Verband und Ton ihrer Rolle (ohne ${ms.ohneVerband}, Ton ab ${ms.tonAb}), die Gestalt steht (${JSON.stringify(ms.arten)}); die Mutanten ohne Verband und mit einem zweiten Stoff fallen`,
+        imStoff(ms) && !imStoff(mm.flach) && !imStoff(mm.zwilling),
+        { ist: ms, flach: mm.flach, zwilling: mm.zwilling && { hausTeile: mm.zwilling.hausTeile } }
+    );
+    check(
+        `B: DER LESER DES GEBAUTEN (\`_mauerGebaut\`) nennt, was im Puffer steht — ${ms.teile} Teile, Lage ab ${ms.lageAb} m (≤ 0,001), ${ms.ecken} von ${ms.imPuffer} Ecken der Mauer gehören einem Teil; die Mutante mit einem Teil, das nicht gezeichnet wird, fällt (Lage ab ${mm.geist && mm.geist.lageAb} m)`,
+        leserTreu(ms) && !leserTreu(mm.geist),
+        { ist: ms, mutant: mm.geist }
     );
     check("B: fail-closed — unbekannte Kultur faellt (0 platziert, 1 uebersprungen)", out.failClosed === true);
     check(
