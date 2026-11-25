@@ -557,6 +557,7 @@
             tc: Math.tan((P.kliffWinkel * Math.PI) / 180),
             schicht: null, // die Schicht-Periode (`schichtMass`), einmal je Netz
             talNass: 0, // der See-Anteil des zuletzt gefragten Talgrunds (`talgrund`)
+            talSpiegel: NaN, // sein Spiegel
             spendeMm: K.spendeMm,
             seeVerlustMm: K.seeVerlustMm,
         };
@@ -1480,6 +1481,8 @@
         let sw = 0;
         let sb = 0;
         let sn = 0;
+        let bn = 0;
+        let spn = NaN;
         for (let p = 0; p < a.length; p += 4) {
             const dx = x - a[p];
             const dz = z - a[p + 1];
@@ -1488,35 +1491,28 @@
             const w = q * q;
             sw += w;
             sb += w * a[p + 2];
-            if (a[p + 3] === a[p + 3]) sn += w;
+            if (a[p + 3] === a[p + 3]) {
+                sn += w;
+                if (w > bn) {
+                    bn = w;
+                    spn = a[p + 3];
+                }
+            }
         }
-        // der Anteil des Sees am Talgrund (`flaeche`: der Grund des Sees trägt kein Relief, `netzSee`)
+        // der Anteil des Sees am Talgrund und der Spiegel des Sees, dessen Knoten ihn hier am stärksten tragen (`flaeche`,
+        // `netzSee`)
         N.talNass = sw > 0 ? sn / sw : 0;
+        N.talSpiegel = spn;
         return sw > 0 ? sb / sw : N.base + grossform(N, x, z).K;
     }
+    const SEE_GRUND = Object.freeze({ tiefe: 3 });
     // DER SEE DES NETZES an (x, z) (fluss-fuellung): der Spiegel des Sees, dessen Knoten den Talgrund hier am stärksten
     // tragen, und sein Anteil am Talgrund (0…1) — null, wo kein See-Knoten den Ort erreicht. Leser: die Hydrosphäre (ihr
     // See steht auf diesem Spiegel, über die Grenzen ihrer Regionen hinweg) und die Linse.
     function netzSee(L, x, z) {
         const N = netzFuer(L);
-        const S = N.S[0];
-        const R2 = 1.6 * S * 1.6 * S;
         talgrund(N, x, z);
-        if (!(N.talNass > 0)) return null;
-        const a = talZelle(N, Math.floor(x / S), Math.floor(z / S));
-        let best = -1;
-        let bw = 0;
-        for (let p = 0; p < a.length; p += 4) {
-            if (a[p + 3] !== a[p + 3]) continue;
-            const dx = x - a[p];
-            const dz = z - a[p + 1];
-            const q = 1 - (dx * dx + dz * dz) / R2;
-            if (q > 0 && q * q > bw) {
-                bw = q * q;
-                best = p;
-            }
-        }
-        return best < 0 ? null : { spiegel: a[best + 3], gewicht: N.talNass };
+        return N.talNass > 0 ? { spiegel: N.talSpiegel, gewicht: N.talNass } : null;
     }
 
     // DIE FLÄCHE der Ebenen 0..kmax an (x, z): ausgehend von der Hülle das Minimum der Talprofile je Ebene. `aus` (optional)
@@ -1524,6 +1520,12 @@
     function flaeche(N, kmax, x, z, gf, aus) {
         const tg = talgrund(N, x, z);
         let H = tg + gf.rel * (1 - N.talNass);
+        // DER GRUND DES SEES (fluss-fuellung): wo der See den Talgrund trägt (Anteil > ½), liegt das Gelände unter seinem
+        // Spiegel — das Ufer bei ½, die Mitte `SEE_GRUND.tiefe` darunter (die Hydrosphäre hält dort das Wasser, `hydroNetzSeen`)
+        if (N.talNass > 0.5) {
+            const unter = N.talSpiegel + SEE_GRUND.tiefe * (1 - 2 * N.talNass);
+            if (unter < H) H = unter;
+        }
         let steil = 0;
         let nah = 1;
         let hang = 0;
@@ -6504,10 +6506,24 @@
     // Saat, keine Live-Simulation → multiplayer-sicher. Es rechnet der voxel-worker vor dem ersten Chunk (Lehre 14), der
     // Haupt-Faden empfängt das Ergebnis per Transfer (Lehre 24); bis zur Karte hydro-faden rechnete der Stamm es synchron im
     // Haupt-Faden (`_computeHydrosphere`: Kalt-Boot 168 ms, je ferne Kachel 235 ms).
+    // DER SEE DES NETZES IN DER HYDROSPHÄRE (fluss-fuellung): die Füllung je Region (ihre Ränder sind Abfluss) hält keinen
+    // See, der über eine Region hinausreicht — die Zellen unter dem Spiegel eines Netz-Sees (`netzSee`, dort, wo sein Grund den
+    // Talgrund trägt: Anteil ≥ ½) stehen auf seinem Spiegel, über jede Grenze hinweg; abseits der Seen bit-gleich.
+    function hydroNetzSeen(ctx, L) {
+        const { dim, surf, filled, isOcean, cell, originX, originZ } = ctx;
+        for (let j = 0; j < dim; j++)
+            for (let i = 0; i < dim; i++) {
+                const idx = i + j * dim;
+                if (isOcean[idx]) continue;
+                const s = netzSee(L, originX + (i + 0.5) * cell, originZ + (j + 0.5) * cell);
+                if (s && s.gewicht >= 0.5 && s.spiegel > surf[idx] && s.spiegel > filled[idx]) filled[idx] = s.spiegel;
+            }
+    }
     function hydrosphaere(L, H, boden, origin) {
         const ctx = hydroInit(L, H, origin);
         hydroMarkOcean(ctx);
         hydroPriorityFlood(ctx, H);
+        hydroNetzSeen(ctx, L);
         const lakes = hydroExtractLakes(ctx, H);
         seeBilanz(ctx, lakes, ortDer(L).wuchs.bilanz, H);
         const rivers = hydroNetzFluesse(ctx, L, H);

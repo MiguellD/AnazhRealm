@@ -16,6 +16,8 @@ Alles steht in EINEM Gesetz: `gelaende-core.js`, Ebene 0 des Netzes (Entscheid d
   - `V = seeVerlustMm` des Orts. In der Heimat ist er 0, weil am Anker der Niederschlag die Verdunstung übertrifft (PET 715 mm gegen P ≈ 745 mm).
 - **Gelände.**
   - Der See-Grund liegt ≤ 2 m unter dem Spiegel; der Spiegel ist die Sohle des Überlaufs.
+  - Wo der See den Talgrund trägt (Anteil > ½), liegt das Gelände unter dem Spiegel: das Ufer bei ½, die Mitte bei `SEE_GRUND.tiefe` 3 m.
+  - Die Hydrosphäre liest `netzSee` (`hydroNetzSeen`): Zellen unter dem Netz-Spiegel stehen auf ihm, über die Regionsgrenzen hinweg.
   - Die Mündung in einen See liegt 0,5 m unter seinem Spiegel.
   - Im See ziehen keine Segmente.
   - Der Talgrund trägt den See-Anteil; das Relief im See ist gedämpft, abseits der Seen bit-gleich (`rel·1`).
@@ -34,7 +36,7 @@ Saat anazh-realm-seed, Mess-Wiese −280,4/−1045,6, Netz der Ebene 0 ±100 km 
 | Becken-Land (Lauf endet in Grube) | 70,02 % | **0 %** |
 | See an der Senke der Messorte | 1 Knoten | **40,96 km², Spiegel 21,99 m (K)**, Gelände-Spiegel −1,83 m |
 | Ende der Wiese | Senke (hp −0,14) | **Meer** bei 4545/−13460, A 363,5 km² |
-| Wiese-Höhe (`hoehe`) | 27,61 m | **14,71 m** (Seeufer, nicht überflutet) |
+| Wiese-Höhe (`hoehe`) | 27,61 m | **12,34 m** (Seeufer, 14,2 m über dem Spiegel, nicht überflutet) |
 | Netz ms (fluss ±100 km) | 14,2 | 40,3 |
 | 2 Kacheln 64² kalt | — | 87 ms |
 
@@ -44,16 +46,21 @@ Saat anazh-realm-seed, Mess-Wiese −280,4/−1045,6, Netz der Ebene 0 ±100 km 
 
 ## Ehrlich offen (Bahn ≈ 45 %)
 
-1. **`gate:gelaende-realismus` ROT an der Saat beta, 3 von 12 Presets.**
-   - Werte: alpental θ −0,51 R² 0,09; tafelland θ 0,27; kueste θ 0,29 (Korridor θ ≥ 0,3).
-   - Die Heimat-Saat ist in allen 4 Presets grün, alpha in allen 4.
-   - Die Ursache ist nicht gefunden. Widerlegt sind: das abgeschnittene A im Fenster (das größte A bei beta/alpental fiel 39 → 10,6 km²) und die See-Flächen (Flint schließt S < 1e-4 aus).
-   - Der tiefe K-Grund trieb vorher auch die Heimat-Saat rot (Senken alpental 0,37/km²). Er fiel auf ≤ 2 m, damit sind die Seen flach. Der tiefe Grund ist offen.
+1. **`gate:gelaende-realismus` ROT.** Das Urteil kippt je Grund-Variante zwischen den Presets; die Ursache ist nicht gefunden.
+
+   | Variante | Heimat | alpha | beta | gesamt |
+   |---|---|---|---|---|
+   | tiefer K-Grund | 2/4 | 3/4 | 2/4 | 7/12 |
+   | Grund ≤ 2 m | 4/4 | 4/4 | 1/4 | 9/12 |
+   | Grund ≤ 2 m + Grund unter dem Spiegel (Stand) | 1/4 | 4/4 | 3/4 | **8/12** |
+
+   - Vorher c765fea8 waren es 12/12.
+   - Widerlegt sind zwei Ursachen: das abgeschnittene A im Fenster (das größte A bei beta/alpental fiel 39 → 10,6 km²) und die See-Flächen (Flint schließt S < 1e-4 aus).
+   - Die rote Zahl ist meist θ knapp unter 0,3 oder R² < 0,5.
 2. **`gate:worker-dichte --faden` ROT: „kein Feld des Staus aus dem Faden"** (0 Stau-Felder). Vermutlich steht der Damm der Szene auf dem geänderten Gelände. Nicht geprüft.
-3. **Hydrosphäre liest `netzSee` noch nicht.**
-   - Ihr Priority-Flood je 2-km-Region (Ränder = Abfluss) kann den 41-km²-See nicht halten.
-   - Der See steht im Gelände (Grund ≤ 2 m unter dem Spiegel), aber im Wasser nur, wo eine Region ihn schließt.
-   - Damit ist Station `leben.wasser.bild#1` nicht belegt.
+3. **`gate:wasser-leben` Selbsttest ROT: N2 EIS „kein See an 1816/−6168“ (Säule 0,28 m).** Der Anker ist ein Ort des alten Senken-Sees. Ihn auf einen See des Gesetzes umzusetzen ist ein Vertragsakt und nicht entschieden. Die Hydrosphäre liest `netzSee` jetzt; was dazu noch offen ist:
+   - Die Station `leben.wasser.bild#1` ist nicht gelaufen, kein Browser-Lauf. Der nächste Fluss (Art „fluss“) liegt 5,30 km von der Wiese.
+   - Die Zahl der See-Zellen in der Hydrosphäre ist ungemessen.
 4. **Kachel-Vorbau im Faden (a) nicht gebaut.**
    - Der Faden ruft denselben Kern und zahlt die Füllung bei der ersten Frage (lazy, memo je Netz).
    - Kosten je erste Kachel ungemessen im Faden; in node kosten 2 Kacheln 64² 87 ms.
