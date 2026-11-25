@@ -17586,10 +17586,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 16,
+    "heute": 17,
     "kern": 1,
     "kernDazu": 1,
-    "anteilHeute": 7.6,
+    "anteilHeute": 8,
     "anteilKern": 0.3
    },
    "perspektiven": [
@@ -17777,13 +17777,14 @@
        "richter": "1 000 Welten × 20 Orte: kein Widerspruch Klima ↔ Relief/Meer in ≥ 95 %"
       }
      ],
-     "heute": 1,
+     "heute": 2,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Stand 0: Regen ist ein Wetter-Stempel, das Meer kein Glied; ein Klima für die ganze Welt.",
      "alt": [],
      "heuteSprossen": [
-      3
+      3,
+      4
      ],
      "kernSprossen": []
     },
@@ -20092,11 +20093,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 117,
+  "heute": 118,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
-  "anteilHeute": 6,
+  "anteilHeute": 6.1,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20107,7 +20108,7 @@
   },
   "gliederLeitern": 9,
   "beide": 60,
-  "nachwache": 57
+  "nachwache": 58
  },
  "zusammengelegt": [
   {
