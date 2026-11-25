@@ -876,7 +876,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an b1f0de0e: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
+     "grund": "Station seit der Messung geändert — zuletzt an 486a6685: die Seite warf: (b)(d) 12.1 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
      "gehalten": true
     },
     {
@@ -12101,7 +12101,7 @@
   },
   "karte2.leben.kopplung.evolution-planet": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.evolution-planet#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, stamm/bild-himmel.js, stamm/dirigent-takt.js +2) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.leben.kopplung.evolution-planet#1 gtx: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#2 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#2 gtx: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#4 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#5 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#5 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#6 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.evolution-planet#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, stamm/bild-himmel.js, stamm/dirigent-takt.js +2) — zuletzt an 486a6685: Deckel 166 s gerissen: Stille seit 105.8 s nach 166 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT leben.kopplung.evolution-planet 60 · karte2.leben.kopplung.evolution-planet#1 gtx: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#2 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#2 gtx: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#4 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#5 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#5 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#6 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.leben.kopplung.evolution-planet#1",
@@ -12109,7 +12109,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, stamm/bild-himmel.js, stamm/dirigent-takt.js +2) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, stamm/bild-himmel.js, stamm/dirigent-takt.js +2) — zuletzt an 486a6685: Deckel 166 s gerissen: Stille seit 105.8 s nach 166 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT leben.kopplung.evolution-planet 60",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -12354,16 +12354,16 @@
   },
   "karte2.leben.kopplung.stadt-im-netz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.stadt-im-netz#2 radeon: ungemessen (R10) — zuletzt an b1f0de0e: der Raffer trug die Seite antwortete nicht: /eval: {\"ms\":74194,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\ 0 von 1 Takten in 0 s — am Budget d · karte2.leben.kopplung.stadt-im-netz#2 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#3 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#4 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#5 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#5 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#6 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#6 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#7 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#7 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#8 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.stadt-im-netz#2 radeon: ROT: S2 die Leiter leben.kopplung.stadt-im-netz ist im Lauf nicht gemessen (die Probe endete vor ihr) an 486a6685 · karte2.leben.kopplung.stadt-im-netz#2 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#3 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#4 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#5 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#5 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#6 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#6 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#7 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#7 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#8 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.kopplung.stadt-im-netz#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an b1f0de0e: der Raffer trug die Seite antwortete nicht: /eval: {\"ms\":74194,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\ 0 von 1 Takten in 0 s — am Budget d",
-     "ungemessen": true
+     "zahl": "S2 die Leiter leben.kopplung.stadt-im-netz ist im Lauf nicht gemessen (die Probe endete vor ihr) · gemessen vor dem Abbruch: Deckel 166 s gerissen: Stille seit 105.8 s nach 166 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt)",
+     "sha": "486a6685925d51302752c756d7d47654d83922d1",
+     "grund": "ROT: S2 die Leiter leben.kopplung.stadt-im-netz ist im Lauf nicht gemessen (die Probe endete vor ihr)",
+     "r6": "naehe"
     },
     {
      "id": "karte2.leben.kopplung.stadt-im-netz#2",
@@ -28039,7 +28039,7 @@
   },
   "karte2.planet.kopplung.bahn-klima": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.84 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.416 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.841 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.242 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kopplung.bahn-klima#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, stamm/bild-himmel.js) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.planet.kopplung.bahn-klima#2 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.bahn-klima#3 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#4 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#5 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#6 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.84 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.416 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.841 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.242 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kopplung.bahn-klima#2 radeon: ROT: S2 Umfang nicht erzeugbar: der Planet-Faden liest den Körper der Saat nicht (voxel-worker.js:1429 planetPlanVon: P.PLANET_ERDE fest): Neigung 3.096° → Amplitude 7.22 K, Neigung 35.786° → 14.813 K, Erd-Saat 19.523 K (Spanne der Saaten 17.48 K: das Relief der Saat unter dem Körper der Erd · amp0Prozent 37 % gegen Soll ≤ 10 % ✗ · amp45Faktor 0,759 gegen Soll ≥ 2 ✗ · schneelinieVersatzM ungemessen gegen Soll > 0 m ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":4927,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h) · Täter: voxel-worker.js planetPlanVon (PLANET_ERDE fest) an 486a6685 · karte2.planet.kopplung.bahn-klima#2 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.bahn-klima#3 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#4 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#5 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#6 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.bahn-klima#1",
@@ -28067,10 +28067,9 @@
      "id": "karte2.planet.kopplung.bahn-klima#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, stamm/bild-himmel.js) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "S2 Umfang nicht erzeugbar: der Planet-Faden liest den Körper der Saat nicht (voxel-worker.js:1429 planetPlanVon: P.PLANET_ERDE fest): Neigung 3.096° → Amplitude 7.22 K, Neigung 35.786° → 14.813 K, Erd-Saat 19.523 K (Spanne der Saaten 17.48 K: das Relief der Saat unter dem Körper der Erd · amp0Prozent 37 % gegen Soll ≤ 10 % ✗ · amp45Faktor 0,759 gegen Soll ≥ 2 ✗ · schneelinieVersatzM ungemessen gegen Soll > 0 m ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":4927,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h) · Täter: voxel-worker.js planetPlanVon (PLANET_ERDE fest)",
+     "sha": "486a6685925d51302752c756d7d47654d83922d1",
+     "grund": "ROT: S2 Umfang nicht erzeugbar: der Planet-Faden liest den Körper der Saat nicht (voxel-worker.js:1429 planetPlanVon: P.PLANET_ERDE fest): Neigung 3.096° → Amplitude 7.22 K, Neigung 35.786° → 14.813 K, Erd-Saat 19.523 K (Spanne der Saaten 17.48 K: das Relief der Saat unter dem Körper der Erd · amp0Prozent 37 % gegen Soll ≤ 10 % ✗ · amp45Faktor 0,759 gegen Soll ≥ 2 ✗ · schneelinieVersatzM ungemessen gegen Soll > 0 m ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":4927,\"fehler\":\"ABNAHME ROT [Vordergrund 28.1 % näher als 8 m (der h) · Täter: voxel-worker.js planetPlanVon (PLANET_ERDE fest)",
      "r6": "konsum"
     },
     {
@@ -28274,16 +28273,15 @@
   },
   "karte2.planet.kopplung.gegenwart": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S6 ohneUrsache 0 gegen Soll = 0 ✓ · Zeuge: die Welt geändert an 1feab29c gtx — offen: karte2.planet.kopplung.gegenwart#1 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, stamm/bild-himmel.js) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.planet.kopplung.gegenwart#1 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.gegenwart#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, stamm/bild-himmel.js) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.planet.kopplung.gegenwart#2 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.gegenwart#3 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#3 gtx: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#5 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#6 radeon: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S6 ohneUrsache 0 gegen Soll = 0 ✓ · Zeuge: die Welt geändert an 1feab29c gtx — offen: karte2.planet.kopplung.gegenwart#1 radeon: ROT: S1 ursacheProzent 44,1 % gegen Soll = 100 % ✗ · Täter: stamm/vegetation-baum.js:1433 _rockGeologyClass (der Findling liest die Eis-Zeit des Planeten, ort.eis — nicht die Geschichte des Orts) an 486a6685 · karte2.planet.kopplung.gegenwart#1 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.gegenwart#2 radeon: ROT: S2 gipfelProzent 98,6 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: nur 12 Saaten (Soll 100) · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze) an 486a6685 · karte2.planet.kopplung.gegenwart#2 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.gegenwart#3 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#3 gtx: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#5 radeon: ungemessen (R10) · karte2.planet.kopplung.gegenwart#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.gegenwart#6 radeon: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.gegenwart#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, stamm/bild-himmel.js) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "S1 ursacheProzent 44,1 % gegen Soll = 100 % ✗ · Täter: stamm/vegetation-baum.js:1433 _rockGeologyClass (der Findling liest die Eis-Zeit des Planeten, ort.eis — nicht die Geschichte des Orts)",
+     "sha": "486a6685925d51302752c756d7d47654d83922d1",
+     "grund": "ROT: S1 ursacheProzent 44,1 % gegen Soll = 100 % ✗ · Täter: stamm/vegetation-baum.js:1433 _rockGeologyClass (der Findling liest die Eis-Zeit des Planeten, ort.eis — nicht die Geschichte des Orts)",
      "r6": "konsum",
      "beide": true
     },
@@ -28301,10 +28299,9 @@
      "id": "karte2.planet.kopplung.gegenwart#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, stamm/bild-himmel.js) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "S2 gipfelProzent 98,6 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: nur 12 Saaten (Soll 100) · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze)",
+     "sha": "486a6685925d51302752c756d7d47654d83922d1",
+     "grund": "ROT: S2 gipfelProzent 98,6 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: nur 12 Saaten (Soll 100) · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze)",
      "r6": "konsum"
     },
     {
@@ -28526,7 +28523,7 @@
   },
   "karte2.planet.kopplung.land-meer-luft": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.land-meer-luft#1 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#1 gtx: Station seit der Messung geändert · karte2.planet.kopplung.land-meer-luft#2 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#2 gtx: Station seit der Messung geändert · karte2.planet.kopplung.land-meer-luft#3 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, stamm/bild-himmel.js) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.planet.kopplung.land-meer-luft#3 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.land-meer-luft#4 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, stamm/bild-himmel.js) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.planet.kopplung.land-meer-luft#4 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.land-meer-luft#5 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.land-meer-luft#6 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.land-meer-luft#1 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#1 gtx: Station seit der Messung geändert · karte2.planet.kopplung.land-meer-luft#2 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#2 gtx: Station seit der Messung geändert · karte2.planet.kopplung.land-meer-luft#3 radeon: ROT: S3 die Messung der Leiter warf nach 0,484 s: /eval: {\"ms\":477,\"fehler\":\"wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)\",\"stapel\":[\"wetterVersatz (http://localhost:7804/phyto-core.js?v=18.546.413:4813:19)\",\"at #evalu · Täter: phyto-core.js wetterAt (die Zeile Nebel liest kein Meer, kein Auftrieb) an 486a6685 · karte2.planet.kopplung.land-meer-luft#3 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.land-meer-luft#4 radeon: ROT: S4 die Messung der Leiter warf nach 0,484 s: /eval: {\"ms\":477,\"fehler\":\"wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)\",\"stapel\":[\"wetterVersatz (http://localhost:7804/phyto-core.js?v=18.546.413:4813:19)\",\"at #evalu · Täter: planet-core.js planetKlimaR (Meeresströmung als Lesart der Küstenseite) an 486a6685 · karte2.planet.kopplung.land-meer-luft#4 gtx: Station seit der Messung geändert — zuletzt an 486a6685: Wirt-Wache: den Kontext der Probe hält noch: return await (async (r, T, arg, wert) => { const t0 = performance.now(); const bis = t0 + arg.ms; const liste = []; for  — Heap nach der Rücknahme 193.9 →  · karte2.planet.kopplung.land-meer-luft#5 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.land-meer-luft#6 radeon: ungemessen (R10) · karte2.planet.kopplung.land-meer-luft#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.land-meer-luft#1",
@@ -28570,10 +28567,9 @@
      "id": "karte2.planet.kopplung.land-meer-luft#3",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, stamm/bild-himmel.js) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "S3 die Messung der Leiter warf nach 0,484 s: /eval: {\"ms\":477,\"fehler\":\"wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)\",\"stapel\":[\"wetterVersatz (http://localhost:7804/phyto-core.js?v=18.546.413:4813:19)\",\"at #evalu · Täter: phyto-core.js wetterAt (die Zeile Nebel liest kein Meer, kein Auftrieb)",
+     "sha": "486a6685925d51302752c756d7d47654d83922d1",
+     "grund": "ROT: S3 die Messung der Leiter warf nach 0,484 s: /eval: {\"ms\":477,\"fehler\":\"wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)\",\"stapel\":[\"wetterVersatz (http://localhost:7804/phyto-core.js?v=18.546.413:4813:19)\",\"at #evalu · Täter: phyto-core.js wetterAt (die Zeile Nebel liest kein Meer, kein Auftrieb)",
      "r6": "konsum"
     },
     {
@@ -28589,10 +28585,9 @@
      "id": "karte2.planet.kopplung.land-meer-luft#4",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, stamm/bild-himmel.js) — zuletzt an 4171973a: die Fahrt riss 1800 s (vor karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "S4 die Messung der Leiter warf nach 0,484 s: /eval: {\"ms\":477,\"fehler\":\"wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)\",\"stapel\":[\"wetterVersatz (http://localhost:7804/phyto-core.js?v=18.546.413:4813:19)\",\"at #evalu · Täter: planet-core.js planetKlimaR (Meeresströmung als Lesart der Küstenseite)",
+     "sha": "486a6685925d51302752c756d7d47654d83922d1",
+     "grund": "ROT: S4 die Messung der Leiter warf nach 0,484 s: /eval: {\"ms\":477,\"fehler\":\"wetterAt: das Δ des Orts trägt nebelQuote nicht (der Nebel liest Meer und Auftrieb des Planeten)\",\"stapel\":[\"wetterVersatz (http://localhost:7804/phyto-core.js?v=18.546.413:4813:19)\",\"at #evalu · Täter: planet-core.js planetKlimaR (Meeresströmung als Lesart der Küstenseite)",
      "r6": "konsum"
     },
     {
@@ -30455,7 +30450,7 @@
   },
   "karte2.planet.relief.grossform": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) — zuletzt an b1f0de0e: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.planet.relief.grossform#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +35) — zuletzt an 486a6685: Deckel 355 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · karte2.planet.relief.grossform#2 radeon: ungemessen (R10) · karte2.planet.relief.grossform#2 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#3 radeon: ungemessen (R10) · karte2.planet.relief.grossform#3 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#4 radeon: ungemessen (R10) · karte2.planet.relief.grossform#4 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#5 radeon: ungemessen (R10) · karte2.planet.relief.grossform#5 gtx: ungemessen (R10) · karte2.planet.relief.grossform#6 radeon: ungemessen (R10) · karte2.planet.relief.grossform#6 gtx: ungemessen (R10) · karte2.planet.relief.grossform#7 radeon: ungemessen (R10) · karte2.planet.relief.grossform#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) — zuletzt an 486a6685: Deckel 180 s gerissen: Stille seit 179.8 s nach 180 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · karte2.planet.relief.grossform#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +35) — zuletzt an 486a6685: Deckel 355 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · karte2.planet.relief.grossform#2 radeon: ungemessen (R10) · karte2.planet.relief.grossform#2 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#3 radeon: ungemessen (R10) · karte2.planet.relief.grossform#3 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#4 radeon: ungemessen (R10) · karte2.planet.relief.grossform#4 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#5 radeon: ungemessen (R10) · karte2.planet.relief.grossform#5 gtx: ungemessen (R10) · karte2.planet.relief.grossform#6 radeon: ungemessen (R10) · karte2.planet.relief.grossform#6 gtx: ungemessen (R10) · karte2.planet.relief.grossform#7 radeon: ungemessen (R10) · karte2.planet.relief.grossform#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.relief.grossform#1",
@@ -30463,7 +30458,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an b1f0de0e: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
+     "grund": "ungemessen (R10) — zuletzt an 486a6685: Deckel 180 s gerissen: Stille seit 179.8 s nach 180 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "ungemessen": true,
      "beide": true
     },
@@ -37742,12 +37737,13 @@
    "wetter.K4#1 headless",
    "wetter.K5#1 headless",
    "wetter.K5#2 headless",
+   "karte2.leben.kopplung.stadt-im-netz#2 radeon",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3276
+  "ohne": 3275
  },
  "kopfVoll": "78ed31677dd35df5fc3aed589de8b24344201ac6",
- "zeit": "2026-11-25T10:54:11.355Z",
+ "zeit": "2026-11-25T11:15:19.585Z",
  "vorher": "78ed3167",
  "bilanz": {
   "gewinn": [],
