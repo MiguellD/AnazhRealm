@@ -2232,30 +2232,38 @@ class AnazhRealm_bild_himmel {
         // das Gesetz der Kamera (welt-licht.js `belichtung`) mit den Stufen am Glied der Welt (die Linsen prüfen ihren Schein dort)
         // und dem Boden des Messers: der Vollmond (er steht der Sonne gegenüber, Höhe −e) ohne Wolken-Decke zu dieser Stunde,
         // derselbe Durchlass wie sein Richtlicht (`_dayNightApplyDirectionalLight`) — unter offenem Himmel liegt er nie über dem Licht
-        const k = __weltLicht.belichtung(
-            wp,
-            EA,
-            e,
-            (h, q) => AnazhRealm._belichtungStufen(h, q),
-            AnazhRealm.BELICHTUNG,
-            e < 0 ? -e * this._mondDurchlass(-e) : 0
-        );
-        // DER RAUM AM AUGE (w28-innenlicht): unter einer Decke misst die Kamera das Licht des Raums — das Licht von draußen ×
-        // F (`_raumBlendeTakt`: das Raum-Licht der Decke × der Anteil des Himmels am Licht, die Sonne erreicht den Messer im
-        // Raum nicht), `_raumStufen` = log2 F. Dasselbe Gesetz der Kamera wie für jedes Licht des Tags, dasselbe Glied wie das
-        // Licht des Auges in der Höhle (`_augenLichtStaerke`): sie gleicht 1 − `steigung` der fehlenden Stufen NICHT aus — die
-        // Karte im Raum zeigt 2^(Stufen des Tags für F) der Karte draußen, zu jeder Stunde (nachts ohne Lampe dunkler als die Nacht).
-        const s = this._raumStufen || 0;
-        if (!(s < 0)) return k;
-        return k * 2 ** (AnazhRealm._belichtungStufen(AnazhRealm.BELICHTUNG.gleitung[0], 2 ** s) - s);
+        const gesetz = (x) =>
+            __weltLicht.belichtung(
+                x,
+                EA,
+                e,
+                (h, q) => AnazhRealm._belichtungStufen(h, q),
+                AnazhRealm.BELICHTUNG,
+                e < 0 ? -e * this._mondDurchlass(-e) : 0
+            );
+        const k = gesetz(wp);
+        // DER RAUM AM AUGE (w28-haus-innen-lesbar): unter einer Decke erreicht das Richtlicht den Messer nicht — mit dem Anteil
+        // `_raumAnteil` (0 unter offenem Himmel: die Belichtung bleibt bitgleich die des Orts) liest er Himmel und Leuchten allein
+        // (dieselbe Lesung ohne `_belichtungSonne`, dasselbe Gesetz), und die Blende des Raums öffnet ihn um `_raumBlendeStufen`
+        // (welt-licht `belichtungRaum`: das Auge steht auf dem Raum). Beide Zahlen führt `_raumBlendeTakt`.
+        const [u, a] = [this._raumAnteil || 0, this._raumBlendeStufen || 0];
+        if (!(u > 0) && !(a > 0)) return k;
+        const so = this._belichtungSonne;
+        const ws = this._belichtungOhneSonne || (this._belichtungOhneSonne = [0, 0, 0]);
+        for (let i = 0; i < 3; i++) ws[i] = Math.max(0, wp[i] - so[i]);
+        return k * 2 ** (u * Math.log2(gesetz(ws) / k) + a);
     }
 
-    // DIE BLENDE DES RAUMS (je Takt, hinter der Belichtung): das Ziel sind die Stufen des Raums am Auge (`_raumAmAuge`, null
-    // unter offenem Himmel: 0) × der Anteil des Himmels am gemessenen Licht (`_belichtungSonne`, die Lesung dieses Takts); die
-    // Blende folgt ihm mit τ = `RAUM.blendeS` in Stufen (ins Helle `RAUM.blendeHellS`, das Auge schließt schneller, als es sich öffnet; kein Sprung an der
-    // Schwelle, kein Pumpen: EIN Tiefpass erster Ordnung, er schwingt nicht über), auf der Wanduhr (auf 0,25 s gekappt). Ein Sprung des Auges über `RAUM.sprungM` in
+    // DIE BLENDE DES RAUMS (je Takt, hinter der Belichtung): unter einer Decke (`_raumAmAuge`, null unter offenem Himmel) sind
+    // die Ziele der Anteil 1 (der Messer liest ohne das Richtlicht) und die Stufen, um die das Gesetz des Raums die Kamera öffnet
+    // (welt-licht `belichtungRaum`: E der Himmel und die Leuchten am Auge, das Licht des Raums = Raum-Licht der Decke × Himmel +
+    // Leuchten, das Feld `_raumFeldAmAuge`); draußen beide 0. Die Blende folgt mit τ = `RAUM.blendeS` in Stufen (ins Helle
+    // `RAUM.blendeHellS`, das Auge schließt schneller, als es sich öffnet; kein Sprung an der Schwelle, kein Pumpen: EIN Tiefpass
+    // erster Ordnung, er schwingt nicht über), auf der Wanduhr (auf 0,25 s gekappt). Ein Sprung des Auges über `RAUM.sprungM` in
     // einem Takt nimmt das Ziel sofort — die Sonde, das Wort, die Ankunft lesen nie die Blende des Orts von vorher. Die Gerätezeit
     // (spec/uhr/geraetezeit.json, Grund `laden`): ein Gang zum Fixpunkt, sein Ende ist dasselbe — auch unter der Bühne, die die Bild-Uhr hält.
+    // Bis w28-haus-innen-lesbar war das Ziel log2((Raum-Licht + Feld) × Himmels-Anteil), gekappt am tiefsten Knoten der Nacht, und
+    // die Belichtung trug davon 1 − `steigung`: das Start-Dorf stand innen im Fuß der Tonkurve (siehe `belichtungRaum`).
     _raumBlendeTakt() {
         const st = this.state;
         const R = AnazhRealm.RAUM;
@@ -2284,26 +2292,42 @@ class AnazhRealm_bild_himmel {
             g
         );
         const D = this._raumAmAuge();
-        const w = this._belichtungGelesen ? this._belichtungE : null; // ohne Lesung des Himmels hält die Blende ihr Ziel am Raum allein
-        const so = this._belichtungSonne;
-        const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-        const himmel = w && so && luma(w) > 0 ? Math.max(0, 1 - luma(so) / luma(w)) : 1;
-        // die Kamera öffnet nie weiter als für ihre Nacht (der tiefste Knoten von `BELICHTUNG.stufen`, wie das Licht des Auges
-        // in der Höhle): darunter fällt der Raum mit seinem Licht — der Raum ohne Öffnung bleibt dunkel, kein Rest-Licht brennt aus
-        const B = AnazhRealm.BELICHTUNG;
-        const tief = B.stufen[B.stufen.length - 1][1] / (1 - B.steigung);
-        // DER MESSER IM RAUM mittelt, was in seinem Feld liegt: das Licht des Raums UND seine Öffnungen (`_raumFeldAmAuge`, der
-        // Anteil der Öffnungen an der Oberfläche × Durchlass) — die Belichtung hält die Öffnung lesbar, der Raum ohne Öffnung misst nur sich
+        st.raumAmAuge = D;
+        // ohne Lesung des Himmels hält die Blende (das Gesetz des Raums liest die Leuchtdichte, nicht nur ein Verhältnis) — auch
+        // ihr Ort bleibt: der Sprung des Auges gilt mit der ersten Lesung
+        if (!w0 || !so0) return;
+        // DER MESSER IM RAUM: `hi` der Himmel auf der Karte, `pool` die Leuchten am Auge (`_poolAmAuge`) — sie stehen im Raum wie
+        // davor; das Feld des Messers (`_raumFeldAmAuge`, der Anteil der Öffnungen an der Oberfläche × Durchlass) mittelt die
+        // Öffnungen mit: die Belichtung hält sie im Bild, der Raum ohne Öffnung misst nur sich
+        const mp = this._belichtungMitPool;
+        const pool = mp ? Math.max(0, lu(mp) - lu(w0)) : 0;
         const ziel =
-            D == null ? 0 : Math.max(tief, Math.log2(Math.max(1e-9, (D + (this._raumFeldAmAuge || 0)) * himmel)));
+            D == null
+                ? 0
+                : Math.max(
+                      0,
+                      Math.log2(
+                          __weltLicht.belichtungRaum(
+                              1,
+                              hi + pool,
+                              D * hi + pool,
+                              this._raumFeldAmAuge || 0,
+                              AnazhRealm.BELICHTUNG
+                          )
+                      )
+                  );
         const p = st.camera && st.camera.position;
         const o = this._raumBlendeOrt || (this._raumBlendeOrt = new THREE.Vector3(NaN, NaN, NaN));
         const sprung = !p || !(o.distanceTo(p) <= R.sprungM);
         if (p) o.copy(p);
-        const s = this._raumStufen || 0;
-        const n = sprung ? ziel : s + (ziel - s) * (1 - Math.exp(-dt / (ziel > s ? R.blendeHellS : R.blendeS)));
-        this._raumStufen = Math.abs(n - ziel) < 1e-3 ? ziel : n;
-        st.raumAmAuge = D;
+        const folge = (ist, soll) => {
+            const n = sprung
+                ? soll
+                : ist + (soll - ist) * (1 - Math.exp(-dt / (soll < ist ? R.blendeHellS : R.blendeS)));
+            return Math.abs(n - soll) < 1e-3 ? soll : n;
+        };
+        this._raumBlendeStufen = folge(this._raumBlendeStufen || 0, ziel);
+        this._raumAnteil = folge(this._raumAnteil || 0, D == null ? 0 : 1);
     }
 
     // DIE STUFEN DER KAMERA (rein): die Blenden-Stufen der 18-%-Karte gegen den Anker bei der Sonnenhöhe h (Grad) und dem Licht q
