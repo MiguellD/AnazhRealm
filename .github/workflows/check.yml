@@ -1016,7 +1016,9 @@ jobs:
               # Inventar, Auftrag und Aufstieg (das Tier antwortet mit seiner Stimme); der Wald-Ort steht am Bestand.
               # Inkl. Selbst-Test (Drohn-Zwilling, stumme Schleife, Ufer ohne Wasser, Voll-Umlauf, Ereignis-
               # Glocke, Graph ohne Werkstatt, Ruf im Spiel-Takt, Glut ohne Spitzen-Wand, Ping-Zwilling im Stamm,
-              # Wald ohne Bestand).
+              # Wald ohne Bestand). Danach auf derselben Seite der Markt von stadt-voll (Mk): >= 7 Stimmen zugleich aus
+              # der Menge, L_Aeq im Band der Wochenmaerkte, Spitze <= 0 dBFS, Duck 8-12 dB am Bus, kein Laut der Menge
+              # duckt, Lombard am Sprecher (Selbst-Test: Duck 13,27 dB, Menge stumm, die Menge duckt, Lombard aus).
               run: npm run gate:klang-zensus
 
             - name: Der Portal-Gestalt-Wechsel (W-A3 — Katalysator-Bogen)
