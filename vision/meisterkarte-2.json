@@ -2985,10 +2985,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 17,
+    "heute": 18,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 8.3,
+    "anteilHeute": 8.8,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -3238,7 +3238,7 @@
        "richter": "100 Orte × 5 Zeitabstände: Bestand im Band der Chronosequenz des Bioms ≥ 90 %; fremde Planeten mit Fremdwelt-Probe (R10)"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "reverse-J-Größen und Selbstastung stehen als statischer Parameter (phyto-core.js:2899); Verjüngung nur im Labor („Host has no pass“); der Ertragstafel-Richter wurde nie gefahren.",
@@ -20090,11 +20090,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 112,
+  "heute": 113,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
-  "anteilHeute": 5.7,
+  "anteilHeute": 5.8,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20105,7 +20105,7 @@
   },
   "gliederLeitern": 9,
   "beide": 60,
-  "nachwache": 52
+  "nachwache": 53
  },
  "zusammengelegt": [
   {
