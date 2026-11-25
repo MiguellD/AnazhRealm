@@ -28,6 +28,8 @@
 //   P-Ferne DIE FERNE DER NAH-WIESE (vegetation.K1) an der echten Klasse: das Gesetz der Ferne (`WIESE_FERN_TAFEL`) — das Büschel
 //       unverformt (nur ein Anteil, der Block affin, je Büschel die Ebene des Gesetzes), die Lücke des Strahls bis zur Kappe,
 //       die Büschel je Pixel ≤ 2× der Übergabe
+//   P-Ferne-Halm DIE HALM-HÖHE DER FERNE (wiese-fern, tiere.K5#1): bei 20 · 30 · 40 m 0,9–1,1× der nahen, die Fläche s² in der
+//       Breite (`_wieseFernHalm`); den Konsum des Stoffs beweist das Bild
 //   H9  DAS SOLL DES TURMS (hochhaus-dach-speicher) am Kern des Werk-Fadens: die Fern-Stufen L2 · L3 · L1 eines frischen
 //       Klinker-Turms (modern, 22 Geschosse) legen zusammen höchstens die Ecken seiner Stufe 0 an — der Warm-Pfad `sollTon`
 //       baut die Stufe 0 je Bau einmal, nie je Auftrag (der Müll von 1,1–1,7 GB je Auftrag brach den Renderer der Metropole)
@@ -741,6 +743,24 @@ function ferneWand(A) {
     const rot =
         luecke < 0.99 || schirm > 2 || verformt.length || groesse || affin !== "affin" || rest.size > 1 || brueche;
     return { errs: rot ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2× · unverformt · 1 → ≤ ${F.skalaMax}× Deckung 1 · affin · 1 · 0)`] : [], luecke, schirm, verformt, gross, deckung, affin }; // prettier-ignore
+}
+
+// P-Ferne-Halm — DIE HALM-HÖHE DER FERNE (wiese-fern, tiere.K5#1): der Halm der Ferne (`_wieseFernHalm`, der Stoff `_halmFerne`
+// liest ihn) steht bei 20 · 30 · 40 m flach (Q = d) so hoch wie der nahe — Höhe im Band 0,9–1,1 der Nähe — und trägt die Fläche
+// der Größe `skala` (`_wieseFern`) in der Breite: Breite × Höhe ≥ s² (Nilson 1971: die Lücke hängt allein an der Fläche). Bis
+// wiese-fern wuchs das Büschel gleichförmig (Höhe × s: 1,23 · 1,85 · 2,47) und verdeckte den Hirsch bis an den Rücken. Den
+// Konsum des Stoffs beweist das Bild (die Deckung 30–60 m je Gesetz, `werkbank bild --abstand --kanten 30,60`), kein Quelltext.
+function ferneHalmWand(A) {
+    const Z = A.constructor("return globalThis")().__phytoCore.WIND_ZAHLEN;
+    const je = [20, 30, 40].map((d) => {
+        const s = A._wieseFern(Z, d, d).skala,
+            H = A._wieseFernHalm(Z, s);
+        return { d, s, hoehe: H.hoehe, flaeche: (H.breite * H.hoehe) / (s * s) };
+    });
+    const r2 = (x) => x.toFixed(2).replace(".", ",");
+    const zeile = `Halm-Höhe der Ferne ${je.map((j) => `${j.d} m ${r2(j.hoehe)}×`).join(" · ")} der nahen · Fläche ${je.map((j) => r2(j.flaeche)).join(" · ")} × s²`; // prettier-ignore
+    const rot = je.some((j) => !(j.hoehe >= 0.9 && j.hoehe <= 1.1) || !(j.flaeche >= 0.99));
+    return { errs: rot ? [`P-Ferne-Halm: ${zeile} (Soll 0,9–1,1× · ≥ 1 × s²) — Täter _wieseFernHalm`] : [], je, zeile }; // prettier-ignore
 }
 
 // P-Fächer — DER FÄCHER DER NAH-WIESE (stufe-ein-auge) an der echten Klasse: die Kacheln der Nähe stehen im Sicht-Kegel des EINEN
@@ -1800,6 +1820,9 @@ function selbsttest() {
             return !(r.errs.length && rot(r));
         });
         t(`Ferne der Wiese: das Gesetz hält, je Glied ein Mutant rot ${ferneWand(A).errs}${stillF.map((m) => " — still " + m[0])}`, !ferneWand(A).errs.length && !stillF.length); // prettier-ignore
+        // P-Ferne-Halm: die gleichförmige Skala (bis wiese-fern, Höhe × s bis 2,5) → ROT beim Namen
+        const hGleich = ferneHalmWand(klasseVon(stammLib.ersetze(st, "_wieseFernHalm", "return { breite: A.mul(s, s), hoehe: A.k(1) };", "return { breite: s, hoehe: s };"))); // prettier-ignore
+        t(`Halm-Höhe der Ferne: ${ferneHalmWand(A).zeile}; gleichförmige Skala → ${hGleich.errs.length ? "ROT" : "still"} (${hGleich.zeile})`, !ferneHalmWand(A).errs.length && hGleich.errs.some((e) => /Halm-Höhe der Ferne 20 m 1,2\d× · 30 m 1,8\d× · 40 m 2,\d+×.*Täter _wieseFernHalm/.test(e))); // prettier-ignore
         // die Ordnung ohne den Bayer-Rang der Zelle (die PCG allein, bis w19-saum-lai) reißt das Teil-Gitter
         // P-Fächer: der Fächer hält; der RING (jede Kachel im Fächer) macht „hinter dem Auge“ rot, der Saum ohne Dreh-Rate die Drehung
         const fRing = faecherWand(
@@ -2092,6 +2115,10 @@ function main() {
     );
     // P-Ferne — die Ferne der Nah-Wiese: unverformt, die Lücke des Strahls und der Schirm (vegetation.K1)
     errs.push(...ferneWand(A).errs);
+    // P-Ferne-Halm — der Halm der Ferne so hoch wie der nahe, die Fläche in der Breite (wiese-fern, tiere.K5#1)
+    const fh = ferneHalmWand(A);
+    errs.push(...fh.errs);
+    console.log(`P-Ferne-Halm ${fh.zeile}`);
     // P-Fächer — die Nähe der Wiese steht im Kegel des EINEN Auges, nie dahinter (stufe-ein-auge)
     const fw = faecherWand(A);
     errs.push(...fw.errs);

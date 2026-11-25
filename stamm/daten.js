@@ -482,7 +482,8 @@ class AnazhRealm_daten {
     // lässt gleich viel Grund durch wie an der Übergabe) bis zur KAPPE (die Büschel je Pixel nie über denen am Fußabdruck
     // `fuss` der flachen Wiese, (fuss/Q)³ — dort zählt die Ferne je Pixel nie mehr Büschel als bis w28-wiese-schale, Lehre 25:
     // die Kosten hängen am Schirm, nie an der Weite der Welt); was die Kappe an Zahl nimmt, trägt das Büschel in seiner Größe
-    // (`skalaMax`: gleichförmig bis 2,5-fach um den Fuß — die Deckung im Blick, n · w · h, hält die der Lücke); ein Büschel steht, solange seine Ordnung o darunter liegt, im Band `rand`
+    // (`skalaMax`: die Fläche bis 2,5²-fach — die Deckung im Blick, n · w · h, hält die der Lücke; seit wiese-fern trägt sie der Halm
+    // in der BREITE, die Höhe bleibt die der Nähe, `_wieseFernHalm`); ein Büschel steht, solange seine Ordnung o darunter liegt, im Band `rand`
     // (relativ) sinkt es in den Boden statt zu springen, vor `bis` über `saum`.
     // DIE BODENFLÄCHE JE PIXEL (w14-wiese-saum): Q ist der FUSSABDRUCK-ABSTAND des Büschels (`_wieseFuss`) — Q = dist · (h/S)^⅓,
     // dist der Abstand seines Fußes vom Auge, S die Höhe des Auges über der Ebene seines Hangs, h die Höhe des Auges über

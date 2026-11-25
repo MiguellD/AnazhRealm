@@ -329,26 +329,22 @@ function buildDorf(dp){
   lay.feldwege.forEach(fw=>{ const m=new THREE.Mesh(rib(fw.pts,fw.w,0.03),M.weg); m.receiveShadow=true; dorfGroup.add(m); });
   if(lay.platz){ const pz=lay.platz, pm=new THREE.Mesh(new THREE.BoxGeometry(pz.ex*2,0.09,pz.ez*2),(pz.typ==='gras')?M.gras:((modernS||pflasterS)?new THREE.MeshLambertMaterial({color:0xa9a49a, side:THREE.DoubleSide}):M.weg));   // MARKT trägt den Zonen-Belag
     pm.position.set(pz.cx,0.045,pz.cz); pm.receiveShadow=true; dorfGroup.add(pm); }
-  if(lay.mauer){ const MG=FC.mauerGestalt(lay.mauer, plan.region, plan.jahr), W=MG.wand, K=MG.krone, T=MG.turm, D=MG.dach, BW=MG.bollwerk, mW=mLay(MG.stoff);      // DIE WEHR IHRER ZEIT (fachwerk MAUER_FORM, mensch.macht.wehrbau#2): Palisade · Steinring · Bastion in den Maßen des Gesetzbuchs — dieselbe Gestalt baut die Welt (_stlMauerBuild)
-    MG.segs.forEach(sg=>{ const dx=sg.x1-sg.x0, dz=sg.z1-sg.z0, len=Math.hypot(dx,dz)+W.ueber;
-      const ang=Math.atan2(-dz,dx), mx=(sg.x0+sg.x1)/2, mz=(sg.z0+sg.z1)/2;
-      const w=new THREE.Mesh(new THREE.BoxGeometry(len,W.hoch,W.dick),mW); w.position.set(mx,W.hoch/2,mz); w.rotation.y=ang;
-      w.castShadow=true; w.receiveShadow=true; dorfGroup.add(w);
-      if(K){ const ol=Math.hypot(mx,mz)||1, o=K.aussen?(W.dick-K.dick)/2:0;   // die Brustwehr der Bastion steht außen auf dem Wall
-        const zi=new THREE.Mesh(new THREE.BoxGeometry(len,K.hoch,K.dick),mW); zi.position.set(mx+mx/ol*o,K.y,mz+mz/ol*o); zi.rotation.y=ang; zi.castShadow=true; dorfGroup.add(zi); }
+  const netzAm=(netze,x,z,gier)=>{ netze.forEach(N=>{ const g=new THREE.BufferGeometry();   // EIN STUECK DER EINFRIEDUNG (mauer-im-stoff): das Netz des Gesetzbuchs je Stoff (fachwerk mauerNetz · zaunNetz) im Layout-Stoff seiner Rolle — dasselbe Netz legt die Welt in den Satz ihres Bau-Stoffs (_einfriedungLege); bis hier baute das Labor je Wand, Krone, Turm und Dach einen Quader
+      g.setAttribute('position',new THREE.BufferAttribute(N.pos,3)); g.setAttribute('normal',new THREE.BufferAttribute(N.nrm,3)); g.setAttribute('uv',new THREE.BufferAttribute(N.uv,2)); g.setIndex(new THREE.BufferAttribute(N.idx,1));
+      const me=new THREE.Mesh(g,mLay(N.stoff)); me.position.set(x,0,z); me.rotation.y=gier; me.castShadow=true; me.receiveShadow=true; dorfGroup.add(me); }); };
+  if(lay.mauer){ const MG=FC.mauerGestalt(lay.mauer, plan.region, plan.jahr), W=MG.wand, T=MG.turm, BW=MG.bollwerk;      // DIE WEHR IHRER ZEIT (fachwerk MAUER_FORM, mensch.macht.wehrbau#2): Palisade · Steinring · Bastion in Gestalt und Maßen des Gesetzbuchs (mauerNetz: Wehrgang, Brustwehr, Zinnen, Zeltdach, Pfähle) — dasselbe Netz baut die Welt (_stlMauerBuild)
+    MG.segs.forEach((sg,si)=>{ const dx=sg.x1-sg.x0, dz=sg.z1-sg.z0, lang=Math.hypot(dx,dz), len=lang+W.ueber;
+      const ang=Math.atan2(-dz,dx), gier=Math.atan2(dx,dz), mx=(sg.x0+sg.x1)/2, mz=(sg.z0+sg.z1)/2;
+      netzAm(FC.mauerNetz(MG,{art:'wand', lang:lang, fuss:0, steig:0, aussen:(Math.cos(gier)*mx-Math.sin(gier)*mz>=0?1:-1), saat:si+1}), mx, mz, gier);   // +x des Stücks zeigt vom Ort weg: dort stehen Brustwehr und Zinnen
       solids.push({min:[-len/2,0,-W.dick/2],max:[len/2,W.hoch,W.dick/2], th:ang, tx:mx, tz:mz}); });
     const tB=T?T.breit:BW?BW.vor*Math.SQRT2:0, tH=T?T.hoch:BW?BW.hoch:0;   // der Turm oder das Bollwerk (die Raute, ihre innere Ecke am Ring)
-    if(tB>0) MG.towers.forEach(tw=>{ const tm=new THREE.Mesh(new THREE.BoxGeometry(tB,tH,tB),mW); tm.position.set(tw.x,tH/2,tw.z); if(BW) tm.rotation.y=Math.atan2(tw.x,tw.z)+Math.PI/4; tm.castShadow=true; tm.receiveShadow=true; dorfGroup.add(tm);
-      if(D){ const td=new THREE.Mesh(new THREE.BoxGeometry(D.breit,D.hoch,D.breit),MG.dachStoff==='ziegel'?M.ziegel:mLay(MG.dachStoff)); td.position.set(tw.x,D.y,tw.z); td.castShadow=true; dorfGroup.add(td); }
+    if(tB>0) MG.towers.forEach((tw,ti)=>{ netzAm(FC.mauerNetz(MG,{art:'turm', fuss:0, saat:ti+1}), tw.x, tw.z, BW?Math.atan2(tw.x,tw.z)+Math.PI/4:0);
       solids.push({min:[tw.x-tB/2,0,tw.z-tB/2],max:[tw.x+tB/2,tH,tw.z+tB/2]}); }); }
   lay.brunnen.forEach(b3=>{ const bg2=ausstattungAm('brunnen', b3.x, b3.z, 0); dorfGroup.add(bg2);   // AUSSTATTUNG: der Ziehbrunnen kommt aus dem Gesetzbuch (Lab = Welt)
     solids.push({min:[b3.x-0.95,0,b3.z-0.95],max:[b3.x+0.95,0.75,b3.z+0.95]}); });
-  lay.fences.forEach(f=>{ const dx=f.x1-f.x0, dz=f.z1-f.z0, len=Math.hypot(dx,dz); if(len<0.8)return;
-    const ang=Math.atan2(-dz,dx), mx=(f.x0+f.x1)/2, mz=(f.z0+f.z1)/2, np=Math.max(2,Math.round(len/1.6)+1);
-    for(let q2=0;q2<np;q2++){ const fpo=new THREE.Mesh(new THREE.BoxGeometry(0.09,1.0,0.09),mLay('holz'));
-      fpo.position.set(f.x0+dx*q2/(np-1),0.5,f.z0+dz*q2/(np-1)); fpo.castShadow=true; dorfGroup.add(fpo); }
-    for(const ry of [0.55,0.9]){ const ra=new THREE.Mesh(new THREE.BoxGeometry(len,0.07,0.06),M.lattung);
-      ra.position.set(mx,ry,mz); ra.rotation.y=ang; ra.castShadow=true; dorfGroup.add(ra); }
+  lay.fences.forEach((f,fi)=>{ const dx=f.x1-f.x0, dz=f.z1-f.z0, len=Math.hypot(dx,dz); if(len<0.8)return;
+    const ang=Math.atan2(-dz,dx), mx=(f.x0+f.x1)/2, mz=(f.z0+f.z1)/2;
+    netzAm(FC.zaunNetz(len,0,fi+1), mx, mz, Math.atan2(dx,dz));   // der Zaun des Gesetzbuchs (Pfosten und zwei Riegel) — dasselbe Netz legt die Welt (_stlWegeRaten)
     solids.push({min:[-len/2,0,-0.08],max:[len/2,0.95,0.08], th:ang, tx:mx, tz:mz}); });
   lay.felder.forEach(f=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(f.ex*2,0.1,f.ez*2),mLay('lehm'));
     m.position.set(f.cx,0.05,f.cz); m.rotation.y=f.phi; m.receiveShadow=true; dorfGroup.add(m);

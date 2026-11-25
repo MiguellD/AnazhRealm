@@ -26,7 +26,7 @@ des Tags).
    Stück 3, dort stand das rund des Bogens (0,2696 beim Bau, 0,27 in der Probe); keiner überschrieb es. Die Linie trägt je Meter
    einen Punkt, der Fuß einer Ecke geht zwischen zwei Punkten über die Stücke dazwischen. Jetzt gilt das rund einer Ecke an jedem
    Stück von ihrem Fuß am einen Punkt bis zu dem am nächsten. VK 10 Uhr 480 s: GRÜN, das Weiteste über dem Band 0,036 m (Raum 0,1),
-   rund an Stück 3 0,632; Stoß 0, Berührung 0, ohne Schlüssel 0. Die Zeile trägt den Beweis: Gier beim Bau, Weg seit dem Bau, Bau
+   rund an Stück 3 0,632; 23 Uhr 600 s: GRÜN, 0,02 m. Stoß 0, Berührung 0, ohne Schlüssel 0 zu beiden Stunden. Die Zeile trägt den Beweis: Gier beim Bau, Weg seit dem Bau, Bau
    (anfang · weiter), das Stück am Fuß, das Stück des Leibs und das rund dort beim Bau.
 2. **„ohne Ziel 18 Uhr 6 %“ war die Probe, nicht der Tag.** Sie las den Plan zur Uhr (`tagesPlan`), der Wirt geht aber nach der Kette
    (`tagesZiel` über `_bewohnerKette`). Der Händler auf dem Weg zum Besuch (haendler #936614 → haus#279359, sein Werk bis 18,5 Uhr)

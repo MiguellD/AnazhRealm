@@ -1959,30 +1959,134 @@ class AnazhRealm_siedlung_wege {
     }
 
     // DIE KENNUNG EINES BAU-POOLS (gate:asset-inventory): Name UND Inventar-Stempel eines Instanz-Pools der Bau-Substanz
-    // (der Zaun der Siedlungen, das Fundament der Häuser), bei jeder Erzeugung — auch beim Verdoppeln. Die Inventur liest den
-    // Stempel (`userData.inventar`), nie den Namen: bis 08.10. trugen beide Pools nur ihren Namen, und kam das Auto-Dorf
-    // während der Inventur, stand der Zaun als „UNBEKANNTER Emitter“ rot (CI 37709343976, siedlung-zaun inst×3).
+    // (die Kisten-Pools: Acker, Vogel, die Ferne der Stadt), bei jeder Erzeugung — auch beim Verdoppeln. Die Inventur liest den
+    // Stempel (`userData.inventar`), nie den Namen: bis 08.10. trugen die Pools nur ihren Namen, und kam das Auto-Dorf
+    // während der Inventur, stand der Zaun als „UNBEKANNTER Emitter“ rot (CI 37709343976; der Zaun-Pool fiel mit mauer-im-stoff).
     static _poolKennung(mesh, name) {
         mesh.name = name;
         mesh.userData.inventar = name;
         return mesh;
     }
 
-    // ═══ DER ZAUN-POOL ═══
-    // Das Muster der Instanz-Pools: EIN InstancedMesh für die hüfthohen Zaun-Streifen der Siedlungen (1 Draw-Call,
-    // per-Instanz-Farbe); Höhe aus `getTerrainHeightAt`, Pitch aus den Endpunkt-Höhen. Kein Snapshot-Feld: die
-    // Streifen entstehen je Session deterministisch aus dem Settlement-Export (`_tickAutoSettlement`).
-    _stlZaunEnsurePool() {
+    // ═══ DIE EINFRIEDUNG IM STOFF DER WELT (mauer-im-stoff) ═══
+    // Stadtmauer und Zaun der Siedlungen zeichnen im EINEN Bau-Stoff der Welt (`_foundryTreeMaterial`, der matte Satz-Stoff der
+    // Häuser: Verband, Fuge und Gefüge webt er aus Welt-Lage und Nummer der Ecke, `_verbandStoff`) als EIN Satz — ein Draw im
+    // Hauptbild, einer je Kaskade. Die Gestalt liefert das Gesetzbuch als Netz (fachwerk `mauerNetz` · `zaunNetz`: Zinne,
+    // Brustwehr, Zeltdach, Pfahl, Pfosten und Riegel; das Labor zeichnet dasselbe Netz). Bis hier standen beide als Kiste mit
+    // Instanz-Farbe in zwei Pools (`_kistenPool`: weißer Stoff ohne Verband): je Segment EIN Quader von 37 m in einem Ton — am
+    // Messort stadt-voll las die Mauer als glatte Platte, im Schatten als schwarze (Schöpfer 24.11.: „die grauen blöcke“).
+    // Kein Snapshot-Feld: die Stücke entstehen je Sitzung aus dem Export der Siedlung (`_stlWegeRaten`, `_stlMauerBuild`).
+    _einfriedungArt() {
         const st = this.state;
-        if (!st.scene) return null;
-        let P = st.stlZaun;
-        if (P) return P;
-        const mesh = this._kistenPool("siedlung-zaun", 256);
-        st.scene.add(mesh);
-        P = st.stlZaun = { mesh, cap: 256, top: 0 };
-        return P;
+        const art = "siedlung-einfriedung";
+        if (!st.satzStoffe) st.satzStoffe = new Map();
+        if (!st.satzStoffe.has(art))
+            st.satzStoffe.set(art, {
+                name: art,
+                // derselbe Stoff, dasselbe Programm wie der matte Bau-Satz der Häuser (`_satzStoff`: Regler und Verband je Ecke)
+                mat: this._foundryTreeMaterial("unknown", { seh: "stoff", side: 2, satzRegler: true }, false, null),
+                wurf: true,
+                userData: { einfriedung: true, inventar: art },
+                kapazitaet: "bau",
+            });
+        return art;
     }
-    // DIE KISTE DER POOLS (Zaun · Mauer · Vogel): EIN Stoff — EIN Programm, je Pool EIN Draw (das Fundament-Muster: welt-weit,
+    // EIN STÜCK (Wand, Turm, Zaun) IN DEN SATZ: `netze` = die Netze des Gesetzbuchs je Stoff im Rahmen des Stücks, die Pose ist
+    // seine Mitte am Boden und die Gier (`yaw`: z längs). Je Stoff EIN Bereich (die Rauheit der Rolle gilt je Bereich,
+    // `_satzBlock`); ein Stück desselben Schlüssels fällt vorher. Der Eintrag merkt je TEIL die Matrix Einheits-Form → Welt
+    // (Pose × `m` des Gesetzbuchs — dieselben Zahlen, aus denen die Ecken im Puffer stehen): `_mauerGebaut` liest ihn.
+    _einfriedungLege(key, plan, netze, x, y, z, yaw) {
+        const st = this.state;
+        const satz = this._einfriedungArt();
+        const E = st.einfriedung || (st.einfriedung = new Map());
+        this._einfriedungFaellt(key);
+        const pose = new THREE.Matrix4().makeRotationY(yaw).setPosition(x, y, z);
+        const im = pose.elements;
+        const e = { plan, schluessel: [], teile: [] };
+        for (const N of netze) {
+            const n = N.pos.length / 3;
+            const je = (array, itemSize) => ({ array, itemSize, count: n });
+            const eins = new Float32Array(n).fill(1);
+            const geo = {
+                attributes: {
+                    position: je(N.pos, 3),
+                    normal: je(N.nrm, 3),
+                    color: je(N.farbe, 3),
+                    // die Stempel der Blende: ungemaskt (Stufe 0, beide Höhen 1 — wie ein Haus auf dem Null-Stempel)
+                    aLodLevel: je(new Float32Array(n), 1),
+                    aH0: je(eins, 1),
+                    aH0L: je(eins, 1),
+                    aVerband: je(N.nr, 1),
+                    aLage: je(N.lage, 2),
+                },
+                index: { array: N.idx },
+            };
+            const k = key + "|" + N.stoff;
+            const regler = { regler: [N.rau, 0, 1], glut: [0, 0, 0], verband: 0 };
+            const block = this._satzBlock(geo, im, null, 1, AnazhRealm.BAU_SATZ_ATTR, k, regler);
+            this._chunkSatzEin(satz, k, block, this._bauSatzChunk(im));
+            e.schluessel.push(k);
+            for (const t of N.teile)
+                e.teile.push({
+                    art: t.art,
+                    form: t.form,
+                    arg: t.arg,
+                    stoff: t.stoff,
+                    m: new THREE.Matrix4().fromArray(t.m).premultiply(pose).elements.slice(),
+                    bereich: k,
+                    v0: t.v0,
+                    n: t.n,
+                    ton: t.ton,
+                });
+        }
+        E.set(key, e);
+        return e;
+    }
+    // ein Stück verlässt den Satz (die Mauer wächst mit dem Ort, die Welt wechselt)
+    _einfriedungFaellt(key) {
+        const st = this.state;
+        const e = st.einfriedung ? st.einfriedung.get(key) : null;
+        if (!e) return false;
+        for (const k of e.schluessel) this._chunkSatzAus("siedlung-einfriedung", k);
+        st.einfriedung.delete(key);
+        return true;
+    }
+    // DER LESER DES GEBAUTEN (die Station mensch.macht.wehrbau, gate:settlement): je Teil der Mauer des Plans `plan` (ohne Plan:
+    // jeder Mauer) { art: wand · krone · untersicht · brustwehr · zinne · wallkrone · wandkopf · turm · dach, x, y, z (die Mitte),
+    // yaw, pitch, dick, hoch, lang, m (16 Zahlen: Einheits-Würfel [−0,5; 0,5]³ → Welt), form, arg, stoff, stueck, bereich, v0, n,
+    // ton (der Anteil des Tons der Rolle, den das Teil trägt: 1, die Untersicht des Wehrgangs `MAUER_GESTALT.untersicht`) } — aus den
+    // Zahlen des Eintrags, mit denen die Ecken in den Puffer gingen (`_einfriedungLege`), nie aus dem Plan nachgerechnet. Die
+    // Linse (gate:settlement) rechnet den Puffer des Bereichs aus `m` und der Einheits-Form nach (fachwerk `mauerEinheit`).
+    _mauerGebaut(plan = null) {
+        const aus = [];
+        for (const [stueck, e] of this.state.einfriedung || [])
+            if (stueck.startsWith("mauer:") && (!plan || e.plan === plan))
+                for (const t of e.teile) {
+                    const m = t.m;
+                    aus.push({
+                        art: t.art,
+                        x: m[12],
+                        y: m[13],
+                        z: m[14],
+                        yaw: Math.atan2(m[8], m[10]),
+                        pitch: -Math.atan2(m[9], Math.hypot(m[8], m[10])),
+                        dick: Math.hypot(m[0], m[1], m[2]),
+                        hoch: Math.hypot(m[4], m[5], m[6]),
+                        lang: Math.hypot(m[8], m[10]),
+                        m,
+                        form: t.form,
+                        arg: t.arg,
+                        stoff: t.stoff,
+                        stueck,
+                        bereich: t.bereich,
+                        v0: t.v0,
+                        n: t.n,
+                        ton: t.ton,
+                    });
+                }
+        return aus;
+    }
+    // DIE KISTE DER POOLS (Vogel · Feld · Acker · die Ferne der Stadt): EIN Stoff — EIN Programm, je Pool EIN Draw (das Fundament-Muster: welt-weit,
     // nie gecullt); die Form der Einheit ist der Würfel, oder `geo` (dieselben Attribute: Lage, Normale, UV). Farbe je Instanz
     // (setColorAt); Standard (rau, nicht-metallisch) liest den EINEN Himmel — r184-Lambert liest scene.environment nie diffus,
     // die Wege-Kisten standen im Schatten schwarz.
@@ -2001,18 +2105,6 @@ class AnazhRealm_siedlung_wege {
         mesh.frustumCulled = false;
         mesh.receiveShadow = true;
         return mesh;
-    }
-    // DER MAUER-POOL (siedlung.K2): die Wände, Kronen und Türme der Stadtmauern — dieselbe Kiste, derselbe Stoff wie der Zaun
-    // (EIN Programm), EIN Draw; anders als der hüfthohe Zaun wirft die Mauer (`castShadow`, die Wurf-Ebene).
-    _stlMauerEnsurePool() {
-        const st = this.state;
-        if (st.stlMauer) return st.stlMauer;
-        if (!this._stlZaunEnsurePool()) return null; // der Zaun-Pool steht vor der Mauer
-        const mesh = this._kistenPool("siedlung-mauer", 256);
-        mesh.castShadow = true;
-        st.scene.add(mesh);
-        st.stlMauer = { mesh, cap: 256, top: 0 };
-        return st.stlMauer;
     }
     // DIE FERNE DER STADT (w28-stadt-netz, Stufe 1 im Bild): jede Kachel einer Stadt, die in dieser Sitzung nicht steht, trägt
     // ihre Häuser als MASSEN — die Liste des Gesetzbuchs (fachwerk `kachelMassen`: Zahl, Maße, Geschosse, Ton der Kachel an den
@@ -2389,44 +2481,8 @@ class AnazhRealm_siedlung_wege {
         this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1);
         this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
     }
-    _stlZaunAddStrip(x, y, z, yaw, pitch, sx, sy, sz, farbe) {
-        this._stlStreifen(this._stlZaunEnsurePool(), x, y, z, yaw, pitch, sx, sy, sz, farbe);
-    }
-    // EIN STREIFEN in einen Bau-Pool `P` (Zaun, Mauer): Mitte x/y/z, Gier und Neigung, Maße sx (quer) · sy (hoch) · sz (längs);
-    // die Verdopplung trägt Name, Stempel und Wurf des Pools.
-    _stlStreifen(P, x, y, z, yaw, pitch, sx, sy, sz, farbe) {
-        if (!P) return;
-        if (P.top >= P.cap) {
-            // Verdopplungs-Wachstum (Matrizen + Farben in einen frischen Pool).
-            const bigger = this._kistenPool(P.mesh.name, P.cap * 2);
-            bigger.castShadow = P.mesh.castShadow;
-            bigger.instanceMatrix.array.set(P.mesh.instanceMatrix.array);
-            if (P.mesh.instanceColor) bigger.instanceColor.array.set(P.mesh.instanceColor.array);
-            AnazhRealm._instanzZahl(bigger, P.mesh.count);
-            this.state.scene.add(bigger);
-            this.state.scene.remove(P.mesh);
-            this._instanzAbschied(P.mesh);
-            P.mesh = bigger;
-            P.cap *= 2;
-        }
-        const slot = P.top++;
-        const m = this._stlWegeTmpM || (this._stlWegeTmpM = new THREE.Matrix4());
-        const q = this._stlWegeTmpQ || (this._stlWegeTmpQ = new THREE.Quaternion());
-        const e = this._stlWegeTmpE || (this._stlWegeTmpE = new THREE.Euler());
-        const v = this._stlWegeTmpV || (this._stlWegeTmpV = new THREE.Vector3());
-        const s = this._stlWegeTmpS || (this._stlWegeTmpS = new THREE.Vector3());
-        const c = this._stlWegeTmpC || (this._stlWegeTmpC = new THREE.Color());
-        e.set(pitch, yaw, 0, "YXZ");
-        q.setFromEuler(e);
-        m.compose(v.set(x, y, z), q, s.set(sx, sy, sz));
-        P.mesh.setMatrixAt(slot, m);
-        P.mesh.setColorAt(slot, c.setHex(farbe));
-        AnazhRealm._instanzZahl(P.mesh, P.top);
-        P.mesh.instanceMatrix.needsUpdate = true;
-        if (P.mesh.instanceColor) P.mesh.instanceColor.needsUpdate = true;
-    }
     // Die Boden-Schichten EINES Settlement-Exports (Straßen · Feldwege · Platz · Äcker) in die Wege-Karte und die
-    // Zäune in den Zaun-Pool — verankert am `origin`, je Form Wasser-bewacht (`_nassAt`; Fluss-Querungen
+    // Zäune in den Satz der Einfriedung — verankert am `origin`, je Form Wasser-bewacht (`_nassAt`; Fluss-Querungen
     // bleiben offen, die bruecken-Schicht reist unkonsumiert). `key` = Session-Gedächtnis (kein Doppel-Bau je Boot). `nurWege`:
     // ein neuer Plan desselben Orts (`_ortNeuRechnen`) — Zaun und Mauer stehen schon. Die Formen merken ihren Plan (`plan`).
     // JEDE FORM DES PLANS WIRD GEMALT (w28-stadt-grund): die Kosten binden an das Fenster jeder Stufe (der Maler malt nur, was in
@@ -2714,9 +2770,13 @@ class AnazhRealm_siedlung_wege {
         if (pm && wk.stufen.some((s) => !s.zentriert)) this._tickWegeKarte(pm.position);
         if (box.x0 < box.x1) this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
         if (nurWege) return n;
-        // ZÄUNE (fences-Schicht): je Segment ein schmaler hüfthoher Holz-Streifen aus dem Zaun-Pool (sy 0.85)
-        // — bewusst KEIN Blocker, das Dorf bleibt durchlässig.
+        // ZÄUNE (fences-Schicht): je Segment ein Zaun des Gesetzbuchs (fachwerk `zaunNetz`: Pfosten und zwei Riegel, wie im
+        // Labor) im Satz der Einfriedung — bewusst KEIN Blocker, das Dorf bleibt durchlässig. Bis mauer-im-stoff stand je
+        // Segment ein Brett von 0,12 × 0,85 m in einem Ton.
+        const ortKey = Math.round(origin.x) + "," + Math.round(origin.z);
+        let zi = -1;
         for (const fz of plan.fences || []) {
+            zi++;
             if (!fz || !Number.isFinite(fz.x0) || !Number.isFinite(fz.x1)) continue;
             const ax = origin.x + fz.x0;
             const az = origin.z + fz.z0;
@@ -2730,27 +2790,28 @@ class AnazhRealm_siedlung_wege {
             const y0 = this.getTerrainHeightAt(ax, az);
             const y1 = this.getTerrainHeightAt(bx, bz);
             if (!Number.isFinite(y0) || !Number.isFinite(y1)) continue;
-            this._stlZaunAddStrip(
+            this._einfriedungLege(
+                "zaun:" + ortKey + ":" + zi,
+                plan,
+                FC.zaunNetz(len, (y1 - y0) / len, (Math.round(ax * 7) * 73856093) ^ (Math.round(az * 7) * 19349663)),
                 (ax + bx) / 2,
-                (y0 + y1) / 2 + 0.42,
+                (y0 + y1) / 2,
                 (az + bz) / 2,
-                Math.atan2(dx, dz),
-                -Math.atan2(y1 - y0, len),
-                0.12,
-                0.85,
-                len,
-                0x6a4e32
+                Math.atan2(dx, dz)
             );
             n++;
         }
         return n + this._stlMauerBuild(plan, origin);
     }
     // DIE STADTMAUER (siedlung.K2): die Mauer des Exports (fachwerk `dorfLayout` → exportSettlement `mauer`: Segmente zwischen
-    // den Toren, Türme) im Mauer-Pool, in den Maßen des Gesetzbuchs (fachwerk STADTMAUER — dieselben baut das Labor) und den
-    // Farben von DEFCOL (stein · ziegel). Der Fuß liest den Boden an beiden Enden und über die Länge: die Wand reicht
-    // `STADTMAUER_FUSS_M` unter den tiefsten Punkt unter ihrer Sehne, die Krone folgt dem Hang; der Turm steht auf seiner
-    // tiefsten Ecke. Was die Wasser-Wand nimmt, steht nicht. Die Natur weicht der Mauer wie dem Anger (`kanal` −1: kein
-    // Boden-Kanal, die Natur-Wand hält die Linie frei). Bis K2 strich der Export die Mauer — die Stadt der Welt stand ohne sie.
+    // den Toren, Türme) im Satz der Einfriedung (`_einfriedungLege`: der Bau-Stoff der Welt), in Gestalt und Maßen des
+    // Gesetzbuchs (fachwerk `mauerNetz` über STADTMAUER und MAUER_GESTALT — dasselbe Netz zeichnet das Labor): Wehrgang,
+    // Brustwehr und Zinnen, das Zeltdach des Turms, die Pfähle der Palisade, die begrünte Krone des Walls. Der Fuß liest den
+    // Boden an beiden Enden und über die Länge: die Wand reicht `STADTMAUER_FUSS_M` unter den tiefsten Punkt unter ihrer Sehne,
+    // die Krone folgt dem Hang (das Stück schert: Stoß und Zinne stehen lotrecht — die starre Kiste kippte mit dem Hang); der
+    // Turm steht auf seiner tiefsten Ecke. Was die Wasser-Wand nimmt, steht nicht. Die Natur weicht der Mauer wie dem Anger
+    // (`kanal` −1: kein Boden-Kanal, die Natur-Wand hält die Linie frei). Bis K2 strich der Export die Mauer — die Stadt der
+    // Welt stand ohne sie.
     // DIE WEHR IHRER ZEIT (mensch.macht.wehrbau#2, fachwerk `MAUER_FORM` über `mauerGestalt`): der Export trägt Form, Maße und
     // Stoff — die Palisade aus Stämmen mit hölzernen Türmen, der Steinring mit Wehrgang und Türmen, die Bastion als niedriger,
     // dicker Wall mit der Brustwehr außen und Bollwerken (je eine Raute, deren Spitze vor den Ring springt) an Stelle der Türme.
@@ -2761,13 +2822,11 @@ class AnazhRealm_siedlung_wege {
         const FC = globalThis.__fachwerkCore;
         if (!M.wand || !M.art)
             throw new Error("_stlMauerBuild: die Mauer trägt keine Form (fachwerk `mauerGestalt`: art, wand)");
-        const [W, K, T, D, BW] = [M.wand, M.krone, M.turm, M.dach, M.bollwerk];
-        const farbe = FC.DEFCOL[M.stoff];
-        const dachFarbe = M.dachStoff ? FC.DEFCOL[M.dachStoff] : null;
-        const P = this._stlMauerEnsurePool();
+        const [W, K, T, BW] = [M.wand, M.krone, M.turm, M.bollwerk];
         const wk = this._wegeKarteEnsure();
         const FUSS = AnazhRealm.STADTMAUER_FUSS_M;
-        // die Mauer merkt ihren Plan und ihre Streifen im Pool (`_stlMauerNeu`: sie wächst mit dem Ort)
+        const ortKey = "mauer:" + Math.round(origin.x) + "," + Math.round(origin.z);
+        // die Mauer merkt ihren Plan und ihre Stücke im Satz (`_stlMauerNeu`: sie wächst mit dem Ort)
         const box = {
             x0: Infinity,
             z0: Infinity,
@@ -2775,7 +2834,7 @@ class AnazhRealm_siedlung_wege {
             z1: -Infinity,
             formen: [],
             mauerVon: plan,
-            streifen: [P ? P.top : 0],
+            stuecke: [],
         };
         const form = (f) => {
             box.formen.push(f);
@@ -2786,7 +2845,9 @@ class AnazhRealm_siedlung_wege {
             box.z1 = Math.max(box.z1, f.az + r, f.bz + r);
         };
         let n = 0;
+        let si = -1;
         for (const sg of M.segs) {
+            si++;
             const ax = origin.x + sg.x0;
             const az = origin.z + sg.z0;
             const bx = origin.x + sg.x1;
@@ -2808,34 +2869,22 @@ class AnazhRealm_siedlung_wege {
             const mz = (az + bz) / 2;
             const my = (y0 + y1) / 2;
             const yaw = Math.atan2(dx, dz);
-            const pitch = -Math.atan2(y1 - y0, len);
-            const L = len + W.ueber;
-            this._stlStreifen(P, mx, my + (W.hoch - fuss) / 2, mz, yaw, pitch, W.dick, W.hoch + fuss, L, farbe);
-            if (K) {
-                // die Brustwehr der Bastion steht außen auf dem Wall (`aussen`), der Wehrgang des Steinrings über seiner Mitte
-                const [ox, oz, ol] = [mx - origin.x, mz - origin.z, Math.hypot(mx - origin.x, mz - origin.z) || 1];
-                const o = K.aussen ? (W.dick - K.dick) / 2 : 0;
-                this._stlStreifen(
-                    P,
-                    mx + (ox / ol) * o,
-                    my + K.y,
-                    mz + (oz / ol) * o,
-                    yaw,
-                    pitch,
-                    K.dick,
-                    K.hoch,
-                    L,
-                    farbe
-                );
-            }
+            // +x des Stücks zeigt vom Ort weg (`aussen`): dort stehen Brustwehr und Zinnen
+            const aussen = Math.cos(yaw) * (mx - origin.x) - Math.sin(yaw) * (mz - origin.z) >= 0 ? 1 : -1;
+            const saat = (Math.round(mx * 7) * 73856093) ^ (Math.round(mz * 7) * 19349663);
+            const stueck = { art: "wand", lang: len, fuss, steig: (y1 - y0) / len, aussen, saat };
+            const sk = ortKey + ":w" + si;
+            this._einfriedungLege(sk, plan, FC.mauerNetz(M, stueck), mx, my, mz, yaw);
+            box.stuecke.push(sk);
             form({ typ: "segment", kanal: -1, ax, az, bx, bz, halb: Math.max(W.dick, K ? K.dick : 0) / 2 });
             n++;
         }
         // die Türme (Palisade, Steinring) oder die Bollwerke (Bastion: die Raute mit der Seite vor × √2, ihre innere Ecke am Ring)
         const breit = T ? T.breit : BW ? BW.vor * Math.SQRT2 : 0;
-        const hoch = T ? T.hoch : BW ? BW.hoch : 0;
         const tb = BW ? BW.vor : breit / 2; // der Halbmesser, über den der Fuß den Boden liest
+        let ti = -1;
         for (const t of breit > 0 && Array.isArray(M.towers) ? M.towers : []) {
+            ti++;
             const x = origin.x + t.x;
             const z = origin.z + t.z;
             if (!this._landAt(x, z, 0.2)) continue;
@@ -2853,8 +2902,10 @@ class AnazhRealm_siedlung_wege {
             }
             const fuss = FUSS + tief;
             const gier = BW ? Math.atan2(t.x, t.z) + Math.PI / 4 : 0; // die Raute: eine Ecke zeigt vom Ort weg
-            this._stlStreifen(P, x, y + (hoch - fuss) / 2, z, gier, 0, breit, hoch + fuss, breit, farbe);
-            if (D && dachFarbe !== null) this._stlStreifen(P, x, y + D.y, z, 0, 0, D.breit, D.hoch, D.breit, dachFarbe);
+            const tk = ortKey + ":t" + ti;
+            const saat = (Math.round(x * 7) * 73856093) ^ (Math.round(z * 7) * 19349663);
+            this._einfriedungLege(tk, plan, FC.mauerNetz(M, { art: "turm", fuss, saat }), x, y, z, gier);
+            box.stuecke.push(tk);
             form({
                 typ: "kasten",
                 kanal: -1,
@@ -2869,7 +2920,6 @@ class AnazhRealm_siedlung_wege {
             });
             n++;
         }
-        box.streifen.push(P ? P.top : 0);
         if (box.formen.length) {
             wk.siedlungen.push(box); // die Natur-Wand liest die Linie (`_aufWeg`); einen Boden-Kanal malt sie nicht
             wk.raeumen.push(box); // was schon in der Linie der Mauer wuchs, räumt der Takt (`_wegeRaeumen`)
@@ -3228,7 +3278,9 @@ class AnazhRealm_siedlung_wege {
     }
 
     _stlWegeDispose() {
-        for (const feld of ["stlZaun", "stlMauer", "ackerKoerper"]) {
+        // Mauer und Zaun gehören der alten Welt: ihre Stücke verlassen den Satz der Einfriedung
+        for (const k of this.state.einfriedung ? [...this.state.einfriedung.keys()] : []) this._einfriedungFaellt(k);
+        for (const feld of ["ackerKoerper"]) {
             const P = this.state[feld];
             for (const mesh of P ? [P.mesh, P.halmMesh] : [])
                 if (mesh) {
