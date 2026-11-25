@@ -1,7 +1,7 @@
 {
  "sha": "c540c783d2370aa52fb5c11cee726d93fa629dca",
  "geraet": "gtx",
- "zeit": "2026-11-25T03:53:07.004Z",
+ "zeit": "2026-11-25T03:56:07.789Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#3": {
@@ -558,6 +558,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.massstab.spanne#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT Leser fehlt: Steigflug 0,5 → 700 m in 30 s: kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe — Saaten: die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden) — in 1 von 21 Adressen (nahe Ebene 0.1 m, Auge über dem Grund 2.09 m; Fächer 1/21 Adressen (20 Saaten + 1) in 0 ms · Leser stamm/koerper-bewegung.js:1759 _loopCamera · Gesetz gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833) · 20 ohne Fähigkeit (die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)) · schlechteste {\"saat\":\"anazh-realm-seed\"} auge 2.09 · Bild dort Saat anazh-realm-seed an der Wiese, ego (das Auge am Leib) · ungemessen: Steigflug 0,5 → 700 m in 30 s (kein Verb hebt das Auge)) (verlangt 20 Saaten, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.04,
+   "grund": "ROT: S1 · ROT Leser fehlt: Steigflug 0,5 → 700 m in 30 s: kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe — Saaten: die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden) — in 1 von 21 Adressen (nahe Ebene 0.1 m, Auge über dem Grund 2.09 m; Fächer 1/21 Adressen (20 Saaten + 1) in 0 ms · Leser stamm/koerper-bewegung.js:1759 _loopCamera · Gesetz gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833) · 20 ohne Fähigkeit (die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)) · schlechteste {\"saat\":\"anazh-realm-seed\"} auge 2.09 · Bild dort Saat anazh-realm-seed an der Wiese, ego (das Auge am Leib) · ungemessen: Steigflug 0,5 → 700 m in 30 s (kein Verb hebt das Auge)) (verlangt 20 Saaten, die Welt erzeugte 1)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k8177748f7dbe",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k6c91a0ed10dc",
+   "s": 1.8,
+   "fremd": {
+    "s": 4.3,
+    "takte": 2,
+    "fremdS": 3.53,
+    "kerne": 0.816,
+    "fensterKerne": 0.816,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.7
+     ],
+     [
+      "Explorer.EXE",
+      0.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.33
+     ]
+    ],
+    "dienerS": 1.38,
+    "diener": [
+     [
+      "System",
+      0.78
+     ],
+     [
+      "dwm.exe",
+      0.28
+     ]
+    ],
+    "geraetS": 3.72,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      2.7
+     ],
+     [
+      "svchost.exe",
+      0.78
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.11
+     ]
+    ],
+    "eigenS": 8.44,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T03:54:50.259Z",
+   "abdruck": "2be4c703545f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -569,6 +639,73 @@
   "k75a3d31c80c1": "bVXbbqMwEP2XPG7XNddgLPXBKZUSaS/JJ4xhDDQEIhvKKqv99xUkbgJ03kDnzBzOGZu/qzOkR8jx+d009Yqvvq2+rwx8IDGoP1A/v5sVX8Wp66HPxUEMtRdCvA6wVJfn1tCqlBRkDcUJSadbLKvndKSBxCBjnPZvIt9TquiFJv3Ly5xaScwa0oJCS3TQDxnyObAzOUgk0KlxmAU7bO0Bp2OxRPxO6Gf1TIh9oII9S2bNJNTZVG28DiMM+a4X4k0sVGYlYEuqsjZ2rptFsXL4fdbPBUdDTy6ARYX6RkLmuoG0YjeDnYM1M6KqOmMmw5ifhR7jlMZzbI6mTIuWnHUjsb7BZexFLvDN0u383BH1qAikBCbnXheAdY56osHxU7V2Of3D5k2PcEINpIbCeun4kSfv3lBKt0st1Sh8HGGFZ24Ueu6EOIRKPwaDxU7canxm20+EfZ/k4l6HxUCTFqU+Ta1SAXqOz38s5ZkCMtTk2Jj2E+1jFDiSj/13yXXunm3mzPuH2fwAgD0sC2VUbBc+mka1PWgk+bmzCxNgGIVciN0C3MLpZPP20cmceYimHZb8UUYQrRGRU/p0PSTLj74eCXLBsrIkpYIgDufNPzScCMhcl0rZ1GWYqvirJe2xaolsmtba6EaR73Pq0/ox6F/96OtDhkl+CNpq07+JSe3EXPc4odGtFR3KtaMCrsbFSRfoUrekh7SwcE9JhEH6IpML6gpznNgoIxYP692rq+7LcM1Et2tAPU2W97LsWOJgcG06Y0NOIZAh/yKSHvVRQn28AdPMddfZuH6b32I78eQ1OexZMhyTSfn54F1SbK7v08FTe1edMaVn3ahyuA1pAZ0poGrvv4J//wE=",
   "k286f336190e5": "bVTbcpswFPwXPzZVxNUIzeRBLunYM03rfMIRHAExBo8EoXWn/94BW7GBnCeb2dVZdlf8XZ0gPUCOj2+mqVd89WX1dWXgHYlB/Y768c2s+CpOXQ99Li5DhRDfBliqy1NraFVKCrKG4oik0y2W1WM60kBikDFO+2eR7ylV9EyT/ulpTq0kZg1pQaElOuiHDPkc2JkcJBLo1LjMgh229oDTcVgifiX0Y/oXIfaBCvYsmR0moc6mauN1GGHId3+EeBYLlVkJ2JKqrI3d62ZRrBx+t2vB0dCTM2BRob6SkLluIK3YzWDnYM2MqKrOmMky5mehxzil8RyboynToiUn3Uisr3AZe5ELfLN0Oz91RN0rAimBybnXBWCdo55ocPxUrV1Of7P5oQc4ogZSQ2G9dPzIkzdvKKXbpZZqFD6usMIzNwo9d0IcQqXvg8FiJ2wFh/9s+4Gwz5Nc3OZ1sdCkRamPU6tUgJ7j8x9LeaaADDU5NKb9QPsYBY683IRdctm7Z5s58/ZiNj8AYHdloYyK7cJH06i2B40kP3W2MAGGUciF2C3ALRyPNm8fncyZh2jaoeT3MoJojYic0ofLJVm+9OVKkDOWlSUpFQRxOD/8XcORgMx1qZRNXYapij8raY9VS2TTtNZGN4p8n1Of1vdB/+xHX+8yTPLX4OW7yJ/FZHZirnvc0OjWig7l2lEBV2Nx0gW61C3pIS0s3FMSIeafQM+oK8xxYqOMWDzUu0/vlAb2x8OkvOdFyucSB4Nr0xkbcgqBDPknkfSoDxLqwxWYZq67zsb6bX6J7dSU5HXPkuGaTMYfvUsKcT34hCk96UaVwxeQFtCZAqr29vn/9x8=",
   "ka0adac890897": "dVTbjpswEP0XHnfrNQQIYGkfnBApUS/KfsIYxsCGALLN0qbqv1eQsAnQziOcmTlz5nh+Ww0kJ8jw5V3XlcWsJ+uLpeEDiUb1gerlXVvMihJnhS7jb7yPI+d828MSVTRG07IQFEQF+RlJqwwW5UsypIFALw0Z7XY8O1Iq6YXGHf+MLX99nZcpBaY1MSBxLGKj64fI5sBWZyCQQCuHxjfw0wwmoEqnnKK1H6DPDr843y37pwWgIWVR6bGikwaRtBkdo/u+yFHQkQtgXqK6JWHoOJ64JYWbfthegFmiLFutJ81CN/VXIaM0mmMz1EWSG9KoWmB1g4toFTjANt1ijqxpiXxkBEJAKOYq5oBVhmrCwXYTuXYY/RnOi57gjApIBfmope0GK3HXhlK6X3IpB+JDi+o/a9JJXqjzdDjp4cp22bdlQZ1Dioqcam0+0S4Gni3Y4KtDTK8+DTfzzDuVUXEACB/WS0PK94vJdS1NBwpJ1rTjij30A59xfliADZzP44ZctFN7Lrs2vS0faXjBGhEZpc/x1WWLoa8mJhcsyjFJSs+LfLbdeHPwh4IzAZGpQspxV8JPZPQva3VYGiLq2oxSOkHgur0k1eNmfwwv93B/vjzO3jxTbrodn8RXvjlmC/5Dl1qZkbwv1rb0mBymTRboQhnSQZKP8JUUCD39xW4uqErMcCKnCMKoN2Ynr9wvIefH4PaA5fPjWPSyrFhgL3SlWz0uOwFP+FeX3A7YYXo8OlQnAdXplpCkjrNOWczjjD7v9hN9tvHbMYw/C41Bs17Hfb65fk96fWn3veMHPti4wYRKUAKpgYwolJOL3f9tVC2L/uLRHFqdQ2nukD9/AQ==",
-  "k9b8cacb2c000": "bVXbcpswFPwXHpsQcTVCM3mQSzr2TNM6n3AER0CNgZEgtO703ztgKzaQ82QzuzrL7sr+a7WQHiHHp1+6qS1mfbEerbaCGjs7bdT42GKWhxAGHqsd8kD6AyGDm/Nt/mw9Whre0dao3lFdoHHqeugzfhnCOf86wlJVtp0mVSkIiBqKE9q96rCsntKJBgKDjDIyvPD8QIgkZ5IMz89LaiUwa+wOJBqig35IkS2Bvc5BoA29nJYZsEM3HjAyDU34z4R8zPDK+SGQwYEmi8ME1NlcbbwJIwzZ/g/nL3ylMisBO7sqa232ulkUS4fd7VpxFAz2GbCoUF1JSF03EEbsdrRztGZBlFWv9WwZ9bPQo4yQeInNUZdp0dmtagTWV7iIvcgFtl27nbe9Le8VgRBAxdLrArDOUc00OH4qNy4jv+ny0COcUIFdQ2G8dPzIEzdvCCG7tZZqEj6tMMIzNwo9d0YcQyXvo8F8z00Fx+9094Ewz5Oc3+ZttVCnRalOc6tkgJ7js+9rebqADJV9bHT3gfYxChxxuQn75LL3QLdL5u3FTH4AQO/KQijhu5WPupHdAArtvO1NYQIMo5Bxvl+BOzidTN4+OpmzDFF3Y8nvZQTRBhEZIQ+XS7J+6cuVsM9YVoYkZRDE4fLwdwUnG0SuSilN6iJMZfxZSQesOls0TWdsdKPI9xnxSX0f9I9h8vUuwyR/C16/8fyFz2bPl7qnDY3qjOhQbBwZMDkVJ12hS9XZA6SFgXtSIMTsE+gZVYU5zmwUEY3Heg/pndLAfHiYlfe8Svlc4mhwrXttQk4hECH7JJIB1VFAfbwC08x1N9lUv+1PvpubkrwdaDJek9n4k3e7gl8PbjElrWpkOf4CkgJ6XUDV3f4p/v0H"
+  "k9b8cacb2c000": "bVXbcpswFPwXHpsQcTVCM3mQSzr2TNM6n3AER0CNgZEgtO703ztgKzaQ82QzuzrL7sr+a7WQHiHHp1+6qS1mfbEerbaCGjs7bdT42GKWhxAGHqsd8kD6AyGDm/Nt/mw9Whre0dao3lFdoHHqeugzfhnCOf86wlJVtp0mVSkIiBqKE9q96rCsntKJBgKDjDIyvPD8QIgkZ5IMz89LaiUwa+wOJBqig35IkS2Bvc5BoA29nJYZsEM3HjAyDU34z4R8zPDK+SGQwYEmi8ME1NlcbbwJIwzZ/g/nL3ylMisBO7sqa232ulkUS4fd7VpxFAz2GbCoUF1JSF03EEbsdrRztGZBlFWv9WwZ9bPQo4yQeInNUZdp0dmtagTWV7iIvcgFtl27nbe9Le8VgRBAxdLrArDOUc00OH4qNy4jv+ny0COcUIFdQ2G8dPzIEzdvCCG7tZZqEj6tMMIzNwo9d0YcQyXvo8F8z00Fx+9094Ewz5Oc3+ZttVCnRalOc6tkgJ7js+9rebqADJV9bHT3gfYxChxxuQn75LL3QLdL5u3FTH4AQO/KQijhu5WPupHdAArtvO1NYQIMo5Bxvl+BOzidTN4+OpmzDFF3Y8nvZQTRBhEZIQ+XS7J+6cuVsM9YVoYkZRDE4fLwdwUnG0SuSilN6iJMZfxZSQesOls0TWdsdKPI9xnxSX0f9I9h8vUuwyR/C16/8fyFz2bPl7qnDY3qjOhQbBwZMDkVJ12hS9XZA6SFgXtSIMTsE+gZVYU5zmwUEY3Heg/pndLAfHiYlfe8Svlc4mhwrXttQk4hECH7JJIB1VFAfbwC08x1N9lUv+1PvpubkrwdaDJek9n4k3e7gl8PbjElrWpkOf4CkgJ6XUDV3f4p/v0H",
+  "k8177748f7dbe": "bVVdj5swEPwveeyVM5/BWLoH5zgpkdpe8hPWsAYuBJANoU3V/15B4kuA2zfQzO4wszZ/Vw0kR8jw+UPX1Yqtvq2+rzSc0dKozqieP/SKraLEcdFj/MCH2nPOXwdYooqm1aQsBAFRQX5Cq1MtFuVzMtJAoJ9SRvo3nu0JkeRC4v7lZU4tBaa11YJEQ7TRCyiyObDTGQi0oJPjMAO26doFRsaiMX+PyWf1lPO9L/09jWfNBFTpVG20DkIM2O4P5298oTItAFurLCpt5jppGEmb3Wf9XHAU9NYFMC9R3UhIHccXRuxmsHOwZkaUZaf1ZBj10sCljJBojs1QF0neWo2qBVY3uIjc0AG2WbqdNZ0lHxWBEEDF3OscsMpQTTTYXiLXDiO/6bzpEU6owKogN17aXuiKuzeEkO1SSzkKH0cY4akTBq4zIQ6hkvNgMN/xW43PdPuJMO/jjN/rsBiok7xQp6lV0kfX9tiPpTydQ4rKOta6/UR7GPq2YGP/XXydu6ebOfP+YSY/AKAPy0Io4duFj7qWbQ8KrazpzML4GIQB43y3ALdwOpm8PbRTex6iboclf5Thh2tEZIQ8XQ/J8qOvR8K6YFEakpS+HwXz5mcFJwtEpgopTeoiSGT01ZL2WLaWqOvW2OiEoecx4pHqMehf/ejrQ4ZxdvDbctO/8Unt+Fz3OKFWrREdiLUtfSbHxUkW6EK1Vg9JbuCuFAiD9EUmF1QlZjixUYQ0Gta7l1fdl+GaCW/XgHyaLO9l2bHAweBKd9qEnIAvAvZFJD2qo4DqeAMmqeOs03H9Nu98O/HkNT7saTwck0l52eDdNt9c3yeDp+auajAhjaplMdyGJIdO51C291/Bv/8="
+ },
+ "ungemessen": {
+  "karte2.erleben.klang.stimme#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschienen (stimmFormanten) — S1 misst ihn noch nicht",
+   "exit": 0,
+   "minuten": 0,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschienen (stimmFormanten) — S1 misst ihn noch nicht",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 0.1,
+   "fremd": {
+    "s": 2.1,
+    "takte": 1,
+    "fremdS": 0.64,
+    "kerne": 0.301,
+    "fensterKerne": 0.301,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.2
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-c540c783-w045201 x listen/kandidat-gtx-c540c783-w045201.txt",
+      0.09
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      0.06
+     ]
+    ],
+    "dienerS": 0.2,
+    "diener": [
+     [
+      "System",
+      0.13
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.05
+     ]
+    ],
+    "geraetS": 1.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.95
+     ],
+     [
+      "svchost.exe",
+      0.27
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 5.11,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T03:56:07.789Z",
+   "abdruck": "f0f7353bbe7b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
