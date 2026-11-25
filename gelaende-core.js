@@ -7079,7 +7079,7 @@
     // k Stufen der Gezeit (`GEZEIT.stufe`) über dem Ruhe-Spiegel steht: der niedrigste Sattel des Wegs vom Ozean (Priority-Flood in
     // Eimern der Stufe, 8 Nachbarn wie die Ozean-Maske), bis zum höchsten Hochwasser (`GEZEIT.hoch`). 0: nie (der Ozean selbst, das
     // Land über dem Hochwasser, die Mulde hinter einem höheren Deich). Jede Schwelle liegt über dem Ruhe-Spiegel (k ≥ 1): ohne Gezeit
-    // flutet keine Zelle (byte-neutral). Leser: `meerKoerper` über `atlasSpiegel`.
+    // flutet keine Zelle (byte-neutral). Leser: `spiegelTeile` (die Schwellen der Zelle und des Rands) über `atlasSpiegel`.
     function hydroWatt(ctx) {
         const { dim, surf, isOcean, waterLevel } = ctx;
         const n = dim * dim;
@@ -7835,27 +7835,18 @@
         for (const p of GEZEIT.teile) eta -= p.amp * Math.sin((2 * Math.PI * t) / p.stunden);
         return Math.round(eta / GEZEIT.stufe);
     }
-    // der Hub des Meers über seinem Ruhe-Spiegel (m) an der Lage — 0 ohne Träger
+    // der Hub des Meers über seinem Ruhe-Spiegel (m) zur Stufe k — der EINE Term (die Zelle des Meers `koerperY`, der Spiegel
+    // `spiegelZurStufe`); `gezeitHub` ist er an der Lage, 0 ohne Träger
+    function gezeitHubStufe(k) {
+        return k * GEZEIT.stufe;
+    }
     function gezeitHub(L) {
         const g = L.gezeit;
-        return g ? g.k * GEZEIT.stufe : 0;
+        return g ? gezeitHubStufe(g.k) : 0;
     }
     // der Träger der Gezeit zur Stunde `t`: { stunde, k } — der Wirt legt ihn in die Lage, der Faden bekommt ihn im Stand
     function gezeitStand(t) {
         return Object.freeze({ stunde: t, k: gezeitStufe(t) });
-    }
-    // der Spiegel des MEERS jenseits der Regionen (der Ozean ist global, V17.117) — der Ruhe-Spiegel samt der Gezeit
-    function meerSpiegel(L) {
-        return (typeof L.waterLevel === "number" ? L.waterLevel : 0) + gezeitHub(L);
-    }
-    // der Spiegel des Körpers der Zelle i (Meer, See, das geflutete Watt) oder −Infinity: das Watt trägt das Meer, sobald die
-    // Gezeit seine Flut-Schwelle erreicht (`hydroWatt`)
-    function meerKoerper(L, h, i) {
-        const k = h.water.waterKind[i];
-        if (k === 1 || k === 2) return koerperY(L, h, i);
-        const w = h.water.wattK;
-        const g = L.gezeit;
-        return w && g && w[i] > 0 && w[i] <= g.k ? meerSpiegel(L) : -Infinity;
     }
     // DAS WATT IM BILD (der Bezug der Ufer-Bänder): der Anteil der Zeit, die der Grund `a` Meter über dem Ruhe-Spiegel unter Wasser
     // liegt (die Überflutungs-Dauer der Küsten-Ökologie) — unter dem Sinus der mittleren Tide A_M2: acos(a / A) / π, 1 unter dem
@@ -7908,13 +7899,25 @@
         if (river && river.surfaceY > level) level = river.surfaceY;
         return level;
     }
-    // DER SPIEGEL DES WASSERS an (x, z) über dem Boden `terrainTopY` (−Infinity = hier nie Wasser): der Körper der Zelle (Meer,
-    // See) voll in jeder Tiefe; Land neben einem Körper (3×3) dessen Spiegel, wenn der Boden darunter liegt — nur bei ENDLICHEM
-    // Boden („unbekannt“ heißt keine Rand-Erweiterung, nie „immer nass“); jenseits der Region ist das Meer der Default-Körper
-    // (der Ozean ist global, V17.117). Der Fluss zählt mit seiner ganzen Breite, bei unbekanntem Boden nur sein Kanal-Kern.
-    // `aus` (optional) bekommt den Spiegel der Körper ohne den Fluss: `aus.koerper`.
-    function atlasSpiegel(L, x, z, terrainTopY, aus) {
-        let level = -Infinity;
+    // DIE TEILE DES SPIEGELS (planet.wasser.gezeiten): der Spiegel der Körper an (x, z) über dem Boden `terrainTopY`, zerlegt in
+    // das, was die Gezeit nicht bewegt, und die Schwellen des Meers — `SPIEGEL_TEILE` Zahlen ab `o` in `t`: [0] die Stufe, ab der
+    // das Meer die Zelle trägt (−∞ das Meer selbst und der Ozean jenseits der Regionen, die Flut-Schwelle des Watts `hydroWatt`,
+    // +∞ sonst), [1] der Ruhe-Spiegel dieses Meers, [2] der stehende Körper der Zelle ohne Gezeit (der See mit seinem Pegel); am
+    // Rand (3×3, nur wo die Zelle selbst kein Körper ist) [3] der höchste See, [4] der höchste Ruhe-Spiegel des Meers und [5] die
+    // niedrigste Flut-Schwelle des Watts; [6] der Stau (`stauSpiegel`). `spiegelZurStufe` setzt sie zur Stufe k zusammen, und
+    // `atlasSpiegel` IST diese Zusammensetzung zur Stufe der Lage (EIN Gesetz). Wer den Spiegel einmal rechnet und zu jeder
+    // Stunde zeichnet, trägt die Teile: der Fern-Ring (der Faden rechnet sie je Punkt, der Wirt setzt sie bei jedem Wechsel der
+    // Stufe neu zusammen, `_fernRingY`) — bis hier zeichnete er die Ferne zur Stunde ihres Baus.
+    const SPIEGEL_TEILE = 7;
+    const SPIEGEL_HIER = new Float64Array(SPIEGEL_TEILE);
+    function spiegelTeile(L, x, z, terrainTopY, t, o) {
+        t[o] = Infinity;
+        t[o + 1] = 0;
+        t[o + 2] = -Infinity;
+        t[o + 3] = -Infinity;
+        t[o + 4] = -Infinity;
+        t[o + 5] = Infinity;
+        const wl = typeof L.waterLevel === "number" ? L.waterLevel : 0;
         let inRegion = false;
         const h = hydroRegion(L, x, z);
         if (h && h.ready && h.water && h.water.waterKind) {
@@ -7923,27 +7926,89 @@
             const cj = Math.floor((z - h.originZ) / h.cell);
             if (ci >= 0 && cj >= 0 && ci < dim && cj < dim) {
                 inRegion = true;
-                // der Körper der Zelle (Meer, See, das geflutete Watt: `meerKoerper`)
-                const here = meerKoerper(L, h, ci + cj * dim);
-                if (here > -Infinity) level = here;
+                const wK = h.water.waterKind;
+                const wY = h.water.waterY;
+                const wW = h.water.wattK;
+                const i = ci + cj * dim;
+                if (wK[i] === 1) {
+                    t[o] = -Infinity;
+                    t[o + 1] = wY[i];
+                } else if (wK[i] === 2) t[o + 2] = koerperY(L, h, i);
                 else {
-                    let rim = -Infinity;
+                    if (wW && wW[i] > 0) {
+                        t[o] = wW[i];
+                        t[o + 1] = wl;
+                    }
                     for (let dj = -1; dj <= 1; dj++) {
                         for (let di = -1; di <= 1; di++) {
                             const ni = ci + di;
                             const nj = cj + dj;
                             if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
-                            const nk = meerKoerper(L, h, ni + nj * dim);
-                            if (nk > rim) rim = nk;
+                            const n = ni + nj * dim;
+                            if (wK[n] === 1) {
+                                if (wY[n] > t[o + 4]) t[o + 4] = wY[n];
+                            } else if (wK[n] === 2) {
+                                const y = koerperY(L, h, n);
+                                if (y > t[o + 3]) t[o + 3] = y;
+                            } else if (wW && wW[n] > 0 && wW[n] < t[o + 5]) t[o + 5] = wW[n];
                         }
                     }
-                    if (Number.isFinite(terrainTopY) && rim > -Infinity && terrainTopY < rim) level = rim;
                 }
             }
         }
-        if (h && h.ready && !inRegion) level = meerSpiegel(L);
-        const stau = stauSpiegel(L, x, z, terrainTopY);
-        if (stau > level) level = stau;
+        if (h && h.ready && !inRegion) {
+            t[o] = -Infinity;
+            t[o + 1] = wl;
+        }
+        t[o + 6] = stauSpiegel(L, x, z, terrainTopY);
+        return t;
+    }
+    // der Spiegel der Körper aus seinen Teilen zur Stufe k der Gezeit (`wl` der Ruhe-Spiegel des Meers der Lage): die Zelle trägt
+    // das Meer ab ihrer Schwelle, sonst ihren See, sonst den Rand, wenn der Boden darunter liegt; darüber der Stau
+    function spiegelZurStufe(t, o, k, terrainTopY, wl) {
+        const hub = gezeitHubStufe(k);
+        let level;
+        if (k >= t[o]) level = t[o + 1] + hub;
+        else if (t[o + 2] > -Infinity) level = t[o + 2];
+        else {
+            let rim = t[o + 3];
+            if (t[o + 4] + hub > rim) rim = t[o + 4] + hub;
+            if (k >= t[o + 5] && wl + hub > rim) rim = wl + hub;
+            level = Number.isFinite(terrainTopY) && rim > -Infinity && terrainTopY < rim ? rim : -Infinity;
+        }
+        return t[o + 6] > level ? t[o + 6] : level;
+    }
+    // die Teile des Meers allein (der Ruhe-Spiegel `wl`, zu jeder Stufe samt der Gezeit): der Spiegel vor der Hydrosphäre
+    function spiegelMeer(t, o, wl) {
+        t[o] = -Infinity;
+        t[o + 1] = wl;
+        t[o + 2] = -Infinity;
+        t[o + 3] = -Infinity;
+        t[o + 4] = -Infinity;
+        t[o + 5] = Infinity;
+        t[o + 6] = -Infinity;
+        return t;
+    }
+    // der niedrigste Spiegel aus diesen Teilen über den Hub der Gezeit: zum niedrigsten Niedrigwasser — oder zur Stufe, ab der das
+    // Meer die Zelle trägt (darunter trägt sie ihren Rand, der einen See höher halten kann); nass darunter heißt nass zu jeder Stunde
+    function spiegelNiedrigst(t, o, terrainTopY, wl) {
+        const K = GEZEIT_HOCH.k;
+        const tief = spiegelZurStufe(t, o, -K, terrainTopY, wl);
+        return t[o] > -K && t[o] <= K ? Math.min(tief, spiegelZurStufe(t, o, t[o], terrainTopY, wl)) : tief;
+    }
+    // trägt der Spiegel aus diesen Teilen die Gezeit? (eine Schwelle des Meers in ihrem Hub, oder ein Meer am Rand)
+    function spiegelMitGezeit(t, o) {
+        return t[o] <= GEZEIT_HOCH.k || t[o + 4] > -Infinity || t[o + 5] <= GEZEIT_HOCH.k;
+    }
+    // DER SPIEGEL DES WASSERS an (x, z) über dem Boden `terrainTopY` (−Infinity = hier nie Wasser): der Körper der Zelle (Meer,
+    // See) voll in jeder Tiefe; Land neben einem Körper (3×3) dessen Spiegel, wenn der Boden darunter liegt — nur bei ENDLICHEM
+    // Boden („unbekannt“ heißt keine Rand-Erweiterung, nie „immer nass“); jenseits der Region ist das Meer der Default-Körper
+    // (der Ozean ist global, V17.117). Der Fluss zählt mit seiner ganzen Breite, bei unbekanntem Boden nur sein Kanal-Kern.
+    // `aus` (optional) bekommt den Spiegel der Körper ohne den Fluss: `aus.koerper`.
+    function atlasSpiegel(L, x, z, terrainTopY, aus) {
+        const g = L.gezeit;
+        const wl = typeof L.waterLevel === "number" ? L.waterLevel : 0;
+        let level = spiegelZurStufe(spiegelTeile(L, x, z, terrainTopY, SPIEGEL_HIER, 0), 0, g ? g.k : 0, terrainTopY, wl);
         if (aus) aus.koerper = level;
         const river = flussAm(L, x, z);
         if (river && river.surfaceY > level && (terrainTopY !== -Infinity || river.centerness > 0)) level = river.surfaceY;
@@ -8221,10 +8286,16 @@
         gezeitStufe: gezeitStufe,
         gezeitHub: gezeitHub,
         gezeitStand: gezeitStand,
-        meerSpiegel: meerSpiegel,
-        meerKoerper: meerKoerper,
+        spiegelTeile: spiegelTeile,
+        spiegelZurStufe: spiegelZurStufe,
+        spiegelMitGezeit: spiegelMitGezeit,
+        spiegelMeer: spiegelMeer,
+        spiegelNiedrigst: spiegelNiedrigst,
+        gezeitHubStufe: gezeitHubStufe,
+        SPIEGEL_TEILE: SPIEGEL_TEILE,
         wattSchlick: wattSchlick,
         hydroWatt: hydroWatt,
+        GEZEIT_HOCH: GEZEIT_HOCH,
         lageHochwasser: lageHochwasser,
         landSpiegel: landSpiegel,
     });

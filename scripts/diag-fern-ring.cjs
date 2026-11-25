@@ -327,13 +327,15 @@ hauptLauf(async () => {
                 return { nass, klumpen, tal: +tal.toFixed(2), hoechster: +hoechster.toFixed(2) };
             };
             const tiefe0 = Object.getPrototypeOf(r)._fernRingWasserTiefe;
-            // der Spiegel der Probe: jenseits der Kacheln ist er das Meer — der Faden gab jedem Punkt seinen Spiegel
-            // (`fr.spiegel`), die Probe hebt ihn für die Punkte unter wlW und legt ihn danach zurück
-            const spiegel0 = fr.spiegel.slice();
+            // der Spiegel der Probe: jenseits der Kacheln ist er das Meer — der Faden gab jedem Punkt die Teile seines Spiegels
+            // (`fr.spiegelTeile`, gelaende-core `spiegelTeile`), die Probe hebt seinen Boden (den Stau, Teil 6: der Spiegel ist das
+            // Maximum darüber) für die Punkte unter wlW auf wlW und legt ihn danach zurück
+            const TS = globalThis.__gelaendeCore.SPIEGEL_TEILE;
+            const teile0 = fr.spiegelTeile.slice();
             const probeSpiegel = (an) => {
                 for (let g = 0; g < Math.min(fr.totalVerts, fr.cursor); g++)
                     if (fr.law[g] < wlW) {
-                        fr.spiegel[g] = an ? Math.max(spiegel0[g], wlW) : spiegel0[g];
+                        fr.spiegelTeile[g * TS + 6] = an ? Math.max(teile0[g * TS + 6], wlW) : teile0[g * TS + 6];
                         r._fernRingSetzVertex(fr, r._fernRingPunkt(fr, g), an ? wlW : wl0);
                     }
             };

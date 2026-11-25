@@ -4555,16 +4555,20 @@ function fernFlussTeil(x, z, out, hs) {
 // DIE NÄSSE DER FERNE (K16): die Form des Gewässers, die die Dichte des Chunks trägt (Kanal, Damm, See-Becken — dieselbe
 // Formel wie `terrainBaseDensityCol` bei y = 0), und sein Spiegel aus der EINEN Wasser-Wahrheit (`atlasWaterLevelAt`, der
 // Körper ohne Fluss); vor der Hydrosphäre der Meeresspiegel.
-function fernNass(x, z, law, wl, aus) {
+// `teile` (optional, ab `o`): die Teile des Spiegels (gelaende-core `spiegelTeile`; vor der Hydrosphäre das Meer, `spiegelMeer`) —
+// der Fern-Ring setzt sie zu jeder Stufe der Gezeit zusammen
+function fernNass(x, z, law, wl, aus, teile, o) {
     const h = state.hydrosphere;
     if (!h || !h.ready || state.hydroComputing) {
         aus.y = law;
         aus.spiegel = wl;
+        if (teile) G.spiegelMeer(teile, o, wl);
         return law < wl;
     }
     const edits = state.voxelEdits && state.voxelEdits.length ? G.editsAm(editKarteFrisch(), x, z) : null;
     const y = G.editHoehe(G.gewaesserForm(law, 0, hydrosphereCarveAt(x, z), hydrosphereLakeAt(x, z)), x, z, edits);
     aus.y = y;
+    if (teile) G.spiegelTeile(state, x, z, y, teile, o);
     atlasWaterLevelAt(x, z, y, aus);
     aus.spiegel = aus.koerper;
     return y < aus.spiegel;
@@ -5027,6 +5031,10 @@ function fernAuftrag(msg) {
         const schutt = new Float32Array(n);
         const nassY = new Float64Array(n);
         const spiegel = new Float64Array(n);
+        // DIE GEZEIT IM RING (planet.wasser.gezeiten): je Punkt die Teile seines Spiegels (gelaende-core `spiegelTeile`) — der Wirt
+        // setzt sie zu jeder Stufe der Gezeit zusammen (`_fernRingY`); `spiegel` ist ihre Summe zur Stufe des Fadens
+        const TS = G.SPIEGEL_TEILE;
+        const spiegelTeile = new Float64Array(n * TS);
         const flussC = new Float64Array(n);
         const flussSp = new Float64Array(n);
         const teile = new Float32Array(n * 8).fill(NaN);
@@ -5055,19 +5063,20 @@ function fernAuftrag(msg) {
             }
             law[k] = L = Math.max(L, krone[k]);
             schutt[k] = s;
-            const wet = fernNass(x, z, L, wl, nass);
+            fernNass(x, z, L, wl, nass, spiegelTeile, k * TS);
             nassY[k] = nass.y;
             spiegel[k] = nass.spiegel;
             fuss.ht = msg.ht[k];
             fuss.hr = msg.hr[k];
             flussC[k] = fernFlussDeckung(x, z, Math.max(fuss.ht, fuss.hr), fl);
             flussSp[k] = fl.spiegel;
-            if (wet && !zone) continue;
+            // die Farbe des Bodens trägt jeder Punkt, den eine Stunde der Gezeit freilegt (nur der immer nasse spart sie)
+            if (!zone && nass.y < G.spiegelNiedrigst(spiegelTeile, k * TS, nass.y, wl)) continue;
             const f = fernRingTeile(x, z, L, fuss, s, msg.memo | 0);
             teile.set(f.subarray(0, 8), k * 8);
             jahr.set(f.subarray(8, 16), k * 8);
         }
-        const antwort = { law, voll, schutt, nassY, spiegel, flussC, flussSp, teile, jahr, krone };
+        const antwort = { law, voll, schutt, nassY, spiegel, spiegelTeile, flussC, flussSp, teile, jahr, krone };
         return { antwort, transfer: Object.values(antwort).map((a) => a.buffer) };
     }
     if (msg.art === "feld") {

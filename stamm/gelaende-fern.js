@@ -740,7 +740,12 @@ class AnazhRealm_gelaende_fern {
             law: new Float64Array(off),
             schutt: new Float32Array(off),
             nassY: new Float64Array(off),
-            spiegel: new Float64Array(off),
+            // DIE GEZEIT IM RING (planet.wasser.gezeiten): je Punkt die Teile seines Spiegels (gelaende-core `spiegelTeile`, der
+            // Faden rechnet sie) und ob sie die Gezeit tragen (`spiegelMitGezeit`) — `_fernRingY` setzt sie zur Stufe zusammen,
+            // `_fernRingWasserNeu` legt die Punkte der Gezeit bei jedem Wechsel der Stufe neu
+            spiegelTeile: new Float64Array(off * globalThis.__gelaendeCore.SPIEGEL_TEILE),
+            gezeitPunkt: new Uint8Array(off),
+            wasserLauf: null, // der Lauf des Neulegens unter der Frist des Horizonts (`_fernRingWasserNeu`)
             flussC: new Float64Array(off),
             flussSp: new Float64Array(off),
             teile: new Float32Array(off * 8).fill(NaN),
@@ -1653,7 +1658,7 @@ class AnazhRealm_gelaende_fern {
 
     // Die Höhe EINES Ring-Punkts aus seinem Gesetz: unter Wasser flach unter dem Spiegel (`_fernRingWasserTiefe`), die
     // innerste Reihe jeder Schale taucht −saumDrop (die Saum-Tauchkante). Gesetz, Fläche, Spiegel und Fluss der Masche rechnete
-    // der Fern-Faden (`fr.nassY` · `fr.spiegel` · `fr.flussC` · `fr.flussSp`, B2). DIE NAHT (K16, `_fernRingNaht`): wo ein
+    // der Fern-Faden (`fr.nassY` · `fr.spiegelTeile` — der Spiegel zur Stufe der Gezeit — · `fr.flussC` · `fr.flussSp`, B2). DIE NAHT (K16, `_fernRingNaht`): wo ein
     // gebauter Chunk den Punkt oder einen Nachbarn trägt, liegt der Ring auf dem VOLLEN Gesetz (`vollY`, dieselbe Höhe wie der
     // Chunk, ohne die Loch-Senkung), die Ecke eines Naht-Dreiecks auf der Fläche des Feldes (`feldY`) — nur dort fragt der
     // Haupt-Faden das Wasser des Bodens selbst (`_fernNass`: Kanal, See, Meer), denn nur er kennt das Gebaute. Im Gebauten
@@ -1671,8 +1676,10 @@ class AnazhRealm_gelaende_fern {
         let wet;
         if (law === law) wet = this._fernNass(p.x, p.z, law, wl, aus);
         else {
+            // der Spiegel des Punkts aus seinen Teilen zur Stufe der Gezeit (`_gezeitGilt`) — die EINE Zusammensetzung des Gesetzes
+            const G = globalThis.__gelaendeCore;
             aus.y = fr.nassY[g];
-            aus.spiegel = fr.spiegel[g];
+            aus.spiegel = G.spiegelZurStufe(fr.spiegelTeile, g * G.SPIEGEL_TEILE, this._gezeitGilt().k, aus.y, wl);
             wet = aus.y < aus.spiegel;
         }
         let y = wet ? aus.spiegel - this._fernRingWasserTiefe() : aus.y;
@@ -1688,19 +1695,20 @@ class AnazhRealm_gelaende_fern {
     // DIE NÄSSE DER FERNE (K16, die Naht: dieselbe Höhe UND dasselbe Wasser aus EINEM Gesetz): ein Punkt mit der Gesetzes-
     // Höhe `law` trägt die Form des Gewässers, die die Dichte des Chunks trägt (gelaende-core `gewaesserForm`: Kanal, Damm, See-Becken),
     // und sein Spiegel ist die EINE Wasser-Wahrheit (`_atlasWaterLevelAt`: Meer und See; jenseits der Kacheln der
-    // Meeresspiegel; vor der Hydrosphäre der Meeresspiegel `wl`). Schreibt `aus.y` (die Fläche) und `aus.spiegel`
+    // Meeresspiegel; vor der Hydrosphäre der Meeresspiegel `wl` samt der Gezeit). Schreibt `aus.y` (die Fläche) und `aus.spiegel`
     // (−Infinity = trocken) und liefert, ob der Punkt nass ist. Der FLUSS taucht keinen Punkt: sein Kanal (4–17 m) ist
     // schmaler als die Masche der Ferne, sein Wasser trägt die Fern-Farbe als Anteil der Masche (`_fernFlussDeckung`) —
     // ein getauchter Punkt riss Gruben in den Ring (Werkbank 13.10.). Bis K16 nässte jeder Fern-Leser (Ring, Kronen-Karte,
     // Feld-Pass) nur unter dem Meeresspiegel (`law < wl`): Fluss und See endeten an der Bau-Kante.
     _fernNass(x, z, law, wl, aus) {
         const h = this.state.hydrosphere;
-        if (!h || !h.ready) {
-            aus.y = law;
-            aus.spiegel = wl;
-            return law < wl;
-        }
         const G = globalThis.__gelaendeCore;
+        if (!h || !h.ready) {
+            // vor der Hydrosphäre das Meer samt der Gezeit (die Teile des Fadens: `spiegelMeer`)
+            aus.y = law;
+            aus.spiegel = wl + G.gezeitHubStufe(this._gezeitGilt().k);
+            return law < aus.spiegel;
+        }
         const meta = this.state.worldMeta;
         const edits =
             meta && meta.voxelEdits && meta.voxelEdits.length ? G.editsAm(this._voxelEditKarte(), x, z) : null;
@@ -1763,22 +1771,46 @@ class AnazhRealm_gelaende_fern {
     }
 
     // Wechselt die Tiefe des Ring-Wassers (das Fern-Wasser kommt oder geht), setzt der Ring jeden nassen Punkt neu — durch
-    // die EINE Setz-Naht, mit dem Gesetz, das der Fern-Faden dem Punkt gab (kein neues Gesetz).
+    // die EINE Setz-Naht, mit dem Gesetz, das der Fern-Faden dem Punkt gab (kein neues Gesetz). DIE GEZEIT (planet.wasser.gezeiten):
+    // wechselt die Stufe des Meers (`_gezeitGilt`, der Träger wechselt nur mit ihr), setzt er jeden Punkt neu, dessen Spiegel sie
+    // trägt (`fr.gezeitPunkt`: das Meer und sein Rand, das Watt) — er fällt trocken oder läuft voll, sein Wasser steigt und
+    // sinkt mit dem nahen. Der Preis folgt dem Ring (seine Punkte am Meer), nie der Welt; bis hier stand die Ferne zur Stunde
+    // ihres Baus (das Bild Flut am Watt: die Flut als Rechteck der gebauten Chunks). DER LAUF unter der EINEN Frist des Horizonts
+    // (`_bauFrist("horizont")`, wie das Einhängen je 64 Punkte gefragt): eine Stufe legt am Watt 5–7 Tsd. Punkte neu (≈ 4 µs je
+    // Punkt, 20–40 ms am Stück), sie kommt am Standard-Tag alle ~13 s — der Lauf (`fr.wasserLauf`) trägt seinen Zeiger über die
+    // Takte; wechselt die Stufe im Lauf, beginnt er von vorn (gelegte Punkte legt er unter der neuen Stufe noch einmal).
     _fernRingWasserNeu(fr) {
         const tiefe = this._fernRingWasserTiefe();
-        if (fr.wasserTiefe === tiefe) return 0;
-        fr.wasserTiefe = tiefe;
+        const gezeit = this._gezeitGilt();
+        const tiefeNeu = fr.wasserTiefe !== tiefe;
+        const gezeitNeu = fr.gezeit !== gezeit;
+        if (tiefeNeu || gezeitNeu) {
+            const L = fr.wasserLauf;
+            fr.wasserLauf = { ab: 0, tiefe: tiefeNeu || !!(L && L.tiefe), gezeit: gezeitNeu || !!(L && L.gezeit) };
+            fr.wasserTiefe = tiefe;
+            fr.gezeit = gezeit;
+        }
+        const L = fr.wasserLauf;
+        if (!L) return 0;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         const bewegt = [[], [], []];
+        const aus = this._fernRingWasserAus || (this._fernRingWasserAus = { y: 0, spiegel: 0 });
+        const frist = this._bauFrist("horizont");
         let n = 0;
         const bis = Math.min(fr.totalVerts, fr.cursor);
-        for (let g = 0; g < bis; g++) {
-            if (!fr.nass[g]) continue;
+        let g = L.ab;
+        for (; g < bis; g++) {
+            if (g > L.ab && (g & 63) === 0 && performance.now() >= frist) break;
+            if (!(L.tiefe && fr.nass[g]) && !(L.gezeit && fr.gezeitPunkt[g])) continue;
             const p = this._fernRingPunkt(fr, g);
+            // ein trockener Punkt, den die neue Stufe nicht erreicht, bleibt liegen: sein Boden steht (Höhe und Teile ohne Gezeit)
+            if (!fr.nass[g] && (this._fernRingY(fr, p, wl, aus), !(aus.y < aus.spiegel))) continue;
             this._fernRingSetzVertex(fr, p, wl);
             bewegt[p.s].push(p.li);
             n++;
         }
+        L.ab = g;
+        if (g >= bis) fr.wasserLauf = null;
         this._fernRingHoch(fr, bewegt);
         return n;
     }
@@ -2236,8 +2268,12 @@ class AnazhRealm_gelaende_fern {
         if (!fr.einhaengen.length && !fr.nachEdit.length) return 0;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         const bewegt = [[], [], []];
+        const G = globalThis.__gelaendeCore;
+        const TS = G.SPIEGEL_TEILE;
         const setze = (g, a, k) => {
-            for (const f of ["law", "schutt", "nassY", "spiegel", "flussC", "flussSp", "krone"]) fr[f][g] = a[f][k];
+            for (const f of ["law", "schutt", "nassY", "flussC", "flussSp", "krone"]) fr[f][g] = a[f][k];
+            fr.spiegelTeile.set(a.spiegelTeile.subarray(k * TS, k * TS + TS), g * TS);
+            fr.gezeitPunkt[g] = G.spiegelMitGezeit(a.spiegelTeile, k * TS) ? 1 : 0;
             fr.teile.set(a.teile.subarray(k * 8, k * 8 + 8), g * 8);
             fr.jahr.set(a.jahr.subarray(k * 8, k * 8 + 8), g * 8);
             const v = a.voll[k];
