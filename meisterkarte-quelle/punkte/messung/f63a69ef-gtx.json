@@ -1,7 +1,7 @@
 {
  "sha": "f63a69ef8086b12e4ed913535b7314068383c87f",
  "geraet": "gtx",
- "zeit": "2026-11-25T18:12:07.294Z",
+ "zeit": "2026-11-25T18:24:03.608Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#2": {
@@ -994,6 +994,70 @@
    },
    "zeit": "2026-11-25T18:12:07.294Z",
    "abdruck": "c91f97507ed2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.stimme#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschienen (stimmFormanten) — S1 misst ihn noch nicht",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.klang.stimme) · Täter: @@ 0 s · erleben.klang.stimme S1 warf: Leser erschienen (stimmFormanten) — S1 misst ihn noch nicht",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 0.1,
+   "fremd": {
+    "s": 2.2,
+    "takte": 1,
+    "fremdS": 0.75,
+    "kerne": 0.343,
+    "fensterKerne": 0.343,
+    "namen": [
+     [
+      "Explorer.EXE",
+      0.48
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.11
+     ],
+     [
+      "sihost.exe",
+      0.03
+     ]
+    ],
+    "dienerS": 0.47,
+    "diener": [
+     [
+      "System",
+      0.31
+     ],
+     [
+      "dwm.exe",
+      0.08
+     ]
+    ],
+    "geraetS": 0.89,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.31
+     ],
+     [
+      "svchost.exe -k UnistackSvcGroup -s WpnUserService",
+      0.25
+     ],
+     [
+      "svchost.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 4.66,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T18:24:03.608Z",
+   "abdruck": "f0f7353bbe7b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
