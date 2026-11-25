@@ -1,7 +1,7 @@
 {
  "sha": "e1a54023c9a9e6fd30a824fd89087d3bb7ae854e",
  "geraet": "gtx",
- "zeit": "2026-11-25T15:10:27.897Z",
+ "zeit": "2026-11-25T15:15:43.089Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.koennen#2": {
@@ -423,6 +423,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.menge.seuche#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 verfehlt ≥ 1 — Täter: koerper-core.js tagesHaltung(akt, rolle) — die Haltung kennt den Kranken nicht: er sitzt im Akt des Abends wie ein Gesunder (kein Stand des Kranken in TAGES_GESETZ.haltung, kein Husten) · Anteil der Viertelstunden, in denen der Krank-Tag vom gesunden Tag abweicht 0.4416 (Soll > 0) · Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 (Soll ≥ 1) · Umfang 43 (Soll ≥ 1 Person krank) · 43 von 1356 Bewohnern heute krank (b.krank, der Lebenslauf am Tag der Prozesse); 43 gemessen: der Krank-Tag (_bewohnerSoll) gegen den gesunden (koerper tagesPlan, krank falsch) in 0.4416 der Viertelstunden anders, 0 am Posten ohne Abweichung; um 10 Uhr 43 daheim, Akte {\"morgen\":35,\"abend\":7,\"schlaf\" · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.37,
+   "grund": "ROT: S1 ROT an Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 verfehlt ≥ 1 — Täter: koerper-core.js tagesHaltung(akt, rolle) — die Haltung kennt den Kranken nicht: er sitzt im Akt des Abends wie ein Gesunder (kein Stand des Kranken in TAGES_GESETZ.haltung, kein Husten) · Anteil der Viertelstunden, in denen der Krank-Tag vom gesunden Tag abweicht 0.4416 (Soll > 0) · Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 (Soll ≥ 1) · Umfang 43 (Soll ≥ 1 Person krank) · 43 von 1356 Bewohnern heute krank (b.krank, der Lebenslauf am Tag der Prozesse); 43 gemessen: der Krank-Tag (_bewohnerSoll) gegen den gesunden (koerper tagesPlan, krank falsch) in 0.4416 der Viertelstunden anders, 0 am Posten ohne Abweichung; um 10 Uhr 43 daheim, Akte {\"morgen\":35,\"abend\":7,\"schlaf\" · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k57f8ad5e72ec",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2bc4137a3e27",
+   "s": 21.3,
+   "fremd": {
+    "s": 24.2,
+    "takte": 11,
+    "fremdS": 12.2,
+    "kerne": 0.504,
+    "fensterKerne": 0.597,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.48
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.8
+     ],
+     [
+      "Explorer.EXE",
+      1.75
+     ]
+    ],
+    "dienerS": 6.11,
+    "diener": [
+     [
+      "System",
+      2.44
+     ],
+     [
+      "dwm.exe",
+      2.25
+     ]
+    ],
+    "geraetS": 10.78,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.25
+     ],
+     [
+      "svchost.exe",
+      3.06
+     ],
+     [
+      "SearchIndexer.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 53.58,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T15:15:43.089Z",
+   "abdruck": "79d51260ec8a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -430,7 +500,8 @@
   "kc3d36042cafd": "jVXbcpswEP0XPzYl4iIMaCYPcvDUTieN2+kPrGAFxBg8EoSMO/33DrblcMlD94WXs9qz5xyJP4sjJHvI8P5V19WCLb4svi40vKGlUb2hun/VC7aIEsdFj/FLEc75tx6WqOLYaFIWgoCoID+g1aoGi/I+ObfJJdi+YKRb82xHiCQnEnf8Vo/84WF6TCkwra0GJJpDbPT8ENkU2OoMBFrQyvNgA7bDpQuMnCuM+UtMbtU9c76jku7CeHKYgCodM4+WfoA+23acr+cs0wKwscqi0maukwaRtNlg1qxHQWedAPMS1bUJQ8ehwpBd9ZL0Mk0aZdlqPRoWeqnvhoyQaIrNUBdJ3lhHVQusrnARuYEDbNXN9siOrSWHjEAICMVU6xywylCNONheIpcOI+/h9NA9HFCBVUFutLS9wBUf2hBCNnMu5Zn4eYQhTmmEoTtq7E29CMy3fFB0Rwh5J6FBmZjRAeYTI3WSF+owlktSdG1vqoHOIUVl7Wvd3JAeBtQWl1uxjcn5uwtX086PxYx/ABAOwkJCwjczHXUtmw4UWtmxNYGh6Ac+49ksXbqBw8H47aGd2rMFmj7kQxo0WCIiI+TuKulMnsuVsE5YlKZJSkojnz2u6BT8puBggchUIaVxXviJjD4LaodlY4m6boyUThB4HiMeqYZm/+j4I+fPAxPj8hdtyqe7NR/Vd/702YRaNYa4L5a2pEyeN02m5LtCNVYHSW7grhQI0VTEE6oSMxzJKB0H3JSRLhmwNLmL70bhPc1cPhXYC1zpVhuTE6DCZ9eUX8I1Tm6Hai+g2l8bAlcGSf84xxl/4ZuBKhu+/W3vOv5/teY/+yFHTMhR1bLoX0WSQ6tzKJuP38Pffw==",
   "k4b2cfb8fa486": "bVVdb6MwEPwvebweNR8mGEt9cEqlRrq7pj9hDWugIRDZEKqc7r+fIHEToPuIZnbHM2vzd3WEdA85Pn6Ypl7x1Y/Vz5WBEzoG9Qn144dZ8VWcej4GXLyLoXZCiOcBlury2BpSlZKArKE4oNPpFsvqMR1pag1uKDnpX0S+I0SRM0n6p6c5tZKYNU4LCi3RxSBkyOfAzuQg0YFOjcMs2GVrHzgZiyXiLSFf1TMhdlTRHUtmzSTU2VRtvA4jDPm2F+JFLFRmJWDrVGVt7Fwvi2Ll8tus3wuOht45AxYV6isJmedRacVuBjsHa2ZEVXXGTIaxIAt9xgmJ59gcTZkWrXPUjcT6CpexH3nAN0u382PnqHtFICUwOfe6AKxz1BMNbpCqtcfJJ5s33cMBNTg1FNZLN4h8efOGEPK61FKNwscRVjilMTJ/QhxCJafBYLEVd0V3hJBPwiwq6a/f7zDfBGnSotSHqV2Kou8G/NdSoikgQ+3sG9N+oQOMqCv5OGCbkMudYJs583Y4myEAsLuFIYyI14WXplFtDxqd/NjZpaEYRiEXYrsAt3A42MwDdDN3HqRph0W/l0GjNSJyQh4uF2V56Mu1cM5YVpakFKVxOG9+0nBwQOa6VMomL8NUxd8tao9V68imaa2NXhQFAScBqe/D/jPGeJ90kr/Tttr0L2JSWzHXPU5odGtFh3LtKsrVuDzpAl3q1ukhLSzcVxJhkL7I5Iy6whwnNirPAz/jpFcX3efhqYmuT4F6mCzwedmxxMHg2nTGhpwClSH/JpIe9V5Cvb8CI19FaTCu3+ZNvE48eU7edywZrsqkgnzwLik2l+/p4Kl9r46YkqNuVDm8iKSAzhRQtbffwb//",
   "k98b8325ffab4": "bVVdb6MwEPwvebweNZ/BWOqDUyo10t01/QlrWAMNgcg2ocrp/vsJEjcBui9IaMY7zKyXv6sjZHso8PFDt82KrX6sfq40nNDRqE6oHj/0iq2SzPMxYPxShHP+PMAyVR2NJnUlCIgGygM6nTJY1Y/ZSJNrcCPBSP/Cix0hkpxJ2j89zam1wLx1DEi0RBeDiCKbAztdgEAHOjk2s2CXrn1gZCya8reUfFVPOd+FMtzRdHaYgCafqk3WUYwR2/acv/CFyrwCNE5dNdr29fI4kS679fq94CjonTNgWaO6kpB6Xiis2M1g52DNjCjrTutJMxrkkU8ZIckcW6CustI4R9UKbK5wkfixB2yzdLs4do68VwRCABVzr0vApkA10eAGmVx7jHzS+aF7OKACp4HSeukGsS9u3hBCXpda6lH42MIKD8MEqT8hDqGS02Aw3/K7CneEkE9CLSrtr+/vMN8EqbOyUoepXTJE3w3Yr6VEXUKOytm32nyhA4xDV1xuwzYl43NHN3Pm7eNshgBA7waGUMJfF17qVpoeFDrFsbNDE2IUR4zz7QJs4HCwmQfo5u48SG2GQb+XEcZrRGSEPFwuyvKjL9fCOWNVW5KUYZhE88NPCg4OiEJVUtrkRZTJ5LtB7bE2jmhbY2304jgIGAlIcx/2nzHG+6TT4j009aZ/4ZPa8rnusUOrjBUdibUrQybH4ckW6EoZp4estHBfCoRB+iKTM6oaC5zYKD0P/JyRXl50n4dVE19XgXyYDPB5eWKFg8GN7rQNOYNQROybSHpUewHN/gqMfRlnl2W8eeOvE0+e0/cdTYerMqmgGLxLy83lfTZ4avfVETNyVK2sho1ISuh0CbW5/Q7+/Qc=",
-  "ke94e7593c7a2": "bVXbbqMwEP2XPG7XNddgLPXBKZUaaS/pJ4xhDDQEIhtCN6v99xUkbgJ0XpDQOZ7DOePh7+oI6R5yfHw3Tb3iq2+r7ysDJyQG9Qn147tZ8VWcuh76XFyKCiGeB1iqy2NraFVKCrKG4oCk0y2W1WM60tQanFBy2r+IfEepomea9E9Pc2olMWtICwot0UE/ZMjnwM7kIJFAp8ZmFuywtQecjsUS8Tuhn9UzIXaBCnYsmR0moc6mauN1GGHIt3+EeBELlVkJ2JKqrI3t62ZRrBx+6/VzwdHQkzNgUaG+kpC5biCt2M1g52DNjKiqzphJM+Znocc4pfEcm6Mp06IlR91IrK9wGXuRC3yzdDs/dkTdKwIpgcm51wVgnaOeaHD8VK1dTj/Y/NA9HFADqaGwXjp+5MmbN5TS16WWahQ+trDCgyBG5k2IQ6j0NBgstuKugh2l9IMyi0r66/s7zBdBmrQo9WFqlwrQc3z+YynRFJChJvvGtJ9oH6PAkZfbsE3o+NyxzZx5+zibIQCwu4GhjIrXhZemUW0PGkl+7OzQBBhGIRdiuwC3cDjYzH10MmcepGmHQb+XEURrROSUPlwuyvKjL9eCnLGsLEmpIIjD+eEnDQcCMtelUjZ5GaYq/mpQe6xaIpumtTa6UeT7nPq0vg/71xjjfdJJ/ha01aZ/EZPairnusUOjWys6lGtHBVyNw5Mu0KVuSQ9pYeGekgiD9EUmZ9QV5jixUbkueBmnvbroPg+rJrquAvUwGeDz8sQSB4Nr0xkbcgqBDPkXkfSo9xLq/RUYeSpKL8t481u8Tjx5Tt52LBmuyqT8fPAuKTaX9+ngqd1XR0zpUTeqHDYiLaAzBVTt7Xfw7z8="
+  "ke94e7593c7a2": "bVXbbqMwEP2XPG7XNddgLPXBKZUaaS/pJ4xhDDQEIhtCN6v99xUkbgJ0XpDQOZ7DOePh7+oI6R5yfHw3Tb3iq2+r7ysDJyQG9Qn147tZ8VWcuh76XFyKCiGeB1iqy2NraFVKCrKG4oCk0y2W1WM60tQanFBy2r+IfEepomea9E9Pc2olMWtICwot0UE/ZMjnwM7kIJFAp8ZmFuywtQecjsUS8Tuhn9UzIXaBCnYsmR0moc6mauN1GGHIt3+EeBELlVkJ2JKqrI3t62ZRrBx+6/VzwdHQkzNgUaG+kpC5biCt2M1g52DNjKiqzphJM+Znocc4pfEcm6Mp06IlR91IrK9wGXuRC3yzdDs/dkTdKwIpgcm51wVgnaOeaHD8VK1dTj/Y/NA9HFADqaGwXjp+5MmbN5TS16WWahQ+trDCgyBG5k2IQ6j0NBgstuKugh2l9IMyi0r66/s7zBdBmrQo9WFqlwrQc3z+YynRFJChJvvGtJ9oH6PAkZfbsE3o+NyxzZx5+zibIQCwu4GhjIrXhZemUW0PGkl+7OzQBBhGIRdiuwC3cDjYzH10MmcepGmHQb+XEURrROSUPlwuyvKjL9eCnLGsLEmpIIjD+eEnDQcCMtelUjZ5GaYq/mpQe6xaIpumtTa6UeT7nPq0vg/71xjjfdJJ/ha01aZ/EZPairnusUOjWys6lGtHBVyNw5Mu0KVuSQ9pYeGekgiD9EUmZ9QV5jixUbkueBmnvbroPg+rJrquAvUwGeDz8sQSB4Nr0xkbcgqBDPkXkfSo9xLq/RUYeSpKL8t481u8Tjx5Tt52LBmuyqT8fPAuKTaX9+ngqd1XR0zpUTeqHDYiLaAzBVTt7Xfw7z8=",
+  "k2bc4137a3e27": "jVXbcpswEP0XPzYl4iIMaCYPcvDUTieN2+kPrGAFxBg8EoSMO/33DrYVc8lD94WXc7Rnzx6JP4sjJHvI8P5V19WCLb4svi40vKGlUb2hun/VC7aIEsdFj/FLEc75tx6WqOLYaFIWgoCoID+g1aoGi/I+OdPkEmxfMNKtebYjRJITiTv+UY/84WF6TCkwra0GJJpDbPT8ENkU2OoMBFrQynNjA7bDpQuMnCuM+UtMPqp75nxHJd2F8eQwAVU6Vh4t/QB9tu04X89VpgVgY5VFpU1fJw0iabNBrxlHQWedAPMS1ZWEoeNQYcSuekt6myZEWbZaj5qFXuq7ISMkmmIz1EWSN9ZR1QKrK1xEbuAAW3WzObJja8mhIhACQjH1OgesMlQjDbaXyKXDyHs4PXQPB1RgVZAbL20vcMXNG0LIZq6lPAs/tzDCKY0wdEfEfqkXg/mWD4ruCCHvJDQoEzM6wHyySJ3khTqM7ZIUXdubeqBzSFFZ+1o3H0gPA2qLy63YxuT83YWrKfM2mNkfAISDsJCQ8M3MR13LpgOFVnZsTWAo+oHPeDZLl27gcDD79tBO7dkATR/yoQwaLBGREXJ3tXRmz+VKWCcsSkOSktLIZ48rOgW/KThYIDJVSGk2L/xERp8FtcOysURdN8ZKJwg8jxGPVMNl/+j4I+fPgycjLn/Rpny6W/NRfedPn3WoVWOE+2JpS8rkedJkKr4rVGN1kOQG7kqBEE1NPKEqMcORjdJxwE0Z6ZKbnNjkLr4bhfc02/KpwN7gSrfaLDkBKnx2TfklXOPkdqj2Aqr9lRC4Mkj6xznO+AvfDFzZ8O1ve9fx/6s1/9k3OWJCjqqWRf8qkhxanUPZ3H4Pf/8B"
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
@@ -689,20 +760,6 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
-  "karte2.mensch.menge.seuche#1": {
-   "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 110 s von karte2.mensch.menge.seuche#1) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 88 s unter dem Grund-Deckel 110 s von karte2.mensch.menge.seuche#1) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-25T15:07:39.028Z",
-   "abdruck": "79d51260ec8a",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
   },
   "karte2.erleben.spieler.zeit#1": {
    "gruen": false,
