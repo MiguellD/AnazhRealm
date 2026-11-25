@@ -1,7 +1,7 @@
 {
  "sha": "486a6685925d51302752c756d7d47654d83922d1",
  "geraet": "gtx",
- "zeit": "2026-11-25T09:23:25.034Z",
+ "zeit": "2026-11-25T09:27:23.766Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.gespraech#2": {
@@ -4296,6 +4296,136 @@
    "ungemessen": true,
    "zeit": "2026-11-25T09:18:21.870Z",
    "abdruck": "7b30f40cd9b8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K2#1": {
+   "gruen": false,
+   "zahl": "die Seite warf: (b)(d) 19.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 1,919 (Faden 1,919 · alle Kerne 1,667; vor 90,4/225,4 ms, nach 171,6/376 ms, Ruhe 89,4/225,5 ms seit 2026-11-25) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 8,5 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 5,3 CPU-s · Explorer.EXE 1,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 15,9 CPU-s · svchost.exe 7,1 CPU-s · SearchIndexer.exe 0,4 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 19.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "exit": 1,
+   "minuten": 0.45,
+   "grund": "die Seite warf: (b)(d) 19.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 1,919 (Faden 1,919 · alle Kerne 1,667; vor 90,4/225,4 ms, nach 171,6/376 ms, Ruhe 89,4/225,5 ms seit 2026-11-25) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 8,5 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 5,3 CPU-s · Explorer.EXE 1,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 15,9 CPU-s · svchost.exe 7,1 CPU-s · SearchIndexer.exe 0,4 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 19.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "konsumFehlt": "1 Prozess(e) ohne Ende (hart getötet oder ohne Antwort): 14408",
+   "s": 27.3,
+   "fremd": {
+    "s": 54.8,
+    "takte": 25,
+    "fremdS": 25.77,
+    "kerne": 0.47,
+    "fensterKerne": 0.664,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.47
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      5.33
+     ],
+     [
+      "Explorer.EXE",
+      1.8
+     ]
+    ],
+    "dienerS": 18.02,
+    "diener": [
+     [
+      "dwm.exe",
+      7.61
+     ],
+     [
+      "System",
+      7.2
+     ]
+    ],
+    "geraetS": 23.84,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      15.86
+     ],
+     [
+      "svchost.exe",
+      7.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.44
+     ]
+    ],
+    "eigenS": 206.73,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.191,
+     "nach": 0.583,
+     "station": 1.1
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 90.4,
+     "alle": 225.4,
+     "cpuEin": 94,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.87,
+      "s": 2,
+      "soll": 3,
+      "reihe": [
+       3.85,
+       3.08,
+       3.3,
+       2.7,
+       3,
+       2.9
+      ]
+     },
+     "spanne": [
+      1795598845770,
+      1795598846200
+     ]
+    },
+    "nach": {
+     "ein": 171.6,
+     "alle": 376,
+     "cpuEin": 140,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.99,
+      "s": 22.1,
+      "soll": 3,
+      "reihe": [
+       2.92,
+       3.33,
+       2.87,
+       3.08,
+       3.07,
+       2.82
+      ]
+     },
+     "spanne": [
+      1795598895566,
+      1795598896393
+     ]
+    },
+    "ruhe": {
+     "ein": 89.4,
+     "alle": 225.5,
+     "n": 1204,
+     "von": "2026-11-25"
+    },
+    "f": 1.919,
+    "fEin": 1.919,
+    "fAlle": 1.667,
+    "verdraengt": 1.103,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-25T09:27:23.766Z",
+   "abdruck": "47cc56a17829",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
