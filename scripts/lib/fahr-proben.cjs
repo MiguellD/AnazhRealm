@@ -1073,7 +1073,7 @@ async function probeLeben(expected) {
             // DER FAHRER IM SITZ [Proben, außer der Kabine, je Wagen Probe, Höhe des Sitz-Knochens, Dach]. Die Täter (`o.taeter`):
             // Wagen 0 fährt ohne Fahrer, Wagen 1 steht für die Linse 20 m neben seiner Lage, Wagen 2 1 m hinter Wagen 3, der
             // Sitz-Knochen des ersten gemessenen Fahrers 1,3 m höher (auf dem Dach, wie um 23 Uhr an der Radeon)
-            const T = { tr: [0, 0, []], st: [Infinity], weg: new Map(VK.wagen.map((W) => [W, W.weg])), t0: tMs, min: 0, w60: [Infinity], lh: new Map(), lhMax: [0] }; // prettier-ignore
+            const T = { tr: [0, 0, []], st: [Infinity], weg: new Map(VK.wagen.map((W) => [W, W.weg])), t0: tMs, min: 0, w60: [Infinity], art: new Map(), lh: new Map(), lhMax: [0] }; // prettier-ignore
             const [SZ, V1, V2] = [[0, 0], new THREE.Vector3(), new THREE.Vector3()];
             if (o.taeter) VK.wagen[0].b.amSteuer = false;
             // der fünfte Täter: die Stadt fließt nicht um den stehenden Spieler (kein Wagen umfährt ihn) — die Minute nennt ihn
@@ -1091,7 +1091,7 @@ async function probeLeben(expected) {
             // der weicht, neu den Schlüssel hält (die Einfahrt), und die Lücke, die er nahm — die Zeit, bis der nächste, dem er weicht,
             // mit seinem Tempo an dessen Haltelinie wäre (wer fährt, über 1 m/s), gegen t_c, die Frist der Probe gutgeschrieben; je Arm
             // die Folge der Weichenden gegen t_f; und wie oft einer die Lücke ließ (seine Kante „vorfahrt“ im Warte-Graphen)
-            const VF = { lassen: 0, ein: 0, genommen: 0, folge: 0, knapp: [Infinity], hat: new Map(), arm: new Map(), folgeKnapp: null }; // prettier-ignore
+            const VF = { lassen: 0, wem: [0, 0, 0], ein: 0, genommen: 0, folge: 0, knapp: [Infinity], hat: new Map(), arm: new Map(), folgeKnapp: null }; // prettier-ignore
             for (let k = 0; k < sek * 60; k++, i++) {
                 const tv = tMs;
                 frame(i);
@@ -1107,8 +1107,12 @@ async function probeLeben(expected) {
                     let K = W;
                     for (let n = 0; n < 20 && K.grund !== "leib"; n++)
                         K = (K.grund === "wagen" ? K.vorne.O : [...K.reihe].flatMap((z) => z.halter).find((h) => h !== K)) || K; // prettier-ignore
-                    if (w < T.w60[0]) T.w60 = [Math.round(w), W.nr, 0, T.min, K.grund === "leib" && !K.wer ? "spieler" : K.grund]; // prettier-ignore
+                    // (knoten-grossstadt) dazu seine Lage am Ende der Minute und je Sekunde der Minute, was er tat (`T.art`: der Zustand,
+                    // „rollt“ oder der Grund seines Stehens wie im Warte-Graphen) — bis hier hieß der Täter ohne Grund nur „null“
+                    const e = W.entry && W.entry.position;
+                    if (w < T.w60[0]) T.w60 = [Math.round(w), W.nr, 0, T.min, K.grund === "leib" && !K.wer ? "spieler" : K.grund, e ? [Math.round(e.x), Math.round(e.z)] : null, T.art.get(W) || {}]; // prettier-ignore
                     T.w60[2] = T.min;
+                    T.art = new Map();
                 }
                 if (k % 60 === 0) {
                     // DER WARTE-GRAPH (w28-verkehr-graph): je Sekunde, auf wen jeder stehende Wagen wartet (`W.wartet` aus `_verkehrZonen`, `W.wer`), die Kreise beim Namen (`verkehrVerdict`)
@@ -1126,7 +1130,13 @@ async function probeLeben(expected) {
                         return [nr, z1(e.position.x), z1(e.position.z), Math.round(((e._rideYaw || 0) * 180) / Math.PI), e._fahr ? +e._fahr.vlong.toFixed(2) : null, W.vorne ? [+W.vorne.gap.toFixed(2), +W.vorne.quer.toFixed(2), W.vorne.O.nr] : null, W.zonen.filter((q) => !q.weg).slice(0, 3).map((q) => `${q.Z.art}${q.hat ? "*" : ""}@${Math.round(q.Z.x)}/${Math.round(q.Z.z)}`).join(","), W.F ? `${z1(W.F.s)}/${z1(W.F.lang)}` : null, W.letzter ? W.letzter.art : null]; // prettier-ignore
                     };
                     for (const W of VK.wagen) {
-                        if (W.zustand !== "faehrt" || !W.entry || !W.entry._fahr || !(W.entry._fahr.vlong < 0.5)) continue;
+                        const h = T.art.get(W) || {};
+                        T.art.set(W, h);
+                        const was = W.zustand !== "faehrt" ? "zustand:" + W.zustand : !W.entry || !W.entry._fahr || !(W.entry._fahr.vlong < 0.5) ? "rollt" : null; // prettier-ignore
+                        if (was) {
+                            h[was] = (h[was] || 0) + 1;
+                            continue;
+                        }
                         G.steht++;
                         let a = [];
                         let art = W.grund || "ohne";
@@ -1139,6 +1149,7 @@ async function probeLeben(expected) {
                             G.leiber[wer] = (G.leiber[wer] || 0) + 1;
                         }
                         G.grund[art] = (G.grund[art] || 0) + 1;
+                        h[art] = (h[art] || 0) + 1;
                         kanten.set(W, a);
                     }
                     const gesehen = new Set();
@@ -1182,7 +1193,14 @@ async function probeLeben(expected) {
                     if (folgt(W, fz.speed)) LK.luecken.push(W.vorder.gap / fz.speed);
                 }
                 for (const W of fahrend) {
-                    if (W.wartet && W.wartet.auf.some((a) => a[1] === "vorfahrt")) VF.lassen++;
+                    // wem er die Lücke lässt: dem Vorigen seines Arms (er hält den Ort — die Folge t_f), einem, der an seiner Linie
+                    // steht, oder dem Strom, der fährt [Folge, steht, Strom]
+                    const lasse = W.wartet && W.wartet.auf.find((a) => a[1] === "vorfahrt");
+                    if (lasse) {
+                        const [L, zL] = [lasse[0], lasse[0].zonen && lasse[0].zonen.find((y) => !y.weg && y.Z.art === "kreuzung")];
+                        VF.lassen++;
+                        VF.wem[zL && zL.hat ? 0 : !(L.entry && L.entry._fahr && L.entry._fahr.vlong >= 0.5) ? 1 : 2]++;
+                    }
                     // die Einfahrt je Wagen und Ort (der Bau seiner Linie tauscht die Einträge seiner Orte, ihr Schlüssel bleibt);
                     // wer vor der ersten Probe einfuhr oder mit dem Bug schon im Ort steht (er muss hinaus), nimmt keine Lücke
                     const [war, jetzt] = [VF.hat.get(W) || new Set(), new Set()];
@@ -1492,7 +1510,7 @@ async function probeLeben(expected) {
                     const l = LK.luecken.sort((a, b) => a - b);
                     return { reisetempo: LK.fahrS > 0 ? +(weg / LK.fahrS / A.VERKEHR.tempoMs).toFixed(3) : 0, zeitluecke: l.length ? +l[l.length >> 1].toFixed(2) : null, p05: l.length ? +l[Math.floor(l.length * 0.05)].toFixed(2) : null, luecken: l.length, wegM: Math.round(weg), fahrS: Math.round(LK.fahrS) }; // prettier-ignore
                 })(),
-                vorfahrt: { lassen: VF.lassen, ein: VF.ein, genommen: VF.genommen, folge: VF.folge, knapp: Number.isFinite(VF.knapp[0]) ? VF.knapp : null, folgeKnapp: VF.folgeKnapp }, // prettier-ignore
+                vorfahrt: { lassen: VF.lassen, wem: VF.wem, ein: VF.ein, genommen: VF.genommen, folge: VF.folge, knapp: Number.isFinite(VF.knapp[0]) ? VF.knapp : null, folgeKnapp: VF.folgeKnapp }, // prettier-ignore
                 knoten: KN && (() => {
                     const med = (x) => (x.sort((a, b) => a - b), x.length ? +x[x.length >> 1].toFixed(2) : null);
                     return { ort: [KN.x, KN.z, KN.r], flussH: Math.round((KN.durch * 3600) / sek), durch: KN.durch, tempoMs: KN.nS ? +(KN.vS / KN.nS).toFixed(2) : null, reise: KN.nS ? +(KN.vS / KN.nS / A.VERKEHR.tempoMs).toFixed(3) : null, schlangeMax: KN.schlange, schlangeMittel: +(KN.nSchl / Math.max(1, LK.proben)).toFixed(2), bug: Number.isFinite(KN.bug[0]) ? KN.bug : null, bugS: +KN.bugS.toFixed(1), luecke: med(KN.gaps), zeitluecke: med(KN.luecken), folgen: KN.gaps.length }; // prettier-ignore
