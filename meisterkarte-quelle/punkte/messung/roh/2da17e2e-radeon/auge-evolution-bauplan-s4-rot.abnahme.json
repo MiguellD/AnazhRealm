@@ -1,0 +1,101 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.425",
+  "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 98,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.4352,
+  "taeter": {
+   "Gelände": 0.4352
+  },
+  "vordergrund": {
+   "radius": 2.89,
+   "deckung": 0.4566,
+   "taeter": {
+    "Gelände": 0.4566
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 5.78,
+  "gestalt": [
+   "tier:fuchs 0"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -202.184,
+   97.84,
+   -70.574
+  ],
+  "blick": [
+   -0.69172,
+   -0.20752,
+   -0.69171
+  ]
+ },
+ "seitenfehler": 0,
+ "leiber": {
+  "nahM": 6,
+  "n": 1,
+  "halb": 0,
+  "teile": 8,
+  "ganz": true,
+  "fehlt": []
+ },
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 71.7,
+  "sigma": 48.4,
+  "schwarz": 0.0176,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 43.5 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Gelände 43.5 % · Vordergrund 45.7 % näher als 2.89 m (der halbe Ziel-Abstand): Gelände 45.7 %] · beweis · Sicht 43.5 % (Gelände 43.5 %) · Leiber näher als 6 m: 1 von 1 ganz (8 Teile) · Ziel Blickziel im Bild frei 5.78 m · Luma 71.7 σ 48.4 schwarz 1.8 % weiß 0.0 % · Stand 18.546.425 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 43.5 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Gelände 43.5 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 45.7 % näher als 2.89 m (der halbe Ziel-Abstand): Gelände 45.7 %"
+  }
+ ],
+ "urteil": "ROT"
+}
