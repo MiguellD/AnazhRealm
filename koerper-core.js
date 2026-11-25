@@ -5537,7 +5537,13 @@
         // jeder: der Besuch ist dort der Weg des Tags (≥ 100 m, mensch.K3 Staffel 2; mit `besuch: false` ging der häusliche
         // Wirt 3 Wege und 25 m, gate:kreatur-takt bewohner, gasthaus #419347). Bis hier band der Wirt den Häuslichen wie jeden
         // an den Besuch (0,75 h) und an den Ring des Spiels (~1 h): an der Stadt (GTX, erste 100) las der blinde Zuordner 0 von
-        // 29 Häuslichen häuslich, ohne beide 19 von 22 Erwachsenen. DAS KIND TRÄGT DEN ZUG IN SEINER FORM (`kind`): das
+        // 29 Häuslichen häuslich, ohne beide 19 von 22 Erwachsenen. DAS BAND DES HÄUSLICHEN (äußere Quelle; Leser: gate:mensch-zuege
+        // FREI_DAHEIM_Q, die Station mensch.geist.absicht#1): Erwachsene verbringen im Mittel 0,74 ihrer Freizeit daheim — ATUS
+        // 2019 Table 11A (15 J und älter, Freizeit und Sport 5,19 h je Tag): Fernsehen 2,81 · Lesen 0,27 · Ruhe 0,31 · Spiel und
+        // Computer 0,43 = 3,82 h im Haus; Band 0,74–0,80, wenn die halbe Geselligkeit (0,64 h) daheim liegt (ANGENOMMEN: die
+        // Zuordnung der Tätigkeit zum Ort, ATUS druckt keine Tafel je Ort). Der Häusliche liegt darüber — ≥ 0,89 seiner Freizeit
+        // und ≥ 2 h frei daheim —, treffMal 0 und `empfaengt` halten ihn dort (am Kandidaten 8f075dca, GTX, 100 Bewohner: 27 von
+        // 29 Häuslichen). DAS KIND TRÄGT DEN ZUG IN SEINER FORM (`kind`): das
         // häusliche spielt daheim, das fleißige hilft am Werk seines Hauses (der Akt „arbeit“, das Mittag am Tisch), das
         // gesellige und das ausgeglichene spielen am Ort ihrer Wahl und tragen den Zug am Abend. Bis hier spielte jedes Kind
         // am Ort seiner Wahl, das fleißige nur länger: 16 von 36 Kindern trafen ihren Zug. Wer einen Posten hat (die Rolle

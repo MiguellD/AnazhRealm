@@ -104,7 +104,9 @@ function zuordnen(P, K = KC) {
     const A = G.zeitArt || {};
     const R = G.rollen[P.rolle] || {};
     const W = R.werk || G.werk;
-    const mass = W[1] - W[0] - (R.mittagAmWerk ? 0 : G.mittag[1] - G.mittag[0]);
+    // die Rolle mit Spiel (`spiel`: das Kind) trägt kein Maß der Arbeit — ihr Fenster ist das Spiel, jede Stunde „hilft“ liegt
+    // über dem Maß (bis hier las der Zuordner das Fenster 9–16 als 6 h Arbeit: das helfende Kind, 6,5 h, lag 0,5 h darüber)
+    const mass = R.spiel ? 0 : W[1] - W[0] - (R.mittagAmWerk ? 0 : G.mittag[1] - G.mittag[0]);
     let [werk, treff, heimFrei, heimWach, ausFrei] = [0, 0, 0, 0, 0];
     const ohneArt = new Set();
     for (const w of P.worte) {
@@ -189,6 +191,10 @@ const ROLLEN_OFFEN = {
     // Sicherheitsdienstleistungen NRW vom 16.01.2017, § 2: Regelarbeitszeit im Mittel 228 h je Monat, 24-Stunden-Dienste); ihr Abend
     // bis zur Ruhe (22 ± 0,5 Uhr) trägt um 2 h, die Kaskade verlangt ≥ 2 h frei daheim — die Hälfte der Häuslichen liegt darunter
     "waechter haeuslich": [19, 33],
+    // das fleißige Kind hilft nur am Werk SEINES Hauses und erst ab 9 J (TAGES_GESETZ.kindHilftAbJ; Fabrikgesetz 1833: kein Kind
+    // unter 9 in der Fabrik) — unter 9 oder im Wohnhaus ohne Werk spielt es wie jedes Kind, sein Zug zeigt sich am Tag nicht;
+    // gelesen werden die Helfer (4 von 24: ab 9 J am Werk des Hauses), der Rest liest gesellig
+    "kind fleissig": [4, 24],
 };
 function rollenDerStadt(K) {
     const G = K.TAGES_GESETZ;
