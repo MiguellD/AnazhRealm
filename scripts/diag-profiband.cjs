@@ -263,7 +263,8 @@ function wieseAmGesetz(haushalt) {
             if (!_wasserWirt) _wasserWirt = WO.wirtAmGesetz(root, true);
             // die Kacheln der Hydrosphäre um den Ort, wie die Welt sie um den Spieler hält (der Blick und 64 m Polster)
             const weit = Math.hypot(o.blick[0] - o.spieler[0], o.blick[1] - o.spieler[1]) + 64;
-            const m = WO.belegMessen(_wasserWirt.wasserUm(o.spieler[0], o.spieler[1], weit), o.spieler[0], o.spieler[1], o.blick);
+            const w = _wasserWirt.wasserUm(o.spieler[0], o.spieler[1], weit);
+            const m = WO.belegMessen(w, o.spieler[0], o.spieler[1], o.blick, WO.belegSichtAmGesetz(w));
             aus.belege.push(Object.assign({ ort: o.id }, m));
             for (const x of WO.belegUrteil(m, o.beleg, true)) aus.befunde.push(`${o.id}: ${x}`);
         }
@@ -1540,9 +1541,22 @@ function selbsttest() {
     const gleich = (0, eval)(
         "(" + WO.belegMessen.toString().replace("Math.abs(spiegel - r.state.waterLevel) <= 0.01", "spiegel === r.state.waterLevel") + ")"
     );
+    // DER WALD AM WATT (25.11.): die zweite Wahl der Küste stand im Erlen-Wald — das Bild zeigte Laub statt Meer; der Beleg zählt
+    // die Kronen der Ego-Sicht (`belegSicht`, die Messung der Wiese), ein Beleg ohne Sicht ist ungemessen
+    const imWald = (o) => {
+        // BÜHNE: die zweite Wahl der Küste, in der Welt ein Erlen-Wald vor dem Auge
+        o.spieler = [859.3, 10430.3];
+        o.blick = [1141, 10480];
+        Object.assign(o.beleg, { hoehe: -2.45, spiegel: -3, abstand: 35 });
+    };
+    const ohneSicht = WO.belegUrteil(WO.belegMessen(_wasserWirt, kq.spieler[0], kq.spieler[1], kq.blick), kq.beleg, false);
     t(
-        "Beleg: die Küste hält, auch im Bild des Wassers der Welt (Meer bei −3 + 4e-16; die Art auf Gleichheit nennt es see → rot); Höhe +1 m, Blick landeinwärts, als Ufer gelesen, die Mündung der ersten Wahl → rot (der Täter-Wirt ohne die Kacheln des Orts liest dort Meer); ohne Quelle bricht das Schema",
+        "Beleg: die Küste hält, auch im Bild des Wassers der Welt (Meer bei −3 + 4e-16; die Art auf Gleichheit nennt es see → rot); die Küste im Erlen-Wald → rot (Kronen in der Ego-Sicht), ohne Sicht ungemessen → rot; Höhe +1 m, Blick landeinwärts, als Ufer gelesen, die Mündung der ersten Wahl → rot (der Täter-Wirt ohne die Kacheln des Orts liest dort Meer); ohne Quelle bricht das Schema",
         haelt &&
+            bAm(imWald).some((x) => /^kueste: Beleg .*: der Blick zum Wasser ist nicht frei — [1-9]\d* Krone/.test(x)) &&
+            bAm(imWald).length === 1 &&
+            ohneSicht.length === 1 &&
+            /der Blick ist nicht gemessen/.test(ohneSicht[0]) &&
             WO.belegMessen(bildWirt, kq.spieler[0], kq.spieler[1], kq.blick).wasser === "meer" &&
             gleich !== WO.belegMessen &&
             gleich(bildWirt, kq.spieler[0], kq.spieler[1], kq.blick).wasser === "see" &&
@@ -2257,7 +2271,7 @@ function main() {
             `H2b ${ratschen.length} Ratschen frisch an V${version}${messungen.length ? ` gegen ${messungen.length} Messungen` : ""}` +
             `${BAND.serieOffen(haushalt).length ? `, die Serie offen an ${BAND.serieOffen(haushalt).map((s) => `${s.ort} (${s.grund})`).join(", ")}` : ""} · ` +
             `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen · ` +
-            `Messorte ${ortZeile} · H1 Wiese am Gesetz ${wiese.messungen.map((m) => `${m.ort} ${m.x}/${m.z} Hang ${m.hang}° · Krone ${m.krone} · Kranz ${m.kranz} · Horizont ${m.horizont}°`).join("; ")}${wiese.belege.length ? ` · H1 Beleg am Gesetz ${wiese.belege.map((m) => `${m.ort} Höhe ${m.hoehe} · ${m.wasser} ${m.spiegel} in ${m.abstand} m · Hang ${m.hang}°${m.breite ? ` · Breite ${m.breite}` : ""} · Äsung ${m.aesung}`).join("; ")}` : ""} · H7 die Zeichen-Reihe (Bündel @global · Regionen, lose Bau · Boden · Fern · Himmel) und die Reihe im Bündel (Stufe).`
+            `Messorte ${ortZeile} · H1 Wiese am Gesetz ${wiese.messungen.map((m) => `${m.ort} ${m.x}/${m.z} Hang ${m.hang}° · Krone ${m.krone} · Kranz ${m.kranz} · Horizont ${m.horizont}°`).join("; ")}${wiese.belege.length ? ` · H1 Beleg am Gesetz ${wiese.belege.map((m) => `${m.ort} Höhe ${m.hoehe} · ${m.wasser} ${m.spiegel} in ${m.abstand} m · Hang ${m.hang}°${m.breite ? ` · Breite ${m.breite}` : ""} · Äsung ${m.aesung} · Kronen im Blick ${m.imBlick}`).join("; ")}` : ""} · H7 die Zeichen-Reihe (Bündel @global · Regionen, lose Bau · Boden · Fern · Himmel) und die Reihe im Bündel (Stufe).`
     );
 }
 

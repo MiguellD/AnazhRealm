@@ -2463,7 +2463,7 @@ async function starte() {
                             beleg = await page.evaluate(
                                 (install, x, z, blick, B) => {
                                     (0, eval)(install + "\n//# sourceURL=werkbank/beleg.js");
-                                    const m = __belegMessen(r, x, z, blick);
+                                    const m = __belegMessen(r, x, z, blick, __belegSicht(r, __wieseMessen, __wieseGesetz));
                                     return { messung: m, befunde: __belegUrteil(m, B, false) };
                                 },
                                 BELEG_INSTALL,

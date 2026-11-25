@@ -215,7 +215,14 @@ function wirtAmGesetz(root, mitWasser) {
 //   abstand  — der Weg dorthin (m); `hang` die Neigung von Spieler zu Wasser, atan((hoehe − spiegel) / abstand) in Grad
 //   breite   — die Breite des Flusses an seinem Rand (`_hydroDistAt`: 2 · halfW), nur am Fluss
 //   aesung   — die Äsung am Spieler (`_kreaturNahrung`, das Leben des Felds: der Jungwuchs, den der Fraß liest), 0..1
-function belegMessen(r, x, z, blick) {
+//   imBlick  — die Kronen in der Ego-Sicht, gezählt von `sicht(x, z, blick)` (`belegSicht`: DIE Messung der Wiese, `wieseMessen`
+//              … imBlick, mit dem Gesetz der Mess-Wiese `blickFrei`/`blickWinkel`) — der Blick zum Wasser ist frei. Die erste
+//              Küste 859,3/10 430,3 stand im Erlen-Wald (Kronen-Deckung 0,897, 6 Kronen im Blick, eine Erle 0,9 m vom Spieler):
+//              das Bild zeigte Birkenlaub statt Meer, die Blick-Wahl floh auf 7,5 m Höhe (25.11.)
+function belegSicht(r, wm, S) {
+    return (x, z, blick) => wm(r, x, z, blick, S).imBlick;
+}
+function belegMessen(r, x, z, blick, sicht) {
     const r2 = (v) => Math.round(v * 100) / 100;
     const V = (px, pz) => r._voxelSurfaceY(px, pz);
     const l = Math.hypot(blick[0] - x, blick[1] - z);
@@ -252,6 +259,7 @@ function belegMessen(r, x, z, blick) {
         wasser,
         breite: fr ? r2(2 * fr.halfW) : null,
         aesung: Math.round(r._kreaturNahrung(x, z) * 1000) / 1000,
+        imBlick: sicht ? sicht(x, z, blick) : null,
     };
 }
 
@@ -270,6 +278,8 @@ function belegUrteil(m, B, mitZahl) {
         if (m.wasser !== "fluss") f.push(`Ufer ${wo}: längs des Blicks fließt kein Fluss (${m.wasser} bei ${m.abstand} m)`);
         if (!(m.aesung >= B.aesungMin)) f.push(`Ufer ${wo}: kein Jungwuchs — Äsung ${m.aesung} unter ${B.aesungMin}`);
     } else f.push(`Beleg ${wo}: keine Art „${B.art}" (kueste, ufer)`);
+    if (m.imBlick == null) f.push(`Beleg ${wo}: der Blick ist nicht gemessen (keine Sicht, \`belegSicht\`)`);
+    else if (m.imBlick > 0) f.push(`Beleg ${wo}: der Blick zum Wasser ist nicht frei — ${m.imBlick} Krone(n) in der Ego-Sicht`);
     if (mitZahl)
         for (const k of ["hoehe", "spiegel", "abstand"])
             if (!(Math.abs(m[k] - B[k]) <= B.toleranz))
@@ -618,14 +628,28 @@ const WIESE_INSTALL =
     `window.__wieseGesetz = ${JSON.stringify(WIESE.wiese)};` +
     `window.__wieseMessen = ${wieseMessen.toString()};` +
     `window.__wieseUrteil = ${wieseUrteil.toString()};`;
+// der Beleg in der Seite: dieselbe Messung der Wiese für den freien Blick (`__belegSicht(r, __wieseMessen, __wieseGesetz)`)
 const BELEG_INSTALL =
-    `window.__belegMessen = ${belegMessen.toString()};` + `window.__belegUrteil = ${belegUrteil.toString()};`;
+    WIESE_INSTALL +
+    `window.__belegSicht = ${belegSicht.toString()};` +
+    `window.__belegMessen = ${belegMessen.toString()};` +
+    `window.__belegUrteil = ${belegUrteil.toString()};`;
 module.exports = {
     messort,
     wieseMessen,
     wieseUrteil,
+    belegSicht,
     belegMessen,
     belegUrteil,
+    // der freie Blick am Gesetz: die Messung der Wiese mit dem Gesetz der Mess-Wiese (EINE Quelle, haushalt `wiese`). Der Wald
+    // fragt die Feuchte der Hydrosphäre in seinem Urteils-Reich (`_forestCellDarts` → `_ensureHydroTilesAround`, WALD_PLAN.urteil
+    // Zellen): der Wirt (`wasserUm`) hält die Kacheln bis zum Kranz der Messung und das Reich darüber, ehe er fragt — ohne Faden
+    // bestellte er sie, und die Bestellung brach (HYDRO-FADEN)
+    belegSichtAmGesetz: (r) => (x, z, blick) => {
+        const A = r.constructor;
+        r.wasserUm(x, z, WIESE.wiese.rand[1] + (A.WALD_PLAN.urteil + 2) * A.FOREST.cell);
+        return belegSicht(r, wieseMessen, WIESE.wiese)(x, z, blick);
+    },
     wirtAmGesetz,
     WIESE_INSTALL,
     BELEG_INSTALL,
