@@ -261,7 +261,9 @@ function wieseAmGesetz(haushalt) {
     for (const o of haushalt.messorte || []) {
         if (o.beleg) {
             if (!_wasserWirt) _wasserWirt = WO.wirtAmGesetz(root, true);
-            const m = WO.belegMessen(_wasserWirt, o.spieler[0], o.spieler[1], o.blick);
+            // die Kacheln der Hydrosphäre um den Ort, wie die Welt sie um den Spieler hält (der Blick und 64 m Polster)
+            const weit = Math.hypot(o.blick[0] - o.spieler[0], o.blick[1] - o.spieler[1]) + 64;
+            const m = WO.belegMessen(_wasserWirt.wasserUm(o.spieler[0], o.spieler[1], weit), o.spieler[0], o.spieler[1], o.blick);
             aus.belege.push(Object.assign({ ort: o.id }, m));
             for (const x of WO.belegUrteil(m, o.beleg, true)) aus.befunde.push(`${o.id}: ${x}`);
         }
@@ -1509,8 +1511,8 @@ function selbsttest() {
             wGefallen.some((x) => /kein Fernblick/.test(x)) &&
             !wieseAmGesetz(haushalt).befunde.length
     );
-    // S20c — DER BELEG (messort-zeit): die Küste des Haushalts hält am Gesetz; mit 1 m Höhe zu viel, mit dem Blick landeinwärts
-    // (kein Wasser) und als Ufer gelesen (kein Fluss) ist sie ROT, ohne Quelle bricht das Schema.
+    // S20c — DER BELEG (messort-zeit): die Küste des Haushalts hält am Gesetz; mit 1 m Höhe zu viel, mit einem kurzen Blick
+    // landeinwärts (kein Wasser binnen 6 m) und als Ufer gelesen (kein Fluss) ist sie ROT, ohne Quelle bricht das Schema.
     const b20 = (f) => {
         const h = jsonKlon(haushalt);
         h.messorte = h.messorte.filter((o) => o.id === "kueste");
@@ -1518,11 +1520,24 @@ function selbsttest() {
         return h;
     };
     const bAm = (f) => wieseAmGesetz(b20(f)).befunde;
+    // DIE MÜNDUNG (25.11.): die erste Küste stand in der Welt in einem Fluss — der Wirt mit den Kacheln um den Ort nennt ihn, der
+    // Täter (der Wirt nur mit der Heim-Region, `wasserUm` ohne Kachel) las dort Meer
+    const muendung = (o) => {
+        // BÜHNE: die erste Wahl der Küste, in der Welt eine Mündung
+        o.spieler = [1191.1, 9928.8];
+        o.blick = [1480.9, 10006.4];
+    };
+    const WO = require("./lib/welt-orte.cjs");
+    const ohneKachel = WO.wirtAmGesetz(root, true);
+    ohneKachel.wasserUm = () => ohneKachel;
+    const mTaeter = b20(muendung).messorte[0];
     t(
-        "Beleg: die Küste hält; Höhe +1 m, Blick landeinwärts, als Ufer gelesen → rot; ohne Quelle bricht das Schema",
+        "Beleg: die Küste hält; Höhe +1 m, Blick landeinwärts, als Ufer gelesen, die Mündung der ersten Wahl → rot (der Täter-Wirt ohne die Kacheln des Orts liest dort Meer); ohne Quelle bricht das Schema",
         !bAm(() => {}).length &&
+            bAm(muendung).some((x) => /kueste: Küste .*: längs des Blicks steht kein Meer \(fluss bei 0 m\)/.test(x)) &&
+            WO.belegMessen(ohneKachel, mTaeter.spieler[0], mTaeter.spieler[1], mTaeter.blick).wasser === "meer" &&
             bAm((o) => (o.beleg.hoehe += 1)).some((x) => /kueste: Beleg .*: hoehe -?[\d.]+ am Gesetz, der Haushalt sagt/.test(x)) &&
-            bAm((o) => (o.blick = [2 * o.spieler[0] - o.blick[0], 2 * o.spieler[1] - o.blick[1]])).some((x) =>
+            bAm((o) => (o.blick = [1.02 * o.spieler[0] - 0.02 * o.blick[0], 1.02 * o.spieler[1] - 0.02 * o.blick[1]])).some((x) =>
                 /kueste: Beleg: nicht gemessen \(kein Wasser längs des Blicks/.test(x)
             ) &&
             bAm((o) => Object.assign(o.beleg, { art: "ufer", aesungMin: 0 })).some((x) => /längs des Blicks fließt kein Fluss \(meer/.test(x)) &&

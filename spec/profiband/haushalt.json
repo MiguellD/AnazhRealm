@@ -420,18 +420,18 @@
         },
         {
             "id": "kueste",
-            "titel": "Die Küste (messort-zeit): ein Ufer des Meeres mit flachem Watt-Hang, gefunden am Gelände-Kern — von 120 Strahlen aus dem Ursprung (Strahl k im Winkel k · 2,39996 rad) trägt Strahl 87 das breiteste Watt (470 m zwischen 1,5 m über und 1,5 m unter dem Spiegel, 0,37°). Der Spieler steht 10,0 km vom Ursprung auf dem Watt, 0,38 m über dem Meer; der Blick geht dorthin, wo das Wasser am nächsten beginnt (50 m), und weiter über die flache See. Die Zeit: Abend im Herbst unter Wolken — das Streiflicht auf dem Watt. Der Beleg (`beleg`) misst Höhe, Spiegel und Abstand am Gesetz (gate:profiband H1) und die Art in der Welt (`werkbank umstellen --ort`).",
-            "spieler": [1191.1, 9928.8],
-            "blick": [1480.9, 10006.4],
+            "titel": "Die Küste (messort-zeit): ein Ufer des Meeres mit flachem Watt-Hang, gefunden am Gelände-Kern samt den Kacheln der Hydrosphäre um den Ort — von 120 Strahlen aus dem Ursprung (Strahl k im Winkel k · 2,39996 rad) trägt Strahl 87 das breiteste Watt; in seiner Umgebung (±1,5 km, Raster 25 m) die Stelle 0,2–0,8 m über dem Meer ohne Fluss am Ort (der Kanal des Gesetzes, `_hydroDistAt`), das Meer als erstes Wasser in 30–120 m, mit dem breitesten Watt längs des Blicks (476 m zwischen 1,5 m über und 1,5 m unter dem Spiegel, 0,36°). Die erste Wahl 0,6 km daneben stand in einer Mündung (die Welt: „fluss bei 0 m“). Der Spieler steht 10,5 km vom Ursprung auf dem Watt, 0,55 m über dem Meer; der Blick geht dorthin, wo das Wasser am nächsten beginnt (35 m), und weiter über die See; das nächste Wasser landeinwärts ist ein Fluss 222 m hinter ihm. Die Zeit: Abend im Herbst unter Wolken — das Streiflicht auf dem Watt. Der Beleg (`beleg`) misst Höhe, Spiegel und Abstand am Gesetz (gate:profiband H1) und die Art in der Welt (`werkbank umstellen --ort`).",
+            "spieler": [859.3, 10430.3],
+            "blick": [1141, 10480],
             "imBild": { "bodenSatz": 0.05, "wasserSatz": 0.05 },
             "dorfZug": false,
             "ortTakt": [],
             "zeit": { "uhr": 0.7, "tag": "herbst", "wetter": "bewoelkt", "wort": null },
             "beleg": {
                 "art": "kueste",
-                "hoehe": -2.62,
+                "hoehe": -2.45,
                 "spiegel": -3,
-                "abstand": 49.75,
+                "abstand": 35,
                 "toleranz": 0.05,
                 "hangMax": 2,
                 "quelle": "gemessen am Gelände-Kern (scripts/lib/welt-orte.cjs `belegMessen`, der Wirt mit Wasser), 25.11.; der Watt-Hang hält die Klasse „flach“ 0–2° der Kartierung des Harle-Seegatts im Wattenmeer (Mascioli et al. 2023, Journal of Maps 19, https://doi.org/10.1080/17445647.2022.2154175)"

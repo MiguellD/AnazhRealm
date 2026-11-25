@@ -173,14 +173,35 @@ function wirtAmGesetz(root, mitWasser) {
     const w = Object.create(A.prototype);
     w.state = { worldMeta: {}, terrainBaseHeight: G.basis, waterLevel: G.basis - G.meerUnterBasis };
     w.ensureWorldMeta();
-    if (mitWasser) w._pegelTafelGilt = null;
-    if (mitWasser)
-        w.state.hydrosphere = ctx.__gelaendeCore.hydrosphaere(
-            w._gelaende(),
-            A.HYDROSPHERE,
-            (x, z) => w._voxelSurfaceY(x, z),
-            null
-        );
+    if (!mitWasser) return w;
+    const K = ctx.__gelaendeCore;
+    const L = w._gelaende();
+    // eine Region, wie der Faden sie rechnet (voxel-worker `hydroRegion`): der Kanal ist aus, solange sie entsteht (`hydroComputing`)
+    const region = (origin) => {
+        L.hydroComputing = true;
+        try {
+            return K.hydrosphaere(L, A.HYDROSPHERE, (x, z) => w._voxelSurfaceY(x, z), origin);
+        } finally {
+            delete L.hydroComputing;
+        }
+    };
+    w._pegelTafelGilt = null;
+    w.state.hydrosphere = region(null);
+    w.state.hydroTiles = new Map();
+    // DIE KACHELN UM EINEN ORT (`wasserUm(x, z, r)`): jede Hydro-Kachel, die [x ± r, z ± r] schneidet — dieselbe Teilung wie die
+    // Welt (`_ensureHydroTilesAround`, die Heimat „0,0" steht schon), gerechnet wie im Faden. Ohne sie las der Wirt 10 km fern
+    // nur den Meeresspiegel der Heimat, und die Welt stellte den Spieler der ersten Küste in eine Mündung (umstellen --ort
+    // kueste ROT: „kein Meer … fluss bei 0 m", 25.11.).
+    w.wasserUm = (x, z, r) => {
+        const size = A.HYDROSPHERE.regionSize;
+        const half = size / 2;
+        const k = (v) => Math.floor((v + half) / size);
+        for (let rx = k(x - r); rx <= k(x + r); rx++)
+            for (let rz = k(z - r); rz <= k(z + r); rz++)
+                if ((rx || rz) && !w.state.hydroTiles.has(`${rx},${rz}`))
+                    w.state.hydroTiles.set(`${rx},${rz}`, region({ x: rx * size - half, z: rz * size - half }));
+        return w;
+    };
     return w;
 }
 
