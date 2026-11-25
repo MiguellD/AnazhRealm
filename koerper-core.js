@@ -5750,20 +5750,23 @@
         return [bis - T.morgenH, bis];
     }
     // DIE WENDEN SEINES TAGS MIT SEINEN ORTEN (tages-gesetz): der Einkäufer seines Haushalts (orte.einkauf = der Markt, an dem er
-    // kauft) beginnt um e0 = auf + u · streuH (u aus dem Samen), bleibt dauerH × dem Mal seines Zugs (`morgenMal`), wacht
-    // wenigstens besuchH davor und tritt sein Werk erst nach dem Einkauf an — beginnt sein Werk vor dem Einkauf, geht er vom Werk
-    // zum Markt und zurück (der Gang des Frühaufstehers); jeder andere lebt die Wenden seines Samens.
-    // Leser: `tagesPlan`, `tagesGaenge`, `tagesKette`
+    // kauft) kauft VOR seinem Werk — er beginnt um e0 = auf + u · s (u aus dem Samen), gleich verteilt über die Spanne
+    // s = min(streuH, w0 − dauer − auf) zwischen der Öffnung und dem letzten Beginn, der sein Werk noch trägt; er bleibt
+    // dauerH × dem Mal seines Zugs (`morgenMal`), wacht wenigstens besuchH davor und tritt sein Werk nach dem Einkauf an.
+    // Beginnt sein Werk vor der Öffnung + dauer, kauft er zur Öffnung und beginnt das Werk danach (s = 0). Bis hier ging, wessen
+    // Werk vor dem Einkauf begann, vom Werk zum Markt und zurück: an der Station mensch.K2#2 stand um 10 Uhr keiner am Amboss
+    // der Schmiede (koerper rollen.schmiede: Werk 7–18 Uhr, der einzige Schmied ihres Hauses war ihr Einkäufer). Jeder andere
+    // lebt die Wenden seines Samens. Leser: `tagesPlan`, `tagesGaenge`, `tagesKette`
     function _tagesWendenOrt(same, rolle, orte) {
         var T = _tagesWenden(same, rolle);
         if (!orte || !orte.einkauf) return T;
         var K = TAGES_GESETZ.einkauf,
             Z = TAGES_GESETZ.zuege[tagesZug(same)],
-            e0 = K.auf + _tagZahl(same, "einkauf") * K.streuH,
             U = Object.assign({}, T);
-        U.e0 = e0;
         U.morgenH = K.dauerH * (Z.morgenMal != null ? Z.morgenMal : 1);
-        U.w0 = T.w0 < e0 ? T.w0 : Math.max(T.w0, e0 + U.morgenH);
+        var e0 = K.auf + _tagZahl(same, "einkauf") * Math.max(0, Math.min(K.streuH, T.w0 - U.morgenH - K.auf));
+        U.e0 = e0;
+        U.w0 = Math.max(T.w0, e0 + U.morgenH);
         U.wach = Math.min(T.wach, e0 - TAGES_GESETZ.besuchH);
         return U;
     }

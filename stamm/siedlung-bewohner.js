@@ -1094,9 +1094,29 @@ class AnazhRealm_siedlung_bewohner {
                     );
                     continue;
                 }
-                geboren.push({ sl, si, k, g, rolle: kind ? "kind" : rolle, epoche, tuer, vor, ein, heimI, heim, platz: yield* platzStand(g) }); // prettier-ignore
+                geboren.push({ sl, si, k, g, rolle: kind ? "kind" : rolle, epoche, tuer, vor, ein, heimI, heim, platz: null }); // prettier-ignore
             }
         }
+        // DER STAND AM MARKT GEHT ZUERST AN DEN EINKÄUFER (tages-gesetz, koerper `tagesEinkaeufer`): je Haushalt — die Leute hinter
+        // EINER Tür — steht erst der, den der Kern zum Einkauf am Markt-Morgen wählt (nach der Rolle seines Hauses; `_einkaufAnlegen`
+        // wählt nach der letzten Rolle neu, unter denen mit Stand), dann jeder andere in der Reihe der Türen. Der Platz trägt nur so
+        // viele Stände, wie Raum ist (`platzStand`, an stadt-voll 377 für 1 356 Menschen); bis hier nahm ihn die Reihe der Türen,
+        // und von 295 Einkäufern standen 221 ohne Stand am Markt: sie kauften nie (um 8 Uhr 11 im Akt einkauf statt ≈ 40).
+        if (typeof KC.tagesEinkaeufer !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesEinkaeufer");
+        const jeTuer = new Map();
+        for (const P of geboren) {
+            const L = jeTuer.get(P.tuer);
+            if (L) L.push(P);
+            else jeTuer.set(P.tuer, [P]);
+        }
+        const zuerst = new Set();
+        for (const L of jeTuer.values()) {
+            const glieder = L.map((P) => ({ same: Math.floor(P.g.axis("tag") * 4294967296) >>> 0, rolle: P.rolle }));
+            const w = KC.tagesEinkaeufer(glieder);
+            if (w >= 0) zuerst.add(L[w]);
+        }
+        for (const P of zuerst) P.platz = yield* platzStand(P.g);
+        for (const P of geboren) if (!zuerst.has(P)) P.platz = yield* platzStand(P.g);
         yield* anschliessen();
         for (const { sl, si, k, g, rolle, epoche, tuer, vor, ein, heimI, heim, platz } of geboren) {
             yield;
@@ -2752,10 +2772,12 @@ class AnazhRealm_siedlung_bewohner {
     // Vor seiner Geburt (kein Leib, kein Tempo) geht er keinen Weg: die Kette ohne Gehzeit, ungemerkt.
     // DER EINKAUF DES HAUSHALTS (koerper TAGES_GESETZ.einkauf, `tagesEinkaeufer`): je Haushalt — die Leute hinter EINER Tür — geht
     // EINER am Markt-Morgen zum Markt; der Kern wählt ihn aus Samen und Rolle der Seinen (der Erwachsene, dessen Werk am
-    // spätesten beginnt; wer einen Posten hat, nur, wenn kein anderer da ist). Gewählt, wenn jede Rolle steht: nach dem Händler
-    // am Stand, der Wache und dem Fahrer am Steuer. Sein Ort ist sein Stand am Platz (`orte.einkauf`), die Kette liest den Weg
-    // dorthin wie zum Markt (`ortI.einkauf`). Bis hier ging jeder Mensch jeden Morgen über den Markt (morgenPlatzH 1 h): an
-    // stadt-voll 1 356 Gänge, um 8 Uhr 140 mit dem Markt zum Ziel, und die Leute des Markts standen erst mit ihrem Werk dort.
+    // spätesten beginnt; wer einen Posten hat, nur, wenn kein anderer da ist). Gewählt, wenn jede Rolle steht (nach dem Händler
+    // am Stand, der Wache und dem Fahrer am Steuer), unter denen mit Stand am Platz — die Liste gab ihn dem Einkäufer nach der
+    // Rolle seines Hauses zuerst (`_bewohnerListe`). Sein Ort ist sein Stand am Platz (`orte.einkauf`), die Kette liest den Weg
+    // dorthin wie zum Markt (`ortI.einkauf`); ein Haushalt ohne Stand am Platz kauft nicht (laut gezählt: `S.ohneEinkauf`). Bis
+    // hier ging jeder Mensch jeden Morgen über den Markt (morgenPlatzH 1 h): an stadt-voll 1 356 Gänge, um 8 Uhr 140 mit dem Markt
+    // zum Ziel, und die Leute des Markts standen erst mit ihrem Werk dort.
     _einkaufAnlegen(S) {
         const KC = window.__koerperCore;
         if (typeof KC.tagesEinkaeufer !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesEinkaeufer");
@@ -2766,9 +2788,12 @@ class AnazhRealm_siedlung_bewohner {
             if (L) L.push(b);
             else H.set(b.orte.tuer, [b]);
         }
+        S.ohneEinkauf = 0;
         for (const L of H.values()) {
-            const w = KC.tagesEinkaeufer(L.map((b) => ({ same: b.same, rolle: b.rolle })));
-            if (w >= 0 && L[w].orte.platz) L[w].orte.einkauf = L[w].orte.platz;
+            const mit = L.filter((b) => b.orte.platz);
+            const w = KC.tagesEinkaeufer(mit.map((b) => ({ same: b.same, rolle: b.rolle })));
+            if (w >= 0) mit[w].orte.einkauf = mit[w].orte.platz;
+            else if (KC.tagesEinkaeufer(L.map((b) => ({ same: b.same, rolle: b.rolle }))) >= 0) S.ohneEinkauf++;
         }
     }
     _bewohnerKette(b, regen) {
