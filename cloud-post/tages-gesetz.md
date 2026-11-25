@@ -5,6 +5,40 @@
 Linsen gate:koerper-kern (M1 · M2 · M5), gate:mensch-zuege und gate:kreatur-takt zielplan (die Stunde aus dem Akt, die Ganglinie
 des Tags).
 
+## Der Heil-Kopf (tages-gesetz 2, 25.11.): die CI des Kopfs 99b234d7 stand ROT an vier Aufträgen
+
+1. **Der Warte-Kreis zweier Wagen ist ein Fehler des Verkehrs an main; das Tages-Gesetz hat ihn nur geweckt.** stamm/siedlung-verkehr.js
+   ist zwischen main und dem Kopf 99b234d7 byte-gleich. Die neue Nachfrage stellte zwei Entgegenkommende in den Bogen vor der Wende
+   746/573: Wagen 8 heraus bei 747/555, Wagen 9 hinein bei 748/548 hinter 18. Jeder stand 0,04–0,10 m im Raum der Begegnung des
+   anderen. Der Warte-Graph löste nur Kreise über Halter und Kopf, nie einen Kreis aus reinen Wagen-Kanten: ab Sekunde 30 standen
+   21 von 21 Wagen. Der Schnitt liegt an EINER Stelle (`_verkehrKreisDurch`, gelesen in `_verkehrZonen` und `_verkehrFolge`). Im Kreis
+   aus Wagen-Kanten fährt, wer einen Ort hält, sonst die kleinste Nummer. Er fährt an dem vorbei, vor dem er hält, ohne den Rand der
+   Begegnung; sein Leib samt Ausscheren bleibt frei. Der Halter behält seine Kette. Der Löser gilt für jeden Kreis, nicht für eine
+   Wende. Gemessen am Kopf (stadt-voll, 600 s je Stunde): Täter `--mutante-kreis` (der Rang still) → ROT beim Namen,
+   Warte-Kreis ["8>9", 30 s ab Sekunde 30] an 747/555 · 748/548. Mit dem Schnitt um 10 und 23 Uhr kein Kreis, kein Wagen in Wagen,
+   keiner ohne Schlüssel im Ort, die Arbeit im Soll. OFFEN steht eine Zeile: „Ausscheren über dem Band“ an 826/442 vor der Kreuzung
+   am Markt, 10 Uhr SUV 14 0,374 m (rund 0,27, 16° schräg zur Linie), 23 Uhr Supersport 0 0,259 m (rund 0,246, 10,8°). Beide stehen
+   0,3–0,6 m nach dem Anfang einer neuen Linie nach der Wende, ohne Umfahren und ohne Durchlass. Ein Schnitt der Ecken, wie der Wagen
+   steht (am Anfang der Linie), änderte die Zahl nicht und fiel: der Leib dreht nach dem Bau der Linie oder vor ihrem ersten Punkt.
+   Erst geschnitten und gefallen: das Ausscheren je Seite (außen die Ecke, innen die Flanke). Es löste die Wende, aber an der Messung
+   standen die Wagen ineinander (−0,04 m, 5 174×), und der Kreis wanderte an die Kreuzung 836/438 (8>10, 437 s).
+2. **„ohne Ziel 18 Uhr 6 %“ war die Probe, nicht der Tag.** Sie las den Plan zur Uhr (`tagesPlan`), der Wirt geht aber nach der Kette
+   (`tagesZiel` über `_bewohnerKette`). Der Händler auf dem Weg zum Besuch (haendler #936614 → haus#279359, sein Werk bis 18,5 Uhr)
+   zählte am Werk, also ohne Ziel. Mit dem EINEN Leser: ohne Ziel um 6 · 10 · 13 · 18 · 23 Uhr = 0 · 0 · 0 · 0 · 0.
+3. **Die Ganglinie meldet, sie urteilt nicht** (Entscheid des Koordinators 13:06). Fußwege tragen werktags vier Spitzen (8 · 12 · 15 · 18
+   Uhr ± 1 h), Autofahrten drei (7 · 12 · 17), nur der ÖV zwei: FHWA NHTS 2017, Brief „Non-Motorized Travel“. Das Soll „2 Spitzen“ der
+   Linse war ohne Herkunft und ein Zwilling der Station rhythmus#2, die allein urteilt. Die Täter zielplan-wenden und zielplan-spitze15
+   fielen mit dem Soll. Die Mittags-Spitze ist Gesetz: um 12 Uhr gehen arbeit>mittag 62 und mittag>arbeit 55 (Stadt, 477 Bewohner),
+   134 und 112 (stadt-voll), der Gang zum Tisch daheim und zurück.
+4. **Der Hof-Gang trägt einen zur Zeit** (`_bewohnerImHof`). Die Achse von der Tür bis vor das Tor jedes Hof-Hauses liegt zwischen
+   Mauern, dort weicht keiner aus. Über sie geht nur, wer im Haus wohnt; Besuch und Kunde stehen vor dem Tor. Wer hinaus soll, tritt
+   erst aus der Tür, wenn die Achse frei ist, und wer vor dem Tor hinein will, wartet, solange einer hinausgeht. Bis hier traten um
+   8,45 Uhr das Kind von haus_provenzalisch #81761 und der heimgehende Werkstatt-Mann auf dieselbe 9 m lange Achse; beide standen
+   Bug an Bug (2 Steckenbleiber bei 752/476). Mit dem Schnitt: 0 Steckenbleiber. OFFEN steht die eine Tür, neu gegen main (dort
+   0 von 402): „nicht über die Tür 1 von 404“, kind #946741 um 20,52 Uhr an seinem Heim haus_provenzalisch #946741 hinein bei
+   674,9/435,0 → 674,8/434,8, drinnen, ohne die Front zu kreuzen. Die Zeile nennt jetzt Uhr, Ort und Lage im Haus (gate:kreatur-takt
+   Teil 1). Ein Täter des Hof-Gangs im Selbsttest fehlt: der Täter-Lauf der Stadt fährt 5–8 Uhr, die Begegnung lag um 8,45 Uhr.
+
 ## Das Gesetz (EIN Gesetz im Kern, TAGES_GESETZ · `_tagesWenden` · `_tagesWendenOrt` · `tagesPlan`)
 
 | Teil | vorher | jetzt | Quelle |
@@ -96,7 +130,9 @@ Das Tag trägt die drei Pflicht-Wände von Bau und Haus (der Beitrag fasst stamm
 Für „main“ lagen koerper-core.js und stamm/siedlung-bewohner.js von main im Baum des Kopfs. Das sind die einzigen Laufzeit-Dateien
 des Beitrags. Die Rücknahme lief immer (trap), danach war der Baum sauber.
 
-**Der Platz um 8 Uhr** an der Kamera der Station bild#2 (stadt-voll, third, Auge [836,7 · 58 · 453,4]):
+**Der Platz um 8 Uhr**, der Stand der Station bild#2 (stadt-voll, 8 Uhr). Das Auge ist NICHT die Kamera der Station: Die Blick-Wahl
+der Werkbank (`bild`) fand das Ziel der Stationskamera [836,7 · 58 · 453,4] verdeckt (bauSatz in 15 m) und wählte Pose 39
+[863,4 · 66,7 · 439,7], für main und Kopf dieselbe (Akte `*.abnahme.json`: ABNAHME GRÜN, weltTakte 0):
 `cloud-post/tages-gesetz-bild/main-platz-08_00.jpg` ↔ `kopf-platz-08_00.jpg`. main zeigt 84 im Bild und 32 gehend, drinnen 0. Der
 Kopf zeigt 72 und 19, drinnen 536. Mein Auge: Beide Märkte sind voll. Bei main stehen die Leute verstreut auf dem Platz, am Kopf ziehen
 sie in Strömen über ihn, und am Rand fahren Wagen. Die schiefen fernen Leiber oben rechts stehen in beiden Bildern; sie gehören nicht

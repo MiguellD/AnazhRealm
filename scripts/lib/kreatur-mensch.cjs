@@ -161,7 +161,12 @@ async function menschBuehnen() {
                     for (const e of innen === sp.innen ? [] : [sp.innen, innen].filter(Boolean)) {
                         WG.durch++;
                         if (durchTuer(e, sp.x, sp.z, x, z)) WG.tuer++;
-                        else WG.falsch.push(`${b.rolle} #${b.heim} an ${nameVon(e)}`);
+                        // der Gang durch die Wand beim Ort (tages-gesetz 2): Uhr, Richtung, von wo nach wo — in der Welt und im Haus
+                        // (`hausLage`: x quer zur Front, z von der Mitte zur Front) —, ob er drinnen steht; bis hier nur Rolle und Haus
+                        else {
+                            const [f1, hl] = [(v) => v.toFixed(1), (px, pz) => { const l = hausLage(e, px, pz); return `${l.x.toFixed(1)}/${l.z.toFixed(1)}`; }]; // prettier-ignore
+                            WG.falsch.push(`${wann(b)} an ${nameVon(e)} ${innen === e ? "hinein" : "hinaus"} von ${f1(sp.x)}/${f1(sp.z)} nach ${f1(x)}/${f1(z)} (im Haus ${hl(sp.x, sp.z)} → ${hl(x, z)}${b.drinnen ? ", drinnen" : ""})`); // prettier-ignore
+                        }
                     }
                     // (die Höhe des Leibs ist die seines Genoms, 8 Kopf-Einheiten `kh` — die Höhe seiner Gestalt × `groesse`; bis
                     // generationen-band las die Linse 1,7 m × `groesse`, die Höhe eines Erwachsenen: das Kind, 1,22 × seine

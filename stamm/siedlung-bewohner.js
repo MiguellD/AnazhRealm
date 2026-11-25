@@ -3837,8 +3837,10 @@ class AnazhRealm_siedlung_bewohner {
 
     // DER HOF-GANG TRÄGT EINEN ZUR ZEIT (tages-gesetz 2; der Hof `orte.ein`, `_bewohnerWeg`): die Achse vom Punkt vor der Tür bis
     // vor das Tor des Hof-Hauses (± 1,5 m, wie `_bewohnerWeg` den Hof misst) liegt zwischen den Mauern des Hofs, dort weicht keiner
-    // aus. Wer außer b auf ihr geht — `hinaus`: nur wer zum Tor geht (sein nächster Punkt ist das Tor) —: der erste,
-    // sonst null. Leser: die Tür (wer hinaus soll, tritt erst aus ihr, wenn die Achse frei ist) und der Gang (wer hinein will,
+    // aus — ein enger Ort jedes Hof-Hauses, der EINEN trägt. Die Achse gehört dem Haus: über sie geht nur, wer in ihm wohnt (der
+    // Besuch, der Kunde, der Händler stehen vor dem Tor, wo der Gang am Netz hängt), also fragt jeder die Achse seines Heims, und
+    // alle Bewohner eines Hauses fragen dieselbe. Wer außer b auf ihr geht — `hinaus`: nur wer zum Tor geht (sein nächster Punkt
+    // ist das Tor) —: der erste, sonst null. Leser: die Tür (wer hinaus soll, tritt erst aus ihr, wenn die Achse frei ist) und der Gang (wer hinein will,
     // wartet vor dem Tor, solange einer auf ihr hinausgeht). Bis hier fragte die Tür nur ihren Punkt und den vor ihr: um 8,45 Uhr
     // trat das Kind von haus_provenzalisch #81761 auf die 9 m lange Achse, auf der der Werkstatt-Mann heimging, beide standen
     // Bug an Bug zwischen den Mauern (Stadt, Kopf 99b234d7: 2 Steckenbleiber, Wahl 0/0, jede Richtung eine Wand)

@@ -980,13 +980,10 @@ async function probeLeben(expected) {
                         delete VK.belegung.get;
                     }
                 };
-            // DER KREIS ZWEIER WAGEN (tages-gesetz 2, `mutanteKreis`): das Ausscheren ohne Seite — jede Seite der Linie trägt die
-            // größere (die Ecke außen), wie bis hier; im Bogen der Sackgasse vor der Wende 746/573 stehen zwei Entgegenkommende Bug
-            // an Bug (stadt-voll 10 Uhr, Kopf 99b234d7: Warte-Kreis „8>9“ ab Sekunde 30)
-            if (o.mutanteKreis)
-                r._verkehrAusscheren = function (W, kk) {
-                    return P._verkehrAusscheren.call(this, W, kk);
-                };
+            // DER KREIS ZWEIER WAGEN (tages-gesetz 2, `mutanteKreis`): der Rang im Kreis aus Wagen-Kanten steht still
+            // (`_verkehrKreisDurch` → null) — im Bogen der Sackgasse vor der Wende 746/573 stehen zwei Entgegenkommende Bug an Bug
+            // (stadt-voll 10 Uhr, Kopf 99b234d7: Warte-Kreis „8>9“ ab Sekunde 30)
+            if (o.mutanteKreis) r._verkehrKreisDurch = () => null;
             r._verkehrSchritt = function (dt) {
                 const t0 = performance.now();
                 P._verkehrSchritt.call(this, dt);
@@ -1255,7 +1252,8 @@ async function probeLeben(expected) {
                 // gegen das Stück seiner Linie um ihn: ragt sie weiter
                 // als hw + rund, frisst sie den Raum der Begegnung (`begegnungM`) — das weiteste beim Namen [über dem Band m, Wagen,
                 // Gattung, Probe, Ort, rund, Gier gegen die Linie °]. Bis hier galt der Leib als Tangente der Linie (l²·κ/2): der
-                // Transporter stand im Umfahren 14,5° schräg zu ihr, seine Ecke ragte über das Band, 0,07 m Wagen an Wagen (23 Uhr)
+                // Transporter stand im Umfahren 14,5° schräg zu ihr, seine Ecke ragte über das Band, 0,07 m Wagen an Wagen (23 Uhr).
+                // Dazu sein Beweis (tages-gesetz 2): ob er umfährt, wem er im Kreis aus Wagen-Kanten vorbeifährt, sein Weg auf der Linie
                 for (const [W, L] of LA) {
                     const F = W.F;
                     if (!F || !F.rund || !(W.entry._fahr && W.entry._fahr.speed > 0.5) || haeltAllein(W)) continue;
@@ -1264,27 +1262,24 @@ async function probeLeben(expected) {
                     while (i1 < F.pts.length - 1 && F.bogen[i1] < F.s + W.hl + 2) i1++;
                     for (const [u, w] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
                         const [x, z] = [L.x + L.fx * W.hl * u + L.fz * W.hw * w, L.z + L.fz * W.hl * u - L.fx * W.hw * w];
-                        let [bq, bi, bt, rand, br] = [Infinity, -1, 0, false, false];
+                        let [bq, bi, bt, rand] = [Infinity, -1, 0, false];
                         for (let i = i0; i < i1; i++) {
                             const [p, q] = [F.pts[i], F.pts[i + 1]];
                             const [dx, dz] = [q.x - p.x, q.z - p.z];
                             const t0 = ((x - p.x) * dx + (z - p.z) * dz) / (dx * dx + dz * dz || 1);
                             const t = Math.max(0, Math.min(1, t0));
-                            const [ox, oz] = [x - p.x - dx * t, z - p.z - dz * t];
-                            const d = Math.hypot(ox, oz);
-                            if (d < bq) [bq, bi, bt, rand, br] = [d, i, Math.atan2(dx, dz), (i === i0 && t0 < 0) || (i === i1 - 1 && t0 > 1), -dz * ox + dx * oz > 0]; // prettier-ignore
+                            const d = Math.hypot(x - p.x - dx * t, z - p.z - dz * t);
+                            if (d < bq) [bq, bi, bt, rand] = [d, i, Math.atan2(dx, dz), (i === i0 && t0 < 0) || (i === i1 - 1 && t0 > 1)];
                         }
                         // eine Ecke vor dem Anfang der Linie oder hinter ihrem Ende hat keinen Fuß auf ihr (die neue Linie beginnt am
                         // Wagen, `_verkehrLinie`: sein Heck liegt hinter ihrem ersten Punkt) — der Abstand zum Endpunkt wäre seine Länge
-                        // (je Seite, tages-gesetz 2: außen am Bogen die Ecke, innen die Flanke — `F.rundR` / `F.rundL`, die Folge fragt sie)
-                        const rS = bi < 0 ? 0 : (br ? F.rundR : F.rundL)[bi];
-                        const ueber = bi < 0 || rand ? -Infinity : bq - W.hw - rS;
+                        const ueber = bi < 0 || rand ? -Infinity : bq - W.hw - F.rund[bi];
                         if (ueber > m.aussch[0])
-                            m.aussch = [+ueber.toFixed(3), W.nr, W.typ, k, ...ort2(L), +rS.toFixed(3), +((((Math.atan2(L.fx, L.fz) - bt) * 180) / Math.PI + 540) % 360 - 180).toFixed(1), br ? "rechts" : "links"]; // prettier-ignore
+                            m.aussch = [+ueber.toFixed(3), W.nr, W.typ, k, ...ort2(L), +F.rund[bi].toFixed(3), +((((Math.atan2(L.fx, L.fz) - bt) * 180) / Math.PI + 540) % 360 - 180).toFixed(1), W.umfahr ? "umfahr" : "", W.durch ? "durch " + W.durch.O.nr : "", `${F.s.toFixed(1)}/${F.lang.toFixed(1)}`, (W.letzter && W.letzter.art) || ""]; // prettier-ignore
                     }
                 }
             }
-            for (const n of ["_verkehrSchritt", "_verkehrUmfahren", "_verkehrFolge", "_verkehrBild", "_fahrtVerkehr", "_verkehrAusscheren"]) delete r[n];
+            for (const n of ["_verkehrSchritt", "_verkehrUmfahren", "_verkehrFolge", "_verkehrBild", "_fahrtVerkehr", "_verkehrKreisDurch"]) delete r[n];
             if (sy.fahrt) for (const s of sy.fahrt.values()) s.stop(0);
             Object.assign(sy, KL.vor);
             if (zwilling) {

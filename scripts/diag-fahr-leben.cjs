@@ -1091,7 +1091,7 @@ const verkehrVerdict = (m) =>
         // der Seite) — sonst sieht die Folge „frei“, wo der Leib steht; ungemessen ist ROT
         [
             Array.isArray(m.ausscheren) && m.ausscheren[0] <= m.ausscherenRand,
-            `Ausscheren über dem Band ${m.ausscheren ? JSON.stringify(m.ausscheren) : "ungemessen"} (Raum ${m.ausscherenRand} m) [m, Wagen, Gattung, Probe, x, z, rund, Gier gegen die Linie °]`,
+            `Ausscheren über dem Band ${m.ausscheren ? JSON.stringify(m.ausscheren) : "ungemessen"} (Raum ${m.ausscherenRand} m) [m, Wagen, Gattung, Probe, x, z, rund, Gier gegen die Linie °, Umfahren, Durchlass, Weg der Linie, letzter Ort]`,
         ],
         [!m.ohneSchluessel, `ohne Schlüssel im Ort ${m.ohneSchluessel}× ${JSON.stringify(m.ohneOrte)}`],
         [
@@ -2760,7 +2760,7 @@ hauptLauf(async () => {
             const brueche = [
                 // stadt-voll 10 Uhr ohne die Regel des Warte-Graphen: 8 hinter 17, 17 hinter 8, 235 s ab Bild 21900
                 [{ graph: { kreise: [["8>17", 235, 21900, 35940, "8-wagen > 17-wagen"]] } }, /Warte-Kreis \["8>17",235/],
-                // der Kreis zweier Wagen beim Ort (tages-gesetz 2, `--mutante-kreis`: das Ausscheren ohne Seite): Bug an Bug im Bogen
+                // der Kreis ohne Lösung → ROT beim Ort (tages-gesetz 2, im Spiel `--mutante-kreis`: der Rang still): Bug an Bug im Bogen
                 // der Sackgasse vor der Wende 746/573, je Wagen Mitte, Gier, Tempo, der vor ihm [Lücke, quer, Nr.], Orte, Weg der Linie
                 [{ graph: { kreise: [["8>9", 570, 1800, 35940, "8-wagen(747/555) > 9-wagen(748/548)", [[8, 747.2, 555.3, 178, 0, [1.61, 1.89, 9], "enge@779/514", "37/177.8", "strecke"], [9, 748, 547.9, -38, 0, [2.36, 1.55, 8], "wende@746/573,enge@779/514,kreuzung@836/438", "0/351.1", "strecke"]]]] } }, /Warte-Kreis \["8>9",570,1800,35940,"8-wagen\(747\/555\) > 9-wagen\(748\/548\)",\[\[8,747.2,555.3,178/], // prettier-ignore
                 [{ graph: undefined }, /Warte-Kreis ungezählt/],
