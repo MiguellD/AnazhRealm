@@ -270,6 +270,7 @@ const treppenZeile = (T, n) => Object.keys(T).find((k) => k === n || k.startsWit
 const gehaltenVon = (p, k) => (p.posten && typeof p.posten[k] === "number" ? p.posten[k] : p[k]);
 // WAS am Preis reißt, beim Namen und mit Zahl (der Bericht der Buchung nennt die Wand, nicht nur ihre Farbe)
 function preisGrund(p, T, klasse) {
+    if (p && typeof p.fehlt === "string") return "fehlt: " + p.fehlt.slice(0, 200); // die Akte ohne Preis-Zahl nennt warum (richter-akte.cjs preisFehlt)
     const s = p && klasse ? T[treppenZeile(T, klasse)] : null;
     if (!s) return "";
     const aus = [];

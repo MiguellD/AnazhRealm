@@ -3496,7 +3496,7 @@ function stromSeite(r, a) {
 }
 // DIE RICHTER-AKTE DER MEISTERKARTE 2 (vision/richter-akte.cjs, die Tafel vision/richter-tafel.json): nach jeder Probe schreibt die
 // Sitzung für jede Sprosse, die die Tafel ihrer Station zuordnet, EINE Akte nach vision/richter/ — Messwert und Urteil der Station, der
-// Preis als Schnitt DIESES Stroms über das Fenster der Probe [Beginn, letzter Zapfen]; ohne Bilder im Fenster keine Akte. Ein Fehler
+// Preis als Schnitt DIESES Stroms über das Fenster der Probe [Beginn, letzter Zapfen]; ohne Bilder im Fenster die Akte mit Preis FEHLT beim Namen. Ein Fehler
 // beim Schreiben steht beim Namen im Log und stört nie die Messung
 // DIE LAST AM PREIS (richter-akte.cjs, der Schöpfer 11.11.): unmittelbar vor und nach dem Preis-Lauf die Referenzfahrt DIESER Maschine
 // (referenzFahrt, Umfeld „sitzung“, dieselbe Ruhe wie jede Zeit-Station der Sitzung) — der Bericht reist in die Akte, buche-2 urteilt.
@@ -3535,7 +3535,10 @@ async function preisLauf(W, namen) {
     const sg = r && r.stellgroessen;
     const stueck = r && r.frameMs && r.sekunden > 0
         ? { ab: tLauf - r.sekunden * 1000, bis: tLauf,
-            lauf: { ...(r.ruhe ? { ruhe: { ruhig: r.ruhe.ruhig, sek: r.ruhe.sek } } : {}), ...(sg ? { skala: [sg.szeneSkalaAnfang, sg.szeneSkala] } : {}), p95: r.frameMs.p95, max: r.frameMs.max, bilder: r.frames } }
+            lauf: { ...(r.ruhe ? { ruhe: { ruhig: r.ruhe.ruhig, sek: r.ruhe.sek } } : {}), ...(sg ? { skala: [sg.szeneSkalaAnfang, sg.szeneSkala] } : {}), p95: r.frameMs.p95, max: r.frameMs.max, bilder: r.frames,
+            // DIE LEINE BEIM NAMEN (25.11., wanderung#1 an 99f687f3 Radeon: der Lauf zählte 0 Bilder, die Akte fiel still): zeichnete der
+            // Loop kein Bild, sagt die Leine des Spiels, ob die Takte liefen und nur nicht zeichneten (ausgesetzt %) — die Akte trägt es
+            ...(r.leine ? { leine: { ausgesetztPct: r.leine.ausgesetztPct, imFlug: r.leine.imFlug } } : {}) } }
         : null;
     const rNach = await ref.fahrt();
     const ok = rVor && rNach && !rVor.fehler && !rNach.fehler;
@@ -3550,7 +3553,8 @@ async function preisLauf(W, namen) {
         (sg ? " · Skala " + sg.szeneSkalaAnfang + " → " + sg.szeneSkala +
             (sg.geraet ? " (Regler-Fenster bei " + sg.geraet.skala + ": p95 " + sg.geraet.p95 + " ms · CPU p50 " + sg.geraet.cpu50 + " ms · Leine " + sg.geraet.leine + " · " + (sg.geraet.gebunden ? "an die GPU gebunden" : "NICHT an die GPU gebunden") + ")" : " (der Regler urteilte kein Fenster)") : "") +
         (r && r.frameMs ? " · das Stück nach der Ruhe p95 " + r.frameMs.p95 + " ms, max " + r.frameMs.max + " ms (" + r.frames + " Bilder)" : "") +
-        (stueck ? "" : " · DER LAUF NENNT KEIN STÜCK — keine Akte") +
+        (r && r.frameMs && !r.frames ? " · KEIN BILD IM LAUF" + (r.leine ? " (Leine ausgesetzt " + r.leine.ausgesetztPct + " % · im Flug " + r.leine.imFlug + ")" : "") + " — die Akte trägt den Preis FEHLT" : "") +
+        (stueck ? "" : " · DER LAUF NENNT KEIN STÜCK — die Akte trägt den Preis FEHLT") +
         (r && r.fehler && typeof r.fehler === "string" ? " — " + r.fehler.split(String.fromCharCode(10))[0].slice(0, 160) : ""));
     return { referenz, posten, stueck };
 }

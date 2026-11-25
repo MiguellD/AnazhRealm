@@ -3,9 +3,11 @@
 // Gerufen von meisterkarte-quelle/punkte/punkte.cjs (fahreSitzung) nach jeder Probe: kein zweiter Mess-Pfad — Messwert und Urteil
 // sind die der Station, der Preis ist der Schnitt des Stroms DERSELBEN Sitzung (strom.ndjson, stromLesen) über genau das Fenster der
 // Probe: die Bilder, die die Sitzung unter ihrem Namen zapfte UND deren Wanduhr zwischen Beginn und Ende der Probe liegt. Fehlt der
-// Strom im Fenster (weniger als MIN_BILDER Bilder), entsteht KEINE Akte — nie ein Preis aus fremder Zeit.
+// Strom im Fenster (weniger als MIN_BILDER Bilder), steht die Akte mit einem Preis ohne Zahl, der beim Namen sagt warum (preisFehlt;
+// buche-2: FEHLT) — nie ein Preis aus fremder Zeit, nie ein stilles Urteil ohne Akte.
 //
-//   akten({ station, probe, eintrag, bilder, von, bis, sha, geraet, karte, tafel, referenz, posten }) → [{ datei, akte } | { kein: true, sprosse, grund }]
+//   akten({ station, probe, eintrag, bilder, von, bis, sha, geraet, karte, tafel, referenz, posten, stueck }) → [{ datei, akte } | { kein: true, sprosse, grund }]
+//   (kein: nur ohne Richter in der Station, ohne Standardgerät, ungemessen — ein leerer Preis ist eine Akte mit preis.fehlt)
 //
 // DIE ZWILLINGE EINES LAUFS (16.11., Fund g6: pflicht.E#1 und karte2.same.preis.bytes#1 sind zweite Urteile auf einem bestehenden
 // Lauf): die Sitzung fährt eine Probe-Gruppe EINMAL, ihr Strom und ihr Preis-Lauf tragen den Namen des Laufs (`probe`, der erste der
@@ -88,6 +90,22 @@ function preisImFenster(bilder, station, von, bis, stueck) {
     preis.quelle = "Loop des Spiels an der Pose der Probe: das Stück des Preis-Laufs nach Einschwingen und Ruhe (" + PREIS_S + " s)";
     return preis;
 }
+// DER PREIS FEHLT BEIM NAMEN (25.11., der Koordinator: „ein stilles GRÜN ohne Akte ist der fail-soft-Bruch“). Bis hier schrieb ein
+// leeres Stück KEINE Akte: das Urteil der Station stand nur in der Mess-Datei, buche-2 sah es nie — 82 GRÜN in 16 Stationen und 39 ROT
+// in 26 Stationen an Köpfen, deren Sitzung Akten schrieb (leben.tiere.wanderung#1 an 99f687f3 Radeon: der Lauf zählte 0 Bilder). Die
+// Akte steht nun mit dem Urteil des Richters und einem Preis ohne Zahl, der beim Namen sagt, warum: buche-2 urteilt ihn FEHLT (R3:
+// fehlende Preis-Zahl nimmt, höchstens Kern, Z5) — nie ein Preis aus fremder Zeit, nie ein Fenster daneben, und nie mehr still.
+function preisFehlt(leer, o) {
+    const L = o.stueck && o.stueck.lauf;
+    const fehlt = leer.ohneStueck
+        ? "der Preis-Lauf nannte sein Stück nicht (kein Ergebnis von `/lauf`)"
+        : "kein Strom im Stück des Preis-Laufs (" + leer.bilder + " Bilder < " + MIN_BILDER + ")" +
+          (L ? " · der Lauf selbst " + L.bilder + " Bilder, p95 " + L.p95 + " ms" + (L.leine ? ", Leine ausgesetzt " + L.leine.ausgesetztPct + " % · im Flug " + L.leine.imFlug : "") : "");
+    const p = { fehlt, bilder: leer.bilder, fenster: { von: new Date(o.von).toISOString(), bis: new Date(o.bis).toISOString() } };
+    if (!leer.ohneStueck) p.stueck = { ab: new Date(o.stueck.ab).toISOString(), bis: new Date(o.stueck.bis).toISOString(), ...(L ? { lauf: L } : {}) };
+    p.quelle = "kein Preis: " + fehlt;
+    return p;
+}
 // der Bericht der Referenz in der Akte: die Zahlen, die buche-2 urteilt, und die, die sie belegen
 function referenzFuerAkte(r) {
     if (!r || typeof r !== "object") return { fehler: "die Sitzung fuhr keine Referenz um den Preis-Lauf" };
@@ -124,13 +142,8 @@ function akten(o) {
         let sp = null;
         for (const g of karte.gruppen) for (const L of g.kriterien) if (L.id === z.leiter) sp = L.sprossen.find((s) => s.nr === z.sprosse);
         if (!sp) throw new Error("richter-tafel: " + wo + " steht nicht in der Karte");
-        const preis = preisImFenster(o.bilder || [], o.probe || o.station, o.von, o.bis, o.stueck);
-        if (preis.leer) {
-            aus.push({ kein: true, sprosse: wo, grund: preis.ohneStueck
-                ? "der Preis-Lauf nannte sein Stück nicht (kein Ergebnis von `/lauf`) — keine Akte, nie ein Fenster daneben"
-                : "kein Strom im Stück des Preis-Laufs (" + preis.bilder + " Bilder < " + MIN_BILDER + ") — keine Akte, nie ein Preis aus fremder Zeit" });
-            continue;
-        }
+        let preis = preisImFenster(o.bilder || [], o.probe || o.station, o.von, o.bis, o.stueck);
+        if (preis.leer) preis = preisFehlt(preis, o);
         preis.referenz = referenzFuerAkte(o.referenz);
         if (o.posten) preis.posten = o.posten;
         if (sp.klasse) {
@@ -171,6 +184,10 @@ function schreibe(o) {
         const folge = alt ? (Array.isArray(alt) ? alt : [alt]).concat([a.akte]) : null;
         fs.writeFileSync(f, JSON.stringify(folge || a.akte, null, 1) + "\n");
         const p = a.akte.geraete[0].preis;
+        if (p.fehlt) {
+            zeilen.push(`KARTE2 Akte ${a.datei}: Richter ${a.akte.geraete[0].richter.urteil} · Preis ${p.urteil || "FEHLT"} — ${p.fehlt}`);
+            continue;
+        }
         // DIE ZEILE NENNT, WAS URTEILT (16.11., mensch.K2#2 Radeon a42d4720: „Preis ROT … Heap 579,7 MB“ — geurteilt hatte buche-2 die
         // gehaltenen 449,4 MB der Posten (`gehaltenVon`), die Zeile zeigte die Spitze des Stücks samt Müll zwischen zwei GCs): das
         // Gehaltene vorn, die Spitze als Lesewert dahinter; ohne Posten urteilt die Spitze, und die Zeile sagt es.
@@ -296,17 +313,52 @@ function selbsttest() {
         const p = preisVon({ stueck: { ab: U + 10000, bis: U + BIS }, referenz: ref(1.05) });
         return p.urteil === "ROT" && p.bild_max_ms === 150 && p.einlauf.bilder === 0 ? true : JSON.stringify(p).slice(0, 300);
     });
-    pruefe("STÜCK Mutant der Lauf nannte kein Stück: KEINE Akte, nie ein Fenster daneben", () => {
+    // DER PREIS FEHLT BEIM NAMEN (preisFehlt): die Akte steht mit dem Urteil des Richters, der Preis trägt keine Zahl, nur den Grund
+    const ohneZahl = (p) => ["bild_p95_ms", "bild_max_ms", "heap_mb", "vram_mb", "einlauf"].every((k) => p[k] === undefined);
+    pruefe("STÜCK Mutant der Lauf nannte kein Stück: Akte mit Richter GRÜN, Preis FEHLT beim Namen, nie ein Fenster daneben", () => {
         const a = akten({ ...basis, stueck: undefined });
-        return a.length === 1 && a[0].kein && /nannte sein Stück nicht/.test(a[0].grund) ? true : JSON.stringify(a).slice(0, 300);
+        const p = a.length === 1 && a[0].akte && a[0].akte.geraete[0].preis;
+        return p && a[0].akte.geraete[0].richter.urteil === "GRÜN" && p.urteil === "FEHLT" && /nannte sein Stück nicht/.test(p.fehlt) && ohneZahl(p) && !p.stueck ? true : JSON.stringify(a).slice(0, 300);
     });
-    pruefe("Mutant kein Strom im Stück: KEINE Akte", () => {
+    pruefe("Mutant kein Strom im Stück (das Fenster liegt hinter den Bildern): Akte, Preis FEHLT mit „0 Bilder < 30“ und dem Wort des Laufs", () => {
         const a = akten({ ...basis, von: U + 30000, bis: U + 40000 });
-        return a.length === 1 && a[0].kein && /kein Strom im Stück/.test(a[0].grund) ? true : JSON.stringify(a);
+        const p = a.length === 1 && a[0].akte && a[0].akte.geraete[0].preis;
+        return p && p.urteil === "FEHLT" && /kein Strom im Stück des Preis-Laufs \(0 Bilder < 30\) · der Lauf selbst 34 Bilder, p95 20 ms/.test(p.fehlt) && ohneZahl(p) && p.bilder === 0 ? true : JSON.stringify(a).slice(0, 300);
     });
-    pruefe("Mutant Fenster nur um fremde Bilder unter fremdem Namen: KEINE Akte", () => {
+    pruefe("Mutant Fenster nur um fremde Bilder unter fremdem Namen: Akte, Preis FEHLT — nie ein Preis aus fremder Zeit", () => {
         const a = akten({ ...basis, von: U, bis: U + 9999 });
-        return a[0].kein ? true : JSON.stringify(a);
+        const p = a[0].akte && a[0].akte.geraete[0].preis;
+        return p && p.urteil === "FEHLT" && ohneZahl(p) ? true : JSON.stringify(a).slice(0, 300);
+    });
+    // der Fall von leben.tiere.wanderung#1 an 99f687f3 Radeon: der Lauf selbst zählte 0 Bilder (p95 null), die Leine nennt warum
+    const leerLauf = { stueck: { ab: U + AB, bis: U + BIS, lauf: { p95: null, max: null, bilder: 0, leine: { ausgesetztPct: 100, imFlug: 2 } } }, bilder: bilder.filter((b) => b.probe !== "vegetation.K2#1") };
+    pruefe("Täter der Lauf zählte 0 Bilder (wanderung#1 an 99f687f3): Akte, Preis FEHLT samt Leine; die Zeile des Logs nennt es", () => {
+        const a = akten({ ...basis, ...leerLauf });
+        const p = a[0].akte && a[0].akte.geraete[0].preis;
+        const dir = path.join(X, "leer");
+        const z = schreibe({ ...basis, ...leerLauf, dir });
+        return p && p.urteil === "FEHLT" && /der Lauf selbst 0 Bilder, p95 null ms, Leine ausgesetzt 100 % · im Flug 2/.test(p.fehlt) && p.stueck.lauf.leine.ausgesetztPct === 100 &&
+            z.length === 1 && /^KARTE2 Akte leben\.pflanzen\.kraft\.1\.7f778d44-radeon\.json: Richter GRÜN · Preis FEHLT — kein Strom/.test(z[0]) && fs.readdirSync(dir).length === 1
+            ? true : JSON.stringify([p, z]).slice(0, 300);
+    });
+    pruefe("Station ROT und Preis leer: Akte mit Richter ROT (die Ratsche liest sie; bis hier fiel auch das ROT still)", () => {
+        const a = akten({ ...basis, ...leerLauf, eintrag: { gruen: false, zahl: "Kamm/Tal 1.1" } });
+        return a[0].akte && a[0].akte.geraete[0].richter.urteil === "ROT" && a[0].akte.geraete[0].preis.urteil === "FEHLT" ? true : JSON.stringify(a).slice(0, 300);
+    });
+    pruefe("buche-2 liest die Akte mit fehlendem Preis: Kern, nie Punkt, der Grund im Bericht; ROT mit leerem Preis nimmt", () => {
+        const dir = path.join(X, "fehlt");
+        const lies = () => {
+            const ak = {};
+            for (const n of fs.readdirSync(dir)) ak[n.slice(0, -5)] = JSON.parse(fs.readFileSync(path.join(dir, n), "utf8"));
+            return buche.rechne(JSON.parse(JSON.stringify(karte)), ak, buche.brueckeLesen(fs.readFileSync(path.join(__dirname, "BRUECKE.md"), "utf8")), buche.kopfFolgeFest({ main: [basis.sha] }));
+        };
+        schreibe({ ...basis, ...leerLauf, dir });
+        const g = lies(), b0 = g.bericht.find((x) => x.leiter === "leben.pflanzen.kraft" && x.sprosse === 1);
+        fs.rmSync(dir, { recursive: true, force: true });
+        schreibe({ ...basis, ...leerLauf, dir, eintrag: { gruen: false, zahl: "Kamm/Tal 1.1" } });
+        const r = lies(), b1 = r.bericht.find((x) => x.leiter === "leben.pflanzen.kraft" && x.sprosse === 1);
+        return g.heute === 0 && b0.stand === "KERN" && /Preis Radeon 890M FEHLT \(fehlt: kein Strom im Stück/.test(b0.warum) && b1.stand === "NULL" && /Richter ROT/.test(b1.warum)
+            ? true : JSON.stringify([g.heute, b0, b1]).slice(0, 400);
     });
     pruefe("Mutant Station ungemessen: KEINE Akte", () => {
         const a = akten({ ...basis, eintrag: { gruen: false, ungemessen: true, grund: "Schloss" } });
@@ -375,4 +427,4 @@ if (require.main === module) {
     if (process.argv.includes("--selbsttest")) process.exit(selbsttest());
     console.log("Aufruf: node vision/richter-akte.cjs --selbsttest (gerufen wird die Datei von punkte.cjs fahreSitzung)");
 }
-module.exports = { akten, schreibe, preisImFenster, brauchtPreisLauf, referenzFuerAkte, MIN_BILDER, PREIS_S, TAFEL };
+module.exports = { akten, schreibe, preisImFenster, preisFehlt, brauchtPreisLauf, referenzFuerAkte, MIN_BILDER, PREIS_S, TAFEL };
