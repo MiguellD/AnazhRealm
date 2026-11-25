@@ -551,6 +551,22 @@ class AnazhRealm_siedlung_ort {
                     if (q.slot === so.si) this._hausStueckSetzen(so.plan, Z, q, k, origin, so);
         return entry || zu("die Wurzel"); // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
     }
+    // DAS WERK WARTET AUF SEINEN BAUPLAN (fahrzeug-gattung): ein Werk des Gesetzes, dessen Bauplan erst mit dem Buch geboren wird
+    // (`_foundryAutoRegisterSpecies`: die Arten der Studios, `fahrzeug_*`, `steg_*`), steht mit der Geburt (`_wartendeTreten`) —
+    // bis hier fiel es still, wo der Ort vor dem Buch stand. Leser: der Anleger (`_anlegerLegen`). Rückgabe null (noch nichts).
+    _wartetAufBauplan(typen, tat) {
+        (this._bauplanWarten || (this._bauplanWarten = [])).push({ typen, tat });
+        return null;
+    }
+    // DIE GEBURT DER BAUPLÄNE (`_foundryAutoRegisterSpecies` nach jeder Geburt): jedes wartende Werk, dessen Baupläne jetzt
+    // stehen, tritt an; die übrigen warten weiter.
+    _wartendeTreten() {
+        const W = this._bauplanWarten;
+        if (!W || !W.length) return;
+        const da = (w) => w.typen.every((t) => this.state.blueprints && this.state.blueprints[t]);
+        this._bauplanWarten = W.filter((w) => !da(w));
+        for (const w of W) if (da(w)) w.tat();
+    }
     // DER ORT EINER LATERNE DES PLANS (K10 × K11 × K66-2): die Studio-Gestalt (Bauplan `laterne_dorf` bzw. mit `wand` die
     // Wandlaterne `wandlaterne_dorf`, ihr Licht LICHT_GESETZ.wandlaterne) am Anker, hinter Wasser- und Bau-Wand — die
     // Wandlaterne hängt vor der Wand, die Bau-Wand prüft nur ihren Kopf (der Rund-Fußabdruck reichte in die eigene Wand).
@@ -693,7 +709,10 @@ class AnazhRealm_siedlung_ort {
                     });
             }
         if (spannen.length && so && so.key) this._brueckenLegen(spannen, "dorf:" + so.key);
+        // DER ANLEGER (Karte 2 planet.kopplung.siedlungslage#1): liegt Wasser am Ort, legt er Steg und Boot an sein Ufer (`_anlegerLegen`)
+        if (so && so.key) this._anlegerLegen(origin.x, origin.z, "dorf:" + so.key);
         this._wegenetzAnschluss(so && so.key); // die Feldwege zu den Nachbarn, deren Plan steht (fahrzeug.K2)
+        yield* this._grenzeImLandSetzen(plan, origin, so && so.key); // der Rand des Reichs eines Herrn (mensch.macht.grenze #1)
         yield;
         // DIE LATERNEN (K10 × K11): jede Laterne des Plans steht als Studio-Gestalt (Bauplan `laterne_dorf`, fachwerk
         // AUSSTATTUNG `laterne`) — der Leib und das Licht EINER Quelle: das Verzeichnis „licht" stempelt den Eintrag aus dem
@@ -3667,6 +3686,63 @@ class AnazhRealm_siedlung_ort {
                 precise: true,
                 ausGesetz: true,
             }
+        );
+    }
+
+    // DIE GRENZE IM LAND (Leiter mensch.macht.grenze #1): trägt der Plan einen Herrn (ein Los der Rolle burg, das BURG-GESETZ),
+    // steht der Rand seines Reichs (fachwerk `siedlungsReich` über die Häuser des Plans, um den Ort) als Haupt- und Läufersteine
+    // im Land (fachwerk `grenzeImLand`: das Band der Weite, der Rücken längs des Rands) — derselbe Stein wie am Weg
+    // (`markstein_dorf`, die Gestalt im Wort `__gestalt`, der Hauptstein in seiner Größe `groesse`), aus dem Gesetz (`ausGesetz`), der Same aus dem Ort. Frei ist ein Stand
+    // auf Land, auf keinem Weg und in keinem Bau. Je Ort und Größe einmal je Sitzung; wächst der Herr, fällt der alte Rand mit ihm.
+    // Je `AUTO_SETTLEMENT.laternenJeTakt` Steine eine Rate des Erwachens. Bis hier stand am Rand des Reichs kein Zeichen: die
+    // Station sah 0 von 360 Punkten des Rands im Bild (GTX 2d6a0447).
+    *_grenzeImLandSetzen(plan, origin, key) {
+        const typ = "markstein_dorf";
+        if (!key || !plan || !Array.isArray(plan.slots) || !plan.slots.some((s) => s && s.rolle === "burg")) return;
+        if (!this.state.blueprints || !this.state.blueprints[typ]) return;
+        const [SG, reich] = [AnazhRealm._siedlungGesetz(), AnazhRealm.Gesetz("fachwerk:siedlungsReich")];
+        const nH = plan.slots.length;
+        const L = this._grenzeImLandOrte || (this._grenzeImLandOrte = new Map());
+        const alt = L.get(key);
+        if (alt && alt.nH === nH) return;
+        if (alt)
+            for (const e of alt.werke)
+                if (e && this.state.architectures.includes(e)) this.removeArchitecture(e, { still: true });
+        const A = { x: origin.x, z: origin.z, r: reich(SG, nH) };
+        const seed = Math.floor(this._rollGenome("grenze:land:" + key, "markstein").axis("stein") * 4294967296) >>> 0;
+        const frei = (x, z) =>
+            this._landAt(x, z, 0.2) &&
+            !this._aufWeg(x, z, 1) &&
+            this._bauFreiRund(typ, x, z, this.getTerrainHeightAt(x, z));
+        const G = AnazhRealm.Gesetz("fachwerk:grenzeImLand")(A, seed, frei);
+        const eintrag = { nH, werke: [] };
+        L.set(key, eintrag);
+        const rate = AnazhRealm.AUTO_SETTLEMENT.laternenJeTakt;
+        let k = 0;
+        for (const g of G.steine) {
+            const y = this.getTerrainHeightAt(g.x, g.z);
+            if (!Number.isFinite(y)) {
+                G.fehlt++;
+                continue;
+            }
+            const e = this.spawnArchitecture(
+                typ,
+                { x: g.x, y: y + 0.5, z: g.z },
+                {
+                    seed: (seed + k * 0x9e3779b1) >>> 0,
+                    rotationY: g.th,
+                    studioOv: g.haupt ? { __gestalt: g.gestalt, groesse: g.groesse } : { __gestalt: g.gestalt },
+                    silent: true,
+                    precise: true,
+                    ausGesetz: true,
+                }
+            );
+            if (e) eintrag.werke.push(e);
+            if (++k % rate === 0) yield;
+        }
+        this.log(
+            `GRENZE: das Reich ${key} (${A.r.toFixed(0)} m) trägt ${eintrag.werke.length} Steine am Rand (${G.haupt} Hauptsteine, ${G.abstandM.toFixed(0)} m Weite)${G.fehlt ? `, ${G.fehlt} Stände ohne freies Land` : ""}`,
+            "INFO"
         );
     }
 

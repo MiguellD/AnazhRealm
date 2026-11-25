@@ -1,24 +1,25 @@
 <!DOCTYPE html><html lang="de"><head>
 <meta charset="utf-8">
 <!-- Fachwerk-Portal (W-A5b) — eigenes Document, eigene strikte CSP: Skript nur
-     same-origin (fachwerk.js + ../../fachwerk-core.js + ../terrain/lib/ — Three.js
-     r128 vendored vom geteilten Regal, kein CDN mehr; die Shell wanderte dafür
-     byte-treu aus den Inline-Skripten nach fachwerk.js, das schmiede.js-Muster).
-     Die iframe-Sandbox trägt die Isolation; die W12-Brücke am Ende von
-     fachwerk.js spricht die Heimat (enter/ready/dsl/exit). -->
+     same-origin (fachwerk.js, ../../fachwerk-core.js, die Hülle und die EINE Engine
+     der Welt aus ../../vendor/ — three r184 WebGPU, kein CDN; der Hash trägt die
+     Import-Map). DIE EINE BÜHNE (fachwerk-buehne, mensch.bau.bauen#1): das Werk
+     zeichnet AnazhHuelle.studio — der Foundry-Faden der Welt (ein Blob-Worker, der
+     die Engine als Blob-Modul lädt: worker-src und script-src blob:, wie die Seite
+     der Welt), ihr Stoff, ihr Licht an ihrer Uhr. Das r128 des Labors fiel. -->
 <meta
     http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
+    content="default-src 'self'; script-src 'self' blob: 'sha256-0GvGmzWavRegxN1My7wRvCLRbft9D2pWirOHv/rDu50='; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
 /><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Fachwerkhaus — parametrisch, begehbar</title>
-<link rel="stylesheet" href="../huelle/huelle.css?v=18.546.407">
+<link rel="stylesheet" href="../huelle/huelle.css?v=18.546.411">
 <style>
 :root{--bg:#0c0f14;--pn:#10151c;--ln:#1e2630;--ac:#c98a3a;--tx:#cdd6df;--mut:#7c8794;}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:var(--bg);color:var(--tx);font:13px/1.45 ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none}
 #app{position:fixed;inset:0}
 canvas{display:block}
-#ui{position:fixed;top:0;right:0;height:100%;width:300px;background:linear-gradient(180deg,rgba(16,21,28,.97),rgba(11,14,19,.97));border-left:1px solid var(--ln);padding:16px 16px 26px;overflow-y:auto;backdrop-filter:blur(6px)}
+#ui{position:fixed;top:var(--h-oben,0px);right:0;height:calc(100% - var(--h-oben,0px));width:300px;background:linear-gradient(180deg,rgba(16,21,28,.97),rgba(11,14,19,.97));border-left:1px solid var(--ln);padding:16px 16px 26px;overflow-y:auto;backdrop-filter:blur(6px)}
 #ui h1{font-size:13px;letter-spacing:.16em;color:var(--mut);font-weight:600;text-transform:uppercase;margin-bottom:2px}
 #ui .sub{font-size:11px;color:var(--mut);margin-bottom:14px}
 .sec{font-size:10px;letter-spacing:.16em;color:var(--mut);text-transform:uppercase;margin:18px 0 8px;border-top:1px solid var(--ln);padding-top:14px}
@@ -66,7 +67,6 @@ select{width:100%;margin-top:3px;padding:6px 8px;border:1px solid var(--ln);bord
   <div class="pr"><label>Stil</label><select id="pStil"><option value="alt" selected>Fachwerk</option><option value="modern">Modern · Putz</option><option value="huette">Blockholz</option><option value="stein">Putz / Stein</option><option value="glas">Glasfassade</option><option value="stroh">Reet / Stroh</option></select></div>
   <div class="pr"><label>Dachtyp</label><select id="pDachTyp"><option value="sattel" selected>Sattel</option><option value="mansard">Mansarde</option><option value="pyramide">Pyramide / Zelt</option><option value="kegel">Kegel</option><option value="pult">Pult</option><option value="tonne">Tonne</option><option value="schmetterling">Schmetterling</option><option value="zwiebel">Zwiebel</option></select></div>
   <div class="pr"><label>Bogen (Öffnungen/Arkade)</label><select id="pBogenTyp"><option value="none" selected>—</option><option value="rund">Rundbogen</option><option value="spitz">Spitzbogen</option><option value="hufeisen">Hufeisen</option></select></div>
-  <div class="pr"><label>Tageszeit</label><select id="pZeit"><option value="mittag" selected>Mittag</option><option value="morgen">Morgen</option><option value="abend">Abend</option><option value="nacht">Nacht</option></select></div>
   <div class="row"><label for="pTerrain">Gelände &amp; Garten</label><input type="checkbox" id="pTerrain" checked></div>
   <div id="reglerLOD"></div>
   <div id="lodInfo" style="display:none;font:11px/1.5 system-ui;color:#9fb2c8;margin:2px 0 6px;white-space:pre-line"></div>
@@ -88,15 +88,21 @@ select{width:100%;margin-top:3px;padding:6px 8px;border:1px solid var(--ln);bord
 </div>
 <div id="hud"><div class="cross"></div><div class="keys"><b>W A S D</b> gehen &nbsp;·&nbsp; Maus schauen &nbsp;·&nbsp; <b>Leer</b> Sprung &nbsp;·&nbsp; <b>E</b> Tür &nbsp;·&nbsp; <b>ESC</b> zurück</div></div>
 <div id="esc"><b>ESC</b> — zurück zur Übersicht</div>
-<script src="../terrain/lib/three-r128.min.js"></script>
-<script src="../../vendor/simplex-noise.js"></script>
+<!-- DIE EINE ENGINE: dieselbe Import-Map, derselbe Bootstrap (three r184 WebGPU, window.THREE) wie index.html der Welt;
+     danach die Luft und das Licht der Welt (foundry-core ATMO_GESETZ, welt-licht.js), die Kerne, die Hülle und das Labor
+     (defer hält die Reihe hinter dem Modul). Den Stamm der Welt (ohne Ankunft) und ihren Foundry-Faden holt die Bühne selbst. -->
+<script type="importmap">{"imports":{"three":"../../vendor/three.module.min.js","three/webgpu":"../../vendor/three.webgpu.min.js","three/tsl":"../../vendor/three.tsl.min.js"}}</script>
+<script type="module" src="../../vendor/three-bootstrap.js?v=18.546.411"></script>
+<script src="../../vendor/simplex-noise.js" defer></script>
 <!-- Welle SAMEN: der Samen-Baum lädt vor jedem Kern und vor der Hülle (der EINE Generator) -->
-<script src="../../samen-core.js?v=18.546.407"></script>
-<script src="../../gelaende-core.js?v=18.546.407"></script>
+<script src="../../samen-core.js?v=18.546.411" defer></script>
+<script src="../../foundry-core.js?v=18.546.411" defer></script>
+<script src="../../welt-licht.js?v=18.546.411" defer></script>
+<script src="../../gelaende-core.js?v=18.546.411" defer></script>
 <!-- die Stoff-Zeile vor dem Fachwerk: sein Technik-Gesetz (TECHNIK) liest T_schmelz beim Namen (schmiede-core STOFF_GESETZ) -->
-<script src="../../schmiede-core.js?v=18.546.407"></script>
-<script src="../../fachwerk-core.js?v=18.546.407"></script>
-<script src="../../porta-core.js?v=18.546.407"></script>
-<script src="../huelle/huelle.js?v=18.546.407"></script>
-<script src="fachwerk.js?v=18.546.407"></script>
+<script src="../../schmiede-core.js?v=18.546.411" defer></script>
+<script src="../../fachwerk-core.js?v=18.546.411" defer></script>
+<script src="../../porta-core.js?v=18.546.411" defer></script>
+<script src="../huelle/huelle.js?v=18.546.411" defer></script>
+<script src="fachwerk.js?v=18.546.411" defer></script>
 </body></html>

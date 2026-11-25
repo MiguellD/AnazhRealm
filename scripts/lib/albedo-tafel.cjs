@@ -61,7 +61,7 @@ const STUDIOS = {
         wurzel: "gWeapon", // das Werk allein (Rückgrat, Schnitt-Karte, Lehren und Massen-Streifen hängen daneben unter `weapon`)
     },
     fachwerk: {
-        pfad: "worlds/fachwerk/index.html",
+        pfad: "worlds/fachwerk/index.html?uhr=mittag",
         szene: "scene",
         renderer: "renderer",
         ausgabe: null,

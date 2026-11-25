@@ -351,7 +351,70 @@ async function selbsttest() {
         if (!ok) f.push(`„${n}": ganze Datei ${soll}, Teile ${ist.ok} (${ist.n} Teile)`);
     }
     if (!blindIrrt) f.push("der blinde Schneider irrt an keinem Täter — das Fixture beweist die Trenner-Regel nicht");
+    // DIE GRENZE: der echte Stand, drei Täter-Texte, und das Verhalten des Werkzeugs an vier echten Dateien
+    const wurzel = path.join(__dirname, "..");
+    const pkg = fs.readFileSync(path.join(wurzel, "package.json"), "utf8");
+    const ignPfad = path.join(wurzel, ".prettierignore");
+    const ign = fs.existsSync(ignPfad) ? fs.readFileSync(ignPfad, "utf8") : "";
+    const grenzFaelle = [
+        ["der echte Stand", ign, false],
+        ["ein Ziel fehlt in der Ignore-Liste", ign.replace(/^!\/save-server\.js\r?\n/m, ""), true],
+        ["die Ignore-Liste lässt die Skripte zurück", ign + "!/scripts/\n", true],
+        ["ohne die Zeile, die alles ausnimmt", ign.replace(/^\/\*\r?\n/m, ""), true],
+    ];
+    for (const [n, text, sollRot] of grenzFaelle) {
+        const u = grenzUrteil(pkg, text);
+        const ok = !!u.length === sollRot;
+        console.log(`  ${ok ? "✅" : "❌"} Selbsttest Grenze „${n}" → ${u.length ? "rot: " + u[0] : "grün: (nichts)"}`);
+        if (!ok) f.push(`Grenze „${n}": ${u.length ? u.join(" · ") : "die Wand schweigt am Täter"}`);
+    }
+    for (const [d, soll] of [
+        ["scripts/format-teile.cjs", true],
+        ["fachwerk-core.js", true],
+        ["save-server.js", false],
+        ["stamm/dirigent-kern.js", false],
+    ]) {
+        const ist = (await prettier.getFileInfo(path.join(wurzel, d), { ignorePath: ignPfad })).ignored;
+        console.log(`  ${ist === soll ? "✅" : "❌"} Grenze am Werkzeug: ${d} ist ${ist ? "ausgenommen" : "in Prettiers Hand"}`);
+        if (ist !== soll) f.push(`Grenze: ${d} ist ${ist ? "ausgenommen" : "in Prettiers Hand"} (Soll umgekehrt)`);
+    }
     return f;
+}
+// DIE GRENZE DES FORMATS (24.11.): Prettier schreibt nur, was `npm run format:check` prüft. `.prettierignore` nimmt alles andere
+// aus (`/*`, dann je Ziel eine Rückkehr `!/ziel`), damit ein `prettier --write` aus Gewohnheit kein Skript und kein Gesetzbuch
+// umschreibt (dreimal geschehen: 15.10. · 18.11. · 24.11., zuletzt scripts/diag-settlement.cjs mit 256 neuen Zeilen). Das Urteil:
+// die Ziele von `format:check`, die Ziele von `format` und die Rückkehrer der Ignore-Liste sind DIESELBE Menge. Rein über die
+// zwei Texte — der Selbsttest reicht Täter-Texte.
+function grenzUrteil(pkgText, ignoreText) {
+    const skripte = JSON.parse(pkgText).scripts || {};
+    const ziele = (name, nach) => {
+        const w = String(skripte[name] || "").split(/\s+/);
+        const i = w.findIndex((x) => nach.test(x));
+        return i < 0 ? null : w.slice(i + 1).filter((x) => !x.startsWith("--"));
+    };
+    const pruef = ziele("format:check", /format-teile\.cjs$/);
+    const schreib = ziele("format", /^prettier$/);
+    const zeilen = ignoreText
+        .split(/\r?\n/)
+        .map((z) => z.trim())
+        .filter((z) => z && !z.startsWith("#"));
+    const v = [];
+    if (!pruef) v.push("package.json: `format:check` ruft scripts/format-teile.cjs nicht");
+    if (!schreib) v.push("package.json: `format` ruft prettier nicht");
+    if (zeilen[0] !== "/*") v.push("die Ignore-Liste (.prettierignore) beginnt nicht mit `/*` — nichts ist ausgenommen");
+    const rueckkehr = /^!\/[^*!]+$/;
+    const fremd = zeilen.slice(1).filter((z) => !rueckkehr.test(z));
+    if (fremd.length) v.push(`die Ignore-Liste trägt eine Zeile, die keine Rückkehr \`!/ziel\` ist: ${fremd.join(" · ")}`);
+    const zurueck = zeilen.filter((z) => rueckkehr.test(z)).map((z) => z.slice(2).replace(/\/$/, ""));
+    const gleich = (a, b, na, nb) => {
+        const nurA = a.filter((x) => !b.includes(x));
+        const nurB = b.filter((x) => !a.includes(x));
+        if (nurA.length) v.push(`${na} trägt ${nurA.join(" · ")}, ${nb} nicht`);
+        if (nurB.length) v.push(`${nb} trägt ${nurB.join(" · ")}, ${na} nicht`);
+    };
+    if (pruef && schreib) gleich(pruef, schreib, "`format:check`", "`format`");
+    if (pruef) gleich(pruef, zurueck, "`format:check`", "die Ignore-Liste (.prettierignore)");
+    return v;
 }
 // Teilen mit Schnitt an jeder erlaubten Stelle (Selbsttest)
 function teileMit(t, blind) {

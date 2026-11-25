@@ -216,9 +216,9 @@ class AnazhRealm_studio_gestalt {
     // Liest GENAU die Attribute aus FOUNDRY_LESEN (die Konsum-Wand der Transport-Schale) — sonst nichts.
     _foundryBuildMesh(m, baum, art) {
         if (!m || !m.position || !m.position.array) return null;
-        // Defensiv: ein absurd grosser Puffer (>200k Verts/Teil) ist ein Transfer-Glitch
-        // (kein echter Vorlagen-Baum hat das — LOD0 ~110k GESAMT) -> Teil ueberspringen.
-        if (m.position.array.length > 600000) return null;
+        // KEIN TEIL FÄLLT STILL (fachwerk-buehne): hier lag die Kappe „> 200k Ecken je Teil = Transfer-Glitch → überspringen“
+        // aus der Baum-Zeit; seit w28-haus-stoff trägt die Wand eines Hauses ihren Stein als EIN Teil (viktorianisch Same 3:
+        // 226 308 Ecken, budget.frei 113 440 △) — die Kappe warf Wände, Pfosten und Schornstein still weg (Bühne und Welt).
         const T = THREE;
         const geo = new T.BufferGeometry();
         geo.setAttribute("position", new T.BufferAttribute(m.position.array, 3));

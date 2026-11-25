@@ -2578,8 +2578,10 @@ hauptLauf(async () => {
             res.c.ticks = ticks;
             // DORF-ERLEBNIS — die Siedlung hebt auch BRUNNEN (brunnen_dorf) und HOF-BÄUME (Studio-Bäume der
             // trees-Schicht), dazu jedes Stück ihrer Ausstattung (die Bauplan-Zeilen der Tafel `ORT_AUSSTATTUNG`: Stand, Grab,
-            // Schild): das Band wandert mit dem Gesetz.
+            // Schild): das Band wandert mit dem Gesetz. Liegt Wasser am Ort, legt sie den Anleger — Steg und Boot, die Werke, die
+            // das Gesetz des Anlegers nennt (`AnazhRealm.ANLEGER`, fahrzeug-gattung), nie eine Liste der Linse.
             const stueckTyp = new Set([...Object.values(AnazhRealm.ORT_AUSSTATTUNG).map((Z) => Z.bauplan).filter(Boolean)]);
+            const anleger = AnazhRealm.ANLEGER ? [AnazhRealm.ANLEGER.steg, AnazhRealm.ANLEGER.boot] : [];
             res.c.allHaus = st.architectures
                 .slice(archBefore)
                 .every(
@@ -2591,6 +2593,7 @@ hauptLauf(async () => {
                             e.type === "laterne_dorf" ||
                             e.type === "wandlaterne_dorf" ||
                             stueckTyp.has(e.type) ||
+                            anleger.includes(e.type) ||
                             e.type.indexOf("baum_") === 0)
                 );
             // C4 — IDEMPOTENZ: dieselbe Zelle nochmal -> 0 neue (Reservierung traegt).
@@ -3534,25 +3537,39 @@ hauptLauf(async () => {
                     // marktstand_dorf, keine Brücke seiner Gassen: bruecke_jochfeld, kein Werk des Genesis-Orts: die ids seines Plans
                     // `genesis:<art>:<n>`, `_genesisWerkListeBauen` — Tore, Bänke, Laternen), auf dem Erdbau eines Orts — nie das gesetzte
                     // Haus auf seinem EIGENEN Grund (`haus:`, S4)
-                    // — und nie der Wagen des Orts selbst (`_verkehrWagen`, stamm/siedlung-verkehr.js `_verkehrWagenStellen`): er parkt an
-                    // der Wende seiner Gasse, die der Erdbau trägt (haus-stoff2: das nordische Dorf am Mess-Ort trägt Wenden, sein
-                    // Kleinwagen und sein SUV zählten als „fremde Bauten im Erdbau 2“)
+                    // Ein Wagen des Verkehrs (`_verkehrWagen`, siedlung-verkehr `_verkehrWagenStellen`) ist kein Bau: sein Ort ist seine
+                    // Bahn, nicht der Grund, über den er gerade fährt — bis fahrzeug-gattung zählte die Schleife ihn, wo er im Augenblick
+                    // der Zählung stand (zwei rote Läufe von drei, `fahrzeug_kompakt_fwd`, `fahrzeug_suv` am Zweit-Dorf −7,−7: ein
+                    // Urteil nach der Uhr). Das Urteil liest den Zustand des Eintrags, nie den Takt.
+                    // Dieselbe Röte traf haus-stoff2 am nordischen Dorf des Mess-Orts: seine Wagen parken an der Wende ihrer Gasse, die
+                    // der Erdbau trägt (Kleinwagen und SUV zählten als „fremde Bauten im Erdbau 2“).
+                    const fremdBau = (e) =>
+                        !e.fundament &&
+                        !e._verkehrWagen &&
+                        !/^genesis:/.test(e.id) &&
+                        !/_dorf$|^bruecke_/.test(e.type) &&
+                        !st.worldMeta.erdbau[`haus:${Math.round(e.position.x * 100)},${Math.round(e.position.z * 100)}`] &&
+                        !r._ortFrei(e.position.x, e.position.z, 0.01);
                     let fremd = 0;
                     for (const e of st.architectures)
-                        if (
-                            !e.fundament &&
-                            !e._verkehrWagen &&
-                            !/^genesis:/.test(e.id) &&
-                            !/_dorf$|^bruecke_/.test(e.type) &&
-                            !st.worldMeta.erdbau[
-                                `haus:${Math.round(e.position.x * 100)},${Math.round(e.position.z * 100)}`
-                            ] &&
-                            !r._ortFrei(e.position.x, e.position.z, 0.01)
-                        ) {
+                        if (fremdBau(e)) {
                             fremd++;
                             (res.fremdArten || (res.fremdArten = {}))[e.type] = (res.fremdArten[e.type] || 0) + 1;
                         }
                     res.fremdBauten = fremd;
+                    // der Schein: am Grund eines Hauses des Orts (0,37 m neben seiner Mitte) zählt ein fremdes Werk (1), derselbe Eintrag
+                    // als Wagen des Verkehrs nicht (0) — und die Zählung ohne den Zustand (`_verkehrWagen` übergangen) zählte ihn (1)
+                    const hausO = st.architectures.find((e) => e.fundament && e.position);
+                    if (hausO) {
+                        const pos = { x: hausO.position.x + 0.37, y: hausO.position.y, z: hausO.position.z };
+                        const werk = { type: "haus_schein", id: "schein:werk", position: pos };
+                        const wagen = Object.assign({}, werk, { type: "fahrzeug_schein", _verkehrWagen: {} });
+                        res.fremdSchein = {
+                            werk: +fremdBau(werk),
+                            wagen: +fremdBau(wagen),
+                            ohneZustand: +fremdBau(Object.assign({}, wagen, { _verkehrWagen: undefined })),
+                        };
+                    }
                     // DAS DORF-LICHT DER GASSE (Leiter mensch.netz.verkehr): Mitternacht über den EINEN Uhr-Schreiber, die brennenden Quellen aus
                     // dem EINEN Licht-Gesetz der Welt (`_leuchtQuellen`: Datum × Zeitplan > 0) — gezählt wird jede mit Leib (Studio-
                     // Gestalt mit Licht-Datum oder Glut) im Ort; die Gasse und ihre Sicht rechnet `gassenLicht` (Node), den Licht-Pool
@@ -3937,6 +3954,11 @@ hauptLauf(async () => {
             poolGasse: outO.gasse ? outO.gasse.poolOrt : null,
             poolPlaetze: outO.gasse ? outO.gasse.plaetze : null,
         });
+        check(
+            `O ${modusName}: Selbst-Schein — ein fremdes Werk am Grund des Orts zählt, ein Wagen des Verkehrs dort nicht, die Zählung nach der Uhr fiele`,
+            !!outO.fremdSchein && outO.fremdSchein.werk === 1 && outO.fremdSchein.wagen === 0 && outO.fremdSchein.ohneZustand === 1,
+            JSON.stringify(outO.fremdSchein || null)
+        );
         console.log("  DORF-LICHT DER GASSE " + JSON.stringify(outO.gasse || null));
         console.log("  GT AUF DEM DORFWEG " + JSON.stringify(gtO.err ? { err: gtO.err.split("\n")[0] } : gtO));
         console.log(
