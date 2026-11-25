@@ -3518,6 +3518,67 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                     const [uhr, jahr] = [st.weatherEffectTime, st.autoSeason];
                     st.weatherEffectTime = -1e9;
                     st.autoSeason = false;
+                    // (der Haufen fährt VOR der Sim-Linse — sie hüllt jedes Glied des Prototyps, die Mutanten bauen auf dem Rumpf — und
+                    // vor der Welle: auf leerem Grund, nicht auf ihren Scherben)
+                    let HAUFEN = null;
+                    // DER HAUFEN (DRUCK-SCHLAF, der Löser der Ruhe): je Saat sechs Quarz-Platten 12 × 12 × 0,4 cm über dem Ort der
+                    // Probe (der Ort des Fasses: dort lag der Haufen der Flocke), Lage und Drehung aus der Saat, der Löser direkt im
+                    // festen Schritt (die Sim-Uhr je Saat ab 0, danach zurück) OHNE Wind — der Haufen misst den Löser, die Luft der
+                    // liegenden Platte ist ein eigenes Gesetz —, bis alle schlafen, höchstens 10 s. Zuerst je Mutante (warm: der
+                    // Warmstart erbt über die Fläche, bias: der Bias-Gang löst die Reibung mit), bis eine Saat nie schläft (höchstens
+                    // 60); dann der echte Löser über dieselben Saaten
+                    const PR = Object.getPrototypeOf(r);
+                    const MUT = {
+                        warm: ["_freiKontaktBereit", PR._freiKontaktBereit.toString(), "const gilt = l !== undefined && l[3] * n0 + l[4] * n1 + l[5] * n2 >= AnazhRealm.FREI.warmCos;", "const gilt = l !== undefined;"],
+                        bias: ["_freiGang", PR._freiGang.toString(), "const dMax = prall !== undefined || (mitFeder && !warm) ? 1 : 3;", "const dMax = prall !== undefined ? 1 : 3;"],
+                    }; // prettier-ignore
+                    const haufen = (saaten, m) => {
+                        if (m && m[1].split(m[2]).length !== 2) return null;
+                        const eigen = {};
+                        for (const g of ["_windAt", ...(m ? [m[0]] : [])]) eigen[g] = Object.prototype.hasOwnProperty.call(r, g) ? r[g] : null;
+                        const [sim0, name, cs] = [st._simZeit, "_druck_platte", AnazhRealm.LIFE_FIELD.cell];
+                        const H = { nieSaat: null, spaetSaat: null, schlafS: 0, nie: 0, n: 0 };
+                        try {
+                            if (m) r[m[0]] = eval(`({${m[1].replace(m[2], m[3])}})`)[m[0]];
+                            r._windAt = (x, z, t, aus) => Object.assign(aus || {}, { x: 1, z: 0, staerke: 0, boe: 0, form: 1, ms: 0 });
+                            st.blueprints[name] = AnazhRealm._etikett({ name, builtIn: false, vomGesetz: true, frei: true, parts: [{ shape: "box", material: "quarz", size: { x: 0.12, y: 0.004, z: 0.12 }, position: { x: 0, y: 0.002, z: 0 } }] }); // prettier-ignore
+                            for (let k = 0; k < saaten && !(m && H.nieSaat != null); k++) {
+                                let s = 1 + k * 7919;
+                                const R = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+                                const ks = [];
+                                for (let i = 0; i < 6; i++) {
+                                    const [x, z] = [MESS.x - cs - 0.3 + (R() - 0.5) * 0.16, MESS.z + 1 + (R() - 0.5) * 0.16];
+                                    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler((R() - 0.5) * 0.5, R() * 2 * Math.PI, (R() - 0.5) * 0.5, "YXZ"));
+                                    const g = r._koerperBodenUnter(x, r._voxelSurfaceY(x, z) + 2, z);
+                                    const e = r.spawnArchitecture(name, { x, y: g + 0.52 + i * 0.014, z }, { precise: true, silent: true, seed: 9000 + k * 10 + i, drehung: [q.w, q.x, q.y, q.z] });
+                                    if (e) ks.push(e);
+                                }
+                                st._simZeit = 0;
+                                let t = null;
+                                for (let i = 1; i <= 600 && t == null; i++) {
+                                    st._simZeit += 1 / 60;
+                                    r._freiSchritt(1 / 60);
+                                    if (ks.every((e) => e._frei && e._frei.schlaf)) t = +(i / 60).toFixed(3);
+                                }
+                                for (const e of ks) r.removeArchitecture(e, { still: true });
+                                H.n++;
+                                if (t == null) (H.nie++, H.nieSaat == null && (H.nieSaat = k));
+                                else if (t > H.schlafS) [H.schlafS, H.spaetSaat] = [t, k];
+                            }
+                        } finally {
+                            delete st.blueprints[name];
+                            st._simZeit = sim0;
+                            for (const g in eigen) eigen[g] ? (r[g] = eigen[g]) : delete r[g];
+                        }
+                        return { n: H.n, nie: H.nie, saat: H.nieSaat ?? H.spaetSaat, schlafS: H.nie ? null : H.schlafS };
+                    };
+                    {
+                        const [HW, HB] = [haufen(60, MUT.warm), haufen(60, MUT.bias)];
+                        const bis = Math.max(...[HW, HB].map((H) => (H && H.nie ? H.saat + 1 : 0)));
+                        const HE = haufen(bis || 60, null);
+                        const mu = (H) => H && { saat: H.nie ? H.saat : null, schlafS: H.schlafS, n: H.n };
+                        HAUFEN = { saaten: HE.n, echt: { saat: HE.saat, schlafS: HE.schlafS, nie: HE.nie }, mutanten: { warm: mu(HW), bias: mu(HB) } };
+                    }
                     const S = window.__simLinseAn();
                     const simPhase = async (n, schritt) => {
                         const fs = [];
@@ -4039,64 +4100,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             staub: DM.staub ? { aussen: DM.staub.aussen, masseG: DM.staub.masseG, sollG: DM.staub.sollG } : null,
                             ms: DM.ms,
                         };
-                        // DER HAUFEN (DRUCK-SCHLAF, der Löser der Ruhe): je Saat sechs Quarz-Platten 12 × 12 × 0,4 cm über dem Ort der
-                        // Probe (der Ort des Fasses: dort lag der Haufen der Flocke), Lage und Drehung aus der Saat, der Löser direkt im
-                        // festen Schritt (die Sim-Uhr je Saat ab 0, danach zurück) OHNE Wind — der Haufen misst den Löser, die Luft der
-                        // liegenden Platte ist ein eigenes Gesetz —, bis alle schlafen, höchstens 10 s. Zuerst je Mutante (warm: der
-                        // Warmstart erbt über die Fläche, bias: der Bias-Gang löst die Reibung mit), bis eine Saat nie schläft (höchstens
-                        // 60); dann der echte Löser über dieselben Saaten
-                        const PR = Object.getPrototypeOf(r);
-                        const MUT = {
-                            warm: ["_freiKontaktBereit", PR._freiKontaktBereit.toString(), "const gilt = l !== undefined && l[3] * n0 + l[4] * n1 + l[5] * n2 >= AnazhRealm.FREI.warmCos;", "const gilt = l !== undefined;"],
-                            bias: ["_freiGang", PR._freiGang.toString(), "const dMax = prall !== undefined || (mitFeder && !warm) ? 1 : 3;", "const dMax = prall !== undefined ? 1 : 3;"],
-                        }; // prettier-ignore
-                        const haufen = (saaten, m) => {
-                            if (m && m[1].split(m[2]).length !== 2) return null;
-                            const eigen = {};
-                            for (const g of ["_windAt", ...(m ? [m[0]] : [])]) eigen[g] = Object.prototype.hasOwnProperty.call(r, g) ? r[g] : null;
-                            const [sim0, name, cs] = [st._simZeit, "_druck_platte", AnazhRealm.LIFE_FIELD.cell];
-                            const H = { nieSaat: null, spaetSaat: null, schlafS: 0, nie: 0, n: 0 };
-                            try {
-                                if (m) r[m[0]] = eval(`({${m[1].replace(m[2], m[3])}})`)[m[0]];
-                                r._windAt = (x, z, t, aus) => Object.assign(aus || {}, { x: 1, z: 0, staerke: 0, boe: 0, form: 1, ms: 0 });
-                                st.blueprints[name] = AnazhRealm._etikett({ name, builtIn: false, vomGesetz: true, frei: true, parts: [{ shape: "box", material: "quarz", size: { x: 0.12, y: 0.004, z: 0.12 }, position: { x: 0, y: 0.002, z: 0 } }] }); // prettier-ignore
-                                for (let k = 0; k < saaten && !(m && H.nieSaat != null); k++) {
-                                    let s = 1 + k * 7919;
-                                    const R = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
-                                    const ks = [];
-                                    for (let i = 0; i < 6; i++) {
-                                        const [x, z] = [MESS.x - cs - 0.3 + (R() - 0.5) * 0.16, MESS.z + 1 + (R() - 0.5) * 0.16];
-                                        const q = new THREE.Quaternion().setFromEuler(new THREE.Euler((R() - 0.5) * 0.5, R() * 2 * Math.PI, (R() - 0.5) * 0.5, "YXZ"));
-                                        const g = r._koerperBodenUnter(x, r._voxelSurfaceY(x, z) + 2, z);
-                                        const e = r.spawnArchitecture(name, { x, y: g + 0.52 + i * 0.014, z }, { precise: true, silent: true, seed: 9000 + k * 10 + i, drehung: [q.w, q.x, q.y, q.z] });
-                                        if (e) ks.push(e);
-                                    }
-                                    st._simZeit = 0;
-                                    let t = null;
-                                    for (let i = 1; i <= 600 && t == null; i++) {
-                                        st._simZeit += 1 / 60;
-                                        r._freiSchritt(1 / 60);
-                                        if (ks.every((e) => e._frei && e._frei.schlaf)) t = +(i / 60).toFixed(3);
-                                    }
-                                    for (const e of ks) r.removeArchitecture(e, { still: true });
-                                    H.n++;
-                                    if (t == null) (H.nie++, H.nieSaat == null && (H.nieSaat = k));
-                                    else if (t > H.schlafS) [H.schlafS, H.spaetSaat] = [t, k];
-                                }
-                            } finally {
-                                delete st.blueprints[name];
-                                st._simZeit = sim0;
-                                for (const g in eigen) eigen[g] ? (r[g] = eigen[g]) : delete r[g];
-                            }
-                            return { n: H.n, nie: H.nie, saat: H.nieSaat ?? H.spaetSaat, schlafS: H.nie ? null : H.schlafS };
-                        };
-                        {
-                            const [HW, HB] = [haufen(60, MUT.warm), haufen(60, MUT.bias)];
-                            const bis = Math.max(...[HW, HB].map((H) => (H && H.nie ? H.saat + 1 : 0)));
-                            const HE = haufen(bis || 60, null);
-                            const mu = (H) => H && { saat: H.nie ? H.saat : null, schlafS: H.schlafS, n: H.n };
-                            W.druck.haufen = { saaten: HE.n, echt: { saat: HE.saat, schlafS: HE.schlafS, nie: HE.nie }, mutanten: { warm: mu(HW), bias: mu(HB) } };
-                        }
+                        W.druck.haufen = HAUFEN;
                         // DAS FENSTER ZÄHLT SCHRITTE DES BRANDS, nie Bilder (linse-brand-schritte): die Uhr der Welt geht erst einen
                         // Schritt weiter, wenn der vorige ganz ist (`_brandRest` leer) — ein langsamer Läufer geht denselben Schritt in
                         // mehr Bildern, nie weniger Schritte, und jedes Bild ohne Rest zeigt den ganzen Schritt (`jeBild(vor, ganz)`).
