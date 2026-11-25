@@ -12079,10 +12079,10 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 13,
+    "heute": 14,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 4.8,
+    "anteilHeute": 5.1,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -13998,7 +13998,7 @@
        "richter": "der Spieler als Lachs: von der Mündung zum Geburtsfluss allein nach Duft, N = 20 Saaten ≥ 0,9; Gegenlauf Duft aus → Trefferquote auf Zufall"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "_scentAt (stamm/koerper-seele.js:1578-1604), Leser stamm/kreatur-verhalten.js:178-275 und tetrapoda-core.js:149-171; Wolf findet Beute (§8.K4). Feld ohne Gedächtnis; der Spieler riecht nichts. — KARTE: 0 — der Gegenlauf ist headless gebucht (R2).",
@@ -20092,7 +20092,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 116,
+  "heute": 117,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
@@ -20107,7 +20107,7 @@
   },
   "gliederLeitern": 9,
   "beide": 60,
-  "nachwache": 56
+  "nachwache": 57
  },
  "zusammengelegt": [
   {
