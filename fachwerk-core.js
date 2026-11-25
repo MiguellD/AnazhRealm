@@ -249,6 +249,18 @@
         if (holz && klima.winter <= -3) return "schindel";
         return d;
     }
+    // DER SCHNEE HEBT DAS DACH (dach-regen): der Schneefall des Orts S = 0,074 mm/Tag je K unter der Regen-Schnee-Schwelle 1,0 °C,
+    // getragen von der Wasser-Spende (Li u. a. 2021, Science Advances 7:eabh2601: −0,074 mm/Tag/K; Jennings u. a. 2018, Nat. Commun.
+    // 9:1148: Schwelle 1,0 °C), und das Verhältnis Höhe/Spannweite steigt um 0,10 je 0,15 mm/Tag über 0,2 (Li 2021: HSR 25 → 35 % bei
+    // 0,2 → 0,35 mm/Tag) — tan α = 2·HSR, nie über die Klemme von HAUS (62°). Leser: DORF mit Klima, gate:settlement Teil R (R8).
+    var SCHNEE_GESETZ = { jeK: 0.074, schwelle: 1.0, ab: 0.2, hsrJeMm: 0.1 / 0.15, klemme: 62 };
+    function schneefallVon(klima) {
+        return SCHNEE_GESETZ.jeK * Math.max(0, SCHNEE_GESETZ.schwelle - klima.winter) * Math.max(0, klima.spendeVerh);
+    }
+    function schneeNeigung(pitchDeg, klima) {
+        var dh = SCHNEE_GESETZ.hsrJeMm * Math.max(0, schneefallVon(klima) - SCHNEE_GESETZ.ab);
+        return Math.min(SCHNEE_GESETZ.klemme, Math.max(pitchDeg, Math.round(Math.atan(Math.tan(pitchDeg * Math.PI / 180) + 2 * dh) * 180 / Math.PI)));
+    }
     // prettier-ignore
     function HAUS(THREE, mat, PARAMS){
   const D2R=Math.PI/180, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -5615,7 +5627,7 @@
   if(DP.klima!=null){ const fh=sockelImWasser(DP.klima); alle.forEach((b,ai)=>{ b.foundH=fh; for(const f of za[ai].fr) f.v.foundH=fh; }); }
   // DIE DECKUNG FOLGT DEM ORT (haus-dach, `ortDeckung`): jeder Bau und jede Fassung deckt im Stoff des Orts, die Neigung steigt auf die Regel
   // seiner Deckung (`grenzNeigung`), der Ziegel trägt die Farbe seiner Deckung, wo der Ort sie wechselt — ohne Klima (das Labor) der Bau, wie er stand
-  if(DP.klima!=null){ const deck=b=>{ const d0=deckungVon(b), d=ortDeckung(DP.klima, b, staedtisch); b.deckung=d; b.pitchDeg=Math.max(b.pitchDeg, Math.ceil(grenzNeigung(b)));
+  if(DP.klima!=null){ const deck=b=>{ const d0=deckungVon(b), d=ortDeckung(DP.klima, b, staedtisch); b.deckung=d; b.pitchDeg=Math.max(b.pitchDeg, Math.ceil(grenzNeigung(b))); if(d!=="flach") b.pitchDeg=schneeNeigung(b.pitchDeg, DP.klima);   /*der Schnee des Orts hebt das Dach (SCHNEE_GESETZ)*/
       const G=DECKUNG_GESETZ[d], F=G.farbe; if(d!==d0&&F) b.col=Object.assign({}, b.col||{}, G.rolle==="ziegel"?{ziegel:F[0], ziegel2:F[1]}:{[G.rolle]:F[0]}); };
     alle.forEach((b,ai)=>{ deck(b); for(const f of za[ai].fr) deck(f.v); }); }
   return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
@@ -15568,6 +15580,8 @@
         deckungVon: deckungVon,
         ortDeckung: ortDeckung,
         grenzNeigung: grenzNeigung,
+        SCHNEE_GESETZ: SCHNEE_GESETZ, // der Schnee hebt das Dach (dach-regen, Li 2021): Leser DORF, gate:settlement R8
+        schneefallVon: schneefallVon,
         GRUENDUNG_RASTER: GRUENDUNG_RASTER, // w28-gruendung-flach — das Raster der Grundriss-Probe (Leser: gate:settlement G, seine Mutante)
         GRUENDUNG_OPS: GRUENDUNG_OPS, // w28-gruendung-flach — die Stände und Grundriss-Proben je Gründung (Leser: gate:settlement G)
         ortAusstattung: ortAusstattung, // ort-ausstattung — das EINE Gesetz der Stücke, die den Ort ausweisen (Leser: exportSettlement)
