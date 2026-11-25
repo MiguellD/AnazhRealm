@@ -194,7 +194,9 @@ class AnazhRealm_vegetation_wiese {
                 // … und vor jeder anderen Hülle der Natur-Wand (w20-lack-spiegel; die Nah-Streu fragt sie über `_naturSetzen`):
                 // dem Wagen (`_imWagen`, er hält: `_wagenGrund`) und dem Bau mit Boxen (`_imGrundriss` "bau": Tor, Esse, Brunnen)
                 if (this._imWagen(x, z, reich * sb) || this._imGrundriss(x, z, reich * sb) === "bau") continue;
-                const f = WT(x, z, L, m, [1, 1, 1], 0);
+                // der Äsungs-Druck des Orts (`_wieseAesung`, 0 … 1): der Verbiss hält die Narbe jung — ihr Tint ohne das Alter
+                const P = this._wieseAesung(x, z);
+                const f = WT(x, z, L, m, [1, 1, 1], 0, P);
                 // DER VERSENGTE HALM (w28-brand-bild): im Saum der Narbe (dieselbe Asche, die den Wurf dünnt) steht das Büschel
                 // braun gesengt — bis hier war ein Halm grün oder weg, die Narbe endete als Schnitt im Grün
                 const av = this._ascheAt(x, z);
@@ -202,17 +204,31 @@ class AnazhRealm_vegetation_wiese {
                     const [V, k] = [AnazhRealm.BRAND.versengt, Math.min(1, av * 2)];
                     for (let c = 0; c < 3; c++) f[c] *= 1 + (V[c] - 1) * k;
                 }
-                // h: die Höhe des Büschels im Äsungs-Druck des Orts (`_wieseAesung`) — die Ferne erbt dieselben Büschel
-                const h = this._wieseAesung(x, z);
-                out.push({ x, y, z, s: sb, h, rot, vorlage, o, f, gi, gj, gx: eb.gx, gz: eb.gz });
+                // DER RASEN (`AESUNGS_RASEN`): h die Höhe im Druck, linear bis `rasenM`; der kurze Trieb ist schmal und zahlreich
+                // (Größen-Dichte-Ausgleich der beästen Narbe, Matthew et al. 1995: Selbstdurchforstung −3/2 bei gleichem LAI — der
+                // isometrisch kleinere Trieb steht 1/h² dichter; die 3-cm-Narbe trägt weniger Blattlänge je Trieb, mehr Triebe,
+                // gleiche Blattmasse: Weidelgras 1983–84 bei 3 und 4 cm, Grass Forage Sci. 2004, Rothamsted) — bis zum Band der Dreiecke: höchstens
+                // `triebeMax` Büschel je Zelle, je schmaler um 1/√n. Die Ferne erbt dieselben Büschel.
+                const AR = AnazhRealm.AESUNGS_RASEN;
+                const h = 1 - P * (1 - AR.rasenM / AR.wieseM);
+                const n = P > 0 ? Math.max(1, Math.min(AR.triebeMax, Math.floor(1 / (h * h)))) : 1;
+                const q = 1 / Math.sqrt(n);
+                out.push({ x, y, z, s: sb, h, q, rot, vorlage, o, f, gi, gj, gx: eb.gx, gz: eb.gz });
+                for (let i = 1; i < n; i++) {
+                    // der Nachbar-Trieb in derselben Zelle (eigene Ziehung NACH allen Würfen: die Wiese ohne Druck bleibt byte-gleich)
+                    const [dx, dz] = [(w() - 0.5) * step * 0.7, (w() - 0.5) * step * 0.7];
+                    const [gx, gz] = [eb.gx || 0, eb.gz || 0];
+                    const x2 = x + dx, z2 = z + dz; // prettier-ignore
+                    out.push({ x: x2, y: y + gx * dx + gz * dz, z: z2, s: sb, h, q, rot: rot + w() * Math.PI * 2, vorlage: 1 - vorlage, o, f, gi, gj, gx: eb.gx, gz: eb.gz }); // prettier-ignore
+                }
             }
         }
         out.sort((a, b) => a.o - b.o);
         return out;
     }
 
-    // DER ÄSUNGS-RASEN (aesungs-rasen) — die Halm-Höhe liest den Äsungs-Druck des Bestands am Ort: → der Faktor der Höhe des
-    // Büschels (1 die Wiese, `rasenM` ÷ `wieseM` der Rasen; `AESUNGS_RASEN`). Der Druck P ist der Anteil des Aufwuchses, den der
+    // DER ÄSUNGS-RASEN (aesungs-rasen) — die Halm-Höhe liest den Äsungs-Druck des Bestands am Ort: → der Druck P (0 die Wiese,
+    // 1 der Rasen; Höhe, Trieb und Tint daraus im Büschel-Bau, `_nahWieseKachelBueschel`, `AESUNGS_RASEN`). Der Druck P ist der Anteil des Aufwuchses, den der
     // Bestand frisst: das Defizit der Fraß-Schicht im ERWARTUNGSWERT des Gaus (`_gauFrassAt(x, z, true)`, das Gleichgewicht
     // seines Bedarfs — es steht mit der ersten Antwort des Fadens, nie erst nach Stunden) und das Leben-Overlay (der Fraß der
     // Altlast, `_kreaturFrass`, live), je in seinen Stufen (`LIFE_FIELD.stufen`: eine Kachel baut nur, wo eine Stufe springt —
@@ -224,12 +240,12 @@ class AnazhRealm_vegetation_wiese {
     _wieseAesung(x, z) {
         const [S, AR] = [AnazhRealm.LIFE_FIELD.stufen, AnazhRealm.AESUNGS_RASEN];
         const o = Math.round(this._gauFrassAt(x, z, true) * S) / S + Math.round(this._lebenStufeHalt(x, z)[0] * S) / S;
-        if (!(o < 0)) return 1;
+        if (!(o < 0)) return 0;
         const w = this._gauWirt();
         const BG = AnazhRealm._bestandGesetz();
         const H = ((AR.aufwuchsKgHaJahr / 365) * w.feld.ha) / AR.aufnahmeKgTag;
         const voll = (BG.frass(w.feld.diet, BG.B) * H) / (1 - Math.exp(-w.feld.zerfallJeS * w.taktS));
-        return 1 - Math.min(1, -o / voll) * (1 - AR.rasenM / AR.wieseM);
+        return Math.min(1, -o / voll);
     }
 
     // DER SCHRITT DES GITTERS der Wiese (Studio `understory.grassStep`): je Zelle ein Wurf (`_nahWieseKachelBueschel`), die
@@ -1132,7 +1148,9 @@ class AnazhRealm_vegetation_wiese {
             const b = bueschel[i];
             pv.set(b.x, b.y, b.z);
             q.setFromAxisAngle(up, b.rot);
-            sv.set(b.s, b.s * (b.h === undefined ? 1 : b.h), b.s); // senkrecht × die Höhe der Äsung (`_wieseAesung`)
+            // senkrecht × die Höhe der Äsung, waagrecht × die Schmalheit des Triebs (`_nahWieseKachelBueschel`, der Rasen)
+            const [bh, bq] = [b.h === undefined ? 1 : b.h, b.q === undefined ? 1 : b.q];
+            sv.set(b.s * bq, b.s * bh, b.s * bq);
             const e = m4.compose(pv, q, sv).elements;
             const [gx, gz] = [b.gx || 0, b.gz || 0];
             for (let c = 0; c < 3; c++) e[4 * c + 1] += gx * e[4 * c] + gz * e[4 * c + 2];
@@ -3418,7 +3436,14 @@ AnazhRealm.WUCHS = Object.freeze({ wasserBasis: 0.75, naehrK: 0.2, naehrMax: 1.6
 // McNaughton 1984), die Wiese unbeäst (die Ähre des Halm-Gesetzes 0,74 m), der Aufwuchs (kg TM je ha und Jahr: britisches
 // Grünland 5–6 t, Green & Baker 1981, zitiert von Natural England) und die Aufnahme eines Kopfs der Beute (kg TM je Tag:
 // Rothirsch 2,0, Hirschkuh 1,5 — forestry.gov.scot, Woodland Grazing Toolbox).
-AnazhRealm.AESUNGS_RASEN = Object.freeze({ rasenM: 0.07, wieseM: 0.74, aufwuchsKgHaJahr: 5500, aufnahmeKgTag: 2 });
+// `triebeMax`: höchstens so viele Triebe je Zelle der Wiese (das Band der Dreiecke: die Nah-Wiese der Mess-Wiese 33,8k, Haushalt 80k).
+AnazhRealm.AESUNGS_RASEN = Object.freeze({
+    rasenM: 0.07,
+    wieseM: 0.74,
+    aufwuchsKgHaJahr: 5500,
+    aufnahmeKgTag: 2,
+    triebeMax: 2,
+});
 // DIE SUKZESSION NACH DEM BRAND (stoffe.K5#2, `_sukzession`): die Rampen im Rest der Narbe — die Asche liegt bis 0,08 und ist
 // bei 0,3 nachgegrünt (das Gras der Nah-Wiese), der Busch der Nah-Streu wächst von 0,3 bis 0,6, der Wald von 0,6 bis zur
 // Heilung (sein Jungwuchs, `_baumAlter`); der Stumpf eines gefällten Baums treibt ab `stubben[0]` seinen Sämling. Gezählt in

@@ -3093,7 +3093,9 @@ const WIESEN_GEWICHT = new Float64Array(WIESEN_ARTEN.arten.length); // die Misch
 // Mischung des Orts und sein Alter, beide aus dem Γ5-Strom SEINES Orts (dasselbe Büschel trägt bei jedem Besuch dieselbe Art);
 // darüber der Standort des Labor-Tints FIX v27 — Schatten dunkler, hell + trocken wärmeres Oliv, Nässe kühles Grün —, das
 // Licht um die offene Wiese zentriert. Schreibt je Kanal den Faktor in [0, 2] auf die Halm-Farbe nach aus[o..o+2], gibt `aus`.
-function wiesenTint(x, z, lit, wet, aus, o) {
+// `jung` (additiv, aesungs-rasen; 0 ohne Angabe): der Anteil der Narbe, den der Verbiss jung hält — die Äsung nimmt die alten,
+// vergilbten Blätter, der Wiederaustrieb ist grün (das Alter `s` × (1 − jung)).
+function wiesenTint(x, z, lit, wet, aus, o, jung = 0) {
     const cl = (v, a, b) => Math.max(a, Math.min(b, v));
     const WA = WIESEN_ARTEN,
         A = WA.arten,
@@ -3109,7 +3111,7 @@ function wiesenTint(x, z, lit, wet, aus, o) {
     while (k < A.length - 1 && u >= g[k]) u -= g[k++];
     const tr = cl(lit, 0, 1) * (1 - cl(wet, 0, 1)),
         alt = w(),
-        s = tr * alt * alt * WA.alter.anteil;
+        s = tr * alt * alt * WA.alter.anteil * (1 - jung);
     const val = (lit - 1) * 0.45,
         warm = (cl(lit * 0.5 + (1 - wet) * 0.5, 0, 1) - 0.5) * 0.24;
     const f = A[k].f,
