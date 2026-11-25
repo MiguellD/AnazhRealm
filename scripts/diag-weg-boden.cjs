@@ -99,23 +99,35 @@ function probe(stoerung) {
     };
     if (fern) plan.roads.push({ pts: [{ x: fern.x, z: fern.z }, { x: fern.x + 30, z: fern.z }], w: 4 });
     r._stlWegeBuild(plan, o, "probe:weg");
-    if (stoerung === "streifen") r._stlZaunAddStrip(o.x, 0, o.z, 0, 0, 4, 0.14, 3, 0x8a7456);
+    if (stoerung === "streifen") {
+        // die Störung: ein flacher Boden-Streifen (4 × 0,14 × 3 m) als Stück im Satz der Einfriedung
+        const E = globalThis.__fachwerkCore.mauerEinheit("kasten");
+        const n = E.pos.length / 3;
+        const mass = [4, 0.14, 3];
+        const netz = {
+            stoff: "holz",
+            rau: 0.9,
+            pos: Float32Array.from(E.pos, (v, i) => v * mass[i % 3]),
+            nrm: new Float32Array(E.nrm),
+            farbe: new Float32Array(n * 3).fill(0.3),
+            nr: new Float32Array(n),
+            lage: new Float32Array(n * 2),
+            idx: new Uint32Array(E.idx),
+            teile: [{ art: "streifen", form: "kasten", arg: null, stoff: "holz", m: [4, 0, 0, 0, 0, 0.14, 0, 0, 0, 0, 3, 0, 0, 0, 0, 1], v0: 0, n }],
+        };
+        r._einfriedungLege("zaun:probe:flach", plan, [netz], o.x, 0, o.z, 0);
+    }
     r._tickWegeKarte({ x: o.x, z: o.z });
     const out = { ort: o };
-    // 1 KEIN QUAD: jeder Streifen im Pool ist ein hüfthoher Zaun (sy ≥ 0,5), keiner ein flacher Boden-Streifen
-    const P = st.stlZaun;
-    const m = new T.Matrix4();
-    const pos = new T.Vector3();
-    const q = new T.Quaternion();
-    const sk = new T.Vector3();
+    // 1 KEIN QUAD: jedes Stück Zaun im Satz der Einfriedung steht (ein Teil ≥ 0,5 m hoch: der Pfosten), keines ist ein flacher
+    // Boden-Streifen — gelesen an den Teilen, mit denen das Stück in den Puffer ging (`_einfriedungLege`)
     let flach = 0;
     let zaun = 0;
-    for (let i = 0; P && i < P.top; i++) {
-        P.mesh.getMatrixAt(i, m);
-        m.decompose(pos, q, sk);
-        if (sk.y < 0.5) flach++;
-        else zaun++;
-    }
+    for (const [k, e] of st.einfriedung || [])
+        if (k.startsWith("zaun:")) {
+            if (Math.max(...e.teile.map((x) => Math.hypot(x.m[4], x.m[5], x.m[6]))) < 0.5) flach++;
+            else zaun++;
+        }
     out.flacheStreifen = flach;
     out.zaeune = zaun;
     // 2 BODEN + 3 KANTE: die Karte über der Straße (halbe Breite 2 m)
