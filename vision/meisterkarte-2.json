@@ -17586,10 +17586,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 13,
+    "heute": 15,
     "kern": 1,
     "kernDazu": 1,
-    "anteilHeute": 6.6,
+    "anteilHeute": 7.2,
     "anteilKern": 0.3
    },
    "perspektiven": [
@@ -19557,7 +19557,7 @@
        "richter": "Anteil der Planeten mit ≥ 1 Kette von ≥ 3 Gliedern, jedes einer sichtbaren Ursache zugeordnet, ≥ 80 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Kette regen → nässe → stoff → brand → licht, Tiefe 4 mit Festhalte-Probe (feld.K1) — headless; Bruch, Fluid mit Impuls und Beben fehlen als Glieder.",
@@ -19783,7 +19783,7 @@
        "richter": "10/10 Glieder am selben Ort geändert (Bildpaar Weltkarte); Arten-Verlust 50–80 %, Erholung in 5–10 Mio. a"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Brand schwärzt, Asche düngt, Sukzession r = 0,825 (stoffe.K5) — Mechanik headless; Tier-, Wasser-, Siedlungs-Antwort fehlt.",
@@ -20090,11 +20090,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 109,
+  "heute": 111,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
-  "anteilHeute": 5.6,
+  "anteilHeute": 5.7,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20104,8 +20104,8 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 59,
-  "nachwache": 50
+  "beide": 60,
+  "nachwache": 51
  },
  "zusammengelegt": [
   {
