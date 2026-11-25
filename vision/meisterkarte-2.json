@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 44,
+    "heute": 45,
     "kern": 2,
     "kernDazu": 2,
-    "anteilHeute": 7.5,
+    "anteilHeute": 7.7,
     "anteilKern": 0.3
    },
    "perspektiven": [
@@ -10156,7 +10156,7 @@
        "richter": "20 Saaten: besiedelte Zone ↔ Energie ≥ 0,7"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "keine Energie-Größe in der Wirtschaft",
@@ -20090,7 +20090,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 111,
+  "heute": 112,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
@@ -20105,7 +20105,7 @@
   },
   "gliederLeitern": 9,
   "beide": 60,
-  "nachwache": 51
+  "nachwache": 52
  },
  "zusammengelegt": [
   {

@@ -25206,7 +25206,7 @@
   },
   "karte2.mensch.wirtschaft.energie": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.wirtschaft.energie#1 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#1 gtx: Station seit der Messung geändert · karte2.mensch.wirtschaft.energie#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: S1 GRÜN · Änderung des Holzstapels je Schmelze -25 (Soll < 0) · Gegenlauf: Barren ohne Holz 0 (Soll ≤ 0) · Umfang 75 (Soll ≥ 1 Feuer mit Brennstoff (Schmelze)) · 75 Ofenreisen, 1875 kg Kohle für 1875 kg Erz, 61429.6 MJ · [linse-gpu] nvidia/pascal an f63a69ef gtx — offen: karte2.mensch.wirtschaft.energie#1 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.wirtschaft.energie#1",
@@ -25221,11 +25221,11 @@
     {
      "id": "karte2.mensch.wirtschaft.energie#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 GRÜN · Änderung des Holzstapels je Schmelze -25 (Soll < 0) · Gegenlauf: Barren ohne Holz 0 (Soll ≤ 0) · Umfang 75 (Soll ≥ 1 Feuer mit Brennstoff (Schmelze)) · 75 Ofenreisen, 1875 kg Kohle für 1875 kg Erz, 61429.6 MJ · [linse-gpu] nvidia/pascal",
+     "sha": "f63a69ef8086b12e4ed913535b7314068383c87f",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37571,7 +37571,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 343,
+  "konsum": 344,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37740,10 +37740,10 @@
    "karte2.leben.kopplung.stadt-im-netz#2 radeon",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3278
+  "ohne": 3277
  },
  "kopfVoll": "fbbd597c60b84b072be2c9db3a9ebbbe98213269",
- "zeit": "2026-11-25T18:09:08.139Z",
+ "zeit": "2026-11-25T18:17:43.255Z",
  "vorher": "fbbd597c",
  "bilanz": {
   "gewinn": [],
