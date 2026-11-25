@@ -1306,11 +1306,18 @@ async function lebenBuehnen() {
         // Nachtwächter um 10 Uhr (sein Tag 22 Uhr, im Akt des Abends vor seiner Tür) und um 23 Uhr drei, deren Zug später ruht,
         // zählten ohne Ziel (Stadt 10 Uhr 1, 23 Uhr 4 von 145, a62d5eeb; 23 Uhr ebenso am Kopf 3c9bed7f)
         const TG = window.__koerperCore.TAGES_GESETZ;
+        // DIE STUNDE DES MENSCHEN IST DER AKT SEINES PLANS (tages-gesetz): der Kern trägt die Wenden je Mensch — den Beginn seines
+        // Werks aus der Verteilung der Abfahrten (TAGES_GESETZ.werkAb bis 12 Uhr), den Einkauf seines Haushalts am Markt-Morgen,
+        // seine Ruhe —, die Probe liest zur Uhr den Akt (`tagesPlan`): schlaf → 23, morgen · einkauf → 6, arbeit · spiel → 10,
+        // mittag → 13, jeder andere (Besuch, Abend, das Spiel des Abends) → 18. Bis tages-gesetz las sie den Tag aus den festen Wenden
+        // der Tafel (wach + streuH + morgenPlatzH → 6, mittag → 13) und nur die Nacht aus dem Plan: wer mit dem späten Werk um 10 Uhr
+        // noch daheim ist, zählte ohne Ziel. DER AKT IST DER DES ZIELS, ZU DEM ER GEHT (der EINE Leser der Ziel-Kette, koerper
+        // `tagesZiel` über `_bewohnerKette` — wie der Wirt ihn gehen lässt): wer um die Gehzeit vor seiner Wende aufbricht, lebt schon
+        // den nächsten Abschnitt. Bis hier las die Probe den Plan zur Uhr: der Händler auf dem Weg zum Besuch um 18 Uhr (sein Werk
+        // bis 18,5 Uhr, haendler #936614 → haus#279359) zählte am Werk, also ohne Ziel (CI voll 12/18, Kopf 99b234d7: 18 Uhr 6 %)
         const stundeVon = (uhr, b) => {
-            const hs = (((uhr - ((TG.rollen[b.rolle] || {}).versatzH || 0)) % 24) + 24) % 24;
-            if (hs >= TG.ruhe - TG.streuH || hs < TG.wach + TG.streuH)
-                return window.__koerperCore.tagesPlan(b.same, b.rolle, s.timeOfDay * 24, b.orte, 0, b.krank).akt === "schlaf" ? 23 : 18; // prettier-ignore
-            return hs < TG.wach + TG.streuH + TG.morgenPlatzH ? 6 : hs < TG.mittag[0] ? 10 : hs <= TG.mittag[1] + TG.streuH ? 13 : 18; // prettier-ignore
+            const a = window.__koerperCore.tagesZiel(r._bewohnerKette(b, 0), s.timeOfDay * 24).akt;
+            return a === "schlaf" ? 23 : a === "morgen" || a === "einkauf" ? 6 : a === "arbeit" || a === "spiel" ? 10 : a === "mittag" ? 13 : 18; // prettier-ignore
         };
         const passt = (o, uhr, b, drinnen) => {
             const h = stundeVon(uhr, b);
@@ -1629,7 +1636,48 @@ async function lebenBuehnen() {
             for (const art in zahl) gesetzLeer[art] *= 1 - zahl[art] / GESETZ_PROBEN;
         }
         for (const ro in gesetzLeer) gesetzLeer[ro] = q3(gesetzLeer[ro]);
+        // DIE GANGLINIE DES TAGS (tages-gesetz; der Kern `tagesKette` · `tagesZiel`, die Gehzeit des Wirts `_bewohnerKette`), gelesen
+        // wie die Station mensch.menge.rhythmus#2: je Stunde h ein Fenster von 0,1 h in 30 Schritten, ein Weg beginnt, wenn das Ziel
+        // eines Bewohners um mehr als 2 m springt (drinnen: seine Tür); Wege je Stunde = Beginne ÷ 0,1. Die Spitzen: zusammenhängende
+        // Stunden mit ≥ der Hälfte der höchsten; Spitze zu Tal: die kleinere der zwei höchsten ÷ das Kleinste zwischen ihnen (mindestens
+        // 1 Weg je Fenster)
+        const ganglinie = (() => {
+            const L = liste().map((b) => [b, r._bewohnerKette(b, 0)]);
+            const zielUm = ([b, K], h) => {
+                const p = window.__koerperCore.tagesZiel(K, h);
+                return p.drinnen ? b.orte.tuer : p.ort;
+            };
+            const [je, rollenJe] = [[], []];
+            for (let h = 0; h < 24; h++) {
+                let n = 0;
+                const ro = {};
+                for (const e of L) {
+                    let z0 = zielUm(e, h);
+                    for (let k = 1; k <= 30; k++) {
+                        const z = zielUm(e, h + (k * 0.1) / 30);
+                        if (z !== z0 && z && z0 && ab(z, z0) > 2) (n++, (ro[e[0].rolle] = (ro[e[0].rolle] || 0) + 1));
+                        z0 = z;
+                    }
+                }
+                je.push(Math.round(n / 0.1));
+                rollenJe.push(Object.entries(ro).sort((a, b) => b[1] - a[1]).slice(0, 3));
+            }
+            const max = Math.max(...je);
+            const sp = [];
+            let lauf = null;
+            for (let h = 0; h < 24; h++)
+                if (max > 0 && je[h] >= 0.5 * max) {
+                    if (!lauf) sp.push((lauf = { h, max: je[h] }));
+                    else if (je[h] > lauf.max) [lauf.h, lauf.max] = [h, je[h]];
+                } else lauf = null;
+            // DIE GANGLINIE MELDET, SIE URTEILT NICHT (Koordinator 25.11. 13:06): Fußwege tragen werktags VIER Spitzen (8 · 12 · 15 ·
+            // 18 Uhr ± 1 h), Autofahrten drei (7 · 12 · 17), nur der ÖV zwei — FHWA NHTS 2017, Brief „Non-Motorized Travel“
+            // (rosap.ntl.bts.gov/view/dot/58741). Das frühere Soll „2 Spitzen“ war ohne Herkunft und ein Zwilling der Station rhythmus#2,
+            // die allein urteilt. Die Zeile schreibt jede Spitze mit Stunde, Höhe und den drei Rollen, die sie tragen
+            return { je, spitzen: sp.map((x) => [x.h, x.max, rollenJe[x.h]]), n: L.length };
+        })();
         return {
+            ganglinie,
             haeuser: tueren.length,
             gesamt: liste().length,
             je,
@@ -2767,6 +2815,8 @@ function lebenUrteil(name, z, soll) {
             `Stand jenseits der Wand: ${JR.n} von ${JR.N} Ständen vor einer Tür erreichen sie über das Netz erst nach mehr als ${z.jenseitsSoll.umweg} × der Luftlinie + ${z.jenseitsSoll.nahtM} m (${JR === J ? "die Liste neu gestellt" : "die Liste nach dem Tag"}: ${JR.erste.join(" · ")})` // prettier-ignore
         );
         soll(z.je[10].am >= 0.5, `um 10 Uhr am Werk-Ort angekommen: ${Math.round(z.je[10].am * 100)} % (Soll ≥ 50 %)`);
+        // die Ganglinie des Tags (`z.ganglinie`: Wege je Stunde, jede Spitze mit Stunde · Höhe · Rollen) steht als Bericht im Ergebnis,
+        // ohne Soll — die Station rhythmus#2 urteilt allein (Koordinator 25.11. 13:06, die Quelle am Messen der Ganglinie)
         // die Leere, die das Gesetz trägt (`gesetzLeer` ≥ GESETZ_LEER: der Wurf lässt die Rolle so oft ohne Fremden), fällt nicht —
         // sie steht benannt in der Zeile; jede andere leere Rolle ist der Täter
         const GL = z.gesetzLeer || {};
@@ -3133,6 +3183,8 @@ module.exports = {
             ["zielplan-torfern", /Stand fern von seiner Marke.*m vom Posten an tor#/],
             ["zielplan-los", /steht nicht: fiel still/, []],
             ["zielplan-jenseits", /Stand jenseits der Wand: [1-9]/, []],
+            // die Täter „zielplan-wenden“ (der Tag aus fünf festen Wenden) und „zielplan-spitze15“ fielen mit dem Soll der Ganglinie
+            // (Koordinator 25.11. 13:06): die Zeile meldet nur, die Station rhythmus#2 urteilt
         ],
         tagesbudget: [
             ["durst", /kein Tier trinkt aus Durst/],

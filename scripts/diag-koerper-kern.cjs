@@ -203,38 +203,126 @@ const verbKlassen = (P, H, stunde = 12, O = { heim: {}, werk: {}, platz: {}, mah
     return Object.entries(z).filter(([, k]) => k >= 0.1 * n).map(([h, k]) => `${h} ${Math.round((100 * k) / n)} %`); // prettier-ignore
 };
 
-// DER WEG ZUM WERK FÜHRT ÜBER DEN MARKT (menge-bild, koerper `_morgenGang` im `tagesPlan`; Leser: der Wirt `_bewohnerSoll`, die
-// Station mensch.menge.bild#2 um 8 Uhr am Markt): 2000 Samen eines Wohnhauses, je Same sein Aufstehen und sein Werk aus dem Plan
-// selbst (die erste Stunde nicht im Schlaf, die erste am Werk, je 0,05 h) — wer vor dem Werk mehr als `morgenPlatzH` Stunden wach
-// ist, steht 0,1 h vor dem Werk am Markt und 0,1 h nach dem Aufstehen daheim; Soll ≥ 95 % für beide. Bis menge-bild lag der Gang
-// gleich nach dem Aufstehen, vom Markt ging jeder heim und dann zum Werk: am Messort stadt-voll hatten um 7 Uhr 296 den Platz zum
-// Ziel, um 8 Uhr 8 (die Station sah 47 im Bild, 21 gehend). Täter (Selbsttest): „nachDemAufstehen" (der Stand vor menge-bild).
-const MORGEN_ORTE = { heim: { o: "heim" }, werk: { o: "werk" }, platz: { o: "platz" }, mahl: { o: "mahl" }, abend: { o: "abend" }, besuch: null };
-const morgenWenden = (P, s, O) => {
-    let [wach, w0] = [null, null];
-    for (let h = 3; h < 14 && w0 == null; h += 0.05) {
-        const p = P(s, "wohnhaus", h, O);
-        if (wach == null && p.akt !== "schlaf") wach = h;
-        if (p.akt === "arbeit") w0 = h;
-    }
-    return { wach, w0 };
-};
-const morgenGang = (P, mh, O = MORGEN_ORTE) => {
-    let [n, amMarkt, daheim] = [0, 0, 0];
-    for (let s = 0; s < 2000; s++) {
-        const { wach, w0 } = morgenWenden(P, s, O);
-        if (wach == null || w0 == null || w0 - wach < mh + 0.2) continue;
+// DER EINKAUF DES HAUSHALTS (tages-gesetz, koerper TAGES_GESETZ.einkauf · `tagesEinkaeufer` · `tagesPlan`; Leser: der Wirt
+// `_einkaufAnlegen` · `_bewohnerSoll`, die Station mensch.menge.bild#2 um 8 Uhr am Markt): 1000 Samen eines Wohnhauses als
+// Einkäufer seines Haushalts (orte.einkauf = der Markt) und dieselben ohne, je 0,02 h von 3 bis 14 Uhr. M1 der Einkäufer steht in
+// der Marktzeit am Markt — sein Akt „einkauf“ beginnt ab der Öffnung `auf`, endet vor dem Schluss `schluss` und dauert dauerH je
+// Erwachsenem seines Haushalts (orte.einkaufFuer 1–4) × morgenMal seines Zugs —, danach ist er daheim oder am Werk, und vor ihm stand er nie am Werk (kein Gang aus dem Werk:
+// mensch.K2#2, der Schmied am Amboss um 10 Uhr); wer nicht einkauft, steht vor seinem Werk nie am Markt.
+// M2 die Leute des Markts (`marktAuf`) stehen 0,05 h nach der Öffnung an ihrem Werk. M5 je Haushalt (500, je 1–6 Leute) genau
+// EIN Einkäufer, nie ein Kind (ein Haus nur mit Kindern: keiner). Bis tages-gesetz ging jeder Mensch jeden Morgen über den
+// Markt (morgenPlatzH 1 h). Täter (Selbsttest): „jederMorgen“ (jeder geht einkaufen, der Stand vor tages-gesetz) ·
+// „ausWerk“ (der Einkäufer steht vor dem Markt am Werk: der Gang vom Werk zum Markt und zurück, der Stand vor heute) ·
+// „spaeterMarkt“ (die Leute des Markts kommen mit dem Werk der Stadt) · „kindKauft“ (der Einkäufer ist ein Kind) ·
+// „fuerSich“ (er kauft eine halbe Stunde, als kaufte er für sich allein: der Stand vor heute).
+const EINKAUF_BASIS = { heim: { o: "heim" }, werk: { o: "werk" }, platz: { o: "platz" }, mahl: { o: "mahl" }, abend: { o: "abend" }, besuch: null };
+const einkaufUrteil = (C, P = C.tagesPlan, E = C.tagesEinkaeufer) => {
+    const K = C.TAGES_GESETZ.einkauf, B = EINKAUF_BASIS;
+    const [mit, ohne] = [Object.assign({}, B, { einkauf: B.platz }), Object.assign({}, B, { einkauf: null })];
+    let [n, fenster, danach, fremd, ausWerk] = [0, 0, 0, 0, 0];
+    for (let s = 0; s < 1000; s++) {
+        let [e0, e1, w0, w0o, amMarkt] = [null, null, null, null, false];
+        const mitS = Object.assign({}, mit, { einkaufFuer: 1 + (s % 4) }),
+            Z = C.TAGES_GESETZ.zuege[C.tagesZug(s)],
+            dauer = K.dauerH * mitS.einkaufFuer * (Z.morgenMal != null ? Z.morgenMal : 1);
+        for (let i = 150; i < 700; i++) {
+            const h = i / 50,
+                p = P(s, "wohnhaus", h, mitS),
+                q = P(s, "wohnhaus", h, ohne);
+            if (p.akt === "einkauf") [e0, e1] = [e0 == null ? h : e0, h + 0.02];
+            if (w0 == null && p.akt === "arbeit") w0 = h;
+            if (w0o == null && q.akt === "arbeit") w0o = h;
+            if (w0o == null && q.ort === B.platz) amMarkt = true;
+        }
+        if (amMarkt) fremd++;
+        if (e0 != null && w0 != null && w0 < e0) ausWerk++;
         n++;
-        if (P(s, "wohnhaus", w0 - 0.1, O).ort === O.platz) amMarkt++;
-        if (P(s, "wohnhaus", wach + 0.1, O).ort === O.heim) daheim++;
+        if (e0 != null && e0 >= K.auf - 0.021 && e1 <= K.schluss + 0.021 && Math.abs(e1 - e0 - dauer) <= 0.041) fenster++;
+        const nach = e1 == null ? null : P(s, "wohnhaus", e1 + 0.05, mitS);
+        if (nach && ((nach.ort === B.heim && nach.drinnen) || nach.ort === B.werk)) danach++;
     }
-    return { n, markt: n ? amMarkt / n : 0, daheim: n ? daheim / n : 0 };
+    // M2: die Leute des Markts an ihrem Werk, 0,05 h nach der Öffnung
+    const R = C.TAGES_GESETZ.rollen,
+        markt = Object.keys(R).filter((r) => R[r].marktAuf);
+    let [mn, mDa] = [0, 0];
+    for (const r of markt)
+        for (let s = 0; s < 200; s++) {
+            mn++;
+            if (P(s, r, K.auf + 0.05, ohne).akt === "arbeit") mDa++;
+        }
+    // M5: je Haushalt ein Einkäufer, nie ein Kind
+    const ROLLEN = ["wohnhaus", "kind", "wohnhaus", "kind", "schmiede", "haendler", "kind"];
+    let [hn, einer, kind] = [0, 0, 0];
+    for (let k = 0; k < 500; k++) {
+        const gl = [];
+        for (let i = 0; i < 1 + (k % 6); i++) gl.push({ same: (k * 7919 + i * 104729) >>> 0, rolle: ROLLEN[(k * 3 + i * 5) % ROLLEN.length] });
+        const w = E(gl),
+            erw = gl.some((g) => g.rolle !== "kind");
+        hn++;
+        if (erw ? w >= 0 && w < gl.length : w === -1) einer++;
+        if (w >= 0 && gl[w].rolle === "kind") kind++;
+    }
+    return { n, fenster: n ? fenster / n : 0, danach: n ? danach / n : 0, fremd, ausWerk, markt: markt.join(" · "), mn, mDa: mn ? mDa / mn : 0, hn, einer, kind }; // prettier-ignore
 };
-// der Täter „nachDemAufstehen": der Gang über den Markt gleich nach dem Aufstehen, danach daheim bis zum Werk (der Stand vor menge-bild)
-const nachDemAufstehenVon = (P, mh) => (s, r, h, O) => {
-    const { wach, w0 } = morgenWenden(P, s, O);
-    if (wach == null || w0 == null || h < wach || h >= w0) return P(s, r, h, O);
-    return h < wach + mh ? { ort: O.platz, wo: "platz", akt: "morgen", drinnen: false } : { ort: O.heim, wo: "heim", akt: "morgen", drinnen: false };
+const einkaufRot = (e) =>
+    [
+        e.n >= 1000 && e.fenster >= 0.99 && e.danach >= 0.99 && !e.fremd && !e.ausWerk ? null : `M1 der Einkauf liegt nicht in der Marktzeit: ${(100 * e.fenster).toFixed(1)} % der Einkäufer in ihr, ${(100 * e.danach).toFixed(1)} % danach daheim oder am Werk (Soll ≥ 99 %), ${e.ausWerk} von ${e.n} vor dem Markt am Werk, ${e.fremd} von ${e.n} ohne Einkauf vor dem Werk am Markt (Soll 0 · 0)`, // prettier-ignore
+        e.mn > 0 && e.mDa >= 0.95 ? null : `M2 die Leute des Markts stehen nicht ab der Öffnung: ${(100 * e.mDa).toFixed(1)} % von ${e.mn} (${e.markt}) an ihrem Werk 0,05 h nach der Öffnung (Soll ≥ 95 %)`, // prettier-ignore
+        e.einer === e.hn && !e.kind ? null : `M5 der Haushalt trägt nicht genau einen Einkäufer: ${e.einer} von ${e.hn} Haushalten, ${e.kind} Kinder als Einkäufer (Soll alle · 0)`, // prettier-ignore
+    ].filter(Boolean);
+// die Täter: jeder geht einkaufen (der Stand vor tages-gesetz) · der Einkäufer kommt vom Werk · die Leute des Markts mit dem Werk
+// der Stadt · das Kind kauft
+const jederMorgenVon = (P) => (s, r, h, O) => P(s, r, h, O.einkauf ? O : Object.assign({}, O, { einkauf: O.platz }));
+const ausWerkVon = (P) => (s, r, h, O) => (O.einkauf && h >= 6.5 && h < 7 ? { ort: O.werk, wo: "werk", akt: "arbeit", drinnen: false } : P(s, r, h, O));
+const spaeterMarktVon = (C, P) => (s, r, h, O) => {
+    const R = C.TAGES_GESETZ.rollen[r];
+    return R && R.marktAuf && h < C.TAGES_GESETZ.einkauf.auf + 1 ? { ort: O.heim, wo: "heim", akt: "morgen", drinnen: true } : P(s, r, h, O);
+};
+const fuerSichVon = (P) => (s, r, h, O) => P(s, r, h, O.einkaufFuer ? Object.assign({}, O, { einkaufFuer: 1 }) : O);
+const kindKauftVon = (E) => (gl) => (gl.some((g) => g.rolle === "kind") ? gl.findIndex((g) => g.rolle === "kind") : E(gl));
+// DIE ANKUNFT ZUR STUNDE (menge-bild, koerper `tagesKette` · `tagesZiel`; Leser: der Wirt `_bewohnerSoll` — und über ihn die
+// Wende und die Ankunft): 2000 Samen eines Wohnhauses mit Besuch, jeder Weg zwischen zwei Orten `gehH` Stunden — je Abschnitt
+// mit Weg nennt das Ziel zur halben Gehzeit vor der Wende schon den neuen Ort (M3: der Aufbruch liegt um die Gehzeit davor),
+// kein Aufbruch liegt vor der Ankunft am vorigen Ort, und das Ziel jeder Stunde ist ein Abschnitt der Kette; `eng` zählt die
+// Abschnitte, deren Aufenthalt der Weg frisst. M4: kein Leser im Stamm liest den Plan mit eigener Uhr (`tagesPlan(` ohne die
+// Kette). Täter (Selbsttest): „zurWende" (der Aufbruch zur Wende, der Stand vor menge-bild) · „eigeneUhr" (ein Leser des Plans).
+const ANKUNFT_ORTE = { heim: { o: "heim" }, werk: { o: "werk" }, platz: { o: "platz" }, mahl: { o: "mahl" }, abend: { o: "abend" }, besuch: { o: "besuch" } };
+const ankunftUrteil = (C, gehH, mutante = null) => {
+    const geh = (von, nach) => (von === nach ? 0 : gehH);
+    let [n, frueh, monoton, eng, ohneAbschnitt] = [0, 0, 0, 0, 0];
+    for (let s = 0; s < 2000; s++) {
+        const K = C.tagesKette(s, "wohnhaus", ANKUNFT_ORTE, 0, false, mutante === "zurWende" ? () => 0 : geh);
+        eng += K.eng;
+        const L = K.kette;
+        let ank = 0;
+        for (let i = 1; i < L.length; i++) {
+            const g = L[i - 1].p.ort !== L[i].p.ort ? gehH : 0;
+            if (L[i].auf < ank - 1e-9) monoton++;
+            ank = L[i].auf + g;
+        }
+        // je Wende mit Weg, deren Aufenthalt davor die ganze Gehzeit trägt: zur halben Gehzeit vor der Wende ist der neue Ort das Ziel
+        const T = C.tagesKette(s, "wohnhaus", ANKUNFT_ORTE, 0, false, () => 0).kette;
+        for (let i = 2; i < T.length - 1; i++) {
+            if (T[i - 1].p.ort === T[i].p.ort || T[i].auf - T[i - 1].auf < 2 * gehH) continue;
+            n++;
+            const h = (((T[i].auf - gehH / 2 + K.A + K.v) % 24) + 24) % 24;
+            const z = C.tagesZiel(K, h);
+            if (z.ort === T[i].p.ort) frueh++;
+            if (!L.some((e) => e.p === z)) ohneAbschnitt++;
+        }
+    }
+    return { n, frueh: n ? frueh / n : 0, monoton, eng, ohneAbschnitt };
+};
+// M4: wer im Stamm liest den Plan der Stunde selbst (der EINE Leser ist die Kette, `tagesZiel`)
+const eigeneUhr = (texte) => {
+    const wer = [];
+    for (const [datei, t] of texte) t.split("\n").forEach((z, i) => /\btagesPlan\(/.test(z) && !/^\s*\/\//.test(z) && wer.push(`${datei}:${i + 1}`));
+    return wer;
+};
+const stammTexte = () => {
+    const fs = require("fs"), path = require("path");
+    const d = path.join(__dirname, "..", "stamm");
+    return fs.readdirSync(d).filter((n) => n.endsWith(".js")).map((n) => [`stamm/${n}`, fs.readFileSync(path.join(d, n), "utf8")]);
 };
 
 // TEIL S — DER STOSS IM GANG (physik.K5, koerper-core `leibStossLesen` · `leibStossSchritt`): der Leib geht (vor, 4,5 m/s,
@@ -1084,16 +1172,18 @@ if (SELBSTTEST) {
     // die Regel-Grammatik: das Gesetz hält, jeder Täter fällt ROT beim Namen
     const eGut = !spielUrteil(core).rot.length;
     const spielTaeter = [["gewuerfelt", "E1 die Rangfolge des Laufs"], ["immer", "E2 der Stärkere siegt"], ["ohneRegel", "E3 das Brett spielt gegen die Regel"], ["starr", "E4 die Zuschauer folgen"], ["ohneTag", "E5 der Tag liest das Programm nicht"], ["eng", "E6 die Stände des Abends"], ["ohneWeg", "E7 der Abend trägt den Weg nicht"], ["nurTreff", "E8 der Platz zieht seine Nachbarschaft nicht"], ["ohneGegner", "E9 der Zweikampf trägt seinen Gegner nicht"]].map(([m, z]) => [eGut && spielUrteil(core, m).rot.some((r) => r.startsWith(z)), `Spiel ${m} ${z}`]); // prettier-ignore
-    // der Morgengang: das Gesetz hält, der Stand vor menge-bild (der Markt gleich nach dem Aufstehen) fällt ROT beim Namen
-    const mh = core.TAGES_GESETZ.morgenPlatzH;
-    const mGut = morgenGang(core.tagesPlan, mh), mAlt = morgenGang(nachDemAufstehenVon(core.tagesPlan, mh), mh);
-    const morgenTaeter = [[mGut.n >= 500 && mGut.markt >= 0.95 && mGut.daheim >= 0.95 && mAlt.markt < 0.95, "Morgengang nachDemAufstehen M1 der Weg zum Werk führt nicht über den Markt"]];
+    // der Einkauf des Haushalts: das Gesetz hält, jeder Täter fällt ROT bei seinem Maß
+    const ekGut = einkaufRot(einkaufUrteil(core));
+    const eTaeter = [[jederMorgenVon(core.tagesPlan), null, "M1", "jederMorgen"], [ausWerkVon(core.tagesPlan), null, "M1", "ausWerk"], [fuerSichVon(core.tagesPlan), null, "M1", "fuerSich"], [spaeterMarktVon(core, core.tagesPlan), null, "M2", "spaeterMarkt"], [core.tagesPlan, kindKauftVon(core.tagesEinkaeufer), "M5", "kindKauft"]].map(([P, E, m, name]) => [!ekGut.length && einkaufRot(einkaufUrteil(core, P, E || core.tagesEinkaeufer)).some((z) => z.startsWith(m + " ")), `Einkauf ${name} ${m}`]); // prettier-ignore
+    const ankGut = ankunftUrteil(core, 0.4), ankWende = ankunftUrteil(core, 0.4, "zurWende");
+    const uGut = eigeneUhr(stammTexte()), uTaeter = eigeneUhr([["stamm/probe.js", "        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, regen, b.krank);"]]);
+    const morgenTaeter = [...eTaeter, [ankGut.n >= 1000 && ankGut.frueh >= 0.99 && !ankGut.monoton && !ankGut.ohneAbschnitt && ankWende.frueh < 0.5, "Ankunft zurWende M3 der Aufbruch liegt nicht um die Gehzeit vor der Wende"], [!uGut.length && uTaeter.length === 1, "Ankunft eigeneUhr M4 ein Leser liest den Plan mit eigener Uhr"]]; // prettier-ignore
     for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...verbenTaeter, ...spielTaeter, ...morgenTaeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle sechsundvierzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, acht Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, der Täter des Morgengangs).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle zweiundfünfzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, acht Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, sieben Täter des Einkaufs und der Ankunft zur Stunde).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -1115,9 +1205,15 @@ if (!sk.rot.length) console.log(`  STOFFSTROM Halde ${sk.halde0.toFixed(1)} → 
 const sp = spielUrteil(core);
 for (const z of sp.rot) st.rot.push("SPIEL " + z + " — Täter: koerper SPIEL_GESETZ · spielProgramm · spielKampf · spielBrett · spielGeschehen · tagesPlan");
 if (!sp.rot.length) console.log(`  SPIEL ${sp.laeufe} Läufe (${sp.laeufer} Läufer): ρ Laufzeit ↔ Leib ${sp.rho.toFixed(3)} (je Lauf ${sp.rhoLauf.toFixed(3)}) · ${sp.kaempfe} Gänge des Zweikampfs: der Stärkere siegt ${(100 * sp.quote).toFixed(1)} % · ${sp.partien} Partien am Brett, ${sp.zuege} Züge, ${sp.widrig} regelwidrig, ${sp.siege} mit Reihe · Ring bis ${sp.zuschauerMax} Zuschauer, Blick am Geschehen ${(100 * sp.blick).toFixed(1)} % von ${sp.proben} (seitab ${(100 * sp.seitab).toFixed(1)} % von ${sp.seit}) · der Tag stellt ${sp.e5}/${sp.e5n} Auftritte · der Raum des Stands: ${sp.raumN} Paare ≥ ${sp.standM} m, das nächste ${sp.raumMin.toFixed(2)} m · der Abend trägt den Weg: ${sp.wegeN} Gäste an ${sp.wegeAbende} Abenden, höchstens ${sp.wegeMax} Wege (${sp.wegeKurz}× sah der Kern ein Stück unter 0,05 h)`); // prettier-ignore
-const mg = morgenGang(core.tagesPlan, core.TAGES_GESETZ.morgenPlatzH);
-if (mg.n < 500 || mg.markt < 0.95 || mg.daheim < 0.95) st.rot.push(`MORGEN M1 der Weg zum Werk führt nicht über den Markt: ${(100 * mg.markt).toFixed(1)} % vor dem Werk am Markt, ${(100 * mg.daheim).toFixed(1)} % nach dem Aufstehen daheim, von ${mg.n} Samen (Soll ≥ 95 % und ≥ 500) — Täter: koerper _morgenGang · tagesPlan`);
-console.log(`  MORGEN der Weg zum Werk über den Markt: ${(100 * mg.markt).toFixed(1)} % 0,1 h vor dem Werk am Markt, ${(100 * mg.daheim).toFixed(1)} % 0,1 h nach dem Aufstehen daheim (${mg.n} von 2000 Samen mit mehr als einer Stunde vor dem Werk)`);
+const ek = einkaufUrteil(core);
+for (const z of einkaufRot(ek)) st.rot.push(`EINKAUF ${z} — Täter: koerper TAGES_GESETZ.einkauf · tagesEinkaeufer · tagesPlan`);
+console.log(`  EINKAUF des Haushalts (Markt ${ek.markt ? "auf " + core.TAGES_GESETZ.einkauf.auf + " Uhr" : "—"}): ${(100 * ek.fenster).toFixed(1)} % der Einkäufer in der Marktzeit, ${(100 * ek.danach).toFixed(1)} % danach daheim oder am Werk, ${ek.ausWerk} vor dem Markt am Werk, ${ek.fremd} von ${ek.n} ohne Einkauf am Markt · die Leute des Markts (${ek.markt}) ab der Öffnung ${(100 * ek.mDa).toFixed(1)} % · ${ek.einer} von ${ek.hn} Haushalten mit genau einem Einkäufer, ${ek.kind} Kinder`); // prettier-ignore
+const an = typeof core.tagesKette === "function" ? ankunftUrteil(core, 0.4) : null;
+const uhrLeser = eigeneUhr(stammTexte());
+if (!an) st.rot.push("ANKUNFT M3 der Kern trägt keine Kette des Tags (koerper tagesKette · tagesZiel)");
+else if (an.n < 1000 || an.frueh < 0.99 || an.monoton || an.ohneAbschnitt) st.rot.push(`ANKUNFT M3 der Aufbruch liegt nicht um die Gehzeit vor der Wende: ${(100 * an.frueh).toFixed(1)} % von ${an.n} Wenden (Soll ≥ 99 %), ${an.monoton} Aufbrüche vor der Ankunft, ${an.ohneAbschnitt} Ziele ohne Abschnitt (Soll 0) — Täter: koerper tagesKette · tagesZiel`);
+if (uhrLeser.length) st.rot.push(`ANKUNFT M4 ein Leser liest den Plan mit eigener Uhr: ${uhrLeser.join(", ")} (Soll: der EINE Leser ist die Kette, tagesZiel) — Täter: der Leser`);
+if (an) console.log(`  ANKUNFT zur Stunde (je Weg 0,4 h): ${(100 * an.frueh).toFixed(1)} % von ${an.n} Wenden brechen um die Gehzeit davor auf · ${an.monoton} vor der Ankunft · ${an.eng} Abschnitte, deren Aufenthalt der Weg frisst (2000 Samen) · Leser mit eigener Uhr im Stamm: ${uhrLeser.length}`);
 const kn = koennenUrteil(core);
 for (const z of kn.rot) st.rot.push("KÖNNEN " + z + " — Täter: koerper leibKoennen");
 const vb = verbenUrteil(core);

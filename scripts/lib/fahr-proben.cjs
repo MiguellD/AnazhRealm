@@ -980,6 +980,23 @@ async function probeLeben(expected) {
                         delete VK.belegung.get;
                     }
                 };
+            // DER KREIS ZWEIER WAGEN (tages-gesetz 2, `mutanteKreis`): der Rang im Kreis aus Wagen-Kanten steht still
+            // (`_verkehrKreisDurch` → null) — im Bogen der Sackgasse vor der Wende 746/573 stehen zwei Entgegenkommende Bug an Bug
+            // (stadt-voll 10 Uhr, Kopf 99b234d7: Warte-Kreis „8>9“ ab Sekunde 30)
+            if (o.mutanteKreis) r._verkehrKreisDurch = () => null;
+            // die Lage des Leibs beim Bau seiner Linie (tages-gesetz 2, der Beweis des Ausscherens): Gier, Ort und ob sie eine Fahrt
+            // beginnt (`anfang`) — gelesen in der Zeile „Ausscheren über dem Band“
+            r._verkehrLinie = function (S2, W, zuege, anfang) {
+                const F0 = W.F;
+                const v = P._verkehrLinie.call(this, S2, W, zuege, anfang);
+                const F = W.F;
+                if (!F || F === F0 || !W.entry) return v;
+                const e = W.entry;
+                const g0 = e._rideYaw;
+                F._bau = [g0 || 0, e.position.x, e.position.z, !!anfang];
+                F._rund0 = F.rund.slice();
+                return v;
+            };
             r._verkehrSchritt = function (dt) {
                 const t0 = performance.now();
                 P._verkehrSchritt.call(this, dt);
@@ -1036,9 +1053,11 @@ async function probeLeben(expected) {
             // sein Fahrer, trägt ihn eine 3D-Stufe (gezeichnet, nie Stufe 2) — „Wagen ohne Bild mit gezeichnetem Fahrer"; gröber,
             // als das Gesetz ihm dort zuweist (`_chooseLODForDistance` mit seiner Hysterese, ohne Bild im Radius des Culls gröber
             // als jede Stufe: 9), obwohl die Stufe des Gesetzes gedockt bereitliegt (kein Laden, ein altes Urteil) — „bewegter
-            // Eintrag mit veralteter Stufe" [Nr., Probe, m, Stufe, Soll]; der Bewegte urteilt im Takt seines Schritts, jede Probe
+            // Eintrag mit veralteter Stufe" [Nr., Probe, m, Stufe, Soll, Ort x, z, s seit der ersten Probe, die sie veraltet sah —
+            // tages-gesetz 2: der Beweis beim Namen]; der Bewegte urteilt im Takt seines Schritts, jede Probe
             // gilt. `nah`: Proben diesseits der Karten-Grenze (thresh12 − Hysterese); ohne sie misst die Probe nichts.
             const [LD, SK] = [A.LOD_DISTANCES, { nah: 0, ohneBild: 0, ohneBildOrte: [], ohneFahrer: 0, ohneFahrerOrte: [], veraltet: 0, veraltetOrte: [] }]; // prettier-ignore
+            const veraltetSeit = new Map(); // je Wagen die erste Probe seiner veralteten Stufe (ihr Alter)
             // DER RICHTER VON Leiter mensch.netz.verkehr (pflicht.C#1): DER BEWOHNER AM STEUER — die wenigsten fahrenden Wagen mit einem
             // Bewohner am Steuer in einer Probe [Zahl, Probe, wer nicht fuhr]; DIE WEGE-KARTE — je fahrendem Wagen, ob seine Mitte auf
             // dem Boden liegt, den die Stadt als Weg malt (Straße samt Gehweg, Abbieger, Wende, Platz: der EINE Leser ihrer Formen,
@@ -1079,12 +1098,22 @@ async function probeLeben(expected) {
                     const G = (T.graph = T.graph || { kreise: new Map(), grund: {}, steht: 0, proben: 0, leiber: {} });
                     G.proben++;
                     const kanten = new Map();
+                    // DIE LAGE IM KREIS (tages-gesetz 2): je Wagen bei der ersten Probe seines Kreises Mitte, Gier, Tempo, der vor
+                    // ihm [Lücke, quer, Nr.], seine offenen Orte (* hält) und sein Weg auf der Linie — der Kreis zweier Wagen
+                    // Bug an Bug hieß bis hier nur „8-wagen > 9-wagen“, ohne Ort
+                    const lageImKreis = (nr) => {
+                        const W = VK.wagen.find((X) => X.nr === nr);
+                        const e = W && W.entry;
+                        if (!e) return [nr];
+                        const z1 = (v) => +v.toFixed(1);
+                        return [nr, z1(e.position.x), z1(e.position.z), Math.round(((e._rideYaw || 0) * 180) / Math.PI), e._fahr ? +e._fahr.vlong.toFixed(2) : null, W.vorne ? [+W.vorne.gap.toFixed(2), +W.vorne.quer.toFixed(2), W.vorne.O.nr] : null, W.zonen.filter((q) => !q.weg).slice(0, 3).map((q) => `${q.Z.art}${q.hat ? "*" : ""}@${Math.round(q.Z.x)}/${Math.round(q.Z.z)}`).join(","), W.F ? `${z1(W.F.s)}/${z1(W.F.lang)}` : null, W.letzter ? W.letzter.art : null]; // prettier-ignore
+                    };
                     for (const W of VK.wagen) {
                         if (W.zustand !== "faehrt" || !W.entry || !W.entry._fahr || !(W.entry._fahr.vlong < 0.5)) continue;
                         G.steht++;
                         let a = [];
                         let art = W.grund || "ohne";
-                        if (W.grund === "wagen" && W.wer) a = [[W.wer, "wagen", ""]];
+                        if (W.grund === "wagen" && W.wer) a = [[W.wer, "wagen", `${Math.round(W.entry.position.x)}/${Math.round(W.entry.position.z)}`]]; // prettier-ignore
                         else if (W.grund === "ort" && W.wartet) {
                             a = W.wartet.auf;
                             art = "ort:" + ([...new Set(a.map((x) => x[1]))].join("+") || "leer");
@@ -1107,7 +1136,7 @@ async function probeLeben(expected) {
                                     const key = rot.map((x) => x[0]).join(">");
                                     if (!gesehen.has(key)) {
                                         gesehen.add(key);
-                                        const K = G.kreise.get(key) || { k0: k, n: 0, wie: rot.map((x) => `${x[0]}-${x[1]}${x[2] ? "(" + x[2] + ")" : ""}`).join(" > ") }; // prettier-ignore
+                                        const K = G.kreise.get(key) || { k0: k, n: 0, wie: rot.map((x) => `${x[0]}-${x[1]}${x[2] ? "(" + x[2] + ")" : ""}`).join(" > "), lage: rot.map((x) => lageImKreis(x[0])) }; // prettier-ignore
                                         K.n++;
                                         K.kL = k;
                                         G.kreise.set(key, K);
@@ -1158,8 +1187,10 @@ async function probeLeben(expected) {
                         r._lodTreeVisHeight(e) || 0
                     );
                     const im = sv < 9 || Math.hypot(L[n].x - sp.x, L[n].z - sp.z) <= st.architectureCullingRadius;
-                    if (im && soll < sv && r._foundryStufeBereit(e, r._foundryPresetForEntry(e), soll))
-                        SK.veraltet++ < 4 && SK.veraltetOrte.push([W.nr, k, d | 0, sv, soll]);
+                    if (im && soll < sv && r._foundryStufeBereit(e, r._foundryPresetForEntry(e), soll)) {
+                        if (!veraltetSeit.has(W)) veraltetSeit.set(W, k);
+                        SK.veraltet++ < 4 && SK.veraltetOrte.push([W.nr, k, d | 0, sv, soll, ...ort2(L[n]), +((k - veraltetSeit.get(W)) / 60).toFixed(2)]); // prettier-ignore
+                    } else veraltetSeit.delete(W);
                     // OHNE SCHLÜSSEL IM ORT: in Kreuzung und Enge keiner, in der Wende keiner, der fährt (wer im Platz auf den
                     // Schlüssel wartet, steht zu Recht in ihr) — bis w4-verkehr-c2 fragte die Probe nur die Kreuzung, und der Wagen,
                     // der ohne Schlüssel in die Enge vor der Wende fuhr, stand dort Bug an Bug mit ihrem Halter
@@ -1234,7 +1265,8 @@ async function probeLeben(expected) {
                 // gegen das Stück seiner Linie um ihn: ragt sie weiter
                 // als hw + rund, frisst sie den Raum der Begegnung (`begegnungM`) — das weiteste beim Namen [über dem Band m, Wagen,
                 // Gattung, Probe, Ort, rund, Gier gegen die Linie °]. Bis hier galt der Leib als Tangente der Linie (l²·κ/2): der
-                // Transporter stand im Umfahren 14,5° schräg zu ihr, seine Ecke ragte über das Band, 0,07 m Wagen an Wagen (23 Uhr)
+                // Transporter stand im Umfahren 14,5° schräg zu ihr, seine Ecke ragte über das Band, 0,07 m Wagen an Wagen (23 Uhr).
+                // Dazu sein Beweis (tages-gesetz 2): ob er umfährt, wem er im Kreis aus Wagen-Kanten vorbeifährt, sein Weg auf der Linie
                 for (const [W, L] of LA) {
                     const F = W.F;
                     if (!F || !F.rund || !(W.entry._fahr && W.entry._fahr.speed > 0.5) || haeltAllein(W)) continue;
@@ -1256,11 +1288,11 @@ async function probeLeben(expected) {
                         // Wagen, `_verkehrLinie`: sein Heck liegt hinter ihrem ersten Punkt) — der Abstand zum Endpunkt wäre seine Länge
                         const ueber = bi < 0 || rand ? -Infinity : bq - W.hw - F.rund[bi];
                         if (ueber > m.aussch[0])
-                            m.aussch = [+ueber.toFixed(3), W.nr, W.typ, k, ...ort2(L), +F.rund[bi].toFixed(3), +((((Math.atan2(L.fx, L.fz) - bt) * 180) / Math.PI + 540) % 360 - 180).toFixed(1)]; // prettier-ignore
+                            m.aussch = [+ueber.toFixed(3), W.nr, W.typ, k, ...ort2(L), +F.rund[bi].toFixed(3), +((((Math.atan2(L.fx, L.fz) - bt) * 180) / Math.PI + 540) % 360 - 180).toFixed(1), W.umfahr ? "umfahr" : "", W.durch ? "durch " + W.durch.O.nr : "", `${F.s.toFixed(1)}/${F.lang.toFixed(1)}`, (W.letzter && W.letzter.art) || "", ...(F._bau ? [+((((F._bau[0] - Math.atan2(F.pts[1].x - F.pts[0].x, F.pts[1].z - F.pts[0].z)) * 180) / Math.PI + 540) % 360 - 180).toFixed(1), +Math.hypot(L.x - F._bau[1], L.z - F._bau[2]).toFixed(2), F._bau[3] ? "anfang" : "weiter", bi, F.i, +F._rund0[bi].toFixed(3)] : [])]; // prettier-ignore
                     }
                 }
             }
-            for (const n of ["_verkehrSchritt", "_verkehrUmfahren", "_verkehrFolge", "_verkehrBild", "_fahrtVerkehr"]) delete r[n];
+            for (const n of ["_verkehrSchritt", "_verkehrUmfahren", "_verkehrFolge", "_verkehrBild", "_fahrtVerkehr", "_verkehrKreisDurch", "_verkehrLinie"]) delete r[n];
             if (sy.fahrt) for (const s of sy.fahrt.values()) s.stop(0);
             Object.assign(sy, KL.vor);
             if (zwilling) {
@@ -1353,7 +1385,7 @@ async function probeLeben(expected) {
                     steht: T.graph.steht,
                     grund: T.graph.grund,
                     leiber: Object.entries(T.graph.leiber).sort((a, b) => b[1] - a[1]).slice(0, 6),
-                    kreise: [...T.graph.kreise.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 12).map(([key, K]) => [key, K.n, K.k0, K.kL, K.wie]), // prettier-ignore
+                    kreise: [...T.graph.kreise.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 12).map(([key, K]) => [key, K.n, K.k0, K.kL, K.wie, K.lage]), // prettier-ignore
                     nKreise: T.graph.kreise.size,
                     ende: VK.wagen.map((W) => [W.nr, W.zustand, W.grund, W.entry && W.entry._fahr ? +W.entry._fahr.vlong.toFixed(1) : null, W.ziele, W.wartet ? W.wartet.auf.map((x) => x[0].nr + x[1][0]).join(",") : W.wer ? (W.wer.nr != null ? "w" + W.wer.nr : "L") : ""]), // prettier-ignore
                 },
