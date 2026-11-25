@@ -202,11 +202,34 @@ class AnazhRealm_vegetation_wiese {
                     const [V, k] = [AnazhRealm.BRAND.versengt, Math.min(1, av * 2)];
                     for (let c = 0; c < 3; c++) f[c] *= 1 + (V[c] - 1) * k;
                 }
-                out.push({ x, y, z, s: sb, rot, vorlage, o, f, gi, gj, gx: eb.gx, gz: eb.gz });
+                // h: die Höhe des Büschels im Äsungs-Druck des Orts (`_wieseAesung`) — die Ferne erbt dieselben Büschel
+                const h = this._wieseAesung(x, z);
+                out.push({ x, y, z, s: sb, h, rot, vorlage, o, f, gi, gj, gx: eb.gx, gz: eb.gz });
             }
         }
         out.sort((a, b) => a.o - b.o);
         return out;
+    }
+
+    // DER ÄSUNGS-RASEN (aesungs-rasen) — die Halm-Höhe liest den Äsungs-Druck des Bestands am Ort: → der Faktor der Höhe des
+    // Büschels (1 die Wiese, `rasenM` ÷ `wieseM` der Rasen; `AESUNGS_RASEN`). Der Druck P ist der Anteil des Aufwuchses, den der
+    // Bestand frisst: das Defizit der Fraß-Schicht im ERWARTUNGSWERT des Gaus (`_gauFrassAt(x, z, true)`, das Gleichgewicht
+    // seines Bedarfs — es steht mit der ersten Antwort des Fadens, nie erst nach Stunden) und das Leben-Overlay (der Fraß der
+    // Altlast, `_kreaturFrass`, live), je in seinen Stufen (`LIFE_FIELD.stufen`: eine Kachel baut nur, wo eine Stufe springt —
+    // `_gauAntwort`, `_lebenStufeMalen`), geteilt durch das Defizit, bei dem die Köpfe einer Zelle ihren ganzen Aufwuchs fressen
+    // (H = Aufwuchs × Fläche ÷ Aufnahme; ihr Fraß je Takt im Gleichgewicht der Schicht, ÷ (1 − Zerfall je Takt)). Zwischen den
+    // Enden linear: die stehende Masse ist linear in der Höhe (Rising-Plate-Eichung, 145 kg TM/ha je Stufe, R² 0,735 — Lincoln
+    // University), der Fraß nimmt Masse. Bis aesungs-rasen stand die Wiese unter der Herde 0,74 m hoch: an der Mess-Wiese
+    // zählte ein äsender Hirsch auf 46–58 m 0–33 Pixel (tiere.K5#1, Soll 200).
+    _wieseAesung(x, z) {
+        const [S, AR] = [AnazhRealm.LIFE_FIELD.stufen, AnazhRealm.AESUNGS_RASEN];
+        const o = Math.round(this._gauFrassAt(x, z, true) * S) / S + Math.round(this._lebenStufeHalt(x, z)[0] * S) / S;
+        if (!(o < 0)) return 1;
+        const w = this._gauWirt();
+        const BG = AnazhRealm._bestandGesetz();
+        const H = ((AR.aufwuchsKgHaJahr / 365) * w.feld.ha) / AR.aufnahmeKgTag;
+        const voll = (BG.frass(w.feld.diet, BG.B) * H) / (1 - Math.exp(-w.feld.zerfallJeS * w.taktS));
+        return 1 - Math.min(1, -o / voll) * (1 - AR.rasenM / AR.wieseM);
     }
 
     // DER SCHRITT DES GITTERS der Wiese (Studio `understory.grassStep`): je Zelle ein Wurf (`_nahWieseKachelBueschel`), die
@@ -760,7 +783,8 @@ class AnazhRealm_vegetation_wiese {
     // Zahlen): die Ferne tauscht Zahl gegen BREITE, nie gegen Höhe. Die Deckung im Blick hängt allein an der Fläche der Halme
     // (Nilson 1971: Lücke exp(−G · LAI / cos θ), G = 0,5 nach Ross 1976 — die Fläche, nie ihre Teilung), also trägt der Halm die
     // Fläche s² der Größe `skala` (`_wieseFern`) in der Waagrechten: `breite` (Füße UND Breite der Halme) × `hoehe` = s²,
-    // `hoehe` 1 — die ferne Wiese steht so hoch wie die nahe (Spitze 0,74 m). Die Füße streuen mit der Breite: Spike 1 machte
+    // `hoehe` 1 — die ferne Wiese steht so hoch wie die nahe (Spitze 0,74 m; unter dem Äsungs-Druck trägt die Instanz des
+    // Büschels die Höhe des Rasens, `_wieseAesung` — EIN Term für Nähe und Ferne, keine Naht). Die Füße streuen mit der Breite: Spike 1 machte
     // nur die Halme breiter, die Füße blieben am Ort — die Halme deckten einander (Nilsons Klumpung Ω < 1), Deckung 30–60 m
     // 77,7 % statt 97,1 %. Bis wiese-fern wuchs das Büschel gleichförmig um s (Höhe × s): bei 30 m stand die
     // Spitze 1,37 m, ab 40 m 1,85 m über dem Grund und verdeckte den Hirsch bis an den Rücken (Bauch 0,93 m, tiere.K5#1).
@@ -1108,7 +1132,7 @@ class AnazhRealm_vegetation_wiese {
             const b = bueschel[i];
             pv.set(b.x, b.y, b.z);
             q.setFromAxisAngle(up, b.rot);
-            sv.set(b.s, b.s, b.s);
+            sv.set(b.s, b.s * (b.h === undefined ? 1 : b.h), b.s); // senkrecht × die Höhe der Äsung (`_wieseAesung`)
             const e = m4.compose(pv, q, sv).elements;
             const [gx, gz] = [b.gx || 0, b.gz || 0];
             for (let c = 0; c < 3; c++) e[4 * c + 1] += gx * e[4 * c] + gz * e[4 * c + 2];
@@ -3390,6 +3414,11 @@ AnazhRealm.FORAGE = Object.freeze({
 // DER NÄHRSTOFF (stoffe.K5#2, `_naehrstoffAt`) wirkt nach Monod mit der Halbsättigung `naehrK` (ein halbierter Boden wächst mit
 // 0,86, ein leerer nicht) bis `naehrMax` (die Asche düngt).
 AnazhRealm.WUCHS = Object.freeze({ wasserBasis: 0.75, naehrK: 0.2, naehrMax: 1.6 });
+// DER ÄSUNGS-RASEN (`_wieseAesung`): der Rasen voll beäst (Band 4–10 cm: LfL-Weide 4–6 cm, Serengeti-Rasen bis ~10 cm,
+// McNaughton 1984), die Wiese unbeäst (die Ähre des Halm-Gesetzes 0,74 m), der Aufwuchs (kg TM je ha und Jahr: britisches
+// Grünland 5–6 t, Green & Baker 1981, zitiert von Natural England) und die Aufnahme eines Kopfs der Beute (kg TM je Tag:
+// Rothirsch 2,0, Hirschkuh 1,5 — forestry.gov.scot, Woodland Grazing Toolbox).
+AnazhRealm.AESUNGS_RASEN = Object.freeze({ rasenM: 0.07, wieseM: 0.74, aufwuchsKgHaJahr: 5500, aufnahmeKgTag: 2 });
 // DIE SUKZESSION NACH DEM BRAND (stoffe.K5#2, `_sukzession`): die Rampen im Rest der Narbe — die Asche liegt bis 0,08 und ist
 // bei 0,3 nachgegrünt (das Gras der Nah-Wiese), der Busch der Nah-Streu wächst von 0,3 bis 0,6, der Wald von 0,6 bis zur
 // Heilung (sein Jungwuchs, `_baumAlter`); der Stumpf eines gefällten Baums treibt ab `stubben[0]` seinen Sämling. Gezählt in

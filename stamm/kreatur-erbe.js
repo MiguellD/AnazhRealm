@@ -551,8 +551,8 @@ class AnazhRealm_kreatur_erbe {
         return BG.B.kopfJeHa * K;
     }
     // DER FRASS DES GAUS AM ORT (Feld-Einheiten wie das Leben-Overlay: ≤ 0 abgeäst; E3 — die Fraß-Schicht gehört dem Gau): die
-    // Zelle des Reviers aus dem Bild, 0 ohne Bild.
-    _gauFrassAt(x, z) {
+    // Zelle des Reviers aus dem Bild, 0 ohne Bild. `erwartet`: sein ERWARTUNGSWERT (`_gauAntwort`, das Gleichgewicht des Bedarfs).
+    _gauFrassAt(x, z, erwartet = false) {
         const S = this._bestandSeite();
         const zn = AnazhRealm.BESTAND_REGION.zellen;
         const fx = x / S;
@@ -562,8 +562,9 @@ class AnazhRealm_kreatur_erbe {
         const R = this._gauRevierAm(ix, iz);
         if (!R) return 0;
         return (
-            R.frass[Math.min(zn - 1, Math.floor((fx - ix) * zn)) * zn + Math.min(zn - 1, Math.floor((fz - iz) * zn))] ||
-            0
+            (erwartet ? R.erwartet : R.frass)[
+                Math.min(zn - 1, Math.floor((fx - ix) * zn)) * zn + Math.min(zn - 1, Math.floor((fz - iz) * zn))
+            ] || 0
         );
     }
     // DER TAKT-STEMPEL EINES AKTS (E2): der Takt NACH dem höchsten, den die Seite je bestellte — der Akt liegt nie vor dem Stand
@@ -679,20 +680,30 @@ class AnazhRealm_kreatur_erbe {
             for (const t of m.keys()) if (t < bis) m.delete(t);
         });
         const AJ = this._gauJaegerOrt || (this._gauJaegerOrt = new Map());
-        const stufen = AnazhRealm.LIFE_FIELD.stufen;
+        const [stufen, LF] = [AnazhRealm.LIFE_FIELD.stufen, AnazhRealm.LIFE_FIELD];
+        // DER ERWARTUNGSWERT DER FRASS-SCHICHT (aesungs-rasen): die Schicht beginnt leer (Takt 0) und folgt je Takt O ← O·Z − r
+        // (Zerfall Z, Fraß r der Zelle) — nach k Takten O = −r (1 − Zᵏ) ÷ (1 − Z), ihr Gleichgewicht −r ÷ (1 − Z) = O ÷ (1 − Zᵏ):
+        // der Bedarf des Bestands am Ort, der Rasen der Herde steht mit der ersten Antwort (`_wieseAesung`), nie erst nach dem
+        // Einschwingen (τ = 1 ÷ Zerfall, 125 s Welt-Uhr; an der Mess-Wiese Takt 2: −0,049 statt −0,33).
+        const Zk = Math.exp(-LF.decayPerSec * T * a.takt);
+        const erwartet = (o) => (a.takt > 0 ? Math.max(LF.kahl, (o || 0) / (1 - Zk)) : 0);
         for (const rv of a.reviere || []) {
             const [ix, iz] = [b.gx * n - n / 2 + (rv.i % n), b.gz * n - n / 2 + Math.floor(rv.i / n)];
             const key = ix + "," + iz;
-            const R = { i: rv.i, key, koepfe: rv.koepfe, frass: rv.frass, tiere: [] };
+            const R = { i: rv.i, key, koepfe: rv.koepfe, frass: rv.frass, erwartet: rv.frass.map(erwartet), tiere: [] };
             b.reviere.set(rv.i, R);
             // DIE ÄSUNG IM BILD (E3): springt die Stufe des Fraßes einer Zelle gegen das Bild davor (ohne Bild: gegen 0), wächst
-            // die Nah-Streu dieser Zelle neu — sie liest die Stufe am Ort (`_lebenStufe`); gebaut wird nur, wo eine Stufe springt
+            // die Nah-Streu dieser Zelle neu — sie liest die Stufe am Ort (`_lebenStufe`); springt die Stufe seines Erwartungswerts,
+            // wächst die Wiese der Zelle neu (Nähe, Ferne und Streu: `_nahWieseNeuIn`, die Höhe `_wieseAesung`); gebaut wird nur,
+            // wo eine Stufe springt
             const davor = vorher.get(rv.i);
+            const st = (A, c) => Math.round(((A && A[c]) || 0) * stufen);
             for (let c = 0; c < rv.frass.length; c++) {
-                if (Math.round((rv.frass[c] || 0) * stufen) === Math.round(((davor && davor.frass[c]) || 0) * stufen))
-                    continue;
                 const [x0, z0] = [(ix + Math.floor(c / zn) / zn) * S, (iz + (c % zn) / zn) * S];
-                this._nahStreuNeuIn(x0, z0, x0 + S / zn, z0 + S / zn);
+                if (st(R.erwartet, c) !== st(davor && davor.erwartet, c))
+                    this._nahWieseNeuIn(x0, z0, x0 + S / zn, z0 + S / zn, true);
+                else if (st(rv.frass, c) !== st(davor && davor.frass, c))
+                    this._nahStreuNeuIn(x0, z0, x0 + S / zn, z0 + S / zn);
             }
             const zelle = (c) => ({
                 x: (ix + (Math.floor(c / zn) + 0.5) / zn) * S,

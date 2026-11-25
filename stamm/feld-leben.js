@@ -2483,8 +2483,9 @@ class AnazhRealm_feld_leben {
         const [a, ab] = this._lebenStufeHalt(x, z);
         const k = Math.round(a * L.stufen);
         const alt = st.get(key);
+        // … und die Wiese mit ihr (Nähe, Ferne und Streu: `_nahWieseNeuIn`): die Höhe ihrer Halme liest die Stufe (`_wieseAesung`)
         if ((alt ? alt.k : 0) !== k)
-            this._nahStreuNeuIn(cx * L.cell, cz * L.cell, (cx + 1) * L.cell, (cz + 1) * L.cell);
+            this._nahWieseNeuIn(cx * L.cell, cz * L.cell, (cx + 1) * L.cell, (cz + 1) * L.cell, true);
         if (k === 0) return void st.delete(key); // gemalt heißt aus der Halde genommen (`_tickLebenStufen`): kein Platz bleibt
         if (alt) alt.k = k;
         else st.set(key, { key, k, wach: Infinity, i: -1 });
