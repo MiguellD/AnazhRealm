@@ -2102,10 +2102,16 @@
                                                  // Zonen-Mittel (Literatur aus dem Gedächtnis, ungeprüft); warm-seitig, voll bei N/PET ≤ 0,2
     kontiMeerKm: 600,                            // Meer nahe Land: winterkalte Festlandsluft greift e^(−Abstand/600 km) aufs Meer (gesetzt)
     // DIE MEERESLUFT IM WESTWIND (klima-kontinent): die Luft, die längs des EINEN Winds vom Meer kommt, trägt dessen Winter auf das Land
-    // (+14 K Winter, −2 K Sommer bei voller Meeresluft in der Mitte der Westwind-Zone); die Ostküste trägt den kalten Rand-Strom
-    // (−6 K Winter, −2 K Sommer). Band: Jahresmittel Westküste − Ostküste derselben Breite 5–7 K (Brest 11,6 °C − Wladiwostok 4,9 °C;
-    // Portland 12,5 °C − Halifax 6,6 °C; WMO-Normalwerte, aus dem Gedächtnis gegengelesen).
-    westWinterK: 14, westSommerK: -2, ostWinterK: -6, ostSommerK: -2,
+    // (+14 K Winter, −2 K Sommer bei voller Meeresluft in der Mitte der Westwind-Zone); die Ostküste trägt den kalten Rand-Strom und
+    // die stehende Welle, die das warme Meer windab wirft (Kaspi & Schneider 2011, Nature 471: der warme Ozean kühlt die Ostküste,
+    // nicht nur wärmt er die Westküste) — −12 K Winter, −2 K Sommer. Band, Normalwerte 1991–2020 gleicher Breite (Wikipedia-Tafeln aus
+    // AEMET, Roshydromet, NOAA, ECCC): A Coruña 15,1 − Wladiwostok 5,1 = 10,0 K, Newport OR 10,3 − Halifax 6,9 = 3,4 K (Mittel der zwei
+    // Kontinente 6,7 K); Januar 22,9 bzw. 12,8 K, August −0,1 bzw. −4,6 K. Die Ostküste gegen die Zone T0 + T2·P2: Januar −21,0 /
+    // −13,8 K, Jahr −4,0 / −1,2 K. Median der 171 Paare an ±42° (Leiter land-meer-luft#4): mit −6 K Ostküste −15,6 K Winter, −0,9 K
+    // Jahr, West − Ost 4,9 K; mit −12 K −18,2 K, −2,8 K, 6,9 K — der Sommer West − Ost bleibt −1,8 K. Offen: die Südhalbkugel trägt
+    // das Band nicht (Puerto Montt 10,3 − Puerto Madryn 13,6 = −3,3 K), der Kern unterscheidet die Halbkugeln nicht; der Schnitt
+    // verlegt den Anker an 15 von 62 Saaten (die Suche liest das Klima), die Heimat der Standard-Welt bleibt.
+    westWinterK: 14, westSommerK: -2, ostWinterK: -12, ostSommerK: -2,
     // DIE WIRBEL DER STURMBAHN (klima-kontinent): in der Westwind-Zone trägt nicht der mittlere Wind allein den Dampf — die wandernden
     // Zyklonen bringen ihn aus JEDER Richtung vom nahen Meer heran (die Küste, deren Meer im Norden oder Süden liegt, die Ostküste).
     // Band: die Wirbel tragen in den Mittelbreiten rund die Hälfte des Dampf-Flusses (Peixoto & Oort 1992, Physics of Climate, Kap. 12);
