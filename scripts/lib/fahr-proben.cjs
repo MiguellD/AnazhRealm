@@ -2395,17 +2395,23 @@ async function probeLeben(expected) {
             weg(gL);
             return m;
         };
-        // L1 DER HANGFUSS: 9,3 m/s, Gier 92,3°, über den Hangfuß an einen Glutbrunnen — Soll: seine flache Box schiebt den
-        // Wagen nie auf höheren Grund, die Höhe friert nie ein. Der Ort aus der Welt: der nächste Glutbrunnen am Dorf-Messort
-        // (spec/profiband/haushalt.json `dorf`, `expected.dorf`), angefahren mit Tempo und Gier der Schau (Start 5,6 m,
-        // Spieler 3,1 m vor ihm längs der Gier). Kein Glutbrunnen → vakuös, laut.
+        // L1 DER HANGFUSS: 9,3 m/s vom Hang über den Fuß an eine Feuerstelle (`glutbrunnen`) — Soll: ihre flache Box schiebt
+        // den Wagen nie auf höheren Grund, die Höhe friert nie ein. Die Feuerstelle setzt der Mensch, nie das Feld
+        // (landmarken-geologie: bis hier fuhr die Probe mit Gier 92,3° an den nächsten Glutbrunnen, den das Glut-Feld am
+        // Dorf-Messort warf, 101 je 0,2 km²) — die Probe setzt sie als Werk an den Hangfuß der Welt am Dorf-Messort (welt-orte
+        // `hangfuss`, spec/profiband/haushalt.json `dorf`, `expected.dorf`); der Wagen kommt vom Hang (Start 5,6 m, Spieler 3,1 m
+        // vor ihr längs der Fahrt). Kein Hangfuß → vakuös, laut.
         const D = expected.dorf;
         await ankommen(D.x, D.z);
+        const fuss = window.__weltOrt("hangfuss", { mitte: [D.x, D.z], rMax: 200, schritt: 3 });
         let G = null;
-        for (const e of st.architectures)
-            if (e?.position && /glutbrunnen/.test(e.blueprintName || e.name || e.type || ""))
-                if (!G || flach(e.position, D) < flach(G.position, D)) G = e;
-        const gierL1 = (92.3 * Math.PI) / 180;
+        if (fuss) {
+            const y = hh(fuss.x, fuss.z) + 0.5;
+            const o = { silent: true, precise: true, id: "fahr-hangfuss-feuerstelle" };
+            G = r.spawnArchitecture("glutbrunnen", { x: fuss.x, y, z: fuss.z }, o);
+            if (G) await werkGebaut(G);
+        }
+        const gierL1 = fuss ? fuss.gier + Math.PI : 0; // die Fahrt vom Hang zum Fuß (`gier` der Suche zeigt auf den Hang)
         const vor = (d) => [G.position.x - Math.sin(gierL1) * d, G.position.z - Math.cos(gierL1) * d];
         S.hangfuss = G
             ? await lebenFahrt(
@@ -2418,7 +2424,8 @@ async function probeLeben(expected) {
                   },
                   150
               )
-            : { ziel: false, kontakte: 0, fehlt: "kein Glutbrunnen am Dorf-Messort" };
+            : { ziel: false, kontakte: 0, fehlt: fuss ? "die Feuerstelle steht nicht am Hangfuß" : "kein Hangfuß am Dorf-Messort" };
+        if (G && st.architectures.includes(G)) r.removeArchitecture(G);
         // L3–L5 DER STOSS: der GT fährt mit W aus 9 m Anlauf in der freien Gasse auf ein Hindernis, das NICHT gehalten wird.
         // Kontakt = der erste Schritt, in dem der Kontakt-Löser Lage oder Fahrt nahm (`z.kontakt`); gemessen: die Fahrt davor
         // und danach (die kleinste in den 8 Schritten danach: Rückprall), der Weg des Getroffenen längs der Fahrt, die

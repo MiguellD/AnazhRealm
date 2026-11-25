@@ -561,7 +561,7 @@ function stationVerdict(s) {
         ...probe(s.hangfuss, "hangfuss keine Probe", (hf) =>
             probe(
                 hf.ziel && hf.kontakte >= 1,
-                `hangfuss vakuös (Glutbrunnen ${hf.ziel ? "steht" : "fehlt"}, ${hf.kontakte || 0} Kontakte)`,
+                `hangfuss vakuös (Feuerstelle ${hf.ziel ? "steht" : "fehlt" + (hf.fehlt ? ": " + hf.fehlt : "")}, ${hf.kontakte || 0} Kontakte)`,
                 () => [
                     [
                         hf.unterMax <= STATION.unterM && hf.unterN <= STATION.unterN,
@@ -2258,7 +2258,7 @@ hauptLauf(async () => {
                 "hangfuss-unter",
             ],
             [
-                "Hangfuß: der Glutbrunnen versetzt den Wagen 1,33 m in EINEM Schritt",
+                "Hangfuß: die Feuerstelle versetzt den Wagen 1,33 m in EINEM Schritt",
                 { hangfuss: { ziel: true, kontakte: 1, unterMax: 0.0, unterN: 0, schubMax: 1.33, weg: 21 } },
                 "hangfuss-schub",
             ],
@@ -2268,7 +2268,7 @@ hauptLauf(async () => {
                 "hangfuss-steht",
             ],
             [
-                "Hangfuß ohne Glutbrunnen (vakuös)",
+                "Hangfuß ohne Feuerstelle (vakuös)",
                 { hangfuss: { ziel: false, kontakte: 0, unterMax: 0, unterN: 0, schubMax: 0, weg: 21 } },
                 "hangfuss vakuös",
             ],
@@ -3139,7 +3139,7 @@ hauptLauf(async () => {
     console.log("=== L — DIE ORTE DER LEBEN-SCHAU (Auftrag 0710-2), echter Sim-Schritt ===");
     const L1 = S.hangfuss;
     check(
-        "L1 Hangfuß (der Glutbrunnen am Dorf-Messort, 9,3 m/s, Gier 92,3°, seine Box): nach JEDER Kontakt-Antwort steht der Wagen auf dem Gesetz (≤ 0,2 m unter der Ebene seiner Räder, ≤ 3 Schritte), der Schub je Schritt ≤ 0,2 m über die eigene Fahrt, er fährt weiter",
+        "L1 Hangfuß (die Feuerstelle am Hangfuß des Dorf-Messorts, vom Hang mit 9,3 m/s, ihre Box): nach JEDER Kontakt-Antwort steht der Wagen auf dem Gesetz (≤ 0,2 m unter der Ebene seiner Räder, ≤ 3 Schritte), der Schub je Schritt ≤ 0,2 m über die eigene Fahrt, er fährt weiter",
         frei("hangfuss"),
         L1
             ? `unter dem Gesetz höchstens ${L1.unterMax.toFixed(3)} m (${L1.unterN} Schritte > 0,05 m) · größter Schub ${L1.schubMax.toFixed(3)} m · ${L1.kontakte} Kontakt-Schritte · ${L1.weg.toFixed(1)} m gefahren`

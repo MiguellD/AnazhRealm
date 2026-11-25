@@ -2527,9 +2527,9 @@ class AnazhRealm_vegetation_baum {
 
     // DIE LANDMARKE FOLGT DER GEOLOGIE (landmarken-geologie): ob und wie dicht ein Felsbogen oder Felsturm steht, liest die Saat je
     // Chunk am Gesetz des Orts (gelaende-core `landmarke`: je km² aus Tafelland und Klima, die Bänder Arches · Red River Gorge ·
-    // Elbsandstein · Dartmoor) — die Zahl des Chunks ist Poisson(λ · Fläche) aus seinem Samen, ihr Platz der höchste Punkt seines
+    // Sächsische Schweiz · Dartmoor) — die Zahl des Chunks ist Poisson(λ · Fläche) aus seinem Samen, ihr Platz der höchste Punkt seines
     // Rasters auf dem Land (der Tor krönt Kuppe und Rücken), die Art der Anteil ihres λ. Die Höhen fragt der Chunk nur, wenn er eine
-    // trägt (λ · Fläche ≤ 0,015). Bis hier warf jede Probe mit 1,4 % einen Bogen oder Turm, wo die dichte-Affinität 0,18 trug, Bogen
+    // trägt (λ · Fläche ≤ 0,018). Bis hier warf jede Probe mit 1,4 % einen Bogen oder Turm, wo die dichte-Affinität 0,18 trug, Bogen
     // oder Turm nach Münzwurf: an der Ankunft 78 Bögen und 64 Türme auf 0,21 km² (≈ 680 je km², Arches trägt 6,5). → die Zahl.
     _landmarkeChunk(cx, cz) {
         const { span } = this._voxelChunkConfig();
