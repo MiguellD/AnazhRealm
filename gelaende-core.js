@@ -530,7 +530,9 @@
     }
     function netzNeu(L, base, wl) {
         const P = landformRegler(L);
-        let schl = L.seed + "|" + base + "|" + wl;
+        // die Wasser-Bilanz des Orts trägt die Endseen (`seeBilanzNetz`): Spende und Verlust des offenen Wassers
+        const K = ortDer(L).klimaHeute;
+        let schl = L.seed + "|" + base + "|" + wl + "|" + K.spendeMm + "|" + K.seeVerlustMm;
         for (const r of LANDFORM_REGLER) schl += "|" + P[r.id];
         const da = NETZE.get(schl);
         if (da && da.noise === L.noise) return da;
@@ -554,6 +556,9 @@
             ts: Math.tan((P.schuttWinkel * Math.PI) / 180),
             tc: Math.tan((P.kliffWinkel * Math.PI) / 180),
             schicht: null, // die Schicht-Periode (`schichtMass`), einmal je Netz
+            talNass: 0, // der See-Anteil des zuletzt gefragten Talgrunds (`talgrund`)
+            spendeMm: K.spendeMm,
+            seeVerlustMm: K.seeVerlustMm,
         };
         NETZE.set(schl, N);
         return N;
@@ -618,10 +623,14 @@
             hp: NaN,
             fluss: undefined, // der Unterlieger-Knoten, null = Mündung/Senke
             aus: null, // die Mündung ins Netz darüber { x, z, bed }
-            senke: 0, // Ebene 0: 1 benannter See, 2 Meer
+            senke: 0, // Ebene 0: 1 Endsee bzw. trockene Senke, 2 Meer
             A: 0,
             bed: NaN,
             seg: undefined, // das Talprofil des Knotens (`segment`), null = keins
+            ab: undefined, // der tiefste Nachbar (D8), null = Grube
+            ende: undefined, // Ebene 0: die Grube am Ende der D8-Kette
+            see: undefined, // Ebene 0: die Mulde, in deren Becken der Knoten liegt (`mulde`), null = keine
+            nass: null, // Ebene 0: die Mulde, deren Wasser über dem Knoten steht
         };
         M.set(key, kn);
         return kn;
@@ -653,8 +662,53 @@
             kn.aus = muendung(N, kn.k - 1, kn.x, kn.z);
             return null;
         }
+        if (kn.k > 0 || h < N.wl) {
+            const best = knotenAb(N, kn);
+            kn.fluss = best;
+            if (!best) {
+                if (kn.k === 0) kn.senke = 2;
+                else kn.aus = muendung(N, kn.k - 1, kn.x, kn.z);
+            }
+            return best;
+        }
+        // EBENE 0 AUF LAND — DIE FÜLLUNG (`mulde`): im Becken einer Mulde fließt das Wasser durch ihren See zum Überlauf,
+        // der Überlauf in seinen tiefsten Nachbarn jenseits des Beckens; ein Endsee hält sein Wasser (Wurzel: Senke 1).
+        const M = seeVon(N, kn);
+        if (M) {
+            if (!M.endsee) {
+                kn.nass = M;
+                kn.fluss = M.baum.get(kn);
+                return kn.fluss;
+            }
+            if (M.nassBaum.has(kn)) {
+                kn.nass = M;
+                kn.fluss = M.nassBaum.get(kn);
+                if (!kn.fluss) kn.senke = 1;
+                return kn.fluss;
+            }
+            kn.fluss = knotenAb(N, kn);
+            if (!kn.fluss) kn.senke = 1;
+            return kn.fluss;
+        }
+        // der Überlauf: ein Knoten, an dessen Becken-Nachbarn eine überlaufende Mulde ihn als Sattel nennt
+        for (let dj = -1; dj <= 1; dj++)
+            for (let di = -1; di <= 1; di++) {
+                if (!di && !dj) continue;
+                const m = knoten(N, 0, kn.i + di, kn.j + dj);
+                if (!(knotenHp(N, m) < h)) continue;
+                const Mm = seeVon(N, m);
+                if (Mm && Mm.sigma === kn && !Mm.endsee) return (kn.fluss = Mm.aus);
+            }
+        kn.fluss = knotenAb(N, kn);
+        if (!kn.fluss) throw new Error(`gelaende-core knotenFluss: die Grube ${kn.i},${kn.j} liegt in keiner Mulde`);
+        return kn.fluss;
+    }
+    // Der tiefste Nachbar (D8) eines Knoten auf der Höhe seiner Suche (`knotenHp`), null = Grube — die rohe Rinne, auf der
+    // die Füllung ihre Becken findet.
+    function knotenAb(N, kn) {
+        if (kn.ab !== undefined) return kn.ab;
         let best = null;
-        let bh = h;
+        let bh = knotenHp(N, kn);
         for (let dj = -1; dj <= 1; dj++)
             for (let di = -1; di <= 1; di++) {
                 if (!di && !dj) continue;
@@ -665,12 +719,209 @@
                     best = m;
                 }
             }
-        kn.fluss = best;
-        if (!best) {
-            if (kn.k === 0) kn.senke = h < N.wl ? 2 : 1;
-            else kn.aus = muendung(N, kn.k - 1, kn.x, kn.z);
-        }
+        kn.ab = best;
         return best;
+    }
+    // Die Grube am Ende der D8-Kette (Ebene 0; streng fallend, nie ein Zyklus).
+    function knotenEnde(N, kn) {
+        let c = kn;
+        const pfad = [];
+        while (c.ende === undefined) {
+            const a = knotenAb(N, c);
+            if (!a) {
+                c.ende = c;
+                break;
+            }
+            pfad.push(c);
+            c = a;
+        }
+        const e = c.ende;
+        for (let p = 0; p < pfad.length; p++) pfad[p].ende = e;
+        return e;
+    }
+    // Die Mulde, in deren Becken ein Land-Knoten der Ebene 0 liegt (unter dem Spiegel ihres Überlaufs), sonst null.
+    function seeVon(N, kn) {
+        if (kn.see !== undefined) return kn.see;
+        if (knotenHp(N, kn) < N.wl) return (kn.see = null);
+        const E = knotenEnde(N, kn);
+        if (knotenHp(N, E) < N.wl) return (kn.see = null);
+        mulde(N, E);
+        if (kn.see === undefined) kn.see = null;
+        return kn.see;
+    }
+    // DIE FÜLLUNG (fluss-fuellung, „dem Gesetz der Welt fehlt ein Strom") — jede Grube der Ebene 0 füllt ihr Becken bis zu
+    // seinem tiefsten Sattel und läuft dort über (Priority-Flood: Barnes, Lehman & Mulla 2014; die Hierarchie der Senken,
+    // Fill-Spill-Merge: Barnes, Callaghan & Wickert 2021): eine Minimax-Suche von der Grube (Schlüssel max(Höhe, Weg), bei
+    // Gleichstand Höhe, dann i, j) steigt, bis sie einen Knoten unter ihrem Spiegel zieht, dessen Kette ins Meer fällt oder in
+    // eine Mulde mit tieferem Spiegel. Der letzte Anstieg ist der Sattel σ; was vor ihm gezogen ist, ist das Becken (alles
+    // unter σ, mit der Grube verbunden) — dieselbe Menge, von welcher Grube des Beckens die Frage auch kommt. Eine Grube darin
+    // mit unbekanntem Spiegel rechnet ihre eigene Mulde zuerst; eine, die gerade rechnet, ist Teil des Beckens (beide steigen
+    // über denselben Sattel). Der Baum des Sees ist die Breitensuche von σ über das Becken in fester Nachbar-Folge: Wasser
+    // fließt durch den See zum Überlauf. Bis fluss-fuellung endete jede Grube als Senke: 70 % des Landes um die Wiese liefen
+    // in 1 Knoten große Seen, im Fenster ±12 km floss kein Fluss.
+    // `endsee`: die Verdunstung gegen den Zufluss (`seeBilanzNetz`). Leser: `knotenFluss`, `knotenSohle`, der See des
+    // Geländes (`netzSee`), die Hydrosphäre.
+    const FUELLUNG = Object.freeze({ deckel: 1 << 18 });
+    const FUELL_ARBEIT = Object.freeze({ arbeit: true });
+    function muldeVor(a, b) {
+        return a.key < b.key || (a.key === b.key && (a.h < b.h || (a.h === b.h && (a.kn.i < b.kn.i || (a.kn.i === b.kn.i && a.kn.j < b.kn.j)))));
+    }
+    function mulde(N, P) {
+        if (P.see && P.see !== FUELL_ARBEIT) return P.see;
+        P.see = FUELL_ARBEIT;
+        const heap = [];
+        const rein = (e) => {
+            let c = heap.length;
+            heap.push(e);
+            while (c > 0) {
+                const p = (c - 1) >> 1;
+                if (!muldeVor(heap[c], heap[p])) break;
+                const t = heap[c];
+                heap[c] = heap[p];
+                heap[p] = t;
+                c = p;
+            }
+        };
+        const raus = () => {
+            const top = heap[0];
+            const last = heap.pop();
+            if (heap.length) {
+                heap[0] = last;
+                let c = 0;
+                for (;;) {
+                    const l = 2 * c + 1;
+                    const r = l + 1;
+                    let m = c;
+                    if (l < heap.length && muldeVor(heap[l], heap[m])) m = l;
+                    if (r < heap.length && muldeVor(heap[r], heap[m])) m = r;
+                    if (m === c) break;
+                    const t = heap[c];
+                    heap[c] = heap[m];
+                    heap[m] = t;
+                    c = m;
+                }
+            }
+            return top;
+        };
+        const gesehen = new Set([P]);
+        const hP = knotenHp(N, P);
+        rein({ key: hP, h: hP, kn: P });
+        const reihe = [];
+        let lvl = -Infinity;
+        let iSigma = 0;
+        for (;;) {
+            if (!heap.length) throw new Error("gelaende-core mulde: die Suche fand keinen Überlauf");
+            const e = raus();
+            const x = e.kn;
+            if (e.key > lvl) {
+                lvl = e.key;
+                iSigma = reihe.length;
+            }
+            reihe.push(x);
+            const E = knotenEnde(N, x);
+            if (knotenHp(N, E) < N.wl) break;
+            if (E !== P) {
+                const R = E.see === undefined ? mulde(N, E) : E.see;
+                // die Mulde darunter hat dieses Becken aufgenommen (sie stieg über denselben Sattel)
+                if (P.see !== FUELL_ARBEIT) return P.see;
+                if (R !== FUELL_ARBEIT && R.spiegel < lvl) break;
+            }
+            if (reihe.length > FUELLUNG.deckel)
+                throw new Error(`gelaende-core mulde: das Becken der Grube ${P.i},${P.j} wächst über ${FUELLUNG.deckel} Knoten`);
+            for (let dj = -1; dj <= 1; dj++)
+                for (let di = -1; di <= 1; di++) {
+                    if (!di && !dj) continue;
+                    const m = knoten(N, 0, x.i + di, x.j + dj);
+                    if (gesehen.has(m)) continue;
+                    gesehen.add(m);
+                    const h = knotenHp(N, m);
+                    rein({ key: h > e.key ? h : e.key, h, kn: m });
+                }
+        }
+        const sigma = reihe[iSigma];
+        const becken = reihe.slice(0, iSigma);
+        const drin = new Set(becken);
+        // Der Überlauf fällt in seinen tiefsten Nachbarn jenseits des Beckens, dessen Kette ins Meer fällt oder in einen See mit
+        // tieferem Spiegel — zwei Becken auf demselben Sattel (beide voll bis σ) laufen nie ineinander, sondern beide dorthin.
+        let aus = null;
+        let ah = Infinity;
+        for (let dj = -1; dj <= 1; dj++)
+            for (let di = -1; di <= 1; di++) {
+                if (!di && !dj) continue;
+                const m = knoten(N, 0, sigma.i + di, sigma.j + dj);
+                if (drin.has(m)) continue;
+                const h = knotenHp(N, m);
+                if (!(h < lvl) || h >= ah) continue;
+                const E = knotenEnde(N, m);
+                let tiefer = knotenHp(N, E) < N.wl;
+                if (!tiefer) {
+                    const R = E.see === undefined ? mulde(N, E) : E.see;
+                    if (P.see !== FUELL_ARBEIT) return P.see;
+                    tiefer = R !== FUELL_ARBEIT && R.spiegel < lvl;
+                }
+                if (tiefer) {
+                    ah = h;
+                    aus = m;
+                }
+            }
+        if (!aus) throw new Error(`gelaende-core mulde: der Sattel ${sigma.i},${sigma.j} hat keinen tieferen Nachbarn`);
+        const baum = seeBaum(N, sigma, drin);
+        const M = { spiegel: knotenHp(N, sigma), sigma, aus, becken, baum, endsee: false, nassBaum: null, nassSpiegel: NaN, W: NaN };
+        for (const r of becken) r.see = M;
+        seeBilanzNetz(N, M, drin);
+        return M;
+    }
+    // Der Baum des Wassers: die Breitensuche von der Wurzel über die Menge `drin` in fester Nachbar-Folge (Knoten → Unterlieger).
+    function seeBaum(N, wurzel, drin) {
+        const baum = new Map();
+        if (drin.has(wurzel)) baum.set(wurzel, null);
+        const q = [wurzel];
+        for (let h = 0; h < q.length; h++) {
+            const c = q[h];
+            for (let dj = -1; dj <= 1; dj++)
+                for (let di = -1; di <= 1; di++) {
+                    if (!di && !dj) continue;
+                    const m = knoten(N, 0, c.i + di, c.j + dj);
+                    if (!drin.has(m) || baum.has(m)) continue;
+                    baum.set(m, c);
+                    q.push(m);
+                }
+        }
+        return baum;
+    }
+    // DIE VERDUNSTUNG GEGEN DEN ZUFLUSS (fluss-fuellung, Gesetz c) — je Becken die Bilanz des offenen Wassers: der Zufluss
+    // R · A_ein (R die Abfluss-Spende des Orts, A_ein das Einzugsgebiet, dessen D8-Ketten im Becken enden) gegen den Verlust
+    // V · A_See (V = Verdunstung des offenen Wassers − Niederschlag, `seeVerlustMm` des Orts; planet-core S5: der Endsee
+    // `acc < verlust`). Trägt der Zufluss das volle Becken nicht, steht der See auf der Fläche, die er trägt (A_See = R·A_ein/V,
+    // die tiefsten Knoten zuerst, mit der tiefsten Grube verbunden) und läuft nie über: ein Endsee (das Tote Meer, der
+    // Tschad-See; die Erde ≈ 20 % endorheisch, Wang et al. 2018). In der Heimat ist V = 0 (der Niederschlag übertrifft die
+    // Verdunstung des offenen Wassers am Anker): jeder See läuft über. Offen: Oberlieger-Mulden zählen nicht zu A_ein.
+    function seeBilanzNetz(N, M, drin) {
+        const V = N.seeVerlustMm;
+        if (!(V > 0)) return;
+        const S2 = N.S[0] * N.S[0];
+        const ein = new Set(M.becken);
+        const q = M.becken.slice();
+        for (let h = 0; h < q.length; h++) {
+            const c = q[h];
+            for (let dj = -1; dj <= 1; dj++)
+                for (let di = -1; di <= 1; di++) {
+                    if (!di && !dj) continue;
+                    const m = knoten(N, 0, c.i + di, c.j + dj);
+                    if (ein.has(m) || knotenAb(N, m) !== c) continue;
+                    ein.add(m);
+                    q.push(m);
+                }
+        }
+        const traegt = (N.spendeMm * ein.size) / V;
+        if (traegt >= M.becken.length) return;
+        const reihe = M.becken.slice().sort((a, b) => a.hp - b.hp || a.i - b.i || a.j - b.j);
+        const n = Math.max(1, Math.floor(traegt));
+        const nass = new Set(reihe.slice(0, n));
+        M.endsee = true;
+        M.nassSpiegel = reihe[n - 1].hp;
+        M.nassBaum = seeBaum(N, reihe[0], nass);
+        M.einzug = ein.size * S2;
     }
     // Die Oberlieger-Zahl (Einzugsgebiet in Knoten-Zellen): 1 + die Summe der Nachbarn, die hierher fließen.
     function knotenA(N, kn) {
@@ -703,8 +954,14 @@
             const hp = knotenHp(N, q);
             const f = q.fluss;
             if (q.k === 0 && (!f || hp < N.wl)) {
-                // Senke (benannter See: ihre Grundhöhe) oder Meer (die Bathymetrie der Grundhöhe, kein Fluss-Gesetz)
+                // Senke (Endsee: ihre Grundhöhe) oder Meer (die Bathymetrie der Grundhöhe, kein Fluss-Gesetz)
                 q.bed = hp < N.wl ? Math.min(hp, N.wl - 2) : hp;
+                continue;
+            }
+            if (q.k === 0 && q.nass) {
+                // DER GRUND DES SEES (fluss-fuellung): die Tiefe unter dem Spiegel aus der Grundhöhe, der Spiegel auf der Sohle
+                // des Überlaufs (der Endsee: auf seiner Grundhöhe)
+                q.bed = q.nass.endsee ? hp : seeW(N, q.nass) - (q.nass.spiegel - hp);
                 continue;
             }
             const tx = f ? f.x : q.aus.x;
@@ -721,8 +978,10 @@
             if (q.k === 0) {
                 // EBENE 0 — die Höhe ENTSTEHT: die Sohle steigt von der Mündung (Meeresspiegel) oder dem See stromauf mit
                 // S = ks·U·A^−θ (konkav: das Gefälle fällt mit dem Einzugsgebiet) — die Großform setzt Hebung und Senken.
+                // Die Mündung in einen See steht wie die ins Meer 0,5 m unter seinem Spiegel.
                 const sMax = ks * Math.pow(knotenA(N, q) * S * S, -N.P.theta);
-                b = Math.max(tb, N.wl - 0.5) + Math.max(0.0004, sMax) * len;
+                const unten = f && f.nass ? Math.max(N.wl, seeW(N, f.nass)) - 0.5 : N.wl - 0.5;
+                b = Math.max(tb, unten) + Math.max(0.0004, sMax) * len;
             } else if (q.k === 2) {
                 // Ebene 2 ist Hang-Domäne (A < 0,1 km²): die Rinne folgt dem Hang, ihr Einschnitt wächst mit ihm (≤ 0,22 ×
                 // Hang × Knoten-Kante — nie tiefer, als der Hang je Raster-Schritt fällt: keine Rinne wird zur Grube).
@@ -740,6 +999,11 @@
             q.bed = b;
         }
         return kn.bed;
+    }
+    // Der Spiegel eines Sees im Gelände: die Sohle seines Überlaufs (der Endsee: die Grundhöhe seines höchsten nassen Knotens).
+    function seeW(N, M) {
+        if (M.W !== M.W) M.W = M.endsee ? M.nassSpiegel : knotenSohle(N, M.sigma);
+        return M.W;
     }
 
     // DIE BREITE eines Flusses aus seinem Einzugsgebiet A (m²): die Bankvoll-Breite der hydraulischen Geometrie (Dunne &
@@ -996,8 +1260,10 @@
     function segmentNeu(N, kn) {
         knotenFluss(N, kn);
         const bed = knotenSohle(N, kn);
-        if (kn.k === 0 && !kn.fluss) return null;
+        // im See zieht kein Fluss (sein Wasser ist der See); die Mündung in ihn endet auf seinem Spiegel
+        if (kn.k === 0 && (!kn.fluss || kn.nass)) return null;
         const t = kn.fluss || kn.aus;
+        const tBed = t.nass ? Math.max(t.bed, seeW(N, t.nass)) : t.bed;
         const gf = knotenGf(N, kn);
         const P = N.P;
         const S = N.S[kn.k];
@@ -1027,7 +1293,7 @@
             const n = Math.round(len / lam0);
             if (n >= 1) {
                 const lam = len / n;
-                const gefaelle = (bed - t.bed) / len;
+                const gefaelle = (bed - tBed) / len;
                 // gestreckt heißt nie lineal-gerade: der steile Lauf behält ein Viertel des ω (Sinuosität ≈ 1,02)
                 const voll = 1 - glatt(MAEANDER.gefaelleVoll, MAEANDER.gefaelleNull, gefaelle);
                 let o = Math.floor(MAEANDER.stufen * (MAEANDER.gestreckt + (1 - MAEANDER.gestreckt) * voll) + 1e-9);
@@ -1047,7 +1313,7 @@
             ez,
             len2: ex * ex + ez * ez || 1,
             ba: bed,
-            bb: t.bed,
+            bb: tBed,
             F,
             W,
             b,
@@ -1193,7 +1459,9 @@
                     const dx = kn.x < x0 ? x0 - kn.x : kn.x > x0 + S ? kn.x - x0 - S : 0;
                     const dz = kn.z < z0 ? z0 - kn.z : kn.z > z0 + S ? kn.z - z0 - S : 0;
                     if (dx * dx + dz * dz >= R2) continue;
-                    w.push(kn.x, kn.z, knotenSohle(N, kn));
+                    // der vierte Wert: der Spiegel des Sees über dem Knoten (`seeW`), NaN auf dem Trockenen
+                    const bed = knotenSohle(N, kn);
+                    w.push(kn.x, kn.z, bed, kn.nass ? seeW(N, kn.nass) : NaN);
                 }
             a = Float64Array.from(w);
             if (T.M.size > 300000) T.M.clear();
@@ -1211,7 +1479,8 @@
         const a = talZelle(N, Math.floor(x / S), Math.floor(z / S));
         let sw = 0;
         let sb = 0;
-        for (let p = 0; p < a.length; p += 3) {
+        let sn = 0;
+        for (let p = 0; p < a.length; p += 4) {
             const dx = x - a[p];
             const dz = z - a[p + 1];
             const q = 1 - (dx * dx + dz * dz) / R2;
@@ -1219,14 +1488,42 @@
             const w = q * q;
             sw += w;
             sb += w * a[p + 2];
+            if (a[p + 3] === a[p + 3]) sn += w;
         }
+        // der Anteil des Sees am Talgrund (`flaeche`: der Grund des Sees trägt kein Relief, `netzSee`)
+        N.talNass = sw > 0 ? sn / sw : 0;
         return sw > 0 ? sb / sw : N.base + grossform(N, x, z).K;
+    }
+    // DER SEE DES NETZES an (x, z) (fluss-fuellung): der Spiegel des Sees, dessen Knoten den Talgrund hier am stärksten
+    // tragen, und sein Anteil am Talgrund (0…1) — null, wo kein See-Knoten den Ort erreicht. Leser: die Hydrosphäre (ihr
+    // See steht auf diesem Spiegel, über die Grenzen ihrer Regionen hinweg) und die Linse.
+    function netzSee(L, x, z) {
+        const N = netzFuer(L);
+        const S = N.S[0];
+        const R2 = 1.6 * S * 1.6 * S;
+        talgrund(N, x, z);
+        if (!(N.talNass > 0)) return null;
+        const a = talZelle(N, Math.floor(x / S), Math.floor(z / S));
+        let best = -1;
+        let bw = 0;
+        for (let p = 0; p < a.length; p += 4) {
+            if (a[p + 3] !== a[p + 3]) continue;
+            const dx = x - a[p];
+            const dz = z - a[p + 1];
+            const q = 1 - (dx * dx + dz * dz) / R2;
+            if (q > 0 && q * q > bw) {
+                bw = q * q;
+                best = p;
+            }
+        }
+        return best < 0 ? null : { spiegel: a[best + 3], gewicht: N.talNass };
     }
 
     // DIE FLÄCHE der Ebenen 0..kmax an (x, z): ausgehend von der Hülle das Minimum der Talprofile je Ebene. `aus` (optional)
     // sammelt den Hang-Schätzer (die steilste gewählte Flanke) und die Tal-Nähe für das Detail.
     function flaeche(N, kmax, x, z, gf, aus) {
-        let H = talgrund(N, x, z) + gf.rel;
+        const tg = talgrund(N, x, z);
+        let H = tg + gf.rel * (1 - N.talNass);
         let steil = 0;
         let nah = 1;
         let hang = 0;
@@ -2026,7 +2323,8 @@
             for (let i = Math.floor(x0 / S) - 1; i <= Math.floor(x1 / S) + 1; i++) {
                 const kn = knoten(N, 0, i, j);
                 knotenFluss(N, kn);
-                if (kn.senke === 1) {
+                // der See der Füllung (`mulde`): jeder Knoten unter seinem Spiegel; die Senke: der Endsee
+                if (kn.senke === 1 || kn.nass) {
                     const k = idx(kn.x, kn.z);
                     if (k >= 0) out.push(k);
                 }
@@ -2110,13 +2408,16 @@
                 for (let i = Math.floor((x0 - 2 * S) / S) - 1; i <= Math.floor((x1 + 2 * S) / S) + 1; i++) {
                     const kn = knoten(N, k, i, j);
                     if (!drin(kn)) continue;
+                    // im See zieht kein Lauf; der Überlauf eines Sees ohne trockene Oberlieger ist eine Quelle
+                    knotenFluss(N, kn);
+                    if (kn.nass) continue;
                     let oben = 0;
                     let obenDrin = 0;
                     for (let dj = -1; dj <= 1; dj++)
                         for (let di = -1; di <= 1; di++) {
                             if (!di && !dj) continue;
                             const m = knoten(N, k, i + di, j + dj);
-                            if (knotenFluss(N, m) !== kn) continue;
+                            if (knotenFluss(N, m) !== kn || m.nass) continue;
                             oben++;
                             if (drin(m)) obenDrin++;
                         }
@@ -2134,6 +2435,10 @@
                         if (!f) {
                             // die Mündung des Zuflusses auf der Rinne der Ebene 0 — oder die Senke selbst (keine Rinne in Reichweite)
                             ende = c.aus.von ? "muendung" : "see";
+                            break;
+                        }
+                        if (f.nass) {
+                            ende = "see";
                             break;
                         }
                         if (!drin(f)) break;
@@ -6003,8 +6308,11 @@
     function ortGesetz(teil) {
         if (teil == null) {
             if (!ORT_HEIMAT) {
+                // `seeVerlustMm` (fluss-fuellung): die Verdunstung des offenen Wassers über dem Niederschlag (mm/a, ≥ 0) — am
+                // Anker der Heimat übertrifft der Niederschlag sie (planet-core: PET 400 + 45 · 7 °C = 715 mm gegen P ≈ 745 mm aus
+                // Turc-Pike und der Spende 328,5 mm): 0, jeder See läuft über.
                 const klimaHeute = Object.freeze(
-                    Object.assign({}, TEMPERATUR, { spendeMm: PEGEL.spende * 1000 * TEMPERATUR.jahrTage })
+                    Object.assign({}, TEMPERATUR, { spendeMm: PEGEL.spende * 1000 * TEMPERATUR.jahrTage, seeVerlustMm: 0 })
                 );
                 ORT_HEIMAT = {
                     kuehlungKJeM: TEMPERATUR.sommer / ((SCHNEE.start + SCHNEE.voll) / 2),
@@ -8184,6 +8492,8 @@
     }
 
     root.__gelaendeCore = Object.freeze({
+        netzSee,
+        FUELLUNG,
         WELT_FELD: WELT_FELD,
         weltFeldRausch: weltFeldRausch,
         weltFeld: weltFeld,
