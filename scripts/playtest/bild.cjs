@@ -368,19 +368,29 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
             // `_followCelestialBodies`; dieser Test ruft kein _loopRender) → skyOffset.y (= sin(angle)·380)
             // ist das kamera-unabhängige Maß für über/unter dem Horizont.
             const offY = (m) => (m.userData?.skyOffset ? m.userData.skyOffset.y : m.position.y);
+            // der Mond steht am Ort seiner Bahn (`_dayNightMoonDirection`, kosmos-bahn): der Winkel zwischen Körper und Gesetz
+            const mondAmOrt = (t) => {
+                const o = st.moonMesh.userData.skyOffset.clone().normalize();
+                return o.angleTo(r._dayNightMoonDirection(r._sonnenWinkel(t)));
+            };
             r.setTimeOfDay(0.5, "human"); // Mittag
             r._applyDayNightToScene();
             const sunYNoon = offY(st.sunMesh);
-            const moonYNoon = offY(st.moonMesh);
+            const mondMittag = mondAmOrt(0.5);
             r.setTimeOfDay(0, "human"); // Mitternacht
             r._applyDayNightToScene();
             const sunYMidnight = offY(st.sunMesh);
-            const moonYMidnight = offY(st.moonMesh);
-            // Mittag: Sonne oben, Mond unten. Mitternacht: umgekehrt.
+            const mondNacht = mondAmOrt(0);
             out.sunHighAtNoon = sunYNoon > 100;
-            out.moonLowAtNoon = moonYNoon < -100;
             out.sunLowAtMidnight = sunYMidnight < -100;
-            out.moonHighAtMidnight = moonYMidnight > 100;
+            out.mondAmOrt = Math.max(mondMittag, mondNacht) < 1e-6;
+            // der Mond läuft gegen die Sonne (die Zeit des Kosmos): in 7 Tagen 7 × 360°/29,53 = 85,3° (± die Exzentrizität ≤ 0,077)
+            const K = r._kosmosJetzt().K;
+            const dl = (t) => __weltLicht.kosmosZeit(K, t).mond.dLaenge;
+            let woche = ((dl(7.5) - dl(0.5)) * 180) / Math.PI;
+            woche -= 360 * Math.floor(woche / 360);
+            out.mondWoche = woche;
+            out.mondLaeuft = woche > 70 && woche < 100;
         }
         r.setTimeOfDay(0.5, "human"); // Reset
 
@@ -437,9 +447,12 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         check("Welle 6.G3 V2 Vision: peace=1 verlängert Wetter-Dauer (>120%)", wave6g3v2Results.peaceSlowsWeather);
         check("Welle 6.G3 V2 Vision: chaos=1 verkürzt Wetter-Dauer (<70%)", wave6g3v2Results.chaosSpeedsWeather);
         check("Welle 6.G3 V2 Vision: Sonne hoch am Mittag (y > 100)", wave6g3v2Results.sunHighAtNoon);
-        check("Welle 6.G3 V2 Vision: Mond niedrig am Mittag (y < -100)", wave6g3v2Results.moonLowAtNoon);
         check("Welle 6.G3 V2 Vision: Sonne niedrig nachts (y < -100)", wave6g3v2Results.sunLowAtMidnight);
-        check("Welle 6.G3 V2 Vision: Mond hoch nachts (y > 100)", wave6g3v2Results.moonHighAtMidnight);
+        check("kosmos-bahn: der Mond-Körper steht am Ort seiner Bahn (Mittag und Mitternacht, < 1e-6 rad)", wave6g3v2Results.mondAmOrt);
+        check(
+            `kosmos-bahn: der Mond läuft gegen die Sonne (7 Tage: ${Math.round(wave6g3v2Results.mondWoche)}°, Band 70–100°)`,
+            wave6g3v2Results.mondLaeuft
+        );
         check(
             "Welle 6.G3 V2 Vision: magie-Welt-Region hebt Sky-Blau (vs dichte-Region)",
             wave6g3v2Results.magieFieldRaisesBlue

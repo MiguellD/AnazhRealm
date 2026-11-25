@@ -2794,8 +2794,9 @@
     // den Sommer unter den Winter (46 von 1 814 Land-Zielen, gelaende-core `schneePegel` las „friert immer“) und sprang am Äquator.
     // DIE SPANNE REIST ALS VERHÄLTNIS (Karte 2 planet.kopplung.bahn-klima#2): das Mittel des Gangs reist als Differenz, seine halbe
     // Spanne als Verhältnis zu der des Ankers (wie die Spende, `spendeVerh`) — der Ort trägt die Spanne der Heimat × r, r = Spanne
-    // des Orts ÷ Spanne des Ankers. Die Einstrahlung, die den Gang treibt, ist an jeder Breite außerhalb der Polarkreise
-    // S0·sin φ·sin ε (die Differenz der Tagesmittel zur Sonnwende, Berger 1978) — ohne Neigung 0, bei 45° das 1,78-Fache der Erde.
+    // des Orts ÷ Spanne des Ankers. Die Einstrahlung, die den Gang treibt, trägt an jeder Breite (auch jenseits der Polarkreise)
+    // S0·sin φ·sin ε (die Differenz der Tagesmittel zur Sonnwende, Berger 1978) — ohne Neigung 0, bei 45° das 1,78-Fache der Erde;
+    // am Äquator (sin φ = 0) kein Gang: dort trug die Differenz den Rest des Ankers (0,27 K, Phase 0,5), das Verhältnis trägt 0.
     // Vorher reiste die Spanne als Differenz: der Rest des Ankers (Spanne der Heimat − Spanne des Ankers, an manchen Saaten 13 K)
     // blieb jedem Körper — Neigung 0 trug an den 20 Saaten der Station bis 63 % der Spanne mit dem Körper der Erde.
     const kh = og.klimaHeute, gleich = o.klima.sommerPhase === a.klima.sommerPhase;
