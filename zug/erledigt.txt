@@ -2531,3 +2531,4 @@ omen-gtx-gtx-0692960c-w141522-1-0692960c UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESS
 2026-11-25 14:55 RUNDE 30 ALARM gtx: ohne Fortschritt seit 25 min (halt, 10/241, Station karte2.planet.kosmos.himmelsmechanik#1, Kopf 0692960c) — gesehen von radeon (radeon-dienst)
 2026-11-25 15:30 RUNDE 30 SPRUNG am 0692960c → Runde 31 am e1a54023 (gtx halt 10/241, radeon durch 67/67): drei Landungen seit dem Runden-Kopf (w28-mauer-im-stoff z733, w28-sonnenbahn2 + w28-wiese-fern z734); Anspruch #728 erleben.spieler.zeit#1
 2026-11-25 15:38 RUNDE 31 ALARM gtx: OMEN: 62 Messungen ungepusht seit 04:58 — offen 0/0, Station -, Kopf e1a54023; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
+2026-11-25 15:38 landung Runde 31 am e1a54023: misst 68 von 241 Stationen (vorn; 0 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
