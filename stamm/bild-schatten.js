@@ -77,14 +77,16 @@ class AnazhRealm_bild_schatten {
     // Ein Boden aus Albedo 0 trägt nichts zurück. Der Pass läuft nach dem Bild (wie der Spiegel): EIN Dreieck über das Ziel.
     // DIE SICHT DES BILDES (laub-messer, der Lichtmesser der Kamera): hinter der Spalte der Atmosphäre trägt dasselbe Ziel die
     // Kacheln der unteren Bildhälfte ein zweites Mal — je Kachel den Sonnen-Schatten, den das Bild an ihren Proben zeichnet, und
-    // ihre Zahl (`_rueckstrahlPass`, der zweite Block). Das Ziel misst (2 · Kacheln + 1) × Zeilen; die Lesung trägt `sicht`
-    // (das Flächen-Mittel, ohne Lesung 1) und `sichtRichtung` (die Richtung des Lichts, unter der sie maß; 0 vor der ersten).
+    // ihre Zahl (`_rueckstrahlPass`, der zweite Block). DIE PUNKTE DES MESSERS (sonnenbahn 2, abend-brand): ein dritter Block trägt
+    // je Kachel des GANZEN Bilds EINEN Punkt des Bilds (die mittlere Probe der Kachel, gegen das Auge der Messung; der Himmel 0) —
+    // dort liest der Lichtmesser den Pool (`_poolAmBild`), über den ganzen Schirm wie das Histogramm der Profis. Das Ziel misst (3 · Kacheln + 1) × Zeilen; die Lesung trägt `sicht` (das
+    // Flächen-Mittel, ohne Lesung 1), `sichtRichtung` (die Richtung des Lichts, unter der sie maß; 0 vor der ersten) und `punkte`.
     _rueckstrahlLeser() {
         const st = this.state;
         if (st.rueckstrahlLeser) return st.rueckstrahlLeser;
         const T = THREE.TSL;
         const [kx, ky] = AnazhRealm.RUECKSTRAHL.kacheln;
-        const rt = new THREE.RenderTarget(2 * kx + 1, ky, { type: THREE.HalfFloatType, depthBuffer: false });
+        const rt = new THREE.RenderTarget(3 * kx + 1, ky, { type: THREE.HalfFloatType, depthBuffer: false });
         rt.name = rt.texture.name = "rueckstrahl:boden";
         rt.texture.minFilter = rt.texture.magFilter = THREE.NearestFilter;
         rt.texture.generateMipmaps = false;
@@ -104,6 +106,8 @@ class AnazhRealm_bild_schatten {
                 licht: 0,
                 sicht: 1,
                 sichtRichtung: new THREE.Vector3(),
+                punkte: null,
+                punkteNr: 0,
             },
             U
         );
@@ -262,7 +266,10 @@ class AnazhRealm_bild_schatten {
             // den die Kaskaden jedem Empfänger reichen). Der Himmel (Tiefe am fernen Ende) zählt nicht. Der Empfänger des Messers
             // bleibt die waagrechte Karte (M1): die Lesung ist die SICHT 0 … 1, die Neigung trägt `_waagrechtIrradianz` (sin h☉).
             if (csm) {
-                const imSicht = kachel.x.greaterThan(KX).and(kachel.y.lessThan(KYS));
+                const imSicht = kachel.x
+                    .greaterThan(KX)
+                    .and(kachel.x.lessThanEqual(2 * KX))
+                    .and(kachel.y.lessThan(KYS));
                 const letzte = csm.cascades - 1;
                 If(imSicht, () => {
                     const k = kachel.sub(vec2(KX + 1, -KYS)).toVar();
@@ -317,13 +324,37 @@ class AnazhRealm_bild_schatten {
                     });
                 });
             }
+            // DIE PUNKTE DES MESSERS (der dritte Block, auch ohne Schatten — Holz kienspan): je Kachel des GANZEN Bilds die
+            // mittlere ihrer Proben, im Gitter der Proben wie der Block der Sicht — der Welt-Punkt gegen das Auge der Messung (der
+            // Halb-Float trägt die Nähe fein: 1 cm in 16 m), w 1; der Himmel trägt w 0. Der Lichtmesser liest dort den Pool
+            // (`_poolAmBild`). Das ganze Bild, nicht seine untere Hälfte: der Messer der Profis liest den ganzen Schirm (Unreal, das
+            // Histogramm der Auto-Belichtung), ein Himmel und ein Boden ohne Pool zählen mit dem Licht des Himmels allein
+            const punkt = vec4(0).toVar();
+            If(kachel.x.greaterThan(2 * KX), () => {
+                const k = kachel.sub(vec2(2 * KX + 1, 0)).toVar();
+                const px = ivec2(
+                    k
+                        .mul(R.dichte)
+                        .add(vec2(R.dichte >> 1, R.dichte >> 1))
+                        .add(0.5)
+                        .div(vec2(KX * R.dichte, KY * R.dichte))
+                        .mul(gr.sub(3))
+                        .add(1)
+                );
+                const p = welt(px).toVar();
+                If(p.w.lessThan(0.99999), () => punkt.assign(vec4(p.xyz.sub(U.auge), 1)));
+            });
             // je Kachel das Mittel ihres Bodens und die Zahl seiner Proben (die Lesung wiegt die Kacheln nach ihr; eine Kachel
             // ohne Boden trägt 0) — das Mittel, nie die Summe: 64 Proben einer hellen Sonne sprengten den Halb-Float. Die Kachel
             // der Sicht trägt ihr Mittel und die Zahl ihrer Proben ebenso (r, g); die Spalte dazwischen den Boden der Atmosphäre
             return select(
                 imBild,
                 vec4(summe.div(n.max(1)), n),
-                select(kachel.x.greaterThan(KX), vec4(sicht.div(sichtN.max(1)), sichtN, 0, 1), vec4(atmoBoden, 1))
+                select(
+                    kachel.x.greaterThan(2 * KX),
+                    punkt,
+                    select(kachel.x.greaterThan(KX), vec4(sicht.div(sichtN.max(1)), sichtN, 0, 1), vec4(atmoBoden, 1))
+                )
             );
         })();
         const pp = st.postProcessing;
@@ -433,12 +464,30 @@ class AnazhRealm_bild_schatten {
             const mitSicht = P.sicht;
             // die Richtung des Lichts dieser Messung (`_rueckstrahlWach` stellt sie) und ihre Nummer: je Licht EINE Lesung unterwegs
             const richtung = new THREE.Vector3().copy(P.lichtDir);
+            const auge = P.U.auge.value.clone(); // das Auge dieser Messung: die Punkte des Messers stehen gegen es
             const nr = (L.nr = (L.nr || 0) + 1);
-            const lesung = rend.readRenderTargetPixelsAsync(L.rt, 0, 0, 2 * KX + 1, KY).then(
+            const lesung = rend.readRenderTargetPixelsAsync(L.rt, 0, 0, 3 * KX + 1, KY).then(
                 (px) => {
                     if (L.lesung === lesung) L.lesung = null;
                     const w = (i) => (px instanceof Uint16Array ? AnazhRealm._halbZuFloat(px[i]) : px[i]);
-                    const zeile = __weltLicht.zeilenSchritt(px, 2 * KX + 1, KY); // die Zeilen liegen ausgerichtet (bytesPerRow)
+                    const zeile = __weltLicht.zeilenSchritt(px, 3 * KX + 1, KY); // die Zeilen liegen ausgerichtet (bytesPerRow)
+                    // DIE PUNKTE DES MESSERS (der dritte Block): Geometrie wie die Sicht — sie gelten dem Bild ihrer Messung, ein
+                    // Sprung des Himmels im Flug nimmt ihnen nichts; der Himmel (w 0) zählt nicht
+                    if (nr > L.punkteNr) {
+                        L.punkteNr = nr;
+                        const xyz = new Float32Array(3 * KX * KY);
+                        let m = 0;
+                        for (let y = 0; y < KY; y++)
+                            for (let x = 2 * KX + 1; x <= 3 * KX; x++) {
+                                const o = y * zeile + 4 * x;
+                                if (!(w(o + 3) > 0)) continue;
+                                xyz[3 * m] = auge.x + w(o);
+                                xyz[3 * m + 1] = auge.y + w(o + 1);
+                                xyz[3 * m + 2] = auge.z + w(o + 2);
+                                m++;
+                            }
+                        L.punkte = { xyz, n: m, kacheln: KX * KY };
+                    }
                     // DIE SICHT DES BILDES: das Flächen-Mittel über die Kacheln der unteren Bildhälfte, gewogen nach der Zahl
                     // ihrer Proben; ohne eine Fläche im Bild (nur Himmel) hält die letzte Lesung. Sie gilt ohne Folge: die
                     // Kamera misst das Bild, das steht (keine Zeitkonstante — M5 ist zurückgezogen). Sie gilt der Richtung des

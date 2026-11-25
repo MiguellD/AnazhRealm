@@ -65,7 +65,7 @@ var __weltLicht = (function () {
     // seiner Höhe × sein Durchlass (`belichtung`, das sechste Wort); darunter steht die Belichtung, und das Bild fällt mit dem Licht
     // (UE: die Untergrenze der Auto-Belichtung, Min EV100) — Wald, Wolke, Gasse ohne Laterne. Unter offenem Himmel folgt die Kamera
     // dem Mond, wie die REF es misst (spec/farbe/tag-ref.json, USNO Circular 171: −20° 0,096 lx und −90° 0,397 lx stehen beide auf
-    // −2,17 Stufen), und Laterne, Fenster und Feuer tragen die Nacht (der Messer liest ihren Pool, `_poolAmAuge`). Bis licht-stetig
+    // −2,17 Stufen), und Laterne, Fenster und Feuer tragen die Nacht (der Messer liest ihren Pool am Bild, `_poolAmBild`). Bis licht-stetig
     // war der Boden der Mond im Zenit, ab −6° fest (0,26 lx): die Dämmerung der Tafeln (0,43–0,52 Dekaden je Grad, wie Brown 1952)
     // fiel um −8,6° unter ihn, und das Bild der Wiese fiel mit dem Licht — gerechnet 3 EV in 2,5° (GTX 1feab29c: Tafeln + Mond
     // 0,37 lx bei −8,6°, 0,03 lx bei −12°); um 05 Uhr (Mond 18°, 0,056 lx) stand das Bild 2,2 EV unter Mitternacht.

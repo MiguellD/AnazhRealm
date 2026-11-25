@@ -355,8 +355,8 @@ const TUEREN = new Set(["ersetzen", "weltpull", "portal", "einladung", "geburt"]
 // (eine Tür im Fenster des Wechsels), B prüfen und A. `schein`: "spread" (der alte Spread am Lade-Engpass) · "sperre" (saveState
 // ohne die Sperre des Welt-Wechsels) · "stand" (der Prototyp trägt Stand: der Griff des Prüfbühnen-Zensus bis 30.10., `P[n]`
 // weckte den Getter `dslPositions` mit dem Prototyp als this — der Abschied bricht den Tausch beim Namen, die Tür sagt es).
-// DIE NEUN SCHEINE DES SELBSTTESTS mit Namen, Schlüssel in `selbst` und der Fahrt, die ihn trägt (5 und 6 teilen eine Sitzung, 9 und 10
-// eine, 8 ist statisch)
+// DIE ZEHN SCHEINE DES SELBSTTESTS mit Namen, Schlüssel in `selbst` und der Fahrt, die ihn trägt (5 und 6 teilen eine Sitzung, 9 und 10
+// eine, 4 und 11 eine, 8 ist statisch)
 const SCHEINE = [
     ["1 Spread am Lade-Engpass", "spread", "spread"],
     ["2 saveState ohne die Sperre", "sperre", "sperre"],
@@ -367,6 +367,7 @@ const SCHEINE = [
     ["8 Ersatz-Saat neben dem EINEN Leser", "ersatz", "ersatz"],
     ["9 Neubau im Tausch vor dem Heil", "vorrat", "vorrat"],
     ["10 Anker der Sonne je Seite", "anker", "vorrat"],
+    ["11 Merker des Ankers fällt mit der Welt", "merker", "zufall"],
 ];
 // welcher Schein blind blieb — je einer mit den ersten zwei Befunden seiner Fahrt (oder „kein Befund“: die Fahrt sah nichts)
 const blindeScheine = (selbst) =>
@@ -875,7 +876,27 @@ async function fahreSaat(browser, schein) {
             );
         // DER TAG DER PROZESSE ÜBER SPEICHERN + LADEN: zurück in die Welt des Boots (`switchToWorld`, ihr Stand liegt gespeichert
         // seit dem ersten Satz) — ihr Null-Punkt springt nicht (Δ 0; vor welt-tag-null +0,4999 am ersten Laden)
+        // DAS ZWEITE BOOT DERSELBEN WELT (sonnenbahn 2, K6): ihr Anker liegt im Merker je Samen am Wirt (`_planetAnkerJe`,
+        // `WELT_GRENZE.wirt`) — die Sonne liest ihn, der Planet-Faden bekommt für sie keinen Auftrag (`planet-anker`). `schein`
+        // "merker": der Merker fällt mit der Welt (der Stand bis sonnenbahn 2, jede Ankunft fragte den Faden neu).
+        await page.evaluate((merker) => {
+            const f = r._planetFadenStand;
+            window.__ankerPosten = f ? 0 : null;
+            if (!f) return;
+            const roh = f.worker.postMessage.bind(f.worker);
+            f.worker.postMessage = (m, tr) => (m && m.type === "planet-anker" && window.__ankerPosten++, roh(m, tr));
+            if (merker) delete r._planetAnkerJe;
+        }, scheine.includes("merker"));
         const zurueck = await page.evaluate(async (id) => r.switchToWorld(id, { reload: true }) && (await r.erwacht), heim.id);
+        if (zurueck) {
+            rep.zweitBoot = await page.evaluate(async () => (await __weltDa((w) => w._sonnenAnker), window.__ankerPosten));
+            if (rep.zweitBoot == null)
+                rep.befunde.push("zweites Boot derselben Welt: der Planet-Faden stand vor ihm nicht — die Zeile des Merkers ist blind");
+            else if (rep.zweitBoot)
+                rep.befunde.push(
+                    `zweites Boot derselben Welt: die Sonne weckte den Planet-Faden ${rep.zweitBoot}× (\`planet-anker\`) — ihr Anker lag im Merker je Samen (\`_planetAnkerJe\`, WELT_GRENZE.wirt)`
+                );
+        }
         const nach = await page.evaluate(() => r.state.worldMeta.tagNull);
         rep.tagSprung = zurueck ? (Number(nach) || 0) - (Number(heim.tagNull) || 0) : null;
         if (zurueck) await wolke("zurück in die Welt des Boots (switchToWorld)");
@@ -941,7 +962,7 @@ hauptLauf(async () => {
         const art = rep.navigiert
             ? "die Tür lud neu"
             : weg === "saat"
-              ? `am Ort, Saaten ${rep.saaten.map((s) => s[1]).join(" → ")}`
+              ? `am Ort, Saaten ${rep.saaten.map((s) => s[1]).join(" → ")}, zweites Boot derselben Welt: ${rep.zweitBoot == null ? "ungemessen" : rep.zweitBoot + " Aufträge der Sonne an den Planet-Faden (der Anker aus dem Merker)"}`
               : weg === "laden"
               ? "blieb in der Seite"
               : weg === "ersetzen-quota"
@@ -963,7 +984,7 @@ hauptLauf(async () => {
         const fenster = sperre.befunde.filter((f) => /zeigt der Aktiv-Zeiger|erwachte in/.test(f));
         const proto = stand.befunde.filter((f) => /_dslPositionsCache/.test(f));
         // die Scheine der Saat: die Geburt verwirft die Saat (die Welt trägt eine gewürfelte) · der Rausch-Strom der alten Welt bleibt
-        const zufallRep = await fahreSaat(browser, "zufall");
+        const zufallRep = await fahreSaat(browser, "zufall,merker");
         // das Gedächtnis der alten Saat und die Geburt ohne Null-Punkt fahren in EINER Sitzung (zwei Scheine, je einer beim eigenen
         // Namen; das Gedächtnis fällt nur rot, wenn JEDE seiner Stellen beim Namen steht)
         const rauschRep = await fahreSaat(browser, "gedaechtnis,tagnull");
@@ -982,6 +1003,7 @@ hauptLauf(async () => {
         const vorratRep = await fahreSaat(browser, "vorrat,anker");
         const wurf = taeter(/Die Saat der Welt fehlt/);
         const vorrat = wurf.length ? vorratRep.befunde.filter((f) => /_foundryRewarmColdTrees` \d+× vor dem Heil/.test(f)) : [];
+        const merker = zufallRep.befunde.filter((f) => /zweites Boot derselben Welt: die Sonne weckte den Planet-Faden 1×/.test(f));
         const anker = vorratRep.befunde.filter((f) => /Saat grenze-saat-b\): die Sonne steht mittags .* stellt sie auf/.test(f));
         selbst = {
             spread: namen,
@@ -993,6 +1015,7 @@ hauptLauf(async () => {
             ersatz,
             vorrat,
             anker,
+            merker,
             befunde: { vorrat: vorratRep.befunde, spread: spread.befunde, sperre: sperre.befunde, stand: stand.befunde, zufall: zufallRep.befunde, gedaechtnis: rauschRep.befunde, ersatz: [] },
         };
         console.log(
@@ -1015,6 +1038,7 @@ hauptLauf(async () => {
             `  SELBSTTEST 9 (ein Neubau im Tausch vor dem Heil zum Schein): ${vorrat[0] ? `${vorrat[0]} · der Sammler trug ${wurf.length}× den Wurf am Leser der Saat` : `BLIND — der Sammler trug ${wurf.length} Würfe am Leser der Saat`}`
         );
         console.log(`  SELBSTTEST 10 (der Anker der Sonne je Seite zum Schein): ${anker[0] || "BLIND"}`);
+        console.log(`  SELBSTTEST 11 (der Merker des Ankers fällt mit der Welt zum Schein): ${merker[0] || "BLIND"}`);
     }
     if (JSON_AUS) jsonSchreiben(JSON_AUS, { root, absenz: abs, berichte, selbst });
     let pass;
@@ -1030,10 +1054,11 @@ hauptLauf(async () => {
             selbst.tagnull.length > 0 &&
             selbst.ersatz.length > 0 &&
             selbst.vorrat.length > 0 &&
-            selbst.anker.length > 0;
+            selbst.anker.length > 0 &&
+            selbst.merker.length > 0;
         // DER BLINDE SCHEIN BEIM NAMEN (20.11., Probe 584c2060 an der OMEN: „ein Schein blieb unentdeckt“ — die Schlusszeile ist
         // alles, was der Probe-Post trägt, und sie nannte weder den Schein noch, was seine Fahrt stattdessen meldete; der Neulauf
-        // war grün, der Täter blieb ungenannt): welcher der neun blind blieb, und die ersten Befunde seiner Fahrt
+        // war grün, der Täter blieb ungenannt): welcher der zehn blind blieb, und die ersten Befunde seiner Fahrt
         const blind = blindeScheine(selbst);
         // die Namens-Funktion an einem gestellten Fall: Schein 5 blind mit fremdem Befund, Schein 3 blind ohne Befund, der Rest gesehen
         const gestellt = blindeScheine({
@@ -1046,6 +1071,7 @@ hauptLauf(async () => {
             ersatz: [1],
             vorrat: [1],
             anker: [1],
+            merker: [1],
             befunde: { vorrat: [], spread: [], sperre: [], stand: [], zufall: [], gedaechtnis: ["x trägt y", "z", "w"], ersatz: [] },
         }).join(" | ");
         const gestelltSoll = "3 Prototyp trägt Stand — seine Fahrt meldete keinen Befund | 5 Gedächtnis der alten Saat überlebt den Wechsel — seine Fahrt meldete 3 andere Befunde: x trägt y · z";
@@ -1055,7 +1081,7 @@ hauptLauf(async () => {
             blind.push("7 die Namens-Funktion selbst");
         }
         console.log(
-            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf keinem Weg trägt B ein Feld von A oder geht eine Welt verloren, jede Saat wächst in jedem Leser und jeder Stelle ihres Gedächtnisses — und alle neun Scheine fallen rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : `blind an Schein ${blind.join(" | ")} (die Linse sah ihn nicht)`)}`
+            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf keinem Weg trägt B ein Feld von A oder geht eine Welt verloren, jede Saat wächst in jedem Leser und jeder Stelle ihres Gedächtnisses — und alle zehn Scheine fallen rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : `blind an Schein ${blind.join(" | ")} (die Linse sah ihn nicht)`)}`
         );
     } else {
         pass = !rot;

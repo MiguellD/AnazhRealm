@@ -1633,7 +1633,8 @@ class AnazhRealm_bild_himmel {
     // DER ANKER DER SONNE (sonnenbahn): der EINE Schreiber von `_sonnenAnker` — fragt den Planet-Faden (`_planetAnker`) EINMAL je
     // WELT nach dem Ort der Welt auf ihrem Planeten (die Heimat am Anker, eine Reise-Welt am Ort ihres Teils, `ort.teil.breite` in
     // Grad) und nach dem Körper (Schiefe, Drehsinn); mit der Antwort springt der Himmel EINMAL (`_himmelSprung`). Anker und Frage
-    // fallen mit der Welt (`WELT_GRENZE.gedaechtnis`); eine Antwort, die nach dem Wechsel kommt, gehört der alten Welt und schreibt
+    // fallen mit der Welt (`WELT_GRENZE.gedaechtnis`), der Merker des Ankers je Samen nicht (`_planetAnkerJe`, am Wirt): das zweite
+    // Boot derselben Welt liest ihn, der Faden rechnet nichts neu; eine Antwort, die nach dem Wechsel kommt, gehört der alten Welt und schreibt
     // nichts (die Frage ist nicht mehr die der Welt) — bis sonnenbahn 2 hing die Frage an der Seite, und eine Reise-Welt trug die
     // Mittagshöhe der Heimat (Kopf 1, voll 13/18). Rufer: die
     // Belichtung, solange die Ankunft auf ihr Licht wartet (`_belichtungSteht`, Term „licht“) — nie ein Leser der Sonne: im Versuch
@@ -1642,7 +1643,7 @@ class AnazhRealm_bild_himmel {
     _sonnenAnkerFragen() {
         if (this._sonnenAnkerFrage) return;
         const frage = (this._sonnenAnkerFrage = { teil: this._gelaende().ort.teil });
-        this._planetAnker().then(
+        this._planetAnker("Sonne").then(
             (a) => {
                 if (this._sonnenAnkerFrage !== frage) return;
                 const t = frage.teil;
@@ -2273,10 +2274,10 @@ class AnazhRealm_bild_himmel {
         this._belichtungGelesen = !!w;
         const EA = w && this._belichtungAnker();
         if (!EA) return null;
-        // DER MESSER LIEST DIE LICHTER DES ORTS (nacht-lichter): zum Himmel die Plätze des Licht-Pools auf derselben waagrechten
-        // Fläche am Auge (`_poolAmAuge`) — unter der Laterne schließt die Blende, wie das Auge es tut. `_belichtungE` bleibt die
-        // Lesung des Himmels (Regen, Raum und Wurf lesen sie).
-        const wp = this._poolAmAuge(w, this._belichtungMitPool || (this._belichtungMitPool = [0, 0, 0]));
+        // DER MESSER LIEST DIE LICHTER DES ORTS (nacht-lichter): zum Himmel der Licht-Pool am Boden, den das Bild zeigt
+        // (`_poolAmBild`: dieselben Punkte, deren Sonnen-Sicht er liest) — unter der Laterne und am Feuer schließt die Blende, wie
+        // das Auge es tut. `_belichtungE` bleibt die Lesung des Himmels (Regen, Raum und Wurf lesen sie).
+        const wp = this._poolAmBild(w, this._belichtungMitPool || (this._belichtungMitPool = [0, 0, 0]));
         // das Gesetz der Kamera (welt-licht.js `belichtung`) mit den Stufen am Glied der Welt (die Linsen prüfen ihren Schein dort)
         // und dem Boden des Messers: der Vollmond (er steht der Sonne gegenüber, Höhe −e) ohne Wolken-Decke zu dieser Stunde,
         // derselbe Durchlass wie sein Richtlicht (`_dayNightApplyDirectionalLight`) — unter offenem Himmel liegt er nie über dem Licht
