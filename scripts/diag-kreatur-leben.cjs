@@ -3346,7 +3346,7 @@ if (V) {
         const { AnazhRealm: KL, ctx } = SL.ladeKlasse(root, taeter ? { monolith: SL.ersetze(SL.text(root), taeter) } : {});
         // das Buch ist warm (die Foundry trägt die Zeile des Hauses, die Gestalten aus dem Gesetzbuch der Architektur)
         KL._studioRenderConfig = { lod: ctx.__fachwerkCore.PORTAL_RENDER_CONFIG.lod };
-        const P = { x: 45, z: 0 };
+        const P = { x: 45, z: 0 }; // BÜHNE: der Akt des Hauses und seine Zone hängen nicht am Ort (ein Stamm ohne Welt, die Zone ist eine Funktion des Abstands)
         const ORTE = [60, 120, 200, 300, 400, 500, 650, 800, 900, 1000].map((m, k) => [P.x + m * Math.cos(k * 2.39996), P.z + m * Math.sin(k * 2.39996)]);
         const s = Object.create(KL.prototype);
         s.state = { worldMeta: KL._weltGeburt({ taten: [], seed: "anazh-realm-seed" }), spielZeit: 1100, dayLengthMinutes: KL.DAY_LENGTH_DEFAULT_MINUTES };
