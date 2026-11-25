@@ -1938,7 +1938,6 @@ const MARKT_SEK = Number(argOpt("--sek")) || 30;
 const FRIST = Math.max(600000, (MARKT_SEK + 400) * 1000); // die Protokoll-Frist trägt den längsten Lauf einer Seite
 async function marktSeite(o) {
     const s = r.state, pm = s.playerMesh.position;
-    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
     const K = window.__klangCore;
     const leute = (dt) => (r._bewohnerWerkTakt(Infinity), r._tickBewohner(dt));
     const W = window.__markt || (window.__markt = {});
@@ -1961,7 +1960,7 @@ async function marktSeite(o) {
         if (!S) return { fehler: `keine Stadt aus „${M.gruendung.wort}“ am Anker` };
         pm.set(S.ox, r.getTerrainHeightAt(S.ox, S.oz) + 1, S.oz);
         const da = () => !!S.liste && S.liste.every((b) => b.leib && !b.ankunft);
-        for (let i = 0; i < 4 * nH && !da(); i++) (__handTakt(), leute(0), await warte(2));
+        for (let i = 0; i < 4 * nH && !da(); i++) (__handTakt(), leute(0), await sleep(2));
         let [pose, warum] = [null, ""];
         for (let i = 0; i < 4000 && !pose; i++)
             try {
@@ -1969,13 +1968,13 @@ async function marktSeite(o) {
             } catch (e) {
                 warum = e.message;
                 if (!e.warten) break;
-                (__handTakt(), leute(1 / 60), await warte(2));
+                (__handTakt(), leute(1 / 60), await sleep(2));
             }
         if (!pose) return { fehler: `keine Pose am Platz: ${warum}` };
         pm.set(pose.x, r.getTerrainHeightAt(pose.x, pose.z) + 1, pose.z);
         for (const t of [o.uhr + 12, o.uhr]) (r._uhrSetzen((t % 24) / 24, "regler"), leute(0));
         for (let i = 0; i < 4 * nH && !da(); i++) leute(0);
-        for (let i = 0; i < 300; i++) (__handTakt(), i % 10 || (await warte(1)));
+        for (let i = 0; i < 300; i++) (__handTakt(), i % 10 || (await sleep(1)));
         if (!s.symphony || !s.symphony.enabled) r.initSymphony();
         Object.assign(W, { S, pose, liste: S.liste.length });
     }
@@ -2135,15 +2134,15 @@ async function marktSeite(o) {
         const f2 = new Float32Array(an2.frequencyBinCount);
         const linie = async () => {
             let q = 0;
-            for (let i = 0; i < 3; i++) (await warte(60), an2.getFloatFrequencyData(f2), (q += Math.pow(10, f2[k] / 10)));
+            for (let i = 0; i < 3; i++) (await sleep(60), an2.getFloatFrequencyData(f2), (q += Math.pow(10, f2[k] / 10)));
             return 10 * Math.log10(q / 3);
         };
-        await warte(200);
-        for (let i = 0; i < 60 && Lf.duckBis > ctx.currentTime; i++) await warte(50);
+        await sleep(200);
+        for (let i = 0; i < 60 && Lf.duckBis > ctx.currentTime; i++) await sleep(50);
         const frei = !(Lf.duckBis > ctx.currentTime);
         const [l0, g0] = [await linie(), Lf.duck.gain.value];
         r._musikDuck("gespraech", 30);
-        await warte(300);
+        await sleep(300);
         const [l1, g1] = [await linie(), Lf.duck.gain.value];
         ton.stop();
         tonG.disconnect();
@@ -2155,7 +2154,7 @@ async function marktSeite(o) {
         const iv = setInterval(probe, 250);
         let naechster = 3;
         while (ctx.currentTime - tA < o.sek) {
-            await warte(200);
+            await sleep(200);
             if (ctx.currentTime - tA > naechster && duckProben.length < o.ducks)
                 (duckProben.push(await duckProbe()), (naechster += o.sek / o.ducks));
         }
@@ -2181,18 +2180,18 @@ async function marktSeite(o) {
         lAeqDbA: dbA(10 * Math.log10(eA / nE)),
         leqDbfs: +(10 * Math.log10(eZ / nE)).toFixed(2),
         spitzeDbfs: +(20 * Math.log10(spitze)).toFixed(2),
-        zugleichP50: zugleich[zugleich.length >> 1],
+        zugleichP50: rang(zugleich),
         zugleichMax: zugleich[zugleich.length - 1],
         zugleichMin: zugleich[0],
         redeMax: Math.max(...proben.map((q) => q.rede)),
-        sprecherP50: proben.map((q) => q.sprecher).sort((a, b) => a - b)[proben.length >> 1],
-        rednerP50: proben.map((q) => q.redner).sort((a, b) => a - b)[proben.length >> 1],
-        redeAnteilP50: +proben.filter((q) => q.redner > 0).map((q) => q.sprecher / q.redner).sort((a, b) => a - b)[proben.filter((q) => q.redner > 0).length >> 1]?.toFixed(3),
+        sprecherP50: rang(proben.map((q) => q.sprecher).sort(aufsteigend)),
+        rednerP50: rang(proben.map((q) => q.redner).sort(aufsteigend)),
+        redeAnteilP50: +rang(proben.filter((q) => q.redner > 0).map((q) => q.sprecher / q.redner).sort(aufsteigend))?.toFixed(3),
         redeSoll: +(K.MENGE.rede.sprechSek / (K.MENGE.rede.sprechSek + K.MENGE.rede.pauseSek)).toFixed(3),
         laermDbA: proben.length ? proben[proben.length - 1].laerm : null,
         lombardDb: Math.max(...proben.map((q) => q.lombard)),
         anMax: +Math.max(0, ...rufe.filter((q) => q.rede).map((q) => q.an)).toFixed(2),
-        restP50: proben.map((q) => q.rest).sort((a, b) => a - b)[proben.length >> 1],
+        restP50: rang(proben.map((q) => q.rest).sort(aufsteigend)),
         duckGesetz,
         rufe: rufe.length,
         rede: rufe.filter((q) => q.rede).length,
