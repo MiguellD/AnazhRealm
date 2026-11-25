@@ -1610,14 +1610,29 @@ class AnazhRealm_koerper_seele {
         return { ok: true, name: safe };
     }
 
-    // Geruch an (x, z) aus `sources` [{x, z, strength}], Σ über alle Quellen, ∈ [0, ∞) — cappen und
-    // deuten die Konsumenten. Je Quelle: decay = exp(−dist/rangeM); dot = toRecv · windDir (toRecv =
-    // Einheitsvektor Quelle→Empfänger, windDir = der EINE Wind an der Quelle, `_windAt` auf der Sim-Uhr — die Nase riecht
-    // den Wind, den das Gras zeigt, und das Verhalten hängt nie an der Bildrate; positiv = downwind); windMod = max(minDirectional, (1−windFactor) + windFactor ·
-    // max(0, dot)); geruch = strength · decay · windMod.
+    // DIE WITTERUNG IST EINE FAHNE WINDAB (Karte 2 erleben.sinne.geruch#1): Geruch an (x, z) aus `sources` [{x, z, strength}],
+    // Σ über alle Quellen, ∈ [0, ∞) — deuten die Konsumenten (die Nase der Tiere, `_scentNase`). Den Duft trägt der EINE Wind an
+    // der Quelle (`_rauchWindAt` in der Höhe SCENT.hoeheM auf der Sim-Uhr — die Nase riecht den Wind, den das Gras zeigt, nie an
+    // der Bildrate): Richtung ŵ, Tempo u. Die Turbulenz breitet ihn mit σ = √(σ0² + (i·u)²) aus; seine Front läuft in der
+    // Richtung θ gegen ŵ mit v = u·cosθ + q, q = √(σ² − u²·sin²θ) (die Hülle der Ausbreitung im Wind), und er altert mit der
+    // Mischung (Rate σ/ℓ, ℓ = rangeM) auf der Reise r/v: geruch = strength · q/σ · exp(−(r/ℓ) · σ/v), 0 wo v ≤ 0 oder q² ≤ 0.
+    // Windstille (u = 0): q = v = σ, das Radial-Gesetz exp(−r/80 m) wie bis hier. Windab reicht die Fahne ℓ·(1 + u/σ) — sie
+    // wächst mit dem Wind und verdünnt sich, denn der stärkere Wind mischt härter (gesättigt bei ℓ·(1 + 1/i), 6,7 ℓ); quer
+    // fällt sie mit dem Winkel bis 0 am Rand des Kegels (halber Winkel asin(σ/u), im starken Wind asin(i) = 10°); gegen den
+    // Wind ist sie 0, sobald u > σ (0,51 m/s). Bis witterung-windab: windMod = max(0,2; 0,4 + 0,6·max(0, cosθ)) ohne Tempo —
+    // gegen den Wind 40 % Rest, der Wolf fand das Reh von jeder Seite geradewegs (Station geruch#1: Faktor 1 bei gedrehtem Wind).
+    // DER WIND JE QUELLE EINMAL JE TAKT (Kosten an Änderung): im Kreatur-Takt (`_kreaturTaktI` gesetzt, `_scentTakt` leert ihn
+    // vor der Tier-Schleife) liest jede Quelle ihren Wind einmal, jeder weitere Jäger desselben Takts nimmt ihn aus dem Gedächtnis
+    // (Schlüssel: die Lage auf 1/8 m) — außerhalb des Takts frisch. Bis hier las jeder der 16 Wölfe den Wind jedes Leibs in
+    // seiner Nasen-Weite neu (54 je Frage, 1,66 µs je Wind: 60 % der Jäger-Frage).
     _scentAt(x, z, sources) {
         if (!Array.isArray(sources) || sources.length === 0) return 0;
         const S = AnazhRealm.SCENT;
+        const t = this.state._simZeit;
+        const T = this._kreaturTaktI != null ? this._scentWindTaktM : null;
+        const aus = this._scentWindAus || (this._scentWindAus = {});
+        // die fernste Witterung jeder Quelle in jedem Wind: 4 Mischlängen windab der gesättigten Fahne (e⁻⁴ < 2 %)
+        const fernM = 4 * S.rangeM * (1 + 1 / S.turbulenz);
         let total = 0;
         for (const src of sources) {
             if (!src || typeof src.x !== "number" || typeof src.z !== "number") continue;
@@ -1626,21 +1641,54 @@ class AnazhRealm_koerper_seele {
             const dx = x - src.x;
             const dz = z - src.z;
             const dist = Math.hypot(dx, dz);
-            if (dist > S.rangeM * 4) continue; // jenseits 4× range vernachlässigbar
-            const decay = Math.exp(-dist / S.rangeM);
-            // Wind an der Quelle (der Wind, der den Geruch wegträgt)
-            const wind = this._windAt(src.x, src.z, this.state._simZeit);
-            // Normierter Vektor von Source zum Receiver
-            const norm = dist > 0.001 ? 1 / dist : 0;
-            const dirX = dx * norm;
-            const dirZ = dz * norm;
-            // dot mit windDir: positiv = Receiver liegt downwind (wind weht
-            // VON src ZU recv, trägt also den Geruch hin).
-            const dot = dirX * wind.x + dirZ * wind.z;
-            const windMod = Math.max(S.minDirectional, 1 - S.windFactor + S.windFactor * Math.max(0, dot));
-            total += strength * decay * windMod;
+            if (dist > fernM) continue;
+            if (dist < 1e-3) {
+                total += strength; // an der Quelle selbst
+                continue;
+            }
+            let wind = aus;
+            if (T) {
+                const k = Math.round(src.x * 8) * 67108864 + Math.round(src.z * 8);
+                wind = T.get(k);
+                if (!wind) {
+                    const P = this._scentWindPool;
+                    wind = P[T.size] || (P[T.size] = {});
+                    this._rauchWindAt(src.x, src.z, t, S.hoeheM, null, wind);
+                    T.set(k, wind);
+                }
+            } else this._rauchWindAt(src.x, src.z, t, S.hoeheM, null, wind);
+            const u = Math.max(0, wind.ms);
+            const sig = Math.hypot(S.meanderMS, S.turbulenz * u);
+            const cos = (dx * wind.x + dz * wind.z) / dist; // + = der Empfänger liegt windab
+            const q2 = sig * sig - u * u * (1 - cos * cos);
+            if (!(q2 > 0)) continue; // außerhalb des Kegels
+            const q = Math.sqrt(q2);
+            const v = u * cos + q;
+            if (!(v > 0)) continue; // gegen den Wind: die Front erreicht ihn nie
+            total += strength * (q / sig) * Math.exp(-(dist / S.rangeM) * (sig / v));
         }
         return total;
+    }
+    // der Takt der Nase beginnt (updateCreatures, vor der Tier-Schleife): das Wind-Gedächtnis des letzten Takts fällt, die
+    // Wind-Hüllen bleiben im Pool (keine Allokation je Frame)
+    _scentTakt() {
+        if (!this._scentWindTaktM) [this._scentWindTaktM, this._scentWindPool] = [new Map(), []];
+        this._scentWindTaktM.clear();
+    }
+    // DIE NASE DER TIERE (Jagd und Aas, dieselbe): die Schwelle, ab der ein Leib die Witterung einer Quelle der Stärke 1 merkt —
+    // das Feld in Windstille am Rand R (jagd.scentRangeM, exp(−50/80) = 0,535: ohne Wind wittert die Nase genau R im Kreis, wie
+    // bis witterung-windab) — und die fernste Weite, in der sie das in irgendeinem Wind tut (windab R·(1 + 1/i), 334 m). Mit dem
+    // Wind reicht sie windab R·(1 + u/σ): bei 3 m/s in Nasen-Höhe 256 m (Mech 1966, Isle Royale: „Most of the moose detected were within 300
+    // yards upwind of the wolves“, ≤ 274 m), quer kürzer, gegen den Wind nicht. Gemerkt je R: die Frage baut nichts.
+    _scentNase(R) {
+        const M = this._scentNaseMerk || (this._scentNaseMerk = { R: NaN, schwelle: 0, reichM: 0 });
+        if (M.R !== R) {
+            const S = AnazhRealm.SCENT;
+            M.R = R;
+            M.schwelle = Math.exp(-R / S.rangeM);
+            M.reichM = R * (1 + 1 / S.turbulenz);
+        }
+        return M;
     }
 
     // DER EINE Stat-Chokepoint: jede Mutation der Spieler-Stats ruft recomputePlayerStats
@@ -1817,18 +1865,18 @@ AnazhRealm.STAMINA_REGEN_PER_SEC = 5;
 // Rate emergent (effektiv = base × (1 + magieleitung)). Erst-Wurf-Tuning.
 AnazhRealm.MANA_REGEN_PER_SEC = 3;
 
-// GERUCH-Feld: reist mit dem Wind, fällt mit Distanz ab; Quellen sind diskret (Kreaturen, Pflanzen,
-// Strukturen — die Konsumenten geben sie ein). Fundament-Funktion, noch ohne Kreatur-KI-Verdrahtung.
+// DAS GERUCH-FELD (`_scentAt`): eine Fahne windab der Quelle; Quellen sind diskret (Leiber, Fleisch — die Konsumenten geben
+// sie ein). Leser: die Nase der Tiere (Jagd `_creatureScentHuntDir`, Aas `_kreaturAasZug`, über `_scentNase`).
 AnazhRealm.SCENT = Object.freeze({
-    // Reichweite (m): Geruch fällt auf ~37% bei rangeM, ~5% bei 3×rangeM.
+    // die Mischlänge ℓ (m): in Windstille fällt der Geruch auf 37 % bei rangeM, 5 % bei 3 × rangeM (das Radial-Gesetz)
     rangeM: 80,
-    // Wind-Modulation: 1.0 = volle Richtungs-Wirkung (upwind = 0); 0.0 = isotrop.
-    // Erst-Wurf 0.6 — Wind hilft deutlich, isoliert aber nicht (upwind-Geruch
-    // dimmt, verschwindet nicht ganz).
-    windFactor: 0.6,
-    // Minimaler Richtungs-Faktor (gegen Wind): nie ganz 0, sonst wäre der
-    // Geruch upwind invisible — eine Schwelle, die "Restduft" trägt.
-    minDirectional: 0.2,
+    // σ0: die Seiten-Turbulenz in Windstille, der Mäander (Hanna 1990, „Lateral dispersion in light-wind stable conditions“:
+    // σv hält ≈ 0,5 m/s, auch wenn der Wind gegen 0 geht; AERMOD LOWWIND1 dieselbe Untergrenze)
+    meanderMS: 0.5,
+    // i = σv/u: die Seiten-Turbulenz je Wind, σθ der neutralen Schicht (Pasquill 1961, Klasse D: σθ 10° → tan 10° = 0,176)
+    turbulenz: 0.176,
+    // die Höhe der Fahne über Grund (m): der Wind am Ort in Nasen-Höhe, die untere Grenze des Hellmann-Profils (`windProfil`)
+    hoeheM: 1,
 });
 
 // Emotion→Tag-Mapping für Boosts: jede der 6 Emotionen koppelt an einen MATERIAL_TAG_KEY; über 0.7

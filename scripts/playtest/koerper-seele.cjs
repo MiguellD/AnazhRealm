@@ -2878,50 +2878,45 @@ async function checkBandW5Werkzeugabnutzung({ page, check }) {
     );
 }
 
-// das Geruch-Feld der Welt als FÜNFTE Welt-Stimme, sein Wind der EINE Wind am Ort (`_windAt`, gate:kopplung F3); ihr Konsum
-// (Jagd, Kadaver) lebt in gate:kreatur-takt jagdkreis — hier das Gesetz von Wind und Abstand.
+// das Geruch-Feld der Welt als FÜNFTE Welt-Stimme: eine Fahne windab am EINEN Wind am Ort (`_windAt` in Nasen-Höhe, gate:kopplung
+// F3); ihr Konsum (Jagd, Kadaver) und die Suche bei Wind aus vier Richtungen leben in gate:kreatur-takt witterung — hier das
+// Gesetz von Wind und Abstand (witterung-windab: bis hier radial × Richtungs-Faktor mit Rest-Sockel 0,4 gegen den Wind).
 async function checkBandV18202GeruchFeld({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-
-        // (N3) Geruch: einzelne Quelle, Distanz-Decay
+        const S = r.constructor.SCENT;
         const src = [{ x: 0, z: 0, strength: 1.0 }];
-        // Verschiedene Distanzen — Geruch fällt monoton
-        const g0 = r._scentAt(0.5, 0.5, src); // sehr nah
-        const g20 = r._scentAt(20, 0, src);
-        const g50 = r._scentAt(50, 0, src);
-        const g100 = r._scentAt(100, 0, src);
-        const g300 = r._scentAt(300, 0, src); // jenseits 4×range
-        out.scentNearStrong = g0 > 0.3; // nah > 0.3 (rangeM=80, exp(-0)≈1, modifiziert von wind)
-        out.scentDistantWeaker = g20 > g50 && g50 > g100;
-        out.scentFarVanishes = g300 < 0.05;
-
-        // (N5) Wind-Modulation: downwind > upwind — eine Quelle an fester Position, gesampelt EXAKT downwind und upwind
-        const sx = 100,
-            sz = 100;
-        const wind = r._windAt(sx, sz, st._simZeit);
-        // Downwind = in Wind-Richtung von Source aus
-        const dRecv = { x: sx + wind.x * 50, z: sz + wind.z * 50 };
-        const uRecv = { x: sx - wind.x * 50, z: sz - wind.z * 50 };
-        const quelle = [{ x: sx, z: sz, strength: 1 }];
-        const downG = r._scentAt(dRecv.x, dRecv.z, quelle);
-        const upG = r._scentAt(uRecv.x, uRecv.z, quelle);
-        out.downwindStronger = downG > upG;
-        out.upwindStillHasMinScent = upG > 0; // minDirectional > 0
-        out.downwindMagnitude = downG;
-        out.upwindMagnitude = upG;
-
+        // der Wind geliehen: nach +x, `ms` in 10 m (die Böe 1)
+        const wind = (ms) => (x, z, t, o) => Object.assign(o || {}, { x: 1, z: 0, staerke: 0, boe: 1, form: 1, ms });
+        // (N3) die Windstille: das Radial-Gesetz exp(−r/rangeM) in jeder Richtung, nah die volle Stärke
+        let zurueck = leihe(r, { _windAt: wind(0) });
+        try {
+            out.ruhe = [[20, 0], [0, 50], [-100, 0], [0, -300]].map(([x, z]) => Math.abs(r._scentAt(x, z, src) - Math.exp(-Math.hypot(x, z) / S.rangeM))); // prettier-ignore
+            out.nah = r._scentAt(0.5, 0.5, src);
+        } finally {
+            zurueck();
+        }
+        // (N5) bei 4 m/s: windab stark, quer (außerhalb des Kegels asin(σ/u)) und gegen den Wind 0
+        zurueck = leihe(r, { _windAt: wind(4) });
+        try {
+            [out.down, out.quer, out.up] = [r._scentAt(50, 0, src), r._scentAt(0, 50, src), r._scentAt(-50, 0, src)];
+        } finally {
+            zurueck();
+        }
+        // (N5c) am Wind der Welt (die Quelle bei 100/100): windab nie schwächer als gegen den Wind
+        const w = r._rauchWindAt(100, 100, st._simZeit, S.hoeheM);
+        const q = [{ x: 100, z: 100, strength: 1 }];
+        out.weltMs = w.ms;
+        out.weltDown = r._scentAt(100 + w.x * 50, 100 + w.z * 50, q);
+        out.weltUp = r._scentAt(100 - w.x * 50, 100 - w.z * 50, q);
         return out;
     });
 
-    check("(N3a) Geruch nah > 0.3 (volle Stärke nahe Quelle)", res.scentNearStrong === true);
-    check("(N3b) Distanz-Decay monoton (20>50>100)", res.scentDistantWeaker === true);
-    check("(N3c) Bei 300 m: Geruch sehr schwach < 0.05 (decay × windMod)", res.scentFarVanishes === true);
-    check(
-        `(N5a) Downwind stärker als upwind (down=${res.downwindMagnitude && res.downwindMagnitude.toFixed(3)} > up=${res.upwindMagnitude && res.upwindMagnitude.toFixed(3)})`,
-        res.downwindStronger === true
-    );
-    check("(N5b) Upwind hat Restduft > 0 (minDirectional-Schwelle)", res.upwindStillHasMinScent === true);
+    check(`(N3a) Windstille: das Radial-Gesetz exp(−r/80) in vier Richtungen (Abweichung ${res.ruhe && Math.max(...res.ruhe)} ≤ 1e-12)`, res.ruhe && res.ruhe.every((d) => d <= 1e-12)); // prettier-ignore
+    check(`(N3b) nah an der Quelle die volle Stärke (${res.nah && res.nah.toFixed(3)} > 0,99)`, res.nah > 0.99);
+    check(`(N5a) 4 m/s: windab in 50 m stark (${res.down && res.down.toFixed(3)} > 0,5)`, res.down > 0.5);
+    check(`(N5b) 4 m/s: gegen den Wind und quer 0 — kein Rest-Sockel (up=${res.up}, quer=${res.quer})`, res.up === 0 && res.quer === 0); // prettier-ignore
+    check(`(N5c) Wind der Welt ${res.weltMs && res.weltMs.toFixed(2)} m/s: windab ≥ gegen (${res.weltDown} ≥ ${res.weltUp})`, res.weltDown >= res.weltUp); // prettier-ignore
 }
 
 module.exports = {
