@@ -24311,7 +24311,7 @@
   },
   "karte2.mensch.stadt.form": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.stadt.form#2 radeon: ungemessen (R10) · karte2.mensch.stadt.form#2 gtx: Station seit der Messung geändert · karte2.mensch.stadt.form#4 radeon: ungemessen (R10) · karte2.mensch.stadt.form#4 gtx: Station seit der Messung geändert · karte2.mensch.stadt.form#5 radeon: ungemessen (R10) · karte2.mensch.stadt.form#5 gtx: Station seit der Messung geändert · karte2.mensch.stadt.form#6 radeon: ungemessen (R10) · karte2.mensch.stadt.form#6 gtx: ungemessen (R10) · karte2.mensch.stadt.form#7 radeon: ungemessen (R10) · karte2.mensch.stadt.form#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.stadt.form#2 radeon: ungemessen (R10) · karte2.mensch.stadt.form#2 gtx: ROT: S2 ROT: Umfang nicht erzeugbar: Großstadt 10⁴ Häuser mit Vierteln aus dem Bodenwert: die Stadt trägt 307 stehende Häuser in 7 Vierteln; dorf 7 9310 steht erst nach ~154 s, über dem Deckel von 60 s (gemessen 307) · [linse-gpu] nvidia/pascal an 2da17e2e · karte2.mensch.stadt.form#4 radeon: ungemessen (R10) · karte2.mensch.stadt.form#4 gtx: Station seit der Messung geändert · karte2.mensch.stadt.form#5 radeon: ungemessen (R10) · karte2.mensch.stadt.form#5 gtx: Station seit der Messung geändert · karte2.mensch.stadt.form#6 radeon: ungemessen (R10) · karte2.mensch.stadt.form#6 gtx: ungemessen (R10) · karte2.mensch.stadt.form#7 radeon: ungemessen (R10) · karte2.mensch.stadt.form#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.stadt.form#2",
@@ -24326,10 +24326,10 @@
      "id": "karte2.mensch.stadt.form#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "S2 ROT: Umfang nicht erzeugbar: Großstadt 10⁴ Häuser mit Vierteln aus dem Bodenwert: die Stadt trägt 307 stehende Häuser in 7 Vierteln; dorf 7 9310 steht erst nach ~154 s, über dem Deckel von 60 s (gemessen 307) · [linse-gpu] nvidia/pascal",
+     "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
+     "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: Großstadt 10⁴ Häuser mit Vierteln aus dem Bodenwert: die Stadt trägt 307 stehende Häuser in 7 Vierteln; dorf 7 9310 steht erst nach ~154 s, über dem Deckel von 60 s (gemessen 307) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.stadt.form#4",
@@ -25215,7 +25215,7 @@
   },
   "karte2.mensch.wirtschaft.energie": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Änderung des Holzstapels je Schmelze -25 (Soll < 0) · Gegenlauf: Barren ohne Holz 0 (Soll ≤ 0) · Umfang 75 (Soll ≥ 1 Feuer mit Brennstoff (Schmelze)) · 75 Ofenreisen, 1875 kg Kohle für 1875 kg Erz, 61429.6 MJ · [linse-gpu] nvidia/pascal an f63a69ef gtx — offen: karte2.mensch.wirtschaft.energie#1 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#2 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Änderung des Holzstapels je Schmelze -25 (Soll < 0) · Gegenlauf: Barren ohne Holz 0 (Soll ≤ 0) · Umfang 75 (Soll ≥ 1 Feuer mit Brennstoff (Schmelze)) · 75 Ofenreisen, 1875 kg Kohle für 1875 kg Erz, 61429.6 MJ · [linse-gpu] nvidia/pascal an f63a69ef gtx — offen: karte2.mensch.wirtschaft.energie#1 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#2 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#2 gtx: ROT: S2 ROT: Umfang nicht erzeugbar: eine Mühle im Ort: keine Architektur mit Rad oder Segel in der Stadt (338 Häuser, Rollen 20) — kein Mehl (gemessen 0, Soll 1 Mühle im Ort) · [linse-gpu] nvidia/pascal an 2da17e2e · karte2.mensch.wirtschaft.energie#3 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#3 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#4 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#4 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#5 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#5 gtx: ungemessen (R10) · karte2.mensch.wirtschaft.energie#6 radeon: ungemessen (R10) · karte2.mensch.wirtschaft.energie#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.wirtschaft.energie#1",
@@ -25251,10 +25251,10 @@
      "id": "karte2.mensch.wirtschaft.energie#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S2 ROT: Umfang nicht erzeugbar: eine Mühle im Ort: keine Architektur mit Rad oder Segel in der Stadt (338 Häuser, Rollen 20) — kein Mehl (gemessen 0, Soll 1 Mühle im Ort) · [linse-gpu] nvidia/pascal",
+     "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
+     "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: eine Mühle im Ort: keine Architektur mit Rad oder Segel in der Stadt (338 Häuser, Rollen 20) — kein Mehl (gemessen 0, Soll 1 Mühle im Ort) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.wirtschaft.energie#3",
@@ -37587,7 +37587,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 355,
+  "konsum": 357,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37756,10 +37756,10 @@
    "karte2.leben.kopplung.stadt-im-netz#2 radeon",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3266
+  "ohne": 3264
  },
  "kopfVoll": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
- "zeit": "2026-11-25T22:53:45.286Z",
+ "zeit": "2026-11-25T23:01:01.679Z",
  "vorher": "2da17e2e",
  "bilanz": {
   "gewinn": [],
