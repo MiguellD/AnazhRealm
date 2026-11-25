@@ -276,14 +276,17 @@ const KLIMA_ORTE = {
 };
 // R5 (haus-stoff): DER SOCKEL FOLGT DEM WASSER DES ORTS — dasselbe Dorf (Saat 7, 18 Häuser, das Klima der Heimat) am trockenen
 // Ort (Spende 0), in der Heimat (1) und am nassen (2): jeder Bau trägt die Sockel-Höhe aus fachwerk `sockelImWasser` im Rezept
-// (`ov.foundH`), und seine Hülle (`ext.y1`, die Masse des Baus aus `massBau`) steigt vom trockenen zum nassen Ort um
-// genau den Unterschied der Sockel (Soll 0,50 m: 0,30 → 0,80). Die Mutante „der Sockel liest das Wasser nicht“ fällt in R5.
+// (`ov.foundH`), und die Oberkante seines gebauten Sockels (die Masse `sockel` aus `massBau`, die Stelle, aus der der Bau sie
+// nimmt: HAUS `baseY`) steigt vom trockenen zum nassen Ort um genau den Unterschied der Sockel (Soll 0,50 m: 0,30 → 0,80). R5 misst
+// EIN Gesetz an SEINER Größe (Richter-Entscheid dach-regen): bis dahin die Oberkante der Hülle, die seit R8 auch der Schnee hebt.
+// Die Mutanten „der Sockel liest das Wasser nicht“ und „der Sockel hebt nicht“ fallen in R5, die Schnee-Mutante nicht.
 const SOCKEL_SPENDEN = { trocken: 0, heimat: 1, nass: 2 };
 function sockelGang(FC) {
     const je = {};
     for (const [ort, v] of Object.entries(SOCKEL_SPENDEN)) {
         const ex = FC.exportSettlement({ seed: 7, nH: 18, klima: { winter: -4, sommer: 18, spendeVerh: v } });
-        je[ort] = { region: ex.region, fh: ex.slots.map((q) => q.ov.foundH), y1: ex.slots.map((q) => q.ext.y1) };
+        const sockel = (q) => Math.max(...FC.massBau(q.ov).masse.filter((m) => m.art === "sockel").map((m) => m.y1));
+        je[ort] = { region: ex.region, fh: ex.slots.map((q) => q.ov.foundH), y1: ex.slots.map(sockel) };
     }
     const n = je.trocken.y1.length;
     const hub = je.nass.y1.map((y, i) => +(y - je.trocken.y1[i]).toFixed(3));
@@ -293,7 +296,7 @@ function sockelGang(FC) {
 function sockelUrteil(S, check) {
     const fh = (o) => [...new Set(S.je[o].fh)].join("/");
     check(
-        `R5 die Gegenprobe: der Sockel folgt dem Wasser — trocken ${fh("trocken")} m · Heimat ${fh("heimat")} m · nass ${fh("nass")} m, die Hülle steigt vom trockenen zum nassen Ort um ${S.soll} m an ${S.gleich} von ${S.n} Bauten`,
+        `R5 die Gegenprobe: der Sockel folgt dem Wasser — trocken ${fh("trocken")} m · Heimat ${fh("heimat")} m · nass ${fh("nass")} m, die Oberkante des Sockels steigt vom trockenen zum nassen Ort um ${S.soll} m an ${S.gleich} von ${S.n} Bauten`,
         S.soll >= 0.4 && S.gleich === S.n && S.n > 0 && S.je.trocken.region === S.je.nass.region,
         "Hub je Bau " + S.hub.join(",")
     );
@@ -450,13 +453,17 @@ KLIMA_TAETER["die alte Grenze (stroh 38°, die Deckung zählt nicht)"] = [
     ["glas: 4, klinker: 22, stroh: 45 };", "glas: 4, klinker: 22, stroh: 38 };"],
 ];
 KLIMA_TAETER["die Deckung liest den Ort nicht"] = [["if (klima.winter >= 4) return \"hohlziegel\";", "return d;"]];
+KLIMA_TAETER["der Sockel hebt nicht"] = [["const baseY=P.foundH+(P.pilotis?2.6:0);", "const baseY=0.55+(P.pilotis?2.6:0);"]];
 KLIMA_TAETER["der Schnee hebt das Dach nicht"] = [["var dh = SCHNEE_GESETZ.hsrJeMm * Math.max(0, schneefallVon(klima) - SCHNEE_GESETZ.ab);", "var dh = 0;"]];
+// die Trennschärfe: die Mutante eines Gesetzes rötet die Linse des anderen nicht (R5 Sockel ↔ R8 Schnee)
+const KLIMA_NICHT = { "der Schnee hebt das Dach nicht": "R5" };
 const KLIMA_SOLL = {
     "der Kern liest das Klima nicht": "R1",
     "der Sockel liest das Wasser nicht": "R5",
     "die alte Grenze (stroh 38°, die Deckung zählt nicht)": "R6",
     "die Deckung liest den Ort nicht": "R7",
     "der Schnee hebt das Dach nicht": "R8",
+    "der Sockel hebt nicht": "R5",
 };
 
 
@@ -1592,6 +1599,8 @@ hauptLauf(async () => {
                 rot.some((w) => w.startsWith(KLIMA_SOLL[name])),
                 m.fehlt || rot.join(" · ")
             );
+            if (KLIMA_NICHT[name])
+                check(`Selbst-Test R: „${name}“ rötet ${KLIMA_NICHT[name]} nicht (Trennschärfe)`, !!m.text && !rot.some((w) => w.startsWith(KLIMA_NICHT[name])), rot.join(" · "));
         }
         selbsttestEnde(errs);
         process.exit(0);
