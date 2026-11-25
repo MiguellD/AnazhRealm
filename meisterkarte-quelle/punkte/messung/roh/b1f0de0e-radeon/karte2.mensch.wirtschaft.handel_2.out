@@ -1,0 +1,8 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@ 11.9 s · Verkehr: 21 Wagen, 21 mit Fahrer, 0 gezählte Fahrten, aus dem Plan 0
+@@ 64 s · Lieferung: 21 Wagen mit Lieferung (21 mit Fahrer), 5 Stände, voll vor dem Tag 5, Tag 24 h, geliefert im Tag 0, Kisten am Stand danach 0, gewartet 59.8 s, 5 fahren geladen, 16 leer, 10 kraut im ersten, Kisten leer 0 ↔ beladen 3 (gezeichnet), in der Fahrt am Werk 0 (+0), am Stand 1 (−6) · Uhr 0.5 → 0.5 · Fahrt {"loop":"an","takte":2926,"amWerk":0,"amStand":1,"geladen":0,"abgeladen":6,"eineWende":0,"uhr":0.5}
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
