@@ -1,7 +1,7 @@
 {
  "sha": "f63a69ef8086b12e4ed913535b7314068383c87f",
  "geraet": "radeon",
- "zeit": "2026-11-25T20:50:00.494Z",
+ "zeit": "2026-11-25T21:10:29.585Z",
  "host": "MiguellD",
  "je": {
   "karte2.mensch.geist.gespraech#2": {
@@ -4174,45 +4174,325 @@
   },
   "karte2.same.entfaltung.schirm#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\64dacf1e-eb39-4772-afa7-51d56fc3ed81.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\64dacf1e-eb39-4772-afa7-51d56fc3ed81.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-25T19:55:10.566Z",
+   "zahl": "Deckel 114 s gerissen: Stille seit 51.2 s nach 114 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT genesis-third 62.4 s)",
+   "exit": 1,
+   "minuten": 1.91,
+   "grund": "Deckel 114 s gerissen: Stille seit 51.2 s nach 114 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT genesis-third 62.4 s)",
+   "s": 114.4,
+   "fremd": {
+    "s": 119.5,
+    "takte": 47,
+    "fremdS": 251.3,
+    "kerne": 2.103,
+    "fensterKerne": 2.574,
+    "namen": [
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf 2da17e2e72e57ee227b2f393f4a9eff074c23813",
+      75.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.41
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      12.33
+     ]
+    ],
+    "dienerS": 131.64,
+    "diener": [
+     [
+      "System",
+      60.36
+     ],
+     [
+      "WmiPrvSE.exe",
+      37.14
+     ]
+    ],
+    "geraetS": 113.38,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      56.44
+     ],
+     [
+      "svchost.exe",
+      53.5
+     ],
+     [
+      "SearchIndexer.exe",
+      2.25
+     ]
+    ],
+    "eigenS": 346.64,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 1.032,
+     "nach": 1.92,
+     "station": 4.435
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 106.3,
+     "alle": 293.3,
+     "cpuEin": 94,
+     "tor": {
+      "ruhig": true,
+      "kerne": 3.8,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       5.23,
+       9.76,
+       8.22,
+       5.26,
+       3.37,
+       2.76
+      ]
+     },
+     "spanne": [
+      1795640831442,
+      1795640832005
+     ]
+    },
+    "nach": {
+     "ein": 119.4,
+     "alle": 360.5,
+     "cpuEin": 125,
+     "tor": {
+      "ruhig": true,
+      "kerne": 1.56,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       1.77,
+       1.8,
+       1.51,
+       1.51,
+       1.38,
+       1.8
+      ]
+     },
+     "spanne": [
+      1795640946410,
+      1795640947108
+     ]
+    },
+    "ruhe": {
+     "ein": 83.4,
+     "alle": 262.4,
+     "n": 1192,
+     "von": "2026-11-17"
+    },
+    "f": 1.432,
+    "fEin": 1.432,
+    "fAlle": 1.374,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-25T21:07:11.440Z",
    "abdruck": "a16a54631e99",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "gelaende.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\64dacf1e-eb39-4772-afa7-51d56fc3ed81.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\64dacf1e-eb39-4772-afa7-51d56fc3ed81.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "zahl": "die Seite warf: (b)(d) 13.0 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 2,784 (Faden 2,784 · alle Kerne 2,109; vor 110,1/303,2 ms, nach 232,2/553,3 ms, Ruhe 83,4/262,4 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 11,8 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 5,3 CPU-s · sh.exe dienst/radeon-dienst.sh 3,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,1 CPU-s · svchost.exe 13,3 CPU-s · SearchIndexer.exe 0,6 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 13.0 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "exit": 1,
+   "minuten": 0.33,
+   "grund": "die Seite warf: (b)(d) 13.0 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 2,784 (Faden 2,784 · alle Kerne 2,109; vor 110,1/303,2 ms, nach 232,2/553,3 ms, Ruhe 83,4/262,4 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 11,8 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 5,3 CPU-s · sh.exe dienst/radeon-dienst.sh 3,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,1 CPU-s · svchost.exe 13,3 CPU-s · SearchIndexer.exe 0,6 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 13.0 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "konsumFehlt": "1 Prozess(e) ohne Ende (hart getötet oder ohne Antwort): 15564",
+   "s": 19.8,
+   "fremd": {
+    "s": 25.7,
+    "takte": 10,
+    "fremdS": 56.73,
+    "kerne": 2.211,
+    "fensterKerne": 2.584,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      11.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      5.3
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      3.14
+     ]
+    ],
+    "dienerS": 27.63,
+    "diener": [
+     [
+      "System",
+      11.64
+     ],
+     [
+      "WmiPrvSE.exe",
+      9.97
+     ]
+    ],
+    "geraetS": 35.47,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.13
+     ],
+     [
+      "svchost.exe",
+      13.25
+     ],
+     [
+      "SearchIndexer.exe",
+      0.59
+     ]
+    ],
+    "eigenS": 130.7,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 2.217,
+     "nach": 2.227,
+     "station": 3.353
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 110.1,
+     "alle": 303.2,
+     "cpuEin": 109,
+     "tor": {
+      "ruhig": true,
+      "kerne": 3.01,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       4.27,
+       6.86,
+       4.19,
+       3.13,
+       3.17,
+       2.73
+      ]
+     },
+     "spanne": [
+      1795640980920,
+      1795640981500
+     ]
+    },
+    "nach": {
+     "ein": 232.2,
+     "alle": 553.3,
+     "cpuEin": 219,
+     "tor": {
+      "ruhig": true,
+      "kerne": 4.89,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       4.29,
+       4.24,
+       3.21,
+       2.63,
+       4.97,
+       6.79
+      ]
+     },
+     "spanne": [
+      1795641001297,
+      1795641002576
+     ]
+    },
+    "ruhe": {
+     "ein": 83.4,
+     "alle": 262.4,
+     "n": 1194,
+     "von": "2026-11-17"
+    },
+    "f": 2.784,
+    "fEin": 2.784,
+    "fAlle": 2.109,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
    "ungemessen": true,
-   "zeit": "2026-11-25T19:55:10.617Z",
+   "zeit": "2026-11-25T21:09:40.919Z",
    "abdruck": "d09f55f9774b",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.planet.relief.grossform#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\64dacf1e-eb39-4772-afa7-51d56fc3ed81.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\64dacf1e-eb39-4772-afa7-51d56fc3ed81.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-25T19:55:10.660Z",
+   "zahl": "Deckel 180 s gerissen: Stille seit 179.9 s nach 180 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "exit": 1,
+   "minuten": 3,
+   "grund": "Deckel 180 s gerissen: Stille seit 179.9 s nach 180 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "s": 180.3,
+   "fremd": {
+    "s": 181.6,
+    "takte": 73,
+    "fremdS": 214.16,
+    "kerne": 1.179,
+    "fensterKerne": 1.439,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh hand-w2-tat-bild bash tat/lauf3.sh",
+      22.02
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      19.97
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      19.06
+     ]
+    ],
+    "dienerS": 118.5,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      66.53
+     ],
+     [
+      "System",
+      27.61
+     ]
+    ],
+    "geraetS": 151.41,
+    "geraet": [
+     [
+      "svchost.exe",
+      77.31
+     ],
+     [
+      "MsMpEng.exe",
+      69.83
+     ],
+     [
+      "SearchIndexer.exe",
+      2.34
+     ]
+    ],
+    "eigenS": 570.92,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-25T21:10:29.585Z",
    "abdruck": "9d14fbd22724",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   }
  },
  "sitzung": {
