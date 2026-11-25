@@ -5,9 +5,14 @@ ZWISCHENSTAND · Karte 2 gebucht 105 von 1 718 (diese Abgabe bucht keine Sprosse
 **Geschnitten.** Ein Messort trägt `zeit { uhr, tag, wetter, wort }`, und `werkbank umstellen --ort` ist ihr einziger Leser: er
 spricht sie mit den Worten des Spielers, prüft, was die Welt nahm, und wartet nach dem Sprung der Uhr auf das Licht des Orts. Dazu
 zwei neue Orte als Funktion des Gelände-Kerns mit Beleg (Höhe, Spiegel, Abstand): `kueste` und `ufer`.
-**Gemessen.** __GEMESSEN__
-**Ehrlich offen.** Der Inhalt im Bild (`imBild`) und die Serie je Gerät × Sicht (8 Ratschen) messen erst auf echter GPU; die
-Jahreszeit stellt ein Welt-Akt, kein Chat-Satz; das Watt kennt keine Gezeit; `quelle` ist nur Kandidat (Liste unten).
+**Gemessen.** `umstellen --ort kueste` (Exit 0, 614 s) und `umstellen --ort ufer` (Exit 0, 896 s) stellen Ort, Uhr, Wetter und
+Saison; die Welt misst die Belege wie das Gesetz (Küste −2,39 m, Meer −3 in 40 m, 0,879°; Ufer 22,23 m, Fluss 21,96 in 4,75 m,
+8,65 m breit; je 0 Kronen im Blick), je ein Bild aus dem Ausgabe-Pfad mit Abnahme GRÜN — an der Küste von 7,7 m, weil am Auge
+das Schilf steht (82 m Gürtel längs des Blicks). `umstellen --ort wiese` gibt auf dem Kopf der Abgabe in 13 von 15 Schlüsseln
+dieselben Bytes wie main 78ed3167 (sha d6e3923cd73e; die zwei übrigen zählen die Wanduhr); gate:profiband 58/58 im Selbsttest.
+**Ehrlich offen.** Am Auge der Küste steht das Schilf vor dem Meer (das Ufer-Band des Kerns gilt am Meer wie am See); der Inhalt
+im Bild (`imBild`) und die Serie je Gerät × Sicht (8 Ratschen) messen erst auf echter GPU; die Jahreszeit stellt ein Welt-Akt,
+kein Chat-Satz; das Watt kennt keine Gezeit; `quelle` ist nur Kandidat (Liste unten).
 
 ## Schnitt 1 — die Zeit des Orts, EIN Leser
 
@@ -108,11 +113,12 @@ den Morgenhimmel fast weiß (das Bild Luma 146,9), ungeurteilt, weil die Klasse 
 
 ## Die neun bestehenden Orte — `umstellen --ort wiese` vorher ↔ nachher
 
-Gleiche Werkbank (swiftshader, chrome-headless-shell 148), gleicher Befehl, vorher auf main 78ed3167, nachher auf dem Kopf. Die
-Ausgabe trägt in beiden Läufen dieselben 15 Schlüssel; 13 sind byte-gleich (sha256 der Ausgabe ohne die zwei Zeit-Felder: d6e3923cd73e
-↔ d6e3923cd73e) — Spieler −280,4 / −1045,6, Blick, die ganze Wiesen-Messung (y 27,48 · Hang 1,81° · Krone 0,043 · 4 Bäume · Kranz
+Gleiche Werkbank (swiftshader, chrome-headless-shell 148), gleicher Befehl auf frischer Werkbank (`start --ort wiese`, dann
+`umstellen --ort wiese`), vorher auf main 78ed3167, nachher zweimal: auf dem Kopf vor dem Merge und auf dem Kopf der Abgabe nach
+dem Merge von main 804ca10c. Die Ausgabe trägt in allen Läufen dieselben 15 Schlüssel; 13 sind byte-gleich (sha256 von
+`JSON.stringify(o, null, 1)` ohne die zwei Zeit-Felder: d6e3923cd73e ↔ d6e3923cd73e ↔ d6e3923cd73e) — Spieler −280,4 / −1045,6, Blick, die ganze Wiesen-Messung (y 27,48 · Hang 1,81° · Krone 0,043 · 4 Bäume · Kranz
 0,428 · Horizont 2,6° · Gras 1), 25 Chunks, Gier −1,9717, keine Zeit, kein Beleg. Verschieden sind nur die zwei Felder, die die
-Wanduhr zählen: `ms` 916 620 ↔ 1 290 364 und `takte` 440 ↔ 499 (Takte bis Ring und Welt stehen; im Nachher-Lauf lief zu Beginn
+Wanduhr zählen: `ms` 916 620 ↔ 1 290 364 ↔ 1 325 453 und `takte` 440 ↔ 499 ↔ 496 (Takte bis Ring und Welt stehen; im Nachher-Lauf lief zu Beginn
 37 s lang gate:altlasten auf denselben vier Kernen). Die Lage und das Verhalten des Orts sind gleich; die Ausgabe als Ganzes ist es
 nicht, weil sie die Zeit des Laufs mitschreibt.
 
