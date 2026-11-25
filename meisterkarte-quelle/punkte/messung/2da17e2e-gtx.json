@@ -1,0 +1,193 @@
+{
+ "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
+ "geraet": "gtx",
+ "zeit": "2026-11-25T21:10:18.768Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.planet.kopplung.land-meer-luft#4": {
+   "gruen": true,
+   "zahl": "S4 dT 6,921 K gegen Soll ≥ 5 K ✓ · Zeuge: die Welt geändert",
+   "exit": 0,
+   "minuten": 2.42,
+   "gpu": "nvidia/pascal",
+   "konsum": "kc0e6abe472d6",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k106fb7d8e509",
+   "s": 144.2,
+   "fremd": {
+    "s": 147.2,
+    "takte": 68,
+    "fremdS": 33.44,
+    "kerne": 0.227,
+    "fensterKerne": 0.379,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.5
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.84
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.94
+     ]
+    ],
+    "dienerS": 29.08,
+    "diener": [
+     [
+      "System",
+      15.75
+     ],
+     [
+      "WmiPrvSE.exe",
+      5.92
+     ]
+    ],
+    "geraetS": 39.78,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      26.05
+     ],
+     [
+      "svchost.exe",
+      11.11
+     ],
+     [
+      "SearchIndexer.exe",
+      1.08
+     ]
+    ],
+    "eigenS": 304.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T21:10:18.768Z",
+   "abdruck": "a80a71e71b9f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kc0e6abe472d6": "fVVdb6MwEPwvPF5LzYcpYKkPTumpOV1P9CesYQ1cCEQ2qauc7r+fSOIkQHX7kiia9czOrJ0/zg6KDVT48Fv3ncOcb869s2uhw8EtejX+7DAnwMinlJFLhZdvv0xGuXl6cu4dDR/oalQfqE5taeEHGDJ+KsI5fx5hhWp2gyZtIwiIDuotuns1YNM+FMc2+QheJBgxL7zKCZHkQDLDL/XCT2y3x7QCy94dQKI9xMMwSpDNgXtdgUAX9vJIfAZHNMVH/zxfkvG37DqqKTjPDTF58spzSlZLdgFdOZ0A/UBQYNysOefvc3zZAA5u23Ta8vtlnErv6q95W/QoMO4BsG5RWZLE96mwolejNaNds0bZ7rWekCVhGQUJIySdYyvUTVEP7k71ArszXKRB7ANbmcXc1W7vyltFIAQkYu55DdhVqCYavLCQo+GfyfzQDWxRgdtBfYamXhgH4mb3CHldammPwo8UVjilKSbBpHEMl3yMBvM1vymaE0I+SWJRdt0o/+/a6aJu1HZql6QYeCH7uZSoayhRuZteDxd0iDH1xOmGrDNy/MyT1bzzOpzNEACSm4UhCeGvCy91LwcDCt1qt7dLQzGKI8b5egEeYLu1mYfold48SD2Mi34rI45oRIERcne6MMuhT9fCPWDT2iYpKU0j9ryic/CHgq0LolKNlDZ9ERUy/WpZDbaDK/p+sFb6cRyGoyXdbeD5McrbtLPqnb5959ULn9Q6e8+rhf4jS6+Gy00N4tgvmKyyhJBEztGNGlwDRW3hgRQIKSOmmB98QNVihRM7pe9DULLjk3NRa3cwu5ss8mGR9qHB0ehO77UNuwAqIvZFNAbVRkC3se9fVEZByn5wzldvPJ8a81xJmpFFfSacv2Tm7n3q4kiyw4LsVC+b8WUkNex1De1w/Yf5+w8=",
+  "k106fb7d8e509": "jZXdcpswEIXfxZdNifgRATSTCzlkmqTjxukbrGAFxBgYCULGnb57B2zZBnLRvfHNWe3h2yP5z6qBZAcZ3r7rulqx1bfV95WGD7Q0qg9Ut+96xVZR4rjoMX4swjn/McgSVTStJmUhCIgK8j1anWqxKG+TsU3ege0LRvpHnm0JkeRA4p6f64Hf38+PKQWmtdWCRHOIjZ4fIpsLO52BQAs6OQ4+iX0a4Z3DyFhhzDcxOVefcL7tSb8Nn2aHCajSqXN0XEGB8f6Zc/42d5kWgK1VFpU2c500iKTNLrM2ix4FvXUAzEtUZkjoOFQYs+sByYBp1ijLTuvJsNBLfTdkhERzbYa6SPLWalQtsDrJReQGDrB1v6CdNZ0lrx2BEBCKOescsMpQTTzYXiIH0J/h/NAd7FGBVUF+kka2F7jiwoYQ8rT0Uo7GxxHGOKURhu6kcVjqETB/5ldFt4SQTxIalYkZvdI8LuOmk7xQ+ykuSdG1vTkDnUOKytrVuj0rPQyoLY634jkm4+82XM87Lx9m9gcA4VVYSEj404KjrmXbg0IrazoTGIp+4DOeLdKlW9jvzb49tFN78QHtEPJrG4FPfQqMkJsT0gWe45WwDliUpklKSiOfPazpXPyhYG+ByFQhpdm88BMZfRXUHsvWEnXdGpROEHgeIx6prpf9q+cPnG8uO3yNy9+0LV9uHvmkfvKXrybUqj3fUDcInITJPg4JCeVcXajW6iHJjdyVAiGaQzygKjHDCUbpOOCmbHxeTMUmd/HNJLyHxZYPBQ6AK91ps+QEqPDZKeXHcE2T26PaCah25s3zU9+NGOdxxjd8e0XllfP3Rvb8f+ttfRrUYEIaVctieBlJDp3OoWwvfxF//wE="
+ },
+ "sitzung": {
+  "start": "2026-11-25T21:09:36.543Z",
+  "ordner": "sitzung-20261125-220936",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 7.9,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "karte2.planet.kopplung.land-meer-luft#4",
+    "s": 28.4,
+    "takte": 896,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "felder": [
+   {
+    "probe": "karte2.planet.kopplung.land-meer-luft#4",
+    "weg": [
+     "__dorfDerProbe",
+     "__rafferEnde",
+     "__rafferKurz",
+     "__ortZeit",
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr",
+     "__imSchuss",
+     "__nahSpeicher",
+     "__letzteSpiegel",
+     "__letzteTeilung",
+     "__abbruchEpoche"
+    ]
+   }
+  ],
+  "wirt": [
+   {
+    "probe": "karte2.planet.kopplung.land-meer-luft#4",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__raffer",
+     "window.__rafferRest",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
+     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
+     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     193.6,
+     539.3
+    ],
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "karte2.planet.kopplung.land-meer-luft#4",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.planet.kopplung.land-meer-luft#4",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 3282,
+   "frameP95": 25.09,
+   "taktP95": 15.74,
+   "vramMax": 129,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.planet.kopplung.land-meer-luft#4",
+     "m": 17778,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 256,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 266.4,
+  "minuten": 4.59
+ }
+}
