@@ -113,8 +113,8 @@
             "datei": 1
         },
         "scripts/diag-stand-takt.cjs": {
-            "zweck": "Messung: die Mutante des Bias-Gangs (HAUFEN-SCHLAF, Marke druck) — der Rumpf von `_freiGang` live mit der Reibung im Bias-Gang (der Gang vor dem Schnitt), an EINER Anker-Zeile gebaut; fehlt sie, ist die Linse BLIND",
-            "seite": 1
+            "zweck": "Messung: die zwei Mutanten des Lösers der Ruhe (HAUFEN-SCHLAF, Marke druck) — die Rümpfe von `_freiKontaktBereit` (der Warmstart erbt über die Fläche) und `_freiGang` (der Bias-Gang löst die Reibung mit) live getauscht, je an EINER Anker-Zeile gebaut; fehlt sie, ist die Linse BLIND",
+            "seite": 2
         },
         "scripts/diag-streu-wahrheit.cjs": {
             "zweck": "Messung: führt phyto-core und foundry-core im vm aus (Kern-Daten, Karten-Codec) und liest die Emitter je Art am Kern",

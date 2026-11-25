@@ -712,16 +712,19 @@ function druckUrteil(D, v) {
     }
     if (!(D.scherben > 0)) v.push("LEER: die Welle der Probe brach keine Scheibe — keine Scherbe, deren Schlaf die Linse misst");
     else if (D.schlafS == null || !(D.schlafS <= DRUCK_SCHLAF_S)) v.push(`DRUCK-SCHLAF: die letzte der ${D.scherben} Scherben schlief ${D.schlafS == null ? `nie (${D.wach} liegen nach 10 s wach)` : `nach ${D.schlafS} s`} (Soll ≤ ${DRUCK_SCHLAF_S} s)${druckSchlafBeweis(D.schlafBeweis)}`);
-    // DER HAUFEN (der Bias-Gang, `_freiGang`): je Saat sechs Quarz-Platten auf dem Ort der Probe, gestreut, der Löser im
-    // festen Schritt — jeder Haufen schläft im Soll von DRUCK-SCHLAF. Die Mutante (der Gang vor dem Schnitt: der Bias-Gang löst
-    // die Reibung mit) sucht ihre Saat, die nie schläft; der echte Gang geht dieselben Saaten. Bis zum Schnitt kippte dort eine
-    // Platte alle 13–16 Schritte: der Warmstart gab je Teil-Schritt +0,02–0,036 ω·rad, Feder und Entspannung nahmen 0,005.
+    // DER HAUFEN (der Löser der Ruhe): je Saat sechs Quarz-Platten auf dem Ort der Probe, gestreut, der Löser im festen Schritt
+    // ohne Wind — jeder Haufen schläft im Soll von DRUCK-SCHLAF. Je Mutante (warm: der Warmstart erbt über die Fläche, bias: der
+    // Bias-Gang löst die Reibung mit) sucht ihre Saat, die nie schläft; der echte Löser geht dieselben Saaten. Bis zum Schnitt
+    // schliefen 296 von 300 Haufen binnen 3 s, 4 nie (Saat 20, 84, 148, 264: eine Platte kippte alle 13–16 Schritte).
     const H = D.haufen;
-    if (!H || !H.echt || !(H.saaten > 0)) v.push("LEER: die Probe legte keinen Haufen (sechs Platten je Saat am Ort der Probe) — der Schlaf des Gangs ungemessen");
+    if (!H || !H.echt || !(H.saaten > 0)) v.push("LEER: die Probe legte keinen Haufen (sechs Platten je Saat am Ort der Probe) — der Schlaf des Lösers ungemessen");
     else {
         if (!(H.echt.nie === 0) || H.echt.schlafS == null || !(H.echt.schlafS <= DRUCK_SCHLAF_S))
-            v.push(`HAUFEN-SCHLAF: von ${H.saaten} Haufen aus sechs Platten schliefen ${H.echt.nie} nie, der späteste nach ${H.echt.schlafS ?? "?"} s (Saat ${H.echt.saat}, Soll ≤ ${DRUCK_SCHLAF_S} s) — der Bias-Gang \`_freiGang\` löst die Reibung mit der Feder, der Warmstart trägt ihren Dreh in jeden Teil-Schritt, die Platte kippt und weckt ihre Insel`);
-        if (!H.mutante || H.mutante.saat == null) v.push(`BLIND: die Mutante des Gangs (die Reibung im Bias-Gang) ${H.mutante ? `schlief in allen ${H.saaten} Saaten` : "lief nicht (der Gang trägt seinen Anker nicht mehr)"} — der Haufen trifft den Bias-Gang nicht`);
+            v.push(`HAUFEN-SCHLAF: von ${H.saaten} Haufen aus sechs Platten schliefen ${H.echt.nie} nie, der späteste nach ${H.echt.schlafS ?? "?"} s (Saat ${H.echt.saat}, Soll ≤ ${DRUCK_SCHLAF_S} s) — der Löser lässt eine Platte kippen: der Warmstart erbt über die Fläche (\`_freiKontaktBereit\`) oder der Bias-Gang löst die Reibung mit (\`_freiGang\`)`);
+        for (const [k, was] of [["warm", "der Warmstart über die Fläche"], ["bias", "die Reibung im Bias-Gang"]]) {
+            const M = H.mutanten && H.mutanten[k];
+            if (!M || M.saat == null) v.push(`BLIND: die Mutante ${k} (${was}) ${M ? `schlief in allen ${M.n} Saaten` : "lief nicht (der Löser trägt ihren Anker nicht mehr)"} — der Haufen trifft sie nicht`);
+        }
     }
     const ruhe = D.nachher && D.nachher.sims.druck ? D.nachher.sims.druck.summe : NaN;
     if (!(ruhe === 0)) v.push(`DRUCK-RUHE: nach der Welle arbeitet ihr Takt — ${ruhe} Einheiten`);

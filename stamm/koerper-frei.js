@@ -617,10 +617,14 @@ class AnazhRealm_koerper_frei {
         neu.clear();
         for (let k = 0, c = 0; k < n; k++, c += CS) {
             if (!(G[c + 48] > 0)) continue;
-            const w = alt.get(G[c + 74]) || new Float64Array(3);
+            const w = alt.get(G[c + 74]) || new Float64Array(6);
             w[0] = G[c + 48];
             w[1] = G[c + 49];
             w[2] = G[c + 50];
+            // die Normale, unter der der Impuls galt (`_freiKontaktBereit` prüft sie)
+            w[3] = G[c];
+            w[4] = G[c + 1];
+            w[5] = G[c + 2];
             neu.set(G[c + 74], w);
         }
         this._freiWarm = neu;
@@ -1062,10 +1066,14 @@ class AnazhRealm_koerper_frei {
         G[c + 56] = 0;
         G[c + 60] = X[a + 27];
         G[c + 61] = b >= 0 ? X[b + 27] : 0;
+        // DER WARMSTART JE MERKMAL (FREI.warmCos): der Schlüssel nennt den Punkt, nie seine Fläche — die Ecke an der Kante einer
+        // 4-mm-Platte springt zwischen Deck- und Seitenfläche (90°), und ihr Trage-Impuls lief längs der Seite weiter. Der Impuls
+        // gilt nur, steht die Normale des vorigen Schritts noch. Vorher: 37 302 gedrehte Normalen in 300 Haufen, 12 070 mit Impuls.
         const l = alt.get(G[c + 74]);
-        G[c + 48] = l ? l[0] : 0;
-        G[c + 49] = l ? l[1] : 0;
-        G[c + 50] = l ? l[2] : 0;
+        const gilt = l !== undefined && l[3] * n0 + l[4] * n1 + l[5] * n2 >= AnazhRealm.FREI.warmCos;
+        G[c + 48] = gilt ? l[0] : 0;
+        G[c + 49] = gilt ? l[1] : 0;
+        G[c + 50] = gilt ? l[2] : 0;
     }
 
     // DIE PACKUNG der wachen Körper (EIN Puffer, kein Objekt je Körper im Gang): je Körper FREI_KOERPER Zahlen — v, ω, Lage, Lage
@@ -1204,8 +1212,8 @@ class AnazhRealm_koerper_frei {
             }
             // DER BIAS-GANG OHNE REIBUNG (Box2D v3, E. Catto, contact_solver.c, Commit 8c65dcb9 „bias stage no longer applies
             // friction“): mit Feder löst der Gang nur die Normale, die Reibung löst die Entspannung starr; der Warmstart gibt beide.
-            // Vorher löste der Bias-Gang die Reibung gegen das Tempo der Feder mit, der Warmstart trug ihren Dreh in jeden
-            // Teil-Schritt (+0,02–0,036 ω·rad, Saat 20 des Haufens: eine Platte kippte alle 13–16 Schritte und weckte ihre Insel).
+            // Vorher löste der Bias-Gang die Reibung gegen das Tempo der Feder mit: mit dem Warmstart je Merkmal schliefen 293 von
+            // 300 Haufen aus sechs Platten binnen 3 s (2 nie, der späteste 9,75 s), mit dem Gang ohne Reibung 300 (der späteste 2,6 s).
             const dMax = prall !== undefined || (mitFeder && !warm) ? 1 : 3;
             for (let d = 0, o = c; d < dMax; d++, o += 15) {
                 const li = c + 48 + d;
@@ -1470,6 +1478,9 @@ AnazhRealm.FREI = Object.freeze({
     prallMs: 0.5,
     ruheMs: 0.05,
     ruheS: 0.3,
+    // DER WARMSTART JE MERKMAL: ein Punkt erbt seinen Impuls nur, steht seine Normale binnen 5° (Jolt
+    // `mContactNormalCosMaxDeltaRotation`, J. Rouwe, PhysicsSettings.h: cos 5°; Box2D trägt die Bezugsfläche in der Kennung)
+    warmCos: 0.996195,
     rundPunkte: 16,
     // der Fuss je Rand trägt, sobald die Achse weiter als 45° von der Normale des Grunds steht (das Fass liegt eher, als es steht)
     fussLiegt: Math.SQRT1_2,
