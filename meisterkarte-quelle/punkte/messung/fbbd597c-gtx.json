@@ -1,0 +1,175 @@
+{
+ "sha": "fbbd597c60b84b072be2c9db3a9ebbbe98213269",
+ "geraet": "gtx",
+ "zeit": "2026-11-25T18:46:07.266Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.leben.pflanzen.lebenslauf#1": {
+   "gruen": true,
+   "zahl": "S1 hoehenAbstand 0,061 KS gegen Soll ≤ 0,15 KS ✓ · reinekeSteigung -1,47 Steigung gegen Soll -1,766–-1,445 Steigung ✓ · Zeuge: die Welt geändert · Bild (Beleg) C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\fbbd597c-gtx\\auge-pflanzen-lebenslauf-s1.png · gemessen vor dem Wurf der Leiter nach 20,01 s: der Deckel der Leiter 20 s",
+   "exit": 0,
+   "minuten": 2,
+   "gpu": "nvidia/pascal",
+   "konsum": "kf34cfe0ab57a",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kb9e774c672bd",
+   "s": 119.5,
+   "fremd": {
+    "s": 120.9,
+    "takte": 56,
+    "fremdS": 26.38,
+    "kerne": 0.218,
+    "fensterKerne": 0.385,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      4.67
+     ],
+     [
+      "Explorer.EXE",
+      4.42
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.36
+     ]
+    ],
+    "dienerS": 21.58,
+    "diener": [
+     [
+      "System",
+      12.69
+     ],
+     [
+      "WmiPrvSE.exe",
+      4.56
+     ]
+    ],
+    "geraetS": 31.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.2
+     ],
+     [
+      "svchost.exe",
+      9.45
+     ],
+     [
+      "SearchIndexer.exe",
+      1.14
+     ]
+    ],
+    "eigenS": 208.27,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-25T18:46:07.266Z",
+   "abdruck": "be0e377a51bd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kf34cfe0ab57a": "fVXbcpswEP0XPzYl4iIMaCYPcnAn7jQT/AkrWAExBo+EQ+pO/70DjhIunu6LXs7uHp1zBH9WJ0gPkOP9q27qFVt9W31faXhDS6N6Q3X/qldsFaWOix7j1yKc88celqry1GpSlYKAqKE4onVWLZbVfTq0yTXYvmCk2/I8IUSSC4k7/llb/vAwH1MJzBqrBYlmiI2eHyKbA886B4EWnOWw2IDtcO0CI0OFMX+JyWd1z5wnVNIkjHkSbmcDBdTZlH209gP02e73TaZZCdhaVVlrs9vJgkjabLRv0aOgsy6ARYXqowlDx6HCEN70svRSzRplddZ6siz0Mt8NGSHRHJujLtOitU6qEVh/wEXkBg6wTbe4R346W3LMCISAUMz1LgDrHNWEg+2lcu0w8h7Ohx7giAqsGgqjpe0FrvjShhDytORSDcSHFYY4pRGG7qSxN5a89QLzHR8VTQgh7yQ0KBM1yv8bOZ0WpTpO5ZIUXdtjv5YUdQEZKuvQ6PYT7WFAbXF9HbuYDGcSbuadX5czHgJAOAoMCQl/WmipG9l2oNDKT2cTGop+4DPOdwtwC8ej8dxDO7PnRuq2D/qYBg3WiMgIubs+luWlr8/CumBZmSYpKY189rihc/CbgqMFIlellMZ94acyuhXWDqvWEk3TGimdIPC8XpJ6bHgyWDl2O8739PkHz7d8Urt4n+QL/sOWRrWGvC/WtqRMDiFKF+hStVYHaWHgrhQIEbsBvaCqMMeJnNJxwM169IityWB8NwnyZeH2pcRe6FqftTE7BSp8dsOaDtVBQH34AAauDFKP/eScb17401SYeJ+EMVlUt+V8lxR80PeR8/11wQlTclKNLPuvIingrAuo2q9fxN9/",
+  "kb9e774c672bd": "jVXbcpswEP0XPzYl4iIMaCYPcvDUTieN2+kPrGAFxBg8EoSMO/33DrYVc8lD94WXs9qz5xyJP4sjJHvI8P5V19WCLb4svi40vKGlUb2hun/VC7aIEsdFj/FLEc75tx6WqOLYaFIWgoCoID+g1aoGi/I+ObfJJdi+YKRb82xHiCQnEnf8ox75w8P0mFJgWlsNSDSH2Oj5IbIpsNUZCLSglefBBmyHSxcYOVcY85eYfFT3zPmOSroL48lhAqp0zDxa+gH6bNtxvp6zTAvAxiqLSpu5ThpE0maDWbMeBZ11AsxLVNcmDB2HCkN21UvSyzRplGWr9WhY6KW+GzJCoik2Q10keWMdVS2wusJF5AYOsFU32yM7tpYcMgIhIBRTrXPAKkM14mB7iVw6jLyH00P3cEAFVgW50dL2AlfctCGEbOZcyjPx8whDnNIIQ3fU2Jt6EZhv+aDojhDyTkKDMjGjA8wnRuokL9RhLJek6NreVAOdQ4rK2te6+UB6GFBbXG7FNibn7y5cTTtvixn/ACAchIWEhG9mOupaNh0otLJjawJD0Q98xrNZunQDh4Px20M7tWcLNH3IhzRosERERsjdVdKZPJcrYZ2wKE2TlJRGPntc0Sn4TcHBApGpQkrjvPATGX0W1A7LxhJ13RgpnSDwPEY8Ug3N/tHxR86fbx6+xOUv2pRPd2s+qu/86bMJtWoMcV8sbUmZPG+aTMl3hWqsDpLcwF0pEKKpiCdUJWY4klE6DrgpI11yoxOb3MV3o/CeZi6fCuwFrnSrjckJUOGza8ov4Ront0O1F1Dtrw2BK4Okf5zjjL/wzUCVDd/+tncd/79a85/9kCMm5KhqWfSvIsmh1TmUze338Pcf"
+ },
+ "sitzung": {
+  "start": "2026-11-25T18:45:26.354Z",
+  "ordner": "sitzung-20261125-194526",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 6.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "karte2.leben.pflanzen.lebenslauf#1",
+    "s": 28.3,
+    "takte": 636,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "felder": [
+   {
+    "probe": "karte2.leben.pflanzen.lebenslauf#1",
+    "weg": [
+     "__rafferEnde",
+     "__rafferKurz",
+     "__imSchuss",
+     "__nahSpeicher",
+     "__letzteSpiegel",
+     "__letzteTeilung",
+     "__zensusCalls",
+     "__abbruchEpoche"
+    ]
+   }
+  ],
+  "wirt": [
+   {
+    "probe": "karte2.leben.pflanzen.lebenslauf#1",
+    "anders": [
+     "r._tickNahWiese",
+     "r._ruheImBild",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt",
+     "window.__raffer",
+     "window.__rafferRest"
+    ],
+    "wie": {
+     "r._tickNahWiese": "neu: () => 0",
+     "r._ruheImBild": "neu: () => 0",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
+     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()"
+    },
+    "haelt": [],
+    "heap": [
+     226.4,
+     276
+    ],
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "karte2.leben.pflanzen.lebenslauf#1",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 2393,
+   "frameP95": 33.33,
+   "taktP95": 18.97,
+   "vramMax": 156,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 242,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 249.3,
+  "minuten": 4.29
+ }
+}
