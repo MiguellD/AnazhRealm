@@ -304,8 +304,10 @@ module.exports = (F) => [
                 const macht = xs.filter((x) => x.rang >= 2);
                 const volle = xs.map((x) => x.vol).sort((a, b) => a - b);
                 const median = volle[volle.length >> 1] || 1;
-                // der Mauer-Pool: jede Wand (Maß x = STADTMAUER.wand.dick) außerhalb der Kästen der Orte ist Grenzbefestigung
-                const SM = globalThis.__fachwerkCore.STADTMAUER;
+                // der Mauer-Pool: jede Wand (Maß x = die Wand-Dicke EINER Form des Kerns, fachwerk `MAUER_FORM`: Palisade · Steinring ·
+                // Bastion — bis 25.11. nur der Steinring der Konstante STADTMAUER) außerhalb der Kästen der Orte ist Grenzbefestigung
+                const FORMEN = Object.values(globalThis.__fachwerkCore.MAUER_FORM).filter((f) => f && f.wand);
+                const istWand = (s) => FORMEN.some((f) => Math.abs(s.x - f.wand.dick) < 0.01 && s.y > f.wand.hoch);
                 const P = r.state.stlMauer;
                 const wk = r._wegeKarteEnsure();
                 const inBox = (i) => (wk.siedlungen || []).some((b) => b && b.streifen && i >= b.streifen[0] && i < b.streifen[1]);
@@ -315,7 +317,7 @@ module.exports = (F) => [
                     for (let i = 0; i < (P.top || 0); i++) {
                         M4.fromArray(P.mesh.instanceMatrix.array, i * 16);
                         M4.decompose(pos, q, sk);
-                        if (!(Math.abs(sk.x - SM.wand.dick) < 0.01 && sk.y > SM.wand.hoch)) continue;
+                        if (!istWand(sk)) continue;
                         poolWaende++;
                         if (!inBox(i)) (poolFrei++, (freiM += sk.z));
                     }

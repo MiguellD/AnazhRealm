@@ -1327,8 +1327,12 @@ const STADT_KAMERA =
     "hoeher: Math.round((best.y - cy) * 10) / 10, segs: v2.mauer.segs.length, tuerme: v2.mauer.towers.length };";
 // DIE MAUER IN DER WELT (vorrat3-stationen-g5, Karte 2 mensch.macht.wehrbau S1 „geschlossener Ring mittags und Dämmerung lesbar, kein
 // Schwebe-Spalt“): gelesen wird der Mauer-Pool, nie der Plan allein — die Streifen, die `_stlMauerBuild` (stamm/siedlung-wege.js) für
-// den Ort der Kamera in den Pool schrieb (sein Kasten in `_wegeKarteEnsure().siedlungen`, `streifen` [von, bis]). Je Wand (Maß x =
-// STADTMAUER.wand.dick) die Unterkante an fünf Punkten ihrer Länge gegen den gezeichneten Boden (`_voxelSurfaceY`): der größte Spalt
+// den Ort der Kamera in den Pool schrieb (sein Kasten in `_wegeKarteEnsure().siedlungen`, `streifen` [von, bis]). Wand und Turm
+// erkennt die Messung an den Maßen der FORM, die der Bau las (`box.mauerVon.mauer`, fachwerk `mauerGestalt`: Palisade 0,35 × 3,6 mit
+// Türmen 3 × 6,4 · Steinring 1,6 × 5,6 mit Türmen 3,6 × 8,4 · Bastion 4,5 × 6,4 mit Bollwerken vor × √2) — bis 25.11. an der Konstante
+// STADTMAUER: seit der Wehr ihrer Zeit (wehrbau#2) las sie jede Palisade und jede Bastion als „0 Segmente stehen“ (Radeon am main
+// 6c210411: Ring 0/21, Türme 0/3, und „frei im Schuss 0/0“ galt als lesbar). Je Wand (Maß x = die Dicke ihrer Form) die
+// Unterkante an fünf Punkten ihrer Länge gegen den gezeichneten Boden (`_voxelSurfaceY`): der größte Spalt
 // darüber ist der Schwebe-Spalt. Geschlossen: jedes Segment des Plans steht als Wand in der Welt (1,5 m um seine Mitte), die Lücken
 // des Rings sind die Tore des Gesetzes (`mauerRing`: offen nur um ein Tor). Lesbar: die Krone jeder Wand in der Kamera des Schusses
 // (Pose von STADT_KAMERA, 1600 × 900, das Sichtfeld des Spiels), im Rahmen und ohne Grund auf der Sichtlinie (je 1 m). Häuser vor
@@ -1344,20 +1348,23 @@ const STADT_MAUER =
     "const P = r.state.stlMauer, wk = r._wegeKarteEnsure(); " +
     "const box = (wk.siedlungen || []).filter((b) => b && b.mauerVon && (b.mauerVon === v2 || (b.mauerVon.ort && Math.hypot(b.mauerVon.ort.x - o.x, b.mauerVon.ort.z - o.z) < 1))).pop(); " +
     "if (!P || !box) return { fehler: \"die Mauer der Stadt steht nicht im Pool\" }; " +
-    "const SM = globalThis.__fachwerkCore.STADTMAUER, cam = r.state.camera.clone(), M4 = cam.matrixWorld.clone(), pos = cam.position.clone(), q = cam.quaternion.clone(), sk = cam.position.clone(), V = cam.position.clone(); " +
+    "const F = box.mauerVon.mauer; if (!F || !F.art || !F.wand) return { fehler: \"der Plan der Mauer trägt keine Form (fachwerk mauerGestalt: art, wand)\" }; " +
+    "const W = F.wand, tB = F.turm ? F.turm.breit : F.bollwerk ? F.bollwerk.vor * Math.SQRT2 : 0, tH = F.turm ? F.turm.hoch : F.bollwerk ? F.bollwerk.hoch : 0; " +
+    "const cam = r.state.camera.clone(), M4 = cam.matrixWorld.clone(), pos = cam.position.clone(), q = cam.quaternion.clone(), sk = cam.position.clone(), V = cam.position.clone(); " +
     "const boden = (x, z) => { const y = r._voxelSurfaceY(x, z); return Number.isFinite(y) ? y : r.getTerrainHeightAt(x, z); }; " +
     "cam.aspect = 1600 / 900; cam.position.set(K[0], K[1], K[2]); cam.lookAt(K[3], K[4], K[5]); cam.updateProjectionMatrix(); cam.updateMatrixWorld(true); " +
     "const waende = [], tuerme = []; let spalt = -Infinity, bei = null; " +
     "for (let i = box.streifen[0]; i < box.streifen[1]; i++) { M4.fromArray(P.mesh.instanceMatrix.array, i * 16); M4.decompose(pos, q, sk); " +
-    "if (Math.abs(sk.x - SM.wand.dick) < 0.01 && sk.y > SM.wand.hoch) { const w = { x: pos.x, z: pos.z, sp: -Infinity }; " +
+    "if (Math.abs(sk.x - W.dick) < 0.01 && sk.y > W.hoch) { const w = { x: pos.x, z: pos.z, sp: -Infinity }; " +
     "for (const t of [-0.5, -0.25, 0, 0.25, 0.5]) { V.set(0, -0.5, t).applyMatrix4(M4); const g = V.y - boden(V.x, V.z); if (g > w.sp) w.sp = g; if (g > spalt) { spalt = g; bei = [+V.x.toFixed(1), +V.z.toFixed(1)]; } } " +
-    "w.top = V.set(0, 0.5, 0).applyMatrix4(M4).clone(); waende.push(w); } else if (Math.abs(sk.x - SM.turm.breit) < 0.01 && sk.y > SM.turm.hoch) tuerme.push([pos.x, pos.z]); } " +
+    "w.top = V.set(0, 0.5, 0).applyMatrix4(M4).clone(); waende.push(w); } else if (tB > 0 && Math.abs(sk.x - tB) < 0.01 && Math.abs(sk.z - tB) < 0.01 && sk.y > tH) tuerme.push([pos.x, pos.z]); } " +
     "const plan = v2.mauer.segs.map((s) => { const mx = o.x + (s.x0 + s.x1) / 2, mz = o.z + (s.z0 + s.z1) / 2; return { land: r._landAt(mx, mz, 0.2), steht: waende.some((w) => Math.hypot(w.x - mx, w.z - mz) < 1.5) }; }); " +
     "let imRahmen = 0, frei = 0; const E = cam.position; " +
     "for (const w of waende) { const v = w.top.clone().project(cam); if (!(Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1 && v.z > -1 && v.z < 1)) continue; imRahmen++; " +
     "const L = E.distanceTo(w.top); let vor = false; for (let s = 1; s < L - 1 && !vor; s += 1) { const t = s / L; if (E.y + (w.top.y - E.y) * t < r.getTerrainHeightAt(E.x + (w.top.x - E.x) * t, E.z + (w.top.z - E.z) * t) - 0.2) vor = true; } if (!vor) frei++; } " +
     "return { geplant: plan.length, gebaut: plan.filter((p) => p.steht).length, wasser: plan.filter((p) => !p.land).length, offen: plan.filter((p) => !p.steht).length, " +
-    "tore: (v2.mauer.gates || []).length, tuerme: [v2.mauer.towers.length, tuerme.length], waende: waende.length, spaltM: Number.isFinite(spalt) ? +spalt.toFixed(3) : null, bei, imRahmen, frei };";
+    "tore: (v2.mauer.gates || []).length, tuerme: [v2.mauer.towers.length, tuerme.length], waende: waende.length, spaltM: Number.isFinite(spalt) ? +spalt.toFixed(3) : null, bei, imRahmen, frei, " +
+    "art: F.art, mass: { dick: W.dick, hoch: W.hoch, turm: +tB.toFixed(2), turmHoch: tH }, pool: box.streifen[1] - box.streifen[0] };";
 const LIES = (feld) =>
     "node -e 'const t = require(\"fs\").readFileSync(process.argv[1], \"utf8\"); const e = JSON.parse(t.slice(t.indexOf(\"{\"))).ergebnis; " + feld + "'";
 
@@ -2179,14 +2186,39 @@ async function startDorfInnen(o) {
                 const M0 = [(m.x0 + m.x1) / 2, (m.z0 + m.z1) / 2];
                 const paare = [[E4[0], E4[1]], [E4[1], E4[0]], [E4[2], E4[3]], [E4[3], E4[2]], ...E4.map((q) => [M0, q])];
                 const dm = Number.isFinite(diele(...M0)) ? diele(...M0) : 0.5;
-                for (const [[ax, az], [zx, zz]] of paare) {
-                    if (blicke >= 2) break;
+                // der freie Blick eines Paars (Auge 1,3 m über der Diele, 0,25 m frei; der Strahl frei bis 0,3 m vor das Ziel) oder null
+                const sicht = ([[ax, az], [zx, zz]]) => {
                     const da = Number.isFinite(diele(ax, az)) ? diele(ax, az) : dm;
                     const dz = Number.isFinite(diele(zx, zz)) ? diele(zx, zz) : dm;
                     const ay = da + 1.3;
-                    if (!frei(ax, ay, az, 0.25)) continue;
+                    if (!frei(ax, ay, az, 0.25)) return null;
                     const strahl = Array.from({ length: 19 }, (_, j) => (j + 1) * 0.05).map((q) => [ax + (zx - ax) * q, ay + (dz - ay) * q, az + (zz - az) * q]);
-                    if (!strahl.every((q) => Math.hypot(q[0] - zx, q[1] - dz, q[2] - zz) < 0.3 || frei(...q, 0.02))) continue;
+                    return strahl.every((q) => Math.hypot(q[0] - zx, q[1] - dz, q[2] - zz) < 0.3 || frei(...q, 0.02)) ? { ax, az, zx, zz, da, dz, ay } : null;
+                };
+                const wahl = [];
+                for (const paar of paare) {
+                    if (wahl.length >= 2) break;
+                    const v = sicht(paar);
+                    if (v) wahl.push(v);
+                }
+                // DER BLICK IM GETEILTEN GRUNDRISS (haus-innen-lesbar): trägt kein Paar aus Ecken und Mitte einen freien Blick (Querwände,
+                // ein Möbel in der Mitte — Radeon b1f0de0e: haus_tudor 809070, haus_renaissance 45665 und der Haupt-Körper eines dritten,
+                // Programm stein:reihenhaus: ohne Blick blieb `innen` undefined, das Haus „dunkel“ bei jedem Licht), nimmt die Probe auf
+                // dem 0,9-m-Gitter des Kastens das Auge mit dem längsten freien Blick zu einem anderen Gitter-Punkt (≥ 1,5 m)
+                if (!wahl.length) {
+                    const G = [];
+                    for (let gx = m.x0 + i; gx <= m.x1 - i + 1e-6; gx += 0.9) for (let gz = m.z0 + i; gz <= m.z1 - i + 1e-6; gz += 0.9) G.push([gx, gz]);
+                    let best = null;
+                    for (const a of G)
+                        for (const z of G) {
+                            const lang = Math.hypot(z[0] - a[0], z[1] - a[1]);
+                            if (!(lang >= 1.5) || (best && lang <= best.lang)) continue;
+                            const v = sicht([a, z]);
+                            if (v) best = Object.assign(v, { lang });
+                        }
+                    if (best) wahl.push(best);
+                }
+                for (const { ax, az, zx, zz, da, dz, ay } of wahl) {
                     blicke++;
                     const [p, q] = [welt(e, ax * sc, az * sc), welt(e, zx * sc, zz * sc)];
                     // DER EINGESCHWUNGENE TAKT (w28-station-mass): der Leib steht am Auge des Blicks, ≥ 0,5 s Takt der Werkbank (Licht des
@@ -2199,22 +2231,42 @@ async function startDorfInnen(o) {
                     cam.updateMatrixWorld(true);
                     h.innen = Math.min(h.innen ?? 1, luma(await schuss()));
                 }
+                if (!blicke) h.ohneBlick = (h.ohneBlick ? h.ohneBlick + " · " : "") + m.art;
             }
-            // der Boden im Schatten zur selben Stunde
+            if (h.innen == null) h.bildFehlt = "kein freier Blick in " + (h.ohneBlick || "keinem Körper");
+            // der Boden im Schatten zur selben Stunde — DER SCHATTEN DER HÄUSER AUS DEM GESETZ DER WELT (haus-innen-lesbar): `_hausSchatten`
+            // (die Körper des Dach-Pools gegen die Sonne, dieselben Plätze wie der Stoff) statt des Strahls gegen die Schicht der
+            // Schatten-Zwillinge. Die Häuser werfen über den Satz `bauWurf`, den kein Strahl trifft: der Strahl traf das Gelände in
+            // 27–34 m, einen Baum, die Mauer, einen Wolf — oder nichts (Radeon b1f0de0e: 6 von 17 Häusern ohne Fleck, `aussen`
+            // undefined, „dunkel“ bei jedem Licht). Vom Haus gegen die Sonne, dann in Schritten von 15° um das Haus: der erste Boden
+            // 1 m vor jedem Bau im Schatten eines Baus (das Reihenhaus wirft auf den Nachbarn: sein Fleck liegt neben der Achse).
+            // DER KURZE MITTAGS-SCHATTEN (haus-innen-lesbar 2): der Grundriss eines Hauses ist EIN Kasten (`_grundrissVon`), er ragt
+            // über die Körper hinaus, die werfen. Radeon 64f97082, Haus 16 (haus_viktorianisch, −102,6 / −246,1), Sonne 74°: der
+            // Kasten (halbe Kanten 8,08 × 6,24 m) steht 1,6–2,4 m vor den Körpern des Dach-Pools (4,75 × 4,25 m, Traufe 10,15 m),
+            // der Körper wirft 2,9 m: das Gesetz kennt den Schatten bis 8,25 m vom Haus-Ort, der Kasten + 1 m reicht bis 8,5 m — an
+            // allen 24 Winkeln lag kein Punkt im Schatten UND 1 m vor dem Kasten („kein Boden im Schatten“, obwohl beide Körper im
+            // Pool stehen; gezeichnet reicht der Schatten bis 9,4 m). Findet der Rand 1 m keinen Fleck, sucht derselbe Fächer mit
+            // Rand 0,3 m (Haus 16: Fleck in 7,75 m, Luma 0,027, Quote 0,80; die Luma ist der Median über 13 × 13 Pixel am Fleck):
+            // die Häuser mit Fleck behalten ihn, Soll und Urteil bleiben.
             const S = s.directionalLight.position.clone().sub(s.directionalLight.target.position).normalize();
             const d = new THREE.Vector3(-S.x, 0, -S.z).normalize();
-            const rc = new THREE.Raycaster();
-            rc.layers.set(A.SHADOW_TWIN_LAYER);
+            const dreh = (w) => new THREE.Vector3(d.x * Math.cos(w) - d.z * Math.sin(w), 0, d.x * Math.sin(w) + d.z * Math.cos(w));
             let f = null;
-            for (let tt = 1; tt < 40 && !f; tt += 0.25) {
-                const q = new THREE.Vector3(e.position.x + d.x * tt, 0, e.position.z + d.z * tt);
-                if (/haus|bau/.test(r._imGrundriss(q.x, q.z, 1))) continue;
-                q.y = r._bodenSichtAt(q.x, q.z) ?? hh(q.x, q.z);
-                rc.set(q.clone().setY(q.y + 0.05), S);
-                if (rc.intersectObject(s.scene, true).length) f = q;
+            for (const rand of [1, 0.3]) {
+                for (let j = 0; j < 24 && !f; j++) {
+                    const dw = dreh(((j + 1) >> 1) * (j % 2 ? 1 : -1) * (Math.PI / 12));
+                    for (let tt = 1; tt < 40 && !f; tt += 0.25) {
+                        const q = new THREE.Vector3(e.position.x + dw.x * tt, 0, e.position.z + dw.z * tt);
+                        if (/haus|bau/.test(r._imGrundriss(q.x, q.z, rand))) continue;
+                        q.y = r._bodenSichtAt(q.x, q.z) ?? hh(q.x, q.z);
+                        if (r._hausSchatten(q.x, q.y + 0.05, q.z) > 0) f = q;
+                    }
+                }
             }
+            if (!f) h.bildFehlt = (h.bildFehlt ? h.bildFehlt + " · " : "") + "kein Boden im Schatten eines Baus bis 40 m um das Haus";
             if (f) {
-                const p = f.clone().addScaledVector(d, 3);
+                // die Kamera 3 m vom Fleck gegen die Sonne — steht sie dort in einem Bau, eine Vierteldrehung weiter
+                const p = [0, 1, -1, 2].map((v) => f.clone().addScaledVector(dreh((v * Math.PI) / 2), 3)).find((c) => !/haus|bau/.test(r._imGrundriss(c.x, c.z, 0.5))) || f.clone().addScaledVector(d, 3);
                 cam.position.set(p.x, hh(p.x, p.z) + 1.6, p.z);
                 cam.lookAt(f);
                 cam.updateMatrixWorld(true);
@@ -4145,13 +4197,14 @@ const stationen = [
             const [mi, da] = [j && j.mittag, j && j.daemmerung];
             const zu = m.gebaut === m.geplant && m.tore >= 1 && m.tuerme[1] >= 1;
             const fuss = Number.isFinite(m.spaltM) && m.spaltM <= MAUER_SPALT_M;
-            const lesbar = bild(mi, 0.5) && bild(da, 0.25) && m.frei >= MAUER_FREI * m.waende;
+            // eine Messung ohne Wand ist LEER, nie lesbar (0 von 0 Wänden frei galt bis 25.11. als ✅)
+            const lesbar = bild(mi, 0.5) && bild(da, 0.25) && m.waende > 0 && m.frei >= MAUER_FREI * m.waende;
             const k = (x, n) => (typeof x === "number" ? x.toFixed(n).replace(".", ",") : "—");
             const zeile = (b) => (b ? (b.ok === true ? "✅ " : "❌ ") + (b.zeile || "").slice(0, 50) : "fehlt");
             return {
                 gruen: !soft && zu && fuss && lesbar,
                 zahl:
-                    (zu ? "✅" : "❌") + " Ring: " + m.gebaut + "/" + m.geplant + " Segmente stehen" + (m.offen ? " (offen " + m.offen + ", davon über Wasser " + m.wasser + ")" : "") + ", " + m.tore + " Tore, Türme " +
+                    (zu ? "✅" : "❌") + " Ring" + (m.art ? " (" + m.art + ", Wand " + k(m.mass && m.mass.dick, 2) + " × " + k(m.mass && m.mass.hoch, 1) + " m, " + m.pool + " Teile im Pool)" : "") + ": " + m.gebaut + "/" + m.geplant + " Segmente stehen" + (m.offen ?" (offen " + m.offen + ", davon über Wasser " + m.wasser + ")" : "") + ", " + m.tore + " Tore, Türme " +
                     m.tuerme[1] + "/" + m.tuerme[0] + " · " + (fuss ? "✅" : "❌") + " Spalt max " + k(m.spaltM, 3) + " m (Soll ≤ " + k(MAUER_SPALT_M, 2) + (m.bei ? ", bei " + m.bei.join("/") : "") + ") · " +
                     (lesbar ? "✅" : "❌") + " frei im Schuss " + m.frei + "/" + m.waende + " Wände (im Rahmen " + m.imRahmen + ", Soll ≥ " + Math.round(MAUER_FREI * 100) + " %) · mittags " + zeile(mi) + " · Dämmerung " + zeile(da) + " · " + ad,
             };
@@ -4173,6 +4226,8 @@ const stationen = [
                 { name: "der Schwebe-Spalt 0,31 m", stdout: roh({ mauer: { spaltM: 0.31 } }), j, gruen: false },
                 { name: "die Dämmerung hält die Abnahme nicht", stdout: roh(), j: { mittag: bj(0.5), daemmerung: bj(0.25, false) }, gruen: false },
                 { name: "die Mauer hinter dem Grund (2 von 24 frei)", stdout: roh({ mauer: { frei: 2 } }), j, gruen: false },
+                { name: "LEER: keine Wand gezählt (0 von 0 frei ist nicht lesbar)", stdout: roh({ mauer: { waende: 0, frei: 0, imRahmen: 0 } }), j, gruen: false },
+                { name: "die Palisade steht (Wand 0,35 × 3,6 m)", stdout: roh({ mauer: { art: "palisade", mass: { dick: 0.35, hoch: 3.6, turm: 3, turmHoch: 6.4 }, pool: 30 } }), j, gruen: true },
                 { name: "der alte Lauf ohne Schritt MAUER", stdout: roh().replace(/@@PUNKTE@@ MAUER[\s\S]*?(?=\n@@PUNKTE@@ Z)/, ""), j, gruen: false },
                 { name: "die Mauer steht nicht (Zug läuft)", stdout: roh({ stand: { zug: true } }), j, gruen: false },
                 { name: "swiftshader", stdout: roh().replace("amd/rdna-3 (Probe)", "google/swiftshader"), j, gruen: false },
