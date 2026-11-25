@@ -1405,8 +1405,10 @@ function gegner2Selbsttest(zeile) {
 //                    Neu gedruckt am Kern klima-kontinent: das Klima verlegt die Heimat — Gesetz, nicht Treppe. Die Küsten-Feuchte
 //                    trägt mehr Orte: ohne Ort bei 512 vorher 14 von 3 000 Saaten (0,47 %, h2-12; die sieben gefunden unter 1 000),
 //                    jetzt 4 von 4 900 (0,08 %; Saaten sha256('klima-kontinent-' + i), i < 4 900, in der Form des Spiels).
+//                    Neu gedruckt am Kern kuesten-kontrast: `ostWinterK` −6 → −12 K (Normalwerte 1991–2020 gleicher Breite, Kaspi &
+//                    Schneider 2011), die Heimat von mr4t9z rückt 60 km (auch bei 512 Proben bitgleich); azvhsr und h4uio8 bitgleich.
 const ANKER_OHNE = ['w-549d70713064-ybhbkh', 'w-a35ea78d2ddf-ocd04u', 'w-2547d735a0a9-u9clj0', 'w-f3b1679a7155-w49s5c'];
-const ANKER_512 = { 'w-d10e897e3fad-azvhsr': [0.872109983490599, 1.8701752196816235], 'w-e6ea6c6b804e-mr4t9z': [0.7878341894854001, 1.7081433330043478], 'w-4a2768b6253a-h4uio8': [0.7638875402809908, -2.8201081782321613] };
+const ANKER_512 = { 'w-d10e897e3fad-azvhsr': [0.872109983490599, 1.8701752196816235], 'w-e6ea6c6b804e-mr4t9z': [0.7873447093650003, 1.7214563045445765], 'w-4a2768b6253a-h4uio8': [0.7638875402809908, -2.8201081782321613] };
 const WELLE1_BASIS = 'b7ed8419', W1_SAATEN = SAATEN.slice(0, 10), W1_ZIEL = 400, PET_FORMEL = /\b400\s*\+\s*45\s*\*/g;
 function basisKern() { // der Kern vor der Welle: git show WELLE1_BASIS:planet-core.js → tmp; fehlt das Objekt, bricht der Selbsttest beim Namen
   const aus = path.join(os.tmpdir(), 'planet-core-' + WELLE1_BASIS + '-' + process.pid + '.js');
