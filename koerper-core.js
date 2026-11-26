@@ -5385,8 +5385,13 @@
         // die Bank vor der Tür (`_bankWende`): höchstens so viele Stunden sitzt er nach der Heimkehr draußen (ANGENOMMEN; Band: die
         // Gänge zu Fuß ab 18 Uhr, NHTS 2017 22 % von 18 bis 6 Uhr — National Academies 2025, „Improving Pedestrian Safety at Night“)
         bankH: 1,
-        // der Markt-Morgen: die Öffnung und der Schluss (Uhr), wie lange er je Erwachsenem seines Haushalts bleibt
-        einkauf: Object.freeze({ auf: 7, schluss: 11, dauerH: 0.5 }),
+        // der Markt-Morgen: die Öffnung und der Schluss (Uhr), wie lange er je Erwachsenem seines Haushalts bleibt; DER GANG ÜBER
+        // DEN MARKT (`tagesEinkaufStaende`, `tagesKette`): die Stände seines Einkaufs [Zahl, Anteil %] — die Geschäfte je
+        // Einkaufsgang (Ribbeck & Notzon 2017, Passantenbefragung Weißwasser/O.L., BTU Cottbus, Abb. 12, n = 247 mit Zahl: 1 22,8 ·
+        // 2 28,8 · 3–5 34,5 · 6 und mehr 1,8; die 3–5 je zu gleichen Teilen) — und der Anteil seiner Zeit, den er an einem Stand
+        // steht (`kaufAnteil`: 20–30 % der Zeit eines Einkaufs sind Erwerb, der Rest Gang — Sorensen, PathTracker, Knowledge@Wharton
+        // 2006 „Tag Team: Tracking the Patterns of Supermarket Shoppers“)
+        einkauf: Object.freeze({ auf: 7, schluss: 11, dauerH: 0.5, staende: Object.freeze([1, 22.8, 2, 28.8, 3, 11.5, 4, 11.5, 5, 11.5, 6, 1.8]), kaufAnteil: 0.25 }), // prettier-ignore
         // die Abfahrten zur Arbeit je Band [von, bis, Anteil %] (ACS 2009 Table B: vor 5 Uhr 4,1 · 5–6 8,3 · 6–7 18,9 · 7–8 28,1 ·
         // 8–9 16,6 · 9–12 10,4; die Abfahrten ab 12 Uhr, 13,8 %, fährt das Band nicht — die späte Schicht tragen nur die Rollen
         // mit Versatz, der Nachtfahrer und der Nachtwächter —, die Anteile gelten normiert über die Bänder bis 12 Uhr)
@@ -6195,6 +6200,17 @@
         for (var i = 0; i < glieder.length; i++) if (!(TAGES_GESETZ.rollen[glieder[i].rolle] || {}).spiel) n++;
         return n;
     }
+    // WIE VIELE STÄNDE SEIN EINKAUF BESUCHT (der Wirt `_bewohnerListe` stellt ihm so viele Stände am Markt, `orte.einkaufRunde`):
+    // die Zahl aus dem Band `TAGES_GESETZ.einkauf.staende` nach dem Samen des Einkäufers
+    function tagesEinkaufStaende(same) {
+        var B = TAGES_GESETZ.einkauf.staende,
+            summe = 0,
+            u;
+        for (var i = 1; i < B.length; i += 2) summe += B[i];
+        u = _tagZahl(same, "staende") * summe;
+        for (var k = 0; k < B.length; k += 2) if ((u -= B[k + 1]) < 0) return B[k];
+        return B[B.length - 2];
+    }
     function tagesEinkaeufer(glieder) {
         var b = -1,
             bw = -Infinity;
@@ -6285,10 +6301,12 @@
     // DIE ANKUNFT ZUR STUNDE (mensch.menge.bild#2, Entscheid des Koordinators 25.11.): der Plan (`tagesPlan`) nennt, wo ein Mensch
     // zu einer Stunde IST; wer dorthin geht, bricht um die Gehzeit seines Wegs davor auf. `tagesKette` legt die Abschnitte seines
     // Tags (die Wenden wie `tagesGaenge`, je Abschnitt der Plan seiner Mitte) ab dem Schlaf hintereinander; je Abschnitt
-    // `geh(von, nach)` = die Gehzeit in Stunden vom Ort des vorigen zum Ort dieses (der Wirt: die Länge seines Wegs über das Netz,
-    // `tagesWege`, ÷ das Tempo seines Gangs ÷ die Sekunden der Stunde) — der Aufbruch liegt um sie vor der Wende, nie vor der
+    // `geh(von, nach, P0, P1)` = die Gehzeit in Stunden vom Ort des vorigen zum Ort dieses (von, nach: ihr Wo; P0, P1: die Pläne
+    // beider — der Wirt misst den Weg, den sein Leib zwischen ihren Ständen geht, `_bewohnerPfad`, ÷ das Tempo seines Gangs ÷ die
+    // Sekunden der Stunde) — der Aufbruch liegt um sie vor der Wende, nie vor der
     // eigenen Ankunft am vorigen Ort (monoton): ist der Weg länger als der Aufenthalt davor, schrumpft dieser (`eng` zählt die
-    // Abschnitte, bei denen das geschieht). `tagesZiel(K, stunde)` = der Plan des Abschnitts, zu dem er zur Stunde unterwegs ist
+    // Abschnitte, bei denen das geschieht); je Abschnitt `an` = seine Ankunft (Aufbruch + Gehzeit, Stunden ab dem Anker wie `auf`
+    // — die Probe misst den Gehenden an ihr). `tagesZiel(K, stunde)` = der Plan des Abschnitts, zu dem er zur Stunde unterwegs ist
     // oder an dem er steht — der EINE Leser der Ziel-Kette im Wirt (`_bewohnerSoll`, und darüber die Wende und die Ankunft). Bis
     // hier brach jeder zur Wende auf: der Tag dauert 60 min, die Stunde 150 s, der Weg zum Platz an stadt-voll bis 300 m (≈ 214 s)
     // — um 8 Uhr sah der Plan 287 Menschen am Markt, 93 standen dort, 193 gingen noch (131 davon ≥ 50 m fort).
@@ -6335,11 +6353,25 @@
             aus = 0,
             nachAus = null,
             gehSumme = 0;
+        // DER GANG ÜBER DEN MARKT (menge-gang, mensch.menge.bild#2): wer einkauft, steht nicht seine ganze Zeit an EINEM Stand —
+        // von seinem Stand am Platz geht er die Punkte vor den Buden ab, die der Wirt seinem Haus stellt (`orte.einkaufRunde`, je
+        // Bude des Markts einer, in der Folge seines Samens), jeden HÖCHSTENS EINMAL: die ersten `tagesEinkaufStaende` − 1 sind die
+        // Buden, an denen er kauft (Weißwasser: Geschäfte je Weg), jede weitere geht er ab, solange die Gänge den Anteil des
+        // Gehens an seiner Zeit am Markt (1 − `kaufAnteil` von morgenH ab der Ankunft; Sorensen: 20–30 % der Zeit im Laden ist
+        // Kauf) nicht übersteigen; an jedem Punkt steht er gleich lang, den Rest seiner Zeit (die Gehzeit misst `geh`, der Pfad
+        // seines Leibs). Je Besuch ein Abschnitt der Kette mit dem Punkt als Ort — ein Gang über den Markt ist kein Weg des Tags
+        // (`tagesGaenge` zählt ihn nicht). Bis hier stand der Einkäufer morgenH (0,5 h je Erwachsenem) an EINEM Stand: an
+        // stadt-voll um 8 Uhr 78 von 99 Menschen im Bild stehend, 43 davon im Einkauf (Probe gate:kreatur-takt mengebild). Die
+        // Kauf-Buden im Kreis, bis die Zeit um ist, pendelten zwischen zwei Buden 2–3 m auseinander bis zu 58-mal (Probe bewohner)
+        var R = orte.einkaufRunde || [],
+            kauf = tagesEinkaufStaende(same),
+            kA = G.einkauf.kaufAnteil,
+            einkaufAn = 0;
         for (var j = 0; j <= n; j++) {
             var e = ab[(s0 + j) % n],
                 rel = j === n ? 24 : (((e.ab - A) % 24) + 24) % 24;
             var vor = kette.length ? kette[kette.length - 1].p : e.p;
-            var g = j && vor.ort !== e.p.ort ? Math.max(0, geh(vor.wo, e.p.wo) || 0) : 0;
+            var g = j && vor.ort !== e.p.ort ? Math.max(0, geh(vor.wo, e.p.wo, vor, e.p) || 0) : 0;
             // DIE RUNDE BEGINNT AM POSTEN (rollen-des-tages): eine Runde der Streife geht nur, wer zu ihrem Aufbruch am Posten
             // steht — kehrt er aus der vorigen später zurück, als er zur nächsten aufbrechen müsste, lässt er sie aus (`aus`) und
             // geht die nächste zu ihrer Stunde: die Verspätung einer Runde trägt höchstens bis zur nächsten, nie in den Abend.
@@ -6367,10 +6399,31 @@
             // Ankunft (morgenH) — ist der Weg zum Werk länger als die Zeit bis zum Werk, beginnt das Werk später. Bis hier fraß der
             // Weg den Kauf (der Tag dauert 60 min, die Stunde 150 s, der Weg zum Platz bis 1,4 Spielstunden): an stadt-voll standen
             // um 8 Uhr 49 Einkäufer am Platz, 88 im Akt einkauf von 294 (Kern-Spike: am Platz 87 → 110)
-            if (j && vor.akt === "einkauf") auf = Math.max(auf, ank + T.morgenH);
+            if (j && vor.akt === "einkauf") auf = Math.max(auf, einkaufAn + T.morgenH);
             ank = auf + g;
             gehSumme += g;
-            kette.push({ auf: auf, p: e.p });
+            kette.push({ auf: auf, an: ank, p: e.p });
+            if (e.p.akt !== "einkauf") continue;
+            einkaufAn = ank;
+            if (!(j < n && R.length && e.p.wo === "einkauf" && !e.p.drinnen)) continue;
+            // die Besuche: sein Stand am Platz, dann je Punkt der Runde der Gang dorthin — eine Kauf-Bude, solange die Gänge in
+            // seiner Zeit am Markt bleiben, jede weitere, solange sie im Anteil des Gehens bleiben
+            var B = [{ p: e.p, g: 0 }],
+                weg = 0;
+            for (var r = 0; r < R.length; r++) {
+                var pkt = { ort: R[r], wo: "einkauf", akt: "einkauf", drinnen: false },
+                    gq = Math.max(0, geh("einkauf", "einkauf", B[B.length - 1].p, pkt) || 0);
+                if (weg + gq > (r + 1 < kauf ? 1 : 1 - kA) * T.morgenH) break;
+                weg += gq;
+                B.push({ p: pkt, g: gq });
+            }
+            var steh = (T.morgenH - weg) / B.length;
+            for (r = 1; r < B.length; r++) {
+                var vonA = ank + steh;
+                ank = vonA + B[r].g;
+                gehSumme += B[r].g;
+                kette.push({ auf: vonA, an: ank, p: B[r].p });
+            }
         }
         return { A: A, v: v, kette: kette, eng: eng, aus: aus, gehH: gehSumme };
     }
@@ -12037,6 +12090,7 @@
         tagesKette: tagesKette,
         tagesEinkaeufer: tagesEinkaeufer,
         tagesEinkaufFuer: tagesEinkaufFuer,
+        tagesEinkaufStaende: tagesEinkaufStaende,
         tagesZiel: tagesZiel,
         tagesZug: tagesZug,
         tagesHaltung: tagesHaltung,
