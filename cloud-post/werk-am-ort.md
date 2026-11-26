@@ -155,3 +155,25 @@ Lesart: kein Rot der Station, sondern der Messort. Am MAIN 61e2a27f brauchte der
 365 s (Abschnitt 20:47 oben) — über dem Deckel 300 s, den die Sitzung dem /umstellen gibt; an diesem Gerät misst die Station am
 Messort stadt-voll an keinem der beiden Stände. Der Wanzen-Lauf am Kopf f7e5f23b (nach megastadt-vorher) nennt, was dort nach
 1 800 Takten noch baut.
+
+
+## 26.11. 21:35 — GTX 1050: `bild:stadt-voll@0.33` MIT Wanze am Kopf werk-am-ort 4 f7e5f23b — GRÜN, aber 990 s (über dem CI-Deckel 960 s der 1050)
+
+Derselbe Lauf wie am main (Abschnitt 20:47), Baum f7e5f23bdd, allein am Schloss (`hand-stadt-voll-kopf`), 21:11:02 → 21:27:32.
+- **umstellen:** GRÜN nach 532 s — `"takte": 4085` (main: 365 s, 2 669). **Bild:** GRÜN nach 262 s (main: 26 s) — „ABNAHME GRÜN ·
+  Leib im Vordergrund 4.7 % · Leiber näher als 6 m: 4 von 4 ganz · Luma 147.8 σ 67.4 · bauSatz 19.4 %, bewohner 7.3 %“.
+- **ms je Takt (derselbe Lauf, umstellen):** Kopf 532 s ÷ 4 085 = **0,130 s** · main 363,5 s ÷ 2 669 = **0,136 s**. Der Takt kostet
+  am Kopf NICHT mehr; der Kopf braucht **1,53× so viele Takte**, bis die Welt steht. (Die Rechnung „734 s ÷ 1 823 = 0,40 s“ teilt die
+  ganze Probe — Start, Ring, Bild — durch die Takte des Steh-Wartens allein.)
+- **Die Rufer von `_bauRegt` (stamm/dirigent-takt.js:2351), je 300 Takte seit dem Boot:** 0: 616 (`_foundryRewarmColdTrees`
+  studio-gestalt.js:963 ← `tickArchitectureCulling` vegetation-baum.js:3157 ×553) · 300: 221 · 600: 112 · 900: 87 (fast nur
+  `_standMeldet` dienst.js:2223 ← `tickArchitectureCulling` vegetation-baum.js:3162) · 1200: 276 (Rewarm ×246) · 1500: — · 1800: 11 ·
+  **2100: 407 (Rewarm ×305, `_standMeldet` ×72 + ×20 ← `_tickArchitectureLOD` siedlung-bauten.js:260)** · 2400: 17 · 2700: 10 · 3000: 12 ·
+  3300: 11 · 3600: 11 · 3900: 9 (alle `_standMeldet` dienst.js:2223 ← `tickArchitectureCulling` vegetation-baum.js:3162).
+- **Summen Kopf ↔ main:** `_foundryRewarmColdTrees` **1 114 ↔ 702 (+412)** · `_standMeldet` ← Culling 551 ↔ 507 · ← LOD 94 ↔ 93 ·
+  `_karteGebacken` 37 ↔ 35 · `_stufenVorlaufWahl` 4 ↔ 6. Das Mehr des Kopfs ist der Rewarm der kalten Bäume in Wellen (0, 1 200,
+  2 100 Takte); dahinter tropft `_standMeldet` ← Culling alle ~30 Takte (9–14 je 300) — so lang wie die Ruhe, die das Wort „steht“
+  verlangt. Am main standen die letzten 300 Takte mit 6.
+
+**Lesart:** der Täter am Kopf ist die Welle `_foundryRewarmColdTrees` ← `tickArchitectureCulling` (vegetation-baum.js:3157) — wer
+sie am Kopf neu anstößt (die Wiederkehr der Bewohner an ihren Punkt? nicht gemessen), nennt erst eine Wanze an ihrem Auslöser.
