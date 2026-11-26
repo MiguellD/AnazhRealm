@@ -1298,10 +1298,12 @@ function reiheVon(feld, N, i) {
 //      der Fischfang trägt keine Beute aus dem Nichts (J6).
 //   H  DER HIEB — 2 000 Zweikämpfe zweier Bewaffneter (`spielKampf` „hieb“): kein Treffer durch die Deckung (H1), der Getroffene
 //      antwortet — der Zug nach jedem Treffer ist der seine (H2), der Stärkere siegt öfter (H3, Bradley–Terry), der Kampf endet
-//      mit `bis` Treffern (H4).
+//      mit `bis` Treffern (H4), jeder Treffer trägt eine Lage der Tafel des Gesetzes und kein Fehlschlag eine (H5, krieg-lage), die
+//      Lagen halten über alle Treffer die Anteile der Tafel ± 0,03 (H6: Longpoint, Franklin 2019).
 // Am Kern vor rollen-des-tages ROT: R1 (keine Streife — 280 061 Proben „arbeit“, 0 „streife“), J1 (kein Revier), H0 (kein Hieb).
 // Täter (Selbsttest): die Wache ohne Runde, die Runde ohne Rückkehr, der Plan ohne Revier, die Siedlung ohne Jäger, die Rolle
-// ohne Tat, die Beute an jedem Tag, der Fang aus dem Nichts, der Hieb durch die Deckung, der Getroffene ohne Antwort.
+// ohne Tat, die Beute an jedem Tag, der Fang aus dem Nichts, der Hieb durch die Deckung, der Getroffene ohne Antwort, der Treffer
+// ohne Lage (der Zug vor krieg-lage: der Wirt schlug fest auf „rumpf“).
 // der Täter R6: die Kette vor „die Runde beginnt am Posten“ — derselbe Kern, die Auslassung der Runde ausgeschaltet (fehlt das
 // Muster, lädt kein Täter: der Selbsttest fällt laut)
 function kernVorDemPosten() {
@@ -1428,7 +1430,7 @@ function rollenUrteil(C, m = null) {
     if (j.fang) rot.push(`J6 der Fischfang trägt Beute aus dem Nichts: ${j.fang} von ${j.tage} Tagen (Soll 0 bis zum Bestand der Fische)`);
     if (j.bindungFalsch) rot.push(`J7 die Bindung trägt das Werk von Jäger oder Fischer nicht an Revier oder Ufer: ${j.bindungFalsch} von ${2 * j.saaten} (koerper tagesBindung)`); // prettier-ignore
     // H — der Hieb
-    const h = { kaempfe: 0, zuege: 0, deckung: 0, treffer: 0, antwort: 0, staerkerSiegt: 0, ungleich: 0, bisOhne: 0 };
+    const h = { kaempfe: 0, zuege: 0, deckung: 0, treffer: 0, antwort: 0, staerkerSiegt: 0, ungleich: 0, bisOhne: 0, mitLage: 0, ohneLage: 0, fremd: 0, je: {} }; // prettier-ignore
     const A = C.SPIEL_GESETZ && C.SPIEL_GESETZ.arten && C.SPIEL_GESETZ.arten.hieb;
     if (!A) rot.push("H0 der Kern trägt keinen Hieb (SPIEL_GESETZ.arten.hieb)");
     else {
@@ -1437,11 +1439,16 @@ function rollenUrteil(C, m = null) {
             const a = { s: 0.5 + rnd(), u: 0.2 + rnd() }, b = { s: 0.5 + rnd(), u: 0.2 + rnd() }; // prettier-ignore
             let K = C.spielKampf(a, b, (k * 2654435761) >>> 0, m === "durchDeckung" ? "ringen" : "hieb");
             if (m === "ohneAntwort") K = Object.assign({}, K, { zuege: K.zuege.map((z) => Object.assign({}, z, { an: 0 })) });
+            if (m === "ohneLage") K = Object.assign({}, K, { zuege: K.zuege.map((z) => Object.assign({}, z, { lage: undefined })) });
             h.kaempfe++;
             h.zuege += K.zuege.length;
             K.zuege.forEach((z, i) => {
                 if (z.gelesen && z.treffer) h.deckung++;
                 if (z.treffer && i + 1 < K.zuege.length) (h.treffer++, K.zuege[i + 1].an !== z.an && h.antwort++);
+                if (!z.treffer) h.fremd += z.lage != null ? 1 : 0;
+                else if (z.lage == null) h.ohneLage++;
+                else if (!(A.lagen || []).some((l) => l.zone === z.lage)) h.fremd++;
+                else (h.mitLage++, (h.je[z.lage] = (h.je[z.lage] || 0) + 1));
             });
             if (Math.abs(a.s - b.s) > 0.3) (h.ungleich++, K.sieger === (a.s > b.s ? 0 : 1) && h.staerkerSiegt++);
             if (Math.max(...K.treffer) !== A.bis) h.bisOhne++;
@@ -1450,6 +1457,13 @@ function rollenUrteil(C, m = null) {
         if (h.antwort < h.treffer) rot.push(`H2 der Getroffene antwortet nicht: ${h.antwort} von ${h.treffer} Treffern (Soll alle)`);
         if (!(h.staerkerSiegt > 0.55 * h.ungleich)) rot.push(`H3 der Stärkere siegt ${h.staerkerSiegt} von ${h.ungleich} ungleichen Zweikämpfen (Soll > 55 %)`); // prettier-ignore
         if (h.bisOhne) rot.push(`H4 ${h.bisOhne} Zweikämpfe enden nicht mit ${A.bis} Treffern`);
+        if (!A.lagen || h.ohneLage || h.fremd) rot.push(`H5 der Treffer trägt keine Lage der Tafel: ${h.ohneLage} Treffer ohne Lage, ${h.fremd} Lagen außerhalb der Tafel oder an einem Fehlschlag${A.lagen ? "" : " (SPIEL_GESETZ.arten.hieb.lagen fehlt)"}`); // prettier-ignore
+        else {
+            const soll = {};
+            for (const l of A.lagen) soll[l.zone] = (soll[l.zone] || 0) + l.anteil;
+            const ab = Object.keys(soll).filter((z) => Math.abs((h.je[z] || 0) / h.mitLage - soll[z]) > 0.03);
+            if (ab.length) rot.push(`H6 die Lagen halten die Tafel nicht: ${ab.map((z) => z + " " + ((h.je[z] || 0) / h.mitLage).toFixed(3) + " (Soll " + soll[z].toFixed(2) + " ± 0,03)").join(", ")}`); // prettier-ignore
+        }
     }
     return { rot, r, j, h };
 }
@@ -1498,7 +1512,7 @@ if (SELBSTTEST) {
     const uGut = eigeneUhr(stammTexte()), uTaeter = eigeneUhr([["stamm/probe.js", "        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, regen, b.krank);"]]);
     // die Rolle und ihr Tages-Angebot: das Gesetz hält, jeder Täter fällt ROT beim Namen
     const roGut = !rollenUrteil(core).rot.length;
-    const rollenTaeter = [["ohneStreife", "R1 die Wache geht keine Streife"], ["ohneRueckkehr", "R2 die Runde kehrt nicht an den Posten"], ["ohneRevier", "J1 der Plan trägt kein Revier"], ["ohneJaeger", "J2 die Siedlung trägt keinen Jäger"], ["ohneTat", "J3 die Rolle trägt ihre Tat nicht"], ["beuteImmer", "J5 die Beute fällt"], ["fangAusNichts", "J6 der Fischfang trägt Beute aus dem Nichts"], ["durchDeckung", "H1 "], ["ohneAntwort", "H2 der Getroffene antwortet nicht"], ["bindungAmPlatz", "J7 die Bindung trägt das Werk"], ["rundeSchiebt", "R6 die Runde frisst den Abend"]].map(([m, z]) => [roGut && rollenUrteil(core, m).rot.some((r) => r.startsWith(z)), `Rollen ${m} ${z}`]); // prettier-ignore
+    const rollenTaeter = [["ohneStreife", "R1 die Wache geht keine Streife"], ["ohneRueckkehr", "R2 die Runde kehrt nicht an den Posten"], ["ohneRevier", "J1 der Plan trägt kein Revier"], ["ohneJaeger", "J2 die Siedlung trägt keinen Jäger"], ["ohneTat", "J3 die Rolle trägt ihre Tat nicht"], ["beuteImmer", "J5 die Beute fällt"], ["fangAusNichts", "J6 der Fischfang trägt Beute aus dem Nichts"], ["durchDeckung", "H1 "], ["ohneAntwort", "H2 der Getroffene antwortet nicht"], ["ohneLage", "H5 der Treffer trägt keine Lage"], ["bindungAmPlatz", "J7 die Bindung trägt das Werk"], ["rundeSchiebt", "R6 die Runde frisst den Abend"]].map(([m, z]) => [roGut && rollenUrteil(core, m).rot.some((r) => r.startsWith(z)), `Rollen ${m} ${z}`]); // prettier-ignore
     const morgenTaeter = [...eTaeter, [ankGut.n >= 1000 && ankGut.frueh >= 0.99 && !ankGut.monoton && !ankGut.ohneAbschnitt && ankWende.frueh < 0.5, "Ankunft zurWende M3 der Aufbruch liegt nicht um die Gehzeit vor der Wende"], [!uGut.length && uTaeter.length === 1, "Ankunft eigeneUhr M4 ein Leser liest den Plan mit eigener Uhr"]]; // prettier-ignore
     for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...verbenTaeter, ...spielTaeter, ...morgenTaeter, ...rollenTaeter, ...satzTaeter])
         if (!x) {

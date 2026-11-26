@@ -6506,6 +6506,17 @@
             // Treffer trägt. DIE DECKUNG HÄLT: eine gelesene Finte trifft nie (`gelesen` ∞ — die Klinge in der Bindung, kein Treffer
             // durch die Deckung), die ungelesene öffnet ihn wie im Ringen. zugS: ein Hieb mit Erholung je 2 s (ANGENOMMEN — kein Band
             // des Takts eines Gefechts; die Linse nennt die Dauer der Gänge), bis 2 (der zweite Treffer entscheidet, ANGENOMMEN).
+            // DIE LAGE DES TREFFERS (krieg-lage, Meisterkarte 2 mensch.macht.krieg#1 „der Treffer sitzt, wo die Klinge den Leib
+            // kreuzt“; Leser: `spielKampf` legt sie in den Zug, der Wirt `_bewohnerHiebTakt` schlägt den Schaden an ihr und legt sie
+            // in die Akte `S.hiebe`): je Treffer EINE Lage am Leib des Getroffenen, gezogen aus dem Samen des Zugs nach den Anteilen
+            // der Treffer-Lagen im Zweikampf mit der langen Klinge — Longpoint (Langschwert-Turnier, ausgewertet von S. Franklin,
+            // Sword STEM 17.04.2019 „Is Going For Deep Targets Worth It and More — Longpoint Stats Review“, Tafel „Tournament
+            // Trends“: 661 Treffer ohne Kontrollpunkte, Arm 325 · Rumpf 174 · Kopf 129 · Bein 33): Arm 0,49 · Rumpf 0,26 · Kopf
+            // 0,20 · Bein 0,05 (die Regel des Turniers wiegt Kopf höher als Glied — der Anteil ist der eines geregelten Gefechts,
+            // nicht der einer Feldschlacht). Jede Lage ist eine Zone der EINEN Treffer-Tafel (schmiede ARENA.zonen, gelesen von
+            // `_kampfRohSchaden`): der Arm ist ein Glied wie das Bein (tetrapoda TREFFER_ZONE: das Vorderbein trägt „bein“), der
+            // Rumpf teilt sich am Hals in Brust und Bauch, je zur Hälfte (ANGENOMMEN). Bis hier trug der Zug keine Lage, und der
+            // Wirt schlug fest auf „rumpf“ — eine Zone, die die Tafel nicht kennt (Faktor 1 statt einer Zone).
             hieb: Object.freeze({
                 teil: Object.freeze([2, 2]),
                 mass: "treffer",
@@ -6515,6 +6526,13 @@
                 zugS: 2,
                 zuegeMax: 200,
                 finte: Object.freeze({ anteil: 0.3, offen: 0.5, gelesen: Infinity }),
+                lagen: Object.freeze([
+                    Object.freeze({ zone: "bein", anteil: 0.49, wo: "arm" }),
+                    Object.freeze({ zone: "brust", anteil: 0.13, wo: "rumpf" }),
+                    Object.freeze({ zone: "bauch", anteil: 0.13, wo: "rumpf" }),
+                    Object.freeze({ zone: "kopf", anteil: 0.2, wo: "kopf" }),
+                    Object.freeze({ zone: "bein", anteil: 0.05, wo: "bein" }),
+                ]),
             }),
             brett: Object.freeze({ teil: Object.freeze([2, 2]), mass: "reihe", sieg: "gross", feld: 9, reihe: 5, zugS: 8, tische: 4 }),
         }),
@@ -6555,7 +6573,8 @@
     // einer Finte (Anteil `finte.anteil`) oder offen —, der andere wehrt ab; Treffer, wenn sein Zug die Abwehr schlägt (Bradley-
     // Terry). Liefert {zuege: [{an, finte, gelesen, treffer}], treffer: [ta, tb], sieger: 0 | 1}
     // (art: "ringen" — der Gang des Abends — oder "hieb", der Zweikampf mit der Waffe; `gelesen` Infinity heißt: die Deckung hält,
-    // die gelesene Finte trifft nie)
+    // die gelesene Finte trifft nie). Trägt die Art Lagen (`lagen`, der Hieb), trägt jeder Zug `lage`: die Zone des Treffers aus
+    // dem Samen des Zugs nach den Anteilen der Tafel, null ohne Treffer
     function spielKampf(a, b, same, art) {
         var R = SPIEL_GESETZ.arten[art || "ringen"],
             F = R.finte,
@@ -6572,9 +6591,17 @@
             var mal = finte ? (gelesen ? F.gelesen : F.offen) : 1;
             var treffer = _tagZahl(same, "zug:" + k) < A.s / (A.s + D.s * mal);
             if (treffer) t[an]++;
-            zuege.push({ an: an, finte: finte, gelesen: gelesen, treffer: treffer });
+            var zug = { an: an, finte: finte, gelesen: gelesen, treffer: treffer };
+            if (R.lagen) zug.lage = treffer ? _spielLage(R.lagen, _tagZahl(same, "lage:" + k)) : null;
+            zuege.push(zug);
         }
         return { zuege: zuege, treffer: t, sieger: t[0] >= R.bis ? 0 : 1 };
+    }
+    // die Lage zur Zahl u ∈ [0, 1) nach den Anteilen der Tafel (die letzte Zeile fängt den Rest der Summe)
+    function _spielLage(lagen, u) {
+        var s = 0;
+        for (var i = 0; i < lagen.length; i++) if (u < (s += lagen[i].anteil)) return lagen[i].zone;
+        return lagen[lagen.length - 1].zone;
     }
     // DIE REGEL DES BRETTS: ein Zug ist erlaubt, wenn das Feld i auf dem Brett liegt und frei ist (brett: ein Feld je Punkt, 0 frei,
     // 1 und 2 die Steine der beiden Seiten)
