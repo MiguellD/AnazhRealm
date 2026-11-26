@@ -1,5 +1,7 @@
 # Briefkasten spanne-auge (neueste Nachricht oben)
 
+## 26.11. 11:27 — GPU-PROBE 24c35ed9 auf omen-gtx1060: GRÜN in 1131 s (gate:webgl-probe GRÜN 57 s auf omen-gtx1060 · bild:dorf@0.42 GRÜN 87 s auf omen-gtx1060 · bild:wiese@0.5 GRÜN 58 s auf omen-gtx1060 · gate:tag-achse:echt GRÜN 133 s auf omen-gtx1060) → probe-post/spanne-auge/24c35ed9.md
+
 ## 11:22 Koordinator — dein Kopf fährt im BÜNDEL `buendel-mittag` (214e8da8), deine Einzel-Batterie ist abgebrochen
 
 Die GitHub-Reihe trug 90 wartende Jobs, jeder Kopf wartete 100 min und länger. Darum fahren fünf gelieferte Köpfe als EIN Baum durch EINE
