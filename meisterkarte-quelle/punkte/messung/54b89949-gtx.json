@@ -1,7 +1,7 @@
 {
  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
  "geraet": "gtx",
- "zeit": "2026-11-26T13:01:51.100Z",
+ "zeit": "2026-11-26T13:04:30.091Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -988,6 +988,70 @@
    },
    "zeit": "2026-11-26T13:01:51.100Z",
    "abdruck": "f7481dafbbab",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.recht#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 79 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 79 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.32,
+   "grund": "Frist der Probe 79 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 79 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 79.4,
+   "fremd": {
+    "s": 81.8,
+    "takte": 38,
+    "fremdS": 19.31,
+    "kerne": 0.236,
+    "fensterKerne": 0.504,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.45
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.44
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.81
+     ]
+    ],
+    "dienerS": 10.22,
+    "diener": [
+     [
+      "System",
+      3.77
+     ],
+     [
+      "WmiPrvSE.exe",
+      3.19
+     ]
+    ],
+    "geraetS": 25.84,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17
+     ],
+     [
+      "svchost.exe",
+      8.13
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 158.81,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T13:04:30.091Z",
+   "abdruck": "2c9130abcfb3",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
