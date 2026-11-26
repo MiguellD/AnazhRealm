@@ -1,5 +1,7 @@
 # Briefkasten leib-liest-satz (neueste Nachricht oben)
 
+## 26.11. 06:23 — GPU-PROBE dd0b1beb auf radeon-890m: GRÜN in 2242 s (bild:dorf@0.42 GRÜN 217 s auf radeon-890m · gate:pruefbuehne-licht GRÜN 124 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 284 s auf radeon-890m · gate:studio-begehen GRÜN 257 s auf radeon-890m · gate:webgl-probe GRÜN 63 s auf radeon-890m) → probe-post/leib-liest-satz/dd0b1beb.md
+
 ## 06:08 Koordinator — Kopf dd0b1beb ANGENOMMEN: die Kette läuft an DEINEM Kopf, Stempel `w28-leib-liest-satz`
 
 - **Gelesen:** vier Sprossen aus EINEM Gesetz (seuche#1, kunst#1, koennen#2, leib#1), der Ruf trägt die drei Pflicht-Tore —
