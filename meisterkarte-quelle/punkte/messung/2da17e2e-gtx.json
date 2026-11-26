@@ -1,7 +1,7 @@
 {
  "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
  "geraet": "gtx",
- "zeit": "2026-11-26T01:25:26.310Z",
+ "zeit": "2026-11-26T01:26:49.255Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.kopplung.land-meer-luft#4": {
@@ -3829,6 +3829,69 @@
    "ungemessen": true,
    "zeit": "2026-11-26T01:25:26.310Z",
    "abdruck": "47cc56a17829",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.relief.grossform#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 355 s gerissen: Stille seit 354.9 s nach 355.1 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 5.92,
+   "grund": "Deckel 355 s gerissen: Stille seit 354.9 s nach 355.1 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 355.2,
+   "fremd": {
+    "s": 357.7,
+    "takte": 163,
+    "fremdS": 96.75,
+    "kerne": 0.27,
+    "fensterKerne": 0.966,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      14.53
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.39
+     ],
+     [
+      "Explorer.EXE",
+      9.34
+     ]
+    ],
+    "dienerS": 81.2,
+    "diener": [
+     [
+      "System",
+      46.84
+     ],
+     [
+      "WmiPrvSE.exe",
+      18.42
+     ]
+    ],
+    "geraetS": 193.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      125.08
+     ],
+     [
+      "svchost.exe",
+      60.98
+     ],
+     [
+      "SearchIndexer.exe",
+      3.28
+     ]
+    ],
+    "eigenS": 1202.42,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T01:26:49.255Z",
+   "abdruck": "9d14fbd22724",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
