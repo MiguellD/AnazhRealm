@@ -1,10 +1,222 @@
 # kultur-aus-klima — Stand-Blatt (ZWISCHENSTAND)
 
-Zweig `kultur-aus-klima`, **Kopf 4** auf `buendel-dorf-2` b0289a9e (Kopf 1 im Bündel, auf main e71f2721; Briefkasten 06:58): EIN
-Commit, der trägt, was Kopf 2 über Kopf 1 hinaus bringt (die Wüste deckt flach, der Pol liest zuerst, der Messort der Reise), die
-Heilung der acht Karten (Kopf 3) und das Dach, das HAUS in der Wüste baut (Kopf 4, das Bild der Probe 1a78aab2). Sprossen:
-`karte2.mensch.kopplung.kultur#2` (Dach ↔ Niederschlag r ≥ 0,5; Mutation ≥ 90 %) und `karte2.mensch.kultur.sprache#1` (100 Namen aus
-2 Saaten richtig zugeordnet ≥ 90 %). Karte 2 gebucht 120 von 1 718. Status ZWISCHENSTAND.
+Zweig `kultur-aus-klima`, **Kopf 6** auf main 99649186 (der Schnitt von Kopf 5, an 54b89949 gebaut; Regel-Blatt 10:27: die nächste rote Front-Sprosse der Leiter). Sprosse:
+`karte2.mensch.kultur.sprache#3` (Stammbaum aus gelesenen Wortlisten, Robinson-Foulds ≤ 0,3 in ≥ 70 %; U_eff ≥ 10²; ≥ 5 Familien).
+Kopf 4 (5b21a935) ist GELANDET als `w28-kultur-aus-klima-4` (main 54b8994, V18.546.437) mit `karte2.mensch.kopplung.kultur#2` und
+`karte2.mensch.kultur.sprache#1`. Karte 2 gebucht 130 von 1 718 (gate:betriebsgesetz 26.11.). Status ZWISCHENSTAND.
+
+Auftrag 12:56 (`sprache-familie`, Richter OMEN Runde 38 auf 54b89949: 0 von 3) und Regel-Blatt 13:10 (Anspruch nur mit grüner
+Station). Der Kopf trägt beide Schnitte, den Stammbaum (unten, sprache#3) und den gehaltenen Himmel (S2, kultur#2).
+
+## Kopf 6 — derselbe Schnitt auf main 99649186 (das Wartezimmer von Kopf 5)
+
+- **Die Probe von Kopf 5** (865cd4af, omen-gtx1060, 14:27, 651 s): gate:studio-begehen GRÜN 235 s. Das ist die Wand der Regel Haus,
+  die der Schnitt an `fachwerk-core.js` trifft. gate:webgl-probe GRÜN 51 s. Zwei Wände ROT, beide geerbt, wortgleich an main 54b89949
+  auf allen drei Läufern: gate:pruefbuehne-licht „S0 Himmel: … Bestrahlung 3.289e-8, der Himmel des Orts 2.74e-8“ (auch
+  fahrzeug-stapel 445b4549) und gate:weltbild-frost:echt „dritte-person: B das Bild folgt der Kamera — 0.00 % der Blöcke“ (auch
+  werk-am-ort 3fc3fb24, belichtung-daemmerung 6bca4418, buendel-mittag 52c07c4a und 8d0a9ebe). Der Absturz dort liegt in
+  `stamm/werkstatt-vorschau.js` (`depthClearValue`) und `stamm/dirigent-ankunft.js` (`writeBuffer` null), nicht im Pfad des Plans.
+  Nach dem Regel-Blatt 10:27 nicht geheilt, die Linsen nicht angefasst.
+- **Der Vor-Richter** hat die Stationen an 865cd4af in vier Stunden nicht gefahren: kein Urteil im Briefkasten, in `probe-post/` oder in
+  der Punkte-Maschine. Die Läufer maßen in derselben Zeit die Runde 38 am main.
+- **main 99649186** (w28-buendel-mittag) fasst drei Dateien des Schnitts an (`scripts/diag-settlement.cjs`,
+  `spec/stamm/modul-karte.json`, `stamm/siedlung-wege.js`). Der Merge ist ohne Konflikt. Am vereinten Baum: R12 GRÜN (r 0,576, Mutation
+  100 %), gate:settlement-Selbsttest GRÜN („das Dach liest den Himmel nicht“ fällt in R12), die Modul-Karte ohne Abweichung, das Format
+  sauber. Kopf 6 ist derselbe Schnitt als EIN glatter Commit auf diesem main.
+
+## Kopf 5 — der gehaltene Himmel hebt das Dach (Station KULTUR S2)
+
+### Was die Station liest (Zweig punkte-maschine, die Station des Zusammenspiels, KULTUR S2, wörtlich gelesen)
+
+- 32 Zellen aus den Ringen von `_autoSettlementCellInfo`. Je Zelle setzt `DACH_AN` den Himmel über `__wetterSetzen` (sonnig · regnerisch ·
+  sonnig gegen) und ruft `_foundryRequestSettlement({ seed, nH })` OHNE Klima.
+- dach = mittleres `ov.pitchDeg` der Slots · regen = `_weatherFieldFor().rain` · r = Pearson(regen, dach) ohne den Gegenlauf ·
+  mutationProzent = Anteil der Zellen, deren Plan-Hash (Kultur, Lage, W, D, Stockwerke, Neigung, Stil) sich mit dem Wetter ändert.
+- Soll: r ≥ 0,5, Mutation ≥ 90 %; Zeugen: 32 Orte, Streuung des Niederschlags > 0, 32 Mutationen, 32 Gegenläufe gleich.
+
+### Die Täter-Zahl (am alten Gesetz, main 54b89949)
+
+Der Plan ohne Klima liest den Himmel nicht. `__wetterSetzen` hält das Wort (`state.wetterWort`, Schreiber „spieler“), aber
+`_foundryRequestSettlement` reicht dem Kern nur Same und Häuserzahl. Der Richter: „S2 r 0 gegen ≥ 0,5“, „mutationProzent 0 % gegen
+≥ 90 %“, Täter `fachwerk-core.js:2762 bauRezept`. Dieselbe Rechnung in node auf den 32 Zellen der Station: r 0, Mutation 0 %, Dach
+sonnig 40,8° = regnerisch 40,8°.
+
+### Der Schnitt (EIN Gesetz, gelesen an EINER Stelle)
+
+- **Der Leser:** `_himmelDesPlans()` (`stamm/siedlung-ort.js`) liest den gehaltenen Himmel durch den EINEN Wetter-Leser
+  (`_weatherFieldFor(wort).rain`, WX_GESETZ: klar 0 · bewölkt 0,12 · Nebel 0 · Regen 0,6 · Sturm 1,0). Der freie Himmel (kein
+  gehaltenes Wort) gibt nichts; der Plan bleibt Byte für Byte der alte. Beide Pfade des Plans lesen dort: `_foundryRequestSettlement`
+  (`d.himmel`) und die Kacheln der Wege (`kachelMassen(…, himmel)`).
+- **Das Gesetz:** `himmelNeigung(P, a, regen)` in fachwerk-core. Unter gehaltenem Regen steigt die Neigung zum Reet-Band:
+  s = min(1, regen / 0,6) · (50° − Grenze) / (60° − Grenze), Neigung = a + (60° − a) · s. Reet will 45° Minimum und üblich 50°
+  (ZVDH-Regel für Reetdächer; FAO Thatch 1 : 0,6 ≈ 59°), die Kappe 60° ist die von `DACH_KLIMA`. Ein Regen außerhalb [0, 1] wirft beim
+  Namen. Flache Deckung, Gewölbe und Kuppel bleiben stehen.
+- **Die EINE Dach-Form:** `dachModus` / `dachFlach` in fachwerk-core. Das Bild zeigte, dass das marokkanische Haus mit Arkade flach
+  blieb und nur der Schornstein wuchs (`ridgeY` folgt der Neigung). Darum lesen HAUS (`ROOFMODE`, `FLACH`) und `himmelNeigung`
+  (`dachNeigt`) dieselbe Quelle. Gehoben wird nur ein Dach, das die Neigung auch baut.
+
+### Gemessen (vorher main 54b89949 ↔ nachher Kopf 5, dieselben Zellen)
+
+| Messung                                          | vorher  | nachher               |
+| ------------------------------------------------ | ------- | --------------------- |
+| r Regen ↔ Dach, die 32 Zellen der Station (node) | 0       | **0,547**             |
+| Mutation der Pläne mit dem Wetter                | 0 %     | **100 %**             |
+| Gegenlauf (sonnig, regnerisch, sonnig) gleich    | 32 / 32 | **32 / 32**           |
+| mittleres Dach sonnig → regnerisch               | 40,8° → 40,8° | **40,8° → 52,9°** |
+| R12, 32 Saaten ohne Klima (gate:settlement)      | r 0, 0 % | **r 0,576, 100 %**   |
+
+Die Regionen der 32 Zellen: mitteleuropa 14 · mediterran 8 · nordisch 3 · fernost 3 · alpin 3 · antik 1.
+
+**Vertragsakt:** Ohne gehaltenen Himmel ändert sich nichts. Der volle Bau aller 743 Häuser der sieben Klima-Klassen und des Labors hat
+denselben Hash wie main (Sonde `haus-byte`), auch nach der Zusammenlegung von `ROOFMODE` in `dachModus`. Ein gehaltenes „klar“ ist
+Byte für Byte der freie Himmel (R12: 32 von 32).
+
+### Das Bild (diag-blick über den Stempel, swiftshader: die Form)
+
+Marokkanisch, Same 488081, Slot 2 (Wohnhaus): klar 18° → regnerisch 50°. Unter Regen steht das Dach sichtbar steiler, Walm und Giebel
+wachsen, der Schornstein wächst mit dem First und nicht allein. Das Bild vor dem `dachModus`-Schnitt zeigte den Fehler (flaches Dach,
+langer Schornstein), das Bild danach nicht mehr.
+
+### Die Linse (gate:settlement R12, Fachwerk-Familie)
+
+- R12 fährt die 32 Saaten ohne Klima je zweimal, frei und unter gehaltenem Regen (0,6), dazu den Gegenlauf und das gehaltene „klar“.
+  Soll: r ≥ 0,5, Mutation ≥ 90 %, Gegenlauf 32/32, klar = frei 32/32.
+- Am alten Gesetz (main 54b89949, dieselbe Linse): **ROT** — „R12 … klar 41° · Regen 41°: r 0 (Soll ≥ 0,5), Mutation 0 % (Soll ≥ 90)“.
+- Am neuen Gesetz: GRÜN, r 0,576, Mutation 100 %.
+- Selbsttest (`--selftest`): der gepflanzte Täter „das Dach liest den Himmel nicht“ fällt in R12 beim Namen. „die Wüste baut den
+  Sattel“ (Nadel auf `dachFlach`) fällt weiter in R10. SELBSTTEST GRÜN.
+
+### Die Stationen (Regel-Blatt 13:10: Anspruch nur mit grüner Station)
+
+- **KULTUR S2** (`karte2.mensch.kopplung.kultur#2`): **Station nicht gefahren.** Grund: die Station fährt in einer GPU-Sitzung
+  (der Läufer der Punkte-Maschine). In der Wolke (swiftshader) stürzt der GPU-Prozess ab, die Welt steht nicht (Karten pnull), und `umstellen` sowie
+  `bild` scheitern. Headless gemessen auf den Zellen der Station: r 0,547, Mutation 100 %. Der Vor-Richter fährt sie.
+- **SPRACHE S1** (`karte2.mensch.kultur.sprache#1`): **ROT** · „Saaten der Namen 1 verfehlt ≥ 2“. Ursache gemessen: der Zensus bei
+  `stadt-voll` zählt die Einträge von `_bewohnerSiedlungen`. In der Sitzung des Richters steht dort nur die Wort-Stadt (Same 7, ohne
+  Klima, Region mediterran, 1 Name + 600 Leute); das Heimat-Dorf fehlt. Eine Siedlung trägt EIN Label, also eine Saat. Das Gesetz
+  der Namen trennt die Regionen (R9 0,996); was fehlt, ist eine zweite Siedlung im Zensus des Messorts.
+- **SPRACHE S3** (`karte2.mensch.kultur.sprache#3`): **ROT** · „S3 Umfang nicht erzeugbar: je Region EINE Silben-Tafel der Ortsnamen
+  (fachwerk-core NAMEN, 6), keine Wortliste, keine Familie“. Die Station misst Art „nicht“ und kann am Kern nicht grün werden. Der
+  Kandidat `cloud-post/kultur-aus-klima-station/` liest den Baum (192 Sprachen, 6 Familien, RF ≤ 0,3 in 6 von 6).
+
+## Kopf 5 — der Stammbaum aus den Wortlisten (sprache#3, auf main 54b89949)
+
+Dasselbe Gesetz wie sprache#1 (die Sprache je Region und Same, `spracheVon`; die Lautgesetze je Knoten), eine Stufe tiefer: die
+Wortliste. Gelesen an EINER Stelle, `sprachWort(L, b)` in fachwerk-core; der Ortsname, die Linse und die Station lesen dort.
+
+### Die Täter-Zahl (am alten Gesetz, main 54b8994)
+
+- Der Kern trägt keine Wortliste: `sprachWort` fehlt, die Station misst `{ n: 3, art: "nicht" }` („je Region EINE Silben-Tafel“).
+- Die neue Linse am Baum von main (gate:settlement, 653 s): ROT mit genau 1 Verletzung, R11 — „0 Sprachen in 0 Familien … der Kern
+  trägt keine Wortliste (fachwerk sprachWort fehlt)“.
+- Die Listen, die die Lautgesetze allein bauen (die Mutante „die Wortliste kennt keinen Ersatz“): 191 Sprachen, RF ≤ 0,3 in 0 von 6
+  Familien (mitteleuropa 0,603 · alpin 0,655 · mediterran 0,534 · nordisch 0,345 · fernost 0,586 · antik 0,603). Die Lautgesetze eines Zweigs treffen jedes Wort gleich; die
+  Schwestern bleiben ununterscheidbar, der Baum ist nicht lesbar.
+
+### Der Schnitt (EIN Gesetz, `fachwerk-core.js`)
+
+- `SPRACH_BAUM.bedeutungen`: 105 Bedeutungen nach der Grundliste (Swadesh 1971). Je Ursprache `U.lex`: das Wort der Ursprache
+  (`_urWort` am Gesetz der Region); die Grundwörter der Ortsnamen und „haus“ stehen in derselben Liste.
+- Je Blatt `L.lex`: das Wort der Ursprache durch die Lautgesetze seines Zweigs (`_lexWort`, dann das OCP).
+- **Der Ersatz des Worts** (die Lexikostatistik: Lees 1953, Swadesh 1955): je 1 000 Jahre behält eine Sprache 86 % der Grundliste
+  (`ERSATZ = { halten: 0.86, alter: 4000 }`). An jedem Knoten fällt eine Bedeutung mit 1 − 0,86^(alter/tiefe/1000) und wird ein neues
+  Wort der Ursprache, das nur die Lautgesetze UNTER seinem Knoten trägt. Über die Wurzel teilen zwei Sprachen ≈ 30 % der Liste,
+  Schwestern ≈ 79 %. Toponyme sind die konservativste Schicht: die Grundwörter und „haus“ bleiben.
+- `sprachWort(L, b)` wirft beim Namen, wenn die Bedeutung nicht in der Liste steht; es gibt keinen stillen Rückfall.
+- **Der Leser des Spiels:** der Ortsname (`ORTSNAME`, der Name auf der Karte und am Ort) liest sein Bestimmungswort aus der Liste
+  (`SPRACH_BAUM.bestimmung`, 30 Bedeutungen; Bach 1953, Deutsche Namenkunde II).
+
+### Gemessen (gate:settlement auf dem Baum von Kopf 5)
+
+| Messung                                    | main 54b8994 (vorher) | Kopf 5 (nachher)                  |
+| ------------------------------------------ | --------------------- | --------------------------------- |
+| verschiedene Wortlisten U_eff (Soll ≥ 100) | 0 (keine Liste)       | **192**                           |
+| Familien (Soll ≥ 5)                        | 0                     | **6**                             |
+| RF ≤ 0,3 (Soll ≥ 70 % der Familien)        | —                     | **6 von 6 (100 %)**, Median 0,155 |
+| der Ortsname liest die Wortliste           | —                     | **192 von 192**                   |
+| R9 Namen aus ≥ 2 Saaten richtig zugeordnet | 0,993                 | 0,996                             |
+
+RF je Familie: mitteleuropa 0,155 · alpin 0,017 · mediterran 0,19 · nordisch 0,034 · fernost 0,086 · antik 0,155. Lesart: die
+Kompatibilitäts-Methode der Kognaten-Klassen (Buneman 1971; Ringe, Warnow & Taylor 2002), RF normiert auf 2(n − 3) (Robinson &
+Foulds 1981). Der Leser kennt nur die Formen, nie den Zweig.
+
+**Die Wortlisten (je Familie die Blätter 0, 1, 2 und 16, mit Same und Ortsname):** Blatt 0 und 1 sind Schwestern, 2 eine Base,
+16 hängt am anderen Ast der Wurzel.
+
+| Familie    | Blatt (Same, Ort)     | wasser · stein · berg · baum · feuer · mond · hand · zwei |
+| ---------- | --------------------- | --------------------------------------------------------- |
+| nordisch   | 0 (9, Høsnuk)         | tald · nis · snid · safjord · styd · hirkbad · steskan · ban |
+| nordisch   | 1 (24, Vartald)       | tald · nis · snid · safjord · bed · hirkbad · staskan · ban |
+| nordisch   | 2 (71, Drædvåga)      | tald · nit · snid · safjord · styd · hirkbad · kir · ban |
+| nordisch   | 16 (27, Hedsned)      | tald · hjuld · sned · safjurd · stød · hadba · ker · fing |
+| mediterran | 0 (30, Sapa)          | pa · mu · si · tom · calli · co · pu · ca                 |
+| mediterran | 1 (7, Lausi)          | pa · mau · si · tom · calli · co · pau · ca               |
+| mediterran | 16 (25, Latapa)       | pa · se · si · sulli · ma · cialla · po · ca              |
+| antik      | 0 (5, Cyspaes)        | stes · les · ge · prosvos · myt · pem · brens · cex       |
+| antik      | 1 (31, Cøsgas)        | stas · las · ga · prosvos · møt · pam · brans · cax       |
+| antik      | 16 (10, Traecuonpaes) | stas · las · gan · cral · causpun · risas · brans · caem  |
+
+Was man sieht: Die Schwestern teilen fast jedes Wort, oft mit einem Lautgesetz dazwischen (antik e → a, mediterran u → au). Der
+andere Ast ersetzt ganze Wörter (nordisch „stein“ nis → hjuld, „zwei“ ban → fing; antik „baum“ prosvos → cral). „wasser“ und „berg“ sind
+Grundwörter der Ortsnamen: sie werden nie ersetzt, nur ihr Laut wandelt (nordisch snid → sned). Das ist der Stammbaum in der Liste.
+
+### Vertragsakt (nur Namen bewegen sich)
+
+- Die Häuser sind Byte für Byte gleich: der volle Bau aller 743 Häuser der sieben Klima-Klassen des Planeten und des Labors hat
+  denselben Hash wie main (Sonde `haus-byte`).
+- Die Pläne der Dörfer unterscheiden sich nur in `.name`: dorf „Huvisnid“ → „Snadsnid“, stadt und stadt-voll (Same 7) „Mamilsi“ →
+  „Lausi“. Die Bewohner tragen neue Laute derselben Sprache: „Besben Sebelf“ → „Basban Sebalf“.
+- Golden `spec/asset-contract/v6/golden/siedlung.json` neu gestempelt (Same 7: Mamilsi → Lausi; Same 12345: Beldwert → Dindwirt;
+  die Slots 16 und 7 gleich). gate:asset-contract GRÜN (407 s): der Generator trifft die Goldens byte-genau.
+
+### Die Linse (gate:settlement R11, Fachwerk-Familie)
+
+- R11 liest je Familie die Blätter, baut den Baum aus den Formen und misst RF gegen den Baum des Gesetzes. Soll: U_eff ≥ 100,
+  ≥ 5 Familien, RF ≤ 0,3 in ≥ 70 %, und jeder Ortsname beginnt mit einem Wort seiner Liste.
+- Am alten Gesetz (main 54b8994, dieselbe Linse): ROT, 1 Verletzung, R11 beim Namen (oben). Jede andere Regel bleibt dort GRÜN; auch
+  R10 zählt am main 12 324 Wüsten-Häuser wie Kopf 5 (die 12 336 von Kopf 4 verschob main selbst).
+- Selbsttest (gate:settlement --selftest): zwei gepflanzte Täter fallen in R11 beim Namen. „die Wortliste kennt keinen Ersatz“ (RF
+  ≤ 0,3 in 0 von 6) und „der Ort liest die Wortliste nicht“ (der Ortsname aus einer Silbe der Ursprache). Alle 14 Täter des
+  Klima-Gesetzes fallen in ihrer Regel; SELBSTTEST GRÜN.
+
+### Die Station (Kandidat, `cloud-post/kultur-aus-klima-station/`, gegen origin/punkte-maschine 0e4cf4ac)
+
+- Die Seiten-Funktion `sprachBaum` liest den Baum aus `__fachwerkCore` in der Welt; der Zeuge sind die Orte des Fächers. Die Sprosse 3
+  geht von „nicht“ zu „zahl“. Zwei Proben: die Attrappe (Listen nur aus Lautgesetzen) ROT, der Stammbaum GRÜN.
+- Wand 1 (die Liste der Punkte-Maschine, `liste`): Basis und Kandidat tragen dieselben zwei ROT (gelaende.K2#1/#2, Wand HAKEN), sonst nichts —
+  1 976 Stationen, Fehler 2.
+- Der Selbsttest der Punkte-Maschine: Basis 289 GRÜN · 5 ROT, Kandidat 290 GRÜN · 4 ROT, die ROT eine Teilmenge der Basis (die
+  Umgebung der Wolke). PROBEN 16 630 → 16 634 GRÜN. Der Kandidat fügt kein ROT hinzu.
+- Die Basis 55313a8b des Kandidaten von Kopf 4 ist überholt: die Station des Zusammenspiels wandelte sich im Zweig punkte-maschine; der Kandidat
+  trägt alle drei Sprossen (kultur#2 und sprache#1 aus Kopf 4, sprache#3) gegen 0e4cf4ac.
+
+### Gates (lokal auf dem Baum von Kopf 5)
+
+- gate:settlement GRÜN (673 s, mit dem Selbsttest): R8 r 0,791, Mutation 100 % · R9 0,996 · R10 Wüste 12 324 von 12 324 flach ·
+  R11 oben; SELBSTTEST GRÜN, 14 von 14 Tätern des Klima-Gesetzes in ihrer Regel.
+- gate:asset-contract GRÜN (407 s, die neuen Goldens byte-genau) · gate:fachwerk-contract GRÜN (150 s, cv:6) · `npm run
+  check:statik` GRÜN (498 s) · gate:profiband GRÜN (44 s) · `npm run format:check` GRÜN · gate:betriebsgesetz GRÜN.
+- Die Sonden `haus-byte` (743 Häuser gleich) und `vertrag` (nur `.name` bewegt sich) gegen main 54b8994.
+
+## Gelandet — Kopf 4 auf main (die Probe 5b21a935, radeon-890m, 09:31)
+
+- **Die Probe:** GRÜN in 1 206 s — gate:pruefbuehne-licht 73 s · gate:weltbild-frost:echt 142 s · gate:studio-begehen 170 s ·
+  `bild:dorf-trocken@0.42` 96 s · gate:webgl-probe 69 s.
+- **Das Bild, mit eigenem Auge gegen Kopf 3 gelegt** (`probe-post/kultur-aus-klima/5b21a935-dorf-trocken-0.42.png` gegen
+  `1a78aab2-…`): Das Haus von Nagu trägt die flache Platte mit der schmalen Lehmkante, ohne Schwung und ohne dunkle Ziegel; nur der
+  Schornstein steht darüber. Auch das Haus dahinter und das Holzhaus rechts schließen flach. In Kopf 3 standen an derselben Stelle der
+  geschwungene Giebel und das schwarze Ziegeldach. Das Gesetz steht im Bild.
+- **Die Batterie am Zweig:** Die voll-Jobs der Läufe 45781041954 und 45781051348 brachen um 08:31 ohne roten Schritt ab (kopf, puls 2/2,
+  einlass, die Probe und voll 3, 11, 12 GRÜN); der Koordinator stieß sie neu an.
+- **Was die Landung trägt — und was nicht:** `karte2.mensch.kopplung.kultur#2` und `karte2.mensch.kultur.sprache#1` (die Station
+  `cloud-post/kultur-aus-klima-station/` nennt genau diese zwei). **`karte2.mensch.kultur.sprache#3` ist NICHT in diesem Baum.** Die
+  LAGE 12:15 nennt „#3“ unter den Ansprüchen von z754; sein Gesetz (die Wortlisten, der Ersatz nach Swadesh, die Linse R11) lag bis
+  jetzt nur vorbereitet, außerhalb jedes Kopfs. Nach dem Regel-Blatt 10:27 („die nächste rote Front-Sprosse seiner Leiter“) kommt es als
+  eigener Kopf 5 auf main 54b8994; bis dahin darf es nicht gebucht werden.
+- **Der Anspruch 754 (`zug/anspruch.txt`, de2b560) bucht drei Sprossen auf `w28-kultur-aus-klima-4`, getragen sind zwei.** Woher
+  `sprache#3` kam: die Message von Kopf 4 nennt den Namen in ihrem Offen (Zeile 47: „sprache#2/#3
+  (karte2.mensch.kultur.sprache#3)“), der Anspruch nimmt jeden Sprossen-Namen der Message. Bitte die Zeile auf
+  `karte2.mensch.kopplung.kultur#2,karte2.mensch.kultur.sprache#1` setzen; sprache#3 bucht erst der Kopf, der es trägt.
 
 ## Kopf 4 — die Wüste BAUT flach (das Bild der Probe 1a78aab2, gtx1050-desktop, 08:31)
 
@@ -318,12 +530,13 @@ nordisch, „Mitapa“ und „Cobo“ mediterran.
   unterscheidbar, RF **0,57–0,88**, 0 von 6 Bäumen ≤ 0,3. Der Baum steht im Gesetz, aber das Lexikon trägt ihn nicht: eine Neuerung
   je Knoten trifft zu wenige Wörter. Ein Versuch im Arbeitsstand (die 100 Bedeutungen nach Swadesh 1971 je Ursprache, je Knoten
   ein eigenes Lautgesetz TYP · LAUT · ORT, nur sichtbare Gesetze) hob die Unterscheidbarkeit auf 191 von 192, RF 0,26–0,78; er ist
-  nicht im Kopf. Der nächste Hebel ist der Ersatz des Worts selbst (Kognaten-Klassen), nicht nur sein Lautwandel.
+  nicht im Kopf. Der nächste Hebel war der Ersatz des Worts selbst (Kognaten-Klassen), nicht nur sein Lautwandel: ihn trägt Kopf 5
+  (oben), RF ≤ 0,3 in 6 von 6.
 - kultur#3 (Kalender/Fest) ist ein anderes Gesetz und fällt nicht hieraus.
 
 ## Station (Kandidat, `cloud-post/kultur-aus-klima-station/`)
 
-`stationen.diff` gegen origin/punkte-maschine 55313a8b und `BEGRUENDUNG.txt`:
+`stationen.diff` gegen origin/punkte-maschine 0e4cf4ac (seit Kopf 5; bis Kopf 4 55313a8b) und `BEGRUENDUNG.txt`:
 
 - KULTUR misst das Klima des Orts statt des Wetters der Stunde. Der Plan kommt aus dem Auftrag des Spiels (`_ortDp`).
 - SPRACHE misst dazu den Fächer von 32 Zellen über den Leser des Spiels (`_bewohnerLauf`).
@@ -335,12 +548,17 @@ nordisch, „Mitapa“ und „Cobo“ mediterran.
 
 ## Probe
 
+Der Ruf von Kopf 5: `[gpu-probe: gate:studio-begehen, bild:dorf-feucht@0.42]`. `probe-tag` nennt EIN Pflicht-Tor: die Regel Haus
+(der Beitrag fasst `fachwerk-core.js` an); die Regel Bau trifft er nicht (kein `stamm/siedlung-*`). Das Bild ist der offene Partner
+des Bildpaars, das nasse Dorf: es steht mit den neuen Namen, und seine Häuser sind Byte für Byte die von main.
+
 Der Ruf von Kopf 4 (wie Kopf 3): `[gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen,
 bild:dorf-trocken@0.42]`. Das Bild ist dasselbe, weil es jetzt das flache Lehmdach in Nagu urteilt.
 
 - Die drei Tore nennt `probe-tag` als Pflicht: Bau und Haus, weil der Beitrag `stamm/*` und `fachwerk-core.js` anfasst.
 - Der Einlass trägt höchstens 4 Proben je Push (gpu-probe.yml „höchstens 4 je Push“), der Deckel je Probe ist 480 s
   (`PROBE_DECKEL_S`). Neben den drei Pflicht-Toren bleibt EIN Bild: das trockene Dorf, an dem Kopf 2 hing.
+- Kopf 4 (5b21a935) auf radeon-890m: GRÜN in 1 206 s, alle fünf Einträge; das Bild zeigt das flache Lehmdach (oben, Gelandet).
 - Kopf 3 (1a78aab2) auf gtx1050-desktop: GRÜN in 3 321 s, alle fünf Einträge; das Bild zeigte den Schwung (Kopf 4, oben).
 - Kopf 2 (18cec0dc) auf der Radeon: die drei Tore und die GL-Wand GRÜN, das Bild ROT (die acht Karten, oben).
 - Kopf 1 (33caabe5) fuhr im Bündel `buendel-dorf` 65010917: die Probe GRÜN, alle vier Einträge.
@@ -369,15 +587,48 @@ Dieselbe Kirche des Messorts dorf (norwegisch, Same 824851), derselbe Plan bis a
 
 ## Offen (Grund, Messname)
 
-- **Der Partner des Bildpaars**: `bild:dorf-feucht@0.42` (Chagrin). Der Einlass trägt 4, die Pflicht 3; er fährt im nächsten Ruf.
-  Messname `bild:dorf-feucht`.
-- **Das Bild am Ort der Reise auf der Karte**: Die Welt steht dort (Probe 1a78aab2 GRÜN, die acht Karten sind geheilt). Das flache
-  Lehmdach in Nagu urteilt die Probe von Kopf 4; hier läuft keine Karte, die Form steht im Blick oben. Messname `bild:dorf-trocken`.
+- **kultur#2 ohne Station**: die Station KULTUR S2 läuft nur auf der GPU. Headless r 0,547 und Mutation 100 % auf ihren Zellen; der
+  Vor-Richter (GTX 1050) fährt sie. Messname: Station KULTUR S2 `r`, `mutationProzent`.
+- **sprache#1 ROT**: im Zensus bei `stadt-voll` steht eine Siedlung (die Wort-Stadt, mediterran). Grund: das Heimat-Dorf liegt dort
+  nicht in `_bewohnerSiedlungen`. Messname: Station SPRACHE S1 „Saaten der Namen“.
+- **sprache#3 ROT an der Station**: die Station misst Art „nicht“; erst der Stations-Kandidat dreht sie. Messname: Station SPRACHE S3
+  „Umfang“.
+- **Der Partner des Bildpaars**: `bild:dorf-feucht@0.42` (Chagrin) fährt nicht im Ruf von Kopf 5. Der Ruf trägt nur die drei
+  Pflicht-Wände des probe-tag (Bau und Haus), wie der Auftrag 12:56 es verlangt (≤ 4 Wände, ≤ 480 s). Messname `bild:dorf-feucht`.
 - **Die Ratschen-Serie der beiden Orte der Reise** (`serie.offen`): sie misst auf echter GPU (Lehre 17). Messname gate:profiband H2b.
-- **Wand 2 der Station** (Leiter ≤ 60 s): sie misst nur das Gerät. KULTUR rechnet 182 statt 116 Pläne, SPRACHE 32 Pläne dazu.
-  Messname `karte2.mensch.kopplung.kultur#2` und `karte2.mensch.kultur.sprache#1` am ersten Lauf.
+- **Wand 2 der Station** (Leiter ≤ 60 s): sie misst nur das Gerät. KULTUR rechnet 182 statt 116 Pläne, SPRACHE 32 Pläne dazu, und
+  S3 liest 192 Blätter (in node 93 ms). Messname: die Stationen KULTUR S2, SPRACHE S1 und S3 am ersten Lauf.
 - **Der Rest der Klasse nass** (222 von 7 373 Häusern): Stein, Klinker und Glas tragen kein Reet, das Gesetz deckt sie mit Ziegel,
   Schiefer oder flach unter 40°. Die Form des Gesetzes ist dort „steil oder Reet“ nur für den Holzbau. Messname gate:settlement R10 (nass
   96,0 % ≥ 95 %).
-- **sprache#2/#3**: ungemessen am Kopf (Trennung an 20 Sätzen, Robinson-Foulds). Der WIP-Schnitt (Lautgesetz je Knoten) hebt die
-  Unterscheidbarkeit auf 191 von 192 bei RF 0,26–0,78; er ist nicht im Kopf. Messname `karte2.mensch.kultur.sprache#3`.
+- **Der Anspruch 754** bucht sprache#3 auf `w28-kultur-aus-klima-4`, das es nicht trägt (oben, Gelandet). Die Zeile setzt der
+  Koordinator; mit Kopf 5 trägt der Baum sprache#3. Messname `zug/anspruch.txt` Zeile 754.
+- **sprache#2** (die Sprachen an 20 Sätzen getrennt): braucht einen Sprecher der Wörter; klang-core `mengeSilben` spricht Silben
+  ohne Sprache. Die Wortlisten von Kopf 5 sind sein Stoff (105 Bedeutungen je Sprache). Messname: Station SPRACHE S2 „getrennt“.
+
+## Blatt (Kopf 6, Ende des Wartezimmers)
+
+- **Geschnitten:** Zwei Gesetze, je an EINER Stelle gelesen. (1) Der gehaltene Himmel hebt das Dach: `_himmelDesPlans` über den EINEN
+  Wetter-Leser, `himmelNeigung` im Kern, die EINE Dach-Form `dachModus`. (2) Die Wortliste je Sprache mit dem Ersatz des Worts
+  (`sprachWort`); der Ortsname liest dort. Linsen R12 und R11 (gate:settlement), die Station S3 als Kandidat.
+- **Gemessen:** S2 headless auf den Zellen der Station: r 0 → 0,547 · Mutation 0 % → 100 % · Gegenlauf 32/32 · R12 r 0 → 0,576 ·
+  Wortlisten 0 → 192 · Familien 0 → 6 · RF ≤ 0,3 in 6 von 6 · die Häuser Byte für Byte gleich (743) · R12 und R11 am alten Gesetz ROT.
+  Die Probe von Kopf 5: studio-begehen GRÜN 235 s, die zwei ROT geerbt (oben, Kopf 6).
+- **Offen:** die Liste oben (Grund, Messname). Keine Station ist hier GRÜN gefahren; der Vor-Richter fuhr 865cd4af in vier Stunden
+  nicht.
+- **Kopf:** dieser Commit (`Vorprüfung kultur-aus-klima 6`, Zweig `kultur-aus-klima`); die 40 Zeichen nennt der Bericht nach dem Push.
+  Kopf 5 war `865cd4af76815b77420e5c1e52ca74c25e01fefb`.
+- **Sprossen:** keine beansprucht (Regel-Blatt 13:10). Ein Anspruch folgt erst mit einer GRÜNEN Station: `karte2.mensch.kopplung.kultur#2`
+  über den Vor-Richter.
+- Karte 2 gebucht 130 von 1 718 (gate:betriebsgesetz 26.11.). Status ZWISCHENSTAND.
+
+## Blatt (Kopf 4, gelandet)
+
+- **Geschnitten:** EIN Gesetz — das Klima des Orts setzt Neigung, Deckung und Haus-Sprache. In der Wüste baut HAUS flach (`FLACH` in
+  `ROOFMODE`, die Platte im Lehm, kein Schwung). Die acht Karten sind geheilt, der Pol liest zuerst.
+- **Gemessen:** r Dach ↔ Niederschlag 0 → 0,791 · Mutation 0 % → 100 % · Namen aus 2 Saaten zugeordnet 0,993 · die Wüste baut flach
+  952 → 12 336 von 12 336 · die Probe 5b21a935 GRÜN (1 206 s) · die Linse R10 am alten Gesetz ROT, der Selbsttest nennt jeden Täter.
+- **Offen:** die Liste oben (Grund, Messname).
+- **Kopf:** `5b21a935da255bc667a2d1e58b1eda8586d09bef`
+- **Sprossen:** `karte2.mensch.kopplung.kultur#2` · `karte2.mensch.kultur.sprache#1`
+- Karte 2 gebucht 126 von 1 718 (LAGE 12:15). Status ZWISCHENSTAND.
