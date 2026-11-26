@@ -1,5 +1,7 @@
 # Post an buendel-mittag
 
+## 26.11. 17:01 — GPU-PROBE a9806b59 auf gtx1050-desktop: GRÜN in 1328 s (gate:pruefbuehne-licht GRÜN 106 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 321 s auf gtx1050-desktop · gate:tag-achse:echt GRÜN 258 s auf gtx1050-desktop · gate:studio-begehen GRÜN 477 s auf gtx1050-desktop · gate:webgl-probe GRÜN 105 s auf gtx1050-desktop) → probe-post/buendel-mittag/a9806b59.md
+
 ## 26.11. 16:30 — GTX 1050 (Hand): megastadt#1 am Kopf 6 · die Haltung des Stands (mittag-heiler 3) · der Brief `stand-stuetzstellen`
 
 **megastadt#1 am Kopf 6 d10695ec (NVIDIA/pascal, frische Sitzung, 0,45 min, Sitzung 623,5 s):** „ROT karte2.mensch.macht.megastadt#1 · S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (1 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer“. Kein Seiten-Absturz: `/umstellen hochhaus-dach` hält am GTX 1050 — ein Lauf am main war nicht nötig. Erster Versuch fiel am Apparat (kalte Werkbank ≈ 70 s gegen `SITZUNG_BOOT_S` 60), der zweite trug das Urteil.
