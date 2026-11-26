@@ -1,7 +1,7 @@
 {
  "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
  "geraet": "gtx",
- "zeit": "2026-11-26T01:08:53.323Z",
+ "zeit": "2026-11-26T01:16:46.959Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.kopplung.land-meer-luft#4": {
@@ -1613,6 +1613,143 @@
    "bahn": "sitzung",
    "zwilling": "karte2.erleben.sinne.gesehen#1",
    "modus": "session"
+  },
+  "karte2.erleben.schoepfen.satz#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT Umfang nicht erzeugbar: der LLM-Lauf fehlt: llm.fehler.aus (Anbieter anthropic, an false, Schlüssel false; stamm/dienst.js:93–96) — 0 von 41 Sätzen des Korpus (spec/abnahme/ki-korpus.json) erreichen das Modell (verlangt 40 Sätze des eingefrorenen Korpus im echten Fenster, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S1 · ROT Umfang nicht erzeugbar: der LLM-Lauf fehlt: llm.fehler.aus (Anbieter anthropic, an false, Schlüssel false; stamm/dienst.js:93–96) — 0 von 41 Sätzen des Korpus (spec/abnahme/ki-korpus.json) erreichen das Modell (verlangt 40 Sätze des eingefrorenen Korpus im echten Fenster, die Welt erzeugte 0)",
+   "mass": [],
+   "gpu": "nvidia/pascal",
+   "konsum": "kc1ee83ce5fc2",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k05a87765fff2",
+   "s": 0.4,
+   "fremd": {
+    "s": 10.9,
+    "takte": 5,
+    "fremdS": 5.64,
+    "kerne": 0.517,
+    "fensterKerne": 0.517,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.66
+     ],
+     [
+      "Explorer.EXE",
+      1
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      0.7
+     ]
+    ],
+    "dienerS": 1.75,
+    "diener": [
+     [
+      "System",
+      0.67
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.56
+     ]
+    ],
+    "geraetS": 3.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.88
+     ],
+     [
+      "svchost.exe",
+      0.83
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.19
+     ]
+    ],
+    "eigenS": 23.19,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.426,
+     "nach": 0.645,
+     "station": 0.426
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 101.9,
+     "alle": 255.4,
+     "cpuEin": 109,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.88,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       6.61,
+       5.79,
+       3.67,
+       3.06,
+       2.45,
+       3.12
+      ]
+     },
+     "spanne": [
+      1795655806961,
+      1795655807487
+     ]
+    },
+    "nach": {
+     "ein": 92.9,
+     "alle": 238,
+     "cpuEin": 94,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.86,
+      "s": 6,
+      "soll": 3,
+      "reihe": [
+       3.06,
+       2.45,
+       3.12,
+       6.96,
+       1.45,
+       0.18
+      ]
+     },
+     "spanne": [
+      1795655815107,
+      1795655815564
+     ]
+    },
+    "ruhe": {
+     "ein": 89.1,
+     "alle": 223,
+     "n": 1190,
+     "von": "2026-11-16"
+    },
+    "f": 1.145,
+    "fEin": 1.144,
+    "fAlle": 1.145,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-26T01:16:46.959Z",
+   "abdruck": "8a4236ccba5f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1640,7 +1777,8 @@
   "ka38e8b1c3bcf": "bVVdb6MwEPwvebweNR+mGEt9cJpIjdSe6E9YwxpoCEQ21Hc53X8/QUISoPuChGaY8ex6+bs6QrqHHB8/TVOv+OrH6ufKwBc6BvUX6sdPs+KrOPV8DLj4EH0RIcRLD0t1eWwNqUpJQNZQHNDpdItl9ZgONPUEbig5sVuRJ4QociIb+/w8p1YSs8ZpQeFIdDEIGfI5sDM5SHSgU4PYBRzSGJ88ToZiG/G+Idf6zYRILLEJe519TEKdTd2i50sKXNjdixAfc5dZCdg6VVmbUdfLoli5/Kpl3xccDdY5ARYV6lGEeR6Vo9l1H2cfzYyoqs6YiRgLstBnnJB4js3RlGnROkfdSKwvcBn7kQd8vUw7P3aOuncEUgKT86wLwDpHPfHgBqk6B60G++ZPovqA12IusocDanBqKC7U2A0iX96yIoS8Lr1Vw0EGyfEglMbI/AmxbzL56gMXO3FXNOkbTtiI2tjL+zvMVixETVqU+jCNT1H03YC/LS2aAjLUzr4x7RUdYERdyQeB3YYMz4St58zb4caeAgC7GyDCiHhlC8VGtRY0OvmxG4eIYhiFXIjdAtzC4TDOQIBu5nKxqO03rDqbWItCGlLghDycL9MyiPPVcU5YViNJKUrjcD5JXxoODshcl0qN0yDDVMXfDbPFqnVk07RjtF4UBUEfUX0/AL+G1t53f5N/0LZa2+30qLvFaA4KjW6vt9iPIi/lKt8wQpiao0vdOhbSYoT7SiLEnNh0/uET6gpznMSoPA/8jBN7vjDk1K+j6LIu1MNkqE+Lzp9K7AOuTWfGxqdAZci/aYlFvZdQ78edGGahH/M3IcT6XSS3QNa52L7kim4IsWwSFV27wzZ6GpFWiIfkbOqIKTnqRpX91iQFdKaAqr39Mv79Bw==",
   "kfe202b4debf3": "bVVdb5tAEPwvfmxKlo8jHCfl4WynitWmcn7CHuwBMQbrDofIVf97BTa2ge4DSNbs7jAzd/6zOGCyw4weP2xdLcTi2+L7wuInOZbMJ5nHD7sQizjxfAqEPBdIKVcdLDHFobFQFgpQVZjvyTmahoryMenb9BO6oRLQvshsC6DhBOtWXmsln5+nY0pFae00qGkY4lIQchJT4NFmqMjBo+4XX8Ahi+nJE9AXX8u3NVyrTaTcttBu+etkmMIqHTMnz1cMhWw3KynfpyzTAqlxyqKyw14vjWLtituut1mPwdY5IeUlmWEJ9zymBrLLTpJOpkmjLo/WjpbxIA19LgDiKTYjWyR54xxMrai6wFXsRx6KZTtTOzscHX3PCJVCrqZa50hVRmbEwQ0S3Qn9xadDd7gng06F+QUau0Hkq5s2APA651L2xPsVA3HGYuL+qLEz9Syw3Mi7YlsA+AI+oIaYsTvMyzxuNskLsx/LpRn5biB+zSnaHFMyzq62zRUdUMRcdT4ZmzX07y1fTjtvHzd4iIj8LjDAQb7OtLS1blo05GSH4xAaRmEUCik3M3CD+/3geUBu6k6NtE0X9HsaUchChgLg4SLr7KPPx8I5UVEOTVozFoditWRT8KfBvYMqM4XWg/sqTHT8v7C2VDaOqutmkNKLoiAQEEB1b/jv3sp7t9fZO3v7IdsXOaqfcrnNZvz7LbVprifVjyIvEbpdcwCup+jCNE6LST7Afa0IO/ozb05kSspoJKf2PPRT0V81PdMuDdHlStAPoyCf5hML6oSu7NEOZifIVCguiT+HbJzilsxOYbUb7r8wDf1YdBopLrdjgT4Omq0BWj76lS25lEuZPciznsusf2zWl0UHSuBgal10tyTkeLQ5ls3t7+LvPw==",
   "k8b6cb5ec2952": "rVXbjqM4EP2XPG4vbS5mAEvz4DRZdUbbEvmEsikDEwKRDe1WVvPvK9IhCZCRZqSpF6KoLqdOnSr/tzqC3EOBz99N26zY6q/V3ysD7+gY1O+on7+bFVsl0vMxYPzTCOf8ZXCTujp2huQVFM5eI3S9dmoU2DzLc1gYujJBRv6wZfYM44VfPpsd57zYfr2DVFeCgGigPKDT6w6r+gJJfQE3FIzYDS8yQhQ5kdTyq23410WaWmDeOh0oHJO4GIQxsrljbwoQ6ECvzoVHEmiCX7wLCXHK39JbJ1Zynllis/iVZ5Ssl9UFNPm0A/R8QYFxu+Wc7+b+eQXYOXXVmLG+l0eJcm9DsG+LGA3WOQGWNeqxSOx5VIyg1wM1A12zQFX3xkyKxUEe+jEjJJn7FmgqWXbOUbc3gYjEjzxga7vouzj2jrpHBEJALOacl4BNgXqCwQ2kGgj/iOdJ93BADU4D5cU1cYPIFxOBvi6xjNI+YGPkGJqrnMr4t7Wd/jz9hBkMpQJk/Fdtffd7+8tRF7NzSPV5VGdSR0CUJhj7s37jlLwPkpqWpBkh5IPEt54v/9/5PFg0I8tKH6Y0KIq+G7B/l6yZEnLUzr413dU7wIi64pO0bUrO3yxezyNvzY2qBYD4bkVITPjrQj2mVZ0FjU5x7McpUQyjkHG+OD6mg8NhVHmAbu4+nKXlmweRTT6BF4U0pMAIefo8HUsyPg+Ec8KqHoOUojQJ2cuazp3fNRwcEIWulBr3QIRSJY/W1mLdOaJtu5FiL4qCYKCqWZ7kexWkxY6+/cOLzbThbbrLigX+c5VWd9eb5UeRJ5kq0piQWM29K905FmQ5uvtKICSMWDlPfEJdY4ETOpXngZ+z8/G9oh21mT5NBH5aqOBU4UB0Y3ozikACFSF7MBqLei+g2V+fwzz0E/ZtWNc3nk2JeSkUTcnCPmLON6l92k1ZHIocUZKjblU1vBGkhN6UUHe3d/zH/w==",
-  "k0c4b15f5d8c8": "bVXbbqMwEP2XPLZLh2sBS31wSleNtJHSTxjDGGgIIBtCldX++woSUi6dFyTrjM/xOWPzdxNXivTTCctckm6ePnVVbtjmYfNrU2N8xJSmSxrPZGhSZ1JPn3rDNmFs2eQwfi3gnL/2sFjldaMhyTE1RFU1hm76neKh52GCKHIBKErMTmS0qqG8uIHkM5qeYNDteXoAkHCBqHt5WbYWgpLKaFDS2GiS4wXElsBWpyjIwFYOZDew54b0bDEYKoj4PoJ7dTHnhw66Q/C+2ExgmczVkmULF282fCxVJjlSYxR5qUdeK/FDabJvrv2qR2FnXJCygtRIEliWK0ax256qt2bRKItW6xlZ4CSeHTCAcIlNSedx1hi1qgSVN7gIbd9Ctl27ndatIaeKUAgMxNLrDKlMSc00mE4se6O/guWmRzyRQqPE7AYNTce3xbc3APC+1lIMwgeKUbjrhhTYs8Y+VDj3BvMdn5R7AIAvCEZU1N3WJ5g3viLVcZar09wu6ZJtOuzPWqLOMCFlHCvd3NEO+a4proOyi2D4HoLtsvP7cGOGiBhMBgYC4O8rL3Ulmw4VGWndjkPjkud7jPPdCtzg6TRm7pCZmMsgddMP+lSG77meiwzg8XpR1oe+XgvjQnkxNknpuqHHXrfuEnxWeDJQpCqXckxfeLEMfxrWjopmeExGKy3fdxwGFyingR86/spnaUfph7v/zbs3Pq/t0vaBoVLN/Zbavm/FTKZRABDIJTpXjdFhnI1wWwrCXvoqlwupglKaWSktC+2EDc/MXek4f9HjbIgv6x1z6k0udavHoGN0hcd+iKUjdRRYHsc3z0s8OxxGcLvnh4khKeeftewigDk9wMXk8RtPH/nMw11PUlMMtapk3r+KkGGrMywm/5F//wE="
+  "k0c4b15f5d8c8": "bVXbbqMwEP2XPLZLh2sBS31wSleNtJHSTxjDGGgIIBtCldX++woSUi6dFyTrjM/xOWPzdxNXivTTCctckm6ePnVVbtjmYfNrU2N8xJSmSxrPZGhSZ1JPn3rDNmFs2eQwfi3gnL/2sFjldaMhyTE1RFU1hm76neKh52GCKHIBKErMTmS0qqG8uIHkM5qeYNDteXoAkHCBqHt5WbYWgpLKaFDS2GiS4wXElsBWpyjIwFYOZDew54b0bDEYKoj4PoJ7dTHnhw66Q/C+2ExgmczVkmULF282fCxVJjlSYxR5qUdeK/FDabJvrv2qR2FnXJCygtRIEliWK0ax256qt2bRKItW6xlZ4CSeHTCAcIlNSedx1hi1qgSVN7gIbd9Ctl27ndatIaeKUAgMxNLrDKlMSc00mE4se6O/guWmRzyRQqPE7AYNTce3xbc3APC+1lIMwgeKUbjrhhTYs8Y+VDj3BvMdn5R7AIAvCEZU1N3WJ5g3viLVcZar09wu6ZJtOuzPWqLOMCFlHCvd3NEO+a4proOyi2D4HoLtsvP7cGOGiBhMBgYC4O8rL3Ulmw4VGWndjkPjkud7jPPdCtzg6TRm7pCZmMsgddMP+lSG77meiwzg8XpR1oe+XgvjQnkxNknpuqHHXrfuEnxWeDJQpCqXckxfeLEMfxrWjopmeExGKy3fdxwGFyingR86/spnaUfph7v/zbs3Pq/t0vaBoVLN/Zbavm/FTKZRABDIJTpXjdFhnI1wWwrCXvoqlwupglKaWSktC+2EDc/MXek4f9HjbIgv6x1z6k0udavHoGN0hcd+iKUjdRRYHsc3z0s8OxxGcLvnh4khKeeftewigDk9wMXk8RtPH/nMw11PUlMMtapk3r+KkGGrMywm/5F//wE=",
+  "kc1ee83ce5fc2": "bVRdb6MwEPwvebweXT4LWOqDU3pqpcsp/QlrWAMNgciGUOV0//0EiZMA3RckNOsdz4z37+qA6Q5zevzUTb1iqx+rnyuNR7I0qSOpx0+9Yqs4dVzyGD8XcM5fBliqykOroSoFoKix2JPVqZbK6jEd2+QT2oFg0L/yfAsg4QRJ//w8b60EZY3VoiTTaJMXRMTmwE7nKMjCTo7DLuDAj+nJYTBWlPBNAtfqU863PfTb6G12mMA6m7IlxxU+Xi75MWeZlUitVZW1NnOdLIylzW6zNosehb11QioqUmZI5Di+MGTXw6hBmlmjrDqtJ8MiLwvciAHEc2xOukyL1jqoRlB9gYvYDR1k66Xa+aGz5D0jFAIjMde6QKpzUhMOtpfKQeivaH7oDvek0KqxuEBj2wtdcdMGAN6WXKqR+DjCEPf9mCJ30jiYCsdBYP7O78rfAsAXRAaV9Jf/d5hXvhiq06JU+6lc0ifX9tjvJUVdYEbK2jW6vaI9Cn1bnIPynsD43UbreeftcsZDRIzuAgMR8LeFlrqRbY+KrPzQmdD4FIQB4/x9AW5xvzeee2Rn9txI3Q5Bv6cRBn7gIwN4OD+U5aXPz8I6UVmZJil9Pw7mhx8V7i0UuSqlNM6LIJXxd0HtqWot0TStkdEJQ89jcIL63uw/o433Tif5h7/5xfPXOc/xxEa11xfphqGTMpknEUAk5+hStVaPaWHgrhSEMYM+nR98IlVRThPZpOOgm7FxpVyZmawlD5PAnhaunkoaBK11p42pKfoiYN9Y0JPaCax3Zr8FWeDGY9zWG77lk3rJZc8X5a/tcbM8XOJ/oNRsaNiV1q5Rh05PNv6AOKhGlsNehAI7XWDV3iD//gM="
  },
  "sitzung": {
   "start": "2026-11-26T00:41:31.942Z",
@@ -3286,20 +3424,6 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
-  "karte2.erleben.schoepfen.satz#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\ed4b21c5-6dc0-4555-8f00-6185f5e9f296.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\ed4b21c5-6dc0-4555-8f00-6185f5e9f296.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-26T00:49:47.106Z",
-   "abdruck": "8a4236ccba5f",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
   },
   "karte2.erleben.spieler.hand#1": {
    "gruen": false,
