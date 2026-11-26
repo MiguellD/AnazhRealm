@@ -28,7 +28,8 @@
 //   SELBSTTEST (sonst wäre das Grün vakuös): (1) der alte Weg (`_archKartenPreset` → null: jenseits der Mesh-Zone
 //               geräumt) macht A und D rot; (2) ein injizierter Feld-Satz an einem Baum macht B rot mit Namen;
 //               (3) kein Band jenseits des Radius — D2 rot; (4) ein Gedächtnis mit
-//               gekippter Gestalt macht E rot; (5) dasselbe Haus ohne Grundriss macht F rot; (8) ein Ding, das den Bestand
+//               gekippter Gestalt macht E rot; (5) dasselbe Haus ohne Grundriss (ohne die Gestalt seines Mass-Baus) macht F rot, sein
+//               Akt bricht beim Namen (`_werkAkt`); (8) ein Ding, das den Bestand
 //               ohne Abschied verlässt, dessen Instanz stehen bleibt, nennt C „gegangen, aber gezeichnet" (der Satz, nie das Feld).
 //
 //   node scripts/diag-fernwald.cjs
@@ -234,7 +235,11 @@ hauptLauf(async () => {
                 if (haus) r.removeArchitecture(haus);
                 // Selbsttest: dasselbe Haus OHNE Grundriss hält den Wurf nicht — die Eiche bleibt Bestand (die Linse
                 // unterscheidet: frei macht nur der Grundriss). Seit K52 trägt jeder Bau einen (die Hülle seiner Blocker-Boxen), seit
-                // S4 das Haus seinen Grund (Plan-Datum, beim Setzen): die Probe nimmt ihm Grund, Fundament, Hülle und Boxen
+                // S4 das Haus seinen Grund (Plan-Datum, beim Setzen), seit w2-tat-umkreis spricht vor der Hülle der Mass-Bau
+                // seiner Art (`_grundrissVon`): ein Haus mit Gesetz trägt immer einen. Den Grundriss verliert es nur noch, wenn
+                // die Gestalt seines Samens fehlt (das Buch kalt für sein Preset, `_foundryVariantFor` → null) — dann bricht sein
+                // Akt beim Namen (`_werkAkt`: „trägt keinen Grundriss“), und F muss ihn sehen: die Probe nimmt ihm Grund,
+                // Fundament, Hülle, Boxen und die Gestalt seines Mass-Baus
                 r._hausGrundSetzen = () => false;
                 const ohne = r.spawnArchitecture(
                     "haus_alemannisch",
@@ -242,13 +247,30 @@ hauptLauf(async () => {
                     { silent: true }
                 );
                 delete r._hausGrundSetzen; // der Patch lebt nur im Setzen — auch, wenn es fehlschlägt
-                if (ohne) {
-                    ohne.fundament = undefined;
-                    ohne._hausHuelle = undefined;
-                    ohne.blockerAABBs = null;
-                    r._grundrissFaellt();
+                const hausPreset = ohne ? r._foundryPresetForEntry(ohne) : null;
+                r._foundryVariantFor = function (seed, preset, Vk) {
+                    return preset === hausPreset ? null : Object.getPrototypeOf(this)._foundryVariantFor.call(this, seed, preset, Vk);
+                };
+                let wurf = null;
+                try {
+                    if (ohne) {
+                        ohne.fundament = undefined;
+                        ohne._hausHuelle = undefined;
+                        ohne._grundrissArt = undefined;
+                        ohne.blockerAABBs = null;
+                        r._grundrissFaellt();
+                        try {
+                            r._werkAkt({ ...ohne, werk: true }, { uhr: r.state.spielZeit }, true); // dasselbe Haus als Werk
+                        } catch (x) {
+                            wurf = String((x && x.message) || x);
+                        }
+                    }
+                    res.E.F.wurf = wurf;
+                    res.E.F.selbst =
+                        !!ohne && /^_werkAkt: das Werk haus_alemannisch \(.*\) trägt keinen Grundriss/.test(wurf || "") && (await frag(e)) !== V;
+                } finally {
+                    delete r._foundryVariantFor; // der Patch lebt nur im Selbsttest
                 }
-                res.E.F.selbst = !!ohne && (await frag(e)) !== V;
                 if (ohne) r.removeArchitecture(ohne);
                 Object.assign(res.E.F, {
                     ort: `Eiche (${e.position.x}, ${e.position.z}), Nachbar ${o.sp} (${o.x.toFixed(1)}, ${o.z.toFixed(1)})`,
@@ -853,7 +875,11 @@ hauptLauf(async () => {
                 (F.frisch !== F.V ? " — _forestStehtFrei zählt den Wurf im Grundriss" : "") +
                 (F.gemerkt !== F.frisch ? " — _foundryGestaltFor merkt vor dem Grundriss" : "")
     );
-    check("SELBSTTEST 5 (ein Haus ohne Grundriss macht F rot)", F.selbst === true, F.probe ? "" : "keine Probe");
+    check(
+        "SELBSTTEST 5 (ein Haus ohne Grundriss macht F rot)",
+        F.selbst === true,
+        !F.probe ? "keine Probe" : F.wurf ? `der Akt bricht beim Namen (${F.wurf.slice(0, 90)})` : "_werkAkt fiel still (kein Wurf beim Namen)"
+    );
     // H: nicht vakuös — die Kachel trägt Rand-Bäume MIT Nachbarn (den Trauf, nicht nur den Solitär) und Bäume im Innern
     const H = out.H || { taeter: ["nicht gelaufen"] };
     const hZeile = (h) =>

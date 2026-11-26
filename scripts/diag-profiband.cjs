@@ -1563,11 +1563,14 @@ function selbsttest() {
     );
     // DER WALD AM WATT (25.11.): die zweite Wahl der Küste stand im Erlen-Wald — das Bild zeigte Laub statt Meer; der Beleg zählt
     // die Kronen der Ego-Sicht (`belegSicht`, die Messung der Wiese), ein Beleg ohne Sicht ist ungemessen
+    // Seit der Gezeit (planet.wasser.gezeiten) steht der Wald über dem höchsten Hochwasser (`_landSpiegelAt`): am Ort der zweiten
+    // Wahl (859,3/10 430,3, 2,45 m unter dem Mittel, im Watt) wächst keine Krone mehr (imBlick 6 → 0) — die Bühne rückt 400 m
+    // landeinwärts an den Saum des Walds über dem Watt (7 Kronen in der Ego-Sicht, derselbe Blick zum Meer)
     const imWald = (o) => {
-        // BÜHNE: die zweite Wahl der Küste, in der Welt ein Erlen-Wald vor dem Auge
-        o.spieler = [859.3, 10430.3];
-        o.blick = [1141, 10480];
-        Object.assign(o.beleg, { hoehe: -2.45, spiegel: -3, abstand: 35 });
+        // BÜHNE: ein Erlen-Wald vor dem Auge am Watt (dieselbe Blick-Richtung wie die zweite Wahl der Küste)
+        o.spieler = [459.3, 10455.3];
+        o.blick = [741, 10505];
+        Object.assign(o.beleg, { hoehe: -0.17, spiegel: -3, abstand: 202 });
     };
     const ohneSicht = WO.belegUrteil(WO.belegMessen(_wasserWirt, kq.spieler[0], kq.spieler[1], kq.blick), kq.beleg, false);
     t(

@@ -882,6 +882,10 @@ class AnazhRealm_gelaende_boden {
             get pegel() {
                 return realm._pegelGilt();
             },
+            // die Gezeit des Meers (planet.wasser.gezeiten, `_gezeitGilt`: { stunde, k } zur Welt-Uhr) — der Spiegel des Kerns liest sie
+            get gezeit() {
+                return realm._gezeitGilt();
+            },
         };
         return this._gelaendeLage;
     }
@@ -2691,6 +2695,8 @@ class AnazhRealm_gelaende_boden {
         const aboveFluss = uf.fluss !== null ? y - uf.fluss : null;
         let schlick = ss(-0.5, -4, aboveWater);
         if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
+        // Das Watt (die Gezeit, gelaende-core `wattSchlick`): wo das Meer den Grund mehr als ein Achtel der Zeit deckt, liegt Schlick
+        if (uf.watt) schlick = Math.max(schlick, globalThis.__gelaendeCore.wattSchlick(aboveWater));
         // Strand: Glocken-Profil über dem Wasser (`_waterLevelAt` O(1) für Ozean; See-Vertices bekommen den
         // See-Spiegel). Drei Noise-Modulationen statt einer Schwelle: (a) Breite (λ~570 m), (b) Intensität
         // (λ~290 m), (c) karge Fels-Patches ohne Sand. Die Glocke trägt bis 0,6 + 1,9 m — das Fenster schneidet sie nie

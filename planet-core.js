@@ -42,8 +42,8 @@
  *                                     (x Ost, z Süd); winkeltreue Würfel-Abbildung, Krümmung nur im Vertex-Schritt des Zeichners.
  *   planetOrt(scheibe, φ, λ, ortGesetz, aus?, heimat?) → { anker, wildnis (LANDFORM_REGLER, geklemmt), meer.waterLevelM, klima (TEMPERATUR-Felder
  *                                     + spendeMm), wetter (Rahmen für wetterAt), biom, wuchs (die Pflanzen-Deckung des Klimas:
- *                                     Krautschicht und Wald, dieselbe Rechnung wie die Farbe des Atlas), leit (9×9 Stützen über
- *                                     64 km), vulkan, rand, stauchung s_v, delta }.
+ *                                     Krautschicht und Wald, dieselbe Rechnung wie die Farbe des Atlas), eis, vulkan, rand,
+ *                                     stauchung s_v, delta }. Der Ort kostet, was er fragt: 1 Relief-Punkt + das Klima (kein Feld ohne Leser).
  *   ortGesetz ist die EINE Tafel des Gelände-Kerns (gelaende-core `ortGesetz()`: kuehlungKJeM, meerUnterBasisM, regler,
  *   klimaHeute samt spendeMm im Jahr der Tafel) — kein Aufrufer baut sie nach. s_v = 0,0065 / kuehlungKJeM wird daraus GELESEN,
  *   nie kopiert.
@@ -2669,8 +2669,13 @@
   const ANKER_PROBEN = [512, 2048, 8192, 32768];
   function planetAnker(plan, zeitMa, og) {
     pruefOrtGesetz(og); pruefJahr(plan.koerper, og);
+    return ankerAmSchluessel(plan, zeitMa, og, ortGesetzSchluessel(og));
+  }
+  // der Anker zum Schlüssel des Ort-Gesetzes, den der Aufrufer EINMAL baute (planetOrt: ein Schlüssel je Ort, nicht zwei — 2 378 Zeichen,
+  // 14 µs je Bau; gemessen 29 von 76 µs je Ort der Gipfel-Suche, Karte 2 planet.kopplung.gegenwart#2)
+  function ankerAmSchluessel(plan, zeitMa, og, schluessel) {
     const M = memoVon(plan); if (!M.anker) M.anker = new Map();
-    const kh = og.klimaHeute, key = zeitMa + '|' + ortGesetzSchluessel(og);
+    const kh = og.klimaHeute, key = zeitMa + '|' + schluessel;
     if (M.anker.has(key)) return M.anker.get(key);
     const S = planetScheibe(plan, zeitMa), R = S.R, G = planetKlimaGlobal(plan, zeitMa);
     const tMitte = 0.5 * (kh.sommer + kh.winter);
@@ -2739,7 +2744,7 @@
     return o;
   }
   // Die Brücke: was gelaende-core für seine Großform liest, am Ort (breite, laenge) zur Zeit der Scheibe.
-  const _orP = {}, _orK = {}, _orB = {}, _orL = {}, _orV = new Float64Array(3), _orKV = {};
+  const _orP = {}, _orK = {}, _orB = {};
   // R2 der Ort als Differenz zur Heimat: delta = Ort − Anker (t = 0, dieselbe Funktion am Anker gerechnet), die Spende als Verhältnis;
   // am Anker ist jedes Feld +0 (x − x) und das Verhältnis 1 — die Heimat bleibt byte-gleich ohne Bedingung. Kein Aufrufer rechnet Δ nach.
   // Die Jahres-Phase reist als Δ wie jede Größe (Reise K): 0, wo der Sommer des Orts in der Phase der Heimat liegt, sonst 0,5 — ein
@@ -2763,12 +2768,13 @@
     return 0;
   }
   function ortKopie(o) { return { wildnis: Object.assign({}, o.wildnis), meer: Object.assign({}, o.meer), klima: Object.assign({}, o.klima), wetter: Object.assign({}, o.wetter),
-    wuchs: Object.assign({}, o.wuchs), eis: Object.assign({}, o.eis), leit: { huelleM: Float64Array.from(o.leit.huelleM), landC: Float64Array.from(o.leit.landC) } }; }
-  function ortAnkerRoh(plan, og) {
+    wuchs: Object.assign({}, o.wuchs), eis: Object.assign({}, o.eis) }; }
+  // der Anker der Heimat und sein roher Ort, EIN Memo je Schlüssel: { anker, roh }
+  function ortAnkerRoh(plan, og, schluessel) {
     const M = memoVon(plan); if (!M.ortAnker) M.ortAnker = new Map();
-    const key = ortGesetzSchluessel(og);
-    let a = M.ortAnker.get(key); if (a) return a;
-    const A = planetAnker(plan, 0, og); a = ortKopie(ortRoh(planetScheibe(plan, 0), A.breite, A.laenge, og, {})); M.ortAnker.set(key, a); return a;
+    let a = M.ortAnker.get(schluessel); if (a) return a;
+    const A = ankerAmSchluessel(plan, 0, og, schluessel);
+    a = { anker: A, roh: ortKopie(ortRoh(planetScheibe(plan, 0), A.breite, A.laenge, og, {}, plan, A)) }; M.ortAnker.set(schluessel, a); return a;
   }
   // DIE HEIMAT EINES ANDEREN KÖRPERS (Karte 2 planet.kopplung.bahn-klima#2): `heimat` (optional) ist der Plan, dessen Anker die Welt
   // trägt — derselbe Samen (dieselbe Geografie), ein anderer Körper (Neigung, Tag). Das Δ misst den Ort des Körpers gegen den Anker
@@ -2782,8 +2788,8 @@
   function planetOrt(S, breite, laenge, og, aus, heimat) {
     pruefScheibe(S); pruefOrtGesetz(og); pruefJahr(S.plan.koerper, og);
     const hp = heimatPlan(S.plan, heimat, og);
-    const a = ortAnkerRoh(hp, og), o = ortRoh(S, breite, laenge, og, aus || {}, hp);
-    const d = (o.delta && o.delta.leit) ? o.delta : { wildnis: {}, meer: {}, klima: {}, wetter: {}, wuchs: {}, leit: { huelleM: new Float64Array(81), landC: new Float64Array(81) } };
+    const H = ortAnkerRoh(hp, og, ortGesetzSchluessel(og)), a = H.roh, o = ortRoh(S, breite, laenge, og, aus || {}, hp, H.anker);
+    const d = (o.delta && o.delta.wildnis) ? o.delta : { wildnis: {}, meer: {}, klima: {}, wetter: {}, wuchs: {} };
     if (!d.wuchs) d.wuchs = {};
     for (const id in o.wildnis) d.wildnis[id] = o.wildnis[id] - a.wildnis[id];
     d.meer.waterLevelM = o.meer.waterLevelM - a.meer.waterLevelM;
@@ -2803,13 +2809,13 @@
     d.klima.spendeVerh = a.klima.spendeMm !== 0 ? o.klima.spendeMm / a.klima.spendeMm : (o.klima.spendeMm === 0 ? 1 : Infinity);
     for (const f of ORT_DELTA_WETTER) d.wetter[f] = o.wetter[f] - a.wetter[f];
     for (const f of ORT_WUCHS) d.wuchs[f] = a.wuchs[f] > 0 ? o.wuchs[f] / a.wuchs[f] : 1;
-    for (let k = 0; k < 81; k++) { d.leit.huelleM[k] = o.leit.huelleM[k] - a.leit.huelleM[k]; d.leit.landC[k] = o.leit.landC[k] - a.leit.landC[k]; }
     d.eis = { zeit: o.eis.zeit - a.eis.zeit };
     o.delta = d; return o;
   }
-  function ortRoh(S, breite, laenge, og, aus, heimat) {
-    const plan = S.plan, kp = plan.koerper, kh = og.klimaHeute, R = S.R, hp = heimat || plan;
-    const anker = planetAnker(hp, 0, og), S0 = planetScheibe(hp, 0);
+  // ortRoh liest den Anker der Heimat `hp`, den sein Aufrufer am Schlüssel des Ort-Gesetzes fand (planetOrt, ortAnkerRoh)
+  function ortRoh(S, breite, laenge, og, aus, hp, anker) {
+    const plan = S.plan, kp = plan.koerper, kh = og.klimaHeute, R = S.R;
+    const S0 = planetScheibe(hp, 0);
     const sv = 0.0065 / og.kuehlungKJeM;                                   // Stauchung: gelesen aus dem Ort-Gesetz, nie gesetzt
     const o = aus || {};
     planetPunkt(S, breite, laenge, 16, _orP);                    // Band ≥ 32 km (K8): fuss 16 km
@@ -2854,16 +2860,9 @@
     o.eis = { zeit: ortEisZeit(plan, breite, K.tJahrC, S.zeitMa) };   // das Eis des Quartärs liest das Jahresmittel des Orts
     // der Wuchs, den das Klima des Orts trägt — die stetige Form des Bioms, dieselbe Rechnung wie die Farbe des Atlas (`pflanzenDeckung`)
     pflanzenDeckung(K.tJahrC, K.niederschlagMm, _pd); o.wuchs = { decke: _pd.decke, wald: _pd.wald };
-    // Leit-Stützen 9×9 über 64 km in der Würfel-Karte des Ankers: gestauchte Höhen-Differenz zum Anker (t = 0) und Differenz von „land"
-    const hAnk = planetPunktR(S0, anker.auf[0], anker.auf[1], anker.auf[2], 16, _orKV), landAnk = landAus(_orKV.kont);
-    planetRichtung(breite, laenge, _orV); const kv = planetKarteVon(hp, anker, _orV[0], _orV[1], _orV[2], _orL);
-    const huelleM = (o.leit && o.leit.huelleM) || new Float64Array(81), landC = (o.leit && o.leit.landC) || new Float64Array(81);
-    for (let j = 0; j < 9; j++) for (let i = 0; i < 9; i++) {
-      planetFlaeche(hp, anker, kv.flaeche, kv.xiM + (i - 4) * 8000, kv.etaM + (j - 4) * 8000, _orV);
-      const h = planetPunktR(S, _orV[0], _orV[1], _orV[2], 16, _orKV);
-      huelleM[9 * j + i] = sv * (h - hAnk); landC[9 * j + i] = landAus(_orKV.kont) - landAnk;
-    }
-    o.leit = { kanteM: 8000, huelleM, landC, flaeche: kv.flaeche, xiM: kv.xiM, etaM: kv.etaM };
+    // DIE FRAGE BINDET DIE KOSTEN (Karte 2 planet.kopplung.gegenwart#2): hier standen Leit-Stützen 9×9 über 64 km — 81 von 83
+    // planetPunktR je Ort (96 % der Punkt-Zeit), gelesen von keinem Leser (der Faden gibt delta.leit nie zurück, gelaende-core liest
+    // sie nie). Sie fallen ganz; wer die Höhe neben dem Ort braucht, fragt planetPunktR an planetFlaeche selbst.
     o.vulkan = { art: _orP.vulkanArt, abstandKm: _orP.vulkanAbstandKm, alterMa: _orP.vulkanAlterMa,
       foerderKm3Ma: _orP.vulkanAktiv ? (_orP.vulkanArt === VULKAN_ART.hotspot ? 8 : 0.6) : 0 };   // dieselbe Regel wie planetVulkane
     o.rand = { art: _orP.randArt, abstandKm: _orP.randAbstandKm, rateCmA: _orP.randRateCmA };

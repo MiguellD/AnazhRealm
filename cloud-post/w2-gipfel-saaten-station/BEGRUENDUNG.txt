@@ -1,0 +1,38 @@
+# KANDIDAT (Bahn w2-gipfel-saaten, Richter-Sache): planet.kopplung.gegenwart S2 fragt 100 Saaten statt 12
+
+Die Station bleibt unberührt, bis der Richter den Kandidaten nimmt. Soll, Zeuge und Richter-Text ändern sich nicht. Die Änderung
+steht in `k2-zusammenspiel-gegenwart-s2.patch` (gegen `origin/punkte-maschine` b698b2863, `patch -p1` trocken geprüft). Sie ist
+eine Zeile: `S(seite, { saaten: 12, budgetMs: 22000 })` wird `{ saaten: 100, budgetMs: 34000 }`.
+
+**Warum.** Der Zeuge verlangt `saaten ≥ 100` ("nur 12 Saaten (Soll 100)"). Die Station fragt heute höchstens 12. Damit bleibt
+der Zeuge ROT, auch wenn das Gesetz trägt (Gipfel an konvergenter Grenze 99,0 % über 100 Saaten). Die Attrappe "97 % an zwölf
+Saaten" beschreibt genau diesen Stand.
+
+**Warum es jetzt passt (gemessen in node, gleiche Last wie der Faden: `planetOrtAuftrag` je Ort, 23 × 60 Orte je Saat).**
+
+| Kern | je Saat | 100 Saaten | Linse |
+|---|---|---|---|
+| 0ee3ed8c (vor dem Schnitt) | 924 ms | 92,4 s | 84 Relief-Punkte je Ort |
+| dieser Zweig | 193 ms (Plan 16 · Meer 95 · Anker 7 · Orte 75) | 19,3 s | 2 Relief-Punkte je Ort |
+
+- Die Antworten sind bit-gleich: SHA-256 über 100 Saaten × 1 380 Orte = 91edc616f37caa5f…, für den alten und den neuen Kern
+  (`node scripts/diag-planet.cjs --anker`, Zeile `ort.frage.bytes`).
+- Der Rest der Station (S1, S3, S5 an der Heimat) fragt 9 183 Orte. Das dauert in node 0,66 s.
+- Der Speicher wächst um 0,08 MB je Saat. Die 100 Pläne im Faden (`planetPlaene`, ohne Deckel) belegen also etwa 8 MB.
+- Die Frist 34 s liegt unter der Kappe `sek: 40` und lässt 6 s für S1 vor dem Gang (die Frist zählt ab t0), für S3 bis S5
+  danach und für den Start der Seite.
+
+**Ehrlich offen.** Auf einem langsameren Gerät reicht die Frist nicht für 100 Saaten. Die GTX 1050 rechnet in node etwa 2,4-mal
+langsamer: 2 119 statt 924 ms je Saat vor dem Schnitt, Meer 271 statt 95 bis 113 ms. Dort kostet eine Saat etwa 460 ms. In 34 s
+passen damit etwa 73 Saaten, und der Zeuge bleibt ROT mit "nur 73 Saaten".
+
+Der größte Rest ist das Meer, 95 bis 113 ms je Saat in node:
+
+- 5 Hüll-Proben-Sätze zu 1 024 Punkten an 5 Zeiten: 55 ms
+- 4 096 Hüll-Proben an t = 0: 22 ms
+- 5,3 Scheiben, davon 24 ms für die grobe Nachbar-Suche über 4 096 Proben je Scheibe
+- kalte Zellen-Listen: 20 ms
+
+Das ist das Gesetz des Spiegels selbst und kein Feld ohne Leser. Jeder Schnitt dort, der die Proben-Zahl ändert, bewegt jede
+Höhe des Planeten. Ein gröberes Zellen-Gitter (ZN 8 oder 12 statt 16) bleibt zwar byte-gleich, liegt aber im Rauschen
+(202 bis 222 ms je Saat). Messname: `ort.frage.punkte` (die Zeile nennt Meer in ms je Saat).

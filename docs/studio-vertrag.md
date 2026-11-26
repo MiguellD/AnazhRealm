@@ -1101,6 +1101,13 @@ die Krone `spiegelQuer`, am Rand `flussRand` und im Schnitt `schnittSpiegel`, de
 Kern-Probe (`gate:worker-dichte --kern`) mutiert sie. Die Felder selbst: der Überlauf `stauUeberlauf`, der Spiegel am Werk
 `stauWerkY` (die Wahl der Werke im Stamm) und die Felder der Werke `stauFelder` — jeder Faden rechnet sie, nie der Haupt-Faden
 (`gate:worker-dichte --faden` zählt sie).
+DIE GEZEIT (karte2.planet.wasser.gezeiten): das Gesetz `GEZEIT` (M2 + S2 aus der Kalender-Stunde, der Spiegel in Stufen) mit
+der Stufe `gezeitStufe`, dem Hub `gezeitHub` und dem Träger `gezeitStand` `{stunde, k}`; nur das Meer hebt sich. Der Spiegel in
+seinen Teilen `spiegelTeile` (`SPIEGEL_TEILE` je Punkt) und ihre EINE Zusammensetzung `spiegelZurStufe` — `atlasSpiegel` ruft
+sie, der Fern-Ring setzt mit ihr je Stufe neu — über `spiegelMitGezeit`, `spiegelMeer`, `spiegelNiedrigst` und
+`gezeitHubStufe`; das Watt `hydroWatt` (je Zelle die Flut-Schwelle) mit seinem Schlick `wattSchlick`; das höchste Hochwasser
+`GEZEIT_HOCH` mit der Lage `lageHochwasser` und dem Spiegel des Lands `landSpiegel` (was gesetzt wird, steht nie auf dem Watt).
+`gate:worker-dichte --gezeit` misst Hub, Periode, Stamm ↔ Faden und den Ring.
 DAS WELT-FELD (Leben C2a2): die vier Stimmen der Saat `weltFeld` an den Strömen `weltFeldRausch` mit den Zahlen `WELT_FELD`
 (Wellenlängen, Domain-Warp) — die Stimme „lebendig“ ist das Substrat der Äsung; Stamm (`worldFieldAt`), jeder Faden und das
 Feld des Gaus lesen sie hier, die Probe `gau` in `gate:kreatur-takt` ändert die Formel EINMAL und sieht Stamm und Faden gleich gehen.

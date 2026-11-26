@@ -1,0 +1,1 @@
+Gezeit M2+S2 im Gelände-Kern: Hub am Watt 0 → 3,50 m, Periode 12,363 h (−0,47 %), Stamm ↔ Faden maxDiff 0, Watt nass 11 ↔ 11 → 4 ↔ 10 von 11; der Fern-Ring zeichnet die Stufe statt der Stunde seines Baus (0 von 9 408 neben dem Gesetz), längster Takt 31 → 9 ms

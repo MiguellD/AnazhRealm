@@ -22,7 +22,7 @@
 //       der Wald liest den Bezug nie als Wasser, kein Bau weckt den Automaten am Setz-Punkt, der Stempel läuft nie den ganzen
 //       Bestand, keine Wurzel sagt still ab, `natur_weicht` ist fort (die gefallenen Namen trägt gate:altlasten).
 //   K — DER KONSUM AM RUF: am Ort des Spielers ruft jeder Leser sein Gesetz — `_feuchteAt` den Bezug, der Wald
-//       `_atlasWaterLevelAt`, der Zell-Stempel `_blockerNahe`, Tempel und Bauplan `_werkOrtSuchen`, der Baum
+//       `_landSpiegelAt` (der Spiegel des Lands: `atlasSpiegel` zum höchsten Hochwasser, wie `_landAt`), der Zell-Stempel `_blockerNahe`, Tempel und Bauplan `_werkOrtSuchen`, der Baum
 //       `_setzErgebnis`, der losgelassene Wagen `_fahrTiefe`.
 //   F — DER WAGEN IM WASSER: der GT fährt im echten Sim-Schritt mit Vollgas aus 26 m Anlauf in 0,5–0,75 m Wasser (eine
 //       Furt um den Schau-Ort, gesucht). Soll: 1 s nach dem Eintauchen
@@ -1662,7 +1662,7 @@ async function probe(A) {
                             cz = Math.floor(Z / C) + j;
                         // die geborenen Darts der Zelle (w4-b-pflanzen: der Bestand urteilt über sie, sein Gedächtnis
                         // merkt sie) — gefragt ohne Gedächtnis, wie der Plan des Walds sie wirft
-                        wald = ruft(r, "_forestGeborene", "_atlasWaterLevelAt", [cx, cz, r._forestSeedInt(), true]) || wald;
+                        wald = ruft(r, "_forestGeborene", "_landSpiegelAt", [cx, cz, r._forestSeedInt(), true]) || wald;
                     }
                 const cfg = r._voxelChunkConfig(0);
                 const zellen = new Uint8Array(cfg.dim * cfg.dim * cfg.dimY);
@@ -1671,7 +1671,7 @@ async function probe(A) {
                 const oy = (st.terrainBaseHeight || 0) - cfg.floorDrop;
                 const K = {
                     "_feuchteAt → _waterLevelAt": ruft(r, "_feuchteAt", "_waterLevelAt", [X, Z, Y]),
-                    "_forestGeborene → _atlasWaterLevelAt": wald,
+                    "_forestGeborene → _landSpiegelAt": wald,
                     "_stampArchitectureSolidCellsInto → _blockerNahe": ruft(
                         r,
                         "_stampArchitectureSolidCellsInto",
