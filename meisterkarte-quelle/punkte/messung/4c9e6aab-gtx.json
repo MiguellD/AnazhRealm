@@ -1,7 +1,7 @@
 {
  "sha": "4c9e6aab7a4d24859cee6b9173b6f26cd4611bdf",
  "geraet": "gtx",
- "zeit": "2026-11-26T04:41:29.766Z",
+ "zeit": "2026-11-26T04:45:55.148Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.menge.rhythmus#2": {
@@ -980,6 +980,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.nahrung.tier#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: Umfang nicht erzeugbar: Bewohner, die jagen und fischen (8 Saaten): 0 Jäger je Saat, 0 Jagden je Tag; die Taten des Tags schlaf/morgen/arbeit/mittag/abend — koerper-core.js:5300 TAGES_GESETZ trägt keine Rolle, die jagt oder fischt · Fächer 192/192 Adressen (8 Saaten × 24 Zeiten) in 36172 ms · Leser stamm/siedlung-bewohner. (gemessen 0, Soll 1 jagende oder fischende Bewohner (je Saat, 8 Saaten)) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.11,
+   "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: Bewohner, die jagen und fischen (8 Saaten): 0 Jäger je Saat, 0 Jagden je Tag; die Taten des Tags schlaf/morgen/arbeit/mittag/abend — koerper-core.js:5300 TAGES_GESETZ trägt keine Rolle, die jagt oder fischt · Fächer 192/192 Adressen (8 Saaten × 24 Zeiten) in 36172 ms · Leser stamm/siedlung-bewohner. (gemessen 0, Soll 1 jagende oder fischende Bewohner (je Saat, 8 Saaten)) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k906b1f10aa3e",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k05a87765fff2",
+   "s": 66.5,
+   "fremd": {
+    "s": 69,
+    "takte": 32,
+    "fremdS": 18.56,
+    "kerne": 0.269,
+    "fensterKerne": 0.385,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.61
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.22
+     ]
+    ],
+    "dienerS": 12.14,
+    "diener": [
+     [
+      "System",
+      5.08
+     ],
+     [
+      "dwm.exe",
+      3.69
+     ]
+    ],
+    "geraetS": 21.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.28
+     ],
+     [
+      "svchost.exe",
+      6.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.34
+     ]
+    ],
+    "eigenS": 120.81,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T04:45:55.148Z",
+   "abdruck": "d671153922bf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -998,7 +1068,8 @@
   "kf6f6a86cf1af": "fVVdb6MwEPwvebwcNR+mGEt92DSRmtNVoj9hDWugIRDZJFQ53X8/kZQ0QHX7wsusZ3Zmbf4sDpjuMKeHd9vUC7n4sfi5sHgix5I5kXl4twu5iFPPp0DCtRgAPPew1JSH1rKqVAxVjcWenKNpqawe0kubfkQ3VJJ1G8gTxjQ7s3UHt9rA09P0mEpR1jgtahoOcSkIBckp8GhzVOTgUV+IP8Ehj+nRk+xSYg2va3arDwGQdKxLxAsALFdzdoV1Np6APF9xlNBtAeBtis9KpNapytoO/F4WxdqVN87uddZjsHPOSEVFZiARnsfVIHrVW9PbNWnU1dHaEZkIstAXkrF4is3JlmnROgfTKKo/4Sr2Iw/lqpvNnR+Ojr5XhEqhUFPPC6Q6JzPS4Aap7g3/ENNDd7gng06NxSc0doPIV1/eMMZe5lqqi/ALxSCc85iEP2rsw2Wn3mDYwl3xpA+aiQE1rBuH/66dTYvS7Md2aU6+G8jfc4m2wIyMs2tse0MHFHFXXW/Ids0u30Sspp1fww0ZIqK4WxgmGLzMvLSNbjs05OSH47A0nMIolADbGbjF/X7IPCA3c6dB2rZf9HsZUchDjpKx5fXCzIe+XgvnTGU1NGnNeRzK51U+BZ8M7h1UuSm1HtJXYarj75a1o6p1VNO0g5VeFAVBb0l9H3hyifI+7XX+xttq1W1gVFuYyrkwNKa93VI/irxU6nwtGBN6ii5N63SYFgPc14qwlz7L5UymopxGVmrPQz+TrNNX3ef+2Yk+nwO9HC3xeX5iSb3JtT3aIegUuQrlN7F0ZHYK693w9oVZ6MfyFwCsXiEZebJ5P2i+ZrP6cAE263z5dvVw1QEsE7HtSQ6UsoNpdNm/iqzAoy2war9+E3//AQ==",
   "k684f1337f2d2": "rVXbjqM4EP2XPE6GNtfGIM1DpcmoszstpT+hDGWgQyAyEI+y2n8fkcSdAFlpVhq/wMMp16lTp8r/LA6Y7jCnp4+2qRfx4svi66LFI1ktqSOpp492ES+i1HHJi+FyGAC8DLBUlYeuZVmJubVThF2vrIoE1U/pOYxHzygwZn/6aA4AKzDnDTbwvoZv/0Wpw113ZSQpCtCOVzmAhm/3EVUpGIoaiz1ZveqorEzIM9qBiJleQ75lTLITS/Rnblg/uKYSlDVWh5LMJTZ5Aad4CuzbHAVZ2Mtz4is48CN6dq6y8QTeklvpPznAVjO95a8AsFzNswuss3EF5LjCxxj05gXgfYrPSqTOqsq6NfmdLIykfWubfpvFKNTWCamoSJkk3HF8YUifmzPINQmUVd+2o2TcywKXx4xFU2xObZkWnXVQzc1SInJDB+OVntWdH3pL3jNCIZCLqeYFUp2TGnGwvVQOgv/k00t3uCeFVo3FFRrZXuiKkaVf51yM8/ZUt2nx2dZMov//p0HPWV2vHylDQSqRYvjds7r73/x2FAAkAKCnlKpzq86iGkK+HxF3J/XyhB2HmsYp/e1gbcYNygyYf4d5MGhtWpRqP5ZB+uTaXvxj3pS2wIyUtWva7hPtUejb4iLaJmHn75avppG34oxrEZHfjQjjDF5nfWob2WlUZOWH3nTJpyAMYoDNDNzhfm9c7pGd2Q97qWH9ILLORvTCwA/8YfEuL6tjLsZlQVgnKisTJKXvR0H8svKn4KPCvYUiV6WUZg5EkMro0dhqqjpLNI1ZuZ4Thp43SFXfG2Grp8ZL8ne/q1Z6PS74b3g95rOaz1ka1X3uLDcMnTSWOuGMcTlFl6qzNKaFgbtSEA70Zz07kaoop5Gc0nHQzWKm5YX7aVjC4XU65XJk8NP8xpIGoeu2b40JUvRFED9ojSa1E1jvzMoIssCN4r+GcX2D7UiX9cdB+gmbneGF+J7ky/eLjisNsNzyzZDkQCk7qEaWwxvBCuzbAqtu9PJfID1J0VNR0+Ctrmxqqm+of38B",
   "k49717165c865": "bVXbbqMwEP2XPLZLh4spYKkPTtNVI22k9BPGMAYaAsgmocpq/30FCSmXzguSdcbn+Jyx+buKK03m6Yhlrsg0T5+mKld89bD6taoxPmBK4yWDZ7IM6TPpp0+z4qsodlzyuLgWCCFeO1is87oxkOSYWrKqGss03U5x3/MwQhS5BJQlZkeyTrqhvLiB1DPavuTQ7kS6B1BwgU378jJvLSQlldWgoqHRJs8Pic+BJ5OiJAtPqie7gX0W0bPDoa9wI3YbuFcbC7Fvod2H77PNJJbJVC05rmR4s+FjrjLJkRqryEsz8DpJECmbf3PtFj0aW+uClBWkB5LQcZgcxK47qs6aWaMqTsZMyEIv8d2QA0RzbEomj7PGqnUlqbzBZeQGDvL10u20PllqrAilxFDOvc6QypT0RIPtxaoz+iucb3rAI2m0Ssxu0Mj2Ald+ewMA70stRS+8pxiEMxZR6E4au1Dh3BkstmJUbA8AXxAOqE17Wx9h3sSC1MRZro9TuxQj1/b4n6VEk2FC2jpUprmjPQqYLa+Dst1A/92H63nn9+GGDBExHA0MhCDeF16aSjUtarLS+jQMDSM/8LkQ2wW4weNxyNwjO7HnQZqmG/SxjMBnPkMO8Hi9KMtDX6+FdaG8GJqUYizy+euazcFnjUcLZapzpYb0pR+r6Kdhbalo+sdksNIJAs/jcIFyHPi+Fa9ikvYm/WC736J9E7Oa294zVLq531I3CJyYq3QTAoRqjs51Y7UYZwPcVZIw4tDG83NeSBeU0sRK5TjoJrx/Zu5Kh/nbPE6G+LJI+pJTZ3JpTmYIOkYmff5DLC3pg8TyMLx5fuK7UT+C653Yj/xIhfisVTu3SQi2tkUsRPo4Xd52JDXFUOtK5d2rCBmeTIbF6D/y7z8=",
-  "k4e793ee896d7": "fVVNb6MwEP0vOW6Xmg9TwFIPTmjVVFuJHPc4hjHQEIhsEqqs9r+vIHESoNq55PJm5vHeG+fPYg/pFnJ8/NRNvWCLH4ufCw1HtDSqI6rHT71giyh1XPQYPxfhnK96WKrKfatJVQoCooZih9ZBtVhWj+nQJp/A9gUj3QvPE0IkOZG449d64c/P0zGVwKyxWpBohtjo+SGyKfCgcxBowUEOiy9gn0b45DAyVBjzj5hcq0s5TzrSJeEbT+j7ZKCAOhuzR8cVFBjv1ivON1OmWQnYWlVZa7PbyYJI2uy272PWo6CzToBFhcosCR2HCkN42cvSSzVplNVB69Gy0Mt8N2SERFNsjrpMi9baq0ZgfYGLyA0cYMtupni+P1jynhEIAaGY6l0A1jmqEQfbS2Uv9lc4HbqFHSqwaigu0Mj2AlfctCGEvM25VAPxYYUhTmmEoTtq7I0lx15gvuZ3RRNCyBcJDcpEjfL/Rk6nRal2Y7kkRdf22K85RV1AhsraNrq9oj0MqC3O17GOyfCbhMtp5+3jjIcAEN4FhoSEv8201I1sO1Bo5fuDCQ1FP/AZ5+sZuIXdznjuoZ3ZUyN12wf9nkbgU58CI+ThfCzzjz6fhXXCsjJNUlIa+Wy1pFPwUcHOApGrUkrjvvBTGX0X1g6r1hJN0xopnSDwvF6S+t7wZLDy3u0439CPV56/8FGt402Sz/gPWxrVXi/VDQInZTKPQ0JCOUWXqrU6SAsDd6VAiBjp0ungE6oKcxzJKR0H3IwNz82Vrclg/DAK8mnm9qnEXuhaH7QxOwUqfPaNNR2qrYB6a94+P/PdiL1zzpcfPBkLs8oljcmsvkLOX3n3sDmjfl/OY48p2atGlv2rSAo46AKq9vYX8fcf"
+  "k4e793ee896d7": "fVVNb6MwEP0vOW6Xmg9TwFIPTmjVVFuJHPc4hjHQEIhsEqqs9r+vIHESoNq55PJm5vHeG+fPYg/pFnJ8/NRNvWCLH4ufCw1HtDSqI6rHT71giyh1XPQYPxfhnK96WKrKfatJVQoCooZih9ZBtVhWj+nQJp/A9gUj3QvPE0IkOZG449d64c/P0zGVwKyxWpBohtjo+SGyKfCgcxBowUEOiy9gn0b45DAyVBjzj5hcq0s5TzrSJeEbT+j7ZKCAOhuzR8cVFBjv1ivON1OmWQnYWlVZa7PbyYJI2uy272PWo6CzToBFhcosCR2HCkN42cvSSzVplNVB69Gy0Mt8N2SERFNsjrpMi9baq0ZgfYGLyA0cYMtupni+P1jynhEIAaGY6l0A1jmqEQfbS2Uv9lc4HbqFHSqwaigu0Mj2AlfctCGEvM25VAPxYYUhTmmEoTtq7I0lx15gvuZ3RRNCyBcJDcpEjfL/Rk6nRal2Y7kkRdf22K85RV1AhsraNrq9oj0MqC3O17GOyfCbhMtp5+3jjIcAEN4FhoSEv8201I1sO1Bo5fuDCQ1FP/AZ5+sZuIXdznjuoZ3ZUyN12wf9nkbgU58CI+ThfCzzjz6fhXXCsjJNUlIa+Wy1pFPwUcHOApGrUkrjvvBTGX0X1g6r1hJN0xopnSDwvF6S+t7wZLDy3u0439CPV56/8FGt402Sz/gPWxrVXi/VDQInZTKPQ0JCOUWXqrU6SAsDd6VAiBjp0ungE6oKcxzJKR0H3IwNz82Vrclg/DAK8mnm9qnEXuhaH7QxOwUqfPaNNR2qrYB6a94+P/PdiL1zzpcfPBkLs8oljcmsvkLOX3n3sDmjfl/OY48p2atGlv2rSAo46AKq9vYX8fcf",
+  "k906b1f10aa3e": "fVVdb6MwEPwvebwcNR/mMJb64DQ9NdVVSl7vbQ1roCEQ2RCqnO6/nyBxGqC6fZ7dGWbWy5/FEZI9ZPjwbupqwRffFt8XBk7oGNQn1A/vZsEXceL5GHCxE31thRBPPSzRxbExpCwkAVlBfkCn1Q0W5UMytKkf4IaSk+5ZZFtCFDmTdSdu9SweH6djSolp7TSg0A5xMQgZ8imwNRlIdKBVA/EVHNIYf3icDMXW4m1NbvXBhNh2pNuyF7Glr5OBEqp0rB49X1LgotsIIXZTpWkB2DhlURnL7aVRrFx+4+veZj0aOucMmJeoLQnzPCqt4FVvS2/VpFGVrTEjMhakoc84IfEUm6EpkrxxjrqWWF3hMvYjD/iqmzmeHVtH3SsCKYHJqd85YJWhHmlwg0T1Zn+w6dA9HFCDU0F+hcZuEPny0xtCyMtcSzkIHyiscEpjZP6osQ+WnHqDxUbcFd32IRNmUXbVqPjvypkkL/RhbJei6LsB/zWXaHJIUTv72jQ3dIARdSUfCDZrcnkjbDXt/Pw4myEAsLuFIYyIl5mXplZNBxqd7NjapaEYRiEXYjMDN3A42MwDdFN3GqRp+kW/lxGFNKTACVleHsv8oy/PwjljUdompSiNw+nwk4aDAzLThVI2eRkmKv5qUTssG0fWdWNt9KIoCHo7qvuwt0OM90mvsx1tylX3LEa1WYmvGGrd3F6oH0VewlW2ZoQwNUUXunE6SHIL95VE6KXPMjmjLjHDkY3K88BPOenURfe5PzfR9RSo5WiBz/OJBfYGV6Y1NuQEqAz5F5F0qPcSqr29eWEa+jF/FUKs3objfLfvT5mia0LG9IR8uEL8FNlyd/HwdyfEcnsRdcSEHHWtiv4ikhxak0PZfP4e/v4D"
  },
  "sitzung": {
   "start": "2026-11-26T01:49:19.255Z",
