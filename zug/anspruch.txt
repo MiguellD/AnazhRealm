@@ -123,3 +123,5 @@ w28-jaeger-stand
 w28-kultur-aus-klima-6 karte2.mensch.kopplung.kultur#2
 # 790 (main 45bad33f, 26.11. 20:45): z790 kosmos-hadley (Landung 61e2a27f, 26.11. 20:05): die Bahn der Welt trägt die Juni-Insolation 65° N — bahn-klima#3 am main 45bad33f an der Radeon GRÜN (Hand-Lauf 21:4x, rLaskar 0,978, Preis p95 25,2 ms; Station gesetzt c1d6ac4b); klimageschichte#2 und #3 fahren mit, sobald ihre Station gesetzt ist (Werkzeug-Bruch in der Probe)
 w28-kosmos-hadley karte2.planet.kopplung.bahn-klima#3
+# 792 (main c072c864, 26.11. 22:53): wind-boee-haus: die Böe zieht mit dem Wind am Auge, das Haus wirft Windschatten (Vor-Richter Radeon: kraft#2 GRÜN 11,706 %, stadtklima#1 mit Kandidat 1185669c GRÜN)
+w28-wind-boee-haus karte2.leben.pflanzen.kraft#2,karte2.planet.kopplung.stadtklima#1
