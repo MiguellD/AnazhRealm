@@ -1,0 +1,152 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.425",
+  "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.0402,
+  "taeter": {
+   "Laub grown_busch_hazel_v0": 0.0302,
+   "Rinde baum_tanne": 0.01
+  },
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.3437,
+   "taeter": {
+    "Laub baum_eiche": 0.1163,
+    "Laub grown_busch_hazel_v0": 0.0952,
+    "Rinde baum_totholz": 0.0679,
+    "Rinde baum_tanne": 0.0625
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [
+   "baum_kiefer 2454"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -189.064,
+   100.741,
+   -56.552
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 68.3,
+  "sigma": 39.9,
+  "schwarz": 0.0021,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 4.0 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub grown_busch_hazel_v0 3.0 %, Rinde baum_tanne 1.0 % · Vordergrund 34.4 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_eiche 11.6 %, Laub grown_busch_hazel_v0 9.5 %, Rinde baum_totholz 6.8 % · kein nahWiese im Bild: 3.3 % < 15.0 %] · beweis · Sicht 4.0 % (Laub grown_busch_hazel_v0 3.0 %, Rinde baum_tanne 1.0 %) · Ziel Blickziel im Bild frei 20 m · Luma 68.3 σ 39.9 schwarz 0.2 % weiß 0.0 % · Stand 18.546.425 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt nahWiese 3.3 % (≥ 15.0 %) h 112° Luma 111",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 4.0 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub grown_busch_hazel_v0 3.0 %, Rinde baum_tanne 1.0 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 34.4 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_eiche 11.6 %, Laub grown_busch_hazel_v0 9.5 %, Rinde baum_totholz 6.8 %"
+  }
+ ],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "imBild.nahWiese",
+    "grund": "kein nahWiese im Bild: 3.3 % < 15.0 %"
+   }
+  ],
+  "zeile": "Inhalt nahWiese 3.3 % (≥ 15.0 %) h 112° Luma 111"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^nahWiese([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1701,
+   "wechsel": 1127910
+  },
+  "rinde": null,
+  "toene": [
+   "nahWiese:L1=255/80/80",
+   "nahWiese:L2=80/255/80",
+   "nahWiese:Lf=80/120/255"
+  ],
+  "klassen": {
+   "nahWiese:L1": {
+    "objekte": 2,
+    "pixel": 19331,
+    "farbe": [
+     0.03318,
+     0.05003,
+     0.00606
+    ]
+   },
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 48714,
+    "farbe": [
+     0.19753,
+     0.23134,
+     0.04547
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\2da17e2e-gtx\\auge-evolution-mikroben-s1-rot.maske.png"
+ }
+}
