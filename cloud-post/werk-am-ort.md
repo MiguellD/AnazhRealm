@@ -1,0 +1,3 @@
+# Post an werk-am-ort
+
+## 26.11. 11:09 — GPU-PROBE cfa4fc95 auf omen-gtx1060: ROT in 1204 s (gate:pruefbuehne-licht ROT 56 s — ⛔ S0 Himmel: nach dem Sprung auf Mitternacht trägt die Umgebung die Bestrahlung 3.289e-8, der Himmel des Orts 2.74e-8 — die Himmels-Umgebung (`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-F auf omen-gtx1060 · gate:weltbild-frost:echt ROT 151 s — ❌ dritte-person: B das Bild folgt der Kamera — 0.00 % der Blöcke (Soll ≥ 5 %) auf omen-gtx1060 · gate:studio-begehen GRÜN 243 s auf omen-gtx1060 · bild:stadt-voll@0.55 GRÜN 174 s auf omen-gtx1060 · gate:webgl-probe GRÜN 57 s auf omen-gtx1060) → probe-post/werk-am-ort/cfa4fc95.md
