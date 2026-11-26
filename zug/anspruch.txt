@@ -103,3 +103,5 @@ w28-tages-gesetz-5 karte2.mensch.menge.rhythmus#2
 w28-buendel-jagd karte2.planet.wasser.gezeiten#1
 # 736 (main 64fcf12e, 26.11. 06:21): z747 w28-absicht-zug-4 (die Absicht des Bewohners trägt den Zug: der Leser der Absicht im Gang und im Bild)
 w28-absicht-zug-4 karte2.mensch.geist.absicht#1
+# 748 (main c0634d86, 26.11. 07:50): z748 08:35 w28-kosmos-bahn: Mond auf eigener Kepler-Bahn (179,77° → 0,082° gegen die Ephemeride), Jahreszeit folgt der Neigung (45°: 0,712× → 1,944×)
+w28-kosmos-bahn karte2.planet.kosmos.systeme#1,karte2.planet.kopplung.bahn-klima#2
