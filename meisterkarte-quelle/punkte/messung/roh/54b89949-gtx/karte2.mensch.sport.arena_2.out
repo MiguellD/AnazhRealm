@@ -1,0 +1,11 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 10.3 s · am Messort stadt-voll (ego) nach 10.3 s, 333 Takte, Anlauf stand
+@@ 10.3 s · Stadt um 15 Uhr: 1356 Bewohner · Akte {"arbeit":710,"spiel":484,"hilft":19,"schlaf":24,"abend":66,"besuch":53} · Partien 31 · Stichproben 20 · mit Partie 20
+@@ 25.5 s · Spiel an stadt-voll um 18.56 Uhr (Tag 0): 60 Gäste des Treffs, Feld {"L":25,"B":10} · 40 Tage: 20 Läufe (78 Läufer, ρ 0.7485) · 127 Gänge (der Stärkere 0.8425) · 100 Partien (5290 Züge, 0 regelwidrig) · jetzt 20 Zuschauer, 19 mit Blick am Geschehen
+@@ 42.8 s · am Messort genesis (ego) nach 17.3 s, 620 Takte
+@@ 42.8 s · Arena: {"x":236.504319,"z":108.007903,"r":32.26840560052511} · Zuschauer 0 (Blick zur Mitte 0) · Sport-Akte 0
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
