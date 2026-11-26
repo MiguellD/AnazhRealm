@@ -1,6 +1,0 @@
-{
- "ergebnis": {
-  "an": true
- },
- "ms": 4
-}
