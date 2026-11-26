@@ -1,0 +1,81 @@
+BEGRÜNDUNG — karte2.mensch.macht.recht#1 (die Wache antwortet), Leser 2, 26.11.
+
+Kurz: KEIN Kandidat. Die Station misst an stadt-voll nicht, weil das SPIEL bei EINEM Schlag des Spielers die Welt 50–90 s anhält
+(Wolke). Die Wache in Sicht naht nicht, weil eine Laterne auf ihrer Geraden steht. Beide Täter haben Datei:Zeile, die Gegenprobe hat
+eine Zahl, das Soll steht unten.
+
+1. DER RICHTER (wörtlich, vision/meisterkarte-2.json, mensch.macht.recht S1)
+   umfang 20 „Regelbrüche in Sicht der Wache“ · masse „Antwort der Wache“ ≥ 0,8
+   Station: meisterkarte-quelle/punkte/stationen/k2-mensch-macht.js (punkte-maschine ca7a272de2, Blob 8e6dc43ee0 = dc2f3ca9)
+   - Leiter :641 (sek 55);
+   - je Tat EIN /eval :652 mit fester Frist 40 000 ms, der Seiten-Teil TAT :703–768;
+   - dort der Schlag (`damageCreature`, source player) und das Fenster von 4 s Welt-Uhr :739, höchstens 4 × 3 000 ms Wanduhr.
+
+2. DIE ZAHL DER GERÄTE (geraete.cjs, hand.out §0)
+   recht#1, seit 24.11. an jedem Kopf, der die TAT erreichte: 17 von 17 „/eval ohne Antwort binnen 40 s“ (GTX und Radeon, 47,2–53,2 s
+   bis zum Riss), dazu 1 × „Frist der Probe 49 s gerissen“ (bf9be26c).
+   Zuletzt gemessen hat die Leiter am 19./20.11. (f68dbf09 72,9 s, 31ea3847 66 s): 2 Taten, 75 bzw. 83 Zeugen, die Wache 0.
+
+3. WO DIE ZEIT LIEGT (Wolke, Stadt d:7@836,438: 1 356 Bewohner, 1 210 draußen, 6 Wächter mit Waffe; an der Pose 114 Zeugen im Kreis
+   zeugeM 25 m; hand.out §1–§4)
+   EIN Schlag des Spielers (zeuge.js, Uhren je Ruf):           50 355,9 ms
+     _bewohnerZeuge                    1 Ruf               50 355,2 ms
+     _bewohnerWeichen → _bewohnerWeichOrt   106 Rufe       50 309,3 ms (max 3 963 ms für EINEN Zeugen)
+     _bewohnerStrecke                  75 759 Wege         49 851,3 ms  ← 99 %
+     _bewohnerNahen (die Wache)        1 Ruf                    0,4 ms
+     Spawn des Fuchses                                          2,0 ms
+   Die TAT der Station wörtlich (tat.js, dritter Schlag am Ort): 94 092 ms = Schlag 90 025 ms + Fenster 4 060 ms (158 Takte). Der
+   Schlag ist synchron, die Seite antwortet erst danach. Das /eval der Station reißt bei 40 s, und das ist die Zahl der Geräte.
+
+4. DIE TÄTER (origin/main 64fcf12e = eae94514 der Wolke, die Methoden Zeile für Zeile gleich)
+   T1  stamm/siedlung-bewohner.js:2730 (`_bewohnerWeichOrt`, :2718–2737)
+       `fort.sort(…).find(([, q]) => fern(this._bewohnerStrecke(S, { ...p }, q, 0)))`: je Zeuge die Stände ALLER Bewohner der Stadt
+       (1 356 × 7 Stand-Arten), nach Abstand sortiert. Für jeden rechnet er einen vollen Weg, bis einer die Tat nie näher passiert.
+       An der Pose sind das im Mittel 715 Wege je Zeuge.
+       Dazu `{ ...p }`: je Weg ein neuer Ort. Das Gemerkte des Anschlusses (`_bewohnerAnschluss` :4347, WeakMap je Ort-Objekt)
+       verfehlt darum jedes Mal und sortiert alle Knoten des Netzes neu (:4351).
+       Gerufen aus `_bewohnerZeuge` :2577 ← kreatur-leben.js:798, im Schlag selbst und synchron.
+   T2  stamm/siedlung-bewohner.js:2632 (`_bewohnerNahen`, :2626–2642)
+       `… || this._bewohnerWand(p, q)) return false`: die Wache geht nur auf der freien Geraden zur Tat. An der Pose steht die Dorf-Laterne
+       #657 (seed 104) bei 60–70 % ihrer 5,63 m Linie. Die Wache naht darum nicht und weicht auch nicht (`continue` :2590). Das Weichen
+       der Zeugen geht dagegen über den Weg (`_bewohnerStrecke`).
+
+5. DIE GEGENPROBE (hand.out §3–§4; die Mutanten setzen nur eine eigene Eigenschaft der Welt und werden danach entfernt)
+   M1    :2730 `this._bewohnerStrecke(S, p, q, 0)` statt `{ ...p }` (gegen.js, je Zeuge rein, dieselbe `belegt`-Folge):
+         106 von 106 Weich-Orten bit-gleich mit der Basis, 145 332 Wege wie die Basis, 88 780 → 16 793 ms (5,3×).
+         Das ist exakt, aber nicht genug.
+   M1+K24  dazu nur die 24 nächsten Stände, danach die gerade Flucht, die das Gesetz schon trägt (:2731–2735) — die TAT der Station:
+         94 092 → 4 222 ms, Schlag 90 025 → 293 ms · 92 Zeugen · Wache in Sicht 1, Antwort 0 (T2) · Folge ja (nach 1)
+   + T2  `_bewohnerNahen` über den Weg (`!this._bewohnerStrecke(S, {x,z}, q, 0)` statt der Wand der Geraden) — die TAT der Station:
+         4 421 ms, Schlag 351 ms · Wache in Sicht 1, Antwort 1 (7,1 → 2,7 m binnen 4 s Welt-Uhr; ihr Ort 1,5 m vor der Tat, nahM)
+   Damit antwortet die TAT binnen ihrer 40 s, und die Wache naht. Die Station misst dann ohne einen Strich am Stations-Code.
+
+6. DAS SOLL (für den Macher)
+   - Ein Schlag an stadt-voll hält die Welt höchstens ein Bild an: ≤ 33 ms (das Band der Ziellinie, p95 ≤ 33 ms). Heute 50 356 ms.
+     Die Gegenprobe erreicht 293–351 ms. Den Rest (Faktor ≈ 10 bei 114 Zeugen, je Weg ≈ 0,1 ms nach M1) trägt nur eine Wahl, die
+     nicht je Zeuge hunderte Wege rechnet oder die Zeugen über die Takte verteilt. Das ist die Entscheidung des Machers. Prüfen
+     lässt sie sich mit zeuge.js (Uhren je Ruf) und gegen.js (bit-gleich gegen die Basis, wo sie gleich wählen soll).
+   - Die Wache in Sicht naht über den Weg wie jeder Zeuge, der weicht: an der Pose 1 von 1 (heute 0 von 1).
+
+7. WAS AN DER STATION FALSCH IST (benannt; nicht gebaut, weil das Spiel rot ist — kein Kandidat, der ein rotes Spiel grün misst)
+   E1  :652 die TAT ist EIN /eval mit fester Frist 40 s (Schlag + Fenster). Der Riss nennt keinen Schritt: 17 × „/eval ohne Antwort“,
+       nie „im Schlag“. Die Klasse trägt der Auftrag 07:37 (`@@PUNKTE@@ ZEIT <leiter> <schritt> <ms>`), mein nächster Kandidat.
+   E2  :772 umfang 20 „Regelbrüche in Sicht der Wache“, aber :651 macht höchstens 6 Taten (3 gesehen), alle an der Pose (1 Wache in
+       Sicht). n ≤ 3 < 20: S1 wird auch am geheilten Spiel nie GRÜN. Offen, Messname recht#1 S1 Umfang. Grund: messbar erst am
+       geheilten Spiel; 20 Taten × 4 s Welt-Uhr passen nicht in den Deckel 55 s, die Taten müssen an die Posten der Wache verteilt
+       werden.
+
+8. DIE NACHBAR-LEITER DERSELBEN 40-s-KLASSE (nicht beansprucht)
+   mensch.kultur.verstaendigung#1 reißt seit 23.11. ebenso an „/eval ohne Antwort binnen 40 s“ (17 Dateien). Ihre BEGEGNUNG schlägt
+   nicht. Ihr Takt der Leute kostet an der Stadt 4,1 ms × 2 160 ≈ 8,9 s (hand.out §5): NICHT ihre 40 s. Die Ursache ist offen.
+
+9. WAS NUR DAS GERÄT MESSEN KANN
+   Die Sekunden des Schlags an GTX und Radeon. Die Wolke rechnet auf ihrer CPU, swiftshader ohne gezeichnete Welt; das Gerät riss
+   bei 40 s mit Schlag + Fenster ≤ 12 s, also Schlag > 28 s. Dazu das Bild der nahenden Wache.
+
+Werkzeug (aus dem Spiel-Baum, Werkbank mit `--ort stadt-voll`, dann curl /umstellen {ort: stadt-voll, sicht: third}; WERKBANK_PORT):
+  node zeuge.js 842.49 451.79 > z.js && node ev.cjs z.js 360          (EIN Schlag mit Uhren)
+  node gegen.js 842.49 451.79 > g.js && node ev.cjs g.js 460          (Basis ↔ M1 ↔ M2, bit-gleich je Zeuge)
+  node mutante.js an 24 | aus · node nahen.js an | aus                (die Mutanten setzen und entfernen)
+  node lauf.js 1 0 842.4867 451.7928 > t.js && node ev.cjs t.js 360   (die TAT der Station wörtlich, mit Uhren)
+  node geraete.cjs <messung>                                          (die Folge der Geräte)

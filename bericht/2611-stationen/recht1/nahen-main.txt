@@ -1,0 +1,17 @@
+    _bewohnerNahen(S, b, o, stunde) {
+        if (b.amSteuer || b.ankunft || !b.ziel) return false;
+        const p = b.leib.position;
+        const d = Math.hypot(p.x - o.x, p.z - o.z) || 1;
+        const nah = AnazhRealm.LEBENSLAUF.wache.nahM;
+        const q = { x: o.x + ((p.x - o.x) / d) * nah, z: o.z + ((p.z - o.z) / d) * nah, blick: Math.atan2(o.x - p.x, o.z - p.z) }; // prettier-ignore
+        if (!this._landAt(q.x, q.z) || ["haus", "bau"].includes(this._imGrundriss(q.x, q.z, 0.5)) || this._bewohnerWand(p, q)) return false; // prettier-ignore
+        b.weichen = null;
+        const soll = this._bewohnerSoll(b, stunde);
+        if (soll.drinnen) return false;
+        const bis = this._bewohnerWende(b, stunde, stunde + 24);
+        b.weichen = { ort: q, plan: soll.ziel, ab: stunde, dauer: bis === null ? 24 : bis - stunde };
+        this._bewohnerUhrNach(S, b);
+        this._bewohnerZiel(b, stunde, true);
+        this._bewohnerWecken(S, b);
+        return true;
+    }

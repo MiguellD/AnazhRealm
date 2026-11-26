@@ -1,0 +1,58 @@
+# Hand-Lauf recht#1 (Leser 2, 26.11. ~07:00–08:00 UTC) · Wolke, main eae94514 (siedlung-bewohner.js: _bewohnerWeichOrt und _bewohnerNahen Zeile für Zeile = origin/main 64fcf12e), zweite Werkbank :24700 (--ort stadt-voll, swiftshader)
+
+## 0. die Geräte (node geraete.cjs meisterkarte-quelle/punkte/messung, punkte-maschine ca7a272de2)
+2026-11-19T20:28:06.099Z | f68dbf09-gtx.json | f68dbf09 | recht#1 | 72.9 | S1 ROT: fehlender Leser: keine Wache: kein Bewohner trägt die Rolle waechter/nachtwaechter
+2026-11-20T11:38:19.283Z | 31ea3847-radeon.json | 31ea3847 | recht#1 |  | die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {"ms":1,"fehler":"ABSTURZ der
+2026-11-20T15:27:31.851Z | 31ea3847-gtx.json | 31ea3847 | recht#1 | 66 | S1 ROT: fehlender Leser: keine Wache: kein Bewohner trägt die Rolle waechter/nachtwaechter
+2026-11-24T08:49:08.719Z | c9da3a64-radeon.json | c9da3a64 | recht#1 |  | die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worl
+2026-11-24T10:56:15.684Z | 5ef0404b-radeon.json | 5ef0404b | recht#1 |  | die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worl
+2026-11-24T12:06:45.892Z | daee7541-radeon.json | daee7541 | recht#1 |  | die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wi
+2026-11-24T13:09:07.969Z | bf9be26c-radeon.json | bf9be26c | recht#1 | 49.2 | Frist der Probe 49 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung 
+2026-11-24T14:01:21.582Z | a8dd22b5-gtx.json | a8dd22b5 | recht#1 | 49.4 | EVAL40
+2026-11-24T14:23:30.927Z | a8dd22b5-radeon.json | a8dd22b5 | recht#1 |  | die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ
+2026-11-24T16:30:46.963Z | eba9bf8f-radeon.json | eba9bf8f | recht#1 |  | die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worl
+2026-11-24T19:11:06.158Z | 2d6a0447-gtx.json | 2d6a0447 | recht#1 | 47.7 | EVAL40
+2026-11-24T19:33:54.582Z | 2d6a0447-radeon.json | 2d6a0447 | recht#1 |  | die Fahrt riss 1800 s (vor karte2.mensch.nahrung.frucht#1) — offen, UNGEMESSEN
+2026-11-24T23:27:53.332Z | 4171973a-radeon.json | 4171973a | recht#1 | 47.2 | EVAL40
+2026-11-25T00:56:51.114Z | b1f0de0e-gtx.json | b1f0de0e | recht#1 | 47.7 | EVAL40
+2026-11-25T01:58:15.503Z | b1f0de0e-radeon.json | b1f0de0e | recht#1 | 47.8 | EVAL40
+2026-11-25T04:16:29.980Z | c540c783-gtx.json | c540c783 | recht#1 | 47.7 | EVAL40
+2026-11-25T04:20:52.185Z | c540c783-radeon.json | c540c783 | recht#1 | 50.7 | EVAL40
+2026-11-25T06:48:29.214Z | 486a6685-gtx.json | 486a6685 | recht#1 | 48.4 | EVAL40
+2026-11-25T08:49:09.209Z | 486a6685-radeon.json | 486a6685 | recht#1 | 50.7 | EVAL40
+2026-11-25T14:08:41.303Z | 0692960c-radeon.json | 0692960c | recht#1 |  | die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ
+2026-11-25T15:10:27.897Z | e1a54023-gtx.json | e1a54023 | recht#1 | 48.8 | EVAL40
+2026-11-25T17:08:24.037Z | e1a54023-radeon.json | e1a54023 | recht#1 | 52 | EVAL40
+2026-11-25T18:37:59.434Z | f63a69ef-gtx.json | f63a69ef | recht#1 | 47.8 | EVAL40
+2026-11-25T19:13:18.938Z | f63a69ef-radeon.json | f63a69ef | recht#1 | 49.7 | EVAL40
+2026-11-25T23:00:43.947Z | 2da17e2e-radeon.json | 2da17e2e | recht#1 | 50.3 | EVAL40
+2026-11-25T23:44:13.600Z | 2da17e2e-gtx.json | 2da17e2e | recht#1 | 50.2 | EVAL40
+2026-11-26T04:09:31.631Z | 4c9e6aab-radeon.json | 4c9e6aab | recht#1 | 53.2 | EVAL40
+2026-11-26T05:05:22.715Z | 4c9e6aab-gtx.json | 4c9e6aab | recht#1 | 48.2 | EVAL40
+recht#1: EVAL40 17 · gemessen (S1 ROT) 2 · andere 9
+
+## 1. die Stadt (curl /umstellen {ort: stadt-voll, sicht: third})
+{"ms":225183,"ort":"stadt-voll","sicht":"third","pose":null,"welt":null,"spieler":[842.4867207453832,451.79283067541957],"wiese":null,"takte":2051,"steht":true,"blick":[857.2894254660137,449.20174643185885],"chunks":25,"gier":1.7441,"dorfZug":true,"ortTakt":[],"dorfSchwebt":null,"anlauf":"gegangen"}EXIT 0
+
+{"d:7@836,438": "1356 Bewohner, 1356 mit Leib, 1210 draußen", "Wächter": 6, "mit Waffe": 6, "Zeugen im Kreis der Tat an der Pose": 114, "Stunde": 12}
+
+## 2. EIN Schlag des Spielers an der Pose, mit Uhren je Ruf (node zeuge.js 842.49 451.79 > z.js; node ev.cjs z.js 360)
+{"ort":[843.7,452.7],"zeugeM":25,"zeugen":114,"waffe":1,"siedlung":"d:7@836,438","bewohnerDerSiedlung":1356,"staende":["heim","platz","werk","mahl","abend","besuch","einkauf"],"schlagOk":true,"ms":{"spawn":2,"schlag":50355.9},"uhr":{"_bewohnerZeuge":{"n":1,"ms":50355.2,"max":50355.2},"_bewohnerWeichOrt":{"n":106,"ms":50309.3,"max":3963.2},"_bewohnerStrecke":{"n":75759,"ms":49851.3,"max":24.1},"_bewohnerNahen":{"n":1,"ms":0.4,"max":0.4},"_bewohnerWeichen":{"n":113,"ms":50351.1,"max":3963.8},"_creatureRemember":{"n":115,"ms":1.4,"max":0.3}}}
+
+## 3. Gegenprobe Basis ↔ M1 ↔ M2 je Zeuge, dieselbe belegt-Folge, rein (node gegen.js 842.49 451.79; Zustand nach dem ersten Schlag)
+M1: :2730 this._bewohnerStrecke(S, p, q, 0) statt { ...p } — das Gemerkte des Anschlusses (WeakMap je Ort, :4347) greift · M2: M1 + Vorprüfung der Knoten-Kette, Rand 14 m
+{"zeugen":114,"weichen":106,"basis":{"ms":88779.9,"wege":145332,"ort":106},"m1":{"ms":16792.8,"wege":145332,"ort":106,"gleich":106},"m2":{"ms":16226.8,"wege":134298,"ort":106,"gleich":106},"maxBasisMs":2511.7,"maxM2Ms":644.1}
+
+## 4. die TAT der Station wörtlich (tat.js aus k2-mensch-macht.js, node lauf.js 1 0 842.4867 451.7928), gesehen an der Pose, Fenster 4 s Welt-Uhr
+Basis:
+{"p":{"gueltig":true,"gesehen":true,"zeugen":114,"wachen":1,"wacheAntwort":0,"nach":0,"fliehen":78,"versetzt":0,"akten":0,"ort":"d:7@836,438","folge":false,"uhr":4.02},"uhr":{"ganzMs":94092,"takte":158,"syncMs":3705,"rafMs":351,"maxTaktMs":177,"spawnMs":2.8,"schlagMs":90025.1,"rest":8}}
+Mutante M1+K24 (mutante.js an 24: die 24 nächsten Stände, danach die gerade Flucht des Gesetzes):
+{"p":{"gueltig":true,"gesehen":true,"zeugen":92,"wachen":1,"wacheAntwort":0,"nach":1,"fliehen":68,"versetzt":0,"akten":0,"ort":"d:7@836,438","folge":true,"uhr":4.01},"uhr":{"ganzMs":4222,"takte":221,"syncMs":3274,"rafMs":648,"maxTaktMs":36,"spawnMs":1.2,"schlagMs":293,"rest":5}}
+die Wache danach (wache.js): waechter 7,1 m vor der Tat, weichen null — _bewohnerNahen :2632 fiel an _bewohnerWand(p, q): laterne_dorf #657 (seed 104) auf 60–70 % der 5,63 m Linie
+Mutante M1+K24 + „die Wache naht über den Weg“ (nahen.js an: :2632 !this._bewohnerStrecke(S, {x,z}, q, 0) statt this._bewohnerWand(p, q)):
+{"p":{"gueltig":true,"gesehen":true,"zeugen":69,"wachen":1,"wacheAntwort":1,"nach":1,"fliehen":19,"versetzt":0,"akten":0,"ort":"d:7@836,438","folge":true,"uhr":4.04},"uhr":{"ganzMs":4421,"takte":60,"syncMs":1837,"rafMs":2224,"maxTaktMs":160,"spawnMs":1.3,"schlagMs":351.3,"rest":7}}
+die Wache danach: 2,7 m vor der Tat, weichen.ort 842,3/452,2 (nahM 1,5 vor der Tat)
+die Welt danach: beide Mutanten fort ({"basis":true})
+
+## 5. die Nachbar-Leiter derselben 40-s-Klasse (verstaendigung#1, BEGEGNUNG): ihr Takt der Leute an der Stadt
+{"je":4.1,"tick":[5.2,5.8,3.1,4.6,2,4.2],"schaetzung2160S":8.9} — 24 × 90 Takte ≈ 8,9 s: NICHT ihre 40 s; nicht beansprucht

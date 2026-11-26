@@ -1,0 +1,31 @@
+DAS SPIEL IST ROT — Täter stamm/siedlung-bewohner.js:2730 (`_bewohnerWeichOrt`: je Zeuge ein voller Weg zu jedem Stand der Stadt, bis einer passt — EIN Schlag an stadt-voll 50,4 s, davon 99 % in 75 759 Wegen) und :2632 (`_bewohnerNahen`: eine Laterne auf der Geraden hält die Wache an), Gegenprobe (TAT der Station 94,1 → 4,4 s, Schlag 90 025 → 351 ms, Wache 0 → 1 von 1), Soll: ein Schlag an stadt-voll ≤ 33 ms und die Wache in Sicht naht über den Weg
+
+Kein Kandidat (das Spiel ist rot) — Akte der Leiter mensch.macht.recht (S1, beansprucht #1), Auftrag „warum antwortet /eval an stadt-voll
+nicht binnen 40 s“
+
+Richter S1 (wörtlich): umfang 20 „Regelbrüche in Sicht der Wache“ · masse „Antwort der Wache“ ≥ 0,8
+
+Geräte: seit 24.11. 17 von 17 „/eval ohne Antwort binnen 40 s“ (GTX und Radeon, 47,2–53,2 s), zuletzt gemessen 19./20.11. (2 Taten,
+  75/83 Zeugen, Wache 0)
+
+Wo die Zeit liegt (Wolke, Stadt d:7@836,438, 1 356 Bewohner, 114 Zeugen an der Pose, zeuge.js mit Uhren je Ruf):
+  Schlag 50 355,9 ms = _bewohnerZeuge → 106 × _bewohnerWeichOrt 50 309 ms (max 3 963 ms je Zeuge) → 75 759 × _bewohnerStrecke 49 851 ms;
+  _bewohnerNahen 0,4 ms; Spawn 2 ms. Die TAT der Station wörtlich: 94 092 ms = Schlag 90 025 + Fenster 4 060 (synchron, das /eval reißt
+  bei 40 s)
+
+Täter (origin/main 64fcf12e):
+  T1 :2730 die Stände aller 1 356 Bewohner nach Abstand, je Stand ein voller Weg, im Mittel 715 je Zeuge; `{ ...p }` verfehlt je Weg
+     das Gemerkte des Anschlusses (:4347 WeakMap je Ort) und sortiert das Netz neu (:4351)
+  T2 :2632 die Wache nur auf der freien Geraden: laterne_dorf #657 auf ihrer 5,63-m-Linie → sie naht nicht und weicht nicht (:2590)
+
+Gegenprobe (Mutanten als eigene Eigenschaft der Welt, danach fort):
+  M1 `p` statt `{ ...p }`: 106 von 106 Weich-Orten bit-gleich, 88 780 → 16 793 ms (5,3×)
+  M1 + die 24 nächsten Stände (danach die gerade Flucht des Gesetzes): TAT 4 222 ms, Schlag 293 ms, Wache 0 von 1
+  + T2 über den Weg: TAT 4 421 ms, Schlag 351 ms, Wache 1 von 1 (7,1 → 2,7 m in 4 s Welt-Uhr), Folge
+
+Station (benannt, nicht gebaut): E1 :652 EIN /eval mit 40 s, der Riss nennt keinen Schritt (die Klasse trägt der Auftrag ZEIT, 07:37);
+  E2 :772 umfang 20, aber :651 höchstens 3 gesehene Taten an der Pose — S1 nie GRÜN, offen (Messname recht#1 S1 Umfang), messbar erst
+  am geheilten Spiel
+
+Offen (nur das Gerät): die Sekunden des Schlags an GTX/Radeon (dort > 28 s), das Bild der nahenden Wache. Die Nachbar-Leiter
+  verstaendigung#1 (17 × 40 s) trägt eine andere Ursache (ihr Takt der Leute ≈ 8,9 s) — nicht beansprucht.

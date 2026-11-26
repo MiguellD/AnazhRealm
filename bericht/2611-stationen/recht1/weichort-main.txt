@@ -1,0 +1,20 @@
+    _bewohnerWeichOrt(S, b, o, stunde, belegt) {
+        const B = { x: o.x, z: o.z, r: AnazhRealm.BEWOHNER.zeugeM };
+        const R = AnazhRealm._furchtGesetz().fluchtRadius(B, null, false);
+        const soll = this._bewohnerSoll(b, stunde);
+        if (soll.drinnen || Math.hypot(soll.ziel.x - o.x, soll.ziel.z - o.z) >= R) return null;
+        const p = { x: b.leib.position.x, z: b.leib.position.z };
+        const [T, d2] = [{ minX: o.x, maxX: o.x, minZ: o.z, maxZ: o.z }, (p.x - o.x) ** 2 + (p.z - o.z) ** 2 - 1e-6];
+        const fern = (w) => !!w && [p, ...w].every((e, i, v) => !i || this._streckeBoxAbstand2(T, v[i - 1].x, v[i - 1].z, e.x, e.z) >= d2); // prettier-ignore
+        const [fort, gesehen] = [[], new Set()];
+        for (const x of S.liste)
+            for (const q of AnazhRealm.BEWOHNER.staende.map((k) => x.orte[k]))
+                if (q && !gesehen.has(q) && !belegt.has(q) && Math.hypot(q.x - o.x, q.z - o.z) >= R) { gesehen.add(q); fort.push([Math.hypot(q.x - p.x, q.z - p.z), q]); } // prettier-ignore
+        let [, ort] = fort.sort((a, c) => a[0] - c[0]).find(([, q]) => fern(this._bewohnerStrecke(S, { ...p }, q, 0))) || []; // prettier-ignore
+        for (const w of ort ? [] : [0, 0.5, -0.5, 1, -1]) {
+            const [c, n, d] = [Math.cos(w), Math.sin(w), Math.sqrt(d2 + 1e-6) || 1], [vx, vz] = [((p.x - o.x) * c - (p.z - o.z) * n) / d, ((p.x - o.x) * n + (p.z - o.z) * c) / d]; // prettier-ignore
+            const q = { x: o.x + vx * R, z: o.z + vz * R, blick: Math.atan2(vx, vz) };
+            if (!ort && this._landAt(q.x, q.z) && !["haus", "bau"].includes(this._imGrundriss(q.x, q.z, 0.5)) && !this._bewohnerWand(p, q) && fern([q])) ort = q; // prettier-ignore
+        }
+        return ort ? { ort, soll } : null;
+    }
