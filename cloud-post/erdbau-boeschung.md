@@ -99,7 +99,17 @@ origin/integ-probe 4c9e6aab.
 
 Ruf `bild:dorf@0.42` am Kopf. Vorher ist `probe-post/absicht-zug-3/40c7113c-dorf-0.42.png`, Stand 18.546.425: dasselbe
 Gelände-Gesetz wie main, `gelaende-core.js` und `voxel-worker.js` byte-gleich. Kamera −720,31/−922,46, Blick nach Osten.
-Das Urteil steht aus, bis die Probe zurück ist.
+
+Nachher ist `probe-post/erdbau-boeschung/a133198b-dorf-0.42.png`: GPU-Probe GRÜN, Radeon 890M, 87 s, ABNAHME GRÜN, dieselbe
+Kamera und Uhr.
+
+**Urteil (eigenes Auge, Ausschnitt links 860 × 640 px beider Bilder nebeneinander):**
+- **Vorher:** Die Böschung links über dem Dorf steigt als Felswand und endet unter einer dunklen, überhängenden Gras-Kante.
+  Darunter liegt ein Schattenband. Dort brach der Kegel ab, die Natur stand als Absatz darüber.
+- **Nachher:** EINE stetige Böschung steigt vom Weg bis zum Kamm, gleichmäßig beleuchtet, ohne Kante und ohne Schattenband.
+  Zwei Bewohner stehen auf ihr.
+- **Der Preis im Bild:** Die ganze Böschung trägt jetzt den Fels-Stoff der Wand; Gras wächst nur in Büscheln (s. Offen).
+- Die Stein-Böschung rechts am Haus ist in beiden Bildern gleich.
 
 ## Offen (mit Grund und Messnamen)
 
@@ -111,5 +121,10 @@ Das Urteil steht aus, bis die Probe zurück ist.
   - Die Wurzel sind die Höhen des Plans (fachwerk `ortPlan`), nicht `erdbauY`. Messname: Ring 0–10 m der Böschungs-Messung.
 - **Die Normalform kostet das Doppelte** (Stadt 15 → 30 ms). Sie läuft einmal je gelegtem Ort, im Faden und im Stamm
   (`_erdbauNorm`). Messname: Normalform ms (Stadt).
-- **Das Bild und sein Urteil:** die Probe läuft.
-- **Die volle CI** (`[ci voll]` am Vorprüf-Kopf): das Ergebnis steht aus.
+- **Der Fels-Stoff deckt die ganze Böschung.** Die Wand des Erdbaus (`erdbauWand`, K66) liest jeden Punkt, den der Erdbau um
+  mehr als `wandM` / 2 hebt oder senkt, als Wand, gleich welcher Neigung. Die Böschung reicht jetzt bis an die Natur, deshalb
+  wächst die Fels-Fläche mit: Wand-Summe Stadt 9 901 → 11 622 (+17 %).
+  - Im Profi-Band trägt eine Böschung bis 1 : 1,5 (33,7°) Rasen; der Kegel 0,6 (31°) liegt darunter.
+  - Die Wurzel ist die Regel der Wand (der Zweig über `hoeheGrund`), nicht die Höhe.
+  - Messname: Wand-Summe Stadt, Bild `dorf@0.42` links.
+- **Die volle CI** (`[ci voll]` am Vorprüf-Kopf a133198b, Lauf 45733927959): bei Redaktion in der Schlange.
