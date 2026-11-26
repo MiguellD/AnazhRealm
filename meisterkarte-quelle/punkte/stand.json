@@ -3064,7 +3064,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 58 Bilder · max 92.33 ms · 82.76 % > 33 ms · Fahrt 42 Bilder · max 117.18 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 82.76 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 117.18), 100.00 % > 33 ms an 54b89949 radeon · Gehen 95 Bilder · max 58.39 ms · 11.58 % > 33 ms · Fahrt 47 Bilder · max 141.68 ms · 80.85 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 11.58 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 141.68), 80.85 % > 33 ms an 54b89949 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 54b89949: Last: Referenz f 1,309 (Faden 1,309 · alle Kerne 1,083; vor 109,8/278,7 ms, nach 103,6/282,5 ms, Ruhe 83,9/260,8 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --user-data-dir=anazh-28164-pro · profiband.K4#2 gtx: ROT: Gehen 95 Bilder · max 58.39 ms · 11.58 % > 33 ms · Fahrt 47 Bilder · max 141.68 ms · 80.85 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 11.58 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 141.68), 80.85 % > 33 ms an 54b89949",
+   "beleg": "Maschine: Gehen 58 Bilder · max 92.33 ms · 82.76 % > 33 ms · Fahrt 42 Bilder · max 117.18 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 82.76 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 117.18), 100.00 % > 33 ms an 54b89949 radeon · Gehen 93 Bilder · max 76.35 ms · 12.90 % > 33 ms · Fahrt 45 Bilder · max 241.63 ms · 73.33 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 12.90 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 241.63), 73.33 % > 33 ms an 54b89949 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 54b89949: Last: Referenz f 1,309 (Faden 1,309 · alle Kerne 1,083; vor 109,8/278,7 ms, nach 103,6/282,5 ms, Ruhe 83,9/260,8 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --user-data-dir=anazh-28164-pro · profiband.K4#2 gtx: ROT: Gehen 93 Bilder · max 76.35 ms · 12.90 % > 33 ms · Fahrt 45 Bilder · max 241.63 ms · 73.33 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 12.90 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 241.63), 73.33 % > 33 ms an 54b89949",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3079,7 +3079,7 @@
      "id": "profiband.K4#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Gehen 95 Bilder · max 58.39 ms · 11.58 % > 33 ms · Fahrt 47 Bilder · max 141.68 ms · 80.85 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 11.58 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 141.68), 80.85 % > 33 ms",
+     "zahl": "Gehen 93 Bilder · max 76.35 ms · 12.90 % > 33 ms · Fahrt 45 Bilder · max 241.63 ms · 73.33 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 12.90 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 241.63), 73.33 % > 33 ms",
      "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
      "grund": null,
      "r6": "konsum"
@@ -3097,9 +3097,9 @@
      "id": "profiband.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "Gehen 95 Bilder · max 58.39 ms · 11.58 % > 33 ms · Fahrt 47 Bilder · max 141.68 ms · 80.85 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 11.58 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 141.68), 80.85 % > 33 ms",
+     "zahl": "Gehen 93 Bilder · max 76.35 ms · 12.90 % > 33 ms · Fahrt 45 Bilder · max 241.63 ms · 73.33 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 12.90 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 241.63), 73.33 % > 33 ms",
      "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
-     "grund": "ROT: Gehen 95 Bilder · max 58.39 ms · 11.58 % > 33 ms · Fahrt 47 Bilder · max 141.68 ms · 80.85 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 11.58 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 141.68), 80.85 % > 33 ms",
+     "grund": "ROT: Gehen 93 Bilder · max 76.35 ms · 12.90 % > 33 ms · Fahrt 45 Bilder · max 241.63 ms · 73.33 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 12.90 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 241.63), 73.33 % > 33 ms",
      "r6": "konsum"
     }
    ]
@@ -12616,7 +12616,7 @@
   },
   "karte2.leben.oeko.netz": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–1.81× · außer Band 0 · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.oeko.netz#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +31) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.leben.oeko.netz#2 radeon: Station seit der Messung geändert — zuletzt an 54b89949: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.leben.oeko.netz#2 gtx: Station seit der Messung geändert · karte2.leben.oeko.netz#3 radeon: ungemessen (R10) · karte2.leben.oeko.netz#3 gtx: ungemessen (R10) · karte2.leben.oeko.netz#4 radeon: ungemessen (R10) · karte2.leben.oeko.netz#4 gtx: ungemessen (R10) · karte2.leben.oeko.netz#5 radeon: ungemessen (R10) · karte2.leben.oeko.netz#5 gtx: ungemessen (R10) · karte2.leben.oeko.netz#6 radeon: ungemessen (R10) · karte2.leben.oeko.netz#6 gtx: ungemessen (R10) · karte2.leben.oeko.netz#7 radeon: ungemessen (R10) · karte2.leben.oeko.netz#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–1.81× · außer Band 0 · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.oeko.netz#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +31) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.leben.oeko.netz#2 radeon: ROT: S2 Umfang nicht erzeugbar: 10¹ Arten in 4 Ebenen — der Bestand trägt 4 Gattungen (deer, fox, wolf, bear) in 2 Ebenen (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072); im Fächer 32 von 32 Saaten × 100 Spieljahre · Fächer 32/32 Adressen (32 Saaten) in 19996 ms · Leser stamm _kreaturFra · saaten 32 gegen Soll ≥ 32 ✓ · jahre 100 Spieljahre gegen Soll ≥ 100 Spieljahre ✓ · wiederProzent 0 % gegen Soll ≥ 80 % ✗ · paareJeArt 0,2 gegen Soll 2–10 ✗ · Täter: tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen) · stamm/kreatur-leben.js _bestandSchritt an 54b89949 · karte2.leben.oeko.netz#2 gtx: Station seit der Messung geändert · karte2.leben.oeko.netz#3 radeon: ungemessen (R10) · karte2.leben.oeko.netz#3 gtx: ungemessen (R10) · karte2.leben.oeko.netz#4 radeon: ungemessen (R10) · karte2.leben.oeko.netz#4 gtx: ungemessen (R10) · karte2.leben.oeko.netz#5 radeon: ungemessen (R10) · karte2.leben.oeko.netz#5 gtx: ungemessen (R10) · karte2.leben.oeko.netz#6 radeon: ungemessen (R10) · karte2.leben.oeko.netz#6 gtx: ungemessen (R10) · karte2.leben.oeko.netz#7 radeon: ungemessen (R10) · karte2.leben.oeko.netz#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.oeko.netz#1",
@@ -12644,10 +12644,10 @@
      "id": "karte2.leben.oeko.netz#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 54b89949: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a",
-     "ungemessen": true
+     "zahl": "S2 Umfang nicht erzeugbar: 10¹ Arten in 4 Ebenen — der Bestand trägt 4 Gattungen (deer, fox, wolf, bear) in 2 Ebenen (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072); im Fächer 32 von 32 Saaten × 100 Spieljahre · Fächer 32/32 Adressen (32 Saaten) in 19996 ms · Leser stamm _kreaturFra · saaten 32 gegen Soll ≥ 32 ✓ · jahre 100 Spieljahre gegen Soll ≥ 100 Spieljahre ✓ · wiederProzent 0 % gegen Soll ≥ 80 % ✗ · paareJeArt 0,2 gegen Soll 2–10 ✗ · Täter: tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen) · stamm/kreatur-leben.js _bestandSchritt",
+     "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
+     "grund": "ROT: S2 Umfang nicht erzeugbar: 10¹ Arten in 4 Ebenen — der Bestand trägt 4 Gattungen (deer, fox, wolf, bear) in 2 Ebenen (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072); im Fächer 32 von 32 Saaten × 100 Spieljahre · Fächer 32/32 Adressen (32 Saaten) in 19996 ms · Leser stamm _kreaturFra · saaten 32 gegen Soll ≥ 32 ✓ · jahre 100 Spieljahre gegen Soll ≥ 100 Spieljahre ✓ · wiederProzent 0 % gegen Soll ≥ 80 % ✗ · paareJeArt 0,2 gegen Soll 2–10 ✗ · Täter: tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen) · stamm/kreatur-leben.js _bestandSchritt",
+     "r6": "konsum"
     },
     {
      "id": "karte2.leben.oeko.netz#2",
@@ -30065,7 +30065,7 @@
   },
   "karte2.planet.kosmos.welten": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 54b89949: Last: Referenz f 1,416 (Faden 1,416 · alle Kerne 1,255; vor 104,5/324,9 ms, nach 118,8/327,4 ms, Ruhe 83,9/260,8 ms seit 2026-11-17) · fremd: grep.exe -rln die Stunde ohne Vorgeschichte artifacts scri · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an 2da17e2e: Last: Referenz f 1,224 (Faden 1,224 · alle Kerne 1,134; vor 109,1/252,8 ms, nach 88,6/231,3 ms, Ruhe 89,1/223 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfj · karte2.planet.kosmos.welten#2 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#3 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#4 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#5 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#6 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 54b89949: Last: Referenz f 1,416 (Faden 1,416 · alle Kerne 1,255; vor 104,5/324,9 ms, nach 118,8/327,4 ms, Ruhe 83,9/260,8 ms seit 2026-11-17) · fremd: grep.exe -rln die Stunde ohne Vorgeschichte artifacts scri · karte2.planet.kosmos.welten#1 gtx: ROT: ❌ Heimat Bilanz 4.863 (5–12,5) · Schatten-Anteil 0.2056 · A/B 1.000 · A/C 0.324 · Kappe 1489 px · Uhr 0.5 sunny · UNGÜLTIG · ❌ Ferne Bilanz 5.442 (5–12,5) · Schatten-Anteil 0.1837 · A/B 1.000 · A/C 0.321 · Kappe 1491 px · Uhr 0.5 sunny · UNGÜLTIG · ❌ Zenit der Ferne B/R 1.229 · 20736 px · Uhr 0.5 (Soll < 1) · ✅ Gegenlauf Zenit der Heimat B/R 1.702 · 20736 px · Uhr 0.5 (Soll > 1) · ✅ Tor führte in 912511e8 (12.9 s, Schwere -3.71) · [linse-gpu] nvidia/pascal an 54b89949 · karte2.planet.kosmos.welten#2 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#3 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#4 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#5 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#6 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.welten#1",
@@ -30081,10 +30081,10 @@
      "id": "karte2.planet.kosmos.welten#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 2da17e2e: Last: Referenz f 1,224 (Faden 1,224 · alle Kerne 1,134; vor 109,1/252,8 ms, nach 88,6/231,3 ms, Ruhe 89,1/223 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfj",
-     "ungemessen": true,
+     "zahl": "❌ Heimat Bilanz 4.863 (5–12,5) · Schatten-Anteil 0.2056 · A/B 1.000 · A/C 0.324 · Kappe 1489 px · Uhr 0.5 sunny · UNGÜLTIG · ❌ Ferne Bilanz 5.442 (5–12,5) · Schatten-Anteil 0.1837 · A/B 1.000 · A/C 0.321 · Kappe 1491 px · Uhr 0.5 sunny · UNGÜLTIG · ❌ Zenit der Ferne B/R 1.229 · 20736 px · Uhr 0.5 (Soll < 1) · ✅ Gegenlauf Zenit der Heimat B/R 1.702 · 20736 px · Uhr 0.5 (Soll > 1) · ✅ Tor führte in 912511e8 (12.9 s, Schwere -3.71) · [linse-gpu] nvidia/pascal",
+     "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
+     "grund": "ROT: ❌ Heimat Bilanz 4.863 (5–12,5) · Schatten-Anteil 0.2056 · A/B 1.000 · A/C 0.324 · Kappe 1489 px · Uhr 0.5 sunny · UNGÜLTIG · ❌ Ferne Bilanz 5.442 (5–12,5) · Schatten-Anteil 0.1837 · A/B 1.000 · A/C 0.321 · Kappe 1491 px · Uhr 0.5 sunny · UNGÜLTIG · ❌ Zenit der Ferne B/R 1.229 · 20736 px · Uhr 0.5 (Soll < 1) · ✅ Gegenlauf Zenit der Heimat B/R 1.702 · 20736 px · Uhr 0.5 (Soll > 1) · ✅ Tor führte in 912511e8 (12.9 s, Schwere -3.71) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -36729,7 +36729,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an 54b89949: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,309 (Faden 1,309 · alle Kerne 1,083; vor 109,8/278,7 ms, nach 103,6/282,5 ms, Ruhe 83,9/260,8 · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +15) — zuletzt an c3631992: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[ · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an 54b89949: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,309 (Faden 1,309 · alle Kerne 1,083; vor 109,8/278,7 ms, nach 103,6/282,5 ms, Ruhe 83,9/260,8 · karte2.same.preis.ausdauer#1 gtx: ROT: Spielgang 1.49 min in 1 Seite(n), davon die Station 19.4 s in 1 Fenster(n) auf der Bahn (die Sitzung trug 54.8 s, Ziel 70 s, Deckel 93 s) · nach dem Collector 235.7 → 329.5 MB: 63 MB/min (Soll ≤ 50) · Heap-Kurve 26 Punkte über 1.28 min, 324.9 → 347.7 MB (max 527.8), roh -30.12 MB/min (der Takt des Collectors, kein Urteil) · [linse-gpu] nvidia/pascal — ROT 1: Heap nach dem Collector 235.7 → 329.5 MB: 63 MB/min > 50 an 54b89949 · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -36745,10 +36745,9 @@
      "id": "karte2.same.preis.ausdauer#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +15) — zuletzt an c3631992: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[",
-     "ungemessen": true,
+     "zahl": "Spielgang 1.49 min in 1 Seite(n), davon die Station 19.4 s in 1 Fenster(n) auf der Bahn (die Sitzung trug 54.8 s, Ziel 70 s, Deckel 93 s) · nach dem Collector 235.7 → 329.5 MB: 63 MB/min (Soll ≤ 50) · Heap-Kurve 26 Punkte über 1.28 min, 324.9 → 347.7 MB (max 527.8), roh -30.12 MB/min (der Takt des Collectors, kein Urteil) · [linse-gpu] nvidia/pascal — ROT 1: Heap nach dem Collector 235.7 → 329.5 MB: 63 MB/min > 50",
+     "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
+     "grund": "ROT: Spielgang 1.49 min in 1 Seite(n), davon die Station 19.4 s in 1 Fenster(n) auf der Bahn (die Sitzung trug 54.8 s, Ziel 70 s, Deckel 93 s) · nach dem Collector 235.7 → 329.5 MB: 63 MB/min (Soll ≤ 50) · Heap-Kurve 26 Punkte über 1.28 min, 324.9 → 347.7 MB (max 527.8), roh -30.12 MB/min (der Takt des Collectors, kein Urteil) · [linse-gpu] nvidia/pascal — ROT 1: Heap nach dem Collector 235.7 → 329.5 MB: 63 MB/min > 50",
      "r6": "konsum",
      "beide": true
     },
@@ -37567,7 +37566,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 339,
+  "konsum": 341,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37735,10 +37734,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3283
+  "ohne": 3281
  },
  "kopfVoll": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
- "zeit": "2026-11-26T14:31:02.125Z",
+ "zeit": "2026-11-26T14:42:57.059Z",
  "vorher": "54b89949",
  "bilanz": {
   "gewinn": [],
