@@ -2730,3 +2730,4 @@ omen-gtx-gtx-54b89949-w174622-s-1-54b89949 ROT 0 GRÜN / 2 ROT / 1 UNGEMESSEN ·
 2026-11-26 18:00 landung Runde 38 am 54b89949: die OMEN ist durch (237 Stationen, 182 getragen) — gtx durch am 54b89949: 55/237 — 34 Urteile · 21 ungemessen runde 39 9964918608a72e1bbc6972925a4820eac5b53d0f gtx=offen radeon=offen
 2026-11-26 18:01 landung Runde 39 am 99649186: misst 47 von 236 Stationen (vorn; 0 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
 2026-11-26 18:18 RUNDE 39 ALARM gtx: ohne Fortschritt seit 16 min (laeuft, 0/236, Station -, Kopf 99649186) — gesehen von gtx (landung-dienst)
+2026-11-26 18:22 RUNDE 39 ALARM radeon: ohne Fortschritt seit 18 min (laeuft, 0/47, Station -, Kopf 99649186) — gesehen von gtx (landung-dienst)
