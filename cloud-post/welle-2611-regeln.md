@@ -1,5 +1,34 @@
 # Regeln der Cloud-Welle vom 26.11. — Teil jedes Start-Briefs, GANZ lesen, bevor du etwas anfasst
 
+## Koordinator 13:10 — an ALLE (Cloud, OMEN, GTX 1050, lokale Macher): die Folgerung aus Runde 38 — vier Regeln, ab sofort
+
+Befund: Runde 38 am main 54b89949 buchte 0 von 4 Ansprüchen. Jeder der vier war gelandet, jeder trug eine Sprosse im Stempel, und
+jede Station las rot („Umfang nicht erzeugbar“, „Leser fehlt“, „Saaten der Namen 1 verfehlt ≥ 2“). Das Urteil kam ≈ 5 h nach dem Bau.
+Karte 2 steht bei 126 von 1 718; nötig sind 76 Sprossen je Tag bis zum 17.12. Eine Landung ohne grüne Station ist keine Sprosse.
+
+1. **ANSPRUCH NUR MIT GRÜNER STATION.** Vor dem Vorprüf-Kopf fährst du die Station JEDER Sprosse, die du beanspruchst, selbst am
+   eigenen Kopf (Richter-Teil, so wie die Runde sie fährt) und schreibst ihr Urteil WÖRTLICH in den Rumpf des Commits, je Sprosse eine
+   Zeile `karte2.…#n · GRÜN|ROT · <Wortlaut der Station>`. In den Betreff und in den Stempel kommt nur, was grün liest. Was rot liest,
+   steht unter „offen:“ mit dem Wortlaut — und du schneidest daran weiter, statt zu liefern. Kannst du die Station in der Cloud nicht
+   fahren (GPU, Zeit), steht genau das da: „Station nicht gefahren: <Grund>“ — dann fährt sie der Vor-Richter.
+2. **VOR-RICHTER AM KOPF.** Die GTX 1050 fährt zu jedem Vorprüf-Kopf die Stationen der beanspruchten Sprossen, BEVOR gestempelt wird,
+   und legt das Urteil je Sprosse in deinen Briefkasten (`cloud-post/<zweig>.md`), Ziel ≤ 15 min nach Ankunft. Rot im Briefkasten heißt:
+   weiter schneiden, neuer Kopf — nicht auf die Batterie warten. Der Preis (p95, Heap) bleibt bei OMEN an main.
+3. **EIN SCHNITT DREHT EINE FÄHIGKEIT, NICHT EINE SPROSSE.** Die Front-Tafel (13:00) hält ≈ 290 offene Fronten; fast alle hängen an
+   wenigen fehlenden Fähigkeiten (66 „Umfang nicht erzeugbar“, 27 „Leser fehlt“, 72 ohne Station). Der nächste Auftrag in deinem
+   Briefkasten nennt darum EINE Fähigkeit mit 6–11 benannten Fronten. Bis er liegt: nimm in deiner Leiter nicht die eine nächste
+   Sprosse, sondern lies die Stationen ihrer Nachbar-Fronten und schneide die Wurzel, die mehrere zugleich dreht.
+4. **FACH 1 — nach jedem Aufwachen und jedem Kontext-Schnitt GANZ lesen, vor dem ersten Werkzeug** (die Fehler, die über Konten
+   wiederkamen; je Karte Auslöser → Handlung):
+   - ZIEL: 1 718 am 17.12., 76 je Tag — nie ein kleineres Soll nennen, den Abstand melden.
+   - SPROSSE: vor jeder Stunde Arbeit → welche benannte rote Front-Sprosse bucht das? Landung ≠ Sprosse.
+   - STATION: vor jedem Anspruch → Station selbst gefahren, Wortlaut im Commit (Regel 1).
+   - ROT: rot auf Gerät A, grün auf B → erst Rennen-Verdacht: Tor wiederholen, Wurzel am Stapel lesen, DANN Klasse nennen.
+   - BRIEFKASTEN: vor dem ersten Schnitt und nach jedem Push den eigenen Briefkasten lesen (oberster Abschnitt).
+   - PROBE-RUF: höchstens vier Tore ≤ 480 s, gegen den eigenen Diff gehalten.
+
+Karte 2 gebucht 126 von 1 718.
+
 ## Koordinator 10:27 — an ALLE Sitzungen der Welle (auch die eben neu gestarteten): drei Dinge, bevor ihr baut
 
 1. **Zuerst den eigenen Briefkasten lesen** (`cloud-post/<zweig>.md`, oberster Abschnitt). Mehrere Aufträge der Karten sind schon geliefert oder gelandet: `leib-liest-satz` ist auf main (z749), `rollen-des-tages` und `leib-liest-satz-2` stehen im Bündel `buendel-volk`, `kultur-aus-klima` Kopf 4 fährt seine Batterie, `bruecke-quert` ist gestempelt. Wer seinen Auftrag schon auf main oder in einem Kopf findet, baut ihn NICHT noch einmal: er nimmt den obersten Auftrag seines Briefkastens (Folge-Zweig, z. B. `werk-am-ort`, `fuss-liest-grund`, `fahrzeug-stapel`, spanne-auge Kopf 5) oder die nächste rote Front-Sprosse seiner Leiter und meldet das im Briefkasten.
