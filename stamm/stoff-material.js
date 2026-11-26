@@ -391,30 +391,57 @@ class AnazhRealm_stoff_material {
         aus.ms = ms;
         return aus;
     }
-    // DER WEG DER BÖE (wind-saison, Karte 2 leben.pflanzen.kraft#2): die Böe ist ein Muster, das mit dem Wind zieht — g = sin(k·(s(t)
-    // − x·w)), s der Weg des Musters, ds/dt = das Tempo der Böe (phyto-core `boeTempo`, Taylor 1938: 0,9 × der mittlere Wind über
-    // dem Ort, aus dem Wind-Kanal des Felds, das der Spieler trägt — `_wetterFeldAm` an seinem Ort, ohne Drift und Form). Der Weg
-    // ist stückweise linear in der Uhr: ändert sich das Tempo (ein neues Wort, sein Übergang), setzt der Anker den Weg stetig fort
-    // (s(t) = s_a + U_c·(t − t_a)) — die Böe springt nie, und ein schnellerer Wind lässt sie schneller ziehen statt die Phase der
-    // ganzen Welt um U·t zu drehen. Gemerkt je Tempo: die Frage baut nichts. → m. Leser: `_boePhase` (CPU `_windAt`, GPU uBoePhase).
+    // DER WEG DER BÖE (wind-saison, wind-boee-haus — Karte 2 leben.pflanzen.kraft#2): die Böe ist eingefrorene Turbulenz, die MIT dem
+    // Wind am Ort zieht — g = sin(k·(s(t) + o·d − x·d)), d die Richtung (`_windDirAt`), s der Weg des Musters, ds/dt = das Tempo der
+    // Böe (phyto-core `boeTempo`, Taylor 1938: 0,9 × der mittlere Wind über dem Ort). Drei Glieder:
+    //   DER DREHPUNKT o: d mäandert (phyto-core `windRichtung`, |dθ/dt| ≤ 0,0102 rad/s); ab dem Ursprung der Welt gemessen drehte die
+    //   Front um ihn und fegte am Ort r mit r·dθ/dt quer (Wiese, 1 080 m: Laufzeit 7,25 s gegen 5,86 s, +23,7 %; 2 150 m: +222 %).
+    //   Sie dreht um den Ort, an dem die Welt gesehen wird: o = der Spieler; geht er, setzt ein Anker o neu und den Weg so fort, dass
+    //   die Phase in diesem Augenblick an JEDEM Ort stetig bleibt (kein Doppler des Gehers).
+    //   DAS TEMPO AM AUGE: der mittlere Wind über o = der Wind-Kanal des Felds (`_wetterFeldAm`) × die Form des Geländes × der Faktor
+    //   der Gasse — dieselben Glieder wie die Stärke in `_windAt`, ohne die Drift der Böe; bis hier zog sie im Lee (Form 0,74) mit dem
+    //   Wind des freien Felds (Laufzeit −21,9 %).
+    //   DIE ANKER-REIHE: das Tempo wechselt mit Wort, Ort und Richtung (die Form am Auge 0,69–1,20 in einer Minute), s(t) = ∫c dt ist
+    //   stückweise linear: je Wechsel ein Anker (t, s, c, o), stetig fortgesetzt, die Reihe aufsteigend in t. Eine Frage liest das
+    //   Stück, in dem t liegt — wer zweimal dieselbe Minute fragt (die Station: der Ort und 100 m windab), sieht dieselbe Böe. Ein
+    //   Wechsel an t verwirft die Anker danach (ihre Zukunft galt anderen Bedingungen). Höchstens 256 Anker in fünf
+    //   Float64Array: die Frage baut nichts; voll fallen die ältesten 128.
+    // → m. Leser: `_boePhase` (CPU `_windAt`, GPU uBoePhase).
     _boeWeg(t) {
         const pm = this.state.playerMesh;
-        const U = this._wetterFeldAm(
-            pm ? pm.position.x : 0,
-            pm ? pm.position.z : 0,
-            t,
-            this._boeFeldAus || (this._boeFeldAus = {}),
-            false
-        ).wind;
-        const c = globalThis.__phytoCore.boeTempo(U);
-        let A = this._boeAnker;
-        if (!A || A.c !== c) A = this._boeAnker = { t, s: A ? A.s + A.c * (t - A.t) : c * t, c };
-        return A.s + A.c * (t - A.t);
+        const [ox, oz] = pm ? [pm.position.x, pm.position.z] : [0, 0];
+        const U = this._wetterFeldAm(ox, oz, t, this._boeFeldAus || (this._boeFeldAus = {}), false).wind;
+        const d = this._windDirAt(t);
+        const M = this._boeTempoMerk || (this._boeTempoMerk = { U: NaN, ox: NaN, oz: NaN, d: null, c: 0 });
+        if (M.U !== U || M.ox !== ox || M.oz !== oz || M.d !== d) {
+            const f = this._windForm(ox, oz, d) * this._gassenWind(ox, oz, d).f;
+            [M.U, M.ox, M.oz, M.d, M.c] = [U, ox, oz, d, globalThis.__phytoCore.boeTempo(U * f)];
+        }
+        const c = M.c;
+        const N = 256;
+        const H =
+            this._boeAnker ||
+            (this._boeAnker = { n: 0, t: new Float64Array(N), s: new Float64Array(N), c: new Float64Array(N), ox: new Float64Array(N), oz: new Float64Array(N) }); // prettier-ignore
+        let i = H.n - 1;
+        while (i > 0 && H.t[i] > t) i--;
+        if (i >= 0 && H.c[i] === c && H.ox[i] === ox && H.oz[i] === oz) return H.s[i] + c * (t - H.t[i]);
+        const s = i < 0 ? c * t : H.s[i] + H.c[i] * (t - H.t[i]) + (H.ox[i] - ox) * d.x + (H.oz[i] - oz) * d.z;
+        let n = i < 0 || H.t[i] > t ? 0 : H.t[i] === t ? i : i + 1;
+        if (n === N) {
+            for (const k of ["t", "s", "c", "ox", "oz"]) H[k].copyWithin(0, N / 2);
+            n = N / 2;
+        }
+        [H.t[n], H.s[n], H.c[n], H.ox[n], H.oz[n], H.n] = [t, s, c, ox, oz, n + 1];
+        return s;
     }
-    // die Phase der Böe k·s(t), auf [0, 2π) gefaltet (der Shader rechnet in float32: die Phase der Welt wächst mit der Uhr, ihr
-    // Rest bleibt genau). Leser: `_windAt` und der Frame-Takt (uBoePhase).
+    // die Phase der Böe k·(s(t) + o·d(t)), auf [0, 2π) gefaltet (der Shader rechnet in float32: die Phase der Welt wächst mit der
+    // Uhr, ihr Rest bleibt genau; der Ort geht als −k·x·d hinein, die Front dreht um o — das Stück, das `_boeWeg` las, trägt das o
+    // des Spielers jetzt). Leser: `_windAt` und der Frame-Takt (uBoePhase).
     _boePhase(t) {
-        const p = this._boeWeg(t) * AnazhRealm.WIND_BOE.k;
+        const s = this._boeWeg(t);
+        const pm = this.state.playerMesh;
+        const d = this._windDirAt(t);
+        const p = (s + (pm ? pm.position.x * d.x + pm.position.z * d.z : 0)) * AnazhRealm.WIND_BOE.k;
         return p - 2 * Math.PI * Math.floor(p / (2 * Math.PI));
     }
     // DER WIND IN DER GASSE (klima-kontinent, Karte 2 planet.kopplung.stadtklima#1): die Häuser jeder geladenen Siedlung sind

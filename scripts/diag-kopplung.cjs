@@ -11,8 +11,9 @@
 //      (`_windAt`) — das Rauschen je Halm verschiebt nur die Phase; die zweite Welle (die Phase wandert mit dem Ort) MUSS rot sehen.
 //   F7 GASSE (klima-kontinent, stadtklima#1): die Häuser der Siedlung sind Kanal des Winds — in der Schlucht folgt `_windAt` der
 //      Gasse (fachwerk `gassenWind`), daneben Bit für Bit der alte Wind; die ungelesene Siedlung MUSS rot sehen.
-//   F8 DIE PFÜTZE IM SCHATTEN (stadtklima#1): der Ort im Wurf eines Hauses des Dach-Pools trocknet später als der vor ihm
-//      (`_naesseAm` über `_hausSchatten`), der Stoff liest dieselbe Nässe am Ort (`_naesseOrtKnoten`); der Ort ohne Schatten MUSS rot sehen.
+//   F8 DIE PFÜTZE IM SCHATTEN (stadtklima#1): der Ort im Wurf eines Hauses der Welt trocknet später als der vor ihm, auch 700 m vom
+//      Auge (`_naesseAm` über `_hausSchatten`), der Stoff liest dieselbe Nässe am Ort (`_naesseOrtKnoten`); der Ort ohne Schatten
+//      und der Leser des Pools um das Auge MÜSSEN rot sehen.
 //   F6 DIE WELLE IM HALM (druckwelle-bild): die Druckwelle im EINEN Wind-Term — die Front im Halm am Radius des Gesetzes, der
 //      Winkel aus dem Luft-Weg der Welle, der Halm steht wieder auf; ohne Welle ist der Term bit-gleich der alte; der Bild-Takt
 //      trägt die Welle ein. Drei Mutanten (ohne Leser, halbe Trägheit, spätere Tafel) MÜSSEN rot sehen.
@@ -345,11 +346,13 @@ hauptLauf(async () => {
                     fail(`F7: der Täter (die Siedlung ungelesen) bleibt grün — die Linse sieht die Gasse nicht: ${JSON.stringify(gz)}`);
             }
 
-            // ══ F8 DIE PFÜTZE IM SCHATTEN (Karte 2 planet.kopplung.stadtklima#1, „Schatten kühlt“) — als VERHALTEN: ein Haus im
-            //    Dach-Pool (10 × 8 m, Traufe 6 m), die Sonne des klaren Vormittags; der Ort im Wurf seiner Wand trocknet später als der
-            //    Ort vor ihr (die Nässe am Ort `_naesseAm` über `_hausSchatten`, Penman: im Schatten bleibt das Himmelslicht), und der
-            //    Stoff liest dieselbe Nässe (`_pfuetzeKnoten` und `_naesseImStoff` über `_naesseOrtKnoten`). Der Täter (der Ort ohne
-            //    Schatten: `_hausSchatten` 0) MUSS rot sehen ══
+            // ══ F8 DIE PFÜTZE IM SCHATTEN (Karte 2 planet.kopplung.stadtklima#1, „Schatten kühlt“) — als VERHALTEN: ein Haus der Welt
+            //    (sein Kasten 10 × 8 m, Traufe 6 m, `_dachKasten`), die Sonne des klaren Vormittags; der Ort im Wurf seiner Wand trocknet
+            //    später als der Ort vor ihr (die Nässe am Ort `_naesseAm` über `_hausSchatten`, Penman: im Schatten bleibt das
+            //    Himmelslicht), und der Stoff liest dieselbe Nässe (`_pfuetzeKnoten` und `_naesseImStoff` über `_naesseOrtKnoten`).
+            //    DIE WELT IST EINE FUNKTION DES ORTS (wind-boee-haus): das Auge steht 700 m weg, der Dach-Pool um es ist leer — der
+            //    Schatten am Ort liest das Haus selbst (`_deckenVon` über das Blocker-Netz). Die Täter MÜSSEN rot sehen: der Ort ohne
+            //    Schatten (`_hausSchatten` 0) und der alte Leser des Pools um das Auge ══
             {
                 const V4 = (a, b, c, d) => new THREE.Vector4(a, b, c, d);
                 const mkU = () => ({
@@ -358,20 +361,39 @@ hauptLauf(async () => {
                     naesseWeg: { value: 0 },
                     schattenSonne: { value: V4(0, -1, 0, 1) },
                     schattenHuelle: { value: V4(1, 1, -1, -1) },
-                    dachLage: Array.from({ length: 8 }, (_, i) => ({ value: i ? V4(0, 0, 1, 0) : V4(0, 0, Math.cos(0.3), Math.sin(0.3)) })),
-                    dachMass: Array.from({ length: 8 }, (_, i) => ({ value: i ? V4(0, 0, -1e6, 1) : V4(5, 4, 6, 1) })),
-                    dachHuelle: { value: V4(-5, -4, 5, 4) },
-                    dachOben: { value: 6 },
+                    dachLage: Array.from({ length: 8 }, () => ({ value: V4(0, 0, 1, 0) })),
+                    dachMass: Array.from({ length: 8 }, () => ({ value: V4(0, 0, -1e6, 1) })),
+                    dachHuelle: { value: V4(1, 1, -1, -1) },
+                    dachOben: { value: -1e6 },
                 });
-                const mk = (mut) => {
+                const haus = {
+                    type: "kopplung_kasten",
+                    position: new THREE.Vector3(0, 0, 0),
+                    rotationY: 0.3,
+                    _dachKasten: { c: [0, 3, 0], h: [5, 3, 4], k: 1, dy: 0 },
+                };
+                // der Täter beim Namen: der Leser des Pools um das Auge (bis wind-boee-haus)
+                const poolLeser = function (x, y, z) {
+                    const U = this.state.atmoUniforms;
+                    const s = U.schattenSonne.value;
+                    let im = 0;
+                    U.dachLage.forEach((Lu, i) => {
+                        const [L, M] = [Lu.value, U.dachMass[i].value];
+                        const g = AR._hausSchattenGesetz(AR.SCHATTEN_ZAHLEN, x, y, z, s.x, s.y, s.z, [L.x, L.y, L.z, L.w], [M.x, M.y, M.z]); // prettier-ignore
+                        im = Math.max(im, g);
+                    });
+                    return im;
+                };
+                const mk = (taeter) => {
                     const U = mkU();
-                    const s = Object.assign(Object.create(r.state), { atmoUniforms: U, timeOfDay: 0.42, weather: "sunny", naesse: 1 });
-                    const R = Object.assign(Object.create(r), { state: s, _ensureAtmoUniforms: () => U, _lodAuge: () => ({ x: 0, y: 1.6, z: 20 }) }); // prettier-ignore
-                    if (mut) R._hausSchatten = () => 0;
+                    const s = Object.assign(Object.create(r.state), { atmoUniforms: U, timeOfDay: 0.42, weather: "sunny", naesse: 1, architectures: [haus] }); // prettier-ignore
+                    const R = Object.assign(Object.create(r), { state: s, _ensureAtmoUniforms: () => U, _lodAuge: () => ({ x: 700, y: 1.6, z: 20 }), _schattenMerk: null, _schattenNah: null }); // prettier-ignore
+                    if (taeter) R._hausSchatten = taeter;
                     return R;
                 };
                 const miss = (R) => {
                     const wf = R._weatherFieldFor("sunny");
+                    R._dachTakt();
                     R._schattenTakt(AR._trockenAnteil(wf));
                     const S = R.state.atmoUniforms.schattenSonne.value;
                     const h = Math.hypot(S.x, S.z);
@@ -385,11 +407,13 @@ hauptLauf(async () => {
                     return { schattenS: tS, sonneS: tO, verh: tS && tO ? tS / tO : null };
                 };
                 const leser = ["_pfuetzeKnoten", "_naesseImStoff"].filter((g) => !String(AR.prototype[g]).includes("_naesseOrtKnoten"));
-                const pz = (o.zahlen.pfuetze = { ...miss(mk(false)), mutant: miss(mk(true)).verh, ohneLeser: leser });
+                const pz = (o.zahlen.pfuetze = { ...miss(mk(null)), mutant: miss(mk(() => 0)).verh, poolLeser: miss(mk(poolLeser)).verh, ohneLeser: leser }); // prettier-ignore
                 if (!(pz.verh > 1.5 && !leser.length))
                     fail(`F8: die Pfütze trocknet im Schatten nicht später, oder ein Stoff liest die Nässe am Ort nicht: ${JSON.stringify(pz)}`);
                 if (!(pz.mutant <= 1.01))
                     fail(`F8: der Täter (der Ort ohne Schatten) bleibt grün — die Linse sieht den Schatten nicht: ${JSON.stringify(pz)}`);
+                if (!(pz.poolLeser <= 1.01))
+                    fail(`F8: der Täter (der Leser des Pools um das Auge) bleibt grün — die Linse sieht das Auge nicht: ${JSON.stringify(pz)}`);
             }
 
             // ══ FIXTURE 4 (F4) — GRAS-INTERAKTION (radiales Wegbiegen) ══
@@ -616,6 +640,10 @@ hauptLauf(async () => {
     if (z.gasse)
         console.log(
             `  F7 Gasse: Wind auf der Gasse ${z.gasse.abw.toFixed(2)}° zur Achse (Wind 45°) · Stärke ×${z.gasse.faktor.toFixed(3)} · 200 m daneben ${z.gasse.daneben ? "bitgleich" : "ANDERS"} · Täter (Siedlung ungelesen) ${z.gasse.mutant.toFixed(1)}°`
+        );
+    if (z.pfuetze)
+        console.log(
+            `  F8 Pfütze 700 m vom Auge: trocken im Schatten ${z.pfuetze.schattenS} s · in der Sonne ${z.pfuetze.sonneS} s · ×${z.pfuetze.verh && z.pfuetze.verh.toFixed(3)} · Täter: ohne Schatten ×${z.pfuetze.mutant} · Pool um das Auge ×${z.pfuetze.poolLeser}`
         );
     if (z.bend)
         console.log(
