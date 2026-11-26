@@ -1,7 +1,7 @@
 {
  "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
  "geraet": "gtx",
- "zeit": "2026-11-26T21:33:52.043Z",
+ "zeit": "2026-11-26T21:48:38.249Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -420,6 +420,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.erleben.spieler.wegfindung#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT Leser fehlt: der Wurf der Landmarke ist keine Funktion der Saat: stamm/vegetation-baum.js:1482 _vegetationSampleSpawn liest die geladene Welt (_saatJe → worldMeta.seed, _landAt, _hydroDistAt, _voxelSurfaceY) — gemessen 1 von 51 Adressen (die geladene anazh-realm-seed: 0 Landmarken in 1–3 km, im Kegel-Anteil 0) · Fächer 1/51 Adressen (50 Saaten + 1) in 1 ms · Leser stamm/vegetation-baum.js:2607 · Gesetz stamm/vegetation-baum.js:1534 Landmarken-Pass · 50 ohne Fähigkeit (der Wurf der Landmarke ist keine Funktion der Saat: stamm/vegetation-baum.js:1482 _vegetationSampleSpawn liest die geladene Welt (_saatJe → worldMeta.seed, _landAt, _hydroDistAt, _voxelSurfaceY)) · schlechteste {\"saat\":\"anazh-realm-seed\"} n13 0 · Bild dort Saat anazh-realm-seed an der Wiese, ego, Blick in den Kegel der Landmarke (Kontrast im Bild) · ungemessen: Kontrast ≥ 0,1 der Landmarke gegen ihren Grund (ein Bild je Saat, am Gerät) (verlangt 50 Saaten der Sitzung, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.42,
+   "grund": "ROT: S1 · ROT Leser fehlt: der Wurf der Landmarke ist keine Funktion der Saat: stamm/vegetation-baum.js:1482 _vegetationSampleSpawn liest die geladene Welt (_saatJe → worldMeta.seed, _landAt, _hydroDistAt, _voxelSurfaceY) — gemessen 1 von 51 Adressen (die geladene anazh-realm-seed: 0 Landmarken in 1–3 km, im Kegel-Anteil 0) · Fächer 1/51 Adressen (50 Saaten + 1) in 1 ms · Leser stamm/vegetation-baum.js:2607 · Gesetz stamm/vegetation-baum.js:1534 Landmarken-Pass · 50 ohne Fähigkeit (der Wurf der Landmarke ist keine Funktion der Saat: stamm/vegetation-baum.js:1482 _vegetationSampleSpawn liest die geladene Welt (_saatJe → worldMeta.seed, _landAt, _hydroDistAt, _voxelSurfaceY)) · schlechteste {\"saat\":\"anazh-realm-seed\"} n13 0 · Bild dort Saat anazh-realm-seed an der Wiese, ego, Blick in den Kegel der Landmarke (Kontrast im Bild) · ungemessen: Kontrast ≥ 0,1 der Landmarke gegen ihren Grund (ein Bild je Saat, am Gerät) (verlangt 50 Saaten der Sitzung, die Welt erzeugte 1)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k801b0b8c9716",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0f91bf40e6d9",
+   "s": 24.3,
+   "fremd": {
+    "s": 26.5,
+    "takte": 12,
+    "fremdS": 11.8,
+    "kerne": 0.446,
+    "fensterKerne": 0.491,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.61
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      2.42
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.28
+     ]
+    ],
+    "dienerS": 8.81,
+    "diener": [
+     [
+      "dwm.exe",
+      3.66
+     ],
+     [
+      "System",
+      3.31
+     ]
+    ],
+    "geraetS": 11.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.91
+     ],
+     [
+      "svchost.exe",
+      3.81
+     ],
+     [
+      "SearchIndexer.exe",
+      0.22
+     ]
+    ],
+    "eigenS": 115.73,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T21:48:38.249Z",
+   "abdruck": "225daa653620",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -428,7 +498,8 @@
   "k2f1fff7f3897": "bVXRbqMwEPyXPF6PLsRQjKU+OE2lRLrepZ+whjXQEIhsCFVO9+8naEgCdN+QZz3jmbX5uzhivMeUHj9sVS7E4sfi58LiiRxL5kTm8cMuxCKKvSUxId9lVzsp5UsHi01+rC0UuQJUJWYHchpTU148xn2bfkI3UALaV5nuADScYd0+P09bC0VJ5dSoaWh0iQWcxBTY2BQVOdjonuwCDvyInjwBffG1fFvDtT65lLsW2h3fTDZTWCZjtZ4X4VMoZLuVUr5PVSY5Uu0UeWkHXi8JI+2KK1f7Nusx2DpnpKwgc2ki7nm+GsSuOjs7ayaNumisHZFxlgRLLgCiKTYlm8dZ7RxNpai8wFW0DD0Uq7nb6bFx9L0iVAq5mnqdIZUpmZEGl8W6M/qTTzfd44EMOiVmF2jksnCpbt4AwGaupeiF9xSD8MALEo2jxi5UOHUGJ3JUu34xHVC6HRbiKySVM1IbZ7k5jO3SPi1dJn7NJdoMEzLOvrL1Fc0o9F0leoLtGr608NW083a4IUNE5HcDAxzkZualrXTdoiEnPTbD0PgUhIGQcjsD13g4DPEkMaN4GqStu0G/l7GMdBD4AuDh66LMD/11LZwz5QVd5zYOWTTd/GTw4KBKTa71kLwKYh19N6gtFbWjqqoebPTCkDEBDMr7sH/3MW7vcl6n735drNrXcfxbOdXdM1SmHkQrVMz3hU7XHIDrKTo3tdNinF2N0Yqwkz7L5EymoJRGNmrPw2UioNVfus/dUxNengL9MBrg83zHnDqDS9vYweEYfRWIbyJpyewVlvsL0GeuF/J+/FZv/WN8q9eXtLsGcOIw9mrF+uvwR27671Ur5Z81yAvRkWI4mkrn3asIGTY2w6K+/RL+/Qc=",
   "kbe820ac97b64": "jZXRcpswEEX/xY9NFYGBAJrJgxwyTdJJ6/QPVmIFxBgYSYSOO/33DtjYBvLQfWI8d7WXsxf5z6oBuYMMb99NXa3Y6svq68rABxKD+gP17btZsVUs3TV6jB+Lcs6/9TKpi8YaWhaCgqgg3yNptcWivJVDm7oDJxCMdo8821Kq6IEmHT/XA7+/nx9TCkxrYkHheIiDXhAhmwtbk4FAAq0aBp/EgR/jncvoUFHCXxN6rk5yvu1ot42eZocJqNKpc9eN4S5kvHvmnL/NXaYFoCVlUZlxrpuGsXLYZdbrokdDRw6AeYn61ISR6/piNLvpkfSYZo2qbI2ZDIu8NFhHjNJ4rs3QFDK3pNG1wOokF/E6dIFtugXtrGmJunYEQkAk5qxzwCpDPfHgeFL1oH9H80N3sEcNpIL8JI0dL1yLCxtK6dPSSzkYH0aMxgM3SBVMGvulHgGnfFLb4ddsVKlzzORZki3jZmRe6P0Ul/Jx7XhzBiaHFDXZ1caelR6GviOOX8VzQo8+os288/Ji4/4AILoKC40of1pwNLWyHWgkWdOOgfExCAPGs0W6jIX9flxNKj2UixewfcivbaxjFQQ+o/TmhHSB5/hJkAMWJZ4zK0MvZg+JPxd/aNgTEJkulBo3LwKp4s+C2mFpiahrO6J0w9DzGPVodb3sHx1/4Pz16spIyl++LV9uHqfr/85fPptQazsaFyA832eqSyJKIzVXF9qSDmR+hqMEQjyHeEBdYoYTjMp1YZ2y4XoZK/HHh5tJeA+LLR8K7AFXpjUjYQm+CI7pOKX4eZrcDvVOQLU7Nfie44YR4zzJ+CvfXlH5yfl7ozr+3/W24cOgBiVtdK2K/makObQmh9Je/iL+/gM=",
   "k613aadd122e5": "jVVNk6M2EP0vPmbDCowYhKr2IA+zZacyFea21xa0gBiDS8KjLafy31PCxuZjD9GJgtfdr99rNf9sSmwA2wK9vNP49W+z4ZuYxRCFXPwQ34UQb+L/n4/9q/i2+X1zhvwIpUvXtRu++c29aqDFflJFosKAcfI44eMpsyklhH2ne0WF/eYyGvhEz6D+RH0LT/JgiyEXH0PhTAjx6mC5rs+9IU0tCcgWqhN6F91j3XzNhzD1An4kObFvoswIUeRKUvts4E3cqk3TNBKLzutB4ZjExzBiyJfAiylBogcXNRS+gyOa4Etw75Ol4j19tvyTCZFZYjO2FxmNduvqEtpi3kEQJPASc2EPTvAlvqgBe6+pWzPWD4o4Uf5TZ/u+itFgvStg1aC+ByELAipH0jsnjZNrEaiaizGzYiwsoq0zNVliSzR1XvXeWXcS2ztcJts4AL6zq77L88VTU0YgJTC51LwCbEvUMw5+mCsn+E+2THqEE2rwWqju0MQP462czCAh+zWXZiA+lBiJR0FUKJgFOnPJpxO4mF+KbPhYjij1GLf8ASnXxpu8qvVpLpeiuPVD/ueaoqmgQO0dO9M/0CHG1Jd8KHBIyY0L2y0jn82NHgIAmwwMYUTsV1qaTvUWNHrl+TIODcUojrgQhxW4h9NptKfIQ8yXRpreDfqUxjZRUUQ5IV9uF2bd9O1aeFesG3zMbR6HCX9N6RL8qeHkgSx1rdTovoxylfxqWC02vSe7rh+lDOI4DJ0k7dTwbLDyMPE6LT9o3+zsYmkehMjKFf+hSqf7kbwEGVLKVZkyQphaomvdexby6iGQkgiO/sqbK+oGS5zJqYIAtgUnVt24X93qie8rQX2ZDfJ1nbFGJ3RrLmZUOgcqI/4Layzqo4T2eAfS0A9ixv8QQuzeh0U9WbevpbsOw7WZnWQYV4sf+wG3s0L8lZLDvdAZcyKhakkDW9+n09/M8O2sO1W7zUkquJgKmv4J+fc/",
-  "k0f91bf40e6d9": "jZXRcpswEEX/xY9NFYGBAJrJgxwyTdpJ4/QPVmIFxBgYCaKOO/33DtjYBvLQfWKYu9rL2Qv8WTUgd5Dh7bupqxVbfVl9XRn4QGJQf6C+fTcrtoqlu0aP8WNRzvm3XiZ10bSGloWgICrI90g63WJR3sqhTd2BEwhG7SPPtpQqeqCJ5ed64Pf382NKgWlNWlA4HuKgF0TI5sLOZCCQQKeGwSdx4Md45zI6VJTwl4Sey0rOt5babfQ0O0xAlU6du24MdyHj9plz/jZ3mRaALSmLyoxz3TSMlcMus14WPRosOQDmJepTE0au64vR7KZH0mOaNaqyM2YyLPLSYB0xSuO5NkNTyLwlja4FVie5iNehC2xjF7SzpiPq2hEIAZGYs84Bqwz1xIPjSdWD/h3ND93BHjWQCvKTNHa8cC0ubCilT0sv5WB8GDEaD9wgVTBp7Jd6BJzySW2Hu9moUueYybMkW8bNyLzQ+yku5ePa8eYMTA4parKrTXtWehj6jji+Fc8JPfqINvPOy4ON+wOA6CosNKL8acHR1Kq1oJFkTTcGxscgDBjPFukyLez342pS6aFcPEDbh/zaxjpWQeAzSm9OSBd4jq8EOWBR4jmzMvRi9pD4c/GHhj0BkelCqXHzIpAq/iyoFsuWiLpuR5RuGHoeox6trpf90/IHzl8ua35Nyl9+W36/eZyu/wf//tmEWrejcQHC832mbBJRGqm5utAtsSDzMxwlEOI5xAPqEjOcYFSuC+uUDZ+XsRJ/vLiZhPew2PKhwB5wZTozEpbgi+CYjlOKn6fJtah3AqrdqcH3HDeMGOdJxl/49orKK+fvjbL8v+ttw4dBDUra6FoV/ZeR5tCZHMr28ov4+w8="
+  "k0f91bf40e6d9": "jZXRcpswEEX/xY9NFYGBAJrJgxwyTdpJ4/QPVmIFxBgYCaKOO/33DtjYBvLQfWKYu9rL2Qv8WTUgd5Dh7bupqxVbfVl9XRn4QGJQf6C+fTcrtoqlu0aP8WNRzvm3XiZ10bSGloWgICrI90g63WJR3sqhTd2BEwhG7SPPtpQqeqCJ5ed64Pf382NKgWlNWlA4HuKgF0TI5sLOZCCQQKeGwSdx4Md45zI6VJTwl4Sey0rOt5babfQ0O0xAlU6du24MdyHj9plz/jZ3mRaALSmLyoxz3TSMlcMus14WPRosOQDmJepTE0au64vR7KZH0mOaNaqyM2YyLPLSYB0xSuO5NkNTyLwlja4FVie5iNehC2xjF7SzpiPq2hEIAZGYs84Bqwz1xIPjSdWD/h3ND93BHjWQCvKTNHa8cC0ubCilT0sv5WB8GDEaD9wgVTBp7Jd6BJzySW2Hu9moUueYybMkW8bNyLzQ+yku5ePa8eYMTA4parKrTXtWehj6jji+Fc8JPfqINvPOy4ON+wOA6CosNKL8acHR1Kq1oJFkTTcGxscgDBjPFukyLez342pS6aFcPEDbh/zaxjpWQeAzSm9OSBd4jq8EOWBR4jmzMvRi9pD4c/GHhj0BkelCqXHzIpAq/iyoFsuWiLpuR5RuGHoeox6trpf90/IHzl8ua35Nyl9+W36/eZyu/wf//tmEWrejcQHC832mbBJRGqm5utAtsSDzMxwlEOI5xAPqEjOcYFSuC+uUDZ+XsRJ/vLiZhPew2PKhwB5wZTozEpbgi+CYjlOKn6fJtah3AqrdqcH3HDeMGOdJxl/49orKK+fvjbL8v+ttw4dBDUra6FoV/ZeR5tCZHMr28ov4+w8=",
+  "k801b0b8c9716": "bVXRjpswEPwXHnvlFgIcYOkenMtVF6nX5j5hbdaGhkBkQ6hS9d8rSMgF6D4hPLs7ntmFP84R5R41Pf6ydeUw54vz1TmWWFHjytr0rx3mCFLkJ6zy4AHaHUDna77Wz85Xx+KJXEvmROYCTaW/ooDxSwDn/KWHSVMcGwtlIQBFhfmB3NY0VJSPckhTT+hFgkH3yvUOQMEZNt3z8zy1FJTVboOKxkSPgighNge2VqMgF1s1NLuCozClJ5/BEMmGv2/gFp3kfNdBt0veZsUEVtmUre+n+BQz3m1fOP+Ys8wKpMYti8qOff0sTpXHPnu9L3IMdu4ZKS/JXJMo8f1QjGTXvZy9NLNEVbbWTpolQRatEgaQzrGabCHzxj2aWlB1hYt0FfvI1ku19bF11T0jFAITMdc6R6o0mQkHL5CqF/p3Mi+6xwMZdCvMr9DUC+KV+NQGAN6WXMqB+NBiJB75UaZwktibCqde4IxPYjcc6hGluvFA3iCaL5pamRfmMJVLhbTyAvZ9SdHmmJFx97VtbuiA4tATl23YbuDCJVnPMz8vN3qIiMndwEAC/G2hpa1V06EhVx/bcWhCiuKIcb5dgBs8HEZ7MhmQnBtpm37Q72msUhVFIQN4uCzK8tKXtXDPVJR0m1sZB+m8+MngwUWhTaHU6LyIpEr/N6gdlY0r6roZZfTjOAgYBFDdm/1jsHF75/NGf4Tv37h+ndq/5XPeQ4faNCNpgSIIQ6b0JgFI1BxdmMbtUOY3YZQgTBl0cl74TKYkTRMZle/jKmPDJ+bGNBwfHiYDfF64fC6oF7iyrR0VlhiKiP3Hko7MXmC1vwLDwPPjZBi/9TvfTUV50f0awCmBqVbrgPM11z/5pi98JAlHU6ui/wpCjq3NsWw+/xZ//wE="
  },
  "sitzung": {
   "start": "2026-11-26T21:18:50.381Z",
