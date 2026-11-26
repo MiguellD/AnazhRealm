@@ -877,7 +877,13 @@ var __weltLicht = (function () {
     // die Mittagssonne der Bühne steht, wo sie bis sonnenbahn stand — 74,21° (die alte Bahn, Neigung 0,4 × sin ½w: tan(90° − h) = 0,4 √½),
     // im Süden, Aufgang im Osten zur Uhr 0,25. Die Welt reicht ihre Bahn (`_sonnenBahn`), die Bühne der Welt dieselbe: sie reist
     // mit dem Himmel der Welt (`himmelBahn`).
-    const BUEHNE_BAHN = Object.freeze({ breite: Math.atan(0.4 * Math.SQRT1_2), dekl: 0, drehsinn: 1 });
+    // Ihr Mond (die Bühne trägt keinen Kosmos): der volle, der Sonne gegenüber, ohne Parallaxe.
+    const BUEHNE_BAHN = Object.freeze({
+        breite: Math.atan(0.4 * Math.SQRT1_2),
+        dekl: 0,
+        drehsinn: 1,
+        mond: Object.freeze({ dekl: 0, stunde: Math.PI, nah: 0 }),
+    });
     // DIE BAHN IM HIMMEL DER WELT (sonnenbahn 2): der Zustand des Himmels, den die Welt am Tor reicht (stamm `_portalSendEnter`,
     // `msg.himmel.bahn` = `_sonnenBahn()`), trägt die Bahn ihrer Sonne — die Bühne, die Stunden der Hülle (`B.stunden`) und jede
     // Sonde lesen sie hier; ohne Himmel der Welt (ein Studio für sich) der Ort der Bühne. Fail-closed: eine Bahn, die nicht ganz
@@ -886,38 +892,85 @@ var __weltLicht = (function () {
     function himmelBahn(himmel) {
         const b = himmel && himmel.bahn;
         if (b == null) return BUEHNE_BAHN;
-        if (![b.breite, b.dekl, b.drehsinn].every(Number.isFinite))
-            throw new Error("DIE BÜHNE DER WELT: die Bahn der Sonne { breite, dekl, drehsinn } aus Zahlen, nie " + JSON.stringify(b));
-        return Object.freeze({ breite: b.breite, dekl: b.dekl, drehsinn: b.drehsinn < 0 ? -1 : 1 });
+        const m = b.mond;
+        if (![b.breite, b.dekl, b.drehsinn].every(Number.isFinite) || !m || ![m.dekl, m.stunde, m.nah].every(Number.isFinite))
+            throw new Error(
+                "DIE BÜHNE DER WELT: die Bahn { breite, dekl, drehsinn, mond { dekl, stunde, nah } } aus Zahlen, nie " + JSON.stringify(b)
+            );
+        return Object.freeze({
+            breite: b.breite,
+            dekl: b.dekl,
+            drehsinn: b.drehsinn < 0 ? -1 : 1,
+            mond: Object.freeze({ dekl: m.dekl, stunde: m.stunde, nah: m.nah }),
+        });
     }
-    const gleicheBahn = (a, b) => a.breite === b.breite && a.dekl === b.dekl && a.drehsinn === b.drehsinn;
+    const gleicheBahn = (a, b) =>
+        a.breite === b.breite &&
+        a.dekl === b.dekl &&
+        a.drehsinn === b.drehsinn &&
+        a.mond.dekl === b.mond.dekl &&
+        a.mond.stunde === b.mond.stunde &&
+        a.mond.nah === b.mond.nah;
+    // der Ort am Himmel des Orts zum Stundenwinkel H, an der Breite φ, zur Deklination δ (die Achsen oben)
+    function himmelsOrt(H, breite, dekl) {
+        const sp = Math.sin(breite),
+            cp = Math.cos(breite),
+            sd = Math.sin(dekl),
+            cd = Math.cos(dekl),
+            cH = Math.cos(H);
+        return [-cd * Math.sin(H), sp * sd + cp * cd * cH, sp * cd * cH - cp * sd];
+    }
     function sonnenRichtung(winkel, bahn = BUEHNE_BAHN) {
         if (!bahn || !Number.isFinite(bahn.breite) || !Number.isFinite(bahn.dekl))
             throw new Error("DIE SONNENBAHN: ohne Breite und Deklination steht keine Sonne (`sonnenBahn`)");
-        const H = (winkel - Math.PI / 2) * (bahn.drehsinn < 0 ? -1 : 1);
-        const sp = Math.sin(bahn.breite),
-            cp = Math.cos(bahn.breite),
-            sd = Math.sin(bahn.dekl),
-            cd = Math.cos(bahn.dekl),
-            cH = Math.cos(H);
-        return [-cd * Math.sin(H), sp * sd + cp * cd * cH, sp * cd * cH - cp * sd];
+        return himmelsOrt((winkel - Math.PI / 2) * (bahn.drehsinn < 0 ? -1 : 1), bahn.breite, bahn.dekl);
     }
     // DIE BAHN DER SONNE aus dem Ort und dem Jahr: die Breite φ des Ankers (rad), die Saison-Phase p (0 die Gleiche des Frühlings ·
     // 0,25 die Sonnwende des Sommers · 0,5 · 0,75 — die Phasen der Saison-Worte 0,125 · 0,375 · 0,625 · 0,875) und der Körper
     // (Schiefe ε `neigungRad`, `drehsinn`, planet-core `planetPlan(...).koerper`): δ = asin(sin ε · sin 2πp), auf der Südhalbkugel
     // gespiegelt — das Saison-Wort ist das des Orts, sein Sommer steht über seinem Pol.
-    function sonnenBahn(breite, phase, koerper) {
+    // DER MOND AUF DERSELBEN BAHN DES HIMMELS (Karte 2 planet.kosmos.systeme#1): `mond` ist seine Lage gegen die Sonne aus der Zeit
+    // des Kosmos (`kosmosZeit(...).mond`: der Abstand der Längen, die Breite zur Ekliptik, der Abstand in km). Die Sonne steht an der
+    // Länge λ☉ = 2πp (auf der Südhalbkugel + π: ihr Sommer ist der des Südpols), der Mond an λ☉ + Δλ und β; beide in den Äquator
+    // gedreht (Schiefe ε, Meeus Kap. 13: α, δ) → seine Deklination und sein Stundenwinkel gegen den der Sonne (H☾ = H☉ + α☉ − α☾,
+    // `stunde`) und `nah` = R/d, der Sinus seiner Parallaxe (der Radius des Körpers `radiusKm`). Bis kosmos-bahn stand der Mond
+    // stets der Sonne gegenüber (−Sonne, der ewige Vollmond: keine Phase, kein eigener Lauf).
+    function sonnenBahn(breite, phase, koerper, mond) {
         const hem = breite < 0 ? -1 : 1;
+        if (!mond || ![mond.dLaenge, mond.breite, mond.abstandKm, koerper.radiusKm].every(Number.isFinite))
+            throw new Error(
+                "DIE BAHN DES HIMMELS: ohne den Mond der Zeit (`kosmosZeit(...).mond`) und den Radius des Körpers steht kein Mond, nie " +
+                    JSON.stringify({ mond, radiusKm: koerper.radiusKm })
+            );
+        const ce = Math.cos(koerper.neigungRad),
+            se = Math.sin(koerper.neigungRad);
+        const lS = 2 * Math.PI * phase + (hem < 0 ? Math.PI : 0),
+            lM = lS + mond.dLaenge,
+            cb = Math.cos(mond.breite),
+            sb = Math.sin(mond.breite);
+        const xm = cb * Math.cos(lM),
+            ym = cb * Math.sin(lM) * ce - sb * se,
+            zm = cb * Math.sin(lM) * se + sb * ce;
+        let stunde = Math.atan2(ce * Math.sin(lS), Math.cos(lS)) - Math.atan2(ym, xm);
+        stunde -= 2 * Math.PI * Math.round(stunde / (2 * Math.PI));
         return {
             breite,
             dekl: hem * Math.asin(Math.sin(koerper.neigungRad) * Math.sin(2 * Math.PI * phase)),
             drehsinn: koerper.drehsinn < 0 ? -1 : 1,
+            mond: { dekl: Math.asin(Math.max(-1, Math.min(1, zm))), stunde, nah: koerper.radiusKm / mond.abstandKm },
         };
     }
-    // DER MOND steht der Sonne voll gegenüber (der Vollmond) — EINE Formel für sein Licht und seinen Körper (w28-nacht-licht: der
-    // Körper rechnete seine Lage in einer eigenen Kopie mit dem Winkel + π)
+    // DER MOND AM HIMMEL DES ORTS: EINE Formel für sein Licht und seinen Körper — der Ort zu seinem Stundenwinkel (der der Sonne +
+    // `stunde`) und seiner Deklination, gesehen vom Boden (topozentrisch: der Beobachter steht R über der Mitte, die Richtung
+    // verschiebt sich um `nah` zum Horizont, Meeus Kap. 40 — bis 0,95° beim Mond der Erde). Fail-closed: eine Bahn ohne Mond bricht.
     function mondRichtung(winkel, bahn = BUEHNE_BAHN) {
-        return sonnenRichtung(winkel, bahn).map((v) => -v);
+        const m = bahn && bahn.mond;
+        if (!m || ![m.dekl, m.stunde, m.nah].every(Number.isFinite))
+            throw new Error("DER MOND: ohne seine Bahn { dekl, stunde, nah } steht kein Mond (`sonnenBahn` mit `kosmosZeit(...).mond`)");
+        const g = himmelsOrt((winkel - Math.PI / 2) * (bahn.drehsinn < 0 ? -1 : 1) + m.stunde, bahn.breite, m.dekl);
+        const y = g[1] - m.nah,
+            n = Math.hypot(g[0], y, g[2]);
+        return [g[0] / n, y / n, g[2] / n];
     }
 
     // DIE EINE TAG-ACHSE (S7, W7): jede Größe des Lichts über den Tag ist EINE Funktion der Sonnenhöhe e = sin(Höhe) — die Kanäle
@@ -1619,6 +1672,12 @@ var __weltLicht = (function () {
         bedeckung: Object.freeze(["bedeckung", 0.01, 1, 12, 0.2, 1.5]),
         // DAS SYSTEM: Planeten innen/außen um den Anker, Abstand der Bahnen als Perioden-Verhältnis, die Schneegrenze (AE · √L)
         system: Object.freeze({ innen: [0, 3], aussen: [2, 7], verhaeltnis: [1.35, 2.65], schnee: 2.7, aMin: 0.03, aMax: 60 }),
+        // DER MOND DER HEIMAT (Karte 2 planet.kosmos.systeme#1): der Körper der Heimat ist der der Erde (planet-core `PLANET_ERDE`),
+        // sein Mond der der Erde — die Halbachse 384 400 km und die siderische Periode 27,3217 d (NASA NSSDC, Moon Fact Sheet; die
+        // synodische folgt aus dem Jahr: 1/(1/27,3217 − 1/365) = 29,53 d); Exzentrizität und Neigung zur Ekliptik aus dem Samen in
+        // der Spanne, in der die Störung der Sonne die wahre Bahn schwingen lässt (e 0,026 … 0,077 um 0,0549, i 4,99° … 5,30° um
+        // 5,145°, Orbit of the Moon); Knoten, Perizentrum und mittlere Anomalie gleichverteilt. Kepler, ohne den Lauf der Knoten.
+        mond: Object.freeze({ aKm: 384400, P: 27.3217, e: Object.freeze([0.026, 0.077]), inklGrad: Object.freeze([4.99, 5.3]) }),
         // DER TON EINES PLANETEN am Himmel (die Farben der drei Wandelsterne bis kosmos-umfang): Fels zwischen rostig (Albedo 0,1,
         // nackter Stein) und weißgelb (Albedo 0,5, Wolkendecke), Gasriese cremeweiß, Eisriese blassblau
         planetTon: Object.freeze({
@@ -1630,6 +1689,7 @@ var __weltLicht = (function () {
         heimStern: Object.freeze({ klasse: 5, M: 4.83, toleranz: 0.1 }),
     });
     const KOSMOS_ERDRADIUS_KM = 6371;
+    const KOSMOS_AE_KM = 149597870.7; // die astronomische Einheit (IAU 2012, Resolution B2)
     // ganzzahliger Hash (32 bit) aus vier Zahlen, und der gleichverteilte Wurf in (0, 1)
     function kHash(a, b, c, d) {
         let h = KM.imul((a ^ 0x9e3779b9) >>> 0, 0x85ebca6b);
@@ -2035,12 +2095,30 @@ var __weltLicht = (function () {
                 radius,
                 albedo,
                 masse,
-                monde,
+                // die Heimat trägt ihren Mond (`mond` unten) — der Wurf der Zahl bleibt, damit jeder Wurf danach seine Zahl hält
+                monde: heimPlanet ? KM.max(1, monde) : monde,
                 ring,
             };
         });
         const ebene = kDrehung(w(), w(), w());
-        return { stern: st, L, masse: st.masse, schnee, planeten, heim: planeten.findIndex((p) => p.heim), ebene };
+        // DER MOND DER HEIMAT auf seiner Bahn um sie (`KOSMOS.mond`), gewürfelt NACH der Ebene: jede Zahl davor bleibt bitgleich
+        const mond = heimat ? kMond(w) : null;
+        return { stern: st, L, masse: st.masse, schnee, planeten, heim: planeten.findIndex((p) => p.heim), ebene, mond };
+    }
+    // die Kepler-Elemente des Monds der Heimat (Halbachse in AE, Periode in Tagen, Winkel rad; dieselbe Gestalt wie ein Planet: `kBahn`
+    // legt ihn um die Heimat in denselben Rahmen der Ekliptik)
+    function kMond(w) {
+        const MO = KOSMOS.mond,
+            G = KM.PI / 180;
+        return Object.freeze({
+            a: MO.aKm / KOSMOS_AE_KM,
+            P: MO.P,
+            e: MO.e[0] + (MO.e[1] - MO.e[0]) * w(),
+            inkl: (MO.inklGrad[0] + (MO.inklGrad[1] - MO.inklGrad[0]) * w()) * G,
+            knoten: 2 * KM.PI * w(),
+            peri: 2 * KM.PI * w(),
+            M0: 2 * KM.PI * w(),
+        });
     }
     // galaktisch → Rahmen des Felds (die Ekliptik des Heim-Systems, ŷ ihr Pol): die Zeilen der Ebene
     function kInsFeld(E, x, y, z, out, o) {
@@ -2174,7 +2252,20 @@ var __weltLicht = (function () {
             hellste = KM.min(hellste, m);
         }
         for (let q = 0; q < wechselMag.length; q++) hellste = KM.min(hellste, wechselMag[q]);
-        return { t, wechselMag, planeten, hellste };
+        // DER MOND (Karte 2 planet.kosmos.systeme#1): seine Lage um die Heimat (`kBahn`, dieselbe Ekliptik) gegen die Sonne, wie die
+        // Heimat sie sieht (−rH) — die Länge im Sinn der Bahnen (x → z) als Abstand zur Sonne (`dLaenge`, −π … π), die Breite zum Pol
+        // der Bahnen (ihr Drehimpuls, −ŷ) und der Abstand (km). Der Himmel des Orts stellt ihn an die Sonne, die er zeigt
+        // (`sonnenBahn` → `mondRichtung`): die Elongation, also die Phase, ist die der Bahn.
+        let mond = null;
+        if (SY.mond) {
+            const rM = [0, 0, 0];
+            kBahn(SY.mond, t, rM);
+            const d = KM.hypot(rM[0], rM[1], rM[2]);
+            let dl = KM.atan2(rM[2], rM[0]) - KM.atan2(-rH[2], -rH[0]);
+            dl -= 2 * KM.PI * KM.round(dl / (2 * KM.PI));
+            mond = { dLaenge: dl, breite: KM.asin(-rM[1] / d), abstandKm: d * KOSMOS_AE_KM };
+        }
+        return { t, wechselMag, planeten, hellste, mond };
     }
     // DAS BAND DER GALAXIE (stern-bild): das ungelöste Licht der Scheibe — die Sterne der Funktion, die schwächer als `feldGrenze`
     // stehen (10¹¹ gegen die 9 000 Punkte des Felds), als Flächen-Helligkeit je Richtung. KEINE Textur: das Integral derselben

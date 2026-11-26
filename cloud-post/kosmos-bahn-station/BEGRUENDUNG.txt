@@ -1,0 +1,43 @@
+KANDIDATEN (Bahn kosmos-bahn, Richter-Sache) — zwei Patches gegen origin/punkte-maschine e0b88e0 (die beiden Stationsdateien sind dort
+byte-gleich mit d5b0c7d), je `patch -p1 --batch --dry-run` sauber, angewandt byte-gleich mit dem Kandidaten, `node --check` grün.
+Kein Soll ist geändert. Die Prüfstände (Node, ohne GPU) rufen den Stationstext WÖRTLICH (aus der gepatchten Datei geschnitten).
+
+1. k2-kosmos-systeme-s1.patch — planet.kosmos.systeme#1 „Planet und Mond stehen über ein Spieljahr gegen die Ephemeride ≤ 0,5°“
+   Vorher maß die Station nur die Planeten; der Mond stand nie gegen eine Bahn (er war die Gegen-Sonne: welt-licht mondRichtung = −sonne).
+   Neu: MOND_EPHEMERIDE, ein EIGENER Kepler-Löser über die Elemente des Gesetzes (K.heim.system.mond um die Heimat, die Heimat um den
+   Stern), gedreht auf die Sonne des Kalenders, in den Äquator (Schiefe), an den Ort (Sternzeit aus der Sonne der Uhr), topozentrisch
+   (Radius des Körpers) — Matrizen, nie die Formeln des Spiels. HIMMEL_AN liest den Leser des Spiels `_dayNightMoonDirection` (dieselbe
+   Richtung, die Körper, Licht und Belichtung des Monds lesen) zur Uhr der Adresse; abw = max(Mond, Planeten); neues Maß mond_abw_grad.
+   Gemessen (pruefstand-systeme-s1.cjs, 2 Saaten × 2 Körper × 2 920 Adressen, gestufte Kosmos-Zeit wie `_kosmosJetzt`):
+     Leser vor dem Schnitt (Gegen-Sonne) gegen die Ephemeride  max 179,77°
+     Leser kosmos-bahn gegen die Ephemeride                    max 0,0823°, Mittel 0,0712° (die Stufe 1/96 d; bis 0,144° am Stufen-Ende)
+   Ohne Stufe gegen eine zweite, unabhängige Ephemeride: 1,7·10⁻⁶° über 8 760 Proben, 2 Saaten (Stand-Blatt).
+
+2. k2-zusammenspiel-bahn-klima-s2.patch — planet.kopplung.bahn-klima#2 (+ die veralteten Texte von S5/S6)
+   Täter der Station: BAHN_AN fragte `planet-ort` OHNE `koerper` und urteilte über die eigene Neigung jeder Saat (planetPlan ohne
+   Vorgabe) — der Faden baut den Plan jeder Saat mit dem Körper der Erde (voxel-worker.js:1468 planetPlanVon(samen, msg.koerper)): die
+   Station maß das Relief, nie die Bahn. Neu: je Adresse DREI Antworten desselben Auftrags — Erde (ohne koerper), {neigungRad: 0},
+   {neigungRad: π/4}; die Amplituden gepoolt (Summe über den Fächer je Körper), die Schneelinie aus derselben Antwort über das Gesetz, das
+   die Reise liest (gelaende-core ortGesetz(teil).schneeBandM, der Teil wie netz-portal.js:669), Versatz 45° − 0° an 45° Breite.
+   Texte: „PLANET_ERDE fest“ / „liest keinen Körper“ an S2, S5, S6 (nicht/leser/taeter) — veraltet, der Faden liest msg.koerper.
+   Gemessen an der echten Stationsfunktion (pruefstand-bahn-klima-s2.cjs; der Faden = der Block voxel-worker.js KOERPER_FELDER …
+   planetOrtAuftrag wörtlich im vm). EICHUNG: alte Station × Kern von main gibt die Gerätemessung an main 2da17e2e (punkte-maschine
+   messung/roh/2da17e2e-radeon/karte2.planet.kopplung.bahn-klima_2.json) Zahl für Zahl: amp0Prozent 42, amp45Faktor 0,712, ampErde 20,816.
+                                        amp0Prozent (≤ 10)   amp45Faktor (≥ 2)   schneelinieVersatzM (> 0)
+     alte Station × Kern main                 42                 0,712              —
+     alte Station × Kern kosmos-bahn          59,3               0,760              —   (misst das Relief: der Station-Täter)
+     neue Station × Kern main                 22,8               1,833              150,1
+     neue Station × Kern kosmos-bahn           0,0               1,944              152,2 (min 94,9 · max 371,2)
+   Je Adresse: 0° bis 0,0 % (vorher bis 871,7 %), 45° 0,028 … 4,797×.
+   OFFEN amp45 (1,944 = 97 % des Solls): der Rest-Täter ist planet-core.js planetKlimaGlobal — die Hadley-Breite nach Held–Hou aus dem
+   JAHRESMITTEL: Erde 3 Zellen à 29,64°, 45° Neigung 5 Zellen à 19,55° (schwächeres Gefälle). Damit fallen an 45° Breite die Küsten-
+   Winterterme weg (Heimat dTw −7,70 → 0 K) und die Winter-Advektion kehrt um (−1,62 → +1,32 K): 3 der 21 Meer-Adressen bei 45° liegen
+   unter der Erde (Heimat 0,887×). Die äußere Quelle sagt das Gegenteil: die Hadley-Zirkulation wird mit der Neigung BREITER
+   (Guendelman & Kaspi 2019, ApJ, arXiv 1906.05748; Lindzen & Hou 1988 für den Sonnwend-Fall). Die reine Einstrahlung gibt 1,777×
+   (S0·sin φ·sin ε, Berger 1978).
+   FRAGE an den Richter: das Soll „45°: ≥ 2×“ nennt keine Quelle (die Einstrahlung allein 1,78×) — gilt es gepoolt oder je Adresse?
+
+Prüfstände (aus der Wurzel des Spiels; faecher.js muss neben der Stationsdatei liegen):
+  node cloud-post/kosmos-bahn-station/pruefstand-bahn-klima-s2.cjs <…/stationen/k2-zusammenspiel.js> <Wurzel mit planet-core.js> <Wurzel mit voxel-worker.js>
+  node cloud-post/kosmos-bahn-station/pruefstand-systeme-s1.cjs <…/stationen/k2-kosmos.js>
+  (die alte Station liest planet-core über require(path.resolve(…)): aus der Wurzel des Kerns starten)
