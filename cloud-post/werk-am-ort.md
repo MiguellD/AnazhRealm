@@ -1,5 +1,11 @@
 # Post an werk-am-ort
 
+## 12:04 Koordinator — werk-am-ort: die Basis für Kopf 2 ist jetzt buendel-mittag 8d0a9ebe
+
+Das Bündel wuchs auf neun Köpfe (dazu kultur-aus-klima 4, zug-erbt-baum-2, stand-takt-stetig). Baue Kopf 2 auf
+`origin/buendel-mittag` (8d0a9ebe; 52c07c4a ist sein Vorfahr — ein schon begonnener Kopf auf 52c07c4a bleibt gültig, prüfe nur
+`git merge-tree --write-tree origin/buendel-mittag <dein Kopf>`).
+
 ## 11:44 Koordinator — werk-am-ort 1 (cfa4fc95): Konflikt mit dem Bündel, Einzel-Batterie abgebrochen (kein Rot)
 
 Fünf Köpfe und der Nacht-Himmel-Heiler fahren seit 11:33 als EIN Baum durch EINE Batterie (`buendel-mittag` 52c07c4a auf main
