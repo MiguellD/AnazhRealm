@@ -1287,10 +1287,49 @@ var __weltLicht = (function () {
     // zeichnet transparent mit der Deckkraft seines Gesetzbuchs und beide Seiten in EINEM Zug — r184 zieht einen doppelseitig-
     // durchsichtigen Stoff sonst zweimal (Rück-, dann Vorderseite), jede Scheibe tönte doppelt (Durchlass 0,58² statt 0,58 bei
     // Deckkraft 0,42). Die Welt baut ihn so (`_foundryBuildMaterial`), die Bühne jedes Studios zeichnet ihn so (`stoffRecht`).
-    function durchsicht(mat, op) {
+    // `f0` (ein Knoten, der Glanz EINER Fläche aus der Zeile des Stoffs): der Stoff ist eine SCHEIBE und zeichnet nach ihrem Gesetz.
+    function durchsicht(mat, op, f0) {
         mat.transparent = true;
         mat.opacity = op;
         mat.forceSinglePass = true;
+        if (f0) scheibe(mat, f0);
+        return mat;
+    }
+    // DAS GESETZ DER SCHEIBE (fahrzeug-gestalt, das EINE Glas der Welt: Fenster der Häuser, Scheiben der Wagen, der Kopf der
+    // Laterne). Eine Scheibe hat zwei Flächen; jede spiegelt nach Fresnel F(θ) = F₀ + (1 − F₀)(1 − n·v)⁵ (Schlick), F₀ der Fläche
+    // aus der Zeile glas des Stoff-Gesetzes (n 1,49 → 0,039, der Wirt `_glasOptik`); beide zusammen F₀ der Scheibe = 2F₀/(1 + F₀)
+    // ≈ 0,075 (Stokes, ohne Absorption — gemessen: Floatglas 8 % bei senkrechtem Blick). Im Bild steht:
+    //   der Glanz der Scheibe (die Umgebung, die das Spiel jedem Stoff rechnet, `_spiegelUmgebung`, × F) und ihr Leuchten GANZ,
+    //   der Körper des Gesetzbuchs (Tönung, Staub) mit seiner Deckkraft a, das Dahinter mit (1 − F)(1 − a):
+    //   Bild = Glanz + Leuchten + a·Körper + (1 − F)(1 − a)·Dahinter — die Blende α = 1 − (1 − F)(1 − a), das Fragment ÷ α vor der
+    //   Luft (der Nebel der Mischung steht so mit α im Bild, das Dahinter trägt seinen eigenen).
+    // Bis hier mischte r184 die ganze Scheibe mit ihrer Deckkraft: der Glanz stand mit 0,42 im Bild (das Fenster des Hauses
+    // spiegelte 1,7 % statt 8 %, der Himmel fehlte ihm), der Wagen glich es mit eigenen Zahlen aus (Umgebung × 3, ein Klarlack auf
+    // dem Glas — ein zweiter Glanz neben dem der Welt), das Leuchten der Fenster teilte sich durch die Deckkraft (`_leuchtStoff`), und
+    // das Dahinter blieb bei streifendem Blick so hell wie von vorn. Der Glanz einer Fläche ist F₀ der Zeile, nie r184s 0,04.
+    function scheibe(mat, f0) {
+        const T = globalThis.THREE.TSL;
+        if (mat.isNodeMaterial !== true) throw new Error("welt-licht scheibe: kein Knoten-Stoff — die Scheibe zeichnet nach TSL");
+        const eins = T.float(1);
+        const F0 = f0.mul(2).div(f0.add(1));
+        const nv = T.normalView.dot(T.positionViewDirection).abs().min(1);
+        const F = F0.add(eins.sub(F0).mul(eins.sub(nv).pow(5)));
+        const art = Object.getPrototypeOf(mat);
+        mat.setupVariants = function (b) {
+            art.setupVariants.call(this, b);
+            T.specularColor.assign(T.vec3(F0));
+            T.specularColorBlended.assign(T.mix(T.vec3(F0), T.diffuseColor.rgb, T.metalness));
+            T.diffuseContribution.assign(T.diffuseContribution.mul(T.diffuseColor.a));
+        };
+        mat.setupOutput = function (b, aus) {
+            const a = eins.sub(eins.sub(F).mul(eins.sub(aus.a)));
+            return art.setupOutput.call(this, b, T.vec4(aus.rgb.div(a), a));
+        };
+        // das Gesetz ist Teil der Identität des Programms: r184 schlüsselt nur die Knoten des Stoffs, nie seine Bau-Schritte
+        mat.customProgramCacheKey = function () {
+            return art.customProgramCacheKey.call(this) + "|scheibe";
+        };
+        mat.userData.scheibe = f0;
         return mat;
     }
     // DAS RECHT DER WELT AN EINEM MESH DER BÜHNE: es wirft nach dem Wurf-Recht (`teilWirft`), sein durchsichtiger Stoff zeichnet in

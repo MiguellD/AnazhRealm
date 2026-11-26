@@ -2016,6 +2016,9 @@ class AnazhRealm_siedlung_bewohner {
                     Object.assign(b, { gegangen: 0, gehTakt: 0, tempoJetzt: 0, tempoTag: undefined, rueck: 0 });
                     Object.assign(b, { vx: 0, vz: 0, platz: false, hinaus: false, ankunft: !!b.leib, walkPhase: 0, _gaitW: 0, _gait: undefined, nah: false, begegnet: false }); // prettier-ignore
                     this._bewohnerRasterLage(S, b);
+                    // und ohne seinen letzten Tritt (`_tritt`): wer neu steht, ist nicht gegangen — bis fahrzeug-medium schrieb der
+                    // erste Schritt nach dem Sprung einen Tritt, wo der Leib vor ihm stand (unter 1,5 m), und das Rad liest die Tritte
+                    if (b.leib) this._trittMemo?.delete(b.leib);
                 }
                 if (S.verkehr) this._verkehrSprung(S); // auch der Wagen: f(Same, t)
             }
