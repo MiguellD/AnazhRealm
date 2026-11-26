@@ -26,7 +26,7 @@
   "deckung": 0,
   "taeter": {},
   "vordergrund": {
-   "radius": 3,
+   "radius": 3.01,
    "deckung": 0,
    "taeter": {},
    "leib": {
@@ -54,27 +54,27 @@
  },
  "pose": {
   "kamera": [
-   -305.161,
-   28.811,
-   -812.895
+   -305.31,
+   28.821,
+   -812.68
   ],
   "blick": [
-   0.56081,
-   -0.55465,
-   -0.61471
+   0.56029,
+   -0.5558,
+   -0.61414
   ]
  },
  "seitenfehler": 0,
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 53.8,
-  "sigma": 37.1,
-  "schwarz": 0.0003,
+  "mittel": 57.7,
+  "sigma": 38.4,
+  "schwarz": 0.0002,
   "weiss": 0
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 6.01 m · Luma 53.8 σ 37.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.299 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 6.01 m · Luma 57.7 σ 38.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.299 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
  "rot": [],
  "urteil": "GRÜN",
  "klasse": {
@@ -90,8 +90,8 @@
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 850,
-   "wechsel": 1163076
+   "ms": 856,
+   "wechsel": 1162999
   },
   "rinde": null,
   "toene": [
@@ -100,6 +100,6 @@
   "klassen": {},
   "abstand": null,
   "gesicht": null,
-  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K3_1-bach-2.maske.png"
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\kolk\\kolk-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K3_1-bach-2.maske.png"
  }
 }

@@ -22,16 +22,16 @@
   ]
  },
  "sicht": {
-  "radius": 0.7503167664393774,
-  "deckung": 0.2909,
+  "radius": 0.5105568038916001,
+  "deckung": 0.1829,
   "taeter": {
-   "Gelände": 0.2909
+   "Gelände": 0.1829
   },
   "vordergrund": {
-   "radius": 0.75,
-   "deckung": 0.2899,
+   "radius": 0.51,
+   "deckung": 0.184,
    "taeter": {
-    "Gelände": 0.2899
+    "Gelände": 0.184
    },
    "leib": {
     "deckung": 0,
@@ -50,7 +50,7 @@
   "vor": null,
   "vorAbstand": null,
   "leiber": null,
-  "abstand": 1.5,
+  "abstand": 1.02,
   "gestalt": [
    "wasser"
   ],
@@ -58,35 +58,31 @@
  },
  "pose": {
   "kamera": [
-   -300.683,
-   25.432,
-   -815.578
+   -300.229,
+   25.711,
+   -817.074
   ],
   "blick": [
-   -0.73839,
-   0.03066,
-   -0.67368
+   -0.94605,
+   -0.20175,
+   -0.25355
   ]
  },
  "seitenfehler": 0,
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 86.1,
-  "sigma": 18.2,
+  "mittel": 90.1,
+  "sigma": 13.9,
   "schwarz": 0,
   "weiss": 0
  },
  "ok": false,
- "zeile": "ABNAHME ROT [Sicht verdeckt 29.1 % (Laub · Rinde · Fels · Böschung näher als 0.7503167664393774 m, Bau als 0.3751583832196887 m): Gelände 29.1 % · Vordergrund 29.0 % näher als 0.75 m (der halbe Ziel-Abstand): Gelände 29.0 %] · beweis · Sicht 29.1 % (Gelände 29.1 %) · Ziel Blickziel im Bild frei 1.5 m · Luma 86.1 σ 18.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.299 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "zeile": "ABNAHME ROT [Sicht verdeckt 18.3 % (Laub · Rinde · Fels · Böschung näher als 0.5105568038916001 m, Bau als 0.25527840194580004 m): Gelände 18.3 %] · beweis · Sicht 18.3 % (Gelände 18.3 %) · Ziel Blickziel im Bild frei 1.02 m · Luma 90.1 σ 13.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.299 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
  "rot": [
   {
    "feld": "sicht.deckung",
-   "grund": "Sicht verdeckt 29.1 % (Laub · Rinde · Fels · Böschung näher als 0.7503167664393774 m, Bau als 0.3751583832196887 m): Gelände 29.1 %"
-  },
-  {
-   "feld": "sicht.vordergrund.deckung",
-   "grund": "Vordergrund 29.0 % näher als 0.75 m (der halbe Ziel-Abstand): Gelände 29.0 %"
+   "grund": "Sicht verdeckt 18.3 % (Laub · Rinde · Fels · Böschung näher als 0.5105568038916001 m, Bau als 0.25527840194580004 m): Gelände 18.3 %"
   }
  ],
  "urteil": "ROT",
@@ -103,8 +99,8 @@
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 756,
-   "wechsel": 1166302
+   "ms": 866,
+   "wechsel": 1166399
   },
   "rinde": null,
   "toene": [
@@ -113,11 +109,11 @@
   "klassen": {
    "tier:fisch": {
     "objekte": 1,
-    "pixel": 1557
+    "pixel": 41140
    }
   },
   "abstand": null,
   "gesicht": null,
-  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K3_1-bach-1-rot.maske.png"
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\kolk\\kolk-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K3_1-bach-1-rot.maske.png"
  }
 }

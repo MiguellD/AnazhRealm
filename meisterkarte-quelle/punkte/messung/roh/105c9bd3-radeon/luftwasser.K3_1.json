@@ -12,48 +12,56 @@
    "fische": 27,
    "meiden": {
     "stand": [
-     -300.554,
-     -817.23
+     -300.399,
+     -817.687
     ],
     "vorher": 13,
     "spielerAmStand": 0,
-    "naechsterM": 4.594,
+    "naechsterM": 4.86,
     "heim": 12
    },
    "bilder": [
     {
      "wo": "unter dem Spiegel",
-     "saeule": 0.633,
+     "saeule": 0.598,
+     "abstand": 0.8,
+     "bett": 0,
+     "posen": 3,
      "kamera": [
-      -300.683,
-      25.432,
-      -815.578,
-      -301.791,
-      25.478,
-      -816.589
+      -300.747,
+      25.707,
+      -816.638,
+      -301.313,
+      25.505,
+      -817.204
      ],
      "klasse": "^tier:fisch",
-     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K3_1-bach-1.png",
-     "fehler": "ABNAHME ROT [Sicht verdeckt 29.1 % (Laub · Rinde · Fels · Böschung näher als 0.7503167664393774 m, Bau als 0.3751583832196887 m): Gelände 29.1 % · Vordergrund 29.0 % näher als 0.75 m (der halbe Ziel-Abstand): Gelände 29.0 %] · beweis · Sicht 29.1 % (Gelände 29.1 %) · Ziel Blickziel im Bild frei 1.5 m · Luma 86.1 σ 18.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.299 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K3_1-bach-1-rot.png",
-     "klassen": null
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\kolk\\kolk-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K3_1-bach-1.png",
+     "fehler": null,
+     "klassen": {
+      "tier:fisch": {
+       "pixel": 26444,
+       "objekte": 1
+      }
+     }
     },
     {
      "wo": "vom Ufer",
      "kamera": [
-      -305.161,
-      28.811,
-      -812.895,
-      -301.791,
+      -305.31,
+      28.821,
+      -812.68,
+      -301.94,
       25.478,
-      -816.589
+      -816.374
      ],
      "klasse": "^tier:fisch",
-     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K3_1-bach-2.png",
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\kolk\\kolk-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K3_1-bach-2.png",
      "fehler": null,
      "klassen": {}
     }
    ],
-   "sek": 18.3
+   "sek": 23.8
   }
  },
  "fehler": []
