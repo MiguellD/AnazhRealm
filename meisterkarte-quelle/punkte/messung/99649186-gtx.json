@@ -1,7 +1,7 @@
 {
  "sha": "9964918608a72e1bbc6972925a4820eac5b53d0f",
  "geraet": "gtx",
- "zeit": "2026-11-26T20:12:51.938Z",
+ "zeit": "2026-11-26T20:43:07.835Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -2807,6 +2807,70 @@
    "ungemessen": true,
    "zeit": "2026-11-26T20:12:07.830Z",
    "abdruck": "94ecb21f3b9a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.fahrzeug.lenker#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181.1 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 184.4 von 2500000000000 s in 12435 Takten, 170.4 s Wand (13.7 ms je Takt)",
+   "exit": 0,
+   "minuten": 3.03,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181.1 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 184.4 von 2500000000000 s in 12435 Takten, 170.4 s Wand (13.7 ms je Takt)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 181.1,
+   "fremd": {
+    "s": 182.9,
+    "takte": 85,
+    "fremdS": 42.52,
+    "kerne": 0.232,
+    "fensterKerne": 0.469,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      8.17
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.22
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.11
+     ]
+    ],
+    "dienerS": 34.63,
+    "diener": [
+     [
+      "System",
+      12.91
+     ],
+     [
+      "dwm.exe",
+      12.23
+     ]
+    ],
+    "geraetS": 60.48,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      38.83
+     ],
+     [
+      "svchost.exe",
+      19.05
+     ],
+     [
+      "SearchIndexer.exe",
+      1
+     ]
+    ],
+    "eigenS": 306.98,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T20:43:07.835Z",
+   "abdruck": "b6c3c3996fb0",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
