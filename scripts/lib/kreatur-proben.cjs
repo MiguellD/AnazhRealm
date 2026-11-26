@@ -1060,10 +1060,16 @@ async function kreaturProben(r, T, opts) {
         // und sein Anker liegt drei Leinen weit in seiner eigenen Richtung (der Anker des Wurfs, versetzt, und jeder, den es selbst
         // legt): die Herde hat kein gemeinsames Revier mehr und zerfällt beim Wandern. Seit das Ziel dem Verband gehört
         // (Posen-Gesetz H1) übernimmt das Glied Anker und Ziel des Leittiers, und der Wurf legt den Anker schon gelegt — die
-        // verschobene Lage im Leger des Reviers allein traf keinen (0,98 im Fenster)
+        // verschobene Lage im Leger des Reviers allein traf keinen (0,98 im Fenster).
+        // DIE RICHTUNG AUS DEM PLATZ IM WURF (landmarken-geologie-3): der goldene Winkel über die Reihe der Geburt im Verband
+        // (wie die Geburt selbst ihre Glieder legt), nie die Los-Nummer als Winkel — die Lose eines Wurfs steigen um die
+        // FNV-Primzahl 16 777 619 ≡ −0,018 rad (mod 2π): die fünf Richtungen lagen in 4°, die Anker 3,4 m (Kopf) / 4,3 m (main
+        // 64fcf12e) auseinander, und der Täter traf nur, wo das Gelände des Wurf-Orts die Glieder zufällig über die Leine trug
         if (taeter === "herde-revier") {
             const weg = (c, a, leash) => {
-                const w = r._leibNummer(c); // die Richtung aus der Los-Nummer des Glieds (Welle SAMEN), nie aus der netId
+                const vb = c.userData.verband;
+                const reihe = vb == null ? [c] : s.creatures.filter((o) => o.userData.verband === vb);
+                const w = Math.max(0, reihe.indexOf(c)) * 2.39996;
                 return { x: a.x + Math.cos(w) * 3 * leash, z: a.z + Math.sin(w) * 3 * leash };
             };
             decke(

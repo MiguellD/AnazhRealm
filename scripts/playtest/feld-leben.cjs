@@ -1703,42 +1703,87 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             out.felsturmHasCollision = !!(et && Array.isArray(et.blockerAABBs) && et.blockerAABBs.length > 0);
         });
 
-        // Placement-Probe über den Voxel-Populator: über ein Raster frischer Chunks MUSS mindestens ein
-        // Felsbogen + ein Felsturm spawnen (Landmark-Wurf 0.014 × Affinitäts-Floor; 12×12=144 Chunks =
-        // statistisch sicher).
+        // DIE LANDMARKE FOLGT DER GEOLOGIE (landmarken-geologie): die Saat jedes Chunks fragt das Gesetz des Orts (gelaende-core
+        // `landmarke`, je km² aus Tafelland und Klima; `_landmarkeChunk` in `_tickSaat`) — Bögen und Türme stehen, wo die
+        // Tafel sie trägt, und fehlen, wo sie fehlt. Bis landmarken-geologie-3 forderte die Probe „Bögen > 0 UND Türme > 0“
+        // auf dem Block 20..31² (144 Chunks, Wurf 1,4 % je Probe): dort trägt das Gesetz 0,03 Bögen und 0,15 Türme — die alte
+        // Zahl maß das alte Gesetz. ORT A, die Tafel: die Chunks [0, 96)² mit Tafel-Stil ≥ 0,9 (Saat anazh-realm-seed: 1 791
+        // Chunks, 3,34 km², das Gesetz 2,83 Bögen · 10,32 Türme); ORT B, der alte Block: das Gesetz trägt dort zu Recht
+        // keine. Je Ort die Würfe der Saat des Chunks gegen das Poisson-Band ihres Gesetzes (μ + 3,3·√μ + 1 nach oben, nach
+        // unten μ − 3,3·√μ); KONSUM: je Art ihr erster Träger in A geht durch die volle Saat (`_populateVoxelChunkVegetation`,
+        // der Pfad des Stroms) und trägt dort dieselbe Art.
         const vorArch = new Set(st.architectures);
-        // Frische Voxel-Chunk-Indices, deutlich außerhalb des
-        // initialen 9×9-Voxel-Rings (cx,cz ∈ [-4..4]).
-        const fresh = new Set();
-        for (let cx = 20; cx <= 31; cx++) {
-            for (let cz = 20; cz <= 31; cz++) {
-                const key = `${cx},${cz}`;
-                if (st.voxelPopulatedChunks && st.voxelPopulatedChunks.has(key)) continue;
-                fresh.add(key);
-                // der Test-Pfad braucht synchrone Spawns (er
-                // misst gleich danach state.architectures); im echten
-                // Streaming geht das durch die Per-Frame-Queue.
-                r._populateVoxelChunkVegetation(cx, cz, { immediate: true });
+        const span = r._voxelChunkConfig().span;
+        const K = globalThis.__gelaendeCore;
+        const L = r._gelaende();
+        const LM = ["felsbogen", "felsturm"];
+        const ort = (chunks) => {
+            const o = { chunks: 0, km2: 0, mu: { felsbogen: 0, felsturm: 0 }, n: { felsbogen: 0, felsturm: 0 }, traeger: {} };
+            const vorher = r._vegSpawnImmediate;
+            r._vegSpawnImmediate = true; // die Test-Naht der Saat (`_enqueueVegetationSpawn`: synchron statt Schlange)
+            try {
+                for (const [cx, cz] of chunks) {
+                    const d = K.landmarke(L, (cx + 0.5) * span, (cz + 0.5) * span);
+                    for (const a of LM) o.mu[a] += d[a] * span * span * 1e-6;
+                    o.chunks++;
+                    const i0 = st.architectures.length;
+                    r._landmarkeChunk(cx, cz);
+                    for (let i = i0; i < st.architectures.length; i++) {
+                        const t = st.architectures[i].type;
+                        if (!(t in o.n)) continue;
+                        o.n[t]++;
+                        o.traeger[t] = o.traeger[t] || [cx, cz];
+                    }
+                }
+            } finally {
+                r._vegSpawnImmediate = vorher;
             }
-        }
-        let fbCount = 0;
-        let ftCount = 0;
-        for (const e of st.architectures) {
-            if (vorArch.has(e)) continue;
-            const t = e.type;
-            if (t === "felsbogen") fbCount++;
-            else if (t === "felsturm") ftCount++;
-        }
-        out.placedFelsbogen = fbCount;
-        out.placedFelsturm = ftCount;
-        out.placementWorks = fbCount > 0 && ftCount > 0;
-        // die Würfe ferner Daten-Chunks (nie gebaut) fallen nach Identität aus der Liste — der Abbau-Pfad schriebe je Wurf
-        // einen Journal-Eintrag und füllte dessen Deckel (200)
+            o.km2 = (o.chunks * span * span) / 1e6;
+            o.band = {};
+            for (const a of LM) {
+                const w = 3.3 * Math.sqrt(o.mu[a]);
+                o.band[a] = o.n[a] <= o.mu[a] + w + 1 && o.n[a] >= o.mu[a] - w;
+            }
+            return o;
+        };
+        const tafel = [];
+        for (let cx = 0; cx < 96; cx++)
+            for (let cz = 0; cz < 96; cz++)
+                if (K.grossform(L, (cx + 0.5) * span, (cz + 0.5) * span).stil >= 0.9) tafel.push([cx, cz]);
+        const block = [];
+        for (let cx = 20; cx <= 31; cx++) for (let cz = 20; cz <= 31; cz++) block.push([cx, cz]);
+        out.ortA = ort(tafel);
+        out.ortB = ort(block);
         st.architectures = st.architectures.filter((x) => vorArch.has(x));
-        // Test-Räume aus dem Voxel-Idempotenz-Cache löschen
-        // (sonst leben die Test-Chunk-Keys dauerhaft + blockieren
-        // einen späteren echten Pass).
-        for (const k of fresh) if (st.voxelPopulatedChunks) st.voxelPopulatedChunks.delete(k);
+        // DER KONSUM: der Träger geht durch die volle Saat des Chunks (der Test-Pfad sät synchron, `immediate`; im Strom geht
+        // derselbe Ruf durch die Schlange des Takts)
+        out.konsum = {};
+        for (const a of LM) {
+            const t = out.ortA.traeger[a];
+            if (!t) continue;
+            const key = `${t[0]},${t[1]}`;
+            if (st.voxelPopulatedChunks?.has(key)) {
+                out.konsum[a] = { key, schon: true };
+                continue;
+            }
+            const vor = new Set(st.architectures);
+            r._populateVoxelChunkVegetation(t[0], t[1], { immediate: true });
+            const neu = st.architectures.filter((x) => !vor.has(x) && x.type === a);
+            out.konsum[a] = { key, n: neu.length };
+            // die Würfe ferner Daten-Chunks (nie gebaut) fallen nach Identität aus der Liste — der Abbau-Pfad schriebe je
+            // Wurf einen Journal-Eintrag und füllte dessen Deckel (200); der Chunk verlässt den Idempotenz-Cache (ein späterer
+            // echter Pass sät ihn)
+            st.architectures = st.architectures.filter((x) => vorArch.has(x));
+            st.voxelPopulatedChunks.delete(key);
+        }
+        const A = out.ortA,
+            B = out.ortB;
+        out.placementWorks =
+            A.n.felsbogen > 0 &&
+            A.n.felsturm > 0 &&
+            LM.every((a) => A.band[a] && B.band[a] && out.konsum[a]?.n > 0) &&
+            B.mu.felsbogen + B.mu.felsturm < 0.5 &&
+            B.n.felsbogen + B.n.felsturm === 0;
         return out;
     });
 
@@ -1771,8 +1816,16 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             "W6.G P3: spawnArchitecture('felsturm') erzeugt Eintrag + feld-native Kollision (blockerAABBs)",
             wave6gP3Results.felsturmSpawned && wave6gP3Results.felsturmHasCollision
         );
+        const { ortA: A, ortB: B, konsum: KS } = wave6gP3Results;
+        const zahl = (o) =>
+            o
+                ? `${o.chunks} Chunks ${o.km2.toFixed(2)} km²: Bögen ${o.n.felsbogen} (Gesetz ${o.mu.felsbogen.toFixed(2)}) · ` +
+                  `Türme ${o.n.felsturm} (Gesetz ${o.mu.felsturm.toFixed(2)})`
+                : "keine Messung";
+        const konsum = (a) => (KS?.[a] ? `${KS[a].key} ${KS[a].schon ? "schon gesät" : KS[a].n + "×"}` : "kein Träger");
         check(
-            `W6.G P3: Felsbögen UND Felstürme spawnen über das Welt-Affinitäts-Feld (Bögen=${wave6gP3Results.placedFelsbogen}, Türme=${wave6gP3Results.placedFelsturm})`,
+            `W6.G P3: Felsbögen und Felstürme folgen der Geologie (gelaende-core \`landmarke\`) — A Tafel [0,96)² ${zahl(A)}; ` +
+                `B ohne Tafel 20..31² ${zahl(B)}; Konsum der vollen Saat: felsbogen ${konsum("felsbogen")} · felsturm ${konsum("felsturm")}`,
             wave6gP3Results.placementWorks
         );
     }
