@@ -336,6 +336,117 @@ function kippVerdict(m) {
     return out;
 }
 
+// ── A12 DAS WASSER (mensch.fahrzeug.medium#3, Karte 2: „Floß bis Segler — Auftrieb, Krängung, Segel aus dem Wetter; Wende
+// 80–100°, Höhe gegen den Wind > 0; Rollperiode ± 15 %“): am Kern das Boot des ruhigen Wassers (Kahn, Hs 0,1 m) und der offenen
+// See (Spitzboot mit Segel, Hs 0,5 m) auf glattem Wasser (e.schwimmt). Gerudert (Gas voll, 60 s) faehrt jedes ≥ RUDERN.v m/s;
+// die Rollperiode (freies Ausrollen aus 0,1 rad) liegt ± 15 % an der Formel der IMO (IS Code 2008, MSC.267(85): T = 2 C B / √GM,
+// C = 0,373 + 0,023 B/d − 0,043 L/100, B die Breite ueber alles, d der Tiefgang, GM des Kerns); das Segelboot macht im Wind 5 m/s
+// Hoehe (die beste Geschwindigkeit gegen den Wind VMG > 0, mit dem Ruder auf Kurs), sein Wendewinkel (zweimal der Kurs ueber
+// Grund zum Wind am besten VMG) liegt in 80–100°, und die Wende kommt durch den Wind. Am Kopf von main fuhr das Boot auf Reifen:
+// die Land-Gleitreibung des Rumpfs gegen 200 N am Riemen, vmax 0,01 m/s; es rollte mit der Wagenfeder (1,30 s) und kannte kein Segel.
+const WASSER = { rudern: 1, band: 0.15, wende: [80, 100], wind: 5, welle: { kahn: 0.1, spitz: 0.5 } };
+function wasserMessung(VC) {
+    const dt = 1 / 60,
+        eben = () => 0,
+        m = {};
+    const lauf = (G, z, n, e) => {
+        for (let i = 0; i < n; i++) {
+            VC.fahrKraefte(z, e(z, i), G, dt);
+            VC.fahrStand(z, G, eben, dt);
+        }
+        return z;
+    };
+    const zu = (G, yaw) => {
+        const z = VC.fahrZustand(0, 0, yaw);
+        VC.fahrStand(z, G, eben, 0);
+        return z;
+    };
+    // mit dem Ruder auf Kurs (P auf den Winkel, D auf die Gier)
+    const kurs = (ziel, z) => {
+        const f = Math.atan2(Math.sin(ziel() - z.yaw), Math.cos(ziel() - z.yaw));
+        return Math.max(-1, Math.min(1, 3 * f - 1.5 * z.yawRate));
+    };
+    for (const [form, welle] of Object.entries(WASSER.welle)) {
+        const P = { ...VC.DEFAULT_P, ...VC.presetPatch("boot"), welle };
+        const d = VC.exportDrive(P, "boot"),
+            G = VC.fahrGesetz(d);
+        if (!G) continue;
+        const H = G.schwimm,
+            R = VC.bootRumpf(P);
+        const r = { schwimm: !!H };
+        r.rudern = +lauf(G, zu(G, 0), 3600, () => ({ throttle: 1, schwimmt: true })).vlong.toFixed(3);
+        // die Rollperiode: die Nulldurchgaenge des freien Ausrollens
+        const z = zu(G, 0);
+        z.fWank = 0.1;
+        const nd = [];
+        lauf(G, z, 1800, (zz, i) => {
+            if (i > 0 && zz._p > 0 && zz.fWank <= 0) nd.push((i - 1 + zz._p / (zz._p - zz.fWank)) * dt);
+            zz._p = zz.fWank;
+            return { schwimmt: true };
+        });
+        r.roll = nd.length >= 3 ? +((nd[nd.length - 1] - nd[0]) / (nd.length - 1)).toFixed(3) : null;
+        if (H && H.GM > 0) {
+            const C = 0.373 + (0.023 * R.B) / H.T - (0.043 * H.Lwl) / 100;
+            r.imo = +((2 * C * R.B) / Math.sqrt(H.GM)).toFixed(3);
+        } else r.imo = null;
+        if (form === "spitz") {
+            // der Wind weht nach +z (aus −z); der Bug th Grad neben der Herkunft: (sin th, −cos th) = (cos yaw, −sin yaw)
+            const wind = { x: 0, z: WASSER.wind },
+                yawAm = (th) => Math.atan2(Math.cos((th * Math.PI) / 180), Math.sin((th * Math.PI) / 180));
+            let best = null;
+            for (let th = 25; th <= 90; th += 5) {
+                const y0 = yawAm(th),
+                    zz = zu(G, y0);
+                let x0 = 0,
+                    q0 = 0;
+                lauf(G, zz, 5400, (w, i) => {
+                    if (i === 2400) [x0, q0] = [w.x, w.z];
+                    return { schwimmt: true, wind, steer: kurs(() => y0, w) };
+                });
+                const vmg = -(zz.z - q0) / (3000 * dt),
+                    cog = (Math.atan2(zz.x - x0, -(zz.z - q0)) * 180) / Math.PI;
+                if (!best || vmg > best.vmg) best = { th, vmg: +vmg.toFixed(3), cog: +cog.toFixed(1), kren: +((zz.fWank * 180) / Math.PI).toFixed(1) };
+            }
+            r.amWind = best;
+            r.wende = best && best.vmg > 0 ? +(2 * best.cog).toFixed(1) : null;
+            // die Wende: am Wind auf dem einen Bug, dann das Ruder auf den anderen — der Bug kommt durch den Wind
+            const yA = yawAm(45),
+                yB = yawAm(-45),
+                zw = zu(G, yA);
+            let ziel = yA,
+                durch = null;
+            lauf(G, zw, 5400, (w, i) => {
+                if (i === 3600) ziel = yB;
+                if (i > 3600 && durch === null && Math.abs(Math.atan2(Math.sin(yB - w.yaw), Math.cos(yB - w.yaw))) < 0.05) durch = +((i - 3600) * dt).toFixed(1);
+                return { schwimmt: true, wind, steer: kurs(() => ziel, w) };
+            });
+            r.durch = durch;
+        }
+        m[form] = r;
+    }
+    return m;
+}
+function wasserVerdict(m) {
+    const out = [];
+    for (const f of Object.keys(WASSER.welle)) if (!m || !m[f]) out.push(`${f}: kein Boot gemessen`);
+    for (const [f, r] of Object.entries(m || {})) {
+        if (!r.schwimm) {
+            out.push(
+                `${f}: vehicle-core.js exportDrive — der Rumpf traegt kein Wasser-Gesetz (schwimm fehlt): gerudert ${r.rudern} m/s, gerollt ${r.roll == null ? "—" : r.roll + " s"} mit der Wagenfeder${f === "spitz" ? ", gegen den Wind " + (r.amWind ? r.amWind.vmg : "—") + " m/s" : ""}`
+            );
+            continue;
+        }
+        if (!(r.rudern >= WASSER.rudern)) out.push(`${f}: gerudert ${r.rudern} m/s (Soll ≥ ${WASSER.rudern})`);
+        if (r.imo == null || r.roll == null || !(Math.abs(r.roll / r.imo - 1) <= WASSER.band))
+            out.push(`${f}: Rollperiode ${r.roll == null ? "—" : r.roll} s gegen IMO ${r.imo == null ? "— (GM ≤ 0)" : r.imo} s (Soll ± ${WASSER.band * 100} %)`);
+        if (f !== "spitz") continue;
+        if (!(r.amWind && r.amWind.vmg > 0)) out.push(`${f}: keine Hoehe gegen den Wind (VMG ${r.amWind ? r.amWind.vmg : "—"} m/s, Soll > 0)`);
+        else if (!(r.wende >= WASSER.wende[0] && r.wende <= WASSER.wende[1])) out.push(`${f}: Wendewinkel ${r.wende}° (Soll ${WASSER.wende.join("–")}°)`);
+        if (r.durch == null) out.push(`${f}: die Wende kommt nicht durch den Wind`);
+    }
+    return out;
+}
+
 // ── A7/B-h DIE GATTUNGEN (fahrzeug-gattungen, Karte 2 mensch.fahrzeug.gestalt#1): welche Gattungen eine Stadt fährt, ist Gesetz
 // des Fahrzeug-Kerns (vehicle-core `GATTUNGEN` · `flotte`). Gezählt wird, was in der Stadt des Messorts stadt-voll wirklich
 // STEHT oder FÄHRT (die Wagen ihres Verkehrs, B-h) — nie, was der Kern kann; jede Stelle des Stamms mit eigener Typ-Liste (ein
@@ -657,6 +768,26 @@ hauptLauf(async () => {
             const v = kippVerdict({ ...kippGesund, ...b });
             check(`Selbst-Test kippVerdict ${JSON.stringify(b)}`, v.length === n, v.join(" · "));
         }
+        // A12: das Wasser — gesund schweigt es; der Kern von main (kein Wasser-Gesetz), ein Boot, das nicht vom Fleck kommt, eine
+        // Rollperiode neben der Formel, ein Segel ohne Hoehe, ein Wendewinkel ausser Band und eine Wende im Wind nennen je ihren Taeter
+        const wasserGesund = {
+            kahn: { schwimm: true, rudern: 1.78, roll: 2.26, imo: 2.61 },
+            spitz: { schwimm: true, rudern: 1.8, roll: 6.74, imo: 7.22, amWind: { th: 45, vmg: 0.8, cog: 47.3, kren: 19.8 }, wende: 94.6, durch: 10.6 },
+        };
+        for (const [b, n] of [
+            [{}, 0],
+            [{ kahn: { schwimm: false, rudern: 0.01, roll: 1.3, imo: null }, spitz: { schwimm: false, rudern: 0.01, roll: 1.3, imo: null, amWind: { vmg: 0 }, wende: null, durch: null } }, 2],
+            [{ kahn: { ...wasserGesund.kahn, rudern: 0.01 } }, 1],
+            [{ kahn: { ...wasserGesund.kahn, roll: 1.3 } }, 1],
+            [{ spitz: { ...wasserGesund.spitz, amWind: { th: 90, vmg: -0.1 }, wende: null } }, 1],
+            [{ spitz: { ...wasserGesund.spitz, wende: 120 } }, 1],
+            [{ spitz: { ...wasserGesund.spitz, durch: null } }, 1],
+        ]) {
+            const v = wasserVerdict({ ...wasserGesund, ...b });
+            check(`Selbst-Test wasserVerdict ${JSON.stringify(b)}`, v.length === n, v.join(" · "));
+        }
+        const wasserOhne = wasserVerdict({ kahn: wasserGesund.kahn });
+        check("Selbst-Test wasserVerdict: beide Boote gemessen", wasserOhne.length === 1, wasserOhne.join(" · "));
         const kippOhne = kippVerdict({ gt: kippGesund.gt, suv: kippGesund.suv, transporter: kippGesund.transporter });
         check("Selbst-Test kippVerdict: keine hohen Baupläne", kippOhne.length === 1, kippOhne.join(" · "));
         // A7/B-h: die Mutante „feste Liste mit 3 Typen“ (die Tafel von main) heißt beim Namen, eine Stadt mit 3 Gattungen und ein
@@ -853,6 +984,17 @@ hauptLauf(async () => {
         kpV.join(" · ") ||
             Object.entries(kipp)
                 .map(([p, k]) => `${p} SSF ${k.ssf.toFixed(2)} μ ${k.mu.toFixed(2)}: Tisch ${k.tisch.kippt ? "kippt" : "rutscht"} bei tan ${k.tisch.tan == null ? "—" : k.tisch.tan.toFixed(3)} · Kreis ${k.kreis.aQ.toFixed(2)} g${k.kreis.liegt ? ", liegt" : ""}`)
+                .join(" · ")
+    );
+
+    const wasser = wasserMessung(VC);
+    const waV = wasserVerdict(wasser);
+    check(
+        `A12: das Wasser — gerudert ≥ ${WASSER.rudern} m/s, die Rollperiode ± ${WASSER.band * 100} % an der IMO-Formel (Kahn und Spitzboot), das Segelboot macht im Wind ${WASSER.wind} m/s Hoehe (VMG > 0), wendet in ${WASSER.wende.join("–")}° und kommt durch den Wind`,
+        waV.length === 0,
+        waV.join(" · ") ||
+            Object.entries(wasser)
+                .map(([f, r]) => `${f} gerudert ${r.rudern} m/s · Roll ${r.roll} s (IMO ${r.imo} s)${r.amWind ? ` · am Wind ${r.amWind.th}°: VMG ${r.amWind.vmg} m/s, Kraengung ${r.amWind.kren}°, Wende ${r.wende}°, durch in ${r.durch} s` : ""}`)
                 .join(" · ")
     );
 

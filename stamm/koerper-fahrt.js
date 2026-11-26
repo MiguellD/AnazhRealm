@@ -996,6 +996,16 @@ class AnazhRealm_koerper_fahrt {
                 // (vehicle-core fahrSchritt, `_fahrSatz`). NaN-Wand: nur mit den tragenden Größen — ohne sie trägt das
                 // Werk kein Fahr-Gesetz und reitet richtungs-folgend. Dazu die Probefahrt-Kamera (Chase-Cam, `_kamSatz`).
                 if (_fp.kamera) prof.kamera = this._kamSatz(_fp.kamera);
+                // der Rumpf im Wasser (mensch.fahrzeug.medium#3, exportDrive.schwimm): Hydrostatik, Lateralplan, Ruder, Riemen
+                // und Segel des Boots reisen in den Fahr-Satz — ein Wagen ohne Rumpf traegt keinen
+                // DER RUMPF SCHWIMMT NACH SEINEM GESETZ, nie nach dem Blech der Studio-Huelle: traegt das Werk den Rumpf des Kerns,
+                // ist sein Tiefgang Archimedes mit seinen Massen (Planken, Last, Mast) — es schwimmt, solange er unter dem Bord
+                // bleibt. Bis hier wog der Stamm jedes Studio-Fahrzeug als Blech (3 000 kg/m³): das Holzboot sank vom Anleger auf
+                // den Grund, sobald es fuhr (der Anleger hielt es am Spiegel, der Fahr-Schritt nicht).
+                if (_fp.schwimm && _fp.schwimm.delta > 0 && _fp.schwimm.Ixx > 0) {
+                    prof.schwimm = _fp.schwimm;
+                    prof.floats = _fp.schwimm.T < _fp.schwimm.D;
+                }
                 const _zs = _fp.zweispur;
                 if (
                     _zs &&
@@ -1105,11 +1115,18 @@ class AnazhRealm_koerper_fahrt {
     // gestalt)` — der Frame-Tick (`_tickMountedMovement`) ist nur Sicht.
     _fahrzeugGestalt(entry, prof) {
         const p = prof || this._vehicleProfile(entry);
-        if (entry._wasserGestalt && entry._wasserGestalt.prof === p) return entry._wasserGestalt;
+        // der Rumpf des Kerns (mensch.fahrzeug.medium#3): beladen traegt er die Last des Gesetzes (der Spieler im Boot), leer
+        // nur sich und den Mast — die Wasserlinie steht ueber seiner Unterkante (yFloor: der Kiel haengt darunter)
+        const beladen = !!(p && p.schwimm && this.state.player && this.state.player.mountedArch === entry.id);
+        if (entry._wasserGestalt && entry._wasserGestalt.prof === p && entry._wasserGestalt.beladen === beladen) return entry._wasserGestalt;
         const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
         const rel = p && Number.isFinite(p.dichte) ? this._eintauchAnteil(p.dichte) : Infinity;
         let linie = Infinity;
-        if (p && p.floats && rel < 1) {
+        if (p && p.schwimm && p.floats) {
+            const fzg = this._fahrzeugGesetzFor(entry);
+            const yF = fzg && fzg.drive && fzg.drive.huelle && Number.isFinite(fzg.drive.huelle.yFloor) ? fzg.drive.huelle.yFloor : 0;
+            linie = (yF + (beladen ? p.schwimm.T : p.schwimm.Tleer)) * sc;
+        } else if (p && p.floats && rel < 1) {
             const fzg = this._fahrzeugGesetzFor(entry);
             const h = fzg && fzg.drive ? fzg.drive.huelle : null;
             if (h) {
@@ -1127,7 +1144,7 @@ class AnazhRealm_koerper_fahrt {
                 linie = Math.max(0.08, Math.min(rumpfH - 0.05, anteil * rumpfH));
             }
         }
-        entry._wasserGestalt = { linie, lage: null, prof: p };
+        entry._wasserGestalt = { linie, lage: null, prof: p, beladen };
         return entry._wasserGestalt;
     }
 
@@ -1457,6 +1474,7 @@ class AnazhRealm_koerper_fahrt {
                 spring: prof.spring,
                 // die EINE Masse des Werks (physik K1, `_fahrMasse`): die Trägheit des Wasser-Terms im Kern
                 masseKg: this._fahrMasse(entry, prof.zweispur.mass),
+                schwimm: prof.schwimm, // der Rumpf im Wasser (medium#3; nur das Boot)
             },
             this._rittAufstand(entry)
         );
@@ -1604,6 +1622,7 @@ class AnazhRealm_koerper_fahrt {
         e.tiefe = this._fahrTiefe(fz);
         e.haft = this._fahrHaft(fz);
         e.wind = this._fahrWind(fz);
+        e.schwimmt = this._fahrSchwimmt(entry, fz);
         e.boden = this._fahrRad(fz, entry._fahrSatz, false); // das Rad im weichen Boden und seine Spur (fahrzeug-medium)
         vc.fahrKraefte(fz, e, entry._fahrSatz, dt);
         entry._rideYaw = fz.yaw + Math.PI / 2;
@@ -1808,6 +1827,20 @@ class AnazhRealm_koerper_fahrt {
     // Grund des Wagens — seiner eigenen Unterkante, nie der obersten Fläche: unter Fels trägt die Decke kein Wasser, ein Wagen
     // in einer Höhle unter dem See steht trocken, wie der Körper) — der Wasser-Term des Fahr-Schritts (vehicle-core
     // fahrKraefte `e.tiefe`). Bis V18.537 kannte der Fahr-Schritt kein Wasser: der GT fuhr 19 m durch 0,61 m Wasser mit 43 km/h.
+    // TRAEGT DAS WASSER DAS WERK HIER (mensch.fahrzeug.medium#3): dieselbe Wahrheit wie der Boden seines Fahr-Schritts
+    // (`_fahrBodenRoh`: die Wasserlinie aus Gestalt und Dichte, `_koerperWasser` ueber dem Grund unter dem Werk) am Ort des
+    // Fahr-Zustands — der Leser ist der Schwimm-Zweig des Kerns (`fahrKraefte` e.schwimmt): auf ihm traegt der Rumpf, nie
+    // der Reifen. Ein Werk ohne Rumpf im Fahr-Satz fragt nicht.
+    _fahrSchwimmt(entry, fz) {
+        if (!entry || !entry._fahrSatz || !entry._fahrSatz.schwimm || !fz || !Number.isFinite(fz.x)) return false;
+        const gestalt = this._fahrzeugGestalt(entry, this._vehicleProfile(entry));
+        if (gestalt.linie === Infinity) return false;
+        const t = this._werkBoden(entry)(fz.x, fz.z);
+        if (!Number.isFinite(t)) return false;
+        this._koerperWasser(fz.x, fz.z, t, gestalt);
+        return gestalt.lage.schwimmt === true;
+    }
+
     _fahrTiefe(fz) {
         if (!fz || !Number.isFinite(fz.y)) return 0;
         const spiegel = this._koerperWasser(fz.x, fz.z, fz.y);
