@@ -6,7 +6,7 @@
  },
  "buehne": {
   "saison": "summer",
-  "wetter": "stormy",
+  "wetter": "sunny",
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
@@ -66,17 +66,17 @@
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 97.5,
-  "sigma": 36.7,
+  "mittel": 97.4,
+  "sigma": 36.6,
   "schwarz": 0,
   "weiss": 0
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 97.5 σ 36.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.426 · Bühne summer stormy 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Inhalt nahWiese 71.5 % (≥ 15.0 %) h 109° Luma 104",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 97.4 σ 36.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.426 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Inhalt nahWiese 48.4 % (≥ 15.0 %) h 107° Luma 119",
  "rot": [],
  "inhalt": {
   "rot": [],
-  "zeile": "Inhalt nahWiese 71.5 % (≥ 15.0 %) h 109° Luma 104"
+  "zeile": "Inhalt nahWiese 48.4 % (≥ 15.0 %) h 107° Luma 119"
  },
  "urteil": "GRÜN",
  "klasse": {
@@ -87,13 +87,13 @@
    "pixel": 0,
    "max": 0
   },
-  "misch": 1442420,
+  "misch": 510257,
   "kenn": {
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 4544,
-   "wechsel": 937887
+   "ms": 2006,
+   "wechsel": 936310
   },
   "rinde": null,
   "toene": [
@@ -104,29 +104,29 @@
   "klassen": {
    "nahWiese:L1": {
     "objekte": 2,
-    "pixel": 997740,
+    "pixel": 410103,
     "farbe": [
-     0.11901,
-     0.13959,
-     0.02305
+     0.1952,
+     0.21284,
+     0.02306
     ]
    },
    "nahWiese:L2": {
     "objekte": 2,
-    "pixel": 211217,
+    "pixel": 302865,
     "farbe": [
-     0.159,
-     0.17043,
-     0.02197
+     0.16167,
+     0.17098,
+     0.01882
     ]
    },
    "nahWiese:Lf": {
     "objekte": 2,
-    "pixel": 274085,
+    "pixel": 291048,
     "farbe": [
-     0.19128,
-     0.20215,
-     0.03059
+     0.22708,
+     0.23489,
+     0.03239
     ]
    }
   },
