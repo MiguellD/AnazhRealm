@@ -5399,10 +5399,29 @@
         // wegeMax = so viele Wege trägt ein Tag höchstens (mensch.K3: 4–10 Wege je Tag) — der Abend des Spiels
         // (`spielProgramm`) vergibt nur Stände, die der Tag noch trägt (`tagesGaenge`)
         wegeMax: 10,
+        // wegTagM = so weit geht ein Mensch an einem Tag wenigstens (mensch.K3 Staffel 2: ≥ 100 m je Bewohner und Tag) — der
+        // Häusliche empfängt nur, wessen Gang zum Werk und zurück so weit trägt (`tagesBindung`)
+        wegTagM: 100,
+        // DAS KIND, DAS HILFT (zuege `kind: "hilft"`, `tagesBindung`): das fleißige Kind hilft am Werk SEINES Hauses — nie an einem
+        // fremden Werk, die Tätigkeit heißt „hilft“, nie die des Meisters („arbeit“) —, erst ab kindHilftAbJ Jahren, kindHilftH Stunden
+        // am Tag; jedes andere spielt. Die Quelle (The Peel Web, „Factory legislation“, historyhome.co.uk): das Fabrikgesetz von 1833
+        // (3 & 4 Will. IV c. 103) ließ kein Kind unter 9 in die Fabrik und Kinder unter 13 höchstens 9 h je Tag und 48 je Woche
+        // arbeiten (kindArbeitMaxH: die OBERGRENZE, die Linse gate:mensch-zuege liest sie); das Gesetz von 1844 setzte Kinder unter
+        // 13 auf höchstens 6½ h je Tag — das Halbzeit-System, der halbe Tag am Werk (kindHilftH; die Form des Tags, als Mittel
+        // ungeeicht) — und senkte das Alter auf 8 (das Alter hier aus 1833, wie die Obergrenze)
+        kindHilftAbJ: 9,
+        kindHilftH: 6.5,
+        kindArbeitMaxH: 9,
         rollen: Object.freeze({
             schmiede: Object.freeze({ werk: Object.freeze([7, 18]) }),
             kirche: Object.freeze({ werk: Object.freeze([7, 19]) }),
-            gasthaus: Object.freeze({ werk: Object.freeze([10, 23]), ruhe: 23.6, mittagAmWerk: true }),
+            // DER TEILDIENST DES WIRTS (`teildienst` = [Beginn, Dauer] der freien Pause im Werk, `_tagesWenden`): das Gastgewerbe
+            // arbeitet täglich höchstens 10 Stunden, der Teildienst unterbricht die Arbeitszeit einmal am Tag für 2 bis 3 Stunden,
+            // die Pause steht dem Beschäftigten zur freien Verfügung, nie zwischen 22 und 6 Uhr (Manteltarifvertrag Hotel- und
+            // Gaststättengewerbe Niedersachsen, DEHOGA/NGG, gültig ab 1. Mai 2008, § 5.1 und § 5.3) — 10 bis 23 Uhr mit 3 h Pause
+            // sind 10 h Arbeit; die Pause liegt nach dem Mittag der Stadt (12 ± 1 Uhr) vor ihrem Feierabend (ANGENOMMEN: die
+            // Ordnung nennt die Länge, nicht die Stunde)
+            gasthaus: Object.freeze({ werk: Object.freeze([10, 23]), ruhe: 23.6, mittagAmWerk: true, teildienst: Object.freeze([14, 3]) }),
             // DER KAUFMANN STEHT AM MARKT (w28-stadt-grammatik): wer in einem Handelshaus wohnt (die Bauten des Markt-Viertels
             // der Stadt-Grammatik), dessen Werk ist der nächste Platz, der Stände trägt (`werkAm`, binnen wegM.markt) — solange
             // der Wirt dort einen Stand für ihn hat, sonst wie jede Rolle sein Haus. Bis hier arbeitete jede Rolle vor der
@@ -5431,14 +5450,37 @@
             // dem Fahrer), steht von 6 bis 20 Uhr an seinem Punkt — sein Werk und sein Platz sind der Wache-Punkt, das Mittag hält
             // er durch; DER NACHTWÄCHTER lebt denselben Tag um `versatzH` Stunden versetzt (18 bis 8 Uhr) — zu jeder Stunde steht
             // einer draußen, auch um Mitternacht, wenn jeder andere drinnen schläft (`ruhe`)
-            waechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, haltung: false, regenfest: true }),
+            // DIE STREIFE (rollen-des-tages, Meisterkarte 2 mensch.macht.megastadt#1): die Wache steht nicht die Schicht lang am
+            // Posten — je `jeH` Stunden ihres Werks geht sie ihre RUNDE (`streife`): die ersten `dauerH` Stunden über die Punkte
+            // ihres Reviers auf dem Netz der Wege (`orte.streife`, der Wirt stellt sie aus `tagesStreife`), Punkt um Punkt gleich
+            // lang, dann zurück an den Posten. Die Runde je Stunde ist die der Nachtwache vor der Polizei: in jeder Runde ruft der
+            // Wächter die Stunde (Order of the Mayor and Aldermen of Philadelphia, 7. Juli 1752: „in the Course of each round …
+            // call the Hour of the Night“; Smollett 1771, Humphry Clinker: „the watchmen bawling the hour through every street“ —
+            // jede Stunde), zwischen zwei Runden hält ihn das Wachhaus am Posten. dauerH = die halbe Stunde (ANGENOMMEN: kein Band
+            // der Länge einer Runde; die Linse gate:koerper-kern ROLLEN R2 nennt die Zeit am Posten). Das Revier: `punkte` Punkte
+            // des Netzes binnen `radiusM` Weg um den Posten, je zwei `abstandM` auseinander, die nächsten zuerst (`tagesStreife`) —
+            // die Runde geht im Schritt (1,4 m/s) gut 130 m, der Rest der Stunde am Posten trägt, was sie länger braucht
+            // (ANGENOMMEN, die Welt rafft den Tag; tagesKette rechnet die Gehzeit — wer zum Aufbruch nicht am Posten steht, lässt
+            // die Runde aus: „die Runde beginnt am Posten“). Bis
+            // rollen-des-tages stand die Wache von 6 bis 20 Uhr an ihrem Punkt: über 1 000 Samen 280 061 Proben „arbeit“ am
+            // Werk, 0 Streife.
+            waechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, haltung: false, regenfest: true, streife: Object.freeze({ jeH: 1, dauerH: 0.5, punkte: 4, radiusM: 60, abstandM: 15 }) }), // prettier-ignore
             nachtwaechter: Object.freeze({
                 werk: Object.freeze([6, 20]),
                 mittagAmWerk: true,
                 versatzH: 12,
                 haltung: false,
                 regenfest: true,
+                streife: Object.freeze({ jeH: 1, dauerH: 0.5, punkte: 4, radiusM: 60, abstandM: 15 }),
             }),
+            // DER JÄGER UND DER FISCHER (rollen-des-tages, mensch.nahrung.tier#2): die Rolle trägt ihre TAT (`tat`) — in den
+            // Stunden ihres Werks steht sie am Ort, der diese Tat anbietet (`werkAm`: das Revier am Saum der Äcker, das Ufer des
+            // nächsten Gewässers — `tagesOrte`), und heißt dort „jagd" oder „fischfang"; der Heimweg trägt die Beute (der Wirt,
+            // `_bewohnerBeute`: der Bestand der Tiere am Revier GELESEN und um den Kopf GEÄNDERT, die Beute in den Vorrat seines
+            // Werks). Die Stunden: der Morgen ab der Dämmerung (das Wild äst in der Dämmerung, ANGENOMMEN — kein Band der Stunde
+            // der Jagd; die Linse nennt die Stunden), das Mittag am Revier. Wie viele jagen: `JAGD.anteil` der Haushalte.
+            jaeger: Object.freeze({ werk: Object.freeze([5, 11]), werkAm: "revier", tat: "jagd", mittagAmWerk: true }),
+            fischer: Object.freeze({ werk: Object.freeze([4.5, 10.5]), werkAm: "ufer", tat: "fischfang", mittagAmWerk: true }),
             // DAS KIND (ALTER_GESETZ.kindJ; der Wirt gibt die Rolle jedem Bewohner unter 15 J, `_bewohnerListe`): sein Werk ist das
             // Spiel (`spiel`: der Ort seiner Wahl nach dem Angebot `spiel` — der Platz, die Wiese am Acker —, nie das Werk seines
             // Hauses als Arbeit: kein Kind am Amboss), in kürzeren Stunden; der Akt heißt „spiel", die Haltung trägt die Freude
@@ -5460,6 +5502,9 @@
             burg: Object.freeze({ arbeit: 6 }),
             halle: Object.freeze({ arbeit: 6 }),
             turm: Object.freeze({ arbeit: 4 }),
+            // (das Revier und das Ufer bieten nur ihre Tat: kein anderer wählt dort sein Werk, seinen Treff — `tagesBindung`)
+            revier: Object.freeze({ jagd: 1 }),
+            ufer: Object.freeze({ fischfang: 1 }),
             sonst: Object.freeze({ arbeit: 3, treff: 1 }),
         }),
         daheim: Object.freeze({ mahl: 3, treff: 3 }),
@@ -5482,7 +5527,9 @@
         // jeder Bewohner stand zu jeder Stunde in derselben Haltung.
         // (das Spiel des Abends, SPIEL_GESETZ: der Läufer gebeugt in der Kraft, der Ringer in der Haltung des Kampfs — die Hände vor
         // dem Leib, der Stand breit —, am Brett über den Tisch, der Zuschauer jubelt)
-        haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", zweikampf: "fight", brett: "pwalk", zuschauen: "joy" }), // prettier-ignore
+        // (die Tat der Rolle: der Jäger geht gespannt, der Fischer steht über dem Wasser — die Wache trägt keine Haltung, `haltung:
+        // false`, auch nicht auf ihrer Runde und im Hieb: bis hier nannte die Tafel „streife“ und „hieb“, und keine Rolle las sie)
+        haltung: Object.freeze({ arbeit: "pwalk", hilft: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", zweikampf: "fight", brett: "pwalk", zuschauen: "joy", jagd: "pwalk", fischfang: "pwalk" }), // prettier-ignore
         // DIE ZEIT-ART JE AKT (tages-gesetz, Entscheid des Koordinators 25.11.; Leser: gate:mensch-zuege `zuordnen`, die Station
         // mensch.geist.absicht#1): jeder Akt des Tags (`tagesPlan`, das Spiel des Abends) trägt GENAU EINE Art seiner Zeit — die
         // Hauptgruppen der Zeitbudget-Forschung: arbeit (Szalai 1972 „work“; HETUS 2008 Guidelines, Eurostat, Code 1 Erwerb),
@@ -5490,8 +5537,11 @@
         // haushalt (der Einkauf — HETUS 36 Einkaufen und Dienste), frei (Besuch, Treff, Bank, Spiel und Zuschauen — Szalai „free
         // time“, HETUS 5–7); der Weg zwischen zwei Orten (HETUS 9) ist kein Akt des Plans. Bis hier las der Zuordner jede wache
         // Viertelstunde im Haus als Freizeit: mit dem Morgen im Haus (tages-gesetz) trug der Ausgeglichene 5,53 h „daheim“ und
-        // fiel häuslich (gate:mensch-zuege ausgeglichen 7/16)
-        zeitArt: Object.freeze({ schlaf: "bedarf", morgen: "bedarf", mittag: "bedarf", arbeit: "arbeit", einkauf: "haushalt", besuch: "frei", abend: "frei", spiel: "frei", wettkampf: "frei", zweikampf: "frei", brett: "frei", zuschauen: "frei" }), // prettier-ignore
+        // fiel häuslich (gate:mensch-zuege ausgeglichen 7/16). Das Kind, das am Werk seines Hauses hilft („hilft“), arbeitet: die
+        // mithelfenden Familienangehörigen zählen zu den Erwerbstätigen (ILO, ICSE-93, Gruppe 5 „contributing family workers“)
+        // (die Tat der Rolle ist Arbeit — der Gang der Streife ist Weg IM Werk, HETUS 2008: „travel as part of/during main job“
+        // gehört zum Erwerb, nie zu Code 9; der Hieb der Wache ebenso)
+        zeitArt: Object.freeze({ schlaf: "bedarf", morgen: "bedarf", mittag: "bedarf", arbeit: "arbeit", hilft: "arbeit", einkauf: "haushalt", besuch: "frei", abend: "frei", spiel: "frei", wettkampf: "frei", zweikampf: "frei", brett: "frei", zuschauen: "frei", streife: "arbeit", jagd: "arbeit", fischfang: "arbeit", hieb: "arbeit" }), // prettier-ignore
         // DER REGEN TREIBT INS HAUS (mensch.kopplung.leben S1 der Karte 2; Leser: `tagesPlan`, sein Wirt `_bewohnerSoll` reicht
         // den Regen der Welt, den Kanal `rain` des EINEN Wetter-Felds 0–1): steht der Regen am Ort über der Schwelle eines
         // Menschen (`ab` ± `streuH` aus seinem Samen — das Dorf flieht nicht im selben Atemzug, der Übergang des Worts leert den
@@ -5503,6 +5553,17 @@
         // mittags so voll wie in der Sonne; bis zum Bild am Genesis-Ort (Radeon, Regen um 13:16 Uhr) ging nur die Muße heim —
         // 31 von 77 standen bei der Arbeit im Regen auf dem Platz.
         regen: Object.freeze({ ab: 0.3, streuH: 0.15 }),
+        // DIE JAGD (rollen-des-tages, mensch.nahrung.tier#2; Leser: `tagesOrte` das Revier, `tagesJagdHaushalte` der Wirt
+        // `_bewohnerListe`, `tagesBeute` der Wirt `_bewohnerBeute`): anteil = so viele der Haushalte einer Siedlung tragen einen
+        // Jäger (und wo ein Ufer ist, ebenso viele einen Fischer) — die unterste Stufe über null der Abhängigkeit einer
+        // Gesellschaft von der Jagd im Ethnographic Atlas (Murdock 1967, Spalte 3: Stufen 0–5 · 6–15 · 16–25 … %): 6 %; der
+        // Anteil der Kost als Anteil der Haushalte ANGENOMMEN. revierM = so weit hinter dem äußersten Acker (dem Saum, an dem
+        // der Wald beginnt) liegt das Revier (ANGENOMMEN). beute = der Anteil der Jagdtage, an denen der Jäger Fleisch heimbringt:
+        // die Ju/'hoansi an weniger als 27 % (Lee 1979), die Hadza großes Wild an 1 von 30 Jäger-Tagen (Hawkes, O'Connell &
+        // Blurton Jones 1991: 3 %) — das Gesetz nimmt den Rand für jedes Fleisch, 0,27; ein Kopf je Beute. Der Fang des Fischers
+        // liest einen Bestand der Fische, den die Welt erst mit mensch.nahrung.tier#5 trägt: bis dahin heißt seine Tat
+        // „fischfang“ ohne Beute (`tagesBeute` nennt null — kein Fang aus dem Nichts).
+        jagd: Object.freeze({ anteil: 0.06, revierM: 60, beute: Object.freeze({ jagd: 0.27 }) }),
         // DER CHARAKTERZUG (Meisterkarte 2 mensch.geist.absicht S1; Leser: `tagesPlan` und `tagesBindung`, ihr Wirt
         // `_bewohnerSoll` und `binden`): jeder Mensch trägt aus seinem Samen EINEN Zug (`tagesZug`, die Anteile `anteil`), und
         // der Zug ändert die Wenden und die Ortswahl seines Tags. Der Zug ist die EINE Quelle der Abweichung, streuH bleibt das
@@ -5510,10 +5571,29 @@
         // Abend am Treff (das eigene Haus bietet den Abend nur mit daheimTreff) und länger (ruheNachH, die Ruhe bleibt vor
         // Mitternacht) — mit daheimTreff allein änderte sich der Tag von 6 der 24 Geselligen im Dorf der Linse, weil die
         // Bindung die meisten schon an den Treff band (main ↔ Kopf, je 15 min); haeuslich: der Abend daheim (jeder Treff
-        // außer Haus × treffMal), der Einkauf × morgenMal — den Besuch behält er: er ist der Weg des Tags (≥ 100 m, mensch.K3
-        // Staffel 2), kein Zug nimmt ihn (bis hier `besuch: false`: der häusliche Wirt, dessen Werk sein Haus ist, ging 3 Wege und
-        // 25 m am Tag — gate:kreatur-takt bewohner, gasthaus #419347). Wer einen Posten hat (die Rolle
-        // `regenfest`: der Händler, der Fahrer, die Wache), hält seine Schicht — der Zug verschiebt sein Werk nicht. Bis hier
+        // außer Haus × treffMal), der Einkauf × morgenMal. DER HÄUSLICHE EMPFÄNGT (absicht-zug, `empfaengt`; Leser:
+        // `tagesBindung`, `tagesPlan`, `spielGaesteWahl`): der Besuch seines Abends ist bei ihm, drinnen — er geht zu keinem, und
+        // das Spiel des Platzes nimmt ihn nicht als Nachbarn in den Ring der Zuschauer. Nur wessen Tag ohne den Gang zum Besuch
+        // keine wegTagM trägt (der Heimwerker, das Kind, das daheim spielt) oder dessen Abend keinen Besuch trägt, geht wie
+        // jeder: der Besuch ist dort der Weg des Tags (≥ 100 m, mensch.K3 Staffel 2; mit `besuch: false` ging der häusliche
+        // Wirt 3 Wege und 25 m, gate:kreatur-takt bewohner, gasthaus #419347). Bis hier band der Wirt den Häuslichen wie jeden
+        // an den Besuch (0,75 h) und an den Ring des Spiels (~1 h): an der Stadt (GTX, erste 100) las der blinde Zuordner 0 von
+        // 29 Häuslichen häuslich, ohne beide 19 von 22 Erwachsenen. DAS BAND DES HÄUSLICHEN (äußere Quelle; Leser: gate:mensch-zuege
+        // FREI_DAHEIM_Q, die Station mensch.geist.absicht#1): Erwachsene verbringen im Mittel 0,74 ihrer Freizeit daheim — ATUS
+        // 2019 Table 11A (15 J und älter, Freizeit und Sport 5,19 h je Tag): Fernsehen 2,81 · Lesen 0,27 · Ruhe 0,31 · Spiel und
+        // Computer 0,43 = 3,82 h im Haus; Band 0,74–0,80, wenn die halbe Geselligkeit (0,64 h) daheim liegt (ANGENOMMEN: die
+        // Zuordnung der Tätigkeit zum Ort, ATUS druckt keine Tafel je Ort). Der Häusliche liegt darüber — ≥ 0,89 seiner Freizeit
+        // und ≥ 2 h frei daheim —, treffMal 0 und `empfaengt` halten ihn dort (am Kandidaten 8f075dca, GTX, 100 Bewohner: 27 von
+        // 29 Häuslichen). DAS KIND TRÄGT DEN ZUG IN SEINER FORM (`kind`): das
+        // häusliche spielt daheim, das fleißige hilft am Werk seines Hauses (der Akt „arbeit“, das Mittag am Tisch), das
+        // gesellige und das ausgeglichene spielen am Ort ihrer Wahl und tragen den Zug am Abend. Bis hier spielte jedes Kind
+        // am Ort seiner Wahl, das fleißige nur länger: 16 von 36 Kindern trafen ihren Zug. Wer einen Posten hat (die Rolle
+        // `regenfest`: der Händler, der Fahrer, die Wache), hält seine Schicht — der Zug VERLÄNGERT sie nur (der Fleißige steht
+        // früher und länger an ihr, die Schicht bleibt besetzt). DER FLEISS HÄLT SEINE STUNDEN in jeder Rolle: das Werk des
+        // Fleißigen dauert die Stunden seiner Rolle + werkVorH + werkNachH (die Wende streut, die Dauer nicht); was die Ruhe am
+        // Abend nicht trägt, beginnt er früher, was der Einkauf am Morgen nimmt, hängt er an. Bis hier trug der Posten keine
+        // Stunde (Händler 0,12 h über dem Maß, Fahrer 0), der Wirt 1,1 h (die Ruhe schnitt den Abend), der fleißige Einkäufer
+        // in 251 von 997 Samen unter 1,5 h (der Tag aus `tagesPlan`, je Rolle 4 000 Samen). Bis hier
         // verschob der Same jede Wende nur symmetrisch um ±streuH und die Bindung wählte jeden nach derselben Güte: ein
         // blinder Zuordner traf an 100 Bewohnern eines Dorfs 0,19 (Zufall 0,25), mit dem Zug 0,72 (gate:mensch-zuege).
         // DER GETEILTE ABEND (mensch-zahlen, absicht S1 an der Stadt): ausgeglichen geht aus wie der Gesellige (daheimTreff) und
@@ -5526,8 +5606,8 @@
         zuege: Object.freeze({
             anteil: Object.freeze({ gesellig: 0.25, fleissig: 0.25, haeuslich: 0.25, ausgeglichen: 0.25 }),
             gesellig: Object.freeze({ daheimTreff: 0.5, ruheNachH: 1 }),
-            fleissig: Object.freeze({ werkVorH: 1, werkNachH: 1.5, mittagAmWerk: true }),
-            haeuslich: Object.freeze({ treffMal: 0, morgenMal: 0.5 }),
+            fleissig: Object.freeze({ werkVorH: 1, werkNachH: 1.5, mittagAmWerk: true, kind: "hilft" }),
+            haeuslich: Object.freeze({ treffMal: 0, morgenMal: 0.5, empfaengt: true, kind: "daheim" }),
             ausgeglichen: Object.freeze({ daheimTreff: 0.5, abendTreffH: 1.5 }),
         }),
     });
@@ -5559,7 +5639,9 @@
         // der Skala des Könnens (1 = das Band der Guten): der Lehrling unter 0,5 geht im Takt seines Könnens — die Zeit je Akt ist
         // ∝ 1/Können (Newell & Rosenbloom 1981, das Potenzgesetz der Übung), sein Profil im `takt` der Stufe (×freq: der Rhythmus
         // des Stands); der Meister ab 1 steht im Profil des Akts (sein Takt ist der der Guten).
-        kunst: Object.freeze({ arbeit: "haupt", zweikampf: "kampf", brett: "brett" }),
+        // Die Tat der Rolle (rollen-des-tages) ist ihr Werk: die Jagd und der Fischfang üben die Kunst des Werks („haupt“) — der
+        // Jäger, der sein Handwerk nicht kann, steht am Revier im Takt des Lehrlings wie der Lehrling am Werk.
+        kunst: Object.freeze({ arbeit: "haupt", zweikampf: "kampf", brett: "brett", jagd: "haupt", fischfang: "haupt" }),
         stufe: Object.freeze([Object.freeze({ wort: "lehrling", unter: 0.5, takt: 0.5 })]),
         // DIE TRACHT DES TAGS — das Soll der Kleidung aus der Luft um 6 Uhr (Schiavon & Lee 2013, Building and Environment 59:250–260,
         // Gl. 10: < −5 °C 1,00 clo · −5 … 5 °C 0,818 − 0,0364·t · 5 … 26 °C 10^(−0,1635 − 0,0066·t) · ab 26 °C 0,46); die Isolation
@@ -5708,7 +5790,11 @@
     // DIE ORTE EINES PLANS (der Plan v2 des Fachwerks, plan-lokal): je Slot, den `steht(i)` trägt (ohne: jeder), sein Ort
     // {art: seine Rolle, slot: i, x, z, bietet}, der Platz {art "platz"} und je Acker {art "feld", feld: j} — das Angebot aus
     // TAGES_GESETZ.angebot. Der Ort ist ein Angebot der Ziel-Kette (tetrapoda zielWahl liest x, z, bietet).
-    function tagesOrte(plan, steht) {
+    // DAS REVIER UND DAS UFER (rollen-des-tages): das Revier liegt `jagd.revierM` hinter dem äußersten Acker (ohne Acker hinter dem
+    // äußersten Haus), auf dem Strahl vom Kern des Plans durch ihn — dort, wo die Äcker enden, beginnt der Wald (phyto `forestOrt`:
+    // der Saum am Rand der Siedlung); das Ufer reicht der Wirt (`wild.ufer`, plan-lokal: der nächste Punkt eines Gewässers, das
+    // nur er kennt) — ohne Gewässer kein Ufer und kein Fischer.
+    function tagesOrte(plan, steht, wild) {
         var A = TAGES_GESETZ.angebot;
         var von = function (art) {
             return Object.prototype.hasOwnProperty.call(A, art) ? A[art] : A.sonst;
@@ -5732,7 +5818,76 @@
         var fe = (plan && plan.felder) || [];
         for (var j = 0; j < fe.length; j++)
             if (fe[j] && isFinite(fe[j].cx) && isFinite(fe[j].ex)) aus.push({ art: "feld", feld: j, x: fe[j].cx, z: fe[j].cz, bietet: A.feld });
+        var rand = null,
+            rM = 0;
+        for (var r = 0; r < aus.length; r++) {
+            var dr = Math.hypot(aus[r].x, aus[r].z);
+            if ((aus[r].art === "feld" || !fe.length) && dr > rM) {
+                rand = aus[r];
+                rM = dr;
+            }
+        }
+        if (rand && rM > 0) {
+            var mal = (rM + TAGES_GESETZ.jagd.revierM) / rM;
+            aus.push({ art: "revier", x: rand.x * mal, z: rand.z * mal, bietet: A.revier });
+        }
+        if (wild && wild.ufer && isFinite(wild.ufer.x) && isFinite(wild.ufer.z)) aus.push({ art: "ufer", x: wild.ufer.x, z: wild.ufer.z, bietet: A.ufer });
         return aus;
+    }
+    // DIE HAUSHALTE MIT JÄGER (TAGES_GESETZ.jagd.anteil): wie viele der n Haushalte einer Siedlung einen Jäger tragen — wenigstens
+    // einer, wo ein Revier ist (die Siedlung, die jagt, jagt an ihrem Saum), sonst gerundet; ebenso viele einen Fischer, wo ein Ufer
+    // ist. Leser: der Wirt (`_bewohnerListe`), die Station mensch.nahrung.tier S2.
+    function tagesJagdHaushalte(n) {
+        return n > 0 ? Math.max(1, Math.round(n * TAGES_GESETZ.jagd.anteil)) : 0;
+    }
+    // DIE WAHL DER JÄGER (rollen-des-tages): aus den Häusern, die einen Jäger stellen können (`kand`, je {x, z}: die Tür des Wirts,
+    // der Slot der Station), die tagesJagdHaushalte(nHaus) nächsten zum Ort der Tat (das Revier, das Ufer) — sein Weg dorthin ist
+    // der kürzeste; gleich fern entscheidet die Reihe. Liefert die Indizes in `kand` (leer: kein Ort der Tat).
+    function tagesJagdWahl(kand, nHaus, ort) {
+        if (!ort || !isFinite(ort.x) || !kand || !kand.length) return [];
+        var d = kand.map(function (k) {
+            return Math.hypot(k.x - ort.x, k.z - ort.z);
+        });
+        var ix = kand.map(function (_, i) {
+            return i;
+        });
+        ix.sort(function (a, b) {
+            return d[a] - d[b] || a - b;
+        });
+        return ix.slice(0, tagesJagdHaushalte(nHaus));
+    }
+    // DIE BEUTE DES TAGS (TAGES_GESETZ.jagd.beute): ob der Mensch (same) am Tag `tag` der Welt mit seiner Tat (`jagd`) Beute
+    // heimbringt — rein aus Same und Tag; null, wo die Tat keine Beute trägt (der Fischfang bis zum Bestand der Fische)
+    function tagesBeute(same, tag, tat) {
+        var p = TAGES_GESETZ.jagd.beute[tat];
+        return p == null ? null : _tagZahl((same ^ Math.imul(Math.floor(tag) | 0, 0x9e3779b1)) >>> 0, "beute:" + tat) < p;
+    }
+    // DAS REVIER DER STREIFE (rollen.waechter.streife): aus den Punkten `pkt` des Netzes der Wege ({x, z}) um den Posten P die
+    // `punkte` nächsten binnen `radiusM` (weg(i) = der Weg vom Posten zum Punkt i über das Netz; ohne ihn die Luftlinie), je zwei
+    // wenigstens `abstandM` auseinander — als Runde: im Kreis um den Posten (nach dem Winkel), sodass der Wächter von Punkt zu
+    // Punkt geht und am Posten endet. Liefert die Indizes in `pkt` (leer: kein Netz um den Posten, keine Streife).
+    function tagesStreife(pkt, P, rolle, weg) {
+        var R = (TAGES_GESETZ.rollen[rolle] || {}).streife;
+        if (!R || !pkt || !P) return [];
+        var kand = [];
+        for (var i = 0; i < pkt.length; i++) {
+            var q = pkt[i],
+                d = weg ? weg(i) : Math.hypot(q.x - P.x, q.z - P.z);
+            if (isFinite(d) && d <= R.radiusM && Math.hypot(q.x - P.x, q.z - P.z) >= R.abstandM) kand.push({ i: i, d: d });
+        }
+        kand.sort(function (a, b) {
+            return a.d - b.d || a.i - b.i;
+        });
+        var wahl = [];
+        for (var k = 0; k < kand.length && wahl.length < R.punkte; k++) {
+            var c = pkt[kand[k].i],
+                frei = true;
+            for (var m = 0; m < wahl.length; m++) if (Math.hypot(pkt[wahl[m]].x - c.x, pkt[wahl[m]].z - c.z) < R.abstandM) frei = false;
+            if (frei) wahl.push(kand[k].i);
+        }
+        return wahl.sort(function (a, b) {
+            return Math.atan2(pkt[a].x - P.x, pkt[a].z - P.z) - Math.atan2(pkt[b].x - P.x, pkt[b].z - P.z);
+        });
     }
     // DER WEG ZU EINEM ORT (pendler-anschluss; die Nähe der Bindung, `tagesBindung` `weg`): von einem Ort aus `orte` (tagesOrte,
     // plan-lokal) zum Knoten, an dem er am Wege-Netz hängt (netz = {knoten (am Ursprung ox, oz), kanten}: fachwerk `wegeNetz`), über das
@@ -5779,7 +5934,9 @@
     // {werk, platz, mahl, abend, besuch}: je Bedürfnis der Index seines Orts (platz: der Markt seines Einkaufs) — heimI heißt daheim (das Werk: der eigene Hof), −1 keiner.
     // weg(von, o, i) = der Weg, den er von `von` (ein Ort aus `orte`) zum Ort o GEHT (der Wirt: das Wege-Netz des Plans; Infinity:
     // keiner) — die Nähe jeder Wahl misst ihn (tetrapoda `zielWahl` `weg`), ohne ihn die Luftlinie.
-    function tagesBindung(TC, same, rolle, heimI, orte, ohne, weg) {
+    // jahre = das Alter des Menschen (der Wirt: `_bewohnerJahre`) — das Kind hilft erst ab TAGES_GESETZ.kindHilftAbJ; ohne Alter hilft keins.
+    // Liefert dazu hilft = das Kind hilft am Werk seines Hauses (der Wirt reicht es dem Plan als orte.hilft).
+    function tagesBindung(TC, same, rolle, heimI, orte, ohne, weg, jahre) {
         var G = TAGES_GESETZ,
             H = orte[heimI],
             Z = G.zuege[tagesZug(same)];
@@ -5819,13 +5976,14 @@
         // wer in einem Haus mit Rolle wohnt, dessen Werk ist sein Haus; sonst der Ort seiner Wahl, ohne einen der eigene Hof
         var eigen = H.bietet && H.bietet.arbeit > 0 && H.art !== "wohnhaus";
         // (der Kaufmann: `rollen[rolle].werkAm` nennt die Art des Orts, an dem sein Werk steht — der nächste mit Ständen, den
-        // der Wirt trägt, binnen wegM.markt)
+        // der Wirt trägt, binnen wegM.markt; die Rolle mit Tat — Jäger, Fischer, rollen-des-tages — der nächste, der ihre Tat
+        // anbietet, gleich wie fern: das Revier, das Ufer)
         var R = G.rollen[rolle] || {},
             am = -1,
-            amD = G.wegM.markt;
+            amD = R.tat ? Infinity : G.wegM.markt;
         for (var q = 0; R.werkAm && q < orte.length; q++) {
             var o = orte[q];
-            if (!o || o.art !== R.werkAm || !(o.staende > 0) || (ohne && ohne(o, q))) continue;
+            if (!o || o.art !== R.werkAm || !(R.tat ? o.bietet && o.bietet[R.tat] > 0 : o.staende > 0) || (ohne && ohne(o, q))) continue;
             var dq = weg ? weg(H, o, q) : Math.hypot(o.x - H.x, o.z - H.z);
             if (dq <= amD) {
                 am = q;
@@ -5833,16 +5991,30 @@
             }
         }
         // (das Kind, `rollen.kind.spiel`: sein Werk ist der Ort seines Spiels — die Wahl nach dem Angebot `spiel`, das eigene
-        // Haus bietet keins)
-        var werk = am >= 0 ? am : R.spiel ? wahl("spiel", H, "werk", null) : eigen ? heimI : wahl("arbeit", H, "werk", null);
+        // Haus bietet keins; in der Form seines Zugs, `zuege.kind`: das häusliche spielt daheim — kein Ort, der Plan nennt die
+        // Tür —, das fleißige hilft am Werk seines Hauses, nie an einem fremden — ohne Werk im Haus oder unter kindHilftAbJ spielt es)
+        var kind = R.spiel ? Z.kind : null;
+        // (das helfende Kind hilft nur am Werk seines eigenen Hauses und erst ab kindHilftAbJ — sonst spielt es, TAGES_GESETZ.kindHilftAbJ)
+        if (kind === "hilft" && !(eigen && jahre >= G.kindHilftAbJ)) kind = null;
+        var spielt = R.spiel && kind !== "hilft";
+        var werk = am >= 0 ? am : spielt ? (kind === "daheim" ? heimI : wahl("spiel", H, "werk", null)) : eigen ? heimI : wahl("arbeit", H, "werk", null);
         if (werk < 0) werk = heimI;
         var platz = wahl("markt", H, "markt", null);
+        var besuch = wahl("besuch", H, "besuch", null, [H, orte[platz]]);
+        // DER HÄUSLICHE EMPFÄNGT (zuege `empfaengt`): kein Besuch außer Haus, wo sein Gang zum Werk und zurück wegTagM trägt und
+        // sein Abend den Besuch (`tagesPlan`: der Besuch ist dann bei ihm, drinnen); sonst geht er — der Besuch ist sein Weg des Tags
+        if (Z.empfaengt && besuch >= 0 && werk !== heimI) {
+            var T = _tagesWenden(same, rolle),
+                wW = weg ? weg(H, orte[werk], werk) : Math.hypot(orte[werk].x - H.x, orte[werk].z - H.z);
+            if (2 * wW >= G.wegTagM && T.w1 + G.besuchH <= T.ruhe - 0.5) besuch = -1;
+        }
         return {
-            werk: werk,
+            werk: spielt && kind === "daheim" ? -1 : werk,
+            hilft: kind === "hilft",
             platz: platz,
             mahl: wahl("mahl", orte[werk], "mahl", G.daheim, null, G.amWerk),
             abend: wahl("treff", H, "abend", daheimAbend, null, null, treffMal),
-            besuch: wahl("besuch", H, "besuch", null, [H, orte[platz]]),
+            besuch: besuch,
         };
     }
     // DER PLAN DER STUNDE: orte = {heim, werk, platz, mahl, abend, besuch} sind die Orte des Menschen, wie der Wirt sie nach
@@ -5870,9 +6042,8 @@
     function _tagesWenden(same, rolle) {
         var G = TAGES_GESETZ;
         var R = G.rollen[rolle] || {};
-        // der Zug (TAGES_GESETZ.zuege): seine Wenden; wer einen Posten hat (regenfest), hält seine Schicht
-        var Z = G.zuege[tagesZug(same)],
-            post = !!R.regenfest;
+        // der Zug (TAGES_GESETZ.zuege): seine Wenden; wer einen Posten hat (regenfest), hält seine Schicht — der Fleiß verlängert sie
+        var Z = G.zuege[tagesZug(same)];
         var j = function (wort) {
             return (_tagZahl(same, wort) * 2 - 1) * G.streuH;
         };
@@ -5882,9 +6053,13 @@
         // eigene Stunden um 8 ± 0,5 Uhr (an stadt-voll trug die Stunde um 6 Uhr 1 470 Wege: Aufstehen vor die Tür, der Gang zum Markt)
         var Wk = R.werk || G.werk;
         var b0 = R.marktAuf ? G.einkauf.auf : R.werk ? Wk[0] + j("werk0") : _tagBand(G.werkAb, _tagZahl(same, "werk0"));
-        var w0 = b0 - (post ? 0 : Z.werkVorH || 0);
-        var w1 = (R.werk ? Wk[1] : b0 + (Wk[1] - Wk[0])) + (post ? 0 : Z.werkNachH || 0) + j("werk1");
-        var mittagAmWerk = R.mittagAmWerk || Z.mittagAmWerk;
+        var vor = Z.werkVorH || 0,
+            nach = Z.werkNachH || 0;
+        var w0 = b0 - vor;
+        // DER FLEISS HÄLT SEINE STUNDEN (absicht-zug): das Werk des Fleißigen dauert die Stunden seiner Rolle + werkVorH + werkNachH,
+        // seine Wende streut mit dem Beginn (jedem anderen streut das Ende für sich); das Kind isst am Tisch (`rollen.kind.spiel`)
+        var w1 = nach ? w0 + (Wk[1] - Wk[0]) + vor + nach : (R.werk ? Wk[1] : b0 + (Wk[1] - Wk[0])) + j("werk1");
+        var mittagAmWerk = R.mittagAmWerk || (!R.spiel && Z.mittagAmWerk);
         // der Mittag streut ± 1 h um 12 Uhr (die Stunde des Mahls je Mensch aus dem Samen)
         var m0 = G.mittag[0] + (_tagZahl(same, "mittag") * 2 - 1) * 1;
         var m1 = m0 + (G.mittag[1] - G.mittag[0]);
@@ -5892,15 +6067,37 @@
         // der gesellige Abend dauert länger (ruheNachH); die Ruhe bleibt vor Mitternacht seiner Stunde
         if (Z.ruheNachH) ruhe = Math.max(ruhe, Math.min(ruhe + Z.ruheNachH, 23.75));
         // der Zug verschiebt Wenden, er nimmt dem Tag keinen Weg (mensch.K3: 4–10 Wege je Tag): das längere Werk des Fleißigen
-        // endet besuchH vor der Ruhe — der Abend bleibt. Bis hier lief das Werk des fleißigen Wirts (10–23 Uhr + werkNachH) über
-        // seine Ruhe 23,6 hinaus: am Tag aus `tagesPlan` (je 0,02 h, 4 000 Samen) trug er ohne Besuch 3 Wege
-        if (!post && Z.werkNachH) w1 = Math.max((R.werk ? Wk[1] : b0 + (Wk[1] - Wk[0])) + j("werk1"), Math.min(w1, ruhe - G.besuchH));
+        // endet besuchH vor der Ruhe — der Abend bleibt — und beginnt um so viel früher, was der Abend nicht trägt (der fleißige
+        // Wirt um 7,35 Uhr, er schläft 7 h). Bis hier lief das Werk des fleißigen Wirts (10–23 Uhr + werkNachH) über seine Ruhe
+        // 23,6 hinaus (am Tag aus `tagesPlan` trug er ohne Besuch 3 Wege), danach schnitt die Ruhe den Fleiß: 1,1 h über dem Maß
+        if (nach && w1 > ruhe - G.besuchH) {
+            var spaet = w1 - (ruhe - G.besuchH);
+            w0 -= spaet;
+            w1 -= spaet;
+        }
         // er wacht vor seinem Aufbruch: wenigstens besuchH vor dem Werk (der Morgen im Haus)
         wach = Math.min(wach, w0 - G.besuchH);
         // der geteilte Abend am Treff dauert abendTreffH ± 0,25 h (die Heimkehr streut; bis hier × 0,5–1,5: der Ausgeglichene
         // blieb bis 2,25 h am Treff, der blinde Zuordner las ihn als gesellig — gate:mensch-zuege)
         var treffH = Z.abendTreffH != null ? Z.abendTreffH + (_tagZahl(same, "treffH") - 0.5) * 0.5 : Z.abendTreffH;
-        return { R: R, wach: wach, w0: w0, w1: w1, morgenH: 0, mittagAmWerk: mittagAmWerk, m0: m0, m1: m1, ruhe: ruhe, abendTreffH: treffH };
+        // DIE PAUSE DES TEILDIENSTS (rollen `teildienst`): frei im Werk, ihr Beginn streut ± streuH — der Zug füllt sie wie seinen
+        // Abend (`tagesPlan`), der Fleißige arbeitet durch (sein Fleiß hält die Stunden der Rolle). Bis hier stand der Wirt 13 h
+        // ohne freie Stunde am Haus: die Kaskade der Station über den reinen Plan (100 Samen) las 0 von 22 häuslichen und 0 von 16
+        // geselligen Wirten ihrem Zug zu
+        // (der geteilte Abend des Ausgeglichenen ist EIN Maß je Tag: die Pause nimmt es zuerst, der Rest bleibt dem Abend)
+        var p0 = null,
+            p1 = null,
+            pTreffH = null;
+        if (R.teildienst && !nach) {
+            p0 = R.teildienst[0] + j("teil");
+            p1 = p0 + R.teildienst[1];
+            if (!(p0 > w0 && p1 < w1)) p0 = p1 = null;
+            else if (treffH != null) {
+                pTreffH = Math.min(treffH, p1 - p0);
+                treffH -= pTreffH;
+            }
+        }
+        return { R: R, Z: Z, wach: wach, w0: w0, w1: w1, morgenH: 0, mittagAmWerk: mittagAmWerk, m0: m0, m1: m1, ruhe: ruhe, abendTreffH: treffH, p0: p0, p1: p1, pTreffH: pTreffH };
     }
     // DER EINKAUF AM MARKT-MORGEN (mensch.menge.bild#2, TAGES_GESETZ.einkauf): das Fenster [von, bis) seines Akts „einkauf“ (ATUS
     // 07 Consumer Purchases) — für den Einkäufer seines Haushalts (orte.einkauf, `_tagesWendenOrt`) ab e0 für morgenH Stunden; für
@@ -5931,6 +6128,12 @@
         // Fleißige im Rathaus (rathaus #952) 3 Wege (Station mensch.K2#2, gate:kreatur-takt bewohner); an der Stadt liegt das Werk
         // bei 29 von 1 356 keinen Gang vom Heim
         if (orte && T.mittagAmWerk && !(TAGES_GESETZ.rollen[rolle] || {}).mittagAmWerk && _amHeim(orte.werk, orte.heim)) T = Object.assign({}, T, { mittagAmWerk: false });
+        // DAS KIND, DAS HILFT (orte.hilft aus `tagesBindung`): kindHilftH Stunden am Werk seines Hauses ab dem Beginn seines Werks,
+        // das Mittag am Tisch dazwischen (TAGES_GESETZ.kindHilftH, das Halbzeit-System 1844)
+        if (orte && orte.hilft) {
+            var hH = TAGES_GESETZ.kindHilftH;
+            T = Object.assign({}, T, { w1: T.w0 + hH + (T.m0 >= T.w0 && T.m0 < T.w0 + hH ? T.m1 - T.m0 : 0) });
+        }
         if (!orte || !orte.einkauf) return T;
         var K = TAGES_GESETZ.einkauf,
             Z = TAGES_GESETZ.zuege[tagesZug(same)],
@@ -5940,6 +6143,8 @@
         var e0 = K.auf + _tagZahl(same, "einkauf") * Math.max(0, Math.min(K.schluss, T.w0) - U.morgenH - K.auf);
         U.e0 = e0;
         U.w0 = Math.max(T.w0, e0 + U.morgenH);
+        // (der fleißige Einkäufer hängt an, was der Einkauf seinem Werk am Morgen nimmt — bis besuchH vor der Ruhe)
+        if (Z.werkNachH && U.w0 > T.w0) U.w1 = Math.max(T.w1, Math.min(T.w1 + U.w0 - T.w0, T.ruhe - TAGES_GESETZ.besuchH));
         U.wach = Math.min(T.wach, e0 - TAGES_GESETZ.besuchH);
         return U;
     }
@@ -5981,9 +6186,30 @@
     // 354, die dritte Spitze kam wieder, ab 18 Uhr 30,8 % der Wege (Band `bankH`: 22 %)
     function _bankWende(T, same, orte) {
         var G = TAGES_GESETZ,
-            bA = orte.besuch && T.w1 + G.besuchH <= T.ruhe - 0.5,
+            bA = (orte.besuch || T.Z.empfaengt) && T.w1 + G.besuchH <= T.ruhe - 0.5,
             ab = (bA ? T.w1 + G.besuchH : T.w1) + (T.abendTreffH != null ? T.abendTreffH : 0);
         return ab + _tagZahl(same, "bank") * Math.max(0, Math.min(G.bankH, T.ruhe - ab));
+    }
+    // DIE RUNDE DER STREIFE (rollen.waechter.streife): dh Stunden nach dem Beginn des Werks (lang Stunden) — der Index des Punkts
+    // seines Reviers (`orte.streife`), an dem der Wächter in seiner Runde steht, oder −1 (am Posten; ohne Revier keine Streife).
+    // Eine Runde beginnt nur, wenn sie im Werk endet (das Ende der Schicht schneidet keine Runde: gate:koerper-kern ROLLEN R3)
+    function _streifePunkt(R, orte, dh, lang) {
+        var S = R.streife,
+            st = orte && orte.streife;
+        if (!S || !st || !st.length || !(dh >= 0)) return -1;
+        var r = dh % S.jeH;
+        if (dh - r + S.dauerH > lang + 1e-9) return -1;
+        return r < S.dauerH ? Math.min(st.length - 1, Math.floor((r / S.dauerH) * st.length)) : -1;
+    }
+    // die Wenden seiner Runden: je Runde ihr Beginn, der Schritt zu jedem Punkt und die Rückkehr an den Posten (die EINE Liste, die
+    // `tagesGaenge` und `tagesKette` zu ihren Wenden legen)
+    function _streifeWenden(T, orte) {
+        var S = T.R.streife,
+            st = orte && orte.streife,
+            t = [];
+        if (!S || !st || !st.length) return t;
+        for (var a = T.w0; a + S.dauerH <= T.w1 + 1e-9; a += S.jeH) for (var k = 0; k <= st.length; k++) t.push(a + (k * S.dauerH) / st.length);
+        return t;
     }
     function tagesGaenge(same, rolle, orte) {
         var G = TAGES_GESETZ,
@@ -5995,9 +6221,11 @@
         var t = [T.wach, mO[0], mO[1], mB[0], mB[1], mB[1] + G.besuchH, T.w0, T.m0, T.m1, T.w1, T.w1 + G.besuchH, T.ruhe];
         t.push(_bankWende(T, same, orte));
         if (T.abendTreffH != null) t.push(T.w1 + T.abendTreffH, T.w1 + G.besuchH + T.abendTreffH);
+        if (T.p0 != null) t.push(T.p0, T.p1, T.p0 + (T.pTreffH || 0));
         (orte.spiel || []).forEach(function (e) {
             t.push(e.von, e.bis);
         });
+        t = t.concat(_streifeWenden(T, orte));
         var u = t
             .map(function (x) {
                 return ((x % 24) + 24) % 24;
@@ -6039,9 +6267,11 @@
         var t = [T.wach, mO[0], mO[1], mB[0], mB[1], mB[1] + G.besuchH, T.w0, T.m0, T.m1, T.w1, T.w1 + G.besuchH, T.ruhe];
         t.push(_bankWende(T, same, orte));
         if (T.abendTreffH != null) t.push(T.w1 + T.abendTreffH, T.w1 + G.besuchH + T.abendTreffH);
+        if (T.p0 != null) t.push(T.p0, T.p1, T.p0 + (T.pTreffH || 0));
         (orte.spiel || []).forEach(function (e) {
             t.push(e.von, e.bis);
         });
+        t = t.concat(_streifeWenden(T, orte));
         var u = t
             .map(function (x) {
                 return ((x % 24) + 24) % 24;
@@ -6068,12 +6298,35 @@
             kette = [],
             ank = 0,
             eng = 0,
+            aus = 0,
+            nachAus = null,
             gehSumme = 0;
         for (var j = 0; j <= n; j++) {
             var e = ab[(s0 + j) % n],
                 rel = j === n ? 24 : (((e.ab - A) % 24) + 24) % 24;
-            var vor = j ? ab[(s0 + j - 1) % n].p : e.p;
+            var vor = kette.length ? kette[kette.length - 1].p : e.p;
             var g = j && vor.ort !== e.p.ort ? Math.max(0, geh(vor.wo, e.p.wo) || 0) : 0;
+            // DIE RUNDE BEGINNT AM POSTEN (rollen-des-tages): eine Runde der Streife geht nur, wer zu ihrem Aufbruch am Posten
+            // steht — kehrt er aus der vorigen später zurück, als er zur nächsten aufbrechen müsste, lässt er sie aus (`aus`) und
+            // geht die nächste zu ihrer Stunde: die Verspätung einer Runde trägt höchstens bis zur nächsten, nie in den Abend.
+            // Der Tag der Welt dauert 60 min, die Stunde 150 s: die Runde von 186 m (je Punkt 30–42 m) braucht im Schritt 0,92 h
+            // ihrer Stunde. Bis hier schob jede Runde die nächste: im Kern 62 von 76 Abschnitten eng, beim doppelten Weg brach
+            // der Feierabend erst um 7,78 Uhr auf; die Stadt-Wache #91693 (gate:kreatur-takt bewohner) ging 2 Wege statt 4.
+            if (j && j < n && e.p.akt === "streife" && ab[(s0 + j - 1) % n].p.akt !== "streife" && rel - g < ank - 1e-9) {
+                while (j + 1 < n && ab[(s0 + j + 1) % n].p.akt === "streife") j++;
+                aus++;
+                nachAus = rel;
+                continue;
+            }
+            // (nach der ausgelassenen Runde steht er am Posten: ab ihrer Stunde, kommt er von anderswo — der erste Gang der Schicht —,
+            // oder er setzt den Abschnitt fort, an dem er steht, seine Ankunft bleibt die frühere — sonst stünde er zur Wende des
+            // Postens neu „angekommen“, und jede Runde mit einem ersten Weg über die halbe Stunde fiele)
+            if (nachAus !== null) {
+                var weiter = vor.ort === e.p.ort && vor.drinnen === e.p.drinnen && vor.akt === e.p.akt;
+                if (!weiter) rel = nachAus;
+                nachAus = null;
+                if (weiter) continue;
+            }
             if (rel - g < ank - 1e-9) eng++;
             var auf = Math.max(rel - g, ank);
             // DER KAUF SCHRUMPFT NIE (tages-gesetz): den Markt verlässt der Einkäufer erst nach der Dauer seines Einkaufs ab seiner
@@ -6085,7 +6338,7 @@
             gehSumme += g;
             kette.push({ auf: auf, p: e.p });
         }
-        return { A: A, v: v, kette: kette, eng: eng, gehH: gehSumme };
+        return { A: A, v: v, kette: kette, eng: eng, aus: aus, gehH: gehSumme };
     }
     function tagesZiel(K, stunde) {
         var h = (((Number(stunde) - K.v - K.A) % 24) + 24) % 24,
@@ -6112,13 +6365,14 @@
         var W = G.regen,
             regen = nass > 0 && nass >= W.ab + (_tagZahl(same, "regen") * 2 - 1) * W.streuH;
         var aus = function (wo, akt, drinnen, an) {
-            var posten = akt === "arbeit" && R.regenfest;
+            var posten = (akt === "arbeit" || akt === "streife") && R.regenfest;
             var o = an || orte[wo];
             if (regen && !drinnen && !posten) return { ort: heim, wo: "heim", akt: akt, drinnen: true };
             if (krank && !drinnen && !posten && (o || heim) !== heim) return { ort: heim, wo: "heim", akt: "abend", drinnen: false };
             return { ort: o || heim, wo: o ? wo : "heim", akt: akt, drinnen: !!drinnen };
         };
-        var bA = besuch && w1 + G.besuchH <= ruhe - 0.5;
+        // (der Häusliche ohne Besuch außer Haus empfängt am Abend, drinnen — zuege `empfaengt`, `tagesBindung`)
+        var bA = (besuch || T.Z.empfaengt) && w1 + G.besuchH <= ruhe - 0.5;
         var bM = besuch && !bA && (T.e0 != null ? T.e0 : wach) + morgenH + G.besuchH <= w0;
         var M = _morgenGang(T, bM);
         if (h < wach || h >= ruhe) return aus("heim", "schlaf", true);
@@ -6130,8 +6384,21 @@
         if (h < w0) return aus("heim", "morgen", true);
         // der Mittag: am Tisch seiner Bindung — ohne einen isst er daheim (drinnen)
         if (h >= m0 && h < m1 && !mittagAmWerk) return aus("mahl", "mittag", !orte.mahl);
-        if (h < w1) return aus("werk", R.spiel ? "spiel" : "arbeit", false);
-        if (bA && h < w1 + G.besuchH) return aus("besuch", "besuch", false);
+        // die Pause des Teildiensts (rollen `teildienst`): der Zug füllt sie wie seinen Abend — der Gesellige am Treff, der
+        // Häusliche daheim, der Ausgeglichene abendTreffH am Treff und dann daheim
+        if (T.p0 != null && h >= T.p0 && h < T.p1) {
+            if (T.pTreffH != null && h >= T.p0 + T.pTreffH) return aus("heim", "abend", true);
+            return aus("abend", "abend", !orte.abend || orte.abend === heim);
+        }
+        // DAS WERK IST DIE TAT DER ROLLE (rollen-des-tages): die Wache geht in den ersten `dauerH` Stunden jeder Runde ihre Streife
+        // (Punkt k ihres Reviers, `orte.streife`, wo "streife" + k), sonst steht sie am Posten; der Jäger jagt, der Fischer fischt
+        // (`R.tat`), das Kind spielt oder hilft, jeder andere arbeitet
+        if (h < w1) {
+            var k = _streifePunkt(R, orte, h - w0, w1 - w0);
+            if (k >= 0) return aus("streife" + k, "streife", false, orte.streife[k]);
+            return aus("werk", R.tat || (R.spiel ? (orte.hilft ? "hilft" : "spiel") : "arbeit"), false);
+        }
+        if (bA && h < w1 + G.besuchH) return besuch ? aus("besuch", "besuch", false) : aus("heim", "besuch", true);
         // DAS SPIEL DES ABENDS (SPIEL_GESETZ, `spielProgramm`): wer Gast des Treffs am Platz ist, steht in den Stunden seines
         // Auftritts (orte.spiel: [{von, bis, akt, x, z, blick}], der Wirt stellt sie aus dem Programm des Tags) am Feld — als
         // Läufer, Ringer, am Brett oder im Ring der Zuschauer; der Regen schickt ihn heim, der Kranke bleibt vor seiner Tür
@@ -6199,6 +6466,22 @@
                 finte: Object.freeze({ anteil: 0.3, offen: 0.5, gelesen: 1.5 }),
                 gaenge: 4,
             }),
+            // DER HIEB (rollen-des-tages, Meisterkarte 2 mensch.macht.krieg#1): derselbe Zweikampf mit der Waffe — die Wache, die der
+            // Tat naht (der Wirt, `_bewohnerNahen`), steht ihrem Täter `abstandM` gegenüber (die Länge der Klinge, LEBENSLAUF.wache
+            // nahM), je `zugS` Sekunden ein Hieb im Wechsel: der Getroffene antwortet (der nächste Zug ist seiner), bis einer `bis`
+            // Treffer trägt. DIE DECKUNG HÄLT: eine gelesene Finte trifft nie (`gelesen` ∞ — die Klinge in der Bindung, kein Treffer
+            // durch die Deckung), die ungelesene öffnet ihn wie im Ringen. zugS: ein Hieb mit Erholung je 2 s (ANGENOMMEN — kein Band
+            // des Takts eines Gefechts; die Linse nennt die Dauer der Gänge), bis 2 (der zweite Treffer entscheidet, ANGENOMMEN).
+            hieb: Object.freeze({
+                teil: Object.freeze([2, 2]),
+                mass: "treffer",
+                sieg: "gross",
+                bis: 2,
+                abstandM: 1.5,
+                zugS: 2,
+                zuegeMax: 200,
+                finte: Object.freeze({ anteil: 0.3, offen: 0.5, gelesen: Infinity }),
+            }),
             brett: Object.freeze({ teil: Object.freeze([2, 2]), mass: "reihe", sieg: "gross", feld: 9, reihe: 5, zugS: 8, tische: 4 }),
         }),
     });
@@ -6237,8 +6520,10 @@
     // DER ZWEIKAMPF zweier Stärken a, b ({s: Leistung, u: Übung}) aus dem Samen `same`: je Zug greift abwechselnd einer an — mit
     // einer Finte (Anteil `finte.anteil`) oder offen —, der andere wehrt ab; Treffer, wenn sein Zug die Abwehr schlägt (Bradley-
     // Terry). Liefert {zuege: [{an, finte, gelesen, treffer}], treffer: [ta, tb], sieger: 0 | 1}
-    function spielKampf(a, b, same) {
-        var R = SPIEL_GESETZ.arten.ringen,
+    // (art: "ringen" — der Gang des Abends — oder "hieb", der Zweikampf mit der Waffe; `gelesen` Infinity heißt: die Deckung hält,
+    // die gelesene Finte trifft nie)
+    function spielKampf(a, b, same, art) {
+        var R = SPIEL_GESETZ.arten[art || "ringen"],
             F = R.finte,
             t = [0, 0],
             zuege = [],
@@ -6330,6 +6615,9 @@
     // wer ihn daheim verbringt (abend null) und binnen `programm.nachbarM` des Platzes wohnt (heim) — kand = [{abend, heim}] je Mensch
     // ({x, z} oder null). Liefert die Indizes der Gäste in der Folge von kand. Leser: der Wirt (`_spielProgramm`), die Linse
     // gate:koerper-kern E8.
+    // DER HÄUSLICHE BLEIBT DAHEIM (absicht-zug; kand[i].same = der Same des Menschen, sein Zug `tagesZug`): wer empfängt
+    // (TAGES_GESETZ.zuege `empfaengt`), ist kein Nachbar des Spiels — sein Abend daheim bleibt daheim. Bis hier stellte die Wahl
+    // jeden mit dem Abend daheim binnen nachbarM in den Ring: an der Stadt stand der Häusliche ~1 h als Zuschauer am Platz.
     function spielGaesteWahl(kand, mx, mz, R) {
         var N = SPIEL_GESETZ.programm.nachbarM,
             wahl = [];
@@ -6337,6 +6625,8 @@
             var k = kand[i],
                 o = k.abend || k.heim,
                 r = k.abend ? R : N;
+            if (!Number.isFinite(k.same)) throw new Error("KERN-PFLICHT verletzt: spielGaesteWahl ohne den Samen des Menschen (sein Zug wählt, zuege `empfaengt`)"); // prettier-ignore
+            if (!k.abend && TAGES_GESETZ.zuege[tagesZug(k.same)].empfaengt) continue;
             if (o && Math.hypot(o.x - mx, o.z - mz) <= r) wahl.push(i);
         }
         return wahl;
@@ -6587,6 +6877,9 @@
         herstellung: Object.freeze({
             feld: Object.freeze({ ware: "kraut", jeStunde: 2 }),
             schmiede: Object.freeze({ ware: "eisen", jeStunde: 0, aus: "erz" }),
+            // (rollen-des-tages: der Jäger stellt nichts her — sein Fleisch ist die Beute aus dem Bestand der Tiere, `tagesBeute`,
+            // die der Wirt in seinen Halter legt, `_bewohnerBeute`)
+            jaeger: Object.freeze({ ware: "fleisch", jeStunde: 0 }),
         }),
         // DIE STOFFSTROM-KETTE (Meisterkarte 2 mensch.wirtschaft.stoffstrom#1, `stoffstromHalter`): Erz → Barren → Werkzeug.
         // esseKgJeStunde: das Erz, das ein Rennofen in einer Stunde der Arbeit seiner Schmiede reduziert (die Versuche der
@@ -6632,6 +6925,11 @@
             b = Math.min(T.w1, T.ruhe),
             roh = T.mittagAmWerk || !(T.m1 > a && T.m0 < b) ? [[a, b]] : [[a, T.m0], [T.m1, b]],
             aus = [];
+        // (ohne die Pause des Teildiensts, rollen `teildienst`)
+        if (T.p0 != null)
+            roh = roh.reduce(function (L, r) {
+                return L.concat([[r[0], Math.min(r[1], T.p0)], [Math.max(r[0], T.p1), r[1]]]);
+            }, []);
         for (var i = 0; i < roh.length; i++) {
             var x = roh[i][0] + v,
                 y = roh[i][1] + v;
@@ -11537,6 +11835,11 @@
         tagesZiel: tagesZiel,
         tagesZug: tagesZug,
         tagesHaltung: tagesHaltung,
+        // rollen-des-tages — die Tat der Rolle: das Revier der Streife, die Haushalte mit Jäger, die Beute des Tags (Leser: _bewohnerListe, _bewohnerBeute)
+        tagesStreife: tagesStreife,
+        tagesJagdHaushalte: tagesJagdHaushalte,
+        tagesJagdWahl: tagesJagdWahl,
+        tagesBeute: tagesBeute,
         // leib-liest-satz — DER LEIB LIEST SEINEN SATZ (Leser: _bewohnerGemuet, _koerperMotionProfile, _bewohnerStaende, _bewohnerTracht)
         LEIB_SATZ: LEIB_SATZ,
         leibSatzProfil: leibSatzProfil,
