@@ -15,7 +15,7 @@ Wo die Zeit liegt (Wolke, Stadt d:7@836,438, 1 356 Bewohner, 114 Zeugen an der P
 
 Täter (origin/main 64fcf12e):
   T1 :2730 die Stände aller 1 356 Bewohner nach Abstand, je Stand ein voller Weg, im Mittel 715 je Zeuge; `{ ...p }` verfehlt je Weg
-     das Gemerkte des Anschlusses (:4347 WeakMap je Ort) und sortiert das Netz neu (:4351)
+     das Gemerkte des nächsten Knotens (:4347 WeakMap je Ort) und sortiert das Netz neu (:4351)
   T2 :2632 die Wache nur auf der freien Geraden: laterne_dorf #657 auf ihrer 5,63-m-Linie → sie naht nicht und weicht nicht (:2590)
 
 Gegenprobe (Mutanten als eigene Eigenschaft der Welt, danach fort):
