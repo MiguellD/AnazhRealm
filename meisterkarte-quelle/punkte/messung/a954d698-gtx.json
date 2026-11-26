@@ -1,7 +1,7 @@
 {
  "sha": "a954d69818f4a60fb20927a70f39e5d150e9a734",
  "geraet": "gtx",
- "zeit": "2026-11-26T08:15:47.758Z",
+ "zeit": "2026-11-26T08:25:44.512Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.sport.kunst#1": {
@@ -143,11 +143,218 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.macht.megastadt#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (2 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.17,
+   "grund": "ROT: S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (2 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k9b62b80058d3",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kf6ca2d56fe7a",
+   "s": 10.1,
+   "fremd": {
+    "s": 13,
+    "takte": 6,
+    "fremdS": 3.14,
+    "kerne": 0.242,
+    "fensterKerne": 0.23,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.13
+     ],
+     [
+      "Explorer.EXE",
+      0.83
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.23
+     ]
+    ],
+    "dienerS": 2.06,
+    "diener": [
+     [
+      "dwm.exe",
+      0.92
+     ],
+     [
+      "System",
+      0.66
+     ]
+    ],
+    "geraetS": 3.83,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      2.03
+     ],
+     [
+      "svchost.exe",
+      1.38
+     ],
+     [
+      "svchost.exe -k UnistackSvcGroup -s WpnUserService",
+      0.23
+     ]
+    ],
+    "eigenS": 25.66,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T08:20:40.224Z",
+   "abdruck": "ff636cfdbfc5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.koennen#2": {
+   "gruen": true,
+   "zahl": "S2 GRÜN · R² Güte ↔ Potenzgesetz der Übung 1 (Soll ≥ 0.8) · Umfang 100 (Soll ≥ 100 Übungsstunden eines Bewohners) · ein feld über 2077–2177 Übungsstunden (der Kalender der Welt rückt): die Güte seines Werks (b.bestand.rate ÷ jeStunde) 0.7108 → 0.7198, das Können seines Lebenslaufs 0.7108 → 0.7198; Querschnitt 139 Hersteller {\"feld\":149} über 0–36214 h: R² 1, α 0.2658 (Gesetz [object Object]) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.34,
+   "gpu": "nvidia/pascal",
+   "konsum": "kcf98a1b3fd9f",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kf6ca2d56fe7a",
+   "s": 20.6,
+   "fremd": {
+    "s": 23.7,
+    "takte": 11,
+    "fremdS": 8.44,
+    "kerne": 0.356,
+    "fensterKerne": 0.431,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.16
+     ],
+     [
+      "Explorer.EXE",
+      0.83
+     ]
+    ],
+    "dienerS": 5.94,
+    "diener": [
+     [
+      "dwm.exe",
+      2.95
+     ],
+     [
+      "System",
+      1.83
+     ]
+    ],
+    "geraetS": 6.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.28
+     ],
+     [
+      "svchost.exe",
+      1.61
+     ],
+     [
+      "SearchIndexer.exe",
+      0.16
+     ]
+    ],
+    "eigenS": 50.81,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T08:23:54.729Z",
+   "abdruck": "27df9043949a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "k78844961429c": "bVXbbqMwEP2XPG6XDhdTwFIfnNJVI21W6SeMYQw0BCIbQpXV/vsKGpIAnRck68zM8Tnj4e/qiMkeM3r8MHW14qsfq58rgyeyDOkT6ccPs+KrKHFc8rj4ChBCvPSwRBfHxkBZSEBZYX4gq9UNFeVjMqSpJ7R9yaF7FdkOQMEZ4u75eZ5aSkprq0FFY6JNnh8SnwNbk6EkC1s1NLuAfRbRk8NhiDAW2xiu0SVC7DroduHbrJjEKp2yJceVDLnoNkKI9znLtEBqrLKozNjXSYNI2fzWa7vI0dhZZ6S8JD02CR2HyZHsupezl2aWqMrWmEmz0Et9N+QA0RybkSmSvLGOupZUXeAycgMH+XqpdnZsLXXPCKXEUM61zpGqjPSEg+0lqhf6M5wX3eOBNFoV5hdoZHuBK2/aAMDbkks5EB9ajMQZiyh0J4m9qXDqBRYbcRdsBwCfEI6ouLuc32FexaKpSfJCH6ZyKUau7fHfS4omx5S0ta9Nc0V7FDBbfr2GTQzDdxeu55m3y40eImJ4NzAQgnhbaGlq1XSoycqO7Tg0jPzA50JsFuAGD4fRnjTxKJkbaZp+0O9pBD7zGXKAh6+Hsrz017OwzlSUdJ3bJPCiefGTxoOFMtOFUqPz0k9U9N2gdlQ2lqzrZpTRCQLP4+BBdW/2n8HGe6fj7J1tf4nsVUxiI+a8hw61bkbSEqXHGFdZHAKEao4udGN1mOQj3FWSMOLQJfPCZ9IlZTSRUTkOuikfVsyV6Th78cNkgM8Ll88F9QJXpjWjwgky6fNvLOlI7yVW+3Hf+anvRsP4rbdiNxXlJVMsBujCySlb28Omebg8hyMlcNS1KvotCDm2Jseyuf0C/v0H",
   "kf6ca2d56fe7a": "jZXdcpswEIXfxZdNFRkQBTSTCzlkmqST1ukbrGAFxBgYCULGnb57B9uy+clF94abs9rDtwfxZ9VAsoMMb99MXa346svq68rAOxKD+h317ZtZ8VWUOC56XJyKCiG+D7JEF01raFlICrKCfI+k0y0W5W1ybFPfYO1LTvsHkW0pVfRA415c6l7c3c2PKSWmNWlBoT1kjZ4fIp8LO5OBRAKdOg4+i30W4TeH02OFsXiJ6aX6RIhtT/tt+Dg7TEKVTp2j40oGXPRPQojXucu0AGxJWVTGznXSIFJrfp31sujR0JMDYF6itkNCx2HSmt0MSAZMs0ZVdsZMhoVe6rshpzSaazM0RZK3pNG1xOosl5EbOMA3/YJ21nREjR2BlBDKOescsMpQTzysvUQNoD/C+aE72KMGUkF+lkZrL3DllQ2l9HHppTwaP46wxhmLMHQnjcNST4DFkxgV21JKP2hoVTZmbKR5WMbNJHmh91NciqG79uYMTA4parKrTXtRehiwtTx9FU8xPT634WbeeX0xuz8ACEdhoSEVjwuOplZtDxpJ1nQ2MAz9wOciW6TLtLDf29WkiYfJ4gXaIeRjG4HPfAac0psz0gWe0ydBDliUeMlsEngRv4/ZXPyuYU9AZrpQym5e+omKPgtqj2VLZF23FqUTBJ7HqUer8bJ/9uJeiJfREuPyN2vL55sHMakf4vmzCbVurXEJ0mOMqz4OKQ3VXF3olvSQ5FbuKokQzSEeUJeY4QSjchxwU368Xi4ube7im0l4D4stHwocAFemM5ZwAkz6/JzyU7imye1R7yRUO3vn+anvRlyIOBMvYjui8kuIt0b14n/rdXMe1GBCG12rYrgZaQ6dyaFsr7+Iv/8A",
-  "kb61d93cd5c3b": "bVXbbqMwEP2XPG6XmotZjKU+OKVSI21X6SeMYQw0BCIb4iqr/fcVJKRcOo/ojM/xOePh7+YE6QFyfPwwTb3hmx+bnxsDZ3QM6jPqxw+z4Zs49XwMuHgXfe2FEM89LNXlqTWkKiUBWUNxRKfTLZbVYzq0qV/ghpIT+yLyPSGKXEhin56WrZXErHFaUDg2uhiEDPkS2JkcJDrQqYHsBg5pjL88ToZiiXhLyL0+mRB7S+yevS4Ok1Bnc7Xo+ZICF3YnhHhfqsxKwNapytqMvF4Wxcrldy77turRYJ0LYFGhHkmY51E5it32dvbWLBpV1RkzI2NBFvqMExIvsTmaMi1a56QbifUNLmM/8oBv127np85RU0UgJTC59LoArHPUMw1ukKre6E+2PPQAR9Tg1FDcoLEbRL788oYQ8rrWUg3CB4pROKUxMn/W2IdKzr3BYicmRfd9wISNqMTevk8wL2JFatKi1Me5XYqi7wb891qiKSBD7Rwa097RAUbUlXwg2CXk+ibYdtn5dbkxQwBgk4EhjIjXlZemUa0FjU5+6sahoRhGIRditwK3cDyO8WRpgOkySNP2gz6VEYU0pMAJebg+lPWlr8/CuWBZ4X1u0yiIl4efNRwdkLkulRqTl2Gq4u8G1WLVOrJp2tFGL4qCgJOA1NOw/wwxTpNO8nfaVlv7Ima1E0vdA0Oj21G0BBlQylWeMEKYWqJL3ToW0mKE+0oi9NJXmVxQV5jjzEbleeBnnFh11f3Rr5rotgrUw2yAL+sTS+wNrk1nRodToDLk30RiUR8k1Idx34VZ6MfD+G3fhmU8mffnXNGEEMtmn+nWHTbNg7h6uLVCPOyvok6YkpNuVNlvRFJAZwqo2q/fwb//"
+  "kb61d93cd5c3b": "bVXbbqMwEP2XPG6XmotZjKU+OKVSI21X6SeMYQw0BCIb4iqr/fcVJKRcOo/ojM/xOePh7+YE6QFyfPwwTb3hmx+bnxsDZ3QM6jPqxw+z4Zs49XwMuHgXfe2FEM89LNXlqTWkKiUBWUNxRKfTLZbVYzq0qV/ghpIT+yLyPSGKXEhin56WrZXErHFaUDg2uhiEDPkS2JkcJDrQqYHsBg5pjL88ToZiiXhLyL0+mRB7S+yevS4Ok1Bnc7Xo+ZICF3YnhHhfqsxKwNapytqMvF4Wxcrldy77turRYJ0LYFGhHkmY51E5it32dvbWLBpV1RkzI2NBFvqMExIvsTmaMi1a56QbifUNLmM/8oBv127np85RU0UgJTC59LoArHPUMw1ukKre6E+2PPQAR9Tg1FDcoLEbRL788oYQ8rrWUg3CB4pROKUxMn/W2IdKzr3BYicmRfd9wISNqMTevk8wL2JFatKi1Me5XYqi7wb891qiKSBD7Rwa097RAUbUlXwg2CXk+ibYdtn5dbkxQwBgk4EhjIjXlZemUa0FjU5+6sahoRhGIRditwK3cDyO8WRpgOkySNP2gz6VEYU0pMAJebg+lPWlr8/CuWBZ4X1u0yiIl4efNRwdkLkulRqTl2Gq4u8G1WLVOrJp2tFGL4qCgJOA1NOw/wwxTpNO8nfaVlv7Ima1E0vdA0Oj21G0BBlQylWeMEKYWqJL3ToW0mKE+0oi9NJXmVxQV5jjzEbleeBnnFh11f3Rr5rotgrUw2yAL+sTS+wNrk1nRodToDLk30RiUR8k1Idx34VZ6MfD+G3fhmU8mffnXNGEEMtmn+nWHTbNg7h6uLVCPOyvok6YkpNuVNlvRFJAZwqo2q/fwb//",
+  "k9b62b80058d3": "bVXbbqMwEP2XPG6WmospxlIfnBKpkbar7CeMYQw0BCIb4iqr/fcVJKQBOi9I1pmZ43PGw9/VCdID5Pj0YZp6xVc/Vj9XBs7oGNRn1E8fZsVXcer5GHBxDSKEeO1hqS5PrSFVKQnIGoojOp1usaye0iFNPYMbSk7sVuR7QhS5kMS+vMxTK4lZ47SgcEx0MQgZ8jmwMzlIdKBTQ7MbOKQxPnucDMES8Z6Qe3wyIfaW2D17mxWTUGdTtuj5kgIXdvcqxJ85y6wEbJ2qrM3Y18uiWLn83su+L3I0WOcCWFSoxybM86gcyW56OXtpZomq6oyZNGNBFvqMExLPsTmaMi1a56QbifUNLmM/8oBvlmrnp85Rj4xASmByrnUBWOeoJxzcIFW90J9sXvQAR9Tg1FDcoLEbRL780oYQ8rbkUg3EhxYjcUpjZP4ksTeVnHuBxU48BN33BhM2ohJ7O3/AbMWiqUmLUh+ncimKvhvwX0uKpoAMtXNoTHtHBxhRV15fwy4hw3fPNvPMr8uNHgIAexgYwoh4W2hpGtVa0Ojkp24cGophFHIhdgtwC8fjaE+WBpjOjTRtP+iPNKKQhhQ4IevrQ1le+vosnAuWFd7nNo2CeF78rOHogMx1qdTovAxTFX83qBar1pFN044yelEUBJwEpH40+/dg46PTSf6HttXGbsUkdmLOe+jQ6HYkLUEGlHKVJ4wQpuboUreOhbQY4b6SCD31hScX1BXmOJFReR74GSdWXXlf+lUT3VaBWk8G+LKsWGIvcG06MyqcApUh/8YSi/ogoT6M+y7MQj8exm/zLvYTTbavuaIJIZZNjunGHTbNWlw13Fgh1vsrqROm5KQbVfYbkRTQmQKq9ut38O8/",
+  "kcf98a1b3fd9f": "bVXbbqMwEP2XPG6WmospxlIfnBKpkbar7CeMYQw0BCIb4iqr/fcVJKQBOi9I1pmZ43PGw9/VCdID5Pj0YZp6xVc/Vj9XBs7oGNRn1E8fZsVXcer5GHBxDSKEeO1hqS5PrSFVKQnIGoojOp1usaye0iFNPYMbSk7sVuR7QhS5kMS+vMxTK4lZ47SgcEx0MQgZ8jmwMzlIdKBTQ7MbOKQxPnucDMES8Z6Qe3wyIfaW2D17mxWTUGdTtuj5kgIXdieE+DNnmZWArVOVtRn7elkUK5ffe9n3RY4G61wAiwr12IR5HpUj2U0vZy/NLFFVnTGTZizIQp9xQuI5NkdTpkXrnHQjsb7BZexHHvDNUu381DnqkRFICUzOtS4A6xz1hIMbpKoX+pPNix7giBqcGoobNHaDyJdf2hBC3pZcqoH40GIkTmmMzJ8k9qaScy+w2ImHoPveYMJGVGJv5w+YrVg0NWlR6uNULkXRdwP+a0nRFJChdg6Nae/oACPqyutr2CVk+O7ZZp75dbnRQwBgDwNDGBFvCy1No1oLGp381I1DQzGMQi7EbgFu4Xgc7cnSANO5kabtB/2RRhTSkAInZH19KMtLX5+Fc8GywvvcplEQz4ufNRwdkLkulRqdl2Gq4u8G1WLVOrJp2lFGL4qCgJOA1I9m/x5sfHQ6yf/QttrYrZjETsx5Dx0a3Y6kJciAUq7yhBHC1Bxd6taxkBYj3FcSoae+8OSCusIcJzIqzwM/48SqK++PftVEt1Wg1pMBviwrltgLXJvOjAqnQGXIv7HEoj5IqA/jvguz0I+H8du8i/1Ek+1rrmhCiGWTY7pxh02zFlcNN1aI9f5K6oQpOelGlf1GJAV0poCq/fod/PsP"
+ },
+ "ungemessen": {
+  "karte2.planet.kosmos.systeme#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.systeme) · Täter: @@ 0.2 s · planet.kosmos.systeme S1 warf: Cannot read properties of null (reading 'toFixed')",
+   "exit": 0,
+   "minuten": 0.46,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.systeme) · Täter: @@ 0.2 s · planet.kosmos.systeme S1 warf: Cannot read properties of null (reading 'toFixed')",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 27.2,
+   "fremd": {
+    "s": 30.9,
+    "takte": 14,
+    "fremdS": 12.67,
+    "kerne": 0.41,
+    "fensterKerne": 0.735,
+    "namen": [
+     [
+      "Explorer.EXE",
+      3.22
+     ],
+     [
+      "node.exe dienst-omen/runde.cjs push-pfade AnazhRealm-OMEN/n0611-pm punkte-maschine gtx a95",
+      1.22
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.2
+     ]
+    ],
+    "dienerS": 9.05,
+    "diener": [
+     [
+      "System",
+      3.7
+     ],
+     [
+      "dwm.exe",
+      3.31
+     ]
+    ],
+    "geraetS": 14.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.64
+     ],
+     [
+      "svchost.exe",
+      4.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 137.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T08:25:44.512Z",
+   "abdruck": "f7481dafbbab",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
