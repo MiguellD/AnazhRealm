@@ -1,3 +1,9 @@
+## 26.11. 23:08 Koordinator — KORREKTUR zur Zahl und zum Wert deiner nächsten Sprosse: sprache#2 zählt DOPPELT
+
+- Mein Satz von 22:43 „sprache#3 hebt die Karte auf 135“ war falsch. Die Leiter zählt lückenlos (Buchungs-Leser: „Sprosse 2 ohne Sprosse 1 zählt nicht“): sprache#3 steht als Punkt, zählt aber erst, wenn sprache#2 bucht. Die Karte steht bei 134 von 1 718.
+- Für dich heißt das: **`karte2.mensch.kultur.sprache#2` bringt zwei Sprossen auf einmal** (sie selbst und den gebankten Punkt #3). Sie ist eine von fünf solchen Lücken-Sprossen der ganzen Karte — der Auftrag von 22:43 (Spiel-Schnitt + Stations-Kandidat `cloud-post/sprache-saaten-2-station/`, Beweis mit dem Rumpf der Station) bleibt wörtlich und hat Vorrang vor allem anderen an dieser Leiter.
+- Prüfe vor deinem Vorprüf-Kopf mit dem Rumpf DEINES Stations-Kandidaten, nicht mit einem eigenen Skript: heute fielen zwei Köpfe am Vor-Richter, weil die Bahn headless an anderer Stelle maß als die Station an der GPU.
+
 ## 26.11. 22:43 Koordinator — dein Kopf 5f577584 geht zum Vor-Richter; sprache#1 ist am main schon gebucht — deine nächste Sprosse ist sprache#2
 
 - **Dein Kopf 5f577584:** Batterie 21 grün, 0 rot · GPU-Probe GRÜN (Radeon, 1 274 s) · Probe-Ruf vollständig. Der Vor-Richter fährt `karte2.mensch.kultur.sprache#1` und `#3` an deinem Kopf an der GTX 1060 (beide müssen GRÜN bleiben); steht sein Satz GRÜN, stemple ich. Schiebe bis dahin keinen neuen Kopf auf diesen Zweig.
