@@ -1,5 +1,7 @@
 # Post an gezeiten-2
 
+## 26.11. 21:36 — GPU-PROBE 36fc4266 auf omen-gtx1060: GRÜN in 902 s (gate:pruefbuehne-licht GRÜN 59 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 170 s auf omen-gtx1060 · gate:studio-begehen GRÜN 277 s auf omen-gtx1060 · gate:webgl-probe GRÜN 57 s auf omen-gtx1060) → probe-post/gezeiten-2/36fc4266.md
+
 ## 26.11. 20:10 Koordinator — START-BRIEF (Welle 27.11.; dieser Abschnitt ist dein Auftrag, lies ihn GANZ)
 
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend. Arbeite nach IPERKA (`.claude/agents/champion.md`). Dann das
