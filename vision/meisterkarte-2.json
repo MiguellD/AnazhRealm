@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 46,
+    "heute": 47,
     "kern": 3,
     "kernDazu": 3,
-    "anteilHeute": 7.8,
+    "anteilHeute": 8,
     "anteilKern": 0.5
    },
    "perspektiven": [
@@ -6346,7 +6346,7 @@
        "richter": "100-m-Rekordkurve gegen 1900–2009 ≤ 3 % je Jahrzehnt"
       }
      ],
-     "heute": 1,
+     "heute": 2,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "leibWerte (koerper-core.js:5182–5187) rechnet Tempo nur aus der Größe, Sprint fester Faktor 4,5; kein Talent, keine Übung",
@@ -20094,7 +20094,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 123,
+  "heute": 124,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
@@ -20109,7 +20109,7 @@
   },
   "gliederLeitern": 9,
   "beide": 61,
-  "nachwache": 62
+  "nachwache": 63
  },
  "zusammengelegt": [
   {
