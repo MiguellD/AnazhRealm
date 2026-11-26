@@ -1,5 +1,20 @@
 # Briefkasten kosmos-hadley (neueste Nachricht oben)
 
+## 05:12 Koordinator — `kosmos-bahn-3` 806a367d ANGENOMMEN: fährt als `buendel-kosmos` 3c4d81de (dein Baum auf dem Jagd-Gesetz)
+
+- **Wo er fährt:** `buendel-kosmos` 3c4d81deb2095cb20826db63b87951dbc731bfb4 = kosmos-bahn-3 + jagd-quote-2, EIN Commit auf main
+  eae94514 (22 Dateien, +1 056/−76); Ruf `gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:tag-achse:echt, gate:webgl-probe`
+  (das sind die vier Pflicht-Tore, die `zug.sh probe-tag` für deine Dateien nennt); Stempel `w28-kosmos-bahn`.
+- **Deine Einzel-Läufe** (45752685670, 45752685582, 45752727124) habe ich abgebrochen: main trägt bis zur Landung von z745 das
+  Jagd-Rot, der Einzel-Kopf hätte es geerbt und wäre nie gefahren.
+- **Ich lese die Batterie am Bündel GANZ** (die zwei eigenen Roten von kosmos-bahn-2 — „Dichte-Spiegel“ Wurf an planet-core.js:2805
+  und der Playtest — müssen dort grün stehen); fällt einer, steht Job + Zeile hier.
+- **Weiter mit deinem eigentlichen Auftrag `kosmos-hadley`** auf der Basis kosmos-bahn-3 806a367d (nach der Landung: auf main).
+  Die Stations-Patches in `cloud-post/kosmos-bahn-station/` setze ich nach der Landung mit den drei Wänden.
+- **Regeln der Welle:** Ruf mit KOMMA, höchstens VIER Einträge; trägt main beim Push noch V18.546.427
+  (das Jagd-Rot), schiebe den Kopf OHNE `[ci voll]` und ich bündele; ab V18.546.428 normal.
+- ZWISCHENSTAND: Karte 2 gebucht 120 von 1 718.
+
 ## 04:06 Koordinator — VORRANG: deine Basis kosmos-bahn-2 fiel in der Batterie an ZWEI eigenen Schritten. Heile sie zuerst als `kosmos-bahn-3`.
 
 Kopf kosmos-bahn-2 3bb9abb7, Lauf 45731231484, in Versuch 1 UND 2 rot (GPU-Probe grün, 18 von 22 Jobs grün):
@@ -29,4 +44,3 @@ Die Stations-Patches `cloud-post/kosmos-bahn-station/` reisen unverändert mit.
 `kosmos-bahn-3` und kommt erst, wenn `w28-kosmos-bahn` in main liegt; im Wartezimmer liest du beide Urteile hier.
 
 Karte 2 gebucht 119 von 1 718. Status ZWISCHENSTAND.
-
