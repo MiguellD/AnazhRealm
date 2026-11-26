@@ -12106,7 +12106,7 @@
   },
   "karte2.leben.kopplung.evolution-planet": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.evolution-planet#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, planet-core.js, scripts/lib/kreatur-proben.cjs +10) — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (die Welt starb am Messort dorf (Protocol error (Runtime.callFunctionOn): Target closed)) — offen, UNGEMESSEN · karte2.leben.kopplung.evolution-planet#1 gtx: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#2 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#2 gtx: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#4 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#5 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#5 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#6 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.evolution-planet#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, planet-core.js, scripts/lib/kreatur-proben.cjs +10) — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (die Welt starb am Messort dorf (Protocol error (Runtime.callFunctionOn): Target closed)) — offen, UNGEMESSEN · karte2.leben.kopplung.evolution-planet#1 gtx: ungemessen (R10) — zuletzt an 99649186: der Deckel der Leiter riss nach 20,004 s, ehe anteilImRaum der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,004 s, ehe anteilImRaum der Sprosse stand · · karte2.leben.kopplung.evolution-planet#2 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#2 gtx: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#4 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#5 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#5 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#6 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.leben.kopplung.evolution-planet#1",
@@ -12125,7 +12125,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 99649186: der Deckel der Leiter riss nach 20,004 s, ehe anteilImRaum der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,004 s, ehe anteilImRaum der Sprosse stand ·",
      "ungemessen": true,
      "beide": true
     },
@@ -33811,7 +33811,7 @@
   },
   "karte2.same.kopplung.aufwaerts": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.aufwaerts#1 radeon: Station seit der Messung geändert — zuletzt an 99649186: der Deckel der Leiter riss nach 45,015 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 45,015 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.aufwaerts#1 gtx: Station seit der Messung geändert — zuletzt an 54b89949: der Deckel der Leiter riss nach 45,027 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 45,027 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.aufwaerts#2 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#2 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#3 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#3 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#4 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#4 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#5 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#5 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#6 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#6 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#7 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#7 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#8 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.aufwaerts#1 radeon: Station seit der Messung geändert — zuletzt an 99649186: der Deckel der Leiter riss nach 45,015 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 45,015 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.aufwaerts#1 gtx: Station seit der Messung geändert — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · · karte2.same.kopplung.aufwaerts#2 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#2 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#3 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#3 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#4 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#4 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#5 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#5 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#6 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#6 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#7 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#7 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#8 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.aufwaerts#1",
@@ -33829,7 +33829,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 54b89949: der Deckel der Leiter riss nach 45,027 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 45,027 s vor dem Wert der Sprosse · der Deckel der Leiter",
+     "grund": "Station seit der Messung geändert — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) ·",
      "ungemessen": true,
      "beide": true
     },
@@ -34118,7 +34118,7 @@
      "gruen": true,
      "zahl": "S2 brennendHa 1,024 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 100 % gegen Soll = 100 % ✓ · Zeuge: 1 ha brennt, Frame p95 im Preis P, die Front lag auf ihren Wegen und sie mieden sie",
      "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, planet-core.js, scripts/lib/kreatur-proben.cjs +11)",
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, planet-core.js, scripts/lib/kreatur-proben.cjs +11) — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) ·",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -34216,7 +34216,7 @@
   },
   "karte2.same.kopplung.gewalt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.gewalt#1 radeon: Station seit der Messung geändert — zuletzt an 99649186: der Deckel der Leiter riss nach 40,102 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 40,102 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.gewalt#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, planet-core.js +6) · karte2.same.kopplung.gewalt#2 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#2 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#3 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#3 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#4 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#4 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#5 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#5 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#6 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.gewalt#1 radeon: Station seit der Messung geändert — zuletzt an 99649186: der Deckel der Leiter riss nach 40,102 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 40,102 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.gewalt#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, planet-core.js +6) — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · · karte2.same.kopplung.gewalt#2 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#2 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#3 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#3 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#4 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#4 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#5 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#5 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#6 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.gewalt#1",
@@ -34234,7 +34234,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, planet-core.js +6)",
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, planet-core.js +6) — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) ·",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -34333,7 +34333,7 @@
   },
   "karte2.same.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Herd -248,-1064 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +261 Pixel je Pixel, Median aus 5 Sätzen (Spanne 261–261; neu 261 − Rauschen 0, bei laufender Schleife 70; Soll ≥ 200; 32 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 625) · [linse-gpu] amd/rdna-3 an d39e0d6e radeon · gehalten: Herd -248,-1064 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +457 Pixel je Pixel, Median aus 5 Sätzen (Spanne 456–457; neu 457 − Rauschen 0, bei laufender Schleife 33; Soll ≥ 200; 64 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 559) · [linse-gpu] nvidia/pascal an f63a69ef gtx · gehalten: S2 glieder 4 gegen Soll ≥ 4 ✓ · Zeuge: die Welt geändert an 2da17e2e radeon · gehalten: S2 glieder 4 gegen Soll ≥ 4 ✓ · Zeuge: die Welt geändert an 64fcf12e gtx — offen: karte2.same.kopplung.kaskade#3 radeon: ungemessen (R10) — zuletzt an 99649186: der Deckel der Leiter riss nach 55,097 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S3 der Deckel der Leiter riss nach 55,097 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.kaskade#3 gtx: ungemessen (R10) — zuletzt an 54b89949: der Deckel der Leiter riss nach 55,069 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S3 der Deckel der Leiter riss nach 55,069 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.kaskade#4 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#4 gtx: ungemessen (R10) · karte2.same.kopplung.kaskade#5 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#5 gtx: ungemessen (R10) · karte2.same.kopplung.kaskade#6 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#6 gtx: ungemessen (R10) · karte2.same.kopplung.kaskade#7 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: Herd -248,-1064 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +261 Pixel je Pixel, Median aus 5 Sätzen (Spanne 261–261; neu 261 − Rauschen 0, bei laufender Schleife 70; Soll ≥ 200; 32 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 625) · [linse-gpu] amd/rdna-3 an d39e0d6e radeon · gehalten: Herd -248,-1064 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +457 Pixel je Pixel, Median aus 5 Sätzen (Spanne 456–457; neu 457 − Rauschen 0, bei laufender Schleife 33; Soll ≥ 200; 64 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 559) · [linse-gpu] nvidia/pascal an f63a69ef gtx · gehalten: S2 glieder 4 gegen Soll ≥ 4 ✓ · Zeuge: die Welt geändert an 2da17e2e radeon · gehalten: S2 glieder 4 gegen Soll ≥ 4 ✓ · Zeuge: die Welt geändert an 64fcf12e gtx — offen: karte2.same.kopplung.kaskade#3 radeon: ungemessen (R10) — zuletzt an 99649186: der Deckel der Leiter riss nach 55,097 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S3 der Deckel der Leiter riss nach 55,097 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.kaskade#3 gtx: ungemessen (R10) — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · · karte2.same.kopplung.kaskade#4 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#4 gtx: ungemessen (R10) · karte2.same.kopplung.kaskade#5 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#5 gtx: ungemessen (R10) · karte2.same.kopplung.kaskade#6 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#6 gtx: ungemessen (R10) · karte2.same.kopplung.kaskade#7 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kaskade#1",
@@ -34389,7 +34389,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 54b89949: der Deckel der Leiter riss nach 55,069 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S3 der Deckel der Leiter riss nach 55,069 s vor dem Wert der Sprosse · der Deckel der Leiter",
+     "grund": "ungemessen (R10) — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) ·",
      "ungemessen": true
     },
     {
@@ -34468,7 +34468,7 @@
   },
   "karte2.same.kopplung.kohaerenz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kohaerenz#1 radeon: Station seit der Messung geändert — zuletzt an 99649186: der Deckel der Leiter riss nach 40,098 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 40,098 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.kohaerenz#1 gtx: Station seit der Messung geändert — zuletzt an 54b89949: der Deckel der Leiter riss nach 40,069 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 40,069 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.kohaerenz#2 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#2 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kohaerenz#1 radeon: Station seit der Messung geändert — zuletzt an 99649186: der Deckel der Leiter riss nach 40,098 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 40,098 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.kohaerenz#1 gtx: Station seit der Messung geändert — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · · karte2.same.kopplung.kohaerenz#2 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#2 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kohaerenz#1",
@@ -34486,7 +34486,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 54b89949: der Deckel der Leiter riss nach 40,069 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 40,069 s vor dem Wert der Sprosse · der Deckel der Leiter",
+     "grund": "Station seit der Messung geändert — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) ·",
      "ungemessen": true,
      "beide": true
     },
@@ -34602,7 +34602,7 @@
   },
   "karte2.same.kopplung.stoerung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Herd -248,-1064: Luma der Zelle vor 0.173 → nach 0.056 (÷ 0.324, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an f63a69ef radeon · gehalten: Herd -248,-1064: Luma der Zelle vor 0.173 → nach 0.06 (÷ 0.347, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an f63a69ef gtx · gehalten: S2 sprungJahre 1 a gegen Soll ≥ 1 a ✓ · rTempoFeuchteLicht 0,999 gegen Soll ≥ 0,5 ✓ · Zeuge: der Brand düngt (Nährstoff steigt), Nachwuchs auf der Asche, der Gegenlauf ohne Tat ändert nichts an 2da17e2e radeon · gehalten: S2 sprungJahre 1 a gegen Soll ≥ 1 a ✓ · rTempoFeuchteLicht 0,999 gegen Soll ≥ 0,5 ✓ · Zeuge: der Brand düngt (Nährstoff steigt), Nachwuchs auf der Asche, der Gegenlauf ohne Tat ändert nichts an 64fcf12e gtx — offen: karte2.same.kopplung.stoerung#3 radeon: ungemessen (R10) — zuletzt an 99649186: der Deckel der Leiter riss nach 30,102 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S3 der Deckel der Leiter riss nach 30,102 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.stoerung#3 gtx: ungemessen (R10) — zuletzt an 54b89949: der Deckel der Leiter riss nach 30,005 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S3 der Deckel der Leiter riss nach 30,005 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.stoerung#4 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#4 gtx: ungemessen (R10) · karte2.same.kopplung.stoerung#5 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#5 gtx: ungemessen (R10) · karte2.same.kopplung.stoerung#6 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#6 gtx: ungemessen (R10) · karte2.same.kopplung.stoerung#7 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: Herd -248,-1064: Luma der Zelle vor 0.173 → nach 0.056 (÷ 0.324, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an f63a69ef radeon · gehalten: Herd -248,-1064: Luma der Zelle vor 0.173 → nach 0.06 (÷ 0.347, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an f63a69ef gtx · gehalten: S2 sprungJahre 1 a gegen Soll ≥ 1 a ✓ · rTempoFeuchteLicht 0,999 gegen Soll ≥ 0,5 ✓ · Zeuge: der Brand düngt (Nährstoff steigt), Nachwuchs auf der Asche, der Gegenlauf ohne Tat ändert nichts an 2da17e2e radeon · gehalten: S2 sprungJahre 1 a gegen Soll ≥ 1 a ✓ · rTempoFeuchteLicht 0,999 gegen Soll ≥ 0,5 ✓ · Zeuge: der Brand düngt (Nährstoff steigt), Nachwuchs auf der Asche, der Gegenlauf ohne Tat ändert nichts an 64fcf12e gtx — offen: karte2.same.kopplung.stoerung#3 radeon: ungemessen (R10) — zuletzt an 99649186: der Deckel der Leiter riss nach 30,102 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S3 der Deckel der Leiter riss nach 30,102 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.stoerung#3 gtx: ungemessen (R10) — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · · karte2.same.kopplung.stoerung#4 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#4 gtx: ungemessen (R10) · karte2.same.kopplung.stoerung#5 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#5 gtx: ungemessen (R10) · karte2.same.kopplung.stoerung#6 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#6 gtx: ungemessen (R10) · karte2.same.kopplung.stoerung#7 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.stoerung#1",
@@ -34659,7 +34659,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 54b89949: der Deckel der Leiter riss nach 30,005 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S3 der Deckel der Leiter riss nach 30,005 s vor dem Wert der Sprosse · der Deckel der Leiter",
+     "grund": "ungemessen (R10) — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) ·",
      "ungemessen": true
     },
     {
@@ -34738,7 +34738,7 @@
   },
   "karte2.same.kopplung.terraform": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.terraform#1 radeon: Station seit der Messung geändert — zuletzt an 99649186: der Deckel der Leiter riss nach 20,108 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,108 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.terraform#1 gtx: Station seit der Messung geändert — zuletzt an 54b89949: der Deckel der Leiter riss nach 20,026 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,026 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.terraform#2 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#2 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#3 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#3 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#4 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#4 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#5 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#5 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#6 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.terraform#1 radeon: Station seit der Messung geändert — zuletzt an 99649186: der Deckel der Leiter riss nach 20,108 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,108 s vor dem Wert der Sprosse · der Deckel der Leiter · karte2.same.kopplung.terraform#1 gtx: Station seit der Messung geändert — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · · karte2.same.kopplung.terraform#2 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#2 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#3 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#3 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#4 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#4 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#5 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#5 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#6 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.terraform#1",
@@ -34756,7 +34756,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 54b89949: der Deckel der Leiter riss nach 20,026 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,026 s vor dem Wert der Sprosse · der Deckel der Leiter",
+     "grund": "Station seit der Messung geändert — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) ·",
      "ungemessen": true,
      "beide": true
     },
@@ -37769,7 +37769,7 @@
   "ohne": 3261
  },
  "kopfVoll": "4a188bf2d08cd6263e74d21d40d3ec220e789e9d",
- "zeit": "2026-11-26T19:24:59.386Z",
+ "zeit": "2026-11-26T19:31:21.251Z",
  "vorher": "4a188bf2",
  "bilanz": {
   "gewinn": [],
