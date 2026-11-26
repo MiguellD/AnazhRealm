@@ -1,3 +1,13 @@
+## 26.11. 22:43 Koordinator — Kopf 5c6c3726: kein Stempel mit rotem `gate:fahr-leben`; heile den Warte-Kreis, dann Kopf 2
+
+- **Dein Kopf 5c6c3726:** Probe-Ruf vollständig, die GPU-Probe läuft an der Radeon weiter (ihr Urteil kommt in dieses Blatt). **Die Batterie (Lauf 45898339093) habe ich um 22:39 abgebrochen** — kein Urteil über deinen Code: zwei stempel-reife Köpfe standen mit 12 von 18 Batterie-Jobs seit 22:13 in der GitHub-Schlange, und dein Kopf kann unabhängig von der Batterie nicht landen.
+- **Der Grund steht in deinem eigenen Rumpf:** „gate:fahr-leben VK 10 Uhr … main 45bad33f GRÜN, Kopf ROT“. Das Tor gehört zur Leiter `mensch.netz.verkehr`, deren Sprosse 1 an BEIDEN Geräten gebucht ist. Ein Kopf, der ein grünes Tor des main rot macht, wird nicht gestempelt — gleich wie gut `medium#2` aussieht.
+- **Dein nächster Schnitt (die Wurzel, kein Wegschauen):** der Warte-Kreis, den `_verkehrKreisDurch` löst, hält nur an der alten Vertikale. Deine Gegenprobe sagt es schon: ohne Federweg GRÜN, jede Hälfte allein ROT mit derselben Zeile. Lies, welche Größe der Kreis-Löser an der Vertikale liest (Stand-Höhe, Kontakt, Abstand der Wagen im Stau), und führe sie auf den gefederten Stand `fahrStand` zurück — EINE Quelle für die Vertikale, die Fahrt UND Verkehr lesen. Kein zweiter Stand für den Verkehr, kein Flag.
+- **Danach Kopf 2:** EIN Commit auf dem main des Moments, Betreff endet mit deinem Ruf wie bisher (vier Tore) und `[ci voll]`. `gate:fahr-leben` läuft nach deiner eigenen Zahl über 570 s und gehört darum nicht in den Probe-Ruf (Deckel 480 s je Tor); sein Urteil am Kopf steht wörtlich im Rumpf: die Zeile am main ↔ die Zeile am Kopf, beide GRÜN.
+- **Vor-Richter `karte2.mensch.fahrzeug.medium#2`:** sobald Kopf 2 steht, fährt ein Gerät die Station MIT deinem Kandidaten `cloud-post/fahrzeug-medium-4-station/` (ich lege ihn per 3-Wege auf den Kopf von punkte-maschine; dein Diff steht gegen a9a4b3d). Dein Rumpf nennt „Null-Welt ROT allein am Adapter“ — schreibe in BEGRUENDUNG.txt, welche Zeile der Adapter an der GPU erwartet, damit der Vor-Richter sie wörtlich vergleichen kann.
+- Offen aus deinem Rumpf, das ich mitlese: Welt-Bremsweg 58–192 m an Dorf/stadt-voll (Gefälle und Boden des Orts) — steht das Soll der Karte „30–50 m“ für die Ebene des Prüfstands, gehört der Welt-Wert als Lesewert in die Zeile, nie ins Urteil.
+- Karte 2 steht bei 134 von 1 718 (heute +8).
+
 ## 26.11. 19:48 Koordinator — START-BRIEF (Welle 27.11.; dieser Abschnitt ist dein Auftrag, lies ihn GANZ)
 
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.
