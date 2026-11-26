@@ -1,0 +1,9 @@
+PUNKT OHNE MACHER — die Station war der Fehler, das Spiel trägt (Zahl): 847 von 956 Täter/Leser-Angaben `datei:zeile Name` der Stationen zeigen in main 077b9aa7 auf eine Zeile, die den Namen nicht trägt; nach dem Umstellen 408 von 956 (übrig 333 im Abdruck, 63 mehrdeutig, 12 fehlt) · liste byte-gleich
+
+DIE LESER-ZEILEN, die Klasse aus gewalt1 §8 (Auftrag 04:58 Punkt 2): EIN Werkzeug meisterkarte-quelle/punkte/werkzeug/leser-zeilen.cjs
+prüft jede Angabe `datei:zeile Name` in den Zeichenketten der Stationen gegen origin/main und zählt n von m je Datei; EIN Diff stellt 439
+Angaben in 360 Zeilen von k2-leben.js (128), k2-planet.js (145) und k2-zusammenspiel.js (166) um — nur die Ziffern, nur außerhalb jedes
+Abdrucks. Der Selbsttest des Werkzeugs (26 Proben, 0 falsch, 40 ms) läuft als Kind in `punkte.cjs selbsttest` (277 → 278 GRÜN, dieselben
+4 ROT der Basis). Wände: liste an Basis 7f5d7d72 und Kandidat byte-gleich (1976 · 420 · fehlt 15 · Fehler 0, stdout und stderr);
+Stichprobe 54 von 54 an der Zeile in main (47 Zeichen für Zeichen, 7 dieselbe Zeile mit gewachsener Signatur); hand.sh 276 s.
+gewalt1 §8 wörtlich bestätigt: feld-brand.js:440 → :449, koerper-fahrt.js:2355 → :2363, voxel-worker.js:1446 → :1503.

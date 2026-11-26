@@ -1,0 +1,127 @@
+BEGRÜNDUNG — DIE LESER-ZEILEN DER STATIONEN GEGEN MAIN, die Klasse aus gewalt1 §8 (Leser 2, 26.11.)
+
+0. DER AUFTRAG
+   origin/koordination:cloud-post/leser-2.md, 04:58 Punkt 2 (05:36 als Punkt 2 bestätigt), wörtlich:
+   „Die Klasse aus gewalt1 §8 („die Leser-Zeilen der Station hinken main nach“) — nicht von Hand je Zeile: ein Werkzeug unter
+   `meisterkarte-quelle/punkte/werkzeug/`, das je Station die Angaben `datei:zeile` + Name in Täter/Leser gegen `origin/main` prüft und
+   die Abweichungen zählt (n von m, je Datei); der Kandidat stellt sie in EINEM Diff um. Wand: liste = Basis.“
+   bericht/2611-stationen/gewalt1/BEGRUENDUNG.txt:75–77, wörtlich: „Die Leser-Zeilen der Station hinken main nach (feld-brand.js:440 →
+   heute :449, koerper-fahrt.js:2361 → :2363, S5 voxel-worker.js:1446 → :1501) — eine Klasse über die ganze Datei, nicht Teil dieses
+   Kandidaten.“
+   Basis: punkte-maschine 7f5d7d72 (die fünf Dateien des Diffs sind byte-gleich zu 882fcb81). Gegen: origin/main 077b9aa7 (V18.546.433).
+
+1. DER RICHTER (wörtlich)
+   stationen/k2-planet.js:494  `throw new Error(id + " S" + nr + ": taeter fehlt (wer beim ROT beim Namen steht)")`
+   CLAUDE.md, Gebot 10: „baue die LINSE, die den Täter beim NAMEN nennt“.
+   Die Angabe `datei:zeile Name` ist der Name, unter dem ein Macher den Täter in main findet. Zeigt sie auf eine fremde Zeile, nennt
+   das ROT den falschen Ort.
+
+2. DER FEHLER DER STATION (Lauf vorher, lauf-vorher-umstellen.out, jede Angabe mit Station und Zeile)
+   847 von 956 Angaben mit Code-Namen zeigen in main 077b9aa7 auf eine Zeile, die den Namen nicht trägt.
+   Davon sind 772 verschoben (der Name steht in der Datei, an einer anderen Zeile), 63 mehrdeutig und 12 fehlen.
+   Beispiele (die drei aus gewalt1 §8 zuerst):
+   - k2-zusammenspiel.js:5246  „stamm/feld-brand.js:440 _brandEntfachen“ → :449 (+9) · „stamm/kampf.js:2446“ → :2472 (+26) ·
+     „stamm/koerper-fahrt.js:2355“ → :2363 (+8)
+   - k2-zusammenspiel.js:10030 „voxel-worker.js:1446 planetOrtAuftrag“ → :1503 (+57). An main :1446 steht
+     `if (typeof k !== "object") throw new Error("planet: koerper ist kein Objekt (" + typeof k + ")");`. Das ist die Täter-Zeile von
+     gewalt#1: Wer dem Leser folgt, landet am falschen Fehler.
+   - k2-leben.js:4228 u. a. „planet-core.js:2290 planetOrt“ → :2788 (+498)
+   - k2-leben.js:276 „phyto-core.js:3299 FOREST_SPECIES“ → :3665 (+366). An main :3299 steht `ab: 20,`.
+   DER LESER DER ANGABE (Konsum): stationen/k2-planet.js:179 `rot(text, taeter)` hängt „ · Täter: “ + taeter an jede ROT-Zahl einer
+   k2-Sprosse. Das betrifft alle drei umgestellten Dateien: k2-leben.js:4 und k2-zusammenspiel.js:5 `require("./k2-planet.js").kern`,
+   EIN Kern. `leser` liest das Blatt (k2-planet.js:510–511 `blatt.leser`, „die Maschine nie“).
+
+3. DER SCHNITT (EIN Diff, leser-zeilen.diff, 5 Dateien; kein Flag, kein Zwilling)
+   a) werkzeug/leser-zeilen.cjs (neu)
+      - Liest jede Zeichenkette der Stationen, nie die Kommentare (die sind Chronik). Darin jede Angabe `datei:zeile[–zeile] Name`,
+        deren Name Code tragen kann (mit _ oder $, innerer Großbuchstabe, KONSTANTE, a.b).
+      - Prüft sie gegen `--gegen` (Vorgabe origin/main): gleich · verschoben · mehrdeutig · fehlt. Zählt n von m je Station-Datei.
+      - Der Anker: `git blame` der Station-Zeile (Arbeitsbaum) gibt die Zeit, zu der die Angabe geschrieben wurde. Der Log von main
+        für die Zieldatei gibt den ersten Stand, an dem die Zeile den Namen trug. Von dort folgt das Werkzeug der Zeile bis main: erst
+        die wortgleiche Zeile, sonst die Zeile über die -U0-Hunks, gereiht nach gemeinsamem Anfang, dann nach Abstand.
+      - Ohne Anker und mit mehreren Fundstellen heißt die Angabe mehrdeutig. Dann nennt das Werkzeug beide und stellt nicht um.
+      - `--umstellen` schreibt nur die Ziffern und nur außerhalb jedes Abdrucks. Der Abdruck ist der aus punkte.cjs `abdruck`:
+        befehl · urteil als Quelltext · quelle · probe.befehl · pfad.
+   b) punkte.cjs +8 Zeilen. Der Selbsttest des Werkzeugs läuft als Kind in der bestehenden Familie `punkte.cjs selbsttest` (nach der
+      RICHTER-AKTE). Er hat 26 Proben, darunter drei Attrappen, an denen ein Nächster-Name-Anker ROT wird:
+      - planetOrt: der throw gegen die Funktion;
+      - eine Signatur, die wuchs;
+      - ein Bereich 2–4, der über seine tragende Zeile wandert.
+   c) Die Umstellung: 439 Angaben in 360 Zeilen, nur Ziffern (k2-leben.js 128 · k2-planet.js 145 · k2-zusammenspiel.js 166).
+
+4. DIE ZAHL — vorher ↔ nachher. Dasselbe Werkzeug gegen origin/main 077b9aa7, aus hand.sh (Schritt 3 und 6):
+   Datei                     vorher           nachher        umgestellt · übrig verschoben (alle im Abdruck) · mehrdeutig · fehlt
+   g5.js                      5 von    5  →     5 von    5        0 ·   0 ·  4 · 1
+   k2-erleben.js             68 von   92  →    68 von   92        0 ·  61 ·  6 · 1
+   k2-kosmos.js              19 von   21  →    19 von   21        0 ·  16 ·  2 · 1
+   k2-leben.js              150 von  161  →    22 von  161      128 ·   3 · 13 · 6
+   k2-mensch-fahrzeug.js      3 von    3  →     3 von    3        0 ·   3 ·  0 · 0
+   k2-mensch-nahrung.js       2 von    2  →     2 von    2        0 ·   2 ·  0 · 0
+   k2-mensch-wirtschaft.js    1 von    1  →     1 von    1        0 ·   1 ·  0 · 0
+   k2-planet.js             309 von  329  →   164 von  329      145 · 143 · 20 · 1
+   k2-same.js                34 von   42  →    34 von   42        0 ·  33 ·  0 · 1
+   k2-zusammenspiel.js      256 von  300  →    90 von  300      166 ·  71 · 18 · 1
+   SUMME                    847 von  956  →   408 von  956      439 · 333 · 63 · 12
+   Am ersten Kopf (main a954d698, vor 077b9aa7) war es 845 → 406 von 956. Mit main wanderten 15 Ziele in stamm/siedlung-bewohner.js
+   um +18/+19 Zeilen (drinnenSoll 3139 → 3158, _bewohnerSoll 2958 → 2977, furchtErinnert 2609 → 2627, aktenMax 2644 → 2662 …).
+   Der Diff steht am heutigen main.
+
+5. DIE WÄNDE
+   liste       Basis 7f5d7d72: 1 976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0.
+               Kandidat: dieselbe Zeile, stdout und stderr byte-gleich (hand.sh Schritt 5). Jede Station druckt Befehl und
+               Abdruck-Hash. Die Umstellung berührt also keinen Abdruck.
+   umstellen   Das Werkzeug schreibt an der Basis Byte für Byte den Stationen-Teil des Diffs (hand.sh Schritt 4, 360 Zeilen).
+               Ein zweiter Lauf stellt 0 mehr um.
+   Selbsttest  Werkzeug: 26 Proben, 0 falsch, 40 ms.
+               punkte.cjs selbsttest --ohne 3c: Basis 277/281 GRÜN → Kandidat 278/282 GRÜN. ROT sind an Basis und Kandidat dieselben
+               4: BEFEHL TRÄGT · WACHE der Läufer nennt seinen Tod · WACHE DER TOD KOSTET NUR DIE LAUFENDE PROBE ·
+               LEBENSZEICHEN DES ZEUGEN.
+   Leiter      ≤ 60 s. Keine Leiter ändert sich, kein Befehl und kein Urteil. Das Werkzeug ist keine Leiter (Lauf in der Wolke 133 s).
+   Stichprobe  Der Leser ist die Zeile des Spiels in main (stichprobe.out, stichprobe-hand.cjs):
+               - jede 23. der 439 (20) und jede 22. ab der 12. (19);
+               - dazu die 15, die mit main wanderten.
+               54 von 54 tragen:
+               - 47 Zeichen für Zeichen die Anker-Zeile;
+               - 7 dieselbe Zeile, gewachsen. Darunter: planetOrt +heimat (2×), _bestandRegion +uhr, tagesBindung +jahre,
+                 `wurf.push({… alterS: 0 …})` mit neuem Körper (2×), `P.planetPlan(samen, k || P.PLANET_ERDE)`.
+               Jede dieser 7 ist in main eindeutig: wurf.push mit alterS nur :2051, `function planetOrt(` nur :2788, planetPlan mit
+               PLANET_ERDE nur :1475.
+
+6. DER PREIS
+   Keiner am Gerät. Kein Abdruck ändert sich, keine Station misst neu, keine Akte fällt. Es ändert sich der Text, den ein ROT als
+   „Täter:“ druckt, und der Leser im Blatt-Feld.
+
+7. WAS NUR DAS GERÄT MESSEN KANN
+   Nichts am Urteil, denn kein Urteil ändert sich. Der nächste Lauf am Gerät druckt bei jedem ROT einer k2-Sprosse aus k2-leben,
+   k2-planet und k2-zusammenspiel die umgestellte Zeile hinter „ · Täter: “. Ein Beispiel: die Brand-Sprosse an k2-zusammenspiel.js
+   :5246 nennt dann :449 statt :440.
+
+8. OFFEN (beim Namen, mit Messname)
+   - 333 verschoben IM ABDRUCK, in 803 Stationen (Messname leser-zeilen imAbdruck). Die Angabe steht im Quelltext einer Probe, den der
+     Befehl der Leiter ganz trägt. Beispiel: k2-planet.js:758 „voxel-worker.js:1175 planetOrtAuftrag“ → :1503 steht im Abdruck von 48
+     Stationen (planet.geologie.gebirge). Umstellen hieße: 803 Stationen messen neu. Das entscheidet der Koordinator, nicht der
+     Leser.
+   - 63 mehrdeutig (Messname leser-zeilen mehrdeutig). Kein Anker, ≥ 2 Fundstellen. Zum Beispiel g5.js:6033
+     „stamm/werkstatt-bauen.js:1234 _renderHotbarInto“ (2 Fundstellen) und „klang-core.js:443 UMWELT“ (44).
+   - 12 fehlt (Messname leser-zeilen fehlt). Der Name steht nicht mehr in der Datei, oder die Datei fehlt:
+     · „stamm/daten.js:176 FAUNA_MAX_AGE_MS“
+     · „klang-core.js:1277 HRTF“
+     · „stamm/kreatur-leben.js:1993 _creatureBodySize“
+     · „stamm/probe.js:1 textContent“ (Datei fehlt)
+     Hier braucht die Station einen neuen Täter, und den wählt nur, wer die Sprosse kennt.
+   - 722 Angaben ohne Code-Namen (Messname leser-zeilen ohneName). Hinter `datei:zeile` steht ein Wort wie „rufen“ oder eine Klammer.
+     Das Werkzeug zählt sie und prüft sie nicht.
+   - Das Blatt vision/richter/fabrik-planet-leben-zusammenspiel.md (19.11., main b7ed841) ist eine datierte Abschrift und trägt die
+     alten Zeilen (z. B. :147 `planet-core.js:2290`). Es ist nicht berührt (fremde Zeilen). Die nächste Fahrt der Fabrik schreibt es neu.
+
+9. HAND-SKRIPT
+   Aufruf in einem sauberen Baum der Spitze punkte-maschine, origin/main geholt:
+     bash hand.sh <leser-zeilen.diff> <scratch>
+   Die Schritte:
+     1. liste an der Basis;
+     2. aus dem Diff nur Werkzeug und punkte.cjs;
+     3. der Lauf vorher mit --umstellen;
+     4. der Abgleich der Stationen mit dem Diff;
+     5. liste am Kandidaten;
+     6. der Lauf nachher.
+   hand.out ist der Lauf an 7f5d7d72 gegen 077b9aa7: 276 s, Exit 0. Die Listen je Angabe: lauf-vorher-umstellen.out, lauf-nachher.out.

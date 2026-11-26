@@ -1,0 +1,14 @@
+== 1 liste an der Basis 7f5d7d72f5
+1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0
+== 2 aus dem Diff nur das Werkzeug und der Selbsttest-Fall in punkte.cjs (die Stationen bleiben Basis)
+SELBSTTEST leser-zeilen: 26 Proben, 0 falsch
+== 3 vorher gegen origin/main, mit --umstellen (n von m je Datei; --liste nennt jede Angabe)
+LESER-ZEILEN gegen origin/main 077b9aa7: 847 von 956 abweichend (verschoben 772 · mehrdeutig 63 · fehlt 12) · 722 Angaben ohne Code-Namen · im Abdruck 369 Angaben in 803 Stationen (umstellen misst sie neu — nicht umgestellt) · umgestellt 439
+== 4 die Stationen, die das Werkzeug schrieb = die Stationen des Kandidaten?
+   byte-gleich (360 Zeilen)
+== 5 liste am Kandidaten = Basis?
+1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0
+   byte-gleich (stdout und stderr)
+== 6 nachher (zweiter Lauf; übrig nur, was im Abdruck steht, mehrdeutig ist oder fehlt)
+LESER-ZEILEN gegen origin/main 077b9aa7: 408 von 956 abweichend (verschoben 333 · mehrdeutig 63 · fehlt 12) · 722 Angaben ohne Code-Namen · im Abdruck 369 Angaben in 803 Stationen (umstellen misst sie neu — nicht umgestellt)
+exit 0 · hand.sh 276 s

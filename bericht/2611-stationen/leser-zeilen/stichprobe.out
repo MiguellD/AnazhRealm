@@ -1,0 +1,247 @@
+STICHPROBE 1 — jede 23. der 439 umzustellenden Angaben (Täter/Leser außerhalb jedes Abdrucks), Urteil des Kandidaten-Werkzeugs gegen origin/main 077b9aa7d5
+(je Angabe: die Zeile im Anker, die alte Zeile in main, die neue Zeile in main; erzeugt mit stichprobe-hand.cjs)
+
+## k2-leben.js:276  phyto-core.js:3299 FOREST_SPECIES  → :3665 (Anker 813ac91d)  [phyto-core.js]
+   Anker  :3299  const FOREST_SPECIES = {
+   main   :3299  ab: 20,
+   main   :3665  const FOREST_SPECIES = {
+## k2-leben.js:2995  stamm/kreatur-leben.js:1996 alterS  → :2051 (Anker f43e0ecf)  [stamm/kreatur-leben.js]
+   Anker  :1996  wurf.push({ id, soul: best.soul, g, bs, alterS: 0, x: best.x, z: best.z, v });
+   main   :1996  const g = AnazhRealm.TETRAPODA_SOUL_MAP[soul];
+   main   :2051  wurf.push({ id, soul: mu.soul, g, a, e, m: mu.id, alterS: 0, x: mu.x, z: mu.z, v: mu.v });
+## k2-leben.js:4873  stamm/kreatur-fauna.js:590 _fischTiefeY  → :597 (Anker e5176a52)  [stamm/kreatur-fauna.js]
+   Anker  :590  _fischTiefeY(x, z, F) {
+   main   :590  n: F.glieder[0] + Math.floor(w(15) * (F.glieder[1] - F.glieder[0] + 1)),
+   main   :597  _fischTiefeY(x, z, F) {
+## k2-leben.js:5941  stamm/kreatur-leben.js:2284 _bestandRegion  → :2361 (Anker f43e0ecf)  [stamm/kreatur-leben.js]
+   Anker  :2284  _bestandRegion(key, aufholen = true, bis = 0, max = Infinity, tode = null) {
+   main   :2284  }
+   main   :2361  _bestandRegion(key, aufholen = true, bis = 0, max = Infinity, tode = null, uhr = this.state.spielZeit) {
+## k2-leben.js:6740  stamm/vegetation-wiese.js:2078 _wuchsAt  → :2334 (Anker d399eaac)  [stamm/vegetation-wiese.js]
+   Anker  :2078  _wuchsAt(x, z, feuchte) {
+   main   :2078  if (nah) for (let j = 0; j < b.n; j++) nah[j] = Math.hypot(b.fuss[j * 3] - cam.x, b.fuss[j * 3 + 1] - cam.z) <
+   main   :2334  _wuchsAt(x, z, feuchte) {
+## k2-leben.js:8213  stamm/klang.js:506 _tierRuf  → :537 (Anker 1c4fe794)  [stamm/klang.js]
+   Anker  :506  _tierRuf(creature, stimmung) {
+   main   :506  const glut = this._glutAmOhr(px, pz, pan);
+   main   :537  _tierRuf(creature, stimmung) {
+## k2-planet.js:1295  stamm/feld-leben.js:2460 _lavaGiessen  → :2569 (Anker ec71a1e6)  [stamm/feld-leben.js]
+   Anker  :2460  _lavaGiessen(x, z) {
+   main   :2460  const S = AnazhRealm.LIFE_FIELD.stufen;
+   main   :2569  _lavaGiessen(x, z) {
+## k2-planet.js:1884  voxel-worker.js:1446 planetOrtAuftrag  → :1503 (Anker eb5b3688)  [voxel-worker.js]
+   Anker  :1446  function planetOrtAuftrag(msg) {
+   main   :1446  if (typeof k !== "object") throw new Error("planet: koerper ist kein Objekt (" + typeof k + ")");
+   main   :1503  function planetOrtAuftrag(msg) {
+## k2-planet.js:2770  gelaende-core.js:1953 flussLaeufe  → :2045 (Anker a68d8156)  [gelaende-core.js]
+   Anker  :1953  function flussLaeufe(L, x0, z0, x1, z1, schritt) {
+   main   :1953  let k = N.ebenen - 1;
+   main   :2045  function flussLaeufe(L, x0, z0, x1, z1, schritt) {
+## k2-planet.js:3923  gelaende-core.js:7767 wasserSpiegel  → :7956 (Anker f96e8a40)  [gelaende-core.js]
+   Anker  :7767  function wasserSpiegel(L, x, z, aus) {
+   main   :7767  };
+   main   :7956  function wasserSpiegel(L, x, z, aus) {
+## k2-planet.js:4797  stamm/wasser-hydro.js:127 _regenStempel  → :134 (Anker 201bc8d0)  [stamm/wasser-hydro.js]
+   Anker  :127  _regenStempel() {
+   main   :127  }
+   main   :134  _regenStempel() {
+## k2-planet.js:6977  planet-core.js:1618 planetMeer  → :1837 (Anker 2549810f)  [planet-core.js]
+   Anker  :1618  function planetMeer(plan, zeitMa, zusatzWasserKm) {
+   main   :1618  if (!(sumW > 0)) throw new Error('planet: keine Platte trägt den Punkt (B1, Gewichte 0)');
+   main   :1837  function planetMeer(plan, zeitMa, zusatzWasserKm) {
+## k2-zusammenspiel.js:1251  stamm/bild-himmel.js:3009 _weatherFieldFor  → :3171 (Anker f28c4fd8)  [stamm/bild-himmel.js]
+   Anker  :3009  _weatherFieldFor(w, rein) {
+   main   :3009  }
+   main   :3171  _weatherFieldFor(w, rein) {
+## k2-zusammenspiel.js:3944  fachwerk-core.js:5183 DORF  → :5494 (Anker 641f078e)  [fachwerk-core.js]
+   Anker  :5183  function DORF(DP){
+   main   :5183  function groesseBand(klasse) {
+   main   :5494  function DORF(DP){
+## k2-zusammenspiel.js:4813  fachwerk-core.js:5183 DORF  → :5494 (Anker 641f078e)  [fachwerk-core.js]
+   Anker  :5183  function DORF(DP){
+   main   :5183  function groesseBand(klasse) {
+   main   :5494  function DORF(DP){
+## k2-zusammenspiel.js:6110  planet-core.js:2684 planetOrt  → :2788 (Anker f96e8a40)  [planet-core.js]
+   Anker  :2684  function planetOrt(S, breite, laenge, og, aus) {
+   main   :2684  const h = planetPunktR(S, x, y, z, ANKER_FUSS_KM, _ankP);
+   main   :2788  function planetOrt(S, breite, laenge, og, aus, heimat) {
+## k2-zusammenspiel.js:7276  stamm/wasser-hydro.js:231 _pegelZustand  → :285 (Anker 201bc8d0)  [stamm/wasser-hydro.js]
+   Anker  :231  _pegelZustand() {
+   main   :231  // bei jeder Tag-Länge — auch unter dem angehaltenen Tag der Bühne), das Wort und der Weg des Regens zur Welt-
+   main   :285  _pegelZustand() {
+## k2-zusammenspiel.js:8167  stamm/bild-himmel.js:3032 _wetterAmOrt  → :3194 (Anker f28c4fd8)  [stamm/bild-himmel.js]
+   Anker  :3032  _wetterAmOrt(x, z, t = this.state.spielZeit) {
+   main   :3032  //   „gesetz"  — ein Gesetz, das der Spieler gab („rule:" + eine Quelle des Spielers), und der Vorschlag eines
+   main   :3194  _wetterAmOrt(x, z, t = this.state.spielZeit) {
+## k2-zusammenspiel.js:8897  voxel-worker.js:1446 planetOrtAuftrag  → :1503 (Anker eb5b3688)  [voxel-worker.js]
+   Anker  :1446  function planetOrtAuftrag(msg) {
+   main   :1446  if (typeof k !== "object") throw new Error("planet: koerper ist kein Objekt (" + typeof k + ")");
+   main   :1503  function planetOrtAuftrag(msg) {
+## k2-zusammenspiel.js:10030  voxel-worker.js:1446 planetOrtAuftrag  → :1503 (Anker eb5b3688)  [voxel-worker.js]
+   Anker  :1446  function planetOrtAuftrag(msg) {
+   main   :1446  if (typeof k !== "object") throw new Error("planet: koerper ist kein Objekt (" + typeof k + ")");
+   main   :1503  function planetOrtAuftrag(msg) {
+
+STICHPROBE 2 — jede 22. ab der 12. (ohne die der Stichprobe 1)
+
+## k2-leben.js:1002  phyto-core.js:3631 planForestCell  → :4190 (Anker 813ac91d)  [phyto-core.js]
+   Anker  :3631  function planForestCell(cx, cz, seedInt, ctx) {
+   main   :3631  pathClearM: 3.6, // skip dart if pathDist < this
+   main   :4190  function planForestCell(cx, cz, seedInt, ctx) {
+## k2-leben.js:3899  stamm/koerper-fahrt.js:2744 applyPlayerSoul  → :2752 (Anker 1257ce93)  [stamm/koerper-fahrt.js]
+   Anker  :2744  applyPlayerSoul(name) {
+   main   :2744  this._stampSoulPartRefs(leib, (leib.userData && leib.userData._soulParts) || parts);
+   main   :2752  applyPlayerSoul(name) {
+## k2-leben.js:5326  tetrapoda-core.js:2072 LEBENSRAUM_GESETZ  → :2149 (Anker ec71a1e6)  [tetrapoda-core.js]
+   Anker  :2072  var LEBENSRAUM_GESETZ = Object.freeze({
+   main   :2072  function furchtErinnert(memory, F) {
+   main   :2149  var LEBENSRAUM_GESETZ = Object.freeze({
+## k2-leben.js:6394  stamm/vegetation-wiese.js:2120 _sukzession  → :2377 (Anker d399eaac)  [stamm/vegetation-wiese.js]
+   Anker  :2120  _sukzession(a, h = this._weltStunde()) {
+   main   :2120  if (!this.state.pendingGrass) this.state.pendingGrass = new Set();
+   main   :2377  _sukzession(a, h = this._weltStunde()) {
+## k2-leben.js:7278  stamm/kreatur-leben.js:1996 wurf.push  → :2051 (Anker f43e0ecf)  [stamm/kreatur-leben.js]
+   Anker  :1996  wurf.push({ id, soul: best.soul, g, bs, alterS: 0, x: best.x, z: best.z, v });
+   main   :1996  const g = AnazhRealm.TETRAPODA_SOUL_MAP[soul];
+   main   :2051  wurf.push({ id, soul: mu.soul, g, a, e, m: mu.id, alterS: 0, x: mu.x, z: mu.z, v: mu.v });
+## k2-leben.js:8326  stamm/dirigent-ankunft.js:468 PerspectiveCamera  → :472 (Anker a68d8156)  [stamm/dirigent-ankunft.js]
+   Anker  :468  const camera = new THREE.PerspectiveCamera(
+   main   :468  if (typeof this._applyDayNightToScene === "function") {
+   main   :472  const camera = new THREE.PerspectiveCamera(
+## k2-planet.js:1547  gelaende-core.js:3417 FELS_TE  → :3509 (Anker f96e8a40)  [gelaende-core.js]
+   Anker  :3417  FELS_TE = Math.tan(FELS.einfall);
+   main   :3417  );
+   main   :3509  FELS_TE = Math.tan(FELS.einfall);
+## k2-planet.js:1943  voxel-worker.js:1159 PLANET_ERDE  → :1475 (Anker 18433b52)  [voxel-worker.js]
+   Anker  :1159  plan = P.planetPlan(samen, P.PLANET_ERDE); // der Körper der Erde trägt das Jahr des Ort-Gesetzes (R5 bricht s
+   main   :1159  const c = e.target.result;
+   main   :1475  plan = P.planetPlan(samen, k || P.PLANET_ERDE); // der Körper der Erde trägt das Jahr des Ort-Gesetzes (R5 bri
+## k2-planet.js:2968  gelaende-core.js:5501 felsStoffPunkt  → :5593 (Anker f96e8a40)  [gelaende-core.js]
+   Anker  :5501  function felsStoffPunkt(L, B, o, x, y, z, ny, C, feuchte) {
+   main   :5501  if (jede)
+   main   :5593  function felsStoffPunkt(L, B, o, x, y, z, ny, C, feuchte) {
+## k2-planet.js:3925  gelaende-core.js:7767 wasserSpiegel  → :7956 (Anker f96e8a40)  [gelaende-core.js]
+   Anker  :7767  function wasserSpiegel(L, x, z, aus) {
+   main   :7767  };
+   main   :7956  function wasserSpiegel(L, x, z, aus) {
+## k2-planet.js:4808  stamm/wasser-hydro.js:127 _regenStempel  → :134 (Anker 201bc8d0)  [stamm/wasser-hydro.js]
+   Anker  :127  _regenStempel() {
+   main   :127  }
+   main   :134  _regenStempel() {
+## k2-zusammenspiel.js:1084  stamm/bild-himmel.js:2861 _weatherIsWet  → :3290 (Anker 9a9e64e5)  [stamm/bild-himmel.js]
+   Anker  :2861  _weatherIsWet(w) {
+   main   :2861  Math.exp(-WK.kd[0] * tiefe) * tagesLicht,
+   main   :3290  _weatherIsWet(w) {
+## k2-zusammenspiel.js:3916  fachwerk-core.js:5183 DORF  → :5494 (Anker 641f078e)  [fachwerk-core.js]
+   Anker  :5183  function DORF(DP){
+   main   :5183  function groesseBand(klasse) {
+   main   :5494  function DORF(DP){
+## k2-zusammenspiel.js:4626  koerper-core.js:5530 tagesBindung  → :5823 (Anker 524bd220)  [koerper-core.js]
+   Anker  :5530  function tagesBindung(TC, same, rolle, heimI, orte, ohne, weg) {
+   main   :5530  // Abend am Treff (das eigene Haus bietet den Abend nur mit daheimTreff) und länger (ruheNachH, die Ruhe bleib
+   main   :5823  function tagesBindung(TC, same, rolle, heimI, orte, ohne, weg, jahre) {
+## k2-zusammenspiel.js:5685  stamm/netz-portal.js:610 _weltTorBetreten  → :613 (Anker da5142d2)  [stamm/netz-portal.js]
+   Anker  :610  _weltTorBetreten(entry, portalMeta) {
+   main   :610  // Namens in ihrem Speicher (`worldMeta.gesetz`, durch die Wand `_weltGesetz` vor der Geburt) und dem Heimtor
+   main   :613  _weltTorBetreten(entry, portalMeta) {
+## k2-zusammenspiel.js:6909  planet-core.js:2684 planetOrt  → :2788 (Anker f96e8a40)  [planet-core.js]
+   Anker  :2684  function planetOrt(S, breite, laenge, og, aus) {
+   main   :2684  const h = planetPunktR(S, x, y, z, ANKER_FUSS_KM, _ankP);
+   main   :2788  function planetOrt(S, breite, laenge, og, aus, heimat) {
+## k2-zusammenspiel.js:7828  planet-core.js:312 planetPlan  → :324 (Anker 48f0599d)  [planet-core.js]
+   Anker  :312  function planetPlan(samen, koerperIn) {
+   main   :312  const KUESTE_GEWINN = 0.75;            // Gewinn je Oktave des Küsten-fBm; gemessen D 1,18 (kueste.dimension)
+   main   :324  function planetPlan(samen, koerperIn) {
+## k2-zusammenspiel.js:8493  voxel-worker.js:1446 planetOrtAuftrag  → :1503 (Anker eb5b3688)  [voxel-worker.js]
+   Anker  :1446  function planetOrtAuftrag(msg) {
+   main   :1446  if (typeof k !== "object") throw new Error("planet: koerper ist kein Objekt (" + typeof k + ")");
+   main   :1503  function planetOrtAuftrag(msg) {
+## k2-zusammenspiel.js:9731  voxel-worker.js:1446 planetOrtAuftrag  → :1503 (Anker eb5b3688)  [voxel-worker.js]
+   Anker  :1446  function planetOrtAuftrag(msg) {
+   main   :1446  if (typeof k !== "object") throw new Error("planet: koerper ist kein Objekt (" + typeof k + ")");
+   main   :1503  function planetOrtAuftrag(msg) {
+
+STICHPROBE 3 — die 15 Angaben, deren Ziel mit main a954d698 → 077b9aa7d5 wanderte (stamm/siedlung-bewohner.js +18/+19 Zeilen)
+
+## k2-zusammenspiel.js:1084  stamm/siedlung-bewohner.js:2331 drinnenSoll  → :3158 (Anker f43e0ecf)  [stamm/siedlung-bewohner.js]
+   Anker  :2331  b.drinnenSoll = soll.drinnen;
+   main   :2331  // DIE ARME IN DER RUHE SEINES BAUS (w28-leib-genom, koerper `leibBauArme`): wer nah gezeigt wird, hängt seine
+   main   :3158  b.drinnenSoll = soll.drinnen;
+## k2-zusammenspiel.js:1432  stamm/siedlung-bewohner.js:2331 drinnenSoll  → :3158 (Anker f43e0ecf)  [stamm/siedlung-bewohner.js]
+   Anker  :2331  b.drinnenSoll = soll.drinnen;
+   main   :2331  // DIE ARME IN DER RUHE SEINES BAUS (w28-leib-genom, koerper `leibBauArme`): wer nah gezeigt wird, hängt seine
+   main   :3158  b.drinnenSoll = soll.drinnen;
+## k2-zusammenspiel.js:3874  stamm/siedlung-bewohner.js:2237 _bewohnerSoll  → :2977 (Anker 524bd220)  [stamm/siedlung-bewohner.js]
+   Anker  :2237  _bewohnerSoll(b, stunde) {
+   main   :2237  bewegt.push(b);
+   main   :2977  _bewohnerSoll(b, stunde) {
+## k2-zusammenspiel.js:4103  stamm/siedlung-bewohner.js:2149 furchtErinnert  → :2627 (Anker 524bd220)  [stamm/siedlung-bewohner.js]
+   Anker  :2149  // tetrapoda furchtErinnert über sein Gedächtnis, `fluchtJeFurcht` je Einheit), wie es Witterung und Flucht ei
+   main   :2149  const bd2 = (b.d2 = (g.position.x - p.x) ** 2 + (g.position.z - p.z) ** 2);
+   main   :2627  // tetrapoda furchtErinnert über sein Gedächtnis, `fluchtJeFurcht` je Einheit), wie es Witterung und Flucht ei
+## k2-zusammenspiel.js:4140  stamm/siedlung-bewohner.js:2149 furchtErinnert  → :2627 (Anker 524bd220)  [stamm/siedlung-bewohner.js]
+   Anker  :2149  // tetrapoda furchtErinnert über sein Gedächtnis, `fluchtJeFurcht` je Einheit), wie es Witterung und Flucht ei
+   main   :2149  const bd2 = (b.d2 = (g.position.x - p.x) ** 2 + (g.position.z - p.z) ** 2);
+   main   :2627  // tetrapoda furchtErinnert über sein Gedächtnis, `fluchtJeFurcht` je Einheit), wie es Witterung und Flucht ei
+## k2-zusammenspiel.js:5224  stamm/siedlung-bewohner.js:2219 _bewohnerSoll  → :2977 (Anker f43e0ecf)  [stamm/siedlung-bewohner.js]
+   Anker  :2219  _bewohnerSoll(b, stunde) {
+   main   :2219  // das Tor, danach der Punkt vor der Tür, er ist näher als 3 m), wartet, solange einer auf der Achse hinausgeh
+   main   :2977  _bewohnerSoll(b, stunde) {
+## k2-zusammenspiel.js:5236  stamm/siedlung-bewohner.js:458 _bewohnerListe  → :694 (Anker f43e0ecf)  [stamm/siedlung-bewohner.js]
+   Anker  :458  *_bewohnerListe(S) {
+   main   :458  const T = S.plan.kleidung;
+   main   :694  *_bewohnerListe(S) {
+## k2-zusammenspiel.js:6236  stamm/siedlung-bewohner.js:2163 _creatureRemember  → :2650 (Anker f43e0ecf)  [stamm/siedlung-bewohner.js]
+   Anker  :2163  this._creatureRemember(b.leib, "gewalt", { von: "spieler" });
+   main   :2163  b.hinaus = false;
+   main   :2650  this._creatureRemember(b.leib, "gewalt", { von: "spieler" });
+## k2-zusammenspiel.js:6246  stamm/siedlung-bewohner.js:2170 aktenMax  → :2662 (Anker f43e0ecf)  [stamm/siedlung-bewohner.js]
+   Anker  :2170  c.akten.splice(0, c.akten.length - globalThis.__fachwerkCore.WACHSTUM.aktenMax);
+   main   :2170  }
+   main   :2662  c.akten.splice(0, c.akten.length - globalThis.__fachwerkCore.WACHSTUM.aktenMax);
+## k2-zusammenspiel.js:6256  stamm/siedlung-bewohner.js:2170 aktenMax  → :2662 (Anker f43e0ecf)  [stamm/siedlung-bewohner.js]
+   Anker  :2170  c.akten.splice(0, c.akten.length - globalThis.__fachwerkCore.WACHSTUM.aktenMax);
+   main   :2170  }
+   main   :2662  c.akten.splice(0, c.akten.length - globalThis.__fachwerkCore.WACHSTUM.aktenMax);
+## k2-zusammenspiel.js:6266  stamm/siedlung-bewohner.js:2170 aktenMax  → :2662 (Anker f43e0ecf)  [stamm/siedlung-bewohner.js]
+   Anker  :2170  c.akten.splice(0, c.akten.length - globalThis.__fachwerkCore.WACHSTUM.aktenMax);
+   main   :2170  }
+   main   :2662  c.akten.splice(0, c.akten.length - globalThis.__fachwerkCore.WACHSTUM.aktenMax);
+## k2-zusammenspiel.js:6869  stamm/siedlung-bewohner.js:2219 _bewohnerSoll  → :2977 (Anker f43e0ecf)  [stamm/siedlung-bewohner.js]
+   Anker  :2219  _bewohnerSoll(b, stunde) {
+   main   :2219  // das Tor, danach der Punkt vor der Tür, er ist näher als 3 m), wartet, solange einer auf der Achse hinausgeh
+   main   :2977  _bewohnerSoll(b, stunde) {
+## k2-zusammenspiel.js:7645  stamm/siedlung-bewohner.js:2219 _bewohnerSoll  → :2977 (Anker f43e0ecf)  [stamm/siedlung-bewohner.js]
+   Anker  :2219  _bewohnerSoll(b, stunde) {
+   main   :2219  // das Tor, danach der Punkt vor der Tür, er ist näher als 3 m), wartet, solange einer auf der Achse hinausgeh
+   main   :2977  _bewohnerSoll(b, stunde) {
+## k2-zusammenspiel.js:7663  stamm/siedlung-bewohner.js:2179 _bewohnerWeichen  → :2671 (Anker 98068daf)  [stamm/siedlung-bewohner.js]
+   Anker  :2179  _bewohnerWeichen(S, b, o, stunde, belegt) {
+   main   :2179  // wohin der geht, dem er Platz machte: der Spieler `ausweichS` voraus, der Bewohner zum nächsten Punkt
+   main   :2671  _bewohnerWeichen(S, b, o, stunde, belegt) {
+## k2-zusammenspiel.js:9706  stamm/siedlung-bewohner.js:2170 aktenMax  → :2662 (Anker 98068daf)  [stamm/siedlung-bewohner.js]
+   Anker  :2170  c.akten.splice(0, c.akten.length - globalThis.__fachwerkCore.WACHSTUM.aktenMax);
+   main   :2170  }
+   main   :2662  c.akten.splice(0, c.akten.length - globalThis.__fachwerkCore.WACHSTUM.aktenMax);
+Stichprobe: 47 von 54 — die Anker-Zeile steht Zeichen für Zeichen an der neuen Zeile in main
+## k2-leben.js:2995  stamm/kreatur-leben.js:1996 alterS  → :2051 (Anker f43e0ecf)  [stamm/kreatur-leben.js]
+  A wurf.push({ id, soul: best.soul, g, bs, alterS: 0, x: best.x, z: best.z, v });
+  N wurf.push({ id, soul: mu.soul, g, a, e, m: mu.id, alterS: 0, x: mu.x, z: mu.z, v: mu.v });
+## k2-leben.js:5941  stamm/kreatur-leben.js:2284 _bestandRegion  → :2361 (Anker f43e0ecf)  [stamm/kreatur-leben.js]
+  A _bestandRegion(key, aufholen = true, bis = 0, max = Infinity, tode = null) {
+  N _bestandRegion(key, aufholen = true, bis = 0, max = Infinity, tode = null, uhr = this.state.spielZeit) {
+## k2-zusammenspiel.js:6110  planet-core.js:2684 planetOrt  → :2788 (Anker f96e8a40)  [planet-core.js]
+  A function planetOrt(S, breite, laenge, og, aus) {
+  N function planetOrt(S, breite, laenge, og, aus, heimat) {
+## k2-leben.js:7278  stamm/kreatur-leben.js:1996 wurf.push  → :2051 (Anker f43e0ecf)  [stamm/kreatur-leben.js]
+  A wurf.push({ id, soul: best.soul, g, bs, alterS: 0, x: best.x, z: best.z, v });
+  N wurf.push({ id, soul: mu.soul, g, a, e, m: mu.id, alterS: 0, x: mu.x, z: mu.z, v: mu.v });
+## k2-planet.js:1943  voxel-worker.js:1159 PLANET_ERDE  → :1475 (Anker 18433b52)  [voxel-worker.js]
+  A plan = P.planetPlan(samen, P.PLANET_ERDE); // der Körper der Erde trägt das Jahr des Ort-Gesetzes (R5 bricht s
+  N plan = P.planetPlan(samen, k || P.PLANET_ERDE); // der Körper der Erde trägt das Jahr des Ort-Gesetzes (R5 bri
+## k2-zusammenspiel.js:4626  koerper-core.js:5530 tagesBindung  → :5823 (Anker 524bd220)  [koerper-core.js]
+  A function tagesBindung(TC, same, rolle, heimI, orte, ohne, weg) {
+  N function tagesBindung(TC, same, rolle, heimI, orte, ohne, weg, jahre) {
+## k2-zusammenspiel.js:6909  planet-core.js:2684 planetOrt  → :2788 (Anker f96e8a40)  [planet-core.js]
+  A function planetOrt(S, breite, laenge, og, aus) {
+  N function planetOrt(S, breite, laenge, og, aus, heimat) {
