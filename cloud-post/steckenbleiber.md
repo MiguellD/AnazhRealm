@@ -66,3 +66,45 @@ Patch `p3/n2611/nah/steck-linse-patch.cjs` (Syntax und Format an einer Kopie gep
   seinen Stand; Täter `bewohner-ende` = die alte Regel (der Stehende gilt nicht als ruhend).
 - „der Schritt beiseite“: B wird zweimal um Platz gebeten, beim zweiten Mal liegt auf seinem ersten Punkt das Ziel von A; Soll
   ≥ 0,71 m von diesem Ziel; Täter `bewohner-beiseite` = die Wahl blind für die Ziele.
+
+## Stand 26.11. 16:20 — der Jäger am Revier (eigener Schnitt, offen: Kopf 8)
+
+Kopf 6 d10695ec + Schnitt 2, GTX am Software-Adapter, zwei Läufe (`p3/n2411/wechsel/steck-k6.txt`, `steck-k6b.txt`), Zahl für Zahl gleich:
+
+| Glied | Lauf 1 (342 s) | Lauf 2 (332 s) |
+|---|---|---|
+| Steckenbleiber Start-Dorf · Stadt | 0 · 0 | 0 · 0 |
+| Wiederkehr | 4 von 1424, max 8,589 m, jaeger #773347 um 5,067 · 6,567 · 8,133 · 9,633 Uhr (Rückstand 0 m) | ebenso |
+| Stand nach dem Gang | 8965 mm, 1 von 519, jaeger #773347 um 4,58 Uhr | ebenso |
+| Haltung | 3,624 kind/kind #773347 (spiel: joy) — Glied der 1050 | ebenso |
+
+CI am Kopf 6: V1 5 × 11,513 m, V2 0 — an der GTX ist der Lauf fest, nur die CI wandert.
+
+Die Wurzel, gemessen mit einer Spur in der Linse (nur gelesen, wieder aus dem Baum) — zwei Glieder:
+
+1. DER PUNKT ist keine Funktion des Plans. Erste Liste: `orte.werk` 119,885/−191,749, Ursprung 118,183/−192,333 (Ring-Stufe 1,
+   2,7 m vom Anker 119,678/−190,085), von `_bewohnerStandPruefen` 1,8 m gerückt. Jede Liste nach der Abwesenheit (16 von 16):
+   werk = Ursprung 114,796/−186,103 (Ring-Stufe 4, 6,3 m), ungerückt. `postenStand` (stamm/siedlung-bewohner.js ≈ :1298) nimmt den
+   ersten Wurf, der `frei` und `erreicht` hält; beide lesen die Welt, wie sie beim Werk der Liste steht (`_bewohnerWand`: das
+   Blocker-Netz samt Baum und Fels; `_bewohnerTuerAm` über dieselben Wände). Welche der beiden Fragen kippt: NICHT getrennt.
+2. DER BODEN: das Revier liegt in einer Schlucht mit zwei Böden. Das letzte Bein des Wegs (27/28) geht 90 m gerade vom letzten
+   Netz-Knoten (29/−180) über Land; zwischen x 95,3 und 108,6 fällt die Oberkante 69,1 → 41,1 m, die Sohle landet auf 36,56 m
+   (4,5 m unter der Oberkante), am Stand Sohle 36,17 m gegen Oberkante 45,14 m. Zurück: bei 97,7/−188,9 Sohle 28,6 m unter
+   69,5 m, einen Schritt später 68,9 m. Der neu Geborene steht auf der Oberkante (`_bewohnerStellen`, 40,69 m an
+   114,796/−186,103). 8,589 m = 5,09 · 4,00 (hoch) · 5,65.
+   `erreicht` ist ein Zwilling des Gangs: gerade vom Knoten aus `_bewohnerTuerAm`, Beginn auf der Oberkante — der wahre Weg kommt
+   über `_bewohnerAnschluss`/`_bewohnerStrecke` mit eigener Sohle (`_bewohnerSchritt`: `_koerperBodenUnter(x, sohle, z)`).
+
+Nicht der Knoten des Schritts beiseite: Schnitt 2 deckt ihn nicht. Schnitt-Richtung (ungeschnitten, ungemessen): die Liste liest
+für den Posten im Freien nur Plan und Bauten, die Natur richtet die Stand-Prüfung vom Ursprung; der Stand liegt nur, wo die
+Säule EINEN Boden trägt, den jeder Gang erreicht. Der Schnitt liegt in Zeilen, die nur das Bündel trägt (`erreicht`, jaeger) —
+Zweig über dem Bündel, nicht `steckenbleiber` (main). Abgabe: zweimal in Folge Steckenbleiber 0 · Wiederkehr 0 von 1424 ·
+Stand nach dem Gang ≤ 10 mm.
+
+Die Spur zum Wiederholen: in scripts/lib/kreatur-mensch.cjs im `wegeMesser` je Takt für `b.rolle === "jaeger"` Uhr · x · z ·
+Sohle · `_koerperBodenUnter(x, NaN, z)`, in `wiederkehr` nach jeder Abwesenheit `orte.werk` (x, z, ur, _standR) und die Lage;
+Leser `p3/n2611/nah/lies-spur.cjs <slot.txt>` (OMEN).
+
+Offen beim Namen: Schnitt Jäger (Kopf 8) · Selbsttest der Linsen-Proben `bewohner-ende` / `bewohner-beiseite` (uncommitted im
+Baum n1011-hg, Patch `p3/n2611/nah/steck-linse-patch.cjs`; der Slot wich dem Vorrang) · check:statik voll am Schnitt 2 ·
+Nachmessung B, C, D am Kopf 4 (`p3/n2611/nah/nachmessung-kopf4.txt`).
