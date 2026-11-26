@@ -4233,13 +4233,27 @@ class AnazhRealm_siedlung_bewohner {
         const g = { x: o.leib.position.x, z: o.leib.position.z };
         const bein = Array.isArray(p) ? p : [p, q];
         const dr = fuer && fuer.spieler ? 0.3 : 0.6; // dem Spieler auf 0,3 m genau: sein Abstand trägt die Erinnerung
-        for (let r = dr; r <= Math.max(1.81, kF + 0.61); r += dr)
+        // BEISEITE HEISST: NIE IN DEN STAND EINES ANDEREN (steckenbleiber): die Stände um ihn — von jedem anderen seiner
+        // Siedlung das Ziel (`ziel`: wo er steht oder wohin er geht) und das Ende seines Wegs (der Punkt, auf den er selbst
+        // beiseite tritt), in der Reichweite der Ringe, EINMAL je Ruf gelesen —, kein Punkt liegt in der Kapsel eines Stands.
+        // Bis hier fragte die Wahl nur die Leiber (`_bewohnerNaechster`): der Punkt war frei, bis sein Besitzer kam — wohnhaus
+        // #91693 trat um 19,81 Uhr von 663,9/428,2 auf 662,7/428,2, den Stand von werkstatt #946741, beide gingen auf denselben
+        // Punkt, keiner kam an; um 18,44 Uhr lag der Punkt von kaufhaus #936614 0,69 m neben dem Stand von rathaus #619833
+        // (Kreatur-Linse bewohner, Stadt am main 54b89949: je 1 Steckenbleiber).
+        const rMax = Math.max(1.81, kF + 0.61);
+        const staende = this._bewohnerPlatzStaende || (this._bewohnerPlatzStaende = []);
+        staende.length = 0;
+        for (const w of S.liste)
+            for (const z of w === o ? [] : [w.ziel, w.weg && w.weg[w.weg.length - 1]])
+                if (z && (z.x - g.x) ** 2 + (z.z - g.z) ** 2 < (rMax + K) ** 2) staende.push(z);
+        for (let r = dr; r <= rMax; r += dr)
             for (let i = 0; i < 12; i++) {
                 const P = { x: g.x + Math.cos((i * Math.PI) / 6) * r, z: g.z + Math.sin((i * Math.PI) / 6) * r };
                 const pkt = { minX: P.x, maxX: P.x, minZ: P.z, maxZ: P.z };
                 if (bein.some((c, k) => k && this._streckeBoxAbstand2(pkt, bein[k - 1].x, bein[k - 1].z, c.x, c.z) < (kF + 0.1) ** 2)) continue; // prettier-ignore
                 if (S.verkehr && this._verkehrAufSpur(S, P.x, P.z, 0)) continue; // beiseite heißt: aus der Fahrbahn, nie in sie
                 if (this._bewohnerNaechster(S, o, P.x, P.z) < K) continue;
+                if (staende.some((z) => (z.x - P.x) ** 2 + (z.z - P.z) ** 2 < K * K)) continue;
                 if (this._bewohnerWand(P, P, true) || this._bewohnerWand(g, P)) continue;
                 Object.assign(o, {
                     weg: [P],
