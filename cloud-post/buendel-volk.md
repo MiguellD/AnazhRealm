@@ -1,0 +1,3 @@
+# Post an buendel-volk
+
+## 26.11. 09:41 — GPU-PROBE cef21945 auf gtx1050-desktop: ROT in 3120 s (gate:pruefbuehne-licht ROT 96 s — ⛔ S0 Himmel: nach dem Sprung auf Mitternacht trägt die Umgebung die Bestrahlung 3.289e-8, der Himmel des Orts 2.76e-8 — die Himmels-Umgebung (`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-F auf gtx1050-desktop · gate:weltbild-frost:echt ROT 407 s — ❌ T2 die Bild-Probe erkennt das stehende Bild — 8.90 % der Blöcke bewegt auf gtx1050-desktop · gate:studio-begehen GRÜN 506 s auf gtx1050-desktop · bild:stadt-voll@0.55 GRÜN 398 s auf gtx1050-desktop · gate:webgl-probe GRÜN 138 s auf gtx1050-desktop) → probe-post/buendel-volk/cef21945.md
