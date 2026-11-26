@@ -5550,11 +5550,17 @@
     // und Rolle: der Kranke saß wie der Gesunde, der Lehrling stand wie der Meister, der Winter trug den Schnitt des Sommers.
     var LEIB_SATZ = Object.freeze({
         trenner: "/",
-        // DER KRANKE — Lasselin et al. 2020 (Brain Behav Immun 84:147–153, Tab. 1; LPS 2 ng/kg gegen Placebo, 19 Gesunde): der Kopf
-        // 2,50° tiefer, das Knie 1,86° weniger gebeugt („less knee flexion“), die Streckung des Arms 1,50° weniger; Rumpf und
-        // Schulter ohne Befund. Je Achse des Profils das Delta in rad (headX + senkt den Kopf, kneeL/R + beugt, armLX/RX + streckt).
-        // Der Gang (−0,185 m/s, Schritt −0,093 m, Schrittzeit +27,9 ms) liest keine Haltung — er gehört dem Tempo des Satzes.
-        krank: Object.freeze({ headX: 0.0436, kneeL: -0.0325, kneeR: -0.0325, armLX: -0.0262, armRX: -0.0262 }), // prettier-ignore
+        // DER KRANKE — Lasselin et al. 2020 (Brain Behav Immun 84:147–153, Tab. 1; LPS 2 ng/kg gegen Placebo, 19 Gesunde, Kinect v1
+        // auf 5,5 m): GEMESSEN IM GEHEN — darum EINE Zeile für Stand und Gang. `pose` je Achse des Profils das Delta in rad (headX +
+        // senkt den Kopf, kneeL/R + beugt, armLX/RX + streckt): der Kopf 2,50° tiefer [1,0; 4,1], das Knie 1,86° weniger gebeugt
+        // („less knee flexion“ [1,0; 2,7]), die Streckung des Arms 1,50° weniger [0,8; 2,2]; Rumpf und Schulter ohne Befund. `tempo`
+        // das Gehen −0,185 m/s [−0,243; −0,126] (der erste Lauf im eigenen Tempo), absolut (ANGENOMMEN: die Studie druckt kein Mittel
+        // des Placebos). Schrittlänge und Schrittzeit tragen KEINE eigene Zahl: sie folgen aus dem Tempo im EINEN Gang-Gesetz
+        // (tetrapoda `gangSchritt`) — geprüft gegen den Doppelschritt −0,093 m [−0,117; −0,070]; die Schrittzeit +27,9 ms [13,1; 42,7]
+        // mittelt zwei Läufe am Metronom (76 Schritte/min, feste Kadenz) mit dem freien (gate:mensch-anatomie gang.krank).
+        krank: Object.freeze({ pose: Object.freeze({ headX: 0.0436, kneeL: -0.0325, kneeR: -0.0325, armLX: -0.0262, armRX: -0.0262 }), tempo: -0.185 }), // prettier-ignore
+        // DIE BÄNDER DES GANGS im fernen Satz (`leibSatzBand`): je Wort eines, das den Gang ändert, ein Band — der Gesunde, der Kranke
+        baender: Object.freeze([null, "krank"]),
         // DAS KÖNNEN — die Kunst, die ein Akt übt (`kunst`: „haupt“ die Kunst seines Werks, LEBENSLAUF.uebung), und seine Stufe auf
         // der Skala des Könnens (1 = das Band der Guten): der Lehrling unter 0,5 geht im Takt seines Könnens — die Zeit je Akt ist
         // ∝ 1/Können (Newell & Rosenbloom 1981, das Potenzgesetz der Übung), sein Profil im `takt` der Stufe (×freq: der Rhythmus
@@ -5618,7 +5624,7 @@
         var p = Object.assign({}, g);
         for (var i = 1; i < teile.length; i++) {
             var w = teile[i],
-                d = w === "krank" ? LEIB_SATZ.krank : null,
+                d = LEIB_SATZ.baender.indexOf(w) > 0 ? LEIB_SATZ[w].pose : null,
                 st = null;
             for (var j = 0; !d && j < LEIB_SATZ.stufe.length; j++) if (LEIB_SATZ.stufe[j].wort === w) st = LEIB_SATZ.stufe[j];
             if (!d && !st) throw new Error("koerper leibSatzProfil: das Wort „" + w + "“ trägt kein Gesetz (LEIB_SATZ) — fail-closed");
@@ -5628,6 +5634,34 @@
         p = Object.freeze(p);
         if (merk) merk[name] = p;
         return p;
+    }
+    // DER GANG LIEST DEN SATZ (leib-liest-satz-2 — mensch.menge.seuche: der Kranke steht UND geht anders). Drei Leser derselben
+    // Zeile, die der Stand liest (LEIB_SATZ.krank): `leibSatzPose(name)` die Summe der Posen der Wörter eines Namens („pwalk/krank“ →
+    // die Zeile des Kranken; ohne Wort mit Pose null) — die Pose des Gangs legt sie über die Beine des Gesetzes (`leibRigPose`,
+    // ×Gewicht des Gangs; der Stand trägt sie im Profil, `leibSatzProfil`), gemerkt je Namen; `leibSatzTempo(v, satz)` das Tempo des
+    // Gangs zum Tempo v des Gesunden (der Satz: `krank`); `leibSatzBand(satz)` das Band seines Gangs im fernen Satz (LEIB_SATZ.baender).
+    // Bis hier stand der Kranke gebeugt und ging wie der Gesunde: das Gehen las keine Haltung, sein Tempo setzte die Geburt.
+    var _leibSatzPoseMerk = Object.create(null);
+    function leibSatzPose(name) {
+        if (typeof name !== "string" || name.indexOf(LEIB_SATZ.trenner) < 0) return null;
+        if (name in _leibSatzPoseMerk) return _leibSatzPoseMerk[name];
+        var teile = name.split(LEIB_SATZ.trenner),
+            p = null;
+        for (var i = 1; i < teile.length; i++) {
+            var d = LEIB_SATZ.baender.indexOf(teile[i]) > 0 ? LEIB_SATZ[teile[i]].pose : null;
+            if (d) for (var k in d) (p || (p = {}))[k] = (p[k] || 0) + d[k];
+        }
+        return (_leibSatzPoseMerk[name] = p ? Object.freeze(p) : null);
+    }
+    function leibSatzBand(satz) {
+        return satz && satz.krank === true ? LEIB_SATZ.baender.indexOf("krank") : 0;
+    }
+    function leibSatzTempo(v, satz) {
+        if (!(v > 0)) throw new Error("koerper leibSatzTempo: das Tempo des Gesunden fehlt (" + v + ") — fail-closed");
+        var w = LEIB_SATZ.baender[leibSatzBand(satz)],
+            t = v + (w ? LEIB_SATZ[w].tempo : 0);
+        if (!(t > 0)) throw new Error("koerper leibSatzTempo: der Satz nimmt dem Gang sein Tempo (" + v + " → " + t + ") — fail-closed");
+        return t;
     }
     // DIE NAMEN DES SATZES (leib-liest-satz): jeder Name mit Zusatz, den `tagesHaltung` nennen kann — je Grund (neutral und jede
     // Haltung des Akts) der Kranke, je Haltung eines Akts mit Kunst jede Stufe, gesund und krank. Leser: die Stände des Satzes
@@ -8859,7 +8893,9 @@
     // Ruhe (`r.armRuhe`: der Arm hängt am Rumpf, weiter innen liegt er IN ihm); der Kontrapost trägt die Arme nicht mehr nach innen.
     // Die Abspreizung eines Profils zählt vom Lot, die Ruhe ist ihr Boden (a-haltung, am Ende der Pose); über dem Band der Ruhe ist
     // sie eine Geste zur Uhr t (`leibGeste`).
-    function leibRigPose(r, t, walkPhase, isMoving, gait, mp, mref, M, Z, TC) {
+    // DER SATZ IM GANG (leib-liest-satz-2): `satz` die Pose des Satzes (`leibSatzPose`: der Kranke) — über dem Gang ×w, wie der Stand
+    // sie im Profil ×(1−w) trägt; der Kopf, das Knie und die Schulter des Kranken gelten bei jedem Gewicht des Gangs.
+    function leibRigPose(r, t, walkPhase, isMoving, gait, mp, mref, M, Z, TC, satz) {
         if (!Array.isArray(r.armRuhe)) throw new Error("leibRigPose: das Rig ohne die Ruhe seiner Arme (koerper leibRig) — fail-closed");
         var w = gait && Number.isFinite(gait.w) ? Math.max(0, Math.min(1, gait.w)) : isMoving ? 1 : 0;
         var amp = gait && Number.isFinite(gait.amp) ? Math.max(0.5, Math.min(1.6, gait.amp)) : 1;
@@ -9002,6 +9038,15 @@
             add(r.spine, "z", 0.05 * sw * wa);
             add(r.spine, "y", 0.07 * sw * wa);
             add(r.chest, "y", -0.06 * sw * wa);
+            if (satz)
+                for (var si = 0; si < MOTION_RIG_MAP.length; si++) {
+                    var sr = MOTION_RIG_MAP[si],
+                        sd = satz[sr.key];
+                    if (!sd) continue;
+                    var sg = sr.bone.split("."),
+                        sb = sg.length === 2 ? r[sg[0]] && r[sg[0]][sg[1]] : r[sg[0]];
+                    if (sb && sb.rotation) sb.rotation[sr.axis] += sd * sr.mul * w;
+                }
         }
         // DIE RUHE IST DER BODEN, KEIN SOCKEL (a-haltung): die Abspreizung, die ein Profil der Schulter gibt (MOTION_RIG_MAP armL /
         // armR gegen das Labor-idle — das einzige Delta an ihrer z-Achse), nennt ihren Winkel vom LOT: so hing der Arm im Labor, als
@@ -11541,6 +11586,10 @@
         LEIB_SATZ: LEIB_SATZ,
         leibSatzProfil: leibSatzProfil,
         leibSatzNamen: leibSatzNamen,
+        // leib-liest-satz-2 — DER GANG LIEST DEN SATZ (Leser: _animateHumanoidRig → leibRigPose, _bewohnerGang, _bewohnerGangPose)
+        leibSatzPose: leibSatzPose,
+        leibSatzTempo: leibSatzTempo,
+        leibSatzBand: leibSatzBand,
         trachtSoll: trachtSoll,
         trachtClo: trachtClo,
         trachtDesTags: trachtDesTags,

@@ -1198,7 +1198,7 @@ class AnazhRealm_siedlung_bewohner {
                     heim: sl.seed >>> 0, rolle, beruf, same, epoche,
                     orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null, spiel: null, einkauf: null },
                     seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
-                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, gangTempo: u, satzOrt: u,
+                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, gangTempo: u, gangBand: 0, satzOrt: u,
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
                     blick: u, begegnet: u, kopfY: u,
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
@@ -1945,14 +1945,15 @@ class AnazhRealm_siedlung_bewohner {
         if (g.userData.rig) g.userData.rig._beinMass = b.beinMass;
         b.beinL = Math.max(0.3, G.mass.beinL * b.groesse);
         b.tempoBand = window.__koerperCore.leibGehen(b.beinL);
-        b.tempo = b.tempoBand * b.koennen.lauf;
+        this._bewohnerGang(b); // × lauf, mit dem Delta seines Satzes (der Kranke)
         this.state.scene.add(g);
         if (S.satz === null) S.satz = this._bewohnerSatz(S, b);
         // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, der Stand sofort
         if (G.lage === null) {
-            G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, gebacken: 0, fertig: false, tempo: b.tempoBand, gang: null };
+            const B = window.__koerperCore.LEIB_SATZ.baender.length; // (je Gang des Satzes ein Band, `_bewohnerGangPose`)
+            G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, baender: B, gebacken: 0, fertig: false, tempo: b.tempoBand, gaenge: null }; // prettier-ignore
             for (let h = 0; h < AnazhRealm._bewohnerStaende().length; h++)
-                this._bewohnerGangPose(g, G.lage, G.lage.n + h, null);
+                this._bewohnerGangPose(g, G.lage, B * G.lage.n + h, null);
         }
     }
 
@@ -3040,8 +3041,9 @@ class AnazhRealm_siedlung_bewohner {
     // SEIN STAND WECHSELT (der Akt des Tags, die Furcht): gemerkt (`b.standZeile` — die Leser: `_bewohnerSatzSchreiben`, im Feld
     // `_bewohnerFeldLage`, dort sofort neu gestellt); liefert, ob der Satz ihn neu schreiben muss
     _bewohnerStandNeu(b, S) {
-        const h = this._bewohnerStandVon(b);
-        if (h === (b.standZeile || 0)) return false;
+        const band = b.gangBand;
+        const h = this._bewohnerStandVon(b); // (liest das Gemüt: an der Kante seines Satzes auch das Band seines Gangs)
+        if (h === (b.standZeile || 0) && band === b.gangBand) return false;
         b.standZeile = h;
         const g = b.leib;
         const echt = !(this.state.renderer && this.state.renderer._isHeadlessNull);
@@ -3065,9 +3067,26 @@ class AnazhRealm_siedlung_bewohner {
         ) {
             g.haltung = KC.tagesHaltung(b.akt, b.rolle, b);
             g.schluessel = { akt: b.akt, rolle: b.rolle, tag };
+            this._bewohnerGang(b); // (der Gang liest denselben Satz am selben Tag)
         }
         g.sorrow = g.chaos = b.leib ? Math.max(0, this._kreaturFurchtErinnert(b.leib)) : 0;
         return g;
+    }
+    // DER GANG LIEST DEN SATZ (leib-liest-satz-2 — mensch.menge.seuche: der Kranke geht anders): das Tempo seines Gangs ist das
+    // Gehen seines Beins × `lauf` seines Könnens (die Geburt: `tempoBand`, mensch.K2) mit dem Delta seines Satzes (koerper
+    // `leibSatzTempo`: der Kranke −0,185 m/s, Lasselin 2020 — Schritt und Takt folgen im EINEN Gang-Gesetz), dazu das Band seines
+    // Gangs im fernen Satz (`leibSatzBand` → `gangBand`: die Zeilen des Kranken, `_bewohnerGangPose`). EIN Schreiber: die Geburt
+    // und die Kante seines Satzes (`_bewohnerGemuet`: Akt, Rolle, Tag — Krankheit ist Gesetz des Tags); während eines Laufs trägt
+    // ihn `gangTempo` (das Ende des Laufs gibt ihn zurück, `_bewohnerZiel`). Bis hier setzte allein die Geburt das Tempo: der
+    // Kranke ging im Tempo des Gesunden.
+    _bewohnerGang(b) {
+        if (!(b.tempoBand > 0)) return; // (vor der Geburt geht er nicht)
+        const KC = window.__koerperCore;
+        if (typeof KC.leibSatzTempo !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibSatzTempo");
+        const v = KC.leibSatzTempo(b.tempoBand * b.koennen.lauf, b);
+        if (b.gangTempo != null) b.gangTempo = v;
+        else b.tempo = v;
+        b.gangBand = KC.leibSatzBand(b);
     }
 
     // DAS ZIEL DER STUNDE (mensch.K2): das Soll (`_bewohnerSoll`). Ein neues Ziel verwirft den alten Weg; wer drinnen war und
@@ -3084,8 +3103,8 @@ class AnazhRealm_siedlung_bewohner {
         const sp = b.sied && b.sied.spiel;
         b.gegner = ziel && ziel.gegner != null && sp ? sp.wer[ziel.gegner] || null : null;
         // DER LÄUFER LÄUFT (koerper SPIEL_GESETZ): auf dem Weg ins Ziel seines Laufs trägt ihn das Tempo seiner Leistung (der Auftritt
-        // `tempo`) — geliehen: danach geht er das Tempo seines Gangs, wie es vor dem Lauf war (`gangTempo`); das Tempo des Gangs setzt
-        // allein die Geburt (`_bewohnerGeburt`). Bis sport-regeln 3 setzte jedes Ziel das Tempo neu aus dem Gesetz, ein Zwilling der
+        // `tempo`) — geliehen: danach geht er das Tempo seines Gangs (`gangTempo`); das Tempo des Gangs setzt allein sein Satz
+        // (`_bewohnerGang`: die Geburt und die Kante seines Satzes). Bis sport-regeln 3 setzte jedes Ziel das Tempo neu aus dem Gesetz, ein Zwilling der
         // Geburt: der Täter bewohner-koennen der Kreatur-Linse (der Stand vor dem Gesetz) blieb unsichtbar
         const lauf = !!(ziel && ziel.tempo > 0);
         if (lauf && b.gangTempo == null) b.gangTempo = b.tempo;
