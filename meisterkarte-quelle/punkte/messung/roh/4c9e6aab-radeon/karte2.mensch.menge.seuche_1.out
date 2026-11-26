@@ -483,8 +483,8 @@ H.fahre(async (H) => {
     return K.ende();
 }); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\4c9e6aab-radeon\karte2.mensch.menge.seuche_1.json 45
 [linse-gpu] amd/rdna-3
-@@ 10.7 s · am Messort stadt-voll (ego) nach 10.7 s, 469 Takte, Anlauf stand
-@@ 15.9 s · S1 krank 43 von 1356, gemessen 43, Tag weicht ab 43 (Anteil 0.4508, Posten 0), Haltung anders 0 von 43, um 10 Uhr daheim 43 {"abend":41,"morgen":1,"arbeit":1}
+@@ 7.2 s · am Messort stadt-voll (ego) nach 7.2 s, 277 Takte, Anlauf stand
+@@ 11.7 s · S1 krank 43 von 1356, gemessen 43, Tag weicht ab 43 (Anteil 0.4508, Posten 0), Haltung anders 0 von 43, um 10 Uhr daheim 43 {"abend":41,"morgen":1,"arbeit":1}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
