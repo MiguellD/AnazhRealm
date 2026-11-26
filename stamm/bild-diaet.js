@@ -437,6 +437,9 @@ AnazhRealm._diaetRuhig = function (obs, ro, rend, rid) {
         const k = nbs._anazhGang;
         if (k.verweise.length > 0 && AnazhRealm._diaetVerweisAnders(obs, ro, k)) og = true;
     }
+    // bewegte sich das Ding im Bild davor, sieht der Gang es auch jetzt (die Folge seiner Bewegung, `_bewegungHaelt`)
+    if (!og && (obj.__bewegung !== undefined || senke.__bewegungI !== undefined))
+        og = AnazhRealm._bewegungHaelt(obj, senke);
     if (og) AnazhRealm._diaetObjektGang(rend, ro, nbs._anazhGang, false);
     return true;
 };
