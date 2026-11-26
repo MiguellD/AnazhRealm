@@ -12331,8 +12331,18 @@
     "lava-3",
     "lava-4"
    ],
-   "bereitBisAufDenFaecher": true,
-   "fehlt": "c: der Fächer von ≥ 40 Posen an einer Lava-Tat (das eine Bild zeigt den Boden am Spawn — Glut nur, wo die Tat gesetzt ist)"
+   "bereitBisAufDenFaecher": false,
+   "fehlt": "c: das Gesetz der Welt stellt an keiner Adresse Glut — Umfang nicht erzeugbar, 0 von 40 (Fächer 26.11., Radeon, main 54b89949)",
+   "faecher": {
+    "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
+    "geraet": "amd rdna-3",
+    "ort": "dorf",
+    "saat": "anazh-realm-seed",
+    "gesetz": "meisterkarte-quelle/punkte/stationen/k2-planet.js:1228",
+    "posenDesGesetzes": 0,
+    "bilder": 0,
+    "urteil": "Umfang nicht erzeugbar: 0 von 40 — der Planet-Faden trägt keinen Vulkan (breite, delta, hoeheM, kuesteKm, laenge, land, samen, zeitMa · delta eis, klima, meer, wetter, wildnis, wuchs), die Welt 0 Leser eines Ausbruchs; Glut steht nur an der Lava-Tat, die die Station selbst setzt"
+   }
   },
   {
    "id": "planet.geologie.gebirge#1",
@@ -12536,7 +12546,13 @@
     "weiler-4"
    ],
    "bereitBisAufDenFaecher": true,
-   "fehlt": "c: der Fächer von ≥ 40 Posen (heute die EINE Richtung mit den meisten freien Häusern von 8)"
+   "fehlt": "c: der Fächer von ≥ 40 Posen (heute die EINE Richtung mit den meisten freien Häusern von 8)",
+   "faecher": {
+    "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
+    "geraet": "amd rdna-3",
+    "bilder": 0,
+    "urteil": "läuft: 0 von 40 — in frischer Sitzung trugen 7 von 11 Bildern das Motiv, die Bilder der gealterten Sitzung (schwarze Punkte am Himmel) zählen nicht"
+   }
   },
   {
    "id": "mensch.stadt.messlatte#1",
@@ -12565,7 +12581,13 @@
     "haus-zehn-meter-2"
    ],
    "bereitBisAufDenFaecher": true,
-   "fehlt": "c: der Fächer von ≥ 40 Häusern/Posen (heute EIN Haus)"
+   "fehlt": "c: der Fächer von ≥ 40 Häusern/Posen (heute EIN Haus)",
+   "faecher": {
+    "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
+    "geraet": "amd rdna-3",
+    "bilder": 0,
+    "urteil": "läuft: 0 von 40 — das Gesetz trägt 17 Häuser mit Tür, 153 Posen über 9 Tageszeiten, kein Bild geschossen"
+   }
   },
   {
    "id": "mensch.nahrung.flur#2",
@@ -12594,7 +12616,13 @@
     "flur-ernte-2"
    ],
    "bereitBisAufDenFaecher": true,
-   "fehlt": "c: der Fächer von ≥ 40 Posen/Äckern (heute der nächste Acker)"
+   "fehlt": "c: der Fächer von ≥ 40 Posen/Äckern (heute der nächste Acker)",
+   "faecher": {
+    "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
+    "geraet": "amd rdna-3",
+    "bilder": 0,
+    "urteil": "läuft: 0 von 40 — an keinem Gerät durch den Fächer gelaufen"
+   }
   },
   {
    "id": "mensch.nahrung.hand#3",
@@ -12610,7 +12638,13 @@
     "flur-ernte-2"
    ],
    "bereitBisAufDenFaecher": true,
-   "fehlt": "c: der Fächer von ≥ 40 Posen (heute der erste Acker)"
+   "fehlt": "c: der Fächer von ≥ 40 Posen (heute der erste Acker)",
+   "faecher": {
+    "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
+    "geraet": "amd rdna-3",
+    "bilder": 0,
+    "urteil": "läuft: 0 von 40 — an keinem Gerät durch den Fächer gelaufen"
+   }
   },
   {
    "id": "mensch.zeit.erde#1",
@@ -12652,5 +12686,5 @@
    "fehlt": "a: keine Schwelle im Satz · b: Fotos von Durchbruchstälern und Fjorden"
   }
  ],
- "fronten2afcSatz": "a = der Satz nennt die Schwelle (R6) · b = ≥ 40 gesichtete Fotos des Motivs, das die Station zeigt · c = das Spiel-Bild der Station (einzelbild: EIN Bild an EINER Pose; ein Blatt braucht ≥ 40 verschiedene am selben Kopf und Gerät) — paare.cjs baut das Blatt nur, wo die Zeile Sätze trägt"
+ "fronten2afcSatz": "a = der Satz nennt die Schwelle (R6) · b = ≥ 40 gesichtete Fotos des Motivs, das die Station zeigt · c = das Spiel-Bild der Station (einzelbild: EIN Bild an EINER Pose; ein Blatt braucht ≥ 40 verschiedene am selben Kopf und Gerät) — paare.cjs baut das Blatt nur, wo die Zeile Sätze trägt. Der Fächer (Kopf 4, vision/pruefer/faecher.cjs): je Sprosse steht unter „faecher“, was er am Kopf und Gerät schoss — Bilder mit dem Motiv, Posen des Gesetzes und das Urteil („trägt“, „läuft“ oder „Umfang nicht erzeugbar: n von 40“); bereit bis auf den Fächer sind danach vier Sprossen, vulkan#1 trägt den Umfang nicht."
 }

@@ -1,0 +1,151 @@
+{
+ "was": "Schwellen-VORSCHLÄGE für die Front-Sprossen der Art 2afc, deren Satz keine Zahl trägt (R6: die Zahl daneben ist die Schwelle). Ein Vorschlag ist KEINE Schwelle: pruefer.cjs und paare.cjs verweigern diese Sprossen, bis der Koordinator die Zahl in den Satz der Leiter setzt (`gesetzt` nennt dann Datum und Wert).",
+ "herleitung": "Die Treppe der Karte selbst: wo sie Zahlen trägt, liegt die erste Sprosse bei ≤ 85–90 % und jede Sprosse 5 Punkte enger (mensch.stadt.groesse#1–#6: 90 → 65 %; planet.wetter.wolken#1/#2/#7: 85/70/60 %). Außen-Band: zwei Menschen stimmen im 2AFC zu 73,9 % überein (Zhang u. a. 2018) — eine Schwelle ≤ 75 % liegt am Rand menschlicher Uneinigkeit, 50 % heißt ununterscheidbar.",
+ "stand": "2026-11-26",
+ "zeilen": [
+  {
+   "sprosse": "planet.geologie.platten#1",
+   "satz": "Blindpaar Schummerung gegen reale Region",
+   "vorschlag": {
+    "mass": "treffer",
+    "op": "≤",
+    "wert": 0.85,
+    "wort": "Prüfer trifft das Foto ≤ 85 %"
+   },
+   "woraus": "dieselbe Leiter-Familie: planet.geologie.vulkan#1 ≤ 85 %, planet.relief.boden#1 ≤ 85 % (erste Sprosse, Bild gegen Foto)",
+   "gesetzt": null
+  },
+  {
+   "sprosse": "planet.geologie.gebirge#1",
+   "satz": "Blindpaar Felswand gegen Foto",
+   "vorschlag": {
+    "mass": "treffer",
+    "op": "≤",
+    "wert": 0.85,
+    "wort": "Prüfer trifft das Foto ≤ 85 %"
+   },
+   "woraus": "wie planet.geologie.vulkan#1 ≤ 85 % und planet.relief.boden#1 ≤ 85 % (erste Sprosse, Bild gegen Foto)",
+   "gesetzt": null
+  },
+  {
+   "sprosse": "planet.wasser.eis#3",
+   "satz": "Blindpaar Scholle",
+   "vorschlag": {
+    "mass": "treffer",
+    "op": "≤",
+    "wert": 0.75,
+    "wort": "Prüfer trifft das Foto ≤ 75 %"
+   },
+   "woraus": "die Treppe der Karte: erste Sprosse des Kapitels planet ≤ 85 %, je Sprosse 5 Punkte enger (mensch.stadt.groesse#1–#6: 90 → 65 %) — Sprosse 3: 75 %",
+   "gesetzt": null
+  },
+  {
+   "sprosse": "planet.wetter.fremde-atmosphaeren#1",
+   "satz": "Himmelsfarbe Mittag/Abend gegen Foto",
+   "vorschlag": {
+    "mass": "treffer",
+    "op": "≤",
+    "wert": 0.85,
+    "wort": "Prüfer trifft das Foto ≤ 85 %"
+   },
+   "woraus": "dieselbe Perspektive: planet.wetter.wolken#1 ≤ 85 %; die eigene Leiter trägt an Sprosse 6 ≤ 70 %",
+   "gesetzt": null
+  },
+  {
+   "sprosse": "planet.zeit.archiv#2",
+   "satz": "Bildvergleich gegen Fotos des Colorado-Plateaus (Farbbänder, Rhythmus)",
+   "vorschlag": {
+    "mass": "treffer",
+    "op": "≤",
+    "wert": 0.8,
+    "wort": "Prüfer trifft das Foto ≤ 80 %"
+   },
+   "woraus": "die Treppe der Karte: erste Sprosse des Kapitels planet ≤ 85 %, Sprosse 2 fünf Punkte enger (mensch.stadt.groesse#2 ≤ 85 % nach #1 ≤ 90 %)",
+   "gesetzt": null
+  },
+  {
+   "sprosse": "leben.pflanzen.lebenslauf#2",
+   "satz": "Bildreihe 0/10/50/150 Jahre gegen Fotoreihe derselben Art",
+   "vorschlag": {
+    "mass": "treffer",
+    "op": "≤",
+    "wert": 0.8,
+    "wort": "Prüfer trifft das Foto ≤ 80 %"
+   },
+   "woraus": "dieselbe Perspektive rückwärts: leben.pflanzen.dichte#4 ≤ 70 %, je Sprosse 5 Punkte — Sprosse 2: 80 %; die Bildreihe zählt als EIN Paar je Altersstufe",
+   "gesetzt": null
+  },
+  {
+   "sprosse": "leben.pflanzen.jahreslauf#3",
+   "satz": "12-Wochen-Bildreihe gegen Webcam-Zeitreihe",
+   "vorschlag": {
+    "mass": "treffer",
+    "op": "≤",
+    "wert": 0.75,
+    "wort": "Prüfer trifft das Foto ≤ 75 %"
+   },
+   "woraus": "dieselbe Perspektive rückwärts: leben.pflanzen.dichte#4 ≤ 70 %, Sprosse 3 fünf Punkte weiter: 75 %",
+   "gesetzt": null
+  },
+  {
+   "sprosse": "leben.pflanzen.dichte#1",
+   "satz": "Ring-Bildanteil gegen Foto",
+   "vorschlag": {
+    "mass": "treffer",
+    "op": "≤",
+    "wert": 0.85,
+    "wort": "Prüfer trifft das Foto ≤ 85 %"
+   },
+   "woraus": "die eigene Leiter rückwärts: leben.pflanzen.dichte#4 ≤ 70 %, je Sprosse 5 Punkte — Sprosse 1: 85 %",
+   "gesetzt": null
+  },
+  {
+   "sprosse": "leben.oeko.zerfall#2",
+   "satz": "Bildreihe 0/3/10/30 Tage gegen forensische Referenz",
+   "vorschlag": {
+    "mass": "treffer",
+    "op": "≤",
+    "wert": 0.8,
+    "wort": "Prüfer trifft das Foto ≤ 80 %"
+   },
+   "woraus": "die Treppe der Karte: Sprosse 2 des Kapitels leben wie leben.pflanzen (Sprosse 4 ≤ 70 %, je Sprosse 5 Punkte): 80 %",
+   "gesetzt": null
+  },
+  {
+   "sprosse": "leben.oeko.sukzession#2",
+   "satz": "Bildpaar nach 1/5/25 Spieljahren gegen die Yellowstone-1988-Fotoreihe",
+   "vorschlag": {
+    "mass": "treffer",
+    "op": "≤",
+    "wert": 0.8,
+    "wort": "Prüfer trifft das Foto ≤ 80 %"
+   },
+   "woraus": "wie leben.oeko.zerfall#2: Sprosse 2 des Kapitels leben, 80 %",
+   "gesetzt": null
+  },
+  {
+   "sprosse": "leben.evolution.mikroben#1",
+   "satz": "Bildvergleich der Zonierung gegen Natur-Fotos",
+   "vorschlag": {
+    "mass": "treffer",
+    "op": "≤",
+    "wert": 0.85,
+    "wort": "Prüfer trifft das Foto ≤ 85 %"
+   },
+   "woraus": "die eigene Leiter rückwärts: leben.evolution.mikroben#3 ≤ 75 %, je Sprosse 5 Punkte — Sprosse 1: 85 %",
+   "gesetzt": null
+  },
+  {
+   "sprosse": "planet.kopplung.gegenwart#3",
+   "satz": "Bildpaar Durchbruch/Fjord gegen Foto",
+   "vorschlag": {
+    "mass": "treffer",
+    "op": "≤",
+    "wert": 0.75,
+    "wort": "Prüfer trifft das Foto ≤ 75 %"
+   },
+   "woraus": "die Treppe der Karte: erste Sprosse des Kapitels planet ≤ 85 %, je Sprosse 5 Punkte enger — Sprosse 3: 75 %",
+   "gesetzt": null
+  }
+ ]
+}

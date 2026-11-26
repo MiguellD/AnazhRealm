@@ -13,6 +13,9 @@
 //       NASA Image and Video Library (images-api.nasa.gov): Inhalte der NASA sind in der Regel gemeinfrei (media usage guidelines);
 //       jede Zeile, die einen fremden Urheber nennt (ESA, ©, courtesy …), bleibt liegen. Geholt wird die Größe „~medium“.
 //   { "art": "commons-suche", "suche": "<Suchwort>" } | { "art": "commons", "kategorie": "<Name>" }
+//   { "art": "liste", "datei": "<Pfad einer Anker-Liste>" } — das Listen-Format `url;lizenz;wahrheit;beleg` je Zeile (Zeilen mit # und
+//   die Kopfzeile fallen): die Wahrheit (Klasse oder Jahr) und der Beleg stehen je Datei im Manifest; geholt wird nur von den
+//   benannten Quellen (LISTEN_QUELLEN) mit freier Lizenz, alles andere bleibt beim Namen liegen
 //       Wikimedia Commons: die Lizenz je Datei aus `extmetadata.License`; geholt wird die Vorschau der Breite `breite` (ein Skalierer
 //       für alle Dateien eines Satzes: gleiche Kodierung beider Seiten).
 "use strict";
@@ -83,6 +86,31 @@ async function* commons(a, breite) {
         weiter = r.continue;
     }
 }
+// DIE ANKER-LISTE (`url;lizenz;wahrheit;beleg`): je Zeile ein Kandidat; die Lizenz steht als Wort der Liste (gemeinfrei, PD, CC0,
+// CC BY, CC BY-SA — nie NC oder ND), die Quelle am Wirt der Adresse
+const LISTEN_QUELLEN = /(^|\.)(wikimedia\.org|nasa\.gov|usgs\.gov|noaa\.gov|loc\.gov)$/i;
+const listenLizenz = (w) => /^(gemeinfrei|public domain|pd\b|cc0|cc[ -]by([ -]sa)?([ -]\d(\.\d)?)?$)/i.test(String(w || "").trim()) && !/\b(nc|nd)\b/i.test(w);
+function listeLesen(text) {
+    const aus = [];
+    for (const z of String(text).split(/\r?\n/)) {
+        if (!z.trim() || /^\s*#/.test(z) || /^\s*url\s*;/i.test(z)) continue;
+        const [url, lizenz, wahrheit] = z.split(";").map((s) => s.trim());
+        const beleg = z.split(";").slice(3).join(";").trim();
+        let wirt = "";
+        try {
+            const u = new URL(url);
+            wirt = u.protocol === "https:" ? u.hostname : "";
+        } catch {
+            wirt = "";
+        }
+        const grund = !wirt ? "keine https-Adresse" : !LISTEN_QUELLEN.test(wirt) ? "Quelle nicht benannt: " + wirt : !listenLizenz(lizenz) ? "Lizenz nicht in der Liste: " + (lizenz || "ohne Angabe") : !wahrheit ? "ohne Wahrheit" : !beleg ? "ohne Beleg" : null;
+        aus.push({ titel: decodeURIComponent(String(url).split("/").pop() || url).slice(0, 120), adresse: url, seite: beleg, lizenz: lizenz || "ohne Angabe", urheber: "laut Beleg der Liste", frei: !grund, grund, wahrheit, beleg });
+    }
+    return aus;
+}
+async function* liste(a) {
+    for (const k of listeLesen(fs.readFileSync(path.resolve(a.datei), "utf8"))) yield k;
+}
 async function haupt(argv) {
     const arg = (n, d) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
     const ziel = arg("--ziel");
@@ -103,7 +131,7 @@ async function haupt(argv) {
         s.liegenGeblieben = [];
         let fehler = null;
         try {
-            for await (const k of s.abfrage.art === "nasa" ? nasa(s.abfrage) : commons(s.abfrage, s.breite || 1280)) {
+            for await (const k of s.abfrage.art === "nasa" ? nasa(s.abfrage) : s.abfrage.art === "liste" ? liste(s.abfrage) : commons(s.abfrage, s.breite || 1280)) {
                 if (s.dateien.length >= s.soll) break;
                 if (da.has(k.adresse)) continue;
                 if (!k.frei) { if (s.liegenGeblieben.length < 60) s.liegenGeblieben.push({ titel: k.titel, seite: k.seite, lizenz: k.lizenz, grund: "Lizenz offen: " + k.grund }); continue; }
@@ -116,7 +144,7 @@ async function haupt(argv) {
                 fs.writeFileSync(path.join(dir, name), d.b);
                 welle += d.b.length;
                 da.add(k.adresse);
-                s.dateien.push({ datei: name, adresse: k.adresse, seite: k.seite, titel: k.titel, lizenz: k.lizenz, urheber: k.urheber, sha256: crypto.createHash("sha256").update(d.b).digest("hex"), bytes: d.b.length });
+                s.dateien.push({ datei: name, adresse: k.adresse, seite: k.seite, titel: k.titel, lizenz: k.lizenz, urheber: k.urheber, sha256: crypto.createHash("sha256").update(d.b).digest("hex"), bytes: d.b.length, ...(k.wahrheit ? { wahrheit: k.wahrheit, beleg: k.beleg } : {}) });
             }
         } catch (e) {
             fehler = e.message;
@@ -133,5 +161,22 @@ function summe(M) {
     M.summe = { saetze: M.saetze.length, dateien: alle.length, bytes: alle.reduce((n, f) => n + f.bytes, 0), liegenGeblieben: M.saetze.reduce((n, s) => n + (s.liegenGeblieben || []).length, 0) };
     return M;
 }
-if (require.main === module) haupt(process.argv.slice(2)).then((c) => { process.exitCode = c; }, (e) => { console.error(e.message); process.exitCode = 2; });
-module.exports = { freieLizenz, summe };
+function selbsttest() {
+    const L = listeLesen("url;lizenz;wahrheit;beleg\n# Kommentar\nhttps://upload.wikimedia.org/a/Ort_1950.jpg;CC BY-SA 4.0;1950;https://commons.wikimedia.org/wiki/File:Ort_1950.jpg\nhttps://upload.wikimedia.org/a/b.jpg;CC BY-NC 2.0;wald;https://x\nhttps://beispiel.example/c.jpg;CC0;wald;https://x\nhttp://upload.wikimedia.org/d.jpg;CC0;wald;https://x\nhttps://images-assets.nasa.gov/e.jpg;gemeinfrei;;https://x\nhttps://www.usgs.gov/f.jpg;Public Domain;lava;Beleg; mit Strichpunkt");
+    const F = [
+        ["sechs Zeilen, Kopf und Kommentar fallen", L.length === 6],
+        ["eine freie Zeile trägt Wahrheit und Beleg", L[0].frei && L[0].wahrheit === "1950" && /File:Ort_1950/.test(L[0].beleg)],
+        ["NC bleibt liegen beim Namen", !L[1].frei && /Lizenz nicht in der Liste/.test(L[1].grund)],
+        ["eine fremde Quelle bleibt liegen beim Namen", !L[2].frei && /Quelle nicht benannt: beispiel.example/.test(L[2].grund)],
+        ["http bleibt liegen", !L[3].frei && /keine https-Adresse/.test(L[3].grund)],
+        ["ohne Wahrheit kein Anker", !L[4].frei && L[4].grund === "ohne Wahrheit"],
+        ["der Beleg behält seinen Strichpunkt", L[5].frei && L[5].beleg === "Beleg; mit Strichpunkt"],
+    ];
+    for (const x of F) console.log((x[1] ? "GRÜN " : "ROT  ") + x[0]);
+    const rot = F.filter((x) => !x[1]).length;
+    console.log(F.length - rot + " GRÜN · " + rot + " ROT");
+    return rot ? 1 : 0;
+}
+if (require.main === module && process.argv.includes("--selftest")) process.exitCode = selbsttest();
+else if (require.main === module) haupt(process.argv.slice(2)).then((c) => { process.exitCode = c; }, (e) => { console.error(e.message); process.exitCode = 2; });
+module.exports = { freieLizenz, summe, listeLesen, listenLizenz };
