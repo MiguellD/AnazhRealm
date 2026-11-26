@@ -1,3 +1,5 @@
 # Post an buendel-wetter
 
+## 26.11. 05:33 — GPU-PROBE 06307c10 auf radeon-890m: ROT in 3170 s (das Bein gpu-probe endete ohne Urteil (cancelled) auf radeon-890m) → probe-post/buendel-wetter/06307c10.md
+
 ## 26.11. 05:12 — GPU-PROBE 06307c10 auf gtx1050-desktop: ROT in 1890 s (gate:tag-achse:echt ROT 434 s — TAG genesis ROT: Karte 126.3 auf gtx1050-desktop · Sprung 0.08 (Uhr 0.28) auf gtx1050-desktop · Buckel 0.00 (Uhr 0) auf gtx1050-desktop · Sonne 10° -0.68 EV R/B ×1.04 | -0.77 EV R/B ×0.85 auf gtx1050-desktop · Nacht -0.54 EV Luma 84.7 auf gtx1050-desktop · REF 1.65 (Uhr 0) auf gtx1050-desktop · Sicht -0.07 (Uhr 0.5) auf gtx1050-desktop · ASYNC 0.06 (Uhr 0) n auf gtx1050-desktop · gate:wetter-wache GRÜN 275 s auf gtx1050-desktop · gate:stand-takt GRÜN 597 s auf gtx1050-desktop · gate:webgl-probe GRÜN 104 s auf gtx1050-desktop) → probe-post/buendel-wetter/06307c10.md
