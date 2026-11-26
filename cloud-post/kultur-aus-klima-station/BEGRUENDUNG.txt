@@ -1,0 +1,39 @@
+kultur-aus-klima — Kandidat der Stationen (gegen origin/punkte-maschine 55313a8b)
+
+Datei: stationen.diff (meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js, k2-mensch-kultur.js). Der Zweig des Spiels
+trägt keine Stations-Änderung; dieser Kandidat gehört in punkte-maschine, wenn der Kopf des Spiels landet.
+
+1. karte2.mensch.kopplung.kultur#2 (KULTUR, S2) — die Mutation ist das KLIMA des Orts, nicht das Wetter der Stunde
+   - Vorher: der Fächer setzte das Wetter (`__wetterSetzen("rainy")`), las `_weatherFieldFor().rain` und bestellte den Plan als
+     `{seed, nH}`, also OHNE Klima. Der Deck-Schritt des Plans (fachwerk DORF, `DP.klima`) lief so nie. Ein Dach, das dem Regen der
+     Stunde folgt, wäre kein Gesetz; der Richter-Satz verlangt „Mutation Klima ändert Bau gesetzrichtig“.
+   - Nachher: je Zelle der Auftrag des Spiels (stamm/siedlung-ort.js `_ortDp` → `_zellEingang` → `_siedlungKlima` → gelaende-core
+     `ortKlima`), ohne das Raster des Grunds (das Dach liest keinen Grund). Vier Orte: Heimat (der Auftrag des Spiels), trocken und
+     nass (das Ort-Gesetz `ortGesetz` eines Teils, das sich nur in der Regen-Quote unterscheidet, Δ −0,3 / +0,3) und die Heimat als
+     Gegenlauf. r über (Niederschlag mm/a, mittlere Neigung); Mutation über 64 Paare (trocken ↔ Heimat, nass ↔ Heimat).
+   - Die Zeugen (Wand 3, „der Fächer hält eine Probe über den Leser des Spiels“): `klimaGleich` — das Ort-Gesetz ohne Δ trifft das
+     Klima, das das Spiel der Zelle gibt (32 von 32, sonst ROT beim Namen); `spielGleich` — an den ersten zwei Saaten trägt der
+     VOLLE Auftrag des Spiels (`_ortDp` mit Raster) dieselben Dächer (Kultur, Stil, Deckung, Neigung je Haus) wie der Fächer.
+   - Zwei neue Attrappen fallen ROT beim Namen: „das Klima des Fächers ist ein Zwilling“, „der Plan des Fächers ist nicht der Plan
+     des Spiels“. Die alte Attrappe „der Plan liest den Niederschlag nicht“ bleibt.
+   - Erwartung (node, dasselbe Gesetz, 32 Saaten): r 0,792 · Mutation 100 % · Gegenlauf 32/32 · Dach trocken 2,13° · Heimat
+     51,05° · nass 60,06° (76 · 548 · 1 897 mm/a). Vorher am Gerät: r 0 · Mutation 0 % (GTX 2d6a0447, Radeon f63a69ef).
+
+2. karte2.mensch.kultur.sprache#1 (SPRACHE, S1) — die Namen am Fächer
+   - Vorher: am Messort stadt-voll steht EINE Siedlung (die Metropole des Worts „dorf 7 300“): 1 Ortsname + 600 Personennamen
+     aus EINER Region. „Saaten der Namen ≥ 2“ war dort nie messbar (Akte mensch.kultur.sprache.1.4c9e6aab-gtx: Saaten 1).
+   - Nachher: dazu 32 Zellen der Welt (die Ringe um den Ursprung wie die Kultur-Leiter): je Zelle der Plan der Gießerei mit dem
+     Auftrag des Spiels (`_ortDp`, ohne Raster), sein Ortsname und 20 Bewohner aus dem Leser des Spiels (`_bewohnerLauf` „name“).
+     Der Zweier-Laut-Leser der Station bleibt wörtlich.
+   - Der Zeuge (Wand 3): die ersten 50 Bewohner der geladenen Siedlung, durch denselben Ruf mit nichts als ihrem Plan
+     (`{ plan }`), tragen Name für Name den Namen, den die Welt ihnen gibt (`b.name`); sonst wirft die Leiter beim Namen.
+   - Erwartung (node, dasselbe Gesetz, 32 Zellen der Heimat): Saaten 3 (mitteleuropa · alpin · nordisch), 672 Namen,
+     zugeordnet 0,993. Mit stadt-voll (mediterran) dazu: 4 Saaten.
+
+Die drei Wände (gemessen in der Wolke, 26.11.):
+   - Wand 1 `node punkte.cjs liste`: die Basis trägt genau zwei ROT (gelaende.K2#1/#2 „ruft window.__zielen … (Wand HAKEN)“),
+     der Kandidat dieselben zwei, sonst nichts — am Kopf origin/main 4c9e6aab und am Kopf des Zweigs (1976 Stationen, Fehler 2).
+   - Wand 2 (die Leiter misst ≤ 60 s): der Deckel steht (KULTUR sek 60 wie zuvor, SPRACHE sek 30 → 45). Die Zeit misst nur das
+     Gerät; in der Wolke steht keine GPU-Werkbank. KULTUR rechnet 182 statt 116 Pläne der Gießerei (S2: 4 × 32 + 2 volle
+     Aufträge), SPRACHE 32 Pläne dazu. Offen bis zum ersten Lauf am Gerät.
+   - Wand 3: die Zeugen oben.

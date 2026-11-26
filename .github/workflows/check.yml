@@ -434,7 +434,9 @@ jobs:
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 12
               # Node ohne Browser: gelaende-core in einer vm, drei Welt-Saaten, 4 x 4 km innen + 2 km Rand im 30-m-Raster
               # (Nordstern 4.1, Karte K16). Taeter je Ziel beim Namen; der Selbsttest legt eine Eier-Karton-Stoerung auf und
-              # muss die Senken rot faerben. Dazu der GEBAUTE Boden (Null-Renderer, drei Saaten, 2 x 2 km im 30-m-Raster): Senken
+              # muss die Senken rot faerben. Die Boeschung (`--boeschung`): der Erdbau von Genesis, Stadt und zwei Doerfern laeuft
+              # stetig in die Natur aus (Ring 10-60 m, 0,5-m-Raster, Stufe <= 0,6 m); der Selbsttest pflanzt den harten Schnitt bei
+              # 16 m ein und muss am Genesis-Ort rot werden. Dazu der GEBAUTE Boden (Null-Renderer, drei Saaten, 2 x 2 km im 30-m-Raster): Senken
               # > 1 m und Dorfplaetze am Boden des Spielers mit Kanal und See; der Selbsttest legt die alte Bett-Tiefe auf.
               run: npm run gate:gelaende-realismus
 
