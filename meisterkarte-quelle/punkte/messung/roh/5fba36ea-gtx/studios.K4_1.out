@@ -1,7 +1,0 @@
-$ C:/Program Files/Git/bin/bash.exe -c set -u; K=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte'); A=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\studios.K4_1.json'); export WERKBANK_PORT=$((7804+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" 7804 10
-@@PUNKTE@@ FRIST 4 s der Probe gerissen — Studio garage und die folgenden ausgelassen
-K4 Gerät der Bühne: ungenannt
-K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (0 s)
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
