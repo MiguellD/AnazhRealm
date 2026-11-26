@@ -358,6 +358,15 @@ function urteil(b) {
             else if (k.trocken > 0) rot("K12 KÜSTE", k);
         }
     }
+    // K12 bei Ebbe: die Linse steht, der Spiegel ohne die Gezeit fällt (sonst sieht die Linse die Tide nicht)
+    if (b.leserEbbe) {
+        const e = b.leserEbbe;
+        const ke = (e.echt && e.echt.kueste) || {};
+        const km = (e.mutant && e.mutant.kueste) || {};
+        if (!(ke.sichtbar >= 20)) rot("K12 EBBE LEER", ke);
+        else if (ke.trocken > 0) rot("K12 EBBE KÜSTE", ke);
+        if (!(km.trocken > 0)) rot("K12 SELBSTTEST: der Spiegel ohne Tide fällt nicht", km);
+    }
     // K12 M — die Mutation der EINEN Wahrheit (Gelände K4): jeder Leser liest vorher trocken und folgt im Takt danach (am See
     // der Mess-Wiese, K4 ÜBERALL an Zufalls-Orten der Karte); die Kontrolle folgt nie (sonst trifft die Mutation den Kern nicht)
     const mutation = (m, wo) => {
@@ -712,6 +721,7 @@ function selbsttest() {
             kueste: { sichtbar: 110, trocken: 0 },
             beispiele: { klang: [], kueste: [] },
         },
+        leserEbbe: { echt: { kueste: { sichtbar: 96, trocken: 0, stufe: -35 } }, mutant: { kueste: { sichtbar: 220, trocken: 124, stufe: -35 } } },
         mutation: {
             punkte: 50,
             versuche: 546,
@@ -932,6 +942,10 @@ function selbsttest() {
         ["K12 KLANG", ["leser.klang=", 163]],
         ["K12 KÜSTE", ["leser.kueste.trocken=", 110]],
         ["K12 LEER", ["leser.kueste.sichtbar=", 0]],
+        // K12 bei Ebbe (Richter-Entscheid 25.11.): die Linse am Ruhe-Spiegel zählte 124 von 164 Spalten trocken; der Mutant ohne die
+        // Gezeit, der nicht fällt, ist eine blinde Linse
+        ["K12 EBBE KÜSTE", ["leserEbbe.echt.kueste.trocken=", 124]],
+        ["K12 SELBSTTEST: der Spiegel ohne Tide fällt nicht", ["leserEbbe.mutant.kueste.trocken=", 0]],
         ["K6 BAUMLOS", ["koerper.baumlos.sohleUnterSpiegel=", 0]],
         // K12 M an der Basis e3dd2b67: die Spalten-Probe las ihre Obergrenze selbst — Klang, Trink-Ziel, Natur-Wand und Land
         // blieben im See der Wahrheit an 50 von 50 Punkten trocken
@@ -1243,7 +1257,7 @@ async function lauf() {
                 befund.bank = await page.evaluate((o) => window.__wasserBank({ ort: [o.fluss.x, o.fluss.z] }), ORTE);
             // (sie stellt die Welt an den See und an die Küste): die Leser der EINEN Wahrheit
             if (soll("leser"))
-                befund.leser = await page.evaluate((o) => window.__wasserLeser({ orte: [o.see.ufer, o.kueste] }), ORTE);
+                befund.leser = await page.evaluate((o) => window.__wasserLeser({ orte: [o.see.ufer, o.kueste], kueste: o.kueste, meer: o.meer }), ORTE);
             if (soll("mutation"))
                 befund.mutation = await page.evaluate((o) => window.__wasserMutation({ ort: o.see.ufer }), ORTE);
             // K4 Staffel 2 über die Karte: die Läufe, die Mutation an Zufalls-Orten, die Strömung an Fluss-Orten
@@ -1275,6 +1289,21 @@ async function lauf() {
                 befund.graben = await page.evaluate((f) => window.__wasserGraben({ fluss: f }), ORTE.fluss);
             }
             if (soll("damm")) befund.damm = await page.evaluate((f) => window.__wasserDamm({ fluss: f }), ORTE.fluss);
+            // K12 SELBSTTEST (Richter-Entscheid 25.11.), ganz zuletzt (er stellt die Stunde der Gezeit): zum ersten Niedrigwasser des
+            // Gesetzes (gelaende-core `GEZEIT`: T_M2 / 4) steht die Linse mit trocken 0, und der Spiegel ohne die Gezeit fällt ROT
+            if (soll("leser"))
+                befund.leserEbbe = await page.evaluate(async (o) => {
+                    const r = window.anazhRealm;
+                    r._gezeitStunde = () => window.__gelaendeCore.GEZEIT.teile[0].stunden / 4;
+                    r._pegelTakt();
+                    try {
+                        const a = { orte: [o.kueste], kueste: o.kueste, meer: o.meer };
+                        return { echt: await window.__wasserLeser(a), mutant: await window.__wasserLeser(Object.assign({ ohneTide: true }, a)) };
+                    } finally {
+                        delete r._gezeitStunde;
+                        r._pegelTakt();
+                    }
+                }, ORTE);
         }
         const v = urteil(befund);
         console.log(JSON.stringify(befund, null, 1));

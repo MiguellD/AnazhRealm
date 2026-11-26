@@ -1,0 +1,208 @@
+{
+ "adapter": {
+  "vendor": "webgl2",
+  "architecture": "Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE))",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+ },
+ "backend": {
+  "gl": true,
+  "gpu": false
+ },
+ "ring": {
+  "takte": 84,
+  "chunks": 81
+ },
+ "holz": "voll",
+ "kamera": {
+  "p": [
+   0,
+   40,
+   10390
+  ],
+  "l": [
+   0,
+   -3,
+   10620
+  ]
+ },
+ "bild": [
+  960,
+  540
+ ],
+ "ebbe": {
+  "H": 3.1,
+  "stunde": 3.1,
+  "kVor": 0,
+  "k": -35,
+  "markiert": 42,
+  "takte": 43,
+  "wandMs": 92388.16,
+  "tickMax": 284,
+  "tickSumme": 2074.45,
+  "quer": "00100001111",
+  "spieler": [
+   0,
+   -2.17,
+   10590
+  ],
+  "chunks": 81
+ },
+ "ebbeBild": {
+  "treffer": [
+   {
+    "d": 621,
+    "p": [
+     355,
+     -301,
+     10767
+    ],
+    "kette": "himmel<Scene"
+   },
+   {
+    "d": 671,
+    "p": [
+     161,
+     -336,
+     10921
+    ],
+    "kette": "himmel<Scene"
+   },
+   {
+    "d": 75,
+    "p": [
+     -18,
+     -3,
+     10449
+    ],
+    "kette": "nahWiese:Lf:1:0<Scene"
+   },
+   {
+    "d": 621,
+    "p": [
+     -355,
+     -301,
+     10767
+    ],
+    "kette": "himmel<Scene"
+   },
+   {
+    "d": 652,
+    "p": [
+     0,
+     -434,
+     10837
+    ],
+    "kette": "himmel<Scene"
+   }
+  ],
+  "k": -35,
+  "gewendet": true,
+  "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel ungenannt · Luma 105.8 σ 21.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.418 · Bühne summer sunny 0.50 · Gerät WebGL"
+ },
+ "ohne": {
+  "H": 0,
+  "stunde": 3.1,
+  "kVor": -35,
+  "k": -35,
+  "markiert": 0,
+  "takte": 0,
+  "wandMs": 0.45,
+  "tickMax": 0,
+  "tickSumme": 0,
+  "quer": "00100001111",
+  "spieler": [
+   0,
+   -2.17,
+   10590
+  ],
+  "chunks": 81
+ },
+ "flut": {
+  "H": 9.3,
+  "stunde": 9.3,
+  "kVor": -35,
+  "k": 35,
+  "markiert": 73,
+  "takte": 75,
+  "wandMs": 66816.07,
+  "tickMax": 115.47,
+  "tickSumme": 3416.55,
+  "quer": "01111111111",
+  "spieler": [
+   0,
+   -1.99,
+   10590
+  ],
+  "chunks": 81
+ },
+ "flutBild": {
+  "treffer": [
+   {
+    "d": 620,
+    "p": [
+     355,
+     -301,
+     10767
+    ],
+    "kette": "himmel<Scene"
+   },
+   {
+    "d": 670,
+    "p": [
+     161,
+     -336,
+     10921
+    ],
+    "kette": "himmel<Scene"
+   },
+   {
+    "d": 670,
+    "p": [
+     -161,
+     -336,
+     10921
+    ],
+    "kette": "himmel<Scene"
+   },
+   {
+    "d": 620,
+    "p": [
+     -355,
+     -301,
+     10767
+    ],
+    "kette": "himmel<Scene"
+   },
+   {
+    "d": 652,
+    "p": [
+     0,
+     -434,
+     10837
+    ],
+    "kette": "himmel<Scene"
+   }
+  ],
+  "k": 35,
+  "gewendet": true,
+  "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel ungenannt · Luma 85.2 σ 31 schwarz 0.0 % weiß 0.0 % · Stand 18.546.418 · Bühne summer sunny 0.50 · Gerät WebGL"
+ },
+ "stufe": {
+  "H": 9.75,
+  "stunde": 9.75,
+  "kVor": 35,
+  "k": 34,
+  "markiert": 72,
+  "takte": 74,
+  "wandMs": 61782.06,
+  "tickMax": 81.46,
+  "tickSumme": 2892.09,
+  "quer": "01111111111",
+  "spieler": [
+   0,
+   -2.02,
+   10590
+  ],
+  "chunks": 81
+ }
+}

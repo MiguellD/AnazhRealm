@@ -1067,6 +1067,7 @@ async function himmelProbe(page, schein) {
                 AnazhRealm.MOONLIGHT = Object.freeze({ ...MO, intensity: 0 });
                 r._atmoSternenLicht = () => [0, 0, 0];
             }
+            let ankerSpaet = null;
             try {
             const uhr = (t) => {
                 if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0: die Uhr nimmt den Spieler nicht (" + t + ")");
@@ -1074,6 +1075,23 @@ async function himmelProbe(page, schein) {
             const lum = luma709;
             r._setWeather("sunny", "human");
             window.__uebergangFaellt(r);
+            // DIE SONNE STEHT AN IHREM ORT, BEVOR GEMESSEN WIRD (nacht-himmel, S0-Rennen): das EINE Prädikat der Ankunft
+            // (`_belichtungSteht`, Term „licht“ — erst mit dem Anker des Planet-Fadens, `_sonnenAnker`). Bis dahin maß die Probe
+            // ab spiel 1,5 s auf der Bahn der Bühne, und die Antwort des Fadens (`_sonnenAnkerFragen` → `_himmelSprung`) landete
+            // bei spiel ≈ 2,0–2,1 s im Messfenster: Umgebung der alten Bahn gegen den Ort der neuen, −20,0 % (GTX, uhr 0,3).
+            for (let q = 0; q < 600 && !s._belichtungSteht; q++) await window.__takte(1, 16);
+            if (!s._belichtungSteht) {
+                out.befunde.push(
+                    "S0 Himmel: die Sonne steht nach 600 Takten nicht an ihrem Ort (`_belichtungSteht` offen, Anker " +
+                        (r._sonnenAnker ? "da" : "fehlt — `_sonnenAnkerFragen`") +
+                        ") — die Probe mäße die Bahn der Bühne"
+                );
+                return out;
+            }
+            // `anker-spaet` (der Selbsttest): die Antwort des Planet-Fadens kommt erst NACH der ersten Malung (wie im Rennen) —
+            // die Probe MUSS „die Sonne sprang im Messfenster“ nennen
+            ankerSpaet = schein === "anker-spaet" ? r._sonnenAnker : null;
+            if (ankerSpaet) r._sonnenAnker = null;
             uhr(0.3);
             if (!(await r._himmelFrisch())) {
                 out.befunde.push("S0 Himmel: keine Lesung der Umgebung (`_himmelFrisch`) — die Probe ist blind");
@@ -1084,12 +1102,24 @@ async function himmelProbe(page, schein) {
                 const nr0 = s._skyEnvLeseNr || 0;
                 uhr(t);
                 const gemalt = (s._skyEnvLeseNr || 0) !== nr0; // der Sprung malt die Umgebung der neuen Stunde
+                const sonneGemalt = r._dayNightSunDirection(r._sonnenWinkel(s.timeOfDay));
                 await s._skyEnvLesung;
                 delete r._ensureSkyEnvironment;
+                if (ankerSpaet && !r._sonnenAnker) {
+                    r._sonnenAnker = ankerSpaet; // die späte Antwort des Fadens, wie sie im Rennen landete
+                    r._himmelSprung = true;
+                }
                 const env = r._himmelsIrradianz();
                 const sprung = env ? Math.PI * lum(env.oben) : 0;
                 const ort = lum(r._himmelsBestrahlung([0, 0, 0]));
                 const ziffern = (x) => +x.toPrecision(4);
+                const sonneGelesen = r._dayNightSunDirection(r._sonnenWinkel(s.timeOfDay));
+                if (sonneGelesen.distanceTo(sonneGemalt) > 1e-6)
+                    out.befunde.push(
+                        `S0 Himmel: die Sonne sprang im Messfenster — gemalt bei y ${sonneGemalt.y.toFixed(4)}, gelesen bei y ` +
+                            `${sonneGelesen.y.toFixed(4)}: ein Schreiber der Bahn (\`_sonnenAnker\` aus \`_sonnenAnkerFragen\`) landete ` +
+                            "zwischen Malung und Lesung, die Umgebung trägt die alte Bahn"
+                    );
                 const sonneY = r._dayNightSunDirection(r._sonnenWinkel(s.timeOfDay)).y;
                 const sterne = t === 0 ? Math.PI * __weltLicht.nachtHimmel(r._tagAchse(sonneY)) : null;
                 out.himmel.push({ uhr: t, gemalt, sprung: ziffern(sprung), ort: ziffern(ort), sterne: sterne == null ? null : ziffern(sterne) });
@@ -1109,6 +1139,7 @@ async function himmelProbe(page, schein) {
                     );
             }
             } finally {
+                if (ankerSpaet && !r._sonnenAnker) r._sonnenAnker = ankerSpaet;
                 if (schein === "nachtlos") {
                     AnazhRealm.MOONLIGHT = MO;
                     delete r._atmoSternenLicht;
@@ -1288,7 +1319,7 @@ async function lichtLauf() {
             await page.evaluate(S0_GESTALT_INSTALL);
             await page.evaluate(LINSEN_INSTALL);
         });
-        for (const schein of SELBSTTEST ? [null, "taub", "nachtlos"] : [null]) {
+        for (const schein of SELBSTTEST ? [null, "taub", "nachtlos", "anker-spaet"] : [null]) {
             himmel[schein || "sauber"] = await phase(schein ? "Himmel " + schein : "Himmel", () => himmelProbe(page, schein));
             zeit(schein ? `der Himmel (Schein ${schein}) gemessen` : "der Himmel nach dem Sprung gemessen");
         }
@@ -1982,7 +2013,7 @@ async function lichtLauf() {
     for (const [k, e] of Object.entries(himmel))
         for (const h of e.himmel)
             console.log(
-                `  S0 HIMMEL${k === "taub" ? " SCHEIN (der Maler taub)" : k === "nachtlos" ? " SCHEIN (die Nacht ohne Mond und Sterne)" : ""}: nach dem Sprung auf ${h.uhr === 0 ? "Mitternacht" : "Mittag"} ` +
+                `  S0 HIMMEL${k === "taub" ? " SCHEIN (der Maler taub)" : k === "nachtlos" ? " SCHEIN (die Nacht ohne Mond und Sterne)" : k === "anker-spaet" ? " SCHEIN (der Anker nach der Malung)" : ""}: nach dem Sprung auf ${h.uhr === 0 ? "Mitternacht" : "Mittag"} ` +
                     `Umgebung ${h.sprung} · Himmel des Orts ${h.ort}${h.sterne == null ? "" : ` · das Sternen-Licht des Gesetzes π · nachtHimmel ${h.sterne} (Umgebung : Sterne ${h.sterne > 0 ? (h.sprung / h.sterne).toPrecision(4) : "—"})`} · ${h.gemalt ? "gemalt" : "UNGEMALT"}`
             );
     if (himmel.sauber) befunde.push(...himmel.sauber.befunde);
@@ -2143,6 +2174,11 @@ async function lichtLauf() {
         console.log(
             `  SELBSTTEST S0 HIMMEL (der Maler taub): ${taubGetroffen ? `getroffen — ${hb.find((b) => /Mitternacht/.test(b)).split(" — ")[0]}` : "BLIND " + JSON.stringify(hb)}`
         );
+        const ha = himmel["anker-spaet"]?.befunde || [];
+        const ankerGetroffen = ha.find((b) => /^S0 Himmel: die Sonne sprang im Messfenster/.test(b));
+        console.log(
+            `  SELBSTTEST S0 HIMMEL (der Anker des Planet-Fadens kommt nach der Malung): ${ankerGetroffen ? "getroffen — " + ankerGetroffen.split(": ein Schreiber")[0] : "BLIND " + JSON.stringify(ha)}`
+        );
         const hn = himmel.nachtlos?.befunde || [];
         const nachtlosGetroffen = hn.find((b) => /^S0 Himmel: der Himmel der Nacht fehlt/.test(b));
         console.log(
@@ -2195,7 +2231,7 @@ async function lichtLauf() {
         console.log(
             `  SELBSTTEST S0 MESSER (der Messer blind für den Pool am Boden des Bilds): ${messerGetroffen ? "getroffen — " + mm.befund.split(" (k ")[0] : "BLIND " + JSON.stringify(mm)}`
         );
-        pass = pass && messerGetroffen && taubGetroffen && !!nachtlosGetroffen && !!kameraTreffer && stoffTreffer && wurfGetroffen && bruchGetroffen && sichtGetroffen;
+        pass = pass && messerGetroffen && taubGetroffen && !!nachtlosGetroffen && !!ankerGetroffen && !!kameraTreffer && stoffTreffer && wurfGetroffen && bruchGetroffen && sichtGetroffen;
     }
     console.log(
         `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} · Nacht ${JSON.stringify(nacht && { ...nacht.grund, gesetz: nacht.gesetz && nacht.gesetz.luma })} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`

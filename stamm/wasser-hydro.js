@@ -68,6 +68,13 @@ class AnazhRealm_wasser_hydro {
         return globalThis.__gelaendeCore.atlasSpiegel(this._gelaende(), x, z, terrainTopY, aus);
     }
 
+    // Der Spiegel des LANDS (gelaende-core `landSpiegel`: `atlasSpiegel` zum höchsten Hochwasser) — was bleibt, fragt die Welt
+    // zeitlos: ein Ort, ein Baum, ein Fundament stehen über der Springflut, nie auf dem Watt, das die Ebbe gerade freigibt. Leser: `_landAt` (das
+    // Gesetz im Land eines Werks) und der Wald (`waterYAt`, der Zwilling des Fadens `landWaterLevelAt`).
+    _landSpiegelAt(x, z, terrainTopY) {
+        return globalThis.__gelaendeCore.landSpiegel(this._gelaende(), x, z, terrainTopY);
+    }
+
     // DER PEGEL DER WELT (stoffe.K3-2, wetter.K3, gelaende-core `pegelTafel`): der Hub jedes Sees und Flusses über seinem
     // Ruhe-Spiegel je Höhe und Lag-Klasse seines Laufs — die Schmelze am Tag der Saison auf dem Feld dieser Naht (je Tag der Welt,
     // `pegelSchmelze`) und der Lauf des Regens zur Welt-Uhr (`pegelLauf`: die Faltung der Stempel des Regens, `_regenStempel`,
@@ -315,8 +322,80 @@ class AnazhRealm_wasser_hydro {
     // Lag-Klasse, deren Wasser den Chunk erreicht (gelaende-core `pegelKlassen`, je Chunk und Region gemerkt), über den Höhen, die
     // sein Wasser tragen kann (die Makro-Höhe seiner Mitte ± PEGEL_RAND_M); "" wo nichts steigt oder fällt und wo kein Lauf und kein
     // See den Chunk erreicht (der Schlüssel bleibt).
+    // DIE GEZEIT TRÄGT DIESELBE MARKE (planet.wasser.gezeiten): ein Chunk am Meer trägt die Stufe des Meers (`g` + k), ein Chunk
+    // im Watt, sobald die Flut seine niedrigste Schwelle erreicht — der Platten-Schlüssel hält je Stufe die Bytes ihres Spiegels,
+    // ein Auftrag, unter dem die Stufe wechselte, verfällt, und der Takt baut genau die Chunks, deren Stufe wechselt.
     _pegelMarke(cx, cz) {
-        return this._pegelMarkeVon(this._pegelGilt(), cx, cz);
+        return this._pegelMarkeVon(this._pegelGilt(), cx, cz) + this._gezeitMarke(this._gezeitGilt(), cx, cz);
+    }
+    // DIE GEZEIT DES MEERS (planet.wasser.gezeiten #1/#2, gelaende-core `GEZEIT`): der Träger { stunde, k } zur Welt-Uhr — die
+    // Stunde der Gezeit (`_gezeitStunde`), k die Stufe des Hubs. Der Träger wechselt nur mit der Stufe (`_pegelTakt`: je Sekunde
+    // der Welt-Uhr gefragt); die Lage liest ihn (`_gelaende().gezeit`), der Faden bekommt ihn im Stand.
+    _gezeitStand() {
+        const t = this._gezeitStunde();
+        const alt = this._gezeitTraeger;
+        if (alt && alt.k === globalThis.__gelaendeCore.gezeitStufe(t)) return alt;
+        return globalThis.__gelaendeCore.gezeitStand(t);
+    }
+    // DIE STUNDE DER GEZEIT: die Kalender-Zeit (`_kalenderZeit`: die Welt-Uhr, sie reist mit dem Stand, geht nie zurück, stetig
+    // über den Regler der Tag-Länge) in Stunden des Kalenders seit der Welt-Uhr 0 — jede Geburt beginnt im Mittel (η = 0, byte-
+    // gleich wie vor der Gezeit), auch ein Stand von vor dem Schnitt (sein Null-Punkt `tagNull` eicht den Tag der Prozesse auf den
+    // Tag der Sicht, die Prüfbühne bootete so zur Stunde 12, +0,30 m an ihrer Furt). Die Uhr des Spielers bewegt kein Meer.
+    // Leser: `_gezeitStand` und die Linse (gate:worker-dichte --gezeit).
+    _gezeitStunde() {
+        const K = this._kalender();
+        return (K.tagStunden * this._kalenderZeit()) / K.normS;
+    }
+    _gezeitGilt() {
+        if (this._gezeitTraeger === undefined) this._gezeitTraeger = this._gezeitStand();
+        return this._gezeitTraeger;
+    }
+    // Die Marke der Gezeit am Chunk (cx, cz) unter dem Träger g: "" ohne Meer und ohne geflutetes Watt in seinem Fuß (die
+    // Hydro-Zellen unter ihm samt Rand, je Chunk und Region gemerkt — `_gezeitOrt`), sonst die Stufe.
+    _gezeitMarke(g, cx, cz) {
+        if (!g) return "";
+        const o = this._gezeitOrt(cx, cz);
+        return o.meer || (o.watt > 0 && g.k >= o.watt) ? "g" + g.k : "";
+    }
+    _gezeitOrt(cx, cz) {
+        const K = globalThis.__gelaendeCore;
+        const L = this._gelaende();
+        const { span } = this._voxelChunkConfig();
+        const key = cx + "," + cz;
+        const [x0, z0, x1, z1] = [cx * span, cz * span, (cx + 1) * span, (cz + 1) * span];
+        const reg = [
+            [x0, z0],
+            [x1, z0],
+            [x0, z1],
+            [x1, z1],
+        ].map(([x, z]) => K.hydroRegion(L, x, z));
+        if (!this._gezeitOrte) this._gezeitOrte = new Map();
+        const o = this._gezeitOrte.get(key);
+        if (o && !o.reg.some((h, i) => h !== reg[i])) return o;
+        let meer = false;
+        let watt = 0;
+        for (const h of new Set(reg)) {
+            if (!h || !h.ready || !h.water) {
+                meer = true; // jenseits der Regionen ist das Meer der Default-Körper (`atlasSpiegel`)
+                continue;
+            }
+            const c = h.cell;
+            const i0 = Math.max(0, Math.floor((x0 - h.originX) / c) - 1);
+            const i1 = Math.min(h.dim - 1, Math.floor((x1 - h.originX) / c) + 1);
+            const j0 = Math.max(0, Math.floor((z0 - h.originZ) / c) - 1);
+            const j1 = Math.min(h.dim - 1, Math.floor((z1 - h.originZ) / c) + 1);
+            if (i0 > i1 || j0 > j1) continue;
+            for (let j = j0; j <= j1; j++)
+                for (let i = i0; i <= i1; i++) {
+                    const idx = i + j * h.dim;
+                    if (h.water.waterKind[idx] === 1) meer = true;
+                    const w = h.water.wattK ? h.water.wattK[idx] : 0;
+                    if (w > 0 && (watt === 0 || w < watt)) watt = w;
+                }
+        }
+        const neu = { reg, meer, watt };
+        this._gezeitOrte.set(key, neu);
+        return neu;
     }
     _pegelMarkeVon(T, cx, cz) {
         if (!T) return "";
@@ -366,22 +445,35 @@ class AnazhRealm_wasser_hydro {
     // die neue Tafel — der Faden bekommt sie als Änderung (`_voxelZustandPost`), neu gebaut werden genau die gezeichneten Chunks mit
     // Wasser, deren Marke wechselt (ihr Lauf, ihr See, ihre Höhen), und die Netze im Vorrat mit Wasser und gewechselter Marke
     // fallen. Es kostet, was der Hub überstreicht (Gebot 7): kein Chunk ohne Wasser, kein Wasser eines anderen Laufs.
+    // DIE GEZEIT GEHT DENSELBEN TAKT (planet.wasser.gezeiten): wechselt die Stufe des Meers, trägt die Welt den neuen Träger (der
+    // Faden bekommt ihn als Änderung), neu gebaut werden die gezeichneten Chunks, deren Marke der Gezeit wechselt — Meer und
+    // geflutetes Watt, mit oder ohne Wasser (das Watt bekommt es) —, und das Fern-Wasser baut neu (sein Stempel trägt den Träger).
     _pegelTakt() {
         const alt = this._pegelTafelGilt;
         if (alt === undefined) return;
         const neu = this._pegelTafel();
-        if (neu === alt) return;
+        const gAlt = this._gezeitTraeger;
+        const gNeu = gAlt === undefined ? undefined : this._gezeitStand();
+        if (neu === alt && gNeu === gAlt) return;
         this._pegelTafelGilt = neu;
-        this._voxelZustandPost({ type: "state-update", delta: { pegel: neu } });
+        this._gezeitTraeger = gNeu;
+        const delta = {};
+        if (neu !== alt) delta.pegel = neu;
+        if (gNeu !== gAlt) delta.gezeit = gNeu;
+        this._voxelZustandPost({ type: "state-update", delta });
         const st = this.state;
         const WATER = AnazhRealm.CELL_STATE.WATER;
-        // trägt der Eintrag `e` (ein gezeichneter Chunk, ein Netz im Vorrat) Wasser, und wechselt die Marke seines Chunks?
+        // trägt der Eintrag `e` (ein gezeichneter Chunk, ein Netz im Vorrat) Wasser, und wechselt die Marke seines Chunks? Die Marke
+        // der Gezeit trifft jeden Chunk, dessen Stufe wechselt — auch den trockenen im Watt, den die Flut erreicht.
         const trifft = (e, key) => {
-            const w = e && e.waterCells;
+            if (!e) return false;
+            const [cx, cz] = key.split(",").map(Number);
+            if (gNeu !== gAlt && this._gezeitMarke(gAlt, cx, cz) !== this._gezeitMarke(gNeu, cx, cz)) return true;
+            if (neu === alt) return false;
+            const w = e.waterCells;
             if (!w || !w.length) return false;
             if (e._nass === undefined) e._nass = w.includes(WATER);
             if (!e._nass) return false;
-            const [cx, cz] = key.split(",").map(Number);
             return this._pegelMarkeVon(alt, cx, cz) !== this._pegelMarkeVon(neu, cx, cz);
         };
         if (st.voxelChunks && st.voxelChunks.size) {

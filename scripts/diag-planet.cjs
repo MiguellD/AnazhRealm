@@ -541,11 +541,11 @@ function saatZeit(samen) {
   return out;
 }
 // R2 ort.delta.null: am Anker (t = 0) ist jedes Feld von planetOrt().delta Object.is(…, 0), das Verhältnis der Spende und des Wuchses (Krautschicht,
-// Wald) genau 1 und jede der 81 Stützen 0
-function deltaNull(dl) { if (!dl || !dl.leit) return false; const z = (v) => Object.is(v, 0);
+// Wald) genau 1 (die 81 Leit-Stützen fielen mit gegenwart#2: kein Leser)
+function deltaNull(dl) { if (!dl || !dl.wildnis) return false; const z = (v) => Object.is(v, 0);
   return Object.values(dl.wildnis).every(z) && z(dl.meer.waterLevelM) && ['sommer', 'winter', 'tagAmp', 'sommerPhase'].every(f => z(dl.klima[f])) && dl.klima.spendeVerh === 1 &&
     !!dl.wuchs && dl.wuchs.decke === 1 && dl.wuchs.wald === 1 && !!dl.eis && z(dl.eis.zeit) &&
-    ['windX', 'windZ', 'regenQuote', 'sturmQuote', 'nebelQuote'].every(f => z(dl.wetter[f])) && Array.from(dl.leit.huelleM).every(z) && Array.from(dl.leit.landC).every(z); }
+    ['windX', 'windZ', 'regenQuote', 'sturmQuote', 'nebelQuote'].every(f => z(dl.wetter[f])); }
 // R3 zeit.reise: 256 Orte je Saat, t0 = 0 → t1 = −100 Ma mit planetOrtDerZeit; Kruste bleibt Kruste; hin und zurück (Kruste) ≤ 10⁻⁹ rad
 // (Sehne der Einheitsvektoren); wo die Rückreise eine andere Scholle findet (Überdeckung zweier Krusten), steht es beim Namen
 function zeitReise(plan, samen, Q = P) { const t0 = 0, t1 = -100, S1 = Q.planetScheibe(plan, t1), k = Q.planetHash('zeitreise|' + samen), o = {}, b = {}, q = {};
@@ -583,7 +583,7 @@ function urteilBau3(R, extra) {
   const bo = R.reduce((a, r) => a + r.bereich.orte, 0), bi = R.reduce((a, r) => a + r.bereich.inBereich, 0);
   zeile('ort.bereich', bi === bo && z(r => r.anker.wl) === n, bi + '/' + bo + ' Land-Orte mit allen Reglern in min…max (per Bau: geklemmt); waterLevelM am Anker t = 0 genau −3 in ' + z(r => r.anker.wl) + '/' + n, '100 %; Object.is −3');
   { const s = (f) => R.reduce((a, r) => a + r.reise[f], 0); zeile('zeit.reise', s('krOk') === s('krN') && s('rtOk') === s('rtN'), 'Kruste bei 0 Ma ist Kruste bei −100 Ma: ' + s('krOk') + '/' + s('krN') + '; hin und zurück ≤ 10⁻⁹ rad ' + s('rtOk') + '/' + s('rtN') + ' (davon ' + s('ueber') + ' mit anderer Scholle auf dem Rückweg: Überdeckung zweier Krusten; größte Sehne der übrigen ' + Math.max(...R.map(r => r.reise.mx)).toExponential(1) + '); Ozean-Boden, den es bei −100 Ma nicht gab: ' + s('nicht') + '/' + s('n'), 'Kruste 100 %; hin und zurück ≤ 10⁻⁹ rad'); }
-  zeile('ort.delta.null', z(r => r.deltaNull) === n, 'am Anker t = 0 jedes Δ-Feld +0, Spende-Verhältnis 1, 81 Leit-Stützen 0 in ' + z(r => r.deltaNull) + '/' + n, '30/30');
+  zeile('ort.delta.null', z(r => r.deltaNull) === n, 'am Anker t = 0 jedes Δ-Feld +0, Spende-Verhältnis 1 in ' + z(r => r.deltaNull) + '/' + n, '30/30');
   if (extra.ortKosten) zeile('ort.kosten', extra.ortKosten.ok, extra.ortKosten.wert, 'planetOrt ≤ 1 ms, planetAnker ≤ 10 ms, gleiche Bytes');
   if (extra.leser) leserZeile(zeile, extra.leser);
   return U;
@@ -624,7 +624,7 @@ function leserZeile(zeile, L) { zeile('ort.leser', L.n >= 1, 'Leser des Kerns im
 // am Anker jeder Saat (dieselbe Funktion deltaNull wie bau3), und ort.leser
 function urteilOrt(saaten) { const og = ortGesetz(), U = [], zeile = (name, ok, wert, schwelle) => U.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle }); let n = 0, sued = 0;
   for (const s of saaten) { const plan = planVon(s), S0 = P.planetScheibe(plan, 0), A = P.planetAnker(plan, 0, og); if (A.breite < 0) sued++; if (deltaNull(P.planetOrt(S0, A.breite, A.laenge, og).delta)) n++; }
-  zeile('ort.delta.null', n === saaten.length, 'am Anker t = 0 jedes Δ-Feld +0 (samt der Jahres-Phase), Spende-Verhältnis 1, 81 Leit-Stützen 0 in ' + n + '/' + saaten.length + ' (davon ' + sued + ' Anker auf der Süd-Halbkugel)', saaten.length + '/' + saaten.length);
+  zeile('ort.delta.null', n === saaten.length, 'am Anker t = 0 jedes Δ-Feld +0 (samt der Jahres-Phase), Spende-Verhältnis 1 in ' + n + '/' + saaten.length + ' (davon ' + sued + ' Anker auf der Süd-Halbkugel)', saaten.length + '/' + saaten.length);
   leserZeile(zeile, leserImSpiel()); landungZeile(zeile); return U; }
 // ort.landung (K5, w28-reise-ort): 400 Land-Ziele des Samens der Welt (gleichverteilt auf der Kugel, Land im Relief des Planeten, fuss
 // 16 km wie der Satz „reise"), je Ziel die Geburt wie im Spiel — das Erbgut des Orts (`ortErbgut` aus der Heimat), die Reihe der
@@ -1280,10 +1280,10 @@ function selbsttest() {
     const sv = schrittVerhaeltnis(iouSchritte(mk, Wz, Hz)); zeile('zeit.schritt feuert', sv < 0.9, 'gepflanzt: Kontinent springt um 100 Pixel in einem Schritt → kleinster ÷ Median ' + sv.toFixed(3) + ' → ROT'); }
   { const Wi = 512, Hi = 256, mI0 = new Uint8Array(Wi * Hi), mI1 = new Uint8Array(Wi * Hi); for (let r2 = 100; r2 < 160; r2++) for (let i = 100; i < 200; i++) { mI0[r2 * Wi + i] = 1; mI1[r2 * Wi + i] = 1; } mI1[128 * Wi + 300] = 1;
     const dI = kuestenVersatz(mI1, mI0, Wi, Hi, 6371), gI = ohnePartnerNachGroesse(mI1, Wi, Hi, 6371, dI); zeile('zeit.insel teilt', gI.klein > 0 && gI.gross === 0, 'gepflanzt: Insel aus einem Pixel taucht auf → ohne Partner an Stücken ≥ 10⁴ km² ' + gI.gross + ' · darunter ' + gI.klein); }
-  { const dl = { wildnis: { land: 0 }, meer: { waterLevelM: 0 }, klima: { sommer: 0, winter: 0, tagAmp: 0, sommerPhase: 0, spendeVerh: 1 }, wetter: { windX: 0, windZ: 0, regenQuote: 0, sturmQuote: 0, nebelQuote: 0 }, wuchs: { decke: 1, wald: 1 }, eis: { zeit: 0 }, leit: { huelleM: new Float64Array(81), landC: new Float64Array(81) } };
-    const vorher = deltaNull(dl); dl.leit.huelleM[40] = 1e-12; zeile('ort.delta.null feuert', vorher && !deltaNull(dl), 'gepflanzt: eine Leit-Stütze 10⁻¹² m neben dem Anker → ROT');
+  { const dl = { wildnis: { land: 0 }, meer: { waterLevelM: 0 }, klima: { sommer: 0, winter: 0, tagAmp: 0, sommerPhase: 0, spendeVerh: 1 }, wetter: { windX: 0, windZ: 0, regenQuote: 0, sturmQuote: 0, nebelQuote: 0 }, wuchs: { decke: 1, wald: 1 }, eis: { zeit: 0 } };
+    const vorher = deltaNull(dl); dl.meer.waterLevelM = 1e-12; zeile('ort.delta.null feuert', vorher && !deltaNull(dl), 'gepflanzt: der Spiegel 10⁻¹² m neben dem des Ankers → ROT');
     // Reise, Welle 3: der Wuchs ist ein Verhältnis-Feld — gepflanzt: am Anker trägt der Wald 0,999 statt 1 → ROT
-    dl.leit.huelleM[40] = 0; const vorW = deltaNull(dl); dl.wuchs.wald = 0.999; zeile('ort.delta.wuchs feuert', vorW && !deltaNull(dl), 'gepflanzt: das Wald-Verhältnis am Anker 0,999 → ROT'); }
+    dl.meer.waterLevelM = 0; const vorW = deltaNull(dl); dl.wuchs.wald = 0.999; zeile('ort.delta.wuchs feuert', vorW && !deltaNull(dl), 'gepflanzt: das Wald-Verhältnis am Anker 0,999 → ROT'); }
   // Reise K: die Jahres-Phase ist ein Δ-Feld. erde-01 trägt seinen Anker auf der Süd-Halbkugel — dort ist das Δ am Anker +0 (die Heimat
   // behält ihre Phase), jenseits des Äquators 0,5 (Jahreszeiten-Vertrag: 0 oder 0,5, die Phase der wärmeren Jahreszeit); gepflanzt: die
   // Phase als Ort − Tafel (absolut gelesen) gäbe am Süd-Anker 0,5 → ROT
@@ -1428,11 +1428,11 @@ function ankerJedeSaat(Q, og) { // die Zeile anker.jede-saat: EIN Leser für den
 function ankerMutant(proben) {
   return kernMutant(/const ANKER_PROBEN = \[[^\]]*\];/, 'const ANKER_PROBEN = [' + proben.join(', ') + '];', 'anker-' + proben.length);
 }
-function kernMutant(re, ersatz, marke) { // der Kern des Baums mit EINER getauschten Zeile (sein Text, ohne git); null, wenn die Zeile fehlt
-  const text = fs.readFileSync(KERN, 'utf8');
-  if (!re.test(text)) return null; // der Kern trägt die Zeile nicht: der Aufrufer nennt es
+function kernMutant(re, ersatz, marke, mehr) { // der Kern des Baums mit EINER getauschten Zeile (sein Text, ohne git); null, wenn die Zeile fehlt
+  let text = fs.readFileSync(KERN, 'utf8');   // `mehr`: weitere [re, ersatz] danach (der Zähler der Frage und ihr Täter zugleich)
+  for (const [r, e] of [[re, ersatz], ...(mehr || [])]) { if (!r.test(text)) return null; text = text.replace(r, e); } // der Kern trägt die Zeile nicht: der Aufrufer nennt es
   const aus = path.join(os.tmpdir(), 'planet-core-' + marke + '-' + process.pid + '.js'), halt = globalThis.__planetCore;
-  fs.writeFileSync(aus, text.replace(re, ersatz)); delete globalThis.__planetCore;
+  fs.writeFileSync(aus, text); delete globalThis.__planetCore;
   try { return require(aus); } finally { if (halt === undefined) delete globalThis.__planetCore; else globalThis.__planetCore = halt; fs.unlinkSync(aus); }
 }
 // DIE NEIGUNG AM ORT (Karte 2 planet.kopplung.bahn-klima#2): der Ort (45°, Länge des Ankers) am Samen des Spiels, der Körper der Erde
@@ -1448,15 +1448,89 @@ function neigungZeile(Q, og, ohneHeimat) {
   return { ok: proz <= 10 && n0.json !== e.json && n0.json === n0b.json, proz,
     wert: 'Spanne an 45° (' + samen + '): Erde ' + e.amp.toFixed(3) + ' K · Neigung 0 ' + n0.amp.toFixed(3) + ' K (' + proz.toFixed(1) + ' %) · Neigung 45° ' + n45.amp.toFixed(3) + ' K (' + (n45.amp / e.amp).toFixed(3) + '×) · dieselbe Saat ' + (n0.json === n0b.json ? 'byte-gleich' : 'ANDERS') };
 }
+// DIE FRAGE DER GIPFEL-SUCHE (Karte 2 planet.kopplung.gegenwart#2): je Saat 23 × 60 Orte (6°-Gitter, ±66°) als Auftrag des Fadens
+// (voxel-worker.js planetOrtAuftrag: planetOrt + planetPunkt fuss 16, die Felder, die er sendet), die Saaten der Station (Samen des
+// Spiels, zsp-0 …). Die Linse nennt die Kosten je Saat beim Namen — Plan · Meer · Anker · Orte in ms, Relief-Punkte (punktKern) je Ort
+// am gezählten Kern, die Hülle des Klimas daneben — und urteilt in Rufen, nie in Wanduhr-Sekunden (Lehre 26): Punkte je Ort ≤ 2, die Antworten bit-gleich dem Kern vor
+// dem Schnitt (FRAGE_SHA, eingefroren am Kern von main 2da17e2e7 planet-h2-14 mit dem Küsten-Kontrast: 863 ms je Saat, 84 Relief-Punkte je Ort — 81
+// davon Leit-Stützen ohne Leser; ein Gesetz, das eine Antwort bewegt, friert die SHA neu ein, vorher ↔ nachher am selben Gang).
+const FRAGE_SAATEN = 100, FRAGE_PUNKTE_JE_ORT = 2;
+const FRAGE_SHA = { alle: '22ec9a313b0ea9bfdf6c88e60e4d98d7dfcc2fd935cdaa9d8939d44ffad04028', erste: 'b7ff79ae9e8b46219c72b0d9b29e1ac9c60c184db8514c7e6bf8352f9d8613f5' };
+const frageSaat = (i) => (i === 0 ? 'anazh-realm-seed' : 'zsp-' + (i - 1));
+const FRAGE_ORTE = (() => { const L = []; for (let b = -66; b <= 66; b += 6) for (let l = -180; l < 180; l += 6) L.push([b, l]); return L; })();
+// die Antwort des Fadens als Zahlen in fester Folge (wörtlich planetOrtAuftrag) — bit-genau gehasht, nie über JSON (−0, NaN)
+function frageAntwort(Q, og, plan, b, l, zahlen) {
+  const RAD = Math.PI / 180, S = Q.planetScheibe(plan, 0), d = Q.planetOrt(S, b * RAD, l * RAD, og, undefined, plan).delta, p = {};
+  Q.planetPunkt(S, b * RAD, l * RAD, 16, p);
+  zahlen.push(p.hoeheM > 0 ? 1 : 0, p.hoeheM, p.kont, d.klima.sommer, d.klima.winter, d.klima.tagAmp, d.klima.sommerPhase, d.klima.spendeVerh, d.meer.waterLevelM,
+    d.wetter.regenQuote, d.wetter.sturmQuote, d.wetter.nebelQuote, d.wuchs.decke, d.wuchs.wald, d.eis.zeit, ...Object.values(d.wildnis));
+  return { land: p.hoeheM > 0, hoeheM: p.hoeheM, ks: d.wildnis.ks };
+}
+// n Saaten: SHA über alle Antworten und über die erste Saat, die Zeit je Stufe und das Maß der Station (S2: Gipfel > 2 km, lokales
+// Maximum gegen die vier Nachbarn des Gitters, an konvergenter Grenze = ks über dem Minimum der Saat + 0,05; Gegenlauf beliebiges Land)
+function frageGang(Q, og, n) {
+  const hAlle = crypto.createHash('sha256'), ms = { plan: 0, meer: 0, anker: 0, orte: 0 }, gip = { gipfel: 0, konv: 0, land: 0, landKonv: 0 };
+  let erste = '', namen = '';
+  for (let i = 0; i < n; i++) {
+    let a = ns(); const plan = Q.planetPlan(frageSaat(i), Q.PLANET_ERDE); ms.plan += ns() - a;
+    a = ns(); Q.planetScheibe(plan, 0); ms.meer += ns() - a;
+    a = ns(); Q.planetAnker(plan, 0, og); ms.anker += ns() - a;
+    a = ns(); const zahlen = [], o = FRAGE_ORTE.map(([b, l]) => frageAntwort(Q, og, plan, b, l, zahlen)); ms.orte += ns() - a;
+    if (!namen) namen = Object.keys(Q.planetOrt(Q.planetScheibe(plan, 0), 0, 0, og, undefined, plan).delta.wildnis).join(',');
+    const buf = Buffer.from(Float64Array.from(zahlen).buffer); hAlle.update(buf); if (i === 0) erste = sha(buf);
+    const ksMin = Math.min(...o.filter(x => x.land).map(x => x.ks)), nb = 60;
+    o.forEach((x, k) => { if (x.land) { gip.land++; if (x.ks > ksMin + 0.05) gip.landKonv++; }
+      if (!(x.land && x.hoeheM > 2000) || [k - 1, k + 1, k - nb, k + nb].some(j => j >= 0 && j < o.length && o[j].hoeheM > x.hoeheM)) return;
+      gip.gipfel++; if (x.ks > ksMin + 0.05) gip.konv++; });
+  }
+  hAlle.update(namen);
+  const jeSaat = Object.fromEntries(Object.entries(ms).map(([k, v]) => [k, v / 1e6 / n])), summe = Object.values(jeSaat).reduce((s, v) => s + v, 0);
+  return { alle: hAlle.digest('hex'), erste, jeSaat, summe, gip, gipfelProzent: 100 * gip.konv / Math.max(1, gip.gipfel), landProzent: gip.land ? 100 * gip.landKonv / gip.land : 0 };
+}
+// der gezählte Kern: jeder punktKern-Ruf zählt, Relief (fuss 16) und Hülle (fuss 400: der Regenschatten des Klimas luvwärts) getrennt —
+// der Täter sitzt in der Zahl der Punkte, nie in der Uhr; `mehr` pflanzt einen Täter dazu. → { relief, huelle } je Ort
+function fragePunkte(og, mehr, marke) {
+  const Q = kernMutant(/function punktKern\(S, x, y, z, fussKm, huelle\) \{/, '$& globalThis.__planetPunkte[huelle ? 1 : 0]++;', 'frage-' + marke, mehr);
+  if (!Q) return null;
+  globalThis.__planetPunkte = [0, 0]; const plan = Q.planetPlan(frageSaat(0), Q.PLANET_ERDE), zahlen = [];
+  frageAntwort(Q, og, plan, FRAGE_ORTE[0][0], FRAGE_ORTE[0][1], zahlen);   // der erste Ort baut Plan, Meer, Anker und den Ort des Ankers
+  const Z = globalThis.__planetPunkte = [0, 0], n = FRAGE_ORTE.length - 1; for (let k = 1; k <= n; k++) frageAntwort(Q, og, plan, FRAGE_ORTE[k][0], FRAGE_ORTE[k][1], zahlen);
+  return { relief: Z[0] / n, huelle: Z[1] / n };
+}
+function frageZeilen(zeile, og, selbst) {
+  const f = (x, d) => x.toFixed(d).replace('.', ',');
+  if (!selbst) {
+    const pj = fragePunkte(og, null, 'zaehler');
+    const G = frageGang(P, og, FRAGE_SAATEN), j = G.jeSaat;
+    zeile('ort.frage.punkte', pj !== null && pj.relief <= FRAGE_PUNKTE_JE_ORT, pj === null ? 'der Kern ' + P.VERSION + ' trägt keinen punktKern — die Frage lässt sich nicht zählen'
+      : 'Relief-Punkte je Ort der Gipfel-Suche ' + f(pj.relief, 2) + ' (planetOrt 1 + Faden 1; dazu Hülle ' + f(pj.huelle, 2) + ': der Regenschatten des Klimas) · je Saat ' + f(G.summe, 0) + ' ms (Plan ' + f(j.plan, 0) + ' · Meer ' + f(j.meer, 0) + ' · Anker ' + f(j.anker, 0) + ' · ' + FRAGE_ORTE.length + ' Orte ' + f(j.orte, 0) + ') · ' + FRAGE_SAATEN + ' Saaten ' + f(G.summe * FRAGE_SAATEN / 1000, 1) + ' s',
+      '≤ ' + FRAGE_PUNKTE_JE_ORT + ' Punkte je Ort (Lehre 26: Rufe, nie Sekunden)');
+    zeile('ort.frage.bytes', G.alle === FRAGE_SHA.alle && G.erste === FRAGE_SHA.erste, FRAGE_SAATEN + ' Saaten × ' + FRAGE_ORTE.length + ' Orte: SHA ' + G.alle.slice(0, 16) + (G.alle === FRAGE_SHA.alle ? ' = ' : ' ≠ ') + 'Kern vor dem Schnitt ' + FRAGE_SHA.alle.slice(0, 16)
+      + ' · Gipfel > 2 km ' + G.gip.gipfel + ', an konvergenter Grenze ' + f(G.gipfelProzent, 1) + ' % (Land ' + f(G.landProzent, 1) + ' %)', 'bit-gleich (FRAGE_SHA), die Station misst ≥ 95 %');
+    return;
+  }
+  // die Täter: ein Feld ohne Leser, das je Ort 81 Punkte rechnet (die Leit-Stützen vor dem Schnitt), und EINE Relief-Höhe, die an einem
+  // Stichpunkt (der erste Ort des Gitters, −66°/−180°) um 10⁻⁶ m abweicht
+  const pj = fragePunkte(og, [[/\n(    o\.vulkan = \{ art: _orP\.vulkanArt)/, '\n    for (let k = 0; k < 81; k++) planetPunkt(S, breite + k * 1e-4, laenge, 16, {});\n$1']], 'leit');
+  zeile('ort.frage.punkte feuert', pj !== null && pj.relief > FRAGE_PUNKTE_JE_ORT, pj === null ? 'der Kern ' + P.VERSION + ' trägt die Zeile o.vulkan nicht — der Täter lässt sich nicht pflanzen'
+    : 'gepflanzt: 81 Punkte je Ort für ein Feld ohne Leser → ' + f(pj.relief, 2) + ' Relief-Punkte je Ort → ROT');
+  const v = new Float64Array(3); P.planetRichtung(FRAGE_ORTE[0][0] * Math.PI / 180, FRAGE_ORTE[0][1] * Math.PI / 180, v);
+  // (am Punkt-Kern des Relief-Punkts, PK.hA + 10⁻⁹ km: der Faden liest aus.hoeheM, punktSchreiben rechnet sie aus PK — nie den Rückgabewert)
+  const QH = kernMutant(/(function planetPunktR\(S, x, y, z, fussKm, aus\) \{\n    pruefScheibe\(S\);\n    punktKern\(S, x, y, z, fussKm, false\);)/, '$1 if (x === ' + v[0] + ' && y === ' + v[1] + ' && z === ' + v[2] + ') PK.hA += 1e-9;', 'frage-hoehe');
+  if (!QH) { zeile('ort.frage.bytes feuert', false, 'der Kern ' + P.VERSION + ' trägt planetPunktR nicht in der gewohnten Gestalt — der Täter lässt sich nicht pflanzen'); return; }
+  const G = frageGang(QH, og, 1);
+  zeile('ort.frage.bytes feuert', G.erste !== FRAGE_SHA.erste, 'gepflanzt: die Relief-Höhe am Stichpunkt −66°/−180° um 10⁻⁶ m → SHA der ersten Saat ' + G.erste.slice(0, 16) + (G.erste === FRAGE_SHA.erste ? ' = ' : ' ≠ ') + FRAGE_SHA.erste.slice(0, 16) + ' → ROT');
+}
 function ankerWand(selbst) { // `--anker`: die Zeile am Kern des Baums · `--anker --selftest`: beide Täter fallen beim Namen
   const og = ortGesetz(), U = [], zeile = (name, ok, wert, schwelle) => U.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle });
   if (!selbst) { const J = ankerJedeSaat(P, og); zeile('anker.jede-saat', J.ok, J.wert, '0 · 0 · 0 (B5, die Treppe)');
-    const N = neigungZeile(P, og); zeile('ort.neigung', N.ok, N.wert, 'Neigung 0 ≤ 10 % der Erd-Spanne, ≠ Erde, Saat byte-gleich'); return U; }
+    const N = neigungZeile(P, og); zeile('ort.neigung', N.ok, N.wert, 'Neigung 0 ≤ 10 % der Erd-Spanne, ≠ Erde, Saat byte-gleich'); frageZeilen(zeile, og, false); return U; }
   // die Täter der Neigung: der eigene Anker (vor dem Schnitt) und die Zuschläge der Küsten ohne den Gang der Neigung (jG = 1)
   const N1 = neigungZeile(P, og, true), QG = kernMutant(/const jG = sb \/ ksin\(PLANET_ERDE\.neigungRad\);/, 'const jG = 1;', 'neigung');
   zeile('ort.neigung feuert', !N1.ok, 'gepflanzt: das Δ gegen den eigenen Anker → ' + N1.wert);
   if (!QG) zeile('ort.neigung nennt', false, 'der Kern ' + P.VERSION + ' trägt keine Zeile jG — der Täter lässt sich nicht pflanzen');
   else { const N2 = neigungZeile(QG, og); zeile('ort.neigung nennt', !N2.ok, 'gepflanzt: die Küsten-Zuschläge ohne den Gang der Neigung (jG = 1) → ' + N2.wert); }
+  frageZeilen(zeile, og, true);
   const Q1 = ankerMutant([512]), Q2 = ankerMutant([2048, 8192, 32768]);
   if (!Q1 || !Q2) { zeile('anker.jede-saat feuert', false, 'der Kern ' + P.VERSION + ' trägt keine Tafel ANKER_PROBEN — die Täter lassen sich nicht pflanzen'); return U; }
   const J1 = ankerJedeSaat(Q1, og), J2 = ankerJedeSaat(Q2, og);
@@ -1673,4 +1747,4 @@ if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte
   else if (argv.length === 0) { const a = ns(), U = welle1(P, fs.readFileSync(KERN, 'utf8')); drucken('Richter welle1 · Kern ' + P.VERSION + ' · ' + ((ns() - a) / 1e9).toFixed(0) + ' s', U); if (U.some(u => u.urteil !== 'GRÜN')) process.exit(1); }
   else { console.log('diag-planet: (ohne Argument: Richter welle1) | --karte | --karten | --bildsaaten [--schichten a,b] | --richter bau1|bau2|bau3|gesicht|gegner2|ort | --kosten [bau2 <alt-kern.js>] | --bytes | --anker [--selftest] | --selftest (= --selbsttest)'); process.exit(2); }
 }
-module.exports = { materialPunkte, materialTerme, stetigTaeter, taeterVon, png, crc32, sha, planVon, saatStatistik, urteilBau1, saatKlima, urteilBau2, saatGesicht, urteilGesicht, messerStufe, gesichtGitter, innenMasse, kuestenAbstand, klimaGitter, klimaKanteFlach, gestaltMasse, P };
+module.exports = { materialPunkte, materialTerme, stetigTaeter, taeterVon, png, crc32, sha, planVon, saatStatistik, urteilBau1, saatKlima, urteilBau2, saatGesicht, urteilGesicht, messerStufe, gesichtGitter, innenMasse, kuestenAbstand, klimaGitter, klimaKanteFlach, gestaltMasse, frageGang, fragePunkte, P };

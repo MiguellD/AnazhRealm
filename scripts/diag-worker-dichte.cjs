@@ -17,6 +17,8 @@
 //   node scripts/diag-worker-dichte.cjs --selftest     der Faden lädt den Kern mit der Höhe + 1 cm — er MUSS rot werden
 //   node scripts/diag-worker-dichte.cjs --kern [--selftest] [--json datei]
 //                                                      die Kern-Probe (Kopf von `kernProbe`)
+//   node scripts/diag-worker-dichte.cjs --gezeit [--selftest] [--json datei]
+//                                                      die Gezeit am Watt (Kopf von `gezeitProbe`)
 //   node scripts/diag-worker-dichte.cjs --abdruck datei [--wurzel dir]
 //                                                      der BYTE-ABDRUCK beider Welten (SHA-256 je Gitter, Main UND
 //                                                      Worker, und der Makro-Höhe auf einem 64×64-Gitter für drei
@@ -682,6 +684,10 @@ const KERN_MUTATIONEN = {
     "Dichte-Versatz": ["let d = surf - y;", "let d = surf - y + 0.25;"],
     "See-Spiegel": ["const y = h.water.waterY[i];", "const y = h.water.waterY[i] + 0.5;"],
     "Höhen-Versatz": ["let h = hoeheGrund(L, x, z, mitDetail, aus, fuss);", "let h = hoeheGrund(L, x, z, mitDetail, aus, fuss) + 0.01;"],
+    // die Gezeit (`--gezeit`): der Hub des Meers fällt auf 0 — der Spiegel steht
+    "Spiegel steht": ["return k * GEZEIT.stufe;", "return 0;"],
+    // die Gezeit (`--gezeit`): der Spiegel des Lands (`landSpiegel`) trägt die Uhr — die Ebbe gäbe das Watt dem Wald und dem Ort
+    "Land mit Uhr": ["if (!L.gezeit) return L;", "return L;"],
 };
 const KERN_MODUS = { haupt: null, faden: null, probe: null, wald: false }; // je Boot die Mutation im Haupt-Faden, im Voxel-Faden, in der Probe; `wald`: der Faden ohne „die Reihe zuerst“
 // TEIL R: die Abstände (m) der vier Aufträge in der Reihe des Sendens — und die Zeile des Fadens, die seiner Wahl die Wahl gibt
@@ -920,6 +926,326 @@ async function kernProbe(page, url) {
     console.log(`\n${befunde.length ? "⛔ KERN-PROBE ROT" : "✅ KERN-PROBE GRÜN"}: ${N} Punkte, ${mutationen.filter((z) => z.gut).length}/4 Mutationen ziehen beide Leser · ${kern.sekunden} s\n`);
     if (JSON_AUS) jsonSchreiben(JSON_AUS, { kern });
     return befunde.length ? 1 : 0;
+}
+
+// ── DIE GEZEIT (`--gezeit`, karte2.planet.wasser.gezeiten #1/#2): der Spiegel des Meers schwingt an der Welt-Uhr (gelaende-core
+// `gezeitStufe`: M2 + S2), Stamm-Leser und jeder Voxel-Faden lesen ihn Wort für Wort gleich, das Watt fällt trocken. Gemessen am
+// Ort des Zensus (Rang 6 „Nordsee-Watt“, x 0, z 10430–10830: das Watt-Profil in 40 m, sein Ende im Meer) über 24,84 h in
+// Viertelstunden: die Uhr des Tags der Prozesse (`spielZeit` unter der Tag-Länge des Spiels) geht, der Takt des Pegels
+// (`_pegelTakt`) trägt die Stufe in Lage und Faden. Die Leser: Stamm `_atlasWaterLevelAt` · `_nassAt` (das Wasser des Leibs),
+// Faden `atlasWaterLevelAt` (der Spiegel jedes Chunk-Baus). Die Soll-Zahlen aus der Quelle (de.wikipedia „Gezeiten“, Pegel
+// Cuxhaven: Tidenhub Spring 3,48 m · Nipp 2,54 m; Periode M2 12,4206 h, Schwebung 14,765 d), über 30 Tage der Spring-Nipp-Takt.
+// DAS LAND steht zeitlos: der Spiegel des Lands (Stamm `_landSpiegelAt`, Faden `landWaterLevelAt` — gelaende-core `landSpiegel`,
+// der Leser jedes Werks, das gesetzt wird: Wald, Genesis-Ort, `_landAt`) liegt in jeder Viertelstunde Wort für Wort gleich.
+// DIE GEBURT: zur Welt-Uhr 0 steht das Meer im Mittel (`_weltUhrNeu(0)`).
+// DER RING: der Fern-Ring an diesem Ort legt die Punkte der Gezeit zu jeder Stufe neu (`gezeitRing`, Leser `_fernRingY`).
+// Das Urteil nennt den Täter: STEHT (der Hub fiel) · HUB · PERIODE · SCHWEBUNG · SPIEGEL (Stamm ≠ Faden) · WATT · LAND · GEBURT · RING · TRÄGER.
+// Selbsttest: „Spiegel steht“ in Wirt und Faden MUSS STEHT nennen, nur im Faden MUSS SPIEGEL nennen, „Land mit Uhr“ MUSS LAND nennen,
+// „der Ring steht“ MUSS RING nennen.
+const GEZEIT_ORT = Object.freeze({ x: 0, z0: 10430, dz: 40, n: 11, name: "Nordsee-Watt (Zensus Rang 6)" });
+const GEZEIT_SOLL = Object.freeze({ periodeH: 12.4206, periodeTol: 0.01, spring: 3.48, nipp: 2.54, hubTol: 0.05, schwebungD: 14.765, schwebungTol: 0.02, fensterH: 24.84, schrittH: 0.25, tage: 31 });
+async function gezeitLesen(page, ring) {
+    const seite = await page.evaluate(async (O, S) => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        r._gameLoopTick = () => {};
+        const zM = O.z0 + (O.dz * (O.n - 1)) / 2;
+        await __weltDa(() => !r._ensureHydroTilesAround(O.x, zM, 600));
+        const punkte = Array.from({ length: O.n }, (_, i) => [O.x, O.z0 + i * O.dz]).map(([x, z]) => [x, z, r._terrainMacroSurfaceY(x, z)]);
+        const L0 = r._gelaende();
+        if (!L0.gezeit) return { traeger: false };
+        const normS = r._kalender().normS;
+        const basis = st.spielZeit;
+        // die Geburt: zur Welt-Uhr 0 steht das Meer im Mittel (die Uhr einer neuen Welt, `_weltUhrNeu` — die Probe bestellt sie bei
+        // der Welt, die Ein-Schreiber-Wand; den Null-Tag eines Stands liest die Uhr der Gezeit nicht, sie ist Kalender-Zeit)
+        r._weltUhrNeu(0);
+        const geburt = { k: r._gezeitStand().k, stunde: r._gezeitStand().stunde };
+        r._weltUhrNeu(basis);
+        // die Uhr der Probe: die Stunde h nach dem Anfang (die Welt-Uhr über `_weltUhrNeu`: die Messung kehrt zu ihrem Anfang
+        // zurück), der Takt des Pegels trägt die Stufe
+        window.__gezeitUhr = (h, takt) => (r._weltUhrNeu(basis + (h * normS) / 24), takt && r._pegelTakt(), r._gelaende().gezeit);
+        window.__gezeitBasis = basis;
+        // der Spring-Nipp-Takt: die Stufe des Trägers über `tage` Tage, je Viertelstunde (`_gezeitStand`, ohne Takt)
+        const ks = [];
+        for (let h = 0; h <= S.tage * 24 + 1e-9; h += S.schrittH) ks.push((__gezeitUhr(h, false), r._gezeitStand().k));
+        __gezeitUhr(0, true);
+        return { traeger: true, h0: L0.gezeit.stunde, stufe: globalThis.__gelaendeCore.GEZEIT.stufe, punkte, ks, geburt };
+    }, GEZEIT_ORT, GEZEIT_SOLL);
+    if (!seite.traeger) return seite;
+    const faeden = [];
+    for (const w of page.workers()) if (await w.evaluate(`typeof atlasWaterLevelAt === "function" && self.name !== "planet"`).catch(() => false)) faeden.push(w);
+    // je Viertelstunde: die Uhr geht, der Takt des Pegels schickt die Stufe (`state-update` delta.gezeit), der Stamm-Leser liest,
+    // dann jeder Voxel-Faden, sobald die Stufe in SEINEM Stand angekommen ist — nie von der Probe gesetzt
+    seite.proben = [];
+    seite.faden = faeden.map(() => []);
+    seite.fadenLand = faeden.map(() => []);
+    seite.verspaetet = 0;
+    for (let h = 0; h <= GEZEIT_SOLL.fensterH + 1e-9; h += GEZEIT_SOLL.schrittH) {
+        const p = await page.evaluate(
+            (h, P) => {
+                const g = __gezeitUhr(h, true);
+                const r = anazhRealm;
+                const G = globalThis.__gelaendeCore;
+                const land = () => P.map(([x, z, y]) => r._landSpiegelAt(x, z, y));
+                const p = { h, k: g.k, stamm: P.map(([x, z, y]) => r._atlasWaterLevelAt(x, z, y)), land: land(), nass: P.map(([x, z, y]) => (r._nassAt(x, z, -0.05, y) ? 1 : 0)).join("") };
+                // die Gegen-Tide: derselbe Augenblick unter dem Träger eine halbe M2 später (der Pegel der Seen und Flüsse geht weiter
+                // an der Uhr — das Land fragt ihn; die Gezeit nie)
+                r._gezeitTraeger = G.gezeitStand(g.stunde + G.GEZEIT.teile[0].stunden / 2);
+                [p.kGegen, p.landGegen] = [r._gezeitTraeger.k, land()];
+                r._gezeitTraeger = g;
+                return p;
+            },
+            h,
+            seite.punkte
+        );
+        seite.proben.push(p);
+        for (let i = 0; i < faeden.length; i++) {
+            let v = null;
+            for (let t = 0; t < 200 && v === null; t++) {
+                v = await faeden[i].evaluate((P, k) => (state.gezeit && state.gezeit.k === k ? [P.map(([x, z, y]) => atlasWaterLevelAt(x, z, y)), P.map(([x, z, y]) => landWaterLevelAt(x, z, y))] : null), seite.punkte, p.k);
+                if (v === null) (seite.verspaetet++, await sleep(5));
+            }
+            seite.faden[i].push(v ? v[0] : seite.punkte.map(() => NaN));
+            seite.fadenLand[i].push(v ? v[1] : seite.punkte.map(() => NaN));
+        }
+    }
+    await page.evaluate(() => (anazhRealm._weltUhrNeu(__gezeitBasis), anazhRealm._pegelTakt()));
+    if (ring != null) seite.ring = await gezeitRing(page, ring);
+    return seite;
+}
+// DER RING (der Fern-Ring: der Faden rechnet je Punkt die Teile seines Spiegels, gelaende-core `spiegelTeile`, der Wirt setzt sie zu
+// jeder Stufe zusammen, `_fernRingY`, und legt bei jedem Wechsel der Stufe die Punkte der Gezeit neu, `_fernRingWasserNeu`): am Ort
+// des Zensus gebaut (der Haken `__anazhFernRing`, die Linse pumpt seinen Takt), dann je Stufe — das niedrigste Niedrigwasser, das
+// Mittel, das höchste Hochwasser — der Träger gesetzt und der Takt des Wassers gerufen. Jeder Punkt liegt, wie sein Gesetz zur
+// Stufe ihn legt (Höhe und Nässe, `_fernRingY`); die Teile des Fadens sind der Spiegel der Lage (`atlasSpiegel` im Wirt, wo er die
+// Region trägt); das Watt des Rings fällt trocken. `steht`: der Mutant „der Ring steht“ — der Takt sieht den Wechsel der Stufe
+// nicht (bis zum Schnitt zeichnete die Ferne die Stunde ihres Baus: das Bild Flut am Watt, die Flut als Rechteck der Chunks).
+async function gezeitRing(page, steht) {
+    return page.evaluate(
+        async (O, steht) => {
+            const r = window.anazhRealm;
+            const st = r.state;
+            const G = globalThis.__gelaendeCore;
+            const zM = O.z0 + (O.dz * (O.n - 1)) / 2;
+            st.playerMesh.position.set(O.x, st.playerMesh.position.y, zM);
+            await __weltDa(() => !r._ensureHydroTilesAround(O.x, zM, 1500));
+            if (steht) {
+                const alt = r._fernRingWasserNeu;
+                r._fernRingWasserNeu = function (fr) {
+                    fr.gezeit = this._gezeitGilt();
+                    return alt.call(this, fr);
+                };
+            }
+            window.__anazhFernRing = true;
+            const t0 = performance.now();
+            let fr = null;
+            for (let i = 0; i < 3000; i++) {
+                r._tickFernRing(st.playerMesh.position);
+                fr = st.fernRing;
+                if (fr && fr.cursor >= fr.totalVerts && !fr.einhaengen.length && !fr.flug) break;
+                await sleep(20); // das EINE Warten der Seite (welt-boot WARTEN_SEITE), nie ein eigenes Versprechen
+            }
+            if (!fr || fr.cursor < fr.totalVerts) return { gebaut: false, cursor: fr ? fr.cursor : null, punkte: fr ? fr.totalVerts : null };
+            const bauMs = Math.round(performance.now() - t0);
+            const TS = G.SPIEGEL_TEILE;
+            const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+            const L = r._gelaende();
+            const [aus, o] = [{}, {}];
+            let gezeit = 0;
+            for (let g = 0; g < fr.totalVerts; g++) gezeit += fr.gezeitPunkt[g];
+            const traeger = r._gezeitTraeger;
+            const stufen = [];
+            try {
+                for (const k of [-G.GEZEIT_HOCH.k, 0, G.GEZEIT_HOCH.k]) {
+                    r._gezeitTraeger = Object.freeze({ stunde: null, k });
+                    // der Lauf unter der Frist des Horizonts: je Takt ein Teil (`fr.wasserLauf`), bis er steht — die Frist stellt die
+                    // Linse wie ein Takt mit Renderer (`_fristStellen` ab seinem Kopf; der Null-Renderer baut sonst ohne Ende)
+                    let [gesetzt, ms, takte, tickMax] = [0, 0, 0, 0];
+                    r._bauFristOhneEnde = () => false;
+                    try {
+                        do {
+                            const t = performance.now();
+                            r._fristStellen(t, false);
+                            gesetzt += r._fernRingWasserNeu(fr);
+                            const d = performance.now() - t;
+                            [ms, tickMax, takte] = [ms + d, Math.max(tickMax, d), takte + 1];
+                        } while (fr.wasserLauf && takte < 100000);
+                    } finally {
+                        delete r._bauFristOhneEnde;
+                        r._bauFristTakt = null;
+                    }
+                    const s = { k, gesetzt, ms: +ms.toFixed(2), takte, tickMax: +tickMax.toFixed(2), nass: 0, falsch: 0, ab: 0, region: 0, erst: null };
+                    for (let g = 0; g < fr.totalVerts; g++) {
+                        const p = r._fernRingPunkt(fr, g);
+                        const y = Math.fround(r._fernRingY(fr, p, wl, aus));
+                        const nass = aus.y < aus.spiegel ? 1 : 0;
+                        s.nass += fr.nass[g];
+                        if (fr.geos[p.s].attributes.position.getY(p.li) !== y || fr.nass[g] !== nass) {
+                            s.falsch++;
+                            s.erst = s.erst || `Punkt ${g} (${Math.round(p.x)}|${Math.round(p.z)}) liegt ${fr.geos[p.s].attributes.position.getY(p.li).toFixed(2)} nass ${fr.nass[g]}, sein Gesetz ${y.toFixed(2)} nass ${nass}`;
+                        }
+                        const h = G.hydroRegion(L, p.x, p.z);
+                        if (!fr.gezeitPunkt[g] || !h || !h.ready) continue;
+                        s.region++;
+                        G.atlasSpiegel(L, p.x, p.z, fr.nassY[g], o);
+                        if (!Object.is(G.spiegelZurStufe(fr.spiegelTeile, g * TS, k, fr.nassY[g], wl), o.koerper)) s.ab++;
+                    }
+                    stufen.push(s);
+                }
+            } finally {
+                r._gezeitTraeger = traeger;
+                do r._fernRingWasserNeu(fr);
+                while (fr.wasserLauf);
+            }
+            return { gebaut: true, punkte: fr.totalVerts, gezeit, bauMs, stufen };
+        },
+        GEZEIT_ORT,
+        steht
+    );
+}
+// das Urteil des Rings → [[Name, Satz]] (leer: er hält)
+function gezeitRingUrteil(ring) {
+    if (!ring || !ring.gebaut) return [["RING", `RING: der Fern-Ring entstand nicht am Ort des Zensus (Cursor ${ring && ring.cursor} von ${ring && ring.punkte})`]];
+    const [tief, , hoch] = ring.stufen;
+    const falsch = ring.stufen.find((s) => s.falsch);
+    const ab = ring.stufen.reduce((a, s) => a + s.ab, 0);
+    if (falsch) return [["RING", `RING: zur Stufe ${falsch.k} liegen ${falsch.falsch} Punkte des Fern-Rings nicht auf ihrem Gesetz (zuerst ${falsch.erst}) — \`_fernRingWasserNeu\` legt die Punkte der Gezeit beim Wechsel der Stufe nicht neu, die Ferne zeichnet die Stunde ihres Baus`]];
+    if (ab) return [["RING", `RING: ${ab} Spiegel aus den Teilen des Fadens (\`spiegelTeile\` → \`spiegelZurStufe\`) ≠ \`atlasSpiegel\` der Lage`]];
+    if (!(hoch.nass - tief.nass >= 1)) return [["RING", `RING: das Watt des Fern-Rings fällt nicht trocken — nass bei Niedrigwasser ${tief.nass}, bei Hochwasser ${hoch.nass} von ${ring.punkte} Punkten (${ring.gezeit} tragen die Gezeit)`]];
+    return [];
+}
+// die steigenden Durchgänge einer Reihe durch ihr Mittel (linear zwischen den Proben) → Stunden
+function gezeitDurchgaenge(werte, schritt) {
+    const mitte = (Math.max(...werte) + Math.min(...werte)) / 2;
+    const d = [];
+    for (let i = 1; i < werte.length; i++) {
+        const [a, b] = [werte[i - 1] - mitte, werte[i] - mitte];
+        if (a < 0 && b >= 0) d.push((i - 1 + a / (a - b)) * schritt);
+    }
+    return d;
+}
+function gezeitUrteil(s) {
+    const S = GEZEIT_SOLL;
+    const rot = [];
+    if (!s.traeger) return { rot: ["TRÄGER: die Lage des Wirts trägt keine Gezeit (`_gelaende().gezeit`)"], namen: ["TRÄGER"] };
+    const meer = s.proben.map((p) => p.stamm[s.punkte.length - 1]);
+    const hub = Math.max(...meer) - Math.min(...meer);
+    const d = gezeitDurchgaenge(meer, S.schrittH);
+    const periode = d.length >= 2 ? (d[d.length - 1] - d[0]) / (d.length - 1) : NaN;
+    // der Spring-Nipp-Takt: der Hub im gleitenden Fenster zweier Tiden (Hoch − Niedrig in 2 · M2, je Viertelstunde), seine
+    // steigenden Durchgänge (Nipp → Spring) liegen um die Schwebung auseinander
+    const fenster = Math.round((2 * S.periodeH) / S.schrittH);
+    const hubJe = [];
+    for (let i = 0; i + fenster <= s.ks.length; i++) {
+        const t = s.ks.slice(i, i + fenster);
+        hubJe.push((Math.max(...t) - Math.min(...t)) * s.stufe);
+    }
+    const springM = Math.max(...hubJe);
+    const nippM = Math.min(...hubJe);
+    // die steigenden Durchgänge der Hülle durch ihre Mitte (von Nipp zu Spring), mit einer Hysterese von zwei Stufen gegen das
+    // Zittern der quantisierten Fenster — je Schwebung einer (die Zeit: die Mitte des Fensters)
+    const [mitte, band, schrittD] = [(springM + nippM) / 2, 2 * s.stufe, S.schrittH / 24];
+    const steigt = [];
+    for (let i = 1, unten = false; i < hubJe.length; i++) {
+        if (hubJe[i - 1] < mitte - band) unten = true;
+        if (unten && hubJe[i - 1] < mitte && hubJe[i] >= mitte) {
+            const [a, b] = [hubJe[i - 1] - mitte, hubJe[i] - mitte];
+            steigt.push((i - 1 + a / (a - b) + fenster / 2) * schrittD);
+            unten = false;
+        }
+    }
+    const schwebung = steigt.length >= 2 ? (steigt[steigt.length - 1] - steigt[0]) / (steigt.length - 1) : NaN;
+    // der Spiegel: jeder Faden gegen den Stamm-Leser, Wort für Wort
+    let ab = 0;
+    let maxDiff = 0;
+    let werte = 0;
+    for (const F of s.faden)
+        F.forEach((reihe, j) =>
+            reihe.forEach((v, i) => {
+                werte++;
+                const a = s.proben[j].stamm[i];
+                if (!Object.is(v, a)) (ab++, (maxDiff = Math.max(maxDiff, Math.abs(v - a) || 0)));
+            })
+        );
+    // das Land: in jeder Viertelstunde unter der Gegen-Tide Wort für Wort gleich (Stamm), jeder Faden Wort für Wort der Stamm
+    const land0 = s.proben[0].land;
+    let landZieht = 0;
+    let landAb = 0;
+    let landErst = null;
+    let gegen = 0;
+    for (const p of s.proben) {
+        if (p.kGegen !== p.k) gegen++;
+        p.land.forEach((v, i) => {
+            if (Object.is(v, p.landGegen[i])) return;
+            landZieht++;
+            landErst = landErst || `Punkt ${i} (${s.punkte[i][0]}|${s.punkte[i][1]}) zur Stunde ${p.h}: k ${p.k} ${v} ↔ k ${p.kGegen} ${p.landGegen[i]}`;
+        });
+    }
+    for (const F of s.fadenLand) F.forEach((reihe, j) => reihe.forEach((v, i) => !Object.is(v, s.proben[j].land[i]) && landAb++));
+    // das Watt: die nassen Punkte des Profils bei Niedrig- und Hochwasser
+    const nassZahl = (p) => [...p.nass].filter((c) => c === "1").length;
+    const tief = s.proben.reduce((a, p) => (p.k < a.k ? p : a));
+    const hoch = s.proben.reduce((a, p) => (p.k > a.k ? p : a));
+    // das Watt ist nie Land: jeder Punkt, den das Hochwasser deckt, liegt unter dem Spiegel des Lands (dieselbe Marge −5 cm)
+    const wattLand = s.punkte.filter(([, , y], i) => hoch.nass[i] === "1" && !(land0[i] > y - 0.05)).length;
+    const z = { geburt: s.geburt, hub, periode, durchgaenge: d.length, springM, nippM, schwebung, nippe: steigt.length, spiegel: { werte, ab, maxDiff, faeden: s.faden.length }, land: { werte: s.proben.length * land0.length, gegen, zieht: landZieht, ab: landAb, meer: land0[land0.length - 1], erst: landErst, wattLand, nass: s.punkte.map(([, , y], i) => (land0[i] > y - 0.05 ? 1 : 0)).join("") }, watt: { tief: tief.nass, hoch: hoch.nass, kTief: tief.k, kHoch: hoch.k, nassTief: nassZahl(tief), nassHoch: nassZahl(hoch) } };
+    const [ox, oz] = s.punkte[s.punkte.length - 1];
+    const ort = `am Meer (${ox}|${oz})`;
+    if (!(hub >= 0.5)) rot.push(["STEHT", `DER SPIEGEL STEHT: Hub ${hub.toFixed(2)} m ${ort} über ${S.fensterH} h — gelaende-core \`gezeitHub\` (Soll ${S.nipp}–${S.spring} m, Pegel Cuxhaven)`]);
+    else if (!(hub >= S.nipp * (1 - S.hubTol) && hub <= S.spring * (1 + S.hubTol))) rot.push(["HUB", `HUB: ${hub.toFixed(2)} m ${ort} außerhalb Nipp ${S.nipp} – Spring ${S.spring} m ±${S.hubTol * 100} %`]);
+    if (!(Math.abs(periode / S.periodeH - 1) <= S.periodeTol)) rot.push(["PERIODE", `PERIODE: ${Number.isFinite(periode) ? periode.toFixed(3) : "keine"} h aus ${d.length} Durchgängen ${ort} (Soll M2 ${S.periodeH} h ±${S.periodeTol * 100} %)`]);
+    if (!(Math.abs(schwebung / S.schwebungD - 1) <= S.schwebungTol && Math.abs(springM / S.spring - 1) <= S.hubTol && Math.abs(nippM / S.nipp - 1) <= S.hubTol))
+        rot.push(["SCHWEBUNG", `SCHWEBUNG: Spring-Nipp ${Number.isFinite(schwebung) ? schwebung.toFixed(3) : "keine"} d (Soll ${S.schwebungD} d ±${S.schwebungTol * 100} %), Hub Spring ${springM.toFixed(2)} m · Nipp ${nippM.toFixed(2)} m über ${S.tage} d`]);
+    if (!s.faden.length) rot.push(["SPIEGEL", "SPIEGEL: kein Voxel-Faden antwortete"]);
+    else if (ab) rot.push(["SPIEGEL", `SPIEGEL: ${ab} von ${werte} Werten Stamm-Leser \`_atlasWaterLevelAt\` ≠ Faden \`atlasWaterLevelAt\` (maxDiff ${maxDiff.toFixed(3)} m)`]);
+    if (!(z.watt.nassHoch - z.watt.nassTief >= 2)) rot.push(["WATT", `WATT: das Profil ${GEZEIT_ORT.name} trägt bei Niedrigwasser ${z.watt.nassTief} und bei Hochwasser ${z.watt.nassHoch} nasse Punkte (\`_nassAt\`) — das Watt fällt nicht trocken`]);
+    if (s.geburt.k !== 0) rot.push(["GEBURT", `GEBURT: zur Welt-Uhr 0 (\`_weltUhrNeu(0)\`) steht das Meer auf Stufe ${s.geburt.k} (Stunde ${s.geburt.stunde}) — die Uhr der Gezeit (\`_gezeitStunde\`) beginnt nicht mit der Welt`]);
+    if ((z.ring = s.ring)) rot.push(...gezeitRingUrteil(s.ring));
+    if (landZieht || landAb || wattLand || !Number.isFinite(z.land.meer) || gegen < s.proben.length / 2) rot.push(["LAND", `LAND: der Spiegel des Lands folgt der Gezeit in ${landZieht} von ${z.land.werte} Werten (zuerst ${landErst || "—"}; ${gegen} von ${s.proben.length} Proben mit anderer Gegen-Stufe), das Hochwasser deckt ${wattLand} Punkte, die er Land nennt, Faden \`landWaterLevelAt\` ≠ Stamm \`_landSpiegelAt\` in ${landAb}, am Meer ${z.land.meer} — gelaende-core \`landSpiegel\` (das höchste Hochwasser, \`lageHochwasser\`)`]);
+    return { rot: rot.map((x) => x[1]), namen: rot.map((x) => x[0]), z };
+}
+async function gezeitProbe(page, url) {
+    const t0 = Date.now();
+    const lauf = async (haupt = null, faden = haupt, ring = null) => {
+        Object.assign(KERN_MODUS, { haupt, faden, probe: null });
+        try {
+            await frischBoot(page, url);
+            return gezeitUrteil(await gezeitLesen(page, ring));
+        } finally {
+            Object.assign(KERN_MODUS, { haupt: null, faden: null });
+        }
+    };
+    console.log(`\n========= DIE GEZEIT — der Spiegel des Meers an der Welt-Uhr, Stamm-Leser = Faden, das Watt fällt trocken (${GEZEIT_ORT.name}) =========`);
+    const u = await lauf(null, null, false);
+    const z = u.z;
+    if (z) {
+        console.log(`  Pegel am Meer über ${GEZEIT_SOLL.fensterH} h: Hub ${z.hub.toFixed(2)} m (Quelle Cuxhaven Spring ${GEZEIT_SOLL.spring} · Nipp ${GEZEIT_SOLL.nipp} m) · Periode ${z.periode.toFixed(3)} h aus ${z.durchgaenge} Durchgängen (M2 ${GEZEIT_SOLL.periodeH} h, ${(100 * (z.periode / GEZEIT_SOLL.periodeH - 1)).toFixed(2)} %)`);
+        console.log(`  Spring-Nipp über ${GEZEIT_SOLL.tage} d: Schwebung ${z.schwebung.toFixed(3)} d aus ${z.nippe} Durchgängen der Hülle (Soll ${GEZEIT_SOLL.schwebungD} d) · Hub Spring ${z.springM.toFixed(2)} m · Nipp ${z.nippM.toFixed(2)} m`);
+        console.log(`  Spiegel Stamm ↔ Faden: ${z.spiegel.werte} Werte in ${z.spiegel.faeden} Fäden, abweichend ${z.spiegel.ab} (maxDiff ${z.spiegel.maxDiff})`);
+        console.log(`  Land (\`_landSpiegelAt\` = Faden \`landWaterLevelAt\`): ${z.land.werte} Werte, unter der Gegen-Tide (${z.land.gegen} Proben mit anderer Stufe) anders ${z.land.zieht} · Faden ≠ Stamm ${z.land.ab} · am Meer ${z.land.meer} m · Profil ${z.land.nass} (Hochwasser ${z.watt.hoch}, Watt als Land ${z.land.wattLand})`);
+        console.log(`  Geburt (Welt-Uhr 0): Stufe ${z.geburt.k} zur Stunde ${z.geburt.stunde}`);
+        console.log(`  Watt (z ${GEZEIT_ORT.z0}–${GEZEIT_ORT.z0 + GEZEIT_ORT.dz * (GEZEIT_ORT.n - 1)}, je ${GEZEIT_ORT.dz} m): Niedrigwasser k ${z.watt.kTief} ${z.watt.tief} (${z.watt.nassTief} nass) · Hochwasser k ${z.watt.kHoch} ${z.watt.hoch} (${z.watt.nassHoch} nass)`);
+        const R = z.ring;
+        if (R && R.gebaut)
+            console.log(`  Fern-Ring (${R.punkte} Punkte, ${R.gezeit} tragen die Gezeit, gebaut in ${R.bauMs} ms): ${R.stufen.map((s) => `Stufe ${s.k} → ${s.gesetzt} neu gelegt in ${s.ms} ms über ${s.takte} Takte (der längste ${s.tickMax} ms), ${s.nass} nass, ${s.falsch} neben dem Gesetz, Spiegel ≠ Lage ${s.ab} von ${s.region}`).join(" · ")}`);
+    }
+    for (const b of u.rot) console.log("  ⛔", b);
+    let rot = u.rot.length > 0;
+    if (SELBSTTEST) {
+        for (const [wer, haupt, faden, soll] of [["WIRT UND FADEN", "Spiegel steht", "Spiegel steht", "STEHT"], ["NUR DER FADEN", null, "Spiegel steht", "SPIEGEL"], ["DAS LAND MIT UHR", "Land mit Uhr", "Land mit Uhr", "LAND"]]) {
+            const m = await lauf(haupt, faden);
+            const nennt = m.namen.includes(soll);
+            console.log(`  ${nennt ? "✅" : "⛔"} SELBSTTEST (${haupt || faden} — ${wer}): ${m.namen.join(" · ") || "nichts"} → ${nennt ? `${soll} beim Namen ROT` : `${soll} BLIEB BLIND`}`);
+            rot = rot || !nennt;
+        }
+        const m = await lauf(null, null, true);
+        const nennt = m.namen.includes("RING");
+        console.log(`  ${nennt ? "✅" : "⛔"} SELBSTTEST (der Ring steht — \`_fernRingWasserNeu\` sieht den Wechsel der Stufe nicht): ${m.namen.join(" · ") || "nichts"} → ${nennt ? "RING beim Namen ROT" : "RING BLIEB BLIND"}`);
+        rot = rot || !nennt;
+    }
+    console.log(`\n${rot ? "⛔ GEZEIT ROT" : "✅ GEZEIT GRÜN"}: ${Math.round((Date.now() - t0) / 1000)} s\n`);
+    if (JSON_AUS) jsonSchreiben(JSON_AUS, { gezeit: u });
+    return rot ? 1 : 0;
 }
 
 // ── DIE GELÄNDE-LINSE (K16, `--realismus`): die Wand der Natur-Zahlen am Gelände-Gesetzbuch — ohne Browser, das Gesetz
@@ -1392,6 +1718,7 @@ async function studioProbe(page) {
             const snap = r._weltAusPlan({ art: G.PLAN_ART, v: G.PLAN_VERSION, saat: "studio-probe-fremd", regler: {} });
             snap.terrainBaseHeight = 7;
             // das Erbgut ist das Gelände des Welt-Gesetzes (ultiversum.K1)
+            // BÜHNE: die Rampe ist ein Term im Erbgut der fremden Welt (ihre eigene Szene), kein Ort dieser Welt
             snap.worldMeta.gesetz.gelaende.terme.push({
                 art: "rampe",
                 x: 60,
@@ -2784,6 +3111,7 @@ hauptLauf(async () => {
     const url = `http://127.0.0.1:${PORT}/index.html`;
     if (argv.includes("--faden")) process.exit(await faden(page, url));
     if (argv.includes("--kern")) process.exit(await kernProbe(page, url));
+    if (argv.includes("--gezeit")) process.exit(await gezeitProbe(page, url));
     // Frische Standard-Welt (der Boot-Seed): kein Rest einer früheren Welt im Profil.
     await frisch(page, url);
 

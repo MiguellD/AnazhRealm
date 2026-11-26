@@ -1897,6 +1897,9 @@ class AnazhRealm_feld_leben {
     _werkAkt(e, ctx, ein) {
         if (!e || e.werk !== true || e._fahrAchseX || !e.position) return false;
         const g = this._grundrissVon(e);
+        // ein Werk mit Grundriss-Gesetz (Haus, Ausstattung) trägt immer einen — fehlt er, bricht der Akt beim Namen, nie still
+        if (!g && this._grundrissGesetz(e.type))
+            throw new Error(`_werkAkt: das Werk ${e.type} (${e.id}) trägt keinen Grundriss — sein Akt fiele still`);
         if (!g) return false;
         const r2 = (v) => Math.round(v * 100) / 100;
         const w = ctx && ctx.uhr != null ? ctx.uhr : this.state.spielZeit;
