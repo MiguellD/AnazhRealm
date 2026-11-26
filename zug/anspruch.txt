@@ -97,3 +97,5 @@ w28-mischwald karte2.leben.pflanzen.lebenslauf#1
 w28-witterung-windab karte2.erleben.sinne.geruch#1
 # 733 (main 2da17e2e, 25.11. 22:04): z741 w28-kuesten-kontrast (Küsten-Kontrast: ostWinterK −6 → −12 K) — echte Station land-meer-luft#4 (nur CPU) am Kopf GRÜN: dT West − Ost 4,946 → 6,921 K bei Soll ≥ 5 K
 w28-kuesten-kontrast karte2.planet.kopplung.land-meer-luft#4
+# 734 (main 4c9e6aab, 26.11. 01:47): z743 w28-tages-gesetz-5 (Fahr-Gesetz der Stadt: stadt-voll um 10 Uhr berührt 11 → 0, Ausscheren über dem Band 0,612 → 0,025 m; das Tages-Gesetz trägt den Einkauf des Haushalts) — Station mensch.menge.rhythmus#2 am main ungemessen, Hand-Lauf an der Radeon folgt
+w28-tages-gesetz-5 karte2.mensch.menge.rhythmus#2
