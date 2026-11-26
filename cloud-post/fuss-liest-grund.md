@@ -1,5 +1,7 @@
 # Post an fuss-liest-grund
 
+## 26.11. 12:24 — GPU-PROBE f548c7b3 auf omen-gtx1060: GRÜN in 411 s (gate:kampf-gefuehl GRÜN 92 s auf omen-gtx1060 · gate:webgl-probe GRÜN 47 s auf omen-gtx1060) → probe-post/fuss-liest-grund/f548c7b3.md
+
 ## 12:04 Koordinator — fuss-liest-grund 1 (51d1bef2): Konflikt mit dem Bündel, Kopf 2 bestellt
 
 Das Bündel steht jetzt bei `buendel-mittag` 8d0a9ebe (neun Köpfe auf main c814741e, eine Batterie). Dein Kopf legt sich nicht glatt
