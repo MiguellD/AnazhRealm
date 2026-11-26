@@ -12107,7 +12107,7 @@
   },
   "karte2.leben.kopplung.evolution-planet": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.evolution-planet#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, planet-core.js, scripts/lib/kreatur-proben.cjs +11) — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (die Welt starb am Messort dorf (Protocol error (Runtime.callFunctionOn): Target closed)) — offen, UNGEMESSEN · karte2.leben.kopplung.evolution-planet#1 gtx: ungemessen (R10) — zuletzt an 99649186: der Deckel der Leiter riss nach 20,004 s, ehe anteilImRaum der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,004 s, ehe anteilImRaum der Sprosse stand · · karte2.leben.kopplung.evolution-planet#2 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#2 gtx: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#4 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#5 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#5 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#6 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.evolution-planet#1 radeon: Konsum seit der Messung geändert (R6: planet-core.js, voxel-worker.js) · karte2.leben.kopplung.evolution-planet#1 gtx: ungemessen (R10) — zuletzt an 99649186: der Deckel der Leiter riss nach 20,004 s, ehe anteilImRaum der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,004 s, ehe anteilImRaum der Sprosse stand · · karte2.leben.kopplung.evolution-planet#2 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#2 gtx: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#4 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#5 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#5 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#6 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.leben.kopplung.evolution-planet#1",
@@ -12115,7 +12115,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, planet-core.js, scripts/lib/kreatur-proben.cjs +11) — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (die Welt starb am Messort dorf (Protocol error (Runtime.callFunctionOn): Target closed)) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: planet-core.js, voxel-worker.js)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -12360,7 +12360,7 @@
   },
   "karte2.leben.kopplung.stadt-im-netz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.stadt-im-netz#2 radeon: Station seit der Messung geändert — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (die Welt starb am Messort dorf (Protocol error (Runtime.callFunctionOn): Target closed)) — offen, UNGEMESSEN · karte2.leben.kopplung.stadt-im-netz#2 gtx: ungemessen (R10) — zuletzt an 54b89949: der Raffer trug die Seite antwortete nicht: /eval: {\"ms\":133384,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anaz 0 von 1 Takten in 0 s — am Budget d · karte2.leben.kopplung.stadt-im-netz#3 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#4 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#5 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#5 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#6 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#6 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#7 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#7 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#8 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.stadt-im-netz#2 radeon: Station seit der Messung geändert — zuletzt an 99649186: der Raffer trug die Seite antwortete nicht: /eval: {\"ms\":7638,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\m 0 von 1 Takten in 0 s — am Budget d · karte2.leben.kopplung.stadt-im-netz#2 gtx: ungemessen (R10) — zuletzt an 54b89949: der Raffer trug die Seite antwortete nicht: /eval: {\"ms\":133384,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anaz 0 von 1 Takten in 0 s — am Budget d · karte2.leben.kopplung.stadt-im-netz#3 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#4 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#5 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#5 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#6 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#6 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#7 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#7 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#8 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.kopplung.stadt-im-netz#2",
@@ -12368,7 +12368,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (die Welt starb am Messort dorf (Protocol error (Runtime.callFunctionOn): Target closed)) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 99649186: der Raffer trug die Seite antwortete nicht: /eval: {\"ms\":7638,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\m 0 von 1 Takten in 0 s — am Budget d",
      "ungemessen": true
     },
     {
@@ -30481,7 +30481,7 @@
   },
   "karte2.planet.relief.grossform": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (die Welt starb am Messort dorf (Protocol error (Runtime.callFunctionOn): Target closed)) — offen, UNGEMESSEN · karte2.planet.relief.grossform#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +37) — zuletzt an 54b89949: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · karte2.planet.relief.grossform#2 radeon: ungemessen (R10) · karte2.planet.relief.grossform#2 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#3 radeon: ungemessen (R10) · karte2.planet.relief.grossform#3 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#4 radeon: ungemessen (R10) · karte2.planet.relief.grossform#4 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#5 radeon: ungemessen (R10) · karte2.planet.relief.grossform#5 gtx: ungemessen (R10) · karte2.planet.relief.grossform#6 radeon: ungemessen (R10) · karte2.planet.relief.grossform#6 gtx: ungemessen (R10) · karte2.planet.relief.grossform#7 radeon: ungemessen (R10) · karte2.planet.relief.grossform#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) — zuletzt an 99649186: Deckel 180 s gerissen: Stille seit 179.8 s nach 180 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · karte2.planet.relief.grossform#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +37) — zuletzt an 54b89949: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · karte2.planet.relief.grossform#2 radeon: ungemessen (R10) · karte2.planet.relief.grossform#2 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#3 radeon: ungemessen (R10) · karte2.planet.relief.grossform#3 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#4 radeon: ungemessen (R10) · karte2.planet.relief.grossform#4 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#5 radeon: ungemessen (R10) · karte2.planet.relief.grossform#5 gtx: ungemessen (R10) · karte2.planet.relief.grossform#6 radeon: ungemessen (R10) · karte2.planet.relief.grossform#6 gtx: ungemessen (R10) · karte2.planet.relief.grossform#7 radeon: ungemessen (R10) · karte2.planet.relief.grossform#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.relief.grossform#1",
@@ -30489,7 +30489,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (die Welt starb am Messort dorf (Protocol error (Runtime.callFunctionOn): Target closed)) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an 99649186: Deckel 180 s gerissen: Stille seit 179.8 s nach 180 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "ungemessen": true,
      "beide": true
     },
@@ -37773,8 +37773,8 @@
   "ohne": 3260
  },
  "kopfVoll": "61e2a27f77ce1c7721e0c98d685676d910162077",
- "zeit": "2026-11-26T19:38:09.135Z",
- "vorher": "4a188bf2",
+ "zeit": "2026-11-26T19:49:35.726Z",
+ "vorher": "61e2a27f",
  "bilanz": {
   "gewinn": [],
   "fall": [],
