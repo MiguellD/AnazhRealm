@@ -37,18 +37,33 @@ const LANDMARKE_AN = async (r, T, a) => {
     kam.position.y += Math.max(hoehe(p.x, p.z), L2.waterLevel) - Math.max(K.hoehe(L, p.x, p.z, true), L.waterLevel);
     const F = r._frustumVon(kam, true);
     const auge = { x: kam.position.x, y: kam.position.y, z: kam.position.z };
-    const bp = r._defaultBlueprints();
+    // DIE HÖHE IM BILD: die Gestalt, die das Studio zeichnet (Preset `_foundryPresetFor` × Welt-Skala `_foundryWorldScaleMatrix` × die
+    // höchste Hülle ihrer Gestalten, PHYTO_PRESETS `fx.huellen`) — nie der Bauplan (`_defaultBlueprints`: Turm 16,8 m, Bogen 7,7 m), den
+    // keiner zeichnet. DER WURF IM BILD: die Saat sät nur Chunks des gebauten Voxel-Rings (`_populateVoxelChunkVegetation` hinter
+    // `voxelChunks.has`) — jenseits des Rings steht keine Landmarke, auch wo das Gesetz sie wirft (n13Gesetz).
+    const PH = globalThis.__terrainCore && globalThis.__terrainCore.PHYTO_PRESETS;
     const hoch = {};
-    for (const art of ["felsturm", "felsbogen"]) hoch[art] = Math.max(...bp[art].parts.map((q) => q.position.y + q.size.y / 2));
+    for (const art of ["felsturm", "felsbogen"]) {
+        const pr = r._foundryPresetFor(art);
+        const hu = PH && pr && PH[pr] && PH[pr].fx && PH[pr].fx.huellen;
+        if (!hu) return { fehlt: "die gezeichnete Höhe der Landmarke: " + art + " hat kein Preset mit Hülle (`_foundryPresetFor` → " + pr + ")" };
+        hoch[art] = Math.max(...hu.map((z) => z[2])) * r._foundryWorldScaleMatrix(pr).elements[0];
+    }
     const span = r._voxelChunkConfig().span;
+    const R = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+    const [pcx, pcz] = [Math.floor(p.x / span), Math.floor(p.z / span)];
     const liste = [];
+    let n13Gesetz = 0;
     for (let cx = Math.floor((p.x - 3000) / span); cx <= Math.floor((p.x + 3000) / span); cx++)
         for (let cz = Math.floor((p.z - 3000) / span); cz <= Math.floor((p.z + 3000) / span); cz++) {
             const dc = Math.hypot((cx + 0.5) * span - p.x, (cz + 0.5) * span - p.z);
             if (dc < 1000 - span || dc > 3000 + span) continue;
+            const imRing = Math.abs(cx - pcx) <= R && Math.abs(cz - pcz) <= R;
             for (const l of r._landmarkenDesChunks(cx, cz, W)) {
                 const d = Math.hypot(l.x - p.x, l.z - p.z);
-                if (d >= 1000 && d <= 3000) liste.push({ art: l.art, x: l.x, y: l.y + hoch[l.art], z: l.z, fx: l.x, fz: l.z, d });
+                if (d < 1000 || d > 3000) continue;
+                n13Gesetz++;
+                if (imRing) liste.push({ art: l.art, x: l.x, y: l.y + hoch[l.art], z: l.z, fx: l.x, fz: l.z, d });
             }
         }
     liste.sort((u, v) => u.d - v.d);
@@ -73,7 +88,7 @@ const LANDMARKE_AN = async (r, T, a) => {
         const s = strahl(q);
         if (s) best = Object.assign({ q }, s);
     }
-    const w = { n13: liste.length, imKegel, treffer: best ? 1 : 0, saatBoden: +hoehe(p.x, p.z).toFixed(2), kontrast: null };
+    const w = { n13: liste.length, n13Gesetz, imKegel, treffer: best ? 1 : 0, saatBoden: +hoehe(p.x, p.z).toFixed(2), kontrast: null, hoehe: +hoch.felsturm.toFixed(2), wurfBis: Math.round((R + 0.5) * span * Math.SQRT2) };
     if (best) {
         const T0 = r._luftDurchlass(auge, best.q);
         Object.assign(w, { art: best.q.art, d: +best.q.d.toFixed(1), durchlass: +T0[1].toFixed(4), durchlassRgb: T0.map((t) => +t.toFixed(4)), hinter: best.hinter, vorHimmel: best.hinter === "himmel" });
@@ -609,6 +624,9 @@ const LANDMARKE_AN = async (r, T, a) => {
                             saaten: { wie: "anzahl", nur: "saat" },
                             anteil_landmarke: { wie: "mittel", feld: "treffer" },
                             n13: { wie: "min", feld: "n13" },
+                            n13_gesetz: { wie: "mittel", feld: "n13Gesetz" },
+                            hoehe_im_bild: { wie: "erste", feld: "hoehe" },
+                            wurf_bis: { wie: "erste", feld: "wurfBis" },
                             im_kegel: { wie: "mittel", feld: "imKegel" },
                             durchlass_min: { wie: "min", feld: "durchlass" },
                             durchlass_mittel: { wie: "mittel", feld: "durchlass" },
