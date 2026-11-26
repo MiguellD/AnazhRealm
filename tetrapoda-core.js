@@ -844,6 +844,22 @@
         // das letzte Bit von pow sonst bis in die Gelenke des Ofens (Plattform-Probe: 2 Klassen kippten).
         var legMuscle = 0.42 * (Math.round(Math.pow(size / 2.4, 0.67) * 1e9) / 1e9) + (build - 0.5) * 0.3;
         legMuscle = Math.max(0.1, Math.min(0.9, legMuscle));
+        // DIE SCHWERE DER WELT IM BEIN (Karte 2 leben.evolution.fremde-physik#1): `schwere` = g/g_Erde, das Wort der Welt (der Wirt
+        // reicht es nur, wenn es von der Erde abweicht, stamm/koerper-leib.js `_ofenKreaturDials`). Das Bein trägt das GEWICHT,
+        // m·g: Knochen- und Muskel-Fläche der Säuger folgen ihm mit W^0,72–0,80, weil die aufrechte Haltung den Hebel mit W^0,25
+        // hebt und die Muskel-Kraft so nur mit W^0,75 wachsen muss — Knochen- und Muskel-Spannung bleiben über 0,04–300 kg fast
+        // gleich (Biewener 2005, J. Exp. Biol. 208: 1665, nach Biewener 1989). Das Fleisch des Glieds ist MUSKEL: dessen
+        // Querschnitt folgt W^0,80 (Alexander et al. 1979, bei Biewener 2005 der Muskel-Fläche der Kraft W^0,75 gegenüber), der
+        // Knochen darin W^0,72–0,80. Bei gleicher Masse folgt der Querschnitt der Glieder der Schwere also mit A ∝ g^0,80: der
+        // Radius jedes Glied-Teils × (g/g_Erde)^0,40. Gemessen an der gegossenen Haut (der Schnitt quer zur Achse in der Mitte von
+        // Unterarm und Schienbein, 0,3 · 1 · 3 g, die Summe der vier Flächen): Wolf 0,77, Fuchs 0,95, Hirsch 0,98, Bär 1,06 (sein
+        // Schienbein schmilzt bei 3 g in die Keule) — das Raster und die Verrundung der Haut (`TIER_HAUT`) liegen über dem Gesetz;
+        // mit g^0,76 trug der Wolf 0,73. An der
+        // Erde genau 1 (pow(1, x) = 1): die Gestalt der Erde Bit für Bit. Gerastert wie die Potenzen oben. Unter 0,1 g trägt das
+        // Bein nicht mehr das Gewicht, sondern die Trägheit des Laufs (gesetzt, jenseits des Bands der Quelle): der Querschnitt
+        // fällt nicht unter den von 0,1 g (die Welt erlaubt 0 … 3,06 g, `_weltGesetz`).
+        var schwere = fin(d.schwere, 1),
+            beinQuer = Math.round(Math.pow(Math.max(0.1, schwere), 0.4) * 1e9) / 1e9;
         // Der Hals-Winkel (Welle 5, Natur-Haltung im Stand): Wolf 35° (Kopf am Widerrist), Fuchs 43°, Hirsch 55°
         // (aufrecht), Bär 10° (tief) — vorher 8° + 55·Δ: der Hals lag waagrecht, der Kopf saß vorn AN der Brust.
         var neckAng = Math.max(5, Math.min(72, 35 + (neckLen - 0.263) * 300)),
@@ -879,6 +895,7 @@
             neckAng: neckAng,
             legLen: legLen,
             legMuscle: legMuscle,
+            beinQuer: beinQuer,
             diet: diet,
             build: build,
             snoutZ: snoutZ,
@@ -4789,16 +4806,19 @@
         // der Brust, hinten unter dem Becken), jedes Fleisch-Teil trägt die Glied-Dicke der Art (D), der Unterarm,
         // das Schienbein und die Mittelhand sind kräftiger als im alten Stelzen-Bein (Unterarm ~0,08 W). Absolute
         // Lab-Zahlen tragen den Faktor k = H/2,4 (der Wolf behält seine Maße, jede andere Größe skaliert mit).
-        var Dp = Math.sqrt(A.bein.dicke),
-            Dd = A.bein.dicke * A.bein.distal,
+        // Die Schwere der Welt (deriveTierParams `beinQuer`, A ∝ g^0,80) trägt jedes Glied-Teil durch dieselben zwei Faktoren.
+        var bq = typeof P.beinQuer === "number" && isFinite(P.beinQuer) ? P.beinQuer : 1,
+            Dp = Math.sqrt(A.bein.dicke) * bq,
+            Dd = A.bein.dicke * A.bein.distal * bq,
             k = H / 2.4;
         // proximal (Schulter, Oberarm, Keule): √Dicke — die Masse liegt im Rumpf; distal (Unterarm, Schienbein,
         // Mittelhand): Dicke × distal der Art (der Hirsch trägt dünne, aber tragende Läufe, nie Stelzen).
+        // die Schwere macht das Fleisch dicker, nie länger: seine Achse längs des Knochens (sc[1]) teilt bq wieder heraus
         var sD = function (r, kl, sc) {
-            return s(r * Dp, kl, sc);
+            return s(r * Dp, kl, [sc[0], sc[1] / bq, sc[2]]);
         };
         var sU = function (r, kl, sc) {
-            return s(r * Dd, kl, sc);
+            return s(r * Dd, kl, [sc[0], sc[1] / bq, sc[2]]);
         };
         var boneD = function (r, len, kl) {
             return s(r * Dp, kl, [0.92, len / (2 * r * Dp), 0.92]);

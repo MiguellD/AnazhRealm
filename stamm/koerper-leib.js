@@ -1051,6 +1051,13 @@ class AnazhRealm_koerper_leib {
         const basis = core.GATTUNGEN[recId];
         const buch = this._tetrapodaStudioDials(recId);
         const dials = Object.assign({}, basis, buch || {}, ovOpt && typeof ovOpt === "object" ? ovOpt : {});
+        // DIE SCHWERE DER WELT IM GUSS (Karte 2 leben.evolution.fremde-physik#1): der Leib wird unter dem Gesetz der Welt
+        // gegossen (`state.gravity`, `_weltGesetz` schwere) — tetrapoda `deriveTierParams` liest sie als `schwere` (g/g_Erde, der
+        // Glied-Querschnitt ∝ g^0,80, Biewener 2005). Das Wort der Erde ist der Wert des Dials ohne ihn: an der Erde reist er nicht
+        // (Memo-Schlüssel, IDB-Platte und Bytes der Erd-Gestalt bleiben), jede andere Schwere gießt ihre eigene Vorlage.
+        const gWelt = -this.state.gravity,
+            gErde = -AnazhRealm.WELT_GESETZ_ERDE.schwere;
+        if (gWelt !== gErde) dials.schwere = gWelt / gErde;
         // istDefault steuert den IDB-Pfad: nur die unveränderte Gattungs-Gestalt
         // darf die Platte lesen/schreiben (Regler-Unikate bleiben Unikate, W-A1).
         const istDefault = !ovOpt && JSON.stringify(dials) === JSON.stringify(Object.assign({}, basis));

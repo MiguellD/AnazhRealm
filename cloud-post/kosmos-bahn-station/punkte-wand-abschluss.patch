@@ -1,0 +1,83 @@
+diff --git a/meisterkarte-quelle/punkte/punkte.cjs b/meisterkarte-quelle/punkte/punkte.cjs
+index e1d2b6768..a7908ee87 100644
+--- a/meisterkarte-quelle/punkte/punkte.cjs
++++ b/meisterkarte-quelle/punkte/punkte.cjs
+@@ -1220,6 +1220,51 @@ function ankerLeser(repo, kopf) {
+     };
+ }
+ const acornVon = (repo) => require(require.resolve("acorn", { paths: [repo] }));
++// DIE WAND ABSCHLUSS (kosmos-hadley, 26.11.): der Befehl einer Station REIST ALS TEXT — `node -e` baut `H.seite` und den Lauf aus ihren
++// Quell-Texten (stationen/sitzung-seite.js probeBefehl), der Fächer schickt `gesetz.fn` weiter in die Seite (stationen/faecher.js: „die
++// Bauart … sieht nichts aus diesem Modul“). Ein freier Name des Befehls, den das Modul der Station auf oberster Ebene deklariert, reist
++// nicht mit und wirft erst am Gerät. Befund OMEN a954d698: planet.kosmos.systeme#1 UNGEMESSEN — „1460 warfen (MOND_EPHEMERIDE is not
++// defined)“, dann „S1 warf: Cannot read properties of null“; der Prüfstand am Laptop las die Ephemeride aus dem Modul und maß 0,082°.
++// Die Wand liest den Befehl mit dem Parser des Spiels (acorn) und seiner Gültigkeits-Lehre (eslint-scope, optimistisch: ein direktes
++// `eval` im Text hält die Auflösung nicht an) und nennt jeden freien Namen, den das EIGENE Modul der Station deklariert; was der Rahmen
++// stellt (H, Node), und Namen, die erst der Ziel-Rumpf stellt (der Text der Probe im Leib einer Linse), fallen nie.
++const scopeVon = (repo) => require(require.resolve("eslint-scope", { paths: [repo] }));
++const RAHMEN_NAMEN = new Set(["H", "require", "module", "exports", "__filename", "__dirname", ...Object.getOwnPropertyNames(globalThis), ...require("module").builtinModules]);
++// das Modul einer geladenen Station (ladeStationen: `require` je Gruppe) → { datei, text } oder null
++function stationsModul(st, dir = path.join(DIR, "stationen")) {
++    for (const g of [...GRUPPEN, ...k2Register(dir)]) {
++        const f = path.join(dir, g + ".js");
++        const m = require.cache[f];
++        if (m && Array.isArray(m.exports) && m.exports.includes(st)) return { datei: "stationen/" + g + ".js", text: fs.readFileSync(f, "utf8") };
++    }
++    return null;
++}
++function toteAbschluesse(stationen, acorn, scope, modulVon = stationsModul) {
++    const O = { ecmaVersion: "latest", sourceType: "script", allowHashBang: true, allowReturnOutsideFunction: true, ranges: true };
++    const S = { ecmaVersion: 2022, sourceType: "script", optimistic: true };
++    const oben = new Map(), frei = new Map(), aus = [];
++    const obenVon = (m) => {
++        if (!oben.has(m.datei)) oben.set(m.datei, new Set(scope.analyze(acorn.parse(m.text, O), S).globalScope.variables.map((v) => v.name)));
++        return oben.get(m.datei);
++    };
++    for (const st of stationen) {
++        const b = befehlVon(st);
++        if (!Array.isArray(b) || b.indexOf("-e") < 0) continue;
++        const code = b[b.indexOf("-e") + 1];
++        const m = modulVon(st);
++        if (typeof code !== "string" || !m) continue;
++        let namen;
++        try {
++            if (!frei.has(code)) frei.set(code, [...new Set(scope.analyze(acorn.parse(code, O), S).globalScope.through.map((r) => r.identifier.name))]);
++            namen = frei.get(code).filter((n) => !RAHMEN_NAMEN.has(n) && obenVon(m).has(n));
++        } catch (e) {
++            aus.push(schluessel(st) + ": der Befehl ist nicht lesbar (" + e.message + ") — die Wand ist dort blind");
++            continue;
++        }
++        if (namen.length) aus.push(schluessel(st) + ": der Befehl reist ohne " + namen.join(", ") + " (oberste Ebene von " + m.datei + ") — am Gerät „" + namen[0] + " is not defined“");
++    }
++    return aus;
++}
+ 
+ // ───────────────────────────────── Zeuge der Karte (Wand GPU) ─────────────────────────────────
+ const ZEUGE_DATEI = path.join(DIR, "gpu-zeuge.cjs");
+@@ -7620,6 +7665,17 @@ async function selbsttest(o = {}) {
+         const tl = toteLaengen([{ kriterium: "karte2.leben.oeko.sukzession", staffel: 1, t: "const jahrH = s.seasonYearSeconds / 24; const K = r._kalender(); K.jahrK * K.tagS / K.normS" }], LL, (st) => st.t); // prettier-ignore
+         const tb = toteLaengen([{ kriterium: "x.K1", staffel: 1, t: "" }], null, (st) => st.t);
+         pruef("WAND LÄNGE die gestrichene Jahr-Länge beim Namen, der Kalender still, ohne Muster am Kopf blind beim Namen", tl.join() === "karte2.leben.oeko.sukzession#1 liest `seasonYearSeconds` — lies stattdessen den Kalender" && /^Wand LÄNGE blind/.test(tb.join()), tl.join() + " | " + tb.join()); // prettier-ignore
++        // DIE WAND ABSCHLUSS: der Name des Moduls, der nicht mitreist, beim Namen (der Befund von systeme#1: MOND_EPHEMERIDE); still bleiben
++        // der mitreisende, der Rahmen (H, require, fs) und der Name, den erst der Ziel-Rumpf stellt (wetter.K3#2: K, P im Leib der Linse)
++        {
++            const R = spielRepo(), modul = { datei: "stationen/x.js", text: "const GEHEIM = 1;\nconst K = 2;\nconst F = () => GEHEIM;\nmodule.exports = [];" };
++            const st = (code) => ({ kriterium: "karte2.planet.kosmos.systeme", staffel: 1, probe: { befehl: ["node", "-e", code, "{PORT}"] } });
++            const rot = toteAbschluesse([st("H.seite = {\nF: () => GEHEIM + 1\n};\nH.fahre(async function p(H) { return H.seite.F(); });")], acornVon(R), scopeVon(R), () => modul);
++            const still = toteAbschluesse([st("H.seite = {\nF: () => { const GEHEIM = 1; return GEHEIM + fs.existsSync(\"x\") + H.x + require(\"path\").sep; }\n};\nH.fahre(async function p(H) { return eval(\"1\") + H.seite.F(); });"),
++                st("H.fahre(async function p(H) { const probe = () => P.fluss[0] + (function leib(K) { return K; })(1); return String(probe); });")], acornVon(R), scopeVon(R), () => modul);
++            pruef("WAND ABSCHLUSS der Name des Moduls, der nicht mitreist, beim Namen (GEHEIM); der mitreisende, der Rahmen und der Name des Ziel-Rumpfs still",
++                rot.length === 1 && /systeme#1: der Befehl reist ohne GEHEIM \(oberste Ebene von stationen\/x\.js\) — am Gerät „GEHEIM is not defined“/.test(rot[0]) && still.length === 0, JSON.stringify(rot) + " · " + JSON.stringify(still));
++        }
+         // DIE WAND ANKER: jeder Griff in ein Werkzeug des Spiels am Kopf — der fehlende Anker, der doppelte, die fehlende Deklaration, der
+         // Griff, den die Wand nicht lesen kann, je beim Namen; die stehenden still (Konstante, `.map`, `for … of`, `H.seite`, JSON `seite`)
+         {
+@@ -10096,6 +10152,8 @@ if (require.main === module) {
+             for (const x of toteLaengen(stationen, laengeAm(repo, kopf), stationText)) fehler.push(x + " — am Kopf " + kopf.slice(0, 8) + " (Wand LÄNGE)");
+             // DIE WAND ANKER am Kopf: jede Deklaration und jeder Text-Anker, den eine Station aus einem Werkzeug des Spiels liest, steht dort
+             for (const x of toteAnker(stationen, ankerLeser(repo, kopf), acornVon(repo))) fehler.push(x + " — am Kopf " + kopf.slice(0, 8) + " (Wand ANKER)");
++            // DIE WAND ABSCHLUSS: jeder Name, den ein Befehl braucht, reist in ihm (kein Name des Stations-Moduls bleibt zurück)
++            for (const x of toteAbschluesse(stationen, acornVon(repo), scopeVon(repo))) fehler.push(x + " (Wand ABSCHLUSS)");
+             for (const st of stationen) console.log("  " + schluessel(st) + " · " + geraeteVon(st).join("+") + (st.gpu ? " · GPU" : "") + (st.zeit ? " · Zeit" : " · Bild") + (st.probe ? " · Sitzung ≤ " + probeSek(st) + " s" : "") + " · " + st.minuten + " min · " + befehlVon(st).join(" ") + " · " + abdruck(st));
+             for (const e of fehlt) console.log("  FEHLT " + e.kriterium + "#" + e.staffel + " · " + String(e.grund).slice(0, 140));
+             for (const f of fehler) console.log("  ROT " + f);
