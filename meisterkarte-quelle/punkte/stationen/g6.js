@@ -1684,6 +1684,10 @@ const PB_KONST = {
     gpuN: 8,
     fremdN: 60,
     dauerMin: 20,
+    // DIE MINUTE DER STATION (karte2.same.preis.ausdauer S1 „1 min Spielgang“, Leser 2 26.11.): der Spielgang zwischen den Marken trägt
+    // ≥ min Minuten + rand s (die Kurve beginnt mit dem ersten Block nach der Marke des Anfangs); fehlt ihm das, geht die Dauer-Probe
+    // vor ihrem Anker des Endes die Genesis-Bahn in Fenstern zu fenster s, solange ihr Deckel nach dem Fenster noch nach s trägt
+    spielgang: { min: 1, rand: 10, fenster: 6, nach: 8 },
 };
 const PB_PFAD = [
     "stamm/*.js",
@@ -1712,6 +1716,12 @@ const PB_PFAD = [
 // alle 4 s über 90 s, E nach 30 s)
 const PB_TASTE =
     'const t = (c, k) => { for (const a of ["keydown", "keyup"]) window.dispatchEvent(new KeyboardEvent(a, { bubbles: true, code: c, key: k })); }; ';
+// DIE UHREN DER TASTEN LEBEN NIE ÜBER IHR FENSTER (Leser 2, 26.11.; GTX 4c9e6aab profiband.K4#1 „Wirt-Wache: den Kontext der Probe hält
+// noch: const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: "-" …“): `k4fahrt` wartete bis 20 s auf den
+// Wagen und drückte danach 2,3 s Tasten, sein Fenster las nach 2,8 s — die Uhren liefen über das Ende der Probe, hielten ihren Rumpf und
+// drückten E in die nächste Station. Jede Uhr der Tasten steht in `window.__k4t`; das Fenster (H) beendet sie, wenn es die Tasten liest
+const PB_K4_UHR =
+    "for (const h of window.__k4t || []) clearTimeout(h); const T = (window.__k4t = []), u = (f, ms, oft) => (T.push((oft ? setInterval : setTimeout)(f, ms)), T[T.length - 1]); ";
 const PB_SEITE = {
     wagen:
         "let wagen = 0, fahrend = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) for (const W of (S.verkehr && S.verkehr.wagen) || []) " +
@@ -1750,14 +1760,16 @@ const PB_SEITE = {
         '"buf:szene:tier:" + (u.soul || "?"); n[k] = (n[k] | 0) + 1; } } return { halter: __heapHalter(r, 8), tiere: n };',
     raeumen: "let n = 0; for (const c of r.state.creatures.filter((c) => c.userData && c.userData.buehne)) (r.removeCreature(c), n++); return n;",
     k4geh:
-        "const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { v: 0 }); " + PB_TASTE +
-        'window.__k4iv = setInterval(() => { t("KeyV", "v"); z.v++; }, 750); setTimeout(() => clearInterval(window.__k4iv), 4000); return 1;',
+        "const st = r.state; " + PB_K4_UHR + "const z = (window.__k4 = { v: 0 }); " + PB_TASTE +
+        'const iv = u(() => { t("KeyV", "v"); z.v++; }, 750, 1); u(() => clearInterval(iv), 4000); return 1;',
     k4fahrt:
-        'const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: "-", aus: "-", ein: "-" }); ' + PB_TASTE +
+        "const st = r.state; " + PB_K4_UHR + 'const z = (window.__k4 = { wagen: "-", aus: "-", ein: "-" }); ' + PB_TASTE +
         "const bis = performance.now() + 20000; " +
-        'const iv = setInterval(() => { if (st.player.mountedArch !== "werkbank-fahrt" && performance.now() < bis) return; clearInterval(iv); ' +
-        'setTimeout(() => { z.wagen = st.player.mountedArch; t("KeyE", "e"); setTimeout(() => { z.aus = st.player.mountedArch; t("KeyE", "e"); ' +
-        "setTimeout(() => { z.ein = st.player.mountedArch; }, 300); }, 1000); }, 1000); }, 50); return 1;",
+        'const iv = u(() => { if (st.player.mountedArch !== "werkbank-fahrt" && performance.now() < bis) return; clearInterval(iv); ' +
+        'u(() => { z.wagen = st.player.mountedArch; t("KeyE", "e"); u(() => { z.aus = st.player.mountedArch; t("KeyE", "e"); ' +
+        "u(() => { z.ein = st.player.mountedArch; }, 300); }, 1000); }, 1000); }, 50, 1); return 1;",
+    // das Ende der Tasten (H, wenn das Fenster sie liest): jede Uhr fällt, ihr Stand bleibt
+    k4ende: "for (const h of window.__k4t || []) clearTimeout(h); delete window.__k4t; return window.__k4 || null;",
 };
 
 // DIE PROBE (node im Spiel-Baum, in der Welt der Sitzung): art = gang | glaette | dauer, aus = {AUS}. Sie misst über die Werkbank der
@@ -1826,14 +1838,18 @@ async function pbProbe(art, aus) {
     // EIN Fenster der Glätte: die Übergänge über die Tasten, `haenger` unter dem Regler des Spielers (R8), Schwelle 33 ms
     const H = async (name, code, k) => {
         await ev(code);
-        await zelle(name);
-        let o;
+        let o, tasten = null;
         try {
+            await zelle(name);
             o = await ruf("/haenger", { sek: k.sek, ein: k.ein, regler: "frei", tiere: "frei", wandern: k.wandern, schwelle: 33, json: path.join(D, name + ".json") }, k.sek + k.ein + 90);
         } finally {
-            await zelle(null);
+            try {
+                await zelle(null);
+            } finally {
+                tasten = await ev(SEITE.k4ende); // die Uhren der Tasten enden mit ihrem Fenster (PB_K4_UHR)
+            }
         }
-        glaette[name] = { ein: k.ein, sek: k.sek, befunde: (o.befunde || []).slice(0, 4), tasten: await ev("return window.__k4 || null") };
+        glaette[name] = { ein: k.ein, sek: k.sek, befunde: (o.befunde || []).slice(0, 4), tasten };
     };
     // DER STAND (die Puffer-Linse nach dem Collector, dazu Halter und Tiere) als Marke im Strom
     const stand = async (marke) => {
@@ -1882,6 +1898,25 @@ async function pbProbe(art, aus) {
             sonst.torbau = await ev(SEITE.torbau);
             sonst.nacht = await ev(SEITE.nacht);
             await U("genesis", "ego");
+            // DIE MINUTE DER STATION (K.spielgang): bis hier war die Länge des Spielgangs, was die Sitzung zwischen den Marken fuhr — in
+            // den gezielten Läufen 0,82–1,3 min, fünf von sieben BLIND. Jetzt gibt die Probe ihm die fehlenden Sekunden auf der Bahn,
+            // unter ihrem Deckel; trägt er sie nicht, steht das beim Namen (der Zeuge `spielgang`, gelesen von ausdauerRichter)
+            const sg = K.spielgang, deckel = Number(process.env.PUNKTE_PROBE_DECKEL_S) || 0, ziel = sg.min * 60 + sg.rand;
+            const a0 = M.stromLesen(STROM).marken.filter((m) => m.marke === "dauer-anfang").pop();
+            const seit = () => (a0 && a0.wert ? (Date.now() - a0.wert.zeit) / 1000 : null);
+            sonst.spielgang = { ziel, deckel, vorher: seit() == null ? null : +seit().toFixed(1), eigen: 0, fenster: 0 };
+            let kost = sg.fenster + 2; // ein Fenster samt Zapfen, Einschwingen und Probe der Seite: gelernt am letzten
+            while (seit() != null && seit() + sg.nach < ziel) {
+                if (!(uhr() + kost + sg.nach <= deckel)) {
+                    sonst.spielgang.grund = "der Deckel " + deckel + " s trug die Minute nicht (bei " + uhr().toFixed(1) + " s, " + seit().toFixed(1) + " s Spielgang)";
+                    break;
+                }
+                const t = Date.now();
+                await Z("dauer-spielgang", { ...K.anker, sek: sg.fenster, wandern: "bahn" });
+                kost = (Date.now() - t) / 1000;
+                sonst.spielgang.eigen = +(sonst.spielgang.eigen + kost).toFixed(1);
+                sonst.spielgang.fenster++;
+            }
             await Z("dauer-genesis-ego-geht", { ...K.anker, wandern: "bahn" });
             await stand("dauer-ende");
         }, ["dauer-ende"]);
@@ -2057,10 +2092,17 @@ async function pbProbe(art, aus) {
             }
             // DIE HEAP-KURVE (Karte 2 same.preis.ausdauer S1 „Spielgang am Stück mit Heap-Kurve“, vorrat3-stationen-g6): je Block des Stroms
             // der Strecke EIN Punkt (Wanduhr, Heap der Seite, wie der Zapfen ihn las — ohne Aufräumen), die Steigung als Ausgleichsgerade in
-            // MB/min; daneben die zwei Stände nach dem Collector (heap). Ohne Heap im Strom bleibt die Kurve leer (n 0) und das Urteil ROT
+            // MB/min; daneben die zwei Stände nach dem Collector (heap). Ohne Heap im Strom bleibt die Kurve leer (n 0) und das Urteil ROT.
+            // DER PUNKT STEHT AM ENDE SEINES BLOCKS (Leser 2, 26.11.): der Zapfen liest den Heap, wenn er den Block abholt (punkte.cjs
+            // stromSeite `heap`), also nach dessen letztem Bild — bis hier stand er auf der Uhr des ERSTEN Bilds, jeder Punkt um die Länge
+            // seines Blocks zu früh (der Block über Umstellen, Tor und Nacht der Dauer: 10–20 s)
             const kurve = [];
             for (const b of strecke)
-                if (Number.isFinite(b.heap) && Number.isFinite(b.wand) && (!kurve.length || kurve[kurve.length - 1][2] !== b.block)) kurve.push([b.wand, b.heap, b.block]);
+                if (Number.isFinite(b.heap) && Number.isFinite(b.wand)) {
+                    const k = kurve[kurve.length - 1];
+                    if (k && k[2] === b.block) k[0] = b.wand;
+                    else kurve.push([b.wand, b.heap, b.block]);
+                }
             let heapKurve = { n: kurve.length };
             if (kurve.length >= 2) {
                 const t0k = kurve[0][0], xs = kurve.map((p) => (p[0] - t0k) / 60000), ys = kurve.map((p) => p[1]);
@@ -2070,6 +2112,7 @@ async function pbProbe(art, aus) {
             }
             Object.assign(zus.dauer, {
                 heapKurve,
+                spielgang: sonst.spielgang || null,
                 minuten: +((e.wert.zeit - a.wert.zeit) / 60000).toFixed(2), seiten: seiten.length, proben: [...new Set(strecke.map((b) => b.probe))].length,
                 last: zahlen(strecke), weg: Math.round(weg), gegangen: Math.round(gegangen), fahren: strecke.some((b) => b.sattel === 1),
                 nachtImStrom: strecke.some((b) => b.uhr != null && (b.uhr < 0.05 || b.uhr > 0.95)),
@@ -2428,12 +2471,19 @@ const PB_PROBEN_DAUER = [
 // die Heap-Kurve des Stroms (heapKurve: ≥ AUSDAUER_S1.punkte Blöcke über ≥ 1 min) UND die Steigung der zwei Stände nach dem Collector je
 // ≤ 50 MB/min; das volle Bild: beide Anker-Fenster unter Regler voll. Was erst Sprosse 2/3 verlangt (Drift, 5 km, Tor, Nacht), urteilt
 // hier nicht
-const AUSDAUER_S1 = { min: 1, steigung: 50, punkte: 10 };
+// DIE STEIGUNG IST, WAS DAS SPIEL HÄLT (Leser 2, 26.11.): der Preis urteilt den Heap NACH dem Collector (die zwei Stände der Puffer-Linse,
+// je 2 × GC) — die rohe Kurve zeugt den Spielgang am Stück (Punkte, Spanne, Spitze), ihre Steigung steht in der Zahl, nie im Urteil: über
+// eine Minute ist sie der Takt des Collectors, kein Wachstum. Die Geräte: GTX 447eaea6 roh 370,8 → 319,3 MB und doch +51,55 MB/min
+// (nach dem Collector 37,5), Radeon 9d4319c0 330,4 → 300,5 und +100,16 (58,5), Radeon a8dd22b5 358,6 → 350,1 und +56,43 (38,2) — und
+// Radeon ee9c1965 roh −20,65 MB/min bei +91,5 nach dem Collector: die rohe Kurve hätte ein Leck grün gemessen. DIE MINUTE trägt die
+// Station selbst (PB_KONST.spielgang, die Dauer-Probe auf der Bahn): ihr Zeuge `spielgang` (vorher · eigen · fenster · grund) steht in
+// jeder Zahl, ohne ihn ist die Messung keine dieser Station
+const AUSDAUER_S1 = { min: PB_KONST.spielgang.min, steigung: 50, punkte: 10 };
 function ausdauerRichter(lauf) {
     const { ad, hw } = HW(String(lauf.stdout || ""));
     const z = pbZus(lauf, "dauer");
     if (!z) return { gruen: false, zahl: "keine Zeile PROFIBAND der Dauer (Exit " + lauf.exit + ") · " + ad };
-    const d = z.dauer || {}, k = d.heapKurve || {}, rot = [];
+    const d = z.dauer || {}, k = d.heapKurve || {}, sg = d.spielgang, rot = [];
     const [ha, he] = Array.isArray(d.heap) ? d.heap : [];
     const gc = d.minuten > 0 && Number.isFinite(ha) && Number.isFinite(he) ? +((he - ha) / d.minuten).toFixed(1) : NaN;
     if (d.minuten == null) rot.push("kein Spielgang zwischen den Marken (Anfang " + (d.anfang ? "da" : "fehlt") + ", Ende " + (d.ende ? "da" : "fehlt") + ")");
@@ -2441,8 +2491,9 @@ function ausdauerRichter(lauf) {
         if (d.seiten !== 1) rot.push(d.seiten + " Seiten zwischen Anfang und Ende (neu geladen — nie am Stück)");
         if (!(d.minuten >= AUSDAUER_S1.min)) rot.push(d.minuten + " min am Stück < " + AUSDAUER_S1.min);
         if (!(k.n >= AUSDAUER_S1.punkte && k.min >= AUSDAUER_S1.min && Number.isFinite(k.steigung))) rot.push("Heap-Kurve blind (" + (k.n || 0) + " Punkte über " + (k.min || 0) + " min)");
-        else if (!(k.steigung <= AUSDAUER_S1.steigung)) rot.push("Heap-Kurve steigt " + k.steigung + " MB/min > " + AUSDAUER_S1.steigung);
         if (!(gc <= AUSDAUER_S1.steigung)) rot.push("Heap nach dem Collector " + ha + " → " + he + " MB: " + gc + " MB/min > " + AUSDAUER_S1.steigung);
+        if (!sg) rot.push("ohne Zeugen der Minute (die Probe gab dem Spielgang nie Sekunden: kein `spielgang`)");
+        else if (sg.grund) rot.push(sg.grund);
         const an = d.anker || {};
         if (!(an.a && an.b && an.a.voll >= 0.99 && an.b.voll >= 0.99)) rot.push("volles Bild: die Anker-Fenster nicht beide unter Regler voll (" + (an.laeufe || 0) + " Fenster)");
     }
@@ -2451,36 +2502,52 @@ function ausdauerRichter(lauf) {
     // DIE BLINDE DAUER (PB_DAUER_BLIND): trug die Dauer ihre Minute nicht, steht das vorn — die Probe sagte die Marke MESSORT, der Läufer
     // urteilt UNGEMESSEN; die Steigung daneben ist kein Urteil
     const blind = rot.some((t) => / min am Stück < |^Heap-Kurve blind/.test(t));
+    const zeuge = !sg ? "ohne Zeugen der Minute" : "davon die Station " + sg.eigen + " s in " + sg.fenster + " Fenster(n) auf der Bahn (die Sitzung trug " + sg.vorher + " s, Ziel " + sg.ziel + " s, Deckel " + sg.deckel + " s)";
     return {
         gruen: rot.length === 0,
-        zahl: (blind ? "BLIND, kein Urteil über die Steigung · " : "") + "Spielgang " + d.minuten + " min in " + d.seiten + " Seite(n) · Heap-Kurve " + (k.n || 0) + " Punkte, " + (k.von == null ? "?" : k.von) + " → " + (k.bis == null ? "?" : k.bis) +
-            " MB (max " + (k.max == null ? "?" : k.max) + "), Steigung " + (k.steigung == null ? "?" : k.steigung) + " MB/min · nach dem Collector " + gc + " MB/min (Soll je ≤ " + AUSDAUER_S1.steigung + ") · " + ad +
+        zahl: (blind ? "BLIND, kein Urteil über die Steigung · " : "") + "Spielgang " + d.minuten + " min in " + d.seiten + " Seite(n), " + zeuge + " · nach dem Collector " + (ha == null ? "?" : ha) + " → " + (he == null ? "?" : he) + " MB: " + gc +
+            " MB/min (Soll ≤ " + AUSDAUER_S1.steigung + ") · Heap-Kurve " + (k.n || 0) + " Punkte über " + (k.min == null ? "?" : k.min) + " min, " + (k.von == null ? "?" : k.von) + " → " + (k.bis == null ? "?" : k.bis) +
+            " MB (max " + (k.max == null ? "?" : k.max) + "), roh " + (k.steigung == null ? "?" : k.steigung) + " MB/min (der Takt des Collectors, kein Urteil) · " + ad +
             (rot.length ? " — ROT " + rot.length + ": " + rot.slice(0, 6).join(" | ") : ""),
     };
 }
 const ausdauerProben = () => {
     const kurve = (o = {}) => (d) => (d.heapKurve = { n: 1340, min: 22.3, steigung: 0.8, von: 301.2, bis: 333.0, max: 402.7, ...o });
-    const mit = (...m) => (d, s) => m.forEach((f) => f(d, s));
+    // DER ZEUGE DER MINUTE (PB_KONST.spielgang, Leser 2): die volle Sitzung trug sie (22,4 min), die Station ging keine Sekunde
+    const zeuge = (o = {}) => (d) => (d.spielgang = { ziel: 70, deckel: 60, vorher: 1342.6, eigen: 0, fenster: 0, ...o });
+    const mit = (...m) => (d, s) => [zeuge(), ...m].forEach((f) => f(d, s));
+    const ohneZeugen = (...m) => (d, s) => m.forEach((f) => f(d, s));
     return [
-        ["Roh (22,4 min am Stück, Kurve +0,8 MB/min, nach GC +0,8)", kurve(), true],
-        ["Mutante 1,06 min, +185 MB/min (der Beleg der Radeon)", mit(kurve({ n: 64, min: 1.05, steigung: 183.4, von: 290, bis: 486 }), (d) => Object.assign(d, { minuten: 1.06, heap: [290.1, 486.2] })), false],
-        ["Mutante die Kurve steigt 61 MB/min (nach GC flach)", kurve({ steigung: 61 }), false],
+        ["Roh (22,4 min am Stück, Kurve +0,8 MB/min, nach GC +0,8)", mit(kurve()), true],
+        ["Mutante 1,06 min, +185 MB/min (der Beleg der Radeon)", mit(kurve({ n: 64, min: 1.05, steigung: 183.4, von: 290, bis: 486 }), zeuge({ vorher: 49.2, eigen: 16.3, fenster: 2 }), (d) => Object.assign(d, { minuten: 1.06, heap: [290.1, 486.2] })), false],
+        // DIE SÄGE (Leser 2): die rohe Kurve steigt, der Heap nach dem Collector steht — der Takt des Collectors ist kein Wachstum; bis
+        // hier ROT („Heap-Kurve steigt 61 MB/min > 50“)
+        ["die Säge: die rohe Kurve steigt 61 MB/min, nach GC flach — GRÜN", mit(kurve({ steigung: 61 })), true],
         ["Mutante nach GC +60 MB/min (die Kurve flach)", mit(kurve(), (d) => (d.heap = [300, 1644])), false],
-        ["Mutante die Kurve blind (3 Punkte)", kurve({ n: 3 }), false],
-        ["Mutante kein Heap im Strom", (d) => (d.heapKurve = { n: 0 }), false],
+        ["Mutante die Kurve blind (3 Punkte)", mit(kurve({ n: 3 })), false],
+        ["Mutante kein Heap im Strom", mit((d) => (d.heapKurve = { n: 0 })), false],
+        ["Mutante ohne Zeugen der Minute (eine Probe vor diesem Schnitt)", ohneZeugen(kurve()), false],
         ["Mutante 0,6 min am Stück", mit(kurve({ min: 0.6 }), (d) => (d.minuten = 0.6)), false],
         ["Mutante neu geladen zwischen Anfang und Ende", mit(kurve(), (d) => (d.seiten = 2)), false],
         ["Mutante Anker unter Regler frei (nicht das volle Bild)", mit(kurve(), (d) => (d.anker.b.voll = 0)), false],
         ["Mutante der Aufnehmer warf", mit(kurve(), (d, s) => (s.fehler = 3)), false],
-        ["Mutante kein Anfang (die Glätte fuhr nicht)", (d) => Object.assign(d, { anfang: false, minuten: undefined }), false],
+        ["Mutante kein Anfang (die Glätte fuhr nicht)", mit((d) => Object.assign(d, { anfang: false, minuten: undefined })), false],
         ["Mutante Weg 4,6 km, nie Nacht (Sprosse 3 — hier nicht geurteilt)", mit(kurve(), (d) => Object.assign(d, { weg: 4600, nachtImStrom: false, nacht: { nacht: 0.5, mittag: 0.5 } })), true],
-        ["Mutante Software-Adapter", kurve(), false, "[linse-gpu] google/swiftshader"],
+        ["Mutante Software-Adapter", mit(kurve()), false, "[linse-gpu] google/swiftshader"],
     ].map(([name, m, gruen, adapter]) => ({ name, stdout: k5Roh(m, adapter), gruen })).concat([
         // DIE BLINDE DAUER (GTX d39e0d6e): 0,93 min, 19 Punkte über 0,7 min, nach GC 104,7 MB/min — kein GRÜN, „BLIND“ vorn, die Probe
         // sagt die Marke MESSORT (der Läufer: UNGEMESSEN)
-        { name: "die GTX am d39e0d6e: 0,93 min, Kurve blind — BLIND vorn, Marke MESSORT", stdout: k5Roh(mit(kurve({ n: 19, min: 0.7, steigung: 163.93, von: 248.4, bis: 355.2 }), (d) => Object.assign(d, { minuten: 0.93, heap: [227, 324.4] }))) + "\n@@PUNKTE@@ MESSORT die Dauer trug ihre Minute nicht: 0.93 min am Stück < 1 · Heap-Kurve blind (19 Punkte über 0.7 min)", gruen: false, zahl: /^BLIND, kein Urteil über die Steigung · Spielgang 0\.93 min/ },
-        // MUTANTE: die volle Minute mit echter Steigung (1,06 min, 64 Punkte, +185 MB/min) — ROT ohne BLIND
-        { name: "MUTANTE volle Minute, echte Steigung +183 MB/min — ROT, nicht blind", stdout: k5Roh(mit(kurve({ n: 64, min: 1.05, steigung: 183.4, von: 290, bis: 486 }), (d) => Object.assign(d, { minuten: 1.06, heap: [290.1, 486.2] }))), gruen: false, zahl: /^Spielgang 1\.06 min .*Heap-Kurve steigt 183\.4 MB\/min > 50/ },
+        { name: "die GTX am d39e0d6e: 0,93 min, Kurve blind — BLIND vorn, Marke MESSORT", stdout: k5Roh(mit(kurve({ n: 19, min: 0.7, steigung: 163.93, von: 248.4, bis: 355.2 }), zeuge({ deckel: 23, vorher: 41.5, grund: "der Deckel 23 s trug die Minute nicht (bei 17.0 s, 41.5 s Spielgang)" }), (d) => Object.assign(d, { minuten: 0.93, heap: [227, 324.4] }))) + "\n@@PUNKTE@@ MESSORT die Dauer trug ihre Minute nicht: 0.93 min am Stück < 1 · Heap-Kurve blind (19 Punkte über 0.7 min)", gruen: false, zahl: /^BLIND, kein Urteil über die Steigung · Spielgang 0\.93 min/ },
+        // MUTANTE: die volle Minute mit echter Steigung (1,06 min, 64 Punkte, nach dem Collector +183 MB/min) — ROT ohne BLIND, am Collector
+        { name: "MUTANTE volle Minute, echte Steigung +183 MB/min — ROT, nicht blind", stdout: k5Roh(mit(kurve({ n: 64, min: 1.05, steigung: 183.4, von: 290, bis: 486 }), zeuge({ vorher: 49.2, eigen: 16.3, fenster: 2 }), (d) => Object.assign(d, { minuten: 1.06, heap: [290.1, 486.2] }))), gruen: false, zahl: /^Spielgang 1\.06 min in 1 Seite\(n\), davon die Station 16\.3 s in 2 Fenster\(n\) .* — ROT 1: Heap nach dem Collector 290\.1 → 486\.2 MB: 185 MB\/min > 50$/ },
+        // DIE GERÄTE AM 447eaea6 (GTX 24.11., gezielt, 10 Stationen; Leser 2): roh 370,8 → 319,3 MB und doch +51,55 MB/min, nach dem Collector
+        // 37,5 — mit der Minute der Station GRÜN; die alte Station nannte die Säge ROT (und war BLIND: 1,13 min, die Kurve unter 1 min)
+        { name: "die GTX am 447eaea6 mit der Minute der Station: roh +51,55, nach GC 37,5 — GRÜN", stdout: k5Roh(mit(kurve({ n: 26, min: 1.05, steigung: 51.55, von: 370.8, bis: 319.3, max: 373.8 }), zeuge({ vorher: 51.6, eigen: 15.9, fenster: 2 }), (d) => Object.assign(d, { minuten: 1.13, heap: [295.1, 337.5] }))), gruen: true, zahl: /^Spielgang 1\.13 min in 1 Seite\(n\), davon die Station 15\.9 s in 2 Fenster\(n\) .*nach dem Collector 295\.1 → 337\.5 MB: 37\.5 MB\/min .*roh 51\.55 MB\/min \(der Takt des Collectors, kein Urteil\)/ },
+        // ATTRAPPE das Leck hinter der Säge (Radeon ee9c1965 17.11.: roh −20,65 MB/min, nach dem Collector +91,5) — ROT am Collector; wer die
+        // rohe Kurve urteilt, misst dieses Leck grün
+        { name: "ATTRAPPE das Leck hinter der Säge (roh −20,65, nach GC +91,5) — ROT", stdout: k5Roh(mit(kurve({ n: 22, min: 1.04, steigung: -20.65, von: 312.6, bis: 341.7, max: 492.3 }), zeuge({ vorher: 49.2, eigen: 16.1, fenster: 2 }), (d) => Object.assign(d, { minuten: 1.1, heap: [240.2, 340.9] }))), gruen: false, zahl: / — ROT 1: Heap nach dem Collector 240\.2 → 340\.9 MB: 91\.5 MB\/min > 50$/ },
+        // ATTRAPPE die Minute nur aus der Sitzung: die Station ging nicht, ihr Deckel (45 s) trug es nicht — BLIND, der Deckel beim Namen
+        { name: "ATTRAPPE die Minute nur aus der Sitzung (Deckel 45 s) — BLIND, der Deckel beim Namen", stdout: k5Roh(mit(kurve({ n: 18, min: 0.72, steigung: 40.1, von: 250.4, bis: 280.2 }), zeuge({ deckel: 45, vorher: 49.2, grund: "der Deckel 45 s trug die Minute nicht (bei 38.2 s, 49.2 s Spielgang)" }), (d) => Object.assign(d, { minuten: 0.82, heap: [240.2, 262.0] }))) + "\n@@PUNKTE@@ MESSORT die Dauer trug ihre Minute nicht: 0.82 min am Stück < 1 · Heap-Kurve blind (18 Punkte über 0.72 min)", gruen: false, zahl: /^BLIND, kein Urteil über die Steigung · Spielgang 0\.82 min .* — ROT 3: 0\.82 min am Stück < 1 \| Heap-Kurve blind \(18 Punkte über 0\.72 min\) \| der Deckel 45 s trug die Minute nicht/ },
     ]);
 };
 // die drei Proben (die Zwillinge teilen je EINE: gleiche Probe, ein Lauf); Ziel der Gruppe ≤ 90 s: glaette ~16 + gang ~60 + dauer ~14.
@@ -2493,7 +2560,9 @@ const PB_PROBE_GLAETTE = {
     befehl: pbBefehl("glaette"),
 };
 const PB_PROBE_GANG = { sek: PB_GANG_SEK, mutiert: true, befehl: pbBefehl("gang") };
-const PB_PROBE_DAUER = { sek: 23, stellung: "ende", befehl: pbBefehl("dauer") };
+// DIE DAUER TRÄGT DIE MINUTE DES SPIELGANGS (Leser 2, 26.11.; PB_KONST.spielgang): ihr Deckel 23 → 60 s (deckel.json profiband.K5 45 → 60) —
+// am Gerät 22,8–36,0 s ohne die Minute, die gezielten Läufe fehlten ihr bis 11 s (0,82 min) + Rand 10 s; die volle Sitzung geht 0 s
+const PB_PROBE_DAUER = { sek: 60, stellung: "ende", befehl: pbBefehl("dauer") };
 
 // ───────── klang.K3 Staffel 2 — DER RAUM AUS DER WELT (w5-s2-g1, Welt-Probe der Gruppe I: EIN Boot am Null-Renderer) ─────────
 // Gemessen wird, was das OHR hört, über den Weg des Spiels: je Messung ein Stereo-OfflineAudioContext, auf ihm der EINE Welt-Bus
@@ -5254,12 +5323,14 @@ require("./mass.cjs").massAn(module.exports, {
     "profiband.K4#2": (j, lauf) => k4Mass(lauf, 2),
     "profiband.K5#1": (j, lauf) => k5Mass(lauf),
     "profiband.K5#2": (j, lauf) => k5Mass(lauf),
-    // die Minuten am Stück (die Last verlängert sie nur) und die Steigung der Heap-Kurve — der Heap hängt an keiner Wanduhr: fest
+    // die Minuten am Stück (die Last verlängert sie nur) und die Steigung des Heaps nach dem Collector — der Heap hängt an keiner Wanduhr: fest
     "karte2.same.preis.ausdauer#1": (j, lauf) => {
-        const z = pbZus(lauf, "dauer"), d = (z && z.dauer) || {}, k = d.heapKurve || {};
+        const z = pbZus(lauf, "dauer"), d = (z && z.dauer) || {};
         if (!z || d.minuten == null) return [];
         const m = [{ wort: "am Stück min", wert: d.minuten, soll: AUSDAUER_S1.min, richtung: "≥", fest: true }];
-        if (Number.isFinite(k.steigung)) m.push({ wort: "Heap-Kurve MB/min", wert: k.steigung, soll: AUSDAUER_S1.steigung, fest: true });
+        // das Maß ist, was der Richter urteilt (Leser 2, 26.11.): der Heap nach dem Collector, nie die rohe Kurve (der Takt des Collectors)
+        const [ha, he] = Array.isArray(d.heap) ? d.heap : [];
+        if (d.minuten > 0 && Number.isFinite(ha) && Number.isFinite(he)) m.push({ wort: "Heap nach dem Collector MB/min", wert: +((he - ha) / d.minuten).toFixed(1), soll: AUSDAUER_S1.steigung, fest: true });
         return m;
     },
     "klang.K2#1": "die Korrelation r von Bild und Ohr — ein Maß ohne geeichtes k",
