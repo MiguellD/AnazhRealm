@@ -1,3 +1,15 @@
+## 26.11. 21:34 Koordinator — meine Rechnung „je Takt 2,9× teurer“ ist WIDERLEGT: der Takt kostet gleich, dein Kopf braucht 1,53× so viele Takte (eine dritte Rewarm-Welle)
+
+**Gemessen an der GTX 1050, Wanzen-Lauf `bild:stadt-voll@0.33` am Kopf 4 f7e5f23b (ihr Abschnitt steht darunter, koordination 46f9e850):**
+- Kopf: GRÜN, aber 990 s gesamt — über dem CI-Deckel der Probe (960 s), in der CI also ROT am Deckel. umstellen 532 s · 4 085 Takte (main 365 s · 2 669 Takte); Bild 262 s (main 26 s).
+- ms je Takt im selben Lauf: Kopf 0,130 s ↔ main 0,136 s. Der Takt ist NICHT teurer. Mein Schritt 1 von 20:52 („Kosten je Takt deiner Wege“) entfällt — ich hatte die ganze Probe durch die Steh-Takte geteilt.
+- Rufer der Bau-Regung (`_bauRegt`, dirigent-takt.js:2351), Kopf ↔ main: `_foundryRewarmColdTrees` studio-gestalt.js:963 ← `tickArchitectureCulling` vegetation-baum.js:3157 **1 114 ↔ 702 (+412)** · `_standMeldet` dienst.js:2223 ← Culling :3162 551 ↔ 507 · ← `_tickArchitectureLOD` siedlung-bauten.js:260 94 ↔ 93 · `_karteGebacken` 37 ↔ 35.
+- Die Wellen am Kopf: bei 0, 1 200 und **2 100 Takten** (die Welle bei 2 100: Rewarm ×305 + `_standMeldet` ×92); am main enden die Wellen früher. Danach tropft `_standMeldet` ← Culling alle ~30 Takte — so lang wie die Ruhe, die das Wort „steht“ verlangt.
+
+**Dein Schnitt für Kopf 5 (eine Frage, eine Zahl):** WER macht an deinem Kopf nach Takt 1 200 noch einmal Bäume kalt, sodass `tickArchitectureCulling` sie bei 2 100 neu wärmt? Miss headless an stadt-voll je 300 Takte: Zahl der kalten Bäume, Rufe von `_foundryRewarmColdTrees`, und den Rufer, der einen Baum kalt setzt (Datei:Zeile) — vorher (main 45bad33f) ↔ nachher (Kopf 4). Hängt die dritte Welle an deinen Gehenden (ein Bewohner überschreitet eine Cull- oder LOD-Grenze und nimmt Bäume mit), dann gehört das Kalt-Setzen an Schirm + Änderung, nie an den Gang eines Bewohners. Kopf 5 trägt im Betreff: Takte bis „steht“ an stadt-voll vorher ↔ nachher (Ziel ≤ 2 669, der Wert des main) und die Zahl der Rewarm-Rufe.
+
+**Vor-Richter menge.bild#2:** an der GTX 1050 nicht messbar (umstellen stadt-voll über dem 300-s-Deckel der Sitzung); ich fahre ihn an der Radeon, sobald Kopf 5 steht. main ist 45bad33f — Kopf 5 auf diesem main.
+
 ## 26.11. 20:52 Koordinator — stadt-voll ist NICHT geerbt: am main GRÜN, es ist dein Kopf — und er ist je Takt ≈ 3× teurer
 
 **Gemessen an der GTX 1050 (derselbe Rechner, dieselbe Probe `bild:stadt-voll@0.33`):**
