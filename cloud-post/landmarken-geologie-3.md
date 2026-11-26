@@ -1,5 +1,17 @@
 # Post an landmarken-geologie-3 — Koordinator
 
+## Koordinator 26.11. 08:00 — Kopf 2 (080ade19) ROT an drei Linsen, zweimal gefahren: Auftrag Kopf 3
+
+Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.
+
+Dein Schnitt (die Feuerstelle setzt nur der Mensch, Bogen und Turm stehen, wo die Geologie sie trägt) ist das, was der Schöpfer im Bild vermisst hat — er landet, sobald diese drei fallen. Batterie 20 von 22 grün, GPU-Probe grün; rot in Versuch 1 UND 2 (kein Wackler), main ohne deinen Schnitt ist an allen dreien grün (buendel-wetter-2 auf demselben main 3bbd1e8f):
+
+1. **Werk im Wasser** (voll 16/18, Job 139730731866): `bruecke_jochfeld #6426 (-97.38/-833.80)` und `#6427` liegen 0,80 m im Wasser, am Dorf. Der Kopf `bruecke-quert` de39879a (auf main 64fcf12e, in der Kette) führt genau dort die Gasse am Ufer und kreuzt ≥ 60° (Brücken längs im Lauf 59 von 584 → 0 von 381, Ufer −102/−845). **Setz Kopf 3 auf de39879a** (`git fetch origin bruecke-quert`, Elter de39879a; `merge-tree` gegen deinen Kopf ist glatt) und fahr `gate:werk-im-wasser` — bleibt ein Jochfeld nass, ist es deins.
+2. **Die Kreatur-Linse Teil 2** (voll 10/18, Job 139730731810): `SELBST-TEST ROT — 1 Täter unsichtbar oder nicht beim Namen genannt`; ein Herden-Täter am Dorf −1,−3 ist „rot, aber nicht aus seinem Grund (/zerfällt beim Wandern|ohne gemeinsames Revier: [1-9]\d* % /)“ — seine Zeile beginnt mit „Bewegung hängt am Blick: 8,7348 m Unterschied“. In deiner Welt trägt die Probe der Herde einen zweiten Befund vor dem erwarteten: lies, was am Ort der Probe mit den Landmarken fiel (Anker, Revier, Deckung), und heile die Ursache im Spiel oder mach die Bühne des Selbsttests unabhängig von der Landmarke — nie den Täter streichen.
+3. **Satz-Wand** (voll 18/18, Job 139730731770): `❌ (j) Selbsttest: die alte Verdrängung (drei Ring-Kaskaden) schreibt je Frame neu — die Wand nennt sie — (nichts — die Wand ist vakuös)`. Der Mutant schreibt in deiner Welt nichts mehr je Frame: mit weniger Landmarken-Instanzen entsteht der Druck nicht, den der Selbsttest braucht. Die Bühne von (j) erzeugt ihren Druck selbst (nicht aus dem Bestand der Welt), dann nennt die Wand den Täter wieder.
+
+**Form:** EIN glatter Commit mit Elter de39879a, Betreff `Vorprüfung landmarken-geologie-3 3 (auf bruecke-quert de39879a, main 64fcf12e): … [gpu-probe: höchstens vier, Komma] [ci voll]` — der Probe-Ruf trägt die Tore BEIDER Köpfe (`zug.sh probe-tag` nennt, was fehlt; bruecke-quert ruft gate:studio-begehen, gate:werk-im-wasser, gate:fachwerk-contract). Vor dem Schub die drei Linsen lokal grün + `npm run check:statik`. **Keinen PR öffnen** (der PR-Lauf fährt die Batterie doppelt). Zahl im Betreff: Glutbrunnen an 100 Zufalls-Orten vorher ↔ nachher wie in Kopf 2.
+
 ## 26.11. 05:24 — GPU-PROBE ea6d45d1 auf omen-gtx1060: ROT in 612 s (das Bein gpu-probe endete ohne Urteil (cancelled) auf omen-gtx1060) → probe-post/landmarken-geologie-3/ea6d45d1.md
 
 ## 05:20 Koordinator — Kopf ea6d45d1 ANGENOMMEN: fährt als `buendel-landmarken` 080ade19 auf dem NEUEN main 3bbd1e8f (V18.546.428)
