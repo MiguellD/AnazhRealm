@@ -1,0 +1,153 @@
+{
+ "sha": "af81656627a4cf326cb9f409d6e8fec7a9c2787e",
+ "geraet": "gtx",
+ "zeit": "2026-11-26T12:29:45.139Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.erleben.bild.nacht#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT ❌ schatten_kontrast 0,9324 (Soll ≥ 3) · ✅ kelvin_abw 38 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 482 — Täter: schatten_kontrast 0,9324 statt ≥ 3",
+   "exit": 0,
+   "minuten": 3.21,
+   "grund": "ROT: S1 · ROT ❌ schatten_kontrast 0,9324 (Soll ≥ 3) · ✅ kelvin_abw 38 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 482 — Täter: schatten_kontrast 0,9324 statt ≥ 3",
+   "gpu": "nvidia/pascal",
+   "konsum": "kac83249486a0",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "ka3af2d7884c1",
+   "s": 192,
+   "fremd": {
+    "s": 194.1,
+    "takte": 89,
+    "fremdS": 45.33,
+    "kerne": 0.234,
+    "fensterKerne": 0.532,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      8.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      7.05
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.91
+     ]
+    ],
+    "dienerS": 33.92,
+    "diener": [
+     [
+      "System",
+      13.77
+     ],
+     [
+      "dwm.exe",
+      10.45
+     ]
+    ],
+    "geraetS": 53.84,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      35.39
+     ],
+     [
+      "svchost.exe",
+      15.38
+     ],
+     [
+      "SearchIndexer.exe",
+      1.28
+     ]
+    ],
+    "eigenS": 646.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T12:29:45.139Z",
+   "abdruck": "0a8640cb44c5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.bild.nacht#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT ✅ bodenfleck_anteil 0,917 (Soll ≥ 0,9) · ❌ gasse_dev_median — (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 482 — Täter: Gassen-Histogramm gegen Fotosatz: kein Fotosatz nächtlicher Gassen im Baum, kein Leser des Histogramms · gasse_dev_median — statt ≤ 0,5",
+   "exit": 0,
+   "minuten": 3.21,
+   "grund": "ROT: S2 · ROT ✅ bodenfleck_anteil 0,917 (Soll ≥ 0,9) · ❌ gasse_dev_median — (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 482 — Täter: Gassen-Histogramm gegen Fotosatz: kein Fotosatz nächtlicher Gassen im Baum, kein Leser des Histogramms · gasse_dev_median — statt ≤ 0,5",
+   "gpu": "nvidia/pascal",
+   "konsum": "kac83249486a0",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "ka3af2d7884c1",
+   "s": 192,
+   "fremd": {
+    "s": 194.1,
+    "takte": 89,
+    "fremdS": 45.33,
+    "kerne": 0.234,
+    "fensterKerne": 0.532,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      8.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      7.05
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.91
+     ]
+    ],
+    "dienerS": 33.92,
+    "diener": [
+     [
+      "System",
+      13.77
+     ],
+     [
+      "dwm.exe",
+      10.45
+     ]
+    ],
+    "geraetS": 53.84,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      35.39
+     ],
+     [
+      "svchost.exe",
+      15.38
+     ],
+     [
+      "SearchIndexer.exe",
+      1.28
+     ]
+    ],
+    "eigenS": 646.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T12:29:45.139Z",
+   "abdruck": "0c4617c417a6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.bild.nacht#1",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kac83249486a0": "bVVdb6MwEPwvebw7unwWsNQHp/TUSJe79CeszRpoCEQ2hCqn++8naEgCdF9AaNY7nhmbv6sjyj1m9PBu6mrFVt9WP1YGT2QZ0ifSD+9mxVaxdFzyGP8s4Jw/9zCpi2NjoCwEoKgwP5DV6oaK8kEObeoR7UAw6F54tgNQcIake3qat5aC0tpqUNHYaJMXRMTmwNZkKMjCVg3DLuDAj+nRYTBUlPBtAtfqJOe7Drpd9DpbTGCVTtk6ToyPIePdhnP+NmeZFkiNVRaVGec6aRgrm91mbRc9GjvrjJSXpC9NFDmOL0ay617OXppZoypbYybDIi8N3IgBxHNsRqaQeWMddS2ousBF7IYOsvVS7ezYWuqeEQqBkZhrnSNVGekJB9uTqhf6I5ovuscDabQqzC/Q2PZCV9y0AYDXJZdyID6MGIn7fkyRO2nsTf0UmG/4Xfk7APiAaEQl3eX7Hebl+pYMOL4kYWRe6MNUPuWTa3vs1xfoHFPS1r42zRXtUejb4vN0bBIYnrtoPe+8bXb0FBGjuwBBBPx1oa2pVdOhJis7tmOIfArCgHG+WYAbPBxGu1LpkZwba5o++Pc03FgFgc8Avl9kXmz685hYZypKuuZYhl7MnhN/Dj5pPFgoMl0oNaZBBFLFX4W3o7KxRF03o5ROGHoeAw+q+wD8Hqy9dz/J3vztT5698Elt+JzOMKHWzUhcoPB8n6msD0Sk5uhCN1aHMr+KowRhzKCT84XPpEvKaCKlchx0UzZcO1emYx6T75NQnxdOnwvqRa5Ma0aVJfoiYF/Y0pHeC6z247HxbCeMhgiut3w3FeU5Ux3ncIpgqtXaG66fPzzpFz6ShKOuVdHfjJBja3Ism9tv4d9/",
+  "ka3af2d7884c1": "jZXdcpswEIXfxZdNifgNQjO5kEOmSTppnb7BClZAjIGRIHTc6bt3wJbNTy66N745qz18eyT/2TSQ7CHD23ddVxu2+bL5utHwgZZG9YHq9l1v2CZKHBc9xk9FOOffBlmiiqbVpCwEAVFBfkCrUy0W5W0ytsk7sAPBSP/Isx0hkhxJ3PNLPfD7++UxpcC0tlqQaA6x0QsosqWw0xkItKCT4+CzOPAjvHMYGYvG/DUml+oTznc96Xf0aXGYgCqdO3ecCO5Cxvtnzvnb0mVaALZWWVTazHXSMJI2u856XfUo6K0jYF6iOjchdRxfGLPbAcmAadEoy07r2TDqpYFLGSHRUpuhLpK8tRpVC6zOchG5oQNs269oZ01nyakjEAKoWLLOAasM1cyD7SVyAP2bLg/dwwEVWBXkZ2lke6ErrmwIIU9rL+VofBxhjPt+hNSdNQ5LPQHmz3xS/o4Q8ptQozIx8yeax3XcdJIX6jDHJX10bW/JQOeQorL2tW4vSg9D3xanW/Eck/F3R7fLzuuHmf0BAJ2EhVDCn1YcdS3bHhRaWdOZwPgYhAHj2SpduoXDwawmTTxMVh/QDiGf2nAjGQQ+I+TmjHSF53QlrCMWJV4ym4RexB5ifyn+UHCwQGSqkNJsXgSJjD4Lao9la4m6bg1KJww9jxGPVNNl/+j5A+evkycjLn/5bfly88hn9Z2/fDahVq0xLkB4vs9kH1NCqFyqC9VaPST5BY4UCNES4hFViRnOMErHATdl4/NiKja5i29m4T2utnwscABc6U4bwgn4ImDnlJ/CNU9uj2ovoNqba+LZTkgZ53HGX/luQuUn5++N7Pl/19uWj4MaTEijalkMLyPJodM5lO31L+LvPw=="
+ }
+}
