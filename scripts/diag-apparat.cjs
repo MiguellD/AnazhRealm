@@ -968,7 +968,21 @@ function urteilFaelle() {
         wacheLuecken({ "x.cjs": 'require("./lib/welt-boot.cjs");\nconsole.log("❌")' }).length
     )
         v.push("Klinge 9: die Linse ohne Wache bleibt ungenannt");
+    // der Abfluss: was die Linse vor process.exit druckt, steht ganz beim Leser — eine abgeschnittene Ausgabe ist ROT beim Namen
+    const [gelesen, gedruckt] = abflussBytes(true);
+    if (gelesen !== gedruckt)
+        v.push(`Klinge 9: die Ausgabe ist abgeschnitten bei ${gelesen} Byte von ${gedruckt} — process.exit verwirft, was stdout an der Pipe hält (urteil-zeile abfluss)`); // prettier-ignore
     return v;
+}
+// DER ABFLUSS VOR DEM ENDE (urteil-zeile `abfluss`; CI-Job 139566371821 an 40c7113c: das Log der Kreatur-Linse brach bei 65 536 Byte
+// ab): ein Kind druckt 1 MiB und ein Zeilenende an eine Pipe, dann eine rote Zeile, dann process.exit(1) — mit der Wache steht jedes
+// Byte beim Leser; die Mutante ohne sie verliert unter POSIX, was die Pipe nicht fasst. Liefert [gelesen, gedruckt]
+function abflussBytes(mitWache) {
+    const N = 1 << 20;
+    const vor = mitWache ? `require(${JSON.stringify(require.resolve("./lib/urteil-zeile.cjs"))}).wache(); ` : "";
+    const code = `${vor}process.stdout.write("x".repeat(${N}) + String.fromCharCode(10)); console.error("ROT"); process.exit(1)`;
+    const r = require("child_process").spawnSync(process.execPath, ["-e", code], { encoding: "utf8", maxBuffer: 1 << 24 });
+    return [(r.stdout || "").length, N + 1];
 }
 // je Linse in scripts/ (Name → Text): die ROT/❌ druckt, ohne die Wache zu laden
 function wacheLuecken(texte) {
@@ -1230,6 +1244,14 @@ function selftest() {
             `Klinge 9: die Mutante ohne die Etikett-Ausnahme bleibt GRÜN oder ungenannt (${mRot.join(" · ") || "Anker fehlt"})`
         );
     else console.log(`  ✅ Selbsttest „ohne Etikett-Ausnahme" → rot: ${mRot[0]}`);
+    // Klinge 9, die Mutante des Abflusses: ohne die Wache verliert das Kind unter POSIX, was die Pipe nicht fasst (Windows schreibt
+    // eine Pipe synchron — dort reißt sie nicht, und der Lauf sagt es)
+    const [mGelesen, mGedruckt] = abflussBytes(false);
+    if (process.platform === "win32")
+        console.log(`  ℹ️  Selbsttest „ohne Abfluss“: Windows schreibt eine Pipe synchron (${mGelesen} von ${mGedruckt} Byte) — die Mutante reißt unter POSIX (CI)`); // prettier-ignore
+    else if (mGelesen >= mGedruckt)
+        fails.push(`Klinge 9: die Mutante ohne Abfluss verliert nichts (${mGelesen} von ${mGedruckt} Byte) — die Probe des Abflusses ist blind`); // prettier-ignore
+    else console.log(`  ✅ Selbsttest „ohne Abfluss" → rot: die Ausgabe ist abgeschnitten bei ${mGelesen} Byte von ${mGedruckt}`);
     urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle neun Klingen feuern");
 }
 

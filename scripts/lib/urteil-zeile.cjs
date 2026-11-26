@@ -77,8 +77,20 @@ function probeUrteil({ text, rc }) {
 // DIE URTEILS-WACHE am Prozess-Ende (einmal je Prozess): jede gedruckte Zeile (console.log/error/warn/info) läuft durch
 // `istRotZeile`; endet der Prozess mit 0 nach einer ROTEN Zeile, steht der Grund auf stderr und der Exit wird 1
 // Ein Selbsttest (`--selftest`/`--selbsttest`) zeigt seine Mutanten ROT und urteilt am eigenen Ende (selbsttestEnde, urteilEnde):
-// dort wacht sie nicht
+// dort wacht sie nicht. DAVOR DER ABFLUSS (`abfluss`, auch im Selbsttest): was der Prozess druckt, steht im Log
+// DER ABFLUSS VOR DEM ENDE (absicht-zug-4; CI-Job 139566371821 „Die Kreatur-Linse Teil 1“ an 40c7113c): an einer Pipe schreibt
+// Node unter Linux, ohne zu warten — was die Pipe (65 536 Byte) nicht fasst, wartet im Prozess, und `process.exit()` (urteilEnde,
+// selbsttestEnde, hauptLauf, jede Linse) verwirft es. Der Selbsttest der Bewohner-Probe druckte 22 Täter-Zeilen zu je ~127 KB: das
+// Log brach in der ersten bei 65 536 Byte ab, die rote Summe (stderr) stand davor, die 5 Täter, die der Selbsttest blind nannte,
+// standen nirgends beim Namen; gate:settlement (voll 14/18) verlor so alles hinter C-K5b. Das Urteil rechnet die Linse vorher, nie
+// aus der Konsole — verloren gingen die Namen. Jetzt schreibt jeder Prozess, der die Wache lädt (welt-boot lädt sie), an der Pipe
+// blockierend (Windows schreibt eine Pipe ohnehin synchron). Probe: gate:apparat Klinge 9, die Mutante ohne Abfluss reißt unter POSIX
+function abfluss() {
+    for (const s of [process.stdout, process.stderr])
+        if (s && s._handle && typeof s._handle.setBlocking === "function") s._handle.setBlocking(true);
+}
 function wache() {
+    abfluss();
     if (process.__urteilWache || process.argv.some((x) => /^--sel(f|bs)t?test$/.test(x))) return;
     process.__urteilWache = { erste: null, n: 0 };
     const w = process.__urteilWache;
@@ -127,7 +139,7 @@ function mass(art, ok, befund) {
     return true;
 }
 
-module.exports = { istRotZeile, rotZeilen, probeUrteil, wache, mass, alsSelbsttest };
+module.exports = { istRotZeile, rotZeilen, probeUrteil, wache, abfluss, mass, alsSelbsttest };
 
 if (require.main === module) {
     const fs = require("fs");
