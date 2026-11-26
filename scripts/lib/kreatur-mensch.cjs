@@ -161,7 +161,12 @@ async function menschBuehnen() {
                     for (const e of innen === sp.innen ? [] : [sp.innen, innen].filter(Boolean)) {
                         WG.durch++;
                         if (durchTuer(e, sp.x, sp.z, x, z)) WG.tuer++;
-                        else WG.falsch.push(`${b.rolle} #${b.heim} an ${nameVon(e)}`);
+                        // der Gang durch die Wand beim Ort (tages-gesetz 2): Uhr, Richtung, von wo nach wo — in der Welt und im Haus
+                        // (`hausLage`: x quer zur Front, z von der Mitte zur Front) —, ob er drinnen steht; bis hier nur Rolle und Haus
+                        else {
+                            const [f1, hl] = [(v) => v.toFixed(1), (px, pz) => { const l = hausLage(e, px, pz); return `${l.x.toFixed(1)}/${l.z.toFixed(1)}`; }]; // prettier-ignore
+                            WG.falsch.push(`${wann(b)} an ${nameVon(e)} ${innen === e ? "hinein" : "hinaus"} von ${f1(sp.x)}/${f1(sp.z)} nach ${f1(x)}/${f1(z)} (im Haus ${hl(sp.x, sp.z)} → ${hl(x, z)}${b.drinnen ? ", drinnen" : ""}; Ziel ${b.ziel ? `${Object.keys(b.orte).find((k) => b.orte[k] === b.ziel) || "—"} ${f1(b.ziel.x)}/${f1(b.ziel.z)}, ${f1(ab(b.ziel, b.orte.tuer))} m von seiner Tür` : "keins"}, Akt ${b.akt}, drinnen soll ${!!b.drinnenSoll}, ${f1(ab(P, b.orte.tuer))} m von seiner Tür, steht an ${Object.entries(b.orte).filter(([, v]) => v && Number.isFinite(v.x) && ab(v, P) < 2).map(([k]) => k).join("+") || "keinem seiner Orte"})`); // prettier-ignore
+                        }
                     }
                     // (die Höhe des Leibs ist die seines Genoms, 8 Kopf-Einheiten `kh` — die Höhe seiner Gestalt × `groesse`; bis
                     // generationen-band las die Linse 1,7 m × `groesse`, die Höhe eines Erwachsenen: das Kind, 1,22 × seine
@@ -359,10 +364,28 @@ async function menschBuehnen() {
                       ["bewohner-stadt-blind", "_bewohnerWand"],
                       // (der Händler geht mittags heim: das Soll der Stunde nennt seinen Stand vor der Tür)
                       ["bewohner-stand-leer", "_bewohnerSoll", (alt) => (b, h) => ((s) => (b.rolle === "haendler" ? { ...s, ziel: b.orte.heim } : s))(alt.call(r, b, h))], // prettier-ignore
+                      // (der Stand vor tages-gesetz 2: jedes Ende eines Wegs trägt ins Haus, wer drinnen soll — auch der Schritt
+                      // beiseite, `_bewohnerPlatz`; am Abend bittet die Probe jeden auf dem Heimweg einmal beiseite, wie der Wagen
+                      // kind #946741 bat, 80,0 m vor seiner Tür)
+                      ["bewohner-tuer", "_bewohnerSchritt", (alt) => {
+                          const gebeten = new Set();
+                          return function (b, dt, lenk) {
+                              const g = b.leib;
+                              if (b.drinnenSoll && !b.drinnen && b.weg && !b.platz && !gebeten.has(b) && b.wi < b.weg.length && ab(g.position, b.orte.tuer) > 5) { // prettier-ignore
+                                  gebeten.add(b);
+                                  const P = { x: g.position.x, z: g.position.z };
+                                  if (r._bewohnerPlatz(b.sied, b, P, b.weg[b.wi], { leib: g, weg: null, drinnen: false, kF: 0 })) lenk = null; // prettier-ignore
+                              }
+                              const w = b.weg;
+                              const v = alt.call(r, b, dt, lenk);
+                              if (w && !b.weg && b.drinnenSoll && !b.drinnen) [b.drinnen, g.userData._drinnen] = [true, true];
+                              return v;
+                          };
+                      }, 19.5],
                   ];
-            for (const [t, ueber, mit = () => () => null] of taeter ? T : [[]]) {
+            for (const [t, ueber, mit = () => () => null, uhr = 5] of taeter ? T : [[]]) {
                 const [ab, M] = [[], (voll ? ringMesser : wegeMesser)(S.liste)];
-                await uhrAuf(voll ? 7 : 5, `bewohner: ${ort}`, da, 4 * nH);
+                await uhrAuf(voll ? 7 : uhr, `bewohner: ${ort}`, da, 4 * nH);
                 if (ueber) decke(ueber, mit, ab);
                 for (let i = 0; i < (voll ? 600 : (taeter ? 30 : 240) * takte); i++) takt(voll ? 1 / 60 : DT, M);
                 sicht[t] = {
@@ -1475,6 +1498,7 @@ module.exports = {
             ["bewohner-wiederkehr", /Wiederkehr nach 1 h Abwesenheit: [1-9]/],
             ["bewohner-stadt-blind", /Stadt: Durchdringung: [1-9]/],
             ["bewohner-stadt-rempeln", /Berührung: [1-9]/],
+            ["bewohner-tuer", /Stadt: nicht über die Tür: [1-9]\d* von \d+ \([^·]*drinnen soll true, [\d.]+ m von seiner Tür/],
         ],
         // die volle Stadt (`--ort stadt-voll`)
         "bewohner@stadt-voll": [

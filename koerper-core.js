@@ -5338,19 +5338,36 @@
     //    wohnt: sein Haus; sonst ein Ort, der Arbeit bietet — der Markt, ein Acker, die Schmiede, die Burg, die Scheune),
     //    seinen MITTAGSTISCH (vom Werk aus: das Gasthaus, der Markt, die Brotzeit am Werk, `amWerk`, oder der eigene Tisch,
     //    `daheim`), seinen ABEND (der
-    //    Treff: Gasthaus, Platz, Kirche — oder die Bank vor der eigenen Tür) und den Markt seines Morgengangs. Die Güte ist
+    //    Treff: Gasthaus, Platz, Kirche — oder die Bank vor der eigenen Tür) und den Markt seines Einkaufs. Die Güte ist
     //    auch das Maß der Menge: so viele zieht der Ort im Verhältnis; `wegM` je Bedürfnis ist der Weg, über den sich die
     //    Nähe halbiert (zielNaehe) — der Tag trägt den Gang hin und zurück. Bis hierher wählte der Wirt den Ort in einer
     //    Wenn-Kette aus drei Berufen (markt → der Platz, feld → der nächste Acker, hof und jeder Rest → die eigene Tür), kein
     //    Fremder ging je zu Schmiede, Burg, Scheune oder Gasthaus: an der Metropole (dorf 7 300, 1 083 Bewohner) standen um
     //    10 Uhr 67 % ohne Ziel vor ihrer Tür, um 13 Uhr 50 % (Probe zielplan, gate:kreatur-takt).
-    //    DER MORGENGANG (mensch.K3, mensch.menge.bild#2): die letzten morgenPlatzH Stunden vor dem Werk geht jeder über den
-    //    Markt (`_morgenGang`: der Weg zum Werk führt über ihn) — jeder Tag trägt so 4–10 Wege, keiner bleibt an seiner Tür.
+    //    DAS TAGES-GESETZ (Welle tages-gesetz; Leser der Ganglinie: mensch.menge.rhythmus#2, gate:kreatur-takt zielplan): der Tag
+    //    der Stadt trägt zwei Spitzen der Wege, den Aufbruch zum Werk am Morgen und die Heimkehr am Nachmittag. Bis hier wendete
+    //    jeder Mensch seinen Tag an fünf festen Stunden ± streuH, und Aufstehen und Ruhe waren je ein Weg über die Schwelle: an
+    //    stadt-voll stand die Ganglinie in drei Spitzen (6 · 18 · 22 Uhr; 1 470 · 960 · 1 100 Wege je Stunde, Station rhythmus#2).
+    //    DER BEGINN DES WERKS je Mensch aus der Verteilung der Abfahrten zur Arbeit (`werkAb`: [von, bis, Anteil %] — US Census, ACS
+    //    2009, Table B „Time of Departure to Go to Work“); das Werk dauert so lange wie das des Gesetzes (werk[1] − werk[0]); die
+    //    Rollen mit eigenen Stunden behalten sie. AUFSTEHEN UND ZU BETT IM HAUS: der Morgen bis zum Aufbruch ist drinnen, ebenso
+    //    der Abend nach der Bank vor der Tür (`_bankWende`: eine Stunde aus dem Samen in höchstens bankH nach der Heimkehr). DIE HEIMKEHR
+    //    STREUT: der geteilte Abend am Treff dauert abendTreffH ± 0,25 h, der Mittag liegt in 12 ± 1 Uhr.
+    //    DER EINKAUF DES HAUSHALTS (`einkauf`, mensch.menge.bild#2): je Haushalt — die Leute hinter einer Tür — geht EINER am
+    //    Markt-Morgen zum Markt (der Wirt fragt den Kern, `tagesEinkaeufer`). Der Markt öffnet um `auf` mit Fahne und Glocke, bis
+    //    zum Schluss um 11 Uhr kaufen die Bürger „zur Nothdurfft ihrer Haushaltung“, die Fürkäufer erst danach (Marktordnung
+    //    Amberg 1847: April–September 7–11 Uhr, Oktober–März 8–11 Uhr; Laschinger 2024, Verh. Hist. Verein Oberpfalz 164,
+    //    S. 103–123). Der Beginn des Einkaufs streut gleich verteilt über die Marktzeit bis zum Schluss (`schluss`, ANGENOMMEN:
+    //    die Ordnung nennt den Rahmen, keine Verteilung); er bleibt `dauerH` je Erwachsenem seines Haushalts (Einkauf und Anstehen
+    //    je Tag und Befragtem: Pskow 1965 0,50 h; Szalai 1975, Futures 7:394, Table 5 — der EINE Einkäufer trägt die Zeit aller,
+    //    die Summe des Budgets bleibt; `tagesEinkaufFuer`), dann trägt er die Ware heim und geht zum Werk. Die Leute des Markts (`marktAuf`: der Händler, der
+    //    Kaufmann, das Kontor) stehen ab der Öffnung dort. Bis hier ging jeder Mensch jeden Morgen über den Markt (morgenPlatzH
+    //    1 h): an stadt-voll 1 356 Gänge zu 295 Haushalten.
     //    DER BESUCH (mensch.K3 Staffel 2, ≥ 100 m Weg je Tag): die
     //    Bindung nennt die Tür eines anderen Hauses — ein Ort, der Besuch bietet, mindestens besuchFernM von der eigenen Tür
-    //    und vom Markt seines Morgengangs (der Tag trägt den Weg), nah genug, dass er ankommt (wegM.besuch); der Mensch
-    //    steht dort besuchH Stunden — nach dem Werk, wo der Abend sie trägt (eine halbe Stunde vor der Ruhe), sonst nach dem
-    //    Morgengang, zwischen Markt und Werk, wo die Zeit bis zum Werk sie trägt. Bis w28-ziel-plan wählte der Wirt die Tür
+    //    und vom Markt (der Tag trägt den Weg), nah genug, dass er ankommt (wegM.besuch); der Mensch
+    //    steht dort besuchH Stunden — nach dem Werk, wo der Abend sie trägt (eine halbe Stunde vor der Ruhe), sonst am
+    //    Morgen vor dem Werk (der Einkäufer nach dem Markt), wo die Zeit bis zum Werk sie trägt. Bis w28-ziel-plan wählte der Wirt die Tür
     //    (`besuchStand`: fern von
     //    Tür und Platz, höchstens 60 m von ihnen und dem Werk — mit dem Werk an einem Ort der Stadt trug keine Tür mehr das
     //    Maß, die Suche ging jede Tür durch: die Liste der Metropole rechnete 49 statt 5 s). Das Tempo des Gangs ist das Gesetz des Leibs (koerper
@@ -5361,9 +5378,25 @@
         mittag: Object.freeze([12, 13]),
         ruhe: 22,
         streuH: 0.5,
-        morgenPlatzH: 1,
         besuchH: 0.75,
-        // wegeMax = so viele Wege trägt ein Tag höchstens (der Morgengang: 4–10 Wege je Tag, mensch.K3) — der Abend des Spiels
+        // der Gang: zwei Orte eines Menschen liegen wenigstens so weit auseinander, sonst ist die Wende kein Weg (der Wirt bindet
+        // sie so, BEWOHNER.gangM; der Richter gate:kreatur-takt bewohner „Wege“); näher am Heim ist ein Ort sein Heim (`_amHeim`)
+        gangM: 2,
+        // die Bank vor der Tür (`_bankWende`): höchstens so viele Stunden sitzt er nach der Heimkehr draußen (ANGENOMMEN; Band: die
+        // Gänge zu Fuß ab 18 Uhr, NHTS 2017 22 % von 18 bis 6 Uhr — National Academies 2025, „Improving Pedestrian Safety at Night“)
+        bankH: 1,
+        // der Markt-Morgen: die Öffnung und der Schluss (Uhr), wie lange er je Erwachsenem seines Haushalts bleibt
+        einkauf: Object.freeze({ auf: 7, schluss: 11, dauerH: 0.5 }),
+        // die Abfahrten zur Arbeit je Band [von, bis, Anteil %] (ACS 2009 Table B: vor 5 Uhr 4,1 · 5–6 8,3 · 6–7 18,9 · 7–8 28,1 ·
+        // 8–9 16,6 · 9–12 10,4; die Abfahrten ab 12 Uhr, 13,8 %, fährt das Band nicht — die späte Schicht tragen nur die Rollen
+        // mit Versatz, der Nachtfahrer und der Nachtwächter —, die Anteile gelten normiert über die Bänder bis 12 Uhr)
+        werkAb: Object.freeze([4, 5, 4.1, 5, 6, 8.3, 6, 7, 18.9, 7, 8, 28.1, 8, 9, 16.6, 9, 12, 10.4]),
+        // wegBudgetH = so viele Stunden geht ein Mensch an einem Tag (das Band der Ankunft zur Stunde, `tagesKette`): das Budget
+        // der Wegezeit liegt über Städte, Länder und Jahrhunderte bei gut einer Stunde je Tag (Zahavi 1979, The UMOT Project:
+        // 1,1 h; Marchetti 1994, Anthropological invariants in travel behavior: rund 1 h, vom Dorf zu Fuß bis zur Metropole) —
+        // ein Weg, der den Aufenthalt an seinem Ziel frisst, liegt jenseits des Bands
+        wegBudgetH: 1.1,
+        // wegeMax = so viele Wege trägt ein Tag höchstens (mensch.K3: 4–10 Wege je Tag) — der Abend des Spiels
         // (`spielProgramm`) vergibt nur Stände, die der Tag noch trägt (`tagesGaenge`)
         wegeMax: 10,
         rollen: Object.freeze({
@@ -5373,13 +5406,15 @@
             // DER KAUFMANN STEHT AM MARKT (w28-stadt-grammatik): wer in einem Handelshaus wohnt (die Bauten des Markt-Viertels
             // der Stadt-Grammatik), dessen Werk ist der nächste Platz, der Stände trägt (`werkAm`, binnen wegM.markt) — solange
             // der Wirt dort einen Stand für ihn hat, sonst wie jede Rolle sein Haus. Bis hier arbeitete jede Rolle vor der
-            // eigenen Tür: der Markt der Metropole trug 12 Stände und EINEN mit Beruf markt (main, ohne Viertel: 83)
-            kaufhaus: Object.freeze({ werkAm: "platz" }),
-            kontor: Object.freeze({ werkAm: "platz" }),
+            // eigenen Tür: der Markt der Metropole trug 12 Stände und EINEN mit Beruf markt (main, ohne Viertel: 83). DIE LEUTE
+            // DES MARKTS (`marktAuf`, tages-gesetz): sein Werk beginnt mit der Öffnung des Markts (TAGES_GESETZ.einkauf.auf), nicht
+            // mit den Abfahrten der Stadt — wer kaufen kommt, findet den Stand besetzt
+            kaufhaus: Object.freeze({ werkAm: "platz", marktAuf: true }),
+            kontor: Object.freeze({ werkAm: "platz", marktAuf: true }),
             // DER HÄNDLER (w28-stadt-grammatik): je Stand des Plans steht EINER hinter der Theke (der Wirt gibt ihm die Rolle wie
             // dem Fahrer, `_bewohnerListe`) — von früh bis zum Abend, das Mittag hält er durch: kein Stand steht leer
             // (`regenfest`: unter dem Dach seines Stands bleibt er auch im Regen, TAGES_GESETZ.regen)
-            haendler: Object.freeze({ werk: Object.freeze([7, 18.5]), mittagAmWerk: true, regenfest: true }),
+            haendler: Object.freeze({ werk: Object.freeze([7, 18.5]), mittagAmWerk: true, regenfest: true, marktAuf: true }),
             // DER FAHRER (Leiter mensch.netz.verkehr): wer einen Wagen der Stadt fährt (der Wirt gibt ihm die Rolle, `_verkehrAnlegen`), ist
             // von früh bis spät am Steuer — sein Werk ist der Platz seines Wagens, das Mittag fährt er durch; DER NACHTFAHRER
             // lebt denselben Tag um `versatzH` Stunden versetzt (am Steuer von 19 bis 7 Uhr: der Wagen der Stadt fährt bei Tag
@@ -5435,7 +5470,7 @@
         wegM: Object.freeze({ arbeit: 45, markt: 200, mahl: 30, treff: 45, besuch: 45, spiel: 120 }),
         besuchFernM: 40,
         // DER MARKT ZIEHT MIT SEINEN STÄNDEN (w28-stadt-grammatik): das Angebot eines Platzes an Arbeit, Mittagstisch und
-        // Morgengang wächst mit der Zahl der Stände seines Plans — je `staendeBasis` Stände einmal das Angebot der Tafel
+        // Einkauf wächst mit der Zahl der Stände seines Plans — je `staendeBasis` Stände einmal das Angebot der Tafel
         // (mindestens einmal: der Dorfplatz mit zwei, drei Ständen bietet wie bisher). Ein großer Markt zieht von weiter
         // (die Güte verdoppelt, der Halbweg reicht einen Schritt weiter) und trägt mehr: wie viele an ihm stehen, sagt die
         // Fläche vor seinen Ständen (fachwerk `platzAnziehung`, der Wirt stellt den Stand — ist keiner frei, bindet der Kern neu)
@@ -5448,6 +5483,15 @@
         // (das Spiel des Abends, SPIEL_GESETZ: der Läufer gebeugt in der Kraft, der Ringer in der Haltung des Kampfs — die Hände vor
         // dem Leib, der Stand breit —, am Brett über den Tisch, der Zuschauer jubelt)
         haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", zweikampf: "fight", brett: "pwalk", zuschauen: "joy" }), // prettier-ignore
+        // DIE ZEIT-ART JE AKT (tages-gesetz, Entscheid des Koordinators 25.11.; Leser: gate:mensch-zuege `zuordnen`, die Station
+        // mensch.geist.absicht#1): jeder Akt des Tags (`tagesPlan`, das Spiel des Abends) trägt GENAU EINE Art seiner Zeit — die
+        // Hauptgruppen der Zeitbudget-Forschung: arbeit (Szalai 1972 „work“; HETUS 2008 Guidelines, Eurostat, Code 1 Erwerb),
+        // bedarf (persönlicher Bedarf: Schlaf, Aufstehen und Körperpflege, Mahlzeit — Szalai „personal needs“, HETUS 0),
+        // haushalt (der Einkauf — HETUS 36 Einkaufen und Dienste), frei (Besuch, Treff, Bank, Spiel und Zuschauen — Szalai „free
+        // time“, HETUS 5–7); der Weg zwischen zwei Orten (HETUS 9) ist kein Akt des Plans. Bis hier las der Zuordner jede wache
+        // Viertelstunde im Haus als Freizeit: mit dem Morgen im Haus (tages-gesetz) trug der Ausgeglichene 5,53 h „daheim“ und
+        // fiel häuslich (gate:mensch-zuege ausgeglichen 7/16)
+        zeitArt: Object.freeze({ schlaf: "bedarf", morgen: "bedarf", mittag: "bedarf", arbeit: "arbeit", einkauf: "haushalt", besuch: "frei", abend: "frei", spiel: "frei", wettkampf: "frei", zweikampf: "frei", brett: "frei", zuschauen: "frei" }), // prettier-ignore
         // DER REGEN TREIBT INS HAUS (mensch.kopplung.leben S1 der Karte 2; Leser: `tagesPlan`, sein Wirt `_bewohnerSoll` reicht
         // den Regen der Welt, den Kanal `rain` des EINEN Wetter-Felds 0–1): steht der Regen am Ort über der Schwelle eines
         // Menschen (`ab` ± `streuH` aus seinem Samen — das Dorf flieht nicht im selben Atemzug, der Übergang des Worts leert den
@@ -5466,7 +5510,7 @@
         // Abend am Treff (das eigene Haus bietet den Abend nur mit daheimTreff) und länger (ruheNachH, die Ruhe bleibt vor
         // Mitternacht) — mit daheimTreff allein änderte sich der Tag von 6 der 24 Geselligen im Dorf der Linse, weil die
         // Bindung die meisten schon an den Treff band (main ↔ Kopf, je 15 min); haeuslich: der Abend daheim (jeder Treff
-        // außer Haus × treffMal), der Morgengang × morgenMal — den Besuch behält er: er ist der Weg des Tags (≥ 100 m, mensch.K3
+        // außer Haus × treffMal), der Einkauf × morgenMal — den Besuch behält er: er ist der Weg des Tags (≥ 100 m, mensch.K3
         // Staffel 2), kein Zug nimmt ihn (bis hier `besuch: false`: der häusliche Wirt, dessen Werk sein Haus ist, ging 3 Wege und
         // 25 m am Tag — gate:kreatur-takt bewohner, gasthaus #419347). Wer einen Posten hat (die Rolle
         // `regenfest`: der Händler, der Fahrer, die Wache), hält seine Schicht — der Zug verschiebt sein Werk nicht. Bis hier
@@ -5586,7 +5630,7 @@
     }
     // DIE BINDUNG EINES MENSCHEN an die Orte seines Tags: TC = der tetrapoda-Kern (die Ziel-Kette), heimI = der Index seines
     // Hauses in `orte` (tagesOrte), ohne(o, i) = der Ort ist nicht zu haben (der Wirt: kein freier Stand mehr). Liefert
-    // {werk, platz, mahl, abend, besuch}: je Bedürfnis der Index seines Orts (platz: der Markt seines Morgengangs) — heimI heißt daheim (das Werk: der eigene Hof), −1 keiner.
+    // {werk, platz, mahl, abend, besuch}: je Bedürfnis der Index seines Orts (platz: der Markt seines Einkaufs) — heimI heißt daheim (das Werk: der eigene Hof), −1 keiner.
     // weg(von, o, i) = der Weg, den er von `von` (ein Ort aus `orte`) zum Ort o GEHT (der Wirt: das Wege-Netz des Plans; Infinity:
     // keiner) — die Nähe jeder Wahl misst ihn (tetrapoda `zielWahl` `weg`), ohne ihn die Luftlinie.
     function tagesBindung(TC, same, rolle, heimI, orte, ohne, weg) {
@@ -5658,7 +5702,7 @@
     // DER PLAN DER STUNDE: orte = {heim, werk, platz, mahl, abend, besuch} sind die Orte des Menschen, wie der Wirt sie nach
     // seiner Bindung stellt (`tagesBindung`; ohne Werk ist der Hof das Werk, ohne Platz das Heim der Platz, ohne Mittagstisch isst er
     // daheim, ohne Treff sitzt er vor seiner Tür, ohne Besuch kein Besuch). Liefert { ort, wo, akt, drinnen } — ort ist einer
-    // der gereichten Orte, wo sein Name, akt eines von schlaf · morgen · besuch · arbeit · mittag · abend; drinnen = der Mensch
+    // der gereichten Orte, wo sein Name, akt eines von schlaf · morgen · einkauf · besuch · arbeit · mittag · abend; drinnen = der Mensch
     // ist in seinem Haus (an der Tür ungezeichnet). nass = der Regen am Ort (0–1, der Kanal `rain` des Wetter-Felds; ohne ihn
     // trocken): über der Schwelle des Menschen (TAGES_GESETZ.regen) bleibt er daheim, außer am Posten seiner Arbeit
     // (`regenfest`). krank = das Feld seines Lebenslaufs an diesem Tag (mensch.menge.seuche#1, der Satz `b.krank`): jede Stunde,
@@ -5666,7 +5710,17 @@
     // Schicht wie im Regen (`regenfest`: die Wache, der Fahrer). Bis hier stand die Krankheit als Zweig im Wirt (`_bewohnerSoll`)
     // neben diesem Plan: die Linse des Tags las den Plan ohne ihn (Soll-Orte 0,567 statt ≥ 0,9), der kranke Fahrer stieg nie ein.
     // DIE WENDEN DES TAGS EINES MENSCHEN (rein aus Same und Rolle, in den Stunden seiner Rolle — ohne den Versatz `versatzH`): die
-    // EINE Rechnung, die der Plan der Stunde (`tagesPlan`) und das Fenster seiner Arbeit (`tagesFenster`, der Bestand) lesen
+    // EINE Rechnung, die der Plan der Stunde (`tagesPlan`) und das Fenster seiner Arbeit (`tagesFenster`, der Bestand) lesen.
+    // DAS BAND (TAGES_GESETZ.werkAb): u ∈ [0, 1) aus dem Samen → die Stunde, je Band [von, bis) gleich verteilt, die Anteile normiert
+    function _tagBand(B, u) {
+        var s = 0;
+        for (var i = 2; i < B.length; i += 3) s += B[i];
+        var x = u * s;
+        for (var k = 0; k < B.length; k += 3) {
+            if (x < B[k + 2] || k + 3 >= B.length) return B[k] + (B[k + 1] - B[k]) * Math.min(1, x / B[k + 2]);
+            x -= B[k + 2];
+        }
+    }
     function _tagesWenden(same, rolle) {
         var G = TAGES_GESETZ;
         var R = G.rollen[rolle] || {};
@@ -5677,47 +5731,123 @@
             return (_tagZahl(same, wort) * 2 - 1) * G.streuH;
         };
         var wach = G.wach + j("wach");
-        var w0 = (R.werk || G.werk)[0] - (post ? 0 : Z.werkVorH || 0) + j("werk0");
-        var w1 = (R.werk || G.werk)[1] + (post ? 0 : Z.werkNachH || 0) + j("werk1");
-        var morgenH = G.morgenPlatzH * (Z.morgenMal != null ? Z.morgenMal : 1);
+        // der Beginn des Werks: die Leute des Markts mit seiner Öffnung, eine Rolle mit eigenen Stunden zu ihnen ± streuH, jeder
+        // andere aus dem Band der Abfahrten (`werkAb`); das Werk dauert wie das des Gesetzes. Bis tages-gesetz begann jedes Werk ohne
+        // eigene Stunden um 8 ± 0,5 Uhr (an stadt-voll trug die Stunde um 6 Uhr 1 470 Wege: Aufstehen vor die Tür, der Gang zum Markt)
+        var Wk = R.werk || G.werk;
+        var b0 = R.marktAuf ? G.einkauf.auf : R.werk ? Wk[0] + j("werk0") : _tagBand(G.werkAb, _tagZahl(same, "werk0"));
+        var w0 = b0 - (post ? 0 : Z.werkVorH || 0);
+        var w1 = (R.werk ? Wk[1] : b0 + (Wk[1] - Wk[0])) + (post ? 0 : Z.werkNachH || 0) + j("werk1");
         var mittagAmWerk = R.mittagAmWerk || Z.mittagAmWerk;
-        var m0 = G.mittag[0] + j("mittag");
+        // der Mittag streut ± 1 h um 12 Uhr (die Stunde des Mahls je Mensch aus dem Samen)
+        var m0 = G.mittag[0] + (_tagZahl(same, "mittag") * 2 - 1) * 1;
         var m1 = m0 + (G.mittag[1] - G.mittag[0]);
         var ruhe = (R.ruhe || G.ruhe) + j("ruhe");
         // der gesellige Abend dauert länger (ruheNachH); die Ruhe bleibt vor Mitternacht seiner Stunde
         if (Z.ruheNachH) ruhe = Math.max(ruhe, Math.min(ruhe + Z.ruheNachH, 23.75));
-        // der Zug verschiebt Wenden, er nimmt dem Tag keinen Weg (der Morgengang: 4–10 Wege je Tag): das längere Werk des Fleißigen
+        // der Zug verschiebt Wenden, er nimmt dem Tag keinen Weg (mensch.K3: 4–10 Wege je Tag): das längere Werk des Fleißigen
         // endet besuchH vor der Ruhe — der Abend bleibt. Bis hier lief das Werk des fleißigen Wirts (10–23 Uhr + werkNachH) über
         // seine Ruhe 23,6 hinaus: am Tag aus `tagesPlan` (je 0,02 h, 4 000 Samen) trug er ohne Besuch 3 Wege
-        if (!post && Z.werkNachH) w1 = Math.max((R.werk || G.werk)[1] + j("werk1"), Math.min(w1, ruhe - G.besuchH));
-        return { R: R, wach: wach, w0: w0, w1: w1, morgenH: morgenH, mittagAmWerk: mittagAmWerk, m0: m0, m1: m1, ruhe: ruhe, abendTreffH: Z.abendTreffH };
+        if (!post && Z.werkNachH) w1 = Math.max((R.werk ? Wk[1] : b0 + (Wk[1] - Wk[0])) + j("werk1"), Math.min(w1, ruhe - G.besuchH));
+        // er wacht vor seinem Aufbruch: wenigstens besuchH vor dem Werk (der Morgen im Haus)
+        wach = Math.min(wach, w0 - G.besuchH);
+        // der geteilte Abend am Treff dauert abendTreffH ± 0,25 h (die Heimkehr streut; bis hier × 0,5–1,5: der Ausgeglichene
+        // blieb bis 2,25 h am Treff, der blinde Zuordner las ihn als gesellig — gate:mensch-zuege)
+        var treffH = Z.abendTreffH != null ? Z.abendTreffH + (_tagZahl(same, "treffH") - 0.5) * 0.5 : Z.abendTreffH;
+        return { R: R, wach: wach, w0: w0, w1: w1, morgenH: 0, mittagAmWerk: mittagAmWerk, m0: m0, m1: m1, ruhe: ruhe, abendTreffH: treffH };
     }
-    // DER WEG ZUM WERK FÜHRT ÜBER DEN MARKT (mensch.K3 der Morgengang · mensch.menge.bild#2): das Fenster [von, bis) seines Gangs über
-    // den Markt sind die letzten `morgenH` Stunden vor dem Werk — davor ist er daheim, danach (mit dem Besuch des Morgens, `bM`,
-    // erst nach ihm) am Werk. Wer vor dem Werk keine `morgenH` Stunden wach ist (der Posten der Frühschicht, der Spätaufsteher),
-    // geht wie bisher gleich nach dem Aufstehen über den Markt und tritt danach an. Die Fußgänger-Zählungen der Innenstädte
-    // tragen ihre erste Spitze des Tags in der Stunde vor dem Beginn der Arbeit (City of Melbourne, Pedestrian Counting System,
-    // stündlich seit 2009: werktags 8–9 Uhr) — der Markt füllt sich mit dem Weg zur Arbeit. Bis hier lag der Gang gleich nach dem
-    // Aufstehen, und vom Markt ging jeder erst heim, dann zum Werk: am Messort stadt-voll hatten um 7 Uhr 296 Menschen den Platz
-    // zum Ziel, um 8 Uhr 8 — die Station mensch.menge.bild#2 sah um 8 Uhr 47 Menschen im Bild, 21 gehend (Soll 100 und 40).
-    // Die Zahl der Wege bleibt je Mensch dieselbe (drinnen → Markt → vor der Tür → Werk wurde drinnen → vor der Tür → Markt → Werk).
+    // DER EINKAUF AM MARKT-MORGEN (mensch.menge.bild#2, TAGES_GESETZ.einkauf): das Fenster [von, bis) seines Akts „einkauf“ (ATUS
+    // 07 Consumer Purchases) — für den Einkäufer seines Haushalts (orte.einkauf, `_tagesWendenOrt`) ab e0 für morgenH Stunden; für
+    // jeden anderen leer am Aufbruch (mit dem Besuch des Morgens, `bM`, um besuchH davor). Bis tages-gesetz ging jeder Mensch die
+    // letzten morgenPlatzH Stunden vor dem Werk über den Markt (menge-bild: an stadt-voll um 8 Uhr 84 im Bild, 32 gehend).
     function _morgenGang(T, bM) {
-        var bis = Math.max(T.w0 - (bM ? TAGES_GESETZ.besuchH : 0), T.wach + T.morgenH);
+        if (T.e0 != null) return [T.e0, T.e0 + T.morgenH];
+        var bis = T.w0 - (bM ? TAGES_GESETZ.besuchH : 0);
         return [bis - T.morgenH, bis];
+    }
+    // DIE WENDEN SEINES TAGS MIT SEINEN ORTEN (tages-gesetz): der Einkäufer seines Haushalts (orte.einkauf = der Markt, an dem er
+    // kauft) kauft VOR seinem Werk — er beginnt um e0 = auf + u · s (u aus dem Samen), gleich verteilt über die Spanne
+    // s = min(schluss, w0) − dauer − auf zwischen der Öffnung und dem letzten Beginn, den der Schluss und sein Werk noch tragen;
+    // er bleibt dauer = dauerH × die Erwachsenen seines Haushalts (orte.einkaufFuer, der Wirt aus `tagesEinkaufFuer`; höchstens
+    // die Marktzeit) × dem Mal seines Zugs (`morgenMal`), wacht wenigstens besuchH davor und tritt sein Werk nach dem Einkauf an.
+    // Bis hier kaufte er eine halbe Stunde, als kaufte er für sich allein: an stadt-voll standen um 8 Uhr 20 Menschen im Einkauf
+    // (3 am Platz der Station mensch.menge.bild#2, im Bild 48 · gehend 7).
+    // Beginnt sein Werk vor der Öffnung + dauer, kauft er zur Öffnung und beginnt das Werk danach (s = 0). Bis hier ging, wessen
+    // Werk vor dem Einkauf begann, vom Werk zum Markt und zurück: an der Station mensch.K2#2 stand um 10 Uhr keiner am Amboss
+    // der Schmiede (koerper rollen.schmiede: Werk 7–18 Uhr, der einzige Schmied ihres Hauses war ihr Einkäufer). Jeder andere
+    // lebt die Wenden seines Samens. Leser: `tagesPlan`, `tagesGaenge`, `tagesKette`
+    function _tagesWendenOrt(same, rolle, orte) {
+        var T = _tagesWenden(same, rolle);
+        // DER TISCH DES HEIMWERKERS (tages-gesetz; der Zug nimmt dem Tag keinen Weg, mensch.K3 4–10): wessen Werk an seinem Heim
+        // liegt (derselbe Ort oder keinen Gang `gangM` von ihm), isst am Mittag an seinem Tisch wie jeder ohne den Zug — die
+        // Brotzeit am Werk des Fleißigen (zuege `mittagAmWerk`) gilt fern vom Haus; die Rolle mit dem Mittag am Werk (Wirt,
+        // Händler, Posten) hält ihn. Bis hier nahm der Zug dem Heimwerker den Gang des Mittags: am Start-Dorf trug der
+        // Fleißige im Rathaus (rathaus #952) 3 Wege (Station mensch.K2#2, gate:kreatur-takt bewohner); an der Stadt liegt das Werk
+        // bei 29 von 1 356 keinen Gang vom Heim
+        if (orte && T.mittagAmWerk && !(TAGES_GESETZ.rollen[rolle] || {}).mittagAmWerk && _amHeim(orte.werk, orte.heim)) T = Object.assign({}, T, { mittagAmWerk: false });
+        if (!orte || !orte.einkauf) return T;
+        var K = TAGES_GESETZ.einkauf,
+            Z = TAGES_GESETZ.zuege[tagesZug(same)],
+            U = Object.assign({}, T);
+        var fuer = Math.max(1, orte.einkaufFuer || 1);
+        U.morgenH = Math.min(K.schluss - K.auf, K.dauerH * fuer) * (Z.morgenMal != null ? Z.morgenMal : 1);
+        var e0 = K.auf + _tagZahl(same, "einkauf") * Math.max(0, Math.min(K.schluss, T.w0) - U.morgenH - K.auf);
+        U.e0 = e0;
+        U.w0 = Math.max(T.w0, e0 + U.morgenH);
+        U.wach = Math.min(T.wach, e0 - TAGES_GESETZ.besuchH);
+        return U;
+    }
+    // liegt der Ort a am Heim h: derselbe Ort oder näher als ein Gang (TAGES_GESETZ.gangM)
+    function _amHeim(a, h) {
+        return !!a && !!h && (a === h || Math.hypot(a.x - h.x, a.z - h.z) < TAGES_GESETZ.gangM);
+    }
+    // DER EINKÄUFER EINES HAUSHALTS (der Wirt `_einkaufAnlegen`, je Tür): glieder = [{same, rolle}] der Leute hinter ihr → der Index
+    // dessen, der am Markt-Morgen einkauft: der Erwachsene, dessen Werk am spätesten beginnt (ihm trägt der Morgen den Markt);
+    // ein Posten (regenfest) nur, wenn kein anderer da ist; nie ein Kind — ein Haus nur mit Kindern: −1 (keiner)
+    // FÜR WIE VIELE ER KAUFT (der Wirt `_einkaufAnlegen` → orte.einkaufFuer): die Erwachsenen hinter seiner Tür — jeder außer dem Kind
+    function tagesEinkaufFuer(glieder) {
+        var n = 0;
+        for (var i = 0; i < glieder.length; i++) if (!(TAGES_GESETZ.rollen[glieder[i].rolle] || {}).spiel) n++;
+        return n;
+    }
+    function tagesEinkaeufer(glieder) {
+        var b = -1,
+            bw = -Infinity;
+        for (var i = 0; i < glieder.length; i++) {
+            var g = glieder[i],
+                R = TAGES_GESETZ.rollen[g.rolle] || {};
+            if (R.spiel) continue;
+            var w = _tagesWenden(g.same, g.rolle).w0 - (R.regenfest ? 24 : 0);
+            if (w > bw) (b = i), (bw = w);
+        }
+        return b;
     }
     // DIE GÄNGE DES TAGS (mensch.K3, 4–10 Wege je Tag): wie oft der Plan der Stunde (`tagesPlan`, die EINE Quelle) den Ort eines
     // Menschen wechselt — gelesen je Abschnitt zwischen den Wenden seines Tags (`_tagesWenden`) und den Grenzen seiner Auftritte
     // (orte.spiel), rund um die Uhr, trocken und gesund; ein Ort ist der gereichte Ort mit drinnen oder davor (die Orte eines
     // Menschen liegen je einen Gang auseinander, der Wirt bindet sie so), jeder Wechsel ein Weg. Leser: `spielProgramm` (der
     // Abend trägt den Weg), die Linse gate:koerper-kern E7.
+    // DIE BANK VOR DER TÜR (tages-gesetz): wer heimkommt (nach dem Besuch des Abends und dem geteilten Abend am Treff), sitzt erst
+    // vor seiner Tür und geht zu einer Stunde aus dem Samen hinein, gleich verteilt über höchstens bankH nach der Heimkehr — zur
+    // Ruhe ist er drinnen, ihr Gang über die Schwelle folgt der Heimkehr. Bis tages-gesetz saß jeder bis zur Ruhe vor der Tür, die
+    // Ruhe war ein Weg: an stadt-voll um 22 Uhr 1 100 Wege in der Stunde (die dritte Spitze der Station rhythmus#2); danach bis
+    // zur Ruhe gleich verteilt, die Schwelle staute sich vor ihr: im Kern-Spike um 21 Uhr 372 Wege bei der Hälfte der Spitze
+    // 354, die dritte Spitze kam wieder, ab 18 Uhr 30,8 % der Wege (Band `bankH`: 22 %)
+    function _bankWende(T, same, orte) {
+        var G = TAGES_GESETZ,
+            bA = orte.besuch && T.w1 + G.besuchH <= T.ruhe - 0.5,
+            ab = (bA ? T.w1 + G.besuchH : T.w1) + (T.abendTreffH != null ? T.abendTreffH : 0);
+        return ab + _tagZahl(same, "bank") * Math.max(0, Math.min(G.bankH, T.ruhe - ab));
+    }
     function tagesGaenge(same, rolle, orte) {
         var G = TAGES_GESETZ,
-            T = _tagesWenden(same, rolle),
+            T = _tagesWendenOrt(same, rolle, orte),
             v = T.R.versatzH || 0;
         // (die Grenzen des Gangs über den Markt mit und ohne den Besuch des Morgens — eine Grenze ohne Wechsel zählt keinen Weg)
         var mO = _morgenGang(T, false),
             mB = _morgenGang(T, true);
         var t = [T.wach, mO[0], mO[1], mB[0], mB[1], mB[1] + G.besuchH, T.w0, T.m0, T.m1, T.w1, T.w1 + G.besuchH, T.ruhe];
+        t.push(_bankWende(T, same, orte));
         if (T.abendTreffH != null) t.push(T.w1 + T.abendTreffH, T.w1 + G.besuchH + T.abendTreffH);
         (orte.spiel || []).forEach(function (e) {
             t.push(e.von, e.bis);
@@ -5744,9 +5874,83 @@
         }
         return n;
     }
+    // DIE ANKUNFT ZUR STUNDE (mensch.menge.bild#2, Entscheid des Koordinators 25.11.): der Plan (`tagesPlan`) nennt, wo ein Mensch
+    // zu einer Stunde IST; wer dorthin geht, bricht um die Gehzeit seines Wegs davor auf. `tagesKette` legt die Abschnitte seines
+    // Tags (die Wenden wie `tagesGaenge`, je Abschnitt der Plan seiner Mitte) ab dem Schlaf hintereinander; je Abschnitt
+    // `geh(von, nach)` = die Gehzeit in Stunden vom Ort des vorigen zum Ort dieses (der Wirt: die Länge seines Wegs über das Netz,
+    // `tagesWege`, ÷ das Tempo seines Gangs ÷ die Sekunden der Stunde) — der Aufbruch liegt um sie vor der Wende, nie vor der
+    // eigenen Ankunft am vorigen Ort (monoton): ist der Weg länger als der Aufenthalt davor, schrumpft dieser (`eng` zählt die
+    // Abschnitte, bei denen das geschieht). `tagesZiel(K, stunde)` = der Plan des Abschnitts, zu dem er zur Stunde unterwegs ist
+    // oder an dem er steht — der EINE Leser der Ziel-Kette im Wirt (`_bewohnerSoll`, und darüber die Wende und die Ankunft). Bis
+    // hier brach jeder zur Wende auf: der Tag dauert 60 min, die Stunde 150 s, der Weg zum Platz an stadt-voll bis 300 m (≈ 214 s)
+    // — um 8 Uhr sah der Plan 287 Menschen am Markt, 93 standen dort, 193 gingen noch (131 davon ≥ 50 m fort).
+    function tagesKette(same, rolle, orte, nass, krank, geh) {
+        var G = TAGES_GESETZ,
+            T = _tagesWendenOrt(same, rolle, orte),
+            v = T.R.versatzH || 0;
+        var mO = _morgenGang(T, false),
+            mB = _morgenGang(T, true);
+        var t = [T.wach, mO[0], mO[1], mB[0], mB[1], mB[1] + G.besuchH, T.w0, T.m0, T.m1, T.w1, T.w1 + G.besuchH, T.ruhe];
+        t.push(_bankWende(T, same, orte));
+        if (T.abendTreffH != null) t.push(T.w1 + T.abendTreffH, T.w1 + G.besuchH + T.abendTreffH);
+        (orte.spiel || []).forEach(function (e) {
+            t.push(e.von, e.bis);
+        });
+        var u = t
+            .map(function (x) {
+                return ((x % 24) + 24) % 24;
+            })
+            .sort(function (a, b) {
+                return a - b;
+            });
+        // die Abschnitte: je Wende der Plan seiner Mitte; ein Abschnitt am selben Ort mit demselben Akt setzt den vorigen fort
+        var ab = [];
+        for (var i = 0; i < u.length; i++) {
+            var a = u[i],
+                b = i + 1 < u.length ? u[i + 1] : u[0] + 24;
+            if (b - a < 1e-9) continue;
+            var p = tagesPlan(same, rolle, (a + b) / 2 + v, orte, nass, krank);
+            var q = ab.length ? ab[ab.length - 1].p : null;
+            if (q && q.ort === p.ort && q.drinnen === p.drinnen && q.akt === p.akt) continue;
+            ab.push({ ab: a, p: p });
+        }
+        // der Anker: der Schlaf (drinnen daheim — kein Weg führt aus ihm); ohne ihn der erste Abschnitt
+        var s0 = 0;
+        for (var k = 0; k < ab.length; k++) if (ab[k].p.akt === "schlaf") s0 = k;
+        var A = ab.length ? ab[s0].ab : 0,
+            n = ab.length,
+            kette = [],
+            ank = 0,
+            eng = 0,
+            gehSumme = 0;
+        for (var j = 0; j <= n; j++) {
+            var e = ab[(s0 + j) % n],
+                rel = j === n ? 24 : (((e.ab - A) % 24) + 24) % 24;
+            var vor = j ? ab[(s0 + j - 1) % n].p : e.p;
+            var g = j && vor.ort !== e.p.ort ? Math.max(0, geh(vor.wo, e.p.wo) || 0) : 0;
+            if (rel - g < ank - 1e-9) eng++;
+            var auf = Math.max(rel - g, ank);
+            // DER KAUF SCHRUMPFT NIE (tages-gesetz): den Markt verlässt der Einkäufer erst nach der Dauer seines Einkaufs ab seiner
+            // Ankunft (morgenH) — ist der Weg zum Werk länger als die Zeit bis zum Werk, beginnt das Werk später. Bis hier fraß der
+            // Weg den Kauf (der Tag dauert 60 min, die Stunde 150 s, der Weg zum Platz bis 1,4 Spielstunden): an stadt-voll standen
+            // um 8 Uhr 49 Einkäufer am Platz, 88 im Akt einkauf von 294 (Kern-Spike: am Platz 87 → 110)
+            if (j && vor.akt === "einkauf") auf = Math.max(auf, ank + T.morgenH);
+            ank = auf + g;
+            gehSumme += g;
+            kette.push({ auf: auf, p: e.p });
+        }
+        return { A: A, v: v, kette: kette, eng: eng, gehH: gehSumme };
+    }
+    function tagesZiel(K, stunde) {
+        var h = (((Number(stunde) - K.v - K.A) % 24) + 24) % 24,
+            L = K.kette,
+            z = L[0];
+        for (var i = 1; i < L.length && L[i].auf <= h; i++) z = L[i];
+        return z.p;
+    }
     function tagesPlan(same, rolle, stunde, orte, nass, krank) {
         var G = TAGES_GESETZ;
-        var T = _tagesWenden(same, rolle),
+        var T = _tagesWendenOrt(same, rolle, orte),
             R = T.R;
         var h = (((Number(stunde) - (R.versatzH || 0)) % 24) + 24) % 24;
         var wach = T.wach,
@@ -5769,12 +5973,15 @@
             return { ort: o || heim, wo: o ? wo : "heim", akt: akt, drinnen: !!drinnen };
         };
         var bA = besuch && w1 + G.besuchH <= ruhe - 0.5;
-        var bM = besuch && !bA && wach + morgenH + G.besuchH <= w0;
+        var bM = besuch && !bA && (T.e0 != null ? T.e0 : wach) + morgenH + G.besuchH <= w0;
         var M = _morgenGang(T, bM);
         if (h < wach || h >= ruhe) return aus("heim", "schlaf", true);
-        if (h < M[0]) return aus("heim", "morgen", false);
-        if (h < M[1]) return aus("platz", "morgen", false);
+        // der Morgen im Haus (tages-gesetz: Aufstehen ist kein Weg über die Schwelle), der Einkauf am Markt, der Besuch des Morgens,
+        // dann — der Einkäufer trägt die Ware heim — wieder im Haus bis zum Aufbruch
+        if (h < M[0] && h < w0) return aus("heim", "morgen", true);
+        if (h >= M[0] && h < M[1]) return aus("einkauf", "einkauf", false);
         if (bM && h < M[1] + G.besuchH) return aus("besuch", "besuch", false);
+        if (h < w0) return aus("heim", "morgen", true);
         // der Mittag: am Tisch seiner Bindung — ohne einen isst er daheim (drinnen)
         if (h >= m0 && h < m1 && !mittagAmWerk) return aus("mahl", "mittag", !orte.mahl);
         if (h < w1) return aus("werk", R.spiel ? "spiel" : "arbeit", false);
@@ -5784,9 +5991,11 @@
         // Läufer, Ringer, am Brett oder im Ring der Zuschauer; der Regen schickt ihn heim, der Kranke bleibt vor seiner Tür
         var sp = orte.spiel;
         for (var si = 0; sp && si < sp.length; si++) if (h >= sp[si].von && h < sp[si].bis) return aus("spiel", sp[si].akt, false, sp[si]);
-        // der geteilte Abend (zuege `abendTreffH`): die ersten Stunden seines Abends am Treff, dann daheim vor seiner Tür
-        if (T.abendTreffH != null && h >= (bA ? w1 + G.besuchH : w1) + T.abendTreffH) return aus("heim", "abend", false);
-        return aus("abend", "abend", false);
+        // der geteilte Abend (zuege `abendTreffH`): die ersten Stunden seines Abends am Treff, dann daheim vor seiner Tür — ab der
+        // Wende der Bank (`_bankWende`) drinnen; wessen Abend daheim ist (ohne Treff oder die eigene Tür als Treff), ebenso
+        var drin = h >= _bankWende(T, same, orte);
+        if (T.abendTreffH != null && h >= (bA ? w1 + G.besuchH : w1) + T.abendTreffH) return aus("heim", "abend", drin);
+        return aus("abend", "abend", (!orte.abend || orte.abend === heim) && drin);
     }
 
     // ── DIE REGEL-GRAMMATIK (Meisterkarte 2 mensch.sport.regeln#1 · mannschaft#1 · arena#1 · geistspiel#1, rein additiv) — EIN
@@ -11176,6 +11385,10 @@
         tagesWege: tagesWege,
         tagesGaenge: tagesGaenge,
         tagesPlan: tagesPlan,
+        tagesKette: tagesKette,
+        tagesEinkaeufer: tagesEinkaeufer,
+        tagesEinkaufFuer: tagesEinkaufFuer,
+        tagesZiel: tagesZiel,
         tagesZug: tagesZug,
         tagesHaltung: tagesHaltung,
         // mensch.sport regeln · mannschaft · arena · geistspiel #1 — DIE REGEL-GRAMMATIK (Leser: _spielTag, tagesPlan orte.spiel, _bewohnerKopf)
