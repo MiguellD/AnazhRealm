@@ -39,7 +39,8 @@ class AnazhRealm_stoff_gang {
         // DER STAND IN DER ZEIT (stand-lebt, koerper STAND): je Stand `standZeilen` Zeilen über seinen Zyklus — die Zeilen eines Stands
         // liegen beieinander, die Instanz nennt die erste ihrer Uhr und den Anteil der nächsten (`_gangSatzInstanz`); ohne Wort eine
         const HZ = spec.standZeilen || 1;
-        if (!(H % HZ === 0)) throw this._stoffBruch(`die Stände des Satzes (${spec.name})`, new Error(`${H} Zeilen, je Stand ${HZ}`));
+        if (!(H % HZ === 0))
+            throw this._stoffBruch(`die Stände des Satzes (${spec.name})`, new Error(`${H} Zeilen, je Stand ${HZ}`));
         // DER TON JE ECKE (mensch.K4): tragen die Quellen ihn (der Mensch, koerper `menschTon`), färbt jede Instanz ihre Ecken nach
         // ihrer Palette — die Zeilen der Ton-Tafel [Leib, Gestalt] reisen je Instanz in `aGang.zw` (`_gangSatzInstanz`), gelesen am
         // Index des Gangs (`_senkenKnoten().gang`: in der Wahl der GPU der Eintrag ihrer Liste, nie der Index des Zugs)
@@ -627,7 +628,15 @@ class AnazhRealm_stoff_gang {
             const zs = T.int(hs.add(baender * n)).toVar();
             const HZ = standZeilen;
             const ks = HZ > 1 ? T.mod(hs, HZ) : null;
-            const zs1 = HZ > 1 ? T.int(hs.sub(ks).add(T.mod(ks.add(1), HZ)).add(baender * n)).toVar() : null;
+            const zs1 =
+                HZ > 1
+                    ? T.int(
+                          hs
+                              .sub(ks)
+                              .add(T.mod(ks.add(1), HZ))
+                              .add(baender * n)
+                      ).toVar()
+                    : null;
             const ts = HZ > 1 ? T.fract(a.w).toVar() : null;
             const z0 = T.int(band.add(k0)).toVar();
             const z1 = T.int(band.add(T.mod(k0.add(1), n))).toVar();

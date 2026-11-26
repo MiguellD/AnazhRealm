@@ -406,7 +406,13 @@ class AnazhRealm_siedlung_menge {
                 !echt || (this._trefferGliedNamen && this._trefferGliedNamen.has(x.leib.userData.gattung));
             S.backt = S.backt.filter((x) => {
                 const L = S.gestalten[x.gestalt].lage;
-                x.backt = !((!S.satz || (S.satz.fertig && S.satz.standFertig)) && L && L.fertig && L.standFertig && warm(x));
+                x.backt = !(
+                    (!S.satz || (S.satz.fertig && S.satz.standFertig)) &&
+                    L &&
+                    L.fertig &&
+                    L.standFertig &&
+                    warm(x)
+                );
                 return x.backt;
             });
         }

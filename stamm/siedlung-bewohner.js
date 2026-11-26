@@ -1910,7 +1910,8 @@ class AnazhRealm_siedlung_bewohner {
         if (G.lage === null) {
             G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, gebacken: 0, fertig: false, tempo: b.tempoBand, gang: null };
             const N = window.__koerperCore.STAND.zeilen;
-            for (let z = 0; z < AnazhRealm._bewohnerStandZahl(); z += N) this._bewohnerGangPose(g, G.lage, G.lage.n + z, null);
+            for (let z = 0; z < AnazhRealm._bewohnerStandZahl(); z += N)
+                this._bewohnerGangPose(g, G.lage, G.lage.n + z, null);
         }
     }
 
@@ -2316,7 +2317,8 @@ class AnazhRealm_siedlung_bewohner {
                 // die Hülle der Grobstufe trägt keine Glieder, die sich rühren könnten); eine Zeile je Leib und Takt des Stands
                 else if (!istNah && !b.weg && !b.drinnen && this._bewohnerStandTakt(S, b, delta)) {
                     if (b.satzOrt) bewegt.push(b);
-                    else if (echt && g.userData._kzGrob !== true && this._kzBesitztFeld(g)) this._bewohnerFeldLage(b, S);
+                    else if (echt && g.userData._kzGrob !== true && this._kzBesitztFeld(g))
+                        this._bewohnerFeldLage(b, S);
                 }
                 if (!istNah) {
                     if (g.userData.rig && !b.backt) halter.push(b); // er trägt einen Leib, den das Auge nicht sieht
@@ -3008,7 +3010,7 @@ class AnazhRealm_siedlung_bewohner {
     // (koerper `leibStandZeile`, wie die Phase des Gangs k0 und k1 wählt); solange die Zeilen der Gestalt `Z` nicht gebacken
     // sind (`standFertig`), die erste. → [z0, z1, Anteil] (nach `aus`)
     _bewohnerStandLage(b, Z, aus) {
-        const z = aus || (this._bewohnerStandZ || (this._bewohnerStandZ = [0, 0, 0]));
+        const z = aus || this._bewohnerStandZ || (this._bewohnerStandZ = [0, 0, 0]);
         const h = b.standZeile || 0;
         if (!Z || !Z.standFertig) {
             z[0] = z[1] = h;
@@ -3026,7 +3028,10 @@ class AnazhRealm_siedlung_bewohner {
     // (`_creatureAnimDiv` an der Grenze seiner Grobstufe, höchstens ×4: zwei Zeilen); liefert, ob er dran ist
     _bewohnerStandTakt(S, b, delta) {
         const ST = window.__koerperCore.STAND;
-        const div = Math.min(4, this._creatureAnimDiv(Math.sqrt(b.dA2 || 0), this._bewohnerGelenkAb(S, b), 0, delta, true));
+        const div = Math.min(
+            4,
+            this._creatureAnimDiv(Math.sqrt(b.dA2 || 0), this._bewohnerGelenkAb(S, b), 0, delta, true)
+        );
         if (Number.isFinite(b.standUhr) && b.uhr - b.standUhr < (div * ST.zyklus) / ST.zeilen / 2) return false;
         b.standUhr = b.uhr;
         return true;
