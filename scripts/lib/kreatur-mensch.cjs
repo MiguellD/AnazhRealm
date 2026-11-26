@@ -1148,7 +1148,8 @@ async function menschBuehnen() {
     // Vorbeigang und zwei Gänge ohne Erinnerung (der dritte die Gegenprobe), dann schlägt der Spieler ein Wesen 5 m neben ihm
     // (`damageCreature`, Quelle Spieler) — der Zeuge weicht (`_bewohnerWeichen`, kollektiv#1): sein Stand liegt im Kreis der Tat;
     // steht er wieder, steht er weiter von ihr als sein alter Stand (`fort`), und der vierte Gang geht durch den Stand, den er jetzt hat.
-    // Täter (Selbsttest, EIN Lauf): der starre Kopf · wer steht, macht keinen Platz · der Zeuge vergisst · der Zeuge bleibt stehen.
+    // Täter (Selbsttest, EIN Lauf): der starre Kopf · kein Reiz (der Blick folgt dem Bewegten nicht) · wer steht, macht keinen Platz ·
+    // der Zeuge vergisst · der Zeuge bleibt stehen.
     await buehne("begegnung", async (restore) => {
         const [dt, tag0] = [1 / 60, s.timeOfDay];
         const S = await startDorf(restore);
@@ -1265,7 +1266,10 @@ async function menschBuehnen() {
                 const d = ab(pm, g.position);
                 z.dMin = Math.min(z.dMin, Math.round(d * 1000) / 1000);
                 z.beruehrt += S.liste.filter((o) => !o.drinnen && ab(pm, o.leib.position) < 2 * A.PLAYER_WALL_RADIUS).length; // prettier-ignore
-                if (e === null && d <= A.BEWOHNER.begegnungM) [e, z.amEreignis] = [t, Math.round(gier())];
+                // am Ereignis: der Kopf neben dem Spieler (`amEreignis`) und der Spieler neben dem LEIB des Zeugen (`seitEreignis`:
+                // der Vorbeigang kommt von der Seite — der Leib wendet sich dem Reiz nicht zu, `_bewohnerKopf`)
+                if (e === null && d <= A.BEWOHNER.begegnungM)
+                    [e, z.amEreignis, z.seitEreignis] = [t, Math.round(gier()), Math.round(Math.abs(grad(wrap(Math.atan2(pm.x - g.position.x, pm.z - g.position.z) - g.rotation.y))))]; // prettier-ignore
                 if (e !== null && z.zuS === null && traegt() && gier() <= 10)
                     [z.zuS, z.imBild] = [Math.round((t - e) * 1000) / 1000, !!b.nah && (!echt || (g.visible && imBlick(kopf()[12], kopf()[13], kopf()[14])))]; // prettier-ignore
             }
@@ -1319,6 +1323,7 @@ async function menschBuehnen() {
             const je = (k) => G.map((x) => x[k]);
             return {
                 ...{ wer: wer(b), furcht, zuS: je("zuS"), amEreignis: G[0].amEreignis, begegnungM: A.BEWOHNER.begegnungM },
+                ...{ seitEreignis: G[0].seitEreignis, augeNurGrad: +grad(A.BEWOHNER.augeNurRad).toFixed(1), reizM: A.BEWOHNER.reizM },
                 ...{ imBild: je("imBild"), dMin: je("dMin"), beruehrt: je("beruehrt"), fort },
                 weichOrt: W4 ? [+W4.x.toFixed(1), +W4.z.toFixed(1)] : null,
             };
@@ -1327,6 +1332,7 @@ async function menschBuehnen() {
         const sicht = {};
         for (const [t, name] of Object.entries({
             "begegnung-starr": "_bewohnerKopf",
+            "begegnung-reizlos": "_bewohnerReiz",
             "begegnung-steht": "_bewohnerPlatz",
             "begegnung-vergessen": "_bewohnerZeuge",
             "begegnung-bleibt": "_bewohnerWeichen",
@@ -1450,7 +1456,7 @@ function menschUrteil(name, z, soll) {
         soll(z.huellen === z.haeuser, `${z.haeuser - z.huellen} Häuser ohne Hülle`);
     }
     // DIE BEGEGNUNG (mensch.K5 Staffel 1): je Gang (der Vorbeigang 2 m daneben, drei durch seinen Stand) der Kopf auf 10° zum
-    // Spieler ≤ 0,5 s ab 3 m (als Leib, im Fenster im Bild), kein Bewohner näher als zwei Kapseln; die Gewalt neben ihm weitet
+    // Spieler ≤ 0,5 s ab 3 m (als Leib, im Fenster im Bild), der Blick folgt dem Reiz, kein Bewohner näher als zwei Kapseln; die Gewalt neben ihm weitet
     // den Abstand des vierten Gangs um ≥ 0,3 m, die Gegenprobe ohne Erinnerung bleibt auf 0,15 m beim zweiten; nach der Gewalt WEICHT
     // der Zeuge (`_bewohnerWeichen`): steht er wieder, steht er ≥ begegnungM weiter von der Tat als sein alter Stand; kam der
     // Spieler ihm im vierten Gang (durch seinen neuen Stand) nicht auf begegnungM nahe, gab es keinen Kopf zu wenden
@@ -1458,10 +1464,16 @@ function menschUrteil(name, z, soll) {
         const [zu, d] = [z.zuS, z.dMin];
         const begegnet = (i) => i < 3 || d[3] <= z.begegnungM;
         soll(
-            zu.every((t, i) => !begegnet(i) || (t !== null && t <= 0.5)) &&
-                z.amEreignis >= 30 &&
-                z.imBild.every((x, i) => !begegnet(i) || x),
-            `Kopf-Zuwendung ab 3 m: ${zu.join(" / ")} s (Soll ≤ 0,5, der Vorbeigang ab ${z.amEreignis}° ≥ 30; als Leib im Bild ${z.imBild})`
+            zu.every((t, i) => !begegnet(i) || (t !== null && t <= 0.5)) && z.imBild.every((x, i) => !begegnet(i) || x),
+            `Kopf-Zuwendung ab 3 m: ${zu.join(" / ")} s (Soll ≤ 0,5; als Leib im Bild ${z.imBild})`
+        );
+        // DER BLICK FOLGT DEM REIZ (stand-lebt 2, `_bewohnerReiz`): wer steht, schaut dem nächsten Bewegten schon ab `reizM` nach —
+        // am Ereignis (3 m) kommt der Vorbeigang von der Seite seines Leibs (≥ 30°), und sein Kopf steht bis auf die Spanne der
+        // Augen (`augeNurRad`) auf dem Spieler. Bis stand-lebt 2 wandte sich der Kopf erst ab 3 m (das Maß hieß „der Vorbeigang ab
+        // ≥ 30°“ am Kopf selbst); der Täter „reizlos“ (kein Reiz) steht am Ereignis wie damals neben dem Spieler.
+        soll(
+            z.seitEreignis >= 30 && z.amEreignis <= Math.round(z.augeNurGrad),
+            `der Blick folgt dem Reiz nicht: am Ereignis steht der Kopf ${z.amEreignis}° neben dem Spieler (Soll ≤ ${Math.round(z.augeNurGrad)}°, die Spanne der Augen — ab ${z.reizM} m schaut, wer steht, dem Bewegten nach), der Vorbeigang kommt ${z.seitEreignis}° neben seinem Leib (Soll ≥ 30)`
         );
         soll(
             Math.max(...z.beruehrt) === 0 && Math.min(...d) > 0.7,
@@ -1514,6 +1526,7 @@ module.exports = {
         ],
         begegnung: [
             ["begegnung-starr", /Kopf-Zuwendung/],
+            ["begegnung-reizlos", /der Blick folgt dem Reiz nicht/],
             ["begegnung-steht", /Berührung/],
             ["begegnung-vergessen", /die Erinnerung lenkt den Abstand nicht/],
             ["begegnung-bleibt", /der Zeuge weicht nicht/],

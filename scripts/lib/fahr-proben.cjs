@@ -815,13 +815,100 @@ async function probeLeben(expected) {
             for (const W of VK.wagen) if (W.entry) mische(W.entry.position.x), mische(W.entry.position.z);
             return h[0];
         };
-        // (die Lage je Leib und Wagen in den ersten 30 Bildern: trennt sich die Stunde dort, nennt die Linse, WER sich trennt —
-        // sein Same, seine Rolle, seine Tat und beide Lagen)
+        // (WER sich trennt, in JEDEM Bild — sein Same, seine Rolle, seine Tat und beide Lagen: der Zwilling trägt je Bild die Lagen
+        // als Zahlen (`orteJetzt`), der Lauf nennt im ersten Bild, das sich trennt, die Namen dazu. Bis mittag-heiler trug die Linse
+        // die Namen nur der ersten 30 Bilder: buendel-mittag trennte sich in Bild 614, und der Täter blieb ohne Namen)
+        const orteJetzt = (VK) => {
+            const a = [];
+            for (const b of S.liste) if (b.leib) a.push(b.leib.position.x, b.leib.position.z);
+            for (const W of VK.wagen) if (W.entry) a.push(W.entry.position.x, W.entry.position.z);
+            return Float64Array.from(a);
+        };
         const lagenJetzt = (VK) => [
             ...S.liste.filter((b) => b.leib).map((b) => [`${b.rolle}#${b.same >>> 0} ${b.akt}${b.ankunft ? " ankunft" : ""}${b.weg ? " geht" : ""}${b.amSteuer ? " steuer" : ""}${b.ziel ? ` ziel ${b.ziel.x.toFixed(2)}/${b.ziel.z.toFixed(2)}` : ""}${b.ziel && b.ziel.ur ? ` ur ${b.ziel.ur.x.toFixed(2)}/${b.ziel.ur.z.toFixed(2)}` : ""}`, b.leib.position.x, b.leib.position.z]), // prettier-ignore
             ...VK.wagen.filter((W) => W.entry).map((W) => [`wagen ${W.nr} ${W.zustand}`, W.entry.position.x, W.entry.position.z]),
         ];
-        const Z = {};
+        // DER ZUSTAND HINTER DER LAGE (mittag-heiler): die Lage trennt sich Bilder NACH dem Feld, das sie trennt — das Tempo, der
+        // Weg, das Ziel, die Uhr des Kopfs, der Takt der Siedlung. Je Bild der Abdruck jedes Felds über alle Köpfe (ein Hash je
+        // Feld, `zustandJetzt`): der Lauf nennt je Feld das erste Bild, in dem es von seinem Zwilling abweicht, bis zu dem Bild, in
+        // dem die Lage sich trennt. `--zustand` (die Diagnose am Bruch) trägt im Zwilling dazu je Bild den Wert jedes Felds je Kopf
+        // und nennt den ersten Kopf, der es trägt, mit beiden Werten — und zu jedem Kopf, dessen Feld sich im Bild der Trennung
+        // zum ersten Mal trennt, jedes seiner Felder, das im Bild DAVOR schon anders stand (was ihn dorthin trug). Bis hier nannte die Linse nur die Lage: an buendel-mittag
+        // stand ein Kind 4,5 cm neben seinem Zwilling, und was es dorthin trug, stand in keinem Bild
+        const zahl = (v) =>
+            typeof v === "number" ? v : v == null ? NaN : typeof v === "boolean" ? +v : typeof v === "string" ? [...v].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) | 0, 7) : 1; // prettier-ignore
+        const ZUSTAND = {
+            tempo: (b) => b.tempo,
+            gangTempo: (b) => b.gangTempo,
+            gangBand: (b) => b.gangBand,
+            krank: (b) => !!b.krank,
+            akt: (b) => b.akt,
+            zielX: (b) => b.ziel && b.ziel.x,
+            zielZ: (b) => b.ziel && b.ziel.z,
+            zielTempo: (b) => b.ziel && b.ziel.tempo,
+            weg: (b) => b.weg && b.weg.length,
+            wi: (b) => b.wi,
+            wegRest: (b) => b.wegRest,
+            da: (b) => !!b.da,
+            drehen: (b) => b.drehen,
+            ruht: (b) => !!b.ruht,
+            uhr: (b) => b.uhr,
+            uhrAb: (b) => b.uhrAb,
+            takt: (b) => b.takt,
+            drinnen: (b) => !!b.drinnen,
+            ankunft: (b) => !!b.ankunft,
+            amSteuer: (b) => !!b.amSteuer,
+            weichen: (b) => !!b.weichen,
+            platz: (b) => !!b.platz,
+            begegnet: (b) => !!b.begegnet,
+            nah: (b) => !!b.nah,
+            d2: (b) => b.d2,
+            blick: (b) => b.leib && b.leib.rotation.y,
+            hoehe: (b) => b.leib && b.leib.position.y,
+            kopfY: (b) => b.kopfY,
+            reizUhr: (b) => b.reizUhr,
+            standUhr: (b) => b.standUhr,
+            standZeile: (b) => b.standZeile,
+            animDt: (b) => b.animDt,
+            stand: (b) => !!b.stand,
+            hinaus: (b) => !!b.hinaus,
+            gegangen: (b) => b.gegangen,
+            gehTakt: (b) => b.gehTakt,
+            tempoJetzt: (b) => b.tempoJetzt,
+            rueck: (b) => b.rueck,
+            vx: (b) => b.vx,
+            vz: (b) => b.vz,
+            gaitW: (b) => b._gaitW,
+            brand: (b) => !!b.brand,
+        };
+        const ZUSTAND_S = {
+            "S.planI": () => S.planI,
+            "S.taktUhr": () => S.taktUhr,
+            "S.aktiv": () => S.aktiv && S.aktiv.length,
+            "S.ruhend": () => S.ruhend && S.ruhend.length,
+            spielZeit: () => st.spielZeit,
+            simZeit: () => st._simZeit,
+            tag: () => st.timeOfDay,
+        };
+        const ZNAMEN = [...Object.keys(ZUSTAND), ...Object.keys(ZUSTAND_S)];
+        const zustandJetzt = (voll) => {
+            const [dv, L, NK] = [new DataView(new ArrayBuffer(8)), S.liste, Object.keys(ZUSTAND).length];
+            const felder = new Int32Array(ZNAMEN.length);
+            const werte = voll ? new Float32Array(NK * L.length) : null;
+            const mische = (h, v) => (dv.setFloat64(0, v), (Math.imul(h, 31) + dv.getUint32(0) + 7 * dv.getUint32(4)) | 0);
+            ZNAMEN.forEach((n, f) => {
+                if (f >= NK) return void (felder[f] = mische(0, zahl(ZUSTAND_S[n]())));
+                let h = 0;
+                for (let j = 0; j < L.length; j++) {
+                    const v = zahl(ZUSTAND[n](L[j]));
+                    h = mische(h, v);
+                    if (werte) werte[f * L.length + j] = v;
+                }
+                felder[f] = h;
+            });
+            return { felder, werte };
+        };
+        const Z = { zst: {} };
         for (const [lauf, [stunde, sek, nr]] of laeufe.entries()) {
             const zwilling = nr === o.stunden.length;
             // DER SPIELER STEHT, WO DAS SPIEL DEN HARTEN FALL STELLT: in der Kreuzung am Markt im Gedränge (oben, der Anfang der
@@ -1095,14 +1182,51 @@ async function probeLeben(expected) {
             if (o.taeter) VK.wagen[0].b.amSteuer = false;
             // der fünfte Täter: die Stadt fließt nicht um den stehenden Spieler (kein Wagen umfährt ihn) — die Minute nennt ihn
             if (o.taeter) r._verkehrUmfahren = () => false;
-            const [abdruck, lagen] = [[], []];
+            const [abdruck, lagen, zustand] = [[], [], []];
             for (let k = 0; k < sek * 60; k++, i++) {
                 const tv = tMs;
                 frame(i);
                 if (!zwilling) bildRuck((tMs - tv) / 1000, k), ohr(k);
                 if (i % 8 === 7) await window.sleep();
-                if (k < (o.zwillingS | 0) * 60) abdruck.push(abdruckJetzt(VK));
-                if (k < 30 && o.zwillingS) lagen.push(lagenJetzt(VK));
+                if (k < (o.zwillingS | 0) * 60) {
+                    abdruck.push(abdruckJetzt(VK));
+                    const zs = zustandJetzt(!!o.zustandWer && (zwilling || !nr));
+                    if (zwilling) zustand.push(zs);
+                    else if (Z.zustand && !nr && !Z.zstZu) {
+                        const zz = Z.zustand[k];
+                        const L = S.liste;
+                        const neu = new Set();
+                        ZNAMEN.forEach((n, f) => {
+                            if (n in Z.zst || zs.felder[f] === zz.felder[f]) return;
+                            const lies = ZUSTAND[n];
+                            const j = zz.werte && lies ? L.findIndex((b, q) => !Object.is(Math.fround(zahl(lies(b))), zz.werte[f * L.length + q])) : -1; // prettier-ignore
+                            const wer = j < 0 ? "" : ` ${L[j].rolle}#${L[j].same >>> 0} ${L[j].akt}: ${zz.werte[f * L.length + j]} ↔ ${zahl(lies(L[j]))}`;
+                            Z.zst[n] = `${n}@${k}${wer}`;
+                            if (j >= 0) neu.add(j);
+                        });
+                        Z.zstZu = abdruck[k] !== Z.abdruck[k];
+                        if (Z.zstZu && k > 0 && zz.werte && Z.zsVor && Z.zsVor.werte)
+                            for (const j of [...neu].slice(0, 2)) {
+                                const [a, c] = [Z.zustand[k - 1].werte, Z.zsVor.werte];
+                                const d = Object.keys(ZUSTAND)
+                                    .map((n, f) => [n, a[f * L.length + j], c[f * L.length + j]])
+                                    .filter(([, x, y]) => !Object.is(x, y))
+                                    .map(([n, x, y]) => `${n} ${x} ↔ ${y}`);
+                                Z.zst["vor:" + j] = `${L[j].rolle}#${L[j].same >>> 0} im Bild ${k - 1} davor: ${d.join(", ") || "jedes Feld gleich"}`;
+                            }
+                        Z.zsVor = zs;
+                    }
+                    if (zwilling) lagen.push(orteJetzt(VK));
+                    else if (Z.abdruck && !nr && !Z.wer && abdruck[k] !== Z.abdruck[k]) {
+                        const [A, B] = [lagenJetzt(VK), Z.lagen[k]];
+                        const fmt = (v) => (Number.isFinite(v) ? v.toFixed(3) : "-");
+                        Z.wer = A.map((a, j) => [a, B[2 * j], B[2 * j + 1]])
+                            .filter(([a, x, z]) => a[1] !== x || a[2] !== z)
+                            .slice(0, 4)
+                            .map(([a, x, z]) => `${a[0]}: ${fmt(x)}/${fmt(z)} ↔ ${fmt(a[1])}/${fmt(a[2])}`);
+                        if (A.length * 2 !== B.length) Z.wer.unshift(`${B.length / 2} ↔ ${A.length} Leiber und Wagen`);
+                    }
+                }
                 if (zwilling) continue;
                 if (tMs - T.t0 >= 60000 * (T.min + 1) && ++T.min) {
                     const [w, W] = VK.wagen.map((W) => [W.weg - T.weg.get(W), W, T.weg.set(W, W.weg)]).sort((a, b) => a[0] - b[0])[0]; // prettier-ignore
@@ -1317,14 +1441,12 @@ async function probeLeben(expected) {
             if (sy.fahrt) for (const s of sy.fahrt.values()) s.stop(0);
             Object.assign(sy, KL.vor);
             if (zwilling) {
-                [Z.abdruck, Z.lagen] = [abdruck, lagen];
+                [Z.abdruck, Z.lagen, Z.zustand] = [abdruck, lagen, zustand];
                 continue;
             }
             if (Z.abdruck && !nr) {
                 const erst = Z.abdruck.findIndex((x, j) => x !== abdruck[j]);
-                const [A, B] = [Z.lagen[erst], lagen[erst]];
-                const wer = A && B ? A.map((a, j) => [a, B[j]]).filter(([a, c]) => !c || a[1] !== c[1] || a[2] !== c[2]).slice(0, 4).map(([a, c]) => `${a[0]} ${a[1].toFixed(3)}/${a[2].toFixed(3)} ↔ ${c ? c[0] + " " + c[1].toFixed(3) + "/" + c[2].toFixed(3) : "-"}`) : []; // prettier-ignore
-                aus.vorgeschichte = { stunde, bilder: [Z.abdruck.length, abdruck.length], erst, einAnkunft: Z.einAnkunft ?? null, wer };
+                aus.vorgeschichte = { stunde, bilder: [Z.abdruck.length, abdruck.length], erst, einAnkunft: Z.einAnkunft ?? null, wer: Z.wer || [], zustand: Object.values(Z.zst) };
             }
             // DIE ANKUNFT SIEHT DIE HÜLLE DES WAGENS (`_bewohnerNaechster`: die Frage der Ankunft nach dem Sprung der Uhr und des
             // Platz-Machens, ob ein Leib den Punkt hält): ein Punkt in der Hülle eines fahrenden Wagens, zwischen den Mitten seiner

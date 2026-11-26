@@ -1072,7 +1072,7 @@ const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, ohrM: 40, ohrK: 4, ohr
 const vorgeschichteVerdict = (vg) =>
     urteil([
         [!!vg && vg.bilder[0] === VERKEHR.zwillingS * 60 && vg.bilder[1] === vg.bilder[0], `die Stunde ohne Vorgeschichte ungezählt ${JSON.stringify(vg)}`], // prettier-ignore
-        [!vg || vg.erst < 0, `die Stunde ${vg && vg.stunde} Uhr hängt an der Vorgeschichte der Seite: sie trennt sich in Bild ${vg && vg.erst} von ihrem Zwilling${vg && vg.wer && vg.wer.length ? ` (Zwilling ↔ Lauf: ${vg.wer.join(" · ")})` : ""}`], // prettier-ignore
+        [!vg || vg.erst < 0, `die Stunde ${vg && vg.stunde} Uhr hängt an der Vorgeschichte der Seite: sie trennt sich in Bild ${vg && vg.erst} von ihrem Zwilling${vg && vg.wer && vg.wer.length ? ` (Zwilling ↔ Lauf: ${vg.wer.join(" · ")})` : ""}${vg && vg.zustand && vg.zustand.length ? ` — der Zustand trennt sich bis dahin (Feld@Bild): ${vg.zustand.join(" · ")}` : ""}`], // prettier-ignore
         // wer noch ankommt, steigt nicht ein (`_tickVerkehr`, der Fall des Sprungs vor dem ersten Lauf): ein Name = er stieg ein
         [!vg || vg.einAnkunft === false, `wer noch ankommt, steigt ein: ${vg && vg.einAnkunft === null ? "keine Probe" : vg && vg.einAnkunft} — mit der Lage von vor dem Sprung (\`_tickVerkehr\` ohne \`ankunft\`)`], // prettier-ignore
     ]);
@@ -3049,7 +3049,7 @@ hauptLauf(async () => {
             // `--taeter` (pflicht.C#1): um 10 Uhr 130 s (zwei volle Minuten), Wagen 0 ohne Fahrer, Wagen 1 neben der Trasse, Wagen 2
             // in Wagen 3, der erste gemessene Fahrer auf dem Dach, und keiner umfährt den stehenden Spieler in der Kreuzung — jeder
             // beim Namen (der letzte als Kopf der Reihe der kürzesten Minute, `spieler`)
-            { verkehr: { ...VERKEHR, mutanteArbeit: schalter("--mutante-arbeit"), mutanteSprung: schalter("--mutante-sprung"), mutanteOhr: schalter("--mutante-ohr"), mutanteKreis: schalter("--mutante-kreis"), ...(STUNDE != null && { stunden: [STUNDE] }), ...(SEK != null && { sek: SEK }), ...(schalter("--platz") && { stand: "platz" }), ...(TAETER && { stunden: [10], sek: 130, taeter: 1, zwillingS: 0 }) } }, // prettier-ignore
+            { verkehr: { ...VERKEHR, mutanteArbeit: schalter("--mutante-arbeit"), mutanteSprung: schalter("--mutante-sprung"), mutanteOhr: schalter("--mutante-ohr"), mutanteKreis: schalter("--mutante-kreis"), zustandWer: schalter("--zustand"), ...(STUNDE != null && { stunden: [STUNDE] }), ...(SEK != null && { sek: SEK }), ...(schalter("--platz") && { stand: "platz" }), ...(TAETER && { stunden: [10], sek: 130, taeter: 1, zwillingS: 0 }) } }, // prettier-ignore
             (o) => {
                 const vg = o.verkehr && o.verkehr.vorgeschichte;
                 if (!TAETER) check("VK-V (mensch.K2) die Stunde ohne Vorgeschichte: dieselbe Saat, dasselbe Bild", !vorgeschichteVerdict(vg).length, vorgeschichteVerdict(vg).join(" · ") || JSON.stringify(vg)); // prettier-ignore

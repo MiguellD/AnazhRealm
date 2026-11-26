@@ -35,6 +35,27 @@ function staticLaws(manifestSrc) {
     return out;
 }
 
+// E: DIE RUHE DES RIGS (stand-lebt 2, koerper `STAND`): ohne Gemüt steht der Kopf auf 0, und die Wirbelsäule atmet in der Welle des
+// Stands — `STAND.atem` ganze Züge je `STAND.zyklus` Sekunden (koerper `leibStandWelle` · `leibStandAtem`), Amplitude 0,02 um −0,02.
+// Bis stand-lebt 2 atmete der Rig frei mit sin(t · 1,6): der ferne Leib backt die Zeilen seines Stands über den Zyklus, ein freier Atem
+// schlösse dort nie. Die Linse rechnet die Welle aus den ZAHLEN des Gesetzes (`stand`: atem, zyklus), nie mit seiner Funktion.
+const RIG_T = 0.7;
+function rigRuheSoll(stand) {
+    const x = RIG_T / stand.zyklus;
+    return -0.02 + Math.sin(2 * Math.PI * stand.atem * (x - Math.floor(x))) * 0.02;
+}
+function rigRuhe(e) {
+    return (
+        !!e &&
+        !!e.stand &&
+        e.stand.atem >= 1 &&
+        e.stand.zyklus > 0 &&
+        Math.abs(e.headSad - 0.18) < 1e-9 &&
+        Math.abs(e.headNeutral) < 1e-9 &&
+        Math.abs(e.spineNeutral - rigRuheSoll(e.stand)) < 1e-9
+    );
+}
+
 hauptLauf(async () => {
     const manifestSrc = ausDatei("cores.manifest.json");
 
@@ -43,6 +64,19 @@ hauptLauf(async () => {
         const brokenManifest = JSON.stringify(JSON.parse(manifestSrc).filter((c) => c && c.id !== "klang"));
         const s1 = staticLaws(brokenManifest).find((l) => l[0].includes("klang-Kern"));
         check("Selbst-Test 1: klang-Zeile aus dem Manifest entfernt -> S1 feuert", s1 && s1[1] === false);
+        // E: die Ruhe des Rigs — grün an der Welle des Stands, rot am alten freien Atem und an einem Zug je Zyklus
+        const stand = { atem: 2, zyklus: 7.2 };
+        const ruhe = (spineNeutral, headNeutral = 0) => rigRuhe({ stand, headSad: 0.18, headNeutral, spineNeutral });
+        check("Selbst-Test 2: die Ruhe an der Welle des Stands (2 Züge je 7,2 s) ist grün", ruhe(rigRuheSoll(stand)));
+        check(
+            "Selbst-Test 3: MUTANTE alter Atem (sin(t · 1,6), der freie Atem vor stand-lebt 2) -> E „DER RIG LIEST“ feuert",
+            !ruhe(-0.02 + Math.sin(RIG_T * 1.6) * 0.02)
+        );
+        check(
+            "Selbst-Test 4: MUTANTE ein Zug je Zyklus (der Atem liest STAND.atem nicht) -> E „DER RIG LIEST“ feuert",
+            !ruhe(rigRuheSoll({ atem: 1, zyklus: stand.zyklus }))
+        );
+        check("Selbst-Test 5: MUTANTE der Kopf sinkt ohne Gemüt (0,05) -> E „DER RIG LIEST“ feuert", !ruhe(rigRuheSoll(stand), 0.05));
         selbsttestEnde(errs);
         process.exit(0);
     }
@@ -53,7 +87,7 @@ hauptLauf(async () => {
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     const { browser, page } = await nullWelt(server, { frist: 180000 });
 
-    const out = await page.evaluate(async () => {
+    const out = await page.evaluate(async (rigT) => {
         const res = { b: {}, k: {} };
         await __weltDa();
         const f = r._ensureAssetFoundry();
@@ -349,11 +383,13 @@ hauptLauf(async () => {
                 legR: mkLeg(),
             });
             const rigN = mkRig();
-            r._animateHumanoidRig(rigN, 0.7, 0, false, false, null);
+            r._animateHumanoidRig(rigN, rigT, 0, false, false, null);
             res.e.headNeutral = rigN.head.rotation.x; // 0 (Delta-Null)
-            res.e.spineNeutral = rigN.spine.rotation.x; // -0.02 + sin(0.7*1.6)*0.02 byte-alt
+            res.e.spineNeutral = rigN.spine.rotation.x; // −0,02 + die Welle des Stands · 0,02 (`rigRuheSoll`)
+            const STAND = window.__koerperCore.STAND;
+            res.e.stand = { atem: STAND.atem, zyklus: STAND.zyklus };
             const rigS = mkRig();
-            r._animateHumanoidRig(rigS, 0.7, 0, false, false, { sorrow: 1 });
+            r._animateHumanoidRig(rigS, rigT, 0, false, false, { sorrow: 1 });
             res.e.headSad = rigS.head.rotation.x; // +0.18 (sad-Delta)
             // KONSUM: BEIDE Profil-Leser fließen durch den EINEN Resolver; ein Zwilling am Resolver vorbei fällt (Selbsttest).
             const mpn = r._motionProfileName;
@@ -436,7 +472,7 @@ hauptLauf(async () => {
             res.o.err = fehlerText(e);
         }
         return res;
-    });
+    }, RIG_T);
 
     await browser.close();
     server.close();
@@ -564,12 +600,11 @@ hauptLauf(async () => {
         out.e ? String(out.e.tailFlee) : ""
     );
     check(
-        "E: DER RIG LIEST — sorrow=1 senkt den Kopf exakt um das sad-Delta (0.18); neutral bleibt byte-alt (Kopf 0, Atem-Konstanten)",
-        !!out.e &&
-            Math.abs(out.e.headSad - 0.18) < 1e-9 &&
-            Math.abs(out.e.headNeutral) < 1e-9 &&
-            Math.abs(out.e.spineNeutral - (-0.02 + Math.sin(0.7 * 1.6) * 0.02)) < 1e-9,
-        out.e ? `sad=${out.e.headSad} neutral=${out.e.headNeutral}` : ""
+        "E: DER RIG LIEST — sorrow=1 senkt den Kopf exakt um das sad-Delta (0.18); neutral steht in der Ruhe des Gesetzes (Kopf 0, der Atem die Welle des Stands: STAND.atem Züge je STAND.zyklus)",
+        rigRuhe(out.e),
+        out.e
+            ? `sad=${out.e.headSad} neutral=${out.e.headNeutral} · Wirbelsäule ${out.e.spineNeutral} (Soll ${out.e.stand ? rigRuheSoll(out.e.stand) : "?"}, Stand ${JSON.stringify(out.e.stand || null)})`
+            : ""
     );
     check(
         "E: der Schritt-Takt des Avatars trägt die Emotion (sorrow = Studio-Kadenz, neutral 1)",
