@@ -1,0 +1,17 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@ 81.7 s · Nacht der Sitzung (stadt-voll third): {"welt":495,"nah":40,"lava":0,"plaetze":4,"arten":[["laterne_dorf",310],["wandlaterne_dorf",172],["glutbrunnen",12],["esse",1]],"ort":[842,452]}
+@@ 89.7 s · Nacht-Linse (stadt-voll third): {"quellen":40,"sichtbar":12,"gut":11,"anteil":0.917,"ohneKarte":{"gut":8,"anteil":0.667},"kelvin":[{"art":"laterne_dorf","soll":1900,"ist":1862,"duv":0.0005,"abw":38},{"art":"laterne_dorf","soll":1900,"ist":1872,"duv":0.0005,"abw":28},{"art":"laterne_dorf","soll":1900,"ist":1857,"duv":0.0006,"abw":43},{"art":"laterne_dorf","soll":1900,"ist":1867,"duv":0.0005,"abw":33},{"art":"laterne_dorf","soll":1900,"ist":1862,"duv":0.0005,"abw":38}]}
+@@ 89.7 s · erleben.bild.nacht S2 gemessen {"art":"gemessen","werte":{"bodenfleck_anteil":0.917,"gasse_dev_median":null},"erzeugt":495,"welt":{"quellen":495},"taeter":"Gassen-Histogramm gegen Fotosatz: kein Fotosatz nächtlicher Gassen im Baum, kein Leser des Hist
+@@ 102.7 s · Pfosten (schatten.K5 an stadt-voll third): {"quelle":"laterne_dorf","abM":2.15,"imPool":true,"uhr":0,"boden":1,"pfosten":true,"Llicht":0,"Lschatten":0,"kontrast":0.9906,"kontrolle":0.9906,"n":12,"s":1.46}
+@@ 102.7 s · erleben.bild.nacht S1 gemessen {"art":"gemessen","werte":{"schatten_kontrast":0.9906,"kelvin_abw":38},"erzeugt":495,"welt":{"quellen":495},"taeter":null,"beleg":{"pfosten":{"quelle":"laterne_dorf","abM":2.15,"imPool":true,"uhr":0,"boden":1,"pfosten":t
+@@ 102.7 s · erleben.bild.nacht S3 umfang {"art":"umfang","erzeugt":495,"was":"die Welt setzt 495 Leuchtquellen (495 im Verzeichnis „licht“, stamm/gelaende-kollision.js:1193, dazu 0 glühende Lava; die Fenster glühen über EIN Uniform je Licht-Art, atmoUniforms.li
+@@ 102.7 s · erleben.bild.nacht S4 umfang {"art":"umfang","erzeugt":495,"was":"die Welt setzt 495 Leuchtquellen (495 im Verzeichnis „licht“, stamm/gelaende-kollision.js:1193, dazu 0 glühende Lava; die Fenster glühen über EIN Uniform je Licht-Art, atmoUniforms.li
+@@ 102.7 s · erleben.bild.nacht S5 umfang {"art":"umfang","erzeugt":495,"was":"die Welt setzt 495 Leuchtquellen (495 im Verzeichnis „licht“, stamm/gelaende-kollision.js:1193, dazu 0 glühende Lava; die Fenster glühen über EIN Uniform je Licht-Art, atmoUniforms.li
+@@ 102.7 s · erleben.bild.nacht S6 umfang {"art":"umfang","erzeugt":495,"was":"die Welt setzt 495 Leuchtquellen (495 im Verzeichnis „licht“, stamm/gelaende-kollision.js:1193, dazu 0 glühende Lava; die Fenster glühen über EIN Uniform je Licht-Art, atmoUniforms.li
+@@ 102.7 s · erleben.bild.nacht S7 umfang {"art":"umfang","erzeugt":495,"was":"die Welt setzt 495 Leuchtquellen (495 im Verzeichnis „licht“, stamm/gelaende-kollision.js:1193, dazu 0 glühende Lava; die Fenster glühen über EIN Uniform je Licht-Art, atmoUniforms.li
+@@ 102.7 s · erleben.bild.nacht S8 umfang {"art":"umfang","erzeugt":495,"was":"die Welt setzt 495 Leuchtquellen (495 im Verzeichnis „licht“, stamm/gelaende-kollision.js:1193, dazu 0 glühende Lava; die Fenster glühen über EIN Uniform je Licht-Art, atmoUniforms.li
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
