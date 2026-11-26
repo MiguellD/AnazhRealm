@@ -1,5 +1,7 @@
 # Post an werk-am-ort
 
+## 26.11. 18:53 — GPU-PROBE a7569cd3 auf gtx1050-desktop: ROT in 1733 s (gate:pruefbuehne-licht GRÜN 99 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 320 s auf gtx1050-desktop · gate:studio-begehen GRÜN 480 s auf gtx1050-desktop · bild:stadt-voll@0.33 ROT 598 s — ROT umstellen --ort stadt-voll: DIE WELT STEHT NICHT nach 1831 Takten: Ruhe 0, zuletzt brach sie: Bau-Regung (DER BAU STEHT NICHT: die Welt nach 1831 Takten — die Welt hat nichts mehr offen) auf gtx1050-desktop · gate:webgl-probe GRÜN 108 s auf gtx1050-desktop) → probe-post/werk-am-ort/a7569cd3.md
+
 ## 26.11. 14:00 — GPU-PROBE 3fc3fb24 auf omen-gtx1060: ROT in 1025 s (gate:pruefbuehne-licht GRÜN 60 s auf omen-gtx1060 · gate:weltbild-frost:echt ROT 119 s — ❌ dritte-person: B das Bild folgt der Kamera — 0.00 % der Blöcke (Soll ≥ 5 %) auf omen-gtx1060 · gate:studio-begehen GRÜN 237 s auf omen-gtx1060 · bild:stadt-voll@0.33 GRÜN 171 s auf omen-gtx1060 · gate:webgl-probe GRÜN 44 s auf omen-gtx1060) → probe-post/werk-am-ort/3fc3fb24.md
 
 ## 12:04 Koordinator — werk-am-ort: die Basis für Kopf 2 ist jetzt buendel-mittag 8d0a9ebe
