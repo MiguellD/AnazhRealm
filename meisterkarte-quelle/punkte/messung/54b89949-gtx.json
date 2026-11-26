@@ -1,7 +1,7 @@
 {
  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
  "geraet": "gtx",
- "zeit": "2026-11-26T16:07:37.741Z",
+ "zeit": "2026-11-26T16:22:35.066Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -3494,17 +3494,133 @@
   },
   "gelaende.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
+   "zahl": "die Seite warf: (b)(d) 17.6 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 1,713 (Faden 1,284 · alle Kerne 1,713; vor 114/282,9 ms, nach 104,6/379 ms, Ruhe 88,8/221,2 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,8 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 2,8 CPU-s · claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh 2,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 14,8 CPU-s · svchost.exe 6,7 CPU-s · SearchProtocolHost.exe 0,5 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 17.6 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "exit": 1,
+   "minuten": 0.4,
+   "grund": "die Seite warf: (b)(d) 17.6 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 1,713 (Faden 1,284 · alle Kerne 1,713; vor 114/282,9 ms, nach 104,6/379 ms, Ruhe 88,8/221,2 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,8 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 2,8 CPU-s · claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh 2,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 14,8 CPU-s · svchost.exe 6,7 CPU-s · SearchProtocolHost.exe 0,5 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 17.6 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "konsumFehlt": "1 Prozess(e) ohne Ende (hart getötet oder ohne Antwort): 5604",
+   "s": 24.2,
+   "fremd": {
+    "s": 48.3,
+    "takte": 22,
+    "fremdS": 21.67,
+    "kerne": 0.448,
+    "fensterKerne": 0.573,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.78
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      2.83
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      2.36
+     ]
+    ],
+    "dienerS": 12.33,
+    "diener": [
+     [
+      "System",
+      6.23
+     ],
+     [
+      "dwm.exe",
+      3
+     ]
+    ],
+    "geraetS": 22.86,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.81
+     ],
+     [
+      "svchost.exe",
+      6.73
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 197.2,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.83,
+     "nach": 0.273,
+     "station": 1.024
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 114,
+     "alle": 282.9,
+     "cpuEin": 110,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.54,
+      "s": 2,
+      "soll": 3,
+      "reihe": [
+       6.1,
+       3.76,
+       3.58,
+       2.49,
+       3.05,
+       2.08
+      ]
+     },
+     "spanne": [
+      1795710157074,
+      1795710157612
+     ]
+    },
+    "nach": {
+     "ein": 104.6,
+     "alle": 379,
+     "cpuEin": 109,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.93,
+      "s": 20.1,
+      "soll": 3,
+      "reihe": [
+       3.11,
+       4.05,
+       3.52,
+       3.52,
+       2.6,
+       2.69
+      ]
+     },
+     "spanne": [
+      1795710201869,
+      1795710202515
+     ]
+    },
+    "ruhe": {
+     "ein": 88.8,
+     "alle": 221.2,
+     "n": 1190,
+     "von": "2026-11-17"
+    },
+    "f": 1.713,
+    "fEin": 1.284,
+    "fAlle": 1.713,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
    "ungemessen": true,
-   "zeit": "2026-11-26T15:10:50.369Z",
+   "zeit": "2026-11-26T16:22:35.066Z",
    "abdruck": "47cc56a17829",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.planet.relief.grossform#1": {
    "gruen": false,
