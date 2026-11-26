@@ -2673,3 +2673,4 @@ omen-gtx-gtx-a954d698-2-a954d698 ROT 0 GRÜN / 2 ROT / 0 UNGEMESSEN · ROT karte
 2026-11-26 10:37 RUNDE 36 SPRUNG am a954d698 → Runde 37 am c3631992 (gtx halt 36/236, radeon laeuft 28/56): drei Landungen z750–z752: stimme-leib-2 (stimme#1), bewegungs-feld + pr-zwilling, auge-farbe (gesehen#1,#2)
 2026-11-26 10:48 RUNDE 37 ALARM gtx: OMEN: 58 Messungen ungepusht seit 04:58 — offen 0/0, Station -, Kopf c3631992; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
 2026-11-26 10:48 landung Runde 37 am c3631992: misst 55 von 237 Stationen (vorn; 0 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+2026-11-26 11:04 RUNDE 37 ALARM gtx: ohne Fortschritt seit 16 min (laeuft, 0/237, Station -, Kopf c3631992) — gesehen von radeon (radeon-dienst)
