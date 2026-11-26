@@ -180,4 +180,10 @@ Vorprüf-Kopf ruft dasselbe Bild erneut.
   - Messname: Wand-Summe Stadt, Bild `dorf@0.42` links.
 - **Die Kreatur-Linse Teil 3** (`jagdkreis`, voll 13/18) ist fremd und auf main selbst ROT (4c9e6aab, Lauf 45732777771). Sie
   ist nicht Teil dieses Schnitts. Messname: voll 13/18 „Die Kreatur-Linse Teil 3“.
-- **Die volle CI am Vorprüf-Kopf 2** (`[ci voll]`): bei Redaktion noch nicht gelaufen.
+- **Die volle CI am Vorprüf-Kopf 2** (`[ci voll]`, Lauf 45749137753) ist am 26.11. um 04:02 abgebrochen. Auf dem Zweig liegt
+  kein neuerer Push, der Abbruch kam also nicht aus der Gruppe des Zweigs.
+  - voll 1/18 ist grün.
+  - voll 13/18 ist ROT an der Kreatur-Linse Teil 3, wie auf main.
+  - 16 von 18 Gruppen liefen nie. Darunter ist 12/18, die Gelände-Linse; ihr CI-Urteil am Kopf 2 fehlt.
+  - Lokal ist `gate:gelaende-realismus` grün (66 s).
+  - Messname: voll 12/18 am Vorprüf-Kopf 2.
