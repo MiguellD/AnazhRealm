@@ -107,3 +107,5 @@ w28-absicht-zug-4 karte2.mensch.geist.absicht#1
 w28-kosmos-bahn karte2.planet.kosmos.systeme#1,karte2.planet.kopplung.bahn-klima#2
 # 749 (main a954d698, 26.11. 08:52): z749 09:06 w28-leib-liest-satz: der Leib liest seinen Satz (Seuche, Kunst, Können, Kopplung Leib)
 w28-leib-liest-satz karte2.mensch.menge.seuche#1,karte2.mensch.sport.kunst#1,karte2.mensch.sport.koennen#2,karte2.mensch.kopplung.leib#1
+# 750 (main 077b9aa7, 26.11. 09:28): main 077b9aa7, 26.11. 09:48: die Stimme folgt dem Leib nach den Quellen — am Dorf −4,−4 sprechen 28 statt 22 von 28 Erwachsenen innerhalb ±15 % der Peterson-Barney-Tafel, größte Abweichung 20,8 → 10,7 %
+w28-stimme-leib-2 karte2.erleben.klang.stimme#1
