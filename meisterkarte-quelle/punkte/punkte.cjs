@@ -8573,6 +8573,15 @@ async function selbsttest(o = {}) {
             const eb = await fahreStation({ ...sk, befehl: ["node", "scripts/blind.cjs", "{AUS}"] }, { ...ctx("konsum-blind"), baum, deckelMinS: 60 });
             pruef("KONSUM ein node-Kind mit einer Umgebung ohne den Zeugen → keine Konsum-Menge, der Grund beim Namen", eb.gruen && !eb.konsum && /^ein Kind ohne Zeugen \(seine Umgebung trägt ihn nicht\): /.test(eb.konsumFehlt || ""), JSON.stringify({ gruen: eb.gruen, fehlt: eb.konsumFehlt, konsum: !!eb.konsum }));
         }
+        // DER ECHTE ESM-LAUF (konsum-esm): eine Datei des Baums, die als ESM lädt, ehe der Zeuge scharf ist → keine Konsum-Menge, der Grund
+        // beim Namen der Datei — der Lade-Haken (module.registerHooks), nie die Lade-Liste des Prozesses (die Mutante: Node 24.22 hieß
+        // jede Probe ohne Baum-Modul blind, SITZUNG DER KONSUM DER WELT 290/291 am GTX 1050; Node 22 nannte keine Datei)
+        {
+            fs.writeFileSync(path.join(baum, "scripts", "esm.mjs"), 'import fs from "node:fs";\nfs.writeFileSync(process.argv[2], JSON.stringify({ n: 0 }));\n');
+            const ee = await fahreStation({ ...sk, befehl: ["node", "scripts/esm.mjs", "{AUS}"] }, { ...ctx("konsum-esm"), baum, deckelMinS: 60 });
+            pruef("KONSUM ESM aus dem Baum ohne scharfen Zeugen → keine Konsum-Menge, der Grund beim Namen der Datei (scripts/esm.mjs, Node " + process.version + ")",
+                ee.gruen && !ee.konsum && /^ESM lief, ohne dass der Zeuge scharf war: scripts\/esm\.mjs — /.test(ee.konsumFehlt || ""), JSON.stringify({ gruen: ee.gruen, fehlt: ee.konsumFehlt, konsum: !!ee.konsum }));
+        }
         // DIE FENSTER einer lebenden Welt (die Sitzung): das Boot, dann je Probe, was SEIT der letzten Nahme lief — `ja` im ersten Fenster,
         // `nein` im zweiten und `ja` dort nicht mehr; der Kopf-Code des geladenen Moduls steht in jedem
         {
