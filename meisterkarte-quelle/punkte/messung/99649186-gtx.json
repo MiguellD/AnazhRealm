@@ -1,7 +1,7 @@
 {
  "sha": "9964918608a72e1bbc6972925a4820eac5b53d0f",
  "geraet": "gtx",
- "zeit": "2026-11-26T17:20:58.967Z",
+ "zeit": "2026-11-26T17:22:29.670Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -210,6 +210,76 @@
    },
    "zeit": "2026-11-26T17:20:58.967Z",
    "abdruck": "b2ca939fc27a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.kunst#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.15,
+   "grund": "ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kdba7fc06e5ab",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kbe820ac97b64",
+   "s": 8.7,
+   "fremd": {
+    "s": 13,
+    "takte": 6,
+    "fremdS": 6.61,
+    "kerne": 0.51,
+    "fensterKerne": 0.582,
+    "namen": [
+     [
+      "Explorer.EXE",
+      1.89
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.67
+     ],
+     [
+      "node.exe dienst-omen/runde.cjs push-pfade AnazhRealm-OMEN/n0611-pm punkte-maschine gtx 996",
+      0.75
+     ]
+    ],
+    "dienerS": 2.42,
+    "diener": [
+     [
+      "System",
+      0.97
+     ],
+     [
+      "dwm.exe",
+      0.83
+     ]
+    ],
+    "geraetS": 4.38,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      2.83
+     ],
+     [
+      "svchost.exe",
+      1.27
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.14
+     ]
+    ],
+    "eigenS": 23.75,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T17:22:29.670Z",
+   "abdruck": "64bbef8b031b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
