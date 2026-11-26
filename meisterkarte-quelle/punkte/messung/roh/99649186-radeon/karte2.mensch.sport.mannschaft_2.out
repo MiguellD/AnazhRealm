@@ -1,0 +1,9 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@ 9.9 s · am Messort stadt-voll (ego) nach 9.9 s, 251 Takte, Anlauf stand
+@@ 24.3 s · Spiel an stadt-voll um 18.56 Uhr (Tag 0): 60 Gäste des Treffs, Feld {"L":25,"B":10} · 40 Tage: 20 Läufe (78 Läufer, ρ 0.7485) · 127 Gänge (der Stärkere 0.8425) · 100 Partien (5290 Züge, 0 regelwidrig) · jetzt 20 Zuschauer, 19 mit Blick am Geschehen
+@@PUNKTE@@ FRIST 39 s der Probe gerissen — im /umstellen genesis seit 14.5 s (der Ruf ab 24.3 s): der Messort trug die Frist, Abbau
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

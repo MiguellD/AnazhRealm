@@ -1,0 +1,129 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.438",
+  "sha": "9964918608a72e1bbc6972925a4820eac5b53d0f"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.3003,
+   "taeter": {
+    "Laub baum_eiche": 0.3003
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   14970.252,
+   5.381,
+   -9588.634
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 71.4,
+  "sigma": 33.3,
+  "schwarz": 0.0002,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Vordergrund 30.0 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_eiche 30.0 % · kein nahWiese im Bild: 1.6 % < 15.0 %] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 71.4 σ 33.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.438 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Inhalt nahWiese 1.6 % (≥ 15.0 %) h 110° Luma 120",
+ "rot": [
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 30.0 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_eiche 30.0 %"
+  }
+ ],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "imBild.nahWiese",
+    "grund": "kein nahWiese im Bild: 1.6 % < 15.0 %"
+   }
+  ],
+  "zeile": "Inhalt nahWiese 1.6 % (≥ 15.0 %) h 110° Luma 120"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^nahWiese([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 967,
+   "wechsel": 1080521
+  },
+  "rinde": null,
+  "toene": [
+   "nahWiese:Lf=255/80/80"
+  ],
+  "klassen": {
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 32683,
+    "farbe": [
+     0.18518,
+     0.21185,
+     0.03451
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\99649186-radeon\\auge-wetter-welt-s2-rot.maske.png"
+ }
+}

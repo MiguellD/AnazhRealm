@@ -1,0 +1,174 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.438",
+  "sha": "9964918608a72e1bbc6972925a4820eac5b53d0f"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.45,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "Boden-Schicht",
+  "vorAbstand": 1.57,
+  "leiber": null,
+  "abstand": 386.01,
+  "gestalt": [
+   "wasser"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   436.368,
+   -0.805,
+   10676.978
+  ],
+  "blick": [
+   0.04084,
+   -0.00569,
+   0.99915
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 106.1,
+  "sigma": 24.4,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel Blickziel verdeckt von Boden-Schicht in 1.57 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 386.01 m · Luma 106.1 σ 24.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.438 · Bühne summer sunny 0.45 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von Boden-Schicht in 1.57 m"
+  }
+ ],
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^(wasserSatz|farWater|chunk-water-[a-z]+)$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 975,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1246,
+   "wechsel": 642730
+  },
+  "rinde": null,
+  "toene": [
+   "farWater=255/80/80",
+   "wasserSatz=80/255/80"
+  ],
+  "klassen": {
+   "farWater": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": -3.315,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0.0007,
+    "wt": 3,
+    "wtZiel": null,
+    "bunt": 6.49,
+    "pixel": 4594,
+    "luma": 102.02,
+    "kante": 0.5909,
+    "kr": 1488,
+    "inseln": 0,
+    "frei": 0,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "wasserSatz": {
+    "objekte": 1,
+    "spiegelTreue": 0.6883,
+    "spiegelEbene": -3.033,
+    "sp": [
+     34,
+     0,
+     0,
+     6935.73,
+     6935.73,
+     4773.91
+    ],
+    "zweiton": 0,
+    "weiss": 0.0031,
+    "wt": 143,
+    "wtZiel": null,
+    "bunt": 9.41,
+    "pixel": 45982,
+    "luma": 95.4,
+    "kante": 0.1802,
+    "kr": 13582,
+    "inseln": 1,
+    "frei": 0,
+    "strich": 0.3991,
+    "si": 2,
+    "bloecke": 36,
+    "glatt": 0.0556,
+    "glattDunkel": 0,
+    "nyquist": 0.0969,
+    "beta": 2.0684
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\99649186-radeon\\wasser-see-sunny-0.45-rot.maske.png"
+ }
+}
