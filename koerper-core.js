@@ -5542,11 +5542,157 @@
         }
         return last;
     }
-    // DIE HALTUNG ZUM AKT (TAGES_GESETZ.haltung): der Name des Profils der Bewegung oder null (neutral)
-    function tagesHaltung(akt, rolle) {
+    // DER LEIB LIEST SEINEN SATZ (leib-liest-satz — mensch.menge.seuche 1 · mensch.sport.kunst 1 · mensch.kopplung.leib 1): Haltung
+    // und Tracht eines Menschen sind EINE Funktion seines ganzen Satzes — Akt und Rolle (TAGES_GESETZ), Gesundheit (`krank`), Können
+    // (`uebung`), das Wetter an seinem Ort. Die Haltung ist ein NAME: das Profil des Akts, dahinter je Zusatz des Satzes ein Wort
+    // (`trenner`: „sad/krank“, „pwalk/lehrling“); sein Profil rechnet `leibSatzProfil` aus der Tafel der Bewegung (das Buch des Körpers
+    // ist Vertrag — eine neue Zeile in MOTION gäbe es nie, der Zusatz ist ein Delta über dem Grund). Bis hier las die Haltung nur Akt
+    // und Rolle: der Kranke saß wie der Gesunde, der Lehrling stand wie der Meister, der Winter trug den Schnitt des Sommers.
+    var LEIB_SATZ = Object.freeze({
+        trenner: "/",
+        // DER KRANKE — Lasselin et al. 2020 (Brain Behav Immun 84:147–153, Tab. 1; LPS 2 ng/kg gegen Placebo, 19 Gesunde): der Kopf
+        // 2,50° tiefer, das Knie 1,86° weniger gebeugt („less knee flexion“), die Streckung des Arms 1,50° weniger; Rumpf und
+        // Schulter ohne Befund. Je Achse des Profils das Delta in rad (headX + senkt den Kopf, kneeL/R + beugt, armLX/RX + streckt).
+        // Der Gang (−0,185 m/s, Schritt −0,093 m, Schrittzeit +27,9 ms) liest keine Haltung — er gehört dem Tempo des Satzes.
+        krank: Object.freeze({ headX: 0.0436, kneeL: -0.0325, kneeR: -0.0325, armLX: -0.0262, armRX: -0.0262 }), // prettier-ignore
+        // DAS KÖNNEN — die Kunst, die ein Akt übt (`kunst`: „haupt“ die Kunst seines Werks, LEBENSLAUF.uebung), und seine Stufe auf
+        // der Skala des Könnens (1 = das Band der Guten): der Lehrling unter 0,5 geht im Takt seines Könnens — die Zeit je Akt ist
+        // ∝ 1/Können (Newell & Rosenbloom 1981, das Potenzgesetz der Übung), sein Profil im `takt` der Stufe (×freq: der Rhythmus
+        // des Stands); der Meister ab 1 steht im Profil des Akts (sein Takt ist der der Guten).
+        kunst: Object.freeze({ arbeit: "haupt", zweikampf: "kampf", brett: "brett" }),
+        stufe: Object.freeze([Object.freeze({ wort: "lehrling", unter: 0.5, takt: 0.5 })]),
+        // DIE TRACHT DES TAGS — das Soll der Kleidung aus der Luft um 6 Uhr (Schiavon & Lee 2013, Building and Environment 59:250–260,
+        // Gl. 10: < −5 °C 1,00 clo · −5 … 5 °C 0,818 − 0,0364·t · 5 … 26 °C 10^(−0,1635 − 0,0066·t) · ab 26 °C 0,46); die Isolation
+        // des Kleids ist die Summe seiner Teile (ASHRAE 55, Tafel der Kleidungsstücke: T-Shirt 0,08 · ärmellose Bluse 0,12 · Langarm-Sweatshirt 0,34 · dicker
+        // Einreiher 0,44 — der Poncho, ANGENOMMEN · dicke Hose 0,24 · Walking-Shorts 0,08 · Stiefel 0,10 + Wadensocken 0,03 · Schuhe
+        // 0,02 + Knöchelsocken 0,02 · Unterwäsche 0,04); die nasse Lage verliert im Stand 9 % (Bröde et al. 2008, Eur J Appl Physiol)
+        // ab dem Regen, der den Tag nach drinnen schickt (TAGES_GESETZ.regen.ab). Der leichte Schnitt (T-Shirt, Bein und Schuh der
+        // Epoche) nimmt je `lagen` die nächste Lage, solange ihre halbe Isolation das Soll nicht überschreitet — das Kleid, das das
+        // Soll am nächsten trifft.
+        tracht: Object.freeze({
+            uhr: 0.25,
+            clo: Object.freeze({ tshirt: 0.08, pullover: 0.34, poncho: 0.44, tank: 0.12, none: 0, pants: 0.24, shorts: 0.08, boot: 0.13, sneaker: 0.04, unter: 0.04 }), // prettier-ignore
+            soll: Object.freeze({ kalt: -5, kaltClo: 1, mild: 5, a: 0.818, b: -0.0364, warm: 26, warmClo: 0.46, c: -0.1635, d: -0.0066 }), // prettier-ignore
+            nass: 0.91,
+            leicht: "tshirt",
+            warm: Object.freeze(["pullover", "poncho"]),
+            lagen: Object.freeze([
+                Object.freeze({ feld: "top", von: null, zu: null }), // die warme Lage: das Oberteil der Epoche, ist es warm, sonst der Pullover
+                Object.freeze({ feld: "bottom", von: "shorts", zu: "pants" }),
+                Object.freeze({ feld: "shoes", von: "none", zu: "boot" }),
+            ]),
+        }),
+    });
+    // DIE HALTUNG ZUM AKT (TAGES_GESETZ.haltung): der Name des Profils der Bewegung oder null (neutral) — mit dem Satz `satz` (der
+    // Bewohner: `krank`, `uebung`) samt seinen Zusätzen (LEIB_SATZ); ohne Satz die Haltung des Gesunden seiner Rolle. Eine Rolle ohne
+    // Haltung (`haltung: false`) steht neutral, ihr Kranker im neutralen Profil mit dem Zusatz.
+    function tagesHaltung(akt, rolle, satz) {
         var R = TAGES_GESETZ.rollen[rolle],
             h = R && R.haltung === false ? null : TAGES_GESETZ.haltung[akt];
-        return h && MOTION[h] ? h : null;
+        h = h && MOTION[h] ? h : null;
+        if (!satz) return h;
+        var z = [];
+        if (satz.krank === true) z.push("krank");
+        var art = LEIB_SATZ.kunst[akt];
+        if (h && art) {
+            var U = satz.uebung;
+            if (!U) throw new Error("koerper tagesHaltung: der Satz trägt keine Übung (b.uebung) — fail-closed");
+            var k = art === "haupt" ? (U.haupt ? U[U.haupt] : null) : U[art];
+            if (k && !Number.isFinite(k.koennen)) throw new Error("koerper tagesHaltung: das Können der Kunst „" + art + "“ fehlt");
+            for (var i = 0; k && i < LEIB_SATZ.stufe.length; i++) if (k.koennen < LEIB_SATZ.stufe[i].unter) { z.push(LEIB_SATZ.stufe[i].wort); break; } // prettier-ignore
+        }
+        return z.length ? (h || "idle") + LEIB_SATZ.trenner + z.join(LEIB_SATZ.trenner) : h;
+    }
+    // DAS PROFIL EINES NAMENS (leib-liest-satz): aus der Tafel M (das Buch des Körpers: `fx.motion.presets`, oder MOTION) — der Grund
+    // ohne Zusatz ist seine Zeile; mit Zusätzen ihr Grund plus je Wort sein Delta (LEIB_SATZ.krank; die Stufe trägt ihren Takt ×freq).
+    // Gemerkt je Tafel und Namen (dasselbe Objekt je Ruf: der Leser vergleicht Profile auf Identität). Ein Wort ohne Gesetz bricht laut.
+    var _leibSatzMerk = typeof WeakMap === "function" ? new WeakMap() : null;
+    function leibSatzProfil(M, name) {
+        if (!M || typeof name !== "string") return null;
+        if (name.indexOf(LEIB_SATZ.trenner) < 0) return M[name] || null;
+        var merk = _leibSatzMerk && (_leibSatzMerk.get(M) || (_leibSatzMerk.set(M, Object.create(null)), _leibSatzMerk.get(M)));
+        if (merk && merk[name]) return merk[name];
+        var teile = name.split(LEIB_SATZ.trenner),
+            g = M[teile[0]];
+        if (!g) return null;
+        var p = Object.assign({}, g);
+        for (var i = 1; i < teile.length; i++) {
+            var w = teile[i],
+                d = w === "krank" ? LEIB_SATZ.krank : null,
+                st = null;
+            for (var j = 0; !d && j < LEIB_SATZ.stufe.length; j++) if (LEIB_SATZ.stufe[j].wort === w) st = LEIB_SATZ.stufe[j];
+            if (!d && !st) throw new Error("koerper leibSatzProfil: das Wort „" + w + "“ trägt kein Gesetz (LEIB_SATZ) — fail-closed");
+            if (d) for (var key in d) p[key] = (Number(p[key]) || 0) + d[key];
+            if (st) p.freq = (Number(p.freq) || 0) * st.takt;
+        }
+        p = Object.freeze(p);
+        if (merk) merk[name] = p;
+        return p;
+    }
+    // DIE NAMEN DES SATZES (leib-liest-satz): jeder Name mit Zusatz, den `tagesHaltung` nennen kann — je Grund (neutral und jede
+    // Haltung des Akts) der Kranke, je Haltung eines Akts mit Kunst jede Stufe, gesund und krank. Leser: die Stände des Satzes
+    // (`_bewohnerStaende`: der ferne Satz backt je Namen eine Zeile, der Bewohner wählt seine über denselben Namen).
+    function leibSatzNamen() {
+        var G = TAGES_GESETZ.haltung,
+            T = LEIB_SATZ.trenner,
+            B = ["idle"],
+            K = [],
+            out = [],
+            a,
+            i,
+            j;
+        for (a in G) if (MOTION[G[a]] && B.indexOf(G[a]) < 0) B.push(G[a]);
+        for (a in LEIB_SATZ.kunst) if (G[a] && MOTION[G[a]] && K.indexOf(G[a]) < 0) K.push(G[a]);
+        for (i = 0; i < B.length; i++) out.push(B[i] + T + "krank");
+        for (i = 0; i < K.length; i++)
+            for (j = 0; j < LEIB_SATZ.stufe.length; j++) out.push(K[i] + T + LEIB_SATZ.stufe[j].wort, K[i] + T + "krank" + T + LEIB_SATZ.stufe[j].wort); // prettier-ignore
+        return out;
+    }
+    // DAS SOLL DER KLEIDUNG (clo) zur Luft t (°C) um 6 Uhr (Schiavon & Lee 2013, Gl. 10)
+    function trachtSoll(t) {
+        var S = LEIB_SATZ.tracht.soll;
+        if (!Number.isFinite(t)) throw new Error("koerper trachtSoll: die Temperatur fehlt — fail-closed");
+        if (t < S.kalt) return S.kaltClo;
+        if (t < S.mild) return S.a + S.b * t;
+        if (t < S.warm) return Math.pow(10, S.c + S.d * t);
+        return S.warmClo;
+    }
+    // DIE ISOLATION EINES KLEIDS (clo, ASHRAE 55: die Summe seiner Teile samt Unterwäsche; die Socken tragen die Schuhe)
+    function trachtClo(k) {
+        var C = LEIB_SATZ.tracht.clo,
+            s = C.unter;
+        for (var f of ["top", "bottom", "shoes"]) {
+            if (!(k[f] in C)) throw new Error("koerper trachtClo: das Teil „" + k[f] + "“ trägt keine Isolation (LEIB_SATZ.tracht.clo)");
+            s += C[k[f]];
+        }
+        return s;
+    }
+    // DIE TRACHT DES TAGS (leib-liest-satz, mensch.kopplung.leib 1): der Schnitt der Epoche T ({top, bottom, shoes}) unter der Luft
+    // `grad` (°C um 6 Uhr) und dem Regen `regen` (0 … 1) am Ort — {top, bottom, shoes, clo, soll, lagen}: der leichte Schnitt, der je
+    // Lage die nächste nimmt, solange ihre halbe Isolation (nass ×`nass`) das Soll nicht überschreitet.
+    function trachtDesTags(T, grad, regen) {
+        var L = LEIB_SATZ.tracht;
+        if (!T || !T.top || !T.bottom || !T.shoes) throw new Error("koerper trachtDesTags: der Schnitt der Epoche fehlt — fail-closed");
+        if (!Number.isFinite(regen)) throw new Error("koerper trachtDesTags: der Regen am Ort fehlt — fail-closed");
+        var soll = trachtSoll(grad),
+            f = regen >= TAGES_GESETZ.regen.ab ? L.nass : 1,
+            k = { top: L.leicht, bottom: T.bottom, shoes: T.shoes },
+            n = 0;
+        for (var i = 0; i < L.lagen.length; i++) {
+            var la = L.lagen[i],
+                von = la.feld === "top" ? L.leicht : la.von,
+                zu = la.feld === "top" ? (L.warm.indexOf(T.top) >= 0 ? T.top : L.warm[0]) : la.zu;
+            if (k[la.feld] !== von) continue;
+            var jetzt = trachtClo(k),
+                d = L.clo[zu] - L.clo[von];
+            if ((jetzt + d / 2) * f > soll) break;
+            k[la.feld] = zu;
+            n++;
+        }
+        k.clo = trachtClo(k);
+        k.soll = soll;
+        k.lagen = n;
+        return k;
     }
     // die Zahl des Samens zu einem Wort: [0, 1), rein (der Same ist eine ganze Zahl, das Wort benennt die Wende)
     function _tagZahl(same, wort) {
@@ -11391,6 +11537,13 @@
         tagesZiel: tagesZiel,
         tagesZug: tagesZug,
         tagesHaltung: tagesHaltung,
+        // leib-liest-satz — DER LEIB LIEST SEINEN SATZ (Leser: _bewohnerGemuet, _koerperMotionProfile, _bewohnerStaende, _bewohnerTracht)
+        LEIB_SATZ: LEIB_SATZ,
+        leibSatzProfil: leibSatzProfil,
+        leibSatzNamen: leibSatzNamen,
+        trachtSoll: trachtSoll,
+        trachtClo: trachtClo,
+        trachtDesTags: trachtDesTags,
         // mensch.sport regeln · mannschaft · arena · geistspiel #1 — DIE REGEL-GRAMMATIK (Leser: _spielTag, tagesPlan orte.spiel, _bewohnerKopf)
         SPIEL_GESETZ: SPIEL_GESETZ,
         spielLeib: spielLeib,
