@@ -2007,7 +2007,8 @@ async function checkBandScatterScheibe({ page, check }) {
                 const opt = { silent: true, precise: true, id: "streu-probe-feuerstelle" };
                 feuer = Number.isFinite(fy) ? r.spawnArchitecture("glutbrunnen", { x: fx, y: fy + 0.5, z: fz }, opt) : null;
             }
-        for (let i = 0; feuer && feuer._trittBox === undefined && i < 600; i++) await sleep(20); // der erste Studio-Platz
+        if (feuer) await __gebautNach(feuer, { fertig: () => feuer._trittBox !== undefined }); // der erste Studio-Platz
+        o.feuer = feuer ? (feuer._trittBox ? "mit Trittfläche" : `ohne Trittfläche (${feuer._trittBox})`) : "keine";
         try {
             const sd = st.wegeKarte && st.wegeKarte.siedlungen[0];
             const orte = [[rx, rz, pos.x, pos.z]];
@@ -2200,7 +2201,7 @@ async function checkBandScatterScheibe({ page, check }) {
             out.storno.threw === false &&
             out.storno.contDead === true &&
             out.storno.rebuildOk === true,
-        JSON.stringify(out.storno)
+        JSON.stringify(out.storno) + ` · Feuerstelle der Probe: ${out.feuer}`
     );
     const w = out.wecker;
     // ihre Plätze halten, eine fremde Lieferung und die erste Zusage überleben, nach der zweiten weiterbauen, wie der One-Shot stehen
