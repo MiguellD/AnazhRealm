@@ -179,33 +179,36 @@ class AnazhRealm_siedlung_menge {
                 inventar: "bewohner",
                 n: AnazhRealm.BEWOHNER.gangPhasen,
                 baender: window.__koerperCore.LEIB_SATZ.baender.length, // (je Gang des Satzes ein Band: der Gesunde, der Kranke)
-                staende: this._bewohnerStandZahl(),
-                standErste: this._bewohnerStandTafel().erste, // (stand-stuetzstellen: die nächste Zeile des Stands ist z + 1)
+                // (stand-stuetzstellen: je Name und Bein seine Vor-Zeile, dahinter EINE leere — die nächste Zeile des Stands ist
+                // z + 1 —, die Blöcke der Stützstellen nimmt die Seite erst bei Gebrauch, `standNimm`)
+                staende: this._bewohnerStandErste() + 1,
+                standErste: Array.from({ length: this._bewohnerStandErste() }, (_, z) => z),
                 quellen,
                 cap: S.liste.length,
                 senken,
                 raum: true,
             },
-            // die erste Zeile jedes Stands zuerst (der Satz steht, bis sein Gang gebacken ist, und steht in der ersten Zeile, bis die
-            // Zeilen seiner Stände gebacken sind — `_bewohnerGangBacken` im Takt)
+            // die Vor-Zeile jedes Stands zuerst (der Satz steht, bis sein Gang gebacken ist, und steht in der Vor-Zeile seines
+            // Stands, bis dessen Block gebacken ist — `_bewohnerGangBacken` im Takt)
             (Z) => {
                 Object.assign(Z, { gebacken: 0, tempo: b.tempoBand });
-                for (const z of this._bewohnerStandTafel().erste)
-                    this._bewohnerGangPose(b.leib, Z, Z.baender * Z.n + z, S);
+                const SE = window.__koerperCore.STAND.seiten;
+                for (let z = 0; z < this._bewohnerStandErste(); z++)
+                    this._bewohnerGangPose(b.leib, Z, Z.baender * Z.n + z, S, [Math.floor(z / SE), z % SE, 0]);
             }
         );
     }
 
     // DIE POSE k (k < n: die Phase 2πk/n des Doppelschritts im EINEN Gang-Gesetz — `_gaitTick` mit dem Tempo des Leibs,
-    // eingeschwungen, dann `_animateHuman`; k = n + z: die Stand-Zeile z, die Haltung ihres Namens zur Uhr ihres Teils des Zyklus
-    // (`_bewohnerStandZeit`, koerper STAND — stand-lebt) — im Gesetz ändert die Haltung nur den Stand, nie den Gang) am Leib `g`: mit der Siedlung `S` die
+    // eingeschwungen, dann `_animateHuman`; k ≥ baender·n: eine Stand-Zeile — `stand` nennt [den Namen h ihres Stands, ihr
+    // tragendes Bein s, ihre Uhr t im Zyklus], koerper STAND, stand-lebt — im Gesetz ändert die Haltung nur den Stand, nie den Gang) am Leib `g`: mit der Siedlung `S` die
     // Zeile k des Gang-Puffers ihres Satzes `Z` — die Pose auf die Knochen der Vorlage gelegt (`_bewohnerRaumStellen`) und in den
     // Raum des Leibs geskinnt (`_gangSatzPose`) —, ohne sie die Lagen der Zeile k einer Gestalt `Z` (`_bewohnerLagePose`: der Gang
     // des Felds). Danach steht der Leib wieder im Stand.
     // DIE BÄNDER DES GANGS (leib-liest-satz-2, koerper LEIB_SATZ.baender): k < baender·n trägt das Band ⌊k/n⌋ — der Gesunde, der
     // Kranke: sein Tempo aus derselben Zeile wie sein Stand (`leibSatzTempo`), seine Pose aus seinem Namen (`tagesHaltung` des
     // Satzes → `leibSatzPose` im Gang); die Stände ab baender·n. Bis hier buk der Satz EIN Band: fern ging der Kranke wie der Gesunde.
-    _bewohnerGangPose(g, Z, k, S) {
+    _bewohnerGangPose(g, Z, k, S, stand = null) {
         const KC = window.__koerperCore;
         const B = Z.baender;
         if (k < B * Z.n) {
@@ -220,10 +223,10 @@ class AnazhRealm_siedlung_menge {
             }
             this._animateHuman(g, 0, (2 * Math.PI * (k % Z.n)) / Z.n, true, false, G[band].gemuet, G[band].gang);
         } else {
-            // (die Stand-Zeile zur Uhr ihres Teils des Zyklus, `_bewohnerStandZeit` — eingeschwungen, ohne die Zeile davor)
-            const h = k - B * Z.n;
+            // (die Stand-Zeile zur Uhr ihrer Stützstelle — eingeschwungen, ohne die Zeile davor; ohne ihr Wort bricht sie laut)
+            if (!stand) throw new Error("BEWOHNER: eine Stand-Zeile ohne Namen, Bein und Uhr (`_bewohnerGangPose`)");
             window.__koerperCore.leibRigEingeschwungen(g.userData.rig);
-            this._animateHuman(g, this._bewohnerStandZeit(h), 0, false, false, this._bewohnerStandGemuet(h));
+            this._animateHuman(g, stand[2], 0, false, false, this._bewohnerStandGemuet(stand[0], stand[1]));
         }
         this._leibMatrix(g);
         if (S) {
@@ -293,14 +296,38 @@ class AnazhRealm_siedlung_menge {
         return P;
     }
 
+    // DER BODEN DER SCHULTER DES LEIBS `g` AUF DER VORLAGE (rad vom Lot; Leser: der Schlüssel der Stützstellen seiner Stände im
+    // Satz, `_bewohnerGangBacken`): wo `_bewohnerRaumStellen` die Schulter stellt — ruht sie wie die Vorlage, auf dem Boden des
+    // Leibs (koerper `leibStandBoden`: seine Ruhe und die Luft des Daumens), sonst auf der Ruhe der Vorlage
+    _bewohnerRaumBoden(S, g) {
+        const [P, tb, rig] = [this._bewohnerRaumPose(S), g.userData._tierBaum, g.userData.rig];
+        const s = rig.armL.shoulder;
+        const nm = Object.keys(P.teile).find((k) => tb.teile[k] === s);
+        const [r, sr] = [nm && P.ruhe[nm], nm && tb.ruhe[nm]];
+        if (!r || !sr || Math.abs(r.quaternion.dot(sr.quaternion)) > 1 - 1e-9)
+            return window.__koerperCore.leibStandBoden(rig);
+        return new THREE.Euler().setFromQuaternion(r.quaternion, s.rotation.order).z;
+    }
+
     // DIE LAGEN DER ZEILE k (der Gang des Felds, Lehre 14): je Teil des Leibs (`_tierBaum.teile`, "" = die Hülle — die Anker der
     // Glieder, `_kreaturGliederBacken`) seine Welt-Matrix im Raum des Leibs, gestellt wie die Zeile k des Gang-Puffers; die
-    // Größe trägt die Wurzel jedes Leibs (`_bewohnerFeldLage`).
+    // Größe trägt die Wurzel jedes Leibs (`_bewohnerFeldLage`). DIE ZEILEN (stand-stuetzstellen): der Gang, die Vor-Zeilen der
+    // Stände und EINE leere (`lageZeilen`, wie der Satz) — den Block eines Stands nimmt `_bewohnerLageNimm` erst bei Gebrauch:
+    // die Lagen wachsen um seine Zeilen (kopiert; jeder Leser liest `lagen` neu) → seine erste Stand-Zeile.
+    _bewohnerLageNimm(satz, zahl) {
+        const K = satz.lageTeile.length;
+        const ab = satz.lageZeilen - satz.baender * satz.n;
+        const L = new Float32Array((satz.lageZeilen + zahl) * K * 16);
+        L.set(satz.lagen);
+        [satz.lagen, satz.lageZeilen] = [L, satz.lageZeilen + zahl];
+        return ab;
+    }
     _bewohnerLagePose(satz, k, g) {
         const tb = g.userData._tierBaum;
         if (!satz.lageTeile) {
             satz.lageTeile = ["", ...Object.keys(tb.teile)];
-            satz.lagen = new Float32Array((satz.baender * satz.n + this._bewohnerStandZahl()) * satz.lageTeile.length * 16); // prettier-ignore
+            satz.lageZeilen = satz.baender * satz.n + this._bewohnerStandErste() + 1;
+            satz.lagen = new Float32Array(satz.lageZeilen * satz.lageTeile.length * 16);
         }
         const inv = (this._bewohnerLageInv || (this._bewohnerLageInv = new THREE.Matrix4()))
             .copy(g.matrixWorld)
@@ -402,11 +429,18 @@ class AnazhRealm_siedlung_menge {
     // DER GANG WIRD GEBACKEN (Lehre 14: schwere deterministische Arbeit im Takt, nie als Spitze): je Takt höchstens `je`
     // Phasen — zuerst der Satz der Siedlung (am ersten Leib, der nicht als Leib lebt: ein Leib der Nah-Wahl trägt seine eigene
     // Pose), dann die Lagen jeder Gestalt (das Feld, an einem ihrer Leiber); ist der Satz gebacken, lädt die Textur EINMAL neu und
-    // er geht (`fertig`). DIE ZEILEN DER STÄNDE (stand-lebt): nach dem Gang die übrigen Zeilen jedes Stands über seinen Zyklus (die
-    // erste stand ab der Geburt) — sind sie gebacken (`standFertig`, die Textur lädt noch einmal), liest jeder Bewohner die Zeile
-    // seiner Uhr (`_bewohnerStandLage`). Liefert, ob der Satz eben fertig wurde (sein Gang oder seine Stände).
+    // er geht (`fertig`). DIE BLÖCKE DER STÄNDE (stand-lebt, stand-stuetzstellen): nach dem Gang je Back-Ziel der Reihe nach die
+    // Blöcke, die ein Leser wünschte (`_bewohnerStandLage` → das Buch, `_bewohnerStandBuch`) — je Block zuerst die Suche seiner
+    // Stützstellen (ein Ruf je Takt, `_bewohnerStandKnoten`: am Boden der Schulter des Skeletts, das seine Zeilen trägt — im
+    // Satz die Vorlage, `_bewohnerRaumBoden`, im Feld der Leib), dann sein Platz (die Seite `standNimm`, die Lagen
+    // `_bewohnerLageNimm`), dann seine Zeilen (je Bein seine Stützstellen und die erste des nächsten Zyklus); steht er (`bereit`,
+    // die Textur lädt noch einmal), liest jeder Bewohner die Zeile seiner Uhr. Liefert, ob der Satz eben neu steht (sein Gang
+    // oder ein Block). Bis hier buk jede Siedlung nach dem Gang die Zeilen ALLER Stände, ob einer in ihnen stand oder nicht.
     _bewohnerGangBacken(S, je) {
         let fertig = false;
+        const KC = window.__koerperCore;
+        // was ein Back-Ziel noch zu backen hat: sein Gang, die gewünschten Blöcke seiner Stände
+        const offen = (X) => !X.fertig || this._bewohnerStandBuch(X).wunsch.length > 0;
         // (w28-leib-im-ring: gebacken wird an einem Leib — der Erste, der frei ist, trägt ihn für das Backen, `backt`, und
         // gibt ihn zurück, sobald Satz, Lagen und die Glieder seiner Gattung stehen)
         const frei = (gi) => {
@@ -423,50 +457,77 @@ class AnazhRealm_siedlung_menge {
                 !echt || (this._trefferGliedNamen && this._trefferGliedNamen.has(x.leib.userData.gattung));
             S.backt = S.backt.filter((x) => {
                 const L = S.gestalten[x.gestalt].lage;
-                x.backt = !(
-                    (!S.satz || (S.satz.fertig && S.satz.standFertig)) &&
-                    L &&
-                    L.fertig &&
-                    L.standFertig &&
-                    warm(x)
-                );
+                x.backt = !((!S.satz || !offen(S.satz)) && L && !offen(L) && warm(x));
                 // der Leib des Backens geht mit ihm (mittag-heiler): der Ruhende käme sonst erst in seinem Takt an den Ring
                 if (!x.backt && !x.nah && !x.amSteuer) this._bewohnerLeibAb(x);
                 return x.backt;
             });
         }
-        // die Zeilen der Stände nach dem Gang, je Stand ohne seine erste (`standGebacken`: die nächste Zeile unter allen); → ob alle stehen
-        const [VON, H] = [this._bewohnerStandTafel().von, this._bewohnerStandZahl()];
-        const staende = (X, leib, S2) => {
-            if (!(X.standGebacken > 0)) X.standGebacken = 1;
-            for (; je > 0 && X.standGebacken < H; X.standGebacken++) {
-                if (VON[3 * X.standGebacken + 2] === 0) continue;
-                this._bewohnerGangPose(leib, X, X.baender * X.n + X.standGebacken, S2);
-                je--;
+        // die gewünschten Blöcke der Stände des Back-Ziels X (S2: der Satz der Siedlung, ohne sie die Lagen), der Reihe nach; ein
+        // Stand ohne Profil brach laut (`_bewohnerStandProfil`) und verlässt die Schlange (`bruch`: sein Leser steht in der
+        // Vor-Zeile) → ob ein Block eben bereit wurde
+        const SE = KC.STAND.seiten;
+        let sucht = false; // (EIN Ruf der Suche je Takt über alle Back-Ziele: `STAND.sucheJe` Proben)
+        const bloecke = (X, leib, S2) => {
+            const W = this._bewohnerStandBuch(X).wunsch;
+            let neu = false;
+            while (je > 0 && W.length) {
+                const q = W[0];
+                if (!q.K) {
+                    if (q.boden === undefined)
+                        q.boden = S2 ? this._bewohnerRaumBoden(S2, leib) : KC.leibStandBoden(leib.userData.rig);
+                    if (sucht) break;
+                    const K = this._bewohnerStandKnoten(q.h, q.boden);
+                    if (K === false) {
+                        q.bruch = true;
+                        W.shift();
+                        continue;
+                    }
+                    if (!K) {
+                        sucht = true; // (die Suche rechnet im nächsten Takt weiter)
+                        break;
+                    }
+                    q.K = K;
+                    q.n = SE * (K.length + 1);
+                    q.ab = S2
+                        ? X.seite.standNimm(this._bewohnerStandSchluessel(q.h, q.boden), q.n)
+                        : this._bewohnerLageNimm(X, q.n);
+                }
+                for (; je > 0 && q.gebacken < q.n; q.gebacken++, je--) {
+                    const k = q.gebacken % (q.K.length + 1);
+                    this._bewohnerGangPose(leib, X, X.baender * X.n + q.ab + q.gebacken, S2, [
+                        q.h,
+                        Math.floor(q.gebacken / (q.K.length + 1)),
+                        KC.leibStandZeit(k, q.K),
+                    ]);
+                }
+                if (q.gebacken < q.n) break;
+                q.bereit = neu = true;
+                W.shift();
             }
-            return X.standGebacken >= H;
+            return neu;
         };
         const Z = S.satz;
-        const b = Z && !(Z.fertig && Z.standFertig) && je > 0 ? frei(-1) : null;
+        const b = Z && offen(Z) && je > 0 ? frei(-1) : null;
         if (b) {
             for (; je > 0 && Z.gebacken < Z.baender * Z.n; je--) this._bewohnerGangPose(b.leib, Z, Z.gebacken++, S);
             if (!Z.fertig && Z.gebacken >= Z.baender * Z.n) {
                 Z.tex.needsUpdate = true;
                 Z.fertig = fertig = true;
             }
-            if (Z.fertig && !Z.standFertig && staende(Z, b.leib, S)) {
+            if (Z.fertig && bloecke(Z, b.leib, S)) {
                 Z.tex.needsUpdate = true;
-                Z.standFertig = fertig = true;
+                fertig = true;
             }
         }
         S.gestalten.forEach((G, gi) => {
             const L = G.lage;
-            if (!L || (L.fertig && L.standFertig) || je <= 0) return;
+            if (!L || !offen(L) || je <= 0) return;
             const c = frei(gi);
             if (!c) return;
             for (; je > 0 && L.gebacken < L.baender * L.n; je--) this._bewohnerGangPose(c.leib, L, L.gebacken++, null);
             if (L.gebacken >= L.baender * L.n) L.fertig = true;
-            if (L.fertig && !L.standFertig && staende(L, c.leib, null)) L.standFertig = true;
+            if (L.fertig) bloecke(L, c.leib, null);
         });
         return fertig;
     }

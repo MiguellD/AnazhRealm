@@ -9199,10 +9199,11 @@
     var STAND = Object.freeze({
         zyklus: 7.2, // s, in denen sich Atem, Schwanken und Geste wiederholen
         schrittS: 0.3, // s, nach denen der ferne Leib seine Zeilen neu stellt (der Takt des Stands; fern seltener, Wirt `_bewohnerStandTakt`)
-        treueRad: 0.008, // die Treue der Stützstellen (`leibStandKnoten`): so weit (rad, über die Kette eines Glieds summiert — 0,46°) weicht die gerade Mischung zweier Stützstellen höchstens vom Bogen der Pose
+        treueRad: 0.008, // die Treue der Stützstellen (`leibStandKnoten`): so weit (rad — 0,46°) weicht die gerade Mischung der Matrizen zweier Stützstellen an jedem Gelenk höchstens von seiner Drehung im Bogen der Pose
         weiteS: 0.6, // s: höchstens so weit liegen zwei Stützstellen auseinander
         rasterS: 0.01, // s: das Raster, an dem die Stützstellen eines Stands gesucht werden
-        ruheProbe: Object.freeze([0.25, 0.85]), // die Ruhe der Arme der zwei Probe-Rigs der Stützstellen (Anteil von ARM_RUHE.spreizGrad[1]: 6° und 21°, das Band der Körperbauten)
+        ruheProbe: 0.5, // die Ruhe der Arme des Probe-Rigs eines Stands ohne Geste (Anteil von ARM_RUHE.spreizGrad[1]: die Mitte des Bands der Körperbauten — sein Winkel vom Lot steht fest); eine Geste sucht am Boden des backenden Leibs (`leibStandSchluessel`)
+        sucheJe: 24, // Proben, die ein Ruf der Suche im Takt des Ofens höchstens rechnet (`leibStandKnoten` mit `je`; ~0,3 ms)
         atem: 2, // Züge je Zyklus am Labor-idle
         schwanken: Object.freeze([1, 2]), // Wellen des Beckens je Zyklus: seitlich, vor und zurück
         wechselS: 27.3, // s zwischen zwei Gewichtswechseln im Mittel (60 / 2,2; die Welle hin und zurück trägt zwei)
@@ -9278,18 +9279,46 @@
     function leibStandWelle(t, k, v) {
         return Math.sin(2 * Math.PI * k * (leibStandPhase(t) + (v || 0)));
     }
-    // DIE STÜTZSTELLEN DES STANDS (stand-stuetzstellen, 26.11.): der ferne Leib mischt zwei gebackene Zeilen GERADE — also liegen
-    // die Zeilen dort, wo die Pose ihres Stands sich biegt. `leibStandKnoten(name, mp, mref)` sucht sie an der Pose SELBST (kein
-    // Zwilling ihrer Wellen): `leibRigPose` an zwei Probe-Rigs (die Ruhe der Arme am unteren und am oberen Rand des Bands der
-    // Körperbauten, `ruheProbe` — die Geste hebt den Arm erst über seine Ruhe) über den Zyklus am Raster `rasterS`, dann gierig die
-    // längste Strecke, über der die gerade Mischung ihrer Enden an jeder Kette (Becken · Rumpf · Glied, die Winkel je Gelenk und
-    // Achse summiert) höchstens `treueRad` vom Bogen weicht, höchstens `weiteS` lang. → die Phasen der Stützstellen (0 … 1,
-    // steigend, die erste 0), je Name gemerkt. `leibStandLage(t, K)` die zwei Stützstellen der Uhr t und der Anteil der zweiten
-    // ([k, k + 1, Anteil]: k + 1 = K.length ist die erste des nächsten Zyklus — der Wirt backt sie als eigene Zeile hinter die letzte),
-    // `leibStandZeit(k, K)` die Uhr der Stützstelle k. Bis hier buk der Satz je Stand 12 Zeilen zu gleichen Schritten (0,6 s): der Bogen
-    // der Hand (1,08 s) stand zwischen zwei Zeilen bis 42° neben dem nahen Leib (reden 11,7°; gerechnet an diesen Funktionen —
-    // erst 96 gleiche Zeilen trügen 0,9°), gemessen an der Menge 37,1° (bewohner `haltung.zwischen`, buendel-mittag Kopf 6).
-    var _standKnotenMerk = Object.create(null);
+    // DIE STÜTZSTELLEN DES STANDS (stand-stuetzstellen, 26.11.): der ferne Leib mischt zwei gebackene Zeilen GERADE IN DER MATRIX —
+    // also liegen die Zeilen dort, wo die Pose ihres Stands sich biegt. `leibStandKnoten(name, mp, mref, je, boden)` sucht sie an der
+    // Pose SELBST (kein Zwilling ihrer Wellen): `leibRigPose` an EINEM Probe-Rig über den Zyklus am Raster `rasterS`. DER BODEN DER
+    // SCHULTER (`boden`, rad vom Lot): hebt die Geste des Stands den Arm (`leibGeste`), klemmt jeder Leib ihn an SEINER Ruhe — der
+    // Knick liegt, wo der Bogen den Boden des Leibs kreuzt, der die Zeilen backt (die Vorlage des Satzes: ihre Ruhe; der Leib einer
+    // Gestalt: seine Ruhe und die Luft des Daumens, `leibStandBoden`). Die Stützstellen einer Geste gelten darum je Boden
+    // (`leibStandSchluessel`), jeder andere Stand trägt EINE Folge (sein Winkel vom Lot steht fest). Bis hier suchten zwei Probe-Rigs
+    // am Rand des Bands der Körperbauten: joy stand am Leib mit der Ruhe 0 4,3° neben dem Bogen (13 Rigs: 0,9° bei 144 Zeilen). Je
+    // Probe die Drehung jedes Gelenks im Raum der Wurzel (wie die Zeile des Satzes sie trägt); dann gierig die längste Strecke,
+    // über der die gerade Mischung der MATRIZEN ihrer Enden — gemischt und gelesen, wie die GPU mischt und der Knoten liest: die
+    // Spalten auf Länge 1 — an jedem Gelenk höchstens `treueRad` von seiner Drehung im Bogen weicht, höchstens `weiteS` lang.
+    // → die Phasen der Stützstellen (0 … 1, steigend, die erste 0), je Name gemerkt. Mit `je` rechnet der Ruf höchstens so viele
+    // Proben weiter und liefert null, bis die Suche steht (der Ofen des Wirts ruft sie in seinem Budget: nie eine lange Aufgabe
+    // in einem gespielten Takt — Lehre 14); ohne `je` rechnet er sie ganz. `leibStandLage(t, K)` die zwei Stützstellen der Uhr t
+    // und der Anteil der zweiten ([k, k + 1, Anteil]: k + 1 = K.length ist die erste des nächsten Zyklus — der Wirt backt sie als
+    // eigene Zeile hinter die letzte), `leibStandZeit(k, K)` die Uhr der Stützstelle k. Bis hier buk der Satz je Stand 12 Zeilen zu
+    // gleichen Schritten (0,6 s): der Bogen der Hand (1,08 s) stand zwischen zwei Zeilen bis 42° neben dem nahen Leib (reden
+    // 11,7°; gerechnet an diesen Funktionen — erst 96 gleiche Zeilen trügen 0,9°), gemessen an der Menge 37,1° (bewohner
+    // `haltung.zwischen`, buendel-mittag Kopf 6). Die erste Suche prüfte die Winkel der Gelenke, gerade gemischt: am schnellen
+    // Ellbogen des Redens lag die Matrix-Mischung der GPU 1,61° daneben (die Sehne der Drehung zwischen zwei fernen Stützstellen).
+    var _standKnotenMerk = Object.create(null),
+        _standKnotenBau = Object.create(null);
+    // der Boden der Schulter des Rigs r im Stand (rad vom Lot): seine Ruhe und die Luft des Daumens — wie `leibRigPose` ihn stellt
+    function leibStandBoden(r) {
+        var u = r && Array.isArray(r.armRuhe) && r.armRuhe[0].shoulder ? r.armRuhe[0].shoulder[2] : 0,
+            RD = STAND.ruhe;
+        return u + RD.daumen * Math.max(0, 1 - Math.abs(u) / RD.daumenBis);
+    }
+    // die Ruhe des Probe-Rigs, dessen Boden im Stand F ist (die Umkehrung von `leibStandBoden`; unter der Luft des Daumens die Ruhe 0)
+    function _standRuheZu(F) {
+        var RD = STAND.ruhe;
+        return F >= RD.daumenBis ? F : Math.max(0, (F - RD.daumen) / (1 - RD.daumen / RD.daumenBis));
+    }
+    // der Schlüssel der Stützstellen des Stands: sein Name — und, hebt seine Geste den Arm, der Boden der Schulter (fail-closed)
+    function leibStandSchluessel(name, mp, mref, boden) {
+        if (typeof name !== "string") throw new Error("koerper leibStandSchluessel: der Stand ohne Namen — fail-closed");
+        if (!(leibGeste(mp, mref, 0) || leibGeste(mp, mref, 1))) return name;
+        if (!Number.isFinite(boden)) throw new Error("koerper leibStandSchluessel: die Geste „" + name + "“ ohne den Boden der Schulter — fail-closed");
+        return name + "@" + boden;
+    }
     function _standProbeRig(ruhe) {
         var G = function (z) {
             var o = { x: 0, y: 0, z: z || 0 };
@@ -9309,81 +9338,128 @@
             rumpf = G(),
             kopf = G(),
             r = { hips: G(), spine: rumpf, chest: rumpf, neck: kopf, head: kopf, armL: arm(ruhe), armR: arm(-ruhe), legL: bein(), legR: bein() }; // (Rumpf und Kopf je EIN Knochen, wie `leibRig`)
-        // die Gelenke und ihre Ketten (Becken 0 · Rumpf 1 · Kopf 2 · Arme 3–8 · Beine 9–14)
+        // die Gelenke (Becken 0 · Rumpf 1 · Kopf 2 · Arme 3–8 · Beine 9–14)
         r._gelenke = [r.hips, rumpf, kopf, r.armL.shoulder, r.armL.elbow, r.armL.wrist, r.armR.shoulder, r.armR.elbow, r.armR.wrist, r.legL.hip, r.legL.knee, r.legL.ankle, r.legR.hip, r.legR.knee, r.legR.ankle]; // prettier-ignore
         return r;
     }
-    var _STAND_KETTEN = [[0, 1, 2], [0, 1, 3, 4, 5], [0, 1, 6, 7, 8], [0, 9, 10, 11], [0, 12, 13, 14]]; // prettier-ignore
-    function leibStandKnoten(name, mp, mref) {
-        if (typeof name !== "string") throw new Error("koerper leibStandKnoten: der Stand ohne Namen — fail-closed");
-        if (name in _standKnotenMerk) return _standKnotenMerk[name];
-        var n = Math.round(STAND.zyklus / STAND.rasterS),
-            dt = STAND.zyklus / n,
-            weit = Math.max(1, Math.round(STAND.weiteS / dt)),
-            tun = leibStandTun(name),
-            rigs = STAND.ruheProbe.map(function (a) {
-                return _standProbeRig((a * ARM_RUHE.spreizGrad[1] * Math.PI) / 180);
-            }),
-            G = rigs[0]._gelenke.length,
-            V = new Float64Array(n * rigs.length * G * 3),
-            i,
+    // je Gelenk sein Vorgänger zur Wurzel (−1: das Becken)
+    var _STAND_VOR = [-1, 0, 1, 1, 3, 4, 1, 6, 7, 0, 9, 10, 0, 12, 13];
+    // die Drehung des Gelenks g (seine Winkel in der Ordnung XYZ, wie die Gelenke des Rigs) hinter der seines Vorgängers, im Raum
+    // der Wurzel: neun Zahlen zeilenweise nach V ab o (der Vorgänger ab p, ohne ihn p < 0)
+    function _standDrehung(ro, V, o, p) {
+        var a = Math.cos(ro.x), b = Math.sin(ro.x), c = Math.cos(ro.y), d = Math.sin(ro.y), e = Math.cos(ro.z), f = Math.sin(ro.z); // prettier-ignore
+        var m = [c * e, -c * f, d, a * f + b * e * d, a * e - b * f * d, -b * c, b * f - a * e * d, b * e + a * f * d, a * c];
+        if (p < 0) {
+            for (var i = 0; i < 9; i++) V[o + i] = m[i];
+            return;
+        }
+        for (var r = 0; r < 3; r++)
+            for (var k = 0; k < 3; k++)
+                V[o + r * 3 + k] = V[p + r * 3] * m[k] + V[p + r * 3 + 1] * m[3 + k] + V[p + r * 3 + 2] * m[6 + k];
+    }
+    function leibStandKnoten(name, mp, mref, je, boden) {
+        var key = leibStandSchluessel(name, mp, mref, boden);
+        if (key in _standKnotenMerk) return _standKnotenMerk[key];
+        var B = _standKnotenBau[key];
+        if (!B) {
+            var n0 = Math.round(STAND.zyklus / STAND.rasterS);
+            B = _standKnotenBau[key] = {
+                n: n0,
+                dt: STAND.zyklus / n0,
+                weit: Math.max(1, Math.round(STAND.weiteS / (STAND.zyklus / n0))),
+                tun: leibStandTun(name),
+                rigs: [_standProbeRig(key === name ? (STAND.ruheProbe * ARM_RUHE.spreizGrad[1] * Math.PI) / 180 : _standRuheZu(boden))],
+                V: null,
+                i: 0,
+                rege: null,
+                K: [0],
+                i0: 0,
+            };
+            B.W = B.rigs.length * _STAND_VOR.length * 9; // die Zahlen einer Probe
+            B.V = new Float64Array(B.n * B.W);
+        }
+        var rest = je > 0 ? je : Infinity,
+            n = B.n,
+            W = B.W,
+            V = B.V,
+            G = _STAND_VOR.length,
             q,
             g;
-        for (i = 0; i < n; i++)
-            for (q = 0; q < rigs.length; q++) {
-                var r = rigs[q];
+        // (1) die Proben: je Uhr und Probe-Rig die Pose, je Gelenk seine Drehung im Raum der Wurzel
+        for (; B.i < n && rest > 0; B.i++, rest--)
+            for (q = 0; q < B.rigs.length; q++) {
+                var r = B.rigs[q];
                 leibRigNeutral(r);
                 leibRigEingeschwungen(r);
-                r.standTun = tun;
+                r.standTun = B.tun;
                 r.standSeite = 0;
-                leibRigPose(r, i * dt, 0, false, null, mp || null, mref || null, null, null, null, null);
+                leibRigPose(r, B.i * B.dt, 0, false, null, mp || null, mref || null, null, null, null, null);
                 for (g = 0; g < G; g++) {
-                    var o = ((i * rigs.length + q) * G + g) * 3,
-                        ro = r._gelenke[g].rotation;
-                    V[o] = ro.x;
-                    V[o + 1] = ro.y;
-                    V[o + 2] = ro.z;
+                    var o = B.i * W + (q * G + g) * 9;
+                    _standDrehung(r._gelenke[g].rotation, V, o, _STAND_VOR[g] < 0 ? -1 : B.i * W + (q * G + _STAND_VOR[g]) * 9);
                 }
             }
+        if (B.i < n) return null;
         // die Gelenke, die sich im Zyklus rühren (die übrigen tragen keinen Fehler)
-        var rege = [];
-        for (g = 0; g < rigs.length * G * 3; g++) for (i = 1; i < n; i++) if (Math.abs(V[i * rigs.length * G * 3 + g] - V[g]) > 1e-9) { rege.push(g); break; } // prettier-ignore
-        var W = rigs.length * G * 3,
-            eJ = new Float64Array(rigs.length * G),
-            passt = function (a, b) {
-                var bb = b % n;
-                for (var j = a + 1; j < b; j++) {
-                    var u = (j - a) / (b - a);
-                    eJ.fill(0);
-                    for (var c = 0; c < rege.length; c++) {
-                        var k = rege[c];
-                        eJ[(k / 3) | 0] += Math.abs(V[j * W + k] - (V[a * W + k] * (1 - u) + V[bb * W + k] * u));
-                    }
-                    for (var qq = 0; qq < rigs.length; qq++)
-                        for (var kk = 0; kk < _STAND_KETTEN.length; kk++) {
-                            var s = 0;
-                            for (var m = 0; m < _STAND_KETTEN[kk].length; m++) s += eJ[qq * G + _STAND_KETTEN[kk][m]];
-                            if (s > STAND.treueRad) return false;
+        if (!B.rege) {
+            B.rege = [];
+            for (g = 0; g < B.rigs.length * G; g++)
+                for (var i = 1, fest = true; i < n && fest; i++)
+                    for (var c = 0; c < 9; c++)
+                        if (Math.abs(V[i * W + g * 9 + c] - V[g * 9 + c]) > 1e-9) {
+                            B.rege.push(g);
+                            fest = false;
+                            break;
                         }
+        }
+        // (2) gierig die längste Strecke im Halbieren: jede gewählte ist geprüft (eine Strecke von einem Raster-Schritt trägt
+        // keinen Fehler). Der Fehler eines Gelenks: der Sinus des Winkels zwischen seiner Drehung im Bogen T und der gemischten
+        // Matrix M mit Spalten der Länge 1 — die Länge des schiefen Teils von Tᵀ · M
+        var sinSoll = Math.sin(STAND.treueRad),
+            rege = B.rege,
+            M = [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            passt = function (a, b) {
+                var oa = a * W,
+                    ob = (b % n) * W;
+                for (var j = a + 1; j < b; j++) {
+                    var u = (j - a) / (b - a),
+                        oj = j * W;
+                    for (var x = 0; x < rege.length; x++) {
+                        var k = rege[x] * 9;
+                        for (var y = 0; y < 9; y++) M[y] = V[oa + k + y] * (1 - u) + V[ob + k + y] * u;
+                        for (var s = 0; s < 3; s++) {
+                            var l = Math.sqrt(M[s] * M[s] + M[3 + s] * M[3 + s] + M[6 + s] * M[6 + s]) || 1;
+                            M[s] /= l;
+                            M[3 + s] /= l;
+                            M[6 + s] /= l;
+                        }
+                        var t = oj + k,
+                            E = function (p, z) {
+                                return V[t + p] * M[z] + V[t + 3 + p] * M[3 + z] + V[t + 6 + p] * M[6 + z];
+                            },
+                            vx = E(2, 1) - E(1, 2),
+                            vy = E(0, 2) - E(2, 0),
+                            vz = E(1, 0) - E(0, 1);
+                        if (Math.sqrt(vx * vx + vy * vy + vz * vz) / 2 > sinSoll) return false;
+                    }
                 }
                 return true;
             };
-        var K = [0],
-            i0 = 0;
-        while (i0 < n) {
-            // (die längste Strecke im Halbieren: jede gewählte ist geprüft — eine Strecke von einem Raster-Schritt trägt keinen Fehler)
+        for (; B.i0 < n && rest > 0; rest -= 8) {
             var lo = 1,
-                hi = Math.min(weit, n - i0);
+                hi = Math.min(B.weit, n - B.i0);
             while (lo < hi) {
                 var mi = (lo + hi + 1) >> 1;
-                if (passt(i0, i0 + mi)) lo = mi;
+                if (passt(B.i0, B.i0 + mi)) lo = mi;
                 else hi = mi - 1;
             }
-            i0 += lo;
-            if (i0 < n) K.push(i0 / n);
+            B.i0 += lo;
+            if (B.i0 < n) B.K.push(B.i0 / n);
         }
-        Object.freeze(K);
-        if (mp) _standKnotenMerk[name] = K; // (ohne Profil nichts gemerkt: der Wirt bricht laut, `_bewohnerStandTafel`)
+        if (B.i0 < n) return null;
+        delete _standKnotenBau[key];
+        var K = Object.freeze(B.K);
+        if (mp) _standKnotenMerk[key] = K; // (ohne Profil nichts gemerkt: der Wirt bricht laut, `_bewohnerStandProfil`)
         return K;
     }
     function leibStandLage(t, K, aus) {
@@ -12271,6 +12347,8 @@
         leibGeste: leibGeste,
         leibStandAtem: leibStandAtem,
         leibStandKnoten: leibStandKnoten,
+        leibStandBoden: leibStandBoden,
+        leibStandSchluessel: leibStandSchluessel,
         leibStandLage: leibStandLage,
         leibStandZeit: leibStandZeit,
         leibRigPose: leibRigPose,

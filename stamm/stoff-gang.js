@@ -60,7 +60,7 @@ class AnazhRealm_stoff_gang {
             quellen: spec.quellen,
             n: N,
             baender: B,
-            staende: H,
+            staende: seite.zeilen - B * N, // (mit den Blöcken, die die Seite schon trägt, `standNimm`)
             standFolge: HZ,
             J,
             knochen,
@@ -216,11 +216,11 @@ class AnazhRealm_stoff_gang {
             m.userData.gang = {
                 n: N,
                 baender: B,
-                staende: H,
+                staende: satz.staende,
                 standFolge: HZ,
                 J: seite.breite,
                 puffer: tex.image.data,
-                bytes: 3 * J * (B * N + H) * 16,
+                bytes: 3 * J * seite.zeilen * 16,
             };
             m.receiveShadow = !sk.wurf;
             m.layers.mask = sk.wurf ? 0 : 1; // der Wurf nur auf der Wurf-Ebene (`_wurfEbene`), das Auge nur auf Ebene 0
@@ -336,11 +336,11 @@ class AnazhRealm_stoff_gang {
         if (seite) return seite;
         const T = THREE;
         const TSL = T.TSL;
-        const zeilen = baender * n + staende;
+        const zeilen0 = baender * n + staende;
         const tex = new T.DataTexture(
-            new Float32Array(3 * G.start * zeilen * 4),
+            new Float32Array(3 * G.start * zeilen0 * 4),
             3 * G.start,
-            zeilen,
+            zeilen0,
             T.RGBAFormat,
             T.FloatType
         );
@@ -422,6 +422,8 @@ class AnazhRealm_stoff_gang {
         seite = {
             tex,
             breite: G.start,
+            zeilen: zeilen0, // die Zeilen der Seite: der Gang, die Stände der Geburt und die Blöcke, die `standNimm` nahm
+            bloecke: new Map(), // je Schlüssel eines Blocks [seine erste Stand-Zeile, seine Zahl]
             frei: [[0, G.start]], // [erster Platz, Zahl] je freiem Bereich
             saetze: new Set(),
             knoten: AnazhRealm._gangSatzKnoten(tex, n, baender, ziel && ziel.knoten(this._tonTafel()), standFolge),
@@ -437,6 +439,7 @@ class AnazhRealm_stoff_gang {
                     const alt = seite.breite;
                     const neu = Math.min(G.max, alt * 2);
                     const D0 = tex.image.data;
+                    const zeilen = seite.zeilen;
                     const D = new Float32Array(3 * neu * zeilen * 4);
                     for (let z = 0; z < zeilen; z++) D.set(D0.subarray(z * alt * 12, (z + 1) * alt * 12), z * neu * 12);
                     tex.image = { data: D, width: 3 * neu, height: zeilen };
@@ -455,6 +458,43 @@ class AnazhRealm_stoff_gang {
                 return a;
             },
             gib: (a, j) => AnazhRealm._freiZurueck(seite.frei, a, j),
+            // DIE ZEILEN EINES BLOCKS DER STÄNDE (stand-stuetzstellen, Gebot 7: die Seite trägt, was steht): der Block `schluessel`
+            // (ein Stand an den Stützstellen seines Zyklus, je tragendem Bein — der Wirt nennt ihn, `_bewohnerGangBacken`) nimmt
+            // `zahl` Zeilen hinter den letzten der Seite — sie wächst in der Höhe (jede Zeile bleibt, wo sie liegt: `_gangOrt`
+            // rechnet zeilenweise), jeder Satz der Seite backt seine Plätze dieser Zeilen selbst. Ein Block, den die Seite schon
+            // trägt, liefert seine Zeilen. → die erste Stand-Zeile des Blocks (über baender·n). Die Seite gibt keine Zeile zurück:
+            // sie trägt die Blöcke aller Stände, die je einer stand (höchstens die Namen des Gesetzes je Boden der Schulter)
+            standNimm: (schluessel, zahl) => {
+                const da = seite.bloecke.get(schluessel);
+                if (da) {
+                    if (da[1] !== zahl)
+                        throw this._stoffBruch(
+                            `die Seite des Gangs (${name})`,
+                            new Error(`der Block „${schluessel}“ mit ${zahl} Zeilen, die Seite trägt ${da[1]}`)
+                        );
+                    return da[0];
+                }
+                const [ab, hoch] = [seite.zeilen - baender * n, seite.zeilen + zahl];
+                if (!(hoch <= G.hoch))
+                    throw this._stoffBruch(`die Seite des Gangs (${name})`, new Error(`${hoch} Zeilen > ${G.hoch}`));
+                const D = new Float32Array(3 * seite.breite * hoch * 4);
+                D.set(tex.image.data);
+                // (r184, am Vendor gelesen: `Textures.updateTexture` legt eine Daten-Textur EINMAL an und schreibt jedes spätere
+                // Bild mit SEINER Breite und Höhe in dieselbe GPU-Textur — ein höheres Bild fiele als Validierungs-Fehler, die
+                // Textur bliebe alt. Darum geht die GPU-Textur zuerst, `dispose`: ihre Bind-Gruppen fallen mit, der nächste
+                // Zug legt sie in der neuen Größe an)
+                tex.dispose();
+                tex.image = { data: D, width: 3 * seite.breite, height: hoch };
+                tex.needsUpdate = true;
+                seite.zeilen = hoch;
+                seite.bloecke.set(schluessel, [ab, zahl]);
+                for (const s of seite.saetze) {
+                    s.staende = hoch - baender * n;
+                    for (const m of s.senken)
+                        Object.assign(m.userData.gang, { puffer: D, staende: s.staende, bytes: 3 * s.J * hoch * 16 });
+                }
+                return ab;
+            },
         };
         liste.push(seite);
         return seite;
@@ -710,4 +750,4 @@ _stammZonen(AnazhRealm, [AnazhRealm_stoff_gang]);
 // einer WebGPU-Textur
 // (die Formziel-Tafel des Leib-Raums, `_gangZielTafel`: der Schritt ihres Wachstums und ihre Höhe höchstens in Zeilen — je
 // Vorlage eine Zeile je Ecke, die Mengen-Stufen 2 und 3 zusammen 1 191)
-AnazhRealm.GANG_SEITE = Object.freeze({ start: 128, max: 2730, zielSchritt: 256, zielMax: 8192 });
+AnazhRealm.GANG_SEITE = Object.freeze({ start: 128, max: 2730, hoch: 8192, zielSchritt: 256, zielMax: 8192 });

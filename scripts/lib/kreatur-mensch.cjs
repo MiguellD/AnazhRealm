@@ -690,7 +690,7 @@ async function menschBuehnen() {
                 return mB.set(D[o], D[o + 1], D[o + 2], D[o + 3], D[o + 4], D[o + 5], D[o + 6], D[o + 7], D[o + 8], D[o + 9], D[o + 10], D[o + 11], 0, 0, 0, 1).decompose(p3, q, s3); // prettier-ignore
             };
             // DIE ZEILEN, DIE SEINE INSTANZ LIEST (stand-stuetzstellen, wie der Knoten `_gangSatzKnoten`): die Zeile `hs` und die
-            // nächste, hs + 1 (die Stützstellen seines Stands, `_bewohnerStandTafel`), gemischt im Anteil `an` (`aGang.w`) — gerade
+            // nächste, hs + 1 (die Stützstellen seines Stands im Block seines Namens, `_bewohnerStandZeile`), gemischt im Anteil `an` (`aGang.w`) — gerade
             // in der MATRIX, wie die GPU mischt (bis hier mischte die Linse die Drehung: ein milderes Bild als das der Welt)
             const KC = window.__koerperCore;
             const ZY = KC.STAND.zyklus;
@@ -720,10 +720,10 @@ async function menschBuehnen() {
                 });
             };
             // (der neutrale Bezug zu den Bedingungen der Zeile 0, wie der Ofen sie backt, `_bewohnerGangPose`: ihr Gemüt nennt ihr
-            // Bein, ihre Uhr die Mitte ihres Teils des Zyklus — bis mittag-heiler stand das Modell hier ohne Gemüt zur Uhr 0 auf dem
+            // Bein, ihre Uhr ist 0 (die Vor-Zeile des neutralen Stands) — bis mittag-heiler stand das Modell hier ohne Gemüt zur Uhr 0 auf dem
             // Bein SEINER Person, und die Körper-Ruhe trug das fremde Bein mit: 2,27°)
             pose(
-                r._bewohnerStandGemuet(0),
+                r._bewohnerStandGemuet(0, 0),
                 (p, q) => {
                     nahe0.set(p, q.clone());
                     lies(Z.n * Z.baender, p, qB);
@@ -732,7 +732,7 @@ async function menschBuehnen() {
                     // am Leib nach SEINEM Bau (koerper `leibBauArme`), im Satz nach dem der Vorlage
                     haltung.ruheGrad = Math.max(haltung.ruheGrad, q3(winkel(q, qB)));
                 },
-                r._bewohnerStandZeit(0)
+                0
             );
             const neutral = A.MOTION_PROFILE_MAP.koerper.idle;
             for (const b of liste) {
@@ -743,14 +743,30 @@ async function menschBuehnen() {
                 // WAS ER JETZT LIEST, GEGEN DAS, WAS SEIN NAHER LEIB JETZT STELLT (mittag-heiler, stand-lebt 3): im Satz die Zeile
                 // und der Anteil SEINER Instanz (der Täter bleibt wirksam), nah der EINE Weg des Spiels für IHN — sein Gemüt, seine
                 // Person (`atem / 10`: ihr tragendes Bein, koerper `leibStandBein`) zur Uhr, die seine Instanz zeigt (die Uhr ihrer
-                // Zeile samt Anteil, `_bewohnerStandZeit` — die letzte an seiner Uhr `uhr + atem`: der Satz rückt im Takt des Stands,
+                // Zeile samt Anteil, `_bewohnerStandZeile` — die letzte an seiner Uhr `uhr + atem`: der Satz rückt im Takt des Stands,
                 // `_bewohnerStandTakt`). Bis hier stand das Modell zur Uhr der Zeile auf dem Bein seiner EIGENEN Person: jeder Stand
                 // lag über 1° (idle 2,271° = die Körper-Ruhe), sobald die Zeilen ihr tragendes Bein nannten
+                // DER BLOCK SEINES STANDS (stand-stuetzstellen: die Blöcke erst bei Gebrauch): bis der Ofen ihn gebacken hat, steht
+                // er in der Vor-Zeile seines Stands (seine Haltung zur Uhr 0, ohne Zeit) — GEZÄHLT als eigene Zahl (`wartend`), nie
+                // am Bogen geurteilt; ein Stand, dessen Block brach, zählt beim Namen (`bruch`)
+                const block = Z.standBuch && Z.standBuch.bloecke.get(b.standNr || 0);
+                if (!block || !block.bereit) {
+                    haltung.wartend = (haltung.wartend || 0) + 1;
+                    if (block && block.bruch) haltung.bruch = (haltung.bruch || 0) + 1;
+                    continue;
+                }
                 const hs = Math.floor(aG.getY(b.satzOrt[1]) / 2);
+                // (die Zeile beim Namen: der Stand, das Bein, die Uhr ihrer Stützstelle und die Strecke zur nächsten; eine Zeile,
+                // die keinen Stand trägt, zählt beim Namen und fällt im Urteil)
+                const ZL = r._bewohnerStandZeile(Z, hs);
+                if (!ZL) {
+                    haltung.ohneZeile = (haltung.ohneZeile || 0) + 1;
+                    continue;
+                }
                 const an = aG.getW(b.satzOrt[1]) - Math.floor(aG.getW(b.satzOrt[1]));
                 const u = (b.uhr || 0) + (b.atem || 0);
                 // (die Uhr seiner Stützstelle und die Strecke zur nächsten — die Zeile hinter der letzten steht zum Ende des Zyklus)
-                const [tZ, tS] = [r._bewohnerStandZeit(hs), r._bewohnerStandZeit(hs + 1) - r._bewohnerStandZeit(hs)];
+                const [tZ, tS] = [ZL.t, ZL.dt];
                 let dU = (((u - tZ - tS * an) % ZY) + ZY) % ZY;
                 if (dU > ZY / 2) dU -= ZY;
                 const person = (b.atem || 0) / 10;
@@ -796,7 +812,7 @@ async function menschBuehnen() {
                 haltung.zwischen[name] = Math.max(haltung.zwischen[name] || 0, q3(zw));
                 // (wo: das Glied, die Zeile seiner Stützstelle, ihr Anteil und die Strecke zur nächsten)
                 if (zw > haltung.zwischenGrad) haltung.zwischenFach = [0, 0.25, 0.5, 0.75, 1].map((a) => q3(gegen(uZ + tS * a, a))); // (der Fächer der Strecke: Anteil 0 … 1)
-                if (zw > haltung.zwischenGrad) [haltung.zwischenGrad, haltung.zwischenWer, haltung.zwischenWo] = [q3(zw), `${wer(b)} (${b.akt}: ${name})`, `${woZw} · Zeile ${hs} · Anteil ${q3(an)} · Strecke ${q3(tS)} s`];
+                if (zw > haltung.zwischenGrad) [haltung.zwischenGrad, haltung.zwischenWer, haltung.zwischenWo] =[q3(zw), `${wer(b)} (${b.akt}: ${name})`, `${woZw} · Zeile ${hs} · Anteil ${q3(an)} · Strecke ${q3(tS)} s`];
                 if (grad > haltung.maxGrad) [haltung.maxGrad, haltung.wer] = [q3(grad), `${wer(b)} (${b.akt}: ${name})`];
             }
             // das Modell steht wieder in seiner eigenen Pose
@@ -1492,8 +1508,14 @@ function menschUrteil(name, z, soll) {
         );
         const ht = z.haltung || { n: 0, mit: 0, maxGrad: "ungemessen", zwischenGrad: "ungemessen", wer: "", je: {} };
         soll(
-            ht.n >= 10 && ht.mit >= 3 && ht.maxGrad <= 1 && ht.zwischenGrad <= 1,
-            `die Haltung des Stands im Satz: ${ht.maxGrad}° zum nahen Leib an ${ht.wer || "—"} (Soll ≤ 1° an der Zeile und zwischen zwei Zeilen; ${ht.n} Stehende, ${ht.mit} mit Haltung, die Körper-Ruhe des Mess-Leibs ${ht.ruheGrad}°; je Stand an der Zeile ${Object.entries(ht.je).map(([k, v]) => `${k} ${v}°`).join(" · ")}; zwischen zwei Zeilen ${ht.zwischenGrad}° an ${ht.zwischenWer || "—"} (${ht.zwischenWo || "—"}) — ${Object.entries(ht.zwischen || {}).map(([k, v]) => `${k} ${v}°`).join(" · ")}; gemessen, nie geurteilt: im Wechsel des Gewichts ${ht.wechsel || 0} Stehende, ${ht.wechselGrad || 0}°; der Satz hinter der Uhr ≤ ${ht.verzugS || 0} s)`
+            ht.n >= 10 && ht.mit >= 3 && ht.maxGrad <= 1 && ht.zwischenGrad <= 1 && !ht.ohneZeile && !ht.bruch,
+            `die Haltung des Stands im Satz: ${ht.maxGrad}° zum nahen Leib an ${ht.wer || "—"} (Soll ≤ 1° an der Zeile und zwischen zwei Zeilen; ${ht.n} Stehende, ${ht.mit} mit Haltung, die Körper-Ruhe des Mess-Leibs ${ht.ruheGrad}°; je Stand an der Zeile ${Object.entries(ht.je).map(([k, v]) => `${k} ${v}°`).join(" · ")}; zwischen zwei Zeilen ${ht.zwischenGrad}° an ${ht.zwischenWer || "—"} (${ht.zwischenWo || "—"}) — ${Object.entries(ht.zwischen || {}).map(([k, v]) => `${k} ${v}°`).join(" · ")}; gemessen, nie geurteilt: ${ht.wartend || 0} Stehende in der Vor-Zeile ihres Stands (ihr Block backt noch), der Satz hinter der Uhr ≤ ${ht.verzugS || 0} s; ${ht.ohneZeile || 0} Instanzen in einer Zeile ohne Stand, ${ht.bruch || 0} Stände ohne Block)`
+        );
+        // DER WECHSEL DES GEWICHTS (ein eigenes Glied, beim Namen): der nahe Leib gleitet `STAND.wechselDauerS` lang hinüber, der
+        // ferne wechselt das Bein im Schritt einer Zeile — rot, bis auch er im Soll steht
+        soll(
+            !(ht.wechselGrad > 1),
+            `der Wechsel des Gewichts im Satz: ${ht.wechselGrad || 0}° zum nahen Leib (Soll ≤ 1°; ${ht.wechsel || 0} Stehende im Wechsel — der ferne Leib wechselt das Bein im Schritt einer Zeile, der nahe gleitet)`
         );
         const gs = z.gestalt || { n: 0, gestalten: 0, max: "ungemessen", wer: "", mass: "", je: [] };
         // das Soll: 5 % je Maß — die Welt der Linse (Pullover) hält es (9a1552f3: Schulter 2,4 · Taille 2,0 · Hüfte 3,8 %, 73 im

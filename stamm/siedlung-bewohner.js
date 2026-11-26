@@ -2019,12 +2019,14 @@ class AnazhRealm_siedlung_bewohner {
         this._bewohnerGang(b); // × lauf, mit dem Delta seines Satzes (der Kranke)
         this.state.scene.add(g);
         if (S.satz === null) S.satz = this._bewohnerSatz(S, b);
-        // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, die erste Zeile jedes Stands
-        // sofort (die übrigen Zeilen des Zyklus backt der Takt, `_bewohnerGangBacken`)
+        // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, die Vor-Zeile jedes Stands
+        // sofort (`_bewohnerStandErste`; den Block eines Stands backt der Takt, sobald einer in ihm steht, `_bewohnerGangBacken`)
         if (G.lage === null) {
             const B = window.__koerperCore.LEIB_SATZ.baender.length; // (je Gang des Satzes ein Band, `_bewohnerGangPose`)
             G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, baender: B, gebacken: 0, fertig: false, tempo: b.tempoBand, gaenge: null }; // prettier-ignore
-            for (const z of this._bewohnerStandTafel().erste) this._bewohnerGangPose(g, G.lage, B * G.lage.n + z, null);
+            const SE = window.__koerperCore.STAND.seiten;
+            for (let z = 0; z < this._bewohnerStandErste(); z++)
+                this._bewohnerGangPose(g, G.lage, B * G.lage.n + z, null, [Math.floor(z / SE), z % SE, 0]);
         }
     }
 
@@ -3198,8 +3200,8 @@ class AnazhRealm_siedlung_bewohner {
     // Haltung des Tages-Gesetzes (koerper TAGES_GESETZ.haltung) und je Zeile der Emotions-Brücke an einer Achse seines Gemüts
     // (BEWOHNER.gemuet: sorrow, chaos). Jeder Bewohner wählt seinen über denselben Namen wie sein naher Leib (`_koerperMotionName`).
     // DER STAND LEBT (stand-lebt, koerper STAND): der ferne Satz und das Feld backen je Namen die Zeilen seiner Stützstellen über
-    // den Zyklus des Stands (`_bewohnerGangPose` zur Uhr `_bewohnerStandZeit`), die Zeilen eines Namens liegen beieinander
-    // (`_bewohnerStandTafel`), jeder Bewohner liest die Zeile seiner Uhr (`_bewohnerStandLage`). Bis hier buk der Satz je Namen
+    // den Zyklus des Stands (`_bewohnerGangPose` zur Uhr ihrer Stützstelle), die Zeilen eines Namens liegen beieinander (sein
+    // Block, `_bewohnerStandBuch`), jeder Bewohner liest die Zeile seiner Uhr (`_bewohnerStandLage`). Bis hier buk der Satz je Namen
     // EINE Zeile zur Uhr 0 (joy vier Phasen hinten an, je Leib fest aus seinem Samen) — und vor w28-steh-haltung EINEN Stand ohne
     // Haltung: an der Nah-Grenze sprang die Schulter beim Akt besuch um 8,2°.
     static _bewohnerStaende() {
@@ -3218,61 +3220,77 @@ class AnazhRealm_siedlung_bewohner {
         KC.leibSatzNamen().forEach(nimm);
         return (AnazhRealm._bewohnerStaendeListe = Object.freeze(L));
     }
-    // DIE TAFEL DER STÄNDE (stand-stuetzstellen, koerper `leibStandKnoten`): je Name die Stützstellen seines Zyklus — dort, wo die
-    // Pose des nahen Leibs sie braucht (die Geste, die Arme des Tuns, der Atem: EIN Gesetz, `leibRigPose`), gesucht am Profil,
-    // das die gebackene Zeile selbst liest (`_koerperMotionProfile`). Je Name und tragendem Bein (`STAND.seiten`) ein Block: seine
-    // Stützstellen und dahinter die erste des nächsten Zyklus — die nächste Zeile ist im Satz und im Feld immer z + 1. `ab` die
-    // erste Zeile je Name, `von` je Zeile [Name, Bein, Stützstelle], `erste` die erste Zeile jedes Blocks, `zeilen` alle. Bis
-    // hier trug jeder Stand zwölf Zeilen im gleichen Abstand, gerade gemischt: der ferne Arm schnitt die Sehne des Bogens (pwalk
-    // 37,1° neben dem nahen Leib, kreatur-takt `haltung.zwischen`). Ein Profil, das fehlt, bricht laut — und nichts wird gemerkt.
-    _bewohnerStandTafel() {
-        if (AnazhRealm._bewohnerStandTafelMerk) return AnazhRealm._bewohnerStandTafelMerk;
+    // DIE STÄNDE: VOR-ZEILEN UND BLÖCKE ERST BEI GEBRAUCH (stand-stuetzstellen, koerper `leibStandKnoten`): der ferne Leib mischt
+    // zwei gebackene Zeilen gerade — also liegen die Zeilen eines Stands an den Stützstellen seines Zyklus, dort, wo die Pose des
+    // nahen Leibs sie braucht (die Geste, die Arme des Tuns, der Atem: EIN Gesetz, `leibRigPose`). DIE KOSTEN GEHÖREN DEM, WAS
+    // STEHT (Gebot 7): je Name und tragendem Bein (`STAND.seiten`) trägt jedes Back-Ziel (der Satz der Siedlung, die Lagen einer
+    // Gestalt) ab der Geburt EINE Vor-Zeile — sein Stand zur Uhr 0, die Zeile h · seiten + s —, und den BLOCK eines Namens (je
+    // Bein seine Stützstellen und dahinter die erste des nächsten Zyklus: die nächste Zeile ist immer z + 1) erst, wenn einer in
+    // ihm steht: der Leser wünscht ihn (`_bewohnerStandLage`), der Ofen sucht seine Stützstellen, nimmt seinen Platz und backt
+    // seine Zeilen im Takt (`_bewohnerGangBacken`). Bis er bereit ist, steht der Leib in der Vor-Zeile seines Stands (Anteil 0) —
+    // die Linse zählt diese Bilder beim Namen (kreatur-takt bewohner `haltung.wartend`). Bis hier trug jede Siedlung die Zeilen
+    // ALLER 18 Namen (1 722 Zeilen: die Seite 2,44 → 10,28 MB, die Lagen 4,87 → 20,55 MB Heap), gebraucht waren mittags 6, und
+    // die Suche aller Stützstellen lag als EINE Aufgabe von 435 ms im Takt der ersten Geburt. Davor trug jeder Stand zwölf Zeilen
+    // im gleichen Abstand: der ferne Arm schnitt die Sehne des Bogens (pwalk 37,1° neben dem nahen Leib, `haltung.zwischen`).
+    // → die Zahl der Vor-Zeilen
+    _bewohnerStandErste() {
+        return AnazhRealm._bewohnerStaende().length * window.__koerperCore.STAND.seiten;
+    }
+    // DAS BUCH DER STÄNDE DES BACK-ZIELS X: `bloecke` je Name h sein Block {h, K die Stützstellen, ab seine erste Stand-Zeile,
+    // n seine Zeilen, gebacken, bereit, bruch}, `wunsch` die Blöcke, die der Ofen noch backt (der Reihe nach)
+    _bewohnerStandBuch(X) {
+        return X.standBuch || (X.standBuch = { bloecke: new Map(), wunsch: [] });
+    }
+    // DIE STAND-ZEILE z DES BACK-ZIELS X (Leser: das Backen, die Linsen): ihr Name h, ihr Bein s, ihre Stützstelle k, ihre Uhr t
+    // im Zyklus und die Strecke dt zur nächsten Zeile (koerper `leibStandZeit`; eine Vor-Zeile steht zur Uhr 0 ohne Strecke),
+    // `block` ihr Block. null: die Zeile trägt keinen Stand
+    _bewohnerStandZeile(X, z) {
         const KC = window.__koerperCore;
-        const ref = this._koerperMotionProfile(false, null);
-        const T = { ab: [], knoten: [], von: [], erste: [], zeilen: 0 };
-        let ganz = !!ref;
-        AnazhRealm._bewohnerStaende().forEach((nm, h) => {
-            const mp = this._koerperMotionProfile(false, { haltung: nm });
-            if (!mp) ganz = false;
-            const K = KC.leibStandKnoten(nm, mp, ref);
-            T.ab.push(T.zeilen);
-            T.knoten.push(K);
-            for (let s = 0; s < KC.STAND.seiten; s++) {
-                T.erste.push(T.zeilen);
-                for (let k = 0; k <= K.length; k++) T.von.push(h, s, k);
-                T.zeilen += K.length + 1;
-            }
-        });
-        if (!ganz) this._bruchMelden("BEWOHNER: die Tafel der Stände ohne das Buch der Bewegung (koerper fx.motion)");
-        else AnazhRealm._bewohnerStandTafelMerk = T;
-        return T;
+        const SE = KC.STAND.seiten;
+        if (z < this._bewohnerStandErste()) return { h: Math.floor(z / SE), s: z % SE, k: 0, t: 0, dt: 0, block: null };
+        for (const q of this._bewohnerStandBuch(X).bloecke.values()) {
+            if (!q.K || z < q.ab || z >= q.ab + q.n) continue;
+            const [s, k] = [Math.floor((z - q.ab) / (q.K.length + 1)), (z - q.ab) % (q.K.length + 1)];
+            const t = KC.leibStandZeit(k, q.K);
+            return { h: q.h, s, k, t, dt: k < q.K.length ? KC.leibStandZeit(k + 1, q.K) - t : 0, block: q };
+        }
+        return null;
     }
-    // die Zeilen aller Stände (`_bewohnerStandTafel`) — die Zeilen des Satzes und des Felds hinter dem Gang
-    _bewohnerStandZahl() {
-        return this._bewohnerStandTafel().zeilen;
-    }
-    // DIE UHR DER STAND-ZEILE z (das Backen): die Uhr ihrer Stützstelle im Zyklus, die Zeile hinter der letzten zum Ende des
-    // Zyklus (koerper `leibStandZeit`)
-    _bewohnerStandZeit(z) {
-        const T = this._bewohnerStandTafel();
-        return window.__koerperCore.leibStandZeit(T.von[3 * z + 2], T.knoten[T.von[3 * z]]);
-    }
-    // DAS GEMÜT DER STAND-ZEILE z (das Backen): das Gemüt, das die Brücke auf den Namen ihres Stands führt (der erste: neutral);
-    // ein Stand ohne Profil im Buch bricht laut — nie eine neutrale Zeile unter fremdem Namen. (stand-lebt 3) Die Zeilen eines
-    // Namens liegen je tragendem Bein beieinander (`STAND.seiten`): das Gemüt der Zeile nennt ihr Bein (`seite`, 0 das rechte),
-    // das Rig liest es (`_animateHumanoidRig` → `r.standSeite`)
-    _bewohnerStandGemuet(z) {
-        const T = this._bewohnerStandTafel();
-        const h = T.von[3 * z];
-        const e = { haltung: AnazhRealm._bewohnerStaende()[h], seite: T.von[3 * z + 1] };
+    // DAS GEMÜT DER STAND-ZEILE (das Backen): das Gemüt, das die Brücke auf den Namen h ihres Stands führt (der erste: neutral);
+    // ein Stand ohne Profil im Buch bricht laut — nie eine neutrale Zeile unter fremdem Namen. (stand-lebt 3) Das Gemüt der Zeile
+    // nennt ihr tragendes Bein (`seite`, 0 das rechte), das Rig liest es (`_animateHumanoidRig` → `r.standSeite`)
+    _bewohnerStandGemuet(h, s) {
+        const e = { haltung: AnazhRealm._bewohnerStaende()[h], seite: s };
         if (h > 0 && (!this._koerperMotionProfile(false, e) || this._koerperMotionName(false, e) !== e.haltung))
             this._bruchMelden(
                 `BEWOHNER: der Stand „${e.haltung}“ trägt kein Profil der Bewegung (das Buch des Körpers)`
             );
         return e;
     }
-    // DER STAND DES BEWOHNERS: die erste Zeile seines Stands — der Name, den sein naher Leib steht (`_bewohnerGemuet` über die EINE
-    // Wahl `_koerperMotionName`), in der Liste der Stände; ein Name ohne Zeile bricht laut
+    // DER SCHLÜSSEL UND DIE STÜTZSTELLEN DES NAMENS h AM BODEN DER SCHULTER `boden` (rad vom Lot) des Skeletts, das seine Zeilen
+    // trägt (koerper `leibStandSchluessel` · `leibStandKnoten`: hebt die Geste des Stands den Arm, liegt der Knick am Boden DIESES
+    // Skeletts — die Stützstellen gelten je Boden; jeder andere Stand trägt EINE Folge), gesucht am Profil, das die gebackene Zeile
+    // selbst liest (`_koerperMotionProfile`). `_bewohnerStandKnoten` rechnet je Ruf höchstens `STAND.sucheJe` Proben (der Ofen ruft
+    // sie im Takt: nie eine lange Aufgabe in einem gespielten Takt, Lehre 14) → die Stützstellen, null solange die Suche läuft;
+    // ein Profil, das fehlt, bricht laut → false
+    _bewohnerStandProfil(h) {
+        const nm = AnazhRealm._bewohnerStaende()[h];
+        const [mp, ref] = [this._koerperMotionProfile(false, { haltung: nm }), this._koerperMotionProfile(false, null)];
+        if (mp && ref) return [nm, mp, ref];
+        this._bruchMelden(`BEWOHNER: die Stützstellen des Stands „${nm}“ ohne das Buch der Bewegung (koerper fx.motion)`);
+        return null;
+    }
+    _bewohnerStandSchluessel(h, boden) {
+        const P = this._bewohnerStandProfil(h);
+        return P ? window.__koerperCore.leibStandSchluessel(P[0], P[1], P[2], boden) : null;
+    }
+    _bewohnerStandKnoten(h, boden) {
+        const KC = window.__koerperCore;
+        const P = this._bewohnerStandProfil(h);
+        return P ? KC.leibStandKnoten(P[0], P[1], P[2], KC.STAND.sucheJe, boden) : false;
+    }
+    // DER STAND DES BEWOHNERS: der Name, den sein naher Leib steht (`_bewohnerGemuet` über die EINE Wahl `_koerperMotionName`), in
+    // der Liste der Stände; ein Name ohne Zeile bricht laut
     _bewohnerStandVon(b) {
         const nm = this._koerperMotionName(false, this._bewohnerGemuet(b));
         const h = AnazhRealm._bewohnerStaende().indexOf(nm);
@@ -3280,30 +3298,40 @@ class AnazhRealm_siedlung_bewohner {
             this._bruchMelden(`BEWOHNER: der Stand „${nm}“ trägt keine Zeile im Satz`);
             return 0;
         }
-        return this._bewohnerStandTafel().ab[h];
+        return h;
     }
     // DIE ZEILEN SEINES STANDS JETZT (stand-lebt; Leser: das Feld `_bewohnerFeldLage`, der Satz `_bewohnerSatzSchreiben`): zur Uhr
-    // seines Leibs `uhr + atem` — derselben, die sein naher Leib geht — die Stützstelle k0 seines Stands, die nächste und ihr Anteil
-    // (koerper `leibStandLage` an den Stützstellen seines Namens, `_bewohnerStandTafel`); solange die Zeilen der Gestalt `Z` nicht gebacken
-    // sind (`standFertig`), die erste. → [z0, z1, Anteil] (nach `aus`)
-    _bewohnerStandLage(b, Z, aus) {
+    // seines Leibs `uhr + atem` — derselben, die sein naher Leib geht — die Stützstelle seines Stands, die nächste und ihr Anteil
+    // (koerper `leibStandLage` an den Stützstellen des Blocks seines Namens im Back-Ziel `X`), auf dem Bein, das seine Person
+    // gerade trägt (`leibStandBein`, wie sein naher Leib: der Teil des linken liegt hinter dem des rechten — der ferne Leib wechselt
+    // das Bein am Vorzeichen, der Satz mischt nur im Zyklus). Trägt X den Block seines Namens noch nicht, wünscht er ihn (der Ofen
+    // backt ihn, `_bewohnerGangBacken`) und steht so lange in der Vor-Zeile seines Stands; wer geht (das Gewicht seines Gangs
+    // voll: sein Stand zeichnet nicht), wünscht keinen. → [z0, z1, Anteil] (nach `aus`)
+    _bewohnerStandLage(b, X, aus) {
         const z = aus || this._bewohnerStandZ || (this._bewohnerStandZ = [0, 0, 0]);
-        let h = b.standZeile || 0;
-        if (!Z || !Z.standFertig) {
-            z[0] = z[1] = h;
+        const KC = window.__koerperCore;
+        const h = b.standNr || 0;
+        const u = (b.uhr || 0) + (b.atem || 0);
+        const s = KC.leibStandBein(u, (b.atem || 0) / 10) < 0 ? 1 : 0;
+        let q;
+        if (X) {
+            const B = this._bewohnerStandBuch(X);
+            q = B.bloecke.get(h);
+            if (!q && (b._gaitW || 0) < 0.999) {
+                q = { h, K: null, ab: -1, n: 0, gebacken: 0, bereit: false, bruch: false };
+                B.bloecke.set(h, q);
+                B.wunsch.push(q);
+            }
+        }
+        if (!q || !q.bereit) {
+            z[0] = z[1] = h * KC.STAND.seiten + s;
             z[2] = 0;
             return z;
         }
-        const KC = window.__koerperCore;
-        const u = (b.uhr || 0) + (b.atem || 0);
-        const T = this._bewohnerStandTafel();
-        const K = T.knoten[T.von[3 * h]];
-        KC.leibStandLage(u, K, z);
-        // (stand-lebt 3) das Bein, das seine Person gerade trägt (`leibStandBein`, wie sein naher Leib): der Block des linken liegt
-        // hinter dem des rechten — der ferne Leib wechselt das Bein am Vorzeichen (der Satz mischt nur im Zyklus)
-        if (KC.leibStandBein(u, (b.atem || 0) / 10) < 0) h += K.length + 1;
-        z[0] += h;
-        z[1] += h;
+        KC.leibStandLage(u, q.K, z);
+        const ab = q.ab + s * (q.K.length + 1);
+        z[0] += ab;
+        z[1] += ab;
         return z;
     }
     // DER TAKT DES STANDS (stand-lebt, Lehre 25: der Takt kostet, was ihn betrifft): wer jenseits der Nah-Wahl steht, stellt seine
@@ -3319,13 +3347,13 @@ class AnazhRealm_siedlung_bewohner {
         b.standUhr = b.uhr;
         return true;
     }
-    // SEIN STAND WECHSELT (der Akt des Tags, die Furcht): gemerkt (`b.standZeile` — die Leser: `_bewohnerSatzSchreiben`, im Feld
+    // SEIN STAND WECHSELT (der Akt des Tags, die Furcht): gemerkt (`b.standNr`, sein Name in der Liste der Stände — die Leser: `_bewohnerSatzSchreiben`, im Feld
     // `_bewohnerFeldLage`, dort sofort neu gestellt); liefert, ob der Satz ihn neu schreiben muss
     _bewohnerStandNeu(b, S) {
         const band = b.gangBand;
         const h = this._bewohnerStandVon(b); // (liest das Gemüt: an der Kante seines Satzes auch das Band seines Gangs)
-        if (h === (b.standZeile || 0) && band === b.gangBand) return false;
-        b.standZeile = h;
+        if (h === (b.standNr || 0) && band === b.gangBand) return false;
+        b.standNr = h;
         const g = b.leib;
         const echt = !(this.state.renderer && this.state.renderer._isHeadlessNull);
         if (g && echt && !b.nah && !b.drinnen && this._kzBesitztFeld(g)) this._bewohnerFeldLage(b, S);

@@ -868,7 +868,7 @@ async function probeLeben(expected) {
             kopfY: (b) => b.kopfY,
             reizUhr: (b) => b.reizUhr,
             standUhr: (b) => b.standUhr,
-            standZeile: (b) => b.standZeile,
+            standNr: (b) => b.standNr,
             animDt: (b) => b.animDt,
             stand: (b) => !!b.stand,
             hinaus: (b) => !!b.hinaus,

@@ -1132,7 +1132,7 @@ function urteileBau(sb, m, S = sb.__koerperCore.BAU_SOLL) {
 // Profils AUF die Ruhe: mittags (showcase, 0,15 rad) stand die Menge mit p95 29° in der A-Haltung, das spielende Kind (joy, 0,6 rad)
 // mit 58,5°; bis a-haltung 2 hielt joy die Abspreizung: jedes spielende Kind stand mit 34° im selben Moment, im Satz in EINER Zeile.
 // (lebt, stand-lebt) jeder Stand rührt den Kopf über den Zyklus seiner Zeilen (koerper STAND, gestellt wie das Backen sie stellt:
-// `_bewohnerStandZeit`) um mindestens HALTUNG_LEBT_SOLL — bis stand-lebt buk der Satz je Stand EINE Zeile zur Uhr 0, und kein Glied
+// koerper `leibStandZeit`) um mindestens HALTUNG_LEBT_SOLL — bis stand-lebt buk der Satz je Stand EINE Zeile zur Uhr 0, und kein Glied
 // eines Stehenden im Feld rührte sich (am Dorfplatz um 10 Uhr 39 von 40 stehend, 0,000 m über 5 s).
 // Der Selbsttest dieses Teils fährt im Hauptlauf an derselben Welt (`pruefeHaltung`: kein eigener Bau).
 // DAS BAND DES STANDS (äußere Quelle): im ruhigen Stand deckt der Druckpunkt in 30 s 28,8 mm² (IQR 23,5–41,7) bei 3,44 mm/s
@@ -1171,9 +1171,17 @@ function messeHaltung(eingriff, W = mengeWelt(eingriff), nur = W.siedlungen.leng
         });
     };
     const teile = (rig) => ({ mensch: rig.hips, torso: rig.spine, head: rig.head, arm1: rig.armL.shoulder, elbow1: rig.armL.elbow, hand1: rig.armL.wrist, "arm-1": rig.armR.shoulder, "elbow-1": rig.armR.elbow, "hand-1": rig.armR.wrist, hip1: rig.legL.hip, knee1: rig.legL.knee, ankle1: rig.legL.ankle, "hip-1": rig.legR.hip, "knee-1": rig.legR.knee, "ankle-1": rig.legR.ankle }); // prettier-ignore
-    const zeilen = A._bewohnerStaende(); // die Namen der Stände (stand-stuetzstellen: je Name und Bein die Zeilen seiner Stützstellen, `_bewohnerStandTafel`)
+    const zeilen = A._bewohnerStaende(); // die Namen der Stände (stand-stuetzstellen: je Name ein Block — je Bein die Zeilen seiner Stützstellen, `_bewohnerStandBuch`)
     const staende = [...new Set(zeilen)];
-    const TF = r._bewohnerStandTafel();
+    // DER BLOCK DES NAMENS nr AM BODEN DER SCHULTER `boden`, wie der Ofen ihn backt (`_bewohnerGangBacken`): seine Stützstellen
+    // (die Suche des Wirts bis zu ihrem Ende, `_bewohnerStandKnoten`), hinter den Vor-Zeilen — ein Back-Ziel, das NUR ihn trägt
+    const blockVon = (nr, boden) => {
+        let KN = null;
+        while (KN === null) KN = r._bewohnerStandKnoten(nr, boden);
+        if (!KN) throw new Error(`haltung: der Stand „${zeilen[nr]}“ ohne Stützstellen (das Buch der Bewegung)`);
+        const q = { h: nr, K: KN, ab: r._bewohnerStandErste() + 1, n: K.STAND.seiten * (KN.length + 1), bereit: true };
+        return { KN, X: { standBuch: { bloecke: new Map([[nr, q]]), wunsch: [] } } };
+    };
     const NZ = 12; // (lebt) so viele Stützstellen je Stand, gleich über seine Folge verteilt
     // (stand-lebt 3) im Stand hält der Boden der Schulter höchstens die Luft des Daumens der Mittelstellung über der Ruhe (koerper STAND.ruhe.daumen)
     const dauGrad = (K.STAND.ruhe.daumen * 180) / Math.PI;
@@ -1184,7 +1192,6 @@ function messeHaltung(eingriff, W = mengeWelt(eingriff), nur = W.siedlungen.leng
     const C = W.haltung || (W.haltung = { sk0: new Map(), ruheG: new Map() }); // die Gelenke je Gestalt: einmal je Welt
     const aus = { je: [], staende, lebt: [], klasse: [] };
     const lebtG = new Set(); // (lebt) je Gestalt und Stand einmal
-    const uhrZeile = (h) => (typeof r._bewohnerStandZeit === "function" ? r._bewohnerStandZeit(h) : 0);
     const gemAlt = r._bewohnerGemuet;
     for (const { S } of W.siedlungen.slice(0, nur))
         for (const b of S.liste) {
@@ -1195,18 +1202,20 @@ function messeHaltung(eingriff, W = mengeWelt(eingriff), nur = W.siedlungen.leng
             const zu = Object.assign({}, G.dK, b.bau), ruheB = K.leibBauRuhe(zu); // prettier-ignore
             const stelle = (fn) => (rig) => (K.leibBauAuf(teile(rig), G.dK, zu), K.leibBauArme(rig, C.ruheG.get(G), ruheB), fn(rig)); // prettier-ignore
             const winkel = (fn) => spreiz(K.leibGussGestellt(C.sk0.get(G), stelle(fn)).userData.__skelett);
-            const ruhe = winkel((rig) => K.leibRigNeutral(rig));
+            // (der Boden seiner Schulter im Stand, koerper `leibStandBoden`: an ihm liegen die Stützstellen einer Geste)
+            let boden = 0;
+            const ruhe = winkel((rig) => (K.leibRigNeutral(rig), (boden = K.leibStandBoden(rig))));
             // seine Uhr (die Welt: `atem` aus seinem Samen, `_bewohnerListe`)
             if (b.atem === undefined) b.atem = r._rollGenome(b.seed, "bewohner").axis("atem") * 10;
             for (const nm of staende) {
-                const h = TF.ab[zeilen.indexOf(nm)]; // (die erste Zeile seines Namens, das rechte Bein)
-                const KN = TF.knoten[zeilen.indexOf(nm)].length;
-                const gem = r._bewohnerStandGemuet(h);
+                const nr = zeilen.indexOf(nm);
+                const { KN, X } = blockVon(nr, boden);
+                const gem = r._bewohnerStandGemuet(nr, 0); // (das rechte Bein)
                 // (lebt) der Kopf über die Zeilen des Zyklus, je Gestalt einmal: die Spanne seiner Lagen (mm)
                 if (!lebtG.has(b.gestalt + "|" + nm)) {
                     lebtG.add(b.gestalt + "|" + nm);
                     let SK0hoch = 1;
-                    const SK = [...Array(NZ)].map((_, k) => K.leibGussGestellt(C.sk0.get(G), stelle((rig) => r._animateHumanoidRig(rig, uhrZeile(h + Math.floor((k * KN) / NZ)), 0, false, false, gem))).userData.__skelett); // prettier-ignore
+                    const SK = [...Array(NZ)].map((_, k) => K.leibGussGestellt(C.sk0.get(G), stelle((rig) => r._animateHumanoidRig(rig, K.leibStandZeit(Math.floor((k * KN.length) / NZ), KN), 0, false, false, gem))).userData.__skelett); // prettier-ignore
                     // die Spanne in mm am Mann von 1,80 m (die Lagen sind Gelenk-Einheiten): vom Knöchel zum Kopf-Gelenk am Kinn liegen an ihm
                     // 0,870 − 0,039 der Körperhöhe (Drillis & Contini 1966, Body Segment Parameters, Tab. 1)
                     const spanne = (P) => ((1800 * (0.87 - 0.039)) / SK0hoch) * Math.hypot(...[0, 1, 2].map((i) => Math.max(...P.map((p) => p[i])) - Math.min(...P.map((p) => p[i])))); // prettier-ignore
@@ -1225,13 +1234,16 @@ function messeHaltung(eingriff, W = mengeWelt(eingriff), nur = W.siedlungen.leng
                 // Stand ohne Geste steht zu jeder Uhr gleich: sein naher Winkel)
                 // (stand-lebt: die Zeile seiner Uhr im selben Moment — `_bewohnerStandLage` zur Uhr 0, wie der Satz sie liest)
                 r._bewohnerGemuet = () => ({ haltung: nm, sorrow: 0, chaos: 0 });
-                const zeile = r._bewohnerStandLage(Object.assign(Object.create(b), { standZeile: r._bewohnerStandVon(b), uhr: 0 }), { standFertig: true }, [0, 0, 0])[0]; // prettier-ignore
+                const zeile = r._bewohnerStandLage(Object.assign(Object.create(b), { standNr: r._bewohnerStandVon(b), uhr: 0, _gaitW: 0 }), X, [0, 0, 0])[0]; // prettier-ignore
                 r._bewohnerGemuet = gemAlt;
-                const fern = uhren > 1 ? winkel((rig) => r._animateHumanoidRig(rig, uhrZeile(zeile), 0, false, false, r._bewohnerStandGemuet(zeile))) : ist[0]; // prettier-ignore
+                // (die Zeile beim Namen: ihr Stand, ihr Bein, die Uhr ihrer Stützstelle — `_bewohnerStandZeile`)
+                const ZL = r._bewohnerStandZeile(X, zeile);
+                const gemZ = r._bewohnerStandGemuet(ZL.h, ZL.s);
+                const fern = uhren > 1 ? winkel((rig) => r._animateHumanoidRig(rig, ZL.t, 0, false, false, gemZ)) : ist[0]; // prettier-ignore
                 // (stand-lebt 3) DIE KLASSE SEINER HALTUNG im selben Moment: die Zeile, die er im Satz liest (Uhr und Standbein) —
                 // die Schulter je Seite (±5°), das Standbein, die Gier des Kopfs über dem Rumpf (±15°)
-                const skZ = K.leibGussGestellt(C.sk0.get(G), stelle((rig) => r._animateHumanoidRig(rig, uhrZeile(zeile), 0, false, false, r._bewohnerStandGemuet(zeile)))).userData.__skelett; // prettier-ignore
-                const [sZL, sZR] = spreiz(skZ), gier = kopfGier(skZ), bein = TF.von[3 * zeile + 1] ? "links" : "rechts"; // prettier-ignore
+                const skZ = K.leibGussGestellt(C.sk0.get(G), stelle((rig) => r._animateHumanoidRig(rig, ZL.t, 0, false, false, gemZ))).userData.__skelett; // prettier-ignore
+                const [sZL, sZR] = spreiz(skZ), gier = kopfGier(skZ), bein = ZL.s ? "links" : "rechts"; // prettier-ignore
                 aus.klasse.push({ seed: b.seed, gruppe: gruppe(G.gen.jahre), stand: nm, schulter: [sZL, sZR], bein, gier, k: `${Math.round(sZL / 10)}|${Math.round(sZR / 10)}|${bein}|${Math.round(gier / 30)}` }); // prettier-ignore
                 const je = ist.map((x) => Math.max(...x));
                 aus.je.push({ seed: b.seed, gruppe: gruppe(G.gen.jahre), stand: nm, profil: Math.max(...profil), uhren: je, mittel: je.reduce((a, x) => a + x, 0) / je.length, ruhe: Math.max(...ruhe), ueber: Math.max(...ist.map((s) => Math.max(...s.map((x, i) => x - Math.max(ruhe[i] + dauGrad, profil[i]))))), zeile, fern: Math.max(...fern) }); // prettier-ignore
@@ -1295,14 +1307,14 @@ const zeigeHaltung = (m, band) => {
 // Stand ohne Uhr im Backen (jede Zeile des Zyklus zur Uhr 0: vor stand-lebt die Puppe im Feld) · (HA5) der Stand ohne Tun (wer redet, steht
 // mit hängenden Händen: vor stand-lebt 2) · (HA6) die Menge in EINER Haltung (die Bind-Pose: vor stand-lebt 3)
 function pruefeHaltung(W, so) {
-    const K = W.ctx.__koerperCore, roh = K.leibRigPose, rohVon = W.r._bewohnerStandLage, rohZeit = W.r._bewohnerStandZeit; // prettier-ignore
+    const K = W.ctx.__koerperCore, roh = K.leibRigPose, rohVon = W.r._bewohnerStandLage, rohZeit = K.leibStandZeit, SE = K.STAND.seiten; // prettier-ignore
     const schulter = (f) => function (r, t, wp, mov, gait, mp, mref, ...x) { roh.call(this, r, t, wp, mov, gait, mp, mref, ...x); if (!mp || !mref) return; const [uL, uR] = [r.armRuhe[0].shoulder, r.armRuhe[1].shoulder]; r.armL.shoulder.rotation.z = f(uL[2], mp.armL - mref.armL, 1); r.armR.shoulder.rotation.z = -f(-uR[2], mp.armR - mref.armR, -1); }; // prettier-ignore
     const faelle = [
         ["HA1 die Arme der Menge im Mittel über dem Band (die Haltung des Tags auf der Ruhe: die A-Haltung) werden erkannt", () => (K.leibRigPose = schulter((u, p) => Math.max(u, u + p))), /^haltung\.band showcase /], // prettier-ignore
         ["HA2 joy gehalten (jedes spielende Kind mit 34° im selben Moment: die Schaufensterpuppen) wird erkannt", () => (K.leibRigPose = schulter((u, p) => Math.max(u, p))), /^haltung\.moment joy /], // prettier-ignore
-        ["HA3 der Satz ohne die Uhr (jeder ferne Leib in der ersten Zeile seines Stands) wird erkannt", () => (W.r._bewohnerStandLage = function (b, Z, aus) { const z = aus || [0, 0, 0]; z[0] = z[1] = b.standZeile || 0; z[2] = 0; return z; }), /^haltung.fern joy /], // prettier-ignore
-        ["HA4 der Stand ohne Uhr im Backen (jede Zeile des Zyklus zur Uhr 0: die Puppe im Feld) wird erkannt", () => (W.r._bewohnerStandZeit = () => 0), /^haltung.lebt /], // prettier-ignore
-        ["HA6 die Menge in EINER Haltung (jeder in der ersten Zeile seines Stands, auf dem rechten Bein: die Bind-Pose) wird erkannt", () => (W.r._bewohnerStandLage = function (b, Z, aus) { const z = aus || [0, 0, 0]; z[0] = z[1] = b.standZeile || 0; z[2] = 0; return z; }), /^haltung.klasse idle /], // prettier-ignore
+        ["HA3 der Satz ohne die Uhr (jeder ferne Leib in der ersten Zeile seines Stands) wird erkannt", () => (W.r._bewohnerStandLage = function (b, Z, aus) { const z = aus || [0, 0, 0]; z[0] = z[1] = (b.standNr || 0) * SE; z[2] = 0; return z; }), /^haltung.fern joy /], // prettier-ignore
+        ["HA4 der Stand ohne Uhr im Backen (jede Zeile des Zyklus zur Uhr 0: die Puppe im Feld) wird erkannt", () => (K.leibStandZeit = () => 0), /^haltung.lebt /], // prettier-ignore
+        ["HA6 die Menge in EINER Haltung (jeder in der ersten Zeile seines Stands, auf dem rechten Bein: die Bind-Pose) wird erkannt", () => (W.r._bewohnerStandLage = function (b, Z, aus) { const z = aus || [0, 0, 0]; z[0] = z[1] = (b.standNr || 0) * SE; z[2] = 0; return z; }), /^haltung.klasse idle /], // prettier-ignore
         ["HA5 der Stand ohne Tun (wer redet, steht mit hängenden Händen: vor stand-lebt 2) wird erkannt", () => (K.leibRigPose = function (r, ...x) { r.standTun = null; return roh.call(this, r, ...x); }), /^haltung.tun showcase /], // prettier-ignore
     ];
     let rot = 0;
@@ -1312,7 +1324,7 @@ function pruefeHaltung(W, so) {
         try {
             f = urteileHaltung(so, messeHaltung(null, W, 1));
         } finally {
-            [K.leibRigPose, W.r._bewohnerStandLage, W.r._bewohnerStandZeit] = [roh, rohVon, rohZeit];
+            [K.leibRigPose, W.r._bewohnerStandLage, K.leibStandZeit] = [roh, rohVon, rohZeit];
         }
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
