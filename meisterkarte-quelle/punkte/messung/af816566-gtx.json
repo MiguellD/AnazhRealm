@@ -1,0 +1,224 @@
+{
+ "sha": "af81656627a4cf326cb9f409d6e8fec7a9c2787e",
+ "geraet": "gtx",
+ "zeit": "2026-11-26T12:34:47.750Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.erleben.bild.nacht#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT ❌ schatten_kontrast 0,9324 (Soll ≥ 3) · ✅ kelvin_abw 38 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 482 — Täter: schatten_kontrast 0,9324 statt ≥ 3",
+   "exit": 0,
+   "minuten": 3.21,
+   "grund": "ROT: S1 · ROT ❌ schatten_kontrast 0,9324 (Soll ≥ 3) · ✅ kelvin_abw 38 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 482 — Täter: schatten_kontrast 0,9324 statt ≥ 3",
+   "gpu": "nvidia/pascal",
+   "konsum": "kac83249486a0",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "ka3af2d7884c1",
+   "s": 192,
+   "fremd": {
+    "s": 194.1,
+    "takte": 89,
+    "fremdS": 45.33,
+    "kerne": 0.234,
+    "fensterKerne": 0.532,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      8.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      7.05
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.91
+     ]
+    ],
+    "dienerS": 33.92,
+    "diener": [
+     [
+      "System",
+      13.77
+     ],
+     [
+      "dwm.exe",
+      10.45
+     ]
+    ],
+    "geraetS": 53.84,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      35.39
+     ],
+     [
+      "svchost.exe",
+      15.38
+     ],
+     [
+      "SearchIndexer.exe",
+      1.28
+     ]
+    ],
+    "eigenS": 646.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T12:29:45.139Z",
+   "abdruck": "0a8640cb44c5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.bild.nacht#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT ✅ bodenfleck_anteil 0,917 (Soll ≥ 0,9) · ❌ gasse_dev_median — (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 482 — Täter: Gassen-Histogramm gegen Fotosatz: kein Fotosatz nächtlicher Gassen im Baum, kein Leser des Histogramms · gasse_dev_median — statt ≤ 0,5",
+   "exit": 0,
+   "minuten": 3.21,
+   "grund": "ROT: S2 · ROT ✅ bodenfleck_anteil 0,917 (Soll ≥ 0,9) · ❌ gasse_dev_median — (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 482 — Täter: Gassen-Histogramm gegen Fotosatz: kein Fotosatz nächtlicher Gassen im Baum, kein Leser des Histogramms · gasse_dev_median — statt ≤ 0,5",
+   "gpu": "nvidia/pascal",
+   "konsum": "kac83249486a0",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "ka3af2d7884c1",
+   "s": 192,
+   "fremd": {
+    "s": 194.1,
+    "takte": 89,
+    "fremdS": 45.33,
+    "kerne": 0.234,
+    "fensterKerne": 0.532,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      8.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      7.05
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.91
+     ]
+    ],
+    "dienerS": 33.92,
+    "diener": [
+     [
+      "System",
+      13.77
+     ],
+     [
+      "dwm.exe",
+      10.45
+     ]
+    ],
+    "geraetS": 53.84,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      35.39
+     ],
+     [
+      "svchost.exe",
+      15.38
+     ],
+     [
+      "SearchIndexer.exe",
+      1.28
+     ]
+    ],
+    "eigenS": 646.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T12:29:45.139Z",
+   "abdruck": "0c4617c417a6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.bild.nacht#1",
+   "modus": "session"
+  },
+  "karte2.same.massstab.spanne#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT Leser fehlt: Steigflug 0,5 → 700 m in 30 s: kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe — Saaten: die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden) — in 1 von 21 Adressen (nahe Ebene 0.1 m, Auge über dem Grund 2.1 m; Fächer 1/21 Adressen (20 Saaten + 1) in 0 ms · Leser stamm/koerper-bewegung.js:1759 _loopCamera · Gesetz gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833) · 20 ohne Fähigkeit (die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)) · schlechteste {\"saat\":\"anazh-realm-seed\"} auge 2.1 · Bild dort Saat anazh-realm-seed an der Wiese, ego (das Auge am Leib) · ungemessen: Steigflug 0,5 → 700 m in 30 s (kein Verb hebt das Auge)) (verlangt 20 Saaten, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.43,
+   "grund": "ROT: S1 · ROT Leser fehlt: Steigflug 0,5 → 700 m in 30 s: kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe — Saaten: die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden) — in 1 von 21 Adressen (nahe Ebene 0.1 m, Auge über dem Grund 2.1 m; Fächer 1/21 Adressen (20 Saaten + 1) in 0 ms · Leser stamm/koerper-bewegung.js:1759 _loopCamera · Gesetz gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833) · 20 ohne Fähigkeit (die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)) · schlechteste {\"saat\":\"anazh-realm-seed\"} auge 2.1 · Bild dort Saat anazh-realm-seed an der Wiese, ego (das Auge am Leib) · ungemessen: Steigflug 0,5 → 700 m in 30 s (kein Verb hebt das Auge)) (verlangt 20 Saaten, die Welt erzeugte 1)",
+   "gpu": "nvidia/pascal",
+   "konsum": "keb95d994bbbc",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "ka3af2d7884c1",
+   "s": 25.6,
+   "fremd": {
+    "s": 28.7,
+    "takte": 13,
+    "fremdS": 19.66,
+    "kerne": 0.686,
+    "fensterKerne": 0.832,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.25
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      4.14
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      2.22
+     ]
+    ],
+    "dienerS": 9.66,
+    "diener": [
+     [
+      "dwm.exe",
+      4.06
+     ],
+     [
+      "System",
+      3.84
+     ]
+    ],
+    "geraetS": 12.11,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.03
+     ],
+     [
+      "svchost.exe",
+      3.44
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 121.84,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T12:34:47.750Z",
+   "abdruck": "2be4c703545f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kac83249486a0": "bVVdb6MwEPwvebw7unwWsNQHp/TUSJe79CeszRpoCEQ2hCqn++8naEgCdF9AaNY7nhmbv6sjyj1m9PBu6mrFVt9WP1YGT2QZ0ifSD+9mxVaxdFzyGP8s4Jw/9zCpi2NjoCwEoKgwP5DV6oaK8kEObeoR7UAw6F54tgNQcIake3qat5aC0tpqUNHYaJMXRMTmwNZkKMjCVg3DLuDAj+nRYTBUlPBtAtfqJOe7Drpd9DpbTGCVTtk6ToyPIePdhnP+NmeZFkiNVRaVGec6aRgrm91mbRc9GjvrjJSXpC9NFDmOL0ay617OXppZoypbYybDIi8N3IgBxHNsRqaQeWMddS2ousBF7IYOsvVS7ezYWuqeEQqBkZhrnSNVGekJB9uTqhf6I5ovuscDabQqzC/Q2PZCV9y0AYDXJZdyID6MGIn7fkyRO2nsTf0UmG/4Xfk7APiAaEQl3eX7Hebl+pYMOL4kYWRe6MNUPuWTa3vs1xfoHFPS1r42zRXtUejb4vN0bBIYnrtoPe+8bXb0FBGjuwBBBPx1oa2pVdOhJis7tmOIfArCgHG+WYAbPBxGu1LpkZwba5o++Pc03FgFgc8Avl9kXmz685hYZypKuuZYhl7MnhN/Dj5pPFgoMl0oNaZBBFLFX4W3o7KxRF03o5ROGHoeAw+q+wD8Hqy9dz/J3vztT5698Elt+JzOMKHWzUhcoPB8n6msD0Sk5uhCN1aHMr+KowRhzKCT84XPpEvKaCKlchx0UzZcO1emYx6T75NQnxdOnwvqRa5Ma0aVJfoiYF/Y0pHeC6z247HxbCeMhgiut3w3FeU5Ux3ncIpgqtXaG66fPzzpFz6ShKOuVdHfjJBja3Ism9tv4d9/",
+  "ka3af2d7884c1": "jZXdcpswEIXfxZdNifgNQjO5kEOmSTppnb7BClZAjIGRIHTc6bt3wJbNTy66N745qz18eyT/2TSQ7CHD23ddVxu2+bL5utHwgZZG9YHq9l1v2CZKHBc9xk9FOOffBlmiiqbVpCwEAVFBfkCrUy0W5W0ytsk7sAPBSP/Isx0hkhxJ3PNLPfD7++UxpcC0tlqQaA6x0QsosqWw0xkItKCT4+CzOPAjvHMYGYvG/DUml+oTznc96Xf0aXGYgCqdO3ecCO5Cxvtnzvnb0mVaALZWWVTazHXSMJI2u856XfUo6K0jYF6iOjchdRxfGLPbAcmAadEoy07r2TDqpYFLGSHRUpuhLpK8tRpVC6zOchG5oQNs269oZ01nyakjEAKoWLLOAasM1cyD7SVyAP2bLg/dwwEVWBXkZ2lke6ErrmwIIU9rL+VofBxhjPt+hNSdNQ5LPQHmz3xS/o4Q8ptQozIx8yeax3XcdJIX6jDHJX10bW/JQOeQorL2tW4vSg9D3xanW/Eck/F3R7fLzuuHmf0BAJ2EhVDCn1YcdS3bHhRaWdOZwPgYhAHj2SpduoXDwawmTTxMVh/QDiGf2nAjGQQ+I+TmjHSF53QlrCMWJV4ym4RexB5ifyn+UHCwQGSqkNJsXgSJjD4Lao9la4m6bg1KJww9jxGPVNNl/+j5A+evkycjLn/5bfly88hn9Z2/fDahVq0xLkB4vs9kH1NCqFyqC9VaPST5BY4UCNES4hFViRnOMErHATdl4/NiKja5i29m4T2utnwscABc6U4bwgn4ImDnlJ/CNU9uj2ovoNqba+LZTkgZ53HGX/luQuUn5++N7Pl/19uWj4MaTEijalkMLyPJodM5lO31L+LvPw==",
+  "keb95d994bbbc": "bVXRbqMwEPyXPF6PLgQoxlIfnBIpka536SesYQ00BCKbxFVO9+8naEgDdF8QaNYznlmbv4sjpnvM6fHdNPWCL34sfi4MnskxpM+kH9/Ngi/i1FuSz8Wb6AqEEC8dLNXlsTVQlRJQ1lgcyDnplsrqMe3b1BO6oeRg1yLfASi4QGKfn6etlaSscVpUNDS65IeM+BR4MjlKcvCkerIrOAxievI49MUS8ZrArT6YEDsLdsc2k8Uk1tlYrefF+BRxYbcvQrxNVWYlUutUZW0GXi+LYuXyG5d9nfVotM4FqahIX5uIeV4gB7Grzs7Omkmjqk7GjMiYn4VLxgHiKTYnU6ZF6xx1I6m+wmW8jDzkq7nb+fHkqHtFKCUyOfW6QKpz0iMNrp+qzugPNl10jwfS6NRYXKGx60dL+eUNAGzmWqpeeE8xCA+CmNhy1NiFCufOYLEVdxXsuoCBDajEXr/fYdZiRmrSotSHsV0qoKXr819ziabAjLSzb0x7Q/sUBa7kPcE2gf65Y6tp59fmhgwRkd0NDDAQm5mXplGtRU1OfjwNQxNQGIVciO0M3OLhMMSTpT6l0yBN2w36vYxlrMIw4AAPnwdlvunPY+FcqKzoNrdp5Mf8JRFT8FnjwUGZ61KpIX0Zpir+blgtVa0jm6YdrPSiyPc5+FDfB/67j/I+7SR/C9pqZddiVNuZnJ6h0e0gXKL0g4CrPGEATE3RpW4di2lxM0dJwk76LJcL6YpyGlmpPA+XGQerPnVfuusmul4H6mE0xJf5iiV1JtfmZAaXUwxkyL+JxZLeS6z3wzHxXS9i/QiuXsVu5Mn6/aisEHBmMPZq5QuxEvkfsenfV1aIPwmIK9GRUjjqRpXdzQgFnkyBVfv1W/j3Hw=="
+ }
+}
