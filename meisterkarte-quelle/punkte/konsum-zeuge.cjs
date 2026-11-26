@@ -270,7 +270,7 @@ if (KONSUM && BAUM) {
     // DER SPÄTE HAKEN: http trägt seine Haken erst, wenn der Prozess es lädt — keine Probe zahlt sein Laden vor ihrer ersten Zeile
     // (2,2 ms von 30 ms eines node-Starts; unter Last ein Vielfaches). War es beim Einhängen schon geladen, sofort; lädt der
     // Prozess es an Module._load vorbei (ESM, getBuiltinModule), ist er blind beim Namen (stueck). child_process ebenso spät (0,8 ms)
-    // — Node lädt es auch selbst (cluster hinter jedem `listen`), darum gilt sein Wächter nur, wenn ESM lief; vm hängt mit dem Schärfen
+    // — Node lädt es auch selbst (cluster hinter jedem `listen`), darum gilt sein Wächter nur, wenn ESM lief (die Lade-Haken, `esm.lief`); vm hängt mit dem Schärfen
     const spaet = []; // [kern, Anfrage, hake, gehakt, Wächter gilt nur, wenn]
     const spaeter = (kern, anfrage, hake, sofort = false, nurWenn = null) => {
         const e = [kern, anfrage, hake, false, nurWenn];
@@ -305,6 +305,32 @@ if (KONSUM && BAUM) {
     // „DIE TEILE“ 1,7 → 2,8 s je Teil — und zwei Fälle rissen ihren 2-s-Deckel). ESM lädt an diesem Haken vorbei: lief ESM, ohne dass
     // der Zeuge scharf war, ist der Prozess blind beim Namen (stueck)
     let sitz = null, scharf = false;
+    // DER ECHTE ESM-LAUF (konsum-esm 26.11.): ESM ist, was Node als ESM auflöst oder lädt — die Lade-Haken des Prozesses
+    // (`module.registerHooks`, Node ≥ 22.15): eine Auflösung unter der Bedingung „import“ (import, import()) oder eine Ladung im Format
+    // „module“ (der ESM-Einstieg, require(esm) — require(esm) schärft vorher über Module._extensions). Bis hier las der Zeuge die
+    // Lade-Liste des Prozesses (`internal/modules/esm/module_job` geladen): Node 24.22 lädt sie beim Boot, ohne ein ESM — jede Probe
+    // ohne Baum-Modul hieß blind (Selbsttest am GTX 1050 290/291, Sitzung a.K1#1 · d.K1#1 · d.K1#2). Eine Datei des Baums, die als ESM
+    // lädt, solange der Zeuge nicht scharf ist, steht beim Namen (stueck); ohne die Haken ist der Prozess blind beim Grund.
+    const esm = { lief: false, blind: [] };
+    const esmSieht = still((url, format) => {
+        if (!/^module/.test(String(format))) return;
+        esm.lief = true;
+        const p = !scharf && pfadVon(String(url));
+        if (p && esm.blind.length < 4 && !esm.blind.includes(p)) esm.blind.push(p);
+    });
+    if (typeof Module.registerHooks !== "function") konsum.blind.push("kein Lade-Haken (module.registerHooks fehlt, Node " + process.version + "): ob ESM lief, sah niemand");
+    else
+        Module.registerHooks({
+            resolve(anfrage, c, weiter) {
+                if (c && Array.isArray(c.conditions) && c.conditions.includes("import")) esm.lief = true;
+                return weiter(anfrage, c);
+            },
+            load(url, c, weiter) {
+                const r = weiter(url, c);
+                esmSieht(url, r && r.format);
+                return r;
+            },
+        });
     const beginne = () => sitz.post("Profiler.startPreciseCoverage", { callCount: false, detailed: false });
     const schaerfe = still(() => {
         if (scharf) return;
@@ -398,8 +424,8 @@ if (KONSUM && BAUM) {
     const kernDa = (n) => (process.moduleLoadList || []).includes("NativeModule " + n);
     const stueck = (neu) => {
         if (scharf) sitz.post("Profiler.takePreciseCoverage", (e, r) => r && male(r.result));
-        else if (kernDa("internal/modules/esm/module_job") && !konsum.blind.some((b) => /^ESM /.test(b)))
-            konsum.blind.push("ESM lief, ohne dass der Zeuge scharf war (kein Modul des Baums über require): was es aus dem Baum lud, sah niemand");
+        if (esm.blind.length && !konsum.blind.some((b) => /^ESM /.test(b)))
+            konsum.blind.push("ESM lief, ohne dass der Zeuge scharf war: " + esm.blind.join(", ") + " — was es aus dem Baum lud, sah niemand");
         for (const e of spaet)
             if (!e[3] && kernDa(e[0]) && (!e[4] || e[4]())) (e[3] = true), konsum.blind.push(e[0] + " ohne Haken des Zeugen geladen (an Module._load vorbei): was der Prozess dort ausgab, sah niemand");;
         // die gelesenen Funktions-Texte an ihrem Ort im Baum: je Text EINMAL gesucht (in jedem geladenen Skript), in jedem Stück gemalt
@@ -499,7 +525,7 @@ if (KONSUM && BAUM) {
             if (this.pid && this.exitCode == null && a[0] !== 0) bitteVor(this.pid);
             return toeten.apply(this, a);
         };
-        }, false, () => kernDa("internal/modules/esm/module_job"));
+        }, false, () => esm.lief);
         const stoss = process.kill;
         process.kill = function (pid, sig) {
             if (pid > 0 && pid !== process.pid && sig !== 0) bitteVor(pid);
