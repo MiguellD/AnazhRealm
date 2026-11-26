@@ -23,6 +23,8 @@
 //   (j) WURF (B-K1, Lehre 26) — Hauptpass und Wurf verwerfen gleich; ohne Ausschnitt wirft ein Werfer ohne Farb-Graph, in zwei
 //       Lichter aus EINEM Knoten-Zustand (w4-b-knoten, `_schattenGrund`); (h) zählt dazu Metall und Index (`_gestaltSchluessel`).
 //   (k) VORBAU (w4-b-knoten) — ein Bau ohne Draw merkt unter dem Ladeschirm vor, nach dem Bild baut er (`_vorbauWahl`).
+//   (l) GLANZ (w28-funkeln) — jedes gebaute Render-Objekt der Welt mit Normalen-Detail liest im Fragment-Programm die Varianz
+//       seiner Normale in die Rauheit (Kaplanyan & Hoffman, `_glanzFilter`); der Mutant ohne ihn steht beim Namen.
 //   LAUF — kein Spiel-Bild und kein Kehraus-Puffer während der Bühne (der Loop ruht).
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
 "use strict";
@@ -82,6 +84,16 @@ function urteil(z) {
     if (ks.kontrolle !== true) v.push("SCHLÜSSEL: die Kontrolle ist blind");
     if (ks.arenaHaelt)
         v.push(`SCHLÜSSEL: ${ks.arenaHaelt} — der Zeichner hält nach dem Eintritt seiner Senke, was er davor zeichnete`);
+    // (l) GLANZ: das Normalen-Detail jedes Welt-Stoffs liest der Glanz des Pixels (Kaplanyan & Hoffman, `_glanzFilter`)
+    const gl = ks.glanz || {};
+    if (!(gl.geprueft > 0)) v.push("GLANZ: kein gebautes Render-Objekt mit Normalen-Detail in der Welt — die Probe ist blind");
+    if (Object.keys(gl.ohne || {}).length)
+        v.push(
+            `GLANZ: ${namen(gl.ohne)} von ${gl.geprueft} — Normalen-Detail ohne den Glanz des Pixels (die Rauheit liest die Varianz der Normale nicht, \`_glanzFilter\`): der Stein funkelt weiß und himmelblau je Pixel`
+        );
+    if (gl.kontrolle !== true) v.push("GLANZ: das Programm mit r184s Geometrie-Leser statt des Filters zählt als gefiltert — die Kontrolle ist blind");
+    if (gl.gesetz !== "frisch,klon,geometrie")
+        v.push(`GLANZ: das Gesetz hält ${gl.gesetz || "nichts"} (Soll frisch,klon,geometrie: ein frischer Stoff filtert, ein Klon nie zweimal, die Geometrie-Normale bleibt r184s)`);
     if (!wu.leer || wu.leer.verwirft) v.push("WURF: das Standard-Fragment fehlt oder verwirft — die Probe ist blind");
     if (wu.formen !== "2/1") v.push(`WURF: Lichter/Zustände ${wu.formen} (Soll 2/1)`);
     if (z.vorbau !== "merken,,bauen") v.push(`VORBAU: Ladeschirm, Bild des letzten, danach ${z.vorbau} (Soll merken,,bauen)`);
@@ -163,7 +175,7 @@ function selbsttest() {
         aufnahme: { gezeichnet: 13, verfolgt: 13, schattenRenders: 1, unterOverride: 0 },
         bild: { replay: 1, fremd: 1, ohneStapel: 0.62, schattenBundle: 0.91, xGegenY: 0.31 },
         senke: { geteilt: true, kontrolle: true, bild: 1, blind: 0.95 },
-        schluessel: { geprueft: 69, veraltet: {}, kontrolle: true },
+        schluessel: { geprueft: 69, veraltet: {}, kontrolle: true, glanz: { geprueft: 21, ohne: {}, kontrolle: true, gesetz: "frisch,klon,geometrie" } },
         wurf: { leer: { verwirft: false }, formen: "2/1", werfer: [{ name: "wurf:voll", farbe: false }, { name: "wurf:schnitt", aus: true, haupt: true, wurf: true }] },
         vorbau: "merken,,bauen",
         stand: {
@@ -215,6 +227,12 @@ function selbsttest() {
         ["Diät nach Anlage (B-K1)", ["schluessel", { veraltet: { bauSatz: 1 } }], /SCHLÜSSEL: bauSatz ×1/],
         ["Schlüssel-Kontrolle blind", ["schluessel", { kontrolle: false }], /die Kontrolle ist blind/],
         ["Welt ohne Render-Objekt", ["schluessel", { geprueft: 0 }], /die Welt zeichnete kein Render-Objekt/],
+        // der Mutant von main e71f2721: die Erst-Zeichnung ruft `_glanzFilter` nicht (die Namen je Stoff stehen für die Klasse)
+        ["Stein ohne Glanz-Filter (main e71f2721)", ["schluessel.glanz", { ohne: { Boden: 14, Fels: 3 } }], /GLANZ: Boden ×14 · Fels ×3 von 21 — Normalen-Detail ohne den Glanz des Pixels/],
+        ["Glanz-Kontrolle blind", ["schluessel.glanz", { kontrolle: false }], /GLANZ: .* die Kontrolle ist blind/],
+        ["Welt ohne Normalen-Detail", ["schluessel.glanz", { geprueft: 0 }], /GLANZ: kein gebautes Render-Objekt mit Normalen-Detail/],
+        ["Klon filtert zweimal", ["schluessel.glanz", { gesetz: "frisch,geometrie" }], /GLANZ: das Gesetz hält frisch,geometrie/],
+        ["Gesetz fehlt", ["schluessel.glanz", { gesetz: "" }], /GLANZ: das Gesetz hält nichts/],
         ["Zeichner hält nach dem Eintritt (w28-pop-treue)", ["schluessel", { arenaHaelt: "3 Senken der Arena mit 4 Render-Objekten ihres Zeichners" }], /SCHLÜSSEL: 3 Senken der Arena mit 4 Render-Objekten ihres Zeichners — der Zeichner hält/],
         ["alphaTest-0,5-Werfer verliert discard", ["wurf.werfer.1", { wurf: false }], /WURF: wurf:schnitt — Hauptpass verwirft true, Wurf verwirft false/],
         ["Farb-Graph im Wurf", ["wurf.werfer.0", { farbe: true }], /WURF: wurf:voll — ohne Ausschnitt/],
@@ -296,6 +314,36 @@ function buehne() {
                 schluessel.kontrolle = ro.getCacheKey() !== k;
                 Object.defineProperty(ro.material, "setupObserver", d);
             }
+            // (l) GLANZ (w28-funkeln, `_glanzFilter`): jedes gebaute Hauptpass-Render-Objekt der Welt mit Normalen-Detail
+            // (MeshStandardNodeMaterial mit normalNode, nie die Geometrie-Normale selbst) trägt in seinem Fragment-Programm den
+            // Glanz des Pixels — die Ableitung der Normale, die es schattiert (`dpdx(normalView)`; r184s eigener Leser nimmt nur
+            // `normalViewGeometry`). Kontrolle: dasselbe Programm mit r184s Leser statt des Filters fehlt. Das Gesetz am frischen
+            // Stoff: es filtert (`aus`), ein Klon filtert nie zweimal, die Geometrie-Normale bleibt r184s.
+            const traegt = (f) => /\b(dpdx|dFdx)\(\s*normalView\b(?!Geometry)/.test(f);
+            const detail = (m) =>
+                m && m.isMeshStandardNodeMaterial === true && !!m.normalNode && m.normalNode !== TSL.normalViewGeometry;
+            const glanz = { geprueft: 0, ohne: {}, gesetz: [] };
+            let probe = null;
+            for (const ro of ros) {
+                const f = detail(ro.material) && rend._nodes.get(ro).nodeBuilderState?.fragmentShader;
+                if (!f) continue;
+                glanz.geprueft++;
+                if (traegt(f)) probe = probe || f;
+                else {
+                    const n = ro.material.name || ro.object.name || ro.object.type;
+                    glanz.ohne[n] = (glanz.ohne[n] || 0) + 1;
+                }
+            }
+            glanz.kontrolle = !!probe && !traegt(probe.replace(/\b(dpdx|dFdx)\(\s*normalView\b/g, "$1(normalViewGeometry"));
+            if (typeof r._glanzFilter === "function") {
+                const stoff = (n) => Object.assign(new T.MeshStandardNodeMaterial(), { normalNode: n });
+                const frisch = r._glanzFilter(stoff(TSL.normalView.add(TSL.vec3(0.1, 0, 0)).normalize()));
+                if (r._glanzGraphen?.aus.has(frisch.roughnessNode)) glanz.gesetz.push("frisch");
+                if (r._glanzFilter(frisch.clone()).roughnessNode === frisch.roughnessNode) glanz.gesetz.push("klon");
+                if (r._glanzFilter(stoff(TSL.normalViewGeometry)).roughnessNode == null) glanz.gesetz.push("geometrie");
+            }
+            glanz.gesetz = glanz.gesetz.join(",");
+            schluessel.glanz = glanz;
         }
         if (typeof rend.setAnimationLoop === "function") rend.setAnimationLoop(null);
         // DER RUHENDE SPIEL-LOOP (Lauf-Kontrolle): für die Bühne nimmt der Renderer keinen Loop an; danach gilt der verlangte.
@@ -910,7 +958,7 @@ function buehne() {
         `LAUF: ${out.lauf.spielBilder} Spiel-Bilder, ${out.lauf.kehraus} Kehraus-Puffer in der Bühne; die Aufnahme verfolgt ${out.aufnahme.verfolgt} von ${out.aufnahme.gezeichnet} Draws trotz Schatten-Render, ` +
             `kein Bundle unter dem Override-Stoff; der Replay zeichnet Blick Y wie der direkte Pfad (${out.bild.replay}, mit fremdem ` +
             `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
-            `SCHLÜSSEL · WURF halten. ` +
+            `SCHLÜSSEL · WURF halten. GLANZ: ${out.schluessel.glanz.geprueft} Render-Objekte mit Normalen-Detail lesen die Varianz ihrer Normale. ` +
             `SENKE: zwei Senken EINER Gestalt zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei), bild-gleich mit r184s InstancedMesh (${out.senke.bild}; ohne die Senke ${out.senke.blind}). ` +
             `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.zahl.pruef} Prüfungen, 0 Voll-Refreshs (auch der SATZ mit Ausschnitt je Pass), 0 Uploads, 0 wiederholte Gänge (direkt und Replay); eine Attribut-Änderung frischt ${out.stand.direkt.einmal.erst}× auf und im Frame danach 0×; nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (gemuteter Melder ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); im Bild des Belichtungs-Wechsels ${out.stand.belichtung.direkt.diaet}/${out.stand.belichtung.replay.diaet} (Bild davor ${out.stand.belichtung.direkt.blind}/${out.stand.belichtung.replay.blind}); ` +
             `VERSCHACHTELT (Werfer ohne Diät) ${out.stand.verschachtelt.direkt.diaet}/${out.stand.verschachtelt.replay.diaet} (Stempel nur aus der Render-Id ${out.stand.verschachtelt.direkt.taeter}/${out.stand.verschachtelt.replay.taeter}).`

@@ -15,7 +15,8 @@
 //   --bytes                                                   Determinismus (Absenz, Mathe-Genauigkeit, SHA über Prozesse/jitless/Reihenfolge)
 //   --anker [--selftest]                                      die Wand in der CI (gate:worker-dichte, Familie K6): die Zeile anker.jede-saat allein —
 //                                                             jede Saat des Spiels trägt eine Heimat; der Selbsttest pflanzt beide Täter der Treppe;
-//                                                             dazu ort.neigung (Karte 2 bahn-klima#2): ohne Neigung kein Jahres-Gang am Ort
+//                                                             dazu ort.neigung (Karte 2 bahn-klima#2): ohne Neigung kein Jahres-Gang am Ort,
+//                                                             und klima.hadley: die Zelle wird mit der Neigung breiter (GK2019 · LH88)
 //   --selftest (= --selbsttest, die Schreibung der Familie)   gepflanzte Fehler (Transzendente, gerade Küste, Facette) müssen ROT werden;
 //                                                             der Kern vor der Welle 1 (b7ed8419, aus git) macht jede Zeile welle1 ROT
 //
@@ -1454,8 +1455,12 @@ function neigungZeile(Q, og, ohneHeimat) {
 // am gezählten Kern, die Hülle des Klimas daneben — und urteilt in Rufen, nie in Wanduhr-Sekunden (Lehre 26): Punkte je Ort ≤ 2, die Antworten bit-gleich dem Kern vor
 // dem Schnitt (FRAGE_SHA, eingefroren am Kern von main 2da17e2e7 planet-h2-14 mit dem Küsten-Kontrast: 863 ms je Saat, 84 Relief-Punkte je Ort — 81
 // davon Leit-Stützen ohne Leser; ein Gesetz, das eine Antwort bewegt, friert die SHA neu ein, vorher ↔ nachher am selben Gang).
+// NEU EINGEFROREN mit dem Gesetz w28-kosmos-bahn 95f7fea1 (die Jahreszeit folgt der Neigung, am main c0634d86): vorher 22ec9a31 / b7ff79ae
+// (der Kern von main e71f27212, nachgerechnet bit-gleich), nachher 8aa55db6 / 3d14907b. Bewegt sind NUR Sommer und Winter an 138 000 von
+// 138 000 Antworten (bis 17,67 K) und die Sommer-Phase an 11 498 (0,5: der Süden im halben Jahr); Höhe, Kontinent, Meer, Wetter, Wuchs,
+// Eis und Wildnis stehen bit-gleich — das Relief der Gipfel-Suche hat sich nicht bewegt. Die Hadley-Zelle (kosmos-hadley) bewegt 0 von 138 000.
 const FRAGE_SAATEN = 100, FRAGE_PUNKTE_JE_ORT = 2;
-const FRAGE_SHA = { alle: '22ec9a313b0ea9bfdf6c88e60e4d98d7dfcc2fd935cdaa9d8939d44ffad04028', erste: 'b7ff79ae9e8b46219c72b0d9b29e1ac9c60c184db8514c7e6bf8352f9d8613f5' };
+const FRAGE_SHA = { alle: '8aa55db63e294c158133131f99a493c6b150308c520f952e8cbeaaf63e075e49', erste: '3d14907b312ca7d7def6db55e72973726bfcddf9049d11884f58fb2c9f634b6f' };
 const frageSaat = (i) => (i === 0 ? 'anazh-realm-seed' : 'zsp-' + (i - 1));
 const FRAGE_ORTE = (() => { const L = []; for (let b = -66; b <= 66; b += 6) for (let l = -180; l < 180; l += 6) L.push([b, l]); return L; })();
 // die Antwort des Fadens als Zahlen in fester Folge (wörtlich planetOrtAuftrag) — bit-genau gehasht, nie über JSON (−0, NaN)
@@ -1521,10 +1526,40 @@ function frageZeilen(zeile, og, selbst) {
   const G = frageGang(QH, og, 1);
   zeile('ort.frage.bytes feuert', G.erste !== FRAGE_SHA.erste, 'gepflanzt: die Relief-Höhe am Stichpunkt −66°/−180° um 10⁻⁶ m → SHA der ersten Saat ' + G.erste.slice(0, 16) + (G.erste === FRAGE_SHA.erste ? ' = ' : ' ≠ ') + FRAGE_SHA.erste.slice(0, 16) + ' → ROT');
 }
+// DIE HADLEY-ZELLE DER NEIGUNG (Karte 2 planet.kopplung.bahn-klima#2): die Kante der Zelle (`planetKlimaGlobal` zellBreite) am Samen
+// des Spiels, der Körper der Erde mit der Neigung 0 … 90°. Die Quelle: die Zelle wird mit der Neigung BREITER, nie schmaler — ihre
+// Kante im Jahr wächst von 23,44° bis 45° mindestens wie die Winter-Kante des GCM, γ^0,14 = ×1,0956 (Guendelman & Kaspi 2019, ApJ
+// 881: 67), und höchstens wie die Winter-Kante der achsensymmetrischen Zelle der Sonnwende, ×1,2095 (Lindzen & Hou 1988, am Kern
+// gerechnet: |y−| bei y0 = 0,3·β/φH); die Zahl der Zellen fällt nie mit der Neigung; die Erde behält ihre Kante Bit für Bit (die
+// Heimat). Der Täter vor dem Schnitt (die Krümmung des JAHRESMITTELS): 45° → 5 Zellen à 19,55° (×0,660), 60° → 12, 70° → 18.
+// Leser: der Kern selbst (planetKlimaR: Wind, Gürtel, Westwind-Zone, Küsten-Zuschläge — derselbe Takt `w`) und die Station
+// bahn-klima#2 über `planetOrtAuftrag` im Faden.
+// Die Kante der Erde steht HIER als eigene Zahl (die zellBreite des Kerns kosmos-bahn-2 3bb9abb7 am Körper der Erde, 3 Zellen):
+// läse die Linse sie aus dem Kern, schliefe sie gegen jede verlegte Eichung.
+const HADLEY_BAND = [Math.pow(45 / 23.44, 0.14), 1.2095], HADLEY_ERDE = 0.51737143219558779;
+function hadleyZeile(Q) {
+  const kante = (grad) => { const pl = Q.planetPlan('anazh-realm-seed', Object.assign({}, Q.PLANET_ERDE, grad === undefined ? {} : { neigungRad: grad * Math.PI / 180 })), G = Q.planetKlimaGlobal(pl, 0); return { rad: G.zellBreite, w: G.zellBreite * 180 / Math.PI, n: G.zellen }; };
+  const reihe = [0, 10, 23.44, 30, 45, 54, 60, 70, 90].map((g) => Object.assign({ g }, kante(g))), E = kante(), e45 = reihe[4], eE = reihe[2], f = e45.w / eE.w;
+  const fallend = reihe.filter((r, i) => i > 0 && r.w < reihe[i - 1].w).map((r) => r.g + '°'), mehr = reihe.filter((r, i) => i > 0 && r.n > reihe[i - 1].n).map((r) => r.g + '°');
+  const erde = Object.is(E.rad, HADLEY_ERDE) && E.n === 3;
+  return { ok: f >= HADLEY_BAND[0] && f <= HADLEY_BAND[1] && !fallend.length && !mehr.length && erde,
+    wert: 'Kante je Neigung ' + reihe.map((r) => r.g + '° ' + r.w.toFixed(2) + '°/' + r.n).join(' · ') + ' — 45°/23,44° ×' + f.toFixed(4) + ' · schmaler mit der Neigung ' + (fallend.join(', ') || 'nie') + ' · mehr Zellen ' + (mehr.join(', ') || 'nie') + ' · Erde ' + E.rad + ' rad/' + E.n + ' ' + (erde ? 'bit-gleich ihrer Kante' : 'NICHT ihre Kante (' + HADLEY_ERDE + ' rad/3)') };
+}
 function ankerWand(selbst) { // `--anker`: die Zeile am Kern des Baums · `--anker --selftest`: beide Täter fallen beim Namen
   const og = ortGesetz(), U = [], zeile = (name, ok, wert, schwelle) => U.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle });
   if (!selbst) { const J = ankerJedeSaat(P, og); zeile('anker.jede-saat', J.ok, J.wert, '0 · 0 · 0 (B5, die Treppe)');
-    const N = neigungZeile(P, og); zeile('ort.neigung', N.ok, N.wert, 'Neigung 0 ≤ 10 % der Erd-Spanne, ≠ Erde, Saat byte-gleich'); frageZeilen(zeile, og, false); return U; }
+    const N = neigungZeile(P, og); zeile('ort.neigung', N.ok, N.wert, 'Neigung 0 ≤ 10 % der Erd-Spanne, ≠ Erde, Saat byte-gleich'); frageZeilen(zeile, og, false);
+    const H = hadleyZeile(P); zeile('klima.hadley', H.ok, H.wert, '45°/23,44° in ×' + HADLEY_BAND[0].toFixed(4) + '…×' + HADLEY_BAND[1] + ' (Guendelman & Kaspi 2019 · Lindzen & Hou 1988), nie schmaler, nie mehr Zellen, Erde bit-gleich'); return U; }
+  // die Täter der Hadley-Kante: die Krümmung des Jahresmittels (der Kern vor dem Schnitt), die Zelle ohne Sonnwende, die Erde ohne Eichung
+  for (const [re, ersatz, marke, was] of [
+    [/const s2h = -0\.625;/, 'const s2h = s2;', 'hadley-jahr', 'die Heizung der Zelle aus der Krümmung des Jahresmittels (s2h = s2, der Täter)'],
+    [/return phiH \* hadleyJahr\(KLIMA\.schubMeer \* kp\.neigungRad \/ phiH\);/, 'return phiH * hadleyJahr(0);', 'hadley-sonnwende', 'die Zelle ohne den Aufstieg der Sonnwende (y0 = 0)'],
+    [/hadleyErdeRad: 0\.51737143219558779,/, 'hadleyErdeRad: 0.52,', 'hadley-eichung', 'die Erde ohne ihre Kante (0,52 rad)'],
+  ]) {
+    const QM = kernMutant(re, ersatz, marke);
+    if (!QM) { zeile('klima.hadley feuert', false, 'der Kern ' + P.VERSION + ' trägt die Zeile nicht — der Täter „' + was + '“ lässt sich nicht pflanzen'); continue; }
+    const H = hadleyZeile(QM); zeile('klima.hadley feuert', !H.ok, 'gepflanzt: ' + was + (H.ok ? ' → GRÜN, die Linse schläft: ' : ' → ROT: ') + H.wert);
+  }
   // die Täter der Neigung: der eigene Anker (vor dem Schnitt) und die Zuschläge der Küsten ohne den Gang der Neigung (jG = 1)
   const N1 = neigungZeile(P, og, true), QG = kernMutant(/const jG = sb \/ ksin\(PLANET_ERDE\.neigungRad\);/, 'const jG = 1;', 'neigung');
   zeile('ort.neigung feuert', !N1.ok, 'gepflanzt: das Δ gegen den eigenen Anker → ' + N1.wert);

@@ -3621,6 +3621,9 @@ AnazhRealm.DEFAULT_KEYBINDINGS = Object.freeze({
     rutschen: "KeyC",
     einsteigen: "KeyE",
     zoom: "KeyZ",
+    // das gehobene Auge (same.massstab.spanne#1, `_augeHeben`): gehalten steigt es über den Leib, sinkt zurück zu ihm
+    steigen: Object.freeze(["KeyR", "PageUp"]),
+    sinken: Object.freeze(["KeyX", "PageDown"]),
     hud: "KeyH",
     slot0: Object.freeze(["Digit1", "Numpad1"]),
     slot1: Object.freeze(["Digit2", "Numpad2"]),

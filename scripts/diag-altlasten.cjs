@@ -3138,12 +3138,14 @@ function ortsName(code, i) {
 // Kommentare), sind eine Abschrift, gleich in welcher Form und ob die Datei setzt: `stelle(x, z)`, `umstellen(x, z)`,
 // `const X = x, Z = z`, die Blick-Tabelle einer Linse.
 const MESSORT_GEFALLEN = [[-900, -850]]; // die Mess-Wiese bis K55
+// Ein Platz ist EIN Paar, gleich wie viele Orte auf ihm stehen (die Wiese und ihr gehobenes Auge `wiese-auge`).
 function messortPaare() {
     const h = jsonLesen("spec/profiband/haushalt.json");
-    return h.messorte
+    const paare = h.messorte
         .filter((o) => !o.anker && !o.bank && Array.isArray(o.spieler))
         .map((o) => o.spieler)
         .concat(MESSORT_GEFALLEN);
+    return [...new Map(paare.map((p) => [p.join("/"), p])).values()];
 }
 const zahlRe = (v) => String.raw`(?<![\w.])` + String(v).replace(/[.]/g, String.raw`\.`) + String.raw`(?![\d.])`;
 function scanOrtsWand(dateien) {

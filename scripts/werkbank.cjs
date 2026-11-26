@@ -1196,6 +1196,18 @@ async function starte() {
                 } finally {
                     st.perfTargetMs = decke;
                 }
+                // DAS GEHOBENE AUGE (`auge` m, same.massstab.spanne#1): der Ort steht über dem Leib — die Höhe des Verbs `steigen`
+                // (`augeHoehe`, der Leser `_augeHeben` im Loop der Kamera), die Welt schwingt am gehobenen Auge ein. Steht das Auge
+                // nicht auf seiner Höhe über dem Grund der Saat (`_augeAn`), bricht der Ort beim Namen
+                let auge = null;
+                if (o?.auge) {
+                    r.state.augeHoehe = o.auge;
+                    takte += await __weltStehtNach(takt);
+                    const c = r.state.camera.position;
+                    auge = +(c.y - r._augeAn(null, c.x, c.z, 0)).toFixed(2);
+                    if (!(Math.abs(auge - o.auge) <= 0.5))
+                        throw new Error(`Messort ${o.ort}: das Auge steht ${auge} m über dem Grund statt ${o.auge} m (augeHoehe ${r.state.augeHoehe})`);
+                }
                 // ein Dorf, das vor dem Ort losging (ein Ort ohne Dorf-Zug, der Zug lief im Boot): sein Plan schwebt — Wege und
                 // Platz stehen, der Wald weicht, das Dorf wächst nie. Beim Namen (die Folge startet mit `start --ort`).
                 const q = r._autoSettlementQueue;
@@ -1218,6 +1230,7 @@ async function starte() {
                     // der Weg des Spielers: „gegangen“ (über den Anlauf: gegründet oder die Stadt fehlte) · „stand“ (die Stadt stand
                     // am Anker, kein Anlauf) · null (ein Ort ohne Anlauf)
                     anlauf: o?.anlauf ? (gegruendet ? "stand" : "gegangen") : null,
+                    auge,
                     // die Zeit des Orts: seine Worte und was die Welt nahm (nur ein Ort mit `zeit` trägt sie) — unter `ortZeit` wie
                     // `__ortZeit`: der Schlüssel `zeit` ist das Urteil der Böe (`bild --zeit`, `zeit.rot` am Ende des Befehls), und
                     // unter ihm brach `umstellen --ort ufer` nach 869 s am Ende mit TypeError ab (25.11.)
@@ -2431,6 +2444,7 @@ async function starte() {
                             bahn: ort.bahn || null,
                             anlauf: ort.anlauf || null,
                             dach: ort.dach || null,
+                            auge: ort.auge || null,
                             // die Zeit des Orts (`zeit`): die Worte des EINEN Lesers und die Zeit, gegen die er die Welt prüft
                             zeit: ort.zeit ? Object.assign(BAND.ortZeitWorte(ort.zeit), { soll: ort.zeit }) : null,
                         });

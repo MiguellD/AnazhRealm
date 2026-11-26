@@ -539,6 +539,10 @@ class AnazhRealm_bild_kosten {
             };
             renderer._renderObjectDirect = function (object, material, scene, camera, lightsNode, group, clip, passId) {
                 const N = this._nodes;
+                // DER GLANZ DES PIXELS (`_glanzFilter`): jeder Stoff trägt ihn, bevor sein Render-Objekt den Bau-Schlüssel nimmt
+                // (der Schatten-Stoff über sein Original)
+                const urStoff = material.isShadowPassMaterial === true ? object.material : material;
+                if (urStoff && urStoff._anazhGlanz === undefined && !Array.isArray(urStoff)) welt._glanzFilter(urStoff);
                 const ro = this._objects.get(
                     object,
                     material,
@@ -649,7 +653,6 @@ class AnazhRealm_bild_kosten {
                 // (Radeon, Genesis Third, Regler voll): 2,9 ms je Bild Voll-Refresh — Fern-Ring, Inseln, Arena, Plattform, Himmel,
                 // Membranen, Kopf. Jetzt schreibt die Erst-Zeichnung jeden Stoff der Welt-Szene ein, bevor er baut (der Schatten-
                 // Stoff trägt die Diät seines Originals); was sich bewegt, atmet oder Knochen trägt, stellt nur seine eigenen Werte (der Objekt-Gang, `_diaetObjektGang`).
-                const urStoff = material.isShadowPassMaterial === true ? object.material : material;
                 if (urStoff && urStoff._anazhDiaet !== true && !Array.isArray(urStoff))
                     welt._materialObserverDiaet(urStoff);
                 const ungebaut = ungebautVon(N, ro);

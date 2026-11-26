@@ -1,0 +1,115 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-leben.js b/meisterkarte-quelle/punkte/stationen/k2-leben.js
+index f03672526..4f7db13d4 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-leben.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-leben.js
+@@ -7947,23 +7947,86 @@ L.perspektive("evolution", (() => {
+                     // S1 ÜBER DEN FÄCHER (stationen/faecher.js): 50 Saaten und die Saat der Welt × die Schweren 0,3 · 1 · 3 g; je Adresse der Guss
+                     // des Leibs (stamm/koerper-leib.js:2574 `_buildCreatureGroup` „wolf“, der Ofen der Welt) unter der Schwere der Adresse
+                     // (state.gravity, das Wort der Welt) — sein Bein-Querschnitt und sein Gang (tetrapoda `gangSchritt`). Die Schwere setzt das
+-                    // Gesetz der Welt, nie die Saat: eine andere Saat zählt ohne Fähigkeit
++                    // Gesetz der Welt, nie die Saat: eine andere Saat zählt ohne Fähigkeit.
++                    // DER BEIN-QUERSCHNITT IST DIE HAUT DES BEINS (kosmos-hadley 26.11.): je Unterarm/Unterschenkel (flL→flP · frL→frP ·
++                    // hlC→hlP · hrC→hrP) die Schnitt-Schleife der geskinnten Hülle (ohne Schale `aSchale`, in der Ruhe der Vorlage, Welt-Raum)
++                    // quer zur Glied-Achse in ihrer Mitte, die kleinste Schleife um die Achse; A = die Summe der vier Flächen. Bis dahin las
++                    // die Station `_tierBaum.quer` (das Quer-Maß des RUMPFS je Hüft-Höhe) — es reist als Zeuge `rumpfA`
+                     const FP_AN = async (r, T, a) => {
+                         const s = r.state;
+                         if (!s.worldMeta || a.saat !== s.worldMeta.seed)
+                             return { fehlt: "keine Saat trägt ihr g: die Schwere setzt das Gesetz der Welt (state.gravity), der Faden baut jeden Planeten mit PLANET_ERDE (voxel-worker.js:1429; planet-core.js:319 g der Saat ungelesen)" };
+                         const TC = globalThis.__tetrapodaCore;
+                         const g0 = s.gravity;
++                        const lage = (o) => o.matrixWorld.elements.slice(12, 15);
++                        const schnitt = (meshes, c, nrm) => {
++                            const cr = (x, y) => [x[1] * y[2] - x[2] * y[1], x[2] * y[0] - x[0] * y[2], x[0] * y[1] - x[1] * y[0]];
++                            let u = Math.abs(nrm[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0], w = cr(nrm, u);
++                            const lw = Math.hypot(...w);
++                            w = w.map((x) => x / lw);
++                            u = cr(w, nrm);
++                            let best = null;
++                            for (const m of meshes) {
++                                const Pa = m.geometry.attributes.position, I = m.geometry.index ? m.geometry.index.array : null, e = m.matrixWorld.elements;
++                                const P = new Float64Array(Pa.count * 3);
++                                for (let i = 0; i < Pa.count; i++) {
++                                    const x = Pa.getX(i), y = Pa.getY(i), z = Pa.getZ(i);
++                                    for (let k = 0; k < 3; k++) P[3 * i + k] = e[k] * x + e[4 + k] * y + e[8 + k] * z + e[12 + k];
++                                }
++                                const nT = I ? I.length / 3 : Pa.count / 3, vi = (k) => (I ? I[k] : k);
++                                const d = (i) => (P[3 * i] - c[0]) * nrm[0] + (P[3 * i + 1] - c[1]) * nrm[1] + (P[3 * i + 2] - c[2]) * nrm[2];
++                                const pt = {}, nach = new Map();
++                                for (let t = 0; t < nT; t++) {
++                                    const id = [vi(3 * t), vi(3 * t + 1), vi(3 * t + 2)], ein = [];
++                                    for (let k = 0; k < 3; k++) {
++                                        const p = id[k], q = id[(k + 1) % 3], dp = d(p), dq = d(q);
++                                        if (dp < 0 === dq < 0) continue;
++                                        const key = p < q ? p + "_" + q : q + "_" + p;
++                                        if (!pt[key]) {
++                                            const f = dp / (dp - dq), v = [0, 1, 2].map((j) => P[3 * p + j] + f * (P[3 * q + j] - P[3 * p + j]) - c[j]);
++                                            pt[key] = [v[0] * u[0] + v[1] * u[1] + v[2] * u[2], v[0] * w[0] + v[1] * w[1] + v[2] * w[2]];
++                                        }
++                                        ein.push({ key, auf: dp < 0 });
++                                    }
++                                    if (ein.length === 2) nach.set((ein[0].auf ? ein[0] : ein[1]).key, (ein[0].auf ? ein[1] : ein[0]).key);
++                                }
++                                const besucht = new Set();
++                                for (const k0 of nach.keys()) {
++                                    if (besucht.has(k0)) continue;
++                                    const ring = [];
++                                    let k = k0;
++                                    while (k && !besucht.has(k)) besucht.add(k), ring.push(pt[k]), (k = nach.get(k));
++                                    if (k !== k0 || ring.length < 3) continue;
++                                    let A = 0, um = false;
++                                    for (let i = 0; i < ring.length; i++) {
++                                        const p = ring[i], q = ring[(i + 1) % ring.length];
++                                        A += p[0] * q[1] - q[0] * p[1];
++                                        if (p[1] > 0 !== q[1] > 0 && p[0] + ((0 - p[1]) * (q[0] - p[0])) / (q[1] - p[1]) > 0) um = !um;
++                                    }
++                                    A = Math.abs(A) / 2;
++                                    if (um && (!best || A < best.A)) best = { A, n: ring.length };
++                                }
++                            }
++                            return best || { A: 0, n: 0 };
++                        };
+                         try {
+                             s.gravity = -9.81 * a.ort;
+                             const g = r._buildCreatureGroup("wolf");
+                             g.updateMatrixWorld(true);
+-                            const tb = g.userData._tierBaum || {};
++                            const tb = g.userData._tierBaum || {}, B = tb.teile || {};
++                            const haut = [];
++                            if (B.wolf && B.flL) B.wolf.parent.traverse((n) => n.isSkinnedMesh && !n.geometry.attributes.aSchale && n.skeleton.bones.includes(B.flL) && haut.push(n));
++                            const beine = [["flL", "flP"], ["frL", "frP"], ["hlC", "hlP"], ["hrC", "hrP"]].map(([o, u]) => {
++                                if (!B[o] || !B[u]) return { A: 0, n: 0 };
++                                const po = lage(B[o]), pu = lage(B[u]), ax = [0, 1, 2].map((k) => pu[k] - po[k]), la = Math.hypot(...ax);
++                                return schnitt(haut, [0, 1, 2].map((k) => po[k] + 0.5 * ax[k]), ax.map((x) => x / la));
++                            });
+                             const q = (tb.quer || []).filter((x) => x > 0);
+                             const radius = q.length ? (q.reduce((u, v) => u + v, 0) / q.length) * (tb.f || 1) : NaN;
+                             const gs = TC.gangSchritt(1.5, tb.beinL, r._gangZeile(false));
+                             r._disposeSoulGroup(g);
+-                            return { f: a.ort, A: radius * radius, schritt: gs.schritt, omega: gs.omega };
++                            const A = beine.every((b) => b.n >= 3) ? beine.reduce((u, b) => u + b.A, 0) : NaN;
++                            return { f: a.ort, A, beine: beine.map((b) => b.A), ringe: beine.map((b) => b.n), haut: haut.length, rumpfA: radius * radius, schritt: gs.schritt, omega: gs.omega };
+                         } finally {
+                             s.gravity = g0;
+                         }
+@@ -7994,7 +8057,7 @@ L.perspektive("evolution", (() => {
+                     const pruef = [p1, a.luft > 0, a.stern > 0, a.loesung > 0].filter(Boolean).length;
+                     return {
+                         sprossen: {
+-                            1: { werte: { steigung: a.steigung, saatenJeG, gMin: a.gMin, gMax: a.gMax }, zeuge: { fehler: R1.fehler.length ? R1.fehler.length + " Adressen warfen (" + R1.fehler[0].fehler + ")" : null, antworten: je.length, streuung: a.gangStreuung || 0, vor: je[0] && je[0].A, nach: je.length && je[je.length - 1].A }, nicht: (R1.fehlt || "") + " — " + saatenJeG + " Saat je g; das Quer-Maß des Leibs unter g × " + je.map((x) => x.f).join(" / ") + ": " + je.map((x) => Math.round(x.A * 1e4) / 1e4).join(" / ") + " m², der Gang (ω) " + je.map((x) => Math.round(x.omega * 100) / 100).join(" / ") + " rad/s · " + R1.akte },
++                            1: { werte: { steigung: a.steigung, saatenJeG, gMin: a.gMin, gMax: a.gMax }, zeuge: { fehler: R1.fehler.length ? R1.fehler.length + " Adressen warfen (" + R1.fehler[0].fehler + ")" : null, antworten: je.length, streuung: a.gangStreuung || 0, vor: je[0] && je[0].A, nach: je.length && je[je.length - 1].A }, nicht: (R1.fehlt || "") + " — " + saatenJeG + " Saat je g; der Bein-Querschnitt (vier Glieder an der Haut) unter g × " + je.map((x) => x.f).join(" / ") + ": " + je.map((x) => Math.round(x.A * 1e5) / 1e5).join(" / ") + " m², das Quer-Maß des Rumpfs (Zeuge) " + je.map((x) => Math.round(x.rumpfA * 1e5) / 1e5).join(" / ") + " m², der Gang (ω) " + je.map((x) => Math.round(x.omega * 100) / 100).join(" / ") + " rad/s · " + R1.akte },
+                             2: { werte: { saaten: a.luft > 0 ? n : 0, fliegerAnteil: a.fliegerAnteil }, zeuge: { fehler: a.fehler, antworten: a.arten || 0, streuung: a.fliegerAnteil || 0 }, nicht: gesetz + " — keine Luftdichte" },
+                             3: { werte: { sternKlassen: a.stern }, zeuge: { fehler: a.fehler, antworten: (a.gesetzTeile || []).length, streuung: 0 }, nicht: gesetz + " — kein Stern, keine gezeitengebundene Welt" },
+                             4: { werte: { milieus: 1 + a.loesung }, zeuge: { fehler: a.fehler, antworten: (a.gesetzTeile || []).length, streuung: 0 }, nicht: gesetz + " — kein Lösungsmittel; die Lebensdauer ist eine Zahl der Welt (" + a.lebensS + " s), kein Tempo liest die Temperatur" },
+@@ -8014,9 +8077,9 @@ L.perspektive("evolution", (() => {
+                         ],
+                         werte: { saatenJeG: 50, steigung: 0.85, gMin: 0.3, gMax: 3 },
+                         zeuge: { min: 3, was: "Güsse des Leibs unter drei Schweren", streu: true, aend: "der Bein-Querschnitt unter anderer Schwere" },
+-                        taeter: "stamm/koerper-leib.js _buildCreatureGroup (der Guss liest keine Schwere)",
++                        taeter: "voxel-worker.js planetPlanVon (jeder Planet mit dem Körper PLANET_ERDE: keine Saat trägt ihr g) · stamm/koerper-leib.js _ofenKreaturDials (der Guss des Leibs unter der Schwere der Welt)",
+                         nicht: "keine Saat je g",
+-                        leser: "stamm/koerper-leib.js:2469 _buildCreatureGroup — liest state.gravity nicht (nur der Gang, stamm/koerper-leib.js:492 _gangZeile): der Bein-Querschnitt folgt keiner Schwere",
++                        leser: "stamm/koerper-leib.js _ofenKreaturDials → tetrapoda-core.js deriveTierParams `beinQuer` (die Schwere der Welt state.gravity im Guss, Glied-Querschnitt A ∝ g^0,80) → bauTier: der Bein-Querschnitt an der Haut; der Gang stamm/koerper-leib.js _gangZeile",
+                     }),
+                     2: S({
+                         soll: [K.soll(FP, 2, "über 20 Saaten", { key: "saaten", rel: "≥", zahl: 20 }), K.soll(FP, 2, "Kurve monoton", { key: "monotonVerstoesse", rel: "=", zahl: 0, refQuelle: "das Wort „monoton“: kein Abstieg zwischen zwei Stufen der Dichte (0 Verstöße)" }), K.soll(FP, 2, "Anteil fliegender Arten", { key: "dichteMin", rel: "≤", zahl: 0.1, quelleFeld: "umfang", quelleWort: "0,1–10 bar" }), K.soll(FP, 2, "Anteil fliegender Arten über 20 Saaten", { key: "dichteMax", rel: "≥", zahl: 10, quelleFeld: "umfang", quelleWort: "0,1–10 bar" })],

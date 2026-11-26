@@ -1,0 +1,54 @@
+KANDIDAT (Bahn kosmos-hadley, Richter-Sache): ein Patch gegen origin/punkte-maschine c23e7c1d. Die Stationsdatei k2-leben.js ist dort
+byte-gleich mit 2e4ccc1b. `patch -p1 --batch --dry-run` läuft sauber, angewandt ist die Datei byte-gleich mit dem Kandidaten, `node --check`
+ist grün. Kein Soll ist geändert.
+
+k2-leben-fremde-physik-s1.patch, leben.evolution.fremde-physik#1: „Bein-Querschnitt folgt Masse·g“, Richter „Regression … Steigung im Band
+der Statik“.
+
+Täter der Station
+- FP_AN las `_tierBaum.quer`, das Quer-Maß des RUMPFS je Hüft-Höhe (`_tierQuerMass`, an der Vorlage memoisiert).
+- Die Sprosse, ihre Pose („Bein-Querschnitt im Bild“) und ihr Soll (McMahon 1975, Galilei 1638: der Querschnitt des Beins) nennen alle das Bein.
+
+Neu
+- Je Unterarm und Unterschenkel (flL→flP · frL→frP · hlC→hlP · hrC→hrP) schneidet FP_AN die geskinnte Hülle ohne Schale `aSchale`. Der Schnitt
+  liegt in der Ruhe der Vorlage im Welt-Raum, quer zur Glied-Achse in ihrer Mitte; er nimmt die kleinste Schleife um die Achse.
+- A ist die Summe der vier Flächen.
+- Trägt ein Glied keine Schleife, ist A NaN und damit die Steigung NaN: ROT beim Namen, kein Ersatzwert.
+- Der Rumpf reist als Zeuge `rumpfA` mit.
+- Texte `taeter` und `leser`: Der Guss liest die Schwere (kosmos-hadley: `_ofenKreaturDials` → tetrapoda `deriveTierParams` `beinQuer`, A ∝ g^0,80,
+  Biewener 2005 / Alexander et al. 1979). Der Rest-Täter heißt voxel-worker `planetPlanVon`.
+
+Gemessen mit pruefstand-fremde-physik-s1.cjs
+- FP_AN, FAECHER und die Regression stehen wörtlich aus der Stationsdatei und aus faecher.js.
+- Sie laufen in der Welt des Spiels (nullWelt) über 153 Adressen: 51 Saaten × 0,3/1/3 g.
+
+                                    steigung (0,75–1)   saatenJeG (≥ 50)   A bei 0,3 / 1 / 3 g (m²)
+  alte Station × main eae94514           0                   1             0,00726 / 0,00726 / 0,00726 (Rumpf)
+  alte Station × kosmos-hadley           0,2601              1             0,00584 / 0,00726 / 0,01067 (Rumpf)
+  neue Station × main eae94514           0                   1             0,01707 / 0,01707 / 0,01707 (Bein)
+  neue Station × kosmos-hadley           0,7692              1             0,00679 / 0,01707 / 0,03991 (Bein)
+
+- EICHUNG: Die alte Station × main gibt die Akte GTX f63a69ef (steigung 0, saatenJeG 1).
+- Die Erde (g 1) ist byte-gleich an main und kosmos-hadley: A 0,0170670077351569, rumpfA 0,007257938329038861.
+- Je Glied an kosmos-hadley: vorne 0,00145 → 0,00403 → 0,00969 m², hinten 0,00195 → 0,00455 → 0,01028 m². Die Ringe tragen 24 bis 68 Ecken.
+- Zeuge an der Klasse: Der Kern-Guss in node (bauTier über fadenScope OFEN_KERNE, Schnitt in der Vorlage) gibt für den Wolf frL@0,5 0,826,
+  hlC@0,5 0,719 und hrC@0,5 0,723.
+  Fuchs 0,95, Hirsch 0,98, Bär 1,06 (Stand-Blatt).
+
+Die drei Wände
+1. `node punkte.cjs liste` an c23e7c1d:
+   - Basis: 0 ROT (1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0, 25 s).
+   - Die zwei ROT `gelaende.K2#1/#2` „Wand HAKEN“ des Regel-Blatts feuern an main eae94514 nicht mehr.
+   - Mit dem Kandidaten: dasselbe, 0 ROT.
+2. Die Leiter misst in ≤ 60 s: der Fächer braucht 1,6 s (3 Güsse und 150 Adressen ohne Fähigkeit), der Prüfstand 7 s samt Boot. FP `sek: 25` bleibt.
+3. Kein Kern-Fächer: Jede Adresse ruft den Guss des Spiels in der Seite (`_buildCreatureGroup("wolf")` unter state.gravity). Eine zweite
+   Rechnung im Spiel mit THREE-Vektoren (fp-welt) gibt an derselben Saat dieselben A, bit-gleich.
+
+OFFEN saatenJeG 1 (Soll ≥ 50, Messname saatenJeG)
+- Die Station weist jede Saat außer der geladenen ab, und das stimmt so:
+  - Der Faden baut jeden Planeten mit dem Körper PLANET_ERDE (voxel-worker.js `planetPlanVon`; R5: ein Jahr, das des Ort-Gesetzes).
+  - Das g der Saat (planet-core.js `planetPlan` `g`) liest keine Welt.
+- vision/leben/entscheid.md (6) sagt dazu „voxel-worker nimmt den Körper des Plans“. Das ist ein Schnitt am Ort-Gesetz, nicht am Leser des Lebens.
+
+Prüfstand (aus der Wurzel des Spiels):
+  node cloud-post/kosmos-hadley-station/pruefstand-fremde-physik-s1.cjs <…/stationen/k2-leben.js> [<…/stationen/faecher.js>]

@@ -953,9 +953,18 @@ class AnazhRealm_koerper_leib {
         // gangBecken, die Zwei-Knochen-IK auf die gebauten Beine `_gaitBeinMass`), die Arme gegen die Beine, die Becken-Senke.
         const wB = gait && Number.isFinite(gait.w) ? Math.max(0, Math.min(1, gait.w)) : isMoving ? 1 : 0;
         const mp = wB < 0.999 ? this._koerperMotionProfile(false, emotions) : null;
+        // DIE ARME DES TUNS (stand-lebt 2): das Profil, in dem er steht, nennt, was seine Hände tun (koerper `STAND.tun` — der nahe
+        // Leib wie der Satz, der den Stand backt: EIN Weg); im Gehen und ohne Tun null
+        r.standTun = mp ? AnazhRealm._leibTakt().leibStandTun(this._koerperMotionName(false, emotions)) : null;
+        // (stand-lebt 3) die gebackene Zeile nennt ihr tragendes Bein im Gemüt (`_bewohnerStandGemuet` seite) — der lebende Leib keins
+        r.standSeite = emotions && (emotions.seite === 0 || emotions.seite === 1) ? emotions.seite : null;
         const mref = mp ? this._koerperMotionProfile(false, null) : null;
         const SB = wB > 0.001 && gait && gait.S > 0 ? gait.S : 0;
-        AnazhRealm._leibTakt().leibRigPose(
+        // DER GANG LIEST DEN SATZ (leib-liest-satz-2, koerper `leibSatzPose`): die Haltung des Gemüts nennt seinen Satz („pwalk/krank“)
+        // — der Stand trägt ihn im Profil, der Gang dieselbe Zeile über den Beinen des Gesetzes; bis hier ging der Kranke wie der Gesunde
+        const KT = AnazhRealm._leibTakt();
+        const satz = wB > 0.001 && emotions && typeof emotions.haltung === "string" ? KT.leibSatzPose(emotions.haltung) : null; // prettier-ignore
+        KT.leibRigPose(
             r,
             t,
             walkPhase,
@@ -965,7 +974,8 @@ class AnazhRealm_koerper_leib {
             mref,
             SB > 0 ? this._gaitBeinMass(r) : null,
             SB > 0 ? this._gangZeile(true) : null,
-            window.__tetrapodaCore
+            window.__tetrapodaCore,
+            satz
         );
         // DER AUSFALLSCHRITT (koerper-core `leibStossPose`, physik.K5 — dieselbe Funktion setzt das Körper-Studio): die Hüfte rollt
         // jedes Bein quer zu seinem Fuß des Stoß-Zustands, im Schwung hebt das Knie ihn — vor der Fuß-IK, die den Stand hält
@@ -1051,6 +1061,13 @@ class AnazhRealm_koerper_leib {
         const basis = core.GATTUNGEN[recId];
         const buch = this._tetrapodaStudioDials(recId);
         const dials = Object.assign({}, basis, buch || {}, ovOpt && typeof ovOpt === "object" ? ovOpt : {});
+        // DIE SCHWERE DER WELT IM GUSS (Karte 2 leben.evolution.fremde-physik#1): der Leib wird unter dem Gesetz der Welt
+        // gegossen (`state.gravity`, `_weltGesetz` schwere) — tetrapoda `deriveTierParams` liest sie als `schwere` (g/g_Erde, der
+        // Glied-Querschnitt ∝ g^0,80, Biewener 2005). Das Wort der Erde ist der Wert des Dials ohne ihn: an der Erde reist er nicht
+        // (Memo-Schlüssel, IDB-Platte und Bytes der Erd-Gestalt bleiben), jede andere Schwere gießt ihre eigene Vorlage.
+        const gWelt = -this.state.gravity,
+            gErde = -AnazhRealm.WELT_GESETZ_ERDE.schwere;
+        if (gWelt !== gErde) dials.schwere = gWelt / gErde;
         // istDefault steuert den IDB-Pfad: nur die unveränderte Gattungs-Gestalt
         // darf die Platte lesen/schreiben (Regler-Unikate bleiben Unikate, W-A1).
         const istDefault = !ovOpt && JSON.stringify(dials) === JSON.stringify(Object.assign({}, basis));

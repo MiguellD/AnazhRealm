@@ -1994,15 +1994,23 @@ async function checkBandScatterScheibe({ page, check }) {
         o.balanceEqual = groupBalance() === balanceOne;
         // MAIN = FADEN: dieselbe Regel (phyto-core `streuRegion`) an den Lesern beider Fäden, Zahl für Zahl — an der Region des
         // Spielers samt Erdbau und Keller (die Fläche beider Fäden ist eine Probe des Felds, voxel-worker `voxelSurfaceY`) und an
-        // der Region eines Orts (die Mitte der ersten Siedlung der Wege-Karte: Platten, Grund und Trasse des Erdbaus, die Wege)
+        // der Region eines Orts: des Genesis-Orts (`_genesisPlan`, der EINE Plan der Ankunft) samt seinem Belag in der EINEN
+        // Wege-Karte — derselbe Ruf, mit dem der Ort ihn legt (`_genesisOrt`: `_stlWegeBuild`, Schlüssel „genesis“, idempotent).
+        // Bis landmarken-geologie-3 las die Linse die erste Siedlung des Registers: in der Seite des Playtests ruht der Dorf-Zug
+        // (`ortZug` genesis), das Register trug nur die Tritt-Kreise der Feuerstellen des Felds (main: 7 von 7 Einträgen je
+        // 2 × 2 m) — seit die Glut kein Wurf des Felds mehr ist, ist es leer und der Ort fiel („null“)
         {
-            const sd = st.wegeKarte && st.wegeKarte.siedlungen[0];
+            const G = r._genesisPlan;
             const orte = [[rx, rz, pos.x, pos.z]];
-            if (sd) {
-                const [ox, oz] = [(sd.x0 + sd.x1) / 2, (sd.z0 + sd.z1) / 2];
-                orte.push([Math.floor(ox / SC.regionM), Math.floor(oz / SC.regionM), ox, oz]);
+            let ort = null;
+            if (G) {
+                r._stlWegeBuild({ zonen: G.zonen }, G.ort, "genesis");
+                const q = [Math.floor(G.ort.x / SC.regionM), Math.floor(G.ort.z / SC.regionM), G.ort.x, G.ort.z];
+                ort = q.slice(0, 2).join(",");
+                if (ort !== key) orte.push(q); // der Spieler steht am Ort der Ankunft: dieselbe Region, einmal gewürfelt
             }
-            o.wuerfe = { n: 0, gleich: true, ort: sd ? orte[1].slice(0, 2).join(",") : null };
+            const belag = st.wegeKarte?.siedlungen.find((s) => s.plan && s.formen.length);
+            o.wuerfe = { n: 0, gleich: true, spieler: key, ort, formen: belag ? belag.formen.length : 0 };
             for (const [qx, qz, ax, az] of orte) {
                 const mk = () => r._streuAuftrag(qx, qz, ax, az, 1);
                 const msg = await r._nebenAuftrag("streu", Object.assign({ type: "streu-region" }, mk()));
@@ -2175,11 +2183,12 @@ async function checkBandScatterScheibe({ page, check }) {
         `Phasen [${out.contPhases}] · Bilanz ${out.balanceEqual}`
     );
     check(
-        `Scatter-Scheibe MAIN = FADEN: die Würfe des Streu-Fadens Zahl für Zahl gleich der Regel im Haupt-Faden (${out.wuerfe ? out.wuerfe.n : "?"} Zahlen, Region des Spielers und des Orts ${out.wuerfe ? out.wuerfe.ort : "?"}); Dispose mitten in der Fortsetzung storniert ohne Throw`,
+        `Scatter-Scheibe MAIN = FADEN: die Würfe des Streu-Fadens Zahl für Zahl gleich der Regel im Haupt-Faden (${out.wuerfe ? out.wuerfe.n : "?"} Zahlen, Region des Spielers ${out.wuerfe ? out.wuerfe.spieler : "?"} und des Genesis-Orts ${out.wuerfe ? out.wuerfe.ort : "?"} samt ${out.wuerfe ? out.wuerfe.formen : "?"} Formen seines Belags); Dispose mitten in der Fortsetzung storniert ohne Throw`,
         !!out.wuerfe &&
             out.wuerfe.gleich === true &&
             out.wuerfe.n > 0 &&
             !!out.wuerfe.ort &&
+            out.wuerfe.formen > 0 &&
             (out.contPhases || []).includes("faden") &&
             out.storno.threw === false &&
             out.storno.contDead === true &&

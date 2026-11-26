@@ -268,8 +268,16 @@ async function probeLeben(expected) {
             bau: () => r._foundryFlattenFor(e, pr, r._foundryLodForEntry(e)),
         });
     };
+    // DIE SPUR FÄLLT MIT DEM WAGEN (fahrzeug-medium): seit das Rad in das EINE Feld der Tritte schreibt (`_fahrRad` → `_tritt`, die
+    // Rinne der nächsten Durchfahrt), läse jede Probe auf derselben Bahn die Spur der vorigen — die W-Kette bremste trocken 23,65 m
+    // und mit gehaltenem Regen 25,18 m (die Rinne der Vorfahrt widersteht weniger), T6 fuhr über und vor der Karte 31,41 ↔ 31,61 m.
+    // Jede Probe setzt an DERSELBEN Welt an: was ihr Wagen trat (`worldMeta.tritt`, `_trittSchwach`), fällt mit ihm (`weg`). Die
+    // Karte malt eine Zelle erst ab der Stufe des Pfads (27,7 Tritte, `_trittStufe`) — eine Probe tritt höchstens zwei je Zelle und
+    // Fahrt (Vorder- und Hinterrad), keine malt. Die Rinne selbst misst K11 (Kern) und die Station mensch.fahrzeug.medium#2.
+    let spurVor = null;
     // Ein Werk setzen, aufsitzen, einschwingen. `fahrt` = Fahrt-Richtung (sin, cos); ein Studio-Fahrzeug liegt längs x.
     const setzen = async (typ, x, zz, fahrt, vorAufsitzen) => {
+        if (!spurVor) spurVor = [{ ...(st.worldMeta.tritt || {}) }, new Map(r._trittSchwach || [])];
         stelle(x, zz, 1.2);
         const rotY = typ.startsWith("fahrzeug_") ? fahrt - Math.PI / 2 : fahrt;
         const e = r.spawnArchitecture(
@@ -293,6 +301,7 @@ async function probeLeben(expected) {
     const weg = (e) => {
         r.dismountArchitecture();
         r.removeArchitecture(e);
+        if (spurVor) [st.worldMeta.tritt, r._trittSchwach, spurVor] = [...spurVor, null];
     };
     // DIE ANFAHRT: der gesetzte Wagen fährt mit v m/s in seine Fahrt-Richtung (sin, cos) — der Kern und der Kontakt-Löser, aus
     // dessen Fahrt der Ritt je Sim-Schritt liest. Leser: die Bremsung der W-Kette (50 km/h), die Ankunft an der Klippe (S2, S4) und
@@ -891,6 +900,18 @@ async function probeLeben(expected) {
                 r._uhrSetzen((h % 24) / 24, "regler");
                 frame(i++);
             }
+            // DIE SPUR DES ANFANGS (fahrzeug-medium): das Rad sinkt in die Rinne, die Räder und Füße vor ihm traten (`_fahrRad` liest
+            // `_trittZahl`) — der Boden trägt die Vorgeschichte (das Gesetz: ein gegangener Weg bleibt über den Sprung der Uhr), die
+            // Lage nicht. Jeder Lauf beginnt darum auf dem Feld der Tritte des ersten (der Stand `worldMeta.tritt` und das flüchtige
+            // Gedächtnis `_trittSchwach`, wie L8), gelegt NACH den Bildern des Sprungs: deren Sim-Schritte laufen vor dem Sprung
+            // (`_loopFixedStep` vor `_tickBewohner`), jeder Wagen fährt dort noch an seiner Lage von davor — im Zwilling die stehende
+            // Stadt, im Lauf das Ende des Zwillings. Bis hier lag das Feld vor ihnen: im Zwilling trat Wagen 12 im ersten Bild des
+            // Sprungs die Zelle (1966, 738), im Lauf nicht, und in Bild 131 sank Wagen 20 nur im Zwilling dort ein (VK-V). Nach dem
+            // Sprung trägt jeder Wagen einen neuen Fahr-Zustand (kein Rad merkt eine Zelle), und kein Leib trägt die Zelle seines
+            // letzten Schritts in die Stunde (`_trittMemo`): dieselbe Saat, derselbe Boden, dasselbe Bild.
+            Z.spur ??= structuredClone([st.worldMeta.tritt || {}, r._trittSchwach || new Map()]);
+            [st.worldMeta.tritt, r._trittSchwach] = structuredClone(Z.spur);
+            r._trittMemo = new WeakMap();
             await bis("verkehr: der Anfang", bereit);
             const VK = S.verkehr;
             if (!VK) throw new Error("die Stadt trägt keinen Verkehr");
@@ -2001,6 +2022,11 @@ async function probeLeben(expected) {
                 };
             } finally {
                 window.__vehicleCore = echt;
+                // der Wagen steigt mit dem Satz des echten Kerns ab (`_fahr` lebt nur mit dem Satz, siedlung-instanz `_archRadMatrix`):
+                // seit das Rad im weichen Boden einsinkt (fahrzeug-medium), federt der stehende Wagen, und der Abstieg zieht seine Räder
+                gP._fahrSatz = null;
+                gP._fahrSatzKey = null;
+                r._fahrSatz(gP, r._vehicleProfile(gP));
             }
             weg(gP);
         }
@@ -2427,17 +2453,23 @@ async function probeLeben(expected) {
             weg(gL);
             return m;
         };
-        // L1 DER HANGFUSS: 9,3 m/s, Gier 92,3°, über den Hangfuß an einen Glutbrunnen — Soll: seine flache Box schiebt den
-        // Wagen nie auf höheren Grund, die Höhe friert nie ein. Der Ort aus der Welt: der nächste Glutbrunnen am Dorf-Messort
-        // (spec/profiband/haushalt.json `dorf`, `expected.dorf`), angefahren mit Tempo und Gier der Schau (Start 5,6 m,
-        // Spieler 3,1 m vor ihm längs der Gier). Kein Glutbrunnen → vakuös, laut.
+        // L1 DER HANGFUSS: 9,3 m/s vom Hang über den Fuß an eine Feuerstelle (`glutbrunnen`) — Soll: ihre flache Box schiebt
+        // den Wagen nie auf höheren Grund, die Höhe friert nie ein. Die Feuerstelle setzt der Mensch, nie das Feld
+        // (landmarken-geologie: bis hier fuhr die Probe mit Gier 92,3° an den nächsten Glutbrunnen, den das Glut-Feld am
+        // Dorf-Messort warf, 101 je 0,2 km²) — die Probe setzt sie als Werk an den Hangfuß der Welt am Dorf-Messort (welt-orte
+        // `hangfuss`, spec/profiband/haushalt.json `dorf`, `expected.dorf`); der Wagen kommt vom Hang (Start 5,6 m, Spieler 3,1 m
+        // vor ihr längs der Fahrt). Kein Hangfuß → vakuös, laut.
         const D = expected.dorf;
         await ankommen(D.x, D.z);
+        const fuss = window.__weltOrt("hangfuss", { mitte: [D.x, D.z], rMax: 200, schritt: 3 });
         let G = null;
-        for (const e of st.architectures)
-            if (e?.position && /glutbrunnen/.test(e.blueprintName || e.name || e.type || ""))
-                if (!G || flach(e.position, D) < flach(G.position, D)) G = e;
-        const gierL1 = (92.3 * Math.PI) / 180;
+        if (fuss) {
+            const y = hh(fuss.x, fuss.z) + 0.5;
+            const o = { silent: true, precise: true, id: "fahr-hangfuss-feuerstelle" };
+            G = r.spawnArchitecture("glutbrunnen", { x: fuss.x, y, z: fuss.z }, o);
+            if (G) await werkGebaut(G);
+        }
+        const gierL1 = fuss ? fuss.gier + Math.PI : 0; // die Fahrt vom Hang zum Fuß (`gier` der Suche zeigt auf den Hang)
         const vor = (d) => [G.position.x - Math.sin(gierL1) * d, G.position.z - Math.cos(gierL1) * d];
         S.hangfuss = G
             ? await lebenFahrt(
@@ -2450,7 +2482,8 @@ async function probeLeben(expected) {
                   },
                   150
               )
-            : { ziel: false, kontakte: 0, fehlt: "kein Glutbrunnen am Dorf-Messort" };
+            : { ziel: false, kontakte: 0, fehlt: fuss ? "die Feuerstelle steht nicht am Hangfuß" : "kein Hangfuß am Dorf-Messort" };
+        if (G && st.architectures.includes(G)) r.removeArchitecture(G);
         // L3–L5 DER STOSS: der GT fährt mit W aus 9 m Anlauf in der freien Gasse auf ein Hindernis, das NICHT gehalten wird.
         // Kontakt = der erste Schritt, in dem der Kontakt-Löser Lage oder Fahrt nahm (`z.kontakt`); gemessen: die Fahrt davor
         // und danach (die kleinste in den 8 Schritten danach: Rückprall), der Weg des Getroffenen längs der Fahrt, die
@@ -3027,7 +3060,13 @@ async function probeLeben(expected) {
                 // daneben — kein Bruch der Bildrate, ein anderer Start. Beide Läufe beginnen am Pfad vor dem ersten: die Zellen des
                 // Stands, das flüchtige Gedächtnis und die Nah-Stufe, neu gemalt aus ihnen (`_wegeStufeMalen` → `_trittMalen`).
                 const pfadVor = structuredClone([st.worldMeta.tritt, r._trittSchwach]);
+                // DER GLEICHE TAG (fahrzeug-medium): das Rad sinkt in die Rinne der Durchfahrten vor ihm, und die erholt sich mit
+                // dem Tag der Welt (`_trittZahl`: n · e^(−Δt/erholTage)) — der zweite Lauf begann einen Lauf später am Tag, der
+                // ruhende GT stand 5,5e-9 m anders und lag nach 200 Schritten 6e-6 m daneben. Beide Läufe beginnen an derselben
+                // Welt-Uhr (`_weltUhrNeu`: die Messung kehrt zu ihrem Anfang zurück).
+                let weltUhr;
                 const lockProbe = async (muster) => {
+                    r._weltUhrNeu((weltUhr ??= st.spielZeit));
                     [st.worldMeta.tritt, r._trittSchwach] = structuredClone(pfadVor);
                     r._wegeStufeMalen(st.wegeKarte.stufen[0]);
                     const gS = await setzen("fahrzeug_gt", gasse.x, gasse.z, gasse.fahrt);

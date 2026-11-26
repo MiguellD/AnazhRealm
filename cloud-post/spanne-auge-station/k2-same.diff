@@ -1,0 +1,163 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-same.js b/meisterkarte-quelle/punkte/stationen/k2-same.js
+index 9f12d2cbf..bf682afbd 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-same.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-same.js
+@@ -32,17 +32,75 @@ const { netzMitschnitt } = require("./g6.js"); // der EINE Netz-Mitschnitt (same
+ const AUGE = require("./auge-klasse.cjs");
+ const { FAECHER } = require("./faecher.js"); // der Fächer (M4: der Richter ist selbst eine Adresse) — same.massstab.spanne S1–S4
+ 
+-// DAS AUGE AN EINER ADRESSE (same.massstab.spanne S1–S4, das Gesetz des Fächers): a.saat ist die Saat. Die Kamera der Welt folgt dem Leib
+-// (`_loopCamera`, stamm/koerper-bewegung.js:1759), ihr Grund ist das Gelände der Saat — gelaende-core `hoehe` über die Lage
+-// `_gelaende()` (stamm/gelaende-boden.js:833: eine lebende Sicht auf state, ihre Saat `_saatJe` = worldMeta.seed, Hydrosphäre und Erdbau
+-// aus dem Faden). An der geladenen Saat misst das Gesetz die nahe und die ferne Ebene und das Auge über dem Grund; jede andere Saat
+-// trägt keine Lage, die die warme Welt rufen kann — sie nennt das Fehlende
++// DAS AUGE AN EINER ADRESSE (same.massstab.spanne S1–S4, das Gesetz des Fächers): a.saat ist die Saat. Das Spiel liest den Grund unter
++// dem Auge an JEDER Saat aus EINEM Leser (`_augeAn`, stamm/koerper-bewegung.js:2306: gelaende-core `hoehe` über die Lage der Saat
++// `_gelaende(saat)`, stamm/gelaende-boden.js:837 — die geladene Saat die lebende Sicht, jede andere die Lage ihrer Welt `lageGrund`,
++// gelaende-core.js:2830), und das Auge steigt nach EINEM Gesetz (`_augeSchritt`, stamm/koerper-bewegung.js:2299, AnazhRealm.AUGE_STEIG:
++// da/dt = k·a), das der Loop der Kamera ruft (`_augeHeben` in `_loopCamera`). Je Adresse: der Grund an der Wiese, die Zeit des Gesetzes
++// von 0,5 auf 700 m im Takt 60 Hz, die nahe und die ferne Ebene; an der geladenen Saat das Auge über dem Grund. Fehlt der Leser, nennt
++// sie das Fehlende (der Stand vor spanne-auge: nur die geladene Saat trug eine Lage, kein Verb hob das Auge)
+ const AUGE_AN = async (r, T, a) => {
+     const st = r.state;
+-    if (!st.worldMeta || a.saat !== st.worldMeta.seed)
+-        return { fehlt: "die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)" };
++    if (typeof r._augeAn !== "function" || typeof r._augeSchritt !== "function")
++        return { fehlt: "kein Leser der Adresse (`_augeAn`, `_augeSchritt`: der Grund unter dem Auge an einer Saat, das Gesetz des Steigens)" };
+     const c = st.camera;
+-    return { near: c.near, far: c.far, auge: +(c.position.y - r.getTerrainHeightAt(c.position.x, c.position.z)).toFixed(2) };
++    let [h, n] = [0.5, 0];
++    while (h < 700 && n < 60 * 120) (h = r._augeSchritt(h, 1, 1 / 60)), n++;
++    const w = { near: c.near, far: c.far, grund: +r._augeAn(a.saat, c.position.x, c.position.z, 0).toFixed(3), steig_s: h >= 700 ? +(n / 60).toFixed(2) : null };
++    if (st.worldMeta && a.saat === st.worldMeta.seed) w.auge = +(c.position.y - r.getTerrainHeightAt(c.position.x, c.position.z)).toFixed(2);
++    return w;
++};
++
++// DER FLUG IN DER WELT (same.massstab.spanne S1, „hin und zurück“; der Zeuge auge_m): an der Wiese, im Ich-Auge, das Verb `steigen` über
++// die Taste des Spielers (die Tasten-Tafel `state.keybindings`, der Hörer des Fensters → `_verbTaste` → `_verbTafelSammeln` →
++// `_augeHeben`), der Takt des Spiels 60 Hz (`_gameLoopTick`, der Loop der Sitzung ruht), bis das Auge 700 m über dem Grund steht; dann
++// `sinken`, bis es wieder am Leib steht. Je Bild die Bruch-Bedingungen, die der Takt zählt: das Auge unter dem Grund (< 0,1 m), ein
++// Sprung über dem Gesetz in der Zeit des Takts (|Δa| > 1,5 · k · a · Δt + 5 cm, Δt die Welt-Uhr `spielZeit`, an der die Kamera
++// liest), ein Takt über 100 ms, kein Rückweg zum Leib (±5 cm)
++const AUGE_FLUG = async (r) => {
++    const st = r.state;
++    const taste = (v) => r.constructor._tastenListe(st.keybindings && st.keybindings[v])[0] || null;
++    const [hoch, tief] = [taste("steigen"), taste("sinken")];
++    if (!hoch || !tief) return { fehlt: "keine Taste trägt das Verb ‚" + (hoch ? "sinken" : "steigen") + "‘ (die Tasten-Tafel des Spielers)" };
++    const k = r.constructor.AUGE_STEIG.k;
++    const R = st.renderer, lp = R.getAnimationLoop ? R.getAnimationLoop() : null;
++    if (lp) R.setAnimationLoop(null);
++    const druck = (art, code) => dispatchEvent(new KeyboardEvent(art, { bubbles: true, code, key: code.slice(-1).toLowerCase() }));
++    const auge = () => st.camera.position.y - r.getTerrainHeightAt(st.camera.position.x, st.camera.position.z);
++    let t = performance.now();
++    const o = { taste: hoch, brueche: { unter: 0, sprung: 0, takt: 0 }, taktMax: 0 };
++    const fahre = async (code, bis, frist) => {
++        druck("keydown", code);
++        let [a, n] = [auge(), 0];
++        for (; n < frist * 60 && !bis(a); n++) {
++            const [t0, z] = [performance.now(), st.spielZeit];
++            r._gameLoopTick((t += 1000 / 60));
++            const ms = performance.now() - t0;
++            const b = auge();
++            o.taktMax = Math.max(o.taktMax, ms);
++            if (ms > 100) o.brueche.takt++;
++            if (b < 0.1) o.brueche.unter++;
++            if (Math.abs(b - a) > 1.5 * k * Math.max(a, b) * (st.spielZeit - z) + 0.05) o.brueche.sprung++;
++            a = b;
++            if (n % 30 === 29) await new Promise((f) => setTimeout(f, 0));
++        }
++        druck("keyup", code);
++        return n;
++    };
++    try {
++        o.a0 = +auge().toFixed(2);
++        const z0 = st.spielZeit;
++        const n = await fahre(hoch, (a) => a >= 700, 30);
++        o.t700_s = auge() >= 700 ? +(n / 60).toFixed(2) : null;
++        o.auge_m = +auge().toFixed(1);
++        o.zurueck_s = +((await fahre(tief, () => !(st.augeHoehe > 0), 40)) / 60).toFixed(2);
++        o.zurueck = !(st.augeHoehe > 0) && Math.abs(auge() - o.a0) <= 0.05;
++        o.spiel_s = +(st.spielZeit - z0).toFixed(2);
++        o.taktMax = +o.taktMax.toFixed(1);
++    } finally {
++        if (lp) R.setAnimationLoop(lp);
++    }
++    return o;
+ };
+ 
+ const KARTE2_DATEI = path.join(__dirname, "..", "..", "..", "vision", "meisterkarte-2.json");
+@@ -2783,7 +2841,7 @@ LEITERN.push(
+         leiter({
+             leiter: "same.massstab.spanne",
+             sek: 50,
+-            pfad: ["scripts/werkbank.cjs", "stamm/dirigent-ankunft.js", "foundry-core.js"],
++            pfad: ["scripts/werkbank.cjs", "stamm/dirigent-ankunft.js", "foundry-core.js", "stamm/koerper-bewegung.js", "stamm/gelaende-boden.js", "gelaende-core.js"],
+             welt: [{ wort: "auge_m", ab: 1, was: "Höhe, die das Auge in der Welt flog (m)" }],
+             sprossen: {
+                 1: {
+@@ -2826,7 +2884,7 @@ LEITERN.push(
+                     umfang: { verlangt: 1e26, einheit: "m Sicht der Welt-Kamera", wortlaut: "31: 10 µm bis 10²⁶ m", feld: "umfang" },
+                 },
+             },
+-            seite: { FAECHER, AUGE_AN },
++            seite: { FAECHER, AUGE_AN, AUGE_FLUG },
+             lauf: async function spanneLauf(H, P, L) {
+                 const ort0 = Date.now();
+                 await L.ort("wiese", "ego");
+@@ -2847,10 +2905,10 @@ LEITERN.push(
+                         gesetz: { fn: H.seite.AUGE_AN, export: "gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833)", leser: "stamm/koerper-bewegung.js:1759 _loopCamera" },
+                         adressen: { saaten: Array.from({ length: v }, (_, i) => P.leiter + "-s1-" + (i + 1)), dazu: [{ saat: z.saat }] },
+                         ms: Math.max(4000, Math.floor((L.rest() - 6) * 1000)),
+-                        masse: { saaten: { wie: "anzahl", nur: "saat" }, near: { wie: "max", feld: "near" }, auge: { wie: "max", feld: "auge" } },
+-                        schlecht: { feld: "auge", richtung: "min" },
++                        masse: { saaten: { wie: "anzahl", nur: "saat" }, near: { wie: "max", feld: "near" }, auge: { wie: "max", feld: "auge" }, steig_s: { wie: "max", feld: "steig_s" }, gruende: { wie: "verschieden", feld: "grund" } },
++                        schlecht: { feld: "steig_s", richtung: "max" },
+                         pose: (a) => "Saat " + a.saat + " an der Wiese, ego (das Auge am Leib)",
+-                        ungemessen: ["Steigflug 0,5 → 700 m in 30 s (kein Verb hebt das Auge)"],
++                        ungemessen: ["die Bruch-Bedingungen im BILD des Flugs (Pop, Loch, Stufen-Wechsel: die Sitzung zeichnet je Höhe kein Ausgabe-Bild)", "der Flug an den 20 fremden Saaten (sie tragen Grund und Gesetz, nicht die gezeichnete Welt)"],
+                     });
+                     L.zeile("spanne S1–S4 (die Wiese wuchs in " + ortMs + " ms): " + R.akte.slice(0, 400));
+                 } catch (e) {
+@@ -2861,20 +2919,35 @@ LEITERN.push(
+                     for (const nr of [1, 2, 3, 4]) await L.je(nr, async () => { throw wurf; });
+                     return;
+                 }
+-                const in20 = "in " + R.gemessen + " von " + (v + 1) + " Adressen (nahe Ebene " + R.werte.near + " m, Auge über dem Grund " + R.werte.auge + " m; " + R.akte + ")";
+-                const flug = "kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe";
++                const in20 = "in " + R.gemessen + " von " + (v + 1) + " Adressen (" + R.werte.gruende + " verschiedene Gründe, nahe Ebene " + R.werte.near + " m, Auge über dem Grund " + R.werte.auge + " m; " + R.akte + ")";
++                // DER FLUG IN DER WELT (S1: hin und zurück), dann die Sprossen: S1 misst, wenn jede Adresse Grund und Gesetz trägt, die
++                // Gründe der Saat folgen und der Flug ohne Bruch hin und zurück fährt — sonst nennt sie ihren Täter
++                const F = await L.ev("return await (" + H.seite.AUGE_FLUG + ")(r);", 45);
++                L.zeile("spanne S1 Flug: " + JSON.stringify(F));
++                const maxM = await L.ev("return r.constructor.AUGE_STEIG ? r.constructor.AUGE_STEIG.maxM : null;", 10);
++                const flug = F.fehlt ? F.fehlt : "das Auge steigt bis " + maxM + " m (AnazhRealm.AUGE_STEIG.maxM, stamm/koerper-bewegung.js:2731)";
++                const bruch = F.fehlt ? null : Object.entries(F.brueche).filter(([, n]) => n > 0).map(([k, n]) => k + " " + n).join(" · ");
++                await L.je(1, async () => {
++                    if (R.gemessen < v + 1 || R.werte.gruende < R.gemessen || F.fehlt || !(F.t700_s != null) || bruch || !F.zurueck)
++                        return L.leser(1, "Steigflug 0,5 → 700 m in 30 s, hin und zurück: " + (F.fehlt || (F.t700_s == null ? "das Auge steht nach 30 s auf " + F.auge_m + " m" : bruch ? "Bruch im Flug (" + bruch + ")" : !F.zurueck ? "kein Rückweg zum Leib" : "die Lage folgt der Saat nicht (" + R.werte.gruende + " Gründe an " + R.gemessen + " Adressen)")) + (R.gemessen < v + 1 ? " — Saaten: " + (R.fehlt || "keine gemessen") : "") + " — " + in20, R.gemessen);
++                    L.gemessen(1, { steig_s: Math.max(R.werte.steig_s, F.t700_s) }, {
++                        erzeugt: R.gemessen,
++                        welt: { auge_m: F.auge_m },
++                        taeter: "Gesetz 0,5 → 700 m in " + R.werte.steig_s + " s an " + R.gemessen + " von " + (v + 1) + " Adressen (" + R.werte.gruende + " Gründe); Flug in der Welt (Taste " + F.taste + ") " + F.a0 + " → " + F.auge_m + " m in " + F.t700_s + " s, zurück in " + F.zurueck_s + " s, 0 Brüche, Takt höchstens " + F.taktMax + " ms",
++                        beleg: R.akte.slice(0, 300),
++                    });
++                });
+                 // der Bildwinkel des Schusses (1280 × 720) aus dem senkrechten der Welt-Kamera — derselbe wie same.massstab.nahe
+                 const hfov = 2 * Math.atan(Math.tan((z.fov * Math.PI) / 360) * (1280 / 720));
+                 const cm = 0.01 / (2 * Math.tan(hfov / 2));
+                 const nahe = R.werte.near;
+                 // je Sprosse ihr Leser; trägt der Fächer nicht alle Saaten, steht das Fehlende der Saat daneben
+                 const grund = {
+-                    1: "Steigflug 0,5 → 700 m in 30 s: " + flug,
+-                    2: nahe > cm ? "die Welt-Kamera schneidet unter " + nahe + " m ab (state.camera.near, stamm/dirigent-ankunft.js:468): 1 cm Bildbreite verlangt " + cm.toExponential(2) + " m Abstand" : "Spanne 1 cm → 1 km: " + flug,
+-                    3: "Horizont-Absenkung aus 10 km: die Welt ist eben — das Fern-Gelände trägt keine Krümmung (FERN_RING, stamm/gelaende-fern.js:460), kein Auge steigt auf 10 km",
+-                    4: "Flug Boden → Orbit → Boden: kein Orbit — das Gelände ist eben (FERN_RING, stamm/gelaende-fern.js:460), der Planet hat keine andere Seite",
++                    2: nahe > cm ? "die Welt-Kamera schneidet unter " + nahe + " m ab (state.camera.near, stamm/dirigent-ankunft.js:468): 1 cm Bildbreite verlangt " + cm.toExponential(2) + " m Abstand" : "Spanne 1 cm → 1 km: kein Leser zählt die Bildbreite je Höhe des Flugs (" + flug + ")",
++                    3: "Horizont-Absenkung aus 10 km: " + flug + ", nicht auf 10 km — und die Welt ist eben: das Fern-Gelände trägt keine Krümmung (FERN_RING, stamm/gelaende-fern.js:460)",
++                    4: "Flug Boden → Orbit → Boden: kein Orbit — " + flug + ", das Gelände ist eben (FERN_RING, stamm/gelaende-fern.js:460), der Planet hat keine andere Seite",
+                 };
+-                for (const nr of [1, 2, 3, 4]) await L.je(nr, async () => L.leser(nr, grund[nr] + (R.gemessen < v ? " — Saaten: " + (R.fehlt || "keine gemessen") : "") + " — " + in20, R.gemessen));
++                for (const nr of [2, 3, 4]) await L.je(nr, async () => L.leser(nr, grund[nr] + (R.gemessen < v ? " — Saaten: " + (R.fehlt || "keine gemessen") : "") + " — " + in20, R.gemessen));
+             },
+         })
+     );
