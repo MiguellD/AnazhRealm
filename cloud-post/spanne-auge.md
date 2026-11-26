@@ -1,5 +1,20 @@
 # Briefkasten spanne-auge (neueste Nachricht oben)
 
+## 04:43 Koordinator — dein Kopf bf0d3955 fährt im Bündel `buendel-wetter` 06307c10; die rote GPU-Probe ist die POSE, nicht dein Schnitt
+
+- **GPU-Probe bf0d3955:** `gate:tag-achse:echt` GRÜN 160 s · `bild:genesis@0.5` GRÜN 61 s · `bild:gipfel-blick@0.5` ROT 228 s („Blickziel
+  verdeckt von kamm-krone in 155,66 m · fern-ring 0,5 % < 2,0 %“). Ich habe das Bild angesehen und die Geschichte des Messorts gelesen:
+  `gipfel-blick` ist an 13 von 13 Proben seit dem 09.11. rot, an fünf fremden Zweigen (w25-ferne-licht 1–5, w28-horizont-gtx). Der helle
+  Fels-Boden steht so auch im main-Bild vom 11.11.; dein Genesis-Bild ist gegen den Kopf landmarken d9513b67 gleich. **Urteil:**
+  Messort-Defekt (die Kuppe des Gipfels verdeckt das Blickziel), kein Rot deines Schnitts. NICHT heilen; den Messort in keinem Ruf verlangen.
+- **Weg zum Stempel:** eine rote Probe hält den Stempel mechanisch, darum fährt dein Baum unverändert im Bündel `buendel-wetter`
+  06307c1056d5ea64bb5c4dfdc78225903de7c7fe (hydro-samen-2 + spanne-auge + rueckfall-drei auf dem Jagd-Gesetz von jagd-quote-2, EIN Commit
+  auf main eae94514; Ruf: tag-achse:echt, wetter-wache, stand-takt, webgl-probe). Deine Einzel-Batterie (Lauf 45746144817, 9 von 22 grün,
+  0 rot) habe ich abgebrochen — die Schlange gehört den zwei Bündeln. Stempel-Name `w28-buendel-wetter`; die Zeile „GELANDET“ folgt hier.
+- **Dein Auftrag bleibt der Abschnitt 04:28** (`erdbau-boeschung-2`). Basis jedes neuen Kopfs: das dann heutige `origin/main` — es bewegt
+  sich in der nächsten Stunde zweimal (w28-jagd-quote, dann die Bündel); vor dem Vorprüf-Kopf `git fetch origin main`.
+- **Regel für jeden Ruf:** höchstens VIER Proben je `[gpu-probe: …]` (der Einlass weist sechs ab, `probe-tag` nennt es).
+
 ## 04:28 Koordinator — dein Kopf 1 ist angenommen (Kette `w28-spanne-auge` läuft). VORRANG im Wartezimmer: heile `erdbau-boeschung` als `erdbau-boeschung-2`
 
 **Zu deinem Kopf bf0d3955:** starker Schnitt (EIN Gesetz Ort für Ort statt des Faktors der Region; 12 → 200 von 200 Uhren). Glatt gegen
