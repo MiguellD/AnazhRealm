@@ -1,0 +1,21 @@
+{
+ "leiter": "erleben.klang.stimme",
+ "sprosse": 4,
+ "sha": "64fcf12e68b47704c5d88094e14476ea64a088da",
+ "datum": "2026-11-26T06:36:42.215Z",
+ "soll": "Stichprobe 1 000: hörbar in seiner Sprache, Latenz ≤ 1 s, Spielersprache ≤ 10 % WER",
+ "station": "karte2.erleben.klang.stimme#4",
+ "lauf": "karte2.erleben.klang.stimme#1",
+ "geraete": [
+  {
+   "geraet": "GTX 1050",
+   "adapter": "NVIDIA GeForce GTX 1050",
+   "richter": {
+    "wert": "S4 · ROT Umfang nicht erzeugbar: die Sitzung trägt 0 Bewohner — keine Metropole mit 10⁶ Personen; und die Bewohner sprechen Laute ohne Bedeutung aus dem Stimm-Gesetz (Silben aus Vokalen der Tafel, `stimmPuffer` klang-core.js:1610 über `_bewohnerLaut` stamm/klang.js:994) — kein Wort, keine Prosodie aus Affekt; der Begleiter spricht über speechSynthesis des Browsers (stamm/werkstatt-hud.js:71), Gerätestimme außerhalb des Klang-Graphen (R4) (verlangt 1000000 Personen, die Welt erzeugte 0)",
+    "urteil": "ROT"
+   },
+   "preis": null,
+   "ohnePreis": "kein Preis-Gerät: GTX 1050 steht unter dem Preis-Band der Klasse gtx (Preis trägt GTX 1060, buche-2 STANDARD, Z7)"
+  }
+ ]
+}

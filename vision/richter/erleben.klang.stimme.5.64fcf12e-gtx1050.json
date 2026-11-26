@@ -1,0 +1,21 @@
+{
+ "leiter": "erleben.klang.stimme",
+ "sprosse": 5,
+ "sha": "64fcf12e68b47704c5d88094e14476ea64a088da",
+ "datum": "2026-11-26T06:36:42.215Z",
+ "soll": "100 Saaten: geeichtes Ohr „Sprache\" ≥ 90 %; Wortgrenzen und Wiederholungsstruktur messbar",
+ "station": "karte2.erleben.klang.stimme#5",
+ "lauf": "karte2.erleben.klang.stimme#1",
+ "geraete": [
+  {
+   "geraet": "GTX 1050",
+   "adapter": "NVIDIA GeForce GTX 1050",
+   "richter": {
+    "wert": "S5 · ROT Umfang nicht erzeugbar: die Sitzung hält EINE Saat (anazh-realm-seed) — 100 Saaten verlangt; kein fremdes Sprechorgan (verlangt 100 Saaten, die Welt erzeugte 1)",
+    "urteil": "ROT"
+   },
+   "preis": null,
+   "ohnePreis": "kein Preis-Gerät: GTX 1050 steht unter dem Preis-Band der Klasse gtx (Preis trägt GTX 1060, buche-2 STANDARD, Z7)"
+  }
+ ]
+}

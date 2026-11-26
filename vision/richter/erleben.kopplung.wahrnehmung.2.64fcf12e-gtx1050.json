@@ -1,0 +1,20 @@
+{
+ "leiter": "erleben.kopplung.wahrnehmung",
+ "sprosse": 2,
+ "sha": "64fcf12e68b47704c5d88094e14476ea64a088da",
+ "datum": "2026-11-26T06:43:53.762Z",
+ "soll": "Gegenlauf: Beute mit Wind-Wahl überlebt ≥ 1,5×",
+ "station": "karte2.erleben.kopplung.wahrnehmung#2",
+ "geraete": [
+  {
+   "geraet": "GTX 1050",
+   "adapter": "NVIDIA GeForce GTX 1050",
+   "richter": {
+    "wert": "S2 Umfang nicht erzeugbar: die Beute wählt keine Lage gegen den Wind: der Kreatur-Takt rief _windAt in 15 × 300 Schritten an 5 Orten 0×; mit gedrehtem Wind steht das Kitz nach 5 s im Mittel 0.00 m anders, im Rauschen zweier gleicher Läufe 0.00 m (stamm/kreatur-furcht.js:119 witterung is · ueberlebenFaktor ungemessen gegen Soll ≥ 1,5 × ✗ · Täter: stamm/kreatur-furcht.js _creatureWarinessSpieler (die Witterung der Beute ohne Wind)",
+    "urteil": "ROT"
+   },
+   "preis": null,
+   "ohnePreis": "kein Preis-Gerät: GTX 1050 steht unter dem Preis-Band der Klasse gtx (Preis trägt GTX 1060, buche-2 STANDARD, Z7)"
+  }
+ ]
+}
