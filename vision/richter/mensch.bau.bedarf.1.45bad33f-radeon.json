@@ -1,0 +1,22 @@
+{
+ "leiter": "mensch.bau.bedarf",
+ "sprosse": 1,
+ "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
+ "datum": "2026-11-26T23:43:51.832Z",
+ "soll": "50 Bauten blind nach Funktion ≥ 80 %",
+ "geraete": [
+  {
+   "geraet": "Radeon 890M",
+   "richter": {
+    "wert": "Treffer 5 von 44 = 11,4 % [3,8–24,6] gegen „≥ 80 %“",
+    "urteil": "ROT"
+   },
+   "pruefer": {
+    "akte": "mensch.bau.bedarf.1.45bad33f-radeon.json",
+    "sha256": "7c9d5a2da4a1c1493aad2151711cbe8d58975ab0c6f6cc99de3f56951ad32180"
+   },
+   "preis": null,
+   "ohnePreis": "kein Preis: die Vorlage der Mess-Sitzung fehlt (höchstens Kern, R3)"
+  }
+ ]
+}

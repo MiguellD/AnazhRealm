@@ -1,0 +1,99 @@
+{
+ "pruefer": {
+  "modell": "claude-haiku-5-5·low",
+  "kontext": [
+   "pruefer-bedarf1-teil01-nacht2711",
+   "pruefer-bedarf1-teil02-nacht2711"
+  ]
+ },
+ "leiter": "mensch.bau.bedarf",
+ "sprosse": 1,
+ "teil": "50 Bauten blind nach Funktion ≥ 80 %",
+ "art": "ordnen",
+ "form": "klasse",
+ "schwelle": {
+  "mass": "anteil",
+  "op": "≥",
+  "wert": 0.8,
+  "wort": "≥ 80 %"
+ },
+ "zaehlt": "treffer",
+ "stumpf": "rot",
+ "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
+ "geraet": "Radeon 890M",
+ "datum": "2026-11-26T23:43:51.832Z",
+ "modell": "claude-haiku-5-5·low",
+ "auftragSha256": "562ce6769fcd70fa24534a90bea616768d1890699a7250eb2cc8d5ab6bc3c7ed",
+ "bauer": "champion-pruefer-blatt-2611",
+ "frage": "Welche Funktion hat das Gebäude in der Bildmitte?",
+ "teile": 2,
+ "paare": 44,
+ "gezaehlt": 5,
+ "quote": 0.1136,
+ "intervall95": [
+  0.0379,
+  0.2456
+ ],
+ "lesart": null,
+ "fang": {
+  "n": 0,
+  "treffer": 0
+ },
+ "schlagseite": [],
+ "eichung": {
+  "datei": "ordnen.klasse.claude-haiku-5-5-low.d568b019.json",
+  "sha256": "5f675be2f952134655c4632c5766dfaae3828f3e93030301e0ec2e9ef9e95930"
+ },
+ "blatt": {
+  "zuordnungSha256": "121621edcb68740986c3218d5deb40bc5047e94938dc0685842457bfb398ea95",
+  "bilder": [
+   "912f1a9ca36993734cc8b522d4780ee3f4a05547cecdb9b640a0bb89fd4d2783",
+   "2b70a02dd8dad73ceb316c2c41fc2aaf7bd308ae312a540bb9d9aff19092c75d",
+   "065f7861a4ad866df2b1b2c16be6e1651da333fc9c87899c78a5424e4aab09f6",
+   "62885abd7747352c2b0485dcc65354f827b12e4162c2cd4a13d6aaf6572e7c25",
+   "bcced2c3962ae4754dc3bf47881f08ec3f206d0da06be913c4eb2e6808ac2823",
+   "a26a6f256da6db8e00d1ac8020bf5b3507cabbe1a216d4e169609616561418fd",
+   "a900cc9d492a63edbe96998f9e3d68e223678931b7d0b5298ddffca9da294c34",
+   "b65403858d129143f83201d15cc8138dabff85cdc852f807a1d33ade0f6a7662",
+   "4604f80e5c8b169a0121d1a5778c4bb879f60a2bb622d784cdc70b412140002e",
+   "c83df61511efcd0da370a20ed9b1ac3f00169924a6f04cd574dd422e0f2ca0a9",
+   "ec0f33255e9bcfa25918ae7bd58273bea39062e86c87e6eae7633a74d77bed1a",
+   "53365e3571f262c0127135c7cf00a7dcd05d60d0298898e76cf5a9864cb7bea0",
+   "1493b239d69fe1698be8f7df0405365f23ce690d076a63abc1161823a314b544",
+   "752f6e53077bcc1ba7e32f9d78521da75beb95397c3858cdc66beb474add1115",
+   "a10bae225d42c56734c530c59556ea387ed033007ac9822d495e5207b2a1e18d",
+   "9c060cbcc6295166d35e21a27b6021c858fde0b95a7c6baad6968a33b5c74d23",
+   "fe3165d4afea1861b97d738b3838eb3b34a944aae9d0ef1a63ee4a99ecc62663",
+   "293b434b616350faa14107594d01ae22e75868843ee3ffcbf80b7f95f9e98e78",
+   "fc75c57ec2f030eb72dd7600f182a3b8eb1f7b69113009dbbb8dd30b74a5d6cc",
+   "48db9b67b59a4a78f3719437d64e565a154516b5c54257a49ef4a526579c9b8f",
+   "3b3c3ee4989de42be7594b9c09bfeb5570733997bd27043053d8f4bb4d971b14",
+   "8782eaf54a0d5e75ddb2a515ba5590fd85ae174cb7400d079405c830a6dfa975",
+   "d8b1a1f0429cf59b0a7ae669f1212a281a8511f9b4463834a9165abe5fa449cb",
+   "56660076788a91fd0c913ac492ee3a8843b7222f9ac497637538cb8fee929f8b",
+   "f989342e2d5995a01c76a302e1c6e11df57c508a9765632bde2c6da91c050d4d",
+   "6dccbb642c9c1834ed119c9c739a4d68fcf16b57a87a34c73edfd9aa0eb85d61",
+   "17335511f7a4e0331e96cd3379a6b0b1d606371f1dab0b091bcfd8c853546773",
+   "74fe697b619fbdb7280f9322aba2c11326d003f92521b9d4ad01e6bb39c60544",
+   "2b19d1dd3d5da480b72ac1e14d5d1c30f552bafbd4aeb4d05005b43533a578f2",
+   "08a58bdf0400c921291e45079cc30fbe9eff6a0385ea23eb4ea604acfcaf5457",
+   "17dba2571ddbbfe17d10824f23a84bf88f14bdb6347fdb100f337f1babf4f7e3",
+   "fea599cb83520cbdf9a019887f8bf8ce8f19941536025f43503eebe73010d669",
+   "6debb59b0f61ee08224bf7154a31ca79f465c2d69a96ac343f0007aa999f08bc",
+   "c1c6f4fb4d81fbc8a53c53f2cd813a25c64c29a64d739e970501b0b7504a856e",
+   "14604af175e5d1aa777971713ff6fc81b95e972b4dec6e7112dc358c998b951a",
+   "5c2c15766b41ca368433314ad8e21d7dc7dd53f94d6b895a02f70b9f378b3e2f",
+   "325112e63d63ff472ee8dcda7a804b2fc88779a5b2d64c3409fa8e0f3eefa359",
+   "ddcc81387153a8cce5eb6e450d752e5d04ad3ea041cb589ea9e90f3d09c087fb",
+   "c7b21b6fb6182f5dff7b0d8e70eec935f1126b9550bf566d420f4505074803ad",
+   "4ca26a79a9d0cca6b1cb7481d95783d670c5dda551d954cff245b715c26ff537",
+   "1ba267471e19c8bde2d78aaeefa2074b8cd821e49903ce7257749e11dda51a89",
+   "9eb92b42dd2b1ba603be0b633d12fa4505dddc3442241a18878d4b9aa40f4b15",
+   "70f87d8a84b71df89da14e86a151bea02d9811f38068c98a4731d0a57cca961f",
+   "ffe7e058e81e51472be1ab0da2b4660e2ca1d6fdbeb0c7361694c2d2ddb75ec9"
+  ]
+ },
+ "wert": "Treffer 5 von 44 = 11,4 % [3,8–24,6] gegen „≥ 80 %“",
+ "urteil": "ROT",
+ "pruefsumme": "45011afc22b11739c6fa06b0358544e4f26d3f526d57ea8e3c14edce6e2e651c"
+}
