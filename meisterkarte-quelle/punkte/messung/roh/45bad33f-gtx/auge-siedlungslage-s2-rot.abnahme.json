@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 35,
+  "weltTakte": 38,
   "zeilen": 1080
  },
  "geraet": {
@@ -27,8 +27,10 @@
   "taeter": {},
   "vordergrund": {
    "radius": 8,
-   "deckung": 0,
-   "taeter": {},
+   "deckung": 0.3003,
+   "taeter": {
+    "Laub baum_eiche": 0.3003
+   },
    "leib": {
     "deckung": 0,
     "taeter": {}
@@ -52,36 +54,41 @@
  },
  "pose": {
   "kamera": [
-   16116.488,
-   -1.259,
-   -9330.069
+   14970.252,
+   5.381,
+   -9588.634
   ],
   "blick": [
-   0.98502,
    0,
-   -0.17241
+   0,
+   1
   ]
  },
  "seitenfehler": 0,
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 107.1,
-  "sigma": 24.6,
-  "schwarz": 0,
+  "mittel": 71.4,
+  "sigma": 33.3,
+  "schwarz": 0.0008,
   "weiss": 0
  },
- "ok": true,
- "zeile": "ABNAHME ROT [kein nahWiese im Bild: 0.3 % < 15.0 %] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 107.1 σ 24.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.441 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt nahWiese 0.3 % (≥ 15.0 %) h 114° Luma 113",
- "rot": [],
+ "ok": false,
+ "zeile": "ABNAHME ROT [Vordergrund 30.0 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_eiche 30.0 % · kein nahWiese im Bild: 1.6 % < 15.0 %] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 71.4 σ 33.3 schwarz 0.1 % weiß 0.0 % · Stand 18.546.441 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt nahWiese 1.6 % (≥ 15.0 %) h 110° Luma 120",
+ "rot": [
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 30.0 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_eiche 30.0 %"
+  }
+ ],
  "inhalt": {
   "rot": [
    {
     "schluessel": "imBild.nahWiese",
-    "grund": "kein nahWiese im Bild: 0.3 % < 15.0 %"
+    "grund": "kein nahWiese im Bild: 1.6 % < 15.0 %"
    }
   ],
-  "zeile": "Inhalt nahWiese 0.3 % (≥ 15.0 %) h 114° Luma 113"
+  "zeile": "Inhalt nahWiese 1.6 % (≥ 15.0 %) h 110° Luma 120"
  },
  "urteil": "ROT",
  "klasse": {
@@ -97,23 +104,21 @@
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 1385,
-   "wechsel": 656380
+   "ms": 655,
+   "wechsel": 1080486
   },
   "rinde": null,
   "toene": [
-   "nahWiese:L1=255/80/80",
-   "nahWiese:L2=80/255/80",
-   "nahWiese:Lf=80/120/255"
+   "nahWiese:Lf=255/80/80"
   ],
   "klassen": {
    "nahWiese:Lf": {
     "objekte": 2,
-    "pixel": 5804,
+    "pixel": 32693,
     "farbe": [
-     0.15039,
-     0.19096,
-     0.03378
+     0.18482,
+     0.21148,
+     0.03448
     ]
    }
   },
