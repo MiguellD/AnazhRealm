@@ -2148,7 +2148,7 @@ class AnazhRealm_siedlung_wege {
                     // ihren Losen, ehe die Kachel erwacht, und das Erwachen stellt kein Haus um
                     const w = V && V.get(key);
                     const S2 =
-                        (B && B.get(key)) ||
+                        (B && B.get(key) && !B.get(key).gemeldet ? B.get(key) : null) ||
                         (imZug ? { plan: q.plan, ox: q.origin.x, oz: q.origin.z } : null) ||
                         (w && w.da && w.v2 && Array.isArray(w.v2.slots) ? { plan: w.v2, ox: w.x, oz: w.z } : null);
                     let e = F.je.get(key);

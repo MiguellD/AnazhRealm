@@ -281,11 +281,74 @@ class AnazhRealm_siedlung_bewohner {
     // Genom-Roller (`_rollGenome`, Same „Plan:Haus:Person") und einer der Gestalten seiner Siedlung (`_bewohnerGestalten`); der
     // Leib ist der EINE Mensch-Bau (`_buildHumanGroup`: Mensch-Ofen, Gelenk-Gestalt mit Grobstufe, Rig) wie Spieler und
     // Mitspieler. Ihr Budget ist der Plan (Σ leute), nie der Tier-Deckel `maxCreatures`.
+    // DER ORT KENNT SEINE NACHBARN (Karte 2 mensch.kultur.sprache#1): erwacht ein Ort (sein Erlebnis steht), meldet er
+    // jeden Ort des Gesetzes binnen der Reichweite des Wegenetzes (`WEGENETZ.maxM`: so nah sind zwei Orte Nachbarn) — die Zelle
+    // (`_autoSettlementCellInfo` an ihrer Stelle `_zellOrt`, ohne die Zelle im Reich eines Worts, `_wortOrtVerdraengt`) oder das
+    // Gedächtnis eines Orts (`settlementCells`, `_ortDp`) — mit dem Plan seines Exports (Region, Name, Häuser; im Faden, Lehre 14):
+    // ein gemeldeter Ort trägt Plan und Namen, keine Leiber, keinen Weg und keinen Wind, bis er selbst erwacht (dann trägt er den
+    // Plan seines Erlebnisses). Die Welt ist eine Funktion: der Nachbar steht im Gesetz, ehe sein Erlebnis lädt. Das Band: in der
+    // dichtesten Sprachlandschaft der Erde spricht fast jedes Dorf seine eigene Sprache (Ethnologue 2024, Papua-Neuguinea: 839 Sprachen
+    // auf 462 840 km², eine je 552 km², die meisten unter 1 000 Sprechern um ein Dorf oder wenige Weiler) — die Welt würfelt die
+    // Region je Ort (fachwerk `regionImKlima`), der nächste Nachbar ist darum die nächste Sprache. Bis hier kannte die Welt nur, was
+    // geladen war: an stadt-voll eine Stadt, eine Saat der Namen (die Station: „Saaten der Namen 1 verfehlt ≥ 2“).
     _bewohnerMelden(plan, origin, key) {
         if (!plan || !Array.isArray(plan.slots) || !origin || !key) return;
         const B = this._bewohnerSiedlungen || (this._bewohnerSiedlungen = new Map());
-        if (B.has(key)) return;
-        B.set(key, { key, plan, ox: origin.x, oz: origin.z, liste: null, gestalten: null, wirt: this });
+        const S0 = B.get(key);
+        if (S0 && !S0.gemeldet) return;
+        if (S0) Object.assign(S0, { plan, ox: origin.x, oz: origin.z, gemeldet: false, netz: null, netzGrund: null });
+        else B.set(key, { key, plan, ox: origin.x, oz: origin.z, liste: null, gestalten: null, wirt: this });
+        const SG = AnazhRealm._siedlungGesetz();
+        if (!SG) return;
+        const [welt, maxM] = [this.state, AnazhRealm.WEGENETZ.maxM];
+        const [cx, cz, R] = [
+            Math.floor(origin.x / SG.cellM),
+            Math.floor(origin.z / SG.cellM),
+            Math.ceil(maxM / SG.cellM) + 1,
+        ];
+        const melde = (k, dp, ort) => {
+            if (B.has(k) || Math.hypot(ort.x - origin.x, ort.z - origin.z) > maxM) return;
+            this._foundryRequestSettlement(dp, false) // Region und Name: Same, Epoche, Klima (fachwerk DORF), nie der Ort
+                .then((p) => {
+                    if (this.state !== welt || this._bewohnerSiedlungen !== B || B.has(k)) return;
+                    if (!p || !Array.isArray(p.slots)) return void this._bruchMelden(`ORT: der Nachbar ${k} von ${key} trägt keinen Plan — die Foundry gab keinen`); // prettier-ignore
+                    B.set(k, { key: k, plan: p, ox: ort.x, oz: ort.z, liste: null, gestalten: null, wirt: this, gemeldet: true }); // prettier-ignore
+                })
+                .catch((e) => this._stoffBruch(`der Plan des Nachbarn ${k} von ${key}`, e));
+        };
+        const nachbarn = (runde) => {
+            if (this.state !== welt || this._bewohnerSiedlungen !== B) return;
+            const cells = (welt.worldMeta && welt.worldMeta.settlementCells) || {};
+            for (const k in cells) {
+                const c = cells[k];
+                if (
+                    c &&
+                    typeof c === "object" &&
+                    Number.isFinite(c.x) &&
+                    Number.isFinite(c.z) &&
+                    Number.isFinite(c.seed)
+                )
+                    melde(k, this._ortDp(k, c), c); // der Eingang des Gedächtnisses wie `_dorfAkt`
+            }
+            let offen = false;
+            for (let dz = -R; dz <= R; dz++)
+                for (let dx = -R; dx <= R; dx++) {
+                    const k = cx + dx + "," + (cz + dz);
+                    if (B.has(k) || cells[k] || (this._autoSettlementRejected && this._autoSettlementRejected.has(k)))
+                        continue;
+                    const info = this._autoSettlementCellInfo(cx + dx, cz + dz);
+                    // die Stelle liegt in ihrer Zelle: ein Zellpunkt jenseits der Reichweite und einer Zelle bestellt kein Wasser
+                    if (!info || Math.hypot(info.x - origin.x, info.z - origin.z) > maxM + SG.cellM || this._wortOrtVerdraengt(info)) continue; // prettier-ignore
+                    const o = this._zellOrt(k); // undefined: das Wasser der Stelle ist bestellt
+                    if (o === undefined) offen = true;
+                    else if (o) melde(k, { seed: info.seed, nH: info.nH, ...this._zellEingang(k, info.seed), ort: { x: o.x, z: o.z } }, o); // prettier-ignore
+                }
+            // eine offene Stelle wartet auf ihr Wasser und fragt neu (wie `_wegenetzAnschluss`)
+            if (offen && runde < 8)
+                Promise.all([...this._hydroBestellt.values()].map((e) => e.zusage)).then(() => nachbarn(runde + 1));
+            else if (offen) this._bruchMelden(`ORT: die Nachbarn von ${key} bleiben offen — ihr Wasser kam nicht`);
+        };
+        nachbarn(0);
     }
 
     // ═══ DER LEBENSLAUF (bewohner-satz): der Satz des Bewohners ist eine FUNKTION seines Samens ═══
@@ -2094,6 +2157,7 @@ class AnazhRealm_siedlung_bewohner {
         const kDeckel =
             2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01 + BW.spielerRaumM * (1 + FG.deckel * FG.fluchtJeFurcht);
         for (const S of alle.values()) {
+            if (S.gemeldet) continue; // ein gemeldeter Nachbar (`_bewohnerMelden`): Plan und Namen, seine Leute leben erst mit seinem Erlebnis
             const d2 = (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2;
             if (d2 > (A.nearM * BW.fernFaktor) ** 2) {
                 if (S.liste || S.listeWerk) this._bewohnerFort(S);
@@ -5218,9 +5282,19 @@ AnazhRealm.RAUCH_BILD = Object.freeze({
 // er den Schlag des Spielers und erinnert ihn (`_bewohnerZeuge`). DIE HÜLLEN (eine-huelle): huellenJeTakt = so viele Häuser
 // ohne Hülle fragt die wartende Liste je Takt nach ihrer Lieferung (`_bewohnerHuellenDa`, reihum).
 // DAS GEDÄCHTNIS EINER FERNEN SIEDLUNG (heap-register, `_bewohnerFort`): die Felder ihres Eintrags, die der Abschied stehen lässt —
-// was `_bewohnerMelden` setzt, und der Grund ihres Netzes (`netzGrund`, eine Funktion des Plans, den die Wege zu den Nachbarn auch
+// was `_bewohnerMelden` setzt (samt `gemeldet`: ein Nachbar, dessen Erlebnis noch nie stand), und der Grund ihres Netzes (`netzGrund`, eine Funktion des Plans, den die Wege zu den Nachbarn auch
 // fern lesen: `_wegenetzLegen`, `_wegenetzRoute`). Alles übrige ist eine Funktion der Liste und geht mit ihr.
-AnazhRealm.BEWOHNER_ERINNERUNG = Object.freeze(["key", "plan", "ox", "oz", "liste", "gestalten", "netzGrund", "wirt"]);
+AnazhRealm.BEWOHNER_ERINNERUNG = Object.freeze([
+    "key",
+    "plan",
+    "ox",
+    "oz",
+    "liste",
+    "gestalten",
+    "netzGrund",
+    "wirt",
+    "gemeldet",
+]);
 // DER LEBENSLAUF (bewohner-satz, `_bewohnerLauf`): die Bänder, aus denen der Satz eines Bewohners rechnet — je Feld EINE äußere Quelle.
 AnazhRealm.LEBENSLAUF = Object.freeze({
     // die Namen: das Lautgesetz des Fachwerk-Studios (fachwerk `SPRACHE_GESETZ`, `spracheVon` — Region und Same des Orts; WALS 1A/2A/12A)

@@ -433,6 +433,7 @@ class AnazhRealm_stoff_material {
         const FC = globalThis.__fachwerkCore;
         if (!FC || typeof FC.gassenNetz !== "function") return AnazhRealm._kernPflichtBruch("fachwerk:gassenNetz");
         for (const Si of B.values()) {
+            if (Si.gemeldet) continue; // ein gemeldeter Nachbar hat keine Gassen, die den Wind lenken
             // ein Eintrag ohne Plan wirft im Kern beim Namen (`gassenNetz`: „der Plan trägt roads und slots nicht“) — nie ein
             // ungebautes Netz, das `undefined` an `gassenWind` reicht (diag-takt T11, CI 45320194071: „reading 'box'“)
             if (!Si.gassen || Si.gassenPlan !== Si.plan) {

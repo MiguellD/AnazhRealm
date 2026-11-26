@@ -44,6 +44,11 @@ const {
     stadtFunktion,
 } = require("./lib/ort-proben.cjs");
 
+// C3n DER ORT KENNT SEINE NACHBARN (Karte 2 mensch.kultur.sprache#1): das Urteil über den Zensus der Seite — jeder Nachbar des
+// Gesetzes (`_wegenetzNachbarn` des erwachten Orts, ohne die verworfene und die verdrängte Zelle) steht im Register der Orte
+// (`_bewohnerSiedlungen`) mit Plan, Name und Region. Rückgabe: die fehlenden beim Namen (leer: GRÜN).
+const nachbarLuecke = (n) =>
+    !n || !Array.isArray(n.gesetz) ? ["kein Zensus der Nachbarn"] : n.gesetz.filter((k) => !n.register.some((e) => e.k === k && e.name && e.region)); // prettier-ignore
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
 const goldenFile = path.join(goldenDir, "siedlung.json");
 // das Golden der Lose (los-huelle, `huelleProben`): je Fall je Haus eine Zeile [Same, x, z, phi, Hülle]
@@ -1686,6 +1691,16 @@ hauptLauf(async () => {
             u4.tuerenOk === 1 && u5.tuerenOk === 0 && u5.tuerenFehl[0].schwelle === 0.55,
             { tor: u4.tuerenFehl, haustuer: u5.tuerenFehl }
         );
+        // C3n: der Täter von main — das Register trägt nur den erwachten Ort, seine Nachbarn fehlen → ROT beim Namen
+        const gesetzN = { gesetz: ["3,2", "2,1"], register: [] };
+        check(
+            "Selbst-Test 11n: ein Ort ohne gemeldete Nachbarn → ROT, „3,2“ und „2,1“ beim Namen",
+            nachbarLuecke(gesetzN).join(" ") === "3,2 2,1"
+        );
+        const voll = { gesetz: ["3,2", "2,1"], register: [{ k: "3,2", name: "Stihalm", region: "nordisch" }, { k: "2,1", name: "Chagrin", region: "mitteleuropa" }] }; // prettier-ignore
+        check("Selbst-Test 11o: jeder Nachbar mit Name und Region → GRÜN", nachbarLuecke(voll).length === 0);
+        const ohneName = { gesetz: ["3,2"], register: [{ k: "3,2", name: null, region: "nordisch" }] };
+        check("Selbst-Test 11p: ein Nachbar ohne Namen ist ROT", nachbarLuecke(ohneName).join() === "3,2");
         // das L-Haus: der Grund unter der leeren Ecke der obb (x > 0, z < 0) liegt 1 m tiefer — unter den Wänden (`grund.boxen`)
         // steht es eben (Sockel 0), die obb allein läse die Ecke als Sockel 1
         // das Grund-Datum des Kerns (`grundVon`, keine Hüllen-Zeile): seine Boxen im Rahmen des Hauses
@@ -3367,6 +3382,28 @@ hauptLauf(async () => {
             const again = await r._autoSettlementSpawnCell(kx, kz, cand);
             for (let t2 = 0; t2 < 5; t2++) r._tickAutoSettlement({ x: cand.x, z: cand.z });
             res.c.idempotent = again === null && st.architectures.length === archAfter;
+            // C3n — DER ORT KENNT SEINE NACHBARN (mensch.kultur.sprache#1): erwacht, meldet die Zelle jeden Ort des Gesetzes binnen
+            // `WEGENETZ.maxM` (`_bewohnerMelden`) — gezählt an den Nachbarn ihres Wegenetzes (`_wegenetzNachbarn`, offen, bis ihr
+            // Wasser steht), je Nachbar Name und Region im Register; bis sprache-saaten kannte das Register nur Erwachtes
+            {
+                const B = r._bewohnerSiedlungen || new Map();
+                let nb;
+                for (let i = 0; i < 400 && (nb = r._wegenetzNachbarn(key)) === undefined; i++) (r._tickAutoSettlement({ x: cand.x, z: cand.z }), await sleep(20)); // prettier-ignore
+                const zelle = (k) => {
+                    const m = /^(-?\d+),(-?\d+)$/.exec(k);
+                    if (!m || (r._autoSettlementRejected && r._autoSettlementRejected.has(k))) return false;
+                    const info = r._autoSettlementCellInfo(+m[1], +m[2]);
+                    return !!info && !r._wortOrtVerdraengt(info);
+                };
+                const gesetz = (nb || []).filter(zelle);
+                for (let i = 0; i < 500 && gesetz.some((k) => !B.has(k)); i++) await sleep(20);
+                res.c.nachbarn = {
+                    key,
+                    offen: nb === undefined,
+                    gesetz,
+                    register: [...B.values()].map((S) => ({ k: S.key, name: S.plan && S.plan.name, region: S.plan && S.plan.region, gemeldet: !!S.gemeldet })), // prettier-ignore
+                };
+            }
             // C5 — DER GENESIS-PORTAL-RING (Schöpfer: „beim ersten spawn
             // die kernportale um die genesis-plattform anordnen"): am Genesis-Ort
             // (`_genesisMitte`, die Mitte des Plans der Welt) setzt der Ort-Takt jedes Tor des Plans auf seinen Slot (Ring-Weg
@@ -4953,6 +4990,16 @@ hauptLauf(async () => {
         "C4: IDEMPOTENT — dieselbe Zelle nochmal: 0 neue Häuser",
         c.idempotent === true
     );
+    {
+        const n = c.nachbarn;
+        const fehlt = nachbarLuecke(n);
+        const reg = n ? n.register.filter((e) => n.gesetz.includes(e.k)) : [];
+        check(
+            "C3n: der Ort kennt seine Nachbarn — jeder Nachbar des Gesetzes steht mit Name und Region im Register",
+            !!n && !n.offen && n.gesetz.length > 0 && fehlt.length === 0,
+            n ? `Ort ${n.key}: ${n.gesetz.length} Nachbarn${n.offen ? " (offen: ihr Wasser kam nicht)" : ""}, gemeldet ${reg.map((e) => e.k + " " + e.name + "/" + e.region).join(", ") || "keiner"}${fehlt.length ? " — es fehlen " + fehlt.join(", ") : ""}` : "kein Zensus" // prettier-ignore
+        );
+    }
     const k5 = c.k5 || {};
     // das erste Haus steht im zweiten Takt nach dem Erwachen: der erste legt den Grund (der Gang zuerst), der nächste hebt
     const soll = 2;
