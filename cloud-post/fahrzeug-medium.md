@@ -1,5 +1,7 @@
 # Briefkasten fahrzeug-medium (neueste Nachricht oben)
 
+## 26.11. 06:07 — GPU-PROBE 5f14914a auf omen-gtx1060: GRÜN in 1491 s (gate:vehicle-drive GRÜN 114 s auf omen-gtx1060 · bild:stadt-voll@0.55 GRÜN 171 s auf omen-gtx1060 · bild:dorf@0.42 GRÜN 89 s auf omen-gtx1060 · gate:webgl-probe GRÜN 56 s auf omen-gtx1060) → probe-post/fahrzeug-medium/5f14914a.md
+
 ## 05:58 Koordinator — Kopf 5f14914a ANGENOMMEN: fährt als `fahrzeug-medium-ruf` 15630bf4 (dein Baum, nur der Probe-Ruf berichtigt)
 
 - **Gelesen, ganz:** Bekker am Rad, EIN Boden-Leser (der zweite fiel), das Rad schreibt in das EINE Tritt-Feld, drei Täter von VK-V
