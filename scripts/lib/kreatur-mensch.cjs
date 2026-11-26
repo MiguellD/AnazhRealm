@@ -779,7 +779,11 @@ async function menschBuehnen() {
                 // zwischen zwei Zeilen steht (sein Anteil jetzt): der Satz mischt die Stützstellen seines Stands gerade, der nahe
                 // Leib fährt den Bogen seiner Geste (koerper `leibTunWert`, `leibGesteWert`) — die Stützstellen liegen, wo der Bogen
                 // sie braucht (koerper `leibStandKnoten`, Treue `STAND.treueRad`): auch dazwischen steht er im Soll
-                const [grad, zw] = [gegen(uZ, 0), an > 0 ? gegen(u - dU, an) : 0];
+                // (BEIDE Zeilen, die seine Instanz mischt, je an ihrer eigenen Uhr — bis hier prüfte die Linse nur die erste: eine
+                // falsche nächste Zeile stand nur zwischen den Zeilen im Bild; die nächste nur, solange dasselbe Bein trägt)
+                const mitNaechster = an > 0 && KC.leibStandBein(uZ + tS, person) === KC.leibStandBein(uZ, person);
+                const [grad, zw] = [Math.max(gegen(uZ, 0), mitNaechster ? gegen(uZ + tS, 1) : 0), an > 0 ? gegen(u - dU, an) : 0];
+                const woZw = woNm; // (das Glied des Winkels zwischen den Zeilen: der Fächer unten stellt neu)
                 haltung.n++;
                 if (name !== neutral) haltung.mit++;
                 if (imWechsel) {
@@ -791,7 +795,8 @@ async function menschBuehnen() {
                 haltung.je[name] = Math.max(haltung.je[name] || 0, q3(grad));
                 haltung.zwischen[name] = Math.max(haltung.zwischen[name] || 0, q3(zw));
                 // (wo: das Glied, die Zeile seiner Stützstelle, ihr Anteil und die Strecke zur nächsten)
-                if (zw > haltung.zwischenGrad) [haltung.zwischenGrad, haltung.zwischenWer, haltung.zwischenWo] = [q3(zw), `${wer(b)} (${b.akt}: ${name})`, `${woNm} · Zeile ${hs} · Anteil ${q3(an)} · Strecke ${q3(tS)} s`];
+                if (zw > haltung.zwischenGrad) haltung.zwischenFach = [0, 0.25, 0.5, 0.75, 1].map((a) => q3(gegen(uZ + tS * a, a))); // (der Fächer der Strecke: Anteil 0 … 1)
+                if (zw > haltung.zwischenGrad) [haltung.zwischenGrad, haltung.zwischenWer, haltung.zwischenWo] = [q3(zw), `${wer(b)} (${b.akt}: ${name})`, `${woZw} · Zeile ${hs} · Anteil ${q3(an)} · Strecke ${q3(tS)} s`];
                 if (grad > haltung.maxGrad) [haltung.maxGrad, haltung.wer] = [q3(grad), `${wer(b)} (${b.akt}: ${name})`];
             }
             // das Modell steht wieder in seiner eigenen Pose
