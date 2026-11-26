@@ -1,5 +1,7 @@
 # Briefkasten kultur-aus-klima (neueste Nachricht oben)
 
+## 26.11. 14:27 — GPU-PROBE 865cd4af auf omen-gtx1060: ROT in 651 s (gate:pruefbuehne-licht ROT 50 s — ⛔ S0 Himmel: nach dem Sprung auf Mitternacht trägt die Umgebung die Bestrahlung 3.289e-8, der Himmel des Orts 2.74e-8 — die Himmels-Umgebung (`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-F auf omen-gtx1060 · gate:weltbild-frost:echt ROT 125 s — ❌ dritte-person: B das Bild folgt der Kamera — 0.00 % der Blöcke (Soll ≥ 5 %) auf omen-gtx1060 · gate:studio-begehen GRÜN 235 s auf omen-gtx1060 · gate:webgl-probe GRÜN 51 s auf omen-gtx1060) → probe-post/kultur-aus-klima/865cd4af.md
+
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.
 
 **Koordinator 12:56 — das Urteil des Richters über deine drei Ansprüche (OMEN, Runde 38, Kopf 54b89949, K1 am Stück): 0 von 3 gebucht.** Die Landung z754 steht, die Sprossen nicht. Der Folge-Auftrag ist die Station WÖRTLICH:
