@@ -1,0 +1,69 @@
+BEGRÜNDUNG — mensch.menge.bevoelkerung#1 (die Zählung des Dorfs), Leser 2, 26.11.
+
+1. DER RICHTER (wörtlich, vision/meisterkarte-2.json)
+   S1 „Zählung im Bild an 20 Stichproben (Ort × Uhr): Körper am Ort gegen den Soll-Plan ±10 %; niemand fehlt, niemand steht doppelt“
+      (umfang „10² (ein Dorf)“, tiefe „Tag als Funktion der Uhr, 4–10 Wege“, preis „P · Dorfplatz“)
+   Station: meisterkarte-quelle/punkte/stationen/g2.js `dorfZaehlung` + karte2.mensch.menge.bevoelkerung staffel 1 (DORF_ZAEHLUNG).
+
+2. DER BEFUND DER GERÄTE
+   2da17e2e, GTX 22:59 und Radeon 23:19: „89 Bewohner … ✗ 10 Uhr Ort 3 Ist 0/Soll 1 · 15 Uhr Ort 3 Ist 0/Soll 1 · 20 Uhr Ort 3 Ist 0/Soll 1“
+   — und KEIN „fehlt“: der Mensch des Solls steht gezeichnet am Ort (amOrt), die Kamera zählt ihn nicht. GTX 4c9e6aab 03:34 GRÜN
+   (dieselben 89, Σ Soll 23): die Pose entscheidet, nicht das Spiel.
+
+3. DER FEHLER DER STATION (g2.js, punkte-maschine 179fab68 = 29a67474e, Blob a63bcf77)
+   :1952–1967  `stelle(q, ziel)` urteilt den Stand an der Abnahme ohne Pixel und am Ort im Frustum (:1967 `frei && imFrustum(ziel)`)
+   :2021       der Stand ist der ERSTE freie auf 9/13/17 m × 8 Richtungen — sein Blick auf die Menschen des Orts wird nie geprüft
+   :2046–2051  die Zählung danach verlangt Frustum UND Sichtlinie frei von Hausgrundrissen
+   Zwei Sichttests für EINE Frage: der Stand sieht den Ort, die Zählung verlangt den Menschen. Steht ein Haus zwischen Auge und
+   Mensch, zählt die Station Ist 0 an einem Menschen, der da ist — und schreibt es dem Spiel zu.
+   Täter-Zahl in der Wolke (dorf-diag, Dorf d:7@100,0, 31 Bewohner): 10/15/20 Uhr Ort 2 Ist 0/Soll 1, fehlt 0 — der Wirt (rolle
+   gasthaus) steht auf seinem Ziel (dO 0,0 m), mitten im Bild (NDC 0,001/0,001), die Linie vom Auge (136,6/0,6, 15,1 m) zu ihm quert
+   einen Hausgrundriss („haus“). Der Basis-Stand 131,8/−3,0 (9 m, 45°) bestand `stelle`.
+
+4. DER SCHNITT (g2.bevoelkerung-s1.diff, 9 Hunks, `git apply --check` an 179fab68 sauber; der Blob ist am Kopf derselbe)
+   a) DIE EINE SICHT `sperre(B, g)` (null = gesehen, sonst „frustum“ · „haus“) — Brust 0,4 m, Sichtlinie ab dem Rand des Grundrisses
+      unter dem Auge, Schritt 0,5 m: Wort für Wort der Test der Zählung (:2046–2051), jetzt EINMAL, gelesen von Stand UND Zählung.
+   b) DER KREIS DES ORTS `imKreis`: jeder Stand ≤ R_M 10 m vom Ort, nicht drinnen, nicht am Steuer, dem Ort näher als jedem anderen Ziel
+      der Stunde — der Filter der Zählung ohne das Zeichnen (vor dem Stand zeichnet das Spiel nach dem Ort des Spielers).
+   c) DER STAND SIEHT DEN KREIS: Blick auf die Mitte von Ort und Kreis; Stand ist der erste freie, an dem `sperre` für JEDEN des Kreises
+      null ist. Sieht keiner alle, steht der mit den wenigsten Gesperrten und der Ort ist NICHT im Bild (ROT beim Namen, nie Ist 0 an
+      einem Ungesehenen). Gerahmt wird der ganze Kreis — Soll wie Fremde —, nie nur das Soll: ein Zuviel bleibt sichtbar.
+   d) ZEUGE: je Stichprobe `gesperrt` (wen am Ort die Zählung nicht sah, mit Sperre und Abstand), dazu `kreis` und `versuche`. Der
+      Richter verlangt `gesperrt` da und leer; die Zahl nennt die Sperre (die Lücke des Leser-Befunds: „welche der zwei Sichtsperren
+      fiel, nennt die Probe nicht“).
+   e) Proben der Station 22 → 25: die Geräte am 2da17e2e (Wirt hinter dem Haus, kein Stand sieht ihn → ROT mit Sperre), ATTRAPPE
+      „Ist = Soll, ein Fremder ungesehen“ → ROT, ATTRAPPE „die Zählung ohne die EINE Sicht“ → ROT „ohne Sicht-Zeuge“.
+   Urteil, Uhren, Orte, Ankunft, Fahrer, Σ Soll, doppelt: unverändert.
+
+5. DIE ZAHL VORHER ↔ NACHHER (bev-hand.cjs, Wolke, swiftshader, warme Welt der Sitzung, main eae94514; Werte mit dem Adapter der Probe)
+   Am Ort des Täters (Dorf d:7@100,0, die Seiten-Funktion der Station aus ihrem Befehl, nur die Wahl des Dorfs festgelegt):
+     vorher   10/15/20 Uhr Ort 2 Ist 0/Soll 1 (Stand 131,8/−3,0) · 17 von 20 Stichproben im Soll · 28,8 s
+     nachher  20 von 20 im Soll · Ort 2 Ist 1/Soll 1 vom 2. Stand (125,4/−0,4), Ort 1 vom 3. · gesperrt 0 · 30,4 s
+              (das Urteil bleibt ROT an „Σ Soll 15 < 20“: d:7 ist ein kleines Dorf, die Schranke der Station, nicht die Pose)
+     Mutante „drinnen“ (das Spiel verliert den Wirt: nach jedem Takt `_drinnen` an jedem Leib der Rolle gasthaus):
+              9 Stichproben „Ist 0/Soll 1, fehlt 1“ → ROT. Die Pose misst kein rotes Spiel grün.
+   Am Start-Dorf (der Probe-Befehl der Station, wie die Sitzung: umstellen --ort genesis, 89 Bewohner, Σ Soll 23, 8 Fahrer):
+     vorher   GRÜN · GRÜN (37,8 s · 54,4 s)     nachher  GRÜN · GRÜN (53,7 s · 54,5 s), jede Stichprobe vom 1. Stand, gesperrt 0
+   Wände    Proben g2.js 261 → 264, 0 falsch (Basis 261, 0 falsch) · `node punkte.cjs liste` 1 976 Stationen · 420 Kriterien · fehlt 15 ·
+            Fehler 0 — Kandidat = Basis, Zeile für Zeile: 14 Zeilen fallen, 29 kommen, alle im Block karte2.mensch.menge.bevoelkerung#1
+            (Basis 5403–5552, der Befehl der Probe); die übrigen 1 329 638 Zeilen gleich · Deckel 240 bleibt.
+
+6. DIE UHR (Korrektur 3)
+   Kein Stand mehr als nötig: geprüft wird in derselben Folge wie bisher, und der erste, der den Kreis sieht, steht. Am Start-Dorf sah
+   ihn jeder erste Stand (20 von 20, versuche 1) — Uhr im Band der Basis (37,8–54,4 s ↔ 53,7–54,5 s); am Täter-Ort 2–3 Stände (+1,6 s).
+   Kosten hängen an den Ständen um den Ort, nie an der Welt.
+
+7. WAS NUR DAS GERÄT MESSEN KANN
+   - das BILD: die zwei Stände an Ort 2 von d:7 (und Ort 3 des Start-Dorfs der Geräte am 2da17e2e) — in der Wolke verliert swiftshader
+     beim Lesen des Bilds das Gerät („A valid external Instance reference no longer exists“, `_deviceLost` danach true; die Zählung
+     rechnet ohne Pixel und ist davon unberührt);
+   - der Zeuge der Karte ([linse-gpu]) und die Uhr der Station in der Reihe der Sitzung;
+   - ob Ort 3 des Start-Dorfs am Gerät vom ersten Stand oder von einem späteren gesehen wird (`versuche` steht in der Zeile).
+
+8. URTEIL
+   Station-Kandidat: die WELT trägt #1 (GTX 4c9e6aab GRÜN, die Wolke am Start-Dorf 2× GRÜN, an d:7 jeder Mensch des Solls am Ort);
+   die Station sieht jetzt jeden, den sie zählt, und nennt, wen sie nicht sieht.
+
+9. NEBENBEFUND (nicht geschnitten, außerhalb des Auftrags)
+   `dorf()` (g2.js:1934) wählt das Dorf nächst der Start-Zelle UNTER DENEN MIT LISTE: steht das Start-Dorf schon, aber seine Liste noch
+   leer, zählt die Station ein anderes Dorf — der erste Lauf der Wolke zählte d:7 (31 Bewohner) statt „start“ (89, danach).

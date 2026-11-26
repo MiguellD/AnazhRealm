@@ -1,0 +1,21 @@
+Kandidat der Station mensch.menge.bevoelkerung (staffel 1, die Zählung des Dorfs; beansprucht #1) — für den Zweig punkte-maschine, nicht für main
+
+Richter S1 (wörtlich, vision/meisterkarte-2.json): „Zählung im Bild an 20 Stichproben (Ort × Uhr): Körper am Ort gegen den Soll-Plan ±10 %;
+  niemand fehlt, niemand steht doppelt“
+
+Stations-Fehler: meisterkarte-quelle/punkte/stationen/g2.js (punkte-maschine 179fab68 = 29a67474e, Blob a63bcf77) — der Stand der Kamera
+  (:2021, `stelle` :1952–1967) prüft die Abnahme und den Ort im Frustum, die Zählung danach (:2046–2051) Frustum UND Sichtlinie: steht ein
+  Haus zwischen Auge und Mensch, zählt die Station Ist 0 an einem Menschen, der da ist. Geräte 2da17e2e: „10/15/20 Uhr Ort 3 Ist 0/Soll 1“
+  ohne „fehlt“; Wolke Dorf d:7: der Wirt auf seinem Ziel (dO 0), mitten im Bild, die Linie quert ein Haus.
+
+Schnitt (g2.bevoelkerung-s1.diff, 9 Hunks): EINE Sicht `sperre` (frustum · haus) für Stand und Zählung; der Stand muss jeden im Kreis des
+  Orts sehen (≤ 10 m, nicht drinnen, nicht am Steuer, Soll wie Fremde), sonst ist der Ort nicht im Bild; Zeuge `gesperrt` je Stichprobe
+  (da und leer, die Sperre beim Namen) mit `kreis` und `versuche`; Proben 22 → 25 (der Fall der Geräte + 2 Attrappen).
+
+Gemessen (Wolke, bev-hand.cjs, main eae94514):
+  Täter-Ort d:7   vorher 17 von 20 Stichproben im Soll (Ort 2 Ist 0/Soll 1 ×3) · nachher 20 von 20, gesperrt 0 (28,8 → 30,4 s)
+  Mutante         „drinnen“ (das Spiel verliert den Wirt) 9 × „fehlt 1“ → ROT
+  Start-Dorf      89 Bewohner, Σ Soll 23: Basis GRÜN · GRÜN (37,8 · 54,4 s), Kandidat GRÜN · GRÜN (53,7 · 54,5 s), versuche 1
+  Wände           Proben g2.js 261 → 264, 0 falsch · liste 1 976 · Fehler 0, Kandidat = Basis außerhalb des Blocks der Station
+
+Offen (nur das Gerät): das Bild der zwei Stände (swiftshader verliert beim Lesen das Gerät), [linse-gpu], Ort 3 des Start-Dorfs am Gerät.
