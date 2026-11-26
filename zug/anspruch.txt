@@ -99,3 +99,5 @@ w28-witterung-windab karte2.erleben.sinne.geruch#1
 w28-kuesten-kontrast karte2.planet.kopplung.land-meer-luft#4
 # 734 (main 4c9e6aab, 26.11. 01:47): z743 w28-tages-gesetz-5 (Fahr-Gesetz der Stadt: stadt-voll um 10 Uhr berührt 11 → 0, Ausscheren über dem Band 0,612 → 0,025 m; das Tages-Gesetz trägt den Einkauf des Haushalts) — Station mensch.menge.rhythmus#2 am main ungemessen, Hand-Lauf an der Radeon folgt
 w28-tages-gesetz-5 karte2.mensch.menge.rhythmus#2
+# 735 (main e71f2721, 26.11. 05:40): z746 w28-buendel-jagd (fünf Abgaben: Jagd-Heilung Rudel 0,47 → 0,325 · Himmels-Probe −20,0 → −0,1 % · Gipfel-Suche 863 → 179 ms je Saat · Gezeit M2+S2 Hub am Watt 0 → 3,50 m, Periode 12,363 h · Frist eines brechenden Werks 2137 → 1671) — die Station planet.wasser.gezeiten misst am main; aufwaerts#1 trägt seinen Anspruch schon (w28-tat-aufwaerts)
+w28-buendel-jagd karte2.planet.wasser.gezeiten#1
