@@ -1,7 +1,7 @@
 {
  "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
  "geraet": "gtx",
- "zeit": "2026-11-26T00:49:47.174Z",
+ "zeit": "2026-11-26T01:07:41.765Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.kopplung.land-meer-luft#4": {
@@ -3086,17 +3086,67 @@
   },
   "karte2.leben.wasser.bild#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\ed4b21c5-6dc0-4555-8f00-6185f5e9f296.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\ed4b21c5-6dc0-4555-8f00-6185f5e9f296.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "zahl": "der Deckel der Leiter riss nach 10,114 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,114 s, ehe sichtFlussM der Sprosse stand · der Deckel der Leiter 10 s) · Täter: @@PUNKTE@@ PROBE 51.2 s · Exit 0 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group)",
+   "exit": 0,
+   "minuten": 0.87,
+   "grund": "der Deckel der Leiter riss nach 10,114 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,114 s, ehe sichtFlussM der Sprosse stand · der Deckel der Leiter 10 s) · Täter: @@PUNKTE@@ PROBE 51.2 s · Exit 0 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group)",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-26T00:49:47.059Z",
+   "s": 51.4,
+   "fremd": {
+    "s": 54.2,
+    "takte": 25,
+    "fremdS": 18.42,
+    "kerne": 0.34,
+    "fensterKerne": 0.448,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.89
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.47
+     ],
+     [
+      "Explorer.EXE",
+      2.72
+     ]
+    ],
+    "dienerS": 8.94,
+    "diener": [
+     [
+      "System",
+      3.36
+     ],
+     [
+      "WmiPrvSE.exe",
+      2.41
+     ]
+    ],
+    "geraetS": 17.75,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      12.05
+     ],
+     [
+      "svchost.exe",
+      4.64
+     ],
+     [
+      "SearchIndexer.exe",
+      0.48
+     ]
+    ],
+    "eigenS": 172.05,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T01:07:41.765Z",
    "abdruck": "fb537917da92",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.same.preis.ankunft#2": {
    "gruen": false,
