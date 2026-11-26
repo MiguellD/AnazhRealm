@@ -3064,7 +3064,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms an d39e0d6e radeon · gehalten: Gehen 107 Bilder · max 66.64 ms · 14.02 % > 33 ms · Fahrt 92 Bilder · max 75.03 ms · 19.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.02 % > 33 ms | Fahrt: 19.57 % > 33 ms an d39e0d6e gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 2da17e2e: Last: Referenz f 2,549 (Faden 2,549 · alle Kerne 1,479; vor 212,6/386,1 ms, nach 201/387,1 ms, Ruhe 83,4/261,8 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --user-data-dir=anazh-18616-profi · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an 2da17e2e: Wirt-Wache: den Kontext der Probe hält noch: const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t  | return Function(\"window\", \"perfo",
+   "beleg": "Maschine: gehalten: Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms an d39e0d6e radeon · gehalten: Gehen 107 Bilder · max 66.64 ms · 14.02 % > 33 ms · Fahrt 92 Bilder · max 75.03 ms · 19.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.02 % > 33 ms | Fahrt: 19.57 % > 33 ms an d39e0d6e gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 2da17e2e: Last: Referenz f 1,471 (Faden 1,471 · alle Kerne 1,256; vor 122,7/328,7 ms, nach 119,6/299,1 ms, Ruhe 83,4/261,7 ms seit 2026-11-17) · fremd: git pack-objects --exclude-promisor-objects-best-effort pa · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an 2da17e2e: Last: Referenz f 1,204 (Faden 1,144 · alle Kerne 1,204; vor 101,9/268,6 ms, nach 98,8/258 ms, Ruhe 89,1/223 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3072,7 +3072,7 @@
      "gruen": true,
      "zahl": "Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms",
      "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +102) — zuletzt an 2da17e2e: Last: Referenz f 2,549 (Faden 2,549 · alle Kerne 1,479; vor 212,6/386,1 ms, nach 201/387,1 ms, Ruhe 83,4/261,8 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --user-data-dir=anazh-18616-profi",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +102) — zuletzt an 2da17e2e: Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSeite(r, a) {\\n const st = r && r.state, rend = st && | return Function(\"window\", \"performa",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3082,7 +3082,7 @@
      "gruen": true,
      "zahl": "Gehen 107 Bilder · max 66.64 ms · 14.02 % > 33 ms · Fahrt 92 Bilder · max 75.03 ms · 19.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.02 % > 33 ms | Fahrt: 19.57 % > 33 ms",
      "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Station seit der Messung geändert — zuletzt an 2da17e2e: Wirt-Wache: den Kontext der Probe hält noch: const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t  | return Function(\"window\", \"perfo",
+     "grund": "Station seit der Messung geändert — zuletzt an 2da17e2e: Last: Referenz f 1,204 (Faden 1,144 · alle Kerne 1,204; vor 101,9/268,6 ms, nach 98,8/258 ms, Ruhe 89,1/223 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc",
      "gehalten": true
     },
     {
@@ -3091,7 +3091,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2da17e2e: Last: Referenz f 2,549 (Faden 2,549 · alle Kerne 1,479; vor 212,6/386,1 ms, nach 201/387,1 ms, Ruhe 83,4/261,8 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --user-data-dir=anazh-18616-profi",
+     "grund": "Station seit der Messung geändert — zuletzt an 2da17e2e: Last: Referenz f 1,471 (Faden 1,471 · alle Kerne 1,256; vor 122,7/328,7 ms, nach 119,6/299,1 ms, Ruhe 83,4/261,7 ms seit 2026-11-17) · fremd: git pack-objects --exclude-promisor-objects-best-effort pa",
      "ungemessen": true
     },
     {
@@ -3100,7 +3100,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2da17e2e: Wirt-Wache: den Kontext der Probe hält noch: const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t  | return Function(\"window\", \"perfo",
+     "grund": "Station seit der Messung geändert — zuletzt an 2da17e2e: Last: Referenz f 1,204 (Faden 1,144 · alle Kerne 1,204; vor 101,9/268,6 ms, nach 98,8/258 ms, Ruhe 89,1/223 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc",
      "ungemessen": true
     }
    ]
@@ -9419,7 +9419,7 @@
   },
   "karte2.erleben.sinne.gesehen": {
    "punkte": 0,
-   "beleg": "Maschine: S3 · GRÜN ✅ unterschied_pct 77,1 (Soll ≥ 30) an 2da17e2e gtx — offen: karte2.erleben.sinne.gesehen#1 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#1 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#2 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#2 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#3 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#4 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#4 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#5 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#5 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#6 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: S3 · GRÜN ✅ unterschied_pct 77,1 (Soll ≥ 30) an 2da17e2e gtx — offen: karte2.erleben.sinne.gesehen#1 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#1 gtx: ROT: S1 · ROT ❌ abweichung_orange_gruen_pct 22,5 (Soll ≤ 15) — Täter: tetrapoda SINNES_GESETZ.taxa.cervidae (455/537 nm) · augeAbstand: Orange und Grün gleicher Leuchtdichte liegen im Auge des Hirschs 26.4 ↔ 45.7 Schritte vom Boden · abweichung_orange_gruen_pct 22,5 statt ≤ 15 an 2da17e2e · karte2.erleben.sinne.gesehen#2 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#2 gtx: ROT: S2 · ROT ❌ distanz_minus_pct 13,8 (Soll ≥ 30) — Täter: stamm/kreatur-furcht.js _kreaturSiehtM: Böden der Welt um die Beute zu gleich im Wolfs-Auge (59.5 ↔ 82.7 Schritte) · distanz_minus_pct 13,8 statt ≥ 30 an 2da17e2e · karte2.erleben.sinne.gesehen#3 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#4 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#4 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#5 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#5 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#6 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.sinne.gesehen#1",
@@ -9435,10 +9435,10 @@
      "id": "karte2.erleben.sinne.gesehen#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 · ROT ❌ abweichung_orange_gruen_pct 22,5 (Soll ≤ 15) — Täter: tetrapoda SINNES_GESETZ.taxa.cervidae (455/537 nm) · augeAbstand: Orange und Grün gleicher Leuchtdichte liegen im Auge des Hirschs 26.4 ↔ 45.7 Schritte vom Boden · abweichung_orange_gruen_pct 22,5 statt ≤ 15",
+     "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
+     "grund": "ROT: S1 · ROT ❌ abweichung_orange_gruen_pct 22,5 (Soll ≤ 15) — Täter: tetrapoda SINNES_GESETZ.taxa.cervidae (455/537 nm) · augeAbstand: Orange und Grün gleicher Leuchtdichte liegen im Auge des Hirschs 26.4 ↔ 45.7 Schritte vom Boden · abweichung_orange_gruen_pct 22,5 statt ≤ 15",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -9454,10 +9454,10 @@
      "id": "karte2.erleben.sinne.gesehen#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "S2 · ROT ❌ distanz_minus_pct 13,8 (Soll ≥ 30) — Täter: stamm/kreatur-furcht.js _kreaturSiehtM: Böden der Welt um die Beute zu gleich im Wolfs-Auge (59.5 ↔ 82.7 Schritte) · distanz_minus_pct 13,8 statt ≥ 30",
+     "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
+     "grund": "ROT: S2 · ROT ❌ distanz_minus_pct 13,8 (Soll ≥ 30) — Täter: stamm/kreatur-furcht.js _kreaturSiehtM: Böden der Welt um die Beute zu gleich im Wolfs-Auge (59.5 ↔ 82.7 Schritte) · distanz_minus_pct 13,8 statt ≥ 30",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.sinne.gesehen#3",
@@ -10152,7 +10152,7 @@
   },
   "karte2.erleben.spieler.hand": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.hand#1 radeon: ungemessen (R10) — zuletzt an 2da17e2e: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 60 s von karte2.erleben.spieler.hand#1) — offen, UNGEMESSEN · karte2.erleben.spieler.hand#1 gtx: ungemessen (R10) — zuletzt an f63a69ef: Last: Referenz f 1,272 (Faden 1,272 · alle Kerne 1,096; vor 94,2/239,9 ms, nach 113,5/244,9 ms, Ruhe 89,2/223,5 ms seit 2026-11-25) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · karte2.erleben.spieler.hand#2 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#2 gtx: ungemessen (R10) · karte2.erleben.spieler.hand#3 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.hand#4 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#4 gtx: ungemessen (R10) · karte2.erleben.spieler.hand#5 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#5 gtx: Station seit der Messung geändert · karte2.erleben.spieler.hand#6 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.hand#1 radeon: ungemessen (R10) — zuletzt an 2da17e2e: Last: Referenz f 1,269 (Faden 1,269 · alle Kerne 1,088; vor 105,8/284,3 ms, nach 100,8/255,4 ms, Ruhe 83,4/261,4 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrj · karte2.erleben.spieler.hand#1 gtx: ungemessen (R10) — zuletzt an f63a69ef: Last: Referenz f 1,272 (Faden 1,272 · alle Kerne 1,096; vor 94,2/239,9 ms, nach 113,5/244,9 ms, Ruhe 89,2/223,5 ms seit 2026-11-25) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · karte2.erleben.spieler.hand#2 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#2 gtx: ungemessen (R10) · karte2.erleben.spieler.hand#3 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.hand#4 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#4 gtx: ungemessen (R10) · karte2.erleben.spieler.hand#5 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#5 gtx: Station seit der Messung geändert · karte2.erleben.spieler.hand#6 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.hand#1",
@@ -10160,7 +10160,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 2da17e2e: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 60 s von karte2.erleben.spieler.hand#1) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an 2da17e2e: Last: Referenz f 1,269 (Faden 1,269 · alle Kerne 1,088; vor 105,8/284,3 ms, nach 100,8/255,4 ms, Ruhe 83,4/261,4 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrj",
      "ungemessen": true,
      "beide": true
     },
@@ -17608,7 +17608,7 @@
   },
   "karte2.mensch.kopplung.kultur": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.kultur#1 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#1 gtx: ungemessen (R10) · karte2.mensch.kopplung.kultur#2 radeon: Konsum seit der Messung geändert (R6: planet-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +7) — zuletzt an 2da17e2e: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 295 s von karte2.mensch.kopplung.leib#1) — offen, UNGEMESSEN · karte2.mensch.kopplung.kultur#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, planet-core.js +18) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.kopplung.kultur#3 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#3 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#4 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#4 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#5 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#5 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#6 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#6 gtx: ungemessen (R10) · karte2.mensch.kopplung.kultur#7 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.kultur#1 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#1 gtx: ungemessen (R10) · karte2.mensch.kopplung.kultur#2 radeon: ROT: S2 r 0 gegen Soll ≥ 0,5 ✗ · mutationProzent 0 % gegen Soll ≥ 90 % ✗ · Täter: fachwerk-core.js:2762 bauRezept (die Dach-Neigung aus dem Samen; kein Niederschlag, kein Wetter am Dach) an 2da17e2e · karte2.mensch.kopplung.kultur#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, planet-core.js +18) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.kopplung.kultur#3 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#3 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#4 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#4 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#5 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#5 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.kultur#6 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#6 gtx: ungemessen (R10) · karte2.mensch.kopplung.kultur#7 radeon: ungemessen (R10) · karte2.mensch.kopplung.kultur#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kopplung.kultur#1",
@@ -17634,10 +17634,9 @@
      "id": "karte2.mensch.kopplung.kultur#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: planet-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +7) — zuletzt an 2da17e2e: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 295 s von karte2.mensch.kopplung.leib#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "S2 r 0 gegen Soll ≥ 0,5 ✗ · mutationProzent 0 % gegen Soll ≥ 90 % ✗ · Täter: fachwerk-core.js:2762 bauRezept (die Dach-Neigung aus dem Samen; kein Niederschlag, kein Wetter am Dach)",
+     "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
+     "grund": "ROT: S2 r 0 gegen Soll ≥ 0,5 ✗ · mutationProzent 0 % gegen Soll ≥ 90 % ✗ · Täter: fachwerk-core.js:2762 bauRezept (die Dach-Neigung aus dem Samen; kein Niederschlag, kein Wetter am Dach)",
      "r6": "konsum"
     },
     {
@@ -17860,16 +17859,15 @@
   },
   "karte2.mensch.kopplung.leib": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.leib#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/kreatur-proben.cjs +5) — zuletzt an 2da17e2e: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 295 s von karte2.mensch.kopplung.leib#1) — offen, UNGEMESSEN · karte2.mensch.kopplung.leib#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +13) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.kopplung.leib#2 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#2 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#3 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#3 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#4 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#4 gtx: ungemessen (R10) · karte2.mensch.kopplung.leib#5 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#5 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#6 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.leib#1 radeon: ROT: S1 lagenDelta 0 gegen Soll > 0 ✗ · Bild (Beleg) C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\2da17e2e-radeon\\auge-mensch-leib-s1-sommer.png ↔ C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\2da17e2e-radeon\\auge-mensch-leib-s1-winter.png · Täter: stamm/siedlung-bewohner.js:374 _bewohnerTracht (der Schnitt der Epoche aus fachwerk kleidung; keine Jahreszeit, kein Wetter) · gemessen vor dem Wurf der Leiter nach 49,737 s: /eval: {\"ms\":83,\"fehler\":\"ALTER: die Epoche ohne Jahr (fail-closed)\",\"stapel\":[\"alterPyramide (http://localhost:7804/koe an 2da17e2e · karte2.mensch.kopplung.leib#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +13) — zuletzt an f63a69ef: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.kopplung.leib#2 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#2 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#3 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#3 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#4 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#4 gtx: ungemessen (R10) · karte2.mensch.kopplung.leib#5 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#5 gtx: Station seit der Messung geändert · karte2.mensch.kopplung.leib#6 radeon: ungemessen (R10) · karte2.mensch.kopplung.leib#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kopplung.leib#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/kreatur-proben.cjs +5) — zuletzt an 2da17e2e: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 295 s von karte2.mensch.kopplung.leib#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "S1 lagenDelta 0 gegen Soll > 0 ✗ · Bild (Beleg) C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\2da17e2e-radeon\\auge-mensch-leib-s1-sommer.png ↔ C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\2da17e2e-radeon\\auge-mensch-leib-s1-winter.png · Täter: stamm/siedlung-bewohner.js:374 _bewohnerTracht (der Schnitt der Epoche aus fachwerk kleidung; keine Jahreszeit, kein Wetter) · gemessen vor dem Wurf der Leiter nach 49,737 s: /eval: {\"ms\":83,\"fehler\":\"ALTER: die Epoche ohne Jahr (fail-closed)\",\"stapel\":[\"alterPyramide (http://localhost:7804/koe",
+     "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
+     "grund": "ROT: S1 lagenDelta 0 gegen Soll > 0 ✗ · Bild (Beleg) C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\2da17e2e-radeon\\auge-mensch-leib-s1-sommer.png ↔ C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\2da17e2e-radeon\\auge-mensch-leib-s1-winter.png · Täter: stamm/siedlung-bewohner.js:374 _bewohnerTracht (der Schnitt der Epoche aus fachwerk kleidung; keine Jahreszeit, kein Wetter) · gemessen vor dem Wurf der Leiter nach 49,737 s: /eval: {\"ms\":83,\"fehler\":\"ALTER: die Epoche ohne Jahr (fail-closed)\",\"stapel\":[\"alterPyramide (http://localhost:7804/koe",
      "r6": "konsum",
      "beide": true
     },
@@ -30056,7 +30054,7 @@
   },
   "karte2.planet.kosmos.welten": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 2da17e2e: Last: Referenz f 3,173 (Faden 1,84 · alle Kerne 3,173; vor 153,6/349,3 ms, nach 143,3/831,2 ms, Ruhe 83,5/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=ana · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an f63a69ef: Last: Referenz f 1,566 (Faden 1,566 · alle Kerne 1,224; vor 106,3/273,8 ms, nach 139,7/269 ms, Ruhe 89,2/223,7 ms seit 2026-11-25) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf · karte2.planet.kosmos.welten#2 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#3 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#4 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#5 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#6 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 2da17e2e: Last: Referenz f 3,173 (Faden 1,84 · alle Kerne 3,173; vor 153,6/349,3 ms, nach 143,3/831,2 ms, Ruhe 83,5/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=ana · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an 2da17e2e: Last: Referenz f 1,224 (Faden 1,224 · alle Kerne 1,134; vor 109,1/252,8 ms, nach 88,6/231,3 ms, Ruhe 89,1/223 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfj · karte2.planet.kosmos.welten#2 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#3 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#4 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#5 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.welten#6 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.welten#1",
@@ -30074,7 +30072,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f63a69ef: Last: Referenz f 1,566 (Faden 1,566 · alle Kerne 1,224; vor 106,3/273,8 ms, nach 139,7/269 ms, Ruhe 89,2/223,7 ms seit 2026-11-25) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf",
+     "grund": "ungemessen (R10) — zuletzt an 2da17e2e: Last: Referenz f 1,224 (Faden 1,224 · alle Kerne 1,134; vor 109,1/252,8 ms, nach 88,6/231,3 ms, Ruhe 89,1/223 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfj",
      "ungemessen": true,
      "beide": true
     },
@@ -36570,7 +36568,7 @@
   },
   "karte2.same.preis.ankunft": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.33 s · 7.37 s · 7.87 s · 7.56 s (max 9.33 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.preis.ankunft#2 radeon: ungemessen (R10) — zuletzt an 2da17e2e: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 330 s von karte2.same.preis.ankunft#2) — offen, UNGEMESSEN · karte2.same.preis.ankunft#2 gtx: ungemessen (R10) — zuletzt an f63a69ef: Last: Referenz f 1,252 (Faden 1,138 · alle Kerne 1,252; vor 101,5/280 ms, nach 91,8/266,5 ms, Ruhe 89,2/223,7 ms seit 2026-11-25) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfj · karte2.same.preis.ankunft#3 radeon: ungemessen (R10) · karte2.same.preis.ankunft#3 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#4 radeon: ungemessen (R10) · karte2.same.preis.ankunft#4 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#5 radeon: ungemessen (R10) · karte2.same.preis.ankunft#5 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#6 radeon: ungemessen (R10) · karte2.same.preis.ankunft#6 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#7 radeon: ungemessen (R10) · karte2.same.preis.ankunft#7 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#8 radeon: ungemessen (R10) · karte2.same.preis.ankunft#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.33 s · 7.37 s · 7.87 s · 7.56 s (max 9.33 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.preis.ankunft#2 radeon: ungemessen (R10) — zuletzt an 2da17e2e: Last: Referenz f 1,792 (Faden 1,506 · alle Kerne 1,238 · Stoß in der Station 19,00 Kerne fremd → 1,792; vor 123,8/301,6 ms, nach 125,6/323,8 ms, Ruhe 83,4/261,5 ms seit 2026-11-17) · fremd: git pack-o · karte2.same.preis.ankunft#2 gtx: ungemessen (R10) — zuletzt an f63a69ef: Last: Referenz f 1,252 (Faden 1,138 · alle Kerne 1,252; vor 101,5/280 ms, nach 91,8/266,5 ms, Ruhe 89,2/223,7 ms seit 2026-11-25) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfj · karte2.same.preis.ankunft#3 radeon: ungemessen (R10) · karte2.same.preis.ankunft#3 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#4 radeon: ungemessen (R10) · karte2.same.preis.ankunft#4 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#5 radeon: ungemessen (R10) · karte2.same.preis.ankunft#5 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#6 radeon: ungemessen (R10) · karte2.same.preis.ankunft#6 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#7 radeon: ungemessen (R10) · karte2.same.preis.ankunft#7 gtx: Station seit der Messung geändert · karte2.same.preis.ankunft#8 radeon: ungemessen (R10) · karte2.same.preis.ankunft#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.ankunft#1",
@@ -36600,7 +36598,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 2da17e2e: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 330 s von karte2.same.preis.ankunft#2) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an 2da17e2e: Last: Referenz f 1,792 (Faden 1,506 · alle Kerne 1,238 · Stoß in der Station 19,00 Kerne fremd → 1,792; vor 123,8/301,6 ms, nach 125,6/323,8 ms, Ruhe 83,4/261,5 ms seit 2026-11-17) · fremd: git pack-o",
      "ungemessen": true
     },
     {
@@ -36724,7 +36722,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, gelaende-core.js +54) — zuletzt an 2da17e2e: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSei · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +103) — zuletzt an 2da17e2e: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Wirt-Wache: den Kontext der Probe hält noch: const st = r.state; clearInterval(window.__k4iv); const z = (window · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, gelaende-core.js +54) — zuletzt an 2da17e2e: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Wirt-Wache: den Kontext der Probe hält noch: return Function(\"window\", \"performance\", \"return (function stromSei · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +103) — zuletzt an 2da17e2e: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Wirt-Wache: den Kontext der Probe hält noch: const n = {}; for (const c of r.state.creatures) { const u = c.user · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -36743,7 +36741,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +103) — zuletzt an 2da17e2e: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Wirt-Wache: den Kontext der Probe hält noch: const st = r.state; clearInterval(window.__k4iv); const z = (window",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +103) — zuletzt an 2da17e2e: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Wirt-Wache: den Kontext der Probe hält noch: const n = {}; for (const c of r.state.creatures) { const u = c.user",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -37563,7 +37561,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 366,
+  "konsum": 368,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37732,10 +37730,10 @@
    "karte2.leben.kopplung.stadt-im-netz#2 radeon",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3255
+  "ohne": 3253
  },
  "kopfVoll": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
- "zeit": "2026-11-25T23:55:15.225Z",
+ "zeit": "2026-11-26T00:13:11.938Z",
  "vorher": "2da17e2e",
  "bilanz": {
   "gewinn": [],
