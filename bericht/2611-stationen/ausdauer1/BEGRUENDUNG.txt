@@ -1,0 +1,113 @@
+BEGRÜNDUNG — same.preis.ausdauer#1 (die Sitzung hält, Sprosse 1), Leser 2, 26.11.
+
+1. DER RICHTER (wörtlich, vision/meisterkarte-2.json)
+   S1 richter „Spielgang am Stück mit Heap-Kurve“ · umfang „1 min Spielgang“ · tiefe „kein Absturz, volles Bild“ ·
+      preis „Heap-Steigung ≤ 50 MB/min an beiden Geräten“
+   Station: meisterkarte-quelle/punkte/stationen/g6.js `ausdauerRichter` (:2432) auf dem Dauer-Lauf von profiband.K5 (PB_PROBE_DAUER
+   :2496, stellung „ende“), der Anfang ist die Glätte profiband.K4 (PB_PROBE_GLAETTE :2490, stellung „anfang“, Marke `dauer-anfang`).
+   Basis: origin/punkte-maschine 5231cad8 = 5380a5aa (Spitze 26.11.; g6.js fd1edd46 · punkte.cjs 75874b70 · deckel.json ae73de67, an beiden gleich).
+
+2. DER BEFUND DER GERÄTE (aus-gemessen.cjs · k4-zaehl.cjs · wache-klasse.cjs über die 643 Messdateien der Basis, 12 s)
+   42 Einträge ausdauer#1: 13 gemessen, 14 offen über die Wache („misst nie über ein Neuladen“), 15 aus anderen Ursachen.
+   Von den 13 gemessenen: 1 GRÜN (Radeon bf9be26c, 7,39 min, 28,6 MB/min nach dem Collector), 12 ROT, davon 9 „BLIND“ oder „< 1 min“.
+   Die Fenster lagen bei 0,82–1,67 min: die Länge stellte die Sitzung, nie die Station.
+
+3. DIE FEHLER DER STATION (Datei:Zeile an der Basis)
+   E1  DIE MINUTE GEHÖRT DER SITZUNG. g6.js:1879–1887 die Dauer-Probe fährt Tor und Bau, Nacht, ein Anker-Fenster, den Stand des Endes —
+       keinen eigenen Gang; die Minute ist e.zeit − a.zeit (:2052), also was zwischen Glätte und Dauer zufällig lief. Dauer-Deckel 45 s
+       (deckel.json profiband.K5#1/#2 an beiden Geräten), Probe sek 23 (:2496). An den Geräten 0,82–1,3 min auf einer Seite, 9 von 10
+       solchen Fenstern BLIND oder „< 1 min“.
+   E2  DIE ROHE KURVE URTEILT. g6.js:2444 „Heap-Kurve steigt … > 50“ urteilt die Ausgleichsgerade über den Heap des Zapfens OHNE Collector
+       — die Säge des Collectors, nicht das Halten: 447eaea6-gtx Kurve 370,8 → 319,3 MB und doch +51,55 MB/min (nach dem Collector 37,5);
+       9d4319c0-radeon roh +100,16 (nach GC 58,5); a8dd22b5-radeon roh +56,43 (nach GC 38,2); ee9c1965-radeon roh −20,65 bei +91,5 nach
+       dem Collector — ein Leck stünde roh GRÜN. Das Maß der Station (g6.js:5262 „Heap-Kurve MB/min“) trägt dieselbe rohe Zahl.
+   E3  DER PUNKT STEHT AM FALSCHEN ENDE. g6.js:2063 nimmt je Block das ERSTE Bild (Wanduhr) mit dem Heap, den der Zapfen am ENDE des Blocks
+       las: jeder Punkt steht einen Block zu früh, die Kurve ist kürzer als die Strecke (31ea3847-gtx: 1,06 min Spielgang, Kurve 0,84 min
+       → „Heap-Kurve blind“).
+   E4a DIE WACHE LIEST OHNE COLLECTOR. punkte.cjs:4402 `wirtRuf(W, true, mitPreis)`: ohne Preis-Lauf (`brauchtPreisLauf`, :3591) ruft der
+       Läufer `gib` ohne `heap` → werkbank.cjs:2654 kein Collector, :2655 `markenLies` liest jede WeakRef-Marke, die noch kein Collector
+       einsammelte, als gehalten → wirt-wache.cjs:138–140 „den Kontext der Probe hält noch … — Heap ungemessen“ → UNGEMESSEN. Die Wache
+       selbst sagt (wirt-wache.cjs:14–15): „Nach der Rücknahme und dem Collector lebt eine Marke nur, wenn noch etwas den Kontext ihrer
+       Probe hält“. Trifft es die Glätte (stellung anfang), bricht der Läufer ab, lädt neu, und die Dauer steht offen (punkte.cjs:4254/:4425).
+       Klasse: 68 UNGEMESSEN „Heap ungemessen“ in 35 von 643 Dateien, ALLE profiband.K4#1/#2; K4#1 verlor 33 von 188; ausdauer#1 stand
+       14 von 42 offen über die Wache (33 %).
+   E4b DIE UHREN DER TASTEN ÜBERLEBEN IHR FENSTER. g6.js:1755–1760 `k4fahrt`: ein lokales setInterval (nie window.__k4iv) und eine Kette
+       von setTimeout bis 20 s + 2,3 s; das Fenster H liest die Tasten nach 2,8 s Hänger und geht — die Uhren halten den Kontext des /eval
+       weiter. An der echten Seite hält die Basis eine Marke AUCH nach dem Collector (k4-wache-hand.cjs, unten).
+
+4. DER SCHNITT (punkte-maschine.ausdauer-s1.diff, 15 Hunks in 3 Dateien, an 5231cad8 Blob für Blob gleich mit dem Stand, gegen den er
+   geschnitten ist)
+   a) E1 DIE STATION TRÄGT IHRE MINUTE: PB_KONST.spielgang { min 1, rand 10, fenster 6, nach 8 }. Die Dauer-Probe misst, wie viel die
+      Sitzung seit `dauer-anfang` trug (`vorher`), und geht den Rest bis Ziel 60 + 10 s selbst — Fenster zu 6 s auf der Bahn
+      („dauer-spielgang“, K.anker) unter ihrem Deckel, 8 s bleiben dem Stand des Endes. Probe sek 23 → 60, Deckel profiband.K5#1/#2
+      45 → 60 an beiden Geräten (die Leiter misst ≤ 60 s). Zeuge `zus.dauer.spielgang` { ziel, deckel, vorher, eigen, fenster, grund }:
+      trägt der Deckel die Minute nicht, steht die Ursache beim Namen und das Urteil bleibt BLIND — nie eine kurze Minute grün.
+   b) E2 DAS URTEIL IST DER HEAP NACH DEM COLLECTOR: `ausdauerRichter` urteilt die zwei Stände nach 3 × GC (gc ≤ AUSDAUER_S1.steigung 50);
+      die rohe Kurve bleibt Zeuge (≥ 10 Punkte über ≥ 1 min, sonst BLIND) mit „roh … (der Takt des Collectors, kein Urteil)“. Das Maß
+      der Station folgt (Sage a, tue a): „Heap nach dem Collector MB/min“ statt „Heap-Kurve MB/min“ — sonst stünde ein GRÜN mit
+      reißendem Maß (die Linse der Proben hielt es ROT: „GRÜN mit reißendem Maß Heap-Kurve MB/min 61“).
+   c) E3 der Punkt steht am Ende seines Blocks (das letzte Bild des Blocks, der Heap, den der Zapfen dort las).
+   d) E4a punkte.cjs:4402 `gib` sammelt IMMER ein: `wirtRuf(W, true, true)` — was nach dem Collector lebt, hält wirklich.
+   e) E4b PB_K4_UHR: jede Uhr der Tasten steht in window.__k4t; SEITE.k4ende beendet sie im finally des Fensters H (auch wenn der Hänger
+      wirft) und gibt ihren Stand zurück — die Tasten im Zeugen bleiben.
+   f) Proben der Station 316 → 320, 0 falsch. Neu: „Mutante ohne Zeugen der Minute“ → ROT · „die GTX am 447eaea6 mit der Minute der
+      Station: roh +51,55, nach GC 37,5“ → GRÜN · „ATTRAPPE das Leck hinter der Säge (roh −20,65, nach GC +91,5)“ → ROT · „ATTRAPPE die
+      Minute nur aus der Sitzung (Deckel 45 s)“ → BLIND, der Deckel beim Namen. Gekippt, offen benannt: „die Säge: die rohe Kurve steigt
+      61 MB/min, nach GC flach“ war ROT und ist GRÜN — das ist der Schnitt E2, kein Fehlurteil.
+   Unverändert: das Urteil von K5 (gangUrteil), die Stände, Tor/Bau/Nacht, die Glätte-Zahlen, der Preis-Lauf.
+
+5. DIE ZAHL VORHER ↔ NACHHER (hand.out)
+   Minute (dauer-hand.cjs, der echte Befehl gegen eine Attrappe der Werkbank, die Sitzung trug 49,2 s; der echte Richter):
+     Basis      0,94 min · BLIND „0.94 min am Stück < 1 | Heap-Kurve blind (17 Punkte über 0.89 min)“ — an jedem Heap (30 · 91,5 · 0)
+     Kandidat   1,15 min (vorher 54 + eigen 12,6 s in 2 Fenstern), Kurve 19 Punkte über 1,11 min:
+                hält 30 → GRÜN 30 MB/min · hält 91,5 → ROT 91,5 MB/min · Säge ohne Halten → GRÜN 0 MB/min (roh −3,86)
+     Deckel 45  0,98 min, BLIND mit Ursache „der Deckel 45 s trug die Minute nicht (bei 36.3 s, 56.5 s Spielgang)“
+   Glätte (glaette-hand.cjs, der echte Befehl der Glätte): Kandidat beide Fenster „K4ENDE ← die Uhren enden“, auch wenn der Hänger wirft;
+     Basis „KEIN Ende der Uhren“ in beiden; die Tasten im Zeugen gleich ({v 3, wagen, aus, ein}).
+   Wache an der ECHTEN Seite (k4-wache-hand.cjs, Werkbank :24600, Fenster k4fahrt wie pbProbe es fährt):
+     Basis    ohne Collector lebend 3 UNGEMESSEN · mit Collector lebend 1 UNGEMESSEN (1 092 ms)
+     Kandidat ohne Collector lebend 1 UNGEMESSEN · mit Collector lebend 0, misst (1 483 ms)
+     → BEIDE Schnitte (E4a und E4b) sind nötig; nur Kandidat + Collector hält keine Marke.
+   Wände: Proben 316 → 320, 0 falsch (Basis 316, 0 falsch) · `node punkte.cjs liste` 1 976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0
+     (28,4 s) — Kandidat = Basis, Zeile für Zeile: von 1 331 779 Zeilen fallen 112, kommen 546, alle in den 14 Blöcken, die den Befehl
+     von pbProbe teilen (profiband.K1–K5 #1/#2, pflicht.C#2, pflicht.E#1, karte2.same.entfaltung.schirm#1, karte2.same.preis.ausdauer#1);
+     sonst gleich · Selbsttest: siehe betreff (dieselben ROT der Wolke an Basis und Kandidat, PROBEN grün).
+
+6. DIE UHR UND DER PREIS
+   Die Dauer-Probe wächst von sek 23 auf ≤ 60 s (sie geht nur, was die Sitzung nicht trug: am Gerät 49–78 s vorher → 0–21 s eigen).
+   `gib` mit Collector kostet an einem Heap von 782 MB 1,1–1,5 s je Probe ohne Preis-Lauf; 54 von 155 Gruppen der Sitzung fahren ohne
+   Preis → etwa +60–80 s je volle Sitzung. Dagegen: jedes falsche „hält“ an der Glätte kostete ein Neuladen und die ganze Dauer.
+   Kosten hängen an der Zahl der Proben, nie an der Welt.
+   Korrektur zu meiner früheren Rechnung: K.budget schneidet das Fenster der Dauer NICHT (der Gang fährt nach dem Stand des Endes); die
+   Wand ≤ 60 s steht nur an der Leiter (k2-planet.js:456). Deckel über 60 s stehen 101-mal in deckel.json (g1.js:2990 sek 300, g2.js:2224
+   sek 420) — die Dauer bleibt darunter.
+
+7. DAS SPIEL — DAS SPIEL IST ROT an der wörtlichen Sprosse (1 min)
+   Gegenprobe der Geräte, der Heap nach dem Collector je Minuten-Fenster auf EINER Seite (aus-gemessen.cjs):
+     über 50:  31ea3847-gtx 95,5 · 77e079ae-radeon 89,2 · 9d4319c0-gtx 56,5 · 9d4319c0-radeon 58,5 · d39e0d6e-gtx 104,7 ·
+               ee9c1965-radeon 91,5 · f68dbf09-gtx 95,3                                   → 7 von 10 (GTX 4, Radeon 3)
+     unter 50: 447eaea6-gtx 37,5 · a8dd22b5-radeon 38,2 · ee9c1965-gtx 34,3
+     lang:     bf9be26c-radeon 28,6 (7,39 min, GRÜN) · 77e079ae-gtx 14 (3,44 min, 2 Seiten) · 7de938ab-gtx 122,6 (1,67 min, 2 Seiten)
+   Das Wachstum ist vorn: zwischen den Ständen stets +70–100 MB (9d4319c0-gtx: nur Glätte und Dauer dazwischen), über 7,39 min verdünnt
+   es sich unter 50. Die Minute der Sprosse trägt es nicht.
+   Täter: breit, nach der Ankunft — die Halter-Linse der Geräte nennt 12 von 73 MB:
+     three `renderer.info.memoryMap[k].array` +6,8 MB (die Karte des Renderers, gelesen in worlds/huelle/huelle.js:956) ·
+     `r._fahrLeibKoerper[].userData._tierBaum.straehnen[].geometry` +3,3 MB (der Pfad stamm/koerper-bewegung.js:635, Besitzer
+     r.state.creatures) · `r.state.chunkSaetze[].abschnitte[].liste[]` +1,9 MB; VRAM bauSatz +9,9, geometrie-arena +9,4.
+   Die Akte der Dauer selbst halten wenig (akt-heap.cjs an der echten Seite, je 3×): Tor und Bau +4,9 / +5,0 / +6,8 MB, Nacht
+   +6,7 / +1,5 / −0,5 MB. Auf EINE Zeile zu nageln ist der Rest in der Wolke nicht: sie stellt keine Welt („das erste Weltbild fehlt“
+   beim Umstellen an genesis) — ohne gestellte Welt kein Wachstum nach der Ankunft.
+   Soll: ≤ 50 MB/min nach dem Collector in der ersten Minute an beiden Geräten.
+
+8. WAS NUR DAS GERÄT MESSEN KANN
+   - die Minute am Stück in der Reihe der Sitzung: wie viel die Sitzung trug (vorher), wie viel die Station ging (eigen), ob der Deckel
+     60 s sie trägt (der Zeuge `spielgang` steht in der Zeile);
+   - der Heap nach dem Collector über diese Minute an GTX und Radeon und der Halter, der die 61 von 73 MB ohne Namen hält;
+   - die Wache an der Glätte über 188 Läufe: ob nach beiden Schnitten noch eine Marke lebt (Soll: 0 „Heap ungemessen“, die Dauer nie
+     wegen der Wache offen);
+   - das Bild (tiefe „volles Bild“) — in der Wolke verliert swiftshader beim Lesen das Gerät.
+
+9. URTEIL
+   DAS SPIEL IST ROT an S1: in 7 von 10 Minuten-Fenstern hält es mehr als 50 MB/min. Die Station misst es jetzt ehrlich — statt BLIND
+   oder offen — und misst ein heiles Spiel grün (Attrappe 30 und 0 MB/min); sie misst kein rotes grün (Attrappe 91,5 → ROT, ein Leck
+   unter der Säge → ROT). Kein Buchungs-Kandidat, bis das Spiel in der ersten Minute ≤ 50 hält.

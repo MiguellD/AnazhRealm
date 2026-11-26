@@ -1,0 +1,119 @@
+# HAND-LÄUFE ausdauer#1 (Leser 2, 26.11.; Wolke, main eae94514 = scratchpad g-main; Basis = origin/punkte-maschine 5231cad8, Kandidat = Basis + punkte-maschine.ausdauer-s1.diff)
+
+## 1. Die Minute der Dauer — dauer-hand.cjs <stationen> <spiel-baum> <vor_s> <deckel_s> <hält MB/min> (der echte Befehl, der echte Richter ausdauer#1)
+HAND kandidat-gezielt · vor 49.2 s · Deckel 60 s · hält 30 MB/min · Probe 19.8 s (Exit 0)
+  Zeuge spielgang {"ziel":70,"deckel":60,"vorher":54,"eigen":12.6,"fenster":2} · minuten 1.15 · Kurve {"n":19,"min":1.11,"steigung":26.04,"von":311.7,"bis":370.5,"max":380.7} · heap [300,334.5]
+  ausdauer#1 GRÜN · Spielgang 1.15 min in 1 Seite(n), davon die Station 12.6 s in 2 Fenster(n) auf der Bahn (die Sitzung trug 54 s, Ziel 70 s, Deckel 60 s) · nach dem Collector 300 → 334.5 MB: 30 MB/min (Soll ≤ 50) · Heap-Kurve 19 Punkte über 1.11 min, 311.7 → 370.5 MB (max 380.7), roh 26.04 MB/min (der Takt des Collectors, kein Urteil) · [linse-gpu] nvidia/pascal (Attrappe der Werkbank)
+HAND kandidat-deckel45 · vor 20 s · Deckel 45 s · hält 30 MB/min · Probe 38.8 s (Exit 0)
+  Zeuge spielgang {"ziel":70,"deckel":45,"vorher":24.8,"eigen":31.5,"fenster":5,"grund":"der Deckel 45 s trug die Minute nicht (bei 36.3 s, 56.5 s Spielgang)"} · minuten 0.98 · Kurve {"n":12,"min":0.94,"steigung":48.89,"von":311.7,"bis":384.6,"max":384.6} · heap [300,329.4]
+  @@PUNKTE@@ MESSORT die Dauer trug ihre Minute nicht: 0.98 min am Stück < 1 · Heap-Kurve blind (12 Punkte über 0.94 min)
+  ausdauer#1 ROT · BLIND, kein Urteil über die Steigung · Spielgang 0.98 min in 1 Seite(n), davon die Station 31.5 s in 5 Fenster(n) auf der Bahn (die Sitzung trug 24.8 s, Ziel 70 s, Deckel 45 s) · nach dem Collector 300 → 329.4 MB: 30 MB/min (Soll ≤ 50) · Heap-Kurve 12 Punkte über 0.94 min, 311.7 → 384.6 MB (max 384.6), roh 48.89 MB/min (der Takt des Collectors, kein Urteil) · [linse-gpu] nvidia/pascal (Attrappe der Werkbank) — ROT 3: 0.98 min am Stück < 1 | Heap-Kurve blind (12 Punkte über 0.94 min) | der Deckel 45 s trug die Minute nicht (bei 36.3 s, 56.5 s Spielgang)
+HAND kandidat-leck · vor 49.2 s · Deckel 60 s · hält 91.5 MB/min · Probe 19.8 s (Exit 0)
+  Zeuge spielgang {"ziel":70,"deckel":60,"vorher":54,"eigen":12.6,"fenster":2} · minuten 1.15 · Kurve {"n":19,"min":1.11,"steigung":87.5,"von":314.4,"bis":441.1,"max":441.1} · heap [300,405.2]
+  ausdauer#1 ROT · Spielgang 1.15 min in 1 Seite(n), davon die Station 12.6 s in 2 Fenster(n) auf der Bahn (die Sitzung trug 54 s, Ziel 70 s, Deckel 60 s) · nach dem Collector 300 → 405.2 MB: 91.5 MB/min (Soll ≤ 50) · Heap-Kurve 19 Punkte über 1.11 min, 314.4 → 441.1 MB (max 441.1), roh 87.5 MB/min (der Takt des Collectors, kein Urteil) · [linse-gpu] nvidia/pascal (Attrappe der Werkbank) — ROT 1: Heap nach dem Collector 300 → 405.2 MB: 91.5 MB/min > 50
+HAND kandidat-saege · vor 49.2 s · Deckel 60 s · hält 0 MB/min · Probe 19.8 s (Exit 0)
+  Zeuge spielgang {"ziel":70,"deckel":60,"vorher":54,"eigen":12.6,"fenster":2} · minuten 1.15 · Kurve {"n":19,"min":1.11,"steigung":-3.86,"von":310.4,"bis":336.1,"max":358.4} · heap [300,300]
+  ausdauer#1 GRÜN · Spielgang 1.15 min in 1 Seite(n), davon die Station 12.6 s in 2 Fenster(n) auf der Bahn (die Sitzung trug 54 s, Ziel 70 s, Deckel 60 s) · nach dem Collector 300 → 300 MB: 0 MB/min (Soll ≤ 50) · Heap-Kurve 19 Punkte über 1.11 min, 310.4 → 336.1 MB (max 358.4), roh -3.86 MB/min (der Takt des Collectors, kein Urteil) · [linse-gpu] nvidia/pascal (Attrappe der Werkbank)
+HAND basis-gezielt · vor 49.2 s · Deckel 60 s · hält 30 MB/min · Probe 7.1 s (Exit 0)
+  Zeuge spielgang undefined · minuten 0.94 · Kurve {"n":17,"min":0.89,"steigung":43.62,"von":311.7,"bis":373.4,"max":380.7} · heap [300,328.2]
+  @@PUNKTE@@ MESSORT die Dauer trug ihre Minute nicht: 0.94 min am Stück < 1 · Heap-Kurve blind (17 Punkte über 0.89 min)
+  ausdauer#1 ROT · BLIND, kein Urteil über die Steigung · Spielgang 0.94 min in 1 Seite(n) · Heap-Kurve 17 Punkte, 311.7 → 373.4 MB (max 380.7), Steigung 43.62 MB/min · nach dem Collector 30 MB/min (Soll je ≤ 50) · [linse-gpu] nvidia/pascal (Attrappe der Werkbank) — ROT 2: 0.94 min am Stück < 1 | Heap-Kurve blind (17 Punkte über 0.89 min)
+HAND basis-leck · vor 49.2 s · Deckel 60 s · hält 91.5 MB/min · Probe 7.2 s (Exit 0)
+  Zeuge spielgang undefined · minuten 0.94 · Kurve {"n":17,"min":0.9,"steigung":105.18,"von":314.4,"bis":431.3,"max":431.3} · heap [300,385.9]
+  @@PUNKTE@@ MESSORT die Dauer trug ihre Minute nicht: 0.94 min am Stück < 1 · Heap-Kurve blind (17 Punkte über 0.9 min)
+  ausdauer#1 ROT · BLIND, kein Urteil über die Steigung · Spielgang 0.94 min in 1 Seite(n) · Heap-Kurve 17 Punkte, 314.4 → 431.3 MB (max 431.3), Steigung 105.18 MB/min · nach dem Collector 91.4 MB/min (Soll je ≤ 50) · [linse-gpu] nvidia/pascal (Attrappe der Werkbank) — ROT 3: 0.94 min am Stück < 1 | Heap-Kurve blind (17 Punkte über 0.9 min) | Heap nach dem Collector 300 → 385.9 MB: 91.4 MB/min > 50
+HAND basis-saege · vor 49.2 s · Deckel 60 s · hält 0 MB/min · Probe 7.1 s (Exit 0)
+  Zeuge spielgang undefined · minuten 0.94 · Kurve {"n":17,"min":0.9,"steigung":13.69,"von":310.4,"bis":345.4,"max":358.4} · heap [300,300]
+  @@PUNKTE@@ MESSORT die Dauer trug ihre Minute nicht: 0.94 min am Stück < 1 · Heap-Kurve blind (17 Punkte über 0.9 min)
+  ausdauer#1 ROT · BLIND, kein Urteil über die Steigung · Spielgang 0.94 min in 1 Seite(n) · Heap-Kurve 17 Punkte, 310.4 → 345.4 MB (max 358.4), Steigung 13.69 MB/min · nach dem Collector 0 MB/min (Soll je ≤ 50) · [linse-gpu] nvidia/pascal (Attrappe der Werkbank) — ROT 2: 0.94 min am Stück < 1 | Heap-Kurve blind (17 Punkte über 0.9 min)
+
+## 2. Das Fenster der Tasten — glaette-hand.cjs <stationen> <spiel-baum> <wirft> (der echte Befehl der Glätte profiband.K4#1)
+# Kandidat
+GLÄTTE scratchpad · Exit 0 · Schritte [["anfang",2.6],["k4-geh",2.8],["k4-fahrt",3]]
+  Fenster: k4geh zapfen(k4-geh) haenger zapfen(null) K4ENDE umstellen   ← die Uhren enden
+  Fenster: k4fahrt zapfen(k4-fahrt) haenger zapfen(null) K4ENDE zapfen(null)   ← die Uhren enden
+  Tasten im Zeugen {"k4-geh":{"v":3,"wagen":"werkbank-fahrt","aus":null,"ein":"werkbank-fahrt"},"k4-fahrt":{"v":3,"wagen":"werkbank-fahrt","aus":null,"ein":"werkbank-fahrt"}} · Fehler {}
+GLÄTTE scratchpad · MUTANTE der Hänger wirft · Exit 0 · Schritte [["anfang",2.6],["k4-geh","Fehler"],["k4-fahrt","Fehler"]]
+  Fenster: k4geh zapfen(k4-geh) haenger zapfen(null) K4ENDE umstellen   ← die Uhren enden
+  Fenster: k4fahrt zapfen(k4-fahrt) haenger zapfen(null) K4ENDE zapfen(null)   ← die Uhren enden
+  Tasten im Zeugen {} · Fehler {"k4-geh":"/haenger: Attrappe: der Hänger warf","k4-fahrt":"/haenger: Attrappe: der Hänger warf"}
+# Basis
+GLÄTTE scratchpad · Exit 0 · Schritte [["anfang",2.5],["k4-geh",2.8],["k4-fahrt",3]]
+  Fenster: k4geh zapfen(k4-geh) haenger zapfen(null) tasten-lesen umstellen   ← KEIN Ende der Uhren
+  Fenster: k4fahrt zapfen(k4-fahrt) haenger zapfen(null) tasten-lesen zapfen(null)   ← KEIN Ende der Uhren
+  Tasten im Zeugen {"k4-geh":{"v":3,"wagen":"werkbank-fahrt","aus":null,"ein":"werkbank-fahrt"},"k4-fahrt":{"v":3,"wagen":"werkbank-fahrt","aus":null,"ein":"werkbank-fahrt"}} · Fehler {}
+GLÄTTE scratchpad · MUTANTE der Hänger wirft · Exit 0 · Schritte [["anfang",2.6],["k4-geh","Fehler"],["k4-fahrt","Fehler"]]
+  Fenster: k4geh zapfen(k4-geh) haenger zapfen(null) umstellen   ← KEIN Ende der Uhren
+  Fenster: k4fahrt zapfen(k4-fahrt) haenger zapfen(null) zapfen(null)   ← KEIN Ende der Uhren
+  Tasten im Zeugen {} · Fehler {"k4-geh":"/haenger: Attrappe: der Hänger warf","k4-fahrt":"/haenger: Attrappe: der Hänger warf"}
+
+## 3. Die Wache an der ECHTEN Seite — k4-wache-hand.cjs <basis> <kandidat> (Werkbank :24600, /wirt nimm · gib, SEITE aus dem Befehl)
+K4 kandidat · gib MIT Collector  · lebend 0 · misst      · gib 1483 ms · Heap nach 782.1 MB · Tasten {"wagen":"-","aus":"-","ein":"-"} · 
+K4 kandidat · gib OHNE Collector · lebend 1 · UNGEMESSEN · gib 10 ms · Heap nach null MB · Tasten {"wagen":"-","aus":"-","ein":"-"} · const st = r.state; for (const h of window._
+K4 basis    · gib MIT Collector  · lebend 1 · UNGEMESSEN · gib 1092 ms · Heap nach 786.4 MB · Tasten {"wagen":"-","aus":"-","ein":"-"} · const st = r.state; clearInterval(window.__k
+K4 basis    · gib OHNE Collector · lebend 3 · UNGEMESSEN · gib 16 ms · Heap nach null MB · Tasten {"wagen":"-","aus":"-","ein":"-"} · const st = r.state; clearInterval(window.__k | return { zelle: null }; | return window.__k4 || null
+
+## 4. Der Preis je Akt der Dauer — akt-heap.cjs <stationen> torbau,nacht 3 (Heap nach dem Collector vor/nach jedem Akt, echte Seite)
+Seite {"ort":[0,-43],"kreaturen":0,"uhr":0.5000000000444147}
+torbau 1 · 2473 ms · {"bau":true,"tor":true,"heim":true} · Heap nach dem Collector 926.5 → 931.4 MB (+4.9) · lebend 0
+torbau 2 · 2031 ms · {"bau":true,"tor":true,"heim":true} · Heap nach dem Collector 931.4 → 936.4 MB (+5.0) · lebend 0
+torbau 3 · 1896 ms · {"bau":true,"tor":true,"heim":true} · Heap nach dem Collector 936.4 → 943.2 MB (+6.8) · lebend 0
+nacht 1 · 991 ms · {"nacht":9.721833333363371e-15,"mittag":0.50000000000001} · Heap nach dem Collector 943.2 → 949.9 MB (+6.7) · lebend 0
+nacht 2 · 1006 ms · {"nacht":9.722000000025829e-15,"mittag":0.50000000000001} · Heap nach dem Collector 949.9 → 951.4 MB (+1.5) · lebend 0
+nacht 3 · 1013 ms · {"nacht":9.721916666694601e-15,"mittag":0.50000000000001} · Heap nach dem Collector 951.4 → 950.9 MB (-0.5) · lebend 0
+
+## 5. Die Klasse über die Messdateien von origin/punkte-maschine — wache-klasse.cjs · k4-zaehl.cjs · aus-gemessen.cjs (klasse 12 s)
+SUMME 643 Dateien, 42 mit Wache: UNGEMESSEN ohne Collector 68 · nach dem Collector 60 · Dauer offen über die Wache 14
+{
+ "da": 188,
+ "wache": 33,
+ "gemessen": 108,
+ "sonst": 47,
+ "aus": {
+  "da": 42,
+  "gemessen": 13,
+  "offenWache": 14,
+  "andere": {
+   "die Welt der Sitzung startet nicht (Halter Exit 1 ": 2,
+   "Last: Referenz f 1,777 (Faden 1,777 · alle Kerne 1": 1,
+   "Messort: die Dauer trug ihre Minute nicht: Heap-Ku": 2,
+   "kein Anfang in dieser Sitzung (profiband.K4#1 fuhr": 2,
+   "Deckel 23 s gerissen — beendet, UNGEMESSEN (zuletz": 1,
+   "die Welt der Sitzung trägt nicht mehr (Grundstellu": 6,
+   "Messort: die Dauer trug ihre Minute nicht: 0.84 mi": 1
+  }
+ }
+}
+
+31ea3847-gtx.json      ROT   Spielgang 1.06  roh 151.13  nachGC 95.5   Punkte 18 BLIND  —  2: Heap-Kurve blind (18 Punkte über 0.84 min) | Heap nach dem Collector 229.5 → 330.7 MB: 95.5 MB/min > 50 · gemessen v
+447eaea6-gtx.json      ROT   Spielgang 1.13  roh 51.55   nachGC 37.5   Punkte 20 BLIND  —  1: Heap-Kurve blind (20 Punkte über 0.88 min) · gemessen vor dem Abbruch: Messort: die Dauer trug ihre Minute nicht: He
+77e079ae-gtx.json      ROT   Spielgang 3.44  roh 12.8    nachGC 14     Punkte 69   —  1: 2 Seiten zwischen Anfang und Ende (neu geladen — nie am Stück)
+77e079ae-radeon.json   ROT   Spielgang 0.92  roh 152.76  nachGC 89.2   Punkte 18   —  3: 0.92 min am Stück < 1 | Heap-Kurve blind (18 Punkte über 0.7 min) | Heap nach dem Collector 225.7 → 307.8 MB: 89.2 M
+7de938ab-gtx.json      ROT   Spielgang 1.67  roh 174.57  nachGC 122.6  Punkte 17   —  3: 2 Seiten zwischen Anfang und Ende (neu geladen — nie am Stück) | Heap-Kurve steigt 174.57 MB/min > 50 | Heap nach de
+9d4319c0-gtx.json      ROT   Spielgang 1.3   roh 80.14   nachGC 56.5   Punkte 21   —  2: Heap-Kurve steigt 80.14 MB/min > 50 | Heap nach dem Collector 227.9 → 301.4 MB: 56.5 MB/min > 50
+9d4319c0-radeon.json   ROT   Spielgang 1.18  roh 100.16  nachGC 58.5   Punkte 18 BLIND  —  2: Heap-Kurve blind (18 Punkte über 0.95 min) | Heap nach dem Collector 229.4 → 298.4 MB: 58.5 MB/min > 50 · gemessen v
+a8dd22b5-radeon.json   ROT   Spielgang 1     roh 56.43   nachGC 38.2   Punkte 21 BLIND  —  1: Heap-Kurve blind (21 Punkte über 0.76 min) · gemessen vor dem Abbruch: Messort: die Dauer trug ihre Minute nicht: He
+bf9be26c-radeon.json   GRÜN  Spielgang 7.39  roh 27.57   nachGC 28.6   Punkte 125   — 
+d39e0d6e-gtx.json      ROT   Spielgang 0.93  roh 163.93  nachGC 104.7  Punkte 19   —  3: 0.93 min am Stück < 1 | Heap-Kurve blind (19 Punkte über 0.7 min) | Heap nach dem Collector 227 → 324.4 MB: 104.7 MB
+ee9c1965-gtx.json      ROT   Spielgang 0.9   roh 71.4    nachGC 34.3   Punkte 19   —  2: 0.9 min am Stück < 1 | Heap-Kurve blind (19 Punkte über 0.68 min)
+ee9c1965-radeon.json   ROT   Spielgang 0.82  roh -20.65  nachGC 91.5   Punkte 18   —  3: 0.82 min am Stück < 1 | Heap-Kurve blind (18 Punkte über 0.62 min) | Heap nach dem Collector 224.7 → 299.7 MB: 91.5 
+f68dbf09-gtx.json      ROT   Spielgang 0.99  roh 126.41  nachGC 95.3   Punkte 19 BLIND  —  3: 0.99 min am Stück < 1 | Heap-Kurve blind (19 Punkte über 0.77 min) | Heap nach dem Collector 228.2 → 322.5 MB: 95.3 
+
+## 6. Die Wand liste — node punkte.cjs liste, Basis ↔ Kandidat (28,4 s), liste-bloecke.cjs <basis-liste> <diff>
+1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0
+Basis 1 331 779 Zeilen · fallen 112 · kommen 546 · alle in diesen Blöcken (der Befehl von pbProbe, den 14 Stationen teilen):
+10 Hunks · profiband.K4#1
+9 Hunks · profiband.K4#2
+9 Hunks · profiband.K1#1
+9 Hunks · profiband.K1#2
+9 Hunks · pflicht.E#1
+9 Hunks · karte2.same.entfaltung.schirm#1
+9 Hunks · pflicht.C#2
+9 Hunks · profiband.K2#1
+9 Hunks · profiband.K2#2
+9 Hunks · profiband.K3#1
+9 Hunks · profiband.K3#2
+9 Hunks · profiband.K5#1
+9 Hunks · profiband.K5#2
+9 Hunks · karte2.same.preis.ausdauer#1
+14 Blöcke
