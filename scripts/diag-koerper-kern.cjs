@@ -203,6 +203,144 @@ const verbKlassen = (P, H, stunde = 12, O = { heim: {}, werk: {}, platz: {}, mah
     return Object.entries(z).filter(([, k]) => k >= 0.1 * n).map(([h, k]) => `${h} ${Math.round((100 * k) / n)} %`); // prettier-ignore
 };
 
+// DER SATZ DES LEIBS (leib-liest-satz, die Familie des Verbs — koerper `tagesHaltung(akt, rolle, satz)` · `leibSatzProfil` ·
+// `leibSatzNamen` · `trachtDesTags`; Leser im Wirt, der Stamm im vm über stamm.cjs `grundWirt`: `_bewohnerGemuet` · `_bewohnerStaende`
+// · `_bewohnerTracht` · `_bestandAnlegen`): der Leib liest den GANZEN Satz seines Menschen.
+//   L1 der Kranke (mensch.menge.seuche 1): 2000 Samen je Rolle um 10 Uhr krank (`tagesPlan`), wer draußen ist, steht über
+//      `_bewohnerGemuet` anders als der Gesunde desselben Akts (`tagesHaltung(akt, rolle)`) — Soll: jeder (Anteil 1).
+//   L2 das Können (mensch.sport.kunst 1): Meister (Können 1,05) und Lehrling (0,3) derselben Kunst je Akt der Kunst (Werk,
+//      Zweikampf, Brett) stehen über `_bewohnerGemuet` in verschiedenen Namen, ihre Profile (`leibSatzProfil`) verschieden.
+//   L3 die Güte folgt der Übung (mensch.sport.koennen 2): ein Hersteller aus dem Satz des Wirts (BEWOHNER_SATZ, der Kalender der
+//      Welt rückt wie in der Station um 10 Stunden seiner Übung je Schritt, elf Schritte) — R² log Güte ↔ log Stunden ≥ 0,8, die
+//      Steigung = α/(1−α) des Bands (LEBENSLAUF.uebung.alpha.handwerk, Newell & Rosenbloom 1981).
+//   L4 die Tracht des Tags (mensch.kopplung.leib 1): `_bewohnerTracht` am Messort des Dorfs je Epoche (fachwerk EPOCHEN): der
+//      Anteil der Lagen im Winter über dem im Sommer, im Regen nicht darunter, der Sommer danach wie der Sommer davor.
+//   L5 der ferne Satz trägt jeden Namen (`_bewohnerStaende`): jeder Name, den das Gesetz nennen kann (`leibSatzNamen`), hat seine
+//      Zeile — der Bewohner wählt sie über denselben Namen wie sein naher Leib.
+//   L6 die Tat der Rolle liest den Satz (rollen-des-tages, mensch.nahrung.tier 2): je Rolle mit Tat (TAGES_GESETZ.rollen `tat`: der
+//      Jäger, der Fischer) zur ersten Stunde ihrer Tat (`tagesPlan`, Akt = `tat`) stehen Meister (1,05) und Lehrling (0,3) ihres
+//      Werks über `_bewohnerGemuet` in verschiedenen Namen und Profilen, der Kranke anders als der Gesunde — Soll: jede Rolle mit Tat.
+// Täter (Selbsttest, je beim Namen): „alt“ (die Haltung aus Akt und Rolle, vor leib-liest-satz) → ROT an L1 · „ohneStufe“ (der
+// Satz ohne Übung) → ROT an L2 · „einmalRate“ (die Rate liest das Können einmal beim Anlegen, vor leib-liest-satz) → ROT an L3 ·
+// „ohneWetter“ (der Schnitt der Epoche, vor leib-liest-satz) → ROT an L4 · „ohneZeile“ (der Satz ohne die Namen) → ROT an L5 ·
+// „tatOhneKunst“ (die Tat der Rolle ohne ihre Kunst, LEIB_SATZ.kunst vor rollen-des-tages) → ROT an L6.
+const SATZ_LAGEN = ["pullover", "poncho", "jacket", "jacke", "coat", "mantel", "hoodie"]; // die Lagen, die die Station zählt (mensch.kopplung.leib S1)
+function satzUrteil(mutante = null) {
+    const path = require("path");
+    const dorf = require("../spec/profiband/haushalt.json").messorte.find((o) => o.id === "dorf").spieler;
+    const eingriff = (A, ctx) => {
+        const K = ctx.__koerperCore, P = A.prototype; // prettier-ignore
+        if (mutante === "alt") { const th = K.tagesHaltung; K.tagesHaltung = (akt, rolle) => th(akt, rolle); } // prettier-ignore
+        if (mutante === "ohneStufe") { const th = K.tagesHaltung; K.tagesHaltung = (akt, rolle, s) => th(akt, rolle, s && { krank: s.krank, uebung: { haupt: null } }); } // prettier-ignore
+        if (mutante === "einmalRate") { const an = P._bestandAnlegen; P._bestandAnlegen = function (liste) { an.call(this, liste); for (const b of liste) if (b.bestand) Object.defineProperty(b.bestand, "rate", { value: b.bestand.rate, writable: true }); }; } // prettier-ignore
+        if (mutante === "ohneWetter") P._bewohnerTracht = function (d, T, tuch) { const ov = Object.assign(d, { top: T.top, bottom: T.bottom, shoes: T.shoes }); for (const k of ["topColor", "bottomColor", "shoeColor"]) if (!T.farben.includes(ov[k])) ov[k] = T.farben[Math.max(0, tuch.indexOf(ov[k])) % T.farben.length]; return ov; }; // prettier-ignore
+        if (mutante === "ohneZeile") K.leibSatzNamen = () => [];
+        if (mutante === "tatOhneKunst") { const th = K.tagesHaltung, taten = Object.values(K.TAGES_GESETZ.rollen).map((R) => R.tat).filter(Boolean); K.tagesHaltung = (akt, rolle, s) => th(akt, rolle, s && taten.includes(akt) ? { krank: s.krank, uebung: { haupt: null } } : s); } // prettier-ignore
+    };
+    const { r, A, st, ctx } = require("./lib/stamm.cjs").grundWirt(path.join(__dirname, ".."), null, eingriff);
+    const K = ctx.__koerperCore, FC = ctx.__fachwerkCore; // prettier-ignore
+    const rot = [], aus = {}; // prettier-ignore
+    const O = { heim: {}, werk: {}, platz: {}, mahl: {}, abend: {}, besuch: null };
+    const gut = (k) => ({ haupt: "handwerk", handwerk: { h: 7500, koennen: k }, tanz: { h: 7500, koennen: k }, kampf: { h: 7500, koennen: k }, brett: { h: 7500, koennen: k } }); // prettier-ignore
+    // L1 der Kranke
+    let [n1, anders] = [0, 0];
+    for (let s = 0; s < 2000; s++)
+        for (const ro of [null, ...Object.keys(K.TAGES_GESETZ.rollen)]) {
+            const p = K.tagesPlan(s, ro, 10, O, 0, true);
+            if (p.drinnen) continue;
+            n1++;
+            if (r._bewohnerGemuet({ akt: p.akt, rolle: ro, krank: true, uebung: gut(1), leib: null }).haltung !== K.tagesHaltung(p.akt, ro)) anders++; // prettier-ignore
+        }
+    aus.krank = { n: n1, anders };
+    if (!(n1 > 0) || anders < n1) rot.push(`L1 der Kranke steht wie der Gesunde: ${anders} von ${n1} Kranken draußen um 10 Uhr stehen anders als der Gesunde desselben Akts (Soll: jeder) — Täter: koerper tagesHaltung(akt, rolle, satz) · stamm _bewohnerGemuet`); // prettier-ignore
+    // L2 das Können
+    const profil = (nm) => (typeof K.leibSatzProfil === "function" ? K.leibSatzProfil(K.MOTION, nm) : K.MOTION[nm] || null);
+    const paare = [];
+    for (const akt of ["arbeit", "zweikampf", "brett"]) {
+        const [m, l] = [1.05, 0.3].map((k) => r._bewohnerGemuet({ akt, rolle: null, krank: false, uebung: gut(k), leib: null }).haltung); // prettier-ignore
+        const [pm, pl] = [profil(m), profil(l)];
+        if (m !== l && pm && pl && JSON.stringify(pm) !== JSON.stringify(pl)) paare.push(`${akt}: ${m} ↔ ${l}`);
+    }
+    aus.paare = paare;
+    if (paare.length < 3) rot.push(`L2 der Lehrling steht wie der Meister: in ${paare.length} von 3 Künsten trennen sich Name und Profil (Werk, Zweikampf, Brett) — Täter: koerper tagesHaltung · leibSatzProfil · stamm _bewohnerGemuet`); // prettier-ignore
+    // L3 die Güte folgt der Übung
+    const U = A.LEBENSLAUF.uebung, HS = K.BESTAND_GESETZ.herstellung; // prettier-ignore
+    const beruf = Object.keys(HS).find((k) => HS[k].ware && HS[k].jeStunde > 0);
+    st.materials = st.materials || {};
+    st.materials[HS[beruf].ware] = st.materials[HS[beruf].ware] || {};
+    const S = { plan: { seed: 4711, slots: [], name: "satz", jahr: 1500 }, liste: [], wirt: r };
+    const b = { seed: "4711:3:0", same: 4711, rolle: null, beruf, heim: 3, orte: { werk: {} }, epoche: { jahr: 1500, n: 2, rang: 0, name: "mittelalter" }, sied: S }; // prettier-ignore
+    Object.defineProperties(b, A.BEWOHNER_SATZ);
+    r._bestandAnlegen([b]);
+    const wm = st.worldMeta;
+    r._kalenderZeit();
+    const hatte = Object.prototype.hasOwnProperty.call(wm, "kalender"), alt = hatte ? wm.kalender : undefined; // prettier-ignore
+    const [v0, l0] = alt || [0, r._kalender().normS];
+    const jahrK = r._kalender().jahrK;
+    const reihe = [];
+    try {
+        const h0 = b.uebung.handwerk.h;
+        wm.kalender = [v0 + jahrK, l0];
+        const proJ = b.uebung.handwerk.h - h0;
+        for (let k = 0; k <= 10 && proJ > 0; k++) {
+            wm.kalender = [v0 + k * (10 / proJ) * jahrK, l0];
+            reihe.push([Math.log(b.uebung.handwerk.h), Math.log(b.bestand.rate / HS[beruf].jeStunde)]);
+        }
+    } finally {
+        if (hatte) wm.kalender = alt;
+        else delete wm.kalender;
+    }
+    const mx = reihe.reduce((s, p) => s + p[0], 0) / reihe.length, my = reihe.reduce((s, p) => s + p[1], 0) / reihe.length; // prettier-ignore
+    let [sxx, sxy, syy] = [0, 0, 0];
+    for (const [x, y] of reihe) [sxx, sxy, syy] = [sxx + (x - mx) ** 2, sxy + (x - mx) * (y - my), syy + (y - my) ** 2];
+    const r2 = sxx > 0 ? (syy > 0 ? (sxy * sxy) / (sxx * syy) : 0) : null;
+    const a = U.alpha && U.alpha.handwerk, soll = a / (1 - a); // prettier-ignore
+    aus.uebung = { n: reihe.length, r2, steigung: sxx > 0 ? sxy / sxx : null, soll, spanne: reihe.length ? Math.exp(reihe[reihe.length - 1][0]) - Math.exp(reihe[0][0]) : 0 }; // prettier-ignore
+    if (reihe.length < 11 || !(r2 >= 0.8)) rot.push(`L3 die Güte steht über der Übung still: R² log Güte ↔ log Stunden ${r2 == null ? "—" : r2.toFixed(3)} über ${aus.uebung.spanne.toFixed(0)} Stunden (Soll ≥ 0,8) — Täter: stamm _bestandAnlegen (die Rate liest b.uebung)`); // prettier-ignore
+    else if (!(Math.abs(aus.uebung.steigung - soll) < 1e-6)) rot.push(`L3 die Güte folgt nicht dem Band der Übung: Steigung ${aus.uebung.steigung.toFixed(4)} gegen α/(1−α) ${Number.isFinite(soll) ? soll.toFixed(4) : "— (kein Band je Kunst)"} — Täter: stamm LEBENSLAUF.uebung.alpha · _bewohnerLauf`); // prettier-ignore
+    // L4 die Tracht des Tags
+    const tuch = Object.keys(K.CLOTH_COLORS);
+    const w0 = { season: st.season, phase: st.seasonPhase, w: st.weather, wt: st.weatherTransition };
+    const lagen = (jz, w) => {
+        r.setSeason(jz);
+        [st.weather, st.weatherTransition] = [w, null];
+        const E = Object.keys(FC.EPOCHEN);
+        return E.filter((e) => SATZ_LAGEN.includes(r._bewohnerTracht({ topColor: "white", bottomColor: "white", shoeColor: "white" }, FC.EPOCHEN[e].tracht, tuch, { x: dorf[0], z: dorf[1] }).top)).length / E.length; // prettier-ignore
+    };
+    try {
+        aus.lagen = { sommer: lagen("summer", "sunny"), winter: lagen("winter", "sunny"), regen: lagen("summer", "rainy"), gegen: lagen("summer", "sunny") }; // prettier-ignore
+    } finally {
+        r.setSeason(w0.season);
+        Object.assign(st, { seasonPhase: w0.phase, weather: w0.w, weatherTransition: w0.wt });
+    }
+    const L = aus.lagen;
+    if (!(L.winter > L.sommer)) rot.push(`L4 die Tracht liest das Wetter nicht: der Anteil der Lagen im Winter ${L.winter.toFixed(3)} gegen den Sommer ${L.sommer.toFixed(3)} am Dorf (Soll: darüber) — Täter: stamm _bewohnerTracht · koerper trachtDesTags`); // prettier-ignore
+    else if (!(L.regen >= L.sommer) || L.gegen !== L.sommer) rot.push(`L4 die Tracht folgt dem Wetter nicht zurück: Regen ${L.regen.toFixed(3)}, der Sommer danach ${L.gegen.toFixed(3)} gegen ${L.sommer.toFixed(3)} — Täter: stamm _bewohnerTracht (das Merk der Tracht)`); // prettier-ignore
+    // L5 der ferne Satz trägt jeden Namen
+    const namen = typeof K.leibSatzNamen === "function" ? K.leibSatzNamen() : [];
+    A._bewohnerStaendeListe = null;
+    A._bewohnerStaende();
+    const ohne = namen.filter((nm) => !A._bewohnerStandZeilen.get(nm));
+    aus.namen = namen.length;
+    if (!namen.length || ohne.length) rot.push(`L5 der ferne Satz trägt die Namen des Satzes nicht: ${namen.length} Namen, ${ohne.length} ohne Zeile (${ohne.slice(0, 3).join(", ")}) — Täter: koerper leibSatzNamen · stamm _bewohnerStaende`); // prettier-ignore
+    // L6 die Tat der Rolle liest den Satz
+    const tat = [];
+    let tatN = 0;
+    for (const [ro, R] of Object.entries(K.TAGES_GESETZ.rollen)) {
+        if (!R.tat) continue;
+        tatN++;
+        let stunde = null;
+        for (let h = 0; h < 24 && stunde === null; h += 0.25) if (K.tagesPlan(1, ro, h, O, 0).akt === R.tat) stunde = h;
+        if (stunde === null) continue;
+        const gem = (k, krank) => r._bewohnerGemuet({ akt: R.tat, rolle: ro, krank, uebung: gut(k), leib: null }).haltung;
+        const [m, l, kr] = [gem(1.05, false), gem(0.3, false), gem(1.05, true)];
+        if (m !== l && kr !== m && JSON.stringify(profil(m)) !== JSON.stringify(profil(l))) tat.push(`${ro} ${R.tat} ${stunde} Uhr: ${m} ↔ ${l} · ${kr}`); // prettier-ignore
+    }
+    aus.tat = tat;
+    if (!tatN || tat.length < tatN) rot.push(`L6 die Tat der Rolle liest den Satz nicht: ${tat.length} von ${tatN} Rollen mit Tat trennen Meister, Lehrling und Kranken am Ort ihrer Tat — Täter: koerper LEIB_SATZ.kunst · tagesHaltung · stamm _bewohnerGemuet`); // prettier-ignore
+    return { rot, ...aus };
+}
+
 // DER EINKAUF DES HAUSHALTS (tages-gesetz, koerper TAGES_GESETZ.einkauf · `tagesEinkaeufer` · `tagesPlan`; Leser: der Wirt
 // `_einkaufAnlegen` · `_bewohnerSoll`, die Station mensch.menge.bild#2 um 8 Uhr am Markt): 1000 Samen eines Wohnhauses als
 // Einkäufer seines Haushalts (orte.einkauf = der Markt) und dieselben ohne, je 0,02 h von 3 bis 14 Uhr. M1 der Einkäufer steht in
@@ -895,8 +1033,9 @@ function spielGaeste(C0, n, same) {
         const age = Math.max(0, Math.min(1, (alterJ - 18) / 62));
         const K = C0.leibKoennen(Object.assign({}, C0.START_PARAMS, { mass, tone, age, gender: z("g" + i) }));
         // die Übung der Liebhaber wie im Lebenslauf des Wirts (stamm LEBENSLAUF.uebung: amateurH 2000 Stunden über ueberJ 15 Jahre,
-        // das Potenzgesetz guteH 7500 · alpha 0,4; der Zweikampf ab 15 J, das Brett ab 7 J)
-        const uebung = (w) => Math.pow(Math.max(1, ((z(w + i) * 2000) / 15) * Math.max(0, alterJ - (w === "kampf" ? 15 : 7))) / 7500, 0.4);
+        // das Potenzgesetz guteH 7500 in Stunden mit dem Exponenten α/(1−α) des Bands, Newell & Rosenbloom 1981: der Kampf α 0,32,
+        // das Brett α 0,21; der Zweikampf ab 15 J, das Brett ab 7 J)
+        const uebung = (w) => Math.pow(Math.max(1, ((z(w + i) * 2000) / 15) * Math.max(0, alterJ - (w === "kampf" ? 15 : 7))) / 7500, w === "kampf" ? 0.32 / 0.68 : 0.21 / 0.79); // prettier-ignore
         return { same: (same * 7919 + i * 104729) >>> 0, rolle: alterJ < 15 ? "kind" : rollen[i % 4], mann: z("g" + i) >= 0.5, alterJ, masse: mass, beinM: 0.85 + 0.12 * (z("bein" + i) - 0.5), kraft: K.kraft, kampf: uebung("kampf"), brett: uebung("brett"), orte: spielOrte(i, z) }; // prettier-ignore
     });
 }
@@ -1142,6 +1281,180 @@ function reiheVon(feld, N, i) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// DIE ROLLE IST IHR TAGES-ANGEBOT (rollen-des-tages; Meisterkarte 2 mensch.macht.megastadt#1 · nahrung.tier#2 · macht.krieg#1;
+// koerper TAGES_GESETZ.rollen `streife` · `tat` · `werkAm`, `tagesStreife`, `tagesOrte` Revier und Ufer, `tagesJagdHaushalte`,
+// `tagesBeute`, SPIEL_GESETZ.arten.hieb, `spielKampf`; Leser: der Wirt `_bewohnerListe`, `_bewohnerSoll`, `_bewohnerBeute`,
+// `_bewohnerHiebTakt`, die Stationen der drei Sprossen). EINE Probe, drei Teile:
+//   R  DIE STREIFE — 1 000 Samen je Wache (Tag und Nacht), je 0,05 h: in den Stunden des Werks geht sie ihre Runde über die
+//      vier Punkte ihres Reviers (R1), kehrt zwischen zwei Runden an den Posten (R2: Anteil am Posten ≈ 1 − dauerH/jeH ± 0,1),
+//      jede Runde trägt jeden Punkt (R3), die Kette des Tags legt eine Wende an jeden Punkt (R4); `tagesStreife` wählt am Gitter
+//      die Punkte binnen radiusM, je zwei ≥ abstandM, im Kreis um den Posten (R5); braucht jeder Schritt der Runde 0,3 h (die
+//      Runde 1,5 h, länger als ihre Stunde — die Welt rafft den Tag, die Stunde 150 s), bricht jeder Abschnitt außerhalb des
+//      Werks höchstens um eine Runde später auf als ohne ihren Weg, keiner fällt (R6: „die Runde beginnt am Posten“, koerper
+//      `tagesKette`; Täter `rundeSchiebt`: die Kette vor dem Schnitt, jede Runde schiebt die nächste).
+//   J  DIE JAGD — 8 Saaten eines Plans (60 Häuser im Ring, Äcker um ihn, ein Ufer): der Plan trägt das Revier hinter dem
+//      äußersten Acker und das Ufer (J1), die Siedlung ≥ 1 Jäger (J2), der Jäger jagt ≥ 1 Stunde am Revier je Tag, der Fischer
+//      fischt am Ufer (J3), kein anderer bindet sein Werk ans Revier (J4), die Beute fällt an 0,27 ± 0,02 der Jagdtage (J5),
+//      der Fischfang trägt keine Beute aus dem Nichts (J6).
+//   H  DER HIEB — 2 000 Zweikämpfe zweier Bewaffneter (`spielKampf` „hieb“): kein Treffer durch die Deckung (H1), der Getroffene
+//      antwortet — der Zug nach jedem Treffer ist der seine (H2), der Stärkere siegt öfter (H3, Bradley–Terry), der Kampf endet
+//      mit `bis` Treffern (H4).
+// Am Kern vor rollen-des-tages ROT: R1 (keine Streife — 280 061 Proben „arbeit“, 0 „streife“), J1 (kein Revier), H0 (kein Hieb).
+// Täter (Selbsttest): die Wache ohne Runde, die Runde ohne Rückkehr, der Plan ohne Revier, die Siedlung ohne Jäger, die Rolle
+// ohne Tat, die Beute an jedem Tag, der Fang aus dem Nichts, der Hieb durch die Deckung, der Getroffene ohne Antwort.
+// der Täter R6: die Kette vor „die Runde beginnt am Posten“ — derselbe Kern, die Auslassung der Runde ausgeschaltet (fehlt das
+// Muster, lädt kein Täter: der Selbsttest fällt laut)
+function kernVorDemPosten() {
+    const fs = require("fs"), path = require("path"), vm = require("vm"); // prettier-ignore
+    const src = fs.readFileSync(path.join(__dirname, "..", "koerper-core.js"), "utf8");
+    const a = 'if (j && j < n && e.p.akt === "streife"';
+    if (src.split(a).length !== 2) return null;
+    const ctx = {};
+    vm.runInNewContext(src.replace(a, 'if (false && j < n && e.p.akt === "streife"'), ctx);
+    return ctx.__koerperCore || null;
+}
+function rollenUrteil(C, m = null) {
+    const rot = [];
+    const G = C.TAGES_GESETZ;
+    const P = m === "ohneStreife" ? (s, r, h, O) => C.tagesPlan(s, r, h, Object.assign({}, O, { streife: null }))
+        : m === "ohneRueckkehr" ? (s, r, h, O) => { const p = C.tagesPlan(s, r, h, O); return p.akt === "arbeit" && O.streife ? Object.assign({}, p, { akt: "streife", ort: O.streife[0] }) : p; } // prettier-ignore
+        : m === "ohneTat" ? (s, r, h, O) => { const p = C.tagesPlan(s, r, h, O); return p.akt === "jagd" || p.akt === "fischfang" ? Object.assign({}, p, { akt: "arbeit" }) : p; } // prettier-ignore
+        : C.tagesPlan;
+    // R — die Streife
+    const W = { x: 0, z: 0 };
+    // BÜHNE: die Runde im Raum des Kerns um einen Posten im Ursprung — die Mechanik der Kette, kein Ort der Welt
+    const runde = [{ x: 40, z: 0 }, { x: 0, z: 40 }, { x: -40, z: 0 }, { x: 0, z: -40 }];
+    const R = (G.rollen.waechter || {}).streife;
+    const r = { streife: 0, posten: 0, werk: 0, rundenOhne: 0, runden: 0, kette: 0 };
+    if (!R) rot.push("R1 die Wache geht keine Streife (TAGES_GESETZ.rollen.waechter ohne streife)");
+    else {
+        for (const rolle of ["waechter", "nachtwaechter"]) {
+            const v = G.rollen[rolle].versatzH || 0;
+            for (let s = 0; s < 1000; s++) {
+                const O = { heim: { x: 9, z: 9 }, werk: W, platz: W, besuch: {}, streife: runde };
+                let seit = null;
+                for (let h = 0; h < 24; h += 0.05) {
+                    const p = P(s, rolle, h + v, O);
+                    const k = runde.indexOf(p.ort);
+                    if (p.akt === "streife") (r.streife++, r.werk++, seit && k >= 0 && seit.add(k));
+                    else if (p.ort === W) (r.posten++, r.werk++);
+                    // (eine Runde: vom Aufbruch am Posten bis zur Rückkehr — sie trägt jeden Punkt)
+                    if (p.akt === "streife" && !seit) seit = new Set([k]);
+                    if (p.akt !== "streife" && seit) (r.runden++, seit.size < runde.length && r.rundenOhne++, (seit = null)); // prettier-ignore
+                }
+            }
+        }
+        const anteil = r.werk ? r.posten / r.werk : 0;
+        if (!r.streife) rot.push(`R1 die Wache geht keine Streife: ${r.posten} Proben am Posten, 0 in der Runde`);
+        else if (Math.abs(anteil - (1 - R.dauerH / R.jeH)) > 0.1) rot.push(`R2 die Runde kehrt nicht an den Posten: ${(100 * anteil).toFixed(1)} % des Werks am Posten (Soll ${(100 * (1 - R.dauerH / R.jeH)).toFixed(0)} ± 10 %)`); // prettier-ignore
+        if (r.streife && (!r.runden || r.rundenOhne)) rot.push(`R3 die Runde trägt nicht jeden Punkt: ${r.rundenOhne} von ${r.runden} Runden`);
+        const K = typeof C.tagesKette === "function" ? C.tagesKette(7, "waechter", { heim: { x: 9, z: 9 }, werk: W, platz: W, besuch: {}, streife: runde }, 0, false, () => 0.02) : null; // prettier-ignore
+        const an = new Set(((K && K.kette) || []).map((e) => runde.indexOf(e.p.ort)).filter((k) => k >= 0));
+        r.kette = an.size;
+        if (r.streife && an.size < runde.length) rot.push(`R4 die Kette des Tags legt ${an.size} von ${runde.length} Punkten der Runde (koerper tagesKette)`); // prettier-ignore
+        // R6 — die Runde frisst den Abend nicht: je Schritt der Runde 0,3 h, sonst 0,02 h; der Abschnitt außerhalb des Werks bricht
+        // höchstens um eine Runde (5 Schritte) später auf als ohne den Weg der Runde (der Täter: die Kette vor dem Schnitt)
+        const KK = m === "rundeSchiebt" ? kernVorDemPosten() : C;
+        const schrittH = 0.3, rundeH = (runde.length + 1) * schrittH;
+        const gehR = (a, b) => (/^streife/.test(a) || /^streife/.test(b) ? schrittH : 0.02);
+        Object.assign(r, { spaetMax: 0, gefallen: 0, aus: 0 });
+        for (const rolle of ["waechter", "nachtwaechter"])
+            for (let s = 0; s < 200 && KK && typeof KK.tagesKette === "function"; s++) {
+                const O = { heim: { x: 9, z: 9 }, werk: W, platz: W, besuch: {}, streife: runde };
+                const frei = (K) => K.kette.filter((e) => e.p.akt !== "arbeit" && e.p.akt !== "streife");
+                const K1 = KK.tagesKette(s, rolle, O, 0, false, gehR), [e0, e1] = [frei(KK.tagesKette(s, rolle, O, 0, false, () => 0.02)), frei(K1)]; // prettier-ignore
+                r.aus += K1.aus || 0;
+                if (e1.length !== e0.length) r.gefallen++;
+                for (let i = 0; i < Math.min(e0.length, e1.length); i++) r.spaetMax = Math.max(r.spaetMax, e1[i].auf - e0[i].auf);
+            }
+        if (r.streife && (!KK || r.gefallen || r.spaetMax > rundeH + 1e-6)) rot.push(`R6 die Runde frisst den Abend: ${KK ? `${r.gefallen} von 400 Tagen verlieren Abschnitte außerhalb des Werks, der späteste bricht ${r.spaetMax.toFixed(2)} h später auf (Soll ≤ ${rundeH.toFixed(2)} h, eine Runde)` : "der Kern vor dem Posten ist nicht ladbar"} — koerper tagesKette`); // prettier-ignore
+        const gitter = [];
+        for (let i = -10; i <= 10; i++) for (let j = -10; j <= 10; j++) gitter.push({ x: i * 10, z: j * 10 });
+        const w = typeof C.tagesStreife === "function" ? C.tagesStreife(gitter, W, "waechter").map((i) => gitter[i]) : [];
+        const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+        const winkel = w.map((q) => Math.atan2(q.x, q.z));
+        if (w.length !== R.punkte || w.some((q) => ab(q, W) > R.radiusM || ab(q, W) < R.abstandM) || w.some((q, i) => w.some((u, j) => j > i && ab(q, u) < R.abstandM)) || winkel.some((a, i) => i && a < winkel[i - 1])) rot.push(`R5 das Revier der Streife: ${w.length} Punkte (Soll ${R.punkte} binnen ${R.radiusM} m, je zwei ≥ ${R.abstandM} m, im Kreis) — koerper tagesStreife`); // prettier-ignore
+        r.revier = w.length;
+    }
+    // J — die Jagd
+    const j = { saaten: 0, mitRevier: 0, mitUfer: 0, jaeger: 0, jagdH: [], fischH: [], fremd: 0, beute: 0, tage: 0, fang: 0, bindungFalsch: 0 }; // prettier-ignore
+    const ohneRevier = m === "ohneRevier";
+    for (let saat = 1; saat <= 8; saat++) {
+        const rand = mulberry32(saat * 7919);
+        const slots = [];
+        for (let i = 0; i < 60; i++) {
+            const a = (2 * Math.PI * i) / 60, rr = 30 + 40 * rand(); // prettier-ignore
+            slots.push({ x: Math.cos(a) * rr, z: Math.sin(a) * rr, rolle: i % 15 === 0 ? "schmiede" : "wohnhaus" });
+        }
+        const felder = [0, 1, 2, 3].map((k) => ({ cx: Math.cos(k * 1.57 + rand()) * (110 + 30 * rand()), cz: Math.sin(k * 1.57 + rand()) * (110 + 30 * rand()), ex: 20, ez: 15 })); // prettier-ignore
+        const plan = { slots, platz: { cx: 0, cz: 0, ex: 12, ez: 10 }, felder };
+        let orte = C.tagesOrte(plan, null, { ufer: { x: 0, z: -180 - 20 * rand() } });
+        if (ohneRevier) orte = orte.filter((o) => o.art !== "revier" && o.art !== "ufer");
+        j.saaten++;
+        const rev = orte.findIndex((o) => o.art === "revier"), uf = orte.findIndex((o) => o.art === "ufer"); // prettier-ignore
+        if (rev >= 0) j.mitRevier++;
+        if (uf >= 0) j.mitUfer++;
+        // (die Wahl der Jäger: die Wohnhäuser nächst dem Revier, so viele, wie das Gesetz der Haushalte nennt — koerper tagesJagdWahl)
+        const wohn = slots.filter((q) => q.rolle === "wohnhaus");
+        const wahl = m === "ohneJaeger" || typeof C.tagesJagdWahl !== "function" || rev < 0 ? [] : C.tagesJagdWahl(wohn, slots.length, orte[rev]);
+        const dR = (q) => Math.hypot(q.x - orte[rev].x, q.z - orte[rev].z);
+        const n = wahl.length && wahl.length === C.tagesJagdHaushalte(slots.length) && wahl.every((i) => wohn.every((q, k) => wahl.includes(k) || dR(q) >= dR(wohn[i]))) ? wahl.length : 0; // prettier-ignore
+        if (rev >= 0 && n > 0) j.jaeger++;
+        for (const [rolle, i, L] of [["jaeger", rev, j.jagdH], ["fischer", uf, j.fischH]]) {
+            if (i < 0 || !G.rollen[rolle]) continue;
+            // (die Bindung der Rolle trägt ihr Werk an den Ort ihrer Tat — der Zensus der Wege liest sie, diag-kreatur-leben)
+            const Bj = C.tagesBindung(globalThis.__tetrapodaCore, saat, rolle, 1, orte, () => false);
+            const wk = m === "bindungAmPlatz" ? orte.findIndex((o) => o.art === "platz") : Bj.werk;
+            if (wk !== i) j.bindungFalsch++;
+            const O = { heim: orte[1], werk: orte[i], platz: orte.find((o) => o.art === "platz"), besuch: null };
+            let t = 0;
+            for (let h = 0; h < 24; h += 0.05) t += P(saat * 101, rolle, h, O).akt === G.rollen[rolle].tat && P(saat * 101, rolle, h, O).ort === O.werk ? 0.05 : 0; // prettier-ignore
+            L.push(+t.toFixed(2));
+        }
+        // (kein anderer bindet ans Revier oder ans Ufer: die Bindung des Wohnhauses, 200 Samen)
+        for (let s = 0; s < 200; s++) {
+            const B = C.tagesBindung(globalThis.__tetrapodaCore, s, "wohnhaus", 1, orte, () => false);
+            for (const k of ["werk", "mahl", "abend", "besuch"]) if (B[k] === rev || B[k] === uf) j.fremd += B[k] >= 0;
+        }
+    }
+    const beute = m === "beuteImmer" ? () => true : m === "fangAusNichts" ? (s, t, tat) => (tat === "fischfang" ? true : C.tagesBeute(s, t, tat)) : C.tagesBeute; // prettier-ignore
+    if (typeof beute === "function") for (let s = 0; s < 500; s++) for (let t = 0; t < 20; t++) (j.tage++, (j.beute += beute(s, t, "jagd") ? 1 : 0), (j.fang += beute(s, t, "fischfang") ? 1 : 0)); // prettier-ignore
+    const pB = G.jagd && G.jagd.beute ? G.jagd.beute.jagd : null;
+    if (j.mitRevier < j.saaten || j.mitUfer < j.saaten) rot.push(`J1 der Plan trägt kein Revier oder Ufer: Revier in ${j.mitRevier}, Ufer in ${j.mitUfer} von ${j.saaten} Saaten (koerper tagesOrte)`); // prettier-ignore
+    if (j.jaeger < j.saaten) rot.push(`J2 die Siedlung trägt keinen Jäger: ${j.jaeger} von ${j.saaten} Saaten (koerper tagesJagdWahl · tagesJagdHaushalte)`);
+    if (j.jagdH.length < j.saaten || j.jagdH.some((t) => t < 1) || j.fischH.length < j.saaten || j.fischH.some((t) => t < 1)) rot.push(`J3 die Rolle trägt ihre Tat nicht: Jagd je Tag [${j.jagdH.join(", ")}] h, Fischfang [${j.fischH.join(", ")}] h (Soll ≥ 1 h am Ort der Tat in jeder Saat)`); // prettier-ignore
+    if (j.fremd) rot.push(`J4 ${j.fremd} Bindungen des Wohnhauses ans Revier oder Ufer (Soll 0: der Ort bietet nur seine Tat)`);
+    if (pB == null || !j.tage || Math.abs(j.beute / j.tage - pB) > 0.02) rot.push(`J5 die Beute fällt an ${j.tage ? ((100 * j.beute) / j.tage).toFixed(1) : "—"} % der Jagdtage (Soll ${pB == null ? "—" : (100 * pB).toFixed(0)} ± 2 %)`); // prettier-ignore
+    if (j.fang) rot.push(`J6 der Fischfang trägt Beute aus dem Nichts: ${j.fang} von ${j.tage} Tagen (Soll 0 bis zum Bestand der Fische)`);
+    if (j.bindungFalsch) rot.push(`J7 die Bindung trägt das Werk von Jäger oder Fischer nicht an Revier oder Ufer: ${j.bindungFalsch} von ${2 * j.saaten} (koerper tagesBindung)`); // prettier-ignore
+    // H — der Hieb
+    const h = { kaempfe: 0, zuege: 0, deckung: 0, treffer: 0, antwort: 0, staerkerSiegt: 0, ungleich: 0, bisOhne: 0 };
+    const A = C.SPIEL_GESETZ && C.SPIEL_GESETZ.arten && C.SPIEL_GESETZ.arten.hieb;
+    if (!A) rot.push("H0 der Kern trägt keinen Hieb (SPIEL_GESETZ.arten.hieb)");
+    else {
+        const rnd = mulberry32(4711);
+        for (let k = 0; k < 2000; k++) {
+            const a = { s: 0.5 + rnd(), u: 0.2 + rnd() }, b = { s: 0.5 + rnd(), u: 0.2 + rnd() }; // prettier-ignore
+            let K = C.spielKampf(a, b, (k * 2654435761) >>> 0, m === "durchDeckung" ? "ringen" : "hieb");
+            if (m === "ohneAntwort") K = Object.assign({}, K, { zuege: K.zuege.map((z) => Object.assign({}, z, { an: 0 })) });
+            h.kaempfe++;
+            h.zuege += K.zuege.length;
+            K.zuege.forEach((z, i) => {
+                if (z.gelesen && z.treffer) h.deckung++;
+                if (z.treffer && i + 1 < K.zuege.length) (h.treffer++, K.zuege[i + 1].an !== z.an && h.antwort++);
+            });
+            if (Math.abs(a.s - b.s) > 0.3) (h.ungleich++, K.sieger === (a.s > b.s ? 0 : 1) && h.staerkerSiegt++);
+            if (Math.max(...K.treffer) !== A.bis) h.bisOhne++;
+        }
+        if (h.deckung) rot.push(`H1 ${h.deckung} Treffer durch die Deckung in ${h.kaempfe} Zweikämpfen (Soll 0)`);
+        if (h.antwort < h.treffer) rot.push(`H2 der Getroffene antwortet nicht: ${h.antwort} von ${h.treffer} Treffern (Soll alle)`);
+        if (!(h.staerkerSiegt > 0.55 * h.ungleich)) rot.push(`H3 der Stärkere siegt ${h.staerkerSiegt} von ${h.ungleich} ungleichen Zweikämpfen (Soll > 55 %)`); // prettier-ignore
+        if (h.bisOhne) rot.push(`H4 ${h.bisOhne} Zweikämpfe enden nicht mit ${A.bis} Treffern`);
+    }
+    return { rot, r, j, h };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 if (SELBSTTEST) {
     // Vier injizierte Abweichungen (Morph, Proportionen, Landmarken, die Wache ohne Versatz) — jede MUSS die Linse zuenden.
     let fails = 0;
@@ -1178,15 +1491,21 @@ if (SELBSTTEST) {
     // der Einkauf des Haushalts: das Gesetz hält, jeder Täter fällt ROT bei seinem Maß
     const ekGut = einkaufRot(einkaufUrteil(core));
     const eTaeter = [[jederMorgenVon(core.tagesPlan), null, "M1", "jederMorgen"], [ausWerkVon(core.tagesPlan), null, "M1", "ausWerk"], [fuerSichVon(core.tagesPlan), null, "M1", "fuerSich"], [spaeterMarktVon(core, core.tagesPlan), null, "M2", "spaeterMarkt"], [core.tagesPlan, kindKauftVon(core.tagesEinkaeufer), "M5", "kindKauft"]].map(([P, E, m, name]) => [!ekGut.length && einkaufRot(einkaufUrteil(core, P, E || core.tagesEinkaeufer)).some((z) => z.startsWith(m + " ")), `Einkauf ${name} ${m}`]); // prettier-ignore
+    // der Satz des Leibs: das Gesetz hält, jeder Täter fällt ROT beim Namen (leib-liest-satz)
+    const saGut = !satzUrteil().rot.length;
+    const satzTaeter = [["alt", "L1 der Kranke steht wie der Gesunde"], ["ohneStufe", "L2 der Lehrling steht wie der Meister"], ["einmalRate", "L3 die Güte steht über der Übung still"], ["ohneWetter", "L4 die Tracht liest das Wetter nicht"], ["ohneZeile", "L5 der ferne Satz trägt die Namen des Satzes nicht"], ["tatOhneKunst", "L6 die Tat der Rolle liest den Satz nicht"]].map(([m, z]) => { const rr = satzUrteil(m).rot; console.log(`  ${saGut && rr.some((x) => x.startsWith(z)) ? "✅" : "⛔"} Satz-Täter „${m}“ → ROT an ${z.split(" ")[0]}`); return [saGut && rr.some((x) => x.startsWith(z)), "Satz " + m + " " + z]; }); // prettier-ignore
     const ankGut = ankunftUrteil(core, 0.4), ankWende = ankunftUrteil(core, 0.4, "zurWende");
     const uGut = eigeneUhr(stammTexte()), uTaeter = eigeneUhr([["stamm/probe.js", "        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, regen, b.krank);"]]);
+    // die Rolle und ihr Tages-Angebot: das Gesetz hält, jeder Täter fällt ROT beim Namen
+    const roGut = !rollenUrteil(core).rot.length;
+    const rollenTaeter = [["ohneStreife", "R1 die Wache geht keine Streife"], ["ohneRueckkehr", "R2 die Runde kehrt nicht an den Posten"], ["ohneRevier", "J1 der Plan trägt kein Revier"], ["ohneJaeger", "J2 die Siedlung trägt keinen Jäger"], ["ohneTat", "J3 die Rolle trägt ihre Tat nicht"], ["beuteImmer", "J5 die Beute fällt"], ["fangAusNichts", "J6 der Fischfang trägt Beute aus dem Nichts"], ["durchDeckung", "H1 "], ["ohneAntwort", "H2 der Getroffene antwortet nicht"], ["bindungAmPlatz", "J7 die Bindung trägt das Werk"], ["rundeSchiebt", "R6 die Runde frisst den Abend"]].map(([m, z]) => [roGut && rollenUrteil(core, m).rot.some((r) => r.startsWith(z)), `Rollen ${m} ${z}`]); // prettier-ignore
     const morgenTaeter = [...eTaeter, [ankGut.n >= 1000 && ankGut.frueh >= 0.99 && !ankGut.monoton && !ankGut.ohneAbschnitt && ankWende.frueh < 0.5, "Ankunft zurWende M3 der Aufbruch liegt nicht um die Gehzeit vor der Wende"], [!uGut.length && uTaeter.length === 1, "Ankunft eigeneUhr M4 ein Leser liest den Plan mit eigener Uhr"]]; // prettier-ignore
-    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...verbenTaeter, ...spielTaeter, ...morgenTaeter])
+    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...verbenTaeter, ...spielTaeter, ...morgenTaeter, ...rollenTaeter, ...satzTaeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle zweiundfünfzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, acht Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, sieben Täter des Einkaufs und der Ankunft zur Stunde).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle neunundsechzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, acht Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, sieben Täter des Einkaufs und der Ankunft zur Stunde, elf Täter der Rolle und ihres Tages-Angebots, sechs Täter des Satzes des Leibs).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -1195,6 +1514,9 @@ const st = stossUrteil(core);
 const verb = verbKlassen(core.tagesPlan, core.tagesHaltung);
 if (verb.length < 2) st.rot.push(`VERB die Stadt um 12 Uhr steht in ${verb.length} Haltung(en) [${verb.join(", ")}] (Soll ≥ 2) — Täter: koerper tagesHaltung`);
 console.log(`  VERB die Stadt um 12 Uhr: ${verb.join(" · ")}`);
+const sa = satzUrteil();
+for (const z of sa.rot) st.rot.push("SATZ " + z);
+console.log(`  SATZ des Leibs: L1 ${sa.krank.anders} von ${sa.krank.n} Kranken stehen anders · L2 ${sa.paare.length} von 3 Künsten trennen Meister und Lehrling [${sa.paare.join(" · ")}] · L3 R² ${sa.uebung.r2 == null ? "—" : sa.uebung.r2.toFixed(3)} über ${sa.uebung.spanne.toFixed(0)} h (Steigung ${sa.uebung.steigung == null ? "—" : sa.uebung.steigung.toFixed(4)}, Band ${Number.isFinite(sa.uebung.soll) ? sa.uebung.soll.toFixed(4) : "—"}) · L4 Lagen am Dorf Sommer ${sa.lagen.sommer.toFixed(3)} · Winter ${sa.lagen.winter.toFixed(3)} · Regen ${sa.lagen.regen.toFixed(3)} · L5 ${sa.namen} Namen im Satz · L6 ${sa.tat.length} Rollen mit Tat lesen den Satz [${sa.tat.join(" · ")}]`);
 const be = bestandUrteil(core);
 for (const z of be.rot) st.rot.push("BESTAND " + z + " — Täter: koerper BESTAND_GESETZ");
 const ak = typeof core.scheuneFassen === "function" && typeof globalThis.__phytoCore.ackerStand === "function"
@@ -1217,6 +1539,9 @@ if (!an) st.rot.push("ANKUNFT M3 der Kern trägt keine Kette des Tags (koerper t
 else if (an.n < 1000 || an.frueh < 0.99 || an.monoton || an.ohneAbschnitt) st.rot.push(`ANKUNFT M3 der Aufbruch liegt nicht um die Gehzeit vor der Wende: ${(100 * an.frueh).toFixed(1)} % von ${an.n} Wenden (Soll ≥ 99 %), ${an.monoton} Aufbrüche vor der Ankunft, ${an.ohneAbschnitt} Ziele ohne Abschnitt (Soll 0) — Täter: koerper tagesKette · tagesZiel`);
 if (uhrLeser.length) st.rot.push(`ANKUNFT M4 ein Leser liest den Plan mit eigener Uhr: ${uhrLeser.join(", ")} (Soll: der EINE Leser ist die Kette, tagesZiel) — Täter: der Leser`);
 if (an) console.log(`  ANKUNFT zur Stunde (je Weg 0,4 h): ${(100 * an.frueh).toFixed(1)} % von ${an.n} Wenden brechen um die Gehzeit davor auf · ${an.monoton} vor der Ankunft · ${an.eng} Abschnitte, deren Aufenthalt der Weg frisst (2000 Samen) · Leser mit eigener Uhr im Stamm: ${uhrLeser.length}`);
+const ro = rollenUrteil(core);
+for (const z of ro.rot) st.rot.push("ROLLEN " + z + " — Täter: koerper TAGES_GESETZ.rollen · tagesPlan · tagesOrte · tagesStreife · tagesJagdHaushalte · tagesBeute · SPIEL_GESETZ.arten.hieb");
+console.log(`  ROLLEN die Streife: ${ro.r.streife} Proben in der Runde, ${ro.r.posten} am Posten (${ro.r.werk ? ((100 * ro.r.posten) / ro.r.werk).toFixed(1) : "—"} % des Werks), ${ro.r.runden} Runden (${ro.r.rundenOhne} ohne jeden Punkt), die Kette an ${ro.r.kette} Punkten, das Revier ${ro.r.revier} Punkte, bei 0,3 h je Schritt ${ro.r.aus} Runden ausgelassen, der Abend höchstens ${(ro.r.spaetMax || 0).toFixed(2)} h später, ${ro.r.gefallen} Tage mit gefallenen Abschnitten · die Jagd: ${ro.j.mitRevier}/${ro.j.saaten} Saaten mit Revier, ${ro.j.mitUfer} mit Ufer, ${ro.j.jaeger} mit Jäger, Jagd je Tag [${ro.j.jagdH.join(", ")}] h, Fischfang [${ro.j.fischH.join(", ")}] h, ${ro.j.fremd} fremde Bindungen, Beute an ${ro.j.tage ? ((100 * ro.j.beute) / ro.j.tage).toFixed(1) : "—"} % der Jagdtage, Fang aus dem Nichts ${ro.j.fang} · der Hieb: ${ro.h.kaempfe} Zweikämpfe, ${ro.h.zuege} Züge, ${ro.h.deckung} durch die Deckung, ${ro.h.antwort} von ${ro.h.treffer} Treffern beantwortet, der Stärkere siegt ${ro.h.staerkerSiegt} von ${ro.h.ungleich}`); // prettier-ignore
 const kn = koennenUrteil(core);
 for (const z of kn.rot) st.rot.push("KÖNNEN " + z + " — Täter: koerper leibKoennen");
 const vb = verbenUrteil(core);

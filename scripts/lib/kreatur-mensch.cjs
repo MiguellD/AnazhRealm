@@ -198,8 +198,12 @@ async function menschBuehnen() {
                     // der Wirt die Orte eines Menschen stellt), einmal je Stunde der Wende (`tagAb`, `_bewohnerZiel`, gleich ab
                     // wo gesucht) — der Tag misst ≥ 24 Spielstunden, die Wende an seinem Rand zählt einmal; Beiseitetreten
                     // (`_bewohnerPlatz`), der Weg zurück und der gerückte Stand wechseln kein Ziel
-                    if (b.ziel !== sp.ziel && ab(sp.ziel, b.ziel) >= A.BEWOHNER.gangM) sp.n.add(((b.tagAb + 24) % 24).toFixed(4)); // prettier-ignore
-                    sp.ziel = b.ziel;
+                    // (die Runde der Wache ist Weg IM Werk — koerper TAGES_GESETZ.zeitArt streife „arbeit“, HETUS 2008: „travel
+                    // during main job“ —: der Schritt vom Posten in die Runde, von Punkt zu Punkt und zurück wechselt kein Ziel des
+                    // Tags; der Gang von daheim zum ersten Punkt bleibt ein Weg, rollen-des-tages)
+                    const runde = b.akt === "streife" ? sp.akt === "streife" || sp.akt === "arbeit" : sp.akt === "streife" && b.akt === "arbeit"; // prettier-ignore
+                    if (b.ziel !== sp.ziel && !runde && ab(sp.ziel, b.ziel) >= A.BEWOHNER.gangM) sp.n.add(((b.tagAb + 24) % 24).toFixed(4)); // prettier-ignore
+                    [sp.ziel, sp.akt] = [b.ziel, b.akt];
                     // (am Steuer gehört der Leib dem Wagen: ob er steckt, urteilt der Verkehr — gate:fahr-leben VK `fest`)
                     const da =
                         b.amSteuer || (b.drinnen ? !b.hinaus : !b.ziel || (!b.drinnenSoll && ab(P, b.ziel) < 1.5));
@@ -492,11 +496,13 @@ async function menschBuehnen() {
         // DAS KÖNNEN IM GANG (mensch-zahlen, koerper `leibKoennen`): je Bewohner das Tempo seines Gangs gegen das Gesetz (tetrapoda
         // koerper `leibGehen` an seinem Bein × `lauf` seines Könnens aus den Dials seines Genoms und seinem Alter)
         // und im Gang-Fenster das Tempo, das er wirklich geht (Weg ÷ Geh-Zeit, ≥ 5 s am Stück des Fensters): wer mehr kann,
-        // kommt weiter — die Rang-Korrelation Können ↔ gegangenes Tempo über die Geher
-        // Täter (Selbsttest): der Stand vor dem Gesetz — jeder geht das Tempo seines Beins
+        // kommt weiter — die Rang-Korrelation Können ↔ gegangenes Tempo über die Geher. Das Gesetz trägt sein Satz (`leibSatzTempo`:
+        // der Kranke), sein EINER Schreiber ist `_bewohnerGang` (Geburt und Kante des Satzes, leib-liest-satz-2)
+        // Täter (Selbsttest): der Stand vor dem Gesetz — jeder geht das Tempo seines Beins (am EINEN Schreiber: die Geburt allein
+        // zu decken, sah die Kante des Satzes nicht — sie schrieb das Gesetz zurück, der Täter blieb unsichtbar)
         if (hat("bewohner-koennen")) {
-            for (const b of liste) b.tempo = b.tempoBand;
-            decke("_bewohnerGeburt", (alt) => (S2, b) => (alt.call(r, S2, b), b.tempoBand > 0 && (b.tempo = b.tempoBand), undefined)); // prettier-ignore
+            decke("_bewohnerGang", (alt) => (b) => (alt.call(r, b), b.tempoBand > 0 && (b[b.gangTempo != null ? "gangTempo" : "tempo"] = b.tempoBand), undefined)); // prettier-ignore
+            for (const b of liste) r._bewohnerGang(b);
         }
         // DAHEIM AM WERK (mensch-zahlen, der Griff von `binden`): wessen Werk sein eigenes Haus ist (Beruf = Rolle, kein Posten),
         // der trägt den Stand seines Werks nie als Abend oder Tisch — der Abend daheim sitzt vor der Tür, der Tisch daheim ist
@@ -535,9 +541,10 @@ async function menschBuehnen() {
                 },
                 zahl: () => {
                     const ohne = liste.filter((b) => {
-                        if (!b.koennen || !(b.tempo > 0)) return true;
+                        const v = b.gangTempo != null ? b.gangTempo : b.tempo; // (das Tempo seines Gangs, nicht das geliehene des Laufs)
+                        if (!b.koennen || !(v > 0)) return true;
                         const d = Object.assign({}, r._dialsAusGenom(b.genom), { age: b.genom.alter });
-                        return Math.abs(b.tempo - KC.leibGehen(b.beinL) * KC.leibKoennen(d).lauf) > 1e-9;
+                        return Math.abs(v - KC.leibSatzTempo(KC.leibGehen(b.beinL) * KC.leibKoennen(d).lauf, b)) > 1e-9;
                     });
                     const [ra, rb, m] = [rang(paare.map((q) => q[0])), rang(paare.map((q) => q[1])), (paare.length - 1) / 2];
                     let [sab, sa, sb] = [0, 0, 0];

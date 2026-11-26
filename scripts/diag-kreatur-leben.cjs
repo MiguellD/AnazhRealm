@@ -1317,7 +1317,8 @@ async function lebenBuehnen() {
         // bis 18,5 Uhr, haendler #936614 → haus#279359) zählte am Werk, also ohne Ziel (CI voll 12/18, Kopf 99b234d7: 18 Uhr 6 %)
         const stundeVon = (uhr, b) => {
             const a = window.__koerperCore.tagesZiel(r._bewohnerKette(b, 0), s.timeOfDay * 24).akt;
-            return a === "schlaf" ? 23 : a === "morgen" || a === "einkauf" ? 6 : a === "arbeit" || a === "spiel" ? 10 : a === "mittag" ? 13 : 18; // prettier-ignore
+            // (die Tat einer Rolle ist ihr Werk: die Runde der Wache, die Jagd, der Fischfang — rollen-des-tages)
+            return a === "schlaf" ? 23 : a === "morgen" || a === "einkauf" ? 6 : a === "arbeit" || a === "spiel" || a === "streife" || a === "jagd" || a === "fischfang" ? 10 : a === "mittag" ? 13 : 18; // prettier-ignore
         };
         const passt = (o, uhr, b, drinnen) => {
             const h = stundeVon(uhr, b);
@@ -1355,7 +1356,8 @@ async function lebenBuehnen() {
             RG.vor0M + (RG.alle / RG.jeStufe - 1) * RG.stufeM + RG.streuM,
             RG.quer0M + RG.alle / RG.jeStufe - 1
         );
-        const standVon = (b, ziel) => Object.values(b.orte).find((q) => q && q.anker && ab(q, ziel) < 0.05);
+        // (die Runde der Wache ist eine Liste von Ständen, `b.orte.streife` — jeder trägt seine Marke wie jeder andere Stand)
+        const standVon = (b, ziel) => Object.values(b.orte).flat().find((q) => q && q.anker && ab(q, ziel) < 0.05);
         // DER ORT EINES STANDS AM PLATZ IST DER PLATZ (bewohner-satz): der Stand, den der Wirt dem Platz gibt (`platzStand`), trägt
         // dessen Mitte als Marke (`anker`); die Schranke ist sein Rand (`platzRandM` + 2 m, wie `ortVon`), jenseits steht er „fern
         // von seiner Marke" (Täter zielplan-platzfern). Bis hier las die Probe nur die Marke der Tür: der Stand am Rand des Platzes
@@ -1405,6 +1407,25 @@ async function lebenBuehnen() {
         // Täter (Selbsttest): der erste Stand am Posten eines Tors steht jenseits seines Rings
         if (taeter === "zielplan-torfern") {
             const st = werkStand(torVon);
+            hinaus(st, st.anker, torRingM);
+        }
+        // DER ORT DER TAT IST EIN ORT DES WERKS (rollen-des-tages, koerper TAGES_GESETZ.rollen[r].tat · werkAm): das Revier hinter
+        // dem Saum der Äcker und das Ufer am Steg (koerper `tagesOrte` — derselbe Ruf wie der Wirt, das Ufer aus dem Anleger des
+        // Orts, `_anlegerOrt`), die Punkte der Runde der Wache (`b.orte.streife`, koerper `tagesStreife`): der Stand dort trägt den
+        // Ort als Marke (`anker`, `postenStand`), die Schranke ist der Ring des Postens (Täter zielplan-tatfern). Bis hier kannte die
+        // Probe keinen Ort der Tat: der Jäger am Revier zählte um 6 und 10 Uhr ohne Ziel (Stadt 2 und 1 von 145, „jaeger → kein
+        // Ort“), der Wächter auf der Runde an der nächsten Tür (`standVon` fand den Stand der Liste nicht)
+        const anl = r._anleger && r._anleger.has("dorf:" + S.key) ? r._anleger.get("dorf:" + S.key) : undefined;
+        const steg = anl === undefined ? r._anlegerOrt(S.ox, S.oz) : anl && anl.a;
+        const wild = steg && steg.a ? { ufer: { x: steg.a.x - S.ox, z: steg.a.z - S.oz } } : null;
+        const taten = window.__koerperCore
+            .tagesOrte(plan, null, wild)
+            .filter((o) => o.art === "revier" || o.art === "ufer")
+            .map((o) => ({ x: S.ox + o.x, z: S.oz + o.z, k: o.art }));
+        const tatVon = (b, st) => taten.find((t) => ab(st.anker, t) < 0.05) || ((b.orte.streife || []).includes(st) ? { k: "runde" } : null); // prettier-ignore
+        // Täter (Selbsttest): der erste Stand am Ort der Tat (der Jäger am Revier) steht jenseits des Rings um ihn
+        if (taeter === "zielplan-tatfern") {
+            const st = werkStand((a) => taten.some((t) => ab(a, t) < 0.05));
             hinaus(st, st.anker, torRingM);
         }
         // Täter (Selbsttest): die Marke eines Werk-Stands nennt die fernste Tür der Stadt, er steht, wo er stand
@@ -1464,6 +1485,15 @@ async function lebenBuehnen() {
                 const tor = !tuer && !amPlatz && !!st && torVon(st.anker);
                 const torM = tor ? ab(st.ur || st, st.anker) : 0;
                 if (torM > torRingM + 0.05 && !fern.some((f) => f.st === st)) fern.push({ st, text: `${wer(b)}: ${q3(torM)} m vom Posten an ${tor.k}` }); // prettier-ignore
+                const tat = !tuer && !amPlatz && !tor && !!st && tatVon(b, st);
+                const tatM = tat ? ab(st.ur || st, st.anker) : 0;
+                if (tatM > torRingM + 0.05 && !fern.some((f) => f.st === st)) fern.push({ st, text: `${wer(b)}: ${q3(tatM)} m vom Ort der Tat ${tat.k}` }); // prettier-ignore
+                // (die Wache auf der Runde hält ihren Posten: sein Stand gilt, solange sie im Werk ist — die Runde wechselt mit ihm,
+                // koerper `tagesStreife`; bis hier sah die Schranke den Posten nur, wenn die Wache zur Stunde dort stand)
+                const pw = b.orte.werk;
+                const pt = tat && tat.k === "runde" && pw && pw.anker && pw !== st && torVon(pw.anker);
+                const pM = pt ? ab(pw.ur || pw, pw.anker) : 0;
+                if (pM > torRingM + 0.05 && !fern.some((f) => f.st === pw)) fern.push({ st: pw, text: `${wer(b)}: ${q3(pM)} m vom Posten an ${pt.k}` }); // prettier-ignore
                 // (der Stand neben dem eigenen Wagen ist der Ort des Fahrers, `_verkehrAnlegen` — kein Haus daneben; am Steuer
                 // ist es der Wagen selbst, `_bewohnerSoll`: kein Haus, an dem er vorbeifährt)
                 const o = tuer
@@ -1475,6 +1505,10 @@ async function lebenBuehnen() {
                       : tor
                         ? torM <= torRingM + 0.05
                             ? { k: tor.k, rolle: "tor" }
+                            : null
+                        : tat
+                        ? tatM <= torRingM + 0.05
+                            ? { k: tat.k, rolle: tat.k }
                             : null
                         : b.wagen && (ziel === b.orte.werk || ziel === (b.wagen.entry && b.wagen.entry.position))
                         ? null
@@ -3181,6 +3215,7 @@ module.exports = {
             ["zielplan-fremd", /Stand fern von seiner Marke.*m von haus#/],
             ["zielplan-platzfern", /Stand fern von seiner Marke.*m vom Platz/],
             ["zielplan-torfern", /Stand fern von seiner Marke.*m vom Posten an tor#/],
+            ["zielplan-tatfern", /Stand fern von seiner Marke.*m vom Ort der Tat (revier|ufer)/],
             ["zielplan-los", /steht nicht: fiel still/, []],
             ["zielplan-jenseits", /Stand jenseits der Wand: [1-9]/, []],
             // die Täter „zielplan-wenden“ (der Tag aus fünf festen Wenden) und „zielplan-spitze15“ fielen mit dem Soll der Ganglinie

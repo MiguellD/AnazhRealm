@@ -5450,14 +5450,37 @@
             // dem Fahrer), steht von 6 bis 20 Uhr an seinem Punkt — sein Werk und sein Platz sind der Wache-Punkt, das Mittag hält
             // er durch; DER NACHTWÄCHTER lebt denselben Tag um `versatzH` Stunden versetzt (18 bis 8 Uhr) — zu jeder Stunde steht
             // einer draußen, auch um Mitternacht, wenn jeder andere drinnen schläft (`ruhe`)
-            waechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, haltung: false, regenfest: true }),
+            // DIE STREIFE (rollen-des-tages, Meisterkarte 2 mensch.macht.megastadt#1): die Wache steht nicht die Schicht lang am
+            // Posten — je `jeH` Stunden ihres Werks geht sie ihre RUNDE (`streife`): die ersten `dauerH` Stunden über die Punkte
+            // ihres Reviers auf dem Netz der Wege (`orte.streife`, der Wirt stellt sie aus `tagesStreife`), Punkt um Punkt gleich
+            // lang, dann zurück an den Posten. Die Runde je Stunde ist die der Nachtwache vor der Polizei: in jeder Runde ruft der
+            // Wächter die Stunde (Order of the Mayor and Aldermen of Philadelphia, 7. Juli 1752: „in the Course of each round …
+            // call the Hour of the Night“; Smollett 1771, Humphry Clinker: „the watchmen bawling the hour through every street“ —
+            // jede Stunde), zwischen zwei Runden hält ihn das Wachhaus am Posten. dauerH = die halbe Stunde (ANGENOMMEN: kein Band
+            // der Länge einer Runde; die Linse gate:koerper-kern ROLLEN R2 nennt die Zeit am Posten). Das Revier: `punkte` Punkte
+            // des Netzes binnen `radiusM` Weg um den Posten, je zwei `abstandM` auseinander, die nächsten zuerst (`tagesStreife`) —
+            // die Runde geht im Schritt (1,4 m/s) gut 130 m, der Rest der Stunde am Posten trägt, was sie länger braucht
+            // (ANGENOMMEN, die Welt rafft den Tag; tagesKette rechnet die Gehzeit — wer zum Aufbruch nicht am Posten steht, lässt
+            // die Runde aus: „die Runde beginnt am Posten“). Bis
+            // rollen-des-tages stand die Wache von 6 bis 20 Uhr an ihrem Punkt: über 1 000 Samen 280 061 Proben „arbeit“ am
+            // Werk, 0 Streife.
+            waechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, haltung: false, regenfest: true, streife: Object.freeze({ jeH: 1, dauerH: 0.5, punkte: 4, radiusM: 60, abstandM: 15 }) }), // prettier-ignore
             nachtwaechter: Object.freeze({
                 werk: Object.freeze([6, 20]),
                 mittagAmWerk: true,
                 versatzH: 12,
                 haltung: false,
                 regenfest: true,
+                streife: Object.freeze({ jeH: 1, dauerH: 0.5, punkte: 4, radiusM: 60, abstandM: 15 }),
             }),
+            // DER JÄGER UND DER FISCHER (rollen-des-tages, mensch.nahrung.tier#2): die Rolle trägt ihre TAT (`tat`) — in den
+            // Stunden ihres Werks steht sie am Ort, der diese Tat anbietet (`werkAm`: das Revier am Saum der Äcker, das Ufer des
+            // nächsten Gewässers — `tagesOrte`), und heißt dort „jagd" oder „fischfang"; der Heimweg trägt die Beute (der Wirt,
+            // `_bewohnerBeute`: der Bestand der Tiere am Revier GELESEN und um den Kopf GEÄNDERT, die Beute in den Vorrat seines
+            // Werks). Die Stunden: der Morgen ab der Dämmerung (das Wild äst in der Dämmerung, ANGENOMMEN — kein Band der Stunde
+            // der Jagd; die Linse nennt die Stunden), das Mittag am Revier. Wie viele jagen: `JAGD.anteil` der Haushalte.
+            jaeger: Object.freeze({ werk: Object.freeze([5, 11]), werkAm: "revier", tat: "jagd", mittagAmWerk: true }),
+            fischer: Object.freeze({ werk: Object.freeze([4.5, 10.5]), werkAm: "ufer", tat: "fischfang", mittagAmWerk: true }),
             // DAS KIND (ALTER_GESETZ.kindJ; der Wirt gibt die Rolle jedem Bewohner unter 15 J, `_bewohnerListe`): sein Werk ist das
             // Spiel (`spiel`: der Ort seiner Wahl nach dem Angebot `spiel` — der Platz, die Wiese am Acker —, nie das Werk seines
             // Hauses als Arbeit: kein Kind am Amboss), in kürzeren Stunden; der Akt heißt „spiel", die Haltung trägt die Freude
@@ -5479,6 +5502,9 @@
             burg: Object.freeze({ arbeit: 6 }),
             halle: Object.freeze({ arbeit: 6 }),
             turm: Object.freeze({ arbeit: 4 }),
+            // (das Revier und das Ufer bieten nur ihre Tat: kein anderer wählt dort sein Werk, seinen Treff — `tagesBindung`)
+            revier: Object.freeze({ jagd: 1 }),
+            ufer: Object.freeze({ fischfang: 1 }),
             sonst: Object.freeze({ arbeit: 3, treff: 1 }),
         }),
         daheim: Object.freeze({ mahl: 3, treff: 3 }),
@@ -5501,7 +5527,9 @@
         // jeder Bewohner stand zu jeder Stunde in derselben Haltung.
         // (das Spiel des Abends, SPIEL_GESETZ: der Läufer gebeugt in der Kraft, der Ringer in der Haltung des Kampfs — die Hände vor
         // dem Leib, der Stand breit —, am Brett über den Tisch, der Zuschauer jubelt)
-        haltung: Object.freeze({ arbeit: "pwalk", hilft: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", zweikampf: "fight", brett: "pwalk", zuschauen: "joy" }), // prettier-ignore
+        // (die Tat der Rolle: der Jäger geht gespannt, der Fischer steht über dem Wasser — die Wache trägt keine Haltung, `haltung:
+        // false`, auch nicht auf ihrer Runde und im Hieb: bis hier nannte die Tafel „streife“ und „hieb“, und keine Rolle las sie)
+        haltung: Object.freeze({ arbeit: "pwalk", hilft: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", zweikampf: "fight", brett: "pwalk", zuschauen: "joy", jagd: "pwalk", fischfang: "pwalk" }), // prettier-ignore
         // DIE ZEIT-ART JE AKT (tages-gesetz, Entscheid des Koordinators 25.11.; Leser: gate:mensch-zuege `zuordnen`, die Station
         // mensch.geist.absicht#1): jeder Akt des Tags (`tagesPlan`, das Spiel des Abends) trägt GENAU EINE Art seiner Zeit — die
         // Hauptgruppen der Zeitbudget-Forschung: arbeit (Szalai 1972 „work“; HETUS 2008 Guidelines, Eurostat, Code 1 Erwerb),
@@ -5511,7 +5539,9 @@
         // Viertelstunde im Haus als Freizeit: mit dem Morgen im Haus (tages-gesetz) trug der Ausgeglichene 5,53 h „daheim“ und
         // fiel häuslich (gate:mensch-zuege ausgeglichen 7/16). Das Kind, das am Werk seines Hauses hilft („hilft“), arbeitet: die
         // mithelfenden Familienangehörigen zählen zu den Erwerbstätigen (ILO, ICSE-93, Gruppe 5 „contributing family workers“)
-        zeitArt: Object.freeze({ schlaf: "bedarf", morgen: "bedarf", mittag: "bedarf", arbeit: "arbeit", hilft: "arbeit", einkauf: "haushalt", besuch: "frei", abend: "frei", spiel: "frei", wettkampf: "frei", zweikampf: "frei", brett: "frei", zuschauen: "frei" }), // prettier-ignore
+        // (die Tat der Rolle ist Arbeit — der Gang der Streife ist Weg IM Werk, HETUS 2008: „travel as part of/during main job“
+        // gehört zum Erwerb, nie zu Code 9; der Hieb der Wache ebenso)
+        zeitArt: Object.freeze({ schlaf: "bedarf", morgen: "bedarf", mittag: "bedarf", arbeit: "arbeit", hilft: "arbeit", einkauf: "haushalt", besuch: "frei", abend: "frei", spiel: "frei", wettkampf: "frei", zweikampf: "frei", brett: "frei", zuschauen: "frei", streife: "arbeit", jagd: "arbeit", fischfang: "arbeit", hieb: "arbeit" }), // prettier-ignore
         // DER REGEN TREIBT INS HAUS (mensch.kopplung.leben S1 der Karte 2; Leser: `tagesPlan`, sein Wirt `_bewohnerSoll` reicht
         // den Regen der Welt, den Kanal `rain` des EINEN Wetter-Felds 0–1): steht der Regen am Ort über der Schwelle eines
         // Menschen (`ab` ± `streuH` aus seinem Samen — das Dorf flieht nicht im selben Atemzug, der Übergang des Worts leert den
@@ -5523,6 +5553,17 @@
         // mittags so voll wie in der Sonne; bis zum Bild am Genesis-Ort (Radeon, Regen um 13:16 Uhr) ging nur die Muße heim —
         // 31 von 77 standen bei der Arbeit im Regen auf dem Platz.
         regen: Object.freeze({ ab: 0.3, streuH: 0.15 }),
+        // DIE JAGD (rollen-des-tages, mensch.nahrung.tier#2; Leser: `tagesOrte` das Revier, `tagesJagdHaushalte` der Wirt
+        // `_bewohnerListe`, `tagesBeute` der Wirt `_bewohnerBeute`): anteil = so viele der Haushalte einer Siedlung tragen einen
+        // Jäger (und wo ein Ufer ist, ebenso viele einen Fischer) — die unterste Stufe über null der Abhängigkeit einer
+        // Gesellschaft von der Jagd im Ethnographic Atlas (Murdock 1967, Spalte 3: Stufen 0–5 · 6–15 · 16–25 … %): 6 %; der
+        // Anteil der Kost als Anteil der Haushalte ANGENOMMEN. revierM = so weit hinter dem äußersten Acker (dem Saum, an dem
+        // der Wald beginnt) liegt das Revier (ANGENOMMEN). beute = der Anteil der Jagdtage, an denen der Jäger Fleisch heimbringt:
+        // die Ju/'hoansi an weniger als 27 % (Lee 1979), die Hadza großes Wild an 1 von 30 Jäger-Tagen (Hawkes, O'Connell &
+        // Blurton Jones 1991: 3 %) — das Gesetz nimmt den Rand für jedes Fleisch, 0,27; ein Kopf je Beute. Der Fang des Fischers
+        // liest einen Bestand der Fische, den die Welt erst mit mensch.nahrung.tier#5 trägt: bis dahin heißt seine Tat
+        // „fischfang“ ohne Beute (`tagesBeute` nennt null — kein Fang aus dem Nichts).
+        jagd: Object.freeze({ anteil: 0.06, revierM: 60, beute: Object.freeze({ jagd: 0.27 }) }),
         // DER CHARAKTERZUG (Meisterkarte 2 mensch.geist.absicht S1; Leser: `tagesPlan` und `tagesBindung`, ihr Wirt
         // `_bewohnerSoll` und `binden`): jeder Mensch trägt aus seinem Samen EINEN Zug (`tagesZug`, die Anteile `anteil`), und
         // der Zug ändert die Wenden und die Ortswahl seines Tags. Der Zug ist die EINE Quelle der Abweichung, streuH bleibt das
@@ -5581,11 +5622,193 @@
         }
         return last;
     }
-    // DIE HALTUNG ZUM AKT (TAGES_GESETZ.haltung): der Name des Profils der Bewegung oder null (neutral)
-    function tagesHaltung(akt, rolle) {
+    // DER LEIB LIEST SEINEN SATZ (leib-liest-satz — mensch.menge.seuche 1 · mensch.sport.kunst 1 · mensch.kopplung.leib 1): Haltung
+    // und Tracht eines Menschen sind EINE Funktion seines ganzen Satzes — Akt und Rolle (TAGES_GESETZ), Gesundheit (`krank`), Können
+    // (`uebung`), das Wetter an seinem Ort. Die Haltung ist ein NAME: das Profil des Akts, dahinter je Zusatz des Satzes ein Wort
+    // (`trenner`: „sad/krank“, „pwalk/lehrling“); sein Profil rechnet `leibSatzProfil` aus der Tafel der Bewegung (das Buch des Körpers
+    // ist Vertrag — eine neue Zeile in MOTION gäbe es nie, der Zusatz ist ein Delta über dem Grund). Bis hier las die Haltung nur Akt
+    // und Rolle: der Kranke saß wie der Gesunde, der Lehrling stand wie der Meister, der Winter trug den Schnitt des Sommers.
+    var LEIB_SATZ = Object.freeze({
+        trenner: "/",
+        // DER KRANKE — Lasselin et al. 2020 (Brain Behav Immun 84:147–153, Tab. 1; LPS 2 ng/kg gegen Placebo, 19 Gesunde, Kinect v1
+        // auf 5,5 m): GEMESSEN IM GEHEN — darum EINE Zeile für Stand und Gang. `pose` je Achse des Profils das Delta in rad (headX +
+        // senkt den Kopf, kneeL/R + beugt, armLX/RX + streckt): der Kopf 2,50° tiefer [1,0; 4,1], das Knie 1,86° weniger gebeugt
+        // („less knee flexion“ [1,0; 2,7]), die Streckung des Arms 1,50° weniger [0,8; 2,2]; Rumpf und Schulter ohne Befund. `tempo`
+        // das Gehen −0,185 m/s [−0,243; −0,126] (der erste Lauf im eigenen Tempo), absolut (ANGENOMMEN: die Studie druckt kein Mittel
+        // des Placebos). Schrittlänge und Schrittzeit tragen KEINE eigene Zahl: sie folgen aus dem Tempo im EINEN Gang-Gesetz
+        // (tetrapoda `gangSchritt`) — geprüft gegen den Doppelschritt −0,093 m [−0,117; −0,070]; die Schrittzeit +27,9 ms [13,1; 42,7]
+        // mittelt zwei Läufe am Metronom (76 Schritte/min, feste Kadenz) mit dem freien (gate:mensch-anatomie gang.krank).
+        krank: Object.freeze({ pose: Object.freeze({ headX: 0.0436, kneeL: -0.0325, kneeR: -0.0325, armLX: -0.0262, armRX: -0.0262 }), tempo: -0.185 }), // prettier-ignore
+        // DIE BÄNDER DES GANGS im fernen Satz (`leibSatzBand`): je Wort eines, das den Gang ändert, ein Band — der Gesunde, der Kranke
+        baender: Object.freeze([null, "krank"]),
+        // DAS KÖNNEN — die Kunst, die ein Akt übt (`kunst`: „haupt“ die Kunst seines Werks, LEBENSLAUF.uebung), und seine Stufe auf
+        // der Skala des Könnens (1 = das Band der Guten): der Lehrling unter 0,5 geht im Takt seines Könnens — die Zeit je Akt ist
+        // ∝ 1/Können (Newell & Rosenbloom 1981, das Potenzgesetz der Übung), sein Profil im `takt` der Stufe (×freq: der Rhythmus
+        // des Stands); der Meister ab 1 steht im Profil des Akts (sein Takt ist der der Guten).
+        // Die Tat der Rolle (rollen-des-tages) ist ihr Werk: die Jagd und der Fischfang üben die Kunst des Werks („haupt“) — der
+        // Jäger, der sein Handwerk nicht kann, steht am Revier im Takt des Lehrlings wie der Lehrling am Werk.
+        kunst: Object.freeze({ arbeit: "haupt", zweikampf: "kampf", brett: "brett", jagd: "haupt", fischfang: "haupt" }),
+        stufe: Object.freeze([Object.freeze({ wort: "lehrling", unter: 0.5, takt: 0.5 })]),
+        // DIE TRACHT DES TAGS — das Soll der Kleidung aus der Luft um 6 Uhr (Schiavon & Lee 2013, Building and Environment 59:250–260,
+        // Gl. 10: < −5 °C 1,00 clo · −5 … 5 °C 0,818 − 0,0364·t · 5 … 26 °C 10^(−0,1635 − 0,0066·t) · ab 26 °C 0,46); die Isolation
+        // des Kleids ist die Summe seiner Teile (ASHRAE 55, Tafel der Kleidungsstücke: T-Shirt 0,08 · ärmellose Bluse 0,12 · Langarm-Sweatshirt 0,34 · dicker
+        // Einreiher 0,44 — der Poncho, ANGENOMMEN · dicke Hose 0,24 · Walking-Shorts 0,08 · Stiefel 0,10 + Wadensocken 0,03 · Schuhe
+        // 0,02 + Knöchelsocken 0,02 · Unterwäsche 0,04); die nasse Lage verliert im Stand 9 % (Bröde et al. 2008, Eur J Appl Physiol)
+        // ab dem Regen, der den Tag nach drinnen schickt (TAGES_GESETZ.regen.ab). Der leichte Schnitt (T-Shirt, Bein und Schuh der
+        // Epoche) nimmt je `lagen` die nächste Lage, solange ihre halbe Isolation das Soll nicht überschreitet — das Kleid, das das
+        // Soll am nächsten trifft.
+        tracht: Object.freeze({
+            uhr: 0.25,
+            clo: Object.freeze({ tshirt: 0.08, pullover: 0.34, poncho: 0.44, tank: 0.12, none: 0, pants: 0.24, shorts: 0.08, boot: 0.13, sneaker: 0.04, unter: 0.04 }), // prettier-ignore
+            soll: Object.freeze({ kalt: -5, kaltClo: 1, mild: 5, a: 0.818, b: -0.0364, warm: 26, warmClo: 0.46, c: -0.1635, d: -0.0066 }), // prettier-ignore
+            nass: 0.91,
+            leicht: "tshirt",
+            warm: Object.freeze(["pullover", "poncho"]),
+            lagen: Object.freeze([
+                Object.freeze({ feld: "top", von: null, zu: null }), // die warme Lage: das Oberteil der Epoche, ist es warm, sonst der Pullover
+                Object.freeze({ feld: "bottom", von: "shorts", zu: "pants" }),
+                Object.freeze({ feld: "shoes", von: "none", zu: "boot" }),
+            ]),
+        }),
+    });
+    // DIE HALTUNG ZUM AKT (TAGES_GESETZ.haltung): der Name des Profils der Bewegung oder null (neutral) — mit dem Satz `satz` (der
+    // Bewohner: `krank`, `uebung`) samt seinen Zusätzen (LEIB_SATZ); ohne Satz die Haltung des Gesunden seiner Rolle. Eine Rolle ohne
+    // Haltung (`haltung: false`) steht neutral, ihr Kranker im neutralen Profil mit dem Zusatz.
+    function tagesHaltung(akt, rolle, satz) {
         var R = TAGES_GESETZ.rollen[rolle],
             h = R && R.haltung === false ? null : TAGES_GESETZ.haltung[akt];
-        return h && MOTION[h] ? h : null;
+        h = h && MOTION[h] ? h : null;
+        if (!satz) return h;
+        var z = [];
+        if (satz.krank === true) z.push("krank");
+        var art = LEIB_SATZ.kunst[akt];
+        if (h && art) {
+            var U = satz.uebung;
+            if (!U) throw new Error("koerper tagesHaltung: der Satz trägt keine Übung (b.uebung) — fail-closed");
+            var k = art === "haupt" ? (U.haupt ? U[U.haupt] : null) : U[art];
+            if (k && !Number.isFinite(k.koennen)) throw new Error("koerper tagesHaltung: das Können der Kunst „" + art + "“ fehlt");
+            for (var i = 0; k && i < LEIB_SATZ.stufe.length; i++) if (k.koennen < LEIB_SATZ.stufe[i].unter) { z.push(LEIB_SATZ.stufe[i].wort); break; } // prettier-ignore
+        }
+        return z.length ? (h || "idle") + LEIB_SATZ.trenner + z.join(LEIB_SATZ.trenner) : h;
+    }
+    // DAS PROFIL EINES NAMENS (leib-liest-satz): aus der Tafel M (das Buch des Körpers: `fx.motion.presets`, oder MOTION) — der Grund
+    // ohne Zusatz ist seine Zeile; mit Zusätzen ihr Grund plus je Wort sein Delta (LEIB_SATZ.krank; die Stufe trägt ihren Takt ×freq).
+    // Gemerkt je Tafel und Namen (dasselbe Objekt je Ruf: der Leser vergleicht Profile auf Identität). Ein Wort ohne Gesetz bricht laut.
+    var _leibSatzMerk = typeof WeakMap === "function" ? new WeakMap() : null;
+    function leibSatzProfil(M, name) {
+        if (!M || typeof name !== "string") return null;
+        if (name.indexOf(LEIB_SATZ.trenner) < 0) return M[name] || null;
+        var merk = _leibSatzMerk && (_leibSatzMerk.get(M) || (_leibSatzMerk.set(M, Object.create(null)), _leibSatzMerk.get(M)));
+        if (merk && merk[name]) return merk[name];
+        var teile = name.split(LEIB_SATZ.trenner),
+            g = M[teile[0]];
+        if (!g) return null;
+        var p = Object.assign({}, g);
+        for (var i = 1; i < teile.length; i++) {
+            var w = teile[i],
+                d = LEIB_SATZ.baender.indexOf(w) > 0 ? LEIB_SATZ[w].pose : null,
+                st = null;
+            for (var j = 0; !d && j < LEIB_SATZ.stufe.length; j++) if (LEIB_SATZ.stufe[j].wort === w) st = LEIB_SATZ.stufe[j];
+            if (!d && !st) throw new Error("koerper leibSatzProfil: das Wort „" + w + "“ trägt kein Gesetz (LEIB_SATZ) — fail-closed");
+            if (d) for (var key in d) p[key] = (Number(p[key]) || 0) + d[key];
+            if (st) p.freq = (Number(p.freq) || 0) * st.takt;
+        }
+        p = Object.freeze(p);
+        if (merk) merk[name] = p;
+        return p;
+    }
+    // DER GANG LIEST DEN SATZ (leib-liest-satz-2 — mensch.menge.seuche: der Kranke steht UND geht anders). Drei Leser derselben
+    // Zeile, die der Stand liest (LEIB_SATZ.krank): `leibSatzPose(name)` die Summe der Posen der Wörter eines Namens („pwalk/krank“ →
+    // die Zeile des Kranken; ohne Wort mit Pose null) — die Pose des Gangs legt sie über die Beine des Gesetzes (`leibRigPose`,
+    // ×Gewicht des Gangs; der Stand trägt sie im Profil, `leibSatzProfil`), gemerkt je Namen; `leibSatzTempo(v, satz)` das Tempo des
+    // Gangs zum Tempo v des Gesunden (der Satz: `krank`); `leibSatzBand(satz)` das Band seines Gangs im fernen Satz (LEIB_SATZ.baender).
+    // Bis hier stand der Kranke gebeugt und ging wie der Gesunde: das Gehen las keine Haltung, sein Tempo setzte die Geburt.
+    var _leibSatzPoseMerk = Object.create(null);
+    function leibSatzPose(name) {
+        if (typeof name !== "string" || name.indexOf(LEIB_SATZ.trenner) < 0) return null;
+        if (name in _leibSatzPoseMerk) return _leibSatzPoseMerk[name];
+        var teile = name.split(LEIB_SATZ.trenner),
+            p = null;
+        for (var i = 1; i < teile.length; i++) {
+            var d = LEIB_SATZ.baender.indexOf(teile[i]) > 0 ? LEIB_SATZ[teile[i]].pose : null;
+            if (d) for (var k in d) (p || (p = {}))[k] = (p[k] || 0) + d[k];
+        }
+        return (_leibSatzPoseMerk[name] = p ? Object.freeze(p) : null);
+    }
+    function leibSatzBand(satz) {
+        return satz && satz.krank === true ? LEIB_SATZ.baender.indexOf("krank") : 0;
+    }
+    function leibSatzTempo(v, satz) {
+        if (!(v > 0)) throw new Error("koerper leibSatzTempo: das Tempo des Gesunden fehlt (" + v + ") — fail-closed");
+        var w = LEIB_SATZ.baender[leibSatzBand(satz)],
+            t = v + (w ? LEIB_SATZ[w].tempo : 0);
+        if (!(t > 0)) throw new Error("koerper leibSatzTempo: der Satz nimmt dem Gang sein Tempo (" + v + " → " + t + ") — fail-closed");
+        return t;
+    }
+    // DIE NAMEN DES SATZES (leib-liest-satz): jeder Name mit Zusatz, den `tagesHaltung` nennen kann — je Grund (neutral und jede
+    // Haltung des Akts) der Kranke, je Haltung eines Akts mit Kunst jede Stufe, gesund und krank. Leser: die Stände des Satzes
+    // (`_bewohnerStaende`: der ferne Satz backt je Namen eine Zeile, der Bewohner wählt seine über denselben Namen).
+    function leibSatzNamen() {
+        var G = TAGES_GESETZ.haltung,
+            T = LEIB_SATZ.trenner,
+            B = ["idle"],
+            K = [],
+            out = [],
+            a,
+            i,
+            j;
+        for (a in G) if (MOTION[G[a]] && B.indexOf(G[a]) < 0) B.push(G[a]);
+        for (a in LEIB_SATZ.kunst) if (G[a] && MOTION[G[a]] && K.indexOf(G[a]) < 0) K.push(G[a]);
+        for (i = 0; i < B.length; i++) out.push(B[i] + T + "krank");
+        for (i = 0; i < K.length; i++)
+            for (j = 0; j < LEIB_SATZ.stufe.length; j++) out.push(K[i] + T + LEIB_SATZ.stufe[j].wort, K[i] + T + "krank" + T + LEIB_SATZ.stufe[j].wort); // prettier-ignore
+        return out;
+    }
+    // DAS SOLL DER KLEIDUNG (clo) zur Luft t (°C) um 6 Uhr (Schiavon & Lee 2013, Gl. 10)
+    function trachtSoll(t) {
+        var S = LEIB_SATZ.tracht.soll;
+        if (!Number.isFinite(t)) throw new Error("koerper trachtSoll: die Temperatur fehlt — fail-closed");
+        if (t < S.kalt) return S.kaltClo;
+        if (t < S.mild) return S.a + S.b * t;
+        if (t < S.warm) return Math.pow(10, S.c + S.d * t);
+        return S.warmClo;
+    }
+    // DIE ISOLATION EINES KLEIDS (clo, ASHRAE 55: die Summe seiner Teile samt Unterwäsche; die Socken tragen die Schuhe)
+    function trachtClo(k) {
+        var C = LEIB_SATZ.tracht.clo,
+            s = C.unter;
+        for (var f of ["top", "bottom", "shoes"]) {
+            if (!(k[f] in C)) throw new Error("koerper trachtClo: das Teil „" + k[f] + "“ trägt keine Isolation (LEIB_SATZ.tracht.clo)");
+            s += C[k[f]];
+        }
+        return s;
+    }
+    // DIE TRACHT DES TAGS (leib-liest-satz, mensch.kopplung.leib 1): der Schnitt der Epoche T ({top, bottom, shoes}) unter der Luft
+    // `grad` (°C um 6 Uhr) und dem Regen `regen` (0 … 1) am Ort — {top, bottom, shoes, clo, soll, lagen}: der leichte Schnitt, der je
+    // Lage die nächste nimmt, solange ihre halbe Isolation (nass ×`nass`) das Soll nicht überschreitet.
+    function trachtDesTags(T, grad, regen) {
+        var L = LEIB_SATZ.tracht;
+        if (!T || !T.top || !T.bottom || !T.shoes) throw new Error("koerper trachtDesTags: der Schnitt der Epoche fehlt — fail-closed");
+        if (!Number.isFinite(regen)) throw new Error("koerper trachtDesTags: der Regen am Ort fehlt — fail-closed");
+        var soll = trachtSoll(grad),
+            f = regen >= TAGES_GESETZ.regen.ab ? L.nass : 1,
+            k = { top: L.leicht, bottom: T.bottom, shoes: T.shoes },
+            n = 0;
+        for (var i = 0; i < L.lagen.length; i++) {
+            var la = L.lagen[i],
+                von = la.feld === "top" ? L.leicht : la.von,
+                zu = la.feld === "top" ? (L.warm.indexOf(T.top) >= 0 ? T.top : L.warm[0]) : la.zu;
+            if (k[la.feld] !== von) continue;
+            var jetzt = trachtClo(k),
+                d = L.clo[zu] - L.clo[von];
+            if ((jetzt + d / 2) * f > soll) break;
+            k[la.feld] = zu;
+            n++;
+        }
+        k.clo = trachtClo(k);
+        k.soll = soll;
+        k.lagen = n;
+        return k;
     }
     // die Zahl des Samens zu einem Wort: [0, 1), rein (der Same ist eine ganze Zahl, das Wort benennt die Wende)
     function _tagZahl(same, wort) {
@@ -5601,7 +5824,11 @@
     // DIE ORTE EINES PLANS (der Plan v2 des Fachwerks, plan-lokal): je Slot, den `steht(i)` trägt (ohne: jeder), sein Ort
     // {art: seine Rolle, slot: i, x, z, bietet}, der Platz {art "platz"} und je Acker {art "feld", feld: j} — das Angebot aus
     // TAGES_GESETZ.angebot. Der Ort ist ein Angebot der Ziel-Kette (tetrapoda zielWahl liest x, z, bietet).
-    function tagesOrte(plan, steht) {
+    // DAS REVIER UND DAS UFER (rollen-des-tages): das Revier liegt `jagd.revierM` hinter dem äußersten Acker (ohne Acker hinter dem
+    // äußersten Haus), auf dem Strahl vom Kern des Plans durch ihn — dort, wo die Äcker enden, beginnt der Wald (phyto `forestOrt`:
+    // der Saum am Rand der Siedlung); das Ufer reicht der Wirt (`wild.ufer`, plan-lokal: der nächste Punkt eines Gewässers, das
+    // nur er kennt) — ohne Gewässer kein Ufer und kein Fischer.
+    function tagesOrte(plan, steht, wild) {
         var A = TAGES_GESETZ.angebot;
         var von = function (art) {
             return Object.prototype.hasOwnProperty.call(A, art) ? A[art] : A.sonst;
@@ -5625,7 +5852,76 @@
         var fe = (plan && plan.felder) || [];
         for (var j = 0; j < fe.length; j++)
             if (fe[j] && isFinite(fe[j].cx) && isFinite(fe[j].ex)) aus.push({ art: "feld", feld: j, x: fe[j].cx, z: fe[j].cz, bietet: A.feld });
+        var rand = null,
+            rM = 0;
+        for (var r = 0; r < aus.length; r++) {
+            var dr = Math.hypot(aus[r].x, aus[r].z);
+            if ((aus[r].art === "feld" || !fe.length) && dr > rM) {
+                rand = aus[r];
+                rM = dr;
+            }
+        }
+        if (rand && rM > 0) {
+            var mal = (rM + TAGES_GESETZ.jagd.revierM) / rM;
+            aus.push({ art: "revier", x: rand.x * mal, z: rand.z * mal, bietet: A.revier });
+        }
+        if (wild && wild.ufer && isFinite(wild.ufer.x) && isFinite(wild.ufer.z)) aus.push({ art: "ufer", x: wild.ufer.x, z: wild.ufer.z, bietet: A.ufer });
         return aus;
+    }
+    // DIE HAUSHALTE MIT JÄGER (TAGES_GESETZ.jagd.anteil): wie viele der n Haushalte einer Siedlung einen Jäger tragen — wenigstens
+    // einer, wo ein Revier ist (die Siedlung, die jagt, jagt an ihrem Saum), sonst gerundet; ebenso viele einen Fischer, wo ein Ufer
+    // ist. Leser: der Wirt (`_bewohnerListe`), die Station mensch.nahrung.tier S2.
+    function tagesJagdHaushalte(n) {
+        return n > 0 ? Math.max(1, Math.round(n * TAGES_GESETZ.jagd.anteil)) : 0;
+    }
+    // DIE WAHL DER JÄGER (rollen-des-tages): aus den Häusern, die einen Jäger stellen können (`kand`, je {x, z}: die Tür des Wirts,
+    // der Slot der Station), die tagesJagdHaushalte(nHaus) nächsten zum Ort der Tat (das Revier, das Ufer) — sein Weg dorthin ist
+    // der kürzeste; gleich fern entscheidet die Reihe. Liefert die Indizes in `kand` (leer: kein Ort der Tat).
+    function tagesJagdWahl(kand, nHaus, ort) {
+        if (!ort || !isFinite(ort.x) || !kand || !kand.length) return [];
+        var d = kand.map(function (k) {
+            return Math.hypot(k.x - ort.x, k.z - ort.z);
+        });
+        var ix = kand.map(function (_, i) {
+            return i;
+        });
+        ix.sort(function (a, b) {
+            return d[a] - d[b] || a - b;
+        });
+        return ix.slice(0, tagesJagdHaushalte(nHaus));
+    }
+    // DIE BEUTE DES TAGS (TAGES_GESETZ.jagd.beute): ob der Mensch (same) am Tag `tag` der Welt mit seiner Tat (`jagd`) Beute
+    // heimbringt — rein aus Same und Tag; null, wo die Tat keine Beute trägt (der Fischfang bis zum Bestand der Fische)
+    function tagesBeute(same, tag, tat) {
+        var p = TAGES_GESETZ.jagd.beute[tat];
+        return p == null ? null : _tagZahl((same ^ Math.imul(Math.floor(tag) | 0, 0x9e3779b1)) >>> 0, "beute:" + tat) < p;
+    }
+    // DAS REVIER DER STREIFE (rollen.waechter.streife): aus den Punkten `pkt` des Netzes der Wege ({x, z}) um den Posten P die
+    // `punkte` nächsten binnen `radiusM` (weg(i) = der Weg vom Posten zum Punkt i über das Netz; ohne ihn die Luftlinie), je zwei
+    // wenigstens `abstandM` auseinander — als Runde: im Kreis um den Posten (nach dem Winkel), sodass der Wächter von Punkt zu
+    // Punkt geht und am Posten endet. Liefert die Indizes in `pkt` (leer: kein Netz um den Posten, keine Streife).
+    function tagesStreife(pkt, P, rolle, weg) {
+        var R = (TAGES_GESETZ.rollen[rolle] || {}).streife;
+        if (!R || !pkt || !P) return [];
+        var kand = [];
+        for (var i = 0; i < pkt.length; i++) {
+            var q = pkt[i],
+                d = weg ? weg(i) : Math.hypot(q.x - P.x, q.z - P.z);
+            if (isFinite(d) && d <= R.radiusM && Math.hypot(q.x - P.x, q.z - P.z) >= R.abstandM) kand.push({ i: i, d: d });
+        }
+        kand.sort(function (a, b) {
+            return a.d - b.d || a.i - b.i;
+        });
+        var wahl = [];
+        for (var k = 0; k < kand.length && wahl.length < R.punkte; k++) {
+            var c = pkt[kand[k].i],
+                frei = true;
+            for (var m = 0; m < wahl.length; m++) if (Math.hypot(pkt[wahl[m]].x - c.x, pkt[wahl[m]].z - c.z) < R.abstandM) frei = false;
+            if (frei) wahl.push(kand[k].i);
+        }
+        return wahl.sort(function (a, b) {
+            return Math.atan2(pkt[a].x - P.x, pkt[a].z - P.z) - Math.atan2(pkt[b].x - P.x, pkt[b].z - P.z);
+        });
     }
     // DER WEG ZU EINEM ORT (pendler-anschluss; die Nähe der Bindung, `tagesBindung` `weg`): von einem Ort aus `orte` (tagesOrte,
     // plan-lokal) zum Knoten, an dem er am Wege-Netz hängt (netz = {knoten (am Ursprung ox, oz), kanten}: fachwerk `wegeNetz`), über das
@@ -5714,13 +6010,14 @@
         // wer in einem Haus mit Rolle wohnt, dessen Werk ist sein Haus; sonst der Ort seiner Wahl, ohne einen der eigene Hof
         var eigen = H.bietet && H.bietet.arbeit > 0 && H.art !== "wohnhaus";
         // (der Kaufmann: `rollen[rolle].werkAm` nennt die Art des Orts, an dem sein Werk steht — der nächste mit Ständen, den
-        // der Wirt trägt, binnen wegM.markt)
+        // der Wirt trägt, binnen wegM.markt; die Rolle mit Tat — Jäger, Fischer, rollen-des-tages — der nächste, der ihre Tat
+        // anbietet, gleich wie fern: das Revier, das Ufer)
         var R = G.rollen[rolle] || {},
             am = -1,
-            amD = G.wegM.markt;
+            amD = R.tat ? Infinity : G.wegM.markt;
         for (var q = 0; R.werkAm && q < orte.length; q++) {
             var o = orte[q];
-            if (!o || o.art !== R.werkAm || !(o.staende > 0) || (ohne && ohne(o, q))) continue;
+            if (!o || o.art !== R.werkAm || !(R.tat ? o.bietet && o.bietet[R.tat] > 0 : o.staende > 0) || (ohne && ohne(o, q))) continue;
             var dq = weg ? weg(H, o, q) : Math.hypot(o.x - H.x, o.z - H.z);
             if (dq <= amD) {
                 am = q;
@@ -5927,6 +6224,27 @@
             ab = (bA ? T.w1 + G.besuchH : T.w1) + (T.abendTreffH != null ? T.abendTreffH : 0);
         return ab + _tagZahl(same, "bank") * Math.max(0, Math.min(G.bankH, T.ruhe - ab));
     }
+    // DIE RUNDE DER STREIFE (rollen.waechter.streife): dh Stunden nach dem Beginn des Werks (lang Stunden) — der Index des Punkts
+    // seines Reviers (`orte.streife`), an dem der Wächter in seiner Runde steht, oder −1 (am Posten; ohne Revier keine Streife).
+    // Eine Runde beginnt nur, wenn sie im Werk endet (das Ende der Schicht schneidet keine Runde: gate:koerper-kern ROLLEN R3)
+    function _streifePunkt(R, orte, dh, lang) {
+        var S = R.streife,
+            st = orte && orte.streife;
+        if (!S || !st || !st.length || !(dh >= 0)) return -1;
+        var r = dh % S.jeH;
+        if (dh - r + S.dauerH > lang + 1e-9) return -1;
+        return r < S.dauerH ? Math.min(st.length - 1, Math.floor((r / S.dauerH) * st.length)) : -1;
+    }
+    // die Wenden seiner Runden: je Runde ihr Beginn, der Schritt zu jedem Punkt und die Rückkehr an den Posten (die EINE Liste, die
+    // `tagesGaenge` und `tagesKette` zu ihren Wenden legen)
+    function _streifeWenden(T, orte) {
+        var S = T.R.streife,
+            st = orte && orte.streife,
+            t = [];
+        if (!S || !st || !st.length) return t;
+        for (var a = T.w0; a + S.dauerH <= T.w1 + 1e-9; a += S.jeH) for (var k = 0; k <= st.length; k++) t.push(a + (k * S.dauerH) / st.length);
+        return t;
+    }
     function tagesGaenge(same, rolle, orte) {
         var G = TAGES_GESETZ,
             T = _tagesWendenOrt(same, rolle, orte),
@@ -5941,6 +6259,7 @@
         (orte.spiel || []).forEach(function (e) {
             t.push(e.von, e.bis);
         });
+        t = t.concat(_streifeWenden(T, orte));
         var u = t
             .map(function (x) {
                 return ((x % 24) + 24) % 24;
@@ -5986,6 +6305,7 @@
         (orte.spiel || []).forEach(function (e) {
             t.push(e.von, e.bis);
         });
+        t = t.concat(_streifeWenden(T, orte));
         var u = t
             .map(function (x) {
                 return ((x % 24) + 24) % 24;
@@ -6012,12 +6332,35 @@
             kette = [],
             ank = 0,
             eng = 0,
+            aus = 0,
+            nachAus = null,
             gehSumme = 0;
         for (var j = 0; j <= n; j++) {
             var e = ab[(s0 + j) % n],
                 rel = j === n ? 24 : (((e.ab - A) % 24) + 24) % 24;
-            var vor = j ? ab[(s0 + j - 1) % n].p : e.p;
+            var vor = kette.length ? kette[kette.length - 1].p : e.p;
             var g = j && vor.ort !== e.p.ort ? Math.max(0, geh(vor.wo, e.p.wo) || 0) : 0;
+            // DIE RUNDE BEGINNT AM POSTEN (rollen-des-tages): eine Runde der Streife geht nur, wer zu ihrem Aufbruch am Posten
+            // steht — kehrt er aus der vorigen später zurück, als er zur nächsten aufbrechen müsste, lässt er sie aus (`aus`) und
+            // geht die nächste zu ihrer Stunde: die Verspätung einer Runde trägt höchstens bis zur nächsten, nie in den Abend.
+            // Der Tag der Welt dauert 60 min, die Stunde 150 s: die Runde von 186 m (je Punkt 30–42 m) braucht im Schritt 0,92 h
+            // ihrer Stunde. Bis hier schob jede Runde die nächste: im Kern 62 von 76 Abschnitten eng, beim doppelten Weg brach
+            // der Feierabend erst um 7,78 Uhr auf; die Stadt-Wache #91693 (gate:kreatur-takt bewohner) ging 2 Wege statt 4.
+            if (j && j < n && e.p.akt === "streife" && ab[(s0 + j - 1) % n].p.akt !== "streife" && rel - g < ank - 1e-9) {
+                while (j + 1 < n && ab[(s0 + j + 1) % n].p.akt === "streife") j++;
+                aus++;
+                nachAus = rel;
+                continue;
+            }
+            // (nach der ausgelassenen Runde steht er am Posten: ab ihrer Stunde, kommt er von anderswo — der erste Gang der Schicht —,
+            // oder er setzt den Abschnitt fort, an dem er steht, seine Ankunft bleibt die frühere — sonst stünde er zur Wende des
+            // Postens neu „angekommen“, und jede Runde mit einem ersten Weg über die halbe Stunde fiele)
+            if (nachAus !== null) {
+                var weiter = vor.ort === e.p.ort && vor.drinnen === e.p.drinnen && vor.akt === e.p.akt;
+                if (!weiter) rel = nachAus;
+                nachAus = null;
+                if (weiter) continue;
+            }
             if (rel - g < ank - 1e-9) eng++;
             var auf = Math.max(rel - g, ank);
             // DER KAUF SCHRUMPFT NIE (tages-gesetz): den Markt verlässt der Einkäufer erst nach der Dauer seines Einkaufs ab seiner
@@ -6029,7 +6372,7 @@
             gehSumme += g;
             kette.push({ auf: auf, p: e.p });
         }
-        return { A: A, v: v, kette: kette, eng: eng, gehH: gehSumme };
+        return { A: A, v: v, kette: kette, eng: eng, aus: aus, gehH: gehSumme };
     }
     function tagesZiel(K, stunde) {
         var h = (((Number(stunde) - K.v - K.A) % 24) + 24) % 24,
@@ -6056,7 +6399,7 @@
         var W = G.regen,
             regen = nass > 0 && nass >= W.ab + (_tagZahl(same, "regen") * 2 - 1) * W.streuH;
         var aus = function (wo, akt, drinnen, an) {
-            var posten = akt === "arbeit" && R.regenfest;
+            var posten = (akt === "arbeit" || akt === "streife") && R.regenfest;
             var o = an || orte[wo];
             if (regen && !drinnen && !posten) return { ort: heim, wo: "heim", akt: akt, drinnen: true };
             if (krank && !drinnen && !posten && (o || heim) !== heim) return { ort: heim, wo: "heim", akt: "abend", drinnen: false };
@@ -6081,7 +6424,14 @@
             if (T.pTreffH != null && h >= T.p0 + T.pTreffH) return aus("heim", "abend", true);
             return aus("abend", "abend", !orte.abend || orte.abend === heim);
         }
-        if (h < w1) return aus("werk", R.spiel ? (orte.hilft ? "hilft" : "spiel") : "arbeit", false);
+        // DAS WERK IST DIE TAT DER ROLLE (rollen-des-tages): die Wache geht in den ersten `dauerH` Stunden jeder Runde ihre Streife
+        // (Punkt k ihres Reviers, `orte.streife`, wo "streife" + k), sonst steht sie am Posten; der Jäger jagt, der Fischer fischt
+        // (`R.tat`), das Kind spielt oder hilft, jeder andere arbeitet
+        if (h < w1) {
+            var k = _streifePunkt(R, orte, h - w0, w1 - w0);
+            if (k >= 0) return aus("streife" + k, "streife", false, orte.streife[k]);
+            return aus("werk", R.tat || (R.spiel ? (orte.hilft ? "hilft" : "spiel") : "arbeit"), false);
+        }
         if (bA && h < w1 + G.besuchH) return besuch ? aus("besuch", "besuch", false) : aus("heim", "besuch", true);
         // DAS SPIEL DES ABENDS (SPIEL_GESETZ, `spielProgramm`): wer Gast des Treffs am Platz ist, steht in den Stunden seines
         // Auftritts (orte.spiel: [{von, bis, akt, x, z, blick}], der Wirt stellt sie aus dem Programm des Tags) am Feld — als
@@ -6150,6 +6500,22 @@
                 finte: Object.freeze({ anteil: 0.3, offen: 0.5, gelesen: 1.5 }),
                 gaenge: 4,
             }),
+            // DER HIEB (rollen-des-tages, Meisterkarte 2 mensch.macht.krieg#1): derselbe Zweikampf mit der Waffe — die Wache, die der
+            // Tat naht (der Wirt, `_bewohnerNahen`), steht ihrem Täter `abstandM` gegenüber (die Länge der Klinge, LEBENSLAUF.wache
+            // nahM), je `zugS` Sekunden ein Hieb im Wechsel: der Getroffene antwortet (der nächste Zug ist seiner), bis einer `bis`
+            // Treffer trägt. DIE DECKUNG HÄLT: eine gelesene Finte trifft nie (`gelesen` ∞ — die Klinge in der Bindung, kein Treffer
+            // durch die Deckung), die ungelesene öffnet ihn wie im Ringen. zugS: ein Hieb mit Erholung je 2 s (ANGENOMMEN — kein Band
+            // des Takts eines Gefechts; die Linse nennt die Dauer der Gänge), bis 2 (der zweite Treffer entscheidet, ANGENOMMEN).
+            hieb: Object.freeze({
+                teil: Object.freeze([2, 2]),
+                mass: "treffer",
+                sieg: "gross",
+                bis: 2,
+                abstandM: 1.5,
+                zugS: 2,
+                zuegeMax: 200,
+                finte: Object.freeze({ anteil: 0.3, offen: 0.5, gelesen: Infinity }),
+            }),
             brett: Object.freeze({ teil: Object.freeze([2, 2]), mass: "reihe", sieg: "gross", feld: 9, reihe: 5, zugS: 8, tische: 4 }),
         }),
     });
@@ -6188,8 +6554,10 @@
     // DER ZWEIKAMPF zweier Stärken a, b ({s: Leistung, u: Übung}) aus dem Samen `same`: je Zug greift abwechselnd einer an — mit
     // einer Finte (Anteil `finte.anteil`) oder offen —, der andere wehrt ab; Treffer, wenn sein Zug die Abwehr schlägt (Bradley-
     // Terry). Liefert {zuege: [{an, finte, gelesen, treffer}], treffer: [ta, tb], sieger: 0 | 1}
-    function spielKampf(a, b, same) {
-        var R = SPIEL_GESETZ.arten.ringen,
+    // (art: "ringen" — der Gang des Abends — oder "hieb", der Zweikampf mit der Waffe; `gelesen` Infinity heißt: die Deckung hält,
+    // die gelesene Finte trifft nie)
+    function spielKampf(a, b, same, art) {
+        var R = SPIEL_GESETZ.arten[art || "ringen"],
             F = R.finte,
             t = [0, 0],
             zuege = [],
@@ -6543,6 +6911,9 @@
         herstellung: Object.freeze({
             feld: Object.freeze({ ware: "kraut", jeStunde: 2 }),
             schmiede: Object.freeze({ ware: "eisen", jeStunde: 0, aus: "erz" }),
+            // (rollen-des-tages: der Jäger stellt nichts her — sein Fleisch ist die Beute aus dem Bestand der Tiere, `tagesBeute`,
+            // die der Wirt in seinen Halter legt, `_bewohnerBeute`)
+            jaeger: Object.freeze({ ware: "fleisch", jeStunde: 0 }),
         }),
         // DIE STOFFSTROM-KETTE (Meisterkarte 2 mensch.wirtschaft.stoffstrom#1, `stoffstromHalter`): Erz → Barren → Werkzeug.
         // esseKgJeStunde: das Erz, das ein Rennofen in einer Stunde der Arbeit seiner Schmiede reduziert (die Versuche der
@@ -8820,7 +9191,9 @@
     // Ruhe (`r.armRuhe`: der Arm hängt am Rumpf, weiter innen liegt er IN ihm); der Kontrapost trägt die Arme nicht mehr nach innen.
     // Die Abspreizung eines Profils zählt vom Lot, die Ruhe ist ihr Boden (a-haltung, am Ende der Pose); über dem Band der Ruhe ist
     // sie eine Geste zur Uhr t (`leibGeste`).
-    function leibRigPose(r, t, walkPhase, isMoving, gait, mp, mref, M, Z, TC) {
+    // DER SATZ IM GANG (leib-liest-satz-2): `satz` die Pose des Satzes (`leibSatzPose`: der Kranke) — über dem Gang ×w, wie der Stand
+    // sie im Profil ×(1−w) trägt; der Kopf, das Knie und die Schulter des Kranken gelten bei jedem Gewicht des Gangs.
+    function leibRigPose(r, t, walkPhase, isMoving, gait, mp, mref, M, Z, TC, satz) {
         if (!Array.isArray(r.armRuhe)) throw new Error("leibRigPose: das Rig ohne die Ruhe seiner Arme (koerper leibRig) — fail-closed");
         var w = gait && Number.isFinite(gait.w) ? Math.max(0, Math.min(1, gait.w)) : isMoving ? 1 : 0;
         var amp = gait && Number.isFinite(gait.amp) ? Math.max(0.5, Math.min(1.6, gait.amp)) : 1;
@@ -8963,6 +9336,15 @@
             add(r.spine, "z", 0.05 * sw * wa);
             add(r.spine, "y", 0.07 * sw * wa);
             add(r.chest, "y", -0.06 * sw * wa);
+            if (satz)
+                for (var si = 0; si < MOTION_RIG_MAP.length; si++) {
+                    var sr = MOTION_RIG_MAP[si],
+                        sd = satz[sr.key];
+                    if (!sd) continue;
+                    var sg = sr.bone.split("."),
+                        sb = sg.length === 2 ? r[sg[0]] && r[sg[0]][sg[1]] : r[sg[0]];
+                    if (sb && sb.rotation) sb.rotation[sr.axis] += sd * sr.mul * w;
+                }
         }
         // DIE RUHE IST DER BODEN, KEIN SOCKEL (a-haltung): die Abspreizung, die ein Profil der Schulter gibt (MOTION_RIG_MAP armL /
         // armR gegen das Labor-idle — das einzige Delta an ihrer z-Achse), nennt ihren Winkel vom LOT: so hing der Arm im Labor, als
@@ -11498,6 +11880,22 @@
         tagesZiel: tagesZiel,
         tagesZug: tagesZug,
         tagesHaltung: tagesHaltung,
+        // rollen-des-tages — die Tat der Rolle: das Revier der Streife, die Haushalte mit Jäger, die Beute des Tags (Leser: _bewohnerListe, _bewohnerBeute)
+        tagesStreife: tagesStreife,
+        tagesJagdHaushalte: tagesJagdHaushalte,
+        tagesJagdWahl: tagesJagdWahl,
+        tagesBeute: tagesBeute,
+        // leib-liest-satz — DER LEIB LIEST SEINEN SATZ (Leser: _bewohnerGemuet, _koerperMotionProfile, _bewohnerStaende, _bewohnerTracht)
+        LEIB_SATZ: LEIB_SATZ,
+        leibSatzProfil: leibSatzProfil,
+        leibSatzNamen: leibSatzNamen,
+        // leib-liest-satz-2 — DER GANG LIEST DEN SATZ (Leser: _animateHumanoidRig → leibRigPose, _bewohnerGang, _bewohnerGangPose)
+        leibSatzPose: leibSatzPose,
+        leibSatzTempo: leibSatzTempo,
+        leibSatzBand: leibSatzBand,
+        trachtSoll: trachtSoll,
+        trachtClo: trachtClo,
+        trachtDesTags: trachtDesTags,
         // mensch.sport regeln · mannschaft · arena · geistspiel #1 — DIE REGEL-GRAMMATIK (Leser: _spielTag, tagesPlan orte.spiel, _bewohnerKopf)
         SPIEL_GESETZ: SPIEL_GESETZ,
         spielLeib: spielLeib,

@@ -178,6 +178,7 @@ class AnazhRealm_siedlung_menge {
                 gesicht,
                 inventar: "bewohner",
                 n: AnazhRealm.BEWOHNER.gangPhasen,
+                baender: window.__koerperCore.LEIB_SATZ.baender.length, // (je Gang des Satzes ein Band: der Gesunde, der Kranke)
                 staende: AnazhRealm._bewohnerStaende().length,
                 quellen,
                 cap: S.liste.length,
@@ -187,7 +188,7 @@ class AnazhRealm_siedlung_menge {
             // der Stand zuerst (der Satz steht, bis sein Gang gebacken ist — `_bewohnerGangBacken` im Takt)
             (Z) => {
                 Object.assign(Z, { gebacken: 0, tempo: b.tempoBand });
-                for (let h = 0; h < Z.staende; h++) this._bewohnerGangPose(b.leib, Z, Z.n + h, S);
+                for (let h = 0; h < Z.staende; h++) this._bewohnerGangPose(b.leib, Z, Z.baender * Z.n + h, S);
             }
         );
     }
@@ -198,16 +199,26 @@ class AnazhRealm_siedlung_menge {
     // Zeile k des Gang-Puffers ihres Satzes `Z` — die Pose auf die Knochen der Vorlage gelegt (`_bewohnerRaumStellen`) und in den
     // Raum des Leibs geskinnt (`_gangSatzPose`) —, ohne sie die Lagen der Zeile k einer Gestalt `Z` (`_bewohnerLagePose`: der Gang
     // des Felds). Danach steht der Leib wieder im Stand.
+    // DIE BÄNDER DES GANGS (leib-liest-satz-2, koerper LEIB_SATZ.baender): k < baender·n trägt das Band ⌊k/n⌋ — der Gesunde, der
+    // Kranke: sein Tempo aus derselben Zeile wie sein Stand (`leibSatzTempo`), seine Pose aus seinem Namen (`tagesHaltung` des
+    // Satzes → `leibSatzPose` im Gang); die Stände ab baender·n. Bis hier buk der Satz EIN Band: fern ging der Kranke wie der Gesunde.
     _bewohnerGangPose(g, Z, k, S) {
-        if (k < Z.n) {
-            if (!Z.gang) {
-                const h = {};
-                for (let i = 0; i < 40; i++) Z.gang = this._gaitTick(g, h, Z.tempo, 0.1, null);
+        const KC = window.__koerperCore;
+        const B = Z.baender;
+        if (k < B * Z.n) {
+            const band = Math.floor(k / Z.n);
+            const G = Z.gaenge || (Z.gaenge = []);
+            if (!G[band]) {
+                const satz = { krank: KC.LEIB_SATZ.baender[band] === "krank" };
+                const [h, v] = [{}, KC.leibSatzTempo(Z.tempo, satz)];
+                let gang = null;
+                for (let i = 0; i < 40; i++) gang = this._gaitTick(g, h, v, 0.1, null);
+                G[band] = { gang, gemuet: band ? { haltung: KC.tagesHaltung(null, null, satz) } : null };
             }
-            this._animateHuman(g, 0, (2 * Math.PI * k) / Z.n, true, false, null, Z.gang);
+            this._animateHuman(g, 0, (2 * Math.PI * (k % Z.n)) / Z.n, true, false, G[band].gemuet, G[band].gang);
         } else {
             // (der Stand einer Geste zur Uhr seiner Phase, `_bewohnerStandZeit`; jeder andere bei 0 — eingeschwungen, ohne die Zeile davor)
-            const h = k - Z.n;
+            const h = k - B * Z.n;
             window.__koerperCore.leibRigEingeschwungen(g.userData.rig);
             this._animateHuman(g, this._bewohnerStandZeit(h), 0, false, false, this._bewohnerStandGemuet(h));
         }
@@ -216,7 +227,7 @@ class AnazhRealm_siedlung_menge {
             const P = this._bewohnerRaumStellen(S, g);
             this._gangSatzPose(Z, k, P.teile, P.wurzel.matrixWorld);
         } else this._bewohnerLagePose(Z, k, g);
-        if (k !== Z.n) {
+        if (k !== B * Z.n) {
             this._animateHuman(g, 0, 0, false, false, null);
             this._leibMatrix(g);
         }
@@ -286,7 +297,7 @@ class AnazhRealm_siedlung_menge {
         const tb = g.userData._tierBaum;
         if (!satz.lageTeile) {
             satz.lageTeile = ["", ...Object.keys(tb.teile)];
-            satz.lagen = new Float32Array((satz.n + AnazhRealm._bewohnerStaende().length) * satz.lageTeile.length * 16);
+            satz.lagen = new Float32Array((satz.baender * satz.n + AnazhRealm._bewohnerStaende().length) * satz.lageTeile.length * 16); // prettier-ignore
         }
         const inv = (this._bewohnerLageInv || (this._bewohnerLageInv = new THREE.Matrix4()))
             .copy(g.matrixWorld)
@@ -337,11 +348,12 @@ class AnazhRealm_siedlung_menge {
         const M = this._bewohnerFeldM || (this._bewohnerFeldM = new THREE.Matrix4());
         const W = this._bewohnerFeldW || (this._bewohnerFeldW = new THREE.Matrix4());
         const E = M.elements;
+        const kB = Z.fertig ? (b.gangBand || 0) * Z.n : 0; // (das Band seines Gangs: der Kranke geht in seinen Zeilen)
         for (let i = 0; i < gl.length; i++) {
             const j = Z.lageVon.get(gl[i].name);
-            const s = ((Z.n + (b.standZeile || 0)) * K + j) * 16;
-            const a0 = (k0 * K + j) * 16;
-            const a1 = (k1 * K + j) * 16;
+            const s = ((Z.baender * Z.n + (b.standZeile || 0)) * K + j) * 16;
+            const a0 = ((kB + k0) * K + j) * 16;
+            const a1 = ((kB + k1) * K + j) * 16;
             for (let e = 0; e < 16; e++) {
                 const q = L[a0 + e] + (L[a1 + e] - L[a0 + e]) * t;
                 E[e] = L[s + e] + (q - L[s + e]) * w;
@@ -366,7 +378,7 @@ class AnazhRealm_siedlung_menge {
         );
         const M = (this._bewohnerFeldM || (this._bewohnerFeldM = new THREE.Matrix4())).fromArray(
             Z.lagen,
-            (Z.n * Z.lageTeile.length + j) * 16
+            (Z.baender * Z.n * Z.lageTeile.length + j) * 16
         );
         return (this._bewohnerFeldW || (this._bewohnerFeldW = new THREE.Matrix4())).multiplyMatrices(R, M);
     }
@@ -404,8 +416,8 @@ class AnazhRealm_siedlung_menge {
         const Z = S.satz;
         const b = Z && !Z.fertig && je > 0 ? frei(-1) : null;
         if (b) {
-            for (; je > 0 && Z.gebacken < Z.n; je--) this._bewohnerGangPose(b.leib, Z, Z.gebacken++, S);
-            if (Z.gebacken >= Z.n) {
+            for (; je > 0 && Z.gebacken < Z.baender * Z.n; je--) this._bewohnerGangPose(b.leib, Z, Z.gebacken++, S);
+            if (Z.gebacken >= Z.baender * Z.n) {
                 Z.tex.needsUpdate = true;
                 Z.fertig = fertig = true;
             }
@@ -415,8 +427,8 @@ class AnazhRealm_siedlung_menge {
             if (!L || L.fertig || je <= 0) return;
             const c = frei(gi);
             if (!c) return;
-            for (; je > 0 && L.gebacken < L.n; je--) this._bewohnerGangPose(c.leib, L, L.gebacken++, null);
-            if (L.gebacken >= L.n) L.fertig = true;
+            for (; je > 0 && L.gebacken < L.baender * L.n; je--) this._bewohnerGangPose(c.leib, L, L.gebacken++, null);
+            if (L.gebacken >= L.baender * L.n) L.fertig = true;
         });
         return fertig;
     }
@@ -452,7 +464,7 @@ class AnazhRealm_siedlung_menge {
                 Z[k],
                 i,
                 m4,
-                0,
+                Z.fertig ? b.gangBand || 0 : 0, // (das Band seines Gangs, `_bewohnerGang`: der Kranke)
                 Z.fertig ? (b.walkPhase || 0) / (2 * Math.PI) : 0,
                 Z.fertig ? b._gaitW || 0 : 0,
                 b.satzZeilen,

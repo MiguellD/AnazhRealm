@@ -55,6 +55,10 @@
             "zweck": "Messung: führt die Klasse von stamm/bau-buch.js im vm auf einem Wirt mit dem echten schmiede-core aus, dazu mit den zwei Mutanten (Eichfaktor 500 zurück · Lagerung beta 2)",
             "datei": 1
         },
+        "scripts/diag-koerper-kern.cjs": {
+            "zweck": "Messung: führt koerper-core im vm mit dem eingeschmuggelten Täter von ROLLEN R6 aus (tagesKette ohne „die Runde beginnt am Posten“: die verspätete Runde schiebt den Abend) — R6 muss ROT beim Namen fallen, an EINER Anker-Zeile gebaut; fehlt sie, lädt kein Täter und der Selbsttest fällt laut",
+            "datei": 1
+        },
         "scripts/diag-kreatur-leben.cjs": {
             "zweck": "Messung: führt leben-core im vm mit zwei Mutanten seines Selbsttests aus (erbe-geburt: das gewürfelte Kind · die Rate ohne EIGNUNG_EICH) — beide müssen ROT beim Namen fallen",
             "datei": 1
