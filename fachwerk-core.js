@@ -239,19 +239,25 @@
     // (Meteorol. Z. 15, 259, Tafel 1: B, wo P_ann < 10 · P_th, P_th = 2 T_ann + 14, mm und °C; die Wüste BW unter 5 · P_th): A = N / (20 T + 140).
     // Unter `wueste` (A ≤ 0,5, BW) deckt der Ort flach (Dunn u. a. 2024, Evol. Hum. Sci. 6:e24, 1 140 Gesellschaften: das Flachdach steht,
     // wo es trocken ist, das geneigte, wo es warm und nass ist; Trockenheit und Kälte tragen die Form mit relativer Wichtigkeit 1,00);
-    // bis `feucht` (A = 1, die Grenze BS) wächst das Gewicht w der Neigung linear auf 1.
+    // bis `feucht` (A = 1, die Grenze BS) wächst das Gewicht w der Neigung linear auf 1. DER POL ZUERST: Kottek u. a. 2006 bestimmen die
+    // polaren Klimate E (der wärmste Monat unter `polar`, +10 °C) VOR den trockenen — „E has to be determined first, followed by B“; dort gibt
+    // es keine Trockenheit, nur Kälte: der Ort deckt nach dem Schnee (w = 1), nie flach. Ohne die Reihe trugen 7 von 8 001 Land-Zielen (7 Saaten
+    // × 3 Zeiten, 466 polar) das Lehmdach der Wüste — erde-03 heute bei 47,38° N 126,23° O: 51 mm, Sommer 9,3 °C; die Polwüste unter −7 °C
+    // im Jahr fing schon die Grenze P_th ≤ 0.
     // DER SCHNEE (`schneeNeigung`): das Verhältnis Höhe zu Spannweite (HSR) des Dachs wächst mit dem Schneefall — Li u. a. 2021
     // (Sci. Adv. 7, eabh2601; arXiv 2012.14244): HSR ~25 % bei 0,2 mm/Tag, ~35 % bei 0,35 mm/Tag, „kalt steiler, warm glatter“ über
     // 1 000 Jahre der Bauten Chinas; die Gerade durch beide Punkte, die Neigung atan(2 · HSR). Kappe 60°: dort fällt der Formbeiwert
     // der Schneelast auf 0 (EN 1991-1-3, Tafel 5.2: μ1 = 0,8 bis 30°, 0,8 (60° − α) / 30° bis 60°, 0 darüber) — steiler wirft kein Dach mehr ab.
     // DIE NEIGUNG (`ortNeigung`): die des Rezepts (Kultur und Same, `a0`) ist die Überlieferung; der Schnee hebt sie auf seine Neigung,
     // die Trockenheit senkt sie mit w, nie unter die Grenze der Deckung (`grenzNeigung`); deckt der Ort flach, liegt das Dach auf
-    // `flachGrad` (2°, das Gefälle des Flachdachs, ≥ 2 % nach DIN 18531). Das flache Dach des Stils (modern, glas: `d0` flach) trägt
-    // seine Last als Werk — der Ort ändert es nicht. Heimat (−4 / 18 °C, 547,5 mm, 0,42 mm/Tag): A 1,96, Schnee-Neigung 38,5°.
+    // `flachGrad` (2°, das Gefälle des Flachdachs, ≥ 2 % nach DIN 18531) — jedes Dach der Wüste, auch das des Stils. Außerhalb der
+    // Wüste trägt das flache Dach des Stils (modern, glas: `d0` flach) seine Neigung als Werk, der Ort ändert es nicht (Kopf 2: am Planeten
+    // „anazh-realm-seed“, 4 000 Punkte, standen in der Wüste 647 von 38 729 Häusern so auf 11–16°, der moderne Bau mediterran). Heimat (−4 / 18 °C, 547,5 mm, 0,42 mm/Tag): A 1,96, Schnee-Neigung 38,5°.
     // Leser: DORF (der Deck-Schritt), gate:settlement Teil R (R8 die Neigung folgt dem Niederschlag).
-    var DACH_KLIMA = { pth: [20, 140], wueste: 0.5, feucht: 1, li: [[0.2, 0.25], [0.35, 0.35]], kappe: 60, flachGrad: 2 };
+    var DACH_KLIMA = { pth: [20, 140], wueste: 0.5, feucht: 1, polar: 10, li: [[0.2, 0.25], [0.35, 0.35]], kappe: 60, flachGrad: 2 };
     function ariditaet(klima) {
         var K = DACH_KLIMA, g = K.pth[0] * (klima.winter + klima.sommer) / 2 + K.pth[1];
+        if (klima.sommer < K.polar) return Infinity; // E vor B (Kottek 2006): der Pol kennt keine Trockenheit
         return g > 0 ? klima.niederschlagMm / g : Infinity;
     }
     function schneeNeigung(schneeMmTag) {
@@ -259,11 +265,12 @@
         return Math.min(DACH_KLIMA.kappe, Math.atan(2 * Math.max(0, hsr)) * 180 / Math.PI);
     }
     function ortNeigung(klima, P, a0, d0) {
-        if (!(klima && isFinite(klima.niederschlagMm) && isFinite(klima.schneeMmTag)))
-            throw new Error("fachwerk ortNeigung: das Klima des Orts trägt niederschlagMm und schneeMmTag nicht als Zahl (gelaende-core ortKlima)");
+        if (!(klima && isFinite(klima.niederschlagMm) && isFinite(klima.schneeMmTag) && isFinite(klima.sommer)))
+            throw new Error("fachwerk ortNeigung: das Klima des Orts trägt niederschlagMm, schneeMmTag und sommer nicht als Zahl (gelaende-core ortKlima)");
+        var K = DACH_KLIMA, A = ariditaet(klima);
+        if (A <= K.wueste) return K.flachGrad;
         if (d0 === "flach") return a0;
-        if (P.deckung === "flach") return DACH_KLIMA.flachGrad;
-        var K = DACH_KLIMA, A = ariditaet(klima), w = Math.min(1, Math.max(0, (A - K.wueste) / (K.feucht - K.wueste)));
+        var w = Math.min(1, Math.max(0, (A - K.wueste) / (K.feucht - K.wueste)));
         var a = w * Math.max(a0, schneeNeigung(klima.schneeMmTag));
         return Math.round(Math.max(a, grenzNeigung(P)) * 10) / 10;
     }
@@ -273,16 +280,18 @@
     //   · das nasse Land (spendeVerh ≥ 1, die Wasser-Spende der Heimat) trägt Schilf: der Holz- und Fachwerkbau des Dorfs deckt in Reet
     //     (Molfsee, Ammerland; die Isba im Stroh) — die Stadt nicht: Weichdach brennt, die Bauordnungen der Städte verboten es;
     //   · das trockene Schnee-Land (winter ≤ −3 °C, die Grenze C/D nach Kottek u. a. 2006) trägt Wald: Holzschindel;
-    //   · Schiefer und Flachdach bleiben (der Fels und das Werk des Baus, der Ort liest ihn nicht);
-    //   · die Wüste (kultur-aus-klima: `ariditaet` ≤ `DACH_KLIMA.wueste`, BW nach Kottek u. a. 2006) deckt flach — das Lehmdach.
+    //   · die Wüste (kultur-aus-klima: `ariditaet` ≤ `DACH_KLIMA.wueste`, BW nach Kottek u. a. 2006) deckt flach — das Lehmdach, ZUERST:
+    //     kein Regen läuft ab, also trägt kein Bau dort ein Dach gegen den Regen, auch der Schiefer nicht (Kopf 2: am Planeten
+    //     „anazh-realm-seed“, 4 000 Punkte, trugen 16 von 38 729 Wüsten-Häusern Schiefer auf 26,5°, mitteleuropa klinker/stein);
+    //   · sonst bleiben Schiefer und Flachdach (der Fels und das Werk des Baus, der Ort liest ihn nicht).
     // Die Neigung folgt dem Himmel des Orts (`ortNeigung`), nie unter der Regeldachneigung der Deckung (`grenzNeigung`). Leser: DORF,
     // gate:settlement Teil R (R6, R7, R8).
     function ortDeckung(klima, P, dicht) {
-        if (!(klima && isFinite(klima.winter) && isFinite(klima.spendeVerh) && isFinite(klima.niederschlagMm)))
-            throw new Error("fachwerk ortDeckung: das Klima des Orts trägt winter, spendeVerh und niederschlagMm nicht als Zahl");
+        if (!(klima && isFinite(klima.winter) && isFinite(klima.sommer) && isFinite(klima.spendeVerh) && isFinite(klima.niederschlagMm)))
+            throw new Error("fachwerk ortDeckung: das Klima des Orts trägt winter, sommer, spendeVerh und niederschlagMm nicht als Zahl");
         var d = deckungVon(P), stil = _stilVon(P);
-        if (d === "schiefer" || d === "flach") return d;
         if (ariditaet(klima) <= DACH_KLIMA.wueste) return "flach";
+        if (d === "schiefer" || d === "flach") return d;
         if (klima.winter >= 4) return "hohlziegel";
         var holz = stil === "alt" || stil === "huette" || stil === "stroh";
         if (holz && !dicht && klima.spendeVerh >= 1) return "reet";
@@ -340,7 +349,15 @@
   const levels=[]; { let y=baseY; for(let k=0;k<P.storeys;k++){const h=k===0?P.egH:P.ogH; levels.push({y, h, top:y+h}); y+=h;} }
   const eaveY=levels[levels.length-1].top;
   const ridgeY=eaveY+(P.D/2)*Math.tan(pitch);
-  const ROOFMODE = (P.grundriss==='rund')?'rund' : P.kuppel?'dome' : P.terrasse?'stepped' : (P.zinnen||P.arkade)?'flat' : (P.dachTyp&&P.dachTyp!=='sattel')?'alt' : 'sattel';   // EINE Dach-Quelle: welches Dach traegt der Bau — jeder Dach-Ersetzer fliesst hierdurch
+  // DIE WÜSTE BAUT FLACH (kultur-aus-klima 4, Karte 2 mensch.kopplung.kultur#2): liegt die Neigung, die der Bau trägt, unter der Grenze, unter
+  // der ein Dach als flach gilt (`STADT_MASSEN.flachGrad`, dieselbe, mit der die ferne Masse `hausMasse` flach deckelt), trägt er kein Dach
+  // gegen den Regen — keinen Sattel, keinen Walm, keinen Schwung, kein Dach des Zoos —, sondern die EINE flache Quelle (die Platte auf der
+  // Traufe, kein Dachraum, kein Giebel) im Stoff seiner Deckung (`DECKROLLE`: das Lehmdach des Orts). Das Gewölbe bleibt (Kuppel, Tonne,
+  // Zwiebel: es trägt sich ohne Balken, der Lehmbau der Wüste — Yazd, Kashan, das nubische Gewölbe). Bis Kopf 3 setzte der Ort 2° (`ortNeigung`)
+  // und HAUS baute darauf den Sattel mit Ziegeln und Schwung: am Planeten „anazh-realm-seed“ standen 544 von 12 336 Wüsten-Häusern flach gebaut.
+  const GEWOELBE={tonne:1, zwiebel:1}, FLACH = pitch < STADT_MASSEN.flachGrad*D2R && !GEWOELBE[P.dachTyp];
+  const ROOFMODE = (P.grundriss==='rund')?'rund' : P.kuppel?'dome' : P.terrasse?'stepped' : (P.zinnen||P.arkade||FLACH)?'flat' : (P.dachTyp&&P.dachTyp!=='sattel')?'alt' : 'sattel';
+  const DECKROLLE = (FLACH && DECK.rolle==='dachmod') ? 'dachmod' : 'stein';   // die Platte des flachen Dachs: im Lehm der Deckung, wo die Wüste flach deckt; sonst der Stein des Wehrgangs   // EINE Dach-Quelle: welches Dach traegt der Bau — jeder Dach-Ersetzer fliesst hierdurch
   const mS = (ridgeY-eaveY)/(P.D/2);                                             // ░ EINE Dachneigung (Steigung) ░ Quelle für Hauptdach · beide Flügel · Notch · Fenster-Occlusion — ersetzt das alte 0.62-Duplikat
   const STACK_W = 0.84;                                                          // ░ EINE Kaminbreite ░ Stack-AABB UND fensterfreier Korridor leiten sich hieraus ab
   const W=P.W, Dp=P.D, doorW=P.doorW, doorH=P.doorH, doorX=0, ps=P.post/2;
@@ -409,7 +426,7 @@
   const NOSHADOW={ziegel:1,ziegel2:1,lattung:1,backstein:1,nagel:1};   // PERF: tausende Deko-Prims werfen redundante Schatten → aus (Unterhaut/Wand trägt den Schatten); Geometrie unverändert
   // ════ EIN VERFORMUNGS-FELD · jeder Punkt jedes Bauteils läuft hindurch (Schwung + Biegung) — kein Subsystem kann vergessen werden ════
   const DEF_bk=(P.bend>0)?P.bend*2.0/Math.max(8,W):0, DEF_R=DEF_bk>0?1/DEF_bk:0;
-  const DEF_cv=(P.roofCurve>0)?P.roofCurve:0, DEF_cA=DEF_cv*1.35;
+  const DEF_cv=(P.roofCurve>0&&ROOFMODE!=='flat')?P.roofCurve:0, DEF_cA=DEF_cv*1.35;   // der Schwung ist die Traufe eines geneigten Dachs: das flache trägt keinen (die Wüste, kultur-aus-klima 4)
   function deform(x,y,z){ let X=x,Y=y,Z=z;
     if(DEF_cv>0 && Y>eaveY){ const f=Math.min(1,Math.abs(Z)/Math.max(0.1,Dp/2)); Y+=DEF_cA*Math.pow(f,2.2); }
     if(DEF_bk>0){ const th=X*DEF_bk, r=DEF_R+Z; X=r*Math.sin(th); Z=-DEF_R+r*Math.cos(th); }
@@ -964,7 +981,7 @@
       beam(g,gx,yBack+0.13,zBack+0.05,gW+0.34,0.06,0.11,'ziegel'); }
     return g; }
 
-  function dachdeckung(){const g=grp(); if(ROOFMODE==='flat'){ FOOTPRINT.forEach(rr=>beam(g,(rr.x0+rr.x1)/2, (rr.a?rr.h:eaveY+0.06), (rr.z0+rr.z1)/2, rr.x1-rr.x0, 0.12, rr.z1-rr.z0, 'stein')); return g; } if(ROOFMODE!=='sattel') return g; const off=0.055; const up=p=>[p[0],p[1]+off,p[2]];
+  function dachdeckung(){const g=grp(); if(ROOFMODE==='flat'){ FOOTPRINT.forEach(rr=>beam(g,(rr.x0+rr.x1)/2, (rr.a?rr.h:eaveY+0.06), (rr.z0+rr.z1)/2, rr.x1-rr.x0, 0.12, rr.z1-rr.z0, DECKROLLE)); return g; } if(ROOFMODE!=='sattel') return g; const off=0.055; const up=p=>[p[0],p[1]+off,p[2]];
     // Unterdach (geschlossene Fläche unter den Ziegeln)
     const Fl=up(FL),Fr=up(FR),Bl=up(BL),Br=up(BR),Rl=[RL[0],RL[1]+off,RL[2]],Rr=[RR[0],RR[1]+off,RR[2]];
     const Gtlf=up(GTLf),Gtrf=up(GTRf),Gtlb=up(GTLb),Gtrb=up(GTRb);
@@ -1857,7 +1874,7 @@
     beam(g,pcx,y+0.55,pcz,Math.max(1.2,W*0.22),1.1,Math.max(1.2,Dp*0.22),role); const ax=W*0.13,az=Dp*0.13,c=[[-ax,-az],[ax,-az],[ax,az],[-ax,az]]; c.forEach((p,k)=>{const q=c[(k+1)%4]; tri(g,[pcx+p[0],y+1.1,pcz+p[1]],[pcx+q[0],y+1.1,pcz+q[1]],[pcx,y+1.9,pcz],'ziegel');}); return g; }
   function rundbau(){ const g=grp(); if(!ROUND) return g;   // ZYLINDER-GESETZ — runde Wand aus Segmenten, Geschoss-Böden, Kegel/Zwiebel-Dach
     const rad=Math.min(W,Dp)/2, seg=Math.max(18,Math.round(rad*3.5)), nLev=Math.max(1,P.storeys), wallTop=baseY+nLev*P.egH;
-    addMasse({art:'rund',x0:-rad,x1:rad,z0:-rad,z1:rad,rad,y0:baseY-0.35,y1:wallTop,spitze:(P.dachTyp==='zwiebel'||P.kuppel)?wallTop+rad*1.7:wallTop+rad*1.3,zwiebel:(P.dachTyp==='zwiebel'||P.kuppel)?1:0});
+    addMasse({art:'rund',x0:-rad,x1:rad,z0:-rad,z1:rad,rad,y0:baseY-0.35,y1:wallTop,spitze:(P.dachTyp==='zwiebel'||P.kuppel)?wallTop+rad*1.7:FLACH?wallTop+0.12:wallTop+rad*1.3,zwiebel:(P.dachTyp==='zwiebel'||P.kuppel)?1:0});
     const wr=(P.stil==='huette'||P.stil==='stroh')?'holz':((P.stil==='stein'||P.stil==='klinker'||P.stil==='modern')?'putz':'gefach');
     for(let s=0;s<seg;s++){ const a=(s+0.5)/seg*2*Math.PI; beam(g,(rad+0.05)*Math.cos(a),baseY-0.15,(rad+0.05)*Math.sin(a),2*Math.PI*rad/seg+0.1,0.4,0.45,'stein',[0,Math.PI/2-a,0]); }
     for(let lv=0;lv<=nLev;lv++){ const y=baseY+lv*P.egH; for(let s=0;s<seg;s++){ const a0=s/seg*2*Math.PI,a1=(s+1)/seg*2*Math.PI; tri(g,[0,y,0],[rad*Math.cos(a0),y,rad*Math.sin(a0)],[rad*Math.cos(a1),y,rad*Math.sin(a1)],'boden'); } }
@@ -1876,6 +1893,7 @@
         beam(g, (gap+ri)/2, ym, 0, ri-gap, wh, tIW, iwr); } }   // Querwand +x-Seite, Tuerluecke an der Spine
     const dt=P.dachTyp;
     if(dt==='zwiebel'||P.kuppel){ const base=wallTop,bands=16,prof=t=>[rad*Math.pow(Math.cos(t*Math.PI*0.5),0.6)*(1+0.3*Math.sin(t*Math.PI)),base+rad*1.7*t]; for(let bd=0;bd<bands;bd++){const A=prof(bd/bands),B=prof((bd+1)/bands); for(let s=0;s<seg;s++){const a0=s/seg*2*Math.PI,a1=(s+1)/seg*2*Math.PI; tri(g,[A[0]*Math.cos(a0),A[1],A[0]*Math.sin(a0)],[B[0]*Math.cos(a0),B[1],B[0]*Math.sin(a0)],[B[0]*Math.cos(a1),B[1],B[0]*Math.sin(a1)],'kupfer'); tri(g,[A[0]*Math.cos(a0),A[1],A[0]*Math.sin(a0)],[B[0]*Math.cos(a1),B[1],B[0]*Math.sin(a1)],[A[0]*Math.cos(a1),A[1],A[0]*Math.sin(a1)],'kupfer');}} }
+    else if(FLACH){ const y=wallTop+0.12; for(let s=0;s<seg;s++){ const a0=s/seg*2*Math.PI,a1=(s+1)/seg*2*Math.PI; tri(g,[0,y,0],[rad*Math.cos(a0),y,rad*Math.sin(a0)],[rad*Math.cos(a1),y,rad*Math.sin(a1)],DECKROLLE); } }   // die Wüste: die flache Platte statt des Kegels (`FLACH`)
     else { const apexY=wallTop+rad*1.3; for(let s=0;s<seg;s++){ const a0=s/seg*2*Math.PI,a1=(s+1)/seg*2*Math.PI; tri(g,[rad*Math.cos(a0),wallTop,rad*Math.sin(a0)],[rad*Math.cos(a1),wallTop,rad*Math.sin(a1)],[0,apexY,0],'ziegel'); } beam(g,0,apexY+0.2,0,0.1,0.5,0.1,'metall'); }
     return g; }
   function arkade(){ const g=grp(); if(!P.arkade) return g;   // ARKADE/KREUZGANG (Rom/Romanik/Islam/Gotik) — folgt dem GETEILTEN Grundriss-Umriss (eachFootEdge) wie zinnen/vorkragung/veranda

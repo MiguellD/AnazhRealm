@@ -280,6 +280,32 @@
             }
         },
         {
+            "id": "dorf-trocken",
+            "titel": "Das Dorf der Ankunft an einem trockenen Ort desselben Planeten (kultur-aus-klima, Karte 2 mensch.kopplung.kultur#2): der Spieler sagt „reise -49,05 -119,78“ (der Planet „anazh-realm-seed“, 1 547 km vom Anker der Heimat; das Ort-Gesetz liest dort 43 mm im Jahr bei −8,9 / 23,3 °C, die Trockenheit A = 0,15, die Wüste BW nach Kottek u. a. 2006). Er landet bei 0, 0 (gelaende-core `ortLandung`), der Dorf-Zug baut das Dorf der Ankunft (die Zelle „start“: Nagu bei −159,8 / 55,6, fernost, 10 Häuser, der Plan aus dem Klima des Orts, `_zellEingang`), und der Spieler steht auf seinem Platz (`ortPose` „platz“) und blickt auf den ersten freien Bau: das Gesetz deckt flach (Lehm 2°, 10 von 10 Häusern). Gleiche Uhr und Kamera-Regel wie dorf-feucht, der Partner des Bildpaars. Kein Wort gründet hier: der Plan eines Worts trägt per Gesetz kein Klima (`_foundryRequestSettlement`).",
+            "reise": "reise -49,05 -119,78",
+            "spieler": [0, 0],
+            "ortPose": "platz",
+            "imBild": { "bauSatz": 0.02 },
+            "dorfZug": true,
+            "ortTakt": [],
+            "serie": {
+                "offen": "die Ratschen-Serie je Gerät × Sicht (2 × 2) steht aus — sie misst auf echter GPU (Lehre 17), der Arbeiter dieses Orts lief in der Cloud ohne GPU"
+            }
+        },
+        {
+            "id": "dorf-feucht",
+            "titel": "Das Dorf der Ankunft an einem nassen Ort desselben Planeten (kultur-aus-klima, Karte 2 mensch.kopplung.kultur#2): der Spieler sagt „reise 50,13 82,91“ (der Planet „anazh-realm-seed“; das Ort-Gesetz liest dort 1 886 mm im Jahr bei 1,0 / 15,2 °C, die Trockenheit A = 6,24, die Spende 6,3-mal die der Heimat). Er landet bei 0, 0, der Dorf-Zug baut das Dorf der Ankunft (Chagrin bei −115,6 / 39,5, mitteleuropa, 14 Häuser), und der Spieler steht auf seinem Platz (`ortPose` „platz“) und blickt auf den ersten freien Bau: das Gesetz deckt steil (Reet 48–60° an 8 von 14 Häusern, Schiefer, Hohl- und Biberziegel 54–61°). Gleiche Uhr und Kamera-Regel wie dorf-trocken, der Partner des Bildpaars.",
+            "reise": "reise 50,13 82,91",
+            "spieler": [0, 0],
+            "ortPose": "platz",
+            "imBild": { "bauSatz": 0.02 },
+            "dorfZug": true,
+            "ortTakt": [],
+            "serie": {
+                "offen": "die Ratschen-Serie je Gerät × Sicht (2 × 2) steht aus — sie misst auf echter GPU (Lehre 17), der Arbeiter dieses Orts lief in der Cloud ohne GPU"
+            }
+        },
+        {
             "id": "stadt",
             "titel": "Die Stadt (Profiband K1): am Anlauf sagt der Spieler „dorf 7 120“, die Großstadt (91 Häuser im Plan) steht am Anker, der Dorf-Zug läuft; der Spieler steht am Weg neben der Trasse des Wagens, der dem Platz am nächsten fährt, 40 m seine Route voraus, der Blick zurück auf ihn und seinen Fahrer (`ortPose` „trasse“, `_ortPose`), und geht die Hauptgasse nach Osten (`--wandern bahn`).",
             "ortPose": "trasse",

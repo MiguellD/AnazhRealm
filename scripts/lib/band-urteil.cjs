@@ -194,6 +194,11 @@ function messortePruefen(h) {
             f.push(`${o.id}: gruendung ohne wort „dorf <same> <häuser>" oder anker [x, z]`);
         if (g !== undefined && !(Array.isArray(o.bahn) && o.bahn.length > 1 && o.bahn.every(xz) && (o.ortPose || `${o.bahn[0]}` === `${o.spieler}`)))
             f.push(`${o.id}: bahn ist keine Kette [x, z] ab dem Spieler`);
+        // DIE REISE (`reise`, kultur-aus-klima): der Satz des Spielers „reise <Breite> <Länge>“ (Grad, Süden und Westen negativ, das Komma
+        // der Sprache) — die Werkbank spricht ihn durch die Konsole (`reiseDesOrts`); der Ort trägt dann seinen Stand in SEINER Welt (`spieler`,
+        // die Landung 0, 0) und kein Wort: der Plan eines Worts trägt per Gesetz kein Klima, das Bild des Orts zeigt das Dorf seines Zugs
+        if (o.reise !== undefined && !(typeof o.reise === "string" && /^reise -?\d{1,2}(,\d{1,2})? -?\d{1,3}(,\d{1,2})?$/.test(o.reise) && xz(o.spieler) && g === undefined && o.dorfZug))
+            f.push(`${o.id}: reise ist kein Satz „reise <Breite> <Länge>“ mit Stand (spieler) und Dorf-Zug, ohne Gründung`);
         // DAS WIESEN-GESETZ (K55, `wiese`): die Mess-Wiese trägt es — jede Schwelle eine Zahl, Kranz und Fernblick als [von, bis];
         // das Urteil am Ort spricht gate:profiband H1 (am Gesetz) und `werkbank umstellen --ort` (in der Welt, mit Gras).
         if (o.id === "wiese" && o.wiese === undefined) f.push(`${o.id}: das Wiesen-Gesetz (wiese) fehlt`);

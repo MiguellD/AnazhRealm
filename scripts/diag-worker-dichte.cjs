@@ -1630,6 +1630,7 @@ const BOESCHUNG = Object.freeze({
     schwelleM: 0.6,
     ring: [10, 60],
     doerfer: [
+        // BÜHNE: der Bau-Anker zweier Dörfer am Hang (`ortPlan` im Kern, ohne Browser), an denen bis erdbau-boeschung die Stufe stand — kein Setzen
         { name: "dorf 20 8", seed: 20, nH: 8, x: -730.4, z: -875.3 },
         { name: "dorf 12 18", seed: 12, nH: 18, x: -1855, z: -1075 },
     ],
