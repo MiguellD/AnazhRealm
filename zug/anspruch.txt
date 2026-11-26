@@ -125,3 +125,5 @@ w28-kultur-aus-klima-6 karte2.mensch.kopplung.kultur#2
 w28-kosmos-hadley karte2.planet.kopplung.bahn-klima#3
 # 792 (main c072c864, 26.11. 22:53): wind-boee-haus: die Böe zieht mit dem Wind am Auge, das Haus wirft Windschatten (Vor-Richter Radeon: kraft#2 GRÜN 11,706 %, stadtklima#1 mit Kandidat 1185669c GRÜN)
 w28-wind-boee-haus karte2.leben.pflanzen.kraft#2,karte2.planet.kopplung.stadtklima#1
+# 793 (main ab27f4f8, 26.11. 23:21): krieg-lage: der Treffer trägt seine Lage am Leib (Vor-Richter GTX 1060 am Kopf: krieg#1 GRÜN)
+w28-krieg-lage karte2.mensch.macht.krieg#1
