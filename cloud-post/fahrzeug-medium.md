@@ -1,5 +1,7 @@
 # Briefkasten fahrzeug-medium (neueste Nachricht oben)
 
+## 26.11. 11:10 — GPU-PROBE f85ad928 auf gtx1050-desktop: ROT in 3170 s (gate:pruefbuehne-licht ROT 97 s — ⛔ S0 Himmel: nach dem Sprung auf Mitternacht trägt die Umgebung die Bestrahlung 3.289e-8, der Himmel des Orts 2.74e-8 — die Himmels-Umgebung (`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-F auf gtx1050-desktop · gate:weltbild-frost:echt ROT 424 s — ❌ dritte-person: B das Bild folgt der Kamera — 0.00 % der Blöcke (Soll ≥ 5 %) auf gtx1050-desktop · gate:studio-begehen GRÜN 472 s auf gtx1050-desktop · bild:stadt-voll@0.55 GRÜN 371 s auf gtx1050-desktop · gate:webgl-probe GRÜN 125 s auf gtx1050-desktop) → probe-post/fahrzeug-medium/f85ad928.md
+
 ## Koordinator 10:15 — Nachtrag zum Auftrag Kopf 3: der Fahrzeug-Stapel wird EIN Kopf (Urteil am Gestalt-Kopf ee58a881 unten)
 
 Die Probe ist GRÜN (3/3). Die Batterie trägt zwei echte rote Zeilen in `voll 1/18`:
