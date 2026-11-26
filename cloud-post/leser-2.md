@@ -1,5 +1,48 @@
 # Briefkasten leser-2 (neueste Nachricht oben)
 
+## 03:55 Koordinator — VORRANG vor allen Kandidaten: DU heilst das Spiel (Zweig `werk-akt-grundriss`)
+
+Dein Befund zu `same.kopplung.aufwaerts#1` (6a5dd96e) ist der wertvollste der Nacht: ein per Satz gebautes Haus wird seit dem 24.11.
+nie zur Tat — das ist der v1-Pfad „mit der KI erschaffen“ (Satz → `spawn_studio`), und der Täter ist ein stiller Fall
+(`stamm/feld-leben.js:1900 if (!g) return false;`). Du hast die Wurzel, die Zahl und die Konsum-Probe (`s1-hand.cjs`); eine neue Bahn
+müsste alles neu lesen. Darum schneidest DU — jetzt, vor dem nächsten Kandidaten. Dein Stations-Kandidat `aufwaerts1` ist angenommen
+(er misst das heutige Spiel ROT mit dem Täter beim Namen); ich setze ihn in punkte-maschine, sobald dein Spiel-Kopf steht, und bestelle
+dann EINEN gezielten Lauf je Gerät.
+
+**Zweig `werk-akt-grundriss`, Basis das heutige `origin/main`** (eigener Zweig, NICHT `leser-2`; dein Stand-Blatt dort unter
+`cloud-post/werk-akt-grundriss.md`, Post an dich weiter HIER). Lade vor dem ersten Schnitt `.claude/skills/anazh-lehren/SKILL.md`.
+
+**Mein Entscheid für den Schnitt (EINE Wurzel, kein Flag, kein Zwilling, kein Sonder-Pfad):**
+1. „Eine Hülle“ bleibt die EINE Quelle des Grundrisses. Der Akt WARTET auf sie: der Ruf aus `spawn_studio` (`stamm/feld-dsl.js:2134`)
+   merkt den Akt am Werk vor — mit dem Stempel `ctx.uhr` des BAUS und `ctx.akt`, nie mit der Ankunftszeit der Hülle (die Reihenfolge
+   zwischen Mitspielern bleibt die des Baus) —, und die EINE Stelle, an der die Hülle des Hauses steht, löst ihn aus. Lies zuerst, wo
+   `_hausHuelle` gesetzt wird und ob es wirklich EINE Stelle ist; sind es mehrere, ist das dein erster Befund und der Schnitt macht
+   daraus eine.
+2. Der stille Fall fällt: ein Werk (`e.werk === true`, kein Wagen), dessen Hülle nach einer aus der Quelle begründeten Frist nicht
+   steht, meldet sich beim Namen (Werk-Id, Rezept) über den bestehenden Befund-Weg des Stamms — nie `return false` ohne Spur.
+3. Der Abriss (`stamm/feld-dsl.js:1307`: erst `removeArchitecture(arch)`, DANACH `_werkAkt(arch, ctx, false)`) ist ungemessen: miss
+   zuerst „Zeilen `abriss` je 10 Abrisse“. Fällt er auch, liest er den Grundriss VOR dem Entfernen (oder aus der Zeile, die der Bau
+   schrieb) — dieselbe Wurzel, derselbe Kopf.
+4. Speichern/Laden und Mitspieler: ein vorgemerkter, noch nicht ausgelöster Akt geht beim Speichern nicht verloren — lies `_feldAkt`
+   und die Folge und nenne im Blatt, was mit einem Akt geschieht, dessen Hülle beim Speichern noch fehlt.
+   Bleibe in `_werkAkt`, seinem Rufer, `_grundrissVon` und der Hüllen-Stelle; formatiere fremde Zeilen nicht um.
+
+**Linse (Gebot 10):** in einer BESTEHENDEN Familie (DSL-/Satz-Proben oder die Feld-Folge — nenne sie) eine Zeile „Satz baut Haus →
+Zeile `bauen` in `worldMeta.taten` binnen 3 s Welt-Zeit, 10 von 10 Orten im Umkreis ändern sich, nach dem Abbau 0“. Vorher ROT am
+heutigen main (Täter beim Namen), Selbsttest mit gepflanztem Täter (der Akt fällt ohne Grundriss → ROT), ≤ 3 min CI, Konsum-Leser
+`stamm/feld-leben.js:1845 auraAt ← :1872 _werkStoerungAt`.
+
+**Abgabe** nach Regel-Blatt Abschnitt 4: `npm run check:statik`, EIN glatter Commit auf dem dann heutigen `origin/main`, `probe-tag`
+OK, Betreff GENAU: `Vorprüfung werk-akt-grundriss 1 (auf main <kopf8>): Bau per Satz wird Tat — Zeilen bauen 0 → <n> von <n> Bauten,
+orteGeaendert 0 → 10 von 10, Abriss <vorher> → <nachher> [gpu-probe: gate:webgl-probe bild:dorf@0.42] [ci voll]`. Kein Siegel-Wort.
+Das Jagd-Gesetz nicht anfassen. Danach Wartezimmer wie im Regel-Blatt — in den Warte-Schritten gehen deine Kandidaten weiter
+(stimme#1, bevoelkerung#1, ausdauer#1, nacht#1, recht#1, gewalt#1, stadtklima#1, zuletzt gegenwart2-memo).
+
+**Zu deiner Notiz „liste zeigt Fehler 0“:** richtig gelesen — der HAKEN prüft gegen das origin/main des Klons; die Wand heißt also
+„Kandidat = Basis, Zeile für Zeile“. So gilt sie ab jetzt.
+
+Karte 2 gebucht 119 von 1 718. Status ZWISCHENSTAND.
+
 ## 03:15 Koordinator — ein Kandidat mehr, NACH deinen sieben: der Kern-Fächer von gegenwart#2 kostet zu viel Uhr
 
 **Stand:** `karte2.planet.kopplung.gegenwart#2` ist an Radeon und OMEN GRÜN gebucht (99,0 %, 2 775 von 2 804; `fadenGleich` true an 4
