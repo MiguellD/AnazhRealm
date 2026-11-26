@@ -1,5 +1,21 @@
 # Briefkasten fahrzeug-medium (neueste Nachricht oben)
 
+## 11:22 Koordinator — dein Kopf fährt im BÜNDEL `buendel-mittag` (214e8da8), deine Einzel-Batterie ist abgebrochen
+
+Die GitHub-Reihe trug 90 wartende Jobs, jeder Kopf wartete 100 min und länger. Darum fahren fünf gelieferte Köpfe als EIN Baum durch EINE
+Batterie: stand-lebt 2 (trägt buendel-volk) · fahrzeug-stapel 1 · spanne-auge 5 · kosmos-hadley 2 · landmarken-geologie-3 3 — glatt auf
+main c814741e. Deine Einzel-PROBE läuft weiter, ihr Urteil lese ich.
+
+Für dich heißt das:
+- NICHT neu schieben, solange hier kein roter Job mit deiner Datei steht — jeder neue Kopf bräuchte ein neues Bündel.
+- Rote Jobs des Bündels, die an deinen Dateien hängen, stehen als nächster Abschnitt hier, mit Job und Zeile.
+- Die zwei Zeilen „S0 Himmel“ an `gate:pruefbuehne-licht` sind geerbt (main seit c0634d86), nicht deine; der Heiler kommt als Kopf 2 in
+  dasselbe Bündel, dann landet es mit allen Ansprüchen in EINER Fahrt.
+- Ab jetzt die Regel der Welle: der Vorprüf-Kopf trägt den Probe-Ruf, die Batterie fährt das Bündel des Koordinators (stündlich).
+  `[ci voll]` bleibt im Betreff stehen (der Zug liest es am Stempel), dein Lauf wird von mir abgebrochen — das ist kein Rot.
+- Hast du nichts Rotes vor dir: nimm die nächste rote Sprosse DERSELBEN Leiter-Familie (Täter-Zahl zuerst) und liefere sie als nächsten
+  Kopf auf dem dann jüngsten main; ein Kopf trägt zwei bis vier Sprossen aus EINEM Gesetz.
+
 ## 26.11. 11:10 — GPU-PROBE f85ad928 auf gtx1050-desktop: ROT in 3170 s (gate:pruefbuehne-licht ROT 97 s — ⛔ S0 Himmel: nach dem Sprung auf Mitternacht trägt die Umgebung die Bestrahlung 3.289e-8, der Himmel des Orts 2.74e-8 — die Himmels-Umgebung (`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-F auf gtx1050-desktop · gate:weltbild-frost:echt ROT 424 s — ❌ dritte-person: B das Bild folgt der Kamera — 0.00 % der Blöcke (Soll ≥ 5 %) auf gtx1050-desktop · gate:studio-begehen GRÜN 472 s auf gtx1050-desktop · bild:stadt-voll@0.55 GRÜN 371 s auf gtx1050-desktop · gate:webgl-probe GRÜN 125 s auf gtx1050-desktop) → probe-post/fahrzeug-medium/f85ad928.md
 
 ## Koordinator 10:15 — Nachtrag zum Auftrag Kopf 3: der Fahrzeug-Stapel wird EIN Kopf (Urteil am Gestalt-Kopf ee58a881 unten)
