@@ -3064,7 +3064,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 58 Bilder · max 92.33 ms · 82.76 % > 33 ms · Fahrt 42 Bilder · max 117.18 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 82.76 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 117.18), 100.00 % > 33 ms an 54b89949 radeon · Gehen 95 Bilder · max 75.02 ms · 9.47 % > 33 ms · Fahrt 53 Bilder · max 124.96 ms · 66.04 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 9.47 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 124.96), 66.04 % > 33 ms an 54b89949 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 54b89949: Last: Referenz f 1,309 (Faden 1,309 · alle Kerne 1,083; vor 109,8/278,7 ms, nach 103,6/282,5 ms, Ruhe 83,9/260,8 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --user-data-dir=anazh-28164-pro · profiband.K4#2 gtx: ROT: Gehen 95 Bilder · max 75.02 ms · 9.47 % > 33 ms · Fahrt 53 Bilder · max 124.96 ms · 66.04 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 9.47 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 124.96), 66.04 % > 33 ms an 54b89949",
+   "beleg": "Maschine: Gehen 58 Bilder · max 92.33 ms · 82.76 % > 33 ms · Fahrt 42 Bilder · max 117.18 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 82.76 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 117.18), 100.00 % > 33 ms an 54b89949 radeon · Gehen 95 Bilder · max 58.39 ms · 11.58 % > 33 ms · Fahrt 47 Bilder · max 141.68 ms · 80.85 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 11.58 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 141.68), 80.85 % > 33 ms an 54b89949 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 54b89949: Last: Referenz f 1,309 (Faden 1,309 · alle Kerne 1,083; vor 109,8/278,7 ms, nach 103,6/282,5 ms, Ruhe 83,9/260,8 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --user-data-dir=anazh-28164-pro · profiband.K4#2 gtx: ROT: Gehen 95 Bilder · max 58.39 ms · 11.58 % > 33 ms · Fahrt 47 Bilder · max 141.68 ms · 80.85 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 11.58 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 141.68), 80.85 % > 33 ms an 54b89949",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3079,7 +3079,7 @@
      "id": "profiband.K4#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Gehen 95 Bilder · max 75.02 ms · 9.47 % > 33 ms · Fahrt 53 Bilder · max 124.96 ms · 66.04 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 9.47 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 124.96), 66.04 % > 33 ms",
+     "zahl": "Gehen 95 Bilder · max 58.39 ms · 11.58 % > 33 ms · Fahrt 47 Bilder · max 141.68 ms · 80.85 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 11.58 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 141.68), 80.85 % > 33 ms",
      "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
      "grund": null,
      "r6": "konsum"
@@ -3097,9 +3097,9 @@
      "id": "profiband.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "Gehen 95 Bilder · max 75.02 ms · 9.47 % > 33 ms · Fahrt 53 Bilder · max 124.96 ms · 66.04 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 9.47 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 124.96), 66.04 % > 33 ms",
+     "zahl": "Gehen 95 Bilder · max 58.39 ms · 11.58 % > 33 ms · Fahrt 47 Bilder · max 141.68 ms · 80.85 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 11.58 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 141.68), 80.85 % > 33 ms",
      "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
-     "grund": "ROT: Gehen 95 Bilder · max 75.02 ms · 9.47 % > 33 ms · Fahrt 53 Bilder · max 124.96 ms · 66.04 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 9.47 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 124.96), 66.04 % > 33 ms",
+     "grund": "ROT: Gehen 95 Bilder · max 58.39 ms · 11.58 % > 33 ms · Fahrt 47 Bilder · max 141.68 ms · 80.85 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 11.58 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 141.68), 80.85 % > 33 ms",
      "r6": "konsum"
     }
    ]
@@ -35209,7 +35209,7 @@
   },
   "karte2.same.massstab.spanne": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.massstab.spanne#1 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#1 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#2 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#2 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#3 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#3 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#4 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#4 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#5 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#5 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#6 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#6 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#7 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#7 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#8 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#8 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#9 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#9 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.massstab.spanne#1 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#1 gtx: ROT: S1 · ROT Leser fehlt: Steigflug 0,5 → 700 m in 30 s: kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe — Saaten: die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden) — in 1 von 21 Adressen (nahe Ebene 0.1 m, Auge über dem Grund 2.1 m; Fächer 1/21 Adressen (20 Saaten + 1) in 0 ms · Leser stamm/koerper-bewegung.js:1759 _loopCamera · Gesetz gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833) · 20 ohne Fähigkeit (die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)) · schlechteste {\"saat\":\"anazh-realm-seed\"} auge 2.1 · Bild dort Saat anazh-realm-seed an der Wiese, ego (das Auge am Leib) · ungemessen: Steigflug 0,5 → 700 m in 30 s (kein Verb hebt das Auge)) (verlangt 20 Saaten, die Welt erzeugte 1) an 54b89949 · karte2.same.massstab.spanne#2 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#2 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#3 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#3 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#4 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#4 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#5 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#5 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#6 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#6 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#7 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#7 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#8 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#8 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#9 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#9 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.massstab.spanne#1",
@@ -35225,10 +35225,10 @@
      "id": "karte2.same.massstab.spanne#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "S1 · ROT Leser fehlt: Steigflug 0,5 → 700 m in 30 s: kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe — Saaten: die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden) — in 1 von 21 Adressen (nahe Ebene 0.1 m, Auge über dem Grund 2.1 m; Fächer 1/21 Adressen (20 Saaten + 1) in 0 ms · Leser stamm/koerper-bewegung.js:1759 _loopCamera · Gesetz gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833) · 20 ohne Fähigkeit (die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)) · schlechteste {\"saat\":\"anazh-realm-seed\"} auge 2.1 · Bild dort Saat anazh-realm-seed an der Wiese, ego (das Auge am Leib) · ungemessen: Steigflug 0,5 → 700 m in 30 s (kein Verb hebt das Auge)) (verlangt 20 Saaten, die Welt erzeugte 1)",
+     "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
+     "grund": "ROT: S1 · ROT Leser fehlt: Steigflug 0,5 → 700 m in 30 s: kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe — Saaten: die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden) — in 1 von 21 Adressen (nahe Ebene 0.1 m, Auge über dem Grund 2.1 m; Fächer 1/21 Adressen (20 Saaten + 1) in 0 ms · Leser stamm/koerper-bewegung.js:1759 _loopCamera · Gesetz gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833) · 20 ohne Fähigkeit (die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)) · schlechteste {\"saat\":\"anazh-realm-seed\"} auge 2.1 · Bild dort Saat anazh-realm-seed an der Wiese, ego (das Auge am Leib) · ungemessen: Steigflug 0,5 → 700 m in 30 s (kein Verb hebt das Auge)) (verlangt 20 Saaten, die Welt erzeugte 1)",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37567,7 +37567,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 338,
+  "konsum": 339,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37735,10 +37735,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3284
+  "ohne": 3283
  },
  "kopfVoll": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
- "zeit": "2026-11-26T14:19:10.244Z",
+ "zeit": "2026-11-26T14:31:02.125Z",
  "vorher": "54b89949",
  "bilanz": {
   "gewinn": [],
