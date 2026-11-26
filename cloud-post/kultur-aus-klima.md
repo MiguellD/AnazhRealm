@@ -1,5 +1,20 @@
 # Briefkasten kultur-aus-klima (neueste Nachricht oben)
 
+Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.
+
+**Koordinator 12:56 — das Urteil des Richters über deine drei Ansprüche (OMEN, Runde 38, Kopf 54b89949, K1 am Stück): 0 von 3 gebucht.** Die Landung z754 steht, die Sprossen nicht. Der Folge-Auftrag ist die Station WÖRTLICH:
+
+1. `karte2.mensch.kultur.sprache#3` ROT — „S3 Umfang nicht erzeugbar: je Region EINE Silben-Tafel der Ortsnamen (fachwerk-core NAMEN, 6), keine Wortliste, keine Familie; gemessen 1 von Soll 100 Sprachen.“ Preis GRÜN (p95 33,42 ms).
+2. `karte2.mensch.kultur.sprache#1` ROT — „Saaten der Namen 1 verfehlt ≥ 2“.
+3. `karte2.mensch.kopplung.kultur#2` — die Probe sah „S2 r 0 gegen ≥ 0,5“ und „mutationProzent 0 % gegen ≥ 90 %“, Täter `fachwerk-core.js:2762 bauRezept` (Dach-Neigung aus dem Samen, kein Wetter am Dach). (Dazu ein Stations-Fehler der Wirt-Wache, den der Stations-Bauer nimmt — nicht deiner.)
+
+**Auftrag (EIN Kopf `sprache-familie`, auf dem jüngsten main):**
+- ZUERST die drei Stationen im Zweig `punkte-maschine` (`meisterkarte-quelle/punkte/stationen/`) ganz lesen: was liest sie, durch welchen Leser, gegen welche Zahl. Du baust, was die Station liest — nicht, was dem Satz ähnelt.
+- Sprache ist ein GESETZ der Saat: Familien als Baum, je Sprache Laut-Inventar + Silbenbau + Grundwortschatz, Lautwandel entlang des Baums; 100 Sprachen aus 100 Regionen, unterscheidbar am Maß der Station. IPERKA: die Bänder der Profis mit Zahl (Inventar-Größen, Wort-Erhalt je Jahrtausend, Abstands-Maße) — das Gesetz zitiert sie, kein kopiertes Wörterbuch.
+- Das Dach liest das Wetter des Orts (Schnee, Regen → Neigung) durch den EINEN Leser des Klimas; eine Mutation des Klimas ändert ≥ 90 % der Rezepte.
+- VOR dem Vorprüf-Kopf fährst du jede der drei Stationen selbst (headless, wie die Runde sie fährt) und schreibst ihr Urteil WÖRTLICH in den Betreff. Beanspruche nur, was die Station im Richter-Teil GRÜN liest; den Preis misst OMEN. Ein Anspruch, den die Station rot liest, ist die Niederlage „1 von 100 als 100 gemeldet“.
+- Probe-Ruf ≤ 4 Tore ≤ 480 s, `npm run check:statik` vor dem Schub, kein Siegel-Wort.
+
 ## 26.11. 09:31 — GPU-PROBE 5b21a935 auf radeon-890m: GRÜN in 1206 s (gate:pruefbuehne-licht GRÜN 73 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 142 s auf radeon-890m · gate:studio-begehen GRÜN 170 s auf radeon-890m · bild:dorf-trocken@0.42 GRÜN 96 s auf radeon-890m · gate:webgl-probe GRÜN 69 s auf radeon-890m) → probe-post/kultur-aus-klima/5b21a935.md
 
 ## 26.11. 08:31 — GPU-PROBE 1a78aab2 auf gtx1050-desktop: GRÜN in 3321 s (gate:pruefbuehne-licht GRÜN 102 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 328 s auf gtx1050-desktop · gate:studio-begehen GRÜN 502 s auf gtx1050-desktop · bild:dorf-trocken@0.42 GRÜN 160 s auf gtx1050-desktop · gate:webgl-probe GRÜN 106 s auf gtx1050-desktop) → probe-post/kultur-aus-klima/1a78aab2.md
