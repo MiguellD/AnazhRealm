@@ -1,0 +1,12 @@
+PUNKT OHNE MACHER — die Station war der Fehler, das Spiel trägt (Zahl): stadtklima#1 Pfütze im Schatten 1 635 s ÷ Sonne 625 s = 2,616 > 1 am Dorf der Probe; die Station maß am leeren Dach-Pool der Wiese (0 von 8 Plätzen) und meldete das Ungemessene als 0
+
+Belegt, nicht mehr „nicht belegt“: der Dach-Pool ist leer. Das Dorf der Probe liegt 100–160 m neben dem Auge (k2-planet.js:352), der Pool
+wählt nur Decken in 64 m (Spiel stoff-material.js:4178, stoff-dach.js:309), fern trägt jedes Haus die Hülle stufe 3 ohne `decken`
+(stoff-dach.js:316). Täter der Station: k2-zusammenspiel.js:1169–1194 (misst am Pool der Wiese), :1198 (null → 0), :1219 (0 → „nicht später“).
+Schnitt (k2-zusammenspiel.js +41 −5): der Spieler am Platz des Dorfs, die Welt taktet (`__werkTakt`), bis ein Haus des Pools den Wurf
+trägt; dasselbe Stück misst, der Spieler kehrt zurück; leerer Pool → „die Pfütze ist ungemessen: …“ beim Namen, nie 0; Deckel 10 → 30 s.
+Zahl (Wolke, echter Läufer, main c0634d86): Basis schatten 0 · pfuetze null → ROT „nicht später (0)“ = das Geräte-Urteil;
+Kandidat Pool 8 nach 1 Takt (8 737 / 8 718 ms frisch) · 2,616 → GRÜN über die Zeugen; Mutante `_trockenAnteil` → 1: 625 ÷ 625 = 1 → ROT.
+Wände: liste Kandidat = Basis (1 976 · 420 · fehlt 15 · Fehler 0), 48 Blöcke = die Perspektive planet.kopplung, sonst 0;
+Proben 2 005 → 2 007, falsch 0; Leiter ≤ 60 s (Gerät 7,9 s + der Gang).
+Offen: der Täter-Text nennt `_windAt` (GRÜN) statt der Pfütze; nur das Gerät misst die Sekunden des Gangs und das Urteil mit Karte.

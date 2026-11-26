@@ -1,0 +1,90 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+index e61dcf3bf7..8d4c5e9e54 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+@@ -1108,7 +1108,7 @@ L.perspektive("planet", (() => {
+             // Punkte, 300 m abseits; S2 die Temperatur am Kern gegen den Rand auf gleicher Höhe (`_temperaturAt`); S3–S6 fragen die Welt nach der Größe des
+             // Orts, nach Dunst und Böe am Ort und nach den Bewohnern (Umfang nicht erzeugbar).
+             [E]: {
+-                sek: 10,
++                sek: 30, // der Gang ins Dorf der Probe (S1, die Pfütze): der erste Takt nach dem Sprung kostet in der Wolke 8,7 s — Leser 2, 26.11.
+                 dorf: true,
+                 pfad: ["stamm/stoff-material.js", "stamm/bild-himmel.js", "stamm/siedlung-ort.js", "stamm/siedlung-bewohner.js", "fachwerk-core.js", "gelaende-core.js", "scripts/werkbank.cjs"],
+                 ungefahren: "das Bildpaar der tauenden Stadt (S2) schießt nur das Gerät",
+@@ -1165,10 +1165,19 @@ L.perspektive("planet", (() => {
+                         const tRoh = kern ? r._temperaturAt(r._terrainSaatY(kern.x + 600, kern.z, true), 0) : null;
+                         // DIE PFÜTZE IM SCHATTEN (stadtklima#1), als VERHALTEN: am Haus des Dach-Pools, das dem Auge am nächsten steht,
+                         // ein Ort im Wurf seiner Wand (gegen die Sonne) und einer in der Sonne (vor ihr) — die Zeit, bis die Nässe am
+-                        // Ort (`_naesseAm`, derselbe Leser wie der Stoff) trocken ist, unter klarem Mittag (die Uhr kehrt zurück)
++                        // Ort (`_naesseAm`, derselbe Leser wie der Stoff) trocken ist, unter klarem Mittag (die Uhr kehrt zurück).
++                        // AM DORF DER PROBE (Leser 2, 26.11.): bis hier maß das Stück am Pool des Auges an der Wiese — das Dorf der Probe
++                        // liegt 100–160 m daneben (k2-planet.js dorfSeite), der Pool wählt nur Decken im Umkreis `NAESSE.dachUmkreisM`
++                        // (64 m, stamm/stoff-dach.js `_dachTakt`), und fern trägt jedes Haus seine Fernstufe (Hülle stufe 3 ohne
++                        // `decken`): 0 von 8 Plätzen, `schatten` null, gemeldet als 0 — „nicht später“ an GTX und Radeon, wo nichts
++                        // gemessen war. Jetzt steht der Spieler am Platz des Dorfs, die Welt taktet (`__werkTakt`), bis ein Haus des
++                        // Pools den Wurf trägt; danach steht er, wo er stand. Bleibt der Pool leer, nennt der Zeuge den Grund, nie 0.
+                         let schatten = null;
++                        let pfuetzeNicht = null;
++                        let pool = null;
+                         const U = st.atmoUniforms;
+-                        if (typeof r._naesseAm === "function" && U && U.dachLage && U.schattenSonne) {
++                        const D = [...(r._bewohnerSiedlungen || new Map()).values()].find((q) => q && q.key === window.__dorfDerProbe);
++                        const messen = () => {
+                             const uhr = st.timeOfDay;
+                             try {
+                                 st.timeOfDay = 0.45;
+@@ -1191,11 +1200,33 @@ L.perspektive("planet", (() => {
+                                 st.timeOfDay = uhr;
+                                 r._schattenTakt(r.constructor._trockenAnteil(r._weatherFieldFor(st.weather)));
+                             }
++                        };
++                        if (!(typeof r._naesseAm === "function" && U && U.dachLage && U.schattenSonne)) pfuetzeNicht = "die Welt trägt keine Nässe am Ort (_naesseAm · atmoUniforms.dachLage · schattenSonne)";
++                        else if (!D) pfuetzeNicht = "kein Dorf der Probe (window.__dorfDerProbe " + window.__dorfDerProbe + ")";
++                        else if (typeof window.__werkTakt !== "function") pfuetzeNicht = "die Seite trägt keinen Takt (__werkTakt)";
++                        else {
++                            const pm = st.playerMesh.position, T0 = pm.clone();
++                            const plaetze = () => U.dachMass.filter((q) => q.value.x > 0).length;
++                            const w0 = performance.now();
++                            let takte = 0, wahl = "";
++                            try {
++                                pm.set(D.ox, r._terrainSaatY(D.ox, D.oz, true) + 1, D.oz);
++                                while (!schatten && performance.now() - w0 < 12000) {
++                                    await window.__werkTakt();
++                                    takte++;
++                                    const im = String(r._dachWahl && r._dachWahl.im);
++                                    if (plaetze() && im !== wahl) { wahl = im; messen(); }
++                                }
++                            } finally {
++                                pm.copy(T0);
++                            }
++                            pool = { dorf: D.key, takte, ms: Math.round(performance.now() - w0), plaetze: plaetze() };
++                            if (!schatten) pfuetzeNicht = pool.plaetze ? "kein Haus der " + pool.plaetze + " Plätze des Pools am Dorf " + D.key + " wirft seinen Wurf auf den Ort vor seiner Wand (" + takte + " Takte, " + pool.ms + " ms)" : "der Dach-Pool am Dorf " + D.key + " blieb leer (" + takte + " Takte, " + pool.ms + " ms)";
+                         }
+                         const wf = r._weatherFieldFor();
+                         const bk = kern ? r._windAt(kern.x, kern.z, t, {}) : null;
+                         const bf = kern ? r._windAt(kern.x + 600, kern.z, t, {}) : null;
+-                        return { segmente: ab.length, abweichung: r3(m(ab)), abweichungFrei: r3(m(abG)), platzStuecke: platz.length, platzGrad: r3(m(platz)), schatten: schatten ? schatten.verh : 0, pfuetze: schatten, groesste, bewohner, dK: tK != null && tR != null ? r3(tK - tR) : null, dHoeheM: rand ? r3(rand.y - yK) : null, dKOhneHoehe: tK != null ? r3(tK - tRoh) : null, nebel: r3(wf.fog), boeFaktor: bk && bf && bf.boe ? r3(bk.boe / bf.boe) : null };
++                        return { segmente: ab.length, abweichung: r3(m(ab)), abweichungFrei: r3(m(abG)), platzStuecke: platz.length, platzGrad: r3(m(platz)), schatten: schatten ? schatten.verh : null, pfuetze: schatten, pfuetzeNicht, pool, groesste, bewohner, dK: tK != null && tR != null ? r3(tK - tR) : null, dHoeheM: rand ? r3(rand.y - yK) : null, dKOhneHoehe: tK != null ? r3(tK - tRoh) : null, nebel: r3(wf.fog), boeFaktor: bk && bf && bf.boe ? r3(bk.boe / bf.boe) : null };
+                     };
+                     const w = await S(seite, {});
+                     const aus = M.teil || {};
+@@ -1216,13 +1247,18 @@ L.perspektive("planet", (() => {
+                             if (!(z.segmente >= 10)) return "nur " + (z.segmente || 0) + " Gassen-Stücke gemessen";
+                             if (!(z.abweichungFrei - z.abweichung >= 10)) return "der Gegenlauf 300 m abseits weicht gleich ab (" + z.abweichungFrei + "° ↔ " + z.abweichung + "°): die Gasse lenkt nicht";
+                             if (!(z.platzGrad - z.abweichung >= 10)) return "der Platz (κ 0) folgt dem Weg wie die Gasse (" + z.platzGrad + "° ↔ " + z.abweichung + "°): keine Gegenprobe";
++                            if (z.pfuetzeNicht || z.schatten == null) return "die Pfütze ist ungemessen: " + (z.pfuetzeNicht || "kein Ort im Wurf eines Hauses");
+                             if (!(z.schatten > 1)) return "die Pfütze trocknet im Schatten nicht später (Trocken-Zeit Schatten ÷ Sonne " + z.schatten + ")";
+                             return null;
+                         },
+                         taeter: "stamm/stoff-material.js _windAt (liest keine Häuser)",
+                         leser: "stamm/stoff-material.js _windAt über _gassenWind (fachwerk gassenWind, die Gasse κ ≥ 0,99); stamm/stoff-dach.js _naesseAm über _hausSchatten (der Dach-Pool, die Sonne des Lichts) — der Stoff liest dieselbe Nässe am Ort (_naesseOrtKnoten)",
+                         gruen: { werte: { abweichungGrad: 12 }, zeuge: { segmente: 40, abweichung: 12, abweichungFrei: 44, platzGrad: 43, schatten: 2.6 } },
+-                        attrappen: [{ name: "12° ohne Gassen", roh: { werte: { abweichungGrad: 12 }, zeuge: {} } }],
++                        attrappen: [
++                            { name: "12° ohne Gassen", roh: { werte: { abweichungGrad: 12 }, zeuge: {} } },
++                            { name: "die Pfütze am leeren Pool (die Wiese, 0 von 8 Plätzen)", roh: { werte: { abweichungGrad: 12 }, zeuge: { segmente: 40, abweichung: 12, abweichungFrei: 44, platzGrad: 43, schatten: null, pfuetzeNicht: "der Dach-Pool am Dorf d:7@-180,-1046 blieb leer (180 Takte, 12000 ms)" } } },
++                            { name: "die Pfütze trocknet im Schatten gleich schnell", roh: { werte: { abweichungGrad: 12 }, zeuge: { segmente: 40, abweichung: 12, abweichungFrei: 44, platzGrad: 43, schatten: 1 } } },
++                        ],
+                     },
+                     2: {
+                         u: {},

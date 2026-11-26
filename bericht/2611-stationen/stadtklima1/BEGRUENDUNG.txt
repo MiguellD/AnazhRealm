@@ -1,0 +1,94 @@
+BEGRÜNDUNG — planet.kopplung.stadtklima#1, DIE PFÜTZE AM DORF DER PROBE (Leser 2, 26.11.)
+
+0. DER AUFTRAG
+   origin/koordination:cloud-post/leser-2611.md (01:57): „die zwei ‚nicht belegt‘ (`stadtklima#1`, `masse#1`) — je 30 min, dann Urteil oder
+   ‚nicht findbar, weil …‘“; die Reihenfolge leser-2.md 05:36 (… recht#1, gewalt#1, stadtklima#1). Die Tafel (Fassung 3, 66488a26) ließ
+   offen, „welche der Bedingungen fiel (Dach-Pool leer — 8 Plätze im Umkreis 64 m um _lodAuge — oder kein Haus mit Wurf-Paar)“.
+   URTEIL: belegt. Der Dach-Pool ist leer. Die Station war der Fehler, das Spiel trägt.
+
+1. DER RICHTER (wörtlich, vision/meisterkarte-2.json an punkte-maschine d3129c31; k2-zusammenspiel.js an der Spitze 60f16578 byte-gleich zu
+   55ee5ac0 — der Diff greift dort unverändert)
+   planet.kopplung.stadtklima S1  „Wind folgt der Gasse ±20°; Pfütze trocknet im Schatten später“
+   (umfang „ein Platz, eine Gasse“, tiefe „Gasse lenkt Wind, Schatten kühlt“, preis „P“)
+
+2. DER BEFUND AN DEN GERÄTEN
+   Die Akten (vision/richter/planet.kopplung.stadtklima.1.*) zeigen GTX f63a69ef und 4c9e6aab (26.11. 05:39) sowie Radeon b1f0de0e mit
+   demselben Satz: „S1 abweichungGrad 1,185 ° (Radeon 1,976 °) gegen Soll ≤ 20 ° ✓ · der Zeuge der Welt fehlt: die Pfütze trocknet im
+   Schatten nicht später (Trocken-Zeit Schatten ÷ Sonne 0)“. Der rohe Zeuge an der GTX 4c9e6aab (messung/roh/4c9e6aab-gtx/
+   karte2.planet.kopplung.bahn-klima_2.json) lautet: segmente 22 · schatten 0 · pfuetze null · groesste 9. Die 0 ist also keine Zahl der
+   Welt. Sie heißt: nichts gemessen.
+
+3. DER FEHLER DER STATION (punkte-maschine d3129c31; k2-zusammenspiel.js byte-gleich zu 55ee5ac0)
+   stationen/k2-zusammenspiel.js:1169–1194  Das Stück der Pfütze misst am Dach-Pool des Auges, und das Auge steht an der Wiese. Das
+       Dorf der Probe gründet der Rumpf 100–160 m daneben (stationen/k2-planet.js:352, `for (const R of [100, 130, 160])`). Der Pool
+       wählt nur Decken im Umkreis von 64 m um das Auge (Spiel main c0634d86: stamm/stoff-material.js:4178 `dachUmkreisM: 64`,
+       stamm/stoff-dach.js:309). Fern trägt jedes Haus seine Fernstufe, eine gepackte Hülle `stufe 3` mit den Schlüsseln [stufe, code, f]
+       und ohne die Zeile `decken` (stamm/stoff-dach.js:316 `hu.decken || []`). Damit stehen 0 von 8 Plätzen. Bei :1182 hat kein Platz
+       M.x > 0, `schatten` bleibt null.
+   :1198  `schatten: schatten ? schatten.verh : 0` meldet das Ungemessene als 0.
+   :1219  `!(z.schatten > 1)` urteilt diese 0 als „nicht später“: ROT am Spiel, wo die Station nichts sah.
+   Sonde (sonde/sonde.out §2–§4):
+     - an der Wiese 0 von 8 Plätzen;
+     - mit dem Auge in der Mitte des Dorfs ohne Takt ebenfalls 0 (die Häuser tragen keine Decke, lod 2 · Hülle stufe 3);
+     - die Werkbank taktet nicht von selbst (spielZeit steht über 3 s).
+   Gegenprobe an stadt-voll (§1, das Auge in der Stadt): 8 Decken, Haus 3 wirft den Ort vor seiner Wand (sS 1 · sO 0).
+
+4. DER SCHNITT (EIN Stück der Station, k2-zusammenspiel.js, +41 −5; kein Flag, kein Zwilling)
+   - Der Spieler steht am Platz des Dorfs der Probe (window.__dorfDerProbe, derselbe Schlüssel wie M.dorfDa()).
+   - Die Welt taktet über den EINEN Takt der Werkbank (`window.__werkTakt` = __buehne · __ortSchritt · r._gameLoopTick,
+     scripts/werkbank.cjs:887; wie die Station k2-mensch-zeit.js:660), bis ein Haus des Pools den Wurf trägt, höchstens 12 s.
+   - Gemessen wird jedes Mal, wenn der Pool neu wählt. Das Messen ist dasselbe Stück wie bisher, Zeile für Zeile, nur in `messen()`
+     gefasst: Ort im Wurf und Ort vor der Sonne, `_naesseAm` · `_hausSchatten` · `_trockenRate` · `_trockenAnteil`.
+   - Danach steht der Spieler wieder, wo er stand (finally).
+   - Bleibt der Pool leer, nennt der Zeuge den Grund (`pfuetzeNicht`: „der Dach-Pool am Dorf … blieb leer (n Takte, ms)“, „kein Haus
+     der n Plätze … wirft seinen Wurf …“, „kein Dorf der Probe“, „die Seite trägt keinen Takt“). Das Urteil heißt dann „die Pfütze ist
+     ungemessen: …“, ROT beim Namen, nie mehr 0.
+   - `schatten` ist null statt 0. Der Zeuge trägt `pool` (dorf · takte · ms · plaetze).
+   - Der Deckel der Leiter steigt von 10 auf 30 s (der Gang ins Dorf), die Wand bleibt ≤ 60 s.
+   - Linse in der bestehenden Familie (die Proben der Station): zwei Attrappen.
+     · „die Pfütze am leeren Pool (die Wiese, 0 von 8 Plätzen)“ → ROT „die Pfütze ist ungemessen: der Dach-Pool … blieb leer“
+     · „die Pfütze trocknet im Schatten gleich schnell“ → ROT „nicht später (… 1)“
+
+5. DIE ZAHL — vorher ↔ nachher. Der Hand-Lauf (hand.out) fährt der echte Läufer (punkte.cjs fahreStation) auf der Wolke, mit Werkbank
+   --ort wiese, im Spiel-Baum main c0634d86.
+   vorher (Basis, frische Welt): segmente 23 · abweichung 1,976 (= Radeon) · schatten 0 · pfuetze null → „S1 … ✓ · der Zeuge der Welt
+          fehlt: die Pfütze trocknet im Schatten nicht später (Trocken-Zeit Schatten ÷ Sonne 0)“ — das Geräte-Urteil, Zeichen für Zeichen.
+   nachher (Kandidat, dieselbe Welt): pool 8 Plätze nach 1 Takt (8 737 ms) · Pfütze Schatten 1 635 s ÷ Sonne 625 s = 2,616 > 1 →
+          „S1 abweichungGrad 1,976 ° gegen Soll ≤ 20 ° ✓ · Zeuge: die Welt geändert“ = GRÜN über die Zeugen.
+   nachher (Kandidat, Werkbank neu, frische Welt, Deckel 30 s): pool 8 nach 1 Takt (8 718 ms) · 2,616 → GRÜN über die Zeugen.
+   Mutante der Welt (der Leser `_trockenAnteil` → 1, der Schatten trocknet wie die Sonne): Schatten 625 s ÷ Sonne 625 s = 1 → ROT
+          „die Pfütze trocknet im Schatten nicht später (Trocken-Zeit Schatten ÷ Sonne 1)“. Die Station liest das Gesetz der Welt.
+   Die Welt der Zahl: 2,616 = 1 / q1, mit q1 = `_trockenAnteil(sunny)` 0,382 (im Schatten nur das Himmelslicht `NAESSE.diffus` 0,2 des
+   Strahlungs-Terms; Penman). Die Rate ist `_trockenRate` 0,0016125/s (die Sonne 625 s, wie die Tafel unter node: 620 s).
+
+6. DIE WÄNDE
+   liste      Basis 55ee5ac0 (= d3129c31 für jede Station) 1 976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0 = Kandidat 1 976 · 420 ·
+              fehlt 15 · Fehler 0 (33 s). Geändert sind 48 Blöcke, genau die 48 Stationen der Perspektive planet.kopplung (ihre EINE
+              Probe trägt den Text der Leiter), sonst 0 Blöcke.
+   Proben     k2-zusammenspiel.js 2 005 → 2 007 (+2 Attrappen), falsch 0. stadtklima#1 hat 11 Proben, die Attrappen sind ROT beim Namen.
+   Leiter     ≤ 60 s. Deckel 10 → 30 s. Die Leiter am Gerät 7,9 s (GTX 4c9e6aab: ZEIT stadtklima 142,1 − 134,2 s) + der Gang ins Dorf
+              (Wolke 1 Takt 8,7 s; warm 1,5–3,0 s). In der Wolke reißt jede Leiter dieser Probe am /bild der S2 ihren Deckel (Basis
+              bei 10 s, Kandidat bei 30 s), S1 ist davor gemessen.
+   Stichprobe durch den Leser des Spiels: der Pool `_dachTakt`, `_hausSchatten`, `_naesseAm` — dieselben Leser, die der Stoff zeichnet
+              (`_naesseOrtKnoten`). Die Station rechnet nichts nach. Die Mutante am Leser kippt das Urteil.
+
+7. DER PREIS
+   Der Abdruck der 48 Stationen von planet.kopplung ändert sich (der Text der Probe). Jede misst am Gerät neu, ehe punkte.cjs ihr GRÜN
+   hält. Die Probe der Perspektive wird um den Gang länger (Gerät unbekannt, Wolke +8,7 s kalt).
+
+8. WAS NUR DAS GERÄT MESSEN KANN
+   - Die Zeit des Gangs ins Dorf an GTX 1050/1060 und Radeon (der erste Takt nach dem Sprung, die Leiter gegen den Deckel 30).
+   - Ob dort die nahe Stufe im ersten Takt ihre Decken bringt.
+   - Das Urteil S1 mit dem echten Zeugen der Karte.
+   Die Pfütze ist eine Zahl der Welt (kein Bild). Das Bild der nassen Gasse (der Stoff `_naesseOrtKnoten`) ist nicht Teil dieser Sprosse.
+
+9. OFFEN (beim Namen)
+   - Der Täter-Text der Sprosse (k2-zusammenspiel.js `taeter: "stamm/stoff-material.js _windAt (liest keine Häuser)"`) nennt den Wind,
+     der GRÜN ist. Fällt die Pfütze am Gerät, steht dort der falsche Name. Nicht geschnitten, Messname stadtklima#1 taeter.
+   - Gemessen ist das Dorf der Probe (9 Häuser, mediterran), nicht die Stadt. Der Richter verlangt „ein Platz, eine Gasse“.
+
+10. HAND-SKRIPT UND SONDE
+   klima-hand.cjs: der echte Probe-Befehl der Perspektive, geschnitten auf die Leiter stadtklima, gefahren vom echten Läufer; Urteil und
+   Zeuge der S1. Aufruf im Spiel-Baum (Werkbank mit --ort wiese):
+     node klima-hand.cjs <punkte-dir> k2-zusammenspiel.js planet.kopplung.stadtklima <W-Port> 120 [leiter-sek]
+   sonde/: die /eval-Texte der Wurzel (der Pool am Auge, die Hülle der Häuser, der Gang mit Takt) und ihre Antworten (sonde.out).

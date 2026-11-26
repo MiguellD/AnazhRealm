@@ -1,0 +1,34 @@
+DIE SONDE DER WURZEL — stadtklima#1, Wolke (swiftshader), Werkbank 24700 am Spiel-Baum eae94514 (stoff-dach.js · stoff-material.js
+byte-gleich zu main c0634d86), 26.11. Leser 2. Jede Zeile wörtlich die Antwort der Seite (gekürzt nur, wo „…“ steht).
+
+LIES: der Rumpf jedes .js ist ein /eval-Text der Werkbank (`r` die Welt); dorf-diag.cjs fährt `/umstellen {ort:"wiese"}`, gründet das
+Dorf der Probe mit dem Text von dorfSeite (k2-planet.js, wörtlich ausgeschnitten) und ruft den Text; lauf5.cjs ruft einen Text mit ARG.
+  node dorf-diag.cjs <W-Port> <k2-planet.js> diag1.js            (Wiese + Dorf + der Pool am Auge)
+  node dorf-diag.cjs <W-Port> <k2-planet.js> <text> nur-diag      (nur der Text)
+  node lauf5.cjs <W-Port> <text> '<ARG als JSON>'
+
+1  diag1.js an stadt-voll (das Auge in der Stadt) — der Pool trägt 8 Decken, ein Haus wirft den Ort vor seiner Wand:
+   {"auge":{"x":594.17,"y":64.17,"z":385.02},"wahl":{"im":["haus_provenzalisch@596,361#0", … 8 …],"raus":22},"sonne":[0.297,0.797,-0.526,0.38],
+    "plaetze":[… {"i":3,"L":[603.1,414.3],"M":[5.5,4.25,67.42],"e":6.95,"yS":59.49,"sS":1,"sO":0} …]}
+
+2  dorf-diag.cjs diag1.js (Wiese, das Dorf der Probe gegründet wie die Station es tut):
+   umstellen {"ort":"wiese","spieler":[-280.4,-1045.6], …}
+   dorf {"key":"d:7@-180,-1046","n":31,"gebaut":true,"ab":100, …}
+   diag {"auge":{"x":-280.4,"z":-1045.6},"wahl":{"im":[],"raus":0},"plaetze":[{"i":0,"L":[0,0],"M":[0,0,-1000000],"sS":0,"sO":0}, … 8 × leer …]}
+   → 0 von 8 Plätzen: das Stück der Station findet kein M.x > 0 (k2-zusammenspiel.js:1182), schatten null, gemeldet 0 (:1198)
+
+3  diag2.js (dasselbe Stück der Station wörtlich, das Auge an der Wiese · in der Mitte des Dorfs · an der Pose 32 m — ohne Takt):
+   {"dorf":"d:7@-180,-1046","ab":100,"wiese":{"plaetze":0,"schatten":0},"mitte":{"plaetze":0,"schatten":0},"pose":{"plaetze":0,"schatten":0}}
+   → auch im Dorf leer: die Häuser tragen keine Decke
+
+4  d1.js — die Hülle eines Hauses: {"t":"haus_provenzalisch","keys":["stufe","code","f"]} (gepackt, ohne die Zeile `decken`)
+   d6.js — die Welt taktet nicht von selbst (spielZeit 166.383 → 166.383 über 3 s); die 9 Häuser des Dorfs: lod 2 · served 2 ·
+   Hülle stufe 3 · keys [stufe, code, f] — die Fernstufe, 18–50 m vom Spieler
+
+5  diag5t.js '{"ms":60000,"ziel":"mitte"}' — der Spieler im Dorf, die Welt taktet (`__werkTakt`, wie k2-mensch-zeit.js:660):
+   {"deckenJeHaus":[-1,-1,1,-1,2,3,-1,1,1],"im":["haus_provenzalisch@-164,-1056#0", … 8 …],"schatten":2.616,
+    "pfuetze":{"trockenSchattenS":1635,"trockenSonneS":625,"verh":2.616,"haus":1}}
+   → dasselbe Stück der Station misst 2,616 > 1, sobald die nahe Stufe ihre Decken bringt (warte 60 s: die Schleife wartete auf alle 9)
+
+6  zurueck.js '{"x":-280.4,"z":-1045.6,"ms":15000}' — zurück an der Wiese, 224 Takte: {"decken":[-1,-1,1,-1,2,3,-1,1,1],"pool":0}
+   → die nahe Stufe bleibt im Cache, der Pool am Auge (64 m) leer

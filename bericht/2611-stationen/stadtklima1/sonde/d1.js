@@ -1,0 +1,1 @@
+const e = (r.state.architectures||[]).find((x) => x._hausHuelle); return { t: e && e.type, keys: e ? Object.keys(e._hausHuelle).slice(0, 20) : null, decken: e && e._hausHuelle.decken && e._hausHuelle.decken.length };

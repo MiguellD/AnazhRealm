@@ -1,0 +1,77 @@
+# Hand-Läufe stadtklima#1 — Wolke, Werkbank 24600 --ort wiese am Spiel-Baum main c0634d86, klima-hand.cjs; Leser 2, 26.11.
+
+## 1 BASIS (punkte-maschine d3129c31 = 55ee5ac0 für k2-zusammenspiel.js), frische Welt, das Dorf der Probe frisch gegründet (der erste Lauf davor brach am Hand-Skript ab, nach der Gründung)
+HAND planet.kopplung.stadtklima · k2-zusammenspiel.js · Deckel der Probe 120 s · LAUF 10.5 s · Exit 0
+  ZEIT-Zeilen 0
+  der Leser der Uhr (alle Leitern): (an diesem Kopf ohne Uhr der Leiter)
+  der Läufer S1: ROT · ROT: S1 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  ZEUGE S1 {"segmente":23,"abweichung":1.976,"schatten":0,"pfuetze":null,"groesste":9}
+  S1 Urteil: ROT · S1 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S2 Urteil: ROT · S2 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S3 Urteil: ROT · S3 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S4 Urteil: ROT · S4 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S5 Urteil: ROT · S5 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S6 Urteil: ROT · S6 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S1 Urteil über die Zeugen: ROT · S1 abweichungGrad 1,976 ° gegen Soll ≤ 20 ° ✓ · der Zeuge der Welt fehlt: die Pfütze trocknet im Schatten nicht später (Trocken-Zeit Schatten ÷ Sonne 0) · Täter: stamm/stoff-material.js _windAt (liest keine Häuser) · gemessen vor dem Wurf der Leiter nach 10,032 s: der Deckel der Leiter 10 s
+  S2 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 10,032 s vor dem Wert der Sprosse
+  S3 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 10,032 s vor dem Wert der Sprosse
+  S4 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 10,032 s vor dem Wert der Sprosse
+  S5 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 10,032 s vor dem Wert der Sprosse
+  S6 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 10,032 s vor dem Wert der Sprosse
+
+## 2 KANDIDAT, dieselbe Welt, Deckel der Leiter auf 60 s gestellt (die Kosten ohne Deckel)
+HAND planet.kopplung.stadtklima · k2-zusammenspiel.js · Deckel der Probe 120 s · Deckel der Leiter 60 s · LAUF 60.5 s · Exit 0
+  ZEIT-Zeilen 0
+  der Leser der Uhr (alle Leitern): (an diesem Kopf ohne Uhr der Leiter)
+  der Läufer S1: ROT · ROT: S1 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  ZEUGE S1 {"segmente":23,"abweichung":1.976,"schatten":2.616,"pfuetze":{"trockenSchattenS":1635,"trockenSonneS":625,"verh":2.616,"haus":2},"pfuetzeNicht":null,"pool":{"dorf":"d:7@100,0","takte":1,"ms":8737,"plaetze":8},"groesste":9}
+  S1 Urteil: ROT · S1 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S2 Urteil: ROT · S2 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S3 Urteil: ROT · S3 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S4 Urteil: ROT · S4 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S5 Urteil: ROT · S5 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S6 Urteil: ROT · S6 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S1 Urteil über die Zeugen: GRÜN · S1 abweichungGrad 1,976 ° gegen Soll ≤ 20 ° ✓ · Zeuge: die Welt geändert · gemessen vor dem Wurf der Leiter nach 60,068 s: der Deckel der Leiter 60 s
+  S2 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 60,068 s vor dem Wert der Sprosse
+  S3 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 60,068 s vor dem Wert der Sprosse
+  S4 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 60,068 s vor dem Wert der Sprosse
+  S5 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 60,068 s vor dem Wert der Sprosse
+  S6 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 60,068 s vor dem Wert der Sprosse
+
+## 3 KANDIDAT, Werkbank neu gestartet (frische Welt, frisches Dorf), sein eigener Deckel 30 s
+HAND planet.kopplung.stadtklima · k2-zusammenspiel.js · Deckel der Probe 120 s · LAUF 50.1 s · Exit 0
+  ZEIT-Zeilen 0
+  der Leser der Uhr (alle Leitern): (an diesem Kopf ohne Uhr der Leiter)
+  der Läufer S1: ROT · ROT: S1 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  ZEUGE S1 {"segmente":23,"abweichung":1.976,"schatten":2.616,"pfuetze":{"trockenSchattenS":1635,"trockenSonneS":625,"verh":2.616,"haus":2},"pfuetzeNicht":null,"pool":{"dorf":"d:7@100,0","takte":1,"ms":8718,"plaetze":8},"groesste":9}
+  S1 Urteil: ROT · S1 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S2 Urteil: ROT · S2 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S3 Urteil: ROT · S3 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S4 Urteil: ROT · S4 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S5 Urteil: ROT · S5 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S6 Urteil: ROT · S6 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S1 Urteil über die Zeugen: GRÜN · S1 abweichungGrad 1,976 ° gegen Soll ≤ 20 ° ✓ · Zeuge: die Welt geändert · gemessen vor dem Wurf der Leiter nach 30,019 s: der Deckel der Leiter 30 s
+  S2 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 30,019 s vor dem Wert der Sprosse
+  S3 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 30,019 s vor dem Wert der Sprosse
+  S4 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 30,019 s vor dem Wert der Sprosse
+  S5 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 30,019 s vor dem Wert der Sprosse
+  S6 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 30,019 s vor dem Wert der Sprosse
+
+## 4 MUTANTE DER WELT (an Welt 3): der Leser _trockenAnteil → 1 (der Schatten trocknet wie die Sonne), danach zurück (0,448)
+HAND planet.kopplung.stadtklima · k2-zusammenspiel.js · Deckel der Probe 120 s · LAUF 15.0 s · Exit 0
+  ZEIT-Zeilen 0
+  der Leser der Uhr (alle Leitern): (an diesem Kopf ohne Uhr der Leiter)
+  der Läufer S1: ROT · ROT: S1 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  ZEUGE S1 {"segmente":23,"abweichung":1.976,"schatten":1,"pfuetze":{"trockenSchattenS":625,"trockenSonneS":625,"verh":1,"haus":2},"pfuetzeNicht":null,"pool":{"dorf":"d:7@100,0","takte":1,"ms":1533,"plaetze":8},"groesste":9}
+  S1 Urteil: ROT · S1 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S2 Urteil: ROT · S2 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S3 Urteil: ROT · S3 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S4 Urteil: ROT · S4 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S5 Urteil: ROT · S5 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S6 Urteil: ROT · S6 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S1 Urteil über die Zeugen: ROT · S1 abweichungGrad 1,976 ° gegen Soll ≤ 20 ° ✓ · der Zeuge der Welt fehlt: die Pfütze trocknet im Schatten nicht später (Trocken-Zeit Schatten ÷ Sonne 1) · Täter: stamm/stoff-material.js _windAt (liest keine Häuser)
+  S2 Urteil über die Zeugen: ROT · S2 Umfang nicht erzeugbar: keine Stadt mit 10² Häusern geladen (größter Ort 9 Häuser); _temperaturAt liest nur die Höhe: Kern − Rand auf gleicher Höhe -0.1 K (-0.9 m Höhenversatz), 600 m daneben ohne Höhen-Abgleich 3.314 K — die Höhe, keine Stadt · dK -0,1 K gegen Soll ≥ 2 K ✗ · tauVorsprungH ungemessen gegen Soll > 0 h ✗ · Bild (Beleg) fehlt (/bild: {"ms":13010,"fehler":"OperationError: A valid external Instan
+  S3 Urteil über die Zeugen: ROT · S3 Umfang nicht erzeugbar: keine Stadt mit 10⁴ Häusern (die Wand des Rang-Gesetzes 500); der Dunst ist ein Wetter-Feld der ganzen Welt (Nebel 0.15) · sichtProzent 100 % gegen Soll ≤ 50 % ✗ · boeFaktor 0,284 gegen Soll ≥ 1,5 ✗ · Täter: fachwerk-core.js GROESSE_WAND (500 Häuser)
+  S4 Urteil über die Zeugen: ROT · S4 Umfang nicht erzeugbar: keine 10⁶ Bewohner (geladen 31) · freiProzent ungemessen gegen Soll ≤ 30 % ✗ · Täter: stamm/siedlung-bewohner.js (Bewohner nur der geladenen Orte)
+  S5 Urteil über die Zeugen: ROT · S5 Umfang nicht erzeugbar: keine Megastadt ≥ 10⁷ (größter Ort 9 Häuser), kein Niederschlag am Ort aus der Stadt · leePlusProzent ungemessen gegen Soll ≥ 10 % ✗ · Täter: phyto-core.js wetterAt (liest keine Stadt)
+  S6 Urteil über die Zeugen: ROT · S6 Umfang nicht erzeugbar: keine Industriestadt und kein Smog: Sicht und Himmel folgen dem Wetter-Feld, nie der Epoche der Stadt · abweichungProzent ungemessen gegen Soll ≤ 30 % ✗ · Täter: stamm/bild-himmel.js _weatherFieldFor (kein Smog der Epoche)
