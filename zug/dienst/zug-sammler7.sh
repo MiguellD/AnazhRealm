@@ -31,7 +31,12 @@ while true; do
         # „!zweig“ fährt ohne CI-Pflicht (30.10.: w4-siedlung-teilen — sein Puls fällt an der Wachstums-Wand, die w3w-studios im selben Zug bezahlt)
         zwang=0; case $n in "!"*) n=${n#!}; zwang=1;; esac
         s=$(echo "$R" | awk -v r="refs/heads/$n" '$2==r{print $1}'); [ -z "$s" ] && continue
-        c=$(ci $s); [ -z "$c" ] && c=laeuft; [ $zwang = 1 ] && c=success;   # 04.11. z203: eine leere API-Antwort liess w9-gruss still fallen git fetch -q origin "+refs/heads/$n:refs/remotes/origin/$n" 2>/dev/null
+        # DER STEMPEL ERBT ÜBER DEN BAUM (26.11., z755–z779: 25 Fahrten »kein grüner Zweig« in 20 min — check.yml fährt am Stempel
+        # »Abgabe …« keinen Puls mehr (zug-erbt-baum), dieser Leser las ihn weiter am Stempel): das Urteil des Stempels ist `zug.sh erbe`
+        # wie im Dienst (bereit) — 0 grün · 1 wartet · 3 erbt nichts: nur dann urteilt der eigene Lauf des Kopfs (ci) · 2 API-Fehler wartet
+        sh artifacts/profiband/werkzeug/zug.sh erbe "$n@$s" >/dev/null 2>&1; e=$?
+        case $e in 0) c=success;; 3) c=$(ci $s);; *) c=laeuft;; esac
+        [ -z "$c" ] && c=laeuft; [ $zwang = 1 ] && c=success;   # 04.11. z203: eine leere API-Antwort liess w9-gruss still fallen git fetch -q origin "+refs/heads/$n:refs/remotes/origin/$n" 2>/dev/null
         mt=$(git merge-tree --write-tree $M $s >/dev/null 2>&1 && echo frei || echo konflikt)
         bericht="$bericht $n=${c}/${mt}"
         [ "$c" = "laeuft" ] && offen=$((offen+1))
