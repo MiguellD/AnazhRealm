@@ -1,7 +1,0 @@
-{
- "device": [],
- "draws": [],
- "pass": "?",
- "objekt": "Render Pipeline",
- "ms": 3
-}
