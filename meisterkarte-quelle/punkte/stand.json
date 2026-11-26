@@ -13856,7 +13856,7 @@
   },
   "karte2.leben.pflanzen.kraft": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.pflanzen.kraft#2 radeon: Station seit der Messung geändert · karte2.leben.pflanzen.kraft#2 gtx: Konsum seit der Messung geändert (R6: stamm/stoff-material.js) · karte2.leben.pflanzen.kraft#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#3 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#4 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#5 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: S2 laufzeitAbw 11,706 % gegen Soll ≤ 20 % ✓ · Zeuge: der EINE Wind an Gras und Krone 100 m windab, Ruhe ↔ Sturm, die Laufzeit gegen den mittleren Wind (Taylor 1938) · gemessen vor dem Wurf der Leiter nach 12,007 s: der Deckel der Leiter 12 s an 38194f83 gtx — offen: karte2.leben.pflanzen.kraft#2 radeon: Station seit der Messung geändert · karte2.leben.pflanzen.kraft#3 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#3 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#4 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#4 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#5 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#5 gtx: ungemessen (R10) · karte2.leben.pflanzen.kraft#6 radeon: ungemessen (R10) · karte2.leben.pflanzen.kraft#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.leben.pflanzen.kraft#2",
@@ -13870,11 +13870,10 @@
     {
      "id": "karte2.leben.pflanzen.kraft#2",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/stoff-material.js)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S2 laufzeitAbw 11,706 % gegen Soll ≤ 20 % ✓ · Zeuge: der EINE Wind an Gras und Krone 100 m windab, Ruhe ↔ Sturm, die Laufzeit gegen den mittleren Wind (Taylor 1938) · gemessen vor dem Wurf der Leiter nach 12,007 s: der Deckel der Leiter 12 s",
+     "sha": "38194f8373828ba681647f1fb6c41255c41f7fd1",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -37759,7 +37758,7 @@
   "ohne": 3281
  },
  "kopfVoll": "38194f8373828ba681647f1fb6c41255c41f7fd1",
- "zeit": "2026-11-26T23:14:10.968Z",
+ "zeit": "2026-11-26T23:35:32.536Z",
  "vorher": "38194f83",
  "bilanz": {
   "gewinn": [],

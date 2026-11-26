@@ -2985,10 +2985,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 20,
+    "heute": 21,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 9.9,
+    "anteilHeute": 10.5,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -3452,7 +3452,7 @@
        "richter": "gleiche Art auf 3 Planeten: Biegung ∝ Last ±20 %; Frame p95 über den Sturm"
       }
      ],
-     "heute": 1,
+     "heute": 2,
      "kern": 0,
      "fuss": "kern",
      "beleg": "Alte Vegetation K2 1/2: die Böe nah (0–15 m) an einem Gerät als zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit; Staffel 2 (bis 300 m, Gras ↔ Krone, beide Geräte) offen. — KARTE: Kern 1 — die nahe Böe an beiden Geräten grün (vegetation.K2); Bild-Preis an der Radeon fehlt.",
@@ -20098,11 +20098,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 135,
+  "heute": 136,
   "davonKopplungen": 33,
   "kern": 2,
   "kernDazu": 2,
-  "anteilHeute": 7.1,
+  "anteilHeute": 7.2,
   "anteilKern": 0,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20112,7 +20112,7 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 62,
+  "beide": 63,
   "nachwache": 73
  },
  "zusammengelegt": [
