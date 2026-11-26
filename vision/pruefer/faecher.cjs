@@ -28,6 +28,10 @@ const MAX = 44; // der Fächer schießt, bis 44 Bilder das Motiv tragen: Dublett
 // DAS MOTIV IM BILD: die Abnahme der Werkbank (/bild: Blickziel frei, Sicht frei) ist der Richter des Spiels — ein Bild, dessen Ziel
 // hinter Gelände liegt oder dessen Sicht Laub verdeckt, trägt das Motiv nicht und zählt nicht (es liegt unter nicht/, mit Akte)
 const GRUEN = (abnahme) => /ABNAHME GRÜN/.test(abnahme);
+// AN DER POSE: die Werkbank sucht ohne `wahl: 0` bis zu 42 Kameras um ein verdecktes Ziel (scripts/werkbank.cjs `__blickWahl`) und
+// schießt dort — „Blick-Wahl N Posen“ mit N ≥ 2 heißt: das Bild steht NICHT an der Pose des Gesetzes (wiese 26.11.: 16 von 45
+// tragenden Pflanzen-Bildern, die Kamera 3–18 m näher, die Krone wieder angeschnitten). Ein Rahmen-Bild zählt nur an seiner Pose.
+const AN_DER_POSE = (abnahme) => !/Blick-Wahl ([2-9]|\d\d+) Posen/.test(abnahme);
 const ZEILEN = 720;
 // die Tageszeiten des Fächers: Tag zwischen 07:55 und 16:05 (die Stationen schießen am Mittag oder zur Uhr der Sitzung)
 const UHREN = [0.5, 0.4, 0.6, 0.33, 0.67, 0.45, 0.55, 0.36, 0.64];
@@ -203,7 +207,8 @@ const SPROSSEN = {
         frage: "Welche Funktion hat das Gebäude in der Bildmitte?",
         je: 12,
         mehr: {},
-        motiv: (a) => GRUEN(a) || /Blickziel verdeckt von (an Punkt \d+ )?bauSatz/.test(a),
+        wahl: 0,
+        motiv: (a) => AN_DER_POSE(a) && (GRUEN(a) || /Blickziel verdeckt von (an Punkt \d+ )?bauSatz/.test(a)),
         rumpf: () =>
             SAAT +
             "const s = r.state, pm = s.playerMesh.position, hh = (x, z) => r.getTerrainHeightAt(x, z), steht = new Map(), gross = (t) => t.charAt(0).toUpperCase() + t.slice(1);" +
@@ -265,10 +270,12 @@ const SPROSSEN = {
         ordner: "leben.pflanzen.arten.1-b2",
         je: 10,
         max: 124,
+        wahl: 0,
         uhren: [0.5],
         mehr: {},
         // das Ziel ist die Pflanze selbst: ihr eigenes Laub nahe am Ziel IST das Motiv, fremdes Laub oder Gelände davor nicht
         motiv: (a, P) => {
+            if (!AN_DER_POSE(a)) return false;
             if (GRUEN(a)) return true;
             const m = /Blickziel verdeckt von (?:an Punkt \d+ )?Laub (\S+) in ([\d.]+) m/.exec(a);
             return !!(m && P && P.ziel && m[1].includes(P.ziel.art) && +m[2] >= P.ziel.d - 5 && !/Sicht verdeckt|Vordergrund/.test(a));
@@ -282,14 +289,14 @@ const SPROSSEN = {
             "const kr = (sp, roh, s) => r._kronenRadiusFuer(roh, s) || r._kronenRadiusFuer(sp, s) || null;" +
             "const L = [], gesehen = new Set(), ohneH = {};" +
             "const nimm = (sp, x, y, z, h, rad, ohne) => { const k = Math.round(x) + ',' + Math.round(z); if (gesehen.has(k)) return; gesehen.add(k); const d = Math.hypot(x - p.x, z - p.z); if (d > 250) return;" +
-            " if (!(h > 0.1)) { ohneH[sp] = (ohneH[sp] || 0) + 1; return; } L.push({ sp, x, y, z, d, h, rad: rad > 0 ? rad : 0.5 * h, ohne }); };" +
+            " if (!(h > 0.1)) { ohneH[sp] = (ohneH[sp] || 0) + 1; return; } L.push({ sp, x, y, z, d, h, rad: rad > 0 ? rad : /^baum_/.test(sp) ? Math.max(0.5, 0.1 * h) : 0.5 * h, ohne }); };" +
             "for (const e of RW.architectures || []) { const sp = art(e._lodSpecies || e.type); if (!pflanze.test(sp) || !e.position) continue; nimm(sp, e.position.x, e.position.y, e.position.z, r._lodTreeVisHeight(e), kr(sp, e._lodSpecies || e.type, e.scale), e); }" +
             "for (const reg of (RW.scatterRegions || new Map()).values()) for (const c of reg.cells || []) { const sp = art(c.species); if (!((c.layer === 'tree' || c.layer === 'under') && pflanze.test(sp))) continue;" +
             " const sl = r._scatterLayerByName && r._scatterLayerByName.get(c.layer); let h = null;" +
             " if (sl) { const tf = r._scatterCellTransform(c.cellX, c.cellZ, c.cellM, sl.scaleBase, sl.scaleVar); h = r._scatterSichtHoehe(sl, c.species, c.cellX, c.cellZ, c.variantIndex, tf); }" +
             " nimm(sp, c.x, c.fuss && Number.isFinite(c.fuss.y) ? c.fuss.y : r.getTerrainHeightAt(c.x, c.z), c.z, h, kr(sp, c.species, c.scale), null); }" +
             // die Pflanzen ohne Krone der Karte (Busch, Farn, Blume) verdecken auch: sie stehen als Hindernis neben den Kronen
-            "const NIEDER = L.filter((q) => !/^baum_/.test(q.sp)).map((q) => ({ x: q.x, z: q.z, rad: q.rad, oben: q.y + q.h }));" +
+            "const NIEDER = L.map((q) => ({ x: q.x, z: q.z, rad: q.rad, oben: q.y + q.h }));" +
             "const sorte = {}; for (const q of L) (sorte[q.sp] = sorte[q.sp] || []).push(q);" +
             "const posen = [], je = {}, ohneFrei = {}, gruende = {};" +
             "const mach = (q, f) => ({ klasse: name(q.sp), ziel: { art: q.sp.split('_').slice(1).join('_'), d: +(f.d - q.rad).toFixed(1) }, pose: f.pose," +
@@ -315,7 +322,8 @@ const SPROSSEN = {
         frage: "Wohnt in dem Haus in der Bildmitte ein armer oder ein reicher Haushalt?",
         je: 30,
         mehr: {},
-        motiv: (a) => GRUEN(a) || /Blickziel verdeckt von (an Punkt \d+ )?bauSatz/.test(a),
+        wahl: 0,
+        motiv: (a) => AN_DER_POSE(a) && (GRUEN(a) || /Blickziel verdeckt von (an Punkt \d+ )?bauSatz/.test(a)),
         rumpf: () =>
             SAAT +
             "const s = r.state, pm = s.playerMesh.position, hh = (x, z) => r.getTerrainHeightAt(x, z), steht = new Map();" +
@@ -554,7 +562,7 @@ async function schiesse() {
             let a = null, da = null;
             // ein Wurf der Werkbank an einer Pose: EIN zweiter Versuch, dann steht die Pose mit ihrem Fehler in der Akte
             for (let v = 0; v < 2 && !da; v++) {
-                a = await ruf(port, "/bild", Object.assign({ datei, w: 1280, h: 720 }, P.pose, P.mehr), 90000).catch((e) => ({ verbindung: e.message }));
+                a = await ruf(port, "/bild", Object.assign({ datei, w: 1280, h: 720 }, P.pose, P.mehr, D.wahl != null ? { wahl: D.wahl } : {}), 90000).catch((e) => ({ verbindung: e.message }));
                 // eine Werkbank, die nicht antwortet, ist kein Urteil über die Pose: der Lauf endet beim Namen, keine Akte
                 if (a && a.verbindung) throw new Error(id + " Bild " + nr(i) + ": die Werkbank antwortet nicht (" + a.verbindung + ") — Sitzung neu starten, die Posen bleiben offen");
                 da = [a && a.datei, datei, rot].find((f) => f && fs.existsSync(f));
@@ -580,6 +588,31 @@ async function schiesse() {
         if (!frei) return;
     }
     console.log("ALLE DURCH");
+}
+
+// NACHURTEIL: das Motiv der Sprosse (D.motiv, eine Funktion der Abnahme und der Pose) neu über jede Akte eines Ordners — schärft sich
+// das Motiv (AN_DER_POSE), fallen die Bilder, die es nicht mehr tragen, nach nicht/ und ihre Akte nennt den Grund; nie umgekehrt
+// (ein verworfenes Bild kehrt nie zurück). Aufruf: faecher.cjs nachurteil --aus <Fächer-Wurzel> --sprosse <leiter#n>
+async function nachurteil() {
+    const id = opt("--sprosse"), D = SPROSSEN[id];
+    if (!D) throw new Error("kein Fächer für " + id);
+    const hier = path.join(path.resolve(opt("--aus")), D.ordner || ordner(id)), G = JSON.parse(fs.readFileSync(path.join(hier, "faecher.json"), "utf8"));
+    const motiv = D.motiv || GRUEN;
+    let fiel = 0, traegt = 0;
+    fs.mkdirSync(path.join(hier, "nicht"), { recursive: true });
+    for (const n of fs.readdirSync(path.join(hier, "akte")).filter((x) => x.endsWith(".json")).sort()) {
+        const af = path.join(hier, "akte", n), a = JSON.parse(fs.readFileSync(af, "utf8"));
+        if (!a.traegt) continue;
+        if (motiv(a.abnahme, G.posen[a.nr - 1])) { traegt++; continue; }
+        const b = path.join(hier, "bild", n.replace(/\.json$/, ".png"));
+        if (fs.existsSync(b)) fs.renameSync(b, path.join(hier, "nicht", path.basename(b)));
+        Object.assign(a, { traegt: false, nachurteil: "das Motiv der Sprosse trägt das Bild nicht mehr" + (AN_DER_POSE(a.abnahme) ? "" : " — nicht an der Pose (" + /Blick-Wahl \d+ Posen/.exec(a.abnahme)[0] + ")") });
+        fs.writeFileSync(af, JSON.stringify(a, null, 1));
+        fiel++;
+    }
+    G.bilder = traegt;
+    fs.writeFileSync(path.join(hier, "faecher.json"), JSON.stringify(G, null, 1));
+    console.log(id + ": nachgeurteilt — " + traegt + " Bilder tragen das Motiv, " + fiel + " fielen nach nicht/");
 }
 
 async function stop() {
@@ -610,6 +643,7 @@ function selbsttest() {
     const w = imWechsel(kl, 3);
     t("die Klassen im Wechsel: höchstens 3 je Klasse, die seltene Klasse vor dem vierten Wohnhaus, die Klasse reist in die Pose", w.length === 8 && w.slice(0, 3).map((x) => x.klasse).join() === "Wohnhaus,Scheune,Schmiede" && w.filter((x) => x.klasse === "Wohnhaus").length === 3 && faechern(w, [0.5], {})[1].klasse === "Scheune" && faechern(w, [0.5], {})[0].ziel.art === "eiche" && !("klasse" in faechern(basis(2), [0.5], {})[0]));
     const PF = SPROSSEN["leben.pflanzen.arten#1"].motiv;
+    t("an der Pose: ein Bild, für das die Werkbank eine andere Kamera wählte (Blick-Wahl ≥ 2 Posen), trägt kein Rahmen-Motiv", AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 1 Pose") && !AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 2 Posen") && !AN_DER_POSE("Blick-Wahl 42 Posen") && !PF("ABNAHME GRÜN · Blick-Wahl 37 Posen", { ziel: { art: "eiche", d: 9 } }) && !SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME GRÜN · Blick-Wahl 3 Posen") && SPROSSEN["mensch.bau.bedarf#1"].wahl === 0 && SPROSSEN["leben.pflanzen.arten#1"].wahl === 0);
     t("das Motiv der Pflanze: ihr eigenes Laub am Ziel trägt, fremdes oder nahes Laub nicht", PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:tanne:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 2.1 m]", { ziel: { art: "eiche", d: 12 } }) && PF("ABNAHME GRÜN", {}));
     t("jede Klassen-Sprosse trägt ihre Frage", Object.values(SPROSSEN).filter((d) => d.je).every((d) => /\?$/.test(d.frage || "")));
     t("eine feste Uhr (Erntetag) fächert nur über Adressen", faechern(basis(12), [10 / 24], { uhr: 1 }).length === 12 && faechern(basis(12), [10 / 24], {})[0].mehr.uhr === 10 / 24);
@@ -643,9 +677,9 @@ function selbsttest() {
 module.exports = { PFLANZEN_NAME, SPROSSEN, faechern, imWechsel, umfang, pngMass, MIN, MAX, ZEILEN, UHREN };
 if (require.main === module) {
     const cmd = process.argv[2];
-    const lauf = cmd === "--selftest" ? selbsttest : cmd === "start" ? start : cmd === "schiesse" ? schiesse : cmd === "stop" ? stop : null;
+    const lauf = cmd === "--selftest" ? selbsttest : cmd === "start" ? start : cmd === "schiesse" ? schiesse : cmd === "stop" ? stop : cmd === "nachurteil" ? nachurteil : null;
     if (!lauf) {
-        console.error("Aufruf: faecher.cjs start|schiesse|stop|--selftest (Kopf der Datei)");
+        console.error("Aufruf: faecher.cjs start|schiesse|nachurteil|stop|--selftest (Kopf der Datei)");
         process.exit(2);
     }
     Promise.resolve()
