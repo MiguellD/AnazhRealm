@@ -1050,11 +1050,23 @@ async function s0BodenMessung({ hw, selbst, n }) {
 // `taub` (der Selbsttest): der Maler der Umgebung hört die Uhr nicht (`_ensureSkyEnvironment` taub) — die Probe MUSS ihn nennen.
 // DIE MITTERNACHT IN GELTENDEN ZIFFERN (sonnenbahn 2, Wort des Koordinators 25.11.): die Nacht liegt um 1e-8 Welt-Einheiten — mit
 // vier Stellen nach dem Komma und 0,005 absolut druckte die Zeile „Umgebung 0 · Himmel des Orts 0“ und war blind für den Himmel,
-// der fehlt. Um Mitternacht gilt darum nur das Verhältnis (`tol`), und beide tragen mindestens das Sternen-Licht des Gesetzes
-// (welt-licht `nachtHimmel` an der Tag-Achse der Stunde, × π: die Bestrahlung einer waagrechten Fläche unter einem gleichen
-// Himmel, ohne die Luft — der Mond streut darüber). `nachtlos` (der Selbsttest): die Welt schreibt der Nacht weder Mond noch
-// Sterne in die Tafeln (`AnazhRealm.MOONLIGHT` ohne Stärke, `_atmoSternenLicht` null → `__weltLicht.tafelLicht`) — die Probe
-// MUSS „der Himmel der Nacht fehlt“ nennen.
+// der fehlt. Um Mitternacht gilt darum nur das Verhältnis (`tol`), und beide tragen mindestens den BODEN DER NACHT.
+// DER BODEN DER NACHT IST, WAS DER HIMMEL OHNE MOND TRÄGT (nachthimmel-einig): das Sternen-Licht des Gesetzes (welt-licht
+// `nachtHimmel` an der Tag-Achse der Stunde) DURCH DIE LUFT — van Rhijn aus der Schicht des Luftleuchtens × der Durchlass des
+// Mediums jetzt, über die Halbkugel kosinus-gewichtet, hier auf der CPU gerechnet (`ATMO_RECHNUNG.durchlass`, 64 Ringe × 400
+// Schritte: 0,876 · π · nachtHimmel in klarer Luft; die Tafel des Orts liest 0,882, die Umgebung 0,879). Der Mond kommt nur
+// dazu, wenn er steht: dann mindestens ein Zehntel seines Richtlichts auf der waagrechten Fläche (der klare Himmel streut auch
+// unter der Zenit-Quelle nie weniger). Bis hier galt π · nachtHimmel OHNE die Luft, „der Mond streut darüber“ — das setzte den
+// ewigen Vollmond der Sonne gegenüber voraus; seit w28-kosmos-bahn reist der Mond auf seiner Bahn und steht um Mitternacht
+// auch unter dem Horizont (die Mitternacht der Linse: −24° … −27°). `nachtlos` (der Selbsttest): die Welt schreibt der Nacht weder
+// Mond noch Sterne in die Tafeln (`AnazhRealm.MOONLIGHT` ohne Stärke, `_atmoSternenLicht` null → `__weltLicht.tafelLicht`) —
+// die Probe MUSS „der Himmel der Nacht fehlt“ nennen.
+// ZWEI MITTERNÄCHTE: die der Ankunft und die erste der nächsten 60 Tage der Welt (`worldMeta.tag`), an der der Mond 17° oder
+// höher steht (sin ≥ 0,3) — die Ephemeride des Monds selbst, keine gestellte Bahn; danach steht der Tag der Ankunft wieder.
+// `erdschatten` (der Selbsttest, der Täter von main c0634d86 … 12029279): Ψ_ms trägt eine Stufe des Halb-Floats über dem Boden
+// seiner Ablage, wo die Quelle im Erdschatten steht (bis nachthimmel-einig schnitt D3D ln 2^−24 auf −16,625, der Leser las
+// 6,24e-10 statt 0) — die Sonne bei −22° wiegt nachts ohne Mond 2,63e8, die Umgebung trug 3,288e-8 gegen 2,740e-8 am Ort. Die
+// Probe MUSS „im Erdschatten“ und `mehrfach` nennen.
 const S0_HIMMEL_TOL = 0.03; // relativ, mittags plus 0,005 absolut: die Umgebung nach dem Sprung gegen den Himmel des Orts (Radeon 1,9 %)
 async function himmelProbe(page, schein) {
     return page.evaluate(
@@ -1068,6 +1080,8 @@ async function himmelProbe(page, schein) {
                 r._atmoSternenLicht = () => [0, 0, 0];
             }
             let ankerSpaet = null;
+            let tagAnkunft = null;
+            let msSchein = false;
             try {
             const uhr = (t) => {
                 if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0: die Uhr nimmt den Spieler nicht (" + t + ")");
@@ -1097,7 +1111,35 @@ async function himmelProbe(page, schein) {
                 out.befunde.push("S0 Himmel: keine Lesung der Umgebung (`_himmelFrisch`) — die Probe ist blind");
                 return out;
             }
-            for (const t of [0.5, 0]) {
+            const A = s.atmoLut;
+            // das Sternen-Licht des Gesetzes durch die Luft auf der waagrechten Fläche (Welt-Einheiten, Luma), auf der CPU
+            const sterneLuft = (sonneY) => {
+                const [R, M, G, N] = [r._atmoRechnung(), r._atmoMediumJetzt(), r._atmoGesetz(), __weltLicht.STERNENLICHT];
+                const [h, tn, T, NT] = [A.U.hKm.value, A.U.toenung.value, [0, 0, 0], 64];
+                const q = (M.RG + h) / (M.RG + G.nacht.glutHoeheM / 1000);
+                let E = 0;
+                for (let a = 0; a < NT; a++) {
+                    const ct = Math.sqrt(1 - (a + 0.5) / NT);
+                    R.durchlass(M, h, ct, 400, T);
+                    E += lum([N.r * T[0] * tn.x, N.g * T[1] * tn.y, N.b * T[2] * tn.z]) / Math.sqrt(Math.max(1 - q * q * (1 - ct * ct), 1e-4));
+                }
+                return (Math.PI * __weltLicht.nachtHimmel(r._tagAchse(sonneY)) * E) / NT;
+            };
+            // das Gesetz des Orts nach Quellen (dieselbe `bestrahlung`, je eine Quelle allein)
+            const NULL3 = { value: { x: 0, y: 0, z: 0 } };
+            const teil = (so, mo, na) =>
+                lum(__weltLicht.bestrahlung(A.tafel, { ...A.U, sonneE: so ? A.U.sonneE : { value: 0 }, mondE: mo ? A.U.mondE : NULL3, nachtE: na ? A.U.nachtE : NULL3 }, [0, 0, 0]));
+            if (schein === "erdschatten") {
+                // eine Stufe des Halb-Floats über dem Boden der Ablage (−16,625 + 1/64) in jedem Texel von Ψ_ms
+                const TS = THREE.TSL;
+                const q = __weltLicht.schirmDreieck(TS.Fn(() => TS.vec4(-16.609375, -16.609375, -16.609375, 1)), "schein-erdschatten");
+                msSchein = true;
+                let da = false;
+                for (let i = 0; i < 240 && !(da = r._atmoZeichne(q, A.rtMS)); i++) await window.__takte(1, 16);
+                q.material.dispose();
+                if (!da) throw new Error("S0: der Schein „erdschatten“ zeichnet Ψ_ms nicht");
+            }
+            const miss = async (t, mondOben) => {
                 if (taub) r._ensureSkyEnvironment = () => true; // der taube Maler
                 const nr0 = s._skyEnvLeseNr || 0;
                 uhr(t);
@@ -1121,24 +1163,79 @@ async function himmelProbe(page, schein) {
                             "zwischen Malung und Lesung, die Umgebung trägt die alte Bahn"
                     );
                 const sonneY = r._dayNightSunDirection(r._sonnenWinkel(s.timeOfDay)).y;
-                const sterne = t === 0 ? Math.PI * __weltLicht.nachtHimmel(r._tagAchse(sonneY)) : null;
-                out.himmel.push({ uhr: t, gemalt, sprung: ziffern(sprung), ort: ziffern(ort), sterne: sterne == null ? null : ziffern(sterne) });
-                if (!gemalt || !(Math.abs(sprung - ort) <= tol * ort + (t === 0 ? 0 : 0.005)))
+                const grad = (y) => +((Math.asin(y) * 180) / Math.PI).toFixed(2);
+                const nachts = t === 0;
+                const mondY = r._mondRichtung().y;
+                const sterne = nachts ? sterneLuft(sonneY) : null;
+                const MO = AnazhRealm.MOONLIGHT;
+                const mondRicht = nachts && mondY > 0 ? lum([MO.r, MO.g, MO.b]) * MO.intensity * mondY * r._mondDurchlass(mondY) : 0;
+                const boden = nachts ? sterne + 0.1 * mondRicht : null;
+                const teile = nachts && A.tafel ? { sonne: teil(1, 0, 0), mond: teil(0, 1, 0), sterne: teil(0, 0, 1) } : null;
+                out.himmel.push({
+                    uhr: t, gemalt, sprung: ziffern(sprung), ort: ziffern(ort), mondOben: !!mondOben,
+                    ...(nachts ? { sterne: ziffern(sterne), boden: ziffern(boden), sonneGrad: grad(sonneY), mondGrad: grad(mondY), teile: teile && { sonne: ziffern(teile.sonne), mond: ziffern(teile.mond), sterne: ziffern(teile.sterne) } } : {}),
+                });
+                const wo = nachts ? (mondOben ? "die Mitternacht mit dem Mond am Himmel" : "Mitternacht") : "Mittag";
+                if (!gemalt || !(Math.abs(sprung - ort) <= tol * ort + (nachts ? 0 : 0.005)))
                     out.befunde.push(
-                        `S0 Himmel: nach dem Sprung auf ${t === 0 ? "Mitternacht" : "Mittag"} trägt die Umgebung die Bestrahlung ` +
-                            `${ziffern(sprung)}${gemalt ? "" : " (ungemalt)"}, der Himmel des Orts ${ziffern(ort)} — die ` +
-                            "Himmels-Umgebung (`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-Farbe " +
-                            "(`_dayNightApplyLuft`) oder vom Sprung in der Raten-Drossel (SKY_ENV_REGEN_MIN_MS) gehalten"
+                        `S0 Himmel: nach dem Sprung auf ${wo} trägt die Umgebung die Bestrahlung ` +
+                            `${ziffern(sprung)}${gemalt ? "" : " (ungemalt)"}, der Himmel des Orts ${ziffern(ort)} — ` +
+                            // DER TÄTER BEIM NAMEN: gemalt, mehr als das Gesetz, die Sonne in der astronomischen Nacht und im Gesetz
+                            // ohne Licht — dann trägt der Maler Licht einer Quelle im Erdschatten (Ψ_ms über dem Boden seiner Ablage)
+                            (gemalt && nachts && teile && sprung > ort && sonneY < Math.sin((-18 * Math.PI) / 180) && teile.sonne <= tol * ort
+                                ? `die Umgebung trägt ${ziffern(sprung - ort)} über dem Gesetz (Sonne ${ziffern(teile.sonne)} · Mond ` +
+                                  `${ziffern(teile.mond)} · Sterne ${ziffern(teile.sterne)}), und die Sonne steht bei ${grad(sonneY)}° im Erdschatten ` +
+                                  "(unter −18° trägt sie kein Licht zum Himmel): die Himmels-Sicht streut Licht einer Quelle, die keine Luft " +
+                                  "trifft — Ψ_ms liest über dem Boden seiner Ablage (`mehrfach` und `passMehrfach`, `MS_LOG` in welt-licht.js)"
+                                : "die Himmels-Umgebung (`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-Farbe " +
+                                  "(`_dayNightApplyLuft`) oder vom Sprung in der Raten-Drossel (SKY_ENV_REGEN_MIN_MS) gehalten")
                     );
-                if (t === 0 && !(sprung >= (1 - tol) * sterne && ort >= (1 - tol) * sterne))
+                if (nachts && !(sprung >= (1 - tol) * boden && ort >= (1 - tol) * boden))
                     out.befunde.push(
-                        `S0 Himmel: der Himmel der Nacht fehlt — um Mitternacht trägt die Umgebung ${ziffern(sprung)}, der Himmel des ` +
-                            `Orts ${ziffern(ort)}, das Gesetz allein im Sternen-Licht π · nachtHimmel = ${ziffern(sterne)} (Sonne ` +
-                            `${((Math.asin(sonneY) * 180) / Math.PI).toFixed(2)}°) — die Tafeln tragen Mond und Sterne nicht ` +
+                        `S0 Himmel: der Himmel der Nacht fehlt — um ${wo} trägt die Umgebung ${ziffern(sprung)}, der Himmel des ` +
+                            `Orts ${ziffern(ort)}, der Boden der Nacht ${ziffern(boden)} (das Sternen-Licht des Gesetzes durch die Luft ` +
+                            `${ziffern(sterne)}${mondY > 0 ? `, dazu ein Zehntel des Mond-Richtlichts ${ziffern(mondRicht)} bei ${grad(mondY)}°` : `, der Mond steht bei ${grad(mondY)}° unter dem Horizont`}; Sonne ` +
+                            `${grad(sonneY)}°) — die Tafeln tragen Mond und Sterne nicht ` +
                             "(`__weltLicht.tafelLicht` aus `_atmoTakt`: `AnazhRealm.MOONLIGHT`, `_atmoSternenLicht`)"
                     );
+            };
+            for (const t of [0.5, 0]) await miss(t, false);
+            if (msSchein) {
+                // der Schein geht: Durchlass und Ψ_ms zeichnen neu, mit ihnen Himmels-Sicht, Bestrahlung und Umgebung
+                A.tafelnFrisch = false;
+                msSchein = false;
+                uhr(0.5);
+                await s._skyEnvLesung;
+                uhr(0);
+                await s._skyEnvLesung;
+            }
+            if (!schein) {
+                // die zweite Mitternacht: der erste Tag der Welt, an dem der Mond um Mitternacht hoch steht
+                const wm = s.worldMeta;
+                tagAnkunft = wm.tag || 0;
+                let k = 1;
+                for (; k <= 60; k++) {
+                    wm.tag = tagAnkunft + k;
+                    if (r._mondRichtung().y >= 0.3) break;
+                }
+                if (k > 60) {
+                    out.befunde.push("S0 Himmel: in 60 Tagen der Welt steht der Mond um Mitternacht nie 17° hoch — die Bahn des Monds trägt keinen Lauf (`_sonnenBahn`, `kosmosZeit(...).mond`)");
+                } else {
+                    uhr(0.5);
+                    await s._skyEnvLesung;
+                    await miss(0, true);
+                    out.mondTag = k;
+                }
+                wm.tag = tagAnkunft;
+                tagAnkunft = null;
+                uhr(0.5);
+                await s._skyEnvLesung;
+                uhr(0);
+                await s._skyEnvLesung;
             }
             } finally {
+                if (tagAnkunft != null) s.worldMeta.tag = tagAnkunft;
+                if (msSchein) s.atmoLut.tafelnFrisch = false; // Durchlass und Ψ_ms zeichnen im nächsten Takt neu, mit ihnen jede Tafel
                 if (ankerSpaet && !r._sonnenAnker) r._sonnenAnker = ankerSpaet;
                 if (schein === "nachtlos") {
                     AnazhRealm.MOONLIGHT = MO;
@@ -1319,7 +1416,7 @@ async function lichtLauf() {
             await page.evaluate(S0_GESTALT_INSTALL);
             await page.evaluate(LINSEN_INSTALL);
         });
-        for (const schein of SELBSTTEST ? [null, "taub", "nachtlos", "anker-spaet"] : [null]) {
+        for (const schein of SELBSTTEST ? [null, "taub", "nachtlos", "anker-spaet", "erdschatten"] : [null]) {
             himmel[schein || "sauber"] = await phase(schein ? "Himmel " + schein : "Himmel", () => himmelProbe(page, schein));
             zeit(schein ? `der Himmel (Schein ${schein}) gemessen` : "der Himmel nach dem Sprung gemessen");
         }
@@ -2013,8 +2110,8 @@ async function lichtLauf() {
     for (const [k, e] of Object.entries(himmel))
         for (const h of e.himmel)
             console.log(
-                `  S0 HIMMEL${k === "taub" ? " SCHEIN (der Maler taub)" : k === "nachtlos" ? " SCHEIN (die Nacht ohne Mond und Sterne)" : k === "anker-spaet" ? " SCHEIN (der Anker nach der Malung)" : ""}: nach dem Sprung auf ${h.uhr === 0 ? "Mitternacht" : "Mittag"} ` +
-                    `Umgebung ${h.sprung} · Himmel des Orts ${h.ort}${h.sterne == null ? "" : ` · das Sternen-Licht des Gesetzes π · nachtHimmel ${h.sterne} (Umgebung : Sterne ${h.sterne > 0 ? (h.sprung / h.sterne).toPrecision(4) : "—"})`} · ${h.gemalt ? "gemalt" : "UNGEMALT"}`
+                `  S0 HIMMEL${k === "taub" ? " SCHEIN (der Maler taub)" : k === "nachtlos" ? " SCHEIN (die Nacht ohne Mond und Sterne)" : k === "anker-spaet" ? " SCHEIN (der Anker nach der Malung)" : k === "erdschatten" ? " SCHEIN (Ψ_ms über dem Boden seiner Ablage)" : ""}: nach dem Sprung auf ${h.uhr === 0 ? (h.mondOben ? `die Mitternacht mit dem Mond am Himmel (Tag +${e.mondTag})` : "Mitternacht") : "Mittag"} ` +
+                    `Umgebung ${h.sprung} · Himmel des Orts ${h.ort}${h.ort > 0 ? ` (${(((h.sprung - h.ort) / h.ort) * 100).toFixed(2)} %)` : ""}${h.sterne == null ? "" : ` · Sonne ${h.sonneGrad}° · Mond ${h.mondGrad}° · das Gesetz des Orts nach Quellen ${h.teile ? `Sonne ${h.teile.sonne} · Mond ${h.teile.mond} · Sterne ${h.teile.sterne}` : "—"} · der Boden der Nacht ${h.boden} (das Sternen-Licht durch die Luft ${h.sterne})`} · ${h.gemalt ? "gemalt" : "UNGEMALT"}`
             );
     if (himmel.sauber) befunde.push(...himmel.sauber.befunde);
     else befunde.push("S0 Himmel: die Probe lief nicht");
@@ -2179,6 +2276,11 @@ async function lichtLauf() {
         console.log(
             `  SELBSTTEST S0 HIMMEL (der Anker des Planet-Fadens kommt nach der Malung): ${ankerGetroffen ? "getroffen — " + ankerGetroffen.split(": ein Schreiber")[0] : "BLIND " + JSON.stringify(ha)}`
         );
+        const he = himmel.erdschatten?.befunde || [];
+        const erdschattenGetroffen = he.find((b) => /^S0 Himmel: nach dem Sprung auf Mitternacht .*im Erdschatten.*`mehrfach`/.test(b));
+        console.log(
+            `  SELBSTTEST S0 HIMMEL (Ψ_ms eine Stufe über dem Boden seiner Ablage, die Sonne im Erdschatten): ${erdschattenGetroffen ? "getroffen — " + erdschattenGetroffen.split("): die Himmels-Sicht")[0] + ")" : "BLIND " + JSON.stringify(he)}`
+        );
         const hn = himmel.nachtlos?.befunde || [];
         const nachtlosGetroffen = hn.find((b) => /^S0 Himmel: der Himmel der Nacht fehlt/.test(b));
         console.log(
@@ -2231,7 +2333,7 @@ async function lichtLauf() {
         console.log(
             `  SELBSTTEST S0 MESSER (der Messer blind für den Pool am Boden des Bilds): ${messerGetroffen ? "getroffen — " + mm.befund.split(" (k ")[0] : "BLIND " + JSON.stringify(mm)}`
         );
-        pass = pass && messerGetroffen && taubGetroffen && !!nachtlosGetroffen && !!ankerGetroffen && !!kameraTreffer && stoffTreffer && wurfGetroffen && bruchGetroffen && sichtGetroffen;
+        pass = pass && messerGetroffen && taubGetroffen && !!nachtlosGetroffen && !!ankerGetroffen && !!erdschattenGetroffen && !!kameraTreffer && stoffTreffer && wurfGetroffen && bruchGetroffen && sichtGetroffen;
     }
     console.log(
         `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} · Nacht ${JSON.stringify(nacht && { ...nacht.grund, gesetz: nacht.gesetz && nacht.gesetz.luma })} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`

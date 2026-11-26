@@ -412,9 +412,19 @@ var __weltLicht = (function () {
         // Radeon 7ef6fb25 — Täter-Pass „Himmel“ +0,49 → +1,05; im Logarithmus gemischt blieb der Knick der Steigung, wiese Uhr 0,766
         // −0,10 EV, GTX f53f05ea — darum liegt Ψ_ms quadratisch dicht um den Horizont, `msLage`). Die Durchlass-Tafel trägt die
         // optische Tiefe τ (der Filter mischt sie linear, exakt für das exponentielle Gesetz) und Ψ_ms den Logarithmus über dem Boden
-        // ihrer Auflösung (2^−24, die kleinste Stufe des Halb-Floats); ihr EINER Leser (`durchlass`, `mehrfach`) kehrt die Ablage um.
+        // ihrer Ablage (`MS_LOG`, bei der kleinsten Stufe des Halb-Floats); ihr EINER Leser (`durchlass`, `mehrfach`) kehrt die Ablage um.
         // Dasselbe Gesetz mischt die Bestrahlungs-Tafel auf der CPU (`bestrahlung`).
-        const MS_BODEN = 2 ** -24;
+        // DER BODEN DER ABLAGE IST EINE ZAHL DES HALB-FLOATS (nachthimmel-einig): ln 2^−24 = −16,6355 liegt zwischen zwei Stufen der
+        // Tafel (−16,640625 und −16,625); D3D schneidet zur Null (−16,625), der Leser las e^−16,625 − 2^−24 = 6,24e-10 statt 0 —
+        // Licht jeder Quelle im Erdschatten. Nachts ohne Mond wiegt die Sonne E0 ÷ Sternen-Licht = 2,63e8 (`tafelEinheit`): die
+        // Himmels-Sicht trug 5,6e-9 Welt-Einheiten Dämmerung bei −22,08°, 20 % über dem Sternen-Licht des Orts (Radeon 12029279:
+        // Umgebung 3,288e-8 gegen 2,740e-8; ohne die Sonne 2,728e-8). Der Boden ist darum −16,625 selbst: Ψ = 0 liegt GENAU auf
+        // ihm (der Schreiber klemmt, sein Boden einen Hauch darunter), und der Leser zieht einen Hauch mehr ab — 2^−14 deckt den
+        // Fehler von exp und log der GPU (≤ 36 ULP, WGSL) in beiden Rundungen.
+        // Quelle: USNO Circular 171 (Brown 1952) — unter −18° trägt die Sonne kein Licht mehr zum Himmel, die astronomische Nacht
+        const MS_LOG = -16.625;
+        const MS_BODEN = Math.exp(MS_LOG);
+        const MS_HAUCH = 2 ** -14;
         // die Lage von cos Sonnen-Zenit in Ψ_ms (u ∈ [0, 1]): quadratisch um den Horizont, μ = c·|c| mit c = 2u − 1 — dieselbe Lage
         // wie die Bestrahlungs-Tafel (`bestrahlung`); `passMehrfach` legt jeden Texel an ihre Umkehr
         const msLage = (mus) => mus.sign().mul(mus.abs().min(1).sqrt()).add(1).mul(0.5);
@@ -429,7 +439,7 @@ var __weltLicht = (function () {
                         rtMS.texture,
                         vec2(subUv(msLage(mus), Z.mehrfach[0]), subUv(h.div(RT - RG), Z.mehrfach[1]))
                     ).level(float(0)).rgb
-                ).sub(MS_BODEN),
+                ).sub(MS_BODEN * (1 + MS_HAUCH)),
                 vec3(0)
             );
         const phaseR = (nu) =>
@@ -543,8 +553,11 @@ var __weltLicht = (function () {
                 Fsum.addAssign(F);
             });
             const fms = Fsum.div(64);
-            // der Logarithmus über dem Boden der Auflösung: `mehrfach` liest exp(x) − 2^−24
-            return vec4(T.log(max(Lsum.div(64).div(max(fms.oneMinus(), vec3(1e-4))), vec3(0)).add(MS_BODEN)), 1);
+            // der Logarithmus über dem Boden der Ablage (`MS_LOG`, nie darunter): `mehrfach` liest exp(x) − Boden
+            return vec4(
+                max(T.log(max(Lsum.div(64).div(max(fms.oneMinus(), vec3(1e-4))), vec3(0)).add(MS_BODEN * (1 - MS_HAUCH))), vec3(MS_LOG)),
+                1
+            );
         });
         // ── die Himmels-Sicht: Richtung ↔ Texel (Azimut absolut, Breite quadratisch um den Horizont des Auges) ──
         const horizontEl = () => T.acos(float(RG).div(U.hKm.add(RG))).negate();
