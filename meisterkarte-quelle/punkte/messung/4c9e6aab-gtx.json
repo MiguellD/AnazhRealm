@@ -1,7 +1,7 @@
 {
  "sha": "4c9e6aab7a4d24859cee6b9173b6f26cd4611bdf",
  "geraet": "gtx",
- "zeit": "2026-11-26T02:52:23.823Z",
+ "zeit": "2026-11-26T02:54:23.841Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.menge.rhythmus#2": {
@@ -816,6 +816,135 @@
    },
    "zeit": "2026-11-26T02:39:35.530Z",
    "abdruck": "f0f7353bbe7b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.032,0.034,0. (168 Uhren) · 90.9 s · 675.6 s)",
+   "exit": 1,
+   "minuten": 11.3,
+   "grund": "Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.032,0.034,0. (168 Uhren) · 90.9 s · 675.6 s)",
+   "s": 678.1,
+   "fremd": {
+    "s": 682.1,
+    "takte": 315,
+    "fremdS": 126.75,
+    "kerne": 0.186,
+    "fensterKerne": 0.41,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      26.36
+     ],
+     [
+      "Explorer.EXE",
+      14.13
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      10.27
+     ]
+    ],
+    "dienerS": 138.56,
+    "diener": [
+     [
+      "System",
+      92.56
+     ],
+     [
+      "WmiPrvSE.exe",
+      28.88
+     ]
+    ],
+    "geraetS": 229.06,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      142.92
+     ],
+     [
+      "svchost.exe",
+      76.33
+     ],
+     [
+      "SearchIndexer.exe",
+      4.22
+     ]
+    ],
+    "eigenS": 1032.09,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.131,
+     "nach": 0.348,
+     "station": 0.831
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 97.9,
+     "alle": 252.3,
+     "cpuEin": 94,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.73,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       5.42,
+       3.98,
+       2.64,
+       3.15,
+       2.33,
+       2.72
+      ]
+     },
+     "spanne": [
+      1795661663841,
+      1795661664338
+     ]
+    },
+    "nach": {
+     "ein": 115.2,
+     "alle": 280.6,
+     "cpuEin": 124,
+     "tor": {
+      "ruhig": true,
+      "kerne": 1.25,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       1.14,
+       1.29,
+       1.04,
+       1.6,
+       1.03,
+       1.11
+      ]
+     },
+     "spanne": [
+      1795662342491,
+      1795662343014
+     ]
+    },
+    "ruhe": {
+     "ein": 89,
+     "alle": 222.7,
+     "n": 1192,
+     "von": "2026-11-17"
+    },
+    "f": 1.294,
+    "fEin": 1.294,
+    "fAlle": 1.26,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-26T02:54:23.841Z",
+   "abdruck": "c91f97507ed2",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
