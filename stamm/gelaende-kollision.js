@@ -1078,12 +1078,13 @@ class AnazhRealm_gelaende_kollision {
     // DIE AUFLAGE AM PUNKT: die Oberkante eines Baus, die einen Fuß bei (x, z) in der Höhe y trägt — dieselbe Regel wie Kapsel
     // und Tier: eine ungedeckte Oberkante im Band [y − unten, y + PLAYER_STEP_UP] über dem Punkt, die höchste trägt (−Infinity
     // ohne sie); `aus.stoff` nennt ihren Stoff. Leser: der Stoff unter dem Körper (`_kontaktStoffAt`) und der Fuß auf dem Bau
-    // (`_standSicht`: jeder Fuß auf SEINER Stufe).
-    _auflageAt(x, z, y, aus, unten = AnazhRealm.PLAYER_GROUND_SNAP) {
+    // (`_standSicht`: jeder Fuß auf SEINER Stufe). `ohne` (optional, ein Fahr-Zustand): der Wagen steht nie auf sich selbst — die
+    // Boxen des Werks, dessen Fahr-Zustand er ist (`_fahr`), tragen nicht (fahrzeug-medium: das Rad fragt den Grund unter ihm).
+    _auflageAt(x, z, y, aus, unten = AnazhRealm.PLAYER_GROUND_SNAP, ohne = null) {
         const nah = this._blockerNahe(x, z, 0, -Infinity, []);
         let top = -Infinity;
         for (const e of nah)
-            for (const b of e.blockerAABBs || [])
+            for (const b of (ohne && e._fahr === ohne ? null : e.blockerAABBs) || [])
                 if (
                     b.gedeckt !== true &&
                     b.topY >= y - unten &&
@@ -1105,16 +1106,20 @@ class AnazhRealm_gelaende_kollision {
     // `_kronenStreuAt` ≥ ½), die Wiese, wo das Gesetz Gras trägt (das Grün unter dem Kontakt `_bodenGruenUnter` ≥ ½, nie die Karte;
     // `hang` optional, tan: die Ebene, die der Rufer schon kennt), darunter der Stoff des Felds (`_terrainMaterialAt`). Leser: der
     // Schritt-Klang (`_schrittMaterialAt`), die Reibung des gestoßenen Leibs (`_kreaturStossSchritt`) und des freien Körpers, das Bett
-    // des Brands.
-    _kontaktStoffAt(x, z, y, hang) {
+    // des Brands, das Rad des Wagens (`_fahrGrund`, `ohne`: sein eigener Fahr-Zustand, `_auflageAt`).
+    // DER PFAD IST ERDE (fahrzeug-medium): wo das EINE Pfad-Feld (`_pfadFeldAt`: der Ufer-Pfad, die getretene Erde der Wege-Karte)
+    // ≥ ½ liegt, steht kein Halm — der Leib steht auf Erde, im Wald wie auf der Wiese. Bis hier sah der Leser den Weg nicht: auf dem
+    // Feldweg klang der Schritt nach Gras, und der Wagen las den Weg in einem eigenen Gemisch neben ihm (`_fahrHaft` bis fahrzeug-medium).
+    _kontaktStoffAt(x, z, y, hang, ohne = null) {
         const aus = this._kontaktAus || (this._kontaktAus = { stoff: null });
-        if (this._auflageAt(x, z, y, aus) > -Infinity) return aus.stoff;
+        if (this._auflageAt(x, z, y, aus, undefined, ohne) > -Infinity) return aus.stoff;
         if (this._eisAt(x, z, y + 0.02, 0.05) !== null) return "eis";
         const lava = this._lavaAt(x, z); // die Decke der Lava (stoffe.K3-2): glühend Glut, erstarrt Stein
         if (lava) return lava.erstarrt ? "stein" : "glut";
         const belag = this._kontaktBelag || (this._kontaktBelag = {});
         this._wegeBelagAt(x, z, belag);
         if (belag.pflaster >= 0.5) return "stein";
+        if (this._pfadFeldAt(x, z, y) >= 0.5) return "erde";
         if (this._kronenStreuAt(x, z) >= 0.5) return "laub";
         if (this._bodenGruenUnter(x, z, y, hang) >= 0.5) return "gras";
         return this._terrainMaterialAt(x, z, y);
