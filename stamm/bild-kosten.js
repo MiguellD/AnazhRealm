@@ -2864,8 +2864,15 @@ class AnazhRealm_bild_kosten {
         // DER KAMERA-SPRUNG (K68): springt das Auge in EINEM Frame weiter als ZEIT_SPRUNG_M (Tor, Umsetzen, Aufnahme), beginnt
         // die Geschichte neu und läuft als Mittel an (`_zeitAufloesung` `_anlauf`) — sonst trug der erste Frame nach dem Sprung
         // das Bild noch eine halbe Sekunde lang.
+        // DER SPRUNG DES LICHTS (belichtung-daemmerung): springt der Himmel (`_lichtSprung`, gesetzt wo `_himmelSprung` fällt: das
+        // Wort der Uhr, die Jahreszeit, das Laden), zeigt die Geschichte das Bild unter dem alten Licht — sie beginnt neu wie nach
+        // dem Sprung des Auges, und jeder Leser von `sprung` (der Spiegel des letzten Bilds, der Rückstrahl) mit ihr. Bis hier
+        // trug sie die Nacht in den Tag: genesis, Radeon, a7b7a4b1, Holz voll, Mitternacht → Mittag — die Belichtung stand im
+        // zweiten Bild, das Bild stieg 1,1 % je Bild (Y 0,078 → 0,126 in 81 Bildern), 54 von 60 Bildern über 0,5 Stufen zu dunkel.
+        // Quelle: Salvi 2016, „An Excursion in Temporal Supersampling“ (GDC) — das Jetzt wiegt ≈ 10 %, eine verworfene Geschichte beginnt mit α = 1
         const e = cam.matrixWorld.elements;
-        z.sprung = this._augeSprung(z, e[12], e[13], e[14]) || z.neu;
+        z.sprung = this._augeSprung(z, e[12], e[13], e[14]) || z.neu || this._lichtSprung === true;
+        this._lichtSprung = false;
         if (z.neu) {
             z.vor.copy(z.jetzt);
             z.neu = false;

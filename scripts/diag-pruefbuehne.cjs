@@ -186,6 +186,18 @@ const S0_E2_NACHT = 10;
 // viele Stufen (`_poolAmBild`, sonnenbahn 2; bis dahin unter der Laterne am Auge, nacht-lichter: Radeon 0432dd70 1,22 Stufen, k
 // 52 802 → 22 675 — die Kurve der Belichtung steigt mit 0,75 je Stufe Licht; der Messer ohne Pool: 0 Stufen)
 const S0_MESSER_EV = 1.0;
+// DER POOL WIEGT IN JEDER DUNKLEN NACHT GLEICH (belichtung-daemmerung): der Pool, den der Messer am Bild des Feuers liest, unter
+// dem Himmel der Stunde gegen denselben Pool unter dem Himmel der Nacht der REF (`BELICHTUNG.nachtRefE`, 0,0963 lx: der Vollmond
+// gegenüber bei −20°, USNO Circular 171) — höchstens so viele Stufen auseinander. Die Untergrenze der Auto-Belichtung der Profis
+// (Unreal, Auto Exposure, Min EV100: „limits the lower brightness the camera can adapt within“; zu tief gesetzt „the viewport
+// image appears too bright“). Bis hier wog das Fenster jede Kachel gegen den Himmel der Stunde: seit der Mond auf seiner Bahn
+// reist (w28-kosmos-bahn), steht er um Mitternacht auch unter dem Horizont, und gegen das Sternen-Licht (2,84e-8) wog derselbe
+// Pool ein Bruchteil — die Prüfbühne und genesis (Radeon, a7b7a4b1): das Feuer bei k 76 969 statt 26 054 unter dem Mond, Boden
+// 1–3 m Luma 91,3 statt 46,9; unter der Laterne von genesis 36 % des Bilds ausgebrannt, nach dem Wort Mitternacht 44 % der Pixel
+// bei Luma ≥ 235.
+const S0_MESSER_NACHT_EV = 0.5;
+// die Zahlen des Täters an dieser Bühne (Radeon, a7b7a4b1, der Schuss mit dem Feuer): der Selbsttest stellt sie
+const S0_MESSER_TAETER = Object.freeze({ k: 77045.02, kNacht: 31134169.659, poolE: 0.00001105, poolKnoten: 0.00002736, n: 474 });
 async function s0Probe(page, station, schein) {
     return page.evaluate(
         async (st, umkreis, e2min, schein) => {
@@ -1067,10 +1079,24 @@ async function s0BodenMessung({ hw, selbst, n }) {
 // seiner Ablage, wo die Quelle im Erdschatten steht (bis nachthimmel-einig schnitt D3D ln 2^−24 auf −16,625, der Leser las
 // 6,24e-10 statt 0) — die Sonne bei −22° wiegt nachts ohne Mond 2,63e8, die Umgebung trug 3,288e-8 gegen 2,740e-8 am Ort. Die
 // Probe MUSS „im Erdschatten“ und `mehrfach` nennen.
+// DIE DÄMMERUNG (belichtung-daemmerung): der Messer liest den Himmel, den das Bild trägt, auch wo die Sonne unter dem Horizont
+// steht — drei Abend-Stunden der Probe (`S0_DAEMMER_GRAD`, die Uhr aus der Bahn der Sonne selbst gesucht), je Stunde die Umgebung
+// gegen den Himmel des Orts (`S0_DAEMMER_TOL`). Bis hier maß die Probe nur Mittag und Mitternacht, und die Bestrahlungs-Tafel
+// trug die Sonne unter −10° nicht mehr: je Einheit E0 abgelegt, fiel ihr Licht unter die kleinste Stufe des Halb-Floats
+// (5,96e-8) — genesis, Radeon, a7b7a4b1: bei −12,54° Umgebung 1,212e-7 gegen den Himmel des Orts 2,369e-8 (das 5,1-Fache), die
+// Belichtung stand 1,2 Stufen zu hoch und fiel bei −12° in sechs Sekunden um 0,9 Stufen (die letzte Stufe der Tafel).
+// `daemmer-stufe` (der Selbsttest, dieser Täter): die Tafel der CPU ohne das Maß der Dämmerung — jeder Texel unter dem Horizont
+// auf der Halb-Float-Stufe seiner Bestrahlung je Einheit E0 (`__weltLicht.tafelMass` zurückgerechnet). Die Probe MUSS „die
+// Dämmerung“ und `passBestrahlung` nennen.
 const S0_HIMMEL_TOL = 0.03; // relativ, mittags plus 0,005 absolut: die Umgebung nach dem Sprung gegen den Himmel des Orts (Radeon 1,9 %)
+const S0_DAEMMER_GRAD = [-9, -12.5, -15.5]; // die Sonnenhöhen der Dämmerung (Grad): nautisch, ihr Ende, astronomisch
+// relativ: die Umgebung der Dämmerung gegen den Himmel des Orts — 0,1 Stufen, der Schritt der Tag-Wand (`TAG_SOLL.sprung`). Radeon,
+// die drei Stunden: am Täter 6,0 % · 427 % · 23,3 %, im Maß der Dämmerung mit den Ringen gleich im Raumwinkel 1,4 % · 5,0 % · 2,6 %
+// (mit den Ringen gleich in der Bestrahlung, der unterste bei 11,8°: 2,7 % · 13,2 % · 2,8 %)
+const S0_DAEMMER_TOL = 0.07;
 async function himmelProbe(page, schein) {
     return page.evaluate(
-        async (schein, tol) => {
+        async (schein, tol, daemmerGrad, tolD) => {
             const s = st;
             const taub = schein === "taub";
             const out = { himmel: [], befunde: [] };
@@ -1082,6 +1108,7 @@ async function himmelProbe(page, schein) {
             let ankerSpaet = null;
             let tagAnkunft = null;
             let msSchein = false;
+            let tafelSchein = null;
             try {
             const uhr = (t) => {
                 if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0: die Uhr nimmt den Spieler nicht (" + t + ")");
@@ -1139,7 +1166,19 @@ async function himmelProbe(page, schein) {
                 q.material.dispose();
                 if (!da) throw new Error("S0: der Schein „erdschatten“ zeichnet Ψ_ms nicht");
             }
-            const miss = async (t, mondOben) => {
+            // die Uhr des Abends, an der die Sonne `g` Grad steht: ihre Bahn selbst (Bisektion Mittag … Mitternacht), null ohne Durchgang
+            const uhrBei = (g) => {
+                const y = (t) => r._dayNightSunDirection(__weltLicht.sonnenWinkel(t)).y - Math.sin((g * Math.PI) / 180);
+                let [a, b] = [0.5, 0.9999];
+                if (!(y(a) > 0 && y(b) < 0)) return null;
+                for (let i = 0; i < 40; i++) {
+                    const m = (a + b) / 2;
+                    if (y(m) > 0) a = m;
+                    else b = m;
+                }
+                return (a + b) / 2;
+            };
+            const miss = async (t, mondOben, daemmer = null) => {
                 if (taub) r._ensureSkyEnvironment = () => true; // der taube Maler
                 const nr0 = s._skyEnvLeseNr || 0;
                 uhr(t);
@@ -1173,16 +1212,24 @@ async function himmelProbe(page, schein) {
                 const teile = nachts && A.tafel ? { sonne: teil(1, 0, 0), mond: teil(0, 1, 0), sterne: teil(0, 0, 1) } : null;
                 out.himmel.push({
                     uhr: t, gemalt, sprung: ziffern(sprung), ort: ziffern(ort), mondOben: !!mondOben,
+                    ...(daemmer != null ? { daemmer, sonneGrad: grad(sonneY), mondGrad: grad(mondY) } : {}),
                     ...(nachts ? { sterne: ziffern(sterne), boden: ziffern(boden), sonneGrad: grad(sonneY), mondGrad: grad(mondY), teile: teile && { sonne: ziffern(teile.sonne), mond: ziffern(teile.mond), sterne: ziffern(teile.sterne) } } : {}),
                 });
-                const wo = nachts ? (mondOben ? "die Mitternacht mit dem Mond am Himmel" : "Mitternacht") : "Mittag";
-                if (!gemalt || !(Math.abs(sprung - ort) <= tol * ort + (nachts ? 0 : 0.005)))
+                const wo = daemmer != null ? `die Dämmerung (Sonne ${grad(sonneY)}°)` : nachts ? (mondOben ? "die Mitternacht mit dem Mond am Himmel" : "Mitternacht") : "Mittag";
+                if (!gemalt || !(Math.abs(sprung - ort) <= (daemmer != null ? tolD : tol) * ort + (nachts || daemmer != null ? 0 : 0.005)))
                     out.befunde.push(
                         `S0 Himmel: nach dem Sprung auf ${wo} trägt die Umgebung die Bestrahlung ` +
                             `${ziffern(sprung)}${gemalt ? "" : " (ungemalt)"}, der Himmel des Orts ${ziffern(ort)} — ` +
-                            // DER TÄTER BEIM NAMEN: gemalt, mehr als das Gesetz, die Sonne in der astronomischen Nacht und im Gesetz
+                            // DER TÄTER DER DÄMMERUNG: gemalt, und das Bild trägt mehr Himmel, als der Messer liest — die Tafel des
+                            // Messers löst die Sonne unter dem Horizont nicht auf.
+                            // DER TÄTER DER NACHT: gemalt, mehr als das Gesetz, die Sonne in der astronomischen Nacht und im Gesetz
                             // ohne Licht — dann trägt der Maler Licht einer Quelle im Erdschatten (Ψ_ms über dem Boden seiner Ablage)
-                            (gemalt && nachts && teile && sprung > ort && sonneY < Math.sin((-18 * Math.PI) / 180) && teile.sonne <= tol * ort
+                            (gemalt && daemmer != null && sprung > ort
+                                ? `der Messer liest den Himmel nicht, den das Bild trägt (das ${(sprung / Math.max(ort, 1e-30)).toFixed(2)}-Fache): die ` +
+                                  "Bestrahlungs-Tafel löst die Sonne unter dem Horizont nicht auf — ihre Ablage ohne das Maß der Dämmerung, " +
+                                  "eine Halb-Float-Stufe 5,96e-8 je Einheit E0 (`passBestrahlung` und `tafelMass` in welt-licht.js; Leser " +
+                                  "`bestrahlung` → `_belichtungAusLicht`)"
+                                : gemalt && nachts && teile && sprung > ort && sonneY < Math.sin((-18 * Math.PI) / 180) && teile.sonne <= tol * ort
                                 ? `die Umgebung trägt ${ziffern(sprung - ort)} über dem Gesetz (Sonne ${ziffern(teile.sonne)} · Mond ` +
                                   `${ziffern(teile.mond)} · Sterne ${ziffern(teile.sterne)}), und die Sonne steht bei ${grad(sonneY)}° im Erdschatten ` +
                                   "(unter −18° trägt sie kein Licht zum Himmel): die Himmels-Sicht streut Licht einer Quelle, die keine Luft " +
@@ -1200,6 +1247,40 @@ async function himmelProbe(page, schein) {
                     );
             };
             for (const t of [0.5, 0]) await miss(t, false);
+            if (!schein || schein === "daemmer-stufe") {
+                if (schein) {
+                    // die Tafel der CPU ohne das Maß der Dämmerung: unter dem Horizont jede Zahl auf der Halb-Float-Stufe ihrer
+                    // Bestrahlung je Einheit E0 (D3D schneidet ab), zurück im Maß — was der Leser bis belichtung-daemmerung las
+                    const [T, W] = [A.tafel, A.tafel.W];
+                    const w = Float32Array.from(T.werte);
+                    const halb = (x) => {
+                        if (!(x > 0)) return 0;
+                        const p = 2 ** (Math.max(Math.floor(Math.log2(x)), -14) - 10);
+                        return Math.floor(x / p) * p;
+                    };
+                    for (let i = 0; i < W - 1; i++) {
+                        const c = (i / (W - 2)) * 2 - 1;
+                        const mu = Math.max(-1, Math.min(1, c * Math.abs(c)));
+                        if (!(mu < 0)) continue;
+                        const m = __weltLicht.tafelMass(mu);
+                        for (let k = 0; k < 3; k++) w[i * 3 + k] = halb(T.werte[i * 3 + k] / m) * m;
+                    }
+                    tafelSchein = { vor: T, schein: (A.tafel = { ...T, werte: w }) };
+                }
+                for (const g of daemmerGrad) {
+                    const t = uhrBei(g);
+                    if (t == null) {
+                        out.befunde.push(`S0 Himmel: die Sonne der Probe erreicht am Abend ${g}° nicht (ihre Bahn, \`_sonnenBahn\`) — die Dämmerung bleibt ungemessen`);
+                        continue;
+                    }
+                    await miss(t, false, g);
+                }
+                if (tafelSchein && A.tafel === tafelSchein.schein) A.tafel = tafelSchein.vor;
+                tafelSchein = null;
+                // zurück auf Mitternacht: die zweite Mitternacht sucht den Tag des hohen Monds an der Uhr, die steht
+                uhr(0);
+                await s._skyEnvLesung;
+            }
             if (msSchein) {
                 // der Schein geht: Durchlass und Ψ_ms zeichnen neu, mit ihnen Himmels-Sicht, Bestrahlung und Umgebung
                 A.tafelnFrisch = false;
@@ -1235,6 +1316,7 @@ async function himmelProbe(page, schein) {
             }
             } finally {
                 if (tagAnkunft != null) s.worldMeta.tag = tagAnkunft;
+                if (tafelSchein && s.atmoLut.tafel === tafelSchein.schein) s.atmoLut.tafel = tafelSchein.vor;
                 if (msSchein) s.atmoLut.tafelnFrisch = false; // Durchlass und Ψ_ms zeichnen im nächsten Takt neu, mit ihnen jede Tafel
                 if (ankerSpaet && !r._sonnenAnker) r._sonnenAnker = ankerSpaet;
                 if (schein === "nachtlos") {
@@ -1245,7 +1327,9 @@ async function himmelProbe(page, schein) {
             return out;
         },
         schein || null,
-        S0_HIMMEL_TOL
+        S0_HIMMEL_TOL,
+        S0_DAEMMER_GRAD,
+        S0_DAEMMER_TOL
     );
 }
 // DIE NACHT (D3-2, F6): der Boden 1–3 m um die Feuerstelle im Schuss OHNE ihr Licht (der Pool leer) ist um Mitternacht lesbar
@@ -1416,7 +1500,7 @@ async function lichtLauf() {
             await page.evaluate(S0_GESTALT_INSTALL);
             await page.evaluate(LINSEN_INSTALL);
         });
-        for (const schein of SELBSTTEST ? [null, "taub", "nachtlos", "anker-spaet", "erdschatten"] : [null]) {
+        for (const schein of SELBSTTEST ? [null, "taub", "nachtlos", "anker-spaet", "erdschatten", "daemmer-stufe"] : [null]) {
             himmel[schein || "sauber"] = await phase(schein ? "Himmel " + schein : "Himmel", () => himmelProbe(page, schein));
             zeit(schein ? `der Himmel (Schein ${schein}) gemessen` : "der Himmel nach dem Sprung gemessen");
         }
@@ -2009,6 +2093,15 @@ async function lichtLauf() {
                         // des gehaltenen 26 054 stand bis hier in der Zeile)
                         belichtung: +auf.info.licht.k.toFixed(3),
                         poolE: typeof r._poolE === "number" ? +r._poolE.toPrecision(4) : null,
+                        // derselbe Pool unter dem Himmel der Nacht der REF (der Messer selbst, sein Wort `w`; `_poolE` bleibt der des Schusses)
+                        poolKnoten: (() => {
+                            const [K, e0] = [AnazhRealm.BELICHTUNG.nachtRefE, r._poolE];
+                            if (!(K > 0)) return null;
+                            r._poolAmBild([K, K, K], [0, 0, 0]);
+                            const e = r._poolE;
+                            r._poolE = e0;
+                            return typeof e === "number" ? +e.toPrecision(4) : null;
+                        })(),
                         punkteN: s.rueckstrahlLeser && s.rueckstrahlLeser.punkte ? s.rueckstrahlLeser.punkte.n : null,
                         nacht: s.postProcessingUniforms ? +s.postProcessingUniforms.nightFactor.value.toFixed(3) : null,
                         pool: pool.map((p) => ({ q: p.quelle, I: +p.staerke.toPrecision(4), d: +Math.hypot(p.x - f.x, p.z - f.z).toFixed(1) })),
@@ -2089,28 +2182,43 @@ async function lichtLauf() {
     const messerUrteil = (mit, ohne) => {
         if (!mit || mit.fehler || !ohne || ohne.fehler) return { ev: null, befund: "S0 Messer: ein Schuss fehlt — die Probe ist blind" };
         const ev = Math.log2(ohne.belichtung / mit.belichtung);
+        // der Pool unter dem Himmel der Stunde gegen denselben unter der Nacht der REF (oben `S0_MESSER_NACHT_EV`)
+        const nachtEv = mit.poolE > 0 && mit.poolKnoten > 0 ? Math.log2(mit.poolE / mit.poolKnoten) : null;
         return {
             ev,
+            nachtEv,
             befund:
                 ev >= S0_MESSER_EV
                     ? null
                     : `S0 Messer: am Feuer schließt die Belichtung ${ev.toFixed(2)} Stufen gegen die Nacht ohne es (k ${mit.belichtung} ` +
                       `gegen ${ohne.belichtung}, Pool am Boden des Bilds ${mit.poolE} aus ${mit.punkteN} Punkten; Soll ≥ ${S0_MESSER_EV}) — ` +
                       "der Lichtmesser liest den Pool am Boden des Bilds nicht (`_poolAmBild` in `_belichtungAusLicht`)",
+            nacht:
+                nachtEv == null
+                    ? "S0 Messer: der Pool am Bild des Feuers fehlt unter dem Himmel der Stunde oder unter der Nacht der REF " +
+                      `(${mit.poolE} · ${mit.poolKnoten}) — die Probe ist blind`
+                    : Math.abs(nachtEv) <= S0_MESSER_NACHT_EV
+                      ? null
+                      : `S0 Messer: der Pool des Feuers wiegt unter dem Himmel der Stunde ${mit.poolE}, unter dem Himmel der Nacht der REF ` +
+                        `${mit.poolKnoten} — ${nachtEv.toFixed(2)} Stufen (Soll ± ${S0_MESSER_NACHT_EV}): der Messer wiegt die Leuchten gegen das Dunkel ` +
+                        "des Himmels, in der Nacht ohne Mond brennt der beleuchtete Boden aus (`_poolAmBild`: der Bezug seines Fensters, " +
+                        "`BELICHTUNG.nachtRefE`)",
         };
     };
     if (sauber && !sauber.fehler) {
         const m = messerUrteil(sauber, nacht);
         console.log(
             `  S0 MESSER: Belichtung mit dem Feuer ${sauber.belichtung} · ohne es ${nacht && nacht.belichtung} → ${m.ev == null ? "—" : m.ev.toFixed(2)} Stufen ` +
-                `(Soll ≥ ${S0_MESSER_EV}) · Pool am Boden des Bilds ${sauber.poolE} aus ${sauber.punkteN} Punkten, ohne das Feuer ${nacht && nacht.poolE}`
+                `(Soll ≥ ${S0_MESSER_EV}) · Pool am Boden des Bilds ${sauber.poolE} aus ${sauber.punkteN} Punkten, ohne das Feuer ${nacht && nacht.poolE} · ` +
+                `derselbe Pool unter der Nacht der REF ${sauber.poolKnoten} → ${m.nachtEv == null ? "—" : m.nachtEv.toFixed(2)} Stufen (Soll ± ${S0_MESSER_NACHT_EV})`
         );
         if (m.befund) befunde.push(m.befund);
+        if (m.nacht) befunde.push(m.nacht);
     }
     for (const [k, e] of Object.entries(himmel))
         for (const h of e.himmel)
             console.log(
-                `  S0 HIMMEL${k === "taub" ? " SCHEIN (der Maler taub)" : k === "nachtlos" ? " SCHEIN (die Nacht ohne Mond und Sterne)" : k === "anker-spaet" ? " SCHEIN (der Anker nach der Malung)" : k === "erdschatten" ? " SCHEIN (Ψ_ms über dem Boden seiner Ablage)" : ""}: nach dem Sprung auf ${h.uhr === 0 ? (h.mondOben ? `die Mitternacht mit dem Mond am Himmel (Tag +${e.mondTag})` : "Mitternacht") : "Mittag"} ` +
+                `  S0 HIMMEL${k === "taub" ? " SCHEIN (der Maler taub)" : k === "nachtlos" ? " SCHEIN (die Nacht ohne Mond und Sterne)" : k === "anker-spaet" ? " SCHEIN (der Anker nach der Malung)" : k === "erdschatten" ? " SCHEIN (Ψ_ms über dem Boden seiner Ablage)" : k === "daemmer-stufe" ? " SCHEIN (die Tafel ohne das Maß der Dämmerung)" : ""}: nach dem Sprung auf ${h.daemmer != null ? `die Dämmerung (Sonne ${h.sonneGrad}° · Mond ${h.mondGrad}°)` : h.uhr === 0 ? (h.mondOben ? `die Mitternacht mit dem Mond am Himmel (Tag +${e.mondTag})` : "Mitternacht") : "Mittag"} ` +
                     `Umgebung ${h.sprung} · Himmel des Orts ${h.ort}${h.ort > 0 ? ` (${(((h.sprung - h.ort) / h.ort) * 100).toFixed(2)} %)` : ""}${h.sterne == null ? "" : ` · Sonne ${h.sonneGrad}° · Mond ${h.mondGrad}° · das Gesetz des Orts nach Quellen ${h.teile ? `Sonne ${h.teile.sonne} · Mond ${h.teile.mond} · Sterne ${h.teile.sterne}` : "—"} · der Boden der Nacht ${h.boden} (das Sternen-Licht durch die Luft ${h.sterne})`} · ${h.gemalt ? "gemalt" : "UNGEMALT"}`
             );
     if (himmel.sauber) befunde.push(...himmel.sauber.befunde);
@@ -2281,6 +2389,11 @@ async function lichtLauf() {
         console.log(
             `  SELBSTTEST S0 HIMMEL (Ψ_ms eine Stufe über dem Boden seiner Ablage, die Sonne im Erdschatten): ${erdschattenGetroffen ? "getroffen — " + erdschattenGetroffen.split("): die Himmels-Sicht")[0] + ")" : "BLIND " + JSON.stringify(he)}`
         );
+        const hd = himmel["daemmer-stufe"]?.befunde || [];
+        const daemmerGetroffen = hd.find((b) => /^S0 Himmel: nach dem Sprung auf die Dämmerung .*`passBestrahlung`/.test(b));
+        console.log(
+            `  SELBSTTEST S0 HIMMEL (die Bestrahlungs-Tafel ohne das Maß der Dämmerung): ${daemmerGetroffen ? "getroffen — " + daemmerGetroffen.split(": die Bestrahlungs-Tafel")[0] : "BLIND " + JSON.stringify(hd)}`
+        );
         const hn = himmel.nachtlos?.befunde || [];
         const nachtlosGetroffen = hn.find((b) => /^S0 Himmel: der Himmel der Nacht fehlt/.test(b));
         console.log(
@@ -2333,7 +2446,19 @@ async function lichtLauf() {
         console.log(
             `  SELBSTTEST S0 MESSER (der Messer blind für den Pool am Boden des Bilds): ${messerGetroffen ? "getroffen — " + mm.befund.split(" (k ")[0] : "BLIND " + JSON.stringify(mm)}`
         );
-        pass = pass && messerGetroffen && taubGetroffen && !!nachtlosGetroffen && !!ankerGetroffen && !!erdschattenGetroffen && !!kameraTreffer && stoffTreffer && wurfGetroffen && bruchGetroffen && sichtGetroffen;
+        // DER POOL GEGEN DAS STERNEN-LICHT (gestellt, die Zahlen des Täters a7b7a4b1 an dieser Bühne): ROT am Bezug des Fensters;
+        // derselbe Pool an der Nacht der REF gewogen grün; ohne Lesung blind
+        const T0 = S0_MESSER_TAETER;
+        const [sternU, knotenU, blindU] = [
+            messerUrteil({ belichtung: T0.k, poolE: T0.poolE, poolKnoten: T0.poolKnoten, punkteN: T0.n }, { belichtung: T0.kNacht }),
+            messerUrteil({ belichtung: T0.k, poolE: T0.poolKnoten, poolKnoten: T0.poolKnoten, punkteN: T0.n }, { belichtung: T0.kNacht }),
+            messerUrteil({ belichtung: T0.k, poolE: T0.poolE, poolKnoten: null, punkteN: T0.n }, { belichtung: T0.kNacht }),
+        ];
+        const messerNachtGetroffen = !!sternU.nacht && /`_poolAmBild`.*`BELICHTUNG\.nachtRefE`/.test(sternU.nacht) && knotenU.nacht === null && /blind/.test(blindU.nacht || "");
+        console.log(
+            `  SELBSTTEST S0 MESSER (der Pool gewogen gegen das Sternen-Licht): ${messerNachtGetroffen ? "getroffen — " + sternU.nacht.split(" (Soll")[0] + " · an der Nacht der REF gewogen grün · ohne Lesung blind" : "BLIND " + JSON.stringify([sternU.nacht, knotenU.nacht, blindU.nacht])}`
+        );
+        pass = pass && messerGetroffen && messerNachtGetroffen && taubGetroffen && !!nachtlosGetroffen && !!ankerGetroffen && !!erdschattenGetroffen && !!daemmerGetroffen && !!kameraTreffer && stoffTreffer && wurfGetroffen && bruchGetroffen && sichtGetroffen;
     }
     console.log(
         `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} · Nacht ${JSON.stringify(nacht && { ...nacht.grund, gesetz: nacht.gesetz && nacht.gesetz.luma })} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`

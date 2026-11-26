@@ -1146,6 +1146,7 @@ function tagKurve(o) {
         const zeilen = [];
         let karte = null;
         let mutant = null;
+        let geschichte = null;
         const bild = () => new Promise((ok) => requestAnimationFrame(ok));
         // DIE LESUNG DER NEUEN UHR (ASYNC, laub-messer): der Messer liest die Sicht des Bildes (`_bildSonnenSicht`) — die Schatten
         // der neuen Stunde zeichnet erst das nächste Bild, seine Lesung kommt danach. Gezählt die BILDER des Spiels vom Uhr-Wort,
@@ -1392,12 +1393,46 @@ function tagKurve(o) {
                     rend.readRenderTargetPixelsAsync = ur;
                 }
             }
+            // DIE GESCHICHTE NACH DEM WORT DER UHR (GESCHICHTE, belichtung-daemmerung; live, einmal je Ort — der Lauf mit dem Mittag):
+            // unter der Nacht läuft die zeitliche Auflösung im Takt des Spiels an (`_anlauf`: Bilder seit ihrem Beginn), dann springt
+            // die Uhr auf den Mittag — gelesen der kleinste Anlauf bis zum ersten gezeichneten Bild danach (`nach`): 0, sie beginnt
+            // mit dem neuen Licht neu (`_traaReprojektion`: `_lichtSprung`). Ein Holz ohne zeitliche Auflösung trägt keine
+            // Geschichte (`geschichte` null, die Zeile des Orts nennt es).
+            // DER MUTANT (live): derselbe Lauf, das Wort des Lichts erreicht die Geschichte nicht (`_lichtSprung` taub — der Täter
+            // a7b7a4b1): sie zählt über das Wort der Uhr weiter (`mutant`), sonst ist GESCHICHTE blind
+            const tn = st.traaNode;
+            if (o.uhren.includes(0.5) && tn) {
+                const u0 = st.timeOfDay;
+                const sprungLauf = async () => {
+                    r.setTimeOfDay(0, "human");
+                    await lesen();
+                    // 12 Bilder Anlauf vor dem Wort (das Urteil verlangt `TAG_GESCHICHTE_VOR`, 8)
+                    for (let n = 0; n < 240 && tn._anlauf.value < 12; n++) await window.__seitenTakt();
+                    const vor = tn._anlauf.value;
+                    if (r.setTimeOfDay(0.5, "human") !== true) throw new Error("die Uhr nimmt den Spieler nicht (0.5)");
+                    let nach = Infinity;
+                    for (let n = 0, b0 = r._shadowFrame | 0; n < 240 && (r._shadowFrame | 0) === b0; n++) {
+                        await window.__seitenTakt();
+                        nach = Math.min(nach, tn._anlauf.value);
+                    }
+                    await lesen();
+                    return { vor, nach: Number.isFinite(nach) ? nach : 99 };
+                };
+                geschichte = await sprungLauf();
+                Object.defineProperty(r, "_lichtSprung", { configurable: true, get: () => false, set: () => {} });
+                try {
+                    geschichte.mutant = (await sprungLauf()).nach;
+                } finally {
+                    delete r._lichtSprung;
+                }
+                r.setTimeOfDay(u0, "human");
+            }
         } finally {
             // der Spion fällt, die Belichtung schreibt wieder der EINE Schreiber (die Kamera frei, an der Uhr der Seite)
             delete rend.toneMappingExposure;
             r._blendeBestellen(null);
         }
-        return { zeilen, schreiber, karte, mutant, bahn: o.uhren.length === 100 };
+        return { zeilen, schreiber, karte, mutant, geschichte, bahn: o.uhren.length === 100 };
     })();
 }
 
@@ -1415,8 +1450,13 @@ function tagKurve(o) {
 //   (`sofort`) steht als Zahl in der Zeile des Orts, ungeurteilt. Der Mutant (live, je Ort): die Lesung 8 Bilder später muss die
 //   Schranke reißen, sonst ist ASYNC blind. SICHT der Messer liest die Sicht des Bildes: |Sicht des Messers − Flächen-Mittel des
 //   Bild-Schattens| über 0,10 (an den Uhren mit Sonne der Wand).
+//   GESCHICHTE (belichtung-daemmerung): nach dem Wort der Uhr beginnt die zeitliche Auflösung neu — das erste Bild nach dem Wort
+//   Mittag (aus der Nacht) mittelt über kein Bild davor (`geschichte.nach` 0); lief sie vor dem Wort nicht an (unter
+//   `TAG_GESCHICHTE_VOR` Bildern), ist die Probe blind. Bis hier trug sie die Nacht in den Tag (genesis, Radeon, a7b7a4b1, Holz
+//   voll: 54 von 60 Bildern nach dem Wort über 0,5 Stufen zu dunkel, das Bild stieg 1,1 % je Bild).
 const TAG_SOLL = { karte: [110, 130], sprung: 0.1, buckel: 0.15, gold: [-1, -0.5], warm: 1.3, nacht: [-5, -3], nachtLuma: 22, ref: 0.3, async: 0.05, lesung: 3, sicht: 0.1 };
-const TAG_WAND = /^(ANKER|SPRUNG|ASYNC|SICHT|SCHREIBER|BLIND) /;
+const TAG_WAND = /^(ANKER|SPRUNG|ASYNC|SICHT|SCHREIBER|BLIND|GESCHICHTE) /;
+const TAG_GESCHICHTE_VOR = 8; // so viele Bilder trägt die Geschichte mindestens, ehe die Uhr springt
 // DER MESSER DES KOPFS 6113b27e (vor laub-messer: Ellipsen der Karten, Ebene unter dem Auge, 32-m-Gitter) neben dem Flächen-Mittel
 // des Bild-Schattens — GEMESSEN (Radeon 890M, Mess-Wiese Ego, 1920 × 1080, Uhr 0,27, Gier 0): der Mutant „Ellipse zurück“ des Selbsttests.
 // Die Fläche steht am UNTEREN Rand ihres Bands (gezählt an den Schwellen 0,4 · 0,2 · 0,1: 0,249 · 0,319 · 0,386) — ROT auch dort
@@ -1509,6 +1549,17 @@ function tagKurveUrteil(welt) {
         });
         // der Mutant der Lesung (live): 8 Bilder später reißt die Schranke — sonst zählte die Linse die Bilder nicht
         if (m.mutant && !(m.mutant.lesung > S.lesung)) rot("ASYNC", `blind: die Lesung des Mutanten (+8 Bilder) nach ${m.mutant.lesung} Bildern`);
+        // die Geschichte nach dem Wort der Uhr (live): sie beginnt mit dem neuen Licht neu — sonst trägt sie die Nacht in den Tag
+        const G = m.geschichte;
+        if (G && !(G.vor >= TAG_GESCHICHTE_VOR)) rot("GESCHICHTE", `blind: vor dem Wort der Uhr trug die Geschichte ${G.vor} Bilder (Soll ≥ ${TAG_GESCHICHTE_VOR})`);
+        else if (G && G.nach !== 0)
+            rot(
+                "GESCHICHTE",
+                `das erste Bild nach dem Wort Mittag (aus der Nacht) mittelt über ${G.nach} Bilder davor (vor dem Wort ${G.vor}; Soll 0) — ` +
+                    "die zeitliche Auflösung trägt das alte Licht in das neue (`_traaReprojektion`: `_lichtSprung`, gesetzt in `_applyDayNightToScene`)"
+            );
+        // der Mutant (live, das Wort des Lichts taub): seine Geschichte zählt über das Wort weiter — sonst unterscheidet die Probe nicht
+        else if (G && G.mutant != null && !(G.mutant >= TAG_GESCHICHTE_VOR)) rot("GESCHICHTE", `blind: der Mutant (das Wort des Lichts taub) mittelt nach dem Wort über ${G.mutant} Bilder`);
         const gold = [];
         for (const s of [alle.filter((x) => x.uhr < 0.5), alle.filter((x) => x.uhr > 0.5)]) {
             const i = s.findIndex((x, j) => j && (s[j - 1].sonne - 10) * (x.sonne - 10) <= 0);
@@ -1534,7 +1585,8 @@ function tagKurveUrteil(welt) {
             `Nacht ${r2(e(nacht))} EV Luma ${nacht.hell} · REF ${mit(spitze(ref))} · ` +
             `Sicht ${mitSicht ? mit(spitze((x) => (x.sicht != null && x.flaeche != null ? x.sicht - x.flaeche : 0))) : "ohne Messung"} · ` +
             `ASYNC ${mit(spitze((x) => ev(x.nach, x.frisch)))} nach ${lesung} Bildern${m.mutant ? ` (Mutant ${m.mutant.lesung})` : ""} · ` +
-            `sofort ${mit(spitze((x) => ev(x.sofort, x.frisch)))} EV${m.bahn ? "" : " · nur die Wand (--kurz)"}`;
+            `sofort ${mit(spitze((x) => ev(x.sofort, x.frisch)))} EV · Geschichte ${G ? `${G.vor} → ${G.nach} Bilder (Mutant ${G.mutant})` : "ohne (kein Lauf mit dem Mittag oder ein Holz ohne zeitliche Auflösung)"}` +
+            `${m.bahn ? "" : " · nur die Wand (--kurz)"}`;
     }
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, kurven, zahlen };
 }
@@ -1589,6 +1641,12 @@ function tagKurveSelbsttest() {
         if (fall === "MUTANT") m.mutant = { lesung: 10 };
         if (fall === "MUTANT-BLIND") m.mutant = { lesung: 2 };
         if (fall === "SCHREIBER") m.schreiber._tickPortalMembranes = 1;
+        // GESCHICHTE (belichtung-daemmerung): der Täter a7b7a4b1 (der Anlauf zählt über das Wort der Uhr weiter: 8 → 9) ROT beim
+        // Namen, auch an der Wand; der Neubeginn (8 → 0) grün; ohne Anlauf vor dem Wort (2 → 0) blind
+        if (fall === "GESCHICHTE" || fall === "GESCHICHTE-WAND") Object.assign(m, { geschichte: { vor: 8, nach: 9 }, bahn: fall === "GESCHICHTE" });
+        if (fall === "GESCHICHTE-NEU") m.geschichte = { vor: 8, nach: 0, mutant: 13 };
+        if (fall === "GESCHICHTE-MUTANT-BLIND") m.geschichte = { vor: 8, nach: 0, mutant: 0 };
+        if (fall === "GESCHICHTE-BLIND") m.geschichte = { vor: 2, nach: 0 };
         if (fall === "BLIND") m.zeilen = [];
         // DER TÄTER (licht-stetig): der Sprung Uhr 0,276 (+0,26 EV) im Täter-Pass — ein Beitrag mit Schalter trägt ihn (die
         // Belichtung ×1,2 über allem Licht, jeder andere +0,2 des Lichts); die Wand nennt ihn beim Namen. Ohne Zeilen des Passes:
@@ -1628,6 +1686,12 @@ function tagKurveSelbsttest() {
         [kurve(T.kopf, "MUTANT-BLIND"), /(^|,)ASYNC wiese: blind: die Lesung des Mutanten \(\+8 Bilder\) nach 2 Bildern/],
         [nur(kurve(T.kopf, "SOFORT"), /ASYNC/), ""],
         [nur(kurve(T.kopf, "MUTANT"), /ASYNC/), ""],
+        // GESCHICHTE: der Anlauf über das Wort der Uhr hinweg ROT beim Namen (Bahn und Wand), der Neubeginn GRÜN, ohne Anlauf blind
+        [nur(kurve(T.kopf, "GESCHICHTE"), /GESCHICHTE/), /^GESCHICHTE wiese: das erste Bild nach dem Wort Mittag \(aus der Nacht\) mittelt über 9 Bilder davor .*`_lichtSprung`/],
+        [kurve(T.kopf, "GESCHICHTE-WAND"), /^GESCHICHTE wiese: das erste Bild nach dem Wort Mittag/],
+        [nur(kurve(T.kopf, "GESCHICHTE-NEU"), /GESCHICHTE/), ""],
+        [nur(kurve(T.kopf, "GESCHICHTE-MUTANT-BLIND"), /GESCHICHTE/), /^GESCHICHTE wiese: blind: der Mutant \(das Wort des Lichts taub\) mittelt nach dem Wort über 0 Bilder/],
+        [nur(kurve(T.kopf, "GESCHICHTE-BLIND"), /GESCHICHTE/), /^GESCHICHTE wiese: blind: vor dem Wort der Uhr trug die Geschichte 2 Bilder/],
         // SICHT: der Messer des Kopfs 6113b27e neben dem Bild-Schatten ROT, der Messer der Sicht des Bildes GRÜN
         [kurve(T.kopf, "SICHT"), /(^|,)SICHT wiese: Uhr 0\.27 der Messer /],
         [nur(kurve(T.kopf, "SICHT-BILD"), /SICHT/), ""],
