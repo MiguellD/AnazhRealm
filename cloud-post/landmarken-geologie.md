@@ -68,8 +68,24 @@ Heimat felsturm 1356 auf 1,9 km², das Gesetz erwartet …`; die Feuerstelle zur
   Schnitt wäre L1 vakuös. Jetzt setzt die Probe die Feuerstelle als Werk an den Hangfuß der Welt (welt-orte `hangfuss`, rMax
   200 m); am Gesetz im vm liegt er 72 m vom Messort (−787,8/−909,5, Hang 8 m westlich). Die Fahrt kommt vom Hang statt mit der
   Gier 92,3° der Schau. Selbsttest der Fahr-Linse grün; der Browser-Lauf von L1 steht aus (hier keine Seite gefahren).
-- Andere Gates (stoss-Station, weg-boden TRITT, Prüfbühne, Klang-Zensus, Kollisions-Bild) setzen ihre Feuerstelle bzw. ihre
-  Exemplare selbst — unberührt. Der Dorf-Brand zündet über `_brandZuenden`, nie an der Feuerstelle (`stamm/feld-brand.js`).
+- Die Klasse, die CI voll am Kopf d9513b67 fand (voll 1/18 und 18/18 ROT): Linsen, deren Prüfling der Feld-Wurf war. Jede setzt
+  ihn jetzt selbst, beim Namen:
+  - Playtest W6.G P3 (144 Chunks MUSSTEN Bogen und Turm tragen; vorher 53/65, nachher 0/0): der Wurf trocken in Ringen um den
+    Spieler bis je Art ≥ 6 erwartet — 57,2 km², Bögen 4 (Gesetz 6), Türme 36 (Gesetz 30,5), binnen 4 σ + 2; dann der echte
+    Populator an den ersten frischen Chunks mit Bogen und Turm: 1 und 1 stehen als Bau (= die Würfe des Gesetzes).
+  - Playtest Scatter MAIN = FADEN (der Ort war die Trittfläche einer Feld-Feuerstelle, nachher „Ort null“): die Probe setzt ihre
+    Feuerstelle 60 m vom Spieler und wartet ihren Bau ab (`__gebautNach`) — 239 823 Zahlen gleich, Region 0,-1.
+  - Klang-Linse (wartete 3000 Takte auf „eine Glut in Hörweite“): die Dorf-Feuerstelle setzt die Linse als Werk auf der Spirale
+    ab 70 m um den Messort — Dorf-Glut −27,2 dB und Armlänge −15,2 dB wie auf main; die Wiese steht jetzt AM Messort
+    (−280/−1046; auf main 60 m daneben bei −231/−1079, weil die Feld-Glut ihn in Hörweite hielt).
+  - Sicht-Arbeit (F) (ohne Rand 0 Löcher in 8 Strecken, STUMPF): 16 Felstürme der Linse auf der Spirale 25–355 m — ohne Rand
+    8 Löcher im Fels-Satz (Strecke 0,45 π), mit Rand 0.
+  - Satz-Wand (j) (die alte Verdrängung vakuös: den Druck trug der Fels-Satz mit 15 Bereichen): der Boden-Index ERZWUNGEN klein
+    wie in der Druck-Phase. Lokal hängt gate:chunk-satz im Einschwingen auch auf main 2da17e2e (Wald 71 offen, der Container) —
+    das Urteil über (j) gibt die CI.
+- Andere Gates (stoss-Station, weg-boden TRITT, Prüfbühne, Kollisions-Bild) setzen ihre Feuerstelle bzw. ihre Exemplare
+  selbst — unberührt. Der Dorf-Brand zündet über `_brandZuenden`, nie an der Feuerstelle (`stamm/feld-brand.js`).
+- voll 13/18 („Die Kreatur-Linse Teil 3“, jagdkreis) ist auf main 2da17e2e mit demselben Befund rot — nicht dieser Zweig.
 - Goldens: keine Spec trägt eine Zahl dieser Arten (nur die Albedo-Tafel die Farbe der Feuerstelle).
 - Karte 2, gelesen in der Meisterkarte 2 (Zweig `punkte-maschine`): Glut/Feuer lesen leben.oeko.sukzession#1, same.kopplung.stoerung#1,
   same.kopplung.kaskade#1, same.kopplung.gewalt#1, same.kopplung.ereignis#1, mensch.wirtschaft.energie#1 — keine liest die
@@ -92,7 +108,8 @@ Heimat felsturm 1356 auf 1,9 km², das Gesetz erwartet …`; die Feuerstelle zur
 
 Basis main 2da17e2e (unbewegt seit dem Abzweig), `git merge-tree --write-tree origin/main HEAD` eine Zeile, `npm run
 check:statik` Exit 0, gate:betriebsgesetz grün (Karte 2 118 von 1 718), gate:studio-vertrag grün, format:check und lint ohne
-neuen Befund, Selbsttest der Fahr-Linse grün, Modul-Karte (`diag-atlas --check`) grün.
+neuen Befund, Selbsttest der Fahr-Linse grün, Modul-Karte (`diag-atlas --check`) grün. Lokal im Browser (Null-Renderer):
+`npm run playtest` „Alle Invarianten OK“, gate:sicht-arbeit grün, gate:klang-zensus grün.
 
 ## Fragen
 
