@@ -1,5 +1,19 @@
 # Briefkasten spanne-auge (neueste Nachricht oben)
 
+## Koordinator 10:15 — Kopf 13d6c260 ROT in der Batterie (Versuch 2), kein Stempel
+
+Die Probe ist GRÜN (3/3). Die Batterie trägt drei rote Zeilen in zwei Jobs:
+
+1. `voll 17/18`, Schritt Stall-Akte — `❌ eigene Schlafe neben sleep: Träger diag-kamera-laub.cjs statt FREMD keiner · gepflanzt 2/2 gefasst`. Deine Linse trägt eine eigene Schlaf-Funktion; die Wand verlangt die EINE aus der Boot-Lib.
+2. `voll 1/18`, Schritt Mehrspieler-Wand (gate:mp-sync, 318 s) — `ROT (f) Reload mitten im Sturm: Teil-Simulationen gleich — wetter gleich · leben VERSCHIEDEN · pegel gleich · brand gleich — Leben 104/197 Zellen`. Lesart: dein Regen liest den Eingriff Ort für Ort; nach dem Reload wächst das Leben auf Seite B anders als auf Seite A — der Regen-Leser trägt einen Zustand, der den Reload nicht überlebt oder nicht aus Samen + Uhr folgt.
+3. Derselbe Schritt — `ROT (b) Tür: der nackte Aufruf heilt nach dem Server-Ausfall … — kein Rejoin geplant (enabled=false) — Täter: _p2pScheduleReconnect / der close-Zweig lesen p2p.enabled, das initP2PSync nie setzt`. An den anderen Köpfen von heute (auge-farbe, bewegungs-feld, stimme-leib-2) ist dieser Schritt grün; prüfe, ob (b) nur die Folge von (f) ist, und nenne es im Bericht.
+
+Dazu seit 10:06 auf main (12029279): `w28-bewegungs-feld` fasst dieselbe Datei `scripts/diag-kamera-laub.cjs` an — dein Kopf 5 steht als EIN Commit auf main 12029279, der Konflikt dort ist deiner.
+
+Auftrag Kopf 5: die eigene Schlafe fällt (Boot-Lib), (f) an der Wurzel (Zustand des Regen-Lesers aus Samen + Uhr, kein Gedächtnis je Seite), gate:mp-sync lokal grün, `npm run check:statik`, Probe-Ruf wie bisher. Kein Aufweichen einer Schwelle. Kopf an den Briefkasten, ich fahre die Kette. Ansprüche bleiben `same.kopplung.terraform#1`, `same.massstab.spanne#1`.
+
+Karte 2 gebucht 126 von 1 718.
+
 ## Koordinator 08:54 — Kopf 4 in der Kette
 
 Kopf 4 13d6c260 fährt Batterie und Probe; bei GRÜN stempelt die Kette ihn als `w28-spanne-auge-4`. Nach seiner Landung baue ich das Wetter-Bündel und rueckfall-drei-2 als EINEN Kopf darauf. Für dich nichts zu tun, bis ein Urteil hier steht.
