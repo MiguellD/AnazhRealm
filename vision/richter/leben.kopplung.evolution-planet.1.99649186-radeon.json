@@ -1,0 +1,80 @@
+{
+ "leiter": "leben.kopplung.evolution-planet",
+ "sprosse": 1,
+ "sha": "9964918608a72e1bbc6972925a4820eac5b53d0f",
+ "datum": "2026-11-26T19:41:30.283Z",
+ "soll": "≥ 0,9 der Würfe in der Boden-Klasse der Gattung, im Bild gezählt",
+ "station": "karte2.leben.kopplung.evolution-planet#1",
+ "geraete": [
+  {
+   "geraet": "Radeon 890M",
+   "richter": {
+    "wert": "S1 anteilImRaum ungemessen gegen Soll ≥ 0,9 ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":17983,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Natur baum) · Täter: stamm/kreatur-leben.js _pickFaunaSoulAtPlayer (die Gattung aus der Boden-Klasse)",
+    "urteil": "ROT"
+   },
+   "preis": {
+    "fehlt": "der Preis-Lauf nannte sein Stück nicht (kein Ergebnis von `/lauf`)",
+    "bilder": 0,
+    "fenster": {
+     "von": "2026-11-26T19:39:49.240Z",
+     "bis": "2026-11-26T19:41:30.283Z"
+    },
+    "quelle": "kein Preis: der Preis-Lauf nannte sein Stück nicht (kein Ergebnis von `/lauf`)",
+    "referenz": {
+     "f": 1.261,
+     "fEin": 1.261,
+     "fAlle": 1.014,
+     "vor": {
+      "ein": 102,
+      "alle": 255.4,
+      "tor": {
+       "ruhig": true,
+       "s": 0,
+       "kerne": 1.57,
+       "soll": 6,
+       "reihe": [
+        1.18,
+        2.62,
+        4.84,
+        3.14,
+        0.61,
+        0.92
+       ]
+      }
+     },
+     "nach": {
+      "ein": 105.3,
+      "alle": 264.4,
+      "tor": {
+       "ruhig": true,
+       "s": 0,
+       "kerne": 1.57,
+       "soll": 6,
+       "reihe": [
+        1.18,
+        2.62,
+        4.84,
+        3.14,
+        0.61,
+        0.92
+       ]
+      }
+     },
+     "ruhe": {
+      "ein": 83.5,
+      "alle": 260.7,
+      "n": 1192,
+      "von": "2026-11-16"
+     },
+     "umfeld": "sitzung",
+     "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M"
+    },
+    "posten": {
+     "fehler": "Connection closed."
+    },
+    "urteil": "FEHLT",
+    "treppe": "2026-11-23b"
+   }
+  }
+ ]
+}
