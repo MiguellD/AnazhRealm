@@ -1,0 +1,135 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.437",
+  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 1,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.3724,
+  "taeter": {
+   "Laub fscatter:eiche:L1": 0.3724
+  },
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.5622,
+   "taeter": {
+    "Laub fscatter:eiche:L1": 0.4858,
+    "Rinde fscatter:fichte:L0": 0.0469,
+    "Laub grown_busch_hazel_v0": 0.0295
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "an Punkt 1 Rinde grown_busch_hazel_v0",
+  "vorAbstand": 17.79,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -180.4,
+   26.522,
+   -1013.6
+  ],
+  "blick": [
+   -0.92069,
+   0,
+   -0.39029
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 21,
+  "sigma": 22.4,
+  "schwarz": 0.0214,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 37.2 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub fscatter:eiche:L1 37.2 % · Vordergrund 56.2 % näher als 8 m (der halbe Ziel-Abstand): Laub fscatter:eiche:L1 48.6 %, Rinde fscatter:fichte:L0 4.7 %, Laub grown_busch_hazel_v0 2.9 % · Ziel Blickziel verdeckt von an Punkt 1 Rinde grown_busch_hazel_v0 in 17.79 m · kein bodenSatz im Bild: 0.0 % < 15.0 % · kein portal-membran im Bild: 0.0 % < 0.3 %] · beweis · Sicht 37.2 % (Laub fscatter:eiche:L1 37.2 %) · Ziel Blickziel im Bild VERDECKT 20 m · Luma 21 σ 22.4 schwarz 2.1 % weiß 0.0 % · Stand 18.546.437 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt bodenSatz 0.0 % (≥ 15.0 %), portal-membran 0.0 % (≥ 0.3 %)",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 37.2 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub fscatter:eiche:L1 37.2 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 56.2 % näher als 8 m (der halbe Ziel-Abstand): Laub fscatter:eiche:L1 48.6 %, Rinde fscatter:fichte:L0 4.7 %, Laub grown_busch_hazel_v0 2.9 %"
+  },
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von an Punkt 1 Rinde grown_busch_hazel_v0 in 17.79 m"
+  }
+ ],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "imBild.bodenSatz",
+    "grund": "kein bodenSatz im Bild: 0.0 % < 15.0 %"
+   },
+   {
+    "schluessel": "imBild.portal-membran",
+    "grund": "kein portal-membran im Bild: 0.0 % < 0.3 %"
+   }
+  ],
+  "zeile": "Inhalt bodenSatz 0.0 % (≥ 15.0 %), portal-membran 0.0 % (≥ 0.3 %)"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^bodenSatz([-_:].*)?$|^portal-membran([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 888,
+   "wechsel": 0
+  },
+  "rinde": null,
+  "toene": [
+   "bodenSatz=255/80/80"
+  ],
+  "klassen": {},
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\54b89949-gtx\\auge-mensch-kultur-s6-rot.maske.png"
+ }
+}
