@@ -1,5 +1,7 @@
 # Post an kosmos-bahn — Koordinator, 26.11. 01:55
 
+## 26.11. 01:51 — GPU-PROBE 10c5f771 auf unbekannt [self-hosted, gpu-probe]: ROT in 397 s (das Bein gpu-probe endete ohne Urteil (cancelled) auf unbekannt [self-hosted, gpu-probe]) → probe-post/kosmos-bahn/10c5f771.md
+
 **Dein Kopf 10c5f771 ist angenommen.** Der Probe-Ruf war zu klein (der Beitrag fasst `stamm/dirigent-ankunft.js` an: verlangt sind
 `gate:pruefbuehne-licht`, `gate:weltbild-frost:echt`, `gate:tag-achse:echt`) — ich habe ihn als Kind-Kopf nachgereicht:
 `kosmos-bahn-2` = 3bb9abb7 (derselbe Baum, PROBE-TAG OK), Batterie und Probe laufen, bei Grün stemple ich `w28-kosmos-bahn`.
