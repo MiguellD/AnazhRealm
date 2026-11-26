@@ -39,3 +39,11 @@ Grok lief NICHT mit dem eingefrorenen Auftrag: seine Akten tragen den Standard-H
 zwischen den Marken. Nach R11 (Prüfer = Modell + Effort + Auftrags-Text) ist der Hash in diesen Akten darum eine
 Behauptung ohne Beleg; wer mit „grok-bot“ eine Sprosse urteilt, friert zuerst seinen Text ein und eicht neu.
 Gefahren hat die Läufe der Koordinator (der Bauer der Blätter fährt nie einen Prüfer).
+
+## Das dichte Blatt 2afc × paar (26.11. 14:36): scharf ohne Größen-Leck
+
+Neu gebaut mit Saat 2 (`eichblatt.cjs --nur eichung-2afc-motiv --saat 2`, Bauer koordinator-radeon): 222 Anker in 9 Teilen, alle
+Bilder eines Teils in EINER Bytezahl (Teil 01: 48 Bilder, 1 Größe). Neun frische Kontexte „claude-haiku-5-5·low“ mit dem
+eingefrorenen Auftrag: **214 von 222 = 0,964** (Intervall 0,930–0,984; fremd 46 von 47, Störung 168 von 175, keine Schlagseite) —
+Akte `2afc.paar.claude-haiku-5-5-low.4b0a14b7.json`. Die Größen-Regel trägt am dichten Blatt nichts mehr (eine Größe je Teil).
+Offen: der zweite Prüfer (grok-bot) ist am dichten Blatt nicht gefahren; seine Akte unter `leck-2611/` gilt nicht.
