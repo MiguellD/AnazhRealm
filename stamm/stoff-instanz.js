@@ -569,6 +569,19 @@ class AnazhRealm_stoff_instanz {
         // über den Gang hinaus gestreckt, Riesen im Nah-Kreis), die andere den Gang einer fremden Instanz
         const gang = new SenkenPuffer("gang", "vec4", 4, "arenaGang").toReadOnly().element(index);
         const matrix = new SenkenPuffer("instanceMatrix", "mat4", 16, "instanzMatrix").toReadOnly().element(index);
+        // DIE MATRIX DES VORIGEN BILDS (bewegungs-feld, `_bewegungKnoten`): je Instanz ihre Matrix im Bild davor, der Stempel des
+        // Bilds in e[3] — die Arena schreibt sie beim Kopieren ihrer Blöcke (`_block`), eine Senke ohne Arena ihr Zeichner
+        // (`_bewegungSenke`). Nur der Bau des Szenen-Passes liest sie.
+        class VorPuffer extends SenkenPuffer {
+            quelle(o) {
+                if (!o || !o.__instanzQuelle) return null;
+                if (o.isGeometrieArena === true) return o.__instanzQuelle.instanceMatrixVor || null;
+                return AnazhRealm._bewegungSenke(o.__instanzQuelle);
+            }
+        }
+        const vorMatrix = new VorPuffer("instanceMatrixVor", "mat4", 16, "instanzMatrixVor")
+            .toReadOnly()
+            .element(index);
         // DIE ART-GRÖSSEN DES WINDS IN DER ARENA (G1): je Instanz ein vec4 im Speicher-Puffer, nie ein Vertex-Puffer — die
         // Arena belegt genau die Vertex-Puffer ihres Zeichners (r184 bindet je gelesenes Attribut einen; WebGPU trägt höchstens
         // `maxVertexBuffers` 8). Befund 16.10. (Radeon, Genesis Third, GPU-Wache): `aWindArt` als neunter Vertex-Puffer, „Vertex
@@ -603,7 +616,23 @@ class AnazhRealm_stoff_instanz {
                 super("void");
             }
             setup(builder) {
+                // die Bewegung der Instanz (`_bewegungBau`): ihr Punkt unter der Matrix des vorigen Bilds minus unter der jetzigen —
+                // nur mit dem Stempel dieses Bilds, sonst steht sie. Der WebGL2-Rückfall liest den Speicher-Puffer als Attribute
+                // (4 je Matrix, 16 Orte je Vertex-Stufe): mit dem Vor liegen die vollen Stoffe bei 18 (gate:webgl-probe W5 „Attribute
+                // location out of range“) — dort trägt die Instanz keine eigene Bewegung, Welt-Matrix und Knochen tragen sie
+                const gl = !!(
+                    builder.renderer &&
+                    builder.renderer.backend &&
+                    builder.renderer.backend.isWebGLBackend === true
+                );
+                const bew = gl ? null : AnazhRealm._bewegungBau(builder);
+                const roh = bew ? T.vec3(0).toVar("bewegungInstanzRoh") : null;
+                if (roh) roh.assign(T.positionLocal);
                 T.positionLocal.assign(matrix.mul(T.positionLocal).xyz);
+                if (bew) {
+                    const frisch = vorMatrix.element(0).w.sub(AnazhRealm._bewegungUniformen().bild).abs().lessThan(0.5);
+                    bew.lokal.addAssign(T.select(frisch, vorMatrix.mul(roh).xyz.sub(T.positionLocal), T.vec3(0)));
+                }
                 if (builder.hasGeometryAttribute("normal"))
                     T.normalLocal.assign(T.transformNormal(T.normalLocal, matrix));
                 if (builder.geometry && builder.geometry.attributes && builder.geometry.attributes.instanzFarbe)
@@ -627,6 +656,36 @@ class AnazhRealm_stoff_instanz {
             instanz: new SenkenInstanz(),
         };
         return AnazhRealm.__senkenKnoten;
+    }
+    // DIE MATRIZEN DES VORIGEN BILDS EINER SENKE OHNE ARENA (bewegungs-feld, der VorPuffer des `_senkenKnoten`): beim ersten Blick
+    // eines Bilds, wenn ihre Matrizen seit dem letzten Blick eine neue Version tragen und dieser im Bild davor lag, rücken die
+    // Matrizen des letzten Blicks mit dem Stempel dieses Bilds ins Vor; sonst bleibt der alte Stempel (Bewegung 0). Kosten an der
+    // Änderung: eine Senke, die nicht schreibt, kopiert nichts.
+    static _bewegungSenke(m) {
+        const im = m && m.instanceMatrix;
+        if (!im || !im.array) return null;
+        const f = AnazhRealm.__bewegungBild | 0;
+        let s = m.__bewegungI;
+        if (!s || s.vor.array.length !== im.array.length) {
+            const vor = new THREE.StorageInstancedBufferAttribute(new Float32Array(im.array.length), 16);
+            s = m.__bewegungI = { vor, jetzt: new Float32Array(im.array), version: im.version, bild: f, bewegt: false };
+            return vor;
+        }
+        if (s.bild === f) return s.vor;
+        const neu = im.version !== s.version;
+        s.bewegt = neu && s.bild === f - 1;
+        if (s.bewegt) {
+            const V = s.vor.array;
+            V.set(s.jetzt);
+            for (let i = 3; i < V.length; i += 16) V[i] = f;
+            s.vor.needsUpdate = true;
+        }
+        if (neu) {
+            s.jetzt.set(im.array);
+            s.version = im.version;
+        }
+        s.bild = f;
+        return s.vor;
     }
     // DIE GEOMETRIE-ARENA (G1, die GPU-Welt): EIN Render-Objekt je Stoff. Befund 16.10. (Radeon, EINE Welt, je Ort ein
     // gezählter Frame; Rohdaten G1-gpu-welt/b3/s0): je Pass zog jede Senke ihr eigenes Render-Objekt — Genesis Third haupt
@@ -945,6 +1004,23 @@ class AnazhRealm_stoff_instanz {
             }
         };
         const vier = (n) => Math.ceil(n / 4) * 4; // jede Kapazität ein Vielfaches von 4 Elementen
+        // DAS VOR EINES BLOCKS (bewegungs-feld, `_block`): bevor die Arena Plätze [i0, i1) eines Glieds neu schreibt, legt sie ihre
+        // Matrizen von bis jetzt mit dem Stempel dieses Bilds in die Vor-Seite — nur, wenn der Block im Bild davor gezeichnet stand
+        // (sonst zeigt die Geschichte ihn nicht, `z.bewBild`) und nur Plätze, die er schon trug (`alt`). Kosten an der Änderung.
+        const vorSchreiber = (arena, z, alt, frisch) => {
+            const f = AnazhRealm.__bewegungBild | 0,
+                V = arena.__instanzQuelle.instanceMatrixVor,
+                ok = !!V && alt >= 0 && frisch;
+            return (d, i0, i1) => {
+                const j1 = Math.min(i1, alt);
+                if (!ok || j1 <= i0) return;
+                const s0 = (z.erst + i0) * 16,
+                    s1 = (z.erst + j1) * 16;
+                V.array.set(d.array.subarray(s0, s1), s0);
+                for (let k = s0 + 3; k < s1; k += 16) V.array[k] = f;
+                schreib(arena._rend, V, s0, s1 - s0);
+            };
+        };
         const WAHL = new T.BufferAttribute(new Float32Array(1), 1); // die Marke der Wahl der GPU (kein Shader liest sie)
         // DIE RESIDENZ FOLGT DEM BILD — auch in der Arena (Lehre 27, das Gesetz des Kehraus `_gpuKehraus`): sie hält eine
         // Gestalt, solange ein Glied sie mit Instanzen trägt, und einen Instanz-Platz je Instanz, die ein Glied zieht —
@@ -1543,6 +1619,8 @@ class AnazhRealm_stoff_instanz {
                     for (const k in g.attributes)
                         if (g.attributes[k].isInstancedBufferAttribute) q[k] = g.attributes[k];
                 q.instanceMatrix = new T.StorageInstancedBufferAttribute(new Float32Array(this._nCap * 16), 16);
+                // die Matrizen des vorigen Bilds mit ihrem Stempel (`_block`, `_senkenKnoten` VorPuffer)
+                q.instanceMatrixVor = new T.StorageInstancedBufferAttribute(new Float32Array(this._nCap * 16), 16);
                 // die Art-Größen des Winds: ein Speicher-Puffer wie die Matrizen (`_senkenKnoten().windArt`), in der Geometrie
                 // nur die Marke, die das Programm der Arena vom Programm des Zeichners trennt (kein Shader liest sie als Attribut)
                 if (this._wind) {
@@ -1710,6 +1788,9 @@ class AnazhRealm_stoff_instanz {
             // der Block eines Glieds: kopiert, wenn eine seiner Instanz-Größen eine neue Version trägt, die Zahl wuchs oder
             // die Welt-Matrix der Senke wechselte (die Matrizen tragen sie, die Arena steht im Ursprung)
             _block(m, z, n) {
+                // der Block stand im Bild davor (`vorSchreiber`): je Bild, in dem ein Pass ihn prüft
+                const bewFrisch = z.bewBild === (AnazhRealm.__bewegungBild | 0) - 1;
+                z.bewBild = AnazhRealm.__bewegungBild | 0;
                 // ein frischer Block trägt zuerst die Art-Größen des Winds aus dem Stoff seines Glieds (je Instanz gleich)
                 if (this._wind && z.stempel.length === 0) {
                     const art = m.material.userData.windArt,
@@ -1757,6 +1838,7 @@ class AnazhRealm_stoff_instanz {
                 // der Bestand `_nahWieseBestand`); sonst ganz, wie jede Senke ohne Maß (ein Schreiber ohne Version ginge sonst verloren).
                 const e = z.erst,
                     alt = z.n,
+                    vorS = vorSchreiber(this, z, alt, bewFrisch),
                     teil = m.__bereiche === true && alt >= 0 && !mwNeu && istEins(mw) && quellen.every((x) => !x[2] || x[0].updateRanges.length); // prettier-ignore
                 z.n = n;
                 // das Band der Sichthöhen des Glieds für das Fenster im Ganzen (`_fensterTraegt`, nur eine Stufe der Blende)
@@ -1768,6 +1850,7 @@ class AnazhRealm_stoff_instanz {
                     const [ga, gd] = [a.itemSize, d.itemSize];
                     const kopie = (i0, i1) => {
                         if (i1 <= i0) return;
+                        if (a === im) vorS(d, i0, i1);
                         if (ga === gd) d.array.set(a.array.subarray(i0 * ga, i1 * ga), (e + i0) * gd);
                         else for (let i = i0; i < i1; i++) d.array.set(a.array.subarray(i * ga, i * ga + ga), (e + i) * gd); // prettier-ignore
                         if (teil) schreib(this._rend, d, (e + i0) * gd, (i1 - i0) * gd);
@@ -1778,9 +1861,10 @@ class AnazhRealm_stoff_instanz {
                                 kopie(Math.floor(r.start / ga), Math.min(n, Math.ceil((r.start + r.count) / ga)));
                         // der Zuwachs der Zahl kopiert ganz (seine Plätze schrieb die Quelle vielleicht, als die Zahl sie noch kappte)
                         kopie(alt, n);
-                    } else if (a === im && !istEins(mw))
+                    } else if (a === im && !istEins(mw)) {
+                        vorS(d, 0, n);
                         for (let i = 0; i < n; i++) mal(d.array, (e + i) * 16, mw, im.array, i * 16); // prettier-ignore
-                    else kopie(0, n);
+                    } else kopie(0, n);
                     if (!teil) schreib(this._rend, d, e * gd, n * gd);
                     // die Quelle eines Glieds lädt r184 nie (die Arena zeichnet): ihre Bereiche sind hier verbraucht
                     a.clearUpdateRanges();

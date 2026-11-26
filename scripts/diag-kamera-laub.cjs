@@ -15,12 +15,16 @@
 // K6 DER LEIB IM SEITWÄRTSGANG (`--teile strafe`, nur mit zeitlicher Auflösung: gate:kamera-leib:echt auf der Karte): am Prüfplatz
 // geht der Spieler in Third seitwärts, links und rechts, im Takt des Spiels; je Probe das Bild des Spiels (Ausgabe-Pfad mit seiner
 // Geschichte) gegen dieselbe Pose stehend und ohne Leib — gezählt wird jedes Bild mit durchsichtigem oder unsichtbarem Leib
-// (`strafeMass`). Der Schmuggel in derselben Welt: das Feld der Bewegung ohne den getragenen Leib (`_traegerTeile` leer, der
-// Stand vor w12-leib-sicht) muss Bilder nennen. DIE UNTERSEITE IM SEITWÄRTSGANG (w21-laub-unten): je Bild eines eigenen Gangs ohne
+// (`strafeMass`). Der Schmuggel in derselben Welt: das Feld der Bewegung ohne die Bewegung der Dinge (Welt-Matrix und Knochen
+// ohne Vor, `_bewegungVorWelt` · `_bewegungKnochen`; der Stand vor w12-leib-sicht trug nur die Kamera) muss Bilder nennen. DIE UNTERSEITE IM SEITWÄRTSGANG (w21-laub-unten): je Bild eines eigenen Gangs ohne
 // Schuss, in stehender Phase der zeitlichen Auflösung, der gelesene Boden des Rückstrahls — die Unterseite jeder Krone liest ihn ganz;
 // der Schmuggel trägt dazu das dünne Raster am Schirm (12²).
 //
-//   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,gang2,strafe]   Port: KAMERA_LAUB_PORT (Standard 4611)
+// K8 DAS FELD TRÄGT JEDES BEWEGTE DING (`--teile feld`, gate:kamera-leib:echt): am Prüfplatz je sichtbarem bewegtem Ding sein Weg im Bild
+// gegen das Ziel `bewegung` der zeitlichen Auflösung, je Klasse (Leib · Mensch · Wagen · Kreatur · andere); der Schmuggel (der Stempel
+// des Bilds fremd, die Knochen ohne Vor) trägt nichts und muss jede Klasse nennen.
+//
+//   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,gang2,strafe,feld]   Port: KAMERA_LAUB_PORT (Standard 4611)
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
@@ -264,11 +268,11 @@ function strafeMass(bew, still, ohne, W, H, k) {
 }
 // ein Bild mit durchsichtigem (Kopf oder Leib über dem Deckel) oder unsichtbarem Leib
 const strafeDurch = (b) => !(b.leibPx >= STRAFE.leibMinPx) || b.kopf > STRAFE.kopfMax || b.leib > STRAFE.leibMax;
-// DER ZEUGE EINER DURCHSICHTIGEN PROBE (w28-schirm-steht): was im Bild des Spiels galt, als sie fiel — die Teile des getragenen Leibs
-// (`_traaR.traeger.liste`, je Teil sein Knochen; fehlt der Kopf, steht er OHNE Kopf), die Stufe des Leibs, der Grund des Stands und die
+// DER ZEUGE EINER DURCHSICHTIGEN PROBE (w28-schirm-steht): was im Bild des Spiels galt, als sie fiel — ob der Leib im Bild davor
+// bewegt im Feld stand (`__bewegung` seiner Welt-Matrix: der Stempel des Bilds), die Stufe des Leibs, der Grund des Stands und die
 // Zeilen des Schirms. Bis hier nannte K6 nur die Zahl: main 01a6714a fiel in 1 von 16 Läufen mit EINER Pose (A0 Kopf 25,0 % — der Wert
 // des Schmuggels ohne getragenen Leib, 25,8 %), zehn bestückte Läufe fingen keinen zweiten; der Täter blieb ungenannt.
-const strafeZeuge = (z) => (z ? ` [getragen ${z.getragen ? `${z.getragen.length} Teile${z.getragen.includes("head") ? "" : " OHNE Kopf"}` : "nichts gelesen"} · Leib ${z.istFern ? "fern" : `nah Stufe ${z.nahStufe}`} · Stand „${z.grund}“ Ruhe ${z.ruhe} · ${z.zeilen} Zeilen]` : "");
+const strafeZeuge = (z) => (z ? ` [Feld ${z.feld == null ? "nichts gelesen" : z.feld ? "trägt den Leib" : "OHNE den Leib"} · Leib ${z.istFern ? "fern" : `nah Stufe ${z.nahStufe}`} · Stand „${z.grund}“ Ruhe ${z.ruhe} · ${z.zeilen} Zeilen]` : "");
 const strafeZeile = (b) => `${b.seite}${b.probe} Kopf ${pct(b.kopf)} Leib ${pct(b.leib)} (${b.leibPx} px)${strafeDurch(b) || process.env.K6_ZEUGE ? strafeZeuge(b.zeuge) : ""}`; // K6_ZEUGE=1: der Zeuge an jeder Probe
 function urteilStrafe(S) {
     if (!S || S.err || !S.traa) return [`Strafe: ${S ? S.err || "ohne zeitliche Auflösung" : "nicht gemessen"}`];
@@ -281,9 +285,33 @@ function urteilStrafe(S) {
     ];
 }
 
+// K8 DAS FELD TRÄGT JEDES BEWEGTE DING (`--teile feld`, gate:kamera-leib:echt; bewegungs-feld): Salvi GDC 2016 und AMD FSR 2 („motion
+// vectors for all covered pixels“) — die Geschichte folgt nur, wo das Feld die Bewegung des Dings trägt; main 2da17e2e trug in der
+// vollen Stadt 0 von 72 und 0 von 92 bewegten Dingen (die Geister-Fläche > 0,04 im Lauf 0,70 / 1,06 % gegen 0,29 / 0,12 % gehalten).
+// Je Klasse höchstens `ohneMax` ohne Feld (die Mitte eines Dings kann hinter einem anderen liegen), mindestens `minDinge` bewegte
+// Dinge im Bild; der Schmuggel (das Feld ohne die Bewegung der Dinge) muss höchstens `schmuggelMax` tragen.
+const FELD = Object.freeze({ dt: 1000 / 60, warm: 45, maxM: 120, minPx: 1, minR: 3, saum: 2, band: [2 / 3, 1.5], ohneMax: 0.2, minDinge: 3, schmuggelMax: 0.1 });
+const feldSumme = (z) => Object.entries(z.klassen || {}).filter(([kl]) => kl !== "durchsichtig").reduce(([b, g], [, K]) => [b + K.bewegt, g + K.getragen], [0, 0]);
+const feldZeile = (z) => Object.entries(z.klassen || {}).map(([kl, K]) => `${kl} ${K.getragen}/${K.bewegt}`).join(", ");
+function urteilFeld(F) {
+    if (!F || F.err || !F.traa) return [`Feld: ${F ? F.err || "ohne zeitliche Auflösung" : "nicht gemessen"}`];
+    const out = [];
+    const [b, g] = feldSumme(F.an);
+    const bsp = (z) => (z.beispiele || []).slice(0, 4).map((e) => `${e.kl} „${e.name}“ #${e.i} Weg ${e.soll} px, Feld ${e.gem ?? "—"}`).join(" · ");
+    if (!F.an.ziel) out.push(`Feld: der Szenen-Pass trägt kein Ziel „bewegung“ — ${b} von ${b} bewegten Dingen ohne ihre Bewegung (${feldZeile(F.an)})`);
+    else {
+        if (b < FELD.minDinge) out.push(`Feld: ${b} bewegte Dinge im Bild (Vorbedingung ${FELD.minDinge})`);
+        const rot = Object.entries(F.an.klassen).filter(([kl, K]) => kl !== "durchsichtig" && K.bewegt - K.getragen > FELD.ohneMax * K.bewegt);
+        if (rot.length) out.push(`Feld: ${rot.map(([kl, K]) => `${kl} ${K.bewegt - K.getragen} von ${K.bewegt}`).join(", ")} ohne ihre Bewegung — ${bsp(F.an)}`);
+    }
+    const [bs, gs] = feldSumme(F.aus || {});
+    if (F.an.ziel && !(bs >= FELD.minDinge && gs <= FELD.schmuggelMax * bs)) out.push(`Schmuggel ungenannt — ${gs} von ${bs} getragen (${feldZeile(F.aus || {})})`);
+    return out;
+}
+
 // ── K6 DER LEIB IM SEITWÄRTSGANG IN DER SEITE ── der Spieler am Prüfplatz, Third, der Blick des Messorts; der Platz steht über den
 // Ort-Takt (`_genesisOrt`: der Dorf-Zug ruht in der Linse, dasselbe Glied wie Spiel-Takt und Werkbank), der Leib in seiner feinen
-// Stufe (das Buch der Foundry trägt seinen Guss). Je Stand (`an`: das Spiel, `aus`: der Schmuggel ohne getragenen Leib) und Seite
+// Stufe (das Buch der Foundry trägt seinen Guss). Je Stand (`an`: das Spiel, `aus`: der Schmuggel, das Feld ohne die Bewegung der Dinge) und Seite
 // die Takte des Spiels mit gedrückter Taste; je Probe das Bild des Spiels (der nächste gerenderte Takt in ein Ausgabe-Ziel, mit
 // seiner Geschichte), dann dieselbe Pose stehend und ohne Leib (die Aufnahme; die Haupt-Kamera ohne seine Ebene 0, der Schatten bleibt).
 async function leibStrafe(k) {
@@ -303,12 +331,18 @@ async function leibStrafe(k) {
     const [W, H] = rend.getDrawingBufferSize(new THREE.Vector2()).toArray();
     const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
     const [out, RS] = [{ traa: true, an: [], aus: [], boden: { an: 0, aus: 0 } }, AnazhRealm.RUECKSTRAHL];
+    // der Schmuggel: jede Welt-Matrix ohne Vor (kein Stempel), jedes Skelett mit dem Vor gleich dem Jetzt — das Feld trägt nur die Kamera
+    const [vorWelt, knochen] = [AnazhRealm._bewegungVorWelt, AnazhRealm._bewegungKnochen];
+    const ohneVorWelt = (o, aus) => ((aus.copy(o.matrixWorld), (aus.elements[3] = 0)));
+    // der Stand des Felds am Leib: das erste seiner Meshes, das eine Welt-Matrix mit Stempel trägt (`_bewegungVorWelt`)
+    const __leibBewegung = (pm, b = null) => (pm.traverse((n) => (b = b || (n.isMesh && n.__bewegung) || null)), b);
+    const ohneKnochen = (sk, id) => (knochen(sk, id), sk.previousBoneMatrices && sk.previousBoneMatrices.set(sk.boneMatrices));
     for (const stand of ["an", "aus"])
         // je Stand zuerst der Leib (n < 2, vom Start des Stands wie bis w23-k6-flimmern), dann DER RÜCKSTRAHL IM GANG (n ≥ 2)
         for (const [n, seite] of ["KeyA", "KeyD", "KeyA", "KeyD"].entries()) {
             // der Schmuggel trägt dazu das Raster von vor w21-laub-unten, ohne die Ebenheit: der Pass baut neu mit dem Gesetz, das gilt
             // (sein Ziel bleibt, die Lesung nimmt die erste Kachel und den Texel daneben)
-            if (stand === "aus") (r._traegerTeile = (o) => ((o.length = 0), o)), (AnazhRealm.RUECKSTRAHL = { ...RS, kacheln: [1, 1], dichte: 12, ebenRel: 1e9 }), (st.rueckstrahlPass = null);
+            if (stand === "aus") (AnazhRealm._bewegungVorWelt = ohneVorWelt), (AnazhRealm._bewegungKnochen = ohneKnochen), (AnazhRealm.RUECKSTRAHL = { ...RS, kacheln: [1, 1], dichte: 12, ebenRel: 1e9 }), (st.rueckstrahlPass = null);
             const taste = (art) => dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: seite, key: seite[3].toLowerCase() }));
             taste("keydown");
             // Der Leib: der Anlauf, dann `je` Proben im Abstand von `zwischen` Takten des Spiels. Der Rückstrahl: der Anlauf (`warm`: der
@@ -330,7 +364,7 @@ async function leibStrafe(k) {
                 rend.setOutputRenderTarget(null);
                 rend.setRenderTarget(null);
                 // der Zeuge des Bilds des Spiels (vor der Aufnahme: sie zeichnet den Leib stehend und ohne ihn)
-                const zeuge = ((tr, g, Ws) => ({ getragen: tr && tr.liste ? tr.liste.map((t) => (t.anker && t.anker.name) || "?") : null, istFern: !!(g && g.istFern), nahStufe: g ? g.nahStufe : null, grund: Ws.grund || null, ruhe: Ws.ruhe, zeilen: r._schirm().hoehe }))(st._traaR && st._traaR.traeger, st.playerMesh.userData._gelenk, r._weltStand || {});
+                const zeuge = ((b, g, Ws) => ({ feld: b ? b.stempel > 0 : null, istFern: !!(g && g.istFern), nahStufe: g ? g.nahStufe : null, grund: Ws.grund || null, ruhe: Ws.ruhe, zeilen: r._schirm().hoehe }))(__leibBewegung(st.playerMesh), st.playerMesh.userData._gelenk, r._weltStand || {});
                 const [bew, still, weg] = [await __zielLesen(rt, W, H), await schuss(), []];
                 rt.dispose();
                 st.playerMesh.traverse((n) => n.isMesh && n.layers.mask & 1 && weg.push(n) && (n.layers.mask ^= 1));
@@ -340,9 +374,181 @@ async function leibStrafe(k) {
                 out[stand].push({ seite: seite[3], probe: j, zeuge, ...mass(bew, still, ohne, W, H, k) });
             }
             taste("keyup");
-            delete r._traegerTeile;
+            [AnazhRealm._bewegungVorWelt, AnazhRealm._bewegungKnochen] = [vorWelt, knochen];
         }
     [AnazhRealm.RUECKSTRAHL, st.rueckstrahlPass] = [RS, null];
+    return out;
+}
+
+// ── K8 DAS FELD TRÄGT JEDES BEWEGTE DING IN DER SEITE ── am Prüfplatz geht der Spieler seitwärts, die Welt lebt im Takt des Spiels;
+// nach dem Anlauf zwei gerenderte Takte: je sichtbarem Ding (jede Instanz, jedes Mesh; Punkte die Mitte und jedes Gelenk einer Haut)
+// der Weg seines am weitesten ziehenden Punkts zwischen den beiden Bildern unter der Kamera des zweiten in Pixeln (`soll`, ab `minPx`,
+// das Ding deckt im Radius mindestens `minR` Pixel), dazu das Ziel `bewegung` des Szenen-Passes um diesen Punkt (± `saum` Pixel,
+// `gem`). Getragen ist ein Ding, dessen Feld dort in Richtung und Länge (`band`, ⅔ … 1,5) seinem Weg folgt — eine Haut, die ihren Schritt doppelt zählte (W_vor auf die
+// Knochen der Welt, K6 Kopf 7,4 %), lag bei 2 und hieß im Band ½ … 2 noch getragen; am Kopf Radeon stadt-voll 0,91–1,14 (27 von 29). Je Stand: `an` das Spiel, `aus` der Schmuggel (der Stempel des Bilds steht neben jedem Vor,
+// die Knochen ohne Vor — jedes Ding mit Bewegung 0, der Stand vor bewegungs-feld). Ein Stoff mit Mischung schreibt keine Bewegung
+// (die Deckung 0 des Eintrags): er zählt eigen als `durchsichtig`.
+async function feldZensus(k) {
+    const [st, T] = [r.state, THREE];
+    const rend = st.renderer;
+    await r._foundryAwaitBook(45000);
+    r.setCameraMode("third");
+    [st.yaw, st.pitch] = [Math.atan2(k.blick.x - k.x, k.blick.z - k.z), 0];
+    if (!st.traaNode) return { traa: false };
+    let t = performance.now();
+    const bild = async () => {
+        for (let i = 0, g0 = r._gpuLeine.gerendert; i < 20 && r._gpuLeine.gerendert === g0; i++)
+            await new Promise(requestAnimationFrame).then(() => (r._genesisOrt(st.playerMesh.position), r._gameLoopTick((t += k.dt))));
+    };
+    for (let i = 0; i < 600 && !st.worldMeta.genesisOrt?.steht; i++) await bild();
+    if (!st.worldMeta.genesisOrt?.steht) throw new Error("Prüfplatz steht nicht");
+    const kopf = (o3) => { const n = []; for (let x = o3; x && n.length < 4; x = x.parent) if (x.name) n.push(x.name); return n.join("<") || o3.type; };
+    const klasse = (s) => (/leib|spieler|player/i.test(s) ? "leib" : /bewohner|mensch|buerger|haut|koerper/i.test(s) ? "mensch" : /wagen|fahr|karren|kutsche|rad|achse|verkehr|zug|walze/i.test(s) ? "wagen" : /kreatur|tier|fauna|vogel|wolf|hirsch|fisch|herde|schwarm/i.test(s) ? "kreatur" : "andere");
+    const sichtbar = (o3) => { for (let x = o3; x; x = x.parent) if (x.visible === false) return false; return true; };
+    const durch = (x) => [].concat(x.material || []).some((m) => m && m.transparent === true);
+    const [v, mi] = [new T.Vector3(), new T.Matrix4()];
+    const imLeib = new Set();
+    st.playerMesh.traverse((n) => imLeib.add(n));
+    // je Ding seine Punkte: die Mitte (Instanz: unter ihrer Matrix) und je Knochen der Haut sein Gelenk; dazu sein Radius
+    const schnapp = () => {
+        const L = new Map();
+        st.scene.updateMatrixWorld();
+        st.scene.traverse((x) => {
+            // der Zeichner einer Senke zeichnet ihre Instanzen (gezählt an der Senke)
+            if (!x.isMesh || x.isInstanzZeichner || !x.geometry || !sichtbar(x)) return;
+            const g = x.geometry;
+            if (!g.boundingSphere) g.computeBoundingSphere();
+            const [c, rad] = g.boundingSphere ? [g.boundingSphere.center, g.boundingSphere.radius] : [new T.Vector3(), 0];
+            const A = x.instanceMatrix && x.instanceMatrix.array;
+            const n = A ? Math.min(x.count | 0, A.length / 16) : 1;
+            if (!(n > 0)) return;
+            const knochen = x.isSkinnedMesh && x.skeleton ? x.skeleton.bones : [];
+            const je = 1 + knochen.length;
+            const [P, R] = [new Float64Array(n * je * 3), new Float64Array(n)];
+            for (let i = 0; i < n; i++) {
+                mi.copy(x.matrixWorld);
+                if (A) mi.multiply(new T.Matrix4().fromArray(A, i * 16));
+                R[i] = rad * mi.getMaxScaleOnAxis();
+                v.copy(c).applyMatrix4(mi);
+                [P[i * je * 3], P[i * je * 3 + 1], P[i * je * 3 + 2]] = [v.x, v.y, v.z];
+                for (let j = 0; j < knochen.length; j++) {
+                    v.setFromMatrixPosition(knochen[j].matrixWorld);
+                    [P[(i * je + 1 + j) * 3], P[(i * je + 1 + j) * 3 + 1], P[(i * je + 1 + j) * 3 + 2]] = [v.x, v.y, v.z];
+                }
+            }
+            L.set(x, { P, R, n, je, name: (imLeib.has(x) ? "leib:" : "") + kopf(x), durch: durch(x) });
+        });
+        return L;
+    };
+    const halb = (q) => { const [s, e, f] = [q & 0x8000 ? -1 : 1, (q >> 10) & 31, q & 1023]; return e === 0 ? s * 6.103515625e-5 * (f / 1024) : e === 31 ? NaN : s * 2 ** (e - 15) * (1 + f / 1024); };
+    // die Lage jedes Dings, wie das Bild sie zeichnet: am Stempel des Bilds (`_traaReprojektion`, nach Takt und Schatten, vor dem
+    // Szenen-Pass) — ein Schreiber im halben Takt zieht zwischen zwei Bildern nicht, die Lage nach dem Takt nennte ihn bewegt
+    const [U, knochen] = [AnazhRealm._bewegungUniformen ? AnazhRealm._bewegungUniformen() : null, AnazhRealm._bewegungKnochen];
+    const proto = Object.getPrototypeOf(r)._traaReprojektion;
+    let [lagen, schmuggel, nr] = [[], false, 0];
+    r._traaReprojektion = function () {
+        proto.call(this);
+        if (schmuggel && U) U.bild.value = -7;
+        lagen.push({ bild: ++nr, S: schnapp() });
+        if (lagen.length > 2) lagen.shift();
+    };
+    const zensus = async () => {
+        lagen = [];
+        await bild();
+        await bild();
+        if (lagen.length < 2 || lagen[1].bild !== lagen[0].bild + 1) throw new Error("zwei Bilder in Folge fehlen");
+        const [S0, S1] = [lagen[0].S, lagen[1].S];
+        const rt = st.scenePass && st.scenePass.renderTarget;
+        const [W, H] = rt ? [rt.width, rt.height] : [1, 1];
+        const ib = rt ? rt.textures.findIndex((x) => x.name === "bewegung") : -1;
+        let feld = null;
+        if (ib >= 0) {
+            // rg16f: 2 Kanäle; WebGPU kopiert jede Zeile auf 256 Byte ausgerichtet (wie `__zielLesen`) — bei W · 4 ∤ 256 lag
+            // ohne den Schritt jede Zeile versetzt (Radeon 1440 Pixel: 32 Pixel je Zeile, ab der Bildmitte las der Zensus ein
+            // fremdes Ding)
+            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H, ib);
+            const [kan, B] = [2, px.BYTES_PER_ELEMENT];
+            const zeile = px.length > W * H * kan ? (Math.ceil((W * kan * B) / 256) * 256) / B : W * kan;
+            feld = { px, kan, zeile, f: px.constructor.name === "Uint16Array" ? halb : (q) => q };
+        }
+        const oben = rend.coordinateSystem === T.WebGPUCoordinateSystem;
+        const kam = st.camera;
+        const pv = new T.Matrix4().multiplyMatrices(kam.projectionMatrix, kam.matrixWorldInverse);
+        const fy = kam.projectionMatrix.elements[5]; // cot(fov/2): der Radius eines Dings im Abstand d deckt R · fy / d · H/2 Pixel
+        const lies = (px, py) => {
+            const j = (oben ? H - 1 - py : py) * feld.zeile + px * feld.kan;
+            return [feld.f(feld.px[j]) * 0.5 * W, feld.f(feld.px[j + 1]) * 0.5 * H];
+        };
+        const z = { ziel: ib >= 0, W, H, klassen: {}, beispiele: [], sprung: 0 };
+        const [n0, n1] = [new T.Vector3(), new T.Vector3()];
+        // das Fenster wächst mit dem Weg (höchstens 12 Pixel): ein schneller Leib liegt im Bild bis zu einem Weg neben der Lage
+        // am Stempel (Radeon stadt-voll, 19,7 m, Weg 9,6 Pixel: sein Feld 10 Pixel daneben, im Saum von 2 nichts)
+        const imBand = (pt) => {
+            const s = Math.min(12, Math.max(k.saum, Math.ceil(pt.lang)));
+            for (let dy = -s; feld && dy <= s; dy++)
+                for (let dx = -s; dx <= s; dx++) {
+                    const [mx, my] = lies(Math.min(W - 1, Math.max(0, pt.px + dx)), Math.min(H - 1, Math.max(0, pt.py + dy)));
+                    const proj = (mx * pt.ex + my * pt.ey) / (pt.lang * pt.lang);
+                    if (proj > k.band[0] && proj < k.band[1]) return [+mx.toFixed(2), +my.toFixed(2)];
+                }
+            return null;
+        };
+        for (const [x, b] of S1) {
+            const a = S0.get(x);
+            if (!a || a.n !== b.n || a.je !== b.je) continue;
+            const kl = b.durch ? "durchsichtig" : klasse(b.name);
+            for (let i = 0; i < b.n; i++) {
+                // der Punkt des Dings, der am weitesten zieht (die Mitte, ein Gelenk) — streng: ein Gelenk ohne Vor fällt, auch wenn die
+                // Mitte trägt. Hinter fremder Deckung liest er das Feld des Deckenden (Radeon stadt-voll: das Rad des Lieferwagens hinter
+                // einem Passanten); die Tiefe des Szenen-Passes las das Rück-Lesen 0 (465 von 465 Punkten), darum trägt `ohneMax` die Deckung
+                const pts = [];
+                for (let j = 0; j < b.je; j++) {
+                    const q = (i * b.je + j) * 3;
+                    n1.set(b.P[q], b.P[q + 1], b.P[q + 2]).applyMatrix4(pv);
+                    if (Math.abs(n1.z) > 1 || Math.abs(n1.x) > 0.97 || Math.abs(n1.y) > 0.97) continue;
+                    n0.set(a.P[q], a.P[q + 1], a.P[q + 2]).applyMatrix4(pv);
+                    const [ex, ey] = [(n1.x - n0.x) * 0.5 * W, (n1.y - n0.y) * 0.5 * H];
+                    pts.push({ lang: Math.hypot(ex, ey), ex, ey, px: Math.floor((n1.x * 0.5 + 0.5) * W), py: Math.floor((n1.y * 0.5 + 0.5) * H), q });
+                }
+                if (!pts.length) continue;
+                pts.sort((p, q) => q.lang - p.lang);
+                const w = pts[0];
+                if (w.lang < k.minPx) continue;
+                const d = Math.hypot(b.P[w.q] - kam.position.x, b.P[w.q + 1] - kam.position.y, b.P[w.q + 2] - kam.position.z);
+                if (d > k.maxM || (b.R[i] * fy) / Math.max(d, 1e-3) * 0.5 * H < k.minR) continue;
+                // ein Sprung (der Platz einer Instanz nimmt ein anderes Ding — Radeon: 767 Pixel in einem Bild) ist keine Bewegung,
+                // die Geschichte ist dort neu
+                if (w.lang > W / 8) {
+                    z.sprung++;
+                    continue;
+                }
+                const gem = imBand(w);
+                const ok = !!gem;
+                const K = (z.klassen[kl] ||= { bewegt: 0, getragen: 0 });
+                K.bewegt++;
+                K.getragen += ok;
+                if (!ok && z.beispiele.length < 12) z.beispiele.push({ kl, name: b.name.slice(0, 48), i, d: +d.toFixed(1), soll: [+w.ex.toFixed(2), +w.ey.toFixed(2)], gem });
+            }
+        }
+        return z;
+    };
+    const taste = (art) => dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: "KeyA", key: "a" }));
+    const out = { traa: true };
+    for (const stand of ["an", "aus"]) {
+        // der Schmuggel: nach jedem Stempel des Bilds trägt die Uniform einen fremden (jedes Vor gilt als alt), die Knochen ohne Vor
+        if (stand === "aus") {
+            schmuggel = true;
+            if (knochen) AnazhRealm._bewegungKnochen = (sk, id) => (knochen(sk, id), sk.previousBoneMatrices && sk.previousBoneMatrices.set(sk.boneMatrices));
+        }
+        taste("keydown");
+        for (let i = 0; i < k.warm; i++) await bild();
+        out[stand] = await zensus();
+        taste("keyup");
+        schmuggel = false;
+        if (knochen) AnazhRealm._bewegungKnochen = knochen;
+    }
+    delete r._traaReprojektion;
+    for (let i = 0; i < k.warm; i++) await bild();
     return out;
 }
 
@@ -1222,6 +1428,19 @@ hauptLauf(async () => {
             ["Rückstrahl", fall(reihe(), undefined, { an: 0.04, aus: 0.04 }), "Strafe: der Rückstrahl"],
             ["Raster", fall(reihe(), undefined, { an: 0, aus: 0 }), "Strafe: der Rückstrahl"],
         ]);
+        // K8 DAS FELD TRÄGT JEDES BEWEGTE DING: die Klassen eines Zensus (getragen / bewegt), der Schmuggel trägt nichts
+        const zen = (kl, ziel = true) => ({ ziel, klassen: Object.fromEntries(Object.entries(kl).map(([k, [b, g]]) => [k, { bewegt: b, getragen: g }])), beispiele: [{ kl: "kreatur", name: "vogel", i: 3, soll: [4.8, -1.1], gem: [0, 0] }] });
+        const leben = { leib: [1, 1], mensch: [6, 5], kreatur: [12, 11], wagen: [3, 3], durchsichtig: [40, 0] };
+        const still = { leib: [1, 0], mensch: [6, 0], kreatur: [12, 0], wagen: [3, 0] };
+        faelle("K8", urteilFeld, [
+            ["gesund", { traa: true, an: zen(leben), aus: zen(still) }, null],
+            ["kein Ziel (der Stand vor bewegungs-feld)", { traa: true, an: zen(still, false), aus: zen(still, false) }, "Feld: der Szenen-Pass trägt kein Ziel „bewegung“ — 22 von 22"],
+            ["die Vögel ohne Feld", { traa: true, an: zen({ ...leben, kreatur: [12, 2] }), aus: zen(still) }, "Feld: kreatur 10 von 12 ohne ihre Bewegung — kreatur „vogel“"],
+            ["die Räder ohne Feld", { traa: true, an: zen({ ...leben, wagen: [3, 1] }), aus: zen(still) }, "Feld: wagen 2 von 3"],
+            ["nichts bewegt sich", { traa: true, an: zen({ leib: [1, 1] }), aus: zen(still) }, "Feld: 1 bewegte Dinge im Bild"],
+            ["blind für den Schmuggel", { traa: true, an: zen(leben), aus: zen(leben) }, "Schmuggel ungenannt"],
+            ["kein TRAA", { traa: false }, "Feld: ohne"],
+        ]);
         // DIE EINE LESUNG JEDES ZIELS DER WELT (`__weltLicht.zeilenSchritt`) am Maß des Vendors (WebGPU: (h − 1) · Zeile + w · Texel, die
         // Zeile auf 256 Byte): die 33 × 18 Kacheln des Rückstrahls in Halb-Float lesen 256 Elemente je Zeile (`Länge / Höhe` las 249, der
         // Boden kam blau), die Umgebung 128 × 64 und das dichte WebGL lesen dicht
@@ -1314,6 +1533,10 @@ hauptLauf(async () => {
         (await page
             .evaluate(leibStrafe, { ...STRAFE, ...require("./lib/welt-orte.cjs").messort("genesis"), mass: `${strafeMass}` })
             .catch((e) => ({ err: fehlerStapel(e) })));
+    // K8 am selben Platz: das Feld trägt jedes bewegte Ding
+    const feld =
+        TEILE.includes("feld") &&
+        (await page.evaluate(feldZensus, { ...FELD, ...require("./lib/welt-orte.cjs").messort("genesis") }).catch((e) => ({ err: fehlerStapel(e) })));
     if (TEILE.includes("laub")) {
         await page.evaluate(WASSER_INSTALL); // __wasserOrte + __weltOrt: die Orte aus der Welt
         await page.evaluate(leibInstall, { R: LEIB_R }); // der Wagen des Ritts (`gtHolen`)
@@ -1341,7 +1564,7 @@ hauptLauf(async () => {
     // DIE MESSUNG ALS AKTE (statt dreier Druck-Tafeln, w12-leib-sicht): jede Zahl je Ort, Sicht, Pose und Gang steht roh in
     // kamera-laub.json im Temp-Ordner — das Urteil je Teil nennt seine Täter beim Namen in seiner Zeile
     const akte = path.join(require("os").tmpdir(), "kamera-laub.json");
-    jsonSchreiben(akte, { laub: m, leib, gang, strafe });
+    jsonSchreiben(akte, { laub: m, leib, gang, strafe, feld });
     console.log(`  die Akte: ${akte}`);
     if (m) {
         const v = urteil(m);
@@ -1363,6 +1586,10 @@ hauptLauf(async () => {
     if (strafe) {
         const v = urteilStrafe(strafe);
         check(`K6 Strafe am Prüfplatz — ${(strafe.an || []).map(strafeZeile)} · Rückstrahl ${pct(strafe.boden?.an)}`, !v.length, v.join(" · "));
+    }
+    if (feld) {
+        const v = urteilFeld(feld);
+        check(`K8 das Feld trägt jedes bewegte Ding — ${feld.an ? feldZeile(feld.an) : "—"} · Schmuggel ${feld.aus ? feldZeile(feld.aus) : "—"}`, !v.length, v.join(" · "));
     }
     console.log(`  Lauf ${((Date.now() - t0) / 1000).toFixed(1)} s`);
     wandEnde(errs, "die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");

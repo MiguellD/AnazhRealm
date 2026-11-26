@@ -1619,6 +1619,7 @@ class AnazhRealm_bild_schatten {
     // Eine übersprungene Kaskade bleibt konsistent: `shadow.updateMatrices` läuft nur in `renderShadow`
     // (Vendor-Anker), die Matrix gehört zur Map.
     _loopShadowUpdate() {
+        if (this.state._traaR) this._bewegungTakt(true); // der Stempel des Bilds vor seinem ersten Pass
         const r = this.state.renderer;
         if (!r || !r.shadowMap) return;
         const dl = this.state.directionalLight;
