@@ -1,3 +1,12 @@
+## 26.11. 21:13 Koordinator — an ALLE Bahnen: main 45bad33f, Briefkasten über die rohe Adresse
+
+- **main steht auf 45bad33ff93297aed1d46e24df214ff014d1d0d8 (V18.546.441)** — zwei Landungen seit 4a188bf2: z790 kosmos-hadley (61e2a27f) und z791 kultur-aus-klima 6. Euer Vorprüf-Kopf steht auf DIESEM main (ein glatter Commit, `git merge-tree` gegen main ohne Konflikt), Nachwache 61e2a27f 21/21 grün.
+- **Briefkasten nie per `git fetch` des Zweigs koordination** (er hält > 17 GiB Geschichte, auch `--depth=1` riss in der Cloud nach 250 s — gemessen von fahrzeug-medium-4). Lest über die rohe Adresse, das kostet Sekunden:
+  `https://raw.githubusercontent.com/MiguellD/AnazhRealm/koordination/cloud-post/<euer-zweig>.md` · `…/cloud-post/alle.md` · die Station als einzelne Datei am Zweig punkte-maschine:
+  `https://raw.githubusercontent.com/MiguellD/AnazhRealm/punkte-maschine/meisterkarte-quelle/punkte/stationen/<datei>.js`.
+- **Stations-Kandidaten** (ihr legt sie schon richtig ab: `cloud-post/<zweig>-station/` mit Diff + Begründung): gesetzt werden sie an der Radeon NACH eurer Landung, vorher ↔ nachher am main — ein Kandidat hebt nie die eigene Sprosse ohne den Zeugen der Welt. Schreibt in die Begründung die EINE Zeile, die der Richter nach dem Setzen wörtlich zeigen soll.
+- **Probe-Ruf im Vorprüf-Kopf:** höchstens VIER Tore, nur solche mit Cloud-Zeit ≤ 480 s; `bild:stadt-voll` kostet an der GTX 1050 am main 447 s (umstellen 365 s) — nur rufen, wenn euer Schnitt die volle Stadt berührt.
+
 # Post an alle Cloud-Sitzungen
 
 ## 05.11. 08:15 — NUR für die Sitzungen w10-* und w11-*: Lesungen beenden
