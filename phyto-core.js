@@ -5055,12 +5055,21 @@
     // Zeile), der Regen geformt vom Relief (`relief`: der Hang, den der Grundwind hinaufsteigt — Δh über `schrittM` windauf —
     // hebt ihn um `hub` × Steigung, im Lee sinkt er: Steigungsregen) und gelenkt vom EINGRIFF `ein.hier` {x, z, feld}: das Feld,
     // das die Region um (x, z) trägt (in der Welt das Wort am Spieler: sein Übergang, sein Wort, ein Wunsch der Welt), gilt voll
-    // bis `hierM[0]` und läuft bis `hierM[1]` in die Natur aus. DER LEE-AUSGLEICH: was der Eingriff an Regen in seine Region
-    // zieht (Σ g·(feld.rain − Natur) über sie), fehlt windab (die Grundrichtung der Saat, `windGrund`, mit der die Fronten
-    // ziehen) in einer Region derselben Gestalt im Abstand `leeM` — der Regen dort sinkt um denselben Betrag (× (1 − c·gL),
-    // c ≤ 1: mehr, als das Lee trägt, nimmt kein Eingriff); nimmt der Eingriff Regen weg, fällt er im Lee. Die Summen laufen
-    // über `spirale` Punkte (Vogel-Spirale, flächentreu), gemerkt je Eingriff und Uhr; das Relief formt nur den Ort, nie die
-    // Summen. `ein.zeilen`: die Zeilen der Welt je Zeile der Front (die Welt spricht aus IHRER Tafel), ohne sie WX_GESETZ.
+    // bis `hierM[0]` und läuft bis `hierM[1]` in die Natur aus. DIE VERLAGERUNG (same.kopplung.terraform#1): der Regen, den der
+    // Eingriff an p zieht, fehlt an seinem Lee-Partner q = p + `leeM` windab (die Grundrichtung der Saat, `windGrund`, mit der die
+    // Fronten ziehen) zur selben Uhr — Ort für Ort (`wetterZug`): Δ = g(p)·(T − R(p)), T das Wort vom Hang geformt (min(1, ρ·Wort)),
+    // R der Regen der Natur, beide mit dem Relief ρ desselben Orts. Das Wort hält am Ziel an JEDER Uhr (im Kern Regen = T); das Lee
+    // zahlt davon, was es trägt (min(Δ, R(q)); nimmt der Eingriff Regen weg, fällt er im Lee, bis es voll ist: max(Δ, R(q) − 1)) —
+    // den Rest bringt die Front des Worts aus dem Dampf der Säule (Regen ist das Kondensat, nicht das Wasser der Luft: die Säule
+    // trägt auch unter klarem Himmel 10–50 mm niederschlagbares Wasser, AMS Glossary „precipitable water“; WMO 2017, Weather
+    // Modification: ein Eingriff wandelt Dampf, er verlagert Niederschlag). So hält jedes Paar R(p) + R(q) mit = ohne, wo das Lee
+    // den Zug trägt, also jede Stichprobe, die das Lee um leeM windab verschiebt. Am Kern von main 64fcf12e kappte Δ ≤ R(q) das
+    // Ziel selbst: unter trockenem Lee regnete das Wort nicht (die Schale der Werkstatt unter „rainy“ 0, gate:werkstatt-weg).
+    // Bis hier war der Ausgleich EIN Faktor einer Region (c = Σ g·(Wort − Natur) ÷ Σ gL·Natur über 96 Punkte bis 6 600 m, ohne
+    // Relief): der Kern der Region ist eine andere Stichprobe als ihre Summe (die Wellen der Front 6 600 · 4 100 · 2 500 m) — die
+    // Bilanz der Station hielt an 12 von 200 Uhren (Mess-Wiese), und im Kern stand das Wort ohne Relief: kein Hang, den der Spieler
+    // hebt, änderte dort den Regen. Das Relief formt jeden Ort, auch den Eingriff.
+    // `ein.zeilen`: die Zeilen der Welt je Zeile der Front (die Welt spricht aus IHRER Tafel), ohne sie WX_GESETZ.
     // `ein.hoehe(x, z)`: die Höhe des Gesetzes (ohne sie kein Relief). `aus`: ein Leser, der je Bild hunderte Male fragt, gibt
     // sein Objekt mit. `profil`: der Wind über der Höhe (Hellmann, neutral geschichtet über offenem Land: u(h) = u(bezugM) ·
     // (h / bezugM)^alpha, unter `minM` steht der Wert von minM). `maeander`: die Zahlen des Mäanders von `windRichtung` (dort
@@ -5070,7 +5079,6 @@
         kante: 0.04,
         hierM: Object.freeze([3300, 6600]),
         leeM: 13200,
-        spirale: 96,
         relief: Object.freeze({ schrittM: 600, hub: 6, min: 0.4, max: 1.8 }),
         profil: Object.freeze({ bezugM: 10, alpha: 1 / 7, minM: 1 }),
         maeander: Object.freeze({ a: 0.5, w1: 0.009, b: 0.22, w2: 0.0257, n: 7, m: 5 }),
@@ -5138,51 +5146,32 @@
         var f = 1 + (R.hub * (h0 - h1)) / R.schrittM;
         return f < R.min ? R.min : f > R.max ? R.max : f;
     }
-    var _wxSpirale = null;
-    function wxSpirale() {
-        if (_wxSpirale) return _wxSpirale;
-        var N = WETTER_ORT.spirale,
-            p = new Float64Array(2 * N);
-        for (var i = 0; i < N; i++) {
-            var r = Math.sqrt((i + 0.5) / N),
-                a = i * Math.PI * (3 - Math.sqrt(5));
-            p[2 * i] = r * Math.cos(a);
-            p[2 * i + 1] = r * Math.sin(a);
-        }
-        return (_wxSpirale = p);
-    }
-    // Die Summen des Eingriffs (gemerkt je Saat, Uhr, Ort, Regen des Felds, Δ und Tafel): `zug` Σ g·(feld.rain − Natur) über die
-    // Region, `lee` Σ gL·Natur über die Region windab, `c` der Anteil des Lee-Regens, den der Eingriff nimmt (≤ 1)
-    var _wxEingriff = { saat: null };
-    function wetterEingriff(saat, t, ort, Z, H) {
-        var M = _wxEingriff;
-        if (
-            M.saat === saat &&
-            M.t === t &&
-            M.x === H.x &&
-            M.z === H.z &&
-            M.rain === H.feld.rain &&
-            M.ort === ort &&
-            M.Z === Z
-        )
-            return M;
+    // DER ZUG DES EINGRIFFS an p (Gewicht g > 0) und sein Lee-Partner q = p + leeM windab: `d` der Zug an p (das Wort hält dort,
+    // g·(T − R(p)), was immer das Lee trägt), `zahlt` der Teil, den das Lee hergibt (sein Regen bleibt in [0, 1]), `rp`/`rq` der
+    // Regen der Natur an p und q (mit Relief, wenn `E.hoehe`), die Kanäle der Natur an p in `_wxP` (Leser: `wetterFeldAm`)
+    var _wxP = {},
+        _wxQ = {},
+        _wxZug = { d: 0, zahlt: 0, rp: 0, rq: 0 };
+    function wetterZug(saat, px, pz, t, ort, Z, E, H, g) {
         var W = WETTER_ORT,
-            R = W.hierM[1],
-            P = wxSpirale(),
-            g = windGrund(saat),
-            o = {};
-        var lx = H.x + g.x * W.leeM,
-            lz = H.z + g.z * W.leeM;
-        var zug = 0,
-            lee = 0;
-        for (var i = 0; i < P.length; i += 2) {
-            var wg = 1 - wxGlatt(W.hierM[0], W.hierM[1], Math.hypot(P[i], P[i + 1]) * R);
-            zug += wg * (H.feld.rain - wetterNatur(saat, H.x + P[i] * R, H.z + P[i + 1] * R, t, ort, Z, o).rain);
-            lee += wg * wetterNatur(saat, lx + P[i] * R, lz + P[i + 1] * R, t, ort, Z, o).rain;
+            gw = windGrund(saat),
+            qx = px + gw.x * W.leeM,
+            qz = pz + gw.z * W.leeM;
+        var rp = wetterNatur(saat, px, pz, t, ort, Z, _wxP).rain,
+            rq = wetterNatur(saat, qx, qz, t, ort, Z, _wxQ).rain,
+            T = H.feld.rain;
+        if (E.hoehe) {
+            var fp = wetterRelief(saat, px, pz, E.hoehe);
+            rp = Math.min(1, rp * fp);
+            rq = Math.min(1, rq * wetterRelief(saat, qx, qz, E.hoehe));
+            T = Math.min(1, T * fp);
         }
-        var c = lee > 0 ? Math.min(1, zug / lee) : 0;
-        _wxEingriff = { saat: saat, t: t, x: H.x, z: H.z, rain: H.feld.rain, ort: ort, Z: Z, zug: zug, lee: lee, c: c };
-        return _wxEingriff;
+        var d = g * (T - rp);
+        _wxZug.d = d;
+        _wxZug.zahlt = d > 0 ? Math.min(d, rq) : Math.max(d, rq - 1);
+        _wxZug.rp = rp;
+        _wxZug.rq = rq;
+        return _wxZug;
     }
     function wetterFeldAm(saat, x, z, t, ort, ein, aus) {
         if (!(Number.isFinite(x) && Number.isFinite(z) && Number.isFinite(t)))
@@ -5193,7 +5182,8 @@
             H = E.hier,
             W = WETTER_ORT,
             g = 0,
-            i;
+            i,
+            V;
         if (Z !== WX_GESETZ) wxZeilen(Z);
         if (H) {
             if (!(Number.isFinite(H.x) && Number.isFinite(H.z) && H.feld))
@@ -5203,32 +5193,35 @@
                     throw new Error("wetterFeldAm: das Feld des Eingriffs trägt " + WX_KANAELE[i] + " nicht");
             g = 1 - wxGlatt(W.hierM[0], W.hierM[1], Math.hypot(x - H.x, z - H.z));
         }
-        // IM KERN DES EINGRIFFS (g = 1, bis hierM[0]) IST DAS FELD SEIN WORT: die Natur trägt dort nichts bei und wird nicht
-        // gerechnet (die Leser am Spieler — Rauch je Teilchen, die Wende-Suche des Tagesplans — zahlen das Wort, nie Front und
-        // Relief); ihre Kennzeichen (front, feuchte, zeile) stehen null
-        if (g >= 1) {
-            for (i = 0; i < WX_KANAELE.length; i++) o[WX_KANAELE[i]] = H.feld[WX_KANAELE[i]];
-            o.front = o.feuchte = o.zeile = null;
-            o.hier = 1;
-            o.lee = 0;
+        o.hier = 0;
+        o.lee = 0;
+        // IM EINGRIFF (g > 0; bis hierM[0] voll): die Kanäle laufen ins Feld des Eingriffs, der Regen ist die Natur am Hang plus der
+        // Zug — im Kern das Wort am Hang, an jeder Uhr (das Lee zahlt, was es trägt, den Rest bringt die Front des Worts)
+        if (g > 0) {
+            V = wetterZug(saat, x, z, t, ort, Z, E, H, g);
+            for (i = 0; i < WX_KANAELE.length; i++) {
+                var c = WX_KANAELE[i];
+                o[c] = _wxP[c] + (H.feld[c] - _wxP[c]) * g;
+            }
+            o.rain = V.rp + V.d;
+            o.front = _wxP.front;
+            o.feuchte = _wxP.feuchte;
+            o.zeile = _wxP.zeile;
+            o.hier = g;
             return o;
         }
         wetterNatur(saat, x, z, t, ort, Z, o);
         if (E.hoehe) o.rain = Math.min(1, o.rain * wetterRelief(saat, x, z, E.hoehe));
-        o.hier = 0;
-        o.lee = 0;
         if (!H) return o;
-        if (g > 0) {
-            for (i = 0; i < WX_KANAELE.length; i++) o[WX_KANAELE[i]] += (H.feld[WX_KANAELE[i]] - o[WX_KANAELE[i]]) * g;
-            o.hier = g;
-            return o;
-        }
-        var gw = windGrund(saat);
-        var gl = 1 - wxGlatt(W.hierM[0], W.hierM[1], Math.hypot(x - H.x - gw.x * W.leeM, z - H.z - gw.z * W.leeM));
-        if (gl > 0) {
-            var M = wetterEingriff(saat, t, ort, Z, H);
-            o.rain = Math.min(1, o.rain * (1 - M.c * gl));
-            o.lee = M.c * gl;
+        // IM LEE: der Partner p = (x, z) − leeM windab liegt im Eingriff — hier fehlt, was er zog
+        var gw = windGrund(saat),
+            px = x - gw.x * W.leeM,
+            pz = z - gw.z * W.leeM;
+        var gp = 1 - wxGlatt(W.hierM[0], W.hierM[1], Math.hypot(px - H.x, pz - H.z));
+        if (gp > 0) {
+            V = wetterZug(saat, px, pz, t, ort, Z, E, H, gp);
+            o.lee = o.rain > 0 ? V.zahlt / o.rain : 0;
+            o.rain = V.rq - V.zahlt;
         }
         return o;
     }

@@ -190,6 +190,9 @@ function messortePruefen(h) {
         // Kette [x, z] ab dem Spieler, die `werkbank umstellen` auf ihrem Weg prüft.
         const g = o.gruendung;
         if ((g || o.dach || o.anlauf) !== undefined && !xz(o.anlauf)) f.push(`${o.id}: anlauf ist kein [x, z]`);
+        // DAS GEHOBENE AUGE (`auge` m, same.massstab.spanne#1): der Ort steht über dem Leib — `werkbank umstellen` hebt das Auge über
+        // das Verb `steigen` (`augeHoehe`) und bricht laut, steht es in der Welt nicht auf dieser Höhe über dem Grund
+        if (o.auge !== undefined && !(Number.isFinite(o.auge) && o.auge > 0)) f.push(`${o.id}: auge ist keine Höhe über dem Grund (m > 0)`);
         if (g !== undefined && (!g || !/^dorf \d+ \d+$/.test(g.wort) || !xz(g.anker)))
             f.push(`${o.id}: gruendung ohne wort „dorf <same> <häuser>" oder anker [x, z]`);
         if (g !== undefined && !(Array.isArray(o.bahn) && o.bahn.length > 1 && o.bahn.every(xz) && (o.ortPose || `${o.bahn[0]}` === `${o.spieler}`)))
