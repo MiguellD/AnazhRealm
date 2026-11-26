@@ -1,5 +1,7 @@
 ## 26.11. 19:48 Koordinator — START-BRIEF (Welle 27.11.; dieser Abschnitt ist dein Auftrag, lies ihn GANZ)
 
+## 27.11. 00:11 — GPU-PROBE c073a604 auf omen-gtx1060: GRÜN in 1117 s (gate:pruefbuehne-licht GRÜN 55 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 143 s auf omen-gtx1060 · bild:wiese@0.5 GRÜN 46 s auf omen-gtx1060 · gate:webgl-probe GRÜN 45 s auf omen-gtx1060) → probe-post/wander-spieltag/c073a604.md
+
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.
 
 # Sitzung: „Das Tier streift einen Spieltag lang“ (wanderung#2)
