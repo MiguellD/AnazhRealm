@@ -45,7 +45,7 @@ class AnazhRealm_stoff_dach {
     // [tE, tX] des waagrechten Wegs, das im gedrehten Rechteck liegt (zwei Platten), und der Strahl steht am Eintritt noch unter
     // der Oberkante (er steigt mit tan β). 1 im Schatten, 0 sonst; die Sonne unter dem Horizont wirft keinen. EINE Formel über
     // einer Algebra (k · add · sub · mul · div · min · max · sqrt · step(a, b) = b ≥ a): die Zahlen auf der CPU (`_hausSchatten`,
-    // die Nässe am Ort `_naesseAm`, die Station), die TSL-Knoten im Stoff (`_naesseOrtKnoten`) — dieselben Plätze (`_dachTakt`).
+    // die Nässe am Ort `_naesseAm`, die Station), die TSL-Knoten im Stoff (`_naesseOrtKnoten`) — dieselben Decken (`_deckenVon`).
     static _hausSchattenGesetz(A, px, py, pz, sx, sy, sz, L, M) {
         const dx = A.sub(px, L[0]);
         const dz = A.sub(pz, L[1]);
@@ -89,22 +89,46 @@ class AnazhRealm_stoff_dach {
             H.w + Math.max(0, wz)
         );
     }
-    // der Schatten der Häuser am Ort (x, y, z) auf der CPU — die Plätze und die Sonne, die der Stoff liest (`atmoUniforms`)
+    // DER SCHATTEN DER HÄUSER AM ORT (x, y, z) auf der CPU (wind-boee-haus — die Welt ist eine Funktion des Orts, nie des Auges):
+    // die Decken der Bauten, die der Strahl zur Sonne (`schattenSonne`, EIN Schreiber `_schattenTakt`) bis zum längsten Wurf
+    // `NAESSE.wurfM` kreuzt — gefragt im Blocker-Netz Zelle um Zelle den Strahl entlang (`_blockerUmPlatz`), die Decken aus
+    // `_deckenVon`. Bis hier las sie den Dach-Pool um das Auge (64 m): stand das Auge weiter weg, trocknete die Pfütze am Haus wie in
+    // der Sonne, und der Reifen des Verkehrs griff dort trocken (Station stadtklima#1 an der Wiese: Haus 351 m, Schatten ÷ Sonne 0).
+    // Der Stoff liest dieselben Decken über den Pool, solange sie in seinem Bild stehen. Gemerkt: dieselbe Frage am selben Stand.
     _hausSchatten(x, y, z) {
         const U = this.state.atmoUniforms;
-        if (!U || !U.dachLage || !U.schattenSonne) return 0;
+        if (!U || !U.schattenSonne) return 0;
         const s = U.schattenSonne.value;
+        if (!(s.y > 0)) return 0;
+        const netz = this._blockerNetz();
+        const W = this._dachWahl;
+        const m = this._schattenMerk || (this._schattenMerk = { x: NaN });
+        if (
+            m.x === x &&
+            m.y === y &&
+            m.z === z &&
+            m.sx === s.x &&
+            m.sy === s.y &&
+            m.sz === s.z &&
+            m.netz === netz &&
+            m.W === W
+        )
+            return m.v;
+        const R = AnazhRealm.BLOCKER_ZELLE;
+        const h = Math.max(1e-4, Math.hypot(s.x, s.z));
+        const nah = this._schattenNah || (this._schattenNah = []);
+        nah.length = 0;
+        for (let t = 0; t <= AnazhRealm.NAESSE.wurfM + R; t += 2 * R)
+            this._blockerUmPlatz(x + (s.x / h) * t, z + (s.z / h) * t, R, nah);
         const Z = AnazhRealm.SCHATTEN_ZAHLEN;
-        let im = 0;
-        U.dachLage.forEach((Lu, i) => {
-            const L = Lu.value;
-            const M = U.dachMass[i].value;
-            im = Math.max(
-                im,
-                AnazhRealm._hausSchattenGesetz(Z, x, y, z, s.x, s.y, s.z, [L.x, L.y, L.z, L.w], [M.x, M.y, M.z])
-            );
-        });
-        return im;
+        let v = 0;
+        for (let i = 0; i < nah.length && !v; i++)
+            if (nah[i]._hausHuelle || nah[i]._dachKasten)
+                for (const D of this._deckenVon(nah[i]))
+                    if (AnazhRealm._hausSchattenGesetz(Z, x, y, z, s.x, s.y, s.z, D.L, D.M)) v = 1;
+        nah.length = 0;
+        Object.assign(m, { x, y, z, sx: s.x, sy: s.y, sz: s.z, netz, W, v });
+        return v;
     }
     // DIE NÄSSE AM ORT (stadtklima#1): der Film der Welt trocknet je Ort mit seiner Rate — die Welt trägt ihren Trocken-Weg
     // (`_naesseWeg`: 1 − Film, solange er steht, danach weiter mit der Rate des Wetters, EIN Schreiber `_naesseTakt`), der Ort den
@@ -304,54 +328,10 @@ class AnazhRealm_stoff_dach {
         this._dachWahl = { stand, x: auge.x, z: auge.z };
         const decken = [];
         for (const e of st.architectures || []) {
-            const hu = e._hausHuelle;
-            if (!(hu || e._dachKasten) || !e.position) continue;
+            if (!(e._hausHuelle || e._dachKasten) || !e.position) continue;
             if (Math.hypot(e.position.x - auge.x, e.position.z - auge.z) > N.dachUmkreisM) continue;
-            const k = hu ? (Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1) : e._dachKasten.k;
-            const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
-            const [co, si] = [Math.cos(ry), Math.sin(ry)];
-            // je Decke [x0, x1, z0, z1, y] haus-lokal; der Kasten als dieselbe Zeile (seine Mitte, halbe Kanten, Oberkante)
-            const kasten = !hu && e._dachKasten;
-            const zeilen = hu
-                ? hu.decken || []
-                : [
-                      [
-                          kasten.c[0] - kasten.h[0],
-                          kasten.c[0] + kasten.h[0],
-                          kasten.c[2] - kasten.h[2],
-                          kasten.c[2] + kasten.h[2],
-                          kasten.c[1] + kasten.h[1],
-                      ],
-                  ];
-            const fuss = e.position.y + (hu ? -0.5 : kasten.dy);
-            for (const [j, [x0, x1, z0, z1, y, raum, ...sonne]] of zeilen.entries()) {
-                // DAS RAUM-LICHT DER DECKE (w28-innenlicht): die sechste Zahl der Zeile des Gesetzbuchs (fachwerk `raumLicht`);
-                // der Kasten ohne Haus-Hülle (Marktstand, Brunnen, Tor) ist eine offene Halle, kein Raum: 1. Eine Hülle ohne die
-                // Zahl ist ein Bruch beim Namen — ihr Raum stünde still im vollen Himmel.
-                if (hu && !Number.isFinite(raum) && !e._raumLichtBruch) {
-                    e._raumLichtBruch = true;
-                    this._bruchMelden(
-                        `RAUM-LICHT fehlt: ${e.type || e.kind || "bau"} Decke ${j} trägt keine sechste Zahl`
-                    );
-                }
-                const [cx, cz] = [(x0 + x1) / 2, (z0 + z1) / 2];
-                const x = e.position.x + (cx * co + cz * si) * k;
-                const z = e.position.z + (cz * co - cx * si) * k;
-                decken.push({
-                    d: Math.hypot(x - auge.x, z - auge.z),
-                    x,
-                    z,
-                    co,
-                    si,
-                    ex: ((x1 - x0) / 2) * k,
-                    ez: ((z1 - z0) / 2) * k,
-                    y: fuss + y * k,
-                    raum: Number.isFinite(raum) ? raum : 1,
-                    sonne: sonne.length >= 4 ? sonne : null,
-                    feld: Number.isFinite(sonne[4]) ? sonne[4] : 0,
-                    name: `${e.type || e.kind || "bau"}@${Math.round(e.position.x)},${Math.round(e.position.z)}#${j}`,
-                });
-            }
+            // je Platz eine eigene Zeile (der Rückstrahl schreibt ihr Licht, `_raumSonneTakt`), die Decke selbst aus `_deckenVon`
+            for (const D of this._deckenVon(e)) decken.push({ ...D, d: Math.hypot(D.x - auge.x, D.z - auge.z) });
         }
         decken.sort((a, b) => a.d - b.d);
         const U = this._ensureAtmoUniforms();
@@ -390,6 +370,76 @@ class AnazhRealm_stoff_dach {
         if (h[0] > h[2]) h.splice(0, 4, 1, 1, -1, -1);
         U.dachHuelle.value.set(h[0], h[1], h[2], h[3]);
         U.dachOben.value = h[4];
+    }
+
+    // DIE DECKEN EINES BAUS (EINE Quelle, wind-boee-haus): je Decke der Hülle (fachwerk `deckenZeile` [x0, x1, z0, z1, y, raum,
+    // …sonne], haus-lokal) oder sein Kasten (`_dachKasten`) als Welt-Zeile — Mitte, Gier, halbe Kanten, Oberkante, dazu `L`/`M`
+    // für `_hausSchattenGesetz`. Leser: der Dach-Pool (`_dachTakt`, der Stoff am Auge) und der Schatten am Ort (`_hausSchatten`,
+    // die Nässe am Ort für Station, Wagen und Verkehr). Gemerkt am Eintrag, bis Hülle, Kasten, Lage, Gier oder Skala wechseln.
+    _deckenVon(e) {
+        const hu = e._hausHuelle;
+        const kasten = !hu && e._dachKasten;
+        if (!(hu || kasten) || !e.position) return [];
+        const k = hu ? (Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1) : kasten.k;
+        const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+        const { x: px, y: py, z: pz } = e.position;
+        const m = e._deckenMerk;
+        if (
+            m &&
+            m.hu === hu &&
+            m.kasten === kasten &&
+            m.k === k &&
+            m.ry === ry &&
+            m.x === px &&
+            m.y === py &&
+            m.z === pz
+        )
+            return m.decken;
+        const [co, si] = [Math.cos(ry), Math.sin(ry)];
+        // je Decke [x0, x1, z0, z1, y] haus-lokal; der Kasten als dieselbe Zeile (seine Mitte, halbe Kanten, Oberkante)
+        const zeilen = hu
+            ? hu.decken || []
+            : [
+                  [
+                      kasten.c[0] - kasten.h[0],
+                      kasten.c[0] + kasten.h[0],
+                      kasten.c[2] - kasten.h[2],
+                      kasten.c[2] + kasten.h[2],
+                      kasten.c[1] + kasten.h[1],
+                  ],
+              ];
+        const fuss = py + (hu ? -0.5 : kasten.dy);
+        const decken = [];
+        for (const [j, [x0, x1, z0, z1, y, raum, ...sonne]] of zeilen.entries()) {
+            // DAS RAUM-LICHT DER DECKE (w28-innenlicht): die sechste Zahl der Zeile des Gesetzbuchs (fachwerk `raumLicht`);
+            // der Kasten ohne Haus-Hülle (Marktstand, Brunnen, Tor) ist eine offene Halle, kein Raum: 1. Eine Hülle ohne die
+            // Zahl ist ein Bruch beim Namen — ihr Raum stünde still im vollen Himmel.
+            if (hu && !Number.isFinite(raum) && !e._raumLichtBruch) {
+                e._raumLichtBruch = true;
+                this._bruchMelden(`RAUM-LICHT fehlt: ${e.type || e.kind || "bau"} Decke ${j} trägt keine sechste Zahl`);
+            }
+            const [cx, cz] = [(x0 + x1) / 2, (z0 + z1) / 2];
+            const x = px + (cx * co + cz * si) * k;
+            const z = pz + (cz * co - cx * si) * k;
+            const [ex, ez, oben] = [((x1 - x0) / 2) * k, ((z1 - z0) / 2) * k, fuss + y * k];
+            decken.push({
+                x,
+                z,
+                co,
+                si,
+                ex,
+                ez,
+                y: oben,
+                raum: Number.isFinite(raum) ? raum : 1,
+                sonne: sonne.length >= 4 ? sonne : null,
+                feld: Number.isFinite(sonne[4]) ? sonne[4] : 0,
+                name: `${e.type || e.kind || "bau"}@${Math.round(px)},${Math.round(pz)}#${j}`,
+                L: [x, z, co, si],
+                M: [ex, ez, oben],
+            });
+        }
+        e._deckenMerk = { hu, kasten, k, ry, x: px, y: py, z: pz, decken };
+        return decken;
     }
 
     // DIE DECKE OHNE HAUS-HÜLLE (wetter.K2, beim Platz der Studio-Gestalt `_archInstanceAdd`): ein Bau der `NAESSE.dachArten`

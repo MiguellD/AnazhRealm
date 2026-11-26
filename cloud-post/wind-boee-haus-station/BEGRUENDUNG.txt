@@ -1,0 +1,31 @@
+STATION-KANDIDAT wind-boee-haus — karte2.planet.kopplung.stadtklima#1, der Zeuge „die Pfütze im Schatten“
+Datei: meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js (Diff gegen origin/punkte-maschine ae1e2b87: k2-zusammenspiel.diff)
+
+WAS DER ZEUGE HEUTE FRAGT
+Das Haus des Dach-Pools, das dem Auge am nächsten steht (U.dachLage). Der Pool ist der Stoff am Auge: höchstens 8 Decken
+im Umkreis NAESSE.dachUmkreisM 64 m. Die Station fährt an der Wiese (-280,4/-1045,6). Das nächste Haus steht dort 351 m
+weg (Werkbank, main 4a188bf2), der Pool ist leer, der Zeuge findet kein Haus: Schatten ÷ Sonne 0. Das ist keine Aussage über
+die Welt, sondern über den Ausschnitt um das Auge.
+
+WAS DIE WELT JETZT KANN (Spiel-Zweig wind-boee-haus)
+Die Nässe am Ort ist eine Funktion des Orts, nicht mehr des Auges: `_hausSchatten` fragt die Decken der Bauten den
+Sonnenstrahl entlang im Blocker-Netz (`_deckenVon`, EINE Quelle für Pool und Ort), und die Stufe 3 des Fachwerk-Kerns trägt
+ihre Decken (vorher 25 von 40 Häusern der Wiese ohne Decken; 64 von 64 Häusern byte-gleich zu Stufe 2).
+
+DER SCHNITT AM ZEUGEN
+Er nimmt die Häuser der Welt, die dem Auge am nächsten stehen (state.architectures mit Hülle oder Kasten, die nächsten 8),
+deren Decken aus `r._deckenVon` — sonst derselbe Ablauf (Orte im Wurf und vor der Wand, `_hausSchatten` 1/0, Trocken-Zeit
+über `_naesseAm`). Ohne `_deckenVon` (main vor der Landung) bleibt der Zeuge leer, also ROT, nie still grün.
+
+GEMESSEN (Werkbank kienspan, Wiese, nach dem Gang über das Dorf; Spiel-Zweig mit dem Schnitt)
+  Zeuge heute:   schatten 0 (pfuetze null)
+  Kandidat:      schatten 2,616 — trocken im Schatten 1 635 s, in der Sonne 625 s, haus_russisch@-670,-853, 433 m vom Auge
+  S1 unverändert: abweichungGrad 1,367 ° (32 Segmente)
+
+DIE WÄNDE DER PUNKTE-MASCHINE (Abzug von origin/punkte-maschine ae1e2b87, ohne git-Baum)
+  node --check: grün
+  node punkte.cjs tafel: TAFEL 1716 Zeilen · neu 0 · Kollision 0 · von Hand 0 · Abweichung 0 (Kandidat und Basis gleich)
+  node punkte.cjs liste: ROT „planet.wasser.stroemung S1: keine Sprosse in der Station“ — an der Basis ebenso, nicht vom Kandidaten
+  node punkte.cjs selbsttest --ohne 3c: nicht ganz gefahren (verlangt einen git-Baum, der Abzug hat keinen); die Fälle davor grün
+
+DIE LEITER kraft (12,019 s gegen den Deckel 12 s): Sache der Station, hier nicht geändert — benannt im Stand-Blatt.

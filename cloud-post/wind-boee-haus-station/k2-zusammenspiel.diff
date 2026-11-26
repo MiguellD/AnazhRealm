@@ -1,0 +1,47 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+@@ -1169,12 +1169,14 @@
+                         const tK = kern ? r._temperaturAt(yK, 0) : null;
+                         const tR = rand ? r._temperaturAt(rand.y, 0) : null;
+                         const tRoh = kern ? r._temperaturAt(r._terrainSaatY(kern.x + 600, kern.z, true), 0) : null;
+-                        // DIE PFÜTZE IM SCHATTEN (stadtklima#1), als VERHALTEN: am Haus des Dach-Pools, das dem Auge am nächsten steht,
+-                        // ein Ort im Wurf seiner Wand (gegen die Sonne) und einer in der Sonne (vor ihr) — die Zeit, bis die Nässe am
+-                        // Ort (`_naesseAm`, derselbe Leser wie der Stoff) trocken ist, unter klarem Mittag (die Uhr kehrt zurück)
++                        // DIE PFÜTZE IM SCHATTEN (stadtklima#1), als VERHALTEN: an den Häusern der Welt, die dem Auge am nächsten stehen
++                        // (ihre Decken `_deckenVon`, dieselbe Quelle wie der Dach-Pool — die Welt ist eine Funktion des Orts: bis
++                        // wind-boee-haus fragte der Zeuge den Pool um das Auge, 64 m; an der Wiese steht das nächste Haus 351 m weg, der
++                        // Zeuge war leer), ein Ort im Wurf seiner Wand (gegen die Sonne) und einer in der Sonne (vor ihr) — die Zeit, bis
++                        // die Nässe am Ort (`_naesseAm`, derselbe Leser wie der Stoff) trocken ist, unter klarem Mittag (die Uhr kehrt zurück)
+                         let schatten = null;
+                         const U = st.atmoUniforms;
+-                        if (typeof r._naesseAm === "function" && U && U.dachLage && U.schattenSonne) {
++                        if (typeof r._naesseAm === "function" && typeof r._deckenVon === "function" && U && U.schattenSonne) {
+                             const uhr = st.timeOfDay;
+                             try {
+                                 st.timeOfDay = 0.45;
+@@ -1183,15 +1185,19 @@
+                                 const S = U.schattenSonne.value, h = Math.hypot(S.x, S.z) || 1;
+                                 const R = r.constructor._trockenRate(wfK);
+                                 const zeit = (x, y, z) => { for (let q = 0; q < 2e4; q += 5) if (r._naesseAm(x, y, z, q * R) <= 0) return q; return null; };
+-                                for (let i = 0; i < U.dachLage.length && !schatten; i++) {
+-                                    const L = U.dachLage[i].value, M = U.dachMass[i].value;
+-                                    if (!(M.x > 0)) continue;
+-                                    const e = Math.hypot(M.x, M.y);
+-                                    const o = (k) => { const x = L.x + (k * S.x / h) * (e + 2), z = L.y + (k * S.z / h) * (e + 2); return [x, r._terrainSaatY(x, z, true) + 0.05, z]; };
++                                const A = r._lodAuge();
++                                const fern = (e) => Math.hypot(e.position.x - A.x, e.position.z - A.z);
++                                const haeuser = (st.architectures || []).filter((e) => (e._hausHuelle || e._dachKasten) && e.position).sort((a, b) => fern(a) - fern(b));
++                                const decken = haeuser.slice(0, 8).flatMap((e) => r._deckenVon(e));
++                                for (let i = 0; i < decken.length && !schatten; i++) {
++                                    const D = decken[i];
++                                    if (!(D.ex > 0)) continue;
++                                    const e = Math.hypot(D.ex, D.ez);
++                                    const o = (k) => { const x = D.x + (k * S.x / h) * (e + 2), z = D.z + (k * S.z / h) * (e + 2); return [x, r._terrainSaatY(x, z, true) + 0.05, z]; };
+                                     const [pS, pO] = [o(-1), o(1)];
+                                     if (!(r._hausSchatten(...pS) === 1 && r._hausSchatten(...pO) === 0)) continue;
+                                     const [tS, tO] = [zeit(...pS), zeit(...pO)];
+-                                    if (tS && tO) schatten = { trockenSchattenS: tS, trockenSonneS: tO, verh: r3(tS / tO), haus: i };
++                                    if (tS && tO) schatten = { trockenSchattenS: tS, trockenSonneS: tO, verh: r3(tS / tO), haus: D.name, augeM: Math.round(Math.hypot(D.x - A.x, D.z - A.z)) };
+                                 }
+                             } finally {
+                                 st.timeOfDay = uhr;

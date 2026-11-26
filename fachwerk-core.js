@@ -7883,6 +7883,7 @@
             fp: fpVon(plan.H),
             masse: masseVon(plan),
             grund: grundVon(plan), // das Grund-Datum (S4) — byte-gleich dem Mass-Bau wie die Massen
+            raum: raumVon(plan, p && p.col), // das Raum-Licht (w28-innenlicht) — die Decken der Stufe 3 tragen es wie die des Mass-Baus
             hofGap: 2.5,
             meshes: [],
         };
@@ -8241,7 +8242,12 @@
             // Bis hier trug sie keine: jenseits der Mesh-Zone stellte der Wirt vier Wände aus der Tür-Zeile auf (seine Kern-Hülle),
             // an jedem Haus des Dorfs 7–10 Solids am Boden bis 0,73 m daneben, am Hof-Haus 60 bis 9,07 m — kam die Hülle der
             // gezeigten Stufe, rückten die Stände der Bewohner um 0,3–2,9 m (28 Stände während einer Zählung am Start-Dorf).
-            geoms = wurfVon(planBau(p));
+            // DIE DECKEN AUCH FERN (wind-boee-haus, additiv, must-ignore): die Hülle JEDER Stufe trägt sie (`deckenZeile`) — bis hier
+            // trug die Stufe 3 keine, der Schatten am Ort des Wirts (`_hausSchatten`) sah das ferne Haus nicht (25 von 40 Häusern
+            // der Wiese); dieselbe Zeile wie die Stufen 1/2, 64 von 64 Häusern byte-gleich, das Gitter der Stufe byte-gleich.
+            var P3 = planBau(p);
+            geoms = wurfVon(P3);
+            geoms.__decken = deckenZeile(P3.masse, P3.raum);
             var hs3 = hausSolids(p);
             geoms.__solids = hs3.fest;
             geoms.__strahl = hs3.strahl;
@@ -8388,6 +8394,7 @@
         // DER KAMIN REIST MIT DER HÜLLE (B3c, additiv, must-ignore): die Spitze des gebauten Hauses, haus-lokal auf dem Raster
         // (`kamin` [x, y, z], null = kein Kamin) — der Wirt baut kein Haus im Haupt-Faden, um sie zu finden (`_hausHuelleSetzen`).
         // Ebenso die Tür-Zeile (`tuer`, bauen.K5, null = keine Haustür): was der Slot des Dorfs aus dem Export bringt.
+        if (g.userData.__huelle && gm.__decken) g.userData.__huelle.decken = gm.__decken; // jede Stufe, auch die 3 (ohne Kamin-Zeile)
         if (g.userData.__huelle && gm.__kamin) {
             var ks = gm.__kamin.spitze;
             g.userData.__huelle.kamin = ks ? _hr3([ks.x, ks.y, ks.z]) : null;
