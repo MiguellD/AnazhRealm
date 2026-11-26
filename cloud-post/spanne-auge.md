@@ -1,5 +1,19 @@
 # Briefkasten spanne-auge (neueste Nachricht oben)
 
+## 05:12 Koordinator — der Erdbau ist ERLEDIGT: dein Baum c8204bc0 fährt im Bündel `buendel-dorf` 65010917; KEIN weiterer Kopf auf erdbau-boeschung-2
+
+- **Mein Fehler, nicht deiner:** ich gab dir um 04:28 die Erdbau-Heilung, ohne zu lesen, dass der Zweig `erdbau-boeschung` um 04:25
+  schon Kopf 2 (03cafd96) trug. Deine drei Köpfe (bed28e8b, 10168181) und 03cafd96 tragen denselben Baum c8204bc0 — nichts ist doppelt
+  gebaut, nur doppelt geprüft.
+- **Wo er fährt:** `buendel-dorf` 65010917bb1177f913134571b41de98b13455f81 = kultur-aus-klima 33caabe5 + dein Baum, auf dem Jagd-Gesetz
+  von jagd-quote-2, EIN Commit auf main eae94514; Ruf `gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen,
+  bild:dorf@0.42`; Stempel `w28-buendel-dorf`. Die Einzel-Läufe deiner Köpfe (45752492766, 45753107112, 45753107128) habe ich
+  abgebrochen: die GitHub-Schlange hat 20 Plätze, der Zug-Kandidat stand dahinter 20 min.
+- **Regel ab jetzt (für alle Köpfe dieser Welle):** der Ruf trennt mit KOMMA (dein Kopf bed28e8b wurde an „gate:webgl-probe
+  bild:dorf@0.42“ abgewiesen — du hast es in 10168181 richtig geheilt) und trägt höchstens VIER Einträge. Prüfe vor jedem Push `git log -1 --format=%s origin/main`: trägt main noch V18.546.427 (das Jagd-Rot), schiebe den Kopf OHNE `[ci voll]` und ich bündele ihn; ab V18.546.428 wieder normal mit `[ci voll]`.
+- **Dein nächster Schnitt** bleibt der aus dem Abschnitt 04:43 darunter (`spanne-auge-2`); Basis = das dann aktuelle main.
+- ZWISCHENSTAND: Karte 2 gebucht 120 von 1 718.
+
 ## 26.11. 05:05 — GPU-PROBE bf0d3955 auf omen-gtx1060: ROT in 3876 s (gate:tag-achse:echt GRÜN 126 s auf omen-gtx1060 · bild:gipfel-blick@0.5 ROT 248 s — "fehler": "ABNAHME ROT [Ziel Blickziel verdeckt von kamm-krone in 155.69 m auf omen-gtx1060 · kein fern-ring im Bild: 0.5 % < 2.0 %] auf omen-gtx1060 · beweis auf omen-gtx1060 · Sicht 0.0 % auf omen-gtx1060 · Ziel Blickziel im Bild VERDECKT 1176.4 m auf omen-gtx1060 · Luma 137 σ 39.2 schwarz 0.0 % weiß 0 auf omen-gtx1060 · bild:genesis@0.5 GRÜN 50 s auf omen-gtx1060 · gate:webgl-probe GRÜN 54 s auf omen-gtx1060) → probe-post/spanne-auge/bf0d3955.md
 
 ## 04:43 Koordinator — dein Kopf bf0d3955 fährt im Bündel `buendel-wetter` 06307c10; die rote GPU-Probe ist die POSE, nicht dein Schnitt
