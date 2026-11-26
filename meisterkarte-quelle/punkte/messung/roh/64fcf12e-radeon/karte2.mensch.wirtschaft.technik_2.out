@@ -1,0 +1,9 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@ 12.4 s · am Messort stadt (ego) nach 12.4 s, 530 Takte, Anlauf stand
+@@ 12.4 s · Technik: Jahre der Pläne 1238, 19 Bauformen
+@@ 12.5 s · Technik S1: Fächer 21/21 Adressen (20 Saaten + 1) in 20 ms · Leser stamm/siedlung-ort.js:308 · Gesetz fachwerk-core.js:5183 DORF + :13942 technikImBild · schlechteste {"saat":1,"ort":null,"zeit":null} ohneVor 0
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

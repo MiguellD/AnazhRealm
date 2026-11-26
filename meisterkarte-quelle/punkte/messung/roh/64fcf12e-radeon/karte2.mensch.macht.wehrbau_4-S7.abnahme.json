@@ -66,8 +66,8 @@
  "bild": {
   "w": 1280,
   "h": 720,
-  "mittel": 90.8,
-  "sigma": 30.3,
+  "mittel": 91.9,
+  "sigma": 32.3,
   "schwarz": 0,
   "weiss": 0
  },
@@ -83,13 +83,13 @@
      476.79
     ],
     "rot": [],
-    "ms": 842
+    "ms": 675
    }
   ],
-  "ms": 842
+  "ms": 675
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 171.83 m · Luma 90.8 σ 30.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.430 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 171.83 m · Luma 91.9 σ 32.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.430 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
  "rot": [],
  "urteil": "GRÜN"
 }

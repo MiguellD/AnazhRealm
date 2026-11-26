@@ -1,4 +1,4 @@
-$ C:\Program Files\nodejs\node.exe -e /* richter 30dd564bd6 */ const K = {"budget":84,"steht":{"sek":2,"ein":0.3},"geht":{"sek":2,"ein":0.5},"anker":{"sek":2,"ein":0.3},"glaette":{"sek":2.5,"ein":0.3},"ortM":25,"bilderJeS":10,"gpuN":8,"fremdN":60,"dauerMin":20}; const SEITE = {"wagen":"let wagen = 0, fahrend = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) for (const W of (S.verkehr && S.verkehr.wagen) || []) { wagen++; if (W.b && W.b.amSteuer && W.zustand === \"faehrt\") fahrend++; } return { wagen, fahrend };","probe":"const st = r.state; return { gehalten: !!Object.getPrototypeOf(r).__tiereGehalten, sicht: st.cameraMode, speed: st.speed, sprint: st.sprintSpeed, skala: r._szeneSkalaWirk() };","sprint":"const st = r.state; clearInterval(window.__pbiv); let vor = null; const t = (c, k) => window.dispatchEvent(new KeyboardEvent(\"keydown\", { bubbles: true, code: c, key: k })); const tick = () => { t(\"ShiftLeft\", \"Shift\"); t(\"KeyW\", \"w\"); const p = st.playerMesh.position; if (vor && Math.hypot(p.x - vor[0], p.z - vor[1]) < 1) st.yaw += 1.7; vor = [p.x, p.z]; }; tick(); window.__pbiv = setInterval(tick, 1000); return 1;","sprintAus":"clearInterval(window.__pbiv); for (const [c, k] of [[\"KeyW\", \"w\"], [\"ShiftLeft\", \"Shift\"]]) window.dispatchEvent(new KeyboardEvent(\"keyup\", { bubbles: true, code: c, key: k })); return 1;","torbau":"const st = r.state, rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f)), o = { bau: false, tor: false, heim: false }; rend.setAnimationLoop((t) => r._gameLoopTick(t)); try { const p = st.playerMesh.position, x = p.x + 12; const e = r.spawnArchitecture(\"haus_alemannisch\", { x, y: r.getTerrainHeightAt(x, p.z) + 0.5, z: p.z }, { silent: true, precise: true }); await __gebautNach(e, { bau: () => {}, takt: raf }); o.bau = r._archIsRendered(e); r.enterPortal({ type: \"welt_portal\", affordances: { isPortal: true } }); o.tor = !!r._portalOverlay; for (let i = 0; i < 60; i++) await raf(); r.exitPortal(); o.heim = !r._portalOverlay; for (let i = 0; i < 30; i++) await raf(); r.removeArchitecture(e); } finally { rend.setAnimationLoop(null); } return o;","nacht":"const st = r.state, rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f)), o = {}; rend.setAnimationLoop((t) => r._gameLoopTick(t)); try { r.setTimeOfDay(0, \"regler\"); for (let i = 0; i < 30; i++) await raf(); o.nacht = st.timeOfDay; r.setTimeOfDay(0.5, \"regler\"); for (let i = 0; i < 30; i++) await raf(); o.mittag = st.timeOfDay; } finally { rend.setAnimationLoop(null); } return o;","stand":"const n = {}; for (const c of r.state.creatures) { const u = c.userData; if (u && u._tierBaum) { const k = \"buf:szene:tier:\" + (u.soul || \"?\"); n[k] = (n[k] | 0) + 1; } } return { halter: __heapHalter(r, 8), tiere: n };","raeumen":"let n = 0; for (const c of r.state.creatures.filter((c) => c.userData && c.userData.buehne)) (r.removeCreature(c), n++); return n;","k4geh":"const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { v: 0 }); const t = (c, k) => { for (const a of [\"keydown\", \"keyup\"]) window.dispatchEvent(new KeyboardEvent(a, { bubbles: true, code: c, key: k })); }; window.__k4iv = setInterval(() => { t(\"KeyV\", \"v\"); z.v++; }, 750); setTimeout(() => clearInterval(window.__k4iv), 4000); return 1;","k4fahrt":"const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t = (c, k) => { for (const a of [\"keydown\", \"keyup\"]) window.dispatchEvent(new KeyboardEvent(a, { bubbles: true, code: c, key: k })); }; const bis = performance.now() + 20000; const iv = setInterval(() => { if (st.player.mountedArch !== \"werkbank-fahrt\" && performance.now() < bis) return; clearInterval(iv); setTimeout(() => { z.wagen = st.player.mountedArch; t(\"KeyE\", \"e\"); setTimeout(() => { z.aus = st.player.mountedArch; t(\"KeyE\", \"e\"); setTimeout(() => { z.ein = st.player.mountedArch; }, 300); }, 1000); }, 1000); }, 50); return 1;"}; const PB_ZELLEN = ["wiese-ego-steht","wiese-third-steht","genesis-ego-steht","genesis-third-steht","wiese-ego-geht","wiese-ego-sprint","wiese-fahrt","genesis-third-geht","stadt-ego-geht","wiese-ego-sturm","stadt-voll-ego-steht","stadt-voll-third-steht"]; const PB_TRAEGT = function pbSchrittTraegt(zellen, uhrS, estS, budgetS) {
+$ C:\Program Files\nodejs\node.exe -e /* richter 7c15c71fc0 */ const K = {"budget":84,"steht":{"sek":2,"ein":0.3},"geht":{"sek":2,"ein":0.5},"anker":{"sek":2,"ein":0.3},"glaette":{"sek":2.5,"ein":0.3},"ortM":25,"bilderJeS":10,"gpuN":8,"fremdN":60,"dauerMin":20,"spielgang":{"min":1,"rand":10,"fenster":6,"nach":8}}; const SEITE = {"wagen":"let wagen = 0, fahrend = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) for (const W of (S.verkehr && S.verkehr.wagen) || []) { wagen++; if (W.b && W.b.amSteuer && W.zustand === \"faehrt\") fahrend++; } return { wagen, fahrend };","probe":"const st = r.state; return { gehalten: !!Object.getPrototypeOf(r).__tiereGehalten, sicht: st.cameraMode, speed: st.speed, sprint: st.sprintSpeed, skala: r._szeneSkalaWirk() };","sprint":"const st = r.state; clearInterval(window.__pbiv); let vor = null; const t = (c, k) => window.dispatchEvent(new KeyboardEvent(\"keydown\", { bubbles: true, code: c, key: k })); const tick = () => { t(\"ShiftLeft\", \"Shift\"); t(\"KeyW\", \"w\"); const p = st.playerMesh.position; if (vor && Math.hypot(p.x - vor[0], p.z - vor[1]) < 1) st.yaw += 1.7; vor = [p.x, p.z]; }; tick(); window.__pbiv = setInterval(tick, 1000); return 1;","sprintAus":"clearInterval(window.__pbiv); for (const [c, k] of [[\"KeyW\", \"w\"], [\"ShiftLeft\", \"Shift\"]]) window.dispatchEvent(new KeyboardEvent(\"keyup\", { bubbles: true, code: c, key: k })); return 1;","torbau":"const st = r.state, rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f)), o = { bau: false, tor: false, heim: false }; rend.setAnimationLoop((t) => r._gameLoopTick(t)); try { const p = st.playerMesh.position, x = p.x + 12; const e = r.spawnArchitecture(\"haus_alemannisch\", { x, y: r.getTerrainHeightAt(x, p.z) + 0.5, z: p.z }, { silent: true, precise: true }); await __gebautNach(e, { bau: () => {}, takt: raf }); o.bau = r._archIsRendered(e); r.enterPortal({ type: \"welt_portal\", affordances: { isPortal: true } }); o.tor = !!r._portalOverlay; for (let i = 0; i < 60; i++) await raf(); r.exitPortal(); o.heim = !r._portalOverlay; for (let i = 0; i < 30; i++) await raf(); r.removeArchitecture(e); } finally { rend.setAnimationLoop(null); } return o;","nacht":"const st = r.state, rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f)), o = {}; rend.setAnimationLoop((t) => r._gameLoopTick(t)); try { r.setTimeOfDay(0, \"regler\"); for (let i = 0; i < 30; i++) await raf(); o.nacht = st.timeOfDay; r.setTimeOfDay(0.5, \"regler\"); for (let i = 0; i < 30; i++) await raf(); o.mittag = st.timeOfDay; } finally { rend.setAnimationLoop(null); } return o;","stand":"const n = {}; for (const c of r.state.creatures) { const u = c.userData; if (u && u._tierBaum) { const k = \"buf:szene:tier:\" + (u.soul || \"?\"); n[k] = (n[k] | 0) + 1; } } return { halter: __heapHalter(r, 8), tiere: n };","raeumen":"let n = 0; for (const c of r.state.creatures.filter((c) => c.userData && c.userData.buehne)) (r.removeCreature(c), n++); return n;","k4geh":"const st = r.state; for (const h of window.__k4t || []) clearTimeout(h); const T = (window.__k4t = []), u = (f, ms, oft) => (T.push((oft ? setInterval : setTimeout)(f, ms)), T[T.length - 1]); const z = (window.__k4 = { v: 0 }); const t = (c, k) => { for (const a of [\"keydown\", \"keyup\"]) window.dispatchEvent(new KeyboardEvent(a, { bubbles: true, code: c, key: k })); }; const iv = u(() => { t(\"KeyV\", \"v\"); z.v++; }, 750, 1); u(() => clearInterval(iv), 4000); return 1;","k4fahrt":"const st = r.state; for (const h of window.__k4t || []) clearTimeout(h); const T = (window.__k4t = []), u = (f, ms, oft) => (T.push((oft ? setInterval : setTimeout)(f, ms)), T[T.length - 1]); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t = (c, k) => { for (const a of [\"keydown\", \"keyup\"]) window.dispatchEvent(new KeyboardEvent(a, { bubbles: true, code: c, key: k })); }; const bis = performance.now() + 20000; const iv = u(() => { if (st.player.mountedArch !== \"werkbank-fahrt\" && performance.now() < bis) return; clearInterval(iv); u(() => { z.wagen = st.player.mountedArch; t(\"KeyE\", \"e\"); u(() => { z.aus = st.player.mountedArch; t(\"KeyE\", \"e\"); u(() => { z.ein = st.player.mountedArch; }, 300); }, 1000); }, 1000); }, 50, 1); return 1;","k4ende":"for (const h of window.__k4t || []) clearTimeout(h); delete window.__k4t; return window.__k4 || null;"}; const PB_ZELLEN = ["wiese-ego-steht","wiese-third-steht","genesis-ego-steht","genesis-third-steht","wiese-ego-geht","wiese-ego-sprint","wiese-fahrt","genesis-third-geht","stadt-ego-geht","wiese-ego-sturm","stadt-voll-ego-steht","stadt-voll-third-steht"]; const PB_TRAEGT = function pbSchrittTraegt(zellen, uhrS, estS, budgetS) {
     return uhrS + estS <= budgetS || (zellen.some((z) => /-steht$/.test(z)) && uhrS + estS <= budgetS + 3);
 }; (async function pbProbe(art, aus) {
     const fs = require("fs"), path = require("path");
@@ -63,14 +63,18 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 30dd564bd6 */ const K = {"budge
     // EIN Fenster der Glätte: die Übergänge über die Tasten, `haenger` unter dem Regler des Spielers (R8), Schwelle 33 ms
     const H = async (name, code, k) => {
         await ev(code);
-        await zelle(name);
-        let o;
+        let o, tasten = null;
         try {
+            await zelle(name);
             o = await ruf("/haenger", { sek: k.sek, ein: k.ein, regler: "frei", tiere: "frei", wandern: k.wandern, schwelle: 33, json: path.join(D, name + ".json") }, k.sek + k.ein + 90);
         } finally {
-            await zelle(null);
+            try {
+                await zelle(null);
+            } finally {
+                tasten = await ev(SEITE.k4ende); // die Uhren der Tasten enden mit ihrem Fenster (PB_K4_UHR)
+            }
         }
-        glaette[name] = { ein: k.ein, sek: k.sek, befunde: (o.befunde || []).slice(0, 4), tasten: await ev("return window.__k4 || null") };
+        glaette[name] = { ein: k.ein, sek: k.sek, befunde: (o.befunde || []).slice(0, 4), tasten };
     };
     // DER STAND (die Puffer-Linse nach dem Collector, dazu Halter und Tiere) als Marke im Strom
     const stand = async (marke) => {
@@ -119,6 +123,25 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 30dd564bd6 */ const K = {"budge
             sonst.torbau = await ev(SEITE.torbau);
             sonst.nacht = await ev(SEITE.nacht);
             await U("genesis", "ego");
+            // DIE MINUTE DER STATION (K.spielgang): bis hier war die Länge des Spielgangs, was die Sitzung zwischen den Marken fuhr — in
+            // den gezielten Läufen 0,82–1,3 min, fünf von sieben BLIND. Jetzt gibt die Probe ihm die fehlenden Sekunden auf der Bahn,
+            // unter ihrem Deckel; trägt er sie nicht, steht das beim Namen (der Zeuge `spielgang`, gelesen von ausdauerRichter)
+            const sg = K.spielgang, deckel = Number(process.env.PUNKTE_PROBE_DECKEL_S) || 0, ziel = sg.min * 60 + sg.rand;
+            const a0 = M.stromLesen(STROM).marken.filter((m) => m.marke === "dauer-anfang").pop();
+            const seit = () => (a0 && a0.wert ? (Date.now() - a0.wert.zeit) / 1000 : null);
+            sonst.spielgang = { ziel, deckel, vorher: seit() == null ? null : +seit().toFixed(1), eigen: 0, fenster: 0 };
+            let kost = sg.fenster + 2; // ein Fenster samt Zapfen, Einschwingen und Probe der Seite: gelernt am letzten
+            while (seit() != null && seit() + sg.nach < ziel) {
+                if (!(uhr() + kost + sg.nach <= deckel)) {
+                    sonst.spielgang.grund = "der Deckel " + deckel + " s trug die Minute nicht (bei " + uhr().toFixed(1) + " s, " + seit().toFixed(1) + " s Spielgang)";
+                    break;
+                }
+                const t = Date.now();
+                await Z("dauer-spielgang", { ...K.anker, sek: sg.fenster, wandern: "bahn" });
+                kost = (Date.now() - t) / 1000;
+                sonst.spielgang.eigen = +(sonst.spielgang.eigen + kost).toFixed(1);
+                sonst.spielgang.fenster++;
+            }
             await Z("dauer-genesis-ego-geht", { ...K.anker, wandern: "bahn" });
             await stand("dauer-ende");
         }, ["dauer-ende"]);
@@ -294,10 +317,17 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 30dd564bd6 */ const K = {"budge
             }
             // DIE HEAP-KURVE (Karte 2 same.preis.ausdauer S1 „Spielgang am Stück mit Heap-Kurve“, vorrat3-stationen-g6): je Block des Stroms
             // der Strecke EIN Punkt (Wanduhr, Heap der Seite, wie der Zapfen ihn las — ohne Aufräumen), die Steigung als Ausgleichsgerade in
-            // MB/min; daneben die zwei Stände nach dem Collector (heap). Ohne Heap im Strom bleibt die Kurve leer (n 0) und das Urteil ROT
+            // MB/min; daneben die zwei Stände nach dem Collector (heap). Ohne Heap im Strom bleibt die Kurve leer (n 0) und das Urteil ROT.
+            // DER PUNKT STEHT AM ENDE SEINES BLOCKS (Leser 2, 26.11.): der Zapfen liest den Heap, wenn er den Block abholt (punkte.cjs
+            // stromSeite `heap`), also nach dessen letztem Bild — bis hier stand er auf der Uhr des ERSTEN Bilds, jeder Punkt um die Länge
+            // seines Blocks zu früh (der Block über Umstellen, Tor und Nacht der Dauer: 10–20 s)
             const kurve = [];
             for (const b of strecke)
-                if (Number.isFinite(b.heap) && Number.isFinite(b.wand) && (!kurve.length || kurve[kurve.length - 1][2] !== b.block)) kurve.push([b.wand, b.heap, b.block]);
+                if (Number.isFinite(b.heap) && Number.isFinite(b.wand)) {
+                    const k = kurve[kurve.length - 1];
+                    if (k && k[2] === b.block) k[0] = b.wand;
+                    else kurve.push([b.wand, b.heap, b.block]);
+                }
             let heapKurve = { n: kurve.length };
             if (kurve.length >= 2) {
                 const t0k = kurve[0][0], xs = kurve.map((p) => (p[0] - t0k) / 60000), ys = kurve.map((p) => p[1]);
@@ -307,6 +337,7 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 30dd564bd6 */ const K = {"budge
             }
             Object.assign(zus.dauer, {
                 heapKurve,
+                spielgang: sonst.spielgang || null,
                 minuten: +((e.wert.zeit - a.wert.zeit) / 60000).toFixed(2), seiten: seiten.length, proben: [...new Set(strecke.map((b) => b.probe))].length,
                 last: zahlen(strecke), weg: Math.round(weg), gegangen: Math.round(gegangen), fahren: strecke.some((b) => b.sattel === 1),
                 nachtImStrom: strecke.some((b) => b.uhr != null && (b.uhr < 0.05 || b.uhr > 0.95)),
@@ -319,12 +350,12 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 30dd564bd6 */ const K = {"budge
     console.log("PROFIBAND " + JSON.stringify(zus));
 })(process.argv[1], process.argv[2]).catch((e) => { console.log("PROBE ROT: " + String((e && e.stack) || e).split("\n").slice(0, 3).join(" | ")); process.exitCode = 1; }); glaette C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\64fcf12e-radeon\profiband.K4_1.json
 [linse-gpu] amd/rdna-3
-@@PUNKTE@@ ZEIT anfang 37.1 s
-@@PUNKTE@@ ZEIT k4-geh 41.7 s
-@@PUNKTE@@ ZEIT k4-fahrt 48.6 s
-@@PUNKTE@@ ZEIT strom 48.6 s
-@@PUNKTE@@ ZEIT strom-gelesen 48.6 s (179 Bilder)
-PROFIBAND {"art":"glaette","sekunden":48.6,"uhrS":135,"schritte":[["anfang",37.1],["k4-geh",4.5],["k4-fahrt",7]],"offen":[],"fehler":{},"strom":{"bloecke":61,"bilder":179,"seiten":1,"fehler":0,"verloren":0},"glaette":{"k4-geh":{"n":60,"frame":58.75,"p99":66.93,"max":66.93,"ueber33":47,"ueber100":0,"takt":62.23,"vram":136.9,"gpu":17.95,"gpuN":10,"befehle":134,"dreiecke":354204,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":3,"sattel":"0","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"v":5}},"k4-fahrt":{"n":44,"frame":100.44,"p99":117.26,"max":117.26,"ueber33":43,"ueber100":3,"takt":89.33,"vram":158.2,"gpu":20.48,"gpuN":10,"befehle":153,"dreiecke":629372,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":2,"sattel":"101","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"wagen":"werkbank-fahrt","aus":null,"ein":"werkbank-fahrt"}}},"anfang":true}
+@@PUNKTE@@ ZEIT anfang 36.9 s
+@@PUNKTE@@ ZEIT k4-geh 41.1 s
+@@PUNKTE@@ ZEIT k4-fahrt 52.3 s
+@@PUNKTE@@ ZEIT strom 52.3 s
+@@PUNKTE@@ ZEIT strom-gelesen 52.3 s (173 Bilder)
+PROFIBAND {"art":"glaette","sekunden":52.3,"uhrS":135,"schritte":[["anfang",36.9],["k4-geh",4.2],["k4-fahrt",11.2]],"offen":[],"fehler":{},"strom":{"bloecke":65,"bilder":173,"seiten":1,"fehler":0,"verloren":0},"glaette":{"k4-geh":{"n":59,"frame":66.98,"p99":100.74,"max":100.74,"ueber33":50,"ueber100":1,"takt":62.86,"vram":136.3,"gpu":18.08,"gpuN":10,"befehle":132,"dreiecke":348650,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":3,"sattel":"0","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"v":5}},"k4-fahrt":{"n":42,"frame":100.46,"p99":142.25,"max":142.25,"ueber33":42,"ueber100":3,"takt":84.66,"vram":141.2,"gpu":20.98,"gpuN":9,"befehle":178,"dreiecke":697152,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":2,"sattel":"101","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"wagen":"werkbank-fahrt","aus":null,"ein":"werkbank-fahrt"}}},"anfang":true}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
