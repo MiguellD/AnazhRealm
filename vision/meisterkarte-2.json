@@ -17586,10 +17586,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 22,
+    "heute": 23,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 10,
+    "anteilHeute": 10.4,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -18816,12 +18816,14 @@
        "richter": "Schwerkraft aus 20 Stadtbildern ≥ 70 %; gekoppelt ≥ 85 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "metaParams Klima × Epoche → Dach, Stoff, Hof (fachwerk-core.js:8103) liest nur das Studio (worlds/fachwerk/fachwerk.js:621); die Welt zieht die Region per Zufall (:3647) — Zwilling",
      "alt": [],
-     "heuteSprossen": [],
+     "heuteSprossen": [
+      2
+     ],
      "kernSprossen": []
     },
     {
@@ -20096,11 +20098,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 132,
+  "heute": 133,
   "davonKopplungen": 33,
   "kern": 2,
   "kernDazu": 2,
-  "anteilHeute": 6.9,
+  "anteilHeute": 7,
   "anteilKern": 0,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20111,7 +20113,7 @@
   },
   "gliederLeitern": 9,
   "beide": 62,
-  "nachwache": 70
+  "nachwache": 71
  },
  "zusammengelegt": [
   {
