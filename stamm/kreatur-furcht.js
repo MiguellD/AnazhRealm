@@ -72,12 +72,7 @@ class AnazhRealm_kreatur_furcht {
         // Elche die Wölfe zuerst und verließen sofort den Ort; darum ziehen Wölfe gegen den Wind auf ihre Beute. Bis jagd-quote
         // trug nur der Jäger die Nase (witterung-windab): das Rudel umstellte den Hirsch auf dem Ring, auch luvwärts, ungemerkt
         // bis pirschSichtM — die Rudel-Quote stieg über ihr Band (113 von 240 Jagden).
-        const VG = AnazhRealm._verhaltenGesetz();
-        const sichtPirsch = VG.jagd.pirschSichtM;
-        const nase = this._scentNase(VG.jagd.scentRangeM);
-        // DIE FAHNE TRÄGT IHRE LAUFZEIT (jagd-quote 2): die Quelle ist die Spur des Jägers (`_duftSpur`), gerochen wird er dort,
-        // wo er stand, als seine Front aufbrach — ein Jäger ohne Spur hat noch keine Fahne (`_scentAt`, die leere Spur)
-        const quelle = this._furchtQuelle || (this._furchtQuelle = [{ x: 0, z: 0, strength: 1, spur: null }]);
+        const sichtPirsch = AnazhRealm._verhaltenGesetz().jagd.pirschSichtM;
         let best = Infinity;
         let J = null;
         let sichtJ = 0;
@@ -96,12 +91,7 @@ class AnazhRealm_kreatur_furcht {
             // das Auge wird nur gefragt, wo es zählt: in der Fluchtdistanz (die Kosten folgen der Nähe, nie dem Bestand)
             let sicht = !hetzt ? sichtPirsch : d < fluchtM ? Math.min(fluchtM, this._kreaturSiehtM(creature, j)) : 0;
             // die Nase ebenso nur in der Fluchtdistanz, und nur, wo das Auge ihn nicht schon hat (Lehre 25: billige Filter zuerst)
-            if (!(d < sicht) && d < fluchtM) {
-                quelle[0].x = j.position.x;
-                quelle[0].z = j.position.z;
-                quelle[0].spur = (j.userData && j.userData._duftSpur) || AnazhRealm.DUFT_SPUR_LEER;
-                if (this._scentAt(creature.position.x, creature.position.z, quelle) >= nase.schwelle) sicht = fluchtM;
-            }
+            if (!(d < sicht) && d < fluchtM && this._kreaturRiecht(creature, j)) sicht = fluchtM;
             if (d < sicht) [best, J, sichtJ] = [d, j, sicht];
         }
         // Ein jagender Jäger im Blick wiegt wie ein Treffer (combatFearWariness): die Beute flieht, solange sie ihn sieht
@@ -111,6 +101,22 @@ class AnazhRealm_kreatur_furcht {
         von.z = J.position.z;
         von.r = sichtJ;
         return NAT.combatFearWariness;
+    }
+
+    // DIE EINE NASE DER BEUTE (wahrnehmung-wind): riecht `creature` den Leib `leib` — den Jäger wie den Menschen, dieselbe Fahne
+    // windab (`_scentAt`) aus der Spur seines Leibs (`_duftSpur`, die Laufzeit der Front: gerochen wird er dort, wo er stand, als
+    // seine Front aufbrach; ein Leib ohne Spur hat noch keine Fahne, die leere Spur) an derselben Schwelle (`_scentNase`,
+    // jagd.scentRangeM). Das Band der Profis (SCENT.band, Mech 1966): die Beute windab merkt den Jäger weit, der Jäger windab
+    // kommt ungemerkt nah. Bis wahrnehmung-wind trug die Beute die Nase nur gegen den Jäger (jagd-quote, inline in der
+    // Jäger-Schleife); den Menschen nahm sie allein mit dem Auge wahr — der Kreatur-Takt rief `_windAt` für ihn 0×, das Kitz
+    // stand im gedrehten Wind wie im Wind (Station wahrnehmung#2), der getarnte Mensch kam von jeder Seite gleich nah.
+    _kreaturRiecht(creature, leib) {
+        const nase = this._scentNase(AnazhRealm._verhaltenGesetz().jagd.scentRangeM);
+        const q = this._furchtQuelle || (this._furchtQuelle = [{ x: 0, z: 0, strength: 1, spur: null }]);
+        q[0].x = leib.position.x;
+        q[0].z = leib.position.z;
+        q[0].spur = (leib.userData && leib.userData._duftSpur) || AnazhRealm.DUFT_SPUR_LEER;
+        return this._scentAt(creature.position.x, creature.position.z, q) >= nase.schwelle;
     }
 
     // Die nächste glühende Zelle des Brands in der Fluchtdistanz des Tiers (`_kreaturFluchtDistanzM`, das Maß seiner Gattung am
@@ -182,7 +188,18 @@ class AnazhRealm_kreatur_furcht {
                 ? Math.max(auraM, FG.fluchtDistanz(this._kreaturFluchtDistanzM(creature), erinnert, bedroht, ud.bond || 0, FG.F)) // prettier-ignore
                 : auraM;
         const sieht = auge && dist <= reichM ? this._kreaturSiehtM(creature, this.state.playerMesh) * weit : 0;
-        const alarm = Math.min(sieht, auraM);
+        // DIE NASE NIMMT IHN WAHR, WO DAS AUGE IHN NICHT HAT (wahrnehmung-wind, `_kreaturRiecht`): dieselbe Fahne wie jeder Jäger —
+        // wer windab des Menschen steht, merkt ihn in derselben Nähe (`reichM`), getarnt oder nicht; der Mensch windab kommt so nah,
+        // wie das Auge ihn lässt. Gefragt nur in der Nähe und nur, wo das Auge ihn nicht schon hat (Lehre 25), am Leib, nie am
+        // leeren Anker (`_deferredAvatarSoul`: noch keine Spur).
+        const nimmt =
+            dist <= reichM &&
+            !(dist <= sieht) &&
+            !this.state._deferredAvatarSoul &&
+            this._kreaturRiecht(creature, this.state.playerMesh)
+                ? reichM
+                : sieht;
+        const alarm = Math.min(nimmt, auraM);
         let wariness = 0; // fern → neutral, das Wesen wandert
         if (fearActive || dist <= alarm) {
             const menace = jaegt ? 0 : bedroht;
@@ -197,10 +214,11 @@ class AnazhRealm_kreatur_furcht {
         }
         // DER MENSCH IST DER SUPER-RÄUBER (leben.tiere.mensch S1, tetrapoda fluchtDistanz): im pfad flieht jedes Wesen den
         // Spieler ab der Fluchtdistanz seiner Gattung (`_kreaturMenschFlucht`); ihr Radius ist der Radius der Flucht — sobald es
-        // ihn WAHRNIMMT (sein Auge, `sieht`; der Hieb): wen es nicht sieht, den flieht es nicht, der getarnte Jäger kommt
-        // näher (auge-der-art). Vorher floh der Hirsch jeden Spieler ab 120 m, jede Farbe, jeden Boden.
+        // ihn WAHRNIMMT (sein Auge, `sieht`; seine Nase, `nimmt`; der Hieb): wen es weder sieht noch riecht, den flieht es nicht,
+        // der getarnte Jäger kommt von windab näher (auge-der-art, wahrnehmung-wind). Vorher floh der Hirsch jeden Spieler ab
+        // 120 m, jede Farbe, jeden Boden.
         const D =
-            mode === "pfad" && !jaegt && (fearActive || dist <= sieht)
+            mode === "pfad" && !jaegt && (fearActive || dist <= nimmt)
                 ? this._kreaturMenschFlucht(creature, dist, erinnert, bedroht, wariness)
                 : 0;
         if (!(D > 0)) return wariness;

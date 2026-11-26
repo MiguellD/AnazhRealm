@@ -2831,6 +2831,10 @@ class AnazhRealm_kreatur_verhalten {
         // Paar erst genau (`_kreaturRaum` des anderen), wenn es näher steht als der eigene Raum + dieser — vorher fragte
         // jedes Tier den Raum JEDES anderen (40 Tiere: 1 600 Rufe je Takt).
         let raumMax = 0;
+        // DIE SPUR DES MENSCHEN (wahrnehmung-wind): sein Leib riecht wie jeder — die Beute nimmt ihn über dieselbe Fahne wahr
+        // (`_kreaturRiecht`); der leere Anker (`_deferredAvatarSoul`, bis sein Guss steht) hat keinen Leib und keine Spur
+        const sl = this.state._deferredAvatarSoul ? null : this.state.playerMesh;
+        if (sl && sl.position) this._duftSpurSchreiben(sl);
         for (const c of this.state.creatures) {
             const u = c && c.userData;
             if (!u) continue;

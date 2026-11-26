@@ -330,8 +330,11 @@ async function kreaturProben(r, T, opts) {
     // DIE UHR DER BÜHNE rückt um `d` Sekunden (der EINE Weg der Welt-Uhr, `_weltUhrNimm`) — der eine Uhr-Schritt der Proben
     const uhrVor = (d) => r._weltUhrNimm(s.spielZeit + d);
     // DER TAKT WIE IM SPIEL (die Folge von `_gameLoopTick`): erst der feste Sim-Schritt der Leiber (`_kreaturStossSchritt`,
-    // `_leibKontakte`), dann der Frame-Takt der Tiere (`updateCreatures`).
+    // `_leibKontakte`), dann der Frame-Takt der Tiere (`updateCreatures`). Die Sim-Uhr rückt mit dem Schritt (im Spiel setzt sie
+    // `_loopPlayerMovement`): die Spur jedes Leibs (`_duftSpurSchreiben`) und der Wind der Nase lesen sie — bis wahrnehmung-wind stand sie
+    // im Takt der Proben still, keine Spur wuchs, keine Front lief
     const takt = (dt) => {
+        s._simZeit += dt;
         r._kreaturStossSchritt(dt);
         r._leibKontakte();
         r.updateCreatures(dt);
@@ -3276,6 +3279,16 @@ async function kreaturProben(r, T, opts) {
                 decke("_scentAt", (alt) => function (x, z, q) {
                     return alt.call(this, x, z, q.map(({ spur, ...o }) => o)); // eslint-disable-line no-unused-vars
                 });
+            // der Mensch, wie bis wahrnehmung-wind: die Beute fragt ihre Nase nie nach ihm (allein das Auge) — oder der Kreatur-Takt
+            // schreibt seine Spur nicht (er hat keine Fahne)
+            if (taeter === "mensch-ohne-nase")
+                decke("_kreaturRiecht", (alt) => function (c, leib) {
+                    return leib === this.state.playerMesh ? false : alt.call(this, c, leib);
+                });
+            if (taeter === "mensch-ohne-spur")
+                decke("_duftSpurSchreiben", (alt) => function (c) {
+                    if (c !== this.state.playerMesh) alt.call(this, c);
+                });
             const NAT = A._verhaltenGesetz().furcht;
             const o = { abstandM: 30, fluchtM: null, laufzeitS: null };
             for (const [art, dx] of [
@@ -3306,6 +3319,46 @@ async function kreaturProben(r, T, opts) {
                 o[art] = merkt();
             }
             r._kreaturJaeger = [];
+            // DER MENSCH ÜBER DIESELBE FAHNE (wahrnehmung-wind, `_kreaturRiecht`): der GETARNTE Mensch (das Auge der Beute sieht ihn
+            // nicht, `_kreaturSiehtM` 0) geht im Schritt (FURCHT_GESETZ.naeherungMS) 30 m luvwärts auf das Reh zu — es flieht ihn
+            // (`_creatureWarinessSpieler` ≥ fleeThreshold: seine Fluchtdistanz), derselbe Mensch windab nicht. Seine Spur schreibt der
+            // ECHTE Kreatur-Takt (`updateCreatures` zur Sim-Zeit t − τ und t, wie der Wolf oben über `_duftSpurSchreiben`). Bis
+            // wahrnehmung-wind kam der getarnte Mensch von jeder Seite gleich nah (der Takt rief `_windAt` für ihn 0×).
+            const FG = A._furchtGesetz();
+            const getarnt = [];
+            decke(
+                "_kreaturSiehtM",
+                (alt) => function (c, ziel) {
+                    return ziel === this.state.playerMesh ? 0 : alt.call(this, c, ziel);
+                },
+                getarnt
+            );
+            o.mensch = {};
+            for (const [art, dx] of [
+                ["luv", -30],
+                ["lee", 30],
+            ]) {
+                leer(1);
+                Object.assign(W, { x: 1, z: 0, ms: 4 });
+                const reh = tier(neben(M.x, M.z), "wesen", 0.6);
+                ruhig(reh);
+                const sp = neben(M.x + dx, M.z);
+                pm.set(sp.x, sp.y, sp.z);
+                delete s.playerMesh.userData._duftSpur; // je Fall die Spur dieses Falls: die Orte, die der Takt hier schreibt
+                const u = r._rauchWindAt(pm.x, pm.z, s._simZeit, A.SCENT.hoeheM, null, {}).ms;
+                const v = u + Math.hypot(A.SCENT.meanderMS, A.SCENT.turbulenz * u);
+                const t0 = s._simZeit;
+                s._simZeit = t0 - (1.5 * Math.abs(dx)) / v;
+                takt(1 / 60);
+                s._simZeit = t0;
+                takt(1 / 60);
+                const zu = -Math.sign(dx) * FG.F.naeherungMS * 1.5;
+                r._spielerLageAlt = { x: pm.x, z: pm.z, vx: zu, vz: 0 };
+                const von = { x: 0, z: 0, r: 0 };
+                o.mensch[art] = r._creatureWarinessSpieler(reh, NAT, von) >= NAT.fleeThreshold;
+                o.mensch.spurN = (s.playerMesh.userData._duftSpur || { n: 0 }).n;
+            }
+            getarnt.forEach((f) => f());
             leer(1);
             return o;
         });
@@ -4596,6 +4649,11 @@ function urteil(name, z) {
             );
         if (Bt)
             soll(
+                !!Bt.mensch && Bt.mensch.luv === true && Bt.mensch.lee === false,
+                `der getarnte Mensch wird nicht gewittert: ${Bt.abstandM} m luvwärts ${Bt.mensch && Bt.mensch.luv ? "geflohen" : "nicht geflohen"}, windab ${Bt.mensch && Bt.mensch.lee ? "geflohen" : "nicht geflohen"}, seine Spur ${Bt.mensch ? Bt.mensch.spurN : "—"} Orte (Soll luvwärts geflohen — dieselbe Fahne wie die des Jägers, SCENT.band: Mech 1966 —, windab nicht; Fluchtdistanz ${Bt.fluchtM} m)`
+            );
+        if (Bt)
+            soll(
                 Bt.frisch === false,
                 `die Fahne ohne Laufzeit: der eben gesetzte Wolf ${Bt.abstandM} m luvwärts ${Bt.frisch ? "gemerkt" : "ungemerkt"} (Soll ungemerkt — seine Front braucht ${Bt.laufzeitS} s)`
             );
@@ -4853,6 +4911,8 @@ const TAETER = {
         ["witterung-allein", /das Rudel jagt nicht als eines/],
         ["beute-ohne-nase", /die Beute wittert nicht/],
         ["fahne-ohne-laufzeit", /die Fahne ohne Laufzeit/],
+        ["mensch-ohne-nase", /der getarnte Mensch wird nicht gewittert: 30 m luvwärts nicht geflohen/],
+        ["mensch-ohne-spur", /der getarnte Mensch wird nicht gewittert: 30 m luvwärts nicht geflohen, windab nicht geflohen, seine Spur 0 Orte/],
     ],
     rudel: [
         ["rudel", /umstellt nicht/],

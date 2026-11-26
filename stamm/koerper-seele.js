@@ -1945,6 +1945,21 @@ AnazhRealm.SCENT = Object.freeze({
     // Front der Windstille (σ0) 64 m weit, über die Nase der Windstille (jagd.scentRangeM 50 m) hinaus; windab läuft sie schneller
     spurTaktS: 1,
     spurN: 128,
+    // DAS BAND DER PROFIS (wahrnehmung-wind; Leser: die Station karte2.erleben.kopplung.wahrnehmung#2 — die Näherung des Menschen
+    // luv und lee, die Lauer des Rudels): was die Nase im Feld trägt.
+    band: Object.freeze({
+        // Mech 1966 (Isle Royale, Fauna Series 7): Elche wittern Wölfe windab bis ~400 m; Wölfe ziehen gegen den Wind heran und
+        // kommen oft bis ~91 m (100 yd) ungemerkt — die Beute windab merkt den Jäger in ihrer Flucht-Weite, windab kommt er nah
+        witterungWindabM: 400,
+        ungemerktLeeM: 91,
+        // Gable, Homkes, Johnson, Windels, Bump 2021 (Behav. Ecol. 32:339): 89–94 % der Lauerplätze der Wölfe liegen windab ihrer
+        // Beute
+        lauerWindabAnteil: Object.freeze([0.89, 0.94]),
+        // Begall et al. 2008 (PNAS 105:13451, 430 Rehe, 917 Rothirsche: das Lager liegt nord-süd, „the wind factor can be
+        // excluded“), Millspaugh et al. 1998 (Am. Midl. Nat. 139:133, 131 Elk-Lager: der Wind wie am Zufallsort) — die Beute wählt
+        // ihr Lager nicht nach dem Wind; der Wind wirkt über die Nase, nie über die Ruhe
+        lagerWindWahl: 0,
+    }),
 });
 // die Spur eines Leibs, der eben erst da ist: noch keine Front unterwegs (`_scentSpur` riecht ihn nicht)
 AnazhRealm.DUFT_SPUR_LEER = Object.freeze({ x: [], z: [], t: [], n: 0, k: 0 });
