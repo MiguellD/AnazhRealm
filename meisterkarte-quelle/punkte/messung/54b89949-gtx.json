@@ -1,7 +1,7 @@
 {
  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
  "geraet": "gtx",
- "zeit": "2026-11-26T15:50:54.754Z",
+ "zeit": "2026-11-26T15:54:42.185Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -3468,6 +3468,70 @@
    },
    "zeit": "2026-11-26T15:50:54.754Z",
    "abdruck": "55183cc3768b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.fahrzeug.lenker#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181.1 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 1068 von 2500000000000 s in 10680 Takten, 173.1 s Wand (16.2 ms je Takt)",
+   "exit": 0,
+   "minuten": 3.02,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181.1 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 1068 von 2500000000000 s in 10680 Takten, 173.1 s Wand (16.2 ms je Takt)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 181.2,
+   "fremd": {
+    "s": 184.8,
+    "takte": 86,
+    "fremdS": 29.17,
+    "kerne": 0.158,
+    "fensterKerne": 0.3,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.19
+     ],
+     [
+      "Explorer.EXE",
+      4.09
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-54b89949-w164130 x listen/kandidat-gtx-54b89949-w164130.txt",
+      1.91
+     ]
+    ],
+    "dienerS": 27.56,
+    "diener": [
+     [
+      "System",
+      14.3
+     ],
+     [
+      "WmiPrvSE.exe",
+      6.97
+     ]
+    ],
+    "geraetS": 59.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      35.77
+     ],
+     [
+      "svchost.exe",
+      20.7
+     ],
+     [
+      "SearchIndexer.exe",
+      1.16
+     ]
+    ],
+    "eigenS": 262.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T15:54:42.185Z",
+   "abdruck": "b6c3c3996fb0",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
