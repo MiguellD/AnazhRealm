@@ -1,5 +1,7 @@
 # jaeger-stand — der Stand des Jägers am Revier (OMEN, 26.11.)
 
+## 26.11. 18:12 — GPU-PROBE c8724c8b auf omen-gtx1060: GRÜN in 854 s (gate:pruefbuehne-licht GRÜN 54 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 142 s auf omen-gtx1060 · gate:tag-achse:echt GRÜN 125 s auf omen-gtx1060 · gate:studio-begehen GRÜN 242 s auf omen-gtx1060 · gate:webgl-probe GRÜN 49 s auf omen-gtx1060) → probe-post/jaeger-stand/c8724c8b.md
+
 **Vorprüf-Kopf (sha40): c8724c8b8dde749f539bd0c4aa2b67e0d4603714** — Merge von main 9964918608a72e1bbc6972925a4820eac5b53d0f (V18.546.438) in
 `jaeger-stand`, geschoben 17:58; Betreff „Vorprüfung jaeger-stand 1 (auf main 99649186): … [gpu-probe: gate:pruefbuehne-licht,
 gate:weltbild-frost:echt, gate:tag-achse:echt, gate:studio-begehen] [ci voll]“. Der Beitrag gegen main: nur stamm/siedlung-bewohner.js +42 −23.
