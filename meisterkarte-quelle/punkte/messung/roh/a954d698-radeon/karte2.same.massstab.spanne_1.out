@@ -1,0 +1,17 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@ 20.1 s · Kamera und Saat der Sitzung: {"far":8500,"near":0.1,"fov":75,"saat":"anazh-realm-seed"}
+@@ 20.1 s · same.massstab.spanne S5 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":20.1}
+@@ 20.1 s · same.massstab.spanne S6 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":20.1}
+@@ 20.1 s · same.massstab.spanne S7 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":20.1}
+@@ 20.1 s · same.massstab.spanne S8 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":20.1}
+@@ 20.1 s · same.massstab.spanne S9 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":20.1}
+@@ 20.1 s · spanne S1–S4 (die Wiese wuchs in 20062 ms): Fächer 1/21 Adressen (20 Saaten + 1) in 0 ms · Leser stamm/koerper-bewegung.js:1759 _loopCamera · Gesetz gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833) · 20 ohne Fähigkeit (die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)) · schlechteste {"saat":"anazh-realm-s
+@@ 20.1 s · same.massstab.spanne S1 leser {"art":"leser","fehlt":"Steigflug 0,5 → 700 m in 30 s: kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe — Saaten:
+@@ 20.1 s · same.massstab.spanne S2 leser {"art":"leser","fehlt":"die Welt-Kamera schneidet unter 0.1 m ab (state.camera.near, stamm/dirigent-ankunft.js:468): 1 cm Bildbreite verlangt 3.67e-3 m Abstand — Saaten: die Lage des Gelände-Kerns lebt nur für die gelade
+@@ 20.1 s · same.massstab.spanne S3 leser {"art":"leser","fehlt":"Horizont-Absenkung aus 10 km: die Welt ist eben — das Fern-Gelände trägt keine Krümmung (FERN_RING, stamm/gelaende-fern.js:460), kein Auge steigt auf 10 km — Saaten: die Lage des Gelände-Kerns leb
+@@ 20.1 s · same.massstab.spanne S4 leser {"art":"leser","fehlt":"Flug Boden → Orbit → Boden: kein Orbit — das Gelände ist eben (FERN_RING, stamm/gelaende-fern.js:460), der Planet hat keine andere Seite — Saaten: die Lage des Gelände-Kerns lebt nur für die gelad
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
