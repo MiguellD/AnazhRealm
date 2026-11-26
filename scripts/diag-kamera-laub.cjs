@@ -479,37 +479,51 @@ async function feldZensus(k) {
             const j = (oben ? H - 1 - py : py) * feld.zeile + px * feld.kan;
             return [feld.f(feld.px[j]) * 0.5 * W, feld.f(feld.px[j + 1]) * 0.5 * H];
         };
-        const z = { ziel: ib >= 0, W, H, klassen: {}, beispiele: [] };
+        const z = { ziel: ib >= 0, W, H, klassen: {}, beispiele: [], sprung: 0 };
         const [n0, n1] = [new T.Vector3(), new T.Vector3()];
+        // das Fenster wächst mit dem Weg (höchstens 12 Pixel): ein schneller Leib liegt im Bild bis zu einem Weg neben der Lage
+        // am Stempel (Radeon stadt-voll, 19,7 m, Weg 9,6 Pixel: sein Feld 10 Pixel daneben, im Saum von 2 nichts)
+        const imBand = (pt) => {
+            const s = Math.min(12, Math.max(k.saum, Math.ceil(pt.lang)));
+            for (let dy = -s; feld && dy <= s; dy++)
+                for (let dx = -s; dx <= s; dx++) {
+                    const [mx, my] = lies(Math.min(W - 1, Math.max(0, pt.px + dx)), Math.min(H - 1, Math.max(0, pt.py + dy)));
+                    const proj = (mx * pt.ex + my * pt.ey) / (pt.lang * pt.lang);
+                    if (proj > k.band[0] && proj < k.band[1]) return [+mx.toFixed(2), +my.toFixed(2)];
+                }
+            return null;
+        };
         for (const [x, b] of S1) {
             const a = S0.get(x);
             if (!a || a.n !== b.n || a.je !== b.je) continue;
             const kl = b.durch ? "durchsichtig" : klasse(b.name);
             for (let i = 0; i < b.n; i++) {
-                // der Punkt des Dings, der am weitesten zieht (die Mitte, ein Gelenk)
-                let w = null;
+                // der Punkt des Dings, der am weitesten zieht (die Mitte, ein Gelenk) — streng: ein Gelenk ohne Vor fällt, auch wenn die
+                // Mitte trägt. Hinter fremder Deckung liest er das Feld des Deckenden (Radeon stadt-voll: das Rad des Lieferwagens hinter
+                // einem Passanten); die Tiefe des Szenen-Passes las das Rück-Lesen 0 (465 von 465 Punkten), darum trägt `ohneMax` die Deckung
+                const pts = [];
                 for (let j = 0; j < b.je; j++) {
                     const q = (i * b.je + j) * 3;
                     n1.set(b.P[q], b.P[q + 1], b.P[q + 2]).applyMatrix4(pv);
                     if (Math.abs(n1.z) > 1 || Math.abs(n1.x) > 0.97 || Math.abs(n1.y) > 0.97) continue;
                     n0.set(a.P[q], a.P[q + 1], a.P[q + 2]).applyMatrix4(pv);
                     const [ex, ey] = [(n1.x - n0.x) * 0.5 * W, (n1.y - n0.y) * 0.5 * H];
-                    if (!w || Math.hypot(ex, ey) > w.lang) w = { lang: Math.hypot(ex, ey), ex, ey, px: Math.floor((n1.x * 0.5 + 0.5) * W), py: Math.floor((n1.y * 0.5 + 0.5) * H), q };
+                    pts.push({ lang: Math.hypot(ex, ey), ex, ey, px: Math.floor((n1.x * 0.5 + 0.5) * W), py: Math.floor((n1.y * 0.5 + 0.5) * H), q });
                 }
-                if (!w || w.lang < k.minPx) continue;
+                if (!pts.length) continue;
+                pts.sort((p, q) => q.lang - p.lang);
+                const w = pts[0];
+                if (w.lang < k.minPx) continue;
                 const d = Math.hypot(b.P[w.q] - kam.position.x, b.P[w.q + 1] - kam.position.y, b.P[w.q + 2] - kam.position.z);
                 if (d > k.maxM || (b.R[i] * fy) / Math.max(d, 1e-3) * 0.5 * H < k.minR) continue;
-                // das Fenster wächst mit dem Weg (höchstens 12 Pixel): ein schneller Leib liegt im Bild bis zu einem Weg neben der Lage
-                // am Stempel (Radeon stadt-voll, 19,7 m, Weg 9,6 Pixel: sein Feld 10 Pixel daneben, im Saum von 2 nichts)
-                let [ok, gem] = [false, null];
-                const s = Math.min(12, Math.max(k.saum, Math.ceil(w.lang)));
-                for (let dy = -s; feld && dy <= s && !ok; dy++)
-                    for (let dx = -s; dx <= s && !ok; dx++) {
-                        const [mx, my] = lies(Math.min(W - 1, Math.max(0, w.px + dx)), Math.min(H - 1, Math.max(0, w.py + dy)));
-                        const proj = (mx * w.ex + my * w.ey) / (w.lang * w.lang);
-                        ok = proj > k.band[0] && proj < k.band[1];
-                        if (ok || !gem) gem = [+mx.toFixed(2), +my.toFixed(2)];
-                    }
+                // ein Sprung (der Platz einer Instanz nimmt ein anderes Ding — Radeon: 767 Pixel in einem Bild) ist keine Bewegung,
+                // die Geschichte ist dort neu
+                if (w.lang > W / 8) {
+                    z.sprung++;
+                    continue;
+                }
+                const gem = imBand(w);
+                const ok = !!gem;
                 const K = (z.klassen[kl] ||= { bewegt: 0, getragen: 0 });
                 K.bewegt++;
                 K.getragen += ok;
