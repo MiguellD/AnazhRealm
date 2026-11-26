@@ -103,7 +103,8 @@ stimmen Sterne und Sinus; einzelne lange schwach gekrümmte Läufe der Ebene 1 b
 
 gate:gelaende-realismus Selbsttest GRÜN (stern · kreuz beim Namen), die Welt GRÜN bis auf `kosten` im Rauschen (oben) · gate:settlement
 EXIT 0 · gate:wasser-leben EXIT 0 (Selbsttest GRÜN, K4 300 von 300) · gate:worker-dichte GRÜN bis auf `ort.frage.bytes` (der Planet-SHA 8aa55db6 ≠ 22ec9a31) — auch
-auf main 54b89949 selbst ROT, geerbt, nicht berührt · gate:profiband EXIT 0 (die Band-Wand steht).
+auf main 54b89949 selbst ROT, geerbt, nicht berührt · gate:profiband EXIT 0 (die Band-Wand steht) · gate:webgl-probe am Kopf
+c4226224 EXIT 0, `probeUrteil` GRÜN (0 rote Zeilen) · K8 `--faden --planet --saaten 100` EXIT 0 (101 von 101 Saaten, 99,8 %).
 
 ## Offen (mit Grund und Messname)
 
@@ -129,4 +130,8 @@ auf main 54b89949 selbst ROT, geerbt, nicht berührt · gate:profiband EXIT 0 (d
   daneben; die Welt fragt das Wasser. Messname gate:settlement O (der Ort des Akts).
 - **probe-tag**: `artifacts/profiband/werkzeug/zug.sh` fehlt in diesem Container — der Probe-Ruf folgt dem Brief: `gate:webgl-probe`,
   `bild:genesis@0.5`, `bild:ufer@0.35`, dazu `gate:gelaende-realismus` und `gate:profiband` (meine Linsen).
-- **Der Vorprüf-Kopf** wartet auf `w28-hydro-samen` in `origin/main`.
+- **Der Vorprüf-Kopf** wartet auf `w28-hydro-samen` in `origin/main`. Das Wartezimmer 26.11. 12:28–16:27 (27 Schritte ≤ 9 min,
+  Briefkasten alle ≈ 30 min): main stand durchgehend auf 54b89949, hydro-samen nicht darin, kein Brief unter `cloud-post/fluss-netz.md`,
+  keine `probe-post/fluss-netz/` — nach 4 h ohne Post beendet. Sobald hydro-samen landet: `git reset --soft origin/main` → EIN Commit
+  „Vorprüfung fluss-netz 1 (auf main <kopf8>): …“ mit den Stations-Zeilen oben im Rumpf. Messname `git merge-base --is-ancestor
+  origin/hydro-samen origin/main`.
