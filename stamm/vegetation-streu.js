@@ -1971,7 +1971,8 @@ class AnazhRealm_vegetation_streu {
     }
     // DIE BEDEUTUNG EINES LEIBS (das Stufen-Gesetz: wer den knappen Haushalt der Leiber trägt — die Nah-Wahl der Bewohner, der
     // Tier-Satz, die Fahrer, je `nahLeiber`): seine Größe am Schirm (Größe × Brennweite / Abstand vom Auge, Bildpunkte) mal seine
-    // Bewegung (1 + Tempo / LOD_SCHIRM.bewegungMS: wer geht, verliert im Satz die Phasen seines Gangs, wer steht, nichts).
+    // Bewegung (1 + Tempo / LOD_SCHIRM.bewegungMS: wer geht, verliert im Satz die Phasen seines Gangs, wer steht, nichts). Die
+    // Bewohner fragen ohne Gang (`_tickBewohner`, stand-lebt): ihr Satz geht den Gang mit, ihr Stand erstarrt in ihm.
     // Die Brennweite trägt sie je Zeichenpuffer (`_bedeutungF`), nie je Leib.
     // DER SCHIRM IST DAS BILD (w28-bau-rezept-tuer): wer außer dem Bild steht (seine Körper-Kugel — die Größe als halbe Höhe
     // um die halbe Höhe über dem Fuß `p` — gegen den Blick des Takts, `_frustumCache`), hat am Schirm keine Größe: er zählt

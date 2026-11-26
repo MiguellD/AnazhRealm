@@ -1659,6 +1659,10 @@ class AnazhRealm_koerper_seele {
             } else this._rauchWindAt(src.x, src.z, t, S.hoeheM, null, wind);
             const u = Math.max(0, wind.ms);
             const sig = Math.hypot(S.meanderMS, S.turbulenz * u);
+            if (src.spur) {
+                total += strength * this._scentSpur(x, z, src.spur, wind, u, sig, t);
+                continue;
+            }
             const cos = (dx * wind.x + dz * wind.z) / dist; // + = der Empfänger liegt windab
             const q2 = sig * sig - u * u * (1 - cos * cos);
             if (!(q2 > 0)) continue; // außerhalb des Kegels
@@ -1668,6 +1672,66 @@ class AnazhRealm_koerper_seele {
             total += strength * (q / sig) * Math.exp(-(dist / S.rangeM) * (sig / v));
         }
         return total;
+    }
+    // DIE FAHNE TRÄGT IHRE LAUFZEIT (jagd-quote 2): eine Quelle mit Spur (`src.spur`, die Orte ihres Leibs je SCENT.spurTaktS auf
+    // der Sim-Uhr, `_duftSpurSchreiben`) riecht man dort, wo sie stand, als die Front aufbrach, die einen jetzt erreicht — ein
+    // Punkt der Spur im Alter τ trägt, wenn seine Front da ist (r ≤ v·τ, v = u·cosθ + q dieselbe Front wie oben), mit derselben
+    // Fahne; die Quelle wiegt mit ihrem stärksten angekommenen Punkt. Eine Quelle, die lange stand, ist byte-gleich die
+    // Fahne oben; eine eben gesetzte (die leere Spur) riecht noch niemand. In Windstille läuft die Front mit dem Mäander σ0
+    // (0,5 m/s, Hanna 1990): 20 m in 40 s — bis hier roch jede Beute jeden Jäger binnen 50 m sofort, und an einem stillen Tag
+    // gelang keine Pirsch (Bühne jagd, u = 0: 18 von 18 Kitzen flohen im ersten Takt auf 20–26 m, 0 Risse im Nah-Kreis gegen 4).
+    _scentSpur(x, z, sp, wind, u, sig, t) {
+        const S = AnazhRealm.SCENT;
+        const N = sp.x.length;
+        let best = 0;
+        for (let i = 0; i < sp.n; i++) {
+            const j = (sp.k - 1 - i + N) % N;
+            const tau = t - sp.t[j];
+            const dx = x - sp.x[j];
+            const dz = z - sp.z[j];
+            const r = Math.hypot(dx, dz);
+            if (r < 1e-3) {
+                best = 1; // an ihrem Ort selbst
+                break;
+            }
+            const cos = (dx * wind.x + dz * wind.z) / r;
+            const q2 = sig * sig - u * u * (1 - cos * cos);
+            if (!(q2 > 0)) continue;
+            const q = Math.sqrt(q2);
+            const v = u * cos + q;
+            if (!(v > 0) || r > v * tau) continue; // gegen den Wind, oder die Front ist noch unterwegs
+            const g = (q / sig) * Math.exp(-(r / S.rangeM) * (sig / v));
+            if (g > best) best = g;
+        }
+        return best;
+    }
+    // die Spur eines Leibs (die Quelle der Laufzeit, `_scentSpur`): je SCENT.spurTaktS Sim-Sekunden sein Ort, die letzten
+    // SCENT.spurN (128 s — die Front der Windstille trägt in ihnen 64 m, weiter als die Nase, 50 m). Geschrieben in der
+    // Tier-Schleife (`updateCreatures`), ein Vergleich je Tier und Takt; die Uhr läuft zurück (neue Welt) → die Spur beginnt neu.
+    _duftSpurSchreiben(c) {
+        const S = AnazhRealm.SCENT;
+        const t = this.state._simZeit;
+        if (!Number.isFinite(t)) return;
+        const ud = c.userData;
+        let sp = ud._duftSpur;
+        if (!sp)
+            sp = ud._duftSpur = {
+                x: new Float64Array(S.spurN),
+                z: new Float64Array(S.spurN),
+                t: new Float64Array(S.spurN),
+                n: 0,
+                k: 0,
+            };
+        if (sp.n) {
+            const vor = sp.t[(sp.k - 1 + S.spurN) % S.spurN];
+            if (t < vor) sp.n = sp.k = 0;
+            else if (t - vor < S.spurTaktS) return;
+        }
+        sp.x[sp.k] = c.position.x;
+        sp.z[sp.k] = c.position.z;
+        sp.t[sp.k] = t;
+        sp.k = (sp.k + 1) % S.spurN;
+        if (sp.n < S.spurN) sp.n++;
     }
     // der Takt der Nase beginnt (updateCreatures, vor der Tier-Schleife): das Wind-Gedächtnis des letzten Takts fällt, die
     // Wind-Hüllen bleiben im Pool (keine Allokation je Frame)
@@ -1877,7 +1941,13 @@ AnazhRealm.SCENT = Object.freeze({
     turbulenz: 0.176,
     // die Höhe der Fahne über Grund (m): der Wind am Ort in Nasen-Höhe, die untere Grenze des Hellmann-Profils (`windProfil`)
     hoeheM: 1,
+    // DIE SPUR (`_scentSpur`, die Laufzeit der Front): je spurTaktS Sim-Sekunden ein Ort, die letzten spurN — 128 s tragen die
+    // Front der Windstille (σ0) 64 m weit, über die Nase der Windstille (jagd.scentRangeM 50 m) hinaus; windab läuft sie schneller
+    spurTaktS: 1,
+    spurN: 128,
 });
+// die Spur eines Leibs, der eben erst da ist: noch keine Front unterwegs (`_scentSpur` riecht ihn nicht)
+AnazhRealm.DUFT_SPUR_LEER = Object.freeze({ x: [], z: [], t: [], n: 0, k: 0 });
 
 // Emotion→Tag-Mapping für Boosts: jede der 6 Emotionen koppelt an einen MATERIAL_TAG_KEY; über 0.7
 // wirkt ein Tag-Delta auf den Spieler-Compound (Stat-Steigerung ~10–15 %, spürbar, nicht dominant).
