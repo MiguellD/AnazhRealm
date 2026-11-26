@@ -1,7 +1,7 @@
 {
  "sha": "4c9e6aab7a4d24859cee6b9173b6f26cd4611bdf",
  "geraet": "gtx",
- "zeit": "2026-11-26T02:54:23.841Z",
+ "zeit": "2026-11-26T03:16:59.166Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.menge.rhythmus#2": {
@@ -628,6 +628,76 @@
    },
    "zeit": "2026-11-26T02:52:23.823Z",
    "abdruck": "934903ffb9e9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.seuche#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 verfehlt ≥ 1 — Täter: koerper-core.js tagesHaltung(akt, rolle) — die Haltung kennt den Kranken nicht: er sitzt im Akt des Abends wie ein Gesunder (kein Stand des Kranken in TAGES_GESETZ.haltung, kein Husten) · Anteil der Viertelstunden, in denen der Krank-Tag vom gesunden Tag abweicht 0.4508 (Soll > 0) · Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 (Soll ≥ 1) · Umfang 43 (Soll ≥ 1 Person krank) · 43 von 1356 Bewohnern heute krank (b.krank, der Lebenslauf am Tag der Prozesse); 43 gemessen: der Krank-Tag (_bewohnerSoll) gegen den gesunden (koerper tagesPlan, krank falsch) in 0.4508 der Viertelstunden anders, 0 am Posten ohne Abweichung; um 10 Uhr 43 daheim, Akte {\"abend\":41,\"morgen\":1,\"arbeit\" · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.37,
+   "grund": "ROT: S1 ROT an Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 verfehlt ≥ 1 — Täter: koerper-core.js tagesHaltung(akt, rolle) — die Haltung kennt den Kranken nicht: er sitzt im Akt des Abends wie ein Gesunder (kein Stand des Kranken in TAGES_GESETZ.haltung, kein Husten) · Anteil der Viertelstunden, in denen der Krank-Tag vom gesunden Tag abweicht 0.4508 (Soll > 0) · Anteil Kranker, deren Haltung im Bild von der des Gesunden im selben Akt abweicht 0 (Soll ≥ 1) · Umfang 43 (Soll ≥ 1 Person krank) · 43 von 1356 Bewohnern heute krank (b.krank, der Lebenslauf am Tag der Prozesse); 43 gemessen: der Krank-Tag (_bewohnerSoll) gegen den gesunden (koerper tagesPlan, krank falsch) in 0.4508 der Viertelstunden anders, 0 am Posten ohne Abweichung; um 10 Uhr 43 daheim, Akte {\"abend\":41,\"morgen\":1,\"arbeit\" · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kfeb6dbce3b21",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k05a87765fff2",
+   "s": 21.5,
+   "fremd": {
+    "s": 24,
+    "takte": 11,
+    "fremdS": 33.88,
+    "kerne": 1.41,
+    "fensterKerne": 1.54,
+    "namen": [
+     [
+      "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $__claudeCodeSc",
+      20.47
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      2.92
+     ],
+     [
+      "conhost.exe 0x4",
+      2.55
+     ]
+    ],
+    "dienerS": 5.17,
+    "diener": [
+     [
+      "dwm.exe",
+      1.97
+     ],
+     [
+      "System",
+      1.78
+     ]
+    ],
+    "geraetS": 10.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.83
+     ],
+     [
+      "svchost.exe",
+      2.63
+     ],
+     [
+      "SearchIndexer.exe",
+      0.28
+     ]
+    ],
+    "eigenS": 54.86,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T03:16:59.166Z",
+   "abdruck": "79d51260ec8a",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
