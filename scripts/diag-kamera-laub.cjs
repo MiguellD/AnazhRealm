@@ -462,15 +462,20 @@ async function feldZensus(k) {
         const ib = rt ? rt.textures.findIndex((x) => x.name === "bewegung") : -1;
         let feld = null;
         if (ib >= 0) {
+            // rg16f: 2 Kanäle; WebGPU kopiert jede Zeile auf 256 Byte ausgerichtet (wie `__zielLesen`) — bei W · 4 ∤ 256 lag
+            // ohne den Schritt jede Zeile versetzt (Radeon 1440 Pixel: 32 Pixel je Zeile, ab der Bildmitte las der Zensus ein
+            // fremdes Ding)
             const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H, ib);
-            feld = { px, kan: (px.length / (W * H)) | 0, f: px.constructor.name === "Uint16Array" ? halb : (q) => q };
+            const [kan, B] = [2, px.BYTES_PER_ELEMENT];
+            const zeile = px.length > W * H * kan ? (Math.ceil((W * kan * B) / 256) * 256) / B : W * kan;
+            feld = { px, kan, zeile, f: px.constructor.name === "Uint16Array" ? halb : (q) => q };
         }
         const oben = rend.coordinateSystem === T.WebGPUCoordinateSystem;
         const kam = st.camera;
         const pv = new T.Matrix4().multiplyMatrices(kam.projectionMatrix, kam.matrixWorldInverse);
         const fy = kam.projectionMatrix.elements[5]; // cot(fov/2): der Radius eines Dings im Abstand d deckt R · fy / d · H/2 Pixel
         const lies = (px, py) => {
-            const j = ((oben ? H - 1 - py : py) * W + px) * feld.kan;
+            const j = (oben ? H - 1 - py : py) * feld.zeile + px * feld.kan;
             return [feld.f(feld.px[j]) * 0.5 * W, feld.f(feld.px[j + 1]) * 0.5 * H];
         };
         const z = { ziel: ib >= 0, W, H, klassen: {}, beispiele: [] };

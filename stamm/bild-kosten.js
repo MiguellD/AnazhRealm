@@ -2341,17 +2341,25 @@ class AnazhRealm_bild_kosten {
             // dem Bild davor zog — nur mit zeitlicher Auflösung, sie allein liest es (`_traaKameraBewegung`). Es mischt nach der Deckung
             // des Stoffs (Normal): was mischt, schreibt Deckung 0 und lässt die Bewegung des Dings dahinter stehen. 4,67 MB bei 1080p und
             // Skala 0,75.
+            // Ein Gerät mit 16 Varyings (der WebGPU-Standard, `GERAET_GRENZEN`) trägt das Varying des Eintrags nicht neben dem
+            // Satz-Stoff (16): dort zieht jedes Ding allein mit der Kamera, laut benannt.
+            const be = this.state.renderer.backend;
+            const feld = this.state._traa && !(be && be.device && be.device.limits.maxInterStageShaderVariables <= 16);
+            if (this.state._traa && !feld)
+                this.log(
+                    "DAS FELD DER BEWEGUNG: das Gerät trägt 16 Varyings — die Dinge ziehen ohne eigene Bewegung",
+                    "WARN"
+                );
             const eintraege = { output: this._ausgabeDither(belichtet), glanz: this._glanzKnoten() };
-            if (this.state._traa) eintraege.bewegung = this._bewegungKnoten();
+            if (feld) eintraege.bewegung = this._bewegungKnoten();
             const mrt = TSL.mrt(eintraege);
-            if (this.state._traa)
-                mrt.setBlendMode("bewegung", new (mrt.getBlendMode("output").constructor)(THREE.NormalBlending));
+            if (feld) mrt.setBlendMode("bewegung", new (mrt.getBlendMode("output").constructor)(THREE.NormalBlending));
             scenePass.setMRT(mrt);
             const glanz = scenePass.getTexture("glanz");
             glanz.type = THREE.UnsignedByteType;
             glanz.format = THREE.RedFormat;
             glanz.minFilter = glanz.magFilter = THREE.NearestFilter;
-            if (this.state._traa) {
+            if (feld) {
                 const bw = scenePass.getTexture("bewegung");
                 bw.type = THREE.HalfFloatType;
                 bw.format = THREE.RGFormat;
@@ -2397,7 +2405,7 @@ class AnazhRealm_bild_kosten {
                       this._traaKameraBewegung(
                           TSL,
                           scenePass.getTextureNode("depth"),
-                          scenePass.getTextureNode("bewegung")
+                          feld ? scenePass.getTextureNode("bewegung") : null
                       ),
                       this.state.camera
                   )
@@ -2645,7 +2653,7 @@ class AnazhRealm_bild_kosten {
                 const d = tiefe.load(texel).r;
                 const vor = R.mul(vec4(ndc, webgpuRaum ? d : d.mul(2).sub(1), 1));
                 const kamera = ndc.sub(vor.xy.div(vor.w));
-                return kamera.add(d.lessThan(1).select(objekt.load(texel).xy, vec2(0)));
+                return objekt ? kamera.add(d.lessThan(1).select(objekt.load(texel).xy, vec2(0))) : kamera;
             },
         };
     }
@@ -2771,7 +2779,7 @@ class AnazhRealm_bild_kosten {
     // DER EINTRAG `bewegung` DES SZENEN-PASSES (rg16f, `_ensurePostProcessing`): je Fragment die Bewegung seines Dings in NDC
     // unter der Kamera dieses Bilds (`_traaKameraBewegung` addiert die der Kamera). Je Vertex die Strecke im Clip-Raum
     // d = PV · (W · p − W_vor · (p + Δ)) als Varying (Δ die Bewegung im Bau, `_bewegungBau`; ohne Stempel dieses Bilds W_vor = W,
-    // `_bewegungVorWelt`); je Fragment a = P · Sicht-Punkt, die Bewegung a/a.w − (a − d)/(a.w − d.w) — was steht, schreibt
+    // `_bewegungVorWelt`); je Fragment a = PV · Welt-Punkt, die Bewegung a/a.w − (a − d)/(a.w − d.w) — was steht, schreibt
     // genau 0. Ein Stoff mit Mischung (Regen, Rauch, Glas) schreibt Deckung 0: der Eintrag mischt nach der Deckung
     // (`BlendMode` Normal), das Ding hinter ihm behält seine Bewegung.
     _bewegungKnoten() {
@@ -2808,7 +2816,9 @@ class AnazhRealm_bild_kosten {
                 const still = bew ? T.modelWorldMatrix.mul(T.vec4(bew.lokal, 0)).xyz.negate() : T.vec3(0);
                 const dw = T.select(frisch, jetzt.sub(vorWelt.mul(T.vec4(q, 1)).xyz), still);
                 const d = T.varying(T.cameraProjectionMatrix.mul(T.cameraViewMatrix.mul(T.vec4(dw, 0))), "v_bewegung");
-                const a = T.cameraProjectionMatrix.mul(T.vec4(T.positionView, 1));
+                // der Punkt jetzt aus dem Welt-Punkt des Fragments (`v_positionWorld` trägt jeder Welt-Stoff schon): ein eigener
+                // Sicht-Punkt kostete ein zweites Varying — der Satz-Stoff steht bei 15 von 16 (WebGPU maxInterStageShaderVariables)
+                const a = T.cameraProjectionMatrix.mul(T.cameraViewMatrix.mul(T.vec4(T.positionWorld, 1)));
                 const b = a.sub(d);
                 return T.vec4(a.xy.div(a.w).sub(b.xy.div(b.w)), 0, 1);
             }
@@ -2817,14 +2827,27 @@ class AnazhRealm_bild_kosten {
         return AnazhRealm.__bewegungKnoten;
     }
 
+    // DER STEMPEL DES BILDS (`_bewegungUniformen`) steigt VOR dem ersten Pass des Bilds: der Schatten-Takt (`_loopShadowUpdate`)
+    // zeichnet vor dem Szenen-Pass, und wer zuerst zeichnet, rückt das Vor (Arena `_block`, Senke, Knochen) — stieg der Stempel
+    // erst in der Reprojektion, trug jedes Ding, das ein Schatten-Pass zuerst zog, den Stempel des Bilds davor, und der
+    // Szenen-Pass las es als ruhend (Radeon stadt-voll, Zensus 5 von 22 getragen). Ohne Schatten-Takt steigt er hier.
+    _bewegungTakt(vorSchatten) {
+        if (!vorSchatten && this._bewegungOffen) {
+            this._bewegungOffen = false;
+            return;
+        }
+        AnazhRealm.__bewegungBild = ((AnazhRealm.__bewegungBild | 0) % 16777215) + 1;
+        AnazhRealm._bewegungUniformen().bild.value = AnazhRealm.__bewegungBild;
+        this._bewegungOffen = vorSchatten === true;
+    }
+
     // Die Reprojektion des Frames: vor dem Post-Render (die Kamera trägt noch keinen TRAA-Versatz, der lebt nur
-    // zwischen onBefore-/onAfterRenderPipeline), einmal je gerendertem Frame — und der Stempel des Bilds (`_bewegungUniformen`).
+    // zwischen onBefore-/onAfterRenderPipeline), einmal je gerendertem Frame.
     _traaReprojektion() {
         const z = this.state._traaR;
         const cam = this.state.camera;
         if (!z || !cam) return;
-        AnazhRealm.__bewegungBild = ((AnazhRealm.__bewegungBild | 0) % 16777215) + 1;
-        AnazhRealm._bewegungUniformen().bild.value = AnazhRealm.__bewegungBild;
+        this._bewegungTakt(false);
         cam.updateMatrixWorld();
         z.vor.copy(z.jetzt);
         z.jetzt.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);

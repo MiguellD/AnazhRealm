@@ -3131,13 +3131,16 @@ _stammZonen(AnazhRealm, [AnazhRealm_werkstatt_hud]);
 // ===== ATLAS · Werkstatt/hud — Außen-Konstanten =====
 // DIE GERÄTE-GRENZEN (G1): die Grenzen je Shader-Stufe, die jedes Gerät der Seite in der Höhe seines Adapters verlangt
 // (`_rendererGeraet` → `requiredLimits`) — die WebGPU-Standards (16 Texturen · 16 Sampler · 8 Speicher-Puffer · 4 Speicher-
-// Texturen · 12 Uniform-Puffer) gelten sonst auch auf einem Adapter, der mehr trägt (Radeon 890M: 48 · 16 · 16 · 8 · 12).
+// Texturen · 12 Uniform-Puffer) gelten sonst auch auf einem Adapter, der mehr trägt (Radeon 890M: 48 · 16 · 16 · 8 · 12). Dazu die
+// Varyings zwischen den Stufen (Standard 16, Radeon 890M 28): das Feld der Bewegung (`_bewegungKnoten`) trägt eins je Stoff, der
+// Satz-Stoff der Häuser stand mit 16 an der Grenze — ohne die Höhe des Adapters sagte seine Pipeline ab, die Stadt stand ohne Häuser.
 AnazhRealm.GERAET_GRENZEN = Object.freeze([
     "maxSampledTexturesPerShaderStage",
     "maxSamplersPerShaderStage",
     "maxStorageBuffersPerShaderStage",
     "maxStorageTexturesPerShaderStage",
     "maxUniformBuffersPerShaderStage",
+    "maxInterStageShaderVariables",
 ]);
 
 // Was jede Emotion in der WELT bewirkt — die Legende, die das Aura-Rätsel löst (der
