@@ -1,0 +1,78 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+@@ -1602,7 +1602,7 @@
+             // 1 000 Orte um den Spieler (±20 km) — Land der Welt gegen Land des Planeten an derselben Lage (x Ost, z Süd), dazu ±200 km die Höhe (r);
+             // Gegenlauf: der Planet an verschobener Lage (−31°, +97°) und −1 Ma.
+             [P]: {
+-                sek: 40,
++                sek: 80,
+                 faecher: true,
+                 pfad: [...PLANET_PFAD, "stamm/vegetation-baum.js", "stamm/gelaende-kollision.js"],
+                 ungefahren: "die Bildpaare Durchbruch/Fjord (S3) und Ankunft (S5) schießt nur das Gerät",
+@@ -1710,7 +1710,7 @@
+                         aus.ms = r3(performance.now() - t0);
+                         return aus;
+                     };
+-                    const w = await S(seite, { saaten: 12, budgetMs: 22000 });
++                    const w = await S(seite, { saaten: 0, budgetMs: 22000 });   // S2 rechnet der Kopf über die 100 Saaten des Richters (unten), die Seite nicht mehr
+                     const aus = M.teil || {};
+                     const s1 = w.s1;
+                     // S1 AM FÄCHER (M4): Orte des Planeten polwärts 36° × heute — je Ort die Eis-Zeit, die der Findling liest (planet-ort
+@@ -1770,7 +1770,56 @@
+                         werte: { ursacheProzent: w1p.ursache == null ? null : Math.round(1000 * w1p.ursache) / 10, ohneFindlingOrte: w1p.ohneFindling },
+                         zeuge: { relikte: w1p.relikte, zeiten: gangK.length, land: w1p.land, orte: w1p.orte, eisGeschichte: w1p.eisGeschichte, ohneFindling: w1p.ohneFindling, heimat: s1, akte: R1p.akte },
+                     };
+-                    const s2 = w.s2;
++                    // S2 IM KERN DES KOPFS (wie S1): die 100 Saaten des Richters, wörtlich — vorher das Literal 12 auf der Seite (98,6 %, „der Zeuge
++                    // der Welt fehlt: nur 12 Saaten“). Derselbe Auftrag wie voxel-worker.js planetOrtAuftrag (planet-core planetScheibe ·
++                    // planetOrt am Ort-Gesetz des Gelände-Kerns · planetPunkt), dasselbe Gitter 6° × 6° (±66°), dieselbe Gipfel-Regel (Land,
++                    // > 2 000 m, kein 4er-Nachbar höher), dasselbe Maß (Δ ks > ksMin der Saat + 0,05); 138 000 Orte gefächert über die Kerne
++                    // (worker_threads). Gleiche Bedingung: die ersten 12 Saaten geben Byte für Byte die Zahl der Seite (356 von 361).
++                    const s2 = await new Promise((gebenS2, fehlS2) => {
++                        const { Worker } = require("worker_threads"), wurzel = require("path").resolve("."), F = Math.max(1, Math.min(8, require("os").cpus().length));
++                        const SAAT = `
++                            const { parentPort, workerData } = require("worker_threads"), path = require("path");
++                            globalThis.self = globalThis; require(path.join(workerData.wurzel, "gelaende-core.js"));
++                            const G = globalThis.__gelaendeCore, P = require(path.join(workerData.wurzel, "planet-core.js")), RAD = Math.PI / 180, og = G.ortGesetz();
++                            for (const samen of workerData.saaten) {
++                                const plan = P.planetPlan(samen, P.PLANET_ERDE), S = P.planetScheibe(plan, 0), o = [];
++                                for (let b = -66; b <= 66; b += 6) for (let l = -180; l < 180; l += 6) {
++                                    const x = P.planetOrt(S, b * RAD, l * RAD, og, undefined, plan), p = {};
++                                    P.planetPunkt(S, b * RAD, l * RAD, 16, p);
++                                    o.push({ land: p.hoeheM > 0, hoeheM: p.hoeheM, ks: x.delta.wildnis.ks });
++                                }
++                                const nb = 60, ksMin = Math.min(...o.filter((x) => x.land).map((x) => x.ks));
++                                const a = { samen, gipfel: 0, konv: 0, land: 0, landKonv: 0, antworten: o.length, hSumme: 0, hQuadrat: 0 };
++                                o.forEach((x, k) => {
++                                    a.hSumme += x.hoeheM; a.hQuadrat += x.hoeheM * x.hoeheM;
++                                    if (x.land) { a.land++; if (x.ks > ksMin + 0.05) a.landKonv++; }
++                                    if (!(x.land && x.hoeheM > 2000)) return;
++                                    const nachbarn = [k - 1, k + 1, k - nb, k + nb].filter((j) => j >= 0 && j < o.length).map((j) => o[j].hoeheM);
++                                    if (nachbarn.some((h) => h > x.hoeheM)) return;
++                                    a.gipfel++;
++                                    if (x.ks > ksMin + 0.05) a.konv++;
++                                });
++                                parentPort.postMessage(a);
++                            }
++                            parentPort.postMessage(null);`;
++                        const saaten = Array.from({ length: 100 }, (_, si) => (si === 0 ? samenK : "zsp-" + (si - 1))), je = [], t2 = Date.now();
++                        let offen = F;
++                        for (let f = 0; f < F; f++) {
++                            const wk = new Worker(SAAT, { eval: true, workerData: { wurzel, saaten: saaten.filter((_, i) => i % F === f) } });
++                            wk.on("error", fehlS2);
++                            wk.on("message", (m) => {
++                                if (m) return je.push(m);
++                                if (--offen) return;
++                                const g = { gipfel: 0, konv: 0, saaten: je.length, antworten: 0, land: 0, landKonv: 0, faeden: F, ms: Date.now() - t2, version: PCk.VERSION };
++                                let hs = 0, hq = 0;
++                                for (const a of je) { for (const k of ["gipfel", "konv", "antworten", "land", "landKonv"]) g[k] += a[k]; hs += a.hSumme; hq += a.hQuadrat; }
++                                const mh = hs / Math.max(1, g.antworten);
++                                g.streuung = Math.round(1e3 * Math.sqrt(Math.max(0, hq / Math.max(1, g.antworten) - mh * mh))) / 1e3;
++                                g.unter95 = je.filter((a) => a.gipfel && a.konv / a.gipfel < 0.95).map((a) => a.samen + " " + a.konv + "/" + a.gipfel);
++                                gebenS2(g);
++                            });
++                        }
++                    });
+                     aus[2] = { werte: { gipfelProzent: s2.gipfel ? Math.round((1000 * s2.konv) / s2.gipfel) / 10 : null, landProzent: s2.land ? Math.round((1000 * s2.landKonv) / s2.land) / 10 : null }, zeuge: s2 };
+                     const s3 = w.s3;
+                     aus[3] = { werte: { fjordeOhneEis: s3.fjordOhne }, zeuge: s3, auge: await M.auge("gegenwart-s3", { ort: "wiese" }) };

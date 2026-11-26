@@ -1,0 +1,24 @@
+Kandidat der Station planet.kopplung.gegenwart#2 (S2) — für den Zweig punkte-maschine, nicht für main
+
+Richter (wörtlich, vision/meisterkarte-2.json): „100 Saaten: Gipfel > 2 km an einer jemals konvergenten Grenze ≥ 95 %“
+
+Stations-Fehler: meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js, gegenwart `mess`:
+  const w = await S(seite, { saaten: 12, budgetMs: 22000 });
+ein Literal von 12 Saaten gegen die 100 des Richters; die Akte (Radeon 2da17e2e 25.11. 23:32, GTX f63a69ef) urteilt
+„S2 gipfelProzent 98,6 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: nur 12 Saaten (Soll 100)“ → ROT.
+
+Schnitt (k2-zusammenspiel.gegenwart-s2.diff, gegen punkte-maschine d5b0c7d7):
+  - die Seite rechnet S2 nicht mehr (saaten 0); S2 rechnet der Kopf wie S1 (PCk = planet-core.js, Ort-Gesetz aus
+    gelaende-core.js) — derselbe Auftrag wie voxel-worker.js planetOrtAuftrag (planetScheibe · planetOrt · planetPunkt),
+    dasselbe Gitter 6° × 6° (±66°), dieselbe Gipfel-Regel, dasselbe Maß (Δ ks > ksMin der Saat + 0,05);
+  - 100 Saaten (anazh-realm-seed + zsp-0 … zsp-98), 138 000 Orte über worker_threads (min(8, Kerne));
+  - der Deckel der Leiter sek 40 → 80.
+
+Gemessen (Wolke, 4 Kerne, planet-h2-14, Hand-Lauf s2-hand.cjs / s2-kandidat.cjs, gleiche Bedingung):
+  vorher  12 Saaten:  356 /   361 Gipfel = 98,6 %  (Byte für Byte die Zahl der Station) — Zeuge ROT „nur 12 Saaten“
+  nachher 100 Saaten: 2 775 / 2 804 Gipfel = 99,0 %  · Land 29 399 / 43 125 = 68,2 % · Streuung 2 586,608 m
+  Saaten unter 95 %: zsp-0 15/16 · zsp-8 22/24 · zsp-18 43/47 · zsp-21 40/44 · zsp-40 37/39 · zsp-42 29/31
+  Zeit: der S2-Block aus der gepatchten Station, unter node gefahren: 31,4 s auf 4 Fäden (einfädig 113 s).
+
+Offen: die Zeit am Gerät (Kerne des OMEN und der Radeon) — der erste Lauf mit dem Diff nennt `zeuge.ms` und `zeuge.faeden`;
+passt sek 80 nicht, steht die Zahl in der Akte (planet.kopplung.gegenwart#2).
