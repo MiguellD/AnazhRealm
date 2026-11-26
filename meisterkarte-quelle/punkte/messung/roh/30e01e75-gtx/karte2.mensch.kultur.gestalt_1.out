@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] nvidia/pascal
-@@ 12.9 s · am Messort stadt-voll (ego) nach 12.9 s, 253 Takte, Anlauf stand
-@@ 12.9 s · Gestalt: Kulturen der Stadt {"provenzalisch":153,"italienisch":147,"marokkanisch":4,"gotisch":4} · alle Orte 4 · Gesetz 32 · Häuser 308
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

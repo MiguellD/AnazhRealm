@@ -1,9 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] amd/rdna-3
-@@ 7.7 s · am Messort stadt-voll (ego) nach 7.7 s, 283 Takte, Anlauf stand
-@@ 14.1 s · S2 18 von 20 ± 2 m angetroffen um 10.01 Uhr
-@@ 36.6 s · S3 Saaten {"je":[{"saat":"mensch.menge.bevoelkerung-s3-1","ms":16504,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-2","ms":395,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-3","ms":396,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-4","ms":379,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-5","ms":285,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-6","ms":312,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-7","ms":323,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-8","ms":277,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-9","ms":255,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-10","ms":276,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-11","ms":360,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-12","ms":286,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-13","ms":274,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-14","ms":282,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-15","ms":238,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-16","ms":260,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-17","ms":299,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-18","ms":304,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-19","ms":266,"z":0},{"saat":"mensch.menge.bevoelkerung-s3-20","ms":260,"z":0}],"grund":null,"heimweg":{"zurueck":true,"ms":281,"geloescht":20,"versatz":0},"msJe":[16504,395,396,379,285,312,323,277,255,276,360,286,274,282,238,260,299,304,266,260],"msSchnitt":1112}
-
---- gpu-zeuge ---
-[linse-gpu] amd/rdna-3
-[linse-gpu] amd/rdna-3

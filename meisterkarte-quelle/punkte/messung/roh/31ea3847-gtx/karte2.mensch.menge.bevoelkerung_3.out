@@ -1,9 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8")) 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\31ea3847-gtx\karte2.mensch.menge.bevoelkerung_2.json 74
-[linse-gpu] nvidia/pascal
-@@ 58.4 s · am Messort stadt-voll (ego)
-@@ 67 s · S2 warf: /eval ohne Antwort binnen 9 s
-@@ 67 s · S3 an der Frist ausgelassen (67 s)
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

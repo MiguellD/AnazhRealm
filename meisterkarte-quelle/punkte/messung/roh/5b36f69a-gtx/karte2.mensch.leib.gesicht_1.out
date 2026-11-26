@@ -1,9 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] nvidia/pascal
-@@ 18.4 s · am Messort dorf (third) nach 18.4 s, 692 Takte
-@@ 18.4 s · Zensus dorf: 101 Bewohner · Alter [21.582727195625193,48.84104134261142] J. · im Gespräch (treff) 0
-@@ 42.3 s · am Messort wiese (third) nach 21.4 s, 743 Takte
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

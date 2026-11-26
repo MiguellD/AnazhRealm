@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] amd/rdna-3
-@@ 12.8 s · am Messort stadt-voll (ego) nach 12.8 s, 535 Takte, Anlauf stand
-@@ 12.8 s · stadt-voll: 307 Häuser, 1 Saaten, 145 Straßen
-
---- gpu-zeuge ---
-[linse-gpu] amd/rdna-3
-[linse-gpu] amd/rdna-3

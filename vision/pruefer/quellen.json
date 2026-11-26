@@ -12222,8 +12222,8 @@
    "id": "eichung-2afc-motiv",
    "art": "2afc",
    "pixel": "480×320",
-   "bauer": "agent-aaf834b5a5c89f93a (Bauer der Eich-Blätter, 26.11.)",
-   "saat": 1,
+   "bauer": "koordinator-radeon",
+   "saat": 2,
    "blatt": "blatt/eichung-2afc-motiv",
    "kontakt": "kontakt/eichung-2afc-motiv",
    "zuordnung": "getrennt, außerhalb des Korpus-Ordners (AnazhRealm-pruefer-zuordnung/eichung-2afc-motiv/teil-NN/zuordnung.json)",
@@ -12234,63 +12234,63 @@
      "form": "paar",
      "herkunft": "fremd",
      "aufgaben": 24,
-     "zuordnungSha256": "c1bf077ddc1f98133837ed3631673f7313cb51bf78c1306185539fb355c503c5"
+     "zuordnungSha256": "131ea3173e980430a0bc6e780976eb9ba0256c8311a7cd7910a9ee21d832ac85"
     },
     {
      "teil": "teil-02",
      "form": "paar",
      "herkunft": "fremd",
      "aufgaben": 23,
-     "zuordnungSha256": "34afe983b5bbf4176f45dc78ae7a73893b43595ae5fc6edd806615560395b516"
+     "zuordnungSha256": "212ebb99b9b6738da739e6ee6343eb60f86f5550310fd9b4e7294ecc718732a1"
     },
     {
      "teil": "teil-03",
      "form": "paar",
      "herkunft": "stoerung",
      "aufgaben": 25,
-     "zuordnungSha256": "942355a86ed4a35f81573fe556ca0cbe85933cd9f1a28a5ae54c622cbe210fbb"
+     "zuordnungSha256": "a1a4d64b69727c15b0c91741cfe114d2891a4ce6f17bb898c38b19b7c42e85a3"
     },
     {
      "teil": "teil-04",
      "form": "paar",
      "herkunft": "stoerung",
      "aufgaben": 25,
-     "zuordnungSha256": "59f184600d81319017691a8c1c113da63bb82a5c5a9bd5cc99fd1e9aef08d69c"
+     "zuordnungSha256": "f12528554627f7ede776ee441c9f57d5257981aee34dbd1c0fc238bc33325ecc"
     },
     {
      "teil": "teil-05",
      "form": "paar",
      "herkunft": "stoerung",
      "aufgaben": 25,
-     "zuordnungSha256": "d5573257bdf4343810a916202ce627ea33b005c45e7e9b6974394d4073856545"
+     "zuordnungSha256": "3aa6b150867757e1ddd96b3c2fbeb5f247897f5b187e36f2194fdf6e18002fa3"
     },
     {
      "teil": "teil-06",
      "form": "paar",
      "herkunft": "stoerung",
      "aufgaben": 25,
-     "zuordnungSha256": "4b1781d841201dc5ce0336e646cb8ece54a8de684b0d7898ed425004e2227c86"
+     "zuordnungSha256": "d1ad6fa1be9a88acc410deba2116058c92068ef6897eedce45ffe70b1921f6f9"
     },
     {
      "teil": "teil-07",
      "form": "paar",
      "herkunft": "stoerung",
      "aufgaben": 25,
-     "zuordnungSha256": "e283ef7536923ff97f3587ca1590b3e6c65965ed2d7f350b4f9d6936315fe699"
+     "zuordnungSha256": "216da49977a1351ef82efa4d107463f8994dd404f6d0491fca058b4d1c18adcd"
     },
     {
      "teil": "teil-08",
      "form": "paar",
      "herkunft": "stoerung",
      "aufgaben": 25,
-     "zuordnungSha256": "93bf8a5e677b5949a083bf539d8ddb97b3f297dc6dbd6a7cabc9a09ea7452ce4"
+     "zuordnungSha256": "33a0fcffcceec93d7f0f431e31823bf7b14b81ca9baf21afeff5bde68aa9cd5e"
     },
     {
      "teil": "teil-09",
      "form": "paar",
      "herkunft": "stoerung",
      "aufgaben": 25,
-     "zuordnungSha256": "a49696b3a0053cf59433524b293d2b2af959239cb2f8ac690e12717cc4f4afa5"
+     "zuordnungSha256": "01d635dc44ab342aa9ae6913287c35069d6d5a774377b60979f536c604f5b3e1"
     }
    ],
    "stand": "bereit · kein Lauf gefahren"

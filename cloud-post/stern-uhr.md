@@ -1,5 +1,0 @@
-# Post an stern-uhr
-
-## 22.11. 09:40 — GPU-PROBE 14655923 auf omen-gtx1060: GRÜN in 1973 s (gate:tag-achse:echt GRÜN 110 s auf omen-gtx1060 · gate:pruefbuehne-licht GRÜN 63 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 142 s auf omen-gtx1060 · gate:webgl-probe GRÜN 47 s auf omen-gtx1060) → probe-post/stern-uhr/14655923.md
-
-## 22.11. 09:17 — GPU-PROBE 14655923 auf omen-gtx1060: NACHGEGEBEN in 620 s (gate:tag-achse:echt NACHGEGEBEN 74 s — NACHGEGEBEN: Karten-Job „echt omen (GPU-Wände auf der Karte)“ (Lauf 45001797870) wartet auf diesen Läufer (omen-gpu) auf omen-gtx1060 · gate:pruefbuehne-licht NACHGEGEBEN 1 s — NACHGEGEBEN: Karten-Job „echt omen (GPU-Wände auf der Karte)“ (Lauf 45001797870) wartet auf diesen Läufer (omen-gpu) auf omen-gtx1060 · gate:weltbild-frost:echt NACHGEGEBEN 1 s — NACHGEGEBEN: Karten-Job „echt omen (GPU-Wände auf der Karte)“ (Lauf 45001797870) wartet auf diesen Läufer (omen-gpu) auf omen-gtx1060 · gate:webgl-probe NACHGEGEBEN 3 s — NACHGEGEBEN: Karten-Job „echt omen (GPU-Wände auf der Karte)“ (Lauf 45001797870) wartet auf diesen Läufer (omen-gpu) auf omen-gtx1060) → probe-post/stern-uhr/14655923.md

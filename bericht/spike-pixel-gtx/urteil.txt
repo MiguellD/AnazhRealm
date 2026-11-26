@@ -1,3 +1,0 @@
-lauf exit 3
-gpuJeFrameMs 0,75:  | 0,6: 
-QUOTIENT keine Zahl

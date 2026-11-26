@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] amd/rdna-3
-@@ 21 s · am Messort dorf (ego) nach 21.0 s, 697 Takte
-@@ 30.3 s · Acker: 270 Strecken mit Halmen der Frucht auf 270 Kämmen (Stand {"tage":136.875,"hoeheM":0.85,"reife":1,"deckung":0.8,"stoppel":false,"farbe":13214806}); Wildwuchs 0 Pflanzen + 0 Büschel innen, Kontrolle im Ring 40 + 238 (80 Takte)
-
---- gpu-zeuge ---
-[linse-gpu] amd/rdna-3
-[linse-gpu] amd/rdna-3

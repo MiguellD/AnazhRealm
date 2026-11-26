@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8")) 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\f68dbf09-gtx\karte2.mensch.nahrung.flur_1.json 201
-[linse-gpu] nvidia/pascal
-@@ 12.1 s · am Messort dorf (ego)
-@@ 12.1 s · Flur: 6 Äcker im Plan, gemalt als Fläche 6, 0.00109 km²
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

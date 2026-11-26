@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8")) 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\f68dbf09-gtx\karte2.mensch.sport.koerper_1.json 94
-[linse-gpu] nvidia/pascal
-@@ 4.2 s · am Messort wiese (third)
-@@ 12.8 s · Leib: {"fuesse":2,"gehen":{"tempo":1.15,"neig":0.4,"phasen":2,"gleitenCm":228.08},"sprint":{"tempo":5.175,"neig":1.3,"phasen":2,"gleitenCm":1026.37},"sprungM":0.395,"hang":{"tempo":1.15,"neig":2.7,"phasen":2,"gleitenCm":228.06},"steilGrad":3.4,"gleitenCm":1026.37}
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

@@ -1,9 +1,0 @@
-SPIKE v2 · Kern-Kopie SHA-256 028cc2d012a9d47c33ea546dd52003333dbdd550126cf636ffbf959ef65bea06 = Original n1011-hg/fachwerk-core.js (GLEICH) · linse-v2 Selbsttest GRÜN [true,true,true,true,true] · grundriss Selbsttest GRÜN
-Belegung: ERSCHÖPFEND (KAP 1296) für die 2 595 Lose
-
-── LAUF E (Entscheid wörtlich: Druck → EG-Tiefe, A's Geschosse) ({"druck":true}) — 30.462 ms je Haus
-   gültig 1854/2595 · OHNE Grundriss 741 = 28.6 % · je Breite W <5 17/268 · 5–6,5 31/163 · 6,5–8 86/175 · 8–12 1043/1304 · ≥12 677/685
-   Vielfalt: Formen 512 · Breiten 38 · Traufe Q10/Q90 2.57/6.04 (Spanne 3.47) · häufigste Form Q50 8.7 % · Geschosse 1..7 1082 605 134 33 0 0 0
-   Höhe ↔ Druck: Spearman(Traufe, Druck) 0.17 · Spearman(Grund-st, Druck) 0.24 · Druck 0.50–0.67: gültig 767/848, Traufe Q50 2.77, st0 Ø 1.18 | Druck 0.67–0.83: gültig 669/905, Traufe Q50 4.84, st0 Ø 1.39 | Druck 0.83–1.00: gültig 418/842, Traufe Q50 4.84, st0 Ø 1.56
-   Gründe ohne Grundriss: 591× Tiefe # > # | 50× Treppenloch # > L_max # | 34× Haustür ohne Platz in der Stirn | 31× Treppe passt nicht in die Breite | 12× G#: Raum kammer # % / # m | 9× G#: Raum miete # % / # m
-   Form-Unsinn: W > 20 m 320 · W/D > 3 443 · W/D > 5 264 von 1854

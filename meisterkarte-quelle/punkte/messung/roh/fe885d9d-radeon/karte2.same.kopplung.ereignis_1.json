@@ -1,9 +1,0 @@
-{
- "proben": {
-  "lava": {
-   "fehler": "eval: {\"ms\":2581,\"fehler\":\"Cannot read properties of null (reading 'erstarrt')\",\"stapel\":[\"lavaSitzungProbe (eval at <anonymous> (:2:29), <anonymous>:61:112)\",\"async eval (eval at <anonymous> (:2:29), <anonymous>:5:8)\",\"at #evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\node_modules\\\\puppeteer-co",
-   "sek": 2.6
-  }
- },
- "fehler": []
-}

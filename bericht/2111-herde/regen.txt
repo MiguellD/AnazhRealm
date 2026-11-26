@@ -1,5 +1,0 @@
-B4 REGEN (gate:wasser-leben:bild), Radeon 890M, GPU-Schloss je Lauf
-vorher (Probe wartet passiv nach EINEM Takt): Kopf d09a026f 3/3 ROT, main 9f24b5b8 3/3 ROT — "die Bestrahlungs-Tafel des Sturms kam nicht zurück"
-CI z652 GTX 1060 am Kandidaten: schlieren 0, litAnteil 0, uLicht (0,0,0)
-nachher (Probe treibt den Licht-Takt bis zur Lesung des Sturms), Kopf 3bbd3725: 3/3 GRUEN — schlieren 202, litAnteil 0,01205, uLicht (1,27 1,25 1,23), nach 39/38/48 Takten, Leine beim ersten Takt nicht gespannt
-Spiel (Werkbank --echt, Sturm, Mittag, Welt frei 5 s): _belichtungGelesen true, Tafel-Medium = Medium jetzt 0,002634, Regen sichtbar, Deckung 0,72, uLicht (1,274 1,251 1,234) — regen-sturm-mittag.png

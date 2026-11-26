@@ -1,9 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8")) 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\31ea3847-radeon\karte2.erleben.spieler.praesenz_2.json 45
-[linse-gpu] amd/rdna-3
-@@ 10.3 s · praesenz S2 Saaten {"je":[{"saat":"erleben.spieler.praesenz-s2-1","ms":2088,"z":[0,0]},{"saat":"erleben.spieler.praesenz-s2-2","ms":1086,"z":[0,0]},{"saat":"erleben.spieler.praesenz-s2-3","ms":879,"z":[0,0]},{"saat":"erleben.spieler.praesenz-s2-4","ms":733,"z":[0,0]},{"saat":"erleben.spieler.praesenz-s2-5","ms":735,"z":[0,0]},{"saat":"erleben.spieler.praesenz-s2-6","ms":670,"z":[0,0]},{"saat":"erleben.spieler.praesenz-s2-7","ms":943,"z":[0,0]},{"saat":"erleben.spieler.praesenz-s2-8","ms":794,"z":[0,0]},{"saat":"erleben.spieler.praesenz-s2-9","ms":755,"z":[0,0]},{"saat":"erleben.spieler.praesenz-s2-10","ms":754,"z":[0,0]}],"grund":null,"heimweg":{"zurueck":true,"ms":810,"geloescht":10,"versatz":0},"msJe":[2088,1086,879,733,735,670,943,794,755,754],"msSchnitt":944}
-@@ 10.3 s · erleben.spieler.praesenz S2 leser {"art":"leser","fehlt":"die drei Schwellen je Zufallslage: kein Leser, der in jeder Saat Lagen zieht und Taste → Bild, Fuß und Kamera je Lage urteilt (scripts/werkbank.cjs:1892 `/latenz` misst nur am Ort der Pose) — je S
-@@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
-
---- gpu-zeuge ---
-[linse-gpu] amd/rdna-3
-[linse-gpu] amd/rdna-3

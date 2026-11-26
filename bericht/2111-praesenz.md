@@ -1,5 +1,0 @@
-# praesenz#1 an der GTX 1060, main 1e204f83 (pm 333a93cca, Sitzung 20:44) — Taste→Bild ROT am Spiel, nicht am Deckel
-
-- Gemessen: `/latenz` (15 Proben je Sicht, gehen) an Ort wiese direkt nach `/umstellen` (34,3 s · 651 Takte · 81 Chunks), Bild 24,38 ms: ego p50 33,8 · p95 = max 115,1 ms, third p50 47,8 · p95 = max 158,2 ms; die Kette ist kurz (Eingabe 0,8 + Hörer 0,1 + Kette 26,3 / 26,8 ms), die Frist der Probe riss nicht (Exit 0, 593 s). Roh: OMEN p3/n2111/raeumt/lauf-333a-sicher/messung/roh/1e204f83-gtx/karte2.erleben.spieler.praesenz_1.out.
-- Befund: bei n 15 ist das p95 das Maximum — je Sicht entschied EIN langes Bild der Welt (115,1 / 158,2 ms), nicht die Linse und nicht der Eingabe-Pfad; Fuß (p95 ≤ 1 cm) und Kamera (0 Bilder im Fels, 7 474 third · 960 ego) sind GRÜN.
-- Offen: welcher Schritt der Welt das lange Bild trägt, nennt der Trace nicht. Messname für den nächsten Lauf: `karte2.erleben.spieler.praesenz#1` Glied (1) Taste — `/latenz` am Ort wiese nach `/umstellen`, je Probe das Bild der Max-Probe mit den Kosten seiner Takte (Profil-Takt der Werkbank), damit das lange Bild beim Namen seines Takts steht.

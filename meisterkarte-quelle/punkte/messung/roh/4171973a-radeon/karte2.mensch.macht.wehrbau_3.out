@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] amd/rdna-3
-@@ 6.3 s · am Messort stadt-voll (ego) nach 6.3 s, 197 Takte, Anlauf stand
-@@ 6.3 s · Machtbauten: {"slots":320,"plaene":2,"machtbauten":6,"volFaktor":0.89,"rho":0.529,"burgen":1,"wehrbauten":5,"poolWaende":19,"poolFrei":0,"grenzKm":0,"platz":[842.5,451.8],"hoch":170,"pose":{"px":842.49,"py":225.47,"pz":476.79,"lx":842.49,"ly":55.47,"lz":451.79}}
-
---- gpu-zeuge ---
-[linse-gpu] amd/rdna-3
-[linse-gpu] amd/rdna-3

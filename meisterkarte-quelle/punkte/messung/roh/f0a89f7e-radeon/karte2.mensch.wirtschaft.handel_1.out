@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] amd/rdna-3
-@@ 12 s · Verkehr: 21 Wagen, 21 mit Fahrer, 0 gezählte Fahrten, aus dem Plan 0
-@@ 43 s · S1 warf: werkbank eval: ABSTURZ der Seite: die Verbindung zum Browser riss (der Browser-Prozess ist fort) ["at stirb (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\lib\\welt-boot.cjs:1424:15)","at C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\
-
---- gpu-zeuge ---
-[linse-gpu] amd/rdna-3
-[linse-gpu] amd/rdna-3

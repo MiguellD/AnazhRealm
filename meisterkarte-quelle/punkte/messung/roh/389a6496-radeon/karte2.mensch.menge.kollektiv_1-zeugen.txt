@@ -1,6 +1,0 @@
-{
- "ms": 3,
- "ergebnis": {
-  "fehler": "kein Start-Dorf"
- }
-}

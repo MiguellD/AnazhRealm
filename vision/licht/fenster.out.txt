@@ -1,5 +1,0 @@
-1667 K: Farbton fällt unter 28° ab k·L-Luma 0.0625; Sättigung erst ≤ 0,75 ab 0.435; Fenster beider: leer
-1900 K: Farbton fällt unter 28° ab k·L-Luma 0.379; Sättigung erst ≤ 0,75 ab 0.5; Fenster beider: leer
-2000 K: Farbton fällt unter 28° ab k·L-Luma 0.435; Sättigung erst ≤ 0,75 ab 0.536; Fenster beider: leer
-2400 K: Farbton fällt unter 28° ab k·L-Luma 0.758; Sättigung erst ≤ 0,75 ab 0.574; Fenster beider: 0.574…0.707
-2800 K: Farbton fällt unter 28° ab k·L-Luma 1.15; Sättigung erst ≤ 0,75 ab 0.33; Fenster beider: 0.33…1.07

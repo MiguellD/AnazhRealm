@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] nvidia/pascal
-@@ 16.4 s · Verkehr: 21 Wagen, 21 mit Fahrer, 0 gezählte Fahrten, aus dem Plan 0
-@@ 68.8 s · Lieferung: 21 Wagen mit Lieferung (21 mit Fahrer), 5 Stände, voll vor dem Tag 5, Tag 24 h, geliefert im Tag 0, Kisten am Stand danach 0, gewartet 62.4 s, 4 fahren geladen, 17 leer, 8 kraut im ersten, Kisten leer 0 ↔ beladen 2 (gezeichnet), in der Fahrt am Werk 1 (+0), am Stand 1 (−10) · Uhr 0.5 → 0.5 · Fahrt {"loop":"an","takte":2107,"amWerk":1,"amStand":1,"geladen":0,"abgeladen":10,"eineWende":0,"uhr":0.5}
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

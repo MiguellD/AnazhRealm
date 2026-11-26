@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] amd/rdna-3
-@@ 8.3 s · am Messort stadt-voll (ego) nach 8.3 s, 295 Takte, Anlauf stand
-@@ 8.4 s · Bildkunst: Werke 17 (Figur, Wandbild, Ornament, Denkmal …) binnen 700 m, am Ort stehend {"n":17,"hauszeichen":16,"kreuz":1,"plan":17,"gefunden":17,"gleich":0}, Bewohner 1356
-
---- gpu-zeuge ---
-[linse-gpu] amd/rdna-3
-[linse-gpu] amd/rdna-3

@@ -1,9 +1,0 @@
-das Seeeis trägt nach der Frostgrad-Summe der Feldregel — etwa neun Frosttage bis zum tragenden Eis
-
-Geschnitten: das Eis-Gesetz bleibt Ashton 1989 (h²/2k + h/H) mit Übergang H = 13 W/(m²·K) und Trag-Dicke 5 cm (Gold 1971); das Soll der
-Station eis#2 kommt aus der Feldregel (1 Zoll je 15 °F·d). Steg und Boot der Vorfassung sind ganz aus dem Zweig genommen (Kasten-Vorlagen
-ohne Gesetz; sie kommen als Gattung des Fahrzeug-Studios wieder).
-Gemessen: Frostgrad-Summe bis zum tragenden Eis am See 12,31 → 14,83 K·d (Soll 15,7 ± 20 %, node); Median der Heimat 10,24 → 14,79 K·d
-(Station, Vorfassung 2c04ae52); Eis-Ende Tag 40 → 46; Mutanten ROT bei 10,275 und 3,206 K·d.
-Offen: das Bild deckt das Eis nach vier Knoten mit bis zu 39 h Abweichung gegen das Gesetz (Messname fddEinsetzen, Leser _eisLinien /
-_eisDeckung); siedlungslage#1 bleibt rot, bis Steg und Boot aus einem Gesetz kommen.

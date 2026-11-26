@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8")) 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\f68dbf09-gtx\karte2.mensch.stadt.form_2.json 75
-[linse-gpu] nvidia/pascal
-@@ 59 s · am Messort stadt-voll (ego)
-@@ 59.1 s · stadt-voll: 309 Häuser, 1 Saaten, 146 Straßen
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

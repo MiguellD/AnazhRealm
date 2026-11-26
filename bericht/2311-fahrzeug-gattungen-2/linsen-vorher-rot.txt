@@ -1,6 +1,0 @@
-Mutante am Kopf 8a773f882 (main .384): der Schnitt im Verkehr zurück (git show e95ad4bca -- stamm/siedlung-verkehr.js | git apply -R), stadt-voll 23 Uhr 600 s, GTX 1050 Schloss genommen · 16:24:59
-✅ VK-V (mensch.K2) die Stunde ohne Vorgeschichte: dieselbe Saat, dasselbe Bild — {"stunde":23,"bilder":[1200,1200],"erst":-1,"einAnkunft":false,"wer":[]}
-❌ VK (Leiter mensch.netz.verkehr) der Verkehr der Stadt um 23 Uhr — Maß-Zwilling [[0,"supersport",2,2.05,0.96,0.96],[1,"kompakt_fwd",1.92,2.02,0.905,0.905],[2,"limousine",2.465,2.525,0.93,0.93],[3,"kompakt_fwd",1.92,2.02,0.905,0.905]] [Wagen, Gattung, hl im Verkehr, hl der Gattung, hw, hw] · Ausscheren über dem Band [1.512,16,"transporter",25604,751,580,0.557,-22.3] (Raum 0.1 m) [m, Wagen, Gattung, Probe, x, z, rund, Gier gegen die Linie °]
-
-Mutante an main .382 (Linse vor der Fuß-Regel; das Ausscheren-Maximum dort war ein Heck ohne Fuß, siehe sonde-linse-fuss.txt):
-❌ VK (Leiter mensch.netz.verkehr) der Verkehr der Stadt um 23 Uhr — Maß-Zwilling [[0,"supersport",2,2.05,0.96,0.96],[1,"kompakt_fwd",1.92,2.02,0.905,0.905],[2,"limousine",2.465,2.525,0.93,0.93],[3,"kompakt_fwd",1.92,2.02,0.905,0.905]] [Wagen, Gattung, hl im Verkehr, hl der Gattung, hw, hw] · Ausscheren über dem Band [1.701,12,"limousine",8048,801,486,0.004,-0.4] (Raum 0.1 m) [m, Wagen, Gattung, Probe, x, z, rund, Gier gegen die Linie °]

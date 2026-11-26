@@ -1,9 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] nvidia/pascal
-@@ 7.7 s · am Messort stadt-voll (ego) nach 7.7 s, 281 Takte, Anlauf stand
-@@ 7.7 s · S1 Zug zugeordnet erste 20 0.55, erste 100 0.62 (100 Bewohner)
-@@ 7.7 s · S2 100 befragt, sichtbar 72 (0.72), Ziele {"meister":45,"lehre":35,"geselle":20}, der Kalender zurück true
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal
