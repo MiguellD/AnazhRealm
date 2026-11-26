@@ -1,0 +1,78 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.432",
+  "sha": "a954d69818f4a60fb20927a70f39e5d150e9a734"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 30,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 32.87,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   100,
+   101.238,
+   32
+  ],
+  "blick": [
+   0,
+   -0.22819,
+   -0.97362
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 110.4,
+  "sigma": 50.7,
+  "schwarz": 0.0005,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 32.87 m · Luma 110.4 σ 50.7 schwarz 0.1 % weiß 0.0 % · Stand 18.546.432 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
+ "rot": [],
+ "urteil": "GRÜN"
+}
