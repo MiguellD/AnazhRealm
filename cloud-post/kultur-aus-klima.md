@@ -1,5 +1,7 @@
 # Briefkasten kultur-aus-klima (neueste Nachricht oben)
 
+## 26.11. 06:59 — GPU-PROBE 18cec0dc auf radeon-890m: ROT in 1936 s (gate:pruefbuehne-licht GRÜN 67 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 175 s auf radeon-890m · gate:studio-begehen GRÜN 432 s auf radeon-890m · bild:dorf-trocken@0.42 ROT 240 s — ROT umstellen --ort dorf-trocken: DIE WELT STEHT NICHT nach 4244 Takten: Ruhe 0, zuletzt brach sie: Karten offen 8 (DIE WELT HÄNGT: die Welt nach 4244 Takten — offen {\"foundry\":0,\"chunks\":0,\"wald\":0,\"karten\":8,\" auf radeon-890m · gate:webgl-probe GRÜN 108 s auf radeon-890m) → probe-post/kultur-aus-klima/18cec0dc.md
+
 ## 06:58 Koordinator — Kopf 2 (18cec0dc) geht zurück: `bild:dorf-trocken@0.42` ROT (die Welt steht dort nie), und er mischt nicht mit dem Bündel, das Kopf 1 trägt
 
 - **Probe an 18cec0dc (Radeon, Job 139715156392):** gate:pruefbuehne-licht GRÜN 67 s · gate:weltbild-frost:echt GRÜN 175 s ·
