@@ -902,15 +902,17 @@ const MENGE_PLAENE = [0x51ed, 0x7a11]; // die Samen der Pläne (je Plan seine Ep
 // DIE SIEDLUNG DER MENGE (EIN Baustein für die Linsen der Menge und des Baus): der Stamm im vm, je Plan 50 Bewohner aus 50 Samen
 // (`_bewohnerGestalten`, `_bewohnerGenome`) und die Vorlage der Stufe 2 in der Tracht des Plans samt Tafel, wie der Ofen sie der
 // Welt gießt (Beipack `raum`). `eingriff(A, ctx)` verzerrt die Klasse oder den Kern.
+// DIE MENGE STEHT IN EINER WELT (leib-liest-satz): die Tracht des Tags liest Luft und Regen an ihrem Ort (`_bewohnerTracht` →
+// koerper `trachtDesTags`) — der Wirt ist der Grund-Wirt der Werkzeuge (stamm.cjs `grundWirt`: Saat, Saison, Wetter), jede
+// Siedlung steht am Messort des Dorfs (spec/profiband/haushalt.json `dorf`)
+const MENGE_ORT = require("../spec/profiband/haushalt.json").messorte.find((o) => o.id === "dorf").spieler;
 function mengeWelt(eingriff, plaene = MENGE_PLAENE) {
-    const { AnazhRealm: A, ctx } = require("./lib/stamm.cjs").ladeKlasse(require("path").join(__dirname, ".."));
-    if (eingriff) eingriff(A, ctx);
-    const r = Object.assign(Object.create(A.prototype), { state: {} });
+    const { A, ctx, r } = require("./lib/stamm.cjs").grundWirt(require("path").join(__dirname, ".."), null, eingriff);
     const siedlungen = plaene.map((seed) => {
         // je Haus zwei Leute wie `_bewohnerListe` sie stellt: der Same und die Epoche (das Jahr des Plans, Rang im Haus — koerper
         // ALTER_GESETZ ist fail-closed ohne Jahr)
         const plan = ctx.__fachwerkCore.exportSettlement({ seed, nH: 12 });
-        const S = { plan, liste: [...Array(50)].map((_, i) => ({ seed: `${seed}:${i >> 1}:${i & 1}`, epoche: { jahr: plan.jahr, rang: i & 1, n: 2 } })) }; // prettier-ignore
+        const S = { plan, ox: MENGE_ORT[0], oz: MENGE_ORT[1], liste: [...Array(50)].map((_, i) => ({ seed: `${seed}:${i >> 1}:${i & 1}`, epoche: { jahr: plan.jahr, rang: i & 1, n: 2 } })) }; // prettier-ignore
         S.gestalten = r._bewohnerGestalten(S);
         r._bewohnerGenome(S);
         const vorlage = ctx.BAKERS_BY_KIND.koerper(ctx.__koerperCore, "mensch", 1, 2, { dials: S.raum.dK });
@@ -1175,7 +1177,7 @@ function messeHaltung(eingriff, W = mengeWelt(eingriff), nur = W.siedlungen.leng
             for (const nm of staende) {
                 const h = zeilen.indexOf(nm);
                 const gem = r._bewohnerStandGemuet(h);
-                const p = M[nm] || M.idle;
+                const p = K.leibSatzProfil(M, nm) || M.idle; // (ein Name mit Zusatz, leib-liest-satz: das Profil seines Gesetzes)
                 // der Winkel, den das Profil vom Lot nennt (Grad, je Seite: MOTION_RIG_MAP armL / armR gegen das Labor-idle)
                 const profil = ["armL", "armR"].map((k) => ((p[k] - M.idle[k]) * 180) / Math.PI);
                 const uhren = Math.max(...profil) > band[1] ? HALTUNG_UHREN : 1;
