@@ -2841,10 +2841,10 @@ class AnazhRealm_siedlung_bewohner {
     // nahende Wache dem Täter auf die Länge der Klinge gegenüber, rechnet der Kern den Kampf aus ihrer beider Leistung
     // (`spielLeistung` des Leibs: die Kraft seines Könnens, seine Übung im Kampf — der Spieler mit dem Leib seiner Gestalt,
     // `leibKoennen`, und der Übung 1, ANGENOMMEN), je `zugS` Sekunden ein Zug im Wechsel. DIE FOLGE: ein Treffer der Wache nimmt
-    // dem Spieler Leben (`damagePlayer`, der Schaden der Klinge des Arena-Gesetzes `_kampfRohSchaden` aus der Kraft der Wache), ein
+    // dem Spieler Leben (`damagePlayer`, der Schaden der Klinge des Arena-Gesetzes `_kampfRohSchaden` aus der Kraft der Wache, an der Lage des Zugs), ein
     // Treffer des Spielers trifft die Wache ins Gedächtnis der Gewalt (`_creatureRemember`, das EINE Furcht-Gesetz); trägt einer
     // `bis` Treffer, endet der Kampf und die Wache geht in ihren Tag zurück. Weicht die Wache (ihr Akt ist kein Hieb mehr) oder ist
-    // der Täter fort, fällt der Kampf ungeschlagen. Jeder Gang reist als Akte in die Siedlung (`S.hiebe`: Treffer, Antwort, Deckung).
+    // der Täter fort, fällt der Kampf ungeschlagen. Jeder Gang reist als Akte in die Siedlung (`S.hiebe`: Treffer, Antwort, Deckung, Lagen).
     _bewohnerHiebTakt() {
         const KC = window.__koerperCore;
         const H = KC.SPIEL_GESETZ.arten.hieb;
@@ -2868,7 +2868,7 @@ class AnazhRealm_siedlung_bewohner {
                 if (!z.treffer) continue;
                 F.treffer[z.an]++;
                 if (z.an === 0)
-                    this.damagePlayer(this._kampfRohSchaden(null, "rumpf", this._kampfStats().damage * b.koennen.kraft), "hieb"); // prettier-ignore
+                    this.damagePlayer(this._kampfRohSchaden(null, z.lage, this._kampfStats().damage * b.koennen.kraft), "hieb"); // prettier-ignore
                 else if (L) this._creatureRemember(L, "gewalt", { von: "spieler" });
             }
             if (F.i < F.K.zuege.length) continue;
@@ -2876,7 +2876,7 @@ class AnazhRealm_siedlung_bewohner {
             // (der Getroffene antwortet: der Zug nach einem Treffer ist der seine — gezählt je Treffer vor dem letzten Zug)
             const antwort = Z.filter((z, k) => z.treffer && k + 1 < Z.length && Z[k + 1].an !== z.an).length;
             const vorLetztem = Z.filter((z, k) => z.treffer && k + 1 < Z.length).length;
-            (F.S.hiebe || (F.S.hiebe = [])).push({ zuege: Z.length, treffer: F.treffer, sieger: F.K.sieger, antwort, vorLetztem, durchDeckung: Z.filter((z) => z.gelesen && z.treffer).length }); // prettier-ignore
+            (F.S.hiebe || (F.S.hiebe = [])).push({ zuege: Z.length, treffer: F.treffer, sieger: F.K.sieger, antwort, vorLetztem, durchDeckung: Z.filter((z) => z.gelesen && z.treffer).length, lagen: Z.filter((z) => z.treffer).map((z) => z.lage) }); // prettier-ignore
             this._hiebe.delete(b);
             const tg = this.state.timeOfDay;
             const stunde = ((((Number.isFinite(tg) ? tg : 0.5) % 1) + 1) % 1) * 24;
@@ -2997,7 +2997,7 @@ class AnazhRealm_siedlung_bewohner {
         for (const x of S.liste)
             for (const q of AnazhRealm.BEWOHNER.staende.map((k) => x.orte[k]))
                 if (q && !gesehen.has(q) && !belegt.has(q) && Math.hypot(q.x - o.x, q.z - o.z) >= R) { gesehen.add(q); fort.push([Math.hypot(q.x - p.x, q.z - p.z), q]); } // prettier-ignore
-        let [, ort] = fort.sort((a, c) => a[0] - c[0]).find(([, q]) => fern(this._bewohnerStrecke(S, { ...p }, q, 0))) || []; // prettier-ignore
+        let [, ort] = fort.sort((a, c) => a[0] - c[0]).find(([, q]) => fern(this._bewohnerStrecke(S, { ...p }, q, 0, 0, true, b))) || []; // prettier-ignore
         for (const w of ort ? [] : [0, 0.5, -0.5, 1, -1]) {
             const [c, n, d] = [Math.cos(w), Math.sin(w), Math.sqrt(d2 + 1e-6) || 1], [vx, vz] = [((p.x - o.x) * c - (p.z - o.z) * n) / d, ((p.x - o.x) * n + (p.z - o.z) * c) / d]; // prettier-ignore
             const q = { x: o.x + vx * R, z: o.z + vz * R, blick: Math.atan2(vx, vz) };
@@ -3535,7 +3535,7 @@ class AnazhRealm_siedlung_bewohner {
         const L2 = lx * lx + lz * lz, t = L2 > 0 && von !== o.tuer ? (px * lx + pz * lz) / L2 : -1, hof = t > -0.05 && t < 1 && (px * lz - pz * lx) ** 2 < 2.25 * L2; // prettier-ignore
         const vorweg = von === o.tuer ? (o.ein ? [o.vor, o.ein] : [o.vor]) : hof && ziel !== o.tuer ? [o.ein] : [], nachweg = ziel === o.tuer ? (o.ein && !hof ? [o.ein, o.vor] : [o.vor]) : [], a = vorweg.length ? vorweg[vorweg.length - 1] : von, e = nachweg.length ? nachweg[0] : ziel; // prettier-ignore
         const spur = (((b.same >>> 8) & 255) / 255 - 0.5) * 2 * AnazhRealm.BEWOHNER.spurM;
-        const strecke = a === e ? [] : this._bewohnerStrecke(S, a, e, spur);
+        const strecke = a === e ? [] : this._bewohnerStrecke(S, a, e, spur, Math.sign(spur), true, b);
         // kein Weg (laut, `_bewohnerStrecke`): er bleibt, wo er steht — nie geradeaus durch die Wand
         if (!strecke) {
             b.da = true;
@@ -3602,8 +3602,8 @@ class AnazhRealm_siedlung_bewohner {
     // zum Ziel. Jedes Gemerkte gilt für den Stand der Wache (`_blockerWacheMelden`): wechselt eine Hülle, fällt es. Die Spur
     // neben der Mitte (`spurM`) geht nur, wo jedes ihrer Beine frei ist (`_bewohnerWand`) — sonst geht er die Mitte der
     // Gasse, deren Kanten frei sind — auf der Trasse den Gehweg seiner Seite (`seite`), erst wo auch der nicht trägt, ihre Mitte.
-    // Kein Weg: laut, und null (er bleibt, `_bewohnerWeg`).
-    _bewohnerStrecke(S, von, ziel, spur, seite = Math.sign(spur), beide = true) {
+    // Kein Weg: laut, und null (er bleibt, `_bewohnerWeg`). `wer`: der Bewohner, dessen Weg es ist (die Zeile ohne Weg nennt ihn).
+    _bewohnerStrecke(S, von, ziel, spur, seite = Math.sign(spur), beide = true, wer = null) {
         const stand = S.wache.stand;
         if (von._wegeStand !== stand) {
             von._wegeStand = stand;
@@ -3635,7 +3635,17 @@ class AnazhRealm_siedlung_bewohner {
         const ausE = e < 0 ? this._bewohnerAusweg(N, ziel) : null;
         if (ausA) a = this._bewohnerAnschluss(N, ausA);
         if (ausE) e = this._bewohnerAnschluss(N, ausE);
-        const kette = a >= 0 && e >= 0 ? globalThis.__tetrapodaCore.wegKette(this._bewohnerBaum(N, a), a, e) : null;
+        // DIE FRAGE MELDET KEINEN BRUCH (`_bewohnerAnschluss`: −1 heißt „kein Knoten frei“, der Rufer liest es): erst ein Ort, der
+        // weder einen Anschluss noch einen Ausweg hat, ist ein Bruch — EINE Zeile je Bewohner und Ort (das Buch zählt ihre
+        // Wiederkehr, `_bruchMelden`; die Linse bewohner liest sie dort). Bis hier meldete jede Frage, auch die nach einem Punkt im
+        // Ring des Auswegs, der danach einen Weg fand.
+        if (a < 0 || e < 0) {
+            const name = wer ? `${wer.rolle} #${wer.heim}` : "?";
+            for (const [k, o] of [[a, von], [e, ziel]])
+                if (k < 0) this._bruchMelden(`BEWOHNER: ${name} — der Ort ${o.x.toFixed(1)}/${o.z.toFixed(1)} im Dorf-Plan „${S.plan.name || "?"}" erreicht keinen Weg frei und keinen Ausweg`); // prettier-ignore
+            return null;
+        }
+        const kette = globalThis.__tetrapodaCore.wegKette(this._bewohnerBaum(N, a), a, e);
         if (!kette) {
             this._bruchMelden(
                 `BEWOHNER: kein Weg im Dorf-Plan „${S.plan.name || "?"}" von ${von.x.toFixed(1)}/${von.z.toFixed(1)} zu ${ziel.x.toFixed(1)}/${ziel.z.toFixed(1)}`
@@ -3716,7 +3726,7 @@ class AnazhRealm_siedlung_bewohner {
                     continue;
                 }
                 const r = alt[i] ? i : i && alt[i - 1] ? i - 1 : -1;
-                if (r < 0) return this._bewohnerStrecke(S, von, ziel, 0, spur ? seite : 0);
+                if (r < 0) return this._bewohnerStrecke(S, von, ziel, 0, spur ? seite : 0, true, wer);
                 [pts[r], alt[r], i] = [alt[r], undefined, r - 1];
             }
         // DER WEG BETRITT DIE FAHRBAHN NUR, UM SIE ZU QUEREN: jeder Punkt zwischen Anfang und Ziel, an dem seine Kapsel die Bahn
@@ -3739,7 +3749,7 @@ class AnazhRealm_siedlung_bewohner {
         // (`_verkehrFahrbahnM`; gleich viel: seine) — bis w4-verkehr-c2 ging jeder die Seite seines Samens: vom Markt zur Tür des
         // Gasthauses querte der Weg vier Arme der Kreuzung (stadt-voll 23 Uhr, 7:1:1: 22,5 m von 94,6 m auf der Fahrbahn)
         if (beide && seite && breit < Infinity) {
-            const anders = this._bewohnerStrecke(S, von, ziel, spur, -seite, false);
+            const anders = this._bewohnerStrecke(S, von, ziel, spur, -seite, false, wer);
             if (anders && this._verkehrFahrbahnM(S, von, anders) < this._verkehrFahrbahnM(S, von, pts)) return anders;
         }
         return pts;
@@ -4722,6 +4732,9 @@ class AnazhRealm_siedlung_bewohner {
 
     // Der Anschluss ist gemerkt AM NETZ N (`N.anschluss`, je Ort für seinen Punkt und den Stand der Wache, `N.stand`): fällt
     // das Netz, fällt die Zahl mit ihm (netz-index — bis hier lag sie am Ort, `o._knoten`, und überlebte den Tausch des Plans).
+    // −1: kein Knoten frei. DIE FRAGE MELDET KEINEN BRUCH — ihre Rufer lesen −1 ausdrücklich (`_bewohnerStrecke` mit dem Ausweg,
+    // `_bewohnerAusweg` je Punkt des Rings, `_bewohnerStandPruefen` am Ursprung); den Bruch meldet die Strecke, wo auch kein Ausweg
+    // trägt. Bis hier meldete jede Frage „erreicht keinen Weg frei“, auch wo der Ausweg danach trug.
     _bewohnerAnschluss(N, o) {
         const M = N.anschluss || (N.anschluss = new WeakMap());
         const m = M.get(o);
@@ -4732,7 +4745,6 @@ class AnazhRealm_siedlung_bewohner {
             .slice(0, AnazhRealm.BEWOHNER.anschlussN);
         const frei = nah.find((c) => !this._bewohnerWand(o, N.knoten[c.i]));
         const k = frei ? frei.i : -1;
-        if (k < 0) this._bruchMelden(`BEWOHNER: der Ort ${o.x.toFixed(1)}/${o.z.toFixed(1)} erreicht keinen Weg frei`);
         M.set(o, { k, stand: N.stand, x: o.x, z: o.z });
         return k;
     }
@@ -4986,7 +4998,9 @@ class AnazhRealm_siedlung_bewohner {
             // er dort wie in einer Wand und rückt nach demselben Gesetz. Bis hier fragte die Wache am Ursprung nur seinen Punkt: an
             // der Stadt dorf 7 30 standen nach den Proben davor zwei Stände an haus#134516 16,7 m Luft, 182 m über das Netz
             // (gate:kreatur-takt zielplan, die Liste nach dem Tag; die Probe allein grün)
-            const tuerFern = !!urK && !!this._bewohnerWand(ur, urK) && !amTuer(ur, this._bewohnerAnschluss(N, { x: ur.x, z: ur.z })); // prettier-ignore
+            // (−1: kein Knoten frei — der Rufer liest es ausdrücklich, die Frage meldet keinen Bruch)
+            const urA = urK && this._bewohnerWand(ur, urK) ? this._bewohnerAnschluss(N, { x: ur.x, z: ur.z }) : null;
+            const tuerFern = urA !== null && !(urA >= 0 && amTuer(ur, urA));
             const wand = tuerFern || this._bewohnerWand(ur, ur, true, BW.standRandM);
             const dort = !wand && (!frei || frei(ur));
             let q =
