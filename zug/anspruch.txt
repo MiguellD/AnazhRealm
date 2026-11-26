@@ -117,3 +117,5 @@ w28-bruecke-quert karte2.erleben.spieler.wegfindung#1
 w28-kultur-aus-klima-4 karte2.mensch.kopplung.kultur#2,karte2.mensch.kultur.sprache#1,karte2.mensch.kultur.sprache#3
 # 788 (main 99649186, 26.11. 17:49): Landung buendel-mittag z788 (main 99649186): dreizehn Köpfe, kein Anspruch fährt mit — sechs Stationen am Vor-Richter rot, je mit Täter-Zeile
 w28-buendel-mittag
+# 789 (main 4a188bf2, 26.11. 18:46): z789 26.11. 18:56 jaeger-stand (OMEN): der Posten im Freien fragt Plan und Bauten; kein Anspruch fährt mit
+w28-jaeger-stand
