@@ -111,6 +111,79 @@ const BREMS_AN = async (r, T, a) => {
     };
 };
 
+// DIE SPUR SICHTBAR (Karte: „Spurrinne nach 10 Durchfahrten sichtbar“; fahrzeug-medium-2): der gt des Kerns fährt zehnmal dieselben
+// 12 m weichen Bodens (der erste Ort um den Spieler, an dem jeder Punkt 3 m vor bis 15 m hinter dem Anfang in beiden Spuren und der
+// Mitte einen Satz im Boden trägt und kein Wasser) durch den Schreib-Akt der Welt (stamm/koerper-fahrt.js `_fahrRad` → `_tritt`: je
+// Rad die Rinne der Durchfahrten vor ihm, dann sein Tritt, `TRITT.rad`); gelesen an den Zellen beider Spuren der Anteil, den die
+// Wege-Karte als Pfad malt (`_pfadFeldAt` ≥ ½ — dieselben Bytes, die der Boden-Shader liest), nach einer Durchfahrt und nach zehn,
+// und der Stoff unter dem Fuß (`_kontaktStoffAt`). Danach kehren das Feld der Tritte und die Karte zurück: der Kasten der Spur malt
+// neu wie eine Fläche, die aus der Karte fällt (`_wegeStufeMalen` mit dem Kasten); `rest` nennt die Zellen, deren Bytes nicht
+// zurückkehrten. Gerufen NACH dem Fächer: keine Bremsung der Saaten fährt über die Spur.
+const SPUR_SICHT = async (r) => {
+    const VC = window.__vehicleCore;
+    if (typeof r._fahrRad !== "function" || typeof r._trittDurchfahrten !== "function") return { fehlt: "das Rad schreibt keine Spur (stamm/koerper-fahrt.js _fahrRad)" };
+    const pre = VC.PRESETS.gt;
+    const G = pre && VC.fahrGesetz(VC.exportDrive(Object.assign({}, pre.s, pre.fx), "gt"));
+    if (!G || !G.rad) return { fehlt: "der gt trägt kein Rad im Boden (vehicle-core fahrAufstand rad)" };
+    const TT = r.constructor.TRITT, wm = r.state.worldMeta, wk = r.state.wegeKarte;
+    if (!wm || !wk) return { fehlt: "die Welt trägt kein Feld der Tritte oder keine Wege-Karte" };
+    const hk = (x, z) => r._voxelSurfaceY(x, z);
+    const weich = (x, z) => {
+        const y = hk(x, z);
+        const Z = Number.isFinite(y) && r._stoff(r._kontaktStoffAt(x, z, y));
+        return !!(Z && Z.radBoden) && !(r._atlasWaterLevelAt(x, z, y) > y - 0.3);
+    };
+    const q = G.auf.quer, p0 = r.state.playerMesh.position;
+    let ort = null;
+    for (let k = 0; k < 1200 && !ort; k++) {
+        const [x0, z0] = [p0.x + Math.cos(k * 2.4) * (8 + k * 0.2), p0.z + Math.sin(k * 2.4) * (8 + k * 0.2)];
+        let ja = true;
+        for (let sx = -3; sx <= 15 && ja; sx += 1) for (const dz of [-q, 0, q]) ja = ja && weich(x0 + sx, z0 + dz);
+        if (ja) ort = { x0, z0 };
+    }
+    if (!ort) return { zellen: 0, grund: "kein weicher Ort in 1 200 Proben bis 248 m um den Spieler" };
+    const zellen = [];
+    for (let x = ort.x0 + 3.25; x < ort.x0 + 9; x += TT.zelleM)
+        for (const zz of [ort.z0 - q, ort.z0 + q]) zellen.push([(Math.floor(x / TT.zelleM) + 0.5) * TT.zelleM, (Math.floor(zz / TT.zelleM) + 0.5) * TT.zelleM]);
+    const pfad = () => zellen.map(([x, z]) => Math.round(r._pfadFeldAt(x, z, hk(x, z)) * 1000));
+    const vor = [Object.assign({}, wm.tritt || {}), new Map(r._trittSchwach || []), new Map(wk.trittGemalt), new Set(wk.trittOffen), pfad()];
+    const fahre = () => {
+        const z = VC.fahrZustand(ort.x0, ort.z0, 0);
+        for (let sx = 0; sx <= 12; sx += 0.2) {
+            [z.x, z.y, z.luft] = [ort.x0 + sx, hk(ort.x0 + sx, ort.z0), false];
+            r._fahrRad(z, G, false);
+        }
+    };
+    const gemalt = () => pfad().filter((v) => v >= 500).length;
+    fahre();
+    const nach1 = gemalt();
+    for (let n = 2; n <= 10; n++) fahre();
+    const nach10 = gemalt();
+    const erde = zellen.filter(([x, z]) => r._kontaktStoffAt(x, z, hk(x, z)) === "erde").length;
+    const tritte = r._trittZahl(zellen[0][0], zellen[0][1]);
+    // zurück: das Feld, das flüchtige Gedächtnis, das Gemalte, die Wiese von morgen — und der Kasten der Spur malt neu
+    wm.tritt = vor[0];
+    r._trittSchwach = vor[1];
+    r._trittSchrieb = (r._trittSchrieb || 0) + 1;
+    wk.trittGemalt.clear();
+    for (const [k, v] of vor[2]) wk.trittGemalt.set(k, v);
+    wk.trittOffen.clear();
+    for (const k of vor[3]) wk.trittOffen.add(k);
+    const R = TT.halbM + TT.randM + 4;
+    const box = { x0: ort.x0 - R, x1: ort.x0 + 12 + R, z0: ort.z0 - q - R, z1: ort.z0 + q + R };
+    for (const st of wk.stufen) if (st.zentriert) r._wegeStufeMalen(st, null, null, box);
+    const nachher = pfad();
+    return {
+        ort: [Math.round(ort.x0 * 10) / 10, Math.round(ort.z0 * 10) / 10],
+        zellen: zellen.length,
+        anteil1: nach1 / zellen.length,
+        anteil: nach10 / zellen.length,
+        erde: erde / zellen.length,
+        tritte: Math.round(tritte * 10) / 10,
+        rest: nachher.filter((v, i) => v !== vor[4][i]).length,
+    };
+};
+
 // DER ZENSUS DER FAHRZEUGE UND MASCHINEN (Seite der Welt)
 const zensusFahr = async (r, T, arg) => {
     const s = r.state;
@@ -648,13 +721,22 @@ module.exports = (F) => [
                 });
                 H.zeile("Medium S2: " + R.akte.slice(0, 400));
                 if (R.fehlt) return K.leser(2, { fehlt: R.fehlt, wo: "stamm/koerper-fahrt.js:1837 _fahrGrund · vehicle-core.js:4306 radImBoden" });
-                const w = R.werte, pz = (q) => (q == null ? "—" : Math.round(q * 100) + " %");
+                // die Spur nach 10 Durchfahrten im Bild der Karte (SPUR_SICHT) — nach dem Fächer, an einem weichen Ort um den Spieler
+                let sp = null;
+                try {
+                    sp = await K.welt("return await (" + H.seite.SPUR_SICHT + ")(r, T, {});");
+                } catch (e) {
+                    H.zeile("Spur warf: " + String(e && e.message).slice(0, 200));
+                }
+                if (sp && sp.fehlt) return K.leser(2, { fehlt: sp.fehlt, wo: "stamm/koerper-fahrt.js _fahrRad → stamm/siedlung-wege.js _tritt" });
+                H.zeile("Medium S2 Spur: " + JSON.stringify(sp));
+                const w = Object.assign({}, R.werte, { sicht: sp && sp.zellen ? sp.anteil : 0 }), pz = (q) => (q == null ? "—" : Math.round(q * 100) + " %");
                 return K.zahl(2, {
                     n: w.physik,
-                    werte: { imBand: w.imBand, imBand50: w.imBand50, imKreis: w.imKreis, imWelt: w.imWelt, flattert: w.flattert, rinne: w.rinne },
-                    beleg: w.physik + " Fahrten je Rezept über 20 Saaten · Prüfstand auf dem Boden der Saat (eben, 49 CFR 571.135 S6.2.2): Weg × (μ + f_r) im Band 100→0 " + pz(w.imBand) + " (" + w.norm100 + " m), 50→0 " + pz(w.imBand50) + " · die Kurvengrenze im Kreis " + w.kurve + " μ·g (μ " + w.muSpanne + "), im Band 0,95–1,01 " + pz(w.imKreis) + " · die Welt: Bremsweg 100→0 " + w.weg100 + " m am Ort (Gefälle am Wagen bis " + pz(w.steil) + ", " + w.flug + " Fahrten mit Flug, " + w.flattert + " ohne Kuppe), der Weg am Boden × (μ + f_r) mit der Höhe im Band 30–50 m " + pz(w.imWelt) + " (" + w.welt100 + " m) · Rinne " + w.rinne + " m (fest " + w.rinneFest + " m) · " +
+                    werte: { imBand: w.imBand, imBand50: w.imBand50, imKreis: w.imKreis, imWelt: w.imWelt, flattert: w.flattert, rinne: w.rinne, sicht: w.sicht },
+                    beleg: w.physik + " Fahrten je Rezept über 20 Saaten · Prüfstand auf dem Boden der Saat (eben, 49 CFR 571.135 S6.2.2): Weg × (μ + f_r) im Band 100→0 " + pz(w.imBand) + " (" + w.norm100 + " m), 50→0 " + pz(w.imBand50) + " · die Kurvengrenze im Kreis " + w.kurve + " μ·g (μ " + w.muSpanne + "), im Band 0,95–1,01 " + pz(w.imKreis) + " · die Welt: Bremsweg 100→0 " + w.weg100 + " m am Ort (Gefälle am Wagen bis " + pz(w.steil) + ", " + w.flug + " Fahrten mit Flug, " + w.flattert + " ohne Kuppe), der Weg am Boden × (μ + f_r) mit der Höhe im Band 30–50 m " + pz(w.imWelt) + " (" + w.welt100 + " m) · Rinne " + w.rinne + " m (fest " + w.rinneFest + " m) · die Spur nach 10 Durchfahrten gemalt " + pz(w.sicht) + (sp && sp.zellen ? " von " + sp.zellen + " Zellen (nach einer " + pz(sp.anteil1) + ", Erde " + pz(sp.erde) + ", " + sp.tritte + " Tritte je Zelle, zurück bis auf " + sp.rest + ", Ort " + sp.ort + ")" : " (" + ((sp && sp.grund) || "keine Spur") + ")") + " · " +
                         w.stoffe + " Böden, " + w.weich + " Adressen weich, " + w.wasser + " im Wasser · ≥ 130 km/h " + w.bis130 + "/" + R.gemessen + " · ohne: " + ohne.join(", ") + " · " + R.akte,
-                    taeter: w.physik < 20 ? w.physik + " Fahrten je Rezept über 20 Saaten (gleicher Boden, gleicher Hang)" : w.flattert > 0 ? w.flattert + " Welt-Fahrten heben ohne Kuppe ab (vehicle-core.js fahrStand: das Rad verliert den Griff vor dem Federweg)" : !(w.rinne > 0) ? "kein weicher Boden auf der Spirale der Saaten (" + w.stoffe + " Böden)" : null,
+                    taeter: w.physik < 20 ? w.physik + " Fahrten je Rezept über 20 Saaten (gleicher Boden, gleicher Hang)" : w.flattert > 0 ? w.flattert + " Welt-Fahrten heben ohne Kuppe ab (vehicle-core.js fahrStand: das Rad verliert den Griff vor dem Federweg)" : !(w.rinne > 0) ? "kein weicher Boden auf der Spirale der Saaten (" + w.stoffe + " Böden)" : !(w.sicht >= 1) ? (sp && sp.zellen ? "die Spur von 10 Durchfahrten bleibt unsichtbar (gemalt " + pz(w.sicht) + ", " + sp.tritte + " Tritte je Zelle, der Pfad ab 27,7 — stamm/koerper-fahrt.js _fahrRad → stamm/siedlung-wege.js _tritt, TRITT.rad)" : "kein weicher Ort für die Spur (" + ((sp && sp.grund) || "SPUR_SICHT warf") + ")") : null,
                 });
             });
             await K.schritt(3, async () => K.nicht(3, { n: da().medien.wasser, fehlt: "Wasser: kein Floß, Boot oder Segler steht in der Welt" }));
@@ -664,7 +746,7 @@ module.exports = (F) => [
             await K.schritt(7, async () => K.leser(7, { n: da().g === 9.8 ? 1 : 0, fehlt: "kein Planet trägt sein g und ρ: der Fahr-Kern liest die Konstante FAHR.G = " + da().g, wo: "vehicle-core.js:3080" }));
             await K.schritt(8, async () => K.nicht(8, { n: da().medien.raum, fehlt: "zwischen Sonnensystemen: kein Raum-Werk, keine Uhr an Bord neben der Uhr daheim" }));
         },
-        seite: { ZENSUS: zensusFahr, FAECHER, BREMS_AN },
+        seite: { ZENSUS: zensusFahr, FAECHER, BREMS_AN, SPUR_SICHT },
         sprossen: {
             2: {
                 umfang: { soll: 20, wort: "Saaten bis 130 km/h mit eigener Physik" },
@@ -698,6 +780,13 @@ module.exports = (F) => [
                         herkunft: "die Fallkurve: ein Rad verliert den Griff erst, wenn der Boden schneller fällt, als der Wagen fällt, und weiter, als sein Federweg reicht — über einer Welle federt das Rad aus, es fliegt nicht; bis fahrzeug-medium-2 hob der Wagen 2 cm unter der Fallkurve ab (Genesis 60 von 120 Welt-Fahrten)",
                     },
                     { key: "rinne", wort: "Spurrinne nach 10 Durchfahrten in m", soll: 0, richtung: ">" },
+                    {
+                        key: "sicht",
+                        wort: "Anteil der Zellen der Spur, die die Wege-Karte nach 10 Durchfahrten als Pfad malt",
+                        soll: 1,
+                        richtung: "≥",
+                        herkunft: "die Karte: „Spurrinne nach 10 Durchfahrten sichtbar“ — sichtbar ist, was der Boden-Shader liest: die Wege-Karte malt eine Zelle ab der Stufe des Pfads (27,7 Tritte des Fußes, `_trittStufe`); das Gewicht des Rads nach Weaver & Dale 1978 (J. Appl. Ecol. 15; USDA SDTDC 0423-1201, Kap. 3): 200 Durchfahrten eines Motorrads nahmen 9× so viel Bewuchs wie 200 Wanderer, zwei Räder in einer Spur — 4,5 Tritte je Rad",
+                    },
                 ],
                 erwartet: "zahl",
             },
@@ -761,7 +850,7 @@ module.exports = (F) => [
             2: [
                 {
                     name: "ATTRAPPE: 20 Saaten bremsen im Band, der Boden bleibt glatt (Spurrinne 0)",
-                    j: { leiter: "mensch.fahrzeug.medium", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 20, werte: { imBand: 1, imBand50: 1, rinne: 0 } } } },
+                    j: { leiter: "mensch.fahrzeug.medium", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 20, werte: { imBand: 1, imBand50: 1, imKreis: 1, flattert: 0, rinne: 0, sicht: 1 } } } },
                     gruen: false,
                     zahl: /ROT an Spurrinne nach 10 Durchfahrten in m 0 verfehlt/,
                 },
@@ -770,6 +859,12 @@ module.exports = (F) => [
                     j: { leiter: "mensch.fahrzeug.medium", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 20, werte: { imBand: 1, imBand50: 0, rinne: 0.05 } } } },
                     gruen: false,
                     zahl: /ROT an Anteil der Saaten mit Bremsweg 50 → 0 × \(μ \+ f_r\) auf dem Boden der Saat in 7,5–12,5 m 0 verfehlt/,
+                },
+                {
+                    name: "das Rad tritt wie ein Fuß: die Rinne gräbt, die Spur von 10 Durchfahrten bleibt unsichtbar (20 Tritte, der Pfad ab 27,7)",
+                    j: { leiter: "mensch.fahrzeug.medium", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 20, werte: { imBand: 1, imBand50: 1, imKreis: 1, flattert: 0, rinne: 0.05, sicht: 0 } } } },
+                    gruen: false,
+                    zahl: /ROT an Anteil der Zellen der Spur, die die Wege-Karte nach 10 Durchfahrten als Pfad malt 0 verfehlt/,
                 },
             ],
             4: [

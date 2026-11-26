@@ -65,6 +65,13 @@ aufgesetzt auf `fahrzeug-stapel` 445b4549 (main c814741e, im Bündel `buendel-mi
     vollen Einschlag, 20 m/s), die Spitze a_quer gegen μ·g (μ = `_fahrHaft` × maxGrip · grip), Band 0,95–1,01.
   - `imWelt` (gemessen): der Weg am Boden × (μ + f_r) des Schritts, die Höhe gutgeschrieben (½v² = g·Σ(μ + f_r)·Δs + g·Δh), im Band
     30–50 m — am Kern auf Steigungen ±15 % und ±30 % 39,0–40,4 m gegen 38,6 m eben.
+  - `sicht` (geurteilt, Soll 1; die Karte: „Spurrinne nach 10 Durchfahrten sichtbar“): `SPUR_SICHT` fährt den gt des Kerns zehnmal
+    dieselben 12 m weichen Bodens um den Spieler durch den Schreib-Akt der Welt (`_fahrRad` → `_tritt`) und liest an den Zellen
+    beider Spuren den Anteil, den die Wege-Karte als Pfad malt (`_pfadFeldAt` ≥ ½ — die Bytes des Boden-Shaders), nach einer und
+    nach zehn Durchfahrten; danach kehren das Feld der Tritte und die Karte zurück (der Kasten der Spur malt neu, `rest` = 0).
+    Täter beim Namen: „die Spur von 10 Durchfahrten bleibt unsichtbar (… `_fahrRad` → `_tritt`, `TRITT.rad`)“. Dazu fiel ein Rot im
+    Selbsttest des Kandidaten selbst: die ATTRAPPE „der Boden bleibt glatt“ trug `imKreis` nicht und nannte darum die Kurvengrenze
+    statt der Rinne (5 400 Mutanten, 1 falsch → 5 402, 0 falsch).
   - `ungemessen: Kurvengrenze` fiel.
   - Die drei Wände: die Liste (`meisterkarte-quelle/punkte/punkte.cjs liste`, Zweig `punkte-maschine`) 1976 Stationen · Fehler 2 = genau `gelaende.K2#1/#2` „Wand HAKEN“ wie an der Basis; S2 misst
     in 4,2–5,0 s je Ort; kein Fächer im Kern (die Station fährt durch die Leser des Spiels in der Seite).
@@ -86,6 +93,8 @@ aufgesetzt auf `fahrzeug-stapel` 445b4549 (main c814741e, im Bündel `buendel-mi
 | Station S2 Kurvengrenze a_quer ÷ μ·g Genesis · Dorf · stadt-voll (μ 0,4–0,8), im Band 0,95–1,01 | ungemessen | **0,992–0,997 · 0,992–0,999 · 0,99–0,999**, 100 % |
 | Station S2 `imWelt` Genesis · Dorf · stadt-voll | 97 % · — · — | **100 %** · 49 % · 85 % |
 | Station S2 Prüfstand 100 → 0 · 50 → 0 im Band (alle Orte) | 100 % · 100 % | 100 % · 100 % (38,14–45,26 m) |
+| Station S2 `sicht` Genesis · Dorf · Wiese (24 Zellen je Ort): gemalt nach 1 · nach 10 Durchfahrten · Erde · Tritte je Zelle · `rest` | `TRITT.rad` 1: 0 · **0** · 0 · 20 · 0 — ROT „die Spur von 10 Durchfahrten bleibt unsichtbar“ | 0 · **100 %** · 100 % · 90 · 0 an allen drei Orten |
+| Selbsttest k2-mensch mit dem Kandidaten · die Liste der Stationen (Zweig `punkte-maschine`) | 5 400 Mutanten, 1 falsch · Fehler 2 | **5 402, 0 falsch** · Fehler 2 (`gelaende.K2#1/#2` wie an der Basis) |
 | A10 Kante 6 m bei 15 m/s: Bilder am Boden, wo die Ebene nicht trägt (je Gattung) · in der Luft | 0 · 65 | **0 · 65** (Federweg ohne `traegt`: 5) |
 | fahr-leben S4 Klippe (Kante 5,94 m auf 3 m): abgehoben nach · Flug-Höhe beim Absteigen | 87 Bilder · 5,99 m | **86 Bilder · 5,93 m** (Federweg ohne `traegt`: nie, 420 Bilder) |
 | fahr-leben S2 Klippe: Luft-Schritte · größter Sprung je Schritt | 56/531 · 0,19 m | 54/531 · 0,19 m |
@@ -113,7 +122,7 @@ Wände am Kopf: siehe „Kopf“.
   jetzt den Leib. Die Basis mit `luftEps` 1 cm oder 3 cm bleibt ohne Kreis (16 · 15 Ankünfte in 120 s): die Lage hängt am Griff, nicht
   am Rauschen. Was fehlt, ist eine Regel des Verkehrs: der Bogen vor der Wende trägt zwei Entgegenkommende nur, wenn einer vor ihm
   wartet (ein Ort für den Bogen) oder der Zweite im Kreis zurücksetzt. Messname: VK 10 Uhr Warte-Kreis 8>9.
-- **(2) `rinne_sichtbar` — halb**: die Farbe fiel (die Spur von zehn Durchfahrten ist Pfad und Erde, 24 von 24 Zellen, siehe B-k);
+- **(2) `rinne_sichtbar` — halb**: die Farbe fiel (die Spur von zehn Durchfahrten ist Pfad und Erde, 24 von 24 Zellen, siehe B-k; die Station urteilt sie: `sicht` 100 % an Genesis · Dorf · Wiese);
   die TIEFE im Netz steht offen. Die Rinne steht im Gesetz, in der Station und im gezeichneten Reifen; das Gelände-Netz senkt sich
   nicht um sie: der Höhen-Leser `_voxelSurfaceY` (stamm/gelaende-chunks.js) liest das Dichtefeld im Schritt 1,2 m, das Netz der
   Stufe 0 trägt 1,8 m — eine Rinne von 0,5 m Zelle und 0,3 cm (trocken) bis 5–9 cm (nass) trägt es nicht ohne einen Leser der
