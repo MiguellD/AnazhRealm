@@ -1501,7 +1501,7 @@ function planetAnker(msg) {
 // der dritte Parameter derselben Funktion, kein eigener Pfad), `planetOrt` an der Lage (Grad) → NUR das Δ zum Anker (die
 // skalaren Felder, die das Ort-Gesetz liest: gelaende-core `ortGesetz`), dazu das Urteil Land oder Meer an der Lage (die Höhe
 // des Planeten, Band 16 km) und die Küste. Eine reine Funktion von Samen, Lage und Zeit — sie liest weder den Stand des Fadens
-// noch eine Uhr. Rückgabe { samen, version, breite, laenge, zeitMa, land, hoeheM, kuesteKm, delta }.
+// noch eine Uhr. Rückgabe { samen, version, breite, laenge, zeitMa, land, hoeheM, kuesteKm, stauchung, delta }.
 function planetOrtAuftrag(msg) {
     const plan = planetPlanVon(msg.samen, msg.koerper);
     const P = self.__planetCore;
@@ -1521,6 +1521,9 @@ function planetOrtAuftrag(msg) {
         land: p.hoeheM > 0,
         hoeheM: p.hoeheM,
         kuesteKm: p.kont,
+        // die Stauchung s_v des Orts (planetOrt: Spiel-m = s_v · Erd-m, aus dem Ort-Gesetz gelesen): der Leser rechnet das Meer in
+        // Erd-Metern mit der Zahl des Kerns, nie mit einer eigenen (Karte 2 planet.zeit.klimageschichte#2: −21 ka gegen −120 m)
+        stauchung: o.stauchung,
         delta: {
             klima: {
                 sommer: d.klima.sommer,

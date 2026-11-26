@@ -52,3 +52,53 @@ OFFEN saatenJeG 1 (Soll ≥ 50, Messname saatenJeG)
 
 Prüfstand (aus der Wurzel des Spiels):
   node cloud-post/kosmos-hadley-station/pruefstand-fremde-physik-s1.cjs <…/stationen/k2-leben.js> [<…/stationen/faecher.js>]
+
+KOPF 3 — DAS MILANKOVIĆ-GESETZ (Kandidat, Richter-Sache): zwei Patches gegen origin/punkte-maschine e46f5728 (die zwei Stationsdateien
+sind an 7876f5ca byte-gleich; `git apply --check` sauber), `node --check` grün. Kein Soll ist geändert.
+
+k2-zusammenspiel-bahn-klima-s2-s3.patch, planet.kopplung.bahn-klima#3 „r ≥ 0,7 gegen Laskar“ und #2 (dieselbe Klasse, siehe unten):
+- rLaskar = r der Juni-Insolation 65° N der Welt gegen La2004 an den 51 Zeiten der Reihe (−i · 20 ka). Die Welt: planet-core.js
+  planetKlimaGlobal(plan, t).insolation65N, in node aus dem Kern des Spiel-Baums (wie der Findling, „WIE DAS GESETZ SIE LIEST“), der
+  Plan wie im Faden (voxel-worker.js planetPlanVon = planetPlan(samen, PLANET_ERDE)). La2004: spec/bahn/la2004.json (IMCCE
+  INSOLN.LA2004.BTL.ASC je 1 ka), die Juni-Insolation HIER mit der Tagesformel nach Berger 1978 (λ = 90°), nie über den Kern. Trägt das
+  Band an Stelle i·20 nicht −20·i ka, wirft die Messung beim Namen (kein Ersatz).
+- Kosten in node: 142 ms (require 6 · Plan 84 · 51 Zeiten 52). Kein Kern-Fächer.
+- Der Zeuge zyklenMeer liest weiter das Meer des Fadens (die Welt).
+
+k2-planet-klimageschichte-s2.patch, planet.zeit.klimageschichte#2 „Meer −120 ±10 m · global −6 ±2 °C“ und #3:
+- Das Meer in Erd-Metern: Δ des Fadens ÷ `stauchung` der Antwort (voxel-worker.js planetOrtAuftrag, s_v des Kerns 0,05868). Ohne sie
+  NaN → null: ungemessen, keine Ersatz-Zahl. Vorher maß S2 Spiel-Meter (−7,109 m für −121,14 m der Erde).
+
+Der Täter der Station an allen vier Sprossen: `nicht` stand bedingungslos im Ergebnis, und das Urteil (k2-same) macht aus jedem `nicht`
+„Umfang nicht erzeugbar“ — ROT, was immer gemessen ist (GTX 31ea3847, 21.11.: „S3 Umfang nicht erzeugbar: kein Milanković-Antrieb …“).
+Die Kandidaten schreiben `nicht` nur, wo der Umfang fehlt: r undefiniert (flache Insolation) · keine Stauchung · kein Gipfel · kein Ort
+des Fächers antwortet mit Klima (bahn-klima#2: das `nicht` stammte aus der Zeit, als der Faden den Körper nicht las; die Antwort auf die
+Neigung urteilt der Zeuge der Sprosse, `gleich === false`, die Amplituden das Soll — je Adresse stehen sie im Zeugen). Die echten
+Absenzen derselben Leitern bleiben: bahn-klima#5 (keine gebundene Welt im Spiel), #6 (1 000 Welten), klimageschichte#4 (kein Becken).
+
+Gemessen mit pruefstand-milankovic.cjs (der BEFEHL der Station als eigener Prozess im Spiel-Baum gegen eine Werkbank der Sitzung,
+Null-Renderer; nur der Umfang geändert: die eine Leiter, kein Dorf, Deckel × 10; das Urteil spricht die Station selbst):
+  PRÜFSTAND GRÜN: 7 von 7 (Boot 3,5 s; alt-Rev e46f57286 = punkte-maschine 8afcd9729 an beiden Dateien byte-gleich; 1 002 s)
+  EICHUNG-B  alt bahn-klima#3            ROT   zyklen 34 · spanneMeerM 8,054 · rLaskar fehlt („ehe rLaskar der Sprosse stand“)   300,2 s
+  NEU-B      Kandidat bahn-klima#3       GRÜN  „S3 rLaskar 0,978 gegen Soll ≥ 0,7 ✓“ · zyklen 34 · spanneMeerM 8,054          300,2 s
+  EICHUNG-B2 alt bahn-klima#2            ROT   „S2 Umfang nicht erzeugbar: Neigung 0° → Amplitude 0 K, 45° → 23.226 K …“         (derselbe Lauf)
+  NEU-B2     Kandidat bahn-klima#2       ROT am Soll „amp0Prozent 0 % ✓ · amp45Faktor 1,947 gegen Soll ≥ 2 ✗ · schneelinieVersatzM 153,162 m ✓“
+             (die Station urteilt die Zahl, kein „Umfang nicht erzeugbar“ mehr; das Bild schießt das Gerät)
+  EICHUNG-K  alt klimageschichte#2       ROT   „Umfang nicht erzeugbar … meerM -7,109 m gegen Soll -120 ± 10 m ✗“            229,1 s
+  NEU-K      Kandidat klimageschichte#2  GRÜN  „meerM -121,141 m ✓ · globalDT -5,89 °C ✓ · 48 Punkte zur Kaltzeit“           202,3 s
+  NEU-K      Kandidat klimageschichte#3  GRÜN  „gipfel41Ka 41 ✓ · gipfel100Ka 95 ✓ · rEisMeer -0,978 ✓ · spanneMa 3 ✓ · 301 Werte“
+             (alt #3 ROT: dieselben Zahlen, aber das bedingungslose `nicht` — „Umfang nicht erzeugbar“)
+  Die Leiter bahn-klima reißt im Container den Deckel × 10 (300 s; am Gerät 30 s — die GTX las S3 am 21.11. innerhalb des Deckels);
+  S3 steht vor dem Wurf, das Urteil liest ihn („gemessen vor dem Wurf der Leiter“). Die Kosten von rLaskar: 51 Zeilen des Bands
+  und 51 Mal `planetKlimaGlobal` im Prozess der Station, 142 ms.
+  Nebenbefund #4 (Becken, ROT wie vorher aus eigenem Grund, `nicht` unverändert): sein Zeuge liest dasselbe `meer` und steht jetzt
+  in Erd-Metern — −28,979 … 27,55 Spiel-m → −493,836 … 469,484 Erd-m über 540 Ma.
+
+Die drei Wände
+1. `node punkte.cjs liste` mit den Kandidaten (samt S2): 1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0 (25 s).
+2. Die Leiter bahn-klima misst S3 in ≤ 60 s (node 0,14 s dazu), S2 ohne Mehrkosten (eine Bedingung); klimageschichte unverändert
+   (ein Teilen je Antwort).
+3. Kein Kern-Fächer: 51 Aufrufe von planetKlimaGlobal in node; das Meer liest der Faden.
+
+Prüfstand (aus der Wurzel des Spiels):
+  node cloud-post/kosmos-hadley-station/pruefstand-milankovic.cjs <Spiel-Baum> <…/meisterkarte-quelle/punkte> <alte Rev> [Port]

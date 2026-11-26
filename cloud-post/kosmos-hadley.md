@@ -1,8 +1,81 @@
 # kosmos-hadley — Stand-Blatt
 
 Zweig `kosmos-hadley`. Die Basis war `origin/kosmos-bahn-2` 3bb9abb7, seit dem VORRANG vom 26.11. 04:06 ist es `kosmos-bahn-3` 806a367d
-(auf main eae94514). Seit der Landung von `w28-kosmos-bahn` steht der Kopf auf main (Kopf 1 auf c0634d86, Kopf 2 auf c814741e). Sprossen:
-`karte2.planet.kopplung.bahn-klima#2` und `karte2.leben.evolution.fremde-physik#1`.
+(auf main eae94514). Seit der Landung von `w28-kosmos-bahn` steht der Kopf auf main (Kopf 1 auf c0634d86, Kopf 2 auf c814741e, Kopf 3
+auf dem jüngsten main). Sprossen: `karte2.planet.kopplung.bahn-klima#2` und `karte2.leben.evolution.fremde-physik#1` (Kopf 1/2);
+`karte2.planet.kopplung.bahn-klima#3`, `karte2.planet.zeit.klimageschichte#2` und `#3` (Kopf 3, EIN Gesetz: die Bahn treibt das Eis).
+
+## Kopf 3: das Milanković-Gesetz (bahn-klima#3 · klimageschichte#2 · klimageschichte#3)
+
+Nach der Regel vom 11:22 („die nächste rote Sprosse DERSELBEN Leiter-Familie, zwei bis vier Sprossen aus EINEM Gesetz“).
+
+**Täter-Zahl (vorher, Kern von Kopf 2, Erd-Saat `anazh-realm-seed`, die Reihen der Stationen nachgebaut):**
+- bahn-klima#3: über 1 Ma 0 Extrema des Meeres (Spanne 0,087 Spiel-m), 0 des Sommers. rLaskar ungemessen: die Welt kennt keine
+  Juni-Insolation, `planetKlimaGlobal` liest nur Neigung und Sternfluss.
+- klimageschichte#2: −21 ka Meer 0,031 m, die Welt 0 K kühler. #3: kein Gipfel über 3 Ma, r(Eis, Meer) 0,015.
+
+**Geschnitten (planet-core.js, EINE Kette, kein Zwilling):**
+- Die Bahn: `bahnElemente(tKa)` nach Berger 1978 (die Tafeln aus E3SM `shr_orb_mod`): Schiefe, Exzentrizität, Länge des Perihels.
+- Der Antrieb: `tagesEinstrahlung` (Tagesmittel nach Berger 1978), die Juni-Insolation 65° N (λ = 90°) in `planetKlimaGlobal`
+  (`insolation65N`).
+- Das Eis: `eisZustand` nach Imbrie & Imbrie 1980 (b 0,6, Tm 17 ka, 400 ka Anlauf); das Meer `eisMeerM`: 239,07 m je Einheit
+  (−130 m LGM), Hochstand gekappt bei 10,72 m (Grönland 7,42 + WAIS 3,3). Die Wärme: der Glazial-Antrieb κ 6,115 W/m² in
+  `klimaStrahlung` (−6,1 K, Tierney 2020). `ortRoh` liest das Meer in Spiel-Metern (s_v · meerGlazialM).
+- Fremde Körper: der Antrieb in W/m² gegen die Streuung der Erde (`kb.sn` = σ_Erde / Sternfluss, für die Erde bit-gleich), der
+  Faktor der tiefen Kappe ≤ 1. Neigung 0 vorher −601 m und −63 K (das Glazial lief mit der Eis-Albedo davon) → −69,8 m und −2,43 K.
+- Die Stufe der Eis-Zeit im Anker (`ankerAmSchluessel`): gesucht wie zuvor; NUR wenn der gefundene Anker eine Eis-Geschichte trägt,
+  sucht er neu ohne vereiste Proben. Die Heimat erklärt eis 0 (gelaende-core `ORT_HEIMAT`), und die Klemme des Δ hätte die
+  Findlinge gelöscht. Betroffen 9 von 100 Saaten; der Anker des Spiels bleibt bit-gleich (−0,8816373256754768, −1,7151463215373193).
+  Ein Kriterium in jeder Probe hätte ihn auf −43,38° verschoben — verworfen.
+- `voxel-worker.js` `planetOrtAuftrag` trägt `stauchung` (s_v des Kerns): der Leser rechnet Erd-Meter mit der Zahl des Kerns.
+
+**Die Linse (`scripts/diag-planet.cjs --anker`, Familie der Anker-Wand):**
+- `klima.milankovic`: die Bahn des Kerns gegen La2004 (Laskar et al. 2004, A&A 428, 261; das Band `spec/bahn/la2004.json`, IMCCE
+  INSOLN.LA2004.BTL.ASC je 1 ka über 1 Ma, die Juni-Insolation mit der Formel der Quelle, unabhängig vom Kern) r ≥ 0,95; −21 ka Meer
+  [−130, −110] m und Mittel [−8, −4] K; Hochstand [3; 10,72] m; die Gipfel 41 ± 5 und 100 ± 15 ka (LR04); heute Meer 0.
+- `anker.eis`: 0 der 100 Anker unter dem Eis des Quartärs, der Anker des Spiels bit-gleich.
+- Selbsttest: 5 gepflanzte Täter fallen beim Namen (die Stufe gestrichen → 11 unter dem Eis; die Stufe in jeder Probe → der Anker des
+  Spiels −43,38°; das Perihel fest → r 0,158; das Meer 100 m je Einheit → −50,66 m; der Glazial-Antrieb 0 → −0,24 K).
+
+**Gemessen (vorher → nachher, gleiche Last):**
+- bahn-klima#3: zyklenMeer 0 → 34, zyklenSommer 0 → 41, Spanne 0,087 → 8,054 Spiel-m, rLaskar ungemessen → 0,9776 (51 Zeiten der Station).
+- klimageschichte#2: −21 ka Meer 0,031 → −121,14 Erd-m (Spiel −7,109 m ÷ s_v 0,05868), ΔT 0 → −5,89 K.
+- klimageschichte#3: Gipfel keiner → 41 ka (×43,9 Median) und 95 ka (×7,55), r(Eis, Meer) 0,015 → −0,978, über 3 Ma.
+- Der Kern über 1 Ma: r(Juni 65° N) 0,9747 gegen La2004 (0,9991 über 100 ka); −21 ka −121,12 m, −5,73 K; −18 ka −130 m, −6,09 K.
+- Die Erde heute bit-gleich: Meer 0, Anker des Spiels, Relief-Bytes (`--bytes` 112f7c978828 = Tafel, VERSION planet-h2-14 bleibt).
+  Bewegt ist nur `eis.zeit`: `ort.frage.bytes` neu eingefroren (23 985 Antworten eis 0 → 1, davon 12 420 = 9 × 1 380 aus den
+  bewegten Ankern; Höhe, Land, Kontinent, Meer bit-gleich; 2 804 Gipfel, 99,0 % an konvergenter Grenze). Ohne die Stufe standen
+  9 816 Antworten auf −1.
+- `diag-planet` 13 GRÜN · `--selftest` 63 GRÜN · `--bytes` Exit 0 · `--anker` 7 GRÜN · `--anker --selftest` 14 GRÜN.
+
+**Die Station muss sich bewegen** (Kandidaten in `cloud-post/kosmos-hadley-station/`, BEGRUENDUNG.txt):
+- Der Täter der Station an vier Sprossen: die Messung schrieb `nicht` bedingungslos, und `nicht` heißt im Urteil
+  (`meisterkarte-quelle/punkte/stationen/k2-same.js` im Zweig `punkte-maschine`) „Umfang nicht erzeugbar“ — ROT, was immer gemessen ist. Das Gerät
+  las so am 21.11. (GTX 31ea3847) „S3 Umfang nicht erzeugbar: kein Milanković-Antrieb …“. Die Kandidaten schreiben `nicht` nur noch,
+  wo der Umfang wirklich fehlt (r undefiniert · keine Stauchung · kein Gipfel · kein Ort antwortet mit Klima). Die Klasse fällt ganz:
+  auch bahn-klima#2 (Kopf 2) trug das `nicht` aus der Zeit, als der Faden den Körper nicht las — dort urteilt jetzt der Zeuge
+  (`gleich`) und das Soll; die echten Absenzen bleiben (bahn-klima#5 gebundene Welt, #6 1 000 Welten, klimageschichte#4 Becken).
+- bahn-klima#3 (`k2-zusammenspiel-bahn-klima-s2-s3.patch`): rLaskar — die Juni-Insolation der Welt (derselbe Kern, derselbe Plan wie
+  im Faden) an den 51 Zeiten gegen La2004 aus dem Band; die Tafel urteilt, nie das Gesetz über sich selbst. Der Zeuge zyklenMeer liest
+  weiter das Meer des Fadens.
+- klimageschichte#2 und #3 (`k2-planet-klimageschichte-s2.patch`): das Meer in Erd-Metern (Δ ÷ `stauchung` der Antwort; ohne sie
+  NaN → ungemessen, keine Ersatz-Zahl); r(Eis, Meer) ist skaleninvariant.
+- Prüfstand (`pruefstand-milankovic.cjs`, der Befehl der Station als eigener Prozess gegen eine Werkbank der Sitzung, nur der Umfang
+  geändert): GRÜN 7 von 7 — alt bahn-klima#3 ROT (rLaskar fehlt), Kandidat GRÜN „rLaskar 0,978 gegen Soll ≥ 0,7“; alt
+  klimageschichte#2 ROT „meerM -7,109 m“, Kandidat GRÜN „meerM -121,141 m · globalDT -5,89 °C“; Kandidat #3 GRÜN „41 · 95 ka ·
+  rEisMeer -0,978 · 3 Ma“ (alt ROT allein am `nicht`); alt bahn-klima#2 ROT „Umfang nicht erzeugbar“, Kandidat urteilt am Soll
+  „amp0Prozent 0 % ✓ · amp45Faktor 1,947 ✗ · schneelinieVersatzM 153,162 m ✓“. Laufzeit 300 s (Deckel × 10 im Container) · 213 s · 185 s.
+
+**Offen (Grund, Messname):**
+- Das Meer folgt Q65 mit r ≈ 0,35 (das Eis integriert; die Erde trägt in LR04 0,374). Die Station misst darum die Insolation
+  (rLaskar), wie die Sprosse sie nennt. Messname: rLaskar.
+- Tiefe Zeit ohne CO₂-Geschichte: wo das Energie-Bilanz-Modell eine Kappe trägt, treibt die Bahn ein Glazial (−40 Ma −93,4 m und
+  −4,48 K, −90 Ma −38,3 m) — im Eozän hatte die Erde kein großes Eis. klimageschichte#5 steht ROT wie vorher (scoteseAbwGrad
+  14,32 → 14,00 °C, Soll ≤ 3; die Lücke liegt bei −250 Ma, nicht im Glazial). Messname: scoteseAbwGrad.
+- Das Meer der tiefen Zeit in Erd-Metern: klimageschichte#4 (Becken, ROT wie vorher aus eigenem Grund, kein Becken mit
+  Wasserbilanz) liest als Zeugen dasselbe `meer` — jetzt −493,8 … 469,5 Erd-m über 540 Ma (vorher −29,0 … 27,6 Spiel-m); die Erde
+  trug in der Kreide etwa +250 m (Haq & Schutter 2008). Das ist der tektonische Teil (`planetMeer`, 10-Ma-Fächer), nicht das Eis.
+  Messname: meerMaxM.
 
 ## Kandidat 2 für systeme#1 (Koordinator 10:30: die Station wirft am Gerät)
 
@@ -259,31 +332,43 @@ nicht die Zirkulation der gemittelten Heizung (Lindzen & Hou 1988, J. Atmos. Sci
 ## Letzter Stand
 
 - Geschnitten:
-  - die Hadley-Zelle der Jahreszeit (planet-core.js `klimaStrahlung` · `hadleyLH` · `hadleyJahr` · `hadleyMass`) und die Linse `klima.hadley`,
-  - die Schwere der Welt im Guss des Leibs (`_ofenKreaturDials` → `deriveTierParams` `beinQuer` → `bauTier`),
-  - der Stations-Kandidat fremde-physik#1 (das Bein statt des Rumpfs),
-  - kosmos-bahn-3 (die Anker-Wand und die Licht-Invariante an der Quelle; die Linse ohne `try/catch`),
-  - das geerbte Rot `ort.frage.bytes` an main c0634d86 (die SHA neu eingefroren mit dem Gesetz w28-kosmos-bahn),
-  - systeme#1 Kandidat 2 (die Ephemeride reist im Text, der leere Fächer beim Namen) und die Wand ABSCHLUSS.
+  - Kopf 3, das Milanković-Gesetz (planet-core.js): die Bahn nach Berger 1978 (`bahnElemente`) → die Juni-Insolation 65° N
+    (`tagesEinstrahlung`, `insolation65N`) → das Eis nach Imbrie & Imbrie 1980 (`eisZustand`) → das Meer (`eisMeerM`) und der
+    Glazial-Antrieb in `klimaStrahlung`; die Stufe der Eis-Zeit im Anker (`ankerAmSchluessel`); `stauchung` im Faden
+    (`voxel-worker.js` `planetOrtAuftrag`); die Linsen `klima.milankovic` (La2004-Band `spec/bahn/la2004.json`) und `anker.eis`,
+  - die Stations-Kandidaten bahn-klima#3 (rLaskar) und klimageschichte#2/#3 (Meer in Erd-Metern, `nicht` nur bei echter Absenz),
+  - Kopf 2: die Hadley-Zelle der Jahreszeit (`klimaStrahlung` · `hadleyLH` · `hadleyJahr` · `hadleyMass`), die Linse `klima.hadley`,
+    die Schwere der Welt im Guss des Leibs, der Kandidat fremde-physik#1, kosmos-bahn-3, das geerbte Rot `ort.frage.bytes`,
+    systeme#1 Kandidat 2 und die Wand ABSCHLUSS.
 - Gemessen:
-  - 45°/23,44° ×0,6593 → ×1,1434,
-  - amp45Faktor 1,944 → 1,946, amp0Prozent 0 → 0 %, schneelinieVersatzM 152,2 → 153,2 m,
-  - Erde 0 von 345 000 Feldern verschieden,
-  - fremde-physik#1 steigung 0 → 0,769 (in der Welt) und saatenJeG 1 → 1,
-  - systeme#1 am Text des Geräts: 0 von 1460 Adressen (Wurf) → 1460 von 1460, ephemeride_abw_grad 0,1319°; Wand ABSCHLUSS 7 ROT → 0.
+  - bahn-klima#3: zyklenMeer 0 → 34, Spanne 0,087 → 8,054 Spiel-m, rLaskar ungemessen → 0,9776,
+  - klimageschichte#2: −21 ka Meer 0,031 → −121,14 Erd-m, ΔT 0 → −5,89 K; #3: Gipfel keiner → 41/95 ka, r 0,015 → −0,978,
+  - die Erde heute und der Anker des Spiels bit-gleich (Relief-Bytes 112f7c978828),
+  - die Stationen am Prüfstand GRÜN 7 von 7 (alt ROT, Kandidat urteilt am Soll je Sprosse; bahn-klima#2 ROT allein an amp45Faktor),
+  - Kopf 2: 45°/23,44° ×0,6593 → ×1,1434, amp45Faktor 1,944 → 1,946, schneelinieVersatzM 152,2 → 153,2 m, fremde-physik#1
+    steigung 0 → 0,769, systeme#1 0 → 1460 von 1460 Adressen.
 - Offen:
-  - amp45Faktor 1,946 < 2 (97,3 %; das Meer antwortet linear ×1,7775, und das Meereis weicht bei 45° Neigung an 75° statt zu wachsen),
-  - fremde-physik#1 saatenJeG 1 < 50 (3 von 4 Sollen; der Körper der Saat erreicht die Welt nicht, PLANET_ERDE im Faden),
+  - das Meer folgt Q65 mit r ≈ 0,35 (das Eis integriert, LR04 0,374) — Messname rLaskar misst darum die Insolation,
+  - Glaziale der tiefen Zeit ohne CO₂-Geschichte (−40 Ma −93,4 m, −4,48 K); klimageschichte#5 ROT wie vorher — Messname scoteseAbwGrad,
+  - das Meer der tiefen Zeit in Erd-Metern −493,8 … 469,5 m über 540 Ma (Kreide der Erde etwa +250 m; der tektonische Teil
+    `planetMeer`, nicht das Eis; der Zeuge von klimageschichte#4, ROT wie vorher aus eigenem Grund) — Messname meerMaxM,
+  - amp45Faktor 1,947 < 2 (97,4 %; am Kern nachgebaut 1,9472 über dieselben 63 Adressen): die erste Jahres-Harmonische der
+    Einstrahlung ist exakt linear in sin β (×1,778), darüber trägt nur Rückkopplung — Land an 75° mit Schnee ×2,5–2,9, das Meer
+    (49 von 63 Adressen) ×1,6–1,95; ein Meereis-Gesetz der Jahreszeit senkte den Faktor (im Winter unter −12 °C an 75° Meer: Erde
+    16 von 16, 45° Neigung 2 von 16) — Messname amp45Faktor; die Station urteilt ihn jetzt am Soll statt „Umfang nicht erzeugbar“,
+  - fremde-physik#1 saatenJeG 1 < 50 — Messname saatenJeG,
   - die Bilder (auge).
-- Kopf: Vorprüfung kosmos-hadley 2, EIN Commit auf main c814741e (V18.546.436), voller Ruf `gate:pruefbuehne-licht,
-  gate:weltbild-frost:echt, gate:tag-achse:echt, gate:webgl-probe`. Batterie lokal (swiftshader): check:statik Exit 0 · diag-planet
-  und `--anker` Exit 0 · gate:webgl-probe GRÜN · probe-tag OK. gate:pruefbuehne-licht ROT nur an „S0 Himmel“ und „S0 BILD“, byte-gleich
-  am nackten main c814741e — das geerbte Rot nach der Regel vom 10:27, nicht angefasst. Die zwei `:echt`-Tore tragen nur am Gerät
-  (lokal „WebGPU Device Lost“). Kopf 1 (f05c2cdb auf c0634d86) war GPU-Probe GRÜN. Der Verlauf der
-  WIP-Commits (bis 4beebcd9) liegt in PR #97; nach der Regel vom 10:27 kein neuer PR.
-- Probe-Kopf vor der Landung (lokal, ungeschoben): der Diff 3bb9abb7 → kosmos-hadley auf `buendel-kosmos` 3c4d81de, 3-Wege, sauber,
-  9 Dateien. Batterie dort (swiftshader): check:statik Exit 0 (448 s) · diag-planet GRÜN · gate:worker-dichte GRÜN (284 s) ·
-  gate:webgl-probe GRÜN (75 s) · voller Playtest GRÜN (3 710 ✅, 0 ❌) · probe-tag OK gegen 3c4d81de.
-- Beanspruchte Sprossen: `karte2.planet.kopplung.bahn-klima#2`, `karte2.leben.evolution.fremde-physik#1`
-- Karte 2 gebucht 126 von 1 718
+- Kopf: Vorprüfung kosmos-hadley 3 als EIN Commit auf main 4a188bf2 (Kopf 2 landete mit `w28-buendel-mittag`, 99649186;
+  4a188bf2 `w28-jaeger-stand` berührt keine Datei des Kopfs). GPU-Probe 86eb1309 auf gtx1050-desktop GRÜN an allen vier Toren.
+  Die CI am Kopf nannte die Rang-Wand der Stall-Akte (`diag-planet.cjs`, der Median des Spektrums von Hand) — er liest jetzt
+  `rang`, gate:welt-boot GRÜN (78 s); gate:fernwald D2 wackelt auch am nackten main (main ROT, Kopf GRÜN, je 90 s).
+  Am Kopf-Baum 99649186 (swiftshader): check:statik Exit 0 (480 s) · gate:webgl-probe GRÜN (90 s) · probe-tag OK ·
+  gate:pruefbuehne-licht ROT nur an „S0 Himmel“ (1.16e-7 gegen 1.07e-7) und „S0 BILD“ (luma 43,5) — am nackten main 99649186
+  dieselben Zahlen, geerbt (Regel vom 10:27). Die zwei `:echt`-Tore urteilen nur am Gerät: am nackten main fällt
+  weltbild-frost:echt hier mit WebGPU Device Lost (469 s), tag-achse:echt am Kopf BLIND (die Welt ruht nicht in 3 601 Takten).
+  Am Baum c814741e + Kopf 2 + Kopf 3: gate:worker-dichte GRÜN (367 s) · voller Playtest GRÜN (3 710 ✅, 0 ❌) · Prüfstand der
+  Stationen GRÜN 7 von 7.
+- Beanspruchte Sprossen: `karte2.planet.kopplung.bahn-klima#2`, `karte2.leben.evolution.fremde-physik#1` (Kopf 2, im Bündel
+  `buendel-mittag`, gelandet); `karte2.planet.kopplung.bahn-klima#3`, `karte2.planet.zeit.klimageschichte#2`, `karte2.planet.zeit.klimageschichte#3` (Kopf 3)
+- Karte 2 gebucht 130 von 1 718
 - Status: ZWISCHENSTAND
