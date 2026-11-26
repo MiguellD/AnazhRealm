@@ -897,7 +897,7 @@ class AnazhRealm_siedlung_ort {
         // eines mm), das Dorf des Zugs vor seinem Zell-Ort (`_siedlungsAnker`)
         let [S, dMin] = [null, 200];
         for (const q of (this._bewohnerSiedlungen || new Map()).values()) {
-            const d = Math.hypot(q.ox - nahe[0], q.oz - nahe[1]);
+            const d = q.gemeldet ? Infinity : Math.hypot(q.ox - nahe[0], q.oz - nahe[1]); // ein gemeldeter Nachbar steht nicht
             if (d < dMin) [S, dMin] = [q, d];
         }
         const p = S && S.plan;
@@ -3317,7 +3317,7 @@ class AnazhRealm_siedlung_ort {
         const [S, reich] = [AnazhRealm._siedlungGesetz(), AnazhRealm.Gesetz("fachwerk:siedlungsReich")];
         for (const q of (this._bewohnerSiedlungen || new Map()).values()) {
             const n = q.plan.slots.length;
-            if (!String(q.key).startsWith("d:") || n <= info.nH || info.stadt === q.key) continue; // das Viertel steht im Reich SEINES Kerns
+            if (q.gemeldet || !String(q.key).startsWith("d:") || n <= info.nH || info.stadt === q.key) continue; // das Viertel steht im Reich SEINES Kerns
             if (Math.hypot(q.ox - info.x, q.oz - info.z) < reich(S, info.nH) + reich(S, n)) return true;
         }
         return false;
@@ -3554,7 +3554,7 @@ class AnazhRealm_siedlung_ort {
     // Feldweg zu jedem Nachbarn, dessen Plan schon steht — der zweite Ort eines Paars legt ihn, gleich in welcher Folge sie erwachen (die Welt ist eine Funktion).
     _wegenetzAnschluss(key) {
         const B = this._bewohnerSiedlungen;
-        if (!key || !B || !B.has(key)) return;
+        if (!key || !B || !B.has(key) || B.get(key).gemeldet) return;
         const S = B.get(key);
         const G = S.netzGrund || (S.netzGrund = this._wegeNetzGrund(S.plan, S.ox, S.oz));
         const lok = (i) => ({ x: G.knoten[i].x - S.ox, z: G.knoten[i].z - S.oz });
@@ -3565,7 +3565,7 @@ class AnazhRealm_siedlung_ort {
             if (this._bewohnerSiedlungen !== B || B.get(key) !== S) return; // der Ort ging, ehe sein Wasser kam
             const nb = this._wegenetzNachbarn(key);
             if (nb) {
-                for (const n of nb) if (B.has(n)) this._wegenetzLegen(key, n);
+                for (const n of nb) if (B.has(n) && !B.get(n).gemeldet) this._wegenetzLegen(key, n); // ein gemeldeter Nachbar legt seinen Weg, wenn er erwacht
             } else if (runde < 8) {
                 Promise.all([...this._hydroBestellt.values()].map((e) => e.zusage)).then(() => legen(runde + 1));
             } else this._bruchMelden(`WEGENETZ: die Nachbarschaft von ${key} bleibt offen — ihr Wasser kam nicht`);
@@ -3819,6 +3819,7 @@ class AnazhRealm_siedlung_ort {
         const kreuzM = AnazhRealm.BEWOHNER.kreuzM;
         const fach = new Map();
         for (const S of (this._bewohnerSiedlungen || new Map()).values()) {
+            if (S.gemeldet) continue; // ein gemeldeter Nachbar hat noch keinen Weg
             const G = S.netzGrund || (S.netzGrund = this._wegeNetzGrund(S.plan, S.ox, S.oz));
             const o = knoten.length;
             for (let i = 0; i < G.knoten.length; i++) {
