@@ -18862,7 +18862,7 @@
   },
   "karte2.mensch.kultur.sprache": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.sprache#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +5) · karte2.mensch.kultur.sprache#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +5) · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#2 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#3 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#3 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.sprache#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +5) · karte2.mensch.kultur.sprache#1 gtx: ROT: S1 ROT an Saaten der Namen 1 verfehlt ≥ 2 — Täter: die Namen der Bewohner (stamm/siedlung-bewohner.js) und der Orte (fachwerk-core ORTSNAME) · Namen richtig zugeordnet 1 (Soll ≥ 0.9) · Saaten der Namen 1 (Soll ≥ 2) · Umfang 601 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran · [linse-gpu] nvidia/pascal an 4c9e6aab · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#2 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#3 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#3 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.sprache#1",
@@ -18879,10 +18879,9 @@
      "id": "karte2.mensch.kultur.sprache#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +5)",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Saaten der Namen 1 verfehlt ≥ 2 — Täter: die Namen der Bewohner (stamm/siedlung-bewohner.js) und der Orte (fachwerk-core ORTSNAME) · Namen richtig zugeordnet 1 (Soll ≥ 0.9) · Saaten der Namen 1 (Soll ≥ 2) · Umfang 601 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran · [linse-gpu] nvidia/pascal",
+     "sha": "4c9e6aab7a4d24859cee6b9173b6f26cd4611bdf",
+     "grund": "ROT: S1 ROT an Saaten der Namen 1 verfehlt ≥ 2 — Täter: die Namen der Bewohner (stamm/siedlung-bewohner.js) und der Orte (fachwerk-core ORTSNAME) · Namen richtig zugeordnet 1 (Soll ≥ 0.9) · Saaten der Namen 1 (Soll ≥ 2) · Umfang 601 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -23646,7 +23645,7 @@
   },
   "karte2.mensch.sport.kunst": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +9) · karte2.mensch.sport.kunst#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, schmiede-core.js, scripts/lib/ausgabe-aufnahme.cjs +6) · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +9) · karte2.mensch.sport.kunst#1 gtx: ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":5,\"brett\":8} und Anfänger {\"handwerk\":633,\"tanz\":823,\"kampf\":1011,\"brett\":894} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal an 4c9e6aab · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.kunst#1",
@@ -23663,10 +23662,9 @@
      "id": "karte2.mensch.sport.kunst#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, schmiede-core.js, scripts/lib/ausgabe-aufnahme.cjs +6)",
-     "ungemessen": true,
+     "zahl": "S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":5,\"brett\":8} und Anfänger {\"handwerk\":633,\"tanz\":823,\"kampf\":1011,\"brett\":894} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
+     "sha": "4c9e6aab7a4d24859cee6b9173b6f26cd4611bdf",
+     "grund": "ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":5,\"brett\":8} und Anfänger {\"handwerk\":633,\"tanz\":823,\"kampf\":1011,\"brett\":894} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -37770,7 +37768,7 @@
   "ohne": 3255
  },
  "kopfVoll": "4c9e6aab7a4d24859cee6b9173b6f26cd4611bdf",
- "zeit": "2026-11-26T01:56:41.056Z",
+ "zeit": "2026-11-26T02:08:55.004Z",
  "vorher": "4c9e6aab",
  "bilanz": {
   "gewinn": [],
