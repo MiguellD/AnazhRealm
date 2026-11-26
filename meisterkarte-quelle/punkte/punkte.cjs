@@ -5087,11 +5087,17 @@ function startOffen(m) {
     return m;
 }
 const messungLesen = (text) => startOffen(JSON.parse(text));
-function eintragen(m, id, e) {
+// EINE FAHRT IST EIN VERSUCH (pm-welt-tod, 26.11.; Radeon Runde 39 am 99649186: EIN `run` fuhr drei Sitzungen — Teil 1 riss die Fahrt
+// 1 800 s, Teil 2 „/fenster ohne Antwort“, Teil 3 starb die Welt am Messort dorf —, jeder Teil legte die Proben, die er nie erreichte,
+// „— offen, UNGEMESSEN“ ab und zählte `offen` + 1: 19 Stationen standen nach EINER Fahrt bei offen 3 = OFFEN_MAX, ohne je gefahren zu
+// sein, die Runde hieß sie erledigt und „durch“ mit 34 von 49 ungemessen; leib#1 maß in eigener Sitzung GRÜN): `offen` zählt die
+// FAHRTEN (Prozesse von `run`), nie die Sitzungen einer Fahrt — ein zweiter Eintrag derselben Fahrt hält die Zahl (Feld `fahrt`).
+const FAHRT = process.pid + "@" + Date.now().toString(36);
+function eintragen(m, id, e, fahrt = FAHRT) {
     e = konsumTafeln(m, e);
     if (e.ungemessen) {
         const alt = (m.ungemessen || {})[id];
-        if (apparatOffen(String(e.grund || ""))) e = { ...e, offen: ((alt && alt.offen) || 0) + 1 };
+        if (apparatOffen(String(e.grund || ""))) e = { ...e, offen: alt && alt.fahrt === fahrt && alt.offen >= 1 ? alt.offen : ((alt && alt.offen) || 0) + 1, fahrt };
         (m.ungemessen = m.ungemessen || {})[id] = e;
         return;
     }
@@ -8532,9 +8538,9 @@ async function selbsttest(o = {}) {
         // Namen ohne das Feld; ein Urteil räumt den Eintrag. Vorher: kein Eintrag trug das Feld, die Runde zählte jeden als gemessen
         {
             const mo = { sha: "a1", geraet: "radeon", je: {} }, U = (grund) => ({ gruen: false, ungemessen: true, zahl: grund, grund });
-            eintragen(mo, "a#1", U("die Welt der Sitzung trägt nicht mehr (x) — offen, UNGEMESSEN"));
+            eintragen(mo, "a#1", U("die Welt der Sitzung trägt nicht mehr (x) — offen, UNGEMESSEN"), "fahrt-1");
             const o1 = mo.ungemessen["a#1"].offen;
-            eintragen(mo, "a#1", U("UNGEMESSEN: Läufer starb (Exit 0xC0000409) · Kind 1 nach 3.5 min"));
+            eintragen(mo, "a#1", U("UNGEMESSEN: Läufer starb (Exit 0xC0000409) · Kind 1 nach 3.5 min"), "fahrt-2");
             const o2 = mo.ungemessen["a#1"].offen;
             eintragen(mo, "b#1", U("UNGEMESSEN: Läufer starb (Exit 0xC0000409) · Kind 1 nach 3.5 min · die laufende Probe"));
             eintragen(mo, "c#1", U("Messort: /umstellen dach: ABSTURZ der Seite — die Welt starb am Ort (vor c#1), kein Urteil, UNGEMESSEN"));
@@ -8547,9 +8553,9 @@ async function selbsttest(o = {}) {
             // DAS SCHLOSS IST EINE LÜCKE DES APPARATS (pm-schloss-offen): die Texte wörtlich, wie die Sitzung sie ablegt — der Täter der
             // GTX-Runde 3 am c445936d (35 Front-Stationen „blockiert“ ohne `offen`, die Runde zählte sie erledigt) und der stille Warter
             const blockiert = "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'omen-omen-saat-tore' nach 2713 s Warten) — ungemessen";
-            eintragen(mo, "s#1", U(blockiert));
+            eintragen(mo, "s#1", U(blockiert), "fahrt-1");
             const s1 = mo.ungemessen["s#1"].offen;
-            eintragen(mo, "s#1", U(blockiert));
+            eintragen(mo, "s#1", U(blockiert), "fahrt-2");
             pruef("EINTRAG `offen` am blockierten Schloss: „GPU-Schloss blockiert (Exit 75 …)“ trägt 1, dann 2 — UNGEMESSEN, nie ROT, die Runde fährt ihn nach (vorher: kein Feld, 35 Front-Stationen der GTX-Runde 3 zählten erledigt)",
                 s1 === 1 && mo.ungemessen["s#1"].offen === 2 && !mo.je["s#1"] && mo.ungemessen["s#1"].gruen === false, JSON.stringify([s1, mo.ungemessen["s#1"]]));
             eintragen(mo, "t#1", U("GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 900 s beim Warten"));
@@ -8559,6 +8565,19 @@ async function selbsttest(o = {}) {
             const buch = messungLesen(JSON.stringify({ je: {}, ungemessen: { "v#1": U(blockiert), "w#1": U("Frist der Probe gerissen (60 s)"), "x#1": { ...U(blockiert), offen: 2 } } }));
             pruef("BUCH die alte Schloss-Lücke ohne Feld (die 35 der GTX-Runde 3) liest sich mit offen 1, eine gezählte bleibt, die Frist bleibt ohne Feld",
                 buch.ungemessen["v#1"].offen === 1 && buch.ungemessen["x#1"].offen === 2 && buch.ungemessen["w#1"].offen === undefined, JSON.stringify(buch.ungemessen));
+            // EINE FAHRT IST EIN VERSUCH (pm-welt-tod; der Fall Radeon Runde 39 am 99649186 wörtlich): drei Sitzungen EINER Fahrt legen
+            // leib#1 ungefahren ab (Teil 1 riss die Fahrt, Teil 2 trug die Welt nicht, Teil 3 starb die Welt am dorf) → offen 1, die
+            // Runde fährt sie nach; die nächste Fahrt zählt 2. Vorher: 3 = OFFEN_MAX nach EINER Fahrt, die Runde hieß sie erledigt
+            const mf = { sha: "99649186", geraet: "radeon", je: {} }, L = "karte2.mensch.kopplung.leib#1";
+            eintragen(mf, L, U("die Fahrt riss 1800 s (der Rest 223 s unter dem Grund-Deckel 295 s von karte2.mensch.kopplung.leib#1) — offen, UNGEMESSEN"));
+            eintragen(mf, L, U("die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN"));
+            eintragen(mf, L, U("die Welt der Sitzung trägt nicht mehr (die Welt starb am Messort dorf (Protocol error (Runtime.callFunctionOn): Target closed)) — offen, UNGEMESSEN"));
+            const f1 = mf.ungemessen[L].offen;
+            const neu = messungLesen(JSON.stringify(mf)); // die nächste Fahrt liest die Datei: ein anderer Prozess
+            eintragen(neu, L, U("die Fahrt riss 1800 s — offen, UNGEMESSEN"), "fahrt-naechste");
+            pruef("EINTRAG `offen` zählt FAHRTEN, nie Sitzungen: drei Teile EINER Fahrt (Fahrt riss · /fenster · Welt starb am dorf) legen leib#1 ungefahren ab → offen 1, die nächste Fahrt → 2 " +
+                "(vorher: 3 = OFFEN_MAX nach einer Fahrt, Runde 39 am 99649186 hieß 19 nie gefahrene Stationen erledigt)",
+                f1 === 1 && neu.ungemessen[L].offen === 2, JSON.stringify([f1, neu.ungemessen[L].offen]));
         }
         // KEIN STILLER RÜCKFALL: ein Prozess ohne Ende (hart getötet) macht den Konsum ungültig — beim Namen, nie still klein
         const ord = path.join(tmp, "getoetet.konsum");
