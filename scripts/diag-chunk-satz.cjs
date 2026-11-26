@@ -1440,6 +1440,19 @@ const { errs, check } = pruefer();
                 delete r._chunkSatzTausch;
             }
             // der Selbsttest: die alte Verdrängung (am Exemplar, die Methode des Stamms bleibt), drei Ring-Kaskaden
+            // DER DRUCK IST ERZWUNGEN, nie geliehen (landmarken-geologie-3): die alte Regel verdrängt erst, wenn der INHALT
+            // der Abschnitte samt dem neuen den Index sprengt — bis hier trug den Druck der Formations-Satz der Landmarken am
+            // Gürtel (main: 14 Felsbögen + 13 Felstürme aus dem alten Streu-Satz, Index 67 584 = Ende, Frame 2 k0 49 920 B ·
+            // k1 103 680 B); seit die Landmarken der Geologie folgen, steht dort keine (der Satz fehlt, „die Wand ist
+            // vakuös“). Der Boden-Satz steht in jeder Welt: seine Abschnitte vergessen das Hochwasser des Drucks (alle
+            // Höhlen-Zellen) und liegen dicht auf dem Inhalt der Drehung, der Index trägt genau sie — der Ring tauscht in
+            // Frame 1 Lücken in k0 und k1, die dritte Ring-Kaskade passt nicht mehr (k0 90 600 B · k1 211 512 B in Frame 2)
+            const bodenA = s.chunkSaetze.get("boden");
+            if (bodenA) {
+                for (const a of bodenA.abschnitte.values()) a.hoch = a.n;
+                r._chunkSatzUmlegen(bodenA, null, 0, "haupt");
+                r._chunkSatzGeometrie(bodenA, bodenA.vKap, bodenA.iEnde);
+            }
             r._chunkSatzUmlegen = function (satz, neu, kapNeu, wer) {
                 const h = satz.abschnitte.get("haupt");
                 let summe = 0;

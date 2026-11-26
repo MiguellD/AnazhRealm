@@ -771,13 +771,17 @@ async function probe(A) {
             satz.saetze.push({ spieler: [+PX.toFixed(1), +PZ.toFixed(1)], ms: +ms.toFixed(1), chat: zeile, haeuser });
         }
     };
-    // Strömen an einen Ort (Sync-Bau, Worker ausgehängt — wie die Wasser-Linse)
-    const stroemen = async (X, Z, nachlauf) => {
-        // die Kacheln des Orts aus dem Faden (der Haupt-Faden rechnet sie nie): für die Bestellung hängt er ein
+    // die Kacheln eines Orts aus dem Faden (der Haupt-Faden rechnet sie nie): für die Bestellung hängt er ein — eine Bestellung
+    // ohne Faden wartet auf seine Geburt (`_hydroBestellen` → `_hydroWarte`), und die Probe hat ihn ausgehängt
+    const kacheln = async (X, Z) => {
         const aus = st.voxelWorker;
         st.voxelWorker = faden;
         await __weltDa(() => !r._ensureHydroTilesAround(X, Z, 2048));
         st.voxelWorker = aus;
+    };
+    // Strömen an einen Ort (Sync-Bau, Worker ausgehängt — wie die Wasser-Linse)
+    const stroemen = async (X, Z, nachlauf) => {
+        await kacheln(X, Z);
         stelle(X, Z);
         let last = -1;
         let still = 0;
@@ -1061,6 +1065,11 @@ async function probe(A) {
         if (soll("zensus"))
             try {
                 zensus.quelle = "Dorf";
+                // DIE KACHELN DES DORFS (landmarken-geologie-3): seine Ort-Wahl fragt das Wasser ihrer Suche (`_ortWahlImFaden`),
+                // die Kacheln fern des Spielers räumt der Ring (w28-speicher-ring; die Ansaug-Probe steht am See, 5,5 km fern).
+                // Das Dorf am ersten Ufer −102/−845 (179 m vor der Kachel-Kante) wartete ewig auf eine Bestellung ohne Faden — bis
+                // hier trug das Ufer Feld-Glutbrunnen (main: Bauten 4 · 3 · 14), die Wahl fiel ans vierte (−209/−728, 296 m davor)
+                await kacheln(X, Z);
                 await r.spawnSettlement({ seed: 7, nH: 18, position: { x: X, y: r._voxelSurfaceY(X, Z), z: Z } });
                 zensus.quelle = "strom";
             } catch (e) {

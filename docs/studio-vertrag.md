@@ -1023,7 +1023,9 @@ Dials `s`) beim Namen.
 das Feld der Ferne; ohne `fuss` das ganze Netz —, der Term-Auswerter des Erbguts `termY` samt seiner Normalform `erbgutNormal` — mit der Bahn, der Rennstrecke als Term, und ihrem
 Ort `bahnAm`, den der Fahrer der Linie und die Prüfstrecke der Garage lesen —, der Wildnis-Term `wildnisY` = die LANDFORM,
 K16: Großform-Splines `grossform` an den Knoten `OFFSET_KNOTEN`/`RELIEF_KNOTEN` mit den Reglern `LANDFORM_REGLER` — gelesen
-je Lage über `landformRegler` —, das Flussnetz mit den Kanten `NETZ_KANTE`, seinen Läufen `flussLaeufe` und seinen Senken als
+je Lage über `landformRegler` —, die Landmarke des Orts `LANDMARKE`/`landmarke` (landmarken-geologie: Felsbogen und
+Felsturm je km² aus der Großform × der Trockenheit des Orts, die Bänder der Profis; Leser der Wurf je Chunk `_landmarkeChunk`
+und die Phyto-Linse), das Flussnetz mit den Kanten `NETZ_KANTE`, seinen Läufen `flussLaeufe` und seinen Senken als
 den benannten Seen `benannteSeen`, die Arbeit des Netzes `netzZaehler` (Knoten und gebaute Talprofile je Ebene, das
 Einzugsgebiet ohne Leser — der Leser ist die Gelände-Linse „netz“), die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, die Art des Gewässers
 `GEWAESSER_ART`/`gewaesserArt` (w13-bach-klar: see · bach · fluss nach der LAWA-Größenklasse, Bach < 100 km² Einzugsgebiet,

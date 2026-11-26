@@ -1488,9 +1488,7 @@ class AnazhRealm_vegetation_baum {
         // (GT 64 m/s: `_landAt` 1,0 s Haupt-Faden in der Minute, die Saat 9 ms in den Bildern über p90).
         const land = () => this._landAt(sampleX, sampleZ, 0.4);
 
-        // Landmark-Pass: seltener, UNIFORMER Hash-Wurf. Eine Felsformation spawnt nur, wo die Region sie trägt
-        // (dichte-getrieben); Bogen oder Turm entscheidet ein Hash-Münzwurf, kein Affinitäts-Wettstreit.
-        const LANDMARK_RATE = 0.014;
+        // Die Felsbögen und -türme wirft hier keine Probe: ihre Dichte ist ein Gesetz des Orts, gewürfelt je Chunk (`_landmarkeChunk`).
         const BASE_RATE = 0.4;
         const AFFINITY_FLOOR = 0.18;
         // Kandidaten: alle Baumarten lesen dieselben Tags (holz+laub) → die Verteilung emergiert aus aff² ohne
@@ -1532,26 +1530,6 @@ class AnazhRealm_vegetation_baum {
             if (tags === undefined) tafel.set(bp, (tags = this.computeCompoundTags(bp)));
             return this._affinitaet(tags, welt, fw);
         };
-
-        if ((seedForSpawn % 1000) / 1000 < LANDMARK_RATE) {
-            const affBogen = affinitaet("felsbogen");
-            const affTurm = affinitaet("felsturm");
-            if (Math.max(affBogen, affTurm) >= AFFINITY_FLOOR) {
-                if (!land()) return 0;
-                const lmName = (seedForSpawn >>> 10) & 1 ? "felsturm" : "felsbogen";
-                // Enqueue statt sofort spawnen: der Streaming-Pump öffnet 9+ Chunks mit je bis zu 64 Samples, jeder
-                // Spawn kostet ~5-15 ms (Builder + Ammo-Body + BlockerAABBs + Remesh) → verteilt 4 Spawns/Frame.
-                this._enqueueVegetationSpawn(
-                    lmName,
-                    { x: sampleX, y: surfaceY + 0.5, z: sampleZ },
-                    {
-                        seed: seedForSpawn,
-                        silent: true,
-                    }
-                );
-                return 1; // an dieser Stelle keine zweite Struktur
-            }
-        }
 
         // DIE SAAT LIEST KEINE MARKE (Gegner Bild F1, 15.11.): die Probe ist eine Funktion des Samens, nie des Wegs. Bis hier übersprang
         // sie eine Zelle, deren Marke (`scatterPromoted`) ein gewachsener Bau gesetzt hatte — gesetzt beim Spawn aus der Schlange,
@@ -1600,7 +1578,7 @@ class AnazhRealm_vegetation_baum {
         const probe = (rng.noise2D(sampleX * 0.31, sampleZ * 0.31) + 1) / 2;
         // Wald-Dichte: Bäume sind in lebendig-hohen Regionen VIEL wahrscheinlicher → echte Wälder aus den
         // bestehenden, abbaubaren Bäumen (kein paralleles Deko-System); getragen von HISM-Instancing,
-        // Lazy-Collision (< 40 m) und Distanz-Culling. Felsen/Geoden/Glutbrunnen bleiben spärliche Landmarken.
+        // Lazy-Collision (< 40 m) und Distanz-Culling. Felsen und Geoden bleiben spärlich.
         const TREE_NAMES = new Set([
             "baum_eiche",
             "baum_kiefer",
@@ -1703,7 +1681,7 @@ class AnazhRealm_vegetation_baum {
         let spawnName = bestName;
         let spawnScale = 1;
         let spawnYaw = 0;
-        // Landmark-Genome: ist der Sieger ein Fels-/Kristall-/Glut-Wahrzeichen, wähle eine REGION-
+        // Landmark-Genome: ist der Sieger ein Fels- oder Kristall-Wahrzeichen, wähle eine REGION-
         // deterministische Formation (ein Feld trägt EINEN Stil → HISM-Instancing wirkt). Die Gestalt kommt
         // NACH dem Sieg, der Name bleibt kanonischer Affinitäts-Träger (tag-frozen); je Stück scale/yaw.
         const landmarkPool = AnazhRealm.SCATTER_VARIANT_POOL && AnazhRealm.SCATTER_VARIANT_POOL[bestName];
@@ -2523,7 +2501,7 @@ class AnazhRealm_vegetation_baum {
         return !AnazhRealm._studioRenderConfig && this._foundryEnabled();
     }
 
-    // Streu-Strukturen eines Voxel-Chunks (Felsen/Geoden/Glutbrunnen/Formationen + Unterwuchs): Sample-
+    // Streu-Strukturen eines Voxel-Chunks (Felsen/Geoden + Unterwuchs, die Landmarken des Orts `_landmarkeChunk`): Sample-
     // Raster über die Chunk-Bounds (`span`, origin-basiert) durch `_vegetationSampleSpawn`, Höhe aus
     // `_voxelSurfaceY`; die Bäume pflanzt `_forestPlantChunk`. Idempotent über
     // `state.voxelPopulatedChunks`, am Voxel-Chunk-Lifecycle aufgehängt.
@@ -2545,6 +2523,47 @@ class AnazhRealm_vegetation_baum {
         S.set(key, { cx, cz, i: 0 });
         if (opts.immediate) return this._tickSaat(Infinity, key, true);
         return this.state._frameBudget ? 0 : this._tickSaat(Infinity, null, false);
+    }
+
+    // DIE LANDMARKE FOLGT DER GEOLOGIE (landmarken-geologie): ob und wie dicht ein Felsbogen oder Felsturm steht, liest die Saat je
+    // Chunk am Gesetz des Orts (gelaende-core `landmarke`: je km² aus Tafelland und Klima, die Bänder Arches · Red River Gorge ·
+    // Sächsische Schweiz · Dartmoor) — die Zahl des Chunks ist Poisson(λ · Fläche) aus seinem Samen, ihr Platz der höchste Punkt seines
+    // Rasters auf dem Land (der Tor krönt Kuppe und Rücken), die Art der Anteil ihres λ. Die Höhen fragt der Chunk nur, wenn er eine
+    // trägt (λ · Fläche ≤ 0,018). Bis hier warf jede Probe mit 1,4 % einen Bogen oder Turm, wo die dichte-Affinität 0,18 trug, Bogen
+    // oder Turm nach Münzwurf: an der Ankunft 78 Bögen und 64 Türme auf 0,21 km² (≈ 680 je km², Arches trägt 6,5). → die Zahl.
+    _landmarkeChunk(cx, cz) {
+        const { span } = this._voxelChunkConfig();
+        const N = 10; // das Raster der Saat (`_tickSaat`)
+        const step = span / N;
+        const d = globalThis.__gelaendeCore.landmarke(this._gelaende(), (cx + 0.5) * span, (cz + 0.5) * span);
+        const lam = d.felsbogen + d.felsturm;
+        const mu = lam * span * span * 1e-6;
+        const g = this._rollGenome(`${AnazhRealm._saatJe(this)}|${cx},${cz}`, "landmarke");
+        const u = g.axis("zahl");
+        let k = 0;
+        for (let p = Math.exp(-mu), F = p; u > F && k < N * N; F += p) p *= mu / ++k; // Poisson: die Umkehr der Verteilung
+        if (!k) return 0;
+        const orte = [];
+        for (let i = 0; i < N * N; i++) {
+            const x = cx * span + ((i % N) + 0.5) * step;
+            const z = cz * span + (((i / N) | 0) + 0.5) * step;
+            const y = this._voxelSurfaceY(x, z);
+            if (Number.isFinite(y)) orte.push({ x, y, z });
+        }
+        orte.sort((a, b) => b.y - a.y);
+        let n = 0;
+        for (let j = 0; j < k && j < orte.length; j++) {
+            const o = orte[j];
+            if (!this._landAt(o.x, o.z, 0.4)) continue;
+            const art = g.axis(`art${j}`) * lam < d.felsbogen ? "felsbogen" : "felsturm";
+            this._enqueueVegetationSpawn(
+                art,
+                { x: o.x, y: o.y + 0.5, z: o.z },
+                { seed: (g.axis(`same${j}`) * 4294967296) >>> 0, silent: true }
+            );
+            n++;
+        }
+        return n;
     }
 
     // Sät bis zur Frist (`frist`, performance.now()): je Schritt eine Probe des 10×10-Rasters, nach der letzten der Wald
@@ -2592,7 +2611,7 @@ class AnazhRealm_vegetation_baum {
                         // Nische + reverse-J + Dichte-Gradient), nicht das Sample-Raster. Jeder Baum gehört genau dem Chunk
                         // seiner Position → genau einmal.
                         S.delete(`${c.cx},${c.cz}`);
-                        spawned += this._forestPlantChunk(c.cx, c.cz);
+                        spawned += this._landmarkeChunk(c.cx, c.cz) + this._forestPlantChunk(c.cx, c.cz);
                         break;
                     }
                     const xi = c.i % SAMPLES,

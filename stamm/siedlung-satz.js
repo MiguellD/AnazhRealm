@@ -1983,12 +1983,13 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
 });
 for (const z of Object.values(AnazhRealm.KIND_SUBSTANCE)) AnazhRealm._etikett(z); // der Name liest seinen Schlüssel
 // DIE WÜRFE DES FELDS (K10-6) — die Arten, die das Affinitäts-Feld wirft (`_vegetationSampleSpawn`: der Sieger der Affinität
-// je Sample): die Baumarten, der Fels, die Geode und die Feuerstelle des Glut-Felds. Was das Feld wirft, trägt die Marke des
-// Wurfs (`feldWurf`, `_enqueueVegetationSpawn`) und weicht dem Bau wie die Natur (`_weichtDemBau`): es sperrt keinem Ort den
-// Grund (`_bauFrei`), und der Grundriss eines Baus und der Weg eines Dorfs räumen es (`_naturRaeumen`); dieselbe Art aus dem
-// Satz, dem Bau-Modus oder der KI ist Bau. Die Feuerstelle ist keine Art des Terrain-Studios (ihre Gestalt trägt das Fachwerk) —
-// bis K10-6 stand sie als Bau: eine im Grundriss des Dorfs der Zelle −4,−4 schob die Ort-Wahl von 80 auf 96 m, je nach
-// Lade-Stand der Würfe.
+// je Sample): die Baumarten, der Fels und die Geode. Was das Feld wirft, trägt die Marke des Wurfs (`feldWurf`,
+// `_enqueueVegetationSpawn`) und weicht dem Bau wie die Natur (`_weichtDemBau`): es sperrt keinem Ort den Grund (`_bauFrei`),
+// und der Grundriss eines Baus und der Weg eines Dorfs räumen es (`_naturRaeumen`); dieselbe Art aus dem Satz, dem Bau-Modus
+// oder der KI ist Bau. EIN FEUER OHNE MENSCHEN WIRFT DAS FELD NICHT (landmarken-geologie): die Feuerstelle (`glutbrunnen`, die
+// Gestalt des Fachwerks) setzt nur der Mensch — Satz, Bau-Modus, KI; bis hier warf sie das Glut-Feld als Sieger der Affinität,
+// 37 an der Ankunft, 66 an der Mess-Wiese, 101 am Dorf je 0,2 km² („Lagerfeuer bedecken die Karte"). Die Felsbögen und -türme
+// wirft die Saat je Chunk nach dem Gesetz des Orts (`_landmarkeChunk`, gelaende-core `landmarke`).
 AnazhRealm.FELD_WURF = Object.freeze([
     "baum_eiche",
     "baum_kiefer",
@@ -1999,7 +2000,6 @@ AnazhRealm.FELD_WURF = Object.freeze([
     "baum_karst",
     "stein_block",
     "kristall_geode",
-    "glutbrunnen",
 ]);
 AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional → nicht schieben
 // DAS ALTER EINES WERKS (stoffe.K4, `_werkAlterOv`): τ die Tage, in denen der Regler `verwitterung` 63 % seines Wegs zu 1 geht;
