@@ -268,6 +268,9 @@ class AnazhRealm_siedlung_ort {
         const d = Object.assign({}, dp || {});
         const ort = d.ort;
         delete d.ort;
+        // DER HIMMEL IST EIN EINGANG JEDES PLANS (`_himmelDesPlans`): das gehaltene Wort regnet in jeden Auftrag, auch in den des Worts
+        const himmel = this._himmelDesPlans();
+        if (himmel !== undefined) d.himmel = himmel;
         // DAS KLIMA IST EIN EINGANG DES PLANS (haus-gestalt, fachwerk `REGION_KLIMA`): der Kanal liest kein Klima selbst — wer ein Dorf
         // OHNE WORT bestellt, legt das Klima seines Orts in den Auftrag (`_zellEingang`: die Zelle des Dorf-Zugs, ihr Gedächtnis), und
         // wer den Plan nachrechnet, rechnet mit demselben Eingang denselben Plan (gate:settlement Teil O: der Plan-Hash Studio = Welt).
@@ -894,7 +897,7 @@ class AnazhRealm_siedlung_ort {
         // eines mm), das Dorf des Zugs vor seinem Zell-Ort (`_siedlungsAnker`)
         let [S, dMin] = [null, 200];
         for (const q of (this._bewohnerSiedlungen || new Map()).values()) {
-            const d = Math.hypot(q.ox - nahe[0], q.oz - nahe[1]);
+            const d = q.gemeldet ? Infinity : Math.hypot(q.ox - nahe[0], q.oz - nahe[1]); // ein gemeldeter Nachbar steht nicht
             if (d < dMin) [S, dMin] = [q, d];
         }
         const p = S && S.plan;
@@ -1553,6 +1556,14 @@ class AnazhRealm_siedlung_ort {
     // Dazu die Wasser-Spende relativ zur Heimat (haus-stoff, fachwerk `sockelImWasser`: `ortGesetz(teil).spendeVerh`, die Heimat 1):
     // der Sockel jedes Baus steht über dem Spritzwasser des Orts. Dazu der Niederschlag und der Schneefall am Meer (kultur-aus-klima,
     // fachwerk `ortNeigung`: das Dach folgt dem Himmel des Orts) — die EINE Tafel ist gelaende-core `ortKlima`, der Wirt reicht sie.
+    // DER GEHALTENE HIMMEL DES PLANS (fachwerk `himmelNeigung`, Karte 2 mensch.kopplung.kultur#2): hält der Spieler oder das Gesetz ein Wort
+    // des Himmels (`state.wetterWort`, der EINE Schreiber `_setWeather`), ist sein Regen — gelesen durch den EINEN Wetter-Leser
+    // `_weatherFieldFor(wort, rein)` — ein Eingang jedes Plans; ohne Wort (die Front zieht) keiner: der Plan bleibt eine Funktion von Wort
+    // und Ort, die ziehende Front würfelt ihn nie. Leser: der Export (`_foundryRequestSettlement`) und die Massen der fernen Stadt (`kachelMassen`).
+    _himmelDesPlans() {
+        const w = this.state.wetterWort;
+        return w ? this._weatherFieldFor(w, true).rain : undefined;
+    }
     _siedlungKlima() {
         return globalThis.__gelaendeCore.ortKlima(this._gelaende().ort);
     }
@@ -3306,7 +3317,7 @@ class AnazhRealm_siedlung_ort {
         const [S, reich] = [AnazhRealm._siedlungGesetz(), AnazhRealm.Gesetz("fachwerk:siedlungsReich")];
         for (const q of (this._bewohnerSiedlungen || new Map()).values()) {
             const n = q.plan.slots.length;
-            if (!String(q.key).startsWith("d:") || n <= info.nH || info.stadt === q.key) continue; // das Viertel steht im Reich SEINES Kerns
+            if (q.gemeldet || !String(q.key).startsWith("d:") || n <= info.nH || info.stadt === q.key) continue; // das Viertel steht im Reich SEINES Kerns
             if (Math.hypot(q.ox - info.x, q.oz - info.z) < reich(S, info.nH) + reich(S, n)) return true;
         }
         return false;
@@ -3543,7 +3554,7 @@ class AnazhRealm_siedlung_ort {
     // Feldweg zu jedem Nachbarn, dessen Plan schon steht — der zweite Ort eines Paars legt ihn, gleich in welcher Folge sie erwachen (die Welt ist eine Funktion).
     _wegenetzAnschluss(key) {
         const B = this._bewohnerSiedlungen;
-        if (!key || !B || !B.has(key)) return;
+        if (!key || !B || !B.has(key) || B.get(key).gemeldet) return;
         const S = B.get(key);
         const G = S.netzGrund || (S.netzGrund = this._wegeNetzGrund(S.plan, S.ox, S.oz));
         const lok = (i) => ({ x: G.knoten[i].x - S.ox, z: G.knoten[i].z - S.oz });
@@ -3554,7 +3565,7 @@ class AnazhRealm_siedlung_ort {
             if (this._bewohnerSiedlungen !== B || B.get(key) !== S) return; // der Ort ging, ehe sein Wasser kam
             const nb = this._wegenetzNachbarn(key);
             if (nb) {
-                for (const n of nb) if (B.has(n)) this._wegenetzLegen(key, n);
+                for (const n of nb) if (B.has(n) && !B.get(n).gemeldet) this._wegenetzLegen(key, n); // ein gemeldeter Nachbar legt seinen Weg, wenn er erwacht
             } else if (runde < 8) {
                 Promise.all([...this._hydroBestellt.values()].map((e) => e.zusage)).then(() => legen(runde + 1));
             } else this._bruchMelden(`WEGENETZ: die Nachbarschaft von ${key} bleibt offen — ihr Wasser kam nicht`);
@@ -3808,6 +3819,7 @@ class AnazhRealm_siedlung_ort {
         const kreuzM = AnazhRealm.BEWOHNER.kreuzM;
         const fach = new Map();
         for (const S of (this._bewohnerSiedlungen || new Map()).values()) {
+            if (S.gemeldet) continue; // ein gemeldeter Nachbar hat noch keinen Weg
             const G = S.netzGrund || (S.netzGrund = this._wegeNetzGrund(S.plan, S.ox, S.oz));
             const o = knoten.length;
             for (let i = 0; i < G.knoten.length; i++) {

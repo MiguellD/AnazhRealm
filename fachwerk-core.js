@@ -254,7 +254,18 @@
     // Wüste trägt das flache Dach des Stils (modern, glas: `d0` flach) seine Neigung als Werk, der Ort ändert es nicht (Kopf 2: am Planeten
     // „anazh-realm-seed“, 4 000 Punkte, standen in der Wüste 647 von 38 729 Häusern so auf 11–16°, der moderne Bau mediterran). Heimat (−4 / 18 °C, 547,5 mm, 0,42 mm/Tag): A 1,96, Schnee-Neigung 38,5°.
     // Leser: DORF (der Deck-Schritt), gate:settlement Teil R (R8 die Neigung folgt dem Niederschlag).
-    var DACH_KLIMA = { pth: [20, 140], wueste: 0.5, feucht: 1, polar: 10, li: [[0.2, 0.25], [0.35, 0.35]], kappe: 60, flachGrad: 2 };
+    // DER GEHALTENE HIMMEL (sprache-familie, Karte 2 mensch.kopplung.kultur#2: „das Dach liest das Wetter des Orts"): hält der Spieler oder das
+    // Gesetz ein Wort des Himmels (`state.wetterWort`, der Wirt `_himmelDesPlans`), ist sein Regen (der EINE Wetter-Leser `_weatherFieldFor`,
+    // phyto-core WX_GESETZ: klar 0 · bewoelkt 0,12 · regen 0,6 · sturm 1) ein Eingang jedes Plans (`DP.himmel`) — die Welt regnet, wie er sagt,
+    // und jeder Bau, den sie nun plant, wirft das Wasser ab. Das Band: unter Dauerregen (die Zeile `regen`, `himmel.regen`) hebt jede Deckung
+    // von ihrer Regel-Neigung (`grenzNeigung`) auf die übliche Neigung des Reets, der Deckung der nassesten Länder (50°: das Mindestmaß 45°,
+    // üblich 50°, „steeper pitches being more durable“; FAO Rural Structures, Grasdach 1 : 1 = 45° mindestens, 1 : 0,6 = 59° bevorzugt;
+    // Dunn u. a. 2024: das geneigte Dach steht, wo es nass ist), jede steilere Neigung linear dazwischen zur Kappe (60°, EN 1991-1-3) — die
+    // Überlieferung bleibt in der Reihe, der Abstand zur Kappe schrumpft. Schwächerer Regen hebt anteilig, der klare Himmel
+    // (Regen 0) und der freie (kein Wort: die Front zieht, der Plan bleibt eine Funktion von Wort und Ort) heben nichts; das flache Dach
+    // (Wüste, Stil, Arkade, Zinnen) und das Gewölbe bleiben, wie HAUS sie baut (`dachModus`: das Bild des Blicks, 26.11.: der Hof der Arkade
+    // blieb flach und nur der Schornstein wuchs mit dem First). Leser: DORF (der Deck-Schritt), gate:settlement Teil R (R12), die Station kultur#2 (S2 am Fächer).
+    var DACH_KLIMA = { pth: [20, 140], wueste: 0.5, feucht: 1, polar: 10, li: [[0.2, 0.25], [0.35, 0.35]], kappe: 60, flachGrad: 2, himmel: { regen: 0.6, reet: 50 } };
     function ariditaet(klima) {
         var K = DACH_KLIMA, g = K.pth[0] * (klima.winter + klima.sommer) / 2 + K.pth[1];
         if (klima.sommer < K.polar) return Infinity; // E vor B (Kottek 2006): der Pol kennt keine Trockenheit
@@ -273,6 +284,28 @@
         var w = Math.min(1, Math.max(0, (A - K.wueste) / (K.feucht - K.wueste)));
         var a = w * Math.max(a0, schneeNeigung(klima.schneeMmTag));
         return Math.round(Math.max(a, grenzNeigung(P)) * 10) / 10;
+    }
+    // DIE FORM DES DACHS (EINE Quelle; Leser: HAUS `ROOFMODE`, `himmelNeigung`): rund · Kuppel · Terrasse · flach (Zinnen, Arkade oder
+    // die Neigung unter der Grenze `STADT_MASSEN.flachGrad`, das Gewölbe ausgenommen) · ein anderes Dach des Zoos · der Sattel. `pitch` in
+    // Bogenmaß, wie HAUS ihn trägt (die Neigung des Plans geklemmt auf Grenze und 62°). Nur Sattel, Zoo und Rund ohne Gewölbe lesen sie.
+    var DACH_GEWOELBE = { tonne: 1, zwiebel: 1 };
+    function dachFlach(P, pitch) {
+        return pitch < STADT_MASSEN.flachGrad * (Math.PI / 180) && !DACH_GEWOELBE[P.dachTyp];
+    }
+    function dachModus(P, pitch) {
+        return P.grundriss === "rund" ? "rund" : P.kuppel ? "dome" : P.terrasse ? "stepped" : P.zinnen || P.arkade || dachFlach(P, pitch) ? "flat" : P.dachTyp && P.dachTyp !== "sattel" ? "alt" : "sattel";
+    }
+    function dachNeigt(P, grad) {
+        var m = dachModus(P, (Math.min(62, Math.max(grad, grenzNeigung(P))) * Math.PI) / 180);
+        return m === "sattel" || ((m === "alt" || m === "rund") && !DACH_GEWOELBE[P.dachTyp] && !P.kuppel);
+    }
+    function himmelNeigung(P, a, regen) {
+        if (!(regen >= 0 && regen <= 1)) throw new Error("fachwerk himmelNeigung: der Regen des Himmels " + regen + " liegt nicht in [0, 1] (WX_GESETZ)");
+        if (!(regen > 0) || !isFinite(a) || deckungVon(P) === "flach" || !dachNeigt(P, a)) return a; // ein Dach, das die Neigung nicht baut, hebt nichts
+        var K = DACH_KLIMA, H = K.himmel, g = grenzNeigung(P);
+        if (!(a < K.kappe) || !(g < H.reet)) return a;
+        var s = (Math.min(1, regen / H.regen) * (H.reet - g)) / (K.kappe - g);
+        return Math.round((a + (K.kappe - a) * s) * 10) / 10;
     }
     // DIE DECKUNG DES ORTS (haus-dach): der Stoff, der am Ort wächst, deckt das Dach des Landes — Eingang das Klima des Orts
     // (`_siedlungKlima`: winter, sommer, spendeVerh aus gelaende-core `ortGesetz(teil)`), dazu die Stadt (`dicht`). Die Regeln:
@@ -355,8 +388,8 @@
   // Traufe, kein Dachraum, kein Giebel) im Stoff seiner Deckung (`DECKROLLE`: das Lehmdach des Orts). Das Gewölbe bleibt (Kuppel, Tonne,
   // Zwiebel: es trägt sich ohne Balken, der Lehmbau der Wüste — Yazd, Kashan, das nubische Gewölbe). Bis Kopf 3 setzte der Ort 2° (`ortNeigung`)
   // und HAUS baute darauf den Sattel mit Ziegeln und Schwung: am Planeten „anazh-realm-seed“ standen 544 von 12 336 Wüsten-Häusern flach gebaut.
-  const GEWOELBE={tonne:1, zwiebel:1}, FLACH = pitch < STADT_MASSEN.flachGrad*D2R && !GEWOELBE[P.dachTyp];
-  const ROOFMODE = (P.grundriss==='rund')?'rund' : P.kuppel?'dome' : P.terrasse?'stepped' : (P.zinnen||P.arkade||FLACH)?'flat' : (P.dachTyp&&P.dachTyp!=='sattel')?'alt' : 'sattel';
+  // DIE FORM DES DACHS ist EINE Quelle (`dachModus`): HAUS baut sie, der Himmel des Plans (`himmelNeigung`) hebt nur, was sie neigt
+  const FLACH = dachFlach(P, pitch), ROOFMODE = dachModus(P, pitch);
   const DECKROLLE = (FLACH && DECK.rolle==='dachmod') ? 'dachmod' : 'stein';   // die Platte des flachen Dachs: im Lehm der Deckung, wo die Wüste flach deckt; sonst der Stein des Wehrgangs   // EINE Dach-Quelle: welches Dach traegt der Bau — jeder Dach-Ersetzer fliesst hierdurch
   const mS = (ridgeY-eaveY)/(P.D/2);                                             // ░ EINE Dachneigung (Steigung) ░ Quelle für Hauptdach · beide Flügel · Notch · Fenster-Occlusion — ersetzt das alte 0.62-Duplikat
   const STACK_W = 0.84;                                                          // ░ EINE Kaminbreite ░ Stack-AABB UND fensterfreier Korridor leiten sich hieraus ab
@@ -4742,76 +4775,180 @@
       // komplex (12A), groß (1A), 7 Vokale + Zwielaute (2A): Cluster im An- und Auslaut, die Folgesilbe auf e (die Schwa-Silbe)
       mitteleuropa: { anlaut:['b','d','s','h','w','g','m','k','f','l','r','n','t','sch','z','p'], cluster:['br','gr','fr','st','kr','tr','dr','bl','fl','gl','kl','schl','schw','schm','schn','schr','sp'], pCluster:0.25,
         vokale:['e','a','i','o','u','ei','au','ä','ü','ö'], koda:['n','r','l','s','t','ch','nd','rt','ld','st','ng','rg','lf'], pKoda:0.4, pEnde:0.85, doppel:[], neben:'e',
-        wandel:['verschiebung','auslaut','apokope','monophthong'] },
+        wandel:['verschiebung','spirans','fortis','apokope','monophthong','diphthong','rhotazismus','hebung','senkung','entrundung','umlaut','schwund','lenis'] },
       // komplex, mittel, 5 Vokale + Zwielaute ia/ua/oa: die Koda auf g/ck/ch, die Folgesilbe auf i
       alpin: { anlaut:['b','g','s','t','d','m','l','r','w','k','n','f','h','z','tsch'], cluster:['gr','br','tr','kr','fl','gl','st','schn','schw','schl'], pCluster:0.2,
         vokale:['a','i','o','u','e','ia','ua','ei','oa'], koda:['g','ch','l','n','r','ck','tz','ss','gg'], pKoda:0.45, pEnde:0.7, doppel:[], neben:'i',
-        wandel:['verschiebung','auslaut','monophthong','apokope'] },
+        wandel:['verschiebung','spirans','fortis','monophthong','diphthong','apokope','hebung','senkung','entrundung','umlaut','affrikat','schwund','lenis'] },
       // einfach (12A), mittel (1A), 5 Vokale: offene Silben, das Wort endet auf einem Vokal, der Laut zwischen Vokalen verdoppelt sich
       mediterran: { anlaut:['m','c','s','b','p','t','l','r','g','f','v','d','n','gi','ci'], cluster:['pr','tr','br','gr','fr','cr','st','sc'], pCluster:0.12,
         vokale:['a','o','e','i','u'], koda:['n','l','r','s'], pKoda:0.15, pEnde:0, doppel:['ll','tt','nn','rr','ss','cc'], neben:'',
-        wandel:['lenis','rhotazismus','hebung','hschwund'] },
+        wandel:['lenis','rhotazismus','spirans','hebung','senkung','diphthong','schwund','apokope','affrikat'] },
       // komplex, mittel, 9 Vokale (y ø å æ): s-Cluster und j-Cluster im Anlaut, die Koda auf d/nd/rk
       nordisch: { anlaut:['h','s','b','g','v','k','t','f','l','r','m','n','d','j'], cluster:['sk','st','sv','sn','fj','kj','hj','bj','br','dr','fr','gr','kr','tr','bl','fl','gl','kl'], pCluster:0.3,
         vokale:['a','e','i','o','u','y','ø','å','æ'], koda:['d','n','r','k','t','s','nd','rd','rk','ld','ng','rn','lm'], pKoda:0.5, pEnde:0.8, doppel:['nn','ll','kk','tt'], neben:'',
-        wandel:['lenis','apokope','hebung','monophthong'] },
+        wandel:['lenis','spirans','apokope','hebung','senkung','monophthong','diphthong','entrundung','umlaut','schwund','fortis'] },
       // einfach (12A): (C)(j)V(N) — die Koda ist nur der Nasal, 5 Vokale
       fernost: { anlaut:['k','t','s','n','m','h','y','r','w','g','z','d','b','p'], cluster:['ky','ry','ny','hy','my','gy'], pCluster:0.1,
         vokale:['a','i','u','o','e'], koda:['n'], pKoda:0.25, pEnde:0.35, doppel:[], neben:'',
-        wandel:['affrikat','hebung','lenis'] },
+        wandel:['affrikat','hebung','senkung','lenis','schwund','monophthong','apokope'] },
       // mäßig (12A), 6 Vokale + Zwielaute: die Koda auf s/m/n/r/x, Behauchte im Anlaut
       antik: { anlaut:['c','p','t','m','s','l','d','n','r','v','f','g','qu'], cluster:['pr','tr','cr','pl','cl','br','gr','fl','st','sc','ph','th'], pCluster:0.2,
         vokale:['a','e','i','o','u','ae','au','y'], koda:['s','m','n','r','x','ns','l','t'], pKoda:0.4, pEnde:0.9, doppel:[], neben:'',
-        wandel:['rhotazismus','monophthong','hebung','lenis'] },
+        wandel:['rhotazismus','monophthong','diphthong','hebung','senkung','lenis','spirans','schwund','apokope','affrikat'] },
     };
-    // die Bedeutungen der Ursprache: die Grundwörter der Ortsnamen und das Haus (die Endung der Familie)
-    var SPRACH_BAUM = { tiefe: 5, grundwoerter: ['siedlung', 'wasser', 'berg', 'feld', 'wald', 'burg'] };
-    // DIE LAUTGESETZE (Campbell 2013 Kap. 2; Kümmel 2007; die zweite Lautverschiebung: Braune/Reiffenstein, Ahd. Grammatik §83 ff.)
-    var _V = 'aeiouyäöüøåæ';
-    var _LV = new RegExp('([' + _V + '])([ptk])(?=[' + _V + '])', 'g'), _RH = new RegExp('([' + _V + '])s(?=[' + _V + '])', 'g');
-    var _AV = new RegExp('([' + _V + 'rl])([bdg])$'), _AP = new RegExp('([' + _V + '][^' + _V + '])e$'), _HB = new RegExp('(^|[^' + _V + '])([eo])(?![' + _V + '])', 'g');
-    var _HS = new RegExp('^h(?=[' + _V + '])');
+    // DER STAMMBAUM UND DIE BEDEUTUNGEN DER URSPRACHE. `bedeutungen`: die Grundliste nach Swadesh (1971, die 100 Bedeutungen, die in jeder
+    // Sprache ein eigenes Wort tragen und am langsamsten ersetzt werden — der Stoff der Lexikostatistik und der Stammbäume der ASJP,
+    // Wichmann u. a. 2010), dazu die Grundwörter der Ortsnamen (`grundwoerter`) und das Haus (die Endung der Familie). Je Bedeutung
+    // EIN Wort der Ursprache (`_urLex`); `kurz`: einsilbig (das Gesetz der Abkürzung: das Häufige ist kurz, Zipf 1935 — die Fürwörter,
+    // die Zahlen, das Nein, die Grundwörter). `sichtbar`: ein Lautgesetz ist erst eines, wenn es mindestens so viele Wörter der Ursprache
+    // ändert (ein Gesetz ohne Wort hinterlässt keine Spur, aus der der Baum lesbar wäre).
+    // prettier-ignore
+    var SPRACH_BAUM = { tiefe: 5, sichtbar: 3, grundwoerter: ['siedlung', 'wasser', 'berg', 'feld', 'wald', 'burg'],
+      bedeutungen: ['ich', 'du', 'wir', 'dieser', 'jener', 'wer', 'was', 'nicht', 'alle', 'viele', 'eins', 'zwei', 'groß', 'lang', 'klein',
+        'frau', 'mann', 'mensch', 'fisch', 'vogel', 'hund', 'laus', 'baum', 'same', 'blatt', 'wurzel', 'rinde', 'haut', 'fleisch', 'blut',
+        'knochen', 'fett', 'ei', 'horn', 'schwanz', 'feder', 'haar', 'kopf', 'ohr', 'auge', 'nase', 'mund', 'zahn', 'zunge', 'klaue', 'fuß',
+        'knie', 'hand', 'bauch', 'hals', 'brust', 'herz', 'leber', 'trinken', 'essen', 'beißen', 'sehen', 'hören', 'wissen', 'schlafen',
+        'sterben', 'töten', 'schwimmen', 'fliegen', 'gehen', 'kommen', 'liegen', 'sitzen', 'stehen', 'geben', 'sagen', 'sonne', 'mond',
+        'stern', 'wasser', 'regen', 'stein', 'sand', 'erde', 'wolke', 'rauch', 'feuer', 'asche', 'brennen', 'weg', 'berg', 'rot', 'grün',
+        'gelb', 'weiß', 'schwarz', 'nacht', 'warm', 'kalt', 'voll', 'neu', 'gut', 'rund', 'trocken', 'name', 'siedlung', 'feld', 'wald',
+        'burg', 'haus'],
+      kurz: ['ich', 'du', 'wir', 'dieser', 'jener', 'wer', 'was', 'nicht', 'alle', 'eins', 'zwei', 'siedlung', 'wasser', 'berg', 'feld',
+        'wald', 'burg', 'haus'],
+      // die Bestimmungswörter der Ortsnamen: das Wort der Sprache für Größe, Alter, Form, Farbe, Wärme, Boden, Gewächs, Tier, Himmel,
+      // und Weg — die Gruppen der Bestimmungswörter der Siedlungsnamen (Bach 1953, Deutsche Namenkunde II: Lage und
+      // Beschaffenheit, Pflanzen, Tiere; Steinbach, Rotenburg, Neudorf, Langenfeld, Eichwald, Fischbach). Die Grundwörter selbst
+      // stehen nicht darin: „Bergberg“ trägt kein Ort.
+      bestimmung: ['groß', 'klein', 'lang', 'neu', 'rund', 'rot', 'weiß', 'schwarz', 'grün', 'gelb', 'warm', 'kalt', 'trocken', 'stein',
+        'sand', 'erde', 'baum', 'wurzel', 'fisch', 'vogel', 'hund', 'horn', 'sonne', 'mond', 'stern', 'feuer', 'asche', 'wolke', 'regen',
+        'weg'] };
+    // DIE LAUTGESETZE (Campbell 2013 Kap. 2; Kümmel 2007; die zweite Lautverschiebung: Braune/Reiffenstein, Ahd. Grammatik §83 ff.).
+    // Ein Gesetz ist TYP · LAUT · ORT („typ:laut@ort“): der Typ ist die Drift der Familie (Sapir 1921: `SPRACHE_GESETZ[..].wandel`), der
+    // Laut und der Ort sind die Neuerung des Knotens — „t wird zwischen Vokalen d“ ist ein anderes Gesetz als „k wird zwischen Vokalen
+    // g“, „e wird i am Wortende“ ein anderes als „e wird i in offener Silbe“. Erst so trägt jeder Knoten des Stammbaums seine EIGENE
+    // Neuerung: wiederholte sich ein Gesetz in fremden Zweigen (Homoplasie), wäre der Baum aus den Wörtern nicht lesbar (gemessen:
+    // 9–13 Gesetze je Familie auf 62 Knoten, Robinson-Foulds 0,81–0,98). `laute`: der Laut und was aus ihm wird; `orte`: wo das Gesetz
+    // greifen kann. Die Orte: `anlaut` vor dem Vokal am Wortanfang · `zwischen` zwischen Vokalen · `nachvokal` nach einem Vokal ·
+    // `ende` am Wortende (der Konsonant nach Vokal oder Sonorant) · `ueberall` jede Stelle (der Vokal: kein Teil eines Zwielauts) ·
+    // `offen` der Vokal vor einem Konsonanten und einem Vokal (die offene Silbe) · `apokope` der Endvokal nach Vokal + einem Laut im Wort
+    // aus mindestens zwei Silben (der unbetonte Auslaut; die Mundarten Norditaliens: pan, fradel) · `zu` der Vokal der geschlossenen Silbe
+    // (vor zwei Konsonanten oder einem am Wortende) · `umlaut` der Vokal vor Konsonant(en) und i (der i-Umlaut des Germanischen:
+    // ahd. gast → gesti). Ausnahmslos (Osthoff & Brugmann 1878).
+    // Die Typen: Verhärtung (die Auslautverhärtung, die Anlautverhärtung des Alemannischen) · Lenisierung (lat. lacus → sp. lago) · Rhotazismus · Spirantisierung nach Vokal (die zweite
+    // Lautverschiebung im Inlaut, die gorgia toscana) · Verschiebung im Anlaut · Schwund (h, w, j, g, f: kastil. f > h > Ø; am Wortende
+    // n, r, s: lat. -s im Italienischen, das r des nicht-rhotischen Englisch) · Apokope · i-Umlaut ·
+    // Hebung · Senkung (lat. ĭ > rom. e) · Entrundung (bair. schee) · Monophthongierung · Diphthongierung (mhd. mîn → nhd. mein, it.
+    // pietra, buono) · Affrizierung vor i/u und die Palatalisierung vor e/i (lat. centum, jap. chi/tsu/fu).
+    var _V = 'aeiouyäöüøåæ', _VK = '[' + _V + ']', _NV = '[^' + _V + ']', _SILBE = new RegExp(_VK + '+', 'g');
     // prettier-ignore
     var LAUTWANDEL = {
-      auslaut: function (w) { return w.replace(_AV, function (m, a, b) { return a + ({ b: 'p', d: 't', g: 'k' })[b]; }); },
-      lenis: function (w) { return w.replace(_LV, function (m, a, b) { return a + ({ p: 'b', t: 'd', k: 'g' })[b]; }); },
-      apokope: function (w) { return w.length >= 5 ? w.replace(_AP, '$1') : w; }, // das End-e nach Vokal + einem Laut
-      hebung: function (w) { return w.replace(_HB, function (m, a, v) { return a + (v === 'e' ? 'i' : 'u'); }); },
-      verschiebung: function (w) { return w.replace(/^p(?!f)/, 'pf').replace(/^t(?![sh])/, 'z').replace(/^k/, 'ch'); },
-      rhotazismus: function (w) { return w.replace(_RH, '$1r'); },
-      monophthong: function (w) { return w.replace(/ei|ai|ae/g, 'e').replace(/au/g, 'o').replace(/ia/g, 'i').replace(/ua/g, 'u').replace(/oa/g, 'o'); },
-      affrikat: function (w) { return w.replace(/ti/g, 'chi').replace(/si/g, 'shi').replace(/hu/g, 'fu').replace(/tu/g, 'tsu').replace(/[zd]i/g, 'ji'); },
-      hschwund: function (w) { return w.replace(_HS, ''); },
+      fortis:       { orte: ['ende', 'anlaut'],           laute: { b: 'p', d: 't', g: 'k', v: 'f', z: 's' } },
+      lenis:        { orte: ['zwischen'],                 laute: { p: 'b', t: 'd', k: 'g', c: 'g', f: 'v', s: 'z', b: 'v', g: 'j' } },
+      rhotazismus:  { orte: ['zwischen'],                 laute: { s: 'r', z: 'r', d: 'r', l: 'r' } },
+      spirans:      { orte: ['nachvokal'],                laute: { p: 'f', t: 's', k: 'ch', c: 'h', b: 'v' } },
+      verschiebung: { orte: ['anlaut'],                   laute: { p: 'pf', t: 'z', k: 'ch' } },
+      schwund:      { orte: ['anlaut', 'zwischen', 'ende'], laute: { h: '', w: '', j: '', g: '', f: '', d: '', n: '', r: '', s: '' } },
+      apokope:      { orte: ['apokope'],                  laute: { e: '', a: '', i: '', o: '', u: '' } },
+      hebung:       { orte: ['ueberall', 'offen', 'zu', 'ende'], laute: { e: 'i', o: 'u', a: 'e', 'å': 'o', 'æ': 'e', 'ø': 'y' } },
+      senkung:      { orte: ['ueberall', 'offen', 'zu', 'ende'], laute: { i: 'e', u: 'o', e: 'a', y: 'ø' } },
+      umlaut:       { orte: ['umlaut'],                   laute: { a: 'e', o: 'ö', u: 'ü', 'å': 'æ' } },
+      entrundung:   { orte: ['ueberall'],                 laute: { 'ü': 'i', 'ö': 'e', 'ø': 'e', y: 'i' } },
+      monophthong:  { orte: ['ueberall'],                 laute: { ei: 'e', ai: 'e', ae: 'e', au: 'o', ia: 'i', ua: 'u', oa: 'o', ie: 'i', uo: 'u' } },
+      diphthong:    { orte: ['ueberall', 'offen'],        laute: { i: 'ei', u: 'au', e: 'ie', o: 'uo' } },
+      affrikat:     { orte: ['ueberall'],                 laute: { ti: 'chi', si: 'shi', hu: 'fu', tu: 'tsu', di: 'ji', zi: 'ji', ki: 'tschi', ke: 'tsche', gi: 'dschi' } },
     };
+    // das Gesetz „typ:laut@ort“ als Funktion des Worts (EINE Gestalt je Gesetz, gemerkt)
+    var _GESETZE = new Map();
+    // prettier-ignore
+    function lautGesetz(k) {
+      var f = _GESETZE.get(k); if (f) return f;
+      var i = k.indexOf(':'), j = k.indexOf('@'), T = LAUTWANDEL[k.slice(0, i)], x = k.slice(i + 1, j), ort = k.slice(j + 1), y = T && T.laute[x];
+      if (y == null || j < i || T.orte.indexOf(ort) < 0) throw new Error("fachwerk lautGesetz: das Gesetz „" + k + "“ steht nicht in LAUTWANDEL");
+      var vokal = new RegExp('^' + _VK + '$').test(x), kette = !vokal && new RegExp('^' + _VK + '+$').test(x);
+      var re = ort === 'apokope' ? new RegExp('(' + _VK + _NV + ')' + x + '$')
+        : ort === 'anlaut' ? new RegExp('^()' + x + '(?=' + _VK + ')') : ort === 'zwischen' ? new RegExp('(' + _VK + ')' + x + '(?=' + _VK + ')', 'g')
+        : ort === 'nachvokal' ? new RegExp('(' + _VK + ')' + x, 'g') : ort === 'ende' ? new RegExp(vokal ? '(^|' + _NV + ')' + x + '$' : '([' + _V + 'rlnm])' + x + '$')
+        : ort === 'offen' ? new RegExp('(^|' + _NV + ')' + x + '(?=' + _NV + _VK + ')', 'g') : ort === 'zu' ? new RegExp('(^|' + _NV + ')' + x + '(?=' + _NV + '(' + _NV + '|$))', 'g')
+        : ort === 'umlaut' ? new RegExp('(^|' + _NV + ')' + x + '(?=' + _NV + '+i)', 'g')
+        : vokal ? new RegExp('(^|' + _NV + ')' + x + '(?!' + _VK + ')', 'g') : kette ? new RegExp('()' + x, 'g') : new RegExp('()' + x, 'g');
+      f = ort === 'apokope' ? function (w) { return (w.match(_SILBE) || []).length >= 2 ? w.replace(re, '$1') : w; } : function (w) { return w.replace(re, '$1' + y); };
+      _GESETZE.set(k, f); return f; }
     function _sprachU(saat, k) { var h = 2166136261, t = String(saat) + "|" + k; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
     // der Zug nach dem Rang: Gewicht 1/r
     function _rangZug(A, u) { var H = 0, i; for (i = 0; i < A.length; i++) H += 1 / (i + 1); var a = u * H; for (i = 0; i < A.length; i++) if ((a -= 1 / (i + 1)) < 0) return A[i]; return A[A.length - 1]; }
-    // die Ursprache der Familie: das Gesetz der Region mit seinen Grundwörtern (aus dem Gesetz gebaut, nie aus einer Liste)
+    // die Ursprache der Familie: das Gesetz der Region, je Bedeutung EIN Wort (aus dem Gesetz gebaut, nie aus einer Liste von Formen),
+    // die Grundwörter und das Haus als Wörter dieser Bedeutungen, dazu der Raum ihrer Lautgesetze (`raum`: jedes Gesetz der Drift, das
+    // mindestens `sichtbar` Wörter der Ursprache ändert, in der Folge der Drift)
     var _URSPRACHEN = new Map(), _SPRACHEN = new Map();
+    // prettier-ignore
     function _ursprache(region) {
       var u = _URSPRACHEN.get(region); if (u) return u;
       var G = SPRACHE_GESETZ[region], U = { region: region, gesetz: G, anteil: { cluster: G.pCluster, koda: G.pKoda, ende: G.pEnde }, wandel: [] };
-      U.grund = SPRACH_BAUM.grundwoerter.map(function (b) { return _urWort(U, "ur|" + region + "|" + b, 1, true); });
-      U.haus = _urWort(U, "ur|" + region + "|haus", 1, true);
+      U.lex = SPRACH_BAUM.bedeutungen.map(function (b) { var z = "ur|" + region + "|" + b; return _urWort(U, z, SPRACH_BAUM.kurz.indexOf(b) >= 0 || _sprachU(z, "n") < 0.5 ? 1 : 2, true); });
+      U.grund = SPRACH_BAUM.grundwoerter.map(function (b) { return U.lex[SPRACH_BAUM.bedeutungen.indexOf(b)]; });
+      U.haus = U.lex[SPRACH_BAUM.bedeutungen.indexOf("haus")];
+      U.raum = [];
+      G.wandel.forEach(function (typ) { var T = LAUTWANDEL[typ]; Object.keys(T.laute).forEach(function (x) { T.orte.forEach(function (o) { var k = typ + ":" + x + "@" + o, f = lautGesetz(k), n = 0;
+        U.lex.forEach(function (w) { if (f(w) !== w) n++; }); if (n >= SPRACH_BAUM.sichtbar) U.raum.push(k); }); }); });
+      U.knoten = _knotenGesetze(region, U.raum);
       _URSPRACHEN.set(region, Object.freeze(U)); return U; }
+    // DIE NEUERUNGEN DES STAMMBAUMS: je Knoten (Tiefe t, Index p) EIN Gesetz aus dem Raum der Familie — nie eines, das ein Ahne schon trägt
+    // (ein Lautgesetz ändert ein Wort nur einmal: wiederholt, wäre der Knoten ohne Spur), und die beiden Kinder eines Knotens nie
+    // dasselbe (sonst trennte nichts die Schwestern). Unter den Freien zuerst das im Baum seltenste (Homoplasie, die parallele Neuerung
+    // zweier Zweige, verwischt den Baum, Ringe, Warnow & Taylor 2002), unter Gleichen der Wurf des Knotens. Schwestern teilen so die
+    // Neuerungen ihres Ahnen und nur sie: der Stammbaum ist aus den Wortlisten lesbar (gate:settlement Teil R10, Robinson-Foulds).
+    // prettier-ignore
+    function _knotenGesetze(R, raum) {
+      var T = SPRACH_BAUM.tiefe, K = [[[]]], zahl = {};
+      if (raum.length < T + 1) throw new Error("fachwerk Stammbaum: die Familie „" + R + "“ trägt " + raum.length + " sichtbare Gesetze, der Baum der Tiefe " + T + " braucht " + (T + 1));
+      raum.forEach(function (k) { zahl[k] = 0; });
+      for (var t = 1; t <= T; t++) { K[t] = [];
+        for (var q = 0; q < 1 << (t - 1); q++) {
+          var ahnen = K[t - 1][q] || [], frei = raum.filter(function (k) { return ahnen.indexOf(k) < 0; });
+          frei.sort(function (a, b) { return zahl[a] - zahl[b] || _sprachU("knoten|" + R + "|" + t + "|" + q, a) - _sprachU("knoten|" + R + "|" + t + "|" + q, b); });
+          for (var c = 0; c < 2; c++) { zahl[frei[c]]++; K[t][2 * q + c] = ahnen.concat([frei[c]]); } } }
+      return K[T]; }
     // die Sprache des Orts: das Blatt des Stammbaums seiner Familie, das sein Same wählt (ohne Region: die Familie Mitteleuropas,
-    // wie der Wurf ohne Klima); `zweig` ist der Weg von der Wurzel (Bits), `wandel` die Lautgesetze der Knoten auf dem Weg
+    // wie der Wurf ohne Klima); `zweig` ist der Weg von der Wurzel (Bits), `wandel` die Lautgesetze der Knoten auf dem Weg („typ:laut“)
     function spracheVon(region, seed) {
       var R = SPRACHE_GESETZ[region] ? region : "mitteleuropa", T = SPRACH_BAUM.tiefe;
       var blatt = Math.floor(_sprachU("sprache|" + R + "|" + (seed >>> 0), "blatt") * (1 << T)), key = R + "|" + blatt, m = _SPRACHEN.get(key);
       if (m) return m;
-      var U = _ursprache(R), G = U.gesetz, W = [], saat = "sprache|" + key;
-      for (var t = 1; t <= T; t++) { var knoten = R + "|" + t + "|" + (blatt >> (T - t)); W.push(G.wandel[Math.floor(_sprachU("knoten|" + knoten, "wandel") * G.wandel.length) % G.wandel.length]); }
+      var U = _ursprache(R), G = U.gesetz, saat = "sprache|" + key;
       var dreh = function (p, k) { return p * (0.75 + 0.5 * _sprachU(saat, k)); };
-      var L = { region: R, blatt: blatt, zweig: blatt.toString(2).padStart(T, "0"), wandel: W, gesetz: G, ursprache: U,
+      var L = { region: R, blatt: blatt, zweig: blatt.toString(2).padStart(T, "0"), wandel: U.knoten[blatt], gesetz: G, ursprache: U,
         anteil: { cluster: dreh(G.pCluster, "cluster"), koda: dreh(G.pKoda, "koda"), ende: Math.min(1, dreh(G.pEnde, "ende")) } };
+      L.lex = U.lex.map(function (w, i) { return _ocp(L, _lexWort(L, w, i)); });
       L.grund = U.grund.map(function (w) { return wandle(L, w); });
       L.haus = wandle(L, U.haus);
       _SPRACHEN.set(key, Object.freeze(L));
       return L;
     }
     // die Tochterform eines Worts der Ursprache: die Lautgesetze des Zweigs in der Folge des Wegs, ausnahmslos
-    function wandle(L, w) { for (var i = 0; i < L.wandel.length; i++) w = LAUTWANDEL[L.wandel[i]](w); return w; }
+    function wandle(L, w, ab) { for (var i = ab || 0; i < L.wandel.length; i++) w = lautGesetz(L.wandel[i])(w); return w; }
+    // DER ERSATZ DES WORTS (die Lexikostatistik: Lees 1953, Swadesh 1955): eine Sprache behält von der Grundliste je Jahrtausend
+    // `ERSATZ.halten` (86 %) ihrer Wörter, die übrigen ersetzt ein neues Wort. Der Stammbaum der Familie misst `ERSATZ.alter` Jahre,
+    // jede Ebene ein `tiefe`-tel davon: 32 Sprachen in fünf Spaltungen sind eine Familie wie das Bantu (die Ausbreitung ~4 000 bis
+    // 5 000 Jahre: Holden 2002, Grollemund u. a. 2015), nicht wie das Romanische (~2 000 Jahre, ein Zehntel der Sprachen). Zwei Blätter
+    // über die Wurzel teilen 0,86^8 ≈ 30 % der Grundliste, Schwestern 0,86^1,6 ≈ 79 %. Je Knoten fällt jede Bedeutung mit 1 − halten^(Jahre/1000) — das neue Wort wächst aus dem Gesetz der
+    // Ursprache (eine eigene Saat je Knoten und Bedeutung, nie zweimal dasselbe) und trägt danach nur die Lautgesetze der Knoten UNTER
+    // ihm. Die Kognaten-Klasse einer Bedeutung ist darum der Zweig, der ihr Wort trägt: die Wortliste trägt den Baum (die Kognaten-
+    // Bäume der Indogermanistik, Ringe, Warnow & Taylor 2002; Gray & Atkinson 2003). Fest bleiben die Grundwörter der Orte und das
+    // Haus: der Name trägt sie, und das Toponym ist die beständigste Schicht der Sprache (es überdauert sogar den Sprachwechsel).
+    var ERSATZ = { halten: 0.86, alter: 4000 };
+    // prettier-ignore
+    function _lexWort(L, w, i) {
+      var T = SPRACH_BAUM.tiefe, b = SPRACH_BAUM.bedeutungen[i], ab = 0;
+      if (SPRACH_BAUM.grundwoerter.indexOf(b) < 0 && b !== "haus") {
+        var p = 1 - Math.pow(ERSATZ.halten, ERSATZ.alter / T / 1000);
+        for (var t = 1; t <= T; t++) { var z = "ersatz|" + L.region + "|" + L.zweig.slice(0, t) + "|" + b;
+          if (_sprachU(z, "fall") < p) { ab = t; w = _urWort(L.ursprache, z, SPRACH_BAUM.kurz.indexOf(b) >= 0 || _sprachU(z, "n") < 0.5 ? 1 : 2, true); } } }
+      return wandle(L, w, ab); }
+    // das Wort einer Bedeutung in der Sprache L (die Bedeutung als Wort der Grundliste oder ihr Index)
+    function sprachWort(L, b) {
+      var i = typeof b === "number" ? b : SPRACH_BAUM.bedeutungen.indexOf(b);
+      if (!(i >= 0 && i < L.lex.length)) throw new Error("fachwerk sprachWort: die Bedeutung „" + b + "“ steht nicht in SPRACH_BAUM.bedeutungen");
+      return L.lex[i]; }
     // ein Wort in der Gestalt der Ursprache aus n Silben, gewürfelt aus dem Strom `saat` (deterministisch); `ende`: die letzte Silbe ist das Wortende
     function _urWort(L, saat, n, ende) {
       var G = L.gesetz, P = L.anteil, s = "", u = function (i, k) { return _sprachU(saat, i + ":" + k); };
@@ -4838,7 +4975,10 @@
     // prettier-ignore
     function sprachName(L, art, saat) {
       var U = L.ursprache, z = art + "|" + saat;
-      if (art === "ort") return _gross(_ocp(L, wandle(L, _urWort(L, z, _sprachU(z, "n") < 0.6 ? 1 : 2, false) + U.grund[Math.floor(_sprachU(z, "grund") * U.grund.length) % U.grund.length])));
+      // der Ort: das Bestimmungswort ist ein Wort der Sprache (`SPRACH_BAUM.bestimmung`, seine Tochterform mit dem Ersatz des Zweigs) —
+      // die Namen der Schwestern sind darum Kognaten, wo ihr Wort es ist, und fremd, wo ein Zweig es ersetzte
+      if (art === "ort") { var B = SPRACH_BAUM.bestimmung, g = Math.floor(_sprachU(z, "grund") * L.grund.length) % L.grund.length;
+        return _gross(_ocp(L, sprachWort(L, B[Math.floor(_sprachU(z, "bestimmung") * B.length) % B.length]) + L.grund[g])); }
       if (art === "vorname") return _gross(_ocp(L, wandle(L, _urWort(L, z, _sprachU(z, "n") < 0.35 ? 3 : 2, true))));
       if (art === "familie") return _gross(_ocp(L, wandle(L, _urWort(L, z, 1, false) + U.haus)));
       throw new Error("fachwerk sprachName: unbekannte Art " + art);
@@ -5274,11 +5414,11 @@
     // Kosten: das Netz und die Liste, 2–4 ms je Kachel (einmal, der Wirt merkt sie).
     var STADT_MASSEN = { einzugM: 4.2, platzM: 11, eckeM: 9, geschossM: 2.7, sockelM: 0.5, flachGrad: 8, strasseJe: 4 };
     // prettier-ignore
-    function kachelMassen(samen, nH, i, k, epoche, klima) {
+    function kachelMassen(samen, nH, i, k, epoche, klima, himmel) {
         const wort = viertelWort(samen, nH, i, k, epoche, klima);
         if (!wort) return null;
         const S = STADT_MASSEN, netz = kachelNetz(samen, i, k), ring = globalThis.__ring, e3 = v => Math.round(v * 1000) / 1000;
-        const dorf = DORF({ seed: wort.seed, nH: wort.nH, epoche: wort.epoche, erbe: wort.erbe, klima: klima }), H = dorf.houses;
+        const dorf = DORF({ seed: wort.seed, nH: wort.nH, epoche: wort.epoche, erbe: wort.erbe, klima: klima, himmel: himmel }), H = dorf.houses;
         globalThis.__ring = ring;   // DORF würfelt die Zeitachse in ein Global (dorfLayout liest sie): die Frage nach der Ferne lässt es, wie es stand
         // die Straßen der Kachel: jede Kante des Netzes als Linienzug (jeder `strasseJe`-te Punkt), Breite, Belag und Saum des
         // Belag-Gesetzes (`gassenBelag`, `gassenBreite`) für Größe und Jahr der Kachel — dieselben Gassen, die Stufe 2 pflastert
@@ -5790,6 +5930,8 @@
   if(DP.klima!=null){ const deck=b=>{ const d0=deckungVon(b), d=ortDeckung(DP.klima, b, staedtisch); b.deckung=d; b.pitchDeg=ortNeigung(DP.klima, b, b.pitchDeg, d0);
       const G=DECKUNG_GESETZ[d], F=G.farbe; if(d!==d0&&F) b.col=Object.assign({}, b.col||{}, G.rolle==="ziegel"?{ziegel:F[0], ziegel2:F[1]}:{[G.rolle]:F[0]}); };
     alle.forEach((b,ai)=>{ deck(b); for(const f of za[ai].fr) deck(f.v); }); }
+  // DER GEHALTENE HIMMEL HEBT DAS DACH (`himmelNeigung`): nach dem Ort der Himmel, den der Spieler hält — jeder Bau und jede Fassung
+  if(DP.himmel!=null){ const hebe=b=>{ b.pitchDeg=himmelNeigung(b, b.pitchDeg, DP.himmel); }; alle.forEach((b,ai)=>{ hebe(b); for(const f of za[ai].fr) hebe(f.v); }); }
   return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
           schnitt:{jahr:j0, spanne:chronik?T-j0:spanne, groesse:gS, staedtisch:staedtischVon(gS)},
           kleidung:{top:tracht.top, bottom:tracht.bottom, shoes:tracht.shoes, farben:tracht.farben.slice()},
@@ -7741,6 +7883,7 @@
             fp: fpVon(plan.H),
             masse: masseVon(plan),
             grund: grundVon(plan), // das Grund-Datum (S4) — byte-gleich dem Mass-Bau wie die Massen
+            raum: raumVon(plan, p && p.col), // das Raum-Licht (w28-innenlicht) — die Decken der Stufe 3 tragen es wie die des Mass-Baus
             hofGap: 2.5,
             meshes: [],
         };
@@ -8099,7 +8242,12 @@
             // Bis hier trug sie keine: jenseits der Mesh-Zone stellte der Wirt vier Wände aus der Tür-Zeile auf (seine Kern-Hülle),
             // an jedem Haus des Dorfs 7–10 Solids am Boden bis 0,73 m daneben, am Hof-Haus 60 bis 9,07 m — kam die Hülle der
             // gezeigten Stufe, rückten die Stände der Bewohner um 0,3–2,9 m (28 Stände während einer Zählung am Start-Dorf).
-            geoms = wurfVon(planBau(p));
+            // DIE DECKEN AUCH FERN (wind-boee-haus, additiv, must-ignore): die Hülle JEDER Stufe trägt sie (`deckenZeile`) — bis hier
+            // trug die Stufe 3 keine, der Schatten am Ort des Wirts (`_hausSchatten`) sah das ferne Haus nicht (25 von 40 Häusern
+            // der Wiese); dieselbe Zeile wie die Stufen 1/2, 64 von 64 Häusern byte-gleich, das Gitter der Stufe byte-gleich.
+            var P3 = planBau(p);
+            geoms = wurfVon(P3);
+            geoms.__decken = deckenZeile(P3.masse, P3.raum);
             var hs3 = hausSolids(p);
             geoms.__solids = hs3.fest;
             geoms.__strahl = hs3.strahl;
@@ -8246,6 +8394,7 @@
         // DER KAMIN REIST MIT DER HÜLLE (B3c, additiv, must-ignore): die Spitze des gebauten Hauses, haus-lokal auf dem Raster
         // (`kamin` [x, y, z], null = kein Kamin) — der Wirt baut kein Haus im Haupt-Faden, um sie zu finden (`_hausHuelleSetzen`).
         // Ebenso die Tür-Zeile (`tuer`, bauen.K5, null = keine Haustür): was der Slot des Dorfs aus dem Export bringt.
+        if (g.userData.__huelle && gm.__decken) g.userData.__huelle.decken = gm.__decken; // jede Stufe, auch die 3 (ohne Kamin-Zeile)
         if (g.userData.__huelle && gm.__kamin) {
             var ks = gm.__kamin.spitze;
             g.userData.__huelle.kamin = ks ? _hr3([ks.x, ks.y, ks.z]) : null;
@@ -12847,6 +12996,7 @@
             jahr: isFinite(dp.jahr) ? Number(dp.jahr) : undefined, // das Jahr des Orts (Staffel 2, `wachstum`); ohne es das Ende der Epoche
             erbe: kw ? kw.erbe : dp.erbe && typeof dp.erbe === "object" ? dp.erbe : undefined, // die Kachel einer Stadt: Region, Jahr und Spanne ihrer Mitte (`viertelWort`)
             klima: dp.klima, // das Klima des Orts (REGION_KLIMA): der Wirt nennt es, ein Plan ohne Ort (das Labor) nicht
+            himmel: dp.himmel, // der Regen des gehaltenen Himmels (`himmelNeigung`): der Wirt nennt ihn, solange ein Wort gilt
         });
         // DIE MAUER STEHT IM JAHR DER WELT (mensch.macht.wehrbau#3, das EINE Urteil jeder Mauer des Exports: die Kachel, das Layout,
         // der Schnitt): die Entfestigung ist ein Gesetz der Welt-Zeit, nicht des Schnitts — steht das Jahr der Welt (`dp.jahr`,
@@ -16006,6 +16156,7 @@
         ariditaet: ariditaet,
         schneeNeigung: schneeNeigung,
         ortNeigung: ortNeigung,
+        himmelNeigung: himmelNeigung, // der gehaltene Himmel hebt das Dach (Leser: DORF, gate:settlement Teil R12)
         GRUENDUNG_RASTER: GRUENDUNG_RASTER, // w28-gruendung-flach — das Raster der Grundriss-Probe (Leser: gate:settlement G, seine Mutante)
         GRUENDUNG_OPS: GRUENDUNG_OPS, // w28-gruendung-flach — die Stände und Grundriss-Proben je Gründung (Leser: gate:settlement G)
         ortAusstattung: ortAusstattung, // ort-ausstattung — das EINE Gesetz der Stücke, die den Ort ausweisen (Leser: exportSettlement)
@@ -16027,6 +16178,8 @@
         LAUTWANDEL: LAUTWANDEL, // die Lautgesetze der Zweige (Campbell 2013; Leser: wandle)
         spracheVon: spracheVon,
         sprachName: sprachName,
+        sprachWort: sprachWort, // das Wort einer Bedeutung (SPRACH_BAUM.bedeutungen) in der Sprache des Orts
+        lautGesetz: lautGesetz, // ein Lautgesetz „typ:laut“ als Funktion des Worts (LAUTWANDEL)
         wandle: wandle,
         DORF_NORM: DORF_NORM,
         SIEDLUNG: SIEDLUNG,

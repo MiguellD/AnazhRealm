@@ -721,7 +721,9 @@ const LML_TAETER = [
     // kuesten-kontrast: seit die Ostküste ihren Winter trägt (ostWinterK −12, Kaspi & Schneider 2011), hält sie allein 4,8 K — der Täter nimmt beide Küsten
     ["spanne", "ohne den Winter der Küsten (Meeresluft und Rand-Strom)", /westWinterK: 14, westSommerK: -2, ostWinterK: -12, ostSommerK: -2,/, "westWinterK: 0, westSommerK: 0, ostWinterK: 0, ostSommerK: 0,", "planetKlimaR"],
     ["gipfel", "ks nur an der Grenze von heute", /const konv = Math\.max\(st, /, "const konv = Math.max(0, ", "ortRoh ks"],
-    ["eis", "das Eis nur nach der Breite", /if \(G\.T0 \+ G\.T2 \* p2 \+ ab < KLIMA\.tEisC\) return 1;/, "if ((breite < 0 ? -breite : breite) >= G.eisBreite) return 1;", "ortEisZeit"], // prettier-ignore
+    // eis: das Gesetz wohnt seit dem Milanković-Gesetz (kosmos-hadley 3) in `eisZeitY` (y = sin Breite, ortEisZeit und die Stufe des Ankers
+    // lesen es) — der Täter zieht mit: |y| ≥ eisX ⟺ |Breite| ≥ eisBreite (eisBreite = asin eisX), dieselbe Breiten-Regel wie zuvor
+    ["eis", "das Eis nur nach der Breite", /if \(G\.T0 \+ G\.T2 \* p2 \+ ab < KLIMA\.tEisC\) return 1;/, "if ((y < 0 ? -y : y) >= G.eisX) return 1;", "ortEisZeit"], // prettier-ignore
 ];
 // DER GEPFLANZTE KERN: der Kern `datei` des Baums (sein Global `name`), bei einem Täter mit EINER getauschten Zeile (sein Text; fehlt
 // die Zeile, bricht der Selbsttest beim Namen). Leser: (L) `lmlKern`, (O) `ortSelbsttest`.
