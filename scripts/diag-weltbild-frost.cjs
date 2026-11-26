@@ -32,6 +32,16 @@
 //   T3 ein writeBuffer von 6 Bytes → WebGPU wirft, die Puffer-Wache nennt Puffer, Länge, Aufrufer
 //   T4 ein fremder Validierungsfehler im Bau einer Pipeline → keine Pipeline trägt die Fehler-Marke (`_erstAbsageWache` schließt
 //      r184s Fehler-Bereich im Zug des Baus), die GPU-Wache zählt ihn; der Mutant (main: der Bereich bleibt offen) markiert sie
+//   T5 DER TÄTER DER GESCHWISTER (frost-linse): die alte Weiche des Knochen-Takts (`if (!sk.previousBoneMatrices) return taktRoh…`,
+//      bild-kosten.js 2776 bis buendel-mittag 3) + ein drittes Geschwister, Schatten zuerst → writeBuffer wirft im Szenen-Pass,
+//      die Post-Kette bricht LAUT; danach folgt der Schirm der Kamera (B ≥ 5 % im Folgebild, `_rendererStand`) und die Ich-Bühne
+//      zeichnet im Direktpfad (`_leinwandTiefeGilt`); der Mutant (die Rückkehr des Stands fällt aus) stellt den Schirm (B < 5 %)
+// DIE GESCHWISTER (Schritt „geschwister“, frost-linse): das Tor lebte vom Zufall — der Täter (ROT seit w28-bewegungs-feld an NVIDIA
+// und Radeon, „B das Bild folgt der Kamera — 0,00 %“) brauchte zwei Skelette mit geteiltem Bau UND eine Kaskade, die im
+// Eintritts-Bild des zweiten fällig ist. Der Schritt erzwingt beides: zwei Geschwister (EINE Geometrie, EIN Stoff, gleiche
+// Knochenzahl, je ein Skelett), das zweite betritt die Szene, während jede Kaskade fällig ist (`_shadowLast.k` leer). Eine Sonde
+// am Knochen-Takt beweist „Schatten zuerst, der Szenen-Knoten folgt im selben Bild“ (sonst ROT als ungemessen); sein Skelett
+// trägt danach sein Vor (`previousBoneMatrices`), die Post-Kette zeichnet weiter.
 //
 // EIN Weg (bis w27-swift-raus zwei: headless auf swiftshader zeichnete die CI eine PROBE-BÜHNE mit Rücklese-Bild — der Zwilling
 // der Karte, er fiel mit ihm):
@@ -205,6 +215,141 @@ function pruefRaum() {
         st.pitch = -0.18;
     };
     return { weg: "spielpfad" };
+}
+
+// DIE GESCHWISTER (frost-linse, Kopf-Kommentar): Skelette mit geteiltem Bau und die Sonde am Knochen-Takt. `neu(name, k)` baut
+// ein Geschwister k Meter neben der Blickachse, 5 m vor der Kamera auf dem Boden; `eintritt(m)` fügt es ein und hält jede
+// Kaskade fällig, bis sein Skelett zum ersten Mal rückte; `sonde()` nennt je Skelett, WER es in seinem Eintritts-Bild zuerst
+// rückte (der Schatten-Knoten ohne Vor oder der Szenen-Knoten mit Vor) und ob der Szenen-Knoten im selben Bild folgte.
+function geschwisterRaum() {
+    const T = window.THREE;
+    const F = window.__frostWand;
+    const cam = st.camera;
+    const geo = new T.CylinderGeometry(0.22, 0.22, 1.6, 8, 4).translate(0, 0.8, 0);
+    const P = geo.attributes.position;
+    const [si, sw] = [new Uint16Array(P.count * 4), new Float32Array(P.count * 4)];
+    for (let i = 0; i < P.count; i++) {
+        const o = Math.min(1, Math.max(0, P.getY(i) / 1.6));
+        si[i * 4 + 1] = 1;
+        sw[i * 4] = 1 - o;
+        sw[i * 4 + 1] = o;
+    }
+    geo.setAttribute("skinIndex", new T.Uint16BufferAttribute(si, 4));
+    geo.setAttribute("skinWeight", new T.Float32BufferAttribute(sw, 4));
+    // ein Stoff im Licht: sein eigener Bau trägt die Kaskade, r184 zeichnet sie vor seinem ersten Zeichnen (`updateBefore` des
+    // Schatten-Knotens) — die Reihenfolge „Schatten zuerst“ hängt nie an der Sortierung der Szene
+    const stoff = new T.MeshStandardNodeMaterial({ color: 0xff7a00, roughness: 0.8 });
+    const probe = new T.SkinnedMesh();
+    probe.bind(new T.Skeleton([new T.Bone()]));
+    const G = (F.geschwister = { alle: [], erst: new Map(), SN: T.TSL.skinning(probe).constructor });
+    G.neu = (name, k) => {
+        const [a, b] = [new T.Bone(), new T.Bone()];
+        b.position.y = 0.8;
+        a.add(b);
+        const m = new T.SkinnedMesh(geo, stoff);
+        m.name = name;
+        m.add(a);
+        m.bind(new T.Skeleton([a, b]));
+        m.skeleton.__frostName = name;
+        m.castShadow = true;
+        m.receiveShadow = true;
+        m.frustumCulled = false;
+        const vor = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion).setY(0).normalize();
+        const p = cam.position.clone().addScaledVector(vor, 5).addScaledVector(new T.Vector3(-vor.z, 0, vor.x), k);
+        m.position.set(p.x, r._voxelSurfaceY(p.x, p.z), p.z);
+        G.alle.push(m);
+        return m;
+    };
+    G.sonde = () => {
+        const kopf = G.SN.prototype.update;
+        G.SN.prototype.update = function (frame) {
+            const sk = frame.object && frame.object.skeleton ? frame.object.skeleton : this.skinnedMesh.skeleton;
+            const n = sk.__frostName;
+            if (n) {
+                const mitVor = this.previousBoneMatricesNode !== null;
+                const e = G.erst.get(n);
+                if (!e) G.erst.set(n, { bild: frame.frameId, zuerst: mitVor ? "szene" : "schatten", szeneFolgt: mitVor });
+                else if (e.bild === frame.frameId && mitVor) e.szeneFolgt = true;
+            }
+            return kopf.call(this, frame);
+        };
+        return () => (G.SN.prototype.update = kopf);
+    };
+    G.eintritt = async (m) => {
+        F.wurzel.add(m);
+        // jede Kaskade fällig, bis das Skelett zum ersten Mal rückte (`_loopShadowUpdate` liest `_shadowLast.k`)
+        const halte = () => {
+            if (G.erst.has(m.name) || !m.parent) return;
+            if (r._shadowLast) r._shadowLast.k.length = 0;
+            requestAnimationFrame(halte);
+        };
+        halte();
+        let bruch = "";
+        try {
+            for (const weiter = __deckel("das Geschwister " + m.name + " im Bild", 100); (!G.erst.has(m.name) || F.ungezeichnet(m, cam)) && weiter(); )
+                await F.zeichne(1);
+            await F.zeichne(4);
+        } catch (e) {
+            bruch = e.message;
+        }
+        return {
+            name: m.name,
+            ...(G.erst.get(m.name) || { zuerst: "nie gerückt" }),
+            vor: m.skeleton.previousBoneMatrices instanceof Float32Array,
+            kette: st.postProcessingFailed !== true,
+            wirft: r._lichtWirft(),
+            ...(bruch ? { bruch } : {}),
+        };
+    };
+    G.fort = () => {
+        for (const m of G.alle.splice(0)) F.wurzel.remove(m);
+    };
+    // DER TÄTER T5: die alte Weiche des Knochen-Takts (gewichen wurde nach dem SKELETT, nie nach dem Leser — r184s Takt trägt
+    // die Marke `__anazhBewegung`, bild-kosten.js `_bewegungHaut`) + ein weiteres Geschwister; `standAus` nimmt dazu der Rückkehr
+    // des Renderer-Stands ihre Wirkung (der Mutant des Klassen-Schnitts, `_rendererStand`), `G.heile()` stellt danach beides.
+    // Jeder Bruch, den das Spiel in diesem Lauf meldet, steht in `brueche` (das Buch meldet denselben Text nur einmal laut).
+    const stand = r.constructor.prototype._rendererStand;
+    G.taeter = async (name, k, standAus) => {
+        const roh = G.SN.__anazhBewegung;
+        if (typeof roh !== "function" || typeof stand !== "function")
+            return { fehlt: "SkinningNode.__anazhBewegung oder _rendererStand (bild-kosten.js) — der Täter ist nicht baubar" };
+        const brueche = [];
+        const eigen = Object.hasOwn(r, "_bruchMelden") ? r._bruchMelden : null;
+        const melde = r._bruchMelden;
+        r._bruchMelden = function (t) {
+            brueche.push(String(t).slice(0, 240));
+            return melde.apply(this, arguments);
+        };
+        const kopf = G.SN.prototype.update;
+        G.SN.prototype.update = function (frame) {
+            const sk = frame.object && frame.object.skeleton ? frame.object.skeleton : this.skinnedMesh.skeleton;
+            return sk.previousBoneMatrices ? kopf.call(this, frame) : roh.call(this, frame);
+        };
+        const sondeAb = G.sonde();
+        if (standAus) {
+            G.merk = stand.call(r, st.renderer, []);
+            r._rendererStand = function (R, M, zurueck) {
+                return zurueck === true ? M : stand.call(this, R, M);
+            };
+        }
+        try {
+            return { ...(await G.eintritt(G.neu(name, k))), brueche };
+        } finally {
+            sondeAb();
+            G.SN.prototype.update = kopf;
+            if (eigen) r._bruchMelden = eigen;
+            else delete r._bruchMelden;
+        }
+    };
+    G.heile = () => {
+        if (G.merk) {
+            delete r._rendererStand;
+            stand.call(r, st.renderer, G.merk, true);
+            G.merk = null;
+        }
+        st.postProcessingFailed = false;
+    };
+    return { geschwister: "bereit" };
 }
 
 hauptLauf(async () => {
@@ -446,6 +591,31 @@ hauptLauf(async () => {
         start.mensch > 0,
         `${start.mensch} Mensch-Index-Puffer`
     );
+    // DIE GESCHWISTER (Kopf-Kommentar, `geschwisterRaum`): zwei Skelette mit geteiltem Bau, das zweite betritt die Szene, während
+    // jede Kaskade fällig ist — die Reihenfolge, an der der Schirm stand, ist erzwungen und gemessen, nie erhofft
+    console.log(`  Geschwister-Raum: ${JSON.stringify(await page.evaluate(geschwisterRaum))}`);
+    const gZeile = (g) =>
+        `${g.name}: zuerst ${g.zuerst}${g.szeneFolgt ? ", der Szenen-Knoten im selben Bild" : ""} · Vor ${g.vor ? "steht" : "fehlt"} · Kette ${g.kette ? "zeichnet" : "gebrochen"} · das Licht wirft ${g.wirft ? "ja" : "nein"}${g.bruch ? " · " + g.bruch : ""}`;
+    await schritt("geschwister", async () => {
+        const g = await page.evaluate(async () => {
+            const G = window.__frostWand.geschwister;
+            const ab = G.sonde();
+            try {
+                const eins = await G.eintritt(G.neu("frost-geschwister-1", -0.7));
+                return { eins, zwei: await G.eintritt(G.neu("frost-geschwister-2", 0.7)) };
+            } finally {
+                ab();
+                G.fort();
+            }
+        });
+        check(
+            "geschwister: die Reihenfolge stand — das zweite Skelett rückte zuerst der Schatten-Knoten (ohne Vor), der Szenen-Knoten folgte im selben Bild (sonst ungemessen)",
+            g.zwei.zuerst === "schatten" && g.zwei.szeneFolgt === true && !g.zwei.bruch,
+            `${gZeile(g.eins)} | ${gZeile(g.zwei)}`
+        );
+        check("geschwister: das zweite Skelett trägt sein Vor (`previousBoneMatrices`), die Post-Kette zeichnet weiter", g.zwei.vor && g.zwei.kette, gZeile(g.zwei));
+        return { eins: g.eins.zuerst, zwei: g.zwei.zuerst };
+    });
     await schritt("werkstatt-eiche", async () => {
         const wahl = await page.evaluate(() => {
             r.toggleDrawer("werkstatt");
@@ -1045,7 +1215,7 @@ hauptLauf(async () => {
         /frost-taeter-puffer · Uint16Array · Versatz 0 · 6 B .*geworfen: \S/.test(t3),
         t3
     );
-    selbsttest("T4 (der fremde Fehler im Bau einer Pipeline) und T2 (der geweitete Mensch-Index)"); // jede Meldung der Seite ab hier ist der Täter der Wand, kein Fehler der Welt
+    selbsttest("T4 (der fremde Fehler im Bau einer Pipeline), T5 (der Wurf im Szenen-Pass) und T2 (der geweitete Mensch-Index)"); // jede Meldung der Seite ab hier ist der Täter der Wand, kein Fehler der Welt
     // T4 — DER FREMDE FEHLER IM BAU EINER PIPELINE (leib-nah-ganz, `_erstAbsageWache`): r184 hält den Fehler-Bereich eines asynchronen
     // Pipeline-Baus über dessen Versprechen offen; die Validierung eines FREMDEN Befehls dazwischen markierte die Pipeline für immer
     // als kaputt, jeder Stoff ihres Programms zeichnete nie wieder (stadt-voll, main 6699a813: 4 von 4 Bewohnern näher als 6 m ohne
@@ -1129,6 +1299,91 @@ hauptLauf(async () => {
         t4.mutant.marken.length > 0 && t4.mutant.bereiche === 0,
         `${t4Zeile(t4.mutant)} · T4 mit beiden Läufen in ${t4Ms} ms`
     );
+    // T5 — DER TÄTER DER GESCHWISTER (Kopf-Kommentar): unter der alten Weiche des Knochen-Takts wirft der Szenen-Pass am
+    // Geschwister (writeBuffer mit null als Daten). Am Kopf bricht die Post-Kette LAUT, der Stand des Renderers kehrt zurück
+    // (`_rendererStand`): der Schirm folgt der Kamera im Direktpfad, und die Ich-Bühne — ihr Leinwand-Deskriptor entstand unter
+    // der Kette — zeichnet weiter (`_leinwandTiefeGilt`). Der Mutant (die Rückkehr fällt aus) stellt den Schirm: Ziel und MRT des
+    // Szenen-Passes bleiben stehen, der Direktpfad zeichnet in das Ziel der Kette.
+    const t5Ab = Date.now();
+    const t5 = await page.evaluate(async () => {
+        const G = window.__frostWand.geschwister;
+        const ab = G.sonde();
+        let vorlauf;
+        try {
+            vorlauf = await G.eintritt(G.neu("frost-geschwister-3", -0.7));
+        } finally {
+            ab();
+        }
+        return { vorlauf, kopf: await G.taeter("frost-geschwister-4", 0.7, false) };
+    });
+    const t5Wurf = (x) => (x.brueche || []).find((b) => /^STOFF: die Post-Kette \(Render-Lauf/.test(b));
+    const t5Zeile = (x) => (x.fehlt ? x.fehlt : `${gZeile(x)} · Brüche: ${(x.brueche || []).join(" | ") || "keine"}`);
+    if (t5.kopf.fehlt) check("T5 der Täter der Geschwister ist baubar", false, t5.kopf.fehlt);
+    else {
+        check(
+            "T5 die alte Weiche wirft im Szenen-Pass — Schatten zuerst, die Post-Kette bricht LAUT beim Namen",
+            t5.kopf.zuerst === "schatten" && !!t5Wurf(t5.kopf) && t5.kopf.kette === false,
+            `Vorlauf ${gZeile(t5.vorlauf)} | ${t5Zeile(t5.kopf)}`
+        );
+        const folgt = await bildPaar("t5-wurf");
+        check(
+            "T5 EIN Wurf stellt den Schirm nicht — das Folgebild folgt der Kamera im Direktpfad",
+            folgt >= FOLGT_MIN,
+            `${(folgt * 100).toFixed(2)} % der Blöcke (Soll ≥ ${FOLGT_MIN * 100} %)`
+        );
+        const ich = await page.evaluate(async () => {
+            const F = window.__frostWand;
+            const brueche = [];
+            const melde = r._bruchMelden;
+            r._bruchMelden = function (t) {
+                brueche.push(String(t).slice(0, 240));
+                return melde.apply(this, arguments);
+            };
+            const bilder = () => st.ichStage?.renderer?.buehne?.bilder || 0;
+            const vor = bilder();
+            let bruch = "";
+            try {
+                r.toggleInventoryOverlay(true);
+                await F.buehne("die Ich-Bühne im Direktpfad", () => st.ichStage, (n) => n >= vor + 2);
+            } catch (e) {
+                bruch = e.message;
+            } finally {
+                r.toggleInventoryOverlay(false);
+                delete r._bruchMelden;
+            }
+            return { direkt: st.postProcessingFailed === true, bilder: bilder() - vor, tiefe: st.renderer.depth, brueche, bruch };
+        });
+        check(
+            "T5 die Ich-Bühne zeichnet im Direktpfad weiter — ihre Leinwand gilt für die Tiefe des Wegs",
+            ich.direkt && ich.bilder >= 2 && !ich.brueche.length && !ich.bruch,
+            JSON.stringify(ich)
+        );
+        // der Mutant: die Kette zurück, die Rückkehr des Stands fällt aus, ein weiteres Geschwister wirft
+        const mut = await page.evaluate(async () => {
+            const G = window.__frostWand.geschwister;
+            G.heile();
+            await window.__frostWand.zeichne(8);
+            return G.taeter("frost-geschwister-5", 2.1, true);
+        });
+        const steht = await bildPaar("t5-mutant");
+        check(
+            "T5 der Mutant (die Rückkehr des Renderer-Stands fällt aus) stellt den Schirm",
+            !!t5Wurf(mut) && steht < FOLGT_MIN,
+            `${(steht * 100).toFixed(2)} % der Blöcke bewegt · ${t5Zeile(mut)}`
+        );
+        await page.evaluate(() => {
+            const G = window.__frostWand.geschwister;
+            G.heile();
+            G.fort();
+        });
+        const zurueck = await bildPaar("t5-zurueck");
+        const kette = await page.evaluate(() => st.postProcessingFailed !== true);
+        check(
+            "T5 nach dem Täter zeichnet die Post-Kette wieder, das Bild folgt der Kamera",
+            kette && zurueck >= FOLGT_MIN,
+            `${(zurueck * 100).toFixed(2)} % der Blöcke · Kette ${kette ? "zeichnet" : "gebrochen"} · T5 in ${Date.now() - t5Ab} ms`
+        );
+    }
     const hoerVor = (await lage()).hoer;
     const t2 = await page.evaluate(() => {
         const be = st.renderer.backend;
@@ -1190,6 +1445,6 @@ hauptLauf(async () => {
     server.close();
     require("./lib/welt-boot.cjs").wandEnde(
         fehler,
-        "DIE FROST-WAND steht — durch Werkstatt, Ich- und Hof-Bühne trägt jeder Index-Puffer der Welt-GPU sein Format, kein Device meldet, das Bild folgt der Kamera; die Täter (Index über der Vertex-Zahl, ein fremd geweiteter Mensch-Index) nennen die Wachen beim Namen, ein fremder Fehler im Bau einer Pipeline markiert keine, und das stehende Bild wird erkannt."
+        "DIE FROST-WAND steht — durch Werkstatt, Ich- und Hof-Bühne trägt jeder Index-Puffer der Welt-GPU sein Format, kein Device meldet, das Bild folgt der Kamera; die Täter (Index über der Vertex-Zahl, ein fremd geweiteter Mensch-Index) nennen die Wachen beim Namen, ein fremder Fehler im Bau einer Pipeline markiert keine, ein Wurf im Szenen-Pass stellt den Schirm nicht (die Geschwister in erzwungener Reihenfolge), und das stehende Bild wird erkannt."
     );
 });

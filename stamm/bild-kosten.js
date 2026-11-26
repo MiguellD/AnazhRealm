@@ -1499,13 +1499,85 @@ class AnazhRealm_bild_kosten {
         const soll = direkt === true;
         if (rend.depth === soll) return;
         rend.depth = soll;
-        // r184 hält den Deskriptor des Leinwand-Passes im Backend-Datensatz der Leinwand — updateSize verwirft ihn, der
-        // nächste Leinwand-Pass baut ihn mit bzw. ohne Tiefe neu (gate:vendor-anker pinnt beides).
-        be.updateSize();
+        // r184 hält den Deskriptor des Leinwand-Passes im Backend-Datensatz JEDER Leinwand — der der Welt-Leinwand fällt
+        // hier, der einer Bühne bei ihrem nächsten Bild (`_leinwandTiefeGilt`, derselbe Abschied); der nächste
+        // Leinwand-Pass baut ihn mit bzw. ohne Tiefe neu (gate:vendor-anker pinnt beides).
+        this._leinwandTiefeGilt(rend, rend.getCanvasTarget());
         if (!soll) {
             const t = rend.getCanvasTarget().depthTexture;
             if (t && be.has(t)) be.destroyTexture(t);
         }
+    }
+
+    // DER DESKRIPTOR EINER LEINWAND GILT FÜR EINE TIEFE (frost-linse): r184 baut ihn beim ersten Leinwand-Pass mit oder ohne
+    // Tiefe (`renderer.depth`) und hält ihn je Leinwand (`_getDefaultRenderPassDescriptor`, der Datensatz des Backends). Die
+    // Weiche (`_leinwandWeg`) verwarf nur den der Welt-Leinwand (`updateSize` = `delete` der Leinwand von JETZT): fiel die
+    // Post-Kette in den Direktpfad, hielt jede Bühne (Ich-, Hof-, Feed-Bühne, Werkstatt — eigene Leinwände am Welt-Renderer,
+    // `_buehneRenderer`) ihren Deskriptor OHNE Tiefe, und ihr nächster Leinwand-Pass warf in r184 `beginRender`
+    // („depthClearValue" an undefined; gate:weltbild-frost, tab-ich-buehne). Jede Leinwand trägt die Tiefe, mit der ihr
+    // Deskriptor gebaut ist; weicht sie ab, fällt ihr Datensatz (wie `updateSize`), der nächste Pass baut ihn neu.
+    // Leser: `_leinwandWeg` (die Welt-Leinwand), `_buehneRender` (jede Bühne vor ihrem Leinwand-Pass). Die Wand: gate:post-kette (m).
+    _leinwandTiefeGilt(rend, ziel) {
+        const be = rend.backend;
+        if (!be || be.isWebGPUBackend !== true) return;
+        if (ziel.__leinwandTiefe !== rend.depth && be.has(ziel)) be.delete(ziel);
+        ziel.__leinwandTiefe = rend.depth;
+    }
+
+    // DER STAND DES RENDERERS UM EINEN LAUF (frost-linse): r184 stellt für einen Pass Ziel, MRT, Tonkurve, Farbraum, den
+    // Kontext-Knoten, seine Ruf-Tiefe und seine Zeiger um (`RenderPipeline.render`, `PassNode.updateBefore`, `_renderScene`, `_renderBundle`) und
+    // stellt sie erst NACH dem Pass zurück — ein Wurf IM Pass ließ sie stehen. Gemessen (GTX 1050, frost-nvidia): nach
+    // `writeBuffer(null)` eines Bürgers des Szenen-Passes blieb `getRenderTarget()` das Ziel des Szenen-Passes, `getMRT()`
+    // output+glanz+bewegung, die Tonkurve aus — der Direktpfad zeichnete danach ins Pass-Ziel, der Schirm stand für immer
+    // (gate:weltbild-frost B 0,00 %). `_rendererStand(R, M)` merkt den Stand in `M` (ein Feld des Rufers, je Bild neu
+    // beschrieben, keine Anlage), `_rendererStand(R, M, true)` stellt ihn. EIN Merker für jeden Lauf, der werfen kann: die
+    // Post-Kette (`_loopRender`, im Fang) und die Bühnen (`_buehneRender`, immer). Die privaten Zeiger pinnt
+    // gate:vendor-anker („_renderScene stellt den Zeiger …"). Die Wand: gate:post-kette (m), gate:weltbild-frost T5.
+    _rendererStand(R, M, zurueck) {
+        const nf = R._nodes && R._nodes.nodeFrame;
+        if (zurueck !== true) {
+            M[0] = R.getCanvasTarget();
+            M[1] = R.getRenderTarget();
+            M[2] = R.getActiveCubeFace();
+            M[3] = R.getActiveMipmapLevel();
+            M[4] = R.getMRT();
+            M[5] = R.getRenderObjectFunction();
+            M[6] = R.autoClear;
+            M[7] = R.getClearColor(M[7] || new THREE.Color());
+            M[8] = R.getClearAlpha();
+            M[9] = R.toneMapping;
+            M[10] = R.outputColorSpace;
+            M[11] = R.transparent;
+            M[12] = R.opaque;
+            M[13] = R.xr.enabled;
+            M[14] = R._callDepth;
+            M[15] = R._currentRenderContext;
+            M[16] = R._currentRenderObjectFunction;
+            M[17] = R._handleObjectFunction;
+            M[18] = R._currentRenderBundle;
+            M[19] = nf ? nf.renderId : 0;
+            M[20] = R.contextNode;
+            return M;
+        }
+        R.setCanvasTarget(M[0]);
+        R.setRenderTarget(M[1], M[2], M[3]);
+        R.setMRT(M[4]);
+        R.setRenderObjectFunction(M[5]);
+        R.autoClear = M[6];
+        R.setClearColor(M[7], M[8]);
+        R.toneMapping = M[9];
+        R.outputColorSpace = M[10];
+        R.transparent = M[11];
+        R.opaque = M[12];
+        R.xr.enabled = M[13];
+        R._callDepth = M[14];
+        R._currentRenderContext = M[15];
+        R._currentRenderObjectFunction = M[16];
+        R._handleObjectFunction = M[17];
+        R._currentRenderBundle = M[18];
+        if (nf) nf.renderId = M[19];
+        R.contextNode = M[20];
+        return M;
     }
 
     // DER ABSCHIED DES RAHMEN-ZIELS: r184s eigener — der dispose-Hörer, den `_getFrameBufferTarget` an das Leinwand- bzw.
@@ -2779,7 +2851,8 @@ class AnazhRealm_bild_kosten {
             if (this.previousBoneMatricesNode === null && !sk.previousBoneMatrices) return taktRoh.call(this, frame);
             AnazhRealm._bewegungKnochen(sk, frame.frameId);
         };
-        SN.__anazhBewegung = true;
+        // die Marke trägt r184s Takt: die Linse baut daraus den Mutanten der alten Weiche (gate:post-kette (m))
+        SN.__anazhBewegung = taktRoh;
     }
 
     // DER EINTRAG `bewegung` DES SZENEN-PASSES (rg16f, `_ensurePostProcessing`): je Fragment die Bewegung seines Dings in NDC

@@ -1534,14 +1534,8 @@ class AnazhRealm_werkstatt_vorschau {
         try {
             if (!B) renderer.render(scene, camera);
             else {
-                vor = [R.getCanvasTarget(), R.getRenderTarget(), R.getActiveCubeFace(), R.getActiveMipmapLevel()];
-                vor.push(
-                    R.getMRT(),
-                    R.getRenderObjectFunction(),
-                    R.autoClear,
-                    R.getClearColor(B.farbe || (B.farbe = new THREE.Color()))
-                );
-                vor.push(R.getClearAlpha(), R.toneMapping, R.outputColorSpace);
+                // der Stand des Welt-Renderers um den Lauf der Bühne (`_rendererStand`, der EINE Merker): er kehrt immer zurück
+                vor = this._rendererStand(R, B.merk || (B.merk = []));
                 const g = this._schirmMessen(renderer); // die Leinwand der Bühne ist ihr Schirm (die EINE Quelle)
                 if (!B.rt) {
                     B.rt = new THREE.RenderTarget(g.breite, g.hoehe, { samples: 4, type: THREE.HalfFloatType });
@@ -1565,6 +1559,8 @@ class AnazhRealm_werkstatt_vorschau {
                 this._buehneJetzt = scene;
                 R.render(scene, camera);
                 R.setCanvasTarget(renderer);
+                // der Deskriptor ihrer Leinwand gilt für die Tiefe, mit der er gebaut ist (`_leinwandTiefeGilt`)
+                this._leinwandTiefeGilt(R, renderer);
                 R.setRenderTarget(null);
                 R.toneMapping = THREE.NoToneMapping;
                 R.outputColorSpace = THREE.LinearSRGBColorSpace;
@@ -1578,16 +1574,7 @@ class AnazhRealm_werkstatt_vorschau {
             throw this._stoffBruch("die " + wer + " (Bühnen-Render)", e);
         } finally {
             this._buehneJetzt = null;
-            if (vor) {
-                R.setCanvasTarget(vor[0]);
-                R.setRenderTarget(vor[1], vor[2], vor[3]);
-                R.setMRT(vor[4]);
-                R.setRenderObjectFunction(vor[5]);
-                R.autoClear = vor[6];
-                R.setClearColor(vor[7], vor[8]);
-                R.toneMapping = vor[9];
-                R.outputColorSpace = vor[10];
-            }
+            if (vor) this._rendererStand(R, vor, true);
             if (an !== null) lu.uLodMaskOn.value = an;
         }
     }

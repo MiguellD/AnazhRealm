@@ -2618,6 +2618,8 @@ class AnazhRealm_dirigent_takt {
         this._ensureAtmoUniforms().schirmJeSzene.value = direkt || !sp ? 1 : sp.getResolutionScale();
         if (!direkt) {
             this._leinwandWeg(false);
+            // der Stand des Renderers vor dem Lauf der Kette (`_rendererStand`): wirft ein Pass, kehrt er im Fang zurück
+            const schirm = this._rendererStand(this.state.renderer, this._schirmMerk || (this._schirmMerk = []));
             try {
                 // V18.113 — renderAsync() ist im PR-#81-Vendor deprecated (Warnung
                 // in der Schöpfer-Konsole); render() ist der eine Pfad.
@@ -2631,7 +2633,11 @@ class AnazhRealm_dirigent_takt {
                 this._vorBelichtung().kBild.value = this.state.renderer.toneMappingExposure;
             } catch (err) {
                 // r184 baut Post-Kette und Szenen-Pass erst im ersten render() (PostProcessing.render → _update): ein
-                // Knoten-Fehler der Kette bricht HIER — laut beim Namen (K22), der Schirm zeichnet danach direkt
+                // Knoten-Fehler der Kette bricht HIER — laut beim Namen (K22), der Schirm zeichnet danach direkt.
+                // EIN WURF STELLT DEN SCHIRM NICHT (frost-linse): warf ein Bürger IM Szenen-Pass, standen Ziel, MRT, Tonkurve
+                // und r184s Zeiger noch auf dem Pass — der Direktpfad zeichnete ins Pass-Ziel, das Bild stand für immer.
+                // Der Stand von vor dem Lauf kehrt zurück, bevor der Direktpfad zeichnet.
+                this._rendererStand(this.state.renderer, schirm, true);
                 this.state.postProcessingFailed = true;
                 direkt = true;
                 this._stoffBruch(

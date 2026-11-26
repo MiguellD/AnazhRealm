@@ -86,6 +86,21 @@
 //       Strahler verdunkelt seinen Grund (vor der Karte), (l2) ihr Leib trägt die Lichtstärke des Gesetzes (fachwerk
 //       `FEUER_LEUCHTDICHTE` × Fläche, vor Schwarz im geraden Teil der Kurve); MUTANTE-L über das Glied `_flammeOptik` (Kommentar
 //       an `ZUNGE_PROBE`).
+//   (m) WURF (frost-linse) — DER TÄTER: gate:weltbild-frost:echt stand seit w28-bewegungs-feld rot an NVIDIA und Radeon
+//       (GTX 1050, buendel-mittag 8d0a9ebe: GPUQueue.writeBuffer warf im Szenen-Pass, danach „B das Bild folgt der Kamera —
+//       0,00 %“). (m1) DAS SKELETT TRÄGT SEIN VOR: ein frisches Skelett, das in EINEM Bild zuerst ein Knoten OHNE Vor rückt (der
+//       Schatten-Pass eines Geschwisters mit geteiltem Bau), dann der Knoten MIT Vor mit derselben Frame-Id — danach steht
+//       `previousBoneMatrices` (sonst schreibt die Bindung `knochenMatrixVor` null), und im Folgebild trägt das Vor die Knochen
+//       des vorigen Bilds. Am Chokepoint `_bewegungHaut`, ohne GPU. MUTANTE-M1: die alte Weiche (`if (!sk.previousBoneMatrices)
+//       return taktRoh…`, bild-kosten.js 2776 bis buendel-mittag 3), gebaut aus r184s Takt an der Marke `__anazhBewegung` →
+//       kein Vor. (m2) EIN WURF STELLT DEN SCHIRM NICHT: ein Wurf MITTEN im Szenen-Pass (r184 kehrt Ziel, MRT, Tonkurve,
+//       Farbraum und Ruf-Tiefe erst NACH dem Render zurück) bricht LAUT (genau 1 ERROR), der Stand des Renderers steht danach
+//       wie davor (`_rendererStand`), der Direktpfad zeichnet in die Leinwand: die Bild-Mitte zeigt die nahe Kiste, vier Meter
+//       daneben die ferne (der Schirm folgt der Kamera). MUTANTE-M2: die Rückkehr des Stands fällt aus → das Ziel bleibt das
+//       des Szenen-Passes. (m3) DIE LEINWAND EINER BÜHNE GILT FÜR EINE TIEFE: eine Bühne (`_buehneRenderer` →
+//       `_buehneRender`) zeichnet in der Kette (Leinwand ohne Tiefe), im Direktpfad (mit) und wieder in der Kette — ohne Wurf,
+//       ohne GPU-Validierungs-Fehler, ihre Kiste im Bild. MUTANTE-M3: die Bühne behält ihren Deskriptor (`_leinwandTiefeGilt`
+//       übergeht sie) → r184 wirft an `depthClearValue`. Die Meldungen der Mutanten fängt die Probe am Glied `log`.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Shader-Kosten-Linse an gebauten WGSL-Stücken und das
 // Urteil über einen grünen Lauf und je einen injizierten Täter — jeder fällt rot und wird genannt.
 //   node scripts/diag-post-kette.cjs [--selftest]   (npm run gate:post-kette)
@@ -96,6 +111,32 @@ const { statikServer, starteBrowser, postKetteBereit, laufUhr, taeterFaelle, sel
 // der Bruch, den die Wand selbst in die Kette wirft (Schritt „Render-Fehler") — der EINE Fehler-Sammler (welt-boot) nennt jeden
 // anderen Bruch der Post-Kette ROT beim Namen, diesen erwartet die Linse und zählt ihn selbst (GENAU einmal, `urteil`)
 const ERZWUNGEN = /\[ERROR\] STOFF: die Post-Kette .*gate:post-kette — erzwungener Render-Fehler der Kette/;
+// (m) der Wurf, den die Wand MITTEN in den Szenen-Pass wirft: auch er bricht LAUT, genau einmal (`urteil`); die Würfe der
+// Mutanten erreichen die Konsole nie (`wurfProbe` fängt ihre Meldungen am Glied `log`)
+const WURF_TEXT = "gate:post-kette — erzwungener Wurf im Szenen-Pass";
+const WURF = /\[ERROR\] STOFF: die Post-Kette .*gate:post-kette — erzwungener Wurf im Szenen-Pass \(Kopf\)/;
+const ERWARTET = new RegExp(`${ERZWUNGEN.source}|${WURF.source}`);
+const WURF_ORT = "stamm/bild-kosten.js `_rendererStand` (der Fang in `_loopRender`, stamm/dirigent-takt.js)";
+const KNOCHEN_ORT = "stamm/bild-kosten.js `_bewegungHaut`";
+const LEINWAND_ORT = "stamm/bild-kosten.js `_leinwandTiefeGilt` (ihr Leser an der Bühne: stamm/werkstatt-vorschau.js `_buehneRender`)";
+// der grüne Lauf von (m) für den Selbsttest: der Stand des Renderers am Ende eines Bilds der Kette (GTX 1050, frost-linse)
+const STAND_GRUEN = { ziel: "leinwand", mrt: "ohne", ton: 0, farbraum: "srgb", rufTiefe: -1, buendel: "ohne", autoClear: true, deckend: true, durchsichtig: true, xr: false, kontext: true };
+const WURF_GRUEN = {
+    gpuFehler: [],
+    knochen: { marke: "function", kopf: { steht: true, laenge: 32, soll: 32, vor: 0, jetzt: 1 }, mutante: { steht: false, laenge: null, soll: 32 } },
+    szene: {
+        kopf: { fehler: [], geworfen: 1, direkt: true, vor: STAND_GRUEN, nach: STAND_GRUEN, mitteNah: [190, 40, 40], mitteSeit: [40, 190, 40] },
+        mutante: { fehler: [], geworfen: 1, direkt: true, vor: STAND_GRUEN, nach: { ...STAND_GRUEN, ziel: "output", mrt: "output+glanz+bewegung", rufTiefe: 0 } },
+    },
+    leinwand: {
+        laeufe: [
+            { name: "Kette", tiefe: false, ganz: true, gpu: 0, mitte: [190, 40, 40] },
+            { name: "Direktpfad", tiefe: true, ganz: true, gpu: 0, mitte: [190, 40, 40] },
+            { name: "Kette zurück", tiefe: false, ganz: true, gpu: 0, mitte: [190, 40, 40] },
+            { name: "MUTANTE-M3", tiefe: true, ganz: true, gpu: 0, wurf: "STOFF: die post-kette:LEINWAND (Bühnen-Render) — Cannot set properties of undefined (setting 'depthClearValue')" },
+        ],
+    },
+};
 const SK = require("./lib/shader-kosten.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 const STAMM = require("./lib/stamm.cjs");
@@ -728,6 +769,117 @@ function rauchZeilen(ra) {
     ];
 }
 
+// (m) DAS URTEIL ÜBER KNOCHEN-VOR, WURF UND BÜHNEN-LEINWAND (Kopf-Kommentar (m)); der Wurf des Kopfs zählt in `urteil` (LAUT, 1×)
+const istRot = (m) => !!m && m[0] > 1.5 * m[1] && m[0] > 40;
+const istGruen = (m) => !!m && m[1] > 1.5 * m[0] && m[1] > 40;
+const standDiff = (vor, nach) =>
+    Object.keys(vor || {})
+        .filter((k) => vor[k] !== (nach || {})[k])
+        .map((k) => `${k} ${(nach || {})[k]} statt ${vor[k]}`);
+function wurfUrteil(w) {
+    if (!w) return ["WURF: die Probe lief nicht"];
+    const v = [];
+    if (w.abbruch) v.push(`WURF: ABBRUCH — ${w.abbruch}`);
+    if (w.gpuFehler?.length) v.push(`WURF: ${w.gpuFehler.length} GPU-Validierungs-Fehler: ${w.gpuFehler[0]}`);
+    const k = w.knochen;
+    if (!k || !k.kopf || !k.mutante) v.push("KNOCHEN-VOR: (m1) nicht gemessen");
+    else {
+        if (k.marke !== "function")
+            v.push(
+                `KNOCHEN-VOR: (m1) die Marke \`__anazhBewegung\` trägt r184s Takt nicht (${k.marke}) — die Mutante der alten Weiche ist nicht zu bauen (${KNOCHEN_ORT})`
+            );
+        if (k.kopf.steht !== true)
+            v.push(
+                `KNOCHEN-VOR: (m1) EIN SKELETT, DAS IM BILD ZUERST EIN KNOTEN OHNE VOR RÜCKT, TRÄGT SEIN VOR — nach dem Knoten MIT Vor (dieselbe Frame-Id) steht \`previousBoneMatrices\` ` +
+                    `${k.kopf.laenge == null ? "nicht" : `mit ${k.kopf.laenge} statt ${k.kopf.soll} Werten`}: die Weiche in ${KNOCHEN_ORT} liest das Skelett statt den Leser (die alte Zeile 2776) — ` +
+                    `die Bindung \`knochenMatrixVor\` schreibt null, GPUQueue.writeBuffer wirft im Szenen-Pass`
+            );
+        else if (!(Math.abs(k.kopf.vor) < 1e-6 && Math.abs(k.kopf.jetzt - 1) < 1e-6))
+            v.push(
+                `KNOCHEN-VOR: (m1) im Folgebild trägt das Vor ${k.kopf.vor} und das Jetzt ${k.kopf.jetzt} (Soll 0 und 1: der Knochen stieg um 1 m) — das Vor sind nicht die Knochen des vorigen Bilds (${KNOCHEN_ORT}, \`_bewegungKnochen\`)`
+            );
+        if (k.marke === "function" && k.mutante.steht !== false)
+            v.push(
+                "KNOCHEN-VOR: MUTANTE-M1 (die alte Weiche `if (!sk.previousBoneMatrices) return taktRoh…`) reißt nicht — das Vor steht auch mit ihr (die Probe stellt die Reihenfolge des Täters nicht her, sie ist blind)"
+            );
+    }
+    const s = w.szene;
+    if (!s || !s.kopf || !s.mutante) v.push("WURF: (m2) nicht gemessen");
+    else {
+        const [K, M] = [s.kopf, s.mutante];
+        for (const f of K.fehler || []) v.push(`WURF: (m2) der Wurf im Szenen-Pass fiel bis in den Rufer des Loops — ${f}`);
+        if (K.geworfen !== 1)
+            v.push(`WURF: (m2) der Wurf fiel ${K.geworfen}× statt 1× (die Probe ist blind: der Szenen-Pass zeichnete ihre Kiste nicht in sein Ziel)`);
+        else {
+            if (K.direkt !== true) v.push("WURF: (m2) nach dem Wurf im Szenen-Pass fährt der Loop nicht den Direktpfad");
+            const d = standDiff(K.vor, K.nach);
+            if (d.length)
+                v.push(
+                    `WURF: (m2) EIN WURF STELLT DEN SCHIRM NICHT — nach dem Wurf im Szenen-Pass steht der Renderer anders als davor: ${d.join(" · ")} ` +
+                        `(${WURF_ORT}; r184 kehrt den Stand erst nach dem Render zurück, der Direktpfad zeichnet sonst am Schirm vorbei)`
+                );
+            if (!istRot(K.mitteNah))
+                v.push(`WURF: (m2) nach dem Wurf zeigt die Bild-Mitte ${JSON.stringify(K.mitteNah)}, nicht die nahe rote Kiste — der Direktpfad zeichnet nicht in die Leinwand (${WURF_ORT})`);
+            if (!istGruen(K.mitteSeit))
+                v.push(`WURF: (m2) vier Meter daneben zeigt die Bild-Mitte ${JSON.stringify(K.mitteSeit)}, nicht die ferne grüne Kiste — der Schirm folgt der Kamera nicht (${WURF_ORT})`);
+        }
+        if (M.geworfen !== 1) v.push(`WURF: MUTANTE-M2 — der Wurf fiel ${M.geworfen}× statt 1×`);
+        else if (!standDiff(M.vor, M.nach).some((x) => /^ziel /.test(x)))
+            v.push(
+                `WURF: MUTANTE-M2 (die Rückkehr des Stands fällt aus) reißt nicht — das Ziel steht danach bei ${M.nach && M.nach.ziel}: die Probe sieht den gestellten Schirm nicht (blind)`
+            );
+    }
+    const b = w.leinwand;
+    if (!b || !b.laeufe) v.push("LEINWAND: (m3) nicht gemessen");
+    else {
+        const lauf = (n) => b.laeufe.find((l) => l.name === n) || {};
+        const [ke, di, zu, mu] = ["Kette", "Direktpfad", "Kette zurück", "MUTANTE-M3"].map(lauf);
+        if (!(ke.tiefe === false && di.tiefe === true && zu.tiefe === false && mu.tiefe === true))
+            v.push(
+                `LEINWAND: (m3) die Läufe standen bei renderer.depth ${[ke, di, zu, mu].map((l) => l.tiefe).join(" · ")} statt false · true · false · true (die Probe ist blind)`
+            );
+        for (const l of [ke, di, zu]) {
+            if (l.wurf)
+                v.push(
+                    `LEINWAND: (m3) DIE LEINWAND EINER BÜHNE GILT FÜR EINE TIEFE — „${l.name}“ warf: ${l.wurf} (${LEINWAND_ORT}: der Deskriptor ihres Leinwand-Passes trägt die Tiefe seines Baus, nicht die von jetzt)`
+                );
+            else if (l.gpu > 0) v.push(`LEINWAND: (m3) „${l.name}“ — ${l.gpu} GPU-Validierungs-Fehler: ${l.gpuText} (${LEINWAND_ORT})`);
+            else if (!istRot(l.mitte))
+                v.push(
+                    `LEINWAND: (m3) „${l.name}“ — die Mitte der Bühnen-Leinwand ist ${JSON.stringify(l.mitte)}, nicht ihre rote Kiste (${l.ganz ? "die Bühne meldet sich ganz" : "die Bühne wurde nie ganz"})`
+                );
+        }
+        if (!/depthClearValue/.test(mu.wurf || ""))
+            v.push(
+                `LEINWAND: MUTANTE-M3 (die Bühne behält ihren Deskriptor) reißt nicht — ${mu.wurf ? "sie warf anders: " + mu.wurf : "kein Wurf"} (die Probe ist blind für die Leinwand-Tiefe der Bühne)`
+            );
+    }
+    return v;
+}
+
+function wurfZeilen(w) {
+    if (!w) return ["Wurf (m): die Probe lief nicht"];
+    const z = [];
+    const [k, s, b] = [w.knochen, w.szene, w.leinwand];
+    if (k && k.kopf)
+        z.push(
+            `Knochen-Vor (m1): Kopf ${k.kopf.steht ? `steht (${k.kopf.laenge} Werte; Folgebild Vor ${k.kopf.vor} ↔ Jetzt ${k.kopf.jetzt})` : "FEHLT"} · ` +
+                `MUTANTE-M1 (die alte Weiche): ${k.mutante && k.mutante.steht === false ? "kein Vor" : "das Vor steht"}`
+        );
+    if (s && s.kopf)
+        z.push(
+            `Wurf im Szenen-Pass (m2): ${s.kopf.geworfen}× geworfen · Direktpfad ${s.kopf.direkt} · Stand danach ${standDiff(s.kopf.vor, s.kopf.nach).join(" · ") || "wie davor"} ` +
+                `${JSON.stringify(s.kopf.vor)} · Mitte ${JSON.stringify(s.kopf.mitteNah)}, 4 m daneben ${JSON.stringify(s.kopf.mitteSeit)} · ` +
+                `MUTANTE-M2 (ohne Rückkehr): ${s.mutante ? standDiff(s.mutante.vor, s.mutante.nach).join(" · ") || "wie davor" : "?"}`
+        );
+    if (b && b.laeufe)
+        z.push(
+            `Bühnen-Leinwand (m3): ${b.laeufe.map((l) => `${l.name} (Tiefe ${l.tiefe}) ${l.wurf ? "WURF " + l.wurf : JSON.stringify(l.mitte)}${l.gpu ? ` · GPU ${l.gpuText}` : ""}`).join(" · ")}`
+        );
+    if (w.abbruch) z.push(`Wurf (m): ABBRUCH ${w.abbruch}`);
+    return z;
+}
+
 function urteil(z) {
     const v = [];
     const schritte = z.schritte || [];
@@ -860,7 +1012,14 @@ function urteil(z) {
         v.push(
             `WEICHE: der erzwungene Render-Fehler der Kette meldet ${erzwungen.length}× „STOFF: die Post-Kette …" (Soll genau 1 — ${erzwungen.length ? "doppelt" : "er bricht STILL"})`
         );
-    for (const t of (z.konsolenFehler || []).filter((x) => !/RAHMEN-ZIEL/.test(x) && !ERZWUNGEN.test(x)))
+    // (m2) DER WURF IM SZENEN-PASS bricht ebenso LAUT, genau einmal (die Würfe der Mutanten bleiben in der Probe)
+    const wuerfe = (z.konsolenFehler || []).filter((x) => WURF.test(x));
+    if (z.wurf && z.wurf.szene && wuerfe.length !== 1)
+        v.push(
+            `WURF: (m2) der Wurf im Szenen-Pass meldet ${wuerfe.length}× „STOFF: die Post-Kette …" (Soll genau 1 — ${wuerfe.length ? "doppelt" : "er bricht STILL"})`
+        );
+    for (const x of wurfUrteil(z.wurf)) v.push(x);
+    for (const t of (z.konsolenFehler || []).filter((x) => !/RAHMEN-ZIEL/.test(x) && !ERZWUNGEN.test(x) && !WURF.test(x)))
         v.push(`KONSOLE: ${t}`);
     if (fang && !fang.direkt) v.push("WEICHE: nach dem Render-Fehler der Kette fährt der Loop nicht den Direktpfad");
     if (z.gpuFehler?.length) v.push(`GPU: ${z.gpuFehler.length} Validierungs-Fehler: ${z.gpuFehler[0]}`);
@@ -1041,6 +1200,7 @@ function selbsttest() {
         konsolenFehler: [
             "[AnazhRealm V18.543] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — gate:post-kette — erzwungener Render-Fehler der Kette",
             "[AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt",
+            "[AnazhRealm V18.546] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — gate:post-kette — erzwungener Wurf im Szenen-Pass (Kopf)",
         ],
         gpuFehler: [],
         ausgabe,
@@ -1105,6 +1265,7 @@ function selbsttest() {
         },
         rauch: jsonKlon(RAUCH_GEMESSEN.kopf),
         zunge: jsonKlon(ZUNGE_GEMESSEN.kopf),
+        wurf: jsonKlon(WURF_GRUEN),
     };
     const RM = RAUCH_GEMESSEN;
     const ZG = ZUNGE_GEMESSEN;
@@ -1285,6 +1446,28 @@ function selbsttest() {
         ["Tritanopie färbt den Himmel", ["zugang.tritanopie", { himmel: 9 }], /tritanopie färbt/],
         ["Zugang blind", ["zugang.tritanopie", { kiste: 0 }], /ZUGANG: blind/],
         ["Zugang fehlt", ["zugang"], /ZUGANG: lief nicht/],
+        // (m) frost-linse: der Täter zuerst (das Geschwister-Skelett ohne Vor, der gestellte Schirm, die Bühne ohne Tiefe), dann die blinden Proben
+        ["das Skelett ohne Vor (der Täter: die alte Weiche, buendel-mittag 3)", (z) => (z.wurf.knochen.kopf = { steht: false, laenge: null, soll: 32 }), /KNOCHEN-VOR: \(m1\) EIN SKELETT, DAS IM BILD ZUERST EIN KNOTEN OHNE VOR RÜCKT, TRÄGT SEIN VOR — .*steht `previousBoneMatrices` nicht: die Weiche in stamm\/bild-kosten\.js `_bewegungHaut` liest das Skelett/],
+        ["das Vor trägt die Knochen von jetzt", ["wurf.knochen.kopf", { vor: 1 }], /KNOCHEN-VOR: \(m1\) im Folgebild trägt das Vor 1 und das Jetzt 1 /],
+        ["MUTANTE-M1 reißt nicht (blind)", ["wurf.knochen.mutante", { steht: true }], /KNOCHEN-VOR: MUTANTE-M1 .* reißt nicht/],
+        ["die Marke trägt r184s Takt nicht", ["wurf.knochen", { marke: "boolean" }], /KNOCHEN-VOR: \(m1\) die Marke `__anazhBewegung` trägt r184s Takt nicht \(boolean\)/],
+        ["der Knochen-Takt ungemessen", ["wurf.knochen"], /KNOCHEN-VOR: \(m1\) nicht gemessen/],
+        ["der Wurf stellt den Schirm (der Täter: Ziel und MRT bleiben am Szenen-Pass)", ["wurf.szene.kopf.nach=", { ...STAND_GRUEN, ziel: "output", mrt: "output+glanz+bewegung", rufTiefe: 0 }], /WURF: \(m2\) EIN WURF STELLT DEN SCHIRM NICHT — .*ziel output statt leinwand · mrt output\+glanz\+bewegung statt ohne · rufTiefe 0 statt -1/],
+        ["nach dem Wurf steht das alte Bild", ["wurf.szene.kopf", { mitteSeit: [190, 40, 40] }], /WURF: \(m2\) vier Meter daneben zeigt die Bild-Mitte \[190,40,40\], nicht die ferne grüne Kiste — der Schirm folgt der Kamera nicht/],
+        ["nach dem Wurf zeichnet der Direktpfad am Schirm vorbei", ["wurf.szene.kopf", { mitteNah: [0, 0, 0] }], /WURF: \(m2\) nach dem Wurf zeigt die Bild-Mitte \[0,0,0\], nicht die nahe rote Kiste/],
+        ["nach dem Wurf bleibt die Kette am Zug", ["wurf.szene.kopf", { direkt: false }], /WURF: \(m2\) nach dem Wurf im Szenen-Pass fährt der Loop nicht den Direktpfad/],
+        ["der Wurf fiel nie (blind)", ["wurf.szene.kopf", { geworfen: 0 }], /WURF: \(m2\) der Wurf fiel 0× statt 1× /],
+        ["der Wurf im Szenen-Pass bricht still", (z) => (z.konsolenFehler = z.konsolenFehler.filter((x) => !/Wurf im Szenen-Pass/.test(x))), /WURF: \(m2\) der Wurf im Szenen-Pass meldet 0× .*er bricht STILL/],
+        ["der Wurf im Szenen-Pass bricht doppelt", (z) => z.konsolenFehler.push(z.konsolenFehler.at(-1)), /WURF: \(m2\) der Wurf im Szenen-Pass meldet 2× .*doppelt/],
+        ["MUTANTE-M2 reißt nicht (blind)", ["wurf.szene.mutante.nach=", STAND_GRUEN], /WURF: MUTANTE-M2 .* reißt nicht — das Ziel steht danach bei leinwand/],
+        ["die Bühne wirft im Direktpfad (der Täter: ihr Deskriptor ohne Tiefe)", ["wurf.leinwand.laeufe.1", { wurf: "STOFF: die post-kette:LEINWAND (Bühnen-Render) — Cannot set properties of undefined (setting 'depthClearValue')" }], /LEINWAND: \(m3\) DIE LEINWAND EINER BÜHNE GILT FÜR EINE TIEFE — „Direktpfad“ warf: .*depthClearValue/],
+        ["die Bühne zurück in der Kette mit Tiefe im Deskriptor", ["wurf.leinwand.laeufe.2", { gpu: 1, gpuText: "Attachment state of [RenderPipeline] is not compatible with [RenderPassEncoder]" }], /LEINWAND: \(m3\) „Kette zurück“ — 1 GPU-Validierungs-Fehler: Attachment state/],
+        ["die Bühne zeichnet ihre Kiste nicht", ["wurf.leinwand.laeufe.1", { mitte: [32, 32, 32] }], /LEINWAND: \(m3\) „Direktpfad“ — die Mitte der Bühnen-Leinwand ist \[32,32,32\], nicht ihre rote Kiste/],
+        ["die Bühne stand nie im Direktpfad (blind)", ["wurf.leinwand.laeufe.1", { tiefe: false }], /LEINWAND: \(m3\) die Läufe standen bei renderer\.depth false · false · false · true/],
+        ["MUTANTE-M3 reißt nicht (blind)", ["wurf.leinwand.laeufe.3.wurf"], /LEINWAND: MUTANTE-M3 .* reißt nicht — kein Wurf/],
+        ["ein GPU-Validierungs-Fehler in der Wurf-Probe", ["wurf.gpuFehler=", ["Binding size mismatch"]], /WURF: 1 GPU-Validierungs-Fehler: Binding size mismatch/],
+        ["die Wurf-Probe bricht ab", ["wurf.abbruch=", "TypeError: r._rendererStand is not a function"], /WURF: ABBRUCH — TypeError/],
+        ["die Wurf-Probe fehlt", ["wurf"], /WURF: die Probe lief nicht/],
     ];
     taeterFaelle(faelle, urteil, { fehler, gruen });
     // der Selbsttest: die Shader-Kosten-Linse zählt richtig, jeder injizierte Täter fällt rot und wird beim Namen genannt.
@@ -1932,6 +2115,323 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe, knieProbe) {
             rend.backend.copyFramebufferToTexture = kopieRoh;
             dev.removeEventListener("uncapturederror", gpuHoer);
             st.scene.remove(gruppe);
+        }
+        return aus;
+    })();
+}
+
+// (m) KNOCHEN-VOR · WURF · BÜHNEN-LEINWAND (frost-linse; Seiten-Kontext, nach `buehne`, am Ort ihrer Bühne — Kopf-Kommentar (m)).
+// Die Meldungen der Mutanten fängt die Probe am Glied `log` (der Weg der Drift-Probe): nur der Wurf des Kopfs erreicht die
+// Konsole, und das Urteil zählt ihn (LAUT, genau einmal).
+function wurfProbe(ort, nFrames, TEXT) {
+    return (async () => {
+        const T = window.THREE;
+        const [L, AR, rend, cam] = [T.TSL, r.constructor, st.renderer, st.camera];
+        rend.setAnimationLoop(null);
+        window.__buehne();
+        const aus = { gpuFehler: [] };
+        const dev = rend.backend.device;
+        const gpuHoer = (e) => aus.gpuFehler.push(String(e.error?.message || e.message || e).slice(0, 240));
+        dev.addEventListener("uncapturederror", gpuHoer);
+        const { x: x0, y: y0, z: z0 } = ort;
+        let seit = 0;
+        const setzeKamera = () => {
+            cam.position.set(x0 + seit, y0, z0);
+            cam.up.set(0, 1, 0);
+            cam.lookAt(x0 + seit, y0, z0 - 10);
+            cam.updateMatrixWorld(true);
+        };
+        const bilder = (n) => {
+            for (let i = 0; i < n; i++) {
+                setzeKamera();
+                window.__loopBild();
+            }
+        };
+        const stoff = (hex) => new T.MeshBasicNodeMaterial({ color: hex });
+        // die Bühne: die nahe rote Kiste vor der fernen grünen (breit: vier Meter daneben deckt sie die Bild-Mitte allein)
+        const gruppe = new T.Group();
+        gruppe.name = "post-kette:WURF";
+        const nah = new T.Mesh(new T.BoxGeometry(1.6, 1.6, 1.6), stoff(0xff2020));
+        nah.position.set(x0, y0, z0 - 6);
+        const fern = new T.Mesh(new T.BoxGeometry(40, 12, 1), stoff(0x20ff20));
+        fern.position.set(x0, y0, z0 - 16);
+        for (const m of [nah, fern]) {
+            m.frustumCulled = false;
+            gruppe.add(m);
+        }
+        // EIN MUTANT BLEIBT IN DER PROBE: seine ERROR-Meldungen fängt `log`, seine GPU-Fehler fallen aus der Liste des Kopfs
+        const stumm = async (lauf) => {
+            const meldungen = [];
+            const logRoh = r.log;
+            r.log = function (m, lvl) {
+                if (lvl === "ERROR") return void meldungen.push(String(m).slice(0, 200));
+                return logRoh.apply(this, arguments);
+            };
+            const gpuVor = aus.gpuFehler.length;
+            try {
+                return Object.assign(await lauf(), { meldungen });
+            } finally {
+                delete r.log;
+                await dev.queue.onSubmittedWorkDone();
+                aus.gpuFehler.length = gpuVor;
+            }
+        };
+        // (m1) DAS SKELETT TRÄGT SEIN VOR — am Chokepoint, ohne GPU: die Reihenfolge des Täters ist in EINEM Bild zuerst der Knoten
+        // OHNE Vor (der Schatten-Pass), dann der MIT Vor (der Szenen-Pass eines Geschwisters mit geteiltem Bau: `setup` lief an
+        // ihm nie, sein Skelett trägt noch kein Vor)
+        const knochen = () => {
+            const haut = () => {
+                const [a, b] = [new T.Bone(), new T.Bone()];
+                a.add(b);
+                const m = new T.SkinnedMesh(new T.BufferGeometry(), new T.MeshBasicNodeMaterial());
+                m.add(a);
+                m.bind(new T.Skeleton([a, b]));
+                m.updateMatrixWorld(true);
+                return [m, b];
+            };
+            const SN = L.skinning(haut()[0]).constructor;
+            const K = { marke: typeof SN.__anazhBewegung };
+            let id = -1000000;
+            const lauf = (folge) => {
+                const [m, b] = haut();
+                const sk = m.skeleton;
+                const [ohne, mit] = [L.skinning(m), L.skinning(m)];
+                mit.previousBoneMatricesNode = L.referenceBuffer("skeleton.previousBoneMatrices", "mat4", sk.bones.length);
+                const bild = { object: m, frameId: --id };
+                ohne.update(bild);
+                mit.update(bild);
+                const V = sk.previousBoneMatrices;
+                const e = {
+                    steht: V instanceof Float32Array && V.length === sk.boneMatrices.length,
+                    laenge: V ? V.length : null,
+                    soll: sk.boneMatrices.length,
+                };
+                if (e.steht && folge) {
+                    // das Folgebild: der zweite Knochen steigt um 1 m — das Vor trägt die Knochen des vorigen Bilds (0), das Jetzt 1
+                    const bildVor = AR.__bewegungBild;
+                    try {
+                        AR.__bewegungBild = (AR.__bewegungBild | 0) + 1;
+                        b.position.y += 1;
+                        m.updateMatrixWorld(true);
+                        mit.update({ object: m, frameId: --id });
+                        [e.vor, e.jetzt] = [sk.previousBoneMatrices[29], sk.boneMatrices[29]].map((x) => +x.toFixed(6));
+                    } finally {
+                        AR.__bewegungBild = bildVor;
+                    }
+                }
+                m.material.dispose();
+                return e;
+            };
+            K.kopf = lauf(true);
+            // MUTANTE-M1: die alte Weiche (bild-kosten.js 2776 bis buendel-mittag 3) — sie wich nach dem Skelett, nie nach dem Leser
+            K.mutante = { steht: null };
+            if (K.marke === "function") {
+                const kopf = SN.prototype.update;
+                SN.prototype.update = function (frame) {
+                    const sk = frame.object && frame.object.skeleton ? frame.object.skeleton : this.skinnedMesh.skeleton;
+                    if (!sk.previousBoneMatrices) return SN.__anazhBewegung.call(this, frame);
+                    AR._bewegungKnochen(sk, frame.frameId);
+                };
+                try {
+                    K.mutante = lauf(false);
+                } finally {
+                    SN.prototype.update = kopf;
+                }
+            }
+            return K;
+        };
+        // (m2) EIN WURF STELLT DEN SCHIRM NICHT: der Stand des Renderers am Ende eines Bilds, wie ihn r184 um einen Pass stellt
+        const stand = () => {
+            const [z, m] = [rend.getRenderTarget(), rend.getMRT()];
+            return {
+                ziel: z ? (z.texture && z.texture.name) || "ein Ziel" : "leinwand",
+                mrt: m ? Object.keys(m.outputNodes).join("+") : "ohne",
+                ton: rend.toneMapping,
+                farbraum: rend.outputColorSpace,
+                rufTiefe: rend._callDepth,
+                buendel: rend._currentRenderBundle ? "offen" : "ohne",
+                autoClear: rend.autoClear,
+                deckend: rend.opaque,
+                durchsichtig: rend.transparent,
+                xr: rend.xr.enabled,
+                kontext: rend.contextNode === kontextVor,
+            };
+        };
+        const kontextVor = rend.contextNode;
+        let scharf = null,
+            geworfen = 0;
+        // der Wurf MITTEN im Szenen-Pass: die nahe Kiste wirft, sobald der Pass sie in sein Ziel zeichnet (einmal)
+        nah.onBeforeRender = () => {
+            if (scharf === null || rend.getRenderTarget() !== st.scenePass.renderTarget) return;
+            const text = scharf;
+            scharf = null;
+            geworfen++;
+            throw new Error(text);
+        };
+        // (die Aufnahme nach dem Wurf: höchstens drei Versuche — reißt sie dreimal, bricht die Probe mit ihrem letzten Fehler
+        // beim Namen; ein leeres Bild ist kein Urteil über den Schirm)
+        const mitte = async () => {
+            let u8 = null;
+            for (let v = 1; !u8; v++) {
+                setzeKamera();
+                try {
+                    ({ u8 } = await window.__ausgabeAufnahme(32, 24, 1, { satz: "messung" }));
+                    if (!u8 || u8.length < 32 * 24 * 4) throw new Error(`die Aufnahme trägt ${u8 ? u8.length : 0} Byte`);
+                } catch (e) {
+                    u8 = null;
+                    if (v >= 3) throw new Error(`(m) die Bild-Mitte: die Aufnahme riss dreimal — ${e.message}`);
+                    bilder(1);
+                }
+            }
+            const px = (x, y) => [0, 1, 2].map((c) => u8[(y * 32 + x) * 4 + c]);
+            const m = [px(15, 11), px(16, 11), px(15, 12), px(16, 12)];
+            return [0, 1, 2].map((c) => Math.round(m.reduce((a, p) => a + p[c], 0) / 4));
+        };
+        const wurf = async (marke, mutiert) => {
+            const w = { fehler: [] };
+            st.postProcessingFailed = false;
+            seit = 0;
+            bilder(nFrames);
+            w.vor = stand();
+            const merk = r._rendererStand(rend, []);
+            // MUTANTE-M2: die Rückkehr des Stands fällt aus (der Fang in `_loopRender` stellt nichts zurück)
+            if (mutiert)
+                r._rendererStand = function (R, M, zurueck) {
+                    return zurueck === true ? M : AR.prototype._rendererStand.call(this, R, M, zurueck);
+                };
+            const n0 = geworfen;
+            scharf = `${TEXT} (${marke})`;
+            try {
+                bilder(1);
+            } catch (e) {
+                w.fehler.push(fehlerStapel(e).split("\n").slice(0, 3).join(" ← "));
+            } finally {
+                scharf = null;
+                delete r._rendererStand;
+            }
+            w.geworfen = geworfen - n0;
+            w.direkt = st.postProcessingFailed === true;
+            w.nach = stand();
+            // der Stand der Probe kehrt zurück (die Mutante ließ ihn stehen)
+            if (mutiert) r._rendererStand(rend, merk, true);
+            else {
+                // der Schirm folgt der Kamera: die Bild-Mitte zeigt die nahe Kiste, vier Meter daneben die ferne
+                w.mitteNah = await mitte();
+                seit = 4;
+                w.mitteSeit = await mitte();
+                seit = 0;
+            }
+            st.postProcessingFailed = false;
+            bilder(nFrames);
+            return w;
+        };
+        // (m3) DIE LEINWAND EINER BÜHNE GILT FÜR EINE TIEFE: eine Bühne des Spiels mit eigener Leinwand am Welt-Renderer
+        const leinwand = async () => {
+            const B = { laeufe: [] };
+            const wer = "post-kette:LEINWAND";
+            const lw = document.createElement("canvas");
+            lw.style.cssText = "position:fixed;left:0;top:0;width:64px;height:48px;pointer-events:none";
+            document.body.appendChild(lw);
+            const ziel = r._buehneRenderer(lw, 64, 48, 0x202020, wer, () => {});
+            const sz = new T.Scene();
+            const kiste = new T.Mesh(new T.BoxGeometry(1, 1, 1), stoff(0xff2020));
+            sz.add(kiste);
+            const k2 = new T.PerspectiveCamera(50, 64 / 48, 0.1, 50);
+            k2.position.set(0, 0, 1.6);
+            k2.lookAt(0, 0, 0);
+            k2.updateMatrixWorld(true);
+            // die Mitte ihrer Leinwand, im selben Faden-Schritt gelesen (die Leinwand hält ihr Bild bis zum Ende des Schritts)
+            const lesen = () => {
+                const c = document.createElement("canvas");
+                [c.width, c.height] = [lw.width, lw.height];
+                const g = c.getContext("2d", { willReadFrequently: true });
+                g.drawImage(lw, 0, 0);
+                const d = g.getImageData((c.width >> 1) - 1, (c.height >> 1) - 1, 2, 2).data;
+                return [0, 1, 2].map((k) => Math.round((d[k] + d[4 + k] + d[8 + k] + d[12 + k]) / 4));
+            };
+            // ein Lauf: die Bühne zeichnet, bis kein Bürger mehr auf Bau oder Pipeline wartet (`ganz`, das Maß des Spiels)
+            const zeichne = async (name) => {
+                const l = { name, tiefe: rend.depth };
+                const gpuVor = aus.gpuFehler.length;
+                for (let i = 0; i < 120; i++) {
+                    try {
+                        r._buehneRender(ziel, sz, k2, wer);
+                        l.mitte = lesen();
+                    } catch (e) {
+                        l.wurf = fehlerText(e).slice(0, 200);
+                        break;
+                    }
+                    if (i > 0 && ziel.buehne.ganz === true) break;
+                    await sleep(25);
+                }
+                l.ganz = ziel.buehne.ganz === true;
+                await dev.queue.onSubmittedWorkDone();
+                l.gpu = aus.gpuFehler.length - gpuVor;
+                if (l.gpu) l.gpuText = aus.gpuFehler[gpuVor];
+                aus.gpuFehler.length = gpuVor;
+                B.laeufe.push(l);
+            };
+            try {
+                st.postProcessingFailed = false;
+                bilder(2);
+                await zeichne("Kette");
+                st.postProcessingFailed = true;
+                bilder(1);
+                await zeichne("Direktpfad");
+                st.postProcessingFailed = false;
+                bilder(1);
+                await zeichne("Kette zurück");
+                // MUTANTE-M3: die Bühne behält ihren Deskriptor (der Stand vor dem Schnitt: nur der der Welt-Leinwand fiel)
+                B.meldungen = (
+                    await stumm(async () => {
+                        r._leinwandTiefeGilt = function (R, z) {
+                            if (z !== ziel) return AR.prototype._leinwandTiefeGilt.call(this, R, z);
+                        };
+                        try {
+                            st.postProcessingFailed = true;
+                            bilder(1);
+                            await zeichne("MUTANTE-M3");
+                        } finally {
+                            delete r._leinwandTiefeGilt;
+                        }
+                        return {};
+                    })
+                ).meldungen;
+            } finally {
+                delete r._leinwandTiefeGilt;
+                r._leinwandTiefeGilt(rend, ziel);
+                st.postProcessingFailed = false;
+                bilder(2);
+                if (ziel.buehne.rt) ziel.buehne.rt.dispose();
+                ziel.dispose();
+                lw.remove();
+                kiste.geometry.dispose();
+                kiste.material.dispose();
+            }
+            return B;
+        };
+        try {
+            aus.knochen = knochen();
+            st.scene.add(gruppe);
+            aus.szene = { kopf: await wurf("Kopf", false) };
+            aus.szene.mutante = await stumm(() => wurf("MUTANTE-M2", true));
+            st.scene.remove(gruppe);
+            aus.leinwand = await leinwand();
+            await dev.queue.onSubmittedWorkDone();
+        } catch (e) {
+            aus.abbruch = fehlerStapel(e).split("\n").slice(0, 4).join(" ← ");
+        } finally {
+            delete r.log;
+            delete r._rendererStand;
+            delete r._leinwandTiefeGilt;
+            st.postProcessingFailed = false;
+            st.scene.remove(gruppe);
+            for (const m of [nah, fern]) {
+                m.geometry.dispose();
+                m.material.dispose();
+            }
+            dev.removeEventListener("uncapturederror", gpuHoer);
+            window.__buehne();
         }
         return aus;
     })();
@@ -2612,7 +3112,7 @@ function rauchProbe(ort, P) {
         "=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays · Zugang · Rauch ==="
     );
     await server.lausche(0);
-    const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: ERZWUNGEN });
+    const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: ERWARTET });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });
     // die ERROR-Zeilen der Seite (das Spiel meldet über `log(…, "ERROR")` → console.log „[ERROR]")
@@ -2630,6 +3130,9 @@ function rauchProbe(ort, P) {
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(SK.SHADER_INSTALL);
         out = await page.evaluate(buehne, N_FRAMES, DUNKEL_NACHT_LICHT, FLAMME_PROBE, TOR_PROBE, KNIE_PROBE);
+        // (m) Knochen-Vor · Wurf im Szenen-Pass · Bühnen-Leinwand — am Ort der Bühne, vor der ungeraden Leinwand
+        if (out.buehne) out.wurf = await page.evaluate(wurfProbe, out.buehne, N_FRAMES, WURF_TEXT);
+        for (const z of wurfZeilen(out.wurf)) log(z);
         // (j3) der GANZE Stamm (Lehre 12: über scripts/lib/stamm.cjs, ohne Kommentare): außerhalb von `_nachtAuge` liest niemand
         // die Schwellen des Auges (`fehlt.wo` nennt den Zwilling mit Datei und Zeile)
         if (out.flamme && out.flamme.quelle)
@@ -2746,6 +3249,8 @@ function rauchProbe(ort, P) {
             `der Rauch ist EIN Bild (Unterseite ${rauchVerh(out.rauch.unten)}× die Oberseite, flach ${rauchVerh(out.rauch.mutUnten)}×; zwei Ballen ein Muster ${out.rauch.koerper.gleich}, am Ballen ${out.rauch.mutKoerper.gleich}; ` +
             `der Zug streckt ${out.rauch.zug.quer.form}, längs des Blicks ${out.rauch.zug.laengs.form}, ohne Streckung ${out.rauch.mutZug.quer.form}; Fahne und Kamin aus \`_rauchStoff\`); ` +
             `die Zunge verdunkelt ihren Grund nicht (${out.zunge.z1.dunkel} von ${out.zunge.z1.px} Pixeln vor der Karte am Mittag, MUTANTE-L ${out.zunge.mut.z1.dunkel}) und trägt die Lichtstärke ihres Gesetzes ` +
-            `(${out.zunge.z2.cd} cd gegen ${out.zunge.z2.sollCd} cd, MUTANTE-L ${out.zunge.mut.z2.cd} cd).`
+            `(${out.zunge.z2.cd} cd gegen ${out.zunge.z2.sollCd} cd, MUTANTE-L ${out.zunge.mut.z2.cd} cd); ` +
+            `ein Wurf im Szenen-Pass stellt den Schirm nicht (Stand danach wie davor, die Mitte ${JSON.stringify(out.wurf.szene.kopf.mitteNah)}, daneben ${JSON.stringify(out.wurf.szene.kopf.mitteSeit)}; MUTANTE-M2 ${standDiff(out.wurf.szene.mutante.vor, out.wurf.szene.mutante.nach).join(" · ")}), ` +
+            `das Skelett trägt sein Vor (MUTANTE-M1 ohne), die Bühne zeichnet mit jeder Leinwand-Tiefe (MUTANTE-M3 wirft).`
     );
 })();
