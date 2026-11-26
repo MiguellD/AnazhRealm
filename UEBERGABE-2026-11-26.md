@@ -1,8 +1,17 @@
-# ÜBERGABE 26.11.2026 abends — Konto 20 → nächstes Konto (Stand beim Sichern 18:05, Zeiten aus `date` der Radeon)
+# ÜBERGABE 26.11.2026 abends — Konto 20 → nächstes Konto (Stand beim Sichern 18:05, Nachtrag 18:57; Zeiten aus `date` der Radeon)
 
 **ZUERST:** Fach 1 in MEMORY.md ganz · dann dieser Block · dann unten nur die NACHTRÄGE ab 17:20 (das Blatt darunter ist die Chronik des Tages).
 
 ## STAND BEIM SICHERN
+
+**NACHTRAG 18:57 (gilt VOR den Punkten 2 und 3):** jaeger-stand ist GELANDET — Batterie 21 von 22 Jobs grün, 0 rot, GPU-Probe 3 von 3,
+Stempel w28-jaeger-stand 84742e43 (18:34), z789 → **main 4a188bf2d08cd6263e74d21d40d3ec220e789e9d** (V18.546.439, 18:56), gebucht ohne
+Anspruch (koordination 6de6953e). Die Nachwache am Vor-Kopf 99649186 stand um 18:27 GRÜN (voll 18/18, Lauf 45863400473) — damit ist die
+Batterie des Mittags-Bündels gelesen; NICHT gelesen bleiben seine Probe-Tore und Stationen sowie alles am Kopf 4a188bf2 (Nachwache läuft).
+Die Notbremse lief um 18:17 mit Exit 0 (WIP an w27-swift-raus b99519d2 · w27-wald-kosten-heim 2559cf31 · heim3-w20-wald-kosten 5a27a85d ·
+w27-wand-tag a84ffe40; vier Bäume ohne Zweig übersprungen, dort nicht nachgesehen). Der Runden-Sprung trägt jetzt BEIDE Landungen:
+`node A/runde-jetzt.cjs sprung C:/Users/micha/AnazhRealm-profiband 54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb 4a188bf2d08cd6263e74d21d40d3ec220e789e9d "Landungen buendel-mittag und jaeger-stand"`
+— weiter erst, wenn der Schöpfer die Radeon freigibt. Karte 2 um 18:21: 130 von 1 718.
 
 1. **Karte 2: 130 von 1 718** · nötig 76 je Tag, gemessen 20 je Tag. Plan Abschnitt 10 (punkte-maschine `vision/PLAN-1712.md`): fünf Messnamen,
    die JEDER Bericht nennt — Buchungen ÷ Ansprüche (0 ÷ 6; nötig ≥ 0,7) · Buchungen ÷ Landungen (0,7; ≥ 3) · ungemessene Stationen der
@@ -14,7 +23,7 @@
      `node A/runde-jetzt.cjs sprung C:/Users/micha/AnazhRealm-profiband 54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb 9964918608a72e1bbc6972925a4820eac5b53d0f "Landung buendel-mittag"`
      (A = Scratchpad der Sitzung 020b359f; die Wache meldete um 17:45 „LEERLAUF RADEON seit 74 min“).
    - Die integrierte Version SELBST spielen, drei Bilder an den Schöpfer (Dorfplatz, Nacht am Genesis-Platz, Fahrzeug in Fahrt).
-3. **jaeger-stand (OMEN):** Vorprüf-Kopf c8724c8b8dde749f539bd0c4aa2b67e0d4603714 auf main 99649186, PROBE-TAG OK (hier gefahren), Batterie läuft.
+3. **jaeger-stand (OMEN) — ERLEDIGT, siehe Nachtrag 18:57 oben; der Rest dieses Punkts ist Chronik:** Vorprüf-Kopf c8724c8b8dde749f539bd0c4aa2b67e0d4603714 auf main 99649186, PROBE-TAG OK (hier gefahren), Batterie läuft.
    Die Stempel-Kette hing an meiner Sitzung — lebt sie nicht mehr:
    `bash S/kette2.sh jaeger-stand c8724c8b8dde749f539bd0c4aa2b67e0d4603714 S/satz-jaeger-stand.txt w28-jaeger-stand`
    (S = Scratchpad der Sitzung 277b6ec2; der Satz steht auch im Nachtrag 17:23 unten). Kein Anspruch fährt mit.
