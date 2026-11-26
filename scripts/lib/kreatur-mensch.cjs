@@ -198,8 +198,12 @@ async function menschBuehnen() {
                     // der Wirt die Orte eines Menschen stellt), einmal je Stunde der Wende (`tagAb`, `_bewohnerZiel`, gleich ab
                     // wo gesucht) — der Tag misst ≥ 24 Spielstunden, die Wende an seinem Rand zählt einmal; Beiseitetreten
                     // (`_bewohnerPlatz`), der Weg zurück und der gerückte Stand wechseln kein Ziel
-                    if (b.ziel !== sp.ziel && ab(sp.ziel, b.ziel) >= A.BEWOHNER.gangM) sp.n.add(((b.tagAb + 24) % 24).toFixed(4)); // prettier-ignore
-                    sp.ziel = b.ziel;
+                    // (die Runde der Wache ist Weg IM Werk — koerper TAGES_GESETZ.zeitArt streife „arbeit“, HETUS 2008: „travel
+                    // during main job“ —: der Schritt vom Posten in die Runde, von Punkt zu Punkt und zurück wechselt kein Ziel des
+                    // Tags; der Gang von daheim zum ersten Punkt bleibt ein Weg, rollen-des-tages)
+                    const runde = b.akt === "streife" ? sp.akt === "streife" || sp.akt === "arbeit" : sp.akt === "streife" && b.akt === "arbeit"; // prettier-ignore
+                    if (b.ziel !== sp.ziel && !runde && ab(sp.ziel, b.ziel) >= A.BEWOHNER.gangM) sp.n.add(((b.tagAb + 24) % 24).toFixed(4)); // prettier-ignore
+                    [sp.ziel, sp.akt] = [b.ziel, b.akt];
                     // (am Steuer gehört der Leib dem Wagen: ob er steckt, urteilt der Verkehr — gate:fahr-leben VK `fest`)
                     const da =
                         b.amSteuer || (b.drinnen ? !b.hinaus : !b.ziel || (!b.drinnenSoll && ab(P, b.ziel) < 1.5));

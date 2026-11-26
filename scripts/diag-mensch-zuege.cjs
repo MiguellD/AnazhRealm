@@ -193,8 +193,11 @@ const ROLLEN_OFFEN = {
     "waechter haeuslich": [19, 33],
     // das fleißige Kind hilft nur am Werk SEINES Hauses und erst ab 9 J (TAGES_GESETZ.kindHilftAbJ; Fabrikgesetz 1833: kein Kind
     // unter 9 in der Fabrik) — unter 9 oder im Wohnhaus ohne Werk spielt es wie jedes Kind, sein Zug zeigt sich am Tag nicht;
-    // gelesen werden die Helfer (4 von 24: ab 9 J am Werk des Hauses), der Rest liest gesellig
-    "kind fleissig": [4, 24],
+    // gelesen werden die Helfer, der Rest liest gesellig. Die Zahl, unter die es nicht fällt, nennt das GESETZ in dieser Probe
+    // („helfer“: je fleißiges Kind ab kindHilftAbJ in einem Haus mit Werk, gezählt am Haus und am Alter, nie an der Bindung) —
+    // bis rollen-des-tages stand hier die Ziehung [4, 24]: jede neue Rolle verschiebt die Samen und die Häuser der Probe (Jäger
+    // und Fischer: 2 von 25 bei unveränderter Quote — über 20 000 Samen 0,174 am Zweig, 0,168 an main)
+    "kind fleissig": "helfer",
 };
 function rollenDerStadt(K) {
     const G = K.TAGES_GESETZ;
@@ -215,7 +218,8 @@ function rollenDerStadt(K) {
         for (let k = 0; k < 100; k++) {
             const same = (Math.imul(k + 1 + 1000 * ROLLEN.indexOf(R), 0x9e3779b1) ^ 0x5bd1e995) >>> 0;
             const s = R === "kind" ? k % slots.length : sR >= 0 && R !== "wohnhaus" ? sR : k % 18;
-            const B = K.tagesBindung(TC, same, R, s, orte, null, null, R === "kind" ? 1 + (k % 14) : undefined);
+            const jahre = R === "kind" ? 1 + (k % 14) : undefined;
+            const B = K.tagesBindung(TC, same, R, s, orte, null, null, jahre);
             const stelle = (wo) => (B[wo] < 0 || (B[wo] === s && wo !== "werk") ? null : { name: wo, i: B[wo] });
             const werk = stelle("werk") && (B.werk !== s || R !== "wohnhaus") ? stelle("werk") : null;
             const O = { heim: { name: "heim" }, werk, platz: stelle("platz"), mahl: stelle("mahl"), abend: stelle("abend"), besuch: stelle("besuch"), hilft: !!B.hilft }; // prettier-ignore
@@ -225,9 +229,12 @@ function rollenDerStadt(K) {
                 worte.push(`${p.wo}:${p.akt}:${+p.drinnen}`);
             }
             const ist = K.tagesZug(same);
-            const z = (T[ist] = T[ist] || { n: 0, ok: 0, als: {} });
+            const z = (T[ist] = T[ist] || { n: 0, ok: 0, als: {}, helfer: 0 });
             const rat = zuordnen({ rolle: R, worte }, K)[0];
             z.n++;
+            // (der Helfer, den das Gesetz nennt: das Kind ab kindHilftAbJ in einem Haus mit Werk, das kein Wohnhaus ist)
+            const H = orte[s];
+            if (jahre >= G.kindHilftAbJ && H.art !== "wohnhaus" && H.bietet && H.bietet.arbeit > 0) z.helfer++;
             if (rat === ist) z.ok++;
             else z.als[rat] = (z.als[rat] || 0) + 1;
         }
@@ -242,7 +249,8 @@ function rollenRot(u) {
             const Z = T[z];
             if (!Z) continue;
             const was = `${R} ${z} ${Z.ok}/${Z.n}`;
-            const O = ROLLEN_OFFEN[`${R} ${z}`];
+            const O0 = ROLLEN_OFFEN[`${R} ${z}`];
+            const O = O0 === "helfer" ? [Z.helfer, Z.n] : O0;
             if (O && Z.ok / Z.n >= 0.6) rot.push(`${was} ≥ 0,6 — die offene Zeile ist geheilt, streiche sie (ROLLEN_OFFEN)`);
             else if (O && Z.ok / Z.n >= O[0] / O[1]) offen.push(`${was} (offen, nie unter ${O[0]}/${O[1]})`);
             else if (Z.ok / Z.n < 0.6) rot.push(`${was} < 0,6 (gelesen als ${JSON.stringify(Z.als)})`);

@@ -1,0 +1,85 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-mensch-nahrung.js b/meisterkarte-quelle/punkte/stationen/k2-mensch-nahrung.js
+index f373904..e3062b4 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-mensch-nahrung.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-mensch-nahrung.js
+@@ -15,24 +15,33 @@ const { FAECHER } = require("./faecher.js");
+ // Plan des Dorfs, wie der Faden ihn baut (fachwerk `exportSettlement`, die Epoche der Saat; ~1 s je Saat, darum je Saat einmal im
+ // `mit` des Fächers gehalten), seine Orte nach dem Gesetz des Tags (koerper-core `tagesOrte`), und zur Stunde a.zeit je Slot der Plan
+ // seines Bewohners (koerper-core `tagesPlan` — derselbe Ruf wie der Wirt, stamm/siedlung-bewohner.js:2239): gezählt, wer zur Jagd oder
+-// zum Fischen geht (Tat, Ort oder Rolle: Jagd, Wild, Fisch)
++// zum Fischen geht (Tat, Ort oder Rolle: Jagd, Wild, Fisch). DER JÄGER (rollen-des-tages): die Rolle trägt ihr Tages-Angebot —
++// das Revier hinter dem Saum der Äcker (`tagesOrte`), die Wohnhäuser nächst ihm stellen den Jäger (koerper `tagesJagdWahl`, so viele,
++// wie `tagesJagdHaushalte` nennt — dieselbe Wahl wie der Wirt, stamm/siedlung-bewohner.js `_bewohnerListe`), sein Plan geht zur
++// Jagd am Revier (`tagesPlan(…, "jaeger", …)`, TAGES_GESETZ.rollen.jaeger)
+ const JAGD_AN = async (r, T, a, mit) => {
+     const FC = globalThis.__fachwerkCore, KC = window.__koerperCore;
+     if (!FC || !KC || typeof KC.tagesPlan !== "function" || typeof KC.tagesOrte !== "function") return { fehlt: "der Kern trägt kein Gesetz des Tags (koerper-core tagesPlan / tagesOrte)" };
++    if (typeof KC.tagesJagdWahl !== "function") return { fehlt: "der Kern trägt keine Wahl der Jäger (koerper-core tagesJagdWahl)" };
+     const halt = (mit.plaene = mit.plaene || {});
+-    if (!halt[a.saat]) halt[a.saat] = KC.tagesOrte(FC.exportSettlement({ seed: a.saat, nH: mit.nH, epoche: FC.siedlungsEpoche(a.saat) }));
+-    const orte = halt[a.saat];
++    if (!halt[a.saat]) {
++        const orte = KC.tagesOrte(FC.exportSettlement({ seed: a.saat, nH: mit.nH, epoche: FC.siedlungsEpoche(a.saat) }));
++        const rev = orte.find((o) => o.art === "revier") || null;
++        const wohn = orte.filter((o) => o.slot != null && o.art === "wohnhaus");
++        halt[a.saat] = { orte, rev, platz: orte.find((o) => o.art === "platz") || null, jaeger: new Set(KC.tagesJagdWahl(wohn, orte.filter((o) => o.slot != null).length, rev).map((i) => wohn[i])) }; // prettier-ignore
++    }
++    const { orte, rev, platz, jaeger } = halt[a.saat];
+     const JAGD = /jag|jagd|fisch|angel|wild|beute/i;
+     let jagd = 0, bewohner = 0;
+     const taten = {};
+     for (const o of orte) {
+         if (o.slot == null) continue;
+         bewohner++;
+-        const p = KC.tagesPlan(a.saat * 1000 + o.slot, o.art, a.zeit, orte);
++        const p = jaeger.has(o) ? KC.tagesPlan(a.saat * 1000 + o.slot, "jaeger", a.zeit, { heim: o, werk: rev, platz, besuch: null }) : KC.tagesPlan(a.saat * 1000 + o.slot, o.art, a.zeit, orte); // prettier-ignore
+         taten[p.akt] = (taten[p.akt] || 0) + 1;
+         if (JAGD.test(String(p.akt)) || JAGD.test(String(p.wo)) || JAGD.test(String(o.art))) jagd++;
+     }
+-    return { jagd, bewohner, taten, rollen: [...new Set(orte.map((o) => o.art))].join(",") };
++    return { jagd, bewohner, taten, jaeger: jaeger.size, revier: !!rev, rollen: [...new Set(orte.map((o) => o.art))].join(",") };
+ };
+ 
+ // DER ZENSUS DER SIEDLUNG (jede Leiter der Perspektive): warten, bis die Siedlung am Messort ihre Bewohner trägt und nichts mehr offen
+@@ -777,7 +786,7 @@ module.exports = (F) => [
+             // der Fächer braucht die Bühne nicht
+             await K.schritt(2, async () => {
+                 const R = await H.seite.FAECHER(K.welt, {
+-                    gesetz: { fn: H.seite.JAGD_AN, export: "koerper-core.js:5459 tagesOrte + :5630 tagesPlan (TAGES_GESETZ :5300)", leser: "stamm/siedlung-bewohner.js:2239" },
++                    gesetz: { fn: H.seite.JAGD_AN, export: "koerper-core.js:5609 tagesOrte + :5658 tagesJagdWahl + :6088 tagesPlan (TAGES_GESETZ :5375)", leser: "stamm/siedlung-bewohner.js:1335 _bewohnerListe (tagesJagdWahl) · :3047 _bewohnerSoll (tagesPlan)" },
+                     adressen: { saaten: 8, zeiten: Array.from({ length: 24 }, (_, h) => h + 0.5) },
+                     mit: { nH: 60 },
+                     ms: Math.max(4000, Math.floor((H.rest() - 4) * 1000)),
+@@ -789,15 +798,18 @@ module.exports = (F) => [
+                         rollen: { wie: "verschieden", feld: "rollen" },
+                     },
+                     schlecht: { feld: "jagd", richtung: "min" },
+-                    ungemessen: ["der Wildbestand unter der Jagd (ohne Jäger keine Jagd, die ihn senkt)"],
++                    ungemessen: ["der Wildbestand unter der Jagd (die Beute nimmt je Jagdtag mit 27 % einen Kopf aus dem Bestand am Revier — `_bewohnerBeute` → `_bestandAus`; die Änderung zeigt erst die Uhr der Welt über Tage)"],
+                 });
+                 H.zeile("Tier S2: " + R.akte.slice(0, 400));
+-                if (R.fehlt) return K.leser(2, { fehlt: R.fehlt, wo: "koerper-core.js:5630" });
++                if (R.fehlt) return K.leser(2, { fehlt: R.fehlt, wo: "koerper-core.js:5658 tagesJagdWahl" });
+                 const w = R.werte;
+-                return K.nicht(2, {
++                // (rollen-des-tages: der Umfang ist die Zahl der Jäger je Saat, die Jagden je Tag sind die Stunden der Jagd aller Jäger
++                // der Saat — Mittel über 8; der Wildbestand bleibt null, bis die Uhr der Welt Tage der Jagd trägt)
++                return K.zahl(2, {
+                     n: w.jaegerJeSaat,
+-                    fehlt: "Bewohner, die jagen und fischen (8 Saaten): " + w.jaegerJeSaat + " Jäger je Saat, " + w.jagdJeTag + " Jagden je Tag; die Taten des Tags " + Object.keys(w.taten).join("/") +
+-                        " — koerper-core.js:5300 TAGES_GESETZ trägt keine Rolle, die jagt oder fischt · " + R.akte,
++                    werte: { jagdJeTag: w.jagdJeTag, wildDelta: null },
++                    beleg: "Bewohner, die jagen und fischen (8 Saaten): " + w.jaegerJeSaat + " Jäger je Saat, " + w.jagdJeTag + " Jagden je Tag; die Taten des Tags " + Object.keys(w.taten).join("/") + " · " + R.akte, // prettier-ignore
++                    taeter: !(w.jaegerJeSaat >= 1) ? "koerper-core.js TAGES_GESETZ.rollen.jaeger · tagesOrte (Revier) · tagesJagdWahl — keine Rolle, die jagt oder fischt" : "der Wildbestand unter der Jagd ist ungemessen (die Uhr der Welt über Tage der Jagd)", // prettier-ignore
+                 });
+             let Z = null, zf = "";
+             try {
+@@ -830,7 +842,7 @@ module.exports = (F) => [
+         seite: { ZENSUS, TIER, FAECHER, JAGD_AN },
+         sprossen: {
+             1: { umfang: { soll: 1, wort: "an den Spieler gebundenes Tier" }, masse: [{ key: "p95", wort: "Abstand p95 zum Spieler über den Hang (m)", soll: 5, richtung: "≤" }, { key: "hub", wort: "Anstieg des Wegs über den Hang (m)", soll: 0, richtung: ">" }] },
+-            2: { umfang: { soll: 1, wort: "jagende oder fischende Bewohner (je Saat, 8 Saaten)" }, masse: [{ key: "jagdJeTag", wort: "Jagden je Tag", soll: 1, richtung: "≥" }, { key: "wildDelta", wort: "Änderung des Wildbestands", soll: 0, richtung: "<" }], erwartet: "nicht", fehlt: "kein Bewohner jagt oder fischt" },
++            2: { umfang: { soll: 1, wort: "jagende oder fischende Bewohner (je Saat, 8 Saaten)" }, masse: [{ key: "jagdJeTag", wort: "Jagden je Tag", soll: 1, richtung: "≥" }, { key: "wildDelta", wort: "Änderung des Wildbestands", soll: 0, richtung: "<" }] },
+             3: { umfang: { soll: 100, wort: "Tiere in einer Herde mit Hirte" }, masse: [{ key: "gras", wort: "Rückgang der Grasdeckung nach 30 Tagen (Anteil)", soll: 0.2, richtung: "≥" }, { key: "viehpfad", wort: "Viehpfad im Boden (getretene Fläche, m²)", soll: 0, richtung: ">" }], erwartet: "nicht", fehlt: "keine Herde, kein Hirte" },
+             4: { umfang: { soll: 1000, wort: "Haustiere aus der Wildfauna" }, masse: [{ key: "haustier", wort: "Saaten mit Haustier", soll: 0.8, richtung: "≥" }, { key: "gestalt", wort: "Gestalt-Distanz Haustier ↔ Wildform im Soll (Anteil)", soll: 1, richtung: "≥" }], erwartet: "nicht", fehlt: "keine Haustiere" },
+             5: { umfang: { soll: 1, wort: "Fischerei mit Bestand und Fang" }, masse: [{ key: "kollaps", wort: "Bestandsrückgang bei Übernutzung (Anteil)", soll: 0.5, richtung: "≥" }], erwartet: "nicht", fehlt: "keine Fischerei" },
