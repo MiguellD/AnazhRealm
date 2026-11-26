@@ -11322,7 +11322,7 @@
   },
   "karte2.leben.evolution.fremde-physik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) — zuletzt an 2da17e2e: Wirt-Wache: den Kontext der Probe hält noch: if (!window.__fehlt) { window.__codeOf = ((oK) => (f) => oK(String(f)))(function ohneKommentare(src, ohneLiterale = fals — Heap nach der Rücknahme 196.5 →  · karte2.leben.evolution.fremde-physik#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, planet-core.js, scripts/diag-kreatur-leben.cjs +13) — zuletzt an 2da17e2e: Wirt-Wache: den Kontext der Probe hält noch: if (!window.__fehlt) { window.__codeOf = ((oK) => (f) => oK(String(f)))(function ohneKommentare(src, ohneLiterale = fals — Heap nach der Rücknahme 192.7 →  · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) — zuletzt an 4c9e6aab: der Deckel der Leiter riss nach 25,04 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 25,04 s vor dem Wert der Sprosse · der Deckel der Leiter 2 · karte2.leben.evolution.fremde-physik#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, planet-core.js, scripts/diag-kreatur-leben.cjs +13) — zuletzt an 2da17e2e: Wirt-Wache: den Kontext der Probe hält noch: if (!window.__fehlt) { window.__codeOf = ((oK) => (f) => oK(String(f)))(function ohneKommentare(src, ohneLiterale = fals — Heap nach der Rücknahme 192.7 →  · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.fremde-physik#1",
@@ -11330,7 +11330,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 2da17e2e: Wirt-Wache: den Kontext der Probe hält noch: if (!window.__fehlt) { window.__codeOf = ((oK) => (f) => oK(String(f)))(function ohneKommentare(src, ohneLiterale = fals — Heap nach der Rücknahme 196.5 → ",
+     "grund": "ungemessen (R10) — zuletzt an 4c9e6aab: der Deckel der Leiter riss nach 25,04 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 25,04 s vor dem Wert der Sprosse · der Deckel der Leiter 2",
      "ungemessen": true,
      "beide": true
     },
@@ -37788,8 +37788,8 @@
   "ohne": 3255
  },
  "kopfVoll": "64fcf12e68b47704c5d88094e14476ea64a088da",
- "zeit": "2026-11-26T06:06:23.592Z",
- "vorher": "e71f2721",
+ "zeit": "2026-11-26T06:14:23.974Z",
+ "vorher": "64fcf12e",
  "bilanz": {
   "gewinn": [],
   "fall": [],
