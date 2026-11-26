@@ -20,16 +20,21 @@ BEGRÜNDUNG — same.kopplung.aufwaerts#1 (S1), Leser 2, 26.11.
      :1898  if (!e || e.werk !== true || …) return false;
      :1899  const g = this._grundrissVon(e);
      :1900  if (!g) return false;                                      ← still, ohne Meldung (fail-soft)
-   `_grundrissVon` (stamm/vegetation-baum.js:2114) liefert obb → fundament → `_hausHuelle`; seit „eine-huelle“ (:2142–2150) hat das
-   Haus bis zur Hülle KEINEN Grundriss. Die Hülle kommt nach dem Bau (asynchron); der Akt wird davor gerufen und fällt.
-   Kollision: 6bf32259a („eine-huelle“, Merge e807eec74, 24.11. 10:34) ↔ die Landung 5c650d13c (gemessen auf einem älteren main),
-   gemergt 11:42 als 70157f2d3. Seitdem ist der Bau über den Satz nie eine Tat.
+   `_grundrissVon(e, art, seed)` (stamm/vegetation-baum.js:2114) liefert obb → fundament → `_hausHuelle` → und NUR mit `art` den
+   Grundriss des Gesetzes (:2177 `_grundrissGesetz`). Seit „eine-huelle“ (77b0b1da7, 22.11.; :2142–2147) trägt ein Studio-Haus ohne
+   obb/fundament bis zur Hülle keinen; die Hülle kommt in der Seite nach dem Bau. `_werkAkt` (294690516, 24.11. „Die Tat schreibt
+   das Große“) fragt `this._grundrissVon(e)` OHNE die Art — `_werkOrtSuchen` (stamm/feld-leben.js:2998) fragt dasselbe Haus mit ihr.
+   Gegenprobe in der Seite, beim Bau: `_grundrissVon(h)` null · `_grundrissVon(h, h.type, h.seed)` {ex 3,96 · ez 5,15} · die Hülle
+   14 ms später {ex 3,75 · ez 5,15}. Der Code von `_werkAkt` und `_grundrissVon` ist an 03d2bba8d („gemessen headless … 10 von 10“)
+   und an main 4c9e6aab byte-gleich; in der echten Seite fällt der Akt: Wolke 0 von 10, Radeon 2da17e2e 1 von 10, f63a69ef 0 von 10
+   (messung/*.json „orteGeaendert 1 / 0 gegen Soll ≥ 10“). Ob headless die Hülle vor dem Akt steht, ist nicht nachgemessen.
    Zahl (s1-hand.cjs, warme Welt, 3 von 3 Läufen, gleiche Bedingung):
      spiel  huelleBeimBau false · grundrissBeimBau false · tatBeimBau 0 · tat 0 · orteGeaendert 0 von 10
      nach   derselbe Bau, `_werkAkt` von Hand, sobald die Hülle steht (huelleMs ≈ 20): tat 1 · orteGeaendert 10 von 10 ·
             lebendig Δ −0,069 … −0,010 (60 m … 1 000 m) · orteNachAbbau 0
      Die Folge des Felds stand in jedem Lauf (`_feldFolgeSteht` true) — die Reihe an stamm/feld-leben.js:2136 ist NICHT der Täter.
-   Heilung gehört ins Spiel (nicht in diesen Kandidaten): der Akt wartet auf den Grundriss, oder der Grundriss steht vor der Hülle.
+   Heilung gehört ins Spiel (nicht in diesen Kandidaten): `_werkAkt` fragt den Grundriss wie `_werkOrtSuchen`, mit der Art
+   (`_grundrissVon(e, e.type, e.seed)`) — das Gesetz trägt ihn beim Bau, die Hülle verfeinert ihn danach.
 
 4. DER SCHNITT (k2-zusammenspiel.aufwaerts-s1.diff, 7 Hunks, `git apply --check` an 179fab68 sauber)
    a) `vor = lies()` und der Gegenlauf `gegen` NACH dem Bild-Lauf (die Drift der 900 Takte zählt nicht mehr).

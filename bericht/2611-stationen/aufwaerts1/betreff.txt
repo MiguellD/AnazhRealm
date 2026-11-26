@@ -7,8 +7,9 @@ Stations-Fehler: meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js (punkt
   sofort nach `dslRun` — kein Zeuge, dass der Bau eine Tat wurde. Gezählt wird die Drift der Uhr, nicht das Haus (kalt 2 Orte, warm 0).
 
 Das SPIEL trägt die Sprosse heute nicht (Zahl und Täter in BEGRUENDUNG.txt): stamm/feld-leben.js:1899–1900 `_werkAkt` fällt still
-ohne Grundriss — `_grundrissVon` (stamm/vegetation-baum.js:2142 „eine-huelle“) trägt ihn erst mit der Hülle, die nach dem Bau kommt;
-stamm/feld-dsl.js:2134 ruft den Akt davor. Der Bau wird keine Zeile `bauen`, die Aura liest nichts: 0 von 10 Orten.
+ohne Grundriss — er fragt `_grundrissVon(e)` OHNE die Art, so trägt ihn erst die Hülle (stamm/vegetation-baum.js:2142 „eine-huelle“),
+die nach dem Bau kommt; stamm/feld-dsl.js:2134 ruft den Akt davor. Mit der Art trägt das Gesetz ihn beim Bau (ex 3,96 · ez 5,15).
+Der Bau wird keine Zeile `bauen`, die Aura liest nichts: 0 von 10 Orten (Wolke; Radeon 2da17e2e 1, f63a69ef 0).
 
 Schnitt (k2-zusammenspiel.aufwaerts-s1.diff, gegen punkte-maschine 179fab68): `vor` nach dem Bild; warten (Uhr steht,
 `tickFaunaLifecycle`), bis die Zeile `bauen` des Hauses in worldMeta.taten steht (Frist aktMs 3 000, im Rest des Deckels);
