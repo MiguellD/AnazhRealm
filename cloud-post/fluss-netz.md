@@ -102,7 +102,12 @@ auf main 54b89949 selbst ROT, geerbt, nicht berührt · gate:profiband EXIT 0 (d
   Ebene 0 nicht an. Messname `wang.cjs` „Anteil ins Meer“.
 - **Achse > 10 Breiten 7,7 %** (p95 73 Breiten) — der Neigungs-Deckel der Achse skaliert die ganze selbstähnliche Kurve auf
   |Y|/Sehne ≈ 0,03–0,05, weil der Mäander senkrecht zur Sehne schert; der Schnitt wäre der Mäander in der Normalen der lokalen Achse.
-  Die Variante Neigung 0,4 machte die Gerinne-Geraden schlechter und kostete +82 ms (verworfen). Messname `netz-mass` `achse.ueber10w`.
+  Die Variante Neigung 0,4 machte die Gerinne-Geraden schlechter und kostete +82 ms (verworfen). Gemessen ist auch der Schnitt selbst
+  (der Mäander in der Normalen der lokalen Achse, in `bahnPunkt`, der Polylinie und dem Spalten-Leser; 101 Saaten, gleiche Bedingungen):
+  Neigung 0,6 · 1,0 → `achse.ueber10w` 230 → 83 · 87, `ueber20w` 207 → 36 · 38, aber `ms.p50` 291 → 383 · 369 ms (+78 bis +93 ms,
+  über dem Budget von 70 ms), `ohneKanal.steigt` 674 → 751 · 793 (steigtMax 7,6 → 8,4 · 18,3 m), Gerade > 10 Breiten 16 → 17,
+  genauEng 139 → 149 · 148 — verworfen, weil die Kosten über dem Band liegen und der Kanal öfter steigt. Offen bleibt der billige Weg
+  dorthin (die Normale je Glied einmal in `achseBau` gecacht statt je Punkt). Messname `netz-mass` `achse.ueber10w` · `ms.p50`.
 - **L2/L1 0,99** — Ströme 2. Ordnung der Ebene 1 enden nach einem Glied auf der Rinne der Ebene 0 (parallele D8-Ketten auf dem
   400-m-Gitter). Messname `horton-netz` „L2/L1 p50“.
 - **Gerinne-Gerade > 10 Breiten: 16 Läufe (0,5 %, max 10,54)**. Messname `netz-mass` `gerade.ueber10w`.
