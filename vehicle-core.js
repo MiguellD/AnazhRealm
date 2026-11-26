@@ -3802,7 +3802,7 @@
             ebeneTol: 0.5, // m: so nah muss der Grund unter dem Ursprung an einer steilen Ebene liegen (sonst: Kante)
             stufeRad: 0.5, // Anteil radR: die Stufe, die ein Rad in einem Schritt hinaufsteigt (hoeher ist eine Wand)
             radHub: 0.6, // Anteil radR: so weit federt ein Rad einzeln zu seinem Boden (die Ebene der vier ist eine Ebene)
-            luftEps: 0.02, // m: so weit unter der Fallkurve verliert das Rad den Griff (darunter haftet es)
+            luftEps: 0.02, // m: der Reifen ueber dem Federweg (auf.hub): so weit unter der Fallkurve greift das Rad noch
             nickMax: 0.12, // rad: Anschlag der Nick-/Wank-Feder
             hubMax: 0.08, // m: Anschlag der Hub-Feder (der Landestoss schlaegt hier an)
             hubBoden: 1, // Anteil des Boden-Stosses, den die Hub-Feder als Fusspunkt-Erregung traegt (fahrzeug.K5)
@@ -4498,8 +4498,17 @@
             // seine Steig-Rate ist die JETZIGE Fahrt auf der Ebene des letzten Schritts. Vorher trug z.vy die Rate von gestern:
             // jeder Sprung der Fahrt (der Stoß an den Geparkten, die Antwort der Hülle) ließ die Vertikale zurück — am Gefälle
             // hob der gestoßene GT ab (24 m/s: 0,11 m in der Luft nach 7 Schritten, gate:klang-zensus F „die Vorbeifahrt schweigt").
+            // ZWISCHEN AUFBAU UND BODEN FEDERT DAS RAD (fahrzeug-medium-2): faellt die Ebene unter die Fallkurve, faellt der
+            // Aufbau frei, und jedes Rad folgt seinem Boden um seinen Federweg (`auf.hub`, derselbe, um den es in fahrEbene
+            // einzeln zu seinem Boden federt) und den Reifen (luftEps) — erst darueber verliert es den Griff (`luft`). Im Spalt
+            // traegt der Aufbau seine Vertikale (er liegt nicht auf der Ebene); er landet auf den Federn. Bis hier verlor das
+            // Rad den Griff 2 cm unter der Fallkurve, und die Rate des Bodens ersetzte im Spalt je Schritt den Fall. Nur wo die
+            // Ebene TRAEGT: auf einer Kante (`eb.traegt` false — der Bauch liegt am Rand, die Raeder haengen darueber) federt
+            // kein Rad zu einem Boden, der Griff endet am Reifen (fahr-leben S4: mit dem Federweg auch dort kroch der GT mit
+            // 40 Grad Bug-unten 330 Bilder lang an der Klippe, statt abzuheben).
+            const liegt = !warLuft && !(z.y > z.yBoden);
             const vyAlt = z.vy; // der Boden-Stoss misst die Vertikale des Aufstands gegen den letzten Schritt (unten)
-            if (!warLuft && Number.isFinite(z.steig) && Number.isFinite(z.wank)) z.vy = vBoden(z);
+            if (liegt && Number.isFinite(z.steig) && Number.isFinite(z.wank)) z.vy = vBoden(z);
             const yBall = z.y + z.vy * dt - 0.5 * g * dt * dt; // wohin die Fallkurve den Wagen legt
             // Was ein Rad in einem Schritt hinaufsteigt (die Stufe + die Steig-Rate des Bodens); hoeher ist eine WAND — die
             // Vertikale hebt den Wagen nie hinein (der Kontakt-Loeser des Wirts schiebt ihn heraus). Vorher nahm der Wagen
@@ -4514,10 +4523,11 @@
             const yB0 = Number.isFinite(z.yBoden) ? z.yBoden : eb.y;
             if (yBall >= eb.y) {
                 // DER BODEN FAELLT UNTER DIE FALLKURVE (Kuppe mit v²/R > g, Klippe, Spalt): der Wagen fliegt; die Reifen
-                // greifen nur, solange der Spalt unter luftEps bleibt (eine Bodenwelle hebt ihn nicht aus dem Griff).
+                // greifen, solange der Spalt unter Federweg + Reifen bleibt (auf.hub + luftEps: eine Bodenwelle hebt ihn
+                // nicht aus dem Griff; er faellt frei und landet auf den Federn).
                 z.vy -= g * dt;
                 z.y = yBall;
-                z.luft = z.y - eb.y > S.luftEps;
+                z.luft = z.y - eb.y > S.luftEps + (eb.traegt && G.auf && G.auf.hub > 0 ? G.auf.hub : 0);
             } else if (eb.y - yBall <= stufe) {
                 // DER BODEN TRAEGT: folgen — oder LANDEN, dann schlaegt der Stoss (relativ zum Boden) in die Hub-Feder.
                 // fahrzeug.K5 (rein additiv — auf ebenem Grund byte-gleich): folgt das Rad dem Boden, ist jede Aenderung seiner

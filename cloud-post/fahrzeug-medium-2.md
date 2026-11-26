@@ -1,0 +1,113 @@
+# fahrzeug-medium-2 — Stand-Blatt (ZWISCHENSTAND)
+
+Sprosse: `karte2.mensch.fahrzeug.medium#2`, der Rest aus dem „Offen“ von fahrzeug-medium (Post 05:58, Vorrang 2): (1) `flug`,
+(2) `rinne_sichtbar`, (3) die Kurvengrenze je Saat. Gemessen auf main c0634d86 + `fahrzeug-medium-ruf` 15630bf4 (5e332ef); jetzt
+aufgesetzt auf `fahrzeug-stapel` 445b4549 (main c814741e, im Bündel `buendel-mittag`) — der Kopf folgt auf dem main, der den Stapel trägt.
+
+## Täter (vorher, am Kern und in der Welt)
+
+- **flug** — `vehicle-core.js` `fahrStand`: das Rad verlor den Griff 2 cm unter der Fallkurve (`luftEps`), nie erst jenseits seines
+  Federwegs. Fiel die Ebene unter die Fallkurve, ersetzte die Steig-Rate des Bodens (`vBoden`) je Schritt den Fall; jenseits von 2 cm
+  hieß der Wagen `luft`, griff nicht, und landete. Über einer Bodenwelle von 3 cm auf 4 m bei 100 km/h hing er so 80–100 von 180
+  Bildern in der Luft (je Gattung), am Genesis-Ort flogen 78 von 120 Bremsungen aus 100 km/h, **60 davon ohne Kuppe** (der Boden
+  fiel nie weiter als 0,2 m unter den Wagen). Abgelehnt nach Messung: die Steig-Rate aus dem Pfad der Ebene statt der Sekante der
+  Achsen (bodenStoss rms 7 → 17–19 m/s², mehr Luft) — die Ebene hat Knicke, die Sekante über den Radstand glättet sie.
+- **Stand-Flattern** (Folge desselben Täters): der GT steht im nassen Gras am Dorf-Ufer; sein Einsinken (4,33 cm, radImBoden) legt
+  die Ebene 4,33 cm tiefer, der Spalt 4,33 cm > 2 cm hieß `luft`, in der Luft sinkt kein Rad, die Ebene stieg, er landete — je Bild
+  im Wechsel (5 von 12 Bildern in der Luft, einsinken 4,33 / 0 cm).
+- **Kurvengrenze** — ungemessen (die Station trug sie als `ungemessen`).
+
+## Geschnitten
+
+- **`vehicle-core.js` `fahrStand`**: zwischen Aufbau und Boden federt das Rad. Fällt die Ebene unter die Fallkurve, fällt der Aufbau
+  frei; jedes Rad folgt seinem Boden um seinen Federweg (`auf.hub` = radHub × radR × k, derselbe, um den es in `fahrEbene` einzeln
+  zu seinem Boden federt) und den Reifen (`luftEps`) — erst darüber verliert es den Griff. Im Spalt trägt der Aufbau seine
+  Vertikale (`liegt`: kein Ersatz durch die Rate des Bodens), er landet auf den Federn (bodenStoss → Hub-Feder, `hubBoden`).
+  Nur wo die Ebene TRÄGT (`fahrEbene` → `traegt`): auf einer Kante liegt der Bauch am Rand, die Räder hängen darüber, der Griff
+  endet am Reifen wie zuvor. Ohne diese Grenze ritt der GT am Kern 5 Bilder mit 40° Bug-unten auf der Kante, und in der Welt kroch
+  er 330 Bilder an der Klippe, statt abzuheben (gate:fahr-leben S4 ROT: „Flug 0 Takte … 24,2 m längs der Bahn, Kante bei 24,0 m“).
+- **`stamm/siedlung-instanz.js` `_archRadMatrix`**: das gezeichnete Rad steht so tief im weichen Boden, wie das Gesetz es sinken
+  lässt (`fz.einsinken`, dieselbe Tiefe, um die die Ebene der Sim liegt), geklemmt auf den Federweg.
+- **Die Linse A10** in `gate:vehicle-drive` (Fahrzeug-Familie, `scripts/diag-vehicle-drive.cjs` `flugMessung`/`flugVerdict`): je
+  Gattung mit 100 km/h am Kern die Welle 0,03 m / 4 m (Soll 0 Bilder in der Luft), die Kuppe einer Rampe 25 % bei 90 km/h (Soll:
+  er springt) und eine Kante von 6 m bei 15 m/s (Soll 0 Bilder am Boden, wo die Ebene nicht trägt; er fliegt). Selbsttest: gesund
+  schweigt, die Welle von main (GT 84 Bilder), eine Rampe ohne Sprung, der Griff auf der Kante (GT 5 Bilder), eine Kante ohne Flug,
+  3 Gattungen → je ROT beim Namen. **ROT am Kern der Basis**: „gt hebt über der Welle ab (84 von 180 Bildern in der Luft, Federweg
+  0.204 m) · supersport 100 · limousine 82 · kompakt_fwd 98 · suv 81 · transporter 80“; **ROT am Federweg ohne `traegt`**: „gt greift
+  auf der Kante 6 m (5 Bilder am Boden, wo die Ebene nicht trägt — vehicle-core.js fahrStand …)“, je Gattung 5. Konsum-Leser:
+  `fahrStand` des Kerns, gefahren von `_wagenSchritt`.
+- **Der Stations-Kandidat** `cloud-post/fahrzeug-medium-2-station/` (k2-mensch-fahrzeug.js, Diff gegen punkte-maschine 0ba33033,
+  BEGRUENDUNG.txt; der Kandidat von fahrzeug-medium bleibt byte-alt) — die Station urteilt die WELT:
+  - `flattert` (geurteilt, Soll 0): Welt-Fahrten 100 → 0, die abheben, ohne dass der Boden je weiter als den Federweg unter den
+    Wagen fiel; Täter beim Namen (`vehicle-core.js fahrStand`). Am Kern der Basis ROT: „60 Welt-Fahrten heben ohne Kuppe ab“.
+  - `imKreis` (geurteilt, Soll 1): die Kurvengrenze — derselbe Wagen im Kreis auf dem Prüfstand der Saat (Lenkung in 6 s auf
+    vollen Einschlag, 20 m/s), die Spitze a_quer gegen μ·g (μ = `_fahrHaft` × maxGrip · grip), Band 0,95–1,01.
+  - `imWelt` (gemessen): der Weg am Boden × (μ + f_r) des Schritts, die Höhe gutgeschrieben (½v² = g·Σ(μ + f_r)·Δs + g·Δh), im Band
+    30–50 m — am Kern auf Steigungen ±15 % und ±30 % 39,0–40,4 m gegen 38,6 m eben.
+  - `ungemessen: Kurvengrenze` fiel.
+  - Die drei Wände: die Liste (`meisterkarte-quelle/punkte/punkte.cjs liste`, Zweig `punkte-maschine`) 1976 Stationen · Fehler 2 = genau `gelaende.K2#1/#2` „Wand HAKEN“ wie an der Basis; S2 misst
+    in 4,2–5,0 s je Ort; kein Fächer im Kern (die Station fährt durch die Leser des Spiels in der Seite).
+
+## Gemessen (vorher → nachher, gleiche Bedingungen, headless)
+
+| Zahl | vorher (Basis) | nachher (Kopf) |
+|---|---|---|
+| A10 Welle 0,03 m / 4 m, 100 km/h: Bilder in der Luft von 180 (GT · Supersport · Limousine · Kompakt · SUV · Transporter) | 84 · 100 · 82 · 98 · 81 · 80 | **0 · 0 · 0 · 0 · 0 · 0** |
+| A10 Rampe 25 % bei 90 km/h: Bilder in der Luft | — | 60 · 61 · 58 · 57 · 55 · 55 (er springt) |
+| Genesis, 120 Bremsungen 100 → 0: Fahrten mit Flug · Flüge · Bilder in der Luft | 78 · 293 · 2 400 | **18 · 29 · 774** |
+| Flug ohne Kuppe (Spalt nie > 0,2 m) Genesis · Dorf · stadt-voll | 60 · 13 · — | **0 · 0 · 0** |
+| Fahrten mit Flug Dorf · stadt-voll (echte Kuppen und Klippen: Spalt 0,2–11 m, Gefälle bis 96 %) | 98 · 60 | 92 · 45 |
+| Bremsweg der Fahrten, die vorher flatterten (Genesis, 60, Median) | 67,1 m | **62,5 m** |
+| bodenStoss rms auf denselben Fahrten ohne Flug (Genesis 42 · Dorf 17, Median) | 5,2 · 6,8 m/s² | 5,1 · 7,6 m/s² |
+| Stand im nassen Gras (dorf −857/−1069, GT, 12 Bilder): einsinken / luft | 4,33 ↔ 0 cm, 5 von 12 Bildern in der Luft | **4,33 cm, 0 in der Luft** |
+| Die Reifen im Bild gegen das Gesetz (4 Naben, cm unter der Fläche) | −4,33 · −4,33 · −4,33 · −1,1 | **−4,33 · −4,33 · −4,33 · −4,33** |
+| Station S2 `flattert` Genesis | 60 (ROT) | **0** |
+| Station S2 Kurvengrenze a_quer ÷ μ·g Genesis · Dorf · stadt-voll (μ 0,4–0,8), im Band 0,95–1,01 | ungemessen | **0,992–0,997 · 0,992–0,999 · 0,99–0,999**, 100 % |
+| Station S2 `imWelt` Genesis · Dorf · stadt-voll | 97 % · — · — | **100 %** · 49 % · 85 % |
+| Station S2 Prüfstand 100 → 0 · 50 → 0 im Band (alle Orte) | 100 % · 100 % | 100 % · 100 % (38,14–45,26 m) |
+| A10 Kante 6 m bei 15 m/s: Bilder am Boden, wo die Ebene nicht trägt (je Gattung) · in der Luft | 0 · 65 | **0 · 65** (Federweg ohne `traegt`: 5) |
+| fahr-leben S4 Klippe (Kante 5,94 m auf 3 m): abgehoben nach · Flug-Höhe beim Absteigen | 87 Bilder · 5,99 m | **86 Bilder · 5,93 m** (Federweg ohne `traegt`: nie, 420 Bilder) |
+| fahr-leben S2 Klippe: Luft-Schritte · größter Sprung je Schritt | 56/531 · 0,19 m | 54/531 · 0,19 m |
+| Stadt stadt-voll 10 Uhr, 21 Wagen, die ersten 30 s: Bilder ohne Griff (Kuppen 2–2,7 cm) · Bilder im Spalt | 22 (6 Wagen) · 1 724 | **0** · 1 238 |
+| gate:fahr-leben VK 10 Uhr (600 s): Warte-Kreis · Ankünfte | keiner · ✅ | **8>9 ab Sekunde 30** · 9 (ROT, siehe Offen); auf dem Stapel (main c814741e) derselbe Kreis 8>9, 570 s |
+| `gate:vehicle-drive` auf dem Stapel (main c814741e) | — | GRÜN in 2 min 13 s (A10 Welle 0 · Rampe 60 · Kante 0; B-j frei 12,64 mm gegen W / kz 12,63 mm) |
+
+Wände am Kopf: siehe „Kopf“.
+
+## Offen (Grund, Messname)
+
+- **gate:fahr-leben VK 10 Uhr ROT an diesem Kopf** (an der Basis 5e332ef GRÜN, um 23 Uhr GRÜN) — mein Rot; sein Schnitt liegt im
+  Verkehrs-Gesetz `stamm/siedlung-verkehr.js`, das dieser Zweig nicht anfasst (Bahn knoten-grossstadt). Im Bogen vor der Wende
+  746/573 stehen Wagen 8 (Gier 172°, Strecke 37,8 von 177,8 m) und Wagen 9 (Gier −38°, in seiner Wende 163,1 von 243,9 m) ab
+  Sekunde 30 bis Sekunde 600 Bug an Bug: 8 hält `durch` (der Erste im Kreis aus Wagen-Kanten, `_verkehrKreisDurch`), doch eine Ecke
+  von 9 liegt in seinem Leib samt Ausscheren (`_verkehrFolge`: Lücke 1,58 m, quer 1,84 m); 9 wartet auf 8; beide stehen mit
+  Handbremse, ruhig (kein Spalt, die Ebene trägt), keiner setzt zurück — dahinter 14 von 21 Wagen ohne Ziel, 9 Ankünfte, eine
+  Fahrt 668 s > 300 s. Der Kern legt die Lage frei: an der Basis verloren in den ersten 30 s sechs Stadt-Wagen 22 Bilder den Griff
+  über Kuppen von 2–2,7 cm (Wagen 9 allein 7), am Kopf keiner; Wagen 9 steht dadurch bei Sekunde 30 0,93 m tiefer im Bogen —
+  dieselbe Begegnung, die tages-gesetz 2 für ein Eindringen von 0,04–0,10 m in den Raum der Begegnung löste (Kopf 99b234d7), trifft
+  jetzt den Leib. Die Basis mit `luftEps` 1 cm oder 3 cm bleibt ohne Kreis (16 · 15 Ankünfte in 120 s): die Lage hängt am Griff, nicht
+  am Rauschen. Was fehlt, ist eine Regel des Verkehrs: der Bogen vor der Wende trägt zwei Entgegenkommende nur, wenn einer vor ihm
+  wartet (ein Ort für den Bogen) oder der Zweite im Kreis zurücksetzt. Messname: VK 10 Uhr Warte-Kreis 8>9.
+- **(2) `rinne_sichtbar`** — nicht in diesem Kopf. Die Tiefe steht im Gesetz, in der Station und jetzt im gezeichneten Reifen; das
+  Gelände-Netz senkt sich nicht um sie, und die Wege-Karte malt erst ab der Stufe des Pfads (27,7 Tritte; 10 Durchfahrten = 20
+  Tritte). Der Höhen-Leser `_voxelSurfaceY` (stamm/gelaende-chunks.js) liest das Dichtefeld im Schritt 1,2 m, das Netz der Stufe 0
+  trägt 1,8 m — eine Rinne von 0,5 m Zelle und 5–9 cm Tiefe trägt es nicht ohne eigenen Leser der Zelle. Messname:
+  `rinne_sichtbar` (Bild der Rinne nach 10 Durchfahrten am feuchten Ufer, dorf).
+- **`imWelt` am Dorf 49 %, an stadt-voll 85 %**: gemessen, nicht geurteilt. Aus dem Band fallen (a) Fahrten mit echtem Flug — die
+  Landung nach 5–11 m Fall frisst die Höhe, die das Maß gutschreibt (stadt-voll Saat 12, 20; Dorf die Klippen bis 96 % Gefälle,
+  `imWelt` bis −24 m), (b) Fahrten quer zum Hang ohne Flug (stadt-voll Saat 2, 10, 13, 18: 50–66 m — der Reibkreis trägt die
+  Querlage, die Bremse bekommt weniger). Messname: `imWelt` je Ort.
+- **`gate:koerper-stand` K8 streu wiese p95 3,3 cm** (Soll ≤ 3) — nicht dieser Baum: am reinen main c814741e steht dieselbe Fichte der
+  Streu (`fscatter:fichte:3:1`, −345,1 / −1021,5, Stufe 0) 3,3 cm unter dem gezeichneten Boden, schon im Stand vor jedem Gang; `--k8`
+  allein ist am reinen main ROT mit derselben Zahl (n 100, p95 3,3), der volle Lauf kippt mit der Reihenfolge (main voll 0,8, der Stapel
+  voll 3,3). Dazu am reinen main 4 rote Zeilen (K7 Aufbau 403 Büschel, 35 Pflanzen, zwei blinde Selbsttests). Täter laut Linse
+  `_streuFuss` (stamm/vegetation-streu.js), nicht die Fahrt. Messname: K8 streu wiese.
+- bodenStoss misst jetzt die Landung aus dem Spalt (vorher 0 bei jeder Landung): auf den vorher flatternden Fahrten Genesis rms
+  9,3 → 12,9 m/s². Die Landung aus echtem Flug (`luft`) trägt bodenStoss weiter 0 (die Hub-Feder nimmt sie). Messname: bodenStoss
+  der Landung.
+
+## Kopf
+
+- Kopf: folgt (Vorprüfung fahrzeug-medium-2 1).
+- Beanspruchte Sprosse: `karte2.mensch.fahrzeug.medium#2`.
+- Karte 2 gebucht 126 von 1 718 · Status ZWISCHENSTAND.

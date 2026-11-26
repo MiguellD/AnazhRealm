@@ -1,0 +1,33 @@
+STATIONS-KANDIDAT fahrzeug-medium-2 — meisterkarte-quelle/punkte/stationen/k2-mensch-fahrzeug.js, Leiter mensch.fahrzeug.medium S2
+Basis: origin/punkte-maschine 0ba33033 (die Datei ist byte-gleich ihrem Stand seit 8d0eba7e; der Diff k2-mensch-fahrzeug.diff gilt
+gegen sie). Der Kandidat baut auf dem Kandidaten von fahrzeug-medium (cloud-post/fahrzeug-medium-station, noch nicht gelandet): der
+Diff trägt beide. Neu gegen fahrzeug-medium sind nur BREMS_AN (die Welt-Fahrt misst Weg am Boden und Spalt), der Kreis der Saat
+(`kreis`), die Maße imWelt · flattert · welt100 · imKreis · kurve · muSpanne, die Werte, der Beleg, der Täter und zwei Sprossen-Maße
+von S2; `ungemessen: Kurvengrenze` fällt. Die anderen Schritte und Leitern der Datei bleiben byte-alt.
+
+WARUM (Post 05:58, Vorrang 2: „danach urteilt die Station die WELT statt nur den Prüfstand … (3) Kurvengrenze je Saat“)
+
+1. DIE WELT URTEILT (flattert, Soll 0). Bis fahrzeug-medium-2 flogen am Genesis-Ort 78 von 120 Welt-Fahrten bei 100 km/h, 60 davon
+   OHNE KUPPE: der Boden fiel nie weiter als 0,2 m unter den Wagen, und doch hob er ab — vehicle-core.js fahrStand ließ das Rad den
+   Griff 2 cm unter der Fallkurve verlieren, nie erst jenseits seines Federwegs. Der Kern ist geschnitten (das Rad federt seinem
+   Boden um auf.hub + Reifen nach, wo die Ebene trägt). Das Maß `flattert` zählt die Welt-Fahrten, die abheben, ohne dass der Spalt
+   je den Federweg überschritt — Täter beim Namen „vehicle-core.js fahrStand“. Am Kern der Basis 15630bf4: Genesis 60 (ROT); am Kopf
+   0 an Genesis, Dorf und stadt-voll.
+
+2. DIE WELT IM BAND (imWelt, gemessen, nicht geurteilt). Dieselbe Normierung wie der Prüfstand, auf dem echten Gelände: der Weg AM
+   BODEN × (μ + f_r) des Schritts, die Höhe gutgeschrieben — ½v² = g·Σ(μ + f_r)·Δs + g·(y_Ende − y_0). Am Kern auf Steigungen ±15 %
+   und ±30 % 39,0–40,4 m gegen 38,6 m eben (die Energie schließt). Am Kopf im Band 30–50 m: Genesis 100 %, Dorf 49 %, stadt-voll
+   85,8 %. Aus dem Band fallen echte Flüge (die Landung nach 5–11 m Fall frisst die gutgeschriebene Höhe; Dorf bis 96 % Gefälle)
+   und Fahrten quer zum Hang (der Reibkreis trägt die Querlage). Darum Zahl im Beleg, kein Soll — benannt offen im Blatt
+   cloud-post/fahrzeug-medium-2.md, Messname imWelt.
+
+3. DIE KURVENGRENZE (imKreis, Soll 1). Die Karte sagt a_quer = μ·g. Derselbe Wagen auf dem Prüfstand der Saat (μ = `_fahrHaft`,
+   derselbe Leser wie `_wagenSchritt`, × maxGrip · grip des Rezepts) fährt im Kreis: Lenkung in 6 s auf vollen Einschlag, Gas hält
+   20 m/s; die Spitze von aLat gegen μ·g im Band 0,95–1,01. Am Kopf 0,99–0,999 an allen drei Orten (μ 0,4–0,8), 100 %.
+
+DIE DREI WÄNDE
+- `node punkte.cjs liste` mit dem Kandidaten: 1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 2 — genau `gelaende.K2#1/#2` „Wand
+  HAKEN“ (dieselben zwei wie an der Basis), sonst nichts.
+- Die Leiter misst in ≤ 60 s: S2 am Kopf 5,0 s (Genesis) · 4,8 s (Dorf) · 4,2 s (stadt-voll), 120/120 Adressen.
+- Kein Fächer im Kern (node, worker_threads): die Station fährt in der Seite durch die Leser des SPIELS (r._fahrGrund, r._fahrHaft,
+  r._werkBoden, r._trittZahl) — die Stichprobe ist die Fahrt selbst.

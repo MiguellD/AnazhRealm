@@ -156,6 +156,71 @@ function ellipseVerdict(m) {
     return out;
 }
 
+// ── A10 DER FLUG (fahrzeug-medium-2, Karte 2 mensch.fahrzeug.medium): ein Rad verliert seinen Boden erst, wenn die Ebene
+// weiter unter die Fallkurve des Aufbaus faellt als sein Federweg (`auf.hub`) und der Reifen (luftEps) — am Kern je Gattung, die
+// 100 km/h faehrt. Eine Bodenwelle von 3 cm auf 4 m bei 100 km/h (die Ebene beschleunigt bis 5,8 g, das Rad federt sie aus) hebt
+// keinen Wagen ab; die Kuppe einer Rampe von 25 % bei 90 km/h wirft jeden in die Luft (die Steig-Rate 6,25 m/s traegt ihn ueber
+// den Federweg). Am Kopf von main verlor das Rad den Griff 2 cm unter der Fallkurve: ueber der Welle hingen GT · Supersport ·
+// Limousine · Kompakt · SUV · Transporter 84 · 100 · 82 · 98 · 81 · 80 von 180 Bildern in der Luft, und am Genesis-Ort flogen
+// 78 von 120 Bremsungen aus 100 km/h, 60 davon ohne Kuppe (nachher 18, keine ohne Kuppe: drei Saaten mit Rampen-Kuppe und
+// Kante, jede Gattung). DIE KANTE: der Federweg traegt das Rad nur, wo die Ebene der vier eine Ebene ist (fahrEbene `traegt`);
+// an einer Stufe von 6 m bei 15 m/s liegt der Bauch am Rand, die Raeder haengen darueber, und der Wagen fliegt, sobald der Spalt
+// den Reifen uebersteigt (Soll 0 Bilder am Boden auf einer Kante, die nicht traegt). Griff der Federweg auch dort, ritt der GT
+// 5 Bilder mit 40 Grad Bug-unten auf der Kante (je Gattung), und in der Welt (gate:fahr-leben S4) kroch er 330 Bilder an der Klippe.
+const FLUG = { v: 100 / 3.6, welle: [0.03, 4], rampe: [0.25, 20], vRampe: 25, kante: [6, 20], vKante: 15, bilder: 180 };
+function flugMessung(VC) {
+    const dt = 1 / 60;
+    const m = {};
+    const lauf = (G, boden, v) => {
+        const z = VC.fahrZustand(-10, 0, 0);
+        VC.fahrStand(z, G, boden, 0);
+        z.vlong = v;
+        z.speed = v;
+        let luft = 0,
+            griff = 0;
+        for (let i = 0; i < FLUG.bilder; i++) {
+            VC.fahrKraefte(z, { throttle: 0.4 }, G, dt);
+            VC.fahrStand(z, G, boden, dt);
+            if (z.luft === true) luft++;
+            const eb = VC.fahrEbene(G, boden, z.x, z.z, z.yaw, z.einsinken);
+            if (z.luft !== true && eb && !eb.traegt && z.y - eb.y > VC.FAHR.schritt.luftEps) griff++;
+        }
+        return { luft, griff };
+    };
+    const [A, lam] = FLUG.welle,
+        [s, l] = FLUG.rampe,
+        [k, kx] = FLUG.kante;
+    for (const pid of VC.GATTUNGEN || []) {
+        const P = { ...VC.DEFAULT_P, ...VC.presetPatch(pid) };
+        const drv = VC.exportDrive(P);
+        if (!(drv && drv.vmax >= FLUG.v)) continue;
+        const G = VC.fahrGesetz(drv);
+        const kante = lauf(G, (x) => (x < kx ? 0 : -k), FLUG.vKante);
+        m[pid] = {
+            hub: G.auf.hub,
+            welle: lauf(G, (x) => A * Math.sin((2 * Math.PI * x) / lam), FLUG.v).luft,
+            rampe: lauf(G, (x) => (x < 0 ? 0 : x < l ? s * x : s * l), FLUG.vRampe).luft,
+            kante: kante.griff,
+            kanteLuft: kante.luft,
+        };
+    }
+    return m;
+}
+function flugVerdict(m) {
+    const out = [];
+    const ids = Object.keys(m || {});
+    if (ids.length < GATTUNG.min) out.push(`${ids.length} Gattungen mit 100 km/h gemessen (Soll ≥ ${GATTUNG.min})`);
+    for (const [pid, f] of Object.entries(m || {})) {
+        if (!(f.welle === 0))
+            out.push(`${pid} hebt über der Welle ${FLUG.welle[0]} m / ${FLUG.welle[1]} m ab (${f.welle} von ${FLUG.bilder} Bildern in der Luft, Federweg ${f.hub.toFixed(3)} m)`);
+        if (!(f.rampe > 0)) out.push(`${pid} springt nicht über die Kuppe der Rampe ${FLUG.rampe[0] * 100} %`);
+        if (!(f.kante === 0))
+            out.push(`${pid} greift auf der Kante ${FLUG.kante[0]} m (${f.kante} Bilder am Boden, wo die Ebene nicht trägt — vehicle-core.js fahrStand: der Federweg gilt nur, wo die Ebene trägt)`);
+        if (!(f.kanteLuft > 0)) out.push(`${pid} fliegt nicht über die Kante ${FLUG.kante[0]} m (vakuös)`);
+    }
+    return out;
+}
+
 // ── A7/B-h DIE GATTUNGEN (fahrzeug-gattungen, Karte 2 mensch.fahrzeug.gestalt#1): welche Gattungen eine Stadt fährt, ist Gesetz
 // des Fahrzeug-Kerns (vehicle-core `GATTUNGEN` · `flotte`). Gezählt wird, was in der Stadt des Messorts stadt-voll wirklich
 // STEHT oder FÄHRT (die Wagen ihres Verkehrs, B-h) — nie, was der Kern kann; jede Stelle des Stamms mit eigener Typ-Liste (ein
@@ -436,6 +501,22 @@ hauptLauf(async () => {
             const v = ellipseVerdict({ ...ellipse, ...b });
             check(`Selbst-Test ellipseVerdict ${JSON.stringify(b)}`, v.length === n, v.join(" · "));
         }
+        // A10: der Flug — gesund schweigt er; die Welle von main (GT 84 Bilder in der Luft), eine Rampe ohne Sprung, der Griff
+        // auf der Kante (der Federweg ohne `traegt`: GT 5 Bilder), eine Kante ohne Flug und eine Messung mit 3 Gattungen nennen je
+        // ihren Täter
+        const flugGesund = Object.fromEntries(["gt", "supersport", "limousine", "kompakt_fwd", "suv", "transporter"].map((p) => [p, { hub: 0.2, welle: 0, rampe: 60, kante: 0, kanteLuft: 90 }]));
+        for (const [b, n] of [
+            [{}, 0],
+            [{ gt: { hub: 0.204, welle: 84, rampe: 70, kante: 0, kanteLuft: 90 } }, 1],
+            [{ suv: { hub: 0.246, welle: 0, rampe: 0, kante: 0, kanteLuft: 90 } }, 1],
+            [{ gt: { hub: 0.204, welle: 0, rampe: 60, kante: 5, kanteLuft: 84 } }, 1],
+            [{ limousine: { hub: 0.204, welle: 0, rampe: 58, kante: 0, kanteLuft: 0 } }, 1],
+        ]) {
+            const v = flugVerdict({ ...flugGesund, ...b });
+            check(`Selbst-Test flugVerdict ${JSON.stringify(b)}`, v.length === n, v.join(" · "));
+        }
+        const flugDrei = flugVerdict({ gt: flugGesund.gt, suv: flugGesund.suv, limousine: flugGesund.limousine });
+        check("Selbst-Test flugVerdict: 3 Gattungen gemessen", flugDrei.length === 1, flugDrei.join(" · "));
         // A7/B-h: die Mutante „feste Liste mit 3 Typen“ (die Tafel von main) heißt beim Namen, eine Stadt mit 3 Gattungen und ein
         // Kern mit 3 sind ROT, ein Wort-Katalog mit Kulturen (kein reines Rezept-Feld) schweigt
         const tafel = typTafeln(
@@ -612,6 +693,14 @@ hauptLauf(async () => {
         `A6: die Reibellipse je Achse — im Bogen und in der Kehre ≤ ${ELLIPSE.bogen} μ·g, die Handbremse ${ELLIPSE.hand.join("–")} μ·g·b/L, geradeaus der Bremsweg ±${ELLIPSE.weg * 100} %`,
         ellV.length === 0,
         ellV.join(" · ") || Object.entries(ell).map(([p, e]) => `${p} ${e.bogen} μ·g Hand ${e.hand} ${e.weg} m`).join(" · ")
+    );
+
+    const flug = flugMessung(VC);
+    const flV = flugVerdict(flug);
+    check(
+        `A10: der Flug — über der Welle ${FLUG.welle[0]} m / ${FLUG.welle[1]} m bei 100 km/h federt jedes Rad seinen Boden aus (0 Bilder in der Luft), über die Kuppe der Rampe ${FLUG.rampe[0] * 100} % springt jeder Wagen, an der Kante ${FLUG.kante[0]} m greift keiner (er fliegt)`,
+        flV.length === 0,
+        flV.join(" · ") || Object.entries(flug).map(([p, f]) => `${p} Welle ${f.welle} · Rampe ${f.rampe} · Kante ${f.kante} am Boden, ${f.kanteLuft} in der Luft (Federweg ${f.hub.toFixed(3)} m)`).join(" · ")
     );
 
     // A2 (die Hand-Ableitung exportDrive == carPhys-Primitive) fiel in w11-fahrzeug: sie war ein Zwilling der Formel im Skript —
