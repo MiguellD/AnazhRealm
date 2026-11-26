@@ -1,7 +1,7 @@
 {
  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
  "geraet": "gtx",
- "zeit": "2026-11-26T16:22:35.066Z",
+ "zeit": "2026-11-26T16:23:56.923Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -3624,17 +3624,66 @@
   },
   "karte2.planet.relief.grossform#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-26T15:10:50.390Z",
+   "zahl": "Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 5.92,
+   "grund": "Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 355.3,
+   "fremd": {
+    "s": 357,
+    "takte": 163,
+    "fremdS": 82.95,
+    "kerne": 0.232,
+    "fensterKerne": 0.529,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      13.44
+     ],
+     [
+      "Explorer.EXE",
+      9.45
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.03
+     ]
+    ],
+    "dienerS": 76.58,
+    "diener": [
+     [
+      "System",
+      45.17
+     ],
+     [
+      "WmiPrvSE.exe",
+      16.5
+     ]
+    ],
+    "geraetS": 145.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      90.78
+     ],
+     [
+      "svchost.exe",
+      46.34
+     ],
+     [
+      "SearchIndexer.exe",
+      2.59
+     ]
+    ],
+    "eigenS": 1221.48,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T16:23:56.923Z",
    "abdruck": "9d14fbd22724",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.same.entfaltung.schirm#1": {
    "gruen": false,
