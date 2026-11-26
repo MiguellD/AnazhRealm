@@ -1,0 +1,16 @@
+PUNKT OHNE MACHER — die Station war der Fehler, das Spiel trägt (Zahl): stoerung#2 an der GTX 64fcf12e GRÜN 0,999 ≥ 0,5 (170,4 s); der Riss des Deckels nannte nur Sekunden — jetzt nennt jeder Riss einer Leiter seinen längsten Schritt beim Namen
+
+Die Uhr der Leiter, EIN Sender und EIN Leser in stationen/seite.cjs, in allen drei Gerüsten der Karte 2:
+- Sender zeitUhr: die Hülle um den EINEN Weg zur Welt (Kern H.ruf, Gerüst und Fabrik H.wb) schreibt je Ruf
+  „@@PUNKTE@@ ZEIT <leiter> <n>:<weg>[@<kontext>][:<ziel>] <ms>“ in den Strom; am Deckel und im Abbau die laufenden mit „offen“.
+- Leser laengsterSchritt: der längste Schritt beim Namen, daneben der am Riss offene; die Rahmen-Zeile zählt nie.
+- Konsum: k2-planet.js urteilBauen (beide Deckel-Sätze) und punkte.cjs abbruchVon (Frist der Probe).
+Täter vorher: seite.cjs:47 (H.schritt einmal je Leiter), k2-planet.js:401/:194/:215, sitzung-seite.js:69, punkte.cjs:787.
+Zahl: Kern-Risse mit Schritt 0 → 588 von 588; Wolke stoerung „nach 30,016 s …, der längste Schritt
+4:/bild:auge-same-stoerung-s4 29892 ms (am Riss offen, 5 Schritte)“, aufwaerts „nach 45,022 s …, 4:/bild:auge-same-aufwaerts-s7
+24053 ms“; Fabrik-Frist „1:/umstellen:stadt 5999 ms in mensch.sport.medium“; Gerüst-Frist „2:/umstellen@preis:wiese 13986 ms“.
+Uhr 4,22 µs je Schritt. Leiter ≤ 60 s: 30,3 · 45,3 · 14,1 · 24,1 s, jede unter ihrem Deckel.
+Wände: liste Basis 55ee5ac0 = Kandidat (1 976 · 420 · fehlt 15 · Fehler 0), 1 566 Blöcke der drei Gerüste, sonst 0;
+Proben falsch 0 (Kern +1 je Station); Mutanten ROT an 588 von 588; Selbsttest 288/291 ↔ 287/291 (+ LEBENSZEICHEN, fremd, Last).
+Offen: zeit#sitzungsdeckel (SIGKILL lässt den hängenden Schritt ungeschrieben), zeit#waise (die Waise nach dem Deckel zählt bei
+der nächsten Leiter). Nur das Gerät misst, WELCHER Schritt an der GTX 1050 die 30 s und 45 s nimmt.

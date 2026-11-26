@@ -1,0 +1,154 @@
+# Hand-Läufe der Uhr (Wolke, Spiel-Baum main eae94514, Werkbank 24600 Wiese / 24700 Stadt, Kandidat auf punkte-maschine 55ee5ac0)
+# node zeit-hand.cjs <punkte-dir> <stations-datei> <leiter> <W-Port> <sek> [leiter-sek]
+
+## hand-kern-natur
+HAND same.kopplung.stoerung · k2-zusammenspiel.js · Deckel der Probe 60 s · LAUF 30.3 s · Exit 0
+  ZEIT-Zeilen 9
+    @@PUNKTE@@ ZEIT rahmen 1:/eval@rahmen 13
+    @@PUNKTE@@ ZEIT rahmen 2:/eval@rahmen 4
+    @@PUNKTE@@ ZEIT same.kopplung.stoerung 1:/eval@rahmen 3
+    @@PUNKTE@@ ZEIT same.kopplung.stoerung 2:/eval 120
+    @@PUNKTE@@ ZEIT same.kopplung.stoerung 3:/eval 4
+    @@PUNKTE@@ ZEIT same.kopplung.stoerung 4:/bild:auge-same-stoerung-s4 29887 offen
+    @@PUNKTE@@ ZEIT same.kopplung.stoerung 5:/eval@rahmen 5
+    @@PUNKTE@@ ZEIT same.kopplung.stoerung 4:/bild:auge-same-stoerung-s4 29892 offen
+    @@PUNKTE@@ ZEIT rahmen 3:/eval@rahmen 3
+  der Leser der Uhr (alle Leitern): der längste Schritt 4:/bild:auge-same-stoerung-s4 29892 ms in same.kopplung.stoerung (am Riss offen, 8 Schritte)
+  der Läufer S2: ROT · ROT: S2 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S2 Urteil: ROT · S2 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S3 Urteil: ROT · S3 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S4 Urteil: ROT · S4 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S5 Urteil: ROT · S5 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S6 Urteil: ROT · S6 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S7 Urteil: ROT · S7 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S2 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 30,016 s vor dem Wert der Sprosse, der längste Schritt 4:/bild:auge-same-stoerung-s4 29892 ms (am Riss offen, 5 Schritte)
+  S3 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 30,016 s vor dem Wert der Sprosse, der längste Schritt 4:/bild:auge-same-stoerung-s4 29892 ms (am Riss offen, 5 Schritte)
+  S4 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 30,016 s vor dem Wert der Sprosse, der längste Schritt 4:/bild:auge-same-stoerung-s4 29892 ms (am Riss offen, 5 Schritte)
+  S5 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 30,016 s vor dem Wert der Sprosse, der längste Schritt 4:/bild:auge-same-stoerung-s4 29892 ms (am Riss offen, 5 Schritte)
+  S6 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 30,016 s vor dem Wert der Sprosse, der längste Schritt 4:/bild:auge-same-stoerung-s4 29892 ms (am Riss offen, 5 Schritte)
+  S7 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 30,016 s vor dem Wert der Sprosse, der längste Schritt 4:/bild:auge-same-stoerung-s4 29892 ms (am Riss offen, 5 Schritte)
+
+## hand-kern-aufwaerts
+HAND same.kopplung.aufwaerts · k2-zusammenspiel.js · Deckel der Probe 60 s · LAUF 45.3 s · Exit 0
+  ZEIT-Zeilen 9
+    @@PUNKTE@@ ZEIT rahmen 1:/eval@rahmen 14
+    @@PUNKTE@@ ZEIT rahmen 2:/eval@rahmen 4
+    @@PUNKTE@@ ZEIT same.kopplung.aufwaerts 1:/eval@rahmen 2
+    @@PUNKTE@@ ZEIT same.kopplung.aufwaerts 2:/eval 20967
+    @@PUNKTE@@ ZEIT same.kopplung.aufwaerts 3:/eval 5
+    @@PUNKTE@@ ZEIT same.kopplung.aufwaerts 4:/bild:auge-same-aufwaerts-s7 24046 offen
+    @@PUNKTE@@ ZEIT same.kopplung.aufwaerts 5:/eval@rahmen 5
+    @@PUNKTE@@ ZEIT same.kopplung.aufwaerts 4:/bild:auge-same-aufwaerts-s7 24053 offen
+    @@PUNKTE@@ ZEIT rahmen 3:/eval@rahmen 3
+  der Leser der Uhr (alle Leitern): der längste Schritt 4:/bild:auge-same-aufwaerts-s7 24053 ms in same.kopplung.aufwaerts (am Riss offen, 8 Schritte)
+  der Läufer S1: ROT · ROT: S1 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S1 Urteil: ROT · S1 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S2 Urteil: ROT · S2 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S3 Urteil: ROT · S3 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S4 Urteil: ROT · S4 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S5 Urteil: ROT · S5 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S6 Urteil: ROT · S6 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S7 Urteil: ROT · S7 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S8 Urteil: ROT · S8 kein Zeuge der Karte im Lauf ([linse-gpu] fehlt)
+  S1 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 45,022 s vor dem Wert der Sprosse, der längste Schritt 4:/bild:auge-same-aufwaerts-s7 24053 ms (am Riss offen, 5 Schritte)
+  S2 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 45,022 s vor dem Wert der Sprosse, der längste Schritt 4:/bild:auge-same-aufwaerts-s7 24053 ms (am Riss offen, 5 Schritte)
+  S3 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 45,022 s vor dem Wert der Sprosse, der längste Schritt 4:/bild:auge-same-aufwaerts-s7 24053 ms (am Riss offen, 5 Schritte)
+  S4 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 45,022 s vor dem Wert der Sprosse, der längste Schritt 4:/bild:auge-same-aufwaerts-s7 24053 ms (am Riss offen, 5 Schritte)
+  S5 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 45,022 s vor dem Wert der Sprosse, der längste Schritt 4:/bild:auge-same-aufwaerts-s7 24053 ms (am Riss offen, 5 Schritte)
+  S6 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 45,022 s vor dem Wert der Sprosse, der längste Schritt 4:/bild:auge-same-aufwaerts-s7 24053 ms (am Riss offen, 5 Schritte)
+  S7 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 45,022 s vor dem Wert der Sprosse, der längste Schritt 4:/bild:auge-same-aufwaerts-s7 24053 ms (am Riss offen, 5 Schritte)
+  S8 Urteil über die Zeugen: UNGEMESSEN · der Deckel der Leiter riss nach 45,022 s vor dem Wert der Sprosse, der längste Schritt 4:/bild:auge-same-aufwaerts-s7 24053 ms (am Riss offen, 5 Schritte)
+
+## hand-geruest-20
+HAND same.entfaltung.gleichheit · k2-same.js · Deckel der Probe 20 s · LAUF 14.1 s · Exit 3
+  @@PUNKTE@@ FRIST 14 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
+  ZEIT-Zeilen 2
+    @@PUNKTE@@ ZEIT same.entfaltung.gleichheit 1:/eval 10
+    @@PUNKTE@@ ZEIT same.entfaltung.gleichheit 2:/umstellen@preis:wiese 13986 offen
+  der Leser der Uhr (alle Leitern): der längste Schritt 2:/umstellen@preis:wiese 13986 ms in same.entfaltung.gleichheit (am Riss offen, 2 Schritte)
+  der Läufer S1: ROT · ROT: S1 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)
+  S1 Urteil: ROT · S1 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)");
+  S2 Urteil: ROT · S2 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)");
+  S3 Urteil: ROT · S3 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)");
+  S4 Urteil: ROT · S4 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)");
+  S5 Urteil: ROT · S5 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)");
+  S6 Urteil: ROT · S6 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)");
+  S7 Urteil: ROT · S7 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)");
+  S8 Urteil: ROT · S8 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)");
+  S1 Urteil über die Zeugen: ROT · S1 · ROT Leser fehlt: Horizont-Linie G2 ↔ G3 an gleicher Pose: die Probe fährt an einem Gerät, kein Leser legt die Linie je Gerät in die Akte und vergleicht sie über Radeon ↔ GTX — Haken vision/buche-2.cjs:261 (je Standardgerät der Sprosse: der Fingerabdruck des Geräts an fester Pose neben dem des anderen, desselben Kopfs)
+  S2 Urteil über die Zeugen: ROT · S2 · ROT Leser fehlt: Klassen-Masken-Diff A ↔ B und Radeon ↔ GTX: die Sitzung trägt 1 Spieler an einem Gerät (Peers 0), kein Leser vergleicht die Klassen-Maske zweier Spieler oder Geräte an derselben Pose — Haken vision/buche-2.cjs:261 (je Standardgerät der Sprosse: der Fingerabdruck des Geräts an fester Pose neben dem des anderen, desselben Kopfs)
+  S3 Urteil über die Zeugen: ROT · S3 · ROT Umfang nicht erzeugbar: die Sitzung trägt ein Gerät ohne Peer (state.p2p.peers 0) — kein zweites Gerät in derselben Sitzung (verlangt 2 Geräte in EINER Sitzung, die Welt erzeugte 1)
+  S4 Urteil über die Zeugen: ROT · S4 · ROT Leser fehlt: Klassen-Diff an 100 zufälligen Posen über Radeon ↔ GTX: kein Leser vergleicht die Klassen-Maske je Pose über die Geräte — Haken vision/buche-2.cjs:261 (je Standardgerät der Sprosse: der Fingerabdruck des Geräts an fester Pose neben dem des anderen, desselben Kopfs)
+  S5 Urteil über die Zeugen: ROT · S5 · ROT Umfang nicht erzeugbar: die Sitzung trägt eine Saat (anazh-realm-seed) — die Leiter teilt EINE Welt, kein Wechsel der Saat im Lauf (verlangt 100 Saaten, die Welt erzeugte 1)
+  S6 Urteil über die Zeugen: ROT · S6 · ROT Umfang nicht erzeugbar: die Sitzung trägt einen Peer (state.p2p.peers 0) — kein zweiter Peer (verlangt 2 Peers, die Welt erzeugte 1)
+  S7 Urteil über die Zeugen: ROT · S7 · ROT Umfang nicht erzeugbar: die Welt der Sitzung steht in einer Epoche (zeitMa 0): die Epoche wechselt nur der Satz reise als eigene Welt (stamm/feld-leben.js:1277), nie der Ort in der Welt der Sitzung (verlangt 10 Epochen an einem Ort, die Welt erzeugte 1)
+  S8 Urteil über die Zeugen: ROT · S8 · ROT Umfang nicht erzeugbar: die Welt trägt einen Planeten (Samen anazh-realm-seed) — kein System, keine Galaxie (verlangt 100000000000 Systeme, die Welt erzeugte 1)
+
+## hand-geruest-9
+HAND same.entfaltung.gleichheit · k2-same.js · Deckel der Probe 9 s · LAUF 3.1 s · Exit 3
+  @@PUNKTE@@ FRIST 3 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
+  ZEIT-Zeilen 2
+    @@PUNKTE@@ ZEIT same.entfaltung.gleichheit 1:/eval 14
+    @@PUNKTE@@ ZEIT same.entfaltung.gleichheit 2:/umstellen@preis:wiese 2982 offen
+  der Leser der Uhr (alle Leitern): der längste Schritt 2:/umstellen@preis:wiese 2982 ms in same.entfaltung.gleichheit (am Riss offen, 2 Schritte)
+  der Läufer S1: ROT · ROT: S1 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)
+  S1 Urteil: ROT · S1 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)");
+  S2 Urteil: ROT · S2 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)");
+  S3 Urteil: ROT · S3 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)");
+  S4 Urteil: ROT · S4 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)");
+  S5 Urteil: ROT · S5 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)");
+  S6 Urteil: ROT · S6 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)");
+  S7 Urteil: ROT · S7 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)");
+  S8 Urteil: ROT · S8 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)");
+  S1 Urteil über die Zeugen: ROT · S1 · ROT Leser fehlt: Horizont-Linie G2 ↔ G3 an gleicher Pose: die Probe fährt an einem Gerät, kein Leser legt die Linie je Gerät in die Akte und vergleicht sie über Radeon ↔ GTX — Haken vision/buche-2.cjs:261 (je Standardgerät der Sprosse: der Fingerabdruck des Geräts an fester Pose neben dem des anderen, desselben Kopfs)
+  S2 Urteil über die Zeugen: ROT · S2 · ROT Leser fehlt: Klassen-Masken-Diff A ↔ B und Radeon ↔ GTX: die Sitzung trägt 1 Spieler an einem Gerät (Peers 0), kein Leser vergleicht die Klassen-Maske zweier Spieler oder Geräte an derselben Pose — Haken vision/buche-2.cjs:261 (je Standardgerät der Sprosse: der Fingerabdruck des Geräts an fester Pose neben dem des anderen, desselben Kopfs)
+  S3 Urteil über die Zeugen: ROT · S3 · ROT Umfang nicht erzeugbar: die Sitzung trägt ein Gerät ohne Peer (state.p2p.peers 0) — kein zweites Gerät in derselben Sitzung (verlangt 2 Geräte in EINER Sitzung, die Welt erzeugte 1)
+  S4 Urteil über die Zeugen: ROT · S4 · ROT Leser fehlt: Klassen-Diff an 100 zufälligen Posen über Radeon ↔ GTX: kein Leser vergleicht die Klassen-Maske je Pose über die Geräte — Haken vision/buche-2.cjs:261 (je Standardgerät der Sprosse: der Fingerabdruck des Geräts an fester Pose neben dem des anderen, desselben Kopfs)
+  S5 Urteil über die Zeugen: ROT · S5 · ROT Umfang nicht erzeugbar: die Sitzung trägt eine Saat (anazh-realm-seed) — die Leiter teilt EINE Welt, kein Wechsel der Saat im Lauf (verlangt 100 Saaten, die Welt erzeugte 1)
+  S6 Urteil über die Zeugen: ROT · S6 · ROT Umfang nicht erzeugbar: die Sitzung trägt einen Peer (state.p2p.peers 0) — kein zweiter Peer (verlangt 2 Peers, die Welt erzeugte 1)
+  S7 Urteil über die Zeugen: ROT · S7 · ROT Umfang nicht erzeugbar: die Welt der Sitzung steht in einer Epoche (zeitMa 0): die Epoche wechselt nur der Satz reise als eigene Welt (stamm/feld-leben.js:1277), nie der Ort in der Welt der Sitzung (verlangt 10 Epochen an einem Ort, die Welt erzeugte 1)
+  S8 Urteil über die Zeugen: ROT · S8 · ROT Umfang nicht erzeugbar: die Welt trägt einen Planeten (Samen anazh-realm-seed) — kein System, keine Galaxie (verlangt 100000000000 Systeme, die Welt erzeugte 1)
+
+## hand-fabrik-30
+HAND mensch.sport.medium · k2-mensch.js · Deckel der Probe 30 s · LAUF 24.1 s · Exit 3
+  @@PUNKTE@@ FRIST 24 s der Probe gerissen — im /umstellen stadt seit 23.8 s (der Ruf ab 0 s): der Messort trug die Frist, Abbau
+  ZEIT-Zeilen 1
+    @@PUNKTE@@ ZEIT mensch.sport.medium 1:/umstellen:stadt 23998 offen
+  der Leser der Uhr (alle Leitern): der längste Schritt 1:/umstellen:stadt 23998 ms in mensch.sport.medium (am Riss offen, 1 Schritt)
+  der Läufer S1: UNGEMESSEN · Frist der Probe 24 s gerissen im /umstellen stadt (der Ruf lief 23.8 s: der Messort trug die Frist), der längste Schritt 1:/umstellen:stadt 23998 ms in mensch.sport.medium (am Riss offen, 1 Schritt) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ ZEIT mensch.sport.medium 1:/umstellen:stadt 23998 offen
+  S1 Urteil: ROT · S1: keine Messung der Sprosse
+  S2 Urteil: ROT · S2: keine Messung der Sprosse
+  S3 Urteil: ROT · S3: keine Messung der Sprosse
+  S4 Urteil: ROT · S4: keine Messung der Sprosse
+  S5 Urteil: ROT · S5: keine Messung der Sprosse
+  S6 Urteil: ROT · S6: keine Messung der Sprosse
+  S7 Urteil: ROT · S7: keine Messung der Sprosse
+  S1 Urteil über die Zeugen: ROT · S1: keine Messung der Sprosse
+  S2 Urteil über die Zeugen: ROT · S2: keine Messung der Sprosse
+  S3 Urteil über die Zeugen: ROT · S3: keine Messung der Sprosse
+  S4 Urteil über die Zeugen: ROT · S4: keine Messung der Sprosse
+  S5 Urteil über die Zeugen: ROT · S5: keine Messung der Sprosse
+  S6 Urteil über die Zeugen: ROT · S6: keine Messung der Sprosse
+  S7 Urteil über die Zeugen: ROT · S7: keine Messung der Sprosse
+
+## hand-fabrik-12
+HAND mensch.sport.medium · k2-mensch.js · Deckel der Probe 12 s · LAUF 6.1 s · Exit 3
+  @@PUNKTE@@ FRIST 6 s der Probe gerissen — im /umstellen stadt seit 5.8 s (der Ruf ab 0 s): der Messort trug die Frist, Abbau
+  ZEIT-Zeilen 1
+    @@PUNKTE@@ ZEIT mensch.sport.medium 1:/umstellen:stadt 5999 offen
+  der Leser der Uhr (alle Leitern): der längste Schritt 1:/umstellen:stadt 5999 ms in mensch.sport.medium (am Riss offen, 1 Schritt)
+  der Läufer S1: UNGEMESSEN · Frist der Probe 6 s gerissen im /umstellen stadt (der Ruf lief 5.8 s: der Messort trug die Frist), der längste Schritt 1:/umstellen:stadt 5999 ms in mensch.sport.medium (am Riss offen, 1 Schritt) — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ ZEIT mensch.sport.medium 1:/umstellen:stadt 5999 offen
+  S1 Urteil: ROT · S1: keine Messung der Sprosse
+  S2 Urteil: ROT · S2: keine Messung der Sprosse
+  S3 Urteil: ROT · S3: keine Messung der Sprosse
+  S4 Urteil: ROT · S4: keine Messung der Sprosse
+  S5 Urteil: ROT · S5: keine Messung der Sprosse
+  S6 Urteil: ROT · S6: keine Messung der Sprosse
+  S7 Urteil: ROT · S7: keine Messung der Sprosse
+  S1 Urteil über die Zeugen: ROT · S1: keine Messung der Sprosse
+  S2 Urteil über die Zeugen: ROT · S2: keine Messung der Sprosse
+  S3 Urteil über die Zeugen: ROT · S3: keine Messung der Sprosse
+  S4 Urteil über die Zeugen: ROT · S4: keine Messung der Sprosse
+  S5 Urteil über die Zeugen: ROT · S5: keine Messung der Sprosse
+  S6 Urteil über die Zeugen: ROT · S6: keine Messung der Sprosse
+  S7 Urteil über die Zeugen: ROT · S7: keine Messung der Sprosse

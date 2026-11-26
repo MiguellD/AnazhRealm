@@ -1,0 +1,119 @@
+BEGRÜNDUNG — DIE UHR DER LEITER (Auftrag des Koordinators 26.11. 07:37), Leser 2, 26.11.
+
+0. DER AUFTRAG (wörtlich, origin/koordination:cloud-post/leser-2.md, 07:37)
+   „der Deckel-Riss-Befund der GTX 1050 — die Leiter-Dateien tragen keine innere Uhr; an stoerung#2 (30 s) und aufwaerts#1 (45 s) riss
+   der Deckel, ohne dass die Zahl nennt, welcher Schritt die Zeit nahm. Kandidat: jede Leiter schreibt je Schritt eine Zeile
+   `@@PUNKTE@@ ZEIT <leiter> <schritt> <ms>` in ihren Strom und der Riss nennt den längsten Schritt beim Namen. Wände wie gehabt: `liste`
+   an Basis und Kandidat gleich, Leiter ≤ 60 s, Stichprobe durch den Leser des Spiels.“
+   Briefkasten gegrept (ZEIT, Uhr, stoerung, aufwaerts): kein früherer Entwurf einer Leiter-Uhr.
+
+1. DER RICHTER (wörtlich, vision/meisterkarte-2.json an punkte-maschine 55ee5ac0) der zwei benannten Sprossen
+   same.kopplung.stoerung S2  „Zeitsprung 1 Spieljahr: Nachwuchs auf Asche, r(Tempo, Feuchte × Licht) ≥ 0,5“
+                              (umfang „3 Domänen (Boden, Pflanze, Licht), 1 Jahr“, preis „P“)
+   same.kopplung.aufwaerts S1 „Haus bauen, aufsteigen: Pixel aus 400 m an seiner Stelle; Bildpaar an 10 Orten im Umkreis“
+                              (umfang „eine Tat (gebautes Haus, Rodung 1 ha), wirkt bis 1 km“, preis „P; Speicher-Zuwachs = Bytes der Tat“)
+   Der Kandidat ist ein Schnitt am Messgerät, nicht an einer Sprosse: er gilt für jede Leiter der drei Gerüste der Karte 2.
+
+2. DER BEFUND
+   Geräte: der Riss an stoerung#2 und aufwaerts#1 (GTX 1050) steht im Auftrag. In den gebuchten Dateien steht er nicht: der GTX-Lauf an
+   64fcf12e (messung/64fcf12e-gtx.json, Akte vision/richter/same.kopplung.stoerung.2.64fcf12e-gtx.json, 06:40Z) urteilt stoerung#2 GRÜN —
+   „rTempoFeuchteLicht 0,999 gegen Soll ≥ 0,5 ✓“, 170,4 s. Der Riss kommt und geht, und gerade dann muss die Zahl den Schritt nennen.
+   Wolke (hand.out): beide Leitern reißen ihren Deckel auch hier, und vor dem Schnitt sagte die Zahl nur die Sekunden:
+     stoerung  Deckel 30 s → Lauf 30,3 s · aufwaerts  Deckel 45 s → Lauf 45,3 s.
+
+3. DER FEHLER DER STATION (origin/punkte-maschine 55ee5ac0)
+   stationen/seite.cjs:47        die EINE Uhr des Kerns `H.schritt` schreibt „ZEIT <leiter> <s> s“ EINMAL je Leiter, nach ihrem Ende
+                                 (k2-planet.js:410) — kein Schritt, und am Riss nur die Summe.
+   stationen/k2-planet.js:401    der Deckel der Leiter (Promise.race) wirft „der Deckel der Leiter <sek> s“ — ohne den laufenden Ruf.
+   stationen/k2-planet.js:194/:215  das Urteil am Deckel: „der Deckel der Leiter riss nach <s> s vor dem Wert der Sprosse“ — nur Sekunden.
+   stationen/sitzung-seite.js:69 H.wb (der EINE Weg des Gerüsts k2-same.js:162 und der Fabrik k2-mensch.js:77/:91/:140) trägt keine Uhr
+                                 je Ruf; die Marke der Frist nennt nur einen Weg des Messorts (:62 /umstellen|/fenster|/status|/reload).
+   punkte.cjs:787                abbruchVon: „Frist der Probe <s> s gerissen“ — ein /eval oder /bild in der Frist steht nie beim Namen.
+
+4. DER SCHNITT (EIN Sender, EIN Leser, drei Gerüste; kein Flag, kein Zwilling)
+   seite.cjs `zeitUhr(log)`     die Hülle um den EINEN Weg zur Welt: jeder Ruf ist ein Schritt `<n>:<weg>[@<kontext>][:<ziel>]` (n je
+                                Leiter, kontext die Sprosse S<n> oder der Rahmen/der Preis, ziel das Bild oder der Ort); endet er, steht
+                                „@@PUNKTE@@ ZEIT <leiter> <schritt> <ms>“ im Strom; reißt ein Deckel, schreibt `offen()` die laufenden
+                                mit „ offen“ (ihre ms bis zum Riss). Der Text reist in die Probe (keine freien Namen).
+   seite.cjs `laengsterSchritt(strom, leiter)`  der EINE Leser: der längste Schritt beim Namen, und ist er beendet, der am Riss offene
+                                daneben; die Zeile des Rahmens „ZEIT <name> <s> s“ zählt nie; ohne Uhr null (die Zahl bleibt wie vorher).
+   Kern    k2-planet.js probeRumpf: H.ruf in der Hülle (H.seite, M.auge, Rahmen), Z.leiter je Leiter, am Deckel `Z.offen(id)`, am Ende
+           der Probe (H.ende) jeder noch laufende; urteilBauen hängt „, <der längste Schritt>“ an beide Deckel-Sätze.
+   Gerüst  k2-same.js leiterRahmen: H.wb in der Hülle, L.je/L.auge tragen die Sprosse als Kontext (die Körper byte-gleich), die
+           Preis-Pose „preis“; der Abbau schreibt die offenen.
+   Fabrik  k2-mensch.js k2Werkzeug: H.wb in der Hülle, K.schritt trägt die Sprosse; der Abbau schreibt die offenen.
+   Riss der Frist  punkte.cjs abbruchVon hängt den längsten Schritt an (Kern, Gerüst, Fabrik — derselbe Leser).
+   Linse (in den bestehenden Familien, rot am Täter):
+     Proben   je Kern-Station +1: „der Deckel der Leiter riss: der Riss nennt den längsten Schritt der Leiter und den am Riss offenen“
+              (das Muster des Wolken-Risses: 2:/eval 16 094 beendet, /bild offen; fremde Leiter und Rahmen-Zeile zählen nie).
+     Selbsttest FRIST IM MESSORT: die echte Fabrik gegen eine Werkbank, die nie antwortet — der Grund nennt den offenen Schritt; dazu
+              der Strom ohne Uhr (kein Schritt), die Rahmen-Zeile (zählt nie), zwei Leitern (längster beendet + offener daneben).
+     Selbsttest (g) DER RAFFER: der Kern-Rumpf im Sandkasten trägt die Uhr (H des Sandkastens mit H.ruf/H.ende wie das echte),
+              2 Schritte /eval je Lauf gezählt.
+
+5. DIE ZAHL — vorher ↔ nachher (gleiche Bedingungen)
+   Riss des Kerns (die Station selbst urteilt, hand.out über die Zeugen):
+     vorher  „der Deckel der Leiter riss nach 30,016 s vor dem Wert der Sprosse“ (k2-planet.js:194; der Strom trug 0 Schritte)
+     nachher „der Deckel der Leiter riss nach 30,016 s vor dem Wert der Sprosse, der längste Schritt 4:/bild:auge-same-stoerung-s4
+             29892 ms (am Riss offen, 5 Schritte)“ — stoerung S2–S7; aufwaerts S1–S8: „… nach 45,022 s …, der längste Schritt
+             4:/bild:auge-same-aufwaerts-s7 24053 ms (am Riss offen, 5 Schritte)“ (davor 2:/eval 20 967 ms, Bau und Orte).
+     Erster Wolken-Lauf stoerung: 2:/eval 16 094 ms beendet + 4:/bild s4 13 905 ms offen — daraus der Leser „am Riss offen“ daneben.
+   Riss der Frist (der echte Läufer fahreStation, hand.out):
+     vorher  „Frist der Probe 6 s gerissen im /umstellen stadt (der Ruf lief 5.8 s: der Messort trug die Frist)“
+     nachher dasselbe + „, der längste Schritt 1:/umstellen:stadt 5999 ms in mensch.sport.medium (am Riss offen, 1 Schritt)“;
+             Gerüst same.entfaltung.gleichheit: „2:/umstellen@preis:wiese 13986 ms (am Riss offen)“ — die Frist riss in der Preis-Pose
+             NACH der Leiter (1:/eval 10 ms), vorher ohne jedes Wort dazu.
+   Kern-Stationen, deren Riss einen Schritt nennt: 0 von 588 → 588 von 588 (Proben 1 643/2 090/2 005 → 1 818/2 300/2 208, falsch 0).
+   ZEIT-Zeilen je Leiter im Strom: 0 → stoerung 9 · aufwaerts 9 · Gerüst 2 · Fabrik 1.
+   Die Uhr kostet 4,22 µs je Schritt (ohne Uhr 0,33 µs; 20 000 Rufe, Zeile in eine Datei) — bei 1–9 Schritten je Leiter < 0,1 ms.
+   Leiter ≤ 60 s: stoerung 30,3 s (ihr Deckel 30) · aufwaerts 45,3 s (Deckel 45) · Gerüst 14,1 s (Frist 14 von 20) · Fabrik 24,1 s
+   (Frist 24 von 30) — jede unter ihrem eigenen Deckel, die Uhr verlängert keinen.
+
+6. DIE WÄNDE
+   Spitze     punkte-maschine rückte beim Einreichen auf d3129c31: die fünf Dateien des Diffs sind dort byte-gleich zu 55ee5ac0
+              (git diff 55ee5ac0 d3129c31 -- <fünf Pfade> leer; dazwischen nur Messungen, Akten, stand.json, Meisterkarte, zug/),
+              der Diff greift unverändert, keine Station und kein Deckel bewegte sich.
+   liste      Basis 55ee5ac0 1 976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0 (35 s) = Kandidat 1 976 · 420 · fehlt 15 · Fehler 0 (39 s).
+              Geändert 1 566 Blöcke, alle Karte 2 der drei Gerüste (0 Blöcke der Karte 1, 0 der 49 Karte-2-Stationen in g1/g2/g4/g5);
+              die übrigen 74 Stationen der sieben Dateien stehen an Basis wie Kandidat nicht in der Liste. Was sich ändert: der Text des
+              Befehls (die Uhr) und damit sein Abdruck.
+   Proben     k2-planet 1 818 · k2-leben 2 300 · k2-zusammenspiel 2 208 · k2-same 1 583 · k2-erleben 2 137 · k2-kosmos 493 · k2-mensch 5 398,
+              falsch 0 (Basis 1 643 · 2 090 · 2 005 · 1 583 · 2 137 · 493 · 5 398).
+   Mutanten   ohne den Leser am Riss (amRiss leer): falsch 175 · 210 · 203 = ROT an 588 von 588 Kern-Stationen beim Namen;
+              ohne den offenen Schritt daneben: dieselben 588 ROT.
+   Selbsttest Basis 55ee5ac0 288/291 (ROT: BEFEHL TRÄGT · WACHE … Tod · WACHE DER TOD KOSTET …) ↔ Kandidat 287/291, dieselben drei +
+              LEBENSZEICHEN DES ZEUGEN. Der ist fremd und hängt an der Last: zwei node-Prozesse zu je 1,5 s gegen die Wand
+              `la.s >= 3.2` (punkte.cjs:9396) — Basis 933b843639 ruhig 3,1 ROT, Basis 55ee5ac0 neben `liste` 3,2 GRÜN, Kandidat zweimal
+              ruhig 3,1 ROT; der Diff berührt weder die Probe noch die Leine. BEFEHL TRÄGT: „jetzt ROT 0“ an Basis und Kandidat.
+   Befehlszeile (zeilen-laenge.cjs, die Zählung von punkte.cjs zeileLaenge): Kern +1 208 Zeichen, Gerüst +2 036…2 038, Fabrik +1 671;
+              durch die Tür (> 30 000, der Rumpf als Datei) Kern 582 → 582, Gerüst 167 → 245, Fabrik 315 → 415 — derselbe Weg, den die
+              Basis an 1 064 Stationen schon fährt.
+
+7. DER PREIS DES SCHNITTS
+   Der Abdruck der 1 566 Stationen ändert sich (Befehl und Urteil-Text): jede misst am Gerät neu, ehe punkte.cjs ihr GRÜN hält. Die
+   Buchung der Karte 2 (vision/buche-2.cjs, aus den Akten) fällt dadurch nicht.
+
+8. WAS NUR DAS GERÄT MESSEN KANN
+   Welcher Schritt an der GTX 1050 die 30 s von stoerung#2 und die 45 s von aufwaerts#1 nimmt. In der Wolke hängt /bild (die Werkbank hat
+   kein Gerät mehr), dort heißt der Schritt immer /bild. Am Gerät steht er nach dem Schnitt im Grund, bei jedem Riss, ohne neuen Lauf.
+   Ebenso die Zeit der Leiter profiband.K5 gegen den Deckel 60 s (Runde 35 am OMEN).
+
+9. OFFEN (beim Namen)
+   - Deckel der SITZUNG (die Leine tötet mit SIGKILL, punkte.cjs:2284): der hängende Schritt bleibt ungeschrieben. Der Grund
+     „(zuletzt: …)“ trägt jetzt die letzte ZEIT-Zeile, also den letzten beendeten Schritt mit Sprosse, die Stelle, NACH der es hing.
+     Messname: zeit#sitzungsdeckel.
+   - Nach dem Deckel einer Kern-Leiter läuft ihre Messung als Waise weiter (der Deckel bricht das Promise, nicht den Ruf); was sie danach
+     ruft, zählt die Uhr der nächsten Leiter — beim Namen sichtbar (/bild:auge-<leiter>-s<n>), aber unter fremdem Namen. Messname:
+     zeit#waise.
+   - LEBENSZEICHEN DES ZEUGEN (fremd, Last-abhängig, §6) — nicht beansprucht.
+
+10. HAND-SKRIPT
+   zeit-hand.cjs: der echte Probe-Befehl einer Station (Kern: geschnitten auf die EINE Leiter), gefahren vom echten Läufer
+   punkte.cjs fahreStation gegen eine warme Werkbank, dann jede Station der Leiter über ihr Urteil, ein zweites Mal über die Zeugen
+   (die Wolke hat keine Karte, die GPU-Wand urteilt vor dem Deckel).
+   Aufruf im Spiel-Baum (main), Werkbank wie in punkte.cjs halter:
+     node zeit-hand.cjs <punkte-dir> k2-zusammenspiel.js same.kopplung.stoerung 24600 60
+     node zeit-hand.cjs <punkte-dir> k2-zusammenspiel.js same.kopplung.aufwaerts 24600 60
+     node zeit-hand.cjs <punkte-dir> k2-same.js same.entfaltung.gleichheit 24600 20   (und 9: die Frist erzwungen)
+     node zeit-hand.cjs <punkte-dir> k2-mensch.js mensch.sport.medium 24700 30         (und 12: die Frist erzwungen)
+   zeilen-laenge.cjs <stationen Basis> <stationen Kandidat>: die Befehlszeile je Familie.

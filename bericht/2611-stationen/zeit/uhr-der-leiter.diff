@@ -1,0 +1,345 @@
+diff --git a/meisterkarte-quelle/punkte/punkte.cjs b/meisterkarte-quelle/punkte/punkte.cjs
+index 0a50d45417..163cd64b79 100644
+--- a/meisterkarte-quelle/punkte/punkte.cjs
++++ b/meisterkarte-quelle/punkte/punkte.cjs
+@@ -780,11 +780,16 @@ const MESSORT_MARKE = /^@@PUNKTE@@ MESSORT (.+)$/m;
+ // DER BRUCH DES MESSORTS als Grund (abbruchVon): die Frist riss in einem Weg des Messorts, oder das Messgerät warf vor der Linse — die
+ // Probe erreichte ihren Apparat nie (fahreSitzung, DIE SITZUNG TRÄGT (c): offen)
+ const MESSORT_BRUCH = /^(?:Frist der Probe \d+(?:\.\d+)? s gerissen im \/[a-z]+\b|Messort: )/;
+-// der Abbruch eines Laufs beim Namen (deckel: der Riss der Leine, den der Läufer selbst sah) oder null
++// der Abbruch eines Laufs beim Namen (deckel: der Riss der Leine, den der Läufer selbst sah) oder null. DIE UHR DER LEITER (Koordinator
++// 26.11. 07:37, stationen/seite.cjs zeitUhr): trägt der Strom ZEIT-Zeilen, nennt der Riss der Frist den längsten Schritt beim Namen — die
++// am Riss offenen schrieb der Abbau der Probe nach der Marke (der Deckel der Sitzung tötet hart, dort bleibt der offene ungeschrieben)
+ function abbruchVon(stdout, deckel) {
+     if (deckel) return deckel;
+     const f = FRIST_MARKE.exec(String(stdout || ""));
+-    if (f) return "Frist der Probe " + f[1] + " s gerissen" + (f[2] ? " im " + f[2] + " (der Ruf lief " + f[3] + " s: der Messort trug die Frist)" : "");
++    if (f) {
++        const schritt = require("./stationen/seite.cjs").laengsterSchritt(stdout);
++        return "Frist der Probe " + f[1] + " s gerissen" + (f[2] ? " im " + f[2] + " (der Ruf lief " + f[3] + " s: der Messort trug die Frist)" : "") + (schritt ? ", " + schritt : "");
++    }
+     const mo = MESSORT_MARKE.exec(String(stdout || ""));
+     return mo ? "Messort: " + mo[1].trim().slice(0, 300) : null;
+ }
+@@ -7887,9 +7892,12 @@ async function selbsttest(o = {}) {
+             // hier ein Sandkasten mit `window` (der Rumpf reist als Text, wie in die Probe)
+             {
+                 const KP = require("./stationen/k2-planet.js").kern;
++                const uhr = []; // die Uhr der Leiter (seite.cjs zeitUhr) schreibt hier statt in den Strom — ZEIT im Rumpf, wie die Art sie stellt
++                const ZEIT = () => require("./stationen/seite.cjs").zeitUhr((z) => uhr.push(z));
+                 const rumpf = (soll) => {
+                     const datei = path.join(tmp, "raffer-" + soll + ".json"), win = {};
+-                    const H = { aus: datei, frist: async () => 0, schritt: () => {}, seite: async (code) => new Function("window", code)(win) };
++                    const H = { aus: datei, frist: async () => 0, schritt: () => {}, ende: [], ruf: async (weg, o) => ({ ergebnis: new Function("window", o.code)(win) }) };
++                    H.seite = async (code) => (await H.ruf("/eval", { code })).ergebnis;
+                     const LEITERN = { "x.y": { sek: 18, mess: async (H2) => ({ sprossen: { 1: { werte: { n: (await H2.seite("return window.__raffer(" + soll + ", () => {}, 'lauf').n;")) } } } }) } };
+                     return eval("(" + KP.knapp(KP.probeRumpf) + ")")(H, {}, LEITERN, null).then(() => JSON.parse(fs.readFileSync(datei, "utf8")));
+                 };
+@@ -7897,8 +7905,9 @@ async function selbsttest(o = {}) {
+                 const u = KP.urteilBauen("x.y", 1, { soll: [], zeuge: () => null }, false), lauf = { stdout: "[linse-gpu] amd/rdna-3" };
+                 const ue = u(ewig, lauf), uk = u(kurz, lauf);
+                 pruef("KEIN URTEIL (g) DER RAFFER AM BUDGET: 10¹³ Takte (100 Jahre unter dem angehaltenen Tag der Bühne) enden am Budget der Leiter (18 − 15 = 3 s), nie hängend — die Sprosse UNGEMESSEN mit „n von 10000000000000 Takten“; 5 Takte schaffen ihr Soll — GRÜN, keine Liste",
+-                    ms < 6000 && ue.gruen === false && /^der Raffer trug lauf \d+ von 10000000000000 Takten in [\d,]+ s/.test(ue.ohneUrteil || "") && !kurz.leitern["x.y"].raffer && uk.gruen === true,
+-                    JSON.stringify([ms, ue, kurz.leitern["x.y"], uk]));
++                    ms < 6000 && ue.gruen === false && /^der Raffer trug lauf \d+ von 10000000000000 Takten in [\d,]+ s/.test(ue.ohneUrteil || "") && !kurz.leitern["x.y"].raffer && uk.gruen === true &&
++                    uhr.filter((z) => /^@@PUNKTE@@ ZEIT x\.y \d+:\/eval \d+$/.test(z)).length === 2,
++                    JSON.stringify([ms, ue, kurz.leitern["x.y"], uk, uhr.length]));
+             }
+         }
+         const id = schluessel(at);
+@@ -8322,15 +8331,20 @@ async function selbsttest(o = {}) {
+         await new Promise((ja) => haengt.listen(0, "127.0.0.1", ja));
+         const { k2Werkzeug } = require(path.join(DIR, "stationen", "k2-mensch.js"));
+         const flugFn = async (H) => { const K = H.seite.K(H, H.seite.SPEC); await K.messort("stadt-voll"); return { n: 0 }; }; // prettier-ignore
+-        const flugSt = { ...st0, minuten: 0.1, befehl: probeBefehl(flugFn, 12, { K: k2Werkzeug, SPEC: JSON.stringify({ leiter: "mensch.kultur.schrift" }) }).befehl
++        const flugSt = { ...st0, minuten: 0.1, befehl: probeBefehl(flugFn, 12, { K: k2Werkzeug, ZEIT: require(path.join(DIR, "stationen", "seite.cjs")).zeitUhr, SPEC: JSON.stringify({ leiter: "mensch.kultur.schrift" }) }).befehl
+             .map((a) => (a === "{PORT}" ? String(haengt.address().port - 20000) : a)), urteil: (j) => (j ? { gruen: j.n === 0, zahl: "n " + j.n } : { gruen: false, zahl: "keine Ausgabe" }) };
+         const fl = await fahreStation(flugSt, ctx("seite-flug"));
+         if (haengt.closeAllConnections) haengt.closeAllConnections();
+         haengt.close();
+         const flugAlt = abbruchVon("@@PUNKTE@@ FRIST 6 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier");
+-        pruef("FRIST IM MESSORT reißt die Frist der Probe, während /umstellen läuft, nennt der Grund Weg und Ort (die Marke von vorher: ohne Ort)",
+-            fl.ungemessen === true && /^Frist der Probe 6 s gerissen im \/umstellen stadt-voll \(der Ruf lief \d+\.\d s: der Messort trug die Frist\) — /.test(fl.grund) &&
+-            flugAlt === "Frist der Probe 6 s gerissen", JSON.stringify([fl.grund, flugAlt]));
++        // DIE UHR DER LEITER (stationen/seite.cjs zeitUhr): der Abbau schrieb den offenen Schritt, der Grund nennt ihn beim Namen; die
++        // Mutante ist der Strom ohne Uhr (die Marke allein: kein Schritt) und die Zeile des Rahmens „ZEIT <name> <s> s“ (zählt nie)
++        const flugOhneUhr = abbruchVon("@@PUNKTE@@ FRIST 6 s der Probe gerissen — Abbau\n@@PUNKTE@@ ZEIT messung 5.9 s");
++        const flugZwei = abbruchVon("@@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau\n@@PUNKTE@@ ZEIT a.b 2:/eval 16094\n@@PUNKTE@@ ZEIT c.d 1:/bild:auge-x 13905 offen");
++        pruef("FRIST IM MESSORT reißt die Frist der Probe, während /umstellen läuft, nennt der Grund Weg und Ort und den längsten Schritt der Uhr (die Marke von vorher: ohne Ort, ohne Uhr: ohne Schritt)",
++            fl.ungemessen === true && /^Frist der Probe 6 s gerissen im \/umstellen stadt-voll \(der Ruf lief \d+\.\d s: der Messort trug die Frist\), der längste Schritt 1:\/umstellen:stadt-voll \d+ ms in mensch\.kultur\.schrift \(am Riss offen, 1 Schritt\) — /.test(fl.grund) &&
++            flugAlt === "Frist der Probe 6 s gerissen" && flugOhneUhr === "Frist der Probe 6 s gerissen" &&
++            flugZwei === "Frist der Probe 54 s gerissen, der längste Schritt 2:/eval 16094 ms in a.b (2 Schritte), am Riss offen 1:/bild:auge-x 13905 ms in c.d", JSON.stringify([fl.grund, flugAlt, flugOhneUhr, flugZwei]));
+         const gs = spawnSync(process.execPath, [__filename, "grundstellung", "--port", String(zuPort), "--grund", path.join(tmp, "kein-grund.json")], { encoding: "utf8", timeout: 60000 });
+         pruef("MESSORT das Tor, das Werkzeug der Seite und die Grundstellung tragen die Marke beim Namen; ein Wurf daneben (der Anker der Linse) bleibt ROT, das Maß GRÜN",
+             tm.ungemessen === true && /^Messort: \/umstellen: Messort wiese: der Ring 120 m steht nicht nach 300 Takten — kein Urteil, UNGEMESSEN/.test(tm.grund) &&
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-mensch.js b/meisterkarte-quelle/punkte/stationen/k2-mensch.js
+index 9eb7c92992..90677a2977 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-mensch.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-mensch.js
+@@ -47,6 +47,7 @@
+ const fs = require("fs");
+ const path = require("path");
+ const { probeBefehl } = require("./sitzung-seite.js");
++const { zeitUhr } = require("./seite.cjs"); // die Uhr der Leiter (H.seite.ZEIT in der Probe)
+ const AUGE = require("./auge-klasse.cjs");
+ 
+ const KOORD = path.resolve(__dirname, "..", "..", "..");
+@@ -62,6 +63,12 @@ const KARTE_PROBE = "[linse-gpu] amd/rdna-3 (Probe)";
+ function k2Werkzeug(H, SPEC) {
+     const K = { H, SPEC, sicht: "ego" };
+     const j = (K.j = H.teil = { leiter: SPEC.leiter, adapter: null, sprossen: {} });
++    // DIE UHR DER LEITER (seite.cjs zeitUhr, als H.seite.ZEIT in der Probe): jeder Ruf an die Welt über H.wb (K.welt, K.messort, K.bild)
++    // ist ein Schritt, in K.schritt mit der Sprosse als Kontext; reißt die Frist, schreibt der Abbau die laufenden (nach der Marke)
++    const Z = (K.zeit = H.seite.ZEIT(console.log));
++    Z.leiter = SPEC.leiter;
++    H.wb = Z.huelle(H.wb);
++    H.beimAbbau(() => Z.offen());
+     // DER ADAPTER DER SITZUNG: die Welt nennt ihn in ihrem Log (PUNKTE_SITZUNG_LOG) — Zeile der Probe und Feld des JSON
+     K.adapter = () => {
+         let z = null;
+@@ -104,6 +111,8 @@ function k2Werkzeug(H, SPEC) {
+             H.zeile("S" + n + " an der Frist ausgelassen (" + H.sek() + " s)");
+             return null;
+         }
++        const vor = Z.kontext;
++        Z.kontext = "S" + n;
+         try {
+             return await f();
+         } catch (e) {
+@@ -112,6 +121,8 @@ function k2Werkzeug(H, SPEC) {
+             H.zeile("S" + n + " warf: " + t);
+             j.sprossen[n] = { art: "fehler", text: t };
+             return null;
++        } finally {
++            Z.kontext = vor;
+         }
+     };
+     const kurz = (t) => String(t == null ? "" : t).slice(0, 300);
+@@ -369,7 +380,7 @@ function leiter(id, def) {
+         if (!L.sprossen.some((s) => String(s.nr) === k)) throw new Error(id + ": die Sprosse " + k + " steht nicht in der Karte");
+     const nrn = L.sprossen.map((s) => s.nr).filter((n) => sprossen[n]);
+     const SPEC = { leiter: id, sprossen: Object.fromEntries(nrn.map((n) => [n, sprossen[n].auge ? { auge: sprossen[n].auge } : { umfang: sprossen[n].umfang || null, masse: sprossen[n].masse }])) };
+-    const probe = { ...probeBefehl(rumpf(def.messe), sek, { K: k2Werkzeug, SPEC: JSON.stringify(SPEC), ...seite }), ...(def.mutiert ? { mutiert: true } : {}) };
++    const probe = { ...probeBefehl(rumpf(def.messe), sek, { K: k2Werkzeug, ZEIT: zeitUhr, SPEC: JSON.stringify(SPEC), ...seite }), ...(def.mutiert ? { mutiert: true } : {}) };
+     leitern.push({ id, def, nrn });
+     // DIE TAFEL-ZEILE (der Vertrag aller k2-Register, punkte.cjs k2TafelZeile): ein Augen-Richter, dessen Umfang die Welt nicht trägt,
+     // urteilt ROT „Umfang nicht erzeugbar“ — ein ganzes Urteil, die Zeile „gleich“; jeder andere Augen-Richter „fehlt“ mit seiner Klasse
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-planet.js b/meisterkarte-quelle/punkte/stationen/k2-planet.js
+index 08ecf9ea28..ba90dc299a 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-planet.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-planet.js
+@@ -4,7 +4,7 @@
+ "use strict";
+ const fs = require("fs");
+ const path = require("path");
+-const { seiteProbe, knapp } = require("./seite.cjs");
++const { seiteProbe, knapp, zeitUhr, laengsterSchritt } = require("./seite.cjs");
+ // DIE KLASSE DER AUGE-SPROSSE (ZAHL · PANEL · KORPUS am Wortlaut der Karte, R11) — EIN Ort für alle k2-Register
+ const AUGE = require("./auge-klasse.cjs");
+ // DER FÄCHER (M4: der Richter ist selbst eine Adresse, stationen/faecher.js) — eine Leiter mit `faecher: true` findet ihn in ihrer
+@@ -189,9 +189,13 @@ const KERN = (() => {
+             // Leiter (die Welt warf, der Code der Leiter warf) bleibt ROT mit seinem Text.
+             const roh0 = L.sprossen && L.sprossen[nr];
+             const deckelL = L.warf && (L.deckel === true || /^der Deckel der Leiter \d+ s$/.test(String(L.warf)));
++            // DER RISS NENNT DEN LÄNGSTEN SCHRITT (die Uhr der Leiter, seite.cjs zeitUhr; der EINE Leser laengsterSchritt über die
++            // ZEIT-Zeilen DIESER Leiter im Strom): „, der längste Schritt 2:/eval 29812 ms (am Riss offen, 6 Schritte)“ — ohne Zeile nichts
++            const schritt = deckelL ? laengsterSchritt(lauf && lauf.stdout, leiter) : null;
++            const amRiss = schritt ? ", " + schritt : "";
+             if (L.warf && !(roh0 && typeof roh0 === "object")) {
+                 if (deckelL) {
+-                    const grund = "der Deckel der Leiter riss nach " + deutsch(L.s) + " s vor dem Wert der Sprosse";
++                    const grund = "der Deckel der Leiter riss nach " + deutsch(L.s) + " s vor dem Wert der Sprosse" + amRiss;
+                     return { gruen: false, zahl: kopf + grund + " · " + String(L.warf).slice(0, 120), ohneUrteil: grund };
+                 }
+                 return rot("die Messung der Leiter warf nach " + deutsch(L.s) + " s: " + String(L.warf).slice(0, 220), sp.taeter);
+@@ -212,7 +216,7 @@ const KERN = (() => {
+             if (L.warf && deckelL) {
+                 const offen = sp.soll.filter((s) => werte[s.key] == null || (typeof werte[s.key] === "number" && !Number.isFinite(werte[s.key]))).map((s) => s.key);
+                 if (offen.length) {
+-                    const grund = "der Deckel der Leiter riss nach " + deutsch(L.s) + " s, ehe " + offen.join(", ") + " der Sprosse stand";
++                    const grund = "der Deckel der Leiter riss nach " + deutsch(L.s) + " s, ehe " + offen.join(", ") + " der Sprosse stand" + amRiss;
+                     return { gruen: false, zahl: kopf + grund + " · " + String(L.warf).slice(0, 120), ohneUrteil: grund };
+                 }
+             }
+@@ -368,6 +372,13 @@ const KERN = (() => {
+     // Frist behält, was gemessen ist
+     async function probeRumpf(H, M, LEITERN, DORF) {
+         const fs = require("fs");
++        // DIE UHR DER LEITER (seite.cjs zeitUhr, in die Art geschrieben als ZEIT): jeder Ruf an die Welt (H.ruf — H.seite, M.auge, der
++        // Rahmen) ist ein Schritt der Leiter, die gerade misst; der Rahmen (Frist, Dorf, Raffer) trägt den Kontext „rahmen“. Am Deckel der
++        // Leiter schreibt sie ihre laufenden Schritte, am Ende der Probe (H.ende, vor der Marke der Frist) jeden, der noch läuft
++        const Z = ZEIT(console.log);
++        H.ruf = Z.huelle(H.ruf);
++        H.ende.push(() => Z.offen());
++        Z.kontext = "rahmen";
+         await H.frist();
+         const aus = { fassung: 1, leitern: {} };
+         if (DORF) {
+@@ -394,7 +405,10 @@ const KERN = (() => {
+             M.t0 = Date.now();
+             M.teil = {};
+             let uhr = null, deckel = false;
++            Z.leiter = id;
++            Z.kontext = "rahmen";
+             await rafferStellen(H, L.sek);
++            Z.kontext = "";
+             try {
+                 const r = await Promise.race([
+                     L.mess(H, L.U, M),
+@@ -403,13 +417,16 @@ const KERN = (() => {
+                 aus.leitern[id] = { s: (Date.now() - M.t0) / 1000, sprossen: (r && r.sprossen) || {} };
+             } catch (e) {
+                 aus.leitern[id] = Object.assign({ s: (Date.now() - M.t0) / 1000, warf: String((e && e.message) || e).split("\n")[0].slice(0, 300) }, deckel ? { deckel: true } : {}, { sprossen: Object.assign({}, M.teil) });
++                if (deckel) Z.offen(id);
+             }
+             clearTimeout(uhr);
++            Z.kontext = "rahmen";
+             const kurz = await rafferKurz(H);
+             if (kurz.length) aus.leitern[id].raffer = kurz;
+             H.schritt(id);
+             fs.writeFileSync(H.aus, JSON.stringify(aus));
+         }
++        Z.leiter = "rahmen";
+         return 0;
+         // DER RAFFER AM BUDGET SEINER PROBE (pm-stationen-kalender 22.11.; Radeon 161ff792: die Leiter leben.oeko.dynamik stand 271 s
+         // still — ihr Raffer zählte das Jahr in Welt-Uhr-Sekunden, unter dem angehaltenen Tag der Bühne (10¹² min) 4·10¹² Takte). JEDE
+@@ -470,7 +487,7 @@ const KERN = (() => {
+             mutiert = true;
+         }
+         const DORF = dorf ? "{ code: " + JSON.stringify(knapp(dorfSeite)) + ", a: " + JSON.stringify(DORF_A) + ", sek: " + DORF_S + " }" : "null";
+-        const art = "async (H) => { " + (faecher ? "const FAECHER = " + knapp(FAECHER) + "; " : "") + "const M = (" + knapp(probeHilfen) + ")(H); const LEITERN = {" + stuecke.join(",\n") + "}; return (" + knapp(probeRumpf) + ")(H, M, LEITERN, " + DORF + "); }";
++        const art = "async (H) => { const ZEIT = " + knapp(zeitUhr) + "; " + (faecher ? "const FAECHER = " + knapp(FAECHER) + "; " : "") + "const M = (" + knapp(probeHilfen) + ")(H); const LEITERN = {" + stuecke.join(",\n") + "}; return (" + knapp(probeRumpf) + ")(H, M, LEITERN, " + DORF + "); }";
+         const probe = seiteProbe(sek, art, mutiert ? { mutiert: true } : {});
+         const stationen = [];
+         const B = belegt();
+@@ -528,8 +545,13 @@ const KERN = (() => {
+         const w0 = (roh && roh.werte) || {};
+         // trägt schon die erste Probe nicht jeden Wert ihres Solls, ist sie unter dem Deckel die halbe Sprosse (unten)
+         const halb = !!(sp && Array.isArray(sp.soll) && sp.soll.some((s) => w0[s.key] == null || (typeof w0[s.key] === "number" && !Number.isFinite(w0[s.key]))));
++        // die Uhr der Leiter im Strom (seite.cjs zeitUhr): der Riss nennt ihren längsten Schritt und den am Riss offenen — nie den einer
++        // anderen Leiter, nie die Zeile des Rahmens „ZEIT <name> <s> s“ (das Muster des Risses in der Wolke 26.11.: stoerung am Deckel 30 s)
++        const uhr = [[leiter, "1:/eval@rahmen 3"], [leiter, "2:/eval 16094"], [leiter, "3:/eval 4"], [leiter, "4:/bild:auge-x 8810 offen"], ["eine.andere.leiter", "1:/eval 99999"], [leiter, "47.5 s"]];
+         st.proben = st.proben.concat([
+             { name: "der Deckel der Leiter riss vor dem Wert", j: j({}), stdout: p0.stdout, gruen: false, zahl: /der Deckel der Leiter riss nach 25 s vor dem Wert der Sprosse/ },
++            { name: "der Deckel der Leiter riss: der Riss nennt den längsten Schritt der Leiter und den am Riss offenen", j: j({}), stdout: p0.stdout + "\n" + uhr.map(([l, z]) => "@@PUNKTE@@ ZEIT " + l + " " + z).join("\n"), gruen: false,
++                zahl: /der Deckel der Leiter riss nach 25 s vor dem Wert der Sprosse, der längste Schritt 2:\/eval 16094 ms \(4 Schritte\), am Riss offen 4:\/bild:auge-x 8810 ms · / },
+             halb
+                 ? { name: "gemessen vor dem Deckel der Leiter, ohne jeden Wert des Solls", j: j({ [nr]: roh }), stdout: p0.stdout, gruen: false, zahl: /der Deckel der Leiter riss nach 25 s, ehe .+ der Sprosse stand/ }
+                 : { name: "gemessen vor dem Deckel der Leiter", j: j({ [nr]: roh }), stdout: p0.stdout, gruen: p0.gruen, zahl: /gemessen vor dem Wurf der Leiter nach 25 s/ },
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-same.js b/meisterkarte-quelle/punkte/stationen/k2-same.js
+index 9f12d2cbf6..dddd261e90 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-same.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-same.js
+@@ -28,6 +28,7 @@ const fs = require("fs");
+ const path = require("path");
+ const crypto = require("crypto");
+ const { probeBefehl, SAATEN } = require("./sitzung-seite.js");
++const { zeitUhr } = require("./seite.cjs"); // die Uhr der Leiter (H.seite.ZEIT in der Probe)
+ const { netzMitschnitt } = require("./g6.js"); // der EINE Netz-Mitschnitt (same.preis.bytes S7 zählt die Sprünge der Saaten mit ihm)
+ const AUGE = require("./auge-klasse.cjs");
+ const { FAECHER } = require("./faecher.js"); // der Fächer (M4: der Richter ist selbst eine Adresse) — same.massstab.spanne S1–S4
+@@ -133,6 +134,12 @@ async function leiterRahmen(H, P, lauf) {
+     const hw = (/\[linse-gpu\][^\r\n]*/.exec(log) || [null])[0];
+     console.log(hw || "[linse-gpu] ungenannt (kein Log der Sitzung)");
+     const j = (H.teil = { leiter: P.leiter, hw, sprossen: {}, fehler: {}, zeilen: [], preisPose: null });
++    // DIE UHR DER LEITER (seite.cjs zeitUhr, als H.seite.ZEIT in der Probe): jeder Ruf an die Welt über H.wb (L.wb, L.ev, L.ort) ist ein
++    // Schritt, in L.je und L.auge mit der Sprosse als Kontext; reißt die Frist, schreibt der Abbau die laufenden (nach der Marke)
++    const Z = H.seite.ZEIT(console.log);
++    Z.leiter = P.leiter;
++    H.wb = Z.huelle(H.wb);
++    H.beimAbbau(() => Z.offen());
+     const D = String(H.AUS).replace(/\.json$/, "") + "-bilder";
+     // DER STAND NACH JEDER SPROSSE (punkte.cjs keinUrteil (e)): die Ausgabe trägt jede geurteilte Sprosse ganz, ehe die nächste misst —
+     // reißt danach die Frist oder tötet die Leine die Probe, urteilt die Sprosse aus ihr (geschrieben neben der Ausgabe, dann umbenannt:
+@@ -212,8 +219,22 @@ async function leiterRahmen(H, P, lauf) {
+             }
+         },
+     };
++    // die Sprosse als Kontext der Uhr: L.je und L.auge tragen sie für jeden Ruf darin (verschachtelt: die innere, danach wieder die äußere)
++    for (const k of ["je", "auge"]) {
++        const f = L[k];
++        L[k] = async (nr, ...a) => {
++            const vor = Z.kontext;
++            Z.kontext = "S" + nr;
++            try {
++                return await f(nr, ...a);
++            } finally {
++                Z.kontext = vor;
++            }
++        };
++    }
+     await lauf(H, P, L);
+     if (j.preisPose) {
++        Z.kontext = "preis";
+         try {
+             await L.ort(j.preisPose.ort, j.preisPose.sicht, j.preisPose.pose);
+             j.preisPose.steht = true;
+@@ -287,7 +308,7 @@ function leiter(def) {
+     const PLAN = { leiter: def.leiter, sprossen: Object.fromEntries(specs.map((s) => [s.nr, { umfang: s.umfang, soll: s.soll, auge: s.auge }])) };
+     const summe = crypto.createHash("sha1").update(String(sprosseUrteil) + String(sprosseMass) + JSON.stringify(specs)).digest("hex").slice(0, 10);
+     const fn = "async function leiterProbe(H) { /* richter " + summe + " */ const PLAN = " + JSON.stringify(PLAN) + ";\nreturn (" + leiterRahmen + ")(H, PLAN, " + def.lauf + "); }";
+-    const PROBE = Object.assign(probeBefehl(fn, def.sek, def.seite || {}), def.mutiert ? { mutiert: true } : {});
++    const PROBE = Object.assign(probeBefehl(fn, def.sek, { ...(def.seite || {}), ZEIT: zeitUhr }), def.mutiert ? { mutiert: true } : {});
+     return specs.map((S) => {
+         const zeit = S.soll.length > 0 && def.sprossen[S.nr].soll.some((z) => /\bms\b/.test(z.wortlaut));
+         const urteil = new Function("j", "lauf", "const S = " + JSON.stringify(S) + ";\nreturn (" + sprosseUrteil + ")(S, j, lauf);");
+diff --git a/meisterkarte-quelle/punkte/stationen/seite.cjs b/meisterkarte-quelle/punkte/stationen/seite.cjs
+index a6b44dadcb..6e61d916ae 100644
+--- a/meisterkarte-quelle/punkte/stationen/seite.cjs
++++ b/meisterkarte-quelle/punkte/stationen/seite.cjs
+@@ -129,4 +129,54 @@ const seiteProbe = (sek, art, zusatz = {}) => ({
+     ...zusatz,
+ });
+ 
+-module.exports = { seiteProbe, knapp };
++// DIE UHR DER LEITER (der Auftrag des Koordinators 26.11. 07:37; GTX 1050: an stoerung#2 riss der Deckel der Leiter 30 s, an aufwaerts#1
++// 45 s, ohne dass die Zahl nannte, welcher Schritt die Zeit nahm). Jeder Ruf einer Leiter an die Welt — /eval, /bild, /umstellen … über
++// den EINEN Weg ihres Gerüsts (H.ruf hier, H.wb in sitzung-seite.js) — ist ein SCHRITT. Endet er, steht im Strom
++// „@@PUNKTE@@ ZEIT <leiter> <schritt> <ms>“; reißt ein Deckel, schreibt `offen(leiter)` die laufenden mit „ offen“ (ihre Zeit bis zum Riss).
++// Der Schritt heißt `<n>:<weg>[@<kontext>][:<ziel>]` — n zählt je Leiter, kontext ist die Sprosse (S<n>) oder der Rahmen des Gerüsts,
++// ziel das Bild (/bild) oder der Ort (/umstellen). Die drei Gerüste der Leitern hängen sie ein: der Kern (k2-planet.js probeRumpf), das
++// Gerüst (k2-same.js leiterRahmen), die Fabrik (k2-mensch.js k2Werkzeug); der Text reist in die Probe (keine freien Namen).
++function zeitUhr(log) {
++    const Z = { leiter: "rahmen", kontext: "", n: {}, laeuft: new Set() };
++    const ziel = (weg, o) => (!o ? "" : weg === "/bild" && o.datei ? String(o.datei).split(/[\\/]/).pop().replace(/\.png$/i, "") : weg === "/umstellen" && o.ort ? String(o.ort) : "");
++    const zeile = (s, offen) => log("@@PUNKTE@@ ZEIT " + s.leiter + " " + s.schritt + " " + (Date.now() - s.t) + (offen ? " offen" : ""));
++    Z.huelle = (ruf) =>
++        async function (weg, o) {
++            const n = (Z.n[Z.leiter] = (Z.n[Z.leiter] || 0) + 1);
++            const z = ziel(weg, o);
++            const s = { leiter: Z.leiter, schritt: (n + ":" + weg + (Z.kontext ? "@" + Z.kontext : "") + (z ? ":" + z : "")).replace(/\s+/g, "_"), t: Date.now() };
++            Z.laeuft.add(s);
++            try {
++                return await ruf.apply(this, arguments);
++            } finally {
++                Z.laeuft.delete(s);
++                zeile(s, false);
++            }
++        };
++    Z.offen = (leiter) => {
++        for (const s of Z.laeuft) if (!leiter || s.leiter === leiter) zeile(s, true);
++    };
++    return Z;
++}
++// DER LESER DER UHR — EINER für jeden Riss (punkte.cjs abbruchVon: die Frist der Probe; k2-planet.js urteilBauen: der Deckel der Leiter):
++// der längste Schritt aus den ZEIT-Zeilen des Stroms (einer Leiter oder aller), am Riss offen oder beendet — und ist er beendet, der am
++// Riss offene daneben (Wolke 26.11., stoerung am Deckel 30 s: der längste 2:/eval 16 094 ms, offen /bild s4 13 905 ms); ohne Zeile null.
++// Die Zeile des Rahmens „ZEIT <name> <s> s“ (H.schritt) trägt keine ganze Zahl am Ende und zählt nie.
++const ZEIT_ZEILE = /^@@PUNKTE@@ ZEIT (\S+) (\S+) (\d+)( offen)?[ \t]*\r?$/gm;
++function laengsterSchritt(strom, leiter) {
++    const je = new Map();
++    for (const m of String(strom || "").matchAll(ZEIT_ZEILE)) {
++        if (leiter && m[1] !== leiter) continue;
++        const x = je.get(m[1] + " " + m[2]) || { leiter: m[1], schritt: m[2], ms: 0, offen: false };
++        x.ms = Math.max(x.ms, Number(m[3]));
++        x.offen = x.offen || !!m[4];
++        je.set(m[1] + " " + m[2], x);
++    }
++    if (!je.size) return null;
++    const l = [...je.values()].reduce((a, b) => (b.ms > a.ms ? b : a));
++    const o = l.offen ? null : [...je.values()].filter((x) => x.offen).reduce((a, b) => (!a || b.ms > a.ms ? b : a), null);
++    return "der längste Schritt " + l.schritt + " " + l.ms + " ms" + (leiter ? "" : " in " + l.leiter) + " (" + (l.offen ? "am Riss offen, " : "") + je.size + (je.size === 1 ? " Schritt)" : " Schritte)") +
++        (o ? ", am Riss offen " + o.schritt + " " + o.ms + " ms" + (leiter || o.leiter === l.leiter ? "" : " in " + o.leiter) : "");
++}
++
++module.exports = { seiteProbe, knapp, zeitUhr, laengsterSchritt };
