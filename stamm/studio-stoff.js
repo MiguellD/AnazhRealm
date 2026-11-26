@@ -1235,6 +1235,12 @@ class AnazhRealm_studio_stoff {
             // env) sind schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
             mat.colorNode = TSL.vec4(laubFarbe, 1.0);
         }
+        // DIE ECKE IM KNOTEN (auge-farbe): jeder Zweig oben zeichnet die Vorlagen-Farbe `vcol` im Farb-Knoten — nur der Wurf-Teil
+        // (schwarz, er trägt die Deckung) und das Unbeleuchtete (schwarz, sein Licht ist das Leuchten) nicht. Der Stoff sagt es
+        // mit der EINEN Marke der Klasse (`eckeImKnoten`, wie `stoff-material`) seinen Lesern auf der CPU: das Auge der Art liest
+        // die Albedo, die gezeichnet wird (stamm/kreatur-furcht.js `_sichtZiel`) — bis hier las es die nie gezeichnete
+        // Stoff-Farbe Weiß
+        mat.userData.eckeImKnoten = kind !== "schatten" && !R.ub;
         // DIE REGLER JE ECKE (K43-2, der EINE Satz-Stoff): Rauheit · Metall · Deckkraft aus `aRegler`, das Emissiv × Glut-Stärke
         // aus `aGlut` — vor der Blende (sie multipliziert die Deckung) und vor dem Leucht-Gesetz (es addiert den Licht-Pool
         // auf das Emissiv; ein Stoff des Leucht-Gesetzes `leucht` behält sein Emissiv aus der Farbe).
