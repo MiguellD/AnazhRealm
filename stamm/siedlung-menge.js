@@ -195,8 +195,8 @@ class AnazhRealm_siedlung_menge {
     }
 
     // DIE POSE k (k < n: die Phase 2πk/n des Doppelschritts im EINEN Gang-Gesetz — `_gaitTick` mit dem Tempo des Leibs,
-    // eingeschwungen, dann `_animateHuman`; k = n + h: der Stand h, der Kontrapost des Atems bei 0 in der Haltung seines Namens,
-    // `_bewohnerStaende` — im Gesetz ändert die Haltung nur den Stand, nie den Gang) am Leib `g`: mit der Siedlung `S` die
+    // eingeschwungen, dann `_animateHuman`; k = n + z: die Stand-Zeile z, die Haltung ihres Namens zur Uhr ihres Teils des Zyklus
+    // (`_bewohnerStandZeit`, koerper STAND — stand-lebt) — im Gesetz ändert die Haltung nur den Stand, nie den Gang) am Leib `g`: mit der Siedlung `S` die
     // Zeile k des Gang-Puffers ihres Satzes `Z` — die Pose auf die Knochen der Vorlage gelegt (`_bewohnerRaumStellen`) und in den
     // Raum des Leibs geskinnt (`_gangSatzPose`) —, ohne sie die Lagen der Zeile k einer Gestalt `Z` (`_bewohnerLagePose`: der Gang
     // des Felds). Danach steht der Leib wieder im Stand.
@@ -208,7 +208,7 @@ class AnazhRealm_siedlung_menge {
             }
             this._animateHuman(g, 0, (2 * Math.PI * k) / Z.n, true, false, null, Z.gang);
         } else {
-            // (der Stand einer Geste zur Uhr seiner Phase, `_bewohnerStandZeit`; jeder andere bei 0 — eingeschwungen, ohne die Zeile davor)
+            // (die Stand-Zeile zur Uhr ihres Teils des Zyklus, `_bewohnerStandZeit` — eingeschwungen, ohne die Zeile davor)
             const h = k - Z.n;
             window.__koerperCore.leibRigEingeschwungen(g.userData.rig);
             this._animateHuman(g, this._bewohnerStandZeit(h), 0, false, false, this._bewohnerStandGemuet(h));

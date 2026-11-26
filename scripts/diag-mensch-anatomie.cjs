@@ -1129,7 +1129,15 @@ function urteileBau(sb, m, S = sb.__koerperCore.BAU_SOLL) {
 // Lot nennt (`armL` gegen das Labor-idle) — die Ruhe ist der Boden, kein Sockel. Bis a-haltung legte die Pose die Abspreizung des
 // Profils AUF die Ruhe: mittags (showcase, 0,15 rad) stand die Menge mit p95 29° in der A-Haltung, das spielende Kind (joy, 0,6 rad)
 // mit 58,5°; bis a-haltung 2 hielt joy die Abspreizung: jedes spielende Kind stand mit 34° im selben Moment, im Satz in EINER Zeile.
+// (lebt, stand-lebt) jeder Stand rührt den Kopf über den Zyklus seiner Zeilen (koerper STAND, gestellt wie das Backen sie stellt:
+// `_bewohnerStandZeit`) um mindestens HALTUNG_LEBT_SOLL — bis stand-lebt buk der Satz je Stand EINE Zeile zur Uhr 0, und kein Glied
+// eines Stehenden im Feld rührte sich (am Dorfplatz um 10 Uhr 39 von 40 stehend, 0,000 m über 5 s).
 // Der Selbsttest dieses Teils fährt im Hauptlauf an derselben Welt (`pruefeHaltung`: kein eigener Bau).
+// DAS BAND DES STANDS (äußere Quelle): im ruhigen Stand deckt der Druckpunkt in 30 s 28,8 mm² (IQR 23,5–41,7) bei 3,44 mm/s
+// (De Blasiis et al. 2023, Front Bioeng Biotechnol 11:1198120, 20 Erwachsene) — der ruhigste Stand rührt den Kopf über einen Zyklus
+// (7,2 s) um mindestens die Wurzel dieser Fläche; im freien Stand wechselt der Mensch die Haltung 2,2-mal je Minute um 17–35 mm
+// (Freitas et al. 2005, Gait Posture 22:322; Duarte & Zatsiorsky 1999, Motor Control 3:12, Tab. 1).
+const HALTUNG_LEBT_SOLL = 5; // mm: der Kopf über einen Zyklus des Stands (√28,8 mm² ≈ 5,4 mm)
 const HALTUNG_UEBER_SOLL = 0.5; // Grad: die Rechnung der Gelenke (Euler XYZ, der Vorhalt der Schulter) — kein Stand legt etwas auf
 const HALTUNG_MOMENT_SOLL = 0.5; // Anteil der Menge: höchstens die Hälfte hebt im selben Moment die Arme über das Band
 const HALTUNG_UHREN = 24; // die Uhren je Leib, wo das Profil eine Geste nennt (Schritt 0,83 s: über ~20 s, jede Phase des Takts)
@@ -1153,11 +1161,15 @@ function messeHaltung(eingriff, W = mengeWelt(eingriff), nur = W.siedlungen.leng
         });
     };
     const teile = (rig) => ({ mensch: rig.hips, torso: rig.spine, head: rig.head, arm1: rig.armL.shoulder, elbow1: rig.armL.elbow, hand1: rig.armL.wrist, "arm-1": rig.armR.shoulder, "elbow-1": rig.armR.elbow, "hand-1": rig.armR.wrist, hip1: rig.legL.hip, knee1: rig.legL.knee, ankle1: rig.legL.ankle, "hip-1": rig.legR.hip, "knee-1": rig.legR.knee, "ankle-1": rig.legR.ankle }); // prettier-ignore
-    const zeilen = A._bewohnerStaende(); // die Zeilen des Satzes (seit a-haltung 2: je Geste ihre Phasen hinten an)
+    const zeilen = A._bewohnerStaende(); // die Namen der Stände (stand-lebt: je Name STAND.zeilen Zeilen des Satzes, beieinander)
     const staende = [...new Set(zeilen)];
+    const NZ = K.STAND.zeilen;
+    // die Lage des Kopfs (Meter, im Raum der Gestalt) eines gestellten Skeletts
+    const kopf = (sk) => { const J = Object.fromEntries(sk.joints.map((j) => [j.name, j])); let p = [0, 0, 0]; for (let j = J.head; j && j.name !== sk.root; j = J[j.parent]) { p = qRot(j.quat, [p[0] * j.scale[0], p[1] * j.scale[1], p[2] * j.scale[2]]); p = [p[0] + j.pos[0], p[1] + j.pos[1], p[2] + j.pos[2]]; } return p; }; // prettier-ignore
     const gruppe = (J) => (J < 15 ? "kind" : J < 60 ? "erwachsen" : "greis");
     const C = W.haltung || (W.haltung = { sk0: new Map(), ruheG: new Map() }); // die Gelenke je Gestalt: einmal je Welt
-    const aus = { je: [], staende };
+    const aus = { je: [], staende, lebt: [] };
+    const lebtG = new Set(); // (lebt) je Gestalt und Stand einmal
     const uhrZeile = (h) => (typeof r._bewohnerStandZeit === "function" ? r._bewohnerStandZeit(h) : 0);
     const gemAlt = r._bewohnerGemuet;
     for (const { S } of W.siedlungen.slice(0, nur))
@@ -1173,8 +1185,15 @@ function messeHaltung(eingriff, W = mengeWelt(eingriff), nur = W.siedlungen.leng
             // seine Uhr (die Welt: `atem` aus seinem Samen, `_bewohnerListe`)
             if (b.atem === undefined) b.atem = r._rollGenome(b.seed, "bewohner").axis("atem") * 10;
             for (const nm of staende) {
-                const h = zeilen.indexOf(nm);
+                const h = zeilen.indexOf(nm) * NZ;
                 const gem = r._bewohnerStandGemuet(h);
+                // (lebt) der Kopf über die Zeilen des Zyklus, je Gestalt einmal: die Spanne seiner Lagen (mm)
+                if (!lebtG.has(b.gestalt + "|" + nm)) {
+                    lebtG.add(b.gestalt + "|" + nm);
+                    const P = [...Array(NZ)].map((_, k) => kopf(K.leibGussGestellt(C.sk0.get(G), stelle((rig) => r._animateHumanoidRig(rig, uhrZeile(h + k), 0, false, false, gem))).userData.__skelett)); // prettier-ignore
+                    const sp = [0, 1, 2].map((i) => Math.max(...P.map((p) => p[i])) - Math.min(...P.map((p) => p[i])));
+                    aus.lebt.push({ seed: b.seed, gruppe: gruppe(G.gen.jahre), stand: nm, mm: 1000 * Math.hypot(...sp), hoch: P[0][1] });
+                }
                 const p = M[nm] || M.idle;
                 // der Winkel, den das Profil vom Lot nennt (Grad, je Seite: MOTION_RIG_MAP armL / armR gegen das Labor-idle)
                 const profil = ["armL", "armR"].map((k) => ((p[k] - M.idle[k]) * 180) / Math.PI);
@@ -1182,8 +1201,9 @@ function messeHaltung(eingriff, W = mengeWelt(eingriff), nur = W.siedlungen.leng
                 const ist = [...Array(uhren)].map((_, j) => winkel((rig) => r._animateHumanoidRig(rig, b.atem + 0.83 * j, 0, false, false, gem))); // prettier-ignore
                 // die Zeile, die er im Satz liest (sein Gemüt in diesem Stand), und ihr Winkel — gestellt wie das Backen sie stellt (ein
                 // Stand ohne Geste steht zu jeder Uhr gleich: sein naher Winkel)
+                // (stand-lebt: die Zeile seiner Uhr im selben Moment — `_bewohnerStandLage` zur Uhr 0, wie der Satz sie liest)
                 r._bewohnerGemuet = () => ({ haltung: nm, sorrow: 0, chaos: 0 });
-                const zeile = r._bewohnerStandVon(b);
+                const zeile = r._bewohnerStandLage(Object.assign(Object.create(b), { standZeile: r._bewohnerStandVon(b), uhr: 0 }), { standFertig: true }, [0, 0, 0])[0]; // prettier-ignore
                 r._bewohnerGemuet = gemAlt;
                 const fern = uhren > 1 ? winkel((rig) => r._animateHumanoidRig(rig, uhrZeile(zeile), 0, false, false, r._bewohnerStandGemuet(zeile))) : ist[0]; // prettier-ignore
                 const je = ist.map((x) => Math.max(...x));
@@ -1215,6 +1235,9 @@ function urteileHaltung(sb, m, band = sb.__koerperCore.ARM_RUHE.spreizGrad) {
         const hoch = Z.reduce((a, z) => (z.mittel > a.mittel ? z : a));
         if (hoch.mittel > band[1]) f.push(`haltung.band ${nm} Mittel p95 ${quantil(Z.map((z) => z.mittel), 0.95).toFixed(1)}° max ${hoch.mittel.toFixed(1)}° > ${band[1]}° (${hoch.seed} ${hoch.gruppe} — die Arme der Menge stehen im Mittel über dem Band der Ruhe: die A-Haltung)`); // prettier-ignore
         if (moment > HALTUNG_MOMENT_SOLL) f.push(`haltung.moment ${nm} ${(100 * moment).toFixed(0)} % > ${100 * HALTUNG_MOMENT_SOLL} % (im selben Moment heben so viele der Menge die Arme über ${band[1]}°: die Haltung ohne eigene Phase — ein Platz voller Schaufensterpuppen)`); // prettier-ignore
+        const L = m.lebt.filter((z) => z.stand === nm);
+        const still = L.length ? L.reduce((a, z) => (z.mm < a.mm ? z : a)) : null;
+        if (!still || still.mm < HALTUNG_LEBT_SOLL) f.push(`haltung.lebt ${nm} ${still ? still.mm.toFixed(1) : "—"} mm < ${HALTUNG_LEBT_SOLL} mm (${still ? still.seed + " " + still.gruppe : "kein Leib"}: der Kopf über den Zyklus des Stands — der Stand ohne Uhr, die Puppe)`); // prettier-ignore
         if (Math.max(...Z.map((z) => z.profil)) > band[1] && gleich > HALTUNG_MOMENT_SOLL) f.push(`haltung.fern ${nm} ${(100 * gleich).toFixed(0)} % in einer Zeile von ${zeilen} > ${100 * HALTUNG_MOMENT_SOLL} % (die Geste ohne Phase im Satz: die ferne Menge steht jede gleich)`); // prettier-ignore
     }
     return f;
@@ -1224,20 +1247,24 @@ const zeigeHaltung = (m, band) => {
         const { moment, gleich, zeilen } = haltungJe(m, nm, band);
         const je = (g, k) => { const v = m.je.filter((z) => z.stand === nm && z.gruppe === g).map(k); return v.length ? `${g} p50 ${quantil(v, 0.5).toFixed(1)}° p95 ${quantil(v, 0.95).toFixed(1)}° max ${Math.max(...v).toFixed(1)}°` : `${g} —`; }; // prettier-ignore
         console.log(`  haltung ${nm.padEnd(9)} Mittel ${["kind", "erwachsen", "greis"].map((g) => je(g, (z) => z.mittel)).join(" · ")} · Moment über ${band[1]}° max ${(100 * moment).toFixed(0)} % · fern ${zeilen} Zeilen, ${(100 * gleich).toFixed(0)} % in einer · ueber max ${Math.max(...m.je.filter((z) => z.stand === nm).map((z) => z.ueber)).toFixed(2)}°`); // prettier-ignore
+        const L = m.lebt.filter((z) => z.stand === nm).map((z) => z.mm);
+        if (L.length) console.log(`    ${nm} lebt: der Kopf über den Zyklus p50 ${quantil(L, 0.5).toFixed(1)} mm min ${Math.min(...L).toFixed(1)} mm (Soll ≥ ${HALTUNG_LEBT_SOLL} mm, ${L.length} Gestalten)`); // prettier-ignore
         if (m.je.some((z) => z.stand === nm && z.uhren.length > 1)) console.log(`    ${nm} je Uhr (alle Uhren, alle Leiber) ${["kind", "erwachsen", "greis"].map((g) => je(g, (z) => Math.max(...z.uhren))).join(" · ")} · im Satz ${["kind", "erwachsen", "greis"].map((g) => je(g, (z) => z.fern)).join(" · ")}`); // prettier-ignore
     }
 };
 // DER SELBSTTEST DER HALTUNG (an der Welt des Hauptlaufs, ihre Gelenke gemerkt — kein eigener Bau): je Täter der Stand davor, er
 // muss sein Urteil beim Namen rot machen — (HA1) die Haltung des Tags AUF der Ruhe (vor a-haltung: die A-Haltung) · (HA2) joy
 // gehalten (vor a-haltung 2: die Schulter auf der größeren von Ruhe und Profil zu jeder Uhr, jedes Kind mit 34° im selben Moment)
-// · (HA3) der Satz ohne die Phase der Geste (jeder ferne Leib in der ersten Zeile seines Stands)
+// · (HA3) der Satz ohne die Uhr (jeder ferne Leib in der ersten Zeile seines Stands: `_bewohnerStandLage` ohne `uhr + atem`) · (HA4) der
+// Stand ohne Uhr im Backen (jede Zeile des Zyklus zur Uhr 0: vor stand-lebt die Puppe im Feld)
 function pruefeHaltung(W, so) {
-    const K = W.ctx.__koerperCore, roh = K.leibRigPose, rohVon = W.r._bewohnerStandVon; // prettier-ignore
+    const K = W.ctx.__koerperCore, roh = K.leibRigPose, rohVon = W.r._bewohnerStandLage, rohZeit = W.r._bewohnerStandZeit; // prettier-ignore
     const schulter = (f) => function (r, t, wp, mov, gait, mp, mref, ...x) { roh.call(this, r, t, wp, mov, gait, mp, mref, ...x); if (!mp || !mref) return; const [uL, uR] = [r.armRuhe[0].shoulder, r.armRuhe[1].shoulder]; r.armL.shoulder.rotation.z = f(uL[2], mp.armL - mref.armL, 1); r.armR.shoulder.rotation.z = -f(-uR[2], mp.armR - mref.armR, -1); }; // prettier-ignore
     const faelle = [
         ["HA1 die Arme der Menge im Mittel über dem Band (die Haltung des Tags auf der Ruhe: die A-Haltung) werden erkannt", () => (K.leibRigPose = schulter((u, p) => Math.max(u, u + p))), /^haltung\.band showcase /], // prettier-ignore
         ["HA2 joy gehalten (jedes spielende Kind mit 34° im selben Moment: die Schaufensterpuppen) wird erkannt", () => (K.leibRigPose = schulter((u, p) => Math.max(u, p))), /^haltung\.moment joy /], // prettier-ignore
-        ["HA3 der Satz ohne die Phase der Geste (jeder ferne Leib in der ersten Zeile seines Stands) wird erkannt", () => (W.r._bewohnerStandVon = function (b) { return W.A._bewohnerStaende().indexOf(this._koerperMotionName(false, this._bewohnerGemuet(b))); }), /^haltung\.fern joy /], // prettier-ignore
+        ["HA3 der Satz ohne die Uhr (jeder ferne Leib in der ersten Zeile seines Stands) wird erkannt", () => (W.r._bewohnerStandLage = function (b, Z, aus) { const z = aus || [0, 0, 0]; z[0] = z[1] = b.standZeile || 0; z[2] = 0; return z; }), /^haltung.fern joy /], // prettier-ignore
+        ["HA4 der Stand ohne Uhr im Backen (jede Zeile des Zyklus zur Uhr 0: die Puppe im Feld) wird erkannt", () => (W.r._bewohnerStandZeit = () => 0), /^haltung.lebt /], // prettier-ignore
     ];
     let rot = 0;
     for (const [name, taeter, muster] of faelle) {
@@ -1246,7 +1273,7 @@ function pruefeHaltung(W, so) {
         try {
             f = urteileHaltung(so, messeHaltung(null, W, 1));
         } finally {
-            [K.leibRigPose, W.r._bewohnerStandVon] = [roh, rohVon];
+            [K.leibRigPose, W.r._bewohnerStandLage, W.r._bewohnerStandZeit] = [roh, rohVon, rohZeit];
         }
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
