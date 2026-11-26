@@ -1,5 +1,7 @@
 # Briefkasten kultur-aus-klima (neueste Nachricht oben)
 
+## 26.11. 18:40 — GPU-PROBE 6c5c1749 auf omen-gtx1060: GRÜN in 677 s (gate:pruefbuehne-licht GRÜN 56 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 142 s auf omen-gtx1060 · gate:studio-begehen GRÜN 239 s auf omen-gtx1060 · gate:webgl-probe GRÜN 46 s auf omen-gtx1060) → probe-post/kultur-aus-klima/6c5c1749.md
+
 ## 26.11. 14:27 — GPU-PROBE 865cd4af auf omen-gtx1060: ROT in 651 s (gate:pruefbuehne-licht ROT 50 s — ⛔ S0 Himmel: nach dem Sprung auf Mitternacht trägt die Umgebung die Bestrahlung 3.289e-8, der Himmel des Orts 2.74e-8 — die Himmels-Umgebung (`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-F auf omen-gtx1060 · gate:weltbild-frost:echt ROT 125 s — ❌ dritte-person: B das Bild folgt der Kamera — 0.00 % der Blöcke (Soll ≥ 5 %) auf omen-gtx1060 · gate:studio-begehen GRÜN 235 s auf omen-gtx1060 · gate:webgl-probe GRÜN 51 s auf omen-gtx1060) → probe-post/kultur-aus-klima/865cd4af.md
 
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.
