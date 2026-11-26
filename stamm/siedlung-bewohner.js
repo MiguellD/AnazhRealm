@@ -318,52 +318,15 @@ class AnazhRealm_siedlung_bewohner {
         const plan = S.plan;
         const ps = plan.seed >>> 0;
         if (feld === "vorname" || feld === "familie" || feld === "name") {
-            // DIE SPRACHE DES ORTS (aus seinem Samen): die Größe ihres Inventars und die Form ihrer Silbe nach den Anteilen der
-            // Sprachen der Welt; die häufigsten Laute trägt jede, den Rest wählt ihr Same
-            const N = L.namen;
-            const gS = this._rollGenome(ps, "sprache");
-            const klasse = (A, u) => {
-                let a = u * A.reduce((s, x) => s + x, 0);
-                for (let i = 0; i < A.length; i++) if ((a -= A[i]) < 0) return i;
-                return A.length - 1;
-            };
-            // (jeder Strom nennt seinen Zähler VORN und ein Wort dahinter: der Hash des Rollers mischt die letzten Zeichen kaum —
-            // „s" + m streute 15 Freunde auf 3 Häuser, die Ströme zweier Silben trugen zu 0,93 denselben Vokal)
-            const K = N.konsonanten;
-            const rest = K.zeichen.slice(K.kern).map((z, i) => [gS.axis(`${i}:konsonant`), z]);
-            const C = [...K.zeichen.slice(0, K.kern), ...rest.sort((x, y) => x[0] - y[0]).map((e) => e[1])].slice(0, K.n[klasse(K.anteil, gS.axis("konsonanten"))]); // prettier-ignore
-            const V = N.vokale.zeichen.slice(0, N.vokale.n[klasse(N.vokale.anteil, gS.axis("vokale"))]);
-            const form = klasse(N.silbe.anteil, gS.axis("silbenform")); // 0 (C)V · 1 (C)(C)V(C) · 2 (C)(C)(C)V(C)(C)
-            const fluss = N.fluss.filter((z) => C.includes(z));
-            const koda = N.koda.filter((z) => C.includes(z));
-            const wort = (g, w, n) => {
-                let s = "";
-                for (let i = 0; i < n; i++) {
-                    const a = (k) => g.axis(`${i}:${k}:${w}:silbe`);
-                    const zug = (A, k) => A[Math.floor(a(k) * A.length) % A.length];
-                    // der Anlaut: ein Vokal beginnt die Silbe nur nach einer Koda; vor dem Fluss-Laut steht ein Geräusch-Laut, nie ein
-                    // Klinger (die Sonorität steigt zum Vokal), das s nur vor einem einfachen Laut
-                    const auf = i === 0 || /[aeiouäü]$/.test(s) || a("anlaut") < 0.85 ? zug(C, "anlaut") : "";
-                    if (form === 2 && /^[kptmnlw]$/.test(auf) && a("szisch") < 0.15) s += "s";
-                    s += auf;
-                    const fl = fluss.filter((z) => z !== auf);
-                    if (form >= 1 && auf && !N.klinger.includes(auf) && fl.length && a("fluss") < 0.25)
-                        s += zug(fl, "fluss");
-                    s += zug(V, "vokal");
-                    if (!(form >= 1 && koda.length && a("koda") < (i === n - 1 ? 0.5 : 0.25))) continue;
-                    const kd = zug(koda, "koda");
-                    s += kd;
-                    // die zweite Koda nur nach einem Klinger (-nt, -ls, -rk)
-                    const k2 = koda.filter((z) => z !== kd && !N.klinger.includes(z));
-                    if (form === 2 && N.klinger.includes(kd) && k2.length && a("koda2") < 0.2) s += zug(k2, "koda2");
-                }
-                return s;
-            };
-            const gross = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-            const gV = this._rollGenome(b.seed, "vorname");
-            const vorname = gross(wort(gV, "v", gV.axis("silbenzahl") < 0.35 ? 3 : 2));
-            // die Familie ist der Haushalt (Laslett): der Stamm aus dem Samen des Hauses, die Endung aus dem der Sprache
-            const familie = gross(wort(this._rollGenome(`${ps}:${b.heim}`, "familie"), "f", 2) + wort(gS, "e", 1));
+            // DIE SPRACHE DES ORTS (kultur-aus-klima): das EINE Sprachgesetz des Fachwerk-Studios (fachwerk `spracheVon`: die Region
+            // des Plans ist die Familie, der Same des Orts das Blatt ihres Stammbaums) — dasselbe, das den Ort nennt (`ORTSNAME`):
+            // Ort und Leute einer Region klingen verwandt
+            const FC = globalThis.__fachwerkCore;
+            if (!FC || typeof FC.sprachName !== "function") return AnazhRealm._kernPflichtBruch("fachwerk:sprachName");
+            const S2 = FC.spracheVon(plan.region, ps);
+            const vorname = FC.sprachName(S2, "vorname", b.seed);
+            // die Familie ist der Haushalt (Laslett): der Stamm aus dem Samen des Hauses, die Endung das Wort der Sprache für das Haus
+            const familie = FC.sprachName(S2, "familie", `${ps}:${b.heim}`);
             return feld === "vorname" ? vorname : feld === "familie" ? familie : `${vorname} ${familie}`;
         }
         if (feld === "freunde" || feld === "kreis") {
@@ -4928,20 +4891,7 @@ AnazhRealm.RAUCH_BILD = Object.freeze({
 AnazhRealm.BEWOHNER_ERINNERUNG = Object.freeze(["key", "plan", "ox", "oz", "liste", "gestalten", "netzGrund", "wirt"]);
 // DER LEBENSLAUF (bewohner-satz, `_bewohnerLauf`): die Bänder, aus denen der Satz eines Bewohners rechnet — je Feld EINE äußere Quelle.
 AnazhRealm.LEBENSLAUF = Object.freeze({
-    namen: Object.freeze({
-        // WALS 1A/2A/12A (Maddieson 2013): Konsonanten 563 Sprachen 89 klein · 122 mäßig klein · 201 mittel · 94 mäßig groß · 57 groß; Vokale 564: 93 klein · 288 mittel · 183 groß; Silbe 486: 61 einfach · 274 mäßig · 151 komplex
-        konsonanten: Object.freeze({
-            anteil: Object.freeze([89, 122, 201, 94, 57]),
-            n: Object.freeze([9, 12, 15, 18, 21]), // die Klassen auf die 21 Zeichen der Schrift gestaucht
-            kern: 6, // die häufigsten Laute trägt jede Sprache
-            zeichen: Object.freeze(["m", "k", "n", "p", "t", "s", "j", "l", "b", "w", "g", "d", "h", "f", "r", "v", "z", "ch", "sch", "ts", "c"]), // prettier-ignore
-        }),
-        vokale: Object.freeze({ anteil: Object.freeze([93, 288, 183]), n: Object.freeze([3, 5, 7]), zeichen: Object.freeze(["a", "i", "u", "e", "o", "ä", "ü"]) }), // prettier-ignore
-        silbe: Object.freeze({ anteil: Object.freeze([61, 274, 151]) }),
-        fluss: Object.freeze(["r", "l", "j", "w"]), // der zweite Laut eines Anlauts
-        klinger: Object.freeze(["m", "n", "l", "r", "j", "w"]), // die Sonoranten: die Sonorität steigt zum Vokal (Clements 1990)
-        koda: Object.freeze(["n", "m", "l", "r", "s", "t", "k"]),
-    }),
+    // die Namen: das Lautgesetz des Fachwerk-Studios (fachwerk `SPRACHE_GESETZ`, `spracheVon` — Region und Same des Orts; WALS 1A/2A/12A)
     // Dunbar-Schichten (Zhou, Sornette, Hill & Dunbar 2005): Stütz-Gruppe 5 · Sympathie-Gruppe 15 · 50 · 150 — der Besuch gilt der Sympathie-Gruppe
     freunde: Object.freeze({ gruppe: 15, schichten: Object.freeze([15, 50, 150]) }),
     // Ericsson, Krampe & Tesch-Römer 1993: Übung ab ~5 bis 20 J — die besten Geiger 10 000 h, die guten 7 500, die Lehrer 4 000, Amateur-Pianisten 2 000; die Form nach Newell & Rosenbloom 1981 (Zeit je Versuch ∝ N^−α)

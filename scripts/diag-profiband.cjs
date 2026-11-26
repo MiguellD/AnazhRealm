@@ -1452,6 +1452,20 @@ function selbsttest() {
             BAND.ortOf(haushalt).id === "wiese" &&
             unbekannt
     );
+    // S20b — DIE REISE (kultur-aus-klima): ein Ort der Reise ohne Stand, mit einer Gründung (der Plan eines Worts trägt per Gesetz kein
+    // Klima, das Bild zeigte ein Dorf ohne den Ort), ohne Dorf-Zug oder mit einem Satz, den der Spieler nicht spricht, wird rot; die
+    // echten Orte der Reise nicht (main ohne die Regel: rot).
+    const hr = (f) => h20((o) => f(o.find((x) => x.id === "dorf-trocken")));
+    t(
+        "Reise: ohne spieler, mit Gründung „dorf 4291161376 13“, ohne dorfZug, „reise Süden 10“ → rot; dorf-trocken und dorf-feucht stehen",
+        hr((o) => delete o.spieler).some((x) => /dorf-trocken: reise ist kein Satz/.test(x)) &&
+            hr((o) => (o.gruendung = { wort: "dorf 4291161376 13", anker: [54, -129] })).some((x) =>
+                /dorf-trocken: reise ist kein Satz/.test(x)
+            ) &&
+            hr((o) => delete o.dorfZug).some((x) => /dorf-trocken: reise ist kein Satz/.test(x)) &&
+            hr((o) => (o.reise = "reise Süden 10")).some((x) => /dorf-trocken: reise ist kein Satz/.test(x)) &&
+            ["dorf-trocken", "dorf-feucht"].every((id) => haushalt.messorte.some((o) => o.id === id && o.reise))
+    );
     // S21 — die Ratsche gehört dem Ort: dieselbe Klasse über der Genesis-Ratsche ist dort rot, gegen die (ungemessene)
     // Ratsche der Wiese nicht; die Gier des Orts blickt zum Blickpunkt (ein Blick nach −z = π, Genesis −x = −π/2).
     const gen = BAND.ladeSpec("genesis", { geraet: "radeon", sicht: "ego" });

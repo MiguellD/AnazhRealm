@@ -3136,12 +3136,13 @@ function ortsName(code, i) {
 // Dorf) steht NUR im Haushalt (spec/profiband/haushalt.json, gelesen über scripts/lib/welt-orte.cjs `messort`) — und
 // ein gefallener Platz nirgends mehr. Zwei Zahlen-Literale, die ihn nennen (x, dann z binnen 60 Zeichen, Code ohne
 // Kommentare), sind eine Abschrift, gleich in welcher Form und ob die Datei setzt: `stelle(x, z)`, `umstellen(x, z)`,
-// `const X = x, Z = z`, die Blick-Tabelle einer Linse.
+// `const X = x, Z = z`, die Blick-Tabelle einer Linse. Ein Ort der Reise (`reise`, kultur-aus-klima) steht in SEINER Welt: sein
+// Stand ist die Landung des Orts (gelaende-core `ortLandung`, 0, 0), ein Gesetz, kein Platz der Heimat — er nennt keine Abschrift.
 const MESSORT_GEFALLEN = [[-900, -850]]; // die Mess-Wiese bis K55
 function messortPaare() {
     const h = jsonLesen("spec/profiband/haushalt.json");
     return h.messorte
-        .filter((o) => !o.anker && !o.bank && Array.isArray(o.spieler))
+        .filter((o) => !o.anker && !o.bank && !o.reise && Array.isArray(o.spieler))
         .map((o) => o.spieler)
         .concat(MESSORT_GEFALLEN);
 }
