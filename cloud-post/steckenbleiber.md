@@ -108,3 +108,28 @@ Leser `p3/n2611/nah/lies-spur.cjs <slot.txt>` (OMEN).
 Offen beim Namen: Schnitt Jäger (Kopf 8) · Selbsttest der Linsen-Proben `bewohner-ende` / `bewohner-beiseite` (uncommitted im
 Baum n1011-hg, Patch `p3/n2611/nah/steck-linse-patch.cjs`; der Slot wich dem Vorrang) · check:statik voll am Schnitt 2 ·
 Nachmessung B, C, D am Kopf 4 (`p3/n2611/nah/nachmessung-kopf4.txt`).
+
+## Stand 26.11. 17:25 — der Jäger am Revier ist geschnitten: `jaeger-stand` 162b7a4d (auf buendel-mittag a9806b59)
+
+| Glied | vorher (Kopf 6 + Schnitt 2) | Lauf 1 | Lauf 2 (am Commit, 334 s) |
+|---|---|---|---|
+| Wiederkehr | 4 von 1424, max 8,589 m | 0 von 1424, max 1,695 m | ebenso |
+| Stand nach dem Gang | 8965 mm | 8 mm (0 von 519 · 0 von 931) | 8 mm (0 von 519 · 0 von 932) |
+| Steckenbleiber Start-Dorf · Stadt | 0 · 0 | 0 · 0 | 0 · 0 |
+| Haltung (Linse von Kopf 7) | 3,624 | 0 | 0 |
+
+GTX am Software-Adapter, „✅ GRÜN — bewohner · begegnung“ (`p3/n2411/wechsel/jaeger-1.txt`, `jaeger-2.txt`); check:statik ganz am Commit
+EXIT 0 nach 563 s (`jaeger-statik.txt`). Lauf 1 fuhr den Code des Commits bis auf 2 Kommentar-Zeilen am Leck von Schnitt 2.
+
+Der Schnitt (stamm/siedlung-bewohner.js +42 −23):
+1. `_bewohnerWand(a, e, stand, rand, bauten)`: mit `bauten` ist nur ein Bau Wand, nie die Natur (`_istNatur`). `postenStand` wirft mit
+   `frei(x, z, true, null, true)` — der Wurf ist eine Funktion von Plan und Bauten, die Natur richtet `_bewohnerStandPruefen` vom Ursprung.
+2. `erreicht` (gerade von EINEM Knoten aus `_bewohnerTuerAm`) fiel. Jetzt: `bodenGang` (Schritt `WL.ring.schrittM`, Leser
+   `_koerperBodenUnter` ab der Sohle) von JEDEM Knoten der `anschlussN` nächsten des Grunds mit bauten-freier Geraden muss die
+   Oberkante der Säule erreichen (± PLAYER_STEP_UP).
+3. Der Stand trägt `gilt`: der gerückte Punkt hält den Boden vom Ursprung aus.
+
+Offen beim Namen: am Revier meldet die Akte weiter „BEWOHNER: der Ort 121.0/-195.0 erreicht keinen Weg frei“ (vorher 119.4/-192.3) —
+`_bewohnerAnschluss` findet mit dem Wald keinen freien Knoten, der Gang geht über den Ausweg: das nächste Glied der Klasse. Der
+Kopf-Satz der Vorprüfung auf dem neuen main folgt (Merge von main in den Zweig). probe-tag ist an OMEN nicht fahrbar (git 2.30 ohne
+`merge-tree --write-tree`, der Klon des Dienstes fehlt). Die Linsen-Proben `bewohner-ende` / `bewohner-beiseite` bleiben uncommitted.
