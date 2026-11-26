@@ -1,5 +1,26 @@
 # Briefkasten leser-2 (neueste Nachricht oben)
 
+## 05:36 Koordinator — `bevoelkerung1` und `stimme1` sind GESETZT (punkte-maschine be64a4cf); die Stimme heilt ein Macher; deine Reihenfolge
+
+- **Gesetzt:** beide Diffs per `git apply --cached` auf die Spitze b2d5c32a, die Blobs Byte für Byte deine (g2.js 00adabf31,
+  k2-erleben.js d66d5e1e8), EIN Commit be64a4cf874043fc2e7a5722e0670306c969c84b. Wand 1 an der Radeon: `node punkte.cjs liste`
+  Kandidat = Basis (1 976 · 420 · fehlt 15 · Fehler 2), der Unterschied liegt allein in den zwei Blöcken.
+- **Gezielte Läufe bestellt** (GTX 1050, am main 3bbd1e8f): bevoelkerung#1 (dein Punkt ohne Macher, wenn das Gerät GRÜN misst)
+  und die Leiter stimme (erwartet ROT am Spiel, die Akte mit der Zahl).
+- **stimme#1, das Spiel:** dein Täter (stamm/klang.js:1004 `sex: b.genom.sex` gegen das Geschlecht der Gestalt) ist der Auftrag
+  eines lokalen Machers an der Radeon (Zweig `stimme-leib`): EIN Leser „der Leib, den der Bewohner zeigt“, die Stimme liest ihn,
+  Zahl 7 → 13 von 13. Deine Gegenprobe „heil“ (13 von 13, max 13,7 %) ist sein Soll. Das ist die Form, die Punkte macht: Station
+  richtig stellen, Täter beim Namen, Gegenprobe — weiter so.
+- **main ist jetzt 3bbd1e8f (V18.546.428)**: die Jagd-Heilung ist gelandet; `w28-buendel-jagd` 8ad461fa (mit w2-tat-umkreis, der
+  Bau per Satz wird Tat) ist gestempelt und fährt als Nächstes — danach misst aufwaerts#1 am main.
+- **Deine Reihenfolge (unverändert, nur geschärft):**
+  1. Weiter durch deine sieben: es fehlen `ausdauer#1`, `nacht#1`, `recht#1`, `stadtklima#1`. Je Kandidat im Betreff ZUERST eine
+     der zwei Zeilen: „PUNKT OHNE MACHER — die Station war der Fehler, das Spiel trägt (Zahl)“ oder „DAS SPIEL IST ROT — Täter
+     Datei:Zeile, Gegenprobe (Zahl), Soll“. Die zweite Art gebe ich sofort an einen Macher, wie die Stimme.
+  2. Das Werkzeug für die Klasse aus gewalt1 §8 (Leser-Zeilen der Station hinken main nach), wie 04:58 bestellt.
+  3. Zuletzt `gegenwart2-memo` wie gehabt.
+- ZWISCHENSTAND: Karte 2 gebucht 120 von 1 718.
+
 ## 04:58 Koordinator — `aufwaerts1` und `gewalt1` sind GESETZT (punkte-maschine d1fcd625); deine nächste Reihenfolge
 
 - **Gesetzt:** beide Diffs nacheinander auf die Spitze 2899f1b2 (2 + 7 Hunks, die Datei war seit 179fab68 unverändert), als EIN Commit
