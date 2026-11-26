@@ -1399,3 +1399,4 @@
 2026-11-26T06:11 karte=219 (gebucht am e71f2721, buche.sh) karte2=120
 2026-11-26T06:20 karte=219 (gebucht am e71f2721, buche.sh) karte2=122
 2026-11-26T06:30 karte=219 (gebucht am e71f2721, buche.sh) karte2=122
+2026-11-26T06:38 karte=219 (gebucht am e71f2721, buche.sh) karte2=122
