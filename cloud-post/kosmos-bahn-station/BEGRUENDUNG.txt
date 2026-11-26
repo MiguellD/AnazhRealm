@@ -1,3 +1,33 @@
+KANDIDAT 2 (kosmos-hadley, 26.11., auf den Ruf des Koordinators 10:30) — zwei Patches gegen origin/punkte-maschine 3bc807a55, je
+`git apply` sauber; Kandidat 1 (Abschnitt 1 unten) steht dort seit e0f77e2d.
+
+3. k2-kosmos-systeme-s1-kand2.patch — planet.kosmos.systeme#1 wirft am Gerät (OMEN a954d698: „S1 warf: Cannot read properties of null
+   (reading 'toFixed')“, k2-kosmos.js:504). Täter gelesen, nicht geraten: die Akte derselben Zeile sagt „Fächer 0/1460 Adressen … in 142 ms
+   · 1460 warfen (MOND_EPHEMERIDE is not defined)“ — nicht das Budget: der Fächer schickt HIMMEL_AN als TEXT in die Seite (faecher.js: „die
+   Bauart reist als Text … und sieht nichts aus diesem Modul“), MOND_EPHEMERIDE stand auf oberster Ebene des Moduls und reiste nicht mit.
+   Der Prüfstand von Kandidat 1 zog sie aus dem Modul in Node — die Maske, er fällt mit diesem Kandidaten.
+   Schnitt: (1) MOND_EPHEMERIDE steht IN HIMMEL_AN (der Text trägt alles, was er ruft); (2) der leere Fächer — 0 gemessen, gleich ob sie
+   warfen, die Frist sie riss oder das Gesetz fehlt — ist ein Leser beim Namen mit der Akte (`L.leser(1, …, 0)`, dieselbe Zeile wie
+   ereignisse#1 · galaxien#1), nie null.toFixed. Kein Soll geändert.
+   Prüfstand pruefstand-systeme-s1-kand2.cjs — WIE AM GERÄT: der BEFEHL der Station (der Text hinter `node -e`) wird gelesen, H.seite und
+   systemeLauf als Text gebaut, der Fächer ruft eine Null-Welt des Spiels im Rumpf der Werkbank (wirt-wache evalRumpf); nur das Gerüst
+   der Leiter ist Attrappe. 10,8 s (Boot 9,4 s), GRÜN 3 von 3:
+     EICHUNG alte Station          wirft „Cannot read properties of null (reading 'toFixed')“, Akte „0/1460 … 1460 warfen (MOND_EPHEMERIDE
+                                   is not defined)“ — die Zeile des OMEN, nachgestellt
+     LEER    Lauf neu × HIMMEL_AN alt  L.leser(1, „der Fächer maß 0 von 1460 Adressen · Fächer 0/1460 … MOND_EPHEMERIDE …“, 0), kein Wurf
+     VOLL    Kandidat              1460/1460 Adressen in 156 ms, ephemeride_abw_grad 0,1319° (Soll ≤ 0,5°; der Mond trägt das Maximum)
+   Aufruf (aus der Wurzel des Spiels): node cloud-post/kosmos-bahn-station/pruefstand-systeme-s1-kand2.cjs <Spiel-Baum> <…/punkte> <Rev der alten Station>
+
+4. punkte-wand-abschluss.patch — DIE LINSE der Klasse (Gebot 10, in der Familie der Wand ANKER, `liste` am Kopf): jeder freie Name eines
+   Befehls, den das EIGENE Modul der Station auf oberster Ebene deklariert, reist nicht mit → ROT beim Namen (acorn + eslint-scope des
+   Spiels, optimistisch; der Rahmen H/Node und Namen des Ziel-Rumpfs fallen nie). Über alle 1 976 Stationen (1 828 Befehle):
+     liste Basis (3bc807a55)               0 ROT   30,8 s
+     liste Linse × alte Station            7 ROT   34,5 s — systeme#1…#7 „der Befehl reist ohne MOND_EPHEMERIDE (oberste Ebene von
+                                                     stationen/k2-kosmos.js) — am Gerät „MOND_EPHEMERIDE is not defined““; sonst keiner
+     liste Linse × Kandidat                0 ROT   37,6 s
+   Selbsttest `WAND ABSCHLUSS`: der Name des Moduls ROT beim Namen; der mitreisende, der Rahmen (H, fs, require, eval) und der Name des
+   Ziel-Rumpfs (wetter.K3#2: K, P im Leib der Wasser-Linse) still. Die Klasse hat an punkte-maschine 3bc807a55 genau EIN Mitglied.
+
 KANDIDATEN (Bahn kosmos-bahn, Richter-Sache) — zwei Patches gegen origin/punkte-maschine e0b88e0 (die beiden Stationsdateien sind dort
 byte-gleich mit d5b0c7d), je `patch -p1 --batch --dry-run` sauber, angewandt byte-gleich mit dem Kandidaten, `node --check` grün.
 Kein Soll ist geändert. Die Prüfstände (Node, ohne GPU) rufen den Stationstext WÖRTLICH (aus der gepatchten Datei geschnitten).
@@ -39,5 +69,5 @@ Kein Soll ist geändert. Die Prüfstände (Node, ohne GPU) rufen den Stationstex
 
 Prüfstände (aus der Wurzel des Spiels; faecher.js muss neben der Stationsdatei liegen):
   node cloud-post/kosmos-bahn-station/pruefstand-bahn-klima-s2.cjs <…/stationen/k2-zusammenspiel.js> <Wurzel mit planet-core.js> <Wurzel mit voxel-worker.js>
-  node cloud-post/kosmos-bahn-station/pruefstand-systeme-s1.cjs <…/stationen/k2-kosmos.js>
+  (pruefstand-systeme-s1.cjs fiel mit Kandidat 2: er las MOND_EPHEMERIDE aus dem Modul — die Maske des Geräte-Wurfs)
   (die alte Station liest planet-core über require(path.resolve(…)): aus der Wurzel des Kerns starten)

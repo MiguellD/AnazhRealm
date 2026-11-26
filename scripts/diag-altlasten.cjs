@@ -3139,12 +3139,14 @@ function ortsName(code, i) {
 // `const X = x, Z = z`, die Blick-Tabelle einer Linse. Ein Ort der Reise (`reise`, kultur-aus-klima) steht in SEINER Welt: sein
 // Stand ist die Landung des Orts (gelaende-core `ortLandung`, 0, 0), ein Gesetz, kein Platz der Heimat — er nennt keine Abschrift.
 const MESSORT_GEFALLEN = [[-900, -850]]; // die Mess-Wiese bis K55
+// Ein Platz ist EIN Paar, gleich wie viele Orte auf ihm stehen (die Wiese und ihr gehobenes Auge `wiese-auge`).
 function messortPaare() {
     const h = jsonLesen("spec/profiband/haushalt.json");
-    return h.messorte
+    const paare = h.messorte
         .filter((o) => !o.anker && !o.bank && !o.reise && Array.isArray(o.spieler))
         .map((o) => o.spieler)
         .concat(MESSORT_GEFALLEN);
+    return [...new Map(paare.map((p) => [p.join("/"), p])).values()];
 }
 const zahlRe = (v) => String.raw`(?<![\w.])` + String(v).replace(/[.]/g, String.raw`\.`) + String.raw`(?![\d.])`;
 function scanOrtsWand(dateien) {

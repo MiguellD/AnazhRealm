@@ -994,7 +994,14 @@ class AnazhRealm_siedlung_bewohner {
         // jeder mit seinem Angebot) und der Stand eines Menschen an einem Ort: am eigenen Haus die Station (ein zweiter Stand
         // vor der Tür), an einem fremden der Ring am Rand der Gasse, auf dem Platz sein Stand dort, im Acker ein Stand in ihm
         const tuerVon = new Map(tueren.map((T) => [T.si, T]));
-        const orte = KC.tagesOrte(plan, (si) => tuerVon.has(si));
+        // DAS UFER DES ORTS (rollen-des-tages, koerper `tagesOrte` wild.ufer): wo der Ort seinen Steg hat — der Anleger
+        // (`_anlegerOrt`, Karte 2 planet.kopplung.siedlungslage#1: die erste nasse Stelle, an der das Wasser das Boot trägt), sein
+        // Land-Ende plan-lokal; liegt dort kein Anleger, hat der Ort kein Ufer und keinen Fischer
+        const anl =
+            this._anleger && this._anleger.has("dorf:" + S.key) ? this._anleger.get("dorf:" + S.key) : undefined;
+        const steg = anl === undefined ? this._anlegerOrt(S.ox, S.oz) : anl && anl.a;
+        const wild = steg && steg.a ? { ufer: { x: steg.a.x - S.ox, z: steg.a.z - S.oz } } : null;
+        const orte = KC.tagesOrte(plan, (si) => tuerVon.has(si), wild);
         const ortVon = new Map(orte.map((o, i) => [o.slot, i]));
         // KEIN ZIEL OHNE PLAN (tetrapoda `wegTeile` über den Grund des Wege-Netzes, `_wegeNetzGrund`): der Teil, an dem ein Stand
         // hängt — sein nächster frei erreichter Knoten, die Frage von `_bewohnerAnschluss`; zerfällt das Netz des Plans, trägt
@@ -1180,9 +1187,9 @@ class AnazhRealm_siedlung_bewohner {
             const satz = {
                     sied: S,
                     heim: sl.seed >>> 0, rolle, beruf, same, epoche,
-                    orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null, spiel: null, einkauf: null, hilft: !!bind.hilft },
+                    orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null, spiel: null, einkauf: null, hilft: !!bind.hilft, streife: null },
                     seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
-                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, gangTempo: u, satzOrt: u,
+                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, gangTempo: u, gangBand: 0, satzOrt: u,
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
                     blick: u, begegnet: u, kopfY: u,
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
@@ -1190,7 +1197,7 @@ class AnazhRealm_siedlung_bewohner {
                     ortI: null, wegeM: null, kette: null,
                     weg: u, wi: u, linie: u, tag: u, wegRest: u, wegRestAb: u, gegangen: u, gehDt: u, gehTakt: u, rueck: u,
                     tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, grundGx: 0, grundGz: 0, _gait: u, _gaitW: u, walkPhase: u,
-                    wagen: u, amSteuer: u, bestand: null, bestandBild: null, werkzeug: null,
+                    wagen: u, amSteuer: u, bestand: null, bestandBild: null, werkzeug: null, beuteTag: u,
                 };
             liste.push(Object.defineProperties(satz, AnazhRealm.BEWOHNER_SATZ));
             besuche.push(P);
@@ -1269,16 +1276,45 @@ class AnazhRealm_siedlung_bewohner {
         const amPlatz = pz ? { x: S.ox + pz.cx, z: S.oz + pz.cz } : null;
         const posten = [...tore.slice(0, 1), ...(amPlatz ? [amPlatz] : []), ...tore.slice(1)];
         const nPosten = Math.max(tore.length ? 1 : 0, Math.round(liste.length / WL.jeKoepfe));
+        // DER GANG ERREICHT DEN BODEN DER ANKUNFT (rollen-des-tages): der Stand trägt den Boden, auf den die Ankunft ihn stellt (die
+        // Oberkante der Säule, `_bewohnerStellen`), nur wenn der Gang dort ankommt — gegangen wie jeder Gang zu einem Stand: vom
+        // Knoten seines Anschlusses (`_bewohnerTuerAm`, frei in gerader Linie) Schritt für Schritt (`WL.ring.schrittM`, der Halt
+        // des Grunds, BEWOHNER.grundHaltJeM) auf dem Boden, den jeder Schritt liest (`_koerperBodenUnter` ab der Sohle des letzten:
+        // in der Luft abwärts zum nächsten Boden, im Fels die Säule). Unter einem Überhang trägt die Säule zwei Böden, der Gang den
+        // unteren, die Ankunft den oberen: am Revier stand der Jäger 39,5 m unter dem Boden der Säule (gate:kreatur-takt bewohner,
+        // jaeger #773347 an 121/−191: Sohle 37,4 m, Säule 76,9 m). Die erste Wand fragte jeden Meter bis 64 m unter dem Stand nach
+        // Fels — sie verwarf jede Höhle im Grund und mit ihr den Posten am Tor der Stadt (zielplan: „der Posten 0 in Villaalto —
+        // kein freier Stand“); die zweite fragte nur den Boden des Ankers — das Revier liegt oben, der Jäger kam von unten
+        const erreicht = (x, z) => {
+            const h = realm._koerperBodenUnter(x, NaN, z);
+            const an = Number.isFinite(h) && realm._bewohnerTuerAm(NG, { x, z });
+            if (!an) return Number.isFinite(h);
+            const n = Math.max(1, Math.ceil(Math.hypot(x - an.k.x, z - an.k.z) / WL.ring.schrittM));
+            let y = realm._koerperBodenUnter(an.k.x, NaN, an.k.z);
+            for (let i = 1; i <= n && Number.isFinite(y); i++)
+                y = realm._koerperBodenUnter(an.k.x + ((x - an.k.x) * i) / n, y, an.k.z + ((z - an.k.z) * i) / n);
+            return !(Math.abs(y - h) > AnazhRealm.PLAYER_STEP_UP);
+        };
         const postenStand = function* (g, P) {
             for (let v = 0; v < WL.ring.alle; v++) {
                 const r = WL.ring.r0M + Math.floor(v / WL.ring.jeStufe) * WL.ring.stufeM;
                 const a = g.axis(`${v}:postenstand`) * 2 * Math.PI;
                 const [x, z] = [P.x + Math.cos(a) * r, P.z + Math.sin(a) * r];
                 // am Tor sieht er hinaus
-                if (yield* frei(x, z)) return nimm({ x, z, blick: P.fort, anker: { x: P.x, z: P.z } });
+                if ((yield* frei(x, z)) && erreicht(x, z))
+                    return nimm({ x, z, blick: P.fort, anker: { x: P.x, z: P.z } });
                 yield;
             }
             return null;
+        };
+        // DIE RUNDE DER WACHE (rollen-des-tages, koerper `tagesStreife`): die Punkte ihres Reviers sind Knoten des Netzes, das man
+        // geht (`S.netzGrund`), gewählt nach dem Weg vom Posten über das Netz (tetrapoda `wegLaengen` vom Knoten des Postens, je
+        // Knoten einmal gemessen) — je Punkt ein Stand am Rand der Gasse (`postenStand`, der Blick fort vom Posten)
+        const laengen = new Map();
+        const lang = (i) => laengen.get(i) || laengen.set(i, TC.wegLaengen(NG.knoten.length, NG.kanten, i)).get(i);
+        const wegPkt = (a, c) => {
+            const [A, C] = [realm._bewohnerTuerAm(NG, a), realm._bewohnerTuerAm(NG, c)];
+            return A && C ? A.d + lang(A.i)[C.i] + C.d : Infinity;
         };
         for (let pi = 0; pi < nPosten && posten.length; pi++) {
             const P = posten[pi % posten.length];
@@ -1291,13 +1327,57 @@ class AnazhRealm_siedlung_bewohner {
                     if (b.rolle === "kind" || b.rolle === "haendler" || WL.rollen.includes(b.rolle)) continue;
                     const q = amPl ? b.orte.platz : b.orte.tuer;
                     if (!q || +b.seed.split(":")[2] < frueh) continue;
-                    const g = b.rolle === "wohnhaus" ? 2 : 1;
+                    // DIE WACHE RÜCKT AUS IHREM BAU AUS (rollen-des-tages, megastadt#1): wer im Bau der Wache wohnt (fachwerk
+                    // BAU_NUTZUNG.wache, die Hauptwache: 4 Personen) geht vor jedem anderen auf Posten — bis hier wählte das Gesetz
+                    // den Wächter aus dem Wohnhaus nächst dem Posten, und keiner rückte aus der Wache aus
+                    const g = b.rolle === "wache" ? 3 : b.rolle === "wohnhaus" ? 2 : 1;
                     const d = Math.hypot(q.x - P.x, q.z - P.z);
                     if (g > guete || (g === guete && d < dMin)) [wer, dMin, guete] = [b, d, g];
                 }
                 const st = wer && (amPl ? wer.orte.platz : yield* postenStand(this._rollGenome(wer.seed, "posten"), P));
                 if (!st) {
                     this._bruchMelden(`BEWOHNER: der Posten ${pi} in „${plan.name || "?"}" — ${wer ? "kein freier Stand" : "keiner trägt ihn"}`); // prettier-ignore
+                    continue;
+                }
+                wer.rolle = wer.beruf = rolle;
+                wer.orte.werk = st;
+                const an = realm._bewohnerTuerAm(NG, st);
+                const ks = KC.tagesStreife(NG.knoten, st, rolle, an ? (i) => an.d + lang(an.i)[i] : null);
+                const runde = [];
+                for (const [k, i] of ks.entries()) {
+                    const K = NG.knoten[i];
+                    const s = yield* postenStand(this._rollGenome(wer.seed, "streife:" + k), { x: K.x, z: K.z, fort: Math.atan2(K.x - st.x, K.z - st.z) }); // prettier-ignore
+                    if (s) runde.push(s);
+                }
+                if (!runde.length) this._bruchMelden(`BEWOHNER: der Posten ${pi} in „${plan.name || "?"}" — keine Runde (kein Punkt des Netzes um ihn)`); // prettier-ignore
+                wer.orte.streife = runde;
+            }
+        }
+        // DER JÄGER UND DER FISCHER (rollen-des-tages, koerper TAGES_GESETZ.rollen.jaeger · fischer, `tagesJagdWahl`): je Ort des
+        // Plans, der eine Tat anbietet (`werkAm`: das Revier hinter dem Saum der Äcker, das Ufer am Steg), so viele Haushalte, wie das
+        // Gesetz nennt — je der erste Erwachsene eines Wohnhauses (nie die ersten zwei eines Hauses der Stadt), dessen Tür dem Ort am
+        // nächsten liegt; sein Werk ist sein Stand dort (`postenStand`, den Blick hinaus). Bis hier trug kein Bewohner eine Rolle, die
+        // jagt oder fischt: 0 Jäger in 8 Saaten.
+        const RO = KC.TAGES_GESETZ.rollen;
+        const nHaus = new Set(liste.map((b) => b.orte.tuer)).size;
+        for (const [rolle, R] of Object.entries(RO)) {
+            const o = R.tat && R.werkAm && orte.find((x) => x.art === R.werkAm); // (die Rolle mit Tat — nie der Kaufmann am Platz)
+            if (!o) continue;
+            const P = { x: S.ox + o.x, z: S.oz + o.z, fort: Math.atan2(o.x, o.z) };
+            const erster = new Map();
+            for (const b of liste)
+                if (b.rolle === "wohnhaus" && +b.seed.split(":")[2] >= frueh && !erster.has(b.orte.tuer)) erster.set(b.orte.tuer, b); // prettier-ignore
+            const kand = [...erster.values()];
+            for (const wer of KC.tagesJagdWahl(
+                kand.map((b) => b.orte.tuer),
+                nHaus,
+                P
+            ).map((i) => kand[i])) {
+                const st = yield* postenStand(this._rollGenome(wer.seed, rolle), P);
+                if (!st) {
+                    this._bruchMelden(
+                        `BEWOHNER: ${R.werkAm} in „${plan.name || "?"}" — kein freier Stand für ${rolle}`
+                    );
                     continue;
                 }
                 wer.rolle = wer.beruf = rolle;
@@ -1324,13 +1404,20 @@ class AnazhRealm_siedlung_bewohner {
             const werk =
                 b.rolle === "haendler" || (b.orte.werk && b.orte.werk === b.orte.platz)
                     ? am(platzI)
-                    : WL.rollen.includes(b.rolle) && b.orte.werk
+                    : (WL.rollen.includes(b.rolle) || (RO[b.rolle] && RO[b.rolle].tat)) && b.orte.werk
                       ? amOrt(b.orte.werk)
                       : (am(B.werk) ?? P.heimI);
             const I = { heim: P.heimI, platz: am(platzI), spiel: am(platzI), einkauf: am(platzI), werk, mahl: am(B.mahl), abend: am(B.abend), besuch: am(B.besuch) }; // prettier-ignore
+            // (die Punkte der Runde sind keine Orte des Plans: je Punkt ein Index hinter ihnen, sein Weg von Stand zu Stand über das
+            // Netz — `wegPkt`, derselbe Grund; Heim und Werk messen von seinem Stand dort)
+            const R2 = b.orte.streife || [];
+            R2.forEach((s, k) => (I["streife" + k] = orte.length + k));
+            const pkt = (j) => (j >= orte.length ? R2[j - orte.length] : j === werk && b.orte.werk ? b.orte.werk : j === P.heimI ? b.orte.heim : { x: S.ox + orte[j].x, z: S.oz + orte[j].z }); // prettier-ignore
             const wegeM = new Map();
             const ids = [...new Set(Object.values(I).filter((j) => j !== null))];
-            for (const x of ids) for (const y of ids) if (x < y) wegeM.set(x * 65536 + y, wegZu(orte[x], orte[y], y));
+            for (const x of ids)
+                for (const y of ids)
+                    if (x < y) wegeM.set(x * 65536 + y, y >= orte.length ? wegPkt(pkt(x), pkt(y)) : wegZu(orte[x], orte[y], y)); // prettier-ignore
             [b.ortI, b.wegeM] = [I, wegeM];
             if (i % 64 === 0) yield;
         }
@@ -1929,14 +2016,17 @@ class AnazhRealm_siedlung_bewohner {
         if (g.userData.rig) g.userData.rig._beinMass = b.beinMass;
         b.beinL = Math.max(0.3, G.mass.beinL * b.groesse);
         b.tempoBand = window.__koerperCore.leibGehen(b.beinL);
-        b.tempo = b.tempoBand * b.koennen.lauf;
+        this._bewohnerGang(b); // × lauf, mit dem Delta seines Satzes (der Kranke)
         this.state.scene.add(g);
         if (S.satz === null) S.satz = this._bewohnerSatz(S, b);
-        // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, der Stand sofort
+        // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, die erste Zeile jedes Stands
+        // sofort (die übrigen Zeilen des Zyklus backt der Takt, `_bewohnerGangBacken`)
         if (G.lage === null) {
-            G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, gebacken: 0, fertig: false, tempo: b.tempoBand, gang: null };
-            for (let h = 0; h < AnazhRealm._bewohnerStaende().length; h++)
-                this._bewohnerGangPose(g, G.lage, G.lage.n + h, null);
+            const B = window.__koerperCore.LEIB_SATZ.baender.length; // (je Gang des Satzes ein Band, `_bewohnerGangPose`)
+            G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, baender: B, gebacken: 0, fertig: false, tempo: b.tempoBand, gaenge: null }; // prettier-ignore
+            const N = window.__koerperCore.STAND.zeilen;
+            for (let z = 0; z < AnazhRealm._bewohnerStandZahl(); z += N)
+                this._bewohnerGangPose(g, G.lage, B * G.lage.n + z, null);
         }
     }
 
@@ -1982,6 +2072,7 @@ class AnazhRealm_siedlung_bewohner {
         [SP.voraus.x, SP.voraus.z] = [p.x + SP.vx * BW.ausweichS, p.z + SP.vz * BW.ausweichS];
         const spV = Math.hypot(SP.vx, SP.vz);
         SP.weg = spV > 0.2 ? SP.zug || (SP.zug = [SP.voraus]) : null;
+        if (this._hiebe && this._hiebe.size) this._bewohnerHiebTakt(); // der Zweikampf der Wache mit dem Täter (rollen-des-tages)
         const FG = AnazhRealm._furchtGesetz().F;
         const kDeckel =
             2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01 + BW.spielerRaumM * (1 + FG.deckel * FG.fluchtJeFurcht);
@@ -2043,6 +2134,9 @@ class AnazhRealm_siedlung_bewohner {
                     Object.assign(b, { gegangen: 0, gehTakt: 0, tempoJetzt: 0, tempoTag: undefined, rueck: 0 });
                     Object.assign(b, { vx: 0, vz: 0, platz: false, hinaus: false, ankunft: !!b.leib, walkPhase: 0, _gaitW: 0, _gait: undefined, nah: false, begegnet: false }); // prettier-ignore
                     this._bewohnerRasterLage(S, b);
+                    // und ohne seinen letzten Tritt (`_tritt`): wer neu steht, ist nicht gegangen — bis fahrzeug-medium schrieb der
+                    // erste Schritt nach dem Sprung einen Tritt, wo der Leib vor ihm stand (unter 1,5 m), und das Rad liest die Tritte
+                    if (b.leib) this._trittMemo?.delete(b.leib);
                 }
                 if (S.verkehr) this._verkehrSprung(S); // auch der Wagen: f(Same, t)
             }
@@ -2219,6 +2313,7 @@ class AnazhRealm_siedlung_bewohner {
                     // wer aus dem Feld in den Nah-Kreis tritt, nimmt seine Pose mit: im Feld ging sein Rig nicht
                     // (`_bewohnerFeldLage`), die schwindenden Glieder folgen ab hier seinen Knochen
                     if (u._kzGlieder && this._kzBesitztFeld(g)) {
+                        if (g.userData.rig) g.userData.rig.standPerson = b.atem / 10;
                         this._animateHuman(
                             g,
                             b.uhr + b.atem,
@@ -2337,6 +2432,14 @@ class AnazhRealm_siedlung_bewohner {
                     this._bewohnerGangSchritt(b, 0, delta, echt, S);
                     bewegt.push(b);
                 }
+                // DER STAND LEBT (stand-lebt, koerper STAND): wer jenseits der Nah-Wahl steht, geht die Zeilen seines Stands zu seiner
+                // Uhr — im Satz rückt seine Instanz (`bewegt`), im Feld stellt der EINE Schreiber seine Glieder (`_bewohnerFeldLage`;
+                // die Hülle der Grobstufe trägt keine Glieder, die sich rühren könnten); eine Zeile je Leib und Takt des Stands
+                else if (!istNah && !b.weg && !b.drinnen && this._bewohnerStandTakt(S, b, delta)) {
+                    if (b.satzOrt) bewegt.push(b);
+                    else if (echt && g.userData._kzGrob !== true && this._kzBesitztFeld(g))
+                        this._bewohnerFeldLage(b, S);
+                }
                 if (!istNah) {
                     if (g.userData.rig && !b.backt) halter.push(b); // er trägt einen Leib, den das Auge nicht sieht
                     continue;
@@ -2353,6 +2456,8 @@ class AnazhRealm_siedlung_bewohner {
                         const dtA = Math.min(0.25, b.animDt);
                         b.animDt = 0;
                         const gang = this._gaitTick(g, b, geht ? (b.tempoJetzt ?? b.tempo) : 0, dtA, null);
+                        // die Person trägt ihren Gewichtswechsel (koerper `leibStandBein`: Phase und Periode aus ihrem Samen, `atem`)
+                        if (g.userData.rig) g.userData.rig.standPerson = b.atem / 10;
                         this._animateHuman(
                             g,
                             b.uhr + b.atem,
@@ -2465,7 +2570,11 @@ class AnazhRealm_siedlung_bewohner {
         if (!b.leib || !b.da || b.weg || b.platz || b.hinaus || b.ankunft || b.nah || b.drehen != null || b._gaitW > 0)
             return false;
         const u = b.leib.userData;
-        if (u.rig) return false; // wer seinen Leib trägt, gibt ihn im Takt zurück (`_tickBewohner`, der Ring) — erst dann ruht er
+        // wer seinen Leib trägt, gibt ihn im Takt zurück (`_tickBewohner`, der Ring) — erst dann ruht er. AN WEM GEBACKEN WIRD
+        // (`backt`), der trägt ihn für den Satz, nicht für das Auge: er ruht wie einer ohne Leib (mittag-heiler). Bis hier hielt
+        // das Backen sechs Köpfe wach, die Reihe der Ruhenden (`ruhSoll`) rückte anders, und die Stunde hing an der Seite: mit den
+        // Zeilen der Stände (stand-lebt) reichte es in die Stunde, kind#3891861244 trat um 10 Uhr ein Bild früher an (VK-V Bild 614)
+        if (u.rig && !b.backt) return false;
         if (b.drinnen) return true;
         if (b.d2 < innen * innen) return false;
         if (!echt) return true;
@@ -2574,7 +2683,21 @@ class AnazhRealm_siedlung_bewohner {
             const voll = BW.kopfMaxRad + BW.rumpfMaxRad;
             soll = Math.max(-voll, Math.min(voll, da));
             if (!b.weg && Math.abs(da) > voll) b.drehen = a;
-        } else if (war && b.da && !b.weg && !b.platz && Number.isFinite(b.ziel.blick)) b.drehen = b.ziel.blick;
+        } else {
+            if (war && b.da && !b.weg && !b.platz && Number.isFinite(b.ziel.blick)) b.drehen = b.ziel.blick;
+            // DER BLICK FOLGT DEM REIZ (stand-lebt 2, `_bewohnerReiz`): wer steht, schaut dem nächsten Bewegten nach — die ersten
+            // `augeNurRad` tragen die Augen, den Rest Kopf und Rumpf; der Leib wendet sich ihm nicht zu (er bleibt bei seinem Ziel)
+            const rz = b.weg ? null : this._bewohnerReiz(b, dt);
+            if (rz) {
+                const q = rz.leib.position;
+                let da = Math.atan2(q.x - g.position.x, q.z - g.position.z) - g.rotation.y;
+                da -= Math.PI * 2 * Math.round(da / (Math.PI * 2));
+                const voll = BW.kopfMaxRad + BW.rumpfMaxRad;
+                soll = Math.max(-voll, Math.min(voll, Math.sign(da) * Math.max(0, Math.abs(da) - BW.augeNurRad)));
+            } else if (!b.weg && !b.drinnen)
+                // (stand-lebt 3) ohne Reiz wandert der Blick wie der des fernen Leibs (koerper `leibStandBlick`, dieselbe Uhr `uhr + atem`)
+                soll = window.__koerperCore.leibStandBlick((b.uhr || 0) + (b.atem || 0));
+        }
         const om = BW.kopfRadS * dt;
         b.kopfY = (b.kopfY || 0) + Math.max(-om, Math.min(om, soll - (b.kopfY || 0)));
         const kopf = Math.max(-BW.kopfMaxRad, Math.min(BW.kopfMaxRad, b.kopfY));
@@ -2583,6 +2706,30 @@ class AnazhRealm_siedlung_bewohner {
             [r.spine.rotation.y, neu] = [r.spine.rotation.y + b.kopfY - kopf, true];
         if (k.rotation.y !== kopf) [k.rotation.y, neu] = [kopf, true];
         return neu;
+    }
+
+    // DER REIZ (stand-lebt 2): der nächste bewegte Mensch bis `reizM` um b — Passant, Fahrer, der Spieler —, gehalten `reizS` (die
+    // Fixation), solange er sich regt und im Kreis bleibt; dann wählt der Blick neu. Liefert ihn (mit `leib.position`) oder null.
+    _bewohnerReiz(b, dt) {
+        const BW = AnazhRealm.BEWOHNER;
+        const g = b.leib;
+        const R2 = BW.reizM * BW.reizM;
+        const regt = (o) =>
+            !!(o && o.leib && (o.spieler ? Math.abs(o.vx) + Math.abs(o.vz) > 0.1 : o.weg && !o.drinnen));
+        const d2 = (o) => (o.leib.position.x - g.position.x) ** 2 + (o.leib.position.z - g.position.z) ** 2;
+        b.reizUhr = (b.reizUhr || 0) + dt;
+        if (b.reiz && b.reizUhr < BW.reizS && regt(b.reiz) && d2(b.reiz) < R2) return b.reiz;
+        b.reizUhr = 0;
+        let best = null;
+        let bd = R2;
+        const sp = this._bewohnerSpieler;
+        if (regt(sp) && d2(sp) < bd) [best, bd] = [sp, d2(sp)];
+        for (const o of (b.sied && b.sied.liste) || [])
+            if (o !== b && regt(o)) {
+                const e = d2(o);
+                if (e < bd) [best, bd] = [o, e];
+            }
+        return (b.reiz = best);
     }
 
     // DER ABSTAND ZUM SPIELER (mensch.K5, „die Erinnerung lenkt den Abstand"): dem Gehenden zwei Kapseln und der persönliche
@@ -2650,22 +2797,100 @@ class AnazhRealm_siedlung_bewohner {
     // am Ort o nicht — er geht zu ihr (Statute of Winchester 1285: die Wache hält den Fremden an). Sein Soll nennt bis zur Wende
     // seines Plans den Punkt `wache.nahM` vor der Tat auf seiner Seite, über Land ohne Grundriss und Wand — dieselbe Mechanik wie
     // das Weichen (`b.weichen`, gelesen von `_bewohnerSoll`). Bis hier wich die Wache wie jeder Zeuge. Am Steuer bleibt er.
+    // DIE TAT ENDET IM HIEB (rollen-des-tages, Meisterkarte 2 mensch.macht.krieg#1; koerper SPIEL_GESETZ.arten.hieb): die Wache naht
+    // dem TÄTER — dem Spieler, der schlug —, bis sie ihm die Länge der Klinge gegenüber steht (`abstandM`, der Akt „hieb“, ihr Gegner
+    // der Spieler), und stellt ihn zum Zweikampf (`_bewohnerHiebTakt`). Bis hier trat sie 1,5 m vor den Ort der Tat und hielt: kein
+    // Gegner, kein Hieb — 0 Bewaffnete im Zweikampf.
     _bewohnerNahen(S, b, o, stunde) {
         if (b.amSteuer || b.ankunft || !b.ziel) return false;
         const p = b.leib.position;
-        const d = Math.hypot(p.x - o.x, p.z - o.z) || 1;
-        const nah = AnazhRealm.LEBENSLAUF.wache.nahM;
-        const q = { x: o.x + ((p.x - o.x) / d) * nah, z: o.z + ((p.z - o.z) / d) * nah, blick: Math.atan2(o.x - p.x, o.z - p.z) }; // prettier-ignore
+        const t = this.state.playerMesh.position;
+        const H = window.__koerperCore.SPIEL_GESETZ.arten.hieb;
+        const d = Math.hypot(p.x - t.x, p.z - t.z) || 1;
+        const q = { x: t.x + ((p.x - t.x) / d) * H.abstandM, z: t.z + ((p.z - t.z) / d) * H.abstandM, blick: Math.atan2(t.x - p.x, t.z - p.z), gegner: "spieler" }; // prettier-ignore
         if (!this._landAt(q.x, q.z) || ["haus", "bau"].includes(this._imGrundriss(q.x, q.z, 0.5)) || this._bewohnerWand(p, q)) return false; // prettier-ignore
         b.weichen = null;
         const soll = this._bewohnerSoll(b, stunde);
         if (soll.drinnen) return false;
         const bis = this._bewohnerWende(b, stunde, stunde + 24);
-        b.weichen = { ort: q, plan: soll.ziel, ab: stunde, dauer: bis === null ? 24 : bis - stunde };
+        b.weichen = { ort: q, plan: soll.ziel, ab: stunde, dauer: bis === null ? 24 : bis - stunde, akt: "hieb" };
+        (this._hiebe || (this._hiebe = new Map())).set(b, { S, K: null, t0: null, i: 0, treffer: [0, 0] });
         this._bewohnerUhrNach(S, b);
         this._bewohnerZiel(b, stunde, true);
         this._bewohnerWecken(S, b);
         return true;
+    }
+    // DER ZWEIKAMPF DER WACHE (koerper `spielKampf` „hieb“ — der EINE Zweikampf des Kerns, Bradley–Terry, die Deckung hält): steht die
+    // nahende Wache dem Täter auf die Länge der Klinge gegenüber, rechnet der Kern den Kampf aus ihrer beider Leistung
+    // (`spielLeistung` des Leibs: die Kraft seines Könnens, seine Übung im Kampf — der Spieler mit dem Leib seiner Gestalt,
+    // `leibKoennen`, und der Übung 1, ANGENOMMEN), je `zugS` Sekunden ein Zug im Wechsel. DIE FOLGE: ein Treffer der Wache nimmt
+    // dem Spieler Leben (`damagePlayer`, der Schaden der Klinge des Arena-Gesetzes `_kampfRohSchaden` aus der Kraft der Wache), ein
+    // Treffer des Spielers trifft die Wache ins Gedächtnis der Gewalt (`_creatureRemember`, das EINE Furcht-Gesetz); trägt einer
+    // `bis` Treffer, endet der Kampf und die Wache geht in ihren Tag zurück. Weicht die Wache (ihr Akt ist kein Hieb mehr) oder ist
+    // der Täter fort, fällt der Kampf ungeschlagen. Jeder Gang reist als Akte in die Siedlung (`S.hiebe`: Treffer, Antwort, Deckung).
+    _bewohnerHiebTakt() {
+        const KC = window.__koerperCore;
+        const H = KC.SPIEL_GESETZ.arten.hieb;
+        const t = this.state.playerMesh.position;
+        const jetzt = this.state.spielZeit;
+        for (const [b, F] of this._hiebe) {
+            const L = b.leib;
+            const d = L ? Math.hypot(L.position.x - t.x, L.position.z - t.z) : Infinity;
+            if (!F.K) {
+                if (b.akt !== "hieb" || !(d <= AnazhRealm.BEWOHNER.zeugeM)) this._hiebe.delete(b);
+                if (b.akt !== "hieb" || !(d <= H.abstandM + 0.5)) continue;
+                const tag = Math.floor(this._weltTag());
+                const kP = KC.leibKoennen(Object.assign({}, KC.START_PARAMS, this._koerperStudioDials() || {})).kraft;
+                const sa = KC.spielLeistung("ringen", { same: b.same, beinM: 0, kraft: b.koennen.kraft, kampf: b.uebung.kampf.koennen }, tag); // prettier-ignore
+                const sb = KC.spielLeistung("ringen", { same: 0, beinM: 0, kraft: kP, kampf: 1 }, tag);
+                F.K = KC.spielKampf({ s: sa, u: b.uebung.kampf.koennen }, { s: sb, u: 1 }, (b.same ^ Math.imul(tag, 0x9e3779b1)) >>> 0, "hieb"); // prettier-ignore
+                F.t0 = jetzt;
+            }
+            while (F.i < F.K.zuege.length && jetzt >= F.t0 + (F.i + 1) * H.zugS) {
+                const z = F.K.zuege[F.i++];
+                if (!z.treffer) continue;
+                F.treffer[z.an]++;
+                if (z.an === 0)
+                    this.damagePlayer(this._kampfRohSchaden(null, "rumpf", this._kampfStats().damage * b.koennen.kraft), "hieb"); // prettier-ignore
+                else if (L) this._creatureRemember(L, "gewalt", { von: "spieler" });
+            }
+            if (F.i < F.K.zuege.length) continue;
+            const Z = F.K.zuege;
+            // (der Getroffene antwortet: der Zug nach einem Treffer ist der seine — gezählt je Treffer vor dem letzten Zug)
+            const antwort = Z.filter((z, k) => z.treffer && k + 1 < Z.length && Z[k + 1].an !== z.an).length;
+            const vorLetztem = Z.filter((z, k) => z.treffer && k + 1 < Z.length).length;
+            (F.S.hiebe || (F.S.hiebe = [])).push({ zuege: Z.length, treffer: F.treffer, sieger: F.K.sieger, antwort, vorLetztem, durchDeckung: Z.filter((z) => z.gelesen && z.treffer).length }); // prettier-ignore
+            this._hiebe.delete(b);
+            const tg = this.state.timeOfDay;
+            const stunde = ((((Number.isFinite(tg) ? tg : 0.5) % 1) + 1) % 1) * 24;
+            b.weichen = null;
+            this._bewohnerUhrNach(F.S, b);
+            this._bewohnerZiel(b, stunde, true);
+            this._bewohnerWecken(F.S, b);
+        }
+    }
+    // DIE BEUTE DES JÄGERS (rollen-des-tages, Meisterkarte 2 mensch.nahrung.tier#2; koerper `tagesBeute`): verlässt der Jäger die
+    // Jagd, nennt der Kern aus Same und Tag, ob er Beute heimbringt — dann LIEST er den Bestand der Beute-Art am Revier
+    // (`_bestandArt`, der EINE Leser des Bestands, `GAU.beute`), nimmt einen Kopf, den kein Leib zeichnet, aus ihm (`_bestandAus`, der
+    // EINE Ausgang: der Akt „aus“ des Gaus) und legt das Fleisch in den Halter seines Werks (koerper `bestandGib`,
+    // BESTAND_GESETZ.herstellung.jaeger) — der Wagen trägt es zum Markt. Steht kein Kopf im Revier oder hat der Gau nicht
+    // geantwortet, geht er leer heim; je Tag einmal, gezählt in der Siedlung (`S.jagd`).
+    _bewohnerBeute(b, stunde) {
+        const KC = window.__koerperCore;
+        const tag = Math.floor(this._weltTag());
+        const w = b.orte.werk;
+        if (b.beuteTag === tag || !w) return;
+        b.beuteTag = tag;
+        const J = b.sied.jagd || (b.sied.jagd = { jagden: 0, beute: 0, leer: 0, ohneAntwort: 0 });
+        J.jagden++;
+        if (!KC.tagesBeute(b.same, tag, "jagd")) return void J.leer++;
+        const A = this._bestandArt(this._bestandKey(w.x, w.z), AnazhRealm.GAU.beute);
+        if (!A) return void J.ohneAntwort++;
+        const t = A.tiere.find((x) => !x.leib);
+        if (!t) return void J.leer++;
+        this._bestandAus({ userData: { _bestand: t } });
+        J.beute++;
+        if (b.bestand) KC.bestandGib(b.bestand, KC.BESTAND_GESETZ.herstellung.jaeger.ware, 1, stunde);
     }
 
     // DAS SPIEL DES ABENDS (koerper SPIEL_GESETZ, Meisterkarte 2 mensch.sport.regeln#1 · mannschaft#1 · arena#1 · geistspiel#1): je
@@ -2963,7 +3188,7 @@ class AnazhRealm_siedlung_bewohner {
         // DER ZEUGE WEICHT (`_bewohnerWeichen`): solange sein Plan das Ziel der Tat nennt, bis zur Wende, der Stand jenseits der Tat
         const W = b.weichen;
         if (W && ziel === W.plan && (((stunde - W.ab) % 24) + 24) % 24 < W.dauer)
-            return { ziel: W.ort, drinnen: false, akt: soll.akt };
+            return { ziel: W.ort, drinnen: false, akt: W.akt || soll.akt }; // (die nahende Wache: der Akt ihres Hiebs)
         return { ziel, drinnen: soll.drinnen, akt: soll.akt };
     }
 
@@ -2973,14 +3198,17 @@ class AnazhRealm_siedlung_bewohner {
     // ging jeder Leib mit `null`: der Akt des Tags und die Furcht standen in keinem Bild. Ein Objekt je Bewohner, je Ruf gefüllt.
     // DIE STÄNDE DES BEWOHNERS (w28-steh-haltung): die Namen der Profile, in denen ein Bewohner stehen kann — neutral, je
     // Haltung des Tages-Gesetzes (koerper TAGES_GESETZ.haltung) und je Zeile der Emotions-Brücke an einer Achse seines Gemüts
-    // (BEWOHNER.gemuet: sorrow, chaos). Der ferne Satz und das Feld backen je Namen EINE Stand-Zeile (`_bewohnerGangPose`),
-    // jeder Bewohner wählt seine über denselben Namen wie sein naher Leib (`_koerperMotionName`). Bis hier buk der Satz EINEN
-    // Stand ohne Haltung: an der Nah-Grenze sprang die Schulter beim Akt besuch um 8,2°.
+    // (BEWOHNER.gemuet: sorrow, chaos). Jeder Bewohner wählt seinen über denselben Namen wie sein naher Leib (`_koerperMotionName`).
+    // DER STAND LEBT (stand-lebt, koerper STAND): der ferne Satz und das Feld backen je Namen `STAND.zeilen` Zeilen über den Zyklus
+    // des Stands (`_bewohnerGangPose` zur Uhr `_bewohnerStandZeit`), die Zeilen des Namens h liegen ab h · zeilen beieinander
+    // (`_bewohnerStandZahl` alle), jeder Bewohner liest die Zeile seiner Uhr (`_bewohnerStandLage`). Bis hier buk der Satz je Namen
+    // EINE Zeile zur Uhr 0 (joy vier Phasen hinten an, je Leib fest aus seinem Samen) — und vor w28-steh-haltung EINEN Stand ohne
+    // Haltung: an der Nah-Grenze sprang die Schulter beim Akt besuch um 8,2°.
     static _bewohnerStaende() {
         if (AnazhRealm._bewohnerStaendeListe) return AnazhRealm._bewohnerStaendeListe;
         const KC = window.__koerperCore;
         if (!KC || !KC.TAGES_GESETZ) return AnazhRealm._kernPflichtBruch("koerper:TAGES_GESETZ");
-        if (typeof KC.leibGeste !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibGeste");
+        if (!KC.STAND || typeof KC.leibStandZeile !== "function") return AnazhRealm._kernPflichtBruch("koerper:STAND");
         const L = [AnazhRealm.MOTION_PROFILE_MAP.koerper.idle];
         const nimm = (nm) => nm && !L.includes(nm) && L.push(nm);
         Object.values(KC.TAGES_GESETZ.haltung).forEach(nimm);
@@ -2990,54 +3218,87 @@ class AnazhRealm_siedlung_bewohner {
         // hinten an (jede Zeile davor bleibt, wo sie stand); ihr Profil ist das des Gesetzes (`leibSatzProfil`)
         if (typeof KC.leibSatzNamen !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibSatzNamen");
         KC.leibSatzNamen().forEach(nimm);
-        // DIE PHASEN DER GESTE (a-haltung 2): ein Stand, dessen Profil eine Seite über das Band der Ruhe hebt (koerper `leibGeste`
-        // gegen das idle des Buchs: joy), backt `GESTE.phasen` Zeilen — die erste an seinem Platz, die übrigen hinten an (jede andere
-        // Zeile bleibt, wo sie stand); `_bewohnerStandZeilen` nennt je Namen seine Zeilen
-        const M = KC.MOTION;
-        const Z = new Map(L.map((nm, h) => [nm, [h]]));
-        const P = (nm) => KC.leibSatzProfil(M, nm);
-        for (const nm of L.slice())
-            if (KC.leibGeste(P(nm), M[L[0]], 0) || KC.leibGeste(P(nm), M[L[0]], 1))
-                for (let k = 1; k < KC.GESTE.phasen; k++) Z.get(nm).push(L.push(nm) - 1);
-        AnazhRealm._bewohnerStandZeilen = Z;
         return (AnazhRealm._bewohnerStaendeListe = Object.freeze(L));
     }
-    // DIE UHR DES STANDS h (das Backen, a-haltung 2): die Zeile einer Geste steht zur Uhr ihrer Phase (koerper `leibGesteZeit`),
-    // jede andere bei 0 (der Kontrapost des Atems bei 0, wie bisher)
-    _bewohnerStandZeit(h) {
-        const nm = AnazhRealm._bewohnerStaende()[h];
-        const zeilen = AnazhRealm._bewohnerStandZeilen.get(nm);
-        return zeilen.length > 1 ? window.__koerperCore.leibGesteZeit(zeilen.indexOf(h), zeilen.length) : 0;
+    // die Zeilen aller Stände (je Name `STAND.zeilen` je tragendem Bein, `STAND.seiten` — stand-lebt 3) — die Zeilen des Satzes und
+    // des Felds hinter dem Gang
+    static _bewohnerStandZahl() {
+        const ST = window.__koerperCore.STAND;
+        return AnazhRealm._bewohnerStaende().length * ST.zeilen * ST.seiten;
     }
-    // DAS GEMÜT DES STANDS h (das Backen): das Gemüt, das die Brücke auf den Namen des Stands h führt (0: neutral, wie bisher);
-    // ein Stand ohne Profil im Buch bricht laut — nie eine neutrale Zeile unter fremdem Namen
-    _bewohnerStandGemuet(h) {
-        if (!(h > 0)) return null;
-        const e = { haltung: AnazhRealm._bewohnerStaende()[h] };
-        if (!this._koerperMotionProfile(false, e) || this._koerperMotionName(false, e) !== e.haltung)
+    // DIE UHR DER STAND-ZEILE z (das Backen): die Zeile k ihres Namens steht zur Uhr k · zyklus / zeilen (koerper `leibStandZeit`)
+    _bewohnerStandZeit(z) {
+        const N = window.__koerperCore.STAND.zeilen;
+        return window.__koerperCore.leibStandZeit(z % N, N);
+    }
+    // DAS GEMÜT DER STAND-ZEILE z (das Backen): das Gemüt, das die Brücke auf den Namen ihres Stands führt (der erste: neutral);
+    // ein Stand ohne Profil im Buch bricht laut — nie eine neutrale Zeile unter fremdem Namen. (stand-lebt 3) Die Zeilen eines
+    // Namens liegen je tragendem Bein beieinander (`STAND.seiten`): das Gemüt der Zeile nennt ihr Bein (`seite`, 0 das rechte),
+    // das Rig liest es (`_animateHumanoidRig` → `r.standSeite`)
+    _bewohnerStandGemuet(z) {
+        const ST = window.__koerperCore.STAND;
+        const B = Math.floor(z / ST.zeilen);
+        const h = Math.floor(B / ST.seiten);
+        const e = { haltung: AnazhRealm._bewohnerStaende()[h], seite: B % ST.seiten };
+        if (h > 0 && (!this._koerperMotionProfile(false, e) || this._koerperMotionName(false, e) !== e.haltung))
             this._bruchMelden(
                 `BEWOHNER: der Stand „${e.haltung}“ trägt kein Profil der Bewegung (das Buch des Körpers)`
             );
         return e;
     }
-    // DER STAND DES BEWOHNERS: die Zeile seines Stands — der Name, den sein naher Leib steht (`_bewohnerGemuet` über die EINE
-    // Wahl `_koerperMotionName`), in der Liste der Stände; ein Name ohne Zeile bricht laut. Trägt der Stand eine Geste, die Zeile
-    // seiner Phase (a-haltung 2, koerper `leibGestePhase`: seine Uhr bei der Geburt, `atem` aus seinem Samen)
+    // DER STAND DES BEWOHNERS: die erste Zeile seines Stands — der Name, den sein naher Leib steht (`_bewohnerGemuet` über die EINE
+    // Wahl `_koerperMotionName`), in der Liste der Stände; ein Name ohne Zeile bricht laut
     _bewohnerStandVon(b) {
         const nm = this._koerperMotionName(false, this._bewohnerGemuet(b));
-        AnazhRealm._bewohnerStaende();
-        const zeilen = AnazhRealm._bewohnerStandZeilen.get(nm);
-        if (!zeilen) {
+        const h = AnazhRealm._bewohnerStaende().indexOf(nm);
+        if (h < 0) {
             this._bruchMelden(`BEWOHNER: der Stand „${nm}“ trägt keine Zeile im Satz`);
             return 0;
         }
-        return zeilen.length > 1 ? zeilen[window.__koerperCore.leibGestePhase(b.atem || 0, zeilen.length)] : zeilen[0];
+        const ST = window.__koerperCore.STAND;
+        return h * ST.zeilen * ST.seiten;
+    }
+    // DIE ZEILEN SEINES STANDS JETZT (stand-lebt; Leser: das Feld `_bewohnerFeldLage`, der Satz `_bewohnerSatzSchreiben`): zur Uhr
+    // seines Leibs `uhr + atem` — derselben, die sein naher Leib geht — die Zeile k0 seines Stands, die nächste k1 und ihr Anteil
+    // (koerper `leibStandZeile`, wie die Phase des Gangs k0 und k1 wählt); solange die Zeilen der Gestalt `Z` nicht gebacken
+    // sind (`standFertig`), die erste. → [z0, z1, Anteil] (nach `aus`)
+    _bewohnerStandLage(b, Z, aus) {
+        const z = aus || this._bewohnerStandZ || (this._bewohnerStandZ = [0, 0, 0]);
+        let h = b.standZeile || 0;
+        if (!Z || !Z.standFertig) {
+            z[0] = z[1] = h;
+            z[2] = 0;
+            return z;
+        }
+        const KC = window.__koerperCore;
+        const u = (b.uhr || 0) + (b.atem || 0);
+        KC.leibStandZeile(u, KC.STAND.zeilen, z);
+        // (stand-lebt 3) das Bein, das seine Person gerade trägt (`leibStandBein`, wie sein naher Leib): die Zeilen des linken liegen
+        // hinter denen des rechten — der ferne Leib wechselt das Bein im Schritt einer Zeile (der Satz mischt nur im Zyklus)
+        if (KC.leibStandBein(u, (b.atem || 0) / 10) < 0) h += KC.STAND.zeilen;
+        z[0] += h;
+        z[1] += h;
+        return z;
+    }
+    // DER TAKT DES STANDS (stand-lebt, Lehre 25: der Takt kostet, was ihn betrifft): wer jenseits der Nah-Wahl steht, stellt seine
+    // Zeilen neu, sobald seine Uhr eine halbe Zeile weiter ist (`STAND.zyklus / zeilen / 2`), fern auf der Raten-Leiter seltener
+    // (`_creatureAnimDiv` an der Grenze seiner Grobstufe, höchstens ×4: zwei Zeilen); liefert, ob er dran ist
+    _bewohnerStandTakt(S, b, delta) {
+        const ST = window.__koerperCore.STAND;
+        const div = Math.min(
+            4,
+            this._creatureAnimDiv(Math.sqrt(b.dA2 || 0), this._bewohnerGelenkAb(S, b), 0, delta, true)
+        );
+        if (Number.isFinite(b.standUhr) && b.uhr - b.standUhr < (div * ST.zyklus) / ST.zeilen / 2) return false;
+        b.standUhr = b.uhr;
+        return true;
     }
     // SEIN STAND WECHSELT (der Akt des Tags, die Furcht): gemerkt (`b.standZeile` — die Leser: `_bewohnerSatzSchreiben`, im Feld
     // `_bewohnerFeldLage`, dort sofort neu gestellt); liefert, ob der Satz ihn neu schreiben muss
     _bewohnerStandNeu(b, S) {
-        const h = this._bewohnerStandVon(b);
-        if (h === (b.standZeile || 0)) return false;
+        const band = b.gangBand;
+        const h = this._bewohnerStandVon(b); // (liest das Gemüt: an der Kante seines Satzes auch das Band seines Gangs)
+        if (h === (b.standZeile || 0) && band === b.gangBand) return false;
         b.standZeile = h;
         const g = b.leib;
         const echt = !(this.state.renderer && this.state.renderer._isHeadlessNull);
@@ -3061,9 +3322,26 @@ class AnazhRealm_siedlung_bewohner {
         ) {
             g.haltung = KC.tagesHaltung(b.akt, b.rolle, b);
             g.schluessel = { akt: b.akt, rolle: b.rolle, tag };
+            this._bewohnerGang(b); // (der Gang liest denselben Satz am selben Tag)
         }
         g.sorrow = g.chaos = b.leib ? Math.max(0, this._kreaturFurchtErinnert(b.leib)) : 0;
         return g;
+    }
+    // DER GANG LIEST DEN SATZ (leib-liest-satz-2 — mensch.menge.seuche: der Kranke geht anders): das Tempo seines Gangs ist das
+    // Gehen seines Beins × `lauf` seines Könnens (die Geburt: `tempoBand`, mensch.K2) mit dem Delta seines Satzes (koerper
+    // `leibSatzTempo`: der Kranke −0,185 m/s, Lasselin 2020 — Schritt und Takt folgen im EINEN Gang-Gesetz), dazu das Band seines
+    // Gangs im fernen Satz (`leibSatzBand` → `gangBand`: die Zeilen des Kranken, `_bewohnerGangPose`). EIN Schreiber: die Geburt
+    // und die Kante seines Satzes (`_bewohnerGemuet`: Akt, Rolle, Tag — Krankheit ist Gesetz des Tags); während eines Laufs trägt
+    // ihn `gangTempo` (das Ende des Laufs gibt ihn zurück, `_bewohnerZiel`). Bis hier setzte allein die Geburt das Tempo: der
+    // Kranke ging im Tempo des Gesunden.
+    _bewohnerGang(b) {
+        if (!(b.tempoBand > 0)) return; // (vor der Geburt geht er nicht)
+        const KC = window.__koerperCore;
+        if (typeof KC.leibSatzTempo !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibSatzTempo");
+        const v = KC.leibSatzTempo(b.tempoBand * b.koennen.lauf, b);
+        if (b.gangTempo != null) b.gangTempo = v;
+        else b.tempo = v;
+        b.gangBand = KC.leibSatzBand(b);
     }
 
     // DAS ZIEL DER STUNDE (mensch.K2): das Soll (`_bewohnerSoll`). Ein neues Ziel verwirft den alten Weg; wer drinnen war und
@@ -3073,15 +3351,17 @@ class AnazhRealm_siedlung_bewohner {
         const soll = this._bewohnerSoll(b, stunde);
         const ziel = soll.ziel;
         if (tuer && b.weichen && ziel !== b.weichen.ort) b.weichen = null; // sein Tag holt ihn zurück: das Weichen endet
+        if (b.akt === "jagd" && soll.akt !== "jagd") this._bewohnerBeute(b, stunde); // der Heimweg trägt die Beute
         b.akt = soll.akt;
         // DER GEGNER IM ZWEIKAMPF (koerper `spielProgramm`, der Auftritt „zweikampf“ trägt den Index seines Gegners unter den Gästen
         // des Tags): der Leib des anderen aus der Liste des Programms (`S.spiel.wer`) — EIN Akt, zwei Leser (die Siegquote des Sports,
         // der Krieg: wer einen Gegner trägt); jedes andere Ziel nimmt ihn ab
+        // (der Hieb der Wache, `_bewohnerNahen`: ihr Gegner ist der Spieler, der Täter)
         const sp = b.sied && b.sied.spiel;
-        b.gegner = ziel && ziel.gegner != null && sp ? sp.wer[ziel.gegner] || null : null;
+        b.gegner = ziel && ziel.gegner === "spieler" ? "spieler" : ziel && ziel.gegner != null && sp ? sp.wer[ziel.gegner] || null : null; // prettier-ignore
         // DER LÄUFER LÄUFT (koerper SPIEL_GESETZ): auf dem Weg ins Ziel seines Laufs trägt ihn das Tempo seiner Leistung (der Auftritt
-        // `tempo`) — geliehen: danach geht er das Tempo seines Gangs, wie es vor dem Lauf war (`gangTempo`); das Tempo des Gangs setzt
-        // allein die Geburt (`_bewohnerGeburt`). Bis sport-regeln 3 setzte jedes Ziel das Tempo neu aus dem Gesetz, ein Zwilling der
+        // `tempo`) — geliehen: danach geht er das Tempo seines Gangs (`gangTempo`); das Tempo des Gangs setzt allein sein Satz
+        // (`_bewohnerGang`: die Geburt und die Kante seines Satzes). Bis sport-regeln 3 setzte jedes Ziel das Tempo neu aus dem Gesetz, ein Zwilling der
         // Geburt: der Täter bewohner-koennen der Kreatur-Linse (der Stand vor dem Gesetz) blieb unsichtbar
         const lauf = !!(ziel && ziel.tempo > 0);
         if (lauf && b.gangTempo == null) b.gangTempo = b.tempo;
@@ -3149,7 +3429,13 @@ class AnazhRealm_siedlung_bewohner {
         if (Number.isFinite(s0.ziel.blick)) g.rotation.y = s0.ziel.blick;
         Object.assign(b, { ziel: s0.ziel, akt: s0.akt, drinnenSoll: s0.drinnen, drinnen: s0.drinnen, da: true });
         Object.assign(b, { weg: null, wegRestAb: null, wi: null, wegRest: 0, stand: null, drehen: null, gehDt: 0 });
-        for (let n = 0; n < BW.ankunftWenden && h < stunde; n++) {
+        // DIE RUNDE TRÄGT IHRE WENDEN (rollen-des-tages): die Streife wendet je Runde an jedem Punkt und am Posten (koerper
+        // TAGES_GESETZ.rollen[r].streife: punkte + 1 je jeH) — die Ankunft spielt sie über ankunftH zu den Wenden des Tags nach;
+        // mit 12 allein brach sie ab und stellte die Wache an den Punkt einer früheren Stunde (gate:kreatur-takt bewohner,
+        // Wiederkehr: waechter #746991 99,5 m)
+        const St = (window.__koerperCore.TAGES_GESETZ.rollen[b.rolle] || {}).streife;
+        const wenden = BW.ankunftWenden + (St ? Math.ceil((BW.ankunftH * (St.punkte + 1)) / St.jeH) : 0);
+        for (let n = 0; n < wenden && h < stunde; n++) {
             const w = this._bewohnerWende(b, h, stunde);
             if (b.weg) this._bewohnerSchritt(b, ((w === null ? stunde : w) - h) * sek);
             if (w === null) break;
@@ -3747,6 +4033,18 @@ class AnazhRealm_siedlung_bewohner {
             this._bewohnerErreicht(b);
             return this._bewohnerAusweichen(S, b, dt);
         }
+        // DAS BESETZTE ENDE (steckenbleiber): dieselbe Regel am LETZTEN Punkt seines Wegs — steht dort ein Leib (er ruht: kein Weg,
+        // kein Tempo) und ist er neben ihm, endet sein Weg, wo er steht (die Ankunft des Schritts, `_bewohnerSchritt`: wer Platz
+        // machte, geht von dort zurück, sobald sein Stand frei ist, `_tickBewohner`) — wie die Ankunft keinem den Raum nimmt
+        // (`_bewohnerAnkunft`). Nie an seiner Tür: um sie gilt das Bein durch die Tür (unten). Bis hier galt die Regel nur vor
+        // einem übernächsten Punkt: der Punkt, auf den einer beiseite trat (`_bewohnerPlatz`, frei, als er ihn wählte), lag,
+        // als der Nachbar an seinen Stand kam, in dessen Kapsel — frei von jeder Wand und unerreichbar; er tänzelte 0,14 m vor
+        // ihm, kam nie an und ging darum nie zurück (Kreatur-Linse bewohner, Stadt am main 54b89949: kaufhaus #936614 um 18,44
+        // Uhr bei 661,0/427,9 vor seinem Punkt 660,9/427,8, rathaus #619833 an seinem Stand 660,3/428,2 — 1 Steckenbleiber).
+        if (!n1 && q !== b.orte.tuer && nb.some((o) => !o.weg && !(o.vx || o.vz) && besetzt(o))) {
+            this._bewohnerErreicht(b);
+            return { vx: 0, vz: 0 };
+        }
         // UM DEN STEHENDEN: steht einer auf dem Bein zum nächsten Punkt (vor ihm, näher als zwei Kapseln), geht der Weg über
         // einen Punkt neben ihm — auf der Seite des Beins, sonst der anderen —, dessen Beine keine Wand schneiden und an dem
         // kein Leib steht (`_bewohnerUm`)
@@ -3935,13 +4233,28 @@ class AnazhRealm_siedlung_bewohner {
         const g = { x: o.leib.position.x, z: o.leib.position.z };
         const bein = Array.isArray(p) ? p : [p, q];
         const dr = fuer && fuer.spieler ? 0.3 : 0.6; // dem Spieler auf 0,3 m genau: sein Abstand trägt die Erinnerung
-        for (let r = dr; r <= Math.max(1.81, kF + 0.61); r += dr)
+        // BEISEITE HEISST: NIE IN DEN STAND EINES ANDEREN (steckenbleiber): die Stände um ihn — von jedem anderen seiner
+        // Siedlung das Ziel (`ziel`: wo er steht oder wohin er geht) und das Ende seines Wegs (der Punkt, auf den er selbst
+        // beiseite tritt), in der Reichweite der Ringe, EINMAL je Ruf gelesen —, kein Punkt liegt in der Kapsel eines Stands.
+        // Bis hier fragte die Wahl nur die Leiber (`_bewohnerNaechster`): der Punkt war frei, bis sein Besitzer kam — wohnhaus
+        // #91693 trat um 19,81 Uhr von 663,9/428,2 auf 662,7/428,2, den Stand von werkstatt #946741, beide gingen auf denselben
+        // Punkt, keiner kam an; um 18,44 Uhr lag der Punkt von kaufhaus #936614 0,69 m neben dem Stand von rathaus #619833
+        // (Kreatur-Linse bewohner, Stadt am main 54b89949: je 1 Steckenbleiber).
+        const rMax = Math.max(1.81, kF + 0.61);
+        // die Liste lebt nur in diesem Ruf: ein Feld am Spiel hielte Ziel und Weg-Ende einer Siedlung über ihren Abschied
+        // (Band-Wand H10 `_bewohnerFort`: die ferne Siedlung hielt 1 Kopf über `_bewohnerPlatzStaende`)
+        const staende = [];
+        for (const w of S.liste)
+            for (const z of w === o ? [] : [w.ziel, w.weg && w.weg[w.weg.length - 1]])
+                if (z && (z.x - g.x) ** 2 + (z.z - g.z) ** 2 < (rMax + K) ** 2) staende.push(z);
+        for (let r = dr; r <= rMax; r += dr)
             for (let i = 0; i < 12; i++) {
                 const P = { x: g.x + Math.cos((i * Math.PI) / 6) * r, z: g.z + Math.sin((i * Math.PI) / 6) * r };
                 const pkt = { minX: P.x, maxX: P.x, minZ: P.z, maxZ: P.z };
                 if (bein.some((c, k) => k && this._streckeBoxAbstand2(pkt, bein[k - 1].x, bein[k - 1].z, c.x, c.z) < (kF + 0.1) ** 2)) continue; // prettier-ignore
                 if (S.verkehr && this._verkehrAufSpur(S, P.x, P.z, 0)) continue; // beiseite heißt: aus der Fahrbahn, nie in sie
                 if (this._bewohnerNaechster(S, o, P.x, P.z) < K) continue;
+                if (staende.some((z) => (z.x - P.x) ** 2 + (z.z - P.z) ** 2 < K * K)) continue;
                 if (this._bewohnerWand(P, P, true) || this._bewohnerWand(g, P)) continue;
                 Object.assign(o, {
                     weg: [P],
@@ -4919,11 +5232,12 @@ AnazhRealm.LEBENSLAUF = Object.freeze({
     wache: Object.freeze({
         jeKoepfe: 400,
         rollen: Object.freeze(["waechter", "nachtwaechter"]),
-        nahM: 1.5, // so nah tritt die Wache an die Tat
+        // (wie nah die Wache dem Täter tritt, trägt der Hieb des Kerns: SPIEL_GESETZ.arten.hieb.abstandM, rollen-des-tages)
         torInnenM: 6, // der Posten steht so weit innerhalb des Tors
         // der Ring der Stände um den Posten (`postenStand`; die Kreatur-Linse liest ihn als Schranke, zielplan): je Stufe `jeStufe`
-        // Würfe, die erste `r0M` vom Posten, jede weitere `stufeM` weiter
-        ring: Object.freeze({ r0M: 1.5, stufeM: 1.2, jeStufe: 12, alle: 120 }),
+        // Würfe, die erste `r0M` vom Posten, jede weitere `stufeM` weiter; jeder dort, wo der Gang den Boden der Ankunft erreicht,
+        // gegangen in Schritten zu `schrittM` (der größte Halt des Grunds, `_bewohnerSchritt`; `postenStand`, rollen-des-tages)
+        ring: Object.freeze({ r0M: 1.5, stufeM: 1.2, jeStufe: 12, alle: 120, schrittM: 0.5 }),
         waffe: Object.freeze([Object.freeze({ bis: 1829, art: "langschwert" }), Object.freeze({ bis: Infinity, art: "keule" })]), // prettier-ignore
     }),
 });
@@ -5042,6 +5356,14 @@ AnazhRealm.BEWOHNER = Object.freeze({
     kopfMaxRad: 1.2,
     rumpfMaxRad: 0.45,
     kopfRadS: 4.5,
+    // DER BLICK FOLGT DEM REIZ (stand-lebt 2, `_bewohnerReiz`): wer steht und keinem begegnet, wendet Kopf und Rumpf dem nächsten
+    // bewegten Menschen zu — Passant, Fahrer, der Spieler; der Beginn einer Bewegung fängt die Aufmerksamkeit (Abrams & Christ 2003,
+    // Psychol Sci 14:427) —, der Fußgänger fixiert andere in 15 m für 500 ms (Fotios, Uttley & Fox 2018, Light Res Technol 50:511:
+    // `reizM`, `reizS` — so lange hält der Blick, ehe er neu wählt); bis `augeNurRad` folgen ihm die Augen allein (Stahl 1999, Exp
+    // Brain Res 126:41: die Spanne ohne Kopf 35,8°, je Seite 17,9°), darüber der Kopf bis `kopfMaxRad`, darüber der Rumpf
+    reizM: 15,
+    reizS: 0.5,
+    augeNurRad: 0.312,
     // der Zuschauer jenseits der Nah-Wahl wendet den Leib, liegt das Geschehen mehr als 15° neben seinem Blick (ANGENOMMEN: die Hälfte
     // der ± 30°, in denen ein Blick dem Geschehen folgt — keine Quelle; `_tickBewohner`)
     fernBlickRad: Math.PI / 12,

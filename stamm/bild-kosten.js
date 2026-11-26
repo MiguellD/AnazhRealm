@@ -539,6 +539,10 @@ class AnazhRealm_bild_kosten {
             };
             renderer._renderObjectDirect = function (object, material, scene, camera, lightsNode, group, clip, passId) {
                 const N = this._nodes;
+                // DER GLANZ DES PIXELS (`_glanzFilter`): jeder Stoff trägt ihn, bevor sein Render-Objekt den Bau-Schlüssel nimmt
+                // (der Schatten-Stoff über sein Original)
+                const urStoff = material.isShadowPassMaterial === true ? object.material : material;
+                if (urStoff && urStoff._anazhGlanz === undefined && !Array.isArray(urStoff)) welt._glanzFilter(urStoff);
                 const ro = this._objects.get(
                     object,
                     material,
@@ -649,7 +653,6 @@ class AnazhRealm_bild_kosten {
                 // (Radeon, Genesis Third, Regler voll): 2,9 ms je Bild Voll-Refresh — Fern-Ring, Inseln, Arena, Plattform, Himmel,
                 // Membranen, Kopf. Jetzt schreibt die Erst-Zeichnung jeden Stoff der Welt-Szene ein, bevor er baut (der Schatten-
                 // Stoff trägt die Diät seines Originals); was sich bewegt, atmet oder Knochen trägt, stellt nur seine eigenen Werte (der Objekt-Gang, `_diaetObjektGang`).
-                const urStoff = material.isShadowPassMaterial === true ? object.material : material;
                 if (urStoff && urStoff._anazhDiaet !== true && !Array.isArray(urStoff))
                     welt._materialObserverDiaet(urStoff);
                 const ungebaut = ungebautVon(N, ro);
@@ -2770,7 +2773,10 @@ class AnazhRealm_bild_kosten {
         const taktRoh = SN.prototype.update;
         SN.prototype.update = function (frame) {
             const sk = frame.object && frame.object.skeleton ? frame.object.skeleton : this.skinnedMesh.skeleton;
-            if (!sk.previousBoneMatrices) return taktRoh.call(this, frame);
+            // gewichen wird nach dem LESER, nie nach dem Skelett: Geschwister teilen den Bau (gleicher Stoff, gleiche Knochenzahl),
+            // `setup` lief nur am ersten — rückt der Schatten-Knoten (ohne Vor) das zweite Skelett in einem Bild zuerst, legte
+            // keiner sein Vor an, und `knochenMatrixVor` schrieb null in den Puffer (der Wurf, nach dem der Schirm stand)
+            if (this.previousBoneMatricesNode === null && !sk.previousBoneMatrices) return taktRoh.call(this, frame);
             AnazhRealm._bewegungKnochen(sk, frame.frameId);
         };
         SN.__anazhBewegung = true;
@@ -2858,8 +2864,15 @@ class AnazhRealm_bild_kosten {
         // DER KAMERA-SPRUNG (K68): springt das Auge in EINEM Frame weiter als ZEIT_SPRUNG_M (Tor, Umsetzen, Aufnahme), beginnt
         // die Geschichte neu und läuft als Mittel an (`_zeitAufloesung` `_anlauf`) — sonst trug der erste Frame nach dem Sprung
         // das Bild noch eine halbe Sekunde lang.
+        // DER SPRUNG DES LICHTS (belichtung-daemmerung): springt der Himmel (`_lichtSprung`, gesetzt wo `_himmelSprung` fällt: das
+        // Wort der Uhr, die Jahreszeit, das Laden), zeigt die Geschichte das Bild unter dem alten Licht — sie beginnt neu wie nach
+        // dem Sprung des Auges, und jeder Leser von `sprung` (der Spiegel des letzten Bilds, der Rückstrahl) mit ihr. Bis hier
+        // trug sie die Nacht in den Tag: genesis, Radeon, a7b7a4b1, Holz voll, Mitternacht → Mittag — die Belichtung stand im
+        // zweiten Bild, das Bild stieg 1,1 % je Bild (Y 0,078 → 0,126 in 81 Bildern), 54 von 60 Bildern über 0,5 Stufen zu dunkel.
+        // Quelle: Salvi 2016, „An Excursion in Temporal Supersampling“ (GDC) — das Jetzt wiegt ≈ 10 %, eine verworfene Geschichte beginnt mit α = 1
         const e = cam.matrixWorld.elements;
-        z.sprung = this._augeSprung(z, e[12], e[13], e[14]) || z.neu;
+        z.sprung = this._augeSprung(z, e[12], e[13], e[14]) || z.neu || this._lichtSprung === true;
+        this._lichtSprung = false;
         if (z.neu) {
             z.vor.copy(z.jetzt);
             z.neu = false;

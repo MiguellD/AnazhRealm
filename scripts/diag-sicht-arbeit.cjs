@@ -662,11 +662,55 @@ const server = statikServer();
                 __handTakt();
             };
             st.playerMesh.position.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
+            // DIE KANTE DER FAHRT (landmarken-geologie-3): ob der Weg ohne seinen Rand Löcher reißt (F), hängt an einer kleinen
+            // Zelle, deren Hülle während der Fahrt über die führende Kante des Frustums tritt — bis hier trug sie der Zufall der
+            // Wiese, die Landmarken des alten Streu-Satzes (main: 1 Loch ohne Rand, „formationenSatz Zelle (Bild 30)“, Strecke
+            // 0,2 π, 2 306 Zellen geprüft). Seit die Landmarken der Geologie folgen, trägt die Wiese keine (Sätze boden, wasser:
+            // 1 758 Zellen, deren Hüllen nie an der Kante kippen — 0 Löcher auf allen 8 Strecken, die Linse STUMPF). Die Linse
+            // stellt ihre Kante selbst, vor dem Einschwingen (die Welt baut sie in ihren Satz): drei Felstürme als Werke 12 · 18 ·
+            // 24 m vor dem Auge der ersten Strecke, quer dort, wo das Gesetz der Wahl (`_passTrifft`) es verlangt — die Hülle
+            // (Halb-Maß 3 · 2,5 m, wie gebaut) entgeht dem Anker der Fahrt (Bild 1, das Auge 0,67 m quer) ohne Halt, sein Rand je
+            // Meter (`sichtRand` + der Dreh-Rand mit Weg, `drehRand` + `weg.drehRad`) trägt sie nicht, und das Frustum vom Auge
+            // 10 m quer trifft sie, ehe das Auge die Strecke des Ankers verlässt: die Mitte dieses Fensters. Gemessen 40 m vor
+            // dem Auge, quer 6 · 12 · 18 m: der Dreh-Rand (0,088 je Meter, ≈ 5 m) trug jeden — 0 Löcher, die Linse STUMPF.
+            const kante = [];
+            {
+                const PW = r.constructor.PASS_WAHL;
+                const [yaw0, h0, kam] = [Math.PI * 0.2, r._voxelSurfaceY(MESS.x, MESS.z) + 1.7, st.camera.clone()];
+                const [fx, fz, qx, qz] = [Math.sin(yaw0), -Math.cos(yaw0), Math.cos(yaw0), Math.sin(yaw0)];
+                // die Lage vom Auge `quer` m quer, mit dem Rand des Ankers ohne Halt (`anker`) oder ganz ohne Rand
+                const lage = (quer, anker) => {
+                    const [ex, ez] = [MESS.x + qx * quer, MESS.z + qz * quer];
+                    kam.position.set(ex, h0, ez);
+                    kam.lookAt(ex + fx * 100, h0, ez + fz * 100);
+                    kam.updateMatrixWorld(true);
+                    const fr = r._frustumVon(kam, true); // der EINE Bau des Sichtkegels, im System der Kamera wie die Wahl
+                    const dreh = anker ? Math.sin(PW.drehRand + PW.weg.drehRad) : 0;
+                    return { fr, ax: ex, ay: h0, az: ez, halt: 0, licht: 0, rand: anker ? PW.sichtRand : 0, dreh, fit: null };
+                };
+                const [anker, spaet] = [lage(0.667, true), lage(10, false)];
+                for (const [k, d] of [12, 18, 24].entries()) {
+                    const ort = (c) => [MESS.x + fx * d + qx * c, MESS.z + fz * d + qz * c];
+                    const trifft = (L, c) => {
+                        const [x, z] = ort(c);
+                        return r._passTrifft(L, x, r.getTerrainHeightAt(x, z) + 10, z, 3, 10, 2.5, 0);
+                    };
+                    let c0 = 0;
+                    while (c0 < 200 && trifft(anker, c0)) c0 += 0.25;
+                    let c1 = c0;
+                    while (c1 < 200 && trifft(spaet, c1 + 0.25)) c1 += 0.25;
+                    if (!(c1 > c0)) continue;
+                    const [x, z] = ort((c0 + c1) / 2);
+                    const o = { silent: true, precise: true, id: `sicht-kante-${k}` };
+                    const e = r.spawnArchitecture("felsturm", { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, o);
+                    if (e) kante.push(`${d} m vor, quer ${((c0 + c1) / 2).toFixed(1)} (${c0}…${c1}) ${Math.round(x)},${Math.round(z)}`); // prettier-ignore
+                }
+            }
             // einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`)
             const takte = await __weltStehtNach(takt);
             const ring = st.voxelChunks.size;
             r._tickChunkSatz();
-            const aus = { ring, takte };
+            const aus = { ring, takte, kante };
             const cam = st.camera;
             const S = r._kaskadenSchmier();
             // die Lage des Hauptbilds aus dem Blick der Kamera und die Generation ihres Ankers (D, F)
@@ -1042,7 +1086,7 @@ const server = statikServer();
                 `${befund.drehTreue.geprueft} geprüft, ${befund.drehTreue.loecher} Löcher ${befund.drehTreue.namen.join(", ")}`
         );
     console.log(
-        `  Fahrt (Strecke ${befund.fahrtYaw} π), ohne Weg, ohne Rand: ${JSON.stringify([befund.fahrt, befund.fahrtOhneWeg, befund.fahrtOhneRand])}`
+        `  Fahrt (Strecke ${befund.fahrtYaw} π, die Kante der Felstürme ${(befund.kante || []).join(" · ") || "—"}), ohne Weg, ohne Rand: ${JSON.stringify([befund.fahrt, befund.fahrtOhneWeg, befund.fahrtOhneRand])}`
     );
     const v = urteil(befund);
     wandEnde(

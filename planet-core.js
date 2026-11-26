@@ -2080,6 +2080,15 @@
     tEisC: -10,                                  // Eis-Linie bei −10 °C Jahresmittel (North 1975)
     walker: 0.9,                                 // Anteil, den das Karbonat-Silikat-Thermostat vom Sternfluss-Gang ausgleicht (gesetzt)
     tropoKm: 10,                                 // Held-Hou H: Höhe der Tropopause (gesetzt), skaliert mit 1/g und T
+    // DIE ERDE EICHT DIE HADLEY-KANTE (bahn-klima#2): die achsensymmetrische Zelle trägt keine Wirbel und keinen Dampf — ihre Kante
+    // liegt an der Erde weiter polwärts als die beobachtete (≈ 30°, Hill et al. 2019). Das Gesetz trägt darum das VERHÄLTNIS der
+    // Lindzen-Hou-Kante zu der der Erde, die Erde selbst behält ihre Kante: 0,517371… rad = 29,643° (die Kante, an der die Bänder der
+    // Küsten, Gürtel und Westwinde geeicht sind; am Körper der Erde x/x = 1 genau, Lehre 11). Band der Quelle: die Winter-Kante wächst
+    // mit der Neigung γ wie γ^0,14 (Guendelman & Kaspi 2019, ApJ 881: 67, GCM-Fit), die Linse gate:worker-dichte (klima.hadley) misst es.
+    hadleyErdeRad: 0.51737143219558779,
+    // Der Aufstieg (die ITCZ) wandert über dem Meer mit 0,3 der Deklination (gesetzt; Erde ±7°): derselbe Schub trägt die Gürtel des
+    // Jahrs (planetKlimaR) und den Aufstiegs-Ort φ0 der Zelle der Sonnwende (planetKlimaGlobal).
+    schubMeer: 0.3,
     lapse: 6.5,                                  // K/km (Standard-Atmosphäre)
     schritte: Object.freeze([100, 200, 300]),    // km luvwärts (gesetzt): drei im 100-km-Takt lösen die Kämme der Hülle (Gürtel σ 85 km: am
                                                  // schlechtesten Versatz 50 km ≥ 0,84 der Kamm-Höhe); sie sind zugleich die nahen Knoten der Feuchte (G2.3, B2)
@@ -2128,19 +2137,94 @@
   const WHITTAKER = Object.freeze({ eis: 0, tundra: 1, boreal: 2, gemaessigtRegen: 3, gemaessigtSaison: 4, grasland: 5, busch: 6,
     wueste: 7, savanne: 8, tropenRegen: 9, meer: 10 });
 
-  function planetKlimaGlobal(plan, zeitMa) {
-    if (!plan || !plan.koerper) throw new Error('planetKlimaGlobal: plan fehlt (K10)');
-    abschnittIndex(plan, zeitMa);
-    const M = memoVon(plan); if (!M.klimaG) M.klimaG = new Map();
-    if (M.klimaG.has(zeitMa)) return M.klimaG.get(zeitMa);
-    const kp = plan.koerper;
+  // DIE HADLEY-ZELLE DER SONNWENDE (Karte 2 planet.kopplung.bahn-klima#2). Die Zelle antwortet auf die Heizung ihrer Jahreszeit, nie
+  // auf das Jahresmittel: das Maximum der Heizung steht am Aufstiegs-Ort φ0 neben dem Äquator, die Winter-Zelle reicht über ihn
+  // hinweg weit in die Winter-Halbkugel, die Sommer-Zelle bleibt schmal — die Zirkulation des Jahres ist das Mittel der Zirkulationen
+  // der Jahreszeiten, nicht die Zirkulation der gemittelten Heizung (Lindzen & Hou 1988, J. Atmos. Sci. 45: 2416; Hill, Bordoni &
+  // Mitchell 2019). Kleinwinkel-Form in Einheiten von φH (Held & Hou 1980): Strahlungs-Gleichgewicht E(y) = −(y − y0)², Drehimpuls
+  // erhaltend M(y) = c − 5/6·(y² − y1²)²; gesucht c, Aufstieg y1, Kanten y+ (Sommer) und y− (Winter) aus M = E an beiden Kanten und
+  // gleicher Fläche in jeder Zelle. Bei y0 = 0 genau Held–Hou (c = −1/6, y1 = 0, y± = ±1). Die Fläche einer Zelle steht als Mittel
+  // von M − E über die Zelle (geteilte Differenzen, keine Auslöschung): so fällt die entartete Lösung y+ = y1 heraus, die jedes y0
+  // erfüllt und in die der Newton bei großen Schritten sprang (y0 0,83 an einem Zufalls-Körper). DIE GABEL: die Sommer-Zelle vergeht
+  // genau bei y0 = 2·√(6/5) — dort wird M an y1 Tangente an E, also y1 = y0 und c = 0, M = E am Winter-Rand gibt y− = −y0 − √(6/5),
+  // gleiche Fläche das Polynom z⁵ − 10z³ − 20z² − 15z − 4 = (z + 1)⁴·(z − 4) in z = 2y0/√(6/5). Jenseits trägt EINE Zelle über den
+  // Äquator (n = 3: c, y1 = y+, y−; die Kanten bleiben stetig, an der Gabel−10⁻⁹ trifft der Newton die Lösung auf 10⁻⁸). An der Erde
+  // (φH 0,573 rad) läge die Gabel bei φ0 = 72°, der Aufstieg erreicht 7°: es trägt sie nur ein Körper mit schmaler Zelle und steiler
+  // Achse. Newton mit Differenzen-Jacobi, Abbruch am Rest relativ zur Größe der Kanten, nur Grundrechenarten (bit-gleich auf jedem
+  // Gerät); v trägt den Start und das Ergebnis.
+  const HADLEY_GABEL = 2 * Math.sqrt(1.2);
+  function hadleyLH(y0, v, n) {
+    const mittel = (c, q, a, b) => {
+      const A = a - y0, B = b - y0, a2 = a * a, b2 = b * b;
+      return c - (5 / 6) * ((a2 * a2 + a2 * a * b + a2 * b2 + a * b2 * b + b2 * b2) / 5 - (2 / 3) * q * (a2 + a * b + b2) + q * q) + (A * A + A * B + B * B) / 3;
+    };
+    const F = (w, o) => {
+      const c = w[0], y1 = w[1], yp = n === 4 ? w[2] : w[1], ym = w[n - 1], q = y1 * y1, dp = yp * yp - q, dm = ym * ym - q;
+      o[0] = c - (5 / 6) * dp * dp + (yp - y0) * (yp - y0);
+      o[1] = c - (5 / 6) * dm * dm + (ym - y0) * (ym - y0);
+      o[2] = mittel(c, q, ym, y1);
+      if (n === 4) o[3] = mittel(c, q, y1, yp);
+    };
+    const f = [0, 0, 0, 0], g = [0, 0, 0, 0], w = [0, 0, 0, 0], A = [[], [], [], []];
+    for (let it = 0; it < 40; it++) {
+      F(v, f);
+      let r = 0; for (let i = 0; i < n; i++) r = Math.max(r, Math.abs(f[i]));
+      const ym = v[n - 1];
+      if (r <= 1e-14 * (1 + ym * ym * ym * ym)) return v;
+      for (let j = 0; j < n; j++) {
+        for (let k = 0; k < n; k++) w[k] = v[k];
+        const h = 1e-7 * (1 + Math.abs(v[j])); w[j] += h; F(w, g);
+        for (let i = 0; i < n; i++) A[i][j] = (g[i] - f[i]) / h;
+      }
+      for (let i = 0; i < n; i++) A[i][n] = -f[i];
+      for (let p = 0; p < n; p++) {
+        let m = p; for (let s = p + 1; s < n; s++) if (Math.abs(A[s][p]) > Math.abs(A[m][p])) m = s;
+        const t = A[p]; A[p] = A[m]; A[m] = t;
+        for (let s = 0; s < n; s++) if (s !== p) { const k = A[s][p] / A[p][p]; for (let u = p; u <= n; u++) A[s][u] -= k * A[p][u]; }
+      }
+      for (let i = 0; i < n; i++) v[i] += A[i][n] / A[i][i];
+    }
+    throw new Error('hadleyLH: die Zelle der Sonnwende konvergiert nicht (y0 ' + y0 + ', ' + (n === 4 ? 'zwei Zellen' : 'eine Zelle') + ')');
+  }
+  // Die Kante des Jahrs in Einheiten von φH: der Aufstieg folgt der Deklination, φ0 = schubMeer·β·sin t (derselbe Schub, der die
+  // Gürtel über das Jahr trägt, planetKlimaR); das Jahresmittel der Kante einer Halbkugel ist das Mittel ihrer Kanten über das Jahr —
+  // die Hälfte des Jahrs die Sommer-Kante y+, die Hälfte die Winter-Kante |y−| (Mittelpunkt-Regel über den Viertel-Bogen; der Newton
+  // läuft in Schritten ≤ 0,05 entlang steigender y0, über die Gabel springt er auf ihre genaue Lösung; das Vorzeichen der Neigung
+  // trägt die Breite nicht). Die Kanten der Jahreszeit selbst liest kein Gesetz: an der Erde läge die Winter-Kante der
+  // achsensymmetrischen Zelle 1,29× weiter polwärts als die des Jahrs — die Wirbel halten sie (Messung im Blatt kosmos-hadley: als
+  // Leser verlegte sie 2 von 3 Ankern der Probe und 99 003 von 345 000 Klima-Feldern der Erde).
+  function hadleyJahr(y0max) {
+    const v = [-1 / 6, 0, 1, -1], t = [0, 0, 0], n = 16, spitze = y0max < 0 ? -y0max : y0max;
+    let summe = 0, y = 0, zwei = true;
+    for (let i = 0; i < n; i++) {
+      const ziel = spitze * ksin((i + 0.5) / n * HALBPI);
+      while (y < ziel) {
+        if (zwei && (y + 0.05 < ziel ? y + 0.05 : ziel) >= HADLEY_GABEL) {
+          zwei = false; v[0] = 0; v[1] = HADLEY_GABEL; v[2] = HADLEY_GABEL; v[3] = -1.5 * HADLEY_GABEL; y = HADLEY_GABEL;
+          if (y >= ziel) break;
+        }
+        const nach = y + 0.05 < ziel ? y + 0.05 : ziel;
+        if (zwei) hadleyLH(nach, v, 4);
+        else { t[0] = v[0]; t[1] = v[1]; t[2] = v[3]; hadleyLH(nach, t, 3); v[0] = t[0]; v[1] = t[1]; v[2] = t[1]; v[3] = t[2]; }
+        y = nach;
+      }
+      summe += v[2] - v[3];
+    }
+    return summe / (2 * n);
+  }
+  // DAS STRAHLUNGS-KLIMA (EBM, zwei Moden P0 + P2 mit Eis-Albedo, North 1975): T0, T2 und die Eis-Linie aus der Jahres-Einstrahlung
+  // s(x) = 1 + s2·P2(x) — dazu die Krümmung ΔH der HADLEY-Heizung aus der Einstrahlung der Tagundnacht (s2 = −0,625: die Sonne über
+  // dem Äquator, bei jeder Neigung dieselbe; Lindzen & Hou verschieben nur ihr Maximum φ0) auf derselben Albedo. Vorher las die Zelle
+  // die Krümmung des Jahresmittels: bei 54° Neigung verschwindet sie (P2(cos β) = 0), die Breite fiel auf 0, die Zellen-Zahl lief
+  // über 12 (60°) bis 18 (70°) — die Quelle sagt das Gegenteil (Guendelman & Kaspi 2019).
+  function klimaStrahlung(kp, zeitMa) {
     const fluss = kp.sternFluss / (1 - 0.4 * zeitMa / kp.alterMa);     // Gough: L(t)/L_jetzt = 1 / (1 + 0,4·(1 − t/t_jetzt))
     const Q = KLIMA.q0 * fluss;
     const cb = kcos(kp.neigungRad), s2 = -0.625 * (3 * cb * cb - 1) * 0.5;   // Jahres-Einstrahlung s(x) = 1 + s2·P2(x)
     // Walker-Thermostat (Karbonat-Silikat-Kreislauf, Walker et al. 1981): über Ma gleicht das CO₂ den Sternfluss zum Anteil γ aus —
     // die Ausstrahlung sinkt um γ·(Q_heute − Q)·ā. Bei t = 0 ist der Term 0 (bau2-Bytes unverändert). γ gesetzt.
     const N = 256, A = KLIMA.olrA - KLIMA.walker * (KLIMA.q0 * kp.sternFluss - Q) * KLIMA.coA0, B = KLIMA.olrB, D = KLIMA.diffD;
-    let xs = 1, T0 = 0, T2 = 0, T2r = 0;
+    let xs = 1, T0 = 0, T2 = 0;
     for (let it = 0; it < 80; it++) {
       let m0 = 0, m2 = 0;
       for (let i = 0; i < N; i++) {
@@ -2149,20 +2233,40 @@
         m0 += a * s; m2 += a * s * p2;
       }
       m0 /= N; m2 = 5 * m2 / N;
-      T0 = (Q * m0 - A) / B; T2 = Q * m2 / (B + 6 * D); T2r = Q * m2 / B;
+      T0 = (Q * m0 - A) / B; T2 = Q * m2 / (B + 6 * D);
       const p2s = T2 < 0 ? (KLIMA.tEisC - T0) / T2 : 2;
       const xn = p2s >= 1 ? 1 : (p2s <= -0.5 ? 0 : Math.sqrt((2 * p2s + 1) / 3));
       xs += 0.5 * (xn - xs);
     }
-    const T0K = T0 + 273.15, dH = Math.max(0.01, -1.5 * T2r / T0K);      // Held-Hou Δ_H: Gefälle des Strahlungs-Gleichgewichts
-    const om = TAU / (kp.tagStunden * 3600), a = plan.R * 1000, H = KLIMA.tropoKm * 1000 * (9.81 / kp.g) * (T0K / 288);
-    let phiH = Math.sqrt(5 / 3 * kp.g * H * dH / (om * om * a * a));
+    const s2h = -0.625;   // die Heizung der Zelle: die Einstrahlung der Tagundnacht auf der Albedo des Jahrs (nie die Krümmung des Jahresmittels)
+    let m2h = 0;
+    for (let i = 0; i < N; i++) { const x = (i + 0.5) / N, p2 = 1.5 * x * x - 0.5; m2h += (x > xs ? KLIMA.coEis : KLIMA.coA0 + KLIMA.coA2 * p2) * (1 + s2h * p2) * p2; }
+    const T0K = T0 + 273.15, dH = Math.max(0.01, -1.5 * (Q * (5 * m2h / N) / B) / T0K);   // Held-Hou Δ_H: Gefälle des Strahlungs-Gleichgewichts
+    return { fluss, T0, T2, xs, T0K, dH };
+  }
+  // DIE KANTE DER ZELLE (rad): φH nach Held & Hou an der Krümmung ΔH, das Jahresmittel der Kanten der Sonnwende nach Lindzen & Hou (oben)
+  function hadleyMass(kp, R, K) {
+    const om = TAU / (kp.tagStunden * 3600), a = R * 1000, H = KLIMA.tropoKm * 1000 * (9.81 / kp.g) * (K.T0K / 288);
+    let phiH = Math.sqrt(5 / 3 * kp.g * H * K.dH / (om * om * a * a));
     if (phiH > HALBPI) phiH = HALBPI; if (phiH < 0.05) phiH = 0.05;
-    const zellen = Math.max(1, Math.floor(HALBPI / phiH + 0.5));
+    return phiH * hadleyJahr(KLIMA.schubMeer * kp.neigungRad / phiH);
+  }
+  let HADLEY_ERDE = null;   // die Kante des Körpers der Erde heute (einmal je Kern): der Nenner der Eichung (KLIMA.hadleyErdeRad)
+  function planetKlimaGlobal(plan, zeitMa) {
+    if (!plan || !plan.koerper) throw new Error('planetKlimaGlobal: plan fehlt (K10)');
+    abschnittIndex(plan, zeitMa);
+    const M = memoVon(plan); if (!M.klimaG) M.klimaG = new Map();
+    if (M.klimaG.has(zeitMa)) return M.klimaG.get(zeitMa);
+    const kp = plan.koerper, K = klimaStrahlung(kp, zeitMa), h = hadleyMass(kp, plan.R, K);
+    const E = HADLEY_ERDE || (HADLEY_ERDE = hadleyMass(PLANET_ERDE, PLANET_ERDE.radiusKm, klimaStrahlung(PLANET_ERDE, 0)));
+    // das Verhältnis zur Kante der Erde (am Körper der Erde x/x = 1 genau: die Heimat steht Bit für Bit)
+    let zellBreite = KLIMA.hadleyErdeRad * (h / E);
+    if (zellBreite > HALBPI) zellBreite = HALBPI; if (zellBreite < 0.05) zellBreite = 0.05;
+    const zellen = Math.max(1, Math.floor(HALBPI / zellBreite + 0.5));
     const G = Object.freeze({
-      sternFluss: fluss, tMittelC: T0, tAequatorC: T0 - 0.5 * T2, tPolC: T0 + T2, T0, T2,
-      eisBreite: xs >= 1 ? HALBPI : katan2(xs, Math.sqrt(1 - xs * xs)), eisX: xs,
-      zellBreite: phiH, zellen, deltaH: dH,
+      sternFluss: K.fluss, tMittelC: K.T0, tAequatorC: K.T0 - 0.5 * K.T2, tPolC: K.T0 + K.T2, T0: K.T0, T2: K.T2,
+      eisBreite: K.xs >= 1 ? HALBPI : katan2(K.xs, Math.sqrt(1 - K.xs * K.xs)), eisX: K.xs,
+      zellBreite, zellen, deltaH: K.dH,
     });
     M.klimaG.set(zeitMa, G); return G;
   }
@@ -2349,7 +2453,7 @@
     }
     // Gürtel über das Jahr: Deklination ±β, die Verschiebung wächst mit der Erwärmung des Landes (Monsun: das Hitzetief liegt über
     // der Landmasse, gleich woher der Wind weht — klima-kontinent: nie die Luft längs des Winds, die Passat-Westküste ist kein Monsun)
-    const beta = kp.neigungRad, schub = (0.3 + 0.4 * lam * glatt(0, 1500, kont)) * (1 - 0.5 * aphi / HALBPI);
+    const beta = kp.neigungRad, schub = (KLIMA.schubMeer + 0.4 * lam * glatt(0, 1500, kont)) * (1 - 0.5 * aphi / HALBPI);
     // Gegner 2 (F5 Wüsten-Kante als Breitenkreis): die Hochs der Subtropen sind Zellen über den Becken, keine Bänder — die Gürtel
     // lesen die Breite verschoben um dasselbe Feld stehender Wellen (±~3°, λ 6 000–2 500 km, eigener Samen; gesetzt).
     const phiG = phi + 0.035 * fbmKm(plan.k ^ 0x27d4eb2f, x, y, z, R, 6000, 2500, 0.5);

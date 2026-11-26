@@ -3,7 +3,8 @@
 // diag-klang-zensus.cjs — DIE KLANG-LINSE (npm run gate:klang-zensus): was hört man je Ort, trägt jede
 // klingende Quelle ein GESETZ, und kostet sie nur, solange man sie hört?
 //  (O) ORTE aus dem Gesetz (Null-Renderer): Wiese = Messort · Seeufer 3–7 m vor stillem Wasser · Wald = höchste
-//      Deckung der Kronen-Karte `_kronenStreuAt`, geprüft am Bestand ≤ 15 m · Dorf 4 m neben dem nächsten Glut-Bau.
+//      Deckung der Kronen-Karte `_kronenStreuAt`, geprüft am Bestand ≤ 15 m · Dorf 4 m neben dem nächsten Glut-Bau (die
+//      Feuerstelle des Menschen: die Linse setzt sie als Werk jenseits der Hörweite der Wiese und ihrer Wege).
 //  (Z) ZENSUS je Ort (Mittag · Sonne · Sommer, die Musik ruht): jede Quelle mit Erzeuger, Gesetz-Stimmen, Ausgang je Oktavband.
 //  (G) HERKUNFT: gebaut in klang-core.js oder ein Wirt-Leser eines klang-Gesetzes, sonst STAMM-LITERAL beim Namen
 //      (dazu statisch jede Quellen-Stelle im Stamm).
@@ -167,7 +168,7 @@ function werkzeug() {
         return n;
     };
     // DIE ORTE aus dem Gesetz.
-    W.orte = async (wx, wz) => {
+    W.orte = async (wx, wz, wegWiese = 0) => {
         const orte = { wiese: { x: wx, z: wz } };
         const O = __klangCore.UMWELT.ohr;
         // die Nässe ist die des Klangs (`_nassAt`: der Boden unter der EINEN Wasser-Wahrheit am Körper), nie nachgerechnet
@@ -252,8 +253,54 @@ function werkzeug() {
             await sleep(0);
         }
         if (wald) orte.wald = wald;
-        // Dorf: der nächste Glut-Bau (aus der gestreamten Welt um die Wiese), 4 m davor. Die Bauten streamen nach den
-        // Chunks (Pflanz-/Bau-Takt): der Loop läuft weiter, bis einer im Umkreis von 160 m steht (der Deckel zählt Takte).
+        // Dorf: der nächste Glut-Bau um die Wiese, 4 m davor. DIE FEUERSTELLE SETZT DER MENSCH (landmarken-geologie): die Glut
+        // ist kein Wurf des Felds mehr (gelaende-core `landmarke`: ein Feuer ohne Menschen ist keine Landmarke) — bis hier war
+        // das Dorf der Linse die nächste Glut des Felds (main: ein Glutbrunnen 8 m vor dem Messort; der Dorf-Zug der Wiese ruht,
+        // die Seite trägt keinen Ort), danach fand sie keine („DER BAU STEHT NICHT: eine Glut in Hörweite nach 3000 Takten“).
+        // Die Linse setzt sie als Werk (`glutbrunnen` ohne Marke `feldWurf`) an die erste trockene, ebene Stelle jenseits der
+        // Hörweite der Wiese um den Messort (Ringe ab Hörweite + `wegWiese` + 8 m — der weiteste Weg ihrer Szenen, `SZENEN`:
+        // fahrend 30 m —, Schritt 6 m: die Wiese bleibt der Messort, auch im Sattel; 34 m vor ihr verfehlte die Szene fahrend
+        // „Glut trägt nicht“) und wartet, bis die Glut im Verzeichnis steht, aus dem das Ohr sie liest (`_blockerMit("glut")`).
+        const glutWeite = __klangCore.UMWELT.stimmen.glut.hoerweiteM;
+        const feuerHaelt = (x, z) => {
+            if (!r._landAt(x, z, 0.4)) return false;
+            let lo = Infinity,
+                hi = -Infinity;
+            for (let k = 0; k <= 8; k++)
+                for (const rad of k === 8 ? [0] : [3, 6]) {
+                    const a = (k / 8) * Math.PI * 2;
+                    const px = x + Math.sin(a) * rad,
+                        pz = z + Math.cos(a) * rad;
+                    if (r._nassAt(px, pz)) return false;
+                    const y = r._voxelSurfaceY(px, pz);
+                    if (y == null) return false;
+                    if (rad > 3) continue;
+                    lo = Math.min(lo, y);
+                    hi = Math.max(hi, y);
+                }
+            return hi - lo <= 1;
+        };
+        let feuer;
+        for (let rr = glutWeite + wegWiese + 8; rr <= 160 && !feuer; rr += 6) {
+            const n = Math.round((2 * Math.PI * rr) / 6);
+            for (let q = 0; q < n && !feuer; q++) {
+                const a = (q / n) * Math.PI * 2;
+                const x = wx + Math.cos(a) * rr,
+                    z = wz + Math.sin(a) * rr;
+                if (feuerHaelt(x, z)) feuer = { x, z };
+            }
+        }
+        const werk = feuer
+            ? r.spawnArchitecture(
+                  "glutbrunnen",
+                  { x: feuer.x, y: r.getTerrainHeightAt(feuer.x, feuer.z) + 0.5, z: feuer.z },
+                  { silent: true, precise: true, id: "klang-feuerstelle" }
+              )
+            : null;
+        for (const weiter = __deckel("die Feuerstelle im Verzeichnis der Glut", 600); werk && !r._blockerMit("glut").includes(werk) && weiter();) {
+            W.takt();
+            await sleep(30);
+        }
         const sucheGlut = () => {
             let g;
             for (const e of st.architectures || []) {
@@ -2302,7 +2349,7 @@ async function zensus(page, browser, ergebnis) {
     // Die Orte.
     let s0 = await syn();
     await kW("umstellen", MESS.x, MESS.z);
-    const orte = await kW("orte", MESS.x, MESS.z);
+    const orte = await kW("orte", MESS.x, MESS.z, Math.max(...Object.values(SZENEN).map((z) => z.weg || 0)));
     phasen.anreise = (await syn()) - s0;
     const daten = {};
     const offline = {};

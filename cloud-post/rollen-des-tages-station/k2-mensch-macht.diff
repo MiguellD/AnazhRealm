@@ -1,0 +1,187 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-mensch-macht.js b/meisterkarte-quelle/punkte/stationen/k2-mensch-macht.js
+index 8e6dc43..6761fc9 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-mensch-macht.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-mensch-macht.js
+@@ -843,22 +843,28 @@ module.exports = (F) => [
+     // EINE Messung: die Bewaffneten der Welt — der Spieler (sein Schwung, stamm/kampf.js) und jeder Bewohner, der ein Gerät oder eine
+     // Waffe trägt —, dazu die Gemeinwesen im Krieg oder im Vertrag (das Gedächtnis der Orte, `settlementCells`).
+     F.leiter("mensch.macht.krieg", {
+-        sek: 30,
+-        pfad: ["stamm/kampf.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-ort.js"],
++        sek: 60,
++        mutiert: true, // (rollen-des-tages: der Zweikampf nimmt dem Spieler Leben und trifft die Wache ins Gedächtnis der Gewalt)
++        pfad: ["stamm/kampf.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-ort.js", "stamm/kreatur-leben.js", "koerper-core.js"],
+         messe: async (H, K) => {
+             await K.messort("stadt-voll");
+-            const w = await K.welt("return await (" + H.seite.KRIEG + ")(r, T, {});", 20000);
++            const w = await K.welt("return await (" + H.seite.KRIEG + ")(r, T, {});", 45000);
+             if (!w || w.fehler) throw new Error("die Welt des Kriegs: " + ((w && w.fehler) || "ohne Antwort"));
+             H.zeile("Krieg: " + JSON.stringify(w));
+             const nur = "der Spieler (" + (w.haelt || "die leere Hand") + ") und " + w.bewaffneteBewohner + " von " + w.bewohner + " Bewohnern bewaffnet (die Wache), " + w.imZweikampf + " im Kampf";
+             // S1: seit bewohner-satz tragen die Wachen ihre Waffe (`b.waffe`, der Lebenslauf) — der Umfang sind die Bewaffneten IM
+-            // Zweikampf: wer einen Gegner trägt oder im Akt eines Kampfs steht; Treffer, Antwort und Deckung zählt erst ein Zweikampf
++            // Zweikampf: wer einen Gegner trägt oder im Akt eines Kampfs steht, der Spieler, wenn eine Wache ihn zum Gegner trägt
++            // (rollen-des-tages: der Hieb des Kerns, `_bewohnerHiebTakt`) — gezählt im Zweikampf, den die Tat des Spielers vor der
++            // nächsten Wache auslöst; Antwort und Deckung je Zug aus dem Zweikampf (`S.hiebe`); ob der Treffer dort sitzt, wo die
++            // Klinge den Leib kreuzt, misst erst eine Klinge der Wache mit Bahn (heute schwingt nur der Spieler, stamm/kampf.js)
++            const Z = (w.kampf && w.kampf.hiebe) || [];
++            const sum = (k) => Z.reduce((q, x) => q + (+x[k] || 0), 0);
+             await K.schritt(1, async () =>
+                 K.zahl(1, {
+-                    n: w.imZweikampf,
+-                    werte: { sitzt: null, antwortet: null, durchDeckung: null },
+-                    beleg: w.bewaffnet + " Bewaffnete (" + w.bewaffneteBewohner + " von " + w.bewohner + " Bewohnern mit Waffe " + JSON.stringify(w.waffen) + " und der Spieler, " + (w.haelt || "die leere Hand") + "), " + w.imZweikampf + " im Zweikampf",
+-                    taeter: "stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature)",
++                    n: w.kampf ? w.kampf.imZweikampfMax : w.imZweikampf,
++                    werte: { sitzt: null, antwortet: sum("vorLetztem") ? +(sum("antwort") / sum("vorLetztem")).toFixed(3) : null, durchDeckung: Z.length ? sum("durchDeckung") : null }, // prettier-ignore
++                    beleg: w.bewaffnet + " Bewaffnete (" + w.bewaffneteBewohner + " von " + w.bewohner + " Bewohnern mit Waffe " + JSON.stringify(w.waffen) + " und der Spieler, " + (w.haelt || "die leere Hand") + "), im Zweikampf höchstens " + (w.kampf ? w.kampf.imZweikampfMax : w.imZweikampf) + " (" + (w.kampf ? w.kampf.wache + ", " + Z.length + " Zweikämpfe: " + JSON.stringify(Z) : "keine Wache draußen") + ")", // prettier-ignore
++                    taeter: !(w.kampf && w.kampf.imZweikampfMax >= 2) ? "stamm/siedlung-bewohner.js _bewohnerNahen · _bewohnerHiebTakt — die Wache naht der Tat und endet in keinem Zweikampf (" + (w.kampf ? w.kampf.grund : "keine Wache draußen") + ")" : "der Sitz des Treffers ist ungemessen: die Klinge der Wache zieht keine Bahn durch den Leib (stamm/kampf.js schwingt nur für den Spieler; der Hieb trifft nach dem Gesetz des Zweikampfs, koerper spielKampf)", // prettier-ignore
+                 })
+             );
+             await K.schritt(2, async () => {
+@@ -881,20 +887,67 @@ module.exports = (F) => [
+         seite: {
+             KRIEG: async (r, T, arg) => {
+                 const st = r.state;
++                const A = r.constructor;
+                 const pm = st.playerMesh.position;
+-                let [bewohner, bewaffneteBewohner, imZweikampf] = [0, 0, 0];
+-                const waffen = {};
+                 const KAMPF = /kampf|hieb|duell|fecht|streit/i;
++                const zaehle = () => {
++                    let [bewohner, bewaffneteBewohner, imZweikampf, spieler] = [0, 0, 0, 0];
++                    const waffen = {};
++                    for (const S of (r._bewohnerSiedlungen || new Map()).values())
++                        for (const b of S.liste || []) {
++                            bewohner++;
++                            const u = (b.leib && b.leib.userData) || {};
++                            const wf = b.waffe || u.waffe || (b.equipped && b.equipped.held) || (u.equipped && u.equipped.held) || (b.bewaffnet ? "?" : null);
++                            if (!wf) continue;
++                            bewaffneteBewohner++;
++                            waffen[wf] = (waffen[wf] || 0) + 1;
++                            if (b.gegner || u.gegner || KAMPF.test(String(b.akt || ""))) imZweikampf++;
++                            if (b.gegner === "spieler") spieler = 1;
++                        }
++                    return { bewohner, bewaffneteBewohner, imZweikampf: imZweikampf + spieler, waffen };
++                };
++                const { bewohner, bewaffneteBewohner, imZweikampf, waffen } = zaehle();
++                // DER ZWEIKAMPF (rollen-des-tages): der Spieler tritt 8 m vor die nächste Wache draußen und schlägt — sein Schlag ruft
++                // die Zeugen (`_bewohnerZeuge`, derselbe Ruf wie der Schlag an einem Wesen, stamm/kreatur-leben.js), die Wache naht
++                // (`_bewohnerNahen`) und endet im Hieb des Kerns (SPIEL_GESETZ.arten.hieb, `_bewohnerHiebTakt`); je Takt gezählt, wer
++                // bewaffnet im Zweikampf steht, am Ende je Zweikampf Züge, Treffer, Antwort und Deckung (`S.hiebe`); höchstens 40 s der
++                // Welt (ein Gang des Kerns: im Mittel 5,75 Züge je zugS 2 s, gate:koerper-kern ROLLEN — dazu der Weg der Wache über 8 m)
++                const ab =(b) => Math.hypot(b.leib.position.x - pm.x, b.leib.position.z - pm.z);
++                let wache = null;
+                 for (const S of (r._bewohnerSiedlungen || new Map()).values())
+-                    for (const b of S.liste || []) {
+-                        bewohner++;
+-                        const u = (b.leib && b.leib.userData) || {};
+-                        const wf = b.waffe || u.waffe || (b.equipped && b.equipped.held) || (u.equipped && u.equipped.held) || (b.bewaffnet ? "?" : null);
+-                        if (!wf) continue;
+-                        bewaffneteBewohner++;
+-                        waffen[wf] = (waffen[wf] || 0) + 1;
+-                        if (b.gegner || u.gegner || KAMPF.test(String(b.akt || ""))) imZweikampf++;
++                    for (const b of S.liste || []) if (b.waffe && b.leib && !b.drinnen && (!wache || ab(b) < ab(wache[1]))) wache = [S, b];
++                let kampf = null;
++                if (wache) {
++                    const [S, w] = wache;
++                    const [P0, n0] = [pm.clone(), (S.hiebe || []).length];
++                    kampf = { wache: w.rolle + " #" + w.seed, imZweikampfMax: 0, hiebe: [], grund: "kein freier Ort 8 m vor ihr" };
++                    window.__loop(false);
++                    try {
++                        const L = w.leib.position;
++                        let ort = null;
++                        for (let q = 0; q < 16 && !ort; q++) {
++                            const [x, z] = [L.x + Math.cos((q / 16) * Math.PI * 2) * 8, L.z + Math.sin((q / 16) * Math.PI * 2) * 8];
++                            if (r._landAt(x, z) && !(typeof r._imGrundriss === "function" && r._imGrundriss(x, z))) ort = { x, z };
++                        }
++                        if (ort) {
++                            pm.set(ort.x, r.getTerrainHeightAt(ort.x, ort.z) + A.PLAYER_FOOT_OFFSET, ort.z);
++                            if (st._fixedSimPos) st._fixedSimPos.copy(pm);
++                            r._bewohnerZeuge({ x: pm.x, z: pm.z });
++                            let uhr = performance.now();
++                            for (let k = 0; k < 30 * 40 && (S.hiebe || []).length === n0; k++) {
++                                r._gameLoopTick((uhr += 1000 / 30));
++                                kampf.imZweikampfMax = Math.max(kampf.imZweikampfMax, zaehle().imZweikampf);
++                                if (k % 15 === 14) await window.sleep();
++                            }
++                            kampf.hiebe = (S.hiebe || []).slice(n0);
++                            kampf.grund = kampf.hiebe.length ? "" : "40 s der Welt ohne Ende des Zweikampfs (Akt " + w.akt + ", Gegner " + w.gegner + ")";
++                        }
++                    } finally {
++                        pm.copy(P0);
++                        if (st._fixedSimPos) st._fixedSimPos.copy(pm);
++                        window.__loop(true);
+                     }
++                }
+                 const cells = (st.worldMeta && st.worldMeta.settlementCells) || {};
+                 let [orte, imKrieg] = [0, 0];
+                 for (const k in cells) {
+@@ -909,6 +962,7 @@ module.exports = (F) => [
+                     bewaffneteBewohner,
+                     bewaffnet: bewaffneteBewohner + (st.player ? 1 : 0),
+                     imZweikampf,
++                    kampf,
+                     waffen,
+                     haelt: haelt || null,
+                     orte,
+@@ -1002,20 +1056,21 @@ module.exports = (F) => [
+     // Streife (Rollen und Fahrer), die Türme, die Bewohner und wer von ihnen über dem Grund lebt oder protestiert.
+     F.leiter("mensch.macht.megastadt", {
+         sek: 30,
+-        pfad: ["stamm/siedlung-ort.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-verkehr.js", "fachwerk-core.js"],
++        pfad: ["stamm/siedlung-ort.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-verkehr.js", "fachwerk-core.js", "koerper-core.js"],
+         messe: async (H, K) => {
+             await K.messort("hochhaus-dach");
+             const w = await K.welt("return await (" + H.seite.MEGA + ")(r, T, {});", 20000);
+             if (!w || w.fehler) throw new Error("die Welt der Megastadt: " + ((w && w.fehler) || "ohne Antwort"));
+             H.zeile("Megastadt: " + JSON.stringify(w));
+-            // S1: der Umfang ist die Wache MIT Streife (wer aus ihr ausrückt); ρ (Antwortzeit ↔ Weg zur Wache) und das Sichtfeld misst
+-            // erst eine Streife, die aus der Wache kommt — ohne sie null (ROT beim Namen), nie ein Wert der Wache am Posten
++            // S1: der Umfang ist die Wache MIT Streife (wer aus ihr ausrückt und eine Runde geht — rollen-des-tages: koerper
++            // TAGES_GESETZ.rollen.waechter.streife, die Runde `b.orte.streife`); ρ (Antwortzeit ↔ Weg zur Wache) misst erst ein Ruf an
++            // die Wache (heute naht sie nur als Zeugin auf zeugeM), das Sichtfeld die Zeit der Runde am Gerät — null (ROT beim Namen)
+             await K.schritt(1, async () =>
+                 K.zahl(1, {
+                     n: w.mitStreife,
+                     werte: { rho: null, imSicht: null },
+-                    beleg: w.wachen + " Bauten mit der Rolle Wache in " + w.plaene + " Plänen um den Spieler (" + w.wacheBau + " in den Plänen der Bewohner), " + w.inWache + " Bewohner wohnen in ihr, " + w.ausWache + " davon bewaffnet oder am Steuer; " + w.bewaffnet + " Wächter mit Waffe in der Welt, " + w.fahrer + " Fahrer am Steuer",
+-                    taeter: "stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlung-verkehr.js)",
++                    beleg: w.wachen + " Bauten mit der Rolle Wache in " + w.plaene + " Plänen um den Spieler (" + w.wacheBau + " in den Plänen der Bewohner), " + w.inWache + " Bewohner wohnen in ihr, " + w.ausWache + " davon bewaffnet oder am Steuer, " + w.inRunde + " auf einer Runde von " + w.rundePunkte + " Punkten; " + w.bewaffnet + " Wächter mit Waffe in der Welt, " + w.fahrer + " Fahrer am Steuer", // prettier-ignore
++                    taeter: !(w.mitStreife >= 1) ? "stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: wer im Bau der Wache wohnt, rückt aus; die Runde `orte.streife`, koerper tagesStreife) — in den Plänen um den Spieler rückt keiner aus der Wache aus" : "ρ und das Sichtfeld sind ungemessen: kein Ruf an die Wache (sie naht nur als Zeugin auf zeugeM, _bewohnerZeuge), die Zeit der Runde zählt erst das Gerät", // prettier-ignore
+                 })
+             );
+             await K.schritt(2, async () => {
+@@ -1049,7 +1104,7 @@ module.exports = (F) => [
+                 // ausrückt — ein Bewohner mit der Waffe der Wache (`b.waffe`, der Lebenslauf; er naht der Tat, `_bewohnerNahen`), der in
+                 // ihr wohnt, oder ein Wagen, dessen Fahrer in ihr wohnt
+                 const streifeJe = new Map();
+-                let [inWache, bewaffnet, ausWache] = [0, 0, 0];
++                let [inWache, bewaffnet, ausWache, inRunde, rundePunkte] = [0, 0, 0, 0, 0];
+                 for (const S of (r._bewohnerSiedlungen || new Map()).values()) {
+                     if (S.revier || S.bande) reviere++;
+                     const wsl = new Set(((S.plan && S.plan.slots) || []).filter((s) => s && s.rolle === "wache").map((s) => s.seed >>> 0));
+@@ -1057,8 +1112,12 @@ module.exports = (F) => [
+                     for (const b of S.liste || []) {
+                         if (wsl.has(b.heim)) inWache++;
+                         if (b.waffe) bewaffnet++;
+-                        if (wsl.has(b.heim) && (b.waffe || b.amSteuer)) {
+-                            ausWache++;
++                        if (wsl.has(b.heim) && (b.waffe || b.amSteuer)) ausWache++;
++                        // (die Streife: wer aus dem Bau der Wache ausrückt und eine Runde trägt — rollen-des-tages)
++                        const runde = (b.orte && b.orte.streife) || [];
++                        if (wsl.has(b.heim) && b.waffe && runde.length) {
++                            inRunde++;
++                            rundePunkte = Math.max(rundePunkte, runde.length);
+                             streifeJe.set(S.key + ":" + b.heim, (streifeJe.get(S.key + ":" + b.heim) || 0) + 1);
+                         }
+                     }
+@@ -1078,6 +1137,8 @@ module.exports = (F) => [
+                     wacheBau,
+                     mitStreife: streifeJe.size,
+                     inWache,
++                    inRunde,
++                    rundePunkte,
+                     bewaffnet,
+                     ausWache,
+                     tuerme,

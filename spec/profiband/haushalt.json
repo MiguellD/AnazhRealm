@@ -487,6 +487,25 @@
             "serie": {
                 "offen": "die Ratschen-Serie je Gerät × Sicht (2 × 2) steht aus — sie misst auf echter GPU (Lehre 17), der Arbeiter dieses Orts trug nur swiftshader"
             }
+        },
+        {
+            "id": "wiese-auge",
+            "titel": "Das gehobene Auge (same.massstab.spanne#1): die Mess-Wiese, das Auge 700 m über dem Grund — gehoben über das Verb `steigen` (`augeHoehe`, der Leser `_augeHeben` im Loop der Kamera), der Blick wie an der Wiese nach WSW. Das Bild zeigt, was der Spieler nach dem Steigflug sieht: die Welt aus derselben Funktion bis zum Fern-Ring, ohne Loch und ohne Rand. `werkbank umstellen --ort` hebt das Auge und bricht laut, steht es nicht auf seiner Höhe.",
+            "spieler": [
+                -280.4,
+                -1045.6
+            ],
+            "blick": [
+                -289.6,
+                -1049.5
+            ],
+            "auge": 700,
+            "imBild": { "fern-ring": 0.1 },
+            "dorfZug": false,
+            "ortTakt": [],
+            "serie": {
+                "offen": "die Ratschen-Serie je Gerät × Sicht steht aus — der Ort zeigt das gehobene Auge; seine Kosten je Höhe (2 000 · 700 · 70 · 7 · 0 m gegen den Leib) misst gate:kamera-laub K7, auf echter GPU ungemessen (Lehre 17)"
+            }
         }
     ],
     "inhaltBand": {

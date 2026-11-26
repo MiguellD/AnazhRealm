@@ -5450,14 +5450,37 @@
             // dem Fahrer), steht von 6 bis 20 Uhr an seinem Punkt — sein Werk und sein Platz sind der Wache-Punkt, das Mittag hält
             // er durch; DER NACHTWÄCHTER lebt denselben Tag um `versatzH` Stunden versetzt (18 bis 8 Uhr) — zu jeder Stunde steht
             // einer draußen, auch um Mitternacht, wenn jeder andere drinnen schläft (`ruhe`)
-            waechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, haltung: false, regenfest: true }),
+            // DIE STREIFE (rollen-des-tages, Meisterkarte 2 mensch.macht.megastadt#1): die Wache steht nicht die Schicht lang am
+            // Posten — je `jeH` Stunden ihres Werks geht sie ihre RUNDE (`streife`): die ersten `dauerH` Stunden über die Punkte
+            // ihres Reviers auf dem Netz der Wege (`orte.streife`, der Wirt stellt sie aus `tagesStreife`), Punkt um Punkt gleich
+            // lang, dann zurück an den Posten. Die Runde je Stunde ist die der Nachtwache vor der Polizei: in jeder Runde ruft der
+            // Wächter die Stunde (Order of the Mayor and Aldermen of Philadelphia, 7. Juli 1752: „in the Course of each round …
+            // call the Hour of the Night“; Smollett 1771, Humphry Clinker: „the watchmen bawling the hour through every street“ —
+            // jede Stunde), zwischen zwei Runden hält ihn das Wachhaus am Posten. dauerH = die halbe Stunde (ANGENOMMEN: kein Band
+            // der Länge einer Runde; die Linse gate:koerper-kern ROLLEN R2 nennt die Zeit am Posten). Das Revier: `punkte` Punkte
+            // des Netzes binnen `radiusM` Weg um den Posten, je zwei `abstandM` auseinander, die nächsten zuerst (`tagesStreife`) —
+            // die Runde geht im Schritt (1,4 m/s) gut 130 m, der Rest der Stunde am Posten trägt, was sie länger braucht
+            // (ANGENOMMEN, die Welt rafft den Tag; tagesKette rechnet die Gehzeit — wer zum Aufbruch nicht am Posten steht, lässt
+            // die Runde aus: „die Runde beginnt am Posten“). Bis
+            // rollen-des-tages stand die Wache von 6 bis 20 Uhr an ihrem Punkt: über 1 000 Samen 280 061 Proben „arbeit“ am
+            // Werk, 0 Streife.
+            waechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, haltung: false, regenfest: true, streife: Object.freeze({ jeH: 1, dauerH: 0.5, punkte: 4, radiusM: 60, abstandM: 15 }) }), // prettier-ignore
             nachtwaechter: Object.freeze({
                 werk: Object.freeze([6, 20]),
                 mittagAmWerk: true,
                 versatzH: 12,
                 haltung: false,
                 regenfest: true,
+                streife: Object.freeze({ jeH: 1, dauerH: 0.5, punkte: 4, radiusM: 60, abstandM: 15 }),
             }),
+            // DER JÄGER UND DER FISCHER (rollen-des-tages, mensch.nahrung.tier#2): die Rolle trägt ihre TAT (`tat`) — in den
+            // Stunden ihres Werks steht sie am Ort, der diese Tat anbietet (`werkAm`: das Revier am Saum der Äcker, das Ufer des
+            // nächsten Gewässers — `tagesOrte`), und heißt dort „jagd" oder „fischfang"; der Heimweg trägt die Beute (der Wirt,
+            // `_bewohnerBeute`: der Bestand der Tiere am Revier GELESEN und um den Kopf GEÄNDERT, die Beute in den Vorrat seines
+            // Werks). Die Stunden: der Morgen ab der Dämmerung (das Wild äst in der Dämmerung, ANGENOMMEN — kein Band der Stunde
+            // der Jagd; die Linse nennt die Stunden), das Mittag am Revier. Wie viele jagen: `JAGD.anteil` der Haushalte.
+            jaeger: Object.freeze({ werk: Object.freeze([5, 11]), werkAm: "revier", tat: "jagd", mittagAmWerk: true }),
+            fischer: Object.freeze({ werk: Object.freeze([4.5, 10.5]), werkAm: "ufer", tat: "fischfang", mittagAmWerk: true }),
             // DAS KIND (ALTER_GESETZ.kindJ; der Wirt gibt die Rolle jedem Bewohner unter 15 J, `_bewohnerListe`): sein Werk ist das
             // Spiel (`spiel`: der Ort seiner Wahl nach dem Angebot `spiel` — der Platz, die Wiese am Acker —, nie das Werk seines
             // Hauses als Arbeit: kein Kind am Amboss), in kürzeren Stunden; der Akt heißt „spiel", die Haltung trägt die Freude
@@ -5479,6 +5502,9 @@
             burg: Object.freeze({ arbeit: 6 }),
             halle: Object.freeze({ arbeit: 6 }),
             turm: Object.freeze({ arbeit: 4 }),
+            // (das Revier und das Ufer bieten nur ihre Tat: kein anderer wählt dort sein Werk, seinen Treff — `tagesBindung`)
+            revier: Object.freeze({ jagd: 1 }),
+            ufer: Object.freeze({ fischfang: 1 }),
             sonst: Object.freeze({ arbeit: 3, treff: 1 }),
         }),
         daheim: Object.freeze({ mahl: 3, treff: 3 }),
@@ -5501,7 +5527,9 @@
         // jeder Bewohner stand zu jeder Stunde in derselben Haltung.
         // (das Spiel des Abends, SPIEL_GESETZ: der Läufer gebeugt in der Kraft, der Ringer in der Haltung des Kampfs — die Hände vor
         // dem Leib, der Stand breit —, am Brett über den Tisch, der Zuschauer jubelt)
-        haltung: Object.freeze({ arbeit: "pwalk", hilft: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", zweikampf: "fight", brett: "pwalk", zuschauen: "joy" }), // prettier-ignore
+        // (die Tat der Rolle: der Jäger geht gespannt, der Fischer steht über dem Wasser — die Wache trägt keine Haltung, `haltung:
+        // false`, auch nicht auf ihrer Runde und im Hieb: bis hier nannte die Tafel „streife“ und „hieb“, und keine Rolle las sie)
+        haltung: Object.freeze({ arbeit: "pwalk", hilft: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad", spiel: "joy", wettkampf: "pwalk", zweikampf: "fight", brett: "pwalk", zuschauen: "joy", jagd: "pwalk", fischfang: "pwalk" }), // prettier-ignore
         // DIE ZEIT-ART JE AKT (tages-gesetz, Entscheid des Koordinators 25.11.; Leser: gate:mensch-zuege `zuordnen`, die Station
         // mensch.geist.absicht#1): jeder Akt des Tags (`tagesPlan`, das Spiel des Abends) trägt GENAU EINE Art seiner Zeit — die
         // Hauptgruppen der Zeitbudget-Forschung: arbeit (Szalai 1972 „work“; HETUS 2008 Guidelines, Eurostat, Code 1 Erwerb),
@@ -5511,7 +5539,9 @@
         // Viertelstunde im Haus als Freizeit: mit dem Morgen im Haus (tages-gesetz) trug der Ausgeglichene 5,53 h „daheim“ und
         // fiel häuslich (gate:mensch-zuege ausgeglichen 7/16). Das Kind, das am Werk seines Hauses hilft („hilft“), arbeitet: die
         // mithelfenden Familienangehörigen zählen zu den Erwerbstätigen (ILO, ICSE-93, Gruppe 5 „contributing family workers“)
-        zeitArt: Object.freeze({ schlaf: "bedarf", morgen: "bedarf", mittag: "bedarf", arbeit: "arbeit", hilft: "arbeit", einkauf: "haushalt", besuch: "frei", abend: "frei", spiel: "frei", wettkampf: "frei", zweikampf: "frei", brett: "frei", zuschauen: "frei" }), // prettier-ignore
+        // (die Tat der Rolle ist Arbeit — der Gang der Streife ist Weg IM Werk, HETUS 2008: „travel as part of/during main job“
+        // gehört zum Erwerb, nie zu Code 9; der Hieb der Wache ebenso)
+        zeitArt: Object.freeze({ schlaf: "bedarf", morgen: "bedarf", mittag: "bedarf", arbeit: "arbeit", hilft: "arbeit", einkauf: "haushalt", besuch: "frei", abend: "frei", spiel: "frei", wettkampf: "frei", zweikampf: "frei", brett: "frei", zuschauen: "frei", streife: "arbeit", jagd: "arbeit", fischfang: "arbeit", hieb: "arbeit" }), // prettier-ignore
         // DER REGEN TREIBT INS HAUS (mensch.kopplung.leben S1 der Karte 2; Leser: `tagesPlan`, sein Wirt `_bewohnerSoll` reicht
         // den Regen der Welt, den Kanal `rain` des EINEN Wetter-Felds 0–1): steht der Regen am Ort über der Schwelle eines
         // Menschen (`ab` ± `streuH` aus seinem Samen — das Dorf flieht nicht im selben Atemzug, der Übergang des Worts leert den
@@ -5523,6 +5553,17 @@
         // mittags so voll wie in der Sonne; bis zum Bild am Genesis-Ort (Radeon, Regen um 13:16 Uhr) ging nur die Muße heim —
         // 31 von 77 standen bei der Arbeit im Regen auf dem Platz.
         regen: Object.freeze({ ab: 0.3, streuH: 0.15 }),
+        // DIE JAGD (rollen-des-tages, mensch.nahrung.tier#2; Leser: `tagesOrte` das Revier, `tagesJagdHaushalte` der Wirt
+        // `_bewohnerListe`, `tagesBeute` der Wirt `_bewohnerBeute`): anteil = so viele der Haushalte einer Siedlung tragen einen
+        // Jäger (und wo ein Ufer ist, ebenso viele einen Fischer) — die unterste Stufe über null der Abhängigkeit einer
+        // Gesellschaft von der Jagd im Ethnographic Atlas (Murdock 1967, Spalte 3: Stufen 0–5 · 6–15 · 16–25 … %): 6 %; der
+        // Anteil der Kost als Anteil der Haushalte ANGENOMMEN. revierM = so weit hinter dem äußersten Acker (dem Saum, an dem
+        // der Wald beginnt) liegt das Revier (ANGENOMMEN). beute = der Anteil der Jagdtage, an denen der Jäger Fleisch heimbringt:
+        // die Ju/'hoansi an weniger als 27 % (Lee 1979), die Hadza großes Wild an 1 von 30 Jäger-Tagen (Hawkes, O'Connell &
+        // Blurton Jones 1991: 3 %) — das Gesetz nimmt den Rand für jedes Fleisch, 0,27; ein Kopf je Beute. Der Fang des Fischers
+        // liest einen Bestand der Fische, den die Welt erst mit mensch.nahrung.tier#5 trägt: bis dahin heißt seine Tat
+        // „fischfang“ ohne Beute (`tagesBeute` nennt null — kein Fang aus dem Nichts).
+        jagd: Object.freeze({ anteil: 0.06, revierM: 60, beute: Object.freeze({ jagd: 0.27 }) }),
         // DER CHARAKTERZUG (Meisterkarte 2 mensch.geist.absicht S1; Leser: `tagesPlan` und `tagesBindung`, ihr Wirt
         // `_bewohnerSoll` und `binden`): jeder Mensch trägt aus seinem Samen EINEN Zug (`tagesZug`, die Anteile `anteil`), und
         // der Zug ändert die Wenden und die Ortswahl seines Tags. Der Zug ist die EINE Quelle der Abweichung, streuH bleibt das
@@ -5589,16 +5630,24 @@
     // und Rolle: der Kranke saß wie der Gesunde, der Lehrling stand wie der Meister, der Winter trug den Schnitt des Sommers.
     var LEIB_SATZ = Object.freeze({
         trenner: "/",
-        // DER KRANKE — Lasselin et al. 2020 (Brain Behav Immun 84:147–153, Tab. 1; LPS 2 ng/kg gegen Placebo, 19 Gesunde): der Kopf
-        // 2,50° tiefer, das Knie 1,86° weniger gebeugt („less knee flexion“), die Streckung des Arms 1,50° weniger; Rumpf und
-        // Schulter ohne Befund. Je Achse des Profils das Delta in rad (headX + senkt den Kopf, kneeL/R + beugt, armLX/RX + streckt).
-        // Der Gang (−0,185 m/s, Schritt −0,093 m, Schrittzeit +27,9 ms) liest keine Haltung — er gehört dem Tempo des Satzes.
-        krank: Object.freeze({ headX: 0.0436, kneeL: -0.0325, kneeR: -0.0325, armLX: -0.0262, armRX: -0.0262 }), // prettier-ignore
+        // DER KRANKE — Lasselin et al. 2020 (Brain Behav Immun 84:147–153, Tab. 1; LPS 2 ng/kg gegen Placebo, 19 Gesunde, Kinect v1
+        // auf 5,5 m): GEMESSEN IM GEHEN — darum EINE Zeile für Stand und Gang. `pose` je Achse des Profils das Delta in rad (headX +
+        // senkt den Kopf, kneeL/R + beugt, armLX/RX + streckt): der Kopf 2,50° tiefer [1,0; 4,1], das Knie 1,86° weniger gebeugt
+        // („less knee flexion“ [1,0; 2,7]), die Streckung des Arms 1,50° weniger [0,8; 2,2]; Rumpf und Schulter ohne Befund. `tempo`
+        // das Gehen −0,185 m/s [−0,243; −0,126] (der erste Lauf im eigenen Tempo), absolut (ANGENOMMEN: die Studie druckt kein Mittel
+        // des Placebos). Schrittlänge und Schrittzeit tragen KEINE eigene Zahl: sie folgen aus dem Tempo im EINEN Gang-Gesetz
+        // (tetrapoda `gangSchritt`) — geprüft gegen den Doppelschritt −0,093 m [−0,117; −0,070]; die Schrittzeit +27,9 ms [13,1; 42,7]
+        // mittelt zwei Läufe am Metronom (76 Schritte/min, feste Kadenz) mit dem freien (gate:mensch-anatomie gang.krank).
+        krank: Object.freeze({ pose: Object.freeze({ headX: 0.0436, kneeL: -0.0325, kneeR: -0.0325, armLX: -0.0262, armRX: -0.0262 }), tempo: -0.185 }), // prettier-ignore
+        // DIE BÄNDER DES GANGS im fernen Satz (`leibSatzBand`): je Wort eines, das den Gang ändert, ein Band — der Gesunde, der Kranke
+        baender: Object.freeze([null, "krank"]),
         // DAS KÖNNEN — die Kunst, die ein Akt übt (`kunst`: „haupt“ die Kunst seines Werks, LEBENSLAUF.uebung), und seine Stufe auf
         // der Skala des Könnens (1 = das Band der Guten): der Lehrling unter 0,5 geht im Takt seines Könnens — die Zeit je Akt ist
         // ∝ 1/Können (Newell & Rosenbloom 1981, das Potenzgesetz der Übung), sein Profil im `takt` der Stufe (×freq: der Rhythmus
         // des Stands); der Meister ab 1 steht im Profil des Akts (sein Takt ist der der Guten).
-        kunst: Object.freeze({ arbeit: "haupt", zweikampf: "kampf", brett: "brett" }),
+        // Die Tat der Rolle (rollen-des-tages) ist ihr Werk: die Jagd und der Fischfang üben die Kunst des Werks („haupt“) — der
+        // Jäger, der sein Handwerk nicht kann, steht am Revier im Takt des Lehrlings wie der Lehrling am Werk.
+        kunst: Object.freeze({ arbeit: "haupt", zweikampf: "kampf", brett: "brett", jagd: "haupt", fischfang: "haupt" }),
         stufe: Object.freeze([Object.freeze({ wort: "lehrling", unter: 0.5, takt: 0.5 })]),
         // DIE TRACHT DES TAGS — das Soll der Kleidung aus der Luft um 6 Uhr (Schiavon & Lee 2013, Building and Environment 59:250–260,
         // Gl. 10: < −5 °C 1,00 clo · −5 … 5 °C 0,818 − 0,0364·t · 5 … 26 °C 10^(−0,1635 − 0,0066·t) · ab 26 °C 0,46); die Isolation
@@ -5657,7 +5706,7 @@
         var p = Object.assign({}, g);
         for (var i = 1; i < teile.length; i++) {
             var w = teile[i],
-                d = w === "krank" ? LEIB_SATZ.krank : null,
+                d = LEIB_SATZ.baender.indexOf(w) > 0 ? LEIB_SATZ[w].pose : null,
                 st = null;
             for (var j = 0; !d && j < LEIB_SATZ.stufe.length; j++) if (LEIB_SATZ.stufe[j].wort === w) st = LEIB_SATZ.stufe[j];
             if (!d && !st) throw new Error("koerper leibSatzProfil: das Wort „" + w + "“ trägt kein Gesetz (LEIB_SATZ) — fail-closed");
@@ -5667,6 +5716,34 @@
         p = Object.freeze(p);
         if (merk) merk[name] = p;
         return p;
+    }
+    // DER GANG LIEST DEN SATZ (leib-liest-satz-2 — mensch.menge.seuche: der Kranke steht UND geht anders). Drei Leser derselben
+    // Zeile, die der Stand liest (LEIB_SATZ.krank): `leibSatzPose(name)` die Summe der Posen der Wörter eines Namens („pwalk/krank“ →
+    // die Zeile des Kranken; ohne Wort mit Pose null) — die Pose des Gangs legt sie über die Beine des Gesetzes (`leibRigPose`,
+    // ×Gewicht des Gangs; der Stand trägt sie im Profil, `leibSatzProfil`), gemerkt je Namen; `leibSatzTempo(v, satz)` das Tempo des
+    // Gangs zum Tempo v des Gesunden (der Satz: `krank`); `leibSatzBand(satz)` das Band seines Gangs im fernen Satz (LEIB_SATZ.baender).
+    // Bis hier stand der Kranke gebeugt und ging wie der Gesunde: das Gehen las keine Haltung, sein Tempo setzte die Geburt.
+    var _leibSatzPoseMerk = Object.create(null);
+    function leibSatzPose(name) {
+        if (typeof name !== "string" || name.indexOf(LEIB_SATZ.trenner) < 0) return null;
+        if (name in _leibSatzPoseMerk) return _leibSatzPoseMerk[name];
+        var teile = name.split(LEIB_SATZ.trenner),
+            p = null;
+        for (var i = 1; i < teile.length; i++) {
+            var d = LEIB_SATZ.baender.indexOf(teile[i]) > 0 ? LEIB_SATZ[teile[i]].pose : null;
+            if (d) for (var k in d) (p || (p = {}))[k] = (p[k] || 0) + d[k];
+        }
+        return (_leibSatzPoseMerk[name] = p ? Object.freeze(p) : null);
+    }
+    function leibSatzBand(satz) {
+        return satz && satz.krank === true ? LEIB_SATZ.baender.indexOf("krank") : 0;
+    }
+    function leibSatzTempo(v, satz) {
+        if (!(v > 0)) throw new Error("koerper leibSatzTempo: das Tempo des Gesunden fehlt (" + v + ") — fail-closed");
+        var w = LEIB_SATZ.baender[leibSatzBand(satz)],
+            t = v + (w ? LEIB_SATZ[w].tempo : 0);
+        if (!(t > 0)) throw new Error("koerper leibSatzTempo: der Satz nimmt dem Gang sein Tempo (" + v + " → " + t + ") — fail-closed");
+        return t;
     }
     // DIE NAMEN DES SATZES (leib-liest-satz): jeder Name mit Zusatz, den `tagesHaltung` nennen kann — je Grund (neutral und jede
     // Haltung des Akts) der Kranke, je Haltung eines Akts mit Kunst jede Stufe, gesund und krank. Leser: die Stände des Satzes
@@ -5747,7 +5824,11 @@
     // DIE ORTE EINES PLANS (der Plan v2 des Fachwerks, plan-lokal): je Slot, den `steht(i)` trägt (ohne: jeder), sein Ort
     // {art: seine Rolle, slot: i, x, z, bietet}, der Platz {art "platz"} und je Acker {art "feld", feld: j} — das Angebot aus
     // TAGES_GESETZ.angebot. Der Ort ist ein Angebot der Ziel-Kette (tetrapoda zielWahl liest x, z, bietet).
-    function tagesOrte(plan, steht) {
+    // DAS REVIER UND DAS UFER (rollen-des-tages): das Revier liegt `jagd.revierM` hinter dem äußersten Acker (ohne Acker hinter dem
+    // äußersten Haus), auf dem Strahl vom Kern des Plans durch ihn — dort, wo die Äcker enden, beginnt der Wald (phyto `forestOrt`:
+    // der Saum am Rand der Siedlung); das Ufer reicht der Wirt (`wild.ufer`, plan-lokal: der nächste Punkt eines Gewässers, das
+    // nur er kennt) — ohne Gewässer kein Ufer und kein Fischer.
+    function tagesOrte(plan, steht, wild) {
         var A = TAGES_GESETZ.angebot;
         var von = function (art) {
             return Object.prototype.hasOwnProperty.call(A, art) ? A[art] : A.sonst;
@@ -5771,7 +5852,76 @@
         var fe = (plan && plan.felder) || [];
         for (var j = 0; j < fe.length; j++)
             if (fe[j] && isFinite(fe[j].cx) && isFinite(fe[j].ex)) aus.push({ art: "feld", feld: j, x: fe[j].cx, z: fe[j].cz, bietet: A.feld });
+        var rand = null,
+            rM = 0;
+        for (var r = 0; r < aus.length; r++) {
+            var dr = Math.hypot(aus[r].x, aus[r].z);
+            if ((aus[r].art === "feld" || !fe.length) && dr > rM) {
+                rand = aus[r];
+                rM = dr;
+            }
+        }
+        if (rand && rM > 0) {
+            var mal = (rM + TAGES_GESETZ.jagd.revierM) / rM;
+            aus.push({ art: "revier", x: rand.x * mal, z: rand.z * mal, bietet: A.revier });
+        }
+        if (wild && wild.ufer && isFinite(wild.ufer.x) && isFinite(wild.ufer.z)) aus.push({ art: "ufer", x: wild.ufer.x, z: wild.ufer.z, bietet: A.ufer });
         return aus;
+    }
+    // DIE HAUSHALTE MIT JÄGER (TAGES_GESETZ.jagd.anteil): wie viele der n Haushalte einer Siedlung einen Jäger tragen — wenigstens
+    // einer, wo ein Revier ist (die Siedlung, die jagt, jagt an ihrem Saum), sonst gerundet; ebenso viele einen Fischer, wo ein Ufer
+    // ist. Leser: der Wirt (`_bewohnerListe`), die Station mensch.nahrung.tier S2.
+    function tagesJagdHaushalte(n) {
+        return n > 0 ? Math.max(1, Math.round(n * TAGES_GESETZ.jagd.anteil)) : 0;
+    }
+    // DIE WAHL DER JÄGER (rollen-des-tages): aus den Häusern, die einen Jäger stellen können (`kand`, je {x, z}: die Tür des Wirts,
+    // der Slot der Station), die tagesJagdHaushalte(nHaus) nächsten zum Ort der Tat (das Revier, das Ufer) — sein Weg dorthin ist
+    // der kürzeste; gleich fern entscheidet die Reihe. Liefert die Indizes in `kand` (leer: kein Ort der Tat).
+    function tagesJagdWahl(kand, nHaus, ort) {
+        if (!ort || !isFinite(ort.x) || !kand || !kand.length) return [];
+        var d = kand.map(function (k) {
+            return Math.hypot(k.x - ort.x, k.z - ort.z);
+        });
+        var ix = kand.map(function (_, i) {
+            return i;
+        });
+        ix.sort(function (a, b) {
+            return d[a] - d[b] || a - b;
+        });
+        return ix.slice(0, tagesJagdHaushalte(nHaus));
+    }
+    // DIE BEUTE DES TAGS (TAGES_GESETZ.jagd.beute): ob der Mensch (same) am Tag `tag` der Welt mit seiner Tat (`jagd`) Beute
+    // heimbringt — rein aus Same und Tag; null, wo die Tat keine Beute trägt (der Fischfang bis zum Bestand der Fische)
+    function tagesBeute(same, tag, tat) {
+        var p = TAGES_GESETZ.jagd.beute[tat];
+        return p == null ? null : _tagZahl((same ^ Math.imul(Math.floor(tag) | 0, 0x9e3779b1)) >>> 0, "beute:" + tat) < p;
+    }
+    // DAS REVIER DER STREIFE (rollen.waechter.streife): aus den Punkten `pkt` des Netzes der Wege ({x, z}) um den Posten P die
+    // `punkte` nächsten binnen `radiusM` (weg(i) = der Weg vom Posten zum Punkt i über das Netz; ohne ihn die Luftlinie), je zwei
+    // wenigstens `abstandM` auseinander — als Runde: im Kreis um den Posten (nach dem Winkel), sodass der Wächter von Punkt zu
+    // Punkt geht und am Posten endet. Liefert die Indizes in `pkt` (leer: kein Netz um den Posten, keine Streife).
+    function tagesStreife(pkt, P, rolle, weg) {
+        var R = (TAGES_GESETZ.rollen[rolle] || {}).streife;
+        if (!R || !pkt || !P) return [];
+        var kand = [];
+        for (var i = 0; i < pkt.length; i++) {
+            var q = pkt[i],
+                d = weg ? weg(i) : Math.hypot(q.x - P.x, q.z - P.z);
+            if (isFinite(d) && d <= R.radiusM && Math.hypot(q.x - P.x, q.z - P.z) >= R.abstandM) kand.push({ i: i, d: d });
+        }
+        kand.sort(function (a, b) {
+            return a.d - b.d || a.i - b.i;
+        });
+        var wahl = [];
+        for (var k = 0; k < kand.length && wahl.length < R.punkte; k++) {
+            var c = pkt[kand[k].i],
+                frei = true;
+            for (var m = 0; m < wahl.length; m++) if (Math.hypot(pkt[wahl[m]].x - c.x, pkt[wahl[m]].z - c.z) < R.abstandM) frei = false;
+            if (frei) wahl.push(kand[k].i);
+        }
+        return wahl.sort(function (a, b) {
+            return Math.atan2(pkt[a].x - P.x, pkt[a].z - P.z) - Math.atan2(pkt[b].x - P.x, pkt[b].z - P.z);
+        });
     }
     // DER WEG ZU EINEM ORT (pendler-anschluss; die Nähe der Bindung, `tagesBindung` `weg`): von einem Ort aus `orte` (tagesOrte,
     // plan-lokal) zum Knoten, an dem er am Wege-Netz hängt (netz = {knoten (am Ursprung ox, oz), kanten}: fachwerk `wegeNetz`), über das
@@ -5860,13 +6010,14 @@
         // wer in einem Haus mit Rolle wohnt, dessen Werk ist sein Haus; sonst der Ort seiner Wahl, ohne einen der eigene Hof
         var eigen = H.bietet && H.bietet.arbeit > 0 && H.art !== "wohnhaus";
         // (der Kaufmann: `rollen[rolle].werkAm` nennt die Art des Orts, an dem sein Werk steht — der nächste mit Ständen, den
-        // der Wirt trägt, binnen wegM.markt)
+        // der Wirt trägt, binnen wegM.markt; die Rolle mit Tat — Jäger, Fischer, rollen-des-tages — der nächste, der ihre Tat
+        // anbietet, gleich wie fern: das Revier, das Ufer)
         var R = G.rollen[rolle] || {},
             am = -1,
-            amD = G.wegM.markt;
+            amD = R.tat ? Infinity : G.wegM.markt;
         for (var q = 0; R.werkAm && q < orte.length; q++) {
             var o = orte[q];
-            if (!o || o.art !== R.werkAm || !(o.staende > 0) || (ohne && ohne(o, q))) continue;
+            if (!o || o.art !== R.werkAm || !(R.tat ? o.bietet && o.bietet[R.tat] > 0 : o.staende > 0) || (ohne && ohne(o, q))) continue;
             var dq = weg ? weg(H, o, q) : Math.hypot(o.x - H.x, o.z - H.z);
             if (dq <= amD) {
                 am = q;
@@ -6073,6 +6224,27 @@
             ab = (bA ? T.w1 + G.besuchH : T.w1) + (T.abendTreffH != null ? T.abendTreffH : 0);
         return ab + _tagZahl(same, "bank") * Math.max(0, Math.min(G.bankH, T.ruhe - ab));
     }
+    // DIE RUNDE DER STREIFE (rollen.waechter.streife): dh Stunden nach dem Beginn des Werks (lang Stunden) — der Index des Punkts
+    // seines Reviers (`orte.streife`), an dem der Wächter in seiner Runde steht, oder −1 (am Posten; ohne Revier keine Streife).
+    // Eine Runde beginnt nur, wenn sie im Werk endet (das Ende der Schicht schneidet keine Runde: gate:koerper-kern ROLLEN R3)
+    function _streifePunkt(R, orte, dh, lang) {
+        var S = R.streife,
+            st = orte && orte.streife;
+        if (!S || !st || !st.length || !(dh >= 0)) return -1;
+        var r = dh % S.jeH;
+        if (dh - r + S.dauerH > lang + 1e-9) return -1;
+        return r < S.dauerH ? Math.min(st.length - 1, Math.floor((r / S.dauerH) * st.length)) : -1;
+    }
+    // die Wenden seiner Runden: je Runde ihr Beginn, der Schritt zu jedem Punkt und die Rückkehr an den Posten (die EINE Liste, die
+    // `tagesGaenge` und `tagesKette` zu ihren Wenden legen)
+    function _streifeWenden(T, orte) {
+        var S = T.R.streife,
+            st = orte && orte.streife,
+            t = [];
+        if (!S || !st || !st.length) return t;
+        for (var a = T.w0; a + S.dauerH <= T.w1 + 1e-9; a += S.jeH) for (var k = 0; k <= st.length; k++) t.push(a + (k * S.dauerH) / st.length);
+        return t;
+    }
     function tagesGaenge(same, rolle, orte) {
         var G = TAGES_GESETZ,
             T = _tagesWendenOrt(same, rolle, orte),
@@ -6087,6 +6259,7 @@
         (orte.spiel || []).forEach(function (e) {
             t.push(e.von, e.bis);
         });
+        t = t.concat(_streifeWenden(T, orte));
         var u = t
             .map(function (x) {
                 return ((x % 24) + 24) % 24;
@@ -6132,6 +6305,7 @@
         (orte.spiel || []).forEach(function (e) {
             t.push(e.von, e.bis);
         });
+        t = t.concat(_streifeWenden(T, orte));
         var u = t
             .map(function (x) {
                 return ((x % 24) + 24) % 24;
@@ -6158,12 +6332,35 @@
             kette = [],
             ank = 0,
             eng = 0,
+            aus = 0,
+            nachAus = null,
             gehSumme = 0;
         for (var j = 0; j <= n; j++) {
             var e = ab[(s0 + j) % n],
                 rel = j === n ? 24 : (((e.ab - A) % 24) + 24) % 24;
-            var vor = j ? ab[(s0 + j - 1) % n].p : e.p;
+            var vor = kette.length ? kette[kette.length - 1].p : e.p;
             var g = j && vor.ort !== e.p.ort ? Math.max(0, geh(vor.wo, e.p.wo) || 0) : 0;
+            // DIE RUNDE BEGINNT AM POSTEN (rollen-des-tages): eine Runde der Streife geht nur, wer zu ihrem Aufbruch am Posten
+            // steht — kehrt er aus der vorigen später zurück, als er zur nächsten aufbrechen müsste, lässt er sie aus (`aus`) und
+            // geht die nächste zu ihrer Stunde: die Verspätung einer Runde trägt höchstens bis zur nächsten, nie in den Abend.
+            // Der Tag der Welt dauert 60 min, die Stunde 150 s: die Runde von 186 m (je Punkt 30–42 m) braucht im Schritt 0,92 h
+            // ihrer Stunde. Bis hier schob jede Runde die nächste: im Kern 62 von 76 Abschnitten eng, beim doppelten Weg brach
+            // der Feierabend erst um 7,78 Uhr auf; die Stadt-Wache #91693 (gate:kreatur-takt bewohner) ging 2 Wege statt 4.
+            if (j && j < n && e.p.akt === "streife" && ab[(s0 + j - 1) % n].p.akt !== "streife" && rel - g < ank - 1e-9) {
+                while (j + 1 < n && ab[(s0 + j + 1) % n].p.akt === "streife") j++;
+                aus++;
+                nachAus = rel;
+                continue;
+            }
+            // (nach der ausgelassenen Runde steht er am Posten: ab ihrer Stunde, kommt er von anderswo — der erste Gang der Schicht —,
+            // oder er setzt den Abschnitt fort, an dem er steht, seine Ankunft bleibt die frühere — sonst stünde er zur Wende des
+            // Postens neu „angekommen“, und jede Runde mit einem ersten Weg über die halbe Stunde fiele)
+            if (nachAus !== null) {
+                var weiter = vor.ort === e.p.ort && vor.drinnen === e.p.drinnen && vor.akt === e.p.akt;
+                if (!weiter) rel = nachAus;
+                nachAus = null;
+                if (weiter) continue;
+            }
             if (rel - g < ank - 1e-9) eng++;
             var auf = Math.max(rel - g, ank);
             // DER KAUF SCHRUMPFT NIE (tages-gesetz): den Markt verlässt der Einkäufer erst nach der Dauer seines Einkaufs ab seiner
@@ -6175,7 +6372,7 @@
             gehSumme += g;
             kette.push({ auf: auf, p: e.p });
         }
-        return { A: A, v: v, kette: kette, eng: eng, gehH: gehSumme };
+        return { A: A, v: v, kette: kette, eng: eng, aus: aus, gehH: gehSumme };
     }
     function tagesZiel(K, stunde) {
         var h = (((Number(stunde) - K.v - K.A) % 24) + 24) % 24,
@@ -6202,7 +6399,7 @@
         var W = G.regen,
             regen = nass > 0 && nass >= W.ab + (_tagZahl(same, "regen") * 2 - 1) * W.streuH;
         var aus = function (wo, akt, drinnen, an) {
-            var posten = akt === "arbeit" && R.regenfest;
+            var posten = (akt === "arbeit" || akt === "streife") && R.regenfest;
             var o = an || orte[wo];
             if (regen && !drinnen && !posten) return { ort: heim, wo: "heim", akt: akt, drinnen: true };
             if (krank && !drinnen && !posten && (o || heim) !== heim) return { ort: heim, wo: "heim", akt: "abend", drinnen: false };
@@ -6227,7 +6424,14 @@
             if (T.pTreffH != null && h >= T.p0 + T.pTreffH) return aus("heim", "abend", true);
             return aus("abend", "abend", !orte.abend || orte.abend === heim);
         }
-        if (h < w1) return aus("werk", R.spiel ? (orte.hilft ? "hilft" : "spiel") : "arbeit", false);
+        // DAS WERK IST DIE TAT DER ROLLE (rollen-des-tages): die Wache geht in den ersten `dauerH` Stunden jeder Runde ihre Streife
+        // (Punkt k ihres Reviers, `orte.streife`, wo "streife" + k), sonst steht sie am Posten; der Jäger jagt, der Fischer fischt
+        // (`R.tat`), das Kind spielt oder hilft, jeder andere arbeitet
+        if (h < w1) {
+            var k = _streifePunkt(R, orte, h - w0, w1 - w0);
+            if (k >= 0) return aus("streife" + k, "streife", false, orte.streife[k]);
+            return aus("werk", R.tat || (R.spiel ? (orte.hilft ? "hilft" : "spiel") : "arbeit"), false);
+        }
         if (bA && h < w1 + G.besuchH) return besuch ? aus("besuch", "besuch", false) : aus("heim", "besuch", true);
         // DAS SPIEL DES ABENDS (SPIEL_GESETZ, `spielProgramm`): wer Gast des Treffs am Platz ist, steht in den Stunden seines
         // Auftritts (orte.spiel: [{von, bis, akt, x, z, blick}], der Wirt stellt sie aus dem Programm des Tags) am Feld — als
@@ -6296,6 +6500,22 @@
                 finte: Object.freeze({ anteil: 0.3, offen: 0.5, gelesen: 1.5 }),
                 gaenge: 4,
             }),
+            // DER HIEB (rollen-des-tages, Meisterkarte 2 mensch.macht.krieg#1): derselbe Zweikampf mit der Waffe — die Wache, die der
+            // Tat naht (der Wirt, `_bewohnerNahen`), steht ihrem Täter `abstandM` gegenüber (die Länge der Klinge, LEBENSLAUF.wache
+            // nahM), je `zugS` Sekunden ein Hieb im Wechsel: der Getroffene antwortet (der nächste Zug ist seiner), bis einer `bis`
+            // Treffer trägt. DIE DECKUNG HÄLT: eine gelesene Finte trifft nie (`gelesen` ∞ — die Klinge in der Bindung, kein Treffer
+            // durch die Deckung), die ungelesene öffnet ihn wie im Ringen. zugS: ein Hieb mit Erholung je 2 s (ANGENOMMEN — kein Band
+            // des Takts eines Gefechts; die Linse nennt die Dauer der Gänge), bis 2 (der zweite Treffer entscheidet, ANGENOMMEN).
+            hieb: Object.freeze({
+                teil: Object.freeze([2, 2]),
+                mass: "treffer",
+                sieg: "gross",
+                bis: 2,
+                abstandM: 1.5,
+                zugS: 2,
+                zuegeMax: 200,
+                finte: Object.freeze({ anteil: 0.3, offen: 0.5, gelesen: Infinity }),
+            }),
             brett: Object.freeze({ teil: Object.freeze([2, 2]), mass: "reihe", sieg: "gross", feld: 9, reihe: 5, zugS: 8, tische: 4 }),
         }),
     });
@@ -6334,8 +6554,10 @@
     // DER ZWEIKAMPF zweier Stärken a, b ({s: Leistung, u: Übung}) aus dem Samen `same`: je Zug greift abwechselnd einer an — mit
     // einer Finte (Anteil `finte.anteil`) oder offen —, der andere wehrt ab; Treffer, wenn sein Zug die Abwehr schlägt (Bradley-
     // Terry). Liefert {zuege: [{an, finte, gelesen, treffer}], treffer: [ta, tb], sieger: 0 | 1}
-    function spielKampf(a, b, same) {
-        var R = SPIEL_GESETZ.arten.ringen,
+    // (art: "ringen" — der Gang des Abends — oder "hieb", der Zweikampf mit der Waffe; `gelesen` Infinity heißt: die Deckung hält,
+    // die gelesene Finte trifft nie)
+    function spielKampf(a, b, same, art) {
+        var R = SPIEL_GESETZ.arten[art || "ringen"],
             F = R.finte,
             t = [0, 0],
             zuege = [],
@@ -6689,6 +6911,9 @@
         herstellung: Object.freeze({
             feld: Object.freeze({ ware: "kraut", jeStunde: 2 }),
             schmiede: Object.freeze({ ware: "eisen", jeStunde: 0, aus: "erz" }),
+            // (rollen-des-tages: der Jäger stellt nichts her — sein Fleisch ist die Beute aus dem Bestand der Tiere, `tagesBeute`,
+            // die der Wirt in seinen Halter legt, `_bewohnerBeute`)
+            jaeger: Object.freeze({ ware: "fleisch", jeStunde: 0 }),
         }),
         // DIE STOFFSTROM-KETTE (Meisterkarte 2 mensch.wirtschaft.stoffstrom#1, `stoffstromHalter`): Erz → Barren → Werkzeug.
         // esseKgJeStunde: das Erz, das ein Rennofen in einer Stunde der Arbeit seiner Schmiede reduziert (die Versuche der
@@ -8921,16 +9146,149 @@
     // (sin²) über `hub` des Takts, die rechte um `versatz` versetzt (die Arme heben im Wechsel), der Ausschlag je Geste aus der Uhr
     // (`ausschlag`, Anteil der Abspreizung des Profils) — dazwischen hängt der Arm in seiner Ruhe. Die Uhr ist die des Leibs (die
     // Welt reicht `uhr + atem`, die Phase aus seinem Samen): Phase und Ausschlag trägt jeder Leib selbst, im Mittel hängt der Arm im
-    // Band. Der ferne Satz backt je Stand mit Geste `phasen` Zeilen (`leibGesteZeit`), jeder Leib liest die Zeile seiner Phase
-    // (`leibGestePhase`). Bis hier hielt joy die Abspreizung: an stadt-voll mittags standen 27 von 27 nahen Kindern im selben Moment
-    // mit 34–39° (gate:mensch-anatomie haltung.moment joy 100 %), und der Satz zeigte jedes ferne Kind in derselben Zeile.
+    // Band. Die Geste geht im Zyklus des Stands (`STAND`: `zyklus / takt` ganze Takte, der Ausschlag aus der Zahl des Takts im Zyklus) —
+    // der ferne Leib backt sie mit Atem und Schwanken in den Zeilen seines Stands (`leibStandZeit`, `leibStandZeile`). Bis hier hielt
+    // joy die Abspreizung: an stadt-voll mittags standen 27 von 27 nahen Kindern im selben Moment mit 34–39° (gate:mensch-anatomie
+    // haltung.moment joy 100 %), und der Satz zeigte jedes ferne Kind in derselben Zeile.
     var GESTE = Object.freeze({
-        takt: 2.4, // s je Geste
+        takt: 2.4, // s je Geste (ein ganzer Teil des Zyklus des Stands)
         hub: 0.3, // der Anteil des Takts, in dem der Arm gehoben ist
         versatz: 0.5, // die rechte Seite gegen die linke (Anteil des Takts)
         ausschlag: Object.freeze([0.3, 1]), // der Ausschlag je Geste (Anteil der Abspreizung des Profils)
-        phasen: 4, // die Zeilen des Satzes je Stand mit Geste
     });
+    // DER STAND IN DER ZEIT (stand-lebt; Leiter mensch.leib.ausdruck, mensch.menge.bild): wer steht, steht nie still — Atem, Schwanken
+    // und Geste gehen in EINEM Zyklus von `zyklus` s, damit der ferne Leib sie backen kann wie den Gang: Satz und Feld backen je Stand
+    // `zeilen` Zeilen über den Zyklus (`leibStandZeit`), jeder Leib liest die Zeile seiner Uhr `uhr + atem` und mischt die nächste
+    // (`leibStandZeile`, wie die Phase des Gangs k0 und k1 wählt); der nahe Leib (`leibRigPose`) geht dieselben Wellen derselben Uhr —
+    // EIN Weg. Der Atem in ganzen Zügen je Zyklus (`leibStandAtem`: `atem` × das Tempo des Profils gegen das Labor-idle, gerundet,
+    // mindestens einer — idle 2 Züge: 3,6 s, 16,7 je Minute), das Becken schwankt seitlich `schwanken[0]`-mal und vor und zurück
+    // `schwanken[1]`-mal je Zyklus (0,14 und 0,28 Hz), die Geste geht 3 Takte je Zyklus.
+    // DIE HALTUNG DES STANDS (stand-lebt 2, Koordinator 26.11. 04:56: „die Regung kommt aus dem Gesetz der Haltung, nicht aus einem
+    // Wackel-Faktor“): (1) DER GEWICHTSWECHSEL — das Gewicht wandert vom Standbein aufs andere (`leibStandBein`): im freien Stand
+    // wechselt der Mensch die Haltung 2,2-mal je Minute (Freitas et al. 2005, Gait Posture 22:322 — `wechselS` 27,3 s), die Intervalle
+    // streuen um ein Drittel (Duarte & Zatsiorsky 1999, Motor Control 3:12: 49 ± 16 s seitlich — `wechselStreu`), das Becken
+    // verlagert sich seitlich um 22 mm (dieselben: 22 ± 38 mm medio-lateral — `verlagerungRad` auf 0,92 m Hüfthöhe); Phase UND
+    // Periode trägt die Person (`r.standPerson`, aus ihrem Samen — zwei Stehende wechseln nie im selben Takt), die Verlagerung
+    // selbst geht in `wechselDauerS` (ANGENOMMEN: „schnell“ nach Duarte 1999, ohne Zahl). (2) DIE ARME DES TUNS — was die Person
+    // tut, nennt das Profil ihres Stands (der Wirt: `_koerperMotionName` über `tagesHaltung` des Akts); `tun` legt je Profil die
+    // Arbeit der Hände fest, `arme` ihre Takte je Zyklus (ganz: der Satz backt sie mit), ihren Hub und ihre Gelenke: wer redet,
+    // gestikuliert 8–22-mal je Minute (Alibali et al. 2001, J Mem Lang 44:169 — 2 je Zyklus, 16,7/min) vor der Brust (McNeill 1992,
+    // „Hand and Mind“: der Gestenraum Mitte-Mitte — der Unterarm hebt sich um 70°); wer mit den Händen arbeitet, greift 4-mal je
+    // Zyklus (1,8 s = 50 TMU je Griff; MTM-1: 1 TMU = 0,036 s, Greifen G1A und Loslassen RL1 je 2 TMU — die Summe mit Hinlangen und
+    // Bringen über 30–40 cm ANGENOMMEN). Wer wartet oder schaut, rührt die Hände nicht: ihn tragen Gewicht, Atem und Blick (der
+    // Blick folgt dem Reiz im Wirt, `_bewohnerKopf`).
+    // DIE RUHE DES LEIBS (stand-lebt 3, Koordinator 26.11. 05:18: „die Ruhe-Haltung IST die Bind-Pose“ — von ≈ 25 Leibern am Bild
+    // von stadt-voll standen ≈ 22 gleich: die Arme abgespreizt, die Handflächen offen nach vorn, die Füße parallel, der Blick
+    // geradeaus): (1) DIE ARME HÄNGEN unter der Schwere — die Bind-Pose des Gusses ist die anatomische Null (Handfläche vorn, der
+    // Unterarm im Tragewinkel nach außen); im Stand dreht der Unterarm in die Mittelstellung (`ruhe.pronation`, 69°: die Normale der
+    // Handfläche zeigt 0,93 zum Oberschenkel), der Ellbogen ist leicht gebeugt (`ruhe.ellbogen`, 14°, ANGENOMMEN), und weil der Daumen
+    // dann nach vorn-innen zeigt, hält die Schulter über ihrer Ruhe am Rumpf (`r.armRuhe`, 5–10°) Luft, wo die Hand vor dem Schenkel
+    // hängt: `ruhe.daumen` am Lot, linear bis 0 an `ruhe.daumenBis` (11,5°; darüber hängt die Hand neben der Hüfte — ANGENOMMEN aus der
+    // Probe 26.11.: frei ab Ruhe + 0,025 rad am Lot, + 0,010 bei 0,095 rad, + 0 ab 0,113 rad; ohne die Luft bis 30 Ecken im Rumpf). Die Drehung des Oberarms nach innen (23°) legte
+    // bis 140 Ecken der Hand in die Hüfte (ARM_RUHE.innenStand): sie fällt. (2) DAS TRAGENDE BEIN IM SATZ — der ferne Leib backt jeden
+    // Stand auf beiden Beinen (`seiten` Zeilensätze, `r.standSeite` aus der Zeile: der Wirt reicht es im Gemüt der Zeile) und liest
+    // das Bein seines Gewichtswechsels (`leibStandBein` seiner Person, wie der nahe Leib). (3) DER BLICK WANDERT (`leibStandBlick`):
+    // wer steht, hält den Blick in `blick.rad.length` gleichen Teilen des Zyklus — auf seinem Ziel (das Gegenüber, die Ware: wohin
+    // der Leib schaut) und zu beiden Seiten; der Redende schaut den Hörer 41 % der Zeit an (Argyle & Cook 1976, „Gaze and Mutual
+    // Gaze“: Sprecher 41 %, Hörer 75 % — ein Drittel am Ziel), ein Blick 50° zur Seite dreht den Kopf um das, was die Augen allein
+    // nicht tragen (Stahl 1999: ± 17,9° → 32°, 0,56 rad); der Kopf wendet in `wende` s (ANGENOMMEN). Der ferne Leib backt den Blick
+    // in die Zeilen, der nahe liest denselben im Wirt (`_bewohnerKopf`), solange ihn kein Reiz und kein Gegenüber hält.
+    // Bis hier atmete der nahe Leib mit 1,6 rad/s × Tempo und schwankte mit 1,1 und 0,7 rad/s, und Satz und Feld buken je Stand EINE
+    // Zeile zur Uhr 0 (joy vier Phasen, je Leib fest aus seinem Samen): am Dorfplatz um 10 Uhr standen 39 von 40, und kein Glied
+    // eines Stehenden im Feld rührte sich über 5 s (0,000 m; die vier nahen Leiber 0,05–0,17 m — Täter-Messung 26.11., GTX).
+    var STAND = Object.freeze({
+        zyklus: 7.2, // s, in denen sich Atem, Schwanken und Geste wiederholen
+        zeilen: 12, // die Zeilen je Stand im Satz und im Feld (0,6 s, je um eine halbe versetzt: jede Geste trifft eine nahe ihrer Spitze)
+        atem: 2, // Züge je Zyklus am Labor-idle
+        schwanken: Object.freeze([1, 2]), // Wellen des Beckens je Zyklus: seitlich, vor und zurück
+        wechselS: 27.3, // s zwischen zwei Gewichtswechseln im Mittel (60 / 2,2; die Welle hin und zurück trägt zwei)
+        wechselStreu: 0.33, // ± Anteil der Periode je Person
+        wechselDauerS: 1, // s, in denen das Gewicht hinüber wandert
+        verlagerungRad: 0.024, // das Becken seitlich (22 mm auf 0,92 m)
+        seiten: 2, // die Zeilen je Stand im Satz und im Feld je tragendem Bein (das rechte, das linke)
+        ruhe: Object.freeze({ pronation: 1.2, ellbogen: 0.25, daumen: 0.035, daumenBis: 0.2 }), // rad: die Arme hängen (stand-lebt 3)
+        blick: Object.freeze({ rad: Object.freeze([0, 0.56, -0.56]), wende: 0.4 }), // die Gier des Kopfs je Fixation, s je Wende
+        tun: Object.freeze({ showcase: "reden", pwalk: "hand" }), // je Profil des Stands die Arbeit der Hände
+        arme: Object.freeze({
+            reden: Object.freeze({ je: 2, hub: 0.5, schulter: 0.35, ellbogen: 1.2 }), // rad: Beugung vor, Ellbogen
+            hand: Object.freeze({ je: 4, hub: 0.6, schulter: 0.5, ellbogen: 0.9 }),
+        }),
+    });
+    // das Bein, das trägt (+1: das rechte trägt, das linke ist das Spielbein — die Pose des Labors; −1 gespiegelt), zur Uhr t der
+    // Person p (0 … 1: Phase und Periode aus ihrem Samen); ohne Person (der Satz backt den Stand, `_bewohnerGangPose`) trägt das rechte
+    function leibStandBein(t, p) {
+        if (!Number.isFinite(p)) return 1;
+        var P = 2 * STAND.wechselS * (1 + STAND.wechselStreu * (2 * ((p * 7.31) % 1) - 1)), // zwei Wechsel je Welle
+            w = Math.sin(2 * Math.PI * ((Number.isFinite(t) ? t : 0) / P + p)),
+            d = Math.sin((Math.PI * STAND.wechselDauerS) / P);
+        return Math.max(-1, Math.min(1, w / d));
+    }
+    // die Gier des Kopfs des Stehenden zur Uhr t (rad, über dem Rumpf): die Fixation des Teils des Zyklus (`STAND.blick.rad`, je ein
+    // gleicher Teil), aus der vorigen gewendet im Kosinus-Bogen über `wende` s
+    function leibStandBlick(t) {
+        var B = STAND.blick,
+            n = B.rad.length,
+            x = leibStandPhase(t) * n,
+            k = Math.floor(x) % n,
+            u = ((x - Math.floor(x)) * STAND.zyklus) / n,
+            b = B.rad[k];
+        if (!(u < B.wende)) return b;
+        var a = B.rad[(k + n - 1) % n];
+        return a + (b - a) * (0.5 - 0.5 * Math.cos((Math.PI * u) / B.wende));
+    }
+    // DAS TUN EINES NAMENS (stand-lebt 3, der EINE Leser von `STAND.tun`): der Grund des Namens nennt die Arbeit der Hände, die Wörter
+    // des Satzes (leib-liest-satz, `LEIB_SATZ`) lesen sich mit — die Stufe einer Kunst greift im Takt ihres Gesetzes (`stufe.takt`: der
+    // Lehrling halb so oft, ganze Griffe je Zyklus), der Kranke rührt die Hände wie sein Grund (sein Delta trägt das Profil). → die Arme
+    // des Tuns (`STAND.arme`, je Name dasselbe Objekt) oder null
+    var _standTunMerk = Object.create(null);
+    function leibStandTun(name) {
+        if (typeof name !== "string") return null;
+        if (name in _standTunMerk) return _standTunMerk[name];
+        var teile = name.split(LEIB_SATZ.trenner),
+            A = STAND.arme[STAND.tun[teile[0]]] || null;
+        for (var i = 1; A && i < teile.length; i++)
+            for (var j = 0; j < LEIB_SATZ.stufe.length; j++)
+                if (LEIB_SATZ.stufe[j].wort === teile[i]) A = Object.freeze(Object.assign({}, A, { je: Math.max(1, Math.round(A.je * LEIB_SATZ.stufe[j].takt)) })); // prettier-ignore
+        return (_standTunMerk[name] = A);
+    }
+    // der Anteil, den die Arme des Tuns A zur Uhr t an der Seite s heben (0 … 1): ganze Takte je Zyklus wie die Geste
+    // (`leibGesteWert`), die rechte Seite um `GESTE.versatz` versetzt, der Ausschlag je Takt aus seiner Zahl im Zyklus
+    function leibTunWert(t, s, A) {
+        var x = leibStandPhase(t) * A.je + (s ? GESTE.versatz : 0),
+            n = Math.floor(x),
+            u = x - n;
+        if (!(u < A.hub)) return 0;
+        var h = Math.sin(((n % A.je) + 1) * 12.9898 + (s ? 78.233 : 0)) * 43758.5453,
+            b = Math.sin((Math.PI * u) / A.hub);
+        return (GESTE.ausschlag[0] + (GESTE.ausschlag[1] - GESTE.ausschlag[0]) * (h - Math.floor(h))) * b * b;
+    }
+    function leibStandAtem(mp, mref) {
+        var f = mp && mref && Number.isFinite(mp.freq) && mref.freq > 0 ? mp.freq / mref.freq : 1;
+        return Math.max(1, Math.round(STAND.atem * f));
+    }
+    // die Phase der Uhr t im Zyklus (0 … 1) und die Welle mit k ganzen Wellen je Zyklus, um den Anteil v versetzt
+    function leibStandPhase(t) {
+        var x = (Number.isFinite(t) ? t : 0) / STAND.zyklus;
+        return x - Math.floor(x);
+    }
+    function leibStandWelle(t, k, v) {
+        return Math.sin(2 * Math.PI * k * (leibStandPhase(t) + (v || 0)));
+    }
+    // die Zeilen, die ein ferner Leib zur Uhr t liest: [k0, k1, Anteil der k1] unter n Zeilen je Zyklus (nach `aus`, wenn gereicht)
+    // — und die Uhr der Zeile k: die Mitte ihres Teils des Zyklus (je Takt der Geste vier Zeilen, die erste ⅛ nach seinem Beginn, wo der
+    // Bogen 0,93 seiner Spitze hebt — die linke Seite in der ersten, die rechte in der dritten)
+    function leibStandZeile(t, n, aus) {
+        var f = leibStandPhase(t) * n - 0.5,
+            k = Math.floor(f),
+            z = aus || [0, 0, 0];
+        z[0] = (k + n) % n;
+        z[1] = (k + 1 + n) % n;
+        z[2] = f - k;
+        return z;
+    }
+    function leibStandZeit(k, n) {
+        return (STAND.zyklus * (k + 0.5)) / n;
+    }
     // die Seite s (0 links, 1 rechts) des Profils mp gegen mref trägt eine Geste: ihre Abspreizung vom Lot über dem Band der Ruhe
     function leibGeste(mp, mref, s) {
         if (!mp || !mref) return false;
@@ -8938,24 +9296,16 @@
         return (Number(mp[k]) || 0) - (Number(mref[k]) || 0) > (ARM_RUHE.spreizGrad[1] * Math.PI) / 180;
     }
     // der Anteil der Abspreizung, den die Geste zur Uhr t an der Seite s hebt (0 … 1): der Bogen in seinem Takt, der Ausschlag je
-    // Takt aus der Zahl des Takts (dieselbe Uhr, derselbe Ausschlag)
+    // Takt aus der Zahl des Takts im Zyklus des Stands (dieselbe Uhr, derselbe Ausschlag — nach `zyklus` dieselbe Geste)
     function leibGesteWert(t, s) {
-        var x = (Number.isFinite(t) ? t : 0) / GESTE.takt + (s ? GESTE.versatz : 0),
+        var je = Math.round(STAND.zyklus / GESTE.takt),
+            x = leibStandPhase(t) * je + (s ? GESTE.versatz : 0),
             n = Math.floor(x),
             u = x - n;
         if (!(u < GESTE.hub)) return 0;
-        var h = Math.sin((n + 1) * 12.9898 + (s ? 78.233 : 0)) * 43758.5453,
+        var h = Math.sin(((n % je) + 1) * 12.9898 + (s ? 78.233 : 0)) * 43758.5453,
             b = Math.sin((Math.PI * u) / GESTE.hub);
         return (GESTE.ausschlag[0] + (GESTE.ausschlag[1] - GESTE.ausschlag[0]) * (h - Math.floor(h))) * b * b;
-    }
-    // die Phase (0 … n−1) der Uhr t: die Zeile, die ein ferner Leib liest — und die Uhr der Zeile k (die Mitte ihrer Phase, je Zeile
-    // ein eigener Takt: ihr eigener Ausschlag)
-    function leibGestePhase(t, n) {
-        var x = (Number.isFinite(t) ? t : 0) / GESTE.takt;
-        return Math.min(n - 1, Math.floor((x - Math.floor(x)) * n));
-    }
-    function leibGesteZeit(k, n) {
-        return GESTE.takt * (k + (k + 0.5) / n);
     }
     // DIE POSE DES RIGS an Land (Ruhe ×(1−w) und Gehen ×w, beide additiv über der neutralen Pose `leibRigNeutral`): das
     // Kontrapost mit Atem und der Emotion als Daten-Delta (mp/mref die Profile des Wirts, kalt null), die Beine auf dem Ziel des
@@ -8966,7 +9316,9 @@
     // Ruhe (`r.armRuhe`: der Arm hängt am Rumpf, weiter innen liegt er IN ihm); der Kontrapost trägt die Arme nicht mehr nach innen.
     // Die Abspreizung eines Profils zählt vom Lot, die Ruhe ist ihr Boden (a-haltung, am Ende der Pose); über dem Band der Ruhe ist
     // sie eine Geste zur Uhr t (`leibGeste`).
-    function leibRigPose(r, t, walkPhase, isMoving, gait, mp, mref, M, Z, TC) {
+    // DER SATZ IM GANG (leib-liest-satz-2): `satz` die Pose des Satzes (`leibSatzPose`: der Kranke) — über dem Gang ×w, wie der Stand
+    // sie im Profil ×(1−w) trägt; der Kopf, das Knie und die Schulter des Kranken gelten bei jedem Gewicht des Gangs.
+    function leibRigPose(r, t, walkPhase, isMoving, gait, mp, mref, M, Z, TC, satz) {
         if (!Array.isArray(r.armRuhe)) throw new Error("leibRigPose: das Rig ohne die Ruhe seiner Arme (koerper leibRig) — fail-closed");
         var w = gait && Number.isFinite(gait.w) ? Math.max(0, Math.min(1, gait.w)) : isMoving ? 1 : 0;
         var amp = gait && Number.isFinite(gait.amp) ? Math.max(0.5, Math.min(1.6, gait.amp)) : 1;
@@ -8976,17 +9328,34 @@
         if (w < 0.999) {
             var wi = 1 - w;
             var bAmp = mp && mref && Number.isFinite(mp.breath) && mref.breath > 0 ? 0.02 * (mp.breath / mref.breath) : 0.02;
-            var bRate = mp && mref && Number.isFinite(mp.freq) && mref.freq > 0 ? 1.6 * (mp.freq / mref.freq) : 1.6;
-            var breath = Math.sin(t * bRate) * bAmp;
-            add(r.spine, "z", 0.1 * wi);
-            add(r.chest, "z", -0.06 * wi);
-            add(r.neck, "z", 0.05 * wi);
+            // (der Atem und das Schwanken in ganzen Wellen des Zyklus, `STAND` — der ferne Leib backt dieselben Wellen)
+            var breath = leibStandWelle(t, leibStandAtem(mp, mref)) * bAmp;
+            // DAS KONTRAPOST AUF DEM TRAGENDEN BEIN (stand-lebt 2, `leibStandBein`): die Pose des Labors (das rechte trägt) gespiegelt,
+            // sobald das Gewicht der Person hinüber wandert — das Spielbein beugt Hüfte und Knie, Rumpf, Brust und Hals neigen sich
+            // gegen das Becken, das Becken verlagert sich über das Standbein. Bis hier stand jeder Mensch zu jeder Zeit auf dem rechten.
+            // (stand-lebt 3) die Zeile des Satzes nennt ihr Bein (`r.standSeite`: 0 das rechte, 1 das linke), der Leib das seiner Person
+            var seite = r.standSeite,
+                sb = seite === 0 || seite === 1 ? 1 - 2 * seite : leibStandBein(t, r.standPerson),
+                fL = (1 + sb) / 2,
+                fR = (1 - sb) / 2;
+            add(r.spine, "z", 0.1 * sb * wi);
+            add(r.chest, "z", -0.06 * sb * wi);
+            add(r.neck, "z", 0.05 * sb * wi);
+            add(r.hips, "z", -STAND.verlagerungRad * sb * wi);
             add(r.spine, "x", (-0.02 + breath) * wi);
-            add(r.legL.hip, "x", 0.08 * wi);
-            add(r.legL.knee, "x", 0.16 * wi);
-            add(r.legR.knee, "x", 0.04 * wi);
-            add(r.armL.elbow, "x", -0.18 * wi);
-            add(r.armR.elbow, "x", -0.1 * wi);
+            add(r.legL.hip, "x", 0.08 * fL * wi);
+            add(r.legR.hip, "x", 0.08 * fR * wi);
+            add(r.legL.knee, "x", (0.16 * fL + 0.04 * fR) * wi);
+            add(r.legR.knee, "x", (0.16 * fR + 0.04 * fL) * wi);
+            // DIE ARME HÄNGEN (stand-lebt 3, `STAND.ruhe`): der Unterarm in der Mittelstellung, der Ellbogen leicht gebeugt (die Luft des
+            // Daumens trägt der Boden der Ruhe, unten) — bis hier hing die Bind-Pose (Handfläche vorn, Ellbogen 10° und 6°)
+            var RU = STAND.ruhe;
+            add(r.armL.elbow, "x", -RU.ellbogen * wi);
+            add(r.armR.elbow, "x", -RU.ellbogen * wi);
+            add(r.armL.elbow, "y", -RU.pronation * wi);
+            add(r.armR.elbow, "y", RU.pronation * wi);
+            // der Blick der Zeile (`leibStandBlick`): nur die gebackene Zeile trägt ihn — den nahen Kopf stellt der Wirt (`_bewohnerKopf`)
+            if (seite === 0 || seite === 1) add(r.head, "y", leibStandBlick(t) * wi);
             var kpMul = mp && Number.isFinite(Number(mp.kpMul)) ? Number(mp.kpMul) : 1;
             var dtK = r._kpmulT != null ? Math.max(0, Math.min(0.08, t - r._kpmulT)) : 0;
             r._kpmulT = t;
@@ -9014,8 +9383,8 @@
                 add(r.hips, "x", dX);
                 add(r.hips, "z", dZ);
                 var swayA = Number.isFinite(mp.sway) ? mp.sway : 0.022;
-                add(r.hips, "z", Math.sin(t * 1.1) * swayA * wi);
-                add(r.hips, "x", Math.sin(t * 0.7) * swayA * 0.35 * wi);
+                add(r.hips, "z", leibStandWelle(t, STAND.schwanken[0]) * swayA * wi);
+                add(r.hips, "x", leibStandWelle(t, STAND.schwanken[1], 0.125) * swayA * 0.35 * wi);
             }
         }
         var S = w > 0.001 && gait && gait.S > 0 ? gait.S : 0;
@@ -9109,6 +9478,15 @@
             add(r.spine, "z", 0.05 * sw * wa);
             add(r.spine, "y", 0.07 * sw * wa);
             add(r.chest, "y", -0.06 * sw * wa);
+            if (satz)
+                for (var si = 0; si < MOTION_RIG_MAP.length; si++) {
+                    var sr = MOTION_RIG_MAP[si],
+                        sd = satz[sr.key];
+                    if (!sd) continue;
+                    var sg = sr.bone.split("."),
+                        sb = sg.length === 2 ? r[sg[0]] && r[sg[0]][sg[1]] : r[sg[0]];
+                    if (sb && sb.rotation) sb.rotation[sr.axis] += sd * sr.mul * w;
+                }
         }
         // DIE RUHE IST DER BODEN, KEIN SOCKEL (a-haltung): die Abspreizung, die ein Profil der Schulter gibt (MOTION_RIG_MAP armL /
         // armR gegen das Labor-idle — das einzige Delta an ihrer z-Achse), nennt ihren Winkel vom LOT: so hing der Arm im Labor, als
@@ -9125,8 +9503,26 @@
             lot = r.armLot || (r.armLot = []);
         lot[0] = sL && uL ? (sL.rotation.z - uL[2]) * (leibGeste(mp, mref, 0) ? leibGesteWert(t, 0) : 1) : 0;
         lot[1] = sR && uR ? (sR.rotation.z - uR[2]) * (leibGeste(mp, mref, 1) ? leibGesteWert(t, 1) : 1) : 0;
-        if (sL && uL) sL.rotation.z = Math.max(uL[2], lot[0]);
-        if (sR && uR) sR.rotation.z = Math.min(uR[2], lot[1]);
+        // (stand-lebt 3) im Stand hält der Boden die Luft des Daumens der Mittelstellung, wo die Hand vor dem Schenkel hängt
+        // (`STAND.ruhe.daumen` am Lot, bis `daumenBis` linear zu 0; × der Anteil des Stands)
+        var RD = STAND.ruhe,
+            dau = function (u) {
+                return w < 0.999 ? RD.daumen * Math.max(0, 1 - Math.abs(u) / RD.daumenBis) * (1 - w) : 0;
+            };
+        if (sL && uL) sL.rotation.z = Math.max(uL[2] + dau(uL[2]), lot[0]);
+        if (sR && uR) sR.rotation.z = Math.min(uR[2] - dau(uR[2]), lot[1]);
+        // DIE ARME DES TUNS (stand-lebt 2, `STAND.tun`/`arme`): wer steht, rührt die Hände nach dem, was er tut (`r.standTun`, der
+        // Wirt setzt es aus dem Profil seines Stands, `_animateHumanoidRig`) — die Schulter beugt sich vor, der Ellbogen hebt den
+        // Unterarm, je Seite im eigenen Takt; im Gehen tragen die Arme den Gang
+        var AT = w < 0.999 && r.standTun && r.standTun.je > 0 ? r.standTun : null;
+        if (AT)
+            for (var si = 0; si < 2; si++) {
+                var arm = si ? r.armR : r.armL,
+                    hb = leibTunWert(t, si, AT) * (1 - w);
+                if (!hb || !arm) continue;
+                add(arm.shoulder, "x", -AT.schulter * hb);
+                add(arm.elbow, "x", -AT.ellbogen * hb);
+            }
         if (r.hips) {
             if (r._baseHipY == null) r._baseHipY = r.hips.position.y;
             r.hips.position.y = r._baseHipY - r._gangSenke * w;
@@ -11644,10 +12040,19 @@
         tagesZiel: tagesZiel,
         tagesZug: tagesZug,
         tagesHaltung: tagesHaltung,
+        // rollen-des-tages — die Tat der Rolle: das Revier der Streife, die Haushalte mit Jäger, die Beute des Tags (Leser: _bewohnerListe, _bewohnerBeute)
+        tagesStreife: tagesStreife,
+        tagesJagdHaushalte: tagesJagdHaushalte,
+        tagesJagdWahl: tagesJagdWahl,
+        tagesBeute: tagesBeute,
         // leib-liest-satz — DER LEIB LIEST SEINEN SATZ (Leser: _bewohnerGemuet, _koerperMotionProfile, _bewohnerStaende, _bewohnerTracht)
         LEIB_SATZ: LEIB_SATZ,
         leibSatzProfil: leibSatzProfil,
         leibSatzNamen: leibSatzNamen,
+        // leib-liest-satz-2 — DER GANG LIEST DEN SATZ (Leser: _animateHumanoidRig → leibRigPose, _bewohnerGang, _bewohnerGangPose)
+        leibSatzPose: leibSatzPose,
+        leibSatzTempo: leibSatzTempo,
+        leibSatzBand: leibSatzBand,
         trachtSoll: trachtSoll,
         trachtClo: trachtClo,
         trachtDesTags: trachtDesTags,
@@ -11741,9 +12146,15 @@
         leibRigNeutral: leibRigNeutral,
         leibRigEingeschwungen: leibRigEingeschwungen,
         GESTE: GESTE,
+        STAND: STAND,
+        leibStandBein: leibStandBein,
+        leibStandBlick: leibStandBlick,
+        leibStandTun: leibStandTun,
+        leibTunWert: leibTunWert,
         leibGeste: leibGeste,
-        leibGestePhase: leibGestePhase,
-        leibGesteZeit: leibGesteZeit,
+        leibStandAtem: leibStandAtem,
+        leibStandZeile: leibStandZeile,
+        leibStandZeit: leibStandZeit,
         leibRigPose: leibRigPose,
         leibKette: leibKette,
         leibSohle: leibSohle,

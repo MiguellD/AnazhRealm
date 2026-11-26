@@ -1030,8 +1030,8 @@ async function gtDorfweg(v2, anker, sek) {
     return res;
 }
 
-// DIE WÜRFE DES FELDS WEICHEN DEM ORT: jede Art, die das Affinitäts-Feld wirft (Wald, Fels, Geode und die Feuerstelle
-// des Glut-Felds), weicht dem Ort wie die Natur — sie sperrt der Ort-Wahl keinen Grund (`_bauFrei`, die Wand der Wahl und der
+// DIE WÜRFE DES FELDS WEICHEN DEM ORT: jede Art, die das Affinitäts-Feld wirft (Wald, Fels, Geode — die Feuerstelle
+// setzt der Mensch, nie das Feld), weicht dem Ort wie die Natur — sie sperrt der Ort-Wahl keinen Grund (`_bauFrei`, die Wand der Wahl und der
 // Slot-Quelle), der Grundriss eines Hauses räumt sie (`_grundrissRaeumen`), der Weg des Dorfs auch (`_naturRaeumen`).
 // C-K5b DER VORRAT JE ZELLE (Karte vorrat-pingpong): am Mess-Ort `dorf` liegen zwei Zellen im Vorlauf-Ring. Der Zug läuft je
 // Gang einen Takt, bis 20 Gänge nichts unterwegs ist und kein Export beginnt, dann 150 Gänge Ruhe; gezählt werden die Bereitungen
@@ -1117,9 +1117,11 @@ async function vorratAmDorf(messort, alt) {
 }
 // Je Art ein Wurf an einem
 // freien Ort (die Wand in jeder Höhe der Platte: im Hang liegt die Platte tiefer als der Wurf), in der Mitte eines Hauses
-// und auf dem Weg. DAS WERK DERSELBEN ART weicht nie: die Feuerstelle des Satzes oder des Bau-Modus ist Bau (sie sperrt den
-// Grund, kein Grundriss und kein Weg räumt sie) — es entscheidet die HERKUNFT (die Marke `feldWurf`, die nur der Wurf des
-// Felds trägt: `_enqueueVegetationSpawn`), nie die Art. `defekt` ist der Selbst-Schein: "bau" — die Feuerstelle gilt wieder als Bau (der Wurf
+// und auf dem Weg. DAS WERK DERSELBEN ART weicht nie: der Stein des Satzes oder des Bau-Modus ist Werk (er sperrt den
+// Grund, kein Grundriss und kein Weg räumt ihn) — es entscheidet die HERKUNFT (die Marke `feldWurf`, die nur der Wurf des
+// Felds trägt: `_enqueueVegetationSpawn`), nie die Art. Das Feld wirft seit landmarken-geologie keinen Bau mehr (die Feuerstelle
+// setzt der Mensch, `FELD_WURF`); einen Bau mit der Marke trägt noch der AKT des Felds (der Nexus, `autonomous`) — ihn wirft der
+// Selbst-Schein als Probe. `defekt` ist der Selbst-Schein: "bau" — der Bau mit der Marke gilt wieder als Bau (der Wurf
 // MUSS sperren); "art" — die Art entscheidet (das Werk MUSS weichen).
 // Läuft im Browser (page.evaluate) — selbstgenügsam.
 function feldWurfImOrt(anker, defekt) {
@@ -1136,10 +1138,11 @@ function feldWurfImOrt(anker, defekt) {
         "baum_karst",
         "stein_block",
         "kristall_geode",
-        "glutbrunnen",
     ];
     res.arten = LISTE.length;
     res.quelle = Array.isArray(A.FELD_WURF) && A.FELD_WURF.join() === LISTE.join();
+    // die Probe des Selbst-Scheins "bau": die Feuerstelle als Akt des Felds (ein Bau mit der Marke des Wurfs)
+    const WURF = defekt === "bau" ? LISTE.concat(["glutbrunnen"]) : LISTE;
     if (defekt === "bau")
         r._weichtDemBau = function (e) {
             return this._istNatur(e);
@@ -1159,7 +1162,7 @@ function feldWurfImOrt(anker, defekt) {
         r._wildnisTraegt = () => true;
         r._vegSpawnImmediate = true;
         try {
-            r._enqueueVegetationSpawn("glutbrunnen", { x: anker.x, y: 0, z: anker.z }, { silent: true, seed: 4711 });
+            r._enqueueVegetationSpawn("stein_block", { x: anker.x, y: 0, z: anker.z }, { silent: true, seed: 4711 });
         } finally {
             delete r._naturSetzen; // die Methoden des Prototyps gelten wieder
             delete r._wildnisTraegt;
@@ -1187,7 +1190,7 @@ function feldWurfImOrt(anker, defekt) {
             r._landAt(x, z, 0.2) &&
             r._landAt(x + 2, z + 2, 0.2) &&
             r._landAt(x - 2, z - 2, 0.2) &&
-            !LISTE.some((t) => r._werkImWasser(t, { x, z }, {}, 4711));
+            !WURF.some((t) => r._werkImWasser(t, { x, z }, {}, 4711));
         // ein Punkt des Wegs (keine Grundriss-Fläche binnen 3 m) und ein freier Ort (kein Grundriss, kein Bau binnen 4 m)
         let weg = null;
         let frei = null;
@@ -1238,7 +1241,7 @@ function feldWurfImOrt(anker, defekt) {
             if (wo.length) res.werk.weicht.push(`${t} (${wo.join(" · ")})`);
             for (const e of [w1, w2, w3]) if (e && steht(e)) r.removeArchitecture(e);
         }
-        for (const t of LISTE) {
+        for (const t of WURF) {
             const e1 = wirf(t, frei.x, frei.z, "frei");
             if (e1 && !r._bauFrei(frei.x, frei.z, 0, box, null, -Infinity)) res.sperrt.push(t);
             if (e1) r.removeArchitecture(e1);
@@ -4713,7 +4716,7 @@ hauptLauf(async () => {
     );
     check(
         // und bleibt im Grundriss: die Linse sieht den Täter
-        "O Auto-Dorf: Selbst-Schein — die Feuerstelle als Bau sperrt den Grund",
+        "O Auto-Dorf: Selbst-Schein — der Akt des Felds als Bau sperrt den Grund",
         !FWd.err && FWd.sperrt.includes("glutbrunnen") && FWd.grundriss.includes("glutbrunnen"),
         FWd.err
             ? FWd.err.split("\n")[0]
@@ -4730,8 +4733,8 @@ hauptLauf(async () => {
     );
     check(
         // die Linse sieht den Täter
-        "O Auto-Dorf: Selbst-Schein — entscheidet die Art, weicht die Feuerstelle des Menschen",
-        !FWa.err && FWa.werk.weicht.some((w) => w.startsWith("glutbrunnen")),
+        "O Auto-Dorf: Selbst-Schein — entscheidet die Art, weicht der Stein des Menschen",
+        !FWa.err && FWa.werk.weicht.some((w) => w.startsWith("stein_block")),
         FWa.err ? FWa.err.split("\n")[0] : `weicht als Werk: ${FWa.werk.weicht.join(", ") || "—"}`
     );
     console.log("\n=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===");

@@ -198,8 +198,12 @@ async function menschBuehnen() {
                     // der Wirt die Orte eines Menschen stellt), einmal je Stunde der Wende (`tagAb`, `_bewohnerZiel`, gleich ab
                     // wo gesucht) — der Tag misst ≥ 24 Spielstunden, die Wende an seinem Rand zählt einmal; Beiseitetreten
                     // (`_bewohnerPlatz`), der Weg zurück und der gerückte Stand wechseln kein Ziel
-                    if (b.ziel !== sp.ziel && ab(sp.ziel, b.ziel) >= A.BEWOHNER.gangM) sp.n.add(((b.tagAb + 24) % 24).toFixed(4)); // prettier-ignore
-                    sp.ziel = b.ziel;
+                    // (die Runde der Wache ist Weg IM Werk — koerper TAGES_GESETZ.zeitArt streife „arbeit“, HETUS 2008: „travel
+                    // during main job“ —: der Schritt vom Posten in die Runde, von Punkt zu Punkt und zurück wechselt kein Ziel des
+                    // Tags; der Gang von daheim zum ersten Punkt bleibt ein Weg, rollen-des-tages)
+                    const runde = b.akt === "streife" ? sp.akt === "streife" || sp.akt === "arbeit" : sp.akt === "streife" && b.akt === "arbeit"; // prettier-ignore
+                    if (b.ziel !== sp.ziel && !runde && ab(sp.ziel, b.ziel) >= A.BEWOHNER.gangM) sp.n.add(((b.tagAb + 24) % 24).toFixed(4)); // prettier-ignore
+                    [sp.ziel, sp.akt] = [b.ziel, b.akt];
                     // (am Steuer gehört der Leib dem Wagen: ob er steckt, urteilt der Verkehr — gate:fahr-leben VK `fest`)
                     const da =
                         b.amSteuer || (b.drinnen ? !b.hinaus : !b.ziel || (!b.drinnenSoll && ab(P, b.ziel) < 1.5));
@@ -492,11 +496,13 @@ async function menschBuehnen() {
         // DAS KÖNNEN IM GANG (mensch-zahlen, koerper `leibKoennen`): je Bewohner das Tempo seines Gangs gegen das Gesetz (tetrapoda
         // koerper `leibGehen` an seinem Bein × `lauf` seines Könnens aus den Dials seines Genoms und seinem Alter)
         // und im Gang-Fenster das Tempo, das er wirklich geht (Weg ÷ Geh-Zeit, ≥ 5 s am Stück des Fensters): wer mehr kann,
-        // kommt weiter — die Rang-Korrelation Können ↔ gegangenes Tempo über die Geher
-        // Täter (Selbsttest): der Stand vor dem Gesetz — jeder geht das Tempo seines Beins
+        // kommt weiter — die Rang-Korrelation Können ↔ gegangenes Tempo über die Geher. Das Gesetz trägt sein Satz (`leibSatzTempo`:
+        // der Kranke), sein EINER Schreiber ist `_bewohnerGang` (Geburt und Kante des Satzes, leib-liest-satz-2)
+        // Täter (Selbsttest): der Stand vor dem Gesetz — jeder geht das Tempo seines Beins (am EINEN Schreiber: die Geburt allein
+        // zu decken, sah die Kante des Satzes nicht — sie schrieb das Gesetz zurück, der Täter blieb unsichtbar)
         if (hat("bewohner-koennen")) {
-            for (const b of liste) b.tempo = b.tempoBand;
-            decke("_bewohnerGeburt", (alt) => (S2, b) => (alt.call(r, S2, b), b.tempoBand > 0 && (b.tempo = b.tempoBand), undefined)); // prettier-ignore
+            decke("_bewohnerGang", (alt) => (b) => (alt.call(r, b), b.tempoBand > 0 && (b[b.gangTempo != null ? "gangTempo" : "tempo"] = b.tempoBand), undefined)); // prettier-ignore
+            for (const b of liste) r._bewohnerGang(b);
         }
         // DAHEIM AM WERK (mensch-zahlen, der Griff von `binden`): wessen Werk sein eigenes Haus ist (Beruf = Rolle, kein Posten),
         // der trägt den Stand seines Werks nie als Abend oder Tisch — der Abend daheim sitzt vor der Tür, der Tisch daheim ist
@@ -535,9 +541,10 @@ async function menschBuehnen() {
                 },
                 zahl: () => {
                     const ohne = liste.filter((b) => {
-                        if (!b.koennen || !(b.tempo > 0)) return true;
+                        const v = b.gangTempo != null ? b.gangTempo : b.tempo; // (das Tempo seines Gangs, nicht das geliehene des Laufs)
+                        if (!b.koennen || !(v > 0)) return true;
                         const d = Object.assign({}, r._dialsAusGenom(b.genom), { age: b.genom.alter });
-                        return Math.abs(b.tempo - KC.leibGehen(b.beinL) * KC.leibKoennen(d).lauf) > 1e-9;
+                        return Math.abs(v - KC.leibSatzTempo(KC.leibGehen(b.beinL) * KC.leibKoennen(d).lauf, b)) > 1e-9;
                     });
                     const [ra, rb, m] = [rang(paare.map((q) => q[0])), rang(paare.map((q) => q[1])), (paare.length - 1) / 2];
                     let [sab, sa, sb] = [0, 0, 0];
@@ -656,7 +663,7 @@ async function menschBuehnen() {
         // Gewicht, wie der Knoten `_gangSatzKnoten`), und der Pose des nahen Wegs (`_animateHuman` mit SEINEM Gemüt an einem Leib
         // mit Rig, auf die Vorlage gelegt wie das Backen, `_bewohnerRaumStellen`), an Schulter und Ellbogen beider Arme. Bis hier
         // buk der Satz EINEN Stand ohne Haltung: beim Akt besuch sprang die Schulter an der Nah-Grenze um 8,2°.
-        const haltung = { n: 0, mit: 0, maxGrad: 0, wer: "", je: {}, ruheGrad: 0 };
+        const haltung = { n: 0, mit: 0, maxGrad: 0, wer: "", je: {}, ruheGrad: 0, zwischen: {}, zwischenGrad: 0, zwischenWer: "" };
         const haltungMessen = () => {
             const Z = S.satz;
             const modell = liste.find((b) => b.leib && b.leib.userData.rig && !b.amSteuer && !b.backt);
@@ -682,9 +689,24 @@ async function menschBuehnen() {
                 const o = A._gangOrt(Z, zeile, p);
                 return mB.set(D[o], D[o + 1], D[o + 2], D[o + 3], D[o + 4], D[o + 5], D[o + 6], D[o + 7], D[o + 8], D[o + 9], D[o + 10], D[o + 11], 0, 0, 0, 1).decompose(p3, q, s3); // prettier-ignore
             };
-            // (der Stand einer Geste zur Uhr seiner Zeile, `_bewohnerStandZeit` — a-haltung 2; jeder andere bei 0; eingeschwungen wie das
-            // Backen, `leibRigEingeschwungen`)
-            const pose = (gm, je, t = 0) => {
+            // DIE ZEILEN, DIE SEINE INSTANZ LIEST (stand-lebt, wie der Knoten `_gangSatzKnoten`): die Zeile `hs` und die nächste
+            // ihres Zyklus (`STAND.zeilen` je Stand und tragendem Bein), gemischt im Anteil `an` (`aGang.w`)
+            const KC = window.__koerperCore;
+            const [NZ, ZY] = [KC.STAND.zeilen, KC.STAND.zyklus];
+            const qC = new T.Quaternion();
+            const liesStand = (hs, an, p, q) => {
+                const k = hs % NZ;
+                lies(Z.n * Z.baender + hs, p, q);
+                if (!(an > 0)) return q;
+                lies(Z.n * Z.baender + hs - k + ((k + 1) % NZ), p, qC);
+                const v = q.dot(qC) < 0 ? -1 : 1;
+                return q.set(q.x + (v * qC.x - q.x) * an, q.y + (v * qC.y - q.y) * an, q.z + (v * qC.z - q.z) * an, q.w + (v * qC.w - q.w) * an).normalize(); // prettier-ignore
+            };
+            // (die Pose des nahen Wegs zur Uhr t für die Person `person` — ihr Gewichtswechsel, `rig.standPerson` wie im Takt,
+            // `_tickBewohner`; ohne Person nennt das Gemüt der Zeile ihr Bein, wie der Ofen backt —, eingeschwungen wie das Backen,
+            // `leibRigEingeschwungen`)
+            const pose = (gm, je, t = 0, person = undefined) => {
+                rig.standPerson = person;
                 window.__koerperCore.leibRigEingeschwungen(g.userData.rig);
                 r._animateHuman(g, t, 0, false, false, gm);
                 r._leibMatrix(g);
@@ -699,40 +721,77 @@ async function menschBuehnen() {
                     je(p, qA);
                 });
             };
-            pose(null, (p, q) => {
-                nahe0.set(p, q.clone());
-                lies(Z.n * Z.baender, p, qB);
-                satz0.set(p, qB.clone());
-                // DIE KÖRPER-RUHE (gemessen, nie geurteilt): der neutrale Stand des Modells gegen den des Satzes — die Arme hängen am
-                // Leib nach SEINEM Bau (koerper `leibBauArme`), im Satz nach dem der Vorlage
-                haltung.ruheGrad = Math.max(haltung.ruheGrad, q3(winkel(q, qB)));
-            });
+            // (der neutrale Bezug zu den Bedingungen der Zeile 0, wie der Ofen sie backt, `_bewohnerGangPose`: ihr Gemüt nennt ihr
+            // Bein, ihre Uhr die Mitte ihres Teils des Zyklus — bis mittag-heiler stand das Modell hier ohne Gemüt zur Uhr 0 auf dem
+            // Bein SEINER Person, und die Körper-Ruhe trug das fremde Bein mit: 2,27°)
+            pose(
+                r._bewohnerStandGemuet(0),
+                (p, q) => {
+                    nahe0.set(p, q.clone());
+                    lies(Z.n * Z.baender, p, qB);
+                    satz0.set(p, qB.clone());
+                    // DIE KÖRPER-RUHE (gemessen, nie geurteilt): der neutrale Stand des Modells gegen den des Satzes — die Arme hängen
+                    // am Leib nach SEINEM Bau (koerper `leibBauArme`), im Satz nach dem der Vorlage
+                    haltung.ruheGrad = Math.max(haltung.ruheGrad, q3(winkel(q, qB)));
+                },
+                r._bewohnerStandZeit(0)
+            );
             const neutral = A.MOTION_PROFILE_MAP.koerper.idle;
             for (const b of liste) {
                 if (!b.leib || b.leib.userData._satz !== true || b.weg || b._gaitW > 0 || b.drinnen) continue;
                 if (!b.satzOrt || !(b.satzOrt[1] >= 0)) continue;
                 const gm = r._bewohnerGemuet(b);
                 const name = r._koerperMotionName(false, gm);
-                const h = Math.floor(aG.getY(b.satzOrt[1]) / 2);
-                const zeile = Z.n * Z.baender + h;
+                // WAS ER JETZT LIEST, GEGEN DAS, WAS SEIN NAHER LEIB JETZT STELLT (mittag-heiler, stand-lebt 3): im Satz die Zeile
+                // und der Anteil SEINER Instanz (der Täter bleibt wirksam), nah der EINE Weg des Spiels für IHN — sein Gemüt, seine
+                // Person (`atem / 10`: ihr tragendes Bein, koerper `leibStandBein`) zur Uhr, die seine Instanz zeigt (die Uhr ihrer
+                // Zeile samt Anteil, `leibStandZeile` — die letzte an seiner Uhr `uhr + atem`: der Satz rückt im Takt des Stands,
+                // `_bewohnerStandTakt`). Bis hier stand das Modell zur Uhr der Zeile auf dem Bein seiner EIGENEN Person: jeder Stand
+                // lag über 1° (idle 2,271° = die Körper-Ruhe), sobald die Zeilen ihr tragendes Bein nannten
+                const hs = Math.floor(aG.getY(b.satzOrt[1]) / 2);
+                const an = aG.getW(b.satzOrt[1]) - Math.floor(aG.getW(b.satzOrt[1]));
+                const u = (b.uhr || 0) + (b.atem || 0);
+                let dU = (((u - (ZY * ((hs % NZ) + 0.5 + an)) / NZ) % ZY) + ZY) % ZY;
+                if (dU > ZY / 2) dU -= ZY;
+                const person = (b.atem || 0) / 10;
+                // (im Wechsel des Gewichts gleitet der nahe Leib eine `wechselDauerS` lang, der ferne wechselt im Schritt einer Zeile)
+                const uZ = u - dU - (ZY * an) / NZ;
+                const imWechsel = Math.abs(KC.leibStandBein(uZ, person)) < 1 || Math.abs(KC.leibStandBein(u - dU, person)) < 1;
                 // die Haltung als Drehung GEGEN den neutralen Stand — am nahen Weg und im Satz dieselbe (die Körper-Ruhe fällt heraus)
-                let grad = 0;
-                pose(
-                    gm,
-                    (p, q) => {
-                        lies(zeile, p, qB);
-                        const dN = q.clone().normalize().multiply(nahe0.get(p).clone().normalize().invert());
-                        const dS = qB.clone().normalize().multiply(satz0.get(p).clone().normalize().invert());
-                        grad = Math.max(grad, winkel(dN, dS));
-                    },
-                    r._bewohnerStandZeit(h)
-                );
+                const gegen = (t, a) => {
+                    let grad = 0;
+                    pose(
+                        gm,
+                        (p, q) => {
+                            liesStand(hs, a, p, qB);
+                            const dN = q.clone().normalize().multiply(nahe0.get(p).clone().normalize().invert());
+                            const dS = qB.clone().normalize().multiply(satz0.get(p).clone().normalize().invert());
+                            grad = Math.max(grad, winkel(dN, dS));
+                        },
+                        t,
+                        person
+                    );
+                    return grad;
+                };
+                // DAS URTEIL AN DER ZEILE (zur Uhr ihrer Mitte: was der Ofen buk, gegen den nahen Weg für IHN) — und GEMESSEN, was
+                // zwischen zwei Zeilen steht (sein Anteil jetzt): der Satz mischt `STAND.zeilen` Zeilen je Zyklus gerade, der nahe
+                // Leib fährt den Bogen seiner Geste (koerper `leibTunWert`, `leibGesteWert`)
+                const [grad, zw] = [gegen(uZ, 0), an > 0 ? gegen(u - dU, an) : 0];
                 haltung.n++;
                 if (name !== neutral) haltung.mit++;
+                if (imWechsel) {
+                    haltung.wechsel = (haltung.wechsel || 0) + 1;
+                    haltung.wechselGrad = Math.max(haltung.wechselGrad || 0, q3(Math.max(grad, zw)));
+                    continue;
+                }
+                haltung.verzugS = Math.max(haltung.verzugS || 0, q3(Math.abs(dU)));
                 haltung.je[name] = Math.max(haltung.je[name] || 0, q3(grad));
+                haltung.zwischen[name] = Math.max(haltung.zwischen[name] || 0, q3(zw));
+                if (zw > haltung.zwischenGrad) [haltung.zwischenGrad, haltung.zwischenWer] = [q3(zw), `${wer(b)} (${b.akt}: ${name})`];
                 if (grad > haltung.maxGrad) [haltung.maxGrad, haltung.wer] = [q3(grad), `${wer(b)} (${b.akt}: ${name})`];
             }
             // das Modell steht wieder in seiner eigenen Pose
+            rig.standPerson = modell.atem / 10;
             r._animateHuman(g, modell.uhr + modell.atem, modell.walkPhase || 0, !!modell.weg, false, r._bewohnerGemuet(modell), modell._gait); // prettier-ignore
             r._leibMatrix(g);
         };
@@ -1078,7 +1137,7 @@ async function menschBuehnen() {
             const ueberWer = [...new Set(ueber.map((u) => u.split(" um ")[0]))];
             return { n, maxM: q3(maxM), ueberN: ueber.length, ueber: ueber.slice(0, 5), weitester: weit ? `${weit}: ${je.get(weit).join(" · ")}` : null, ueberJe: ueberWer.map((id) => `${id}: ${je.get(id).join(" · ")}`), gesucht: engWer ? [...je].filter(([id]) => id.includes(engWer)).map(([id, z]) => `${id}: ${z.join(" · ")}`) : undefined }; // prettier-ignore
         };
-        if (eng) return { nur: "wiederkehr", wiederkehr: await wiederkehr(), gestalt: engMit === "gestalt" ? gestalt : undefined };
+        if (eng) return { nur: "wiederkehr", wiederkehr: await wiederkehr(), gestalt: engMit === "gestalt" ? gestalt : undefined, haltung: engMit === "haltung" ? haltung : undefined }; // prettier-ignore
         // Täter (Selbsttest) im eigenen Fenster nach dem Tag: der Teleport an den Soll-Ort, eine Spielstunde nach der Ankunft
         // um 7 Uhr, mit eigenem Messer
         if (hat("bewohner-sprung")) {
@@ -1141,7 +1200,8 @@ async function menschBuehnen() {
     // Vorbeigang und zwei Gänge ohne Erinnerung (der dritte die Gegenprobe), dann schlägt der Spieler ein Wesen 5 m neben ihm
     // (`damageCreature`, Quelle Spieler) — der Zeuge weicht (`_bewohnerWeichen`, kollektiv#1): sein Stand liegt im Kreis der Tat;
     // steht er wieder, steht er weiter von ihr als sein alter Stand (`fort`), und der vierte Gang geht durch den Stand, den er jetzt hat.
-    // Täter (Selbsttest, EIN Lauf): der starre Kopf · wer steht, macht keinen Platz · der Zeuge vergisst · der Zeuge bleibt stehen.
+    // Täter (Selbsttest, EIN Lauf): der starre Kopf · kein Reiz (der Blick folgt dem Bewegten nicht) · wer steht, macht keinen Platz ·
+    // der Zeuge vergisst · der Zeuge bleibt stehen.
     await buehne("begegnung", async (restore) => {
         const [dt, tag0] = [1 / 60, s.timeOfDay];
         const S = await startDorf(restore);
@@ -1258,7 +1318,10 @@ async function menschBuehnen() {
                 const d = ab(pm, g.position);
                 z.dMin = Math.min(z.dMin, Math.round(d * 1000) / 1000);
                 z.beruehrt += S.liste.filter((o) => !o.drinnen && ab(pm, o.leib.position) < 2 * A.PLAYER_WALL_RADIUS).length; // prettier-ignore
-                if (e === null && d <= A.BEWOHNER.begegnungM) [e, z.amEreignis] = [t, Math.round(gier())];
+                // am Ereignis: der Kopf neben dem Spieler (`amEreignis`) und der Spieler neben dem LEIB des Zeugen (`seitEreignis`:
+                // der Vorbeigang kommt von der Seite — der Leib wendet sich dem Reiz nicht zu, `_bewohnerKopf`)
+                if (e === null && d <= A.BEWOHNER.begegnungM)
+                    [e, z.amEreignis, z.seitEreignis] = [t, Math.round(gier()), Math.round(Math.abs(grad(wrap(Math.atan2(pm.x - g.position.x, pm.z - g.position.z) - g.rotation.y))))]; // prettier-ignore
                 if (e !== null && z.zuS === null && traegt() && gier() <= 10)
                     [z.zuS, z.imBild] = [Math.round((t - e) * 1000) / 1000, !!b.nah && (!echt || (g.visible && imBlick(kopf()[12], kopf()[13], kopf()[14])))]; // prettier-ignore
             }
@@ -1312,6 +1375,7 @@ async function menschBuehnen() {
             const je = (k) => G.map((x) => x[k]);
             return {
                 ...{ wer: wer(b), furcht, zuS: je("zuS"), amEreignis: G[0].amEreignis, begegnungM: A.BEWOHNER.begegnungM },
+                ...{ seitEreignis: G[0].seitEreignis, augeNurGrad: +grad(A.BEWOHNER.augeNurRad).toFixed(1), reizM: A.BEWOHNER.reizM },
                 ...{ imBild: je("imBild"), dMin: je("dMin"), beruehrt: je("beruehrt"), fort },
                 weichOrt: W4 ? [+W4.x.toFixed(1), +W4.z.toFixed(1)] : null,
             };
@@ -1320,6 +1384,7 @@ async function menschBuehnen() {
         const sicht = {};
         for (const [t, name] of Object.entries({
             "begegnung-starr": "_bewohnerKopf",
+            "begegnung-reizlos": "_bewohnerReiz",
             "begegnung-steht": "_bewohnerPlatz",
             "begegnung-vergessen": "_bewohnerZeuge",
             "begegnung-bleibt": "_bewohnerWeichen",
@@ -1419,7 +1484,7 @@ function menschUrteil(name, z, soll) {
         const ht = z.haltung || { n: 0, mit: 0, maxGrad: "ungemessen", wer: "", je: {} };
         soll(
             ht.n >= 10 && ht.mit >= 3 && ht.maxGrad <= 1,
-            `die Haltung des Stands im Satz: ${ht.maxGrad}° zum nahen Leib an ${ht.wer || "—"} (Soll ≤ 1°; ${ht.n} Stehende, ${ht.mit} mit Haltung, die Körper-Ruhe des Mess-Leibs ${ht.ruheGrad}°; je Stand ${Object.entries(ht.je).map(([k, v]) => `${k} ${v}°`).join(" · ")})`
+            `die Haltung des Stands im Satz: ${ht.maxGrad}° zum nahen Leib an ${ht.wer || "—"} (Soll ≤ 1°; ${ht.n} Stehende, ${ht.mit} mit Haltung, die Körper-Ruhe des Mess-Leibs ${ht.ruheGrad}°; je Stand an der Zeile ${Object.entries(ht.je).map(([k, v]) => `${k} ${v}°`).join(" · ")}; gemessen zwischen zwei Zeilen ${ht.zwischenGrad}° an ${ht.zwischenWer || "—"} — ${Object.entries(ht.zwischen || {}).map(([k, v]) => `${k} ${v}°`).join(" · ")}; im Wechsel des Gewichts ${ht.wechsel || 0} Stehende, ${ht.wechselGrad || 0}°; der Satz hinter der Uhr ≤ ${ht.verzugS || 0} s)`
         );
         const gs = z.gestalt || { n: 0, gestalten: 0, max: "ungemessen", wer: "", mass: "", je: [] };
         // das Soll: 5 % je Maß — die Welt der Linse (Pullover) hält es (9a1552f3: Schulter 2,4 · Taille 2,0 · Hüfte 3,8 %, 73 im
@@ -1443,7 +1508,7 @@ function menschUrteil(name, z, soll) {
         soll(z.huellen === z.haeuser, `${z.haeuser - z.huellen} Häuser ohne Hülle`);
     }
     // DIE BEGEGNUNG (mensch.K5 Staffel 1): je Gang (der Vorbeigang 2 m daneben, drei durch seinen Stand) der Kopf auf 10° zum
-    // Spieler ≤ 0,5 s ab 3 m (als Leib, im Fenster im Bild), kein Bewohner näher als zwei Kapseln; die Gewalt neben ihm weitet
+    // Spieler ≤ 0,5 s ab 3 m (als Leib, im Fenster im Bild), der Blick folgt dem Reiz, kein Bewohner näher als zwei Kapseln; die Gewalt neben ihm weitet
     // den Abstand des vierten Gangs um ≥ 0,3 m, die Gegenprobe ohne Erinnerung bleibt auf 0,15 m beim zweiten; nach der Gewalt WEICHT
     // der Zeuge (`_bewohnerWeichen`): steht er wieder, steht er ≥ begegnungM weiter von der Tat als sein alter Stand; kam der
     // Spieler ihm im vierten Gang (durch seinen neuen Stand) nicht auf begegnungM nahe, gab es keinen Kopf zu wenden
@@ -1451,10 +1516,16 @@ function menschUrteil(name, z, soll) {
         const [zu, d] = [z.zuS, z.dMin];
         const begegnet = (i) => i < 3 || d[3] <= z.begegnungM;
         soll(
-            zu.every((t, i) => !begegnet(i) || (t !== null && t <= 0.5)) &&
-                z.amEreignis >= 30 &&
-                z.imBild.every((x, i) => !begegnet(i) || x),
-            `Kopf-Zuwendung ab 3 m: ${zu.join(" / ")} s (Soll ≤ 0,5, der Vorbeigang ab ${z.amEreignis}° ≥ 30; als Leib im Bild ${z.imBild})`
+            zu.every((t, i) => !begegnet(i) || (t !== null && t <= 0.5)) && z.imBild.every((x, i) => !begegnet(i) || x),
+            `Kopf-Zuwendung ab 3 m: ${zu.join(" / ")} s (Soll ≤ 0,5; als Leib im Bild ${z.imBild})`
+        );
+        // DER BLICK FOLGT DEM REIZ (stand-lebt 2, `_bewohnerReiz`): wer steht, schaut dem nächsten Bewegten schon ab `reizM` nach —
+        // am Ereignis (3 m) kommt der Vorbeigang von der Seite seines Leibs (≥ 30°), und sein Kopf steht bis auf die Spanne der
+        // Augen (`augeNurRad`) auf dem Spieler. Bis stand-lebt 2 wandte sich der Kopf erst ab 3 m (das Maß hieß „der Vorbeigang ab
+        // ≥ 30°“ am Kopf selbst); der Täter „reizlos“ (kein Reiz) steht am Ereignis wie damals neben dem Spieler.
+        soll(
+            z.seitEreignis >= 30 && z.amEreignis <= Math.round(z.augeNurGrad),
+            `der Blick folgt dem Reiz nicht: am Ereignis steht der Kopf ${z.amEreignis}° neben dem Spieler (Soll ≤ ${Math.round(z.augeNurGrad)}°, die Spanne der Augen — ab ${z.reizM} m schaut, wer steht, dem Bewegten nach), der Vorbeigang kommt ${z.seitEreignis}° neben seinem Leib (Soll ≥ 30)`
         );
         soll(
             Math.max(...z.beruehrt) === 0 && Math.min(...d) > 0.7,
@@ -1507,6 +1578,7 @@ module.exports = {
         ],
         begegnung: [
             ["begegnung-starr", /Kopf-Zuwendung/],
+            ["begegnung-reizlos", /der Blick folgt dem Reiz nicht/],
             ["begegnung-steht", /Berührung/],
             ["begegnung-vergessen", /die Erinnerung lenkt den Abstand nicht/],
             ["begegnung-bleibt", /der Zeuge weicht nicht/],

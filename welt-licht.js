@@ -91,6 +91,9 @@ var __weltLicht = (function () {
         gleitung: Object.freeze([12, 8]),
         stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
         nachtKnotenE: MOND_E,
+        // DIE NACHT DER REF: E der waagrechten Fläche am Knoten der Nacht (`stufen` −20° → −2,17), der Bezug, gegen den der Messer
+        // die Leuchten des Orts wiegt (`_poolAmBild`). Quelle: USNO Circular 171 (Janiczek & DeYoung 1987, nach Brown 1952) — 0,0963 lx bei −20°, der Vollmond gegenüber
+        nachtRefE: 0.0963 / EINHEIT_LX,
         // DER WEG ZU WEISS (nacht-lichter): über Bild-Weiß zieht die Kurve den Ton zu seinem größten Kanal — `kappe` ist der höchste
         // Anteil (weit über Weiß), `stufen` die Stufen über Weiß, nach denen die Hälfte erreicht ist — im QUADRAT der Stufen: am Knie
         // (Weiß) steigt der Weg ohne Knick (gate:post-kette KNIE). Gebunden an das Feuer: der KERN (3 000 K bei k 20 000) hält mit 0,14
@@ -412,9 +415,19 @@ var __weltLicht = (function () {
         // Radeon 7ef6fb25 — Täter-Pass „Himmel“ +0,49 → +1,05; im Logarithmus gemischt blieb der Knick der Steigung, wiese Uhr 0,766
         // −0,10 EV, GTX f53f05ea — darum liegt Ψ_ms quadratisch dicht um den Horizont, `msLage`). Die Durchlass-Tafel trägt die
         // optische Tiefe τ (der Filter mischt sie linear, exakt für das exponentielle Gesetz) und Ψ_ms den Logarithmus über dem Boden
-        // ihrer Auflösung (2^−24, die kleinste Stufe des Halb-Floats); ihr EINER Leser (`durchlass`, `mehrfach`) kehrt die Ablage um.
+        // ihrer Ablage (`MS_LOG`, bei der kleinsten Stufe des Halb-Floats); ihr EINER Leser (`durchlass`, `mehrfach`) kehrt die Ablage um.
         // Dasselbe Gesetz mischt die Bestrahlungs-Tafel auf der CPU (`bestrahlung`).
-        const MS_BODEN = 2 ** -24;
+        // DER BODEN DER ABLAGE IST EINE ZAHL DES HALB-FLOATS (nachthimmel-einig): ln 2^−24 = −16,6355 liegt zwischen zwei Stufen der
+        // Tafel (−16,640625 und −16,625); D3D schneidet zur Null (−16,625), der Leser las e^−16,625 − 2^−24 = 6,24e-10 statt 0 —
+        // Licht jeder Quelle im Erdschatten. Nachts ohne Mond wiegt die Sonne E0 ÷ Sternen-Licht = 2,63e8 (`tafelEinheit`): die
+        // Himmels-Sicht trug 5,6e-9 Welt-Einheiten Dämmerung bei −22,08°, 20 % über dem Sternen-Licht des Orts (Radeon 12029279:
+        // Umgebung 3,288e-8 gegen 2,740e-8; ohne die Sonne 2,728e-8). Der Boden ist darum −16,625 selbst: Ψ = 0 liegt GENAU auf
+        // ihm (der Schreiber klemmt, sein Boden einen Hauch darunter), und der Leser zieht einen Hauch mehr ab — 2^−14 deckt den
+        // Fehler von exp und log der GPU (≤ 36 ULP, WGSL) in beiden Rundungen.
+        // Quelle: USNO Circular 171 (Brown 1952) — unter −18° trägt die Sonne kein Licht mehr zum Himmel, die astronomische Nacht
+        const MS_LOG = -16.625;
+        const MS_BODEN = Math.exp(MS_LOG);
+        const MS_HAUCH = 2 ** -14;
         // die Lage von cos Sonnen-Zenit in Ψ_ms (u ∈ [0, 1]): quadratisch um den Horizont, μ = c·|c| mit c = 2u − 1 — dieselbe Lage
         // wie die Bestrahlungs-Tafel (`bestrahlung`); `passMehrfach` legt jeden Texel an ihre Umkehr
         const msLage = (mus) => mus.sign().mul(mus.abs().min(1).sqrt()).add(1).mul(0.5);
@@ -429,7 +442,7 @@ var __weltLicht = (function () {
                         rtMS.texture,
                         vec2(subUv(msLage(mus), Z.mehrfach[0]), subUv(h.div(RT - RG), Z.mehrfach[1]))
                     ).level(float(0)).rgb
-                ).sub(MS_BODEN),
+                ).sub(MS_BODEN * (1 + MS_HAUCH)),
                 vec3(0)
             );
         const phaseR = (nu) =>
@@ -543,8 +556,11 @@ var __weltLicht = (function () {
                 Fsum.addAssign(F);
             });
             const fms = Fsum.div(64);
-            // der Logarithmus über dem Boden der Auflösung: `mehrfach` liest exp(x) − 2^−24
-            return vec4(T.log(max(Lsum.div(64).div(max(fms.oneMinus(), vec3(1e-4))), vec3(0)).add(MS_BODEN)), 1);
+            // der Logarithmus über dem Boden der Ablage (`MS_LOG`, nie darunter): `mehrfach` liest exp(x) − Boden
+            return vec4(
+                max(T.log(max(Lsum.div(64).div(max(fms.oneMinus(), vec3(1e-4))), vec3(0)).add(MS_BODEN * (1 - MS_HAUCH))), vec3(MS_LOG)),
+                1
+            );
         });
         // ── die Himmels-Sicht: Richtung ↔ Texel (Azimut absolut, Breite quadratisch um den Horizont des Auges) ──
         const horizontEl = () => T.acos(float(RG).div(U.hKm.add(RG))).negate();
@@ -685,7 +701,8 @@ var __weltLicht = (function () {
         // EINHEIT DES LICHTS wie die Tafeln: das Licht jetzt (E0 · Tönung) trägt jeder ihrer Leser je Bild (`_umgebungLicht`) ──
         const passUmgebung = Fn(() => vec4(himmelJeLicht(umgebungRichtung(uv()).toVar()), 1));
         // ── DIE BESTRAHLUNGS-TAFEL (S7): je Texel eine Sonnenhöhe e (quadratisch dicht um den Horizont, e = c·|c|) und die
-        // Bestrahlung einer waagrechten Fläche durch den Himmel dieser Sonne, je Einheit E0 — derselbe Marsch wie die Himmels-
+        // Bestrahlung einer waagrechten Fläche durch den Himmel dieser Sonne, je Einheit E0 — unter dem Horizont im Maß der
+        // Dämmerung (`tafelMass`) —, derselbe Marsch wie die Himmels-
         // Sicht über die obere Halbkugel (kosinus-gewichtet, `ATMO_LUT.richtungen`); der letzte Texel trägt das Sternen-Licht je
         // Einheit `nachtE`. Gezeichnet je Medium und Höhe des Auges, EINMAL zurückgelesen (`_himmelsTafelLesen`): die CPU kennt
         // den Himmel jeder Stunde synchron (`_himmelsBestrahlung`), nie eine Lesung nach der Malung.
@@ -702,17 +719,25 @@ var __weltLicht = (function () {
             const mus = clamp(c.mul(c.abs()), -1, 1).toVar();
             const sonne = select(stern, vec3(0, -1, 0), vec3(sqrt(max(float(1).sub(mus.mul(mus)), 0)), mus, 0)).toVar();
             const nacht = select(stern, float(1), float(0)).toVar();
+            // DAS MASS DER DÄMMERUNG (`tafelMass`, unten): unter dem Horizont wiegt die Quelle ihr Maß — der Marsch ist linear in ihr,
+            // der Texel liegt im Maß ab; über dem Horizont und im Sternen-Texel 1
+            const mass = select(mus.lessThan(0), T.exp2(clamp(mus, -TAFEL_MASS.tiefe, 0).mul(-TAFEL_MASS.stufenJeSinus)), float(1)).toVar();
             const E = vec3(0).toVar();
             Loop({ start: 0, end: NT * NP, type: "float", name: "k" }, ({ k }) => {
                 const a = k.div(NP).floor();
-                const ct = sqrt(float(1).sub(a.add(0.5).div(NT))).toVar();
+                // DIE RINGE DER DÄMMERUNG: steht die Sonne unter dem Horizont, liegt das Licht des Himmels in einem Band über ihm —
+                // die Ringe dort gleich im Raumwinkel (cos θ linear, Gewicht 2 · cos θ: 2,4° · 7,2° · 12° …) statt gleich in der
+                // Bestrahlung (der unterste bei 11,8°); über dem Horizont und im Sternen-Texel wie bisher (Gewicht 1)
+                const q = a.add(0.5).div(NT).toVar();
+                const ct = select(mus.lessThan(0), q, sqrt(float(1).sub(q))).toVar();
+                const ring = select(mus.lessThan(0), ct.mul(2), float(1));
                 const sv = sqrt(max(float(1).sub(ct.mul(ct)), 0)).toVar();
                 const phi = k
                     .sub(a.mul(NP))
                     .add(0.5)
                     .mul((2 * PI) / NP)
                     .toVar();
-                E.addAssign(marsch(vec3(sv.mul(phi.cos()), ct, sv.mul(phi.sin())).toVar(), [{ dir: sonne }], nacht));
+                E.addAssign(marsch(vec3(sv.mul(phi.cos()), ct, sv.mul(phi.sin())).toVar(), [{ dir: sonne, gewicht: mass }], nacht).mul(ring));
             });
             return vec4(E.mul(PI / (NT * NP)), 1);
         });
@@ -843,7 +868,26 @@ var __weltLicht = (function () {
     function tafelEinheit(E0, e, mondY) {
         const h = (Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI;
         const nacht = Math.max(mondY > 0 ? MOND_E : 0, STERNENLICHT.leuchtdichte * Math.PI);
-        return Math.max(E0 * 10 ** (0.4 * Math.min(0, h)), nacht);
+        return Math.max(E0 * 10 ** (DAEMMER_DEKADEN_JE_GRAD * Math.min(0, h)), nacht);
+    }
+    // DER FALL DER DÄMMERUNG — EINE Zahl, zwei Leser (die Einheit der Himmels-Tafeln oben, das Maß der Bestrahlungs-Tafel unten).
+    // Quelle: Brown 1952 / USNO Circular 171 — das Licht des Himmels fällt unter dem Horizont um 0,4–0,5 Dekaden je Grad
+    const DAEMMER_DEKADEN_JE_GRAD = 0.4;
+    // DAS MASS DER BESTRAHLUNGS-TAFEL (belichtung-daemmerung): ihre Texel unter dem Horizont liegen × `tafelMass(mu)` ab — der
+    // Fall der Dämmerung, aufgehoben: 2 hoch (`stufenJeSinus` × der Sinus der Tiefe der Sonne), gehalten ab −18° (`tiefe`: die
+    // astronomische Nacht, darunter streut keine Sonne mehr in den Himmel). Der Leser (`bestrahlung`) teilt nach seiner Mischung
+    // zurück; über dem Horizont ist das Maß 1 (dieselben Bits). Im Sinus statt im Winkel: EIN Ausdruck auf GPU und CPU, ohne
+    // Arkussinus (bis 18° weicht der Sinus 1,7 % vom Winkel ab — ein Maß der Ablage wie `tafelEinheit`, kein Gesetz des Lichts).
+    // Bis hier lag die Tafel je Einheit E0 im Halb-Float: unter −10° fiel das Licht der Sonne im Himmel unter seine kleinste
+    // Stufe (5,96e-8), der Messer las dort das Sternen-Licht allein, die Umgebung (ihre Einheit fällt mit der Dämmerung) trug die
+    // Sonne weiter — genesis, Radeon, a7b7a4b1: Umgebung ÷ Himmel des Orts 1,14 bei −9,9° · 2,14 bei −11,9° · 5,12 bei −12,5° ·
+    // 1,39 bei −15°, die Belichtung stand bis 1,2 Stufen zu hoch und sprang mit der letzten Stufe der Tafel 0,9 Stufen in 6 s.
+    const TAFEL_MASS = Object.freeze({
+        stufenJeSinus: DAEMMER_DEKADEN_JE_GRAD * Math.log2(10) * (180 / Math.PI),
+        tiefe: Math.sin((18 * Math.PI) / 180),
+    });
+    function tafelMass(mu) {
+        return 2 ** (-TAFEL_MASS.stufenJeSinus * Math.max(-TAFEL_MASS.tiefe, Math.min(0, mu)));
     }
     // die Quellen der Tafeln in ihrer Einheit: `U.licht`, `U.sonneE`, `U.mondE` (mond = rgb in Welt-Einheiten), `U.nachtE`
     function tafelLicht(U, E0, mond, nacht) {
@@ -1055,6 +1099,9 @@ var __weltLicht = (function () {
     // Messer am Anfang jedes Texels doppelt, an seinem Ende halb so steil wie das Licht: die Belichtung fiel 1,52 und 1,09 EV,
     // wo das Bild 1,1 und 1,4 stieg (genesis Uhr 0,232 → 0,236, GTX, Täter-Pass „Belichtung“). Im Logarithmus gemischt, über dem
     // Boden der Auflösung der Tafel (2^−24, die kleinste Stufe ihres Halb-Floats), folgt er der Steigung des Lichts in jedem Texel.
+    // IM MASS DER TAFEL (belichtung-daemmerung): gemischt wird, was abliegt — unter dem Horizont die Bestrahlung × `tafelMass`,
+    // dort ändert sie sich bis −18° je Texel höchstens um das 1,7-Fache (je Einheit E0 um das 6- bis 7-Fache; Radeon, genesis:
+    // abgelegt 1,4e-2 bei −3° · 1,7e-3 bei −10,6° · 8,6e-4 bei −15,9°) —, danach teilt der Leser das Maß an SEINER Sonnenhöhe zurück.
     const TAFEL_BODEN = 2 ** -24;
     function bestrahlung(T, U, out) {
         const W = T.W,
@@ -1065,7 +1112,7 @@ var __weltLicht = (function () {
             const f = Math.max(0, Math.min(1, x - i));
             const a = Math.max(0, w[i * 3 + c]) + TAFEL_BODEN;
             const b = Math.max(0, w[(i + 1) * 3 + c]) + TAFEL_BODEN;
-            return Math.max(0, a * (b / a) ** f - TAFEL_BODEN);
+            return Math.max(0, a * (b / a) ** f - TAFEL_BODEN) / tafelMass(mu);
         };
         const ms = U.sonne.value.y,
             mm = U.mond.value.y;
@@ -1340,10 +1387,49 @@ var __weltLicht = (function () {
     // zeichnet transparent mit der Deckkraft seines Gesetzbuchs und beide Seiten in EINEM Zug — r184 zieht einen doppelseitig-
     // durchsichtigen Stoff sonst zweimal (Rück-, dann Vorderseite), jede Scheibe tönte doppelt (Durchlass 0,58² statt 0,58 bei
     // Deckkraft 0,42). Die Welt baut ihn so (`_foundryBuildMaterial`), die Bühne jedes Studios zeichnet ihn so (`stoffRecht`).
-    function durchsicht(mat, op) {
+    // `f0` (ein Knoten, der Glanz EINER Fläche aus der Zeile des Stoffs): der Stoff ist eine SCHEIBE und zeichnet nach ihrem Gesetz.
+    function durchsicht(mat, op, f0) {
         mat.transparent = true;
         mat.opacity = op;
         mat.forceSinglePass = true;
+        if (f0) scheibe(mat, f0);
+        return mat;
+    }
+    // DAS GESETZ DER SCHEIBE (fahrzeug-gestalt, das EINE Glas der Welt: Fenster der Häuser, Scheiben der Wagen, der Kopf der
+    // Laterne). Eine Scheibe hat zwei Flächen; jede spiegelt nach Fresnel F(θ) = F₀ + (1 − F₀)(1 − n·v)⁵ (Schlick), F₀ der Fläche
+    // aus der Zeile glas des Stoff-Gesetzes (n 1,49 → 0,039, der Wirt `_glasOptik`); beide zusammen F₀ der Scheibe = 2F₀/(1 + F₀)
+    // ≈ 0,075 (Stokes, ohne Absorption — gemessen: Floatglas 8 % bei senkrechtem Blick). Im Bild steht:
+    //   der Glanz der Scheibe (die Umgebung, die das Spiel jedem Stoff rechnet, `_spiegelUmgebung`, × F) und ihr Leuchten GANZ,
+    //   der Körper des Gesetzbuchs (Tönung, Staub) mit seiner Deckkraft a, das Dahinter mit (1 − F)(1 − a):
+    //   Bild = Glanz + Leuchten + a·Körper + (1 − F)(1 − a)·Dahinter — die Blende α = 1 − (1 − F)(1 − a), das Fragment ÷ α vor der
+    //   Luft (der Nebel der Mischung steht so mit α im Bild, das Dahinter trägt seinen eigenen).
+    // Bis hier mischte r184 die ganze Scheibe mit ihrer Deckkraft: der Glanz stand mit 0,42 im Bild (das Fenster des Hauses
+    // spiegelte 1,7 % statt 8 %, der Himmel fehlte ihm), der Wagen glich es mit eigenen Zahlen aus (Umgebung × 3, ein Klarlack auf
+    // dem Glas — ein zweiter Glanz neben dem der Welt), das Leuchten der Fenster teilte sich durch die Deckkraft (`_leuchtStoff`), und
+    // das Dahinter blieb bei streifendem Blick so hell wie von vorn. Der Glanz einer Fläche ist F₀ der Zeile, nie r184s 0,04.
+    function scheibe(mat, f0) {
+        const T = globalThis.THREE.TSL;
+        if (mat.isNodeMaterial !== true) throw new Error("welt-licht scheibe: kein Knoten-Stoff — die Scheibe zeichnet nach TSL");
+        const eins = T.float(1);
+        const F0 = f0.mul(2).div(f0.add(1));
+        const nv = T.normalView.dot(T.positionViewDirection).abs().min(1);
+        const F = F0.add(eins.sub(F0).mul(eins.sub(nv).pow(5)));
+        const art = Object.getPrototypeOf(mat);
+        mat.setupVariants = function (b) {
+            art.setupVariants.call(this, b);
+            T.specularColor.assign(T.vec3(F0));
+            T.specularColorBlended.assign(T.mix(T.vec3(F0), T.diffuseColor.rgb, T.metalness));
+            T.diffuseContribution.assign(T.diffuseContribution.mul(T.diffuseColor.a));
+        };
+        mat.setupOutput = function (b, aus) {
+            const a = eins.sub(eins.sub(F).mul(eins.sub(aus.a)));
+            return art.setupOutput.call(this, b, T.vec4(aus.rgb.div(a), a));
+        };
+        // das Gesetz ist Teil der Identität des Programms: r184 schlüsselt nur die Knoten des Stoffs, nie seine Bau-Schritte
+        mat.customProgramCacheKey = function () {
+            return art.customProgramCacheKey.call(this) + "|scheibe";
+        };
+        mat.userData.scheibe = f0;
         return mat;
     }
     // DAS RECHT DER WELT AN EINEM MESH DER BÜHNE: es wirft nach dem Wurf-Recht (`teilWirft`), sein durchsichtiger Stoff zeichnet in
@@ -2395,6 +2481,7 @@ var __weltLicht = (function () {
         zeilenSchritt,
         tafelAusPixeln,
         tafelAnker,
+        tafelMass,
         bestrahlung,
         umgebungLicht,
         himmelGrau,

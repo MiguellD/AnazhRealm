@@ -382,8 +382,82 @@ function kernProbe(VC) {
         ).z.speed;
     const k10 = (ab(0) - ab(0.25)) / (ab(0) - ab(0.5));
     out.push(["K10 der Tritt ist analog", Math.abs(k10 - 0.5) <= 0.1, k10.toFixed(2)]);
+    const r11 = (out.boden = bodenMessung(VC)); // die Zeile BODEN liest die Station fahrzeug-medium (Fahrt je Boden, Rinne)
+    const v11 = bodenVerdict(r11);
+    out.push([
+        "K11 das Rad im Boden (fahrzeug-medium): der GT bremst 50 → 1 km/h auf Fels, trockenem und nassem Lehm drei verschiedene Wege; Roll-Widerstand je Boden im Band der Quelle, er sinkt ein und gräbt nach 10 Durchfahrten die Rinne",
+        !v11.length,
+        `Weg ${r11.weg.fest} · ${r11.weg.trocken} · ${r11.weg.nass} m · f_r ${r11.fr.fest} · ${r11.fr.trocken} · ${r11.fr.nass} · Einsinken ${r11.sinkCm} cm · Rinne 1/10 ${r11.rinne.z1} → ${r11.rinne.z10} cm (Fels ${r11.rinne.fels}) · Kufe ${r11.kufe} ${v11.join(" · ")}`,
+    ]);
     return out;
 }
+// ── K11 DAS RAD IM BODEN (fahrzeug-medium, karte2.mensch.fahrzeug.medium#2 „die Saat ändert die Physik nicht“): der Boden unter
+// dem Rad ist ein Teil der Fahrt — Haftung, Roll-Widerstand und Einsinken (vehicle-core `radImBoden`, Bekker; der Wirt reicht ihn
+// als e.boden). Das Orakel ist die QUELLE, nie die Zeile des Spiels: der Druck-Einsinken-Satz von Lean Clay bei 22 % / 32 % Wasser
+// (Wong 2001 über NASA/TM-20250006958 Tafel 1). Die Bänder des Roll-Widerstands F/N des PKW-Rads: auf Beton 0,010–0,015
+// (Gillespie, Bosch 0,013), auf mittelfestem Boden 0,04–0,08 (Engineering ToolBox; Wong 0,08, Bosch „unbefestigt“ 0,05), auf
+// dem Acker 0,10–0,35 (Bosch); die Rinne nach 10 Durchfahrten 1,65–6,48 × der ersten (US Army: +65 … 548 %), auf Fels keine.
+// Bis fahrzeug-medium fuhr der Kern auf jedem Boden dieselbe Fahrt (exportDrive trug kein Rad im Boden: am alten Kern ROT).
+const BODEN_QUELLE = {
+    lehm: { trocken: { n: 0.2, kc: 16.43, kphi: 1724.69 }, nass: { n: 0.15, kc: 1.52, kphi: 119.61 } },
+    fest: [0.01, 0.015],
+    trocken: [0.04, 0.08],
+    nass: [0.1, 0.35],
+    rinne: [1.65, 6.48],
+    wegM: 0.1, // drei Wege, je zwei mindestens so weit verschieden
+};
+function bodenMessung(VC) {
+    const DT = 1 / 60;
+    const G = gesetzVon(VC, "gt");
+    const Q = BODEN_QUELLE;
+    const satz = (w) => (typeof VC.radImBoden === "function" && G.rad ? VC.radImBoden(G.rad, Q.lehm, w, 0) : null);
+    const r3 = (v) => +v.toFixed(3);
+    const bremse = (b) => {
+        const z = VC.fahrZustand(0, 0, 0);
+        VC.fahrStand(z, G, () => 0, 0);
+        z.vlong = z.speed = 50 / 3.6;
+        let s = 0;
+        for (let i = 0; i < 1200 && z.vlong > VC.FAHR.schritt.bremsV; i++) {
+            const x0 = z.x;
+            VC.fahrKraefte(z, { brake: 1, boden: b }, G, DT); // die Folge von fahrSchritt (Kräfte, dann Stand) über die Exporte
+            VC.fahrStand(z, G, () => 0, DT);
+            s += z.x - x0;
+        }
+        return { s: r3(s), y: z.y };
+    };
+    const [tr, na] = [satz(0), satz(1)];
+    const [f, t, n] = [bremse(null), bremse(tr), bremse(na)];
+    const cr = G.reibung / G.g;
+    const z = (k) => (typeof VC.radImBoden === "function" && G.rad ? VC.radImBoden(G.rad, Q.lehm, 1, k).z : 0);
+    const kufe = (() => {
+        const Gk = VC.fahrGesetz(VC.exportDrive({ ...VC.DEFAULT_P, epoche: 0 }));
+        return Gk && Gk.rad && Gk.rad.kufe && Gk.rad.l > 0 ? `${Gk.rad.l.toFixed(2)} m Läufer` : "kein Läufer";
+    })();
+    return {
+        weg: { fest: f.s, trocken: t.s, nass: n.s },
+        fr: { fest: r3(cr), trocken: r3(cr + (tr ? tr.fr : 0)), nass: r3(cr + (na ? na.fr : 0)) },
+        sinkCm: +((f.y - n.y) * 100).toFixed(2),
+        sollCm: na ? +(na.z * 100).toFixed(2) : 0,
+        rinne: {
+            z1: +(z(0) * 100).toFixed(2),
+            z10: +(z(9) * 100).toFixed(2),
+            fels: typeof VC.radImBoden === "function" ? VC.radImBoden(G.rad, null, 1, 9).z : 0,
+        },
+        kufe,
+    };
+}
+const bodenVerdict = (m) => {
+    const Q = BODEN_QUELLE;
+    const im = (v, [lo, hi]) => v >= lo && v <= hi;
+    const o = [];
+    const w = m.weg;
+    if (!(w.fest - w.trocken >= Q.wegM && w.trocken - w.nass >= Q.wegM)) o.push(`fahrt: ${w.fest} · ${w.trocken} · ${w.nass} m (jeder Boden dieselbe Fahrt)`);
+    for (const k of ["fest", "trocken", "nass"]) if (!im(m.fr[k], Q[k])) o.push(`f_r ${k} ${m.fr[k]} ∉ [${Q[k]}]`);
+    if (!(m.sollCm > 0) || Math.abs(m.sinkCm - m.sollCm) > 0.05) o.push(`einsinken: ${m.sinkCm} cm im Stand gegen ${m.sollCm} cm des Gesetzes`);
+    if (!(m.rinne.z1 > 0) || !im(m.rinne.z10 / m.rinne.z1, Q.rinne) || m.rinne.fels !== 0) o.push(`rinne: ${m.rinne.z1} → ${m.rinne.z10} cm, Fels ${m.rinne.fels}`);
+    if (m.kufe === "kein Läufer") o.push("kufe: der Schlitten trägt keinen Läufer im Boden");
+    return o;
+};
 // K9 DAS FAHR-GEFÜHL AM KERN (bis w12-fahrzeug-decke gate:vehicle-drive B-e am Ritt der Welt — die Welt fährt diesen Schritt,
 // S1 Labor = Welt; das Bild folgt der Gier: Playtest V18150Ride; der Rad-Kontakt: Station R, p75 ≤ 0,03 m): der GT 150 Schritte
 // Gas geradeaus, dann 120 mit vollem Einschlag — achse die Fahrt an der Bug-Achse · lenk die Quer-Kinematik v·ω in der
@@ -561,7 +635,7 @@ function stationVerdict(s) {
         ...probe(s.hangfuss, "hangfuss keine Probe", (hf) =>
             probe(
                 hf.ziel && hf.kontakte >= 1,
-                `hangfuss vakuös (Glutbrunnen ${hf.ziel ? "steht" : "fehlt"}, ${hf.kontakte || 0} Kontakte)`,
+                `hangfuss vakuös (Feuerstelle ${hf.ziel ? "steht" : "fehlt" + (hf.fehlt ? ": " + hf.fehlt : "")}, ${hf.kontakte || 0} Kontakte)`,
                 () => [
                     [
                         hf.unterMax <= STATION.unterM && hf.unterN <= STATION.unterN,
@@ -998,7 +1072,7 @@ const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, ohrM: 40, ohrK: 4, ohr
 const vorgeschichteVerdict = (vg) =>
     urteil([
         [!!vg && vg.bilder[0] === VERKEHR.zwillingS * 60 && vg.bilder[1] === vg.bilder[0], `die Stunde ohne Vorgeschichte ungezählt ${JSON.stringify(vg)}`], // prettier-ignore
-        [!vg || vg.erst < 0, `die Stunde ${vg && vg.stunde} Uhr hängt an der Vorgeschichte der Seite: sie trennt sich in Bild ${vg && vg.erst} von ihrem Zwilling${vg && vg.wer && vg.wer.length ? ` (Zwilling ↔ Lauf: ${vg.wer.join(" · ")})` : ""}`], // prettier-ignore
+        [!vg || vg.erst < 0, `die Stunde ${vg && vg.stunde} Uhr hängt an der Vorgeschichte der Seite: sie trennt sich in Bild ${vg && vg.erst} von ihrem Zwilling${vg && vg.wer && vg.wer.length ? ` (Zwilling ↔ Lauf: ${vg.wer.join(" · ")})` : ""}${vg && vg.zustand && vg.zustand.length ? ` — der Zustand trennt sich bis dahin (Feld@Bild): ${vg.zustand.join(" · ")}` : ""}`], // prettier-ignore
         // wer noch ankommt, steigt nicht ein (`_tickVerkehr`, der Fall des Sprungs vor dem ersten Lauf): ein Name = er stieg ein
         [!vg || vg.einAnkunft === false, `wer noch ankommt, steigt ein: ${vg && vg.einAnkunft === null ? "keine Probe" : vg && vg.einAnkunft} — mit der Lage von vor dem Sprung (\`_tickVerkehr\` ohne \`ankunft\`)`], // prettier-ignore
     ]);
@@ -2170,6 +2244,25 @@ hauptLauf(async () => {
                 v.join(" · ")
             );
         }
+        // K11 am echten Kern (fahrzeug-medium): der gesunde Kern 0 Täter; je gepflanzter Täter nennt die Linse ihn zuerst → ROT
+        check("Selbst-Test K11: der gesunde Kern == 0 Täter", !bodenVerdict(bodenMessung(VCk)).length, bodenVerdict(bodenMessung(VCk)).join(" · "));
+        for (const [name, VCm, soll] of [
+            [
+                "das alte exportDrive (die Hülle trägt kein Rad im Boden)",
+                { ...VCk, exportDrive: (P, id) => ((d) => ({ ...d, huelle: { ...d.huelle, radB: 0, kufeL: 0 } }))(VCk.exportDrive(P, id)) },
+                "fahrt",
+            ],
+            ["der Schritt liest e.boden nicht", { ...VCk, fahrKraefte: (z, e, G, dt) => VCk.fahrKraefte(z, e && { ...e, boden: null }, G, dt) }, "fahrt"],
+            [
+                "der Stand sinkt nicht ein",
+                { ...VCk, fahrStand: (z, G, b, dt) => ((s) => (delete z.einsinken, VCk.fahrStand(z, G, b, dt), (z.einsinken = s), z))(z.einsinken) },
+                "einsinken",
+            ],
+            ["die Rinne zählt keine Durchfahrt", { ...VCk, radImBoden: (r, b, w) => VCk.radImBoden(r, b, w, 0) }, "rinne"],
+        ]) {
+            const v = bodenVerdict(bodenMessung(VCm));
+            check(`Selbst-Test K11: ‚${name}' → ROT, die Linse nennt ${soll}`, v[0]?.startsWith(soll), v.join(" · "));
+        }
         // Die Stations-Linse.
         const gutS = {
             kern: true,
@@ -2258,7 +2351,7 @@ hauptLauf(async () => {
                 "hangfuss-unter",
             ],
             [
-                "Hangfuß: der Glutbrunnen versetzt den Wagen 1,33 m in EINEM Schritt",
+                "Hangfuß: die Feuerstelle versetzt den Wagen 1,33 m in EINEM Schritt",
                 { hangfuss: { ziel: true, kontakte: 1, unterMax: 0.0, unterN: 0, schubMax: 1.33, weg: 21 } },
                 "hangfuss-schub",
             ],
@@ -2268,7 +2361,7 @@ hauptLauf(async () => {
                 "hangfuss-steht",
             ],
             [
-                "Hangfuß ohne Glutbrunnen (vakuös)",
+                "Hangfuß ohne Feuerstelle (vakuös)",
                 { hangfuss: { ziel: false, kontakte: 0, unterMax: 0, unterN: 0, schubMax: 0, weg: 21 } },
                 "hangfuss vakuös",
             ],
@@ -2956,7 +3049,7 @@ hauptLauf(async () => {
             // `--taeter` (pflicht.C#1): um 10 Uhr 130 s (zwei volle Minuten), Wagen 0 ohne Fahrer, Wagen 1 neben der Trasse, Wagen 2
             // in Wagen 3, der erste gemessene Fahrer auf dem Dach, und keiner umfährt den stehenden Spieler in der Kreuzung — jeder
             // beim Namen (der letzte als Kopf der Reihe der kürzesten Minute, `spieler`)
-            { verkehr: { ...VERKEHR, mutanteArbeit: schalter("--mutante-arbeit"), mutanteSprung: schalter("--mutante-sprung"), mutanteOhr: schalter("--mutante-ohr"), mutanteKreis: schalter("--mutante-kreis"), ...(STUNDE != null && { stunden: [STUNDE] }), ...(SEK != null && { sek: SEK }), ...(schalter("--platz") && { stand: "platz" }), ...(TAETER && { stunden: [10], sek: 130, taeter: 1, zwillingS: 0 }) } }, // prettier-ignore
+            { verkehr: { ...VERKEHR, mutanteArbeit: schalter("--mutante-arbeit"), mutanteSprung: schalter("--mutante-sprung"), mutanteOhr: schalter("--mutante-ohr"), mutanteKreis: schalter("--mutante-kreis"), zustandWer: schalter("--zustand"), ...(STUNDE != null && { stunden: [STUNDE] }), ...(SEK != null && { sek: SEK }), ...(schalter("--platz") && { stand: "platz" }), ...(TAETER && { stunden: [10], sek: 130, taeter: 1, zwillingS: 0 }) } }, // prettier-ignore
             (o) => {
                 const vg = o.verkehr && o.verkehr.vorgeschichte;
                 if (!TAETER) check("VK-V (mensch.K2) die Stunde ohne Vorgeschichte: dieselbe Saat, dasselbe Bild", !vorgeschichteVerdict(vg).length, vorgeschichteVerdict(vg).join(" · ") || JSON.stringify(vg)); // prettier-ignore
@@ -3142,7 +3235,7 @@ hauptLauf(async () => {
     console.log("=== L — DIE ORTE DER LEBEN-SCHAU (Auftrag 0710-2), echter Sim-Schritt ===");
     const L1 = S.hangfuss;
     check(
-        "L1 Hangfuß (der Glutbrunnen am Dorf-Messort, 9,3 m/s, Gier 92,3°, seine Box): nach JEDER Kontakt-Antwort steht der Wagen auf dem Gesetz (≤ 0,2 m unter der Ebene seiner Räder, ≤ 3 Schritte), der Schub je Schritt ≤ 0,2 m über die eigene Fahrt, er fährt weiter",
+        "L1 Hangfuß (die Feuerstelle am Hangfuß des Dorf-Messorts, vom Hang mit 9,3 m/s, ihre Box): nach JEDER Kontakt-Antwort steht der Wagen auf dem Gesetz (≤ 0,2 m unter der Ebene seiner Räder, ≤ 3 Schritte), der Schub je Schritt ≤ 0,2 m über die eigene Fahrt, er fährt weiter",
         frei("hangfuss"),
         L1
             ? `unter dem Gesetz höchstens ${L1.unterMax.toFixed(3)} m (${L1.unterN} Schritte > 0,05 m) · größter Schub ${L1.schubMax.toFixed(3)} m · ${L1.kontakte} Kontakt-Schritte · ${L1.weg.toFixed(1)} m gefahren`

@@ -1991,19 +1991,61 @@ async function checkBandGamepadVerben({ page, check }) {
         const rumble = () => Math.max(0, ...fx.map((e) => Math.max(e.strongMagnitude, e.weakMagnitude)));
         const [pm, sicht0, hp0, hud0] = [s.playerMesh.position, s.cameraMode, s.player.hp, document.body.className];
         const [heim, h] = [pm.clone(), (x, z) => r.getTerrainHeightAt(x, z)];
-        let ort = null; // die ebene, trockene Bühne (wie das Ritt-Band): 12 m × 12 m Ebene um den Spieler
+        // die ebene, trockene, FESTE Bühne (wie das Ritt-Band): 12 m × 12 m Ebene um den Spieler, und unter dem Wagen (ort.x + 2,5;
+        // im Kreis von 3 m, so weit fährt er bei Gas, Auslauf und Rumble) fester Grund — der Stoff durch den EINEN Leser des Leibs
+        // und des Rads (`_kontaktStoffAt`, seine Zeile `_stoff`): ohne `radBoden` sinkt das Rad nicht, und der Reifen zieht mit dem
+        // μ seiner Zeile. Seit fahrzeug-medium fährt der Wagen das Medium am Ort: im vollen Lauf stand er auf Laub (μ 0,45, weich;
+        // die einzige ebene Bühne im Ring, unter dem Wagen 22 von 49 Punkten Laub, 27 Stein) — der Reifen deckelte das volle Gas
+        // bei μ·g (1,474 m/s in 20 Takten = 4,42 m/s²), das halbe zog frei (1,193): 0,81 über √½. Das Medium hielt den Wagen zu
+        // Recht; die Probe maß den Boden, nicht den Draht. Darum sucht sie in jeder ebenen Bühne des Rings (Schritt 1,5 m, ± 6 m,
+        // von der Mitte aus) den Ort, an dem der Wagen auf festem Grund steht, und nennt, was sie fand.
+        const fest = (x, z) => {
+            const Z = r._stoff(r._kontaktStoffAt(x, z, h(x, z)));
+            return !!Z && !Z.radBoden;
+        };
+        const flach = (x, z) => {
+            const ws = r._atlasWaterLevelAt(x, z, h(x, z));
+            let e = Number.isFinite(h(x, z)) && !(ws > h(x, z) - 0.3);
+            for (let d = 0; d < 49 && e; d++)
+                e = Math.abs(h(x + ((d % 7) - 3) * 2, z + (Math.floor(d / 7) - 3) * 2) - h(x, z)) < 0.15;
+            return e;
+        };
+        const grund = {}; // was unter dem Wagen der ebenen Bühnen liegt (der Text, wenn keine trägt)
+        const traegt = (x, z) => {
+            for (let d = 0; d < 49; d++) {
+                const [a, b] = [(d % 7) - 3, Math.floor(d / 7) - 3];
+                if (a * a + b * b > 9) continue;
+                if (!fest(x + 2.5 + a, z + b)) {
+                    const st = r._kontaktStoffAt(x + 2.5 + a, z + b, h(x + 2.5 + a, z + b));
+                    grund[st] = (grund[st] || 0) + 1;
+                    return false;
+                }
+            }
+            return true;
+        };
+        const NAH = [...Array(81).keys()]
+            .map((k) => [((k % 9) - 4) * 1.5, (Math.floor(k / 9) - 4) * 1.5])
+            .sort((p, q) => Math.hypot(...p) - Math.hypot(...q));
+        let [ort, ebene] = [null, 0];
         for (let i = 0; i < 192 && !ort; i++) {
-            const [x, z] = [
+            const [x0, z0] = [
                 heim.x + Math.cos(i * 0.5236) * (2 + Math.floor(i / 12)) * 24,
                 heim.z + Math.sin(i * 0.5236) * (2 + Math.floor(i / 12)) * 24,
             ];
-            const ws = r._atlasWaterLevelAt(x, z, h(x, z));
-            let eben = Number.isFinite(h(x, z)) && !(ws > h(x, z) - 0.3);
-            for (let d = 0; d < 49 && eben; d++)
-                eben = Math.abs(h(x + ((d % 7) - 3) * 2, z + (Math.floor(d / 7) - 3) * 2) - h(x, z)) < 0.15;
-            if (eben) ort = { x, y: h(x, z) + A.PLAYER_FOOT_OFFSET + 0.02, z };
+            if (!flach(x0, z0)) continue;
+            ebene++;
+            for (const [dx, dz] of NAH) {
+                const [x, z] = [x0 + dx, z0 + dz];
+                if (flach(x, z) && traegt(x, z)) {
+                    ort = { x, y: h(x, z) + A.PLAYER_FOOT_OFFSET + 0.02, z };
+                    break;
+                }
+            }
         }
-        if (!ort) return { error: "keine ebene, trockene Bühne um den Spieler" };
+        if (!ort)
+            return {
+                error: `keine ebene, trockene, feste Bühne um den Spieler (${ebene} ebene im Ring, weich unter dem Wagen ${JSON.stringify(grund)})`,
+            };
         const stellen = () => {
             ruhe();
             pm.set(ort.x, ort.y, ort.z);
@@ -2080,6 +2122,13 @@ async function checkBandGamepadVerben({ page, check }) {
             // seine Reibung 1,0 m/s² wog gegen aEngine 7,45 m/s² schwerer); am Deckel aus der Gestalt (aEngine 10,2 m/s²) liest
             // das Band 0,584 und mit einem Sim-Schritt mehr 0,600 (1 von 9 Läufen: 1,234 statt 1,201 m/s).
             c.gas = o.gas[0] > 0 && o.gas[1] / o.gas[2] > 0.3 && o.gas[1] / o.gas[2] < Math.SQRT1_2;
+            // DIE BÜHNE TRÄGT DEN MOTOR (fahrzeug-medium): das Gas mischt der Reifen-Kreis des Kerns mit (vehicle-core fahrKraefte
+            // `cap` = maxGrip · grip · μ des Bodens), der Takt liest den Grund am Wagen (`_fahrGrund`, `_fahrHaft`). Der Draht ist
+            // nur zu richten, wo der Kreis das halbe Gas frei trägt (cap · g ≥ ½ aEngine): sonst misst das Verhältnis den Boden.
+            // Gelesen nach den Gas-Stufen, am Ort des Wagens; der Grund steht im Text.
+            const [Mb, Gb, hb] = [r._fahrGrund(wagen._fahr), wagen._fahrSatz, r._fahrHaft(wagen._fahr)];
+            o.buehne = [Mb.stoff, hb, Gb ? (Gb.maxGrip * Gb.grip * Math.min(1, hb) * Gb.g) / Gb.aEngine : NaN];
+            c.buehne = !Mb.boden && o.buehne[2] >= 0.5;
             // DER AUSLAUF AUS VIERTEL-GAS (nerv-bewegung): der Deckel des Pad-Wagens ist Gehen × 1,48 (koerper-fahrt `vmax`), und sein
             // Luftwiderstand hält dort dem vollen Motor die Waage (vehicle-core: dragK = (aEngine − Reibung)/vmax², aEngine =
             // kAcc·vmax) — am Deckel bremst schon das Gas-Weg mit aEngine. Mit dem Gehen aus der Gestalt (1,15 → 1,58 m/s) stieg
@@ -2188,8 +2237,8 @@ async function checkBandGamepadVerben({ page, check }) {
             `Gehen ∝ Auslenkung ${f(out.gehen)} m/s (W ${f(out.taste)}, Sprint ${f(out.sprint)}), Blick ∝ Stick ${f(out.blick)} rad, die Maus in derselben Tafel`,
         ],
         [
-            ["einsteigen", "lenk", "gas", "handbremse", "absteigen"],
-            `Fahren: Lenkwinkel ${f(out.lenk)}, Gas ${f(out.gas)} m/s, Auslauf ${f(out.bremse)} m/s ohne/mit Handbremse, Rumble ${f(out.rumbleFahrt)}, Haftung ${f(out.haft)}`,
+            ["einsteigen", "buehne", "lenk", "gas", "handbremse", "absteigen"],
+            `Fahren: Bühne ${f(out.buehne && out.buehne[0])} μ ${f(out.buehne && out.buehne[1])} (Reifen-Kreis ÷ Motor ${f(out.buehne && out.buehne[2])}), Lenkwinkel ${f(out.lenk)}, Gas ${f(out.gas)} m/s, Auslauf ${f(out.bremse)} m/s ohne/mit Handbremse, Rumble ${f(out.rumbleFahrt)}, Haftung ${f(out.haft)}`,
         ],
         [
             ["sprung", "knoepfe", "tastaturPortal", "belegung", "rumbleTreffer"],

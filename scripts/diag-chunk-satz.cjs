@@ -1267,7 +1267,7 @@ const { errs, check } = pruefer();
             // (k0 ±120 m, k1 ±400 m), „druck" = beide über den ganzen Ring (der Abend mit der Sonne im Rücken trägt fast den
             // Ring); gemessen je Frame die Bytes der Neuschreib-Linse aller Sätze (`s.schreiben`). Der Selbsttest „alt" fährt
             // die alte Regel (reicht der Index nicht, verdrängt der Umzug jeden anderen Abschnitt außer dem Hauptbild) mit
-            // drei Ring-Kaskaden — sie muss je Frame neu schreiben.
+            // drei Kaskaden verschiedener Weite (Ring, 400 m, 120 m) — sie muss je Frame neu schreiben.
             const T = window.THREE;
             const ppos = s.playerMesh.position;
             // Die Stellvertreter sind Ortho-Kameras (keine Kaskaden-Kameras: ihre Lage trägt keine Scheibe — das Gesetz der
@@ -1341,10 +1341,11 @@ const { errs, check } = pruefer();
             fristAb();
             // der Druck braucht die volle Last: seit der Höhlen-Sicht tragen die Ring-Kaskaden nur, was ein Empfänger
             // braucht, und der Index reichte — am Exemplar zeichnet hier jede Höhlen-Zelle (die Methode des Stamms bleibt)
-            r._hoehlenSicht = function (satz) {
+            const vollSicht = function (satz) {
                 const st = ++satz.hoehle.stempel;
                 for (const b of satz.bloecke.values()) if (b.hoehle) for (const kn of b.hoehle.knoten) kn.sicht = st;
             };
+            r._hoehlenSicht = vollSicht;
             // die Kapazität ERZWUNGEN klein: der Index des Boden-Satzes trägt genau die liegenden Abschnitte — zwei
             // Ring-Kaskaden brauchen mehr, gleich wie gross der Ring gerade ist (der Druck hing am Inhalt: mit den Boden-Stufen
             // reichte der Start-Index für beide Ring-Kaskaden, 0× gewachsen)
@@ -1439,7 +1440,26 @@ const { errs, check } = pruefer();
             } finally {
                 delete r._chunkSatzTausch;
             }
-            // der Selbsttest: die alte Verdrängung (am Exemplar, die Methode des Stamms bleibt), drei Ring-Kaskaden
+            // der Selbsttest: die alte Verdrängung (am Exemplar, die Methode des Stamms bleibt), drei Kaskaden (Ring, 400 m, 120 m)
+            // DER DRUCK IST ERZWUNGEN, nie geliehen (landmarken-geologie-3): die alte Regel verdrängt erst, wenn der INHALT
+            // der Abschnitte samt dem neuen den Index sprengt — bis hier trug den Druck der Formations-Satz der Landmarken am
+            // Gürtel (main: 14 Felsbögen + 13 Felstürme aus dem alten Streu-Satz, Frame 2 k0 49 920 B · k1 103 680 B); seit
+            // die Landmarken der Geologie folgen, steht dort keine, „die Wand ist vakuös“ (CI Kopf 2, voll 18/18). Die Bühne
+            // trägt ihren Druck selbst, im Boden-Satz, der in jeder Welt steht:
+            // (1) der Index trägt genau die Abschnitte der Drehung (ihr Hochwasser vergessen, dicht gelegt);
+            // (2) die volle Last wie im Druck — die Kaskaden wählen sonst nur, was ein Empfänger des Hauptbilds braucht
+            //     (`_hoehlenSichtLicht`), und der Ring trug nicht mehr als die Drehung;
+            // (3) drei Kaskaden VERSCHIEDENER Weite — drei gleiche Ringe wählen dieselben Zellen, ein verdrängter Abschnitt
+            //     landet auf seinen eigenen Bytes, und `_satzSetze` lädt nichts (am Kopf gemessen: Frame 2–4 je 0 B);
+            // (4) die alte Regel maß die Kapazität an der LETZTEN Länge (vor dem Hochwasser, Befund 06.10.): der verdrängte
+            //     Abschnitt fällt mit ihr, das Wachsen des Gesetzes rettet ihn nicht (sonst wuchs der Index in Frame 1 auf alle
+            //     drei, und keiner zog je wieder um).
+            const bodenA = s.chunkSaetze.get("boden");
+            if (bodenA) {
+                for (const a of bodenA.abschnitte.values()) a.hoch = a.n;
+                r._chunkSatzUmlegen(bodenA, null, 0, "haupt");
+                r._chunkSatzGeometrie(bodenA, bodenA.vKap, bodenA.iEnde);
+            }
             r._chunkSatzUmlegen = function (satz, neu, kapNeu, wer) {
                 const h = satz.abschnitte.get("haupt");
                 let summe = 0;
@@ -1450,13 +1470,16 @@ const { errs, check } = pruefer();
                             this._chunkSatzLeer(a);
                             a.kap = 0;
                             a.start = 0;
+                            a.hoch = 0;
                         }
                 return P._chunkSatzUmlegen.call(this, satz, neu, kapNeu, wer);
             };
+            r._hoehlenSicht = vollSicht;
             try {
-                res.neu.alt = phase([ring, ring, ring], 4);
+                res.neu.alt = phase([ring, eng[1], eng[0]], 4);
             } finally {
                 delete r._chunkSatzUmlegen;
+                delete r._hoehlenSicht;
             }
             phase(eng, 2);
             // (k) DER SATZ FOLGT SEINEM INHALT (W7; der leere Satz der W6-Integration ist sein Fall „Inhalt 0"): trägt
@@ -1890,7 +1913,7 @@ const { errs, check } = pruefer();
         );
         const vAlt = urteilNeu({ alt: nu.alt });
         check(
-            "(j) Selbsttest: die alte Verdrängung (drei Ring-Kaskaden) schreibt je Frame neu — die Wand nennt sie",
+            "(j) Selbsttest: die alte Verdrängung (drei Kaskaden: Ring, 400 m, 120 m) schreibt je Frame neu — die Wand nennt sie",
             vAlt.length > 0,
             vAlt.slice(0, 2).join(" · ") || "(nichts — die Wand ist vakuös)"
         );

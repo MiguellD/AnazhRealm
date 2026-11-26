@@ -1614,6 +1614,14 @@ function selbsttest() {
         BAND.messortePruefen(h23c).some((x) => /anker ist kein Methoden-Name/.test(x)) &&
             haushalt.messorte[1].anker === "_genesisMitte"
     );
+    // S23a — DAS GEHOBENE AUGE (same.massstab.spanne#1): ein Auge ohne Höhe über dem Grund bricht das Schema → ROT; der Ort trägt 700 m.
+    const h23a = jsonKlon(haushalt);
+    h23a.messorte.find((o) => o.id === "wiese-auge").auge = -1;
+    t(
+        "Messorte: ein Auge ohne Höhe über dem Grund (−1 m) bricht das Schema → ROT, das gehobene Auge der Wiese steht 700 m",
+        BAND.messortePruefen(h23a).some((x) => /wiese-auge: auge ist keine Höhe/.test(x)) &&
+            haushalt.messorte.find((o) => o.id === "wiese-auge").auge === 700
+    );
     // S23z — DIE ZEIT DER ORTE (messort-zeit, H17): eine Szene mit Uhr 0,3, Nebel und Herbst. Der Leser ohne den Uhr-Satz stellt
     // die Uhr nicht → ROT beim Ort; der Leser von main stellt Uhr, Wetter und Tag. Das Schema: eine Uhr außerhalb 0..1, ein
     // fehlendes Wort und eine offene Serie, deren Ratsche schon liegt (die Mess-Wiese), sind ROT.

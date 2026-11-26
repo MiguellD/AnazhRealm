@@ -1,0 +1,40 @@
+rollen-des-tages — Stations-Kandidaten (Diff gegen origin/punkte-maschine 2e4ccc1b)
+
+Dateien: meisterkarte-quelle/punkte/stationen/k2-mensch-nahrung.js (k2-mensch-nahrung.diff)
+         meisterkarte-quelle/punkte/stationen/k2-mensch-macht.js   (k2-mensch-macht.diff)
+Anwenden im Baum der punkte-maschine: git apply cloud-post/rollen-des-tages-station/k2-mensch-*.diff
+
+WARUM: das Spiel trägt jetzt die Rolle mit ihrem Tages-Angebot (koerper TAGES_GESETZ.rollen.waechter.streife ·
+jaeger · fischer, tagesJagdWahl, SPIEL_GESETZ.arten.hieb; der Wirt _bewohnerListe · _bewohnerNahen · _bewohnerHiebTakt ·
+_bewohnerBeute). Die drei Leitern lasen den alten Stand: S2 der Jagd urteilte K.nicht (keine Rolle jagt), die Wache am
+Posten, der Zweikampf nur gezählt, nie ausgelöst. Die Kandidaten lesen das neue Gesetz über dieselben Exporte, die das Spiel liest.
+
+mensch.nahrung.tier S2 (karte2.mensch.nahrung.tier#2)
+  - JAGD_AN: je Saat das Revier (tagesOrte), die Jäger aus den Wohnhäusern nächst ihm (KC.tagesJagdWahl — dieselbe Wahl wie der
+    Wirt, stamm/siedlung-bewohner.js:1335), ihr Plan KC.tagesPlan(…, "jaeger", …) mit werk = Revier.
+  - K.nicht → K.zahl: n = Jäger je Saat (Minimum über 8 Saaten), werte { jagdJeTag, wildDelta: null }.
+  - wildDelta bleibt null (ROT beim Namen): die Beute nimmt je Jagdtag mit 27 % einen Kopf aus dem Bestand am Revier
+    (_bewohnerBeute → _bestandAus, der EINE Ausgang des Gaus); die Änderung zeigt erst die Uhr der Welt über Tage.
+  - Gemessen (node, der Weg der Station, 8 Saaten × 24 Zeiten, nH 60): vorher 0 Jäger je Saat · 0 Jagden je Tag →
+    nachher 4 Jäger je Saat · 26 Jagd-Stunden je Tag (208 Proben der Jagd); ≈ 22 s.
+
+mensch.macht.krieg S1 (karte2.mensch.macht.krieg#1)
+  - DER ZWEIKAMPF: der Spieler tritt 8 m vor die nächste Wache draußen, sein Schlag ruft die Zeugen (r._bewohnerZeuge — derselbe
+    Ruf wie stamm/kreatur-leben.js:798), die Wache naht (_bewohnerNahen) und endet im Hieb des Kerns (_bewohnerHiebTakt);
+    je Takt gezählt, wer bewaffnet im Zweikampf steht (der Spieler, wenn die Wache ihn zum Gegner trägt), höchstens 40 s der Welt.
+  - n = imZweikampfMax; antwortet = Σ antwort / Σ vorLetztem aus S.hiebe; durchDeckung = Σ; sitzt null (ROT beim Namen: die
+    Klinge der Wache hat keine Bahn — heute schwingt nur der Spieler, stamm/kampf.js).
+  - sek 30 → 60 (ein Gang des Kerns im Mittel 5,75 Züge × zugS 2 s, gate:koerper-kern ROLLEN, dazu 8 m Weg); mutiert: true
+    (der Kampf nimmt dem Spieler Leben, trifft die Wache ins Gedächtnis der Gewalt); pfad + stamm/kreatur-leben.js, koerper-core.js.
+
+mensch.macht.megastadt S1 (karte2.mensch.macht.megastadt#1)
+  - Umfang = Bewohner des Baus der Wache mit Waffe UND Runde (b.orte.streife, koerper tagesStreife); dazu inRunde, rundePunkte.
+  - rho null (ROT beim Namen): ρ Antwortzeit ↔ Weg zur Wache misst erst ein Ruf an die Wache — heute naht sie nur als Zeugin
+    auf zeugeM 25 m. imSicht null (ROT beim Namen): wer im Sichtfeld erscheint, misst erst die Runde am Gerät über ihre Zeit.
+  - pfad + koerper-core.js.
+
+DIE WÄNDE (Regel-Blatt welle-2611 §2):
+  - node punkte.cjs liste: Basis (Kopf origin/main eae94514) 1976 Stationen · Fehler 0; mit den Kandidaten (Kopf = der Stand des
+    Zweigs) 1976 Stationen · Fehler 0. (Die zwei ROT gelaende.K2#1/#2 „Wand HAKEN“ stehen an der Basis nicht mehr.)
+  - je Leiter ≤ 60 s: krieg 60 (vorher 30), megastadt 30, tier 50 — unverändert bis auf krieg.
+  - kein Fächer in node/worker_threads: S2 fächert in der Seite (stationen/faecher.js, K.welt) über die Exporte des Spiels.

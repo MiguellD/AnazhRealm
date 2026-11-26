@@ -1398,7 +1398,11 @@ class AnazhRealm_bild_himmel {
         // der Raten-Drossel und an der Leine vorbei — und verwirft den Boden, den der Rückstrahl unter dem alten Licht maß.
         const sprung = this._himmelSprung === true;
         this._himmelSprung = false;
-        if (sprung) this._rueckstrahlSprung();
+        if (sprung) {
+            this._rueckstrahlSprung();
+            // auch das Gedächtnis des Bilds trägt das alte Licht: es beginnt mit dem nächsten Bild neu (`_traaReprojektion`)
+            this._lichtSprung = true;
+        }
         this._atmoTakt(sunDir, moonDir, tint, sprung);
         this._dayNightApplySkybox(tint);
         this._dayNightApplyStarField(achse, tint.skyMul);
@@ -3212,7 +3216,8 @@ class AnazhRealm_bild_himmel {
     // Höhe des Gesetzes, `relief`) in den Zeilen der Wetter-Tafel DIESER Welt (je Zeile der Front ihr Wort, dessen Feld
     // WEATHER_FIELD trägt). Das Wort am Spieler ist sein EINGRIFF, nie das Wetter der Welt: das Feld, das er trägt
     // (`_weatherFieldFor`: der Zug der Front an seinem Ort, sein Übergang, das Wort des Spielers, ein Wunsch der Welt), gilt in
-    // seiner Region und läuft in die Natur aus; den Regen, den es zieht, gibt das Lee windab her. Am Spieler ist das Feld darum
+    // seiner Region und läuft in die Natur aus; den Regen, den es zieht, gibt das Lee windab her, so weit es ihn trägt (den Rest
+    // bringt die Front des Worts aus dem Dampf der Säule — das Wort regnet an jeder Uhr). Am Spieler ist das Feld darum
     // das Feld seines Worts (Licht, Nebel, Himmel, Regen-Bild lesen es dort), fern davon die Front über dem Ort. `aus`: ein
     // Leser, der je Bild hunderte Male fragt, gibt sein Objekt mit. Leser: der Wind am Ort (`_windAt` → Gras, Krone, Wasser,
     // Rauch, Wagen, Ohr), der Tag der Bewohner (`_bewohnerSoll`), das Gefäß im Regen (`_tickWerkGesetz`).
@@ -3230,7 +3235,16 @@ class AnazhRealm_bild_himmel {
             }
             Object.freeze(zeilen); // (eingefroren prüft der Kern die Tafel einmal, nie je Ruf)
             const hier = { x: 0, z: 0, feld: null };
-            const hoehe = (hx, hz) => this._terrainMacroSurfaceY(hx, hz, false);
+            // die Höhe des Regens trägt den Willen des Spielers (same.kopplung.terraform#1): ein gehobener Kamm, ein gegrabener
+            // Graben ist Relief wie jeder Hang der Saat — die Fläche mit Edits ist das Gesetz des Kerns (gelaende-core
+            // `editHoehe`, derselbe Leser wie die Nässe der Ferne `_fernNass`)
+            const G = globalThis.__gelaendeCore;
+            const hoehe = (hx, hz) => {
+                const h = this._terrainMacroSurfaceY(hx, hz, false);
+                const meta = this.state.worldMeta;
+                if (!(meta && meta.voxelEdits && meta.voxelEdits.length)) return h;
+                return G.editHoehe(h, hx, hz, G.editsAm(this._voxelEditKarte(), hx, hz));
+            };
             E = this._wetterFeldEin = {
                 tafel,
                 von: null,

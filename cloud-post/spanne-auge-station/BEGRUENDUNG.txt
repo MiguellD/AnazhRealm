@@ -1,0 +1,38 @@
+Kandidat der Station same.massstab.spanne (karte2.same.massstab.spanne#1) — Diff k2-same.diff gegen origin/punkte-maschine e925941d
+(meisterkarte-quelle/punkte/stationen/k2-same.js, 93 Zeilen dazu, 20 fort).
+
+WARUM: Die Station las das Auge nur an der geladenen Saat (AUGE_AN: `a.saat !== worldMeta.seed` → fehlt, 20 von 21 Adressen) und
+hielt S1 mit dem festen Satz „kein Verb hebt das Auge vom Leib" offen. Am Kopf spanne-auge trägt das Spiel beides: EIN Leser des
+Grunds unter dem Auge an jeder Saat (`_augeAn` → gelaende-core `hoehe` über `_gelaende(saat)`, die Lage `lageGrund` der Saat) und
+EIN Gesetz des Steigens (`_augeSchritt`, AnazhRealm.AUGE_STEIG, da/dt = k·a nach Cesium „moveRate = Höhe / 100"), das der Loop der
+Kamera ruft (`_augeHeben`), gehalten über das Verb `steigen` (Taste R / Bild auf). Der feste Satz wäre am Kopf eine Lüge.
+
+WAS DER KANDIDAT TUT:
+- AUGE_AN ruft den Leser des Spiels an jeder Adresse (`r._augeAn(a.saat, x, z, 0)`, `r._augeSchritt`) statt die Kamera nur an der
+  geladenen Saat zu lesen: je Adresse der Grund an der Wiese, die Zeit des Gesetzes 0,5 → 700 m im Takt 60 Hz, nahe/ferne Ebene;
+  fehlt der Leser (main), nennt sie ihn beim Namen. Neue Maße des Fächers: steig_s (max), gruende (verschieden).
+- AUGE_FLUG (neu, S1 „hin und zurück"): an der Wiese im Ich-Auge die Taste des Verbs aus der Tasten-Tafel des Spielers über den Hörer
+  des Fensters, Takt des Spiels 60 Hz (der Loop der Sitzung ruht, wie g1.js `ruhend`), bis 700 m über dem Grund, dann `sinken` bis zum
+  Leib. Je Bild die Bruch-Bedingungen, die der Takt zählt: unter dem Grund, Sprung über dem Gesetz in der Zeit der Welt-Uhr, Takt
+  > 100 ms, kein Rückweg. Zeuge auge_m = die geflogene Höhe.
+- S1 misst (L.gemessen steig_s = max(Gesetz, Flug), welt auge_m), wenn alle 21 Adressen Grund und Gesetz tragen, die Gründe der Saat
+  folgen (21 verschiedene) und der Flug ohne Bruch hin und zurück fährt — sonst L.leser mit dem Täter. S2–S4 bleiben Leser, ihr Text
+  nennt den neuen Stand (das Auge steigt bis AUGE_STEIG.maxM 2 000 m, nicht auf 10 km; die Welt bleibt eben).
+- pfad trägt die Dateien, die der Kandidat liest: stamm/koerper-bewegung.js, stamm/gelaende-boden.js, gelaende-core.js.
+
+GEMESSEN (der Code des Kandidaten wörtlich: FAECHER + AUGE_AN + AUGE_FLUG in der echten Welt, Null-Renderer, Zweig spanne-auge):
+- Fächer 21 von 21 Adressen, 21 verschiedene Gründe (z. B. 107,9 · 33,2 · −1,23 m), steig_s 12,15 s, 36 ms.
+- Flug: Taste KeyR, 2,1 → 700,3 m in 9,65 s Spiel-Zeit, zurück in 9,73 s, 0 Brüche (unter 0 · Sprung 0 · Takt 0), Takt höchstens 83 ms.
+- Vorher (main eae94514): AUGE_AN 1 von 21 (20 „fehlt"), kein Verb; der Kandidat am main: 0 von 21 („kein Leser der Adresse"), S1 Leser.
+
+DIE DREI WÄNDE:
+1. `node punkte.cjs liste` mit dem Kandidaten: 1 976 Stationen · 420 Kriterien · fehlt 15 · Fehler 2 — genau die zwei ROT
+   gelaende.K2#1/#2 „ruft window.__zielen — niemand setzt ihn am Kopf eae94514 (Wand HAKEN)", sonst nichts (die Basis ebenso).
+2. Die Leiter in ≤ 60 s (sek 50): Wiese einschwingen 8,9 s · Fächer 0,04 s · Flug 4,5 s Wand im Null-Renderer (1 166 Takte); an der
+   Radeon kostet der Takt das Bild — bei p95 ≤ 16,7 ms je Takt ≤ 19,5 s. Ungemessen am Gerät, bis die Station dort fährt.
+3. Die Stichprobe durch den Leser des Spiels: der Fächer läuft IN der Seite durch `_augeAn` (den Leser, den `_augeHeben` im Loop
+   ruft) — kein Kern-Fächer in node, also keine zweite Quelle, deren Gleichheit zu prüfen wäre. Die Gleichheit der Lage selbst prüft
+   gate:kamera-laub K7 (`lageGrund` der geladenen Saat gegen `_terrainSaatY` an 64 Punkten: 0 m).
+
+EHRLICH OFFEN (in `ungemessen` der Akte): die Bruch-Bedingungen im BILD des Flugs (Pop, Loch, Stufen-Wechsel — die Sitzung zeichnet je
+Höhe kein Ausgabe-Bild) und der Flug an den 20 fremden Saaten (sie tragen Grund und Gesetz, nicht die gezeichnete Welt).

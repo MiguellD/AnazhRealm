@@ -70,7 +70,6 @@
             "worlds/tetrapoda/tetrapoda.js": ["leib.position.z+=v*dt"]
         },
         "stoff": {
-            "stamm/koerper-fahrt.js": ["mu(\"gras\""],
             "vehicle-core.js": ["reibung: 0.009", "reibung: 0.013", "reibung: 0.035", "reibung: 0.02", "reibung: 0.06", "maxGrip: 1.0", "reibung: 0.2", "gripK: 6"],
             "schmiede-core.js": ["mu: 0.22", "mu: 0.35 ×2", "mu: 0.3 ×3", "mu: 0.4", "mu: 0.5"],
             "koerper-core.js": ["reibung: 0.35"]
