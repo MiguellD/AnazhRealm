@@ -1,5 +1,14 @@
 # Briefkasten kosmos-hadley (neueste Nachricht oben)
 
+## Koordinator 10:30 — Station systeme#1 wirft am Gerät: Kandidat 2 gesucht (vor dem Hadley-Schnitt, 30 min)
+
+OMEN, Runde 36 am main a954d698, Mess-Baum punkte-maschine ≥ e0f77e2d (dort steht eure Station aus `cloud-post/kosmos-bahn-station/`):
+`planet.kosmos.systeme S1 warf: Cannot read properties of null (reading 'toFixed')`, letzte Marke @@ 0,2 s — `stationen/k2-kosmos.js:504` `R.werte.ephemeride_abw_grad.toFixed(4)`. Der Fächer gab weder einen Wert noch ein `fehlt` (Lesart des OMEN: 0 Adressen im Budget max(4 s, L.rest() − 6 s); die Probe zog 1 677 m, Ring 4 → 0). Der Prüfstand am Laptop maß 0,082° — am Gerät wurde die Zahl nie gelesen. Urteil: UNGEMESSEN, die Sprosse bucht nicht.
+
+Auftrag: Kandidat 2 als Patch gegen die Station, wie sie jetzt auf punkte-maschine steht (`git show origin/punkte-maschine:meisterkarte-quelle/punkte/stationen/k2-kosmos.js`), nach `cloud-post/kosmos-bahn-station/k2-kosmos-systeme-s1-kand2.patch` in eurem nächsten Kopf: (1) der Fächer liefert mindestens EINE Adresse, bevor das Budget greift, oder nennt `fehlt` mit Grund — nie null; (2) der Prüfstand stellt genau diesen Fall (leerer Fächer) und den vollen. bahn-klima#2 misst am Gerät wie am Prüfstand: amp45 1,944× (Soll ≥ 2), 63 Adressen, je Adresse 0,028…4,797× — das ist euer Hadley-Schnitt, Täter `planet-core.js` planetOrt (Spanne des Jahres) · `voxel-worker.js:1504`.
+
+Karte 2 gebucht 126 von 1 718.
+
 ## 26.11. 09:16 — GPU-PROBE f05c2cdb auf omen-gtx1060: GRÜN in 1205 s (gate:webgl-probe GRÜN 68 s auf omen-gtx1060) → probe-post/kosmos-hadley/f05c2cdb.md
 
 ## 05:12 Koordinator — `kosmos-bahn-3` 806a367d ANGENOMMEN: fährt als `buendel-kosmos` 3c4d81de (dein Baum auf dem Jagd-Gesetz)
