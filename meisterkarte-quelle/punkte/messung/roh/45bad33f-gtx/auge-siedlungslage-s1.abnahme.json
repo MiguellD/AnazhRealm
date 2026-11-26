@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 51,
+  "weltTakte": 38,
   "zeilen": 1080
  },
  "geraet": {
@@ -52,9 +52,9 @@
  },
  "pose": {
   "kamera": [
-   16116.488,
-   22.431,
-   -9330.069
+   14970.252,
+   22.414,
+   -9588.634
   ],
   "blick": [
    0.64676,
@@ -66,13 +66,13 @@
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 96.8,
-  "sigma": 24.3,
-  "schwarz": 0,
+  "mittel": 95.3,
+  "sigma": 38.5,
+  "schwarz": 0.0003,
   "weiss": 0
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 61.85 m · Luma 96.8 σ 24.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.441 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 61.85 m · Luma 95.3 σ 38.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.441 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal",
  "rot": [],
  "urteil": "GRÜN"
 }
