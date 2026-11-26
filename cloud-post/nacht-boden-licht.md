@@ -1,5 +1,7 @@
 # nacht-boden-licht — karte2.erleben.bild.nacht#1 (GTX 1050, 26.11.)
 
+## 27.11. 00:26 — GPU-PROBE 1b703cc0 auf omen-gtx1060: GRÜN in 1043 s (gate:nacht-licht:echt GRÜN 230 s auf omen-gtx1060 · bild:dorf@0.95 GRÜN 81 s auf omen-gtx1060 · gate:pruefbuehne-licht GRÜN 56 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 145 s auf omen-gtx1060 · gate:webgl-probe GRÜN 52 s auf omen-gtx1060) → probe-post/nacht-boden-licht/1b703cc0.md
+
 Zweig `nacht-boden-licht` auf main 45bad33f, Kopf 1b703cc0 (Vorprüfung 1, `[gpu-probe: gate:nacht-licht:echt, bild:dorf@0.95, gate:pruefbuehne-licht, gate:weltbild-frost:echt] [ci voll]`; check:statik GRÜN am Kopf). ZWISCHENSTAND: Karte 2 gebucht unverändert; die Sprosse bucht erst der Richter.
 
 ## Der EINE Ort
