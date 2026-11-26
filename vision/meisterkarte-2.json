@@ -2277,10 +2277,10 @@
    "summe": {
     "kriterien": 9,
     "sprossen": 61,
-    "heute": 1,
+    "heute": 2,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 1.6,
+    "anteilHeute": 3.2,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -2606,7 +2606,7 @@
        "richter": "1 000 Zufallssterne angeflogen: das System hält die Prüfungen der Sprossen 2–6 in ≥ 95 %; effektive Zahl der System-Typen (Chao1 aus den Flügen) ≥ 10⁴"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Stand 0: jahrTage: 365 ist eine Zahl, keine Bahn (gelaende-core.js:1304).",
@@ -20094,11 +20094,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 129,
+  "heute": 130,
   "davonKopplungen": 33,
   "kern": 2,
   "kernDazu": 2,
-  "anteilHeute": 6.6,
+  "anteilHeute": 6.8,
   "anteilKern": 0,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20109,7 +20109,7 @@
   },
   "gliederLeitern": 9,
   "beide": 62,
-  "nachwache": 67
+  "nachwache": 68
  },
  "zusammengelegt": [
   {
