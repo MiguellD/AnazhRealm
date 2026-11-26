@@ -3033,11 +3033,7 @@ class AnazhRealm_vegetation_wiese {
                           return bodenY;
                       },
                       waterYAt: (x, z) =>
-                          this._atlasWaterLevelAt(
-                              x,
-                              z,
-                              x === bodenX && z === bodenZ ? bodenY : this._voxelSurfaceY(x, z)
-                          ),
+                          this._landSpiegelAt(x, z, x === bodenX && z === bodenZ ? bodenY : this._voxelSurfaceY(x, z)),
                       slopeAt: (x, z) =>
                           typeof this._slopeAt === "function"
                               ? this._slopeAt(x, z, (px, pz) => this.getTerrainHeightAt(px, pz), 2)

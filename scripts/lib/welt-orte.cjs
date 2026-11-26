@@ -171,7 +171,14 @@ function wirtAmGesetz(root, mitWasser) {
     );
     const G = ctx.__gelaendeCore.GRUND;
     const w = Object.create(A.prototype);
-    w.state = { worldMeta: {}, terrainBaseHeight: G.basis, waterLevel: G.basis - G.meerUnterBasis };
+    // der Kalender der Geburt (dirigent-kern: `dayLengthMinutes` des Stands, `_kalender` wirft ohne ihn): die Welt-Uhr steht
+    // auf 0, das Meer im Mittel der Gezeit (gelaende-core `GEZEIT`, η = 0) — der Spiegel des Wirts ist byte-gleich wie vor ihr
+    w.state = {
+        worldMeta: {},
+        terrainBaseHeight: G.basis,
+        waterLevel: G.basis - G.meerUnterBasis,
+        dayLengthMinutes: A.DAY_LENGTH_DEFAULT_MINUTES,
+    };
     w.ensureWorldMeta();
     if (!mitWasser) return w;
     const K = ctx.__gelaendeCore;

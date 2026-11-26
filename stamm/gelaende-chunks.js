@@ -396,6 +396,8 @@ class AnazhRealm_gelaende_chunks {
             schneeVersatz: this._schneeGilt(),
             // DER PEGEL DER BINNEN-GEWÄSSER (stoffe.K3-2), den die Welt trägt (`_pegelGilt`; `_pegelTakt` zieht ihn nach)
             pegel: this._pegelGilt(),
+            // DIE GEZEIT DES MEERS (planet.wasser.gezeiten), die die Welt trägt (`_gezeitGilt`; `_pegelTakt` zieht sie nach)
+            gezeit: this._gezeitGilt(),
             // DER WIESEN-GRUND reist mit (K53): Farbe, Wache und Fleck aus EINER Quelle (`WIESEN_GRUND`)
             wiesenGrund: AnazhRealm.WIESEN_GRUND,
             // DER FELS-STOFF reist mit (K17-2): der Worker baut ihn beim Chunk-Bau (gelaende-core `felsStoff`) mit DENSELBEN

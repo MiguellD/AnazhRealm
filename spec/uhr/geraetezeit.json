@@ -38,7 +38,7 @@
   "feld-nexus": "ki llmBuildSystemPrompt maybeAnswerWithLlm",
   "gelaende-boden": "messung _ortWahlImFaden:2",
   "gelaende-chunks": "messung _acquireVoxelChunkBuild:2 _faedenStumm _nebenFaden:2 · frist _tickFoliageGrowth:2 _tickVoxelChunkStreaming:4",
-  "gelaende-fern": "messung _ensureFarWaterSheet:2 · frist _fernRingEinhaengen:2 _pruneDistantVoxelChunks _saatGehtZuEnde _zellGedaechtnisGeht:2",
+  "gelaende-fern": "messung _ensureFarWaterSheet:2 · frist _fernRingEinhaengen:2 _fernRingWasserNeu _pruneDistantVoxelChunks _saatGehtZuEnde _zellGedaechtnisGeht:2",
   "klang": "anzeige playInventoryHoverPing",
   "koerper-fahrt": "messung _tuchTakt · ruhe _tuchGitterRuhe",
   "kreatur-leben": "speicher _creatureRemember _serializeCreature spawnCreatureAt · ki _maybeTriggerCreatureRareEventLlm · frist _todLageTick:2 _todLageTakt",
