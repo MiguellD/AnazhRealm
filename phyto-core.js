@@ -3194,12 +3194,49 @@
     // Rings, ein Texel des Feld-Passes). Das Bestands-Mosaik (λ 20 m) und das Klima (λ 83 m) tragen darunter ihr Mittel
     // (forestMosaikMittel, forestOktavMittel): ihr Wert wechselte unter einer 13 × 39-m-Masche je Punkt die Art, und jede
     // Masche zog als radialer Streifen um den Spieler. Ohne fussM (planForestCell, das Labor) dieselben Zahlen wie zuvor.
+    // DIE HÖHENSTUFEN (biome-hoehenstufen, karte2.leben.pflanzen.biome#2): die Art folgt der Stufe — kollin Laubwald (Eiche,
+    // Birke, Erle), montan der Bergmischwald, subalpin das Nadelholz der Waldgrenze (die Kiefer-Nische: Fichte, Lärche, Zirbe).
+    // `u` ist die Höhe am Ort im Maß der EINEN Waldgrenze der Welt (gelaende-core `waldStufe`: 0 am Meer, 1 am Beginn des
+    // Sommer-Schnees, ctx.stufe). Das Band (DAV, „Höhenstufen der Alpen“, Randalpen; Schülerlexikon „Die obere Waldgrenze“):
+    // kollin bis 800 m (Buche, Eiche), montan bis 1 500 m — „der Übergang von Laub-, Misch- und Nadelwäldern“ —, subalpin
+    // Fichten-Lärchen- und Lärchen-Zirben-Wald bis zur Waldgrenze, am Nordrand 1 600–1 800 m (Mitte 1 700; Buche, Tanne,
+    // Fichte) über dem Vorland 500 m: `kollin` (800 − 500)/(1 700 − 500) = 0,25, `montan` (1 500 − 500)/1 200 = 0,83.
+    // DER ÖKOTON statt der Kante: die Grenzen derselben Quelle streuen um ±150 m (die subalpine Untergrenze 1 500–1 800 m),
+    // `oekoton` 150/1 200 = 0,125. Die montane Stufe IST der Übergang: das Laub fällt von der Untergrenze (kollin − oekoton)
+    // bis an ihre Obergrenze, das Nadelholz der Waldgrenze steigt von der Untergrenze bis über sie (montan + oekoton), die
+    // Tanne trägt ihre Mitte (an beiden Grenzen im Ökoton) — keine Höhe ohne Mischung, die Folge Laub → Tanne → Nadel steigt
+    // an jedem Ort. `rest` ist der Sockel jeder Art außerhalb ihrer Stufe (ein Hundertstel: das Bestands-Mosaik — Faktor
+    // 0,16 … 5 — wählt in der Stufe, nie über sie hinweg).
+    const FOREST_STUFE = Object.freeze({ kollin: 0.25, montan: 0.83, oekoton: 0.125, rest: 0.01 });
+    function forestStufe(u) {
+        if (!Number.isFinite(u))
+            throw new Error("phyto-core forestStufe: die Höhenstufe des Orts fehlt (ctx.stufe, KERN-PFLICHT)");
+        const S = FOREST_STUFE;
+        const glatt = (a, b) => {
+            let t = (u - a) / (b - a);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        const r = S.rest;
+        return {
+            laub: r + (1 - r) * (1 - glatt(S.kollin - S.oekoton, S.montan)),
+            tanne:
+                r +
+                (1 - r) *
+                    glatt(S.kollin - S.oekoton, S.kollin + S.oekoton) *
+                    (1 - glatt(S.montan - S.oekoton, S.montan + S.oekoton)),
+            kiefer: r + (1 - r) * glatt(S.kollin, S.montan + S.oekoton),
+        };
+    }
     function forestNische(x, z, surfaceY, sd, ctx) {
         const ss = (e0, e1, v) => {
             let t = (v - e0) / (e1 - e0);
             t = t < 0 ? 0 : t > 1 ? 1 : t;
             return t * t * (3 - 2 * t);
         };
+        if (typeof ctx.stufe !== "function")
+            throw new Error("phyto-core forestNische: die Höhenstufe fehlt im ctx des Walds (ctx.stufe, KERN-PFLICHT)");
+        const SF = forestStufe(ctx.stufe(x, z, surfaceY));
         const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
         const relH = surfaceY - (ctx.baseH || 0);
         const feu = clamp01(ctx.feuchteAt(x, z, surfaceY));
@@ -3228,11 +3265,11 @@
         );
         const W = forestWuchs(ctx);
         return {
-            wF: NW.wF * W.nadel,
-            wT: NW.wT * W.nadel,
-            wE: NW.wE * W.laub,
-            wB: NW.wB * W.laub,
-            wW: (feu >= FOREST_PACK.ufer ? NW.wW + feu * feu * 6.0 : 0) * W.laub, // Host: waterProx = feu, nur im Saum
+            wF: NW.wF * W.nadel * SF.kiefer,
+            wT: NW.wT * W.nadel * SF.tanne,
+            wE: NW.wE * W.laub * SF.laub,
+            wB: NW.wB * W.laub * SF.laub,
+            wW: (feu >= FOREST_PACK.ufer ? NW.wW + feu * feu * 6.0 : 0) * W.laub * SF.laub, // Host: waterProx = feu, nur im Saum
             clim,
             patch,
             feu,
@@ -8157,6 +8194,8 @@
         forestOktavMittel: forestOktavMittel, // K16: die Blende einer Oktave unter einem Fußabdruck (Wert → Mittel) // K16: Bestandsdichte + Deckung unter einem Fußabdruck (die Fern-Farbe)
         forestNicheWeights: forestNicheWeights,
         forestNische: forestNische,
+        FOREST_STUFE: FOREST_STUFE, // biome-hoehenstufen — das Band der Höhenstufen (DAV, Randalpen)
+        forestStufe: forestStufe, // die Faktoren Laub · Tanne · Kiefer an der Höhenstufe u
         forestTreeSize: forestTreeSize,
         // der Lebenslauf des Bestands (Bahn mischwald): die Tafeln, die Kurve je Art, die Größe in der Phase, die Phase des Flecks
         FOREST_ERTRAG: FOREST_ERTRAG,
