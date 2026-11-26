@@ -24012,7 +24012,7 @@
   },
   "karte2.mensch.sport.regeln": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.regeln#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +10) · karte2.mensch.sport.regeln#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +9) · karte2.mensch.sport.regeln#2 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#3 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#4 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#5 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#6 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#7 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#7 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#8 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.regeln#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +10) · karte2.mensch.sport.regeln#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +9) · karte2.mensch.sport.regeln#2 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#2 gtx: ROT: S2 ROT: fehlender Leser: kein Ballspiel, kein Gegner, keine Rolle Schiedsrichter (TAGES_GESETZ rollen) (koerper-core.js:5135) · gemessen 0 · [linse-gpu] nvidia/pascal an 54b89949 · karte2.mensch.sport.regeln#3 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#4 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#5 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#6 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#7 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#7 gtx: Station seit der Messung geändert · karte2.mensch.sport.regeln#8 radeon: Station seit der Messung geändert · karte2.mensch.sport.regeln#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.regeln#1",
@@ -24049,10 +24049,10 @@
      "id": "karte2.mensch.sport.regeln#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "S2 ROT: fehlender Leser: kein Ballspiel, kein Gegner, keine Rolle Schiedsrichter (TAGES_GESETZ rollen) (koerper-core.js:5135) · gemessen 0 · [linse-gpu] nvidia/pascal",
+     "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
+     "grund": "ROT: S2 ROT: fehlender Leser: kein Ballspiel, kein Gegner, keine Rolle Schiedsrichter (TAGES_GESETZ rollen) (koerper-core.js:5135) · gemessen 0 · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.sport.regeln#3",
@@ -37566,7 +37566,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 346,
+  "konsum": 347,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37734,10 +37734,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3276
+  "ohne": 3275
  },
  "kopfVoll": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
- "zeit": "2026-11-26T16:47:05.736Z",
+ "zeit": "2026-11-26T16:53:26.453Z",
  "vorher": "54b89949",
  "bilanz": {
   "gewinn": [],
