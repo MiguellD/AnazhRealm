@@ -121,3 +121,5 @@ w28-buendel-mittag
 w28-jaeger-stand
 # 791 (main 45bad33f, 26.11. 20:45): z791 26.11. 20:52 kultur-aus-klima 6: der gehaltene Himmel hebt das Dach — kultur#2 am Kopf an der Radeon GRÜN (Vor-Richter 20:21, r 0,547; Preis p95 33,51 ms); sprache#1 und sprache#3 fahren NICHT mit (rot, eigene Bahnen)
 w28-kultur-aus-klima-6 karte2.mensch.kopplung.kultur#2
+# 790 (main 45bad33f, 26.11. 20:45): z790 kosmos-hadley (Landung 61e2a27f, 26.11. 20:05): die Bahn der Welt trägt die Juni-Insolation 65° N — bahn-klima#3 am main 45bad33f an der Radeon GRÜN (Hand-Lauf 21:4x, rLaskar 0,978, Preis p95 25,2 ms; Station gesetzt c1d6ac4b); klimageschichte#2 und #3 fahren mit, sobald ihre Station gesetzt ist (Werkzeug-Bruch in der Probe)
+w28-kosmos-hadley karte2.planet.kopplung.bahn-klima#3
