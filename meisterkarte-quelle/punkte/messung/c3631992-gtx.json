@@ -1,7 +1,7 @@
 {
  "sha": "c363199265df5e7eb6a78324d59474cc7a34ed05",
  "geraet": "gtx",
- "zeit": "2026-11-26T10:47:16.683Z",
+ "zeit": "2026-11-26T11:05:03.984Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.gespraech#2": {
@@ -571,6 +571,76 @@
    },
    "zeit": "2026-11-26T10:47:16.683Z",
    "abdruck": "3bddb9a59f44",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.stadt.siedlungsnetz#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: Umfang nicht erzeugbar: ein Land von 10³ km, gesehen aus 100 km bei Nacht: die Sitzung trägt Orte bis 0.01 km vom Spieler (1 Siedlungen) (gemessen 0.01) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.14,
+   "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: ein Land von 10³ km, gesehen aus 100 km bei Nacht: die Sitzung trägt Orte bis 0.01 km vom Spieler (1 Siedlungen) (gemessen 0.01) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k78844961429c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k13687177b5b7",
+   "s": 7.7,
+   "fremd": {
+    "s": 10.9,
+    "takte": 5,
+    "fremdS": 3.22,
+    "kerne": 0.295,
+    "fensterKerne": 0.295,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.52
+     ],
+     [
+      "Explorer.EXE",
+      0.48
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.39
+     ]
+    ],
+    "dienerS": 2.28,
+    "diener": [
+     [
+      "dwm.exe",
+      0.92
+     ],
+     [
+      "System",
+      0.69
+     ]
+    ],
+    "geraetS": 3.56,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      2.61
+     ],
+     [
+      "svchost.exe",
+      0.64
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 31.81,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T11:05:03.984Z",
+   "abdruck": "cac2e3a5ed10",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
