@@ -1584,6 +1584,7 @@ class AnazhRealm_koerper_bewegung {
                 tiefe: this._fahrTiefe(z), // das Wasser am Wagen (Schau-2: Widerstand, Ansaugung)
                 haft: this._fahrHaft(z), // μ des Bodens × die Nässe am Reibkreis (fahrzeug.K1, feld.K1)
                 wind: this._fahrWind(z), // der EINE Wind auf der Flanke (wetter.K5)
+                boden: this._fahrRad(z, fahrG, true), // das Rad im weichen Boden und seine Spur (fahrzeug-medium)
             },
             fahrG,
             nowDt

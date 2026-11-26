@@ -1672,9 +1672,7 @@ class AnazhRealm_siedlung_wege {
         const schwach = this._trittSchwach || (this._trittSchwach = new Map());
         const key = i + "," + j;
         const jetzt = this._trittJetzt();
-        const alt = F[key] || schwach.get(key);
-        const n =
-            Math.round(((alt ? alt[0] * Math.exp(-(jetzt - alt[1]) / T.erholTage) : 0) + 1) * T.standN) / T.standN;
+        const n = Math.round((this._trittZahl(x, z) + 1) * T.standN) / T.standN;
         const zeile = [n, Math.floor(jetzt * T.standT) / T.standT];
         const stufe = AnazhRealm._trittStufe(n);
         if (stufe > 0) {
@@ -1692,6 +1690,21 @@ class AnazhRealm_siedlung_wege {
         // der Welt (Bewohner, Tiere) am nächsten Tag (`_trittErholen`) — im Stand kostet die Welt nichts
         if (spieler) this._trittWiese(key);
         else wk.trittOffen.add(key);
+    }
+    // DIE ZAHL DER TRITTE an (x, z) (fahrzeug-medium): wie oft die Zelle schon getreten ist — Fuß, Huf und Rad —, erholt auf die Uhr
+    // von heute (n · e^(−Δt/erholTage): der Stand, darunter das flüchtige Gedächtnis); was unter `vergessen` erholt ist, ist
+    // vergessen — dieselbe Schwelle wie der Kehraus des Tags (`_trittErholen`), so ist die Zahl eine Funktion der Uhr, nie des
+    // Tags, an dem der Kehraus zuletzt lief. Bis hier las sie die Zeile roh: der Sprung der Uhr kehrte im Zwilling der Stunde
+    // die Reste vor dem Sprung aus, der Lauf danach am selben Tag las sie noch (gate:fahr-leben VK-V Bild 0: unter den
+    // Vorderrädern von Wagen 0 je 6,1e-6 Tritte gegen 0, der Wagen 1 mm daneben). Leser: der Tritt selbst (`_tritt`, n + 1) und das Rad im Boden (`_fahrRad`: die Rinne der
+    // Durchfahrten vor ihm). Kosten: ein Schlüssel, wenn ein Fuß oder ein Rad eine neue Zelle betritt.
+    _trittZahl(x, z) {
+        const T = AnazhRealm.TRITT;
+        const key = Math.floor(x / T.zelleM) + "," + Math.floor(z / T.zelleM);
+        const wm = this.state.worldMeta;
+        const alt = (wm && wm.tritt && wm.tritt[key]) || (this._trittSchwach && this._trittSchwach.get(key));
+        const n = alt ? alt[0] * Math.exp(-(this._trittJetzt() - alt[1]) / T.erholTage) : 0;
+        return n >= T.vergessen ? n : 0;
     }
     // Die Kacheln der Wiese und der Nah-Streu über der Zelle `key` fallen (sie wachsen auf dem Pfad neu)
     _trittWiese(key) {
@@ -1774,7 +1787,7 @@ class AnazhRealm_siedlung_wege {
         // das flüchtige Gedächtnis vergisst, was unter einem halben Tritt erholt ist
         if (this._trittSchwach)
             for (const [key, [n, t]] of this._trittSchwach)
-                if (n * Math.exp(-(jetzt - t) / T.erholTage) < 0.5) this._trittSchwach.delete(key);
+                if (n * Math.exp(-(jetzt - t) / T.erholTage) < T.vergessen) this._trittSchwach.delete(key);
         for (const key of wk.trittOffen) this._trittWiese(key);
         wk.trittOffen.clear();
         if (neu) wk.stufen[0].grundNeu = true;
@@ -3339,6 +3352,7 @@ AnazhRealm.TRITT = Object.freeze({
     randM: 0.3,
     tritte: 20,
     erholTage: 20,
+    vergessen: 0.5, // was unter einem halben Tritt erholt ist, ist vergessen (`_trittZahl`, `_trittErholen`)
     stufen: 8,
     pfadGras: 0.4,
     sprungM: 1.5,
