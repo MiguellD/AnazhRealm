@@ -5612,11 +5612,19 @@
     // D = 199 000 Zapfen/mm² (Curcio et al. 1990, J. Comp. Neurol. 292:497). Die FARBE einer Fläche im Rezeptorraum: der Stoff
     // trägt kein Spektrum, also das fundamentale Metamer seines sRGB (Cohen & Kappauf 1982, Am. J. Psychol. 95:537 — die
     // Kombination der Menschen-Zapfen, die der Mensch als genau dieses sRGB sieht; der Wirt reicht seine linear-sRGB → LMS
-    // `lms`), je Zapfen auf Weiß gestellt (von Kries). Der ABSTAND zweier Flächen in Unterscheidungs-Schritten: ln-Fänge mit
-    // dem Rauschen ω = 0,05 je Klasse (Vorobyev & Osorio 1998, Proc. R. Soc. B 265:351), kein Fang unter ω. Die ENTDECKUNG:
-    // ein Ziel der Breite w steht auf der Auflösungs-Grenze β₀ = 1/(2 · cpd) Grad nur mit vollem Kontrast (Weiß gegen die
-    // Rauschgrenze, √n · ln(1/ω)/ω); darunter wächst die Schwelle mit 1/Fläche (Riccò 1877) — D = w / tan(β₀ · √(ΔS_voll/ΔS)),
-    // ab ΔS ≤ 1 ungesehen. Ein Taxon ohne eigene Messung erbt das nächste verwandte und sagt es (`verwandt`).
+    // `lms`), je Zapfen auf Weiß gestellt (von Kries). Der ABSTAND zweier Flächen in Unterscheidungs-Schritten (`sinnSchritte`):
+    // ln-Fänge mit dem Rauschen ω = 0,05 je Klasse, kein Fang unter ω — die FARBE in den n − 1 Gegenfarben (das Rausch-Modell,
+    // Vorobyev & Osorio 1998, Proc. R. Soc. B 265:351, Gl. 3/4: bei gleichem ω der Teil der ln-Differenzen quer zur Hell-Achse,
+    // ΔS² = Σ(Δfᵢ − Δf̄)² / ω²) und die HELLE im längsten Zapfen allein (|Δf_lang| / ω: die S-Zapfen tragen nichts zur
+    // Leuchtdichte, Eisner & MacLeod 1980, J. Opt. Soc. Am. 70:121; der Hell-Kanal der Säuger und der Biene ist der lange
+    // Zapfen, Kelber, Vorobyev & Osorio 2003, Biol. Rev. 78:81), beide gepoolt (√(Farbe² + Helle²)). Bis auge-farbe zählte jede
+    // Klasse ihre ln-Differenz für sich: die Helle stand in jeder Klasse noch einmal als Farbe, der S-Fang des Hirschs trug
+    // Leuchtdichte — Orange und Grün GLEICHER Leuchtdichte lagen im Hirsch-Auge 26,4 ↔ 45,7 Schritte vom Boden (das Warn-Orange
+    // der Jäger, das der Hirsch nicht von Grün trennt: 296,9 ↔ 387,1 m). Die ENTDECKUNG: ein Ziel der Breite w steht auf der
+    // Auflösungs-Grenze β₀ = 1/(2 · cpd) Grad nur mit vollem Kontrast (Weiß gegen die Rauschgrenze im SELBEN Abstand: alle
+    // Klassen gleich weit, keine Farbe, die Helle ln(1/ω)/ω); darunter wächst die Schwelle mit 1/Fläche (Riccò 1877) —
+    // D = w / tan(β₀ · √(ΔS_voll/ΔS)), ab ΔS ≤ 1 ungesehen. Ein Taxon ohne eigene Messung erbt das nächste verwandte und sagt
+    // es (`verwandt`).
     var AUGE_BALL = 0.017; // × H × kopf.gross — der Radius des Augapfels im Kopf-Baum (`bauTier` buildEye)
     var SINNES_GESETZ = Object.freeze({
         taxa: Object.freeze({
@@ -5737,18 +5745,29 @@
         if (T.fovea) return (((2 * Math.PI * G.fovea.k * achseMm) / 360) * Math.sqrt(G.fovea.zapfenMm2)) / 2;
         return Math.exp(G.saeuger.achse) * Math.pow(achseMm, G.saeuger.steigung);
     }
+    // DIE SCHRITTE (das EINE Abstands-Gesetz, Kopf oben): d die ln-Fang-Differenzen je Klasse, aufsteigend (S … lang) — die Farbe
+    // quer zur Hell-Achse in den n − 1 Gegenfarben, die Helle im längsten Zapfen, gepoolt
+    function sinnSchritte(d) {
+        var w = SINNES_GESETZ.omega,
+            n = d.length,
+            m = 0,
+            c = 0;
+        for (var i = 0; i < n; i++) m += d[i] / n;
+        for (var j = 0; j < n; j++) c += (d[j] - m) * (d[j] - m);
+        var h = d[n - 1];
+        return Math.sqrt(c + h * h) / w;
+    }
     // der Abstand zweier linear-sRGB-Flächen im Rezeptorraum eines Fangs, in Unterscheidungs-Schritten
     function augeAbstand(F, a, b) {
         var w = SINNES_GESETZ.omega,
-            s = 0;
+            d = [];
         for (var i = 0; i < F.fang.length; i++) {
             var z = F.fang[i],
                 qa = Math.max(w, z[0] * a[0] + z[1] * a[1] + z[2] * a[2]),
-                qb = Math.max(w, z[0] * b[0] + z[1] * b[1] + z[2] * b[2]),
-                d = Math.log(qa / qb) / w;
-            s += d * d;
+                qb = Math.max(w, z[0] * b[0] + z[1] * b[1] + z[2] * b[2]);
+            d.push(Math.log(qa / qb));
         }
-        return Math.sqrt(s);
+        return sinnSchritte(d);
     }
     // die Entdeckungsdistanz (m) eines Ziels der Breite breiteM mit dem Abstand dS (Schritte) für ein Auge der Schärfe cpd, DURCH
     // DIE LUFT der Welt: der Abstand fällt mit der Strecke wie der Kontrast (Koschmieder, dS·e^{−β·d}; β die Extinktion der EINEN
@@ -5757,9 +5776,12 @@
     // jedes Auge durch Vakuum: der Hirsch den Spieler auf 1,2 km, der Mensch den Hirsch auf 9,7 km, bei Sonne wie im Sturm.
     function augeEntdeckung(cpd, breiteM, dS, kanaele, beta) {
         if (!(beta >= 0)) throw new Error("augeEntdeckung: die Extinktion der Luft fehlt (" + beta + ")");
+        if (!(kanaele >= 1)) throw new Error("augeEntdeckung: die Klassen des Auges fehlen (" + kanaele + ")");
         if (!(cpd > 0) || !(breiteM > 0) || !(dS > 1)) return 0;
+        // der volle Kontrast im SELBEN Gesetz: Weiß (jeder Fang 1) gegen die Rauschgrenze (jeder Fang ω) — bis auge-farbe stand
+        // hier √n · ln(1/ω)/ω, die Summe des alten Abstands
         var w = SINNES_GESETZ.omega,
-            voll = (Math.sqrt(kanaele) * Math.log(1 / w)) / w,
+            voll = sinnSchritte(new Array(kanaele).fill(Math.log(1 / w))),
             b0 = Math.PI / 180 / (2 * cpd);
         var weit = function (s) {
             return breiteM / Math.tan(b0 * Math.sqrt(Math.max(1, voll / s)));
