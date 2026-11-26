@@ -54,7 +54,7 @@ Der Boden bleibt dunkler als das Gras: 72 gegen 124 sRGB-Luma. Das ist Albedo un
 
 **Das Urteil.** ROT nennt den Täter `_lichtWurf` (Haken des Stoffs auf dem Würfel, `ShadowNode.setup` → `receivedShadowNode`). Ungemessen ist ROT beim Namen.
 
-- Selbsttest 9/9 mit der Mutante „Haken auf dem Würfel“.
+- Selbsttest 10/10 mit der Mutante „Haken auf dem Würfel“ (−3,8 EV) und den Fällen „nur ungemessen“ und „ungemessen neben gemessen“.
 - Am Gerät (GTX 1050, `licht --nacht stadt-voll:third,dorf:third --eigen`): VORHER (bild-schatten.js von 45bad33f) stadt-voll third **−2,64 EV ROT beim Täter `_lichtWurf`** (laterne_dorf 2,1 m, 21 Punkte, Himmelskörper y −0,253) → NACHHER **0 EV GRÜN**. Bodenfleck, Kelvin und Karte unverändert (11/12 · ±38 K).
 - Dorf third: die Laterne, die das Spiel wirft, trägt ihren Ring hinter dem Auge (0 Punkte gesehen). Ungemessen je Ort färbt nichts, solange ein anderer Ort misst; misst keiner, ist der Lauf ROT beim Namen.
 
