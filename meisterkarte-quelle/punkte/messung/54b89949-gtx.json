@@ -1,7 +1,7 @@
 {
  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
  "geraet": "gtx",
- "zeit": "2026-11-26T16:41:28.698Z",
+ "zeit": "2026-11-26T16:49:22.765Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -2184,6 +2184,76 @@
    },
    "zeit": "2026-11-26T15:46:34.546Z",
    "abdruck": "c9c10e8a5be2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.regeln#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: fehlender Leser: kein Ballspiel, kein Gegner, keine Rolle Schiedsrichter (TAGES_GESETZ rollen) (koerper-core.js:5135) · gemessen 0 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.69,
+   "grund": "ROT: S2 ROT: fehlender Leser: kein Ballspiel, kein Gegner, keine Rolle Schiedsrichter (TAGES_GESETZ rollen) (koerper-core.js:5135) · gemessen 0 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "ke9dd6d282d0e",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2e9343709e6d",
+   "s": 40.8,
+   "fremd": {
+    "s": 43.5,
+    "takte": 20,
+    "fremdS": 9.55,
+    "kerne": 0.219,
+    "fensterKerne": 0.321,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.92
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      0.8
+     ]
+    ],
+    "dienerS": 8.98,
+    "diener": [
+     [
+      "dwm.exe",
+      3.36
+     ],
+     [
+      "System",
+      3.2
+     ]
+    ],
+    "geraetS": 13.19,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.06
+     ],
+     [
+      "svchost.exe",
+      4.61
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 132.91,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T16:49:22.765Z",
+   "abdruck": "35912037488f",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
