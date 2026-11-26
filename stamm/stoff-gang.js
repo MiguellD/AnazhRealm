@@ -36,6 +36,11 @@ class AnazhRealm_stoff_gang {
         const N = spec.n;
         const B = spec.baender || 1;
         const H = spec.staende || 1;
+        // DER STAND IN DER ZEIT (stand-lebt, koerper STAND): je Stand `standZeilen` Zeilen über seinen Zyklus — die Zeilen eines Stands
+        // liegen beieinander, die Instanz nennt die erste ihrer Uhr und den Anteil der nächsten (`_gangSatzInstanz`); ohne Wort eine
+        const HZ = spec.standZeilen || 1;
+        if (!(H % HZ === 0))
+            throw this._stoffBruch(`die Stände des Satzes (${spec.name})`, new Error(`${H} Zeilen, je Stand ${HZ}`));
         // DER TON JE ECKE (mensch.K4): tragen die Quellen ihn (der Mensch, koerper `menschTon`), färbt jede Instanz ihre Ecken nach
         // ihrer Palette — die Zeilen der Ton-Tafel [Leib, Gestalt] reisen je Instanz in `aGang.zw` (`_gangSatzInstanz`), gelesen am
         // Index des Gangs (`_senkenKnoten().gang`: in der Wahl der GPU der Eintrag ihrer Liste, nie der Index des Zugs)
@@ -50,13 +55,14 @@ class AnazhRealm_stoff_gang {
                 `der Leib-Raum des Satzes (${spec.name})`,
                 new Error("eine Quelle ohne Ton oder Tafel")
             );
-        const seite = this._gangSeite(spec.name, N, B, ton, J, raum, H);
+        const seite = this._gangSeite(spec.name, N, B, ton, J, raum, H, HZ);
         const tex = seite.tex;
         const satz = {
             quellen: spec.quellen,
             n: N,
             baender: B,
             staende: H,
+            standZeilen: HZ,
             J,
             knochen,
             tex,
@@ -212,6 +218,7 @@ class AnazhRealm_stoff_gang {
                 n: N,
                 baender: B,
                 staende: H,
+                standZeilen: HZ,
                 J: seite.breite,
                 puffer: tex.image.data,
                 bytes: 3 * J * (B * N + H) * 16,
@@ -225,8 +232,8 @@ class AnazhRealm_stoff_gang {
             satz.senken.push(m);
         }
         satz.kugeln = AnazhRealm._gangSatzKugeln(satz);
-        // jeder weitere Stand (`staende`: geschrieben vor den Senken) weitet die Kugel wie jede gebackene Zeile
-        for (let h = 1; h < H; h++) AnazhRealm._gangSatzHuelle(satz, B * N + h);
+        // jeder weitere Stand (`staende`: seine erste Zeile, geschrieben vor den Senken) weitet die Kugel wie jede gebackene Zeile
+        for (let h = HZ; h < H; h += HZ) AnazhRealm._gangSatzHuelle(satz, B * N + h);
         return satz;
     }
 
@@ -278,12 +285,15 @@ class AnazhRealm_stoff_gang {
     // der Rest die Phase — und das Gewicht des Gangs, 0 = der Stand); trägt der Satz den Ton (mensch.K4), die Zeilen ihrer
     // Palette in der Ton-Tafel [Leib, Gestalt] (`zeilen`, ohne sie die Eins). DER STAND DER INSTANZ (w28-steh-haltung): die Zeile
     // ihres Stands unter den Ständen des Satzes (`stand`, 0 = neutral) reist mit dem Gewicht — y = 2 · Stand + Gewicht, der
-    // Knoten liest beides (`_gangSatzKnoten`); `aGang` trägt keine freie Komponente
-    static _gangSatzInstanz(m, i, m4, band, phase, w, zeilen, stand = 0) {
+    // Knoten liest beides (`_gangSatzKnoten`); `aGang` trägt keine freie Komponente. DER STAND IN DER ZEIT (stand-lebt): `stand` ist
+    // die Zeile k0 seiner Uhr, der Anteil der nächsten (`standT`, 0 … 1) reist im Bruch der Zeile der Gestalt (w = Zeile + Anteil —
+    // jeder Leser der Palette nimmt die Zeile ganz, `TSL.int`)
+    static _gangSatzInstanz(m, i, m4, band, phase, w, zeilen, stand = 0, standT = 0) {
         m.setMatrixAt(i, m4);
         const a = m.geometry.attributes.aGang;
         const x = band + phase - Math.floor(phase);
-        a.setXYZW(i, x, 2 * stand + Math.min(1, w), zeilen ? zeilen[0] : 0, zeilen ? zeilen[1] : 0);
+        const t = Math.min(0.999, Math.max(0, standT || 0));
+        a.setXYZW(i, x, 2 * stand + Math.min(1, w), zeilen ? zeilen[0] : 0, (zeilen ? zeilen[1] : 0) + t);
     }
     // DIE ZAHL EINER SENKE DES SATZES (dicht, [0, n) lebt): `_instanzZahl`, und was sich schrieb, lädt neu
     static _gangSatzZahl(m, n) {
@@ -316,11 +326,11 @@ class AnazhRealm_stoff_gang {
     // V18.546.159: 8 Bauten des bewohner-satz und 10 seines Wurfs, EIN Programm je Pass). Die Seite wächst in der Breite (doppelt,
     // bis GANG_SEITE.max Plätze: drei Texel je Platz unter der Textur-Grenze 8192), jede Zeile zieht dabei um; erst eine volle
     // Seite öffnet die nächste (ein Knoten mehr).
-    _gangSeite(name, n, baender, ton, J, raum = false, staende = 1) {
+    _gangSeite(name, n, baender, ton, J, raum = false, staende = 1, standZeilen = 1) {
         const S = this._gangSeiten || (this._gangSeiten = new Map());
         const G = AnazhRealm.GANG_SEITE;
         if (!(J <= G.max)) throw this._stoffBruch(`die Seite des Gangs (${name})`, new Error(`${J} Plätze > ${G.max}`));
-        const key = `${name}|${n}|${baender}|${staende}|${ton ? "ton" : ""}|${raum ? "raum" : ""}`;
+        const key = `${name}|${n}|${baender}|${staende}|${standZeilen}|${ton ? "ton" : ""}|${raum ? "raum" : ""}`;
         const liste = S.get(key) || S.set(key, []).get(key);
         let seite = liste.find((x) => x.passt(J));
         if (seite) return seite;
@@ -414,7 +424,7 @@ class AnazhRealm_stoff_gang {
             breite: G.start,
             frei: [[0, G.start]], // [erster Platz, Zahl] je freiem Bereich
             saetze: new Set(),
-            knoten: AnazhRealm._gangSatzKnoten(tex, n, baender, ziel && ziel.knoten(this._tonTafel())),
+            knoten: AnazhRealm._gangSatzKnoten(tex, n, baender, ziel && ziel.knoten(this._tonTafel()), standZeilen),
             zielNimm: ziel ? ziel.nimm : null,
             zielGib: ziel ? ziel.gib : null,
             ziel,
@@ -598,8 +608,10 @@ class AnazhRealm_stoff_gang {
     // DER KNOTEN DES GANGS (Lehre 22: r184 rechnet den positionNode VOR der Instanz-Matrix — die Vorlage ist der Raum des
     // Leibs): je Ecke ihre vier Knochen, je Knochen die Matrix zwischen den zwei Phasen um die Phase der Instanz in ihrem Band,
     // gemischt mit dem Stand nach dem Gewicht des Gangs, an die Vorlage der Ecke; die Normale ebenso — sie geht als
-    // normalLocal in die Instanz-Normale. Die Mischung ist linear in der Matrix, also dieselbe wie zwischen den Lagen.
-    static _gangSatzKnoten(tex, n, baender, raum = null) {
+    // normalLocal in die Instanz-Normale. Die Mischung ist linear in der Matrix, also dieselbe wie zwischen den Lagen. DER STAND IN
+    // DER ZEIT (stand-lebt): trägt der Satz je Stand `standZeilen` Zeilen, mischt der Stand die Zeile k0 seiner Uhr mit der nächsten
+    // seines Zyklus (k1 = k0 + 1, nach der letzten die erste) um den Anteil im Bruch von `aGang.w` (`_gangSatzInstanz`).
+    static _gangSatzKnoten(tex, n, baender, raum = null, standZeilen = 1) {
         const T = THREE.TSL;
         return T.Fn(() => {
             const a = AnazhRealm._senkenKnoten().gang; // der Gang der Instanz (in der Wahl der GPU am Index ihrer Liste)
@@ -614,6 +626,18 @@ class AnazhRealm_stoff_gang {
             const hs = T.floor(a.y.mul(0.5));
             const wg = a.y.sub(hs.mul(2));
             const zs = T.int(hs.add(baender * n)).toVar();
+            const HZ = standZeilen;
+            const ks = HZ > 1 ? T.mod(hs, HZ) : null;
+            const zs1 =
+                HZ > 1
+                    ? T.int(
+                          hs
+                              .sub(ks)
+                              .add(T.mod(ks.add(1), HZ))
+                              .add(baender * n)
+                      ).toVar()
+                    : null;
+            const ts = HZ > 1 ? T.fract(a.w).toVar() : null;
             const z0 = T.int(band.add(k0)).toVar();
             const z1 = T.int(band.add(T.mod(k0.add(1), n))).toVar();
             const lage = T.vec3(0).toVar();
@@ -621,7 +645,8 @@ class AnazhRealm_stoff_gang {
             for (const c of ["x", "y", "z", "w"]) {
                 const j = T.int(ki[c]).mul(3).toVar();
                 const lies = (r, z) => T.textureLoad(tex, T.ivec2(j.add(r), z), T.int(0));
-                const R = [0, 1, 2].map((r) => T.mix(lies(r, zs), T.mix(lies(r, z0), lies(r, z1), t), wg).toVar());
+                const stand = (r) => (HZ > 1 ? T.mix(lies(r, zs), lies(r, zs1), ts) : lies(r, zs));
+                const R = [0, 1, 2].map((r) => T.mix(stand(r), T.mix(lies(r, z0), lies(r, z1), t), wg).toVar());
                 lage.addAssign(T.vec3(T.dot(R[0], roh), T.dot(R[1], roh), T.dot(R[2], roh)).mul(kw[c]));
                 nrm.addAssign(T.vec3(T.dot(R[0].xyz, rohN), T.dot(R[1].xyz, rohN), T.dot(R[2].xyz, rohN)).mul(kw[c]));
             }

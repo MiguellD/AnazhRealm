@@ -953,6 +953,11 @@ class AnazhRealm_koerper_leib {
         // gangBecken, die Zwei-Knochen-IK auf die gebauten Beine `_gaitBeinMass`), die Arme gegen die Beine, die Becken-Senke.
         const wB = gait && Number.isFinite(gait.w) ? Math.max(0, Math.min(1, gait.w)) : isMoving ? 1 : 0;
         const mp = wB < 0.999 ? this._koerperMotionProfile(false, emotions) : null;
+        // DIE ARME DES TUNS (stand-lebt 2): das Profil, in dem er steht, nennt, was seine Hände tun (koerper `STAND.tun` — der nahe
+        // Leib wie der Satz, der den Stand backt: EIN Weg); im Gehen und ohne Tun null
+        r.standTun = mp ? AnazhRealm._leibTakt().leibStandTun(this._koerperMotionName(false, emotions)) : null;
+        // (stand-lebt 3) die gebackene Zeile nennt ihr tragendes Bein im Gemüt (`_bewohnerStandGemuet` seite) — der lebende Leib keins
+        r.standSeite = emotions && (emotions.seite === 0 || emotions.seite === 1) ? emotions.seite : null;
         const mref = mp ? this._koerperMotionProfile(false, null) : null;
         const SB = wB > 0.001 && gait && gait.S > 0 ? gait.S : 0;
         AnazhRealm._leibTakt().leibRigPose(
