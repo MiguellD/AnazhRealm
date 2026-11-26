@@ -1,0 +1,34 @@
+DIE HERDE IN DER WOLKE — karte2.leben.tiere.masse#1 (a)–(d), Leser 2, 26.11. Jede Zeile wörtlich die Zeile der Probe herde
+(scripts/diag-kreatur-takt.cjs --proben herde), im Spiel-Baum wie genannt; Werkbank = scripts/werkbank.cjs start --echt --ort wiese
+(swiftshader, Wolke). Der Läufer ist das Spiel selbst; die Station (g2.js tiere.K1#2, herdeHang) ruft genau diesen Befehl mit --werkbank.
+
+== 1  Spiel 2da17e2e (der Kopf des Geräts) · headless
+✅ herde     {"dorf":["-1,-3",0],"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":0.99,"engst":[0.97,"Una","Una",60],"leine":{"jenseits":0,"max":0.89},"anker":0},"flucht":{"n":5,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0.344,"fluchtMittel":1,"fluchtMin":1,"enge":0.87,"engst":[0.41,"Orin","Pyx",54],"leine":null,"anker":0}},"ausrichtung":{"mittel":0.999,"takte":1221},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.37},"fluchtWegM":34.9,"id":{"bruch":null,"fluchtS":[5,5]}}
+   (24 s) — Sekunden je Probe: herde: 10
+== 2  Spiel 2da17e2e · Werkbank, Spieler am Messort wiese (/umstellen {ort:wiese, sicht:ego}, wie die Sitzung vor dem Deckel)
+✅ herde     {"dorf":["-1,-3",0],"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":0.99,"engst":[0.97,"Sai","Quin",113],"leine":{"jenseits":0,"max":0.93},"anker":0},"flucht":{"n":5,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0.329,"fluchtMittel":1,"fluchtMin":1,"enge":0.87,"engst":[0.42,"Sai","Nira",46],"leine":null,"anker":0}},"ausrichtung":{"mittel":0.995,"takte":1181},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.12},"fluchtWegM":32.2,"id":{"bruch":null,"fluchtS":[5,5]}}
+   (14 s)
+== 3  Spiel main c0634d86 · headless
+✅ herde     {"dorf":["-1,-3",0],"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":0.99,"engst":[0.97,"Una","Una",60],"leine":{"jenseits":0,"max":0.89},"anker":0},"flucht":{"n":5,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0.344,"fluchtMittel":1,"fluchtMin":1,"enge":0.87,"engst":[0.41,"Orin","Pyx",54],"leine":null,"anker":0}},"ausrichtung":{"mittel":0.999,"takte":1221},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.37},"fluchtWegM":34.9,"id":{"bruch":null,"fluchtS":[5,5]}}
+   (23 s) — Sekunden je Probe: herde: 10
+== 4  Spiel main c0634d86 · Werkbank, Spieler bei 0/0 (nach den Läufen von stadtklima#1)
+✅ herde     {"dorf":["-1,-3",0],"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":0.99,"engst":[0.97,"Una","Una",60],"leine":{"jenseits":0,"max":0.89},"anker":0},"flucht":{"n":5,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0.344,"fluchtMittel":1,"fluchtMin":1,"enge":0.86,"engst":[0.44,"Thal","Pyx",14],"leine":null,"anker":0}},"ausrichtung":{"mittel":0.999,"takte":1219},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.37},"fluchtWegM":34.3,"id":{"bruch":null,"fluchtS":[5,5]}}
+   (13 s)
+== 5  Spiel main c0634d86 · Werkbank, Spieler am Messort wiese
+✅ herde     {"dorf":["-1,-3",0],"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":0.99,"engst":[0.97,"Sai","Quin",113],"leine":{"jenseits":0,"max":0.93},"anker":0},"flucht":{"n":5,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0.329,"fluchtMittel":1,"fluchtMin":1,"enge":0.87,"engst":[0.42,"Sai","Nira",46],"leine":null,"anker":0}},"ausrichtung":{"mittel":0.995,"takte":1181},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.12},"fluchtWegM":32.2,"id":{"bruch":null,"fluchtS":[5,5]}}
+   (11 s)
+== 6–8  Spiel 2da17e2e · Werkbank wie 2, davor die Kosten-Kappe der Sitzung r.state.maxCreatures 20 → 1 · 2 · 6 (die Szene herdeSzene leiht sie, g2.js:167)
+   Kappe 1: ✅ herde     {"dorf":["-1,-3",0],"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":0.99,"engst":[0.97,"Sai","Quin",113],"leine":{"jenseits":0,"max":0.93},"anker":0},"flucht":{"n":5,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0.329,"fluchtMittel":1,"fluchtMin":1,"enge":0.87,"engst":[0.42,"Sai","Nira",46],"leine":null,"anker":0}},"ausrichtung":{"mittel":0.995,"takte":1181},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.12},"fluchtWegM":32.2,"id":{"bruch":null,"fluchtS":[5,5]}}
+   Kappe 2: dieselbe Zeile, Zeichen für Zeichen
+   Kappe 6: dieselbe Zeile, Zeichen für Zeichen
+   → die Probe hält ihre eigene Kappe; die Kappe der Sitzung trägt den Wurf nicht
+== 9  Spiel 2da17e2e · Werkbank, Spieler (P0 der Probe) am Hang der Serie -550.6/-889.6 (die Mitte der Herde von „Herde am Hang“)
+✅ herde     {"dorf":["-1,-3",0],"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":0.99,"engst":[0.61,"Thal","Glim",2],"leine":{"jenseits":0,"max":0.92},"anker":0},"flucht":{"n":5,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0.245,"fluchtMittel":1,"fluchtMin":1,"enge":0.86,"engst":[0.35,"Glim","Fae",58],"leine":null,"anker":0}},"ausrichtung":{"mittel":0.996,"takte":894},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.3},"fluchtWegM":33.2,"id":{"bruch":null,"fluchtS":[5,6]}}
+== 10 Spiel 2da17e2e · Werkbank, Spieler am Auge des Schusses 2 -575.39/-924.4 (wo der Zwilling tiere.K1#2 ihn lässt, wenn er davor fährt)
+✅ herde     {"dorf":["-1,-3",0],"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":0.98,"engst":[0.96,"Mira","Sai",25],"leine":{"jenseits":0,"max":0.78},"anker":0},"flucht":{"n":5,"wurfAnteil":1,"mittel":0.975,"fluchtAnteil":0.356,"fluchtMittel":0.973,"fluchtMin":0.6,"enge":0.85,"engst":[0.24,"Sai","Yune",53],"leine":null,"anker":0}},"ausrichtung":{"mittel":0.976,"takte":1298},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.03},"fluchtWegM":34.4,"id":{"bruch":null,"fluchtS":[5,5]}}
+
+GERÄT (vision/richter/leben.tiere.masse.1.*, wörtlich der Anfang des Richters):
+   f63a69ef Radeon 25.11. 18:33  (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.997 über 1231 Takte, letzter Flüchter 0.05 s (4 aus zweiter Hand), Fluchtweg 34.4 m, ID 600 s hält (Flucht 5 / 5 s)
+   2da17e2e Radeon 25.11. 23:04  (a)–(d) auf der Karte ROT: Kohäsion 1 / 1, Φ null über 0 Takte, letzter Flüchter 0 s (0 aus zweiter Hand), Fluchtweg 33.1 m, ID 600 s hält (Flucht 5 / 5 s)
+   2da17e2e GTX 1060 25.11. 23:05  dieselbe Zeile
+   4c9e6aab GTX 1060 26.11. 03:43  dieselbe Zeile

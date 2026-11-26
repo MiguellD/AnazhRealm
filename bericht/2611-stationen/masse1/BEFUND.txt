@@ -1,0 +1,71 @@
+BEFUND — karte2.leben.tiere.masse#1, (a)–(d) DER HERDE AUF DER KARTE (Leser 2, 26.11.)
+
+0. DER AUFTRAG
+   origin/koordination:cloud-post/leser-2611.md (01:57): „die zwei ‚nicht belegt‘ (`stadtklima#1`, `masse#1`) — je 30 min, dann Urteil
+   oder ‚nicht findbar, weil …‘“. stadtklima#1 ist belegt (bericht/2611-stationen/stadtklima1, 3d0e3d58c0).
+   URTEIL masse#1: NICHT FINDBAR in der Wolke, weil die Geräte-Zeile nur mit einem Wurf von höchstens 2 Gliedern entstehen kann (§3),
+   der Spiel-Baum des Geräts in zehn Läufen der Wolke immer 5 Glieder wirft und GRÜN misst (§4), und die Akten den Zustand der
+   Geräte-Sitzung vor der Probe nicht tragen (§5). Kein Kandidat: weder ein Fehler der Station noch ein Täter im Spiel ist belegt.
+
+1. DER RICHTER (wörtlich, vision/meisterkarte-2.json; Stand der Karte 2: punkte-maschine 882fcb81, 123 von 1 718)
+   leben.tiere.masse S1  „Herde flieht als EIN Pulk im Bild“
+   (umfang „10 Glieder: Rudel, Kahlwild“, tiefe „Kohäsion wandernd ≥ 0,9, Flucht ≥ 0,8, Ausrichtung Φ ≥ 0,8“, preis „P · Ego auf 40 m“)
+
+2. DER BEFUND AN DEN GERÄTEN (vision/richter/leben.tiere.masse.1.*)
+   Bis f63a69ef (Radeon 25.11. 18:33) GRÜN in (a)–(d): „Φ 0.997 über 1231 Takte, letzter Flüchter 0.05 s (4 aus zweiter Hand),
+   Fluchtweg 34.4 m“. Seit 2da17e2e auf BEIDEN Geräten Zeichen für Zeichen dieselbe Zeile (Radeon 23:04, GTX 23:05; GTX 4c9e6aab 03:43):
+   „(a)–(d) auf der Karte ROT: Kohäsion 1 / 1, Φ null über 0 Takte, letzter Flüchter 0 s (0 aus zweiter Hand), Fluchtweg 33.1 m,
+   ID 600 s hält (Flucht 5 / 5 s)“. Die Bild-Serie „Herde am Hang“ ist davon getrennt ROT (§8).
+
+3. WAS DIE GERÄTE-ZEILE BEWEIST (die Probe herde im Spiel, scripts/lib/kreatur-proben.cjs am Kopf 2da17e2e; die Zeilen 1000–1250
+   sind byte-gleich an main c0634d86)
+   :1189  Ein Glied läuft (`t.lauf[i]`), sobald es in einem Takt flieht UND sich mehr als 1/60 m bewegt.
+   :1244  „letzter Flüchter“ ist nicht null nur, wenn JEDES Glied lief; 0 s heißt: alle begannen im SELBEN Takt.
+   :1187  In diesem Takt zählt `nl` jedes Glied mit Weg > 1/60 m, also alle Läufer.
+   :1193  Φ zählt jeden Takt mit einem Flüchter und `nl >= 3`.
+   Mit n ≥ 3 Gliedern zählt Φ also mindestens diesen einen Takt. „Φ null über 0 Takte“ zusammen mit „0 s“ geht nur mit n ≤ 2.
+   Das passt zum Rest: Kohäsion 1 / 1 (ein Glied ist immer bei sich) und „0 aus zweiter Hand“ (kein Nachbar, der Alarm gibt).
+   Am Gerät warf die Probe ihren Wurf (:1118 `_kreaturWurf(heim, "wesen", "happy", …, 7)`) also mit höchstens 2 Gliedern. Eine
+   andere Erklärung wäre, dass die Station eine fremde Zeile las. Das prüft §6.
+
+4. DIE WOLKE (wolke.out; zehn Läufe, jede Zeile wörtlich, Befehl der Station `diag-kreatur-takt --proben herde [--werkbank]`)
+   Spiel 2da17e2e headless ............................ n 5 · Φ 0.999 / 1221 Takte · letzter 0.37 s · 4 aus zweiter Hand · 34.9 m  GRÜN
+   Spiel 2da17e2e Werkbank am Messort wiese ............ n 5 · Φ 0.995 / 1181 · 0.12 s · 4 · 32.2 m                              GRÜN
+   dieselbe, Kosten-Kappe maxCreatures 1 · 2 · 6 ........ dieselbe Zeile, Zeichen für Zeichen                                    GRÜN
+   dieselbe, Spieler am Hang -550.6/-889.6 ............. n 5 · Φ 0.996 / 894 · 0.3 s · 4 · 33.2 m                               GRÜN
+   dieselbe, Spieler am Auge des Schusses 2 ............ n 5 · Φ 0.976 / 1298 · 0.03 s · 4 · 34.4 m                             GRÜN
+   Spiel main c0634d86 headless ........................ wie 2da17e2e headless                                                 GRÜN
+   Spiel main c0634d86 Werkbank (Spieler 0/0 · wiese) .. Φ 0.999 / 1219 · 0.995 / 1181 · 4 aus zweiter Hand                      GRÜN
+   Die Kappe ist ausgeschlossen: die Szene der Serie leiht `maxCreatures` (g2.js:167), aber die Probe hält ihre eigene Kappe.
+   Der Ort P0 ist an vier Stellen ausgeschlossen. Die Probe sucht ihr Heim um den Spieler (:31 `P0 = pm.clone()`, :1108
+   `frei(0, 70, 40)`), und die Sitzung stellt nur beim Wechsel des Orts um (punkte.cjs:4307 `ort !== aktOrt`). Die vier Stellen sind
+   0/0, die Wiese, der Hang und das Auge, an dem der Zwilling tiere.K1#2 den Spieler lässt (derselbe Befehl, derselbe Ort).
+
+5. WARUM NICHT FINDBAR
+   - Die Wende liegt genau in f63a69ef..2da17e2e (75 Commits). Darin steht w28-witterung-windab (8d19a24753 „die Witterung ist eine
+     Fahne windab“, 3f13337e06 „die Nase liest den Wind je Takt einmal“). Die Fahne liest den Wind der Sitzung, und die Bühne der Probe
+     stellt den Wind nicht. dce6473d9b nennt denselben Zug als Täter seiner Jagd: „die Fahne ohne Laufzeit — … flohen 18 von 18 Kitzen
+     im ersten Takt“. Das erklärt „alle im selben Takt, 0 aus zweiter Hand“, aber NICHT n ≤ 2 (§3). Die Kette ist also nicht geschlossen.
+   - Was die Sitzung vor der Probe tat (ihre Reihe, Wetter, Uhr, wo der Spieler stand, wie viele Wesen lebten), steht nicht in den
+     Akten. messung/<sha>-<gerät>.json trägt nur die letzte Sitzung (2da17e2e-radeon: sitzung-20261126-011748, 2 Proben). Die rohe
+     Zeile herde (mit n, fremdN, wurfAnteil, dorf) liegt nicht in messung/roh/ (dort nur die Serie, {AUS}).
+   - Am Kopf 2da17e2e ist die Probe in der Wolke an jedem Ort, an jeder Kappe und an beiden Köpfen GRÜN. Eine ROTE Welt lässt sich
+     hier nicht erzeugen, ohne zu raten. Raten wäre Theater, und eine Welt grün zu messen, die am Gerät ROT ist, ist verboten.
+
+6. DIE LÜCKE DER LINSE (die Station; kein Kandidat, nur benannt)
+   g2.js:4798 `echt = Math.min(W.n, F.n, z.fremdN, ...I.fluchtS) >= 3 && …` fällt still. Die Zahl der Station (:4817–4821) nennt weder
+   n noch fremdN noch wurfAnteil, obwohl die Zeile der Probe sie trägt. Darum sagt die Akte „Kohäsion 1 / 1“ und schweigt über den
+   Umfang, also über den einen Wert, der hier den Täter nennt. probeZeile (g2.js:13, `^\s*(✅|❌) herde\s`, die erste Zeile) ist in
+   allen zehn Läufen eindeutig. Ob am Gerät eine zweite Zeile davor stand, kann nur der rohe Strom zeigen.
+
+7. WAS NUR DAS GERÄT MESSEN KANN (Messname masse#1 n)
+   Die rohe Zeile herde der Geräte-Sitzung: verband.wander.n, verband.flucht.n, fremdN, wurfAnteil, dorf. Dazu Wind und Uhr der
+   Sitzung im Augenblick des Wurfs und die Station unmittelbar davor. Ein Lauf am Gerät mit dem Strom der Probe (stdout, nicht nur
+   {AUS}) entscheidet zwischen „der Wurf trug ≤ 2“ (dann ist der Ort oder die Lage der Sitzung der Täter) und „eine fremde Zeile“
+   (dann ist es die Station).
+
+8. OFFEN (beim Namen, nicht Teil dieses Befunds)
+   - Bild-Serie „Herde am Hang“: Schuss 2 ist ROT, weil die Herde hinter Gelände steht („verdeckt von an Punkt 1 Gelände in
+     49.98 m“, Ego 43.3 m, alle 5 tier:wesen UNGEZEICHNET). Das ist seit 486a6685 so, unabhängig von (a)–(d).
+   - Umfang „Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10)“: der Wurf der Szene trägt 5 (`wurf: 5`), der Richter verlangt 10 Glieder.
+     Das ist eine Frage des Spiels (die Kopfzahl des Wurfs), nicht der Station. Messname masse#1 umfang.
