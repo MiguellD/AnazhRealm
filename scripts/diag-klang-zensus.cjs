@@ -29,7 +29,7 @@
 //  (Mk) DER MARKT AUS SEINER MENGE (markt-klang): nach dem Zensus auf derselben Seite am Ort stadt-voll (an `marktSeite`; allein:
 //      `--markt [--sek n]`, 600 = die 10 Minuten der Karte): Stimmen zugleich, L_Aeq gegen die Wochenmärkte, Spitze, Duck am
 //      Bus, wer duckt, Lombard; Täter S24–S27.
-//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S23 unten), Stubs restauriert.
+//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S23 und S28 unten), Stubs restauriert.
 //  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
 //  (U) GESEHEN = GEHÖRT am Bach und im Regen: der eigene Lauf `--gesehen` (an `gesehenSeite`, klang.K2 Staffel 2).
 //   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>] | --gesehen | --markt [--sek <n>]] [--json <datei>]
@@ -1547,10 +1547,18 @@ async function wegSeite(mut) {
 // prettier-ignore
 const PB_BAND = {"mann":{"i":[136,267,2294,2937],"I":[136,392,1993,2569],"E":[128,526,1854,2481],"ae":[125,664,1727,2420],"A":[124,718,1091,2442],"O":[127,568,836,2403],"U":[136,437,1023,2245],"u":[139,307,876,2239],"V":[129,631,1192,2377],"er":[133,489,1360,1709]},"frau":{"i":[231,310,2783,3312],"I":[232,441,2474,3063],"E":[220,608,2334,2999],"ae":[208,863,2049,2832],"A":[212,864,1229,2783],"O":[217,587,915,2736],"U":[234,469,1162,2685],"u":[235,378,961,2666],"V":[223,758,1409,2768],"er":[219,503,1641,1977]},"kind":{"i":[270,360,3178,3763],"I":[270,534,2744,3604],"E":[259,700,2616,3564],"ae":[248,1017,2334,3366],"A":[258,1030,1383,3188],"O":[259,694,1064,3263],"U":[273,560,1402,3332],"u":[278,432,1193,3250],"V":[263,855,1592,3328],"er":[264,569,1806,2194]}};
 const PB_LEIB = { kind: { hoeheM: 1.35, sex: 0.5, jahre: 10 } }; // Mann und Frau: K.STIMME.bezug, K.STIMME.bezugFrau
+// (St) DIE RÄNDER DES LEIBS (stimme-leib-2): der kleinste und der größte Leib des Genoms (koerper kh 0,215 · (1 ± 0,08) · 8 =
+// 1,58 / 1,86 m) am weichen und am harten Rand jedes Pols der Gestalten (Mann sex 0,25 / 0, Frau 0,75 / 1) gegen die Tafel seines
+// Geschlechts, ±15 % — die Stimme eines Erwachsenen folgt seinem Geschlecht und nur schwach seiner Höhe (Pisanski et al. 2014:
+// f0 < 2 % der Varianz der Höhe innerhalb eines Geschlechts). Der Täter: S28 die Falte folgt der Höhe voll (falteExp 1, das
+// Gesetz bis stimme-leib-2) — der kleine Mann und die große Frau fallen beim Namen.
+const PB_RAND = { mannKlein: { hoeheM: 1.5824, sex: 0.25, jahre: 30 }, mannGross: { hoeheM: 1.8576, sex: 0, jahre: 30 }, frauKlein: { hoeheM: 1.5824, sex: 0.75, jahre: 30 }, frauGross: { hoeheM: 1.8576, sex: 1, jahre: 30 } }; // prettier-ignore
+const PB_RAND_BAND = Object.fromEntries(Object.keys(PB_RAND).map((g) => [g, PB_BAND[g.startsWith("mann") ? "mann" : "frau"]]));
 async function stimmSeite(arg) {
     const { band, leiber, mut } = arg;
-    const K = __klangCore, S = K.STIMME, rot = [], je = [], alt = { rachen: S.rachen, kehle: S.kehle };
+    const K = __klangCore, S = K.STIMME, rot = [], je = [], alt = { rachen: S.rachen, kehle: S.kehle, falteExp: S.falteExp };
     if (mut === "pubertaet") [S.rachen, S.kehle] = [0, 0];
+    if (mut === "hoehe") S.falteExp = 1;
     const sr = S.sr;
     // die Kovarianz-Methode (Prony): das freie Ausklingen ist eine Summe gedämpfter Schwingungen an den Polen — exakt, gleich
     // welcher Grundton (die Autokorrelation sieht bei hohem f0 nur die Harmonischen)
@@ -1605,29 +1613,42 @@ async function stimmSeite(arg) {
                 const bestL = tau + (dif[tau - 1] - dif[tau + 1]) / (2 * (dif[tau - 1] - 2 * dif[tau] + dif[tau + 1]) || 1);
                 // die Formanten: das freie Ausklingen nach dem letzten Puls (die Silbe endet bei tex: 0,6 s, dazu der Weg),
                 // 8 ms, Kovarianz 14. Ordnung, die Wurzeln (Durand–Kerner): Winkel → Frequenz, Betrag → Bandbreite (< 400 Hz)
-                const t0 = Math.round((0.6 + ruf.verzug + 0.004) * sr), N = Math.round(0.008 * sr), x = new Float64Array(N);
-                let gross = 0;
-                for (let i = 0; i < N; i++) gross = Math.max(gross, Math.abs((x[i] = A[t0 + i])));
-                for (let i = 0; i < N; i++) x[i] /= gross || 1;
-                const a = kovarianz(x, 14), p = a.length - 1;
-                let z = Array.from({ length: p }, (_, k) => [Math.pow(0.9, k) * Math.cos(0.4 + 0.9 * k), Math.pow(0.9, k) * Math.sin(0.4 + 0.9 * k)].map((q) => q * 0.999));
                 const mul = (u, w) => [u[0] * w[0] - u[1] * w[1], u[0] * w[1] + u[1] * w[0]];
                 const div = (u, w) => { const d = w[0] * w[0] + w[1] * w[1]; return [(u[0] * w[0] + u[1] * w[1]) / d, (u[1] * w[0] - u[0] * w[1]) / d]; }; // prettier-ignore
-                for (let it = 0; it < 800; it++)
-                    z = z.map((zi, i) => {
-                        let f = [1, 0];
-                        for (let k = 1; k <= p; k++) f = [mul(f, zi)[0] + a[k], mul(f, zi)[1]];
-                        let q = [1, 0];
-                        z.forEach((zj, j) => j !== i && (q = mul(q, [zi[0] - zj[0], zi[1] - zj[1]])));
-                        const d = div(f, q);
-                        return [zi[0] - d[0], zi[1] - d[1]];
-                    });
-                const F = z
-                    .filter((w) => w[1] > 0)
-                    .map((w) => [(Math.atan2(w[1], w[0]) * sr) / (2 * Math.PI), (-Math.log(Math.hypot(w[0], w[1])) * sr) / Math.PI])
-                    .filter(([f, b]) => f > 150 && b < 400)
-                    .map(([f]) => f)
-                    .sort((u, w) => u - w);
+                const pole = (vers) => {
+                    const t0 = Math.round((0.6 + ruf.verzug + vers) * sr), N = Math.round(0.008 * sr), x = new Float64Array(N);
+                    let gross = 0;
+                    for (let i = 0; i < N; i++) gross = Math.max(gross, Math.abs((x[i] = A[t0 + i])));
+                    for (let i = 0; i < N; i++) x[i] /= gross || 1;
+                    const a = kovarianz(x, 14), p = a.length - 1;
+                    let z = Array.from({ length: p }, (_, k) => [Math.pow(0.9, k) * Math.cos(0.4 + 0.9 * k), Math.pow(0.9, k) * Math.sin(0.4 + 0.9 * k)].map((q) => q * 0.999));
+                    // bis 800 Schritte, bis kein Wurzel-Schritt 1e-13 übersteigt (die Wurzeln stehen; drei Fenster je Laut)
+                    for (let it = 0, schritt = 1; it < 800 && schritt > 1e-13; it++) {
+                        schritt = 0;
+                        z = z.map((zi, i) => {
+                            let f = [1, 0];
+                            for (let k = 1; k <= p; k++) f = [mul(f, zi)[0] + a[k], mul(f, zi)[1]];
+                            let q = [1, 0];
+                            z.forEach((zj, j) => j !== i && (q = mul(q, [zi[0] - zj[0], zi[1] - zj[1]])));
+                            const d = div(f, q);
+                            schritt = Math.max(schritt, Math.hypot(d[0], d[1]));
+                            return [zi[0] - d[0], zi[1] - d[1]];
+                        });
+                    }
+                    return z
+                        .filter((w) => w[1] > 0)
+                        .map((w) => [(Math.atan2(w[1], w[0]) * sr) / (2 * Math.PI), (-Math.log(Math.hypot(w[0], w[1])) * sr) / Math.PI])
+                        .filter(([f, b]) => f > 150 && b < 400)
+                        .map(([f]) => f)
+                        .sort((u, w) => u - w);
+                };
+                // DER POL, DER BLEIBT (stimme-leib-2): das freie Ausklingen ist eine Summe FESTER gedämpfter Moden (Prony) — ein
+                // Formant steht in jedem Fenster des Ausklingens, ein Pol der Überanpassung (14. Ordnung für fünf Resonatoren) nur in
+                // einem. Je Formant der Median aus drei Fenstern ab 3, 4 und 5 ms (am Dorf 1,1 sah das EINE Fenster bei 4 ms an
+                // einer Frau 1,67 m einen Pol bei 702 Hz als F2 von /i/, 75 %; die Fenster bei 3 und 5 ms und jede andere Ordnung
+                // 2694 Hz)
+                const FF = [0.003, 0.004, 0.005].map(pole), mitte = (k) => FF.map((f) => f[k]).filter(Number.isFinite).sort((u, w) => u - w)[1];
+                const F = [0, 1, 2].map(mitte);
                 const ist = [sr / bestL, F[0], F[1], F[2]], soll = band[gruppe][v];
                 const abw = ist.map((q, i) => (Number.isFinite(q) ? Math.abs(q / soll[i] - 1) : 1));
                 je.push({ gruppe, v, ist: ist.map((q) => Math.round(q)), soll, abw: abw.map((q) => +(100 * q).toFixed(1)) });
@@ -2361,6 +2382,13 @@ async function zensus(page, browser, ergebnis) {
     console.log(
         `── (St) DIE STIMME AUS DEM LEIB: ${sm.je.length * 4 - sm.rot.length}/${sm.je.length * 4} Werte ±15 % zu Peterson & Barney · Mittel ${sm.mittelPct} % · max ${sm.maxPct} % · Kind max ${Math.max(...sm.je.filter((z) => z.gruppe === "kind").flatMap((z) => z.abw))} %`
     );
+    // (St) die Ränder des Leibs: der kleinste und der größte Erwachsene am weichen und harten Rand jedes Pols
+    const sRand = (ergebnis.stimmeRand = await page.evaluate(stimmSeite, { band: PB_RAND_BAND, leiber: PB_RAND, mut: false }));
+    rot.push(...sRand.rot);
+    const randMax = (g) => Math.max(...sRand.je.filter((z) => z.gruppe === g).flatMap((z) => z.abw));
+    console.log(
+        `── (St) DIE RÄNDER DES LEIBS: ${sRand.je.length * 4 - sRand.rot.length}/${sRand.je.length * 4} Werte ±15 % · max ${sRand.maxPct} % · ${Object.keys(PB_RAND).map((g) => `${g} ${randMax(g)} %`).join(" · ")}`
+    );
     Object.assign(ergebnis, { orte, daten, offline, kosten: kostenErg, lab, ereig, rot });
 
     let selbstOk = true;
@@ -2528,13 +2556,15 @@ async function zensus(page, browser, ergebnis) {
         nennt((await page.evaluate(blitzSeite, "wort-ueberall")).rot, /^Db 12 km /, "S23: das Wort gilt überall");
         // S21: der Mann ohne Pubertät (Rachen und Kehle wie die Frau) — sein Grundton fällt beim Namen
         nennt((await page.evaluate(stimmSeite, { band: PB_BAND, leiber: PB_LEIB, mut: "pubertaet" })).rot, /^St mann /, "S21: der Mann ohne Pubertät");
+        // S28: die Falte folgt der Höhe voll (das Gesetz bis stimme-leib-2) — der Grundton des kleinen Manns fällt beim Namen
+        nennt((await page.evaluate(stimmSeite, { band: PB_RAND_BAND, leiber: PB_RAND, mut: "hoehe" })).rot, /^St mannKlein \/\S+\/ f0 /, "S28: die Falte folgt der Höhe voll");
         // S16: die Untertitel aus — der Ton spielt, die Zeile schweigt: jedes klingende Ereignis und jede Stimme fallen beim Namen
         const e16 = await mitZwilling("_untertitelZeile", "zeileAus");
         const u16 = untertitelUrteil(e16, { wiese: await messeOrt(page, "wiese", orte.wiese, { ohneZeile: true }) }, []).rot;
         for (const re of [/^Ü treffer: klingt ohne/, /^Ü auftrag: klingt ohne/, /^Ü wiese\/\S+: klingt ohne/])
             nennt(u16, re, `S16: die Untertitel aus (${re})`);
         for (const t of fehl) console.log("   ❌ " + t);
-        if (!fehl.length) console.log("   ✅ S1–S23 nennen jeden Täter beim Namen");
+        if (!fehl.length) console.log("   ✅ S1–S23 und S28 nennen jeden Täter beim Namen");
         selbstOk = !fehl.length;
         ergebnis.selbsttest = fehl;
     }

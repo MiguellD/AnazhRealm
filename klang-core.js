@@ -1503,12 +1503,12 @@
     //  Formen traegt die Tafel von Peterson & Barney 1952 (die Mittel der 33 Maenner und 28 Frauen, zehn Vokale in /hVd/), je
     //  an der Roehre ihres Bezugs geeicht; die Laenge folgt dem Leib (Nordstroem & Lindblom 1975), die Form der Reife (Fant 1966:
     //  die nicht gleichmaessige Skalierung) — das Kind folgt aus SEINEM Leib, die Vorhersage des Gesetzes.
-    //  DER LEIB (der Wirt reicht ihn aus dem Genom, koerper-core): die Hoehe H (m), die Achse sex nach ihrer Reife
-    //  (`alterGeschlecht`: 0 Mann, 1 Frau, das Kind zur Mitte), die Jahre. Die Pubertaet des Manns (mann = max(0, 1 − 2·sex))
+    //  DER LEIB (der Wirt reicht den Leib, den der Bewohner zeigt — stamm `_bewohnerZeigt`): die Hoehe H (m), die Achse sex nach ihrer Reife
+    //  (`alterGeschlecht`: 0 Mann, 1 Frau, das Kind zur Mitte), die Jahre. Die Pubertaet des Manns (mann = mannReif · reife, gesaettigt: `stimmLeib`)
     //  streckt Rachen und Kehlkopf ueber das Mass der Hoehe hinaus (Fitch & Giedd 1999: der Trakt folgt der Groesse, die
     //  Geschlechter trennen sich erst mit der Pubertaet):
     //    L_t = H·traktJeHoehe·(1 + rachen·mann)    der Trakt
-    //    L_f = H·falteJeHoehe·(1 + kehle·mann)     die schwingende Falte, f0 = welle / (2·L_f) (die Saite, Titze 1994)
+    //    L_f = H_f·falteJeHoehe·(1 + kehle·mann)   die schwingende Falte (H_f: die Hoehe, schwach im Erwachsenen, `stimmLeib`), f0 = welle / (2·L_f) (die Saite, Titze 1994)
     //  rachen und kehle sind an der Frau geeicht (PB: ihre Formanten 1,17-, ihr f0 1,70-mal die des Manns bei 0,93 seiner
     //  Hoehe); das Kind ist die Vorhersage des Gesetzes (gleichmaessig skaliert laege sein /er/ F1 21 % ueber der Tafel, mit der
     //  Form der Reife 6 %). Gemessen am Abgriff: gate:klang-zensus (St), der Grundton (YIN) und die Resonanzen im freien
@@ -1570,12 +1570,28 @@
         for (var n = 0; n < form.length; n++) F.push((form[n] * (2 * n + 1) * c) / (4 * traktM));
         return F;
     }
+    // DIE REIFE UND DIE FALTE (stimme-leib-2): die Pubertaet trennt die Geschlechter als SCHWELLE — der Grundton faellt zwischen
+    // Tanner G3 und G4 abrupt und bleibt (Harries et al. 1997, 26 Knaben laengs); also saettigt die Reife am Rand der Pole: ein
+    // Erwachsener (|sex − 0,5| ≥ reifeSpanne, der Rand der Gestalten, koerper `alterGeschlecht`: Mann ≤ 0,25, Frau ≥ 0,75) traegt die
+    // volle Achse mann seines Pols, das Kind (zur Mitte gezogen) den Teil seiner Reife. Bis stimme-leib-2 mann = 1 − 2·sex: ein Mann
+    // mit sex 0,19 sprach als 0,62-Mann (am Dorf −4,−4 f0 150 Hz gegen Peterson & Barney 124–139). DIE FALTE folgt der Hoehe nur im
+    // Wachsen (das Kind: Fitch & Giedd 1999, 129 Leiber 2–25 J); im Erwachsenen bindet sie schwach — innerhalb eines Geschlechts
+    // erklaert f0 < 2 % der Varianz der Hoehe (Pisanski et al. 2014, Meta-Analyse, 39 Stichproben): |r| ≤ 0,14 · σ(ln f0) 0,127
+    // (die 33 Maenner von Peterson & Barney 1952, je Sprecher) ÷ σ(ln H) 0,04 (~7 cm, Jelenkovic et al. 2016) → der Exponent
+    // falteExp 0,45 um die Hoehe des Bezugs seines Pols. Der Trakt folgt der Hoehe voll (die Formanten, Fitch & Giedd 1999).
+    //   reife = min(1, |sex − 0,5| ÷ reifeSpanne) · mann = mannReif · reife (nur sex < 0,5)
+    //   L_f = H·(H_bezug ÷ H)^((1 − falteExp)·reife)·falteJeHoehe·(1 + kehle·mann)
+    STIMME.reifeSpanne = 0.25;
+    STIMME.falteExp = 0.45;
+    STIMME.mannReif = 1 - 2 * STIMME.bezug.sex; // die Achse mann des reifen Manns (0,75, der Bezug der Tafel)
     // der Leib der Stimme: { hoeheM, mann, traktM, falteM, f0 } aus { hoeheM, sex, jahre }
     function stimmLeib(leib) {
         var S = STIMME, L = leib || {};
         var H = Math.max(0.5, Math.min(2.4, typeof L.hoeheM === "number" && isFinite(L.hoeheM) ? L.hoeheM : S.bezug.hoeheM));
-        var sx = Math.max(0, Math.min(1, typeof L.sex === "number" && isFinite(L.sex) ? L.sex : 0.5)), mann = Math.max(0, 1 - 2 * sx);
-        var trakt = H * S.traktJeHoehe * (1 + S.rachen * mann), falte = H * S.falteJeHoehe * (1 + S.kehle * mann);
+        var sx = Math.max(0, Math.min(1, typeof L.sex === "number" && isFinite(L.sex) ? L.sex : 0.5));
+        var reife = Math.min(1, Math.abs(sx - 0.5) / S.reifeSpanne), mann = sx < 0.5 ? S.mannReif * reife : 0;
+        var Hf = H * Math.pow((sx < 0.5 ? S.bezug.hoeheM : S.bezugFrau.hoeheM) / H, (1 - S.falteExp) * reife);
+        var trakt = H * S.traktJeHoehe * (1 + S.rachen * mann), falte = Hf * S.falteJeHoehe * (1 + S.kehle * mann);
         return { hoeheM: H, mann: mann, traktM: trakt, falteM: falte, f0: S.welle / (2 * falte) };
     }
     // die Formen der Vokale je Bezug: k_n = F_n·4·L_t(Bezug) / ((2n − 1)·c_t), F4 und F5 gerade

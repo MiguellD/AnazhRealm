@@ -830,8 +830,9 @@ class AnazhRealm_klang {
         }
     }
 
-    // DER LAUT DES BEWOHNERS (klang-leib, erleben.klang.stimme#1 — klang:STIMME): ein Bewohner mit Leib spricht aus seinem
-    // Genom (`b.genom`, koerper `alterLeib`: die Höhe 8 · kh, die Achse sex nach ihrer Reife, die Jahre) — sein Laut folgt dem Akt
+    // DER LAUT DES BEWOHNERS (klang-leib, erleben.klang.stimme#1 — klang:STIMME): ein Bewohner mit Leib spricht aus dem Leib, den
+    // er zeigt (`_bewohnerZeigt`: die Höhe seines Genoms, das Geschlecht seiner Gestalt, die Jahre seines Lebenslaufs; bis stimme-leib
+    // der Wurf des Genoms, am Dorf −4,−4 15 von 28 Erwachsenen ±15 % nach Peterson & Barney) — sein Laut folgt dem Akt
     // seines Tags (`b.akt`, STIMME.akte) als Rate je Minute, und wem der Spieler auf grussM nahe kommt, grüßt einmal je
     // Begegnung. Gerechnet in der Klang-Werkstatt (`rufPuffer`), gespielt über den EINEN Weg zum Ohr (`rufSpielen`). Bis
     // klang-leib sprach kein Bewohner. Kosten: die Leiber der Siedlungen im Nah-Ring (AUTO_SETTLEMENT.nearM), je Takt ein
@@ -1001,7 +1002,7 @@ class AnazhRealm_klang {
         const dx = g.position.x - pm.position.x;
         const dz = g.position.z - pm.position.z;
         const ruf = {
-            leib: { hoeheM: 8 * b.genom.kh, sex: b.genom.sex, jahre: b.genom.jahre },
+            leib: this._bewohnerZeigt(b),
             laut,
             d: Math.hypot(dx, dz),
             pan: this._umweltPanorama()(dx, dz),
