@@ -686,7 +686,8 @@ class AnazhRealm_siedlung_verkehr {
     // (`_verkehrQuerung`): ein Wagen beansprucht sie, wenn er an seinem Ort ist, bevor er sie verlassen hat (samt `querRandS`), und
     // nicht schon vorbei, wenn er hineintritt; ohne Zeit, was ein Halter durch seinen Ort fährt und die Lücke im Strom. Wer schon
     // auf der Fahrbahn oder in einer beanspruchten Bahn ist, hält seine Reservierung und geht zu Ende — der Wagen wartet die Dauer
-    // seiner Querung (`_verkehrFolge`). Bis w27-verkehr-leib fragte er nur den nächsten Schritt (0,1 s) gegen die Bahn eines Wagens
+    // seiner Querung (`_verkehrFolge`) —, nie in die Bahn eines anderen, die der beansprucht: an ihrem Rand wartet er (tages-gesetz 4,
+    // unten). Bis w27-verkehr-leib fragte er nur den nächsten Schritt (0,1 s) gegen die Bahn eines Wagens
     // binnen `lueckeS` (höchstens `vorrangM`): wer die erste Spur betrat, stand in ihr vor dem Wagen der zweiten, und der Wagen der
     // ersten hielt vor ihm (stadt-voll 10 Uhr: Halte vor Querenden ~250 Wagen-Sekunden je Stunde). Liefert true (er wartet am Rand),
     // das Tempo, mit dem er eine Bahn quer räumt (unten), oder false.
@@ -699,7 +700,7 @@ class AnazhRealm_siedlung_verkehr {
         // der billige Filter zuerst (Lehre 25): wer nicht an die Fahrbahn tritt, fragt keinen Wagen; wer von außen auf sie tritt,
         // fragt seine ganze Querung, wer auf ihr geht, jede Bahn, in die er tritt (die Kreuzung: Fahrbahn von Rand zu Rand)
         if (!(sp > 0) || !this._verkehrAufSpur(S, nx, nz)) return false;
-        let [traf, drin, tritt, raeum] = [false, false, !this._verkehrAufSpur(S, x, z, 0) && this._verkehrAufSpur(S, nx, nz, 0), null]; // prettier-ignore
+        let [traf, tritt, raeum] = [false, !this._verkehrAufSpur(S, x, z, 0) && this._verkehrAufSpur(S, nx, nz, 0), null]; // prettier-ignore
         for (const W of S.verkehr.wagen) {
             const e = W.entry;
             const F = W.F;
@@ -743,9 +744,8 @@ class AnazhRealm_siedlung_verkehr {
                 (v * (Q[1] + V.querRandS) > d && d + 2 * (W.hl + R) > v * Q[0]);
             if (!belegt) continue;
             if (Math.abs(bQ) <= B) {
-                // er steht schon in der Bahn, die einer beansprucht: verlässt er sie in der Dauer einer Querung, geht er hinüber;
-                // sonst RÄUMT ER SIE QUER (er gibt sie frei), nie längs
-                drin = true;
+                // er steht schon in der Bahn, die einer beansprucht: verlässt er sie in der Dauer einer Querung, geht er hinüber —
+                // nie in die Bahn eines anderen, die der beansprucht (unten); sonst RÄUMT ER SIE QUER (er gibt sie frei), nie längs
                 if (d > 0 && Q[1] > (2 * B) / sp + V.querRandS) raeum = { q: bQ, B, nx: -(c.z - a.z) / l, nz: (c.x - a.x) / l }; // prettier-ignore
                 continue;
             }
@@ -755,7 +755,8 @@ class AnazhRealm_siedlung_verkehr {
         // DER LEIB GIBT DIE BAHN FREI (w27-verkehr-leib): wer vor dem Bug in ihr steht oder längs geht, tritt mit seinem Tempo quer
         // aus ihr an den Rand neben der Fahrbahn (dort fährt kein Wagen) — auf seiner Seite, nie über die Linie —, wo keine Wand
         // den Schritt schneidet und auf ihm kein Leib näher als zwei Kapseln steht; und wartet dort, bis die Bahn frei ist (oben).
-        // Trägt seine Seite nicht, geht er seinen Weg, und der Wagen umfährt ihn (`_verkehrFolge`). Bis hier ging er, wohin sein Weg
+        // Trägt seine Seite nicht, geht er seinen Weg — nie in eine Bahn, die ein anderer beansprucht (unten) —, und der Wagen umfährt
+        // ihn (`_verkehrFolge`). Bis hier ging er, wohin sein Weg
         // und sein Ausweichen ihn führten: an der Kreuzung am Markt tänzelten #7:58:0 und #7:54:4 längs der Bahn ihres Halters
         // (stadt-voll 10 Uhr, 22–49 s, die Kreuzung stand, „fahrend je Minute“ 0 m)
         if (raeum) {
@@ -769,9 +770,15 @@ class AnazhRealm_siedlung_verkehr {
                 !this._bewohnerWand({ x, z }, p) &&
                 this._bewohnerNaechster(S, b, p.x, p.z) >= K &&
                 this._bewohnerNaechster(S, b, m.x, m.z) >= K;
-            return frei && { vx: ux * sp, vz: uz * sp };
+            if (frei) return { vx: ux * sp, vz: uz * sp };
         }
-        return traf && tritt && !drin;
+        // DIE BAHN DES ANDEREN (tages-gesetz 4): wer in der Bahn des einen steht oder sie nicht räumen kann, betritt nie die Bahn,
+        // die ein anderer beansprucht — er wartet an ihrem Rand: der Wagen der Bahn, in der er steht, fährt nie schneller, als er vor
+        // ihm noch hielte (`_verkehrFolge`, `querHaltM`), der andere sieht ihn erst in seiner Bahn. Bis hier hob die eine Bahn das
+        // Warten vor der anderen auf, und wer die seine nicht räumen konnte, ging seinen Weg: stadt-voll 10 Uhr ging das Kind
+        // 7:288:5 längs in der Bahn eines Wagens, trat 3 m vor dem Bug des Wagens 7 (8,2 m/s) in dessen Bahn und stand dort — der
+        // Wagen bremste bis 4,4 m/s, „berührt Bewohner 11×“
+        return traf && tritt;
     }
 
     // DER WAGEN STEHT AUF SEINEM PLATZ: das Werk des Gesetzes (`fahrzeug_<typ>`, ausGesetz, präzise — die Wende ist sein Platz),
@@ -1295,6 +1302,7 @@ class AnazhRealm_siedlung_verkehr {
                 umfahr: null,
                 weicht: null,
                 gesperrt: false,
+                durch: null,
                 wartet: null,
             });
             Object.assign(W, {
@@ -1588,10 +1596,16 @@ class AnazhRealm_siedlung_verkehr {
         // über die halbe Breite, wie sie neben dem Stück der Linie um sie liegt — das `rund` an ihrem Fußpunkt, wo es den Bogen
         // übersteigt. Bis hier galt nur der eingeschwungene Bogen: der Transporter 6 umfuhr einen Bewohner, die neue Linie begann
         // 9° neben seiner Gier und bog binnen 2 m weitere 9°, die Ecke am Bug ragte 0,42 m über das Band (stadt-voll 10 Uhr, 824/442)
+        // DER FUSS WANDERT (tages-gesetz 2): die Linie trägt je Meter einen Punkt, der Fuß einer Ecke aber geht zwischen zwei
+        // Punkten über die Stücke dazwischen — das `rund` der Ecke gilt an jedem Stück von ihrem Fuß am einen Punkt bis zu dem am
+        // nächsten (das größere der beiden). Bis hier trug es nur das Stück am Punkt: der SUV 14 stand beim Bau 13,5° schräg, das
+        // rund 0,607 lag am Stück 2, 0,29 m weiter lag der Fuß seiner Bug-Ecke auf Stück 3 mit dem rund des Bogens 0,27, und die
+        // Ecke ragte 0,374 m über das Band (stadt-voll 10 Uhr, 826/442)
         const g0 = e._rideYaw;
         if (Number.isFinite(g0) && W.c > 0) {
             let [hx, hz] = [e.position.x - Math.sin(g0) * W.c, e.position.z - Math.cos(g0) * W.c];
             const n = F.pts.length;
+            const fuss = AnazhRealm._verkehrEcken.map(() => null);
             for (let i = 0; i < n && F.bogen[i] - F.bogen[0] <= 5 * W.c + W.hl; i++) {
                 const P = F.pts[i];
                 const l = Math.hypot(P.x - hx, P.z - hz) || 1;
@@ -1600,7 +1614,8 @@ class AnazhRealm_siedlung_verkehr {
                 let [j0, j1] = [i, i];
                 while (j0 > 0 && F.bogen[i] - F.bogen[j0] < W.hl + 2) j0--;
                 while (j1 < n - 1 && F.bogen[j1] - F.bogen[i] < W.hl + 2) j1++;
-                for (const [u, w] of AnazhRealm._verkehrEcken) {
+                for (let ek = 0; ek < AnazhRealm._verkehrEcken.length; ek++) {
+                    const [u, w] = AnazhRealm._verkehrEcken[ek];
                     if (!u || !w) continue;
                     const [x, z] = [P.x + fx * W.hl * u + fz * W.hw * w, P.z + fz * W.hl * u - fx * W.hw * w];
                     let [bq, bj] = [Infinity, -1];
@@ -1613,7 +1628,11 @@ class AnazhRealm_siedlung_verkehr {
                         const d = Math.hypot(x - p.x - dx * t, z - p.z - dz * t);
                         if (d < bq) [bq, bj] = [d, j];
                     }
-                    if (bj >= 0 && bq - W.hw > F.rund[bj]) F.rund[bj] = bq - W.hw;
+                    if (bj < 0) continue;
+                    const [j0f, r0f] = fuss[ek] || [bj, bq - W.hw];
+                    const rf = Math.max(r0f, bq - W.hw);
+                    for (let j = Math.min(j0f, bj); j <= Math.max(j0f, bj); j++) if (rf > F.rund[j]) F.rund[j] = rf;
+                    fuss[ek] = [bj, bq - W.hw];
                 }
             }
         }
@@ -1944,6 +1963,8 @@ class AnazhRealm_siedlung_verkehr {
             }
         const A = S.verkehr.zahl.arbeit;
         [A.folge, A.paare] = [A.folge + 1, A.paare + kandidaten.length];
+        // der Erste im Kreis aus Wagen-Kanten (`_verkehrKreisDurch`): an dem, vor dem er stand, fährt er ohne den Rand vorbei
+        const durch = W.durch && W.durch.F === F && F.s < W.durch.bis ? W.durch.O : null;
         for (const O of kandidaten) {
             if (O === W || !O.entry) continue;
             const o = O.entry;
@@ -1982,7 +2003,7 @@ class AnazhRealm_siedlung_verkehr {
                 if (!q || q.s <= F.s || (a && q.s >= a.s)) continue;
                 const b = F.pts[Math.min(F.pts.length - 1, q.i + 1)];
                 const t = Math.atan2(b.x - F.pts[q.i].x, b.z - F.pts[q.i].z);
-                if (q.quer > W.hw + rundAn(q.i) + (ruht || Math.cos(ry - t) < -0.5 ? V.begegnungM : V.seitM)) continue;
+                if (q.quer > W.hw + rundAn(q.i) + (O === durch ? 0 : ruht || Math.cos(ry - t) < -0.5 ? V.begegnungM : V.seitM)) continue; // prettier-ignore
                 [a, lt] = [q, t];
             }
             if (!a) continue;
@@ -2121,6 +2142,12 @@ class AnazhRealm_siedlung_verkehr {
         const rechts = noetig + q;
         const off = rechts <= V.umfahrMaxM ? -rechts : noetig - q;
         const kern = W.hl + R + 1;
+        // DIE RAMPE LIEGT VOR DEM WAGEN (tages-gesetz 4): seine neue Linie beginnt an ihm (`_verkehrLinie`) — schert sie schon an
+        // ihm aus, beginnt sie neben ihm, quer zu seiner Gier, und kein Einschlag trägt den Leib auf sie. Wer dem Stehenden näher
+        // ist als Kern und Rampe, umfährt von hier nie: er wartet, der Leib tritt beiseite (`_bewohnerPlatz`). Bis hier galt die
+        // Rampe um den Stehenden, wo immer der Wagen stand: SUV 17 hielt 4,3 m vor ihm an der Wende 854/407 (stadt-voll 10 Uhr),
+        // die Linie begann 66° neben seiner Gier, er fuhr in ihr, und nach 0,88 m ragte seine Ecke 0,612 m über das Band
+        if (u.s - F.s < kern + V.umfahrRampeM) return false;
         const w = (s) => {
             const d = Math.abs(s - u.s);
             return d <= kern ? 1 : d >= kern + V.umfahrRampeM ? 0 : 1 - (d - kern) / V.umfahrRampeM;
@@ -2164,6 +2191,19 @@ class AnazhRealm_siedlung_verkehr {
     // Sim-Schritt), dann fragt er. Bis hier gab er die Enge hinter der ersten Durchfahrt frei, deren zweite seine Kette schon
     // trug: der Entgegenkommende nahm sie, und beide standen Bug an Bug in ihr — stadt-voll 10 Uhr an beiden Sackgassen mit Enge
     // (736/556 und 679/441), die halbe Stadt dahinter (8 Ankünfte in 10 min).
+    // DER RANG IM KREIS AUS WAGEN-KANTEN (`_verkehrZonen`): es fährt, wer einen Ort hält, sonst die kleinste Nummer (der ältere
+    // Eintrag der Stadt — derselbe Rang wie die übrige Regel des Graphen). Der Erste fährt an dem vorbei, vor dem er hält, ohne den
+    // Raum der Begegnung (`durch`, gelesen in `_verkehrFolge`): sein Leib samt Ausscheren bleibt frei, nur der Rand fällt — bis zwei
+    // Wagenlängen weiter auf seiner Linie. Liefert { O, F, bis } für den Ersten, sonst null; der Täter `--mutante-kreis`
+    // (diag-fahr-leben) stellt ihn still
+    _verkehrKreisDurch(W, kreis) {
+        const haelt = (X) => !!X.F && X.zonen.some((z) => z.hat && !z.weg);
+        let erster = null;
+        for (const [X] of kreis)
+            if (!erster || haelt(X) > haelt(erster) || (haelt(X) === haelt(erster) && X.nr < erster.nr)) erster = X;
+        if (erster !== W || !W.wer) return null;
+        return { O: W.wer, F: W.F, bis: W.F.s + 2 * (W.hl + W.wer.hl) + AnazhRealm.VERKEHR.abstandM };
+    }
     _verkehrZonen(S, W, v) {
         const V = AnazhRealm.VERKEHR;
         const F = W.F;
@@ -2183,7 +2223,15 @@ class AnazhRealm_siedlung_verkehr {
         const nrn = (wer) => (kreis || []).filter(wer).map(([X]) => X.nr);
         const halter = nrn(([X]) => !!X.F && X.zonen.some((z) => z.hat && !z.weg));
         const koepfe = nrn((_, i) => kreis[(i + n - 1) % n][1] === "kopf");
-        const gibtAb = halter.length > 0 && Math.min(...halter) === W.nr;
+        // DER KREIS AUS WAGEN-KANTEN LÖST SICH (tages-gesetz 2; die Verklemmung, Rang nach Zeitstempel): wartet jeder im Kreis nur
+        // auf den Wagen vor seinem Bug, löst kein Ort ihn — EINER fährt (`_verkehrKreisDurch`), der Halter behält seine Kette. Bis
+        // hier löste der Graph nur Kreise über Halter und Kopf: im Bogen vor der Wende 746/573 standen zwei Entgegenkommende Bug
+        // an Bug, jeder 0,04–0,10 m im Raum der Begegnung des anderen (stadt-voll 10 Uhr, Kopf 99b234d7: „8>9“ ab Sekunde 30,
+        // danach 21 von 21 Wagen)
+        const rein = n > 0 && kreis.every(([, art]) => art === "wagen");
+        if (rein) W.durch = this._verkehrKreisDurch(W, kreis);
+        else if (W.durch && !(W.durch.F === F && F.s < W.durch.bis)) W.durch = null;
+        const gibtAb = !rein && halter.length > 0 && Math.min(...halter) === W.nr;
         W.gesperrt = !halter.length && koepfe.length > 0 && Math.min(...koepfe) === W.nr;
         for (const z of W.zonen)
             if (!z.weg && F.s - W.hl > z.aus) {
