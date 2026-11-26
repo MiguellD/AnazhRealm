@@ -1,7 +1,7 @@
 {
  "sha": "c363199265df5e7eb6a78324d59474cc7a34ed05",
  "geraet": "gtx",
- "zeit": "2026-11-26T11:17:53.211Z",
+ "zeit": "2026-11-26T11:29:59.748Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.gespraech#2": {
@@ -781,6 +781,76 @@
    },
    "zeit": "2026-11-26T11:10:14.562Z",
    "abdruck": "6060528d35aa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.kunst#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":5,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1087,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.17,
+   "grund": "ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":5,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1087,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k78844961429c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k098fbe9b1f69",
+   "s": 9.5,
+   "fremd": {
+    "s": 13.2,
+    "takte": 6,
+    "fremdS": 19.58,
+    "kerne": 1.483,
+    "fensterKerne": 1.524,
+    "namen": [
+     [
+      "grep.exe -o [^ {0,900/}Preis-Sitzung zuerst 541cb39c-a23b-4e81-9574-49daf37d0a25.js…",
+      12.84
+     ],
+     [
+      "Explorer.EXE",
+      1.77
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.09
+     ]
+    ],
+    "dienerS": 3.38,
+    "diener": [
+     [
+      "dwm.exe",
+      1.42
+     ],
+     [
+      "System",
+      1.13
+     ]
+    ],
+    "geraetS": 6.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.34
+     ],
+     [
+      "svchost.exe",
+      2.53
+     ],
+     [
+      "SearchIndexer.exe",
+      0.47
+     ]
+    ],
+    "eigenS": 38.97,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T11:29:59.748Z",
+   "abdruck": "64bbef8b031b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
