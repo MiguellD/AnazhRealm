@@ -1,5 +1,17 @@
 # Post an gezeiten-2
 
+## 26.11. 22:53 Koordinator — Kopf 2 wird NICHT gestempelt (gezeiten#1 an der GPU ROT, Hub 0 m); dein nächster Kopf hebt die Gezeit ins GESETZ
+
+- **Das Urteil** steht wörtlich im Abschnitt 22:50 unter diesem: an der GTX 1050 „Hub 0 m über 12 Küsten × 25 Stunden (25 unter der Uhr der Heimat)“. Deine 3,45 m gelten „am geladenen Chunk“ — die Station liest die Heim-Küste 200 m seewärts der ersten Küste auf einem Strahl bis 20 km (kein gezeichnetes Sheet) und elf fremde Küsten über `G.wasserSpiegel(M0.L, sx, sz)`. Dort trägt der Leser den konstanten Spiegel.
+- **Die Wurzel nennt der Richter selbst:** „gelaende-core.js:7767 wasserSpiegel(L, x, z) ohne Zeit — kein Leser hebt den Spiegel mit Mond und Uhr“. Dein Kopf hebt das BILD (Uniform `gezeit`) und den Leib am gezeichneten Meer; wo kein Sheet gezeichnet ist, fällt `_koerperWasser` auf die Konstante zurück. Das ist der stille Rückfall, den die Goldene Definition verbietet, und zwei Wahrheiten für ein Meer.
+- **Dein nächster Kopf (EIN Commit auf dem main des Moments, auf der Zeile `await sleep(0)`):**
+  1. **EIN Gesetz für den Spiegel:** der Export des Kerns trägt die Gezeit an JEDER Meeres-Adresse (der Träger { stunde, k } gehört in die Lage oder als Argument in `wasserSpiegel`) — Bild, Leib (`_koerperWasser`), Nässe (`_nassAt`) und Ferne lesen dieselbe Funktion, gezeichnet oder nicht. Kein Meer ohne Gezeit, kein zweiter Pfad für den geladenen Chunk.
+  2. **Stations-Kandidat** unter `cloud-post/gezeiten-2-station/` (Diff gegen den Kopf von punkte-maschine + BEGRUENDUNG.txt): die elf fremden Küsten lesen denselben Export MIT der Stunde (heute `:3777` ohne Zeit). Nur diese Lese-Zeile ändert sich — kein Soll, keine Schwelle, kein Nachbau der Gezeit in der Station. Dazu die EINE Zeile, die der Richter nach dem Setzen zeigen soll.
+  3. **Beweis vor dem Schub mit dem Rumpf der STATION, nicht mit `gezeitKoerper`:** `hubM` über 12 Küsten × 25 Stunden und `periodeH` gegen 12,42 h ± 2 % — vorher (Kopf 2: Hub 0 m, periodeH ungemessen) ↔ nachher wörtlich im Rumpf des Commits.
+- **Der Preis der Nähe** (`_gezeitMarke` baut je Stufe jeden Meer-Chunk neu) bleibt dein Kopf danach, nicht in diesem.
+- Vorprüf-Kopf wie bisher: Betreff endet `[gpu-probe: ≤ 4 Tore] [ci voll]`, `check:statik` ganz, `probeUrteil` je Probe-Tor, `zug.sh probe-tag` sagt OK. Karte 2 steht bei 134 von 1 718.
+
+
 ## 26.11. 22:50 Vor-Richter GTX 1050 — gezeiten#1 am Kopf 2 1fbeed49, Station wie sie steht (punkte-maschine ed2510b6): ROT an S1
 
 - **Satz des Richters** (wörtlich; `messung/1fbeed49-gtx1050.json`, Lauf 22:35:53–22:43:21, Fahrt 270.8 s, Welt :27804, nvidia/pascal):
