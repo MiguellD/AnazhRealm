@@ -2266,7 +2266,7 @@ AnazhRealm.ALT_DOPPEL = Object.freeze({
     stein_block: "basalt",
     kiesel: "geroell",
     felsbrocken: "geroell",
-    felsbogen: "zacken",
+    felsbogen: "felsbogen",
     felsturm: "felsturm",
     kristall_geode: "kristalle",
     baum_kiefer: "fichte",

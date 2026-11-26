@@ -3340,11 +3340,12 @@ AnazhRealm.STREU_NAMEN = Object.freeze({
     fels_var: "sediment",
     schichtfels: "sediment",
     sediment: "sediment",
-    // zacken = Felszacken (schroffe Tuerme/Boegen); der Felsturm trägt seit landmarken-geologie-5 seine eigene Gestalt in
-    // seiner Größe (foundry-core `felsturm`: das Band der Klettergipfel, 8–75 m — als `zacken` stand er ≤ 0,48 m im Bild):
+    // zacken = Felszacken (schroffe Tuerme/Boegen); Felsturm und Felsbogen tragen seit landmarken-geologie-5 ihre eigene
+    // Gestalt in ihrer Größe (foundry-core `felsturm`: das Band der Klettergipfel, 8–75 m; `felsbogen`: das Band der Felstore,
+    // Spannweite 17–26,5 m — als `zacken` standen beide ≤ 0,48 m im Bild, der Bogen ohne Öffnung):
     felsturm: "felsturm",
     felszacken: "zacken",
-    felsbogen: "zacken",
+    felsbogen: "felsbogen",
     zacken: "zacken",
     // geroell = Geroellhalde (Schutt/Talus/Kiesel):
     geroell: "geroell",

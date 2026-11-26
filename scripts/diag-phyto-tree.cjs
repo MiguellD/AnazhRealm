@@ -495,12 +495,14 @@ function landmarkeFunktion(taeter, chunkZiel) {
     // Gestalten, PHYTO_PRESETS `fx.huellen`), gegen den Bauplan (`_defaultBlueprints`), und wie weit der Wurf reicht (die Saat
     // hängt am Voxel-Ring, `_populateVoxelChunkVegetation`: Ziel-Ring × `span`, Ecke) — die Richter-Weite ist 1–3 km.
     const T = vm.runInContext("globalThis.__terrainCore.PHYTO_PRESETS", stammLib.grundWirt(ROOT, null).ctx);
-    // Seit landmarken-geologie-5 trägt der Felsturm seine Gestalt in Welt-Metern: die Zeile nennt die Hüllen-Höhen aller Gestalten
-    // (kleinste · Median · größte), der Median ist die Zahl, die gegen das Band der Klettergipfel steht (Median 20 m, N = 233).
+    // Seit landmarken-geologie-5 tragen Felsturm und Felsbogen ihre Gestalt in Welt-Metern: die Zeile nennt die Hüllen-Höhen aller
+    // Gestalten (kleinste · Median · größte), der Median steht gegen das Band (Klettergipfel: Median 20 m, N = 233; Felstore:
+    // Kuhstall 11 m, Prebischtor 16 m lichte Höhe). Die Zeile des Bogens ist eine Liste von Boxen [x0, x1, y0, y1, z0, z1].
     const bild = ["felsturm", "felsbogen"].map((art) => {
         const pr = B.r._foundryPresetFor(art);
         const k = B.r._foundryWorldScaleMatrix(pr).elements[0];
-        const hs = ((T[pr] && T[pr].fx && T[pr].fx.huellen) || [[0, 0, 0]]).map((z) => z[2] * k).sort((a, b) => a - b);
+        const hoch = (z) => (Array.isArray(z[0]) ? Math.max(...z.map((b) => b[3])) : z[2]);
+        const hs = ((T[pr] && T[pr].fx && T[pr].fx.huellen) || [[0, 0, 0]]).map((z) => hoch(z) * k).sort((a, b) => a - b);
         const med = hs.length % 2 ? hs[(hs.length - 1) / 2] : (hs[hs.length / 2 - 1] + hs[hs.length / 2]) / 2;
         const bp = B.r._defaultBlueprints()[art];
         const soll = bp ? Math.max(...bp.parts.map((q) => q.position.y + q.size.y / 2)) : 0;

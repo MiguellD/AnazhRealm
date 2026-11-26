@@ -21,6 +21,9 @@
 //       Formation · GT · jedes der sieben Tore · Haus · Brunnen · Marktstand) — die Zählung prüft jede Klasse, nicht nur, was
 //       dort wächst;
 //   (T) DER EINGESCHMUGGELTE TÄTER: ein Felsturm bekommt die Spender-Parts (die alte Regel) — (B) MUSS ihn beim Namen nennen;
+//       der Felsbogen EINE Box über alle seine (die Regel des Steins) — (D) MUSS ihn beim Namen nennen;
+//   (D) DURCHGANG (landmarken-geologie-5): ein Fels mit Öffnung (seine Hüllen-Zeile ist eine Liste von Boxen, der Felsbogen)
+//       lässt den Körper durch — die Mitte der Öffnung (x 0, z 0 seiner Gestalt) liegt in 0,5 · 1 · 1,8 m Höhe in keiner Box;
 //   (Q) QUELLE: der Fels-Zweig führt keine Typ-Liste (kein `_var`-Muster), der Parts-Pfad liest die Welt-Skala jedes
 //       Studio-Werks (`_studioWeltSkala`; der Hand-Spiegel `STUDIO_WORLD_SCALE` ist gate:altlasten), das Tor liest seine Hülle
 //       aus dem Gesetzbuch (`porta:TOR_HUELLE`) und kein Blocker-Erzeuger ruft `buildInstance`;
@@ -185,10 +188,11 @@ function urteil(b) {
         if (t.art === "bild") v.push(`(U) BILD OHNE BLOCKER: ${wo}das Bild steht ${t.mass.toFixed(2)} m neben jeder Box`);
         if (t.art === "stamm") v.push(`(U) BAUM OHNE STAMM: ${wo}keine Box`);
         if (t.art === "gestalt") v.push(`(G) FREMDE GESTALT: ${wo}Bild ${t.bildG}, Blocker ${t.blockG}`);
+        if (t.art === "durchgang") v.push(`(D) DURCHGANG ZU: ${wo}die Mitte der Öffnung steht ${t.mass.toFixed(2)} m über dem Boden in einer Box`);
     }
     const ex = b.exemplare || {};
     for (const k of PFLICHT_EXEMPLARE) if (ex[k] !== true) v.push(`(E) KLASSE FEHLT: ${k} (nicht gezählt)`);
-    for (const k of ["schmuggel", "schmuggelTor"]) if (!(b[k] || {}).genannt) v.push(`LINSE STUMPF: (T) ${k} wurde nicht genannt (${(b[k] || {}).wer})`);
+    for (const k of ["schmuggel", "schmuggelTor", "schmuggelBogen"]) if (!(b[k] || {}).genannt) v.push(`LINSE STUMPF: (T) ${k} wurde nicht genannt (${(b[k] || {}).wer})`);
     if (!Array.isArray(b.bauten)) v.push("LEER: (K) keine Bau-Zählung");
     for (const t of b.bauten || []) v.push(`(K) DER HAUPT-THREAD BAUT: ${t}`);
     for (const k in QUELLE) if (!(b.quelle || {})[k]) v.push("(Q) QUELLE: " + QUELLE[k]);
@@ -203,6 +207,7 @@ function selbsttest() {
         exemplare: ja(PFLICHT_EXEMPLARE),
         schmuggel: { genannt: true, wer: "felsturm#4" },
         schmuggelTor: { genannt: true, wer: "welt_fachwerk#9" },
+        schmuggelBogen: { genannt: true, wer: "felsbogen#5" },
         bauten: [],
         quelle: ja(Object.keys(QUELLE)),
         tempo: {
@@ -231,6 +236,8 @@ function selbsttest() {
             [(b) => (b.zensus.werke = 0), /LEER: kein Studio-Werk/],
             [(b) => (b.schmuggel.genannt = false), /STUMPF: \(T\) schmuggel .*felsturm#4/],
             [(b) => (b.schmuggelTor.genannt = false), /STUMPF: \(T\) schmuggelTor .*welt_fachwerk#9/],
+            [T("durchgang", { wer: "felsbogen#5", mass: 1 }), /DURCHGANG ZU: felsbogen#5 .*1.00 m über dem Boden/],
+            [(b) => (b.schmuggelBogen.genannt = false), /STUMPF: \(T\) schmuggelBogen .*felsbogen#5/],
             [(b) => delete b.exemplare.felsbogen, /KLASSE FEHLT: felsbogen/],
             [(b) => b.bauten.push("__portaCore.buildInstance(drachentor)"), /BAUT: __portaCore.buildInstance.drachentor/],
             [(b) => delete b.bauten, /LEER: \(K\)/],
@@ -397,6 +404,16 @@ async function probe(K) {
             [seite, oben] = [Math.max(seite, sd), Math.max(oben, od)];
         }
         const quer = seite > K.SEITE_M ? { mass: seite, wo: "seitlich" } : { mass: oben, wo: "oben" };
+        // (D) der Durchgang eines Fels mit Öffnung: die Mitte seiner Gestalt in Körper-Höhe liegt in keiner Box
+        const zeile = kind === "rock" && (((globalThis.__terrainCore.PHYTO_PRESETS[pr] || {}).fx || {}).huellen || [])[gB - 1];
+        if (Array.isArray(zeile) && Array.isArray(zeile[0]))
+            for (const hy of [0.5, 1, 1.8]) {
+                const p = new THREE.Vector3(0, hy / ws, 0).applyMatrix4(M);
+                if (B.some((b) => zuBox(rahmen(b), p.x, p.z) <= 0 && p.y >= b.botY && p.y <= b.topY)) {
+                    funde.push({ art: "durchgang", wer, ort, mass: hy });
+                    break;
+                }
+            }
         if (seite > K.SEITE_M || oben > Math.max(K.SEITE_M, K.OBEN_ANTEIL * (hi.y - lo.y)))
             funde.push({ art: "blocker", wer, ort, ...quer });
         // (U) das Bild im Körper-Band gegen die Boxen (feste Werke). DIE PASSAGE des Tors (|x| < rimAx im Vorlagen-Raum) ist
@@ -454,6 +471,13 @@ async function probe(K) {
     if (turm) aus.schmuggel = await schmuggel(turm, st.blueprints.felsturm.parts.filter((p) => r._isPartSolid(p)).map((p) => r._blockerComputePartAABB(turm, p)), "blocker");
     const tor = exemplar("welt_fachwerk");
     if (tor && (tor.blockerAABBs || []).length > 1) aus.schmuggelTor = await schmuggel(tor, tor.blockerAABBs.slice(1), "bild");
+    const bogen = exemplar("felsbogen");
+    const bz = bogen && (((globalThis.__terrainCore.PHYTO_PRESETS.felsbogen || {}).fx || {}).huellen || [])[r._foundryVariantFor(bogen.seed, "felsbogen", AnazhRealm._studioGestaltenKern("felsbogen")) - 1];
+    if (Array.isArray(bz) && Array.isArray(bz[0])) {
+        const [x0, x1, y0, y1, z0, z1] = [0, 1, 2, 3, 4, 5].map((k) => (k % 2 ? Math.max : Math.min)(...bz.map((b) => b[k])));
+        const eine = { position: { x: (x0 + x1) / 2, y: (y0 + y1) / 2, z: (z0 + z1) / 2 }, size: { x: x1 - x0, y: y1 - y0, z: z1 - z0 } };
+        aus.schmuggelBogen = await schmuggel(bogen, [r._blockerComputePartAABB(bogen, eine, r._studioWeltSkala(bogen))], "durchgang");
+    }
     // (Q) DIE QUELLE: der Konsum am Zähl-Spion des Versorgers, während der Erzeuger einmal läuft; die Absenzen kommentarfrei
     const ruft = (lauf, o, k, wer = () => true) => {
         const f = o[k];

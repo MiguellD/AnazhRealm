@@ -1636,6 +1636,18 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             out.felsturmVertical = maxY - minY > (maxX - minX) * 2;
         }
 
+        // DIE GEZEICHNETE GESTALT (landmarken-geologie-5): unter dem Studio zeichnet die Welt nicht den Bauplan, sondern die Gestalt
+        // des Presets in Welt-Metern — ihre Hülle je Gestalt (PHYTO_PRESETS `fx.huellen`, dieselbe Zeile, die der Blocker liest)
+        // trägt die Zahl: der Turm Höhe : Breite, der Bogen die Öffnung am Boden zwischen den Pfeiler-Boxen
+        const T = (globalThis.__terrainCore || {}).PHYTO_PRESETS || {};
+        const zeilen = (art) => ((T[r._foundryPresetFor(art)] || {}).fx || {}).huellen || [];
+        out.turmBild = zeilen("felsturm").map((h) => (Array.isArray(h[0]) ? 0 : h[2] / Math.max(h[1] - h[0], h[4] - h[3])));
+        out.bogenBild = zeilen("felsbogen").map((h) => {
+            const unten = Array.isArray(h[0]) ? h.filter((b) => b[2] === 0) : [];
+            const [L, R] = [unten.find((b) => b[1] <= 0), unten.find((b) => b[0] >= 0)];
+            return L && R ? R[0] - L[1] : 0;
+        });
+
         // Felsbogen ist ein Stein-Compound — dicht.
         if (fb) {
             const tags = r.computeCompoundTags(fb);
@@ -1860,6 +1872,15 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         check(
             `W6.G P3: Felsturm ist vertikal (Höhe ${(wave6gP3Results.felsturmSpanY || 0).toFixed(1)} >> Breite ${(wave6gP3Results.felsturmSpanX || 0).toFixed(1)})`,
             wave6gP3Results.felsturmVertical
+        );
+        const [tb, bb] = [wave6gP3Results.turmBild || [], wave6gP3Results.bogenBild || []];
+        check(
+            `W6.G P3: der Felsturm im Bild ist vertikal in jeder Gestalt (Höhe : Breite ≥ ${(tb.length ? Math.min(...tb) : 0).toFixed(2)} > 2, ${tb.length} Gestalten)`,
+            tb.length >= 1 && Math.min(...tb) > 2
+        );
+        check(
+            `W6.G P3: der Felsbogen im Bild ist begehbar in jeder Gestalt (Öffnung am Boden ≥ ${(bb.length ? Math.min(...bb) : 0).toFixed(1)} m > 2 m, ${bb.length} Gestalten)`,
+            bb.length >= 1 && Math.min(...bb) > 2
         );
         check("W6.G P3: Felsbogen ist ein dichtes Stein-Compound", wave6gP3Results.felsbogenIsDense);
         check(

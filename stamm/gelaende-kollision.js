@@ -1371,18 +1371,24 @@ class AnazhRealm_gelaende_kollision {
         // die Tafel trägt je Gestalt ihre gemessene Hülle [x0, x1, y1, z0, z1] im Vorlagen-Raum. V liest der Blocker aus dem
         // Kern (synchron am Spawn, Lockstep) — für die Fels-Arten dieselbe Zahl, die das Buch dem Bild gibt. Eine Fels-Art ohne
         // Zeile für ihre Gestalt ist ein Vertragsbruch (laut), nie ein stiller Rückfall auf die Spender-Parts.
+        // Die Zeile ist EINE Box [x0, x1, y1, z0, z1] vom Boden — oder, wo die Gestalt eine Öffnung trägt (der Felsbogen,
+        // landmarken-geologie-5), eine Liste von Boxen [x0, x1, y0, y1, z0, z1]: die Pfeiler je Scheibe und der Sturz, die
+        // Öffnung bleibt frei (gate:kollision-bild (D)).
         const H = rec.fx && rec.fx.huellen;
         const g = this._foundryVariantFor(entry.seed, preset, AnazhRealm._studioGestaltenKern(preset));
         const h = Array.isArray(H) && Number.isInteger(g) ? H[g - 1] : null;
-        if (!Array.isArray(h) || h.length !== 5 || !h.every(Number.isFinite))
-            return AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS." + preset + ".fx.huellen[" + g + "]");
-        const [x0, x1, y1, z0, z1] = h;
-        return [
-            {
-                position: { x: (x0 + x1) / 2, y: y1 / 2, z: (z0 + z1) / 2 },
-                size: { x: x1 - x0, y: y1, z: z1 - z0 },
-            },
-        ];
+        const boxen = !Array.isArray(h)
+            ? null
+            : h.length === 5 && h.every(Number.isFinite)
+              ? [[h[0], h[1], 0, h[2], h[3], h[4]]]
+              : h.length && h.every((b) => Array.isArray(b) && b.length === 6 && b.every(Number.isFinite))
+                ? h
+                : null;
+        if (!boxen) return AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS." + preset + ".fx.huellen[" + g + "]");
+        return boxen.map(([x0, x1, y0, y1, z0, z1]) => ({
+            position: { x: (x0 + x1) / 2, y: (y0 + y1) / 2, z: (z0 + z1) / 2 },
+            size: { x: x1 - x0, y: y1 - y0, z: z1 - z0 },
+        }));
     }
 
     // Tor-Kollisions-Hülle aus dem Gesetz: Pfosten (beidseitig, jambW·Ordnungen) + Bogen-Schultern

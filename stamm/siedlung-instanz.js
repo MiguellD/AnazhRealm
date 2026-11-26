@@ -296,7 +296,7 @@ class AnazhRealm_siedlung_instanz {
         if (!this.state.archInstanceGroups) this.state.archInstanceGroups = new Map();
         const regional = regionKey != null && this.state.useRegionFoliageCull !== false;
         // Welle B — ein Bau-Schlüssel ist Studio-Geometrie: ruft der platzierte Bau mit leerem Typ (das Leaf trägt
-        // eine Studio-Identität), ist der Leaf-Schlüssel selbst die Gruppe (felsbogen und felszacken teilen zacken).
+        // eine Studio-Identität), ist der Leaf-Schlüssel selbst die Gruppe (felszacken teilt zacken).
         const basis = atlasGruppe || (name ? name + "#" + leafIdx : String(leafIdx));
         const key = regional ? basis + "@" + regionKey : basis;
         let g = this.state.archInstanceGroups.get(key);
