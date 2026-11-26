@@ -1,7 +1,7 @@
 {
  "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
  "geraet": "gtx",
- "zeit": "2026-11-26T00:05:56.500Z",
+ "zeit": "2026-11-26T00:09:37.723Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.kopplung.land-meer-luft#4": {
@@ -1472,6 +1472,147 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.erleben.sinne.gesehen#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT ❌ abweichung_orange_gruen_pct 22,5 (Soll ≤ 15) — Täter: tetrapoda SINNES_GESETZ.taxa.cervidae (455/537 nm) · augeAbstand: Orange und Grün gleicher Leuchtdichte liegen im Auge des Hirschs 26.4 ↔ 45.7 Schritte vom Boden · abweichung_orange_gruen_pct 22,5 statt ≤ 15",
+   "exit": 0,
+   "minuten": 0.54,
+   "grund": "ROT: S1 · ROT ❌ abweichung_orange_gruen_pct 22,5 (Soll ≤ 15) — Täter: tetrapoda SINNES_GESETZ.taxa.cervidae (455/537 nm) · augeAbstand: Orange und Grün gleicher Leuchtdichte liegen im Auge des Hirschs 26.4 ↔ 45.7 Schritte vom Boden · abweichung_orange_gruen_pct 22,5 statt ≤ 15",
+   "gpu": "nvidia/pascal",
+   "konsum": "k44b0ab85cc0b",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k05a87765fff2",
+   "s": 31.7,
+   "fremd": {
+    "s": 32.7,
+    "takte": 15,
+    "fremdS": 6.5,
+    "kerne": 0.199,
+    "fensterKerne": 0.247,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.02
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.91
+     ],
+     [
+      "Explorer.EXE",
+      0.86
+     ]
+    ],
+    "dienerS": 8.78,
+    "diener": [
+     [
+      "System",
+      5.55
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.48
+     ]
+    ],
+    "geraetS": 11.11,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.19
+     ],
+     [
+      "svchost.exe",
+      3.14
+     ],
+     [
+      "SearchIndexer.exe",
+      0.31
+     ]
+    ],
+    "eigenS": 132.84,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T00:09:37.723Z",
+   "abdruck": "00666d395b88",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.sinne.gesehen#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT ❌ distanz_minus_pct 13,8 (Soll ≥ 30) — Täter: stamm/kreatur-furcht.js _kreaturSiehtM: Böden der Welt um die Beute zu gleich im Wolfs-Auge (59.5 ↔ 82.7 Schritte) · distanz_minus_pct 13,8 statt ≥ 30",
+   "exit": 0,
+   "minuten": 0.54,
+   "grund": "ROT: S2 · ROT ❌ distanz_minus_pct 13,8 (Soll ≥ 30) — Täter: stamm/kreatur-furcht.js _kreaturSiehtM: Böden der Welt um die Beute zu gleich im Wolfs-Auge (59.5 ↔ 82.7 Schritte) · distanz_minus_pct 13,8 statt ≥ 30",
+   "gpu": "nvidia/pascal",
+   "konsum": "k44b0ab85cc0b",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k05a87765fff2",
+   "s": 31.7,
+   "fremd": {
+    "s": 32.7,
+    "takte": 15,
+    "fremdS": 6.5,
+    "kerne": 0.199,
+    "fensterKerne": 0.247,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.02
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.91
+     ],
+     [
+      "Explorer.EXE",
+      0.86
+     ]
+    ],
+    "dienerS": 8.78,
+    "diener": [
+     [
+      "System",
+      5.55
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.48
+     ]
+    ],
+    "geraetS": 11.11,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.19
+     ],
+     [
+      "svchost.exe",
+      3.14
+     ],
+     [
+      "SearchIndexer.exe",
+      0.31
+     ]
+    ],
+    "eigenS": 132.84,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T00:09:37.723Z",
+   "abdruck": "503b54589b12",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.sinne.gesehen#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1500,20 +1641,20 @@
   "kfe202b4debf3": "bVVdb5tAEPwvfmxKlo8jHCfl4WynitWmcn7CHuwBMQbrDofIVf97BTa2ge4DSNbs7jAzd/6zOGCyw4weP2xdLcTi2+L7wuInOZbMJ5nHD7sQizjxfAqEPBdIKVcdLDHFobFQFgpQVZjvyTmahoryMenb9BO6oRLQvshsC6DhBOtWXmsln5+nY0pFae00qGkY4lIQchJT4NFmqMjBo+4XX8Ahi+nJE9AXX8u3NVyrTaTcttBu+etkmMIqHTMnz1cMhWw3KynfpyzTAqlxyqKyw14vjWLtituut1mPwdY5IeUlmWEJ9zymBrLLTpJOpkmjLo/WjpbxIA19LgDiKTYjWyR54xxMrai6wFXsRx6KZTtTOzscHX3PCJVCrqZa50hVRmbEwQ0S3Qn9xadDd7gng06F+QUau0Hkq5s2APA651L2xPsVA3HGYuL+qLEz9Syw3Mi7YlsA+AI+oIaYsTvMyzxuNskLsx/LpRn5biB+zSnaHFMyzq62zRUdUMRcdT4ZmzX07y1fTjtvHzd4iIj8LjDAQb7OtLS1blo05GSH4xAaRmEUCik3M3CD+/3geUBu6k6NtE0X9HsaUchChgLg4SLr7KPPx8I5UVEOTVozFoditWRT8KfBvYMqM4XWg/sqTHT8v7C2VDaOqutmkNKLoiAQEEB1b/jv3sp7t9fZO3v7IdsXOaqfcrnNZvz7LbVprifVjyIvEbpdcwCup+jCNE6LST7Afa0IO/ozb05kSspoJKf2PPRT0V81PdMuDdHlStAPoyCf5hML6oSu7NEOZifIVCguiT+HbJzilsxOYbUb7r8wDf1YdBopLrdjgT4Omq0BWj76lS25lEuZPciznsusf2zWl0UHSuBgal10tyTkeLQ5ls3t7+LvPw=="
  },
  "sitzung": {
-  "start": "2026-11-25T22:19:28.121Z",
-  "ordner": "sitzung-20261125-231928",
+  "start": "2026-11-26T00:08:58.417Z",
+  "ordner": "sitzung-20261126-010858",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 7.1,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "karte2.erleben.sinne.gesehen#3",
-    "s": 26.7,
-    "takte": 779,
+    "vor": "karte2.erleben.sinne.gesehen#1",
+    "s": 27.1,
+    "takte": 830,
     "chunks": 81,
     "nach": null
    }
@@ -1521,7 +1662,7 @@
   "wegeTueren": [],
   "felder": [
    {
-    "probe": "karte2.erleben.sinne.gesehen#3",
+    "probe": "karte2.erleben.sinne.gesehen#1",
     "weg": [
      "__ortZeit",
      "__weltaktSpionBuch",
@@ -1535,7 +1676,7 @@
   ],
   "wirt": [
    {
-    "probe": "karte2.erleben.sinne.gesehen#3",
+    "probe": "karte2.erleben.sinne.gesehen#1",
     "anders": [
      "r._bildZeit",
      "r._wolkenZeit",
@@ -1558,20 +1699,20 @@
     },
     "haelt": [],
     "heap": [
-     193.2,
-     242
+     192.7,
+     240.8
     ],
     "ungemessen": null
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.erleben.sinne.gesehen#3",
+    "probe": "karte2.erleben.sinne.gesehen#1",
     "halt": -1000000000,
     "zurueck": 0
    },
    {
-    "probe": "karte2.erleben.sinne.gesehen#3",
+    "probe": "karte2.erleben.sinne.gesehen#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -1583,28 +1724,28 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2405,
-   "frameP95": 33.36,
-   "taktP95": 19.16,
-   "vramMax": 145.6,
+   "bilder": 2408,
+   "frameP95": 33.37,
+   "taktP95": 19.56,
+   "vramMax": 145.3,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.erleben.sinne.gesehen#3",
+     "probe": "karte2.erleben.sinne.gesehen#1",
      "m": 1083,
      "ringVor": 4,
-     "ringMin": 0
+     "ringMin": -1
     }
    ],
-   "zapfen": 139,
+   "zapfen": 138,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 143.2,
-  "minuten": 2.54
+  "fahrtS": 141.3,
+  "minuten": 2.5
  },
  "ungemessen": {
   "karte2.erleben.klang.stimme#1": {
