@@ -705,8 +705,10 @@ async function saatKennzahlen() {
     const grad = (rad) => (rad * 180) / Math.PI;
     const hoehe = (bahn) => grad(Math.asin(__weltLicht.sonnenRichtung(winkel, bahn)[1]));
     const phase = typeof st.seasonPhase === "number" ? st.seasonPhase : 0.375;
-    const koerper = { neigungRad: anker.neigungRad, drehsinn: anker.drehsinn };
-    const sonne = { ist: hoehe(r._sonnenBahn()), soll: hoehe(__weltLicht.sonnenBahn(breite, phase, koerper)), breite: grad(breite) };
+    const koerper = { neigungRad: anker.neigungRad, drehsinn: anker.drehsinn, radiusKm: anker.radiusKm };
+    // die Bahn des Himmels trägt den Mond der Zeit des Kosmos (kosmos-bahn) — die Probe liest die Höhe der Sonne
+    const mond = r._kosmosJetzt().zeit.mond;
+    const sonne = { ist: hoehe(r._sonnenBahn()), soll: hoehe(__weltLicht.sonnenBahn(breite, phase, koerper, mond)), breite: grad(breite) };
     return {
         sonne,
         leser: {
