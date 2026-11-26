@@ -761,7 +761,31 @@ class AnazhRealm_bild_schatten {
         // DIE WÜRFEL-TIEFE IN 16 BIT (w28-preis-ort, derselbe Haken wie die Kaskaden `_kaskadenZiele`): r184 legt sie als
         // depth24plus an (`PointShadowNode.setupRenderTarget`, gate:vendor-anker); bei 3 m Abstand trägt depth16 2,7 mm je Stufe,
         // unter jeder Kante des Wurfs — 0,75 statt 1,5 MB.
+        // DER WURF LIEST NIE DEN HAKEN DES HIMMELSKÖRPERS (nacht#1, nacht-boden-licht): r184s `ShadowNode.setup` legt
+        // `material.receivedShadowNode` auf JEDEN Schatten-Knoten, den ein Stoff liest — auch auf diesen Würfel (PointShadowNode
+        // erbt den Rumpf, gelesen am Vendor 26.11.). Jeder Haken der Welt ist Gesetz des AKTIVEN KÖRPERS (`uSunDir`): die
+        // Zuwendung des Bodens (`_zu`, stoff-material), die Sonnen-Sicht der Karte (`_sicht`, stoff-material), die Sonne im
+        // Schlitz der Fuge (`stein.sonne`, studio-stoff). Der Boden trug so am Feuer den Faktor seiner Zuwendung zum Himmels-
+        // körper statt zum Feuer — schwarz um die Laterne, das Gras daneben (ohne Haken) im Licht. Der Wurf baut darum r184s
+        // Rumpf OHNE den Haken; Zuwendung zum Feuer trägt der Pool selbst (N·L je Platz). gate:vendor-anker pinnt den Rumpf.
         class WurfSchatten extends Basis {
+            setup(builder) {
+                if (builder.renderer.shadowMap.enabled === false) return;
+                return THREE.TSL.Fn(() => {
+                    const art = builder.renderer.shadowMap.type;
+                    if (this._currentShadowType !== art) {
+                        this._reset();
+                        this._node = null;
+                    }
+                    let n = this._node;
+                    this.setupShadowPosition(builder);
+                    if (n === null) {
+                        this._node = n = this.setupShadow(builder);
+                        this._currentShadowType = art;
+                    }
+                    return n;
+                })();
+            }
             updateBefore() {}
             setupRenderTarget(shadow, builder) {
                 const z = super.setupRenderTarget(shadow, builder);

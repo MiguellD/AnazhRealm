@@ -3794,7 +3794,7 @@ function kontaktSelbsttest() {
 // sichtbar, gut, anteil, ohneKarte {gut, anteil}, kelvin [{art, soll, ist, abw}], karte {schriften, ms, zellen}, plaetze, png? }
 function nachtSicht(o) {
     return (async () => {
-        o = Object.assign({ uhr: 0, nahM: 50, ringeM: [0.8, 1.4, 2], sichtAb: 3, W: 1920, H: 1080 }, o || {});
+        o = Object.assign({ uhr: 0, wurfUhr: 0.95, nahM: 50, ringeM: [0.8, 1.4, 2], sichtAb: 3, W: 1920, H: 1080 }, o || {});
         const [r, T] = [window.anazhRealm, window.THREE];
         const st = r.state;
         const { renderer: rend, camera: cam, scene: sc } = st;
@@ -3935,7 +3935,37 @@ function nachtSicht(o) {
                 r._leuchtQuellen = wahl;
                 if (r._leuchtQuellen === proto._leuchtQuellen) delete r._leuchtQuellen;
             }
-            const gruenIn = (b, i) => i >= 0 && b[4 * i + 1] > 0.5 && b[4 * i + 1] - Math.max(b[4 * i], b[4 * i + 2]) > 0.4;
+            // DER WURF AM FREIEN BODEN (nacht#1, nacht-boden-licht): der Faktor des Würfel-Schattens (`_lichtWurf`) nimmt dem Boden um
+            // seine Quelle nur, was ein Werfer verdeckt — der Ring um ihren Fuß ist frei, sein Median mit Wurf gleich dem ohne. Gemessen
+            // zur Uhr `wurfUhr`, wenn der aktive Himmelskörper unter dem Horizont steht (`uSunDir`.y < 0): dort löschte ein Haken des
+            // Himmels auf dem Würfel den Boden (r184 `ShadowNode.setup` legte die Zuwendung des Bodens, `receivedShadowNode`, auf JEDEN
+            // Schatten-Knoten — GTX 26.11., Dorf 0,95: Boden im Ring 2 m Luma 5 neben Gras 123); um Mitternacht stand der Mond, und der
+            // Haken trug 1. Derselbe Ring, dieselbe Pose, die Wahl des Spiels
+            const WK = r._lichtWurf();
+            const wurfTakt = r._lichtWurfTakt;
+            let wMit = null,
+                wOhne = null,
+                wQ = -1,
+                sonneY = NaN;
+            try {
+                window.__buehne({ uhr: o.wurfUhr });
+                await takt();
+                sonneY = st.windUniforms.uSunDir.value.y;
+                const h = WK.platz.value >= 0 ? r._leuchtPool.halter[WK.platz.value] : null;
+                wQ = h ? alle.findIndex((q) => q.id === h.id) : -1;
+                wMit = await schuss();
+                r._lichtWurfTakt = function () {
+                    this._lichtWurf().platz.value = -1;
+                };
+                WK.platz.value = -1;
+                await takt();
+                wOhne = await schuss();
+            } finally {
+                r._lichtWurfTakt = wurfTakt;
+                if (r._lichtWurfTakt === proto._lichtWurfTakt) delete r._lichtWurfTakt;
+                window.__buehne({ uhr: o.uhr });
+            }
+            const gruenIn =(b, i) => i >= 0 && b[4 * i + 1] > 0.5 && b[4 * i + 1] - Math.max(b[4 * i], b[4 * i + 2]) > 0.4;
             const gesehen = (i) => gruenIn(mark, i);
             const med = (a) => (a.length ? rang(a.slice().sort(aufsteigend)) : null);
             const ev = (a, b) => (b > 0 ? Math.log2(Math.max(a, 1e-12) / b) : a > 0 ? 99 : 0);
@@ -3985,6 +4015,17 @@ function nachtSicht(o) {
                 aus.je.push(e);
             }
             Object.assign(aus, { sichtbar, gut, anteil: sichtbar ? +(gut / sichtbar).toFixed(3) : null, ohneKarte: { gut: gutOhneK, anteil: sichtbar ? +(gutOhneK / sichtbar).toFixed(3) : null }, kelvin, kartenVerdeckt });
+            aus.wurf = { uhr: o.wurfUhr, sonneY: +sonneY.toFixed(3) };
+            if (!(sonneY < 0)) aus.wurf.ungemessen = `der Himmelskörper steht zur Uhr ${o.wurfUhr} über dem Horizont`;
+            else if (!(wQ >= 0)) aus.wurf.ungemessen = "kein Platz wirft (`_lichtWurfTakt`)";
+            else {
+                const q = alle[wQ];
+                const meine = pkt.filter((s) => s.i === wQ && gesehen(px(s.m))).map((s) => px(s.p)).filter((j) => j >= 0);
+                const [a, b] = [wMit, wOhne].map((bild) => med(meine.map((j) => Y(bild, j))));
+                Object.assign(aus.wurf, { art: q.quelle, d: +Math.hypot(q.x - pp.x, q.z - pp.z).toFixed(1), punkte: meine.length });
+                if (meine.length >= o.sichtAb) aus.wurf.ev = +ev(a, b).toFixed(2);
+                else aus.wurf.ungemessen = `${meine.length} gesehene Punkte um ${q.quelle} (Soll ≥ ${o.sichtAb})`;
+            }
             kartenGruen.dispose();
             if (o.png) {
                 karten.visible = zeichen.visible = false;
@@ -4013,7 +4054,9 @@ function nachtSicht(o) {
 // ≥ 0,9; die Kelvin-Farbe je Quelle (Median der Abweichung) ≤ 200 K; DIE LINSE SIEHT DEN TÄTER: wo mehr Quellen sichtbar sind als der
 // Pool Plätze hat, MUSS die Pose ohne Karte unter dem Soll liegen (sonst misst die Linse den Pool, nie die Karte — ROT beim Namen).
 // Ein Ort ohne sichtbare Quelle urteilt nichts (die Wildnis: nur die Kosten).
-const NACHT_SOLL = { anteil: 0.9, ev: 1, kelvin: 200 };
+// `wurfEv`: der Wurf am freien Boden um seine Quelle (`nachtSicht` → `wurf`), der Median mit gegen ohne Wurf — ein Werfer im Ring
+// nimmt einzelne Punkte, nie den Median
+const NACHT_SOLL = { anteil: 0.9, ev: 1, kelvin: 200, wurfEv: -0.5 };
 // die Kelvin-Farbe DER GASSE (S1 „Gasse in der Kelvin-Farbe“): die Leuchten an Weg und Wand, der Median ihrer Abweichung; das Feuer
 // steht als Zahl daneben. EINE Regel für das Gate und die Station der Punkte-Maschine (karte2.erleben.bild.nacht#1)
 function nachtKelvin(m) {
@@ -4024,6 +4067,8 @@ function nachtUrteil(welt) {
     const befunde = [];
     const zahlen = {};
     if (!welt || !Object.keys(welt).length) return { urteil: "ROT", befunde: ["keine Messung"], zahlen };
+    let wurfGemessen = 0;
+    const wurfOffen = [];
     for (const [ort, m] of Object.entries(welt)) {
         if (!m || m.fehler) {
             befunde.push(`${ort}: ${(m && m.fehler) || "keine Messung"}`);
@@ -4031,6 +4076,7 @@ function nachtUrteil(welt) {
         }
         const { kMed, kel } = nachtKelvin(m);
         zahlen[ort] = `Bodenfleck ${m.gut}/${m.sichtbar} sichtbar (${m.quellen} in 50 m) = ${m.anteil} · ohne Karte ${m.ohneKarte.gut}/${m.sichtbar} = ${m.ohneKarte.anteil} · Kelvin ±${kMed} K (${kel.length})${m.karte ? ` · Karte: ein Fleck ${m.karte.einerMs} ms, Takt höchstens ${m.karte.taktMaxMs} ms, Bau der Mitte ${m.karte.bauMs} ms` : ""}`;
+        if (m.wurf) zahlen[ort] += ` · Wurf am freien Boden ${m.wurf.ev != null ? `${m.wurf.ev} EV (${m.wurf.art} ${m.wurf.d} m, Uhr ${m.wurf.uhr})` : `ungemessen (${m.wurf.ungemessen})`}`;
         if (!m.sichtbar) continue;
         if (!(m.anteil >= NACHT_SOLL.anteil)) {
             const dunkel = (m.je || []).filter((e) => e.ev != null && e.ev < NACHT_SOLL.ev).slice(0, 3).map((e) => `${e.art} ${e.d} m ${e.ev} EV`);
@@ -4040,7 +4086,16 @@ function nachtUrteil(welt) {
         if (m.sichtbar > m.plaetze && !(m.ohneKarte.anteil < NACHT_SOLL.anteil))
             befunde.push(`${ort}: ohne Karte ${m.ohneKarte.anteil} — die Linse sieht den Täter nicht (${m.sichtbar} sichtbare Quellen, ${m.plaetze} Plätze)`);
         if (kel.length && !(kMed <= NACHT_SOLL.kelvin)) befunde.push(`${ort}: Kelvin-Farbe ±${kMed} K (Soll ±${NACHT_SOLL.kelvin})`);
+        // DER WURF AM FREIEN BODEN (nacht-boden-licht): der Faktor des Würfels löscht den Boden um seine Quelle nie — ROT beim Täter
+        const w = m.wurf;
+        if (w && w.ev != null && !(w.ev >= NACHT_SOLL.wurfEv))
+            befunde.push(`${ort}: der Wurf löscht den Boden um ${w.art} ${w.d} m (${w.ev} EV gegen den Pool ohne Wurf, Uhr ${w.uhr}, Himmelskörper y ${w.sonneY}; Soll ≥ ${NACHT_SOLL.wurfEv}) — Täter der Faktor des Wurfs (\`_lichtWurf\`: ein Haken des Stoffs auf dem Würfel, r184 \`ShadowNode.setup\` → \`receivedShadowNode\`)`);
+        if (w && w.ev != null) wurfGemessen++;
+        else wurfOffen.push(`${ort}: ${w ? w.ungemessen : "die Linse trägt ihn nicht (`nachtSicht` → `wurf`)"}`);
     }
+    // die Sonde ohne Messung ist ROT (Lehre 6) — je LAUF: an einer Pose kann die Quelle, die das Spiel wirft, ihren Ring hinter dem
+    // Auge tragen (Dorf third, GTX 26.11.: 0 Punkte gesehen), ein anderer Ort misst ihn
+    if (wurfOffen.length && !wurfGemessen) befunde.push(`der Wurf am freien Boden an keinem Ort gemessen — ${wurfOffen.join("; ")}`);
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, zahlen };
 }
 
@@ -4049,7 +4104,8 @@ function nachtUrteil(welt) {
 // falschen Lichts ROT, die Wildnis ohne Quelle urteilt nichts.
 function nachtSelbsttest() {
     const je = (n, ev) => Array.from({ length: n }, (_, i) => ({ art: "laterne", d: 10 + i, ev: i < ev ? 2 : 0.2 }));
-    const m = (sichtbar, gut, ohneGut, schriften = 3, kelvin = [{ art: "laterne_dorf", abw: 60 }]) => ({ quellen: sichtbar + 2, sichtbar, gut, anteil: +(gut / sichtbar).toFixed(3), ohneKarte: { gut: ohneGut, anteil: +(ohneGut / sichtbar).toFixed(3) }, plaetze: 4, je: je(sichtbar, gut), kelvin, karte: { schriften, ms: 4 } });
+    const m = (sichtbar, gut, ohneGut, schriften = 3, kelvin = [{ art: "laterne_dorf", abw: 60 }]) => ({ quellen: sichtbar + 2, sichtbar, gut, anteil: +(gut / sichtbar).toFixed(3), ohneKarte: { gut: ohneGut, anteil: +(ohneGut / sichtbar).toFixed(3) }, plaetze: 4, je: je(sichtbar, gut), kelvin, karte: { schriften, ms: 4 }, wurf: { uhr: 0.95, sonneY: -0.253, art: "laterne_dorf", d: 5.7, punkte: 16, ev: -0.04 } });
+    const mitWurf = (wurf) => Object.assign(m(4, 4, 4, 1), { wurf });
     const U = (w) => nachtUrteil(w).befunde.join(" | ");
     return [
         [U({ gasse: m(40, 38, 4) }), /^$/],
@@ -4059,6 +4115,11 @@ function nachtSelbsttest() {
         [U({ dorf: m(4, 4, 4, 1, [{ art: "laterne_dorf", abw: 700 }, { art: "wandlaterne_dorf", abw: 650 }, { art: "glutbrunnen", abw: 20 }]) }), /^dorf: Kelvin-Farbe ±700 K/],
         [U({ wildnis: { quellen: 0, sichtbar: 0, gut: 0, anteil: null, ohneKarte: { gut: 0, anteil: null }, plaetze: 4, kelvin: [] } }), /^$/],
         [nachtUrteil({}).urteil, /^ROT$/],
+        // DIE MUTANTE „der Haken des Himmels auf dem Würfel“ (main 45bad33f, GTX 26.11. Dorf 0,95: Boden im Ring 5 → 72 Luma mit dem Schnitt)
+        [U({ dorf: mitWurf({ uhr: 0.95, sonneY: -0.253, art: "laterne_dorf", d: 5.7, punkte: 16, ev: -3.8 }) }), /^dorf: der Wurf löscht den Boden um laterne_dorf 5\.7 m \(-3\.8 EV .*Täter der Faktor des Wurfs \(`_lichtWurf`/],
+        [U({ dorf: mitWurf({ uhr: 0.95, sonneY: 0.21, ungemessen: "der Himmelskörper steht zur Uhr 0.95 über dem Horizont" }) }), /^der Wurf am freien Boden an keinem Ort gemessen — dorf: der Himmelskörper steht/],
+        // ein Ort, dessen Wurf-Quelle ihren Ring hinter dem Auge trägt, färbt nichts, solange ein anderer misst
+        [U({ dorf: mitWurf({ uhr: 0.95, sonneY: -0.286, art: "laterne_dorf", d: 2.5, punkte: 0, ungemessen: "0 gesehene Punkte um laterne_dorf (Soll ≥ 3)" }), gasse: m(40, 38, 4) }), /^$/],
     ]
         .filter(([ist, soll]) => !soll.test(ist))
         .map(([ist, soll]) => `${soll} ≠ ${ist}`);

@@ -1355,5 +1355,22 @@
                 "organ": "__weltLicht.zeilenSchritt"
             }
         ]
+    },
+    {
+        "warum": "DER WURF DES FEUERS (_lichtWurf, nacht#1): PointShadowNode erbt ShadowNode.setup, und der Rumpf legt material.receivedShadowNode (den Haken des Himmelskörpers: Zuwendung des Bodens, Sonnen-Sicht der Karte, Sonne der Fuge) auf JEDEN Schatten-Knoten — WurfSchatten baut denselben Rumpf ohne den Haken; seine Würfel-Tiefe stellt er auf 16 Bit.",
+        "anker": [
+            {
+                "sub": "setup(e){if(!1!==e.renderer.shadowMap.enabled)return cn(()=>{const t=e.renderer.shadowMap.type;this._currentShadowType!==t&&(this._reset(),this._node=null);let r=this._node;return this.setupShadowPosition(e),null===r&&(this._node=r=this.setupShadow(e),this._currentShadowType=t),e.material.receivedShadowNode&&(r=e.material.receivedShadowNode(r)),r})()}",
+                "organ": "_lichtWurf (WurfSchatten.setup: r184s Rumpf ohne receivedShadowNode)"
+            },
+            {
+                "sub": "static get type(){return\"PointShadowNode\"}constructor(e,t=null){super(e,t)}getShadowFilterFn(e){",
+                "organ": "_lichtWurf (PointShadowNode trägt keinen eigenen setup: der Rumpf oben ist seiner)"
+            },
+            {
+                "sub": "r.name=\"PointShadowDepthTexture\",r.compareFunction=",
+                "organ": "_lichtWurf (WurfSchatten.setupRenderTarget: die Würfel-Tiefe, die er auf 16 Bit stellt)"
+            }
+        ]
     }
 ]
