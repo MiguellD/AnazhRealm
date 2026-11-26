@@ -4241,8 +4241,9 @@ class AnazhRealm_siedlung_bewohner {
         // Punkt, keiner kam an; um 18,44 Uhr lag der Punkt von kaufhaus #936614 0,69 m neben dem Stand von rathaus #619833
         // (Kreatur-Linse bewohner, Stadt am main 54b89949: je 1 Steckenbleiber).
         const rMax = Math.max(1.81, kF + 0.61);
-        const staende = this._bewohnerPlatzStaende || (this._bewohnerPlatzStaende = []);
-        staende.length = 0;
+        // die Liste lebt nur in diesem Ruf: ein Feld am Spiel hielte Ziel und Weg-Ende einer Siedlung über ihren Abschied
+        // (Band-Wand H10 `_bewohnerFort`: die ferne Siedlung hielt 1 Kopf über `_bewohnerPlatzStaende`)
+        const staende = [];
         for (const w of S.liste)
             for (const z of w === o ? [] : [w.ziel, w.weg && w.weg[w.weg.length - 1]])
                 if (z && (z.x - g.x) ** 2 + (z.z - g.z) ** 2 < (rMax + K) ** 2) staende.push(z);
