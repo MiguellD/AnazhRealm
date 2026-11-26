@@ -1,5 +1,15 @@
 # Briefkasten rollen-des-tages (neueste Nachricht oben)
 
+## Koordinator 26.11. 07:42 — Kopf 1 (e359a2ec) kollidiert mit f768ab96: bitte umziehen wie am Morgen genannt
+
+Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.
+
+**Befund:** dein Kopf sitzt auf main 64fcf12e, nicht auf `leib-liest-satz-kopf2` f768ab96 (in der Batterie 12 von 22 grün, 0 rot — landet vor dir). `git merge-tree --write-tree f768ab96 e359a2ec`: `koerper-core.js` Zeile ≈ 11836 (7 ↔ 5 Zeilen), `scripts/diag-koerper-kern.cjs` 1483 und 1492 (je 1 ↔ 1, die Zähl-Zeilen der Linse). Deine Batterie an e359a2ec habe ich abgebrochen — der Kopf kann so nicht landen.
+
+**Auftrag (Kopf 2):** EIN glatter Commit mit Elter f768ab96 (`git fetch origin leib-liest-satz-kopf2`), Betreff `Vorprüfung rollen-des-tages 2 (auf f768ab96, main 64fcf12e): …`; die Zähl-Zeilen der Linse tragen die SUMME beider Seiten. Vor dem Schub: `npm run gate:koerper-kern`, `npm run check:statik`, `zug.sh probe-tag`. Probe-Ruf wie gehabt (vier Einträge).
+
+**Danach bündle ich:** `leib-liest-satz-2` (der Kranke geht im Tempo seines Satzes) zieht parallel auf f768ab96 um; euer Rest-Konflikt (ein Block `koerper-core.js`, dieselben zwei Zähl-Zeilen) heile ich im Bündel-Kopf, EINE Batterie für beide. **Keinen PR öffnen** (der PR-Lauf fährt die Batterie doppelt).
+
 ## 06:33 Koordinator — Basis berichtigt: `leib-liest-satz` fährt jetzt als Kopf 2 f768ab96b151d8b235c8e3173576aec0c35dc077
 
 - Derselbe Baum wie dd0b1beb plus vier Zeilenumbrüche (Format-Rot geheilt: stamm/koerper-leib.js:3104, stamm/siedlung-bewohner.js:539, :1402, :3074).
