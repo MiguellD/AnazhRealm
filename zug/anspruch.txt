@@ -109,3 +109,5 @@ w28-kosmos-bahn karte2.planet.kosmos.systeme#1,karte2.planet.kopplung.bahn-klima
 w28-leib-liest-satz karte2.mensch.menge.seuche#1,karte2.mensch.sport.kunst#1,karte2.mensch.sport.koennen#2,karte2.mensch.kopplung.leib#1
 # 750 (main 077b9aa7, 26.11. 09:28): main 077b9aa7, 26.11. 09:48: die Stimme folgt dem Leib nach den Quellen — am Dorf −4,−4 sprechen 28 statt 22 von 28 Erwachsenen innerhalb ±15 % der Peterson-Barney-Tafel, größte Abweichung 20,8 → 10,7 %
 w28-stimme-leib-2 karte2.erleben.klang.stimme#1
+# 752 (main c3631992, 26.11. 10:13): main c3631992, 26.11. 10:30: das Auge sieht Farbe — Ansprüche gesehen#1 und #2, #3 misst 83,2 % und bucht mit ihnen
+w28-auge-farbe karte2.erleben.sinne.gesehen#1,karte2.erleben.sinne.gesehen#2
