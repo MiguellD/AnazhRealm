@@ -1,0 +1,10 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@ 239.8 s · Nacht der Sitzung (stadt-voll third): {"welt":786,"nah":40,"lava":0,"plaetze":4,"arten":[["laterne_dorf",501],["wandlaterne_dorf",285]],"ort":[842,452]}
+@@ 255.8 s · Nacht-Linse (stadt-voll third): {"quellen":40,"sichtbar":12,"gut":11,"anteil":0.917,"ohneKarte":{"gut":8,"anteil":0.667},"kelvin":[{"art":"laterne_dorf","soll":1900,"ist":1862,"duv":0.0005,"abw":38},{"art":"laterne_dorf","soll":1900,"ist":1872,"duv":0.0005,"abw":28},{"art":"laterne_dorf","soll":1900,"ist":1857,"duv":0.0006,"abw":43},{"art":"laterne_dorf","soll":1900,"ist":1867,"duv":0.0005,"abw":33},{"art":"laterne_dorf","soll":1900,"ist":1862,"duv":0.0005,"abw":38}]}
+@@ 255.9 s · erleben.bild.nacht S2 gemessen {"art":"gemessen","werte":{"bodenfleck_anteil":0.917,"gasse_dev_median":null},"erzeugt":786,"welt":{"quellen":786},"taeter":"Gassen-Histogramm gegen Fotosatz: kein Fotosatz nächtlicher Gassen im Baum, kein Leser des Hist
+@@PUNKTE@@ FRIST 257 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
