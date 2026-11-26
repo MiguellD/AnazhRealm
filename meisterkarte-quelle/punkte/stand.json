@@ -15076,7 +15076,7 @@
   },
   "karte2.leben.wasser.bild": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.wasser.bild#1 radeon: ungemessen (R10) — zuletzt an 2da17e2e: der Deckel der Leiter riss nach 10,03 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,03 s, ehe sichtFlussM der Sprosse stand · der · karte2.leben.wasser.bild#1 gtx: ungemessen (R10) — zuletzt an 2da17e2e: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · · karte2.leben.wasser.bild#2 radeon: ungemessen (R10) · karte2.leben.wasser.bild#2 gtx: ungemessen (R10) · karte2.leben.wasser.bild#3 radeon: ungemessen (R10) · karte2.leben.wasser.bild#3 gtx: ungemessen (R10) · karte2.leben.wasser.bild#4 radeon: ungemessen (R10) · karte2.leben.wasser.bild#4 gtx: ungemessen (R10) · karte2.leben.wasser.bild#5 radeon: ungemessen (R10) · karte2.leben.wasser.bild#5 gtx: ungemessen (R10) · karte2.leben.wasser.bild#6 radeon: ungemessen (R10) · karte2.leben.wasser.bild#6 gtx: ungemessen (R10) · karte2.leben.wasser.bild#7 radeon: ungemessen (R10) · karte2.leben.wasser.bild#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.wasser.bild#1 radeon: ungemessen (R10) — zuletzt an 2da17e2e: der Deckel der Leiter riss nach 10,03 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,03 s, ehe sichtFlussM der Sprosse stand · der · karte2.leben.wasser.bild#1 gtx: ungemessen (R10) — zuletzt an 2da17e2e: der Deckel der Leiter riss nach 10,114 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,114 s, ehe sichtFlussM der Sprosse stand · d · karte2.leben.wasser.bild#2 radeon: ungemessen (R10) · karte2.leben.wasser.bild#2 gtx: ungemessen (R10) · karte2.leben.wasser.bild#3 radeon: ungemessen (R10) · karte2.leben.wasser.bild#3 gtx: ungemessen (R10) · karte2.leben.wasser.bild#4 radeon: ungemessen (R10) · karte2.leben.wasser.bild#4 gtx: ungemessen (R10) · karte2.leben.wasser.bild#5 radeon: ungemessen (R10) · karte2.leben.wasser.bild#5 gtx: ungemessen (R10) · karte2.leben.wasser.bild#6 radeon: ungemessen (R10) · karte2.leben.wasser.bild#6 gtx: ungemessen (R10) · karte2.leben.wasser.bild#7 radeon: ungemessen (R10) · karte2.leben.wasser.bild#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.wasser.bild#1",
@@ -15094,7 +15094,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 2da17e2e: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) ·",
+     "grund": "ungemessen (R10) — zuletzt an 2da17e2e: der Deckel der Leiter riss nach 10,114 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,114 s, ehe sichtFlussM der Sprosse stand · d",
      "ungemessen": true,
      "beide": true
     },
@@ -37771,8 +37771,8 @@
   "ohne": 3253
  },
  "kopfVoll": "4c9e6aab7a4d24859cee6b9173b6f26cd4611bdf",
- "zeit": "2026-11-26T01:03:38.671Z",
- "vorher": "2da17e2e",
+ "zeit": "2026-11-26T01:10:45.546Z",
+ "vorher": "4c9e6aab",
  "bilanz": {
   "gewinn": [],
   "fall": [],
