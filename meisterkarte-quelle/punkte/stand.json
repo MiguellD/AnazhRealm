@@ -16885,7 +16885,7 @@
   },
   "karte2.mensch.geist.gespraech": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.gespraech#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +23) · karte2.mensch.geist.gespraech#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +23) · karte2.mensch.geist.gespraech#3 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#4 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#5 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#6 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#7 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.gespraech#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +23) · karte2.mensch.geist.gespraech#2 gtx: ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal an 99649186 · karte2.mensch.geist.gespraech#3 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#4 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#5 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#6 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#7 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.gespraech#2",
@@ -16901,10 +16901,9 @@
      "id": "karte2.mensch.geist.gespraech#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +23)",
-     "ungemessen": true,
+     "zahl": "S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal",
+     "sha": "9964918608a72e1bbc6972925a4820eac5b53d0f",
+     "grund": "ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal",
      "r6": "konsum"
     },
     {
@@ -20248,7 +20247,7 @@
   },
   "karte2.mensch.macht.krieg": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.krieg#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/licht-linsen.cjs +7) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.mensch.macht.krieg#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9) · karte2.mensch.macht.krieg#2 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#3 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#4 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#5 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#6 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#7 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#8 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#8 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#9 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#9 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.krieg#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/licht-linsen.cjs +7) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.mensch.macht.krieg#1 gtx: ROT: S1 ROT an Umfang 0 < 2 Bewaffnete im Zweikampf — Täter: stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature) · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) — (Soll ≥ 1) · Treffer durch die Deckung — (Soll ≤ 0) · Umfang 0 (Soll ≥ 2 Bewaffnete im Zweikampf) · 7 Bewaffnete (6 von 1356 Bewohnern mit Waffe {\"langschwert\":6} und der Spieler, die leere Hand), 0 im Zweikampf · [linse-gpu] nvidia/pascal an 99649186 · karte2.mensch.macht.krieg#2 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#3 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#4 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#5 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#6 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#7 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#8 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#8 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#9 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#9 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.macht.krieg#1",
@@ -20265,10 +20264,9 @@
      "id": "karte2.mensch.macht.krieg#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9)",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Umfang 0 < 2 Bewaffnete im Zweikampf — Täter: stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature) · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) — (Soll ≥ 1) · Treffer durch die Deckung — (Soll ≤ 0) · Umfang 0 (Soll ≥ 2 Bewaffnete im Zweikampf) · 7 Bewaffnete (6 von 1356 Bewohnern mit Waffe {\"langschwert\":6} und der Spieler, die leere Hand), 0 im Zweikampf · [linse-gpu] nvidia/pascal",
+     "sha": "9964918608a72e1bbc6972925a4820eac5b53d0f",
+     "grund": "ROT: S1 ROT an Umfang 0 < 2 Bewaffnete im Zweikampf — Täter: stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature) · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) — (Soll ≥ 1) · Treffer durch die Deckung — (Soll ≤ 0) · Umfang 0 (Soll ≥ 2 Bewaffnete im Zweikampf) · 7 Bewaffnete (6 von 1356 Bewohnern mit Waffe {\"langschwert\":6} und der Spieler, die leere Hand), 0 im Zweikampf · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -20420,7 +20418,7 @@
   },
   "karte2.mensch.macht.megastadt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.megastadt#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9) — zuletzt an c3631992: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.mensch.macht.megastadt#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9) · karte2.mensch.macht.megastadt#2 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#2 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#3 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#3 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#4 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#4 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#5 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#5 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#6 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#6 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#7 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.megastadt#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9) — zuletzt an c3631992: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.mensch.macht.megastadt#1 gtx: ROT: S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (2 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] nvidia/pascal an 99649186 · karte2.mensch.macht.megastadt#2 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#2 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#3 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#3 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#4 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#4 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#5 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#5 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#6 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#6 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#7 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.macht.megastadt#1",
@@ -20437,10 +20435,9 @@
      "id": "karte2.mensch.macht.megastadt#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9)",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (2 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] nvidia/pascal",
+     "sha": "9964918608a72e1bbc6972925a4820eac5b53d0f",
+     "grund": "ROT: S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (2 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -23648,7 +23645,7 @@
   },
   "karte2.mensch.sport.kunst": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +11) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.mensch.sport.kunst#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +10) · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +11) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.mensch.sport.kunst#1 gtx: ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal an 99649186 · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.kunst#1",
@@ -23665,10 +23662,9 @@
      "id": "karte2.mensch.sport.kunst#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +10)",
-     "ungemessen": true,
+     "zahl": "S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
+     "sha": "9964918608a72e1bbc6972925a4820eac5b53d0f",
+     "grund": "ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -37767,7 +37763,7 @@
   "ohne": 3274
  },
  "kopfVoll": "9964918608a72e1bbc6972925a4820eac5b53d0f",
- "zeit": "2026-11-26T17:24:31.224Z",
+ "zeit": "2026-11-26T17:36:41.141Z",
  "vorher": "99649186",
  "bilanz": {
   "gewinn": [],
