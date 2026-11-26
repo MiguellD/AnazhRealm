@@ -751,7 +751,7 @@ class AnazhRealm_siedlung_bewohner {
         // stand 1,54 m vor seinem Heim-Stand, Werk und Abend lagen einen Schritt auseinander (Steintal 5 von 89, Stadt 21 von
         // 1 391; gate:kreatur-takt bewohner: 3 Wege des Tags, Soll 4–10)
         let seine = null;
-        const frei = function* (x, z, amRand = true, tuer = null) {
+        const frei = function* (x, z, amRand = true, tuer = null, bauten = false) {
             const [ix, iz] = [Math.floor(x / BW.raumM), Math.floor(z / BW.raumM)];
             for (let i = -1; i <= 1; i++)
                 for (let j = -1; j <= 1; j++)
@@ -764,7 +764,7 @@ class AnazhRealm_siedlung_bewohner {
             if (!ohneStueck(x, z)) return false;
             const g = realm._imGrundriss(x, z, BW.saumM);
             const q = { x, z };
-            if (g === "haus" || g === "bau" || !realm._landAt(x, z, 0.2) || realm._bewohnerWand(q, q, true))
+            if (g === "haus" || g === "bau" || !realm._landAt(x, z, 0.2) || realm._bewohnerWand(q, q, true, 0, bauten))
                 return false;
             // DER STAND HÄNGT AM NETZ (siedlung.K3): am Hang lag der Stand des Besuchs hinter dem Haus, dessen Tür er besuchte —
             // frei, Land, ohne Wand, und keiner der `anschlussN` nächsten Knoten in gerader Linie frei (das Start-Dorf am Hang,
@@ -786,7 +786,7 @@ class AnazhRealm_siedlung_bewohner {
                 return !!e && realm._bewohnerAnTuer(G, { tuerVor: tuer }, q, e.i);
             }
             for (const c of (naheKnoten || (naheKnoten = knotenRaster(knoten)))(x, z, BW.anschlussN)) {
-                if (!realm._bewohnerWand(q, c.k)) return true;
+                if (!realm._bewohnerWand(q, c.k, false, 0, bauten)) return true;
                 yield;
             }
             return false;
@@ -1276,24 +1276,38 @@ class AnazhRealm_siedlung_bewohner {
         const amPlatz = pz ? { x: S.ox + pz.cx, z: S.oz + pz.cz } : null;
         const posten = [...tore.slice(0, 1), ...(amPlatz ? [amPlatz] : []), ...tore.slice(1)];
         const nPosten = Math.max(tore.length ? 1 : 0, Math.round(liste.length / WL.jeKoepfe));
-        // DER GANG ERREICHT DEN BODEN DER ANKUNFT (rollen-des-tages): der Stand trägt den Boden, auf den die Ankunft ihn stellt (die
-        // Oberkante der Säule, `_bewohnerStellen`), nur wenn der Gang dort ankommt — gegangen wie jeder Gang zu einem Stand: vom
-        // Knoten seines Anschlusses (`_bewohnerTuerAm`, frei in gerader Linie) Schritt für Schritt (`WL.ring.schrittM`, der Halt
-        // des Grunds, BEWOHNER.grundHaltJeM) auf dem Boden, den jeder Schritt liest (`_koerperBodenUnter` ab der Sohle des letzten:
-        // in der Luft abwärts zum nächsten Boden, im Fels die Säule). Unter einem Überhang trägt die Säule zwei Böden, der Gang den
-        // unteren, die Ankunft den oberen: am Revier stand der Jäger 39,5 m unter dem Boden der Säule (gate:kreatur-takt bewohner,
-        // jaeger #773347 an 121/−191: Sohle 37,4 m, Säule 76,9 m). Die erste Wand fragte jeden Meter bis 64 m unter dem Stand nach
-        // Fels — sie verwarf jede Höhle im Grund und mit ihr den Posten am Tor der Stadt (zielplan: „der Posten 0 in Villaalto —
-        // kein freier Stand“); die zweite fragte nur den Boden des Ankers — das Revier liegt oben, der Jäger kam von unten
-        const erreicht = (x, z) => {
-            const h = realm._koerperBodenUnter(x, NaN, z);
-            const an = Number.isFinite(h) && realm._bewohnerTuerAm(NG, { x, z });
-            if (!an) return Number.isFinite(h);
-            const n = Math.max(1, Math.ceil(Math.hypot(x - an.k.x, z - an.k.z) / WL.ring.schrittM));
-            let y = realm._koerperBodenUnter(an.k.x, NaN, an.k.z);
+        // DER POSTEN IM FREIEN IST EINE FUNKTION VON PLAN UND BAUTEN (jaeger-stand): sein Wurf fragt nur die Bauten (`frei` mit
+        // `bauten`), die Natur richtet der Stand selbst vom Ursprung (`_bewohnerStandPruefen`). Bis hier las der Wurf das
+        // Blocker-Netz, wie es beim Werk der Liste stand: die erste Liste gab dem Jäger am Revier den Ursprung 118,2/−192,3 (Stufe 1
+        // des Rings), jede Liste nach der Abwesenheit 114,8/−186,1 (Stufe 4; gate:kreatur-takt bewohner, Wiederkehr 4 von 1424
+        // über ±2 m, max 8,589 m, jaeger #773347 — unter swiftshader wanderte die Zahl, 5 × 11,513 m).
+        // DER STAND LIEGT AN EINER SÄULE MIT EINEM BODEN, DEN JEDER GANG ERREICHT: der Stand trägt den Boden, auf den die Ankunft
+        // ihn stellt (die Oberkante der Säule, `_bewohnerStellen`), nur wenn der Gang dort ankommt — von JEDEM Knoten, an dem der
+        // Leib anschließen kann (die `anschlussN` nächsten des Grunds mit einer Geraden frei von Bauten: unter ihnen wählt
+        // `_bewohnerAnschluss`, sobald der Wald steht), Schritt für Schritt (`WL.ring.schrittM`, der Halt des Grunds) auf dem
+        // Boden, den jeder Schritt liest (`_koerperBodenUnter` ab der Sohle des letzten: in der Luft abwärts zum nächsten Boden,
+        // im Fels die Säule — der Leser von `_bewohnerSchritt`). Bis hier ging ein gerader Zwilling von EINEM Knoten
+        // (`_bewohnerTuerAm`): der Leib kam 90 m über Land von einem anderen, fiel an der Kante der Schlucht auf ihren Grund und
+        // stand unter dem Überhang (Sohle 36,17 m, Säule 45,14 m: „Stand nach dem Gang“ 8965 mm). Der gerückte Stand hält dasselbe
+        // (`gilt`): vom Boden des Ursprungs erreicht der Gang seinen Boden. Die erste Wand fragte jeden Meter bis 64 m unter dem
+        // Stand nach Fels — sie verwarf jede Höhle im Grund und mit ihr den Posten am Tor der Stadt (zielplan: „der Posten 0 in
+        // Villaalto — kein freier Stand“); die zweite fragte nur den Boden des Ankers — das Revier liegt oben, der Jäger kam von unten
+        const bodenGang = (ax, az, y, ex, ez, h) => {
+            const n = Math.max(1, Math.ceil(Math.hypot(ex - ax, ez - az) / WL.ring.schrittM));
             for (let i = 1; i <= n && Number.isFinite(y); i++)
-                y = realm._koerperBodenUnter(an.k.x + ((x - an.k.x) * i) / n, y, an.k.z + ((z - an.k.z) * i) / n);
+                y = realm._koerperBodenUnter(ax + ((ex - ax) * i) / n, y, az + ((ez - az) * i) / n);
             return !(Math.abs(y - h) > AnazhRealm.PLAYER_STEP_UP);
+        };
+        const erreicht = function* (x, z) {
+            const h = realm._koerperBodenUnter(x, NaN, z);
+            if (!Number.isFinite(h)) return false;
+            const q = { x, z };
+            for (const c of (NG.raster || (NG.raster = knotenRaster(NG.knoten)))(x, z, BW.anschlussN)) {
+                if (realm._bewohnerWand(q, c.k, false, 0, true)) continue;
+                if (!bodenGang(c.k.x, c.k.z, realm._koerperBodenUnter(c.k.x, NaN, c.k.z), x, z, h)) return false;
+                yield;
+            }
+            return true;
         };
         const postenStand = function* (g, P) {
             for (let v = 0; v < WL.ring.alle; v++) {
@@ -1301,8 +1315,11 @@ class AnazhRealm_siedlung_bewohner {
                 const a = g.axis(`${v}:postenstand`) * 2 * Math.PI;
                 const [x, z] = [P.x + Math.cos(a) * r, P.z + Math.sin(a) * r];
                 // am Tor sieht er hinaus
-                if ((yield* frei(x, z)) && erreicht(x, z))
-                    return nimm({ x, z, blick: P.fort, anker: { x: P.x, z: P.z } });
+                if ((yield* frei(x, z, true, null, true)) && (yield* erreicht(x, z))) {
+                    const h = realm._koerperBodenUnter(x, NaN, z);
+                    const gilt = (qx, qz) => bodenGang(x, z, h, qx, qz, realm._koerperBodenUnter(qx, NaN, qz));
+                    return nimm({ x, z, blick: P.fort, anker: { x: P.x, z: P.z }, gilt });
+                }
                 yield;
             }
             return null;
@@ -4372,8 +4389,9 @@ class AnazhRealm_siedlung_bewohner {
     // gemerkt bis zum nächsten Edit oder Erdbau (`_editGenZaehler`). Liefert den Eintrag der ersten
     // Wand oder null; a = e fragt den Stand. `stand` (mensch.K3 Staffel 2): wer dort steht, steht auf dem Boden — jede Box über
     // dem Fang des Bodens (PLAYER_GROUND_SNAP) bis eine Stufe über den Scheitel ist Wand (der Rand des Brunnens, die Stufe);
-    // `rand`: so viel weiter als die Kapsel fragt er (der Raum eines Gehenden neben dem Stand, `standRandM`).
-    _bewohnerWand(a, e, stand = false, rand = 0) {
+    // `rand`: so viel weiter als die Kapsel fragt er (der Raum eines Gehenden neben dem Stand, `standRandM`). `bauten`: nur die
+    // Bauten des Plans sind Wand, nie die Natur (`_istNatur`) — die Frage der Liste, die vor und nach dem Wald-Takt dasselbe sagt.
+    _bewohnerWand(a, e, stand = false, rand = 0, bauten = false) {
         const R = AnazhRealm.PLAYER_WALL_RADIUS + rand;
         const kand = this._bewohnerWandKand || (this._bewohnerWandKand = []);
         kand.length = 0;
@@ -4398,6 +4416,7 @@ class AnazhRealm_siedlung_bewohner {
         for (const ent of kand) {
             const boxen = ent.blockerAABBs;
             if (!boxen || ent._verkehrFaehrt) continue; // der fahrende Wagen ist ein Leib im Gedränge, keine Wand (`_verkehrImRaster`)
+            if (bauten && this._istNatur(ent)) continue; // (die Frage des Plans: Baum, Busch und Fels richtet der Stand selbst)
             for (const box of boxen) {
                 if (
                     box.tritt ||
