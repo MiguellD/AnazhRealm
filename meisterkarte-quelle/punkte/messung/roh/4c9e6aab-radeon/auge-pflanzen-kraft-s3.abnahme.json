@@ -66,57 +66,67 @@
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 90.9,
-  "sigma": 35.6,
+  "mittel": 97.3,
+  "sigma": 36.7,
   "schwarz": 0,
   "weiss": 0
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 90.9 σ 35.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.426 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Inhalt nahWiese 37.1 % (≥ 15.0 %) h 112° Luma 93",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 97.3 σ 36.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.426 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Inhalt nahWiese 49.5 % (≥ 15.0 %) h 108° Luma 105",
  "rot": [],
  "inhalt": {
   "rot": [],
-  "zeile": "Inhalt nahWiese 37.1 % (≥ 15.0 %) h 112° Luma 93"
+  "zeile": "Inhalt nahWiese 49.5 % (≥ 15.0 %) h 108° Luma 105"
  },
  "urteil": "GRÜN",
  "klasse": {
   "ausdruck": "^nahWiese([-_:].*)?$",
   "schwelle": 18,
   "rauschen": {
-   "anteil": 0.549121,
-   "pixel": 1138658,
-   "max": 548
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
   },
-  "misch": 1515370,
+  "misch": 630502,
   "kenn": {
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 3623,
-   "wechsel": 936440
+   "ms": 2979,
+   "wechsel": 933117
   },
   "rinde": null,
   "toene": [
-   "nahWiese:L2=255/80/80",
-   "nahWiese:Lf=80/255/80"
+   "nahWiese:L1=255/80/80",
+   "nahWiese:L2=80/255/80",
+   "nahWiese:Lf=80/120/255"
   ],
   "klassen": {
+   "nahWiese:L1": {
+    "objekte": 2,
+    "pixel": 405774,
+    "farbe": [
+     0.17552,
+     0.18871,
+     0.02309
+    ]
+   },
    "nahWiese:L2": {
     "objekte": 2,
-    "pixel": 633325,
+    "pixel": 296864,
     "farbe": [
-     0.11446,
-     0.13897,
-     0.01883
+     0.22782,
+     0.23533,
+     0.03242
     ]
    },
    "nahWiese:Lf": {
     "objekte": 2,
-    "pixel": 135712,
+    "pixel": 322889,
     "farbe": [
-     0.03651,
-     0.06442,
-     0.0173
+     0.02471,
+     0.04818,
+     0.01361
     ]
    }
   },
