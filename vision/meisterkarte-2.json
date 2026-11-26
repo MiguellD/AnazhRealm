@@ -17586,10 +17586,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 20,
+    "heute": 21,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 9.1,
+    "anteilHeute": 9.4,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -19561,7 +19561,7 @@
        "richter": "Anteil der Planeten mit ≥ 1 Kette von ≥ 3 Gliedern, jedes einer sichtbaren Ursache zugeordnet, ≥ 80 %"
       }
      ],
-     "heute": 1,
+     "heute": 2,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Kette regen → nässe → stoff → brand → licht, Tiefe 4 mit Festhalte-Probe (feld.K1) — headless; Bruch, Fluid mit Impuls und Beben fehlen als Glieder.",
@@ -20094,7 +20094,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 122,
+  "heute": 123,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
@@ -20109,7 +20109,7 @@
   },
   "gliederLeitern": 9,
   "beide": 61,
-  "nachwache": 61
+  "nachwache": 62
  },
  "zusammengelegt": [
   {

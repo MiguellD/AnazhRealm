@@ -34332,7 +34332,7 @@
   },
   "karte2.same.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Herd -248,-1064 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +261 Pixel je Pixel, Median aus 5 Sätzen (Spanne 261–261; neu 261 − Rauschen 0, bei laufender Schleife 70; Soll ≥ 200; 32 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 625) · [linse-gpu] amd/rdna-3 an d39e0d6e radeon · gehalten: Herd -248,-1064 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +457 Pixel je Pixel, Median aus 5 Sätzen (Spanne 456–457; neu 457 − Rauschen 0, bei laufender Schleife 33; Soll ≥ 200; 64 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 559) · [linse-gpu] nvidia/pascal an f63a69ef gtx · gehalten: S2 glieder 4 gegen Soll ≥ 4 ✓ · Zeuge: die Welt geändert an 2da17e2e radeon — offen: karte2.same.kopplung.kaskade#2 gtx: Konsum seit der Messung geändert (R6: planet-core.js, scripts/lib/kreatur-proben.cjs, scripts/lib/urteil-zeile.cjs +4) · karte2.same.kopplung.kaskade#3 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#3 gtx: ungemessen (R10) · karte2.same.kopplung.kaskade#4 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#4 gtx: ungemessen (R10) · karte2.same.kopplung.kaskade#5 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#5 gtx: ungemessen (R10) · karte2.same.kopplung.kaskade#6 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#6 gtx: ungemessen (R10) · karte2.same.kopplung.kaskade#7 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: Herd -248,-1064 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +261 Pixel je Pixel, Median aus 5 Sätzen (Spanne 261–261; neu 261 − Rauschen 0, bei laufender Schleife 70; Soll ≥ 200; 32 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 625) · [linse-gpu] amd/rdna-3 an d39e0d6e radeon · gehalten: Herd -248,-1064 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +457 Pixel je Pixel, Median aus 5 Sätzen (Spanne 456–457; neu 457 − Rauschen 0, bei laufender Schleife 33; Soll ≥ 200; 64 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 559) · [linse-gpu] nvidia/pascal an f63a69ef gtx · gehalten: S2 glieder 4 gegen Soll ≥ 4 ✓ · Zeuge: die Welt geändert an 2da17e2e radeon · S2 glieder 4 gegen Soll ≥ 4 ✓ · Zeuge: die Welt geändert an 64fcf12e gtx — offen: karte2.same.kopplung.kaskade#3 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#3 gtx: ungemessen (R10) · karte2.same.kopplung.kaskade#4 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#4 gtx: ungemessen (R10) · karte2.same.kopplung.kaskade#5 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#5 gtx: ungemessen (R10) · karte2.same.kopplung.kaskade#6 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#6 gtx: ungemessen (R10) · karte2.same.kopplung.kaskade#7 radeon: ungemessen (R10) · karte2.same.kopplung.kaskade#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kaskade#1",
@@ -34367,11 +34367,10 @@
     {
      "id": "karte2.same.kopplung.kaskade#2",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: planet-core.js, scripts/lib/kreatur-proben.cjs, scripts/lib/urteil-zeile.cjs +4)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S2 glieder 4 gegen Soll ≥ 4 ✓ · Zeuge: die Welt geändert",
+     "sha": "64fcf12e68b47704c5d88094e14476ea64a088da",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -34603,7 +34602,7 @@
   },
   "karte2.same.kopplung.stoerung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Herd -248,-1064: Luma der Zelle vor 0.173 → nach 0.056 (÷ 0.324, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an f63a69ef radeon · gehalten: Herd -248,-1064: Luma der Zelle vor 0.173 → nach 0.06 (÷ 0.347, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an f63a69ef gtx · gehalten: S2 sprungJahre 1 a gegen Soll ≥ 1 a ✓ · rTempoFeuchteLicht 0,999 gegen Soll ≥ 0,5 ✓ · Zeuge: der Brand düngt (Nährstoff steigt), Nachwuchs auf der Asche, der Gegenlauf ohne Tat ändert nichts an 2da17e2e radeon — offen: karte2.same.kopplung.stoerung#2 gtx: Konsum seit der Messung geändert (R6: planet-core.js, scripts/lib/kreatur-proben.cjs, scripts/lib/urteil-zeile.cjs +8) · karte2.same.kopplung.stoerung#3 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#3 gtx: ungemessen (R10) · karte2.same.kopplung.stoerung#4 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#4 gtx: ungemessen (R10) · karte2.same.kopplung.stoerung#5 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#5 gtx: ungemessen (R10) · karte2.same.kopplung.stoerung#6 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#6 gtx: ungemessen (R10) · karte2.same.kopplung.stoerung#7 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: Herd -248,-1064: Luma der Zelle vor 0.173 → nach 0.056 (÷ 0.324, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an f63a69ef radeon · gehalten: Herd -248,-1064: Luma der Zelle vor 0.173 → nach 0.06 (÷ 0.347, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an f63a69ef gtx · gehalten: S2 sprungJahre 1 a gegen Soll ≥ 1 a ✓ · rTempoFeuchteLicht 0,999 gegen Soll ≥ 0,5 ✓ · Zeuge: der Brand düngt (Nährstoff steigt), Nachwuchs auf der Asche, der Gegenlauf ohne Tat ändert nichts an 2da17e2e radeon · S2 sprungJahre 1 a gegen Soll ≥ 1 a ✓ · rTempoFeuchteLicht 0,999 gegen Soll ≥ 0,5 ✓ · Zeuge: der Brand düngt (Nährstoff steigt), Nachwuchs auf der Asche, der Gegenlauf ohne Tat ändert nichts an 64fcf12e gtx — offen: karte2.same.kopplung.stoerung#3 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#3 gtx: ungemessen (R10) · karte2.same.kopplung.stoerung#4 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#4 gtx: ungemessen (R10) · karte2.same.kopplung.stoerung#5 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#5 gtx: ungemessen (R10) · karte2.same.kopplung.stoerung#6 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#6 gtx: ungemessen (R10) · karte2.same.kopplung.stoerung#7 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.stoerung#1",
@@ -34639,11 +34638,10 @@
     {
      "id": "karte2.same.kopplung.stoerung#2",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: planet-core.js, scripts/lib/kreatur-proben.cjs, scripts/lib/urteil-zeile.cjs +8)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S2 sprungJahre 1 a gegen Soll ≥ 1 a ✓ · rTempoFeuchteLicht 0,999 gegen Soll ≥ 0,5 ✓ · Zeuge: der Brand düngt (Nährstoff steigt), Nachwuchs auf der Asche, der Gegenlauf ohne Tat ändert nichts",
+     "sha": "64fcf12e68b47704c5d88094e14476ea64a088da",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -34857,7 +34855,7 @@
   },
   "karte2.same.kopplung.zeitreise": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S2 pflanzenZurueckProzent 100 % gegen Soll ≥ 100 % ✓ · sukzessionsStufen 5 gegen Soll ≥ 3 ✓ · alterDiffTage 0 d gegen Soll = 0 d ✓ · Zeuge: gepflückt, ein Jahr geheilt, das Werk aus dem Stand wieder aufgestanden an 2da17e2e radeon — offen: karte2.same.kopplung.zeitreise#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.zeitreise#1 gtx: Station seit der Messung geändert · karte2.same.kopplung.zeitreise#2 gtx: Konsum seit der Messung geändert (R6: planet-core.js, scripts/lib/kreatur-proben.cjs, scripts/lib/urteil-zeile.cjs +6) · karte2.same.kopplung.zeitreise#3 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#3 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#4 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#4 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#5 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#5 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#6 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#6 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#7 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S2 pflanzenZurueckProzent 100 % gegen Soll ≥ 100 % ✓ · sukzessionsStufen 5 gegen Soll ≥ 3 ✓ · alterDiffTage 0 d gegen Soll = 0 d ✓ · Zeuge: gepflückt, ein Jahr geheilt, das Werk aus dem Stand wieder aufgestanden an 2da17e2e radeon · S2 pflanzenZurueckProzent 100 % gegen Soll ≥ 100 % ✓ · sukzessionsStufen 5 gegen Soll ≥ 3 ✓ · alterDiffTage 0 d gegen Soll = 0 d ✓ · Zeuge: gepflückt, ein Jahr geheilt, das Werk aus dem Stand wieder aufgestanden an 64fcf12e gtx — offen: karte2.same.kopplung.zeitreise#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.zeitreise#1 gtx: Station seit der Messung geändert · karte2.same.kopplung.zeitreise#3 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#3 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#4 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#4 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#5 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#5 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#6 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#6 gtx: ungemessen (R10) · karte2.same.kopplung.zeitreise#7 radeon: ungemessen (R10) · karte2.same.kopplung.zeitreise#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.zeitreise#1",
@@ -34891,11 +34889,10 @@
     {
      "id": "karte2.same.kopplung.zeitreise#2",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: planet-core.js, scripts/lib/kreatur-proben.cjs, scripts/lib/urteil-zeile.cjs +6)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S2 pflanzenZurueckProzent 100 % gegen Soll ≥ 100 % ✓ · sukzessionsStufen 5 gegen Soll ≥ 3 ✓ · alterDiffTage 0 d gegen Soll = 0 d ✓ · Zeuge: gepflückt, ein Jahr geheilt, das Werk aus dem Stand wieder aufgestanden",
+     "sha": "64fcf12e68b47704c5d88094e14476ea64a088da",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -37775,7 +37772,7 @@
   "ohne": 3261
  },
  "kopfVoll": "64fcf12e68b47704c5d88094e14476ea64a088da",
- "zeit": "2026-11-26T06:39:10.334Z",
+ "zeit": "2026-11-26T06:46:13.551Z",
  "vorher": "64fcf12e",
  "bilanz": {
   "gewinn": [],
