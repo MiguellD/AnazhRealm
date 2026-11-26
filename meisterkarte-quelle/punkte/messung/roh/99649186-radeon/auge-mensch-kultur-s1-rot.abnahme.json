@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 30,
+  "weltTakte": 34,
   "zeilen": 1080
  },
  "geraet": {
@@ -23,15 +23,15 @@
  },
  "sicht": {
   "radius": 2,
-  "deckung": 0.1312,
+  "deckung": 0.0417,
   "taeter": {
-   "fscatter:geroell:L0": 0.1312
+   "fscatter:geroell:L0": 0.0417
   },
   "vordergrund": {
    "radius": 8,
-   "deckung": 0.1649,
+   "deckung": 0.1007,
    "taeter": {
-    "fscatter:geroell:L0": 0.1649
+    "fscatter:geroell:L0": 0.1007
    },
    "leib": {
     "deckung": 0,
@@ -70,31 +70,31 @@
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 106.3,
-  "sigma": 30.1,
+  "mittel": 104.5,
+  "sigma": 29.6,
   "schwarz": 0.0001,
   "weiss": 0
  },
  "ok": false,
- "zeile": "ABNAHME ROT [Sicht verdeckt 13.1 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): fscatter:geroell:L0 13.1 % · kein bodenSatz im Bild: 12.8 % < 15.0 % · kein portal-membran im Bild: 0.0 % < 0.3 %] · beweis · Sicht 13.1 % (fscatter:geroell:L0 13.1 %) · Ziel Blickziel im Bild frei 20 m · Luma 106.3 σ 30.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.438 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Inhalt bodenSatz 12.8 % (≥ 15.0 %) Luma 80, portal-membran 0.0 % (≥ 0.3 %)",
+ "zeile": "ABNAHME ROT [Sicht verdeckt 4.2 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): fscatter:geroell:L0 4.2 % · kein bodenSatz im Bild: 13.6 % < 15.0 % · kein portal-membran im Bild: 0.0 % < 0.3 %] · beweis · Sicht 4.2 % (fscatter:geroell:L0 4.2 %) · Ziel Blickziel im Bild frei 20 m · Luma 104.5 σ 29.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.438 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Inhalt bodenSatz 13.6 % (≥ 15.0 %) Luma 81, portal-membran 0.0 % (≥ 0.3 %)",
  "rot": [
   {
    "feld": "sicht.deckung",
-   "grund": "Sicht verdeckt 13.1 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): fscatter:geroell:L0 13.1 %"
+   "grund": "Sicht verdeckt 4.2 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): fscatter:geroell:L0 4.2 %"
   }
  ],
  "inhalt": {
   "rot": [
    {
     "schluessel": "imBild.bodenSatz",
-    "grund": "kein bodenSatz im Bild: 12.8 % < 15.0 %"
+    "grund": "kein bodenSatz im Bild: 13.6 % < 15.0 %"
    },
    {
     "schluessel": "imBild.portal-membran",
     "grund": "kein portal-membran im Bild: 0.0 % < 0.3 %"
    }
   ],
-  "zeile": "Inhalt bodenSatz 12.8 % (≥ 15.0 %) Luma 80, portal-membran 0.0 % (≥ 0.3 %)"
+  "zeile": "Inhalt bodenSatz 13.6 % (≥ 15.0 %) Luma 81, portal-membran 0.0 % (≥ 0.3 %)"
  },
  "urteil": "ROT",
  "klasse": {
@@ -110,8 +110,8 @@
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 569,
-   "wechsel": 631856
+   "ms": 549,
+   "wechsel": 631428
   },
   "rinde": null,
   "toene": [
@@ -120,11 +120,11 @@
   "klassen": {
    "bodenSatz": {
     "objekte": 1,
-    "pixel": 264622,
+    "pixel": 281251,
     "farbe": [
-     0.1013,
-     0.08159,
-     0.03173
+     0.10111,
+     0.08341,
+     0.03086
     ]
    }
   },
