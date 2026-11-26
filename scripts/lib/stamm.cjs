@@ -690,9 +690,11 @@ function ladeKlasse(root, opt = {}) {
 // Foundry (aus). Einmal durch die Kette, dann trägt das worldMeta, was das Laden heilt. `taeter`: die Mutante als Ersetzungen
 // `[[glied, alt, neu], …]` am Text des Stamms (`ersetze`: eine vakuöse wirft) — der Leser liest nie selbst Quelltext. → { r, A, st, ctx, imWirt } — `imWirt(js)` baut einen Wert im Reich des vm (`_grundJson` ordnet nur dessen Objekte).
 // Leser: die Grund-Fälle von gate:wetter-wache (Kalender, Wetter) und gate:ankunft (die Wesen des Stands).
-function grundWirt(root, taeter) {
+// `eingriff(A, ctx)`: verzerrt die Klasse oder den Kern vor dem Bau des Wirts (die Selbsttests der Linsen)
+function grundWirt(root, taeter, eingriff) {
     const vm = require("vm");
     const { AnazhRealm: A, ctx } = ladeKlasse(root, taeter ? { monolith: ersetze(text(root), taeter) } : {});
+    if (eingriff) eingriff(A, ctx);
     const imWirt = (js) => vm.runInContext(`(${js})`, ctx);
     const r = imWirt("new AnazhRealm()");
     const U = new Proxy({}, { get: (t, k) => t[k] || (t[k] = { value: 0 }) });
