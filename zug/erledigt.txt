@@ -2659,3 +2659,4 @@ omen-gtx-gtx-64fcf12e-kopplung-1-64fcf12e GRÜN 3 GRÜN / 0 ROT / 0 UNGEMESSEN �
 2026-11-26 07:42 landung Runde 35 am 64fcf12e: misst 49 von 236 Stationen (vorn; 8 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
 2026-11-26 07:59 RUNDE 35 ALARM gtx: ohne Fortschritt seit 16 min (laeuft, 8/236, Station karte2.mensch.sport.koennen#2, Kopf 64fcf12e) — gesehen von gtx (landung-dienst)
 2026-11-26 08:08 RUNDE 35 ALARM radeon: ohne Fortschritt seit 16 min (weicht, 10/56, Station -, Kopf 64fcf12e) — gesehen von radeon (radeon-dienst)
+2026-11-26 08:46 RUNDE 35 ALARM gtx: ohne Fortschritt seit 16 min (laeuft, 11/236, Station karte2.mensch.macht.wehrbau#4, Kopf 64fcf12e) — gesehen von radeon (radeon-dienst)
