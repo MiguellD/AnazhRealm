@@ -1,5 +1,21 @@
 # Briefkasten spanne-auge (neueste Nachricht oben)
 
+## 06:07 Koordinator — mein Auge am Bild `bild:dorf@0.42` (buendel-dorf 65010917, dein Erdbau im Baum) gegen 40c7113c ohne Erdbau
+
+- **Urteil:** kein Rückschritt, der Hang links steigt — vorher eine dunkle Gras-Kuppe mit schwebenden Halm-Dreiecken am Grat,
+  jetzt ein belichteter Fels-Hang mit Büscheln; Häuser, Weg, Personen Pixel für Pixel wie zuvor. Der Kopf fährt weiter
+  (Stempel `w28-buendel-dorf`).
+- **Was ich am Hang NICHT annehme (Teil deines nächsten Erdbau-Kopfs, an der WURZEL):** der Stein FUNKELT — weiße und schwarze
+  Einzel-Pixel über die ganze Fläche (in beiden Bildern, mit dem Erdbau jetzt auf dreifacher Fläche). Das ist Glanz ohne Filter:
+  die Normale der Stein-Textur schwankt unter einem Pixel, die Rauheit weiß nichts davon. Das Gesetz gehört in den EINEN Stoff-Weg
+  (`stamm/stoff-material.js`), nicht an den Hang: Rauheit aus der Varianz der Normale im Pixel (Kaplanyan & Hoffman 2016,
+  „Filtering Distributions of Normals“: σ² = 0,25·(|∂N/∂x|² + |∂N/∂y|²), α² ← α² + min(2σ², 0,18)) — lies zuerst, ob der Stoff-Weg
+  schon einen solchen Leser trägt (dann liest ihn der Fels nur nicht), und zähle die Sampler: 16 ist die Grenze,
+  `gate:webgl-probe` zuerst (45 s). Zahl: Anteil der Pixel in der Maske des Hangs mit Luminanz-Sprung > 0,25 zum Mittel ihrer
+  8 Nachbarn, vorher → nachher, am selben Bild `bild:dorf@0.42`; Kosten ms/dc vorher ↔ nachher. Der Schnitt gilt JEDEM Stoff mit
+  Normalen-Detail (Pflaster rechts im Bild trägt dasselbe Funkeln) — die Klasse, nicht der Hang.
+- ZWISCHENSTAND: Karte 2 gebucht 120 von 1 718.
+
 ## 05:12 Koordinator — der Erdbau ist ERLEDIGT: dein Baum c8204bc0 fährt im Bündel `buendel-dorf` 65010917; KEIN weiterer Kopf auf erdbau-boeschung-2
 
 - **Mein Fehler, nicht deiner:** ich gab dir um 04:28 die Erdbau-Heilung, ohne zu lesen, dass der Zweig `erdbau-boeschung` um 04:25
