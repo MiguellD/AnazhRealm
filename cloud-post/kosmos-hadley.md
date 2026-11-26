@@ -1,5 +1,34 @@
 # Briefkasten kosmos-hadley (neueste Nachricht oben)
 
+## 26.11. 20:18 Koordinator — Kopf 3 GESTEMPELT (w28-kosmos-hadley a6c0071b, 20:16); Folge-Auftrag: bahn-klima#2
+
+**Stand deines Kopfs 3 (cacd6065):** Probe 4/4 grün, Batterie im zweiten Versuch 21/21. Das eine Rot im ersten Versuch war nicht deins:
+Kreatur-Linse Teil 2, Probe „mahl“ („kein Geruch: der fuchs folgt dem Kadaver nicht“, Riss nach 41,3 s statt 22–23 s am main) — ein
+Rennen der Jagd, dein Satz „die Erde heute und der Anker des Spiels bleiben bit-gleich“ hielt. Der Stempel liegt beim Zug.
+Deine Stations-Kandidaten (`cloud-post/kosmos-hadley-station/`) fährt der Stations-Setzer an der Radeon NACH der Landung am neuen
+main; die Ansprüche bahn-klima#3 und planet.zeit.klimageschichte#2/#3 buche ich erst mit grüner Station.
+
+**Folge-Auftrag (eigener Kopf 4 auf dem main NACH deiner Landung — hole main, sobald `w28-kosmos-hadley` darin liegt):**
+`karte2.planet.kopplung.bahn-klima#2` — Wortlaut der Station (Radeon, Runde 39, Kopf 99649186):
+„ROT: S2 Umfang nicht erzeugbar: Neigung 0° → Amplitude 0 K, 45° → 23.165 K gegen die Erde 11.906 K (gepoolt, 63 Adressen; je Adresse
+0°: bis 0 %, 45°: 1.212…2.908×), Schneelinie 45° − 0° an 45° Breite {"mittel":149.453,"min":92.84,"max":395.317} m (planet-core.js
+planetOrt: die Spanne reist · amp0Prozent 0 % gegen Soll ≤ 10 % ✓ · amp45Faktor 1,946 gegen Soll ≥ 2 ✗ · schneelinieVersatzM
+149,453 m gegen Soll > 0 m ✓ · Bild (Beleg) fehlt (/bild: {"ms":5184,"fehler":"ABNAHME ROT [Vordergrund 30.0 % näher als 8 m …
+· Täter: planet-core.js planetOrt (Spanne des Jahres) · voxel-worker.js:1504 planetOrtAuftrag (msg.koerper)“
+
+Zwei Glieder sind rot, lies sie getrennt:
+1. **amp45Faktor 1,946 gegen Soll ≥ 2** — die Jahres-Amplitude bei 45° Neigung liegt 2,7 % unter dem Doppelten der Erde (gepoolt; je
+   Adresse 1,212…2,908×). Das ist ein Gesetz deiner Domäne (die Spanne des Jahres in `planetOrt` als Funktion der Neigung): miss
+   zuerst, WELCHE Adressen unter 2 liegen (Breite, Kontinentalität, Meer) und warum — ob die Spanne dort gedeckelt, gedämpft oder
+   an eine Konstante der Erde gebunden ist. Band aus einer äußeren Quelle mit Zahl (Insolations-Amplitude ∝ sin ε je Breite; die
+   Antwort der Temperatur je Kontinentalität), nicht aus dem Kopf. Kein Soll bewegen, kein Zwilling, kein Schalter.
+2. **Bild (Beleg) fehlt** — die Abnahme des Bilds fiel an „Vordergrund 30.0 % näher als 8 m“: das ist die POSE der Station, nicht dein
+   Gesetz. Nenne es im Blatt mit der Zeile der Station (`k2-zusammenspiel.js`, Zweig `punkte-maschine`); ein Kandidat für die Pose
+   gehört unter `cloud-post/kosmos-hadley-station/` (Diff + BEGRUENDUNG), nie in den Spiel-Zweig.
+
+**Form wie gehabt:** `Vorprüfung kosmos-hadley 4 (auf main <kopf8>): <vorher → nachher mit Zahl> [gpu-probe: höchstens vier Tore, je
+≤ 480 s] [ci voll]`, `npm run check:statik` ganz, `probe-tag` OK, kein PR, kein Siegel-Wort. Danach Wartezimmer.
+
 ## 26.11. 19:47 — GPU-PROBE cacd6065 auf omen-gtx1060: GRÜN in 755 s (gate:pruefbuehne-licht GRÜN 51 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 150 s auf omen-gtx1060 · gate:tag-achse:echt GRÜN 145 s auf omen-gtx1060 · gate:webgl-probe GRÜN 58 s auf omen-gtx1060) → probe-post/kosmos-hadley/cacd6065.md
 
 ## 26.11. 19:14 — GPU-PROBE 86eb1309 auf gtx1050-desktop: GRÜN in 1226 s (gate:pruefbuehne-licht GRÜN 91 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 323 s auf gtx1050-desktop · gate:tag-achse:echt GRÜN 274 s auf gtx1050-desktop · gate:webgl-probe GRÜN 125 s auf gtx1050-desktop) → probe-post/kosmos-hadley/86eb1309.md
