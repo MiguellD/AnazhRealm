@@ -1,7 +1,7 @@
 {
  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
  "geraet": "gtx",
- "zeit": "2026-11-26T11:48:05.846Z",
+ "zeit": "2026-11-26T12:00:52.555Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -283,6 +283,146 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.macht.megastadt#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (1 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.18,
+   "grund": "ROT: S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (1 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "ke9dd6d282d0e",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k818cfe2748cc",
+   "s": 10.3,
+   "fremd": {
+    "s": 12.9,
+    "takte": 6,
+    "fremdS": 3.34,
+    "kerne": 0.26,
+    "fensterKerne": 0.246,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.17
+     ],
+     [
+      "Explorer.EXE",
+      0.52
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.23
+     ]
+    ],
+    "dienerS": 1.88,
+    "diener": [
+     [
+      "System",
+      0.81
+     ],
+     [
+      "dwm.exe",
+      0.42
+     ]
+    ],
+    "geraetS": 3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.92
+     ],
+     [
+      "svchost.exe",
+      0.83
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 27.67,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T11:57:16.845Z",
+   "abdruck": "ff636cfdbfc5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Umfang 0 < 2 Bewaffnete im Zweikampf — Täter: stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature) · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) — (Soll ≥ 1) · Treffer durch die Deckung — (Soll ≤ 0) · Umfang 0 (Soll ≥ 2 Bewaffnete im Zweikampf) · 7 Bewaffnete (6 von 1356 Bewohnern mit Waffe {\"langschwert\":6} und der Spieler, die leere Hand), 0 im Zweikampf · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.16,
+   "grund": "ROT: S1 ROT an Umfang 0 < 2 Bewaffnete im Zweikampf — Täter: stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature) · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) — (Soll ≥ 1) · Treffer durch die Deckung — (Soll ≤ 0) · Umfang 0 (Soll ≥ 2 Bewaffnete im Zweikampf) · 7 Bewaffnete (6 von 1356 Bewohnern mit Waffe {\"langschwert\":6} und der Spieler, die leere Hand), 0 im Zweikampf · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k64a898761429",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k818cfe2748cc",
+   "s": 9.3,
+   "fremd": {
+    "s": 11,
+    "takte": 5,
+    "fremdS": 2.41,
+    "kerne": 0.219,
+    "fensterKerne": 0.219,
+    "namen": [
+     [
+      "Explorer.EXE",
+      0.5
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.38
+     ],
+     [
+      "sh.exe",
+      0.23
+     ]
+    ],
+    "dienerS": 1.78,
+    "diener": [
+     [
+      "System",
+      0.73
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.5
+     ]
+    ],
+    "geraetS": 5.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.38
+     ],
+     [
+      "svchost.exe",
+      1.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 32.58,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T12:00:52.555Z",
+   "abdruck": "b2ca939fc27a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -290,7 +430,8 @@
   "k818cfe2748cc": "jZXBcpswEIbfxcemRAZEEJrJQQ6ZJum4cfoGK1gBMQZGgpBxp+/eMbZsAzl0L1z+1f58+wv+LBpItpDh7bupqwVffFt8Xxj4QMeg/kB9+24WfBElroc+F8ciQogfB1mii6Y1pCwkAVlBvkOn0y0W5W0ytKk7WAaSk/5RZBtCFNmTuBfnehD399NjSolp7bSg0B6yRD9gyKfCzmQg0YFODYNP4oBGeOdyMhSLxTom5+oTITY96TfsaXKYhCodO/dV5FPGRf8shHibukwLwNYpi8rYuW4aRmrJL7PWsx4NvbMHzEvUpyZkrkulNbs6IDlgmjSqsjNmNIz5aeAxTkg01WZoiiRvnUbXEquTXEZe6AJf9TPaWdM56toRSAlMTlnngFWGeuRh6SfqAPqTTQ/dwg41OBXkJ2m09ENPXtgQQp7mXsrB+DDCGqc0QuaNGg9LPQIWz+Kq6IYQ8kmYVdmY0SvN4zxuJskLvRvjUhS9pT9lYHJIUTvb2rRnpY8hXcrjrXiOyfDcsNW08/Jidn8AwK7CQhgRTzOOplZtDxqdrOlsYCgGYcBFNkuXaWG3s6tJEx+T2Qu0h5Bf2wgDGlDghNyckM7wHK+Es8eixHNmk9CP+ENMp+IPDTsHZKYLpezmZZCo6Kug9li2jqzr1qJ0w9D3OfFJdb3sX714EGJ92eFrXP6mbfly8yhG9VO8fDWh1q01LkH6lHLVx4wQpqbqQrdOD0lu5Z6SCNEU4h51iRmOMCrXBS/lw+fFVmxzF9+MwrufbXlf4AFwZTpjCSdAZcBPKT+Ga5zcHvVWQrU9X5PQjxgXIs7EWmyuqLwK8d6oXvx3va3EMKjBhDS6VsXhy0hy6EwOZXv5Rfz9Bw==",
   "k64a898761429": "bVVdb6MwEPwvebwedcBQjKU+OKVSIl3v0p+whjXQEIhsiKuc7r+fICHlo/sGmvUMM+vl7+oEyQEyfPwwdbXiqx+rnysDZ3QM6jPqxw+z4qsocT2kXLyLrvZCiJcOluji1BhSFpKArCA/otPqBovyMenb1BOsA8mJfRXZnhBFLiS2z8/z1lJiWjsNKBwa10gDhnwObE0GEh1oVU92Awd+hE8uJ32xWLzF5F6fTIi9JXbPtrPDJFTpVC1VEfUZF3YnhHifq0wLwMYpi8oMvG4aRmrN71z2bdGjwToXwLxEfWtC5rq+HMRuOjs7a2aNqmyNmZAxmgYe44REc2yGpkjyxjnpWmJ1g8vIC13gm6Xb2al11FgRSAlMzr3OAasM9UTDmiaqM/qTzQ89wBE1OBXkN2i0pqEnv7whhGyXWspeeE8xCPf9CJk3aexCJefOYLETo/L3XcCEDajY3t6PMK9iQWqSvNDHqV3KR29N+a+lRJNDito51Ka5oymG/lrynmAXk+udYJt559fHDRkCABsNDGFEbBdemlo1FjQ62akdhsbHIAy4ELsFuIHjcYgnTSgm8yBN0w36WEYY+IEPnJCH60VZfvT1WjgXLEq8z20S0mh++FnD0QGZ6UKpIXkZJCr6blAtlo0j67oZbHTDkFJOKKnGYf/uYxwnHWfvflNu7KuY1E7MdfcMtW4G0RIk9X2uspgRwtQcXejGsZDkA9xTEqGTvsjkgrrEDCc2KtcFL+XEqqvuS7dqwtsqUA+TAb4sTyywM7gyrRkcTsCXAf8mEov6IKE63K9ISCPWj9/mrV/Go3l/yZQVgpwZmXq1of2q+SO2/fPGCvEnJuJGdMKEnHStim4rkhxak0PZfP0S/v0H",
   "kfa2ffcc33cc0": "bVXRjqM4EPwXHm+WbYhhMZbmwUxGmkg3u5lPaEMb2BCIbAirnO7fV5CQCTD9hlXtKle1zX/OCdMD5vT9t21qRzj/ON+cU4U1tW7amGHZEU6QYuxlovbgCbo9QO/nMsmfnW+OxTO5lsyZzBUap/6GmJAfcqi9lPJlgKWmPLUWqlIBqhqLI7mdaamsvqdjm/6BXqgE9K8y3wNouMC2f35etlaKssZtUdPU6BELOYklsLM5KnKx0yPZDRwGMf3wBYzFt/J9C/f6w6Xc99Dv+dtiM4V1NlfLdMwCLmS/e5HyY6kyK5FatyprO/H6WRRrT9y5+vdVj8HevSAVFZlbE3HfD9QkNhnsHKxZNOqqs3ZGxlkWbrgAiJfYnGyZFq17Mo2i+gZX8SbyUSRrt/NT5+pHRagUcrX0ukCqczIzDR5L9WD0H77c9IBHMujWWNygsceijfr0BgDe1lqqUfhIMQkPgpj4ZtY4hArnwWC5kw8V7IeAgU+obX9bf8C8yhWpTYvSHOd26YA2HhP/riXaAjMy7qGx7R3NKAo8JUaC3Raud4Iny87Pw00ZIiJ/GBjgIN9WXtpGtz0acvNTNw1NQGEUCil3K3CLx+MUT5YySpdB2nYY9EcZURiEAQqAp+tFWR/6ei3cC5UV3ec2jVi83Pxs8Oiiyk2p9ZS8ClMdfzWoPVWtq5qmnWz0o4gxAQzqx7B/jjE+Jr3NP4K2SvpXOaudXOoeGRrTTqIVKhYEQudbDsD1El2a1u0xLSb4RivCQfoqkwuZinKa2ah9HzeZgF5fdV+Gpya6PQX6aTbAl/WOJQ0G17azk8MpBioUX0TSkzkorA/3KxKxmI/jl7yPj/HDvL/kupcSzhzmXiVMykTmv+Tb+J30Uv7agrwRnSiFk2l0ObyKUGBnC6zaz7/H/38B",
-  "k094974ec4b8f": "fVXBbptAEP0XH5uSNWYpy0o5jIMlu2pU5xNm8SwQY7B2cTZy1X+vwMYxEHUuXN7MvHlvZvkzO2K6x4we32xdzeTs2+z7zOI7eZbMO5nHNzuTszj1FxRIuAQDgOcWlpri2FhWFoqhqjA/kHcyDRXlY9ql6R84D5VkbgXZljHNzixxcIsVPD2Ny5SKdrXXoKa+yJyCUJAcA082Q0UennTX+AoOeUw/fMm6EAm8JOwWHwJg65jbijWs+MNy2l1htRtOEOg44EKC2wDA6xi/K5Aarywq2/f3d1Gs5/LW071Mcgw674yUl2SuSSR8n6ue9LKVppVrlKjLk7WDZiLYhQshGYvH2IxskeaNdzS1ouoKV/Ei8lEu3WTu7Hjy9D0jVAqFGmueI1UZmQGHeZDqVvAPMS66xwMZ9CrMr9B4HkQL9akNY2w95VJ2xLsWPXHOYxKLQWJrLntvBYYN3AXftkYz0aP6dePw37WzaV6Yw1AuzWkxD+SvKUWb446Mt69tc0MHFPG5ulzIJmHddyuW48zP4XoPEVHcLQwTDNYTLW2tG4eGvOx46peGUxiFEmAzATd4OPT27NKA0rGRtmkX/Z5GFPKQo2Ts4XIw06EvZ+GdqSjptrdpFMTyOeFj8LvBg4cqM4XWvfsqTHX81bI6KhtP1XXTS+lHURC0klT3hm87K+/dTrJX3pRLt4JBbJLXbTbh33WpTdOTV6gCzqXOEsGY0GN0YRrPYZr38IVWhC39iTdnMiVlNJBT+z4udpI5feF+bp+e6Pok6IfBIp+nFQtqha7syfZKp8hVKL+wxpHZK6z2t1OJgljInwCwfIHtQJfVc6YdQHc2g4gZwBIcpesOt3QAvxO2uTY6UsqOptZF+zqyHE82x7L5/F38/Qc="
+  "k094974ec4b8f": "fVXBbptAEP0XH5uSNWYpy0o5jIMlu2pU5xNm8SwQY7B2cTZy1X+vwMYxEHUuXN7MvHlvZvkzO2K6x4we32xdzeTs2+z7zOI7eZbMO5nHNzuTszj1FxRIuAQDgOcWlpri2FhWFoqhqjA/kHcyDRXlY9ql6R84D5VkbgXZljHNzixxcIsVPD2Ny5SKdrXXoKa+yJyCUJAcA082Q0UennTX+AoOeUw/fMm6EAm8JOwWHwJg65jbijWs+MNy2l1htRtOEOg44EKC2wDA6xi/K5Aarywq2/f3d1Gs5/LW071Mcgw674yUl2SuSSR8n6ue9LKVppVrlKjLk7WDZiLYhQshGYvH2IxskeaNdzS1ouoKV/Ei8lEu3WTu7Hjy9D0jVAqFGmueI1UZmQGHeZDqVvAPMS66xwMZ9CrMr9B4HkQL9akNY2w95VJ2xLsWPXHOYxKLQWJrLntvBYYN3AXftkYz0aP6dePw37WzaV6Yw1AuzWkxD+SvKUWb446Mt69tc0MHFPG5ulzIJmHddyuW48zP4XoPEVHcLQwTDNYTLW2tG4eGvOx46peGUxiFEmAzATd4OPT27NKA0rGRtmkX/Z5GFPKQo2Ts4XIw06EvZ+GdqSjptrdpFMTyOeFj8LvBg4cqM4XWvfsqTHX81bI6KhtP1XXTS+lHURC0klT3hm87K+/dTrJX3pRLt4JBbJLXbTbh33WpTdOTV6gCzqXOEsGY0GN0YRrPYZr38IVWhC39iTdnMiVlNJBT+z4udpI5feF+bp+e6Pok6IfBIp+nFQtqha7syfZKp8hVKL+wxpHZK6z2t1OJgljInwCwfIHtQJfVc6YdQHc2g4gZwBIcpesOt3QAvxO2uTY6UsqOptZF+zqyHE82x7L5/F38/Qc=",
+  "ke9dd6d282d0e": "bVXRbptAEPwXP7YlazgIx0l5OIdUsVS3zifswR4QY7DusIlc9d8riLENZF+Q0MzuMLN3/F0cMNlhRg/vtq4WYvFt8WNh8USOJXMi8/BuF2IRJa5HTMjPAinlcwdLTHFoLJSFAlQV5ntyjqahonxIepp+xGWgBLQvMtsCaDhD3D49TamlorR2GtQ0EJfEAk5iCjzaDBU5eNT9sAs48CN6dAX0xWO5ieFabSLltoV2y18nzRRW6Vgt0xHzuZDt+lnKt6nKtEBqnLKo7DDXTcNIL8Vt1mbGMdg6Z6S8JHMhEXddXw1iV52dnTUToi6P1o6GcZYGHhcA0RSbkS2SvHEOplZUXeAq8kIXxWrudnY4OvpeESqFXE29zpGqjMxIw5IlujP6g0+b7nBPBp0K8ws0WrLQUzdvAOB1rqXshfcjBuG+HxH3RsQuVDh1Bsu1vCt/CwAfwAdU3F7e32Fe5GyoTfLC7Md2aZ+8JRO/5hJtjikZZ1fb5opmFPpL9Xka1jH0zy1fTZm3jxsyRER+tzDAQb7OvLS1blo05GSH47A0PgVhIKRcz8AN7vdDPGnCKJkGaZtu0e9lhIEf+CgAvn8elPlHfx4L50xFSde9TUIWTZufDO4dVJkptB6SV0Gio68WtaWycVRdN4ONbhgyJoBBdR/27z7G+6Tj7M3f/JTZixzVWk519xNq0wyiFSrm+0JnMQfgeoouTOO0mOQD3NOKMBLQJtPGZzIlZTSyUbsueqnor5ir0mH34u+jBT7PUj4X1Blc2aMdHE7QV4H4IpKWzE5htbsekZBFvF+/1UZux6Y8Z7qVEk4cxl6tWH/V/JFx1/hACRxMrYvuFoQcjzbHsrn9Av79Bw=="
  },
  "ungemessen": {
   "karte2.mensch.kopplung.kultur#2": {
