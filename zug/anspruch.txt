@@ -119,3 +119,5 @@ w28-kultur-aus-klima-4 karte2.mensch.kopplung.kultur#2,karte2.mensch.kultur.spra
 w28-buendel-mittag
 # 789 (main 4a188bf2, 26.11. 18:46): z789 26.11. 18:56 jaeger-stand (OMEN): der Posten im Freien fragt Plan und Bauten; kein Anspruch fährt mit
 w28-jaeger-stand
+# 791 (main 45bad33f, 26.11. 20:45): z791 26.11. 20:52 kultur-aus-klima 6: der gehaltene Himmel hebt das Dach — kultur#2 am Kopf an der Radeon GRÜN (Vor-Richter 20:21, r 0,547; Preis p95 33,51 ms); sprache#1 und sprache#3 fahren NICHT mit (rot, eigene Bahnen)
+w28-kultur-aus-klima-6 karte2.mensch.kopplung.kultur#2
