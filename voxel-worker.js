@@ -249,6 +249,7 @@ function nachricht(e) {
                 const aWave = new Float32Array(data.aWave);
                 const aDepth = new Float32Array(data.aDepth);
                 const aSlope = new Float32Array(data.aSlope);
+                const aMeer = new Float32Array(data.aMeer);
                 self.postMessage(
                     {
                         type: "water-sheet-result",
@@ -260,8 +261,17 @@ function nachricht(e) {
                         aWave: aWave.buffer,
                         aDepth: aDepth.buffer,
                         aSlope: aSlope.buffer,
+                        aMeer: aMeer.buffer,
                     },
-                    [positions.buffer, indices.buffer, aFlow.buffer, aWave.buffer, aDepth.buffer, aSlope.buffer]
+                    [
+                        positions.buffer,
+                        indices.buffer,
+                        aFlow.buffer,
+                        aWave.buffer,
+                        aDepth.buffer,
+                        aSlope.buffer,
+                        aMeer.buffer,
+                    ]
                 );
             }
         } else if (msg.type === "fern") {
@@ -2811,6 +2821,9 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
     const aWave = [];
     const aDepth = [];
     const aSlope = [];
+    // Mirror: DIE GEZEIT IM BILD — das Gewicht des Meers je Vertex (`atlasSpiegel` aus.meer), die Ruhe-Höhe unten
+    const aMeer = [];
+    const MEER = {};
     const vmap = new Int32Array(NV * NV).fill(-1);
     const vertIsAnchor = [];
     // V18.375 — Vertex-Jitter gegen das Gitter-Moiré (Mirror zu `_computeWaterSheetData`): das
@@ -2868,10 +2881,12 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
         const _jdir2 = _jhash(cz * dim + k + 8191, cx * dim + i + 131071) * _jitAmp;
         // Mirror: ruhendes Wasser trägt den Spiegel des Gesetzes am Ort des Vertex, gehalten zwischen die rohen Dächer
         let surfY = anchor - 0.5;
+        let meer = 0;
         if (n > 0 && ruht) {
-            const Lv = atlasWaterLevelAt(wx + _jdir, wz + _jdir2, Infinity);
+            const Lv = atlasWaterLevelAt(wx + _jdir, wz + _jdir2, Infinity, MEER);
             const Lq = Lv > -Infinity ? Lv : hydroSpiegelQuer(wx + _jdir, wz + _jdir2);
             surfY = Lq > -Infinity ? Math.max(rohMin, Math.min(rohMax, Lq)) : rohMax;
+            meer = Lv > -Infinity && MEER.meer === 1 && surfY === Lq ? 1 : 0;
         } else if (n > 0) surfY = sum / n;
         const depthM = n > 0 ? dsum / n : 0;
         const id = positions.length / 3;
@@ -2888,17 +2903,19 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
         aWave.push(isLake ? 0 : heightRamp * (1 - riverness));
         aDepth.push(depthM);
         aSlope.push(n > 0 ? slopeMax : 0);
+        aMeer.push(meer);
         aFlow.push(avFx, avFz);
         vmap[vi] = id;
         return id;
     };
     const VERT_SPLIT = step * 3;
-    const dupVert = (srcId, nx, ny, nz, slopeOverride) => {
+    const dupVert = (srcId, nx, ny, nz, slopeOverride, meer) => {
         const id = positions.length / 3;
         positions.push(nx, ny, nz);
         aWave.push(aWave[srcId]);
         aDepth.push(aDepth[srcId]);
         aSlope.push(slopeOverride !== undefined ? slopeOverride : aSlope[srcId]);
+        aMeer.push(meer);
         aFlow.push(aFlow[srcId * 2], aFlow[srcId * 2 + 1]);
         return id;
     };
@@ -2948,20 +2965,27 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
                 loB = v10;
             }
             const lipY = (positions[hiA * 3 + 1] + positions[hiB * 3 + 1]) / 2;
-            const dA = dupVert(loA, positions[loA * 3], lipY, positions[loA * 3 + 2]);
-            const dB = dupVert(loB, positions[loB * 3], lipY, positions[loB * 3 + 2]);
+            const lipMeer = aMeer[hiA] && aMeer[hiB] ? 1 : 0;
+            const dA = dupVert(loA, positions[loA * 3], lipY, positions[loA * 3 + 2], undefined, lipMeer);
+            const dB = dupVert(loB, positions[loB * 3], lipY, positions[loB * 3 + 2], undefined, lipMeer);
             const rep = (v) => (v === loA ? dA : v === loB ? dB : v);
             indices.push(rep(v00), rep(v10), rep(v01), rep(v11), rep(v01), rep(v10));
-            const cA = dupVert(loA, positions[loA * 3], lipY, positions[loA * 3 + 2], 4);
-            const cB = dupVert(loB, positions[loB * 3], lipY, positions[loB * 3 + 2], 4);
-            const fA = dupVert(loA, positions[loA * 3], positions[loA * 3 + 1], positions[loA * 3 + 2], 4);
-            const fB = dupVert(loB, positions[loB * 3], positions[loB * 3 + 1], positions[loB * 3 + 2], 4);
+            const cA = dupVert(loA, positions[loA * 3], lipY, positions[loA * 3 + 2], 4, lipMeer);
+            const cB = dupVert(loB, positions[loB * 3], lipY, positions[loB * 3 + 2], 4, lipMeer);
+            const fA = dupVert(loA, positions[loA * 3], positions[loA * 3 + 1], positions[loA * 3 + 2], 4, aMeer[loA]);
+            const fB = dupVert(loB, positions[loB * 3], positions[loB * 3 + 1], positions[loB * 3 + 2], 4, aMeer[loB]);
             indices.push(cA, fA, cB, fB, cB, fA);
             indices.push(cB, fB, cA, fA, cA, fB);
         }
     }
     if (indices.length === 0) return null;
-    return { positions, indices, aFlow, aWave, aDepth, aSlope };
+    const hubBau = G.gezeitHub(state);
+    for (let v = 0; v < aMeer.length; v++)
+        if (aMeer[v]) {
+            positions[3 * v + 1] -= hubBau;
+            aDepth[v] -= hubBau;
+        }
+    return { positions, indices, aFlow, aWave, aDepth, aSlope, aMeer };
 }
 
 // =============================================================================

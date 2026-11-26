@@ -1042,10 +1042,11 @@ async function wasserGraben(o = {}) {
 function wasserFlaechen(r, x, z) {
     const span = r._voxelChunkConfig(0).span;
     const ys = [];
+    const hub = r._gezeitHubBild();
     for (let dz = -1; dz <= 1; dz++)
         for (let dx = -1; dx <= 1; dx++) {
             const n = r._wasserNetz(Math.floor(x / span) + dx, Math.floor(z / span) + dz);
-            const y = n ? r.constructor._wasserNetzHoehe(n, x, z) : null;
+            const y = n ? r.constructor._wasserNetzHoehe(n, x, z, hub) : null;
             if (y !== null) ys.push(y);
         }
     return ys.sort(aufsteigend).filter((y, j, l) => !j || y - l[j - 1] > 0.1);

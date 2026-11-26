@@ -350,6 +350,13 @@ class AnazhRealm_wasser_hydro {
         if (this._gezeitTraeger === undefined) this._gezeitTraeger = this._gezeitStand();
         return this._gezeitTraeger;
     }
+    // DER HUB, DEN DAS MEER JETZT TRÄGT (planet.wasser.gezeiten #1): der Hub der Stufe des Trägers — EIN Wert für Bild und Körper.
+    // Das gezeichnete Sheet legt sein Meer in die Ruhe-Höhe (`_computeWaterSheetData`, Gewicht `aMeer`); der Wasser-Stoff hebt es
+    // um diesen Hub (Uniform `gezeit`, `_ensureHydroSurfaceMaterial`, geschrieben im `_pegelTakt`), der Körper ebenso
+    // (`_wasserBildAt` → `_wasserNetzHoehe`). Das Sheet einer anderen Stufe steht damit am Schirm und im Körper auf der Stufe der Uhr.
+    _gezeitHubBild() {
+        return globalThis.__gelaendeCore.gezeitHubStufe(this._gezeitGilt().k);
+    }
     // Die Marke der Gezeit am Chunk (cx, cz) unter dem Träger g: "" ohne Meer und ohne geflutetes Watt in seinem Fuß (die
     // Hydro-Zellen unter ihm samt Rand, je Chunk und Region gemerkt — `_gezeitOrt`), sonst die Stufe.
     _gezeitMarke(g, cx, cz) {
@@ -462,6 +469,8 @@ class AnazhRealm_wasser_hydro {
         if (gNeu !== gAlt) delta.gezeit = gNeu;
         this._voxelZustandPost({ type: "state-update", delta });
         const st = this.state;
+        if (gNeu !== gAlt && st.hydroSurfaceUniforms && st.hydroSurfaceUniforms.gezeit)
+            st.hydroSurfaceUniforms.gezeit.value = this._gezeitHubBild();
         const WATER = AnazhRealm.CELL_STATE.WATER;
         // trägt der Eintrag `e` (ein gezeichneter Chunk, ein Netz im Vorrat) Wasser, und wechselt die Marke seines Chunks? Die Marke
         // der Gezeit trifft jeden Chunk, dessen Stufe wechselt — auch den trockenen im Watt, den die Flut erreicht.
