@@ -10020,7 +10020,7 @@
   },
   "karte2.erleben.spieler.gemeinsam": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.gemeinsam#1 radeon: ungemessen (R10) — zuletzt an 54b89949: Last: Referenz f 1,337 (Faden 1,337 · alle Kerne 1,217; vor 112,2/317,4 ms, nach 109,6/282,6 ms, Ruhe 83,9/260,7 ms seit 2026-11-17) · fremd: bash.exe -c source /c/Users/micha/.claude/shell-sna… scrat · karte2.erleben.spieler.gemeinsam#1 gtx: ungemessen (R10) — zuletzt an c3631992: Last: Referenz f 1,222 (Faden 1,222 · alle Kerne 1,147; vor 103,5/254,5 ms, nach 108,6/253,6 ms, Ruhe 88,9/221,8 ms seit 2026-11-25) · fremd: Explorer.EXE 0,8 CPU-s · OneDrive.Sync.Service.exe silentC · karte2.erleben.spieler.gemeinsam#2 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#3 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#3 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#6 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.gemeinsam#1 radeon: ungemessen (R10) — zuletzt an 54b89949: Last: Referenz f 1,337 (Faden 1,337 · alle Kerne 1,217; vor 112,2/317,4 ms, nach 109,6/282,6 ms, Ruhe 83,9/260,7 ms seit 2026-11-17) · fremd: bash.exe -c source /c/Users/micha/.claude/shell-sna… scrat · karte2.erleben.spieler.gemeinsam#1 gtx: ROT: S1 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 2 Spieler der Sitzung (echte Geräte), die Welt erzeugte 1) an 54b89949 · karte2.erleben.spieler.gemeinsam#2 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#3 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#3 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#6 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 radeon: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.gemeinsam#1",
@@ -10036,10 +10036,10 @@
      "id": "karte2.erleben.spieler.gemeinsam#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c3631992: Last: Referenz f 1,222 (Faden 1,222 · alle Kerne 1,147; vor 103,5/254,5 ms, nach 108,6/253,6 ms, Ruhe 88,9/221,8 ms seit 2026-11-25) · fremd: Explorer.EXE 0,8 CPU-s · OneDrive.Sync.Service.exe silentC",
-     "ungemessen": true,
+     "zahl": "S1 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 2 Spieler der Sitzung (echte Geräte), die Welt erzeugte 1)",
+     "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
+     "grund": "ROT: S1 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 2 Spieler der Sitzung (echte Geräte), die Welt erzeugte 1)",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37566,7 +37566,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 344,
+  "konsum": 345,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37734,10 +37734,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3278
+  "ohne": 3277
  },
  "kopfVoll": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
- "zeit": "2026-11-26T15:37:59.336Z",
+ "zeit": "2026-11-26T15:49:06.445Z",
  "vorher": "54b89949",
  "bilanz": {
   "gewinn": [],
