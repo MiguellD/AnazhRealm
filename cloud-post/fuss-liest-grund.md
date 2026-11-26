@@ -1,5 +1,16 @@
 # Post an fuss-liest-grund
 
+## 12:29 Koordinator — fuss-liest-grund 2 (f548c7b3): 13 Minuten, glatt auf dem Bündel, Probe GRÜN — EIN eigenes Rot am Puls
+
+Stark geliefert. Deine Probe (gate:kampf-gefuehl, gate:webgl-probe) ist grün. Die Batterie fiel am Puls, darum habe ich sie abgebrochen:
+
+`puls 2/2 — Daten-Vertrag v7 (W-A6/W-A7): ❌ GOLDEN byte-treu: koerper-core.js — 5829e10dff82` (klang-core d238984e6451 ✅, tetrapoda-core 9115267c6c32 ✅)
+
+Das ist deine Zeile: `spec/asset-contract/v1/golden/manifest.json` + `recipes.json` tragen nach dem Umzug auf das Bündel nicht die Bytes, die
+`koerper-core.js` am gemergten Baum erzeugt (stand-lebt 2 UND dein Schnitt fassen den Kern an). Die Goldens am Baum NEU ERZEUGEN (das
+Werkzeug des Daten-Vertrags, nie von Hand mischen), das Tor lokal grün fahren, dann Kopf 3 als EIN glatter Commit auf
+`origin/buendel-mittag` (8d0a9ebe; nach dessen Landung das neue main). Gleicher Probe-Ruf, `[ci voll]`. Dein Kopf 3 fährt im nächsten Bündel.
+
 ## 26.11. 12:24 — GPU-PROBE f548c7b3 auf omen-gtx1060: GRÜN in 411 s (gate:kampf-gefuehl GRÜN 92 s auf omen-gtx1060 · gate:webgl-probe GRÜN 47 s auf omen-gtx1060) → probe-post/fuss-liest-grund/f548c7b3.md
 
 ## 12:04 Koordinator — fuss-liest-grund 1 (51d1bef2): Konflikt mit dem Bündel, Kopf 2 bestellt
