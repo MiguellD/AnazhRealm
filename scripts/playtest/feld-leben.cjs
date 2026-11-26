@@ -1641,7 +1641,9 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         // trägt die Zahl: der Turm Höhe : Breite, der Bogen die Öffnung am Boden zwischen den Pfeiler-Boxen
         const T = (globalThis.__terrainCore || {}).PHYTO_PRESETS || {};
         const zeilen = (art) => ((T[r._foundryPresetFor(art)] || {}).fx || {}).huellen || [];
-        out.turmBild = zeilen("felsturm").map((h) => (Array.isArray(h[0]) ? 0 : h[2] / Math.max(h[1] - h[0], h[4] - h[3])));
+        // (die Zeile des Turms ist seit landmarken-geologie-6 eine Liste von Scheiben [x0, x1, y0, y1, z0, z1])
+        const boxen = (h) => (Array.isArray(h[0]) ? h : [[h[0], h[1], 0, h[2], h[3], h[4]]]);
+        out.turmBild = zeilen("felsturm").map((h) => Math.max(...boxen(h).map((b) => b[3])) / Math.max(...boxen(h).map((b) => Math.max(b[1] - b[0], b[5] - b[4]))));
         out.bogenBild = zeilen("felsbogen").map((h) => {
             const unten = Array.isArray(h[0]) ? h.filter((b) => b[2] === 0) : [];
             const [L, R] = [unten.find((b) => b[1] <= 0), unten.find((b) => b[0] >= 0)];

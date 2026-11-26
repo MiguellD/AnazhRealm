@@ -1360,6 +1360,18 @@ class AnazhRealm_gelaende_kollision {
     // Stein-Bogen 8,4 × 8 m, ein Eisen-Mast 4,4 × 16,8 m) — gezeichnet wird aber der Zacken des Studios, ohne Bogen.
     // Nur, wo das Studio zeichnet (ohne Foundry sind die Parts das Bild).
     _felsBlockerParts(entry) {
+        const boxen = this._felsHuellBoxen(entry);
+        if (!boxen) return null;
+        return boxen.map(([x0, x1, y0, y1, z0, z1]) => ({
+            position: { x: (x0 + x1) / 2, y: (y0 + y1) / 2, z: (z0 + z1) / 2 },
+            size: { x: x1 - x0, y: y1 - y0, z: z1 - z0 },
+        }));
+    }
+
+    // DIE HÜLLE EINES FELS ALS BOXEN [x0, x1, y0, y1, z0, z1] im Vorlagen-Raum (Boden y 0) — die EINE Quelle seiner Kollision
+    // (`_felsBlockerParts`) und seines Satzes in der Ferne (`_archFoundryZiegel`, wo die Zeile eine Liste ist: der Bogen mit
+    // seiner Öffnung, der Turm in Scheiben; landmarken-geologie-6). null: kein Fels des Studios.
+    _felsHuellBoxen(entry) {
         if (!entry || typeof entry.type !== "string" || !this._foundryEnabled()) return null;
         const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
         const tab = tc && tc.PHYTO_PRESETS;
@@ -1385,10 +1397,7 @@ class AnazhRealm_gelaende_kollision {
                 ? h
                 : null;
         if (!boxen) return AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS." + preset + ".fx.huellen[" + g + "]");
-        return boxen.map(([x0, x1, y0, y1, z0, z1]) => ({
-            position: { x: (x0 + x1) / 2, y: (y0 + y1) / 2, z: (z0 + z1) / 2 },
-            size: { x: x1 - x0, y: y1 - y0, z: z1 - z0 },
-        }));
+        return boxen;
     }
 
     // Tor-Kollisions-Hülle aus dem Gesetz: Pfosten (beidseitig, jambW·Ordnungen) + Bogen-Schultern

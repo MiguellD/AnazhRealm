@@ -2988,7 +2988,8 @@ class AnazhRealm_studio_bruecke {
                     if (lf.localMatrix) m.matrix.copy(lf.localMatrix);
                     g.add(m);
                 }
-                return this._archBoxFit(g, new THREE.Matrix4());
+                const fit = this._archBoxFit(g, new THREE.Matrix4());
+                return this._felsFernBoxen(entry, fit) || fit;
             },
             einblenden
         );
@@ -3069,6 +3070,36 @@ class AnazhRealm_studio_bruecke {
         if (!kand.length) return null;
         kand.sort((p2, q2) => q2.vol - p2.vol);
         return kand.slice(0, 24);
+    }
+
+    // DIE LANDMARKE IN DER FERNE (landmarken-geologie-6, erleben.spieler.wegfindung#1): ein Fels, dessen Hülle eine Liste von Boxen
+    // ist (`_felsHuellBoxen`: der Felsbogen — Pfeiler je Scheibe und Sturz —, der Felsturm in fünf Scheiben), steht fern in DIESER
+    // Hülle, in der Welt-Skala seines Bilds (`_studioWeltSkala`), mit der Farbe des Fits (das Mittel seiner Boxen nach Volumen).
+    // Der Box-Fit allein fasst jedes Mesh in EINE Box: jenseits der Nah-Grenze stand der Bogen als Klotz ohne Öffnung, der Turm
+    // als Platte von Fuß-Breite bis zum Gipfel. null: keine Liste (jeder andere Fels trägt seinen Fit, byte-alt).
+    _felsFernBoxen(entry, fit) {
+        const B = this._felsHuellBoxen(entry);
+        if (!Array.isArray(B) || B.length < 2 || !Array.isArray(fit) || !fit.length) return null;
+        let [r, g, b, w] = [0, 0, 0, 0];
+        for (const d of fit)
+            if (d.farbe) {
+                r += d.farbe.r * d.vol;
+                g += d.farbe.g * d.vol;
+                b += d.farbe.b * d.vol;
+                w += d.vol;
+            }
+        const farbe = w > 0 ? { r: r / w, g: g / w, b: b / w } : null;
+        const k = this._studioWeltSkala(entry);
+        return B.map(([x0, x1, y0, y1, z0, z1]) => {
+            const h = new THREE.Vector3(((x1 - x0) * k) / 2, ((y1 - y0) * k) / 2, ((z1 - z0) * k) / 2);
+            return {
+                box: true,
+                c: new THREE.Vector3(((x0 + x1) * k) / 2, ((y0 + y1) * k) / 2, ((z0 + z1) * k) / 2),
+                h,
+                farbe,
+                vol: Math.max(1e-6, h.x) * Math.max(1e-6, h.y) * Math.max(1e-6, h.z),
+            };
+        });
     }
 
     // Das Feld stirbt mit seinem Eintrag (der Slot wird frei — kein Atlas-Leck).

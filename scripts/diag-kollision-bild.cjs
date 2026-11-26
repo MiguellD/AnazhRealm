@@ -21,9 +21,13 @@
 //       Formation · GT · jedes der sieben Tore · Haus · Brunnen · Marktstand) — die Zählung prüft jede Klasse, nicht nur, was
 //       dort wächst;
 //   (T) DER EINGESCHMUGGELTE TÄTER: ein Felsturm bekommt die Spender-Parts (die alte Regel) — (B) MUSS ihn beim Namen nennen;
-//       der Felsbogen EINE Box über alle seine (die Regel des Steins) — (D) MUSS ihn beim Namen nennen;
-//   (D) DURCHGANG (landmarken-geologie-5): ein Fels mit Öffnung (seine Hüllen-Zeile ist eine Liste von Boxen, der Felsbogen)
-//       lässt den Körper durch — die Mitte der Öffnung (x 0, z 0 seiner Gestalt) liegt in 0,5 · 1 · 1,8 m Höhe in keiner Box;
+//       der Felsbogen EINE Box über alle seine (die Regel des Steins) — (D) MUSS ihn beim Namen nennen; sein Satz als der Box-Fit
+//       allein (EINE Box je Mesh, die Regel bis landmarken-geologie-6) — (F) MUSS ihn beim Namen nennen;
+//   (D) DURCHGANG (landmarken-geologie-5): ein Fels mit Öffnung (sein Gesetz trägt `ph.bogen`, der Felsbogen) lässt den Körper
+//       durch — die Mitte der Öffnung (x 0, z 0 seiner Gestalt) liegt in 0,5 · 1 · 1,8 m Höhe in keiner Box;
+//   (F) FERNE (landmarken-geologie-6): ein Fels, dessen Hüllen-Zeile eine Liste von Boxen ist (Felsbogen, Felsturm), steht jenseits
+//       der Nah-Grenze in seinem Satz (`_felsFernBoxen` über dem Box-Fit, `_archFoundryZiegel`): der Umriss des Satzes liegt je
+//       Seite höchstens SEITE_M neben dem Bild, und die Öffnung des Bogens bleibt im Satz frei (0,5 · 1 · 1,8 m);
 //   (Q) QUELLE: der Fels-Zweig führt keine Typ-Liste (kein `_var`-Muster), der Parts-Pfad liest die Welt-Skala jedes
 //       Studio-Werks (`_studioWeltSkala`; der Hand-Spiegel `STUDIO_WORLD_SCALE` ist gate:altlasten), das Tor liest seine Hülle
 //       aus dem Gesetzbuch (`porta:TOR_HUELLE`) und kein Blocker-Erzeuger ruft `buildInstance`;
@@ -189,10 +193,11 @@ function urteil(b) {
         if (t.art === "stamm") v.push(`(U) BAUM OHNE STAMM: ${wo}keine Box`);
         if (t.art === "gestalt") v.push(`(G) FREMDE GESTALT: ${wo}Bild ${t.bildG}, Blocker ${t.blockG}`);
         if (t.art === "durchgang") v.push(`(D) DURCHGANG ZU: ${wo}die Mitte der Öffnung steht ${t.mass.toFixed(2)} m über dem Boden in einer Box`);
+        if (t.art === "fern") v.push(`(F) FERNE: ${wo}der Satz jenseits der Nah-Grenze ${t.wo} (${t.mass.toFixed(2)} m)`);
     }
     const ex = b.exemplare || {};
     for (const k of PFLICHT_EXEMPLARE) if (ex[k] !== true) v.push(`(E) KLASSE FEHLT: ${k} (nicht gezählt)`);
-    for (const k of ["schmuggel", "schmuggelTor", "schmuggelBogen"]) if (!(b[k] || {}).genannt) v.push(`LINSE STUMPF: (T) ${k} wurde nicht genannt (${(b[k] || {}).wer})`);
+    for (const k of ["schmuggel", "schmuggelTor", "schmuggelBogen", "schmuggelFern"]) if (!(b[k] || {}).genannt) v.push(`LINSE STUMPF: (T) ${k} wurde nicht genannt (${(b[k] || {}).wer})`);
     if (!Array.isArray(b.bauten)) v.push("LEER: (K) keine Bau-Zählung");
     for (const t of b.bauten || []) v.push(`(K) DER HAUPT-THREAD BAUT: ${t}`);
     for (const k in QUELLE) if (!(b.quelle || {})[k]) v.push("(Q) QUELLE: " + QUELLE[k]);
@@ -208,6 +213,7 @@ function selbsttest() {
         schmuggel: { genannt: true, wer: "felsturm#4" },
         schmuggelTor: { genannt: true, wer: "welt_fachwerk#9" },
         schmuggelBogen: { genannt: true, wer: "felsbogen#5" },
+        schmuggelFern: { genannt: true, wer: "felsbogen#5" },
         bauten: [],
         quelle: ja(Object.keys(QUELLE)),
         tempo: {
@@ -238,6 +244,9 @@ function selbsttest() {
             [(b) => (b.schmuggelTor.genannt = false), /STUMPF: \(T\) schmuggelTor .*welt_fachwerk#9/],
             [T("durchgang", { wer: "felsbogen#5", mass: 1 }), /DURCHGANG ZU: felsbogen#5 .*1.00 m über dem Boden/],
             [(b) => (b.schmuggelBogen.genannt = false), /STUMPF: \(T\) schmuggelBogen .*felsbogen#5/],
+            [T("fern", { wer: "felsbogen#5", mass: 1, wo: "schließt die Öffnung in 1.00 m" }), /FERNE: felsbogen#5 .*schließt die Öffnung/],
+            [T("fern", { wer: "felsturm#3", mass: 2.4, wo: "steht neben dem Bild" }), /FERNE: felsturm#3 .*neben dem Bild \(2.40 m\)/],
+            [(b) => (b.schmuggelFern.genannt = false), /STUMPF: \(T\) schmuggelFern .*felsbogen#5/],
             [(b) => delete b.exemplare.felsbogen, /KLASSE FEHLT: felsbogen/],
             [(b) => b.bauten.push("__portaCore.buildInstance(drachentor)"), /BAUT: __portaCore.buildInstance.drachentor/],
             [(b) => delete b.bauten, /LEER: \(K\)/],
@@ -404,9 +413,12 @@ async function probe(K) {
             [seite, oben] = [Math.max(seite, sd), Math.max(oben, od)];
         }
         const quer = seite > K.SEITE_M ? { mass: seite, wo: "seitlich" } : { mass: oben, wo: "oben" };
-        // (D) der Durchgang eines Fels mit Öffnung: die Mitte seiner Gestalt in Körper-Höhe liegt in keiner Box
-        const zeile = kind === "rock" && (((globalThis.__terrainCore.PHYTO_PRESETS[pr] || {}).fx || {}).huellen || [])[gB - 1];
-        if (Array.isArray(zeile) && Array.isArray(zeile[0]))
+        // (D) der Durchgang eines Fels mit Öffnung (sein Gesetz trägt `ph.bogen`): die Mitte seiner Gestalt in Körper-Höhe liegt
+        // in keiner Box
+        const tafel = (kind === "rock" && globalThis.__terrainCore.PHYTO_PRESETS[pr]) || {};
+        const zeile = ((tafel.fx || {}).huellen || [])[gB - 1];
+        const oeffnung = !!(tafel.ph || {}).bogen;
+        if (oeffnung)
             for (const hy of [0.5, 1, 1.8]) {
                 const p = new THREE.Vector3(0, hy / ws, 0).applyMatrix4(M);
                 if (B.some((b) => zuBox(rahmen(b), p.x, p.z) <= 0 && p.y >= b.botY && p.y <= b.topY)) {
@@ -414,6 +426,29 @@ async function probe(K) {
                     break;
                 }
             }
+        // (F) der Satz jenseits der Nah-Grenze (im Rahmen des Satzes: Vorlagen-Raum × Welt-Skala, die Skala des Eintrags trägt
+        // seine Matrix): der Box-Fit des Bilds — EINE Box —, über ihm `_felsFernBoxen`, wie `_archFoundryZiegel` ihn ruft
+        if (Array.isArray(zeile) && Array.isArray(zeile[0])) {
+            const k = r._studioWeltSkala(e);
+            const [u0, u1] = [[Infinity, Infinity, Infinity], [-Infinity, -Infinity, -Infinity]];
+            // das Bild über dem Boden (y ≥ 0; die Füße unter ihm sieht kein Auge)
+            for (let i = 0; i < pts.length; i += 3)
+                if (pts[i + 1] >= 0) for (let a = 0; a < 3; a++) [u0[a], u1[a]] = [Math.min(u0[a], pts[i + a] * k), Math.max(u1[a], pts[i + a] * k)];
+            const h = new THREE.Vector3((u1[0] - u0[0]) / 2, (u1[1] - u0[1]) / 2, (u1[2] - u0[2]) / 2);
+            const eins = [{ box: true, c: new THREE.Vector3((u0[0] + u1[0]) / 2, (u0[1] + u1[1]) / 2, (u0[2] + u1[2]) / 2), h, farbe: { r: 0.4, g: 0.4, b: 0.4 }, vol: h.x * h.y * h.z }];
+            const satz = r._felsFernBoxen(e, eins) || eins;
+            const [s0, s1] = [0, 1].map((j) => [0, 1, 2].map((a) => (j ? Math.max : Math.min)(...satz.map((d) => d.c.getComponent(a) + (j ? 1 : -1) * d.h.getComponent(a)))));
+            const um = Math.max(...[0, 1, 2].map((a) => Math.max(Math.abs(s1[a] - u1[a]), Math.abs(s0[a] - u0[a]))));
+            if (um > K.SEITE_M) funde.push({ art: "fern", wer, ort, mass: um, wo: "steht neben dem Bild" });
+            const sk = e.scale > 0 ? e.scale : 1;
+            for (const hy of oeffnung ? [0.5, 1, 1.8] : []) {
+                const y = hy / sk;
+                if (satz.some((d) => Math.abs(d.c.x) <= d.h.x && Math.abs(y - d.c.y) <= d.h.y && Math.abs(d.c.z) <= d.h.z)) {
+                    funde.push({ art: "fern", wer, ort, mass: hy, wo: `schließt die Öffnung in ${hy.toFixed(2)} m` });
+                    break;
+                }
+            }
+        }
         if (seite > K.SEITE_M || oben > Math.max(K.SEITE_M, K.OBEN_ANTEIL * (hi.y - lo.y)))
             funde.push({ art: "blocker", wer, ort, ...quer });
         // (U) das Bild im Körper-Band gegen die Boxen (feste Werke). DIE PASSAGE des Tors (|x| < rimAx im Vorlagen-Raum) ist
@@ -477,6 +512,13 @@ async function probe(K) {
         const [x0, x1, y0, y1, z0, z1] = [0, 1, 2, 3, 4, 5].map((k) => (k % 2 ? Math.max : Math.min)(...bz.map((b) => b[k])));
         const eine = { position: { x: (x0 + x1) / 2, y: (y0 + y1) / 2, z: (z0 + z1) / 2 }, size: { x: x1 - x0, y: y1 - y0, z: z1 - z0 } };
         aus.schmuggelBogen = await schmuggel(bogen, [r._blockerComputePartAABB(bogen, eine, r._studioWeltSkala(bogen))], "durchgang");
+        // der Satz als der Box-Fit allein (die Regel bis landmarken-geologie-6): (F) MUSS den Bogen beim Namen nennen
+        r._felsFernBoxen = () => null;
+        try {
+            aus.schmuggelFern = await schmuggel(bogen, bogen.blockerAABBs, "fern");
+        } finally {
+            delete r._felsFernBoxen;
+        }
     }
     // (Q) DIE QUELLE: der Konsum am Zähl-Spion des Versorgers, während der Erzeuger einmal läuft; die Absenzen kommentarfrei
     const ruft = (lauf, o, k, wer = () => true) => {
@@ -497,7 +539,7 @@ async function probe(K) {
     const baum = st.architectures.find((e) => e && r._foundryPresetIsTree(r._foundryPresetForEntry(e)) && Array.isArray(r._baumGestaltTeile(e)));
     const drache = exemplar("tor_drachentor");
     aus.quelle = {
-        felsOhneTypListe: __fehlt(r._felsBlockerParts, /_var/),
+        felsOhneTypListe: __fehlt([r._felsBlockerParts, r._felsHuellBoxen], /_var/),
         partsSkala: !!baum && ruft(() => r._populateBlockerAABBs(baum), r, "_studioWeltSkala"),
         torTafel: !!drache && ruft(() => r._torBlockerAABBs(drache), AnazhRealm, "Gesetz", (pfad) => /^porta:TOR_HUELLE\./.test(pfad)),
         // die Erzeuger und ihre Hilfs-Methoden (der Nachbau lag in einer Hilfs-Methode des Tors) — die Liste beim Namen
@@ -506,6 +548,7 @@ async function probe(K) {
                 "_populateBlockerAABBs",
                 "_torBlockerAABBs",
                 "_felsBlockerParts",
+                "_felsHuellBoxen",
                 "_hausBlockerBoxen",
                 "_fahrzeugBlockerParts",
                 "_baumGestaltTeile",
