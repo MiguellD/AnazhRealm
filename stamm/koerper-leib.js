@@ -3098,7 +3098,11 @@ class AnazhRealm_koerper_leib {
         // DIE HALTUNG DES TAGS (w28-mensch-menge, koerper `tagesHaltung`): ein Gemüt mit `haltung` (der Bewohner,
         // `_bewohnerGemuet`) trägt nie den Kampf-Zustand des Spielers; im Stand steht es in der Haltung seines Akts, solange keine
         // Emotion über ihrer Schwelle die Zeile wählt (die Furcht schlägt die Arbeit)
-        const p = m[this._koerperMotionName(moving, emotions)];
+        // DER NAME MIT DEM SATZ (leib-liest-satz): ein Name mit Zusatz („sad/krank“) ist der Grund des Buchs plus das Delta seines
+        // Gesetzes (koerper `leibSatzProfil`, je Buch und Namen dasselbe Objekt)
+        const KC = window.__koerperCore;
+        if (!KC || typeof KC.leibSatzProfil !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibSatzProfil");
+        const p = KC.leibSatzProfil(m, this._koerperMotionName(moving, emotions));
         return p && typeof p === "object" ? p : null;
     }
     // DER NAME DES PROFILS (w28-steh-haltung — die EINE Wahl, die der Leser der Daten `_koerperMotionProfile` und der Stand

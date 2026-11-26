@@ -1,0 +1,34 @@
+leib-liest-satz — Kandidat der Stationen (Diff gegen origin/punkte-maschine 75cfc1412, kandidat.diff)
+
+Der Schnitt im Spiel: der Leib des Bewohners liest seinen ganzen Satz an EINER Stelle (koerper tagesHaltung(akt, rolle, satz) ·
+leibSatzProfil · trachtDesTags; Leser im Wirt _bewohnerGemuet · _bewohnerStaende · _bewohnerTracht · _bestandAnlegen). Zwei Leser,
+die Stationen rufen, änderten dabei ihren Vertrag; eine Station meldete einen Leser als fehlend, den es jetzt gibt.
+
+1. mensch.kopplung.leib S1 (k2-zusammenspiel.js TRACHT_AN): die Tracht des Tags liest Luft und Regen an IHREM Ort —
+   _bewohnerTracht(d, T, tuch, ort), der Ort ist Pflicht (ohne Ort bricht sie laut: kein stiller Rückfall auf den Ort des Spielers).
+   Der Kandidat gibt je Saat den Ort ihrer Zelle (_autoSettlementCellInfo x, z — derselbe Ort, den der Wirt jeder Siedlung gibt,
+   { x: S.ox, z: S.oz }). Gemessen in der Welt der Werkbank (stadt-voll, derselbe Fächer: 16 Saaten × Sommer · Winter · Regen · Sturm
+   · Sommer): Lagen-Anteil Sommer 0,500 · Winter 1,000 · Regen 0,813 · Sturm 0,813 · Gegenlauf 0,500 → lagenDelta 0,500 (vorher
+   0,000: der Schnitt der Epoche in jedem Wetter), 5,1 s.
+2. mensch.sport.koennen S2 (k2-mensch-sport.js): LEBENSLAUF.uebung.alpha ist jetzt das Band JE KUNST (Newell & Rosenbloom 1981
+   Tab. 1: handwerk 0,21 · tanz 0,26 · kampf 0,32 · brett 0,21) statt einer Zahl ohne Quelle; die Zeile druckt es als JSON statt
+   „[object Object]“. Die Messung bleibt: R² 1,000 über 100 h (vorher 0,000), Werkbank-Welt.
+3. mensch.sport.kunst S1 (k2-mensch-sport.js KUNST, auge-klasse.cjs): die Station meldete „fehlender Leser: kein Leib liest ihr
+   Können“. Der Leser steht: je Akt einer Kunst (LEIB_SATZ.kunst: arbeit · zweikampf · brett) zeigt der Meister (Können ≥ 1) einen
+   anderen Stand als der Anfänger (< 0,5) — über den Leser des Spiels (_bewohnerGemuet → _koerperMotionName, Profil leibSatzProfil):
+   Werk pwalk ↔ pwalk/lehrling (Takt 1,6 ↔ 0,8), Zweikampf fight ↔ fight/lehrling (2,8 ↔ 1,4), Brett pwalk ↔ pwalk/lehrling — 3 von 3
+   Künsten (Werkbank-Welt, 62 ms). Der Richter ist ein Blindtest („Blindtest Anfänger ↔ Meister ≥ 80 %“): Klasse P (R11 Panel) in
+   auge-klasse.cjs, die Sprosse trägt kein „erwartet nicht“ mehr; die Station schießt das Bildpaar Meister ↔ Anfänger an der Pose der
+   Sprosse (3 m vor dem Gesicht, Augenhöhe), wo ein Paar jetzt im Akt seiner Kunst draußen steht, sonst „Umfang nicht erzeugbar“ mit
+   der Zahl des Lesers. GRÜN nie an der Zahl — erst mit dem Urteil des Panels. Das Budget der Leiter 30 → 45 s (zwei Bilder).
+
+mensch.menge.seuche S1 braucht keinen Kandidaten: KRANK misst die Haltung über _bewohnerGemuet gegen tagesHaltung(akt, rolle) — der
+Kranke steht jetzt „<Haltung>/krank“ (Lasselin et al. 2020), am alten Gesetz 0 von 21 247, am neuen 21 247 von 21 247 (vm).
+
+Die drei Wände:
+- node punkte.cjs liste: Basis (75cfc1412, Kopf 4c9e6aab) 1976 Stationen · fehlt 15 · Fehler 2 — genau ROT gelaende.K2#1/#2 „Wand
+  HAKEN“; mit dem Kandidaten am Kopf 3587374c (leib-liest-satz) dasselbe: 1976 · fehlt 15 · Fehler 2, dieselben zwei, sonst nichts.
+- Eine Leiter misst in ≤ 60 s: kopplung.leib unverändert sek 60 (der Fächer 5,1 s), koennen unverändert sek 30, kunst sek 45
+  (KUNST 62 ms + UEBUNG 12 ms + zwei Bilder).
+- Der Fächer: kein Fächer im Kern (node, worker_threads) — der Fächer von kopplung.leib fährt in der Seite (H.seite), jede Adresse
+  durch den Leser des Spiels (_bewohnerTracht), derselbe Zeuge wie bisher (≥ 8 Saaten, Kälte, Regen, Gegenlauf gleich dem Sommer).
