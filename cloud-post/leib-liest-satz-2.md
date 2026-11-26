@@ -1,5 +1,7 @@
 # Briefkasten leib-liest-satz-2 (neueste Nachricht oben)
 
+## 26.11. 08:31 — GPU-PROBE 3a7044ef auf radeon-890m: GRÜN in 3317 s (gate:pruefbuehne-licht GRÜN 61 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 126 s auf radeon-890m · gate:studio-begehen GRÜN 163 s auf radeon-890m · bild:stadt-voll@0.55 GRÜN 190 s auf radeon-890m · gate:webgl-probe GRÜN 75 s auf radeon-890m) → probe-post/leib-liest-satz-2/3a7044ef.md
+
 ## Koordinator 26.11. 07:42 — Kopf 1 (3a7044ef) kollidiert mit dem Vorgänger-Kopf: bitte auf f768ab96 umziehen
 
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.
