@@ -1,0 +1,16 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 22.3 s · Wegfindung an der Wiese: {"saat":"anazh-realm-seed","samen":"anazh-realm-seed","breite":-0.8816373256754768,"laenge":-1.7151463215373193,"lm1":0,"lm13":0,"lmAlle":0,"max":1471,"sied":2,"polHoehe":67.08168819476707,"mittag":[{"w":"fruehling","phase":0.125,"hoehe":55.82225299594653},{"w":"sommer","phase":0.375,"hoehe":55.82225299594653},{"w":"herbst","phase":0.625,"hoehe":23.14955135924212},{"w":"winter","phase":0.875,"hoehe":23.149551359242118}]}
+@@ 22.4 s · erleben.spieler.wegfindung S2 umfang {"art":"umfang","erzeugt":0,"was":"in 1 km um die Wiese steht keine Landmarke (felsturm/felsbogen, stamm/vegetation-baum.js:1519; 0 in 1–3 km, 0 geladen)","t":22.4}
+@@ 22.4 s · erleben.spieler.wegfindung S3 leser {"art":"leser","fehlt":"Karte aus dem Gesetz: kein Haken, der die Welt als Karte vor den Spieler legt (Höhenlinien, Wege, Ortsnamen) — `_wegeKarteEnsure` (stamm/siedlung-wege.js:16) ist eine Boden-Textur, keine Karte des
+@@ 22.4 s · erleben.spieler.wegfindung S4 umfang {"art":"umfang","erzeugt":1471,"was":"die größte Siedlung der Sitzung trägt 1471 Bewohner (2 Siedlungen) — keine Stadt von 10⁶","t":22.4}
+@@ 22.4 s · Gestirne bei Breite -50,51°: [{"w":"fruehling","ist":55.82225299594653,"soll":55.822252995946535,"f":7.105427357601002e-15},{"w":"sommer","ist":55.82225299594653,"soll":55.822252995946535,"f":7.105427357601002e-15},{"w":"herbst","ist":23.14955135924212,"soll":23.14955135924211,"f":1.0658141036401503e-14},{"w":"winter","ist":23.149551359242118,"soll":23.14955135924211,"f":7.105427357601002e-15}] · Pol 67,08°
+@@ 22.4 s · erleben.spieler.wegfindung S5 gemessen {"art":"gemessen","werte":{"gestirn_fehler_grad":16.568},"erzeugt":40030.173592041145,"welt":{"gestirn_proben":5},"taeter":"die Sonnenbahn kennt weder Breite noch Saison (welt-licht.js:711 `sonnenRichtung`): Mittag herbs
+@@ 22.4 s · erleben.spieler.wegfindung S6 leser {"art":"leser","fehlt":"Mittel der Epoche: die Reise ist ein Sprung der Konsole in eine neue Welt (stamm/feld-leben.js:1278 → `_reiseBetreten` stamm/netz-portal.js:660), keine Fahrt mit Karte, Schiff oder Fahrzeug der Ep
+@@ 22.4 s · erleben.spieler.wegfindung S7 umfang {"art":"umfang","erzeugt":1,"was":"die Sitzung hält eine Saat (anazh-realm-seed) und einen Planeten — kein Nachbarplanet, keine Bahn zwischen Planeten","t":22.4}
+@@ 22.4 s · wegfindung S1 (die Wiese wuchs in 22249 ms): Fächer 1/51 Adressen (50 Saaten + 1) in 2 ms · Leser stamm/vegetation-baum.js:2607 · Gesetz stamm/vegetation-baum.js:1534 Landmarken-Pass · 50 ohne Fähigkeit (der Wurf der Landmarke ist keine Funktion der Saat: stamm/vegetation-baum.js:1482 _vegetationSampleSpawn liest die geladene Welt (_saatJe → worldMeta.seed, _landAt, _hydroDistAt, _voxelSurfaceY)) · schlechteste {"saat":"anazh-realm-seed"} n1
+@@ 22.4 s · erleben.spieler.wegfindung S1 leser {"art":"leser","fehlt":"der Wurf der Landmarke ist keine Funktion der Saat: stamm/vegetation-baum.js:1482 _vegetationSampleSpawn liest die geladene Welt (_saatJe → worldMeta.seed, _landAt, _hydroDistAt, _voxelSurfaceY) —
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
