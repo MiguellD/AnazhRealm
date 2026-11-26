@@ -1,0 +1,21 @@
+{
+ "leiter": "erleben.klang.stimme",
+ "sprosse": 2,
+ "sha": "64fcf12e68b47704c5d88094e14476ea64a088da",
+ "datum": "2026-11-26T06:36:42.215Z",
+ "soll": "Wortfehlerrate eines Spracherkenners am Abgriff ≤ 10 %; Affekt blind ≥ 60 %",
+ "station": "karte2.erleben.klang.stimme#2",
+ "lauf": "karte2.erleben.klang.stimme#1",
+ "geraete": [
+  {
+   "geraet": "GTX 1050",
+   "adapter": "NVIDIA GeForce GTX 1050",
+   "richter": {
+    "wert": "S2 · ROT Leser fehlt: keine Sprache am Abgriff: die Bewohner sprechen Laute ohne Bedeutung aus dem Stimm-Gesetz (Silben aus Vokalen der Tafel, `stimmPuffer` klang-core.js:1610 über `_bewohnerLaut` stamm/klang.js:994) — kein Wort, keine Prosodie aus Affekt; der Begleiter spricht über speechSynthesis des Browsers (stamm/werkstatt-hud.js:71), Gerätestimme außerhalb des Klang-Graphen (R4)",
+    "urteil": "ROT"
+   },
+   "preis": null,
+   "ohnePreis": "kein Preis-Gerät: GTX 1050 steht unter dem Preis-Band der Klasse gtx (Preis trägt GTX 1060, buche-2 STANDARD, Z7)"
+  }
+ ]
+}
