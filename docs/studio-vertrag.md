@@ -1121,6 +1121,10 @@ DIESELBE Tafel am Ziel — Heimat + Δ für Klima, Meer, Spende und die Linie de
 phyto-core `wetterAt`; jede Lage trägt sie als Pflichtfeld `L.ort` (`temperaturFeld`, `schnee`, `schneeVersatz`, `pegelTafel`).
 DAS ERBGUT DES ORTS `ortErbgut`: der Wildnis-Term der Heimat plus das Δ der Regler, geklemmt — die Geburt der Reise-Welt schreibt
 es EINMAL in ihr Gesetz, jeder Leser des Erbguts liest die Welt.
+DAS KLIMA DES PLANS `ortKlima` (kultur-aus-klima): aus dem Ort-Gesetz die EINE Tafel, die der Mensch am Ort liest — Winter, Sommer,
+Spende, der Niederschlag im Jahr (`NIEDERSCHLAG`: in der Heimat der Schneefall eines Frosttags × Jahr, 547,5 mm; am Ziel die
+Umkehrung der Regen-Quote des Planeten) und der Schneefall im Mittel des Jahres (der Fall des Pegels über seine Frosttage); der
+Wirt (`_siedlungKlima`) reicht sie in jeden Plan ohne Wort, das Dach liest sie (fachwerk `ortNeigung`, `ortDeckung`).
 DER WUCHS DES ORTS (`ortGesetz(teil).wuchs`, Bewuchs und Grund nach Klima): je Größe ein Faktor, in der Heimat 1 — die
 Krautschicht `decke` und der Wald `wald` (das Verhältnis des Planeten zum Anker, der Niederschlag gegen die Verdunstung), die
 Gräser `gras` und der Laubbaum `laub` nach der Zeit des Orts, das Nadelholz `nadel` und der Sand des kahlen Grunds `sand` nach

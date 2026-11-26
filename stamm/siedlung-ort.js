@@ -1551,11 +1551,10 @@ class AnazhRealm_siedlung_ort {
     // Ort-Gesetz der Welt (gelaende-core `ortGesetz(teil).klimaHeute`: die Heimat −4 / 18, am Ziel der Reise Heimat + Δ). Leser: der
     // Export (`_foundryRequestSettlement`) und die Massen der Stadt-Kacheln (`kachelMassen`) — die Region jedes Dorfs liegt im Klima.
     // Dazu die Wasser-Spende relativ zur Heimat (haus-stoff, fachwerk `sockelImWasser`: `ortGesetz(teil).spendeVerh`, die Heimat 1):
-    // der Sockel jedes Baus steht über dem Spritzwasser des Orts.
+    // der Sockel jedes Baus steht über dem Spritzwasser des Orts. Dazu der Niederschlag und der Schneefall am Meer (kultur-aus-klima,
+    // fachwerk `ortNeigung`: das Dach folgt dem Himmel des Orts) — die EINE Tafel ist gelaende-core `ortKlima`, der Wirt reicht sie.
     _siedlungKlima() {
-        const o = this._gelaende().ort,
-            k = o.klimaHeute;
-        return { winter: k.winter, sommer: k.sommer, spendeVerh: o.spendeVerh };
+        return globalThis.__gelaendeCore.ortKlima(this._gelaende().ort);
     }
     _autoSettlementCellInfo(cx, cz) {
         // ZENSUS 17.07. — Existenz/Raster/Größe sind fachwerk-Gesetz (SIEDLUNG); kaltes Buch → keine Zelle.

@@ -1554,6 +1554,36 @@
         firn: 2,
         stufe: 2,
     });
+    // DER NIEDERSCHLAG DES ORTS (kultur-aus-klima, Karte 2 mensch.kopplung.kultur#2): der Schneefall eines Frosttags ist der
+    // Niederschlag eines Tags — die Heimat trägt `heimatMm` = fall × 1000 × jahrTage = 547,5 mm im Jahr (der Abfluss `spendeMm`
+    // 328,5 mm davon, 60 %). Am Ziel der Reise trägt der Ort die Regen-Quote des Planeten: planet-core `ortRoh` setzt
+    // regenQuote = N / (N + `quoteMm`); die Heimat steht auf ihrer Quote N_H / (N_H + 900), der Ort auf ihr + Δ regenQuote, und der
+    // Niederschlag ist die Umkehrung N = 900 q / (1 − q). Leser: der Schneefall des Pegels (`schneeFall`: fall × N / N_H, in der
+    // Heimat × 1, bit-gleich), die Tafel `ortKlima` (das Klima des Plans) und über sie das Dach (fachwerk `ortNeigung`).
+    const NIEDERSCHLAG = Object.freeze({
+        heimatMm: SCHMELZE.fall * 1000 * TEMPERATUR.jahrTage,
+        quoteMm: 900,
+        quoteMax: 0.99,
+    });
+    function niederschlagAmOrt(dQuote) {
+        const N = NIEDERSCHLAG;
+        const q = Math.min(N.quoteMax, Math.max(0, N.heimatMm / (N.heimatMm + N.quoteMm) + dQuote));
+        return (N.quoteMm * q) / (1 - q);
+    }
+    // DER WINTER DES PEGELS (`schneeFall`, die EINE Rechnung des Schneefalls): auf dem Feld F die Phase, in der das Tagesmittel unter
+    // 0 °C liegt (der Frost: ±a um die Winter-Mitte), der Fall je Frosttag am Ort (fall × N / N_H) und das Wasser des ganzen Winters
+    // (`voll`, m). null, wo es nie friert. Leser: der Pegel (`schneePegel`) und das Klima des Plans (`ortKlima`).
+    function schneeFall(L, F) {
+        const S = SCHMELZE;
+        const A = F.jahr.amp;
+        const basis = F.mittel - F.kuehlung;
+        const c = -basis / A;
+        if (c <= -1) return null;
+        const tage = TEMPERATUR.jahrTage / (2 * Math.PI);
+        const a = Math.acos(Math.min(1, c)); // friert die Luft immer, beginnt die (leere) Schmelze am wärmsten Tag
+        const fall = S.fall * (ortDer(L).klimaHeute.niederschlagMm / NIEDERSCHLAG.heimatMm);
+        return { A, basis, tage, a, fall, voll: fall * tage * (2 * Math.PI - 2 * a), frostTage: tage * (2 * Math.PI - 2 * a) };
+    }
     // `aus` (optional, wetter.K4) bekommt `aus.alt`: das Wasser des Alten im Pegel — der Firn und der Rest des Vorjahrs, den der
     // Sommer nicht zehrte (gepresst, er trägt); der Pegel ohne ihn ist der Schnee DIESES Winters (`schneeTiefe`).
     function schneePegel(L, y, saison, feld, aus) {
@@ -1561,23 +1591,19 @@
             throw new Error("gelaende-core schneePegel: Höhe oder Saison fehlt");
         const S = SCHMELZE;
         const F = feld ? feld(0) : temperaturFeld(L, y, 0);
-        const A = F.jahr.amp;
-        const basis = F.mittel - F.kuehlung;
-        const c = -basis / A;
         if (aus) aus.alt = 0;
-        if (c <= -1) return 0;
-        const tage = TEMPERATUR.jahrTage / (2 * Math.PI);
+        const W = schneeFall(L, F);
+        if (!W) return 0;
+        const { A, basis, tage, a, voll } = W;
         const psi = 2 * Math.PI * (saison - F.jahr.gipfel) - F.jahr.spaet;
-        const a = Math.acos(Math.min(1, c)); // friert die Luft immer, beginnt die (leere) Schmelze am wärmsten Tag
         const u = (((psi + a) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) - a;
         const zehrt = (v) => S.gradTag * tage * (basis * (v + a) + A * (Math.sin(v) + Math.sin(a)));
-        const voll = S.fall * tage * (2 * Math.PI - 2 * a);
         // der Rest, den der Sommer nicht zehrt: über dem Firn bleibt er bis zur nächsten Schmelze (der Überschuss des Jahres
         // fließt als Eis ab — der Gang springt um ihn, wo die Schmelze beginnt)
         const rest = Math.max(0, voll - zehrt(a));
         const firn = rest > 0 ? S.firn : 0;
         if (aus) aus.alt = firn + rest;
-        if (u >= a) return firn + rest + S.fall * tage * (u - a);
+        if (u >= a) return firn + rest + W.fall * tage * (u - a);
         return firn + Math.max(0, voll - zehrt(u));
     }
     function schneeLinie(L, saison, feldAt) {
@@ -2183,7 +2209,14 @@
     // eine Feld-Probe (`L.erdbau`), die Welt bleibt byte-gleich. Leser: `hoehe` (Stamm, voxel-worker, Foundry-Worker).
     // `wandM` (K66): das Band der Wand — ein Punkt binnen wandM / 2 über einer Fläche liegt auf ihr (das Netz trägt die Feinform
     // ±0,2 m, Lehre 22), die Natur mehr als 2 · wandM (entlang der Normale) innen im Kegel der Böschung bleibt Natur (`erdbauWand`)
-    const ERDBAU = Object.freeze({ boeschung: 0.6, reichweiteM: 16, zelleM: 16, wandM: 0.5 });
+    // DIE BÖSCHUNG LÄUFT IN DIE NATUR (erdbau-boeschung): der Kegel `boeschung` 0,6 (31°, im Band des Schüttwinkels loser Böden
+    // 25–40° und bei der Regelböschung 1 : 1,5 = 33,7°) endet, wo er das gewachsene Gelände trifft (das „Daylight“ des
+    // Erdbaus) — seine Reichweite folgt dem Höhenunterschied, d = |h − y| / boeschung. Trifft er es nicht (der Hang steiler
+    // als der Kegel, die Fläche tiefer im Hang als der Kegel trägt), hält die STEILE Böschung `steil` 1,0 (45°, die Grenze
+    // für ungestützte Böschungen nichtbindiger Böden, DIN 4124) den Unterschied zur Natur: höchstens steil · (R − d), an der
+    // Reichweite R = `reichweiteM` 0 — der Erdbau endet stetig, nie in einer Stufe. Bis erdbau-boeschung endete der Kegel hart bei
+    // 16 m: 12 von 26 Orten trugen dort eine Stufe bis 23,7 m (die Stadt 16,2 m an 937/83,5).
+    const ERDBAU = Object.freeze({ boeschung: 0.6, steil: 1.0, reichweiteM: 48, zelleM: 16, wandM: 0.5 });
     const ERDBAU_ZAHL = ["cx", "cz", "phi", "ex", "ez", "y"];
     const TRASSE_ZAHL = ["x0", "z0", "y0", "x1", "z1", "y1", "w"];
     // FREI {cx, cz, phi, ex, ez} (das Brücken-Etikett des Plans v2): in seinem Rechteck gilt der Grund allein — keine Fläche,
@@ -2202,10 +2235,18 @@
         if (roh == null) return null;
         if (!Array.isArray(roh)) throw new Error("gelaende-core: der Erdbau ist keine Liste");
         if (!roh.length) return null;
-        const R = ERDBAU.reichweiteM;
         const Z = ERDBAU.zelleM;
         const splats = [];
         const zellen = new Map();
+        // je Eintrag einer Zelle die GRENZE [lo, hi] (`grenzen`, parallel zu `zellen`): jeder Punkt der Zelle liegt mindestens
+        // dl von der Fläche (der Abstand der Zell-Mitte minus die halbe Diagonale), also hält der Kegel dort jede Höhe in
+        // [yMax − dl · boeschung, yMin + dl · boeschung] — `erdbauY` und `erdbauWand` überspringen den Splat, dessen Kegel die
+        // Höhe hält (exakt: er ließe sie gleich). Eine Zelle außer Reichweite (dl ≥ R) trägt den Splat nicht. So kostet die Frage
+        // die Splats, deren Kegel an ihr wirkt, nie die Fläche der Reichweite. `freiZellen`: die Brücken je Zelle (der Grund gilt).
+        const grenzen = new Map();
+        const freiZellen = new Map();
+        const kasten = []; // je Splat der Kasten seiner Fläche [x0, x1, z0, z1] — gerastert nach dem Lesen (`reichen` unten)
+        const reichen = (x0, x1, z0, z1) => kasten.push(x0, x1, z0, z1);
         // DER GRUND DER HÄUSER (S4, `grund`): je Haus sein Körper-Satz und Keller im Rahmen des Hauses, mit einem eigenen Raster
         // (`grundZellen`: die Zellen, die seine Boxen berühren) — die Leser des Grunds (`erdbauGrund`, `erdbauHohl`,
         // `erdbauSchnitt`) fragen nur ihre Zelle; die Keller tragen ein eigenes (`kellerZellen`: nur der Kasten des Raums) — der
@@ -2225,10 +2266,11 @@
                 }
         };
         const platte = (cx, cz, c, sn, ex, ez, y, frei) => {
-            splats.push({ platte: !frei, frei, cx, cz, c, s: sn, ex, ez, y: frei ? NaN : y });
-            const hx = Math.abs(ex * c) + Math.abs(ez * sn) + (frei ? 0 : R);
-            const hz = Math.abs(ex * sn) + Math.abs(ez * c) + (frei ? 0 : R);
-            rastern(zellen, cx - hx, cx + hx, cz - hz, cz + hz, splats.length - 1);
+            const p = { platte: !frei, frei, cx, cz, c, s: sn, ex, ez, y: frei ? NaN : y };
+            splats.push(p);
+            const hx = Math.abs(ex * c) + Math.abs(ez * sn);
+            const hz = Math.abs(ex * sn) + Math.abs(ez * c);
+            reichen(cx - hx, cx + hx, cz - hz, cz + hz);
         };
         for (let i = 0; i < roh.length; i++) {
             const p = roh[i];
@@ -2287,60 +2329,164 @@
                 if (p.weg != null && !Number.isFinite(p.weg))
                     throw new Error("gelaende-core: Erdbau-Splat " + i + " trägt keinen Weg als Zahl");
                 const weg = p.weg == null ? -1 : p.weg;
-                splats.push({ platte: false, x0: p.x0, z0: p.z0, dx, dz, len2, y0: p.y0, dy: p.y1 - p.y0, hw: p.w / 2, weg });
-                const m = p.w / 2 + R;
-                const [ax0, ax1] = [Math.min(p.x0, p.x1) - m, Math.max(p.x0, p.x1) + m];
-                const [az0, az1] = [Math.min(p.z0, p.z1) - m, Math.max(p.z0, p.z1) + m];
-                rastern(zellen, ax0, ax1, az0, az1, splats.length - 1);
+                const t = { platte: false, x0: p.x0, z0: p.z0, dx, dz, len2, y0: p.y0, dy: p.y1 - p.y0, hw: p.w / 2, weg };
+                splats.push(t);
+                const m = p.w / 2;
+                reichen(Math.min(p.x0, p.x1) - m, Math.max(p.x0, p.x1) + m, Math.min(p.z0, p.z1) - m, Math.max(p.z0, p.z1) + m);
             }
         }
-        return { n: splats.length, splats, zellen, gruende, grundZellen, kellerZellen, hohl, schnitt };
+        // DAS RASTER DER REICHWEITE: je Splat die Zellen seines Kastens samt R (eine Brücke ohne), je Zelle dl (der Abstand der
+        // Zell-Mitte zur Fläche minus die halbe Diagonale, 1e-9 m sicher gegen das Runden) — aufgebaut unter einem kleinen
+        // ganzzahligen Schlüssel im Kasten aller Splats (der Schlüssel der Welt liegt über 2³¹ und kostet je Eintrag ein Zahl-Objekt:
+        // bis hier 0,5 µs je Eintrag), danach EINMAL je Zelle unter den Schlüssel der Welt gelegt
+        erdbauRaster(splats, kasten, zellen, grenzen, freiZellen);
+        return { n: splats.length, splats, zellen, grenzen, freiZellen, gruende, grundZellen, kellerZellen, hohl, schnitt };
+    }
+    // Das Raster der Reichweite (die Normalform, `erdbauNormal`) — eine eigene Funktion, damit die Maschine sie als Ganzes
+    // übersetzt (in der Normalform lief sie als Schleife eines einmal gerufenen Rumpfs, 0,6 µs je Eintrag).
+    function erdbauRaster(splats, kasten, zellen, grenzen, freiZellen) {
+        const R = ERDBAU.reichweiteM;
+        const Z = ERDBAU.zelleM;
+        const B = ERDBAU.boeschung;
+        let aMin = Infinity;
+        let aMax = -Infinity;
+        let bMin = Infinity;
+        for (let i = 0; i < splats.length; i++) {
+            const r = splats[i].frei ? 0 : R;
+            aMin = Math.min(aMin, Math.floor((kasten[4 * i] - r) / Z));
+            aMax = Math.max(aMax, Math.floor((kasten[4 * i + 1] + r) / Z));
+            bMin = Math.min(bMin, Math.floor((kasten[4 * i + 2] - r) / Z));
+        }
+        const nA = aMax - aMin + 1;
+        const lokal = new Map();
+        const halbDiag = Z * Math.SQRT1_2 + 1e-9;
+        for (let i = 0; i < splats.length; i++) {
+            const p = splats[i];
+            const r = p.frei ? 0 : R;
+            const yMin = p.platte ? p.y : Math.min(p.y0, p.y0 + p.dy);
+            const yMax = p.platte ? p.y : Math.max(p.y0, p.y0 + p.dy);
+            const a1 = Math.floor((kasten[4 * i + 1] + r) / Z);
+            const b0 = Math.floor((kasten[4 * i + 2] - r) / Z);
+            const b1 = Math.floor((kasten[4 * i + 3] + r) / Z);
+            for (let a = Math.floor((kasten[4 * i] - r) / Z); a <= a1; a++)
+                for (let b = b0; b <= b1; b++) {
+                    let lo = Infinity;
+                    let hi = -Infinity;
+                    if (!p.frei) {
+                        const x = (a + 0.5) * Z;
+                        const z = (b + 0.5) * Z;
+                        let dc;
+                        if (p.platte) {
+                            const dx = x - p.cx;
+                            const dz = z - p.cz;
+                            const u = Math.max(0, Math.abs(dx * p.c - dz * p.s) - p.ex);
+                            const v = Math.max(0, Math.abs(dx * p.s + dz * p.c) - p.ez);
+                            dc = Math.sqrt(u * u + v * v);
+                        } else {
+                            let q = p.len2 > 0 ? ((x - p.x0) * p.dx + (z - p.z0) * p.dz) / p.len2 : 0;
+                            q = q < 0 ? 0 : q > 1 ? 1 : q;
+                            const ux = x - (p.x0 + p.dx * q);
+                            const uz = z - (p.z0 + p.dz * q);
+                            dc = Math.sqrt(ux * ux + uz * uz) - p.hw;
+                        }
+                        const dl = dc - halbDiag;
+                        if (dl >= R) continue;
+                        if (dl > 0) {
+                            lo = yMax - dl * B;
+                            hi = yMin + dl * B;
+                        }
+                    }
+                    const k = a - aMin + (b - bMin) * nA;
+                    const e = lokal.get(k);
+                    if (e) {
+                        e.i.push(i);
+                        e.g.push(lo, hi);
+                        if (p.frei) (e.f || (e.f = [])).push(i);
+                    } else lokal.set(k, { a, b, i: [i], g: [lo, hi], f: p.frei ? [i] : null });
+                }
+        }
+        for (const e of lokal.values()) {
+            const key = (e.a + 32768) * 65536 + (e.b + 32768);
+            zellen.set(key, e.i);
+            grenzen.set(key, Float64Array.from(e.g));
+            if (e.f && e.f.length) freiZellen.set(key, e.f);
+        }
     }
     // Der Erdbau an (x, z) über der Höhe h (die Normalform E, `erdbauNormal`). `gang` (optional) trägt, ob der Punkt auf einer
     // Fläche liegt (`gang.flaeche`, die Höhe kam aus ihr, nicht aus der Böschung) — die Wand in `hoehe` liest es aus DIESEM Gang.
+    // EINE HÜLLE (erdbau-boeschung): jeder Splat in Reichweite (d > 0) ist ein Band um die Natur h0 — unten l = min(y − d · b,
+    // h0 + steil · (R − d)), oben u = max(y + d · b, h0 − steil · (R − d)) (der Kegel, und wo er die Natur nicht trifft, die
+    // steile Böschung, ERDBAU) —, die Höhe ist h0 im Schnitt aller Bänder [max l, min u]: in keiner Reihenfolge, Platten
+    // nebeneinander stapeln nichts. Wo sich die Bänder nicht schneiden (zwei Flächen näher, als die Böschung ihren
+    // Höhenunterschied trägt), gilt die RAMPE: die Höhe, an der die größte Übersteilung (l − h) · w gegen (h − u) · w am
+    // kleinsten ist, w = (R − d) / (R · d) — an einer Fläche (d → 0) geht sie in ihre Höhe über, an der Reichweite (d → R)
+    // verliert der Splat sein Gewicht: die Hülle ist überall stetig. Wo die Bänder sich schneiden, ist sie der Kegel des
+    // Gesetzes bis K10 (die Folge der Klammern ist dort der Schnitt); bis erdbau-boeschung gewann im Widerspruch der letzte
+    // Splat, und am Rand einer Fläche stand die Stufe (die Stadt an 980,25/141,25: der Plan legt Platten auf 65 m 42 m
+    // neben einen Weg auf 37 m).
+    const ERDBAU_FUSS = { d: 0, y: 0, mitte: 0 };
+    let ERDBAU_BAND = new Float64Array(3 * 64);
+    let ERDBAU_MARKE = new Uint32Array(256);
+    let erdbauFrage = 0;
+    function erdbauFuss(p, x, z) {
+        if (p.platte) {
+            const dx = x - p.cx;
+            const dz = z - p.cz;
+            const u = Math.abs(dx * p.c - dz * p.s) - p.ex;
+            const v = Math.abs(dx * p.s + dz * p.c) - p.ez;
+            ERDBAU_FUSS.d = u > 0 ? (v > 0 ? Math.hypot(u, v) : u) : v > 0 ? v : 0;
+            ERDBAU_FUSS.y = p.y;
+            ERDBAU_FUSS.mitte = 0;
+        } else {
+            let q = p.len2 > 0 ? ((x - p.x0) * p.dx + (z - p.z0) * p.dz) / p.len2 : 0;
+            if (q < 0) q = 0;
+            else if (q > 1) q = 1;
+            const mitte = Math.hypot(x - (p.x0 + p.dx * q), z - (p.z0 + p.dz * q));
+            ERDBAU_FUSS.d = mitte > p.hw ? mitte - p.hw : 0;
+            ERDBAU_FUSS.y = p.y0 + p.dy * q;
+            ERDBAU_FUSS.mitte = mitte;
+        }
+    }
     function erdbauY(E, x, z, h, gang) {
         const Z = ERDBAU.zelleM;
-        const liste = E.zellen.get((Math.floor(x / Z) + 32768) * 65536 + (Math.floor(z / Z) + 32768));
+        const key = (Math.floor(x / Z) + 32768) * 65536 + (Math.floor(z / Z) + 32768);
+        const liste = E.zellen.get(key);
         if (gang) gang.flaeche = false;
         if (!liste) return h;
         const R = ERDBAU.reichweiteM;
-        const B = ERDBAU.boeschung;
         let fest = NaN; // die Fläche, auf der der Punkt liegt (der letzte Splat mit d = 0): ihre Höhe ist Gesetz
         let festWeg = -2; // der Weg der Fläche (die Strecken EINES Wegs folgen einander: unter ihnen gilt die nächste Mitte)
         let festMitte = Infinity;
-        for (let k = 0; k < liste.length; k++) {
-            const p = E.splats[liste[k]];
-            if (!p.frei) continue;
-            const dx = x - p.cx;
-            const dz = z - p.cz;
-            if (Math.abs(dx * p.c - dz * p.s) <= p.ex && Math.abs(dx * p.s + dz * p.c) <= p.ez) return h; // unter der Brücke: der Grund
-        }
-        for (let k = 0; k < liste.length; k++) {
-            const p = E.splats[liste[k]];
-            if (p.frei) continue;
-            let d;
-            let y;
-            let mitte = 0;
-            if (p.platte) {
+        const frei = E.freiZellen.get(key);
+        if (frei)
+            for (let k = 0; k < frei.length; k++) {
+                const p = E.splats[frei[k]];
                 const dx = x - p.cx;
                 const dz = z - p.cz;
-                const u = Math.abs(dx * p.c - dz * p.s) - p.ex;
-                const v = Math.abs(dx * p.s + dz * p.c) - p.ez;
-                d = u > 0 ? (v > 0 ? Math.hypot(u, v) : u) : v > 0 ? v : 0;
-                y = p.y;
-            } else {
-                let q = p.len2 > 0 ? ((x - p.x0) * p.dx + (z - p.z0) * p.dz) / p.len2 : 0;
-                if (q < 0) q = 0;
-                else if (q > 1) q = 1;
-                mitte = Math.hypot(x - (p.x0 + p.dx * q), z - (p.z0 + p.dz * q));
-                d = mitte - p.hw;
-                if (d < 0) d = 0;
-                y = p.y0 + p.dy * q;
+                if (Math.abs(dx * p.c - dz * p.s) <= p.ex && Math.abs(dx * p.s + dz * p.c) <= p.ez) return h; // unter der Brücke: der Grund
             }
+        const g = E.grenzen.get(key);
+        const h0 = h;
+        if (ERDBAU_MARKE.length < liste.length) ERDBAU_MARKE = new Uint32Array(2 * liste.length);
+        const marke = ++erdbauFrage;
+        const H = ERDBAU_HUELLE;
+        H.h0 = h0;
+        H.lo = -Infinity;
+        H.hi = Infinity;
+        H.n = 0;
+        for (let k = 0; k < liste.length; k++) {
+            if (h0 >= g[2 * k] && h0 <= g[2 * k + 1]) continue; // der Kegel hält h0 in der ganzen Zelle (die Grenze der Normalform)
+            const p = E.splats[liste[k]];
+            if (p.frei) continue;
+            ERDBAU_MARKE[k] = marke;
+            erdbauFuss(p, x, z);
+            const d = ERDBAU_FUSS.d;
+            const y = ERDBAU_FUSS.y;
             if (d > R) continue;
             if (d === 0) {
                 // auf EINEM Weg (dieselbe Weg-Zahl wie die Fläche davor) trägt die Strecke mit der nächsten Mitte — an den Gelenken
                 // überdecken sich die Strecken, und die spätere trüge sonst die Höhe ihres Anfangs (eine Treppe längs des Wegs)
+                const mitte = ERDBAU_FUSS.mitte;
                 if (!p.platte && p.weg >= 0 && p.weg === festWeg) {
                     if (mitte < festMitte) {
                         fest = y;
@@ -2353,12 +2499,90 @@
                 }
                 continue;
             }
-            const b = d * B;
-            if (h > y + b) h = y + b;
-            else if (h < y - b) h = y - b;
+            erdbauBand(d, y);
         }
         if (gang) gang.flaeche = fest === fest;
-        return fest === fest ? fest : h;
+        if (fest === fest) return fest;
+        if (h0 !== h0) return h0; // ohne Natur (die Fläche allein, `erdbauFlaeche`)
+        // Ein übersprungener Splat hält h0, nicht unbedingt die Höhe der Hülle: liegt sie (oder im Widerspruch das Intervall
+        // zwischen min u und max l) außerhalb seiner Grenze, zählt er mit — bis die Hülle steht
+        for (;;) {
+            const a = H.lo <= H.hi ? (h0 < H.lo ? H.lo : h0 > H.hi ? H.hi : h0) : H.hi;
+            const e = H.lo <= H.hi ? a : H.lo;
+            if (a === h0 && e === h0) return h0;
+            const n0 = H.n;
+            for (let k = 0; k < liste.length; k++) {
+                if (ERDBAU_MARKE[k] === marke) continue;
+                if (a >= g[2 * k] && e <= g[2 * k + 1]) continue;
+                const p = E.splats[liste[k]];
+                if (p.frei) continue;
+                ERDBAU_MARKE[k] = marke;
+                erdbauFuss(p, x, z);
+                if (ERDBAU_FUSS.d > R) continue;
+                erdbauBand(ERDBAU_FUSS.d, ERDBAU_FUSS.y);
+            }
+            if (H.n === n0) break;
+        }
+        if (H.lo <= H.hi) return h0 < H.lo ? H.lo : h0 > H.hi ? H.hi : h0;
+        return erdbauRampe(H.n, H.hi, H.lo);
+    }
+    // das Band eines Splats (d > 0, y die Höhe seiner Fläche am Fuß) in die Hülle der Frage (`erdbauY`)
+    const ERDBAU_HUELLE = { h0: 0, lo: 0, hi: 0, n: 0 };
+    function erdbauBand(d, y) {
+        const H = ERDBAU_HUELLE;
+        const R = ERDBAU.reichweiteM;
+        const b = d * ERDBAU.boeschung;
+        const s = (R - d) * ERDBAU.steil;
+        const l = y - b < H.h0 + s ? y - b : H.h0 + s;
+        const u = y + b > H.h0 - s ? y + b : H.h0 - s;
+        if (l > H.lo) H.lo = l;
+        if (u < H.hi) H.hi = u;
+        const n = H.n;
+        if (3 * n + 3 > ERDBAU_BAND.length) {
+            const neu = new Float64Array(2 * ERDBAU_BAND.length);
+            neu.set(ERDBAU_BAND);
+            ERDBAU_BAND = neu;
+        }
+        ERDBAU_BAND[3 * n] = l;
+        ERDBAU_BAND[3 * n + 1] = u;
+        ERDBAU_BAND[3 * n + 2] = (R - d) / (R * d);
+        H.n = n + 1;
+    }
+    // DIE RAMPE im Widerspruch der Bänder (`erdbauY`): die Höhe h in [a, e] (a = min u < e = max l), an der die größte
+    // Übersteilung nach unten, F(h) = max (l − h) · w, der nach oben, G(h) = max (h − u) · w, gleicht — F fällt, G steigt,
+    // die Wurzel ist eindeutig: gehalbiert, dann im bindenden Paar (i, j) genau: h = (l_i · w_i + u_j · w_j) / (w_i + w_j).
+    function erdbauRampe(n, a, e) {
+        const T = ERDBAU_BAND;
+        let unten = a;
+        let oben = e;
+        for (let it = 0; it < 48; it++) {
+            const m = 0.5 * (unten + oben);
+            let F = -Infinity;
+            let G = -Infinity;
+            for (let k = 0; k < n; k++) {
+                const f = (T[3 * k] - m) * T[3 * k + 2];
+                const q = (m - T[3 * k + 1]) * T[3 * k + 2];
+                if (f > F) F = f;
+                if (q > G) G = q;
+            }
+            if (F > G) unten = m;
+            else oben = m;
+        }
+        const m = 0.5 * (unten + oben);
+        let F = -Infinity;
+        let G = -Infinity;
+        let i = 0;
+        let j = 0;
+        for (let k = 0; k < n; k++) {
+            const f = (T[3 * k] - m) * T[3 * k + 2];
+            const q = (m - T[3 * k + 1]) * T[3 * k + 2];
+            if (f > F) (F = f), (i = k);
+            if (q > G) (G = q), (j = k);
+        }
+        const wi = T[3 * i + 2];
+        const wj = T[3 * j + 2];
+        const h = wi + wj > 0 ? (T[3 * i] * wi + T[3 * j + 1] * wj) / (wi + wj) : m;
+        return h >= a && h <= e ? h : m;
     }
     // Die FLÄCHE des Erdbaus an (x, z): die Höhe der Fläche, auf der der Punkt liegt (dieselbe Regel wie `erdbauY`: die letzte
     // gewinnt), oder null abseits jeder Fläche. Leser: der Plan v2 (fachwerk `ortPlan` über ctx.flaeche — Haus und Laterne
@@ -2578,24 +2802,32 @@
     function erdbauWand(L, x, y, z, ny) {
         const E = L.erdbau;
         const Z = ERDBAU.zelleM;
-        const liste = E.zellen.get((Math.floor(x / Z) + 32768) * 65536 + (Math.floor(z / Z) + 32768));
+        const key = (Math.floor(x / Z) + 32768) * 65536 + (Math.floor(z / Z) + 32768);
+        const liste = E.zellen.get(key);
         if (!liste) return 0;
         const T = ERDBAU.wandM;
         const f = erdbauY(E, x, z, NaN);
         if (f === f && Math.abs(y - f) <= T / 2) return 0;
-        const R = ERDBAU.reichweiteM;
-        const B = ERDBAU.boeschung;
-        let w = 0;
-        for (let k = 0; k < liste.length; k++) {
-            const p = E.splats[liste[k]];
-            let d;
-            let yS;
-            if (p.frei) {
+        const frei = E.freiZellen.get(key);
+        if (frei)
+            for (let k = 0; k < frei.length; k++) {
+                const p = E.splats[frei[k]];
                 const dx = x - p.cx;
                 const dz = z - p.cz;
                 if (Math.abs(dx * p.c - dz * p.s) <= p.ex && Math.abs(dx * p.s + dz * p.c) <= p.ez) return 0;
-                continue;
             }
+        const R = ERDBAU.reichweiteM;
+        const B = ERDBAU.boeschung;
+        // die Grenze der Normalform mit dem Band der Wand: steht y in ihr um 2 · wandM / ny innen, bleibt e · ny ≤ −2 · wandM
+        const m = ny > 0 ? (2 * T) / ny : Infinity;
+        const grenze = E.grenzen.get(key);
+        let w = 0;
+        for (let k = 0; k < liste.length; k++) {
+            if (y >= grenze[2 * k] + m && y <= grenze[2 * k + 1] - m) continue;
+            const p = E.splats[liste[k]];
+            let d;
+            let yS;
+            if (p.frei) continue;
             if (p.platte) {
                 const dx = x - p.cx;
                 const dz = z - p.cz;
@@ -6004,7 +6236,10 @@
         if (teil == null) {
             if (!ORT_HEIMAT) {
                 const klimaHeute = Object.freeze(
-                    Object.assign({}, TEMPERATUR, { spendeMm: PEGEL.spende * 1000 * TEMPERATUR.jahrTage })
+                    Object.assign({}, TEMPERATUR, {
+                        spendeMm: PEGEL.spende * 1000 * TEMPERATUR.jahrTage,
+                        niederschlagMm: NIEDERSCHLAG.heimatMm,
+                    })
                 );
                 ORT_HEIMAT = {
                     kuehlungKJeM: TEMPERATUR.sommer / ((SCHNEE.start + SCHNEE.voll) / 2),
@@ -6064,6 +6299,7 @@
                 tagAmp: T.tagAmp + k.tagAmp,
                 sommerPhase: (((T.sommerPhase + k.sommerPhase) % 1) + 1) % 1,
                 spendeMm: T.spendeMm * k.spendeVerh,
+                niederschlagMm: niederschlagAmOrt(d.wetter.regenQuote),
             })
         );
         if (!(klimaHeute.tagAmp >= 0)) nein(`der Tagesgang am Ort ist ${klimaHeute.tagAmp} K`);
@@ -6090,6 +6326,24 @@
         );
         ORT_JE.set(teil, tafel);
         return tafel;
+    }
+    // DAS KLIMA DES PLANS (kultur-aus-klima, die EINE Tafel, die der Mensch am Ort liest): aus dem Ort-Gesetz `O` (`ortGesetz(teil)`)
+    // das Tagesmittel des kältesten und des wärmsten Monats am Meer (°C), die Wasser-Spende relativ zur Heimat, der Niederschlag im
+    // Jahr (mm) und der Schneefall am Meer im Mittel des Jahres (mm Wasser je Tag: der Fall des Pegels über seine Frosttage,
+    // `schneeFall`). Die Heimat: −4 / 18 °C, 547,5 mm, 0,42 mm/Tag (102 Frosttage). Leser: der Wirt (`_siedlungKlima`, der Eingang
+    // jedes Plans ohne Wort) und die Linsen, die einen Plan an einem Ort rechnen (gate:settlement Teil R).
+    function ortKlima(O) {
+        if (!O || !O.klimaHeute) throw new Error("gelaende-core ortKlima: kein Ort-Gesetz (`ortGesetz(teil)`)");
+        const k = O.klimaHeute;
+        const L = { waterLevel: 0, ort: O };
+        const W = schneeFall(L, temperaturFeld(L, 0, 0));
+        return {
+            winter: k.winter,
+            sommer: k.sommer,
+            spendeVerh: O.spendeVerh,
+            niederschlagMm: k.niederschlagMm,
+            schneeMmTag: W ? (W.voll * 1000) / k.jahrTage : 0,
+        };
     }
     // Das Ort-Gesetz der Lage — Pflicht wie ihr Meer: ohne `L.ort` bricht der Leser beim Namen, nie das Klima der Heimat als Ersatz.
     function ortDer(L) {
@@ -8198,6 +8452,7 @@
         PLAN_VERSION: PLAN_VERSION,
         GRUND: GRUND,
         ortGesetz: ortGesetz,
+        ortKlima: ortKlima, // das Klima des Plans (kultur-aus-klima; Leser: der Wirt `_siedlungKlima`, gate:settlement Teil R)
         ortErbgut: ortErbgut,
         kahlGrund: kahlGrund,
         ortKraut: ortKraut,
@@ -8314,6 +8569,7 @@
         wasserKoerper: wasserKoerper,
         eisDicke: eisDicke,
         SCHMELZE: SCHMELZE,
+        NIEDERSCHLAG: NIEDERSCHLAG,
         schneePegel: schneePegel,
         schneeLinie: schneeLinie,
         schneeVersatz: schneeVersatz,
