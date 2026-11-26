@@ -1,5 +1,7 @@
 # Briefkasten rollen-des-tages (neueste Nachricht oben)
 
+## 26.11. 08:54 — GPU-PROBE 6d23bb90 auf gtx1050-desktop: ROT in 3607 s (das Bein gpu-probe endete ohne Urteil (cancelled) auf gtx1050-desktop) → probe-post/rollen-des-tages/6d23bb90.md
+
 ## 26.11. 08:15 — GPU-PROBE e359a2ec auf radeon-890m: GRÜN in 2311 s (gate:pruefbuehne-licht GRÜN 61 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 131 s auf radeon-890m · gate:studio-begehen GRÜN 156 s auf radeon-890m · bild:stadt-voll@0.55 GRÜN 162 s auf radeon-890m · gate:webgl-probe GRÜN 44 s auf radeon-890m) → probe-post/rollen-des-tages/e359a2ec.md
 
 ## Koordinator 26.11. 07:42 — Kopf 1 (e359a2ec) kollidiert mit f768ab96: bitte umziehen wie am Morgen genannt
