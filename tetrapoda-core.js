@@ -2123,10 +2123,20 @@
     // Fett dazwischen (an main 39,6 Ansaetze je Jagd, 20 von 60 Rissen). Mit dem Leib der gezeichneten Haut trifft es (24,5
     // Ansaetze, die Beute 6,4 → 4,2 m/s): unter 1,3 rissen vier Woelfe 55 von 60; mit dem Sehen der Tiere (w27-tiere-sicht, main
     // 2d5f4146) unter 1 noch 24 von 60 (an der Kante 0,4), unter 0,9 sind es 17 von 60 (0,8: 6).
-    var JAGD_GESETZ = Object.freeze({ dauerS: 45, ruheS: 120, wundExp: 0.9 });
+    // DIE AUFGABE IST EINE STRECKE (jagd-quote 2): der Jaeger gibt auf, wenn die Jagd so lange waehrt, wie sein Sprint fuer
+    // aufgabeM braucht (jagdDauerS) — die Hetze der Woelfe misst in der Schnee-Spur im Mittel 237 m auf das Reh (64 Angriffe),
+    // 76 m auf den Elch (252 Angriffe; die Autoren lesen darin Groesse und Wachsamkeit der Beute — Wikenros et al. 2009, Acta
+    // Theriol. 54:207); der Hirsch der Welt flieht wie das Reh, er stellt sich nicht.
+    // Die Pirsch zwischen den Hetzen zaehlt mit (die Uhr der Jagd, nicht ihr Weg). Fuer den Wolf (Sprint 7,5 m/s) 31,6 s; bis
+    // hier galt dauerS 45 s ohne Quelle: das Rudel riss in der Buehne jagdkreis 113 von 240 (0,47, Band 0,2–0,4).
+    var JAGD_GESETZ = Object.freeze({ aufgabeM: 237, ruheS: 120, wundExp: 0.9 });
     function wundTempo(hpAnteil, J) {
         var a = hpAnteil > 0 ? (hpAnteil < 1 ? hpAnteil : 1) : 0;
         return Math.pow(a, J.wundExp);
+    }
+    // sprint = der Sprint des Jaegers (m/s, unverwundet). Liefert die Dauer der Jagd (s), nach der er aufgibt.
+    function jagdDauerS(sprint, J) {
+        return sprint > 0 ? J.aufgabeM / sprint : 0;
     }
 
     // DER LEBENSRAUM (Tiere K4, 23.10., additiv — LEBENSRAUM_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): die
@@ -5876,6 +5886,7 @@
         fluchtDistanz: fluchtDistanz,
         JAGD_GESETZ: JAGD_GESETZ,
         wundTempo: wundTempo,
+        jagdDauerS: jagdDauerS,
         LEBENSRAUM_GESETZ: LEBENSRAUM_GESETZ,
         bodenKlasse: bodenKlasse,
         bodenKlasseAm: bodenKlasseAm,

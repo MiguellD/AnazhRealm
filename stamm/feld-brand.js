@@ -385,7 +385,7 @@ class AnazhRealm_feld_brand {
     // Partikel), die Zünd-Wärme Q_ig = c·(T_zünd − T_Luft) + M·(c_w·(100 °C − T_Luft) + L_v) aus derselben Zeile, der des Wassers
     // und der Luft des Temperatur-Felds (`_temperaturAt`); der Wind des EINEN Felds (`_windAt` am Ort zur Uhr des Brands) in der
     // Stärke, die das Gesetz ihm gibt — `sturmMS` bei Böe 1 ist Beaufort (WIND_FELD), also ohne die wandernde Böe und ihre Drift
-    // (`_windWob`), die die Front über die Querung einer Zelle (zwei Böen-Perioden) mittelt; die Böe des Zünd-Augenblicks gehalten
+    // (`wob` derselben Probe des Winds am Ort), die die Front über die Querung einer Zelle (zwei Böen-Perioden) mittelt; die Böe des Zünd-Augenblicks gehalten
     // streute die Köpfe an EINER Pose 0,10–1,14 m/s, ihr Mittel 0,7 statt der Beaufort-Stärke hielt sie bei 0,51 —, in 10 m Höhe
     // (÷ 1,15 auf 20 ft) auf Flammenhöhe (Albini–Baughman 1979 aus der Tiefe des Betts, ohne Wind-Grenze), und der Hang (das
     // Gefälle der Oberfläche über die Zelle) addieren als Vektoren zum effektiven φ (BehavePlus). R ist das Tempo der Spitze in
@@ -420,9 +420,7 @@ class AnazhRealm_feld_brand {
             0.02526 * sig ** 0.54,
             0.715 * Math.exp(-3.59e-4 * sig),
         ];
-        const u =
-            ((w.ms / 1.15 / (w.boe * this._windWob(t))) * 196.85 * 1.83) /
-            Math.log((20 + 0.36 * tiefe) / (0.13 * tiefe));
+        const u = ((w.ms / 1.15 / (w.boe * w.wob)) * 196.85 * 1.83) / Math.log((20 + 0.36 * tiefe) / (0.13 * tiefe));
         const phiW = C * u ** Bw * q ** -E;
         const [gx, gz] = [f.gx, f.gz];
         const phiS = (5.275 * beta ** -0.3 * (gx * gx + gz * gz)) / (Math.hypot(gx, gz) || 1);
