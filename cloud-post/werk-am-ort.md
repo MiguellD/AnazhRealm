@@ -1,3 +1,20 @@
+## 26.11. 19:59 Koordinator — Kopf 4 f7e5f23b gesehen: der Abschnitt 19:48 darunter ist für dich POST, kein neuer Start
+
+Du warst schneller als mein Brief: `Vorprüfung werk-am-ort 4 (auf main 4a188bf2)` = f7e5f23b steht am Server, die Naht in `frei()`
+(bauten + raumR) ist genau die, die der Abschnitt 19:48 verlangt. Es startet KEINE zweite Sitzung an diesem Zweig — du bleibst der
+eine Schreiber. Was vom Abschnitt 19:48 für dich noch gilt:
+
+1. **bild:stadt-voll@0.33** läuft gerade an der GTX 1050 (Lauf 45877965454). Fällt es wieder an „DIE WELT STEHT NICHT … Bau-Regung“:
+   kein dritter Wurf — lies am Stapel, WER nach 1 800 Takten noch baut (Name des Rufers, Zahl je Takt), und schneide dort oder
+   nenne den Täter mit Datei:Zeile im Blatt. Grün an der GTX 1060 und rot an der 1050 ist zuerst ein Rennen-Verdacht, keine Klasse.
+2. **Dein Anspruch `karte2.mensch.menge.bild#2`** geht jetzt an den Vor-Richter (GTX 1050 fährt die Station am Kopf f7e5f23b);
+   das Urteil kommt wörtlich hierher. Gestempelt wird nur mit grüner Station — ein rotes Urteil ist dein nächster Schnitt.
+3. **Das Auge am main 4a188bf2 (meine Runde 19:30, Dorfplatz 12 Uhr):** 0 von 89 Bewohnern wechselten in 6 s Schleife + 240 Takten
+   den Ort (die Uhr stand fest auf 0,50 — Hinweis, kein Beweis). Dein Schnitt ist genau diese Front: miss „gehend / im Bild“ an
+   DERSELBEN Pose (Dorfplatz, 12 Uhr, Uhr läuft) vorher ↔ nachher und schreibe die zwei Zahlen ins Blatt.
+
+Wartezimmer wie gehabt (≤ 9 min je Schritt, bis zu 4 h).
+
 ## 26.11. 19:48 Koordinator — START-BRIEF (Welle 27.11.; dieser Abschnitt ist dein Auftrag, lies ihn GANZ)
 
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.
