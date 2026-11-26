@@ -938,8 +938,18 @@ module.exports = (F) => [
                 if (!ort) return { fehlt: "keine freie Stelle 4 m vor einer der " + wachen.length + " Wachen draußen" };
                 const start = { x: pm.x, y: pm.y, z: pm.z };
                 const vorher = (st.player && st.player.equipped && st.player.equipped.held) || null;
-                r.equipHeld(arg.klinge || "langschwert");
+                // die Klinge der Wache als Bauplan der Welt: die Gattung der Schmiede trägt den Präfix ihrer Domäne (KIND_POLICY.weapon,
+                // `klinge_` — wie `_stoffstromBauplan`; trägt die Welt die Gattung der Wache nicht, das Langschwert); ohne ihn hält der
+                // Spieler die leere Hand, und die Station sagt es beim Namen
+                const KP = r.constructor.KIND_POLICY;
+                const pre = KP && KP.weapon ? KP.weapon.prefix : "klinge_";
+                const klinge = [arg.klinge, wache.waffe, "langschwert"].map((a) => a && pre + a).find((n) => n && st.blueprints && st.blueprints[n]) || pre + "langschwert";
+                const griff = r.equipHeld(klinge);
                 const haelt = (st.player && st.player.equipped && st.player.equipped.held) || null;
+                if (!haelt) {
+                    r.equipHeld(vorher);
+                    return { fehlt: "der Spieler hält keine Klinge: equipHeld(" + klinge + ") → " + ((griff && griff.reason) || "leer") };
+                }
                 pm.set(ort.x, r._voxelSurfaceY(ort.x, ort.z) + 1.8, ort.z);
                 const n0 = new Map(SL.map((S) => [S, (S.hiebe || []).length]));
                 const [fx, fz] = [ort.x + 1.2, ort.z + 0.9];
