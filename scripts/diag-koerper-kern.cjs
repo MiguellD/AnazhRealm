@@ -320,7 +320,7 @@ function satzUrteil(mutante = null) {
     const namen = typeof K.leibSatzNamen === "function" ? K.leibSatzNamen() : [];
     A._bewohnerStaendeListe = null;
     A._bewohnerStaende();
-    const ohne = namen.filter((nm) => !A._bewohnerStaende().includes(nm)); // (stand-lebt: je Name STAND.zeilen × seiten Zeilen)
+    const ohne = namen.filter((nm) => !A._bewohnerStaende().includes(nm)); // (stand-stuetzstellen: je Name und Bein die Zeilen seiner Stützstellen)
     aus.namen = namen.length;
     if (!namen.length || ohne.length) rot.push(`L5 der ferne Satz trägt die Namen des Satzes nicht: ${namen.length} Namen, ${ohne.length} ohne Zeile (${ohne.slice(0, 3).join(", ")}) — Täter: koerper leibSatzNamen · stamm _bewohnerStaende`); // prettier-ignore
     // L6 die Tat der Rolle liest den Satz

@@ -1171,9 +1171,10 @@ function messeHaltung(eingriff, W = mengeWelt(eingriff), nur = W.siedlungen.leng
         });
     };
     const teile = (rig) => ({ mensch: rig.hips, torso: rig.spine, head: rig.head, arm1: rig.armL.shoulder, elbow1: rig.armL.elbow, hand1: rig.armL.wrist, "arm-1": rig.armR.shoulder, "elbow-1": rig.armR.elbow, "hand-1": rig.armR.wrist, hip1: rig.legL.hip, knee1: rig.legL.knee, ankle1: rig.legL.ankle, "hip-1": rig.legR.hip, "knee-1": rig.legR.knee, "ankle-1": rig.legR.ankle }); // prettier-ignore
-    const zeilen = A._bewohnerStaende(); // die Namen der Stände (stand-lebt: je Name STAND.zeilen × STAND.seiten Zeilen des Satzes, beieinander)
+    const zeilen = A._bewohnerStaende(); // die Namen der Stände (stand-stuetzstellen: je Name und Bein die Zeilen seiner Stützstellen, `_bewohnerStandTafel`)
     const staende = [...new Set(zeilen)];
-    const NZ = K.STAND.zeilen;
+    const TF = r._bewohnerStandTafel();
+    const NZ = 12; // (lebt) so viele Stützstellen je Stand, gleich über seine Folge verteilt
     // (stand-lebt 3) im Stand hält der Boden der Schulter höchstens die Luft des Daumens der Mittelstellung über der Ruhe (koerper STAND.ruhe.daumen)
     const dauGrad = (K.STAND.ruhe.daumen * 180) / Math.PI;
     // die Lage des Kopfs (Meter, im Raum der Gestalt) eines gestellten Skeletts
@@ -1198,13 +1199,14 @@ function messeHaltung(eingriff, W = mengeWelt(eingriff), nur = W.siedlungen.leng
             // seine Uhr (die Welt: `atem` aus seinem Samen, `_bewohnerListe`)
             if (b.atem === undefined) b.atem = r._rollGenome(b.seed, "bewohner").axis("atem") * 10;
             for (const nm of staende) {
-                const h = zeilen.indexOf(nm) * NZ * K.STAND.seiten; // (stand-lebt 3: je Name die Zeilen beider Beine)
+                const h = TF.ab[zeilen.indexOf(nm)]; // (die erste Zeile seines Namens, das rechte Bein)
+                const KN = TF.knoten[zeilen.indexOf(nm)].length;
                 const gem = r._bewohnerStandGemuet(h);
                 // (lebt) der Kopf über die Zeilen des Zyklus, je Gestalt einmal: die Spanne seiner Lagen (mm)
                 if (!lebtG.has(b.gestalt + "|" + nm)) {
                     lebtG.add(b.gestalt + "|" + nm);
                     let SK0hoch = 1;
-                    const SK = [...Array(NZ)].map((_, k) => K.leibGussGestellt(C.sk0.get(G), stelle((rig) => r._animateHumanoidRig(rig, uhrZeile(h + k), 0, false, false, gem))).userData.__skelett); // prettier-ignore
+                    const SK = [...Array(NZ)].map((_, k) => K.leibGussGestellt(C.sk0.get(G), stelle((rig) => r._animateHumanoidRig(rig, uhrZeile(h + Math.floor((k * KN) / NZ)), 0, false, false, gem))).userData.__skelett); // prettier-ignore
                     // die Spanne in mm am Mann von 1,80 m (die Lagen sind Gelenk-Einheiten): vom Knöchel zum Kopf-Gelenk am Kinn liegen an ihm
                     // 0,870 − 0,039 der Körperhöhe (Drillis & Contini 1966, Body Segment Parameters, Tab. 1)
                     const spanne = (P) => ((1800 * (0.87 - 0.039)) / SK0hoch) * Math.hypot(...[0, 1, 2].map((i) => Math.max(...P.map((p) => p[i])) - Math.min(...P.map((p) => p[i])))); // prettier-ignore
@@ -1229,7 +1231,7 @@ function messeHaltung(eingriff, W = mengeWelt(eingriff), nur = W.siedlungen.leng
                 // (stand-lebt 3) DIE KLASSE SEINER HALTUNG im selben Moment: die Zeile, die er im Satz liest (Uhr und Standbein) —
                 // die Schulter je Seite (±5°), das Standbein, die Gier des Kopfs über dem Rumpf (±15°)
                 const skZ = K.leibGussGestellt(C.sk0.get(G), stelle((rig) => r._animateHumanoidRig(rig, uhrZeile(zeile), 0, false, false, r._bewohnerStandGemuet(zeile)))).userData.__skelett; // prettier-ignore
-                const [sZL, sZR] = spreiz(skZ), gier = kopfGier(skZ), bein = Math.floor(zeile / NZ) % 2 ? "links" : "rechts"; // prettier-ignore
+                const [sZL, sZR] = spreiz(skZ), gier = kopfGier(skZ), bein = TF.von[3 * zeile + 1] ? "links" : "rechts"; // prettier-ignore
                 aus.klasse.push({ seed: b.seed, gruppe: gruppe(G.gen.jahre), stand: nm, schulter: [sZL, sZR], bein, gier, k: `${Math.round(sZL / 10)}|${Math.round(sZR / 10)}|${bein}|${Math.round(gier / 30)}` }); // prettier-ignore
                 const je = ist.map((x) => Math.max(...x));
                 aus.je.push({ seed: b.seed, gruppe: gruppe(G.gen.jahre), stand: nm, profil: Math.max(...profil), uhren: je, mittel: je.reduce((a, x) => a + x, 0) / je.length, ruhe: Math.max(...ruhe), ueber: Math.max(...ist.map((s) => Math.max(...s.map((x, i) => x - Math.max(ruhe[i] + dauGrad, profil[i]))))), zeile, fern: Math.max(...fern) }); // prettier-ignore

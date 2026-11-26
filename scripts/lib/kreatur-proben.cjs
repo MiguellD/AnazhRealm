@@ -356,10 +356,9 @@ async function kreaturProben(r, T, opts) {
             const f = (x - Math.floor(x)) * G.n;
             const k0 = Math.floor(f);
             const zs = G.baender * G.n + hs;
-            // (der Stand in der Zeit, stand-lebt: die Zeile k0 seiner Uhr und die nächste seines Zyklus um den Bruch von w, wie der Knoten)
-            const HZ = G.standZeilen || 1;
-            const zs1 = zs - (hs % HZ) + (((hs % HZ) + 1) % HZ);
-            const ts = HZ > 1 ? a.aGang.getW(inst) - Math.floor(a.aGang.getW(inst)) : 0;
+            // (der Stand in der Zeit, stand-lebt: die Zeile seiner Uhr und die nächste, z + 1, um den Bruch von w, wie der Knoten)
+            const zs1 = G.standFolge ? zs + 1 : zs;
+            const ts = G.standFolge ? a.aGang.getW(inst) - Math.floor(a.aGang.getW(inst)) : 0;
             const z0 = r0 + k0;
             const z1 = r0 + ((k0 + 1) % G.n);
             // der Knochen j, Zeile r, Spalte c der Matrix in der Pose-Zeile z (drei Texel je Knochen)

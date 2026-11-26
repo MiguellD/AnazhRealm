@@ -179,8 +179,8 @@ class AnazhRealm_siedlung_menge {
                 inventar: "bewohner",
                 n: AnazhRealm.BEWOHNER.gangPhasen,
                 baender: window.__koerperCore.LEIB_SATZ.baender.length, // (je Gang des Satzes ein Band: der Gesunde, der Kranke)
-                staende: AnazhRealm._bewohnerStandZahl(),
-                standZeilen: window.__koerperCore.STAND.zeilen,
+                staende: this._bewohnerStandZahl(),
+                standErste: this._bewohnerStandTafel().erste, // (stand-stuetzstellen: die nächste Zeile des Stands ist z + 1)
                 quellen,
                 cap: S.liste.length,
                 senken,
@@ -190,7 +190,7 @@ class AnazhRealm_siedlung_menge {
             // Zeilen seiner Stände gebacken sind — `_bewohnerGangBacken` im Takt)
             (Z) => {
                 Object.assign(Z, { gebacken: 0, tempo: b.tempoBand });
-                for (let z = 0; z < Z.staende; z += Z.standZeilen)
+                for (const z of this._bewohnerStandTafel().erste)
                     this._bewohnerGangPose(b.leib, Z, Z.baender * Z.n + z, S);
             }
         );
@@ -300,7 +300,7 @@ class AnazhRealm_siedlung_menge {
         const tb = g.userData._tierBaum;
         if (!satz.lageTeile) {
             satz.lageTeile = ["", ...Object.keys(tb.teile)];
-            satz.lagen = new Float32Array((satz.baender * satz.n + AnazhRealm._bewohnerStandZahl()) * satz.lageTeile.length * 16); // prettier-ignore
+            satz.lagen = new Float32Array((satz.baender * satz.n + this._bewohnerStandZahl()) * satz.lageTeile.length * 16); // prettier-ignore
         }
         const inv = (this._bewohnerLageInv || (this._bewohnerLageInv = new THREE.Matrix4()))
             .copy(g.matrixWorld)
@@ -436,11 +436,11 @@ class AnazhRealm_siedlung_menge {
             });
         }
         // die Zeilen der Stände nach dem Gang, je Stand ohne seine erste (`standGebacken`: die nächste Zeile unter allen); → ob alle stehen
-        const [N, H] = [window.__koerperCore.STAND.zeilen, AnazhRealm._bewohnerStandZahl()];
+        const [VON, H] = [this._bewohnerStandTafel().von, this._bewohnerStandZahl()];
         const staende = (X, leib, S2) => {
             if (!(X.standGebacken > 0)) X.standGebacken = 1;
             for (; je > 0 && X.standGebacken < H; X.standGebacken++) {
-                if (X.standGebacken % N === 0) continue;
+                if (VON[3 * X.standGebacken + 2] === 0) continue;
                 this._bewohnerGangPose(leib, X, X.baender * X.n + X.standGebacken, S2);
                 je--;
             }
