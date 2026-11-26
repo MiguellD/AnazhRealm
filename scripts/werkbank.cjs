@@ -963,6 +963,32 @@ async function starte() {
         if (!(await steht())) throw new Error(`Messort ${ort.id}: nach dem Wechsel steht die Seite nicht in ${slug}`);
         return { slug, neu: true, id: res.id };
     };
+    // DIE REISE DES ORTS (haushalt.json `reise`, kultur-aus-klima): der Ort liegt an einer anderen Stelle des Planeten der Welt — die
+    // Werkbank spricht den Satz des Spielers („reise <Breite> <Länge>“) durch die EINE Tür der Konsole (`_chatDispatchLegacyCommand`:
+    // der Planet-Faden rechnet den Ort, `_reiseBetreten` gebiert seine Welt, der Wechsel am Ort), wie im Spiel; die Welt des Orts ist eine
+    // Funktion von Samen, Lage und VERSION, nie eine Hand-Pose. Steht die Seite schon an ihm, bleibt sie. Antwortet der Satz mit Meer, der
+    // Form oder einer Absage, oder steht die Seite danach an einem anderen Ort, bricht die Aufstellung laut.
+    const reiseDesOrts = async (ort) => {
+        const [b, l] = ort.reise.split(/\s+/).slice(1).map((s) => Math.round(Number(s.replace(",", ".")) * 100) / 100);
+        const da = () => page.evaluate(([b, l]) => { const t = r._gelaende().ort.teil; return !!t && t.breite === b && t.laenge === l; }, [b, l]); // prettier-ignore
+        if (await da()) return { satz: ort.reise, neu: false };
+        const res = await page.evaluate(async (satz) => {
+            const aus = [];
+            __loop(1);
+            r._chatDispatchLegacyCommand(satz, null, (z) => aus.push(z));
+            await __weltDa(() => aus.length > 0);
+            const zeile = aus.map((z) => (Array.isArray(z) ? z[0] : String(z))).join(" · ");
+            if (!aus.some((z) => Array.isArray(z) && z[0] === "chat.befehl.reise.ziel")) return { fehler: `${zeile} ${JSON.stringify(aus).slice(0, 300)}` };
+            if ((await r.erwacht) === false) return { fehler: "die Welt des Orts erwacht nicht" };
+            await __weltDa(() => r.state.voxelWorkerReady);
+            const t = r._gelaende().ort.teil;
+            return { zeile, welt: r.state.worldMeta.worldId, saat: r.state.worldMeta.seed, ort: t && [t.breite, t.laenge] };
+        }, ort.reise);
+        await loopAus();
+        if (res.fehler) throw new Error(`Messort ${ort.id}: „${ort.reise}“ kam nicht an — ${res.fehler}`);
+        if (!(await da())) throw new Error(`Messort ${ort.id}: nach „${ort.reise}“ steht die Seite bei ${res.ort}, nicht bei ${b} ${l}`);
+        return Object.assign({ satz: ort.reise, neu: true }, res);
+    };
     // Der Adapter-Text des Geräts (WebGPU `adapterInfo`: Hersteller · Architektur · Beschreibung) — EIN Leser für Albedo und Band.
     const geraetInfo = () =>
         page.evaluate(async () => {
@@ -1126,7 +1152,7 @@ async function starte() {
                     });
                     takte += await __weltStehtNach(takt);
                     // die Bahn der Gründung erst, wenn die Welt am Anlauf steht: der Zug legt die Wege der Stadt nach ihrem Gedächtnis
-                    const k = g ? o.bahn : [];
+                    const k = (g && o.bahn) || [];
                     for (let i = 1; i < k.length; i++)
                         for (let s = 0, l = Math.hypot(k[i][0] - k[i - 1][0], k[i][1] - k[i - 1][1]); s <= l; s++) {
                             const x = k[i - 1][0] + ((k[i][0] - k[i - 1][0]) * s) / l, z = k[i - 1][1] + ((k[i][1] - k[i - 1][1]) * s) / l;
@@ -2423,6 +2449,7 @@ async function starte() {
                         aktOrt = ort.id;
                         aktSicht = sicht;
                         const welt = ort.welt ? await weltDesOrts(ort) : null;
+                        const reise = ort.reise ? await reiseDesOrts(ort) : null;
                         // DIE POSE (Toggle-Ort): eine Station des Orts mit eigenem Spieler-Platz und Blick
                         const pose = b.pose ? (ort.posen || []).find((p) => p.id === b.pose) : null;
                         if (b.pose && !pose)
@@ -2490,7 +2517,7 @@ async function starte() {
                             if (beleg.befunde.length)
                                 throw new Error(`Messort ${ort.id} trägt seinen Beleg nicht: ${beleg.befunde.join(" · ")}`);
                         }
-                        return send(Object.assign({ ort: ort.id, sicht, pose: pose ? pose.id : null, welt, spieler: stelle.spieler, wiese, ...(beleg && { beleg }) }, o));
+                        return send(Object.assign({ ort: ort.id, sicht, pose: pose ? pose.id : null, welt, ...(reise && { reise }), spieler: stelle.spieler, wiese, ...(beleg && { beleg }) }, o));
                     }
                     aktOrt = null;
                     aktSicht = null;

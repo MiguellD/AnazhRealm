@@ -1567,6 +1567,14 @@ class AnazhRealm_speicher_laden {
                 buch: f.buchRoh,
             });
         }
+        // DIE FRAGE DER KARTE FÄLLT MIT IHRER WELT (kultur-aus-klima, Radeon 26.11.): der Atlas der Karten reist (`WELT_GRENZE.wirt`),
+        // die Frage seiner Zellen nach der Platte (`_kartePlatteFragen`, `_platte` false: die Frage reist) ging an Aufträge, die hier
+        // verfallen — ihre Antwort fände niemanden, und die Zelle wartete ewig (nach „reise -49,05 -119,78“ standen 8 Karten der Heimat
+        // offen, birke · fichte · tanne · weide …, nach 4 244 Takten stand die Welt nie). Sie ist wieder ungefragt: ihr erster Leser in
+        // der neuen Welt fragt neu.
+        const atlas = this._kartenAtlas;
+        if (atlas && atlas.zellen)
+            for (const z of atlas.zellen.values()) if (z._platte === false) z._platte = undefined;
         for (const n of this._nebenFaeden ? this._nebenFaeden.values() : []) n.pending = new Map();
         // der Wurf reist (`WELT_GRENZE.wirt`), seine Quelle nicht: er ruht, bis der Licht-Takt der neuen Welt wählt
         if (this._lichtWurfK) this._lichtWurfRuht(this._lichtWurfK);

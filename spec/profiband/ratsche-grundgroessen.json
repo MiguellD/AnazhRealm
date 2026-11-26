@@ -23,7 +23,7 @@
             "stamm/speicher-welten.js": ["Math.random ×4"],
             "phyto-core.js": ["1664525 ×7"],
             "foundry-core.js": ["1103515245", "1664525"],
-            "fachwerk-core.js": ["1664525 ×9"],
+            "fachwerk-core.js": ["1664525 ×8"],
             "klang-core.js": ["Math.random ×3"],
             "koerper-core.js": ["1664525"],
             "worlds/begegnung/index.html": ["Math.random ×4"],

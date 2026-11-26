@@ -269,9 +269,20 @@ function jahresringe(FC, o = {}) {
 // Heimat liegt ≥ 10° über der des Mittelmeer-Orts (Schnee und Regen gegen Sonne: steile Deckung im Norden), und das Fachwerk
 // (Stil `alt`) steht in der Heimat, am Mittelmeer-Ort nicht; R4: ohne Klima (das Labor) würfelt der Kern über alle sechs Regionen
 // (die Schwellen bis haus-gestalt; der Byte-Beweis des Labors steht im Commit). Mutante „der Kern liest das Klima nicht“ fällt in R1 beim Namen.
+// Jedes Klima der Linse ist das Klima eines Orts nach dem EINEN Gesetz des Spiels (gelaende-core `ortKlima`, kultur-aus-klima): die
+// Heimat mit Temperatur, Wasser-Spende und Niederschlag des Orts — den Schnee und die Trockenheit rechnet das Gesetz, nie die Linse.
+// Der Niederschlag ohne Zahl ist der der Heimat; der Mittelmeer-Ort trägt den Athens (≈ 400 mm/a, BSh nach Kottek et al. 2006).
+let _GC = null;
+const gelaende = () => _GC || (_GC = studioKern("gelaende-core.js", "__gelaendeCore"));
+function ortKlimaVon({ winter, sommer, spendeVerh, niederschlagMm }) {
+    const GC = gelaende(),
+        H = GC.ortGesetz(null);
+    const N = niederschlagMm ?? H.klimaHeute.niederschlagMm;
+    return GC.ortKlima({ ...H, spendeVerh, klimaHeute: { ...H.klimaHeute, winter, sommer, niederschlagMm: N } });
+}
 const KLIMA_ORTE = {
     heimat: { winter: -4, sommer: 18, spendeVerh: 1 },
-    mittelmeer: { winter: 10, sommer: 27, spendeVerh: 1 },
+    mittelmeer: { winter: 10, sommer: 27, spendeVerh: 1, niederschlagMm: 400 },
     subpolar: { winter: -12, sommer: 14, spendeVerh: 1 },
 };
 // R5 (haus-stoff): DER SOCKEL FOLGT DEM WASSER DES ORTS — dasselbe Dorf (Saat 7, 18 Häuser, das Klima der Heimat) am trockenen
@@ -282,7 +293,7 @@ const SOCKEL_SPENDEN = { trocken: 0, heimat: 1, nass: 2 };
 function sockelGang(FC) {
     const je = {};
     for (const [ort, v] of Object.entries(SOCKEL_SPENDEN)) {
-        const ex = FC.exportSettlement({ seed: 7, nH: 18, klima: { winter: -4, sommer: 18, spendeVerh: v } });
+        const ex = FC.exportSettlement({ seed: 7, nH: 18, klima: ortKlimaVon({ winter: -4, sommer: 18, spendeVerh: v }) });
         je[ort] = { region: ex.region, fh: ex.slots.map((q) => q.ov.foundH), y1: ex.slots.map((q) => q.ext.y1) };
     }
     const n = je.trocken.y1.length;
@@ -303,7 +314,8 @@ function klimaGang(FC) {
     const je = {},
         aus = {},
         unter = [];
-    for (const [ort, k] of Object.entries(KLIMA_ORTE)) {
+    for (const [ort, k0] of Object.entries(KLIMA_ORTE)) {
+        const k = ortKlimaVon(k0);
         const R = {},
             neig = [],
             stil = {},
@@ -353,7 +365,7 @@ function klimaGang(FC) {
             d = FC.deckungVon({ stil: st });
         if (g < FC.DECKUNG_GESETZ[d].grad) unter.push(`stil ${st}: Grenze ${g}° unter ${d} ${FC.DECKUNG_GESETZ[d].grad}°`);
     }
-    return { je, aus, r4, unter, sockel: sockelGang(FC), dach: dachGang(FC) };
+    return { je, aus, r4, unter, sockel: sockelGang(FC), dach: dachGang(FC), regen: regenGang(FC), planet: planetGang(FC), sprache: spracheGang(FC) };
 }
 function klimaUrteil(K, check) {
     const fremd = Object.entries(K.aus)
@@ -381,6 +393,9 @@ function klimaUrteil(K, check) {
         K.unter.slice(0, 6).join(" · ")
     );
     if (K.dach) dachUrteil(K.dach, check);
+    if (K.regen) regenUrteil(K.regen, check);
+    if (K.planet) planetUrteil(K.planet, check);
+    if (K.sprache) spracheUrteil(K.sprache, check);
 }
 // R6/R7 (haus-dach): DIE DECKUNG FOLGT DEM ORT, DIE NEIGUNG DER DECKUNG — R6 die Wand: kein Bau trägt eine Deckung unter ihrer
 // Regeldachneigung (Reet 45°, Mönch-Nonne 40°, Biber 30°, Schiefer 26,5°, Schindel 22°, Hohlziegel 16,7°; fachwerk DECKUNG_GESETZ);
@@ -397,7 +412,7 @@ const DACH_ORTE = { nass: { winter: -4, sommer: 18, spendeVerh: 1 }, trocken: { 
 function dachGang(FC) {
     const je = {};
     for (const [ort, k] of Object.entries(DACH_ORTE)) {
-        const d = FC.DORF({ seed: 4291161376, nH: 13, klima: k }),
+        const d = FC.DORF({ seed: 4291161376, nH: 13, klima: ortKlimaVon(k) }),
             hs = d.houses.map((h) => h.p || h);
         const deck = {};
         for (const p of hs) deck[p.deckung] = (deck[p.deckung] || 0) + 1;
@@ -415,6 +430,245 @@ function dachUrteil(D, check) {
         n.kulturen === t.kulturen ? "" : "die Vorlage wechselt"
     );
 }
+// R8 (kultur-aus-klima, Karte 2 mensch.kopplung.kultur#2): DAS DACH FOLGT DEM NIEDERSCHLAG — 32 Saaten der Heimat (14 Häuser) an
+// drei Orten, die nur der Niederschlag trennt: das Ort-Gesetz des Spiels (gelaende-core `ortGesetz`, Δ Regen-Quote −0,3 · 0 · +0,3 →
+// ≈ 76 · 548 · 1 897 mm/a bei der Temperatur der Heimat), sein Klima (`ortKlima`: Niederschlag und Schneefall) in den Plan. Das Soll
+// des Richters: die Neigung folgt dem Niederschlag (r über (N, mittlere Neigung) ≥ 0,5), jeder trockene und jeder nasse Plan deckt
+// anders als derselbe in der Heimat (≥ 90 %), der Gegenlauf (die Heimat zweimal) ist gleich, das trockene Land deckt flacher als die
+// Heimat und die Heimat nicht steiler als das nasse. Die Mutante „das Dach liest den Niederschlag nicht“ (die Neigung vor dem Schnitt:
+// nur Kultur, Samen und die Grenze der Deckung; fachwerk-core.js `_bauweiseWurf`) fällt in R8 beim Namen.
+const REGEN_ORTE = { heimat: 0, trocken: -0.3, nass: 0.3, gegen: 0 };
+// der Pol der Probe: 9 K kälter als die Heimat (−13 / 9 °C) und trocken (Δ Regen-Quote −0,35 → 26 mm) — unter der Grenze B allein
+// (A = 26 / 100 = 0,26) läge er in der Wüste, erst die Reihe Kotteks (E vor B) nimmt ihn heraus
+const [POL_KALT, POL_REGEN] = [-9, -0.35];
+const REGEN_SAATEN = Array.from({ length: 32 }, (_, i) => (((i * 2654435761) >>> 0) % 100000) + 1);
+function regenKlima(dq, kalt = 0) {
+    const GC = gelaende();
+    if (dq === 0 && !kalt) return GC.ortKlima(GC.ortGesetz(null));
+    const d = {
+        wildnis: {},
+        meer: { waterLevelM: 0 },
+        klima: { sommer: kalt, winter: kalt, tagAmp: 0, sommerPhase: 0, spendeVerh: 1 },
+        wetter: { regenQuote: dq, sturmQuote: 0, nebelQuote: 0 },
+        wuchs: { decke: 1, wald: 1 },
+        eis: { zeit: 0 },
+    };
+    return GC.ortKlima(GC.ortGesetz({ samen: "linse-r8", version: "linse-r8", breite: 0, laenge: 0, zeitMa: 0, delta: d }));
+}
+function regenGang(FC) {
+    const kl = Object.fromEntries(Object.entries(REGEN_ORTE).map(([o, dq]) => [o, regenKlima(dq)]));
+    const paare = [],
+        bild = {},
+        je = { heimat: [], trocken: [], nass: [] };
+    for (const s of REGEN_SAATEN)
+        for (const o of Object.keys(REGEN_ORTE)) {
+            const hs = FC.DORF({ seed: s, nH: 14, klima: kl[o] }).houses.map((h) => h.p || h);
+            const dach = hs.reduce((q, p) => q + (p.pitchDeg || 0), 0) / Math.max(1, hs.length);
+            (bild[s] = bild[s] || {})[o] = JSON.stringify(hs.map((p) => [p.kultur, p.deckung, p.pitchDeg]));
+            if (o !== "gegen") paare.push([kl[o].niederschlagMm, dach]), je[o].push(dach);
+        }
+    const m = (a) => a.reduce((x, y) => x + y, 0) / Math.max(1, a.length);
+    const [mx, my] = [m(paare.map((p) => p[0])), m(paare.map((p) => p[1]))];
+    let [sxy, sxx, syy] = [0, 0, 0];
+    for (const [x, y] of paare) (sxy += (x - mx) * (y - my)), (sxx += (x - mx) ** 2), (syy += (y - my) ** 2);
+    let [mut, gegen] = [0, 0];
+    for (const s of REGEN_SAATEN) {
+        mut += (bild[s].trocken !== bild[s].heimat) + (bild[s].nass !== bild[s].heimat);
+        gegen += bild[s].gegen === bild[s].heimat;
+    }
+    // DER POL ZUERST (Kottek u. a. 2006: E vor B): ein trockener Himmel 9 K kälter (der Sommer der Heimat 18 → 9 °C, unter der
+    // Grenze +10 °C des wärmsten Monats) ist kein Trockenklima — kein Plan deckt dort flach, das Dach folgt dem Schnee
+    const kp = regenKlima(POL_REGEN, POL_KALT);
+    let [polFlach, polHaeuser, polDach] = [0, 0, 0];
+    for (const s of REGEN_SAATEN)
+        for (const h of FC.DORF({ seed: s, nH: 14, klima: kp }).houses.map((h) => h.p || h))
+            (polHaeuser += 1), (polFlach += h.deckung === "flach"), (polDach += h.pitchDeg || 0);
+    return {
+        pol: { sommer: kp.sommer, N: Math.round(kp.niederschlagMm), flach: polFlach, n: polHaeuser, dach: +(polDach / Math.max(1, polHaeuser)).toFixed(2) },
+        r: syy > 0 ? +(sxy / Math.sqrt(sxx * syy)).toFixed(3) : 0,
+        mutation: +((100 * mut) / (2 * REGEN_SAATEN.length)).toFixed(1),
+        gegen,
+        n: REGEN_SAATEN.length,
+        N: Object.fromEntries(Object.entries(kl).map(([o, k]) => [o, Math.round(k.niederschlagMm)])),
+        dach: Object.fromEntries(Object.entries(je).map(([o, a]) => [o, +m(a).toFixed(2)])),
+    };
+}
+// R10 (kultur-aus-klima 2, Karte 2 mensch.kopplung.kultur#2): DIE DÄCHER DES PLANETEN — die Reise-Ziele des Standard-Planeten
+// („anazh-realm-seed“, 1 200 Fibonacci-Punkte, Land im Relief, Band 16 km wie der Satz „reise“), je Ziel das Δ des Planet-Fadens
+// (planet-core `planetOrt`, wie voxel-worker `planetOrtAuftrag`) durch das Ort-Gesetz (`ortGesetz(teil)` → `ortKlima`) in die Dörfer
+// derselben vier Saaten (fachwerk `DORF`, wie der Wirt sie stempelt). Die Klassen nach Kottek u. a. 2006 in ihrer Reihe (E vor B vor
+// A/C/D, gelesen vom Richter an der Quelle); das Soll je Klasse ist die Form des Gesetzes am Haus: die Wüste (BW) deckt JEDES Dach flach
+// (Lehm, nie steiler als `flach` = 8°, die Grenze, unter der ein Dach als flach gilt, wie STADT_MASSEN der Stadt-Masse), der Pol nie
+// flach, der warme Süden (Winter ≥ 4 °C) in Kanal-Ziegeln (≥ 95 %), das kühle nasse Land in Reet oder steiler als 40° (≥ 95 %).
+// Gemessen 26.11. an 4 000 Punkten und 8 Saaten (Kopf 1 → Kopf 2): Wüste 38 066 → 38 729 von 38 729 Häusern flach (die 663 waren das
+// Werk des Stils — modern 14–16°, glas 11° — und der Schiefer der Kultur auf 26,5°), Pol 0 flach, Süden 98,1 %, nass 97,0 %. Am alten
+// Kern (die Neigung aus Kultur und Samen) deckt die Wüste 0 %.
+const PLANET_DACH = { samen: "anazh-realm-seed", punkte: 1200, saaten: [4291161376, 7, 11, 23, 101, 777, 4242, 90001], soll: { wueste: 1, sueden: 0.95, nass: 0.95 }, kottek: { polar: 10, bw: 5, bs: 10 }, flach: 8 };
+function planetGang(FC) {
+    const GC = gelaende(),
+        P = require(path.join(root, "planet-core.js")),
+        RAD = Math.PI / 180,
+        plan = P.planetPlan(PLANET_DACH.samen, P.PLANET_ERDE),
+        S = P.planetScheibe(plan, 0),
+        og = GC.ortGesetz(),
+        K = PLANET_DACH.kottek;
+    // die Klasse liest der Richter selbst an der Quelle (Kottek u. a. 2006, Tafel 1), nie am Gesetz, das er prüft: E, wo der wärmste
+    // Monat unter +10 °C bleibt; BW, wo P_ann < 5 · P_th (P_th = 2 T_ann + 14, mm und °C); BS bis 10 · P_th
+    const klasse = (k) => {
+        const pth = 2 * ((k.winter + k.sommer) / 2) + 14;
+        if (k.sommer < K.polar) return "polar";
+        if (pth > 0 && k.niederschlagMm < K.bw * pth) return "wueste";
+        if (pth > 0 && k.niederschlagMm < K.bs * pth) return "steppe";
+        return k.winter >= 4 ? "sueden" : k.spendeVerh >= 1 ? "nass" : "kalt";
+    };
+    // die Wüste liest der Richter am BAU (kultur-aus-klima 4): das Dach, das HAUS baut (der Mass-Bau des Gesetzbuchs, `MASSNUR`, wie
+    // los-proben; Masse „haupt“: dach · curve · dachRolle, „rund“: spitze · zwiebel), nie das Plan-Feld allein — bis Kopf 3 stand der Plan
+    // auf „flach, 2°“ und HAUS baute darauf den Sattel mit Ziegeln und Schwung (544 von 12 336 flach gebaut). Flach ist die Platte ohne
+    // Schwung im Lehm der Deckung (`dachmod`) oder der flache Rundbau; das Gewölbe (Kuppel, Tonne, Zwiebel) trägt sich ohne Balken und
+    // bleibt. Gebaut wird je Signatur des Plans (alle Felder außer Maß, Same, Alter, Bewohner — das Dach liest keins davon) einmal.
+    const bauSig = {},
+        bau = (h) => {
+            const q = Object.assign({}, h);
+            for (const k of ["W", "D", "storeys", "seed", "baujahr", "wohl", "leute", "parent", "foundH", "col", "mark", "parzelle", "programm"]) delete q[k];
+            const sig = JSON.stringify(q);
+            if (bauSig[sig]) return bauSig[sig];
+            const H = FC.HAUS(globalThis.THREE, (r) => ({ __role: r }), Object.assign({}, h, { nur: FC.MASSNUR, __nurMass: true }));
+            H.build(FC.LOD1F);
+            const M = H.masse || [],
+                m = M.find((x) => x.art === "haupt") || M.find((x) => x.art === "rund") || {},
+                dach = m.art === "rund" ? (m.zwiebel ? "rund:gewoelbe" : m.spitze - m.y1 <= 0.2 ? "flat" : "rund") : String(m.dach);
+            return (bauSig[sig] = {
+                dach,
+                schwung: m.curve > 0,
+                flach: dach === "flat" && !(m.curve > 0) && (m.art === "rund" || m.dachRolle === "dachmod"),
+                gewoelbe: dach === "dome" || dach === "rund:gewoelbe" || dach === "alt:tonne" || dach === "alt:zwiebel",
+            });
+        };
+    const form = {
+        wueste: (h, Z) => {
+            const B = bau(h);
+            (Z.bauFlach += B.flach), (Z.gewoelbe += B.gewoelbe), (Z.schwung += B.schwung);
+            if (!B.flach && !B.gewoelbe) Z.anders[h.kultur + "/" + B.dach] = (Z.anders[h.kultur + "/" + B.dach] || 0) + 1;
+            return h.deckung === "flach" && h.pitchDeg <= PLANET_DACH.flach && (B.flach || B.gewoelbe);
+        },
+        sueden: (h) => h.deckung === "hohlziegel",
+        nass: (h) => h.deckung === "reet" || h.pitchDeg >= 40,
+    };
+    const je = {};
+    for (let i = 0, N = PLANET_DACH.punkte; i < N; i++) {
+        const y = 1 - (2 * (i + 0.5)) / N,
+            th = Math.PI * (3 - Math.sqrt(5)) * i;
+        const [b, l] = [Math.round((Math.asin(y) / RAD) * 100) / 100, Math.round((Math.atan2(Math.sin(th), Math.cos(th)) / RAD) * 100) / 100];
+        const p = {};
+        P.planetPunkt(S, b * RAD, l * RAD, 16, p);
+        if (!(p.hoeheM > 0)) continue;
+        const d = P.planetOrt(S, b * RAD, l * RAD, og, undefined, plan).delta;
+        const teil = { samen: PLANET_DACH.samen, version: P.VERSION, breite: b, laenge: l, zeitMa: 0, delta: { klima: d.klima, meer: d.meer, wetter: d.wetter, wuchs: d.wuchs, eis: d.eis, wildnis: d.wildnis } };
+        const kl = GC.ortKlima(GC.ortGesetz(teil)),
+            k = klasse(kl),
+            Z = (je[k] = je[k] || { ziele: 0, haus: 0, form: 0, flach: 0, dorf: 0, dorfForm: 0, bauFlach: 0, gewoelbe: 0, schwung: 0, anders: {} });
+        Z.ziele++;
+        for (const s of PLANET_DACH.saaten) {
+            const hs = FC.DORF({ seed: s, nH: 14, klima: kl }).houses.map((h) => h.p || h);
+            let n = 0;
+            for (const h of hs) (Z.haus += 1), (Z.flach += h.deckung === "flach"), (n += form[k] ? form[k](h, Z) : 0);
+            (Z.form += n), (Z.dorf += 1), (Z.dorfForm += n === hs.length);
+        }
+    }
+    return je;
+}
+function planetUrteil(J, check) {
+    const A = (k) => (J[k] ? J[k].form / Math.max(1, J[k].haus) : 0),
+        z = (k) => (J[k] ? `${k} ${J[k].form} von ${J[k].haus} Häusern (${(100 * A(k)).toFixed(1)} %, ${J[k].dorfForm} von ${J[k].dorf} Dörfern, ${J[k].ziele} Ziele)` : `${k} ohne Ziel`);
+    const S = PLANET_DACH.soll,
+        pol = J.polar || { flach: 0, haus: 0 },
+        W = J.wueste || { bauFlach: 0, gewoelbe: 0, schwung: 0, haus: 0, anders: {} },
+        anders = Object.entries(W.anders)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 4)
+            .map(([k, n]) => `${k} ${n}`)
+            .join(", ");
+    check(
+        `R10 die Dächer des Planeten (${PLANET_DACH.samen}, ${PLANET_DACH.punkte} Punkte) — ${z("wueste")} flach (Lehm ≤ ${PLANET_DACH.flach}°, gebaut: Platte im Lehm ${W.bauFlach}, Gewölbe ${W.gewoelbe}, Schwung ${W.schwung}${anders ? `; anders gebaut ${anders}` : ""}) · ${z("sueden")} in Kanal-Ziegeln · ${z("nass")} in Reet oder ≥ 40° · Pol flach ${pol.flach} von ${pol.haus} (Soll 0)`,
+        A("wueste") >= S.wueste && !W.schwung && A("sueden") >= S.sueden && A("nass") >= S.nass && !pol.flach && J.wueste && J.wueste.ziele > 0
+    );
+}
+function regenUrteil(G, check) {
+    const D = G.dach;
+    check(
+        `R8 das Dach folgt dem Niederschlag — trocken ${G.N.trocken} mm ${D.trocken}° · Heimat ${G.N.heimat} mm ${D.heimat}° · nass ${G.N.nass} mm ${D.nass}°: r ${G.r} (Soll ≥ 0,5), Mutation ${G.mutation} % (Soll ≥ 90), Gegenlauf ${G.gegen} von ${G.n} gleich · der Pol zuerst (${G.pol.N} mm, Sommer ${G.pol.sommer} °C): flach ${G.pol.flach} von ${G.pol.n} (Soll 0), ${G.pol.dach}° (Soll über trocken)`,
+        G.r >= 0.5 && G.mutation >= 90 && G.gegen === G.n && D.trocken < D.heimat && D.heimat <= D.nass && G.pol.flach === 0 && G.pol.dach > D.trocken
+    );
+}
+// R9 (kultur-aus-klima, Karte 2 mensch.kultur.sprache#1): DER NAME FOLGT DER REGION — die 32 Saaten von R8 in der Heimat: je Plan
+// der Ortsname (`ORTSNAME`) und 20 Leute (fachwerk `sprachName` vorname + familie, dasselbe Gesetz, das der Wirt `_bewohnerLauf`
+// liest; Same des Hauses wie dort), jeder Name mit der Region seines Plans. Der Leser ist der der Station (k2-mensch-kultur.js
+// `zuordnung`, wörtlich): je Name die Zweier-Laute, die Region mit der höchsten Wahrscheinlichkeit aus den ANDEREN Namen (Laplace).
+// Soll: ≥ 2 Regionen, richtig zugeordnet ≥ 90 %. Die Mutante „die Sprache kennt keine Region“ (jeder Ort spricht das Gesetz
+// Mitteleuropas) fällt in R9 beim Namen.
+function spracheGang(FC) {
+    // vor kultur-aus-klima trug der Kern kein Sprachgesetz (die Ortsnamen eine Silben-Liste je Region, die Leute eine Sprache ohne Region)
+    if (typeof FC.sprachName !== "function") return { namen: 0, saaten: 0, zugeordnet: 0, beispiel: ["der Kern trägt kein Sprachgesetz (fachwerk sprachName fehlt)"] };
+    const k = regenKlima(0),
+        L = [];
+    for (const seed of REGEN_SAATEN) {
+        const plan = FC.DORF({ seed, nH: 14, klima: k }),
+            S = FC.spracheVon(plan.region, seed),
+            nh = plan.houses.length;
+        L.push({ w: plan.name, s: plan.region });
+        for (let j = 0; j < 20; j++)
+            L.push({ w: FC.sprachName(S, "vorname", seed + ":" + j) + " " + FC.sprachName(S, "familie", seed + ":" + (j % nh)), s: plan.region });
+    }
+    const bi = (w) => {
+        const t = "^" + String(w).toLowerCase() + "$",
+            o = [];
+        for (let i = 0; i + 1 < t.length; i++) o.push(t.slice(i, i + 2));
+        return o;
+    };
+    const saaten = [...new Set(L.map((x) => x.s))],
+        B = L.map((x) => bi(x.w));
+    const tafel = new Map(saaten.map((r) => [r, new Map()])),
+        summe = new Map(saaten.map((r) => [r, 0]));
+    L.forEach((x, i) => {
+        const m = tafel.get(x.s);
+        for (const g of B[i]) m.set(g, (m.get(g) || 0) + 1);
+        summe.set(x.s, summe.get(x.s) + B[i].length);
+    });
+    let ok = 0;
+    L.forEach((x, i) => {
+        const eigen = new Map();
+        for (const g of B[i]) eigen.set(g, (eigen.get(g) || 0) + 1);
+        let [best, bw] = [null, -Infinity];
+        for (const r of saaten) {
+            const m = tafel.get(r),
+                selbst = r === x.s,
+                tot = summe.get(r) - (selbst ? B[i].length : 0);
+            let w = 0;
+            for (const g of B[i]) w += Math.log(((m.get(g) || 0) - (selbst ? eigen.get(g) : 0) + 1) / (tot + 900));
+            if (w > bw) [best, bw] = [r, w];
+        }
+        if (best === x.s) ok++;
+    });
+    // DIE FUGE (das OCP, fachwerk `_ocp`): kein Name trägt zwei gleiche Konsonanten nebeneinander, die das Gesetz seiner Region nicht
+    // trägt (`doppel`) — vor dem OCP 4,19 % von 36 000 Namen („Betzzel“, „Gonggros“, „Hesschon“)
+    const fuge = L.filter((x) =>
+        (String(x.w).toLowerCase().match(/([^aeiouyäöüøåæ ])\1/g) || []).some((d) => !FC.SPRACHE_GESETZ[x.s].doppel.includes(d))
+    );
+    return {
+        namen: L.length,
+        saaten: saaten.length,
+        zugeordnet: +(ok / L.length).toFixed(3),
+        fuge: fuge.length,
+        fugeBeispiel: fuge.slice(0, 3).map((x) => x.w),
+        beispiel: L.slice(0, 3).map((x) => x.w),
+    };
+}
+function spracheUrteil(G, check) {
+    check(
+        `R9 der Name folgt der Region — ${G.namen} Namen aus ${G.saaten} Regionen (Soll ≥ 2), richtig zugeordnet ${G.zugeordnet} (Soll ≥ 0,9; ${G.beispiel.join(", ")}), Doppel-Laut ohne Gesetz an der Fuge ${G.fuge} (Soll 0${G.fuge ? ": " + G.fugeBeispiel.join(", ") : ""})`,
+        G.saaten >= 2 && G.zugeordnet >= 0.9 && G.fuge === 0
+    );
+}
 const KLIMA_TAETER = {
     "der Kern liest das Klima nicht": [
         ["var im = Z.filter(function (z) { return klimaAbstand(z, klima) === 0; });", "var im = Z.slice();"],
@@ -428,11 +682,34 @@ KLIMA_TAETER["die alte Grenze (stroh 38°, die Deckung zählt nicht)"] = [
     ["glas: 4, klinker: 22, stroh: 45 };", "glas: 4, klinker: 22, stroh: 38 };"],
 ];
 KLIMA_TAETER["die Deckung liest den Ort nicht"] = [["if (klima.winter >= 4) return \"hohlziegel\";", "return d;"]];
+// das alte Gesetz (vor kultur-aus-klima): die Neigung aus Kultur und Samen, die Grenze der Deckung — kein Niederschlag, kein Schnee
+KLIMA_TAETER["die Sprache kennt keine Region"] = [['var R = SPRACHE_GESETZ[region] ? region : "mitteleuropa"', 'var R = "mitteleuropa"']];
+KLIMA_TAETER["die Fuge kennt kein OCP"] = [["var D = L.gesetz.doppel; return w.replace(", "var D = L.gesetz.doppel; return w; w.replace("]];
+KLIMA_TAETER["das Dach liest den Niederschlag nicht"] = [
+    ["b.pitchDeg=ortNeigung(DP.klima, b, b.pitchDeg, d0);", "b.pitchDeg=Math.max(b.pitchDeg, Math.ceil(grenzNeigung(b)));"],
+    ["if (ariditaet(klima) <= DACH_KLIMA.wueste) return \"flach\";", ""],
+];
+// die Wüste ohne ihr Dach (die Deckung des Orts kennt die Trockenheit nicht): am Planeten deckt keine Wüste flach
+KLIMA_TAETER["die Wüste deckt nicht flach"] = [["if (ariditaet(klima) <= DACH_KLIMA.wueste) return \"flach\";", ""]];
+KLIMA_TAETER["die Wüste lässt das Werk des Stils stehen"] = [["if (A <= K.wueste) return K.flachGrad;", ""]];
+// das Haus von Kopf 3 (der Plan sagt flach, HAUS baut den Sattel und behält den Schwung): die Wüste baut nicht, was sie deckt
+KLIMA_TAETER["die Wüste baut den Sattel"] = [["(P.zinnen||P.arkade||FLACH)?'flat'", "(P.zinnen||P.arkade)?'flat'"]];
+KLIMA_TAETER["die Wüste behält den Schwung"] = [["const DEF_cv=(P.roofCurve>0&&ROOFMODE!=='flat')?P.roofCurve:0", "const DEF_cv=(P.roofCurve>0)?P.roofCurve:0"]];
+// das Gesetz ohne die Reihe Kotteks (B vor E): die Polwüste deckt flach wie die Wüste
+KLIMA_TAETER["die Trockenheit kennt den Pol nicht"] = [["if (klima.sommer < K.polar) return Infinity;", ""]];
 const KLIMA_SOLL = {
+    "die Trockenheit kennt den Pol nicht": "R8",
+    "die Wüste deckt nicht flach": "R10",
+    "die Wüste lässt das Werk des Stils stehen": "R10",
+    "die Wüste baut den Sattel": "R10",
+    "die Wüste behält den Schwung": "R10",
     "der Kern liest das Klima nicht": "R1",
     "der Sockel liest das Wasser nicht": "R5",
     "die alte Grenze (stroh 38°, die Deckung zählt nicht)": "R6",
     "die Deckung liest den Ort nicht": "R7",
+    "das Dach liest den Niederschlag nicht": "R8",
+    "die Sprache kennt keine Region": "R9",
+    "die Fuge kennt kein OCP": "R9",
 };
 
 
@@ -3457,9 +3734,9 @@ hauptLauf(async () => {
                             return res;
                         }
                         // das Dorf ohne Wort plant im Klima seines Orts (`_zellEingang`) — die Linse reicht es als Argument aus dem
-                        // Ort-Gesetz des Geländes (gelaende-core `ortGesetz`), nicht aus dem Leser der Welt; der Akt (ein Wort) trägt keins
-                        const k = L.ort.klimaHeute;
-                        const klima = { winter: k.winter, sommer: k.sommer, spendeVerh: L.ort.spendeVerh };
+                        // Ort-Gesetz des Geländes (gelaende-core `ortGesetz`, sein Klima `ortKlima`: Temperatur, Spende, Niederschlag,
+                        // Schneefall), nicht aus dem Leser der Welt; der Akt (ein Wort) trägt keins
+                        const klima = globalThis.__gelaendeCore.ortKlima(L.ort);
                         plan = { seed: c.seed, nH: c.nH, epoche: r._siedlungEpoche(c.seed), klima };
                     } else {
                         const ort = globalThis.__gelaendeCore.hangOrt(L, (x, z) => r._landAt(x, z, 0.2));

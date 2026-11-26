@@ -509,7 +509,16 @@ function brandAmSoll(Z) {
 // Anteil, den die älteste Frist schon wartete, nach verzugS alles Fällige) plus EIN Takt am Deckel der Welt-Uhr
 // (`TAKT_DECKEL_S` 0,1 s: so spät kann das Bild kommen, das die Grenze sieht). Das Budget allein hielt den letzten von 52
 // Brüchen 2,6 s, die Grenze 0,27 s; gemessen an der Probe 0,032 s. `DRUCK_SCHLAF_S`: so lange darf die letzte Scherbe wach
-// liegen (gemessen 1,5 s mit 20 Scherben, 2,2 s mit den 70 des Bruch-Gesetzes).
+// liegen (gemessen 1,5 s mit 20 Scherben, 2,2 s mit den 70 des Bruch-Gesetzes) — in der Uhr des Gesetzes, der SIM-UHR: der Löser
+// zählt die Ruhe je festem Schritt (`_freiSchritt`: `ruhe += dt`, FREI.ruheS 0,3 s nach Jolt `mTimeBeforeSleep` 0,5 s).
+// DIE UHR DER PROBE (stand-takt-stetig): `DRUCK_UHR_S` — auf dieser Sim-Uhr beginnt die Probe (der Böen-Anker neu), danach läuft
+// die Uhr des Laufs stetig weiter; `DRUCK_WELT_S` — auf diese Welt-Uhr stellt sie die Welt vorwärts (`_weltUhrNeu`, um Mittag, wie
+// jeder Herd der Brand-Fenster ab 36 900 s). Der Wind am Körper ist eine Funktion der Sim-Uhr (`_windAt`: Richtung, Böe, Drift), die
+// Frist der Front eine der Welt-Uhr; bis hier las die Probe die Uhren, die der Lauf vor ihr gerade erreicht hatte — wie viele Takte
+// die Wartezeiten an der Wanduhr brauchten (`bisDa`, `__weltStehtNach`): am Läufer Sim-Uhr 240,15 s → die letzte Scherbe nach
+// 3,067 s, 238,23 s → 6,8 s, an gleichen Bytes der Physik; lokal je 23–170 Takte Vorgeschichte 0,683–1,417 s bei 2,0–7,0 m/s.
+// Beide vor jeder Uhr, die ein Lauf bis zur Probe erreicht (am Läufer Sim 238–245 s, Welt 12 200–12 300 s).
+const [DRUCK_UHR_S, DRUCK_WELT_S] = [3600, 15000];
 const DRUCK_UMSATZ = 50;
 const DRUCK_WELLE = 80;
 const DRUCK_BLICK = 40;
@@ -544,7 +553,9 @@ function druckSchlafBeweis(B) {
     return (
         ` — Beweis: Ort O (${z(O.x, 2)}, ${z(O.z, 2)}) Grund ${z(O.y, 2)} m, Neigung ${z(O.grad, 1)}°, ${O.fremd ?? "?"} fremde freie Körper ≤ 30 m (${O.fremdWach ?? "?"} wach) · ` +
         `Welt-Uhr ${z(B.welt, 2)} s · Sim-Uhr ${z(B.sim, 2)} s · ${B.takte} Takte seit dem Boot · ${B.sprungN} Sprünge der Welt-Uhr (${z(B.sprungS, 2)} s) · ` +
-        `verworfene Sim-Zeit ${z(B.verworfenS, 3)} s · Wind am Ort ${z(B.windMS, 2)} m/s · ${B.amSoll} wach beim Soll: ${je.join("; ") || "keiner"}`
+        `verworfene Sim-Zeit ${z(B.verworfenS, 3)} s · Wind am Ort ${z(B.windMS, 2)} m/s · ` +
+        (B.fenster ? `im Fenster Sim-Uhr ${z(B.fenster.sim, 3)} s, Welt-Uhr ${z(B.fenster.welt, 3)} s · ` : "") +
+        `${B.amSoll} wach beim Soll: ${je.join("; ") || "keiner"}`
     );
 }
 const druckSoll = (e) =>
@@ -709,6 +720,24 @@ function druckUrteil(D, v) {
         if (!(BR.ueber <= 0)) v.push(`DRUCK-BUDGET: ein Bild der Welle trug ${BR.ueber} Brüche über dem Gesetz (\`DRUCK.bruecheJeBild\` und das Soll des Rückstands, \`_tickDruck\`)`);
         if (!(BU.zugleich >= 2)) v.push(`BLIND: unter stehender Uhr sah kein Takt zwei fällige Werke (${BU.zugleich}) — die drei Böcke der Welle von Hand standen nicht zugleich an`);
         else if (!(BU.ueber <= 0)) v.push(`DRUCK-WANDUHR: unter stehender Uhr trug ein Bild ${BU.ueber} Brüche über dem Gesetz — das Budget des Takts liest die Wanduhr, das Bild eines Bruchs hängt am Läufer (\`_tickDruck\`)`);
+    }
+    // DIE UHR DES SCHLAFS (stand-takt-stetig): DRUCK-SCHLAF zählt in der Sim-Uhr ab der Welle; die Probe beginnt auf IHRER Uhr
+    // (`DRUCK_UHR_S`, nie die Uhr, die der Lauf vor ihr erreichte), und im Fenster gehen Welt- und Sim-Uhr gleich — ein Sprung der
+    // Welt-Uhr (sein Schreiber beim Namen) oder Sim-Zeit, die der feste Schritt am Deckel verwarf (ein gestauter Takt), ist ein
+    // Fehler der Uhr, nie der Scherbe
+    const SU = D.schlafUhr;
+    if (D.scherben > 0 && (!SU || !SU.fenster)) v.push("LEER: die Probe maß die Uhr ihres Schlafs nicht (Sim- und Welt-Uhr im Fenster, die Uhr ihres Beginns)");
+    else if (SU) {
+        const F = SU.fenster;
+        const uhr = [
+            SU.start === DRUCK_UHR_S ? "" : `die Probe begann an der Sim-Uhr des Laufs (${SU.start} s statt ihrer Uhr ${DRUCK_UHR_S} s) — Wind, Böe und Drift am Körper lesen, wie viele Takte die Wartezeiten vor ihr an der Wanduhr brauchten`,
+            SU.welt === DRUCK_WELT_S ? "" : `die Probe begann an der Welt-Uhr des Laufs (${SU.welt} s statt ihrer Uhr ${DRUCK_WELT_S} s) — die Frist der Front liest, wie viele Takte die Wartezeiten vor ihr an der Wanduhr brauchten`,
+            SU.sprungN > 0 ? `im Fenster sprang die Welt-Uhr ${SU.sprungN}× um ${SU.sprungS} s (Schreiber \`_weltUhrNimm\` aus ${SU.sprungVon || "?"})` : "",
+            SU.verworfenS > 0 ? `im Fenster verwarf der feste Schritt ${SU.verworfenS} s Sim-Zeit am Deckel (\`FIXED_MAX_STEPS\`: ein gestauter Takt)` : "",
+            !(SU.sprungN > 0) && !(SU.verworfenS > 0) && !(Math.abs(F.welt - F.sim) <= 2 / 60) ? `im Fenster ging die Welt-Uhr ${F.welt} s, die Sim-Uhr ${F.sim} s` : "",
+            D.schlafS != null && D.schlafS === F.welt && F.welt !== F.sim ? `der Schlaf zählte in der Welt-Uhr (${D.schlafS} s, im Fenster ging die Sim-Uhr ${F.sim} s)` : "",
+        ].filter(Boolean);
+        if (uhr.length) v.push(`DRUCK-UHR: ${uhr.join("; ")} (Fenster: Sim-Uhr ${F.sim} s, Welt-Uhr ${F.welt} s) — die Probe misst den Schlaf nicht in der Uhr des Gesetzes`);
     }
     if (!(D.scherben > 0)) v.push("LEER: die Welle der Probe brach keine Scheibe — keine Scherbe, deren Schlaf die Linse misst");
     else if (D.schlafS == null || !(D.schlafS <= DRUCK_SCHLAF_S)) v.push(`DRUCK-SCHLAF: die letzte der ${D.scherben} Scherben schlief ${D.schlafS == null ? `nie (${D.wach} liegen nach 10 s wach)` : `nach ${D.schlafS} s`} (Soll ≤ ${DRUCK_SCHLAF_S} s)${druckSchlafBeweis(D.schlafBeweis)}`);
@@ -1273,6 +1302,8 @@ module.exports = {
     STAND_INSTALL:
         `window.__standLinseAn = () => (${standLinseAn.toString()})(${JSON.stringify(TAKTE)}, ${JSON.stringify(BLAETTER)}, ${JSON.stringify(EIGENE_UHR)});` +
         `window.__simLinseAn = () => (${simLinseAn.toString()})(${JSON.stringify(SIMS)}, ${JSON.stringify(AKTE)});` +
+        `window.__druckUhrS = ${DRUCK_UHR_S};` +
+        `window.__druckWeltS = ${DRUCK_WELT_S};` +
         `window.__simPhase = ${simPhase.toString()};` +
         `window.__standPhase = ${standPhase.toString()};` +
         `window.__standLauf = ${standLauf.toString()};` +

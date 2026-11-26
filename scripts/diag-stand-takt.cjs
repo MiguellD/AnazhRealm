@@ -249,6 +249,7 @@ function selbsttest() {
                 scheiben: [[8.031, 5.557, 1, 16], [12.037, 3.234, 2, 32], [16.045, 2.177, 1, 16], [24.064, 1.296, 1, 6], [36.097, 0.811, 1, 0], [48.142, 0.593, 1, 0]].map(([R, last, n, scherben]) => ({ R, gebrochen: scherben > 0, last, kreuz: 4 * n, scherben, ...(scherben ? ((k) => ({ soll: scherben, kanteSoll: k.slice(), kante: k.slice() }))(scherben === 6 ? [0.085, 0.25] : [0.066, 0.184]) : {}) })), // prettier-ignore
                 ...{ scherben: 70, zaehler: 70, vorrat: { rest: 5, scherben: [9, 4] }, wach: 0, schlafS: 2.167, verzug: 0.032, brueche: { zugleich: 2, ueber: 0, bilder: 12 }, uhr: { zugleich: 3, ueber: 0, bilder: 3 } },
                 staub: { randM: 43.173, kornMm: 0.111, ostM: 8, narbeM2: 2300, sollG: 1200, echt: { ballen: 9, lebend: 9 }, gesaet: 384, ballen: 384, max: 384, grob: 150, masseG: 1190, aussen: 0, jenseits: 0, lebenS: 13.9, bilder: 700, ballenMax: 384, satzMax: 384, luftMaxG: 1150, satzMaxG: 1150, ohneSatz: 0, nebenG: 0.01, steigt: 0, endeS: 12.2, danach: { satz: 0, uhr: null } },
+                schlafUhr: { start: 3600, welt: 15000, fenster: { sim: 2.167, welt: 2.167 }, sprungN: 0, sprungS: 0, sprungVon: null, verworfenS: 0 },
                 bildLage: Object.fromEntries([["geburt", 70], ["neubau", 16], ["stand", 1]].map(([k, n]) => [k, { n, schief: 0, grad: 0, mm: 0 }])), // prettier-ignore
                 kiste: { R: 6, dv: 1.542, soll: 1.542, wegM: 0.202 },
                 spieler: { R: 16, dv: 1.005 },
@@ -800,6 +801,16 @@ function selbsttest() {
         // der erste Lauf an 52 Werken: 53 von 208 Scherben lagen nach der Welle wach (sie hielten einander, `_freiVier`)
         ["die Scherben schlafen nicht ein", ["simWecken.druck", { wach: 5, schlafS: null }], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nie \(5 liegen nach 10 s wach\) \(Soll ≤ 3 s\)/],
         ["die letzte Scherbe schläft nach 6 s", ["simWecken.druck.schlafS=", 6], /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 6 s \(Soll ≤ 3 s\)/],
+        // DIE UHR DES SCHLAFS (stand-takt-stetig): die Flocke am Läufer (f6bb7852 3,067 s, ee58a881 6,8 s an gleichen Bytes der Physik) —
+        // die Probe begann an der Sim-Uhr, die der Lauf vor ihr erreichte (240,15 · 238,23 s: der Wind am Körper 9,1 · 8,4 m/s);
+        // ein Schreiber der Welt-Uhr im Fenster und ein gestauter Takt sind Fehler der Uhr, nie der Scherbe
+        ["die Probe beginnt an der Uhr des Laufs (der Stand vor stand-takt-stetig)", ["simWecken.druck.schlafUhr", { start: 238.23 }], /^DRUCK-UHR: die Probe begann an der Sim-Uhr des Laufs \(238.23 s statt ihrer Uhr 3600 s\) — Wind, Böe und Drift am Körper lesen, wie viele Takte die Wartezeiten vor ihr an der Wanduhr brauchten \(Fenster: Sim-Uhr 2.167 s, Welt-Uhr 2.167 s\)/],
+        ["die Probe beginnt an der Welt-Uhr des Laufs", ["simWecken.druck.schlafUhr", { welt: 16200.5 }], /^DRUCK-UHR: die Probe begann an der Welt-Uhr des Laufs \(16200.5 s statt ihrer Uhr 15000 s\) — die Frist der Front liest/],
+        ["im Fenster springt die Welt-Uhr: der Schreiber, nie die Scherbe", ["simWecken.druck.schlafUhr", { fenster: { sim: 2.167, welt: 4.477 }, sprungN: 1, sprungS: 2.31, sprungVon: "AnazhRealm._weltSpeicherLaden" }], /^DRUCK-UHR: im Fenster sprang die Welt-Uhr 1× um 2.31 s \(Schreiber `_weltUhrNimm` aus AnazhRealm._weltSpeicherLaden\) \(Fenster: Sim-Uhr 2.167 s, Welt-Uhr 4.477 s\) — die Probe misst den Schlaf nicht in der Uhr des Gesetzes$/],
+        ["ein gestauter Takt verwirft Sim-Zeit im Fenster", ["simWecken.druck.schlafUhr", { fenster: { sim: 2.167, welt: 2.667 }, verworfenS: 0.5 }], /^DRUCK-UHR: im Fenster verwarf der feste Schritt 0.5 s Sim-Zeit am Deckel \(`FIXED_MAX_STEPS`: ein gestauter Takt\)/],
+        ["Welt- und Sim-Uhr gehen im Fenster auseinander", ["simWecken.druck.schlafUhr", { fenster: { sim: 2.167, welt: 0 } }], /^DRUCK-UHR: im Fenster ging die Welt-Uhr 0 s, die Sim-Uhr 2.167 s/],
+        ["der Schlaf zählt in der Welt-Uhr (der Stand vor stand-takt-stetig)", (b) => Object.assign(b.simWecken.druck, { schlafS: 4.477, schlafUhr: { start: 3600, welt: 15000, fenster: { sim: 2.167, welt: 4.477 }, sprungN: 1, sprungS: 2.31, sprungVon: "x", verworfenS: 0 } }), [/DRUCK-UHR: .*der Schlaf zählte in der Welt-Uhr \(4.477 s, im Fenster ging die Sim-Uhr 2.167 s\)/, /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 4.477 s/]],
+        ["die Probe misst die Uhr ihres Schlafs nicht", ["simWecken.druck.schlafUhr"], /LEER: die Probe maß die Uhr ihres Schlafs nicht/],
         // ROT nennt seinen Beweis (die Flocke der CI, 8,267 s): die Uhren an der Probe, der Wind am Ort, je beim Soll wachem Körper Ort,
         // Tempo, Auflage (Neigung und Reibung seines Grunds) und Alter, vorn der Ort der Probe O, seine Neigung und die Reste früherer
         // Marken — ein Lauf ohne Beweis sagt es
@@ -3767,7 +3778,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 // die freien Körper der Probe außer der Kiste: die Scherben in der Welt; `geburt`: je Werk die, die seine Frist gebar
                                 const freie = () => st.architectures.filter((e) => e._frei && !bautenVor.has(e) && e !== kiste);
                                 const geburt = new Map();
-                                const geborenAm = new Map(); // je Scherbe die Welt-Uhr ihrer Geburt (das Alter im Beweis von DRUCK-SCHLAF)
+                                const geborenAm = new Map(); // je Scherbe die Sim-Uhr ihrer Geburt (das Alter im Beweis von DRUCK-SCHLAF)
                                 // DIE LAGE IM BILD (druckwelle-bild): das Bild eines freien Körpers (sein Mesh: Drehung, und wo es seinen
                                 // Schwerpunkt zeichnet) gegen die Lage, die der Löser hält (`_frei.q`, `_frei.p`) — hier gerechnet, ohne Ruf
                                 // in den Stamm (ein Ruf zählte im Takt der Welle mit). Drei Augenblicke: `geburt` jede Scherbe, vor dem ersten
@@ -3832,7 +3843,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                     mess(e, () => P._druckTrifft.call(this, f));
                                     const neu = freie().filter((x) => !vor.has(x));
                                     e.scherben = neu.length;
-                                    for (const x of neu) bildLage("geburt", x), geborenAm.set(x, st.spielZeit);
+                                    for (const x of neu) bildLage("geburt", x), geborenAm.set(x, st._fixedSimTime);
                                     if (f.q && neu.length) geburt.set(f.q, neu);
                                 };
                                 r._druckEnde = function (w) {
@@ -3841,11 +3852,13 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 // DIE UHREN DER PROBE (der Beweis von DRUCK-SCHLAF, gedruckt nur im ROT): die Sprünge der Welt-Uhr
                                 // (`_weltUhrNimm`) und die Sim-Zeit, die der feste Schritt am Deckel verwirft (`FIXED_MAX_STEPS`: der Rest
                                 // des Akkumulators fällt, `_loopFixedStep`) — hier gerechnet, ohne Ruf in den Stamm
-                                const U = { sprungN: 0, sprungS: 0, verworfenS: 0 };
+                                // — je Sprung sein Schreiber (`von`: das Glied, das die Uhr rief), damit ein Sprung im Fenster des Schlafs
+                                // beim Namen steht (DRUCK-UHR)
+                                const U = { sprungN: 0, sprungS: 0, verworfenS: 0, von: null };
                                 r._weltUhrNimm = function (t) {
                                     const vor = st.spielZeit;
                                     P._weltUhrNimm.call(this, t);
-                                    if (st.spielZeit > vor) (U.sprungN++, (U.sprungS += st.spielZeit - vor));
+                                    if (st.spielZeit > vor) (U.sprungN++, (U.sprungS += st.spielZeit - vor), (U.von = (String(new Error().stack).split("\n")[2] || "").trim().split(" ")[1] || "?"));
                                 };
                                 r._loopFixedStep = function (realDt, ...a) {
                                     const acc = st._fixedAccumulator || 0;
@@ -3902,6 +3915,24 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 const [kiste0, kisteR] = [kiste._frei.p.slice(), Array.from(kiste._frei.R)];
                                 const wachN = () => st.architectures.filter((e) => e._frei && !e._frei.schlaf && !bautenVor.has(e)).length;
                                 const loesche = () => (st.brandFeld && (r._brandRest = st.brandFeld.clear()), (st.worldMeta.taten.length = taten0)); // das Feuer des Funkens: von Hand, ohne Asche
+                                // DIE UHR DER PROBE (stand-takt-stetig): die Probe beginnt auf IHRER Sim-Uhr (`__druckUhrS`) mit neuem
+                                // Böen-Anker (`_boeWeg` trägt den Weg der Böe über jeden Wechsel ihres Tempos — Vorgeschichte), wie jeder
+                                // Herd VORWÄRTS auf ihrer Welt-Uhr (`__druckWeltS`, `_weltUhrNeu`; steht die Welt schon später — die Mutante
+                                // nach der Probe —, bleibt sie) um Mittag, der Spieler am Herd: der Wind am Körper (Richtung, Böe, Drift:
+                                // `_windAt` zur Sim-Uhr, das Tempo der Böe am Ort des Spielers) und die Frist der Front (`_brandTempo` zur
+                                // Welt-Uhr) sind Funktionen von Saat, Ort und Probe, nie der Takte, die der Lauf vor ihr an der Wanduhr
+                                // brauchte. Der Akkumulator des festen Schritts steht auf einem halben Schritt: jeder Takt der Probe (1/60 s)
+                                // trägt genau einen Schritt — sein Rest aus der Vorgeschichte verschob, in welchem Takt ein Schritt fiel (die
+                                // Fristen der Welle fallen je Takt, der Löser je Schritt). Die Sim-Uhr des Laufs geht danach stetig weiter.
+                                const uhrVor = [st._fixedSimTime, r._boeAnker];
+                                r._weltUhrNeu(Math.max(window.__druckWeltS, st.spielZeit));
+                                r.setTimeOfDay(0.5, "regler");
+                                pm.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
+                                st.playerVel.setValue(0, 0, 0);
+                                st._fixedSimTime = window.__druckUhrS;
+                                st._fixedAccumulator = -AnazhRealm.FIXED_DT / 2;
+                                r._boeAnker = null;
+                                D.schlafUhr = { start: st._fixedSimTime, welt: st.spielZeit };
                                 try {
                                     // der Funke fällt 2,4 m vor dem Fass GEGEN den Kopf der Front (ihr Bett und ihr Tempo aus dem Gesetz des Brands):
                                     // die Spitze läuft auf die Ladung zu, ihre Frist ist die Laufzeit der Front
@@ -3942,7 +3973,8 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                                 return s;
                                             });
                                             loesche();
-                                            // die Scherben schlafen ein: der Takt läuft, bis keine mehr wach liegt (höchstens 10 s Spielzeit)
+                                            // die Scherben schlafen ein: der Takt läuft, bis keine mehr wach liegt (höchstens 10 s der Sim-Uhr — der Uhr des Gesetzes,
+                                            // `_freiSchritt` zählt die Ruhe je festem Schritt; die Welt-Uhr steht daneben als Auskunft, DRUCK-UHR richtet beide)
                                             D.scherben = freie().length;
                                             D.zaehler = w.scherben;
                                             // DER BEWEIS (nur im ROT): ab dem Soll (`__druckSchlafS`, das EINE Soll der Linse) je noch wachem
@@ -3956,19 +3988,31 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                                 // die Ebene seines Grunds (`_freiGrund`, `K.grund`): ihre Neigung und ihre Reibung, wie der Löser sie liest
                                                 const G = K.grund;
                                                 const grund = G && Number.isFinite(G.a) ? { grad: r3((Math.atan(Math.hypot(G.b, G.c)) * 180) / Math.PI), mu: r3(G.mu) } : null;
-                                                return { art: x === kiste ? "Kiste" : "Scherbe", p: Array.from(K.p, (v) => +v.toFixed(2)), tempo: r3(K.tempo), auf, grund, alterS: geborenAm.has(x) ? r3(st.spielZeit - geborenAm.get(x)) : null, ruheS: r3(K.ruhe), schlafS: null };
+                                                return { art: x === kiste ? "Kiste" : "Scherbe", p: Array.from(K.p, (v) => +v.toFixed(2)), tempo: r3(K.tempo), auf, grund, alterS: geborenAm.has(x) ? r3(st._fixedSimTime - geborenAm.get(x)) : null, ruheS: r3(K.ruhe), schlafS: null };
                                             };
                                             let amSoll = null;
-                                            while (st.spielZeit - tW < 10 && wachN() > 0) {
+                                            const [sW, U0] = [st._fixedSimTime, { ...U }];
+                                            const simS = () => st._fixedSimTime - sW;
+                                            // (höchstens 1 200 Bilder: steht die Sim-Uhr, endet das Fenster laut — DRUCK-UHR nennt es)
+                                            for (let i = 0; i < 1200 && simS() < 10 && wachN() > 0; i++) {
                                                 bild();
-                                                if (!amSoll && st.spielZeit - tW > sollS) amSoll = new Map();
+                                                if (!amSoll && simS() > sollS) amSoll = new Map();
                                                 if (amSoll) {
                                                     for (const x of wachOhne()) amSoll.set(x, lage(x));
-                                                    for (const [x, s] of amSoll) if (s.schlafS == null && (!x._frei || x._frei.schlaf)) s.schlafS = r3(st.spielZeit - tW);
+                                                    for (const [x, s] of amSoll) if (s.schlafS == null && (!x._frei || x._frei.schlaf)) s.schlafS = r3(simS());
                                                 }
                                             }
                                             D.wach = wachN();
-                                            D.schlafS = D.wach ? null : r3(st.spielZeit - tW);
+                                            D.schlafS = D.wach ? null : r3(simS());
+                                            // die Uhren des Fensters: Sim- und Welt-Uhr ab der Welle, die Sprünge der Welt-Uhr darin (ihr Schreiber)
+                                            // und die Sim-Zeit, die der feste Schritt darin verwarf
+                                            Object.assign(D.schlafUhr, {
+                                                fenster: { sim: r3(simS()), welt: r3(st.spielZeit - tW) },
+                                                sprungN: U.sprungN - U0.sprungN,
+                                                sprungS: r3(U.sprungS - U0.sprungS),
+                                                sprungVon: U.sprungN > U0.sprungN ? U.von : null,
+                                                verworfenS: r3(U.verworfenS - U0.verworfenS),
+                                            });
                                             if (amSoll && (D.wach || !(D.schlafS <= sollS))) {
                                                 const je = [...amSoll.values()].sort((a, b) => (b.schlafS == null) - (a.schlafS == null) || b.schlafS - a.schlafS);
                                                 // der Ort der Probe O und die Neigung des Gesetzes dort (die Regel von `_freiGrund`: die Höhe unter
@@ -3978,7 +4022,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                                 const neigung = (Math.atan(Math.hypot(h(0.5, 0) - h(-0.5, 0), h(0, 0.5) - h(0, -0.5))) * 180) / Math.PI; // je 1 m
                                                 const fremd = st.architectures.filter((e) => e._frei && bautenVor.has(e) && Math.hypot(e._frei.p[0] - O.x, e._frei.p[2] - O.z) <= 30);
                                                 const ort = { x: r3(O.x), z: r3(O.z), y: r3(h(0, 0)), grad: r3(neigung), fremd: fremd.length, fremdWach: fremd.filter((e) => !e._frei.schlaf).length };
-                                                D.schlafBeweis = { ort, welt: r3(st.spielZeit), sim: r3(st._simZeit), takte: st.weltTakt, sprungN: U.sprungN, sprungS: r3(U.sprungS), verworfenS: r3(U.verworfenS), windMS: r3(r._windAt(O.x, O.z, st._simZeit, {}).ms), amSoll: amSoll.size, wach: je.slice(0, 6) };
+                                                D.schlafBeweis = { ort, welt: r3(st.spielZeit), sim: r3(st._simZeit), takte: st.weltTakt, sprungN: U.sprungN, sprungS: r3(U.sprungS), verworfenS: r3(U.verworfenS), windMS: r3(r._windAt(O.x, O.z, st._simZeit, {}).ms), fenster: D.schlafUhr.fenster, amSoll: amSoll.size, wach: je.slice(0, 6) };
                                             }
                                             // das Bild schlafender Scherben neu gebaut, wie der Cull-Takt es baut (höchstens 16: die Probe bleibt kurz)
                                             for (const x of freie().filter((x) => x._frei.schlaf && x.mesh).slice(0, 16)) {
@@ -4113,6 +4157,9 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                     }
                                 } finally {
                                     for (const k of eigen) delete r[k];
+                                    // die Uhr des Laufs geht stetig weiter (um die Zeit der Probe), ihr Böen-Anker wie vor ihr
+                                    st._fixedSimTime = uhrVor[0] + (st._fixedSimTime - window.__druckUhrS);
+                                    r._boeAnker = uhrVor[1];
                                     // je Ereignis seine acht größten Leser und sein Erbe-Maß: die Rufe der Natur-Räumung unter der Marke
                                     for (const e of E) {
                                         if (e.d._naturRaeumen > 0) e.raeumt = e.d._naturRaeumen;

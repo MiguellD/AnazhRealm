@@ -55,6 +55,13 @@ jobs:
         # scripts/ci-zeiten.cjs nimmt einer Gruppe mit Mitfahrern über dem Deckel ihren schwersten Schritt in die volle
         # Stufe (z212: die Mensch-Anatomie, 80 s).
         name: puls ${{ matrix.gruppe }}/2
+        # DER STEMPEL FÄHRT KEINEN JOB (zug-erbt-baum, 26.11.; z747–z749: Stempel → fährt 24 · 44 · 21 min, je Stempel 5 Jobs hier und 3
+        # in gpu-probe.yml in derselben Reihe wie die Batterien — 88f5904e: Code-Check 14 min für ein Urteil, das am Elter f768ab96 über
+        # demselben Baum schon stand): ein Push auf einen w2*-Zweig, dessen Kopf-Message mit „Abgabe “ beginnt, ist ein Stempel; puls und
+        # kopf (und mit ihm voll) laufen nicht. Sein Urteil liest der Zug-Dienst am Elter über den Baum (zug.cjs `erbe`: EIN Elter,
+        # derselbe Baum, dort Code-Check und volle Batterie grün; abgebrochen ist kein Urteil). Ein Abgabe-Kopf MIT Inhalt fährt darum nie
+        # (gemessen 20.–26.11.: 0 von 149 Abgabe-Köpfen auf w28-*) — der Dienst nennt ihn beim Namen. gate:ci-deckung (V) STEMPEL.
+        if: ${{ !(github.event_name == 'push' && startsWith(github.ref, 'refs/heads/w2') && startsWith(github.event.head_commit.message, 'Abgabe ')) }}
         strategy:
             fail-fast: false
             matrix:
@@ -244,11 +251,10 @@ jobs:
         # zug-a, zug-b) sagt er ohne Frage voll=nein — die Batterie erbt vom Zweig-Kopf (LANDUNG ≤ 10 MIN); auf main fährt sie als
         # Nachwache, auf Abruf läuft alles, auf einem PR auch — außer er kommt aus einem eigenen Zweig, den der push schon richtet
         # (der Zwilling, `prZwilling`); ein Fehler der API ist rot. gate:ci-deckung (V) KOPF hält die Form.
-        # DER KOPF IST SEIN INHALT (18.11.): ein Commit ohne Inhalt (EIN Elter, derselbe Baum) trägt das Urteil seines Elters — der
-        # Stempel „Abgabe …" auf einem Kopf, der `[ci voll]` grün trug, fährt die Batterie nicht ein zweites Mal (Stempel → bereit
-        # in der Zeit des Pulses statt der Batterie); ein Merge und jeder Commit mit Inhalt erben nichts (`kopfKette`).
+        # DER STEMPEL FÄHRT HIER NICHT (zug-erbt-baum, 26.11.): ein w2*-Kopf „Abgabe …“ startet keinen Job (die Bedingung STEMPEL wie
+        # am Puls) — die Kette der leeren Vorfahren (`kopfKette`, 18.11.) fiel mit ihm, das Erbe über den Baum liest der Zug-Dienst.
         name: kopf
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[ci voll]')
+        if: (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[ci voll]')) && !(github.event_name == 'push' && startsWith(github.ref, 'refs/heads/w2') && startsWith(github.event.head_commit.message, 'Abgabe '))
         runs-on: ubuntu-latest
         timeout-minutes: 35
         permissions:
@@ -436,7 +442,9 @@ jobs:
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 16
               # Node ohne Browser: gelaende-core in einer vm, drei Welt-Saaten, 4 x 4 km innen + 2 km Rand im 30-m-Raster
               # (Nordstern 4.1, Karte K16). Taeter je Ziel beim Namen; der Selbsttest legt eine Eier-Karton-Stoerung auf und
-              # muss die Senken rot faerben. Dazu der GEBAUTE Boden (Null-Renderer, drei Saaten, 2 x 2 km im 30-m-Raster): Senken
+              # muss die Senken rot faerben. Die Boeschung (`--boeschung`): der Erdbau von Genesis, Stadt und zwei Doerfern laeuft
+              # stetig in die Natur aus (Ring 10-60 m, 0,5-m-Raster, Stufe <= 0,6 m); der Selbsttest pflanzt den harten Schnitt bei
+              # 16 m ein und muss am Genesis-Ort rot werden. Dazu der GEBAUTE Boden (Null-Renderer, drei Saaten, 2 x 2 km im 30-m-Raster): Senken
               # > 1 m und Dorfplaetze am Boden des Spielers mit Kanal und See; der Selbsttest legt die alte Bett-Tiefe auf.
               run: npm run gate:gelaende-realismus
 
