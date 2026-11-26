@@ -1,0 +1,1 @@
+Station erleben.spieler.wegfindung S1: je Saat der Wurf der Landmarke als Funktion (_landmarkenDesChunks) und ihr Durchlass (_luftDurchlass) — gemessen 1 → 51 von 51 Adressen, sichtbare Landmarke im Kegel 1–3 km 34 von 51 (Obergrenze 0,667 < 0,9: ROT beim Namen); der Kontrast fehlt an C₀ (die Leuchtdichte des Himmels je Richtung hat keinen CPU-Leser) [skip ci]
