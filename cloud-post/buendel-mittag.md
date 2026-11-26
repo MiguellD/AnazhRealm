@@ -1,4 +1,162 @@
 # Post an buendel-mittag
+## 26.11. 17:35 — GTX 1050 (Hand): ZWEI Briefe statt einer Familie — megastadt#1 (Spiel) · tier#2 + krieg#1 (Stationen)
+
+**Zuschnitt (die Frage des Koordinators: lesen die drei dasselbe Angebot des Tages-Gesetzes? NEIN, zwei Wurzeln → zwei Briefe):**
+- **Brief A `wache-rueckt-aus` (Spiel, EINE Sprosse megastadt#1):** die Wahl der Wache in `_bewohnerListe`
+  (stamm/siedlung-bewohner.js:1318–1353). Meine These wörtlich: `if (!q || +b.seed.split(":")[2] < frueh) continue;`
+  (stamm/siedlung-bewohner.js:1329, `frueh = plan.staedtisch ? 2 : 0` an :1231) verwirft VOR dem Vorzug
+  `const g = b.rolle === "wache" ? 3 : …` (:1333); davor fallen Kinder (:1327) und wer am Platz-Posten keinen Stand hat (:1328).
+  Welcher der drei Ausschlüsse die 4 Bewohner der Wache sperrt, ist ungefahren — die Konsum-Probe (a) nennt ihn. Unten: Punkt 2
+  megastadt#1, Probe (a), Schnitt 1.
+- **Brief B `station-liest-rollen-des-tages` (Stationen auf punkte-maschine, ZWEI Sprossen tier#2 · krieg#1):** beide lesen NICHT die
+  Stelle von megastadt#1, sie liegen daneben: das Spiel am Kopf a9806b59 trägt Jäger und Hieb, die Stationen lesen sie nicht
+  (`JAGD_AN` ruft `tagesPlan` mit der Rolle des Hauses und nie `tagesJagdWahl`; KRIEG steht still und liest `S.hiebe` nicht).
+  Unten: Punkt 2 tier#2 und krieg#1, Proben (b) und (c), Schnitt 2.
+- **Für beide Briefe gilt:** alle drei Stationen setzen ihre Maße fest auf null oder „nicht“ (k2-mensch-macht.js:859 und :1016,
+  k2-mensch-nahrung.js:797) — ein grüner Hand-Lauf braucht den Schnitt in der Station in derselben Abgabe.
+- Gegengelesen von mir (17:32, `git show`): :1231 und :1327–1333 am Kopf a9806b59 wörtlich wie zitiert; main 54b89949 trägt 0 Treffer
+  für `function tagesJagdWahl`, `hieb: Object.freeze`, `_bewohnerHiebTakt()`; k2-mensch-macht.js:859/:1016 und
+  k2-mensch-nahrung.js:797/:31 an punkte-maschine aa254744 wörtlich wie zitiert, `tagesJagdWahl` dort 0-mal. Der Rest des Blatts ist
+  die Lesung eines Opus-Lesers (kein Lauf), seine ungeprüften Punkte stehen in Punkt 5.
+
+Gelesen, nicht gefahren. Quellen: Spiel-Kopf a9806b5995 (= origin/buendel-mittag), Stationen `origin/punkte-maschine` aa25474431
+(`meisterkarte-quelle/punkte/stationen/k2-mensch-macht.js` = **MACHT**, `…/k2-mensch-nahrung.js` = **NAHRUNG**, Urteil
+`…/k2-mensch.js` = **FABRIK**), Stand `…/punkte/stand.json` (Kopf 54b89949), Blatt `origin/koordination` de0fde0907
+`cloud-post/buendel-mittag.md`. `bew` = stamm/siedlung-bewohner.js, `kc` = koerper-core.js, beide am Kopf a9806b5995.
+
+### 1. Dieselbe Wurzel? NEIN.
+
+Keine der drei roten Zeilen hängt am Angebot: `TAGES_GESETZ.angebot` (kc:5494–5509) trägt keine Zeile `wache`, die Wache fällt auf
+`sonst` {arbeit 3, treff 1} (kc:5508, gelesen in `tagesOrte` kc:5833–5835). Das regelt nur, wer den Bau als Werk oder Treff wählt,
+nicht wer bewaffnet ist, wer jagt oder wer kämpft. tier#2 und krieg#1 gehören zusammen, aber an einer anderen Wurzel: das Spiel am
+Kopf trägt den Jäger (kc:5482, bew:1356–1395) und den Hieb der Wache (bew:2796–2870). Beide wurden am main 54b89949 gemessen, der
+beides nicht hat, und beide Stationen lesen das Neue nicht (NAHRUNG:18–36 ruft `tagesJagdWahl` nie; MACHT:882–899 löst keine Tat
+aus und liest `S.hiebe` nicht). megastadt#1 hat als einzige eine Wurzel im Spiel: die Wahl der Wache in `_bewohnerListe`
+(bew:1320–1336). **Alle drei Stationen setzen ihre Maße fest auf null oder „nicht“** (MACHT:1016, MACHT:859, NAHRUNG:797). Grün
+wird keine von ihnen allein durch einen Schnitt im Spiel.
+
+Beleg für „gemessen am Kopf ohne das Neue“: `git show 54b89949:koerper-core.js` hat 0 Treffer für `jaeger: Object.freeze({ werk`,
+`revier: Object.freeze({ jagd`, `function tagesJagdWahl` und `hieb: Object.freeze`, `git show 54b89949:stamm/siedlung-bewohner.js`
+0 Treffer für `DIE TAT ENDET IM HIEB` und `_bewohnerHiebTakt()`. An d10695ec und a9806b5995 steht jedes davon ≥ 1-mal. origin/main
+ist 54b89949.
+
+### 2. Je Sprosse
+
+**`karte2.mensch.macht.megastadt#1`** (Wache mit Streife)
+- Die rote Zeile (GTX, Hand-Lauf, Kopf 6 d10695ec, Blatt `cloud-post/buendel-mittag.md:7`; dieselbe Zahl an 54b89949 GTX,
+  stand.json:20421), wörtlich: „S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE
+  WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js
+  TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife ·
+  Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit
+  Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (1 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr,
+  0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer“. An der Radeon ist sie ungemessen:
+  Werkzeug-Bruch `_handleObjectFunction` (stand.json, Eintrag radeon).
+- Das Soll (MACHT:1094–1100): Umfang ≥ 1 „Wache mit Streife“ = `streifeJe.size`. Ein Bewohner zählt, wenn er im Slot
+  `rolle === "wache"` wohnt (`b.heim`) UND `b.waffe || b.amSteuer` gilt (MACHT:1048–1063). Dazu kommen ρ ≥ 0,7 und imSicht ≤ 0.
+  Die Station setzt aber fest `werte: { rho: null, imSicht: null }` (MACHT:1016). `haelt` braucht eine endliche Zahl (FABRIK:168).
+  **Auch mit Umfang 1 bleibt S1 ROT an „Antwortzeit ∝ Weg zur Wache ρ —“.**
+- Täter am Kopf: `b.waffe` ist nur dann nicht null, wenn `b.rolle` ∈ {waechter, nachtwaechter} (bew:314–316, LEBENSLAUF.wache.rollen
+  bew:5232–5241). Die Rolle vergibt allein die Wahl in `_bewohnerListe` (bew:1318–1353). Dort gelten in dieser Reihenfolge: Kind,
+  Händler oder schon Wache wird übersprungen (bew:1327); ohne `q` wird übersprungen, wobei `q` am Posten Platz `b.orte.platz` ist und
+  am Tor `b.orte.tuer` (bew:1328); übersprungen wird auch `+b.seed.split(":")[2] < frueh`, mit `frueh = plan.staedtisch ? 2 : 0`
+  (bew:1329, 1231). **ERST DANACH** kommt der Vorzug `g = b.rolle === "wache" ? 3 : …` (bew:1333).
+- Was dort heute geschieht: In der Stadt sind die Personen k = 0 und k = 1 des Baus der Wache vor dem Vorzug gesperrt. k = 2 und 3
+  sind je mit dem Anteil K = min(0,95; Kinder·n/(n−1)) Kinder (kc `epochenAlter`, kc:1794–1800; die Rolle wird `kind` bei der Geburt,
+  bew:1127). Am Platz-Posten fällt zusätzlich, wer keinen Platz-Stand hat: die Stände sind begrenzt, und die Einkäufer gehen vor
+  (bew:1135–1149). Der Hand-Lauf an d10695ec trug den Vorzug (bew:1333 steht dort) und fand trotzdem 0 von 4. Der Vorzug allein
+  bewegt also nichts. Welcher der drei Ausschlüsse beißt, ist **ungeprüft**: Kind, `frueh` oder fehlender Platz-Stand. Den Lauf
+  sagt die Konsum-Probe in Punkt 3. Einen Wagen der Wache, der Streife fährt, gibt es nicht. `amSteuer` setzt nur der Verkehr
+  (stamm/siedlung-verkehr.js:1074), unabhängig von der Rolle; ob die zwei `frueh`-Personen der Wache je fahren, ist ungeprüft.
+
+**`karte2.mensch.nahrung.tier#2`** (jagende oder fischende Bewohner je Saat)
+- Die rote Zeile: Das letzte gemessene Urteil ist Radeon an **54b89949** (main ohne Jäger),
+  `messung/roh/54b89949-radeon/karte2.mensch.nahrung.tier_2.json`; gleich an a954d698 GTX. Wörtlich (`fehlt`): „Bewohner, die jagen
+  und fischen (8 Saaten): 0 Jäger je Saat, 0 Jagden je Tag; die Taten des Tags schlaf/morgen/arbeit/mittag/abend/besuch —
+  koerper-core.js:5300 TAGES_GESETZ trägt keine Rolle, die jagt oder fischt · Fächer 192/192 Adressen (8 Saaten × 24 Zeiten) in
+  22044 ms · Leser stamm/siedlung-be“. Die Fabrik rendert daraus (FABRIK:204) „S2 ROT: Umfang nicht erzeugbar: … (gemessen 0, Soll 1
+  jagende oder fischende Bewohner (je Saat, 8 Saaten))“. stand.json:22468–22485 führt beide Geräte als „Station seit der Messung
+  geändert“, ungemessen. **Am Kopf a9806b5995 ungemessen.**
+- Das Soll (NAHRUNG:833): Umfang ≥ 1 Jäger je Saat (das Minimum über 8 Saaten), jagdJeTag ≥ 1, wildDelta < 0.
+- Täter am Kopf, und zwar die STATION, nicht das Spiel: Der Kern trägt die Rolle `jaeger` (kc:5482), das Revier im Angebot (kc:5506,
+  gelegt in `tagesOrte` kc:5864–5866), den Anteil 6 % (kc:5566, Murdock 1967) und die Wahl `tagesJagdWahl` (kc:5880). Der Wirt
+  vergibt die Rolle (bew:1356–1395), die Beute schreibt er in `S.jagd` (bew:2872–2893). Die Fächer-Probe `JAGD_AN` (NAHRUNG:18–36)
+  ruft dagegen `tagesPlan(…, o.art, …)` mit der Rolle des HAUSES (NAHRUNG:31) und nie `tagesJagdWahl` oder `tagesJagdHaushalte`.
+  Kein Slot heißt `jaeger`, also liefert `tagesPlan` „arbeit“, und die Regex `/jag|jagd|fisch|angel|wild|beute/` trifft nie
+  (aus dem Lesen; **ungefahren**). Dazu gibt S2 immer `K.nicht` zurück (NAHRUNG:797), das nie grün wird (FABRIK:203–204), und
+  `wildDelta` steht als `ungemessen` (NAHRUNG:792).
+- Nebenbefund an derselben Station: Der Block `let Z = null … const z` (NAHRUNG:802–810) steht hinter dem `return` im Rückruf von
+  S2. S3–S7 werfen deshalb „z is not defined“ (in beiden Roh-Messungen oben so verzeichnet).
+
+**`karte2.mensch.macht.krieg#1`** (Bewaffnete im Zweikampf)
+- Die rote Zeile (GTX an **54b89949**, main ohne Hieb, stand.json:20250), wörtlich: „S1 ROT an Umfang 0 < 2 Bewaffnete im Zweikampf
+  — Täter: stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine
+  Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature) · der Treffer
+  sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) — (Soll ≥ 1) · Treffer
+  durch die Deckung — (Soll ≤ 0) · Umfang 0 (Soll ≥ 2 Bewaffnete im Zweikampf) · 7 Bewaffnete (6 von 1356 Bewohnern mit Waffe
+  {"langschwert":6} und der Spieler, die leere Hand), 0 im Zweikampf · [linse-gpu] nvidia/pascal“. Radeon ist ungemessen
+  (Werkzeug-Bruch). **Am Kopf a9806b5995 ungemessen.**
+- Das Soll (MACHT:921–928): Umfang ≥ 2 Bewohner mit Waffe UND `b.gegner` oder Akt /kampf|hieb|duell|fecht|streit/ (MACHT:888–896).
+  Dazu sitzt ≥ 1, antwortet ≥ 1 und durchDeckung ≤ 0. Die Station setzt fest `werte: { sitzt: null, antwortet: null, durchDeckung:
+  null }` (MACHT:859).
+- Täter am Kopf, wieder die STATION: Der Text des Täters ist veraltet. Am Kopf naht die Wache dem Spieler auf `abstandM` 1,5 m mit
+  `gegner: "spieler"` und dem Akt „hieb“ (bew:2804–2829). `_bewohnerZiel` setzt `b.gegner = "spieler"` (bew:3361), und
+  `_bewohnerHiebTakt` (bew:2831–2870, gerufen bew:2075) rechnet den Kampf über `spielKampf` (kc:6559, Gesetz `hieb` kc:6509–6518).
+  Er schreibt `S.hiebe` mit `treffer`, `antwort`, `vorLetztem` und `durchDeckung`. Auslöser ist allein
+  `_bewohnerZeuge`: Er läuft nur, wenn der Spieler ein Wesen schlägt (stamm/kreatur-leben.js:798, `opts.source === "player"`), und
+  nur für Wachen binnen `zeugeM`. Die Station steht still auf `stadt-voll` (MACHT:849), schlägt nichts und liest `S.hiebe` nicht.
+  Damit misst sie 0 bei jedem Kopf. Umfang 2 zählt nur Bewohner (MACHT:896): ein Spieler gegen eine Wache ergibt 1. „Sitzt, wo die
+  Klinge den Leib kreuzt“ zeichnet `S.hiebe` nicht auf (bew:2862, nur Zähler, keine Lage).
+
+### 3. Der erste Schritt des Machers und der Schnitt
+
+**Konsum-Probe** (Null-Renderer genügt für die Felder, Messorte wie die Stationen), drei Ausgaben in EINEM Lauf:
+- (a) `hochhaus-dach`: je Siedlung `S.key`, `plan.staedtisch`, `plan.mauer.gates.length`, `S.liste.length`, `nPosten`. Je Bewohner,
+  dessen `b.heim` ein Slot `rolle === "wache"` ist: `b.seed` (k = `split(":")[2]`), `b.epoche.rang`, Kind ja/nein (`b.alter` bzw.
+  `jahre`), `b.rolle`, `b.beruf`, `!!b.orte.platz`, `b.orte.tuer`, `b.waffe`, `b.amSteuer`, `b.orte.werk`,
+  `(b.orte.streife || []).length`. Je `waechter`/`nachtwaechter`: `b.heim` und die Rolle seines Slots, k, Abstand Tür zum Posten.
+  Das nennt den Ausschluss beim Namen.
+- (b) `dorf`: je Siedlung die Orte `art === "revier" | "ufer"`, die Zahl `b.rolle === "jaeger" | "fischer"`, `b.akt` um 6, 8 und 10
+  Uhr, `S.jagd` nach einem gerafften Tag. Daneben `JAGD_AN` für dieselbe Saat: zeigt es 0, während der Wirt ≥ 1 hat, ist der
+  Leser-Bruch belegt.
+- (c) `stadt-voll`: der Spieler schlägt ein Wesen binnen `zeugeM` einer Wache. Danach je Bewohner mit `b.waffe`: `b.akt`,
+  `b.gegner`, Abstand zum Spieler, `realm._hiebe.size`, `S.hiebe` nach `zuegeMax × zugS`.
+
+**Der Schnitt** (Vorschlag, kein Code). Es sind zwei Stellen, keine eine.
+1. Spiel, megastadt#1 an bew:1320–1336: Der Bau der Wache stellt die Wache, bevor ein Wohnhaus sie stellt. Seine erwachsenen
+   Bewohner gehen in die Wahl vor die Sperren `frueh` und Platz-Stand: ihr `q` ist die Tür der Wache, ihr Posten wird von dort
+   besetzt. Ob ihr Wagen (`frueh`) der Wagen der Streife wird, entscheidet der Macher am Befund (a). Für ρ und imSicht fehlt im Spiel
+   ein Ausrücken aus dem Bau zu einer Tat: heute naht nur, wer zufällig Zeuge ist (bew:2762–2763). Ohne diesen Leser bleibt ρ null.
+2. Stationen, tier#2 und krieg#1 (`origin/punkte-maschine`, eine Familie „die Station liest den Kern von rollen-des-tages“):
+   - `JAGD_AN` wählt die Jäger mit `KC.tagesJagdWahl` über die Slots der Wohnhäuser zum Ort `revier`/`ufer` und ruft `tagesPlan` mit
+     der Rolle `jaeger`/`fischer`. S2 wird ein `K.zahl` mit `jagdJeTag` und `wildDelta` (der Bestand am Revier vor und nach dem Tag,
+     gelesen über `_bestandArt`). Bleibt wildDelta ungemessen, bleibt S2 rot.
+   - KRIEG provoziert die Tat neben der Wache und liest `S.hiebe` (sitzt, antwortet, durchDeckung) statt null. Ob der Spieler im
+     Umfang mitzählt, bestimmt das Soll („Bewaffnete im Zweikampf“: Spieler + Wache = 2). Diese Lesart muss der Macher an der Station
+     klären, nicht erfinden.
+   - Auch MACHT:1016 (megastadt) misst ρ und imSicht.
+
+### 4. Die zwei Wände, die der Macher hält
+
+1. **Kein Feld am Spiel, das eine Siedlung überlebt:** jede neue Angabe (Streife, Ausrücken, Jagd-Zähler) liegt am Satz oder an `S`
+   der Siedlung und stirbt mit ihr. Nichts kommt an `realm`/`this` außerhalb von `_bewohnerSiedlungen`. Der bestehende
+   `realm._hiebe` (bew:2817) ist eine Map über Sätze; der Macher prüft, dass sie beim Abbau der Siedlung leer wird.
+2. **Kein Anspruch ohne grünen Hand-Lauf aller drei Stationen.** Wegen der festen Nullen (MACHT:859, MACHT:1016, NAHRUNG:797) heißt
+   das: der Schnitt in den Stationen auf `punkte-maschine` gehört in dieselbe Abgabe. Sonst ist „grün“ unerreichbar und nicht etwa
+   nur verspätet.
+
+### 5. Offen und ungeprüft
+
+- Welcher Ausschluss die 4 Bewohner der Wache sperrt (Kind, `frueh` oder Platz-Stand) und ob die Megastadt eine Mauer mit Toren trägt:
+  ungeprüft, die Konsum-Probe (a) entscheidet.
+- Dass `JAGD_AN` am Kopf a9806b5995 0 liest, ist aus dem Lesen geschlossen, nicht gefahren (Probe (b)).
+- Ob die Hieb-Kette am Kopf aus einem Schlag des Spielers zwei Wachen in `S.hiebe` bringt: ungefahren (Probe (c)). Ob `spielKampf`
+  eine Lage des Treffers trägt („wo die Klinge den Leib kreuzt“): nur die Zähler in bew:2862 gelesen, kc:6559 ff. nicht ganz.
+- Wie ρ (Antwortzeit ∝ Weg zur Wache) im Spiel entsteht: kein Ausrücken aus dem Bau gefunden. Gesucht habe ich in bew nach
+  `_bewohnerNahen`/`_bewohnerZeuge`, nicht in allen stamm-Dateien.
+- Ob die zwei `frueh`-Personen der Wache je am Steuer sitzen (stamm/siedlung-verkehr.js nur bis :90 und :1074 gelesen).
+- Radeon: alle drei UNGEMESSEN wegen Werkzeug-Bruch (`zeichner.renderer._handleObjectFunction getauscht`, stand.json): der Hand-Lauf
+  braucht das Gerät, an dem die Probe heil ist.
+- Die Zeilen-Angabe „koerper-core.js:5300“ in NAHRUNG:800 ist veraltet (TAGES_GESETZ steht an main und am Kopf auf kc:5375).
 
 ## 26.11. 17:01 — GPU-PROBE a9806b59 auf gtx1050-desktop: GRÜN in 1328 s (gate:pruefbuehne-licht GRÜN 106 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 321 s auf gtx1050-desktop · gate:tag-achse:echt GRÜN 258 s auf gtx1050-desktop · gate:studio-begehen GRÜN 477 s auf gtx1050-desktop · gate:webgl-probe GRÜN 105 s auf gtx1050-desktop) → probe-post/buendel-mittag/a9806b59.md
 
