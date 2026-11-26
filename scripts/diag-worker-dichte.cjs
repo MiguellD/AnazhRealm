@@ -1390,25 +1390,61 @@ function presetsAnSaaten(K, Z) {
 // DAS NETZ (w28-ankunft-faden; die Summe der Ankunft: das Feld-Panorama baute je neuer Zelle die Talprofile ihrer 25 bzw. 49
 // Knoten neu und zählte je Rinnen-Knoten ein Einzugsgebiet ohne Leser — 6,4 CPU-s vor dem ersten Bild der GTX 1050). Die Wand:
 // der Kern zählt selbst (`netzZaehler`), jedes Profil ist EINMAL gebaut, kein Knoten der Ebene 2 trägt ein Einzugsgebiet.
+// DER STERN (fluss-netz): in einem Punkt treffen sich höchstens zwei Läufe (Strahler 1957: jeder Zusammenfluss ist binär, die
+// Ordnung steigt, wo zwei gleiche treffen) — gezählt an den Gliedern der Läufe des Felds (`flussLaeufe`, jedes Glied einmal):
+// ein Punkt, in dem drei oder mehr Glieder enden und eines weiterläuft, ist ein Stern (`sternZahl`); die Senke (See, Meer)
+// läuft nicht weiter, ihre Zuflüsse enden je an ihrem Ufer (`zusammenfluss`: sie nimmt jeden). Bis fluss-netz schickte das D8 des
+// Knoten-Rasters jeden tieferen Nachbarn in denselben Knoten (41840fb6: 414 Sterne in 98 von 101 Saaten, der größte 9).
+// Leser des Netzes: die Läufe der Hydrosphäre (`flussLaeufe` → die Station kohaerenz#1, das Bild leben.wasser).
 // Der Selbsttest nimmt dem Kern je eine Zeile (`NETZ_MUTANTEN`): jeder Mutant fällt beim EIGENEN Namen ROT.
 const NETZ_MUTANTEN = {
     profil: ["if (kn.seg !== undefined) return kn.seg;", ""],
     einzug: ["kn.k <= 1 ? knotenA(N, kn) * S * S : 0", "knotenA(N, kn) * S * S"],
     fuss: ["if (fuss > 0) while (k > 0 && N.S[k] * NETZ_TRAGT < fuss) k--;", ""],
+    stern: ["if (zu.length <= 2 || (X.k === 0 && !knotenFluss(N, X))) return;", "return;"],
 };
+function sternZahl(laeufe) {
+    const cm = (v) => Math.round(v * 100);
+    const glieder = new Map();
+    for (const lf of laeufe) for (const gl of lf.glieder) glieder.set([gl.ax, gl.az, gl.bx, gl.bz].map(cm).join(","), gl);
+    const ende = new Map();
+    const weiter = new Set();
+    for (const gl of glieder.values()) {
+        const k = cm(gl.bx) + "," + cm(gl.bz);
+        ende.set(k, (ende.get(k) || 0) + 1);
+        weiter.add(cm(gl.ax) + "," + cm(gl.az));
+    }
+    let punkte = 0;
+    let groesste = 0;
+    let ort = null;
+    for (const [k, n] of ende)
+        if (n >= 3 && weiter.has(k)) {
+            punkte++;
+            if (n > groesste) {
+                groesste = n;
+                ort = k.split(",").map((v) => Math.round(+v / 100));
+            }
+        }
+    return { punkte, groesste, ort, glieder: glieder.size };
+}
 // DIE STUFE DES FRAGERS (w28-feld-fuss): 192 Fragen auf dem 20-km-Kreis mit der Masche des Felds dort (600 m) an eine frische
 // Lage — die Ebene 2 (Kante 100 m) trägt diese Masche nicht, der Kern baut keinen ihrer Knoten (das Feld der Ferne las sie:
 // 463 636 Knoten, 3,1 s je Bild).
 const NETZ_FUSS = { kreisM: 20000, fragen: 192, mascheM: 600 };
-function netzUrteil(G, L, frisch) {
+function netzUrteil(G, L, frisch, halb) {
     const z = typeof G.netzZaehler === "function" ? G.netzZaehler(L) : null;
     if (!z) return { gut: false, rot: ["zaehler"], taeter: "der Kern zählt sein Netz nicht (gelaende-core `netzZaehler` fehlt)" };
     const mehrfach = z.profilBau.map((b, k) => b - z.profile[k]);
     const rot = [];
     const namen = [];
-    if (!(z.profile[0] + z.profile[1] > 0) || !(z.knoten[2] > 0)) {
+    const sterne = sternZahl(G.flussLaeufe(L, -halb, -halb, halb, halb, 8));
+    if (!(z.profile[0] + z.profile[1] > 0) || !(z.knoten[2] > 0) || !(sterne.glieder > 0)) {
         rot.push("leer");
-        namen.push(`die Messung fragte das Netz nicht (Profile ${z.profile.join(" · ")} an ${z.knoten.join(" · ")} Knoten)`);
+        namen.push(`die Messung fragte das Netz nicht (Profile ${z.profile.join(" · ")} an ${z.knoten.join(" · ")} Knoten, ${sterne.glieder} Glieder der Läufe)`);
+    }
+    if (sterne.punkte > 0) {
+        rot.push("stern");
+        namen.push(`${sterne.punkte} Punkte mit ≥ 3 Zuflüssen (der größte Stern ${sterne.groesste} Glieder bei (${sterne.ort.join(", ")})) — gelaende-core zusammenfluss/knotenZiel: der Unterlieger nimmt jeden tieferen Nachbarn des D8 in EINEM Punkt`);
     }
     if (mehrfach.some((m) => m !== 0)) {
         rot.push("profil");
@@ -1430,7 +1466,7 @@ function netzUrteil(G, L, frisch) {
             namen.push(`ein Frager mit der Masche ${NETZ_FUSS.mascheM} m baut ${fuss[2]} Knoten der Ebene 2 (Soll 0; Knoten je Ebene ${fuss.join(" · ")}) — gelaende-core netzStufe liest den Fuß nicht`);
         }
     }
-    return { ...z, fuss, gut: !rot.length, rot, taeter: namen.join(" · ") };
+    return { ...z, fuss, sterne, gut: !rot.length, rot, taeter: namen.join(" · ") };
 }
 // Der Selbsttest der Netz-Wand: der Kern der gemessenen Wurzel mit je EINER genommenen Zeile, 41 × 41 Fragen im 100-m-Raster.
 function netzSelbsttest(wurzel, saat) {
@@ -1446,7 +1482,7 @@ function netzSelbsttest(wurzel, saat) {
         const M = { G: c.__gelaendeCore, SimplexNoise: c.SimplexNoise };
         const L = realismusLage(M, M.G, saat);
         for (let j = 0; j <= 40; j++) for (let i = 0; i <= 40; i++) M.G.hoehe(L, -2000 + i * 100, -2000 + j * 100, false);
-        const u = netzUrteil(M.G, L, realismusLage(M, M.G, saat));
+        const u = netzUrteil(M.G, L, realismusLage(M, M.G, saat), 2000);
         je[name] = { anker: true, rot: u.rot, sieht: u.rot.length === 1 && u.rot[0] === name, taeter: u.taeter };
     }
     return { je, sieht: Object.values(je).every((m) => m.sieht) };
@@ -1490,7 +1526,7 @@ function realismus() {
             m.lambdaBreiten <= 14 &&
             m.rcBreiten >= 2 &&
             m.rcBreiten <= 3;
-        const netz = netzUrteil(G, L, realismusLage(K, Z, saat)); // nach Raster und Läufen: das Netz dieser Lage hat gearbeitet
+        const netz = netzUrteil(G, L, realismusLage(K, Z, saat), HALB); // nach Raster und Läufen: das Netz dieser Lage hat gearbeitet
         const urteil = { ...Z.urteil(st, sm), maeander: maeanderGut(maeander), kosten: kosten.imBudget, netz: netz.gut };
         const taeter = {
             netz: netz.taeter,
@@ -1530,7 +1566,7 @@ function realismus() {
             schicht,
             urteil,
             maeander,
-            netz: { knoten: netz.knoten, profile: netz.profile, profilBau: netz.profilBau, einzugOhneLeser: netz.einzugOhneLeser, fuss: netz.fuss },
+            netz: { knoten: netz.knoten, profile: netz.profile, profilBau: netz.profilBau, einzugOhneLeser: netz.einzugOhneLeser, fuss: netz.fuss, sterne: netz.sterne },
             stoerung: stoer && {
                 senken1mJeKm2: stoer.senken1mJeKm2,
                 minimaJeKm2: stoer.minimaJeKm2,
@@ -1554,7 +1590,7 @@ function realismus() {
         );
         if (netz.knoten)
             console.log(
-                `    Netz: Knoten je Ebene ${netz.knoten.join(" · ")} · Talprofile ${netz.profile.join(" · ")}, gebaut ${netz.profilBau.join(" · ")} (Soll eins je Knoten) · Einzug ohne Leser ${netz.einzugOhneLeser} (Soll 0) · Masche ${NETZ_FUSS.mascheM} m: Knoten ${(netz.fuss || []).join(" · ")} (Soll Ebene 2: 0)`
+                `    Netz: Knoten je Ebene ${netz.knoten.join(" · ")} · Talprofile ${netz.profile.join(" · ")}, gebaut ${netz.profilBau.join(" · ")} (Soll eins je Knoten) · Einzug ohne Leser ${netz.einzugOhneLeser} (Soll 0) · Masche ${NETZ_FUSS.mascheM} m: Knoten ${(netz.fuss || []).join(" · ")} (Soll Ebene 2: 0) · Sterne ${netz.sterne ? netz.sterne.punkte : "?"} in ${netz.sterne ? netz.sterne.glieder : "?"} Gliedern (Soll 0)`
             );
         if (stoer)
             console.log(
@@ -1596,7 +1632,7 @@ function realismus() {
                     w.stoerung.maeanderGerade !== "rot"
             );
         console.log(
-            `\n${blind ? "⛔ SELBSTTEST ROT: die Störung, die Kosten-Last, die Gerade oder ein Netz-Mutant blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot, die Kosten-Last sprengt das Spalten-Budget, die Gerade färbt den Mäander rot, das Netz ohne Gedächtnis, der Einzug ohne Leser und der Frager ohne Stufe fallen beim Namen"}\n`
+            `\n${blind ? "⛔ SELBSTTEST ROT: die Störung, die Kosten-Last, die Gerade oder ein Netz-Mutant blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot, die Kosten-Last sprengt das Spalten-Budget, die Gerade färbt den Mäander rot, das Netz ohne Gedächtnis, der Einzug ohne Leser, der Frager ohne Stufe und der Zusammenfluss ohne Grenze (Stern) fallen beim Namen"}\n`
         );
         return blind ? 1 : 0;
     }

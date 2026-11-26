@@ -226,9 +226,9 @@ function wirtAmGesetz(root, mitWasser) {
 //              … imBlick, mit dem Gesetz der Mess-Wiese `blickFrei`/`blickWinkel`) — keine Krone steht zwischen Auge und Wasser.
 //              Die zweite Küste 859,3/10 430,3 stand im Erlen-Wald (Kronen-Deckung 0,897, 6 Kronen im Blick, eine Erle 0,9 m vom
 //              Spieler): das Bild zeigte Birkenlaub statt Meer, die Blick-Wahl floh auf 7,5 m Höhe (25.11.). Die Boden-Schicht
-//              (Halm, Streu) zählt `imBlick` nicht: an der Küste −215,7/10 555,3 steht vor dem Auge der Gürtel des Schilfs (sein
-//              Ufer-Band, foundry-core `schilf`, gilt am Meer wie am See: 82 m längs des Blicks), die Abnahme des Bilds an der
-//              Pose des Auges nennt ihn „verdeckt von Boden-Schicht in 5.93 m“
+//              (Halm, Streu) zählt `imBlick` nicht: an der Küste −215,7/10 555,3 (seit fluss-netz 26.11. −229,7/10 579,3)
+//              steht vor dem Auge der Gürtel des Schilfs (sein Ufer-Band, foundry-core `schilf`, gilt am Meer wie am See: 82 m
+//              längs des Blicks), die Abnahme des Bilds an der Pose des Auges nennt ihn „verdeckt von Boden-Schicht in 5.93 m“
 function belegSicht(r, wm, S) {
     return (x, z, blick) => wm(r, x, z, blick, S).imBlick;
 }

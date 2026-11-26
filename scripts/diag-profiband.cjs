@@ -1542,11 +1542,13 @@ function selbsttest() {
     };
     const bAm = (f) => wieseAmGesetz(b20(f)).befunde;
     // DIE MÜNDUNG (25.11.): die erste Küste stand in der Welt in einem Fluss — der Wirt mit den Kacheln um den Ort nennt ihn, der
-    // Täter (der Wirt nur mit der Heim-Region, `wasserUm` ohne Kachel) las dort Meer
+    // Täter (der Wirt nur mit der Heim-Region, `wasserUm` ohne Kachel) las dort Meer. Seit fluss-netz (26.11., der Abfluss über das
+    // Relief) steht die Mündung 44,7 m weiter: am alten Ort 1191,1/9928,8 liegt der Boden 0,32 m unter dem Meer, der Fluss 47 m fern;
+    // hier liest der Täter das Meer in 33,75 m (0,56 m darüber), die Welt den Fluss am Ort (10,6 m breit) — dieselbe Suche, derselbe Blick
     const muendung = (o) => {
         // BÜHNE: die erste Wahl der Küste, in der Welt eine Mündung
-        o.spieler = [1191.1, 9928.8];
-        o.blick = [1480.9, 10006.4];
+        o.spieler = [1211.1, 9888.8];
+        o.blick = [1500.9, 9966.4];
     };
     const WO = require("./lib/welt-orte.cjs");
     const ohneKachel = WO.wirtAmGesetz(root, true);
@@ -1564,13 +1566,15 @@ function selbsttest() {
     // DER WALD AM WATT (25.11.): die zweite Wahl der Küste stand im Erlen-Wald — das Bild zeigte Laub statt Meer; der Beleg zählt
     // die Kronen der Ego-Sicht (`belegSicht`, die Messung der Wiese), ein Beleg ohne Sicht ist ungemessen
     // Seit der Gezeit (planet.wasser.gezeiten) steht der Wald über dem höchsten Hochwasser (`_landSpiegelAt`): am Ort der zweiten
-    // Wahl (859,3/10 430,3, 2,45 m unter dem Mittel, im Watt) wächst keine Krone mehr (imBlick 6 → 0) — die Bühne rückt 400 m
-    // landeinwärts an den Saum des Walds über dem Watt (7 Kronen in der Ego-Sicht, derselbe Blick zum Meer)
+    // Wahl (859,3/10 430,3, 2,45 m unter dem Mittel, im Watt) wächst keine Krone mehr (imBlick 6 → 0) — die Bühne rückte 400 m
+    // landeinwärts an den Saum des Walds über dem Watt (459,3/10 455,3). Seit fluss-netz (26.11., der Abfluss über das Relief) fließt
+    // dort ein Fluss 44,5 m vor dem Auge; der Saum steht 161,9 m weiter (`buehne-neu.cjs`, Meer längs desselben Blicks in 188 m,
+    // 3,48 m über dem Meer, Hang 1,06°, 7 Kronen in der Ego-Sicht)
     const imWald = (o) => {
         // BÜHNE: ein Erlen-Wald vor dem Auge am Watt (dieselbe Blick-Richtung wie die zweite Wahl der Küste)
-        o.spieler = [459.3, 10455.3];
-        o.blick = [741, 10505];
-        Object.assign(o.beleg, { hoehe: -0.17, spiegel: -3, abstand: 202 });
+        o.spieler = [619.3, 10430.3];
+        o.blick = [901, 10480];
+        Object.assign(o.beleg, { hoehe: 0.48, spiegel: -3, abstand: 188 });
     };
     const ohneSicht = WO.belegUrteil(WO.belegMessen(_wasserWirt, kq.spieler[0], kq.spieler[1], kq.blick), kq.beleg, false);
     t(

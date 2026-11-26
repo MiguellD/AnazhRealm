@@ -4180,12 +4180,24 @@ hauptLauf(async () => {
     const K5 = [];
     for (const alt of [null, "vorrat"]) K5.push(await page.evaluate(vorratAmDorf, MESSORT_DORF, alt));
     const [K5b, K5bS] = K5;
-    // DER HANG-ORT (siedlung.K3 Staffel 2): in seinem Vorlauf-Ring liegen vier Zellen, deren Anker zwischen der alten Wand 0,35 und
-    // der Böschung des Erdbaus liegt (−3,−14 0,38 · −1,−14 0,49 · −3,−12 0,51 · −1,−12 0,57; am Mess-Ort dorf −3,−3 0,51)
-    const [H, HS] = [
-        await page.evaluate(vorratAmDorf, [-400, -3175], null),
-        await page.evaluate(vorratAmDorf, [-400, -3175], "wand"),
+    // DIE HANG-ORTE (siedlung.K3 Staffel 2): in ihren Vorlauf-Ringen liegen Zellen, deren Ort zwischen der alten Wand 0,35 und der
+    // Böschung des Erdbaus liegt — die Linse zählt sie über alle Orte (bis fluss-netz EIN Ort −400/−3175: −3,−14 0,38 · −1,−14
+    // 0,49 · −3,−12 0,51 · −1,−12 0,57). Seit fluss-netz (26.11., der Abfluss über das Relief) liegen die Ufer und mit ihnen die
+    // Hänge an den Ankern anders: dort steht 1 Hangdorf (−1,−14 0,58), kein Spieler-Ort binnen 3,6 km trägt vier (Suche je 128 m,
+    // 24 Vorrat-Läufe, höchstens 3). 624/−4455: 3,−19 0,56 · 3,−17 0,48 · 1,−17 0,40 · −2960/−743: −12,−5 0,48 · 1648/−2535:
+    // 6,−9 0,41 (Gassen p95 8,0–9,8 %)
+    const HANG_ORTE = [
+        [624, -4455],
+        [-2960, -743],
+        [1648, -2535],
     ];
+    const hangLauf = async (alt) => {
+        const L = [];
+        for (const o of HANG_ORTE) L.push(await page.evaluate(vorratAmDorf, o, alt));
+        return { trasse: L.flatMap((h) => h.trasse), leser: [...new Set(L.flatMap((h) => h.leser))] };
+    };
+    const H = await hangLauf(null);
+    const HS = await hangLauf("wand");
     const HD = H.trasse.filter((t) => t.hang > 0.35);
     // die Würfe des Felds am Auto-Dorf (`feldWurfImOrt`) und ihr Selbst-Schein
     const wirf = (d) => (OA.outO.anker ? page.evaluate(feldWurfImOrt, OA.outO.anker, d) : { err: "kein Ort" });

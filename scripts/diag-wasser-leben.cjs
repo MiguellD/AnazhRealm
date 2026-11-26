@@ -165,20 +165,22 @@ function eisMutante(r, f) {
     });
 }
 
-// N2 DAS EIS SETZT NACH DER FELDREGEL EIN (Karte 2 planet.wasser.eis#2): am See 1816/−6168 je Tag das Tagesmittel der Luft über dem Spiegel
+// N2 DAS EIS SETZT NACH DER FELDREGEL EIN (Karte 2 planet.wasser.eis#2): am See 1926/−6168 je Tag das Tagesmittel der Luft über dem Spiegel
 // (vier Stunden, `temperaturAus`), dann stündlich vom ersten Eis (die Dicke des Gesetzes `_eisDickeAt` > 1 mm) bis zum tragenden
 // (`_eisAt`, die Dicke ≥ `EIS.traegt`) die Frostgrad-Summe — Soll EIS_FELDREGEL_KD ± 20 % (liest den Kern NICHT); das Eis trägt im
 // Frost und bricht im Tauwetter. `tauTag`: der erste Tag nach dem tragenden, an dem es nicht mehr trägt. → { fehler, zahl }
 // Das Soll: Gold 1971 (80 kg, P = A·h², A = 3,5 kg/cm²) trägt auf 4,8 cm; die Feldregel — ist die erste Decke da, wächst das Eis
 // 1 Zoll je 15 °F·d = 2,54 cm je 8,33 K·d — gibt 4,8 / 2,54 · 8,33 = 15,7 K·d.
+// Der Ort seit fluss-netz (26.11.): an 1816/−6168 lag der See 3,43 m tief (Spiegel 0,93); nach dem Abfluss über das Relief liegt dort
+// Land, der nächste See 110 m östlich in derselben Kachel, 3,37 m tief (Spiegel 0,87).
 const EIS_FELDREGEL_KD = (4.8 / 2.54) * ((15 * 5) / 9);
 function eisEinsatz(wirt, G) {
     const r = wirt;
     const st = r.state;
-    const S = [1816, -6168];
+    const S = [1926, -6168];
     const spiegel = r._koerperWasser(S[0], S[1], -Infinity);
     const tiefe = spiegel - r._voxelSurfaceY(S[0], S[1]);
-    if (!(tiefe > 0.5)) return { fehler: "kein See an 1816/−6168 (Säule " + tiefe + " m)" };
+    if (!(tiefe > 0.5)) return { fehler: "kein See an 1926/−6168 (Säule " + tiefe + " m)" };
     const [alt, wf, n] = [st.seasonPhase, r._weatherFieldFor(), 365];
     const T = [];
     const E = [];
@@ -1074,7 +1076,7 @@ function selbsttest() {
     // N2 an der lebenden Quelle (ohne Browser, der Wirt in node): das Eis setzt nach Stefan mit Übergang ein — und jede Mutante
     // fällt beim Namen: die Summe des alten Übergangs, die des einfachen Stefan
     {
-        const { r, G } = wasserWirt([1816, -6168]);
+        const { r, G } = wasserWirt([1926, -6168]);
         const n2 = eisEinsatz(r, G);
         // die Mutanten: die Summe des alten Übergangs H = 20 (main bis spiegel-eis 2) und die des einfachen Stefan ohne Übergang
         const m2 = eisEinsatz(eisMutante(r, 0.695), G);

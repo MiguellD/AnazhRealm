@@ -542,6 +542,7 @@
             base,
             wl,
             S: NETZ_KANTE.map((s) => s / P.netzDichte),
+            iS: NETZ_KANTE.map((s) => P.netzDichte / s), // die Kehrwerte (die Zelle einer Spalte: Multiplikation)
             ebenen: P.rinnen > 0 ? 3 : 2,
             knoten: [new Map(), new Map(), new Map()],
             profilBau: [0, 0, 0], // gebaute Talprofile je Ebene (`segment`: eins je Knoten)
@@ -621,6 +622,7 @@
             senke: 0, // Ebene 0: 1 benannter See, 2 Meer
             A: 0,
             bed: NaN,
+            talSohle: NaN, // Ebene k ≥ 1: die Auen-Kante des Tals der Ebene darüber am Knoten (`knotenHp`), NaN = keins
             seg: undefined, // das Talprofil des Knotens (`segment`), null = keins
         };
         M.set(key, kn);
@@ -636,9 +638,10 @@
         const gf = knotenGf(N, kn);
         if (kn.k === 0) kn.hp = gf.K;
         else {
-            const mess = { steil: 0, nah: 1, hang: 0, aue: false };
+            const mess = { steil: 0, nah: 1, hang: 0, aue: false, sohle: NaN };
             kn.hp = flaeche(N, kn.k - 1, kn.x, kn.z, gf, mess);
             kn.inAue = mess.aue;
+            kn.talSohle = mess.sohle;
         }
         return kn.hp;
     }
@@ -650,7 +653,7 @@
         // unsichtbar, mit Mäander zwei verflochtene Bahnen).
         if (kn.k > 0 && kn.inAue) {
             kn.fluss = null;
-            kn.aus = muendung(N, kn.k - 1, kn.x, kn.z);
+            kn.aus = muendung(N, kn.k - 1, kn.x, kn.z, kn);
             return null;
         }
         let best = null;
@@ -665,12 +668,146 @@
                     best = m;
                 }
             }
+        // DER ABFLUSS ÜBER DAS RELIEF (fluss-netz): der Unterlieger ist nur erreichbar, wenn die Fläche, über die das Wasser
+        // fließt (die der Ebene darüber, `flaeche` bis k − 1 — dieselbe, auf der der Knoten sucht), längs der Verbindung nie
+        // um `fang` m unter die des Unterliegers fällt und keine Aue quert; sonst fängt das tiefere Tal dazwischen den Lauf: er
+        // mündet dort (`muendung` am tiefsten Punkt der Verbindung, an der ersten Aue — die Aue nimmt ihr Wasser, wie am
+        // Knoten; gefragt an den Vierteln — `proben`). Bis fluss-netz querte die Sehne eines Bachs der Ebene 1 das Tal der
+        // Ebene 0 — 15 m unter seiner Sohle, das Wasser stieg am Gegenhang 22,8 m wieder an (101 Saaten: 4 721 steigende Paare),
+        // und eine Rinne der Ebene 2 querte die Aue eines Bachs unter seiner Sohle (er schwebte über ihrer Flanke). `fang` ist
+        // der Mindest-Einschnitt des kleinsten Tals im Netz (die Rinne der Ebene 2: 1 m, `knotenSohle`): flacher ist die Delle
+        // kein Tal, das einen Lauf fängt — mit 0,5 m fing das Kleinrelief der Küstenebene die Bäche quer zum Hang (Flint θ der
+        // Linse alpha kueste 0,31 → 0,28).
+        if (best && kn.k > 0) {
+            const ex = best.x - kn.x;
+            const ez = best.z - kn.z;
+            let tief = bh - RELIEF_FANG.fang;
+            let fx = NaN;
+            let fz = NaN;
+            const mess = { steil: 0, nah: 1, hang: 0, aue: false, sohle: NaN };
+            for (let q = 1; q < RELIEF_FANG.proben; q++) {
+                const x = kn.x + (ex * q) / RELIEF_FANG.proben;
+                const z = kn.z + (ez * q) / RELIEF_FANG.proben;
+                const v = flaeche(N, kn.k - 1, x, z, grossform(N, x, z), mess);
+                if (mess.aue) {
+                    if (fx !== fx) {
+                        fx = x;
+                        fz = z;
+                    }
+                    break;
+                }
+                if (v < tief) {
+                    tief = v;
+                    fx = x;
+                    fz = z;
+                }
+            }
+            if (fx === fx) {
+                kn.fluss = null;
+                kn.aus = muendung(N, kn.k - 1, fx, fz, kn);
+                return null;
+            }
+        }
         kn.fluss = best;
         if (!best) {
             if (kn.k === 0) kn.senke = h < N.wl ? 2 : 1;
-            else kn.aus = muendung(N, kn.k - 1, kn.x, kn.z);
+            else kn.aus = muendung(N, kn.k - 1, kn.x, kn.z, kn);
         }
         return best;
+    }
+    const RELIEF_FANG = Object.freeze({ fang: 1, proben: 4 });
+    // DER ZUSAMMENFLUSS IST BINÄR (fluss-netz) — in einem Punkt treffen sich höchstens zwei Läufe. Das D8 des Knoten-Rasters
+    // schickt bis zu acht Nachbarn in denselben Knoten (bis fluss-netz ein Stern: Knoten mit ≥ 3 Zuflüssen in EINEM Punkt).
+    // Der Unterlieger X behält zwei: den Hauptlauf (Ebenen 0 und 1 das größte Einzugsgebiet, Ebene 2 die Flucht seines
+    // Abflusses) und den Zufluss, dessen Lot X am nächsten fällt; jeder weitere mündet STROMAB auf der Bahn von X (die Sohle
+    // fällt dort immer), am Ort seines Lots, mindestens `fernM` m hinter X und je `abstandM` m hinter der Mündung davor,
+    // höchstens bei `nah` der Sehne. Ist das Glied von X die Mündung ins Netz darunter und dafür zu kurz, mündet der Zufluss
+    // selbst dort (`muendung`, seine eigene Sehne). Stromauf mündete keiner: die Sehne des Zuflusses quert dort das Tal des
+    // Hauptlaufs unter der Sohle der Mündung (bis zur Regel 2,34 m Anstieg im Kanal). Topologie, Einzugsgebiet und Sohlen
+    // bleiben die des Netzes, nur der Ort der Mündung wandert: das Ziel des Knotens (`knotenZiel`) — der Unterlieger selbst,
+    // die Mündung auf einer Bahn {auf, tc, bed} (ihr Ort, sobald das Glied steht: `zielOrt`) oder die Mündung ins Netz
+    // darunter (`aus`). Ein Knoten der Ebene 0 ohne Unterlieger (Meer, See) nimmt jeden: die Läufe münden je an ihrem Ufer.
+    // Leser: das Glied (`segmentNeu`), die Läufe (`flussLaeufe`: ein Zufluss endet auf der Bahn) und die Linse
+    // (`netzZaehler`: `sterne`). `weg`: das Gewicht des Wegs zur Mündung ins Netz darunter (`muendung`), in m Sohle je m.
+    const ZUSAMMENFLUSS = Object.freeze({ fernM: 24, abstandM: 24, nah: 0.88, weg: 0.3 });
+    function knotenZiel(N, kn) {
+        if (kn.ziel !== undefined) return kn.ziel;
+        const f = knotenFluss(N, kn);
+        if (!f) return (kn.ziel = kn.aus);
+        zusammenfluss(N, f);
+        return kn.ziel;
+    }
+    function zielOrt(N, z) {
+        if (z.x === undefined) {
+            const o = bahnOrt0(segment(N, z.auf), z.tc);
+            z.x = o.x;
+            z.z = o.z;
+        }
+        return z;
+    }
+    function zusammenfluss(N, X) {
+        if (X.zu) return;
+        X.zu = true;
+        const zu = [];
+        for (let dj = -1; dj <= 1; dj++)
+            for (let di = -1; di <= 1; di++) {
+                if (!di && !dj) continue;
+                const m = knoten(N, X.k, X.i + di, X.j + dj);
+                if (knotenFluss(N, m) === X) {
+                    m.ziel = X;
+                    zu.push(m);
+                }
+            }
+        if (zu.length <= 2 || (X.k === 0 && !knotenFluss(N, X))) return;
+        const Z = zielOrt(N, knotenZiel(N, X));
+        const dx = Z.x - X.x;
+        const dz = Z.z - X.z;
+        const dl2 = dx * dx + dz * dz || 1;
+        let m0 = null;
+        let best = -Infinity;
+        for (const m of zu) {
+            const ax = m.x - X.x;
+            const az = m.z - X.z;
+            const flucht = -(ax * dx + az * dz) / ((Math.hypot(ax, az) || 1) * Math.sqrt(dl2));
+            const w = X.k <= 1 ? knotenA(N, m) + 0.5 * flucht : flucht;
+            if (w > best) {
+                best = w;
+                m0 = m;
+            }
+        }
+        const ux = m0.x - X.x;
+        const uz = m0.z - X.z;
+        const ul2 = ux * ux + uz * uz || 1;
+        const lot = [];
+        for (const m of zu) {
+            if (m === m0) continue;
+            const ax = m.x - X.x;
+            const az = m.z - X.z;
+            const pu = (ax * ux + az * uz) / ul2;
+            const pd = (ax * dx + az * dz) / dl2;
+            lot.push({ m, pu, pd, f: Math.max(pu, pd) });
+        }
+        const folge = (a, b) => a.f - b.f || a.m.i - b.m.i || a.m.j - b.m.j;
+        lot.sort(folge);
+        lot.shift(); // das nächste Lot: der zweite Lauf in X
+        lot.sort((a, b) => a.pd - b.pd || a.m.i - b.m.i || a.m.j - b.m.j);
+        const Xb = knotenSohle(N, X);
+        const len = Math.sqrt(dl2);
+        const { fernM, abstandM, nah } = ZUSAMMENFLUSS;
+        let vor = -Infinity;
+        for (const L of lot) {
+            const f = Math.max(L.pd, fernM / len, vor + abstandM / len);
+            if (f > nah && !X.fluss) {
+                // das Glied von X ist die Mündung ins Netz darunter und kurz: der Zufluss mündet selbst dort
+                const o = muendung(N, X.k - 1, L.m.x, L.m.z, L.m);
+                if (o.bed < knotenSohle(N, L.m) - 0.01) {
+                    L.m.ziel = o;
+                    continue;
+                }
+            }
+            vor = Math.min(nah, f);
+            L.m.ziel = { auf: X, tc: vor, bed: Xb + (Z.bed - Xb) * vor, von: X, x: undefined, z: undefined };
+        }
     }
     // Die Oberlieger-Zahl (Einzugsgebiet in Knoten-Zellen): 1 + die Summe der Nachbarn, die hierher fließen.
     function knotenA(N, kn) {
@@ -736,6 +873,15 @@
             }
             // Im Tafelland schneiden die Ebenen 1 und 2 nicht ein (die Treppe der Ebene 0 bleibt Kliff, eine Rinne schliffe es).
             if (q.k > 0 && gf.stil > 0) b += (hp - b) * gf.stil;
+            // KEIN SEITENTAL MÜNDET ZU TIEF (Playfair 1802, „Illustrations of the Huttonian Theory", § 99: die Täler „so nicely
+            // adjusted to each other, that none of them join the principal valley either on too high or too low a level") —
+            // in der Aue der Ebene darüber liegt die Sohle eines Knotens nie unter dieser Aue (`talSohle`: Sohle + Quergefälle an
+            // der Auen-Kante, am Ort des Knotens auf der Achse; nie über seiner Fläche). Bis fluss-netz grub der Mindest-
+            // Einschnitt einen Knoten in der Aue unter das Bett des Hauptlaufs: sein Tal lief tiefer als der Fluss daneben, der
+            // Fluss schwebte über dem Boden (101 Saaten: 10 der 24 steigenden Paare der Station in den 7 roten Saaten). NUR in
+            // der Aue, nie am Hang: am Hang gehoben, verlor jeder Zufluss sein Gefälle zum Hauptlauf (Flint θ der Linse alpha
+            // 0,35 → 0,29, anazh mittelgebirge 0,60 → 0,79 — außerhalb des Korridors 0,3–0,7).
+            if (q.k > 0 && q.inAue && b < q.talSohle) b = Math.min(q.talSohle, hp);
             if (b < lo) b = lo;
             q.bed = b;
         }
@@ -855,10 +1001,12 @@
     // Glieds der Ebenen 0 und 1 ist die sinus-erzeugte Kurve (Langbein & Leopold 1966) — die Richtung schwingt mit der
     // Bogenlänge, θ(s) = ω·cos(2π·s/M), die Kurve kleinster Krümmungs-Varianz. Die Wellenlänge auf der Sehne λ ≈ 11 Breiten
     // (Leopold & Wolman 1960, ±15 % je Glied), ω = 1,2 rad: Sinuosität M/λ = 1/J0(ω) ≈ 1,49, kleinster Krümmungs-Radius
-    // Rc = M/(2π·ω) ≈ 2,2 Breiten (Soll 2–3). Ein Glied trägt n = round(Sehne/λ) ganze Wellen: die Bahn verlässt und erreicht
-    // ihre Knoten auf der Sehne und unter demselben Winkel — die Knicke sind die des Netzes, keiner mehr. Sie bleibt in der
-    // Aue (halbe Amplitude ≤ Aue F − Breite, sonst ein kleineres ω) und streckt sich mit dem Gefälle (voll bis 0,4 %, gerade
-    // ab 1,5 %: der Gebirgsbach mäandriert nicht). Leser: die Fläche (die Aue fällt quer zur BAHN), die Mündung der Zuflüsse
+    // Rc = M/(2π·ω) ≈ 2,2 Breiten (Soll 2–3). Ein Glied trägt n = round(Sehne/λ) ganze Wellen UNGLEICHER Länge (fluss-netz: je
+    // Welle λ·(1 ± `wellenStreu`), die Summe die Sehne; je Welle zufällig eine ω-Stufe flacher) — kein Sinus fester Wellenlänge
+    // (bis fluss-netz streuten die Bögen eines Glieds nicht: Variationskoeffizient der Halbwellen 0,21). Die Bahn verlässt und
+    // erreicht ihre Knoten auf der ACHSE des Laufs (`LAUF_ACHSE`) und unter demselben Winkel. Sie bleibt in der
+    // Aue (halbe Amplitude ≤ Aue F − Breite, sonst ein kleineres ω) und streckt sich mit dem Gefälle (voll bis 0,4 %, ab 1,5 %
+    // gestreckt: `gestreckt` des ω, nie lineal-gerade). Leser: die Fläche (die Aue fällt quer zur BAHN), die Mündung der Zuflüsse
     // (auf der Bahn) und das Wasser (`flussLaeufe` trägt je Glied die Bahn, die Hydrosphäre legt Kanal und Spiegel darauf).
     const MAEANDER = Object.freeze({
         lambdaBreiten: 11,
@@ -866,10 +1014,11 @@
         omega: 1.2,
         gefaelleVoll: 0.004,
         gefaelleNull: 0.015,
-        gestreckt: 0.25,
+        gestreckt: 0.42,
         stufen: 12,
         tafel: 128,
         knick: 0.6,
+        wellenStreu: 0.35,
     });
     // Die Kurve je ω-Stufe, EINMAL beim Laden: über eine Welle (φ = 2π·s/M) X(φ) und Y(φ) in Wellenlängen der Sehne
     // (X(2π) = 1), dazu Y über X gleichmäßig (die Fläche fragt am Ort auf der Sehne; X steigt streng, ω < π/2), die größte
@@ -917,71 +1066,253 @@
         }
         return stufen;
     })();
-    // Der Versatz der Bahn quer zur Sehne an t ∈ [0, 1] (m, links positiv; 0 an beiden Knoten).
+    // die flachste Stufe des Mäanders (der gestreckte Lauf, auch je Welle) und die Krümmung ihres Scheitels je Wellenlänge
+    // (2π·ω / (M/λ), ω 0,5 rad: 2,95 — der Leser ist die Achse, `achseBau`)
+    const MAEANDER_BODEN = Math.floor(MAEANDER.stufen * MAEANDER.gestreckt + 1e-9);
+    const MAEANDER_SCHEITEL = (2 * Math.PI * MAEANDER_KURVE[MAEANDER_BODEN].omega) / MAEANDER_KURVE[MAEANDER_BODEN].bogen;
+    // DIE ACHSE DES LAUFS (fluss-netz) — kein Glied ist eine Gerade: der Lauf zwischen zwei Knoten folgt einer gekrümmten Achse,
+    // der Versatz Y(t) quer zur Sehne (0 an beiden Knoten, dort tangential zur Sehne) aus der Mittelpunkt-Verschiebung je Halbierung
+    // (± `verhaeltnis` · Teil-Sehne, der Betrag je Knick 1 ± `streu`, das Vorzeichen aus dem Strom der Saat), Catmull-Rom zwischen
+    // den Knicken. Das Verhältnis 0,183 gibt die Dimension log 2 / (log 2 − ½·ln(1 + 4·0,183²)) = 1,10: Flussläufe tragen
+    // D ≈ 1,1 (Tarboton 1996, J. Hydrol. 187: „values of α from 0.55 to 0.7 suggest Ds between 1.1 and 1.4 centered around 1.15";
+    // Hack 1957: L = 1,4·A^0,6). Die Halbierung endet, bevor die Teil-Sehne unter `fein` Breiten (zwei Wellen des Mäanders)
+    // fiele: darunter krümmt der Mäander — getrennte Skalen, kein Zwilling. Gerade länger als 10 Breiten sind in der Natur
+    // selten (Leopold & Wolman 1957, USGS PP 282-B: „reaches which are straight for distances exceeding ten times the channel
+    // width are rare"); bis fluss-netz lief jedes Glied auf seiner Sehne (die längste Gerade des Gürtels je Lauf 2,3 km, 247
+    // Breiten). Die Deckel (`deckel`, `kruemmung`, `neigung`) stehen an `achseBau`. Die Achse tragen die Läufe des Wassers
+    // (Ebenen 0 und 1, wie der Mäander); die Rinne der Ebene 2 ist Hang und bleibt auf ihrer Sehne.
+    // DAS RELIEF TRÄGT DIE ACHSE: ein Knick biegt nur dorthin, wo die Fläche, über die der Lauf fließt (die Fläche der Ebene
+    // darüber, `flaeche` bis k − 1 — dieselbe, auf der der Knoten seinen Unterlieger sucht), seine Sohle um `traegt` m
+    // überragt oder nicht tiefer liegt als unter der Mitte seiner Nachbarn; sonst zur anderen Seite, halb, dann die Mitte —
+    // Wasser, das tiefer kann, liefe dorthin ab (bis zur Regel bog die Achse eines Bachs der Ebene 1 ins Tal der Ebene 0:
+    // Sohle 5 m über dem Boden, 21,9 m Anstieg). Leser: die Fläche (das Tal folgt der Achse), die Mündung, die Bahn
+    // (`bahnPunkte`: das Wasser) und der Schicht-Ort.
+    const LAUF_ACHSE = Object.freeze({ verhaeltnis: 0.183, streu: 0.3, tiefeMax: 4, deckel: 0.15, fein: 22, traegt: 0.3, kruemmung: 0.5, neigung: 0.27 });
+    function achseFlaeche(N, kn, x, z) {
+        return flaeche(N, kn.k - 1, x, z, grossform(N, x, z));
+    }
+    function achseBau(N, kn, ex, ez, ba, bb, skala) {
+        const len = Math.hypot(ex, ez) || 1;
+        const nx = -ez / len;
+        const nz = ex / len;
+        let D = 1;
+        while (D < LAUF_ACHSE.tiefeMax && len / (1 << (D + 1)) >= skala) D++;
+        const M = 1 << D;
+        const y = new Float64Array(M + 1);
+        let q = 0;
+        for (let st = M; st >= 2; st >>= 1) {
+            const ell = (len * st) / M;
+            for (let a = 0; a < M; a += st) {
+                const u = zufall(N.sh, kn.i, kn.j, 200 + 16 * kn.k + q++);
+                const v = u < 0.5 ? 2 * u : 2 * u - 1;
+                const d = (u < 0.5 ? -1 : 1) * (1 - LAUF_ACHSE.streu + 2 * LAUF_ACHSE.streu * v) * LAUF_ACHSE.verhaeltnis * ell;
+                const m = a + (st >> 1);
+                const mitte = 0.5 * (y[a] + y[a + st]);
+                const t = m / M;
+                const bx = kn.x + ex * t;
+                const bz = kn.z + ez * t;
+                const bed = ba + (bb - ba) * t;
+                let wahl = mitte;
+                let boden = NaN; // die Fläche unter der Mitte — erst gefragt, wenn ein Knick die Sohle nicht um `traegt` überragt
+                for (const c of [mitte + d, mitte - d, mitte + 0.5 * d, mitte - 0.5 * d]) {
+                    const v = achseFlaeche(N, kn, bx + nx * c, bz + nz * c);
+                    if (v < bed + LAUF_ACHSE.traegt) {
+                        if (boden !== boden) boden = achseFlaeche(N, kn, bx + nx * mitte, bz + nz * mitte);
+                        if (v < boden) continue;
+                    }
+                    wahl = c;
+                    break;
+                }
+                y[m] = wahl;
+            }
+        }
+        // Die Deckel, alle linear in Y (EIN Faktor): `deckel` |Y| ≤ 0,15 · min(Sehne, Kante) an den Knicken — die Rinne bleibt
+        // in der Reichweite ihrer Zelle (`zelleNeu`); die Krümmung nie stärker als `kruemmung` mal der Scheitel des flachsten
+        // Mäanders auf der Wellenlänge `skala` — wo ihre Krümmung die des Bogens trifft, heben sich beide auf, und eine Gerade
+        // liegt im Gerinne (bis zur Regel 87 Läufe mit Geraden über 10 Breiten an 5 Saaten, die längste 21,8 Breiten); die
+        // Neigung dY/ds nie über `neigung` (15°): der Mäander schwingt quer zur SEHNE (dort fragt die Fläche) — auf einer
+        // steilen Achse schert er, ein Schenkel jedes Bogens streckt sich zur Geraden (bis zur Regel der Haupt-Fluss von
+        // same-saat-1: Achse 33°, 111 m gerade, 12,9 Breiten). Krümmung, Neigung und |Y| der Kurve exakt je Knick-Stück
+        // (`achseMass`: Catmull-Rom ist kubisch, Y'' linear).
+        let ymax = 0;
+        for (let i = 0; i <= M; i++) ymax = Math.max(ymax, Math.abs(y[i]));
+        if (!(ymax > 0)) return { c: new Float64Array(4), ymax: 0, steil: 1 };
+        const c = achseKoeff(y);
+        const ms = achseMass(c);
+        const km = ms.kr * (M / len) ** 2;
+        const gm = (ms.ne * M) / len;
+        const f = Math.min(
+            1,
+            (LAUF_ACHSE.deckel * Math.min(len, N.S[kn.k])) / ymax,
+            (LAUF_ACHSE.kruemmung * MAEANDER_SCHEITEL) / skala / km,
+            LAUF_ACHSE.neigung / gm
+        );
+        if (f < 1) for (let i = 0; i < c.length; i++) c[i] *= f;
+        const g = gm * Math.min(1, f);
+        const yk = ms.am * Math.min(1, f);
+        return { c, ymax: yk, steil: Math.sqrt(1 + g * g) };
+    }
+    // Die Achse als Kubik je Knick-Stück (Catmull-Rom, an den Knoten tangential: Geister-Knick y[−1] = y[1], y[M+1] = y[M−1]):
+    // je Stück i die Koeffizienten c0..c3 in u ∈ [0, 1] — EINMAL je Lauf gerechnet, jeder Leser wertet das Polynom aus
+    // (`achseAus`, `achseNeigungAus`, `achseMass`); die Fläche fragt die Achse je Spalte an jedem nahen Lauf.
+    function achseKoeff(y) {
+        const M = y.length - 1;
+        const c = new Float64Array(4 * M);
+        for (let i = 0; i < M; i++) {
+            const p0 = i > 0 ? y[i - 1] : y[1];
+            const p1 = y[i];
+            const p2 = y[i + 1];
+            const p3 = i + 2 <= M ? y[i + 2] : y[M - 1];
+            c[4 * i] = p1;
+            c[4 * i + 1] = 0.5 * (p2 - p0);
+            c[4 * i + 2] = 0.5 * (2 * p0 - 5 * p1 + 4 * p2 - p3);
+            c[4 * i + 3] = 0.5 * (3 * (p1 - p2) + p3 - p0);
+        }
+        return c;
+    }
+    // Die größte |Y''|, |Y'| (je Knick-Stück u ∈ [0, 1]) und |Y| der Achse: je Stück Y = c0 + c1·u + c2·u² + c3·u³ — Y'' an
+    // den Enden, Y' an den Enden und am Scheitel, Y an den Enden und an den Nullstellen von Y'.
+    function achseMass(c) {
+        const M = c.length >> 2;
+        let kr = 0;
+        let ne = 0;
+        let am = 0;
+        for (let i = 0; i < M; i++) {
+            const p1 = c[4 * i];
+            const c1 = c[4 * i + 1];
+            const c2 = c[4 * i + 2];
+            const c3 = c[4 * i + 3];
+            const p2 = p1 + c1 + c2 + c3;
+            kr = Math.max(kr, Math.abs(2 * c2), Math.abs(2 * c2 + 6 * c3));
+            ne = Math.max(ne, Math.abs(c1), Math.abs(c1 + 2 * c2 + 3 * c3));
+            am = Math.max(am, Math.abs(p1), Math.abs(p2));
+            if (c3 !== 0) {
+                const us = -c2 / (3 * c3);
+                if (us > 0 && us < 1) ne = Math.max(ne, Math.abs(c1 + 2 * c2 * us + 3 * c3 * us * us));
+                const D = c2 * c2 - 3 * c3 * c1;
+                if (D >= 0) {
+                    const r = Math.sqrt(D);
+                    for (const u of [(-c2 + r) / (3 * c3), (-c2 - r) / (3 * c3)])
+                        if (u > 0 && u < 1) am = Math.max(am, Math.abs(p1 + u * (c1 + u * (c2 + u * c3))));
+                }
+            } else if (c2 !== 0) {
+                const u = -c1 / (2 * c2);
+                if (u > 0 && u < 1) am = Math.max(am, Math.abs(p1 + u * (c1 + u * c2)));
+            }
+        }
+        return { kr, ne, am };
+    }
+    // Y(t) und dY/dt der Achse (die Kubik ihres Knick-Stücks, `achseKoeff`; ohne Achse 0).
+    function achseAus(c, t) {
+        const M = c.length >> 2;
+        const f = t * M;
+        let i = f | 0;
+        if (i >= M) i = M - 1;
+        const u = f - i;
+        const o = i << 2;
+        return c[o] + u * (c[o + 1] + u * (c[o + 2] + u * c[o + 3]));
+    }
+    function achseNeigungAus(c, t) {
+        const M = c.length >> 2;
+        const f = t * M;
+        let i = f | 0;
+        if (i >= M) i = M - 1;
+        const u = f - i;
+        const o = i << 2;
+        return M * (c[o + 1] + u * (2 * c[o + 2] + 3 * u * c[o + 3]));
+    }
+    // Die Welle des Mäanders an t (die Grenzen `mw` auf der Sehne, Binärsuche).
+    function welleAn(s, t) {
+        const w = s.mw;
+        let lo = 0;
+        let hi = s.mn - 1;
+        while (lo < hi) {
+            const m = (lo + hi + 1) >> 1;
+            if (w[m] <= t) lo = m;
+            else hi = m - 1;
+        }
+        return lo;
+    }
+    // Der Versatz der Bahn quer zur ACHSE an t ∈ [0, 1] (m, links positiv; 0 an beiden Knoten): die Welle an t, ihre Stufe,
+    // ihre Länge λ_k auf der Sehne.
     function bahnVersatz(s, t) {
-        const yX = MAEANDER_KURVE[s.mo].yX;
-        let X = t * s.mn;
-        X -= Math.floor(X);
+        const k = welleAn(s, t);
+        const a = s.mw[k];
+        const b = s.mw[k + 1];
+        const yX = MAEANDER_KURVE[s.mos[k]].yX;
+        let X = (t - a) / (b - a);
+        X = X < 0 ? 0 : X > 1 ? 1 : X;
         const f = X * MAEANDER.tafel;
         const j = f | 0;
         const y = j >= MAEANDER.tafel ? yX[MAEANDER.tafel] : yX[j] + (yX[j + 1] - yX[j]) * (f - j);
-        return s.mv * s.ml * y;
+        return s.mv * (b - a) * s.len * y;
+    }
+    // Der Ort auf der Bahn eines Segments an t (Achse + Mäander), mit der Sohle dort (`sohleAn`).
+    function bahnOrt0(s, t) {
+        const y = achseAus(s.wy, t) + (s.mo ? bahnVersatz(s, t) : 0);
+        return { x: s.ax + s.ex * t - (s.ez / s.len) * y, z: s.az + s.ez * t + (s.ex / s.len) * y };
+    }
+    function bahnOrt(s, t) {
+        const o = bahnOrt0(s, t);
+        o.bed = sohleAn(s, t);
+        o.von = s.von;
+        return o;
     }
     // Die Bahn eines Segments als Punkte (Abstand ≤ `schritt` m auf dem Bogen, zwischen zwei Punkten springt die Richtung um
     // höchstens `knick` — die Knicke der Welle, `MAEANDER_KURVE`): je Punkt der Ort auf der Sehne t, die Lage (x, z), die
-    // Bogenlänge s ab dem Knoten und die Richtung (fx, fz). Ohne Mäander die Sehne.
+    // Bogenlänge s ab dem Knoten, die Richtung (fx, fz) und `q` der Versatz der Achse dort (der Mäander-Linse: die Welle
+    // quer zur Achse). Ohne Mäander die Achse.
     function bahnPunkte(s, schritt) {
-        const len = Math.sqrt(s.len2);
+        const len = s.len;
         const ux = s.ex / len;
         const uz = s.ez / len;
         const P = [];
-        if (!s.mo) {
-            const m = Math.max(1, Math.ceil(len / schritt));
-            for (let q = 0; q <= m; q++) {
-                const t = q / m;
-                P.push({ t, x: s.ax + s.ex * t, z: s.az + s.ez * t, s: len * t, fx: ux, fz: uz });
-            }
-            return P;
-        }
-        const K = MAEANDER_KURVE[s.mo];
-        const M = K.bogen * s.ml;
-        const n = MAEANDER.tafel;
-        const kn = K.knicke;
-        // der Punkt am Anteil ph ∈ [0, 1] der Welle w
-        const punkt = (w, ph) => {
-            const f = ph * n;
-            const j = Math.min(n - 1, f | 0);
-            const r = f - j;
-            const X = K.phiX[j] + (K.phiX[j + 1] - K.phiX[j]) * r;
-            const Y = K.phiY[j] + (K.phiY[j + 1] - K.phiY[j]) * r;
-            const t = (w + X) / s.mn;
-            const y = s.mv * s.ml * Y;
-            const th = s.mv * K.omega * Math.cos(2 * Math.PI * ph);
+        const dazu = (t, ym, thm) => {
+            const q = achseAus(s.wy, t);
+            const y = q + ym;
+            const th = thm + Math.atan(achseNeigungAus(s.wy, t) / len);
             const c = Math.cos(th);
             const sn = Math.sin(th);
-            P.push({
-                t,
-                x: s.ax + s.ex * t - uz * y,
-                z: s.az + s.ez * t + ux * y,
-                s: (w + ph) * M,
-                fx: ux * c - uz * sn,
-                fz: uz * c + ux * sn,
-            });
+            P.push({ t, x: s.ax + s.ex * t - uz * y, z: s.az + s.ez * t + ux * y, s: 0, fx: ux * c - uz * sn, fz: uz * c + ux * sn, q, b: sohleAn(s, t) });
         };
-        for (let w = 0; w < s.mn; w++)
-            for (let k = 0; k + 1 < kn.length; k++) {
-                const a = kn[k];
-                const b = kn[k + 1];
-                const teile = Math.max(1, Math.ceil((M * (b - a)) / schritt));
-                for (let u = 0; u < teile; u++) punkt(w, a + ((b - a) * u) / teile);
+        if (!s.mo) {
+            const m = Math.max(1, Math.ceil((len * s.wsteil) / schritt));
+            for (let k = 0; k <= m; k++) dazu(k / m, 0, 0);
+        } else {
+            const n = MAEANDER.tafel;
+            for (let w = 0; w < s.mn; w++) {
+                const K = MAEANDER_KURVE[s.mos[w]];
+                const a0 = s.mw[w];
+                const lam = (s.mw[w + 1] - a0) * len;
+                const M = K.bogen * lam * s.wsteil;
+                const kn = K.knicke;
+                // der Punkt am Anteil ph ∈ [0, 1] der Welle w
+                const punkt = (ph) => {
+                    const f = ph * n;
+                    const j = Math.min(n - 1, f | 0);
+                    const r = f - j;
+                    const X = K.phiX[j] + (K.phiX[j + 1] - K.phiX[j]) * r;
+                    const Y = K.phiY[j] + (K.phiY[j + 1] - K.phiY[j]) * r;
+                    dazu(a0 + X * (s.mw[w + 1] - a0), s.mv * lam * Y, s.mv * K.omega * Math.cos(2 * Math.PI * ph));
+                };
+                for (let k = 0; k + 1 < kn.length; k++) {
+                    const a = kn[k];
+                    const b = kn[k + 1];
+                    const teile = Math.max(1, Math.ceil((M * (b - a)) / schritt));
+                    for (let u = 0; u < teile; u++) punkt(a + ((b - a) * u) / teile);
+                }
             }
-        punkt(s.mn - 1, 1);
+            const e = MAEANDER_KURVE[s.mos[s.mn - 1]];
+            dazu(1, 0, s.mv * e.omega);
+        }
+        for (let k = 1; k < P.length; k++) P[k].s = P[k - 1].s + Math.hypot(P[k].x - P[k - 1].x, P[k].z - P[k - 1].z);
         return P;
     }
 
     // Das Talprofil eines Segments (Ebene, Auen-Breite F, Flanken-Breite W, Form b, Stil) — die Segmente einer Knoten-Zelle
     // sind die, deren Reichweite (F + W, im Tafelland die Schicht-Treppe) die Zelle berührt. Die Ebenen 0 und 1 tragen ihren
-    // Mäander (Stufe mo, Wellen mn, Wellenlänge ml, Seite mv; mo 0: die Sehne).
+    // Mäander (größte Stufe mo, Wellen mn mit Grenzen mw und Stufen mos, Seite mv; mo 0: die Achse), jede die Achse ihres Laufs
+    // (`wy`, `LAUF_ACHSE`); das Ende ist das Ziel des Knotens (`knotenZiel`: der Unterlieger oder die Mündung auf einer Bahn).
     // DAS PROFIL STEHT AM KNOTEN (w28-ankunft-faden): es ist eine Funktion des Knotens allein (Unterlieger, Sohle, Großform,
     // Einzugsgebiet — jedes davon steht schon an ihm), gebaut EINMAL (`profilBau` zählt je Ebene, der Leser ist die Gelände-Linse
     // `netzZaehler`). Bis hier baute jede neue Zelle die Profile ihrer 25 bzw. 49 Knoten neu, dichte Raster jedes bis zu 49-mal.
@@ -997,13 +1328,14 @@
         knotenFluss(N, kn);
         const bed = knotenSohle(N, kn);
         if (kn.k === 0 && !kn.fluss) return null;
-        const t = kn.fluss || kn.aus;
+        const t = zielOrt(N, knotenZiel(N, kn));
         const gf = knotenGf(N, kn);
         const P = N.P;
         const S = N.S[kn.k];
         const Am2 = kn.k <= 1 ? knotenA(N, kn) * S * S : 0;
         const ex = t.x - kn.x;
         const ez = t.z - kn.z;
+        const len = Math.hypot(ex, ez) || 1;
         const F = kn.k === 0 ? P.aue * 30 * Math.pow(Am2 / 1e6, 0.4) : kn.k === 1 ? P.aue * 16 * Math.pow(Am2 / 1e5, 0.45) : 3;
         const W = (kn.k === 0 ? 0.36 : kn.k === 1 ? 0.3 : 0.34) * S * (0.85 + 0.3 * zufall(N.sh, kn.i, kn.j, 40 + kn.k));
         const b = kn.k === 0 ? P.talForm + (2 - P.talForm) * gf.trog : kn.k === 1 ? P.talForm + 0.3 : 1.2;
@@ -1013,53 +1345,118 @@
             const M = schichtMass(N);
             reach = Math.max(reach, F + 140 + Math.ceil((gf.rel + 40) / M.T) * M.per);
         }
+        const w = flussBreite(Am2);
+        const lam0 =
+            kn.k <= 1 ? MAEANDER.lambdaBreiten * w * (1 + MAEANDER.streuung * (zufall(N.sh, kn.i, kn.j, 50 + kn.k) - 0.5)) : 0;
+        const achse = kn.k <= 1 ? achseBau(N, kn, ex, ez, bed, t.bed, Math.max(lam0, LAUF_ACHSE.fein * w)) : { c: new Float64Array(4), ymax: 0, steil: 1 };
         let mo = 0;
         let mn = 0;
-        let ml = 0;
+        let mw = null;
+        let mos = null;
         let mv = 1;
         if (kn.k <= 1) {
-            const len = Math.hypot(ex, ez) || 1;
-            const w = flussBreite(Am2);
-            const lam0 =
-                MAEANDER.lambdaBreiten *
-                w *
-                (1 + MAEANDER.streuung * (zufall(N.sh, kn.i, kn.j, 50 + kn.k) - 0.5));
             const n = Math.round(len / lam0);
             if (n >= 1) {
-                const lam = len / n;
                 const gefaelle = (bed - t.bed) / len;
-                // gestreckt heißt nie lineal-gerade: der steile Lauf behält ein Viertel des ω (Sinuosität ≈ 1,02)
+                // gestreckt heißt nie lineal-gerade: der steile Lauf behält fünf Zwölftel des ω (0,5 rad, Sinuosität ≈ 1,07) —
+                // seine Bögen schwingen über die halbe Breite hinaus, sonst läge eine Gerade im Gerinne (Leopold & Wolman 1957)
                 const voll = 1 - glatt(MAEANDER.gefaelleVoll, MAEANDER.gefaelleNull, gefaelle);
                 let o = Math.floor(MAEANDER.stufen * (MAEANDER.gestreckt + (1 - MAEANDER.gestreckt) * voll) + 1e-9);
-                while (o > 0 && MAEANDER_KURVE[o].ymax * lam > F - w) o--;
+                // die Wellen ungleicher Länge (λ_k ∝ 1 ± wellenStreu, die Summe die Sehne); die längste bleibt in der Aue
+                const g = new Float64Array(n);
+                let sum = 0;
+                for (let q = 0; q < n; q++) {
+                    g[q] = 1 + MAEANDER.wellenStreu * (2 * zufall(N.sh, kn.i, kn.j, 300 + 64 * kn.k + (q & 63)) - 1);
+                    sum += g[q];
+                }
+                let gmax = 0;
+                for (let q = 0; q < n; q++) gmax = Math.max(gmax, g[q] / sum);
+                while (o > 0 && MAEANDER_KURVE[o].ymax * gmax * len > F - w) o--;
                 if (o > 0) {
                     mo = o;
                     mn = n;
-                    ml = lam;
+                    mw = new Float64Array(n + 1);
+                    mos = new Uint8Array(n);
+                    for (let q = 0; q < n; q++) {
+                        mw[q + 1] = mw[q] + g[q] / sum;
+                        // je Welle zufällig eine ω-Stufe flacher (0,1 rad: der Knick an der Querung bleibt ≤ 6°)
+                        mos[q] = o > MAEANDER_BODEN && zufall(N.sh, kn.i, kn.j, 430 + 64 * kn.k + (q & 63)) < 0.5 ? o - 1 : o;
+                    }
+                    mw[n] = 1;
                     mv = zufall(N.sh, kn.i, kn.j, 52 + kn.k) < 0.5 ? -1 : 1;
                 }
             }
         }
-        return {
+        const sg = {
             ax: kn.x,
             az: kn.z,
             ex,
             ez,
             len2: ex * ex + ez * ez || 1,
+            len,
+            // die Kehrwerte der Sehne (die Fläche teilt je Spalte an jedem nahen Lauf: Multiplikation statt Division)
+            iLen2: 1 / (ex * ex + ez * ez || 1),
+            iLen: 1 / len,
             ba: bed,
             bb: t.bed,
+            wb: null,
+            N,
             F,
             W,
             b,
             stil,
             reach,
             reach2: reach * reach,
+            // die Reichweite um die SEHNE (die Achse schwingt bis `ymax` von ihr): Zelle und Vorprobe der Fläche
+            reachW: reach + achse.ymax,
+            wy: achse.c, // die Achse (`achseKoeff`; ohne Schwung Nullen)
+            wq: achse.ymax > 0, // die Achse schwingt (die Fläche fragt sie nur dann)
+            wsteil: achse.steil,
             mo,
             mn,
-            ml,
+            mw,
+            mos,
             mv,
             von: kn, // der Knoten des Segments (eine Mündung darauf ist ein Zufluss, keine Senke: `flussLaeufe`)
         };
+        return sg;
+    }
+    // DIE SOHLE FOLGT DER FLÄCHE, ÜBER DIE SIE FLIESST (fluss-netz): zwischen den Knoten liegt die Sohle eines Laufs (Ebenen 0
+    // und 1; die Rinnen der Ebene 2 sind Hang, ihre Sohle bleibt die Sehne) nie über der Fläche bis zur eigenen Ebene ohne sich
+    // selbst (`flaeche` mit `ohne`: die Ebene darüber und die Täler der Nachbarn — Geschwister am selben Ende, Folge-Glied,
+    // Ziel, Nachbar) — gefragt längs der BAHN je `schritt` m, `unter` m darunter, stromab nie steigend und je Schritt um das
+    // Mindest-Gefälle des Knotens fallend (0,04 %), nie unter der Sohle des Ziels. Eine Tafel je Segment (`wb`, Sohle an
+    // t = i/n), gebaut, wenn sie zuerst gelesen wird; EIN Leser `sohleAn`: die Fläche (das Tal), die Mündung, die Bahn
+    // (`bahnOrt`, `bahnPunkte`: das Wasser). Bis fluss-netz lief die Sohle linear von Knoten zu Knoten: über dem hohlen Hang
+    // zwischen ihnen schwebte der Lauf (101 Saaten: 1 263 der 2 605 steigenden Paare ein Bach der Ebene 1 über der Fläche der
+    // Ebene 0, bis 15 m), und über der Aue seines Geschwisters am Zusammenfluss (die Tafel nur über der Ebene darüber:
+    // 1 978 steigende Paare, mit den Tälern der eigenen Ebene 1 703).
+    const SOHLE_FOLGT = Object.freeze({ schritt: 60, unter: 0.1, gefaelle: 0.0004 });
+    function sohleTafel(N, kn, s) {
+        const n = kn.k > 1 ? 1 : Math.max(1, Math.ceil(s.len / SOHLE_FOLGT.schritt));
+        const wb = new Float64Array(n + 1);
+        wb[0] = s.ba;
+        wb[n] = s.bb;
+        const fall = (SOHLE_FOLGT.gefaelle * s.len) / n;
+        for (let i = 1; i < n; i++) {
+            const t = i / n;
+            const o = bahnOrt0(s, t);
+            const f = flaeche(N, kn.k, o.x, o.z, grossform(N, o.x, o.z), null, s) - SOHLE_FOLGT.unter;
+            let b = s.ba + (s.bb - s.ba) * t;
+            if (f < b) b = f;
+            if (b > wb[i - 1] - fall) b = wb[i - 1] - fall;
+            const boden = s.bb + fall * (n - i);
+            wb[i] = b < boden ? boden : b;
+        }
+        return wb;
+    }
+    // Die Sohle eines Segments an t (die Tafel `wb`, linear zwischen ihren Stützen).
+    function sohleAn(s, t) {
+        const wb = s.wb || (s.wb = sohleTafel(s.N, s.von, s));
+        const n = wb.length - 1;
+        const f = t * n;
+        const i = f | 0;
+        return i >= n ? wb[n] : wb[i] + (wb[i + 1] - wb[i]) * (f - i);
     }
     // Die Zelle trägt zwei Listen: `alle` (die Box der Rinne samt Reichweite trifft die Zelle — die Mündung sucht darin den
     // tiefsten Punkt) und `nah` (die Rinne selbst kommt der Zelle näher als ihre Reichweite: nur sie kann eine Spalte der
@@ -1086,15 +1483,15 @@
             for (let i = ci - r; i <= ci + r; i++) {
                 const s = segment(N, knoten(N, k, i, j));
                 if (!s) continue;
-                // Abstand Segment ↔ Zellen-Rechteck (konservativ: Abstand der Segment-Box)
-                const mnx = Math.min(s.ax, s.ax + s.ex) - s.reach;
-                const mxx = Math.max(s.ax, s.ax + s.ex) + s.reach;
-                const mnz = Math.min(s.az, s.az + s.ez) - s.reach;
-                const mxz = Math.max(s.az, s.az + s.ez) + s.reach;
+                // Abstand Segment ↔ Zellen-Rechteck (konservativ: Abstand der Segment-Box samt Schwung der Achse)
+                const mnx = Math.min(s.ax, s.ax + s.ex) - s.reachW;
+                const mxx = Math.max(s.ax, s.ax + s.ex) + s.reachW;
+                const mnz = Math.min(s.az, s.az + s.ez) - s.reachW;
+                const mxz = Math.max(s.az, s.az + s.ez) + s.reachW;
                 if (mxx < x0 || mnx > x0 + S || mxz < z0 || mnz > z0 + S) continue;
                 z.push(s);
             }
-        const e = { alle: z, nah: z.filter((s) => streckeTrifft(s, x0, z0, S, s.reach + 0.001)) };
+        const e = { alle: z, nah: z.filter((s) => streckeTrifft(s, x0, z0, S, s.reachW + 0.001)) };
         if (M.size > 300000) M.clear();
         M.set(key, e);
         return e;
@@ -1205,10 +1602,9 @@
         return a;
     }
     function talgrund(N, x, z) {
-        const S = N.S[0];
-        const R = 1.6 * S;
+        const R = 1.6 * N.S[0];
         const R2 = R * R;
-        const a = talZelle(N, Math.floor(x / S), Math.floor(z / S));
+        const a = talZelle(N, Math.floor(x * N.iS[0]), Math.floor(z * N.iS[0]));
         let sw = 0;
         let sb = 0;
         for (let p = 0; p < a.length; p += 3) {
@@ -1224,34 +1620,48 @@
     }
 
     // DIE FLÄCHE der Ebenen 0..kmax an (x, z): ausgehend von der Hülle das Minimum der Talprofile je Ebene. `aus` (optional)
-    // sammelt den Hang-Schätzer (die steilste gewählte Flanke) und die Tal-Nähe für das Detail.
-    function flaeche(N, kmax, x, z, gf, aus) {
+    // sammelt den Hang-Schätzer (die steilste gewählte Flanke), die Tal-Nähe für das Detail, die Aue und ihre Kante (`sohle`).
+    // `ohne` (optional, die Tafel eines Segments: `sohleTafel`): die Fläche ohne dieses Segment, die eigene Ebene kmax auf den
+    // Sehnen-Sohlen ihrer Knoten — die Tafel eines Nachbarn läse sonst die eigene (kein Zyklus, keine Kette über die Region).
+    function flaeche(N, kmax, x, z, gf, aus, ohne) {
         let H = talgrund(N, x, z) + gf.rel;
         let steil = 0;
         let nah = 1;
         let hang = 0;
         let schutt = 0;
         let aue = false;
+        // die Aue der gewählten Fläche: der Sieger und seine Sohle, die Kante erst am Ende (ein NaN als Startwert eines Werts
+        // der Schleife boxt ihn — 2,6 k der 36 k Instruktionen je Spalte, cachegrind an w-sweepalpha)
+        let sohleSeg = null;
+        let sohleBed = 0;
         for (let k = 0; k <= kmax; k++) {
-            const S = N.S[k];
-            const segs = zelle(N, k, Math.floor(x / S), Math.floor(z / S)).nah;
+            const iS = N.iS[k];
+            const segs = zelle(N, k, Math.floor(x * iS), Math.floor(z * iS)).nah;
             let Hk = H;
             let kSteil = 0;
             let kNah = 1;
             let kAue = false;
             let kHang = 0;
             let kSchutt = 0;
+            let kSeg = null;
+            let kBed = 0;
+            const sehne = ohne !== undefined && k === kmax;
             for (let q = 0; q < segs.length; q++) {
                 const s = segs[q];
+                if (s === ohne) continue;
                 const dx = x - s.ax;
                 const dz = z - s.az;
-                let t = (dx * s.ex + dz * s.ez) / s.len2;
-                t = t < 0 ? 0 : t > 1 ? 1 : t;
-                const px = dx - s.ex * t;
-                const pz = dz - s.ez * t;
-                const d2 = px * px + pz * pz;
+                // quer zur ACHSE des Laufs (`LAUF_ACHSE`): der Abstand zur Sehne in Länge (jenseits der Enden) und Quere,
+                // die Quere um den Versatz der Achse am Ort auf der Sehne gemindert
+                const lat0 = (dz * s.ex - dx * s.ez) * s.iLen;
+                if (lat0 >= s.reachW || lat0 <= -s.reachW) continue;
+                const tr = (dx * s.ex + dz * s.ez) * s.iLen2;
+                const t = tr < 0 ? 0 : tr > 1 ? 1 : tr;
+                const ao = (tr - t) * s.len;
+                const lat = s.wq ? lat0 - achseAus(s.wy, t) : lat0;
+                const d2 = ao * ao + lat * lat;
                 if (d2 >= s.reach2) continue;
-                const bed = s.ba + (s.bb - s.ba) * t;
+                const bed = sehne ? s.ba + (s.bb - s.ba) * t : sohleAn(s, t);
                 if (bed >= Hk) continue;
                 const d = Math.sqrt(d2);
                 const u = d - s.F;
@@ -1267,7 +1677,6 @@
                 if (u <= 0) {
                     let dq = d;
                     if (s.mo && t > 0 && t < 1) {
-                        const lat = (dz * s.ex - dx * s.ez) / Math.sqrt(s.len2);
                         const y = bahnVersatz(s, t);
                         dq = lat >= y ? ((lat - y) * s.F) / (s.F - y) : ((y - lat) * s.F) / (s.F + y);
                     }
@@ -1295,6 +1704,8 @@
                     kSteil = g;
                     kNah = w < 1 ? w : 1;
                     kAue = u <= 0;
+                    kSeg = s;
+                    kBed = bed;
                     kHang = gh;
                     kSchutt = sch;
                 }
@@ -1305,6 +1716,8 @@
                 aue = kAue;
                 hang = kHang;
                 schutt = kSchutt;
+                sohleSeg = kSeg;
+                sohleBed = kBed;
             }
             H = Hk;
         }
@@ -1314,34 +1727,53 @@
             aus.hang = hang;
             aus.schutt = schutt;
             aus.aue = aue;
+            aus.sohle = sohleSeg === null ? NaN : sohleBed + AUE_QUER * sohleSeg.F;
         }
         return H;
     }
-    // Die Mündung eines Knotens der Ebene k+1 ins Netz der Ebene k: der Segment-Punkt, der die Fläche an (x, z) am tiefsten
-    // trägt (Sohle + Profil), mit seiner Sohle.
-    function muendung(N, k, x, z) {
+    // Die Mündung eines Knotens der Ebene k+1 ins Netz der Ebene k: der Bahn-Punkt, der die Fläche an (x, z) am tiefsten
+    // trägt (Sohle + Profil quer zur Achse), mit seiner Sohle. Nie auf einem Knoten (fluss-netz: dort mündete der Zufluss als
+    // dritter Lauf in den Zusammenfluss des Netzes): der Ort auf der Sehne bleibt um ε ∈ [¼; 1] · `fernM` m (je Zufluss `wer`
+    // aus dem Strom der Saat) von beiden Enden — zwei Zuflüsse am selben Ende münden nie in einem Punkt. In METERN, nie als
+    // Anteil der Sehne: ein Anteil 6–16 % legte die Mündung auf einem Glied der Ebene 0 (2,5 km) bis 390 m stromauf, der
+    // Zufluss lief durch die Aue zurück und schwebte über ihr (in den vier roten Saaten 75 der 271 steigenden Paare).
+    function muendung(N, k, x, z, wer) {
         const S = N.S[k];
         const segs = zelle(N, k, Math.floor(x / S), Math.floor(z / S)).alle;
-        let best = null;
+        const epsM = ZUSAMMENFLUSS.fernM * (wer ? 0.25 + 0.75 * zufall(N.sh, wer.i, wer.j, 60 + wer.k) : 0.6);
+        let bs = null;
+        let beps = 0;
+        let bt = 0;
+        let bd = 0;
         let bv = Infinity;
         for (let q = 0; q < segs.length; q++) {
             const s = segs[q];
             const dx = x - s.ax;
             const dz = z - s.az;
+            const eps = Math.min(0.45, epsM / s.len);
             let t = (dx * s.ex + dz * s.ez) / s.len2;
-            t = t < 0 ? 0 : t > 1 ? 1 : t;
-            const d = Math.hypot(dx - s.ex * t, dz - s.ez * t);
-            const bed = s.ba + (s.bb - s.ba) * t;
-            const v = bed + d * 0.05;
+            t = t < eps ? eps : t > 1 - eps ? 1 - eps : t;
+            const lat = (dz * s.ex - dx * s.ez) / s.len - achseAus(s.wy, t);
+            const ao = (dx * s.ex + dz * s.ez) / s.len - t * s.len;
+            const d = Math.hypot(ao, lat);
+            const bed = sohleAn(s, t);
+            // der tiefste Punkt, gewogen mit dem Weg dorthin (`weg`): fällt das Tal steiler als das Gewicht, läuft die
+            // Mündung talab davon — mit 0,05 (5 %) mündeten die Rinnen der Ebene 2 in steilen Tälern 600–1 000 m stromab
+            // (alpha alpental, Knoten (−14, −2): 131 → 911 m) und gruben ihre Sehne als Graben durch den Hang (Senken > 1 m
+            // 7 → 27); 0,3 trägt jedes Talgefälle der Saaten, die Mündung bleibt am nächsten Ufer
+            const v = bed + d * ZUSAMMENFLUSS.weg;
             if (v < bv) {
                 bv = v;
-                // der Zufluss mündet auf der BAHN des Hauptlaufs (nie neben dem Wasser in der Aue)
-                const y = s.mo && t > 0 && t < 1 ? bahnVersatz(s, t) : 0;
-                const len = Math.sqrt(s.len2);
-                best = { x: s.ax + s.ex * t - (s.ez / len) * y, z: s.az + s.ez * t + (s.ex / len) * y, bed, von: s.von };
+                bs = s;
+                bt = t;
+                bd = d;
+                beps = eps;
             }
         }
-        if (best) return best;
+        // der Zufluss mündet auf der BAHN des Hauptlaufs (nie neben dem Wasser in der Aue) — und nie näher als `fernM` an
+        // seinem Knoten: ein Knoten in der Aue (sein Glied 2 m kurz) trüge seine Zuflüsse sonst als Stern ans Ufer; die
+        // Mündung rückt stromab, der Lauf trifft im spitzen Winkel
+        if (bs) return bahnOrt(bs, Math.min(1 - beps, bt + Math.sqrt(Math.max(0, ZUSAMMENFLUSS.fernM ** 2 - bd * bd)) / bs.len));
         // Keine Ebene-k-Rinne in Reichweite (nur Ebene 0 an einer Senke): die Senke selbst.
         const kn = knoten(N, k, Math.floor(x / S), Math.floor(z / S));
         return { x: kn.x, z: kn.z, bed: knotenSohle(N, kn) };
@@ -2036,8 +2468,9 @@
     // DAS WASSER LIEST DAS NETZ (K16): die Fluss-Läufe der Ebenen 0 und 1, die das Rechteck [x0, x1) × [z0, z1) berühren —
     // dasselbe Netz, das die Täler schneidet; die Hydrosphäre rechnet kein zweites. Ein Lauf beginnt an einer Quelle (ein
     // Knoten ohne Oberlieger seiner Ebene: `quelle`) oder, liegen alle Oberlieger jenseits der Reichweite, an ihrem Rand,
-    // und folgt dem Unterlieger bis zur Mündung ins Netz der Ebene 0 (`ende` "muendung": ein Zufluss endet auf der Rinne des
-    // Hauptlaufs, jedes Glied gehört EINEM Lauf), zur Senke ("see" ein benannter See, "meer") oder jenseits der Reichweite
+    // und folgt dem Unterlieger bis zur Mündung ins Netz der Ebene 0 oder auf die Bahn des Hauptlaufs seiner Ebene (`ende`
+    // "muendung": ein Zufluss endet auf der Rinne des Hauptlaufs — auch der dritte eines Knotens, `zusammenfluss`; die zwei
+    // Zuflüsse eines Knotens laufen beide weiter, ihr Unterlauf trägt dieselben Glieder), zur Senke ("see" ein benannter See, "meer") oder jenseits der Reichweite
     // ("rand"). Je Glied die Enden, die Sohlen (`knotenSohle`, stromab streng fallend), das Einzugsgebiet A in m² und die
     // BAHN (`bahnPunkte`: der Mäander, Punkte im Abstand ≤ `schritt` m — der Wirt legt Kanal und Spiegel darauf). Ohne
     // Wildnis-Term (eine Bühne): der Bach jeder Klamm (`rinne`), die das Fenster berührt — EIN Glied auf ihrer Achse, Quelle
@@ -2061,7 +2494,7 @@
                 const bahn = [];
                 for (let q = 0; q <= m; q++) {
                     const u = q / m;
-                    bahn.push({ t: u, x: t.x0 + t.ex * u, z: t.z0 + t.ez * u, s: t.len * u, fx: ux, fz: uz });
+                    bahn.push({ t: u, x: t.x0 + t.ex * u, z: t.z0 + t.ez * u, s: t.len * u, fx: ux, fz: uz, b: base + t.quelle + (t.muendung - t.quelle) * u });
                 }
                 aus.push({
                     k: 0,
@@ -2090,17 +2523,16 @@
             return kn.x >= x0 - S && kn.x < x1 + S && kn.z >= z0 - S && kn.z < z1 + S;
         };
         const glied = (kn) => {
-            const f = knotenFluss(N, kn);
-            const t = f || kn.aus;
+            const sg = segment(N, kn);
             return {
                 ax: kn.x,
                 az: kn.z,
-                bx: t.x,
-                bz: t.z,
-                ba: knotenSohle(N, kn),
-                bb: f ? knotenSohle(N, f) : t.bed,
+                bx: sg.ax + sg.ex,
+                bz: sg.az + sg.ez,
+                ba: sg.ba,
+                bb: sg.bb,
                 A: knotenA(N, kn) * N.S[kn.k] * N.S[kn.k],
-                bahn: bahnPunkte(segment(N, kn), schritt),
+                bahn: bahnPunkte(sg, schritt),
             };
         };
         const laeufe = [];
@@ -2118,7 +2550,8 @@
                             const m = knoten(N, k, i + di, j + dj);
                             if (knotenFluss(N, m) !== kn) continue;
                             oben++;
-                            if (drin(m)) obenDrin++;
+                            // ein Zufluss, der auf einer Bahn mündet (`knotenZiel`), endet dort: sein Lauf trägt diesen nicht
+                            if (drin(m) && knotenZiel(N, m) === kn) obenDrin++;
                         }
                     if (obenDrin) continue;
                     const glieder = [];
@@ -2134,6 +2567,11 @@
                         if (!f) {
                             // die Mündung des Zuflusses auf der Rinne der Ebene 0 — oder die Senke selbst (keine Rinne in Reichweite)
                             ende = c.aus.von ? "muendung" : "see";
+                            break;
+                        }
+                        // der dritte Zufluss eines Knotens mündet auf der Bahn des Hauptlaufs (`zusammenfluss`)
+                        if (knotenZiel(N, c) !== f) {
+                            ende = "muendung";
                             break;
                         }
                         if (!drin(f)) break;
@@ -2157,11 +2595,12 @@
             for (let i = Math.floor(x0 / S); i <= Math.floor(x1 / S); i++) {
                 const sg = segment(N, knoten(N, 0, i, j));
                 if (!sg || sg.stil < 0.8) continue;
-                const len = Math.sqrt(sg.len2);
+                const len = sg.len;
                 const off = sg.F + 140 + 3 * per;
+                const mitte = achseAus(sg.wy, 0.5);
                 for (const seite of [1, -1]) {
-                    const x = sg.ax + sg.ex * 0.5 - (seite * sg.ez * off) / len;
-                    const z = sg.az + sg.ez * 0.5 + (seite * sg.ex * off) / len;
+                    const x = sg.ax + sg.ex * 0.5 - (sg.ez * (seite * off + mitte)) / len;
+                    const z = sg.az + sg.ez * 0.5 + (sg.ex * (seite * off + mitte)) / len;
                     if (x < x0 || x > x1 || z < z0 || z > z1) continue;
                     const gf = grossform(N, x, z);
                     const w = sg.stil * gf.stil * Math.min(gf.rel, 120);
@@ -2847,20 +3286,30 @@
         };
     }
     // DER HANG EINES ORTS (K10): die Ring-Suche ab r0 (Schritt 40 m, 48 Richtungen) nach dem ersten Ort, dessen Gefälle über
-    // 16 m in [gMin, gMax] liegt und der trocken ist — 3 m über dem Meer und `trocken(x, z)` an acht Punkten in 40 m (der
-    // Wirt reicht sein Wasser-Urteil, das Studio die Höhe über dem Meer). Leser: das Fachwerk-Studio (der Ort des Dorfs ohne
-    // `?ort=`), gate:settlement Teil O (der Ort des Akts).
+    // 16 m in [gMin, gMax] liegt und der trocken ist — 3 m über dem Meer und `trocken(x, z)` auf der ganzen Fläche des Dorfs
+    // (`HANG_ORT`: jeder Punkt des Rasters `rasterM` im Kreis `umkreisM`; der Wirt reicht sein Wasser-Urteil, das Studio die
+    // Höhe über dem Meer). Das Dorf misst 65 m Radius (siedlung-ort K10), die Ort-Wahl rückt es bis 128 m. Bis fluss-netz
+    // (26.11.) fragten acht Punkte in 40 m: der Akt stand an 1299/750 mit einem Fluss 60 m neben dem Anker (die Wand warf 2 von
+    // 21 Häusern), Ringe je 20 m mit 16 Punkten (47 m Lücke auf dem äußeren) übersahen an −1500/0 einen 4,4 m breiten Bach in
+    // 79 m (3 von 20). Der Raster 2 m fängt jeden Lauf; an main bleibt der Ort −1448,9/−388,2. Leser: das Fachwerk-Studio
+    // (der Ort des Dorfs ohne `?ort=`), gate:settlement Teil O (der Ort des Akts).
+    const HANG_ORT = Object.freeze({ umkreisM: 120, rasterM: 2 });
     function hangOrt(L, trocken, r0 = 1500, r1 = 4000, gMin = 0.12, gMax = 0.25) {
         const H = (x, z) => hoehe(L, x, z, true);
+        const n = Math.floor(HANG_ORT.umkreisM / HANG_ORT.rasterM);
+        const flaecheTrocken = (x, z) => {
+            for (let j = -n; j <= n; j++)
+                for (let i = -n; i <= n; i++)
+                    if (i * i + j * j <= n * n && !trocken(x + i * HANG_ORT.rasterM, z + j * HANG_ORT.rasterM)) return false;
+            return true;
+        };
         for (let rr = r0; rr < r1; rr += 40)
             for (let k = 0; k < 48; k++) {
                 const x = Math.cos((k / 48) * 2 * Math.PI) * rr;
                 const z = Math.sin((k / 48) * 2 * Math.PI) * rr;
                 const g = Math.hypot(H(x + 8, z) - H(x - 8, z), H(x, z + 8) - H(x, z - 8)) / 16;
                 if (!(g >= gMin && g <= gMax) || !(H(x, z) > L.waterLevel + 3)) continue;
-                let land = 0;
-                for (let a = 0; a < 8; a++) if (trocken(x + 40 * Math.cos(a * 0.785), z + 40 * Math.sin(a * 0.785))) land++;
-                if (land === 8) return { x, z, g };
+                if (flaecheTrocken(x, z)) return { x, z, g };
             }
         return null;
     }
@@ -3381,8 +3830,10 @@
     }
     // DIE MÄANDER-ZAHL (K16): die Bahnen der Flachland-Glieder (Gefälle < 0,4 %, Sehne ≥ drei Wellen von 11 Breiten) gegen
     // Leopold & Wolman — je Glied die Sinuosität (Bogen / Sehne), die Wellenlänge der Sehne in Breiten (2 · Sehne / (Achsen-
-    // Querungen + 1)) und der kleinste Krümmungs-Radius in Breiten (Umkreis je drei Punkte); gezählt wird der Median. Ein
-    // Glied ohne Bahn ist seine Sehne (eine Gerade: Sinuosität 1, keine Querung). Die Breite ist `flussBreite`.
+    // Querungen + 1); quer zur ACHSE des Laufs, `q` je Bahn-Punkt, fluss-netz) und je BOGEN (Halbwelle zwischen zwei Querungen)
+    // der kleinste Krümmungs-Radius in Breiten (Umkreis je drei Punkte; die Wellen eines Glieds sind ungleich lang, Leopold &
+    // Wolman zählen Bögen); gezählt wird der Median. Ein Glied ohne Bahn ist seine Sehne (eine Gerade: Sinuosität 1, keine
+    // Querung). Die Breite ist `flussBreite`.
     function maeanderZahl(laeufe) {
         const sin = [];
         const lam = [];
@@ -3406,10 +3857,14 @@
                 for (let k = 0; k < P.length; k++) {
                     const p = P[k];
                     if (k) bogen += Math.hypot(p.x - P[k - 1].x, p.z - P[k - 1].z);
-                    const lat = ((p.z - gl.az) * ex - (p.x - gl.ax) * ez) / sehne;
+                    const lat = ((p.z - gl.az) * ex - (p.x - gl.ax) * ez) / sehne - (p.q || 0);
                     if (Math.abs(lat) > 0.05 * w) {
                         const s = lat > 0 ? 1 : -1;
-                        if (vz && s !== vz) quer++;
+                        if (vz && s !== vz) {
+                            quer++;
+                            if (rmin < Infinity) rc.push(rmin / w);
+                            rmin = Infinity;
+                        }
                         vz = s;
                     }
                     if (k && k < P.length - 1) {
@@ -3424,7 +3879,7 @@
                 }
                 sin.push(bogen / sehne);
                 lam.push(quer ? (2 * sehne) / (quer + 1) / w : Infinity);
-                rc.push(rmin / w);
+                if (rmin < Infinity) rc.push(rmin / w);
             }
         const med = (a) => (a.length ? a.slice().sort((p, q) => p - q)[a.length >> 1] : null);
         const r2 = (v) => (v == null ? null : Number.isFinite(v) ? Math.round(v * 100) / 100 : v);
@@ -6584,7 +7039,11 @@
     function hydroExtractLakes(ctx, H) {
         const { dim, surf, filled, isOcean } = ctx;
         const n = dim * dim;
-        const TOL = 0.02;
+        // Ein See ist tiefer als das Quergefälle der Aue über eine halbe Zellen-Diagonale (`AUE_QUER`, bei 16 m 6,8 cm): flacher
+        // ist die Füllung das Raster, das die Bahn eines flachen Flusses zwischen seinen Zellen-Mitten trifft — kein Becken. Bis
+        // fluss-netz galt 2 cm: der Hauptlauf in alpha endete in einem 3,3 cm tiefen „See“ von 270 m Länge (101 Saaten: 9 Seen
+        // flacher als 10 cm, danach 2), und die Linse des gebauten Bodens fand kein flaches Fenster mehr.
+        const TOL = AUE_QUER * ctx.cell * Math.SQRT1_2;
         const lakeOf = new Int32Array(n).fill(-1);
         const lakes = [];
         // ein See ist eine aufgefüllte Zelle (filled > surf), die NICHT
@@ -6716,7 +7175,7 @@
                 const voll = flussBreite(gl.A);
                 const bis = g === lf.glieder.length - 1 ? B.length : B.length - 1;
                 for (let m = 0; m < bis; m++) {
-                    const { t, x, z } = B[m];
+                    const { x, z } = B[m];
                     const idx = zelle(x, z);
                     if (idx < 0) {
                         abschluss("border");
@@ -6737,7 +7196,7 @@
                     points.push({
                         x,
                         z,
-                        y: gl.ba + (gl.bb - gl.ba) * t,
+                        y: B[m].b,
                         width: voll * quelle,
                         quelle,
                         flowX: B[m].fx,
