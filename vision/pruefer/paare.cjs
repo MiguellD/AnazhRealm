@@ -31,6 +31,7 @@ async function haupt(argv) {
     const id = arg("--sprosse"), ziel = path.resolve(arg("--ziel")), aus = path.resolve(arg("--aus", ziel)), zuWurzel = path.resolve(arg("--zuordnung")), saat = +arg("--saat", 1);
     if (zuWurzel === aus || zuWurzel.startsWith(aus + path.sep)) throw new Error("die Zuordnung liegt AUSSERHALB des Blatt-Ordners — der Prüfer sieht ihn");
     const z = P.sprosseVon(id);
+    if (z && z.art === "ordnen") return klasseBlatt(arg, P, bild, z, id, ziel, aus, zuWurzel, saat);
     if (!z || z.art !== "2afc") throw new Error("die Sprosse " + id + " ist im Zensus keine 2afc-Sprosse");
     if (!z.schwelle.mass) throw new Error("verweigert: " + id + " — " + z.schwelle.grund);
     const M = JSON.parse(fs.readFileSync(MANIFEST, "utf8"));
@@ -80,6 +81,63 @@ async function haupt(argv) {
             fs.writeFileSync(path.join(kontaktW, t.teil + ".jpg"), await B.kontakt(zellen, { spalten: 6, tw: 192, th: 128 }));
         }
         console.log("BLATT " + id + " (" + z.schwelle.wort + "): " + n + " Paare Foto gegen Spiel-Bild + " + fang.length + " Fang-Aufgaben in " + teile.length + " Teilen → " + blattW + " · Zuordnung getrennt in " + zuW + " · Bögen in " + kontaktW);
+    } finally {
+        await B.zu();
+    }
+    return 0;
+}
+// ORDNEN × KLASSE (26.11. abends): das Blatt aus dem FÄCHER — `--spiel` ist der Ordner der Sprosse im Fächer (akte/NN.json + bild/NN.png,
+// vision/pruefer/faecher.cjs). Es zählt nur ein Bild, dessen Akte „traegt“ sagt (die Abnahme der Werkbank nennt das Motiv), dessen
+// Bytes die Akte nennt (sha256) und das ≥ 720 Zeilen trägt; die Wahrheit je Bild ist die KLASSE, die das Gesetz der Adresse in die
+// Akte schrieb (nie von Hand), die Frage steht am Fächer der Sprosse. Jedes Bild durch denselben Canvas wie die Eichung ordnen × klasse
+// (480 × 320, Stufe 0), dann Teile zu 25. Fang-Aufgaben verlangt das Urteil nur, wo ein ratender Prüfer GRÜN läse (stumpf „gruen“) —
+// dort verweigert dieser Weg beim Namen, bis ein Fang-Satz der Klasse gebaut ist.
+async function klasseBlatt(arg, P, bild, z, id, ziel, aus, zuWurzel, saat) {
+    if (!z.schwelle.mass) throw new Error("verweigert: " + id + " — " + z.schwelle.grund);
+    if (z.stumpf === "gruen") throw new Error("Fang fehlt: " + id + " — ein ratender Prüfer läse hier GRÜN, das Klassen-Blatt trägt noch keine Fang-Aufgaben");
+    const F = require("./faecher.cjs").SPROSSEN[id];
+    if (!F || !F.frage) throw new Error("kein Fächer mit Frage für " + id + " (vision/pruefer/faecher.cjs SPROSSEN)");
+    const dir = path.resolve(arg("--spiel")), gesehen = new Set(), kopf = new Set(), geraet = new Set();
+    const akten = fs.readdirSync(path.join(dir, "akte")).filter((n) => /^\d+\.json$/.test(n)).sort().map((n) => JSON.parse(fs.readFileSync(path.join(dir, "akte", n), "utf8")));
+    const bilder = [];
+    for (const a of akten) {
+        if (!a.traegt || a.klasse == null) continue;
+        const f = path.join(dir, "bild", String(a.nr).padStart(2, "0") + ".png");
+        const b = fs.readFileSync(f);
+        if (sha(b) !== a.sha256) throw new Error("falscher Hash: " + f + " ist nicht das Bild seiner Akte");
+        if (!(a.zeilen >= 720)) throw new Error(f + ": " + a.zeilen + " Zeilen < 720");
+        if (gesehen.has(a.sha256)) continue;
+        gesehen.add(a.sha256), kopf.add(a.sha), geraet.add(a.geraet);
+        bilder.push({ a, b, f });
+    }
+    if (kopf.size > 1 || geraet.size > 1) throw new Error("der Fächer trägt nicht EINEN Kopf und EIN Gerät: " + [...kopf].join(" | ") + " · " + [...geraet].join(" | "));
+    if (bilder.length < P.MIN_PAARE) throw new Error("Umfang nicht erzeugbar: " + bilder.length + " von " + P.MIN_PAARE + " Bildern tragen das Motiv (" + dir + ")");
+    if (arg("--sha") && !String([...kopf][0]).startsWith(arg("--sha"))) throw new Error("--sha " + arg("--sha") + " ist nicht der Kopf des Fächers " + [...kopf][0]);
+    const optionen = [...new Set(bilder.map((x) => String(x.a.klasse)))].sort();
+    if (optionen.length < 2) throw new Error("eine Klasse allein ist keine Ordnung: " + optionen.join());
+    const B = await bild.oeffne();
+    console.log("Canvas im headless-Browser (ohne GPU), PID " + B.pid);
+    try {
+        const kennung = id.replace("#", "."), pd = path.join(aus, "paare", kennung), blattW = path.join(aus, "blatt", kennung), zuW = path.join(zuWurzel, kennung), kontaktW = path.join(aus, "kontakt", kennung);
+        for (const d of [pd, blattW, zuW, kontaktW]) fs.rmSync(d, { recursive: true, force: true });
+        fs.mkdirSync(pd, { recursive: true });
+        const aufgaben = [];
+        for (let i = 0; i < bilder.length; i++) {
+            const n = "k" + String(i + 1).padStart(2, "0") + ".jpg", x = bilder[i];
+            fs.writeFileSync(path.join(pd, n), await B.norm(x.b, { w: W, h: H, stufe: 0, vor: W }));
+            aufgaben.push({ bilder: [n], wahr: String(x.a.klasse), quelle: ["faecher: " + path.basename(dir) + "/bild/" + path.basename(x.f) + " · " + x.a.wort + " · Uhr " + x.a.uhr] });
+        }
+        const je = {};
+        for (const x of aufgaben) je[x.wahr] = (je[x.wahr] || 0) + 1;
+        fs.writeFileSync(path.join(pd, "paare.json"), JSON.stringify({ sprosse: id, art: "ordnen", form: "klasse", frage: F.frage, optionen, bauer: arg("--bauer"), sha: [...kopf][0], geraet: arg("--geraet"), herkunft: "spiel", pixel: W + "×" + H, gesetz: F.gesetz, aufgaben }, null, 1) + "\n");
+        const teile = P.teileBauen(pd, blattW, zuW, saat * 100, JE_TEIL);
+        fs.mkdirSync(kontaktW, { recursive: true });
+        for (const t of teile) {
+            const blatt = JSON.parse(fs.readFileSync(path.join(blattW, t.teil, "blatt.json"), "utf8"));
+            const zellen = blatt.aufgaben.flatMap((a) => a.bilder.map((nm) => ({ b: fs.readFileSync(path.join(blattW, t.teil, nm)), text: nm.replace(/\.jpg$/, "").replace(/^0+/, "") })));
+            fs.writeFileSync(path.join(kontaktW, t.teil + ".jpg"), await B.kontakt(zellen, { spalten: 6, tw: 192, th: 128 }));
+        }
+        console.log("BLATT " + id + " (" + z.schwelle.wort + "): " + aufgaben.length + " Bilder in " + optionen.length + " Klassen " + JSON.stringify(je) + " in " + teile.length + " Teilen → " + blattW + " · Zuordnung getrennt in " + zuW + " · Bögen in " + kontaktW + " · Teile " + teile.map((t) => t.teil + " " + t.zuordnungSha256.slice(0, 12)).join(", "));
     } finally {
         await B.zu();
     }

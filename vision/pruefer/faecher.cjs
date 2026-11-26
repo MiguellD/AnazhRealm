@@ -60,7 +60,37 @@ function stadtAlle() {
     }
     return s;
 }
+// die Namen der Arten als Gattung (die Klasse im Blatt; der Schlüssel ist die Art des Gesetzes, k2-leben.js:162)
+const PFLANZEN_NAME = { baum_birke: "Birke", baum_buche: "Buche", baum_eiche: "Eiche", baum_erle: "Erle", baum_kiefer: "Kiefer", baum_palme: "Palme", baum_tanne: "Tanne", baum_zypresse: "Zypresse", baum_mammut: "Mammutbaum", baum_totholz: "Totholz", baum_karst: "Karst-Baum", busch_hazel: "Hasel", farn_busch: "Farn", blume_gross: "Blume" };
 const SAAT = "const saat = r.state.worldMeta && r.state.worldMeta.seed != null ? r.state.worldMeta.seed : null;";
+// die Reise in der Seite: derselbe Weg wie scripts/werkbank.cjs reiseDesOrts (Satz → `_chatDispatchLegacyCommand` → die Welt des Orts
+// erwacht → der Faden bereit), der Loop danach wieder aus
+const REISE =
+    "const reise = async (satz) => { const t0 = performance.now(), [b, l] = satz.split(/\\s+/).slice(1).map((s) => Math.round(Number(s.replace(',', '.')) * 100) / 100);" +
+    " const da = () => { const t = r._gelaende().ort.teil; return !!t && t.breite === b && t.laenge === l; }; if (da()) return { neu: false }; const aus = []; window.__loop(1);" +
+    " try { r._chatDispatchLegacyCommand(satz, null, (z) => aus.push(z)); await window.__weltDa(() => aus.length > 0);" +
+    "  if (!aus.some((z) => Array.isArray(z) && z[0] === 'chat.befehl.reise.ziel')) return { fehler: JSON.stringify(aus).slice(0, 300) };" +
+    "  if ((await r.erwacht) === false) return { fehler: 'die Welt des Orts erwacht nicht' }; await window.__weltDa(() => r.state.voxelWorkerReady); } finally { window.__loop(); }" +
+    " if (!da()) return { fehler: 'die Seite steht danach nicht an ' + b + ' ' + l }; return { neu: true, welt: r.state.worldMeta.worldId, ms: Math.round(performance.now() - t0) }; };";
+// DAS PROFIL-GESETZ DES FORMSCHATZES (k2-planet.js:2662 PROFIL_AN, im Rumpf der Planet-Probe, kein `seite`-Export): am Wortlaut aus der
+// Station gefasst — der Querschnitt je Saat × Stelle, die Klasse V-Tal/Trog aus dem Exponenten b; dazu die Richtung des Laufs (talauf)
+// und die Lagen der 20 Saaten (k2-planet.js:2610 lagePunkt, :2613 die Land-Orte). Ändert die Station den Wortlaut, wirft der Fächer
+function formschatzGesetz() {
+    const t = fs.readFileSync(path.join(STATIONEN, "k2-planet.js"), "utf8");
+    const a = t.indexOf("const formschatz = {");
+    const fang = (von, bis, ab) => {
+        const i = t.indexOf(von, ab), j = i < 0 ? -1 : t.indexOf(bis, i);
+        if (i < 0 || j < 0) throw new Error("Gesetz fehlt: k2-planet.js trägt „" + von.slice(0, 50) + "“ nicht mehr");
+        return t.slice(i, j);
+    };
+    const p0 = t.indexOf("const PROFIL_AN = ", a);
+    if (a < 0 || p0 < 0) throw new Error("Gesetz fehlt: k2-planet.js trägt PROFIL_AN im Formschatz nicht mehr");
+    let profil = fang("async (r, T, a, mit) => {", "\n                const zahl = (aus, f)", p0).trim().replace(/;$/, "");
+    const alt = "y: R3(h0) };";
+    if (!profil.includes(alt)) throw new Error("Gesetz fehlt: PROFIL_AN gibt „" + alt + "“ nicht mehr zurück");
+    profil = profil.replace(alt, () => "y: R3(h0), fx: q.fx, fz: q.fz, ly: R3(K.hoehe(L, q.x - q.fx * 60, q.z - q.fz * 60, true)) };");
+    return { profil, punkt: fang("const lagePunkt = (k) =>", "\n", a), orte: fang("for (let k0 = 0; orte.length < 50 && k0 < 2000;", "\n", a) };
+}
 
 // JE SPROSSE: der Messort, die Zeile des Gesetzes, der Rumpf in der Seite (r = Welt, T = THREE) → { saat, posen: [{ pose, wort }], lage }
 const SPROSSEN = {
@@ -135,6 +165,140 @@ const SPROSSEN = {
             " posen.push({ pose: { px: f.x + a, py: '+1.7', pz: f.z + b, lx: f.x, ly: '+1.0', lz: f.z }, wort: 'Acker ' + f.x + ',' + f.z + ' aus ' + a + ',' + b });" +
             "return { saat, posen, lage: 'um 10 Uhr ' + Z.feld10 + ' am Acker (Soll der Station ≥ 50), ' + Z.bewohner + ' Bewohner, ' + (Z.felder || []).length + ' Äcker' };",
     },
+    // ═══ ORDNEN × KLASSE (R11: der Prüfer nennt die Klasse eines Bilds, die Wahrheit sagt das Gesetz der Adresse) ═══
+    // 50 Bauten nach Funktion: der Zensus der Station (k2-mensch-bau.js:30–49 zensusBau) zählt je Ort die stehenden Häuser seines
+    // Plans mit ihrer Rolle (das Los trägt die Funktion, stamm/siedlung-ort.js:483) und setzt das Bild 10 m vor die Tür (:74) — der
+    // Fächer nimmt JEDES stehende Haus mit Tür ALLER Orte des Messorts an derselben Pose, die Rolle ist die Klasse
+    "mensch.bau.bedarf#1": {
+        ort: "dorf",
+        gesetz: "meisterkarte-quelle/punkte/stationen/k2-mensch-bau.js:38",
+        faecher: "jedes stehende Haus mit Tür aller Orte, 10 m vor der Tür (k2-mensch-bau.js:74), Klassen im Wechsel × Tageszeit",
+        frage: "Welche Funktion hat das Gebäude in der Bildmitte?",
+        je: 12,
+        mehr: {},
+        motiv: (a) => GRUEN(a) || /Blickziel verdeckt von (an Punkt \d+ )?bauSatz/.test(a),
+        rumpf: () =>
+            SAAT +
+            "const s = r.state, pm = s.playerMesh.position, hh = (x, z) => r.getTerrainHeightAt(x, z), steht = new Map(), gross = (t) => t.charAt(0).toUpperCase() + t.slice(1);" +
+            "for (const e of s.architectures || []) if (e && Number.isFinite(e.seed) && e.position) steht.set((e.seed >>> 0) + '@' + Math.round(e.position.x) + ',' + Math.round(e.position.z), e);" +
+            "const H = [], orte = [];" +
+            "for (const S of (r._bewohnerSiedlungen || new Map()).values()) { if (!S || !S.plan || !Array.isArray(S.plan.slots)) continue; let n = 0;" +
+            " for (const sl of S.plan.slots) { const wx = S.ox + sl.x, wz = S.oz + sl.z, e = steht.get((sl.seed >>> 0) + '@' + Math.round(wx) + ',' + Math.round(wz)); if (!e || !e.tuer) continue;" +
+            "  const rolle = typeof sl.rolle === 'string' ? sl.rolle : 'wohnhaus';" +
+            "  const c = Math.cos(sl.phi || 0), sn = Math.sin(sl.phi || 0), tu = sl.tuer || { x: 0, z: 0 }, tx = wx + tu.x * c + tu.z * sn, tz = wz - tu.x * sn + tu.z * c;" +
+            "  const mx = sl.obb ? S.ox + sl.obb.cx : wx, mz = sl.obb ? S.oz + sl.obb.cz : wz, ul = Math.hypot(tx - mx, tz - mz) || 1, ux = (tx - mx) / ul, uz = (tz - mz) / ul;" +
+            "  n++; H.push({ d: Math.hypot(wx - pm.x, wz - pm.z), klasse: gross(rolle), pose: { px: +(tx + ux * 10).toFixed(2), py: +(hh(tx + ux * 10, tz + uz * 10) + 1.7).toFixed(2), pz: +(tz + uz * 10).toFixed(2), lx: +wx.toFixed(2), ly: +(e.position.y + 2.5).toFixed(2), lz: +wz.toFixed(2) }," +
+            "   wort: '10 m vor der Tür von ' + e.type + ' (' + rolle + ') in ' + (S.plan.name || '?') }); }" +
+            " if (n) orte.push((S.plan.name || '?') + ' ' + n); }" +
+            "H.sort((a, b) => a.d - b.d); const je = {}; for (const h of H) je[h.klasse] = (je[h.klasse] || 0) + 1;" +
+            "return { saat, posen: H, lage: H.length + ' Häuser mit Tür in ' + orte.length + ' Orten (' + orte.join(', ') + ') · Rollen ' + JSON.stringify(je) };",
+    },
+    // der Raum hinter der Tür: die Station zählt die Werk-Bauten der vollen Stadt (jedes Haus mit Tür, dessen Rolle weder Wohnhaus
+    // noch Scheune ist, k2-mensch-bau.js:79) und stellt das Auge 1,6 m hinter die Tür, 1,4 m über dem Grund, Blick 7 m ins Haus (:77) —
+    // der Fächer nimmt JEDEN Werk-Bau mit Tür an derselben Pose, die Rolle ist die Klasse
+    "mensch.bau.innen#3": {
+        ort: "stadt-voll",
+        gesetz: "meisterkarte-quelle/punkte/stationen/k2-mensch-bau.js:77",
+        faecher: "jeder Werk-Bau mit Tür aller Orte, in der Tür (k2-mensch-bau.js:77), Klassen im Wechsel × Tageszeit",
+        frage: "Welcher Raum ist das — wozu dient das Haus, in dessen Tür die Kamera steht?",
+        je: 12,
+        mehr: {},
+        // die Kamera steht IN der Tür: die eigene Wand des Hauses (bauSatz) vor dem Blickziel ist das Motiv
+        motiv: (a) => GRUEN(a) || /Blickziel verdeckt von (an Punkt \d+ )?bauSatz/.test(a),
+        rumpf: () =>
+            SAAT +
+            "const s = r.state, pm = s.playerMesh.position, steht = new Map(), gross = (t) => t.charAt(0).toUpperCase() + t.slice(1);" +
+            "for (const e of s.architectures || []) if (e && Number.isFinite(e.seed) && e.position) steht.set((e.seed >>> 0) + '@' + Math.round(e.position.x) + ',' + Math.round(e.position.z), e);" +
+            "const H = []; let werk = 0;" +
+            "for (const S of (r._bewohnerSiedlungen || new Map()).values()) { if (!S || !S.plan || !Array.isArray(S.plan.slots)) continue;" +
+            " for (const sl of S.plan.slots) { const wx = S.ox + sl.x, wz = S.oz + sl.z, e = steht.get((sl.seed >>> 0) + '@' + Math.round(wx) + ',' + Math.round(wz)); if (!e || !e.tuer) continue;" +
+            "  const rolle = typeof sl.rolle === 'string' ? sl.rolle : 'wohnhaus'; if (rolle === 'wohnhaus' || rolle === 'scheune') continue; werk++;" +
+            "  const c = Math.cos(sl.phi || 0), sn = Math.sin(sl.phi || 0), tu = sl.tuer || { x: 0, z: 0 }, tx = wx + tu.x * c + tu.z * sn, tz = wz - tu.x * sn + tu.z * c;" +
+            "  const mx = sl.obb ? S.ox + sl.obb.cx : wx, mz = sl.obb ? S.oz + sl.obb.cz : wz, ul = Math.hypot(tx - mx, tz - mz) || 1, ux = (tx - mx) / ul, uz = (tz - mz) / ul, y = e.position.y;" +
+            "  H.push({ d: Math.hypot(wx - pm.x, wz - pm.z), klasse: gross(rolle), pose: { px: +(tx - ux * 1.6).toFixed(2), py: +(y + 1.4).toFixed(2), pz: +(tz - uz * 1.6).toFixed(2), lx: +(tx - ux * 7).toFixed(2), ly: +(y + 1.2).toFixed(2), lz: +(tz - uz * 7).toFixed(2) }, wort: 'in der Tür von ' + e.type + ' (' + rolle + ') in ' + (S.plan.name || '?') }); } }" +
+            "H.sort((a, b) => a.d - b.d); const je = {}; for (const h of H) je[h.klasse] = (je[h.klasse] || 0) + 1;" +
+            "return { saat, posen: H, lage: werk + ' Werk-Bauten mit Tür · Rollen ' + JSON.stringify(je) };",
+    },
+    // die Gattung: die Station zählt den Bestand am Spieler — Bauten der Art baum_/busch_/farn_/blume_ und die Zellen des Streuguts
+    // (k2-leben.js:161–170), „10 Bilder je Gestalt“ Ego am Waldrand der Mess-Wiese (:265) — der Fächer nimmt je Art die nächsten
+    // Pflanzen (höchstens 10), die Kamera 12 m (Baum) bzw. 4 m (Busch, Farn, Blume) vor der Pflanze auf der Seite des Spielers
+    "leben.pflanzen.arten#1": {
+        ort: "wiese",
+        gesetz: "meisterkarte-quelle/punkte/stationen/k2-leben.js:161",
+        faecher: "je Art die nächsten Pflanzen des Bestands (höchstens 10), Ego 12 m / 4 m vor ihr, Klassen im Wechsel × Tageszeit",
+        frage: "Welche Pflanzen-Gattung steht in der Bildmitte?",
+        je: 10,
+        mehr: {},
+        // das Ziel ist die Pflanze selbst: ihr eigenes Laub nahe am Ziel IST das Motiv, fremdes Laub oder Gelände davor nicht
+        motiv: (a, P) => {
+            if (GRUEN(a)) return true;
+            const m = /Blickziel verdeckt von (?:an Punkt \d+ )?Laub (\S+) in ([\d.]+) m/.exec(a);
+            return !!(m && P && P.ziel && m[1].includes(P.ziel.art) && +m[2] >= P.ziel.d - 5 && !/Sicht verdeckt|Vordergrund/.test(a));
+        },
+        rumpf: () =>
+            SAAT +
+            "const st = r.state, p = st.playerMesh.position, art = (t) => String(t || '').replace(/^grown_/, '').replace(/_v[0-9]+$/, ''), pflanze = /^(baum_|busch_|farn_|blume_)/;" +
+            "const NAME = " + JSON.stringify(PFLANZEN_NAME) + ";" +
+            "const name = (sp) => NAME[sp] || (sp.split('_').slice(1).join(' ').replace(/^./, (c) => c.toUpperCase()) || sp);" +
+            "const L = [], gesehen = new Set(), nimm = (sp, x, y, z) => { const k = Math.round(x) + ',' + Math.round(z); if (gesehen.has(k)) return; gesehen.add(k); const d = Math.hypot(x - p.x, z - p.z); if (d <= 250) L.push({ sp, x, y, z, d }); };" +
+            "for (const e of st.architectures || []) { const sp = art(e._lodSpecies || e.type); if (pflanze.test(sp) && e.position) nimm(sp, e.position.x, e.position.y, e.position.z); }" +
+            "for (const reg of (st.scatterRegions || new Map()).values()) for (const c of reg.cells || []) { const sp = art(c.species); if ((c.layer === 'tree' || c.layer === 'under') && pflanze.test(sp)) nimm(sp, c.x, c.fuss && Number.isFinite(c.fuss.y) ? c.fuss.y : r.getTerrainHeightAt(c.x, c.z), c.z); }" +
+            "L.sort((a, b) => a.d - b.d); const je = {};" +
+            "const posen = L.map((q) => { const baum = /^baum_/.test(q.sp), dd = baum ? 12 : 4, l = Math.hypot(p.x - q.x, p.z - q.z), ux = l > 0.5 ? (p.x - q.x) / l : 1, uz = l > 0.5 ? (p.z - q.z) / l : 0, cx = q.x + ux * dd, cz = q.z + uz * dd; je[q.sp] = (je[q.sp] || 0) + 1;" +
+            " return { klasse: name(q.sp), ziel: { art: q.sp.split('_').slice(1).join('_'), d: dd }, pose: { px: +cx.toFixed(2), py: +(r.getTerrainHeightAt(cx, cz) + 1.7).toFixed(2), pz: +cz.toFixed(2), lx: +q.x.toFixed(2), ly: +(q.y + (baum ? 3 : 0.5)).toFixed(2), lz: +q.z.toFixed(2) }, wort: q.sp + ' ' + Math.round(q.d) + ' m vom Spieler, Ego ' + dd + ' m vor ihr' }; });" +
+            "return { saat, posen, lage: L.length + ' Pflanzen binnen 250 m · Arten ' + JSON.stringify(je) };",
+    },
+    // arm/reich: die Station misst die Wohnfläche der Wohnbauten der vollen Stadt (W × D × Geschosse aus dem Plan, k2-mensch-macht.js:
+    // 511–519) und nennt arm das ärmste, reich das reichste Zehntel (:532–533) — der Fächer nimmt JEDES stehende Wohnhaus beider
+    // Zehntel, 10 m vor seiner Tür (dieselbe Pose wie der Zensus der Bauten, k2-mensch-bau.js:74), das Zehntel ist die Klasse
+    "mensch.macht.stand#1": {
+        ort: "stadt-voll",
+        gesetz: "meisterkarte-quelle/punkte/stationen/k2-mensch-macht.js:533",
+        faecher: "jedes stehende Wohnhaus des ärmsten und des reichsten Zehntels, 10 m vor der Tür, Klassen im Wechsel × Tageszeit",
+        frage: "Wohnt in dem Haus in der Bildmitte ein armer oder ein reicher Haushalt?",
+        je: 30,
+        mehr: {},
+        motiv: (a) => GRUEN(a) || /Blickziel verdeckt von (an Punkt \d+ )?bauSatz/.test(a),
+        rumpf: () =>
+            SAAT +
+            "const s = r.state, pm = s.playerMesh.position, hh = (x, z) => r.getTerrainHeightAt(x, z), steht = new Map();" +
+            "for (const e of s.architectures || []) if (e && Number.isFinite(e.seed) && e.position) steht.set((e.seed >>> 0) + '@' + Math.round(e.position.x) + ',' + Math.round(e.position.z), e);" +
+            "const plaene = [...(r._ortPlaene || new Map()).values()].filter((q) => q && q.ort && Array.isArray(q.slots) && Math.hypot(q.ort.x - pm.x, q.ort.z - pm.z) < 1500);" +
+            "const WOHN = { wohnhaus: 1, patrizierhaus: 1, wohnturm: 1, pfarrhaus: 1, kontor: 1 }, haus = [];" +
+            "for (const q of plaene) for (const sl of q.slots) { if (!WOHN[sl.rolle]) continue; const ov = sl.ov || {}; const fl = (ov.W || 2 * ((sl.obb && sl.obb.ex) || 3)) * (ov.D || 2 * ((sl.obb && sl.obb.ez) || 3)) * (ov.storeys || 1); haus.push({ q, sl, fl }); }" +
+            "if (haus.length < 20) return { saat, posen: [], lage: haus.length + ' Wohnbauten in ' + plaene.length + ' Plänen' };" +
+            "const f = haus.map((h) => h.fl).sort((a, b) => a - b), n = f.length, lo = f[Math.floor(n * 0.1)], hi = f[Math.ceil(n * 0.9) - 1], H = []; let ohne = 0;" +
+            "for (const h of haus) { const k = h.fl <= lo ? 'arm' : h.fl >= hi ? 'reich' : null; if (!k) continue; const sl = h.sl, ox = h.q.ort.x, oz = h.q.ort.z, wx = ox + sl.x, wz = oz + sl.z, e = steht.get((sl.seed >>> 0) + '@' + Math.round(wx) + ',' + Math.round(wz)); if (!e || !e.tuer) { ohne++; continue; }" +
+            " const c = Math.cos(sl.phi || 0), sn = Math.sin(sl.phi || 0), tu = sl.tuer || { x: 0, z: 0 }, tx = wx + tu.x * c + tu.z * sn, tz = wz - tu.x * sn + tu.z * c;" +
+            " const mx = sl.obb ? ox + sl.obb.cx : wx, mz = sl.obb ? oz + sl.obb.cz : wz, ul = Math.hypot(tx - mx, tz - mz) || 1, ux = (tx - mx) / ul, uz = (tz - mz) / ul;" +
+            " H.push({ d: Math.hypot(wx - pm.x, wz - pm.z), klasse: k, pose: { px: +(tx + ux * 10).toFixed(2), py: +(hh(tx + ux * 10, tz + uz * 10) + 1.7).toFixed(2), pz: +(tz + uz * 10).toFixed(2), lx: +wx.toFixed(2), ly: +(e.position.y + 2.5).toFixed(2), lz: +wz.toFixed(2) }, wort: k + ': ' + sl.rolle + ' ' + Math.round(h.fl) + ' m² (Zehntel ≤ ' + Math.round(lo) + ' / ≥ ' + Math.round(hi) + ' m²), 10 m vor der Tür' }); }" +
+            "H.sort((a, b) => a.d - b.d);" +
+            "return { saat, posen: H, lage: n + ' Wohnbauten in ' + plaene.length + ' Plänen, Zehntel ≤ ' + Math.round(lo) + ' m² / ≥ ' + Math.round(hi) + ' m², stehend mit Tür arm ' + H.filter((x) => x.klasse === 'arm').length + ' · reich ' + H.filter((x) => x.klasse === 'reich').length + ', ohne stehendes Haus mit Tür ' + ohne };",
+    },
+    // die Talform an 20 Saaten: die Station rechnet je Saat (Land-Lage der Fibonacci-Kugel) × Stelle 1/4 · 1/2 · 3/4 des größten Laufs
+    // den Querschnitt (k2-planet.js:2662 PROFIL_AN, V-Tal b < 1,5 ≤ Trog) und nennt die Pose „Ego 8 m über der Sohle, Blick talauf“
+    // (:2706) — der Fächer REIST je Saat an ihre Lage (der Satz des Spielers „reise <Breite> <Länge>“, wie die Werkbank ihre Reise-Orte
+    // stellt) und schießt dort jede Stelle; die Klasse sagt das Profil-Gesetz der Adresse
+    "planet.relief.formschatz#1": {
+        ort: "wiese",
+        gesetz: "meisterkarte-quelle/punkte/stationen/k2-planet.js:2686",
+        faecher: "20 Land-Saaten × 3 Stellen des größten Laufs (k2-planet.js:2691), Ego 8 m über der Sohle, Blick 60 m talauf, je Saat eine Reise",
+        frage: "Welche Talform zeigt das Bild?",
+        mehr: {},
+        motiv: GRUEN,
+        rumpf: () => {
+            const G = formschatzGesetz();
+            return (
+                SAAT +
+                "const samen = r._planetSamen(); await r._fadenQuelle();" + G.punkt + "const orte = [];" + G.orte +
+                "const punkte = orte.slice(0, 20).map((o) => [o.breite, o.laenge]), PROFIL_AN = " + G.profil + ", mit = { punkte, abstaende: [20, 40, 80, 160, 320, 640, 1280] }, posen = [], je = {}; let ohne = 0;" +
+                "for (let s = 0; s < punkte.length; s++) for (const ort of [0.25, 0.5, 0.75]) { let w = null; try { w = await PROFIL_AN(r, T, { saat: s, ort }, mit); } catch (e) { w = null; } if (!w || !w.klasse) { ohne++; continue; }" +
+                " const fl = Math.hypot(w.fx, w.fz) || 1, ux = -w.fx / fl, uz = -w.fz / fl, k = w.klasse === 'vtal' ? 'V-Tal' : 'Trogtal'; je[k] = (je[k] || 0) + 1;" +
+                " posen.push({ klasse: k, reise: 'reise ' + punkte[s][0] + ' ' + punkte[s][1], pose: { px: w.x, py: +(w.y + 8).toFixed(2), pz: w.z, lx: +(w.x + ux * 60).toFixed(2), ly: +((Number.isFinite(w.ly) ? w.ly : w.y) + 2).toFixed(2), lz: +(w.z + uz * 60).toFixed(2) }, wort: 'Saat ' + s + ' (' + punkte[s].join(' ') + ') Stelle ' + ort + ': b ' + w.b + ', Aue ' + w.aue + ' m, Ego 8 m über der Sohle, Blick talauf' }); }" +
+                "return { saat, posen, lage: punkte.length + ' Land-Saaten, ' + posen.length + ' Querschnitte (' + JSON.stringify(je) + '), ohne Lauf oder Profil ' + ohne };"
+            );
+        },
+    },
     // die Glut: die Station setzt ihre Lava-Tat selbst und schießt am Spawn (k2-planet.js:1228); das Gesetz der Welt stellt keinen
     // Vulkan (kein Schlüssel am Planet-Faden, kein Leser eines Ausbruchs) — Adressen der Glut sind nur die Lava-Zellen, die die Welt trägt
     "planet.geologie.vulkan#1": {
@@ -156,7 +320,21 @@ const SPROSSEN = {
 // der Umfang nicht erzeugbar
 function faechern(basis, uhren, mehr) {
     const aus = [];
-    for (const u of uhren) basis.forEach((b, i) => aus.push({ basis: i, pose: b.pose, wort: b.wort, mehr: Object.assign({}, mehr, { uhr: u }) }));
+    // die KLASSE (ordnen × klasse): die Wahrheit des Gesetzes an der Adresse reist mit der Pose in die Akte — nie von Hand gesetzt
+    for (const u of uhren) basis.forEach((b, i) => aus.push(Object.assign({ basis: i, pose: b.pose, wort: b.wort, mehr: Object.assign({}, mehr, { uhr: u }) }, b.klasse != null ? { klasse: b.klasse } : {}, b.ziel ? { ziel: b.ziel } : {}, b.reise ? { reise: b.reise } : {})));
+    return aus;
+}
+// DIE KLASSEN IM WECHSEL: je Klasse die Adressen nach Abstand, dann Runde um Runde eine je Klasse (höchstens `je` je Klasse) — der
+// Fächer schießt bis MAX Bilder das Motiv tragen; ohne Wechsel füllte die häufigste Klasse (das Wohnhaus) das Blatt allein
+function imWechsel(basis, je) {
+    const nach = new Map();
+    for (const b of basis) (nach.get(b.klasse) || nach.set(b.klasse, []).get(b.klasse)).push(b);
+    const aus = [];
+    for (let k = 0; k < (je || Infinity); k++) {
+        let mehr = false;
+        for (const l of nach.values()) if (l[k]) (aus.push(l[k]), (mehr = true));
+        if (!mehr) break;
+    }
     return aus;
 }
 // eine Pose, deren Ziel hinter Gelände liegt, deren Sicht verdeckt ist oder deren Vordergrund das Bild füllt, bleibt es zu jeder Uhr
@@ -224,6 +402,8 @@ async function start() {
     for (;;) {
         const t = fs.readFileSync(path.join(aus, "werkbank.log"), "utf8");
         if (/WERKBANK bereit/.test(t)) break;
+        // ein Absturz der Werkbank endet sofort beim Namen — nie 200 s am GPU-Schloss auf ein „bereit“, das nicht kommt
+        if (/ABSTURZ/.test(t)) throw new Error("die Werkbank stürzte ab: " + t.split("\n").find((z) => /ABSTURZ/.test(z)).slice(0, 200));
         if (Date.now() - t0 > 200000) throw new Error("die Werkbank meldet in 200 s kein „bereit“ (" + path.join(aus, "werkbank.log") + ")");
         await schlaf(1000);
     }
@@ -261,7 +441,7 @@ async function schiesse() {
         if (!G || G.sha !== S.sha) {
             // die Posen EINMAL je Kopf aus dem Gesetz: jeder weitere Lauf schießt dieselbe Liste weiter
             const g = await evalSeite(port, D.rumpf(), 120000);
-            const posen = faechern(g.posen || [], D.uhren || UHREN, D.mehr);
+            const posen = faechern(D.je ? imWechsel(g.posen || [], D.je) : g.posen || [], D.uhren || UHREN, D.mehr);
             G = { sprosse: id, sha: S.sha, geraet: S.lage.adapter, version: S.lage.version, ort: D.ort, saat: g.saat, gesetz: D.gesetz, faecher: D.faecher, lage: g.lage, posenDesGesetzes: (g.posen || []).length, posen, urteil: umfang(posen.length, D.gesetz, g.lage) };
             fs.writeFileSync(blatt, JSON.stringify(G, null, 1));
         }
@@ -298,6 +478,14 @@ async function schiesse() {
             const datei = path.join(hier, "bild", nr(i) + ".png");
             const rot = datei.replace(/\.png$/, "-rot.png");
             const t = Date.now();
+            // DIE REISE DER ADRESSE: liegt die Pose an einer anderen Lage des Planeten, spricht der Fächer den Satz des Spielers durch die
+            // EINE Tür der Konsole (wie die Werkbank ihre Reise-Orte stellt, scripts/werkbank.cjs reiseDesOrts) und prüft, dass die Seite
+            // danach an der Lage steht — sonst endet der Lauf beim Namen (keine Akte, die Pose bleibt offen)
+            if (P.reise) {
+                const R = await evalSeite(port, REISE + "return await reise(" + JSON.stringify(P.reise) + ");", 240000);
+                if (!R || R.fehler) throw new Error(id + " Bild " + nr(i) + ": „" + P.reise + "“ kam nicht an — " + ((R && R.fehler) || "ohne Antwort"));
+                if (R.neu) console.log(id + ": " + P.reise + " → Welt " + R.welt + " (" + R.ms + " ms)");
+            }
             let a = null, da = null;
             // ein Wurf der Werkbank an einer Pose: EIN zweiter Versuch, dann steht die Pose mit ihrem Fehler in der Akte
             for (let v = 0; v < 2 && !da; v++) {
@@ -307,7 +495,7 @@ async function schiesse() {
                 da = [a && a.datei, datei, rot].find((f) => f && fs.existsSync(f));
             }
             const abnahme = String((a && (a.abnahme || a.fehler)) || "").slice(0, 300);
-            const akte = { sprosse: id, nr: i + 1, basis: P.basis, sha: S.sha, geraet: S.lage.adapter, version: S.lage.version, ort: D.ort, saat: G.saat, gesetz: D.gesetz, pose: P.pose, uhr: P.mehr.uhr, wort: P.wort, abnahme, sek: 0, datum: new Date().toISOString() };
+            const akte = Object.assign({ sprosse: id, nr: i + 1, basis: P.basis, sha: S.sha, geraet: S.lage.adapter, version: S.lage.version, ort: D.ort, saat: G.saat, gesetz: D.gesetz, pose: P.pose, uhr: P.mehr.uhr, wort: P.wort, abnahme, sek: 0, datum: new Date().toISOString() }, P.klasse != null ? { klasse: P.klasse } : {});
             if (!da) Object.assign(akte, { traegt: false, fehler: "kein Bild nach zwei Versuchen" });
             else {
                 if (da !== datei) fs.renameSync(da, datei);
@@ -317,7 +505,7 @@ async function schiesse() {
                     fs.unlinkSync(datei);
                     throw new Error(id + " Bild " + nr(i) + ": " + (m ? m.zeilen : 0) + " Zeilen < " + ZEILEN);
                 }
-                Object.assign(akte, { breite: m.breite, zeilen: m.zeilen, sha256: sha256(b), traegt: motiv(abnahme) });
+                Object.assign(akte, { breite: m.breite, zeilen: m.zeilen, sha256: sha256(b), traegt: motiv(abnahme, P) });
                 if (!akte.traegt) fs.renameSync(datei, path.join(hier, "nicht", nr(i) + ".png"));
             }
             akte.sek = +((Date.now() - t) / 1000).toFixed(1);
@@ -353,6 +541,12 @@ function selbsttest() {
     t("3 Posen × 9 Uhren = 27: Umfang nicht erzeugbar beim Namen", /^Umfang nicht erzeugbar: 27 von 40 \(x:1/.test(umfang(faechern(basis(3), UHREN, {}).length, "x:1", "")));
     t("0 Posen: 0 von 40, kein Bild", umfang(faechern([], UHREN, {}).length, "x:1", "leer").includes("0 von 40") && faechern([], UHREN, {}).length === 0);
     t("40 Posen tragen", umfang(40, "x:1") === null);
+    const kl = Array.from({ length: 30 }, (_, i) => ({ pose: { px: i }, wort: "h" + i, klasse: i < 24 ? "Wohnhaus" : i < 28 ? "Scheune" : "Schmiede", ziel: { art: "eiche", d: 12 } }));
+    const w = imWechsel(kl, 3);
+    t("die Klassen im Wechsel: höchstens 3 je Klasse, die seltene Klasse vor dem vierten Wohnhaus, die Klasse reist in die Pose", w.length === 8 && w.slice(0, 3).map((x) => x.klasse).join() === "Wohnhaus,Scheune,Schmiede" && w.filter((x) => x.klasse === "Wohnhaus").length === 3 && faechern(w, [0.5], {})[1].klasse === "Scheune" && faechern(w, [0.5], {})[0].ziel.art === "eiche" && !("klasse" in faechern(basis(2), [0.5], {})[0]));
+    const PF = SPROSSEN["leben.pflanzen.arten#1"].motiv;
+    t("das Motiv der Pflanze: ihr eigenes Laub am Ziel trägt, fremdes oder nahes Laub nicht", PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:tanne:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 2.1 m]", { ziel: { art: "eiche", d: 12 } }) && PF("ABNAHME GRÜN", {}));
+    t("jede Klassen-Sprosse trägt ihre Frage", Object.values(SPROSSEN).filter((d) => d.je).every((d) => /\?$/.test(d.frage || "")));
     t("eine feste Uhr (Erntetag) fächert nur über Adressen", faechern(basis(12), [10 / 24], { uhr: 1 }).length === 12 && faechern(basis(12), [10 / 24], {})[0].mehr.uhr === 10 / 24);
     const png = Buffer.alloc(24);
     png.writeUInt32BE(0x89504e47, 0);
@@ -381,7 +575,7 @@ function selbsttest() {
     process.exit(rot.length ? 1 : 0);
 }
 
-module.exports = { SPROSSEN, faechern, umfang, pngMass, MIN, MAX, ZEILEN, UHREN };
+module.exports = { PFLANZEN_NAME, SPROSSEN, faechern, imWechsel, umfang, pngMass, MIN, MAX, ZEILEN, UHREN };
 if (require.main === module) {
     const cmd = process.argv[2];
     const lauf = cmd === "--selftest" ? selbsttest : cmd === "start" ? start : cmd === "schiesse" ? schiesse : cmd === "stop" ? stop : null;
