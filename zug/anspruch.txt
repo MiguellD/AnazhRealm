@@ -111,3 +111,5 @@ w28-leib-liest-satz karte2.mensch.menge.seuche#1,karte2.mensch.sport.kunst#1,kar
 w28-stimme-leib-2 karte2.erleben.klang.stimme#1
 # 752 (main c3631992, 26.11. 10:13): main c3631992, 26.11. 10:30: das Auge sieht Farbe — Ansprüche gesehen#1 und #2, #3 misst 83,2 % und bucht mit ihnen
 w28-auge-farbe karte2.erleben.sinne.gesehen#1,karte2.erleben.sinne.gesehen#2
+# 753 (main c814741e, 26.11. 10:38): main c814741e, 26.11. 10:49: die Brücke quert — Anspruch wegfindung#1; erste Fahrt unter dem Erb-Dienst, 15 min
+w28-bruecke-quert karte2.erleben.spieler.wegfindung#1
