@@ -1,9 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] nvidia/pascal
-@@ 8.2 s · am Messort stadt-voll (ego) nach 8.2 s, 247 Takte, Anlauf stand
-@@ 8.2 s · Zensus: Medien {"land":22,"wasser":0,"schiene":0,"luft":0,"tief":0,"raum":0} · Rezepte [{"k":"gt","m":8.942,"v":63.82},{"k":"supersport","m":7.437,"v":68.06},{"k":"limousine","m":11.201,"v":57.27},{"k":"kompakt_fwd","m":8.571,"v":40.35},{"k":"suv","m":12.332,"v":48.81},{"k":"transporter","m":16.434,"v":41.14},{"k":"boot","m": · g 9.8
-@@ 11.3 s · Medium S2: Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 3129 ms · Leser stamm/gelaende-kollision.js:1238 · Gesetz vehicle-core.js:3474 exportDrive → :3662 fahrGesetz → :4146 fahrSchritt · schlechteste {"saat":1,"ort":"supersport","zeit":null} weg100 45.39 · ungemessen: Spurrinne nach 10 Durchfahrten (kein Gesetz der Spur im Boden)
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

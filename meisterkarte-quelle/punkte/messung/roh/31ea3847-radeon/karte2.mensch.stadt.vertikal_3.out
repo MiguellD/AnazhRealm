@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8")) 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\31ea3847-radeon\karte2.mensch.stadt.vertikal_2.json 45
-[linse-gpu] amd/rdna-3
-@@PUNKTE@@ MESSORT /umstellen hochhaus-dach: ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\Users\micha\AppData\Local\Temp\anazh-absturz\134e2c08-76ba-458a-ab4c-574daafefac8.dmp
-@@ PROBE-FEHLER Error: /umstellen hochhaus-dach: ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\Users\micha\AppData\Local\Temp\anazh-absturz\134e2c08-76ba-458a-ab4c-574daafefac8.dmp |     at K.messort (eval at <anonymous> ([eval]:1:1), <anonymous>:240:45) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:651:13) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:650:5)
-
---- gpu-zeuge ---
-[linse-gpu] amd/rdna-3
-[linse-gpu] amd/rdna-3

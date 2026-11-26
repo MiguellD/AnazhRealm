@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] nvidia/pascal
-@@ 17.1 s · am Messort dorf (ego) nach 17.1 s, 711 Takte
-@@ 27.4 s · Acker: 270 Strecken mit Halmen der Frucht auf 270 Kämmen (Stand {"tage":136.875,"hoeheM":0.85,"reife":1,"deckung":0.8,"stoppel":false,"farbe":13214806}); Wildwuchs 0 Pflanzen + 0 Büschel innen, Kontrolle im Ring 40 + 238 (86 Takte)
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

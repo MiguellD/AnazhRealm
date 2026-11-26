@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] nvidia/pascal
-@@ 11.1 s · am Messort stadt-voll (ego) nach 11.1 s, 266 Takte, Anlauf stand
-@@ 11.1 s · Diffusion: 1 Orte, Regionen binnen 2 km 1, Paar {"paar":0,"regionen":1}
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

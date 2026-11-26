@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8")) 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\f68dbf09-gtx\karte2.mensch.bau.bauen_2.json 143
-[linse-gpu] nvidia/pascal
-@@ 12.2 s · am Messort dorf (ego)
-@@ 12.3 s · Sätze → Bau: 7/50 · tragend ["baue dorf hier","baue tempel hier","baue damm hier","baue wasserfall hier","bau mir ein haus","baue ein haus hier","baue eine arena"]
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

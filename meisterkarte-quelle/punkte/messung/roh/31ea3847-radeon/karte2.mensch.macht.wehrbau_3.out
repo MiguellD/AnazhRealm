@@ -1,9 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8")) 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\31ea3847-radeon\karte2.mensch.macht.wehrbau_2.json 55
-[linse-gpu] amd/rdna-3
-@@ 39.1 s · am Messort stadt-voll (ego)
-@@ 39.1 s · Machtbauten: {"slots":328,"plaene":2,"machtbauten":6,"volFaktor":1.34,"rho":0.402,"burgen":1,"wehrbauten":5,"poolWaende":19,"poolFrei":0,"grenzKm":0,"platz":[842.5,451.8],"hoch":170,"pose":{"px":842.49,"py":225.47,"pz":476.79,"lx":842.49,"ly":55.47,"lz":451.79}}
-@@PUNKTE@@ FRIST 49 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
-
---- gpu-zeuge ---
-[linse-gpu] amd/rdna-3
-[linse-gpu] amd/rdna-3

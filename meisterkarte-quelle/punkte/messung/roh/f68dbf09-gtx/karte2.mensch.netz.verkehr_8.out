@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8")) 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\f68dbf09-gtx\karte2.mensch.netz.verkehr_3.json 70
-[linse-gpu] nvidia/pascal
-@@ 50.6 s · am Messort stadt-voll (ego)
-@@ 50.6 s · stadt-voll: 21 Wagen (21 fahren, 21 mit Fahrer), Ampeln 0, Wege am Tag 4407
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

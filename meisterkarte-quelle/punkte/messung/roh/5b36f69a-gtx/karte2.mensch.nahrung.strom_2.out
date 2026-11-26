@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] nvidia/pascal
-@@ 22.4 s · am Messort dorf (ego) nach 22.4 s, 1149 Takte
-@@ 22.4 s · Scheunen 3 (Aradunum): Sägezahn 365 Ernten je Jahr an 2 Höfen, Paar Hof 0 voll 19 h, leer 37 h · je Hof [Esser, Bauern, Ernten, Mahle] [[19,1,2,2],[15,1,2,2],[23,0,0,0]]
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] amd/rdna-3
-@@PUNKTE@@ MESSORT /umstellen stadt-voll: ABSTURZ der Seite: die Verbindung zum Browser riss (der Browser-Prozess ist fort)
-@@ PROBE-FEHLER Error: /umstellen stadt-voll: ABSTURZ der Seite: die Verbindung zum Browser riss (der Browser-Prozess ist fort) |     at K.messort (eval at <anonymous> ([eval]:1:1), <anonymous>:253:45) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:491:13) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:490:5)
-
---- gpu-zeuge ---
-[linse-gpu] amd/rdna-3
-[linse-gpu] amd/rdna-3

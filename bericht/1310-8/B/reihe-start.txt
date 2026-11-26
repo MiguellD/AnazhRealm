@@ -1,1 +1,0 @@
-{"ergebnis":{"reihe":["@wahl:49"],"lose":48},"ms":2}

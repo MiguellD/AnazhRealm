@@ -1,9 +1,0 @@
-[
-    {
-        "station": "gelaende.K2#1",
-        "leiter": "same.physik.fluid",
-        "sprosse": 1,
-        "richter": "gleich",
-        "grund": "Richter „Grube unter dem Pegel gegraben füllt sich im Bild, beide Geräte“: die Station (stationen/g1.js, K2_PROBE = proben-welt.cjs wasserGraben) gräbt über das echte Verb graben (CDP-Klick, Third, am Fluss nächst Genesis) 1 m und 3 m jenseits der Krone und zählt je präsentiertem Bild die gezeichneten Wasser-Flächen: gefüllt ≤ 2 s, doppelt 0, über dem Spiegel 0; geraet radeon + gtx. Dieselbe Station trägt schon mensch.nahrung.erdbau S1 (vision/richter-tafel.json). Am Fenster: Radeon und GTX am SELBEN Kopf mit --nur gelaende.K2#1."
-    }
-]

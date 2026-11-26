@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] amd/rdna-3
-@@ 8.1 s · am Messort stadt-voll (ego) nach 8.1 s, 307 Takte, Anlauf stand
-@@ 8.2 s · Sprache: 1 Orte (Villaalto/mediterran), Namen im DOM 1 von 648 Zeilen, Personennamen 1356 von 1356
-
---- gpu-zeuge ---
-[linse-gpu] amd/rdna-3
-[linse-gpu] amd/rdna-3

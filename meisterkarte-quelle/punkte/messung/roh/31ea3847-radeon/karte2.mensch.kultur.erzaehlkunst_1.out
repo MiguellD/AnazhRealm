@@ -1,9 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8")) 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\31ea3847-radeon\karte2.mensch.kultur.erzaehlkunst_1.json 45
-[linse-gpu] amd/rdna-3
-@@ 38.4 s · am Messort stadt-voll (ego)
-@@ 38.5 s · Erzählkunst: Bühnen 0, Lokale 1, Text-Träger 0, Kulturen 5 von 32
-@@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:66) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)
-
---- gpu-zeuge ---
-[linse-gpu] amd/rdna-3
-[linse-gpu] amd/rdna-3

@@ -1,9 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] nvidia/pascal
-@@ 3.6 s · am Messort wiese (third) nach 3.6 s, 165 Takte
-@@ 9.4 s · Leib: {"fuesse":2,"gehen":{"tempo":1.576,"neig":0.6,"phasen":4,"gleitenCm":312.52},"sprint":{"tempo":6.281,"neig":1.4,"phasen":4,"gleitenCm":1245.83},"sprungM":0.543,"hang":{"tempo":1.576,"neig":3.7,"phasen":4,"gleitenCm":312.52},"steilGrad":3.9,"gleitenCm":1245.83}
-@@ 50.5 s · Verben: {"verben":{"schaukeln":{"wert":2.517,"lo":2.3955073815327563,"hi":2.647666053273047,"gesetz":"Periode 2π√(L/g) 2.522 s ± 5 % (L 1.580 m)","ok":true},"rutschen":{"wert":3.277,"lo":2,"hi":4,"gesetz":"Spitze im Band der Rutsche (Ausgang 2.76 m/s, Band 1.5–4)","ok":true,"ausgang":2.756},"wippen":{"wert":0.23,"lo":0.23039696112979058,"hi":3.141592653589793,"gesetz":"der Hebel am Anschlag phiMax 0.230 rad","ok":true},"klettern":{"wert":0.376,"lo":0.3,"hi":0.6,"gesetz":"Tempo des Stiegs im Band (VERB_SOLL.tempo.klettern)","ok":true},"hangeln":{"wert":0.262,"lo":0.2,"hi":0.6,"gesetz":"Tempo längs des Holms im Band (VERB_SOLL.tempo.hangeln)","ok":true},"balancieren":{"wert":0.5,"lo":0.1,"hi":0.5,"gesetz":"Tempo auf dem Balken im Band (VERB_SOLL.tempo.balancieren)","ok":true},"wand":{"wert":0.6,"lo":0.54,"hi":0.66,"gesetz":"Stieg an der Wand parkour.kletterV 0.6 m/s ± 10 %","ok":true},"schwimmen":{"wert":1.371,"lo":1.234113122934825,"hi":1.5083604835870084,"gesetz":"Tempo im See = Gehen × speedMul 1.371 m/s ± 10 % (See 1816/-6168, nach 354 Takten am Ufer)","ok":true}},"tafel":["gehen","sprint","sprung","wand","schwimmen","schaukeln","rutschen","klettern","hangeln","balancieren","wippen"]}
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

@@ -1,9 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] amd/rdna-3
-@@ 44.2 s · am Messort dorf (ego) nach 44.2 s, 861 Takte
-@@ 45.1 s · gepflückt blume (5 m): fort 1, Ernte +1 kraut, Dauer 4 h, früh 0, zurück 1 nach 1 Takten
-@@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
-
---- gpu-zeuge ---
-[linse-gpu] amd/rdna-3
-[linse-gpu] amd/rdna-3

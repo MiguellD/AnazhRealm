@@ -1,9 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] nvidia/pascal
-@@ 24.5 s · Säule λ 30 gegen Euler (β 2): {"E":11000000000,"lambda":30,"beta":2,"F_euler":25131,"F_voll":25130.9,"F_halb":12565.5,"abw_pct":0,"abw_halbe_pct":0,"knick":2,"steht":2,"frueher":true,"grund":null}
-@@ 24.5 s · same.physik.tragen S1 gemessen {"art":"gemessen","werte":{"abw_pct":0,"abw_halbe_pct":0},"erzeugt":1,"welt":{"knick":2,"steht":2},"taeter":"Holzsäule 0,1 × 3 m: versagt bei 25130.9 N (E/2: 12565.5 N), Euler 25131 N (β 2, eingespannt-frei) — stamm/bau-
-@@PUNKTE@@ FRIST 111 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

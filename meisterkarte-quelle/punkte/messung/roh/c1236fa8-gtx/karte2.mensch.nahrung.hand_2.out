@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
-[linse-gpu] nvidia/pascal
-@@ 17 s · am Messort dorf (ego) nach 17.0 s, 714 Takte
-@@ 17.5 s · gepflückt blume (5 m): fort 1, Ernte +1 kraut, Dauer 4 h, früh 0, zurück 1 nach 1 Takten
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

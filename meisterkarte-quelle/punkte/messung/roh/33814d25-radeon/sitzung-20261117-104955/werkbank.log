@@ -1,9 +1,0 @@
-[linse-gpu] amd/rdna-3
-[seite] 2026-11-17T10:03:28.438Z navigiert http://localhost:7804/index.html
-WERKBANK bereit: Steuer 127.0.0.1:27804 · Seite :27803
-[seite] 2026-11-17T10:04:46.502Z ABSTURZ Page crashed!
-[welt-boot] ABSTURZ im Browser (nicht die Seite): utility · Ausnahme 0xc0000005 (Zugriffsverletzung) · Abbild %TEMP%\anazh-absturz\54764591-6c93-44e4-8005-1e5db5373274.dmp
-
-❌ ABSTURZ der Seite: renderer · Ausnahme 0xc0000005 (Zugriffsverletzung) · Abbild %TEMP%\anazh-absturz\d32a5ac3-d30f-4b4b-b588-14874b7cabc5.dmp
-[seite] 2026-11-17T10:04:46.790Z GESCHLOSSEN
-[seite] 2026-11-17T10:04:46.880Z Browser getrennt

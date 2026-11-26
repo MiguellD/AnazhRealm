@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8")) 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\31ea3847-radeon\karte2.mensch.zeit.palimpsest_2.json 45
-[linse-gpu] amd/rdna-3
-@@ 0.8 s · am Messort wiese (ego)
-@@ 2.8 s · Wachstum: {"gruendSlots":12,"stufen":[{"jahr":1400,"slots":10,"neu":0,"weg":2},{"jahr":1500,"slots":14,"neu":4,"weg":0},{"jahr":1600,"slots":16,"neu":2,"weg":0},{"jahr":1700,"slots":19,"neu":4,"weg":1},{"jahr":1800,"slots":24,"neu":7,"weg":2},{"jahr":1900,"slots":25,"neu":4,"weg":3},{"jahr":1935,"slots":27,"neu":3,"weg":1}],"bleiben":9,"ueberdeckung":0.75,"ringe":5,"sprung":0.25,"sprungJ":1332,"wechsel":27,"paare":600,"spanne4":600,"umbau":0,"bauphasen":0,"niedergang":1,"namen":["Steinstadt"],"gr0":1183,"ende":2007,"chronikJ":824,"letzterJahr":1862,"ms":1954,"pose":{"px":-280.4,"py":57.61,"pz":-1005.6,"lx":-280.4,"ly":27.61,"lz":-1045.6}}
-
---- gpu-zeuge ---
-[linse-gpu] amd/rdna-3
-[linse-gpu] amd/rdna-3

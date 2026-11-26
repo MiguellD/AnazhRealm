@@ -1,6 +1,0 @@
-Tafel: 221 Zeilen · 583 Felder
-Felder: bleibt Datum 116 · folgt 39 · fällt 169 · unberührt 259
-Licht-Kette (ohne Technik/Kosmetik/Studios, 407 Felder): bleibt 116 · folgt 34 · fällt 159 · unberührt 98
-Zeilen (Mehrheit): bleibt 56 · folgt 27 · fällt 88 · unberührt 50
-Licht-Kette G0: 108 von 252 Feldern fallen · GB (Bild-Anker): 15 von 20
-fallende Zeilen: S1 1 · S2 1 · S5 5 · S8 1 · S10 18 · S11 1 · S12 1 · S16 1 · S35 3 · S40 3 · N1 1 · N3 1 · N4 1 · N5 1 · N6 1 · N7 1 · N12 1 · N13 1 · N14 1 · N15 1 · N16 1 · N17 1 · N18 1 · N19 1 · N20 3 · N21 1 · N22 1 · N23 1 · N24 4 · N25 1 · N28 3 · N29 1 · N31 1 · N33 6 · A1 1 · A2 1 · A3 1 · A4 1 · A5 1 · A6 1 · A7 1 · A9 1 · A10 1 · A11 1 · A13 2 · A18 1 · A19 1 · A20 2 · A21 1 · A27 1 · A22 1 · A24 3 · R2 3 · R5 1 · R6 3 · Q2 1 · Q3 1 · Q7 1 · Q8 1 · Q12 1 · Q13 2 · Q17 2 · Q18 2 · Q19 1 · Q20 1 · Q27 1 · Q29 1 · L6 1 · L8 1 · L9 1 · L10 1 · L12 1 · L13 1 · L15 2 · L16 1 · L29 3 · L30 1 · L31 1 · E1 6 · E2 4 · E3 9 · E4 3 · E11 2 · E17 1 · E20 1 · E21 1 · E22 2 · E23 1 · V6 1 · X2 9

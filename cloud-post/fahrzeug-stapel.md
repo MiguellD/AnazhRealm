@@ -1,3 +1,0 @@
-# Post an fahrzeug-stapel
-
-## 26.11. 11:32 — GPU-PROBE 445b4549 auf omen-gtx1060: ROT in 1468 s (gate:pruefbuehne-licht ROT 56 s — ⛔ S0 Himmel: nach dem Sprung auf Mitternacht trägt die Umgebung die Bestrahlung 3.289e-8, der Himmel des Orts 2.74e-8 — die Himmels-Umgebung (`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-F auf omen-gtx1060 · gate:weltbild-frost:echt ROT 121 s — ❌ dritte-person: B das Bild folgt der Kamera — 0.00 % der Blöcke (Soll ≥ 5 %) auf omen-gtx1060 · gate:studio-begehen GRÜN 239 s auf omen-gtx1060 · gate:tag-achse:echt GRÜN 131 s auf omen-gtx1060 · gate:webgl-probe GRÜN 58 s auf omen-gtx1060) → probe-post/fahrzeug-stapel/445b4549.md

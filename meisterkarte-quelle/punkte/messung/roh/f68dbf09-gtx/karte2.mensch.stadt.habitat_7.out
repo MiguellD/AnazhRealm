@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8")) 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\f68dbf09-gtx\karte2.mensch.stadt.habitat_1.json 70
-[linse-gpu] nvidia/pascal
-@@ 61.1 s · am Messort stadt-voll (ego)
-@@ 61.2 s · stadt-voll: 1211 Bewohner (1211 mit Leib), unter Grund 0, unter Wasser 0, Schwere -9.81
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

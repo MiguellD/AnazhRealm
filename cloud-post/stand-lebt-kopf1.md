@@ -1,3 +1,0 @@
-# Post an stand-lebt-kopf1
-
-## 26.11. 11:13 — GPU-PROBE b1d9fe56 auf radeon-890m: ROT in 1340 s (gate:pruefbuehne-licht ROT 83 s — ⛔ S0 Himmel: nach dem Sprung auf Mitternacht trägt die Umgebung die Bestrahlung 3.288e-8, der Himmel des Orts 2.74e-8 — die Himmels-Umgebung (`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-F auf radeon-890m · gate:weltbild-frost:echt GRÜN 171 s auf radeon-890m · gate:studio-begehen GRÜN 236 s auf radeon-890m · bild:stadt-voll@0.55 GRÜN 193 s auf radeon-890m · gate:webgl-probe GRÜN 61 s auf radeon-890m) → probe-post/stand-lebt-kopf1/b1d9fe56.md

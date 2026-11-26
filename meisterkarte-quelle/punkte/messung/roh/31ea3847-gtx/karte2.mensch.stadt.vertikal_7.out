@@ -1,8 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8")) 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\31ea3847-gtx\karte2.mensch.stadt.vertikal_2.json 135
-[linse-gpu] nvidia/pascal
-@@PUNKTE@@ MESSORT /umstellen hochhaus-dach: ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\Users\micha\AppData\Local\Temp\anazh-absturz\c5de8a0f-b0ec-4ed3-a23a-52db07269cac.dmp
-@@ PROBE-FEHLER Error: /umstellen hochhaus-dach: ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\Users\micha\AppData\Local\Temp\anazh-absturz\c5de8a0f-b0ec-4ed3-a23a-52db07269cac.dmp |     at K.messort (eval at <anonymous> ([eval]:1:1), <anonymous>:240:45) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:651:13) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:650:5)
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

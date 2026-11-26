@@ -1,3 +1,0 @@
-kueste: Orte 129 · erste Saat der Reihe traegt Land am Ursprung bei k = 0 in 74 (57.4 %), Mittel k 0.8, groesstes k 6, ohne Saat in 32: 0 · danach traegt der Boden im Umkreis 240 m (Makro) in 129 (100 %)
-innen: Orte 799 · erste Saat der Reihe traegt Land am Ursprung bei k = 0 in 778 (97.4 %), Mittel k 0.03, groesstes k 2, ohne Saat in 32: 0 · danach traegt der Boden im Umkreis 240 m (Makro) in 799 (100 %)
-Kosten der Reihe je Ort im Mittel 3.06 ms

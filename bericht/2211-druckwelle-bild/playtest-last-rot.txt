@@ -1,8 +1,0 @@
-179:  ❌ Feld-Regeln: deposit_life SCHREIBT → auraAt liest es zurueck
-181:  ❌ Feld-Regeln: Default-Position einer Feld-Op ist at_player
-245:  ❌ Wertung: END-TO-END
-3778:❌ 3 Invariante(n) verletzt: Feld-Regeln: deposit_life SCHREIBT → auraAt liest es zurueck, Feld-Regeln: Default-Position einer Feld-Op ist at_player, Wertung: END-TO-END
-3779:PLAYTEST-EXIT=1
---- derselbe Baum gleich danach allein ---
-3781:✅ Alle Invarianten OK
-3782:PLAYTEST-EXIT=0

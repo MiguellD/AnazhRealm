@@ -1,3 +1,0 @@
-# Post an stand-lebt
-
-## 26.11. 11:29 — GPU-PROBE a39ca363 auf gtx1050-desktop: ROT in 2300 s (gate:pruefbuehne-licht ROT 101 s — ⛔ S0 Himmel: nach dem Sprung auf Mitternacht trägt die Umgebung die Bestrahlung 3.289e-8, der Himmel des Orts 2.74e-8 — die Himmels-Umgebung (`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-F auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 473 s auf gtx1050-desktop · gate:studio-begehen GRÜN 515 s auf gtx1050-desktop · bild:stadt-voll@0.55 GRÜN 390 s auf gtx1050-desktop · gate:webgl-probe GRÜN 123 s auf gtx1050-desktop) → probe-post/stand-lebt/a39ca363.md

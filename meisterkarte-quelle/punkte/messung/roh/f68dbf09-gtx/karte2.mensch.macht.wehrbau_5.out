@@ -1,9 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8")) 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\f68dbf09-gtx\karte2.mensch.macht.wehrbau_2.json 85
-[linse-gpu] nvidia/pascal
-@@ 64.5 s · am Messort stadt-voll (ego)
-@@ 64.5 s · Machtbauten: {"slots":329,"plaene":2,"machtbauten":6,"volFaktor":1.34,"rho":0.403,"burgen":1,"wehrbauten":5,"poolWaende":19,"poolFrei":0,"grenzKm":0,"platz":[842.5,451.8],"hoch":170,"pose":{"px":842.49,"py":225.47,"pz":476.79,"lx":842.49,"ly":55.47,"lz":451.79}}
-@@PUNKTE@@ FRIST 79 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal

@@ -1,9 +1,0 @@
-$ C:\Program Files\nodejs\node.exe -e eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8")) 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\f68dbf09-gtx\karte2.mensch.kultur.verstaendigung_1.json 91
-[linse-gpu] nvidia/pascal
-@@ 52.1 s · am Messort stadt-voll (ego)
-@@ 52.1 s · Verständigung: Bewohner 1211 (nah 98), Text-Träger an Gräbern 0, Wörter 0, Kreaturen 0 (mit Zeichen 0)
-@@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:625:95) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:591:5)
-
---- gpu-zeuge ---
-[linse-gpu] nvidia/pascal
-[linse-gpu] nvidia/pascal
