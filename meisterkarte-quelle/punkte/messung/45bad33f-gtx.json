@@ -1,7 +1,7 @@
 {
  "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
  "geraet": "gtx",
- "zeit": "2026-11-26T22:32:11.494Z",
+ "zeit": "2026-11-26T22:38:27.450Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -700,6 +700,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.planet.kopplung.bahn-klima#2": {
+   "gruen": false,
+   "zahl": "S2 amp0Prozent 0 % gegen Soll ≤ 10 % ✓ · amp45Faktor 1,947 gegen Soll ≥ 2 ✗ · schneelinieVersatzM 149,481 m gegen Soll > 0 m ✓ · Bild (Beleg) fehlt (/bild: {\"ms\":3998,\"fehler\":\"ABNAHME ROT [Vordergrund 30.0 % näher als 8 m (der h) · Täter: planet-core.js planetOrt (Spanne des Jahres) · voxel-worker.js:1504 planetOrtAuftrag (msg.koerper)",
+   "exit": 0,
+   "minuten": 2.04,
+   "grund": "ROT: S2 amp0Prozent 0 % gegen Soll ≤ 10 % ✓ · amp45Faktor 1,947 gegen Soll ≥ 2 ✗ · schneelinieVersatzM 149,481 m gegen Soll > 0 m ✓ · Bild (Beleg) fehlt (/bild: {\"ms\":3998,\"fehler\":\"ABNAHME ROT [Vordergrund 30.0 % näher als 8 m (der h) · Täter: planet-core.js planetOrt (Spanne des Jahres) · voxel-worker.js:1504 planetOrtAuftrag (msg.koerper)",
+   "gpu": "nvidia/pascal",
+   "konsum": "ke6d7d82f5c44",
+   "konsumN": 32,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k0f91bf40e6d9",
+   "s": 121.6,
+   "fremd": {
+    "s": 125,
+    "takte": 57,
+    "fremdS": 45.59,
+    "kerne": 0.365,
+    "fensterKerne": 0.593,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      9.83
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.47
+     ],
+     [
+      "Explorer.EXE",
+      5.91
+     ]
+    ],
+    "dienerS": 29.88,
+    "diener": [
+     [
+      "System",
+      15.02
+     ],
+     [
+      "dwm.exe",
+      7.91
+     ]
+    ],
+    "geraetS": 41.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.98
+     ],
+     [
+      "svchost.exe",
+      12.83
+     ],
+     [
+      "SearchProtocolHost.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 384.98,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T22:38:27.450Z",
+   "abdruck": "c1c9096dfddb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -714,11 +784,11 @@
   "ka720c7ab3037": "bVXRbqMwEPyXPF6PLgQoxlIfnFIpka536SesYQ00BJANocrp/v0ECWmA7hvyrGc8szZ/VzXGB0zp8cNU5Yqvfqx+rgyeyDKkT6QfP8yKr8LYWZPLxbvoC4QQLz0s1nndGChyCShLzI5ktbqhvHiMhzb1hLYvOXSvIt0DKDhD1D0/z1sLSUllNahobLTJ9RnxObA1KUqysFUD2RXseyE9ORyGYpF4i+BWn0yIfQfdnm1nm0ksk6laxwnxKeCi2wkh3ucqkxypsYq8NCOvkwShsvmNq3tb9GjsrDNSVpC+NhFzHE+OYje9nb01s0ZVtMZMyJib+GvGAcI5NiWTx1lj1bqSVF7hMlwHDvLN0u20bi11rwilRCbnXmdIZUp6osF2Y9Ub/cnmmx7wSBqtErMrNLTdYC2/vAGA7VJLMQgfKEbhvuMnCieNfahw6g1OxKT2w2I6olQ3LsQ3SCoWpCbOcn2c2qU8Wtsu/7WUaDJMSFuHyjQ3tEuBZ0s+EOwiuGhhm3nn1+HGDBGR3Q0MMBDbhZemUk2Hmqy0bseh8cgPfC7EbgFu8Hgc40lil+J5kKbpB/1exjpUvu9xgIfLRVke+nItrDPlBd3mNg7ckL9EYg4+aTxaKFOdKzWmL/1Yhd8Na0dFY8mqakYrnSBwXQ4ulPeB/x6i3N1lHaXvXlNsutfpCOwWcgaGSjejcInS9Tyu0ogBMDVH57qxOoyzmzlKEvbSF7mcSReU0sRK5Ti4Tjh06qL73D83wfU5UA+TIT4vd8ypN7k0rRldjtGTPv8mlo70QWJ5uAI913YCNozg5k3sJ568ftT9VYATg6lXG3e4En/EdvjedEL8iUBciWqKodaVyvuXETJsTYZF8/Vb+Pcf"
  },
  "sitzung": {
-  "start": "2026-11-26T21:52:36.344Z",
-  "ordner": "sitzung-20261126-225236",
+  "start": "2026-11-26T22:37:48.141Z",
+  "ordner": "sitzung-20261126-233748",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 6.5,
+  "bootS": 6.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
@@ -730,9 +800,9 @@
   "orte": [
    {
     "ort": null,
-    "vor": "karte2.planet.kopplung.bahn-klima#3",
-    "s": 25.5,
-    "takte": 805,
+    "vor": "karte2.planet.kopplung.bahn-klima#2",
+    "s": 25.6,
+    "takte": 779,
     "chunks": 81,
     "nach": null
    }
@@ -740,7 +810,7 @@
   "wegeTueren": [],
   "felder": [
    {
-    "probe": "karte2.planet.kopplung.bahn-klima#3",
+    "probe": "karte2.planet.kopplung.bahn-klima#2",
     "weg": [
      "__dorfDerProbe",
      "__rafferEnde",
@@ -758,7 +828,7 @@
   ],
   "wirt": [
    {
-    "probe": "karte2.planet.kopplung.bahn-klima#3",
+    "probe": "karte2.planet.kopplung.bahn-klima#2",
     "anders": [
      "r._bildZeit",
      "r._wolkenZeit",
@@ -782,19 +852,19 @@
     "haelt": [],
     "heap": [
      192.6,
-     543
+     545.5
     ],
     "ungemessen": null
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.planet.kopplung.bahn-klima#3",
+    "probe": "karte2.planet.kopplung.bahn-klima#2",
     "halt": -1000000000,
     "zurueck": 0
    },
    {
-    "probe": "karte2.planet.kopplung.bahn-klima#3",
+    "probe": "karte2.planet.kopplung.bahn-klima#2",
     "gehalten": [
      "skala",
      "spiegel",
@@ -806,28 +876,28 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3037,
-   "frameP95": 25.24,
-   "taktP95": 15.85,
-   "vramMax": 136.4,
+   "bilder": 3340,
+   "frameP95": 25.07,
+   "taktP95": 15.64,
+   "vramMax": 136,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.planet.kopplung.bahn-klima#3",
+     "probe": "karte2.planet.kopplung.bahn-klima#2",
      "m": 17778,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 228,
+   "zapfen": 229,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 236.3,
-  "minuten": 4.08
+  "fahrtS": 238.9,
+  "minuten": 4.16
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
