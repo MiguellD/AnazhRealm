@@ -11,8 +11,9 @@ Dein Start-Brief nennt fünf Rote. Die Batterie hat in beiden Versuchen dieselbe
    ist ein Bruch im Spiel oder in der Probe, nenne welcher.
 7. **Die Kreatur-Linse Teil 2** (gate:kreatur-takt, headless, Null-Renderer; Job voll 10/18): „❌ SELBST-TEST ROT — 1 Täter unsichtbar
    oder nicht beim Namen genannt, 0 Probe(n) im Grund verletzt.“ Die Proben im Grund sind grün; EIN eingespielter Täter des Selbsttests
-   wird an deinem Kopf nicht mehr gesehen (im Log tragen geister, sattel, reload, huepfer ihr ❌ — suche den, dem die Zeile „✅ der Täter
-   macht die Probe ROT und wird beim Namen genannt“ fehlt). Am `origin/main` gegenprüfen: ist er dort sichtbar, nahm dein Schnitt der
+   wird an deinem Kopf nicht mehr aus seinem Grund gesehen: „❌ herde [Täter herde-revier] … ❌ rot, aber nicht aus seinem Grund
+   (/zerfällt beim Wandern|ohne gemeinsames Revier: [1-9]d* % /) — die Linse nennt ihn nicht“ (im Wurf: dorf ["-1,-3",0], fremdN 5,
+   blickDiffM 41,14). Am `origin/main` gegenprüfen: ist er dort sichtbar, nahm dein Schnitt der
    Szene etwas, an dem der Täter hing.
 
 Reihenfolge nach Gewicht: 2 (Scatter MAIN ≠ FADEN — echter Bruch) · 6 (Versprechen ohne Ende) · 1 · 4 · 7 · 3 · 5.
