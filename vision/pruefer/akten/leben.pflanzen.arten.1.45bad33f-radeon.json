@@ -1,0 +1,95 @@
+{
+ "pruefer": {
+  "modell": "claude-haiku-5-5·low",
+  "kontext": [
+   "pruefer-leben.pflanzen.arten.1-teil-01-2205",
+   "pruefer-leben.pflanzen.arten.1-teil-02-2205"
+  ]
+ },
+ "leiter": "leben.pflanzen.arten",
+ "sprosse": 1,
+ "teil": "Blindtest 10 Bilder je Gestalt: Gattung ≥ 80 % richtig",
+ "art": "ordnen",
+ "form": "klasse",
+ "schwelle": {
+  "mass": "anteil",
+  "op": "≥",
+  "wert": 0.8,
+  "wort": "≥ 80 %"
+ },
+ "zaehlt": "treffer",
+ "stumpf": "rot",
+ "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
+ "geraet": "Radeon 890M",
+ "datum": "2026-11-26T21:05:30.522Z",
+ "modell": "claude-haiku-5-5·low",
+ "auftragSha256": "562ce6769fcd70fa24534a90bea616768d1890699a7250eb2cc8d5ab6bc3c7ed",
+ "bauer": "champion-pruefer-blatt-2611",
+ "frage": "Welche Pflanzen-Gattung steht in der Bildmitte?",
+ "teile": 2,
+ "paare": 40,
+ "gezaehlt": 7,
+ "quote": 0.175,
+ "intervall95": [
+  0.0734,
+  0.3278
+ ],
+ "lesart": null,
+ "fang": {
+  "n": 0,
+  "treffer": 0
+ },
+ "schlagseite": [],
+ "eichung": {
+  "datei": "ordnen.klasse.claude-haiku-5-5-low.d568b019.json",
+  "sha256": "5f675be2f952134655c4632c5766dfaae3828f3e93030301e0ec2e9ef9e95930"
+ },
+ "blatt": {
+  "zuordnungSha256": "5154662b42e49b6ebbcbd7b91639f3a561fb0d4d819d3d6f7b94576ddb100483",
+  "bilder": [
+   "beba0d51498699521e40d6bd7de16d3d616b4af90df5cd33d65de1423218b74a",
+   "235fdc91c4202c734a9059b7ba20f16eb54d52518ff55602413236d9d99fcc45",
+   "fb2765d4ab84e829795679234f808cc69db6e087c70bda7b1de02bfdab5c2c93",
+   "ae4cb6debb245c9266a552527501d8b76d81d5f4f8f98e0c1b623d998045f0dd",
+   "94d5f26b9855df4122dcc4b4625650dd6cb06e0bd24bc09416bb8f35d212eb0e",
+   "f4ff8df00390051dfdb41ae12c4324d3ca7f2a0f2985b1b1cc26cffa3f77ca39",
+   "4c78dd7f5304e641285ee54990b647e4f8425cb1e837145ef01d2bfcb8b47f00",
+   "04e699f650dea059ee41422d43d3ea5e653f5481d7937af784e0e4a5092cb7ec",
+   "0471115accb452ce8db66015fa497d7b8b3a43bc6b034d8eb11c88aa01eefc20",
+   "601675c3ad88552ed538a742ad610f473d87459101901880b922ec7b90062f5f",
+   "73faf0ed4a84648b05edf4ca1163b97692679acf3e340a6657b71ae948e59aba",
+   "ea0d9968379443beefbb2fe4446a44487f615f11fd36405b590efaebe4e496ce",
+   "a66f98ec76bf4c50380291701d084d25be1ec6ccb28d8bcab5cc2877d4f79b99",
+   "816d530cc1150bf39819f3e2e2489d1a11db37ed678218568b17691c4fcf4084",
+   "11ee0af278a9e09c7e6ead994e0420675001e82d3e7d3e0c144bf7ca664590fd",
+   "29ef209e838696c2e5057139940cd788f30383ec9d78d718e804c853b47ae55f",
+   "6279d830d21d3f84d9f554db253b658ad2567cde8b765c105459b2910f28e30e",
+   "4106d4d63ffec421069048e86ce93863d5cb722018ed5f212a8190a28f1a137f",
+   "e711284fc176e308d860b372e9fa869a9aa199bdf124ddbfc13da6a68753619b",
+   "949437a7c65b567b47061047554e92027af6106c0443ea896255fb447d40dba4",
+   "00e61f3dc2a6cef01d0eaba72740edf8f80556e75909f5e427f7f66c2f7cc69f",
+   "d3be2b5662cfdc6868c3f76ea0865ccc7286a13d914f7f847648b8fb9b87eed6",
+   "4c2883ba54d94a8f29b6a06ecdb975e64d81ef63e2a177ec3183cf05aae975f0",
+   "39b958018fa8f6478c239118875c2fefbcbbfcc872f29968d4a4a483339f9f9f",
+   "56de1f8d228d2a8ba91b7818e64ad62fccc44a25a5436aa175c4ac9cf59658ec",
+   "b7a4cd963de070c229972538c16b39a193858b4d586b3c918b8f823dfdfe3a30",
+   "02abc886082718143e44f9d57ea11b0dcb277707a4c6a41df40b0682840c5851",
+   "5ed076c0061136ae8536cdaf20ff07db08ad0d89cb16dd627fd110f691a723ef",
+   "8e58992bf0b3ddc546de1764511a8ad97c129951c2fc439cc675dbf74f4df53f",
+   "d51e08c1c97d609a577b73aad329e56a098da2694eb6ebfe936be6533e3e6ea3",
+   "99424bfdf77ec92713984d3ccd46d928d7a9459fae87368be4c2ea7335df16e3",
+   "4ae96ca7d6dc2fc5a2d75d3fdeb5725cf7be61d5c04cd17a2fe021c8e002fd03",
+   "82bed589fc0c74dffbbcc2b07d84da864e7c48a8dd25723a50e4eb5676289e2a",
+   "c138112ab17c5e87e6d2e1f71a9b4a19974ba96580dc441e30beb001ae2d4dc6",
+   "c6d833d8ac7a13ca461707ac153c0ccffc529f9c411aec01d7f49799ebb74b30",
+   "f1cd3a435117e983201f9b4a678187f763e34e4e780fd3100cb421105c444e13",
+   "b52dbb1255c00d6b057bbc6b5249272c2f2031fba341286c45d35aeff746022a",
+   "fe9b6341e87c4db15508d751a78a1d5e75591eddd0e3445fde61897568431f24",
+   "5e8c0d82d5fafd68e84d6a812a313c67f4b449cf0f5ba1325de9fd8b49b1fdb6",
+   "2b6f2a5fbe8038b0e8314540c29fb0700f132f91ac8ebf79f5bd2d82fee92985"
+  ]
+ },
+ "wert": "Treffer 7 von 40 = 17,5 % [7,3–32,8] gegen „≥ 80 %“",
+ "urteil": "ROT",
+ "pruefsumme": "a021eec8924c16e1c6698cbba563bb6417efa78cb2be233d75c68fe0550be9aa"
+}
