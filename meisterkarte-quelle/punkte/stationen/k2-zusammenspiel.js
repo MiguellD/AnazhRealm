@@ -718,41 +718,48 @@ L.perspektive("planet", (() => {
                 mess: async function (H, U, M) {
                     const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
                     // S2 ÜBER DEN FÄCHER (stationen/faecher.js): 20 Planeten-Saaten und die Erd-Saat × jede dritte Breite (15° · 45° · 75°);
-                    // je Saat ihre eigene Neigung aus dem Gesetz des Körpers (planet-core.js:312 planetPlan ohne Vorgabe, :323 neigungRad),
-                    // je Adresse die Jahresamplitude, die der Planet-Faden der Welt antwortet (`_planetAuftrag` planet-ort, voxel-worker.js:1429
-                    // planetPlanVon). Die Saat der kleinsten Neigung urteilt „0°“, die der größten „45°“ — gegen die Erd-Saat an denselben Breiten
-                    const PC = require(require("path").resolve("planet-core.js"));
-                    const grad = (x) => (x * 180) / Math.PI;
+                    // je Adresse DREI Antworten desselben Auftrags (`_planetAuftrag` planet-ort, voxel-worker.js:1504 planetPlanVon(samen,
+                    // msg.koerper)): der Körper der Erde (ohne `koerper`), Neigung 0 und Neigung 45° (`koerper.neigungRad`, die Felder
+                    // überschreiben PLANET_ERDE, dieselbe Saat trägt dieselbe Geografie). Die Amplituden sind gepoolt (Summe über den Fächer
+                    // je Körper: 0° gegen die Erde, 45° gegen die Erde), die Schneelinie liest das Spiel aus derselben Antwort
+                    // (gelaende-core.js ortGesetz(teil).schneeBandM — der Teil, den die Reise trägt: netz-portal.js:669) — ihr Versatz
+                    // 45° − 0° an den Adressen der Breite 45°. Vorher fragte die Station ohne `koerper` je Saat deren eigene Neigung,
+                    // die der Faden nie liest (planetPlanVon baut den Plan der Saat mit dem Körper der Erde): sie maß das Relief, nie die Bahn
                     const erdSamen = await H.seite("return r._planetSamen();");
                     const saaten2 = Array.from({ length: 20 }, (_, i) => "planet.kopplung.bahn-klima-s2-" + (i + 1));
-                    const neig = Object.fromEntries(saaten2.map((q) => [q, grad(PC.planetPlan(q).koerper.neigungRad)]));
-                    neig[erdSamen] = grad(PC.PLANET_ERDE.neigungRad);
                     const BAHN_AN = async (r, T, a) => {
                         await r._fadenQuelle();
                         const kh = r._gelaende().ort.klimaHeute;
                         const an = await r._planetAnker();
-                        const o = await r._planetAuftrag({ type: "planet-ort", samen: a.saat, breite: a.ort, laenge: (an.laenge * 180) / Math.PI, zeitMa: 0 });
-                        if (!o || !o.delta || !o.delta.klima) return { fehlt: "planet-ort antwortet ohne Klima (voxel-worker.js planet-ort)" };
-                        return { amp: kh.sommer + o.delta.klima.sommer - (kh.winter + o.delta.klima.winter), land: !!o.land };
+                        const frage = (koerper) =>
+                            r._planetAuftrag(Object.assign({ type: "planet-ort", samen: a.saat, breite: a.ort, laenge: (an.laenge * 180) / Math.PI, zeitMa: 0 }, koerper ? { koerper } : {}));
+                        const [e, z, f] = await Promise.all([frage(null), frage({ neigungRad: 0 }), frage({ neigungRad: Math.PI / 4 })]);
+                        for (const o of [e, z, f]) if (!o || !o.delta || !o.delta.klima) return { fehlt: "planet-ort antwortet ohne Klima (voxel-worker.js planet-ort)" };
+                        const amp = (o) => kh.sommer + o.delta.klima.sommer - (kh.winter + o.delta.klima.winter);
+                        const band = (o) => globalThis.__gelaendeCore.ortGesetz({ samen: o.samen, version: o.version, breite: o.breite, laenge: o.laenge, zeitMa: o.zeitMa, delta: o.delta }).schneeBandM;
+                        return { ampE: amp(e), amp0: amp(z), amp45: amp(f), schnee: band(f) - band(z), land: !!e.land };
                     };
                     const R2 = await FAECHER((c) => H.seite(c), {
-                        gesetz: { fn: BAHN_AN, export: "planet-core.js:312 planetPlan (Körper je Saat)", leser: "voxel-worker.js:1429 planetPlanVon" },
+                        gesetz: { fn: BAHN_AN, export: "voxel-worker.js:1504 planetOrtAuftrag (msg.koerper → planetPlanVon)", leser: "gelaende-core.js ortGesetz (schneeBandM, Klima der Reise)" },
                         adressen: { saaten: [erdSamen, ...saaten2], orte: [15, 45, 75] },
                         ms: 15000,
-                        masse: { amp: { wie: "mittel", feld: "amp" }, saaten: { wie: "verschieden", nur: "saat" } },
-                        schlecht: { feld: "amp", richtung: "min" },
-                        pose: (a) => "Hang mit Schneelinie und Laub, Saat " + a.saat + " (Neigung " + Math.round(neig[a.saat] * 10) / 10 + "°) bei " + a.ort + "° Breite",
-                        ungemessen: ["Schneelinie und Laub im Bild (am Gerät)", "45° Neigung: keine Saat trägt sie (planet-core.js:323 neigungRad = 0,7·Z ≤ 40,1°)"],
+                        masse: { ampE: { wie: "summe", feld: "ampE" }, amp0: { wie: "summe", feld: "amp0" }, amp45: { wie: "summe", feld: "amp45" }, saaten: { wie: "verschieden", nur: "saat" } },
+                        schlecht: { feld: "schnee", richtung: "min" },
+                        pose: (a) => "Hang mit Schneelinie und Laub, Saat " + a.saat + ", Neigung 0° ↔ 45° bei " + a.ort + "° Breite",
+                        ungemessen: ["Schneelinie und Laub im Bild (am Gerät)", "kein Spielpfad fragt einen fremden Körper (feld-leben.js:1298 reise ohne koerper) — das Gesetz antwortet, gespielt wird die Erde"],
                     });
-                    const ampJe = (q) => {
-                        const x = R2.je.filter((e) => e.a.saat === q).map((e) => e.w.amp);
-                        return x.length ? x.reduce((u, v) => u + v, 0) / x.length : null;
-                    };
-                    const saatMin = saaten2.reduce((u, q) => (neig[q] < neig[u] ? q : u)), saatMax = saaten2.reduce((u, q) => (neig[q] > neig[u] ? q : u));
-                    const ampErde = ampJe(erdSamen), amp0 = ampJe(saatMin), amp45 = ampJe(saatMax);
                     const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
-                    const ampSaaten = saaten2.map(ampJe).filter(Number.isFinite);
-                    const s2 = { ampErde: r3(ampErde), amp0: r3(amp0), amp45: r3(amp45), neigMin: r3(neig[saatMin]), neigMax: r3(neig[saatMax]), spanneSaatenK: ampSaaten.length ? r3(Math.max(...ampSaaten) - Math.min(...ampSaaten)) : null, gleich: ampSaaten.length > 1 && Math.max(...ampSaaten) - Math.min(...ampSaaten) < 1e-9, akte: R2.akte };
+                    const ok = R2.je.filter((x) => x.w && Number.isFinite(x.w.ampE));
+                    const sum = (k) => ok.reduce((u, x) => u + x.w[k], 0);
+                    const sE = sum("ampE"), s0 = sum("amp0"), s45 = sum("amp45");
+                    const vers = ok.filter((x) => x.a.ort === 45).map((x) => x.w.schnee);
+                    const je0 = ok.map((x) => x.w.amp0 / x.w.ampE), je45 = ok.map((x) => x.w.amp45 / x.w.ampE);
+                    const s2 = {
+                        adressen: ok.length, ampErde: r3(sE / ok.length), amp0: r3(s0 / ok.length), amp45: r3(s45 / ok.length),
+                        amp0ProzentMax: je0.length ? r3(100 * Math.max(...je0)) : null, amp45FaktorJeAdresse: je45.length ? [r3(Math.min(...je45)), r3(Math.max(...je45))] : null,
+                        schneeM: vers.length ? { mittel: r3(vers.reduce((u, v) => u + v, 0) / vers.length), min: r3(Math.min(...vers)), max: r3(Math.max(...vers)) } : null,
+                        gleich: ok.length > 0 && ok.every((x) => Math.abs(x.w.amp0 - x.w.ampE) < 1e-9), akte: R2.akte,
+                    };
                     const seite = async (r, a) => {
                         await r._fadenQuelle();
                         const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
@@ -794,20 +801,19 @@ L.perspektive("planet", (() => {
                     const w = await S(seite, {});
                     const aus = M.teil || {};
                     aus[2] = {
-                        werte: { amp0Prozent: s2.ampErde ? Math.round((1000 * s2.amp0) / s2.ampErde) / 10 : null, amp45Faktor: s2.ampErde ? Math.round((1000 * s2.amp45) / s2.ampErde) / 1000 : null },
+                        werte: { amp0Prozent: sE ? Math.round((1000 * s0) / sE) / 10 : null, amp45Faktor: sE ? Math.round((1000 * s45) / sE) / 1000 : null, schneelinieVersatzM: s2.schneeM ? s2.schneeM.mittel : null },
                         zeuge: s2,
                         auge: await M.auge("bahn-klima-s2", { ort: "wiese" }),
-                        // der Faden baut jeden Plan mit dem Körper der Erde: die eigene Neigung der Saat erreicht die Antwort nie
-                        nicht: "der Planet-Faden liest den Körper der Saat nicht (voxel-worker.js:1429 planetPlanVon: P.PLANET_ERDE fest): Neigung " + s2.neigMin + "° → Amplitude " + s2.amp0 + " K, Neigung " + s2.neigMax + "° → " + s2.amp45 + " K, Erd-Saat " + s2.ampErde + " K (Spanne der Saaten " + s2.spanneSaatenK + " K: das Relief der Saat unter dem Körper der Erde, nie ihre Neigung) · " + R2.akte,
+                        nicht: "Neigung 0° → Amplitude " + s2.amp0 + " K, 45° → " + s2.amp45 + " K gegen die Erde " + s2.ampErde + " K (gepoolt, " + s2.adressen + " Adressen; je Adresse 0°: bis " + s2.amp0ProzentMax + " %, 45°: " + (s2.amp45FaktorJeAdresse || []).join("…") + "×), Schneelinie 45° − 0° an 45° Breite " + JSON.stringify(s2.schneeM) + " m (planet-core.js planetOrt: die Spanne reist als Verhältnis zur Spanne des Ankers) · " + R2.akte,
                     };
                     const s3 = w.s3;
                     aus[3] = { werte: { zyklen: s3.zyklenMeer, spanneMeerM: s3.spanneMeerM }, zeuge: s3, nicht: "kein Milanković-Antrieb: über 1 Ma " + s3.zyklenMeer + " Extrema des Meeres (Spanne " + s3.spanneMeerM + " m), keine Juni-Insolation 65° N und keine Laskar-Reihe in der Welt" };
                     const s4 = w.s4;
                     aus[4] = { werte: { bluehDJeGrad: s4.dJeGrad, laichSaaten: s4.laich ? null : 0 }, zeuge: s4 };
                     const s5 = w.s5;
-                    aus[5] = { werte: {}, zeuge: s5, nicht: "keine gebundene Welt: der Faden liest keinen Körper (Antwort " + (s5.gleich ? "gleich" : "anders") + " der Erd-Saat), PLANET_ERDE ist fest" };
+                    aus[5] = { werte: {}, zeuge: s5, nicht: "keine gebundene Welt im Spiel: der Faden antwortet dem gebundenen Körper (voxel-worker.js:1504 msg.koerper; Antwort " + (s5.gleich ? "gleich" : "anders") + " der Erd-Saat, Tagesgang " + s5.tagAmpErde + " K ↔ " + s5.tagAmpGebunden + " K), kein Spielpfad fragt ihn" };
                     const s6 = w.s6;
-                    aus[6] = { werte: { imBandProzent: s6.zonen ? Math.round((1000 * s6.imBand) / s6.zonen) / 10 : null }, zeuge: s6, auge: await M.auge("bahn-klima-s6", { ort: "wiese" }), nicht: "1 000 Welten mit eigener Bahn: der Faden kennt nur PLANET_ERDE — gemessen ist die Erd-Saat allein" };
+                    aus[6] = { werte: { imBandProzent: s6.zonen ? Math.round((1000 * s6.imBand) / s6.zonen) / 10 : null }, zeuge: s6, auge: await M.auge("bahn-klima-s6", { ort: "wiese" }), nicht: "1 000 Welten mit eigener Bahn: die Zonen fragen ohne Körper (der Faden antwortet einem Körper je Auftrag, voxel-worker.js:1504) — gemessen ist die Erd-Saat allein" };
                     return { sprossen: aus };
                 },
                 sprossen: {
@@ -817,9 +823,9 @@ L.perspektive("planet", (() => {
                         // ZAHL (auge-klasse.cjs): die Amplituden urteilen, das Bild ist Beleg — der Zeuge verlangt die Antwort des Fadens auf die Neigung
                         zeuge: (roh) => ((roh.zeuge || {}).gleich === false ? null : "der Faden antwortet der Neigung 0 wie der Erd-Saat (keine Antwort auf die Neigung)"),
                         auge: { pose: "Hang mit Schneelinie und Laub, Saat mit Neigung 0° ↔ 45° (heute: Wiese)", vorbild: "Schneelinie und Laub im Bild (Blindpaar R11)" },
-                        taeter: "voxel-worker.js planetPlanVon (PLANET_ERDE fest)",
-                        nicht: "der Faden liest keine Neigung",
-                        leser: "voxel-worker.js:1425 — planetPlanVon(samen) baut jeden Plan mit P.PLANET_ERDE, kein Auftrag trägt einen Körper",
+                        taeter: "planet-core.js planetOrt (Spanne des Jahres) · voxel-worker.js:1504 planetOrtAuftrag (msg.koerper)",
+                        nicht: "die Neigung formt den Jahresgang nicht",
+                        leser: "voxel-worker.js:1504 — planetPlanVon(samen, msg.koerper) überschreibt PLANET_ERDE mit dem Körper des Auftrags; gelaende-core.js ortGesetz liest das Δ (Klima, schneeBandM)",
                         gruen: { werte: { amp0Prozent: 6, amp45Faktor: 2.3, schneelinieVersatzM: 400 }, zeuge: { gleich: false } },
                         attrappen: [{ name: "6 % ohne Antwort des Fadens", roh: { werte: { amp0Prozent: 6, amp45Faktor: 2.3, schneelinieVersatzM: 400 }, zeuge: {} } }],
                     },
@@ -849,9 +855,9 @@ L.perspektive("planet", (() => {
                         u: {},
                         soll: [K.soll(C, 5, "Temperatur Tag/Nacht gegen Energie-Bilanz ±5 K", { key: "abweichungK", rel: "≤", zahl: 5, einheit: "K" }), K.soll(C, 5, "Leben im Terminator-Band ≥ 80 %", { key: "terminatorProzent", einheit: "%" })],
                         zeuge: (roh) => ((roh.zeuge || {}).gleich === false ? null : "der Faden antwortet der gebundenen Bahn wie der Erde"),
-                        taeter: "voxel-worker.js planetPlanVon (PLANET_ERDE fest)",
+                        taeter: "planet-core.js planetOrt (der gebundene Körper im Auftrag, voxel-worker.js:1504)",
                         nicht: "keine gebundene Welt",
-                        leser: "voxel-worker.js:1425 — planetPlanVon(samen) baut jeden Plan mit P.PLANET_ERDE (tagStunden 24)",
+                        leser: "voxel-worker.js:1504 — planetPlanVon(samen, msg.koerper) überschreibt PLANET_ERDE mit dem Körper des Auftrags (gebunden: tagStunden = Jahr)",
                         gruen: { werte: { abweichungK: 3, terminatorProzent: 85 }, zeuge: { gleich: false } },
                         attrappen: [{ name: "3 K ohne gebundene Antwort", roh: { werte: { abweichungK: 3, terminatorProzent: 85 }, zeuge: {} } }],
                     },
@@ -863,7 +869,7 @@ L.perspektive("planet", (() => {
                         auge: { pose: "Klima-Zonen im Bild (heute: Wiese)", vorbild: "Zwei-Moden-Modell North 1975: T = 14,97 − 28,0·P₂(sin φ) °C, ±5 K" },
                         taeter: "voxel-worker.js planetPlanVon (eine Bahn für jede Welt)",
                         nicht: "1 000 Welten mit eigener Bahn",
-                        leser: "voxel-worker.js:1425 — planetPlanVon(samen) kennt nur PLANET_ERDE",
+                        leser: "voxel-worker.js:1504 — planetPlanVon(samen, msg.koerper): ein Körper je Auftrag; die Zonen fragen ohne ihn",
                         gruen: { werte: { imBandProzent: 93 }, zeuge: { zonen: 40 } },
                         attrappen: [{ name: "93 % ohne Zonen", roh: { werte: { imBandProzent: 93 }, zeuge: {} } }],
                     },
