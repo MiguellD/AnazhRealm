@@ -17586,11 +17586,11 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 18,
-    "kern": 3,
-    "kernDazu": 3,
-    "anteilHeute": 8.5,
-    "anteilKern": 1
+    "heute": 20,
+    "kern": 0,
+    "kernDazu": 0,
+    "anteilHeute": 9.1,
+    "anteilKern": 0
    },
    "perspektiven": [
     {
@@ -19562,7 +19562,7 @@
       }
      ],
      "heute": 1,
-     "kern": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "Kette regen → nässe → stoff → brand → licht, Tiefe 4 mit Festhalte-Probe (feld.K1) — headless; Bruch, Fluid mit Impuls und Beben fehlen als Glieder.",
      "alt": [
@@ -19787,8 +19787,8 @@
        "richter": "10/10 Glieder am selben Ort geändert (Bildpaar Weltkarte); Arten-Verlust 50–80 %, Erholung in 5–10 Mio. a"
       }
      ],
-     "heute": 1,
-     "kern": 1,
+     "heute": 2,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "Brand schwärzt, Asche düngt, Sukzession r = 0,825 (stoffe.K5) — Mechanik headless; Tier-, Wasser-, Siedlungs-Antwort fehlt.",
      "alt": [
@@ -20011,8 +20011,8 @@
        "richter": "100 Taten: Sichtbarkeit auf B zur richtigen Zeit"
       }
      ],
-     "heute": 1,
-     "kern": 1,
+     "heute": 2,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "Lichtung bleibt über Reload, 138/138 Pflanzen nach 1 Spieljahr (feld.K4, stoffe.K5) — headless; rückwärts klemmt _werkAlter die Zeit auf 0: ein Werk vor seinem Akt erscheint ungealtert statt abwesend.",
      "alt": [
@@ -20094,12 +20094,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 120,
+  "heute": 122,
   "davonKopplungen": 33,
-  "kern": 6,
-  "kernDazu": 6,
-  "anteilHeute": 6.2,
-  "anteilKern": 0.2,
+  "kern": 3,
+  "kernDazu": 3,
+  "anteilHeute": 6.3,
+  "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
@@ -20109,7 +20109,7 @@
   },
   "gliederLeitern": 9,
   "beide": 61,
-  "nachwache": 59
+  "nachwache": 61
  },
  "zusammengelegt": [
   {
