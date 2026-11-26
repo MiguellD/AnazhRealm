@@ -1,5 +1,7 @@
 ## 26.11. 19:48 Koordinator — START-BRIEF (Welle 27.11.; dieser Abschnitt ist dein Auftrag, lies ihn GANZ)
 
+## 26.11. 22:06 — GPU-PROBE a85350d0 auf gtx1050-desktop: ROT in 1157 s (bild:wiese@0.5 ROT 9 s — ROT: die Werkbank endete vor dem Start auf gtx1050-desktop · gate:pruefbuehne-licht GRÜN 104 s auf gtx1050-desktop · gate:tag-achse:echt GRÜN 276 s auf gtx1050-desktop · gate:studio-begehen GRÜN 490 s auf gtx1050-desktop · gate:webgl-probe GRÜN 101 s auf gtx1050-desktop) → probe-post/landmarken-geologie-8/a85350d0.md
+
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.
 
 # Sitzung: „Heimholer Landmarke: Wurf je Saat auf main“ (wegfindung#1)
