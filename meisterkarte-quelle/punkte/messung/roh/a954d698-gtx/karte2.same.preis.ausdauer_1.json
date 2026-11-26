@@ -1,0 +1,150 @@
+{
+ "art": "dauer",
+ "sekunden": 23,
+ "uhrS": 87,
+ "schritte": [
+  [
+   "ende",
+   23
+  ]
+ ],
+ "offen": [],
+ "fehler": {},
+ "strom": {
+  "bloecke": 123,
+  "bilder": 450,
+  "seiten": 1,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "dauer": {
+  "anfang": true,
+  "ende": true,
+  "torbau": {
+   "bau": true,
+   "tor": true,
+   "heim": true
+  },
+  "nacht": {
+   "nacht": 1.111125000000044e-14,
+   "mittag": 0.5000000000000059
+  },
+  "heapKurve": {
+   "n": 19,
+   "min": 1.06,
+   "steigung": 97.32,
+   "von": 252,
+   "bis": 334.6,
+   "max": 380.3
+  },
+  "spielgang": {
+   "ziel": 70,
+   "deckel": 93,
+   "vorher": 62.3,
+   "eigen": 0,
+   "fenster": 0
+  },
+  "minuten": 1.29,
+  "seiten": 1,
+  "proben": 2,
+  "last": {
+   "n": 440,
+   "frame": 66.7,
+   "p99": 100.01,
+   "max": 625.04,
+   "ueber33": 84,
+   "ueber100": 5,
+   "takt": 57.88,
+   "vram": 148.9,
+   "gpu": 7.97,
+   "gpuN": 56,
+   "befehle": 159,
+   "dreiecke": 485490,
+   "voll": 0.429,
+   "halt": false,
+   "last": 0,
+   "sicht": [
+    1,
+    2
+   ],
+   "sichtWechsel": 10,
+   "sattel": "01010",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0
+  },
+  "weg": 213,
+  "gegangen": 90,
+  "fahren": true,
+  "nachtImStrom": true,
+  "anker": {
+   "a": {
+    "n": 75,
+    "frame": 33.52,
+    "p99": 74.9,
+    "max": 74.9,
+    "ueber33": 5,
+    "ueber100": 0,
+    "takt": 36.22,
+    "vram": 136.1,
+    "gpu": 6.84,
+    "gpuN": 7,
+    "befehle": 137,
+    "dreiecke": 316435,
+    "voll": 1,
+    "halt": false,
+    "last": 1,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "b": {
+    "n": 92,
+    "frame": 33.37,
+    "p99": 74.94,
+    "max": 74.94,
+    "ueber33": 4,
+    "ueber100": 0,
+    "takt": 23.64,
+    "vram": 148.6,
+    "gpu": 6.99,
+    "gpuN": 7,
+    "befehle": 169,
+    "dreiecke": 360100,
+    "voll": 1,
+    "halt": false,
+    "last": 0.57,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "laeufe": 2
+  },
+  "gang": [
+   "heap: +65.6 MB/min > 5 — Halter: r.state.renderer.info.memoryMap[k].array +8.5 MB · r._fahrLeibKoerper[].userData._tierBaum.straehnen[].geometry +4.5 MB · r.state.renderer._nodes.nodeBuilderCache[].updateNodes[] +2.3 MB",
+   "vram: +14.0 MB zurück am Start — buf:szene:geometrie-arena +10.3 MB · buf:szene:bauSatz +9.8 MB · tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x22 +6.4 MB",
+   "buf:verwaist 0.2 MB"
+  ],
+  "heap": [
+   233.4,
+   318
+  ],
+  "vramGC": [
+   134.3,
+   148.3
+  ]
+ }
+}
