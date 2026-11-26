@@ -776,7 +776,7 @@ L.perspektive("planet", (() => {
                         const wl = reihe.map((o) => o.delta.meer.waterLevelM);
                         const so = reihe.map((o) => o.delta.klima.sommer);
                         const extrema = (v) => { let n = 0; for (let i = 1; i < v.length - 1; i++) if ((v[i] - v[i - 1]) * (v[i + 1] - v[i]) < 0) n++; return n; };
-                        aus.s3 = { schritte: reihe.length, zyklenMeer: extrema(wl), zyklenSommer: extrema(so), spanneMeerM: r3(Math.max(...wl) - Math.min(...wl)), spanneSommerK: r3(Math.max(...so) - Math.min(...so)), laskar: ["_insolation65N", "_laskarReihe"].filter((n) => typeof r[n] === "function").length };
+                        aus.s3 = { schritte: reihe.length, zyklenMeer: extrema(wl), zyklenSommer: extrema(so), spanneMeerM: r3(Math.max(...wl) - Math.min(...wl)), spanneSommerK: r3(Math.max(...so) - Math.min(...so)) };
                         const br = [30, 35, 40, 45, 50, 55, 60];
                         const ph = await Promise.all(br.map((b) => ort(b, L0)));
                         const phase = ph.map((o) => kh.sommerPhase + o.delta.klima.sommerPhase);
@@ -804,10 +804,41 @@ L.perspektive("planet", (() => {
                         werte: { amp0Prozent: sE ? Math.round((1000 * s0) / sE) / 10 : null, amp45Faktor: sE ? Math.round((1000 * s45) / sE) / 1000 : null, schneelinieVersatzM: s2.schneeM ? s2.schneeM.mittel : null },
                         zeuge: s2,
                         auge: await M.auge("bahn-klima-s2", { ort: "wiese" }),
-                        nicht: "Neigung 0° → Amplitude " + s2.amp0 + " K, 45° → " + s2.amp45 + " K gegen die Erde " + s2.ampErde + " K (gepoolt, " + s2.adressen + " Adressen; je Adresse 0°: bis " + s2.amp0ProzentMax + " %, 45°: " + (s2.amp45FaktorJeAdresse || []).join("…") + "×), Schneelinie 45° − 0° an 45° Breite " + JSON.stringify(s2.schneeM) + " m (planet-core.js planetOrt: die Spanne reist als Verhältnis zur Spanne des Ankers) · " + R2.akte,
                     };
+                    // `nicht` heißt „Umfang nicht erzeugbar“ (k2-same: ROT, was immer gemessen ist) — nur, wo kein Ort des Fächers mit Klima
+                    // antwortet; die Antwort auf die Neigung urteilt der Zeuge (gleich), die Amplituden das Soll, je Adresse stehen sie im Zeugen
+                    if (!ok.length) aus[2].nicht = "kein Ort des Fächers antwortet mit Klima (voxel-worker.js planet-ort) · " + R2.akte;
                     const s3 = w.s3;
-                    aus[3] = { werte: { zyklen: s3.zyklenMeer, spanneMeerM: s3.spanneMeerM }, zeuge: s3, nicht: "kein Milanković-Antrieb: über 1 Ma " + s3.zyklenMeer + " Extrema des Meeres (Spanne " + s3.spanneMeerM + " m), keine Juni-Insolation 65° N und keine Laskar-Reihe in der Welt" };
+                    // S3 GEGEN LASKAR: die Juni-Insolation 65° N der Welt (planet-core.js planetKlimaGlobal(plan, t).insolation65N — derselbe
+                    // Kern, den der Faden lädt, derselbe Plan: voxel-worker.js planetPlanVon = planetPlan(samen, PLANET_ERDE)) an den 51 Zeiten
+                    // der Reihe oben (−i · 20 ka) gegen La2004 (Laskar et al. 2004, A&A 428, 261; spec/bahn/la2004.json, IMCCE
+                    // INSOLN.LA2004.BTL.ASC je 1 ka): die Juni-Insolation der Tafel HIER mit der Tagesformel nach Berger 1978 (λ = 90°),
+                    // nie über den Kern — die Tafel urteilt, nie das Gesetz über sich selbst. Der Leser des Antriebs in der Welt ist das Eis
+                    // (planet-core.js eisZustand → meerGlazialM → ortRoh waterLevelM): der Zeuge zyklenMeer zählt das Meer des Fadens.
+                    // Vorher: keine Insolation, keine Reihe — rLaskar ungemessen
+                    const PCb = require(require("path").resolve("planet-core.js"));
+                    const LA = require(require("path").resolve("spec/bahn/la2004.json")).zeilen;
+                    const planB = PCb.planetPlan(erdSamen, PCb.PLANET_ERDE), DG = Math.PI / 180, PHI = 65 * DG;
+                    const juniLa = ([, e, epsG, wG]) => {
+                        const sd = Math.sin(epsG * DG), cd = Math.cos(epsG * DG), h = Math.acos(Math.max(-1, Math.min(1, (-Math.tan(PHI) * sd) / cd))), ar = (1 - e * Math.cos(Math.PI / 2 - wG * DG)) / (1 - e * e);
+                        return ((ar * ar) / Math.PI) * (h * Math.sin(PHI) * sd + Math.cos(PHI) * cd * Math.sin(h));
+                    };
+                    const insW = [], insL = [];
+                    for (let i = 0; i < s3.schritte; i++) {
+                        const zeile = LA[i * 20];
+                        if (!zeile || zeile[0] !== -20 * i) throw new Error("spec/bahn/la2004.json trägt " + (zeile ? zeile[0] : "keine Zeile") + " ka an Stelle " + i * 20 + " (−" + 20 * i + " ka erwartet)");
+                        insW.push(PCb.planetKlimaGlobal(planB, -i * 0.02).insolation65N);
+                        insL.push(juniLa(zeile));
+                    }
+                    const korB = (x, y) => { const n = x.length, mx = x.reduce((u, v) => u + v, 0) / n, my = y.reduce((u, v) => u + v, 0) / n; let sxy = 0, sxx = 0, syy = 0; for (let i = 0; i < n; i++) { sxy += (x[i] - mx) * (y[i] - my); sxx += (x[i] - mx) ** 2; syy += (y[i] - my) ** 2; } return sxx > 0 && syy > 0 ? sxy / Math.sqrt(sxx * syy) : NaN; };
+                    const rLaskar = Math.round(1e4 * korB(insW, insL)) / 1e4;
+                    s3.laskar = { zeiten: insW.length, rLaskar, insolationW: [Math.round(Math.min(...insW) * 10) / 10, Math.round(Math.max(...insW) * 10) / 10], quelle: "spec/bahn/la2004.json" };
+                    // `nicht` heißt „Umfang nicht erzeugbar“ (k2-same: die Sprosse steht ROT, was immer sie misst) — es steht nur noch, wo die
+                    // Welt keine Juni-Insolation trägt (die Reihe ist flach: r undefiniert); das Urteil über r und den Zeugen spricht das Soll
+                    aus[3] = Object.assign(
+                        { werte: { zyklen: s3.zyklenMeer, spanneMeerM: s3.spanneMeerM, rLaskar: Number.isFinite(rLaskar) ? rLaskar : null }, zeuge: s3 },
+                        Number.isFinite(rLaskar) ? {} : { nicht: "keine Juni-Insolation 65° N in der Welt: planetKlimaGlobal(plan, t).insolation65N ist über 1 Ma flach (" + s3.laskar.insolationW.join("…") + " W/m²) — kein Milanković-Antrieb, über 1 Ma " + s3.zyklenMeer + " Extrema des Meeres" },
+                    );
                     const s4 = w.s4;
                     aus[4] = { werte: { bluehDJeGrad: s4.dJeGrad, laichSaaten: s4.laich ? null : 0 }, zeuge: s4 };
                     const s5 = w.s5;
