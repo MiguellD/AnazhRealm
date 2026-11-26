@@ -17586,10 +17586,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 21,
+    "heute": 22,
     "kern": 1,
     "kernDazu": 1,
-    "anteilHeute": 9.4,
+    "anteilHeute": 10,
     "anteilKern": 0.3
    },
    "perspektiven": [
@@ -18524,12 +18524,14 @@
        "richter": "2 g: Statur gedrungener; Leib und Kultur kohärent ≥ 0,8"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Tracht folgt nur der Epoche-Tafel; kein Wetter, kein Klima am Leib",
      "alt": [],
-     "heuteSprossen": [],
+     "heuteSprossen": [
+      1
+     ],
      "kernSprossen": []
     },
     {
@@ -20094,11 +20096,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 130,
+  "heute": 131,
   "davonKopplungen": 33,
   "kern": 3,
   "kernDazu": 3,
-  "anteilHeute": 6.8,
+  "anteilHeute": 6.9,
   "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20109,7 +20111,7 @@
   },
   "gliederLeitern": 9,
   "beide": 62,
-  "nachwache": 68
+  "nachwache": 69
  },
  "zusammengelegt": [
   {
