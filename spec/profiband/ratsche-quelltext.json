@@ -76,8 +76,9 @@
             "datei": 1
         },
         "scripts/diag-phyto-tree.cjs": {
-            "zweck": "Messung: führt die Glieder _scatterSpeciesForCell/_scatterSpeciesForLayer und _rockGeologyClass des Stamms in node aus, mit Mutanten (Ufer, Wärme, Findling des Eises)",
-            "stamm": 2
+            "zweck": "Messung: führt die Glieder _scatterSpeciesForCell/_scatterSpeciesForLayer und _rockGeologyClass des Stamms in node aus, mit Mutanten (Ufer, Wärme, Findling des Eises); dazu phyto-core im Faden (vm) mit zwei Mutanten der Höhenstufe (biome-hoehenstufen: ohne Stufe · ohne Ökoton), beide fallen ROT beim Namen an forestStufe",
+            "stamm": 2,
+            "datei": 1
         },
         "scripts/diag-profiband.cjs": {
             "zweck": "Struktur: der Selbsttest lädt den gewandelten Stamm als Klasse (Bündel-Reihe am Verhalten)",

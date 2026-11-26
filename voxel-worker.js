@@ -1767,6 +1767,10 @@ function waldStand(x, z) {
 function waldSchnee(x, z, y) {
     return G.schnee(state, y, x, z, 0);
 }
+// Die Höhenstufe des Walds (phyto-core `forestStufe`): die Höhe im Maß derselben Waldgrenze (gelaende-core `waldStufe`).
+function waldStufe(x, z, y) {
+    return G.waldStufe(state, y, x, z);
+}
 
 // Der Abstand jenseits des nächsten Siedlungsrands (der Saum, phyto-core `forestOrt`): dieselbe Liste wie der Wirt (`_ortRaender`).
 function waldOrt(x, z) {
@@ -1812,6 +1816,7 @@ function waldCtx(msg) {
         fbm: forestFbm,
         stand: waldStand,
         schnee: waldSchnee,
+        stufe: waldStufe,
         ort: waldOrt,
         wuchs: state.ort.wuchs, // der Wuchs des Orts (die Tafel `ortGesetz`): Trockengrenze, Nadel- und Laubholz
         surfaceYAt: (x, z) => {
@@ -4590,6 +4595,7 @@ function fernNischeCtx() {
         baseH: 0,
         fussM: 0,
         fbm: forestFbm,
+        stufe: waldStufe, // die Höhenstufe der Arten (phyto-core `forestStufe`)
         feuchteAt: (px, pz, sy) => feuchteAt(px, pz, sy, ctx.fussM),
     };
     fernNischeCtxMerk = ctx;
@@ -4791,6 +4797,7 @@ function kammKrone(msg) {
         fbm: forestFbm,
         stand: waldStand,
         schnee: waldSchnee,
+        stufe: waldStufe,
         ort: waldOrt,
         wuchs: state.ort.wuchs,
         surfaceYAt: (x, z) => {

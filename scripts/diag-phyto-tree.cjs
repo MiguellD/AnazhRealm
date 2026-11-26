@@ -11,7 +11,7 @@
 // Konstante zwischen den Scopes (ein window/self-Leck), fällt die Linse. Dazu der P-Zwilling und das Skelett im Haupt-Thread
 // (unten). Das ist die Gesetz-#0-Wand: EINE Quelle, viele Leser, KEIN Mirror, der driften kann.
 "use strict";
-const { vm, fadenScope, ROOT, stammLib, pruefer } = require("./lib/welt-boot.cjs");
+const { vm, fadenScope, ausDatei, ROOT, stammLib, pruefer } = require("./lib/welt-boot.cjs");
 
 // Der geteilte Kern läuft im IIFE-Muster und exportiert auf `root` (self||globalThis) — in
 // node ist das globalThis. Ein simpler require() reicht (die Datei ist kein CommonJS-Modul,
@@ -272,7 +272,7 @@ function uferWaermeBefunde(nische, artVon) {
     const warmOrt = Object.assign({}, heimat, { klimaHeute: Object.assign({}, T0, { sommer: 27, winter: 13 }) });
     // die Wald-Nische: Erle nur im Saum
     for (let feu = 0; feu <= 1.0001; feu += 0.02) {
-        const ctx = { F: { dryScale: 18 }, baseH: 0, fbm: () => 0.5, feuchteAt: () => feu, wuchs: heimat.wuchs };
+        const ctx = { F: { dryScale: 18 }, baseH: 0, fbm: () => 0.5, feuchteAt: () => feu, wuchs: heimat.wuchs, stufe: () => 0 };
         const NO = nische(0, 0, 1, 0.5, ctx);
         if (feu < P.ufer && NO.wW > 0) {
             out.push(`forestNicheWeights/forestNische: die Erle wiegt wW ${NO.wW.toFixed(3)} bei Feuchte ${feu.toFixed(2)} unter dem Ufer ${P.ufer}`);
@@ -475,7 +475,7 @@ function landmarkeBefunde(taeter, chunkZiel, saetze) {
     }
     ok("Ertragstafel: je Art die Höhe der Größe 1 aus foundry PRESETS, r steigt, die Größe in groesse", tafel.length === 0, tafel[0] || `${Object.keys(FE.kurven).length} Tafeln`);
     const bestand = (fc, stehende) => {
-        const ctx = { F: FOREST, baseH: 0, extras: [], fbm: () => fc, stand: () => 0.15, schnee: () => 0, ort: () => Infinity, wuchs: GC.ortGesetz(null).wuchs,
+        const ctx = { F: FOREST, baseH: 0, extras: [], fbm: () => fc, stand: () => 0.15, schnee: () => 0, stufe: () => 0.5, ort: () => Infinity, wuchs: GC.ortGesetz(null).wuchs,
             surfaceYAt: () => 30, waterYAt: () => 0, slopeAt: () => 0, feuchteAt: () => 0.3, ortFrei: () => true }; // prettier-ignore
         const K = new Map();
         const geboren = (cx, cz) => K.get(cx + "," + cz) || K.set(cx + "," + cz, PK.planForestCell(cx, cz, SAMEN, ctx)).get(cx + "," + cz);
@@ -525,6 +525,55 @@ function landmarkeBefunde(taeter, chunkZiel, saetze) {
     const ohneTod = (gx, gz, geboren) => geboren(gx, gz).filter((d) => !d.gelichtet);
     const M = urteil(0.6, ohneTod).out.join(" | ");
     ok("Bestand Selbsttest: ohne den Tod (jeder Geborene steht) fällt die Steigung an forestStehende", /^forestStehende: Reineke-Steigung -?\d/.test(M), M || "die Mutante blieb grün");
+}
+
+// ── DIE HÖHENSTUFEN (biome-hoehenstufen) ── die Art folgt der Stufe des Orts (phyto-core `forestStufe`, Band DAV
+// „Höhenstufen der Alpen“: kollin bis 800 m Laub · montan bis 1500 m Misch · subalpin Nadel; die Untergrenze ±150 m = das
+// Ökoton). Über u = 0 … 1,2 (die Stufe, ctx.stufe) mittelt die Linse die Gewichte der Nische über ein festes Raster des
+// Mosaiks; der mittlere Rang (Laub 1 · Tanne 2 · Kiefer 3) steigt monoton, kollin führt das Laub, subalpin die Kiefer, und
+// kein Schritt Δu 0,02 springt (Ökoton statt Kante). Selbsttest: ohne Stufe fällt „steigt“, ohne Ökoton fällt „Kante“.
+{
+    const stufenBefunde = (core) => {
+        const vs = [0.18, 0.3, 0.42, 0.5, 0.58, 0.7, 0.82];
+        const heimat = GC.ortGesetz(null);
+        const rang = [];
+        for (let i = 0; i <= 60; i++) {
+            const u = i * 0.02;
+            let l = 0;
+            let t = 0;
+            let k = 0;
+            for (const a of vs)
+                for (const b of vs)
+                    for (const y of [0, 6, 18]) {
+                        let n = 0;
+                        const ctx = { F: { dryScale: 18 }, baseH: 0, fbm: () => (n++ % 2 ? b : a), feuchteAt: () => 0.3, wuchs: heimat.wuchs, stufe: () => u }; // prettier-ignore
+                        const N = core.forestNische(0, 0, y, 0.5, ctx);
+                        (l += N.wE + N.wB + N.wW), (t += N.wT), (k += N.wF);
+                    }
+            rang.push({ u, r: (l + 2 * t + 3 * k) / (l + t + k), l: l / (l + t + k), k: k / (l + t + k) });
+        }
+        const out = [];
+        const fall = rang.findIndex((p, i) => i && p.r < rang[i - 1].r - 1e-9);
+        if (fall > 0) out.push(`forestStufe: der Rang fällt bei u ${rang[fall].u.toFixed(2)} (${rang[fall - 1].r.toFixed(3)} → ${rang[fall].r.toFixed(3)})`);
+        if (!(rang[60].r - rang[0].r >= 1)) out.push(`forestStufe: der Rang steigt nicht (u 0 → 1,2: ${rang[0].r.toFixed(3)} → ${rang[60].r.toFixed(3)})`);
+        if (!(rang[0].l >= 0.8 && rang[60].k >= 0.8)) out.push(`forestStufe: kollin Laub ${(100 * rang[0].l).toFixed(0)} %, subalpin Kiefer ${(100 * rang[60].k).toFixed(0)} % (Soll je ≥ 80 %)`);
+        const sprung = Math.max(...rang.slice(1).map((p, i) => Math.abs(p.r - rang[i].r)));
+        if (!(sprung <= 0.2)) out.push(`forestStufe: die Kante — ein Schritt Δu 0,02 springt um ${sprung.toFixed(3)} Rang (Ökoton ≤ 0,2)`);
+        return { out, rang, sprung };
+    };
+    const H = stufenBefunde(mainCore);
+    ok("Höhenstufen: die Art folgt der Stufe (Rang steigt, kollin Laub, subalpin Kiefer, Ökoton statt Kante)", H.out.length === 0, H.out[0] || `Rang ${H.rang[0].r.toFixed(2)} → ${H.rang[60].r.toFixed(2)} · größter Schritt ${H.sprung.toFixed(3)}`);
+    const mutant = (von, nach) => {
+        const text = ausDatei("phyto-core.js");
+        if (!text.includes(von)) throw new Error("diag-phyto-tree Höhenstufen: die Mutanten-Stelle fehlt — " + von);
+        const sb = fadenScope(["phyto-core.js"]);
+        vm.runInContext(text.replace(von, nach), sb, { filename: "phyto-core.mutant.js" });
+        return stufenBefunde(sb.__phytoCore).out.join(" | ");
+    };
+    const ohne = mutant("const SF = forestStufe(ctx.stufe(x, z, surfaceY));", "const SF = { laub: 1, tanne: 1, kiefer: 1 };");
+    ok("Höhenstufen Selbsttest: ohne Stufe fällt „steigt“ an forestStufe", /der Rang steigt nicht/.test(ohne), ohne || "die Mutante blieb grün");
+    const kante = mutant("kollin: 0.25, montan: 0.83, oekoton: 0.125,", "kollin: 0.25, montan: 0.83, oekoton: 0.001,");
+    ok("Höhenstufen Selbsttest: ohne Ökoton fällt „die Kante“ an forestStufe", /die Kante/.test(kante), kante || "die Mutante blieb grün");
 }
 
 wandEnde(errs, "PHYTO-KERN: der Wuchs trägt die Gesetze, Main + Worker aus EINER Quelle (Gesetz #0).");

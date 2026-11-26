@@ -1375,13 +1375,24 @@
         ],
     });
     function schnee(L, y, x, z, versatz) {
-        if (!Number.isFinite(x) || !Number.isFinite(z)) throw new Error("gelaende-core schnee: der Ort (x, z) fehlt");
-        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
         // die Linie des Orts (Reise): das Band steht um `schneeBandM` über dem der Heimat (in der Heimat 0)
         const band = ortDer(L).schneeBandM;
+        return glatt(SCHNEE.start, SCHNEE.voll, schneeHoehe(L, y, x, z) - (versatz || 0) - band);
+    }
+    // Die Höhe über dem Meer, die die Schneegrenze am Ort liest: das Meer der Lage und die Zungen der Linie (Mulden, Rücken).
+    function schneeHoehe(L, y, x, z) {
+        if (!Number.isFinite(x) || !Number.isFinite(z)) throw new Error("gelaende-core schnee: der Ort (x, z) fehlt");
+        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
         let zunge = 0;
         for (const o of SCHNEE.zungen) zunge += L.noise.noise2D(x * o.f + o.ox, z * o.f + o.oz) * o.a;
-        return glatt(SCHNEE.start, SCHNEE.voll, y - wl + zunge - (versatz || 0) - band);
+        return y - wl + zunge;
+    }
+    // DIE HÖHENSTUFE DES WALDS (biome-hoehenstufen, karte2.leben.pflanzen.biome#2): die Höhe am Ort im Maß der EINEN Waldgrenze
+    // der Welt — 0 am Meer, 1 dort, wo der Schnee des Sommers beginnt (`SCHNEE.start` über der Linie des Orts, mit ihren Zungen
+    // und ihrem Band): dieselbe Linie, an der der Wald endet (phyto-core `forestWaldgrenze` über `schnee`). Die Stufen der Arten
+    // liest phyto-core `forestStufe` an dieser Zahl, so folgen sie der Waldgrenze in jede Mulde und auf jeden Rücken.
+    function waldStufe(L, y, x, z) {
+        return (schneeHoehe(L, y, x, z) - ortDer(L).schneeBandM) / SCHNEE.start;
     }
 
     // DIE TEMPERATUR (stoffe.K3, Wetter H4): die Luft an der Höhe y in °C — EINE reine Funktion aus der Höhe über dem Meer,
@@ -8590,6 +8601,7 @@
         bahnAm: bahnAm, // w11-fahrzeug (rein additiv): der Ort auf der Bahn — der Fahrer und die Garage lesen ihn
         SCHNEE: SCHNEE,
         schnee: schnee,
+        waldStufe: waldStufe, // biome-hoehenstufen — die Höhe am Ort im Maß der Waldgrenze (0 Meer · 1 Schnee-Beginn)
         TEMPERATUR: TEMPERATUR,
         temperatur: temperatur,
         temperaturFeld: temperaturFeld,

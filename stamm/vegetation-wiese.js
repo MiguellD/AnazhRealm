@@ -3024,6 +3024,8 @@ class AnazhRealm_vegetation_wiese {
                       stand: (px, pz) => this._placementStandAt(px, pz, "forest"), // Lichtung und Schluss (phyto-core)
                       // die Waldgrenze (phyto-core `forestWaldgrenze`): der Schnee des Sommers am Boden, Versatz 0 (die Sommer-Mitte)
                       schnee: (px, pz, y) => globalThis.__gelaendeCore.schnee(this._gelaende(), y, px, pz, 0),
+                      // die Höhenstufe (phyto-core `forestStufe`): die Höhe im Maß derselben Waldgrenze (gelaende-core `waldStufe`)
+                      stufe: (px, pz, y) => globalThis.__gelaendeCore.waldStufe(this._gelaende(), y, px, pz),
                       // der Wuchs des Orts (Reise: die Tafel `ortGesetz` — Trockengrenze, Nadel- und Laubholz; die Heimat 1)
                       wuchs: this._gelaende().ort.wuchs,
                       surfaceYAt: (x, z) => {
