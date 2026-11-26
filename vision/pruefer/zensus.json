@@ -1,0 +1,7430 @@
+{
+ "quelle": {
+  "karte": "vision/meisterkarte-2.json",
+  "klasse": "meisterkarte-quelle/punkte/stationen/auge-klasse.cjs",
+  "tafel": "vision/richter-tafel.json",
+  "gebucht": 126
+ },
+ "summe": {
+  "sprossen": 367,
+  "P": 198,
+  "K": 27,
+  "wort": 142,
+  "front": 60,
+  "frontOhneFremdeDatei": 20
+ },
+ "arten": {
+  "2afc": {
+   "sprossen": 156,
+   "front": 25,
+   "P": 96,
+   "K": 0,
+   "wort": 60,
+   "laufSpiel": 3,
+   "laufFremd": 153,
+   "laufLiteratur": 0,
+   "ohneSchwelle": 46,
+   "massOffen": 3,
+   "medium": {
+    "bild": 133,
+    "film": 17,
+    "text": 4,
+    "klang": 2
+   }
+  },
+  "ordnen": {
+   "sprossen": 105,
+   "front": 32,
+   "P": 65,
+   "K": 0,
+   "wort": 40,
+   "laufSpiel": 103,
+   "laufFremd": 2,
+   "laufLiteratur": 0,
+   "ohneSchwelle": 3,
+   "massOffen": 5,
+   "medium": {
+    "bild": 97,
+    "film": 2,
+    "text": 1,
+    "klang": 5
+   }
+  },
+  "leser": {
+   "sprossen": 12,
+   "front": 1,
+   "P": 0,
+   "K": 12,
+   "wort": 0,
+   "laufSpiel": 12,
+   "laufFremd": 0,
+   "laufLiteratur": 0,
+   "ohneSchwelle": 0,
+   "massOffen": 12,
+   "medium": {
+    "bild": 12
+   }
+  },
+  "band": {
+   "sprossen": 15,
+   "front": 3,
+   "P": 0,
+   "K": 15,
+   "wort": 0,
+   "laufSpiel": 0,
+   "laufFremd": 10,
+   "laufLiteratur": 5,
+   "ohneSchwelle": 0,
+   "massOffen": 15,
+   "medium": {
+    "bild": 15
+   }
+  },
+  "zahl": {
+   "sprossen": 3,
+   "front": 0,
+   "P": 0,
+   "K": 0,
+   "wort": 3,
+   "laufSpiel": 0,
+   "laufFremd": 0,
+   "laufLiteratur": 0,
+   "ohneSchwelle": 0,
+   "massOffen": 0,
+   "medium": {}
+  },
+  "skala": {
+   "sprossen": 60,
+   "front": 5,
+   "P": 33,
+   "K": 0,
+   "wort": 27,
+   "laufSpiel": 37,
+   "laufFremd": 23,
+   "laufLiteratur": 0,
+   "ohneSchwelle": 5,
+   "massOffen": 1,
+   "medium": {
+    "bild": 52,
+    "film": 2,
+    "text": 4,
+    "klang": 2
+   }
+  },
+  "spieler": {
+   "sprossen": 16,
+   "front": 4,
+   "P": 4,
+   "K": 0,
+   "wort": 12,
+   "laufSpiel": 14,
+   "laufFremd": 2,
+   "laufLiteratur": 0,
+   "ohneSchwelle": 0,
+   "massOffen": 16,
+   "medium": {
+    "spiel": 16
+   }
+  }
+ },
+ "frontOhneFremdeDatei": [
+  {
+   "id": "leben.evolution.zeitreise#1",
+   "art": "ordnen",
+   "station": "karte2.leben.evolution.zeitreise#1",
+   "schwelle": "≥ 0,8",
+   "stumpf": "rot",
+   "lauf": 8,
+   "bis": 8,
+   "von": 8,
+   "teil": "Panel ordnet Bildpaare Gegenwart/Epoche ≥ 0,8"
+  },
+  {
+   "id": "mensch.geist.generationen#2",
+   "art": "ordnen",
+   "station": "karte2.mensch.geist.generationen#2",
+   "schwelle": "≥ 0,7",
+   "stumpf": "rot",
+   "lauf": 7,
+   "bis": 8,
+   "von": 8,
+   "teil": "Prüfer ordnet Kinder den Eltern ≥ 0,7"
+  },
+  {
+   "id": "mensch.kultur.gestalt#1",
+   "art": "ordnen",
+   "station": "karte2.mensch.kultur.gestalt#1",
+   "schwelle": "≥ 80 %",
+   "stumpf": "rot",
+   "lauf": 7,
+   "bis": 7,
+   "von": 7,
+   "teil": "10 Kulturen an Häuser-Bildern blind getrennt ≥ 80 %"
+  },
+  {
+   "id": "leben.tiere.lebenszyklus#2",
+   "art": "ordnen",
+   "station": "karte2.leben.tiere.lebenszyklus#2",
+   "schwelle": "≥ 0,7",
+   "stumpf": "rot",
+   "lauf": 6,
+   "bis": 7,
+   "von": 7,
+   "teil": "Bildpaar Kitz/Hirsch Panel ≥ 0,7"
+  },
+  {
+   "id": "mensch.bau.bedarf#1",
+   "art": "ordnen",
+   "station": "karte2.mensch.bau.bedarf#1",
+   "schwelle": "≥ 80 %",
+   "stumpf": "rot",
+   "lauf": 6,
+   "bis": 6,
+   "von": 6,
+   "teil": "50 Bauten blind nach Funktion ≥ 80 %"
+  },
+  {
+   "id": "mensch.macht.stand#1",
+   "art": "ordnen",
+   "station": "karte2.mensch.macht.stand#1",
+   "schwelle": "≥ 80 %",
+   "stumpf": "rot",
+   "lauf": 6,
+   "bis": 6,
+   "von": 6,
+   "teil": "arm/reich erkannt ≥ 80 %"
+  },
+  {
+   "id": "mensch.sport.kunst#1",
+   "art": "ordnen",
+   "station": "karte2.mensch.sport.kunst#1",
+   "schwelle": "≥ 80 %",
+   "stumpf": "rot",
+   "lauf": 6,
+   "bis": 6,
+   "von": 6,
+   "teil": "Blindtest Anfänger ↔ Meister ≥ 80 %"
+  },
+  {
+   "id": "mensch.bau.innen#3",
+   "art": "ordnen",
+   "station": "karte2.mensch.bau.innen#3",
+   "schwelle": "≥ 85 %",
+   "stumpf": "rot",
+   "lauf": 5,
+   "bis": 7,
+   "von": 7,
+   "teil": "200 Räume blind klassifiziert ≥ 85 %"
+  },
+  {
+   "id": "mensch.geist.netz#2",
+   "art": "ordnen",
+   "station": "karte2.mensch.geist.netz#2",
+   "schwelle": "≥ 0,7",
+   "stumpf": "rot",
+   "lauf": 5,
+   "bis": 6,
+   "von": 6,
+   "teil": "Prüfer sagt aus Gesten Freund/Feind/fremd ≥ 0,7"
+  },
+  {
+   "id": "mensch.zeit.spanne#1",
+   "art": "ordnen",
+   "station": "karte2.mensch.zeit.spanne#1",
+   "schwelle": "≥ 80 %",
+   "stumpf": "rot",
+   "lauf": 5,
+   "bis": 5,
+   "von": 7,
+   "teil": "dieselbe Zelle unter 4 Jahren: Blind-Datierung bringt die 4 Bilder in die richtige Folge ≥ 80 %"
+  },
+  {
+   "id": "same.entfaltung.vielfalt#1",
+   "art": "ordnen",
+   "station": "karte2.same.entfaltung.vielfalt#1",
+   "schwelle": "≥ 80 %",
+   "stumpf": "rot",
+   "lauf": 5,
+   "bis": 5,
+   "von": 7,
+   "teil": "aus einem Zufallsbild den richtigen von 10 Orten ≥ 80 % (Panel)"
+  },
+  {
+   "id": "mensch.leib.ausdruck#1",
+   "art": "ordnen",
+   "station": "karte2.mensch.leib.ausdruck#1",
+   "schwelle": "≥ 60 %",
+   "stumpf": "rot",
+   "lauf": 4,
+   "bis": 4,
+   "von": 6,
+   "teil": "Prüfer errät Akt/Gemüt aus der Silhouette ≥ 60 %"
+  },
+  {
+   "id": "mensch.stadt.form#2",
+   "art": "ordnen",
+   "station": "karte2.mensch.stadt.form#2",
+   "schwelle": "≥ 70 %",
+   "stumpf": "rot",
+   "lauf": 4,
+   "bis": 5,
+   "von": 7,
+   "teil": "Blindtest Lage und Wohlstand aus 20 Straßenbildern ≥ 70 %"
+  },
+  {
+   "id": "planet.relief.formschatz#1",
+   "art": "ordnen",
+   "station": "karte2.planet.relief.formschatz#1",
+   "schwelle": "≥ 80 %",
+   "stumpf": "rot",
+   "lauf": 4,
+   "bis": 4,
+   "von": 8,
+   "teil": "Blind-Klassifikation von Ego-Bildern an 20 Saaten ≥ 80 %"
+  },
+  {
+   "id": "mensch.kultur.bildkunst#2",
+   "art": "ordnen",
+   "station": "karte2.mensch.kultur.bildkunst#2",
+   "schwelle": "≥ 70 %",
+   "stumpf": "rot",
+   "lauf": 3,
+   "bis": 4,
+   "von": 7,
+   "teil": "Werk blind der richtigen von 10 Kulturen zugeordnet ≥ 70 %"
+  },
+  {
+   "id": "mensch.stadt.breite#1",
+   "art": "ordnen",
+   "station": "karte2.mensch.stadt.breite#1",
+   "schwelle": "≥ 50 %",
+   "stumpf": "rot",
+   "lauf": 2,
+   "bis": 2,
+   "von": 7,
+   "teil": "Region einer Stadt aus 6 erkannt ≥ 50 %"
+  },
+  {
+   "id": "planet.erde.gestalt#1",
+   "art": "ordnen",
+   "station": "karte2.planet.erde.gestalt#1",
+   "schwelle": "≥ 70 %",
+   "stumpf": "rot",
+   "lauf": 2,
+   "bis": 2,
+   "von": 6,
+   "teil": "Ortskundige wählen die Region aus 10 Kandidaten an 3 Ego-Bildern ≥ 70 %"
+  },
+  {
+   "id": "leben.pflanzen.arten#1",
+   "art": "ordnen",
+   "station": "karte2.leben.pflanzen.arten#1",
+   "schwelle": "≥ 80 %",
+   "stumpf": "rot",
+   "lauf": 1,
+   "bis": 1,
+   "von": 7,
+   "teil": "Blindtest 10 Bilder je Gestalt: Gattung ≥ 80 % richtig"
+  },
+  {
+   "id": "leben.wasser.lebensraeume#2",
+   "art": "ordnen",
+   "station": "karte2.leben.wasser.lebensraeume#2",
+   "schwelle": "≥ 80 %",
+   "stumpf": "rot",
+   "lauf": 1,
+   "bis": 2,
+   "von": 7,
+   "teil": "Klassifikator erkennt den Lebensraum ≥ 80 %"
+  },
+  {
+   "id": "planet.geologie.lagerstaette#1",
+   "art": "ordnen",
+   "station": "karte2.planet.geologie.lagerstaette#1",
+   "schwelle": "≥ 80 %",
+   "stumpf": "rot",
+   "lauf": 1,
+   "bis": 1,
+   "von": 6,
+   "teil": "Jury trennt drei Genesen ≥ 80 %"
+  }
+ ],
+ "sprossen": [
+  {
+   "id": "planet.geologie.platten#1",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar Schummerung gegen reale Region",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.geologie.platten#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": true
+  },
+  {
+   "id": "planet.geologie.platten#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar Orbitbild gegen Relief-Globus",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.geologie.platten#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "planet.geologie.platten#7",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Fach-Panel erkennt „dieselbe Erde“ in ≥ 8 von 10",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 8 von 10"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.planet.geologie.platten#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "planet.geologie.platten#8",
+   "klasse": "K",
+   "art": "leser",
+   "teil": "1 000 Saaten: Ursachen-Probe Wärmefluss und Alter aus dem Orbitbild, Rang ≥ 0,7; ≥ 50 % der Saatenpaare mit auffallend verschiedener Geschichte",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "R10: Rang ≥ 0,7 · Gegenlauf ≥ 80 % · Neuheit ≥ 30 % — das Rang-Maß trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.planet.geologie.platten#8",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "planet.geologie.platten#9",
+   "klasse": "K",
+   "art": "leser",
+   "teil": "Ursachen-Probe an 1 000 Saaten Rang ≥ 0,7; 0 Saaten mit Naht oder Loch",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "R10: Rang ≥ 0,7 · Gegenlauf ≥ 80 % · Neuheit ≥ 30 % — das Rang-Maß trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.planet.geologie.platten#9",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "planet.geologie.vulkan#1",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar Glutbild gegen Lava-Foto (2AFC ≤ 85 %)",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.85,
+    "wort": "≤ 85 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.geologie.vulkan#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "planet.geologie.vulkan#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar Clip gegen Ausbruchsfilm",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.geologie.vulkan#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.geologie.vulkan#4",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar Oberfläche",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.geologie.vulkan#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.geologie.vulkan#7",
+   "klasse": "K",
+   "art": "leser",
+   "teil": "Ursachen-Probe an 1 000 Saaten: Wärmefluss aus der Vulkanlandschaft Rang ≥ 0,7; höchster Vulkan gegen 1/Schwere Rang ≥ 0,7",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "R10: Rang ≥ 0,7 · Gegenlauf ≥ 80 % · Neuheit ≥ 30 % — das Rang-Maß trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.planet.geologie.vulkan#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.geologie.gebirge#1",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar Felswand gegen Foto",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.geologie.gebirge#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "planet.geologie.gebirge#4",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar gegen Feldfoto",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.geologie.gebirge#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.geologie.unterwelt#1",
+   "klasse": "K",
+   "art": "band",
+   "teil": "Mündungen je km² an 3 Saaten im Band; Mund im Bild an ≥ 90 % im Fels",
+   "medium": "bild",
+   "lauf": "literatur",
+   "schwelle": {
+    "mass": null,
+    "grund": "Band realer Daten: urteilt die Station an der Zahl, sobald das Band mit Quelle liegt"
+   },
+   "station": "karte2.planet.geologie.unterwelt#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "planet.geologie.unterwelt#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar Karstfeld",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.geologie.unterwelt#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.geologie.unterwelt#5",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar Halle",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.geologie.unterwelt#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.geologie.lagerstaette#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Jury trennt drei Genesen ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.planet.geologie.lagerstaette#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "planet.geologie.lagerstaette#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar geologische Karte gegen reale",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.geologie.lagerstaette#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.geologie.lagerstaette#3",
+   "klasse": "wort",
+   "art": "zahl",
+   "teil": "Prospektor-Probe an 30 Saaten: Fundquote nach Zeichen ≥ 5× blindes Bohren",
+   "hand": "„blindes Bohren“ ist der Vergleichs-Lauf der Prospektor-Probe, kein Urteil",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.geologie.lagerstaette#5",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "100 Zufallsfunde: Jury nennt das Kristallsystem blind ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.planet.geologie.lagerstaette#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.geologie.lagerstaette#6",
+   "klasse": "wort",
+   "art": "zahl",
+   "teil": "Prospektor-Probe an 1 000 Saaten ≥ 3× blindes Bohren",
+   "hand": "„blindes Bohren“ ist der Vergleichs-Lauf der Prospektor-Probe, kein Urteil",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.geologie.inneres#6",
+   "klasse": "K",
+   "art": "leser",
+   "teil": "Ursachen-Probe an 1 000 Saaten: Feldstärke aus Kern und Rotation; erstarrter Kern → kein Feld in ≥ 95 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "R10: Rang ≥ 0,7 · Gegenlauf ≥ 80 % · Neuheit ≥ 30 % — das Rang-Maß trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.planet.geologie.inneres#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.geologie.einschlag#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar gegen Kraterfoto",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.geologie.einschlag#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.relief.grossform#5",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar Luftbild gegen Satellit: Fehlerquote ≥ 35 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.35,
+    "wort": "≥ 35 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.relief.grossform#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.relief.grossform#6",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Orbit-Blindpaar Fehlerquote ≥ 35 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.35,
+    "wort": "≥ 35 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.relief.grossform#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.relief.formschatz#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Blind-Klassifikation von Ego-Bildern an 20 Saaten ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.planet.relief.formschatz#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": true
+  },
+  {
+   "id": "planet.relief.formschatz#2",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Blind-Klassifikation ≥ 80 % je Klasse",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.planet.relief.formschatz#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "planet.relief.formschatz#3",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "200 Orte aus 20 Saaten: Bild-Klasse = Klasse, die die Prozessgrößen vorhersagen, ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.planet.relief.formschatz#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "planet.relief.formschatz#5",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Foto-Blindpaar Fehler ≥ 35 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.35,
+    "wort": "≥ 35 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.relief.formschatz#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "planet.relief.formschatz#7",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "1 000 zufällige Gewässer- und Landform-Posen aus 100 Saaten: ≥ 80 % im Blindtest gegen Fotos als echt bewertet",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.relief.formschatz#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "planet.relief.boden#1",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar Ego-Bild gegen Foto gleichen Hangs und Klimas (2AFC ≤ 85 %)",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.85,
+    "wort": "≤ 85 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.relief.boden#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "planet.relief.boden#4",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Graben an 100 Zufallsorten: Bodentyp aus dem Anschnitt-Bild blind klassiert gegen die WRB-Referenzprofile",
+   "hand": "der Bodentyp wird am Anschnitt klassiert — die Referenzprofile der WRB sind fremde Bilder",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.planet.relief.boden#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.relief.boden#5",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildpaar Anschnitt gegen Referenzprofil-Foto: ΔE ≤ 10, Blind-Fehler ≥ 35 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.35,
+    "wort": "≥ 35 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.relief.boden#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.relief.boden#6",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Regolith-Blindpaar gegen Mond-/Mars-Fotos Fehler ≥ 35 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.35,
+    "wort": "≥ 35 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.relief.boden#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.relief.wandel#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildfolge gegen Landsat-Zeitreihe",
+   "hand": "Bildfolge gegen die Landsat-Zeitreihe",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.relief.wandel#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.relief.wandel#7",
+   "klasse": "K",
+   "art": "leser",
+   "teil": "100 Welten × 10 Epochen: Fremdwelt-Probe (R10) an der Abtragsgeschichte — Agens und Alter aus dem Bild gelesen Rang ≥ 0,7",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "R10: Rang ≥ 0,7 · Gegenlauf ≥ 80 % · Neuheit ≥ 30 % — das Rang-Maß trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.planet.relief.wandel#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.wasser.seegang#3",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Blindtest 10 Bilder je Beaufort-Stufe, ≥ 70 % richtig zugeordnet",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.planet.wasser.seegang#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "planet.wasser.seegang#7",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "100 Küstenposen aus 10 Saaten × 12 Uhr/Wetter: ≥ 80 % im Blindtest nicht sicher von Fotos unterschieden",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.wasser.seegang#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "planet.wasser.eis#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar Scholle",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.wasser.eis#3",
+   "leiterHeute": 2,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "planet.wasser.eis#7",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar Eismond gegen Sondenfoto",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.wasser.eis#7",
+   "leiterHeute": 2,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.wasser.kreislauf#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "nach 60 Tagen ohne Regen: Wiese braun gegen Dürrefoto, Fluss ≥ 50 % Querschnitt verloren",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.5,
+    "wort": "≥ 50 %"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.wasser.kreislauf#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.wasser.tiefsee#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindtest 50 Posen gegen Taucherfotos ≥ 60 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.6,
+    "wort": "≥ 60 %"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.wasser.tiefsee#2",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "planet.wasser.tiefsee#5",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "500 Bodenposen aus 50 Saaten: Blindtest gegen Tiefsee-Fotos ≥ 60 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.6,
+    "wort": "≥ 60 %"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.wasser.tiefsee#5",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.wetter.lagen#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindtest 20 Draufsichten gegen Satellitenbild: Trefferquote ≤ 60 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.wetter.lagen#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.wetter.lagen#6",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindtest gegen Sturmfotos ≤ 60 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.wetter.lagen#6",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.wetter.wolken#1",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Zeitraffer der Schicht gegen Zeitraffer-Film realer Schichtwolken (2AFC ≤ 85 %)",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.85,
+    "wort": "≤ 85 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.wetter.wolken#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "planet.wetter.wolken#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindtest 20 Himmelsbilder gegen Foto ≤ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.7,
+    "wort": "≤ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.wetter.wolken#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.wetter.wolken#7",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "100 Himmelsbilder gegen Fotos: Trefferquote ≤ 60 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.wetter.wolken#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.wetter.klimazonen#6",
+   "klasse": "K",
+   "art": "band",
+   "teil": "Farbverteilung je Breite r ≥ 0,7 gegen Blue-Marble-Mosaik",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "Band realer Daten: urteilt die Station an der Zahl, sobald das Band mit Quelle liegt"
+   },
+   "station": "karte2.planet.wetter.klimazonen#6",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.wetter.klimazonen#7",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "1 000 Saaten × 50 Orte: kein sichtbarer Widerspruch in ≥ 95 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.95,
+    "wort": "≥ 95 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.planet.wetter.klimazonen#7",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.wetter.extreme#5",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindtest gegen Sturmfotos ≤ 60 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.wetter.extreme#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.wetter.extreme#6",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindtest ≤ 60 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.wetter.extreme#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.wetter.vorhersage#2",
+   "klasse": "K",
+   "art": "leser",
+   "teil": "Bildmodell, das NUR den Himmel sieht: Regen in 12 h mit Skill ≥ 0,3 über Persistenz",
+   "hand": "das eingefrorene Bildmodell liest den Regen aus dem Himmel — die Wahrheit kennt der Same",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "R10: Rang ≥ 0,7 · Gegenlauf ≥ 80 % · Neuheit ≥ 30 % — das Rang-Maß trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.planet.wetter.vorhersage#2",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "planet.wetter.fremde-atmosphaeren#1",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Himmelsfarbe Mittag/Abend gegen Foto",
+   "hand": "Himmelsfarbe gegen Foto",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.wetter.fremde-atmosphaeren#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "planet.wetter.fremde-atmosphaeren#6",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindtest gegen Juno/Cassini ≤ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.7,
+    "wort": "≤ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.wetter.fremde-atmosphaeren#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.wetter.fremde-atmosphaeren#7",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "1 000 Planeten × 20 Orte ohne sichtbaren Widerspruch ≥ 95 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.95,
+    "wort": "≥ 95 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.planet.wetter.fremde-atmosphaeren#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.zeit.klimageschichte#9",
+   "klasse": "K",
+   "art": "leser",
+   "teil": "heute → Eiszeit → heute: Moränen liegen am Eisrand der Eiszeit (Lagefehler ≤ 5 %), 100 Saaten; 1 000 Planeten: Fremdwelt-Probe (R10) an Eisrand, Meeresspiegel und Klimazonen",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "R10: Rang ≥ 0,7 · Gegenlauf ≥ 80 % · Neuheit ≥ 30 % — das Rang-Maß trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.planet.zeit.klimageschichte#9",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "planet.zeit.archiv#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildvergleich gegen Fotos des Colorado-Plateaus (Farbbänder, Rhythmus)",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.zeit.archiv#2",
+   "leiterHeute": 1,
+   "leiterSprossen": 8,
+   "front": true
+  },
+  {
+   "id": "planet.zeit.archiv#6",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Spiel-Wand aus 2 km gegen Grand-Canyon-Fotos: Fachleute ordnen ≥ 80 % der Lagen dem richtigen Milieu zu",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.planet.zeit.archiv#6",
+   "leiterHeute": 1,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "planet.zeit.archiv#7",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Fachjury bestimmt aus 50 Ego-Bildern das Agens ≥ 70 % (Zufall 25 %), die Abfolge ≥ 60 %, das Alter Rang ≥ 0,6",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.6,
+    "wort": "≥ 0,6"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.planet.zeit.archiv#7",
+   "leiterHeute": 1,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "planet.erde.gestalt#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Ortskundige wählen die Region aus 10 Kandidaten an 3 Ego-Bildern ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.planet.erde.gestalt#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "planet.erde.gestalt#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Orbitbild gegen Satellitenmosaik: Panel-2AFC ≤ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.7,
+    "wort": "≤ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.erde.gestalt#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.erde.gestalt#4",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Ego-Blindpaar gegen ein Foto des Orts ≤ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.7,
+    "wort": "≤ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.erde.gestalt#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.erde.gestalt#6",
+   "klasse": "P",
+   "art": "spieler",
+   "teil": "Heimat-Probe: 100 Menschen suchen ihren Wohnort — Tal, Flusslauf und Straßenzug erkannt ≥ 80 %",
+   "hand": "100 Menschen suchen ihren Wohnort — ein Modell hat keinen",
+   "medium": "spiel",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ein spielendes Wesen: das Protokoll trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.planet.erde.gestalt#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.kosmos.himmelsmechanik#4",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Bildpaar Totalität gegen Foto",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.kosmos.himmelsmechanik#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "planet.kosmos.welten#4",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindtest gegen Sondenfoto ≥ 40 % verwechselt",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.4,
+    "wort": "≥ 40 %"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.kosmos.welten#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.kosmos.eigengesetz#6",
+   "klasse": "wort",
+   "art": "spieler",
+   "teil": "blinde Spieler sagen nach 30 min Versuchen den Ausgang eines neuen Versuchs voraus ≥ 70 %",
+   "medium": "spiel",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ein spielendes Wesen: das Protokoll trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.planet.kosmos.eigengesetz#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "planet.kosmos.galaxien#1",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Bildpaar Anflug gegen Teleskop-Aufnahme (2AFC ≤ 80 %)",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.8,
+    "wort": "≤ 80 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.planet.kosmos.galaxien#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "leben.pflanzen.arten#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Blindtest 10 Bilder je Gestalt: Gattung ≥ 80 % richtig",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.pflanzen.arten#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "leben.pflanzen.arten#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "100 Saaten → Wuchsform-Blindtest",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.pflanzen.arten#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.pflanzen.arten#3",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Artenzahl im Bild per Blindbenennung",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.pflanzen.arten#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.pflanzen.arten#4",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindtest Foto ↔ Spiel, 200 Paare: Trefferquote ≤ 60 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.leben.pflanzen.arten#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.pflanzen.arten#6",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "paarweise unterscheidbar ≥ 95 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.95,
+    "wort": "≥ 95 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.pflanzen.arten#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.pflanzen.biome#6",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "1 000 Saaten × 10 Punkte: Konsistenz ≥ 95 %, Blindbewertung „lebendige Welt“ ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.leben.pflanzen.biome#6",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "leben.pflanzen.lebenslauf#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildreihe 0/10/50/150 Jahre gegen Fotoreihe derselben Art",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.pflanzen.lebenslauf#2",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "leben.pflanzen.lebenslauf#6",
+   "klasse": "K",
+   "art": "band",
+   "teil": "100 Orte × 5 Zeitabstände: Bestand im Band der Chronosequenz des Bioms ≥ 90 %; fremde Planeten mit Fremdwelt-Probe (R10)",
+   "medium": "bild",
+   "lauf": "literatur",
+   "schwelle": {
+    "mass": null,
+    "grund": "Band realer Daten: urteilt die Station an der Zahl, sobald das Band mit Quelle liegt"
+   },
+   "station": "karte2.leben.pflanzen.lebenslauf#6",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "leben.pflanzen.jahreslauf#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "12-Wochen-Bildreihe gegen Webcam-Zeitreihe",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.pflanzen.jahreslauf#3",
+   "leiterHeute": 2,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "leben.pflanzen.jahreslauf#4",
+   "klasse": "K",
+   "art": "band",
+   "teil": "Austriebsdatum über Höhe und Breite gegen Satelliten-NDVI",
+   "medium": "bild",
+   "lauf": "literatur",
+   "schwelle": {
+    "mass": null,
+    "grund": "Band realer Daten: urteilt die Station an der Zahl, sobald das Band mit Quelle liegt"
+   },
+   "station": "karte2.leben.pflanzen.jahreslauf#4",
+   "leiterHeute": 2,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "leben.pflanzen.dichte#1",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Ring-Bildanteil gegen Foto",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.pflanzen.dichte#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "leben.pflanzen.dichte#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildpaar Wald-innen gegen REF",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.pflanzen.dichte#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "leben.pflanzen.dichte#4",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindtest Landschaftsfoto ↔ Spiel: Trefferquote ≤ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.7,
+    "wort": "≤ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.leben.pflanzen.dichte#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "leben.pflanzen.kraft#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildreihe Durchgang gegen Video derselben Lage",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.pflanzen.kraft#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "leben.pflanzen.kraft#4",
+   "klasse": "K",
+   "art": "band",
+   "teil": "Anteil geworfener Bäume über Windstärke gegen Sturm-Statistik",
+   "medium": "bild",
+   "lauf": "literatur",
+   "schwelle": {
+    "mass": null,
+    "grund": "Band realer Daten: urteilt die Station an der Zahl, sobald das Band mit Quelle liegt"
+   },
+   "station": "karte2.leben.pflanzen.kraft#4",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "leben.pflanzen.kraft#5",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindtest Sturm-Video ↔ Spiel: Trefferquote ≤ 60 %",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.leben.pflanzen.kraft#5",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "leben.tiere.arten#2",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "1 000 Saaten: Blind-Panel „echt möglich“ ≥ 0,7",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 0,7"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.leben.tiere.arten#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "leben.tiere.arten#3",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "je Klasse Panel ≥ 0,7",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 0,7"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.leben.tiere.arten#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "leben.tiere.arten#4",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Makro-Bildpaar gegen Foto-Korpus Panel ≥ 0,7",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 0,7"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.leben.tiere.arten#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "leben.tiere.arten#6",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "1 000 angetroffene Arten: 2AFC gegen den Foto-Korpus ≤ 70 %, in ihrer Nische angetroffen ≥ 0,9, paarweise trennbar ≥ 95 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.95,
+    "wort": "≥ 95 %"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.tiere.arten#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "leben.tiere.arten#8",
+   "klasse": "K",
+   "art": "leser",
+   "teil": "100 fremde Saaten: Fremdwelt-Probe (R10) an den angetroffenen Arten; im Bild ununterscheidbare Duplikate ≤ 1 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "R10: Rang ≥ 0,7 · Gegenlauf ≥ 80 % · Neuheit ≥ 30 % — das Rang-Maß trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.leben.tiere.arten#8",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "leben.tiere.bewegung#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindtest Schwimmweise ≥ 80 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.tiere.bewegung#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "leben.tiere.bewegung#5",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Panel gegen Hochgeschwindigkeits-Referenz ≥ 0,7",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 0,7"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.tiere.bewegung#5",
+   "leiterHeute": 1,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "leben.tiere.verhalten#3",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "100 Saaten, je 1 h: Ethologe ordnet die Lebensweise blind zu ≥ 0,8",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 0,8"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.tiere.verhalten#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.tiere.verhalten#6",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "blinde Zuordnung an 10⁴ Saaten ≥ 0,8",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 0,8"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.tiere.verhalten#6",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.tiere.verhalten#7",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "100 fremde Saaten: Lebensweise blind benannt ≥ 0,8",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 0,8"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.tiere.verhalten#7",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.tiere.lebenszyklus#2",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Bildpaar Kitz/Hirsch Panel ≥ 0,7",
+   "hand": "Kitz und Hirsch werden als Alter derselben Art erkannt",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 0,7"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.tiere.lebenszyklus#2",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "leben.tiere.masse#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Silhouette gegen Murmuration-Film",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.tiere.masse#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "leben.tiere.masse#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Konvexität und Lückenfläche gegen Unterwasser-Film",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.tiere.masse#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "leben.tiere.masse#6",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Draufsicht gegen Luftbild des Sardinenzugs",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.tiere.masse#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "leben.tiere.masse#7",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Horizont-Bild Panel ≥ 0,7",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 0,7"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.leben.tiere.masse#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "leben.tiere.mensch#6",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Blind-Panel erkennt die Art an der Ego-Aufnahme ≥ 0,7",
+   "hand": "die Ego-Aufnahme ist ein Bild des Spiels",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 0,7"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.tiere.mensch#6",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.tiere.mensch#7",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "100 fremde Saaten: jede Art spielbar, Tempo ±10 %, Panel ≥ 0,7",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 0,7"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.leben.tiere.mensch#7",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.wasser.lebensraeume#2",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Klassifikator erkennt den Lebensraum ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.wasser.lebensraeume#2",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "leben.wasser.lebensraeume#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Tauchbild gegen Unterwasserfoto ≥ 0,7",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 0,7"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.wasser.lebensraeume#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.wasser.lebensraeume#4",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Klassifikator erkennt das Riff ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.wasser.lebensraeume#4",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.wasser.bild#2",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Bildpaar 1 m vor dem Fisch: Blindtest erkennt die Art ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.wasser.bild#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.wasser.bild#6",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Panel unterscheidet Spiel und Foto in ≤ 60 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.leben.wasser.bild#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.wasser.bild#7",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "erdähnlich: Blindtest 100 Szenen ≤ 55 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.55,
+    "wort": "≤ 55 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.leben.wasser.bild#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.oeko.netz#7",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "64 Saaten × 3 Planetentypen: Fremdwelt-Probe (R10) am beobachteten Netz; Kennzahl-Tafeln aus dem Transekt trennen Fachleute nicht über Zufall von realen",
+   "hand": "Kennzahl-Tafeln werden nicht über Zufall von realen getrennt",
+   "medium": "text",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.leben.oeko.netz#7",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.oeko.dynamik#4",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "braune Waldfläche gegen Luftbild-Reihe eines Borkenkäfer-Ausbruchs",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.oeko.dynamik#4",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.oeko.zerfall#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildreihe 0/3/10/30 Tage gegen forensische Referenz",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.oeko.zerfall#2",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "leben.oeko.sukzession#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildpaar nach 1/5/25 Spieljahren gegen die Yellowstone-1988-Fotoreihe",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.oeko.sukzession#2",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "leben.oeko.sukzession#5",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildpaar 0/30/100 Jahre gegen Fotoreihen verlassener Städte",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.oeko.sukzession#5",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.evolution.stammbaum#7",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "1 000 Blätter aus 10 Saaten, Kladen-gewichtet: Blindtest ≤ 60 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.leben.evolution.stammbaum#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.evolution.zeitreise#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Panel ordnet Bildpaare Gegenwart/Epoche ≥ 0,8",
+   "hand": "das Panel ordnet Gegenwart und Epoche",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 0,8"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.evolution.zeitreise#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": true
+  },
+  {
+   "id": "leben.evolution.zeitreise#5",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Blind-Sortierung von Bildern aus 10 Epochen nach Alter ≥ 90 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.evolution.zeitreise#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "leben.evolution.zeitreise#6",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Panel ordnet 20 Unterwasserbilder ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.evolution.zeitreise#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "leben.evolution.bauplan#4",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindtest Spiel-Video ↔ Natur-Video in Bewegung ≤ 60 %",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.leben.evolution.bauplan#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "leben.evolution.bauplan#6",
+   "klasse": "K",
+   "art": "leser",
+   "teil": "1 000 Wesen aus 10 Planeten: Morphoraum-Volumen > Erde; Fremdwelt-Probe (R10): Lebensweise aus dem Körper gelesen Rang ≥ 0,7",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "R10: Rang ≥ 0,7 · Gegenlauf ≥ 80 % · Neuheit ≥ 30 % — das Rang-Maß trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.leben.evolution.bauplan#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "leben.evolution.fremde-physik#7",
+   "klasse": "K",
+   "art": "leser",
+   "teil": "100 Welten: Prüfliste ≥ 95 %; Fremdwelt-Probe (R10): Morphoraum-Abstand zur Erde über dem 95. Perzentil der Erd-internen Abstände bei ≥ 50 %, Ursache aus dem Körper gelesen Rang ≥ 0,7",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "R10: Rang ≥ 0,7 · Gegenlauf ≥ 80 % · Neuheit ≥ 30 % — das Rang-Maß trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.leben.evolution.fremde-physik#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.evolution.zivilisation#7",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "10 Zivilisationen aus 10 Saaten: Blind-Sortierung nach Herkunft ≥ 90 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.evolution.zivilisation#7",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.evolution.mikroben#1",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildvergleich der Zonierung gegen Natur-Fotos",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.evolution.mikroben#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "leben.evolution.mikroben#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildvergleich am Ende des Zooms gegen Mikroskop-Aufnahmen",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.evolution.mikroben#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "leben.evolution.mikroben#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "100 Zufallsorte: 2AFC Zoom-Bild gegen Lichtmikroskopie desselben Lebensraums ≤ 75 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.75,
+    "wort": "≤ 75 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.leben.evolution.mikroben#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.verschieden#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Bild 10 Bewohner auf 2 m: Prüfer findet 0 gleiche Paare",
+   "hand": "gleiche Paare finden: Wahrheit aus dem Samen",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.leib.verschieden#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "mensch.leib.verschieden#3",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Prüfer-Wiedererkennung ≥ 90 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.leib.verschieden#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.verschieden#6",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "N = 200 Zufallsorte: Prüfer ordnet Gesicht ↔ Region ≥ 2× Basisrate, 0 Klone",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "faktor",
+    "op": "≥",
+    "wert": 2,
+    "wort": "≥ 2× Basisrate"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.leib.verschieden#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.gesicht#2",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Bildpaar gegen Porträtfoto gleicher Beleuchtung: Prüfer „lebt“ ≥ 50 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.5,
+    "wort": "≥ 50 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.leib.gesicht#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.gesicht#3",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Altersschätzung des Prüfers über 100 Zufallssamen, Fehler ≤ 5 Jahre",
+   "hand": "das Alter wird geschätzt, die Wahrheit kennt der Same",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "Schwelle anderer Art (Fehler, Faktor, Anzahl) — das Maß trägt pruefer.cjs noch nicht: „Altersschätzung des Prüfers über 100 Zufallssamen, Fehler ≤ 5 Jahre“"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.leib.gesicht#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.gesicht#4",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Prüfer erkennt die Basis-Emotion ≥ 80 % (Foto-Niveau)",
+   "hand": "„Foto-Niveau“ nennt die Höhe der Schwelle, kein Gegenbild",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.leib.gesicht#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.gesicht#5",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Bildpaar je Licht gegen Foto: Prüfer-Verwechslung ≥ 30 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.3,
+    "wort": "≥ 30 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.leib.gesicht#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.gesicht#6",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindtest Render ↔ Foto 50 ± 5 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "band",
+    "wert": [
+     0.45,
+     0.55
+    ],
+    "wort": "50 ± 5 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.leib.gesicht#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.tracht#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "20 Saaten: Prüfer ordnet Epoche ± 1 Jh. ≥ 0,7",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "Schwelle anderer Art (Fehler, Faktor, Anzahl) — das Maß trägt pruefer.cjs noch nicht: „20 Saaten: Prüfer ordnet Epoche ± 1 Jh. ≥ 0,7“"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.leib.tracht#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "mensch.leib.tracht#2",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "50 Zufalls-Eingaben: Prüfer ordnet Bild ↔ Epoche/Region ≥ 60 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.6,
+    "wort": "≥ 60 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.leib.tracht#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.tracht#3",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Stand-Rateaufgabe an 50 Zufallspersonen ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.leib.tracht#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.tracht#4",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "N = 200 Saaten: plausibel gegen Trachtenatlas ≥ 0,9",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 0,9"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.leib.tracht#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.tracht#6",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Blind-Zuordnung ≥ 0,7",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 0,7"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.leib.tracht#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.stoff#3",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "Video gegen Referenz-Aufnahme: Prüfer „echt“ ≥ 60 %",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.6,
+    "wort": "≥ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.leib.stoff#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.stoff#4",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Verschleiß Bauer ↔ Adel erkannt ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.leib.stoff#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.stoff#5",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Video Platz ↔ Referenz: Prüfer-Verwechslung ≥ 40 %",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.4,
+    "wort": "≥ 40 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.leib.stoff#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.stoff#6",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindtest Video ↔ Render 50 ± 5 %",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "band",
+    "wert": [
+     0.45,
+     0.55
+    ],
+    "wort": "50 ± 5 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.leib.stoff#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.ausdruck#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Prüfer errät Akt/Gemüt aus der Silhouette ≥ 60 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.6,
+    "wort": "≥ 60 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.leib.ausdruck#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "mensch.leib.ausdruck#3",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Prüfer erkennt Gemüt aus dem Ganzkörper ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.leib.ausdruck#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.ausdruck#5",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Prüfer-Verwechslung Video ↔ Feldaufnahme ≥ 50 %",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.5,
+    "wort": "≥ 50 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.leib.ausdruck#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.leib.spur#1",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Prüfer-Altersschätzung, Fehler ≤ 15 J",
+   "hand": "das Alter wird geschätzt, die Wahrheit kennt der Same",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "Schwelle anderer Art (Fehler, Faktor, Anzahl) — das Maß trägt pruefer.cjs noch nicht: „Prüfer-Altersschätzung, Fehler ≤ 15 J“"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.leib.spur#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "mensch.leib.spur#6",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "N = 500 Saaten: Spuren plausibel ≥ 0,9",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 0,9"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.leib.spur#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.sport.regeln#4",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "N = 200 Saaten: Regelwerk im Blindpaar gegen reale Regelwerke (2AFC ≤ 75 %)",
+   "medium": "text",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.75,
+    "wort": "≤ 75 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.sport.regeln#4",
+   "leiterHeute": 1,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "mensch.sport.koerper#6",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "N = 100 Baupläne: ≥ 80 % stimmige Gangart gegen Tierreferenz",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.sport.koerper#6",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.sport.koerper#7",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Zweiwahl-Blindtest Spiel ↔ Video ≤ 60 %",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.sport.koerper#7",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.sport.mannschaft#7",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Tracking-Blindtest Spiel ↔ Liga ≤ 60 %",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.sport.mannschaft#7",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.sport.arena#3",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Bildvergleich gegen Fotos des Typs",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.mensch.sport.arena#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.sport.kunst#1",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Blindtest Anfänger ↔ Meister ≥ 80 %",
+   "hand": "Anfänger und Meister werden unterschieden",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.sport.kunst#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "mensch.geist.tag#4",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Bildpaar gegen Berufsverkehrs-Foto: Prüfer trennt ≤ 0,65",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.65,
+    "wort": "≤ 0,65"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.geist.tag#4",
+   "leiterHeute": 1,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "mensch.geist.gespraech#6",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Prüfer unterscheidet 2 Personen gleicher Rolle ≥ 0,9",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 0,9"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.geist.gespraech#6",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.geist.netz#2",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Prüfer sagt aus Gesten Freund/Feind/fremd ≥ 0,7",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 0,7"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.geist.netz#2",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "mensch.geist.generationen#2",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Prüfer ordnet Kinder den Eltern ≥ 0,7",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 0,7"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.geist.generationen#2",
+   "leiterHeute": 1,
+   "leiterSprossen": 8,
+   "front": true
+  },
+  {
+   "id": "mensch.geist.innenleben#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Panel nennt das Gefühl aus 5 s Film ≥ 70 %",
+   "hand": "der 5-s-Film ist ein Film des Spiels",
+   "medium": "film",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.geist.innenleben#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "mensch.geist.innenleben#3",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Spiel der Kinder im Bild erkannt (Fangen, Ball, Verstecken) ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.geist.innenleben#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.geist.innenleben#6",
+   "klasse": "wort",
+   "art": "spieler",
+   "teil": "blinde Spieler nennen nach 5 min in der Rolle deren Gefühl ≥ 70 %",
+   "medium": "spiel",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ein spielendes Wesen: das Protokoll trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.mensch.geist.innenleben#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.menge.bild#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildpaar gegen Foto eines vollen Bahnsteigs: Dichte ± 20 %, Zwillinge 0",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.mensch.menge.bild#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.menge.bild#7",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Bildpaare 10 m bis 10 km gegen Fotos realer Großstädte",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.mensch.menge.bild#7",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.groesse#1",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Straßenbild gegen Foto eines Weilers: Panel-2AFC ≤ 90 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.9,
+    "wort": "≤ 90 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.groesse#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": true
+  },
+  {
+   "id": "mensch.stadt.groesse#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "2AFC Straßen- und Luftbild ≤ 85 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.85,
+    "wort": "≤ 85 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.groesse#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.groesse#3",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "2AFC ≤ 80 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.8,
+    "wort": "≤ 80 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.groesse#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.groesse#4",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "2AFC ≤ 75 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.75,
+    "wort": "≤ 75 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.groesse#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.groesse#5",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "2AFC Skyline und Straße ≤ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.7,
+    "wort": "≤ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.groesse#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.groesse#6",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "2AFC Luftbild ≤ 65 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.65,
+    "wort": "≤ 65 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.groesse#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.groesse#7",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "1 000 Straßenbilder: 2AFC gegen Fotos einer Megastadt ≤ 60 %, Zwillinge ≤ 1 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.01,
+    "wort": "≤ 1 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.groesse#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.form#2",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Blindtest Lage und Wohlstand aus 20 Straßenbildern ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.stadt.form#2",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "mensch.stadt.form#6",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Verwechslung gegen Street-View gleicher Stadtklasse ≥ 40 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.4,
+    "wort": "≥ 40 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.form#6",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.vertikal#5",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Bildpaar gegen Fotos der Kowloon Walled City: 2AFC ≤ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.7,
+    "wort": "≤ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.vertikal#5",
+   "leiterHeute": 1,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.breite#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Region einer Stadt aus 6 erkannt ≥ 50 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.5,
+    "wort": "≥ 50 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.stadt.breite#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "mensch.stadt.breite#3",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "20 Referenz-Altstädte glaubhaft ≥ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.stadt.breite#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.breite#4",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "100 Saaten: 2AFC gegen Fotos des Kulturraums ≤ 80 %, paarweise unterscheidbar ≥ 90 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.breite#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.breite#7",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "die Erd-nahen im 2AFC gegen Stadtfotos ≤ 75 %, die übrigen mit Fremdwelt-Probe (R10)",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.75,
+    "wort": "≤ 75 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.breite#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.siedlungsnetz#4",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "Orbitbild bei Nacht gegen Black Marble plausibel ≥ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.stadt.siedlungsnetz#4",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.siedlungsnetz#6",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Orbitbilder paarweise unterscheidbar ≥ 90 %, plausibel ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "klasse",
+   "station": "karte2.mensch.stadt.siedlungsnetz#6",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.habitat#3",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Gang der Bewohner bei einem Sechstel und einem Drittel der Schwere gegen Film realer Mondgänge (2AFC ≤ 75 %)",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.75,
+    "wort": "≤ 75 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.habitat#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.habitat#4",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Bewegung in Schwerelosigkeit gegen Stations-Film (2AFC ≤ 75 %)",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.75,
+    "wort": "≤ 75 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.habitat#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.messlatte#1",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar gegen dieselbe Kameralage im Vergleichstitel: das Panel wählt unser Bild in ≥ 20 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "vergleichstitel": true,
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.2,
+    "wort": "≥ 20 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.messlatte#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "mensch.stadt.messlatte#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindpaar ≥ 30 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.3,
+    "wort": "≥ 30 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.messlatte#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.messlatte#3",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindpaar ≥ 40 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.4,
+    "wort": "≥ 40 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.messlatte#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.messlatte#4",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindpaar gegen die Nachtstraße des dichtesten Vergleichstitels: unser Bild gewählt ≥ 50 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "vergleichstitel": true,
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.5,
+    "wort": "≥ 50 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.messlatte#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.messlatte#6",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindpräferenz ≥ 70 % an 100 Zufallsorten gegen den Vergleichstitel UND gegen Straßenfotos von Tokio 2AFC ≤ 60 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "vergleichstitel": true,
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.stadt.messlatte#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.stadt.messlatte#7",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "1 000 Zufallsorte über Saaten und Epochen: Blindpräferenz ≥ 70 %, alle vier Zählungen ≥ Vergleichstitel",
+   "medium": "bild",
+   "lauf": "fremd",
+   "vergleichstitel": true,
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.stadt.messlatte#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.netz.stoffwechsel#3",
+   "klasse": "wort",
+   "art": "zahl",
+   "teil": "Rohre in plausibler Tiefe",
+   "hand": "„plausible Tiefe“ ist die Norm-Tiefe der Leitung, eine Zahl",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.bau.bedarf#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "50 Bauten blind nach Funktion ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.bau.bedarf#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "mensch.bau.huelle#1",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Paarvergleich Spiel ↔ Foto bei 10 m: „Foto“ ≥ 5 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.05,
+    "wort": "≥ 5 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.bau.huelle#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "mensch.bau.huelle#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "10 m und 100 m ≥ 15 % „Foto“",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.15,
+    "wort": "≥ 15 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.bau.huelle#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.bau.huelle#4",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Panel-2AFC Nachtstadt-Bild gegen Nachtfoto einer realen Stadt ≤ 75 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.75,
+    "wort": "≤ 75 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.bau.huelle#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.bau.innen#3",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "200 Räume blind klassifiziert ≥ 85 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.85,
+    "wort": "≥ 85 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.bau.innen#3",
+   "leiterHeute": 2,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "mensch.fahrzeug.gestalt#2",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Epoche ± 1 Jh. ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.fahrzeug.gestalt#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.fahrzeug.gestalt#3",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "glaubhaft ≥ 90 %, Kultur ≥ 60 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.6,
+    "wort": "≥ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "klasse",
+   "station": "karte2.mensch.fahrzeug.gestalt#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.nahrung.flur#2",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Feldgrößen-Verteilung gegen reale Flur KS ≤ 0,25, Blindurteil ≤ 65 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.65,
+    "wort": "≤ 65 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.nahrung.flur#2",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "mensch.nahrung.flur#3",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "20 Luftbilder gegen Satellit, Blindurteil ≤ 65 % an 8 Saaten",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.65,
+    "wort": "≤ 65 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.nahrung.flur#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.nahrung.flur#6",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "100 Zufallslandungen plausibel ≥ 90 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.nahrung.flur#6",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.nahrung.frucht#1",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindurteil ≤ 65 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.65,
+    "wort": "≤ 65 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.nahrung.frucht#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "mensch.nahrung.erdbau#3",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindurteil ≤ 65 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.65,
+    "wort": "≤ 65 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.nahrung.erdbau#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.nahrung.erdbau#6",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "Jahr 0/1000: ≥ 1 % Land umgeformt, plausibel ≥ 90 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.nahrung.erdbau#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.nahrung.hand#3",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Erntetag gegen Foto ≤ 65 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.65,
+    "wort": "≤ 65 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.nahrung.hand#3",
+   "leiterHeute": 2,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "mensch.nahrung.jenseits#2",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindurteil ≤ 65 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.65,
+    "wort": "≤ 65 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.nahrung.jenseits#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.wirtschaft.stoffstrom#4",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "Werkstatt gegen Foto „echt“ ≥ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.wirtschaft.stoffstrom#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.wirtschaft.stoffstrom#6",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "100 Saaten × 10 Epochen: Warenkörbe plausibel ≥ 95 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.95,
+    "wort": "≥ 95 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.wirtschaft.stoffstrom#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.wirtschaft.handel#3",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "Hafenlage plausibel 100 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.wirtschaft.handel#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.wirtschaft.technik#2",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "50 Saaten: ≥ 5 plausible Pfadfolgen",
+   "hand": "plausible Pfadfolgen: ein Urteil, die Schwelle ist eine Anzahl",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.wirtschaft.technik#2",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "mensch.macht.wehrbau#7",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Sitz der Macht aus der Vogelschau ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.macht.wehrbau#7",
+   "leiterHeute": 3,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "mensch.macht.stand#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "arm/reich erkannt ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.macht.stand#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "mensch.macht.stand#2",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Stand aus dem Nah-Bild ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.macht.stand#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.kultur.sprache#5",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Linguisten-Blindtest: Tonaufnahme der erzeugten Sprache gegen eine reale, den Hörern unbekannte Sprache, 2AFC ≤ 60 %",
+   "medium": "klang",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.kultur.sprache#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.kultur.schrift#3",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "≥ 90 % nennen das Gewerbe",
+   "hand": "das Gewerbe wird am Schild benannt",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.kultur.schrift#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.kultur.schrift#5",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "N = 100: Typus, Träger, Epoche plausibel ≥ 85 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.85,
+    "wort": "≥ 85 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.kultur.schrift#5",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.kultur.glaube#2",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "blind getrennt ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.kultur.glaube#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.kultur.gestalt#1",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "10 Kulturen an Häuser-Bildern blind getrennt ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.kultur.gestalt#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "mensch.kultur.gestalt#2",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Saat-Probe: getrennt ≥ 80 %, plausibel ≥ 90 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "gruen",
+   "anker": "klasse",
+   "station": "karte2.mensch.kultur.gestalt#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.kultur.gestalt#5",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "100 (Ort, Jahr): plausibel ≥ 85 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.85,
+    "wort": "≥ 85 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.kultur.gestalt#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.kultur.bildkunst#2",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Werk blind der richtigen von 10 Kulturen zugeordnet ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.kultur.bildkunst#2",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "mensch.kultur.bildkunst#3",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Blind-Datierung der Werke eines Orts: Fehler ≤ 15 % der Spanne",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.15,
+    "wort": "≤ 15 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.kultur.bildkunst#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.kultur.bildkunst#5",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindpaar Werk gegen Foto realer Kunst der Epoche (2AFC ≤ 70 %)",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.7,
+    "wort": "≤ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.kultur.bildkunst#5",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.kultur.erzaehlkunst#3",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindpaar Text gegen Übersetzungen realer Werke der Epoche (2AFC ≤ 75 %)",
+   "medium": "text",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.75,
+    "wort": "≤ 75 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.kultur.erzaehlkunst#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.kultur.erzaehlkunst#7",
+   "klasse": "wort",
+   "art": "spieler",
+   "teil": "blinde Leser: zu Ende gelesen ≥ 50 %",
+   "medium": "spiel",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ein spielendes Wesen: das Protokoll trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.mensch.kultur.erzaehlkunst#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.kultur.strassenleben#4",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindpaar Ausgehstraße gegen Foto ≤ 75 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.75,
+    "wort": "≤ 75 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.kultur.strassenleben#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.kultur.strassenleben#6",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "10 Szenen blind an Tracht und Ort getrennt ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.kultur.strassenleben#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.kultur.strassenleben#7",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Erd-Seite: 2AFC gegen datierte Bildquellen ≤ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.7,
+    "wort": "≤ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.kultur.strassenleben#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.zeit.spanne#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "dieselbe Zelle unter 4 Jahren: Blind-Datierung bringt die 4 Bilder in die richtige Folge ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.zeit.spanne#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "mensch.zeit.spanne#2",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "60 Halte: Blind-Datierung, Fehler ≤ 10 % der Spanne bei ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.zeit.spanne#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.zeit.spanne#4",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Anfang und Ende blind in der richtigen Folge ≥ 95 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.95,
+    "wort": "≥ 95 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.zeit.spanne#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.zeit.spanne#5",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "1 000 Zufallsjahre: Blind-Datierung ≤ 10 % der Spanne in log-Jahren",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.1,
+    "wort": "≤ 10 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.zeit.spanne#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.zeit.spanne#6",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "1 000 Stichproben (Ort, Jahr): 2AFC gegen datierte Bildquellen und Rekonstruktionen der Epoche ≤ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.7,
+    "wort": "≤ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.zeit.spanne#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.zeit.spanne#7",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Stichproben (Planet, Art, Ort): 5 Halte eines Orts blind in die richtige Folge gebracht ≥ 90 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.zeit.spanne#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.zeit.erleben#2",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Fluchtwege sinnvoll ≥ 90 % blind",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.zeit.erleben#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.zeit.erde#1",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Fach-Panel 2AFC Spielbild gegen wissenschaftliche Rekonstruktion ≤ 80 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.8,
+    "wort": "≤ 80 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.zeit.erde#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "mensch.zeit.erde#3",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Blind-Datierung der Schnitte: Fehler ≤ 10 % der Spanne",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.1,
+    "wort": "≤ 10 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.zeit.erde#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.zeit.erde#5",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "1 000 (Ort, Jahr): 2AFC gegen datierte Bildquellen ≤ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.7,
+    "wort": "≤ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.zeit.erde#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.zeit.erde#6",
+   "klasse": "wort",
+   "art": "spieler",
+   "teil": "Heimat-Probe über die Zeit: 100 Menschen erkennen ihren Ort um 1950 im 2AFC gegen alte Fotos ≤ 75 %",
+   "hand": "100 Menschen erkennen ihren Ort um 1950 — ein Modell hat keinen",
+   "medium": "spiel",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ein spielendes Wesen: das Protokoll trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.mensch.zeit.erde#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "mensch.zukunft.technik#4",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Blind-Sortierung: 10 Stadtbilder zur richtigen Saat ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.zukunft.technik#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.zukunft.medien#2",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindpaar Nachtstraße gegen Foto einer Leuchtschrift-Straße ≤ 80 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.8,
+    "wort": "≤ 80 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.zukunft.medien#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.zukunft.medien#5",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindpaar gegen die Nachtstraße der Vergleichstitel (unser Bild gewählt ≥ 50 %) und gegen Fotos (2AFC ≤ 65 %)",
+   "medium": "bild",
+   "lauf": "fremd",
+   "vergleichstitel": true,
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.65,
+    "wort": "≤ 65 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.zukunft.medien#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.zukunft.maschinenwesen#1",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindpaar gegen Film realer Roboter ≤ 85 %",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.85,
+    "wort": "≤ 85 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.zukunft.maschinenwesen#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "mensch.zukunft.maschinenwesen#6",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindpaar Straßenszene gegen die Vergleichstitel: unser Bild gewählt ≥ 50 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "vergleichstitel": true,
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.5,
+    "wort": "≥ 50 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.zukunft.maschinenwesen#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "mensch.zukunft.leib#6",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindpaar gegen die Vergleichstitel: unser Bild gewählt ≥ 50 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "vergleichstitel": true,
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.5,
+    "wort": "≥ 50 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.mensch.zukunft.leib#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.spieler.rolle#4",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "N = 100 (Epoche, Bewohner): Anteil epochentreuer Verben im Blindurteil gegen Quellen ≥ 0,8",
+   "hand": "epochentreu gegen Quellen: ein Urteil am Wort",
+   "medium": "text",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 0,8"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.spieler.rolle#4",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.spieler.hand#2",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "N = 20 Zufallspaare (Werkzeug × Stoff): Blindurteil Ergebnisbild gegen Real-Foto, Anteil plausibel ≥ 0,8",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 0,8"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.spieler.hand#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.spieler.hand#4",
+   "klasse": "K",
+   "art": "band",
+   "teil": "Spieler-Werkstück gegen Museumsfoto: Form-Abweichung im Band, ≥ 5 Schritte",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "Band realer Daten: urteilt die Station an der Zahl, sobald das Band mit Quelle liegt"
+   },
+   "station": "karte2.erleben.spieler.hand#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.spieler.hand#5",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "N = 200 (Saat, Epoche, Werkzeug, Stoff): Anteil benutzbar mit plausibler Wirkung ≥ 0,8",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 0,8"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.spieler.hand#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.spieler.hand#6",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "N = 1 000 (Saat, Art, Glied, Stoff, Tätigkeit): Anteil plausibler Wirkung ≥ 0,8",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 0,8"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.spieler.hand#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.spieler.zeit#4",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "je Monat Bildvergleich gegen Foto-Reihe gleicher Breite",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.erleben.spieler.zeit#4",
+   "leiterHeute": 1,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "erleben.spieler.gemeinsam#5",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Video der Spieler-Menge gegen Video einer realen Großmenge 2AFC ≤ 75 %",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.75,
+    "wort": "≤ 75 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.erleben.spieler.gemeinsam#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.spieler.nichtleib#4",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Sicht aus den Sensoren der Maschine, das Blind-Panel erkennt die Bauart ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.erleben.spieler.nichtleib#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.hebel#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildpaar Spieler-Hof ↔ Gesetz-Hof derselben Region: Blindurteil unterscheidet ≤ 60 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.erleben.schoepfen.hebel#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.hebel#4",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindurteil Pinsel ↔ Gesetz ≤ 60 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.erleben.schoepfen.hebel#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.hebel#5",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "nach 1 Spieljahr: Wasserlauf, Uferbewuchs, Erosion, verlegte Siedlung im Bildpaar plausibel (Blindurteil ≥ 70 %)",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.schoepfen.hebel#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.hebel#7",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "Annäherung vom Horizont ohne Aufploppen (Blindurteil)",
+   "hand": "ohne Aufploppen: ein Urteil am Film der Annäherung",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.schoepfen.hebel#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.satz#2",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Bildpaar Satz-Werk ↔ Referenzfoto der genannten Eigenschaft, 100 Regler-Sätze: Blindurteil „passt\" ≥ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.schoepfen.satz#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.satz#3",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "100 Zufallssätze × Zufallsorte: Anteil plausibler Ensembles im Blindurteil ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.schoepfen.satz#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.satz#4",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindurteil trifft die Epoche ≥ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.erleben.schoepfen.satz#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.satz#5",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Turmblick gegen Luftbild einer Megastadt ≥ 50 % „echt\"",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.5,
+    "wort": "≥ 50 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.schoepfen.satz#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.satz#6",
+   "klasse": "K",
+   "art": "band",
+   "teil": "„Vulkaninsel mit Hafenstadt\" in 100 Saaten: Höhenprofil und Küstenform im Band realer Vulkaninseln, Stadt am geschützten Hafen ≥ 80 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "Band realer Daten: urteilt die Station an der Zahl, sobald das Band mit Quelle liegt"
+   },
+   "station": "karte2.erleben.schoepfen.satz#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.satz#7",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "100 Absätze → Planet: Orbit- und Bodenbild entsprechen dem Text im Blindurteil ≥ 80 %",
+   "hand": "Bild ↔ Text: das Bild wird seinem Absatz zugeordnet",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.erleben.schoepfen.satz#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.satz#8",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Fach-Blindurteil „glaubwürdig\" ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.schoepfen.satz#8",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.satz#9",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "100 Absätze, je 10 Ort-Zeit-Punkte: Anteil, der Text UND Vorzeit gehorcht (Blindurteil + Kausal-Probe: Gebirge, wo Platten es fordern) ≥ 80 %",
+   "hand": "der Ort gehorcht Text und Vorzeit: ein Urteil am Bild",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.schoepfen.satz#9",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.gesetz#2",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "100 Saaten: ≥ 80 % plausible Werke",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.schoepfen.gesetz#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.gesetz#3",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "100 Erfindungssätze × 100 Saaten: Anteil plausibler UND vom Bestand verschiedener Werke ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.schoepfen.gesetz#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.gesetz#5",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "100 Saaten je Physik: Fach-Blindurteil „folgerichtig\" ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "klasse",
+   "station": "karte2.erleben.schoepfen.gesetz#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.gespraech#2",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Korrektur-Korpus 100 Dialoge: Endfassung im Blindurteil näher am Wunsch als jede Zwischenfassung ≥ 80 %",
+   "hand": "die Endfassung wird unter den Fassungen als die nächste am Wunsch gewählt",
+   "medium": "text",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.erleben.schoepfen.gespraech#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.gespraech#6",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindurteil Vorschlag ↔ Spieler-Werk ≤ 60 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.erleben.schoepfen.gespraech#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.schoepfen.teilen#5",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "1 000 Zufallsfusionen: spielbar ≥ 90 %, im Blindurteil von beiden Eltern verschieden ≥ 70 %",
+   "hand": "von beiden Eltern verschieden: Unterscheiden, Wahrheit aus dem Samen",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.erleben.schoepfen.teilen#5",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.sinn.ziele#2",
+   "klasse": "wort",
+   "art": "spieler",
+   "teil": "Blind-Spieler (nur Bild und Eingabe) nennt nach 60 min ≥ 1 Ziel, die Prüfung gegen den Zustand bestätigt es",
+   "medium": "spiel",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ein spielendes Wesen: das Protokoll trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.erleben.sinn.ziele#2",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "erleben.sinn.ziele#5",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "Blind-Paarvergleich: 100 Welt-Ziele gegen 100 Quests eines AAA-Titels, Präferenz ≥ 50 %",
+   "medium": "text",
+   "lauf": "fremd",
+   "vergleichstitel": true,
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.5,
+    "wort": "≥ 50 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.sinn.ziele#5",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.sinn.ziele#6",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Panel-2AFC gegen von Menschen geschriebene Ziele derselben Lage ≤ 70 %",
+   "medium": "text",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.7,
+    "wort": "≤ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.erleben.sinn.ziele#6",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.sinn.legenden#7",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "N = 100 Saaten: in ≥ 90 % wählt das Panel im Blind-Paarvergleich die Legende vor der Lore der Vergleichstitel in ≥ 50 % der Paare",
+   "medium": "text",
+   "lauf": "fremd",
+   "vergleichstitel": true,
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.5,
+    "wort": "≥ 50 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.sinn.legenden#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.sinn.tod#7",
+   "klasse": "wort",
+   "art": "spieler",
+   "teil": "Blind-Spieler beschreiben ihren Tod als „Teil der Geschichte\" ≥ 70 %",
+   "medium": "spiel",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ein spielendes Wesen: das Protokoll trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.erleben.sinn.tod#7",
+   "leiterHeute": 2,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.sinn.entdeckung#1",
+   "klasse": "P",
+   "art": "spieler",
+   "teil": "Blind-Agent nennt in 10 min ≥ 1 Ort „anders als der vorige\" und begründet es am Bild",
+   "medium": "spiel",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ein spielendes Wesen: das Protokoll trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.erleben.sinn.entdeckung#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "erleben.sinn.entdeckung#2",
+   "klasse": "P",
+   "art": "spieler",
+   "teil": "Spielgang 10 min: Funde, die ein Blind-Agent „besonders\" nennt ≥ 5",
+   "medium": "spiel",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ein spielendes Wesen: das Protokoll trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.erleben.sinn.entdeckung#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.sinn.entdeckung#4",
+   "klasse": "wort",
+   "art": "spieler",
+   "teil": "N = 100 Saaten: Anteil Regionen, in denen Blind-Agenten nach 30 min noch Neues finden ≥ 90 %",
+   "medium": "spiel",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ein spielendes Wesen: das Protokoll trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.erleben.sinn.entdeckung#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.sinn.entdeckung#5",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Grabung: Schichtbild gegen Referenz der Epoche, Plausibilität ≥ 80 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.sinn.entdeckung#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.sinn.takt#7",
+   "klasse": "wort",
+   "art": "spieler",
+   "teil": "Blind-Spieler über 10 h: Bogen gegen AAA-Kampagne ≥ gleichwertig in ≥ 50 %",
+   "medium": "spiel",
+   "lauf": "fremd",
+   "vergleichstitel": true,
+   "schwelle": {
+    "mass": null,
+    "grund": "ein spielendes Wesen: das Protokoll trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.erleben.sinn.takt#7",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.sinn.sog#5",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Blindpräferenz derselben Szene ≥ 50 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.5,
+    "wort": "≥ 50 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.sinn.sog#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.sinn.staunen#1",
+   "klasse": "wort",
+   "art": "spieler",
+   "teil": "blinde Spieler nennen nach 30 min ≥ 10 verschiedene Dinge beim Namen oder im Bild",
+   "medium": "spiel",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ein spielendes Wesen: das Protokoll trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.erleben.sinn.staunen#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "erleben.sinn.staunen#2",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Schätzfrage „wie viele verschiedene Arten, Gesichter, Häuser?“: Median im Faktor 3 der gezählten Zahl",
+   "hand": "Schätzfrage: eine Zahl aus dem Bild, Median im Faktor 3",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "Schwelle anderer Art (Fehler, Faktor, Anzahl) — das Maß trägt pruefer.cjs noch nicht: „Schätzfrage „wie viele verschiedene Arten, Gesichter, Häuser?“: Median im Faktor 3 der gez“"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.sinn.staunen#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.sinn.staunen#3",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Staunen-Panel (Skala 1–7) Median ≥ 5",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "median",
+    "op": "≥",
+    "wert": 5,
+    "wort": "Median ≥ 5"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.sinn.staunen#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.sinn.staunen#5",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Staunen-Panel Median ≥ 5",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "median",
+    "op": "≥",
+    "wert": 5,
+    "wort": "Median ≥ 5"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.sinn.staunen#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.sinn.staunen#7",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Paarvergleich derselben Art Augenblick gegen die Vergleichstitel: Staunen-Wahl ≥ 60 % für diese Welt",
+   "medium": "bild",
+   "lauf": "fremd",
+   "vergleichstitel": true,
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.6,
+    "wort": "≥ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.sinn.staunen#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.sinne.hoeren#1",
+   "klasse": "wort",
+   "art": "spieler",
+   "teil": "Blind-Lauf (Bild schwarz, nur Echo): Ausgang in ≤ 2× der sehenden Zeit",
+   "hand": "Blind-Lauf: ein Spieler findet den Ausgang nur am Echo",
+   "medium": "spiel",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ein spielendes Wesen: das Protokoll trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.erleben.sinne.hoeren#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "erleben.sinne.hoeren#2",
+   "klasse": "wort",
+   "art": "spieler",
+   "teil": "Blind-Flug Fledermaus 200 m Wald: ≤ 1 Kollision je 100 m",
+   "hand": "Blind-Flug: ein Spieler fliegt nur am Echo",
+   "medium": "spiel",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ein spielendes Wesen: das Protokoll trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.erleben.sinne.hoeren#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.sinne.feld#4",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Magnetstreifen am Ozeanboden symmetrisch zum Rücken (Bildvergleich gegen Vine-Matthews)",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.erleben.sinne.feld#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.bild.ferne#5",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "2AFC Fernbild gegen Foto ≤ 60 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.6,
+    "wort": "≤ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.erleben.bild.ferne#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 9,
+   "front": false
+  },
+  {
+   "id": "erleben.bild.nacht#2",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Gassen-Histogramm gegen Fotosatz ΔEV-Median ≤ 0,5",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "Schwelle anderer Art (Fehler, Faktor, Anzahl) — das Maß trägt pruefer.cjs noch nicht: „Gassen-Histogramm gegen Fotosatz ΔEV-Median ≤ 0,5“"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.erleben.bild.nacht#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "erleben.bild.nacht#4",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Leuchtdichte-Histogramm und Spiegelstreifen gegen Fotosatz nasser Nachtstraßen ΔEV ≤ 0,5",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "Schwelle anderer Art (Fehler, Faktor, Anzahl) — das Maß trägt pruefer.cjs noch nicht: „Leuchtdichte-Histogramm und Spiegelstreifen gegen Fotosatz nasser Nachtstraßen ΔEV ≤ 0,5“"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.erleben.bild.nacht#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "erleben.bild.flaeche#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Glanz nach Regen gegen Foto",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.erleben.bild.flaeche#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "erleben.bild.flaeche#6",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Wolkenunterseite gegen Fotos ΔE ≤ 10",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "Schwelle anderer Art (Fehler, Faktor, Anzahl) — das Maß trägt pruefer.cjs noch nicht: „Wolkenunterseite gegen Fotos ΔE ≤ 10“"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.erleben.bild.flaeche#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "erleben.bild.auge#4",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Panel-2AFC gegen Fotos gleicher Blendsituation ≤ 65 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.65,
+    "wort": "≤ 65 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.erleben.bild.auge#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.bild.kamera#2",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindpaar gegen ein Foto gleicher Brennweite und Blende ≤ 80 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.8,
+    "wort": "≤ 80 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.erleben.bild.kamera#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.bild.kamera#5",
+   "klasse": "wort",
+   "art": "spieler",
+   "teil": "blinde Zuschauer verstehen Stand und Entscheidung nach 5 min ≥ 80 %",
+   "medium": "spiel",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ein spielendes Wesen: das Protokoll trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.erleben.bild.kamera#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.bild.kamera#7",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Panel-2AFC 60 s Fahrt gegen eine Filmaufnahme gleicher Szene ≤ 65 %",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.65,
+    "wort": "≤ 65 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.erleben.bild.kamera#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.klang.raum#3",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Blind-Lokalisierung (geeicht) ≥ 85 %",
+   "hand": "Blind-Lokalisierung: die Richtung der Quelle wird benannt",
+   "medium": "klang",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.85,
+    "wort": "≥ 85 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.erleben.klang.raum#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.klang.ereignis#3",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Stoff aus 10 nur am Klang ≥ 70 % (Jury, dann Klassifikator)",
+   "medium": "klang",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.erleben.klang.ereignis#3",
+   "leiterHeute": 2,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "erleben.klang.ereignis#7",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "1 000 Zufallsereignisse: geeichtes Ohr „plausibel für Stoff und Medium\" ≥ 90 %",
+   "medium": "klang",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.klang.ereignis#7",
+   "leiterHeute": 2,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.klang.landschaft#6",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "Blindtest gegen Feldaufnahme ≥ 50 % „echt\"",
+   "medium": "klang",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.5,
+    "wort": "≥ 50 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.klang.landschaft#6",
+   "leiterHeute": 1,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "erleben.klang.stimme#2",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Affekt blind ≥ 60 %",
+   "medium": "klang",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.6,
+    "wort": "≥ 60 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.erleben.klang.stimme#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 5,
+   "front": false
+  },
+  {
+   "id": "erleben.klang.musik#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Hörer-Blindtest: Stimmung der Szene aus der Musik erkannt ≥ 70 %",
+   "medium": "klang",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.erleben.klang.musik#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "erleben.klang.musik#5",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "100 Kulturen: 2AFC gegen Feldaufnahmen des Musik-Korpus ≤ 75 %",
+   "medium": "klang",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.75,
+    "wort": "≤ 75 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.erleben.klang.musik#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.physik.tragen#3",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "Bruchbild-Paar je Stoff gegen Fotos, Jury „echt\" ≥ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.same.physik.tragen#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.physik.tragen#7",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Blind-Jury ordnet Silhouetten der richtigen Schwere zu ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.same.physik.tragen#7",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.physik.fluid#5",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "Bildpaar gegen Flutvideo, Jury ≥ 60 %",
+   "medium": "film",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.6,
+    "wort": "≥ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.same.physik.fluid#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "same.physik.flug#6",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Blind-Jury ordnet Sprung-Videos der Schwere zu ≥ 80 %",
+   "hand": "die Sprung-Videos sind Filme des Spiels",
+   "medium": "film",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.same.physik.flug#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "same.physik.stoffe#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Blind-Jury sieht und hört einen grauen Gegenstand fallen, brechen, brennen und benennt den Stoff ≥ 70 %",
+   "hand": "der Stoff wird am Verhalten benannt",
+   "medium": "klang",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.same.physik.stoffe#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "same.physik.stoffe#2",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "Jury ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.same.physik.stoffe#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "same.physik.stoffe#5",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Jury unterscheidet ≥ 10 Stoffe je Welt am Verhalten",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "Schwelle anderer Art (Fehler, Faktor, Anzahl) — das Maß trägt pruefer.cjs noch nicht: „Jury unterscheidet ≥ 10 Stoffe je Welt am Verhalten“"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.same.physik.stoffe#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "same.physik.stoffe#6",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "N = 100 Planeten: Jury hält sie im Verhalten für physikalisch denkbar ≥ 70 % und unterscheidet ≥ 20 je Welt",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "klasse",
+   "station": "karte2.same.physik.stoffe#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "same.entfaltung.schirm#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindtest Bildpaar Spiel ↔ Foto",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.same.entfaltung.schirm#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.entfaltung.schirm#3",
+   "klasse": "K",
+   "art": "band",
+   "teil": "wie 2; Dichte-Histogramm gegen Foto einer Großstadt-Kreuzung",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "Band realer Daten: urteilt die Station an der Zahl, sobald das Band mit Quelle liegt"
+   },
+   "station": "karte2.same.entfaltung.schirm#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.entfaltung.schirm#4",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindtest ≥ 40 % „Foto\"",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.4,
+    "wort": "≥ 40 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.same.entfaltung.schirm#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.entfaltung.schirm#5",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "wie 4 entlang des Abstiegs",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.same.entfaltung.schirm#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.entfaltung.schirm#6",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blindtest ≥ 40 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.4,
+    "wort": "≥ 40 %"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.same.entfaltung.schirm#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.entfaltung.vielfalt#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "aus einem Zufallsbild den richtigen von 10 Orten ≥ 80 % (Panel)",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.same.entfaltung.vielfalt#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "same.entfaltung.vielfalt#2",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "richtiger von 10 Zufalls-Orten aus 10² ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.same.entfaltung.vielfalt#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.entfaltung.vielfalt#3",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Region ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.same.entfaltung.vielfalt#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.entfaltung.vielfalt#4",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "aus einem Zufallsbild die richtige von 10 Saaten ≥ 90 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.same.entfaltung.vielfalt#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.entfaltung.vielfalt#5",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "richtige von 10 Zufalls-Welten aus 10² ≥ 90 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.same.entfaltung.vielfalt#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.entfaltung.vielfalt#6",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Erd-nahe: 2AFC gegen Fotos ≤ 70 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.7,
+    "wort": "≤ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.same.entfaltung.vielfalt#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.entfaltung.vielfalt#7",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "aus einem Zufallsbild die richtige von 10 Zufalls-Saaten aus 10⁴ ≥ 95 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.95,
+    "wort": "≥ 95 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.same.entfaltung.vielfalt#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.massstab.nahe#1",
+   "klasse": "K",
+   "art": "band",
+   "teil": "Spektrum gegen Foto der Bodenklasse: Energie über 1/20 der Bildbreite ≥ 50 % der Referenz in ≥ 80 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "Band realer Daten: urteilt die Station an der Zahl, sobald das Band mit Quelle liegt"
+   },
+   "station": "karte2.same.massstab.nahe#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": true
+  },
+  {
+   "id": "same.massstab.nahe#2",
+   "klasse": "K",
+   "art": "band",
+   "teil": "wie 1 gegen Foto 50 cm; Gram-Statistik im Band",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "Band realer Daten: urteilt die Station an der Zahl, sobald das Band mit Quelle liegt"
+   },
+   "station": "karte2.same.massstab.nahe#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.massstab.nahe#3",
+   "klasse": "K",
+   "art": "band",
+   "teil": "wie 1 gegen Makrofoto 10 cm",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "Band realer Daten: urteilt die Station an der Zahl, sobald das Band mit Quelle liegt"
+   },
+   "station": "karte2.same.massstab.nahe#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.massstab.nahe#4",
+   "klasse": "K",
+   "art": "band",
+   "teil": "bei 1 cm Kamera-Versatz: optischer Fluss gegen Tiefe eines Makro-Stereopaars, Fehler ≤ 20 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "Band realer Daten: urteilt die Station an der Zahl, sobald das Band mit Quelle liegt"
+   },
+   "station": "karte2.same.massstab.nahe#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.massstab.nahe#6",
+   "klasse": "wort",
+   "art": "skala",
+   "teil": "N = 100 Orte auf 10 Planeten-Saaten: Bildvergleich gegen Makrofoto plausibel ≥ 90 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.same.massstab.nahe#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.massstab.nahe#7",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "N = 100 Orte: gegen Lichtmikroskopie derselben Klasse plausibel ≥ 80 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.same.massstab.nahe#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.gedaechtnis.alter#3",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blind-Paarvergleich gegen Fotos 10 Jahre alter Bauten: ≥ 60 % schätzen gleich alt",
+   "hand": "Paarvergleich gegen Fotos 10 Jahre alter Bauten",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.6,
+    "wort": "≥ 60 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.same.gedaechtnis.alter#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "same.gedaechtnis.alter#4",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Panel schätzt Baualter von 20 Stichproben-Werken: Fehler ≤ Faktor 2",
+   "hand": "das Baualter wird geschätzt, die Wahrheit kennt der Same",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "Schwelle anderer Art (Fehler, Faktor, Anzahl) — das Maß trägt pruefer.cjs noch nicht: „Panel schätzt Baualter von 20 Stichproben-Werken: Fehler ≤ Faktor 2“"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.same.gedaechtnis.alter#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "same.gedaechtnis.alter#6",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blind-Bildvergleich gegen Angkor, Tikal, Wüstenstädte ≥ 50 % Verwechslung",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.5,
+    "wort": "≥ 50 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.same.gedaechtnis.alter#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "same.gedaechtnis.alter#7",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Luftbild: Panel findet ≥ 60 % der verschwundenen Siedlungen",
+   "hand": "das Luftbild ist ein Bild des Spiels",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.6,
+    "wort": "≥ 60 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.same.gedaechtnis.alter#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "same.gedaechtnis.alter#8",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Panel liest den Planeten-Typ aus der Ruine ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.same.gedaechtnis.alter#8",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "same.gedaechtnis.pfad#3",
+   "klasse": "K",
+   "art": "band",
+   "teil": "Netzform (Knotengrad, Abkürzungs-Anteil) gegen Luftbilder echter Parks im Band",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "Band realer Daten: urteilt die Station an der Zahl, sobald das Band mit Quelle liegt"
+   },
+   "station": "karte2.same.gedaechtnis.pfad#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "same.gedaechtnis.pfad#4",
+   "klasse": "wort",
+   "art": "2afc",
+   "teil": "Blindvergleich gegen Foto",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.same.gedaechtnis.pfad#4",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "same.gedaechtnis.pfad#6",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Bild aus 10 km Höhe: Panel erkennt Fernrouten in ≥ 70 % der Saaten",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.same.gedaechtnis.pfad#6",
+   "leiterHeute": 1,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "same.gedaechtnis.schicht#5",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "N = 50 Grabungen: plausible Abfolgen ≥ 90 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "gruen",
+   "anker": "klasse",
+   "station": "karte2.same.gedaechtnis.schicht#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "same.gedaechtnis.schicht#6",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Bohrkern-Bild: Panel erkennt den Horizont ≥ 70 % auf N = 20 Planeten",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.same.gedaechtnis.schicht#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "planet.kopplung.siedlungslage#6",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Jury rät aus der Geländekarte OHNE Städte deren Lagen: Treffer ≥ 3× Zufall",
+   "hand": "die Jury rät die Lagen aus der Karte — Treffer gegen Zufall",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "faktor",
+    "op": "≥",
+    "wert": 3,
+    "wort": "≥ 3× Zufall"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.planet.kopplung.siedlungslage#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "glieder": true,
+   "front": true
+  },
+  {
+   "id": "planet.kopplung.siedlungslage#7",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Jury erkennt die geologische Ursache der Hauptstädte ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.planet.kopplung.siedlungslage#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "glieder": true,
+   "front": true
+  },
+  {
+   "id": "planet.kopplung.gegenwart#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildpaar Durchbruch/Fjord gegen Foto",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.planet.kopplung.gegenwart#3",
+   "leiterHeute": 2,
+   "leiterSprossen": 6,
+   "glieder": true,
+   "front": true
+  },
+  {
+   "id": "leben.kopplung.leben-formt-planet#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildpaar 0/10 Jahre: Wasserfläche und Totholz gegen Referenz-Luftbild",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.leben.kopplung.leben-formt-planet#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.kopplung.leben-formt-planet#5",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Rifftyp in Draufsicht ≥ 75 % richtig",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.75,
+    "wort": "≥ 75 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.kopplung.leben-formt-planet#5",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.kopplung.leben-formt-planet#7",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "32 Saaten mit und ohne Leben im Bildvergleich unterscheidbar ≥ 90 %",
+   "hand": "mit und ohne Leben unterscheidbar: Wahrheit aus dem Samen",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.kopplung.leben-formt-planet#7",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "leben.kopplung.stadt-im-netz#7",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Panel ordnet Fischerei und Hafen ihrer Epoche ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.leben.kopplung.stadt-im-netz#7",
+   "leiterHeute": 1,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "mensch.kopplung.leib#4",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Vielfalts-Index Hafen > Bergdorf, plausibel gegen Daten",
+   "hand": "plausibel gegen Daten",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.kopplung.leib#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "glieder": true,
+   "front": true
+  },
+  {
+   "id": "mensch.kopplung.leib#6",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Leib und Kultur kohärent ≥ 0,8",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 0,8"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.kopplung.leib#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "glieder": true,
+   "front": true
+  },
+  {
+   "id": "mensch.kopplung.sport#5",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "je Saat ≥ 1 Art mit Lebenslauf, plausibel ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.kopplung.sport#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "glieder": true,
+   "front": true
+  },
+  {
+   "id": "mensch.kopplung.sport#6",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "andere Geländesaat zeigt andere Sportkultur, stimmig",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.mensch.kopplung.sport#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "glieder": true,
+   "front": true
+  },
+  {
+   "id": "mensch.kopplung.kultur#1",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Region aus Hausbild ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.kopplung.kultur#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "glieder": true,
+   "front": true
+  },
+  {
+   "id": "mensch.kopplung.kultur#6",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "1 000 Orte: Klima, Gestein, Epoche aus dem Bild ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.kopplung.kultur#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "glieder": true,
+   "front": true
+  },
+  {
+   "id": "mensch.kopplung.kultur#7",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Schwerkraft aus 20 Stadtbildern ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.mensch.kopplung.kultur#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "glieder": true,
+   "front": true
+  },
+  {
+   "id": "erleben.kopplung.emergenz#5",
+   "klasse": "P",
+   "art": "spieler",
+   "teil": "Blind-Spieler nennt nach 10 h ungefragt ≥ 3 Ereignisse, die er nicht verursachte",
+   "medium": "spiel",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "ein spielendes Wesen: das Protokoll trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.erleben.kopplung.emergenz#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.kopplung.emergenz#6",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "N = 100 Saaten: plausible Geschichten ≥ 90 % (Gutachter), am Ort im Bild nachgeprüft",
+   "hand": "plausible Geschichten, am Ort im Bild nachgeprüft",
+   "medium": "text",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.erleben.kopplung.emergenz#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "erleben.kopplung.bild#2",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Panel-2AFC Spiel gegen Foto ähnlicher Landschaft ≤ 75 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.75,
+    "wort": "≤ 75 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.erleben.kopplung.bild#2",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.kopplung.bild#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "2AFC ≤ 65 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.65,
+    "wort": "≤ 65 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.erleben.kopplung.bild#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.kopplung.bild#4",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "2AFC ≤ 55 % gegen Fotos realer Vulkanküsten bei Nacht",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.55,
+    "wort": "≤ 55 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.erleben.kopplung.bild#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.kopplung.bild#5",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Anteil, den ein Panel als Foto hält ≥ 0,4 (Zufall = 0,5)",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.4,
+    "wort": "≥ 0,4"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.erleben.kopplung.bild#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.kopplung.bild#6",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "2AFC gegen Sondenfotos (Mars, Titan) ≤ 55 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≤",
+    "wert": 0.55,
+    "wort": "≤ 55 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.erleben.kopplung.bild#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "erleben.kopplung.epoche-ganz#4",
+   "klasse": "wort",
+   "art": "ordnen",
+   "teil": "Epoche blind erkannt ≥ 80 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.8,
+    "wort": "≥ 80 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.erleben.kopplung.epoche-ganz#4",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "same.kopplung.aufwaerts#7",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Orbitbild vor ↔ nach 300 Jahren an 100 Saaten plausibel ≥ 90 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.9,
+    "wort": "≥ 90 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.same.kopplung.aufwaerts#7",
+   "leiterHeute": 0,
+   "leiterSprossen": 8,
+   "front": false
+  },
+  {
+   "id": "same.kopplung.kohaerenz#5",
+   "klasse": "P",
+   "art": "ordnen",
+   "teil": "Blindtest: 20 Stadtbilder ihrem Biom zugeordnet ≥ 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ 70 %"
+   },
+   "stumpf": "rot",
+   "anker": "klasse",
+   "station": "karte2.same.kopplung.kohaerenz#5",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.kopplung.kohaerenz#6",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "100 Planeten-Saaten: Geograf trennt sie blind nicht von Erdkarten-Ausschnitten ≥ 50 %",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.5,
+    "wort": "≥ 50 %"
+   },
+   "stumpf": "gruen",
+   "anker": "foto-render",
+   "station": "karte2.same.kopplung.kohaerenz#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.kopplung.gewalt#6",
+   "klasse": "K",
+   "art": "leser",
+   "teil": "100 Fremd-Planeten: Fremdwelt-Probe (R10) — Gefahr-Klasse und Rate aus Wärmefluss, Masse und Atmosphäre vorhergesagt Rang ≥ 0,7; ≥ 1 namenlose Gefahr je 10 Planeten",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "R10: Rang ≥ 0,7 · Gegenlauf ≥ 80 % · Neuheit ≥ 30 % — das Rang-Maß trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.same.kopplung.gewalt#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "same.kopplung.ereignis#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildvergleich gegen Foto (Brandfront, Pahoehoe)",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.same.kopplung.ereignis#3",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.kopplung.ereignis#4",
+   "klasse": "P",
+   "art": "skala",
+   "teil": "Blind-Urteil gegen historische Bilder ≥ „glaubhaft\" bei 70 %",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": "anteil",
+    "op": "≥",
+    "wert": 0.7,
+    "wort": "≥ „glaubhaft\" bei 70 %"
+   },
+   "stumpf": "gruen",
+   "anker": "stoerung",
+   "station": "karte2.same.kopplung.ereignis#4",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.kopplung.ereignis#6",
+   "klasse": "K",
+   "art": "band",
+   "teil": "Aschedicke gegen Distanz Faktor 2 (Toba/Yellowstone); Himmel-Bild über 3 Jahre",
+   "medium": "bild",
+   "lauf": "literatur",
+   "schwelle": {
+    "mass": null,
+    "grund": "Band realer Daten: urteilt die Station an der Zahl, sobald das Band mit Quelle liegt"
+   },
+   "station": "karte2.same.kopplung.ereignis#6",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.kopplung.ereignis#7",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Bildvergleich gegen Chicxulub-Modellierung",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.same.kopplung.ereignis#7",
+   "leiterHeute": 1,
+   "leiterSprossen": 7,
+   "front": false
+  },
+  {
+   "id": "same.kopplung.erdsaat#1",
+   "klasse": "K",
+   "art": "band",
+   "teil": "Bildvergleich gegen Relief-Modell; der Vulkan bricht von selbst aus",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "Band realer Daten: urteilt die Station an der Zahl, sobald das Band mit Quelle liegt"
+   },
+   "station": "karte2.same.kopplung.erdsaat#1",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": true
+  },
+  {
+   "id": "same.kopplung.erdsaat#3",
+   "klasse": "P",
+   "art": "2afc",
+   "teil": "Blind-Bildvergleich",
+   "medium": "bild",
+   "lauf": "fremd",
+   "schwelle": {
+    "mass": null,
+    "grund": "ohne Schwelle im Satz (R6: die Zahl daneben ist die Schwelle — hier steht keine)"
+   },
+   "stumpf": "rot",
+   "anker": "foto-render",
+   "station": "karte2.same.kopplung.erdsaat#3",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  },
+  {
+   "id": "same.kopplung.terraform#6",
+   "klasse": "K",
+   "art": "leser",
+   "teil": "Fremdwelt-Probe (R10): Eingriff aus dem Orbitbild gelesen Rang ≥ 0,7; Gegenlauf je Saat",
+   "medium": "bild",
+   "lauf": "spiel",
+   "schwelle": {
+    "mass": null,
+    "grund": "R10: Rang ≥ 0,7 · Gegenlauf ≥ 80 % · Neuheit ≥ 30 % — das Rang-Maß trägt pruefer.cjs noch nicht"
+   },
+   "station": "karte2.same.kopplung.terraform#6",
+   "leiterHeute": 0,
+   "leiterSprossen": 6,
+   "front": false
+  }
+ ]
+}

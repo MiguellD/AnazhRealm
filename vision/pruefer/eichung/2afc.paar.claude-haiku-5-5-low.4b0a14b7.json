@@ -1,0 +1,123 @@
+{
+ "eichung": true,
+ "art": "2afc",
+ "form": "paar",
+ "herkunft": "fremd+stoerung",
+ "modell": "claude-haiku-5-5·low",
+ "auftragSha256": "562ce6769fcd70fa24534a90bea616768d1890699a7250eb2cc8d5ab6bc3c7ed",
+ "pruefer": {
+  "modell": "claude-haiku-5-5·low",
+  "kontext": [
+   "dicht-2afc-teil-01",
+   "dicht-2afc-teil-02",
+   "dicht-2afc-teil-03",
+   "dicht-2afc-teil-04",
+   "dicht-2afc-teil-05",
+   "dicht-2afc-teil-06",
+   "dicht-2afc-teil-07",
+   "dicht-2afc-teil-08",
+   "dicht-2afc-teil-09"
+  ]
+ },
+ "bauer": "koordinator-radeon",
+ "frage": [
+  "Welches der beiden Bilder ist das Foto?"
+ ],
+ "anker": 222,
+ "treffer": 214,
+ "quote": 0.964,
+ "intervall95": [
+  0.9302,
+  0.9843
+ ],
+ "schlagseite": [],
+ "scharf": true,
+ "grund": "scharf: 214 von 222 Ankern in 9 Teilen",
+ "jeHerkunft": {
+  "fremd": {
+   "anker": 47,
+   "treffer": 46
+  },
+  "stoerung": {
+   "anker": 175,
+   "treffer": 168
+  }
+ },
+ "teile": [
+  {
+   "teil": "teil-01",
+   "form": "paar",
+   "herkunft": "fremd",
+   "anker": 24,
+   "treffer": 23,
+   "zuordnungSha256": "131ea3173e980430a0bc6e780976eb9ba0256c8311a7cd7910a9ee21d832ac85"
+  },
+  {
+   "teil": "teil-02",
+   "form": "paar",
+   "herkunft": "fremd",
+   "anker": 23,
+   "treffer": 23,
+   "zuordnungSha256": "212ebb99b9b6738da739e6ee6343eb60f86f5550310fd9b4e7294ecc718732a1"
+  },
+  {
+   "teil": "teil-03",
+   "form": "paar",
+   "herkunft": "stoerung",
+   "anker": 25,
+   "treffer": 23,
+   "zuordnungSha256": "a1a4d64b69727c15b0c91741cfe114d2891a4ce6f17bb898c38b19b7c42e85a3"
+  },
+  {
+   "teil": "teil-04",
+   "form": "paar",
+   "herkunft": "stoerung",
+   "anker": 25,
+   "treffer": 25,
+   "zuordnungSha256": "f12528554627f7ede776ee441c9f57d5257981aee34dbd1c0fc238bc33325ecc"
+  },
+  {
+   "teil": "teil-05",
+   "form": "paar",
+   "herkunft": "stoerung",
+   "anker": 25,
+   "treffer": 25,
+   "zuordnungSha256": "3aa6b150867757e1ddd96b3c2fbeb5f247897f5b187e36f2194fdf6e18002fa3"
+  },
+  {
+   "teil": "teil-06",
+   "form": "paar",
+   "herkunft": "stoerung",
+   "anker": 25,
+   "treffer": 24,
+   "zuordnungSha256": "d1ad6fa1be9a88acc410deba2116058c92068ef6897eedce45ffe70b1921f6f9"
+  },
+  {
+   "teil": "teil-07",
+   "form": "paar",
+   "herkunft": "stoerung",
+   "anker": 25,
+   "treffer": 25,
+   "zuordnungSha256": "216da49977a1351ef82efa4d107463f8994dd404f6d0491fca058b4d1c18adcd"
+  },
+  {
+   "teil": "teil-08",
+   "form": "paar",
+   "herkunft": "stoerung",
+   "anker": 25,
+   "treffer": 25,
+   "zuordnungSha256": "33a0fcffcceec93d7f0f431e31823bf7b14b81ca9baf21afeff5bde68aa9cd5e"
+  },
+  {
+   "teil": "teil-09",
+   "form": "paar",
+   "herkunft": "stoerung",
+   "anker": 25,
+   "treffer": 21,
+   "zuordnungSha256": "01d635dc44ab342aa9ae6913287c35069d6d5a774377b60979f536c604f5b3e1"
+  }
+ ],
+ "zuordnungSha256": "4b0a14b7af800b0ebcec7e44d226061bc1d379f7318389ea34c02c1d8e795363",
+ "datum": "2026-11-26T13:36:38.962Z",
+ "pruefsumme": "e2c21e3d1c50ae8968646586386c64a3706ce9575fc7426679d2870c208552ec"
+}

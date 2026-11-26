@@ -1,0 +1,56 @@
+{
+ "eichung": true,
+ "art": "ordnen",
+ "form": "folge",
+ "herkunft": "stoerung",
+ "modell": "claude-haiku-5-5·low",
+ "auftragSha256": "562ce6769fcd70fa24534a90bea616768d1890699a7250eb2cc8d5ab6bc3c7ed",
+ "pruefer": {
+  "modell": "claude-haiku-5-5·low",
+  "kontext": [
+   "haiku-ordnen-teil-09-2611",
+   "haiku-ordnen-teil-10-2611"
+  ]
+ },
+ "bauer": "agent-aaf834b5a5c89f93a (Bauer der Eich-Blätter, 26.11.)",
+ "frage": [
+  "Ordne die 4 Bilder vom schärfsten zum am stärksten gestörten."
+ ],
+ "anker": 20,
+ "treffer": 12,
+ "quote": 0.6,
+ "intervall95": [
+  0.3605,
+  0.8088
+ ],
+ "schlagseite": [],
+ "scharf": false,
+ "grund": "urteilt nicht: 20 Anker < 200 (12 von 20 = 0.600)",
+ "jeHerkunft": {
+  "stoerung": {
+   "anker": 20,
+   "treffer": 12
+  }
+ },
+ "teile": [
+  {
+   "teil": "teil-09",
+   "form": "folge",
+   "herkunft": "stoerung",
+   "anker": 10,
+   "treffer": 7,
+   "zuordnungSha256": "6f04e0fb75031fc08f08160d6c5c2bb047c96f25c496926a5603d0246d865039"
+  },
+  {
+   "teil": "teil-10",
+   "form": "folge",
+   "herkunft": "stoerung",
+   "anker": 10,
+   "treffer": 5,
+   "zuordnungSha256": "affc34d8568ae593e189b28288e766fae18b46179c3b4fc611aace75e30b9f01"
+  }
+ ],
+ "zuordnungSha256": "0aae16de6c4b0bf5b6a10cbff00a52e7564ea101dc6dd05bfe5fdeeebf80f329",
+ "datum": "2026-11-26T11:42:47.490Z",
+ "pruefsumme": "50270acc109b58a7b3c7db70d294936a3f77278dc328f3c1324f5f64d963fc86"
+}

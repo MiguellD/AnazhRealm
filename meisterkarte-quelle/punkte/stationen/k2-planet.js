@@ -228,7 +228,7 @@ const KERN = (() => {
                 return mit({
                     gruen: false,
                     zahl: kopf + (mess ? mess + " · " : "") + "auge: Pose " + (a.pose || sp.auge.pose) + " · Vorbild " + sp.auge.vorbild + " · Bild " + (a.bild || "fehlt" + (a.grund ? " (" + String(a.grund).slice(0, 120) + ")" : "")) +
-                        (k.klasse === "panel" ? " — R11 Panel („" + k.wort + "“): das Urteil fällt im Panel, die Station behauptet kein GRÜN" : " — Korpus fehlt (" + k.wort + "): die Station behauptet kein GRÜN") +
+                        (k.klasse === "panel" ? " — R11 Prüfer („" + k.wort + "“): das Urteil spricht der Blind-Prüfer, die Station behauptet kein GRÜN" : " — Korpus fehlt (" + k.wort + "): die Station behauptet kein GRÜN") +
                         (roh.nicht ? " · Umfang nicht erzeugbar: " + roh.nicht : ""),
                 });
             }
