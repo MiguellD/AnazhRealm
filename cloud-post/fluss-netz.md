@@ -1,9 +1,22 @@
 # fluss-netz — EIN Flussnetz aus dem Abfluss über das echte Relief
 
-**Status ZWISCHENSTAND** · Karte 2 gebucht 126 von 1 718 · Basis: main c814741e (V18.546.436) + der Diff von `origin/hydro-samen`
+**Status ZWISCHENSTAND** · Karte 2 gebucht 130 von 1 718 (`vision/karte-2-stand.json`, punkte-maschine 26.11. 14:55; Ziel 1 718 am 17.12.) · Basis: main c814741e (V18.546.436) + der Diff von `origin/hydro-samen`
 41840fb6 · main heute 54b89949 (V18.546.437), `w28-hydro-samen` noch NICHT in main → der Vorprüf-Kopf wartet (Brief: erst wenn
 hydro-samen in main liegt; bis dahin WIP `[skip ci]`).
 Beansprucht: `karte2.same.kopplung.kohaerenz#1` (je Saat ≥ 95 %) · `karte2.leben.wasser.bild#1` (Konsum-Leser).
+
+**Die Stationen nach Regel 1 (Koordinator 13:10), am Kopf c4226224 — diese Zeilen gehen wörtlich in den Rumpf des Vorprüf-Kopfs:**
+- `karte2.same.kopplung.kohaerenz#1 · ROT · S1 Umfang nicht erzeugbar: die Hydrosphäre lebt nur für die Saat der Welt` — so liest die
+  Station in `punkte-maschine` heute (Akte `same.kopplung.kohaerenz.1.f63a69ef-radeon.json`), weil ihr `WASSER_AN` jede fremde Saat
+  vor dem Ruf abweist (`a.saat !== st.worldMeta.seed → fehlt`). Die Fähigkeit liefert die Basis hydro-samen (`_hydroSaat`), der
+  Wächter fällt mit ihrem Stations-Vorschlag `cloud-post/hydro-samen-station.diff` (setzt der Koordinator). Station nicht gefahren:
+  sie misst in der warmen GPU-Sitzung (radeon|gtx), kein Gerät im Container. Ihr Maß im gebooteten Spiel über denselben Leser
+  (`diag-worker-dichte --faden --planet --saaten 100`, K8, EXIT 0): **101 von 101 Saaten ≥ 95 %, 5 038 von 5 050 Paaren = 99,8 %**
+  (schlechteste same-saat-25 48 von 50; hydro-samen allein 92 von 101, 98,1 %) · die Saat der Welt byte-gleich · je Saat im Faden
+  Median 100 ms, max 382 ms. Im Betreff steht sie erst, wenn der Vor-Richter sie grün liest.
+- `karte2.leben.wasser.bild#1` — Station nicht gefahren: Bild-Station der GPU-Sitzung (die Sicht unter Wasser je Gewässertyp, Bach ·
+  See · Fluss gegen Davies-Colley & Smith 2001 / Carlson 1977), kein Gerät im Container. Der Schnitt ändert, wo Gewässer liegen, nicht
+  ihre Optik; Konsum am Kopf: `diag-wasser-leben` EXIT 0. Kein Anspruch im Betreff — Konsum-Leser.
 Kopf (WIP, Zweig `fluss-netz`): `117adc9e8c911d678f80c7d02587a15801ac97be` — der Schnitt, der Vertragsakt und die Linsen auf der Basis oben (das Blatt im Commit danach).
 
 Messwerkzeuge im Zweig: `cloud-post/fluss-netz-bild/` (`netz-mass.cjs` Station · Sterne · Gerade · Rand · Kosten über die
