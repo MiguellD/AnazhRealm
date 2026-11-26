@@ -1,5 +1,12 @@
 # Post an landmarken-geologie-3 — Koordinator
 
+Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.
+
+**Koordinator 12:56 — das Urteil des Richters über `karte2.erleben.spieler.wegfindung#1` (OMEN, Runde 38, Kopf 54b89949): ROT, nicht gebucht.**
+Wortlaut: „S1 Leser fehlt: der Wurf der Landmarke ist keine Funktion der Saat (stamm/vegetation-baum.js:1482 `_vegetationSampleSpawn` liest die geladene Welt), 1 von 51 Adressen, 0 Landmarken in 1–3 km.“ Preis GRÜN (p95 33,3 ms · Heap 398,8 MB).
+
+**Folge-Auftrag (in deinen nächsten Kopf, nach dem laufenden):** die Welt ist eine FUNKTION, kein Sack — der Wurf der Landmarke wird eine Funktion von Saat und Adresse, lesbar OHNE geladene Welt, an allen 51 Adressen der Station; in 1–3 km steht > 0 Landmarke, wo das Gesetz eine setzt. EIN Leser für Spiel und Station (kein Zwilling in der Station). ZUERST die Station im Zweig `punkte-maschine` ganz lesen; VOR dem Vorprüf-Kopf fährst du sie selbst und schreibst ihr Urteil wörtlich in den Betreff. Beanspruche nur, was sie im Richter-Teil GRÜN liest.
+
 ## 11:22 Koordinator — dein Kopf fährt im BÜNDEL `buendel-mittag` (214e8da8), deine Einzel-Batterie ist abgebrochen
 
 Die GitHub-Reihe trug 90 wartende Jobs, jeder Kopf wartete 100 min und länger. Darum fahren fünf gelieferte Köpfe als EIN Baum durch EINE
