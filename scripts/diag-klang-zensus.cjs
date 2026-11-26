@@ -26,13 +26,16 @@
 //  (St) DIE STIMME AUS DEM LEIB (klang-leib): Grundton und Formanten am Abgriff gegen Peterson & Barney 1952, ±15 %.
 //  (Dn) DER DONNER AUS DEM BLITZ (klang-leib): der Einsatz am Abgriff gegen d/c(T) vom nächsten Punkt des Kanals, ±2 %.
 //  (Db) DER BLITZ FOLGT DEM FELD AM ORT (klang-leib): der Anteil des Sturms im Feld am Ort, exakt im Kern, fern wortfrei.
+//  (Bz) DER BLITZ ZÜNDET AUS TROCKENHEIT × GEWITTER (same.kopplung.gewalt#1, zuletzt im Zensus; allein `--blitz [--jahre n]`):
+//      das Bett trocken ↔ im Regen-Kern, der Takt am ersten zündenden Blitz der Folge, der Zeitraffer, die Station im Nachbau;
+//      Täter S28 · S29.
 //  (Mk) DER MARKT AUS SEINER MENGE (markt-klang): nach dem Zensus auf derselben Seite am Ort stadt-voll (an `marktSeite`; allein:
 //      `--markt [--sek n]`, 600 = die 10 Minuten der Karte): Stimmen zugleich, L_Aeq gegen die Wochenmärkte, Spitze, Duck am
 //      Bus, wer duckt, Lombard; Täter S24–S27.
 //  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S23 unten), Stubs restauriert.
 //  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
 //  (U) GESEHEN = GEHÖRT am Bach und im Regen: der eigene Lauf `--gesehen` (an `gesehenSeite`, klang.K2 Staffel 2).
-//   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>] | --gesehen | --markt [--sek <n>]] [--json <datei>]
+//   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>] | --gesehen | --markt [--sek <n>] | --blitz [--jahre <n>]] [--json <datei>]
 //   (KLANG_WURZEL=<baum> misst einen anderen Arbeitsbaum unter derselben Linse)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
@@ -1726,7 +1729,7 @@ async function blitzSeite(mut) {
         je.hier = [+hierS.toFixed(4), +hierK.toFixed(4)];
         if (!(Math.abs(hierS - 1) <= 1e-6 && hierK <= 1e-6))
             rot.push(
-                `Db am Spieler: Anteil unter dem Sturm-Wort ${hierS}, unter Sonne ${hierK} (stamm/klang _blitzAnteilAm: am Spieler gilt sein Wort)`
+                `Db am Spieler: Anteil unter dem Sturm-Wort ${hierS}, unter Sonne ${hierK} (stamm/bild-himmel _blitzAnteilAm: am Spieler gilt sein Wort)`
             );
         const lee = (x, z) => feld.call(r, x, z, st.spielZeit, undefined, false).lee;
         for (let k = 0; k < 8; k++) {
@@ -1740,17 +1743,235 @@ async function blitzSeite(mut) {
                 je.lee++;
                 if (!(s <= k0 + 1e-9))
                     rot.push(
-                        `Db 12 km ${k * 45}° im Lee: Anteil unter dem Sturm-Wort ${s.toFixed(3)} über dem unter Sonne ${k0.toFixed(3)} (stamm/klang _blitzAnteilAm: das Lee trocknet den Sturm)`
+                        `Db 12 km ${k * 45}° im Lee: Anteil unter dem Sturm-Wort ${s.toFixed(3)} über dem unter Sonne ${k0.toFixed(3)} (stamm/bild-himmel _blitzAnteilAm: das Lee trocknet den Sturm)`
                     );
             } else if (!(Math.abs(s - k0) <= 1e-9))
                 rot.push(
-                    `Db 12 km ${k * 45}°: Anteil unter dem Sturm-Wort ${s.toFixed(3)}, unter Sonne ${k0.toFixed(3)} — das Wort gilt fern (stamm/klang _blitzAnteilAm: die Front am Ort, nie das Wort überall)`
+                    `Db 12 km ${k * 45}°: Anteil unter dem Sturm-Wort ${s.toFixed(3)}, unter Sonne ${k0.toFixed(3)} — das Wort gilt fern (stamm/bild-himmel _blitzAnteilAm: die Front am Ort, nie das Wort überall)`
                 );
         }
     } finally {
         if (eigen) r._wetterFeldAm = feld;
         else delete r._wetterFeldAm;
         Object.assign(st, alt);
+    }
+    return { rot, je };
+}
+
+// (Bz) DER BLITZ ZÜNDET AUS TROCKENHEIT × GEWITTER (same.kopplung.gewalt#1): der EINE Blitz des Wetters (stamm/bild-himmel.js
+// `_blitzeIn`, sein Takt `_blitzTakt`) und seine Leser Ohr (`_blitz` → `symphony.blitze`) und Feuer (stamm/feld-brand.js
+// `_blitzZuendet` → `_brandEntfachen`). (1) DAS BETT: ein Wolke-Erde-Blitz mit langem Strom am nächsten Bett um den Spieler zündet
+// bei trockener Welt (Film 0) und nie im Regen-Kern (Film 1). (2) DER TAKT: in trockener Welt unter dem Sturm-Wort der erste
+// zündende Blitz der Folge (gesucht über `_blitzeIn`) — die Uhr kurz davor, dann der echte Takt (`_gameLoopTick`): er ruft
+// `_brandEntfachen` an seinem Ort, das Brand-Feld trägt die Zelle, das Ohr zählt jeden Blitz der Folge. (3) DER ZEITRAFFER: `jahre`
+// Spieljahre an vier Orten 40 km fern (die Natur, kein Eingriff des Spielers) — Gewitter-Züge (`_wetterAmOrt`), Blitze im Kreis
+// der Hörweite, Wolke-Erde mit langem Strom über einem Bett, Zündungen je km² und Jahr gegen die Real-Rate 10⁻³ (Stocks et al.
+// 2002), der Film am Fuß dieser Kandidaten. (4) DIE STATION im Nachbau (same.kopplung.gewalt#1, k2-zusammenspiel.js): 240 Takte
+// unter dem Sturm-Wort, 240 in der Sonne, jeder Ruf von `_brandEntfachen` gezählt. Täter: S28 der Blitz zündet nie · S29 der
+// Blitz zündet im Regen-Kern wie am trockenen Rand (der Film am Fuß fehlt). Alles, was die Messung schrieb, fällt zurück.
+async function blitzBrandSeite(a) {
+    const st = r.state;
+    const [rot, je] = [[], {}];
+    const BB = AnazhRealm.BRAND.blitz;
+    const D = AnazhRealm._umweltGesetz().kern.DONNER;
+    const S = AnazhRealm.BLITZ.schrittS;
+    const eigen = (n) => Object.hasOwn(r, n);
+    const stubs = [];
+    const stub = (n, fn) => (stubs.push([n, eigen(n), r[n]]), (r[n] = fn));
+    if (a.mut === "nie") stub("_blitzZuendet", () => false);
+    if (a.mut === "regen-gleich") stub("_blitzFilm", () => 0);
+    const pm = st.playerMesh.position;
+    const [px, pz] = [pm.x, pm.z];
+    const alt = { weather: st.weather, wetterWort: st.wetterWort, naesse: st.naesse, sz: st.spielZeit };
+    const L0 = (st.worldMeta.taten ||= []);
+    const n0 = L0.length;
+    const bf0 = new Set((st.brandFeld || new Map()).keys());
+    const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : v);
+    try {
+        // (1) DAS BETT: das nächste Bett mit trockenem Boden um den Spieler (Spirale über die Zellen des Felds)
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        let bett = null;
+        for (let k = 0; k < 400 && !bett; k++) {
+            const w = k * 2.39996;
+            const [x, z] = [px + Math.sqrt(k) * cs * Math.cos(w), pz + Math.sqrt(k) * cs * Math.sin(w)];
+            const f = r._brandStoff(Math.floor(x / cs), Math.floor(z / cs), st.spielZeit);
+            if (f && r._brandFeuchte(f.boden, 0) < f.zeile.brenn.mx * 0.8) bett = { x: f.x, z: f.z, stoff: f.zeile.name, mx: f.zeile.brenn.mx };
+        }
+        if (!bett) rot.push("Bz kein Bett mit trockenem Boden in 400 Zellen um den Spieler — die Probe des Gesetzes fehlt");
+        else {
+            const b = (film) => ({ x: bett.x, z: bett.z, t: st.spielZeit, u: [0, 0, 0], feld: { hier: 1, film } });
+            st.naesse = 0;
+            const trocken = r._blitzZuendet(b(0));
+            st.naesse = 1;
+            const kern = r._blitzZuendet(b(1));
+            st.naesse = alt.naesse;
+            je.bett = { stoff: bett.stoff, mx: bett.mx, trocken, kern };
+            if (!trocken) rot.push(`Bz der Blitz zündet nie: Wolke-Erde mit langem Strom am Bett ${bett.stoff} (mx ${bett.mx}) bei trockener Welt (Film 0) fängt nicht (stamm/feld-brand.js _blitzZuendet)`);
+            if (kern) rot.push(`Bz der Blitz zündet im Regen-Kern wie am trockenen Rand: am Bett ${bett.stoff} bei Film 1 (stamm/feld-brand.js _blitzFilm — die Nässe am Fuß fehlt)`);
+        }
+        // (2) DER TAKT: trockene Welt, Sturm-Wort; der erste zündende Blitz der Folge in den nächsten `suche` s — gesucht bei dem
+        // Film, den 1,5 s Sturm legen (1 − e^(−1,5 ÷ 150) = 0,0100: der Takt davor benetzt die Welt so lang, er zündet dann, wo die Suche zündete)
+        st.naesse = 0.011;
+        if (window.__wetterSetzen("stormy") !== "stormy") throw new Error("das Sturm-Wort gilt nicht");
+        let ziel = null;
+        const k0 = Math.floor(st.spielZeit / S) + 3;
+        for (let k = k0; k < k0 + a.suche && !ziel; k += 200)
+            for (const b of r._blitzeIn(k, Math.min(k + 200, k0 + a.suche), px, pz, D.hoerweiteM, true))
+                if (r._blitzZuendet(b)) {
+                    ziel = b;
+                    break;
+                }
+        je.takt = { suche: a.suche, ziel: ziel && { x: Math.round(ziel.x - px), z: Math.round(ziel.z - pz), dt: r3(ziel.t - st.spielZeit), hier: r3(ziel.feld.hier) } };
+        if (!ziel) rot.push(`Bz der Blitz zündet nie: in ${a.suche} s Sturm über trockener Welt kein zündender Blitz der Folge im Kreis von ${D.hoerweiteM} m (stamm/bild-himmel.js _blitzeIn → stamm/feld-brand.js _blitzZuendet)`);
+        else {
+            const orig = r._brandEntfachen;
+            const hatte = eigen("_brandEntfachen");
+            const rufe = [];
+            const b0 = st.symphony.blitze || 0;
+            r._brandEntfachen = function (x, z) {
+                const aus = orig.call(this, x, z);
+                rufe.push([x, z, aus === true ? "wartet" : aus ? "faengt" : "null", r3(st.naesse), r3(st.spielZeit)]);
+                return aus;
+            };
+            try {
+                // die Uhr springt 1,5 s vor den Blitz, die Welt trocken unter dem Sturm-Wort. Nach dem Sprung wartet die Folge des
+                // Felds, in der jeder Akt wirkt (`_feldAkt` → `_feldTakt`), auf die Regionen um den Spieler (ihr Gau steht in der
+                // Seite der Linse nicht, `_bestandGauSteht`): ein Akt des Brands, der dort wartet, wirkt die Linse zu seinem Stempel
+                // mit dem EINEN Wirker der Folge (`_feldAktWirkt` → `_brandFangen`), wie es die Folge tut, sobald sie steht
+                r._weltUhrNimm(ziel.t - 1.5); // die Welt-Uhr geht nur vor (der Blitz liegt ≥ 3 Schritte voraus)
+                if (st.spielZeit !== ziel.t - 1.5) throw new Error("die Welt-Uhr nimmt den Sprung zum Blitz nicht");
+                r._naesseUhr = st.spielZeit;
+                r._blitzSchritt = Math.floor(st.spielZeit / S);
+                st.naesse = 0;
+                let t = performance.now();
+                // die Welt ändert sich: das Feuer am Fuß — die Zellen des Brand-Felds, die er trägt, je Takt; wie lange es brennt, bis
+                // der Regen des Sturms es löscht (30 s Takte)
+                const fuss = Math.floor(ziel.x / cs) + "," + Math.floor(ziel.z / cs);
+                const brennt = () => [...(st.brandFeld || new Map()).values()].filter((z) => z.t0 !== null).length;
+                let [i, an, max, aus] = [0, null, 0, null];
+                je.takt.gewirkt = 0;
+                for (; i < 1800; i++) {
+                    r._gameLoopTick((t += 1000 / 60));
+                    const A = st.feldAkte || [];
+                    const k = A.findIndex((x) => x.art === "brand" && Math.hypot(x.x - ziel.x, x.z - ziel.z) < 1e-6);
+                    if (k >= 0) (r._feldAktWirkt(A.splice(k, 1)[0]), je.takt.gewirkt++);
+                    const n = brennt();
+                    if (n && an === null && (st.brandFeld.get(fuss) || {}).t0 != null) an = st.spielZeit;
+                    if (an !== null && !n && aus === null) aus = st.spielZeit;
+                    max = Math.max(max, n);
+                }
+                const am = rufe.filter(([x, z]) => Math.hypot(x - ziel.x, z - ziel.z) < 1e-6).length;
+                je.takt.rufe = rufe.length;
+                je.takt.wie = rufe.map((q) => q.slice(2).join("@")).join(" ");
+                je.takt.amZiel = am;
+                je.takt.brennt = an !== null;
+                je.takt.zellenMax = max;
+                je.takt.brennS = an !== null ? r3((aus ?? st.spielZeit) - an) : null;
+                je.takt.ohr = (st.symphony.blitze || 0) - b0;
+                if (!am) rot.push(`Bz der Takt zündet nicht: der Blitz der Folge bei +${je.takt.ziel.x}/+${je.takt.ziel.z} m zündet im Gesetz, der Takt rief _brandEntfachen ${rufe.length}× und nie an seinem Ort (stamm/bild-himmel.js _blitzTakt)`);
+                else if (!je.takt.brennt) rot.push(`Bz der Blitz zündet, die Welt brennt nicht: die Zelle unter dem Fuß bei +${je.takt.ziel.x}/+${je.takt.ziel.z} m fängt in 30 s kein Feuer (${je.takt.wie}; stamm/feld-brand.js _brandFangen)`);
+                if (!(je.takt.ohr >= 1)) rot.push(`Bz das Ohr zählt den Blitz nicht: symphony.blitze +${je.takt.ohr} (stamm/klang.js _blitz)`);
+            } finally {
+                if (hatte) r._brandEntfachen = orig;
+                else delete r._brandEntfachen;
+            }
+        }
+        // (3) DER ZEITRAFFER in der Natur: vier Orte 40 km fern, je der Kreis der Hörweite über `jahre` Spieljahre
+        if (a.jahre) {
+            const Z = AnazhRealm.WETTER_ZUG_SEK;
+            const jahrS = r._kalender().jahrK; // am Standard-Tag: Kalender-Zeit = Welt-Uhr
+            const nK = Math.round((a.jahre * jahrS) / S);
+            const tA = Math.floor(alt.sz / S);
+            const z = { orte: 0, zuege: 0, sturm: 0, blitze: 0, kandidaten: 0, zuend: 0, film: [], ms: 0 };
+            const t0 = performance.now();
+            for (let o = 0; o < 4; o++) {
+                const [cx, cz] = [px + 40000 * Math.cos((o * Math.PI) / 2), pz + 40000 * Math.sin((o * Math.PI) / 2)];
+                for (let k = 0; k < Math.round((a.jahre * jahrS) / Z); k++) (z.zuege++, r._wetterAmOrt(cx, cz, alt.sz + k * Z) === "stormy" && z.sturm++);
+                for (let k = tA; k < tA + nK; k += 5000)
+                    for (const b of r._blitzeIn(k, Math.min(k + 5000, tA + nK), cx, cz, D.hoerweiteM, true)) {
+                        z.blitze++;
+                        if (!(b.u[0] < BB.wolkeErde && b.u[1] < BB.langStrom)) continue;
+                        const f = r._brandStoff(Math.floor(b.x / cs), Math.floor(b.z / cs), b.t);
+                        if (!f) continue;
+                        z.kandidaten++;
+                        if (z.film.length < 400) z.film.push(r._blitzFilm(b));
+                        if (r._blitzZuendet(b)) z.zuend++;
+                    }
+                z.orte++;
+            }
+            z.ms = Math.round(performance.now() - t0);
+            const flaeche = (Math.PI * (D.hoerweiteM / 1000) ** 2) * z.orte;
+            const rate = z.zuend / flaeche / a.jahre;
+            const fs = z.film.slice().sort((p, q) => p - q);
+            je.zeitraffer = {
+                jahre: a.jahre,
+                orte: z.orte,
+                sturmZuege: z.sturm,
+                zuege: z.zuege,
+                blitzeJeKm2a: r3((z.blitze / flaeche / a.jahre) * 1000) / 1000,
+                kandidaten: z.kandidaten,
+                zuend: z.zuend,
+                rateKm2a: rate,
+                faktor: rate > 0 ? r3(Math.max(rate / 1e-3, 1e-3 / rate)) : null,
+                filmMin: r3(fs[0]),
+                filmMedian: r3(fs[Math.floor(fs.length / 2)]),
+                ms: z.ms,
+            };
+        }
+        // (4) DIE STATION im Nachbau: 240 Takte Sturm-Wort, 240 Sonne, jeder Ruf von `_brandEntfachen`
+        if (a.station) {
+            window.__wetterSetzen("sunny");
+            st.naesse = alt.naesse;
+            r._naesseUhr = st.spielZeit;
+            const orig = r._brandEntfachen;
+            const hatte = eigen("_brandEntfachen");
+            let n = 0;
+            r._brandEntfachen = function (x, z) {
+                n++;
+                return orig.call(this, x, z);
+            };
+            // die Kosten des Blitzes je Takt (`_blitzTakt`: die Würfel der Folge und die Rufe seiner Leser)
+            const bt = r._blitzTakt;
+            let msBlitz = 0;
+            r._blitzTakt = function () {
+                const m = performance.now();
+                try {
+                    return bt.call(this);
+                } finally {
+                    msBlitz += performance.now() - m;
+                }
+            };
+            try {
+                let t = performance.now();
+                const lauf = (wort) => {
+                    window.__wetterSetzen(wort);
+                    const [a0, b0, c0] = [n, st.symphony.blitze || 0, msBlitz];
+                    const m0 = performance.now();
+                    for (let i = 0; i < 240; i++) r._gameLoopTick((t += 1000 / 60));
+                    return { zuend: n - a0, blitze: (st.symphony.blitze || 0) - b0, msJeTakt: r3((performance.now() - m0) / 240), msBlitzJeTakt: Math.round(((msBlitz - c0) / 240) * 1e4) / 1e4, naesse: r3(st.naesse) };
+                };
+                je.station = { naesse0: r3(st.naesse || 0), sturm: lauf("stormy"), sonne: lauf("sunny") };
+            } finally {
+                delete r._blitzTakt;
+                if (hatte) r._brandEntfachen = orig;
+                else delete r._brandEntfachen;
+            }
+        }
+    } finally {
+        for (const [n, hatte, fn] of stubs.reverse()) if (hatte) r[n] = fn;
+            else delete r[n];
+        window.__wetterSetzen(alt.weather);
+        st.wetterWort = alt.wetterWort;
+        st.naesse = alt.naesse;
+        r._weltUhrNimm(alt.sz); // die Uhr geht nie zurück: nur vor, falls die Linse hinter ihrem Anfang stünde
+        r._naesseUhr = st.spielZeit;
+        r._blitzSchritt = Math.floor(st.spielZeit / S);
+        const L = st.worldMeta.taten;
+        if (L === L0 && L.length > n0) L.length = n0;
+        let weg = 0;
+        for (const k of [...(st.brandFeld || new Map()).keys()]) if (!bf0.has(k)) (st.brandFeld.delete(k), weg++);
+        if (weg) r._tatGen = (r._tatGen | 0) + 1;
+        je.zurueck = weg;
     }
     return { rot, je };
 }
@@ -2227,6 +2448,32 @@ function marktUrteil(m) {
         rot.push(`Mk Lombard aus: Lärm ${m.laermDbA} dB(A) am Sprecher über dem Knick ${K.lombardAb}, die Stimme hebt sich um ${m.lombardDb} dB (Rede bis ${m.anMax} dB)`);
     return rot;
 }
+// (Bz) an der Seite: Bett, Takt, Zeitraffer (`--jahre`, im Zensus 20, allein `--blitz` 100) und die Station im Nachbau; mit
+// --selftest die Täter S28 · S29 (an Bett und Takt). → die Befunde und die Täter, die unbemerkt blieben
+const BLITZ_LAUF = argv.includes("--blitz");
+async function blitzBrand(page, erg, jahre) {
+    const b = (erg.blitzBrand = await page.evaluate(blitzBrandSeite, { suche: 40000, jahre, station: true }));
+    const { bett, takt, zeitraffer: zr, station: sn } = b.je;
+    console.log(
+        `── (Bz) DER BLITZ ZÜNDET AUS TROCKENHEIT × GEWITTER: Bett ${bett ? `${bett.stoff} (mx ${bett.mx}) trocken ${bett.trocken} · Regen-Kern ${bett.kern}` : "—"}` +
+            ` · Takt ${takt && takt.ziel ? `Blitz +${takt.ziel.dt} s bei +${takt.ziel.x}/+${takt.ziel.z} m (Eingriff ${takt.ziel.hier}) → _brandEntfachen ${takt.amZiel}× am Ort, das Feuer am Fuß ${takt.brennt} (bis ${takt.zellenMax} Zellen, ${takt.brennS} s bis der Regen löscht), Ohr ${takt.ohr} Blitze` : "kein zündender Blitz"}` +
+            (zr ? ` · Zeitraffer ${zr.jahre} a × ${zr.orte} Orte 40 km fern: ${zr.sturmZuege}/${zr.zuege} Sturm-Züge, ${zr.blitzeJeKm2a} Blitze/km²a, ${zr.kandidaten} Wolke-Erde mit langem Strom über einem Bett (Film am Fuß min ${zr.filmMin} · Median ${zr.filmMedian}), ${zr.zuend} Zündungen = ${zr.rateKm2a.toExponential(2)}/km²a (Real 1e-3, Faktor ${zr.faktor}) in ${zr.ms} ms` : "") +
+            (sn ? ` · Station-Nachbau (Film ${sn.naesse0}): Sturm ${sn.sturm.zuend} Zündungen/${sn.sturm.blitze} Blitze (Film → ${sn.sturm.naesse}, Takt ${sn.sturm.msJeTakt} ms, davon Blitz ${sn.sturm.msBlitzJeTakt} ms) · Sonne ${sn.sonne.zuend}/${sn.sonne.blitze} (Takt ${sn.sonne.msJeTakt} ms, davon Blitz ${sn.sonne.msBlitzJeTakt} ms)` : "") +
+            ` · zurück ${b.je.zurueck} Zellen`
+    );
+    const fehl = [];
+    if (SELBSTTEST)
+        for (const [mut, re, was] of [
+            ["nie", /^Bz der Blitz zündet nie/, "S28: der Blitz zündet nie"],
+            ["regen-gleich", /^Bz der Blitz zündet im Regen-Kern wie am trockenen Rand/, "S29: der Blitz zündet im Regen-Kern wie am trockenen Rand"],
+        ]) {
+            const u = (await page.evaluate(blitzBrandSeite, { suche: 300, jahre: 0, station: false, mut })).rot;
+            const t = u.find((z) => re.test(z));
+            if (!t) fehl.push(`${was} bleibt unbemerkt (${u.join(" · ") || "GRÜN"})`);
+            else console.log(`   ${was} → ${t}`);
+        }
+    return { rot: b.rot, fehl };
+}
 async function markt(page, erg) {
     const lauf = async (mut, sek, ducks) => {
         const m = await page.evaluate(marktSeite, { ort: "stadt-voll", uhr: 10, sek, ducks, mut, spek: !!JSON_AUS && !mut });
@@ -2538,6 +2785,12 @@ async function zensus(page, browser, ergebnis) {
         selbstOk = !fehl.length;
         ergebnis.selbsttest = fehl;
     }
+    // (Bz) zuletzt: der Takt des Blitzes stellt die Welt-Uhr vor (der erste zündende Blitz der Folge), keine Wand danach liest sie
+    const bz = await blitzBrand(page, ergebnis, 20);
+    rot.push(...bz.rot);
+    for (const t of bz.fehl) console.log("   ❌ " + t);
+    if (SELBSTTEST && !bz.fehl.length) console.log("   ✅ S28–S29 nennen jeden Täter beim Namen");
+    selbstOk = selbstOk && !bz.fehl.length;
     console.log("");
     if (rot.length) {
         console.log(`❌ ROT — ${rot.length} Befund(e):`);
@@ -2571,7 +2824,23 @@ async function zensus(page, browser, ergebnis) {
         await page.evaluate(`window.__klangW = (${werkzeug})();`);
         exit = await (TAKT
             ? takt(page, ergebnis)
-            : GESEHEN
+            : BLITZ_LAUF
+              ? page.evaluate(AUSGABE_INSTALL).then(async () => {
+                    // das Ohr des EINEN Blitzes zuerst: (Dn) der Donner aus dem Blitz, (Db) der Anteil des Sturms am Ort — mit S22 · S23
+                    const dn = await page.evaluate(donnerSeite, false);
+                    const db = await page.evaluate(blitzSeite, false);
+                    console.log(`── (Dn) ${dn.je.length - dn.rot.length}/${dn.je.length} Einsätze ±2 % zu d/c(T) · (Db) Kern ${db.je.kern} Anteile exakt · am Spieler Sturm ${db.je.hier[0]} / Sonne ${db.je.hier[1]} · im Lee ${db.je.lee} von 8`);
+                    const bz = await blitzBrand(page, ergebnis, Number(argOpt("--jahre")) || 100);
+                    bz.rot.unshift(...dn.rot, ...db.rot);
+                    if (SELBSTTEST) {
+                        if (!(await page.evaluate(donnerSeite, "sofort")).rot.some((t) => /^Dn /.test(t))) bz.fehl.push("S22: der Donner ohne Laufzeit bleibt unbemerkt");
+                        if (!(await page.evaluate(blitzSeite, "wort-ueberall")).rot.some((t) => /^Db 12 km /.test(t))) bz.fehl.push("S23: das Wort gilt überall bleibt unbemerkt");
+                    }
+                    for (const t of [...bz.rot, ...bz.fehl]) console.log("   ❌ " + t);
+                    console.log(bz.rot.length || bz.fehl.length ? "❌ ROT — der Blitz" : "✅ GRÜN — der Blitz zündet aus Trockenheit × Gewitter");
+                    return bz.rot.length || bz.fehl.length ? 1 : 0;
+                })
+              : GESEHEN
               ? gesehen(page, ergebnis)
               : MARKT
                 ? markt(page, ergebnis)

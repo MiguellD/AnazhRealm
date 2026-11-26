@@ -36,7 +36,8 @@ Basis: main f287dfb, dann main 60e8909 (w28-wetter-am-ort) hineingemergt — der
   (stamm/klang.js:921) → die Werkstatt → `rufSpielen` (stamm/klang.js:192).
 - **Donner:** `DONNER` (klang-core.js:1675), `blitzAnteil` (klang-core.js:1694: der duale Vektor der EINEN Tafel WEATHER_FIELD,
   das Lee nimmt den Sturm mit dem Regen), `donnerPuffer` (klang-core.js:1747: der gewundene Kanal, je 0,7 m eine N-Welle nach dem
-  Relaxations-Radius); `_donnerTakt` (stamm/klang.js:873, Poisson mit Verdünnung), `_blitzAnteilAm` (stamm/klang.js:891, liest
+  Relaxations-Radius); `_blitzTakt` (stamm/bild-himmel.js, seit blitz-brand der EINE Schreiber der Blitze: Poisson mit Verdünnung je Zelle und Schritt,
+  Donner und Feuer lesen ihn), `_blitzAnteilAm` (stamm/bild-himmel.js, liest
   `_wetterFeldAm`), `_blitz` (stamm/klang.js:900); `rufSpielen` (klang-core.js:1465) setzt den Einsatz ab dem Blitz (`t0`) vom
   nächsten Punkt des Kanals; der Untertitel „Donner grollt“ zur Ankunft (stamm/werkstatt-hud.js:3200, stamm/daten.js:1355).
 - **Duck:** `MUSIK.duck.gespraech.db` −12 → −10 (klang-core.js:384).

@@ -316,7 +316,6 @@ class AnazhRealm_klang {
             } else {
                 this._tierRufTakt(um.rufDt);
                 this._bewohnerLautTakt(um.rufDt);
-                this._donnerTakt(um.rufDt);
             }
             return;
         }
@@ -936,37 +935,9 @@ class AnazhRealm_klang {
         M.lombardDb = kern.mengeLombard(M.laermDbA);
         [M.sprecher, M.klingen, M.rest] = [sprecher, klingen, energie > 0 ? rest / energie : 0];
     }
-    // DER DONNER (klang-leib, erleben.kopplung.ein-ereignis#2): der Blitz ist ein Ereignis des EINEN Wetters — eine Poisson-Folge
-    // mit der Dichte blitzJeKm2Min × dem Anteil des Sturms am Ort (`_blitzAnteilAm`), gezogen durch Verdünnung (Lewis & Shedler
-    // 1979): je Ruf-Takt ein Kandidat mit der vollen Dichte auf der Scheibe der Hörweite, sein Ort gleichverteilt in der Fläche,
-    // er schlägt mit der Wahrscheinlichkeit des Anteils dort.
-    _donnerTakt(dt) {
-        const st = this.state;
-        const um = st.symphony.umwelt;
-        const pm = st.playerMesh;
-        if (!(dt > 0) || !um || !um.kern.DONNER || !pm) return null;
-        const D = um.kern.DONNER;
-        const zug = () => this._klangZug("umwelt") / 4294967296;
-        const rate = (D.blitzJeKm2Min * Math.PI * (D.hoerweiteM / 1000) ** 2) / 60;
-        if (!(zug() < 1 - Math.exp(-rate * dt))) return null;
-        const r = D.hoerweiteM * Math.sqrt(zug());
-        const w = 2 * Math.PI * zug();
-        const [x, z] = [pm.position.x + r * Math.cos(w), pm.position.z + r * Math.sin(w)];
-        if (!(zug() < this._blitzAnteilAm(x, z))) return null;
-        return this._blitz(x, z);
-    }
-    // Der Anteil des Sturms im Wetter-Feld am Ort (klang `blitzAnteil` über die EINE Tafel WEATHER_FIELD): das Feld ist das des
-    // Kerns (`_wetterFeldAm` — die Front am Ort, das Wort des Spielers als Eingriff in seiner Region, das Lee, das er trocknet),
-    // ohne den Steigungsregen (der Hang hebt den Regen, nie die Front). Leser: `_donnerTakt`.
-    _blitzAnteilAm(x, z) {
-        const kern = AnazhRealm._umweltGesetz().kern;
-        return kern.blitzAnteil(
-            this._wetterFeldAm(x, z, this.state.spielZeit, undefined, false),
-            AnazhRealm.WEATHER_FIELD,
-            "stormy"
-        );
-    }
-    // Ein Blitz bei (x, z): zählt jeden (headless messbar); sein Donner geht an die Werkstatt, der Einsatz zählt ab dem Blitz.
+    // DER DONNER (klang-leib, erleben.kopplung.ein-ereignis#2): das Ohr ist EIN Leser des Blitzes, den das Wetter schreibt
+    // (`_blitzeIn` über `_blitzTakt`, stamm/bild-himmel.js — dort auch das Feuer als zweiter Leser). Ein Blitz bei (x, z): zählt
+    // jeden (headless messbar); sein Donner geht an die Werkstatt, der Einsatz zählt ab dem Blitz.
     _blitz(x, z) {
         const s = this.state.symphony;
         s.blitze = (s.blitze || 0) + 1;

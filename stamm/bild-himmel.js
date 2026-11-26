@@ -3231,6 +3231,94 @@ class AnazhRealm_bild_himmel {
             aus
         );
     }
+    // DAS FELD DER NATUR AM ORT (same.kopplung.gewalt#1): die Front über (x, z) zur Welt-Uhr t samt Steigungsregen, OHNE den
+    // Eingriff des Spielers — sein Wort gilt jetzt, nie in der Vergangenheit eines Orts. Leser: der Film der Streu am Fuß eines
+    // Blitzes (`_blitzFilm`, die Nässe-Kurve über die Züge davor).
+    _wetterNaturAm(x, z, t, aus) {
+        const st = this.state;
+        const E = Object.hasOwn(this, "_wetterFeldEin") ? this._wetterFeldEin : null;
+        if (!E || E.tafel !== AnazhRealm._weltGesetz(st.worldMeta || {}).wetter) this._wetterFeldAm(x, z, t, aus, false);
+        const N = this._wetterFeldEin.natur || (this._wetterFeldEin.natur = { zeilen: this._wetterFeldEin.mit.zeilen, hoehe: this._wetterFeldEin.mit.hoehe });
+        return globalThis.__phytoCore.wetterFeldAm(AnazhRealm._saatVon(st.worldMeta || {}), x, z, t, this._gelaende().ort.wetter, N, aus);
+    }
+
+    // DER BLITZ IST EIN EREIGNIS DES EINEN WETTERS (erleben.kopplung.ein-ereignis#2, same.kopplung.gewalt#1) — EIN Schreiber, drei
+    // Leser: das Ohr (`_blitz`, der Donner), das Feuer (`_blitzZuendet` → `_brandEntfachen`) und die Zahl `symphony.blitze`. Eine
+    // Poisson-Folge in Raum und Welt-Uhr als FUNKTION von Saat, Zelle und Schritt (Lockstep: jede Seite derselbe Blitz am selben
+    // Ort, ein Zeitraffer liest dieselbe Folge wie der Takt): je Zelle `BLITZ.zelleM`² und Schritt `BLITZ.schrittS` der Welt-Uhr
+    // Kandidaten mit der vollen Dichte (klang-core `DONNER.blitzJeKm2Min`), gleichverteilt in Zelle und Schritt; ein Kandidat
+    // schlägt mit dem Anteil des Sturms im Feld an seinem Ort zu seiner Zeit (`_blitzAnteilAm`, Verdünnung nach Lewis & Shedler
+    // 1979). Bis blitz-brand zog das Klang-Modul die Folge mit seinem eigenen Würfel auf der Uhr der Audio-Werkstatt — ohne Ohr
+    // (headless, stumm) schlug kein Blitz, und kein Leser des Gewitters zündete (Station same.kopplung.gewalt#1: 0 Zündungen
+    // in 249 Gewitter-Zügen). → [{ x, z, t, u: [Wolke-Erde, langer Strom, Zündung] }] im Kreis R um (cx, cz), Zeit in
+    // [k0·S, k1·S) der Schritte k0 … k1 − 1; `feld` (optional) bekommt je Blitz das Feld an seinem Ort (`b.feld`).
+    _blitzeIn(k0, k1, cx, cz, R, feld = false) {
+        const B = AnazhRealm.BLITZ;
+        const D = AnazhRealm._umweltGesetz().kern.DONNER;
+        const saat = AnazhRealm._saatVon(this.state.worldMeta || {});
+        if (!this._blitzSaat || this._blitzSaat[0] !== saat)
+            this._blitzSaat = [saat, globalThis.__samenCore.samenHash("blitz:" + saat) >>> 0];
+        const s0 = this._blitzSaat[1];
+        const [L, S] = [B.zelleM, B.schrittS];
+        const lam = (D.blitzJeKm2Min / 60) * (L / 1000) ** 2 * S; // Kandidaten je Zelle und Schritt
+        const e0 = Math.exp(-lam);
+        const mix = (h) => {
+            h = Math.imul(h ^ (h >>> 16), 0x7feb352d);
+            h = Math.imul(h ^ (h >>> 15), 0x846ca68b);
+            return (h ^ (h >>> 16)) >>> 0;
+        };
+        const [i0, i1, j0, j1] = [Math.floor((cx - R) / L), Math.floor((cx + R) / L), Math.floor((cz - R) / L), Math.floor((cz + R) / L)];
+        const aus = [];
+        for (let k = k0; k < k1; k++) {
+            const hk = mix(s0 ^ mix(k | 0));
+            for (let i = i0; i <= i1; i++) {
+                const hi = mix(hk ^ mix(i + 0x5bd1e995));
+                for (let j = j0; j <= j1; j++) {
+                    let h = mix(hi ^ mix(j + 0x1b873593));
+                    // die Zahl der Kandidaten: Poisson(λ) durch Inversion (λ ≈ 0,003 — fast immer 0, EIN Würfel)
+                    let u = h / 4294967296;
+                    let [n, p, c] = [0, e0, e0];
+                    while (u > c && n < 8) (n++, (p *= lam / n), (c += p));
+                    for (let m = 0; m < n; m++) {
+                        const w = [];
+                        for (let q = 0; q < 6; q++) w.push((h = mix(h + 0x9e3779b9)) / 4294967296);
+                        const [x, z, t] = [(i + w[0]) * L, (j + w[1]) * L, (k + w[2]) * S];
+                        if (Math.hypot(x - cx, z - cz) > R) continue;
+                        const o = feld ? {} : undefined;
+                        if (!(w[3] < this._blitzAnteilAm(x, z, t, o))) continue;
+                        aus.push({ x, z, t, u: [w[4], w[5], (h = mix(h + 0x9e3779b9)) / 4294967296], feld: o });
+                    }
+                }
+            }
+        }
+        return aus;
+    }
+    // Der Anteil des Sturms im Wetter-Feld am Ort zur Welt-Uhr t (klang `blitzAnteil` über die EINE Tafel WEATHER_FIELD): das Feld
+    // ist das des Kerns (`_wetterFeldAm` — die Front am Ort, das Wort des Spielers als Eingriff in seiner Region, das Lee, das er
+    // trocknet), ohne den Steigungsregen (der Hang hebt den Regen, nie die Front). `aus` nimmt das Feld (sein `hier`: der Anteil
+    // des Eingriffs). Leser: der Blitz (`_blitzeIn`).
+    _blitzAnteilAm(x, z, t = this.state.spielZeit, aus) {
+        const kern = AnazhRealm._umweltGesetz().kern;
+        return kern.blitzAnteil(this._wetterFeldAm(x, z, t, aus, false), AnazhRealm.WEATHER_FIELD, "stormy");
+    }
+    // DER TAKT DES BLITZES: je voller Schritt der Welt-Uhr seine Blitze im Kreis der Hörweite um den Spieler (dem Kreis, den Ohr und
+    // Feld ohnehin tragen) — je Blitz das Ohr und das Feuer, EIN Ruf je Leser; ohne Kandidat kostet ein Schritt einen Würfel je
+    // Zelle (81 im Kreis), nie eine Frage an die Welt. Ein Sprung der Welt-Uhr (mehr als EIN Wetter-Zug: Laden, Mitspieler) schlägt nicht nach — der
+    // Blitz der Zwischenzeit traf eine Welt, die keiner trug.
+    _blitzTakt() {
+        const st = this.state;
+        const pm = st.playerMesh;
+        const S = AnazhRealm.BLITZ.schrittS;
+        const k1 = Math.floor(st.spielZeit / S);
+        const k0 = this._blitzSchritt;
+        this._blitzSchritt = k1;
+        if (!pm || !(k1 > k0) || (k1 - k0) * S > AnazhRealm.WETTER_ZUG_SEK) return;
+        const R = AnazhRealm._umweltGesetz().kern.DONNER.hoerweiteM;
+        for (const b of this._blitzeIn(k0, k1, pm.position.x, pm.position.z, R, true)) {
+            this._blitz(b.x, b.z);
+            if (this._blitzZuendet(b)) this._brandEntfachen(b.x, b.z);
+        }
+    }
 
     // DER WIND DER WOLKEN-SCHICHT (licht.K4, wetter-am-ort): die Schicht zieht mit dem EINEN Wind (phyto-core `windRichtung`: die
     // Richtung, die Gras, Krone, Wasser und Rauch an jedem Ort lesen) im Zug der Fronten (`WIND_FELD.front.zugMS`, 850 hPa) —
@@ -3775,6 +3863,10 @@ AnazhRealm.HIMMEL = Object.freeze({
     sonneWinkelGrad: 0.53,
     sonneCd: 1.6e9,
 });
+// DER BLITZ ALS FUNKTION DER WELT (`_blitzeIn`): die Zelle des Rasters (m) und der Schritt der Welt-Uhr (s), in denen die
+// Poisson-Folge gewürfelt wird — die Dichte trägt das Gesetz des Donners (klang-core `DONNER.blitzJeKm2Min`). Die Zelle ist
+// eine Größe der Rechnung, nie des Gesetzes: λ je Zelle und Schritt ≈ 0,003, die Folge ist in Ort und Zeit gleichverteilt.
+AnazhRealm.BLITZ = Object.freeze({ zelleM: 4000, schrittS: 1 });
 // DER HALBMESSER DER SCHEIBE eines Punkts der Größenklasse m in Grad (`_sternPunkt`): θ0 · 10^(0,2·(G − m)) — der ferne Saum des
 // Auges fällt mit θ⁻², so steht er am Rand jeder Scheibe gleich hell (der eines Sterns der Feldgrenze G in θ0). Die Fläche wächst
 // mit dem Licht.

@@ -1756,7 +1756,7 @@
     // ═══════════════════════════════════════════════════════════════════════
     // prettier-ignore
     var DONNER = {
-        blitzJeKm2Min: 0.01, // QUELLE UNGEPRUEFT im Wert: ein gewoehnliches Gewitter, wenige Blitze je Minute auf ~100 km²
+        blitzJeKm2Min: 0.01, // Band 0,006–0,01: ein Gewitter 2,4–4 Blitze/min (Brooks 1925: 200/h; Satellit je Zelle 3,1/min) auf ~400 km² (die Flaeche eines Gewitters der Blitzdichte-Statistik)
         hoerweiteM: 16000,   // NWS „Understanding Lightning: Thunder": der Donner traegt etwa 10 Meilen
         hoeheM: 5000, segmentM: 40, knickGrad: 16, aeste: 3, astM: 1500, // QUELLE UNGEPRUEFT im Wert: die Gestalt des Kanals
         energieJeM: 1e6, streuung: 0.6, p0: 101325, fFaktor: 0.63,   // E_l: die Groesse, die Few aus dem Spektrum des Donners las
