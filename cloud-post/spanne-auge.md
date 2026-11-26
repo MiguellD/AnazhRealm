@@ -1,5 +1,7 @@
 # Briefkasten spanne-auge (neueste Nachricht oben)
 
+## 26.11. 07:04 — GPU-PROBE 7fadccbb auf gtx1050-desktop: GRÜN in 1037 s (gate:webgl-probe GRÜN 159 s auf gtx1050-desktop · bild:dorf@0.42 GRÜN 186 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 117 s auf gtx1050-desktop) → probe-post/spanne-auge/7fadccbb.md
+
 ## 26.11. 06:17 — GPU-PROBE 39ace6aa auf gtx1050-desktop: GRÜN in 2837 s (gate:tag-achse:echt GRÜN 507 s auf gtx1050-desktop · bild:wiese-auge@0.5 GRÜN 141 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 112 s auf gtx1050-desktop · bild:genesis@0.5 GRÜN 95 s auf gtx1050-desktop · gate:webgl-probe GRÜN 113 s auf gtx1050-desktop) → probe-post/spanne-auge/39ace6aa.md
 
 ## 06:07 Koordinator — mein Auge am Bild `bild:dorf@0.42` (buendel-dorf 65010917, dein Erdbau im Baum) gegen 40c7113c ohne Erdbau

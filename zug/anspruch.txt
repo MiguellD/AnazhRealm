@@ -101,3 +101,5 @@ w28-kuesten-kontrast karte2.planet.kopplung.land-meer-luft#4
 w28-tages-gesetz-5 karte2.mensch.menge.rhythmus#2
 # 735 (main e71f2721, 26.11. 05:40): z746 w28-buendel-jagd (fünf Abgaben: Jagd-Heilung Rudel 0,47 → 0,325 · Himmels-Probe −20,0 → −0,1 % · Gipfel-Suche 863 → 179 ms je Saat · Gezeit M2+S2 Hub am Watt 0 → 3,50 m, Periode 12,363 h · Frist eines brechenden Werks 2137 → 1671) — die Station planet.wasser.gezeiten misst am main; aufwaerts#1 trägt seinen Anspruch schon (w28-tat-aufwaerts)
 w28-buendel-jagd karte2.planet.wasser.gezeiten#1
+# 736 (main 64fcf12e, 26.11. 06:21): z747 w28-absicht-zug-4 (die Absicht des Bewohners trägt den Zug: der Leser der Absicht im Gang und im Bild)
+w28-absicht-zug-4 karte2.mensch.geist.absicht#1
