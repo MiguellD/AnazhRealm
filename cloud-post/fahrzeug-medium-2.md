@@ -130,6 +130,13 @@ aufgesetzt auf `fahrzeug-stapel` 445b4549 (main c814741e, im Bündel `buendel-mi
     63 Baupläne aus dem Stempel der Welt (sieben Gattungen an Land × neun Hebel der Werkstatt), ihr Fahr-Satz aus der Welt
     (`_fahrSatz`), der Kipptisch am Satz und der Kreis in der Welt (`_wagenSchritt` · `_wagenLage` an der Mess-Wiese). Täter beim
     Namen „vehicle-core.js fahrTakt: … kippen nie“. Selbsttest 5 408 Mutanten, 0 falsch (der Kern von main + drei ATTRAPPEN).
+  - `stamm/koerper-bewegung.js` `_fahrHuelleStellen` (`kipp_huelle`): die Hülle des Kontakts liegt mit dem Bild — die Rolle trägt den
+    Kipp, die Ecken quer den Versatz der Stütze (`_rideKippX/Z` aus `_wagenLage`, auf der Quer-Achse der Hülle), und jede Ecke in
+    Ruhe stützt dazu auf Dach-Höhe (k.dach), denn der liegende Aufbau stößt mit Boden UND Dach. Der stehende Wagen bleibt
+    byte-gleich (m = 4, Versatz 0). Linse H4b in `gate:fahr-leben` (Familie H, die Hülle): der GT liegt (Kipp 1,60 rad), die
+    Quer-Weite von k.pq gegen die gezeichneten Ecken durch `_archEntryWorldMatrix`; ROT am Baum ohne den Schnitt „huelle-liegt:
+    stamm/koerper-bewegung.js _fahrHuelleStellen — der liegende Wagen trägt die Hülle des stehenden“; Selbsttest 2 Fälle (Täter,
+    vakuös).
 
 Wände am Kopf: siehe „Kopf“.
 | A11 Kipptisch tan θ ÷ SSF (gt · limousine · kompakt · suv · transporter hoch · karren · karren hoch) | rutscht bei tan 1,00 (μ), kein Kipp | **1,00 · 1,00 · 1,00 · 1,01 · 1,01 · 1,00 · 1,02** |
@@ -137,7 +144,9 @@ Wände am Kopf: siehe „Kopf“.
 | Station form S2 an der Mess-Wiese, 63 Baupläne: Kipper am Tisch · tan θ ÷ SSF | 25 · 0 kippen (ROT, kippQ 0) | **25 · 25 kippen, 1,001–1,034** |
 | Station form S2: im Kreis liegend · Reifenkraft ÷ SSF · g · Rutscher, die kippen | 0 (liegt 0) · — · 0 von 65 | **9 · 0,962–1,013 · 0 von 65** |
 | Die sechs Straßen-Rezepte (SSF 1,16–1,93) | — | byte-gleich: fahrKipp kehrt vor dem Abheben zurück |
-| Mit dem Kipp (37d51e7 + Modul-Karte): `gate:vehicle-drive` · voller Playtest · `gate:persistence` · `gate:fahr-leben` · `check:statik` | — | GRÜN (A11 GRÜN, Selbsttest GRÜN) · 3 710 ✅, alle Invarianten · 21/21 · nur VK 10 Uhr Warte-Kreis 8>9 (siehe Offen) · GRÜN |
+| H4b die Hülle des liegenden GT (Kipp 1,60 rad): Quer-Weite k.pq gegen die gezeichneten Ecken | −0,93…0,95 m gegen −2,16…−1,36 m, Abstand 2,308 m (ROT) | **−2,16…−1,36 m, Abstand 0,000 m** |
+| Der liegende Turm-Bauplan (Dach 3,4 · Spur 1,0 · Fahrhöhe 0,9), Kreis 25 m/s bis `umgekippt` | Hülle 4 Ecken, quer −0,63…0,63 m | **8 Ecken, −3,15…0,29 m = gezeichnet −3,15…0,29 m** |
+| Mit dem Kipp und der liegenden Hülle: `gate:vehicle-drive` · voller Playtest · `gate:persistence` · `gate:fahr-leben` · `check:statik` | — | GRÜN (A11 GRÜN, Selbsttest GRÜN) · 3 710 ✅, alle Invarianten · 21/21 · nur VK 10 Uhr Warte-Kreis 8>9 (siehe Offen) · GRÜN |
 
 ## Offen (Grund, Messname)
 
@@ -172,9 +181,6 @@ Wände am Kopf: siehe „Kopf“.
 - **`gate:weltbild-frost:echt` „dritte-person: B das Bild folgt der Kamera — 0,00 % der Blöcke“** (Messplatz, GTX 1060/1050) — nicht
   dieser Baum: ROT an jedem Kopf auf main ab 12029279, auch an einem Kopf ohne eine Datei der Fahrzeuge (werk-am-ort cfa4fc95), am
   Bündel buendel-mittag 52c07c4a dieselbe Zeile; GRÜN an a954d698 und älter. Messname: weltbild-frost dritte-person B.
-- **form#2 die Hülle des liegenden Wagens**: der Kontakt des Schritts (`_fahrHuelleStellen`, stamm/koerper-bewegung.js) stellt die
-  Hülle mit Nick und Wank der Federn, nicht mit dem Kipp — ein liegender Wagen stößt an Bauten mit dem Grundriss des stehenden
-  (die Zeichnung liegt richtig). Messname: `kipp_huelle`.
 - **form#2 kein Aufrichten**: ein gekippter Wagen bleibt liegen (`umgekippt`); kein Verb, kein Gesetz richtet ihn auf (die
   Straßen-Rezepte kippen nie, nur Werkstatt-Baupläne mit SSF < μ). Messname: `kipp_aufrichten`.
 - **form#2 das Bild des liegenden Wagens**: gemessen an der Matrix, die beide Zeichen-Pfade lesen (die Flanken über dem Boden), nicht

@@ -566,6 +566,7 @@ const STATION = {
     hautAussen: 0.005, // Anteil der Haut des Reiters, der je Richtung außerhalb der Hülle des Wagens liegen darf
     spielerDv: 0.3, // m/s: so viel bekommt der Spieler mindestens vom rutschenden GT
     spielerTiefM: 0.12, // m: höchstens EIN Frame der Anfahrt (zwei Sim-Schritte bei 3,5 m/s) zwischen Kapsel und Blocker-Box
+    liegtM: 0.05, // m: so weit darf die Quer-Weite der Hülle des liegenden Wagens neben seinen gezeichneten Ecken stehen (form#2)
 };
 function stationVerdict(s) {
     if (!s || !s.kern) return ["kern ohne fahrSchritt"];
@@ -625,6 +626,15 @@ function stationVerdict(s) {
         ...probe(s.huelleHang, "huelle-hang keine Probe", (hg) =>
             probe(hg.schub >= 0.5, `huelle-hang vakuös (Schub ${(hg.schub || 0).toFixed(2)} m)`, () => [
                 [hg.eindringen <= 0.01, `huelle-hang Schub ins Gelände ${hg.eindringen?.toFixed(2)} m`],
+            ])
+        ),
+        // H4b DIE HÜLLE LIEGT MIT DEM BILD (form#2): der gekippte Wagen stößt mit dem Grundriss, den `_wagenLage` zeichnet
+        ...probe(s.huelleLiegt, "huelle-liegt keine Probe", (hl) =>
+            probe(hl.kipp >= 1.2, `huelle-liegt vakuös (Kipp ${(hl.kipp || 0).toFixed(2)} rad)`, () => [
+                [
+                    hl.fehl <= STATION.liegtM,
+                    `huelle-liegt: stamm/koerper-bewegung.js _fahrHuelleStellen — der liegende Wagen trägt die Hülle des stehenden (quer ${hl.huelle.map((v) => v.toFixed(2)).join("…")} m, gezeichnet ${hl.bild.map((v) => v.toFixed(2)).join("…")} m)`,
+                ],
             ])
         ),
         ...probe(s.huelleSchub, "huelle-schub keine Probe", (h) => [
@@ -2283,6 +2293,7 @@ hauptLauf(async () => {
             },
             huelleSchub: { weg: 0 },
             huelleHang: { schub: 0.8, eindringen: 0 },
+            huelleLiegt: { kipp: 1.6, bild: [-3.15, 0.29], huelle: [-3.15, 0.29], fehl: 0 },
             pflicht: { satz: "bruch", ebene: "bruch", leser: true },
             huelleKonsum: { gleiten: true, kapsel: true, leibWagen: true, leibTier: true },
             hangfuss: { ziel: true, kontakte: 4, unterMax: 0.12, unterN: 2, schubMax: 0.17, weg: 21 },
@@ -2584,6 +2595,12 @@ hauptLauf(async () => {
                 "huelle-hang Schub",
             ],
             ["der Kasten schiebt nicht (vakuös)", { huelleHang: { schub: 0, eindringen: 0 } }, "huelle-hang vakuös"],
+            [
+                "der liegende Wagen trägt die Hülle des stehenden (form#2 vor dem Schnitt)",
+                { huelleLiegt: { kipp: 1.6, bild: [-3.15, 0.29], huelle: [-0.63, 0.63], fehl: 2.52 } },
+                "huelle-liegt: stamm/koerper-bewegung.js",
+            ],
+            ["der Wagen liegt nicht (vakuös)", { huelleLiegt: { kipp: 0, bild: [0, 0], huelle: [0, 0], fehl: 0 } }, "huelle-liegt vakuös"],
             [
                 "ein alter Kern: fahrSatz und rittEbene still null",
                 { pflicht: { satz: "null", ebene: "null" } },
@@ -3231,6 +3248,13 @@ hauptLauf(async () => {
         S.huelleHang
             ? `Schub des Kastens ${S.huelleHang.schub.toFixed(2)} m · Eindringen in die Wand ${S.huelleHang.eindringen.toFixed(3)} m`
             : "keine Probe"
+    );
+    check(
+        "H4b der GT liegt auf der Flanke: die Quer-Weite seiner Hülle ist die seiner gezeichneten Ecken (Boden und Dach, form#2)",
+        frei("huelle-liegt"),
+        S.huelleLiegt
+            ? `Kipp ${S.huelleLiegt.kipp.toFixed(2)} rad · Hülle quer ${S.huelleLiegt.huelle.map((v) => v.toFixed(2)).join("…")} m · gezeichnet ${S.huelleLiegt.bild.map((v) => v.toFixed(2)).join("…")} m · Abstand ${S.huelleLiegt.fehl.toFixed(3)} m (Soll ≤ ${STATION.liegtM})${taeter(vS.filter((x) => x.startsWith("huelle-liegt")))}`
+            : vS.join(" · ")
     );
     console.log("=== L — DIE ORTE DER LEBEN-SCHAU (Auftrag 0710-2), echter Sim-Schritt ===");
     const L1 = S.hangfuss;

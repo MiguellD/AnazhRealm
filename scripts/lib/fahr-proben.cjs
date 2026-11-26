@@ -2362,6 +2362,41 @@ async function probeLeben(expected) {
                     }
                     S.huelleHang = { schub, eindringen: Math.max(0, eindringen), x, anWand: WX - (x + k.hw) };
                 }
+                // H4b — DIE HÜLLE LIEGT MIT DEM BILD (form#2): der GT liegt auf der Flanke (Kipp π/2 · 1,02, die Lage
+                // schreibt der EINE Schreiber `_wagenLage`); die Quer-Weite der Hülle (k.pq) gegen die gezeichneten Ecken
+                // — Boden UND Dach jeder Ecke in Ruhe durch die Matrix des Bilds (`_archEntryWorldMatrix`), quer projiziert
+                const fz = gT._fahr;
+                const kL = kEcht && fz && gT._fahrSatz && gT._fahrSatz.kipp ? kEcht : null;
+                if (kL) {
+                    const vor = [fz.kipp, fz.umgekippt];
+                    fz.kipp = (Math.PI / 2) * 1.02;
+                    fz.umgekippt = true;
+                    r._wagenLage(gT, fz);
+                    r._fahrHuelleKontakt(gT, kL, fz.x, fz.z, 0, 0, DT);
+                    const M = new THREE.Matrix4();
+                    const V = new THREE.Vector3();
+                    r._archEntryWorldMatrix(gT, M);
+                    const m0 = kL.m0 || kL.m;
+                    const spanne = (f, n) => {
+                        let [lo, hi] = [Infinity, -Infinity];
+                        for (let i = 0; i < n; i++) [lo, hi] = [Math.min(lo, f(i)), Math.max(hi, f(i))];
+                        return [lo, hi];
+                    };
+                    const bild = spanne((i) => {
+                        const [j, y] = i < m0 ? [i, kL.ry[i]] : [i - m0, kL.dach];
+                        V.set(kL.rl[j], y, -kL.rq[j]).applyMatrix4(M);
+                        return (V.x - gT.position.x) * kL.qX + (V.z - gT.position.z) * kL.qZ;
+                    }, 2 * m0);
+                    const huelle = spanne((i) => kL.pq[i], kL.m);
+                    S.huelleLiegt = {
+                        kipp: fz.kipp,
+                        bild,
+                        huelle,
+                        fehl: Math.max(Math.abs(bild[0] - huelle[0]), Math.abs(bild[1] - huelle[1])),
+                    };
+                    [fz.kipp, fz.umgekippt] = vor;
+                    r._wagenLage(gT, fz);
+                }
                 weg(gT);
             }
         }
