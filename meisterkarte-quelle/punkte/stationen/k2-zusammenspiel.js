@@ -1602,7 +1602,7 @@ L.perspektive("planet", (() => {
             // 1 000 Orte um den Spieler (±20 km) — Land der Welt gegen Land des Planeten an derselben Lage (x Ost, z Süd), dazu ±200 km die Höhe (r);
             // Gegenlauf: der Planet an verschobener Lage (−31°, +97°) und −1 Ma.
             [P]: {
-                sek: 40,
+                sek: 60,
                 faecher: true,
                 pfad: [...PLANET_PFAD, "stamm/vegetation-baum.js", "stamm/gelaende-kollision.js"],
                 ungefahren: "die Bildpaare Durchbruch/Fjord (S3) und Ankunft (S5) schießt nur das Gerät",
@@ -1710,7 +1710,62 @@ L.perspektive("planet", (() => {
                         aus.ms = r3(performance.now() - t0);
                         return aus;
                     };
-                    const w = await S(seite, { saaten: 12, budgetMs: 22000 });
+                    // S2: die 100 Saaten des Richters rechnet der Kopf im Kern (unten); die Seite fährt 4 davon (5 520 Orte) durch den Planet-Faden
+                    // des SPIELS — der Konsum-Zeuge: an denselben Saaten zählen Faden und Kern dieselben Gipfel (sonst ROT beim Namen)
+                    // der Kern-Fächer von S2 startet VOR der Seite und rechnet neben ihr (gemessen an der Radeon: 26 s Kern + 25 s Seite nacheinander
+                    // = 51 s gegen den Deckel 60 s) — sein Urteil fällt unten, nach der Antwort der Seite
+                    const samenS2 = await H.seite("return r._planetSamen();");
+                    const s2Kern = new Promise((gebenS2, fehlS2) => {
+                        const { Worker } = require("worker_threads"), wurzel = require("path").resolve("."), F = Math.max(1, Math.min(8, require("os").cpus().length));
+                        const SAAT = `
+                            const { parentPort, workerData } = require("worker_threads"), path = require("path");
+                            globalThis.self = globalThis; require(path.join(workerData.wurzel, "gelaende-core.js"));
+                            const G = globalThis.__gelaendeCore, P = require(path.join(workerData.wurzel, "planet-core.js")), RAD = Math.PI / 180, og = G.ortGesetz();
+                            for (const samen of workerData.saaten) {
+                                const plan = P.planetPlan(samen, P.PLANET_ERDE), S = P.planetScheibe(plan, 0), o = [];
+                                for (let b = -66; b <= 66; b += 6) for (let l = -180; l < 180; l += 6) {
+                                    // das Ort-Gesetz (ks) liest das Maß nur an LAND (ksMin, landKonv, Gipfel) — am Meer (≈ 69 % der Orte) rechnet es niemand
+                                    const p = {};
+                                    P.planetPunkt(S, b * RAD, l * RAD, 16, p);
+                                    const land = p.hoeheM > 0;
+                                    o.push({ land, hoeheM: p.hoeheM, ks: land ? P.planetOrt(S, b * RAD, l * RAD, og, undefined, plan).delta.wildnis.ks : 0 });
+                                }
+                                const nb = 60, ksMin = Math.min(...o.filter((x) => x.land).map((x) => x.ks));
+                                const a = { samen, gipfel: 0, konv: 0, land: 0, landKonv: 0, antworten: o.length, hSumme: 0, hQuadrat: 0 };
+                                o.forEach((x, k) => {
+                                    a.hSumme += x.hoeheM; a.hQuadrat += x.hoeheM * x.hoeheM;
+                                    if (x.land) { a.land++; if (x.ks > ksMin + 0.05) a.landKonv++; }
+                                    if (!(x.land && x.hoeheM > 2000)) return;
+                                    const nachbarn = [k - 1, k + 1, k - nb, k + nb].filter((j) => j >= 0 && j < o.length).map((j) => o[j].hoeheM);
+                                    if (nachbarn.some((h) => h > x.hoeheM)) return;
+                                    a.gipfel++;
+                                    if (x.ks > ksMin + 0.05) a.konv++;
+                                });
+                                parentPort.postMessage(a);
+                            }
+                            parentPort.postMessage(null);`;
+                        const saaten = Array.from({ length: 100 }, (_, si) => (si === 0 ? samenS2 : "zsp-" + (si - 1))), je = [], t2 = Date.now();
+                        let offen = F;
+                        for (let f = 0; f < F; f++) {
+                            const wk = new Worker(SAAT, { eval: true, workerData: { wurzel, saaten: saaten.filter((_, i) => i % F === f) } });
+                            wk.on("error", fehlS2);
+                            wk.on("message", (m) => {
+                                if (m) return je.push(m);
+                                if (--offen) return;
+                                const g = { gipfel: 0, konv: 0, saaten: je.length, antworten: 0, land: 0, landKonv: 0, faeden: F, ms: Date.now() - t2, version: require(require("path").resolve("planet-core.js")).VERSION };
+                                let hs = 0, hq = 0;
+                                for (const a of je) { for (const k of ["gipfel", "konv", "antworten", "land", "landKonv"]) g[k] += a[k]; hs += a.hSumme; hq += a.hQuadrat; }
+                                const mh = hs / Math.max(1, g.antworten);
+                                g.streuung = Math.round(1e3 * Math.sqrt(Math.max(0, hq / Math.max(1, g.antworten) - mh * mh))) / 1e3;
+                                g.je = je.map((x) => ({ samen: x.samen, gipfel: x.gipfel, konv: x.konv, land: x.land, landKonv: x.landKonv }));
+                                g.saatFolge = saaten;
+                                g.unter95 = je.filter((a) => a.gipfel && a.konv / a.gipfel < 0.95).map((a) => a.samen + " " + a.konv + "/" + a.gipfel);
+                                gebenS2(g);
+                            });
+                        }
+                    });
+                    s2Kern.catch(() => {}); // wirft die Seite zuerst, bleibt der Fächer nicht als unbehandelter Wurf stehen; unten wird er erwartet
+                    const w = await S(seite, { saaten: 4, budgetMs: 22000 });
                     const aus = M.teil || {};
                     const s1 = w.s1;
                     // S1 AM FÄCHER (M4): Orte des Planeten polwärts 36° × heute — je Ort die Eis-Zeit, die der Findling liest (planet-ort
@@ -1770,7 +1825,23 @@ L.perspektive("planet", (() => {
                         werte: { ursacheProzent: w1p.ursache == null ? null : Math.round(1000 * w1p.ursache) / 10, ohneFindlingOrte: w1p.ohneFindling },
                         zeuge: { relikte: w1p.relikte, zeiten: gangK.length, land: w1p.land, orte: w1p.orte, eisGeschichte: w1p.eisGeschichte, ohneFindling: w1p.ohneFindling, heimat: s1, akte: R1p.akte },
                     };
-                    const s2 = w.s2;
+                    // S2 IM KERN DES KOPFS (wie S1): die 100 Saaten des Richters, wörtlich — vorher das Literal 12 auf der Seite (98,6 %, „der Zeuge
+                    // der Welt fehlt: nur 12 Saaten“). Derselbe Auftrag wie voxel-worker.js planetOrtAuftrag (planet-core planetScheibe ·
+                    // planetOrt am Ort-Gesetz des Gelände-Kerns · planetPunkt), dasselbe Gitter 6° × 6° (±66°), dieselbe Gipfel-Regel (Land,
+                    // > 2 000 m, kein 4er-Nachbar höher), dasselbe Maß (Δ ks > ksMin der Saat + 0,05); 138 000 Orte gefächert über die Kerne
+                    // (worker_threads). Gleiche Bedingung: die ersten 12 Saaten geben Byte für Byte die Zahl der Seite (356 von 361).
+                    const s2 = await s2Kern;
+                    // der Konsum-Zeuge: die n Saaten, die der Planet-Faden des Spiels auf der Seite fuhr (w.s2), gegen dieselben n im Kern
+                    {
+                        const fd = w.s2 || {}, fn = fd.saaten || 0, kn = { gipfel: 0, konv: 0, land: 0, landKonv: 0 };
+                        for (const x of s2.je) if (s2.saatFolge.indexOf(x.samen) < fn) for (const k of ["gipfel", "konv", "land", "landKonv"]) kn[k] += x[k];
+                        s2.fadenSaaten = fn;
+                        s2.faden = { gipfel: fd.gipfel, konv: fd.konv, land: fd.land, landKonv: fd.landKonv };
+                        s2.kernAnFadenSaaten = kn;
+                        s2.fadenGleich = fn > 0 && ["gipfel", "konv", "land", "landKonv"].every((k) => fd[k] === kn[k]);
+                        delete s2.je;
+                        delete s2.saatFolge;
+                    }
                     aus[2] = { werte: { gipfelProzent: s2.gipfel ? Math.round((1000 * s2.konv) / s2.gipfel) / 10 : null, landProzent: s2.land ? Math.round((1000 * s2.landKonv) / s2.land) / 10 : null }, zeuge: s2 };
                     const s3 = w.s3;
                     aus[3] = { werte: { fjordeOhneEis: s3.fjordOhne }, zeuge: s3, auge: await M.auge("gegenwart-s3", { ort: "wiese" }) };
@@ -1861,6 +1932,8 @@ L.perspektive("planet", (() => {
                         zeuge: (roh) => {
                             const z = roh.zeuge || {};
                             if (!(z.saaten >= 100)) return "nur " + (z.saaten || 0) + " Saaten (Soll 100)";
+                            if (!(z.fadenSaaten >= 1)) return "der Planet-Faden des Spiels fuhr keine Saat — die 100 des Kerns sind ohne Konsum-Zeugen";
+                            if (z.fadenGleich !== true) return "Faden des Spiels und Kern trennen sich an denselben " + z.fadenSaaten + " Saaten (Gipfel " + ((z.faden || {}).gipfel) + " ↔ " + ((z.kernAnFadenSaaten || {}).gipfel) + ", konvergent " + ((z.faden || {}).konv) + " ↔ " + ((z.kernAnFadenSaaten || {}).konv) + ")";
                             if (!(z.gipfel >= 100) || !(z.streuung > 0)) return "keine 100 Gipfel oder keine Streuung";
                             if (!(z.land >= 100)) return "der Gegenlauf (beliebiges Land, kein Gipfel) fehlt";
                             const w = roh.werte || {};
@@ -1868,8 +1941,12 @@ L.perspektive("planet", (() => {
                             return null;
                         },
                         taeter: "planet-core.js planetPunktR (Orogen an der konvergenten Grenze)",
-                        gruen: { werte: { gipfelProzent: 97, landProzent: 30 }, zeuge: { saaten: 100, gipfel: 400, streuung: 1800, land: 5000 } },
-                        attrappen: [{ name: "97 % an zwölf Saaten", roh: { werte: { gipfelProzent: 97 }, zeuge: { saaten: 12, gipfel: 40, streuung: 1800 } } }],
+                        gruen: { werte: { gipfelProzent: 97, landProzent: 30 }, zeuge: { saaten: 100, gipfel: 400, streuung: 1800, land: 5000, fadenSaaten: 12, fadenGleich: true } },
+                        attrappen: [
+                            { name: "97 % an zwölf Saaten", roh: { werte: { gipfelProzent: 97 }, zeuge: { saaten: 12, gipfel: 40, streuung: 1800 } } },
+                            { name: "100 Saaten im Kern, keine im Faden des Spiels", roh: { werte: { gipfelProzent: 97, landProzent: 30 }, zeuge: { saaten: 100, gipfel: 400, streuung: 1800, land: 5000, fadenSaaten: 0 } } },
+                            { name: "Faden und Kern zählen verschieden", roh: { werte: { gipfelProzent: 97, landProzent: 30 }, zeuge: { saaten: 100, gipfel: 400, streuung: 1800, land: 5000, fadenSaaten: 12, fadenGleich: false, faden: { gipfel: 44, konv: 43 }, kernAnFadenSaaten: { gipfel: 45, konv: 43 } } } },
+                        ],
                     },
                     3: {
                         u: {},
