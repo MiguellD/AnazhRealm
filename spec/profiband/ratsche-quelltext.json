@@ -11,9 +11,8 @@
             "datei": 1
         },
         "scripts/diag-apparat.cjs": {
-            "zweck": "Struktur: die Klingen lesen den Stamm am AST, ihre Selbsttest-Fälle sind Text; Klinge 7 liest den Richter scripts/ci-kopf.cjs, um ihn je Bedingung des Erbes der GPU-Probe zu mutieren (die Mutante im require-Cache des Einlasses, stempel-erbt-probe)",
-            "stamm": 6,
-            "datei": 1
+            "zweck": "Struktur: die Klingen lesen den Stamm am AST, ihre Selbsttest-Fälle sind Text (der Datei-Leser der Klinge 7 fiel mit dem Erbe im Einlass, zug-erbt-baum)",
+            "stamm": 6
         },
         "scripts/diag-asset-contract.cjs": {
             "zweck": "Messung: führt phyto-core im Faden (vm) mit zwei Mutanten aus (Raster-Wand R: das ganze Rechteck gefragt · das Innere je Pixel gezählt)",
