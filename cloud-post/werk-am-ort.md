@@ -92,3 +92,25 @@ mit Probe-Ruf und `[ci voll]`. Die Batterie fährt das nächste Bündel des Koor
 Das geerbte Rot an `gate:pruefbuehne-licht` heilt der Heiler im Bündel — auf der Basis 52c07c4a misst die Linse grün.
 
 ## 26.11. 11:09 — GPU-PROBE cfa4fc95 auf omen-gtx1060: ROT in 1204 s (gate:pruefbuehne-licht ROT 56 s — ⛔ S0 Himmel: nach dem Sprung auf Mitternacht trägt die Umgebung die Bestrahlung 3.289e-8, der Himmel des Orts 2.74e-8 — die Himmels-Umgebung (`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-F auf omen-gtx1060 · gate:weltbild-frost:echt ROT 151 s — ❌ dritte-person: B das Bild folgt der Kamera — 0.00 % der Blöcke (Soll ≥ 5 %) auf omen-gtx1060 · gate:studio-begehen GRÜN 243 s auf omen-gtx1060 · bild:stadt-voll@0.55 GRÜN 174 s auf omen-gtx1060 · gate:webgl-probe GRÜN 57 s auf omen-gtx1060) → probe-post/werk-am-ort/cfa4fc95.md
+
+
+## 26.11. 20:47 — GTX 1050 (Meister der GTX 1050): `bild:stadt-voll@0.33` am MAIN 61e2a27f — GRÜN in 447 s
+
+Dieselbe Probe wie `gpu-probe.yml` `bild_probe` (Werkbank `start --ort stadt-voll --fenster 1920x1080` → `umstellen` → Kamera des
+Spiels → `bild --wahl 0 --uhr 0.33`), Baum 61e2a27f77 (V18.546.440), Adapter nvidia/pascal, allein am Schloss (`hand-stadt-voll`).
+
+- **umstellen:** GRÜN nach 365 s — `"takte": 2669, "steht": true`, 81 Chunks, Anlauf gegangen.
+- **Bild:** GRÜN nach 26 s — „ABNAHME GRÜN · beweis · Sicht 0.0 % · Leib im Vordergrund 5.2 % · Leiber näher als 6 m: 4 von 4 ganz
+  (32 Teile) · Ziel Blickziel im Bild frei 14.99 m · Luma 148.1 σ 67.3 · Gerät WebGPU nvidia pascal · Inhalt bauSatz 19.4 % (≥ 2.0 %),
+  bewohner 7.3 % (≥ 1.0 %)“. Mit eigenem Auge gesehen: der Markt voll Leute, Stände, Häuser, Morgensonne.
+- **Die Wanze an `_bauRegt`** (dem EINEN Schreiber von `_bauRegung`, stamm/dirigent-takt.js:2351), über den ganzen Lauf 1 343 Rufe:
+  `_foundryRewarmColdTrees` studio-gestalt.js:963 ← `tickArchitectureCulling` vegetation-baum.js:3157 **702** ·
+  `_standMeldet` dienst.js:2223 ← `tickArchitectureCulling` vegetation-baum.js:3162 **507** · `_standMeldet` ← `_tickArchitectureLOD`
+  siedlung-bauten.js:260 **93** · `_karteGebacken` stoff-karte.js:1757 **35** · `_stufenVorlaufWahl` dirigent-ankunft.js:973 **6**.
+  In den letzten 300 Takten vor dem Stehen nur noch 6 (alle `_standMeldet` ← `tickArchitectureCulling`) — am main verebbt die
+  Bau-Regung, die Welt steht.
+
+**Urteil:** am main GRÜN — „DIE WELT STEHT NICHT … Bau-Regung“ ist an diesem Gerät NICHT geerbt; es ist der Kopf. Derselbe Lauf mit
+derselben Wanze am Kopf werk-am-ort 4 f7e5f23b steht in meiner Kette (nach (c) menge.bild#2 und megastadt-vorher) und nennt dann den
+Rufer, der dort nach 1 800 Takten noch baut, beim Namen (Datei:Zeile, Zahl je 300 Takte). Nicht gemessen: ob main am Rand steht —
+die Wanze trennt Ring- und Steh-Phase nicht; der Kopf-Lauf liest sie je 300 Takte.
