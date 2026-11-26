@@ -15259,10 +15259,10 @@
    "summe": {
     "kriterien": 28,
     "sprossen": 198,
-    "heute": 12,
+    "heute": 13,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 5.8,
+    "anteilHeute": 6.4,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -16535,7 +16535,7 @@
        "richter": "Flug zu 10 Zufallsgalaxien mit Landung auf einem Planeten dort, alle Bruch-Bedingungen gehalten; Verteilung der Galaxien im Flug gezählt gegen Durchmusterungs-Karten im Band"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Unter Sprosse 1: die Wiese trägt bis ~20 m, der Fern-Saum ist ROT (Kohärenz 0,60, Radeon); der Himmel rechnet eine Kugel (foundry-core.js:284, 6 360 km), der Boden ist eine flache Ebene — ein Zwilling, sichtbar ab ~10 km Auge. Gemessen ohne Bruch ist keine Spanne.",
@@ -17587,10 +17587,10 @@
     "kriterien": 33,
     "sprossen": 213,
     "heute": 22,
-    "kern": 1,
-    "kernDazu": 1,
+    "kern": 0,
+    "kernDazu": 0,
     "anteilHeute": 10,
-    "anteilKern": 0.3
+    "anteilKern": 0
    },
    "perspektiven": [
     {
@@ -19869,7 +19869,7 @@
       }
      ],
      "heute": 1,
-     "kern": 1,
+     "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Lava-Zelle glüht und erstarrt als Spieler-Tat (gelaende-core.js:1787-1801); Frame-p95 im brennenden Hektar und Flucht der Bewohner nie gemessen.",
      "alt": []
@@ -20096,12 +20096,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 131,
+  "heute": 132,
   "davonKopplungen": 33,
-  "kern": 3,
-  "kernDazu": 3,
+  "kern": 2,
+  "kernDazu": 2,
   "anteilHeute": 6.9,
-  "anteilKern": 0.1,
+  "anteilKern": 0,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
@@ -20111,7 +20111,7 @@
   },
   "gliederLeitern": 9,
   "beide": 62,
-  "nachwache": 69
+  "nachwache": 70
  },
  "zusammengelegt": [
   {
