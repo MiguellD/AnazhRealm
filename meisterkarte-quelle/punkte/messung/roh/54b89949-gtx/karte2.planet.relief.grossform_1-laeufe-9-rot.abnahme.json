@@ -1,0 +1,128 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.437",
+  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 190,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.767,
+  "taeter": {
+   "Laub baum_erle": 0.767
+  },
+  "vordergrund": {
+   "radius": 4.69,
+   "deckung": 0.9184,
+   "taeter": {
+    "Laub baum_erle": 0.9132,
+    "Rinde baum_erle": 0.0052
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "Rinde baum_erle",
+  "vorAbstand": 2.5,
+  "leiber": null,
+  "abstand": 9.38,
+  "gestalt": [
+   "wasser"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   2122.947,
+   108.994,
+   2138.091
+  ],
+  "blick": [
+   -0.63961,
+   -0.4264,
+   -0.6396
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 103.4,
+  "sigma": 47.7,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 76.7 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_erle 76.7 % · Vordergrund 91.8 % näher als 4.69 m (der halbe Ziel-Abstand): Laub baum_erle 91.3 %, Rinde baum_erle 0.5 % · Ziel Blickziel verdeckt von Rinde baum_erle in 2.5 m] · beweis · Sicht 76.7 % (Laub baum_erle 76.7 %) · Ziel Blickziel im Bild VERDECKT 9.38 m · Luma 103.4 σ 47.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.437 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 76.7 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_erle 76.7 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 91.8 % näher als 4.69 m (der halbe Ziel-Abstand): Laub baum_erle 91.3 %, Rinde baum_erle 0.5 %"
+  },
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von Rinde baum_erle in 2.5 m"
+  }
+ ],
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^(wasserSatz|chunk-water-[a-z]+)$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 609,
+   "wechsel": 1148783
+  },
+  "rinde": null,
+  "toene": [
+   "wasserSatz=255/80/80"
+  ],
+  "klassen": {
+   "wasserSatz": {
+    "objekte": 1,
+    "pixel": 8194
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\54b89949-gtx\\karte2.planet.relief.grossform_1-laeufe-9-rot.maske.png"
+ }
+}
