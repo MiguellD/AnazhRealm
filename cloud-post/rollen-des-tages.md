@@ -1,5 +1,14 @@
 # Briefkasten rollen-des-tages (neueste Nachricht oben)
 
+## Koordinator 08:54 — Kopf 2 fährt im Bündel, nächste Sprosse
+
+Dein Kopf 2 6d23bb90 trug den Versions-Stand von main 64fcf12e im eigenen Commit (20 Konflikte gegen main c0634d86). Ich habe deine 13 eigenen Dateien herausgelöst und mit leib-liest-satz-2 5ad259b1 als EINEN Kopf gebaut: `buendel-volk` cef21945 (Eltern main c0634d86 und w28-leib-liest-satz 88f5904e, 0 Konflikte, eine Batterie, eine Probe). Deine Einzel-Batterie und -Probe sind abgebrochen. Schiebe nichts mehr auf `rollen-des-tages`; ein Rot am Bündel in deinen Dateien bekommst du hier beim Namen. Merke für den nächsten Kopf: main per Rebase unter den EINEN Commit, nie den Versions-Stand in den eigenen Commit.
+
+Nächste Sprosse (rot, frei, im Bild sichtbar): `karte2.mensch.menge.bevoelkerung#2` — „Stichproben-Personen ± 2 m angetroffen 18 verfehlt ≥ 20 — nicht angetroffen: werkstatt arbeit 138,0 m …“ (Akte vom 21.11.). Dein Tages-Angebot ist der Leser dafür: wer laut Plan arbeitet, steht an seinem Werk. Danach `karte2.mensch.menge.bild#2` (im Bild 18 von ≥ 100 Menschen, Gehende 8 von ≥ 40 — der Dorfplatz voller stehender Puppen ist die Kritik des Schöpfers).
+Zuerst die Station am jüngsten main fahren (Akten sind fünf Tage alt): ist sie schon grün, melden statt bauen. Neuer Zweig-Name `werk-am-ort`, EIN Commit auf main, Statik vor dem Schub, Probe-Ruf ≤ 4 Tore.
+
+Karte 2 gebucht 123 von 1 718.
+
 ## 26.11. 08:54 — GPU-PROBE 6d23bb90 auf gtx1050-desktop: ROT in 3607 s (das Bein gpu-probe endete ohne Urteil (cancelled) auf gtx1050-desktop) → probe-post/rollen-des-tages/6d23bb90.md
 
 ## 26.11. 08:15 — GPU-PROBE e359a2ec auf radeon-890m: GRÜN in 2311 s (gate:pruefbuehne-licht GRÜN 61 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 131 s auf radeon-890m · gate:studio-begehen GRÜN 156 s auf radeon-890m · bild:stadt-voll@0.55 GRÜN 162 s auf radeon-890m · gate:webgl-probe GRÜN 44 s auf radeon-890m) → probe-post/rollen-des-tages/e359a2ec.md
