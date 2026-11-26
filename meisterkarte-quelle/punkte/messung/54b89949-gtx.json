@@ -1,7 +1,7 @@
 {
  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
  "geraet": "gtx",
- "zeit": "2026-11-26T15:21:38.926Z",
+ "zeit": "2026-11-26T15:23:44.322Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -1839,6 +1839,147 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.kopplung.ereignis#2": {
+   "gruen": true,
+   "zahl": "S2 brennendHa 1,024 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 100 % gegen Soll = 100 % ✓ · Zeuge: 1 ha brennt, Frame p95 im Preis P, die Front lag auf ihren Wegen und sie mieden sie",
+   "exit": 0,
+   "minuten": 4.69,
+   "gpu": "nvidia/pascal",
+   "konsum": "k2bab5f52a188",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2e9343709e6d",
+   "s": 281.5,
+   "fremd": {
+    "s": 284.2,
+    "takte": 130,
+    "fremdS": 143.88,
+    "kerne": 0.506,
+    "fensterKerne": 1.61,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.92
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      27.3
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      11.97
+     ]
+    ],
+    "dienerS": 82.27,
+    "diener": [
+     [
+      "dwm.exe",
+      34.56
+     ],
+     [
+      "System",
+      31.5
+     ]
+    ],
+    "geraetS": 118.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      72.78
+     ],
+     [
+      "svchost.exe",
+      38.95
+     ],
+     [
+      "SearchIndexer.exe",
+      3.48
+     ]
+    ],
+    "eigenS": 1016.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T15:23:44.322Z",
+   "abdruck": "1bb7ad7c47c4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.gewalt#1": {
+   "gruen": false,
+   "zahl": "S1 Umfang nicht erzeugbar: kein Brand von selbst: 240 Takte der Welt im Gewitter zünden 0, in der Sonne 0 (jeder Ruf von `_brandEntfachen` gezählt); die Front trägt 274 Sturm-Züge in 100 Spieljahren, 0 nach ≥ 10 trockenen Zügen — kein Blitz schlägt ein · am Fächer 12 Orte × 2000 Züge: i · faktorZurRealRate ungemessen gegen Soll ≤ 3 × ✗ · Täter: stamm/feld-brand.js `_brandEntfachen` (gerufen nur von der Tat: Brennglas, Unfall, Lava — kein Blitz im Gewitter)",
+   "exit": 0,
+   "minuten": 4.69,
+   "grund": "ROT: S1 Umfang nicht erzeugbar: kein Brand von selbst: 240 Takte der Welt im Gewitter zünden 0, in der Sonne 0 (jeder Ruf von `_brandEntfachen` gezählt); die Front trägt 274 Sturm-Züge in 100 Spieljahren, 0 nach ≥ 10 trockenen Zügen — kein Blitz schlägt ein · am Fächer 12 Orte × 2000 Züge: i · faktorZurRealRate ungemessen gegen Soll ≤ 3 × ✗ · Täter: stamm/feld-brand.js `_brandEntfachen` (gerufen nur von der Tat: Brennglas, Unfall, Lava — kein Blitz im Gewitter)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2bab5f52a188",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2e9343709e6d",
+   "s": 281.5,
+   "fremd": {
+    "s": 284.2,
+    "takte": 130,
+    "fremdS": 143.88,
+    "kerne": 0.506,
+    "fensterKerne": 1.61,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.92
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      27.3
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      11.97
+     ]
+    ],
+    "dienerS": 82.27,
+    "diener": [
+     [
+      "dwm.exe",
+      34.56
+     ],
+     [
+      "System",
+      31.5
+     ]
+    ],
+    "geraetS": 118.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      72.78
+     ],
+     [
+      "svchost.exe",
+      38.95
+     ],
+     [
+      "SearchIndexer.exe",
+      3.48
+     ]
+    ],
+    "eigenS": 1016.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T15:23:44.322Z",
+   "abdruck": "4bef18d921a2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1864,7 +2005,8 @@
   "k6b4dcc37c21d": "fVXBbqMwEP2XHLdLHbBZjKUenNJVs9pI6SeMzRhoCEQ2CVVW++8rSEkCVDsXLm9m3rw3Y/4sDqB3kOHju6urhVh8W3xfODih59Ce0D6+u4VYxNoPkAp5CSKlfO5g2haHxpGyUARUBfkevaNtsCgfdZ9mfsAyVIK0LzLbEmLImSStvMaLfHqalikVprXXgMGhyBJpyFFMgUeXgUIPjqZv/AkOWYw/fEH64IncJOQarZZy25J2y1+llA+reXcFVTqegJqYMi5ku5ZSvk3xaQHYeGVRuaG/n0axWYpbz80sx0LrnQHzEu1nEnLfZ2ogveqk6eSaJJry6NyoGadpGHBBSDzFZugKnTfewdYKq0+4ioPIB7FqZ3Nnh6Nn7hmBUsDVVPMcsMrQjjgsqTad4B98WnQHe7TgVZB/QuMljQJ104YQ8jrnUvbE+xYDccZi5MEosTOXnDqB5VreBdsSQj4IH1DDujH537VzOi/sfiyXYRgsqfg9p+hySNF6u9o1VzTFiC3V5ULWCem/W76aZt6GGzwEAH63MIQT+TrT0tWmacGilx2Ow9IwDKNQSLmegRvY7wd7Uk1RT410Tbfo9zSikIUMBCEPl4OZD305C++MRYnXvdURjafFTxb2HqjMFsYMzqtQm/irRW2xbDxV180gox9FlHZyVPdmb3sb751Osje2+SmzFzmKtZzy7jvUthlIK1CUMWGyhBPCzRRd2MZrQecDPDAKIRak1dPCZ7QlZjiS0fg+BKnon5or02H3kofRAp9nLp8L7ASu3NENCmtgKhRfWNKi3SmodtcTiWjMxS8p5Wojt2NRnjPTStmfyyhi2j81qJOJhH2jA2pysLUpuleR5HB0OZTN7Tfx9x8=",
   "k5ab759231ed1": "bVXRbqMwEPyXPF6PboihGEt9cEqkRrreJZ+wJmugIYBsCFVO9+8naEgDdF+Q0KxnmFkvfxcVxkdM6PHdlsVCLH4sfi4snsmxZM5kHt/tQizC2F0RE3IvuwIp5UsHi01W1RbyTAGqAtMTOY2pKcsf475NP+HSVwLajUx2ABouELXPz9PWXNGhdGrUNDQuifmcxBTY2AQVOdjonuwK9r2QnlwBffFIvkVwqw8u5a6FdsdfJ4cpLA5jtUyHzONCtlsp5X6q8pAh1U6eFXbgdQ9BqJfixtW+zXoMts4FKc3JXJuIu66nBrHrzs7OmkmjzhtrR2ScHfwVFwDhFJuQzeK0dipTKiqucBWuAhfFeu52UjWOvleESiFXU69TpCIhM9KwZLHujP7g00OPeCKDToHpFRouWbBSX94AwOtcS94L7ykG4Z4XEl+NGrtQ4dwZLLfyrrxdFzDwARW11/d3mI2ckdo4zcxpbJf2aLVk4tdcok3xQMY5lra+oRkF3lKJnmAbQf/c8fW08+vjhgwRkd8NDHCQrzMvbanrFg05SdUMQ+ORH/hCyu0MXOPpNMRziBnF0yBt3Q36vYzA93wPBcDD50WZf/TntXAulOV0m9s4YKF4ieQUfDZ4clAlJtN6SF/5sQ6/G9aW8tpRZVkPVrpBwJgABsV94L/7KO/TjpK9V+frdiNHtZ3J6RlKUw/CFSrmeUInEQfgeorOTO20GKcDfKUVYSd9lsuFTE4JjazUrourg4BWf+q+dOsmuK4D/TAa4sv8xIw6kwvb2MHlGD3li29iackcFRbH2zUJWMj7EVy/yd3Ik817pVsp4TzmBwhZv25o/9rj1q2UfyKQV6KKYqhMqbNuM0KKjU0xr79+C//+Aw==",
   "k5eeb270649b9": "rVXRrps4EP2XPLblOgnmYiz1wQmpbrSbKvcTxmYMNAQiG+Iqq/33ChKSAHelrtR5AaEznjNnzph/ZidQB0jx5YetyhmffZp9mVk4o2fRnNG8/LAzPovUYok+F9cgQoh1C1MmP9WWJDmk3sEg1I3xCpRYvqguTb1SrXxO/niwfcvjXfQRi3X3YfP1v2jVcKhvrDRGAcz5KhXCia/PGUUuCcgSsiN6jakxL/qUV5gHkhO3EemeEE0uJHbT1EJiUnk1aOwT5+gHDPkY2NgUJHrQ6K7YDRzQCF8XN7lYLHbxo2OnhNg74vbsbXSYhDIZsvV15FPGhduuhXgfs0xywNor8tL2dRdJGOn5Y0xuN8kx4LwLYFaguSUhWyyo7MmuWvlbaUaJumisHRRjfhIsGSckGmNTtLnKau9kqoeFZLQMF8BXU7XTU+PpZ0YgJTA51joDLFM0Aw5zX+lW6J9sfOgBjmjAKyG7QaO5Hy7lwMJvUy69y45YWpXdx5looP/f/W7K6nb8QJlXCJUGLn43Vk/v29/O6sIJsRtRKrpRdaL2hCiNkC1H/bKYnNuehiXpnhDyk7AeFbvb9yfMZrqbVmW5OQ5l0BSXc5//PR2KzSBB4x0qW9/RPoZ0Lq+ibWPSPfdsNc58NNe7FgDY04oQRsTbZE620rUDg156avo1oRiEARdiOwHXcDz2hkyUj+rDWTqx+SCzTAb0woAGFDghn69XxlSM6wXhXTAv8L7BKvQjvo7pGHw2cPRApibXut8DGSgdfbS2Dovak1XVX6/+Igx9nxOflM9G+O7GxovTd7r7JtLNsOG/xNs5nfTcValM3ZOXIH1KuXYxI4TpMTo3tedAZT18qSVCxIlT44MvaApMcSCnXixgmfDu0r2z7b0Zfx4Y/DJxwSXHVujSNrZXWgGVAf9gNA7NQUJ5uK9Q6Ees88FqJ/ZDYdapdkJ06zSIiLTLnaKIn9Hb2/qcUJGTqXTe/idIBo3NoKgHf/srpEEtG8xKbP1V51WJ5QP17y8=",
-  "k1d4fb55c6a07": "rVXRjps6EP2XPN5er0Mwi7HUB2eJtJHutuknjM0Y2BCIbFhXueq/VyRhE2ArtVL9kgidYc6cOcf8vziC3kOOD6+uqRdi8c/i34WDNyQO7Rvah1e3EItEBysMhfwm+0OllE89TNvy2DqalZCTvUVoO0sqVFg/6HOZfmRGh4L+9cOfex4XNv1J5dP5webzHa2qVBRUDcUBSWdbLKsrLfMIy0gJ6jcy31Fq6Imm/vOstFKYNaQFg0PhEsOIo5gCO5eDQgKdOTe7giOW4GNwHZ6n8iW98f/Opdx56nf9INtpZwV1NmYcmiRkXEi/7aec4rMSsCVVWbuhd5DFiVnehPcvsxoLnpwAiwrttQh5EDA1EF73gvbyTApN1Tk3asbDLFpxQWkyxeboSl205GibmylUsooDEOu54vmxI+aeESgFXE31LgDrHO2IwzLUphf7O5++dA8HtEBqKK7QZBnGKzUy5fOcy2DnA9ZOF+8rzQywP/ez1796/UiZR4i1ASF/96zv/m9/u2o4LxNK1XlVZ1EHQowlyFeTeXlK3/qZxi3Zrrc15QMq9dfnd5iNnMnsdFHaw1gGw3C1DMV/86W4AjK0ZN+49h0dYsyW6iLaNqXn3x1fTytvww2uBQB+FxHKqXyeucc1pvVgkeTHbogJwyiOxAe5dS0cDoMhMx2i/nCXXs6uKdf2kb+nF0csYiAo/XS5NuZiXC4IcsKywvcE6zhMxFPKpuA3CwcCKrelMUMOVKRN8lFsPVYtUU3TDhIHcRyGgoa0vjfCFz81Xpp/Y2219pvxwFspd/mM/7lLY9uBvAIVMiZMnnJKuZmiS9sSD7oY4CujEHr6s52d0FaY40hOEwSwygT15sL9tb+A42s6zaeRwU/zN5bYC127zg1Ka2AqEh+sxqPdK6j37xGKw4SffbB+kbuRLpun3Hgp6W56XyS0D7dH+XzJuZfya0q310ZH1PRoG1P23wlaQOcKqNrb9/vHTw=="
+  "k1d4fb55c6a07": "rVXRjps6EP2XPN5er0Mwi7HUB2eJtJHutuknjM0Y2BCIbFhXueq/VyRhE2ArtVL9kgidYc6cOcf8vziC3kOOD6+uqRdi8c/i34WDNyQO7Rvah1e3EItEBysMhfwm+0OllE89TNvy2DqalZCTvUVoO0sqVFg/6HOZfmRGh4L+9cOfex4XNv1J5dP5webzHa2qVBRUDcUBSWdbLKsrLfMIy0gJ6jcy31Fq6Imm/vOstFKYNaQFg0PhEsOIo5gCO5eDQgKdOTe7giOW4GNwHZ6n8iW98f/Opdx56nf9INtpZwV1NmYcmiRkXEi/7aec4rMSsCVVWbuhd5DFiVnehPcvsxoLnpwAiwrttQh5EDA1EF73gvbyTApN1Tk3asbDLFpxQWkyxeboSl205GibmylUsooDEOu54vmxI+aeESgFXE31LgDrHO2IwzLUphf7O5++dA8HtEBqKK7QZBnGKzUy5fOcy2DnA9ZOF+8rzQywP/ez1796/UiZR4i1ASF/96zv/m9/u2o4LxNK1XlVZ1EHQowlyFeTeXlK3/qZxi3Zrrc15QMq9dfnd5iNnMnsdFHaw1gGw3C1DMV/86W4AjK0ZN+49h0dYsyW6iLaNqXn3x1fTytvww2uBQB+FxHKqXyeucc1pvVgkeTHbogJwyiOxAe5dS0cDoMhMx2i/nCXXs6uKdf2kb+nF0csYiAo/XS5NuZiXC4IcsKywvcE6zhMxFPKpuA3CwcCKrelMUMOVKRN8lFsPVYtUU3TDhIHcRyGgoa0vjfCFz81Xpp/Y2219pvxwFspd/mM/7lLY9uBvAIVMiZMnnJKuZmiS9sSD7oY4CujEHr6s52d0FaY40hOEwSwygT15sL9tb+A42s6zaeRwU/zN5bYC127zg1Ka2AqEh+sxqPdK6j37xGKw4SffbB+kbuRLpun3Hgp6W56XyS0D7dH+XzJuZfya0q310ZH1PRoG1P23wlaQOcKqNrb9/vHTw==",
+  "k2bab5f52a188": "bVVdb6MwEPwvebwe3fBVjKU+OKWnRLqc0p+whjXQEEA2CVVO999PkJAE6L4goVnveGYW/i5qjPeY0vOnqcoFX/xY/FwYPJFlSJ9IP3+aBV+Ese2Qy8WlQAjx1sFindeNgSKXgLLE7EDWUTeUF89x36ZecOlLDu27SHcACs4Qta+v09ZCUlJZDSoaGpfk+oz4FHg0KUqy8Kj6YVew74X0YnPoi0ViG8Gt2liIXQvtjq2F2EwnSyyTMWNXha7HuGg3b0J8TPFJjtRYRV6aYbadBKFa8vu87axHY2udkbKC9LWJmG17ciC86iTt5Jk0quJozGgYcxPfYRwgnGJTMnmcNVatK0nlFS5DJ7CRr+aKp/XRUo+MUEpkcqp3hlSmpEcclm6sOrG/2PTQPR5Io1VidoWGSzdw5F0bAFjPuRQ98X7EQNzzQmLOqLEzFk6dwGIjHsrbAcAXsAEVtdf3D5h3MRtq4izXh7FcyiNn6fLfc4omw4S0ta9Mc0O7FHhLedmITQT9c8dW08775QYPEZE9BAYYiPVMS1OppkVNVlofh9B45Ac+/ybFpsHDYbAniV2Kp0aapgv6I43A93wPOcDTZVnml76shXWmvKBbbuPADflb5E3BJ40HC2Wqc6UG96Ufq/C7sLZUNJasqmaQ0g4C1+XgQvlo+J/eyke3o/TD2/4S7bsY1Wb1sUtn/PsplW4G8hKl63lcpREDYGqKznVjtRhnA9xRkrCjP/PmTLqglEZyKttGJ+H95+bGdshg9DQK8nl+Yk6d0KU5mkHpGD3p82+saUnvJZb726oEbsj6GK62YjcW5rNWrRD92owqBCFWoiWxHsl4XZOaYqh1pfLu6wgZHk2GRXP/Pfz7Dw=="
  },
  "ungemessen": {
   "karte2.mensch.kopplung.kultur#2": {
@@ -2693,107 +2835,327 @@
   },
   "karte2.same.kopplung.aufwaerts#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
+   "zahl": "der Deckel der Leiter riss nach 45,027 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 45,027 s vor dem Wert der Sprosse · der Deckel der Leiter 45 s) · Täter: @@PUNKTE@@ PROBE 281.4 s · Exit 0",
+   "exit": 0,
+   "minuten": 4.69,
+   "grund": "der Deckel der Leiter riss nach 45,027 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 45,027 s vor dem Wert der Sprosse · der Deckel der Leiter 45 s) · Täter: @@PUNKTE@@ PROBE 281.4 s · Exit 0",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-26T15:10:50.338Z",
+   "s": 281.5,
+   "fremd": {
+    "s": 284.2,
+    "takte": 130,
+    "fremdS": 143.88,
+    "kerne": 0.506,
+    "fensterKerne": 1.61,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.92
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      27.3
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      11.97
+     ]
+    ],
+    "dienerS": 82.27,
+    "diener": [
+     [
+      "dwm.exe",
+      34.56
+     ],
+     [
+      "System",
+      31.5
+     ]
+    ],
+    "geraetS": 118.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      72.78
+     ],
+     [
+      "svchost.exe",
+      38.95
+     ],
+     [
+      "SearchIndexer.exe",
+      3.48
+     ]
+    ],
+    "eigenS": 1016.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T15:23:44.322Z",
    "abdruck": "57c233db25e9",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.same.kopplung.ereignis#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-26T15:10:50.338Z",
-   "abdruck": "1bb7ad7c47c4",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.same.kopplung.aufwaerts#1",
-   "modus": "session",
-   "offen": 1
-  },
-  "karte2.same.kopplung.gewalt#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-26T15:10:50.338Z",
-   "abdruck": "4bef18d921a2",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.same.kopplung.aufwaerts#1",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.same.kopplung.stoerung#3": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
+   "zahl": "der Deckel der Leiter riss nach 30,005 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S3 der Deckel der Leiter riss nach 30,005 s vor dem Wert der Sprosse · der Deckel der Leiter 30 s) · Täter: @@PUNKTE@@ PROBE 281.4 s · Exit 0",
+   "exit": 0,
+   "minuten": 4.69,
+   "grund": "der Deckel der Leiter riss nach 30,005 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S3 der Deckel der Leiter riss nach 30,005 s vor dem Wert der Sprosse · der Deckel der Leiter 30 s) · Täter: @@PUNKTE@@ PROBE 281.4 s · Exit 0",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-26T15:10:50.338Z",
+   "s": 281.5,
+   "fremd": {
+    "s": 284.2,
+    "takte": 130,
+    "fremdS": 143.88,
+    "kerne": 0.506,
+    "fensterKerne": 1.61,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.92
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      27.3
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      11.97
+     ]
+    ],
+    "dienerS": 82.27,
+    "diener": [
+     [
+      "dwm.exe",
+      34.56
+     ],
+     [
+      "System",
+      31.5
+     ]
+    ],
+    "geraetS": 118.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      72.78
+     ],
+     [
+      "svchost.exe",
+      38.95
+     ],
+     [
+      "SearchIndexer.exe",
+      3.48
+     ]
+    ],
+    "eigenS": 1016.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T15:23:44.322Z",
    "abdruck": "20b246bfccb7",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.same.kopplung.kaskade#3": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
+   "zahl": "der Deckel der Leiter riss nach 55,069 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S3 der Deckel der Leiter riss nach 55,069 s vor dem Wert der Sprosse · der Deckel der Leiter 55 s) · Täter: @@PUNKTE@@ PROBE 281.4 s · Exit 0",
+   "exit": 0,
+   "minuten": 4.69,
+   "grund": "der Deckel der Leiter riss nach 55,069 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S3 der Deckel der Leiter riss nach 55,069 s vor dem Wert der Sprosse · der Deckel der Leiter 55 s) · Täter: @@PUNKTE@@ PROBE 281.4 s · Exit 0",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-26T15:10:50.338Z",
+   "s": 281.5,
+   "fremd": {
+    "s": 284.2,
+    "takte": 130,
+    "fremdS": 143.88,
+    "kerne": 0.506,
+    "fensterKerne": 1.61,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.92
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      27.3
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      11.97
+     ]
+    ],
+    "dienerS": 82.27,
+    "diener": [
+     [
+      "dwm.exe",
+      34.56
+     ],
+     [
+      "System",
+      31.5
+     ]
+    ],
+    "geraetS": 118.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      72.78
+     ],
+     [
+      "svchost.exe",
+      38.95
+     ],
+     [
+      "SearchIndexer.exe",
+      3.48
+     ]
+    ],
+    "eigenS": 1016.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T15:23:44.322Z",
    "abdruck": "641ca3b76372",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.same.kopplung.kohaerenz#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
+   "zahl": "der Deckel der Leiter riss nach 40,069 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 40,069 s vor dem Wert der Sprosse · der Deckel der Leiter 40 s) · Täter: @@PUNKTE@@ PROBE 281.4 s · Exit 0",
+   "exit": 0,
+   "minuten": 4.69,
+   "grund": "der Deckel der Leiter riss nach 40,069 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 40,069 s vor dem Wert der Sprosse · der Deckel der Leiter 40 s) · Täter: @@PUNKTE@@ PROBE 281.4 s · Exit 0",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-26T15:10:50.338Z",
+   "s": 281.5,
+   "fremd": {
+    "s": 284.2,
+    "takte": 130,
+    "fremdS": 143.88,
+    "kerne": 0.506,
+    "fensterKerne": 1.61,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.92
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      27.3
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      11.97
+     ]
+    ],
+    "dienerS": 82.27,
+    "diener": [
+     [
+      "dwm.exe",
+      34.56
+     ],
+     [
+      "System",
+      31.5
+     ]
+    ],
+    "geraetS": 118.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      72.78
+     ],
+     [
+      "svchost.exe",
+      38.95
+     ],
+     [
+      "SearchIndexer.exe",
+      3.48
+     ]
+    ],
+    "eigenS": 1016.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T15:23:44.322Z",
    "abdruck": "e835d8e7d5fd",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.same.kopplung.terraform#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
+   "zahl": "der Deckel der Leiter riss nach 20,026 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,026 s vor dem Wert der Sprosse · der Deckel der Leiter 20 s) · Täter: @@PUNKTE@@ PROBE 281.4 s · Exit 0",
+   "exit": 0,
+   "minuten": 4.69,
+   "grund": "der Deckel der Leiter riss nach 20,026 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,026 s vor dem Wert der Sprosse · der Deckel der Leiter 20 s) · Täter: @@PUNKTE@@ PROBE 281.4 s · Exit 0",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-26T15:10:50.338Z",
+   "s": 281.5,
+   "fremd": {
+    "s": 284.2,
+    "takte": 130,
+    "fremdS": 143.88,
+    "kerne": 0.506,
+    "fensterKerne": 1.61,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.92
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      27.3
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      11.97
+     ]
+    ],
+    "dienerS": 82.27,
+    "diener": [
+     [
+      "dwm.exe",
+      34.56
+     ],
+     [
+      "System",
+      31.5
+     ]
+    ],
+    "geraetS": 118.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      72.78
+     ],
+     [
+      "svchost.exe",
+      38.95
+     ],
+     [
+      "SearchIndexer.exe",
+      3.48
+     ]
+    ],
+    "eigenS": 1016.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T15:23:44.322Z",
    "abdruck": "bf999c452afd",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "gelaende.K2#1": {
    "gruen": false,
@@ -2839,12 +3201,15 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-26T11:42:14.282Z",
-  "ordner": "sitzung-20261126-124214",
+  "start": "2026-11-26T15:19:48.041Z",
+  "ordner": "sitzung-20261126-161948",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 7.4,
-  "grundstellungS": [],
+  "bootS": 6.9,
+  "grundstellungS": [
+   0.2,
+   8
+  ],
   "proben": 3,
   "freigaben": [],
   "geraet": {
@@ -2854,151 +3219,324 @@
   },
   "orte": [
    {
-    "ort": "stadt-voll",
-    "vor": "karte2.mensch.kultur.sprache#3",
-    "s": 144.1,
-    "takte": 1951,
+    "ort": null,
+    "vor": "karte2.leben.wasser.bild#1",
+    "s": 29.8,
+    "takte": 881,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": null,
-    "vor": "karte2.mensch.kopplung.kultur#2",
-    "s": 0,
-    "takte": 1,
+    "vor": "karte2.erleben.spieler.hand#1",
+    "s": 14.2,
+    "takte": 760,
     "chunks": 81,
-    "nach": "der Wanderung von karte2.erleben.spieler.wegfindung#1"
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "karte2.same.kopplung.aufwaerts#1",
+    "s": 21.6,
+    "takte": 681,
+    "chunks": 81,
+    "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
-  "wirt": [
-   {
-    "probe": "karte2.mensch.kultur.sprache#3",
-    "anders": [
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     469.7,
-     532.8
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.erleben.spieler.wegfindung#1",
-    "anders": [
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     514.4,
-     445.4
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.mensch.kopplung.kultur#2",
-    "anders": [
-     "window.__ortSchritt",
-     "window.__raffer",
-     "window.__rafferRest"
-    ],
-    "wie": {
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
-     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
-     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()"
-    },
-    "haelt": [
-     "return await (async (r, a) => { const st = r.state, A = AnazhRealm, alt = { g: st.gravity, halt: st.weatherEffectTime };"
-    ],
-    "heap": [
-     398.7,
-     470.3
-    ],
-    "ungemessen": "den Kontext der Probe hält noch: return await (async (r, a) => { const st = r.state, A = AnazhRealm, alt = { g: st.gravity, halt: st.weatherEffectTime }; — Heap nach der Rücknahme 398.7 → 470.3 MB (+71.6 > 64)"
-   }
-  ],
-  "messHalt": [
-   {
-    "probe": "karte2.mensch.kultur.sprache#3",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.erleben.spieler.wegfindung#1",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.mensch.kopplung.kultur#2",
-    "gehalten": [
-     "skala",
-     "spiegel"
-    ],
-    "offen": []
-   }
-  ],
-  "wanderung": [
-   {
-    "probe": "karte2.erleben.spieler.wegfindung#1",
-    "ort": "stadt-voll",
-    "m": 1871.65,
-    "dreh": 3.716
-   }
-  ],
   "felder": [
    {
-    "probe": "karte2.mensch.kopplung.kultur#2",
+    "probe": "karte2.leben.wasser.bild#1",
+    "weg": [
+     "__rafferEnde",
+     "__rafferKurz",
+     "__ortZeit",
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr",
+     "__abbruchEpoche"
+    ]
+   },
+   {
+    "probe": "karte2.erleben.spieler.hand#1",
+    "weg": [
+     "__ortZeit",
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr"
+    ]
+   },
+   {
+    "probe": "karte2.same.kopplung.aufwaerts#1",
     "weg": [
      "__dorfDerProbe",
      "__rafferEnde",
      "__rafferKurz",
      "__imSchuss",
      "__nahSpeicher",
-     "__letzteSpiegel",
-     "__letzteTeilung",
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr",
+     "__ortZeit",
      "__abbruchEpoche"
     ]
+   }
+  ],
+  "wirt": [
+   {
+    "probe": "karte2.leben.wasser.bild#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.luma709",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__weltOrte",
+     "window.__weltOrt",
+     "window.__strecke",
+     "window.__raffer",
+     "window.__rafferRest",
+     "window.__wasserOrte",
+     "window.__wasserLeser",
+     "window.__wasserLeib",
+     "window.__wasserEis",
+     "window.__wasserMutation",
+     "window.__wasserKarte",
+     "window.__wasserLaeufe",
+     "window.__wasserTreibt",
+     "window.__wasserHoehle",
+     "window.__wasserWagen",
+     "window.__wasserSichtNetz",
+     "window.__wasserFlora",
+     "window.__wasserSee",
+     "window.__wasserQuelle",
+     "window.__wasserQuellTeil",
+     "window.__wasserBach",
+     "window.__wasserBank",
+     "window.__wasserFluss",
+     "window.__wasserKroneVon",
+     "window.__wasserUfer",
+     "window.__wasserStrom",
+     "window.__wasserFlussNah",
+     "window.__wasserGraben",
+     "window.__wasserDamm",
+     "window.__wasserUferFarbe",
+     "window.__wasserKoerper",
+     "window.__wasserBild",
+     "window.__wasserSeeAm",
+     "window.__wasserLicht",
+     "window.__wasserRegen",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
+     "window.luma709": "getauscht: (u, i = 0) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2]",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__weltOrte": "getauscht: function weltOrte(art, opts) { const o = opts || {}; const [mx, mz] = o.mitte ||",
+     "window.__weltOrt": "getauscht: function weltOrt(art, opts) { return window.__weltOrte(art, Object.assign({}, op",
+     "window.__strecke": "getauscht: function strecke(mitte, ringe, stufeMax = Infinity, querMax = Infinity, naechste",
+     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
+     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()",
+     "window.__wasserOrte": "neu: async function wasserOrte(o = {}) { const G = window.__gelaendeCore; const mitte",
+     "window.__wasserLeser": "neu: async function wasserLeser(o = {}) { if (!st.hydrosphere || !st.hydrosphere.read",
+     "window.__wasserLeib": "neu: function wasserLeib() { const [r, A] = [window.anazhRealm, window.anazhRealm.con",
+     "window.__wasserEis": "neu: async function wasserEis(o = {}) { const A = AnazhRealm; const FUSS = A.PLAYER_F",
+     "window.__wasserMutation": "neu: async function wasserMutation(o = {}) { const A = AnazhRealm; const [RHO, TIEF] ",
+     "window.__wasserKarte": "neu: async function wasserKarte(o) { const [orte, zufall] = [[], window.__phytoCore.m",
+     "window.__wasserLaeufe": "neu: async function wasserLaeufe() { const [G, L] = [window.__gelaendeCore, r._gelaen",
+     "window.__wasserTreibt": "neu: async function wasserTreibt(o) { const [r, A] = [window.anazhRealm, window.anazh",
+     "window.__wasserHoehle": "neu: async function wasserHoehle(o = {}) { const A = AnazhRealm; const cfg = r._voxel",
+     "window.__wasserWagen": "neu: async function wasserWagen(o = {}) { const ziel = o.see || (await window.__wasse",
+     "window.__wasserSichtNetz": "neu: function wasserSichtNetz() { const cfg = r._voxelChunkConfig(0); const span = cf",
+     "window.__wasserFlora": "neu: function wasserFlora(o = {}) { const sicht = o.sicht || window.__wasserSichtNetz",
+     "window.__wasserSee": "neu: async function wasserSee(o = {}) { const f = o.fenster || (await window.__wasser",
+     "window.__wasserQuelle": "neu: async function wasserQuelle(o = {}) { if (!st.hydrosphere || !st.hydrosphere.rea",
+     "window.__wasserQuellTeil": "neu: function wasserQuellTeil(p, n) { const h = (Math.imul(Math.round(p.x * 4), 73856",
+     "window.__wasserBach": "neu: async function wasserBach(o = {}) { const R = wasserRund(2); const bachOrt = Num",
+     "window.__wasserBank": "neu: async function wasserBank(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
+     "window.__wasserFluss": "neu: function wasserFluss() { const h = st.hydrosphere; if (!h || !h.ready || !Array.",
+     "window.__wasserKroneVon": "neu: function __wasserKroneVon(r, p) { const A = r.constructor; const HC = A.HYDROSPH",
+     "window.__wasserUfer": "neu: async function wasserUfer(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
+     "window.__wasserStrom": "neu: async function wasserStrom(ort, hoehe) { const zurueck = [leihe(st, { postProces",
+     "window.__wasserFlussNah": "neu: function __wasserFlussNah(r, x, z) { const st = r.state; const fluesse = []; for",
+     "window.__wasserGraben": "neu: async function wasserGraben(o = {}) { const K = AnazhRealm.NAH_WIESE.kachel; con",
+     "window.__wasserDamm": "neu: async function wasserDamm(o = {}) { const f2 = wasserRund(2); const S = (q) => r",
+     "window.__wasserUferFarbe": "neu: async function wasserUferFarbe(o = {}) { const h = st.hydrosphere; if (!h || !h.",
+     "window.__wasserKoerper": "neu: async function wasserKoerper(o = {}) { const A = AnazhRealm; const DT = A.FIXED_",
+     "window.__wasserBild": "neu: async function wasserBild(o = {}) { const T = window.THREE; const renderer = st.",
+     "window.__wasserSeeAm": "neu: function __wasserSeeAm(r, ziel) { const st = r.state; const h = r._hydroFor(ziel",
+     "window.__wasserLicht": "neu: async function wasserLicht(o = {}) { if (!st.renderer || st.renderer._isHeadless",
+     "window.__wasserRegen": "neu: async function wasserRegen(o = {}) { const T = window.THREE; const renderer = st",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     199.6,
+     253.8
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.erleben.spieler.hand#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     268,
+     287.3
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.same.kopplung.aufwaerts#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__raffer",
+     "window.__rafferRest",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
+     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
+     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     200.3,
+     308.9
+    ],
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "karte2.leben.wasser.bild#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.leben.wasser.bild#1",
+    "gehalten": [
+     "tiere",
+     "skala"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.erleben.spieler.hand#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.erleben.spieler.hand#1",
+    "gehalten": [
+     "tiere",
+     "skala"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.same.kopplung.aufwaerts#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.same.kopplung.aufwaerts#1",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "zeichner": [
+   {
+    "probe": "karte2.leben.wasser.bild#1",
+    "anders": [
+     "zeichner.renderer._handleObjectFunction"
+    ],
+    "wie": {
+     "zeichner.renderer._handleObjectFunction": "getauscht: function (object, material, scene, camera, lightsNode, group"
+    },
+    "zurueck": {
+     "vor": "karte2.erleben.spieler.hand#1",
+     "wie": "an Ort und Stelle",
+     "s": 0.2
+    }
    }
   ],
   "ciBlicke": 4,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 4332,
-   "frameP95": 33.43,
-   "taktP95": 27.9,
-   "vramMax": 234.5,
-   "seiten": 1,
+   "bilder": 1321,
+   "frameP95": 83.31,
+   "taktP95": 38.26,
+   "vramMax": 138.5,
+   "seiten": 2,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.erleben.spieler.wegfindung#1",
-     "m": 1872,
+     "probe": "karte2.leben.wasser.bild#1",
+     "m": 1159,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "karte2.erleben.spieler.hand#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "karte2.same.kopplung.aufwaerts#1",
+     "m": 295,
      "ringVor": 4,
      "ringMin": 0
     }
    ],
-   "zapfen": 438,
-   "luecken": 5,
+   "zapfen": 700,
+   "luecken": 1,
    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 502,
-  "minuten": 8.52
+  "fahrtS": 730.8,
+  "minuten": 12.35
  }
 }
