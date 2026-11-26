@@ -1,7 +1,7 @@
 {
  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
  "geraet": "gtx",
- "zeit": "2026-11-26T15:10:50.412Z",
+ "zeit": "2026-11-26T15:20:31.614Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -2482,17 +2482,67 @@
   },
   "karte2.leben.wasser.bild#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
+   "zahl": "der Deckel der Leiter riss nach 10,014 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,014 s, ehe sichtFlussM der Sprosse stand · der Deckel der Leiter 10 s) · Täter: @@PUNKTE@@ PROBE 49.8 s · Exit 0 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group)",
+   "exit": 0,
+   "minuten": 0.85,
+   "grund": "der Deckel der Leiter riss nach 10,014 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,014 s, ehe sichtFlussM der Sprosse stand · der Deckel der Leiter 10 s) · Täter: @@PUNKTE@@ PROBE 49.8 s · Exit 0 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group)",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-26T15:10:50.266Z",
+   "s": 50,
+   "fremd": {
+    "s": 52.5,
+    "takte": 24,
+    "fremdS": 20.19,
+    "kerne": 0.385,
+    "fensterKerne": 0.503,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      4.78
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.75
+     ]
+    ],
+    "dienerS": 9.41,
+    "diener": [
+     [
+      "System",
+      3.53
+     ],
+     [
+      "dwm.exe",
+      2.66
+     ]
+    ],
+    "geraetS": 18.78,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      12.86
+     ],
+     [
+      "svchost.exe",
+      5.2
+     ],
+     [
+      "SearchIndexer.exe",
+      0.41
+     ]
+    ],
+    "eigenS": 173.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T15:20:31.614Z",
    "abdruck": "fb537917da92",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.erleben.spieler.hand#1": {
    "gruen": false,
