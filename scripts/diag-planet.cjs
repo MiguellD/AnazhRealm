@@ -16,7 +16,9 @@
 //   --anker [--selftest]                                      die Wand in der CI (gate:worker-dichte, Familie K6): die Zeile anker.jede-saat allein —
 //                                                             jede Saat des Spiels trägt eine Heimat; der Selbsttest pflanzt beide Täter der Treppe;
 //                                                             dazu ort.neigung (Karte 2 bahn-klima#2): ohne Neigung kein Jahres-Gang am Ort,
-//                                                             und klima.hadley: die Zelle wird mit der Neigung breiter (GK2019 · LH88)
+//                                                             und klima.hadley: die Zelle wird mit der Neigung breiter (GK2019 · LH88),
+//                                                             anker.eis: die Heimat liegt nie unter dem Eis des Quartärs (B5, die Stufe),
+//                                                             klima.milankovic: die Bahn gegen La2004, Hochglazial, Hochstand, 41/100 ka
 //   --selftest (= --selbsttest, die Schreibung der Familie)   gepflanzte Fehler (Transzendente, gerade Küste, Facette) müssen ROT werden;
 //                                                             der Kern vor der Welle 1 (b7ed8419, aus git) macht jede Zeile welle1 ROT
 //
@@ -1393,7 +1395,7 @@ function gegner2Selbsttest(zeile) {
 //                    nächsten Zelle (planetWasserR) |ΔQ|/Q ≤ 10⁻³ auf 1 cm
 //  anden.bogen   B4  c3 je Saat erde-01 … erde-10 (40 000 Adressen, fuss 16): Anteil Land > 2 km nah konvergentem Rand (≤ 500 km) ÷
 //                    Anteil Land nah Rand ≥ 2 in 10/10
-//  anker.traegt  B5  erde-01 … erde-30: der Anker bei fuss 16 Land, Wald > 0, Decke > 0, Spende > 0, kein Köppen E
+//  anker.traegt  B5  erde-01 … erde-30: der Anker bei fuss 16 Land, Wald > 0, Decke > 0, Spende > 0, kein Köppen E, kein Eis des Quartärs
 //  ort.faellt    FÄLLT planetOrt trägt kontinentLambda, schichtDicke, hartAnteil nicht mehr (Zensus e217/e222/e223)
 //  ort.jahreszeit    der Jahreszeiten-Vertrag Planet ↔ Ort-Gesetz, gelesen durch den Leser des Spiels (gelaende-core `ortGesetz(teil)`,
 //                    `schneePegel`): Raster 4° × 10° (±80°) der Samen JZ_SAMEN, Land-Ziele bei fuss 16 — Sommer < Winter 0 · Schnee zur
@@ -1459,8 +1461,13 @@ function neigungZeile(Q, og, ohneHeimat) {
 // (der Kern von main e71f27212, nachgerechnet bit-gleich), nachher 8aa55db6 / 3d14907b. Bewegt sind NUR Sommer und Winter an 138 000 von
 // 138 000 Antworten (bis 17,67 K) und die Sommer-Phase an 11 498 (0,5: der Süden im halben Jahr); Höhe, Kontinent, Meer, Wetter, Wuchs,
 // Eis und Wildnis stehen bit-gleich — das Relief der Gipfel-Suche hat sich nicht bewegt. Die Hadley-Zelle (kosmos-hadley) bewegt 0 von 138 000.
+// NEU EINGEFROREN mit dem Gesetz kosmos-hadley 3 (die Bahn trägt das Eis, Milanković): vorher 8aa55db6 / 3d14907b, nachher b1545ac3 /
+// 34fd43fc. Bewegt ist die Eis-Zeit an 23 985 von 138 000 Antworten (0 → 1: das Hochglazial trug den Ort unter die Eis-Linie; −1 an
+// keiner) und jede Antwort der 9 Saaten, deren Anker unter dem Eis lag und auf der Stufe der Eis-Zeit neu gesucht wird (12 420 = 9 × 1 380:
+// Klima, Wetter, Wuchs, Wildnis gegen den neuen Anker; Linse anker.eis). Höhe, Land, Kontinent und Meer stehen bit-gleich an 138 000,
+// die Gipfel-Suche 2 804 Gipfel, 99,0 % an konvergenter Grenze wie vorher. Ohne die Stufe stand die Eis-Zeit an 9 816 Antworten auf −1.
 const FRAGE_SAATEN = 100, FRAGE_PUNKTE_JE_ORT = 2;
-const FRAGE_SHA = { alle: '8aa55db63e294c158133131f99a493c6b150308c520f952e8cbeaaf63e075e49', erste: '3d14907b312ca7d7def6db55e72973726bfcddf9049d11884f58fb2c9f634b6f' };
+const FRAGE_SHA = { alle: 'b1545ac3a13a6f9c4ee01693af8294730336f67a14aba6aec78a8ba289951080', erste: '34fd43fcf43764758175b3a9583913c9f45ab5e8b9166bdf03773b102484682d' };
 const frageSaat = (i) => (i === 0 ? 'anazh-realm-seed' : 'zsp-' + (i - 1));
 const FRAGE_ORTE = (() => { const L = []; for (let b = -66; b <= 66; b += 6) for (let l = -180; l < 180; l += 6) L.push([b, l]); return L; })();
 // die Antwort des Fadens als Zahlen in fester Folge (wörtlich planetOrtAuftrag) — bit-genau gehasht, nie über JSON (−0, NaN)
@@ -1545,15 +1552,93 @@ function hadleyZeile(Q) {
   return { ok: f >= HADLEY_BAND[0] && f <= HADLEY_BAND[1] && !fallend.length && !mehr.length && erde,
     wert: 'Kante je Neigung ' + reihe.map((r) => r.g + '° ' + r.w.toFixed(2) + '°/' + r.n).join(' · ') + ' — 45°/23,44° ×' + f.toFixed(4) + ' · schmaler mit der Neigung ' + (fallend.join(', ') || 'nie') + ' · mehr Zellen ' + (mehr.join(', ') || 'nie') + ' · Erde ' + E.rad + ' rad/' + E.n + ' ' + (erde ? 'bit-gleich ihrer Kante' : 'NICHT ihre Kante (' + HADLEY_ERDE + ' rad/3)') };
 }
+// DIE HEIMAT OHNE EIS (B5, die Stufe der Eis-Zeit; Karte 2 planet.kopplung.bahn-klima#3): seit die Bahn das Hochglazial trägt, lag der
+// Anker von 9 der 100 Saaten der Gipfel-Suche (zsp-5 · 23 · 65 · 73 · 76 · 85 · 87 · 90 · 95) und von erde-05, erde-24 unter dem Eis des
+// Quartärs — die Heimat trägt Eis 0 (gelaende-core ORT_HEIMAT), ihr Δ −1 löschte jeden Findling der Welt (`_rockGeologyClass`). Die
+// Linse: diese Anker tragen Eis 0, und der Anker des Spiels liegt Bit für Bit, wo er lag (−50,514°/−98,27°: die Stufe sucht nur neu,
+// wo der gefundene Anker unter dem Eis liegt; das Kriterium in jeder Probe verlegte ihn nach −43,38°).
+const ANKER_EIS = ['erde-05', 'erde-24', 'zsp-5', 'zsp-23', 'zsp-65', 'zsp-73', 'zsp-76', 'zsp-85', 'zsp-87', 'zsp-90', 'zsp-95'];
+const ANKER_SPIEL = ['anazh-realm-seed', -0.8816373256754768, -1.7151463215373193];
+function ankerEis(Q, og) {
+  const unter = [], nL = (l) => l.length + (l.length ? ' (' + l.join(', ') + ')' : '');
+  for (const s of ANKER_EIS) { const pl = planQ(Q, s), An = Q.planetAnker(pl, 0, og), o = Q.planetOrt(Q.planetScheibe(pl, 0), An.breite, An.laenge, og); if (!o.eis || o.eis.zeit !== 0) unter.push(s); }
+  const A0 = Q.planetAnker(planQ(Q, ANKER_SPIEL[0]), 0, og), spiel = A0.breite === ANKER_SPIEL[1] && A0.laenge === ANKER_SPIEL[2];
+  return { ok: !unter.length && spiel, wert: 'von ' + ANKER_EIS.length + ' Heimaten über dem Eis des Hochglazials unter dem Eis ' + nL(unter) + ' · der Anker des Spiels ' + (spiel ? 'bit-gleich' : 'VERLEGT nach ' + (A0.breite * 180 / Math.PI).toFixed(2) + '°/' + (A0.laenge * 180 / Math.PI).toFixed(2) + '°') };
+}
+// DAS EIS DER BAHN (Karte 2 planet.kopplung.bahn-klima#3 · planet.zeit.klimageschichte#2 · #3): (1) die Bahn des Kerns (Berger 1978,
+// `bahnElemente`) gegen La2004 (Laskar et al. 2004, spec/bahn/la2004.json, 0 … 1 000 ka je ka): die Juni-Einstrahlung 65° N beider —
+// gerechnet HIER mit der Formel der Quelle (Berger 1978), nie mit der des Kerns — r ≥ 0,95; (2) das Hochglazial −21 ka des Körpers der
+// Erde: das Meer [−130, −110] m (Lambeck et al. 2014 −134 m · Clark et al. 2009 −120 … −130 m), das Mittel [−8, −4] K (Tierney et al.
+// 2020 −6,1 K; die Sprosse klimageschichte#2: −120 ± 10 m, −6 ± 2 °C); (3) der Hochstand über 1 Ma ≤ 10,72 m (das Rest-Eis: Grönland
+// 7,42 m, Morlighem 2017, + West-Antarktis 3,3 m, Bamber 2009) und ≥ +3 m (MIS 5e +6 … 9 m, Dutton et al. 2015); (4) das Spektrum des
+// Meers über 3 Ma je 10 ka (wie die Station: linear entzerrt, Gipfel ≥ 5 × Median): 41 ± 5 ka und 100 ± 15 ka (LR04, Lisiecki & Raymo
+// 2005); (5) heute: das Meer des Eises 0, ε = die Neigung des Körpers, keine Präzession — die Erde bit-gleich. Vorher (Kern kosmos-hadley 2,
+// 50be34c1): die Bahn fehlte, −21 ka Meer 0,03 m, 0 K, kein Gipfel.
+const LA2004 = path.join(__dirname, '..', 'spec', 'bahn', 'la2004.json');
+const MILANKOVIC = { r: 0.95, meer: [-130, -110], dT: [-8, -4], hoch: [3, 10.72], g41: [36, 46], g100: [85, 115], lgmMa: -0.021 };
+function juniQuelle(phi, eps, e, w) { // Berger 1978 an der Juni-Sonnwende (λ = 90°), Anteil von S0 — die Formel der Quelle, unabhängig vom Kern
+  const sd = Math.sin(eps), cd = Math.cos(eps); let ch = -Math.tan(phi) * sd / cd; ch = Math.max(-1, Math.min(1, ch));
+  const h = Math.acos(ch), ar = (1 - e * Math.cos(Math.PI / 2 - w)) / (1 - e * e);
+  return ar * ar / Math.PI * (h * Math.sin(phi) * sd + Math.cos(phi) * cd * Math.sin(h));
+}
+function spektrumGipfel(y, lo, hi) { // die Station klimageschichte#3 wörtlich: linear entzerrt, Perioden 20 … 1 000 ka bei 10 ka je Wert
+  const n = y.length, xm = (n - 1) / 2, ym = y.reduce((s, v) => s + v, 0) / n; let sxy = 0, sxx = 0;
+  y.forEach((v, i) => { sxy += (i - xm) * (v - ym); sxx += (i - xm) ** 2; });
+  const d = y.map((v, i) => v - ym - (sxx ? (sxy / sxx) * (i - xm) : 0)), P = [];
+  for (let per = 20; per <= 1000; per++) { const f = 10 / per; let re = 0, im = 0; d.forEach((v, i) => { re += v * Math.cos(2 * Math.PI * f * i); im += v * Math.sin(2 * Math.PI * f * i); }); P.push([per, re * re + im * im]); }
+  const med = rang(P.map((x) => x[1]).sort((p, q) => p - q)), b =P.filter((x) => x[0] >= lo && x[0] <= hi).sort((p, q) => q[1] - p[1])[0];
+  return b && med > 0 && b[1] >= 5 * med ? { ka: b[0], x: b[1] / med } : null;
+}
+function milankovicZeile(Q) {
+  const I = Q._intern || {};
+  if (typeof I.bahnElemente !== 'function') return { ok: false, wert: 'der Kern ' + Q.VERSION + ' trägt keine Bahn (bahnElemente fehlt): kein Milanković' };
+  const B = JSON.parse(fs.readFileSync(LA2004, 'utf8')).zeilen, D = Math.PI / 180, phi = 65 * D, kor = (a, b) => {
+    const n = a.length, ma = a.reduce((u, v) => u + v) / n, mb = b.reduce((u, v) => u + v) / n; let sab = 0, sa = 0, sb = 0;
+    for (let i = 0; i < n; i++) { sab += (a[i] - ma) * (b[i] - mb); sa += (a[i] - ma) ** 2; sb += (b[i] - mb) ** 2; } return sab / Math.sqrt(sa * sb); };
+  const qK = [], qL = [];
+  for (const [t, e, eps, w] of B) { const b = I.bahnElemente(t); qK.push(juniQuelle(phi, b[0], b[1], b[2])); qL.push(juniQuelle(phi, eps * D, e, w * D)); }
+  const r = kor(qK, qL), plan = planQ(Q, 'anazh-realm-seed'), G = (t) => Q.planetKlimaGlobal(plan, t), G0 = G(0), GL = G(MILANKOVIC.lgmMa);
+  const meer = GL.meerGlazialM, dT = GL.T0 - G0.T0, reihe = (n, schritt) => Array.from({ length: n }, (_, i) => G(-i * schritt).meerGlazialM);
+  const m1 = reihe(1001, 0.001), hoch = Math.max(...m1), m3 = reihe(301, 0.01), g41 = spektrumGipfel(m3, 20, 70), g100 = spektrumGipfel(m3, 70, 200);
+  const heute = G0.meerGlazialM === 0 && G0.neigung === Q.PLANET_ERDE.neigungRad && G0.dPraez === 0;
+  const im = (v, [a, b]) => Number.isFinite(v) && v >= a && v <= b, f = (v, d) => (Number.isFinite(v) ? v.toFixed(d) : String(v));
+  const gp = (g) => (g ? g.ka + ' ka (×' + g.x.toFixed(1) + ' Median)' : 'keiner');
+  return { ok: r >= MILANKOVIC.r && im(meer, MILANKOVIC.meer) && im(dT, MILANKOVIC.dT) && im(hoch, MILANKOVIC.hoch) && !!g41 && im(g41.ka, MILANKOVIC.g41) && !!g100 && im(g100.ka, MILANKOVIC.g100) && heute,
+    wert: 'Bahn ↔ La2004 r(Juni 65° N) ' + f(r, 4) + ' (1 Ma je ka) · −21 ka Meer ' + f(meer, 2) + ' m, Mittel ' + f(dT, 2) + ' K · Hochstand (1 Ma) ' + f(hoch, 2) + ' m · Meer 3 Ma: ' + gp(g41) + ', ' + gp(g100) + ' · heute ' + (heute ? 'Meer 0, ε = Neigung, keine Präzession' : 'BEWEGT (Meer ' + G0.meerGlazialM + ', ε ' + G0.neigung + ', Präzession ' + G0.dPraez + ')') };
+}
 function ankerWand(selbst) { // `--anker`: die Zeile am Kern des Baums · `--anker --selftest`: beide Täter fallen beim Namen
   const og = ortGesetz(), U = [], zeile = (name, ok, wert, schwelle) => U.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle });
   if (!selbst) { const J = ankerJedeSaat(P, og); zeile('anker.jede-saat', J.ok, J.wert, '0 · 0 · 0 (B5, die Treppe)');
     const N = neigungZeile(P, og); zeile('ort.neigung', N.ok, N.wert, 'Neigung 0 ≤ 10 % der Erd-Spanne, ≠ Erde, Saat byte-gleich'); frageZeilen(zeile, og, false);
-    const H = hadleyZeile(P); zeile('klima.hadley', H.ok, H.wert, '45°/23,44° in ×' + HADLEY_BAND[0].toFixed(4) + '…×' + HADLEY_BAND[1] + ' (Guendelman & Kaspi 2019 · Lindzen & Hou 1988), nie schmaler, nie mehr Zellen, Erde bit-gleich'); return U; }
+    const H = hadleyZeile(P); zeile('klima.hadley', H.ok, H.wert, '45°/23,44° in ×' + HADLEY_BAND[0].toFixed(4) + '…×' + HADLEY_BAND[1] + ' (Guendelman & Kaspi 2019 · Lindzen & Hou 1988), nie schmaler, nie mehr Zellen, Erde bit-gleich');
+    const AE = ankerEis(P, og); zeile('anker.eis', AE.ok, AE.wert, '0 unter dem Eis, der Anker des Spiels bit-gleich (B5, die Stufe der Eis-Zeit)');
+    const MK = milankovicZeile(P); zeile('klima.milankovic', MK.ok, MK.wert, 'r ≥ 0,95 (Laskar 2004) · Meer [−130, −110] m · Mittel [−8, −4] K (Lambeck 2014 · Tierney 2020) · Hochstand [3; 10,72] m · 41 ± 5 und 100 ± 15 ka (LR04) · heute 0');
+    return U; }
+  // die Täter der Heimat ohne Eis: die Stufe gestrichen (der Anker liegt, wo die Wertung ihn findet, auch unter dem Eis) und das
+  // Kriterium in jeder Probe (es verlegt die Heimat des Spiels, deren grobe Probe unter dem Eis lag)
+  for (const [re, ersatz, marke, was] of [
+    [/\n    if \(eisZeitY\(plan, by, _ankK\.tJahrC, G\) === 1\) \{ mitEis = true; suche\(\); \}/, '', 'anker-eis-weg', 'die Stufe der Eis-Zeit gestrichen'],
+    [/if \(mitEis && eisZeitY\(/, 'if (eisZeitY(', 'anker-eis-jede', 'das Eis-Kriterium in jeder Probe (keine Stufe)'],
+  ]) {
+    const QM = kernMutant(re, ersatz, marke);
+    if (!QM) { zeile('anker.eis feuert', false, 'der Kern ' + P.VERSION + ' trägt die Zeile nicht — der Täter „' + was + '“ lässt sich nicht pflanzen'); continue; }
+    const AE = ankerEis(QM, og); zeile('anker.eis feuert', !AE.ok, 'gepflanzt: ' + was + (AE.ok ? ' → GRÜN, die Linse schläft: ' : ' → ROT: ') + AE.wert);
+  }
+  // die Täter des Eises der Bahn: das Perihel ohne seinen Umlauf (die Präzession steht), das Meer je Einheit Eis verstellt, das
+  // Hochglazial ohne seine Wärme (κ = 0)
+  for (const [re, ersatz, marke, was] of [
+    [/50\.439273 \* BOGEN_SEK \* y/, '0 * y', 'milankovic-perihel', 'das Perihel ohne seinen allgemeinen Umlauf (50,44″/a)'],
+    [/mJeEinheit: 239\.07,/, 'mJeEinheit: 100,', 'milankovic-meer', 'das Meer je Einheit Eis 100 m statt 239,07 m'],
+    [/glazialWm2: 6\.115,/, 'glazialWm2: 0,', 'milankovic-waerme', 'das Hochglazial ohne seine Wärme (κ = 0)'],
+  ]) {
+    const QM = kernMutant(re, ersatz, marke);
+    if (!QM) { zeile('klima.milankovic feuert', false, 'der Kern ' + P.VERSION + ' trägt die Zeile nicht — der Täter „' + was + '“ lässt sich nicht pflanzen'); continue; }
+    const MK = milankovicZeile(QM); zeile('klima.milankovic feuert', !MK.ok, 'gepflanzt: ' + was + (MK.ok ? ' → GRÜN, die Linse schläft: ' : ' → ROT: ') + MK.wert);
+  }
   // die Täter der Hadley-Kante: die Krümmung des Jahresmittels (der Kern vor dem Schnitt), die Zelle ohne Sonnwende, die Erde ohne Eichung
   for (const [re, ersatz, marke, was] of [
     [/const s2h = -0\.625;/, 'const s2h = s2;', 'hadley-jahr', 'die Heizung der Zelle aus der Krümmung des Jahresmittels (s2h = s2, der Täter)'],
-    [/return phiH \* hadleyJahr\(KLIMA\.schubMeer \* kp\.neigungRad \/ phiH\);/, 'return phiH * hadleyJahr(0);', 'hadley-sonnwende', 'die Zelle ohne den Aufstieg der Sonnwende (y0 = 0)'],
+    [/return phiH \* hadleyJahr\(KLIMA\.schubMeer \* neigung \/ phiH\);/, 'return phiH * hadleyJahr(0);', 'hadley-sonnwende', 'die Zelle ohne den Aufstieg der Sonnwende (y0 = 0)'],
     [/hadleyErdeRad: 0\.51737143219558779,/, 'hadleyErdeRad: 0.52,', 'hadley-eichung', 'die Erde ohne ihre Kante (0,52 rad)'],
   ]) {
     const QM = kernMutant(re, ersatz, marke);
@@ -1606,10 +1691,11 @@ function querungen(Q, ziel) { // erde-01, t = 0: Paare 20 km, je Art die ersten 
   return { funde, paare, W: !!W };
 }
 function anker30(Q, og) { // B5: was der Ort am Anker trägt, gelesen bei fuss 16
-  const F = { meer: [], wald: [], decke: [], spende: [], e: [] };
+  const F = { meer: [], wald: [], decke: [], spende: [], e: [], eis: [] };
   for (const s of SAATEN) {
     const plan = planQ(Q, s), S = Q.planetScheibe(plan, 0), A = Q.planetAnker(plan, 0, og), p = {}; Q.planetPunkt(S, A.breite, A.laenge, 16, p); const o = Q.planetOrt(S, A.breite, A.laenge, og);
     if (!(p.hoeheM > 0)) F.meer.push(s); if (!(o.wuchs.wald > 0)) F.wald.push(s); if (!(o.wuchs.decke > 0)) F.decke.push(s); if (!(o.klima.spendeMm > 0)) F.spende.push(s); if (/^E/.test(Q.KOEPPEN[o.biom.koeppen])) F.e.push(s);
+    if (!o.eis || o.eis.zeit !== 0) F.eis.push(s);   // die Heimat trägt kein Eis des Quartärs (gelaende-core ORT_HEIMAT eis 0)
   }
   return F;
 }
@@ -1679,7 +1765,7 @@ function welle1(Q, text) {
     zeile('wasser.stetig', dq <= 1e-3, '|ΔQ|/Q max ' + dq.toExponential(1) + ' an ' + fu.zelle.length + ' Querungen der nächsten Zelle auf 1 cm', '≤ 10⁻³ (B3)');
   }
   const og = ortGesetz(), F = anker30(Q, og), nA = (k) => F[k].length + (F[k].length ? ' (' + F[k].join(', ') + ')' : '');
-  zeile('anker.traegt', Object.values(F).every(l => l.length === 0), 'von ' + SAATEN.length + ' Ankern bei fuss 16 im Meer ' + nA('meer') + ' · Wald 0 ' + nA('wald') + ' · Decke 0 ' + nA('decke') + ' · Spende 0 ' + nA('spende') + ' · Köppen E ' + nA('e'), '0 je Fall (B5)');
+  zeile('anker.traegt', Object.values(F).every(l => l.length === 0), 'von ' + SAATEN.length + ' Ankern bei fuss 16 im Meer ' + nA('meer') + ' · Wald 0 ' + nA('wald') + ' · Decke 0 ' + nA('decke') + ' · Spende 0 ' + nA('spende') + ' · Köppen E ' + nA('e') + ' · Eis des Quartärs ' + nA('eis'), '0 je Fall (B5)');
   { const J = ankerJedeSaat(Q, og); zeile('anker.jede-saat', J.ok, J.wert, '0 · 0 · 0 (B5, die Treppe)'); }
   const plan = planQ(Q, 'erde-01'), S0 = Q.planetScheibe(plan, 0), A = Q.planetAnker(plan, 0, og), wl = Q.planetOrt(S0, A.breite, A.laenge, og), FAELLT = ['kontinentLambda', 'schichtDicke', 'hartAnteil'];
   const traegt = FAELLT.filter(k => k in wl.wildnis || k in wl.delta.wildnis);

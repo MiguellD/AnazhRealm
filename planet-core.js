@@ -2212,18 +2212,148 @@
     }
     return summe / (2 * n);
   }
+  // DIE BAHN DER HEIMAT (Karte 2 planet.kopplung.bahn-klima#3 · planet.zeit.klimageschichte#2 · #3): Schiefe ε, Exzentrizität e und die
+  // Länge des Perihels ϖ (vom wandernden Frühlingspunkt) zur Zeit t nach Berger 1978 (J. Atmos. Sci. 35, 2362) — die Reihen je Glied
+  // (Amplitude ″ bzw. 1 · Rate ″/a · Phase °) wie in shr_orb_mod.F90 (CESM/E3SM), Jahre relativ zu 1950 (Vergangenheit negativ). Gegen
+  // Laskar et al. 2004 (INSOLN La2004, 0–1 Ma je ka, spec/bahn/la2004.json): r der Juni-Insolation 65° N 0,975 (Linse klima.milankovic).
+  // Ein Körper trägt seine eigene Neigung, die Bahn der Heimat schwingt sie: ε(t) = Neigung + ε_B(t) − ε_B(0) — der Plan kennt keine
+  // eigene Bahn (kein Feld e, ϖ im Körper), alle Körper teilen das Spektrum der Heimat. Vorher kannte der Planet nur Neigung und
+  // Sternfluss: über 1 Ma trug das Meer der Heimat 0 Extrema (Spanne 0,087 m), −21 ka lag es 0,002 m tiefer, die Welt 0 K kälter.
+  const BAHN_BERGER = Object.freeze({
+    ob: Object.freeze([
+      -2462.2214466, 31.609974, 251.9025, -857.3232075, 32.620504, 280.8325, -629.3231835, 24.172203, 128.3057, -414.2804924, 31.983787, 292.7252,
+      -311.7632587, 44.828336, 15.3747, 308.9408604, 30.973257, 263.7951, -162.5533601, 43.668246, 308.4258, -116.1077911, 32.246691, 240.0099,
+      101.1189923, 30.599444, 222.9725, -67.6856209, 42.681324, 268.7809, 24.9079067, 43.836462, 316.7998, 22.5811241, 47.439436, 319.6024,
+      -21.1648355, 63.219948, 143.805, -15.6549876, 64.230478, 172.7351, 15.3936813, 1.01053, 28.93, 14.6660938, 7.437771, 123.5968,
+      -11.7273029, 55.782177, 20.2082, 10.2742696, 0.373813, 40.8226, 6.4914588, 13.218362, 123.4722, 5.8539148, 62.583231, 155.6977,
+      -5.4872205, 63.593761, 184.6277, -5.4290191, 76.43831, 267.2772, 5.160957, 45.815258, 55.0196, 5.0786314, 8.448301, 152.5268,
+      -4.0735782, 56.792707, 49.1382, 3.7227167, 49.747842, 204.6609, 3.3971932, 12.058272, 56.5233, -2.8347004, 75.27822, 200.3284,
+      -2.6550721, 65.241008, 201.6651, -2.5717867, 64.604291, 213.5577, -2.4712188, 1.647247, 17.0374, 2.462541, 7.811584, 164.4194,
+      2.2464112, 12.207832, 94.5422, -2.0755511, 63.856665, 131.9124, -1.9713669, 56.15599, 61.0309, -1.8813061, 77.44884, 296.2073,
+      -1.8468785, 6.801054, 135.4894, 1.8186742, 62.209418, 114.875, 1.7601888, 20.656133, 247.0691, -1.5428851, 48.344406, 256.6114,
+      1.4738838, 55.14546, 32.1008, -1.4593669, 69.000539, 143.6804, 1.4192259, 11.07135, 16.8784, -1.181898, 74.291298, 160.6835,
+      1.1756474, 11.047742, 27.5932, -1.1316126, 0.636717, 348.1074, 1.0896928, 12.844549, 82.6496
+    ]),
+    ec: Object.freeze([
+      0.01860798, 4.207205, 28.620089, 0.01627522, 7.346091, 193.788772, -0.0130066, 17.857263, 308.307024, 0.00988829, 17.220546, 320.199637,
+      -0.003367, 16.846733, 279.376984, 0.00333077, 5.199079, 87.195, -0.002354, 18.231076, 349.129677, 0.00140015, 26.216758, 128.443387,
+      0.001007, 6.359169, 154.14388, 0.000857, 16.210016, 291.269597, 0.0006499, 3.065181, 114.860583, 0.000599, 16.583829, 332.092251,
+      0.000378, 18.49398, 296.414411, -0.000337, 6.190953, 145.76991, 0.000276, 18.867793, 337.237063, 0.000182, 17.425567, 152.092288,
+      -0.000174, 6.186001, 126.839891, -0.000124, 18.417441, 210.667199, 0.0000125, 0.667863, 72.108838
+    ]),
+    mv: Object.freeze([
+      7391.022589, 31.609974, 251.9025, 2555.1526947, 32.620504, 280.8325, 2022.7629188, 24.172203, 128.3057, -1973.6517951, 0.636717, 348.1074,
+      1240.2321818, 31.983787, 292.7252, 953.8679112, 3.138886, 165.1686, -931.7537108, 30.973257, 263.7951, 872.3795383, 44.828336, 15.3747,
+      606.3544732, 0.991874, 58.5749, -496.0274038, 0.373813, 40.8226, 456.9608039, 43.668246, 308.4258, 346.946232, 32.246691, 240.0099,
+      -305.8412902, 30.599444, 222.9725, 249.6173246, 2.147012, 106.5937, -199.10272, 10.511172, 114.5182, 191.0560889, 42.681324, 268.7809,
+      -175.2936572, 13.650058, 279.6869, 165.9068833, 0.986922, 39.6448, 161.1285917, 9.874455, 126.4108, 139.7878093, 13.013341, 291.5795,
+      -133.5228399, 0.262904, 307.2848, 117.0673811, 0.004952, 18.93, 104.6907281, 1.142024, 273.7596, 95.3227476, 63.219948, 143.805,
+      86.7824524, 0.205021, 191.8927, 86.0857729, 2.151964, 125.5237, 70.5893698, 64.230478, 172.7351, -69.9719343, 43.836462, 316.7998,
+      -62.5817473, 47.439436, 319.6024, 61.5450059, 1.384343, 69.7526, -57.9364011, 7.437771, 123.5968, 57.1899832, 18.829299, 217.6432,
+      -57.0236109, 9.500642, 85.5882, -54.2119253, 0.431696, 156.2147, 53.2834147, 1.16009, 66.9489, 52.1223575, 55.782177, 20.2082,
+      -49.0059908, 12.639528, 250.7568, -48.3118757, 1.155138, 48.0188, -45.4191685, 0.168216, 8.3739, -42.235792, 1.647247, 17.0374,
+      -34.7971099, 10.884985, 155.3409, 34.4623613, 5.610937, 94.1709, -33.8356643, 12.658184, 221.112, 33.6689362, 1.01053, 28.93,
+      -31.2521586, 1.983748, 117.1498, -30.8798701, 14.023871, 320.5095, 28.4640769, 0.560178, 262.3602, -27.1960802, 1.273434, 336.2148,
+      27.0860736, 12.021467, 233.0046, -26.3437456, 62.583231, 155.6977, 24.725374, 63.593761, 184.6277, 24.6732126, 76.43831, 267.2772,
+      24.4272733, 4.28091, 78.9281, 24.0127327, 13.218362, 123.4722, 21.7150294, 17.818769, 188.7132, -21.5375347, 8.359495, 180.1364,
+      18.1148363, 56.792707, 49.1382, -16.9603104, 8.448301, 152.5268, -16.1765215, 1.978796, 98.2198, 15.5567653, 8.863925, 97.4808,
+      15.4846529, 0.186365, 221.5376, 15.2150632, 8.996212, 168.2438, 14.5047426, 6.771027, 161.1199, -14.3873316, 45.815258, 55.0196,
+      13.1351419, 12.002811, 262.6495, 12.8776311, 75.27822, 200.3284, 11.9867234, 65.241008, 201.6651, 11.9385578, 18.870667, 294.6547,
+      11.7030822, 22.009553, 99.8233, 11.6018181, 64.604291, 213.5577, -11.2617293, 11.498094, 154.1631, -10.4664199, 0.578834, 232.7153,
+      10.433397, 9.237738, 138.3034, -10.2377466, 49.747842, 204.6609, 10.1934446, 2.147012, 106.5938, -10.1280191, 1.196895, 250.4676,
+      10.0289441, 2.133898, 332.3345, -10.0034259, 0.173168, 27.3039
+    ]),
+  });
+  const BOGEN_SEK = 1 / 3600, GRAD = PI / 180;
+  function gradRest(a) { return a - 360 * Math.floor(a / 360); }   // der Winkel in Grad auf [0, 360) vor dem Bogenmaß: genau auch über Ga
+  const BAHN_ELEMENTE = new Map();                                    // t (ka) → [ε, e, ϖ] (rad): reine Funktion, gedeckelter Speicher
+  function bahnElemente(tKa) {
+    let b = BAHN_ELEMENTE.get(tKa); if (b) return b;
+    const y = tKa * 1000, O = BAHN_BERGER.ob, E = BAHN_BERGER.ec, V = BAHN_BERGER.mv;
+    let ob = 0, c = 0, s = 0, mv = 0;
+    for (let i = 0; i < O.length; i += 3) ob += O[i] * kcos(gradRest(O[i + 1] * BOGEN_SEK * y + O[i + 2]) * GRAD);
+    for (let i = 0; i < E.length; i += 3) { const a = gradRest(E[i + 1] * BOGEN_SEK * y + E[i + 2]) * GRAD; c += E[i] * kcos(a); s += E[i] * ksin(a); }
+    for (let i = 0; i < V.length; i += 3) mv += V[i] * ksin(gradRest(V[i + 1] * BOGEN_SEK * y + V[i + 2]) * GRAD);
+    const w = gradRest(katan2(s, c) / GRAD + 50.439273 * BOGEN_SEK * y + 3.392506 + mv * BOGEN_SEK);
+    b = Object.freeze([(23.320556 + ob * BOGEN_SEK) * GRAD, Math.sqrt(c * c + s * s), w * GRAD]);
+    if (BAHN_ELEMENTE.size >= 250000) BAHN_ELEMENTE.clear();
+    BAHN_ELEMENTE.set(tKa, b); return b;
+  }
+  let BAHN_HEUTE = null;
+  function bahnHeute() { return BAHN_HEUTE || (BAHN_HEUTE = bahnElemente(0)); }
+  // die Tages-Einstrahlung als Anteil von S0 an der Breite φ zur wahren Länge λ der Sonne (Berger 1978): (a/r)²/π·(h0·sin φ·sin δ +
+  // cos φ·cos δ·sin h0), sin δ = sin ε·sin λ, cos h0 = −tan φ·tan δ (Polartag h0 = π, Polarnacht 0), a/r = (1 − e·cos(λ − ϖ))/(1 − e²)
+  function tagesEinstrahlung(phi, lam, eps, e, w) {
+    const sp = ksin(phi), cp = kcos(phi), sd = ksin(eps) * ksin(lam), cd = Math.sqrt(1 - sd * sd);
+    let ch = cp * cd > 0 ? -(sp * sd) / (cp * cd) : (sp * sd > 0 ? -1 : 1);
+    if (ch < -1) ch = -1; if (ch > 1) ch = 1;
+    const h = kacos(ch), ar = (1 - e * kcos(lam - w)) / (1 - e * e);
+    return ar * ar / PI * (h * sp * sd + cp * cd * Math.sqrt(1 - ch * ch));
+  }
+  // DAS EIS DER BAHN (Imbrie & Imbrie 1980, Science 207, 943): dV/dt = (1 ∓ b)·(x − V)/Tm — das Eis wächst langsam (1 − b), es schmilzt
+  // schnell (1 + b), b 0,6, Tm 17 ka (die Werte der Quelle, nie gestimmt); x = −(Q − Q̄)/σ die Juni-Insolation 65° N des Körpers
+  // (λ = 90°), normiert über die letzte Ma je ka. Der Zustand zur Zeit t: 400 ka Anlauf aus V = 0 im festen Gitter ganzer ka, der
+  // letzte Schritt bis t (das Gedächtnis des Anfangs e^(−400·0,4/17) < 10⁻⁴) — die Antwort hängt nie an der Reihenfolge der Fragen.
+  // Das Meer: das Eis über dem von heute ist Meer unter dem von heute, geeicht am Hochglazial — der tiefste Stand der letzten 30 ka
+  // liegt bei −130 m (Lambeck et al. 2014: −134 m; Clark et al. 2009: −120 … −130 m); weniger Eis als heute hebt das Meer höchstens um
+  // das Eis, das blieb (tanh-Sättigung): Grönland 7,42 m (Morlighem et al. 2017) + West-Antarktis 3,3 m (Bamber et al. 2009). Die Wärme:
+  // das Hochglazial trägt die Ausstrahlung des Energie-Bilanz-Modells um κ·g (g = Meer/−130 m: CO₂ und Eis-Albedo der Eisschilde, mit
+  // dem Eis gekoppelt), κ geeicht auf −6,1 K im Mittel des Körpers der Erde (Tierney et al. 2020); die Eis-Albedo des Modells verstärkt
+  // sie polwärts. Die tiefe Zeit: das Eis schwingt mit der Kappe, die das Modell ohne Glazial trägt — (1 − x_s(t))/(1 − x_s Erde heute):
+  // ohne Kappe kein Glazial.
+  const EIS_BAHN = Object.freeze({ b: 0.6, tmKa: 17, anlaufKa: 400, breite: 65 * GRAD, normKa: 1000, meerLgmM: -130, fensterKa: 30,
+    restEisM: 7.42 + 3.3, mJeEinheit: 239.07, glazialWm2: 6.115, s0: 1361 });   // die zwei Eichungen: das Hochglazial −18 ka des Körpers der Erde
+  // trägt y − y0 = 0,5438 (× 239,07 = 130 m), κ 6,115 W/m² kühlt sein Mittel um 6,10 K (die Eis-Linie 74,4° → 57,8°); S0 1 361 W/m² (Kopp & Lean 2011)
+  const KOERPER_BAHN = new Map();                                     // Neigung|Sternfluss → { q: Map(ka → Q/S0), mq, sq, sn, y0 }
+  function juniQ(kb, tKa) {
+    let q = kb.q.get(tKa); if (q !== undefined) return q;
+    const b = bahnElemente(tKa);
+    q = tagesEinstrahlung(EIS_BAHN.breite, HALBPI, kb.neigung + (b[0] - bahnHeute()[0]), b[1], b[2]);
+    if (kb.q.size >= 250000) kb.q.clear();
+    kb.q.set(tKa, q); return q;
+  }
+  function eisZustand(kb, tKa) {
+    const ganz = Math.floor(tKa), cWachs = (1 - EIS_BAHN.b) / EIS_BAHN.tmKa, cSchmelz = (1 + EIS_BAHN.b) / EIS_BAHN.tmKa;
+    let y = 0;
+    for (let tau = Math.ceil(tKa) - EIS_BAHN.anlaufKa; tau <= ganz; tau++) { const x = -(juniQ(kb, tau) - kb.mq) / kb.sn; y += (x > y ? cWachs : cSchmelz) * (x - y); }
+    if (tKa > ganz) { const x = -(juniQ(kb, tKa) - kb.mq) / kb.sn; y += (x > y ? cWachs : cSchmelz) * (x - y) * (tKa - ganz); }
+    return y;
+  }
+  // Der Antrieb eines Körpers in W/m² gegen die Streuung der ERDE (sn = σ_Erde / Sternfluss): das Eis antwortet auf die Abweichung der
+  // Einstrahlung, wie Imbrie & Imbrie sie an der Erde geeicht haben — eine schwächere Bahn (Neigung 0: σ 10,3 W/m², die Erde 23,9) treibt
+  // schwächer. Vorher normierte jeder Körper auf seine eigene Streuung, jede Bahn trieb wie die der Erde: Neigung 0 trug −601 m, −63 K.
+  function bahnKoerper(neigung, fluss) {
+    const key = neigung + '|' + fluss;
+    let kb = KOERPER_BAHN.get(key); if (kb) return kb;
+    kb = { neigung, q: new Map(), mq: 0, sq: 1, sn: 1, y0: 0 };
+    let s = 0, s2 = 0; const n = EIS_BAHN.normKa + 1;
+    for (let i = 0; i < n; i++) s += juniQ(kb, -i);
+    kb.mq = s / n; for (let i = 0; i < n; i++) { const d = juniQ(kb, -i) - kb.mq; s2 += d * d; }
+    kb.sq = Math.sqrt(s2 / n);
+    kb.sn = (neigung === PLANET_ERDE.neigungRad ? kb.sq : bahnKoerper(PLANET_ERDE.neigungRad, 1).sq) / fluss;
+    kb.y0 = eisZustand(kb, 0);
+    KOERPER_BAHN.set(key, kb); return kb;
+  }
+  // das Meer des Eises (m, Erde; + höher): mehr Eis senkt es linear, weniger hebt es bis zum Rest-Eis (tanh, stetig in 0)
+  function eisMeerM(a) {
+    if (a >= 0) return -a;
+    const u = -2 * a / EIS_BAHN.restEisM, v = kexp(-u);
+    return EIS_BAHN.restEisM * (1 - v) / (1 + v);
+  }
   // DAS STRAHLUNGS-KLIMA (EBM, zwei Moden P0 + P2 mit Eis-Albedo, North 1975): T0, T2 und die Eis-Linie aus der Jahres-Einstrahlung
   // s(x) = 1 + s2·P2(x) — dazu die Krümmung ΔH der HADLEY-Heizung aus der Einstrahlung der Tagundnacht (s2 = −0,625: die Sonne über
   // dem Äquator, bei jeder Neigung dieselbe; Lindzen & Hou verschieben nur ihr Maximum φ0) auf derselben Albedo. Vorher las die Zelle
   // die Krümmung des Jahresmittels: bei 54° Neigung verschwindet sie (P2(cos β) = 0), die Breite fiel auf 0, die Zellen-Zahl lief
   // über 12 (60°) bis 18 (70°) — die Quelle sagt das Gegenteil (Guendelman & Kaspi 2019).
-  function klimaStrahlung(kp, zeitMa) {
+  // Die Bahn der Zeit (oben): die Neigung schwingt um dEps, das Jahresmittel der Einstrahlung folgt der Exzentrizität ((1 − e²)^−½,
+  // flussE gegen heute), das Hochglazial hebt die Ausstrahlung um dA — heute dEps 0, flussE 1, dA 0: dieselben Bytes wie zuvor.
+  function klimaStrahlung(kp, zeitMa, dEps, flussE, dA) {
     const fluss = kp.sternFluss / (1 - 0.4 * zeitMa / kp.alterMa);     // Gough: L(t)/L_jetzt = 1 / (1 + 0,4·(1 − t/t_jetzt))
-    const Q = KLIMA.q0 * fluss;
-    const cb = kcos(kp.neigungRad), s2 = -0.625 * (3 * cb * cb - 1) * 0.5;   // Jahres-Einstrahlung s(x) = 1 + s2·P2(x)
+    const Qs = KLIMA.q0 * fluss, Q = Qs * flussE;                        // der Thermostat gleicht den Stern, nie die Bahn (100 ka)
+    const cb = kcos(kp.neigungRad + dEps), s2 = -0.625 * (3 * cb * cb - 1) * 0.5;   // Jahres-Einstrahlung s(x) = 1 + s2·P2(x)
     // Walker-Thermostat (Karbonat-Silikat-Kreislauf, Walker et al. 1981): über Ma gleicht das CO₂ den Sternfluss zum Anteil γ aus —
     // die Ausstrahlung sinkt um γ·(Q_heute − Q)·ā. Bei t = 0 ist der Term 0 (bau2-Bytes unverändert). γ gesetzt.
-    const N = 256, A = KLIMA.olrA - KLIMA.walker * (KLIMA.q0 * kp.sternFluss - Q) * KLIMA.coA0, B = KLIMA.olrB, D = KLIMA.diffD;
+    const N = 256, A = KLIMA.olrA - KLIMA.walker * (KLIMA.q0 * kp.sternFluss - Qs) * KLIMA.coA0 + dA, B = KLIMA.olrB, D = KLIMA.diffD;
     let xs = 1, T0 = 0, T2 = 0;
     for (let it = 0; it < 80; it++) {
       let m0 = 0, m2 = 0;
@@ -2245,20 +2375,30 @@
     return { fluss, T0, T2, xs, T0K, dH };
   }
   // DIE KANTE DER ZELLE (rad): φH nach Held & Hou an der Krümmung ΔH, das Jahresmittel der Kanten der Sonnwende nach Lindzen & Hou (oben)
-  function hadleyMass(kp, R, K) {
+  function hadleyMass(kp, R, K, neigung) {
     const om = TAU / (kp.tagStunden * 3600), a = R * 1000, H = KLIMA.tropoKm * 1000 * (9.81 / kp.g) * (K.T0K / 288);
     let phiH = Math.sqrt(5 / 3 * kp.g * H * K.dH / (om * om * a * a));
     if (phiH > HALBPI) phiH = HALBPI; if (phiH < 0.05) phiH = 0.05;
-    return phiH * hadleyJahr(KLIMA.schubMeer * kp.neigungRad / phiH);
+    return phiH * hadleyJahr(KLIMA.schubMeer * neigung / phiH);
   }
   let HADLEY_ERDE = null;   // die Kante des Körpers der Erde heute (einmal je Kern): der Nenner der Eichung (KLIMA.hadleyErdeRad)
+  let KAPPE_ERDE = null;    // die Eis-Kappe des Körpers der Erde heute ohne Glazial (1 − x_s): der Nenner der tiefen Zeit (EIS_BAHN)
   function planetKlimaGlobal(plan, zeitMa) {
     if (!plan || !plan.koerper) throw new Error('planetKlimaGlobal: plan fehlt (K10)');
     abschnittIndex(plan, zeitMa);
     const M = memoVon(plan); if (!M.klimaG) M.klimaG = new Map();
     if (M.klimaG.has(zeitMa)) return M.klimaG.get(zeitMa);
-    const kp = plan.koerper, K = klimaStrahlung(kp, zeitMa), h = hadleyMass(kp, plan.R, K);
-    const E = HADLEY_ERDE || (HADLEY_ERDE = hadleyMass(PLANET_ERDE, PLANET_ERDE.radiusKm, klimaStrahlung(PLANET_ERDE, 0)));
+    // DIE BAHN UND IHR EIS zur Zeit (oben): t auf das Jahr gerundet (zeitMa·10⁶ a ist selten eine ganze Zahl von ka im Binärformat)
+    const kp = plan.koerper, tKa = Math.round(zeitMa * 1e9) / 1e6, b = bahnElemente(tKa), b0 = bahnHeute(), kb = bahnKoerper(kp.neigungRad, kp.sternFluss);
+    const dEps = b[0] - b0[0], flussE = Math.sqrt((1 - b0[1] * b0[1]) / (1 - b[1] * b[1])), dPraez = b[1] * ksin(b[2]) - b0[1] * ksin(b0[2]);
+    // die Kappe der Zeit ohne Bahn und ohne Glazial (Stern, Thermostat, Neigung des Körpers): die Kapazität des Eises, nie sein Takt —
+    // höchstens die der Erde heute: die Eichung (−130 m, −6,1 K) reicht bis zu ihr, darüber trägt keine Quelle das Maß (Neigung 0 mit
+    // der Kappe bis 59,7°: × 4,6 vorher, das Glazial lief mit der Eis-Albedo davon)
+    const kappe = KAPPE_ERDE || (KAPPE_ERDE = 1 - klimaStrahlung(PLANET_ERDE, 0, 0, 1, 0).xs), K0 = klimaStrahlung(kp, zeitMa, 0, 1, 0), fk = (1 - K0.xs) / kappe;
+    const meerGlazialM = (fk < 1 ? fk : 1) * eisMeerM(EIS_BAHN.mJeEinheit * (eisZustand(kb, tKa) - kb.y0));
+    const glazial = meerGlazialM / EIS_BAHN.meerLgmM, dA = EIS_BAHN.glazialWm2 * glazial;
+    const K = dEps !== 0 || flussE !== 1 || dA !== 0 ? klimaStrahlung(kp, zeitMa, dEps, flussE, dA) : K0, neigung = kp.neigungRad + dEps, h = hadleyMass(kp, plan.R, K, neigung);
+    const E = HADLEY_ERDE || (HADLEY_ERDE = hadleyMass(PLANET_ERDE, PLANET_ERDE.radiusKm, klimaStrahlung(PLANET_ERDE, 0, 0, 1, 0), PLANET_ERDE.neigungRad));
     // das Verhältnis zur Kante der Erde (am Körper der Erde x/x = 1 genau: die Heimat steht Bit für Bit)
     let zellBreite = KLIMA.hadleyErdeRad * (h / E);
     if (zellBreite > HALBPI) zellBreite = HALBPI; if (zellBreite < 0.05) zellBreite = 0.05;
@@ -2267,6 +2407,7 @@
       sternFluss: K.fluss, tMittelC: K.T0, tAequatorC: K.T0 - 0.5 * K.T2, tPolC: K.T0 + K.T2, T0: K.T0, T2: K.T2,
       eisBreite: K.xs >= 1 ? HALBPI : katan2(K.xs, Math.sqrt(1 - K.xs * K.xs)), eisX: K.xs,
       zellBreite, zellen, deltaH: K.dH,
+      neigung, exzentrizitaet: b[1], perihel: b[2], dPraez, insolation65N: EIS_BAHN.s0 * kp.sternFluss * juniQ(kb, tKa), meerGlazialM, glazial,
     });
     M.klimaG.set(zeitMa, G); return G;
   }
@@ -2453,7 +2594,7 @@
     }
     // Gürtel über das Jahr: Deklination ±β, die Verschiebung wächst mit der Erwärmung des Landes (Monsun: das Hitzetief liegt über
     // der Landmasse, gleich woher der Wind weht — klima-kontinent: nie die Luft längs des Winds, die Passat-Westküste ist kein Monsun)
-    const beta = kp.neigungRad, schub = (KLIMA.schubMeer + 0.4 * lam * glatt(0, 1500, kont)) * (1 - 0.5 * aphi / HALBPI);
+    const beta = G.neigung, schub = (KLIMA.schubMeer + 0.4 * lam * glatt(0, 1500, kont)) * (1 - 0.5 * aphi / HALBPI);
     // Gegner 2 (F5 Wüsten-Kante als Breitenkreis): die Hochs der Subtropen sind Zellen über den Becken, keine Bänder — die Gürtel
     // lesen die Breite verschoben um dasselbe Feld stehender Wellen (±~3°, λ 6 000–2 500 km, eigener Samen; gesetzt).
     const phiG = phi + 0.035 * fbmKm(plan.k ^ 0x27d4eb2f, x, y, z, R, 6000, 2500, 0.5);
@@ -2468,7 +2609,18 @@
     // Land schwingt stärker als Meer, auch an der Küste; jenseits der Eis-Linie der Zone (tZ ≤ tEis) zehrt Schnee den Sommer (gesetzt)
     // Meer nahe Land (Gegner 3): winterkalte Festlandsluft — Randmeere schwingen stärker als der offene Ozean (Ochotsk, Hudson)
     const cL = (1 - lam) * 0.3 * kexpS(Math.min(0, kont) / KLIMA.kontiMeerKm) + lam * (0.3 + 0.7 * c) * (1 - 0.85 * glatt(KLIMA.tEisC + 5, KLIMA.tEisC - 5, tZ));
-    const amp = (5 + 28 * cL) * (sb / 0.39782) * (y < 0 ? -y : y) * fJ;  // halbe Jahres-Spanne: Meer 5 K, Inneres 33 K bei sin φ = 1 (gesetzt)
+    // DIE PRÄZESSION (Karte 2 planet.kopplung.bahn-klima#3): die Solstitien-Differenz der Tages-Einstrahlung einer Halbkugel ist in
+    // erster Ordnung von e (S0/π)·[(f₊ − f₋) − 2·sg·e·sin ϖ·(f₊ + f₋)], f± = h0·sin φ·sin(±ε) + cos φ·cos ε·sin h0 (Berger 1978); die
+    // Spanne der Heimat trägt das e·sin ϖ von heute schon, die Zeit trägt die Änderung (dPraez, heute 0: dieselben Bytes). Am Äquator
+    // trägt sie allein den Gang (f₊ − f₋ = 0): das Perihel macht die Jahreszeit der Tropen.
+    let ampP = 0;
+    if (G.dPraez !== 0) {
+      const ay = y < 0 ? -y : y, cb2 = kcos(beta);
+      let ch = cphi * cb2 > 0 ? -(ay * sb) / (cphi * cb2) : -1; if (ch < -1) ch = -1; if (ch > 1) ch = 1;
+      const h0 = kacos(ch), summe = ay * sb * (2 * h0 - PI) + 2 * cphi * cb2 * Math.sqrt(1 - ch * ch);
+      ampP = (5 + 28 * cL) / (PI * 0.39782) * (-2 * sg * G.dPraez * summe) * fJ;
+    }
+    const amp = (5 + 28 * cL) * (sb / 0.39782) * (y < 0 ? -y : y) * fJ + ampP;  // halbe Jahres-Spanne: Meer 5 K, Inneres 33 K bei sin φ = 1 (gesetzt)
     // Trockenes Land heizt (Gegner 2, heiße Wüste 4 % statt ~14 %): ohne Verdunstung und Wolken liegt die Wüste über dem Zonen-Mittel —
     // klima-kontinent: nur die warme Zone (voll ab 20 °C, aus unter 10 °C; vorher ab 0 °C halb bei 10 °C: die trockene Ostküste der
     // Mittelbreiten lag 2–3 K über ihrer Westküste). Band: Gobi und Kasachstan liegen im Jahr UNTER der Breite, nicht über ihr.
@@ -2761,7 +2913,8 @@
   // B5 der Anker wird dort gesucht, wo er gelesen wird: im Band des Orts (ortRoh und der Faden lesen fuss 16), vorher fuss 40 — 1 von 30
   // Ankern lag bei fuss 16 im Meer. Und er trägt jede Größe, die als Verhältnis zu ihm reist (Spende, Krautschicht, Wald; ein Verhältnis
   // zu 0 ist tot: 5 von 30 Ankern ohne Wald, 2 ohne Spende) und das Klima der Heimat auf seiner wahren Höhe, wo sein Biom gelesen wird
-  // (kein E: 4 von 30 Ankern lagen als Tundra auf Hochflächen, gesucht auf Meeres-Niveau)
+  // (kein E: 4 von 30 Ankern lagen als Tundra auf Hochflächen, gesucht auf Meeres-Niveau) — und die Eis-Zeit der Heimat, 0: seit die
+  // Bahn das Hochglazial trägt (Milanković, −6,1 K), lagen 9 von 100 Ankern unter dem Eis des Quartärs, und ihr Δ löschte jeden Findling
   const ANKER_FUSS_KM = 16;
   // Der Anker: der Ort, an dem die Konstanten des heutigen Ort-Gesetzes (Sommer/Winter am Meer) wahr sind — auf Land, Küste ≤ 300 km,
   // kein aktiver Rand näher als 500 km. Suche über 512 Fibonacci-Proben (~1 000 km Abstand), Wertung ((ΔS/4)² + (ΔW/6)²), dann drei
@@ -2783,6 +2936,7 @@
     if (M.anker.has(key)) return M.anker.get(key);
     const S = planetScheibe(plan, zeitMa), R = S.R, G = planetKlimaGlobal(plan, zeitMa);
     const tMitte = 0.5 * (kh.sommer + kh.winter);
+    let mitEis = false;   // die Stufe der Eis-Zeit (unten): erst der Weg wie zuvor, nur ein Anker unter dem Eis sucht neu
     const wert = (x, y, z) => {
       const tZ = G.T0 + G.T2 * (1.5 * y * y - 0.5); if (tZ - tMitte > 14 || tMitte - tZ > 14) return Infinity;   // Zone zuerst (ohne Punkt)
       const h = planetPunktR(S, x, y, z, ANKER_FUSS_KM, _ankP);
@@ -2791,23 +2945,33 @@
       if (!(_ankK.abflussMm > 0)) return Infinity;
       pflanzenDeckung(_ankK.tJahrC, _ankK.niederschlagMm, _ankD); if (!(_ankD.decke > 0) || !(_ankD.wald > 0)) return Infinity;
       planetBiom(_ankK, h, _ankB); if (_ankB.hauptklasse === 4) return Infinity;
+      if (mitEis && eisZeitY(plan, y, _ankK.tJahrC, G) === 1) return Infinity;   // die Heimat trägt kein Eis des Quartärs (ORT_HEIMAT eis 0)
       const hk = _ankP.hoeheKm > 0 ? _ankP.hoeheKm : 0, dS = (_ankK.tSommerC + KLIMA.lapse * hk - kh.sommer) / 4, dW = (_ankK.tWinterC + KLIMA.lapse * hk - kh.winter) / 6;
       return dS * dS + dW * dW;
     };
     let best = Infinity, bx = 0, by = 0, bz = 0;
-    for (let s = 0; s < ANKER_PROBEN.length && best === Infinity; s++) { const N = ANKER_PROBEN[s], F = fib(N);
-      for (let i = 0; i < N; i++) { const v = wert(F[3 * i], F[3 * i + 1], F[3 * i + 2]); if (v < best) { best = v; bx = F[3 * i]; by = F[3 * i + 1]; bz = F[3 * i + 2]; } } }
-    if (best === Infinity) throw new Error('planetAnker: kein Ort trägt die heutigen Konstanten (Land, Küste ≤ 300 km, kein aktiver Rand < 500 km, Spende, Wuchs, kein E) (K10)');
     const tb = new Float64Array(6);
-    for (let runde = 0; runde < 3; runde++) {
-      tangente(bx, by, bz, tb); const sch = (240 >> runde) / R; let nx = bx, ny = by, nz = bz;
-      for (let a = -1; a <= 1; a++) for (let c = -1; c <= 1; c++) {
-        if (!a && !c) continue;
-        let x = bx + sch * (a * tb[0] + c * tb[3]), y = by + sch * (a * tb[1] + c * tb[4]), z = bz + sch * (a * tb[2] + c * tb[5]); const l = Math.sqrt(x * x + y * y + z * z); x /= l; y /= l; z /= l;
-        const v = wert(x, y, z); if (v < best) { best = v; nx = x; ny = y; nz = z; }
+    const suche = () => {
+      best = Infinity; bx = 0; by = 0; bz = 0;
+      for (let s = 0; s < ANKER_PROBEN.length && best === Infinity; s++) { const N = ANKER_PROBEN[s], F = fib(N);
+        for (let i = 0; i < N; i++) { const v = wert(F[3 * i], F[3 * i + 1], F[3 * i + 2]); if (v < best) { best = v; bx = F[3 * i]; by = F[3 * i + 1]; bz = F[3 * i + 2]; } } }
+      if (best === Infinity) throw new Error('planetAnker: kein Ort trägt die heutigen Konstanten (Land, Küste ≤ 300 km, kein aktiver Rand < 500 km, Spende, Wuchs, kein E' + (mitEis ? ', kein Eis des Quartärs' : '') + ') (K10)');
+      for (let runde = 0; runde < 3; runde++) {
+        tangente(bx, by, bz, tb); const sch = (240 >> runde) / R; let nx = bx, ny = by, nz = bz;
+        for (let a = -1; a <= 1; a++) for (let c = -1; c <= 1; c++) {
+          if (!a && !c) continue;
+          let x = bx + sch * (a * tb[0] + c * tb[3]), y = by + sch * (a * tb[1] + c * tb[4]), z = bz + sch * (a * tb[2] + c * tb[5]); const l = Math.sqrt(x * x + y * y + z * z); x /= l; y /= l; z /= l;
+          const v = wert(x, y, z); if (v < best) { best = v; nx = x; ny = y; nz = z; }
+        }
+        bx = nx; by = ny; bz = nz;
       }
-      bx = nx; by = ny; bz = nz;
-    }
+    };
+    // DIE STUFE DER EIS-ZEIT (wie die Treppe der Proben): der Anker geht den Weg wie zuvor — eine Heimat ohne Eis liegt Bit für Bit,
+    // wo sie lag (das Wahl-Kriterium in jeder Probe verlegte den Anker des Spiels, −50,51° → −43,38°: seine grobe Probe lag unter dem
+    // Eis, nicht er). Trägt der gefundene Anker die Eis-Zeit, sucht dieselbe Wertung neu, jede Probe unter dem Eis fällt.
+    suche();
+    planetPunktR(S, bx, by, bz, ANKER_FUSS_KM, _ankP); planetKlimaR(S, bx, by, bz, -1, _ankK, _ankP);
+    if (eisZeitY(plan, by, _ankK.tJahrC, G) === 1) { mitEis = true; suche(); }
     const bl = planetBreiteLaenge(bx, by, bz, new Float64Array(2)), breite = bl[0], laenge = bl[1];
     const sb = ksin(breite), cb = kcos(breite), sl = ksin(laenge), cl = kcos(laenge);
     planetPunktR(S, bx, by, bz, ANKER_FUSS_KM, _ankP); planetKlimaR(S, bx, by, bz, -1, _ankK, _ankP);
@@ -2863,13 +3027,17 @@
   // (T0 + T2·P2 der Energie-Bilanz zur Zeit t gegen die Zeit des Orts). Vorher las sie nur die Breite gegen die Eisgrenze der Zone (74,4°):
   // Hochland und Kontinent-Inneres unter −10 °C trugen kein Eis, 377 von 2 000 Land-Orten. Fehlt das Jahresmittel, wirft sie beim Namen.
   // Sie reist als Δ zum Anker wie jede Größe (am Anker +0); der Leser ist der Findling (Stamm `_rockGeologyClass`: der Erratiker liegt,
-  // wo das Eis ihn ablud).
+  // wo das Eis ihn ablud). Die Heimat trägt kein Eis (gelaende-core ORT_HEIMAT eis 0): der Anker wird nur dort gesucht, wo die Zeiten
+  // ihn nie unter die Eis-Linie trugen (`eisZeitY` in `ankerAmSchluessel`, dasselbe Gesetz) — sonst stünde Δ ≤ 0 an jedem Ort der Welt.
   const EIS_ZEITEN = Object.freeze([0, -0.02, -0.1, -0.5, -1, -2, -2.6]);
-  function ortEisZeit(plan, breite, tJahrC, zeitMa) {
-    if (!Number.isFinite(tJahrC) || !Number.isFinite(zeitMa)) throw new Error('ortEisZeit: das Jahresmittel des Orts oder seine Zeit fehlt (K10)');
-    const y = ksin(breite), p2 = 1.5 * y * y - 0.5, G0 = planetKlimaGlobal(plan, zeitMa), ab = tJahrC - (G0.T0 + G0.T2 * p2);
+  function eisZeitY(plan, y, tJahrC, G0) {   // y = sin Breite, G0 = die Energie-Bilanz zur Zeit des Orts
+    const p2 = 1.5 * y * y - 0.5, ab = tJahrC - (G0.T0 + G0.T2 * p2);
     for (const t of EIS_ZEITEN) { const G = planetKlimaGlobal(plan, t); if (G.T0 + G.T2 * p2 + ab < KLIMA.tEisC) return 1; }
     return 0;
+  }
+  function ortEisZeit(plan, breite, tJahrC, zeitMa) {
+    if (!Number.isFinite(tJahrC) || !Number.isFinite(zeitMa)) throw new Error('ortEisZeit: das Jahresmittel des Orts oder seine Zeit fehlt (K10)');
+    return eisZeitY(plan, ksin(breite), tJahrC, planetKlimaGlobal(plan, zeitMa));
   }
   function ortKopie(o) { return { wildnis: Object.assign({}, o.wildnis), meer: Object.assign({}, o.meer), klima: Object.assign({}, o.klima), wetter: Object.assign({}, o.wetter),
     wuchs: Object.assign({}, o.wuchs), eis: Object.assign({}, o.eis) }; }
@@ -2961,13 +3129,16 @@
       ks: klemm(rKs, 3 + 12 * konv),
       tafel: klemm(rTa, glatt(400, 1500, _orP.randAbstandKm) * glatt(1500, 3500, schAlter)),
     };
-    o.meer = { waterLevelM: -og.meerUnterBasisM + sv * (S.meerKm - S0.meerKm) * 1000 };
+    // das Meer der Zeit: das Becken (meerKm, 10-Ma-Fächer) und das Eis der Bahn (planetKlimaGlobal meerGlazialM, Erd-Meter) — beide in der
+    // Stauchung des Ort-Gesetzes; heute ist das Eis 0 (dieselben Bytes)
+    const G = planetKlimaGlobal(plan, S.zeitMa);
+    o.meer = { waterLevelM: -og.meerUnterBasisM + sv * (S.meerKm - S0.meerKm) * 1000 + sv * G.meerGlazialM };
     // der Jahres-Gang am Meer: die Luft zum Sonnen-Hoch und zum Sonnen-Tief der Halbkugel. „Sommer“ ist die WÄRMERE der beiden und
     // trägt ihre Phase — wo die Winter-Advektion die Spanne dreht (Tropen, roh bis −0,39 K), liegt der Sommer des Orts im Sonnen-Tief
     const tHoch = K.tSommerC + KLIMA.lapse * hk, tTief = K.tWinterC + KLIMA.lapse * hk, warmHoch = tHoch >= tTief;
     o.klima = { sommer: warmHoch ? tHoch : tTief, winter: warmHoch ? tTief : tHoch,
       sommerPhase: sued === warmHoch ? (kh.sommerPhase + 0.5) % 1 : kh.sommerPhase, tagAmp: 0.5 * K.tagAmpC, tagGipfel: kh.tagGipfel, jahrTage: kp.jahrTage, spendeMm: K.abflussMm };
-    const G = planetKlimaGlobal(plan, S.zeitMa), aphi = breite < 0 ? -breite : breite, v = (aphi - 1.7 * G.zellBreite) / (0.4 * G.zellBreite);
+    const aphi = breite < 0 ? -breite : breite, v = (aphi - 1.7 * G.zellBreite) / (0.4 * G.zellBreite);
     const wl = Math.sqrt(K.windOst * K.windOst + K.windNord * K.windNord);
     o.wetter = { windX: wl > 1e-9 ? -K.windOst / wl : 0, windZ: wl > 1e-9 ? K.windNord / wl : 0,   // wohin der Wind weht, Spiel-(x Ost, z Süd)
       regenQuote: K.niederschlagMm / (K.niederschlagMm + 900),   // gesetzt
@@ -3025,7 +3196,8 @@
     KLIMA, KOEPPEN, WHITTAKER, planetKlimaGlobal, planetKlima, planetKlimaR, planetBiom, planetPet: petMm,
     PLANET_WASSER_N: WASSER_N, planetWasserGitter, planetWasserR,
     planetAnker, planetFlaeche, planetKarteVon, planetOrt, ortEisZeit, EIS_ZEITEN, planetOrtDerZeit, NACHKLANG_MA,
-    _intern: Object.freeze({ terme, planBytes, scheibeBytes, abschnitt, acosF, gdh1, fib, biomFarbe, wasserZellen, wasserLauf, guertelP, scheibeKern, tempoAbl, abschnittIndex }),
+    _intern: Object.freeze({ terme, planBytes, scheibeBytes, abschnitt, acosF, gdh1, fib, biomFarbe, wasserZellen, wasserLauf, guertelP, scheibeKern, tempoAbl, abschnittIndex,
+      bahnElemente, tagesEinstrahlung, bahnKoerper, eisZustand, eisMeerM, klimaStrahlung, EIS_BAHN }),
   });
   root.__planetCore = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
