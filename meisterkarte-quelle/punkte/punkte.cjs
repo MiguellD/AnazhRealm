@@ -4399,7 +4399,11 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         }
         // DIE WIRT-WACHE NACH DER PROBE, VOR DEM PREIS: was die Probe am Wirt stehen ließ, fällt beim Namen — der Preis misst das Spiel;
         // hält die Probe danach noch ihren Kontext über der Schwelle der Linse, misst er es nie: die Stationen der Probe stehen UNGEMESSEN beim Grund
-        const wirt = wirtVor.fehler || gerissen || tot ? null : await wirtRuf(W, true, mitPreis);
+        // DIE MARKE LEBT NUR NACH DEM COLLECTOR (Leser 2, 26.11.; wirt-wache.cjs: „Nach der Rücknahme und dem Collector lebt eine Marke nur,
+        // wenn noch etwas den Kontext ihrer Probe hält“): `gib` sammelt immer ein — ohne Preis las die Wache jede Marke, die noch kein Collector
+        // eingesammelt hatte, als gehalten (GTX 4c9e6aab profiband.K4#1: zwei Zapfen des Stroms; über 643 Messdateien 68 UNGEMESSEN „hält noch …
+        // Heap ungemessen“, alle profiband.K4#1/#2, und 14-mal stand die Dauer danach offen). Was nach dem Collector lebt, hält wirklich
+        const wirt = wirtVor.fehler || gerissen || tot ? null : await wirtRuf(W, true, true);
         if (wirt && wirt.fehler) (kopf.wirtBlind = kopf.wirtBlind || []).push({ probe: schluessel(g[0]), wann: "nach", fehler: wirt.fehler });
         else if (wirt && (wirt.anders.length || wirt.haelt.length || wirt.ungemessen)) {
             (kopf.wirt = kopf.wirt || []).push({ probe: schluessel(g[0]), anders: wirt.anders, wie: wirt.wie, haelt: wirt.haelt, heap: [wirt.heapVor, wirt.heapNach], ungemessen: wirt.ungemessen });
