@@ -1,0 +1,27 @@
+Kandidat der Station same.kopplung.gewalt (Leiter, S1–S6; beansprucht #1) — für den Zweig punkte-maschine, nicht für main
+
+Richter S1 (wörtlich, vision/meisterkarte-2.json): „100 Spieljahre Zeitraffer: Brände je km² und Jahr im Faktor 3 der Real-Rate“
+
+Stations-Fehler: meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js:8006 (punkte-maschine 179fab68) fragt den Planet-Faden mit
+  { koerper: "mars", radiusKm: 3389.5, masseErden: 0.107, schwere: 3.71 } — seit 23e944ef3 (23.11. 17:40, „der Planet-Faden liest den
+  Körper des Auftrags“) wirft voxel-worker.js:1444 `planetKoerper` daran „planet: koerper ist kein Objekt (string)“: die ganze Leiter
+  wirft nach 1,2 s (Wolke) / 1,665 s (Radeon 2da17e2e), alle sechs Sprossen ungemessen. Vorher las `planetOrtAuftrag` den Körper nicht
+  (0 Leser von msg.koerper an a615ab5d): die Mars-Hälfte maß die Erde zweimal.
+
+Schnitt (k2-zusammenspiel.gewalt-koerper.diff, 2 Hunks, gegen punkte-maschine 179fab68): der Körper Mars als Objekt in den Feldern
+  des Plan-Gesetzes (voxel-worker.js:1429 KOERPER_FELDER; NASA Mars Fact Sheet: radiusKm 3 389,5 · g 3,71 · tagStunden 24,6597 ·
+  neigungRad 25,19°; das Jahr bleibt das des Ort-Gesetzes, planet-core.js:2637 pruefJahr); S6-Zeuge `koerperWirkt` > 0 + Attrappe
+  „der Körper ändert keine Antwort (die Erde zweimal)“; Leser S6 auf voxel-worker.js:1501 / :1444.
+
+Gemessen (Wolke, Hand-Lauf leiter-kandidat.cjs / koerper-hand.cjs):
+  vorher  Leiter wirft nach 1,2 s · 0 von 6 Sprossen gemessen
+  nachher Leiter 1,2–1,4 s warm · 6 von 6 gemessen · S6 antworten 200 · koerperWirkt 100 von 100 · gefahr 0 · Proben 2 003, 0 falsch ·
+          liste 1 976 · Fehler 0 · sek 40 bleibt
+  Faden-Kosten (EIN Planet-Faden): Erde kalt 123–201 ms je Samen, Mars bei warmer Erde 139–192 ms, 10 Mars auf einmal 1 926 ms
+
+Das SPIEL trägt #1 nicht: S1 misst ROT „kein Brand von selbst (kein Blitz)“ — 249 / 266 Sturm-Züge in 100 Spieljahren, 0 Zündungen;
+  `_brandEntfachen` (stamm/feld-brand.js:449) rufen nur stamm/kampf.js:2471/2472 (die Tat) und stamm/koerper-fahrt.js:2363 (das Werk).
+  Kein Buchungs-Kandidat — der Kandidat heilt den Wurf, damit die Leiter das Spiel wieder misst.
+
+Offen (nur das Gerät): die Uhr der Leiter in der Reihe der Perspektive (Soll ≤ 40 s; 100 Mars-Pläne ≈ 15–19 s im Faden der Wolke),
+  das Auge S6 und das Bild des Gewitters am Fächer (swiftshader: „A valid external Instance reference no longer exists“).

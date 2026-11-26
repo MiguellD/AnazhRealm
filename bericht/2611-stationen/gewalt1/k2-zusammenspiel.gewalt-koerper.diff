@@ -1,0 +1,39 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+index daee18bc9..3f0023a8c 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+@@ -8003,7 +8003,12 @@ L.perspektive("same", (() => {
+                         for (let i = 0; i < a.gitter; i++) for (let j = 0; j < a.gitter; j++) gitter.push([B - a.gitter / 2 + i + 0.5, Lg - a.gitter / 2 + j + 0.5]);
+                         const eg = await Promise.all(gitter.map(([b, l]) => ort(r._planetSamen(), b, l, 0)));
+                         aus.erde = { zellen: eg.length, streuungM: sd(eg.map((o) => o.hoeheM)), land: eg.filter((o) => o.land).length, gefahr: [...new Set(eg.flatMap(gef))] };
+-                        const fr = await Promise.all(Array.from({ length: a.fremd }, async (_, i) => [await ort("same-saat-" + i, B, Lg, 0), await ort("same-saat-" + i, B, Lg, 0, { koerper: "mars", radiusKm: 3389.5, masseErden: 0.107, schwere: 3.71 })]));
++                        // DER KÖRPER MARS in den Feldern des Plan-Gesetzes (voxel-worker.js:1429 KOERPER_FELDER, `planetKoerper` wirft an
++                        // allem anderen, seit 6bf32259a laut — vorher fiel der Text „mars“ still, und die Hälfte maß die Erde zweimal): NASA
++                        // Mars Fact Sheet — mittlerer Radius 3 389,5 km, Schwere 3,71 m/s², Sonnentag 24,6597 h, Achsneigung 25,19°; das Jahr
++                        // bleibt das des Ort-Gesetzes (planet-core.js:2637 pruefJahr, R5: 686,98 d bricht den Ort beim Namen)
++                        const MARS = { radiusKm: 3389.5, g: 3.71, tagStunden: 24.6597, neigungRad: (25.19 * Math.PI) / 180 };
++                        const fr = await Promise.all(Array.from({ length: a.fremd }, async (_, i) => [await ort("same-saat-" + i, B, Lg, 0), await ort("same-saat-" + i, B, Lg, 0, { koerper: MARS })]));
+                         aus.fremd = { antworten: fr.length * 2, streuungM: sd(fr.map((q) => q[0].hoeheM)), koerperWirkt: fr.filter(([x, y]) => x.hoeheM !== y.hoeheM || x.kuesteKm !== y.kuesteKm || JSON.stringify(x.delta) !== JSON.stringify(y.delta)).length, gefahr: [...new Set(fr.flatMap(([x, y]) => gef(x).concat(gef(y))))] };
+                         return aus;
+                     };
+@@ -8194,12 +8199,15 @@ L.perspektive("same", (() => {
+                         u: { planeten: 100, koerper: "mars", jahre: 1e9 },
+                         soll: [K.soll(G, 6, "Rang ≥ 0,7", { key: "rang" }), K.soll(G, 6, "≥ 1 namenlose Gefahr je 10 Planeten", { key: "namenloseJe10" })],
+                         auge: { pose: "Orbit über dem Fremd-Planeten (heute keine Orbit-Pose: geschossen an der Wiese)", vorbild: "Fremdwelt-Probe R10: Ursachen-Probe aus dem Bild Rang ≥ 0,7, Gegenlauf, Neuheit" },
+-                        zeuge: zeugeFaden(200, 1),
+-                        taeter: "voxel-worker.js planetOrtAuftrag (der Körper ändert nichts, keine Gefahr in der Antwort)",
++                        zeuge: (roh) => zeugeFaden(200, 1)(roh) || (!((roh.zeuge || {}).koerperWirkt > 0) ? "der Körper Mars ändert keine Antwort des Fadens (er misst die Erde zweimal)" : null),
++                        taeter: "voxel-worker.js planetOrtAuftrag (keine Gefahr in der Antwort, auch am Körper Mars)",
+                         nicht: "keine Fremd-Gefahr",
+-                        leser: "voxel-worker.js:1446 planetOrtAuftrag — nimmt samen, breite, laenge, zeitMa; kein Körper, kein Wärmefluss, keine Gefahr",
+-                        gruen: { werte: { rang: 0.78, namenloseJe10: 2 }, zeuge: { antworten: 200, streuungM: 2400, gefahr: 3 } },
+-                        attrappen: [{ name: "Rang 0,78 ohne Gefahr in der Antwort", roh: { werte: { rang: 0.78, namenloseJe10: 2 }, zeuge: { antworten: 200, streuungM: 2400, gefahr: 0 } } }],
++                        leser: "voxel-worker.js:1501 planetOrtAuftrag — nimmt samen, breite, laenge, zeitMa und den Körper (`koerper`, :1444 planetKoerper); kein Wärmefluss, keine Gefahr",
++                        gruen: { werte: { rang: 0.78, namenloseJe10: 2 }, zeuge: { antworten: 200, streuungM: 2400, gefahr: 3, koerperWirkt: 100 } },
++                        attrappen: [
++                            { name: "Rang 0,78 ohne Gefahr in der Antwort", roh: { werte: { rang: 0.78, namenloseJe10: 2 }, zeuge: { antworten: 200, streuungM: 2400, gefahr: 0, koerperWirkt: 100 } } },
++                            { name: "Rang 0,78, der Körper ändert keine Antwort (die Erde zweimal)", roh: { werte: { rang: 0.78, namenloseJe10: 2 }, zeuge: { antworten: 200, streuungM: 2400, gefahr: 3, koerperWirkt: 0 } } },
++                        ],
+                     },
+                 },
+             },

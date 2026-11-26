@@ -1,0 +1,77 @@
+BEGRÜNDUNG — same.kopplung.gewalt#1 (die Leiter, S1–S6), Leser 2, 26.11.
+
+1. DIE RICHTER (wörtlich, vision/meisterkarte-2.json)
+   S1 „100 Spieljahre Zeitraffer: Brände je km² und Jahr im Faktor 3 der Real-Rate“ (umfang „1 Klasse von selbst, 1 km², 100 a“,
+      tiefe „Blitz-Brand aus Trockenheit × Gewitter des EINEN Wetters“)
+   S6 „100 Fremd-Planeten: Fremdwelt-Probe (R10) — Gefahr-Klasse und Rate aus Wärmefluss, Masse und Atmosphäre vorhergesagt Rang ≥ 0,7;
+      ≥ 1 namenlose Gefahr je 10 Planeten“
+   Beansprucht ist #1; der Fehler sitzt in S6 und reißt die ganze Leiter (EIN `seite`-Lauf trägt S1–S6).
+
+2. DER FEHLER DER STATION (meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js, punkte-maschine 179fab68)
+   :8006  await ort("same-saat-" + i, B, Lg, 0, { koerper: "mars", radiusKm: 3389.5, masseErden: 0.107, schwere: 3.71 })
+   Die Form des Körpers änderte main: 23e944ef3 (23.11. 17:40 UTC, „Vorprüfung wetter-am-ort 1: der Planet-Faden liest den Körper
+   des Auftrags“) — voxel-worker.js:1501 `planetOrtAuftrag` liest seither `msg.koerper` (:1468 `planetPlanVon(samen, koerper)`), und
+   :1444 `planetKoerper` nimmt NUR ein Objekt mit Feldern aus :1429 KOERPER_FELDER (radiusKm · g · wasserKm · krustenAnteil · freibordKm
+   · neigungRad · tagStunden · jahrTage · drehsinn · sternFluss · alterMa · …):
+     typeof k !== "object" → „planet: koerper ist kein Objekt (string)“
+   Vorher (a615ab5d, der Elternteil): 0 Leser von msg.koerper, `planetPlanVon(msg.samen)` — der Text „mars“ fiel still, die Felder
+   radiusKm/masseErden/schwere lagen am Auftrag, nicht am Körper: die Mars-Hälfte von 100 Paaren maß die Erde zweimal (still).
+   Seit 23e944ef3: die Leiter wirft nach 1,2 s (Wolke) / 1,665 s (Radeon 2da17e2e, messung/2da17e2e-radeon.json „S1 die Messung der
+   Leiter warf nach 1,665 s: /eval: … planet: koerper ist kein Objekt (string)“) — S1–S6 ungemessen.
+
+3. DER SCHNITT (k2-zusammenspiel.gewalt-koerper.diff, 2 Hunks, `git apply --check` an 179fab68 sauber)
+   a) Der Körper Mars als Objekt in den Feldern des Plan-Gesetzes, Quelle NASA Mars Fact Sheet: radiusKm 3 389,5 · g 3,71 m/s² ·
+      tagStunden 24,6597 · neigungRad 25,19°. KEIN jahrTage: planet-core.js:2637 `pruefJahr` verlangt das Jahr des Ort-Gesetzes
+      (365, R5/K10) — mit 686,98 d bricht der Ort beim Namen („planetOrt: koerper.jahrTage 686.98 ist nicht das Jahr des
+      Ort-Gesetzes 365 (R5, K10)“, koerper-hand.cjs jahr). Masse folgt dem Gesetz aus Radius und Schwere; `masseErden`/`schwere` sind
+      keine Felder des Gesetzes und fallen.
+   b) Zeuge S6: zeugeFaden(200, 1) UND `koerperWirkt` > 0 (wie viele der 100 Paare Erde ↔ Mars sich in hoeheM · kuesteKm · delta
+      unterscheiden) — sonst ROT „der Körper Mars ändert keine Antwort des Fadens (er misst die Erde zweimal)“.
+   c) Attrappe neu: „Rang 0,78, der Körper ändert keine Antwort (die Erde zweimal)“ {koerperWirkt: 0}; grün und die alte Attrappe
+      tragen koerperWirkt 100.
+   d) Täter/Leser S6 auf den heutigen Faden: voxel-worker.js:1501 `planetOrtAuftrag` (nimmt den Körper, :1444 `planetKoerper`).
+   Kein Kern-Fächer: die 200 Antworten gibt der Planet-Faden des SPIELS (`r._planetAuftrag`), derselbe Leser wie die Reise.
+
+4. DIE ZAHL VORHER ↔ NACHHER (Wolke, swiftshader, gleiche Welt; leiter-kandidat.cjs, koerper-hand.cjs)
+   vorher   Leiter warf nach 1,162 s · 0 von 6 Sprossen gemessen
+            koerper-hand alt: „planet: koerper ist kein Objekt (string)“ nach 1 ms
+   nachher  Leiter 1,236 / 1,205 s warm · 6 von 6 gemessen:
+              S1 zuege 2 000 · takte 240 · sturm 249 / 266 · zuendSturm 0 · zuendOhne 0 · faecherOrte 12 · sturmJeOrt 253,75
+              S3 antworten 16 · S5 antworten 36 (28 Land) · S6 antworten 200 · streuungM 2 474,792 · gefahr 0 · koerperWirkt 100
+            koerper-hand neu: 4 von 4 Paaren verschieden (same-saat-1: hoeheM −4 765 ↔ 3 143 m, Sommer −11,59 ↔ −4,70 K)
+   Wände    Proben aller Stationen der Datei 2 003, 0 falsch · `node punkte.cjs liste`: 1 976 Stationen · 420 Kriterien · fehlt 15 ·
+            Fehler 0 (= Basis; die zwei ROT `gelaende.K2#1/#2` „Wand HAKEN“ des Regel-Blatts zeigt dieser Klon nicht — der HAKEN prüft
+            gegen origin/main 4c9e6aab des Klons) · sek 40 ≤ 60.
+
+5. DIE UHR (Korrektur 3: die Wolke gilt nicht am Gerät — was sie misst und was nicht)
+   Der Planet-Faden ist EIN Worker (stamm/gelaende-chunks.js:644 `_planetAuftrag`), der Plan wird je Samen + Körper gemerkt
+   (voxel-worker.js:1467 `planetPlaene`). In ruhiger Seite (koerper-hand uhr): Erde kalt 123–201 ms je Samen · Mars bei warmer Erde
+   139–192 ms · 10 Mars auf einmal 1 926 ms → 100 Mars ≈ 15–19 s. Unter node einfädig (Nachbau desselben Auftrags): Erde 227 ms,
+   Mars 148 ms je Samen (Median).
+   Am Gerät läuft gewalt in der Reihe der Perspektive `same` NACH aufwaerts (Radeon 2da17e2e ZEIT: aufwaerts → ereignis → erdsaat →
+   gewalt); aufwaerts S7 fragt dieselben Saaten same-saat-0…99 an der Erde → die Erd-Pläne sind warm, gewalt zahlt die 100 Mars-Pläne.
+   Allein und kalt (Erde UND Mars neu) kämen ≈ 12–20 s dazu.
+   Die Wolke kalt misst das nicht: nach frischem Start streamt die Welt minutenlang über swiftshader auf 4 Kernen — die Leiter riss
+   den Deckel (60 s Mess-Kopie: 55,9 s Exit 3, dann 60 s), auch die Basis-Leiter aufwaerts riss dort ihre Frist (42 s); das Auge S6
+   kostete in der Wolke 24 ms … 31 s und warf.
+   Ungelesene Arbeit, die fallen könnte: keine im Planet-Teil — die 100 Erd-Zwillinge kosten warm ≈ 21 ms je Antwort und werden
+   gelesen (koerperWirkt, streuungM); der Erd-Plan ist ohnehin die Heimat jeder Mars-Antwort (planet-core.js:2782 `planetOrt`, Δ gegen
+   den Anker der Heimat); die 100 Mars-Pläne verlangt der Richter.
+
+6. DAS SPIEL TRÄGT #1 NICHT (Täter mit Zahl)
+   S1 misst ROT „kein Brand von selbst (kein Blitz)“: 249 / 266 Sturm-Züge in 100 Spieljahren an 12 Orten (±2 km), 0 Zündungen im
+   Gewitter, 0 in der Sonne, brandRateKm2a 0 → faktorZurRealRate fehlt (Real-Rate 10⁻³ je km² und Jahr, Stocks et al. 2002).
+   Täter: stamm/feld-brand.js:449 `_brandEntfachen` — die einzigen Rufer stamm/kampf.js:2471/2472 (die Tat: Brennglas, Unfall, Lava)
+   und stamm/koerper-fahrt.js:2363 (das Werk); kein Leser des Gewitters zündet. Die Heilung gehört ins Spiel (ein Blitz aus dem
+   Gewitter des EINEN Wetters), nicht in die Station.
+   Die Station misst kein rotes Spiel grün: S2–S6 tragen dieselbe Absenz (0 Gefahr-Schlüssel in 252 Antworten des Fadens).
+
+7. WAS NUR DAS GERÄT MESSEN KANN
+   - die Uhr der Leiter in der Reihe der Perspektive (Soll ≤ 40 s; der Faden zahlt dort die 100 Mars-Pläne) und allein kalt;
+   - das Auge S6 (`same-gewalt-s6`) und das Bild des Gewitters am Fächer (swiftshader: „A valid external Instance reference no longer
+     exists“);
+   - der Zeuge der Karte ([linse-gpu]) — der Hand-Lauf der Wolke urteilt daran ROT, nicht an den Werten.
+
+8. OFFEN AM RAND (nicht geschnitten, benannt)
+   Die Leser-Zeilen der Station hinken main nach (feld-brand.js:440 → heute :449, koerper-fahrt.js:2361 → :2363, S5 voxel-worker.js:1446
+   → :1501) — eine Klasse über die ganze Datei, nicht Teil dieses Kandidaten.
