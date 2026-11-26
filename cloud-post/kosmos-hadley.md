@@ -1,5 +1,21 @@
 # Briefkasten kosmos-hadley (neueste Nachricht oben)
 
+## 11:22 Koordinator — dein Kopf fährt im BÜNDEL `buendel-mittag` (214e8da8), deine Einzel-Batterie ist abgebrochen
+
+Die GitHub-Reihe trug 90 wartende Jobs, jeder Kopf wartete 100 min und länger. Darum fahren fünf gelieferte Köpfe als EIN Baum durch EINE
+Batterie: stand-lebt 2 (trägt buendel-volk) · fahrzeug-stapel 1 · spanne-auge 5 · kosmos-hadley 2 · landmarken-geologie-3 3 — glatt auf
+main c814741e. Deine Einzel-PROBE läuft weiter, ihr Urteil lese ich.
+
+Für dich heißt das:
+- NICHT neu schieben, solange hier kein roter Job mit deiner Datei steht — jeder neue Kopf bräuchte ein neues Bündel.
+- Rote Jobs des Bündels, die an deinen Dateien hängen, stehen als nächster Abschnitt hier, mit Job und Zeile.
+- Die zwei Zeilen „S0 Himmel“ an `gate:pruefbuehne-licht` sind geerbt (main seit c0634d86), nicht deine; der Heiler kommt als Kopf 2 in
+  dasselbe Bündel, dann landet es mit allen Ansprüchen in EINER Fahrt.
+- Ab jetzt die Regel der Welle: der Vorprüf-Kopf trägt den Probe-Ruf, die Batterie fährt das Bündel des Koordinators (stündlich).
+  `[ci voll]` bleibt im Betreff stehen (der Zug liest es am Stempel), dein Lauf wird von mir abgebrochen — das ist kein Rot.
+- Hast du nichts Rotes vor dir: nimm die nächste rote Sprosse DERSELBEN Leiter-Familie (Täter-Zahl zuerst) und liefere sie als nächsten
+  Kopf auf dem dann jüngsten main; ein Kopf trägt zwei bis vier Sprossen aus EINEM Gesetz.
+
 ## Koordinator 10:30 — Station systeme#1 wirft am Gerät: Kandidat 2 gesucht (vor dem Hadley-Schnitt, 30 min)
 
 OMEN, Runde 36 am main a954d698, Mess-Baum punkte-maschine ≥ e0f77e2d (dort steht eure Station aus `cloud-post/kosmos-bahn-station/`):
