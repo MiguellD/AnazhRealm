@@ -22,8 +22,9 @@
 //   (K) KALENDER: Licht, Tag der Prozesse, Pegel und Jahr gehen bei jeder Tag-Länge im Verhältnis 1; DAS JAHR AM LAUB: im Winter des
 //       Kalenders deckt keine Laub-Art über `JAHR_LAUB_DECKUNG` ihrer Sommer-Fläche, die Nadel steht (`jahrLaubRot`).
 //   (O) ORT (wetter-am-ort, im Selbsttest am echten Kern): das Wetter ist ein Feld je Ort (phyto-core `wetterFeldAm`) — Weg des
-//       Winds = Integral seiner Richtung, gleiche Saat → gleiches Feld, stetig, der Eingriff trägt sein Feld, Bilanz Ziel + Lee
-//       ±10 %, der Luv-Hang regnet mehr als der Lee-Hang (`ortRot`).
+//       Winds = Integral seiner Richtung, gleiche Saat → gleiches Feld, stetig, der Eingriff trägt sein Feld, wo das Lee den Zug
+//       trägt, jedes Paar Ort ↔ Lee-Partner hält mit = ohne (Bilanz Ziel + Lee ±10 %), der Luv-Hang regnet mehr als der Lee-Hang,
+//       auch im Eingriff (`ortRot`); KAMM in der Welt: ein gehobener Kamm (`fillVoxel`) hebt den Regen am Grat (`kammRot`).
 //   (L) LAND-MEER-LUFT (klima-kontinent, im Selbsttest am echten Kern planet-core): das Δ des Orts trägt das Klima von Land, Meer und
 //       Luft — Regenschatten am Kamm, Nebel an der Auftriebs-Küste, die Spanne West ↔ Ost —, der Gipfel steht auf Konvergenz
 //       (ks liest die Grenze jemals) und das Eis auf der Kälte des Orts; fünf gepflanzte Täter fallen je an ihrer Klinge und nennen
@@ -471,11 +472,18 @@ async function jahrLaubArten(praesenz) {
 // aus dem rAF-Stempel und die Spiel-Zeit ohne ihren Takt — je beim Namen
 // ── (O) DAS WETTER AM ORT (wetter-am-ort, rein, ohne Browser — im Selbsttest gemessen): das Feld des Kerns (phyto-core
 // `wetterFeldAm`) je Ort statt EINES Worts der Welt. Gemessen am echten Kern: der Weg des Winds ist das Integral der EINEN Richtung
-// (d/dt `windWeg` = `windRichtung`, |Δ| ≤ 1e-5), gleiche Saat → gleiches Feld (byte), der Eingriff trägt an seinem Ort sein Feld,
-// die Bilanz Ziel + Lee mit ÷ ohne steht in ±10 % (median ±5 %, ≥ 85 % der Fälle — wo das Lee weniger Regen trägt, als der Eingriff
-// zieht, nimmt er nur, was dort fällt), der Luv-Hang regnet mehr als die Ebene, der Lee-Hang weniger, und das Feld springt nie
-// (10 m Schritt: |Δ| < 0,2 je Kanal — die Zeilen der Tafel liegen bis 0,85 auseinander). Leser: `ortRot`.
-const ORT_BILANZ = { median: 0.05, band: 0.1, anteil: 0.85, sprung: 0.2 };
+// (d/dt `windWeg` = `windRichtung`, |Δ| ≤ 1e-5), gleiche Saat → gleiches Feld (byte), das Feld springt nie (10 m Schritt: |Δ| < 0,2
+// je Kanal — die Zeilen der Tafel liegen bis 0,85 auseinander), der Luv-Hang regnet mehr als die Ebene, der Lee-Hang weniger.
+// DIE VERLAGERUNG (same.kopplung.terraform#1 — WMO 2017, Weather Modification: ein Eingriff verlagert Niederschlag, er erfindet
+// keinen): PAAR — jeder Ort p im Eingriff und sein Lee-Partner q = p + leeM windab halten zur selben Uhr mit = ohne (|Δ| ≤ 1e-9,
+// sechs Saaten × vier Uhren, über einem Hügel-Relief); daraus die BILANZ jeder Stichprobe, die das Lee um leeM verschiebt (die
+// Scheiben bis hierM[1], median ±5 %, ≥ 85 % in ±10 %); BEREICH — kein Regen außerhalb [0, 1] (das Lee gibt nie mehr her, als es
+// trägt); EINGRIFF — am Ort des Eingriffs trägt das Feld sein Wort, wo das Lee den Zug trägt (|Δ| ≤ 1e-12, mindestens ein solcher
+// Fall); RELIEF IM EINGRIFF — der Hang formt den gezogenen Regen wie draußen (Kontrast (Luv − Lee) ÷ Ebene im Eingriff ≥ der Hälfte
+// des Kontrasts draußen: die Hebung w = U·∇h macht das Kondensat, gleich, wer die Wolke rief — Smith & Barstad 2004, τ 1 000 s).
+// Bis same.kopplung.terraform#1 glich EIN Faktor der Region das Lee aus und der Kern trug das Wort ohne Relief: am alten Kern
+// PAAR bis 1,4 und RELIEF IM EINGRIFF 0 (main 4c9e6aab, `ortRot`). Leser: `ortRot`.
+const ORT_BILANZ = { median: 0.05, band: 0.1, anteil: 0.85, sprung: 0.2, paar: 1e-9, reliefHier: 0.5 };
 function ortMessung(P) {
     const W = P.WETTER_ORT;
     const K = ["fog", "sun", "grey", "wind", "rain"];
@@ -496,35 +504,48 @@ function ortMessung(P) {
         for (const c of K) sprung = Math.max(sprung, Math.abs(a[c] - b[c]));
     }
     const feld = { fog: 0.4, sun: 0.55, grey: 0.6, wind: 0.35, rain: 0.6 };
+    const huegel = (x, z) => 300 * Math.sin(x / 2100) * Math.cos(z / 2700); // BÜHNE: ein Relief der Kern-Ebene, kein Welt-Ort
     const bilanz = [];
-    let hier = 0;
+    let [hier, traegt, paar, rMin, rMax] = [0, 0, 0, 1, 0];
     for (const saat of ["o1", "o2", "o3", "o4", "o5", "o6"])
         for (const t of [0, 900, 1800, 2700]) {
             const H = { x: 1000, z: -500, feld }; // BÜHNE: ein Punkt der Kern-Ebene (Saat o1–o6 ohne Welt), kein Welt-Ort
-            hier = Math.max(hier, Math.abs(P.wetterFeldAm(saat, H.x, H.z, t, null, { hier: H }).rain - feld.rain));
             const g = P.windGrund(saat);
+            const [lx, lz] = [g.x * W.leeM, g.z * W.leeM];
+            const [np, nq] = [P.wetterFeldAm(saat, H.x, H.z, t).rain, P.wetterFeldAm(saat, H.x + lx, H.z + lz, t).rain];
+            if (nq >= feld.rain - np) {
+                traegt++;
+                hier = Math.max(hier, Math.abs(P.wetterFeldAm(saat, H.x, H.z, t, null, { hier: H }).rain - feld.rain));
+            }
             const R = W.hierM[1];
             let [mit, ohne] = [0, 0];
-            for (const [cx, cz] of [
-                [H.x, H.z],
-                [H.x + g.x * W.leeM, H.z + g.z * W.leeM],
-            ])
-                for (let dx = -R; dx <= R; dx += 400)
-                    for (let dz = -R; dz <= R; dz += 400) {
-                        if (dx * dx + dz * dz > R * R) continue;
-                        mit += P.wetterFeldAm(saat, cx + dx, cz + dz, t, null, { hier: H }).rain;
-                        ohne += P.wetterFeldAm(saat, cx + dx, cz + dz, t, null).rain;
-                    }
+            for (let dx = -R; dx <= R; dx += 400)
+                for (let dz = -R; dz <= R; dz += 400) {
+                    if (dx * dx + dz * dz > R * R) continue;
+                    const [px, pz] = [H.x + dx, H.z + dz];
+                    const m = [P.wetterFeldAm(saat, px, pz, t, null, { hier: H }).rain, P.wetterFeldAm(saat, px + lx, pz + lz, t, null, { hier: H }).rain]; // prettier-ignore
+                    const o = [P.wetterFeldAm(saat, px, pz, t).rain, P.wetterFeldAm(saat, px + lx, pz + lz, t).rain];
+                    mit += m[0] + m[1];
+                    ohne += o[0] + o[1];
+                    const mh = [P.wetterFeldAm(saat, px, pz, t, null, { hier: H, hoehe: huegel }).rain, P.wetterFeldAm(saat, px + lx, pz + lz, t, null, { hier: H, hoehe: huegel }).rain]; // prettier-ignore
+                    const oh = [P.wetterFeldAm(saat, px, pz, t, null, { hoehe: huegel }).rain, P.wetterFeldAm(saat, px + lx, pz + lz, t, null, { hoehe: huegel }).rain]; // prettier-ignore
+                    paar = Math.max(paar, Math.abs(m[0] + m[1] - o[0] - o[1]), Math.abs(mh[0] + mh[1] - oh[0] - oh[1]));
+                    for (const v of [...m, ...mh]) [rMin, rMax] = [Math.min(rMin, v), Math.max(rMax, v)];
+                }
             bilanz.push(mit / ohne);
         }
     bilanz.sort(aufsteigend); // der EINE Vergleich und der EINE Rang der Boot-Lib (`aufsteigend`, `rang`: Node global)
     const gr = P.windGrund("o1");
     const hang = (s) => (x, z) => s * 0.05 * (x * gr.x + z * gr.z);
-    let [luv, flach, lee] = [0, 0, 0];
+    const E0 = { x: 0, z: 0, feld: Object.assign({}, feld, { rain: 0.5 }) };
+    let [luv, flach, lee, luvH, flachH, leeH] = [0, 0, 0, 0, 0, 0];
     for (let t = 0; t < 3600; t += 120) {
         flach += P.wetterFeldAm("o1", 0, 0, t).rain;
         luv += P.wetterFeldAm("o1", 0, 0, t, null, { hoehe: hang(1) }).rain;
         lee += P.wetterFeldAm("o1", 0, 0, t, null, { hoehe: hang(-1) }).rain;
+        flachH += P.wetterFeldAm("o1", 0, 0, t, null, { hier: E0 }).rain;
+        luvH += P.wetterFeldAm("o1", 0, 0, t, null, { hier: E0, hoehe: hang(1) }).rain;
+        leeH += P.wetterFeldAm("o1", 0, 0, t, null, { hier: E0, hoehe: hang(-1) }).rain;
     }
     const r3 = (v) => Math.round(v * 1000) / 1000;
     return {
@@ -532,9 +553,13 @@ function ortMessung(P) {
         gleich,
         sprung: r3(sprung),
         hier,
+        traegt,
+        paar,
+        bereich: { min: r3(rMin), max: r3(rMax) },
         bilanz: { min: r3(bilanz[0]), median: r3(rang(bilanz)), max: r3(bilanz[bilanz.length - 1]) },
         imBand: r3(bilanz.filter((v) => Math.abs(v - 1) <= ORT_BILANZ.band).length / bilanz.length),
         relief: { luv: r3(luv), flach: r3(flach), lee: r3(lee) },
+        reliefHier: { luv: r3(luvH), flach: r3(flachH), lee: r3(leeH) },
     };
 }
 function ortRot(O) {
@@ -542,17 +567,69 @@ function ortRot(O) {
     if (!(O.weg <= 1e-5)) rot.push(`(O) WEG: d/dt windWeg weicht von windRichtung um ${O.weg} ab — die Wolken-Schicht zieht neben dem Wind`); // prettier-ignore
     if (!O.gleich) rot.push("(O) SAAT: gleiche Saat, gleicher Ort, gleiche Uhr — ein anderes Feld");
     if (!(O.sprung < ORT_BILANZ.sprung)) rot.push(`(O) STETIG: das Feld springt um ${O.sprung} auf 10 m — die Zeile wechselt hart`); // prettier-ignore
-    if (!(O.hier <= 1e-12))
-        rot.push(`(O) EINGRIFF: am Ort des Eingriffs trägt das Feld nicht sein Feld (Regen ±${O.hier})`);
+    if (!(O.traegt > 0 && O.hier <= 1e-12))
+        rot.push(`(O) EINGRIFF: am Ort des Eingriffs trägt das Feld nicht sein Wort, wo das Lee den Zug trägt (Regen ±${O.hier}, ${O.traegt} Fälle)`); // prettier-ignore
+    if (!(O.paar <= ORT_BILANZ.paar))
+        rot.push(`(O) PAAR: Ort und Lee-Partner (leeM windab, dieselbe Uhr) mit − ohne bis ${O.paar} — der Eingriff erfindet oder verliert Regen (WMO 2017: er verlagert)`); // prettier-ignore
+    if (!(O.bereich.min >= 0 && O.bereich.max <= 1))
+        rot.push(`(O) BEREICH: Regen ${O.bereich.min} … ${O.bereich.max} außerhalb [0, 1] — das Lee gibt mehr her, als es trägt`); // prettier-ignore
     if (!(Math.abs(O.bilanz.median - 1) <= ORT_BILANZ.median && O.imBand >= ORT_BILANZ.anteil))
         rot.push(`(O) BILANZ: Ziel + Lee mit ÷ ohne median ${O.bilanz.median}, ${(100 * O.imBand).toFixed(0)} % in ±${100 * ORT_BILANZ.band} % — der Eingriff erfindet oder verliert Regen`); // prettier-ignore
     if (!(O.relief.luv > O.relief.flach && O.relief.flach > O.relief.lee))
         rot.push(`(O) RELIEF: Luv ${O.relief.luv} · Ebene ${O.relief.flach} · Lee ${O.relief.lee} — der Hang formt den Regen nicht`); // prettier-ignore
+    const [k, kH] = [(O.relief.luv - O.relief.lee) / O.relief.flach, (O.reliefHier.luv - O.reliefHier.lee) / O.reliefHier.flach]; // prettier-ignore
+    if (!(kH >= ORT_BILANZ.reliefHier * k))
+        rot.push(`(O) RELIEF IM EINGRIFF: Kontrast (Luv − Lee) ÷ Ebene ${kH.toFixed(3)} im Eingriff gegen ${k.toFixed(3)} draußen — der Hang formt den gezogenen Regen nicht (Smith & Barstad 2004)`); // prettier-ignore
     return rot;
 }
+// (O) KAMM IN DER WELT (same.kopplung.terraform#1, Null-Renderer): die Höhe des Regens trägt den Willen des Spielers — ein Kamm
+// aus Füllungen (`fillVoxel`, das Verb der Werkstatt und der DSL; 7 Säulen r 12 quer zum Grundwind, der Grat ~24 m über dem Boden)
+// hebt den Regen auf dem Grat und senkt ihn `relief.schrittM` windab (Steigungsregen: Smith & Barstad 2004, die Hebung w = U·∇h),
+// gefragt über den EINEN Leser der Welt `_wetterFeldAm` an sechs Uhren, die Natur am Ort (der Eingriff des Spielers 200 km fern,
+// im finally zurück). Am alten Leser (main 4c9e6aab: `_terrainMacroSurfaceY` ohne Edits) stand der Regen auf dem Grat byte-gleich
+// (0,4713 → 0,4713). Leser: `kammRot`.
+async function kammProbe() {
+    const P = globalThis.__phytoCore;
+    const g = P.windGrund(AnazhRealm._saatVon(st.worldMeta || {}));
+    const sM = P.WETTER_ORT.relief.schrittM;
+    const C = { x: pm.position.x - g.x * 400, z: pm.position.z - g.z * 400 };
+    const L = { x: C.x + g.x * sM, z: C.z + g.z * sM };
+    const uhren = [0, 600, 1200, 3600, 7200, 20000];
+    const regen = (o) => {
+        const p0 = [pm.position.x, pm.position.z];
+        try {
+            pm.position.x += 2e5;
+            pm.position.z += 2e5;
+            return uhren.reduce((q, t) => q + r._wetterFeldAm(o.x, o.z, t).rain, 0) / uhren.length;
+        } finally {
+            [pm.position.x, pm.position.z] = p0;
+        }
+    };
+    const vor = [regen(C), regen(L)];
+    let edits = 0;
+    for (let i = -3; i <= 3; i++) {
+        const [x, z] = [C.x - g.z * 20 * i, C.z + g.x * 20 * i];
+        if (r.fillVoxel(x, r._terrainMacroSurfaceY(x, z, true) + 12, z, 12)) edits++;
+    }
+    const nach = [regen(C), regen(L)];
+    return { kamm: [vor[0], nach[0]], lee: [vor[1], nach[1]], edits, schrittM: sM };
+}
+function kammRot(K) {
+    const r4 = (v) => +v.toFixed(4);
+    if (!(K.edits > 0)) return ["(O) KAMM: kein Edit gesetzt — die Probe misst keinen Willen des Spielers"];
+    if (!(K.kamm[1] > K.kamm[0] && K.lee[1] < K.lee[0]))
+        return [`(O) KAMM: ${K.edits} Füllungen quer zum Wind — Regen auf dem Grat ${r4(K.kamm[0])} → ${r4(K.kamm[1])}, windab ${r4(K.lee[0])} → ${r4(K.lee[1])}: die Höhe des Regens liest den Edit nicht (gelaende-core editHoehe)`]; // prettier-ignore
+    return [];
+}
+// die gepflanzten Täter des Kerns (EINE Zeile getauscht, `kernGepflanzt`): jeder fällt an genau seiner Klinge
+const ORT_TAETER = [
+    ["PAAR", "das Lee zahlt nicht", /o\.rain = V\.rq - V\.d;/, "o.rain = V.rq;"],
+    ["BEREICH", "ohne die Grenze des Lee", /d = d > 0 \? Math\.min\(d, rq\) : Math\.max\(d, rq - 1\);/, ""],
+    ["RELIEF IM EINGRIFF", "das Relief nicht im Eingriff", /T = Math\.min\(1, T \* fp\);/, ""],
+];
 function ortSelbsttest() {
     require("../phyto-core.js");
-    const O = ortMessung(globalThis.__phytoCore);
+    const O = ortMessung(kernGepflanzt("phyto-core.js", "__phytoCore", null));
     const v = ortRot(O).map((r) => `ort am Kern: ${r}`);
     const A = (o) => ortRot(Object.assign({}, O, o)).length;
     if (
@@ -561,13 +638,33 @@ function ortSelbsttest() {
             { gleich: false },
             { sprung: 0.6 },
             { hier: 0.2 },
+            { traegt: 0 },
+            { paar: 0.05 },
+            { bereich: { min: -0.2, max: 1 } },
             { bilanz: { min: 1.4, median: 1.4, max: 2 } },
             { imBand: 0.5 },
             { relief: { luv: 1, flach: 1, lee: 1 } },
+            { reliefHier: { luv: 1, flach: 1, lee: 1 } },
         ].some((o) => A(o) !== 1)
     )
-        v.push("ort: ein eingeschmuggelter Täter (Weg, Saat, Sprung, Eingriff, Bilanz, Band, Relief) fällt nicht rot");
-    return { v, O };
+        v.push("ort: ein eingeschmuggelter Täter (Weg, Saat, Sprung, Eingriff, Fälle, Paar, Bereich, Bilanz, Band, Relief, Relief im Eingriff) fällt nicht genau einmal rot"); // prettier-ignore
+    const K = { kamm: [0.47, 0.55], lee: [0.25, 0.2], edits: 7 };
+    if (kammRot(K).length) v.push(`kamm: der gehobene Kamm, der den Regen formt, ist nicht grün: ${kammRot(K)}`);
+    const kammTaeter = [
+        ["die Höhe des Regens ohne Edits", { kamm: [0.47, 0.47], lee: [0.25, 0.25] }],
+        ["kein Edit gesetzt", { edits: 0 }],
+    ].map(([name, o]) => {
+        const rot = kammRot(Object.assign({}, K, o));
+        if (rot.length !== 1) v.push(`kamm: der Täter „${name}" fällt nicht genau einmal an (O) KAMM rot`);
+        return `${name} → ${rot.length === 1 ? "ROT an (O) KAMM" : "GRÜN"}`;
+    });
+    const taeter = ORT_TAETER.map(([klinge, name, re, ersatz]) => {
+        const rot = ortRot(ortMessung(kernGepflanzt("phyto-core.js", "__phytoCore", [klinge, name, re, ersatz])));
+        const an = rot.some((r) => r.startsWith(`(O) ${klinge}:`));
+        if (!an) v.push(`ort: der Täter „${name}" fällt nicht an (O) ${klinge} rot: ${rot.join(" · ") || "grün"}`);
+        return `${name} → ${an ? "ROT an (O) " + klinge : "GRÜN"}${rot.length > 1 ? ` (+${rot.length - 1})` : ""}`;
+    });
+    return { v, O, taeter: taeter.concat(kammTaeter) };
 }
 
 // (L) LAND-MEER-LUFT (klima-kontinent, Karte 2 planet.kopplung.land-meer-luft): das Wetter am Ort liest das Klima des Planeten — der
@@ -596,35 +693,39 @@ const LML_TAETER = [
     ["gipfel", "ks nur an der Grenze von heute", /const konv = Math\.max\(st, /, "const konv = Math.max(0, ", "ortRoh ks"],
     ["eis", "das Eis nur nach der Breite", /if \(G\.T0 \+ G\.T2 \* p2 \+ ab < KLIMA\.tEisC\) return 1;/, "if ((breite < 0 ? -breite : breite) >= G.eisBreite) return 1;", "ortEisZeit"], // prettier-ignore
 ];
-function lmlKern(taeter) {
-    // der Kern des Baums, bei einem Täter mit EINER getauschten Zeile (sein Text; fehlt die Zeile, bricht der Selbsttest beim Namen)
+// DER GEPFLANZTE KERN: der Kern `datei` des Baums (sein Global `name`), bei einem Täter mit EINER getauschten Zeile (sein Text; fehlt
+// die Zeile, bricht der Selbsttest beim Namen). Leser: (L) `lmlKern`, (O) `ortSelbsttest`.
+function kernGepflanzt(datei, name, taeter) {
     const fs = require("fs");
     const os = require("os");
     const path = require("path");
-    const kern = path.join(__dirname, "..", "planet-core.js");
-    const halt = globalThis.__planetCore;
-    if (!taeter) {
-        delete globalThis.__planetCore;
-        delete require.cache[kern];
+    const kern = path.join(__dirname, "..", datei);
+    const halt = globalThis[name];
+    const lade = (f) => {
+        delete globalThis[name];
+        delete require.cache[f];
         try {
-            return require(kern);
+            const m = require(f);
+            return globalThis[name] || m;
         } finally {
-            if (halt === undefined) delete globalThis.__planetCore;
-            else globalThis.__planetCore = halt;
+            // der reine Kern bleibt stehen, wo keiner stand (ein späteres `require` liest den Cache, setzt ihn nie neu)
+            if (halt !== undefined) globalThis[name] = halt;
+            else if (f !== kern) delete globalThis[name];
         }
-    }
+    };
+    if (!taeter) return lade(kern);
     const text = fs.readFileSync(kern, "utf8");
-    if (!taeter[2].test(text)) throw new Error(`(L) der Kern trägt die Zeile ${taeter[2]} nicht — der Täter „${taeter[1]}" lässt sich nicht pflanzen`); // prettier-ignore
-    const aus = path.join(os.tmpdir(), `planet-core-lml-${taeter[0]}-${process.pid}.js`);
+    if (!taeter[2].test(text)) throw new Error(`${datei} trägt die Zeile ${taeter[2]} nicht — der Täter „${taeter[1]}" lässt sich nicht pflanzen`); // prettier-ignore
+    const aus = path.join(os.tmpdir(), `${path.basename(datei, ".js")}-taeter-${taeter[0].replace(/\W+/g, "-")}-${process.pid}.js`);
     fs.writeFileSync(aus, text.replace(taeter[2], taeter[3]));
-    delete globalThis.__planetCore;
     try {
-        return require(aus);
+        return lade(aus);
     } finally {
-        if (halt === undefined) delete globalThis.__planetCore;
-        else globalThis.__planetCore = halt;
         fs.unlinkSync(aus);
     }
+}
+function lmlKern(taeter) {
+    return kernGepflanzt("planet-core.js", "__planetCore", taeter);
 }
 function lmlMessung(P, W, og) {
     const RAD = Math.PI / 180;
@@ -765,10 +866,32 @@ function lmlSelbsttest() {
 // Böe im Stamm dreht ihre Phase mit der Uhr allein (`uWindTime·ω`) — Gras, Krone und Karte lesen uBoePhase (`_boePhase`), der Wind
 // am Ort dieselbe Phase. Selbst-Test: der Täter von vor wind-saison (die Böe wandert mit ω/k = 10,4 m/s in jedem Wetter) MUSS rot
 // sehen. Leser: `boeRot`.
+// JEDE PHASE DES ANKERS (rueckfall-drei): der Weg der Böe trägt seine Geschichte (`_boeAnker` — jedes Wort und jede Uhr davor
+// setzen ihn fort), und die Station misst an der Mess-Wiese nach dem Umstellen ihrer Sitzung (punkte-maschine 5ce9e0d1:
+// lebenslauf ruft `/umstellen --ort wiese` vor kraft) — an einer anderen Phase als der frische Wirt. Die Laufzeit gilt bei jeder:
+// `BOE_PHASEN` Phasen des Ankers über eine Wellenlänge, das Urteil liest die schlechteste. Bis hier maß die Wache EINE Phase bei
+// (40, −30), 50 m vom Ursprung, und sah die Drift an der Uhr allein nie (5,6–17,8 %); an der Wiese streute sie 12,6–23,9 %, das
+// Gerät nach dem Umstellen 23,7 % (GTX f63a69ef, Radeon 2da17e2e). Selbst-Test: die Drift an der Uhr allein (der Täter vor
+// rueckfall-drei) MUSS rot sehen.
 const BOE_SOLL = { laufzeitAbw: 20, kreuzR: 0.6, varianz: 3 };
+const BOE_PHASEN = 12;
 // die Phase der Böe aus der Uhr allein: `uWindTime.mul(B.omega)`, `.mul(float(B.omega))`, `t * B.omega − (x * d.x …)`
 const BOE_ALT = /\.mul\(\s*(?:float\()?\s*_?[A-Z][A-Za-z]*\.omega\b|\.omega\s*-\s*\(?\s*[a-z]+\s*\*\s*d\.x/;
-function boeMessung(r) {
+// das Maß über die Phasen des Ankers: je Phase S0 der Weg ab t 100 (die Ruhe zuerst, wie die Station), die schlechteste Phase
+// trägt Laufzeit und Lag, dazu das kleinste r und die kleinste Varianz und die Spanne der Laufzeit
+function boePhasen(r) {
+    const lam = (2 * Math.PI) / r.constructor.WIND_BOE.k;
+    const L = [];
+    for (let i = 0; i < BOE_PHASEN; i++) L.push(Object.assign(boeMessung(r, (i / BOE_PHASEN) * lam), { phase: i / BOE_PHASEN }));
+    const w = L.reduce((a, b) => (b.laufzeitAbw > a.laufzeitAbw ? b : a));
+    const ab = L.map((b) => b.laufzeitAbw);
+    return Object.assign({}, w, {
+        kreuzR: Math.min(...L.map((b) => b.kreuzR)),
+        varianz: Math.min(...L.map((b) => b.varianz)),
+        spanne: [Math.min(...ab), Math.max(...ab)],
+    });
+}
+function boeMessung(r, S0) {
     const st = r.state;
     const p = st.playerMesh.position;
     const reihe = (x, z) => {
@@ -786,6 +909,11 @@ function boeMessung(r) {
     let ruhe, A, B;
     try {
         st.weather = "sunny";
+        if (S0 != null) {
+            r._boeAnker = null;
+            r._boeWeg(100);
+            r._boeAnker.s = S0;
+        }
         ruhe = reihe(p.x, p.z);
         st.weather = "stormy";
         A = reihe(p.x, p.z);
@@ -836,18 +964,31 @@ function boeSelbsttest() {
     const { ctx } = require("./lib/stamm.cjs").ladeKlasse(R);
     const r = require("vm").runInContext("new AnazhRealm()", ctx);
     r.state.worldMeta = { seed: "anazh-realm-seed", voxelTerrain: true };
-    r.state.playerMesh = { position: { x: 40, y: 0, z: -30 } }; // BÜHNE: der Stand-Ort der Station kraft#2 am Wirt ohne Welt (Saat anazh-realm-seed), kein Welt-Ort
+    // der Stand-Ort der Station kraft#2: die Mess-Wiese (spec/profiband/haushalt.json, die Sitzung steht dort nach `/umstellen --ort
+    // wiese`), am Wirt ohne Welt — der Wind ist eine Funktion von Saat, Wort, Ort und Uhr, die Null-Welt misst an der Wiese dieselbe Zahl
+    const W = require("./lib/welt-orte.cjs").messort("wiese");
+    r.state.playerMesh = { position: { x: W.x, y: 0, z: W.z } };
     r.state.weatherTransition = null;
-    const Bm = boeMessung(r);
+    const Bm = boePhasen(r);
     const v = boeRot(Bm, boeQuelle(R)).map((x) => `böe am Wirt: ${x}`);
     // der Täter von vor wind-saison: die Phase der Böe läuft mit ω = 0,4 rad/s, gleich welches Wetter
     const alt = Object.create(r);
     alt._boePhase = (t) => t * 0.4;
-    const Ba = boeMessung(alt);
+    const Ba = boePhasen(alt);
     const ra = boeRot(Ba, []);
     if (!(ra.length === 1 && /^\(Ö\) BÖE:/.test(ra[0]))) v.push(`böe: der Täter „die Böe wandert mit ω/k“ fällt nicht rot (${JSON.stringify(Ba)})`);
+    // der Täter vor rueckfall-drei: die Drift atmet an der Uhr allein, die ganze Welt zugleich (`_windWob(t)` statt der Uhr des Musters)
+    const uhr = Object.create(r);
+    uhr._windAt = function (x, z, t) {
+        const w = r._windAt.call(this, x, z, t);
+        const f = this._windWob(t) / w.wob;
+        return Object.assign(w, { staerke: w.staerke * f, ms: w.ms * f, wob: w.wob * f });
+    };
+    const Bu = boePhasen(uhr);
+    const ru = boeRot(Bu, []);
+    if (!(ru.length === 1 && /^\(Ö\) BÖE:/.test(ru[0]))) v.push(`böe: der Täter „die Drift an der Uhr allein“ fällt nicht rot (${JSON.stringify(Bu)})`);
     if (boeRot(Bm, ["stamm/x.js:1"]).length !== boeRot(Bm, []).length + 1) v.push("böe: die Quelle mit ω/k fällt nicht rot");
-    return { v, Bm, Ba };
+    return { v, Bm, Ba, Bu };
 }
 
 function uhrSelbsttest() {
@@ -897,8 +1038,9 @@ if (SELBSTTEST) {
     v.push(...ort.v);
     const O = ort.O;
     console.log(
-        `  (O) Ort am Kern · Weg ${O.weg.toExponential(1)} · Sprung ${O.sprung} · Bilanz ${O.bilanz.min}/${O.bilanz.median}/${O.bilanz.max} (${(100 * O.imBand).toFixed(0)} % in ±10 %) · Regen Luv ${O.relief.luv} · Ebene ${O.relief.flach} · Lee ${O.relief.lee}`
+        `  (O) Ort am Kern · Weg ${O.weg.toExponential(1)} · Sprung ${O.sprung} · Paar ${O.paar.toExponential(1)} · Bereich ${O.bereich.min} … ${O.bereich.max} · Bilanz ${O.bilanz.min}/${O.bilanz.median}/${O.bilanz.max} (${(100 * O.imBand).toFixed(0)} % in ±10 %) · Eingriff trägt ${O.traegt} · Regen Luv ${O.relief.luv} · Ebene ${O.relief.flach} · Lee ${O.relief.lee} · im Eingriff ${O.reliefHier.luv} · ${O.reliefHier.flach} · ${O.reliefHier.lee}`
     );
+    for (const t of ort.taeter) console.log(`      gepflanzt: ${t}`);
     const lml = lmlSelbsttest();
     v.push(...lml.v);
     const L = lml.L;
@@ -909,7 +1051,7 @@ if (SELBSTTEST) {
     const boe = boeSelbsttest();
     v.push(...boe.v);
     console.log(
-        `  (Ö) Böe am Wirt · Laufzeit ${boe.Bm.lagS} s gegen ${boe.Bm.sollS} s (±${boe.Bm.laufzeitAbw} %) · r ${boe.Bm.kreuzR} · Varianz ${boe.Bm.varianz} — gepflanzt ω/k: ±${boe.Ba.laufzeitAbw} %`
+        `  (Ö) Böe am Wirt an der Mess-Wiese · ${BOE_PHASEN} Phasen des Ankers · Laufzeit ±${boe.Bm.spanne[0]}–${boe.Bm.spanne[1]} % (die schlechteste: ${boe.Bm.lagS} s gegen ${boe.Bm.sollS} s bei Phase ${boe.Bm.phase.toFixed(3)}) · r ${boe.Bm.kreuzR} · Varianz ${boe.Bm.varianz} ✅ — gepflanzt ω/k: ±${boe.Ba.laufzeitAbw} % → ROT · gepflanzt die Drift an der Uhr allein: ±${boe.Bu.spanne[0]}–${boe.Bu.spanne[1]} % → ROT`
     );
     const grund = grundSelbsttest();
     v.push(...grund.rot);
@@ -1446,6 +1588,7 @@ hauptLauf(async () => {
     const KAL = await page3.evaluate(kalenderProbe, { minuten: [8, 60], sek: 240, schrittSek: SCHRITT_SEK });
     const JL = await page3.evaluate(jahrWinterProbe, { schrittSek: SCHRITT_SEK });
     JL.feld = await page3.evaluate(jahrFeldProbe, { praesenz: JL.praesenz });
+    const KAMM = await page3.evaluate(kammProbe);
     const lab = await browser.newPage();
     await server.zeige(lab, 60000, "worlds/terrain/index.html");
     await lab.waitForFunction("typeof updateWorld === 'function' && typeof camera === 'object' && camera");
@@ -1511,7 +1654,10 @@ hauptLauf(async () => {
     console.log(
         `  Jahr am Laub · Kalender im Winter (Phase ${JL.phase} nach ${JL.takte} Takten, Präsenz Laub ${JL.praesenz[0]} · Blüte ${JL.praesenz[1]}): ${laub.length} Laub-Stufen, höchste Deckung ${(100 * dmax.d).toFixed(1)} % (${dmax.a ? dmax.a.id + " L" + dmax.a.lod : "–"}), ${JL.arten.length - laub.length} Nadel- und leere Stufen; Feld (Fernform gesetz) ${(JL.feld || []).map((f) => f.id + " " + (f.fehlt ? "–" : (100 * f.winter).toFixed(1) + " %")).join(" · ")}`
     );
-    const rot = [...urteil(S, H), ...kalenderRot(KAL), ...jahrLaubRot(JL)];
+    console.log(
+        `  Kamm · ${KAMM.edits} Füllungen quer zum Wind: Regen auf dem Grat ${KAMM.kamm[0].toFixed(4)} → ${KAMM.kamm[1].toFixed(4)}, ${KAMM.schrittM} m windab ${KAMM.lee[0].toFixed(4)} → ${KAMM.lee[1].toFixed(4)}`
+    );
+    const rot = [...urteil(S, H), ...kalenderRot(KAL), ...jahrLaubRot(JL), ...kammRot(KAMM)];
     wandEnde(
         rot,
         "unter der Bühne dreht kein Schreiber das Wetter; frei gehen Uhr und Wetter nach dem Wort des Spielers, die Welt" +

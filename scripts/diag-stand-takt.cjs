@@ -4307,13 +4307,10 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             r.setTimeOfDay(0.5, "regler");
                             vor();
                             if (wind === "aus") r._windAt = (...a) => Object.assign(P._windAt.apply(r, a), { ms: 0 });
-                            // der gesetzte Wind GANZ: `_brandTempo` teilt die Stärke durch die Böen-Drift zur Uhr des Brands
-                            // (`_windWob(t)`) — trägt der Wind sie zur Uhr des Winds, teilt die Drift auch dort (lokal streute R sonst
-                            // an derselben Uhr des Winds 0,935 · 0,871 · 0,875)
-                            else if (wind != null) {
-                                r._windAt = (x, z, t, aus) => P._windAt.call(r, MESS.x, MESS.z, wind, aus);
-                                r._windWob = () => P._windWob.call(r, wind);
-                            }
+                            // der gesetzte Wind GANZ: `_brandTempo` teilt die Stärke durch die Böen-Drift derselben Probe
+                            // (`wob` des Winds am Ort, rueckfall-drei) — der gesetzte Wind trägt sie mit (bis dahin teilte der Brand
+                            // durch die Drift zur Uhr des Brands, und R streute an derselben Uhr des Winds 0,935 · 0,871 · 0,875)
+                            else if (wind != null) r._windAt = (x, z, t, aus) => P._windAt.call(r, MESS.x, MESS.z, wind, aus);
                             // DAS GESETZTE BETT (FENSTER-BETT): der EINE Schreiber des Betts im Brand ist `_brandStoff` (stamm/feld-brand.js,
                             // das Gemessene `_brandBett`) — lebendig selbst hat drei Schreiber, die erst im Leser `auraAt` zusammenlaufen
                             // (das Overlay `_depositLife`, die Narbe der Taten, der Fraß aus dem Faden des Gaus). Der Herd misst sein Bett
@@ -4343,7 +4340,6 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             } finally {
                                 AnazhRealm.BRAND = B0;
                                 delete r._windAt;
-                                delete r._windWob;
                                 delete r._brandStoff;
                             }
                         };

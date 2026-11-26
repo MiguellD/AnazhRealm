@@ -2483,8 +2483,11 @@ class AnazhRealm_dirigent_takt {
         this._feldPassKamera();
         const knotenUhr = this.state.renderer && this.state.renderer._nodes && this.state.renderer._nodes.nodeFrame;
         if (knotenUhr) knotenUhr.time = bildZeit;
-        // die Böen-Drift am Bild (`_windWob` auf der Bild-Uhr; die Uhr-Wache liest sie)
-        this._weatherWob = this._windWob(bildZeit);
+        // der EINE Wind am Auge auf der Bild-Uhr (`_windAt`) — seine Böen-Drift (`wob`, sie zieht mit der Böe) liest die Uhr-Wache,
+        // Stärke und Richtung lesen Gras und Krone unten
+        const auge = (this.state.camera || this.state.playerMesh || { position: { x: 0, z: 0 } }).position;
+        const windAuge = this._windAt(auge.x, auge.z, bildZeit);
+        this._weatherWob = windAuge.wob;
         // `uEmotion` füttern: die Stimmung hebt den Schaum (s. `_ensureHydroSurfaceMaterial`) — positive
         // Gefühle beleben das Wasser, Trauer dämpft.
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.emotion) {
@@ -2507,8 +2510,7 @@ class AnazhRealm_dirigent_takt {
             this.state.windUniforms.uWindTime.value = bildZeit;
             // die Böe zieht mit dem Wind (`_boePhase`, Taylor): dieselbe Phase wie `_windAt` auf der Bild-Uhr
             this.state.windUniforms.uBoePhase.value = this._boePhase(bildZeit);
-            const auge = (this.state.camera || this.state.playerMesh || { position: { x: 0, z: 0 } }).position;
-            const w = this._windAt(auge.x, auge.z, bildZeit);
+            const w = windAuge;
             this.state.windUniforms.uWindStrength.value = w.staerke * AnazhRealm.WEATHER_WIND_AMP;
             if (this.state.windUniforms.uWindDir) this.state.windUniforms.uWindDir.value.set(w.x, w.z);
             // die Wetterseite des Stoffs (`uWetterVon`): gegen den Zug der Fronten, je Saat einmal (`_windUniformsEnsure`)

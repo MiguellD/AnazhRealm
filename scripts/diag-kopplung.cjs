@@ -260,7 +260,9 @@ hauptLauf(async () => {
                         .staerke;
                 const eben = U(() => 0, 104, 8);
                 const lee = U((x) => 60 * Math.exp(-((x / 120) ** 2)), 104, 8) / eben - 1;
-                const duese = U((x, z) => 40 * (1 - Math.exp(-((z / 80) ** 2))), 8, 8) / eben - 1;
+                // die Düse gegen die Ebene am SELBEN Ort: seit rueckfall-drei zieht die Böen-Drift mit dem Wind (Taylor), zwei Orte tragen
+                // zur selben Uhr verschiedene Drift — gegen die Ebene bei x 104 las die Linse die Drift als Düse (+45 % statt +20 %)
+                const duese = U((x, z) => 40 * (1 - Math.exp(-((z / 80) ** 2))), 8, 8) / U(() => 0, 8, 8) - 1;
                 const [st, P] = [r.state, r.state.playerMesh.position];
                 const form = Array.from({ length: 1681 }, (_, i) => r._windAt(P.x + (i % 41) * 64 - 1280, P.z + ((i / 41) | 0) * 64 - 1280, 9).form);
                 const alt = [st.weather, st.dorfRauch, st.hydroSurfaceUniforms];

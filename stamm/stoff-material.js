@@ -375,18 +375,28 @@ class AnazhRealm_stoff_material {
         // trägt keins) — am Spieler das Feld seines Worts, fern die Front über dem Ort; bis hier wehte jeder Ort im Wort am Spieler
         const wf = this._wetterFeldAm(x, z, tt, this._windFeldAus || (this._windFeldAus = {}), false);
         // die Böe zieht MIT dem Wind (Taylor, `_boePhase`): dieselbe Phase liest der Shader als uBoePhase
-        const boe = Math.sin(this._boePhase(tt) - (x * d.x + z * d.z) * B.k) * B.amp + B.mitte;
+        const s = this._boeWeg(tt);
+        const lage = x * d.x + z * d.z;
+        const boe = Math.sin(this._boePhase(tt, s) - lage * B.k) * B.amp + B.mitte;
         const form = this._windForm(x, z, d);
         // DIE GASSE (klima-kontinent, stadtklima#1): in der Schlucht der Häuser trägt der Wind den Anteil längs der Gasse — Richtung
         // und Stärke (`_gassenWind`); die Böe wandert mit dem Wind über den Dächern (d). Neben jeder Gasse Bit für Bit der alte Wind.
         const g = this._gassenWind(x, z, d);
-        const staerke = wf.wind * this._windWob(tt) * form * g.f;
+        // DIE DRIFT ZIEHT MIT DER BÖE (rueckfall-drei, Karte 2 leben.pflanzen.kraft#2): die Böen-Drift ist Turbulenz derselben
+        // Grenzschicht (Perioden 5–33 s) und zieht wie die Böe eingefroren mit dem Wind (Taylor 1938) — sie liest die Uhr des
+        // Musters am Ort, τ = (s(t) − Lage) ÷ das Tempo der Böe im Sturm (`boeTempo(1)`: im Sturm am festen Ort dieselben Perioden
+        // wie bisher, in der Ruhe zieht sie langsam wie ihr Wind). Bis hier atmete die Drift an der Uhr allein, die ganze Welt
+        // zugleich: 100 m windab kam sie ohne Laufzeit an, und die Laufzeit der Station hing an der Phase der Böe (Wiese, zwölf
+        // Phasen des Ankers: 12,6–23,9 %, das Gerät nach dem Umstellen der Station 23,7 %).
+        const wob = this._windWob((s - lage) / globalThis.__phytoCore.boeTempo(1));
+        const staerke = wf.wind * wob * form * g.f;
         const ms = staerke * boe * globalThis.__phytoCore.WIND_FELD.sturmMS;
-        if (!aus) return { x: g.x, z: g.z, staerke, boe, form, ms };
+        if (!aus) return { x: g.x, z: g.z, staerke, boe, wob, form, ms };
         aus.x = g.x;
         aus.z = g.z;
         aus.staerke = staerke;
         aus.boe = boe;
+        aus.wob = wob;
         aus.form = form;
         aus.ms = ms;
         return aus;
@@ -412,9 +422,9 @@ class AnazhRealm_stoff_material {
         return A.s + A.c * (t - A.t);
     }
     // die Phase der Böe k·s(t), auf [0, 2π) gefaltet (der Shader rechnet in float32: die Phase der Welt wächst mit der Uhr, ihr
-    // Rest bleibt genau). Leser: `_windAt` und der Frame-Takt (uBoePhase).
-    _boePhase(t) {
-        const p = this._boeWeg(t) * AnazhRealm.WIND_BOE.k;
+    // Rest bleibt genau). Leser: `_windAt` und der Frame-Takt (uBoePhase). `s`: der Weg, den der Leser zur selben Uhr schon fragte.
+    _boePhase(t, s) {
+        const p = (s === undefined ? this._boeWeg(t) : s) * AnazhRealm.WIND_BOE.k;
         return p - 2 * Math.PI * Math.floor(p / (2 * Math.PI));
     }
     // DER WIND IN DER GASSE (klima-kontinent, Karte 2 planet.kopplung.stadtklima#1): die Häuser jeder geladenen Siedlung sind
