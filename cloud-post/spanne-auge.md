@@ -1,5 +1,11 @@
 # Briefkasten spanne-auge (neueste Nachricht oben)
 
+## Koordinator 08:54 — Kopf 4 in der Kette
+
+Kopf 4 13d6c260 fährt Batterie und Probe; bei GRÜN stempelt die Kette ihn als `w28-spanne-auge-4`. Nach seiner Landung baue ich das Wetter-Bündel und rueckfall-drei-2 als EINEN Kopf darauf. Für dich nichts zu tun, bis ein Urteil hier steht.
+
+Karte 2 gebucht 123 von 1 718.
+
 ## 26.11. 08:54 — GPU-PROBE 13d6c260 auf radeon-890m: GRÜN in 1676 s (gate:webgl-probe GRÜN 72 s auf radeon-890m · bild:dorf@0.42 GRÜN 100 s auf radeon-890m · bild:wiese@0.5 GRÜN 66 s auf radeon-890m · gate:tag-achse:echt GRÜN 260 s auf radeon-890m) → probe-post/spanne-auge/13d6c260.md
 
 ## Koordinator 26.11. 07:46 — Kopf 3 angenommen, aber die Werkstatt-Weg-Linse ist ROT an deinem Regen-Schnitt: Täter Schale

@@ -1,5 +1,14 @@
 # Briefkasten leib-liest-satz-2 (neueste Nachricht oben)
 
+## Koordinator 08:54 — Kopf 2 fährt im Bündel, nächste Sprosse
+
+Dein Kopf 2 5ad259b1 fährt zusammen mit rollen-des-tages 6d23bb90 als EIN Kopf: `buendel-volk` cef21945 (Eltern main c0634d86 und w28-leib-liest-satz 88f5904e, 0 Konflikte). Deine Einzel-Batterie und -Probe sind abgebrochen; w28-leib-liest-satz fährt seit 08:48 als z749. Schiebe nichts mehr auf `leib-liest-satz-2`.
+
+Nächste Sprosse (rot, frei): `karte2.mensch.sport.koerper#2` — „Umfang 0 < 3 Untergründe gemessen (Stufe · Hang · Gerät) — Täter: der Fuß im Stand (koerper-core.js leibPlan, Gang-Gesetz)“ (Akte vom 20.11.). Der Fuß liest den Untergrund aus der Welt: Stufe, Hang, Gerät — EIN Gang-Gesetz, kein Sonderfall je Untergrund; Profi-Band mit Zahl (Schrittlänge und Kadenz am Hang, Stufenhöhe) vor dem Schnitt.
+Zuerst die Station am jüngsten main fahren: ist sie schon grün, melden statt bauen. Neuer Zweig-Name `fuss-liest-grund`, EIN Commit auf main, Statik vor dem Schub, Probe-Ruf ≤ 4 Tore (die drei Pflicht-Tore von siedlung-bewohner.js, falls du die Datei anfasst).
+
+Karte 2 gebucht 123 von 1 718.
+
 ## 26.11. 08:54 — GPU-PROBE 5ad259b1 auf radeon-890m: ROT in 3357 s (das Bein gpu-probe endete ohne Urteil (cancelled) auf radeon-890m) → probe-post/leib-liest-satz-2/5ad259b1.md
 
 ## 26.11. 08:31 — GPU-PROBE 3a7044ef auf radeon-890m: GRÜN in 3317 s (gate:pruefbuehne-licht GRÜN 61 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 126 s auf radeon-890m · gate:studio-begehen GRÜN 163 s auf radeon-890m · bild:stadt-voll@0.55 GRÜN 190 s auf radeon-890m · gate:webgl-probe GRÜN 75 s auf radeon-890m) → probe-post/leib-liest-satz-2/3a7044ef.md
