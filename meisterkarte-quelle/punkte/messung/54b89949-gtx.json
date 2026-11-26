@@ -1,7 +1,7 @@
 {
  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
  "geraet": "gtx",
- "zeit": "2026-11-26T15:20:31.614Z",
+ "zeit": "2026-11-26T15:21:38.926Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -2546,17 +2546,136 @@
   },
   "karte2.erleben.spieler.hand#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
+   "zahl": "Last: Referenz f 1,304 (Faden 1,213 · alle Kerne 1,304; vor 107,8/288,6 ms, nach 85,4/217,3 ms, Ruhe 88,9/221,3 ms seit 2026-11-25) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 8,8 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,2 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 18,8 CPU-s · svchost.exe 10,2 CPU-s · SearchIndexer.exe 0,6 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S1 · ROT Leser fehlt: Eingabe → erstes Bild mit Wirkung: die Latenz-Linse kennt kein Verb setzen (scripts/werkbank.cjs:1894) und misst an Kamera, Leib und Hand, nie die Wirkung am Stoff (scripts/lib/haenger-linse.cjs:1181); Trefferpunkt ↔ Z)",
+   "exit": 1,
+   "minuten": 1.55,
+   "grund": "Last: Referenz f 1,304 (Faden 1,213 · alle Kerne 1,304; vor 107,8/288,6 ms, nach 85,4/217,3 ms, Ruhe 88,9/221,3 ms seit 2026-11-25) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 8,8 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,2 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 18,8 CPU-s · svchost.exe 10,2 CPU-s · SearchIndexer.exe 0,6 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S1 · ROT Leser fehlt: Eingabe → erstes Bild mit Wirkung: die Latenz-Linse kennt kein Verb setzen (scripts/werkbank.cjs:1894) und misst an Kamera, Leib und Hand, nie die Wirkung am Stoff (scripts/lib/haenger-linse.cjs:1181); Trefferpunkt ↔ Z)",
+   "mass": [],
+   "gpu": "nvidia/pascal",
+   "abbruch": "Deckel 93 s gerissen: Stille seit 75.9 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt)",
+   "konsumFehlt": "1 Prozess(e) ohne Ende (hart getötet oder ohne Antwort): 5036",
+   "s": 93.1,
+   "fremd": {
+    "s": 95,
+    "takte": 44,
+    "fremdS": 33.98,
+    "kerne": 0.358,
+    "fensterKerne": 0.459,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      8.81
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.22
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.05
+     ]
+    ],
+    "dienerS": 12.98,
+    "diener": [
+     [
+      "System",
+      6.11
+     ],
+     [
+      "WmiPrvSE.exe",
+      3.5
+     ]
+    ],
+    "geraetS": 30.31,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.77
+     ],
+     [
+      "svchost.exe",
+      10.22
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 87.28,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.327,
+     "nach": 0.357,
+     "station": 0.94
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 107.8,
+     "alle": 288.6,
+     "cpuEin": 110,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.68,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       5.16,
+       3.26,
+       2.74,
+       2.97,
+       1.98,
+       3.11
+      ]
+     },
+     "spanne": [
+      1795706498927,
+      1795706499459
+     ]
+    },
+    "nach": {
+     "ein": 85.4,
+     "alle": 217.3,
+     "cpuEin": 93,
+     "tor": {
+      "ruhig": true,
+      "kerne": 0.15,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       0.11,
+       0.12,
+       0.13,
+       0.12,
+       0.12,
+       0.2
+      ]
+     },
+     "spanne": [
+      1795706592580,
+      1795706592991
+     ]
+    },
+    "ruhe": {
+     "ein": 88.9,
+     "alle": 221.3,
+     "n": 1190,
+     "von": "2026-11-25"
+    },
+    "f": 1.304,
+    "fEin": 1.213,
+    "fAlle": 1.304,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
    "ungemessen": true,
-   "zeit": "2026-11-26T15:10:50.290Z",
+   "zeit": "2026-11-26T15:21:38.926Z",
    "abdruck": "94ecb21f3b9a",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.same.physik.feuer#2": {
    "gruen": false,
