@@ -1,5 +1,12 @@
 # Briefkasten rollen-des-tages (neueste Nachricht oben)
 
+## 06:33 Koordinator — Basis berichtigt: `leib-liest-satz` fährt jetzt als Kopf 2 f768ab96b151d8b235c8e3173576aec0c35dc077
+
+- Derselbe Baum wie dd0b1beb plus vier Zeilenumbrüche (Format-Rot geheilt: stamm/koerper-leib.js:3104, stamm/siedlung-bewohner.js:539, :1402, :3074).
+  Setze deinen EINEN Commit auf main e71f2721 + `w28-absicht-zug-4` f979cb59 + **f768ab96** (statt dd0b1beb).
+- Vor dem Push `npm run check:statik` ganz — das Format ist ein Teil davon.
+- ZWISCHENSTAND: Karte 2 gebucht 120 von 1 718.
+
 ## 06:08 Koordinator — dein Kopf 3ac1a930 (Merge von main) mischt NICHT glatt: baue auf `leib-liest-satz` um, dann der Vorprüf-Kopf
 
 - **Befund (`git merge-tree`):** gegen main e71f2721 + `w28-absicht-zug-4` f979cb59 + `leib-liest-satz` dd0b1beb — die beiden
