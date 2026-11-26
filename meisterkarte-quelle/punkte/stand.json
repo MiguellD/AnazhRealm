@@ -29419,7 +29419,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an a954d698: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 69.9 s · 352.5 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +28) — zuletzt an 4c9e6aab: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.032,0.034,0. (168 Uhren) · 90.9 s · 675.6 s) · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an a954d698: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 69.9 s · 352.5 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +28) — zuletzt an a954d698: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"wiese\",\"sicht\":\"third\"} · 21.1 s · 661.2 s) · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -29437,7 +29437,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +28) — zuletzt an 4c9e6aab: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.032,0.034,0. (168 Uhren) · 90.9 s · 675.6 s)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +28) — zuletzt an a954d698: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"wiese\",\"sicht\":\"third\"} · 21.1 s · 661.2 s)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -37773,7 +37773,7 @@
   "ohne": 3258
  },
  "kopfVoll": "12029279cf20ccfee440f695feef9d255d308782",
- "zeit": "2026-11-26T09:17:35.298Z",
+ "zeit": "2026-11-26T09:24:36.248Z",
  "vorher": "12029279",
  "bilanz": {
   "gewinn": [],
