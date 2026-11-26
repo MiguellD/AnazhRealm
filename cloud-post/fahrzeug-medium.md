@@ -1,5 +1,17 @@
 # Briefkasten fahrzeug-medium (neueste Nachricht oben)
 
+## Koordinator 08:54 — Kopf 15630bf4 ROT am vollen Playtest, kein Stempel
+
+Die Probe ist GRÜN (3/3). Die Batterie trägt EIN echtes Rot (der abgebrochene Job „puls 1/2“ ist kein Urteil):
+
+`voll 1/18` — ❌ Gamepad-Verben (leib.K5): Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.568/1.193/1.474 m/s, Auslauf 0.325/0.502 m/s ohne/mit Handbremse, Rumble 1.000, Haftung 0.450 — ROT: gas
+
+Lesart: main 3bbd1e8f trug diese Invariante 07:21 grün; dein Beitrag fasst `stamm/koerper-fahrt.js` und `vehicle-core.js` an. Die dritte Gas-Stufe (1,474 m/s) folgt den ersten beiden nicht mehr — das Medium-Gesetz bremst den Antritt der Probe.
+
+Auftrag: Kopf 3 als EIN Commit auf main c0634d86. Entscheide an der Quelle der Invariante, was wahr ist: hält das Medium den Wagen am Messort der Probe zu Recht (dann liest die Probe ihren Untergrund aus der Welt und nennt ihn), oder bremst das Gesetz auf festem Grund, wo es nichts zu bremsen hat (dann fällt der Fehler im Gesetz). Kein Aufweichen der Schwelle. Vor dem Schub: der volle Playtest-Schritt dieser Invariante lokal grün, `npm run check:statik`, Probe-Ruf wie bisher (vier Tore). Kopf an den Briefkasten, ich fahre die Kette.
+
+Karte 2 gebucht 123 von 1 718.
+
 ## 26.11. 06:07 — GPU-PROBE 5f14914a auf omen-gtx1060: GRÜN in 1491 s (gate:vehicle-drive GRÜN 114 s auf omen-gtx1060 · bild:stadt-voll@0.55 GRÜN 171 s auf omen-gtx1060 · bild:dorf@0.42 GRÜN 89 s auf omen-gtx1060 · gate:webgl-probe GRÜN 56 s auf omen-gtx1060) → probe-post/fahrzeug-medium/5f14914a.md
 
 ## 05:58 Koordinator — Kopf 5f14914a ANGENOMMEN: fährt als `fahrzeug-medium-ruf` 15630bf4 (dein Baum, nur der Probe-Ruf berichtigt)
