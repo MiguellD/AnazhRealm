@@ -1,6 +1,6 @@
 # Vorprüfung bewegungs-feld — das Feld der zeitlichen Auflösung trägt die Bewegung der Dinge
 
-ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 118 von 1 718 (diese Abgabe bucht keine Sprosse — die Station
+ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 122 von 1 718 (diese Abgabe bucht keine Sprosse — die Station
 `erleben.bild.auge#5` hat keinen Leser, siehe unten).
 
 **Geschnitten:** Der Szenen-Pass schreibt je Fragment die Bewegung SEINES Dings seit dem Bild davor in einen dritten Eintrag
@@ -13,7 +13,7 @@ ihre Welt in den Knochen: W_vor fällt dort weg (sonst zählte ihr Schritt doppe
 Vor-Matrix trägt den Stempel ihres Bilds (`__bewegungBild`, e[3]); der Shader nimmt sie nur mit dem Stempel DIESES Bilds — was
 die Diät ruhen lässt, steht. Der Stempel steigt vor dem ersten Pass des Bilds (`_bewegungTakt`, aus dem Schatten-Takt; vorher
 schrieb der Schatten-Pass die Vor-Matrizen mit der Nummer des alten Bilds), Kosten an der Änderung: eine Senke, die nicht
-schreibt, kopiert nichts. Der Träger-Zwilling (`_traegerTakt` · `_traegerTeile` · `TRAEGER`) ist gelöscht — kein Flag, kein
+schreibt, kopiert nichts. Der Träger-Zwilling (Takt, Teile und Tafel des Trägers) ist gelöscht — kein Flag, kein
 zweiter Weg (grep 0 Treffer im Stamm). Das Gerät verlangt die Varyings seines Adapters (`GERAET_GRENZEN`
 `maxInterStageShaderVariables`, Radeon 28): mit 16 sagte die Pipeline des Satz-Stoffs ab, die Stadt stand ohne Häuser.
 
@@ -74,10 +74,10 @@ Arena nimmt ein anderes Ding, 767 Pixel in einem Bild) zählt `sprung`, nie bewe
 - **WebGL2-Rückfall:** die Instanz trägt keine eigene Bewegung (das Vor kostete 4 von 16 Attribut-Orten, W5). Adresse `gate:webgl-probe` W5.
 - **Geräte mit 16 Varyings** tragen keine Ding-Bewegung (laut gemeldet: „DAS FELD DER BEWEGUNG: das Gerät trägt 16 Varyings“).
   Adresse `gate:webgl-probe`.
-- **γ_Ruhe 1,25 → 1,0** und die längste Bewegung im 3×3 (Salvi) — nicht genommen: die Geister-Fläche in Ruhe steht bei 0,12 %,
+- **γ der Ruhe 1,25 → 1,0** und die längste Bewegung im 3×3 (Salvi) — nicht genommen: die Geister-Fläche in Ruhe steht bei 0,12 %,
   ohne Bildbeweis kein Schnitt. Adresse `erleben.bild.auge#5`.
 - **Sprosse `erleben.bild.auge#5`** (Geister-Fläche ≤ 1 % gegen 16-fach zeitabgetastete Referenz): die Station hat keinen Leser
-  (k2-erleben.js „kein Leser — /bild schießt EIN Bild ohne Zeitabtastung“). Ein Kandidat für den Leser liegt bei:
+  (Station im Zweig punkte-maschine: „kein Leser — /bild schießt EIN Bild ohne Zeitabtastung“). Ein Kandidat für den Leser liegt bei:
   `cloud-post/bewegungs-feld-station/geister-zensus-seite.js` (Referenz = dieselbe Welt nach 32 ruhenden Bildern). Sache des Richters.
 
 ## Beanspruchte Sprossen
