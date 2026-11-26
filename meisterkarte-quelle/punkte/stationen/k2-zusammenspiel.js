@@ -4213,12 +4213,14 @@ L.perspektive("mensch", (() => {
             // ════════ mensch.kopplung.kultur — Kultur folgt der Welt ════════
             // 32 Zellen der Welt: ihr Plan (der Baustoff der Häuser: `ov.stil` stein · klinker → Stein, huette → Holz, alt → Fachwerk/Lehm;
             // das Dach `ov.pitchDeg`) gegen den Boden der Zelle (Fels, Wald, Bodenklasse) und das Klima des Planeten am Anker (planet-ort);
-            // die Mutation: Regen über `__wetterSetzen` und Schwerkraft 2 g über den Welt-Akt — der Plan derselben Zelle vor ↔ nach;
+            // die Mutation: das Klima des Orts (S2, kultur-aus-klima: der Niederschlag aus dem Ort-Gesetz des Geländes, nie das Wetter
+            // der Stunde) und Schwerkraft 2 g über den Welt-Akt — der Plan derselben Zelle vor ↔ nach;
             // der Tag der Bewohner über 24 Stunden (ein Fest?), die Rollen der Pläne (heiliger Ort). 1 000 Orte zählt die Probe an den Zellen.
             [KULTUR]: {
                 // DER DECKEL TRÄGT DAS PROGRAMM (pm-front-f1, Radeon c445936d: „der Deckel der Leiter riss nach 20,012 s vor dem Wert der
-                // Sprosse“, GTX f68dbf09 ebenso): die Leiter rechnet in EINEM Seiten-Eval 1 000 Zellen und 116 Pläne der Gießerei (32 +
-                // 32 Gegenlauf + 32 Regen + 20 unter 2 g) — M.teil trägt dort nichts, 20 s reichten nie; kein Soll ändert sich
+                // Sprosse“, GTX f68dbf09 ebenso): die Leiter rechnet in EINEM Seiten-Eval 1 000 Zellen und 182 Pläne der Gießerei (S1 32;
+                // S2 32 Heimat + 32 trocken + 32 nass + 32 Gegenlauf + 2 volle Aufträge des Spiels; 20 unter 2 g) — M.teil trägt dort nichts,
+                // 20 s reichten nie; kein Soll ändert sich
                 sek: 60,
                 dorf: true,
                 mutiert: true,
@@ -4230,7 +4232,7 @@ L.perspektive("mensch", (() => {
                     const kultur = async (r, a) => {
                         const st = r.state, alt = { w: st.weather, g: st.gravity, halt: st.weatherEffectTime };
                         const zellen = [];
-                        for (let R = 0; R <= 26 && zellen.length < 1000; R++) for (let cx = -R; cx <= R; cx++) for (let cz = -R; cz <= R; cz++) { if (Math.max(Math.abs(cx), Math.abs(cz)) !== R) continue; const c = r._autoSettlementCellInfo(cx, cz); if (c) zellen.push(c); }
+                        for (let R = 0; R <= 26 && zellen.length < 1000; R++) for (let cx = -R; cx <= R; cx++) for (let cz = -R; cz <= R; cz++) { if (Math.max(Math.abs(cx), Math.abs(cz)) !== R) continue; const c = r._autoSettlementCellInfo(cx, cz); if (c) zellen.push(Object.assign({}, c, { key: cx + "," + cz })); }
                         const aus = { orte: zellen.length };
                         // S1, S2 und S7 misst der Fächer (unten) an denselben 32 Zellen; die Seite trägt nur die Zellen, den Anker und den Tag
                         const Z = zellen.slice(0, 32);
@@ -4238,7 +4240,7 @@ L.perspektive("mensch", (() => {
                         const An = await r._planetAnker();
                         const O = await r._planetAuftrag({ type: "planet-ort", samen: r._planetSamen(), breite: (An.breite * 180) / Math.PI, laenge: (An.laenge * 180) / Math.PI, zeitMa: 0 });
                         const nied = O && O.delta && O.delta.wetter ? O.delta.wetter.regenQuote : null;
-                        aus.s2 = { niederschlag: nied, zellen: Z.map((c) => ({ seed: c.seed, nH: c.nH, x: c.x, z: c.z })), wetter: alt.w, g: alt.g };
+                        aus.s2 = { niederschlag: nied, zellen: Z.map((c) => ({ seed: c.seed, nH: c.nH, x: c.x, z: c.z, key: c.key })), wetter: alt.w, g: alt.g };
                         const D = window.__dorfDerProbe && r._bewohnerSiedlungen.get(window.__dorfDerProbe);
                         let feste = 0, akte = new Set();
                         if (D && D.liste) for (let h = 0; h < 24; h += 0.5) for (const b of D.liste) { const z = r._bewohnerSoll(b, h); akte.add(String(z.akt)); if (/fest|feier|markttag|kirchweih|ernte/i.test(String(z.akt))) feste++; }
@@ -4249,8 +4251,8 @@ L.perspektive("mensch", (() => {
                     if (!m || m.fehler) throw new Error("die Kultur: " + (m && m.fehler));
                     const aus = M.teil || {};
                     const s2 = m.s2;
-                    const nH2 = {}, lage = {};
-                    for (const c of s2.zellen) { nH2[c.seed] = c.nH; lage[c.seed] = [c.x, c.z]; }
+                    const nH2 = {}, lage = {}, zelle = {};
+                    for (const c of s2.zellen) { nH2[c.seed] = c.nH; lage[c.seed] = [c.x, c.z]; zelle[c.seed] = c.key; }
                     // S1 AM FÄCHER (M4): je Zelle der Plan der Gießerei (der Export, den der Ort baut) und der Boden der Zelle (Fels, Wald —
                     // dieselben Leser, die Gelände und Wiese tragen); passend heißt: der Baustoff des Plans ist der Stoff seines Bodens. Die
                     // Region aus dem Hausbild ist R11 (ein Prüfer liest) — ungemessen bis zum Gerät und zum Panel
@@ -4291,18 +4293,44 @@ L.perspektive("mensch", (() => {
                         zeuge: { saaten: w1.saaten, stoffe: JSON.stringify(w1.stoffe), bodenArten: w1.sollStoffe, akte: R1.akte },
                         auge: await M.auge("mensch-kultur-s1", { ort: "genesis" }, {}),
                     };
-                    // S2 AM FÄCHER (M4): der Niederschlag ist der EINE Wetter-Kanal der Welt (window.__wetterSetzen → _weatherFieldFor().rain, den
-                    // stamm/siedlung-bewohner.js:2241 und stamm/wasser-hydro.js:164 lesen); je Zelle der Plan der Gießerei unter Sonne, Regen und
-                    // Sonne als Gegenlauf. Liest der Plan den Regen, steigt die Dach-Neigung mit ihm (r) und der Plan ändert sich (Mutation); liest
-                    // er ihn nicht, ist r ≈ 0 und die Mutation 0 % — geurteilt, nie geraten
+                    // S2 AM FÄCHER (M4, kultur-aus-klima): der Niederschlag ist das KLIMA des Orts, nie das Wetter des Augenblicks (ein Dach,
+                    // das dem Regen der Stunde folgte, wäre kein Gesetz; der Richter: „Mutation Klima ändert Bau gesetzrichtig“). Je Zelle der
+                    // Plan der Gießerei mit dem Auftrag des Spiels (stamm/siedlung-ort.js `_ortDp`: die Zeit der Zelle und das Klima ihres
+                    // Orts, `_zellEingang` → `_siedlungKlima` → gelaende-core `ortKlima`) — ohne das Raster des Grunds (`ort`: das Dach liest
+                    // keinen Grund) — in der Heimat, am trockenen und am nassen Ort und in der Heimat als Gegenlauf. Der trockene und der
+                    // nasse Ort sind Orte des Gesetzes: das Ort-Gesetz des Geländes (gelaende-core `ortGesetz`) eines Teils, das sich von der
+                    // Heimat nur in der Regen-Quote unterscheidet (Δ −0,3 / +0,3, planet-core `ortRoh`), sein Klima `ortKlima` (Niederschlag
+                    // und Schneefall). DIE ZEUGEN: das Klima des Teils ohne Δ ist das Klima, das das Spiel der Zelle gibt (`klimaGleich`), und
+                    // an den ersten zwei Saaten trägt der Plan des VOLLEN Auftrags des Spiels (mit dem Raster) dieselben Dächer wie der des
+                    // Fächers (`spielGleich`: Kultur, Stil, Deckung und Neigung je Haus). Liest der Plan den Niederschlag, steigt die
+                    // Neigung mit ihm (r) und der Plan ändert sich (Mutation); liest er ihn nicht, ist r ≈ 0 und die Mutation 0 %
                     const DACH_AN = async (r, T, a, mit) => {
-                        if (r.state.weather !== a.zeit.w && window.__wetterSetzen(a.zeit.w) !== a.zeit.w) return { fehlt: "das Wetter " + a.zeit.w + " gilt nicht (__wetterSetzen)" };
-                        const P = await r._foundryRequestSettlement({ seed: a.saat, nH: mit.nH[a.saat] });
+                        const GC = globalThis.__gelaendeCore;
+                        if (!GC || typeof GC.ortKlima !== "function") return { fehlt: "gelaende-core trägt kein Klima des Orts (ortKlima)" };
+                        const [cx, cz] = mit.zelle[a.saat].split(",").map(Number), c = r._autoSettlementCellInfo(cx, cz);
+                        if (!c) return { fehlt: "die Zelle " + mit.zelle[a.saat] + " trägt keinen Ort (_autoSettlementCellInfo)" };
+                        const voll = r._ortDp(mit.zelle[a.saat], c);
+                        if (!voll.klima) return { fehlt: "der Auftrag der Zelle " + mit.zelle[a.saat] + " trägt kein Klima (_ortDp, _zellEingang)" };
+                        const teil = (dq) => ({ samen: "kultur-s2", version: "kultur-s2", breite: 0, laenge: 0, zeitMa: 0, delta: { wildnis: {}, meer: { waterLevelM: 0 }, klima: { sommer: 0, winter: 0, tagAmp: 0, sommerPhase: 0, spendeVerh: 1 }, wetter: { regenQuote: dq, sturmQuote: 0, nebelQuote: 0 }, wuchs: { decke: 1, wald: 1 }, eis: { zeit: 0 } } });
+                        const klima = a.zeit.dq ? GC.ortKlima(GC.ortGesetz(teil(a.zeit.dq))) : voll.klima;
+                        const dp = Object.assign({}, voll, { klima });
+                        delete dp.ort;
+                        const P = await r._foundryRequestSettlement(dp);
                         if (!P || !P.slots || !P.slots.length) return { fehlt: "die Gießerei gibt der Saat keinen Plan (fachwerk-core.js, _foundryRequestSettlement)" };
-                        const t = JSON.stringify(P.slots.map((x) => [x.kultur, x.x, x.z, x.ov && x.ov.W, x.ov && x.ov.D, x.ov && x.ov.storeys, x.ov && x.ov.pitchDeg, x.ov && x.ov.stil]));
+                        const t = JSON.stringify(P.slots.map((x) => [x.kultur, x.x, x.z, x.ov && x.ov.W, x.ov && x.ov.D, x.ov && x.ov.storeys, x.ov && x.ov.pitchDeg, x.ov && x.ov.stil, x.ov && x.ov.deckung]));
                         let h = 0;
                         for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0;
-                        return { dach: P.slots.reduce((q, x) => q + ((x.ov && x.ov.pitchDeg) || 0), 0) / P.slots.length, regen: r._weatherFieldFor().rain, hash: h };
+                        const w = { dach: P.slots.reduce((q, x) => q + ((x.ov && x.ov.pitchDeg) || 0), 0) / P.slots.length, regen: klima.niederschlagMm, hash: h };
+                        if (a.zeit.k === "heimat") {
+                            const k0 = GC.ortKlima(GC.ortGesetz(teil(0)));
+                            w.klimaGleich = Object.keys(k0).every((q) => k0[q] === voll.klima[q]) ? 1 : 0;
+                            if (mit.spiel.includes(a.saat)) {
+                                const Q = await r._foundryRequestSettlement(voll);
+                                const dach = (X) => JSON.stringify(X.slots.map((x) => [x.kultur, x.ov && x.ov.stil, x.ov && x.ov.deckung, x.ov && x.ov.pitchDeg]).sort());
+                                w.spielGleich = Q && Q.slots && dach(Q) === dach(P) ? 1 : 0;
+                            }
+                        }
+                        return w;
                     };
                     const pearsonPaare = (v) => {
                         const p = v.filter((q) => Array.isArray(q) && q.every((x) => typeof x === "number" && Number.isFinite(x)));
@@ -4318,35 +4346,33 @@ L.perspektive("mensch", (() => {
                         const p = Object.values(by).filter((o) => o[w1] != null && o[w2] != null);
                         return { paare: p.length, anders: p.filter((o) => o[w1] !== o[w2]).length };
                     };
-                    let R2;
-                    try {
-                        R2 = await FAECHER((c) => H.seite(c), {
-                            gesetz: { fn: DACH_AN, export: "fachwerk-core.js:2762 bauRezept über _foundryRequestSettlement({seed, nH}) — die Dach-Neigung ov.pitchDeg der Slots", leser: "stamm/siedlung-bewohner.js:2241 _weatherFieldFor().rain (der Regen, den der Tag liest)" },
-                            adressen: { saaten: s2.zellen.map((c) => c.seed), zeiten: [{ k: "sonne", w: "sunny" }, { k: "regen", w: "rainy" }, { k: "gegen", w: "sunny" }] },
-                            mit: { nH: nH2 },
+                    const R2 = await FAECHER((c) => H.seite(c), {
+                            gesetz: { fn: DACH_AN, export: "fachwerk-core.js ortNeigung über _foundryRequestSettlement(_ortDp) — die Dach-Neigung ov.pitchDeg der Slots aus dem Klima des Orts", leser: "stamm/siedlung-ort.js _ortDp → _zellEingang → _siedlungKlima (gelaende-core ortKlima: Niederschlag und Schneefall des Orts)" },
+                            adressen: { saaten: s2.zellen.map((c) => c.seed), zeiten: [{ k: "heimat", dq: 0 }, { k: "trocken", dq: -0.3 }, { k: "nass", dq: 0.3 }, { k: "gegen", dq: 0 }] },
+                            mit: { nH: nH2, zelle, spiel: s2.zellen.slice(0, 2).map((c) => c.seed) },
                             ms: 30000,
                             masse: {
                                 orte: { wie: "verschieden", feld: "a.saat" },
                                 r: { wie: pearsonPaare, x: "regen", y: "dach", nur: (a) => a.zeit.k !== "gegen" },
-                                regenSonne: { wie: "max", feld: "regen", nur: (a) => a.zeit.k === "sonne" },
-                                regenRegen: { wie: "min", feld: "regen", nur: (a) => a.zeit.k === "regen" },
-                                dachSonne: { wie: "mittel", feld: "dach", nur: (a) => a.zeit.k === "sonne" },
-                                dachRegen: { wie: "mittel", feld: "dach", nur: (a) => a.zeit.k === "regen" },
-                                mutation: { wie: (v, aus) => paarJeSaat(aus, "sonne", "regen"), feld: "hash" },
-                                gegen: { wie: (v, aus) => paarJeSaat(aus, "sonne", "gegen"), feld: "hash" },
+                                regenTrocken: { wie: "max", feld: "regen", nur: (a) => a.zeit.k === "trocken" },
+                                regenNass: { wie: "min", feld: "regen", nur: (a) => a.zeit.k === "nass" },
+                                dachTrocken: { wie: "mittel", feld: "dach", nur: (a) => a.zeit.k === "trocken" },
+                                dachHeimat: { wie: "mittel", feld: "dach", nur: (a) => a.zeit.k === "heimat" },
+                                dachNass: { wie: "mittel", feld: "dach", nur: (a) => a.zeit.k === "nass" },
+                                mutation: { wie: (v, aus) => { const t = paarJeSaat(aus, "heimat", "trocken"), n = paarJeSaat(aus, "heimat", "nass"); return { paare: t.paare + n.paare, anders: t.anders + n.anders }; }, feld: "hash" },
+                                gegen: { wie: (v, aus) => paarJeSaat(aus, "heimat", "gegen"), feld: "hash" },
+                                klimaGleich: { wie: "summe", feld: "klimaGleich", nur: (a) => a.zeit.k === "heimat" },
+                                spielGleich: { wie: "summe", feld: "spielGleich", nur: (a, w) => a.zeit.k === "heimat" && w.spielGleich != null },
                             },
                             schlecht: { feld: "dach", richtung: "min" },
-                            pose: (a, w) => "die Zelle der Saat " + a.saat + " unter " + a.zeit.w + ", Third 40 m über dem Dorfplatz — Dach " + (+w.dach).toFixed(1) + "°",
-                            ungemessen: ["das Dachbild der 32 Zellen unter Sonne ↔ Regen (am Gerät)"],
+                            pose: (a, w) => "die Zelle der Saat " + a.saat + " am Ort " + a.zeit.k + " (Niederschlag " + Math.round(w.regen) + " mm/a), Third 40 m über dem Dorfplatz — Dach " + (+w.dach).toFixed(1) + "°",
+                            ungemessen: ["das Dachbild der 32 Zellen trocken ↔ Heimat ↔ nass (am Gerät)"],
                         });
-                    } finally {
-                        await H.seite("window.__wetterSetzen(" + JSON.stringify(s2.wetter) + "); return 1;");
-                    }
                     const w2 = R2.werte;
                     const mut = w2.mutation || { paare: 0, anders: 0 }, geg = w2.gegen || { paare: 0, anders: 0 };
                     aus[2] = {
-                        werte: { r: w2.r, mutationProzent: mut.paare ? (100 * mut.anders) / mut.paare : null, dachSonneGrad: w2.dachSonne, dachRegenGrad: w2.dachRegen, niederschlagAnker: s2.niederschlag },
-                        zeuge: { orte: w2.orte, niederschlagStreuung: w2.regenRegen != null && w2.regenSonne != null ? w2.regenRegen - w2.regenSonne : 0, mutationen: mut.paare, gegenGleich: geg.paare - geg.anders, akte: R2.akte },
+                        werte: { r: w2.r, mutationProzent: mut.paare ? (100 * mut.anders) / mut.paare : null, dachTrockenGrad: w2.dachTrocken, dachHeimatGrad: w2.dachHeimat, dachNassGrad: w2.dachNass, niederschlagAnker: s2.niederschlag },
+                        zeuge: { orte: w2.orte, niederschlagStreuung: w2.regenNass != null && w2.regenTrocken != null ? w2.regenNass - w2.regenTrocken : 0, mutationen: mut.paare, gegenGleich: geg.paare - geg.anders, klimaGleich: w2.klimaGleich, spielGleich: w2.spielGleich, akte: R2.akte },
                     };
                     const s3 = m.s3;
                     aus[3] = { werte: { feste: s3.feste }, zeuge: { feste: s3.feste, ereignisse: 0 }, nicht: "kein Fest und kein Kalender: der Tag kennt " + s3.akte + " (koerper-core.js:5630 tagesPlan), kein Ereignis der Saat am Himmel oder in der Ernte" };
@@ -4428,20 +4454,26 @@ L.perspektive("mensch", (() => {
                             const z = roh.zeuge || {};
                             if (!(z.orte >= 32)) return "nur " + (z.orte || 0) + " Orte";
                             if (!(z.niederschlagStreuung > 0)) return "der Niederschlag streut nicht über die Orte (EIN Klima — r ohne Ursache)";
-                            if (!(z.mutationen >= 32)) return "keine Mutation des Klimas gemessen";
+                            if (!(z.mutationen >= 64)) return "keine Mutation des Klimas gemessen (" + (z.mutationen || 0) + " von 64 Paaren trocken/nass ↔ Heimat)";
                             if (!(z.gegenGleich >= 32)) return "der Gegenlauf fehlt: ohne Mutation ist der Plan nicht zweimal gleich (" + z.gegenGleich + " von 32)";
+                            if (!(z.klimaGleich >= 32)) return "das Klima des Fächers ist nicht das des Spiels: das Ort-Gesetz ohne Δ trifft das Klima der Zelle (_ortDp) an " + (z.klimaGleich || 0) + " von 32";
+                            if (!(z.spielGleich >= 2)) return "der Plan des Fächers ist nicht der des Spiels: der volle Auftrag (_ortDp mit Raster) trägt dieselben Dächer an " + (z.spielGleich || 0) + " von 2 Saaten";
                             return null;
                         },
-                        // ZAHL am Fächer (M4): 32 Zellen × Sonne · Regen · Sonne-Gegenlauf am EINEN Wetter-Kanal; der Zeuge verlangt, dass der Regen
-                        // stand (rain Regen > Sonne) und der Gegenlauf den Plan gleich lässt (sonst wäre die Mutation Zufall, nicht Regen)
-                        taeter: "fachwerk-core.js:2762 bauRezept (die Dach-Neigung aus dem Samen; kein Niederschlag, kein Wetter am Dach)",
+                        // ZAHL am Fächer (M4, kultur-aus-klima): 32 Zellen × Heimat · trocken · nass · Heimat-Gegenlauf — das Klima des Orts aus dem
+                        // Ort-Gesetz des Geländes (Δ Regen-Quote −0,3 / +0,3), der Auftrag des Spiels (_ortDp); der Zeuge verlangt, dass der
+                        // Niederschlag streut, der Gegenlauf den Plan gleich lässt (sonst wäre die Mutation Zufall), das Ort-Gesetz ohne Δ das Klima
+                        // des Spiels trifft und der volle Auftrag des Spiels dieselben Dächer trägt wie der Fächer
+                        taeter: "fachwerk-core.js `_bauweiseWurf` (die Dach-Neigung aus Kultur und Samen; kein Niederschlag, kein Schnee am Dach) — vor kultur-aus-klima",
                         nicht: "kein Klima am Dach",
-                        leser: "fachwerk-core.js:2762 bauRezept({nutzung, rahmen:{region, band}}) liest kein Klima; der Regen der Welt ist EIN Kanal (window.__wetterSetzen → _weatherFieldFor().rain, gelesen stamm/siedlung-bewohner.js:2241), kein Niederschlag je Ort; Jahr und Klima fielen mit dem Labor-Meta-Gesetz (worlds/fachwerk/fachwerk.js:807 Klima)",
-                        gruen: { werte: { r: 0.58, mutationProzent: 94 }, zeuge: { orte: 32, niederschlagStreuung: 0.6, mutationen: 32, gegenGleich: 32 } },
+                        leser: "stamm/siedlung-ort.js _ortDp → _zellEingang → _siedlungKlima (gelaende-core ortKlima: Niederschlag und Schneefall des Orts) → fachwerk-core.js DORF ortDeckung · ortNeigung",
+                        gruen: { werte: { r: 0.79, mutationProzent: 100 }, zeuge: { orte: 32, niederschlagStreuung: 1821, mutationen: 64, gegenGleich: 32, klimaGleich: 32, spielGleich: 2 } },
                         attrappen: [
-                            { name: "r 0,58 über EIN Klima", roh: { werte: { r: 0.58, mutationProzent: 94 }, zeuge: { orte: 32, niederschlagStreuung: 0, mutationen: 32, gegenGleich: 32 } } },
-                            { name: "Mutation 94 % ohne Gegenlauf (der Plan würfelt)", roh: { werte: { r: 0.58, mutationProzent: 94 }, zeuge: { orte: 32, niederschlagStreuung: 0.6, mutationen: 32, gegenGleich: 3 } } },
-                            { name: "der Plan liest den Regen nicht (Mutant: r 0, Mutation 0 %)", roh: { werte: { r: 0, mutationProzent: 0 }, zeuge: { orte: 32, niederschlagStreuung: 0.6, mutationen: 32, gegenGleich: 32 } } },
+                            { name: "r 0,79 über EIN Klima", roh: { werte: { r: 0.79, mutationProzent: 100 }, zeuge: { orte: 32, niederschlagStreuung: 0, mutationen: 64, gegenGleich: 32, klimaGleich: 32, spielGleich: 2 } } },
+                            { name: "Mutation 100 % ohne Gegenlauf (der Plan würfelt)", roh: { werte: { r: 0.79, mutationProzent: 100 }, zeuge: { orte: 32, niederschlagStreuung: 1821, mutationen: 64, gegenGleich: 3, klimaGleich: 32, spielGleich: 2 } } },
+                            { name: "der Plan liest den Niederschlag nicht (Mutant: r 0, Mutation 0 %)", roh: { werte: { r: 0, mutationProzent: 0 }, zeuge: { orte: 32, niederschlagStreuung: 1821, mutationen: 64, gegenGleich: 32, klimaGleich: 32, spielGleich: 2 } } },
+                            { name: "das Klima des Fächers ist ein Zwilling (nicht das Klima der Zelle)", roh: { werte: { r: 0.79, mutationProzent: 100 }, zeuge: { orte: 32, niederschlagStreuung: 1821, mutationen: 64, gegenGleich: 32, klimaGleich: 0, spielGleich: 2 } } },
+                            { name: "der Plan des Fächers ist nicht der Plan des Spiels", roh: { werte: { r: 0.79, mutationProzent: 100 }, zeuge: { orte: 32, niederschlagStreuung: 1821, mutationen: 64, gegenGleich: 32, klimaGleich: 32, spielGleich: 1 } } },
                         ],
                     },
                     3: {

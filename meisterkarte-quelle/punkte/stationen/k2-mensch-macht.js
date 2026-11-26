@@ -843,24 +843,48 @@ module.exports = (F) => [
     // EINE Messung: die Bewaffneten der Welt — der Spieler (sein Schwung, stamm/kampf.js) und jeder Bewohner, der ein Gerät oder eine
     // Waffe trägt —, dazu die Gemeinwesen im Krieg oder im Vertrag (das Gedächtnis der Orte, `settlementCells`).
     F.leiter("mensch.macht.krieg", {
-        sek: 30,
-        pfad: ["stamm/kampf.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-ort.js"],
+        sek: 60,
+        mutiert: true, // S1 stellt den Spieler mit Klinge vor die Wache und schlägt einen Fuchs: die Wache stellt ihn zum Zweikampf
+        pfad: ["stamm/kampf.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-ort.js", "stamm/koerper-seele.js", "stamm/kreatur-leben.js", "koerper-core.js"],
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const w = await K.welt("return await (" + H.seite.KRIEG + ")(r, T, {});", 20000);
             if (!w || w.fehler) throw new Error("die Welt des Kriegs: " + ((w && w.fehler) || "ohne Antwort"));
             H.zeile("Krieg: " + JSON.stringify(w));
             const nur = "der Spieler (" + (w.haelt || "die leere Hand") + ") und " + w.bewaffneteBewohner + " von " + w.bewohner + " Bewohnern bewaffnet (die Wache), " + w.imZweikampf + " im Kampf";
-            // S1: seit bewohner-satz tragen die Wachen ihre Waffe (`b.waffe`, der Lebenslauf) — der Umfang sind die Bewaffneten IM
-            // Zweikampf: wer einen Gegner trägt oder im Akt eines Kampfs steht; Treffer, Antwort und Deckung zählt erst ein Zweikampf
-            await K.schritt(1, async () =>
-                K.zahl(1, {
-                    n: w.imZweikampf,
-                    werte: { sitzt: null, antwortet: null, durchDeckung: null },
-                    beleg: w.bewaffnet + " Bewaffnete (" + w.bewaffneteBewohner + " von " + w.bewohner + " Bewohnern mit Waffe " + JSON.stringify(w.waffen) + " und der Spieler, " + (w.haelt || "die leere Hand") + "), " + w.imZweikampf + " im Zweikampf",
-                    taeter: "stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature)",
-                })
-            );
+            // S1 (rollen-des-tages: die Tat endet im Hieb): die Station stellt den Zweikampf, wie das Spiel ihn auslöst (ZWEIKAMPF: der
+            // Spieler mit Klinge schlägt einen Fuchs vor der Wache, sie naht ihm und ficht, `_bewohnerHiebTakt`), und liest seine Akte
+            // (`S.hiebe`: Antwort, Treffer durch die Deckung). Der Umfang sind die Bewaffneten im Zweikampf: jede Wache, deren Gang
+            // begann, und der Spieler, wenn er eine Klinge hält (die leere Hand ist nicht bewaffnet). „Sitzt, wo die Klinge den Leib
+            // kreuzt“ liest kein Feld der Akte: der Zug des Kerns trägt keine Lage des Treffers — das Maß bleibt leer, beim Namen
+            await K.schritt(1, async () => {
+                const ms = Math.max(5000, Math.floor((H.rest() - 3) * 1000));
+                const z = await K.welt("return await (" + H.seite.ZWEIKAMPF + ")(r, T, { fensterS: 30, msMax: " + (ms - 4000) + " });", ms);
+                H.zeile("Krieg S1: " + JSON.stringify(z).slice(0, 600));
+                if (!z || z.fehlt)
+                    return K.zahl(1, {
+                        n: 0,
+                        werte: { sitzt: null, antwortet: null, durchDeckung: null },
+                        beleg: "kein Zweikampf gestellt: " + ((z && z.fehlt) || "ohne Antwort") + " · " + w.bewaffnet + " Bewaffnete (" + w.bewaffneteBewohner + " von " + w.bewohner + " Bewohnern mit Waffe " + JSON.stringify(w.waffen) + ")",
+                        taeter: "die Station: " + ((z && z.fehlt) || "ZWEIKAMPF ohne Antwort"),
+                    });
+                return K.zahl(1, {
+                    n: z.imZweikampf,
+                    werte: { sitzt: z.sitzt, antwortet: z.antwortet, durchDeckung: z.durchDeckung },
+                    beleg: z.imZweikampf + " Bewaffnete im Zweikampf (" + z.wachenImGang + " Wache(n) im Gang, der Spieler mit " + (z.haelt || "der leeren Hand") + ") · " + z.gaenge + " Gänge geschlagen in " + z.uhr + " s Welt-Uhr, Treffer Wache/Spieler " + z.treffer.join("/") + ", Züge " + z.zuege + ", " + z.antwort + " von " + z.vorLetztem + " Treffern beantwortet, " + z.durchDeckungN + " durch die Deckung, Lagen " + (z.lagen ? z.lagen.join("/") || "keine" : "ohne Feld") + " · " + z.nahten + " von " + z.wachen + " Wachen draußen nahten (Wache " + z.wache + ", " + z.abstand + " m vor dem Spieler)",
+                    taeter: !(z.imZweikampf >= 2)
+                        ? z.nahten < 1
+                            ? "stamm/siedlung-bewohner.js:2768 _bewohnerZeuge / :2821 _bewohnerNahen — die Wache naht nicht"
+                            : "stamm/siedlung-bewohner.js:2848 _bewohnerHiebTakt — die Wache naht, der Gang beginnt nicht"
+                        : z.gaenge < 1
+                          ? "stamm/siedlung-bewohner.js:2848 _bewohnerHiebTakt — der Gang endet nicht im Fenster"
+                          : z.sitzt != null
+                            ? z.sitzt >= 1
+                              ? null
+                              : "koerper-core.js:6559 spielKampf — eine Lage des Treffers liegt außerhalb der Treffer-Tafel (schmiede-core ARENA.zonen)"
+                            : "koerper-core.js:6559 spielKampf — der Zug {an, finte, gelesen, treffer} trägt keine Lage des Treffers, der Schaden fällt fest auf den Rumpf (stamm/siedlung-bewohner.js:2871 _kampfRohSchaden(null, \"rumpf\"))",
+                });
+            });
             await K.schritt(2, async () => {
                 if (w.bewaffnet < 10) return K.nicht(2, { n: w.bewaffnet, fehlt: nur + ", keine zehn Kämpfer, keine Moral, keine Flucht" });
                 const b = await K.bild(2, w.pose);
@@ -879,6 +903,105 @@ module.exports = (F) => [
             await K.schritt(9, async () => K.nicht(9, { n: 0, fehlt: "keine interplanetaren Konflikte: eine Welt, eine Art mit Klinge (der Spieler)" }));
         },
         seite: {
+            // DER ZWEIKAMPF (S1): der Spieler hält eine Klinge (`equipHeld`, der EINE Griff), steht 4 m vor einer Wache draußen
+            // (`b.waffe`, nicht drinnen, nicht am Steuer — die nächste zum Spieler, deren Stelle Land ist und in keinem Haus und keinem Bau
+            // liegt: `_imGrundriss` nennt auch den Weg und die Lichtung, auf denen jede Wache steht) und schlägt einen
+            // Fuchs neben sich (`damageCreature` mit source player → `_bewohnerZeuge` → `_bewohnerNahen`); dann läuft die Welt (der Takt der
+            // Werkbank), bis jeder begonnene Gang geschlagen ist (`_bewohnerHiebTakt` → `S.hiebe`) oder das Fenster endet. Danach steht der
+            // Spieler wieder am Start und hält, was er vorher hielt.
+            ZWEIKAMPF: async (r, T, arg) => {
+                const st = r.state;
+                const pm = st.playerMesh.position;
+                const KC = window.__koerperCore;
+                const HG = KC && KC.SPIEL_GESETZ && KC.SPIEL_GESETZ.arten && KC.SPIEL_GESETZ.arten.hieb;
+                if (!HG) return { fehlt: "der Kern trägt kein Gesetz des Hiebs (koerper-core SPIEL_GESETZ.arten.hieb)" };
+                if (typeof r.equipHeld !== "function" || typeof r.damageCreature !== "function" || typeof r.spawnCreatureAt !== "function") return { fehlt: "kein Griff oder Schlag des Spielers (equipHeld, damageCreature, spawnCreatureAt)" };
+                const SL = [...(r._bewohnerSiedlungen || new Map()).values()];
+                const wachen = [];
+                for (const S of SL) for (const b of S.liste || []) if (b.waffe && b.leib && !b.drinnen && !b.amSteuer && !b.ankunft && b.ziel) wachen.push(b);
+                if (!wachen.length) return { fehlt: "keine Wache draußen (b.waffe, nicht drinnen, nicht am Steuer)" };
+                const dSp = (b) => Math.hypot(b.leib.position.x - pm.x, b.leib.position.z - pm.z);
+                wachen.sort((p, q) => dSp(p) - dSp(q));
+                let ort = null, wache = null;
+                for (const b of wachen) {
+                    for (let k = 0; k < 12 && !ort; k++) {
+                        const a = (k / 12) * 2 * Math.PI;
+                        const [x, z] = [b.leib.position.x + Math.sin(a) * 4, b.leib.position.z + Math.cos(a) * 4];
+                        const g = r._imGrundriss ? r._imGrundriss(x, z, 1.5) : null;
+                        if (r._landAt(x, z, 0.2) && g !== "haus" && g !== "bau") ort = { x, z };
+                    }
+                    if (ort) {
+                        wache = b;
+                        break;
+                    }
+                }
+                if (!ort) return { fehlt: "keine freie Stelle 4 m vor einer der " + wachen.length + " Wachen draußen" };
+                const start = { x: pm.x, y: pm.y, z: pm.z };
+                const vorher = (st.player && st.player.equipped && st.player.equipped.held) || null;
+                // die Klinge der Wache als Bauplan der Welt: die Gattung der Schmiede trägt den Präfix ihrer Domäne (KIND_POLICY.weapon,
+                // `klinge_` — wie `_stoffstromBauplan`; trägt die Welt die Gattung der Wache nicht, das Langschwert); ohne ihn hält der
+                // Spieler die leere Hand, und die Station sagt es beim Namen
+                const KP = r.constructor.KIND_POLICY;
+                const pre = KP && KP.weapon ? KP.weapon.prefix : "klinge_";
+                const klinge = [arg.klinge, wache.waffe, "langschwert"].map((a) => a && pre + a).find((n) => n && st.blueprints && st.blueprints[n]) || pre + "langschwert";
+                const griff = r.equipHeld(klinge);
+                const haelt = (st.player && st.player.equipped && st.player.equipped.held) || null;
+                if (!haelt) {
+                    r.equipHeld(vorher);
+                    return { fehlt: "der Spieler hält keine Klinge: equipHeld(" + klinge + ") → " + ((griff && griff.reason) || "leer") };
+                }
+                pm.set(ort.x, r._voxelSurfaceY(ort.x, ort.z) + 1.8, ort.z);
+                const n0 = new Map(SL.map((S) => [S, (S.hiebe || []).length]));
+                const [fx, fz] = [ort.x + 1.2, ort.z + 0.9];
+                const tier = r.spawnCreatureAt(fx, r.getTerrainHeightAt(fx, fz), fz, "happy", "fuchs", { bodySize: 1, precise: true });
+                const schlag = tier && r.damageCreature(tier, 0.001, { source: "player" });
+                const nahten = [...((r._hiebe && r._hiebe.keys()) || [])].filter((b) => b.waffe).length;
+                const imGang = new Set();
+                const [t0, w0] = [st.spielZeit, performance.now()];
+                const neu = () => SL.flatMap((S) => (S.hiebe || []).slice(n0.get(S) || 0));
+                if (tier && schlag && schlag.ok)
+                    while (st.spielZeit - t0 < arg.fensterS && performance.now() - w0 < Math.min(arg.fensterS * 3000, arg.msMax || Infinity)) {
+                        await window.__werkTakt();
+                        for (const [b, F] of r._hiebe || new Map()) if (F.K) imGang.add(b);
+                        if (neu().length >= Math.max(1, imGang.size) && ![...(r._hiebe || new Map()).values()].some((F) => F.K)) break;
+                    }
+                const G = neu();
+                const sum = (k) => G.reduce((q, g) => q + (g[k] || 0), 0);
+                const vorLetztem = sum("vorLetztem");
+                // DIE LAGE DES TREFFERS (sitzt): je Gang die Lagen seiner Treffer (`S.hiebe[].lagen`, der Zug des Kerns) — gezählt, was eine
+                // Zone der EINEN Treffer-Tafel trägt (schmiede ARENA.zonen, `_arenaGesetz`), über alle Treffer; ohne Lagen-Feld bleibt es leer
+                const Z = (typeof r.constructor._arenaGesetz === "function" && r.constructor._arenaGesetz().zonen) || {};
+                const tr = G.reduce((q, g) => q + ((g.treffer && g.treffer[0]) || 0) + ((g.treffer && g.treffer[1]) || 0), 0);
+                const mitLage = G.length > 0 && G.every((g) => Array.isArray(g.lagen));
+                const sitzen = mitLage ? G.reduce((q, g) => q + g.lagen.filter((l) => Object.prototype.hasOwnProperty.call(Z, l)).length, 0) : 0;
+                const lagen = mitLage ? G.flatMap((g) => g.lagen) : null;
+                const wachenImGang = Math.max(imGang.size, G.length);
+                const uhr = +(st.spielZeit - t0).toFixed(2);
+                pm.set(start.x, start.y, start.z);
+                r.equipHeld(vorher);
+                if (!tier) return { fehlt: "kein Fuchs an der Stelle" };
+                if (!(schlag && schlag.ok)) return { fehlt: "der Schlag traf nicht" };
+                return {
+                    wachen: wachen.length,
+                    wache: wache.seed,
+                    abstand: 4,
+                    haelt,
+                    nahten,
+                    wachenImGang,
+                    imZweikampf: wachenImGang + (wachenImGang > 0 && haelt ? 1 : 0),
+                    gaenge: G.length,
+                    zuege: sum("zuege"),
+                    treffer: [G.reduce((q, g) => q + ((g.treffer && g.treffer[0]) || 0), 0), G.reduce((q, g) => q + ((g.treffer && g.treffer[1]) || 0), 0)],
+                    antwort: sum("antwort"),
+                    vorLetztem,
+                    antwortet: vorLetztem > 0 ? +(sum("antwort") / vorLetztem).toFixed(3) : null,
+                    durchDeckungN: sum("durchDeckung"),
+                    durchDeckung: G.length ? sum("durchDeckung") : null,
+                    sitzt: mitLage && tr > 0 ? +(sitzen / tr).toFixed(3) : null,
+                    lagen,
+                    uhr,
+                };
+            },
             KRIEG: async (r, T, arg) => {
                 const st = r.state;
                 const pm = st.playerMesh.position;
