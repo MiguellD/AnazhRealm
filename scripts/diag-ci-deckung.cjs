@@ -1236,14 +1236,17 @@ function selbsttestKopf(urteile = kopfUrteil) {
     const lauf = (x, lauf) => ({ ...x, lauf: { ...x.lauf, ...lauf } });
     const laufend = lauf(gruen(1), { status: "in_progress", conclusion: null });
     // der eigene Lauf: ein push auf main (die Nachwache) — im Zug (ZUG_REFS) fragt der Richter nichts
-    const fall = (ereignis, laeufe, gewartet = [], ref = "refs/heads/main") => ({
+    // pr: { kopfZweig, eigen } eines pull_request (der Kopf-Zweig und ob er im eigenen Repo liegt)
+    const fall = (ereignis, laeufe, gewartet = [], ref = "refs/heads/main", pr = {}) => ({
         ereignis,
         ref,
         eigenerLauf: 9,
         laeufe: laeufe.map((x) => x.lauf),
         jobsJe: Object.fromEntries(laeufe.map((x) => [x.lauf.id, x.jobs])),
         gewartet,
+        ...pr,
     });
+    const PR_REF = "refs/pull/7/merge";
     // [Name, Fall, Soll: „ja"/„nein" (voll) · „warte" · „rot" · ein Prüfer am Urteil]
     const faelle = [
         ["derselbe Kopf grün am Zweig (der Stempel landet, main erbt)", fall("push", [gruen(1)]), "nein"],
@@ -1251,6 +1254,27 @@ function selbsttestKopf(urteile = kopfUrteil) {
         ["nur der eigene Lauf", fall("push", [gruen(9)]), "ja"],
         ["auf Abruf läuft sie immer", fall("workflow_dispatch", [gruen(1)]), "ja"],
         ["ein PR prüft den Merge, nie den Kopf", fall("pull_request", [gruen(1)]), "ja"],
+        // 26.11.: je Cloud-Kopf fuhren push UND pull_request die 22 Jobs — den Kopf richtet der push am selben Zweig
+        [
+            "der Zwilling: ein PR aus dem eigenen Zweig (der push am selben Zweig richtet den Kopf)",
+            fall("pull_request", [], [], PR_REF, { kopfZweig: "leib-liest-satz", eigen: true }),
+            "nein",
+        ],
+        [
+            "der Zwilling wartet auf keinen Lauf und liest keinen",
+            fall("pull_request", [laufend], [], PR_REF, { kopfZweig: "leib-liest-satz", eigen: true }),
+            "nein",
+        ],
+        [
+            "kein Zwilling: ein PR aus einem Fork (dort fährt hier kein push)",
+            fall("pull_request", [], [], PR_REF, { kopfZweig: "leib-liest-satz", eigen: false }),
+            "ja",
+        ],
+        [
+            "kein Zwilling: ein PR aus claude/** (check.yml nimmt den Zweig vom push aus)",
+            fall("pull_request", [], [], PR_REF, { kopfZweig: "claude/leib-liest-satz", eigen: true }),
+            "ja",
+        ],
         ["der grüne Lauf war ein PR", fall("push", [gruen(1, "pull_request")]), "ja"],
         ["der grüne Lauf trug nur den Puls", fall("push", [gruen(1, "push", [])]), "ja"],
         ["eine Voll-Gruppe übersprungen", fall("push", [gruen(1, "push", ["success", "skipped"])]), "ja"],
@@ -1309,6 +1333,21 @@ function selbsttestKopf(urteile = kopfUrteil) {
             `  ${ok ? "✅" : "❌"} Selbsttest Kopf, Mutant „der Richter blind für den Zug" → ${alt.length ? "ROT an „" + alt.join("“ · „") + '"' : "bleibt grün"}`
         );
         if (!ok) f.push("Kopf: der Mutant „der Richter blind für den Zug\" fällt nicht an jedem Zug-Fall — die Fälle sind vakuös");
+        // DIE DREI MUTANTEN DES ZWILLINGS: der alte Richter (jeder PR fährt die Batterie), der Richter blind für den Fork (jeder PR
+        // gilt als eigen) und der Richter blind für claude/** (jeder Zweig gilt als vom push gedeckt) — jeder fällt an SEINEM Fall
+        const zwilling = [
+            ["der Richter blind für den Zwilling (jeder PR fährt die Batterie doppelt)", (e) => ({ ...e, eigen: undefined }), "der Zwilling"],
+            ["der Richter blind für den Fork", (e) => ({ ...e, eigen: e.ereignis === "pull_request" ? true : e.eigen }), "kein Zwilling: ein PR aus einem Fork"],
+            ["der Richter blind für claude/**", (e) => ({ ...e, kopfZweig: e.kopfZweig && e.kopfZweig.replace(/^claude\//, "") }), "kein Zwilling: ein PR aus claude/**"],
+        ];
+        for (const [n, m, an] of zwilling) {
+            const faellt = pruefe((e) => kopfUrteil(m(e))).map(([x]) => x);
+            const trifft = faellt.some((x) => x.startsWith(an));
+            console.log(
+                `  ${trifft ? "✅" : "❌"} Selbsttest Kopf, Mutant „${n}" → ${faellt.length ? "ROT an „" + faellt.join("“ · „") + '"' : "bleibt grün"}`
+            );
+            if (!trifft) f.push(`Kopf: der Mutant „${n}" fällt nicht an „${an} …" — die Fälle sind vakuös`);
+        }
     }
     return f;
 }
