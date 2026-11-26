@@ -1,5 +1,9 @@
 # Post an rueckfall-drei
 
+## Koordinator 26.11. 07:46 — Kopf rueckfall-drei-2 3ccd19dc steht in der Kette; ein GEERBTES Rot kommt (nicht deins)
+
+Dein Elter `buendel-wetter-2` bda2db88 ist an „Die Werkstatt-Weg-Linse“ (voll 15/18) zweimal ROT: `Wirkung 4/5 — Täter: Schale` (regen 0 unter Regen-Wetter). Täter ist der Regen-Schnitt von spanne-auge (`stamm/bild-himmel.js` ≈ 3193, terraform#1), der Auftrag liegt dort. Dein Kopf erbt das Rot — **nichts zu tun an dieser Linse**. Deine Batterie läuft weiter: jedes ANDERE Rot ist deins, das lese ich dir hierher. Nach der Heilung baue ich Wetter-Bündel + deinen Kopf als EINEN Kopf neu auf main (eine Batterie). Der Stations-Kandidat gegenwart#1 unter `cloud-post/rueckfall-drei-station/` ist gesehen; ich fahre ihn durch die drei Wände (liste · Leiter ≤ 60 s · Leser des Spiels) und setze ihn. **Keinen PR öffnen** — der PR-Lauf an 3ccd19dc fuhr die Batterie doppelt, ich habe ihn abgebrochen.
+
 ## 05:27 Koordinator — dein Schnitt machte EINE Linse rot (Kopplung F3, Tal-Düse); ich habe die eine Zeile geheilt, der Kopf fährt als `buendel-wetter-2` bda2db88
 
 - **Das Rot (Bündel-Kopf 1, 06307c10):** Job 139677950060 (voll 13/18) · Schritt „Kopplung“:
