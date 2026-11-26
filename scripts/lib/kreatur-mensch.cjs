@@ -1340,6 +1340,283 @@ async function menschBuehnen() {
         }
         return { sicht };
     });
+
+    // ── ruf (rollen-des-tages, Meisterkarte 2 mensch.macht.megastadt#1 „Antwortzeit ∝ Weg zur Wache ρ ≥ 0,7 · wer im Sichtfeld
+    // erscheint ≤ 0“): im Start-Dorf um 10 Uhr (die Wache im Werk, auf ihrer Runde) schlägt der Spieler ein Wesen neben einem
+    // Bewohner, den keine Wache sieht (jede Waffe weiter als `zeugeM` + 5 m vom Ort der Tat) — der Zeuge erhebt den Ruf
+    // (`_bewohnerRuf`), es antwortet die Wache mit dem kürzesten Weg über das Netz (koerper `tagesRuf`), sie geht ihn und stellt
+    // den Täter (`_bewohnerNahen`, der Hieb). Je Tat ihr Weg und ihre Antwortzeit (`S.rufe`: vom Ruf, bis sie ihm gegenübersteht),
+    // die Taten an Zeugen in wachsendem Abstand zur nächsten Waffe (30–150 m). Der Spieler blickt dorthin, woher die gerufene Wache
+    // kommt: wer im Sichtfeld in einem Takt mehr als `SPRUNG_M` springt (draußen davor und danach), ist erschienen (`imSicht`).
+    // Drinnen ist auch der Leib am Steuer eines Wagens, den keine 3D-Stufe trägt: ungezeichnet folgt er nur der Lage seines Wagens
+    // (`_verkehrSitz`; das Feld trägt keinen Fahrer, `_kzBesitztFeld`) — bis hier zählte die Probe ihn (fahrer #952 1,0 m je achtem
+    // Schritt in 207 m, 270 „Sprünge“ eines Leibs, den niemand sieht; das Bild seines Wagens glitt, `_verkehrGleit`).
+    // Täter (Selbsttest, EIN Lauf): der stumme Zeuge (das Gesetz vor dem Ruf) · die Wende holt sie zurück (der Hieb hält nur bis
+    // zur nächsten Wende ihres Plans — auf der Runde je Punkt) · die Wache springt an die Tat.
+    await buehne("ruf", async (restore) => {
+        const [dt, tag0, SPRUNG_M] = [1 / 60, s.timeOfDay, 1];
+        const S = await startDorf(restore);
+        const stell = (x, z) => pm.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
+        restore.push(() => r._uhrSetzen(tag0, "regler"));
+        r._setWeather("sunny", "regler");
+        const da = angekommen(S);
+        await bisDa("ruf: die Leiber", () => !da());
+        await uhrAuf(10, "ruf: 10 Uhr", da);
+        await stehtUm("ruf: das Start-Dorf");
+        // (der Schritt rückt die Welt-Uhr wie der Takt des Spiels, `uhrVor`, und der Tag liest sie, `tickDayNight`: der Hieb und die
+        // Antwort auf den Ruf lesen die Uhr, die Runde der Wache ihre Stunde — ohne die Uhr stand die Antwortzeit auf 0 s und die
+        // Wache blieb im Hieb, der nie einen Zug tat; ohne den Tag stand die Stunde auf 10,0033 über alle sechs Taten, die Runde
+        // wendete nie, und der Täter „ruf-wende“ ging unerkannt)
+        const schritt = () => [uhrVor(dt), r.tickDayNight(s.spielZeit), takt(dt), r._verkehrSchritt(dt), leute(dt), r._tickVerkehr()]; // prettier-ignore
+        const wachen = S.liste.filter((b) => b.waffe && b.orte && (b.orte.streife || []).length);
+        if (!wachen.length) return { fehler: "keine Wache mit Runde im Start-Dorf" };
+        const offen = (x, z) => r._landAt(x, z) && !["haus", "bau"].includes(r._imGrundriss(x, z, 0.5));
+        const ZM = A.BEWOHNER.zeugeM;
+        // DER ORT DER TAT IM ABSTAND D: 3 m neben einem stehenden Bewohner ohne Waffe, frei von Grundriss, jede Waffe draußen
+        // weiter als zeugeM + 5 m — der nächste an D (die Wachen gehen ihre Runde: je Tat neu gefragt)
+        const ortDerTat = (D) => {
+            const Wa = S.liste.filter((b) => b.waffe && b.leib && !b.drinnen);
+            let best = null;
+            for (const k of Wa.length ? S.liste : [])
+                for (let j = 0; !k.waffe && k.leib && !k.drinnen && !k.amSteuer && !k.ankunft && k.ziel && k.da && j < 8; j++) {
+                    const p = k.leib.position;
+                    const t = { x: p.x + 3 * Math.cos((j * Math.PI) / 4), z: p.z + 3 * Math.sin((j * Math.PI) / 4) };
+                    if (!offen(t.x, t.z)) continue;
+                    const dW = Math.min(...Wa.map((w) => ab(w.leib.position, t)));
+                    if (dW > ZM + 5 && (!best || Math.abs(dW - D) < Math.abs(best.dW - D))) best = { k, t, dW };
+                }
+            return best;
+        };
+        const gerufen = () => [...(r._hiebe || new Map())].find(([, F]) => F.ruf && F.S === S);
+        const lauf = () => {
+            const [taten, sprung] = [[], []];
+            for (const D of [30, 50, 70, 95, 120, 150]) {
+                // wer im Lauf davor (ein Täter) im Hieb stand, geht erst in seinen Tag zurück
+                for (let i = 0; i < 60 * 120 && r._hiebe && r._hiebe.size; i++) schritt();
+                const O = ortDerTat(D);
+                if (!O) return { fehler: `kein Ort der Tat ${D} m von der Wache (ein stehender Bewohner ohne Waffe, frei daneben)` }; // prettier-ignore
+                stell(O.t.x, O.t.z);
+                r._spielerLageAlt = null;
+                kamera(O.k.leib.position.x - pm.x, O.k.leib.position.z - pm.z);
+                for (let i = 0; i < 30; i++) schritt();
+                const n0 = (S.rufe || []).length;
+                const drin = (o) => !!o.drinnen || (!!o.amSteuer && !o.leib.visible);
+                const lage = new Map(S.liste.map((o) => [o, o.leib && { x: o.leib.position.x, z: o.leib.position.z, drin: drin(o) }])); // prettier-ignore
+                const sieh = () => {
+                    for (const o of S.liste) {
+                        const L = o.leib;
+                        if (!L) continue;
+                        const [a, jetzt] = [lage.get(o), { x: L.position.x, z: L.position.z, drin: drin(o) }];
+                        if (a && !a.drin && !jetzt.drin && ab(a, jetzt) > SPRUNG_M && imBlick(jetzt.x, L.position.y + 1, jetzt.z))
+                            sprung.push(`${wer(o)} ${ab(a, jetzt).toFixed(1)} m um ${D} m`);
+                        lage.set(o, jetzt);
+                    }
+                };
+                const opfer = tier({ x: (O.t.x + O.k.leib.position.x) / 2, y: pm.y + 0.5, z: (O.t.z + O.k.leib.position.z) / 2 }, "wesen"); // prettier-ignore
+                r.damageCreature(opfer, 1e9, { source: "player" });
+                const G = gerufen();
+                const zeile = { D, dW: Math.round(O.dW * 10) / 10, wer: G ? wer(G[0]) : null, wegM: null, antwortS: null };
+                if (G) {
+                    const b = G[0];
+                    const luft = ab(b.leib.position, pm);
+                    const zu = () => kamera(b.leib.position.x - pm.x, b.leib.position.z - pm.z);
+                    zu();
+                    sieh();
+                    for (let k = 0; k < 60 * (2 * luft + 60) && (S.rufe || []).length === n0 && r._hiebe && r._hiebe.has(b); k++) {
+                        schritt();
+                        if (k % 10 === 9) zu();
+                        sieh();
+                    }
+                    const A2 = (S.rufe || []).length > n0 ? S.rufe[S.rufe.length - 1] : null;
+                    if (A2) [zeile.wegM, zeile.antwortS] = [Math.round(A2.wegM * 10) / 10, Math.round(A2.antwortS * 100) / 100];
+                    else zeile.grund = r._hiebe && r._hiebe.has(b) ? "kam nicht an" : `kehrte um (${ab(b.leib.position, pm).toFixed(1)} m vor ihm, Akt ${b.akt})`; // prettier-ignore
+                    zeile.luftM = Math.round(luft * 10) / 10;
+                }
+                r.removeCreature(opfer);
+                taten.push(zeile);
+            }
+            return { taten, imSicht: sprung.length, sprung: sprung.slice(0, 4).join(" · "), wachen: wachen.length };
+        };
+        if (!taeter) return lauf();
+        const sicht = {};
+        for (const [t, [name, fn]] of Object.entries({
+            // das Gesetz vor dem Ruf: wer die Tat sah, ruft keinen
+            "ruf-stumm": ["_bewohnerRuf", () => () => false],
+            // der Hieb hält nur bis zur nächsten Wende ihres Plans (der Stand vor rollen-des-tages: die Runde wendet je 19 s)
+            "ruf-wende": ["_bewohnerNahen", (f) => function (S2, b, o, stunde, ruf) {
+                const ja = f.apply(this, arguments);
+                const W = ja && b.weichen;
+                if (!W) return ja;
+                b.weichen = null;
+                const bis = this._bewohnerWende(b, stunde, stunde + 24);
+                b.weichen = W;
+                if (bis === null) return ja;
+                W.dauer = bis - stunde;
+                this._bewohnerZiel(b, stunde, true); // ihr Ziel gilt bis zur Wende, die das Weichen jetzt trägt
+                return ja;
+            }], // prettier-ignore
+            // die gerufene Wache springt an den Täter, statt ihren Weg zu gehen
+            "ruf-sprung": ["_bewohnerNahen", (f) => function (S2, b, o, stunde, ruf) {
+                const ja = f.apply(this, arguments);
+                const q = ja && ruf && b.weichen && b.weichen.ort;
+                if (q) b.leib.position.set(q.x, this.getTerrainHeightAt(q.x, q.z), q.z);
+                return ja;
+            }], // prettier-ignore
+        })) {
+            const zurueck = [];
+            decke(name, fn, zurueck);
+            if ([].concat(taeter).includes(t)) sicht[t] = lauf();
+            for (const f of zurueck) f();
+        }
+        return { sicht };
+    });
+
+    // ── wild (rollen-des-tages, Meisterkarte 2 mensch.nahrung.tier#2 „Änderung des Wildbestands < 0“): die Jäger des Start-Dorfs
+    // jagen, bis der Kern an einem Jagdtag Beute nannte (koerper `tagesBeute`, höchstens `TAGE` Tage der Welt-Uhr). Je zehn
+    // Spielminuten fragt jeder seinen Plan (`_bewohnerSoll`); wechselt sein Akt, nimmt er das Ziel der Stunde (`_bewohnerZiel`) —
+    // der Heimweg aus der Jagd trägt die Beute (`_bewohnerBeute` → der EINE Leser des Bestands `_bestandArt` → der EINE Ausgang
+    // `_bestandAus`: der Akt „aus“ seines Gaus). Der Gau ist die Funktion von Saat, Akten und Takt (`_gauAuftrag`): am Takt jeder
+    // Beute wird er zweimal gefragt, mit allen Akten und ohne ihren — die Differenz der Beute-Art ist die Änderung des
+    // Wildbestands unter der Jagd (Rudel, Riss-Quote und Geburt rechnen in beiden Läufen, das Gesetz der Tiere bleibt
+    // unberührt). Danach liest der Leser des Spiels das Revier (`gauLies` → `_bestandArt`): er trägt die Zahl mit den Akten. Die
+    // Leute gehen nicht (kein Takt der Leute): gemessen wird die Kette Plan → Beute → Bestand.
+    // Täter (Selbsttest, EIN Lauf): das Gesetz vor rollen-des-tages (der Heimweg trägt keine Beute) · die Beute aus dem Nichts (der
+    // Halter des Jägers füllt sich, kein Kopf verlässt den Bestand).
+    await buehne("wild", async (restore) => {
+        const [TAGE, JA, KC, SCHRITTE] = [40, 2, window.__koerperCore, 144];
+        const S = await startDorf(restore);
+        const da = angekommen(S);
+        await bisDa("wild: die Leiber", () => !da());
+        const [g, tagS] = [A.GAU.beute, s.dayLengthMinutes * 60];
+        const J = S.liste.filter((b) => b.rolle === "jaeger" && b.orte && b.orte.werk);
+        if (!J.length) return { fehler: "kein Jäger im Start-Dorf (koerper tagesJagdWahl, `_bewohnerListe`)" };
+        const keys = [...new Set(J.map((b) => r._bestandKey(b.orte.werk.x, b.orte.werk.z)))];
+        const gaue = new Map();
+        for (const key of keys) {
+            const [ix, iz] = key.split(",").map(Number);
+            const o = r._gauOrt(ix, iz);
+            (gaue.get(o.gx + "," + o.gz) || gaue.set(o.gx + "," + o.gz, { o, lesen: new Set(), keys: [] }).get(o.gx + "," + o.gz)).lesen.add(o.revier); // prettier-ignore
+            gaue.get(o.gx + "," + o.gz).keys.push(key);
+        }
+        const akte = () => [...gaue.keys()].flatMap((k) => r._gauHalt().get(k) || []);
+        const stunde = () => ((((s.timeOfDay % 1) + 1) % 1) * 24);
+        const zaehl = () => Object.assign({ jagden: 0, beute: 0, leer: 0, ohneAntwort: 0 }, S.jagd);
+        const zahl = (a) => ({ gau: a.beute, revier: (a.reviere || []).reduce((q, rv) => q + rv.tiere.filter((t) => t.g === "beute").length, 0), ids: new Set((a.reviere || []).flatMap((rv) => rv.tiere.map((t) => t.id))) }); // prettier-ignore
+        const frage = async (k, takt, liste) => {
+            const { o, lesen } = gaue.get(k);
+            for (let i = 0; r._gauBild(o.gx, o.gz).flug; i++) {
+                if (i > 2400) throw new Error(`der Gau ${k} antwortet nicht binnen 60 s`);
+                await sleep(25);
+            }
+            return zahl(await r._gauAuftrag(o.gx, o.gz, takt, liste, { lesen: [...lesen].sort((p, q) => p - q) }));
+        };
+        // DIE WIRKUNG AM TAKT DER BEUTE (gleich nach ihr gefragt, ihr Akt ist der jüngste): der Gau einen Takt davor und am Takt
+        // ihres Akts ohne ihn, dann mit ihm — in der Reihe der Takte rechnet der Faden seinen Lauf weiter (voxel-worker `weiter`)
+        const wirkung = async (a, k) => {
+            const alle = (r._gauHalt().get(k) || []).slice();
+            const ohneA = alle.filter((x) => x !== a);
+            const v = await frage(k, a.takt - 1, ohneA);
+            const [n, m] = [await frage(k, a.takt, ohneA), await frage(k, a.takt, alle)];
+            const [davor, am, mitAm] = [v.ids.has(a.id), n.ids.has(a.id), m.ids.has(a.id)];
+            // wirkt: der Kopf lebt am Takt ohne den Akt, mit ihm nicht · gefällt: das Gesetz fällte ihn an genau diesem Takt (der
+            // Akt landet einen Takt nach dem Bild, `_gauAktTakt`; der Kern rechnet je Takt erst den Schritt, dann die Akte, leben-core
+            // `gauBis`) · sonst: der Akt erreicht das Gesetz nicht, oder der Kopf war schon vor dem Takt fort
+            const wie = am && !mitAm ? "wirkt" : davor && !am ? "gefällt" : `sonst (davor ${davor}, am ${am}, mit ${mitAm})`;
+            return { takt: a.takt, id: a.id, gau: m.gau - n.gau, revier: m.revier - n.revier, wie };
+        };
+        const lauf = async () => {
+            const [z0, jag, sofort] = [zaehl(), new Map(), []];
+            const [t0, vor] = [s.spielZeit, (d) => (uhrVor(d), r.tickDayNight(s.spielZeit))];
+            let [heim, ja, tag] = [0, 0, 0];
+            const genug = () => ja >= JA && (!jag.size || sofort.some((d) => d.wie === "wirkt"));
+            for (; tag < TAGE && !genug(); tag++) {
+                // die Wechsel der nächsten 24 Stunden aus dem Plan (je zehn Spielminuten gefragt), die Uhr rückt nur zu ihnen — am Ort
+                // jedes Wechsels fragt der Jäger seinen Plan noch einmal zur Uhr der Welt
+                const [h0, wechsel] = [stunde(), []];
+                for (const b of J)
+                    for (let i = 1, akt = b.akt; i <= SCHRITTE; i++) {
+                        const a = r._bewohnerSoll(b, (h0 + (24 * i) / SCHRITTE) % 24).akt;
+                        if (a !== akt) (wechsel.push(i), (akt = a));
+                    }
+                let i0 = 0;
+                for (const i of [...new Set(wechsel)].sort((p, q) => p - q).concat(SCHRITTE)) {
+                    vor(((i - i0) * tagS) / SCHRITTE);
+                    i0 = i;
+                    const h = stunde();
+                    for (const b of J) {
+                        if (r._bewohnerSoll(b, h).akt === b.akt) continue;
+                        if (b.akt === "jagd") {
+                            heim++;
+                            if (KC.tagesBeute(b.same, Math.floor(r._weltTag()), "jagd")) ja++;
+                            await gauLies(keys); // die Beute liest das Bild des Gaus am Takt der Uhr
+                        }
+                        const V = new Map([...gaue.keys()].map((q) => [q, new Set(r._gauHalt().get(q) || [])]));
+                        r._bewohnerZiel(b, h);
+                        for (const [q, W0] of V)
+                            for (const a of (r._gauHalt().get(q) || []).filter((x) => !W0.has(x) && x.art === "aus"))
+                                (jag.set(a, q), sofort.push(await wirkung(a, q)));
+                    }
+                }
+            }
+            const z1 = zaehl();
+            // DER LESER DES SPIELS am Revier (`gauLies` → `_bestandArt`, das Bild am Takt der Uhr) trägt die Zahl des Gaus mit den
+            // Akten an diesem Takt. Gemessen wird am Takt der Beute, nie am Horizont: das Gesetz der Tiere ist ein Lauf aus EINEM Strom
+            // je Gau, ein Kopf weniger dekorreliert ihn (rollen-des-tages, 12 Tage: die eine Beute am Takt 695, am Takt 4 322 trug der
+            // Gau mit ihr 14 661 Hirsche, ohne sie 13 814 — +847 ist Rauschen des Laufs, keine Wirkung der Jagd)
+            // (die Uhr rückt bis zum Takt des letzten Akts: davor reist er noch — das Bild zeichnet seinen Kopf nicht mehr, der Gau
+            // trägt ihn noch, `_gauAntwort` · `gefallen`)
+            const T = A._bestandGesetz().B.taktS;
+            for (const a of jag.keys()) while (Math.floor(r._feldHorizont() / T) < a.takt) uhrVor(T);
+            const takt = Math.max(0, Math.floor(r._feldHorizont() / T));
+            const mit = { gau: 0, revier: 0 };
+            for (const k of gaue.keys()) {
+                const m = await frage(k, takt, (r._gauHalt().get(k) || []).slice());
+                [mit.gau, mit.revier] = [mit.gau + m.gau, mit.revier + m.revier];
+            }
+            await gauLies(keys);
+            const leser = keys.reduce((q, key) => q + (r._bestandArt(key, g) || { tiere: [] }).tiere.length, 0);
+            return {
+                jaeger: J.length,
+                tage: Math.round(((s.spielZeit - t0) / tagS) * 10) / 10,
+                heim,
+                beute: z1.beute - z0.beute,
+                leer: z1.leer - z0.leer,
+                ohneAntwort: z1.ohneAntwort - z0.ohneAntwort,
+                aus: jag.size,
+                sofort,
+                wildDelta: sofort.reduce((q, d) => q + d.gau, 0),
+                takt,
+                mit,
+                leser,
+            };
+        };
+        if (!taeter) return await lauf();
+        const sicht = {};
+        for (const [t, [name, fn]] of Object.entries({
+            // das Gesetz vor rollen-des-tages: der Heimweg aus der Jagd trägt keine Beute
+            "wild-ohne-beute": ["_bewohnerBeute", () => () => {}],
+            // die Beute aus dem Nichts: der Halter füllt sich, kein Kopf verlässt den Bestand
+            "wild-aus-nichts": ["_bestandAus", () => () => {}],
+        })) {
+            const zurueck = [];
+            decke(name, fn, zurueck);
+            if ([].concat(taeter).includes(t)) sicht[t] = await lauf();
+            for (const f of zurueck) f();
+        }
+        return { sicht };
+    });
+}
+
+// der Rang-Zusammenhang zweier Reihen (Spearman, ohne Bindungen: Rang nach der Reihe der Werte)
+function rangRho(a, b) {
+    const rang = (v) => {
+        const o = v.map((x, i) => [x, i]).sort((p, q) => p[0] - q[0]);
+        const R = new Array(v.length);
+        o.forEach(([, i], k) => (R[i] = k));
+        return R;
+    };
+    const [ra, rb, n] = [rang(a), rang(b), a.length];
+    return 1 - (6 * ra.reduce((s, x, i) => s + (x - rb[i]) ** 2, 0)) / (n * (n * n - 1));
 }
 
 // DAS URTEIL (Node) der Proben des Menschen: `soll(bedingung, text)` sammelt im Urteil von kreatur-proben.cjs
@@ -1473,15 +1750,39 @@ function menschUrteil(name, z, soll) {
         );
         soll(z.fort >= z.begegnungM, `der Zeuge weicht nicht: ${z.fort} m weiter von der Tat als sein Stand (Soll ≥ begegnungM ${z.begegnungM} m)`);
     }
+    // DER RUF AN DIE WACHE (megastadt#1): jede Tat beantwortet (die Wache steht dem Täter gegenüber), die Antwortzeit folgt dem
+    // Weg der Wache, ρ ≥ 0,7 (der Richter der Sprosse), und keiner erscheint im Sichtfeld (0 Sprünge, imSicht ≤ 0)
+    if (name === "ruf") {
+        const T = z.taten || [];
+        const bea = T.filter((t) => t.antwortS != null);
+        const ohne = T.filter((t) => t.antwortS == null).map((t) => `${t.dW} m ${t.wer || "keiner gerufen"}${t.grund ? " " + t.grund : ""}`); // prettier-ignore
+        soll(T.length >= 5 && !ohne.length, `der Ruf bleibt ohne Antwort: ${ohne.length} von ${T.length} Taten (${ohne.join(" · ") || "keine Tat"})`); // prettier-ignore
+        const rho = bea.length >= 5 ? rangRho(bea.map((t) => t.antwortS), bea.map((t) => t.wegM)) : null;
+        soll(rho >= 0.7, `die Antwortzeit folgt dem Weg der Wache nicht: ρ ${rho == null ? "—" : rho.toFixed(3)} (Soll ≥ 0,7; ${bea.map((t) => t.wegM + " m " + t.antwortS + " s").join(" · ")})`); // prettier-ignore
+        soll(z.imSicht === 0, `im Sichtfeld erschienen: ${z.imSicht} (${z.sprung || "-"})`);
+    }
+    // DER WILDBESTAND UNTER DER JAGD (tier#2): die Jäger jagen und bringen Beute heim (≥ 1 in `tage` Tagen), jede Beute ist ein Kopf,
+    // der den Bestand verlässt (Akte „aus“ = Beuten), der Gau mit den Akten trägt weniger Beute-Tiere als ohne sie (wildDelta < 0),
+    // und der Leser des Spiels liest am Revier die Zahl mit den Akten
+    if (name === "wild") {
+        const was = `${z.jaeger} Jäger, ${z.tage} Tage: ${z.heim} Heimwege aus der Jagd, ${z.beute} Beuten, ${z.leer} leer, ${z.ohneAntwort} ohne Antwort des Gaus`; // prettier-ignore
+        const S0 = z.sofort || [];
+        soll(z.heim >= 1 && z.beute >= 1, `der Jäger bringt keine Beute heim: ${was}`);
+        soll(z.aus === z.beute, `die Beute verlässt den Bestand nicht: Akte „aus“ ${z.aus} bei ${z.beute} Beuten (${was})`);
+        const [wirkt, gefaellt] = [S0.filter((d) => d.wie === "wirkt"), S0.filter((d) => d.wie === "gefällt")];
+        const sonst = S0.filter((d) => d.wie !== "wirkt" && d.wie !== "gefällt");
+        soll(wirkt.length >= 1 && !sonst.length && wirkt.every((d) => d.gau === -1) && z.wildDelta < 0, `der Wildbestand bleibt unter der Jagd: Δ ${z.wildDelta} am Takt der Beute — wirkt ${wirkt.length}, vom Gesetz am Takt gefällt ${gefaellt.length}, sonst ${sonst.length} (${S0.map((d) => d.takt + ": " + d.gau + " " + d.wie).join(" · ") || "keine Beute"}; ${was})`); // prettier-ignore
+        soll(z.leser === (z.mit && z.mit.revier), `der Leser des Spiels liest am Revier ${z.leser} Beute-Tiere, der Gau mit den Akten ${z.mit && z.mit.revier}`); // prettier-ignore
+    }
 }
 
 module.exports = {
     BUEHNEN: `await (${menschBuehnen.toString()})();`,
     // DIE DORF-PROBEN (`startDorf`): ihr Start-Dorf bleibt in der Welt der Seite — sie laufen nach allen anderen, auch nach den
     // Lebens-Proben (die Reihe des Laufs ist die Reihe von PROBEN, je Teil gefiltert)
-    PROBEN: ["bewohner", "begegnung", "zielplan"],
+    PROBEN: ["bewohner", "begegnung", "ruf", "wild", "zielplan"],
     // die Probe mit EINEM Lauf im Selbsttest: alle ihre Täter in ihm, das Urteil je Täter an seiner Sicht (`sicht`)
-    EIN_LAUF: ["bewohner", "begegnung"],
+    EIN_LAUF: ["bewohner", "begegnung", "ruf", "wild"],
     TAETER: {
         bewohner: [
             ["bewohner-haus", /Haus ohne Bewohner/],
@@ -1518,6 +1819,15 @@ module.exports = {
             ["begegnung-vergessen", /die Erinnerung lenkt den Abstand nicht/],
             ["begegnung-bleibt", /der Zeuge weicht nicht/],
             ["begegnung-zugebaut", /kein freier Weg um den Zeugen/],
+        ],
+        ruf: [
+            ["ruf-stumm", /der Ruf bleibt ohne Antwort: [1-9]\d* von \d+ Taten \([^)]*keiner gerufen/],
+            ["ruf-wende", /der Ruf bleibt ohne Antwort: [1-9]\d* von \d+ Taten \([^)]*kehrte um/],
+            ["ruf-sprung", /im Sichtfeld erschienen: [1-9]/],
+        ],
+        wild: [
+            ["wild-ohne-beute", /der Jäger bringt keine Beute heim: \d+ Jäger, \d+ Tage: [1-9]\d* Heimwege aus der Jagd, 0 Beuten/],
+            ["wild-aus-nichts", /die Beute verlässt den Bestand nicht: Akte „aus“ 0 bei [1-9]\d* Beuten/],
         ],
     },
     urteil: menschUrteil,

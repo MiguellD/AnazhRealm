@@ -5508,6 +5508,9 @@
             sonst: Object.freeze({ arbeit: 3, treff: 1 }),
         }),
         daheim: Object.freeze({ mahl: 3, treff: 3 }),
+        // DER RUF AN DIE WACHE (rollen-des-tages, `tagesRuf`): er geht von Mund zu Mund durch den Ort und erreicht jede Wache, deren
+        // Weg zur Tat binnen `reichM` liegt (ANGENOMMEN: das Viertel einer Wache — kein Band der Reichweite eines Rufs)
+        ruf: Object.freeze({ reichM: 400 }),
         // DIE BROTZEIT: das eigene Werk aus der Sicht dessen, der dort arbeitet — wer keinen Tisch in der Nähe hat, isst am Werk
         // (bis hier ging er mittags heim, wie weit es auch war: an der Metropole war um 13 Uhr jeder Zweite unterwegs, und der
         // Strom über die Fahrbahn hielt einen Wagen eine Minute lang auf 27 m, gate:fahr-leben --verkehr)
@@ -5922,6 +5925,25 @@
         return wahl.sort(function (a, b) {
             return Math.atan2(pkt[a].x - P.x, pkt[a].z - P.z) - Math.atan2(pkt[b].x - P.x, pkt[b].z - P.z);
         });
+    }
+    // DER RUF AN DIE WACHE (rollen-des-tages, Meisterkarte 2 mensch.macht.megastadt#1: „Antwortzeit ∝ Weg zur Wache“): sah ein
+    // Bewohner die Tat und stand keine Wache unter den Zeugen, erhebt er den Ruf — hue and cry (Statute of Winchester 1285, c. 4:
+    // gehorcht der Fremde der Festnahme nicht, „they shall levy Hue and Cry upon them“, und der Ruf folgt ihm von Ort zu Ort). Er erreicht die
+    // Wachen seines Orts; es ANTWORTET die, deren WEG zur Tat der kürzeste ist (weg(i) = der Weg der Wache i über das Netz der Wege,
+    // Infinity: keiner), binnen `ruf.reichM`. Sie GEHT ihn — kein Wagen, keine Leitstelle: ihre Antwortzeit ist ihr Weg durch ihr
+    // Tempo, und niemand erscheint (sie kommt von ihrem Stand). Das Band der Profis: Greater Manchester Police (Blanes i Vidal &
+    // Kirchmaier 2018, Rev. Econ. Stud. 85(2): 855–891, die erste Stufe): 10 % mehr Weg zur Wache → 1,40 % mehr Antwortzeit
+    // (Kleibergen-Paap F 53,11) — dort fährt der Wagen erst nach der Leitstelle (Median 17 min); die Wache zu Fuß ohne Leitstelle
+    // trägt die Antwort ganz im Weg. Liefert {i, wegM} oder null (keine Wache in Reichweite). Leser: der Wirt (`_bewohnerRuf`) und
+    // die Linse gate:koerper-kern ROLLEN W1–W3.
+    function tagesRuf(wachen, weg) {
+        var R = TAGES_GESETZ.ruf,
+            best = null;
+        for (var i = 0; wachen && i < wachen.length; i++) {
+            var d = weg(i);
+            if (isFinite(d) && d <= R.reichM && (!best || d < best.wegM)) best = { i: i, wegM: d };
+        }
+        return best;
     }
     // DER WEG ZU EINEM ORT (pendler-anschluss; die Nähe der Bindung, `tagesBindung` `weg`): von einem Ort aus `orte` (tagesOrte,
     // plan-lokal) zum Knoten, an dem er am Wege-Netz hängt (netz = {knoten (am Ursprung ox, oz), kanten}: fachwerk `wegeNetz`), über das
@@ -11882,6 +11904,7 @@
         tagesHaltung: tagesHaltung,
         // rollen-des-tages — die Tat der Rolle: das Revier der Streife, die Haushalte mit Jäger, die Beute des Tags (Leser: _bewohnerListe, _bewohnerBeute)
         tagesStreife: tagesStreife,
+        tagesRuf: tagesRuf,
         tagesJagdHaushalte: tagesJagdHaushalte,
         tagesJagdWahl: tagesJagdWahl,
         tagesBeute: tagesBeute,

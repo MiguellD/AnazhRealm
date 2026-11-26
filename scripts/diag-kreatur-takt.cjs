@@ -53,6 +53,10 @@ const DAUER_S = {
     todlage: 1,
     bewohner: 660,
     begegnung: 10,
+    // (rollen-des-tages: headless an der Cloud-Maschine, sechs Taten in 30–150 m samt den drei Tätern in EINEM Lauf — 59 s)
+    ruf: 59,
+    // (rollen-des-tages: headless an der Cloud-Maschine, die Jagd über zwei Beute-Tage des Kerns, bis eine Beute am Takt wirkt, samt den zwei Tätern — 66 s)
+    wild: 66,
     tiersatz: 7,
     furcht: 31,
     lebensraum: 21,

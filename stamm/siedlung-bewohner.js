@@ -2715,18 +2715,20 @@ class AnazhRealm_siedlung_bewohner {
         const stunde = ((((Number.isFinite(this.state.timeOfDay) ? this.state.timeOfDay : 0.5) % 1) + 1) % 1) * 24; // wie der Takt
         for (const S of (this._bewohnerSiedlungen || new Map()).values()) {
             let sah = false;
+            let naht = false;
             let belegt = null;
             for (const b of S.liste || [])
                 if (b.leib && !b.drinnen && (b.leib.position.x - o.x) ** 2 + (b.leib.position.z - o.z) ** 2 < R2) {
                     this._creatureRemember(b.leib, "gewalt", { von: "spieler" });
                     sah = true;
                     if (b.waffe) {
-                        this._bewohnerNahen(S, b, o, stunde); // die Wache flieht nicht, sie naht
+                        naht = this._bewohnerNahen(S, b, o, stunde) || naht; // die Wache flieht nicht, sie naht
                         continue;
                     }
                     belegt = belegt || new Set(S.liste.map((x) => x.ziel));
                     this._bewohnerWeichen(S, b, o, stunde, belegt);
                 }
+            if (sah && !naht) this._bewohnerRuf(S, o, stunde); // naht keine Wache, die es sah, ruft der Zeuge sie
             const c = sah && cells[S.key];
             if (!c || !c.wachs) continue;
             c.akten = (c.akten || []).concat([{ t: this.state.spielZeit, type: "gewalt" }]);
@@ -2762,20 +2764,24 @@ class AnazhRealm_siedlung_bewohner {
     // dem TÄTER — dem Spieler, der schlug —, bis sie ihm die Länge der Klinge gegenüber steht (`abstandM`, der Akt „hieb“, ihr Gegner
     // der Spieler), und stellt ihn zum Zweikampf (`_bewohnerHiebTakt`). Bis hier trat sie 1,5 m vor den Ort der Tat und hielt: kein
     // Gegner, kein Hieb — 0 Bewaffnete im Zweikampf.
-    _bewohnerNahen(S, b, o, stunde) {
+    // DER HIEB HÄLT ÜBER DIE WENDE (rollen-des-tages): sein Weichen gilt, bis der Zweikampf endet oder der Täter fort ist
+    // (`_bewohnerHiebTakt`), nie nur bis zur nächsten Wende ihres Plans — auf der Runde wendet sie je Punkt (je 0,125 h, 19 s):
+    // eine gerufene Wache drehte auf halbem Weg um. GERUFEN (`ruf`, `_bewohnerRuf`) geht sie den Weg über das Netz, nie die gerade
+    // Linie, die nur der nahe Zeuge frei sehen muss; der Ruf trägt den Weg und die Stunde des Rufs (die Antwortzeit, `S.rufe`).
+    _bewohnerNahen(S, b, o, stunde, ruf = null) {
         if (b.amSteuer || b.ankunft || !b.ziel) return false;
         const p = b.leib.position;
         const t = this.state.playerMesh.position;
         const H = window.__koerperCore.SPIEL_GESETZ.arten.hieb;
         const d = Math.hypot(p.x - t.x, p.z - t.z) || 1;
         const q = { x: t.x + ((p.x - t.x) / d) * H.abstandM, z: t.z + ((p.z - t.z) / d) * H.abstandM, blick: Math.atan2(t.x - p.x, t.z - p.z), gegner: "spieler" }; // prettier-ignore
-        if (!this._landAt(q.x, q.z) || ["haus", "bau"].includes(this._imGrundriss(q.x, q.z, 0.5)) || this._bewohnerWand(p, q)) return false; // prettier-ignore
+        if (!this._landAt(q.x, q.z) || ["haus", "bau"].includes(this._imGrundriss(q.x, q.z, 0.5)) || (!ruf && this._bewohnerWand(p, q))) return false; // prettier-ignore
         b.weichen = null;
         const soll = this._bewohnerSoll(b, stunde);
         if (soll.drinnen) return false;
-        const bis = this._bewohnerWende(b, stunde, stunde + 24);
-        b.weichen = { ort: q, plan: soll.ziel, ab: stunde, dauer: bis === null ? 24 : bis - stunde, akt: "hieb" };
-        (this._hiebe || (this._hiebe = new Map())).set(b, { S, K: null, t0: null, i: 0, treffer: [0, 0] });
+        b.weichen = { ort: q, plan: soll.ziel, ab: stunde, dauer: 24, akt: "hieb" };
+        const fortM = Math.max(AnazhRealm.BEWOHNER.zeugeM, d + AnazhRealm.BEWOHNER.zeugeM); // weiter fort, und sie gibt auf
+        (this._hiebe || (this._hiebe = new Map())).set(b, { S, K: null, t0: null, i: 0, treffer: [0, 0], fortM, ruf });
         this._bewohnerUhrNach(S, b);
         this._bewohnerZiel(b, stunde, true);
         this._bewohnerWecken(S, b);
@@ -2794,12 +2800,31 @@ class AnazhRealm_siedlung_bewohner {
         const H = KC.SPIEL_GESETZ.arten.hieb;
         const t = this.state.playerMesh.position;
         const jetzt = this.state.spielZeit;
+        // (die Wache geht in ihren Tag zurück: nach dem Kampf, und wenn der Täter fort ist, bevor er begann)
+        const heim = (F, b) => {
+            this._hiebe.delete(b);
+            const tg = this.state.timeOfDay;
+            b.weichen = null;
+            this._bewohnerUhrNach(F.S, b);
+            this._bewohnerZiel(b, ((((Number.isFinite(tg) ? tg : 0.5) % 1) + 1) % 1) * 24, true);
+            this._bewohnerWecken(F.S, b);
+        };
         for (const [b, F] of this._hiebe) {
             const L = b.leib;
             const d = L ? Math.hypot(L.position.x - t.x, L.position.z - t.z) : Infinity;
             if (!F.K) {
-                if (b.akt !== "hieb" || !(d <= AnazhRealm.BEWOHNER.zeugeM)) this._hiebe.delete(b);
-                if (b.akt !== "hieb" || !(d <= H.abstandM + 0.5)) continue;
+                if (b.akt !== "hieb" || !(d <= F.fortM)) {
+                    heim(F, b);
+                    continue;
+                }
+                if (!(d <= H.abstandM + 0.5)) continue;
+                // DIE ANTWORT AUF DEN RUF (megastadt#1 ρ): vom Ruf bis die Wache dem Täter gegenübersteht — je Ruf ihr Weg und
+                // ihre Zeit in der Siedlung (`S.rufe`, die letzten `rufeMax`)
+                if (F.ruf) {
+                    const R = F.S.rufe || (F.S.rufe = []);
+                    R.push({ wegM: F.ruf.wegM, antwortS: jetzt - F.ruf.ab, wer: b.heim });
+                    R.splice(0, R.length - AnazhRealm.BEWOHNER.rufeMax);
+                }
                 const tag = Math.floor(this._weltTag());
                 const kP = KC.leibKoennen(Object.assign({}, KC.START_PARAMS, this._koerperStudioDials() || {})).kraft;
                 const sa = KC.spielLeistung("ringen", { same: b.same, beinM: 0, kraft: b.koennen.kraft, kampf: b.uebung.kampf.koennen }, tag); // prettier-ignore
@@ -2821,14 +2846,28 @@ class AnazhRealm_siedlung_bewohner {
             const antwort = Z.filter((z, k) => z.treffer && k + 1 < Z.length && Z[k + 1].an !== z.an).length;
             const vorLetztem = Z.filter((z, k) => z.treffer && k + 1 < Z.length).length;
             (F.S.hiebe || (F.S.hiebe = [])).push({ zuege: Z.length, treffer: F.treffer, sieger: F.K.sieger, antwort, vorLetztem, durchDeckung: Z.filter((z) => z.gelesen && z.treffer).length }); // prettier-ignore
-            this._hiebe.delete(b);
-            const tg = this.state.timeOfDay;
-            const stunde = ((((Number.isFinite(tg) ? tg : 0.5) % 1) + 1) % 1) * 24;
-            b.weichen = null;
-            this._bewohnerUhrNach(F.S, b);
-            this._bewohnerZiel(b, stunde, true);
-            this._bewohnerWecken(F.S, b);
+            heim(F, b);
         }
+    }
+    // DER RUF AN DIE WACHE (rollen-des-tages, Meisterkarte 2 mensch.macht.megastadt#1; koerper `tagesRuf`): sah ein Bewohner die
+    // Tat am Ort o und naht keine Wache unter den Zeugen, erhebt er den Ruf — es antwortet die Wache des Orts, deren Weg zum Täter
+    // über das Netz der Wege (`_bewohnerStrecke` von ihrem Stand) der kürzeste ist; sie naht ihm (`_bewohnerNahen` mit dem Ruf: sie
+    // geht diesen Weg). Wer drinnen, am Steuer oder schon im Hieb ist, hört ihn nicht. Bis hier nahte nur die Wache, die selbst sah
+    // (`zeugeM` 25 m): eine Tat 26 m vor ihrem Posten blieb ohne Antwort — ρ (Antwortzeit ↔ Weg) war nicht zu messen.
+    _bewohnerRuf(S, o, stunde) {
+        const t = this.state.playerMesh.position;
+        const zu = { x: t.x, z: t.z };
+        const W = (S.liste || []).filter((b) => b.waffe && b.leib && !b.drinnen && !b.amSteuer && !b.ankunft && b.ziel && !(this._hiebe && this._hiebe.has(b))); // prettier-ignore
+        const wege = W.map((b) => {
+            const von = { x: b.leib.position.x, z: b.leib.position.z };
+            const pts = this._bewohnerStrecke(S, von, zu, 0);
+            let L = pts ? 0 : Infinity;
+            for (let i = 0, a = von; pts && i < pts.length; a = pts[i++])
+                L += Math.hypot(pts[i].x - a.x, pts[i].z - a.z);
+            return L;
+        });
+        const R = window.__koerperCore.tagesRuf(W, (i) => wege[i]);
+        return !!R && this._bewohnerNahen(S, W[R.i], o, stunde, { wegM: R.wegM, ab: this.state.spielZeit });
     }
     // DIE BEUTE DES JÄGERS (rollen-des-tages, Meisterkarte 2 mensch.nahrung.tier#2; koerper `tagesBeute`): verlässt der Jäger die
     // Jagd, nennt der Kern aus Same und Tag, ob er Beute heimbringt — dann LIEST er den Bestand der Beute-Art am Revier
@@ -3146,9 +3185,10 @@ class AnazhRealm_siedlung_bewohner {
             b.brand = null;
         }
         // DER ZEUGE WEICHT (`_bewohnerWeichen`): solange sein Plan das Ziel der Tat nennt, bis zur Wende, der Stand jenseits der Tat
+        // (die nahende Wache: der Akt ihres Hiebs — er hält über die Wende ihres Plans, bis der Kampf endet, `_bewohnerNahen`)
         const W = b.weichen;
-        if (W && ziel === W.plan && (((stunde - W.ab) % 24) + 24) % 24 < W.dauer)
-            return { ziel: W.ort, drinnen: false, akt: W.akt || soll.akt }; // (die nahende Wache: der Akt ihres Hiebs)
+        if (W && (ziel === W.plan || W.akt === "hieb") && (((stunde - W.ab) % 24) + 24) % 24 < W.dauer)
+            return { ziel: W.ort, drinnen: false, akt: W.akt || soll.akt };
         return { ziel, drinnen: soll.drinnen, akt: soll.akt };
     }
 
@@ -5272,6 +5312,8 @@ AnazhRealm.BEWOHNER = Object.freeze({
     fernBlickRad: Math.PI / 12,
     spielerRaumM: 0.5,
     zeugeM: 25,
+    // die Antworten auf den Ruf, die eine Siedlung trägt (`S.rufe`, `_bewohnerHiebTakt`: Weg und Antwortzeit je Ruf)
+    rufeMax: 64,
     // die Ringe der Zellen des Lebens-Rasters (LIFE_FIELD.cell), über die der Fliehende den nächsten Ort ohne Gefahr sucht
     // (`_bewohnerBrandOrt`: 8 × 16 m)
     brandRinge: 8,
