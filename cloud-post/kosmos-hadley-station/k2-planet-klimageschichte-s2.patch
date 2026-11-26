@@ -1,0 +1,57 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-planet.js b/meisterkarte-quelle/punkte/stationen/k2-planet.js
+index 08ecf9ea2..72c67eb33 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-planet.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-planet.js
+@@ -6728,6 +6728,10 @@ L.perspektive("zeit", (() => {
+         pfad: PFAD,
+         ungefahren: "die Bilder (Halte +250 Ma / +1 Ga / +5 Ga, Schneeball, Eisrand) schießt die Probe nur am Gerät; der Sprung ≤ 5 s des Preises misst die Maschine",
+         mess: async function (H, U, M) {
++            // DAS MEER IN ERD-METERN (S2 −120 ±10 m gegen Lambeck 2014 ist eine Zahl der Erde): das Δ des Fadens ist in Spiel-Metern
++            // (planet-core.js ortRoh: Spiel-m = s_v · Erd-m), die Antwort trägt s_v des Kerns (voxel-worker.js planetOrtAuftrag
++            // `stauchung`) — der Leser teilt durch die Zahl des Kerns, nie durch eine eigene; antwortet der Faden ohne sie, steht das
++            // Meer ungemessen (NaN → null), keine Ersatz-Zahl. Vorher maß S2 die Spiel-Meter (−7,1 m für −121,1 m der Erde)
+             const KOPF = `
+ const K = globalThis.__gelaendeCore;
+ const samen = r._planetSamen();
+@@ -6737,7 +6741,7 @@ const fib = (n) => Array.from({ length: n }, (_, i) => [Math.round((Math.asin(1
+ const lagePunkt = (k) => [Math.round((Math.asin(((k * 0.6180339887) % 1) * 2 - 1) * 180) / Math.PI * 100) / 100, Math.round((((k * 137.508) % 360) - 180) * 100) / 100];
+ const ortVon = (o) => ({ samen: o.samen, version: o.version, breite: o.breite, laenge: o.laenge, zeitMa: o.zeitMa, delta: o.delta });
+ const ort = (p, z, sam) => r._planetAuftrag({ type: "planet-ort", samen: sam || samen, breite: p[0], laenge: p[1], zeitMa: z });
+-const glob = async (z, P, sam) => { const a = await Promise.all(P.map((p) => ort(p, z, sam))); let t = 0, eis = 0, land = 0, sb = 0, nl = 0; for (const o of a) { const O = K.ortGesetz(ortVon(o)); t += (O.klimaHeute.sommer + O.klimaHeute.winter) / 2; if (O.klimaHeute.sommer < 0) eis++; if (o.land) { land++; sb += K.SCHNEE.start + O.schneeBandM; nl++; } } return { z, t: t / a.length, eis: eis / a.length, land: land / a.length, meer: a[0].delta.meer.waterLevelM, schnee: nl ? sb / nl : null, a }; };
++const glob = async (z, P, sam) => { const a = await Promise.all(P.map((p) => ort(p, z, sam))); let t = 0, eis = 0, land = 0, sb = 0, nl = 0; for (const o of a) { const O = K.ortGesetz(ortVon(o)); t += (O.klimaHeute.sommer + O.klimaHeute.winter) / 2; if (O.klimaHeute.sommer < 0) eis++; if (o.land) { land++; sb += K.SCHNEE.start + O.schneeBandM; nl++; } } return { z, t: t / a.length, eis: eis / a.length, land: land / a.length, meer: a[0].stauchung > 0 ? a[0].delta.meer.waterLevelM / a[0].stauchung : NaN, stauchung: a[0].stauchung, schnee: nl ? sb / nl : null, a }; };
+ const kurz = (g) => [g.z, R3(g.t), R3(g.eis), R3(g.land), R3(g.meer), R3(g.schnee)];
+ `;
+             const R3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+@@ -6749,7 +6753,7 @@ const t0 = performance.now();
+ const F48 = fib(48), F24 = fib(24), F200 = fib(200);
+ const aus = {};
+ const g0 = await glob(0, F48), g21 = await glob(-0.021, F48);
+-aus.heute = kurz(g0); aus.lgm = kurz(g21);
++aus.heute = kurz(g0); aus.lgm = kurz(g21); aus.stauchung = g21.stauchung;
+ const P6 = [[60, 0], [-60, 90], [70, 180], [-70, -90], [50, 45], [-50, -135]];
+ aus.s3 = [];
+ for (let i = 0; i <= 300; i++) aus.s3.push(kurz(await glob(-i * 0.01, P6)));
+@@ -6862,8 +6866,10 @@ return aus;
+             aus[2] = {
+                 werte: { meerM: mL, globalDT: R3(tL - t0), landDeltaProzent: R3(100 * (lL - l0)), eisDeltaProzent: R3(100 * (eL - e0)) },
+                 zeuge: { punkte: 48, aenderung: Math.abs(mL) + Math.abs(tL - t0) },
+-                nicht: "keine Erd-Saat (R4) und keine Eiszeit: −21 ka liegt das Meer " + mL + " m, die Welt " + R3(tL - t0) + " °C anders (planet-core.js:1618 planetMeer: lineare 10-Ma-Fächer, keine Bahn-Zyklen); Eisrand und Landbrücke folgen aus keiner Kaltzeit",
+             };
++            // `nicht` heißt „Umfang nicht erzeugbar“ (k2-same: die Sprosse steht ROT, was immer sie misst) — nur noch, wo die Antwort
++            // des Fadens die Erd-Meter nicht tragen kann; das Urteil über Meer und Wärme spricht das Soll
++            if (!(a.stauchung > 0)) aus[2].nicht = "der Faden antwortet ohne Stauchung (voxel-worker.js planetOrtAuftrag `stauchung`): das Meer der Erde ist in Spiel-Metern nicht lesbar — −21 ka die Welt " + R3(tL - t0) + " °C anders";
+             // S3: das Spektrum über 3 Ma (301 Werte, 10 ka): die stärksten Gipfel 20–70 ka und 70–200 ka (signifikant: Leistung ≥ 5 × Median)
+             const s3 = a.s3 || [];
+             const spek = (y) => {
+@@ -6890,8 +6896,10 @@ return aus;
+             aus[3] = {
+                 werte: Object.assign({ spanneMa: R3(s3.length ? -s3[s3.length - 1][0] : 0), werteN: s3.length }, sp.g41 !== null ? { gipfel41Ka: sp.g41 } : {}, sp.g100 !== null ? { gipfel100Ka: sp.g100 } : {}, rZyklus !== null ? { rEisMeer: R3(rZyklus) } : {}),
+                 zeuge: { werte: s3.length, restEisGrad: sp.rest, restMeerM: spM.rest, gipfel: (sp.g41 !== null) + (sp.g100 !== null), ms: a.s3Ms },
+-                nicht: "kein Glazialtakt: über 3 Ma schwankt die Welt um " + sp.rest + " °C (ohne Trend), das Meer um " + spM.rest + " m — der Planet kennt keine Bahn-Zyklen (planet-core.js:1883 planetKlimaGlobal: Neigung fest, kein Milanković), das Meer ist linear in 10-Ma-Fächern (planet-core.js:1618 planetMeer)",
+             };
++            // `nicht` heißt „Umfang nicht erzeugbar“ (k2-same: die Sprosse steht ROT, was immer sie misst) — nur noch, wo die Welt über 3 Ma
++            // keinen Takt trägt (kein Gipfel über dem Rauschen); Gipfel, r und Spanne urteilt das Soll
++            if (sp.g41 === null && sp.g100 === null) aus[3].nicht = "kein Glazialtakt: über 3 Ma schwankt die Welt um " + sp.rest + " °C (ohne Trend), das Meer um " + spM.rest + " Erd-m, kein Gipfel über dem Fünffachen des Medians";
+             // S4: das Becken — kein Leser einer Wasserbilanz; gemessen die Spanne des Meeres über 540 Ma
+             const s5 = a.s5 || [];
+             aus[4] = {
