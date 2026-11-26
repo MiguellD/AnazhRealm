@@ -20560,7 +20560,7 @@
   },
   "karte2.mensch.macht.recht": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.recht#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/werkbank.cjs, spec/profiband/haushalt.json +1) — zuletzt an 4c9e6aab: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eva · karte2.mensch.macht.recht#1 gtx: Station seit der Messung geändert — zuletzt an a954d698: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.mensch.macht.recht#2 radeon: ungemessen (R10) · karte2.mensch.macht.recht#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#3 radeon: ungemessen (R10) · karte2.mensch.macht.recht#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#4 radeon: ungemessen (R10) · karte2.mensch.macht.recht#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#5 radeon: ungemessen (R10) · karte2.mensch.macht.recht#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#6 radeon: ungemessen (R10) · karte2.mensch.macht.recht#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#7 radeon: ungemessen (R10) · karte2.mensch.macht.recht#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.recht#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/werkbank.cjs, spec/profiband/haushalt.json +1) — zuletzt an 4c9e6aab: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eva · karte2.mensch.macht.recht#1 gtx: Station seit der Messung geändert — zuletzt an 54b89949: Frist der Probe 79 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 79 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.macht.recht#2 radeon: ungemessen (R10) · karte2.mensch.macht.recht#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#3 radeon: ungemessen (R10) · karte2.mensch.macht.recht#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#4 radeon: ungemessen (R10) · karte2.mensch.macht.recht#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#5 radeon: ungemessen (R10) · karte2.mensch.macht.recht#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#6 radeon: ungemessen (R10) · karte2.mensch.macht.recht#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#7 radeon: ungemessen (R10) · karte2.mensch.macht.recht#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.macht.recht#1",
@@ -20579,7 +20579,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an a954d698: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 54b89949: Frist der Probe 79 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 79 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true,
      "beide": true
     },
@@ -29962,7 +29962,7 @@
   },
   "karte2.planet.kosmos.systeme": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.systeme#1 radeon: Station seit der Messung geändert — zuletzt an 54b89949: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.systeme) · Täter: @@ 0.1 s · planet.kosmos.systeme S1 warf: Cannot rea · karte2.planet.kosmos.systeme#1 gtx: Station seit der Messung geändert — zuletzt an 54b89949: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.systeme) · Täter: @@ 0.2 s · planet.kosmos.systeme S1 warf: Cannot rea · karte2.planet.kosmos.systeme#2 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#3 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#4 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#5 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#6 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#7 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.systeme#1 radeon: Station seit der Messung geändert — zuletzt an 54b89949: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.systeme) · Täter: @@ 0.1 s · planet.kosmos.systeme S1 warf: Cannot rea · karte2.planet.kosmos.systeme#1 gtx: Station seit der Messung geändert — zuletzt an af816566: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.systeme) · Täter: @@ 0.2 s · planet.kosmos.systeme S1 warf: Cannot rea · karte2.planet.kosmos.systeme#2 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#3 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#4 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#5 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#6 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#7 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.systeme#1",
@@ -29980,7 +29980,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 54b89949: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.systeme) · Täter: @@ 0.2 s · planet.kosmos.systeme S1 warf: Cannot rea",
+     "grund": "Station seit der Messung geändert — zuletzt an af816566: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.systeme) · Täter: @@ 0.2 s · planet.kosmos.systeme S1 warf: Cannot rea",
      "ungemessen": true,
      "beide": true
     },
@@ -37782,7 +37782,7 @@
   "ohne": 3249
  },
  "kopfVoll": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
- "zeit": "2026-11-26T13:05:52.711Z",
+ "zeit": "2026-11-26T13:14:43.849Z",
  "vorher": "54b89949",
  "bilanz": {
   "gewinn": [],
