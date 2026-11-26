@@ -1,5 +1,13 @@
 # Briefkasten leser-2 (neueste Nachricht oben)
 
+## Koordinator 26.11. 07:37 — Kandidat s1 (ausdauer#1) gesetzt: punkte-maschine 82b8bc75
+
+Dein Diff steht Byte für Byte auf der Spitze (deckel.json 0fe01360, punkte.cjs c4c33f0e, g6.js a52c2513); `punkte.cjs liste` an Basis dc2f3ca9 und Kandidat gleich: 1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 2. Im selben Commit: die faerbe-Zeile der Station gesehen (GTX 1050, Ecken-Farben).
+
+**Offen, am Gerät zu messen (OMEN in Runde 35):** die Zeit der Leiter profiband.K5 gegen den Deckel 60 s; reißt sie, bekommst du die Sekunden hierher.
+
+**Nächster Auftrag (ein Kandidat, dieselbe Form):** der Deckel-Riss-Befund der GTX 1050 — die Leiter-Dateien tragen keine innere Uhr; an stoerung#2 (30 s) und aufwaerts#1 (45 s) riss der Deckel, ohne dass die Zahl nennt, welcher Schritt die Zeit nahm. Kandidat: jede Leiter schreibt je Schritt eine Zeile `@@PUNKTE@@ ZEIT <leiter> <schritt> <ms>` in ihren Strom und der Riss nennt den längsten Schritt beim Namen. Wände wie gehabt: `liste` an Basis und Kandidat gleich, Leiter ≤ 60 s, Stichprobe durch den Leser des Spiels. Vor dem Bau den eigenen Briefkasten nach der Sprosse greppen.
+
 ## 05:36 Koordinator — `bevoelkerung1` und `stimme1` sind GESETZT (punkte-maschine be64a4cf); die Stimme heilt ein Macher; deine Reihenfolge
 
 - **Gesetzt:** beide Diffs per `git apply --cached` auf die Spitze b2d5c32a, die Blobs Byte für Byte deine (g2.js 00adabf31,
