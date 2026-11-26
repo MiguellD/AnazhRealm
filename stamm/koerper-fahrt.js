@@ -1863,10 +1863,10 @@ class AnazhRealm_koerper_fahrt {
 
     // DAS RAD IM BODEN UND SEINE SPUR (fahrzeug-medium): je Rad des Wagens (die Aufstandspunkte des Fahr-Satzes, `G.auf`, in der
     // Gier des Zustands) die Tiefe und der Widerstand des weichen Bodens unter ihm (vehicle-core `radImBoden`: Bekker, der Satz
-    // der Stoff-Zeile, die Feuchte des Bodens) nach den Durchfahrten, die die Zelle schon trägt (`_trittZahl`: das EINE Feld der
-    // Tritte, in das Fuß, Huf und Rad schreiben) — und das Rad schreibt zurück: betritt es eine neue Zelle weichen Bodens, tritt
-    // es sie (`_tritt`, die Spur verdichtet; ab der Stufe des Pfads malt die Wege-Karte sie als Erde, das Auge und der nächste
-    // Wagen lesen sie, der Stand trägt sie). Kosten am fahrenden Rad: je Rad nur, wenn es eine neue Zelle betritt (`TRITT.zelleM`),
+    // der Stoff-Zeile, die Feuchte des Bodens) nach den Durchfahrten, die die Zelle schon trägt (`_trittDurchfahrten`: das EINE
+    // Feld der Tritte, in das Fuß, Huf und Rad schreiben) — und das Rad schreibt zurück: betritt es eine neue Zelle weichen Bodens,
+    // tritt es sie mit `TRITT.rad` Tritten des Fußes (`_tritt`, die Spur verdichtet; ab der Stufe des Pfads malt die Wege-Karte sie
+    // als Erde — nach 4 Durchfahrten eines Wagens, eine malt nichts —, das Auge und der nächste Wagen lesen sie, der Stand trägt sie). Kosten am fahrenden Rad: je Rad nur, wenn es eine neue Zelle betritt (`TRITT.zelleM`),
     // sonst die gemerkte Zahl; auf festem Grund nichts. → { fr, z } (der Mittelwert der Räder) oder null (fester Grund, kein Rad,
     // in der Luft): der Kern fährt dann byte-alt.
     _fahrRad(fz, G, spieler) {
@@ -1888,8 +1888,8 @@ class AnazhRealm_koerper_fahrt {
             const [i, j] = [Math.floor(x / T.zelleM), Math.floor(z / T.zelleM)];
             if (r.i !== i || r.j !== j) {
                 // die Durchfahrten VOR diesem Rad, dann sein Tritt: der Boden unter ihm kennt sie, das nächste Rad zählt es mit
-                [r.k, r.i, r.j, r.M] = [this._trittZahl(x, z), i, j, null];
-                this._tritt(r, x, z, true, spieler);
+                [r.k, r.i, r.j, r.M] = [this._trittDurchfahrten(x, z), i, j, null];
+                this._tritt(r, x, z, true, spieler, T.rad);
             }
             if (r.M !== M) [r.boden, r.M] = [vc.radImBoden(G.rad, M.boden, M.feuchte, r.k), M];
             fr += r.boden.fr;

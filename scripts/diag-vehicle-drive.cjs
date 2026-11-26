@@ -108,6 +108,25 @@ function reifenVerdict(t) {
     return out;
 }
 
+// ── B-k DIE SPUR IM BODEN (fahrzeug-medium-2, rinne_sichtbar; Karte: „Spurrinne nach 10 Durchfahrten sichtbar“): der gestellte
+// Wagen fährt zehnmal dieselbe Zeile weichen Bodens — durch den Schreib-Akt der Welt (`_fahrRad` → `_tritt`, das EINE Feld der
+// Tritte → die Wege-Karte), gelesen von den Lesern der Welt (`_pfadFeldAt`, den Wiese und Streu dünnen, und der Stoff unter dem
+// Fuß, `_kontaktStoffAt`). Nach EINER Durchfahrt malt die Spur nichts (ein Weg entsteht erst durch Wiederholung), nach zehn ist
+// jede Zelle der Spur Erde, und die Rinne ist tiefer als nach der ersten. Am Kopf vor fahrzeug-medium-2 trat das Rad wie ein Fuß:
+// zehn Durchfahrten trugen der Zelle 20 Tritte, der Pfad beginnt bei 27,7 — die Spur blieb unsichtbar.
+function spurVerdict(s) {
+    if (!s || !(s.zellen > 0)) return [`die Probe fand keine Zeile weichen Bodens für die Spur (${s && s.grund})`];
+    const out = [];
+    if (s.gemalt10 < s.zellen)
+        out.push(
+            `die Spur von 10 Durchfahrten bleibt unsichtbar (gemalt ${s.gemalt10} von ${s.zellen} Zellen, je Zelle ${s.tritte10} Tritte, der Pfad ab 27,7) — das Rad tritt wie ein Fuß (\`_fahrRad\` → \`_tritt\`, \`TRITT.rad\`)`
+        );
+    if (s.gemalt1 > 0) out.push(`eine Durchfahrt malt schon den Pfad (${s.gemalt1} von ${s.zellen} Zellen) — ein Weg entsteht erst durch Wiederholung`);
+    if (s.erde10 < s.zellen) out.push(`der Leib hört auf der Spur keine Erde (\`_kontaktStoffAt\`: ${s.erde10} von ${s.zellen} Zellen)`);
+    if (!(s.tief10 > s.tief1)) out.push(`die Rinne wächst nicht mit den Durchfahrten (${s.tief1} → ${s.tief10} cm, \`_trittDurchfahrten\`)`);
+    return out;
+}
+
 // ── A6 DIE REIBELLIPSE JE ACHSE (fahrzeug.K1, w28-reibellipse), am Kern je Rezept. Im Bogen (20 m/s, Einschlag 0,25, 1,5 s ohne
 // Gas) voll gebremst und in der Kehre unter Handbremse (15 m/s, Einschlag 0,6, 1 s) tragen die Reifen höchstens μ·g (der
 // Rollwiderstand liegt außerhalb des Reifens: abgezogen). DIE HANDBREMSE sperrt nur das Heck: ihr Zug über dem Ausrollen
@@ -483,6 +502,9 @@ hauptLauf(async () => {
             [formVerdict, { masseQ: 1.8963, wattQ: 1 }, { wattQ: 1.8963 }, { masseQ: 1 }],
             [scheibeVerdict, { durch: 2, mit: 2, abw: 0, folgt: true }, { mit: 0 }, { abw: 0.0357 }, { folgt: false }, { durch: 0 }],
             [reifenVerdict, { blaetter: 2, rollt: 0, sehne: 0.11, aufstand: 0, dzMesh: 0.0127, dzGesetz: 0.0127 }, { rollt: 2 }, { sehne: 0 }, { aufstand: 0.0127 }, { dzMesh: 0 }, { blaetter: 0 }],
+            // B-k: gesund schweigt; die Spur des Kopfs vor fahrzeug-medium-2 (20 Tritte, 0 gemalt), eine Durchfahrt, die malt, eine
+            // Spur ohne Erde unter dem Fuß und eine Rinne, die nicht wächst, nennen je ihren Täter
+            [spurVerdict, { zellen: 16, gemalt1: 0, gemalt10: 16, erde10: 16, tritte10: 90, tief1: 0.6, tief10: 1.1 }, { gemalt10: 0 }, { gemalt1: 16 }, { erde10: 0 }, { tief10: 0.6 }, { zellen: 0 }],
         ])
             for (const b of [{}, ...brueche]) {
                 const v = V({ ...basis, ...b });
@@ -839,6 +861,76 @@ hauptLauf(async () => {
                 } catch (eR) {
                     res.reifenErr = fehlerText(eR);
                 }
+                // B-k: DIE SPUR (fahrzeug-medium-2) — der gestellte GT fährt zehnmal dieselben 12 m weichen Bodens (Gier 0, längs +x)
+                // durch den Schreib-Akt der Welt (`_fahrRad`: je Rad die Rinne der Durchfahrten vor ihm, dann sein Tritt), je Durchfahrt
+                // ein frischer Fahr-Zustand; gelesen an den Zellen beider Spuren, über die Vorder- und Hinterrad rollten. Das Feld
+                // der Tritte kehrt danach zurück (die Wege-Karte behält die Farbe der Spur, fern von B-h).
+                try {
+                    const VCk = window.__vehicleCore;
+                    const SK = r._fahrSatz(entry, r._vehicleProfile(entry));
+                    const TT = r.constructor.TRITT;
+                    const wm = r.state.worldMeta;
+                    const vorher = [{ ...((wm && wm.tritt) || {}) }, new Map(r._trittSchwach || [])];
+                    const hk = (x, z) => r._voxelSurfaceY(x, z);
+                    const weich = (x, z) => {
+                        const y = hk(x, z);
+                        const Z = Number.isFinite(y) && r._stoff(r._kontaktStoffAt(x, z, y));
+                        return !!(Z && Z.radBoden) && !(r._atlasWaterLevelAt(x, z, y) > y - 0.3);
+                    };
+                    const q = SK.auf.quer;
+                    const pmk = r.state.playerMesh.position;
+                    let ort = null;
+                    for (let k = 0; k < 600 && !ort; k++) {
+                        const [x0, z0] = [pmk.x + Math.cos(k * 2.4) * (8 + k * 0.2), pmk.z + Math.sin(k * 2.4) * (8 + k * 0.2)];
+                        let ja = true;
+                        for (let sx = -3; sx <= 15 && ja; sx += 1) for (const dz of [-q, 0, q]) ja = ja && weich(x0 + sx, z0 + dz);
+                        if (ja) ort = { x0, z0 };
+                    }
+                    const zellen = [];
+                    if (ort)
+                        for (let x = ort.x0 + 3.25; x < ort.x0 + 9; x += TT.zelleM)
+                            for (const zz of [ort.z0 - q, ort.z0 + q]) {
+                                const [i, j] = [Math.floor(x / TT.zelleM), Math.floor(zz / TT.zelleM)];
+                                zellen.push([(i + 0.5) * TT.zelleM, (j + 0.5) * TT.zelleM]);
+                            }
+                    const fahre = () => {
+                        const z = VCk.fahrZustand(ort.x0, ort.z0, 0);
+                        let tief = 0;
+                        for (let sx = 0; sx <= 12; sx += 0.2) {
+                            [z.x, z.y, z.luft] = [ort.x0 + sx, hk(ort.x0 + sx, ort.z0), false];
+                            const b = r._fahrRad(z, SK, false);
+                            if (b && sx >= 6 && sx < 6.2) tief = b.z;
+                        }
+                        return +(tief * 100).toFixed(2);
+                    };
+                    const lies = () => ({
+                        gemalt: zellen.filter(([x, z]) => r._pfadFeldAt(x, z, hk(x, z)) >= 0.5).length,
+                        erde: zellen.filter(([x, z]) => r._kontaktStoffAt(x, z, hk(x, z)) === "erde").length,
+                        tritte: zellen.map(([x, z]) => r._trittZahl(x, z)).sort((a, b) => a - b)[zellen.length >> 1],
+                    });
+                    if (ort) {
+                        const tief1 = fahre();
+                        const l1 = lies();
+                        let tief10 = tief1;
+                        for (let n = 2; n <= 10; n++) tief10 = fahre();
+                        const l10 = lies();
+                        res.spur = {
+                            ort: [+ort.x0.toFixed(1), +ort.z0.toFixed(1)],
+                            zellen: zellen.length,
+                            gemalt1: l1.gemalt,
+                            gemalt10: l10.gemalt,
+                            erde10: l10.erde,
+                            tritte1: +(l1.tritte || 0).toFixed(2),
+                            tritte10: +(l10.tritte || 0).toFixed(2),
+                            tief1,
+                            tief10,
+                        };
+                    } else res.spur = { zellen: 0, grund: "kein weicher Ort in 600 Proben um den Spieler" };
+                    if (wm) wm.tritt = vorher[0];
+                    r._trittSchwach = vorher[1];
+                } catch (eK) {
+                    res.spurErr = fehlerText(eK);
+                }
                 // KONSUM: die Instanz zieht über die EINE Flat-Quelle mit — die Foundry-Gestalt, ohne Foundry der Bauplan
                 const ruft = (k, n = 0, f0 = r[k]) => {
                     const zurueck = leihe(r, { [k]: (...a) => (n++, f0.apply(r, a)) }); // die EINE Leihe (welt-boot)
@@ -1097,6 +1189,14 @@ hauptLauf(async () => {
         "B-j: REIFEN — der Reifen des gestellten Wagens rollt nicht, liegt als Sehne auf und steht um W / kz frei (W die Last des Bodens)",
         reifenV.length === 0,
         out.reifenErr || `${JSON.stringify(out.reifen)}${reifenV.length ? " — Täter: " + reifenV.join(", ") : ""}`
+    );
+
+    // B-k: die Spur des gestellten Wagens im Boden — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
+    const spurV = spurVerdict(out.spur);
+    check(
+        "B-k: SPUR — nach einer Durchfahrt malt die Spur nichts, nach zehn ist jede Zelle der Spur Erde (Wege-Karte und Stoff unter dem Fuß), die Rinne wächst",
+        spurV.length === 0 && !out.spurErr,
+        out.spurErr || `${JSON.stringify(out.spur)}${spurV.length ? " — Täter: " + spurV.join(", ") : ""}`
     );
 
     wandEnde(

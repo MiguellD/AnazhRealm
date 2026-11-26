@@ -272,8 +272,9 @@ async function probeLeben(expected) {
     // Rinne der nächsten Durchfahrt), läse jede Probe auf derselben Bahn die Spur der vorigen — die W-Kette bremste trocken 23,65 m
     // und mit gehaltenem Regen 25,18 m (die Rinne der Vorfahrt widersteht weniger), T6 fuhr über und vor der Karte 31,41 ↔ 31,61 m.
     // Jede Probe setzt an DERSELBEN Welt an: was ihr Wagen trat (`worldMeta.tritt`, `_trittSchwach`), fällt mit ihm (`weg`). Die
-    // Karte malt eine Zelle erst ab der Stufe des Pfads (27,7 Tritte, `_trittStufe`) — eine Probe tritt höchstens zwei je Zelle und
-    // Fahrt (Vorder- und Hinterrad), keine malt. Die Rinne selbst misst K11 (Kern) und die Station mensch.fahrzeug.medium#2.
+    // Karte malt eine Zelle erst ab der Stufe des Pfads (27,7 Tritte, `_trittStufe`) — eine Probe fährt eine Zelle höchstens einmal,
+    // Vorder- und Hinterrad treten je `TRITT.rad` (4,5): 9 Tritte, die Stufe 2/8 unter dem Pfad 6/8, keine malt. Die Rinne selbst
+    // misst K11 (Kern), die Spur nach zehn Durchfahrten B-k (diag-vehicle-drive) und die Station mensch.fahrzeug.medium#2.
     let spurVor = null;
     // Ein Werk setzen, aufsitzen, einschwingen. `fahrt` = Fahrt-Richtung (sin, cos); ein Studio-Fahrzeug liegt längs x.
     const setzen = async (typ, x, zz, fahrt, vorAufsitzen) => {

@@ -30,4 +30,4 @@ DIE DREI WÄNDE
   HAKEN“ (dieselben zwei wie an der Basis), sonst nichts.
 - Die Leiter misst in ≤ 60 s: S2 am Kopf 5,0 s (Genesis) · 4,8 s (Dorf) · 4,2 s (stadt-voll), 120/120 Adressen.
 - Kein Fächer im Kern (node, worker_threads): die Station fährt in der Seite durch die Leser des SPIELS (r._fahrGrund, r._fahrHaft,
-  r._werkBoden, r._trittZahl) — die Stichprobe ist die Fahrt selbst.
+  r._werkBoden, r._trittDurchfahrten — die Rinne liest Durchfahrten, das Rad tritt `TRITT.rad`) — die Stichprobe ist die Fahrt selbst.

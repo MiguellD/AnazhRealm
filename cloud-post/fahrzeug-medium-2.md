@@ -16,6 +16,13 @@ aufgesetzt auf `fahrzeug-stapel` 445b4549 (main c814741e, im Bündel `buendel-mi
   die Ebene 4,33 cm tiefer, der Spalt 4,33 cm > 2 cm hieß `luft`, in der Luft sinkt kein Rad, die Ebene stieg, er landete — je Bild
   im Wechsel (5 von 12 Bildern in der Luft, einsinken 4,33 / 0 cm).
 - **Kurvengrenze** — ungemessen (die Station trug sie als `ungemessen`).
+- **rinne_sichtbar** — `_fahrRad` (stamm/koerper-fahrt.js) trat das Rad wie einen Fuß: je Rad und Zelle ein Tritt in das EINE Feld
+  (`_tritt`), Vorder- und Hinterrad in einer Spur — 10 Durchfahrten = 20 Tritte; die Wege-Karte malt eine Zelle erst ab der Stufe
+  des Pfads (`_trittStufe` 6/8, 27,7 Tritte), der Stoff unter dem Fuß wird erst dort Erde (`_kontaktStoffAt`, Pfad ≥ 0,5). Eine
+  Spur von zehn Wagen blieb unsichtbar (B-k am Kopf ohne den Schnitt: gemalt 0 von 24 Zellen, je Zelle 20 Tritte), sichtbar erst
+  nach 14 Durchfahrten — ein Wanderer malt nach 28 Schritten. Die Quelle sagt das Gegenteil: Weaver & Dale 1978 (J. Appl. Ecol.
+  15:451–457; USDA SDTDC 0423-1201, Kap. 3) — 200 Durchgänge eines Motorrads nahmen auf der Bergwiese (Montana) 9× so viel Bewuchs wie
+  200 eines Wanderers.
 
 ## Geschnitten
 
@@ -28,6 +35,20 @@ aufgesetzt auf `fahrzeug-stapel` 445b4549 (main c814741e, im Bündel `buendel-mi
   er 330 Bilder an der Klippe, statt abzuheben (gate:fahr-leben S4 ROT: „Flug 0 Takte … 24,2 m längs der Bahn, Kante bei 24,0 m“).
 - **`stamm/siedlung-instanz.js` `_archRadMatrix`**: das gezeichnete Rad steht so tief im weichen Boden, wie das Gesetz es sinken
   lässt (`fz.einsinken`, dieselbe Tiefe, um die die Ebene der Sim liegt), geklemmt auf den Federweg.
+- **`stamm/siedlung-wege.js` — das Rad tritt mit dem Gewicht der Quelle**: `TRITT.rad` = 4,5 (9× des Wanderers je Durchgang, zwei
+  Räder in einer Spur); `_tritt(…, last)` zählt die Last des Schritts (der Fuß 1, das Rad `TRITT.rad`), `_trittDurchfahrten` liest
+  die Durchfahrten (Tritte ÷ `TRITT.rad`) — der EINE Leser der Rinne in `_fahrRad` und in der Station. Die Rinne eines reinen
+  Wagen-Wegs bleibt die des Kerns (z_k = z₁ (1 + 0,283 ln k), k = die Räder vor diesem), ein Fuß zählt ihr ein 4,5-tel. Folge: nach
+  einer Durchfahrt 9 Tritte (Stufe 2/8, nichts gemalt), nach vier 36 (6/8, die Spur ist Pfad und Erde). `spec/stamm/modul-karte.json`
+  trägt `_trittDurchfahrten` (stamm-umzug --nach-karte 0 Abweichungen); `scripts/lib/fahr-proben.cjs` nennt im Kommentar die 9
+  Tritte einer Probe (unter dem Pfad, jede Probe setzt ihre Spur zurück).
+- **Die Linse B-k** in `gate:vehicle-drive` (`spurVerdict`): der gestellte GT fährt zehnmal dieselben 12 m weichen, trockenen Bodens
+  um den Spieler durch den Schreib-Akt der Welt (`_fahrRad`), gelesen an den Zellen beider Spuren (Wege-Karte `_pfadFeldAt`, Stoff
+  unter dem Fuß, Tritte, die Rinne bei 6 m). Soll: eine Durchfahrt malt nichts, zehn malen jede Zelle und sie ist Erde, die Rinne
+  wächst. Selbsttest: gesund schweigt, unsichtbar · eine malt · keine Erde · Rinne steht · kein Ort → je ROT beim Namen. **ROT am
+  Gesetz ohne den Schnitt** (`rad` 1): „die Spur von 10 Durchfahrten bleibt unsichtbar (gemalt 0 von 24 Zellen, je Zelle 20 Tritte,
+  der Pfad ab 27,7) — das Rad tritt wie ein Fuß (`_fahrRad` → `_tritt`, `TRITT.rad`)“. Konsum-Leser: `_fahrRad`, die Wege-Karte
+  (`_wegeKarteMale`), `_kontaktStoffAt` (Leib, Schritt-Klang).
 - **Die Linse A10** in `gate:vehicle-drive` (Fahrzeug-Familie, `scripts/diag-vehicle-drive.cjs` `flugMessung`/`flugVerdict`): je
   Gattung mit 100 km/h am Kern die Welle 0,03 m / 4 m (Soll 0 Bilder in der Luft), die Kuppe einer Rampe 25 % bei 90 km/h (Soll:
   er springt) und eine Kante von 6 m bei 15 m/s (Soll 0 Bilder am Boden, wo die Ebene nicht trägt; er fliegt). Selbsttest: gesund
@@ -71,6 +92,10 @@ aufgesetzt auf `fahrzeug-stapel` 445b4549 (main c814741e, im Bündel `buendel-mi
 | Stadt stadt-voll 10 Uhr, 21 Wagen, die ersten 30 s: Bilder ohne Griff (Kuppen 2–2,7 cm) · Bilder im Spalt | 22 (6 Wagen) · 1 724 | **0** · 1 238 |
 | gate:fahr-leben VK 10 Uhr (600 s): Warte-Kreis · Ankünfte | keiner · ✅ | **8>9 ab Sekunde 30** · 9 (ROT, siehe Offen); auf dem Stapel (main c814741e) derselbe Kreis 8>9, 570 s |
 | `gate:vehicle-drive` auf dem Stapel (main c814741e) | — | GRÜN in 2 min 13 s (A10 Welle 0 · Rampe 60 · Kante 0; B-j frei 12,64 mm gegen W / kz 12,63 mm) |
+| B-k die Spur (Genesis −11,4 / −29,2, 24 Zellen): gemalt nach 1 · nach 10 Durchfahrten · Erde nach 10 · Tritte je Zelle 1 → 10 | 0 · **0** · 0 · 2 → 20 | 0 · **24** · 24 · 9 → 90 |
+| B-k die Rinne bei 6 m nach 1 → 10 Durchfahrten (trocken) | 0,17 → 0,28 cm | 0,17 → 0,28 cm (derselbe Kern, `_trittDurchfahrten`) |
+| Der Blick von oben auf die Bytes, die der Boden-Shader liest (`_wegeBelagAt`, Wiese über `_bodenSichtAt`; 18 × 5 m, 0,05 m je Pixel, null-Renderer): Pixel Erde ≥ ½ vor der Fahrt · nach 1 · nach 10 Durchfahrten | 0 · 0 · **0** | 0 · 0 · **12 654** (zwei Spuren, je ≈ 1,0 m breit und 15,8 m lang) |
+| Auf dem Stapel mit dem Rad-Tritt: `gate:vehicle-drive` · voller Playtest · `gate:persistence` · `gate:fahr-leben` | — | GRÜN 2 min 9 s · 3 710 ✅ 0 ❌ (3 min 9 s, neben fahr-leben) · GRÜN · ROT allein an VK 10 Uhr, dieselbe Zeile (8>9, 570 s) wie ohne den Rad-Tritt |
 
 Wände am Kopf: siehe „Kopf“.
 
@@ -88,11 +113,13 @@ Wände am Kopf: siehe „Kopf“.
   jetzt den Leib. Die Basis mit `luftEps` 1 cm oder 3 cm bleibt ohne Kreis (16 · 15 Ankünfte in 120 s): die Lage hängt am Griff, nicht
   am Rauschen. Was fehlt, ist eine Regel des Verkehrs: der Bogen vor der Wende trägt zwei Entgegenkommende nur, wenn einer vor ihm
   wartet (ein Ort für den Bogen) oder der Zweite im Kreis zurücksetzt. Messname: VK 10 Uhr Warte-Kreis 8>9.
-- **(2) `rinne_sichtbar`** — nicht in diesem Kopf. Die Tiefe steht im Gesetz, in der Station und jetzt im gezeichneten Reifen; das
-  Gelände-Netz senkt sich nicht um sie, und die Wege-Karte malt erst ab der Stufe des Pfads (27,7 Tritte; 10 Durchfahrten = 20
-  Tritte). Der Höhen-Leser `_voxelSurfaceY` (stamm/gelaende-chunks.js) liest das Dichtefeld im Schritt 1,2 m, das Netz der Stufe 0
-  trägt 1,8 m — eine Rinne von 0,5 m Zelle und 5–9 cm Tiefe trägt es nicht ohne eigenen Leser der Zelle. Messname:
-  `rinne_sichtbar` (Bild der Rinne nach 10 Durchfahrten am feuchten Ufer, dorf).
+- **(2) `rinne_sichtbar` — halb**: die Farbe fiel (die Spur von zehn Durchfahrten ist Pfad und Erde, 24 von 24 Zellen, siehe B-k);
+  die TIEFE im Netz steht offen. Die Rinne steht im Gesetz, in der Station und im gezeichneten Reifen; das Gelände-Netz senkt sich
+  nicht um sie: der Höhen-Leser `_voxelSurfaceY` (stamm/gelaende-chunks.js) liest das Dichtefeld im Schritt 1,2 m, das Netz der
+  Stufe 0 trägt 1,8 m — eine Rinne von 0,5 m Zelle und 0,3 cm (trocken) bis 5–9 cm (nass) trägt es nicht ohne einen Leser der
+  Zelle im Netz. Messname: `rinne_tiefe_im_netz` (die Fläche über der Spur nach 10 Durchfahrten am feuchten Ufer, dorf, gegen z₁₀).
+  Das Bild im echten Frame urteilt der Messplatz: lokal verliert swiftshader das Gerät vor dem ersten Weltbild (`diag-blick`, „WebGPU
+  Device Lost“), am reinen main c814741e ebenso; gesehen ist die Spur in den Bytes der Wege-Karte (Gemessen). Messname: `rinne_sichtbar` Bild.
 - **`imWelt` am Dorf 49 %, an stadt-voll 85 %**: gemessen, nicht geurteilt. Aus dem Band fallen (a) Fahrten mit echtem Flug — die
   Landung nach 5–11 m Fall frisst die Höhe, die das Maß gutschreibt (stadt-voll Saat 12, 20; Dorf die Klippen bis 96 % Gefälle,
   `imWelt` bis −24 m), (b) Fahrten quer zum Hang ohne Flug (stadt-voll Saat 2, 10, 13, 18: 50–66 m — der Reibkreis trägt die
@@ -102,6 +129,9 @@ Wände am Kopf: siehe „Kopf“.
   allein ist am reinen main ROT mit derselben Zahl (n 100, p95 3,3), der volle Lauf kippt mit der Reihenfolge (main voll 0,8, der Stapel
   voll 3,3). Dazu am reinen main 4 rote Zeilen (K7 Aufbau 403 Büschel, 35 Pflanzen, zwei blinde Selbsttests). Täter laut Linse
   `_streuFuss` (stamm/vegetation-streu.js), nicht die Fahrt. Messname: K8 streu wiese.
+- **`gate:weltbild-frost:echt` „dritte-person: B das Bild folgt der Kamera — 0,00 % der Blöcke“** (Messplatz, GTX 1060/1050) — nicht
+  dieser Baum: ROT an jedem Kopf auf main ab 12029279, auch an einem Kopf ohne eine Datei der Fahrzeuge (werk-am-ort cfa4fc95), am
+  Bündel buendel-mittag 52c07c4a dieselbe Zeile; GRÜN an a954d698 und älter. Messname: weltbild-frost dritte-person B.
 - bodenStoss misst jetzt die Landung aus dem Spalt (vorher 0 bei jeder Landung): auf den vorher flatternden Fahrten Genesis rms
   9,3 → 12,9 m/s². Die Landung aus echtem Flug (`luft`) trägt bodenStoss weiter 0 (die Hub-Feder nimmt sie). Messname: bodenStoss
   der Landung.

@@ -1,5 +1,5 @@
 diff --git a/meisterkarte-quelle/punkte/stationen/k2-mensch-fahrzeug.js b/meisterkarte-quelle/punkte/stationen/k2-mensch-fahrzeug.js
-index 995670c..d1ae8ae 100644
+index 995670c..9a8e93d 100644
 --- a/meisterkarte-quelle/punkte/stationen/k2-mensch-fahrzeug.js
 +++ b/meisterkarte-quelle/punkte/stationen/k2-mensch-fahrzeug.js
 @@ -9,28 +9,106 @@
@@ -16,7 +16,7 @@ index 995670c..d1ae8ae 100644
 +// fahrGesetz (stamm/gelaende-kollision.js `_fahrzeugGesetzFor`), der Boden unter ihm durch DEN Leser des Wagens (`_fahrGrund`: der EINE
 +// Leser des Leibs `_kontaktStoffAt` — Pflaster, Pfad, Laub, Wiese, Stoff des Felds —, die Stoff-Zeile mit μ trocken/nass und dem Satz
 +// `radBoden`, die Feuchte `_feuchteAt`), die Haftung `_fahrHaft` (mit dem Film `_naesseAm`) und je Schritt der Kern: fahrKraefte mit
-+// e.haft und e.boden (vehicle-core radImBoden an den Durchfahrten, die die Zelle trägt, `_trittZahl` — gelesen, nie geschrieben),
++// e.haft und e.boden (vehicle-core radImBoden an den Durchfahrten, die die Zelle trägt, `_trittDurchfahrten` — gelesen, nie geschrieben),
 +// fahrStand auf dem Grund. Aus 100 und 50 km/h die volle Bremse bis bremsV des Kerns (darunter fährt er rückwärts: bis hier zählte der
 +// Halt bei 0,05 m/s die Rückfahrt mit — supersport 50 → 0 „1 230,92 m“). ZWEI FAHRTEN je Geschwindigkeit, zwei Fragen der Karte:
 +//   die WELT — auf dem Grund des Orts (`_werkBoden`: Hang, Buckel, Kanten), je Schritt der Stoff unter dem Rad (die Bahn kreuzt Stoffe):
@@ -60,7 +60,7 @@ index 995670c..d1ae8ae 100644
 +    const rad = (M, k) => (M.boden ? VC.radImBoden(G.rad, M.boden, M.feuchte, k) : null);
 +    const z0 = VC.fahrZustand(O.x, O.z, O.yaw);
 +    VC.fahrStand(z0, G, r._werkBoden({ _fahr: z0 }), 0);
-+    const M0 = r._fahrGrund(z0), mu0 = r._fahrHaft(z0), k0 = r._trittZahl(z0.x, z0.z);
++    const M0 = r._fahrGrund(z0), mu0 = r._fahrHaft(z0), k0 = r._trittDurchfahrten(z0.x, z0.z);
 +    // die Bremsung aus kmh: `stand` null — die Welt (Grund und Stoff je Schritt), sonst der Prüfstand (die Ebene, der Boden des Orts)
 +    const fahrt = (kmh, stand) => {
 +        const z = VC.fahrZustand(O.x, O.z, O.yaw);
@@ -74,7 +74,7 @@ index 995670c..d1ae8ae 100644
 +        let steil = 0, luft = 0, halt = 0, spalt = 0;
 +        const y0 = z.y;
 +        for (let i = 0; z.vlong > bremsV && i < 3600; i++) {
-+            const M = stand ? M0 : r._fahrGrund(z), mu = stand ? mu0 : r._fahrHaft(z), rb = rad(M, stand ? k0 : r._trittZahl(z.x, z.z));
++            const M = stand ? M0 : r._fahrGrund(z), mu = stand ? mu0 : r._fahrHaft(z), rb = rad(M, stand ? k0 : r._trittDurchfahrten(z.x, z.z));
 +            const [x0, q0, flog] = [z.x, z.z, z.luft === true];
 +            VC.fahrKraefte(z, { brake: 1, haft: mu, boden: rb }, G, DT);
 +            VC.fahrStand(z, G, boden, DT);
