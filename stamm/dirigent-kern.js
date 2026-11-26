@@ -1987,6 +1987,18 @@ class AnazhRealm {
     // sonnenbahn 2 las er den Pool auf einer waagrechten Fläche AM AUGE (`_poolAmAuge`, jede Quelle unter dem Auge 0): das Feuer
     // am Boden war ihm blind — die Belichtung des S0-Schusses mit und ohne Feuer 149 434,762, das Feuer +53 % über main, die
     // Abend-Stadt brannte aus (Wort des Koordinators 25.11.: der Sonderweg „nur über dem Auge“ fällt).
+    // DER BEZUG DES FENSTERS IST NIE DUNKLER ALS DIE NACHT DER REF (belichtung-daemmerung): die Stufen jeder Kachel zählen gegen
+    // das Licht des Himmels, mindestens aber gegen `BELICHTUNG.nachtRefE` (0,0963 lx: der Vollmond gegenüber bei −20°, die Nacht,
+    // an der die Stufen der Kamera hängen) — eine Leuchte wiegt in jeder dunklen Nacht gleich, mit dem Mond am Himmel oder ohne
+    // ihn. Über dem Bezug (der Tag, die Dämmerung bis −9°) dieselben Bits; die Nacht mit dem Mond am Himmel liegt meist darunter
+    // (genesis, der Mond 19° hoch: Himmel 1,5e-6) und wiegt mit — ihre Belichtung 16,73 → 16,62 EV, Median-Luma 69 → 66.
+    // Quelle: Unreal Engine, Auto Exposure — Min EV100 „limits the lower brightness the camera can adapt within“ (zu tief: „the viewport image appears too bright“)
+    // Bis hier wog jede Kachel gegen den Himmel der Stunde: seit der Mond auf seiner Bahn reist (w28-kosmos-bahn), steht er um
+    // Mitternacht auch unter dem Horizont, und gegen das Sternen-Licht (2,84e-8) stand der beleuchtete Boden zehn Stufen über
+    // den Kacheln ohne Leuchte — das Fenster mittelte beide, die Blende blieb drei Stufen zu weit. Genesis, Radeon, a7b7a4b1, die
+    // zwei Laternen in 9,6 und 23,1 m: Pool 5,00e-7 (mit Mond am Himmel 4,02e-6), 36 % des Bilds ausgebrannt, Median-Luma 122
+    // (mit Mond 69 und 0,3 %), nach dem Wort Mitternacht 44 % der Pixel bei Luma ≥ 235. Das helle Fenster der Profis allein
+    // (Unreal: 70–80 % bis 80–95 %) schlösse am selben Bild 5,5 Stufen (Median unter 5) und nähme der Mond-Nacht 1,8.
     // DIE WAHL DES ORTS ZUR UHR, NIE DIE BLENDE DES BILDS (licht.K1: die Kamera folgt dem Licht des Orts, steht die Uhr, stehen
     // Leuchten UND Messer im selben Bild): der Messer stellt eine fällige Wahl selbst (`_leuchtWahl` — nach dem Uhr-Wort liest er
     // vor dem nächsten Licht-Takt) und liest die gewählten Quellen in voller Stärke; die Blende (`blendeS`) ist der Übergang des
@@ -2039,7 +2051,7 @@ class AnazhRealm {
         if (!farbig) return aus;
         // das Fenster: log₂((Himmel + Pool) ÷ Himmel) je Kachel des Bilds, sortiert, gemittelt zwischen den Perzentilen — eine
         // Kachel ohne Punkt (der Himmel) trägt das Licht des Himmels allein: 0 Stufen
-        const wl = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], 1e-12);
+        const wl = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], AnazhRealm.BELICHTUNG.nachtRefE);
         const N = Math.max(P.n, P.kacheln || 0);
         const st =
             this._poolBildStufen && this._poolBildStufen.length >= N

@@ -1398,7 +1398,11 @@ class AnazhRealm_bild_himmel {
         // der Raten-Drossel und an der Leine vorbei — und verwirft den Boden, den der Rückstrahl unter dem alten Licht maß.
         const sprung = this._himmelSprung === true;
         this._himmelSprung = false;
-        if (sprung) this._rueckstrahlSprung();
+        if (sprung) {
+            this._rueckstrahlSprung();
+            // auch das Gedächtnis des Bilds trägt das alte Licht: es beginnt mit dem nächsten Bild neu (`_traaReprojektion`)
+            this._lichtSprung = true;
+        }
         this._atmoTakt(sunDir, moonDir, tint, sprung);
         this._dayNightApplySkybox(tint);
         this._dayNightApplyStarField(achse, tint.skyMul);
