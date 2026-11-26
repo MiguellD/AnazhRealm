@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 48,
+    "heute": 49,
     "kern": 2,
     "kernDazu": 2,
-    "anteilHeute": 8.2,
+    "anteilHeute": 8.4,
     "anteilKern": 0.3
    },
    "perspektiven": [
@@ -7585,7 +7585,7 @@
        "richter": "Wellenzahl und -abstand im Band realer Pandemien; jede Infektionskette verfolgbar"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "kein Gesetz für Krankheit bei Menschen (Grep Seuche/krank/Epidem leer)",
@@ -20094,7 +20094,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 125,
+  "heute": 126,
   "davonKopplungen": 33,
   "kern": 2,
   "kernDazu": 2,
@@ -20109,7 +20109,7 @@
   },
   "gliederLeitern": 9,
   "beide": 61,
-  "nachwache": 64
+  "nachwache": 65
  },
  "zusammengelegt": [
   {
