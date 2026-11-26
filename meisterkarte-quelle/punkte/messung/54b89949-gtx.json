@@ -1,7 +1,7 @@
 {
  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
  "geraet": "gtx",
- "zeit": "2026-11-26T16:23:56.923Z",
+ "zeit": "2026-11-26T16:41:28.698Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -3687,17 +3687,132 @@
   },
   "karte2.same.entfaltung.schirm#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8fb4-fc2085f120b5.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\lib\\\\welt-boot.c) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-26T15:10:50.412Z",
+   "zahl": "Deckel 139 s gerissen: Stille seit 15 s nach 165.6 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego-geht 150.4 s)",
+   "exit": 1,
+   "minuten": 2.76,
+   "grund": "Deckel 139 s gerissen: Stille seit 15 s nach 165.6 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego-geht 150.4 s)",
+   "s": 165.7,
+   "fremd": {
+    "s": 167.3,
+    "takte": 77,
+    "fremdS": 30.69,
+    "kerne": 0.183,
+    "fensterKerne": 0.348,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      7.16
+     ],
+     [
+      "Explorer.EXE",
+      3.98
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-54b89949-w174016 x listen/kandidat-gtx-54b89949-w174016.txt",
+      1.83
+     ]
+    ],
+    "dienerS": 33.44,
+    "diener": [
+     [
+      "System",
+      16.27
+     ],
+     [
+      "dwm.exe",
+      8.67
+     ]
+    ],
+    "geraetS": 55.72,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      37.53
+     ],
+     [
+      "svchost.exe",
+      15.22
+     ],
+     [
+      "SearchIndexer.exe",
+      1.22
+     ]
+    ],
+    "eigenS": 455.14,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.212,
+     "nach": 0.24,
+     "station": 0.9
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 105.9,
+     "alle": 212.1,
+     "cpuEin": 110,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.75,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       7.07,
+       7.4,
+       3.18,
+       3.15,
+       2.77,
+       2.33
+      ]
+     },
+     "spanne": [
+      1795711288701,
+      1795711289159
+     ]
+    },
+    "nach": {
+     "ein": 130.1,
+     "alle": 276,
+     "cpuEin": 141,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.87,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       6.35,
+       5.27,
+       4.54,
+       3.1,
+       2.53,
+       2.98
+      ]
+     },
+     "spanne": [
+      1795711454838,
+      1795711455398
+     ]
+    },
+    "ruhe": {
+     "ein": 88.8,
+     "alle": 220.9,
+     "n": 1190,
+     "von": "2026-11-17"
+    },
+    "f": 1.465,
+    "fEin": 1.465,
+    "fAlle": 1.249,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-26T16:41:28.698Z",
    "abdruck": "0b389cec986f",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.mensch.kultur.verstaendigung#1": {
    "gruen": false,
@@ -3967,16 +4082,13 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-26T15:19:48.041Z",
-  "ordner": "sitzung-20261126-161948",
+  "start": "2026-11-26T16:40:48.249Z",
+  "ordner": "sitzung-20261126-174048",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 6.9,
-  "grundstellungS": [
-   0.2,
-   8
-  ],
-  "proben": 3,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "geraet": {
    "name": "GTX 1060",
@@ -3986,172 +4098,30 @@
   "orte": [
    {
     "ort": null,
-    "vor": "karte2.leben.wasser.bild#1",
-    "s": 29.8,
-    "takte": 881,
+    "vor": "karte2.same.entfaltung.schirm#1",
+    "s": 27.9,
+    "takte": 830,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": null,
-    "vor": "karte2.erleben.spieler.hand#1",
-    "s": 14.2,
-    "takte": 760,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.same.kopplung.aufwaerts#1",
-    "s": 21.6,
-    "takte": 681,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
   "felder": [
    {
-    "probe": "karte2.leben.wasser.bild#1",
+    "probe": "karte2.same.entfaltung.schirm#1",
     "weg": [
-     "__rafferEnde",
-     "__rafferKurz",
      "__ortZeit",
      "__weltaktSpionBuch",
      "__wetterSpionBuch",
      "__buehneUhr",
-     "__abbruchEpoche"
-    ]
-   },
-   {
-    "probe": "karte2.erleben.spieler.hand#1",
-    "weg": [
-     "__ortZeit",
-     "__weltaktSpionBuch",
-     "__wetterSpionBuch",
-     "__buehneUhr"
-    ]
-   },
-   {
-    "probe": "karte2.same.kopplung.aufwaerts#1",
-    "weg": [
-     "__dorfDerProbe",
-     "__rafferEnde",
-     "__rafferKurz",
-     "__imSchuss",
-     "__nahSpeicher",
-     "__weltaktSpionBuch",
-     "__wetterSpionBuch",
-     "__buehneUhr",
-     "__ortZeit",
-     "__abbruchEpoche"
+     "__bandDecke",
+     "__zensusCalls"
     ]
    }
   ],
   "wirt": [
    {
-    "probe": "karte2.leben.wasser.bild#1",
-    "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r.state.weather",
-     "window.luma709",
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__weltOrte",
-     "window.__weltOrt",
-     "window.__strecke",
-     "window.__raffer",
-     "window.__rafferRest",
-     "window.__wasserOrte",
-     "window.__wasserLeser",
-     "window.__wasserLeib",
-     "window.__wasserEis",
-     "window.__wasserMutation",
-     "window.__wasserKarte",
-     "window.__wasserLaeufe",
-     "window.__wasserTreibt",
-     "window.__wasserHoehle",
-     "window.__wasserWagen",
-     "window.__wasserSichtNetz",
-     "window.__wasserFlora",
-     "window.__wasserSee",
-     "window.__wasserQuelle",
-     "window.__wasserQuellTeil",
-     "window.__wasserBach",
-     "window.__wasserBank",
-     "window.__wasserFluss",
-     "window.__wasserKroneVon",
-     "window.__wasserUfer",
-     "window.__wasserStrom",
-     "window.__wasserFlussNah",
-     "window.__wasserGraben",
-     "window.__wasserDamm",
-     "window.__wasserUferFarbe",
-     "window.__wasserKoerper",
-     "window.__wasserBild",
-     "window.__wasserSeeAm",
-     "window.__wasserLicht",
-     "window.__wasserRegen",
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "neu: () => wert",
-     "window.luma709": "getauscht: (u, i = 0) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2]",
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__weltOrte": "getauscht: function weltOrte(art, opts) { const o = opts || {}; const [mx, mz] = o.mitte ||",
-     "window.__weltOrt": "getauscht: function weltOrt(art, opts) { return window.__weltOrte(art, Object.assign({}, op",
-     "window.__strecke": "getauscht: function strecke(mitte, ringe, stufeMax = Infinity, querMax = Infinity, naechste",
-     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
-     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()",
-     "window.__wasserOrte": "neu: async function wasserOrte(o = {}) { const G = window.__gelaendeCore; const mitte",
-     "window.__wasserLeser": "neu: async function wasserLeser(o = {}) { if (!st.hydrosphere || !st.hydrosphere.read",
-     "window.__wasserLeib": "neu: function wasserLeib() { const [r, A] = [window.anazhRealm, window.anazhRealm.con",
-     "window.__wasserEis": "neu: async function wasserEis(o = {}) { const A = AnazhRealm; const FUSS = A.PLAYER_F",
-     "window.__wasserMutation": "neu: async function wasserMutation(o = {}) { const A = AnazhRealm; const [RHO, TIEF] ",
-     "window.__wasserKarte": "neu: async function wasserKarte(o) { const [orte, zufall] = [[], window.__phytoCore.m",
-     "window.__wasserLaeufe": "neu: async function wasserLaeufe() { const [G, L] = [window.__gelaendeCore, r._gelaen",
-     "window.__wasserTreibt": "neu: async function wasserTreibt(o) { const [r, A] = [window.anazhRealm, window.anazh",
-     "window.__wasserHoehle": "neu: async function wasserHoehle(o = {}) { const A = AnazhRealm; const cfg = r._voxel",
-     "window.__wasserWagen": "neu: async function wasserWagen(o = {}) { const ziel = o.see || (await window.__wasse",
-     "window.__wasserSichtNetz": "neu: function wasserSichtNetz() { const cfg = r._voxelChunkConfig(0); const span = cf",
-     "window.__wasserFlora": "neu: function wasserFlora(o = {}) { const sicht = o.sicht || window.__wasserSichtNetz",
-     "window.__wasserSee": "neu: async function wasserSee(o = {}) { const f = o.fenster || (await window.__wasser",
-     "window.__wasserQuelle": "neu: async function wasserQuelle(o = {}) { if (!st.hydrosphere || !st.hydrosphere.rea",
-     "window.__wasserQuellTeil": "neu: function wasserQuellTeil(p, n) { const h = (Math.imul(Math.round(p.x * 4), 73856",
-     "window.__wasserBach": "neu: async function wasserBach(o = {}) { const R = wasserRund(2); const bachOrt = Num",
-     "window.__wasserBank": "neu: async function wasserBank(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
-     "window.__wasserFluss": "neu: function wasserFluss() { const h = st.hydrosphere; if (!h || !h.ready || !Array.",
-     "window.__wasserKroneVon": "neu: function __wasserKroneVon(r, p) { const A = r.constructor; const HC = A.HYDROSPH",
-     "window.__wasserUfer": "neu: async function wasserUfer(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
-     "window.__wasserStrom": "neu: async function wasserStrom(ort, hoehe) { const zurueck = [leihe(st, { postProces",
-     "window.__wasserFlussNah": "neu: function __wasserFlussNah(r, x, z) { const st = r.state; const fluesse = []; for",
-     "window.__wasserGraben": "neu: async function wasserGraben(o = {}) { const K = AnazhRealm.NAH_WIESE.kachel; con",
-     "window.__wasserDamm": "neu: async function wasserDamm(o = {}) { const f2 = wasserRund(2); const S = (q) => r",
-     "window.__wasserUferFarbe": "neu: async function wasserUferFarbe(o = {}) { const h = st.hydrosphere; if (!h || !h.",
-     "window.__wasserKoerper": "neu: async function wasserKoerper(o = {}) { const A = AnazhRealm; const DT = A.FIXED_",
-     "window.__wasserBild": "neu: async function wasserBild(o = {}) { const T = window.THREE; const renderer = st.",
-     "window.__wasserSeeAm": "neu: function __wasserSeeAm(r, ziel) { const st = r.state; const h = r._hydroFor(ziel",
-     "window.__wasserLicht": "neu: async function wasserLicht(o = {}) { if (!st.renderer || st.renderer._isHeadless",
-     "window.__wasserRegen": "neu: async function wasserRegen(o = {}) { const T = window.THREE; const renderer = st",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     199.6,
-     253.8
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.erleben.spieler.hand#1",
+    "probe": "karte2.same.entfaltung.schirm#1",
     "anders": [
      "r._bildZeit",
      "r._wolkenZeit",
@@ -4174,135 +4144,43 @@
     },
     "haelt": [],
     "heap": [
-     268,
-     287.3
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.same.kopplung.aufwaerts#1",
-    "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r.state.weather",
-     "window.__raffer",
-     "window.__rafferRest",
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "neu: () => wert",
-     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
-     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     200.3,
-     308.9
+     198.2,
+     316.2
     ],
     "ungemessen": null
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.leben.wasser.bild#1",
+    "probe": "karte2.same.entfaltung.schirm#1",
     "halt": -1000000000,
     "zurueck": 0
-   },
-   {
-    "probe": "karte2.leben.wasser.bild#1",
-    "gehalten": [
-     "tiere",
-     "skala"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.erleben.spieler.hand#1",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.erleben.spieler.hand#1",
-    "gehalten": [
-     "tiere",
-     "skala"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.same.kopplung.aufwaerts#1",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.same.kopplung.aufwaerts#1",
-    "gehalten": [
-     "skala",
-     "spiegel",
-     "tiere"
-    ],
-    "offen": []
    }
   ],
-  "zeichner": [
-   {
-    "probe": "karte2.leben.wasser.bild#1",
-    "anders": [
-     "zeichner.renderer._handleObjectFunction"
-    ],
-    "wie": {
-     "zeichner.renderer._handleObjectFunction": "getauscht: function (object, material, scene, camera, lightsNode, group"
-    },
-    "zurueck": {
-     "vor": "karte2.erleben.spieler.hand#1",
-     "wie": "an Ort und Stelle",
-     "s": 0.2
-    }
-   }
-  ],
-  "ciBlicke": 4,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 1321,
-   "frameP95": 83.31,
-   "taktP95": 38.26,
-   "vramMax": 138.5,
-   "seiten": 2,
+   "bilder": 509,
+   "frameP95": 33.43,
+   "taktP95": 23.5,
+   "vramMax": 150.6,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.leben.wasser.bild#1",
-     "m": 1159,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "karte2.erleben.spieler.hand#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "karte2.same.kopplung.aufwaerts#1",
-     "m": 295,
+     "probe": "karte2.same.entfaltung.schirm#1",
+     "m": 1089,
      "ringVor": 4,
      "ringMin": 0
     }
    ],
-   "zapfen": 700,
-   "luecken": 1,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 197,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 730.8,
-  "minuten": 12.35
+  "fahrtS": 203.2,
+  "minuten": 3.55
  }
 }
