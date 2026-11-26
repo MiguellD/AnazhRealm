@@ -4342,6 +4342,7 @@
             // fahrzeug-medium (rein additiv): das Rad im Boden — die Geometrie aus den Aufstandspunkten, die Last je Rad aus
             // derselben Masse (vier Räder, zwei Läufer); `radImBoden` liest sie
             rad: a.rad ? Object.assign({ W: radLast(masse, a.rad.kufe) }, a.rad) : null,
+            kipp: fahrKippForm(a.quer, d.cgH, a.breite, a.bauch),
         };
     }
     // DIE LAST JE RAD [N] (fahrzeug-gestalt): die EINE Masse des Werks × g durch die Räder, die sie tragen (vier, die Kufe
@@ -4460,6 +4461,53 @@
         // Auf der Kante ist die Lage die der Klammer (die Punkte liegen auf Rand und Grund, keine Flaeche).
         const kl = (w) => (traegt ? w : Math.max(-S.ebeneMax, Math.min(S.ebeneMax, w)));
         return { y: y, steig: kl(steig), wank: kl(wank), traegt: traegt };
+    }
+    // DIE KIPPGRENZE (mensch.fahrzeug.form#2) — die Form trägt sie: der Schwerpunkt h über dem Boden, die halbe Spur w2 der
+    // Aufstandspunkte (auf.quer, dieselbe, über der fahrEbene den Wank misst). Die statische Formel (NHTSA, Static Stability
+    // Factor, 49 CFR 575.105 / Federal Register 68 FR 59250, 2003): die innere Spur hebt ab, wenn die Querkraft der Reifen je
+    // Masse a_R · h > g_N · w2 — a_R > SSF · g_N, SSF = Spur ÷ 2h; auf dem Kipptisch tan θ = SSF. Das Trägheitsmoment um die
+    // äußere Radlinie je Masse: der Kasten der Spur 2·w2 und der Höhe 2h um seinen Schwerpunkt ((2w2)² + (2h)²)/12 (gemessen
+    // NHTSA VIPD, Heydinger et al. 1999, SAE 1999-01-1336: Pkw I_xx ÷ m ≈ 0,25–0,35 m²; der GT des Kerns 0,29) plus Steiner
+    // h² + w2². Liegt der Wagen auf der Seite, gleitet das Blech: μ 0,35 (Unfall-Rekonstruktion, Fahrzeug auf der Seite auf
+    // Asphalt 0,30–0,40: Fricke, Traffic Accident Reconstruction, Northwestern University 1990, Tafel der Verzögerungen). Die
+    // Flanke des Aufbaus (`b2` die halbe Breite der Hülle, `hb` ihre Unterkante am Bauch) ist die zweite Stütze: wer liegt, liegt
+    // auf ihr (der Leser: die Lage des Bilds, `_wagenLage`).
+    function fahrKippForm(w2, h, breite, bauch) {
+        if (!(w2 > 0) || !(h > 0)) return null;
+        const b2 = breite > 0 ? Math.max(w2, breite / 2) : w2;
+        const hb = bauch > 0 ? bauch : 0;
+        return { w2: w2, h: h, ssf: w2 / h, iP: (4 * w2 * w2 + 4 * h * h) / 12 + h * h + w2 * w2, muSeite: 0.35, b2: b2, hb: hb };
+    }
+    // DER KIPP-SCHRITT: a_R die Querkraft der Reifen je Masse (links +), gedeckelt am Reibkreis aCap = μ · g_N — mehr trägt kein
+    // Reifen, darum kippt nur, wessen μ über dem SSF liegt; wer darunter liegt, rutscht (die Formel und der Reifen zusammen).
+    // Solange beide Spuren tragen und a_R · h ≤ g_N · w2, bleibt alles byte-gleich (z.kipp ruht bei 0). Hebt die innere Spur ab,
+    // dreht der Aufbau um die äußere Radlinie (s = +1: die linke Seite oben, wie wank): der Schwerpunkt liegt dann w2·cos φ −
+    // h·sin φ quer innen und w2·sin φ + h·cos φ hoch über ihr — das Moment der Reifen an der Höhe gegen die Last am Hebel,
+    // I_P · φ̈ = s·a_R · h' − g_N · d'. Fällt φ auf 0, landet die Spur (unelastisch); erreicht φ 90°, liegt der Wagen auf der Seite.
+    function fahrKipp(z, G, aR, aCap, gN, dt) {
+        const K = G.kipp;
+        if (!K) return;
+        const a = Math.max(-aCap, Math.min(aCap, aR));
+        const phi0 = z.kipp || 0;
+        if (phi0 === 0 && !(Math.abs(a) * K.h > gN * K.w2)) return;
+        const s = phi0 !== 0 ? Math.sign(phi0) : Math.sign(a);
+        const phi = Math.abs(phi0);
+        const dq = K.w2 * Math.cos(phi) - K.h * Math.sin(phi),
+            hq = K.w2 * Math.sin(phi) + K.h * Math.cos(phi);
+        let w = (z.kippV || 0) + ((s * a * hq - gN * dq) / K.iP) * dt;
+        let p = phi + w * dt;
+        if (!(p > 0)) {
+            z.kipp = 0;
+            z.kippV = 0;
+            return;
+        }
+        if (p >= Math.PI / 2) {
+            p = Math.PI / 2;
+            w = 0;
+            z.umgekippt = true;
+        }
+        z.kipp = s * p;
+        z.kippV = w;
     }
     function fahrFeder(z, key, m, k, c, dt, max) {
         const kv = key + "V";
@@ -4631,7 +4679,20 @@
             aW = G.luft.kFlanke * wq * Math.abs(wq);
             if (!Number.isFinite(aW)) aW = 0;
         }
-        if (z.luft) {
+        if (z.umgekippt && !z.luft) {
+            // AUF DER SEITE (mensch.fahrzeug.form#2) greift kein Reifen: das Blech gleitet mit μ_Seite · g_N gegen die Fahrt, die
+            // Gier klingt mit derselben Reibung ab; Gas und Lenkung greifen ins Leere
+            const v0 = Math.hypot(z.vlong, z.vlat),
+                dv = G.kipp.muSeite * gN * dt,
+                k = v0 > dv ? (v0 - dv) / v0 : 0;
+            z.aLong = dt > 0 ? (z.vlong * (k - 1)) / dt : 0;
+            z.aLat = dt > 0 ? (z.vlat * (k - 1)) / dt : 0;
+            z.vlong *= k;
+            z.vlat *= k;
+            z.yawRate *= k;
+            z.slipF = 0;
+            z.slipR = 0;
+        } else if (z.luft) {
             // IM FLUG greift kein Reifen: nur der Luftwiderstand; die Gier dreht mit ihrer Rate weiter.
             const aD = -G.dragK * z.vlong * Math.abs(z.vlong);
             z.vlong += (aD + z.vlat * z.yawRate) * dt;
@@ -4784,6 +4845,13 @@
             } else {
                 z.vlong -= g * Math.sin(z.steig || 0) * dt;
             }
+            // ── DIE KIPPGRENZE (mensch.fahrzeug.form#2): die Querkraft der Reifen je Masse dreht den Aufbau um die äußere
+            //    Radlinie (im Wagen-Rahmen heben sich Fliehkraft und Hangabtrieb bis auf sie auf): Fy / m. Unter Schritttempo
+            //    fährt der Wagen kinematisch (dieselbe Blende `low` wie die Gier): dort trägt die Bahn v · ω die Kurve und die
+            //    Haftung hält den Hangabtrieb (−aG, ohne Rutschen). Am Reibkreis μ · g_N; über SSF · g_N hebt die innere Spur
+            //    ab. Die Bahn allein läge im Einlenken über der Kraft der Reifen (die Welt kippte an der Mess-Wiese bei
+            //    0,69–0,95 · SSF · g), Fy allein trüge im Schritttempo den Schräglauf der Blende (der Karren mit 1,6 m/s kippte). ──
+            fahrKipp(z, G, (1 - low) * aLatB + low * (z.vlong * z.yawRate - (rutscht ? 0 : aG)), cap * gN, gN, dt);
         }
         if (tW > 0) {
             // ── DAS WASSER (SCHAU-2): der Widerstand der getauchten Stirn laengs und der Flanke quer, halb-implizit

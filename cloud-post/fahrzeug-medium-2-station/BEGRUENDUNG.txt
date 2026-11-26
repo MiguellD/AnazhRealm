@@ -1,4 +1,5 @@
 STATIONS-KANDIDAT fahrzeug-medium-2 — meisterkarte-quelle/punkte/stationen/k2-mensch-fahrzeug.js, Leiter mensch.fahrzeug.medium S2
+und Leiter mensch.fahrzeug.form S2 (die Kippgrenze, Punkt 5)
 Basis: origin/punkte-maschine 0ba33033 (die Datei ist byte-gleich ihrem Stand seit 8d0eba7e; der Diff k2-mensch-fahrzeug.diff gilt
 gegen sie). Der Kandidat baut auf dem Kandidaten von fahrzeug-medium (cloud-post/fahrzeug-medium-station, noch nicht gelandet): der
 Diff trägt beide. Neu gegen fahrzeug-medium sind nur BREMS_AN (die Welt-Fahrt misst Weg am Boden und Spalt), der Kreis der Saat
@@ -37,11 +38,33 @@ WARUM (Post 05:58, Vorrang 2: „danach urteilt die Station die WELT statt nur d
    über die Spur. Der Selbsttest trägt die ATTRAPPE „die Rinne gräbt, die Spur bleibt unsichtbar“; die ATTRAPPE „der Boden bleibt
    glatt“ trägt jetzt `imKreis` und `flattert` (ohne sie nannte sie die Kurvengrenze statt der Rinne: 1 falsch → 0).
 
+5. DIE KIPPGRENZE (mensch.fahrzeug.form S2: kippQ ± 15 %, liegt ≥ 1, steht ≥ 1; `erwartet: "nicht"` fällt). Die Karte sagt
+   „Kippgrenze ± 15 % gegen statische Formel“ an 50 Bauplänen an Land. Die Formel ist der Static Stability Factor der NHTSA
+   (68 FR 59250, 49 CFR 575.105): SSF = Spur ÷ 2h — die innere Spur hebt ab bei a_quer = SSF · g, auf dem Kipptisch bei tan θ =
+   SSF; wessen Reibkreis μ darunter liegt, rutscht. Bis hier kippte im Kern kein Bauplan (nur die Längs-Lastverlagerung, der Wank
+   eine Feder mit Anschlag 0,12 rad): 7 von 16 Bauplänen mit μ > SSF rutschten mit 0,76–1,0 g durch den Kreis. Der Kern ist
+   geschnitten (vehicle-core.js fahrKipp: der Aufbau dreht um die äußere Radlinie, I ÷ m = ((2w)² + (2h)²)/12 + w² + h², w die halbe Spur, angetrieben von
+   der Querkraft der Reifen je Masse; über π/2 liegt er und rutscht auf der Flanke mit μ 0,35). KIPP (die Seite) baut 63 Baupläne
+   aus dem Stempel der Welt — sieben Gattungen an Land × neun Hebel der Werkstatt (studioOv Dach, Fahrhöhe, Spur: serie, hoch,
+   turm, dach, schmal, gelände, breit, tief, kran) —, liest den Fahr-Satz der Welt (`_fahrSatz`) und fährt je Bauplan (a) den
+   Kipptisch: der Kern auf diesem Satz, der Boden quer geneigt in Stufen 0,025, die Grenze halbiert auf 1/64 Stufe, 3 s Stand je
+   Neigung; (b) den Kreis in der Welt: `_wagenSchritt` · `_wagenLage` über ihrem Boden an der Mess-Wiese, 25 m/s, Lenkung voll in
+   4 s, gelesen die Querkraft der Reifen je Masse vor dem Abheben und ob er am Ende auf der Seite liegt. Kipper: μ > SSF × 1,15
+   (Tisch: μ des Satzes; Kreis: μ × Haftung des Bodens am Start, und er hält 80 % des Tempos — der Karren mit 1,6 m/s nicht);
+   Rutscher: μ × 1,15 < SSF (Kreis: der größte Reibkreis vor dem Abheben, die Haftung wechselt mit dem Boden). kippQ = der
+   Quotient (tan θ ÷ SSF am Tisch, a_quer ÷ SSF · g im Kreis), der am weitesten von 1 liegt. Am Kopf an der Mess-Wiese: 63
+   Baupläne, Kipper am Tisch 25 von 25 (tan θ ÷ SSF 1,001–1,034), im Kreis 6, die liegen alle; alle 9, die im Kreis liegen,
+   bei 0,962–1,013 · SSF · g; 65 Rutscher, keiner kippt. kippQ 0,962 · liegt 1 · steht 1. Am Kern ohne den Schnitt (6c1c3d1):
+   dieselben 63, Kipper 25, Tisch kippt 0, im Kreis liegt 0 — kippQ 0, liegt 0, ROT mit dem Täter „vehicle-core.js fahrTakt: 25
+   von 25 Bauplänen mit μ > SSF kippen nie … keine Quer-Lastverlagerung“. Der Selbsttest trägt „der Kern von main“ und drei
+   ATTRAPPEN (feste Kipp-Neigung tan 0,6 · die Lage ohne den Kreis · sechs Rezepte statt 50 Baupläne).
+
 DIE DREI WÄNDE
 - `node punkte.cjs liste` mit dem Kandidaten: 1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 2 — genau `gelaende.K2#1/#2` „Wand
   HAKEN“ (dieselben zwei wie an der Basis), sonst nichts.
 - Die Leiter misst in ≤ 60 s: S2 am Kopf 5,0 s (Genesis) · 4,8 s (Dorf) · 4,2 s (stadt-voll), 120/120 Adressen; mit
   SPUR_SICHT 5,0 · 5,1 · 3,9 s (Genesis · Dorf · Wiese).
-- Selbsttest `node stationen/k2-mensch.js --selbsttest`: 544 Stationen, 5 402 Mutanten, 0 falsch.
+- form S2 (KIPP) misst 63 Baupläne in 18–30 s headless (null-Renderer).
+- Selbsttest `node stationen/k2-mensch.js --selbsttest`: 544 Stationen, 5 408 Mutanten, 0 falsch.
 - Kein Fächer im Kern (node, worker_threads): die Station fährt in der Seite durch die Leser des SPIELS (r._fahrGrund, r._fahrHaft,
   r._werkBoden, r._trittDurchfahrten — die Rinne liest Durchfahrten, das Rad tritt `TRITT.rad`) — die Stichprobe ist die Fahrt selbst.

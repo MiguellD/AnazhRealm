@@ -240,6 +240,102 @@ function flugVerdict(m) {
     return out;
 }
 
+// ── A11 DIE KIPPGRENZE (mensch.fahrzeug.form#2, Karte 2: „Kippgrenze ± 15 % gegen statische Formel“): am Kern je Gattung und
+// ihr hoher Bauplan (Dach × 1,6, Bodenfreiheit × 3, Spur × 0,8 — die Hebel der Werkstatt). Die statische Formel (NHTSA Static
+// Stability Factor, 68 FR 59250): die innere Spur hebt ab bei a_quer = SSF · g, auf dem Kipptisch bei tan θ = SSF, SSF = Spur ÷ 2h.
+// Der Reifen trägt höchstens μ · g: wessen μ über dem SSF liegt, KIPPT (Kipptisch tan θ ÷ SSF und im Kreis a_quer vor dem Abheben
+// ÷ SSF · g im Band ± 15 %, er liegt am Ende auf der Seite); wessen μ darunter liegt, RUTSCHT und bleibt stehen. Am Kopf von main
+// kippte kein Bauplan: der Kern trug nur die Längs-Lastverlagerung, der Wank war eine Feder mit Anschlag 0,12 rad — 7 von 16
+// Bauplänen mit μ > SSF rutschten mit 0,76–1,0 g durch den Kreis und erst bei tan θ = μ vom Tisch.
+const KIPP = { band: 0.15, rand: 1.15, v: 20, bilder: 480, tisch: 0.025, stehen: 180, min: 3 };
+function kippMessung(VC) {
+    const dt = 1 / 60;
+    const m = {};
+    const kreis = (G) => {
+        const z = VC.fahrZustand(0, 0, 0),
+            boden = () => 0;
+        VC.fahrStand(z, G, boden, 0);
+        z.vlong = z.speed = KIPP.v;
+        let a = 0,
+            vh = 0;
+        for (let i = 0; i < KIPP.bilder; i++) {
+            const v = Math.hypot(z.vlong, z.vlat);
+            if (i === 60) vh = v;
+            VC.fahrKraefte(z, { steer: Math.min(1, i / 360), throttle: z.kipp ? 0 : Math.max(0, Math.min(1, (KIPP.v - v) * 0.5)) }, G, dt);
+            VC.fahrStand(z, G, boden, dt);
+            if (i > 30 && !z.kipp) a = Math.max(a, Math.abs(z.aLat || 0)); // die Querkraft der Reifen je Masse (Fy / m)
+        }
+        return { aQ: a / G.g, liegt: !!z.umgekippt, v: vh };
+    };
+    // der Kipptisch: tan θ in Stufen KIPP.tisch, dann die Grenze auf 1/64 Stufe halbiert
+    const neige = (G, t) => {
+        const z = VC.fahrZustand(0, 0, 0),
+            boden = (x, q) => -q * t;
+        VC.fahrStand(z, G, boden, 0);
+        const q0 = z.z;
+        for (let i = 0; i < KIPP.stehen; i++) {
+            VC.fahrKraefte(z, {}, G, dt);
+            VC.fahrStand(z, G, boden, dt);
+        }
+        return z.umgekippt ? "kippt" : Math.abs(z.z - q0) > 0.05 ? "rutscht" : null;
+    };
+    const tisch = (G) => {
+        for (let t = KIPP.tisch; t <= 2; t += KIPP.tisch) {
+            if (!neige(G, t)) continue;
+            let lo = t - KIPP.tisch,
+                hi = t;
+            for (let k = 0; k < 6; k++) {
+                const m = (lo + hi) / 2;
+                if (neige(G, m)) hi = m;
+                else lo = m;
+            }
+            return { tan: hi, kippt: neige(G, hi) === "kippt" };
+        }
+        return { tan: null, kippt: false };
+    };
+    for (const pid of VC.GATTUNGEN || []) {
+        const P = { ...VC.DEFAULT_P, ...VC.presetPatch(pid) };
+        for (const [name, ov] of [
+            [pid, {}],
+            [pid + "+hoch", { dach: P.dach * 1.6, fahrhoehe: P.fahrhoehe * 3, spur: P.spur * 0.8 }],
+        ]) {
+            const G = VC.fahrGesetz(VC.exportDrive({ ...P, ...ov }));
+            if (!G) continue;
+            const ssf = G.kipp ? G.kipp.ssf : G.auf.quer / G.cgH;
+            m[name] = { ssf, mu: G.maxGrip * G.grip, kreis: kreis(G), tisch: tisch(G) };
+        }
+    }
+    return m;
+}
+function kippVerdict(m) {
+    const out = [];
+    const e = Object.entries(m || {});
+    const kippen = e.filter(([, k]) => k.mu > k.ssf * KIPP.rand);
+    const rutschen = e.filter(([, k]) => k.mu * KIPP.rand < k.ssf);
+    if (kippen.length < KIPP.min) out.push(`${kippen.length} Baupläne mit μ über dem SSF gemessen (Soll ≥ ${KIPP.min})`);
+    if (rutschen.length < KIPP.min) out.push(`${rutschen.length} Baupläne mit μ unter dem SSF gemessen (Soll ≥ ${KIPP.min})`);
+    // der Kreis urteilt, wer die Probe-Geschwindigkeit hält (der Karren fährt 1,6 m/s: sein SSF liegt jenseits seines Kreises)
+    const imKreis = kippen.filter(([, k]) => !(k.kreis.v < KIPP.v * 0.8));
+    if (kippen.length >= KIPP.min && imKreis.length < KIPP.min) out.push(`${imKreis.length} Baupläne mit μ über dem SSF im Kreis gemessen (Soll ≥ ${KIPP.min})`);
+    const nie = kippen.filter(([, k]) => !k.tisch.kippt && !k.kreis.liegt);
+    if (nie.length)
+        out.push(
+            `${nie.length} von ${kippen.length} Bauplänen mit μ > SSF kippen nie (${nie.map(([p, k]) => `${p} SSF ${k.ssf.toFixed(2)} μ ${k.mu.toFixed(2)}: Kreis ${k.kreis.aQ.toFixed(2)} g, Tisch rutscht bei tan ${k.tisch.tan == null ? "—" : (+k.tisch.tan).toFixed(3)}`).join(" · ")} — vehicle-core.js fahrTakt: keine Quer-Lastverlagerung, der Aufbau dreht nie um die äußere Radlinie)`
+        );
+    for (const [p, k] of kippen) {
+        if (nie.some(([q]) => q === p)) continue;
+        const qT = k.tisch.kippt ? k.tisch.tan / k.ssf : null;
+        const qK = k.kreis.aQ / k.ssf;
+        if (!(qT != null && Math.abs(qT - 1) <= KIPP.band)) out.push(`${p} Kipptisch tan θ ÷ SSF ${qT == null ? "— (" + (k.tisch.tan == null ? "steht" : "rutscht bei tan " + k.tisch.tan) + ")" : qT.toFixed(2)} (Soll 1 ± ${KIPP.band})`);
+        if (k.kreis.v < KIPP.v * 0.8) continue;
+        if (!k.kreis.liegt) out.push(`${p} liegt im Kreis nicht auf der Seite (a_quer ${k.kreis.aQ.toFixed(2)} g gegen SSF ${k.ssf.toFixed(2)})`);
+        else if (!(Math.abs(qK - 1) <= KIPP.band)) out.push(`${p} Kreis a_quer vor dem Abheben ÷ SSF · g ${qK.toFixed(2)} (Soll 1 ± ${KIPP.band})`);
+    }
+    for (const [p, k] of rutschen)
+        if (k.tisch.kippt || k.kreis.liegt) out.push(`${p} kippt mit μ ${k.mu.toFixed(2)} unter dem SSF ${k.ssf.toFixed(2)} (${k.tisch.kippt ? "Tisch tan " + k.tisch.tan : "im Kreis"}) — er müsste rutschen`);
+    return out;
+}
+
 // ── A7/B-h DIE GATTUNGEN (fahrzeug-gattungen, Karte 2 mensch.fahrzeug.gestalt#1): welche Gattungen eine Stadt fährt, ist Gesetz
 // des Fahrzeug-Kerns (vehicle-core `GATTUNGEN` · `flotte`). Gezählt wird, was in der Stadt des Messorts stadt-voll wirklich
 // STEHT oder FÄHRT (die Wagen ihres Verkehrs, B-h) — nie, was der Kern kann; jede Stelle des Stamms mit eigener Typ-Liste (ein
@@ -539,6 +635,30 @@ hauptLauf(async () => {
         }
         const flugDrei = flugVerdict({ gt: flugGesund.gt, suv: flugGesund.suv, limousine: flugGesund.limousine });
         check("Selbst-Test flugVerdict: 3 Gattungen gemessen", flugDrei.length === 1, flugDrei.join(" · "));
+        // A11: die Kippgrenze — gesund schweigt sie; der Kern von main (kein Bauplan kippt), ein Tisch weit neben der Formel,
+        // ein Kreis ohne Liegen, ein rutschender Bauplan, der kippt, und eine Messung ohne hohe Baupläne nennen je ihren Täter
+        const kG = (ssf, mu, tan, liegt, aQ) => ({ ssf, mu, kreis: { aQ, liegt, v: 20 }, tisch: { tan, kippt: tan != null && liegt } });
+        const kippGesund = {
+            gt: { ...kG(1.75, 1, 1, false, 1.0), tisch: { tan: 1, kippt: false } },
+            suv: { ...kG(1.31, 1, 1, false, 1.0), tisch: { tan: 1, kippt: false } },
+            transporter: { ...kG(1.16, 0.8, 0.8, false, 0.8), tisch: { tan: 0.8, kippt: false } },
+            "gt+hoch": kG(0.8, 1, 0.85, true, 0.8),
+            "suv+hoch": kG(0.63, 1, 0.65, true, 0.63),
+            "transporter+hoch": kG(0.63, 1, 0.65, true, 0.62),
+        };
+        for (const [b, n] of [
+            [{}, 0],
+            [{ "gt+hoch": { ssf: 0.8, mu: 1, kreis: { aQ: 0.98, liegt: false }, tisch: { tan: 1, kippt: false } }, "suv+hoch": { ssf: 0.63, mu: 1, kreis: { aQ: 0.99, liegt: false }, tisch: { tan: 1, kippt: false } } }, 1],
+            [{ "gt+hoch": kG(0.8, 1, 0.6, true, 0.8) }, 1],
+            [{ "gt+hoch": { ...kG(0.8, 1, 0.85, true, 0.1), kreis: { aQ: 0.1, liegt: false, v: 1.6 } } }, 1],
+            [{ "suv+hoch": { ...kG(0.63, 1, 0.65, true, 0.63), kreis: { aQ: 0.99, liegt: false } } }, 1],
+            [{ suv: { ...kG(1.31, 1, 0.5, true, 0.5) } }, 1],
+        ]) {
+            const v = kippVerdict({ ...kippGesund, ...b });
+            check(`Selbst-Test kippVerdict ${JSON.stringify(b)}`, v.length === n, v.join(" · "));
+        }
+        const kippOhne = kippVerdict({ gt: kippGesund.gt, suv: kippGesund.suv, transporter: kippGesund.transporter });
+        check("Selbst-Test kippVerdict: keine hohen Baupläne", kippOhne.length === 1, kippOhne.join(" · "));
         // A7/B-h: die Mutante „feste Liste mit 3 Typen“ (die Tafel von main) heißt beim Namen, eine Stadt mit 3 Gattungen und ein
         // Kern mit 3 sind ROT, ein Wort-Katalog mit Kulturen (kein reines Rezept-Feld) schweigt
         const tafel = typTafeln(
@@ -723,6 +843,17 @@ hauptLauf(async () => {
         `A10: der Flug — über der Welle ${FLUG.welle[0]} m / ${FLUG.welle[1]} m bei 100 km/h federt jedes Rad seinen Boden aus (0 Bilder in der Luft), über die Kuppe der Rampe ${FLUG.rampe[0] * 100} % springt jeder Wagen, an der Kante ${FLUG.kante[0]} m greift keiner (er fliegt)`,
         flV.length === 0,
         flV.join(" · ") || Object.entries(flug).map(([p, f]) => `${p} Welle ${f.welle} · Rampe ${f.rampe} · Kante ${f.kante} am Boden, ${f.kanteLuft} in der Luft (Federweg ${f.hub.toFixed(3)} m)`).join(" · ")
+    );
+
+    const kipp = kippMessung(VC);
+    const kpV = kippVerdict(kipp);
+    check(
+        `A11: die Kippgrenze — wessen μ über dem SSF (Spur ÷ 2h) liegt, kippt auf dem Kipptisch bei tan θ und im Kreis bei a_quer = SSF · g (± ${KIPP.band * 100} %) und liegt auf der Seite; wessen μ darunter liegt, rutscht`,
+        kpV.length === 0,
+        kpV.join(" · ") ||
+            Object.entries(kipp)
+                .map(([p, k]) => `${p} SSF ${k.ssf.toFixed(2)} μ ${k.mu.toFixed(2)}: Tisch ${k.tisch.kippt ? "kippt" : "rutscht"} bei tan ${k.tisch.tan == null ? "—" : k.tisch.tan.toFixed(3)} · Kreis ${k.kreis.aQ.toFixed(2)} g${k.kreis.liegt ? ", liegt" : ""}`)
+                .join(" · ")
     );
 
     // A2 (die Hand-Ableitung exportDrive == carPhys-Primitive) fiel in w11-fahrzeug: sie war ein Zwilling der Formel im Skript —

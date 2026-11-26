@@ -1,5 +1,5 @@
 diff --git a/meisterkarte-quelle/punkte/stationen/k2-mensch-fahrzeug.js b/meisterkarte-quelle/punkte/stationen/k2-mensch-fahrzeug.js
-index 995670c..27d1280 100644
+index 995670c..8fe4c5f 100644
 --- a/meisterkarte-quelle/punkte/stationen/k2-mensch-fahrzeug.js
 +++ b/meisterkarte-quelle/punkte/stationen/k2-mensch-fahrzeug.js
 @@ -9,28 +9,179 @@
@@ -205,7 +205,145 @@ index 995670c..27d1280 100644
          }
      const wagen = [];
      let nah = null;
-@@ -523,33 +675,68 @@ module.exports = (F) => [
+@@ -280,6 +432,137 @@ const haspelKurbel = async (r, T, arg) => {
+ // Radstand, Spur und Dach (die Masse des Kerns: Länge × Spur × Dach, vehicle-core carPhys) —, aufgesessen, eingeschwungen, dann
+ // `arg.takte` Takte zu 1/60 s mit gehaltenem Gas (die Verb-Tafel); gemessen die Masse des Fahr-Gesetzes am Werk
+ // (`_fahrzeugGesetzFor`), das Tempo des Spielers im Sattel und der Weg.
++// form#2 DIE KIPPGRENZE: Baupläne an Land aus dem Stempel der Welt (spawnArchitecture fahrzeug_<Gattung> + studioOv — die
++// Hebel der Werkstatt Dach, Spur, Fahrhöhe), ihr Fahr-Satz aus der Welt (`_fahrSatz`). Je Bauplan: der Kipptisch (der Kern auf
++// dem Satz der Welt, Boden quer geneigt tan θ in Schritten 0,025, 3 s Stand) und der Kreis in der Welt (`_wagenSchritt` ·
++// `_wagenLage` über ihrem Boden, 25 m/s, Lenkung voll in 4 s, gelesen die Querkraft der Reifen je Masse vor dem Abheben). Die statische Formel (NHTSA Static Stability Factor, 68 FR
++// 59250): SSF = Spur ÷ 2h; wessen μ über dem SSF liegt, kippt bei tan θ = SSF und bei a_quer = SSF · g; wessen μ darunter
++// liegt, rutscht. kippQ = der Quotient (Tisch und Kreis), der am weitesten von 1 liegt; liegt = Anteil der Kipper, die im Kreis
++// auf der Seite liegen; steht = Anteil der Rutscher, die nie kippen.
++const kippForm = async (r, T, arg) => {
++    const s = r.state;
++    const VC = window.__vehicleCore;
++    const pm = s.playerMesh.position;
++    if (!VC || !VC.GATTUNGEN) return { n: 0, fehler: "kein Fahrzeug-Kern" };
++    const dt = 1 / 60;
++    const PLAN = [
++        ["serie", () => ({})],
++        ["hoch", (P) => ({ dach: P.dach * 1.6, fahrhoehe: P.fahrhoehe * 3, spur: P.spur * 0.8 })],
++        ["turm", (P) => ({ dach: P.dach * 2, fahrhoehe: P.fahrhoehe * 2, spur: P.spur * 0.7 })],
++        ["dach", (P) => ({ dach: P.dach * 1.3 })],
++        ["schmal", (P) => ({ spur: P.spur * 0.75, fahrhoehe: P.fahrhoehe * 1.5 })],
++        ["gelaende", (P) => ({ fahrhoehe: P.fahrhoehe * 2.5 })],
++        ["breit", (P) => ({ spur: P.spur * 1.2 })],
++        ["tief", (P) => ({ fahrhoehe: P.fahrhoehe * 0.6, dach: P.dach * 0.9 })],
++        ["kran", (P) => ({ dach: P.dach * 2.4, fahrhoehe: P.fahrhoehe * 3, spur: P.spur * 0.6 })],
++    ];
++    // der Kipptisch: tan θ in Stufen 0,025, dann die Grenze zwischen der letzten stehenden und der ersten Stufe auf 1/64 Stufe
++    // halbiert (ein SSF von 0,18 läge sonst um eine Stufe = 14 % daneben)
++    const neige = (G, t) => {
++        const z = VC.fahrZustand(0, 0, 0),
++            boden = (x, q) => -q * t;
++        VC.fahrStand(z, G, boden, 0);
++        const q0 = z.z;
++        for (let i = 0; i < 180; i++) {
++            VC.fahrKraefte(z, {}, G, dt);
++            VC.fahrStand(z, G, boden, dt);
++        }
++        return z.umgekippt ? "kippt" : Math.abs(z.z - q0) > 0.05 ? "rutscht" : null;
++    };
++    const tisch = (G) => {
++        for (let t = 0.025; t <= 2; t += 0.025) {
++            const w = neige(G, t);
++            if (!w) continue;
++            let lo = t - 0.025,
++                hi = t;
++            for (let k = 0; k < 6; k++) {
++                const m = (lo + hi) / 2;
++                if (neige(G, m)) hi = m;
++                else lo = m;
++            }
++            return { tan: +hi.toFixed(4), kippt: neige(G, hi) === "kippt" };
++        }
++        return { tan: null, kippt: false };
++    };
++    const plaene = [];
++    let k = 0;
++    for (const gid of VC.GATTUNGEN) {
++        const pr = VC.PRESETS[gid];
++        if (!pr || /boot/.test(gid)) continue;
++        const P = Object.assign({}, VC.DEFAULT_P, VC.presetPatch(gid));
++        for (const [pname, f] of PLAN) {
++            const ov = f(P);
++            const x = pm.x + 40 + (k % 4) * 6,
++                zz = pm.z + 40 + Math.floor(k / 4) * 0.01;
++            k++;
++            const e = r.spawnArchitecture("fahrzeug_" + gid, { x, y: r.getTerrainHeightAt(x, zz) + 0.5, z: zz }, Object.assign({ silent: true, precise: true, rotationY: 0 }, Object.keys(ov).length ? { studioOv: ov } : {}));
++            if (!e) {
++                plaene.push({ p: gid + "·" + pname, fehler: "das Werk stand nicht" });
++                continue;
++            }
++            try {
++                await window.__gebautNach(e);
++            } catch (_e) {}
++            const G = r._fahrSatz(e, r._vehicleProfile(e));
++            if (!G || !(G.cgH > 0)) {
++                plaene.push({ p: gid + "·" + pname, fehler: "kein Fahr-Satz" });
++                r.removeArchitecture(e);
++                continue;
++            }
++            // die statische Formel aus dem Satz (ein Kern ohne Kippgrenze trägt Spur und Schwerpunkt ebenso)
++            const ssf = G.kipp ? G.kipp.ssf : G.auf.quer / G.cgH;
++            e._fahrSatz = G;
++            const fz = (e._fahr = VC.fahrZustand(e.position.x, e.position.z, 0));
++            const boden = r._fahrBoden(e);
++            VC.fahrStand(fz, G, boden, 0);
++            const haft = r._fahrHaft(fz);
++            fz.vlong = fz.speed = arg.v || 25;
++            let a = 0,
++                vh = 0,
++                muMax = 0;
++            for (let i = 0; i < (arg.bilder || 600); i++) {
++                const v = Math.hypot(fz.vlong, fz.vlat);
++                if (i === 60) vh = v;
++                // die Haftung wechselt mit dem Boden unter dem Kreis (Gras, Erde, Weg): der Reibkreis ist der größte vor dem Abheben
++                if (!fz.kipp) muMax = Math.max(muMax, G.maxGrip * G.grip * r._fahrHaft(fz));
++                VC.fahrStand(fz, G, r._fahrBoden(e), dt);
++                r._wagenSchritt(e, { steer: Math.min(1, i / 240), throttle: fz.kipp ? 0 : Math.max(0, Math.min(1, ((arg.v || 25) - v) * 0.5)) }, dt, true, false);
++                r._wagenLage(e, fz);
++                // die Querkraft der Reifen je Masse (z.aLat = Fy / m): die Kraft, die den Aufbau um die äußere Radlinie dreht —
++                // die Bahn v · ω läge im Schleudern darüber
++                if (i > 1 && !fz.kipp) a = Math.max(a, Math.abs(fz.aLat || 0));
++            }
++            const liegt = !!fz.umgekippt,
++                rolle = +(e._rideRoll || 0).toFixed(3);
++            r.removeArchitecture(e);
++            plaene.push({ p: gid + "·" + pname, ssf: +ssf.toFixed(3), mu: +(G.maxGrip * G.grip * haft).toFixed(3), muMax: +muMax.toFixed(3), muT: +(G.maxGrip * G.grip).toFixed(3), tisch: tisch(G), aQ: +(a / G.g).toFixed(3), liegt, rolle, vh: +vh.toFixed(1) });
++        }
++    }
++    const gem = plaene.filter((q) => !q.fehler);
++    // Kipptisch: der Satz am Tisch trägt μ ohne Boden (muT); Kreis: μ mit der Haftung des Bodens unter dem Wagen (mu)
++    const tK = gem.filter((q) => q.muT > q.ssf * 1.15),
++        tR = gem.filter((q) => q.muT * 1.15 < q.ssf);
++    const kK = gem.filter((q) => q.mu > q.ssf * 1.15 && q.vh >= (arg.v || 25) * 0.8),
++        kR = gem.filter((q) => q.muMax * 1.15 < q.ssf && q.vh >= (arg.v || 25) * 0.8);
++    const qs = [];
++    for (const q of tK) qs.push({ p: q.p, wo: "Tisch", q: q.tisch.kippt ? q.tisch.tan / q.ssf : 0 });
++    for (const q of kK) if (q.liegt) qs.push({ p: q.p, wo: "Kreis", q: q.aQ / q.ssf });
++    let w = null;
++    for (const x of qs) if (!w || Math.abs(x.q - 1) > Math.abs(w.q - 1)) w = x;
++    const steht = tR.length + kR.length ? (tR.filter((q) => !q.tisch.kippt).length + kR.filter((q) => !q.liegt).length) / (tR.length + kR.length) : null;
++    return {
++        n: gem.length,
++        plaene,
++        kipper: tK.length,
++        kreisKipper: kK.length,
++        rutscher: tR.length + kR.length,
++        kippQ: w ? +w.q.toFixed(3) : null,
++        schlimmst: w,
++        liegt: kK.length ? kK.filter((q) => q.liegt).length / kK.length : null,
++        steht,
++    };
++};
++
+ const formTempo = async (r, T, arg) => {
+     const s = r.state;
+     const VC = window.__vehicleCore;
+@@ -523,33 +806,68 @@ module.exports = (F) => [
                  if (!z) throw new Error("kein Zensus der Welt");
                  return z;
              };
@@ -290,7 +428,7 @@ index 995670c..27d1280 100644
                  });
              });
              await K.schritt(3, async () => K.nicht(3, { n: da().medien.wasser, fehlt: "Wasser: kein Floß, Boot oder Segler steht in der Welt" }));
-@@ -559,23 +746,49 @@ module.exports = (F) => [
+@@ -559,23 +877,49 @@ module.exports = (F) => [
              await K.schritt(7, async () => K.leser(7, { n: da().g === 9.8 ? 1 : 0, fehlt: "kein Planet trägt sein g und ρ: der Fahr-Kern liest die Konstante FAHR.G = " + da().g, wo: "vehicle-core.js:3080" }));
              await K.schritt(8, async () => K.nicht(8, { n: da().medien.raum, fehlt: "zwischen Sonnensystemen: kein Raum-Werk, keine Uhr an Bord neben der Uhr daheim" }));
          },
@@ -312,16 +450,16 @@ index 995670c..27d1280 100644
                          key: "imBand50",
 -                        wort: "Anteil der Saaten mit Bremsweg 50 → 0 in 7,5–12,5 m",
 +                        wort: "Anteil der Saaten mit Bremsweg 50 → 0 × (μ + f_r) auf dem Boden der Saat in 7,5–12,5 m",
-+                        soll: 1,
-+                        richtung: "≥",
+                         soll: 1,
+                         richtung: "≥",
+-                        herkunft: "„∝ v²“: das Band 30–50 m bei 100 km/h mal (50/100)² = 0,25 ergibt 7,5–12,5 m bei 50 km/h",
 +                        herkunft: "„∝ v²/μ“: das Band 30–50 m bei 100 km/h mal (50/100)² = 0,25 ergibt 7,5–12,5 m bei 50 km/h, auf dem Prüfstand wie oben",
 +                    },
 +                    {
 +                        key: "imKreis",
 +                        wort: "Anteil der Saaten mit Kurvengrenze a_quer ÷ μ·g im Kreis in 0,95–1,01",
-                         soll: 1,
-                         richtung: "≥",
--                        herkunft: "„∝ v²“: das Band 30–50 m bei 100 km/h mal (50/100)² = 0,25 ergibt 7,5–12,5 m bei 50 km/h",
++                        soll: 1,
++                        richtung: "≥",
 +                        herkunft: "die Karte: a_quer = μ·g — derselbe Wagen im Kreis auf dem Prüfstand der Saat, μ = der Boden der Saat (`_fahrHaft`) × der Reifen des Rezepts (maxGrip · grip); das Band: der Reifen gibt im Grenzbereich höchstens μ·g (1,01: das Raster der Zahl), und ein Wagen, der vor 95 % der Haftung ausbricht, verschenkt die Kurve",
 +                    },
 +                    {
@@ -346,7 +484,7 @@ index 995670c..27d1280 100644
              },
              3: {
                  umfang: { soll: 1, wort: "Wasserfahrzeug (Floß bis Segler)" },
-@@ -637,7 +850,7 @@ module.exports = (F) => [
+@@ -637,7 +981,7 @@ module.exports = (F) => [
              2: [
                  {
                      name: "ATTRAPPE: 20 Saaten bremsen im Band, der Boden bleibt glatt (Spurrinne 0)",
@@ -355,7 +493,7 @@ index 995670c..27d1280 100644
                      gruen: false,
                      zahl: /ROT an Spurrinne nach 10 Durchfahrten in m 0 verfehlt/,
                  },
-@@ -645,7 +858,13 @@ module.exports = (F) => [
+@@ -645,7 +989,13 @@ module.exports = (F) => [
                      name: "der Bremsweg wächst linear mit v (50 → 0 in 15–25 m, die Hälfte von 100 → 0)",
                      j: { leiter: "mensch.fahrzeug.medium", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 20, werte: { imBand: 1, imBand50: 0, rinne: 0.05 } } } },
                      gruen: false,
@@ -370,3 +508,76 @@ index 995670c..27d1280 100644
                  },
              ],
              4: [
+@@ -701,8 +1051,24 @@ module.exports = (F) => [
+                     taeter: o.tempoQ != null && o.tempoQ >= 1 ? "carPhys: die Leistung je Masse ist fest (P.leistung kW/t, vehicle-core.js:3412) — die schwere Form zieht gleich" : null,
+                 });
+             });
++            await K.schritt(2, async () => {
++                const o = await K.welt("return await (" + H.seite.KIPP + ")(r, T, " + JSON.stringify({ v: 25, bilder: 600 }) + ");", 600000);
++                const pl = (o.plaene || []).filter((q) => !q.fehler);
++                H.zeile("Kippgrenze: " + o.n + " Baupläne · Kipper Tisch " + o.kipper + " · im Kreis " + o.kreisKipper + " · Rutscher " + o.rutscher + " · kippQ " + o.kippQ + " (" + JSON.stringify(o.schlimmst) + ") · liegt " + o.liegt + " · steht " + o.steht);
++                const nie = pl.filter((q) => q.muT > q.ssf * 1.15 && !q.tisch.kippt);
++                K.zahl(2, {
++                    n: o.n,
++                    werte: { kippQ: o.kipper ? (o.kippQ == null ? 0 : o.kippQ) : null, liegt: o.kreisKipper ? o.liegt : null, steht: o.steht },
++                    beleg:
++                        o.n + " Baupläne an Land aus dem Stempel der Welt (" + (o.plaene || []).filter((q) => q.fehler).length + " ohne Satz): " +
++                        pl.slice(0, 8).map((q) => q.p + " SSF " + q.ssf + " μ " + q.mu + " Tisch " + (q.tisch.kippt ? "kippt" : "rutscht") + " " + q.tisch.tan + " · Kreis " + q.aQ + " g" + (q.liegt ? ", liegt" : "")).join(" · "),
++                    taeter: nie.length
++                        ? "vehicle-core.js fahrTakt: " + nie.length + " von " + o.kipper + " Bauplänen mit μ > SSF kippen nie (" + nie.slice(0, 3).map((q) => q.p + " SSF " + q.ssf).join(" · ") + ") — keine Quer-Lastverlagerung, der Aufbau dreht nie um die äußere Radlinie"
++                        : null,
++                });
++            });
+         },
+-        seite: { ZENSUS: zensusFahr, FORM: formTempo, SAETZE: saetzeFahr },
++        seite: { ZENSUS: zensusFahr, FORM: formTempo, KIPP: kippForm, SAETZE: saetzeFahr },
+         sprossen: {
+             1: {
+                 umfang: { soll: 1, wort: "Werkstatt-Wagen, in zwei Bauplänen gefahren" },
+@@ -713,9 +1079,11 @@ module.exports = (F) => [
+             },
+             2: {
+                 umfang: { soll: 50, wort: "Baupläne an Land" },
+-                masse: [{ key: "kippQ", wort: "Kippgrenze ÷ statische Formel", soll: 1, tol: 0.15 }],
+-                erwartet: "nicht",
+-                fehlt: "50 Baupläne an Land: der Kern trägt sechs Rezepte",
++                masse: [
++                    { key: "kippQ", wort: "Kippgrenze ÷ statische Formel", soll: 1, tol: 0.15, herkunft: "NHTSA Static Stability Factor SSF = Spur ÷ 2h (68 FR 59250, 49 CFR 575.105)" },
++                    { key: "liegt", wort: "Anteil der Baupläne mit μ > SSF, die im Kreis auf der Seite liegen", soll: 1, richtung: "≥" },
++                    { key: "steht", wort: "Anteil der Baupläne mit μ < SSF, die rutschen statt zu kippen", soll: 1, richtung: "≥" },
++                ],
+             },
+             3: {
+                 umfang: { soll: 2, wort: "Werke mit gebauter Hülle (Floß, Gleiter)", herkunft: "der Richter nennt zwei Werke aus Teilen: das Floß (sinkt/schwimmt) und den Gleiter (fällt/fliegt)" },
+@@ -762,6 +1130,31 @@ module.exports = (F) => [
+                     zahl: /ROT an Masse schwer ÷ leicht 1 verfehlt/,
+                 },
+             ],
++            2: [
++                {
++                    name: "der Kern von main: kein Bauplan kippt (der Tisch rutscht bei tan θ = μ, der Kreis rutscht mit 1 g)",
++                    j: { leiter: "mensch.fahrzeug.form", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 63, werte: { kippQ: 0, liegt: 0, steht: 1 } } } },
++                    gruen: false,
++                    zahl: /ROT an Kippgrenze ÷ statische Formel 0 verfehlt/,
++                },
++                {
++                    name: "ATTRAPPE: der Aufbau kippt an einer festen Neigung (tan 0,6 für jeden Bauplan, unabhängig von Spur und Höhe)",
++                    j: { leiter: "mensch.fahrzeug.form", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 63, werte: { kippQ: 0.62, liegt: 1, steht: 0.4 } } } },
++                    gruen: false,
++                    zahl: /ROT an Kippgrenze ÷ statische Formel 0\.62 verfehlt/,
++                },
++                {
++                    name: "ATTRAPPE: der Wagen liegt im Bild auf der Seite, doch er rutscht weiter wie aufrecht (die Lage ohne den Kreis)",
++                    j: { leiter: "mensch.fahrzeug.form", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 63, werte: { kippQ: 1.02, liegt: 0, steht: 1 } } } },
++                    gruen: false,
++                    zahl: /ROT an Anteil der Baupläne mit μ > SSF, die im Kreis auf der Seite liegen 0 verfehlt/,
++                },
++                {
++                    name: "ATTRAPPE: zu wenig Baupläne (die sechs Rezepte des Kerns)",
++                    j: { leiter: "mensch.fahrzeug.form", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 6, werte: { kippQ: 1, liegt: 1, steht: 1 } } } },
++                    gruen: false,
++                },
++            ],
+         },
+     }),
+ 

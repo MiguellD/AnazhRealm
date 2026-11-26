@@ -876,7 +876,7 @@ class AnazhRealm_siedlung_bauten {
                 c * s,
                 0,
                 sn * s,
-                entry.position.x || 0,
+                (entry.position.x || 0) + (entry._rideKippX || 0),
                 0,
                 s,
                 0,
@@ -884,7 +884,7 @@ class AnazhRealm_siedlung_bauten {
                 -sn * s,
                 0,
                 c * s,
-                entry.position.z || 0,
+                (entry.position.z || 0) + (entry._rideKippZ || 0),
                 0,
                 0,
                 0,
@@ -896,9 +896,9 @@ class AnazhRealm_siedlung_bauten {
         }
         // compose(T, R=identity, S) — direkt gesetzt (schneller als compose).
         m.makeScale(s, s, s);
-        m.elements[12] = entry.position.x || 0;
+        m.elements[12] = (entry.position.x || 0) + (entry._rideKippX || 0);
         m.elements[13] = baseY;
-        m.elements[14] = entry.position.z || 0;
+        m.elements[14] = (entry.position.z || 0) + (entry._rideKippZ || 0);
         if (rp || rr) this._archRittNeigung(entry, m, rp, rr);
         if (entry._gesetz) this._werkPoseMal(entry, m);
         return m;

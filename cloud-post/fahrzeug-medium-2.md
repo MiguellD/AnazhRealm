@@ -1,7 +1,8 @@
 # fahrzeug-medium-2 — Stand-Blatt (ZWISCHENSTAND)
 
 Sprosse: `karte2.mensch.fahrzeug.medium#2`, der Rest aus dem „Offen“ von fahrzeug-medium (Post 05:58, Vorrang 2): (1) `flug`,
-(2) `rinne_sichtbar`, (3) die Kurvengrenze je Saat. Gemessen auf main c0634d86 + `fahrzeug-medium-ruf` 15630bf4 (5e332ef); jetzt
+(2) `rinne_sichtbar`, (3) die Kurvengrenze je Saat. Dazu die nächste rote Sprosse derselben Familie aus demselben Gesetz (der
+Fahr-Kern, Koordinator 11:22): `karte2.mensch.fahrzeug.form#2` — die Kippgrenze ± 15 % gegen die statische Formel an 50 Bauplänen. Gemessen auf main c0634d86 + `fahrzeug-medium-ruf` 15630bf4 (5e332ef); jetzt
 aufgesetzt auf `fahrzeug-stapel` 445b4549 (main c814741e, im Bündel `buendel-mittag`) — der Kopf folgt auf dem main, der den Stapel trägt.
 
 ## Täter (vorher, am Kern und in der Welt)
@@ -105,8 +106,37 @@ aufgesetzt auf `fahrzeug-stapel` 445b4549 (main c814741e, im Bündel `buendel-mi
 | B-k die Rinne bei 6 m nach 1 → 10 Durchfahrten (trocken) | 0,17 → 0,28 cm | 0,17 → 0,28 cm (derselbe Kern, `_trittDurchfahrten`) |
 | Der Blick von oben auf die Bytes, die der Boden-Shader liest (`_wegeBelagAt`, Wiese über `_bodenSichtAt`; 18 × 5 m, 0,05 m je Pixel, null-Renderer): Pixel Erde ≥ ½ vor der Fahrt · nach 1 · nach 10 Durchfahrten | 0 · 0 · **0** | 0 · 0 · **12 654** (zwei Spuren, je ≈ 1,0 m breit und 15,8 m lang) |
 | Auf dem Stapel mit dem Rad-Tritt: `gate:vehicle-drive` · voller Playtest · `gate:persistence` · `gate:fahr-leben` | — | GRÜN 2 min 9 s · 3 710 ✅ 0 ❌ (3 min 9 s, neben fahr-leben) · GRÜN · ROT allein an VK 10 Uhr, dieselbe Zeile (8>9, 570 s) wie ohne den Rad-Tritt |
+- **form#2 DIE KIPPGRENZE** (Täter-Zahl zuerst, am Kern 6c1c3d1: 7 von 16 Bauplänen mit μ > SSF — die sieben Gattungen und ihr hoher
+  Bauplan — rutschten mit 0,76–1,0 g durch den Kreis und erst bei tan θ = μ vom Kipptisch; kein Bauplan kippte: der Kern trug nur
+  die Längs-Lastverlagerung, der Wank war eine Feder mit Anschlag 0,12 rad):
+  - `vehicle-core.js` fahrGesetz trägt `kipp` (fahrKippForm: die halbe Spur w, die Schwerpunkthöhe h, SSF = w ÷ h — NHTSA Static
+    Stability Factor, 68 FR 59250 / 49 CFR 575.105; das Moment um die Radlinie I ÷ m = ((2w)² + (2h)²)/12 + w² + h², Heydinger
+    1999 SAE 1999-01-1336: I_xx ÷ m ≈ 0,25–0,35 m² um den Schwerpunkt; die Flanke rutscht mit μ 0,35, Fricke 1990).
+    fahrKipp dreht den Aufbau um die äußere Radlinie, angetrieben von der Querkraft der Reifen je Masse (Fy ÷ m; unter Schritttempo
+    die Bahn v · ω und der gehaltene Hangabtrieb, dieselbe Blende wie die Gier) gegen g_N am Hebel der Radlinie; über π/2 liegt er
+    (`umgekippt`) und rutscht auf der Flanke aus. Die sechs Straßen-Rezepte (SSF 1,16–1,93 über μ ≤ 1) bleiben byte-gleich: fahrKipp
+    kehrt vor dem ersten Abheben zurück. Die erste Fassung trieb den Kipp mit der Bahn v · ω − aG: in der Welt kippten die Kipper an
+    der Mess-Wiese bei 0,69–0,95 · SSF · g Reifenkraft (die Bahn liegt im Einlenken über der Kraft der Reifen) — geschnitten auf Fy.
+  - `stamm/koerper-fahrt.js` `_wagenLage` (der EINE Schreiber der Pose) legt den gekippten Aufbau um die Radlinie
+    (`_wagenKippLage`: die Stütze ist die Radlinie oder die Flanke, die höhere trägt) — Höhe, Querversatz `_rideKippX/Z` und Rolle;
+    beide Zeichen-Pfade lesen ihn (`_rittMeshPose`, `stamm/siedlung-bauten.js _archEntryWorldMatrix`). Der liegende Turm-Bauplan:
+    linke Flanke 1,15 m, rechte −0,02 bis +0,02 m über dem Boden (vorher −0,15 m im Boden, die Flanken-Stütze schloss es).
+  - Linse A11 in `gate:vehicle-drive` (kippMessung/kippVerdict): je Gattung und ihr hoher Bauplan (Dach × 1,6, Fahrhöhe × 3,
+    Spur × 0,8) der Kipptisch (Stufe 0,025, halbiert auf 1/64) und der Kreis 20 m/s; Soll: μ > SSF kippt bei tan θ und bei
+    a_quer = SSF · g (± 15 %) und liegt; μ < SSF rutscht; der Kreis urteilt, wer das Tempo hält. ROT am Kern ohne den Schnitt:
+    „6 von 6 Bauplänen mit μ > SSF kippen nie (… — vehicle-core.js fahrTakt: keine Quer-Lastverlagerung, der Aufbau dreht nie um
+    die äußere Radlinie)“; Selbsttest 6 Fälle.
+  - Der Stations-Kandidat trägt form S2 (Seite `KIPP`, Maße kippQ ± 15 % · liegt ≥ 1 · steht ≥ 1, `erwartet: "nicht"` fällt):
+    63 Baupläne aus dem Stempel der Welt (sieben Gattungen an Land × neun Hebel der Werkstatt), ihr Fahr-Satz aus der Welt
+    (`_fahrSatz`), der Kipptisch am Satz und der Kreis in der Welt (`_wagenSchritt` · `_wagenLage` an der Mess-Wiese). Täter beim
+    Namen „vehicle-core.js fahrTakt: … kippen nie“. Selbsttest 5 408 Mutanten, 0 falsch (der Kern von main + drei ATTRAPPEN).
 
 Wände am Kopf: siehe „Kopf“.
+| A11 Kipptisch tan θ ÷ SSF (gt · limousine · kompakt · suv · transporter hoch · karren · karren hoch) | rutscht bei tan 1,00 (μ), kein Kipp | **1,00 · 1,00 · 1,00 · 1,01 · 1,01 · 1,00 · 1,02** |
+| A11 Kreis 20 m/s: Reifenkraft vor dem Abheben ÷ SSF · g · liegt auf der Seite (die fünf hohen Straßen-Baupläne) | 1,05–1,10 g gerutscht, 0 liegen | **1,00 · 0,99 · 1,00 · 1,00 · 1,00, 5 von 5 liegen** |
+| Station form S2 an der Mess-Wiese, 63 Baupläne: Kipper am Tisch · tan θ ÷ SSF | 25 · 0 kippen (ROT, kippQ 0) | **25 · 25 kippen, 1,001–1,034** |
+| Station form S2: im Kreis liegend · Reifenkraft ÷ SSF · g · Rutscher, die kippen | 0 (liegt 0) · — · 0 von 65 | **9 · 0,962–1,013 · 0 von 65** |
+| Die sechs Straßen-Rezepte (SSF 1,16–1,93) | — | byte-gleich: fahrKipp kehrt vor dem Abheben zurück |
 
 ## Offen (Grund, Messname)
 
@@ -141,6 +171,13 @@ Wände am Kopf: siehe „Kopf“.
 - **`gate:weltbild-frost:echt` „dritte-person: B das Bild folgt der Kamera — 0,00 % der Blöcke“** (Messplatz, GTX 1060/1050) — nicht
   dieser Baum: ROT an jedem Kopf auf main ab 12029279, auch an einem Kopf ohne eine Datei der Fahrzeuge (werk-am-ort cfa4fc95), am
   Bündel buendel-mittag 52c07c4a dieselbe Zeile; GRÜN an a954d698 und älter. Messname: weltbild-frost dritte-person B.
+- **form#2 die Hülle des liegenden Wagens**: der Kontakt des Schritts (`_fahrHuelleStellen`, stamm/koerper-bewegung.js) stellt die
+  Hülle mit Nick und Wank der Federn, nicht mit dem Kipp — ein liegender Wagen stößt an Bauten mit dem Grundriss des stehenden
+  (die Zeichnung liegt richtig). Messname: `kipp_huelle`.
+- **form#2 kein Aufrichten**: ein gekippter Wagen bleibt liegen (`umgekippt`); kein Verb, kein Gesetz richtet ihn auf (die
+  Straßen-Rezepte kippen nie, nur Werkstatt-Baupläne mit SSF < μ). Messname: `kipp_aufrichten`.
+- **form#2 das Bild des liegenden Wagens**: gemessen an der Matrix, die beide Zeichen-Pfade lesen (die Flanken über dem Boden), nicht
+  im echten Frame — lokal verliert swiftshader das Gerät vor dem ersten Weltbild (wie bei der Rinne). Messname: `kipp` Bild.
 - bodenStoss misst jetzt die Landung aus dem Spalt (vorher 0 bei jeder Landung): auf den vorher flatternden Fahrten Genesis rms
   9,3 → 12,9 m/s². Die Landung aus echtem Flug (`luft`) trägt bodenStoss weiter 0 (die Hub-Feder nimmt sie). Messname: bodenStoss
   der Landung.
@@ -148,5 +185,5 @@ Wände am Kopf: siehe „Kopf“.
 ## Kopf
 
 - Kopf: folgt (Vorprüfung fahrzeug-medium-2 1).
-- Beanspruchte Sprosse: `karte2.mensch.fahrzeug.medium#2`.
+- Beanspruchte Sprossen: `karte2.mensch.fahrzeug.medium#2`, `karte2.mensch.fahrzeug.form#2`.
 - Karte 2 gebucht 126 von 1 718 · Status ZWISCHENSTAND.

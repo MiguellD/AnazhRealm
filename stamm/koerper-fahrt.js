@@ -1538,9 +1538,9 @@ class AnazhRealm_koerper_fahrt {
         const m = entry.mesh;
         if (!m) return;
         m.position.set(
-            entry.position.x,
+            entry.position.x + (entry._rideKippX || 0),
             entry.position.y - 0.5 + (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0),
-            entry.position.z
+            entry.position.z + (entry._rideKippZ || 0)
         );
         const rp =
             (Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0) +
@@ -1557,13 +1557,31 @@ class AnazhRealm_koerper_fahrt {
     // DIE LAGE EINES GESETZ-WAGENS aus seinem Fahr-Zustand (der Ritt des Spielers und der Wagen des Verkehrs): Höhe, Lage (Nick
     // Bug ab = +, Wank die Flanke (cos, −sin) oben = +), Federn, Gier und die Fahr-Phase (der Rad-Winkel des Kerns, Weg/radR;
     // applyJoint multipliziert den rad-Kanal ×1.6) — die Kurven-Feder neigt den Aufbau nach außen wie die Probefahrt.
+    // DER KIPP (mensch.fahrzeug.form#2): hebt die innere Spur ab, dreht der Kern den Aufbau um die äußere Radlinie (`fz.kipp`,
+    // links oben +, wie der Wank) — gezeichnet als Wank um den Ursprung des Werks (`clear` über dem Boden, mittig), der mit der
+    // Drehung wandert. Der Aufbau ruht auf der äußersten seiner zwei Stützen (`_wagenKippLage`): die Radlinie (halbe Spur w2, am
+    // Boden) und die Flanke (halbe Breite b2, Unterkante hb am Bauch) — liegt er, liegt er auf der Flanke. Beide Pfade des Bilds
+    // lesen den Versatz quer (`_rideKippX/Z`); die Höhe trägt der Eintrag.
+    _wagenKippLage(K, phi, clear) {
+        const [c, s] = [Math.cos(phi), Math.sin(phi)];
+        // je Stütze: die Höhe des Ursprungs über dem Boden (L·sin φ − u·cos φ, u die Höhe der Stütze unter dem Ursprung) und
+        // der Weg quer zur oberen Seite (L·(cos φ − 1) + u·sin φ), solange sie trägt (die höhere trägt)
+        const hR = K.w2 * s + clear * c;
+        const hF = K.b2 * s - (K.hb - clear) * c;
+        return hF > hR ? { hoch: hF - clear, quer: K.b2 * (c - 1) + (K.hb - clear) * s } : { hoch: hR - clear, quer: K.w2 * (c - 1) - clear * s };
+    }
     _wagenLage(entry, fz) {
         const clear = entry._fahrAchseX ? 0 : Number.isFinite(entry._groundClear) ? entry._groundClear : 0;
-        entry.position.y = fz.y + 0.5 + clear;
+        const K = fz.kipp && entry._fahrSatz && entry._fahrSatz.kipp;
+        const L = K ? this._wagenKippLage(K, Math.abs(fz.kipp), clear) : null;
+        const quer = L ? Math.sign(fz.kipp) * L.quer : 0;
+        entry._rideKippX = -quer * Math.sin(fz.yaw);
+        entry._rideKippZ = -quer * Math.cos(fz.yaw);
+        entry.position.y = fz.y + 0.5 + clear + (L ? L.hoch : 0);
         entry._rideY = entry.position.y;
         entry._rideVy = fz.vy;
         entry._terrainPitchZiel = entry._rideTerrainPitch = -fz.steig;
-        entry._terrainRollZiel = entry._rideRoll = fz.wank;
+        entry._terrainRollZiel = entry._rideRoll = fz.wank + (K ? fz.kipp : 0);
         entry._ridePitch = -fz.fNick;
         entry._rideKurvenRoll = fz.fWank;
         entry._rideHeave = fz.fHub;
