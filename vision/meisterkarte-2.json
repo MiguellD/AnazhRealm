@@ -17586,10 +17586,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 23,
+    "heute": 24,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 10.4,
+    "anteilHeute": 10.9,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -17999,7 +17999,7 @@
        "richter": "Industriestadt 1850 ↔ heute: Sicht und Himmelsfarbe gegen historische Messreihen ±30 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Stand 0: kein Stadtklima.",
@@ -20098,11 +20098,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 134,
+  "heute": 135,
   "davonKopplungen": 33,
   "kern": 2,
   "kernDazu": 2,
-  "anteilHeute": 7,
+  "anteilHeute": 7.1,
   "anteilKern": 0,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20113,7 +20113,7 @@
   },
   "gliederLeitern": 9,
   "beide": 62,
-  "nachwache": 72
+  "nachwache": 73
  },
  "zusammengelegt": [
   {
