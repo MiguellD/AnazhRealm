@@ -1,16 +1,16 @@
 # Vorprüfung bewohner-satz — der Satz des Bewohners als Funktion seines Samens
 
-ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 77 von 1 718 (die Sprossen bucht der Koordinator nach seinem Blick).
+ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht 78 von 1 718 (die Sprossen bucht der Koordinator nach seinem Blick).
 
-**Geschnitten:** EIN Gesetz `_bewohnerLauf(S, b, feld, tag)` (stamm/siedlung-bewohner.js:301, Bänder `LEBENSLAUF` :4379) rechnet
+**Geschnitten:** EIN Gesetz `_bewohnerLauf(S, b, feld, tag)` (stamm/siedlung-bewohner.js:301, Bänder `LEBENSLAUF` :4486) rechnet
 Name, Familie, Freunde, Alter, Übung, Ziel, Krankheit und Waffe beim Lesen über die EINE Tafel geteilter Getter `BEWOHNER_SATZ`
-(:4423, kein Feld je Kopf, kein Prototyp), und seine Leser hängen daran: der Ruf und die Persona (stamm/feld-nexus.js:1284, :1181),
+(:4530, kein Feld je Kopf, kein Prototyp), und seine Leser hängen daran: der Ruf und die Persona (stamm/feld-nexus.js:1284, :1181),
 der Besuch bei Freunden in der nächsten Dunbar-Schicht (:1161), die Wache am Tor und am Platz (:1207) mit der Waffe in der Hand
-(:1450), die zur Tat naht (:2464), das Können im Werk (:1288), der Kranke als Eingang des Kern-Plans (koerper-core.js:5633/5653 — nur der Leser des Satzes,
-die Akt-Tafel steht, der Posten hält seine Schicht; der Wirt reicht `b.krank` neben dem Regen an der Tür, :2536, am Tag der
+(:1450), die zur Tat naht (:2470), das Können im Werk (:1288), der Kranke als Eingang des Kern-Plans (koerper-core.js:5642/5662 — nur der Leser des Satzes,
+die Akt-Tafel steht, der Posten hält seine Schicht; der Wirt reicht `b.krank` neben dem Regen an der Tür, :2637, am Tag der
 Prozesse `_weltTag`, :307 — die Vertretung am Steuer und der Tag der Sicht der Wiederkehr fielen im Merge als Zwilling) — und in derselben Welle fielen zwei
 Klassen: die zehn Stand-Ströme mit dem Zähler hinten (der Zähler steht vorn) und die Stände eines Menschen, die keinen Gang
-auseinander lagen (`BEWOHNER.gangM` 2 m, :4462, gestellt in `frei`/`standAm` :732/:1023, die Linse liest dieselbe Zahl,
+auseinander lagen (`BEWOHNER.gangM` 2 m, :4569, gestellt in `frei`/`standAm` :732/:1023, die Linse liest dieselbe Zahl,
 scripts/lib/kreatur-mensch.cjs:196, ihr Blick ordnet den Stand nach seinem Anker, :607, ihr Soll ist das des Wirts, :983).
 **Gemessen (stadt-voll, 1 391 Bewohner, Null-Renderer der Werkbank; main a8a9ab16 → Kopf, nach dem Merge mit main 60e8909d gemessen; die Linsen lokal headless):**
 sprache#1 Namen 0 → 1 391 von 1 391 (1 391 voll eindeutig, 278 Familien; Steintal 0 → 89 von 89); gespraech#2 Ruf trifft 0 →
@@ -33,7 +33,7 @@ bis zu ihrer Erweiterung mit 0; die Faktentreue des Gesprächs braucht den LLM-L
 hält Bau mit Rolle Wache und Streife beim anderen Arbeiter (stamm/siedlung-verkehr.js:431), ρ und „im Sichtfeld" misst erst die
 GPU-Probe; seuche#1 ohne Ansteckung (S-I-R, R0) — der Kranke sitzt im Akt des Abends vor der Tür, eine eigene Haltung des
 Kranken trüge die Akt-Tafel (koerper-core.js TAGES_GESETZ.haltung, nicht mein Teil); koennen#2 mit gesetztem α 0,4
-(stamm/siedlung-bewohner.js:4403), aus keiner Quelle gefittet; absicht#2 setzt die Werk-Rate beim Bau der Liste, sie wächst in
+(stamm/siedlung-bewohner.js:4510), aus keiner Quelle gefittet; absicht#2 setzt die Werk-Rate beim Bau der Liste, sie wächst in
 einer Sitzung nicht mit; an stadt-voll trägt der volle Platz für 208 Kinder keinen zweiten Stand (`platzVoll`, :1022 — ihr Spiel
 steht auf dem Stand ihres Morgens); DRUCK-SCHLAF der Stand-Linse lief lokal 1,083 → 1,3 s (Soll ≤ 3), die CI am Kopf maß 4,283 —
 lauf-abhängig, der nächste Lauf ist der Richter; der Hash-Roller `_rollGenome` (stamm/bau-teile.js:1479) mischt das letzte Zeichen
