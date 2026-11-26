@@ -139,12 +139,7 @@ class AnazhRealm_gelaende_chunks {
                     const pending = this.state.voxelWorkerPending.get(msg.requestId);
                     if (pending) {
                         this.state.voxelWorkerPending.delete(msg.requestId);
-                        const r = msg.region;
-                        let d = null;
-                        for (const k of ["rivers", "lakes"])
-                            Object.defineProperty(r, k, {
-                                get: () => (d = d || JSON.parse(new TextDecoder().decode(r.daten)))[k],
-                            });
+                        AnazhRealm._hydroDaten(msg.region);
                         pending.resolve(msg);
                     }
                 } else if (msg.type === "tuch-gitter-result" && msg.requestId) {
@@ -692,6 +687,32 @@ class AnazhRealm_gelaende_chunks {
         const p = je.get(samen);
         p.catch(() => je.get(samen) === p && je.delete(samen));
         return p;
+    }
+    // DIE HYDROSPHÄRE EINES SAMENS (hydro-samen, Sprosse kohaerenz#1): die Heim-Region der Welt, die `samen` unter dem Gesetz
+    // DIESER Welt trägt (ihr Erbgut, ihr Ort, ihr Grund — `G.lageAbbild` der Lage, nur die Saat ist `samen`), gerechnet im
+    // Planet-Faden (`_planetAuftrag`, der Faden rechnet `hydroSaat`: die Lage aus dem Abbild, `hydrosphaere` über IHREM Boden).
+    // → das Versprechen der Region (Flüsse und Seen entpackt beim ersten Lesen, `_hydroDaten`). Kein Merker: jeder Ruf rechnet
+    // (≈ 0,25 s je Samen in node) — die Kosten hängen an der Frage, nie an der Welt. Bis hier lebte die Region nur für die Saat
+    // der Welt (`_hydroFor`; Station kohaerenz#1: 1 von 101 Saaten). Band: jeder Lauf endet in Meer oder Senke (Wang et al. 2018,
+    // Nature Geoscience 11, 926: Binnen-Senken entwässern ≈ 1/5 des Lands). Leser: die Station kohaerenz#1 · gate:worker-dichte K8.
+    _hydroSaat(samen, origin = null) {
+        if (typeof samen !== "string" || !samen) return Promise.reject(new Error(`_hydroSaat: kein Samen (${samen})`));
+        const lage = Object.assign(globalThis.__gelaendeCore.lageAbbild(this._gelaende()), { seed: samen });
+        return this._fadenQuelle()
+            .then(() =>
+                this._planetAuftrag({ type: "hydro-saat", lage, gesetz: AnazhRealm.HYDROSPHERE, origin }, "Hydro")
+            )
+            .then((m) => AnazhRealm._hydroDaten(m.region));
+    }
+    // DIE FLÜSSE UND SEEN EINER REGION AUS DEM FADEN (`hydroAntwort`: sie reisen als Bytes ihres JSON, `daten`): ihr erster Leser
+    // entpackt sie, einmal je Region. Leser: der Empfang der Welt (`hydro-result`) · `_hydroSaat`. → die Region.
+    static _hydroDaten(r) {
+        let d = null;
+        for (const k of ["rivers", "lakes"])
+            Object.defineProperty(r, k, {
+                get: () => (d = d || JSON.parse(new TextDecoder().decode(r.daten)))[k],
+            });
+        return r;
     }
     // DIE STUMMEN FÄDEN (w28-krone-vor-kachel): die Neben-Fäden, die ihre Geburt nie quittierten (`quittiert`: das `ack` ihres
     // Geburts-Stands, die EINE Wahrheit „der Faden lebt“, w28-faden-quelle), während Aufträge bei ihnen offen sind (ohne den
@@ -3487,9 +3508,10 @@ AnazhRealm.FADEN_QUELLE = Object.freeze({
         tetrapoda: "tetrapoda-core.js",
     }),
 });
-// DIE LESER DES PLANETEN (`_planetAuftrag`, `_planetAnker`): wer den Planet-Faden wecken darf — der Satz „reise“ der Konsole und
-// die Frage der Sonne nach dem Ort der Welt (`_sonnenAnkerFragen`). Ein Faden ohne einen von ihnen trägt `geweckt` null.
-AnazhRealm.PLANET_LESER = Object.freeze(["Satz", "Sonne"]);
+// DIE LESER DES PLANETEN (`_planetAuftrag`, `_planetAnker`): wer den Planet-Faden wecken darf — der Satz „reise“ der Konsole,
+// die Frage der Sonne nach dem Ort der Welt (`_sonnenAnkerFragen`) und die Frage nach der Hydrosphäre eines Samens
+// (`_hydroSaat`). Ein Faden ohne einen von ihnen trägt `geweckt` null.
+AnazhRealm.PLANET_LESER = Object.freeze(["Satz", "Sonne", "Hydro"]);
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
 // Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.
 AnazhRealm.DIRTY_IM_FLUG = 3;
