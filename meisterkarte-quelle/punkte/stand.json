@@ -23142,7 +23142,7 @@
   },
   "karte2.mensch.sport.arena": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Blicke, die dem Geschehen folgen 1 (Soll ≥ 0.8) · Umfang 22 (Soll ≥ 10 Zuschauer am Spielfeld des Ort-Gesetzes) · [linse-gpu] nvidia/pascal an b1f0de0e gtx — offen: karte2.mensch.sport.arena#1 radeon: ungemessen (R10) · karte2.mensch.sport.arena#2 radeon: ungemessen (R10) · karte2.mensch.sport.arena#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#3 radeon: ungemessen (R10) · karte2.mensch.sport.arena#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#4 radeon: ungemessen (R10) · karte2.mensch.sport.arena#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#5 radeon: ungemessen (R10) · karte2.mensch.sport.arena#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#6 radeon: ungemessen (R10) · karte2.mensch.sport.arena#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#7 radeon: ungemessen (R10) · karte2.mensch.sport.arena#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Blicke, die dem Geschehen folgen 1 (Soll ≥ 0.8) · Umfang 22 (Soll ≥ 10 Zuschauer am Spielfeld des Ort-Gesetzes) · [linse-gpu] nvidia/pascal an b1f0de0e gtx — offen: karte2.mensch.sport.arena#1 radeon: ungemessen (R10) · karte2.mensch.sport.arena#2 radeon: ungemessen (R10) · karte2.mensch.sport.arena#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +3) · karte2.mensch.sport.arena#3 radeon: ungemessen (R10) · karte2.mensch.sport.arena#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#4 radeon: ungemessen (R10) · karte2.mensch.sport.arena#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#5 radeon: ungemessen (R10) · karte2.mensch.sport.arena#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#6 radeon: ungemessen (R10) · karte2.mensch.sport.arena#6 gtx: Station seit der Messung geändert · karte2.mensch.sport.arena#7 radeon: ungemessen (R10) · karte2.mensch.sport.arena#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.arena#1",
@@ -23180,8 +23180,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +3)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.sport.arena#3",
@@ -37596,7 +37597,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 347,
+  "konsum": 348,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37764,11 +37765,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3275
+  "ohne": 3274
  },
  "kopfVoll": "9964918608a72e1bbc6972925a4820eac5b53d0f",
- "zeit": "2026-11-26T17:02:06.781Z",
- "vorher": "54b89949",
+ "zeit": "2026-11-26T17:12:46.984Z",
+ "vorher": "99649186",
  "bilanz": {
   "gewinn": [],
   "fall": [],
