@@ -1,7 +1,7 @@
 {
  "sha": "9964918608a72e1bbc6972925a4820eac5b53d0f",
  "geraet": "gtx",
- "zeit": "2026-11-26T18:16:33.542Z",
+ "zeit": "2026-11-26T18:21:45.315Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -1286,6 +1286,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.tiere.masse#1": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.999 über 921 Takte, letzter Flüchter 0.12 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 10 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.2 m: 43 m 5/5 fliehen, 3 sichtbar, 1 Fleck(en) (32 px) · 46.8 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (278 px) · 43.5 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von an Punkt 1 Gelände in 49.77 m · Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 51.39 m · Luma 98.4 σ 41.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.438 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\99649186-gtx\\karte2.leben.tiere.masse_1-herde-3-rot.png · Glieder im Pulk je Schuss 5/5/0 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.19,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.999 über 921 Takte, letzter Flüchter 0.12 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 10 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.2 m: 43 m 5/5 fliehen, 3 sichtbar, 1 Fleck(en) (32 px) · 46.8 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (278 px) · 43.5 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von an Punkt 1 Gelände in 49.77 m · Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 51.39 m · Luma 98.4 σ 41.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.438 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\99649186-gtx\\karte2.leben.tiere.masse_1-herde-3-rot.png · Glieder im Pulk je Schuss 5/5/0 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k98977b1a48a3",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kbe820ac97b64",
+   "s": 71.3,
+   "fremd": {
+    "s": 74,
+    "takte": 34,
+    "fremdS": 13.66,
+    "kerne": 0.184,
+    "fensterKerne": 0.401,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.38
+     ],
+     [
+      "Explorer.EXE",
+      2.22
+     ],
+     [
+      "sh.exe n0611/kandidat.sh gtx-99649186 x listen/kandidat-gtx-99649186.txt",
+      0.98
+     ]
+    ],
+    "dienerS": 13.48,
+    "diener": [
+     [
+      "System",
+      6.53
+     ],
+     [
+      "WmiPrvSE.exe",
+      3.41
+     ]
+    ],
+    "geraetS": 24.25,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      15.75
+     ],
+     [
+      "svchost.exe",
+      7.45
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 166.48,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T18:19:06.157Z",
+   "abdruck": "5f316e994d1d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1303,7 +1373,8 @@
   "k0ea5edef6fd5": "jZXRbptAEEX/xY9NyYKBACvlYR2iJqncOv2D2WUWsDGg3SVUrvrvFdhgA3noPCF0Z+dy5gJ/VjWIA6R4v9dVuaKrL6uvKw0faGlUH6ju93pFV5Fw1uhSdi7CGPvWyYTKa6NJkXMCvITsiFajDObFvejb5APYPqekfWbpjhBJTiRu2VhP7PFxfkzBMaksAxKHQ2x0/RDpXNjoFDha0Mh+8EXsexE+OJT0FcZsG5OxWsHYriXtLnyZHcahTKbOHSeCh4Cy9pUx9j53meSAxiryUg9znSSIpE2vs7aLHgWtdQLMClSXJgwdx+OD2U2HpMM0a5RFo/VkWOgm/jqkhERzbYo6F5mxalVxLC9yHq0DB+imXdBO68aSt46Acwj5nHUGWKaoJh5sV8gO9O9wfugBjqjAKiG7SCPbDdb8yoYQ8rL0UvTG+xGDcd/xEwmTxm6pZ8AJm9Suv5sOKjnGTIySdBk3LbJcHae4pIdr250z0BkkqKxDpc2odDHwbH5+K15jcvYRbuad1wcb9gcA4U1YSEjYy4KjrqRpQaGV1s0QGA/9wKcsXaRLGzgeh9UkwkWxeADThfzWxjqSvu9RQu4uSBd4zq+EdcK8wDGzInAj+hR7c/GHgqMFPFW5lMPmuS9k9FlQWyyMxavKDCidIHBdSlxS3i77R8ueGNve7DkufnmmeLt7nq7/O3v7bEKlzGCcA3c9j8o2DgkJ5VydK2O1ILIRjuQI0RziCVWBKU4wSseBdUL7z8vo0hsu7ibhPS22fMqxA1zqRg+EBXjcP6fjkuLXaXJbVAcO5eHS4Lm2E4SUsThlW7a7ofKTsX0tW/bf9b5h/aAaBalVJfPuy0gyaHQGhbn+Iv7+Aw==",
   "kd56671b387d6": "bVXRbqMwEPyXPF7PXQhQwFIfnFIpka53ySesYQ00BJANocrp/v0EDWmA7iuznvHMrvm7qjE+YkqP76YqV3z1Y/VzZfBMzJA+k358Nyu+CmN7TQ4XB9EXCCFeelis87oxUOQSUJaYnYi1uqG8eIyHNvWElic5dK8i3QMouEDUPT/PWwtJScUaVDQ2WuR4AfE5sDUpSmLYqoHsCvbckJ5sDkMFkXiL4FYfgRD7Drp9sJ0dJrFMpmptO8Qnn4tuJ4Q4zFUmOVLDirw0I6+d+KGy+I2re1v0aOzYBSkrSF+bKLBtV45iN72dvTWzRlW0xkzIAifx1gEHCOfYlEweZw2rdSWpvMJluPZt5Jul22ndMnWvCKXEQM69zpDKlPREg+XEqjf6I5gfesQTaWQlZldoaDn+Wn55AwDbpZZiED5QjMI920sUThr7UOHcG5yISe2Hj+mIUt34Ib5BUrEgNXGW69PULuXS2nL4r6VEk2FCmh0r09zQDvmuJflAsIvgU0uwmXd+XW7MEBGDu4GBAMR24aWpVNOhJpbW7Tg0Lnm+x4XYLcANnk5jPEnsUDwP0jT9oN/LWIfK81wO8PC5KMtLf64Fu1Be0G1uY98J+Usk5uCzxhNDmepcqTF96cUq/G5YOyoaJquqGa20fd9xODhQ3gf+e4hyd5d1lB7cpth0r9MR2C3kDAyVbkbhEqXjulylUQAQqDk61w3rMM5u5ihJ2Etf5HIhXVBKEyuVbeM64dCpT92X/rnxr8+BepgM8WV5Yk69yaVpzehyjK70+DexdKSPEsvjFeg6lu0Hwwhu3sR+4snre92vApyn/AChM6wEHbYDbtMJ8ScCcSWqKYZaVyrvX0bIsDUZFs3Xb+Hffw==",
   "keda2f311f867": "bVXRcpswEPwXPzYlAgNBaCYPIngmniat8wkncQJiDB4JW607/fcO2NgGold2tXt7d+LvYg9yCzk+fpqmXrDFt8X3hYEjOgb1EfXjp1mwRSy9JfqMf/DuEM75SweTuty3hlSlICBqKHboHHSLZfUoe5p6AjcUjNgVzzeEKHIiqX1+nlIrgVnjtKBwILrohxTZFHgwOQh04KB6sQs4DGJ88hjpD035e0qu5zflfGOJ3dDXyWUC6mzs1vNieIoYt+sXzj+mLrMSsHWqsjaDrpdFsXLZVcu+zzgarHMCLCrUFxJSzwvEYDbp4uyimRBVdTBmJEb9LFxSRkg8xeZoSlm0zl43AusLXMTLyAOWzNPO9wdH3TsCIYCKadYFYJ2jHnlwfanOQavevvmzUV3ACZ+KbGGHGpwaigs1dv1oKW5ZEUJe596qvpBecigk9MJMwYjYNZkcu8AzPjqb/mM+oJQdPsgrJOczUSOLUu/G8akAl67P3uYWTQEZamfbmPaK9jEKXMF6gXVKzl5oMmXeiht6CgD0boAIJfyVzhQb1VrQ6OT7wzBEAYZRyDhfz8At7HZDuzLpo2R8dlZfsOpsZG0ZqzAMGCEP52WaB3FeHeeEZYXX2ZaRH08n6ahh54DIdanUMA0ilCr+apgtVq0jmqYdovWiyPe7iOr7AfjZt3Z9V1OafwRtldjVuNT1bDR7hUa3g2kBwg8CpvKUEkLVFF3q1rEgi2swSiDEjFg5vfiEusIcRzEqz4Nlxog9Lww5dc9RdHku1MNoqE+zzp9K7AKuzcEMCUsIRMi+aIlFvRVQby/AwHe9iLI3znnyzje3QJKcr17ybjXIkZJxVonfr8gPnp6hlvNfKeEXoT1KsteNKruXkxRwMAVU7e238e8/",
-  "k1e9e09afbb9b": "bVXRbqMwEPyXPF7PXQhQjKU+OE2lRLrepZ+whjXQEIhsCFVO9+8nSEgDdN+QZ3fHM7vm7+KI8R5TevywVbkQix+LnwuLJ2KWzInM44ddiEUUu0vyhLwESClfOlhs8mNtocgVoCoxOxBrTE158Rj3afoJnUAJaF9lugPQcIZ1+/w8TS0UJRWrUdOQ6JAXcBJTYGNTVMSw0X2zKzjwI3pyBfTB1/JtDbf45FLuWmh3fDMpprBMxmxdN8KnUMh2+yLl+5RlkiPVrMhLO/R1kzDSjrj1at9mOQZbdkbKCjLXJOKu66uB7Ophx3tpJom6aKwdNeNeEiy5AIim2JRsHmc1O5pKUXmFq2gZuihWc7XTY8P0PSNUCrmaap0hlSmZEQfHi3Un9CefFt3jgQyyErMrNHK8cKm+tAGAzZxL0RPvWwzEAzdINI4SO1Ph1AmcyFHs+sN0QOl2OIhvkFTOmto4y81hLJf2ael44tecos0wIcP2la1vaI9C31GXbdiu4cKFr6aZX5cbPEREfjcwwEFuZlraStctGmLpsRmGxqcgDISU2xm4xsNhsCeJPYqnRtq6G/R7GstIB4EvAB4uizK/9GUt2Jnygm5zG4deNC1+MnhgqFKTaz04r4JYR98NaktFzVRV1YOMbhh6ngAPynuzf/c2bu98Xqfvfl2s2tex/Vs55d13qEw9kFaoPN8XOl1zAK6n6NzUrMU4uwmjFWFHfebJmUxBKY1k1K6Ly0RAqy+8z91TE16fAv0wGuDzvGJOncClbeygcIy+CsQ3lrRk9grL/RXoe44b8n78Vm9yN9Lk9aXq1gBOHMZarbx+Hf7ITf+9aqX8swZ5bXSkGI6m0nn3KkKGjc2wqL9+Cf/+Aw=="
+  "k1e9e09afbb9b": "bVXRbqMwEPyXPF7PXQhQjKU+OE2lRLrepZ+whjXQEIhsCFVO9+8nSEgDdN+QZ3fHM7vm7+KI8R5TevywVbkQix+LnwuLJ2KWzInM44ddiEUUu0vyhLwESClfOlhs8mNtocgVoCoxOxBrTE158Rj3afoJnUAJaF9lugPQcIZ1+/w8TS0UJRWrUdOQ6JAXcBJTYGNTVMSw0X2zKzjwI3pyBfTB1/JtDbf45FLuWmh3fDMpprBMxmxdN8KnUMh2+yLl+5RlkiPVrMhLO/R1kzDSjrj1at9mOQZbdkbKCjLXJOKu66uB7Ophx3tpJom6aKwdNeNeEiy5AIim2JRsHmc1O5pKUXmFq2gZuihWc7XTY8P0PSNUCrmaap0hlSmZEQfHi3Un9CefFt3jgQyyErMrNHK8cKm+tAGAzZxL0RPvWwzEAzdINI4SO1Ph1AmcyFHs+sN0QOl2OIhvkFTOmto4y81hLJf2ael44tecos0wIcP2la1vaI9C31GXbdiu4cKFr6aZX5cbPEREfjcwwEFuZlraStctGmLpsRmGxqcgDISU2xm4xsNhsCeJPYqnRtq6G/R7GstIB4EvAB4uizK/9GUt2Jnygm5zG4deNC1+MnhgqFKTaz04r4JYR98NaktFzVRV1YOMbhh6ngAPynuzf/c2bu98Xqfvfl2s2tex/Vs55d13qEw9kFaoPN8XOl1zAK6n6NzUrMU4uwmjFWFHfebJmUxBKY1k1K6Ly0RAqy+8z91TE16fAv0wGuDzvGJOncClbeygcIy+CsQ3lrRk9grL/RXoe44b8n78Vm9yN9Lk9aXq1gBOHMZarbx+Hf7ITf+9aqX8swZ5bXSkGI6m0nn3KkKGjc2wqL9+Cf/+Aw==",
+  "k98977b1a48a3": "tVZB06I4EP0vHvdbvoCAQKrmEMUq3d2vxjnusRM6wIhgJWCm3Nr/PoWACrg1M4ftG/g6/fp1v+A/izOII6T4/lVX5YIuflv8vtBwQUujuqB6/6oXdBEJZ4kuZV0QxtimhQmVn2tNkhxS66gQ6kZZBXIs30WXFnEv8Cj5HyI2jLEtu4dhafti/V+0ajjWPSuJkQ82Xadt1qdPTxlFzgnwErITWo2qMS+GlBXYPqfEbFl6IESSa0egj+2LYwqOSWXVIHE4xEbXD5FOgY1OgaMFjbwV7sG+F+HK6aULY/YRP3r/FjJ2MMQcwh1j7G09r86hTMYdOE4Eq4Ays98w9mWKT3LA2iryUg/1nSSIpP0YnfmY5Sgw1hUwK1D1SRg6jscH0utWmlauSaIsGq1HxUI38ZchJSSaYlPUuchq66yqx1rxaBk4QNdm1nd6biz5zAg4h5BPNc8AyxTViIPtCtkK/i2cHnqEEyqwSsiGtbbdYMlHa72bcxk274SlFkMqJBJW4tcdcZ2z6o8fKeMnK+QhZT8bm9HT+qfz2sGy7d8TSsVtVDdR74QcP5Ew6TeMyaVdqWR84uH2Yzqg5N1g4qnoTGYtslydxjJID5e2S/+aD0VnkKCyjpWu72gXA8/mnWj7mHRcwvU089HcsLUAED5ZhISE7WZz0pWsDSi00nMz2MRDP/ApY/sZuIbTaVjIRLgoXs7SsO2LzDIZ0VtG0vfby/etuzrmYnQXhHXFvMC7g0XgRnQTe1PwRcHJAp6qXMrBB9wXMnplW4NFbfGqGq5c1wkC122lKp8X4XAb8f6pszj94tXF2mzHDf/Jdpd01vOtSqXqgTwH7noelSYOCQnlFJ2r2jIgsrtAkiO09Gczu6IqMMWRnNJxYJlQYuTgSMYOQX85yrcfuPWaYyt0qRs9KC3A4z59MRqD6sihPPZAz7WdIKR/tAb9YIeRLttN2trkZqdRRKS1c4pi1znbMPY5Jvu+0BkFOatK5u13gmTQ6AyKevQPoIM0KHmDWYntftV5VWL5QP37HQ=="
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
@@ -1435,75 +1506,61 @@
    "bahn": "sitzung",
    "modus": "session"
   },
-  "karte2.leben.tiere.masse#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-26T18:07:37.515Z",
-   "abdruck": "5f316e994d1d",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
-  },
   "karte2.leben.tiere.wanderung#2": {
    "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 328 s unter dem Grund-Deckel 347 s von karte2.leben.tiere.wanderung#2) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 328 s unter dem Grund-Deckel 347 s von karte2.leben.tiere.wanderung#2) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-26T18:07:37.546Z",
+   "zeit": "2026-11-26T18:21:44.850Z",
    "abdruck": "4600bd35e884",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1
+   "offen": 2
   },
   "karte2.leben.oeko.netz#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-26T18:07:37.577Z",
+   "zeit": "2026-11-26T18:21:44.989Z",
    "abdruck": "56927f059c1e",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1
+   "offen": 2
   },
   "karte2.erleben.kopplung.wahrnehmung#2": {
    "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 328 s unter dem Grund-Deckel 513 s von karte2.erleben.kopplung.wahrnehmung#2) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 328 s unter dem Grund-Deckel 513 s von karte2.erleben.kopplung.wahrnehmung#2) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-26T18:07:37.701Z",
+   "zeit": "2026-11-26T18:21:45.143Z",
    "abdruck": "60fd019dc4f4",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1
+   "offen": 2
   },
   "karte2.leben.evolution.fremde-physik#1": {
    "gruen": false,
-   "zahl": "die Fahrt riss 1800 s (der Rest 328 s unter dem Grund-Deckel 539 s von karte2.leben.evolution.fremde-physik#1) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Fahrt riss 1800 s (der Rest 328 s unter dem Grund-Deckel 539 s von karte2.leben.evolution.fremde-physik#1) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-26T18:07:37.733Z",
+   "zeit": "2026-11-26T18:21:45.315Z",
    "abdruck": "1dd8f597a7d1",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1
+   "offen": 2
   }
  },
  "sitzung": {
