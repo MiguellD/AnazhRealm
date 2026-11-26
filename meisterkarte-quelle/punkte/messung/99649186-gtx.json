@@ -1,7 +1,7 @@
 {
  "sha": "9964918608a72e1bbc6972925a4820eac5b53d0f",
  "geraet": "gtx",
- "zeit": "2026-11-26T19:26:08.427Z",
+ "zeit": "2026-11-26T19:52:54.870Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -1991,119 +1991,245 @@
   },
   "karte2.same.kopplung.aufwaerts#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-26T19:26:08.427Z",
+   "zeit": "2026-11-26T19:52:14.780Z",
    "abdruck": "57c233db25e9",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "offen": 1
+   "offen": 2
   },
   "karte2.same.kopplung.ereignis#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-26T19:26:08.427Z",
+   "zeit": "2026-11-26T19:52:14.780Z",
    "abdruck": "1bb7ad7c47c4",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
    "modus": "session",
-   "offen": 1
+   "offen": 2
   },
   "karte2.same.kopplung.gewalt#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-26T19:26:08.427Z",
+   "zeit": "2026-11-26T19:52:14.780Z",
    "abdruck": "4bef18d921a2",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
    "modus": "session",
-   "offen": 1
+   "offen": 2
   },
   "karte2.same.kopplung.stoerung#3": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-26T19:26:08.427Z",
+   "zeit": "2026-11-26T19:52:14.780Z",
    "abdruck": "20b246bfccb7",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
    "modus": "session",
-   "offen": 1
+   "offen": 2
   },
   "karte2.same.kopplung.kaskade#3": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-26T19:26:08.427Z",
+   "zeit": "2026-11-26T19:52:14.780Z",
    "abdruck": "641ca3b76372",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
    "modus": "session",
-   "offen": 1
+   "offen": 2
   },
   "karte2.same.kopplung.kohaerenz#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-26T19:26:08.427Z",
+   "zeit": "2026-11-26T19:52:14.780Z",
    "abdruck": "e835d8e7d5fd",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
    "modus": "session",
-   "offen": 1
+   "offen": 2
   },
   "karte2.same.kopplung.terraform#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-26T19:26:08.427Z",
+   "zeit": "2026-11-26T19:52:14.780Z",
    "abdruck": "bf999c452afd",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
    "modus": "session",
-   "offen": 1
+   "offen": 2
+  },
+  "karte2.leben.kopplung.stadt-im-netz#2": {
+   "gruen": false,
+   "zahl": "der Deckel der Leiter riss nach 30,607 s, ehe fangR der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 30,607 s, ehe fangR der Sprosse stand · der Deckel der Leiter 30 s) · Täter: @@PUNKTE@@ PROBE 155.7 s · Exit 0",
+   "exit": 0,
+   "minuten": 2.61,
+   "grund": "der Deckel der Leiter riss nach 30,607 s, ehe fangR der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 30,607 s, ehe fangR der Sprosse stand · der Deckel der Leiter 30 s) · Täter: @@PUNKTE@@ PROBE 155.7 s · Exit 0",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 156,
+   "fremd": {
+    "s": 159,
+    "takte": 73,
+    "fremdS": 48.86,
+    "kerne": 0.307,
+    "fensterKerne": 0.633,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.44
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      8.55
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.2
+     ]
+    ],
+    "dienerS": 31.64,
+    "diener": [
+     [
+      "System",
+      15.89
+     ],
+     [
+      "dwm.exe",
+      7.39
+     ]
+    ],
+    "geraetS": 59.13,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      37.73
+     ],
+     [
+      "svchost.exe",
+      19.36
+     ],
+     [
+      "SearchIndexer.exe",
+      1
+     ]
+    ],
+    "eigenS": 421.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T19:49:37.072Z",
+   "abdruck": "1a37a7d12bd3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.wasser.bild#1": {
+   "gruen": false,
+   "zahl": "der Deckel der Leiter riss nach 10,023 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,023 s, ehe sichtFlussM der Sprosse stand · der Deckel der Leiter 10 s) · Täter: @@PUNKTE@@ PROBE 51.3 s · Exit 0",
+   "exit": 0,
+   "minuten": 0.86,
+   "grund": "der Deckel der Leiter riss nach 10,023 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,023 s, ehe sichtFlussM der Sprosse stand · der Deckel der Leiter 10 s) · Täter: @@PUNKTE@@ PROBE 51.3 s · Exit 0",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 51.6,
+   "fremd": {
+    "s": 52.3,
+    "takte": 24,
+    "fremdS": 14.77,
+    "kerne": 0.282,
+    "fensterKerne": 0.395,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.08
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.36
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.94
+     ]
+    ],
+    "dienerS": 8.36,
+    "diener": [
+     [
+      "System",
+      3.14
+     ],
+     [
+      "WmiPrvSE.exe",
+      2.3
+     ]
+    ],
+    "geraetS": 22.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.33
+     ],
+     [
+      "svchost.exe",
+      6.77
+     ],
+     [
+      "SearchIndexer.exe",
+      0.59
+     ]
+    ],
+    "eigenS": 173.22,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T19:52:54.870Z",
+   "abdruck": "fb537917da92",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-26T19:15:32.058Z",
-  "ordner": "sitzung-20261126-201532",
+  "start": "2026-11-26T19:48:55.219Z",
+  "ordner": "sitzung-20261126-204855",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 6.8,
-  "grundstellungS": [
-   4.3
-  ],
-  "proben": 2,
+  "bootS": 6.4,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "geraet": {
    "name": "GTX 1060",
@@ -2111,6 +2237,7 @@
    "preis": true
   },
   "offen": [
+   "karte2.leben.wasser.bild#1",
    "karte2.same.kopplung.aufwaerts#1",
    "karte2.same.kopplung.ereignis#2",
    "karte2.same.kopplung.gewalt#1",
@@ -2121,101 +2248,61 @@
   ],
   "orte": [
    {
-    "ort": "stadt-voll",
-    "vor": "karte2.mensch.macht.recht#1",
-    "s": 156.7,
-    "takte": 2247,
+    "ort": null,
+    "vor": "karte2.leben.kopplung.stadt-im-netz#2",
+    "s": 28.8,
+    "takte": 779,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": null,
-    "vor": "karte2.leben.kopplung.evolution-planet#1",
-    "s": 23.8,
-    "takte": 721,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "karte2.leben.kopplung.evolution-planet#1",
-    "wege": "wege +5 [-119.1,-274.9,279.2,201/278] [425.5,53.4,1072.3,817.4/2666] [660.2,284.5,992.9,577.1/4] …",
-    "s": 4.3
-   }
-  ],
-  "wirt": [
-   {
-    "probe": "karte2.mensch.macht.recht#1",
-    "anders": [
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     478,
-     509
-    ],
-    "ungemessen": null
-   }
-  ],
-  "messHalt": [
-   {
-    "probe": "karte2.mensch.macht.recht#1",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   }
-  ],
+  "wegeTueren": [],
   "felderBlind": [
    {
-    "probe": "karte2.leben.kopplung.evolution-planet#1",
+    "probe": "karte2.leben.kopplung.stadt-im-netz#2",
     "wann": "nach",
-    "fehler": "ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\619298a5-1ef7-4cda-9478"
+    "fehler": "ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\cef3bfab-61a2-4a65-80d4-df1c13"
    }
   ],
   "wirtBlind": [
    {
-    "probe": "karte2.leben.kopplung.evolution-planet#1",
+    "probe": "karte2.leben.kopplung.stadt-im-netz#2",
     "wann": "nach",
-    "fehler": "ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp"
+    "fehler": "ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp"
    }
   ],
   "zeichnerBlind": [
    {
-    "probe": "karte2.leben.kopplung.evolution-planet#1",
+    "probe": "karte2.leben.kopplung.stadt-im-netz#2",
     "wann": "nach",
-    "fehler": "ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp"
+    "fehler": "ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp"
    }
   ],
-  "grund": "die Welt trägt nicht mehr vor karte2.same.kopplung.aufwaerts#1: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\619298a5-1ef7-4cda-9478-f4a608eccab6.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea — offen: karte2.same.kopplung.aufwaerts#1, karte2.same.kopplung.ereignis#2, karte2.same.kopplung.gewalt#1, karte2.same.kopplung.stoerung#3, karte2.same.kopplung.kaskade#3, karte2.same.kopplung.kohaerenz#1, karte2.same.kopplung.terraform#1",
-  "ciBlicke": 3,
+  "grund": "die Welt trägt nicht mehr vor karte2.leben.wasser.bild#1: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\cef3bfab-61a2-4a65-80d4-df1c13cfcc96.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN — offen: karte2.leben.wasser.bild#1, karte2.same.kopplung.aufwaerts#1, karte2.same.kopplung.ereignis#2, karte2.same.kopplung.gewalt#1, karte2.same.kopplung.stoerung#3, karte2.same.kopplung.kaskade#3, karte2.same.kopplung.kohaerenz#1, karte2.same.kopplung.terraform#1",
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2076,
-   "frameP95": 41.67,
-   "taktP95": 35.41,
-   "vramMax": 222.1,
-   "seiten": 2,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.leben.kopplung.evolution-planet#1",
+     "probe": "karte2.leben.kopplung.stadt-im-netz#2",
      "m": 340,
      "ringVor": 4,
      "ringMin": 0
     }
    ],
-   "zapfen": 301,
-   "luecken": 34,
-   "letzteLuecke": "ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\619298a5-1ef7-4cda-9478"
+   "zapfen": 86,
+   "luecken": 14,
+   "letzteLuecke": "ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\cef3bfab-61a2-4a65-80d4-df1c13"
   },
-  "fahrtS": 630.7,
-  "minuten": 10.66
+  "fahrtS": 194.1,
+  "minuten": 3.37
  }
 }
