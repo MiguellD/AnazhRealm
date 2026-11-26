@@ -178,6 +178,15 @@ if [ "$1" = "--selbsttest-nachwache" ]; then
     NACHWACHE_FRIST_S=0
     nachwache_takt
     pr "das neue Grün löst das Rot am Puls" $(grep -q "NACHWACHE GRÜN main dddd0000" "$X/log" && [ -z "$(nachwache_rot)" ] && echo 0 || echo 1)
+    # ABGEBROCHEN IST KEIN URTEIL (26.11., Läufe 45764758296 und 45776471095; die Zeilen in der Form von zug.cjs nachwacheUrteil, dort
+    # am gestellten Lauf geprüft): nur cancelled → eine eigene Zeile, die Täter-Spur bleibt leer, der Puls trägt kein ROT
+    : >"$X/zug-taeter.txt"
+    NACHWACHE_BEFEHL="echo 'NACHWACHE OHNE URTEIL main c0634d86 (Lauf 45776471095 abgelöst von main a954d698, Lauf 45776999999: 18 von 18 Jobs der Batterie abgebrochen, keiner rot)'"
+    nachwache_takt
+    pr "nur abgebrochene Jobs: OHNE URTEIL im Log, die Täter-Spur leer, kein ROT am Puls" $(grep -q "NACHWACHE OHNE URTEIL main c0634d86 (Lauf 45776471095 abgelöst von main a954d698" "$X/log" && [ ! -s "$X/zug-taeter.txt" ] && [ -z "$(nachwache_rot)" ] && echo 0 || echo 1)
+    NACHWACHE_BEFEHL="echo 'NACHWACHE ROT main eeee0000 (Lauf 5: voll 4/18/Haus der Welt) · Landungen seit grünem main dddd0000 (Lauf 4): w28-b@22222222'"
+    nachwache_takt
+    pr "abgebrochen und ein failure: ROT am failure in der Täter-Spur und am Puls" $(grep -q "NACHWACHE ROT main eeee0000 (Lauf 5: voll 4/18/Haus der Welt)" "$X/zug-taeter.txt" && nachwache_rot | grep -q "^ · NACHWACHE ROT main eeee0000" && echo 0 || echo 1)
     rm -rf "$X"
     echo "zug-dienst selbsttest-nachwache: $ok von $n grün"
     [ $ok = $n ]
@@ -395,9 +404,26 @@ bereit() {
         # trägt keine check.yml) und stand sonst für immer als „Code-Check nicht GRÜN ()“ in der Warteliste (11.11.: w28-r6-konsum
         # eec204c0 lag seit 11:53 in punkte-maschine und galt den ganzen Tag als wartend)
         git -C $R merge-base --is-ancestor "$sha" origin/punkte-maschine 2>/dev/null && { echo "$b $sha" >>"$ruht"; continue; }
-        c=$(sh "$D/ci.sh" "$b" </dev/null 2>&1)
+        # DER STEMPEL ERBT ÜBER DEN BAUM (26.11., zug-erbt-baum; z747–z749 Stempel → fährt 24 · 44 · 21 min, je Stempel 5 + 3 Jobs in der
+        # GitHub-Reihe für ein Urteil, das am Elter schon stand): ein Abgabe-Kopf ohne Inhalt (EIN Elter, derselbe Baum) startet in
+        # check.yml und gpu-probe.yml keinen Job mehr — sein Urteil liest `zug.sh erbe` an der Kette (Gesetz und Linse dort). ERBE GRÜN
+        # trägt die Zeilen „Code-Check:“ · „voll:“ · „GPU-Probe:“ des Elters in der Form von ci.sh, der Rest unten liest sie wie bisher;
+        # ERBE WARTET steht beim Namen (abgebrochen ist kein Urteil); nur ERBE KEINS (Inhalt, Merge) fragt ci.sh am eigenen SHA.
+        e=$(sh "$WZ/zug.sh" erbe "$b@$sha" </dev/null 2>&1)
+        case "$e" in
+        "ERBE GRÜN "*) c=$e ;;
+        "ERBE WARTET "*)
+            echo "$b ${sha:0:8}: $(echo "$e" | head -1 | cut -c13-400)" >>"$W/zug-nie-leer.wartet"
+            continue ;;
+        "ERBE KEINS "*) c=$(sh "$D/ci.sh" "$b" </dev/null 2>&1) ;;
+        *)
+            echo "$b ${sha:0:8}: das Erbe urteilte nicht — $(echo "$e" | tail -1 | cut -c1-200)" >>"$W/zug-nie-leer.wartet"
+            continue ;;
+        esac
         echo "$c" | grep "Code-Check:" | head -1 | grep -q "completed success" || {
-            echo "$b ${sha:0:8}: Code-Check nicht GRÜN ($(echo "$c" | grep "Code-Check:" | head -1 | cut -c1-80))" >>"$W/zug-nie-leer.wartet"
+            # ein Abgabe-Kopf MIT Inhalt fährt keine CI (check.yml STEMPEL): der Grund des Erbes steht dabei, der Inhalt gehört in
+            # einen Vorprüf-Kopf, der Stempel darauf erbt
+            echo "$b ${sha:0:8}: Code-Check nicht GRÜN ($(echo "$c" | grep "Code-Check:" | head -1 | cut -c1-80)) · $(echo "$e" | head -1 | cut -c12-200)" >>"$W/zug-nie-leer.wartet"
             # ein ROTER Check geht sofort heim (heim.sh: der rote Text je Kopf EINMAL in cloud-post/<zweig>.md)
             echo "$c" | grep "Code-Check:" | head -1 | grep -q "completed failure" && sh "$D/heim.sh" "$b" "$sha" </dev/null >/dev/null 2>&1
             continue

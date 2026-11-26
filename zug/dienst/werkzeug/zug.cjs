@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 // zug.cjs — der Merge-Zug (Rumpf von zug.sh; Hilfe zug.md). Geurteilt wird genau der SHA, der landet; ein roter Zweig
-// fällt aus dem Zug, statt die Spur zu sperren. Verben: bereit · bau · urteil · teile · wackler · landen · nachwache · punkte · loese (intern).
+// fällt aus dem Zug, statt die Spur zu sperren. Verben: bereit · erbe · bau · urteil · teile · wackler · landen · nachwache · punkte · loese (intern).
 const { execFileSync, spawn, spawnSync } = require("child_process");
 const fs = require("fs");
 const os = require("os");
@@ -164,6 +164,123 @@ async function bereit(args) {
     return rot ? 1 : 0;
 }
 
+// ── erbe: DER STEMPEL ERBT ÜBER DEN BAUM ──────────────────────────────────────────────────────────────────────────────
+// 26.11., z747–z749: ein Stempel „Abgabe …“ (EIN Elter, derselbe Baum wie der grüne Vorprüf-Kopf) wartete Stempel → fährt 24 · 44 ·
+// 21 min, denn an seinem eigenen SHA starteten ein Code-Check (5 Jobs) und eine GPU-Probe (3 Jobs) in derselben GitHub-Reihe wie die
+// Batterien (20 Läufer, 85–150 wartende Jobs, kein FIFO; 88f5904e: Code-Check 14 min, Probe 16 min für ein Urteil, das am Elter f768ab96
+// über dem Baum dac55cd9 schon stand). DAS GESETZ: ein w2*-Kopf, dessen Betreff mit „Abgabe “ beginnt, startet in check.yml und
+// gpu-probe.yml KEINEN Job (STEMPEL dort); sein Urteil ist das Urteil seiner Kette — der Elter und, über weitere Stempel mit
+// demselben Baum, bis ERBE_TIEFE Glieder. Bereit heißt: am nächsten Glied mit einem Code-Check ist dessen jüngster Lauf (sein jüngster
+// Versuch) completed/success, ein grüner Lauf der Kette trägt die volle Batterie n/n, und die GPU-Probe steht wie ci.sh sie druckt
+// (bereit() liest sie nur, wenn der Zweig das Spiel berührt). Abgebrochen ist kein Urteil (der Kopf wartet beim Namen); ein Kopf mit
+// eigenem Baum, ein Merge und ein Betreff ohne „Abgabe “ erben nichts (ERBE KEINS: der alte Weg über ci.sh am eigenen SHA).
+// Leser: zug-dienst.sh bereit() — ERBE GRÜN fährt im selben Takt. Linse: selbsttestErbe (vier Fälle am echten git-Baum).
+const ERBE_TIEFE = 4;
+const rufVon = (m) => {
+    const mk = [...String(m || "").matchAll(/\[gpu-probe:([^\]\n]*)\]/g)];
+    return mk.length === 1 ? mk[0][1].split(",").map((p) => p.trim()) : null;
+};
+// erbeKette(sha, lies) — lies(sha) → { sha, tree, parents: [sha], message }; → { kopf, kette: [Glied, …], kein: grund|null }
+function erbeKette(sha, lies) {
+    const kopf = lies(sha);
+    const s8 = sha.slice(0, 8);
+    if (!/^Abgabe /.test(kopf.message)) return { kopf, kette: [], kein: `${s8}: der Betreff beginnt nicht mit »Abgabe « — kein Stempel` };
+    if (kopf.parents.length !== 1) return { kopf, kette: [], kein: `${s8}: ${kopf.parents.length} Eltern — ein Merge erbt nichts` };
+    const kette = [];
+    for (let c = kopf; c.parents.length === 1 && kette.length < ERBE_TIEFE; ) {
+        const e = lies(c.parents[0]);
+        if (e.tree !== c.tree) break;
+        kette.push(e);
+        c = e;
+    }
+    if (kette.length) return { kopf, kette, kein: null };
+    const e = lies(kopf.parents[0]);
+    return { kopf, kette, kein: `${s8}: Baum ${kopf.tree.slice(0, 8)} ≠ Baum ${e.tree.slice(0, 8)} des Elters ${e.sha.slice(0, 8)} — der Kopf trägt Inhalt, er erbt nichts` };
+}
+// das Urteil EINES Code-Check-Laufs (jobs = die Jobs seines jüngsten Versuchs): GRUEN { voll: [grün, n] } · LAEUFT · ROT · OHNE
+// (abgebrochen, übersprungen …: kein Urteil). Der Wackler ohne Täter (WACKEL_RE) gilt grün wie in ci.sh.
+function laufUrteil(run) {
+    if (run.status !== "completed") return { wort: "LAEUFT", text: `${run.status} -` };
+    const jobs = run.jobs || [];
+    const f = jobs.filter((j) => j.conclusion === "failure");
+    const wackel =
+        run.conclusion === "failure" &&
+        f.length > 0 &&
+        jobs.every((j) => ["success", "skipped", "failure"].includes(j.conclusion)) &&
+        f.every((j) => rotSchritte(j).every((n) => WACKEL_RE.test(n)));
+    if (run.conclusion !== "success" && !wackel)
+        return { wort: run.conclusion === "failure" ? "ROT" : "OHNE", text: `completed ${run.conclusion}` };
+    const v = jobs.filter((j) => /^voll /.test(j.name));
+    return { wort: "GRUEN", text: "completed success", voll: [v.filter((j) => j.conclusion === "success" || (wackel && f.includes(j))).length, v.length] };
+}
+// erbeUrteil({ kopf, kette, laeufe }) — laeufe: Map sha → [{ id, name, event, status, conclusion, jobs }]; rein (der Selbsttest)
+// → { wort: "GRUEN"|"WARTET"|"KEINS", von, grund, zeilen } — zeilen in der Form von ci.sh (bereit() liest „Code-Check:“ · „GPU-Probe“)
+function erbeUrteil({ kopf, kette, kein, laeufe }) {
+    if (kein) return { wort: "KEINS", grund: kein, zeilen: [] };
+    // der Name des Laufs: „Code-Check“, die Probe trägt ihren run-name „GPU-Probe <zweig> <sha>“ (gpu-probe.yml)
+    const je = (sha, name) => (laeufe.get(sha) || []).filter((r) => (r.name === name || String(r.name).startsWith(name + " ")) &&["push", "workflow_dispatch"].includes(r.event)).sort((a, b) => b.id - a.id);
+    const s8 = (s) => s.slice(0, 8);
+    const zeilen = [];
+    // die GPU-Probe: das nächste Glied, dessen Ruf jede Probe des Kopf-Rufs nennt und das einen Lauf trägt — sein jüngster
+    const ruf = rufVon(kopf.message) || [];
+    const pg = kette.find((g) => je(g.sha, "GPU-Probe").length && ruf.every((p) => (rufVon(g.message) || []).includes(p)));
+    if (pg) {
+        const r = je(pg.sha, "GPU-Probe")[0];
+        zeilen.push(`  GPU-Probe: ${r.status} ${r.conclusion || "-"} (geerbt von ${s8(pg.sha)}, Lauf ${r.id})`);
+    } else zeilen.push(`  GPU-Probe: keine — kein Glied der Kette (${kette.map((g) => s8(g.sha)).join(" → ")}) fuhr den Ruf ${ruf.join(", ") || "(leer)"}`);
+    // der Code-Check: das nächste Glied mit einem Lauf, dessen jüngster Lauf urteilt
+    const cg = kette.find((g) => je(g.sha, "Code-Check").length);
+    if (!cg) return { wort: "WARTET", von: kette[0].sha, grund: `kein Glied der Kette (${kette.map((g) => s8(g.sha)).join(" → ")}) trägt einen Code-Check`, zeilen };
+    const cr = je(cg.sha, "Code-Check")[0];
+    const cu = laufUrteil(cr);
+    zeilen.unshift(`  Code-Check: ${cu.text} (geerbt von ${s8(cg.sha)}, Lauf ${cr.id})`);
+    if (cu.wort !== "GRUEN") {
+        const was = { LAEUFT: "läuft noch", ROT: "ist ROT", OHNE: cr.conclusion === "cancelled" ? "ist abgebrochen — abgebrochen ist kein Urteil" : `trägt kein Urteil (${cr.conclusion})` }[cu.wort];
+        return { wort: "WARTET", von: cg.sha, grund: `der jüngste Code-Check am Elter ${s8(cg.sha)} (Lauf ${cr.id}) ${was}`, zeilen };
+    }
+    // die volle Batterie: ein grüner Lauf der Kette ab diesem Glied trägt sie n/n (die Vorprüfung mit [ci voll])
+    const ab = kette.slice(kette.indexOf(cg));
+    let voll = null;
+    for (const g of ab)
+        for (const r of je(g.sha, "Code-Check")) {
+            const u = laufUrteil(r);
+            if (!voll && u.wort === "GRUEN" && u.voll[1] > 0 && u.voll[0] === u.voll[1]) voll = { g, r, u };
+        }
+    if (!voll)
+        return { wort: "WARTET", von: cg.sha, grund: `kein grüner Lauf der Kette (${ab.map((g) => s8(g.sha)).join(" → ")}) trägt die volle Batterie (am Elter voll ${cu.voll.join("/")}) — die Vorprüfung trägt [ci voll] nicht`, zeilen };
+    zeilen.splice(1, 0, `    voll: ${voll.u.voll.join("/")}`, `    geerbt: der Stempel ${s8(kopf.sha)} ist sein Baum — Code-Check von ${s8(cg.sha)}, volle Batterie von ${s8(voll.g.sha)} (Lauf ${voll.r.id})`);
+    return { wort: "GRUEN", von: cg.sha, grund: `Code-Check Lauf ${cr.id} grün, volle Batterie ${voll.u.voll.join("/")} (Lauf ${voll.r.id} an ${s8(voll.g.sha)})`, zeilen };
+}
+// die Läufe je Glied aus der API (je SHA bis zu vier Blicke, die Suche antwortet zuweilen leer) und die Jobs der Code-Checks
+async function erbeLaeufe(kette) {
+    const m = new Map();
+    for (const g of kette) {
+        let rs = [];
+        for (const n of [50, 49, 48, 47]) {
+            rs = (await api(`/actions/runs?head_sha=${g.sha}&per_page=${n}`)).workflow_runs || [];
+            if (rs.length) break;
+        }
+        for (const r of rs) if (r.name === "Code-Check" && r.status === "completed") r.jobs = (await api(`/actions/runs/${r.id}/jobs?filter=latest&per_page=100`)).jobs || [];
+        m.set(g.sha, rs);
+    }
+    return m;
+}
+// erbe <zweig@sha> — Exit 0 „ERBE GRÜN …“ (bereit im selben Takt) · 1 „ERBE WARTET …“ · 3 „ERBE KEINS …“ (der alte Weg) · 2 die Maschine
+async function erbe(args) {
+    const [z, s] = String(args[0] || "").split("@");
+    if (!z || !s) throw new Error("Aufruf: erbe <zweig@sha>");
+    const lies = (x) => {
+        const [h, t, p, ...m] = git(["log", "-1", "--format=%H%n%T%n%P%n%B", x], VOLL).split("\n");
+        return { sha: h, tree: t, parents: p ? p.split(" ") : [], message: m.join("\n") };
+    };
+    const k = erbeKette(git(["rev-parse", s], VOLL), lies);
+    const u = erbeUrteil({ ...k, laeufe: k.kein ? new Map() : await erbeLaeufe(k.kette) });
+    const kz = `${z}@${k.kopf.sha.slice(0, 8)}`;
+    console.log(u.wort === "KEINS" ? `ERBE KEINS ${kz}: ${u.grund}` : `ERBE ${u.wort === "GRUEN" ? "GRÜN" : "WARTET"} ${kz} von ${u.von.slice(0, 8)}: ${u.grund}`);
+    for (const l of u.zeilen) console.log(l);
+    return { GRUEN: 0, WARTET: 1, KEINS: 3 }[u.wort];
+}
+
 // ── urteil ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 // die Wackler ohne je einen Täter (08.11., z296–z322: Fenster-Wand 6×, K6 5× rot, 0 Täter) — kein Neulauf, sie blockieren nie (landen --wackler-frei)
 const WACKEL_RE = new RegExp(process.env.ZUG_WACKEL || "Fenster-Wand|Kamera-Leib auf der Karte|Fahr-Linse des Lebens|Erst-Zeichnungs-Wand");
@@ -231,15 +348,33 @@ function battUrteil(jobs) {
     if (!v.length) return null;
     if (v.some((j) => j.status !== "completed")) return { wort: "LAEUFT", n: v.length };
     const rot = [...letzte].filter(([, j]) => ROT.has(j.conclusion));
-    return rot.length
-        ? { wort: "ROT", n: v.length, rot: rot.flatMap(([n, j]) => rotSchritte(j).map((s) => `${kurz(n)}/${s}`)) }
+    // ABGEBROCHEN IST KEIN URTEIL (26.11.: 08:36 Lauf 45764758296 an 64fcf12e von Hand abgebrochen, 09:18 Lauf 45776471095 an c0634d86
+    // abgelöst — die Landung z749 schob main, cancel-in-progress je Ref brach ihn ab; beide standen als „NACHWACHE ROT … voll 1/18/?“
+    // in der Täter-Spur und nannten Landungen, die keine Täter waren): ist JEDER rote Job „cancelled“, urteilt der Lauf nicht; ein
+    // einziger Job mit failure (timed_out …) bleibt ROT, und die abgebrochenen fallen aus seinen Namen
+    const echt = rot.filter(([, j]) => j.conclusion !== "cancelled");
+    if (rot.length && !echt.length) return { wort: "ABGEBROCHEN", n: v.length, ab: rot.length };
+    return echt.length
+        ? { wort: "ROT", n: v.length, rot: echt.flatMap(([n, j]) => rotSchritte(j).map((s) => `${kurz(n)}/${s}`)) }
         : { wort: "GRUEN", n: v.length };
 }
 function nachwacheUrteil(laeufe, zweigeZwischen) {
     const mit = laeufe.map(({ run, jobs }) => ({ run, u: battUrteil(jobs) })).filter((x) => x.u);
-    const fertig = mit.filter((x) => x.u.wort !== "LAEUFT");
+    const fertig = mit.filter((x) => x.u.wort !== "LAEUFT" && x.u.wort !== "ABGEBROCHEN");
     const neu = mit[0] && mit[0].u.wort === "LAEUFT" ? mit[0] : null;
     const dazu = neu ? ` · main ${neu.run.head_sha.slice(0, 8)} fährt noch (Lauf ${neu.run.id})` : "";
+    // der jüngste Lauf, der nicht mehr fährt, ist abgebrochen: KEIN Urteil — eine eigene Zeile, nie ROT, nie in der Täter-Spur
+    const erst = mit.find((x) => x.u.wort !== "LAEUFT");
+    if (erst && erst.u.wort === "ABGEBROCHEN") {
+        const nach = laeufe.find((x) => x.run.id > erst.run.id && x.run.head_sha !== erst.run.head_sha);
+        const wie = nach ? `abgelöst von main ${nach.run.head_sha.slice(0, 8)}, Lauf ${nach.run.id}` : "abgebrochen";
+        return {
+            wort: "OHNE URTEIL",
+            abgebrochen: true,
+            sha: erst.run.head_sha,
+            zeile: `NACHWACHE OHNE URTEIL main ${erst.run.head_sha.slice(0, 8)} (Lauf ${erst.run.id} ${wie}: ${erst.u.ab} von ${erst.u.n} Jobs der Batterie abgebrochen, keiner rot)${dazu}`,
+        };
+    }
     if (!fertig.length) return { wort: "OHNE URTEIL", zeile: `NACHWACHE OHNE URTEIL: ${laeufe.length} Läufe auf main, keiner trug die Batterie zu Ende${dazu}` };
     const kopf = fertig[0];
     const k8 = kopf.run.head_sha.slice(0, 8);
@@ -280,7 +415,7 @@ async function nachwache() {
         laeufe.push({ run, jobs: await jobsAlle(run) });
         // genug gelesen: ein fertiges Urteil — grün, oder rot mit einem grünen dahinter
         const u = nachwacheUrteil(laeufe, () => []);
-        if (u.wort === "GRUEN" || (u.wort === "ROT" && u.gruen)) break;
+        if (u.wort === "GRUEN" || (u.wort === "ROT" && u.gruen) || u.abgebrochen) break;
     }
     git(["fetch", "-q", "origin", "+refs/heads/main:refs/remotes/origin/main"], INTEG);
     const u = nachwacheUrteil(laeufe, (g, k) => zweigeZwischen(g, k));
@@ -1985,9 +2120,75 @@ function selbsttestUrteil(pr) {
     pr(`Nachwache: ein Lauf ohne Urteil der Batterie zählt nicht (${u3.zeile})`, u3.wort === "ROT" && u3.sha.startsWith("dddd"));
     const u4 = nw([lauf(33, "ffff", ["failure"])]);
     pr(`Nachwache: ohne grünes main nennt sie den Bereich ohne Anfang (${u4.zeile})`, u4.wort === "ROT" && u4.gruen === null && bereich.at(-1) === "—..ffff0000");
+    // ABGEBROCHEN IST KEIN URTEIL (26.11., Läufe 45764758296 und 45776471095): nur cancelled → OHNE URTEIL mit dem ablösenden Kopf;
+    // cancelled und EIN failure → ROT am failure, die abgebrochenen ohne Namen
+    const u5 = nw([lauf(42, "hhhh", ["lauf", "lauf"]), lauf(41, "gggg", ["cancelled", "cancelled"]), lauf(40, "ffff", ["success", "success"])]);
+    pr(`Nachwache: nur abgebrochene Jobs sind kein Urteil (${u5.zeile})`, u5.wort === "OHNE URTEIL" && /^NACHWACHE OHNE URTEIL main gggg0000 \(Lauf 41 abgelöst von main hhhh0000, Lauf 42: 2 von 2 Jobs/.test(u5.zeile));
+    const u6 = nw([lauf(41, "gggg", ["cancelled", "failure"]), lauf(40, "ffff", ["success", "success"])]);
+    pr(`Nachwache: abgebrochen und ein failure bleibt ROT am failure (${u6.zeile})`, u6.wort === "ROT" && /\(Lauf 41: voll 2\/18\/Haus der Welt\)/.test(u6.zeile));
     // der Mutant: „nur der Kopf zählt“ — er nennt nur die letzte Landung, nie den Bereich seit dem letzten grünen main
     const nurKopf = (l) => { const u = nachwacheUrteil(l.slice(0, 1), zwischen); return u; }; // prettier-ignore
     pr("Nachwache: der Mutant „nur der jüngste Lauf“ verliert den grünen Anfang des Bereichs", nurKopf(rotUeberGruen).gruen === null);
+}
+// DIE LINSE DES ERBES (26.11., zug-erbt-baum): ein echter git-Baum im Temp-Ordner (Vorprüf-Kopf V, Stempel S ohne Inhalt, Stempel S1
+// mit EINEM Byte mehr, Neu-Stempel S2 über S), die Läufe gestellt; je Fall der Name im ROT. Der Leser ist bereit() in zug-dienst.sh:
+// ERBE GRÜN und eine Zeile „GPU-Probe: completed success“ fahren im selben Takt, alles andere wartet beim Namen.
+function selbsttestErbe(pr) {
+    const d = fs.mkdtempSync(path.join(os.tmpdir(), "zug-erbe-"));
+    try {
+        const g = (...a) => git(a, d);
+        g("init", "-q");
+        const env = { GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@t", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@t" };
+        const ct = (tree, eltern, msg) =>
+            spawnSync("git", ["commit-tree", tree, ...eltern.flatMap((e) => ["-p", e]), "-m", msg], { cwd: d, encoding: "utf8", env: { ...process.env, ...env }, maxBuffer: 1 << 20, windowsHide: true }).stdout.trim();
+        const baum = (text) => {
+            fs.writeFileSync(path.join(d, "x.txt"), text);
+            g("add", "x.txt");
+            return g("write-tree");
+        };
+        const a = ct(baum("a\n"), [], "WIP a [skip ci]");
+        const tv = baum("ab\n");
+        const v = ct(tv, [a], "Vorprüfung x 1 (auf main a): x [gpu-probe: bild:wiese@0.5] [ci voll]");
+        const s = ct(tv, [v], "Abgabe w28-x: x [gpu-probe: bild:wiese@0.5] [ci voll]");
+        const s1 = ct(baum("ac\n"), [v], "Abgabe w28-x: x [gpu-probe: bild:wiese@0.5] [ci voll]");
+        const s2 = ct(tv, [s], "Abgabe w28-x: neuer Kopf nach rotem z1 — x [gpu-probe: bild:wiese@0.5] [ci voll]");
+        const lies = (x) => {
+            const [h, t, p, ...m] = g("log", "-1", "--format=%H%n%T%n%P%n%B", x).split("\n");
+            return { sha: h, tree: t, parents: p ? p.split(" ") : [], message: m.join("\n") };
+        };
+        const job = (name, conclusion) => ({ name, conclusion, status: "completed", steps: [] });
+        const gruenJobs = ["puls 1/2", "puls 2/2", "kopf", ...VOLL_PFLICHT].map((n) => job(n, "success"));
+        const cc = (id, conclusion, jobs = gruenJobs) => ({ id, name: "Code-Check", event: "push", status: "completed", conclusion, jobs });
+        const gp = (id, conclusion) => ({ id, name: `GPU-Probe x ${v}`, event: "push", status: "completed", conclusion });
+        const urteil = (kopf, laeufe) => erbeUrteil({ ...erbeKette(kopf, lies), laeufe: new Map(laeufe) });
+        const probe = (u) => (u.zeilen.find((l) => /GPU-Probe/.test(l)) || "").includes("completed success");
+        const code = (u) => (u.zeilen.find((l) => /Code-Check:/.test(l)) || "").includes("completed success");
+        const bereit = (u) => u.wort === "GRUEN" && code(u) && probe(u);
+        const gruen = [[v, [cc(11, "success"), gp(21, "success")]]];
+        // (1) der Baum weicht um EIN Byte ab → erbt nicht (der alte Weg über den eigenen SHA)
+        const u1 = urteil(s1, gruen);
+        pr(`Erbe (1) Baum um ein Byte anders → ERBE KEINS (${u1.grund})`, u1.wort === "KEINS" && /trägt Inhalt/.test(u1.grund) && !bereit(u1));
+        // (2) die Batterie des Elters abgebrochen (jüngster Lauf cancelled über einem älteren grünen) → nicht bereit, beim Namen
+        const u2 = urteil(s, [[v, [cc(12, "cancelled", gruenJobs.map((j) => ({ ...j, conclusion: "cancelled" }))), cc(11, "success"), gp(21, "success")]]]);
+        pr(`Erbe (2) Batterie des Elters abgebrochen → WARTET (${u2.grund})`, u2.wort === "WARTET" && /Lauf 12\) ist abgebrochen — abgebrochen ist kein Urteil/.test(u2.grund) && !bereit(u2));
+        // (3) die Probe des Elters rot → die GPU-Probe-Zeile trägt failure, bereit() wartet
+        const u3 = urteil(s, [[v, [cc(11, "success"), gp(22, "failure")]]]);
+        pr(`Erbe (3) Probe des Elters rot → nicht bereit (${u3.zeilen.find((l) => /GPU-Probe/.test(l))})`, code(u3) && !probe(u3) && !bereit(u3));
+        // (4) der Elter grün → bereit im selben Takt, ohne einen Lauf am Stempel
+        const u4 = urteil(s, gruen);
+        pr(`Erbe (4) Elter grün → ERBE GRÜN ohne Lauf am Stempel (${u4.grund})`, bereit(u4) && u4.von === v && u4.zeilen.includes(`    voll: 18/18`));
+        // der Neu-Stempel über dem Stempel (Täter-Suche: leerer Commit auf den alten Stempel) erbt durch ihn hindurch vom Vorprüf-Kopf
+        const u5 = urteil(s2, gruen);
+        pr(`Erbe Neu-Stempel S2 → S → V erbt vom Vorprüf-Kopf (${u5.grund})`, bereit(u5) && u5.von === v);
+        // ein Elter ohne volle Batterie (der Puls grün, [ci voll] fehlte) → wartet beim Namen
+        const u6 = urteil(s, [[v, [cc(11, "success", gruenJobs.filter((j) => !/^voll/.test(j.name))), gp(21, "success")]]]);
+        pr(`Erbe Elter ohne volle Batterie → WARTET (${u6.grund})`, u6.wort === "WARTET" && /trägt \[ci voll\] nicht/.test(u6.grund));
+        // DER MUTANT: das alte Gesetz — der Stempel urteilt an seinen EIGENEN Läufen; am Stempel startet keiner mehr → nie bereit
+        const alt = erbeUrteil({ kopf: lies(s), kette: [lies(s)], kein: null, laeufe: new Map(gruen) });
+        pr("Erbe: der Mutant „Läufe am Stempel-Kopf“ wartet am grünen Elter für immer", !bereit(alt));
+    } finally {
+        fs.rmSync(d, { recursive: true, force: true });
+    }
 }
 // selbsttest --vorab — DER ECHTE FALL z631 (20.11.) in einem Temp-Worktree des Repos (ZUG_PROBE_REPO, sonst INTEG; node_modules als
 // Junction): (a) main 3da9d9ae + w28-ein-schreiber-wand 8ea58de7 + kern-sprossen-heil-2 + los-huelle-2 + stein-ein-gesetz → die
@@ -2295,6 +2496,7 @@ function selbsttest(args = []) {
     iFall("i Code im Stück bleibt d", d3([], [M("a, c"), "c();"], [M("a")], [M("a, d"), "d();"], ["a();"]), null);
     iFall("i derselbe neue Name an zwei Modulen bleibt d", d3([], [M("a, z")], [M("a")], [M("a"), 'const { z } = require("./n.cjs");'], ["a(z);"]), null);
     selbsttestUrteil(pr);
+    selbsttestErbe(pr);
     // die Landung je Zweig (z390): ein Zweig des Bündels fehlt im Kandidaten — die Mutante
     const nw = (o) => nachweisUrteil(o).map((u) => `${u.zweig}:${u.wort}`).join(" ");
     pr("Nachweis z390: ein Zweig des Bündels fehlt im Kandidaten → FREI, nie GELANDET",
@@ -2390,7 +2592,7 @@ function selbsttestPuffer(pr) {
     pr(`Puffer-Grenze: jeder git-Leser der Dienst-Skripte trägt maxBuffer${funde.length ? ` — OHNE: ${funde.join(", ")}` : ""}`, !funde.length);
 }
 
-if (require.main !== module) module.exports = { loeseDatei, loeseBlock, loeseKarte, dreiWege, urteilAus, urteilVon, nachwacheUrteil, zweigeZwischen, nachweisUrteil, zugAufbau, rotSchritte, WACKEL_RE, mergeAlle, vorabLauf, vorabStatik, taeterUrteil, echtBefehle, neuerBetreff, probeTagFehlt };
+if (require.main !== module) module.exports = { loeseDatei, loeseBlock, loeseKarte, dreiWege, urteilAus, urteilVon, nachwacheUrteil, zweigeZwischen, nachweisUrteil, zugAufbau, rotSchritte, erbeKette, erbeUrteil, WACKEL_RE, mergeAlle, vorabLauf, vorabStatik, taeterUrteil, echtBefehle, neuerBetreff, probeTagFehlt };
 else (async () => {
     const [verb, ...args] = process.argv.slice(2);
     let rc = 2;
@@ -2411,8 +2613,9 @@ else (async () => {
         else if (verb === "nachweis") rc = nachweis(args);
         else if (verb === "taeter") rc = await taeter(args);
         else if (verb === "probe-tag") rc = probeTag(args);
+        else if (verb === "erbe") rc = await erbe(args);
         else if (verb === "nachwache") rc = await nachwache();
-        else console.log("zug.sh bereit|bau|vorab|urteil|teile|wackler|landen|nachwache|punkte|nachweis|taeter|probe-tag|selbsttest [--vorab] — siehe zug.md");
+        else console.log("zug.sh bereit|erbe|bau|vorab|urteil|teile|wackler|landen|nachwache|punkte|nachweis|taeter|probe-tag|selbsttest [--vorab] — siehe zug.md");
     } catch (e) {
         console.log(`zug ${verb} FEHLER: ${e.message}`);
         rc = 2;
