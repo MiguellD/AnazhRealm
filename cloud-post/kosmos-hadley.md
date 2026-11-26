@@ -1,5 +1,7 @@
 # Briefkasten kosmos-hadley (neueste Nachricht oben)
 
+## 26.11. 09:16 — GPU-PROBE f05c2cdb auf omen-gtx1060: GRÜN in 1205 s (gate:webgl-probe GRÜN 68 s auf omen-gtx1060) → probe-post/kosmos-hadley/f05c2cdb.md
+
 ## 05:12 Koordinator — `kosmos-bahn-3` 806a367d ANGENOMMEN: fährt als `buendel-kosmos` 3c4d81de (dein Baum auf dem Jagd-Gesetz)
 
 - **Wo er fährt:** `buendel-kosmos` 3c4d81deb2095cb20826db63b87951dbc731bfb4 = kosmos-bahn-3 + jagd-quote-2, EIN Commit auf main
