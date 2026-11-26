@@ -15,31 +15,33 @@ const { FAECHER } = require("./faecher.js");
 // Kepler-Löser über die Elemente des Gesetzes (`K.heim.system.mond` um die Heimat, die Heimat um den Stern), auf die Sonne des
 // Kalenders gedreht (die Länge der Saison-Phase), in den Äquator (die Schiefe des Körpers), an den Ort (die Sternzeit aus der Sonne
 // der Uhr, die Breite des Ankers) und auf den Boden (topozentrisch, der Radius des Körpers) — Matrizen, nie die Formeln des Spiels.
-const MOND_EPHEMERIDE = (K, t, phase, winkel, breite, k) => {
-    const SY = K.heim.system;
-    const kepler = (p) => {
-        const M = p.M0 + (2 * Math.PI * t) / p.P;
-        let E = M;
-        for (let i = 0; i < 50; i++) { const d = (E - p.e * Math.sin(E) - M) / (1 - p.e * Math.cos(E)); E -= d; if (Math.abs(d) < 1e-15) break; }
-        const xb = p.a * (Math.cos(E) - p.e), yb = p.a * Math.sqrt(1 - p.e * p.e) * Math.sin(E), c = Math.cos, s = Math.sin;
-        const x1 = xb * c(p.peri) - yb * s(p.peri), y1 = (xb * s(p.peri) + yb * c(p.peri));
-        return [x1 * c(p.knoten) - y1 * c(p.inkl) * s(p.knoten), y1 * s(p.inkl), x1 * s(p.knoten) + y1 * c(p.inkl) * c(p.knoten)];
-    };
-    const rH = kepler(SY.planeten[SY.heim]), m = kepler(SY.mond);
-    const ek = (v) => [v[0], v[2], -v[1]]; // (x, z, −y): rechtshändig, der Pol der Bahnen −ŷ
-    const sE = ek(rH.map((v) => -v)), mE = ek(m);
-    const rz = (v, w) => [Math.cos(w) * v[0] - Math.sin(w) * v[1], Math.sin(w) * v[0] + Math.cos(w) * v[1], v[2]];
-    const rx = (v, w) => [v[0], Math.cos(w) * v[1] - Math.sin(w) * v[2], Math.sin(w) * v[1] + Math.cos(w) * v[2]];
-    const dreh = 2 * Math.PI * phase + (breite < 0 ? Math.PI : 0) - Math.atan2(sE[1], sE[0]);
-    const sQ = rx(rz(sE, dreh), k.neigungRad), mQ = rx(rz(mE, dreh), k.neigungRad);
-    const theta = (winkel - Math.PI / 2) * (k.drehsinn < 0 ? -1 : 1) + Math.atan2(sQ[1], sQ[0]);
-    const q = rz(mQ, -theta), sp = Math.sin(breite), cp = Math.cos(breite);
-    const dKm = Math.hypot(...m) * 149597870.7, n0 = Math.hypot(...q);
-    const g = [q[1] / n0, (cp * q[0] + sp * q[2]) / n0, (sp * q[0] - cp * q[2]) / n0];
-    const top = [g[0] * dKm, g[1] * dKm - k.radiusKm, g[2] * dKm], n = Math.hypot(...top);
-    return top.map((v) => v / n);
-};
 const HIMMEL_AN = async (r, T, a) => {
+    // DIE EPHEMERIDE REIST MIT (26.11.): das Gesetz des Fächers läuft in der SEITE, dort gibt es nur, was diese Funktion selbst trägt —
+    // als Nachbar im Modul warf sie an allen 1 460 Adressen „MOND_EPHEMERIDE is not defined“ (Radeon und GTX am af816566).
+    const MOND_EPHEMERIDE = (K, t, phase, winkel, breite, k) => {
+        const SY = K.heim.system;
+        const kepler = (p) => {
+            const M = p.M0 + (2 * Math.PI * t) / p.P;
+            let E = M;
+            for (let i = 0; i < 50; i++) { const d = (E - p.e * Math.sin(E) - M) / (1 - p.e * Math.cos(E)); E -= d; if (Math.abs(d) < 1e-15) break; }
+            const xb = p.a * (Math.cos(E) - p.e), yb = p.a * Math.sqrt(1 - p.e * p.e) * Math.sin(E), c = Math.cos, s = Math.sin;
+            const x1 = xb * c(p.peri) - yb * s(p.peri), y1 = (xb * s(p.peri) + yb * c(p.peri));
+            return [x1 * c(p.knoten) - y1 * c(p.inkl) * s(p.knoten), y1 * s(p.inkl), x1 * s(p.knoten) + y1 * c(p.inkl) * c(p.knoten)];
+        };
+        const rH = kepler(SY.planeten[SY.heim]), m = kepler(SY.mond);
+        const ek = (v) => [v[0], v[2], -v[1]]; // (x, z, −y): rechtshändig, der Pol der Bahnen −ŷ
+        const sE = ek(rH.map((v) => -v)), mE = ek(m);
+        const rz = (v, w) => [Math.cos(w) * v[0] - Math.sin(w) * v[1], Math.sin(w) * v[0] + Math.cos(w) * v[1], v[2]];
+        const rx = (v, w) => [v[0], Math.cos(w) * v[1] - Math.sin(w) * v[2], Math.sin(w) * v[1] + Math.cos(w) * v[2]];
+        const dreh = 2 * Math.PI * phase + (breite < 0 ? Math.PI : 0) - Math.atan2(sE[1], sE[0]);
+        const sQ = rx(rz(sE, dreh), k.neigungRad), mQ = rx(rz(mE, dreh), k.neigungRad);
+        const theta = (winkel - Math.PI / 2) * (k.drehsinn < 0 ? -1 : 1) + Math.atan2(sQ[1], sQ[0]);
+        const q = rz(mQ, -theta), sp = Math.sin(breite), cp = Math.cos(breite);
+        const dKm = Math.hypot(...m) * 149597870.7, n0 = Math.hypot(...q);
+        const g = [q[1] / n0, (cp * q[0] + sp * q[2]) / n0, (sp * q[0] - cp * q[2]) / n0];
+        const top = [g[0] * dKm, g[1] * dKm - k.radiusKm, g[2] * dKm], n = Math.hypot(...top);
+        return top.map((v) => v / n);
+    };
     const st = r.state, wm = st.worldMeta, WL = window.__weltLicht;
     if (!WL || typeof WL.kosmosZeit !== "function" || typeof r._kosmosJetzt !== "function") return { fehlt: "kein Kosmos-Gesetz (welt-licht kosmosZeit) oder kein Leser (_kosmosJetzt)" };
     if (typeof r._dayNightMoonDirection !== "function" || !r._sonnenAnker) return { fehlt: "kein Leser des Monds (stamm/bild-himmel.js `_dayNightMoonDirection`) oder kein Anker der Sonne (`_sonnenAnker`)" };
@@ -500,7 +502,7 @@ const LEITERN = [];
                         ungemessen: ["Mondphase je Woche im Bildpaar (am Gerät: die Scheibe trägt die Phase, Lommel–Seeliger, stamm/dirigent-ankunft.js)"],
                     });
                     L.zeile("Systeme S1: " + R.akte.slice(0, 400));
-                    if (R.fehlt) return L.leser(1, R.fehlt, 0);
+                    if (R.fehlt || !R.gemessen) return L.leser(1, (R.fehlt || "kein Wert des Gesetzes") + " · " + R.akte, 0);
                     L.gemessen(1, { ephemeride_abw_grad: +R.werte.ephemeride_abw_grad.toFixed(4) }, {
                         erzeugt: R.werte.planeten,
                         welt: { gezaehlt: z.koerper.length },

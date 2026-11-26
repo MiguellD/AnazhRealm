@@ -102,7 +102,11 @@ const FAECHER = async (ev, f) => {
         " · Gesetz " + f.gesetz.export + (fehler.length ? " · " + fehler.length + " warfen (" + fehler[0].fehler + ")" : "") + (fehlt.length ? " · " + fehlt.length + " ohne Fähigkeit (" + fehlt[0].w.fehlt + ")" : "") +
         (roh.gerissen ? " · " + roh.gerissen + " an der Frist ungemessen" : "") + (schlecht ? " · schlechteste " + kurz(schlecht.a) + " " + f.schlecht.feld + " " + lies(schlecht, f.schlecht.feld) : "") +
         (pose ? " · Bild dort " + (typeof pose === "string" ? pose : kurz(pose)) : "") + ((f.ungemessen || []).length ? " · ungemessen: " + f.ungemessen.join("; ") : "");
-    return { werte, gemessen: gut.length, adressen: n, fehler, fehlt: fehlt.length ? fehlt[0].w.fehlt : null, fehltAn: fehlt.map((x) => x.a), gerissen: roh.gerissen, ms: roh.ms, msGesamt: Date.now() - t, schlecht, pose, akte, je: gut };
+    // KEINE GUTE ADRESSE IST KEIN MASS (26.11., planet.kosmos.systeme#1: alle 1 460 Adressen warfen „MOND_EPHEMERIDE is not defined“,
+    // die Station las `werte.x` null und warf selbst „reading 'toFixed'“ — der Grund stand in keiner Zeile, die das Lauf-Log bewahrt).
+    // Warf JEDE gelaufene Adresse, ist der Wurf das, was fehlt: jede Station mit der Wache `R.fehlt` urteilt damit beim Namen.
+    const leer = !gut.length && !fehlt.length && fehler.length ? "der Fächer maß an keiner Adresse: " + fehler.length + " von " + n + " warfen (" + fehler[0].fehler + ")" : null;
+    return { werte, gemessen: gut.length, adressen: n, fehler, fehlt: fehlt.length ? fehlt[0].w.fehlt : leer, fehltAn: fehlt.map((x) => x.a), gerissen: roh.gerissen, ms: roh.ms, msGesamt: Date.now() - t, schlecht, pose, akte, je: gut };
 };
 
 module.exports = { FAECHER };
