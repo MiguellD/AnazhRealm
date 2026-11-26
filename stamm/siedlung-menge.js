@@ -179,23 +179,26 @@ class AnazhRealm_siedlung_menge {
                 inventar: "bewohner",
                 n: AnazhRealm.BEWOHNER.gangPhasen,
                 baender: window.__koerperCore.LEIB_SATZ.baender.length, // (je Gang des Satzes ein Band: der Gesunde, der Kranke)
-                staende: AnazhRealm._bewohnerStaende().length,
+                staende: AnazhRealm._bewohnerStandZahl(),
+                standZeilen: window.__koerperCore.STAND.zeilen,
                 quellen,
                 cap: S.liste.length,
                 senken,
                 raum: true,
             },
-            // der Stand zuerst (der Satz steht, bis sein Gang gebacken ist — `_bewohnerGangBacken` im Takt)
+            // die erste Zeile jedes Stands zuerst (der Satz steht, bis sein Gang gebacken ist, und steht in der ersten Zeile, bis die
+            // Zeilen seiner Stände gebacken sind — `_bewohnerGangBacken` im Takt)
             (Z) => {
                 Object.assign(Z, { gebacken: 0, tempo: b.tempoBand });
-                for (let h = 0; h < Z.staende; h++) this._bewohnerGangPose(b.leib, Z, Z.baender * Z.n + h, S);
+                for (let z = 0; z < Z.staende; z += Z.standZeilen)
+                    this._bewohnerGangPose(b.leib, Z, Z.baender * Z.n + z, S);
             }
         );
     }
 
     // DIE POSE k (k < n: die Phase 2πk/n des Doppelschritts im EINEN Gang-Gesetz — `_gaitTick` mit dem Tempo des Leibs,
-    // eingeschwungen, dann `_animateHuman`; k = n + h: der Stand h, der Kontrapost des Atems bei 0 in der Haltung seines Namens,
-    // `_bewohnerStaende` — im Gesetz ändert die Haltung nur den Stand, nie den Gang) am Leib `g`: mit der Siedlung `S` die
+    // eingeschwungen, dann `_animateHuman`; k = n + z: die Stand-Zeile z, die Haltung ihres Namens zur Uhr ihres Teils des Zyklus
+    // (`_bewohnerStandZeit`, koerper STAND — stand-lebt) — im Gesetz ändert die Haltung nur den Stand, nie den Gang) am Leib `g`: mit der Siedlung `S` die
     // Zeile k des Gang-Puffers ihres Satzes `Z` — die Pose auf die Knochen der Vorlage gelegt (`_bewohnerRaumStellen`) und in den
     // Raum des Leibs geskinnt (`_gangSatzPose`) —, ohne sie die Lagen der Zeile k einer Gestalt `Z` (`_bewohnerLagePose`: der Gang
     // des Felds). Danach steht der Leib wieder im Stand.
@@ -217,7 +220,7 @@ class AnazhRealm_siedlung_menge {
             }
             this._animateHuman(g, 0, (2 * Math.PI * (k % Z.n)) / Z.n, true, false, G[band].gemuet, G[band].gang);
         } else {
-            // (der Stand einer Geste zur Uhr seiner Phase, `_bewohnerStandZeit`; jeder andere bei 0 — eingeschwungen, ohne die Zeile davor)
+            // (die Stand-Zeile zur Uhr ihres Teils des Zyklus, `_bewohnerStandZeit` — eingeschwungen, ohne die Zeile davor)
             const h = k - B * Z.n;
             window.__koerperCore.leibRigEingeschwungen(g.userData.rig);
             this._animateHuman(g, this._bewohnerStandZeit(h), 0, false, false, this._bewohnerStandGemuet(h));
@@ -297,7 +300,7 @@ class AnazhRealm_siedlung_menge {
         const tb = g.userData._tierBaum;
         if (!satz.lageTeile) {
             satz.lageTeile = ["", ...Object.keys(tb.teile)];
-            satz.lagen = new Float32Array((satz.baender * satz.n + AnazhRealm._bewohnerStaende().length) * satz.lageTeile.length * 16); // prettier-ignore
+            satz.lagen = new Float32Array((satz.baender * satz.n + AnazhRealm._bewohnerStandZahl()) * satz.lageTeile.length * 16); // prettier-ignore
         }
         const inv = (this._bewohnerLageInv || (this._bewohnerLageInv = new THREE.Matrix4()))
             .copy(g.matrixWorld)
@@ -318,7 +321,8 @@ class AnazhRealm_siedlung_menge {
     // seines Ankers (`_kreaturGliederBacken`): bis treffer-kalt las die Lage dafür die Gattung und hielt still an, war sie kalt.
     // Bis stadt-takt-z15d ging je Schritt das Rig (`_animateHuman`) und die Welt-Matrix des ganzen Leibs (`_leibMatrix`) — am
     // Messort stadt mittags (165 Gehende) `_bewohnerGangSchritt` 108,7 → 25,6 ms je Sekunde (Radeon); die Lage der Glieder
-    // weicht vom Rig höchstens 3,7 cm ab (der Atem, das Tempo des Back-Leibs).
+    // weicht vom Rig höchstens 3,7 cm ab (der Atem, das Tempo des Back-Leibs). DER STAND LEBT (stand-lebt): der Stand ist die Zeile
+    // seiner Uhr im Zyklus seines Stands, gemischt mit der nächsten (`_bewohnerStandLage`) — wie der Gang k0 und k1 mischt.
     _bewohnerFeldLage(b, S, an = this.state.creaturesHidden !== true) {
         const g = b.leib;
         const gl = g.userData._kzGlieder;
@@ -340,6 +344,8 @@ class AnazhRealm_siedlung_menge {
         const k0 = Math.min(Z.n - 1, Math.floor(f));
         const k1 = (k0 + 1) % Z.n;
         const t = f - k0;
+        const st = this._bewohnerStandLage(b, Z);
+        const u = st[2];
         const R = (this._bewohnerFeldR || (this._bewohnerFeldR = new THREE.Matrix4())).compose(
             g.position,
             g.quaternion,
@@ -351,12 +357,14 @@ class AnazhRealm_siedlung_menge {
         const kB = Z.fertig ? (b.gangBand || 0) * Z.n : 0; // (das Band seines Gangs: der Kranke geht in seinen Zeilen)
         for (let i = 0; i < gl.length; i++) {
             const j = Z.lageVon.get(gl[i].name);
-            const s = ((Z.baender * Z.n + (b.standZeile || 0)) * K + j) * 16;
+            const s0 = ((Z.baender * Z.n + st[0]) * K + j) * 16;
+            const s1 = ((Z.baender * Z.n + st[1]) * K + j) * 16;
             const a0 = ((kB + k0) * K + j) * 16;
             const a1 = ((kB + k1) * K + j) * 16;
             for (let e = 0; e < 16; e++) {
                 const q = L[a0 + e] + (L[a1 + e] - L[a0 + e]) * t;
-                E[e] = L[s + e] + (q - L[s + e]) * w;
+                const sv = L[s0 + e] + (L[s1 + e] - L[s0 + e]) * u;
+                E[e] = sv + (q - sv) * w;
             }
             this._weltFeldMatrix(gl[i].handle, W.multiplyMatrices(R, M));
             this._weltFeldAktiv(gl[i].handle, an);
@@ -394,7 +402,9 @@ class AnazhRealm_siedlung_menge {
     // DER GANG WIRD GEBACKEN (Lehre 14: schwere deterministische Arbeit im Takt, nie als Spitze): je Takt höchstens `je`
     // Phasen — zuerst der Satz der Siedlung (am ersten Leib, der nicht als Leib lebt: ein Leib der Nah-Wahl trägt seine eigene
     // Pose), dann die Lagen jeder Gestalt (das Feld, an einem ihrer Leiber); ist der Satz gebacken, lädt die Textur EINMAL neu und
-    // er geht (`fertig`). Liefert, ob der Satz eben fertig wurde.
+    // er geht (`fertig`). DIE ZEILEN DER STÄNDE (stand-lebt): nach dem Gang die übrigen Zeilen jedes Stands über seinen Zyklus (die
+    // erste stand ab der Geburt) — sind sie gebacken (`standFertig`, die Textur lädt noch einmal), liest jeder Bewohner die Zeile
+    // seiner Uhr (`_bewohnerStandLage`). Liefert, ob der Satz eben fertig wurde (sein Gang oder seine Stände).
     _bewohnerGangBacken(S, je) {
         let fertig = false;
         // (w28-leib-im-ring: gebacken wird an einem Leib — der Erste, der frei ist, trägt ihn für das Backen, `backt`, und
@@ -409,26 +419,48 @@ class AnazhRealm_siedlung_menge {
                 !echt || (this._trefferGliedNamen && this._trefferGliedNamen.has(x.leib.userData.gattung));
             S.backt = S.backt.filter((x) => {
                 const L = S.gestalten[x.gestalt].lage;
-                x.backt = !((!S.satz || S.satz.fertig) && L && L.fertig && warm(x));
+                x.backt = !(
+                    (!S.satz || (S.satz.fertig && S.satz.standFertig)) &&
+                    L &&
+                    L.fertig &&
+                    L.standFertig &&
+                    warm(x)
+                );
                 return x.backt;
             });
         }
+        // die Zeilen der Stände nach dem Gang, je Stand ohne seine erste (`standGebacken`: die nächste Zeile unter allen); → ob alle stehen
+        const [N, H] = [window.__koerperCore.STAND.zeilen, AnazhRealm._bewohnerStandZahl()];
+        const staende = (X, leib, S2) => {
+            if (!(X.standGebacken > 0)) X.standGebacken = 1;
+            for (; je > 0 && X.standGebacken < H; X.standGebacken++) {
+                if (X.standGebacken % N === 0) continue;
+                this._bewohnerGangPose(leib, X, X.baender * X.n + X.standGebacken, S2);
+                je--;
+            }
+            return X.standGebacken >= H;
+        };
         const Z = S.satz;
-        const b = Z && !Z.fertig && je > 0 ? frei(-1) : null;
+        const b = Z && !(Z.fertig && Z.standFertig) && je > 0 ? frei(-1) : null;
         if (b) {
             for (; je > 0 && Z.gebacken < Z.baender * Z.n; je--) this._bewohnerGangPose(b.leib, Z, Z.gebacken++, S);
-            if (Z.gebacken >= Z.baender * Z.n) {
+            if (!Z.fertig && Z.gebacken >= Z.baender * Z.n) {
                 Z.tex.needsUpdate = true;
                 Z.fertig = fertig = true;
+            }
+            if (Z.fertig && !Z.standFertig && staende(Z, b.leib, S)) {
+                Z.tex.needsUpdate = true;
+                Z.standFertig = fertig = true;
             }
         }
         S.gestalten.forEach((G, gi) => {
             const L = G.lage;
-            if (!L || L.fertig || je <= 0) return;
+            if (!L || (L.fertig && L.standFertig) || je <= 0) return;
             const c = frei(gi);
             if (!c) return;
             for (; je > 0 && L.gebacken < L.baender * L.n; je--) this._bewohnerGangPose(c.leib, L, L.gebacken++, null);
             if (L.gebacken >= L.baender * L.n) L.fertig = true;
+            if (L.fertig && !L.standFertig && staende(L, c.leib, null)) L.standFertig = true;
         });
         return fertig;
     }
@@ -459,7 +491,9 @@ class AnazhRealm_siedlung_menge {
                 g.quaternion,
                 v3.set(b.raumSkala * b.breite, b.raumSkala, b.raumSkala * b.tiefe)
             );
-        const setze = (k, i, b) =>
+        // (der Stand: die Zeile seiner Uhr und der Anteil der nächsten, `_bewohnerStandLage` — stand-lebt)
+        const setze = (k, i, b) => {
+            const st = this._bewohnerStandLage(b, Z);
             AnazhRealm._gangSatzInstanz(
                 Z[k],
                 i,
@@ -468,8 +502,10 @@ class AnazhRealm_siedlung_menge {
                 Z.fertig ? (b.walkPhase || 0) / (2 * Math.PI) : 0,
                 Z.fertig ? b._gaitW || 0 : 0,
                 b.satzZeilen,
-                b.standZeile || 0
+                st[0],
+                st[2]
             );
+        };
         if (bewegt) {
             if (!Z) return;
             const dran = new Set();

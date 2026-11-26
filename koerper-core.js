@@ -9146,16 +9146,149 @@
     // (sin²) über `hub` des Takts, die rechte um `versatz` versetzt (die Arme heben im Wechsel), der Ausschlag je Geste aus der Uhr
     // (`ausschlag`, Anteil der Abspreizung des Profils) — dazwischen hängt der Arm in seiner Ruhe. Die Uhr ist die des Leibs (die
     // Welt reicht `uhr + atem`, die Phase aus seinem Samen): Phase und Ausschlag trägt jeder Leib selbst, im Mittel hängt der Arm im
-    // Band. Der ferne Satz backt je Stand mit Geste `phasen` Zeilen (`leibGesteZeit`), jeder Leib liest die Zeile seiner Phase
-    // (`leibGestePhase`). Bis hier hielt joy die Abspreizung: an stadt-voll mittags standen 27 von 27 nahen Kindern im selben Moment
-    // mit 34–39° (gate:mensch-anatomie haltung.moment joy 100 %), und der Satz zeigte jedes ferne Kind in derselben Zeile.
+    // Band. Die Geste geht im Zyklus des Stands (`STAND`: `zyklus / takt` ganze Takte, der Ausschlag aus der Zahl des Takts im Zyklus) —
+    // der ferne Leib backt sie mit Atem und Schwanken in den Zeilen seines Stands (`leibStandZeit`, `leibStandZeile`). Bis hier hielt
+    // joy die Abspreizung: an stadt-voll mittags standen 27 von 27 nahen Kindern im selben Moment mit 34–39° (gate:mensch-anatomie
+    // haltung.moment joy 100 %), und der Satz zeigte jedes ferne Kind in derselben Zeile.
     var GESTE = Object.freeze({
-        takt: 2.4, // s je Geste
+        takt: 2.4, // s je Geste (ein ganzer Teil des Zyklus des Stands)
         hub: 0.3, // der Anteil des Takts, in dem der Arm gehoben ist
         versatz: 0.5, // die rechte Seite gegen die linke (Anteil des Takts)
         ausschlag: Object.freeze([0.3, 1]), // der Ausschlag je Geste (Anteil der Abspreizung des Profils)
-        phasen: 4, // die Zeilen des Satzes je Stand mit Geste
     });
+    // DER STAND IN DER ZEIT (stand-lebt; Leiter mensch.leib.ausdruck, mensch.menge.bild): wer steht, steht nie still — Atem, Schwanken
+    // und Geste gehen in EINEM Zyklus von `zyklus` s, damit der ferne Leib sie backen kann wie den Gang: Satz und Feld backen je Stand
+    // `zeilen` Zeilen über den Zyklus (`leibStandZeit`), jeder Leib liest die Zeile seiner Uhr `uhr + atem` und mischt die nächste
+    // (`leibStandZeile`, wie die Phase des Gangs k0 und k1 wählt); der nahe Leib (`leibRigPose`) geht dieselben Wellen derselben Uhr —
+    // EIN Weg. Der Atem in ganzen Zügen je Zyklus (`leibStandAtem`: `atem` × das Tempo des Profils gegen das Labor-idle, gerundet,
+    // mindestens einer — idle 2 Züge: 3,6 s, 16,7 je Minute), das Becken schwankt seitlich `schwanken[0]`-mal und vor und zurück
+    // `schwanken[1]`-mal je Zyklus (0,14 und 0,28 Hz), die Geste geht 3 Takte je Zyklus.
+    // DIE HALTUNG DES STANDS (stand-lebt 2, Koordinator 26.11. 04:56: „die Regung kommt aus dem Gesetz der Haltung, nicht aus einem
+    // Wackel-Faktor“): (1) DER GEWICHTSWECHSEL — das Gewicht wandert vom Standbein aufs andere (`leibStandBein`): im freien Stand
+    // wechselt der Mensch die Haltung 2,2-mal je Minute (Freitas et al. 2005, Gait Posture 22:322 — `wechselS` 27,3 s), die Intervalle
+    // streuen um ein Drittel (Duarte & Zatsiorsky 1999, Motor Control 3:12: 49 ± 16 s seitlich — `wechselStreu`), das Becken
+    // verlagert sich seitlich um 22 mm (dieselben: 22 ± 38 mm medio-lateral — `verlagerungRad` auf 0,92 m Hüfthöhe); Phase UND
+    // Periode trägt die Person (`r.standPerson`, aus ihrem Samen — zwei Stehende wechseln nie im selben Takt), die Verlagerung
+    // selbst geht in `wechselDauerS` (ANGENOMMEN: „schnell“ nach Duarte 1999, ohne Zahl). (2) DIE ARME DES TUNS — was die Person
+    // tut, nennt das Profil ihres Stands (der Wirt: `_koerperMotionName` über `tagesHaltung` des Akts); `tun` legt je Profil die
+    // Arbeit der Hände fest, `arme` ihre Takte je Zyklus (ganz: der Satz backt sie mit), ihren Hub und ihre Gelenke: wer redet,
+    // gestikuliert 8–22-mal je Minute (Alibali et al. 2001, J Mem Lang 44:169 — 2 je Zyklus, 16,7/min) vor der Brust (McNeill 1992,
+    // „Hand and Mind“: der Gestenraum Mitte-Mitte — der Unterarm hebt sich um 70°); wer mit den Händen arbeitet, greift 4-mal je
+    // Zyklus (1,8 s = 50 TMU je Griff; MTM-1: 1 TMU = 0,036 s, Greifen G1A und Loslassen RL1 je 2 TMU — die Summe mit Hinlangen und
+    // Bringen über 30–40 cm ANGENOMMEN). Wer wartet oder schaut, rührt die Hände nicht: ihn tragen Gewicht, Atem und Blick (der
+    // Blick folgt dem Reiz im Wirt, `_bewohnerKopf`).
+    // DIE RUHE DES LEIBS (stand-lebt 3, Koordinator 26.11. 05:18: „die Ruhe-Haltung IST die Bind-Pose“ — von ≈ 25 Leibern am Bild
+    // von stadt-voll standen ≈ 22 gleich: die Arme abgespreizt, die Handflächen offen nach vorn, die Füße parallel, der Blick
+    // geradeaus): (1) DIE ARME HÄNGEN unter der Schwere — die Bind-Pose des Gusses ist die anatomische Null (Handfläche vorn, der
+    // Unterarm im Tragewinkel nach außen); im Stand dreht der Unterarm in die Mittelstellung (`ruhe.pronation`, 69°: die Normale der
+    // Handfläche zeigt 0,93 zum Oberschenkel), der Ellbogen ist leicht gebeugt (`ruhe.ellbogen`, 14°, ANGENOMMEN), und weil der Daumen
+    // dann nach vorn-innen zeigt, hält die Schulter über ihrer Ruhe am Rumpf (`r.armRuhe`, 5–10°) Luft, wo die Hand vor dem Schenkel
+    // hängt: `ruhe.daumen` am Lot, linear bis 0 an `ruhe.daumenBis` (11,5°; darüber hängt die Hand neben der Hüfte — ANGENOMMEN aus der
+    // Probe 26.11.: frei ab Ruhe + 0,025 rad am Lot, + 0,010 bei 0,095 rad, + 0 ab 0,113 rad; ohne die Luft bis 30 Ecken im Rumpf). Die Drehung des Oberarms nach innen (23°) legte
+    // bis 140 Ecken der Hand in die Hüfte (ARM_RUHE.innenStand): sie fällt. (2) DAS TRAGENDE BEIN IM SATZ — der ferne Leib backt jeden
+    // Stand auf beiden Beinen (`seiten` Zeilensätze, `r.standSeite` aus der Zeile: der Wirt reicht es im Gemüt der Zeile) und liest
+    // das Bein seines Gewichtswechsels (`leibStandBein` seiner Person, wie der nahe Leib). (3) DER BLICK WANDERT (`leibStandBlick`):
+    // wer steht, hält den Blick in `blick.rad.length` gleichen Teilen des Zyklus — auf seinem Ziel (das Gegenüber, die Ware: wohin
+    // der Leib schaut) und zu beiden Seiten; der Redende schaut den Hörer 41 % der Zeit an (Argyle & Cook 1976, „Gaze and Mutual
+    // Gaze“: Sprecher 41 %, Hörer 75 % — ein Drittel am Ziel), ein Blick 50° zur Seite dreht den Kopf um das, was die Augen allein
+    // nicht tragen (Stahl 1999: ± 17,9° → 32°, 0,56 rad); der Kopf wendet in `wende` s (ANGENOMMEN). Der ferne Leib backt den Blick
+    // in die Zeilen, der nahe liest denselben im Wirt (`_bewohnerKopf`), solange ihn kein Reiz und kein Gegenüber hält.
+    // Bis hier atmete der nahe Leib mit 1,6 rad/s × Tempo und schwankte mit 1,1 und 0,7 rad/s, und Satz und Feld buken je Stand EINE
+    // Zeile zur Uhr 0 (joy vier Phasen, je Leib fest aus seinem Samen): am Dorfplatz um 10 Uhr standen 39 von 40, und kein Glied
+    // eines Stehenden im Feld rührte sich über 5 s (0,000 m; die vier nahen Leiber 0,05–0,17 m — Täter-Messung 26.11., GTX).
+    var STAND = Object.freeze({
+        zyklus: 7.2, // s, in denen sich Atem, Schwanken und Geste wiederholen
+        zeilen: 12, // die Zeilen je Stand im Satz und im Feld (0,6 s, je um eine halbe versetzt: jede Geste trifft eine nahe ihrer Spitze)
+        atem: 2, // Züge je Zyklus am Labor-idle
+        schwanken: Object.freeze([1, 2]), // Wellen des Beckens je Zyklus: seitlich, vor und zurück
+        wechselS: 27.3, // s zwischen zwei Gewichtswechseln im Mittel (60 / 2,2; die Welle hin und zurück trägt zwei)
+        wechselStreu: 0.33, // ± Anteil der Periode je Person
+        wechselDauerS: 1, // s, in denen das Gewicht hinüber wandert
+        verlagerungRad: 0.024, // das Becken seitlich (22 mm auf 0,92 m)
+        seiten: 2, // die Zeilen je Stand im Satz und im Feld je tragendem Bein (das rechte, das linke)
+        ruhe: Object.freeze({ pronation: 1.2, ellbogen: 0.25, daumen: 0.035, daumenBis: 0.2 }), // rad: die Arme hängen (stand-lebt 3)
+        blick: Object.freeze({ rad: Object.freeze([0, 0.56, -0.56]), wende: 0.4 }), // die Gier des Kopfs je Fixation, s je Wende
+        tun: Object.freeze({ showcase: "reden", pwalk: "hand" }), // je Profil des Stands die Arbeit der Hände
+        arme: Object.freeze({
+            reden: Object.freeze({ je: 2, hub: 0.5, schulter: 0.35, ellbogen: 1.2 }), // rad: Beugung vor, Ellbogen
+            hand: Object.freeze({ je: 4, hub: 0.6, schulter: 0.5, ellbogen: 0.9 }),
+        }),
+    });
+    // das Bein, das trägt (+1: das rechte trägt, das linke ist das Spielbein — die Pose des Labors; −1 gespiegelt), zur Uhr t der
+    // Person p (0 … 1: Phase und Periode aus ihrem Samen); ohne Person (der Satz backt den Stand, `_bewohnerGangPose`) trägt das rechte
+    function leibStandBein(t, p) {
+        if (!Number.isFinite(p)) return 1;
+        var P = 2 * STAND.wechselS * (1 + STAND.wechselStreu * (2 * ((p * 7.31) % 1) - 1)), // zwei Wechsel je Welle
+            w = Math.sin(2 * Math.PI * ((Number.isFinite(t) ? t : 0) / P + p)),
+            d = Math.sin((Math.PI * STAND.wechselDauerS) / P);
+        return Math.max(-1, Math.min(1, w / d));
+    }
+    // die Gier des Kopfs des Stehenden zur Uhr t (rad, über dem Rumpf): die Fixation des Teils des Zyklus (`STAND.blick.rad`, je ein
+    // gleicher Teil), aus der vorigen gewendet im Kosinus-Bogen über `wende` s
+    function leibStandBlick(t) {
+        var B = STAND.blick,
+            n = B.rad.length,
+            x = leibStandPhase(t) * n,
+            k = Math.floor(x) % n,
+            u = ((x - Math.floor(x)) * STAND.zyklus) / n,
+            b = B.rad[k];
+        if (!(u < B.wende)) return b;
+        var a = B.rad[(k + n - 1) % n];
+        return a + (b - a) * (0.5 - 0.5 * Math.cos((Math.PI * u) / B.wende));
+    }
+    // DAS TUN EINES NAMENS (stand-lebt 3, der EINE Leser von `STAND.tun`): der Grund des Namens nennt die Arbeit der Hände, die Wörter
+    // des Satzes (leib-liest-satz, `LEIB_SATZ`) lesen sich mit — die Stufe einer Kunst greift im Takt ihres Gesetzes (`stufe.takt`: der
+    // Lehrling halb so oft, ganze Griffe je Zyklus), der Kranke rührt die Hände wie sein Grund (sein Delta trägt das Profil). → die Arme
+    // des Tuns (`STAND.arme`, je Name dasselbe Objekt) oder null
+    var _standTunMerk = Object.create(null);
+    function leibStandTun(name) {
+        if (typeof name !== "string") return null;
+        if (name in _standTunMerk) return _standTunMerk[name];
+        var teile = name.split(LEIB_SATZ.trenner),
+            A = STAND.arme[STAND.tun[teile[0]]] || null;
+        for (var i = 1; A && i < teile.length; i++)
+            for (var j = 0; j < LEIB_SATZ.stufe.length; j++)
+                if (LEIB_SATZ.stufe[j].wort === teile[i]) A = Object.freeze(Object.assign({}, A, { je: Math.max(1, Math.round(A.je * LEIB_SATZ.stufe[j].takt)) })); // prettier-ignore
+        return (_standTunMerk[name] = A);
+    }
+    // der Anteil, den die Arme des Tuns A zur Uhr t an der Seite s heben (0 … 1): ganze Takte je Zyklus wie die Geste
+    // (`leibGesteWert`), die rechte Seite um `GESTE.versatz` versetzt, der Ausschlag je Takt aus seiner Zahl im Zyklus
+    function leibTunWert(t, s, A) {
+        var x = leibStandPhase(t) * A.je + (s ? GESTE.versatz : 0),
+            n = Math.floor(x),
+            u = x - n;
+        if (!(u < A.hub)) return 0;
+        var h = Math.sin(((n % A.je) + 1) * 12.9898 + (s ? 78.233 : 0)) * 43758.5453,
+            b = Math.sin((Math.PI * u) / A.hub);
+        return (GESTE.ausschlag[0] + (GESTE.ausschlag[1] - GESTE.ausschlag[0]) * (h - Math.floor(h))) * b * b;
+    }
+    function leibStandAtem(mp, mref) {
+        var f = mp && mref && Number.isFinite(mp.freq) && mref.freq > 0 ? mp.freq / mref.freq : 1;
+        return Math.max(1, Math.round(STAND.atem * f));
+    }
+    // die Phase der Uhr t im Zyklus (0 … 1) und die Welle mit k ganzen Wellen je Zyklus, um den Anteil v versetzt
+    function leibStandPhase(t) {
+        var x = (Number.isFinite(t) ? t : 0) / STAND.zyklus;
+        return x - Math.floor(x);
+    }
+    function leibStandWelle(t, k, v) {
+        return Math.sin(2 * Math.PI * k * (leibStandPhase(t) + (v || 0)));
+    }
+    // die Zeilen, die ein ferner Leib zur Uhr t liest: [k0, k1, Anteil der k1] unter n Zeilen je Zyklus (nach `aus`, wenn gereicht)
+    // — und die Uhr der Zeile k: die Mitte ihres Teils des Zyklus (je Takt der Geste vier Zeilen, die erste ⅛ nach seinem Beginn, wo der
+    // Bogen 0,93 seiner Spitze hebt — die linke Seite in der ersten, die rechte in der dritten)
+    function leibStandZeile(t, n, aus) {
+        var f = leibStandPhase(t) * n - 0.5,
+            k = Math.floor(f),
+            z = aus || [0, 0, 0];
+        z[0] = (k + n) % n;
+        z[1] = (k + 1 + n) % n;
+        z[2] = f - k;
+        return z;
+    }
+    function leibStandZeit(k, n) {
+        return (STAND.zyklus * (k + 0.5)) / n;
+    }
     // die Seite s (0 links, 1 rechts) des Profils mp gegen mref trägt eine Geste: ihre Abspreizung vom Lot über dem Band der Ruhe
     function leibGeste(mp, mref, s) {
         if (!mp || !mref) return false;
@@ -9163,24 +9296,16 @@
         return (Number(mp[k]) || 0) - (Number(mref[k]) || 0) > (ARM_RUHE.spreizGrad[1] * Math.PI) / 180;
     }
     // der Anteil der Abspreizung, den die Geste zur Uhr t an der Seite s hebt (0 … 1): der Bogen in seinem Takt, der Ausschlag je
-    // Takt aus der Zahl des Takts (dieselbe Uhr, derselbe Ausschlag)
+    // Takt aus der Zahl des Takts im Zyklus des Stands (dieselbe Uhr, derselbe Ausschlag — nach `zyklus` dieselbe Geste)
     function leibGesteWert(t, s) {
-        var x = (Number.isFinite(t) ? t : 0) / GESTE.takt + (s ? GESTE.versatz : 0),
+        var je = Math.round(STAND.zyklus / GESTE.takt),
+            x = leibStandPhase(t) * je + (s ? GESTE.versatz : 0),
             n = Math.floor(x),
             u = x - n;
         if (!(u < GESTE.hub)) return 0;
-        var h = Math.sin((n + 1) * 12.9898 + (s ? 78.233 : 0)) * 43758.5453,
+        var h = Math.sin(((n % je) + 1) * 12.9898 + (s ? 78.233 : 0)) * 43758.5453,
             b = Math.sin((Math.PI * u) / GESTE.hub);
         return (GESTE.ausschlag[0] + (GESTE.ausschlag[1] - GESTE.ausschlag[0]) * (h - Math.floor(h))) * b * b;
-    }
-    // die Phase (0 … n−1) der Uhr t: die Zeile, die ein ferner Leib liest — und die Uhr der Zeile k (die Mitte ihrer Phase, je Zeile
-    // ein eigener Takt: ihr eigener Ausschlag)
-    function leibGestePhase(t, n) {
-        var x = (Number.isFinite(t) ? t : 0) / GESTE.takt;
-        return Math.min(n - 1, Math.floor((x - Math.floor(x)) * n));
-    }
-    function leibGesteZeit(k, n) {
-        return GESTE.takt * (k + (k + 0.5) / n);
     }
     // DIE POSE DES RIGS an Land (Ruhe ×(1−w) und Gehen ×w, beide additiv über der neutralen Pose `leibRigNeutral`): das
     // Kontrapost mit Atem und der Emotion als Daten-Delta (mp/mref die Profile des Wirts, kalt null), die Beine auf dem Ziel des
@@ -9203,17 +9328,34 @@
         if (w < 0.999) {
             var wi = 1 - w;
             var bAmp = mp && mref && Number.isFinite(mp.breath) && mref.breath > 0 ? 0.02 * (mp.breath / mref.breath) : 0.02;
-            var bRate = mp && mref && Number.isFinite(mp.freq) && mref.freq > 0 ? 1.6 * (mp.freq / mref.freq) : 1.6;
-            var breath = Math.sin(t * bRate) * bAmp;
-            add(r.spine, "z", 0.1 * wi);
-            add(r.chest, "z", -0.06 * wi);
-            add(r.neck, "z", 0.05 * wi);
+            // (der Atem und das Schwanken in ganzen Wellen des Zyklus, `STAND` — der ferne Leib backt dieselben Wellen)
+            var breath = leibStandWelle(t, leibStandAtem(mp, mref)) * bAmp;
+            // DAS KONTRAPOST AUF DEM TRAGENDEN BEIN (stand-lebt 2, `leibStandBein`): die Pose des Labors (das rechte trägt) gespiegelt,
+            // sobald das Gewicht der Person hinüber wandert — das Spielbein beugt Hüfte und Knie, Rumpf, Brust und Hals neigen sich
+            // gegen das Becken, das Becken verlagert sich über das Standbein. Bis hier stand jeder Mensch zu jeder Zeit auf dem rechten.
+            // (stand-lebt 3) die Zeile des Satzes nennt ihr Bein (`r.standSeite`: 0 das rechte, 1 das linke), der Leib das seiner Person
+            var seite = r.standSeite,
+                sb = seite === 0 || seite === 1 ? 1 - 2 * seite : leibStandBein(t, r.standPerson),
+                fL = (1 + sb) / 2,
+                fR = (1 - sb) / 2;
+            add(r.spine, "z", 0.1 * sb * wi);
+            add(r.chest, "z", -0.06 * sb * wi);
+            add(r.neck, "z", 0.05 * sb * wi);
+            add(r.hips, "z", -STAND.verlagerungRad * sb * wi);
             add(r.spine, "x", (-0.02 + breath) * wi);
-            add(r.legL.hip, "x", 0.08 * wi);
-            add(r.legL.knee, "x", 0.16 * wi);
-            add(r.legR.knee, "x", 0.04 * wi);
-            add(r.armL.elbow, "x", -0.18 * wi);
-            add(r.armR.elbow, "x", -0.1 * wi);
+            add(r.legL.hip, "x", 0.08 * fL * wi);
+            add(r.legR.hip, "x", 0.08 * fR * wi);
+            add(r.legL.knee, "x", (0.16 * fL + 0.04 * fR) * wi);
+            add(r.legR.knee, "x", (0.16 * fR + 0.04 * fL) * wi);
+            // DIE ARME HÄNGEN (stand-lebt 3, `STAND.ruhe`): der Unterarm in der Mittelstellung, der Ellbogen leicht gebeugt (die Luft des
+            // Daumens trägt der Boden der Ruhe, unten) — bis hier hing die Bind-Pose (Handfläche vorn, Ellbogen 10° und 6°)
+            var RU = STAND.ruhe;
+            add(r.armL.elbow, "x", -RU.ellbogen * wi);
+            add(r.armR.elbow, "x", -RU.ellbogen * wi);
+            add(r.armL.elbow, "y", -RU.pronation * wi);
+            add(r.armR.elbow, "y", RU.pronation * wi);
+            // der Blick der Zeile (`leibStandBlick`): nur die gebackene Zeile trägt ihn — den nahen Kopf stellt der Wirt (`_bewohnerKopf`)
+            if (seite === 0 || seite === 1) add(r.head, "y", leibStandBlick(t) * wi);
             var kpMul = mp && Number.isFinite(Number(mp.kpMul)) ? Number(mp.kpMul) : 1;
             var dtK = r._kpmulT != null ? Math.max(0, Math.min(0.08, t - r._kpmulT)) : 0;
             r._kpmulT = t;
@@ -9241,8 +9383,8 @@
                 add(r.hips, "x", dX);
                 add(r.hips, "z", dZ);
                 var swayA = Number.isFinite(mp.sway) ? mp.sway : 0.022;
-                add(r.hips, "z", Math.sin(t * 1.1) * swayA * wi);
-                add(r.hips, "x", Math.sin(t * 0.7) * swayA * 0.35 * wi);
+                add(r.hips, "z", leibStandWelle(t, STAND.schwanken[0]) * swayA * wi);
+                add(r.hips, "x", leibStandWelle(t, STAND.schwanken[1], 0.125) * swayA * 0.35 * wi);
             }
         }
         var S = w > 0.001 && gait && gait.S > 0 ? gait.S : 0;
@@ -9361,8 +9503,26 @@
             lot = r.armLot || (r.armLot = []);
         lot[0] = sL && uL ? (sL.rotation.z - uL[2]) * (leibGeste(mp, mref, 0) ? leibGesteWert(t, 0) : 1) : 0;
         lot[1] = sR && uR ? (sR.rotation.z - uR[2]) * (leibGeste(mp, mref, 1) ? leibGesteWert(t, 1) : 1) : 0;
-        if (sL && uL) sL.rotation.z = Math.max(uL[2], lot[0]);
-        if (sR && uR) sR.rotation.z = Math.min(uR[2], lot[1]);
+        // (stand-lebt 3) im Stand hält der Boden die Luft des Daumens der Mittelstellung, wo die Hand vor dem Schenkel hängt
+        // (`STAND.ruhe.daumen` am Lot, bis `daumenBis` linear zu 0; × der Anteil des Stands)
+        var RD = STAND.ruhe,
+            dau = function (u) {
+                return w < 0.999 ? RD.daumen * Math.max(0, 1 - Math.abs(u) / RD.daumenBis) * (1 - w) : 0;
+            };
+        if (sL && uL) sL.rotation.z = Math.max(uL[2] + dau(uL[2]), lot[0]);
+        if (sR && uR) sR.rotation.z = Math.min(uR[2] - dau(uR[2]), lot[1]);
+        // DIE ARME DES TUNS (stand-lebt 2, `STAND.tun`/`arme`): wer steht, rührt die Hände nach dem, was er tut (`r.standTun`, der
+        // Wirt setzt es aus dem Profil seines Stands, `_animateHumanoidRig`) — die Schulter beugt sich vor, der Ellbogen hebt den
+        // Unterarm, je Seite im eigenen Takt; im Gehen tragen die Arme den Gang
+        var AT = w < 0.999 && r.standTun && r.standTun.je > 0 ? r.standTun : null;
+        if (AT)
+            for (var si = 0; si < 2; si++) {
+                var arm = si ? r.armR : r.armL,
+                    hb = leibTunWert(t, si, AT) * (1 - w);
+                if (!hb || !arm) continue;
+                add(arm.shoulder, "x", -AT.schulter * hb);
+                add(arm.elbow, "x", -AT.ellbogen * hb);
+            }
         if (r.hips) {
             if (r._baseHipY == null) r._baseHipY = r.hips.position.y;
             r.hips.position.y = r._baseHipY - r._gangSenke * w;
@@ -11986,9 +12146,15 @@
         leibRigNeutral: leibRigNeutral,
         leibRigEingeschwungen: leibRigEingeschwungen,
         GESTE: GESTE,
+        STAND: STAND,
+        leibStandBein: leibStandBein,
+        leibStandBlick: leibStandBlick,
+        leibStandTun: leibStandTun,
+        leibTunWert: leibTunWert,
         leibGeste: leibGeste,
-        leibGestePhase: leibGestePhase,
-        leibGesteZeit: leibGesteZeit,
+        leibStandAtem: leibStandAtem,
+        leibStandZeile: leibStandZeile,
+        leibStandZeit: leibStandZeit,
         leibRigPose: leibRigPose,
         leibKette: leibKette,
         leibSohle: leibSohle,

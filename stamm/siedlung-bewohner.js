@@ -2038,12 +2038,14 @@ class AnazhRealm_siedlung_bewohner {
         this._bewohnerGang(b); // × lauf, mit dem Delta seines Satzes (der Kranke)
         this.state.scene.add(g);
         if (S.satz === null) S.satz = this._bewohnerSatz(S, b);
-        // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, der Stand sofort
+        // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, die erste Zeile jedes Stands
+        // sofort (die übrigen Zeilen des Zyklus backt der Takt, `_bewohnerGangBacken`)
         if (G.lage === null) {
             const B = window.__koerperCore.LEIB_SATZ.baender.length; // (je Gang des Satzes ein Band, `_bewohnerGangPose`)
             G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, baender: B, gebacken: 0, fertig: false, tempo: b.tempoBand, gaenge: null }; // prettier-ignore
-            for (let h = 0; h < AnazhRealm._bewohnerStaende().length; h++)
-                this._bewohnerGangPose(g, G.lage, B * G.lage.n + h, null);
+            const N = window.__koerperCore.STAND.zeilen;
+            for (let z = 0; z < AnazhRealm._bewohnerStandZahl(); z += N)
+                this._bewohnerGangPose(g, G.lage, B * G.lage.n + z, null);
         }
     }
 
@@ -2327,6 +2329,7 @@ class AnazhRealm_siedlung_bewohner {
                     // wer aus dem Feld in den Nah-Kreis tritt, nimmt seine Pose mit: im Feld ging sein Rig nicht
                     // (`_bewohnerFeldLage`), die schwindenden Glieder folgen ab hier seinen Knochen
                     if (u._kzGlieder && this._kzBesitztFeld(g)) {
+                        if (g.userData.rig) g.userData.rig.standPerson = b.atem / 10;
                         this._animateHuman(
                             g,
                             b.uhr + b.atem,
@@ -2445,6 +2448,14 @@ class AnazhRealm_siedlung_bewohner {
                     this._bewohnerGangSchritt(b, 0, delta, echt, S);
                     bewegt.push(b);
                 }
+                // DER STAND LEBT (stand-lebt, koerper STAND): wer jenseits der Nah-Wahl steht, geht die Zeilen seines Stands zu seiner
+                // Uhr — im Satz rückt seine Instanz (`bewegt`), im Feld stellt der EINE Schreiber seine Glieder (`_bewohnerFeldLage`;
+                // die Hülle der Grobstufe trägt keine Glieder, die sich rühren könnten); eine Zeile je Leib und Takt des Stands
+                else if (!istNah && !b.weg && !b.drinnen && this._bewohnerStandTakt(S, b, delta)) {
+                    if (b.satzOrt) bewegt.push(b);
+                    else if (echt && g.userData._kzGrob !== true && this._kzBesitztFeld(g))
+                        this._bewohnerFeldLage(b, S);
+                }
                 if (!istNah) {
                     if (g.userData.rig && !b.backt) halter.push(b); // er trägt einen Leib, den das Auge nicht sieht
                     continue;
@@ -2461,6 +2472,8 @@ class AnazhRealm_siedlung_bewohner {
                         const dtA = Math.min(0.25, b.animDt);
                         b.animDt = 0;
                         const gang = this._gaitTick(g, b, geht ? (b.tempoJetzt ?? b.tempo) : 0, dtA, null);
+                        // die Person trägt ihren Gewichtswechsel (koerper `leibStandBein`: Phase und Periode aus ihrem Samen, `atem`)
+                        if (g.userData.rig) g.userData.rig.standPerson = b.atem / 10;
                         this._animateHuman(
                             g,
                             b.uhr + b.atem,
@@ -2682,7 +2695,21 @@ class AnazhRealm_siedlung_bewohner {
             const voll = BW.kopfMaxRad + BW.rumpfMaxRad;
             soll = Math.max(-voll, Math.min(voll, da));
             if (!b.weg && Math.abs(da) > voll) b.drehen = a;
-        } else if (war && b.da && !b.weg && !b.platz && Number.isFinite(b.ziel.blick)) b.drehen = b.ziel.blick;
+        } else {
+            if (war && b.da && !b.weg && !b.platz && Number.isFinite(b.ziel.blick)) b.drehen = b.ziel.blick;
+            // DER BLICK FOLGT DEM REIZ (stand-lebt 2, `_bewohnerReiz`): wer steht, schaut dem nächsten Bewegten nach — die ersten
+            // `augeNurRad` tragen die Augen, den Rest Kopf und Rumpf; der Leib wendet sich ihm nicht zu (er bleibt bei seinem Ziel)
+            const rz = b.weg ? null : this._bewohnerReiz(b, dt);
+            if (rz) {
+                const q = rz.leib.position;
+                let da = Math.atan2(q.x - g.position.x, q.z - g.position.z) - g.rotation.y;
+                da -= Math.PI * 2 * Math.round(da / (Math.PI * 2));
+                const voll = BW.kopfMaxRad + BW.rumpfMaxRad;
+                soll = Math.max(-voll, Math.min(voll, Math.sign(da) * Math.max(0, Math.abs(da) - BW.augeNurRad)));
+            } else if (!b.weg && !b.drinnen)
+                // (stand-lebt 3) ohne Reiz wandert der Blick wie der des fernen Leibs (koerper `leibStandBlick`, dieselbe Uhr `uhr + atem`)
+                soll = window.__koerperCore.leibStandBlick((b.uhr || 0) + (b.atem || 0));
+        }
         const om = BW.kopfRadS * dt;
         b.kopfY = (b.kopfY || 0) + Math.max(-om, Math.min(om, soll - (b.kopfY || 0)));
         const kopf = Math.max(-BW.kopfMaxRad, Math.min(BW.kopfMaxRad, b.kopfY));
@@ -2691,6 +2718,30 @@ class AnazhRealm_siedlung_bewohner {
             [r.spine.rotation.y, neu] = [r.spine.rotation.y + b.kopfY - kopf, true];
         if (k.rotation.y !== kopf) [k.rotation.y, neu] = [kopf, true];
         return neu;
+    }
+
+    // DER REIZ (stand-lebt 2): der nächste bewegte Mensch bis `reizM` um b — Passant, Fahrer, der Spieler —, gehalten `reizS` (die
+    // Fixation), solange er sich regt und im Kreis bleibt; dann wählt der Blick neu. Liefert ihn (mit `leib.position`) oder null.
+    _bewohnerReiz(b, dt) {
+        const BW = AnazhRealm.BEWOHNER;
+        const g = b.leib;
+        const R2 = BW.reizM * BW.reizM;
+        const regt = (o) =>
+            !!(o && o.leib && (o.spieler ? Math.abs(o.vx) + Math.abs(o.vz) > 0.1 : o.weg && !o.drinnen));
+        const d2 = (o) => (o.leib.position.x - g.position.x) ** 2 + (o.leib.position.z - g.position.z) ** 2;
+        b.reizUhr = (b.reizUhr || 0) + dt;
+        if (b.reiz && b.reizUhr < BW.reizS && regt(b.reiz) && d2(b.reiz) < R2) return b.reiz;
+        b.reizUhr = 0;
+        let best = null;
+        let bd = R2;
+        const sp = this._bewohnerSpieler;
+        if (regt(sp) && d2(sp) < bd) [best, bd] = [sp, d2(sp)];
+        for (const o of (b.sied && b.sied.liste) || [])
+            if (o !== b && regt(o)) {
+                const e = d2(o);
+                if (e < bd) [best, bd] = [o, e];
+            }
+        return (b.reiz = best);
     }
 
     // DER ABSTAND ZUM SPIELER (mensch.K5, „die Erinnerung lenkt den Abstand"): dem Gehenden zwei Kapseln und der persönliche
@@ -3158,14 +3209,17 @@ class AnazhRealm_siedlung_bewohner {
     // ging jeder Leib mit `null`: der Akt des Tags und die Furcht standen in keinem Bild. Ein Objekt je Bewohner, je Ruf gefüllt.
     // DIE STÄNDE DES BEWOHNERS (w28-steh-haltung): die Namen der Profile, in denen ein Bewohner stehen kann — neutral, je
     // Haltung des Tages-Gesetzes (koerper TAGES_GESETZ.haltung) und je Zeile der Emotions-Brücke an einer Achse seines Gemüts
-    // (BEWOHNER.gemuet: sorrow, chaos). Der ferne Satz und das Feld backen je Namen EINE Stand-Zeile (`_bewohnerGangPose`),
-    // jeder Bewohner wählt seine über denselben Namen wie sein naher Leib (`_koerperMotionName`). Bis hier buk der Satz EINEN
-    // Stand ohne Haltung: an der Nah-Grenze sprang die Schulter beim Akt besuch um 8,2°.
+    // (BEWOHNER.gemuet: sorrow, chaos). Jeder Bewohner wählt seinen über denselben Namen wie sein naher Leib (`_koerperMotionName`).
+    // DER STAND LEBT (stand-lebt, koerper STAND): der ferne Satz und das Feld backen je Namen `STAND.zeilen` Zeilen über den Zyklus
+    // des Stands (`_bewohnerGangPose` zur Uhr `_bewohnerStandZeit`), die Zeilen des Namens h liegen ab h · zeilen beieinander
+    // (`_bewohnerStandZahl` alle), jeder Bewohner liest die Zeile seiner Uhr (`_bewohnerStandLage`). Bis hier buk der Satz je Namen
+    // EINE Zeile zur Uhr 0 (joy vier Phasen hinten an, je Leib fest aus seinem Samen) — und vor w28-steh-haltung EINEN Stand ohne
+    // Haltung: an der Nah-Grenze sprang die Schulter beim Akt besuch um 8,2°.
     static _bewohnerStaende() {
         if (AnazhRealm._bewohnerStaendeListe) return AnazhRealm._bewohnerStaendeListe;
         const KC = window.__koerperCore;
         if (!KC || !KC.TAGES_GESETZ) return AnazhRealm._kernPflichtBruch("koerper:TAGES_GESETZ");
-        if (typeof KC.leibGeste !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibGeste");
+        if (!KC.STAND || typeof KC.leibStandZeile !== "function") return AnazhRealm._kernPflichtBruch("koerper:STAND");
         const L = [AnazhRealm.MOTION_PROFILE_MAP.koerper.idle];
         const nimm = (nm) => nm && !L.includes(nm) && L.push(nm);
         Object.values(KC.TAGES_GESETZ.haltung).forEach(nimm);
@@ -3175,48 +3229,80 @@ class AnazhRealm_siedlung_bewohner {
         // hinten an (jede Zeile davor bleibt, wo sie stand); ihr Profil ist das des Gesetzes (`leibSatzProfil`)
         if (typeof KC.leibSatzNamen !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibSatzNamen");
         KC.leibSatzNamen().forEach(nimm);
-        // DIE PHASEN DER GESTE (a-haltung 2): ein Stand, dessen Profil eine Seite über das Band der Ruhe hebt (koerper `leibGeste`
-        // gegen das idle des Buchs: joy), backt `GESTE.phasen` Zeilen — die erste an seinem Platz, die übrigen hinten an (jede andere
-        // Zeile bleibt, wo sie stand); `_bewohnerStandZeilen` nennt je Namen seine Zeilen
-        const M = KC.MOTION;
-        const Z = new Map(L.map((nm, h) => [nm, [h]]));
-        const P = (nm) => KC.leibSatzProfil(M, nm);
-        for (const nm of L.slice())
-            if (KC.leibGeste(P(nm), M[L[0]], 0) || KC.leibGeste(P(nm), M[L[0]], 1))
-                for (let k = 1; k < KC.GESTE.phasen; k++) Z.get(nm).push(L.push(nm) - 1);
-        AnazhRealm._bewohnerStandZeilen = Z;
         return (AnazhRealm._bewohnerStaendeListe = Object.freeze(L));
     }
-    // DIE UHR DES STANDS h (das Backen, a-haltung 2): die Zeile einer Geste steht zur Uhr ihrer Phase (koerper `leibGesteZeit`),
-    // jede andere bei 0 (der Kontrapost des Atems bei 0, wie bisher)
-    _bewohnerStandZeit(h) {
-        const nm = AnazhRealm._bewohnerStaende()[h];
-        const zeilen = AnazhRealm._bewohnerStandZeilen.get(nm);
-        return zeilen.length > 1 ? window.__koerperCore.leibGesteZeit(zeilen.indexOf(h), zeilen.length) : 0;
+    // die Zeilen aller Stände (je Name `STAND.zeilen` je tragendem Bein, `STAND.seiten` — stand-lebt 3) — die Zeilen des Satzes und
+    // des Felds hinter dem Gang
+    static _bewohnerStandZahl() {
+        const ST = window.__koerperCore.STAND;
+        return AnazhRealm._bewohnerStaende().length * ST.zeilen * ST.seiten;
     }
-    // DAS GEMÜT DES STANDS h (das Backen): das Gemüt, das die Brücke auf den Namen des Stands h führt (0: neutral, wie bisher);
-    // ein Stand ohne Profil im Buch bricht laut — nie eine neutrale Zeile unter fremdem Namen
-    _bewohnerStandGemuet(h) {
-        if (!(h > 0)) return null;
-        const e = { haltung: AnazhRealm._bewohnerStaende()[h] };
-        if (!this._koerperMotionProfile(false, e) || this._koerperMotionName(false, e) !== e.haltung)
+    // DIE UHR DER STAND-ZEILE z (das Backen): die Zeile k ihres Namens steht zur Uhr k · zyklus / zeilen (koerper `leibStandZeit`)
+    _bewohnerStandZeit(z) {
+        const N = window.__koerperCore.STAND.zeilen;
+        return window.__koerperCore.leibStandZeit(z % N, N);
+    }
+    // DAS GEMÜT DER STAND-ZEILE z (das Backen): das Gemüt, das die Brücke auf den Namen ihres Stands führt (der erste: neutral);
+    // ein Stand ohne Profil im Buch bricht laut — nie eine neutrale Zeile unter fremdem Namen. (stand-lebt 3) Die Zeilen eines
+    // Namens liegen je tragendem Bein beieinander (`STAND.seiten`): das Gemüt der Zeile nennt ihr Bein (`seite`, 0 das rechte),
+    // das Rig liest es (`_animateHumanoidRig` → `r.standSeite`)
+    _bewohnerStandGemuet(z) {
+        const ST = window.__koerperCore.STAND;
+        const B = Math.floor(z / ST.zeilen);
+        const h = Math.floor(B / ST.seiten);
+        const e = { haltung: AnazhRealm._bewohnerStaende()[h], seite: B % ST.seiten };
+        if (h > 0 && (!this._koerperMotionProfile(false, e) || this._koerperMotionName(false, e) !== e.haltung))
             this._bruchMelden(
                 `BEWOHNER: der Stand „${e.haltung}“ trägt kein Profil der Bewegung (das Buch des Körpers)`
             );
         return e;
     }
-    // DER STAND DES BEWOHNERS: die Zeile seines Stands — der Name, den sein naher Leib steht (`_bewohnerGemuet` über die EINE
-    // Wahl `_koerperMotionName`), in der Liste der Stände; ein Name ohne Zeile bricht laut. Trägt der Stand eine Geste, die Zeile
-    // seiner Phase (a-haltung 2, koerper `leibGestePhase`: seine Uhr bei der Geburt, `atem` aus seinem Samen)
+    // DER STAND DES BEWOHNERS: die erste Zeile seines Stands — der Name, den sein naher Leib steht (`_bewohnerGemuet` über die EINE
+    // Wahl `_koerperMotionName`), in der Liste der Stände; ein Name ohne Zeile bricht laut
     _bewohnerStandVon(b) {
         const nm = this._koerperMotionName(false, this._bewohnerGemuet(b));
-        AnazhRealm._bewohnerStaende();
-        const zeilen = AnazhRealm._bewohnerStandZeilen.get(nm);
-        if (!zeilen) {
+        const h = AnazhRealm._bewohnerStaende().indexOf(nm);
+        if (h < 0) {
             this._bruchMelden(`BEWOHNER: der Stand „${nm}“ trägt keine Zeile im Satz`);
             return 0;
         }
-        return zeilen.length > 1 ? zeilen[window.__koerperCore.leibGestePhase(b.atem || 0, zeilen.length)] : zeilen[0];
+        const ST = window.__koerperCore.STAND;
+        return h * ST.zeilen * ST.seiten;
+    }
+    // DIE ZEILEN SEINES STANDS JETZT (stand-lebt; Leser: das Feld `_bewohnerFeldLage`, der Satz `_bewohnerSatzSchreiben`): zur Uhr
+    // seines Leibs `uhr + atem` — derselben, die sein naher Leib geht — die Zeile k0 seines Stands, die nächste k1 und ihr Anteil
+    // (koerper `leibStandZeile`, wie die Phase des Gangs k0 und k1 wählt); solange die Zeilen der Gestalt `Z` nicht gebacken
+    // sind (`standFertig`), die erste. → [z0, z1, Anteil] (nach `aus`)
+    _bewohnerStandLage(b, Z, aus) {
+        const z = aus || this._bewohnerStandZ || (this._bewohnerStandZ = [0, 0, 0]);
+        let h = b.standZeile || 0;
+        if (!Z || !Z.standFertig) {
+            z[0] = z[1] = h;
+            z[2] = 0;
+            return z;
+        }
+        const KC = window.__koerperCore;
+        const u = (b.uhr || 0) + (b.atem || 0);
+        KC.leibStandZeile(u, KC.STAND.zeilen, z);
+        // (stand-lebt 3) das Bein, das seine Person gerade trägt (`leibStandBein`, wie sein naher Leib): die Zeilen des linken liegen
+        // hinter denen des rechten — der ferne Leib wechselt das Bein im Schritt einer Zeile (der Satz mischt nur im Zyklus)
+        if (KC.leibStandBein(u, (b.atem || 0) / 10) < 0) h += KC.STAND.zeilen;
+        z[0] += h;
+        z[1] += h;
+        return z;
+    }
+    // DER TAKT DES STANDS (stand-lebt, Lehre 25: der Takt kostet, was ihn betrifft): wer jenseits der Nah-Wahl steht, stellt seine
+    // Zeilen neu, sobald seine Uhr eine halbe Zeile weiter ist (`STAND.zyklus / zeilen / 2`), fern auf der Raten-Leiter seltener
+    // (`_creatureAnimDiv` an der Grenze seiner Grobstufe, höchstens ×4: zwei Zeilen); liefert, ob er dran ist
+    _bewohnerStandTakt(S, b, delta) {
+        const ST = window.__koerperCore.STAND;
+        const div = Math.min(
+            4,
+            this._creatureAnimDiv(Math.sqrt(b.dA2 || 0), this._bewohnerGelenkAb(S, b), 0, delta, true)
+        );
+        if (Number.isFinite(b.standUhr) && b.uhr - b.standUhr < (div * ST.zyklus) / ST.zeilen / 2) return false;
+        b.standUhr = b.uhr;
+        return true;
     }
     // SEIN STAND WECHSELT (der Akt des Tags, die Furcht): gemerkt (`b.standZeile` — die Leser: `_bewohnerSatzSchreiben`, im Feld
     // `_bewohnerFeldLage`, dort sofort neu gestellt); liefert, ob der Satz ihn neu schreiben muss
@@ -5267,6 +5353,14 @@ AnazhRealm.BEWOHNER = Object.freeze({
     kopfMaxRad: 1.2,
     rumpfMaxRad: 0.45,
     kopfRadS: 4.5,
+    // DER BLICK FOLGT DEM REIZ (stand-lebt 2, `_bewohnerReiz`): wer steht und keinem begegnet, wendet Kopf und Rumpf dem nächsten
+    // bewegten Menschen zu — Passant, Fahrer, der Spieler; der Beginn einer Bewegung fängt die Aufmerksamkeit (Abrams & Christ 2003,
+    // Psychol Sci 14:427) —, der Fußgänger fixiert andere in 15 m für 500 ms (Fotios, Uttley & Fox 2018, Light Res Technol 50:511:
+    // `reizM`, `reizS` — so lange hält der Blick, ehe er neu wählt); bis `augeNurRad` folgen ihm die Augen allein (Stahl 1999, Exp
+    // Brain Res 126:41: die Spanne ohne Kopf 35,8°, je Seite 17,9°), darüber der Kopf bis `kopfMaxRad`, darüber der Rumpf
+    reizM: 15,
+    reizS: 0.5,
+    augeNurRad: 0.312,
     // der Zuschauer jenseits der Nah-Wahl wendet den Leib, liegt das Geschehen mehr als 15° neben seinem Blick (ANGENOMMEN: die Hälfte
     // der ± 30°, in denen ein Blick dem Geschehen folgt — keine Quelle; `_tickBewohner`)
     fernBlickRad: Math.PI / 12,
