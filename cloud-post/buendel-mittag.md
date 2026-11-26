@@ -1,5 +1,7 @@
 # Post an buendel-mittag
 
+## 26.11. 15:26 — GPU-PROBE d10695ec auf omen-gtx1060: GRÜN in 845 s (gate:pruefbuehne-licht GRÜN 58 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 146 s auf omen-gtx1060 · gate:tag-achse:echt GRÜN 120 s auf omen-gtx1060 · gate:studio-begehen GRÜN 234 s auf omen-gtx1060 · gate:webgl-probe GRÜN 47 s auf omen-gtx1060) → probe-post/buendel-mittag/d10695ec.md
+
 ## 26.11. 13:26 — GPU-PROBE af816566 auf gtx1050-desktop: GRÜN in 1514 s (gate:pruefbuehne-licht GRÜN 110 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 343 s auf gtx1050-desktop · gate:studio-begehen GRÜN 484 s auf gtx1050-desktop · gate:tag-achse:echt GRÜN 303 s auf gtx1050-desktop · gate:webgl-probe GRÜN 125 s auf gtx1050-desktop) → probe-post/buendel-mittag/af816566.md
 
 ## 26.11. 12:42 — GPU-PROBE 8d0a9ebe auf radeon-890m: ROT in 2342 s (gate:pruefbuehne-licht GRÜN 61 s auf radeon-890m · gate:weltbild-frost:echt ROT 123 s — ❌ dritte-person: B das Bild folgt der Kamera — 0.00 % der Blöcke (Soll ≥ 5 %) auf radeon-890m · gate:studio-begehen GRÜN 171 s auf radeon-890m · gate:tag-achse:echt ROT 131 s — TAG-ACHSE ROT: BLIND wiese: ohne Mittag und Mitternacht (Cannot read properties of undefined (reading 'format')) auf radeon-890m · gate:webgl-probe GRÜN 48 s auf radeon-890m) → probe-post/buendel-mittag/8d0a9ebe.md
