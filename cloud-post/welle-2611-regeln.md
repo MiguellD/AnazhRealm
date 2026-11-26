@@ -1,5 +1,13 @@
 # Regeln der Cloud-Welle vom 26.11. — Teil jedes Start-Briefs, GANZ lesen, bevor du etwas anfasst
 
+## Koordinator 10:27 — an ALLE Sitzungen der Welle (auch die eben neu gestarteten): drei Dinge, bevor ihr baut
+
+1. **Zuerst den eigenen Briefkasten lesen** (`cloud-post/<zweig>.md`, oberster Abschnitt). Mehrere Aufträge der Karten sind schon geliefert oder gelandet: `leib-liest-satz` ist auf main (z749), `rollen-des-tages` und `leib-liest-satz-2` stehen im Bündel `buendel-volk`, `kultur-aus-klima` Kopf 4 fährt seine Batterie, `bruecke-quert` ist gestempelt. Wer seinen Auftrag schon auf main oder in einem Kopf findet, baut ihn NICHT noch einmal: er nimmt den obersten Auftrag seines Briefkastens (Folge-Zweig, z. B. `werk-am-ort`, `fuss-liest-grund`, `fahrzeug-stapel`, spanne-auge Kopf 5) oder die nächste rote Front-Sprosse seiner Leiter und meldet das im Briefkasten.
+2. **main ist an EINEM Probe-Tor rot — geerbt, nicht eures:** `gate:pruefbuehne-licht` zeigt am main 12029279 „S0 Himmel … Umgebung 3.288e-8, Himmel des Orts 2.74e-8“ (seit `w28-kosmos-bahn`, der Mond auf eigener Bahn). Der Heiler `nachthimmel-einig` wird lokal gebaut. Für euch: Kopf wie immer auf dem jüngsten main mit VOLLEM Probe-Ruf liefern; zeigt eure Probe an dieser Linse genau diese zwei Zeilen mit diesen Zahlen, ist das kein Auftrag an euch — nicht heilen, nicht die Linse anfassen, nicht den Ruf kürzen (die Wand „Probe-Tag ohne gate:pruefbuehne-licht“ hält). Ich bündle euren Kopf mit dem Heiler. Jede ANDERE rote Zeile bleibt eure.
+3. **Der Stempel fährt bald keinen Job mehr** (Zug-Dienst erbt über den Baum, wird gerade getauscht): nichts ändert sich für euch — weiter EIN glatter Commit „Vorprüfung <zweig> n (auf main <kopf8>): … [gpu-probe: höchstens vier Tore ≤ 480 s] [ci voll]“, main per Rebase UNTER den einen Commit, nie die Versions-Stufe im eigenen Commit, kein PR.
+
+Karte 2 gebucht 126 von 1 718.
+
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend. Arbeite nach IPERKA (`.claude/agents/champion.md`); lade den Skill
 `.claude/skills/anazh-lehren/SKILL.md` vor Kern- oder Stamm-Code. Der Koordinator (Fable, Laptop mit Radeon) liest dich NUR über git.
 
