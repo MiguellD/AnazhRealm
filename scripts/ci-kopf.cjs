@@ -3,8 +3,9 @@
 // trägt das Urteil seines Elters, bis KETTE Glieder tief (`kopfKette`); ein Merge und jeder Commit mit Inhalt erben nichts.
 // Trug ein anderer Lauf, der den Kopf selbst prüfte (push · schedule · workflow_dispatch), die volle Batterie grün: `voll=nein`.
 // Läuft ein ÄLTERER noch, wartet der Richter (je 30 s, höchstens 30 min): grün steht, rot
-// ist ROT, abgebrochen fährt selbst; ein jüngerer wartet nie auf ihn zurück. Auf Abruf und auf einem PR läuft alles, ein Fehler
-// der API ist ROT. gate:ci-deckung (V) KOPF hält die Form, sein Selbsttest die Fälle.
+// ist ROT, abgebrochen fährt selbst; ein jüngerer wartet nie auf ihn zurück. Auf Abruf läuft alles, auf einem PR auch — außer er
+// kommt aus einem eigenen Zweig, den der push schon richtet (`prZwilling`); ein Fehler der API ist ROT. gate:ci-deckung (V) KOPF
+// hält die Form, sein Selbsttest die Fälle.
 // DER ZUG FÄHRT voll NIE (LANDUNG ≤ 10 MIN, 23.11., der Schöpfer: „Keine 10h max 10min und fertig. Wir messen soviel wie nötig,
 // nicht wie möglich“): ein push auf einen Zug-Zweig (ZUG_REFS) ist `voll=nein` ohne Frage an die API — die Batterie erbt vom grünen
 // Lauf am Zweig-Kopf, den der Einlass verlangt (zug.cjs bereit); nach der Landung fährt sie auf main (die Nachwache). Die Karten
@@ -25,6 +26,14 @@ const KETTE = 4;
 const ZUG_REFS = ["refs/heads/integ-probe", "refs/heads/zug-a", "refs/heads/zug-b"];
 const imZug = (ereignis, ref) => ereignis === "push" && ZUG_REFS.includes(ref);
 const ZUG_GRUND = "der Zug fährt die volle Batterie nie — sie erbt vom grünen Lauf am Zweig-Kopf (zug.cjs bereit), main fährt sie nach der Landung (LANDUNG ≤ 10 MIN)";
+// EIN PR AUS DEM EIGENEN ZWEIG IST DER ZWILLING SEINES PUSHS (26.11., gelesen an fünf Läufen: leib-liest-satz und fahrzeug-medium
+// trugen je Kopf zwei volle Batterien, push und pull_request im Abstand von 3 und 23 s — die Gruppe in check.yml ist je Ref, der
+// PR trägt refs/pull/<n>/merge und teilt sie nie; die Schlange stand bei 69 wartenden Jobs). Den Kopf richtet der push am selben
+// Zweig, den Merge der Zug am Kandidaten, und kein Leser erbt von einem PR-Lauf (BEWEIS). `voll=nein` gilt nur, wo der push
+// wirklich fährt: nie für einen Fork (er pusht hier nicht) und nie für claude/** (check.yml on.push.branches nimmt sie aus).
+const PUSH_FAEHRT_NIE = /^claude\//;
+const prZwilling = ({ ereignis, kopfZweig, eigen }) =>
+    ereignis === "pull_request" && eigen === true && !!kopfZweig && !PUSH_FAEHRT_NIE.test(kopfZweig);
 
 // der Kopf und seine leeren Vorfahren, der Kopf zuerst: `commits` trägt je SHA { sha, tree: { sha }, parents: [{ sha }] }
 // (die Form von /git/commits/<sha>); die Kette endet am Merge, am ersten Elter mit anderem Baum, an KETTE Vorfahren
@@ -40,8 +49,13 @@ function kopfKette(sha, commits) {
 }
 
 // → { voll, grund } · { warte: lauf } · { rot: grund }
-function kopfUrteil({ ereignis, ref, eigenerLauf, laeufe, jobsJe, gewartet = [] }) {
+function kopfUrteil({ ereignis, ref, eigenerLauf, laeufe, jobsJe, gewartet = [], kopfZweig, eigen }) {
     const u = { voll: "ja", grund: "kein anderer Lauf trägt die volle Batterie auf diesem Kopf grün" };
+    if (prZwilling({ ereignis, kopfZweig, eigen }))
+        return {
+            voll: "nein",
+            grund: `PR aus dem eigenen Zweig ${kopfZweig}: den Kopf richtet der push am selben Zweig, den Merge der Zug am Kandidaten`,
+        };
     if (IMMER.includes(ereignis)) return { ...u, grund: `Ereignis ${ereignis}: die Batterie läuft immer` };
     if (imZug(ereignis, ref)) return { voll: "nein", grund: ZUG_GRUND };
     const gruen = (jobs, re) =>
@@ -164,6 +178,10 @@ if (require.main === module) {
             .replace(/@.*$/, "") || "check.yml";
     (async () => {
         const [ereignis, ref, gewartet] = [env.GITHUB_EVENT_NAME, env.GITHUB_REF, []];
+        // ein PR nennt Kopf-Zweig und Kopf-Repo in seiner Ereignis-Datei; fehlt sie an einem PR, wirft der Richter (nie still „fremd“).
+        // Ein PR ohne Kopf-Repo (der Fork ist gelöscht) ist nicht eigen: seine Batterie fährt.
+        const pr = ereignis === "pull_request" ? JSON.parse(fs.readFileSync(env.GITHUB_EVENT_PATH, "utf8")).pull_request : null;
+        const [kopfZweig, eigen] = pr ? [pr.head.ref, !!pr.head.repo && pr.head.repo.full_name === env.GITHUB_REPOSITORY] : [];
         // im Zug fragt der Richter nichts: voll=nein (ZUG_REFS)
         const ohneFrage = IMMER.includes(ereignis) || imZug(ereignis, ref);
         // die Kette des Kopfs: je Glied EINE Anfrage, sie endet am ersten Commit, der nicht mehr erbt
@@ -181,7 +199,7 @@ if (require.main === module) {
             for (const r of laeufe)
                 if (String(r.id) !== String(env.GITHUB_RUN_ID) && r.conclusion === "success")
                     jobsJe[r.id] = (await api(`/actions/runs/${r.id}/jobs?filter=latest&per_page=100`)).jobs;
-            u = kopfUrteil({ ereignis, ref, eigenerLauf: env.GITHUB_RUN_ID, laeufe, jobsJe, gewartet });
+            u = kopfUrteil({ ereignis, ref, eigenerLauf: env.GITHUB_RUN_ID, laeufe, jobsJe, gewartet, kopfZweig, eigen });
             if (!u.warte) break;
             if (gang >= WARTE_S / TAKT_S) {
                 u = {

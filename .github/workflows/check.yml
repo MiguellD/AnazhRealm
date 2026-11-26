@@ -37,8 +37,9 @@ on:
                 default: false
 
 # V7 — ein Lauf pro Ref: ein neuer Push auf denselben Branch canceled den laufenden
-# (spart Runner-Minuten, kein veralteter Lauf hängt). Der pull_request-Trigger teilt sich
-# die Gruppe mit dem push, sodass ein PR-Branch nicht doppelt läuft. AUSSER auf main: die Nachwache bricht nie ab — landet der
+# (spart Runner-Minuten, kein veralteter Lauf hängt). Ein pull_request trägt refs/pull/<n>/merge und teilt die Gruppe mit dem
+# push NIE (26.11.: je Cloud-Kopf fuhren beide die 22 Jobs) — den Zwilling hält der Kopf-Richter (scripts/ci-kopf.cjs
+# `prZwilling`: ein PR aus einem eigenen Zweig, den der push richtet, fährt nur kopf und Puls). AUSSER auf main: die Nachwache bricht nie ab — landet der
 # nächste Zug, während sie fährt, wartet sein Lauf (GitHub hält je Gruppe einen laufenden und einen wartenden; ein überholter
 # wartender fällt, sein Kopf steht im Bereich des nächsten Urteils: zug.cjs nachwache nennt die Landungen seit dem letzten grünen main).
 concurrency:
@@ -241,7 +242,8 @@ jobs:
         # demselben Kopf (SHA): trug einer die volle Batterie grün, läuft sie nicht noch einmal (voll=nein); läuft ein älterer noch,
         # wartet er bis 30 min auf sein Urteil (grün steht, rot ist ROT, abgebrochen fährt selbst). Im Zug (push auf integ-probe,
         # zug-a, zug-b) sagt er ohne Frage voll=nein — die Batterie erbt vom Zweig-Kopf (LANDUNG ≤ 10 MIN); auf main fährt sie als
-        # Nachwache, auf Abruf und auf einem PR läuft alles; ein Fehler der API ist rot. gate:ci-deckung (V) KOPF hält die Form.
+        # Nachwache, auf Abruf läuft alles, auf einem PR auch — außer er kommt aus einem eigenen Zweig, den der push schon richtet
+        # (der Zwilling, `prZwilling`); ein Fehler der API ist rot. gate:ci-deckung (V) KOPF hält die Form.
         # DER KOPF IST SEIN INHALT (18.11.): ein Commit ohne Inhalt (EIN Elter, derselbe Baum) trägt das Urteil seines Elters — der
         # Stempel „Abgabe …" auf einem Kopf, der `[ci voll]` grün trug, fährt die Batterie nicht ein zweites Mal (Stempel → bereit
         # in der Zeit des Pulses statt der Batterie); ein Merge und jeder Commit mit Inhalt erben nichts (`kopfKette`).
