@@ -1,0 +1,9 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 8.5 s · am Messort stadt-voll (ego) nach 8.5 s, 241 Takte, Anlauf stand
+@@ 8.5 s · Kunst: 1356 Bewohner · mit Können-Profil 1356 · Akte {"mittag":127,"arbeit":672,"spiel":491,"schlaf":6,"abend":54,"einkauf":4,"morgen":2}
+@@ 8.5 s · S1 Meister {"handwerk":427,"tanz":8,"kampf":5,"brett":8} · Anfänger {"handwerk":633,"tanz":823,"kampf":1011,"brett":894} · Künste mit Paar 4 von 3
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
