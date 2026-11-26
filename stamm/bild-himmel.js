@@ -1383,11 +1383,11 @@ class AnazhRealm_bild_himmel {
         // der Winkel der Sonne in Stufen (`_sonnenWinkel`): Licht, Schatten, Himmelskörper und Luft lesen dieselbe Richtung
         const angle = this._sonnenWinkel(t);
         const sunDir = this._dayNightSunDirection(angle);
-        // Mond-Richtung aus der EINEN Quelle: der Vollmond steht der Sonne gegenüber (`__weltLicht.mondRichtung` = −sunDir), sein
-        // Licht und sein Körper (`_updateCelestialBodies`) lesen dieselbe Richtung.
+        // Mond-Richtung aus der EINEN Quelle: der Mond auf seiner eigenen Bahn (`_dayNightMoonDirection`), sein Licht und sein
+        // Körper (`_updateCelestialBodies`) lesen dieselbe Richtung.
         // `lightDir` = der AKTIVE Himmelskörper (Sonne über dem Horizont, sonst Mond) → Richtlicht,
         // Wasser-Glitzer, Gras-Translucency; die Skybox behält sunDir (der Wolken-Glow ist Sonne).
-        const moonDir = sunDir.clone().negate();
+        const moonDir = this._dayNightMoonDirection(angle);
         const lightDir = sunDir.y >= 0 ? sunDir : moonDir;
         // DIE EINE TAG-ACHSE (S7): jeder Anwender liest dieselben Kanäle derselben Sonnenhöhe
         const achse = this._tagAchse(sunDir.y);
@@ -1618,16 +1618,40 @@ class AnazhRealm_bild_himmel {
         return new THREE.Vector3(x, y, z);
     }
 
+    // DIE RICHTUNG ZUM MOND zum Winkel der Uhr: dieselbe Bahn (`__weltLicht.mondRichtung` — seine eigene Lage aus der Zeit des
+    // Kosmos, topozentrisch); Licht, Luft, Belichtung und Körper lesen sie hier
+    _dayNightMoonDirection(angle) {
+        const [x, y, z] = __weltLicht.mondRichtung(angle, this._sonnenBahn());
+        return new THREE.Vector3(x, y, z);
+    }
+
+    // DIE PHASE DER SCHEIBE (Karte 2 planet.kosmos.systeme#1): die Sonne beleuchtet die Kugel des Monds, die Kamera sieht sie —
+    // Lommel–Seeliger (der Regolith streut einfach: L ∝ μ₀/(μ₀ + μ), μ₀ = n·Sonne, μ = n·Auge; Hapke 1981), auf den Vollmond
+    // geeicht (× 2: bei μ₀ = μ trägt jeder Punkt der Scheibe `mondCd`, die flache Scheibe des Vollmonds wie bis hier). Die Nacht-
+    // Seite trägt 0. Der Stoff des Monds (`init`, stamm/dirigent-ankunft.js) nimmt den Knoten → die Uniform der Sonne, die
+    // `_updateCelestialBodies` schreibt (die EINE Bahn, `_dayNightSunDirection`).
+    _mondPhase(stoff) {
+        const T = THREE.TSL;
+        const sonne = T.uniform(new THREE.Vector3(0, 1, 0));
+        const n = T.normalWorldGeometry;
+        const mu0 = T.max(T.dot(n, sonne), 0);
+        const mu = T.max(T.dot(n, T.cameraPosition.sub(T.positionWorld).normalize()), 1e-4);
+        stoff.colorNode = T.vec4(T.materialColor.mul(mu0.mul(2).div(mu0.add(mu))), 1);
+        return sonne;
+    }
+
     // DIE BAHN DER SONNE JETZT (sonnenbahn, Meeus Kap. 13): die Breite der Welt auf ihrem Planeten — die Heimat am Anker
     // (`_planetAnker`, im Planet-Faden gerechnet), eine Reise-Welt am Ort ihres Teils (`ort.teil.breite`, Grad) —, der Körper des
     // Planeten (Schiefe und Drehsinn, mit dem Anker) und die Saison-Phase der Welt (`seasonPhase`) → `__weltLicht.sonnenBahn`.
     // Ein reiner Leser: bis der Anker antwortet (`_sonnenAnkerFragen`), steht die Sonne am Ort der Bühne (`BUEHNE_BAHN`).
     // Bis sonnenbahn kannte die Bahn weder Breite noch Saison: 46,13° gegen die Ephemeride (erleben.spieler.zeit#1, c1236fa8).
+    // DER MOND reist auf derselben Bahn (Karte 2 planet.kosmos.systeme#1): seine Lage gegen die Sonne aus der Zeit des Kosmos, die
+    // auch die Planeten des Felds stellt (`_kosmosJetzt`, in Stufen von `HIMMEL.kosmosSchrittTage`).
     _sonnenBahn() {
         const A = this._sonnenAnker;
         if (!A) return __weltLicht.BUEHNE_BAHN;
         const p = typeof this.state.seasonPhase === "number" ? this.state.seasonPhase : 0.375;
-        return __weltLicht.sonnenBahn(A.breite, p, A.koerper);
+        return __weltLicht.sonnenBahn(A.breite, p, A.koerper, this._kosmosJetzt().zeit.mond);
     }
 
     // DER ANKER DER SONNE (sonnenbahn): der EINE Schreiber von `_sonnenAnker` — fragt den Planet-Faden (`_planetAnker`) EINMAL je
@@ -1649,7 +1673,7 @@ class AnazhRealm_bild_himmel {
                 const t = frage.teil;
                 this._sonnenAnker = {
                     breite: t ? (t.breite * Math.PI) / 180 : a.breite,
-                    koerper: { neigungRad: a.neigungRad, drehsinn: a.drehsinn },
+                    koerper: { neigungRad: a.neigungRad, drehsinn: a.drehsinn, radiusKm: a.radiusKm },
                 };
                 this._himmelSprung = true;
             },
@@ -1663,6 +1687,12 @@ class AnazhRealm_bild_himmel {
     _sonnenRichtung() {
         const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
         return this._dayNightSunDirection(this._sonnenWinkel(t));
+    }
+
+    // Die Richtung ZUM Mond jetzt (Einheitsvektor; y ≤ 0 unter dem Horizont) — dieselbe Quelle wie sein Licht und sein Körper.
+    _mondRichtung() {
+        const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+        return this._dayNightMoonDirection(this._sonnenWinkel(t));
     }
 
     // Reine Godray-Stärke aus Sonnenhöhe × Wetter-Klarheit (`weatherSun`, auf [0..1] remappt): über dem Horizont blenden sie
@@ -1905,7 +1935,8 @@ class AnazhRealm_bild_himmel {
         // Sonne, Mond und Sterne in der Einheit der Tafeln (`__weltLicht.tafelLicht`: das Licht der Stunde)
         __weltLicht.tafelLicht(U, E0, [Mo.r * mi, Mo.g * mi, Mo.b * mi], this._atmoSternenLicht(sunDir.y));
         const s = st._sonne;
-        const schluessel = `${s ? s.winkel : 0}:${h}:${A.mediumBeta}`;
+        // der Mond trägt seine eigene Stufe (die Zeit des Kosmos): die Himmels-Sicht zeichnet mit seiner Richtung neu
+        const schluessel = `${s ? s.winkel : 0}:${h}:${A.mediumBeta}:${moonDir.x}:${moonDir.y}:${moonDir.z}`;
         const rend = st.renderer;
         if (!rend || rend._isHeadlessNull || !st.rendererReady) return A;
         // DIE LEINE FRAGT DIE TAFELN (wie das Bild, die Karte und die Umgebung, `_gpuLeineStraff`): an gespannter Leine zeichnet
@@ -2113,10 +2144,10 @@ class AnazhRealm_bild_himmel {
         // Das Richtlicht IST die Sonne, solange sie über dem Horizont steht, sonst der Mond (von oben).
         // Der Wechsel bei y=0 ist unsichtbar: beide Körper erreichen den Horizont durch die ganze Luft (der Durchlass der EINEN
         // Atmosphäre ist dort ~0, `_atmoSonne` · `_mondDurchlass`).
-        // `moonDir` kommt vom Aufrufer (_applyDayNightToScene, dieselbe Formel wie das Mond-Mesh); der
-        // −sunDir-Guard deckt nur Diag-Aufrufe ohne dritten Parameter.
+        // `moonDir` kommt vom Aufrufer (_applyDayNightToScene, dieselbe Formel wie das Mond-Mesh, `_dayNightMoonDirection`) — bis
+        // kosmos-bahn stand hier ein Zwilling −sunDir für Rufer ohne Mond (es gab keinen)
         const sunUp = sunDir.y >= 0;
-        const md = moonDir || { x: -sunDir.x, y: -sunDir.y, z: -sunDir.z };
+        const md = moonDir;
         const lightDir = sunUp ? sunDir : md;
         let focusX = pm ? pm.position.x : 0;
         let focusY = 0;
@@ -2285,8 +2316,12 @@ class AnazhRealm_bild_himmel {
         // das Auge es tut. `_belichtungE` bleibt die Lesung des Himmels (Regen, Raum und Wurf lesen sie).
         const wp = this._poolAmBild(w, this._belichtungMitPool || (this._belichtungMitPool = [0, 0, 0]));
         // das Gesetz der Kamera (welt-licht.js `belichtung`) mit den Stufen am Glied der Welt (die Linsen prüfen ihren Schein dort)
-        // und dem Boden des Messers: der Vollmond (er steht der Sonne gegenüber, Höhe −e) ohne Wolken-Decke zu dieser Stunde,
-        // derselbe Durchlass wie sein Richtlicht (`_dayNightApplyDirectionalLight`) — unter offenem Himmel liegt er nie über dem Licht
+        // und dem Boden des Messers: der Mond auf seiner Bahn (`_mondRichtung`, Höhe y) ohne Wolken-Decke zu dieser Stunde,
+        // derselbe Durchlass wie sein Richtlicht (`_dayNightApplyDirectionalLight`) — unter offenem Himmel liegt er nie über dem
+        // Licht. Gelesen, sobald die Sonne sinkt: über ihrem Horizont trägt der Tag (die klare Sonne am Horizont ~400 lx, unter
+        // Sturm-Decke noch das Zehnfache des Bodens) jeden Boden des Monds (≤ 0,26 lx, `nachtKnotenE`). Bis kosmos-bahn stand er
+        // der Sonne gegenüber (Höhe −e).
+        const my = e < 0 ? this._mondRichtung().y : 0;
         const gesetz = (x) =>
             __weltLicht.belichtung(
                 x,
@@ -2294,7 +2329,7 @@ class AnazhRealm_bild_himmel {
                 e,
                 (h, q) => AnazhRealm._belichtungStufen(h, q),
                 AnazhRealm.BELICHTUNG,
-                e < 0 ? -e * this._mondDurchlass(-e) : 0
+                my > 0 ? my * this._mondDurchlass(my) : 0
             );
         const k = gesetz(wp);
         // DER RAUM AM AUGE (w28-haus-innen-lesbar): unter einer Decke erreicht das Richtlicht den Messer nicht — mit dem Anteil
@@ -2916,10 +2951,12 @@ class AnazhRealm_bild_himmel {
             }
         }
         if (moon) {
-            // Mond gegenüber der Sonne (der Vollmond, `__weltLicht.mondRichtung`)
+            // der Mond auf seiner Bahn (`_dayNightMoonDirection`, dieselbe wie sein Licht); seine Scheibe liest die Sonne für ihre
+            // Phase (die Uniform der Sonne, stamm/dirigent-ankunft.js)
             if (!moon.userData.skyOffset) moon.userData.skyOffset = new THREE.Vector3();
-            moon.userData.skyOffset.copy(dir).multiplyScalar(-sunDist);
+            moon.userData.skyOffset.copy(this._dayNightMoonDirection(angle)).multiplyScalar(sunDist);
             moon.visible = moon.userData.skyOffset.y > -10;
+            moon.userData.sonne.value.copy(dir);
         }
     }
 

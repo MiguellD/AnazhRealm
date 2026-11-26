@@ -357,7 +357,9 @@ class AnazhRealm_dirigent_ankunft {
                 })
             )
         );
+        // die Phase der Scheibe (`_mondPhase`, stamm/bild-himmel.js: Lommel–Seeliger, die Uniform der Sonne)
         const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+        moonMesh.userData.sonne = this._mondPhase(moonMat);
         moonMesh.name = "himmel-mond";
         moonMesh.frustumCulled = false;
         scene.add(moonMesh);
