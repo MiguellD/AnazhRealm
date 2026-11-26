@@ -3092,11 +3092,14 @@ async function kreaturProben(r, T, opts) {
                 const hetzer = new Set();
                 const magenVor = new Map();
                 let riss = false;
-                // DAS FENSTER IST DAS GESETZ (witterung-windab): die Jagd endet dauerS nach ihrer ersten Hetze (`_kreaturJagdEndet`),
-                // die Pirsch davor zählt nicht — die Probe sieht bis zur ersten Hetze + dauerS + 5 s, mindestens 90 s. Bis hier
+                // DAS FENSTER IST DAS GESETZ (witterung-windab): die Jagd endet nach ihrer ersten Hetze, wenn der Sprint des
+                // Jägers die Strecke der Aufgabe liefe (`_kreaturJagdEndet`, tetrapoda jagdDauerS), die Pirsch davor zählt nicht —
+                // die Probe sieht bis zur ersten Hetze + die längste Dauer des Rudels + 5 s, mindestens 90 s. Bis hier
                 // endete sie fest nach 90 s: Rudel #35 kreiste 50 s auf dem Ring (größte Lücke 140–154° > 135°, rudelPlatz),
                 // hetzte ab 65 s und hieß „ohne Ende", 25 s nach Beginn seiner Hetze (3 von 4 Läufen)
-                const fensterT = Math.ceil((A._jagdGesetz().J.dauerS + 5) / dt);
+                const JG = A._jagdGesetz();
+                const dauerS = Math.max(...woelfe.map((c) => JG.dauerS(A._steuerGesetz().sprintTempo(r._kreaturHueftL(c)), JG.J)));
+                const fensterT = Math.ceil((dauerS + 5) / dt);
                 for (let k = 0, ende = 5400, hetzeK = null; k < ende; k++) {
                     ruhigSpieler();
                     takt(dt);
@@ -3257,16 +3260,24 @@ async function kreaturProben(r, T, opts) {
         });
         await stelle({ gesetz, rudel }, "rudel");
         // DIE BEUTE WITTERT (jagd-quote): dieselbe Fahne, dieselbe Nase — ein pirschender Wolf 30 m luvwärts des Rehs (das Reh in
-        // seiner Fahne) fällt ihm auf, derselbe Wolf windab (das Reh luvwärts) nicht. Gefragt am Gesetz (`_creatureWarinessEigen`,
-        // der Wolf in der Jäger-Liste des Takts, das Auge sieht ihn pirschend erst ab pirschSichtM), ohne Takt. Täter: die Beute
-        // ohne Nase — ihre Fahne (`_furchtQuelle`) trägt nichts, wie bis jagd-quote.
+        // seiner Fahne) fällt ihm auf, derselbe Wolf windab (das Reh luvwärts) nicht. MIT DER LAUFZEIT (jagd-quote 2): auffallen kann
+        // er erst, wenn seine Front da ist — eben gesetzt (die leere Spur) merkt ihn das Reh nicht, nachdem er τ = 1,5 · r/v an
+        // seinem Ort stand (seine Spur, `_duftSpurSchreiben` zur Sim-Zeit t − τ und t; v = u + σ windab, u in Nasen-Höhe) merkt es
+        // ihn. Gefragt am Gesetz (`_creatureWarinessEigen`, der Wolf in der Jäger-Liste des Takts, das Auge sieht ihn pirschend erst
+        // ab pirschSichtM), ohne Takt. Täter: die Beute ohne Nase — ihre Fahne (`_furchtQuelle`) trägt nichts, wie bis jagd-quote;
+        // die Fahne ohne Laufzeit — die Spur fällt aus der Quelle, wie bis jagd-quote 2 (Bühne jagd: 18 von 18 Kitzen rochen den
+        // eben gesetzten Wolf auf 20–26 m, 0 Risse im Nah-Kreis).
         const beute = await teil("beute", () => {
             if (taeter === "beute-ohne-nase")
                 decke("_scentAt", (alt) => function (x, z, q) {
                     return q === this._furchtQuelle ? 0 : alt.call(this, x, z, q);
                 });
+            if (taeter === "fahne-ohne-laufzeit")
+                decke("_scentAt", (alt) => function (x, z, q) {
+                    return alt.call(this, x, z, q.map(({ spur, ...o }) => o)); // eslint-disable-line no-unused-vars
+                });
             const NAT = A._verhaltenGesetz().furcht;
-            const o = { abstandM: 30, fluchtM: null };
+            const o = { abstandM: 30, fluchtM: null, laufzeitS: null };
             for (const [art, dx] of [
                 ["luv", -30],
                 ["lee", 30],
@@ -3281,7 +3292,18 @@ async function kreaturProben(r, T, opts) {
                 wolf.userData._motionZustand = "jagd";
                 r._kreaturJaeger = [wolf];
                 o.fluchtM = rund(r._kreaturFluchtDistanzM(reh), 1);
-                o[art] = r._creatureWarinessEigen(reh) >= NAT.combatFearWariness;
+                const merkt = () => r._creatureWarinessEigen(reh) >= NAT.combatFearWariness;
+                if (art === "luv") o.frisch = merkt();
+                const u = r._rauchWindAt(wolf.position.x, wolf.position.z, s._simZeit, A.SCENT.hoeheM, null, {}).ms;
+                const v = u + Math.hypot(A.SCENT.meanderMS, A.SCENT.turbulenz * u);
+                const t0 = s._simZeit;
+                const tau = (1.5 * Math.abs(dx)) / v;
+                o.laufzeitS = rund(Math.abs(dx) / v, 1);
+                s._simZeit = t0 - tau;
+                r._duftSpurSchreiben(wolf);
+                s._simZeit = t0;
+                r._duftSpurSchreiben(wolf);
+                o[art] = merkt();
             }
             r._kreaturJaeger = [];
             leer(1);
@@ -4572,6 +4594,11 @@ function urteil(name, z) {
                 Bt.luv === true && Bt.lee === false,
                 `die Beute wittert nicht: der pirschende Wolf ${Bt.abstandM} m luvwärts ${Bt.luv ? "gemerkt" : "ungemerkt"}, windab ${Bt.lee ? "gemerkt" : "ungemerkt"} (Soll luvwärts gemerkt — dieselbe Fahne wie die des Jägers, Mech 1966 —, windab ungemerkt; Fluchtdistanz ${Bt.fluchtM} m)`
             );
+        if (Bt)
+            soll(
+                Bt.frisch === false,
+                `die Fahne ohne Laufzeit: der eben gesetzte Wolf ${Bt.abstandM} m luvwärts ${Bt.frisch ? "gemerkt" : "ungemerkt"} (Soll ungemerkt — seine Front braucht ${Bt.laufzeitS} s)`
+            );
         const L = z.suche && z.suche.laeufe;
         soll(!!L, "die Suche fehlt");
         if (L) {
@@ -4825,6 +4852,7 @@ const TAETER = {
         ["witterung-sockel", /gegen den Wind > 0/],
         ["witterung-allein", /das Rudel jagt nicht als eines/],
         ["beute-ohne-nase", /die Beute wittert nicht/],
+        ["fahne-ohne-laufzeit", /die Fahne ohne Laufzeit/],
     ],
     rudel: [
         ["rudel", /umstellt nicht/],

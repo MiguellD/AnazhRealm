@@ -422,7 +422,7 @@ class AnazhRealm_kreatur_verhalten {
         const davon = d > 1e-6 && (vx * dx + vz * dz) / d > AnazhRealm._steuerGesetz().tempoEinheit(hueftL);
         const hetze =
             ((hetzt || davon) && d <= 3 * J.hetzM) || (d <= J.hetzM && Math.abs(abw) <= Math.PI / n && umstellt);
-        if (this._kreaturJagdEndet(creature, zielKey, hetze)) {
+        if (this._kreaturJagdEndet(creature, zielKey, hetze, hueftL)) {
             this._kreaturZustandStempel(creature, null);
             direction.set(0, 0, 0);
             return;
@@ -472,17 +472,20 @@ class AnazhRealm_kreatur_verhalten {
     }
 
     // DIE JAGD HAT EIN ENDE (Tiere K2, tetrapoda JAGD_GESETZ): die erste Hetze auf ein Ziel beginnt die Jagd (ruhte die Hetze
-    // länger als ruheS, beginnt die nächste eine neue); dauert die Jagd dauerS — in der Hetze oder in der Pirsch danach —, bricht der
-    // Jäger ab und ist ruheS erschöpft: er jagt nicht (`_kreaturErschoepft`). Liefert true, wenn die Jagd jetzt endet. Vorher hetzte das Rudel, bis die Beute fiel (der
-    // Riss nach 7–9 Minuten, eine Quote je Jagd gab es nicht).
+    // länger als ruheS, beginnt die nächste eine neue); währt die Jagd so lange, wie der Sprint des Jägers (STEUER sprintTempo
+    // an seiner Hüfte hueftL, unverwundet) für die Strecke aufgabeM braucht (tetrapoda jagdDauerS, Wikenros et al. 2009: 237 m;
+    // der Wolf 31,6 s) — in der Hetze oder in der Pirsch danach —, bricht der Jäger ab und ist ruheS erschöpft: er jagt nicht
+    // (`_kreaturErschoepft`). Liefert true, wenn die Jagd jetzt endet. Vorher hetzte das Rudel, bis die Beute fiel (der Riss nach
+    // 7–9 Minuten, eine Quote je Jagd gab es nicht); bis jagd-quote 2 währte jede Jagd fest 45 s (dauerS, ohne Quelle).
     // DIE JAGD GEHÖRT DEM LEIB DES JÄGERS, NICHT SEINEM ZIEL: wechselt er zu einem anderen Leib, solange der alte lebt (der
     // fliehende Hirsch führt das Rudel zum Spieler, zwei Leiber einer Herde), läuft DIESELBE Jagd weiter — erst der Riss oder
     // der Abschied des alten Ziels endet sie. Bis heil-stationen-a3 begann jeder Wechsel eine neue Jagd: das Rudel pendelte
     // zwischen Hirsch und Spieler, und keine Jagd endete (gate:kreatur-takt jagdkreis, Rudel-Jagd 9, 10, 37: 3 von 39 ohne Ende)
-    _kreaturJagdEndet(creature, zielKey, hetze) {
+    _kreaturJagdEndet(creature, zielKey, hetze, hueftL) {
         const ud = creature.userData;
         const now = this.state.creatureAnimationTime;
-        const J = AnazhRealm._jagdGesetz().J;
+        const JG = AnazhRealm._jagdGesetz();
+        const J = JG.J;
         const alt = ud._jagd;
         // eine Jagd, deren letzte Hetze länger als eine Ruhe her ist, ist vorbei, ebenso die, deren Ziel nicht mehr lebt (der
         // Spieler kehrt wieder, er lebt immer); erst die Hetze beginnt eine neue
@@ -495,7 +498,7 @@ class AnazhRealm_kreatur_verhalten {
         }
         ud._jagd.ziel = zielKey; // das Ziel dieses Takts (Leser: die Jäger des Spielers)
         if (hetze) ud._jagd.zuletzt = now;
-        if (now - ud._jagd.beginn < J.dauerS) return false;
+        if (now - ud._jagd.beginn < JG.dauerS(AnazhRealm._steuerGesetz().sprintTempo(hueftL), J)) return false;
         ud._jagd = null;
         ud._erschoepftBis = now + J.ruheS;
         return true;
@@ -3535,14 +3538,19 @@ AnazhRealm._furchtGesetz = function () {
     }
     return AnazhRealm._kernPflichtBruch("tetrapoda:FURCHT_GESETZ");
 };
-// DIE JAGD HAT EIN ENDE (tetrapoda JAGD_GESETZ + wundTempo, Tiere K2): die Dauer der Jagd, die Ruhe des Erschöpften, die Wunde,
-// die den Sprint bremst. Fail-closed.
+// DIE JAGD HAT EIN ENDE (tetrapoda JAGD_GESETZ + wundTempo + jagdDauerS, Tiere K2): die Strecke der Aufgabe, die Ruhe des
+// Erschöpften, die Wunde, die den Sprint bremst. Fail-closed.
 AnazhRealm._jagdGesetz = function () {
     if (AnazhRealm._jagdGesetzMemo) return AnazhRealm._jagdGesetzMemo;
     const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
     const J = k && k.JAGD_GESETZ;
-    if (J && [J.dauerS, J.ruheS, J.wundExp].every(Number.isFinite) && typeof k.wundTempo === "function") {
-        AnazhRealm._jagdGesetzMemo = Object.freeze({ J, wundTempo: k.wundTempo });
+    if (
+        J &&
+        [J.aufgabeM, J.ruheS, J.wundExp].every(Number.isFinite) &&
+        typeof k.wundTempo === "function" &&
+        typeof k.jagdDauerS === "function"
+    ) {
+        AnazhRealm._jagdGesetzMemo = Object.freeze({ J, wundTempo: k.wundTempo, dauerS: k.jagdDauerS });
         return AnazhRealm._jagdGesetzMemo;
     }
     return AnazhRealm._kernPflichtBruch("tetrapoda:JAGD_GESETZ");
