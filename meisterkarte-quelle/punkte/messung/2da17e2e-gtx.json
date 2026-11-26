@@ -1,7 +1,7 @@
 {
  "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
  "geraet": "gtx",
- "zeit": "2026-11-26T01:19:05.742Z",
+ "zeit": "2026-11-26T01:25:26.310Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.kopplung.land-meer-luft#4": {
@@ -3705,17 +3705,133 @@
   },
   "gelaende.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\ed4b21c5-6dc0-4555-8f00-6185f5e9f296.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\ed4b21c5-6dc0-4555-8f00-6185f5e9f296.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea) — offen, UNGEMESSEN",
+   "zahl": "die Seite warf: (b)(d) 17.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 1,475 (Faden 1,329 · alle Kerne 1,475; vor 87,7/269,8 ms, nach 118,3/328,8 ms, Ruhe 89/222,9 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 9,5 CPU-s · claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh 3,9 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 2,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 16,4 CPU-s · svchost.exe 6,4 CPU-s · SearchIndexer.exe 1,5 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 17.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "exit": 1,
+   "minuten": 0.42,
+   "grund": "die Seite warf: (b)(d) 17.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 1,475 (Faden 1,329 · alle Kerne 1,475; vor 87,7/269,8 ms, nach 118,3/328,8 ms, Ruhe 89/222,9 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 9,5 CPU-s · claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh 3,9 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 2,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 16,4 CPU-s · svchost.exe 6,4 CPU-s · SearchIndexer.exe 1,5 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 17.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "konsumFehlt": "1 Prozess(e) ohne Ende (hart getötet oder ohne Antwort): 8528",
+   "s": 25.5,
+   "fremd": {
+    "s": 50.8,
+    "takte": 23,
+    "fremdS": 27.72,
+    "kerne": 0.546,
+    "fensterKerne": 0.751,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.48
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      3.92
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      2.48
+     ]
+    ],
+    "dienerS": 13.23,
+    "diener": [
+     [
+      "System",
+      6.55
+     ],
+     [
+      "dwm.exe",
+      3.91
+     ]
+    ],
+    "geraetS": 24.88,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      16.36
+     ],
+     [
+      "svchost.exe",
+      6.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.47
+     ]
+    ],
+    "eigenS": 200.41,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.618,
+     "nach": 1.07,
+     "station": 0.979
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 87.7,
+     "alle": 269.8,
+     "cpuEin": 94,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.26,
+      "s": 4,
+      "soll": 3,
+      "reihe": [
+       4.31,
+       3.55,
+       3.18,
+       3.19,
+       3.52,
+       0.23
+      ]
+     },
+     "spanne": [
+      1795656330331,
+      1795656330816
+     ]
+    },
+    "nach": {
+     "ein": 118.3,
+     "alle": 328.8,
+     "cpuEin": 125,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.74,
+      "s": 18.1,
+      "soll": 3,
+      "reihe": [
+       4.12,
+       3.4,
+       3.47,
+       3.17,
+       2.38,
+       2.67
+      ]
+     },
+     "spanne": [
+      1795656374340,
+      1795656374950
+     ]
+    },
+    "ruhe": {
+     "ein": 89,
+     "alle": 222.9,
+     "n": 1190,
+     "von": "2026-11-17"
+    },
+    "f": 1.475,
+    "fEin": 1.329,
+    "fAlle": 1.475,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
    "ungemessen": true,
-   "zeit": "2026-11-26T00:49:47.174Z",
+   "zeit": "2026-11-26T01:25:26.310Z",
    "abdruck": "47cc56a17829",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   }
  }
 }
