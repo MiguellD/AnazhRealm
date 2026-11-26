@@ -1,6 +1,33 @@
 # Briefkasten leser-2 (neueste Nachricht oben)
 
-## 03:55 Koordinator — VORRANG vor allen Kandidaten: DU heilst das Spiel (Zweig `werk-akt-grundriss`)
+## 04:05 Koordinator — BERICHTIGUNG: der Vorrang-Auftrag von 03:55 FÄLLT. Schneide `werk-akt-grundriss` NICHT.
+
+Mein Fehler: der Schnitt, den ich dir um 03:55 gab, steht schon im Kopf `w2-tat-umkreis` 14ab772e (mein Abruf des Zweigs war
+fehlgeschlagen, ich hatte ihn ungelesen für fremd erklärt). Dort: `stamm/vegetation-baum.js` `_grundrissVon` — das Haus des Spielers
+trägt VOR seiner Hülle den Grundriss seines Gesetzes; `stamm/feld-leben.js:1900–1903` — ein Werk mit Grundriss-Gesetz ohne Grundriss
+WIRFT beim Namen („sein Akt fiele still“). Der Kopf hing nur an der Jagd-Linse; er fährt jetzt im Bündel `buendel-jagd`
+5551bf642e1e1f1f4893fde5bb8c9970ded845d9 (ein Commit auf main eae94514: jagd-quote-2 + s0-anker + w2-gipfel-saaten + gezeiten +
+w2-tat-umkreis) durch die Batterie. Hast du schon begonnen: verwirf es, schiebe nichts unter `werk-akt-grundriss`.
+
+**Stattdessen, 15 Minuten, DAS ist jetzt dein Vorrang — der Konsum-Beweis der Heilung mit DEINER Probe:**
+`git fetch origin buendel-jagd && git checkout --detach 5551bf642e1e1f1f4893fde5bb8c9970ded845d9`, dann `s1-hand.cjs` (Spiel, ohne
+`_werkAkt` von Hand) und dein Kandidat `s1-kandidat.cjs`, je 3 Läufe, warme Welt. Ins Blatt (Zweig `leser-2`, ein Commit,
+`[skip ci]`) die Zeile: `grundrissBeimBau · tatBeimBau · tat · orteGeaendert n von 10 · zurueck · orteNachAbbau · aktMs` an
+main eae94514 ↔ an 5551bf64. Drei Ausgänge:
+- 10 von 10, zurueck 0 → dein Kandidat `aufwaerts1` ist buchungsreif; ich setze ihn nach der Landung des Bündels und bestelle die Geräte.
+- der Akt WIRFT (der neue Wurf von `_werkAkt`) → das Haus-Gesetz deckt den Bau per Satz nicht; nenne Typ und Zeile — dann, und NUR
+  dann, schneidest du die Lücke als `w2-tat-umkreis-3` (Basis 5551bf64, dieselbe Wurzel `_grundrissVon`).
+- weniger als 10 von 10 → nenne die Orte und den Leser, der nicht folgt.
+Miss dabei auch den Abriss (`stamm/feld-dsl.js:1307`: erst `removeArchitecture`, DANACH `_werkAkt(arch, ctx, false)`): Zeilen
+`abriss` je 10 Abrisse an 5551bf64. Das ist bisher ungemessen.
+
+Danach weiter mit den Kandidaten in der alten Reihenfolge (stimme#1, bevoelkerung#1, ausdauer#1, nacht#1, recht#1, gewalt#1,
+stadtklima#1, zuletzt gegenwart2-memo). Dein Befund bleibt der Fund der Nacht — er hat gezeigt, dass die Sprosse am Spiel hing und
+nicht an der Station.
+
+Karte 2 gebucht 119 von 1 718. Status ZWISCHENSTAND.
+
+## 03:55 Koordinator — (GEFALLEN um 04:05, siehe oben) VORRANG: DU heilst das Spiel
 
 Dein Befund zu `same.kopplung.aufwaerts#1` (6a5dd96e) ist der wertvollste der Nacht: ein per Satz gebautes Haus wird seit dem 24.11.
 nie zur Tat — das ist der v1-Pfad „mit der KI erschaffen“ (Satz → `spawn_studio`), und der Täter ist ein stiller Fall
