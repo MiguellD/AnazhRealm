@@ -3193,7 +3193,16 @@ class AnazhRealm_bild_himmel {
             }
             Object.freeze(zeilen); // (eingefroren prüft der Kern die Tafel einmal, nie je Ruf)
             const hier = { x: 0, z: 0, feld: null };
-            const hoehe = (hx, hz) => this._terrainMacroSurfaceY(hx, hz, false);
+            // die Höhe des Regens trägt den Willen des Spielers (same.kopplung.terraform#1): ein gehobener Kamm, ein gegrabener
+            // Graben ist Relief wie jeder Hang der Saat — die Fläche mit Edits ist das Gesetz des Kerns (gelaende-core
+            // `editHoehe`, derselbe Leser wie die Nässe der Ferne `_fernNass`)
+            const G = globalThis.__gelaendeCore;
+            const hoehe = (hx, hz) => {
+                const h = this._terrainMacroSurfaceY(hx, hz, false);
+                const meta = this.state.worldMeta;
+                if (!(meta && meta.voxelEdits && meta.voxelEdits.length)) return h;
+                return G.editHoehe(h, hx, hz, G.editsAm(this._voxelEditKarte(), hx, hz));
+            };
             E = this._wetterFeldEin = {
                 tafel,
                 von: null,

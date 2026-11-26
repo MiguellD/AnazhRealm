@@ -2734,6 +2734,54 @@ class AnazhRealm_stoff_material {
             .add(glanz); // r184 BRDF_Lambert + GGX
     }
 
+    // DER GLANZ DES PIXELS (w28-funkeln; Kaplanyan & Hoffman 2016, „Filtering Distributions of Normals for Shading
+    // Antialiasing“): ein Pixel sieht nicht EINE Normale, sondern ihre Verteilung über seine Fläche — schwankt die Normale des
+    // Stoffs unter dem Pixel (Mikro-Relief, Fels, Kopfstein, Fase, Karte, Halm), trägt er das Mittel vieler Glanz-Lappen, nie den
+    // EINEN scharfen Lappen seiner Mitte. Die Rauheit des Pixels: α² ← α² + min(2σ², κ), σ² = `GLANZ_FILTER.sigma2` ·
+    // (|∂N/∂x|² + |∂N/∂y|²) auf der Normale, die der Stoff schattiert (r184 `normalView`: die Normale nach `normalNode`), κ =
+    // `GLANZ_FILTER.kappa`; r184 rechnet α = Rauheit², also Rauheit = (α² + Kern)^¼. r184 trägt den Leser nur für die
+    // GEOMETRIE (`getGeometryRoughness`: max |∂N/∂x|, |∂N/∂y| der Geometrie-Normale, `normalViewGeometry`) — das Detail des
+    // `normalNode` sah es nie: der Stein funkelte weiß (die Sonne) und himmelblau (der Himmel) je Pixel (Koordinator 26.11.,
+    // `bild:dorf@0.42` buendel-dorf 65010917, der Fels-Hang). Ein Stoff ohne Detail (kein `normalNode`, oder die Geometrie-Normale
+    // selbst) bleibt r184s. Der Graph je Rauheits-Quelle EINMAL (geteilte Graphen bleiben geteilt, `_graphTeilen`); ein Klon, der
+    // die gefilterte Rauheit schon trägt, filtert nie zweimal (`aus`); die Lichter des Pools lesen dieselbe Rauheit
+    // (`_punktLichtBrdf`: `roughness`). Der EINE Rufer: die Erst-Zeichnung (`_renderObjectDirect`), VOR dem Render-Objekt — sein
+    // Bau-Schlüssel trägt die Rauheit, die er baut (gate:kamera-treue (i)). Linse: gate:kamera-treue (l).
+    _glanzFilter(mat) {
+        if (!mat || mat._anazhGlanz !== undefined) return mat;
+        const T = THREE.TSL;
+        mat._anazhGlanz =
+            mat.isMeshStandardNodeMaterial === true && !!mat.normalNode && mat.normalNode !== T.normalViewGeometry;
+        if (!mat._anazhGlanz) return mat;
+        const quelle = mat.roughnessNode || null;
+        const G = (this._glanzGraphen ||= { je: new WeakMap(), aus: new WeakSet(), ohne: null });
+        if (quelle && G.aus.has(quelle)) return mat;
+        let r = quelle ? G.je.get(quelle) : G.ohne;
+        if (!r) {
+            const F = AnazhRealm.GLANZ_FILTER;
+            const [dx, dy] = [T.normalView.dFdx(), T.normalView.dFdy()];
+            const kern = dx
+                .dot(dx)
+                .add(dy.dot(dy))
+                .mul(2 * F.sigma2)
+                .min(F.kappa);
+            // die Rauheit als float gefasst: r184 deklariert `materialRoughness.pow2()` sonst als Variable vom Typ `null`
+            // (ungültiges WGSL, die Pipeline des Stoffs fiele — Konsum-Probe 26.11., swiftshader)
+            r = T.float(quelle || T.materialRoughness)
+                .pow2()
+                .pow2()
+                .add(kern)
+                .min(1.0)
+                .sqrt()
+                .sqrt();
+            G.aus.add(r);
+            if (quelle) G.je.set(quelle, r);
+            else G.ohne = r;
+        }
+        mat.roughnessNode = r;
+        return mat;
+    }
+
     // DER RAUSCH-ATLAS (Welle G, der Boden-Stoff): das RAUSCH-GESETZ als EINE Textur, gelesen von zwei Knoten-Bauern, die
     // jeder Boden- und Substanz-Stoff ruft. Befund 06.10. (Zerlege-Linse, GTX 1060, Mess-Wiese): der Boden-Satz kostete
     // 6,90 ms GPU für 6 Befehle und die Hälfte des Bildes; je Boden-Fragment liefen 26 `mx_noise_float` (je Aufruf 8
@@ -3389,12 +3437,23 @@ class AnazhRealm_stoff_material {
             const _O = AnazhRealm._felsRechenwerkTSL(_T, _ra.raum);
             const _camD = wp.sub(_T.cameraPosition).length();
             const _nahB = _T.float(1).sub(_T.smoothstep(FF.fern[0], FF.fern[1], _camD));
-            const _nahF = _T.float(1).sub(_T.smoothstep(FF.fugeFern[0], FF.fugeFern[1], _camD));
             const _pxM = _camD
                 .mul(2)
                 .div(_T.cameraProjectionMatrix.element(1).y.mul(_T.screenSize.y))
                 .mul(this._ensureAtmoUniforms().schirmJeSzene);
             const _kornSicht = _T.smoothstep(1.5, 4, _T.float(FS.gesetz.geroell.korn).div(_pxM));
+            // DIE KANTE NACH IHREN PIXELN (w28-funkeln): die Kante der Fuge ist 0,08 m (die helle Oberkante `rand`) und 0,1 m (die
+            // dunkle Kehle `kehle`) hoch — sie fällt nach DERSELBEN Regel wie das Korn auf ihr Mittel 1 (unter 1,5 … 4 Pixeln der
+            // schmaleren; 75°, 1080 Zeilen: voll bis 14 m, fort ab 38 m), `fugeFern` bleibt die Grenze des Zweigs. Bis hier blendete
+            // sie nur nach Metern (30 … 80 m): dort ist ein Pixel 0,04 … 0,11 m, die Kante 0,7 … 1,9 Pixel — ein Pixel trug sie ganz,
+            // hell oder dunkel je Pixel: 0,26 % des Hangs sprangen um > 0,25 Luma gegen ihre acht Nachbarn (65010917
+            // `bild:dorf@0.42`, 238 von 446 dunkel: kein Glanz). Linse: gate:hoehlen-sicht (f).
+            const _kanteSicht = _T.smoothstep(1.5, 4, _T.float(Math.min(FS.gesetz.rand, FS.gesetz.kehle)).div(_pxM));
+            _kanteSicht._anazhPixelSicht = "kante";
+            const _nahF = _T
+                .float(1)
+                .sub(_T.smoothstep(FF.fugeFern[0], FF.fugeFern[1], _camD))
+                .mul(_kanteSicht);
             const _gate = _rockW.add(_screeW).mul(_gRock);
             // DIE FELS-FUNKTION (K17-3): das Gesetz rechnet in EINER WGSL-Funktion (`felsFein`), ihre Wiederholungen als Schleifen
             // (gelaende-core `falte`: die neun Zellen des Schutts, die vier Bank-Grenzen) und die Ziehung als EINE Funktion
@@ -4247,6 +4306,10 @@ AnazhRealm.GRAS_BEND_CREATURE_DIST_SQ = 324;
 // Charakter des Grases). Die Weite selbst ist der EINE Wind am Ort (`_windAt`); bis w20-boee-bild lief die Phase mit `raum` 0,35
 // je Meter als zweite Welle über die Wiese.
 AnazhRealm.WIND_WIEGEN = Object.freeze({ takt: 1.7, quer: 0.7, laengs: 1.5 });
+// DER GLANZ DES PIXELS (`_glanzFilter`, Kaplanyan & Hoffman 2016 §4): `sigma2` die Varianz des Pixel-Filters am Schirm (die Box
+// eines Pixels, ¼), `kappa` die Decke des Zuschlags auf α² (0,18 — darüber verlöre ein Stoff im streifenden Blick seinen Glanz
+// ganz; Filament wählt 0,15 / 0,2, Kaplanyan 0,25 / 0,18).
+AnazhRealm.GLANZ_FILTER = Object.freeze({ sigma2: 0.25, kappa: 0.18 });
 // DAS GLIMMEN (licht-eine-skala P8): die Leuchtdichte eines Stoffs der vollen Glimm-Achse in cd/m² (`_materialFor`) — HYPOTHESE
 // 0,1–1 cd/m² (der Koordinator; Biolumineszenz und nachleuchtende Farbe liegen bei 0,001–1), hier der obere Rand des Bands.
 AnazhRealm.GLIMMEN_CD_M2 = 1;

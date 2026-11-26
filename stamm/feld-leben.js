@@ -3190,6 +3190,8 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
     sprint: "taste.sprinten",
     rutschen: "taste.rutschen",
     zoom: "taste.fernglas",
+    steigen: "taste.steigen",
+    sinken: "taste.sinken",
     hud: "taste.hud",
     slotVor: "taste.slot-vor",
     slotZurueck: "taste.slot-zurueck",

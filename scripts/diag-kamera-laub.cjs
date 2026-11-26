@@ -20,7 +20,10 @@
 // Schuss, in stehender Phase der zeitlichen Auflösung, der gelesene Boden des Rückstrahls — die Unterseite jeder Krone liest ihn ganz;
 // der Schmuggel trägt dazu das dünne Raster am Schirm (12²).
 //
-//   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,gang2,strafe]   Port: KAMERA_LAUB_PORT (Standard 4611)
+// K7 DAS GEHOBENE AUGE (`--teile steig`, same.massstab.spanne#1, mit laub in gate:kamera-laub): der Fächer der Station (21 Saaten) durch den
+// Leser des Auges, der Flug über die Taste des Verbs bis 700 m, die Kosten je Größenordnung gegen den Leib, der Schmuggel beim Namen.
+//
+//   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,gang2,strafe,steig]   Port: KAMERA_LAUB_PORT (Standard 4611)
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
@@ -343,6 +346,188 @@ async function leibStrafe(k) {
             delete r._traegerTeile;
         }
     [AnazhRealm.RUECKSTRAHL, st.rueckstrahlPass] = [RS, null];
+    return out;
+}
+
+// ── K7 DAS GEHOBENE AUGE (same.massstab.spanne#1, `--teile steig`) ── die Sicht fragt die Welt als FUNKTION der Adresse. An der
+// Mess-Wiese je Adresse des Fächers der Station (20 Saaten `same.massstab.spanne-s1-<i>` und die geladene) der Grund aus dem EINEN
+// Leser des Auges (`_augeAn`: die Lage der Saat, `_gelaende(saat)`) und die Zeit seines Gesetzes von 0,5 auf 700 m (`_augeSchritt`);
+// die geladene Saat aus `lageGrund` gleich der lebenden Sicht ohne Erdbau (`_terrainSaatY`). Dann der FLUG im Takt des Spiels
+// (60 Hz): die Taste des Verbs `steigen` aus der Tasten-Tafel des Spielers, gedrückt über den Hörer des Fensters (→ `_verbTaste` →
+// `_verbTafelSammeln` → `_augeHeben`), bis das Auge 700 m über dem Grund steht; dann sinkt es Stufe für Stufe (STEIG.stufen, zuletzt
+// der Leib), je Stufe `bilder` stille Takte: Bildzeit p50/p95, Speicher, Chunks, gezeichnete Meshes und Dreiecke — die Kosten hängen
+// an Schirm und Änderung, nie an der Höhe: keine Stufe kostet mehr als der Leib. Der Schmuggel in derselben Welt: das Auge ohne
+// Hub (`_augeHeben` gibt den Leib zurück — der Stand vor spanne-auge) und die Lage nur der geladenen Saat (`_gelaende` ohne Saat,
+// der Stand von gelaende-boden vor spanne-auge) — die Linse nennt beide.
+const STEIG = Object.freeze({ zielM: 700, sollS: 30, startM: 0.5, saaten: 20, praefix: "same.massstab.spanne-s1-", stufen: [2000, 700, 70, 7, 0], bilder: 120, hubS: 3, hubM: 1, msFaktor: 2, msPlusMs: 1, werkFaktor: 1.1, gleichM: 1e-6 });
+function urteilSteig(S) {
+    if (!S || S.err) return [`Steig: ${S ? S.err : "nicht gemessen"}`];
+    const out = [];
+    // der Fächer: jede Adresse trägt ihren Grund (endlich) und ihre Zeit; die Gründe sind so viele wie die Saaten
+    const F = S.faecher || [];
+    const traegt = F.filter((a) => Number.isFinite(a.grund) && Number.isFinite(a.steig_s));
+    if (traegt.length < STEIG.saaten + 1) out.push(`Steig Fächer: ${traegt.length} von ${STEIG.saaten + 1} Adressen tragen Grund und Gesetz — ${F.filter((a) => !traegt.includes(a)).slice(0, 3).map((a) => `${a.saat}: ${a.fehler || "kein Grund"}`).join(" · ")}`);
+    const verschieden = new Set(traegt.map((a) => a.grund.toFixed(6))).size;
+    if (traegt.length && verschieden < traegt.length) out.push(`Steig Fächer: ${verschieden} verschiedene Gründe an ${traegt.length} Adressen (die Lage folgt der Saat nicht)`);
+    const lahm = traegt.filter((a) => a.steig_s > STEIG.sollS);
+    if (lahm.length) out.push(`Steig Fächer: das Gesetz braucht ${lahm[0].steig_s} s von ${STEIG.startM} auf ${STEIG.zielM} m (Soll ≤ ${STEIG.sollS} s) an ${lahm.length} Adressen`);
+    if (!(Number.isFinite(S.gleichM) && S.gleichM <= STEIG.gleichM)) out.push(`Steig Saat: die geladene Saat aus \`lageGrund\` weicht der lebenden Sicht um ${S.gleichM} m`);
+    // der Flug im Takt des Spiels
+    const f = S.flug;
+    if (!f || !f.taste) out.push("Steig: keine Taste trägt das Verb ‚steigen‘ (die Tasten-Tafel des Spielers)");
+    else if (!(f.hubM >= STEIG.hubM)) out.push(`Steig: das Auge hebt sich in ${STEIG.hubS} s um ${f.hubM} m (Taste ${f.taste}, Soll ≥ ${STEIG.hubM} m)`);
+    else if (!(f.t700 != null && f.t700 <= STEIG.sollS)) out.push(`Steig: das Auge steht ${f.t700 == null ? `nach ${STEIG.sollS} s auf ${f.ende} m` : `erst nach ${f.t700} s`} statt ${STEIG.zielM} m in ${STEIG.sollS} s`);
+    // die Kosten je Stufe gegen den Leib — vor dem Flug und nach ihm (die letzte Stufe) gemessen, je Maß das größere: die Welt
+    // lebt weiter, während das Auge fliegt (Kreaturen, Strom), die Klammer trennt ihre Zeit von der Höhe
+    const K = S.kosten || [];
+    if (K.length < STEIG.stufen.length) out.push(`Steig Kosten: ${K.length} von ${STEIG.stufen.length} Stufen gemessen`);
+    else if (!S.leibVorher) out.push("Steig Kosten: der Leib vor dem Flug ungemessen");
+    else {
+        const [L1, L2] = [S.leibVorher, K[K.length - 1]];
+        const leib = Object.fromEntries(["p50", "mtris", "meshes", "chunks"].map((m) => [m, Math.max(L1[m], L2[m])]));
+        for (const k of K.slice(0, -1)) {
+            const zuviel = [
+                k.p50 > STEIG.msFaktor * leib.p50 + STEIG.msPlusMs && `Bild p50 ${k.p50} ms (Leib ${leib.p50})`,
+                k.mtris > STEIG.werkFaktor * leib.mtris && `${k.mtris} Mio. Dreiecke (Leib ${leib.mtris})`,
+                k.meshes > STEIG.werkFaktor * leib.meshes && `${k.meshes} Meshes (Leib ${leib.meshes})`,
+                k.chunks > STEIG.werkFaktor * leib.chunks && `${k.chunks} Chunks (Leib ${leib.chunks})`,
+            ].filter(Boolean);
+            if (zuviel.length) out.push(`Steig Kosten ${k.h} m: ${zuviel.join(" · ")}`);
+        }
+    }
+    // der Schmuggel: dieselbe Linse nennt das Auge ohne Hub und die Lage nur der geladenen Saat
+    const sm = S.schmuggel || {};
+    if (!(sm.flug && Number.isFinite(sm.flug.hubM) && sm.flug.hubM < STEIG.hubM)) out.push(`Schmuggel: das Auge ohne Hub bleibt ungenannt (${sm.flug ? sm.flug.hubM : "—"} m in ${STEIG.hubS} s)`);
+    if (!(Number.isFinite(sm.verschieden) && sm.verschieden < STEIG.saaten + 1)) out.push(`Schmuggel: die Lage nur der geladenen Saat bleibt ungenannt (${sm.verschieden ?? "—"} verschiedene Gründe)`);
+    return out;
+}
+const steigZeile = (S) => (S && S.kosten ? [S.leibVorher, ...S.kosten].filter(Boolean).map((k) => `${k.h} m: p50 ${k.p50} · p95 ${k.p95} ms · ${k.heapMB} MB · ${k.chunks} Chunks · ${k.meshes} Meshes · ${k.mtris} Mio. Dreiecke`).join(" | ") : "");
+async function leibSteig(k) {
+    const st = r.state;
+    const pm = st.playerMesh.position;
+    const G = globalThis.__gelaendeCore;
+    const saat = st.worldMeta.seed;
+    const out = {};
+    // 1 · der Fächer der Station: der Grund an der Wiese je Saat aus dem Leser des Auges, die Zeit seines Gesetzes
+    const saaten = Array.from({ length: k.saaten }, (_, i) => k.praefix + (i + 1)).concat([saat]);
+    const faecher = () =>
+        saaten.map((sa) => {
+            try {
+                if (typeof r._augeAn !== "function" || typeof r._augeSchritt !== "function") throw new Error("kein Leser der Adresse (`_augeAn`, `_augeSchritt`)");
+                let [a, n] = [k.startM, 0];
+                while (a < k.zielM && n < 60 * 120) (a = r._augeSchritt(a, 1, 1 / 60)), n++;
+                return { saat: sa, grund: r._augeAn(sa, k.x, k.z, 0), steig_s: a >= k.zielM ? +(n / 60).toFixed(2) : null };
+            } catch (e) {
+                return { saat: sa, fehler: String(e.message).slice(0, 140) };
+            }
+        });
+    out.faecher = faecher();
+    const L0 = G.lageGrund(saat, SimplexNoise);
+    out.gleichM = 0;
+    for (let i = 0; i < 64; i++) {
+        const [x, z] = [k.x + Math.cos(i * 2.4) * 40 * i, k.z + Math.sin(i * 2.4) * 40 * i];
+        out.gleichM = Math.max(out.gleichM, Math.abs(G.hoehe(L0, x, z, true) - r._terrainSaatY(x, z, true)));
+    }
+    // 2 · der Leib an der Wiese (wie `L.fuss`), das Weltbild steht; der Takt der Linse (60 Hz), je zehn Takte ein Atem für die Fäden
+    // (ein verschachtelter Zeitgeber wartet ≥ 4 ms: je Takt ein Atem kostete die Linse 10 s Warten)
+    r.setCameraMode("first");
+    let [tMs, nT] = [performance.now(), 0];
+    const tick = async (n = 1) => {
+        for (let i = 0; i < n; i++) {
+            tMs += 1000 / 60;
+            r._gameLoopTick(tMs);
+            if (++nT % 10 === 0) await new Promise((f) => setTimeout(f, 0));
+        }
+    };
+    const y = r.getTerrainHeightAt(k.x, k.z);
+    pm.set(k.x, y + r.constructor.PLAYER_FOOT_OFFSET + 0.02, k.z);
+    [st._kapselTraegerY, st._kapselStruktur, st.yaw, st.pitch] = [y, false, Math.atan2(k.blick.x - k.x, k.blick.z - k.z), -0.15];
+    for (let n = 0; n < 80; n++) {
+        await tick(10);
+        if (n > 6 && !r._weltbildFehlt(true).length) break;
+    }
+    const auge = () => st.camera.position.y - r.getTerrainHeightAt(st.camera.position.x, st.camera.position.z);
+    const taste = AnazhRealm._tastenListe(st.keybindings && st.keybindings.steigen)[0] || null;
+    const sinkTaste = AnazhRealm._tastenListe(st.keybindings && st.keybindings.sinken)[0] || null;
+    const druck = (art, code) => code && dispatchEvent(new KeyboardEvent(art, { bubbles: true, code, key: code.slice(-1).toLowerCase() }));
+    // der Flug: die Taste gehalten, bis 700 m stehen oder `fristS` verstrich; `hubM` nach `hubS`
+    const flug = async (fristS) => {
+        const f = { taste, a0: +auge().toFixed(2), hubM: null, t700: null, kurve: [] };
+        if (!taste) return f;
+        druck("keydown", taste);
+        for (let i = 1; i <= fristS * 60; i++) {
+            await tick();
+            const a = auge();
+            if (i === k.hubS * 60) f.hubM = +(a - f.a0).toFixed(2);
+            if (i % 60 === 0) f.kurve.push(+a.toFixed(1));
+            if (a >= k.zielM) {
+                f.t700 = +(i / 60).toFixed(2);
+                break;
+            }
+        }
+        druck("keyup", taste);
+        f.ende = +auge().toFixed(1);
+        if (f.hubM == null) f.hubM = +(f.ende - f.a0).toFixed(2);
+        return f;
+    };
+    // die Kosten einer Stufe: `bilder` stille Takte nach einer Sekunde Ruhe — Bildzeit, Speicher, Chunks, gezeichnete Werke
+    const mem = () => (performance.memory ? performance.memory.usedJSHeapSize : 0);
+    const werk = () => {
+        let [tris, meshes] = [0, 0];
+        st.scene.traverseVisible((m) => {
+            if (!m.isMesh || !m.geometry) return;
+            const g = m.geometry;
+            meshes++;
+            tris += ((g.index ? g.index.count : g.attributes.position ? g.attributes.position.count : 0) / 3) * (m.isInstancedMesh ? m.count : 1);
+        });
+        return { meshes, mtris: +(tris / 1e6).toFixed(3) };
+    };
+    const kosten = async () => {
+        await tick(30);
+        const ms = [];
+        for (let i = 0; i < k.bilder; i++) {
+            tMs += 1000 / 60;
+            const t0 = performance.now();
+            r._gameLoopTick(tMs);
+            ms.push(performance.now() - t0);
+            if (i % 10 === 9) await new Promise((f) => setTimeout(f, 0));
+        }
+        ms.sort((u, v) => u - v);
+        return { h: +auge().toFixed(1), p50: +ms[Math.floor(k.bilder / 2)].toFixed(2), p95: +ms[Math.floor(k.bilder * 0.95)].toFixed(2), heapMB: +(mem() / 1048576).toFixed(1), chunks: st.voxelChunks.size, ...werk() };
+    };
+    // der Leib vor dem Flug, wenn das Gezeichnete steht (nach drei Sekunden eine ohne 2 % Wandel: die Nah-Kacheln der Ankunft gehen,
+    // wenn die Fäden liefern — hier je Takt ein Atem, sonst steht das Gezeichnete nur, weil nichts landet)
+    for (let n = 0, w0 = werk(), w; n < 20; n++, w0 = w) {
+        for (let i = 0; i < 60; i++) (tMs += 1000 / 60), r._gameLoopTick(tMs), await new Promise((f) => setTimeout(f, 0));
+        w = werk();
+        if (n >= 2 && Math.abs(w.mtris - w0.mtris) <= 0.02 * w0.mtris && Math.abs(w.meshes - w0.meshes) <= 0.02 * w0.meshes) break;
+    }
+    out.leibVorher = await kosten();
+    // 3 · der Schmuggel zuerst (das Auge am Leib): das Auge ohne Hub, die Lage nur der geladenen Saat
+    const P = Object.getPrototypeOf(r);
+    r._augeHeben = (x, z, y0) => y0;
+    const smFlug = await flug(k.hubS);
+    delete r._augeHeben;
+    r._gelaende = function () {
+        return P._gelaende.call(this);
+    };
+    const smF = faecher();
+    delete r._gelaende;
+    out.schmuggel = { flug: smFlug, verschieden: new Set(smF.filter((a) => Number.isFinite(a.grund)).map((a) => a.grund.toFixed(6))).size };
+    // 4 · der Flug des Spiels, dann die Kosten je Stufe: hinab mit `sinken`, `bilder` stille Takte gemessen
+    out.flug = await flug(k.sollS);
+    if (out.flug.t700 != null) {
+        druck("keydown", taste);
+        for (let n = 0; auge() < k.stufen[0] - 1 && n < 60 * 10; n++) await tick();
+        druck("keyup", taste);
+    }
+    out.kosten = [];
+    for (const h of out.flug.t700 != null ? k.stufen : []) {
+        druck("keydown", sinkTaste);
+        for (let n = 0; (h > 0 ? auge() > h : st.augeHoehe > 0) && n < 60 * 40; n++) await tick();
+        druck("keyup", sinkTaste);
+        out.kosten.push(await kosten());
+    }
     return out;
 }
 
@@ -1222,6 +1407,36 @@ hauptLauf(async () => {
             ["Rückstrahl", fall(reihe(), undefined, { an: 0.04, aus: 0.04 }), "Strafe: der Rückstrahl"],
             ["Raster", fall(reihe(), undefined, { an: 0, aus: 0 }), "Strafe: der Rückstrahl"],
         ]);
+        // K7 DAS GEHOBENE AUGE: gesund (21 Adressen mit eigenem Grund, 700 m nach 9,7 s, die Kosten je Stufe wie am Leib) und je
+        // Bruch beim Namen — der Stand vor spanne-auge (kein Verb, die Lage nur der geladenen Saat: 1 von 21 Adressen) fällt ROT
+        const kst = (h, k = {}) => ({ h, p50: 2.2, p95: 3, heapMB: 180, chunks: 25, meshes: 181, mtris: 0.512, ...k });
+        const steigG = (je = {}) => ({
+            faecher: Array.from({ length: STEIG.saaten + 1 }, (_, i) => ({ saat: `s${i}`, grund: 10 + i * 3.7, steig_s: 12.15 })),
+            gleichM: 0,
+            flug: { taste: "KeyR", a0: 2.1, hubM: 10.5, t700: 9.73, ende: 700.4 },
+            kosten: STEIG.stufen.map((h) => kst(h || 2.1)),
+            leibVorher: kst(2.1),
+            schmuggel: { flug: { taste: "KeyR", hubM: 0, t700: null }, verschieden: 1 },
+            ...je,
+        });
+        const fehlt20 = steigG().faecher.map((a, i) => (i < STEIG.saaten ? { saat: a.saat, fehler: "kein Leser der Adresse" } : a));
+        faelle("K7", urteilSteig, [
+            ["gesund", steigG(), null],
+            ["die Lage nur der geladenen Saat (1 von 21 Adressen, der Stand vor spanne-auge)", steigG({ faecher: fehlt20 }), "Steig Fächer: 1 von 21 Adressen"],
+            ["jede Saat trägt denselben Grund", steigG({ faecher: steigG().faecher.map((a) => ({ ...a, grund: 33.2 })) }), "Steig Fächer: 1 verschiedene Gründe"],
+            ["das Gesetz zu lahm (0,5 → 700 m in 41 s)", steigG({ faecher: steigG().faecher.map((a) => ({ ...a, steig_s: 41 })) }), "Steig Fächer: das Gesetz braucht 41 s"],
+            ["die geladene Saat weicht der Sicht", steigG({ gleichM: 0.4 }), "Steig Saat: die geladene Saat"],
+            ["kein Verb in der Tasten-Tafel", steigG({ flug: { taste: null } }), "Steig: keine Taste trägt das Verb"],
+            ["kein Verb hebt das Auge vom Leib", steigG({ flug: { taste: "KeyR", hubM: 0, t700: null, ende: 2.1 } }), "Steig: das Auge hebt sich in 3 s um 0 m"],
+            ["zu langsam (700 m erst nach 41 s)", steigG({ flug: { taste: "KeyR", hubM: 4, t700: 41, ende: 700 } }), "Steig: das Auge steht erst nach 41 s"],
+            ["die Decke hält das Auge (auf 120 m nach 30 s)", steigG({ flug: { taste: "KeyR", hubM: 4, t700: null, ende: 120 } }), "Steig: das Auge steht nach 30 s auf 120 m"],
+            ["der Grund lädt mit der Höhe (2 000 m: 4 × Chunks)", steigG({ kosten: [kst(2000, { chunks: 100, mtris: 2.1 }), ...steigG().kosten.slice(1)] }), "Steig Kosten 2000 m: 2.1 Mio. Dreiecke (Leib 0.512) · 100 Chunks"],
+            ["das Bild wird langsam mit der Höhe", steigG({ kosten: [kst(2000), kst(700, { p50: 9 }), ...steigG().kosten.slice(2)] }), "Steig Kosten 700 m: Bild p50 9 ms"],
+            ["eine Stufe fehlt", steigG({ kosten: steigG().kosten.slice(1) }), "Steig Kosten: 4 von 5 Stufen"],
+            ["der Leib vor dem Flug fehlt (die Klammer der Zeit)", steigG({ leibVorher: null }), "Steig Kosten: der Leib vor dem Flug ungemessen"],
+            ["blind für das Auge ohne Hub", steigG({ schmuggel: { flug: { hubM: 10.5 }, verschieden: 1 } }), "Schmuggel: das Auge ohne Hub bleibt ungenannt"],
+            ["blind für die Lage nur der geladenen Saat", steigG({ schmuggel: { flug: { hubM: 0 }, verschieden: 21 } }), "Schmuggel: die Lage nur der geladenen Saat bleibt ungenannt"],
+        ]);
         // DIE EINE LESUNG JEDES ZIELS DER WELT (`__weltLicht.zeilenSchritt`) am Maß des Vendors (WebGPU: (h − 1) · Zeile + w · Texel, die
         // Zeile auf 256 Byte): die 33 × 18 Kacheln des Rückstrahls in Halb-Float lesen 256 Elemente je Zeile (`Länge / Höhe` las 249, der
         // Boden kam blau), die Umgebung 128 × 64 und das dichte WebGL lesen dicht
@@ -1319,6 +1534,8 @@ hauptLauf(async () => {
         await page.evaluate(leibInstall, { R: LEIB_R }); // der Wagen des Ritts (`gtHolen`)
         m = await page.evaluate(probe, { orte: ORTE, radius: RADIUS, saum: SAUM, nahMax: NAH_DECKUNG_MAX, hubMax: SCHMUGGEL_HUB_M, jeOrt: 5, jeStreu: 2, gw: 48, gh: 27 });
     }
+    // K7 nach der Nah-Deckung (die Ankunft steht dort, wo die Welt sie setzte): das Auge steigt an der Mess-Wiese
+    const steig = TEILE.includes("steig") && (await page.evaluate(leibSteig, { ...STEIG, x: WIESE.x, z: WIESE.z, blick: WIESE.blick }).catch((e) => ({ err: fehlerStapel(e) })));
     let gang = null;
     let leib = null;
     if (TEILE.includes("leib")) {
@@ -1341,7 +1558,7 @@ hauptLauf(async () => {
     // DIE MESSUNG ALS AKTE (statt dreier Druck-Tafeln, w12-leib-sicht): jede Zahl je Ort, Sicht, Pose und Gang steht roh in
     // kamera-laub.json im Temp-Ordner — das Urteil je Teil nennt seine Täter beim Namen in seiner Zeile
     const akte = path.join(require("os").tmpdir(), "kamera-laub.json");
-    jsonSchreiben(akte, { laub: m, leib, gang, strafe });
+    jsonSchreiben(akte, { laub: m, leib, gang, strafe, steig });
     console.log(`  die Akte: ${akte}`);
     if (m) {
         const v = urteil(m);
@@ -1363,6 +1580,12 @@ hauptLauf(async () => {
     if (strafe) {
         const v = urteilStrafe(strafe);
         check(`K6 Strafe am Prüfplatz — ${(strafe.an || []).map(strafeZeile)} · Rückstrahl ${pct(strafe.boden?.an)}`, !v.length, v.join(" · "));
+    }
+    if (steig) {
+        const v = urteilSteig(steig);
+        const tragen = (steig.faecher || []).filter((a) => Number.isFinite(a.grund)).length;
+        check(`K7 das Auge steigt: ${tragen} von ${STEIG.saaten + 1} Adressen tragen Grund, ${STEIG.zielM} m nach ${steig.flug?.t700 ?? "—"} s (Taste ${steig.flug?.taste ?? "—"}), keine Stufe kostet mehr als der Leib`, !v.length, v.length ? "Täter: " + v.join(" · ") : "");
+        console.log(`   STEIG je Stufe: ${steigZeile(steig)}`);
     }
     console.log(`  Lauf ${((Date.now() - t0) / 1000).toFixed(1)} s`);
     wandEnde(errs, "die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");

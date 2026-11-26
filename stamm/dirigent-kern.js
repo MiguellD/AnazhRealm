@@ -188,7 +188,8 @@ class AnazhRealm {
             hydroBand: null,
             // DIE VERB-TAFEL (leib.K5): Tastatur, Maus und Gamepad schreiben hinein, jedes Verb liest NUR sie (`_verbTafelSammeln`).
             // Analog: vor/quer (−1..1, quer + = links), gas/bremse (0..1), lenken (−1..1, + = links), der Blick seit dem letzten
-            // Bild (rad). Digital: sprint · sprung · rutsch · handbremse und `gehalten` (Aktion → gedrückt, der EINE Auslöser).
+            // Bild (rad), steigen (−1..1: das gehobene Auge, `_augeHeben`). Digital: sprint · sprung · rutsch · handbremse und
+            // `gehalten` (Aktion → gedrückt, der EINE Auslöser).
             verbTafel: {
                 vor: 0,
                 quer: 0,
@@ -199,6 +200,7 @@ class AnazhRealm {
                 bremse: 0,
                 lenken: 0,
                 handbremse: false,
+                steigen: 0,
                 blickGier: 0,
                 blickNeig: 0,
                 gehalten: {},

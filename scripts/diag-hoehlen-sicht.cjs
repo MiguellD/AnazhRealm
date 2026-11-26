@@ -21,7 +21,8 @@
 //       nennt sie die fehlenden (sonst prüfte (b) nichts);
 //   (e) SCHNITT — die Wiese zeichnet weniger Höhlen-Dreiecke, als ihr Frustum trägt (sonst wäre die Sicht tot);
 //   (f) DER STOFF AM GRAPH — der Boden-Stoff legt die Himmels-Sicht als Verdeckung, Normale und Pool-Gewicht (der gebaute
-//       Knoten-Graph, der Ruf der EINEN BRDF; dass der Chokepoint die Höhle wählt, misst (b)/(d)/(e) am Bild); (g) kein Page-Error (der EINE Sammler, welt-boot);
+//       Knoten-Graph, der Ruf der EINEN BRDF; dass der Chokepoint die Höhle wählt, misst (b)/(d)/(e) am Bild), und die Fels-Kante
+//       blendet nach ihren Pixeln (w28-funkeln: die Pixel-Sicht im Farb-Graph liest den Schirm); (g) kein Page-Error (der EINE Sammler, welt-boot);
 //   (h) GEDÄCHTNIS — die gemerkte Horizont-Sperre gilt nur dem Boden, den sie gemessen hat: im Stand an der Mündung hält
 //       sie (sonst prüfte die Wand nichts), nach einem neuen Boden (`_chunkSatzMarke`: Graben, LOD-Naht) misst der nächste
 //       Pass jede Mündung im Bild neu;
@@ -301,6 +302,17 @@ function urteil(b) {
                 "Shader fährt ein Zwilling"
         );
     if (c.graphFehler) v.push(`CODE: der Boden-Stoff baut keinen Graph (${c.graphFehler}) — die Proben (f) messen nichts`);
+    else if (!(c.kanteSicht && c.kanteSicht.knoten > 0))
+        v.push(
+            "KANTE NACH METERN: der Farb-Graph des Chunk-Stoffs trägt keine Pixel-Sicht der Fels-Kante (`_terrainGeologyAlbedo`, " +
+                "`_anazhPixelSicht` „kante“) — die Kante der Fuge (0,08 m) blendet nur nach Metern, ein Pixel trägt sie ganz: der " +
+                "Stein funkelt hell und dunkel je Pixel (w28-funkeln, 65010917 `bild:dorf@0.42`)"
+        );
+    else if (c.kanteSicht.schirm !== true)
+        v.push(
+            `KANTE OHNE SCHIRM: ${c.kanteSicht.knoten} Pixel-Sicht(en) der Fels-Kante lesen die Schirm-Größe nicht ` +
+                "(`screenSize`) — die Sicht folgt nicht dem Pixel"
+        );
     if (c.feinEigenHash !== undefined && !(c.feinRechenwerk && c.feinRechenwerk.maxDiff <= 1e-6))
         v.push(
             "RECHENWERK: das TSL-Rechenwerk (`_felsRechenwerkTSL`) rechnet nicht das Gesetz — " +
@@ -404,6 +416,7 @@ function selbsttest() {
             poolGesetz: true,
             feinEigenHash: false,
             feinRechenwerk: { maxDiff: 0, n: 400 },
+            kanteSicht: { knoten: 1, schirm: true },
         },
         bankung: { baenke: 2000, mittel: 0.65, cv: 0.71, welligkeit: 0.112, durchlauf: 0.526 },
         wieseUnterFels: { ohneHimmel: 700, fremd: 0, gruen: 0, erst: null, streuung: 0.19, albedo: 0.14 },
@@ -600,6 +613,9 @@ function selbsttest() {
         ["Ohne Bankung", ["bankung"], /LEER: \(m\) Bankung/],
         ["Graph bricht", ["code.graphFehler=", "x"], /CODE: der Boden-Stoff baut keinen Graph \(x\)/],
         ["Eigene Ziehung", ["code.feinEigenHash=", true], /CODE: der Detail-Term .*\(eigene Ziehung/],
+        // (f) w28-funkeln: der Mutant von main e71f2721 — die Fels-Kante blendet nur nach Metern (`fugeFern`)
+        ["Kante nach Metern (main e71f2721)", ["code.kanteSicht=", { knoten: 0, schirm: false }], /KANTE NACH METERN: .*0,08 m/],
+        ["Kante ohne Schirm", ["code.kanteSicht=", { knoten: 1, schirm: false }], /KANTE OHNE SCHIRM: 1 Pixel-Sicht/],
         [
             "Rechenwerk falsch",
             ["code.feinRechenwerk=", { maxDiff: 0.31, n: 400 }],
@@ -1418,6 +1434,21 @@ const server = statikServer();
                     !haelt(m0.aoNode, kh);
                 // die wahre Normale (ferne.K4, w10-ferne): der normalNode trägt die Geometrie-Normale der Stufen, keine 2.5D-Lichtung
                 aus.code.normaleHoehle = haelt(m0.normalNode, r._bodenStufenKnoten().normalWelt);
+                // DIE KANTE NACH IHREN PIXELN (w28-funkeln): der Farb-Graph des Chunk-Stoffs trägt die Sicht der Fels-Kante
+                // (`_anazhPixelSicht` „kante“, `_terrainGeologyAlbedo`), und sie liest den Schirm (`screenSize`) — nur nach
+                // Metern trug ein Pixel des Dorf-Hangs die ganze Kante, hell oder dunkel je Pixel
+                const kanten = [];
+                const sammle = (x, seen = new Set()) => {
+                    if (!x || typeof x !== "object" || seen.has(x)) return;
+                    seen.add(x);
+                    if (x._anazhPixelSicht === "kante") kanten.push(x);
+                    for (const c of typeof x.getChildren === "function" ? x.getChildren() : []) sammle(c, seen);
+                };
+                sammle(r._getVoxelChunkMaterial().colorNode);
+                aus.code.kanteSicht = {
+                    knoten: kanten.length,
+                    schirm: kanten.length > 0 && kanten.every((k) => haelt(k, THREE.TSL.screenSize)),
+                };
                 // der Boden reicht dem Pool seine Himmels-Sicht, jeder Himmels-Ersatz hängt im gebauten Term; im selben Ruf: der
                 // Pool ruft die EINE BRDF, und die Bedingung jedes Zweigs (`select`) liest normalView/positionView (r184 baut
                 // das Emissiv VOR der Lichtung)

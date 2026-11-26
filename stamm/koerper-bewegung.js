@@ -2022,10 +2022,14 @@ class AnazhRealm_koerper_bewegung {
                     sx = rx * s;
                     sz = rz * s;
                 }
+                // DAS GEHOBENE AUGE hebt Drehpunkt und Wunsch gleich (`_augeHeben` vom Drehpunkt aus): der Arm bleibt kurz, sein
+                // Wurf fragt die Luft über dem Leib; die Decke hält Drehpunkt und Kamera die Kugel unter sich
+                const hub = this._augeHeben(bx, bz, by, currentTime, 0.12 + kr + Math.max(0, camY - by)) - by;
                 const tx = bx + sx;
-                const ty = by;
+                const ty = by + hub;
                 const tz = bz + sz;
                 camX += sx;
+                camY += hub;
                 camZ += sz;
                 // der Übergang des Rigs gleitet den WUNSCH (`_kamGleiten`): Wurf und Arm unten halten die gleitende Kamera vor
                 // jedem Bau (gate:kamera-leib K2 — glitt die fertige Lage, stand sie nach dem Aufstieg im Haus neben dem Wagen)
@@ -2131,6 +2135,7 @@ class AnazhRealm_koerper_bewegung {
                 // Lab-eyeY 1.62) — die Decken-Probe klemmt es unter eine niedrige Decke (0.12 m Marge), sonst sieht
                 // man den Fels von innen. Die Seitenwände hält die Physik-Box.
                 let eyeY = smoothBodyY + AnazhRealm.EGO_AUGE_M + landDip;
+                eyeY = this._augeHeben(player.position.x, player.position.z, eyeY, currentTime, 0.12);
                 const headroomFP = this._ceilingHeadroom();
                 if (Number.isFinite(headroomFP)) {
                     eyeY = Math.min(eyeY, player.position.y + 0.55 + headroomFP - 0.12);
@@ -2268,6 +2273,38 @@ class AnazhRealm_koerper_bewegung {
         else y += (bodyY - y) * (1 - Math.exp(-AnazhRealm.CAMERA_SMOOTH_K * dt));
         st._smoothBodyY = y;
         return [y, dt];
+    }
+
+    // DAS GEHOBENE AUGE (same.massstab.spanne#1): das Verb `steigen`/`sinken` (Verb-Tafel `steigen`, −1..1, gehalten) hebt das
+    // Auge vom Leib — EIN Gesetz für Ego und Third: die Höhe a des Auges über dem Grund der Saat (`_augeAn`) wächst mit sich selbst
+    // (`_augeSchritt`), ab dem Auge des Rigs `y0`; eine Decke über dem Leib (`_ceilingHeadroom`, die Probe des Ego-Auges) hält a
+    // `rand` unter ihr. Sinkt a unter das Auge des Rigs, ruht es (`augeHoehe` 0: das Rig byte-alt). Zurück das Auge dieses Bilds.
+    // Vorher folgte die Kamera nur dem Leib: kein Verb hob das Auge, die Spanne 0,5 → 700 m stand ohne Leser.
+    _augeHeben(x, z, y0, t, rand) {
+        const st = this.state;
+        const dt = Math.min(0.1, Math.max(0, t - (Number.isFinite(st._augeT) ? st._augeT : t)));
+        st._augeT = t;
+        const s = st.verbTafel.steigen || 0;
+        if (!(st.augeHoehe > 0) && !(s > 0)) return y0;
+        const g = this._augeAn(null, x, z, 0);
+        const a0 = y0 - g;
+        let a = this._augeSchritt(Math.max(st.augeHoehe || 0, a0), s, dt);
+        if (a > a0) a = Math.min(a, st.playerMesh.position.y + 0.55 + this._ceilingHeadroom() - rand - g);
+        st.augeHoehe = a > a0 ? a : 0;
+        return a > a0 ? g + a : y0;
+    }
+
+    // DER SCHRITT DES STEIGENS: die Höhe a über dem Grund nach dt Sekunden unter dem Verb s (−1..1) — da/dt = s·k·a, jede
+    // Größenordnung gleich lang (AUGE_STEIG), höchstens maxM. Leser: das gehobene Auge und der Fächer der Sprosse (jede Adresse).
+    _augeSchritt(a, s, dt) {
+        const A = AnazhRealm.AUGE_STEIG;
+        return Math.min(A.maxM, a * Math.exp(s * A.k * dt));
+    }
+
+    // DAS AUGE AN EINER ADRESSE: die Höhe y des Auges a m über dem Grund der Saat `saat` (null: die geladene) an (x, z) — der Grund
+    // ist der Gelände-Kern (`hoehe` über `_gelaende(saat)`), an jeder Saat dieselbe Funktion. Leser: `_augeHeben`, der Fächer.
+    _augeAn(saat, x, z, a) {
+        return globalThis.__gelaendeCore.hoehe(this._gelaende(saat), x, z, true) + a;
     }
 
     // DER ÜBERGANG DES RIGS (F1 b): der Versatz zwischen dem Ort, an dem die Kamera beim Wechsel stand (`_kamVon`), und dem
@@ -2428,6 +2465,7 @@ class AnazhRealm_koerper_bewegung {
         T.bremse = Math.max(g[FT.bremse.aktion] ? 1 : 0, p ? p.lt : 0);
         T.lenken = achse(...FT.lenken.aktionen, p ? -p.lx : 0);
         T.handbremse = !!(g[FT.handbremse.aktion] || g.handbremse);
+        T.steigen = achse("steigen", "sinken", 0); // das gehobene Auge (`_augeHeben`)
         if (this._fahrer) this._fahrerSchritt(T); // der Fahrer am Steuer schreibt dieselben Felder (fahrzeug.K2)
     }
 
@@ -2686,6 +2724,11 @@ AnazhRealm.KAMERA_SPIEL_M = 0.05;
 // der weiteste Versatz (m, zwei Arme der Chase-Cam), der gleitet — ein Sprung des Spielers (Tor, Rettung) bleibt ein Schnitt;
 // das Sichtfeld gleitet mit dem Deckel fovGradS (°/s: 0,4° im längsten Bild von 33 ms, ein Tempo-FOV von 9° in ~0,8 s).
 AnazhRealm.KAMERA_UEBERGANG = Object.freeze({ ruheS: 0.15, vMax: 6, maxM: 20, fovGradS: 12 });
+// DAS GESETZ DES STEIGENS (same.massstab.spanne#1, `_augeSchritt`): das Auge steigt, wie Cesium es fährt — das Camera-Tutorial
+// bewegt die Kamera je Bild um ihre Höhe / 100 (`moveRate = cameraHeight / 100.0`, 60 Hz), also da/dt = k·a mit k = 60·ln 1,01
+// ≈ 0,597/s: jede Größenordnung 3,9 s, 0,5 → 700 m in 12,1 s. maxM: so hoch trägt der gezeichnete Grund — der Fern-Ring endet
+// bei 8 km (FERN_RING), aus 2 km liegt sein Rand 14° unter dem Horizont und innerhalb der fernen Ebene (8,5 km).
+AnazhRealm.AUGE_STEIG = Object.freeze({ k: 60 * Math.log(1.01), maxM: 2000 });
 
 // Kapsel-Maße des Spielers, am 1-m-Box-Collider geeicht: footDrop = halbe Box-Höhe (Füße =
 // position.y − 0.5 = die Grounded-Annahme); STEP_UP = wie hoch der Spieler ohne Sprung aufsteigt.

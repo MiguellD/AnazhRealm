@@ -830,7 +830,20 @@ class AnazhRealm_gelaende_boden {
     // `state` (jeder Zugriff liest den Stand von jetzt; kein zweiter Speicher, nichts zu synchronisieren). Der Rausch-
     // Strom entsteht beim ersten Lesen aus der Saat und steht im Gedächtnis der Saat (`_saatJe`, er fällt mit ihr); `erbgut` ist
     // die gemerkte Normalform (sie trägt die Regler der Landform), `regionSize` die Kachel-Kante der Hydrosphäre.
-    _gelaende() {
+    // DIE LAGE IST EINE FUNKTION DER SAAT (same.massstab.spanne#1, M4: die Sicht fragt die Welt als Funktion der Adresse): ohne
+    // Saat oder mit der geladenen die lebende Sicht; jede andere Saat trägt die Lage der Welt, die aus ihr entstünde, bevor ein Ort sie
+    // formt (gelaende-core `lageGrund`: Basis, Meer, Erbgut, Rausch-Strom der Saat, kein Erdbau) — gemerkt im Gedächtnis der Saat
+    // (höchstens GELAENDE_SAATEN Lagen, die älteste weicht). Vorher trug nur die geladene Saat einen Grund: 1 von 21 Adressen.
+    _gelaende(saat) {
+        if (saat != null && saat !== AnazhRealm._saatJe(this)) {
+            const M = AnazhRealm._saatJe(this, "gelaende.saaten", () => new Map());
+            let L = M.get(saat);
+            if (L) M.delete(saat);
+            else L = globalThis.__gelaendeCore.lageGrund(saat, SimplexNoise);
+            M.set(saat, L);
+            if (M.size > AnazhRealm.GELAENDE_SAATEN) M.delete(M.keys().next().value);
+            return L;
+        }
         if (this._gelaendeLage) return this._gelaendeLage;
         const realm = this;
         this._gelaendeLage = {
@@ -3333,6 +3346,9 @@ AnazhRealm.SPALTEN_PLAETZE = 4096;
 // Wand urteilt im halben Meter). `bodenTolM`: so weit darf die Gestalt des Gewässers (gelaende-core `gewaesserForm`) den Boden des Plans
 // unter einem Haus verschieben. `trasseRunden`: so oft rechnet der Export am gewählten Ort neu (`_ortMitTrasse`, siedlung.K3).
 AnazhRealm.ORT_WAHL = Object.freeze({ schrittM: 16, ringe: 8, grobM: 2, bodenTolM: 0.05, trasseRunden: 6 });
+// DIE LAGEN FREMDER SAATEN (`_gelaende(saat)`): so viele hält das Gedächtnis der Saat (eine Lage ist ihr Rausch-Strom, < 1 ms im
+// Bau; der Fächer einer Sprosse ruft jede Saat einmal), die älteste weicht der neuen.
+AnazhRealm.GELAENDE_SAATEN = 8;
 
 // DIE BODEN-STUFEN (K51, K51-2 CDLOD) — die Stufen-Kette des Chunk-Netzes (`_voxelChunkConfig(lod)`: Schritt 1,8 · 3,6 · 7,2 ·
 // 14,4 m) nach dem KASTEN-Abstand des Spielers zum Chunk-Quadrat (Chebyshev, `_voxelChunkLodFor`): `bis` die Grenze der Stufe,
