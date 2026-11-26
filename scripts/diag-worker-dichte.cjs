@@ -932,8 +932,9 @@ async function kernProbe(page, url) {
 // Kliff ≥ 60° ≥ 2 %, Schutthang 30–40° ≥ 5 %, Pediment 0,5–7° ≥ 20 %. Der Täter je Ziel steht beim Namen.
 //   --realismus [--json datei] [--selftest]   Selbsttest: eine Eier-Karton-Störung (±3 m, λ 80 m) MUSS die Senken rot färben
 const REALISMUS_SAATEN = ["anazh-realm-seed", "w-sweepalpha0001-aaaaaa", "w-sweepbeta00002-bbbbbb"];
-function gelaendeKern(wurzel) {
-    const c = require("./lib/asset-worker-harness.cjs").kernAusText([ausDatei(path.join(wurzel, "vendor", "simplex-noise.js")), kernQuelle(wurzel)]);
+// `mutante` [alt, neu] (optional): der Kern mit EINER ersetzten Zeile (der eingepflanzte Täter eines Selbsttests)
+function gelaendeKern(wurzel, mutante = ["", ""]) {
+    const c = require("./lib/asset-worker-harness.cjs").kernAusText([ausDatei(path.join(wurzel, "vendor", "simplex-noise.js")), String(kernQuelle(wurzel)).replace(...mutante)]);
     return { G: c.__gelaendeCore, SimplexNoise: c.SimplexNoise };
 }
 // Die Lage einer frisch geborenen Welt der Saat: der Grund und die Lage-Rechnung aus DIESEM Kern (`GRUND`, `lageAus`),
@@ -1303,19 +1304,11 @@ const BOESCHUNG = Object.freeze({
     mutante: ["const R = ERDBAU.reichweiteM;\n        let fest = NaN;", "const R = 16;\n        let fest = NaN;"],
 });
 function boeschungKerne(wurzel, mutiert) {
-    const hier = path.resolve(__dirname, "..");
-    const roh = String(kernQuelle(wurzel));
-    const [alt, neu] = BOESCHUNG.mutante;
-    if (mutiert && roh.split(alt).length !== 2) return null;
-    global.THREE ||= require("./lib/welt-boot.cjs").ENGINE_THREE(); // der Plan baut seine Häuser gegen die Engine der Kerne
-    const c = require("./lib/asset-worker-harness.cjs").kernAusText([
-        ausDatei(path.join(hier, "vendor", "simplex-noise.js")),
-        mutiert ? roh.replace(alt, neu) : roh,
-        ausDatei(path.join(hier, "samen-core.js")),
-        ausDatei(path.join(hier, "schmiede-core.js")),
-        ausDatei(path.join(hier, "fachwerk-core.js")),
-    ]);
-    return { G: c.__gelaendeCore, FC: c.__fachwerkCore, EINGANG: c.__samenCore.EINGANG, SimplexNoise: c.SimplexNoise };
+    if (mutiert && String(kernQuelle(wurzel)).split(BOESCHUNG.mutante[0]).length !== 2) return null;
+    const K = gelaendeKern(wurzel, mutiert ? BOESCHUNG.mutante : undefined);
+    // der Plan aus DIESEM Baum (der Studio-Kern mit Samen und Schmiede, gegen die Engine der Kerne)
+    const FC = require("./lib/welt-boot.cjs").studioKern("fachwerk-core.js", "__fachwerkCore");
+    return { ...K, FC, EINGANG: globalThis.__samenCore.EINGANG };
 }
 // die Orte als Erdbau-Listen (der Plan v2, fachwerk `ortPlan` auf dem Gelände-Kern — derselbe Gang wie der Wirt)
 function boeschungOrte(K, L, nur) {
