@@ -1,0 +1,128 @@
+{
+ "serie": [
+  {
+   "schuss": 1,
+   "abstand": 43,
+   "spieler": 43,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 1996,
+   "kamera": [
+    -575.39,
+    39.62,
+    -924.4,
+    -549.29,
+    41.38,
+    -890.23
+   ],
+   "abnahme": null,
+   "fehler": "Failed to execute 'writeBuffer' on 'GPUQueue': Overload resolution failed.",
+   "klassen": null,
+   "pulk": null,
+   "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\54b89949-gtx\\karte2.leben.tiere.masse_1-herde-1.png",
+   "bisS": 27
+  },
+  {
+   "schuss": 2,
+   "abstand": 43.3,
+   "spieler": 43.3,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 2026,
+   "kamera": [
+    -575.39,
+    39.62,
+    -924.4,
+    -545.69,
+    39.96,
+    -892.84
+   ],
+   "abnahme": null,
+   "fehler": "Failed to execute 'writeBuffer' on 'GPUQueue': Overload resolution failed.",
+   "klassen": null,
+   "pulk": null,
+   "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\54b89949-gtx\\karte2.leben.tiere.masse_1-herde-2.png",
+   "bisS": 31.1
+  },
+  {
+   "schuss": 3,
+   "abstand": 44.1,
+   "spieler": 44.1,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 2056,
+   "kamera": [
+    -575.39,
+    39.62,
+    -924.4,
+    -542.07,
+    38.73,
+    -895.46
+   ],
+   "abnahme": null,
+   "fehler": "Failed to execute 'writeBuffer' on 'GPUQueue': Overload resolution failed.",
+   "klassen": null,
+   "pulk": null,
+   "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\54b89949-gtx\\karte2.leben.tiere.masse_1-herde-3.png",
+   "bisS": 33.7
+  }
+ ],
+ "zeiten": {
+  "herdeS": 5.2,
+  "szeneS": 5.6
+ },
+ "szene": {
+  "kamera": [
+   -575.39,
+   39.62,
+   -924.4,
+   -549.29,
+   41.38,
+   -890.23
+  ],
+  "abstand": 43,
+  "punkte": [
+   [
+    -550.06,
+    42,
+    -889.62
+   ],
+   [
+    -548.82,
+    41.17,
+    -892.09
+   ],
+   [
+    -548.6,
+    41.95,
+    -888.02
+   ],
+   [
+    -551.83,
+    42.26,
+    -890.8
+   ],
+   [
+    -547.13,
+    40.95,
+    -890.61
+   ]
+  ],
+  "glieder": 5,
+  "fliehen": 5,
+  "takte": 1996,
+  "hang": {
+   "x": -550.6,
+   "z": -889.6,
+   "neigung": 21.2,
+   "lebensraum": false
+  },
+  "wurf": 5,
+  "fluchtBei": 14.2
+ },
+ "ende": {
+  "ende": true,
+  "max": 20,
+  "takt": true
+ }
+}

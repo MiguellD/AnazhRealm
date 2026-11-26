@@ -3382,7 +3382,10 @@ L.perspektive("mensch", (() => {
                         const P = await r._foundryRequestSettlement({ seed: a.saat, nH: mit.nH[a.saat] });
                         if (!P || !P.kleidung) return { fehlt: "der Plan der Saat trägt keine Kleidung (fachwerk-core.js kleidung)" };
                         const Pa = kc.START_PARAMS;
-                        const t = r._bewohnerTracht({ topColor: Pa.topColor, bottomColor: Pa.bottomColor, shoeColor: Pa.shoeColor }, P.kleidung, Object.keys(kc.CLOTH_COLORS));
+                        // DER ORT DER TRACHT (26.11.): das Gesetz liest Luft und Regen am Ort der Siedlung (leib-liest-satz: `_bewohnerTracht(d, T, tuch,
+                        // ort)`, der Leib-Raum reicht `{ x: S.ox, z: S.oz }`) und bricht laut ohne ihn — mit drei Gliedern gerufen warf es an 80 von 80
+                        // Adressen (Radeon af816566). Der Richter reicht den Ort der Zelle, aus der die Saat der Adresse stammt (`mit.ort`).
+                        const t = r._bewohnerTracht({ topColor: Pa.topColor, bottomColor: Pa.bottomColor, shoeColor: Pa.shoeColor }, P.kleidung, Object.keys(kc.CLOTH_COLORS), mit.ort[a.saat]);
                         let grad = null;
                         try { grad = r._temperaturAt(st.playerMesh.position.y); } catch (e) { grad = null; }
                         return { lage: mit.lagen.includes(t.top) ? 1 : 0, kapuze: t.kapuze || t.hood ? 1 : 0, top: t.top, rain: r._weatherFieldFor().rain, phase: st.seasonPhase, grad: Number.isFinite(grad) ? grad : null };
@@ -3394,7 +3397,7 @@ L.perspektive("mensch", (() => {
                         R1 = await FAECHER((c) => H.seite(c), {
                             gesetz: { fn: TRACHT_AN, export: "stamm/siedlung-bewohner.js:374 _bewohnerTracht an der kleidung des Plans (fachwerk-core.js, _foundryRequestSettlement)", leser: "stamm/siedlung-bewohner.js:362 _bewohnerRaum" },
                             adressen: { saaten: zellen.slice(0, 16).map((c) => c.seed), zeiten: [Z("sommer", "sunny"), Z("winter", "sunny"), Z("sommer", "rainy"), Z("sommer", "stormy"), Z("sommer", "sunny", true)] },
-                            mit: { nH, lagen: ["pullover", "poncho", "jacket", "jacke", "coat", "mantel", "hoodie"] },
+                            mit: { nH, ort: Object.fromEntries(zellen.map((c) => [c.seed, { x: c.x, z: c.z }])), lagen: ["pullover", "poncho", "jacket", "jacke", "coat", "mantel", "hoodie"] },
                             ms: 14000,
                             masse: {
                                 saaten: { wie: "verschieden", feld: "a.saat" },
