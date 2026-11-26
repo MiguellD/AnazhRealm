@@ -1,0 +1,18 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@ 20.4 s · Kamera und Saat der Sitzung: {"far":8500,"near":0.1,"fov":75,"saat":"anazh-realm-seed"}
+@@ 20.4 s · same.massstab.spanne S5 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":20.4}
+@@ 20.4 s · same.massstab.spanne S6 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":20.4}
+@@ 20.4 s · same.massstab.spanne S7 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":20.4}
+@@ 20.4 s · same.massstab.spanne S8 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":20.4}
+@@ 20.4 s · same.massstab.spanne S9 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":20.4}
+@@ 20.4 s · spanne S1–S4 (die Wiese wuchs in 20372 ms): Fächer 21/21 Adressen (20 Saaten + 1) in 22 ms · Leser stamm/koerper-bewegung.js:1759 _loopCamera · Gesetz gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833) · schlechteste {"saat":"same.massstab.spanne-s1-1","ort":null,"zeit":null} steig_s 12.15 · Bild dort Saat same.massstab.spanne-s1-1 an der Wiese, ego (das Auge am Leib) · ungemessen: die Bruch-Bedingungen im BILD des Flugs (P
+@@ 25.6 s · spanne S1 Flug: {"taste":"KeyR","brueche":{"unter":0,"sprung":0,"takt":0},"taktMax":49.2,"a0":2.1,"t700_s":9.65,"auge_m":700.3,"zurueck_s":9.73,"zurueck":true,"spiel_s":19.47}
+@@ 25.6 s · same.massstab.spanne S1 gemessen {"art":"gemessen","werte":{"steig_s":12.15},"erzeugt":21,"welt":{"auge_m":700.3},"taeter":"Gesetz 0,5 → 700 m in 12.15 s an 21 von 21 Adressen (21 Gründe); Flug in der Welt (Taste KeyR) 2.1 → 700.3 m in 9.65 s, zurück in
+@@ 25.6 s · same.massstab.spanne S2 leser {"art":"leser","fehlt":"die Welt-Kamera schneidet unter 0.1 m ab (state.camera.near, stamm/dirigent-ankunft.js:468): 1 cm Bildbreite verlangt 3.67e-3 m Abstand — in 21 von 21 Adressen (21 verschiedene Gründe, nahe Ebene 
+@@ 25.6 s · same.massstab.spanne S3 leser {"art":"leser","fehlt":"Horizont-Absenkung aus 10 km: das Auge steigt bis 2000 m (AnazhRealm.AUGE_STEIG.maxM, stamm/koerper-bewegung.js:2731), nicht auf 10 km — und die Welt ist eben: das Fern-Gelände trägt keine Krümmun
+@@ 25.6 s · same.massstab.spanne S4 leser {"art":"leser","fehlt":"Flug Boden → Orbit → Boden: kein Orbit — das Auge steigt bis 2000 m (AnazhRealm.AUGE_STEIG.maxM, stamm/koerper-bewegung.js:2731), das Gelände ist eben (FERN_RING, stamm/gelaende-fern.js:460), der 
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
