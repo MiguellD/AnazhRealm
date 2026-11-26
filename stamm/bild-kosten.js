@@ -2814,7 +2814,11 @@ class AnazhRealm_bild_kosten {
                 const q = bew ? p.add(bew.lokal) : p;
                 const jetzt = T.modelWorldMatrix.mul(T.vec4(p, 1)).xyz;
                 const still = bew ? T.modelWorldMatrix.mul(T.vec4(bew.lokal, 0)).xyz.negate() : T.vec3(0);
-                const dw = T.select(frisch, jetzt.sub(vorWelt.mul(T.vec4(q, 1)).xyz), still);
+                // die Haut im Modus „attached“ (three: bindMatrixInverse = W⁻¹ je Bild) trägt ihre Welt in den Knochen — der Punkt des
+                // vorigen Bilds ist W · (p + Δ), nie W_vor · (p + Δ): mit W_vor zählte jeder Schritt des Leibs doppelt (K6 Kopf 7,4 %)
+                const o = builder.object;
+                const haut = !!(o && o.isSkinnedMesh === true && o.bindMode === THREE.AttachedBindMode);
+                const dw = haut ? still : T.select(frisch, jetzt.sub(vorWelt.mul(T.vec4(q, 1)).xyz), still);
                 const d = T.varying(T.cameraProjectionMatrix.mul(T.cameraViewMatrix.mul(T.vec4(dw, 0))), "v_bewegung");
                 // der Punkt jetzt aus dem Welt-Punkt des Fragments (`v_positionWorld` trägt jeder Welt-Stoff schon): ein eigener
                 // Sicht-Punkt kostete ein zweites Varying — der Satz-Stoff steht bei 15 von 16 (WebGPU maxInterStageShaderVariables)

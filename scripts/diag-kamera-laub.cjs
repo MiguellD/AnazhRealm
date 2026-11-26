@@ -290,7 +290,7 @@ function urteilStrafe(S) {
 // vollen Stadt 0 von 72 und 0 von 92 bewegten Dingen (die Geister-Fläche > 0,04 im Lauf 0,70 / 1,06 % gegen 0,29 / 0,12 % gehalten).
 // Je Klasse höchstens `ohneMax` ohne Feld (die Mitte eines Dings kann hinter einem anderen liegen), mindestens `minDinge` bewegte
 // Dinge im Bild; der Schmuggel (das Feld ohne die Bewegung der Dinge) muss höchstens `schmuggelMax` tragen.
-const FELD = Object.freeze({ dt: 1000 / 60, warm: 45, maxM: 120, minPx: 1, minR: 3, saum: 2, ohneMax: 0.2, minDinge: 3, schmuggelMax: 0.1 });
+const FELD = Object.freeze({ dt: 1000 / 60, warm: 45, maxM: 120, minPx: 1, minR: 3, saum: 2, band: [2 / 3, 1.5], ohneMax: 0.2, minDinge: 3, schmuggelMax: 0.1 });
 const feldSumme = (z) => Object.entries(z.klassen || {}).filter(([kl]) => kl !== "durchsichtig").reduce(([b, g], [, K]) => [b + K.bewegt, g + K.getragen], [0, 0]);
 const feldZeile = (z) => Object.entries(z.klassen || {}).map(([kl, K]) => `${kl} ${K.getragen}/${K.bewegt}`).join(", ");
 function urteilFeld(F) {
@@ -384,7 +384,8 @@ async function leibStrafe(k) {
 // nach dem Anlauf zwei gerenderte Takte: je sichtbarem Ding (jede Instanz, jedes Mesh; Punkte die Mitte und jedes Gelenk einer Haut)
 // der Weg seines am weitesten ziehenden Punkts zwischen den beiden Bildern unter der Kamera des zweiten in Pixeln (`soll`, ab `minPx`,
 // das Ding deckt im Radius mindestens `minR` Pixel), dazu das Ziel `bewegung` des Szenen-Passes um diesen Punkt (± `saum` Pixel,
-// `gem`). Getragen ist ein Ding, dessen Feld dort in Richtung und Länge (½ … 2) seinem Weg folgt. Je Stand: `an` das Spiel, `aus` der Schmuggel (der Stempel des Bilds steht neben jedem Vor,
+// `gem`). Getragen ist ein Ding, dessen Feld dort in Richtung und Länge (`band`, ⅔ … 1,5) seinem Weg folgt — eine Haut, die ihren Schritt doppelt zählte (W_vor auf die
+// Knochen der Welt, K6 Kopf 7,4 %), lag bei 2 und hieß im Band ½ … 2 noch getragen; am Kopf Radeon stadt-voll 0,91–1,14 (27 von 29). Je Stand: `an` das Spiel, `aus` der Schmuggel (der Stempel des Bilds steht neben jedem Vor,
 // die Knochen ohne Vor — jedes Ding mit Bewegung 0, der Stand vor bewegungs-feld). Ein Stoff mit Mischung schreibt keine Bewegung
 // (die Deckung 0 des Eintrags): er zählt eigen als `durchsichtig`.
 async function feldZensus(k) {
@@ -498,12 +499,15 @@ async function feldZensus(k) {
                 if (!w || w.lang < k.minPx) continue;
                 const d = Math.hypot(b.P[w.q] - kam.position.x, b.P[w.q + 1] - kam.position.y, b.P[w.q + 2] - kam.position.z);
                 if (d > k.maxM || (b.R[i] * fy) / Math.max(d, 1e-3) * 0.5 * H < k.minR) continue;
+                // das Fenster wächst mit dem Weg (höchstens 12 Pixel): ein schneller Leib liegt im Bild bis zu einem Weg neben der Lage
+                // am Stempel (Radeon stadt-voll, 19,7 m, Weg 9,6 Pixel: sein Feld 10 Pixel daneben, im Saum von 2 nichts)
                 let [ok, gem] = [false, null];
-                for (let dy = -k.saum; feld && dy <= k.saum && !ok; dy++)
-                    for (let dx = -k.saum; dx <= k.saum && !ok; dx++) {
+                const s = Math.min(12, Math.max(k.saum, Math.ceil(w.lang)));
+                for (let dy = -s; feld && dy <= s && !ok; dy++)
+                    for (let dx = -s; dx <= s && !ok; dx++) {
                         const [mx, my] = lies(Math.min(W - 1, Math.max(0, w.px + dx)), Math.min(H - 1, Math.max(0, w.py + dy)));
                         const proj = (mx * w.ex + my * w.ey) / (w.lang * w.lang);
-                        ok = proj > 0.5 && proj < 2;
+                        ok = proj > k.band[0] && proj < k.band[1];
                         if (ok || !gem) gem = [+mx.toFixed(2), +my.toFixed(2)];
                     }
                 const K = (z.klassen[kl] ||= { bewegt: 0, getragen: 0 });
