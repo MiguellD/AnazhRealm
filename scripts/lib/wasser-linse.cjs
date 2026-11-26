@@ -3237,15 +3237,19 @@ async function wasserMutation(o = {}) {
 }
 
 // ── GELÄNDE K4 STAFFEL 2: ÜBERALL ── `n` Würfe über die Karte (±6 km, je ≥ 1,5 km auseinander): trockenes Land (`_landAt`) oder
-// der Fluss-Punkt nächst dem Wurf mit Strömung und ≥ 1,2 m Wasser (`fluss`); an jedem die Mutation oder die Strömung.
+// der Fluss-Punkt nächst dem Wurf mit Strömung und einer Säule, in der der Körper SCHWIMMT (`fluss`); an jedem die Mutation
+// oder die Strömung. DIE SÄULE DES SCHWIMMERS (fluss-netz): der Körper schwimmt, sobald die Säule seine Brust-Linie übersteigt
+// (`_schwimmBrustM`, Stamm `_loopPhysicsSync`) — die Linse fragt dasselbe Gesetz, `brust` m Freibord darüber (er treibt quer über
+// das Bett); bis fluss-netz 1,2 m fest, unter der Linie 1,26 m: am Ort −2164/−5866 (Säule 1,25 m) stand der Schwimmer.
 async function wasserKarte(o) {
     const [orte, zufall] = [[], window.__phytoCore.mulberry32(0x51ed270b)];
+    const brust = r.constructor._schwimmBrustM() + 0.3;
     for (let v = 0; v < 400 && orte.length < o.n; v++) {
         const [x, z] = [zufall() * 12000 - 6000, zufall() * 12000 - 6000];
         if (orte.some(([a, b]) => Math.hypot(a - x, b - z) < 1500)) continue;
         await __weltDa(() => !r._ensureHydroTilesAround(x, z, 300));
         const tief = (q, b = r._voxelSurfaceY(q.x, q.z)) =>
-            r._waterFlowAt(q.x, q.z) && r._atlasWaterLevelAt(q.x, q.z, b) - b >= 1.2;
+            r._waterFlowAt(q.x, q.z) && r._atlasWaterLevelAt(q.x, q.z, b) - b > brust;
         const P = o.fluss
             ? (r._hydroFor(x, z).rivers || []).flatMap((rv) => rv.points.slice(4, -4)).filter((q) => !q.inLake)
             : [];
@@ -3265,31 +3269,48 @@ async function wasserKarte(o) {
 // DIE LÄUFE ENDEN IN SEE ODER MEER: jeder Lauf des Gesetzes (`flussLaeufe` ±3 km) bis zu seiner Senke verfolgt, über den
 // Fenster-Rand und die Mündung (der Lauf der Ebene darunter, dessen Bahn sie trägt); jede Senke (auch jede `benannteSeen`) ist
 // nass (`_nassAt`, dort oder daneben); stromab fällt die Sohle jedes Flusses der Regionen streng, sein Spiegel steigt nie.
+// DIE MÜNDUNG AUF DER BAHN (fluss-netz, `zusammenfluss`): ein Zufluss endet auf der Bahn eines Laufs der Ebene darunter ODER
+// seiner eigenen (der dritte eines Knotens mündet stromab auf der Bahn des Hauptlaufs) — weiter geht es im Glied, dessen Bahn
+// durch die Mündung läuft (das nächste, der Zufluss selbst endet dort); bis fluss-netz suchte die Linse nur die Ebene darunter.
 async function wasserLaeufe() {
     const [G, L] = [window.__gelaendeCore, r._gelaende()];
     const start = G.flussLaeufe(L, -3072, -3072, 3072, 3072, 16);
     const aus = { laeufe: start.length, ende: {}, nass: 0, trocken: [], schritte: 0, steigt: 0 };
     const senken = new Map();
+    const abstand = (B, x, z) => {
+        let d = Infinity;
+        for (let i = 1; i < B.length; i++) {
+            const [ex, ez] = [B[i].x - B[i - 1].x, B[i].z - B[i - 1].z];
+            const t = Math.max(0, Math.min(1, ((x - B[i - 1].x) * ex + (z - B[i - 1].z) * ez) / (ex * ex + ez * ez || 1)));
+            d = Math.min(d, Math.hypot(B[i - 1].x + t * ex - x, B[i - 1].z + t * ez - z));
+        }
+        return d;
+    };
     for (let [gl, ende, k, n] of start.map((l) => [l.glieder, l.ende, l.k, 0])) {
         let { bx: x, bz: z } = gl[gl.length - 1];
         for (; n < 400 && ende !== "see" && ende !== "meer"; n++) {
             const e = ende;
             const weiter = G.flussLaeufe(L, x - 1, z - 1, x + 1, z + 1, 16)
-                .filter((l) => l.k === (e === "muendung" ? k - 1 : k))
+                .filter((l) => (e === "muendung" ? l.k === k - 1 || l.k === k : l.k === k))
                 .map((l) => {
-                    const i = l.glieder.findIndex((q) =>
-                        e === "muendung"
-                            ? q.bahn.some((b) => Math.hypot(b.x - x, b.z - z) < 16)
-                            : q.ax === x && q.az === z
-                    );
+                    if (e === "muendung") {
+                        let [i, d] = [-1, 16];
+                        l.glieder.forEach((q, j) => {
+                            const dq = q.bx === x && q.bz === z ? Infinity : abstand(q.bahn, x, z);
+                            if (dq < d) [i, d] = [j, dq];
+                        });
+                        return i >= 0 ? [l.glieder.slice(i), l.ende, l.k, d] : null;
+                    }
+                    const i = l.glieder.findIndex((q) => q.ax === x && q.az === z);
                     const f = l.glieder[l.glieder.length - 1];
                     return i >= 0
-                        ? [l.glieder.slice(i), l.ende, l.k]
+                        ? [l.glieder.slice(i), l.ende, l.k, 0]
                         : e === "rand" && f.bx === x && f.bz === z && l.ende !== "rand"
-                          ? [[f], l.ende, l.k]
+                          ? [[f], l.ende, l.k, 0]
                           : null;
                 })
-                .find(Boolean);
+                .filter(Boolean)
+                .sort((a, b) => a[3] - b[3])[0];
             [gl, ende, k] = weiter || [gl, "verloren", k];
             if (!weiter) break;
             ({ bx: x, bz: z } = gl[gl.length - 1]);

@@ -4181,20 +4181,24 @@ hauptLauf(async () => {
     for (const alt of [null, "vorrat"]) K5.push(await page.evaluate(vorratAmDorf, MESSORT_DORF, alt));
     const [K5b, K5bS] = K5;
     // DIE HANG-ORTE (siedlung.K3 Staffel 2): in ihren Vorlauf-Ringen liegen Zellen, deren Ort zwischen der alten Wand 0,35 und der
-    // Böschung des Erdbaus liegt — die Linse zählt sie über alle Orte (bis fluss-netz EIN Ort −400/−3175: −3,−14 0,38 · −1,−14
-    // 0,49 · −3,−12 0,51 · −1,−12 0,57). Seit fluss-netz (26.11., der Abfluss über das Relief) liegen die Ufer und mit ihnen die
-    // Hänge an den Ankern anders: dort steht 1 Hangdorf (−1,−14 0,58), kein Spieler-Ort binnen 3,6 km trägt vier (Suche je 128 m,
-    // 24 Vorrat-Läufe, höchstens 3). 624/−4455: 3,−19 0,56 · 3,−17 0,48 · 1,−17 0,40 · −2960/−743: −12,−5 0,48 · 1648/−2535:
-    // 6,−9 0,41 (Gassen p95 8,0–9,8 %)
+    // Böschung des Erdbaus liegt — die Linse zählt sie über alle Orte, je Zelle EIN Dorf (bis fluss-netz EIN Ort −400/−3175:
+    // −3,−14 0,38 · −1,−14 0,49 · −3,−12 0,51 · −1,−12 0,57). Seit fluss-netz (26.11., der Abfluss über das Relief) liegen die Ufer
+    // und mit ihnen die Hänge anders: dort stehen 2 (−1,−14 0,58 · −3,−12 0,67), kein Spieler-Ort binnen 3,6 km trägt vier. Die
+    // Orte tragen Zellen, die die alte Wand wirklich nimmt (22 Orte je Gesetz und Wand): 880/−5095 3,−19 0,56 → 0,20 · 1136/−5223
+    // 3,−22 0,48 → 0,24 und 3,−20 0,37 → 0,18 · 752/−5479 2,−23 0,50 → 0,13 · −1,−14 → 0,24. Die Ort-Wahl rückt manche Zelle auch
+    // hinter der Wand an den Hang (−3,−12 0,67; anderswo 3,−17 0,57 · −12,−5 0,61 · 6,−9 0,39) — Orte aus solchen Zellen
+    // allein trugen mit der Wand 4 von 5 (Gassen p95 9,0–11,5 %)
     const HANG_ORTE = [
-        [624, -4455],
-        [-2960, -743],
-        [1648, -2535],
+        [-400, -3175], // BÜHNE: der Hang-Ort von main, −1,−14 0,58 · −3,−12 0,67 über der alten Wand
+        [880, -5095], // BÜHNE: die Zelle 3,−19 0,56 — die alte Wand nimmt sie (0,20)
+        [1136, -5223], // BÜHNE: die Zellen 3,−22 0,48 und 3,−20 0,37 — die alte Wand nimmt sie (0,24 · 0,18)
+        [752, -5479], // BÜHNE: die Zelle 2,−23 0,50 — die alte Wand nimmt sie (0,13)
     ];
     const hangLauf = async (alt) => {
         const L = [];
         for (const o of HANG_ORTE) L.push(await page.evaluate(vorratAmDorf, o, alt));
-        return { trasse: L.flatMap((h) => h.trasse), leser: [...new Set(L.flatMap((h) => h.leser))] };
+        const je = new Map(L.flatMap((h) => h.trasse).map((t) => [t.zelle, t]));
+        return { trasse: [...je.values()], leser: [...new Set(L.flatMap((h) => h.leser))] };
     };
     const H = await hangLauf(null);
     const HS = await hangLauf("wand");

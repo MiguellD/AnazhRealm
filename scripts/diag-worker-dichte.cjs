@@ -1402,7 +1402,61 @@ const NETZ_MUTANTEN = {
     einzug: ["kn.k <= 1 ? knotenA(N, kn) * S * S : 0", "knotenA(N, kn) * S * S"],
     fuss: ["if (fuss > 0) while (k > 0 && N.S[k] * NETZ_TRAGT < fuss) k--;", ""],
     stern: ["if (zu.length <= 2 || (X.k === 0 && !knotenFluss(N, X))) return;", "return;"],
+    kreuz: ["if (fx === fx) {", "if (false) {"],
 };
+// Was ein Mutant mit Recht AUCH rot färbt: der Stern kreuzt — ohne die Mündung auf der Bahn laufen alle Zuflüsse in EINEN Punkt,
+// ihre Bahnen queren die des Nachbarn (Saat anazh-realm-seed: frei 12 → 14).
+const NETZ_MITROT = { stern: ["kreuz"] };
+// DIE KREUZUNG (fluss-netz): zwei Läufe kreuzen sich nie — das tiefere Tal fängt den Lauf (`knotenFluss`, RELIEF_FANG). Gezählt
+// an den Bahnen der Glieder (`kreuzZahl`, jedes Glied einmal): ein echter Schnitt zweier Bahnen, nicht an einem Ende (≤ 2 m: die
+// Mündung); FREI ist ein Schnitt > 60 m von jedem Ende — zwei Flüsse kreuzen sich, kein Zusammenfluss in der Nähe (nahe am
+// Knoten schneidet der Mäander der Zuflüsse, dort zählt der Stern). Offen steht die Klasse: am Netz des Abflusses über das
+// Relief kreuzen sich die Bahnen noch — die lange Mündungs-Sehne der Ebene 1 (am Ort −2164/−5866 quert sie den Nachbarn, die
+// Spiegel 29,14 ↔ 28,38 stehen quer). Die Ratsche hält die freien je Saat; sie fällt nur (41840fb6: frei 45 · 28 · 34 von
+// 114 · 71 · 87 → frei 12 · 22 · 17 von 66 · 80 · 71).
+const KREUZ_RATSCHE = { "anazh-realm-seed": 12, "w-sweepalpha0001-aaaaaa": 22, "w-sweepbeta00002-bbbbbb": 17 };
+function kreuzZahl(laeufe) {
+    const glieder = new Map();
+    for (const lf of laeufe) for (const gl of lf.glieder) glieder.set([gl.ax, gl.az, gl.bx, gl.bz].join(","), gl);
+    const G = [...glieder.values()].map((g) => {
+        const B = g.bahn;
+        const box = [Infinity, Infinity, -Infinity, -Infinity];
+        for (const p of B) {
+            box[0] = Math.min(box[0], p.x);
+            box[1] = Math.min(box[1], p.z);
+            box[2] = Math.max(box[2], p.x);
+            box[3] = Math.max(box[3], p.z);
+        }
+        return { B, box, enden: [B[0], B[B.length - 1]] };
+    });
+    const schnitt = (p, q, r, s) => {
+        const d = (q.x - p.x) * (s.z - r.z) - (q.z - p.z) * (s.x - r.x);
+        if (Math.abs(d) < 1e-9) return null;
+        const t = ((r.x - p.x) * (s.z - r.z) - (r.z - p.z) * (s.x - r.x)) / d;
+        const u = ((r.x - p.x) * (q.z - p.z) - (r.z - p.z) * (q.x - p.x)) / d;
+        return t > 0.001 && t < 0.999 && u > 0.001 && u < 0.999 ? { x: p.x + t * (q.x - p.x), z: p.z + t * (q.z - p.z) } : null;
+    };
+    let n = 0;
+    let frei = 0;
+    let ort = null;
+    for (let i = 0; i < G.length; i++)
+        for (let j = i + 1; j < G.length; j++) {
+            const [a, b] = [G[i], G[j]];
+            if (a.box[2] < b.box[0] || b.box[2] < a.box[0] || a.box[3] < b.box[1] || b.box[3] < a.box[1]) continue;
+            let hit = null;
+            for (let m = 1; m < a.B.length && !hit; m++)
+                for (let q = 1; q < b.B.length && !hit; q++) hit = schnitt(a.B[m - 1], a.B[m], b.B[q - 1], b.B[q]);
+            if (!hit) continue;
+            const dEnde = Math.min(...[...a.enden, ...b.enden].map((e) => Math.hypot(e.x - hit.x, e.z - hit.z)));
+            if (dEnde <= 2) continue;
+            n++;
+            if (dEnde > 60) {
+                frei++;
+                if (!ort) ort = [Math.round(hit.x), Math.round(hit.z)];
+            }
+        }
+    return { n, frei, ort };
+}
 function sternZahl(laeufe) {
     const cm = (v) => Math.round(v * 100);
     const glieder = new Map();
@@ -1437,7 +1491,14 @@ function netzUrteil(G, L, frisch, halb) {
     const mehrfach = z.profilBau.map((b, k) => b - z.profile[k]);
     const rot = [];
     const namen = [];
-    const sterne = sternZahl(G.flussLaeufe(L, -halb, -halb, halb, halb, 8));
+    const laeufe = G.flussLaeufe(L, -halb, -halb, halb, halb, 8);
+    const sterne = sternZahl(laeufe);
+    const kreuze = kreuzZahl(laeufe);
+    const ratsche = KREUZ_RATSCHE[L.seed];
+    if (!(ratsche >= 0) || kreuze.frei > ratsche) {
+        rot.push("kreuz");
+        namen.push(`${kreuze.frei} freie Kreuzungen der Bahnen > 60 m von jedem Ende (Ratsche ${ratsche}; alle ${kreuze.n}, die erste freie bei (${(kreuze.ort || []).join(", ")})) — gelaende-core knotenFluss: der Lauf quert ein tieferes Tal, statt dort zu münden (RELIEF_FANG)`);
+    }
     if (!(z.profile[0] + z.profile[1] > 0) || !(z.knoten[2] > 0) || !(sterne.glieder > 0)) {
         rot.push("leer");
         namen.push(`die Messung fragte das Netz nicht (Profile ${z.profile.join(" · ")} an ${z.knoten.join(" · ")} Knoten, ${sterne.glieder} Glieder der Läufe)`);
@@ -1466,7 +1527,7 @@ function netzUrteil(G, L, frisch, halb) {
             namen.push(`ein Frager mit der Masche ${NETZ_FUSS.mascheM} m baut ${fuss[2]} Knoten der Ebene 2 (Soll 0; Knoten je Ebene ${fuss.join(" · ")}) — gelaende-core netzStufe liest den Fuß nicht`);
         }
     }
-    return { ...z, fuss, sterne, gut: !rot.length, rot, taeter: namen.join(" · ") };
+    return { ...z, fuss, sterne, kreuze, gut: !rot.length, rot, taeter: namen.join(" · ") };
 }
 // Der Selbsttest der Netz-Wand: der Kern der gemessenen Wurzel mit je EINER genommenen Zeile, 41 × 41 Fragen im 100-m-Raster.
 function netzSelbsttest(wurzel, saat) {
@@ -1483,7 +1544,8 @@ function netzSelbsttest(wurzel, saat) {
         const L = realismusLage(M, M.G, saat);
         for (let j = 0; j <= 40; j++) for (let i = 0; i <= 40; i++) M.G.hoehe(L, -2000 + i * 100, -2000 + j * 100, false);
         const u = netzUrteil(M.G, L, realismusLage(M, M.G, saat), 2000);
-        je[name] = { anker: true, rot: u.rot, sieht: u.rot.length === 1 && u.rot[0] === name, taeter: u.taeter };
+        const mit = NETZ_MITROT[name] || [];
+        je[name] = { anker: true, rot: u.rot, sieht: u.rot.includes(name) && u.rot.every((r) => r === name || mit.includes(r)), taeter: u.taeter };
     }
     return { je, sieht: Object.values(je).every((m) => m.sieht) };
 }
@@ -1566,7 +1628,7 @@ function realismus() {
             schicht,
             urteil,
             maeander,
-            netz: { knoten: netz.knoten, profile: netz.profile, profilBau: netz.profilBau, einzugOhneLeser: netz.einzugOhneLeser, fuss: netz.fuss, sterne: netz.sterne },
+            netz: { knoten: netz.knoten, profile: netz.profile, profilBau: netz.profilBau, einzugOhneLeser: netz.einzugOhneLeser, fuss: netz.fuss, sterne: netz.sterne, kreuze: netz.kreuze },
             stoerung: stoer && {
                 senken1mJeKm2: stoer.senken1mJeKm2,
                 minimaJeKm2: stoer.minimaJeKm2,
@@ -1590,7 +1652,7 @@ function realismus() {
         );
         if (netz.knoten)
             console.log(
-                `    Netz: Knoten je Ebene ${netz.knoten.join(" · ")} · Talprofile ${netz.profile.join(" · ")}, gebaut ${netz.profilBau.join(" · ")} (Soll eins je Knoten) · Einzug ohne Leser ${netz.einzugOhneLeser} (Soll 0) · Masche ${NETZ_FUSS.mascheM} m: Knoten ${(netz.fuss || []).join(" · ")} (Soll Ebene 2: 0) · Sterne ${netz.sterne ? netz.sterne.punkte : "?"} in ${netz.sterne ? netz.sterne.glieder : "?"} Gliedern (Soll 0)`
+                `    Netz: Knoten je Ebene ${netz.knoten.join(" · ")} · Talprofile ${netz.profile.join(" · ")}, gebaut ${netz.profilBau.join(" · ")} (Soll eins je Knoten) · Einzug ohne Leser ${netz.einzugOhneLeser} (Soll 0) · Masche ${NETZ_FUSS.mascheM} m: Knoten ${(netz.fuss || []).join(" · ")} (Soll Ebene 2: 0) · Sterne ${netz.sterne ? netz.sterne.punkte : "?"} in ${netz.sterne ? netz.sterne.glieder : "?"} Gliedern (Soll 0) · Kreuzungen frei ${netz.kreuze ? `${netz.kreuze.frei} von ${netz.kreuze.n}` : "?"} (Ratsche ${KREUZ_RATSCHE[saat]})`
             );
         if (stoer)
             console.log(
@@ -1632,7 +1694,7 @@ function realismus() {
                     w.stoerung.maeanderGerade !== "rot"
             );
         console.log(
-            `\n${blind ? "⛔ SELBSTTEST ROT: die Störung, die Kosten-Last, die Gerade oder ein Netz-Mutant blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot, die Kosten-Last sprengt das Spalten-Budget, die Gerade färbt den Mäander rot, das Netz ohne Gedächtnis, der Einzug ohne Leser, der Frager ohne Stufe und der Zusammenfluss ohne Grenze (Stern) fallen beim Namen"}\n`
+            `\n${blind ? "⛔ SELBSTTEST ROT: die Störung, die Kosten-Last, die Gerade oder ein Netz-Mutant blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot, die Kosten-Last sprengt das Spalten-Budget, die Gerade färbt den Mäander rot, das Netz ohne Gedächtnis, der Einzug ohne Leser, der Frager ohne Stufe, der Zusammenfluss ohne Grenze (Stern) und der Lauf ohne Fang (Kreuzung) fallen beim Namen"}\n`
         );
         return blind ? 1 : 0;
     }
