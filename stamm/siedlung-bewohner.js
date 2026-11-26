@@ -3747,6 +3747,18 @@ class AnazhRealm_siedlung_bewohner {
             this._bewohnerErreicht(b);
             return this._bewohnerAusweichen(S, b, dt);
         }
+        // DAS BESETZTE ENDE (steckenbleiber): dieselbe Regel am LETZTEN Punkt seines Wegs — steht dort ein Leib (er ruht: kein Weg,
+        // kein Tempo) und ist er neben ihm, endet sein Weg, wo er steht (die Ankunft des Schritts, `_bewohnerSchritt`: wer Platz
+        // machte, geht von dort zurück, sobald sein Stand frei ist, `_tickBewohner`) — wie die Ankunft keinem den Raum nimmt
+        // (`_bewohnerAnkunft`). Nie an seiner Tür: um sie gilt das Bein durch die Tür (unten). Bis hier galt die Regel nur vor
+        // einem übernächsten Punkt: der Punkt, auf den einer beiseite trat (`_bewohnerPlatz`, frei, als er ihn wählte), lag,
+        // als der Nachbar an seinen Stand kam, in dessen Kapsel — frei von jeder Wand und unerreichbar; er tänzelte 0,14 m vor
+        // ihm, kam nie an und ging darum nie zurück (Kreatur-Linse bewohner, Stadt am main 54b89949: kaufhaus #936614 um 18,44
+        // Uhr bei 661,0/427,9 vor seinem Punkt 660,9/427,8, rathaus #619833 an seinem Stand 660,3/428,2 — 1 Steckenbleiber).
+        if (!n1 && q !== b.orte.tuer && nb.some((o) => !o.weg && !(o.vx || o.vz) && besetzt(o))) {
+            this._bewohnerErreicht(b);
+            return { vx: 0, vz: 0 };
+        }
         // UM DEN STEHENDEN: steht einer auf dem Bein zum nächsten Punkt (vor ihm, näher als zwei Kapseln), geht der Weg über
         // einen Punkt neben ihm — auf der Seite des Beins, sonst der anderen —, dessen Beine keine Wand schneiden und an dem
         // kein Leib steht (`_bewohnerUm`)
