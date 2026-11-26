@@ -113,3 +113,5 @@ w28-stimme-leib-2 karte2.erleben.klang.stimme#1
 w28-auge-farbe karte2.erleben.sinne.gesehen#1,karte2.erleben.sinne.gesehen#2
 # 753 (main c814741e, 26.11. 10:38): main c814741e, 26.11. 10:49: die Brücke quert — Anspruch wegfindung#1; erste Fahrt unter dem Erb-Dienst, 15 min
 w28-bruecke-quert karte2.erleben.spieler.wegfindung#1
+# 754 (main 54b89949, 26.11. 12:14): z754 w28-kultur-aus-klima-4 (26.11.): die Wüste baut flach — gebaut 544 → 11 928 von 12 336 Häusern, Schwung 672 → 0; Ansprüche aus dem Kopf 5b21a935
+w28-kultur-aus-klima-4 karte2.mensch.kopplung.kultur#2,karte2.mensch.kultur.sprache#1,karte2.mensch.kultur.sprache#3
