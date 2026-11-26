@@ -141,3 +141,17 @@ Spiels → `bild --wahl 0 --uhr 0.33`), Baum 61e2a27f77 (V18.546.440), Adapter n
 derselben Wanze am Kopf werk-am-ort 4 f7e5f23b steht in meiner Kette (nach (c) menge.bild#2 und megastadt-vorher) und nennt dann den
 Rufer, der dort nach 1 800 Takten noch baut, beim Namen (Datei:Zeile, Zahl je 300 Takte). Nicht gemessen: ob main am Rand steht —
 die Wanze trennt Ring- und Steh-Phase nicht; der Kopf-Lauf liest sie je 300 Takte.
+
+
+## 26.11. 20:57 — GTX 1050: Vor-Richter (c) `karte2.mensch.menge.bild#2` am Kopf werk-am-ort 4 f7e5f23b — UNGEMESSEN (kein Urteil)
+
+Wörtlich: „SITZUNG Ort stadt-voll vor karte2.mensch.menge.bild#2 steht nicht — die Tür trägt nicht: /reload: {"ms":60061,"fehler":
+"Navigation timeout of 60000 ms exceeded"…}“ · „SITZUNG die Welt trägt nicht mehr: der Messort stadt-voll riss sie vor
+karte2.mensch.menge.bild#2: /umstellen ohne Antwort binnen 300 s“ · „OFFEN karte2.mensch.menge.bild#2 · Messort: /umstellen
+stadt-voll: /umstellen ohne Antwort binnen 300 s — die Welt starb am Ort, kein Urteil, UNGEMESSEN“ · Fahrt 410.6 s.
+Richter: keiner (UNGEMESSEN). Preis: keiner (GTX 1050 ist kein Preis-Gerät).
+
+Lesart: kein Rot der Station, sondern der Messort. Am MAIN 61e2a27f brauchte derselbe `umstellen --ort stadt-voll` an diesem Gerät
+365 s (Abschnitt 20:47 oben) — über dem Deckel 300 s, den die Sitzung dem /umstellen gibt; an diesem Gerät misst die Station am
+Messort stadt-voll an keinem der beiden Stände. Der Wanzen-Lauf am Kopf f7e5f23b (nach megastadt-vorher) nennt, was dort nach
+1 800 Takten noch baut.
