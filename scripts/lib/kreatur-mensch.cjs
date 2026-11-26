@@ -1081,6 +1081,118 @@ async function menschBuehnen() {
         if (eng) return { nur: "wiederkehr", wiederkehr: await wiederkehr(), gestalt: engMit === "gestalt" ? gestalt : undefined };
         // Täter (Selbsttest) im eigenen Fenster nach dem Tag: der Teleport an den Soll-Ort, eine Spielstunde nach der Ankunft
         // um 7 Uhr, mit eigenem Messer
+        // DAS BESETZTE ENDE (steckenbleiber; Gebot 10: die Probe BAUT die Lage, an der kaufhaus #936614 steckte — Stadt am main
+        // 54b89949, 18,44 Uhr): um 10 Uhr steht jeder an seinem Ort. Einer, B, tritt auf einen freien Punkt 1,8 m neben sich (der
+        // Weg des Schritts beiseite, wie `_bewohnerPlatz` ihn legt), ein zweiter, A, steht 0,36 m hinter dem Punkt: der Punkt
+        // liegt in seiner Kapsel, frei von jeder Wand und unerreichbar. Gemessen: die Spielminuten bis zur Ankunft von B (`da`;
+        // Soll ≤ 5 — der Steckenbleiber des Messers geht in 5 Spielminuten keinen Meter), ob er danach an seinen Stand zurückging,
+        // und der kleinste Abstand der beiden. Beide tragen bis über das Fenster hinaus kein neues Soll (`_bewohnerWende`).
+        // Täter (Selbsttest, eigenes Fenster): die alte Regel — dem Ausweichen von B gilt der Stehende am Ende nicht als ruhend
+        // (ein Tempo von 1e-9 m/s), das besetzte Ende endet keinen Weg. Nach der Messung gilt wieder das Gesetz, bis B daheim ist.
+        const besetztesEnde = async (blind) => {
+            await uhrAuf(10, "bewohner: das besetzte Ende", alleDa);
+            const [K, h0, N, ab1, still] = [2 * RW + 0.01, s.timeOfDay * 24, Math.round((takte * 5) / 6), [], { messen() {} }];
+            const ruht = (b) =>
+                b.leib && !b.drinnen && b.da && !b.weg && !b.platz && !b.amSteuer && b.ziel && ab(b.leib.position, pm) > 6;
+            const bleibt = (b) => ruht(b) && r._bewohnerWende(b, h0, h0 + 0.5) === null;
+            const frei = (b, P) =>
+                !r._bewohnerWand(P, P, true) &&
+                !(S.verkehr && r._verkehrAufSpur(S, P.x, P.z, 0)) &&
+                r._bewohnerNaechster(S, b, P.x, P.z) >= 2 * K;
+            let lage = null;
+            for (const B of liste.filter(bleibt)) {
+                const g = { x: B.leib.position.x, z: B.leib.position.z };
+                const A = liste.find((o) => o !== B && bleibt(o) && ab(o.leib.position, g) > 6);
+                for (let i = 0; A && !lage && i < 12; i++) {
+                    const [cx, cz] = [Math.cos((i * Math.PI) / 6), Math.sin((i * Math.PI) / 6)];
+                    const P = { x: g.x + cx * 1.8, z: g.z + cz * 1.8 };
+                    const Q = { x: P.x + cx * 0.3 - cz * 0.2, z: P.z + cz * 0.3 + cx * 0.2 };
+                    if (frei(B, P) && frei(B, Q) && !r._bewohnerWand(g, P)) lage = { B, A, g, P, Q };
+                }
+                if (lage) break;
+            }
+            if (!lage) return { gebaut: false, ruhend: liste.filter(ruht).length, bleibend: liste.filter(bleibt).length };
+            const { B, A, g, P, Q } = lage;
+            const a0 = { x: A.leib.position.x, z: A.leib.position.z };
+            const stell = (x, z) => (r._bewohnerStellen(A, A.leib, x, z), r._bewohnerRasterLage(S, A));
+            stell(Q.x, Q.z);
+            Object.assign(B, { weg: [P], linie: g, wi: 0, wegRestAb: new Float64Array(1), wegRest: 1.8, da: false, stand: null });
+            B.platz = { leib: A.leib, weg: null, drinnen: false, kF: 0 };
+            r._bewohnerWecken(S, B);
+            if (blind) decke("_bewohnerAusweichen", (alt) => (S2, b, dt) => (b === B && (A.vx = 1e-9), alt.call(r, S2, b, dt)), ab1); // prettier-ignore
+            let [ankunft, nah] = [null, Infinity];
+            for (let k = 1; k <= N && ankunft === null; k++) {
+                takt(DT, still);
+                nah = Math.min(nah, ab(B.leib.position, A.leib.position));
+                if (B.da || !B.platz) ankunft = k; // (die Ankunft des Schritts; der Takt danach schickt ihn schon zurück)
+            }
+            const vorM = q3(ab(B.leib.position, P));
+            for (const f of ab1) f();
+            const daheim = () => !B.platz && B.da && !B.weg && ab(B.leib.position, g) < 0.5;
+            let j = 0;
+            while (j < 2 * N && !daheim()) (takt(DT, still), j++);
+            const zurueck = daheim();
+            stell(a0.x, a0.z);
+            if (blind) A.vx = 0;
+            const min = (n) => q3(((n * DT) / tagS) * 1440);
+            return {
+                gebaut: true,
+                wer: `${wer(B)} vor ${wer(A)}`,
+                ankunftMin: ankunft === null ? null : min(ankunft),
+                vorM,
+                naechsteM: q3(nah),
+                zurueck: ankunft !== null && zurueck,
+                zurueckMin: ankunft !== null && zurueck ? min(j) : null,
+                geraeumt: zurueck,
+            };
+        };
+        const ende = await besetztesEnde(false);
+        if (hat("bewohner-ende")) sicht["bewohner-ende"] = { ende: await besetztesEnde(true) };
+        // BEISEITE, NIE IN DEN STAND EINES ANDEREN (steckenbleiber, der zweite Fall: wohnhaus #91693 trat um 19,81 Uhr auf den
+        // Stand von werkstatt #946741, beide gingen auf denselben Punkt): ein Stehender B wird um Platz gebeten
+        // (`_bewohnerPlatz`, das Bein durch seinen Stand) — der Punkt seiner Wahl, P0; dann trägt ein zweiter, A, sein Ziel auf
+        // P0, und B wird noch einmal gebeten: der Punkt der zweiten Wahl liegt nie in der Kapsel dieses Ziels (Soll ≥ zwei
+        // Kapseln von P0). Ohne Takt — B steht danach, wie er stand, A trägt sein Ziel. Täter (Selbsttest): die Wahl ist blind
+        // für die Ziele der anderen, sie nennt wieder P0.
+        const beiseiteProbe = (blind) => {
+            const felder = ["weg", "linie", "wi", "wegRestAb", "wegRest", "da", "stand", "platz"];
+            const steht = (b) => b.leib && !b.drinnen && b.da && !b.weg && !b.platz && !b.amSteuer && b.ziel;
+            const tritt = (B) => {
+                const [alt, g] = [felder.map((f) => B[f]), B.leib.position];
+                const fuer = { leib: B.leib, weg: null, drinnen: false, kF: 0 };
+                const ja = r._bewohnerPlatz(S, B, { x: g.x - 1, z: g.z }, { x: g.x + 1, z: g.z }, fuer);
+                const P = ja ? { x: B.weg[0].x, z: B.weg[0].z } : null;
+                felder.forEach((f, i) => (B[f] = alt[i]));
+                return P;
+            };
+            const blindFuerZiele = (alt) => (S2, o, ...a) => {
+                const z = S2.liste.map((w) => w.ziel);
+                for (const w of S2.liste) if (w !== o) w.ziel = null;
+                const v = alt.call(r, S2, o, ...a);
+                S2.liste.forEach((w, i) => (w.ziel = z[i]));
+                return v;
+            };
+            for (const B of liste.filter(steht)) {
+                const A = liste.find((o) => o !== B && steht(o) && ab(o.leib.position, B.leib.position) > 6);
+                const P0 = A ? tritt(B) : null;
+                if (!P0) continue;
+                const [z0, ab2] = [A.ziel, []];
+                A.ziel = P0;
+                if (blind) decke("_bewohnerPlatz", blindFuerZiele, ab2);
+                const P1 = tritt(B);
+                for (const f of ab2) f();
+                A.ziel = z0;
+                return {
+                    gebaut: true,
+                    wer: `${wer(B)}, auf seinem ersten Punkt das Ziel von ${wer(A)}`,
+                    standM: P1 ? q3(ab(P1, P0)) : null,
+                    sollM: q3(2 * RW + 0.01),
+                };
+            }
+            return { gebaut: false, stehend: liste.filter(steht).length };
+        };
+        const beiseite = beiseiteProbe(false);
+        if (hat("bewohner-beiseite")) sicht["bewohner-beiseite"] = { beiseite: beiseiteProbe(true) };
         if (hat("bewohner-sprung")) {
             await uhrAuf(7, "bewohner: der Morgen", alleDa);
             const SP = wegeMesser(liste);
@@ -1125,6 +1237,8 @@ async function menschBuehnen() {
             haendlerFehlt,
             staende: (S.plan.staende || []).length,
             huellen: hausE.filter((e) => e._hausHuelle).length,
+            ende,
+            beiseite,
             wege: SD.zahl(),
             wiederkehr: await wiederkehr(),
             stadt: ort ? undefined : await stadtTag(),
@@ -1397,6 +1511,22 @@ function menschUrteil(name, z, soll) {
             `Schmiede um 10/2 Uhr: ${z.schmiede10}/${z.schmiede2} am Werk`
         );
         soll(z.wege.sprungN === 0, `Sprung im Nahbereich: ${z.wege.sprungN} Takte > 2 m`);
+        // DAS BESETZTE ENDE (steckenbleiber): wer vor dem letzten Punkt seines Wegs steht, in dem ein Ruhender steht, kommt an
+        const en = z.ende || { gebaut: false, ruhend: "ungemessen", bleibend: "ungemessen" };
+        soll(
+            en.gebaut && en.ankunftMin !== null && en.ankunftMin <= 5 && en.zurueck,
+            en.gebaut
+                ? `das besetzte Ende: ${en.wer} — Ankunft ${en.ankunftMin === null ? "nie" : `nach ${en.ankunftMin} Spielminuten`} (Soll ≤ 5 Spielminuten;${en.vorM} m vor seinem Punkt, der kleinste Abstand ${en.naechsteM} m), zurück an seinem Stand ${en.zurueck ? `nach ${en.zurueckMin} Spielminuten` : "nie"}`
+                : `das besetzte Ende: die Lage ließ sich nicht bauen (um 10 Uhr ${en.ruhend} Ruhende draußen, ${en.bleibend} ohne Wende in 0,5 h)`
+        );
+        // BEISEITE, NIE IN DEN STAND EINES ANDEREN (steckenbleiber): der Punkt des Schritts beiseite liegt in keinem fremden Ziel
+        const bs = z.beiseite || { gebaut: false, stehend: "ungemessen" };
+        soll(
+            bs.gebaut && (bs.standM === null || bs.standM >= bs.sollM),
+            bs.gebaut
+                ? `der Schritt beiseite: ${bs.wer} — der Punkt der zweiten Wahl liegt ${bs.standM} m von diesem Ziel (Soll ≥ ${bs.sollM} m: nie im Stand eines anderen)`
+                : `der Schritt beiseite: die Lage ließ sich nicht bauen (${bs.stehend} Stehende draußen)`
+        );
         soll(
             wk.n > 0 && wk.ueberN === 0,
             `Wiederkehr nach 1 h Abwesenheit: ${wk.ueberN} von ${wk.n} über ±2 m (max ${wk.maxM} m: ${wk.ueber}; der Weiteste je Prüf-Stunde ${wk.weitester})`
@@ -1481,6 +1611,8 @@ module.exports = {
             ["bewohner-menge", /Leiber als Leib gezeichnet/],
             ["bewohner-plan6", /Soll-Orte über 24 Spielstunden/],
             ["bewohner-sprung", /Sprung im Nahbereich/],
+            ["bewohner-ende", /das besetzte Ende: .* Ankunft nie/],
+            ["bewohner-beiseite", /der Schritt beiseite: .* der Punkt der zweiten Wahl liegt 0 m/],
             ["bewohner-uhr", /der Tag beginnt mit Geschichte/],
             ["bewohner-gleiten", /der Satz gleitet/],
             ["bewohner-koennen", /das Können trägt den Gang nicht/],
