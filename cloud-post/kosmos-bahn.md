@@ -102,7 +102,10 @@ ampErde 20,816. Die Zahlen des Auftrags (37 % / 0,759) stammen von einem ältere
     (`gate:pruefbuehne-licht`, `gate:weltbild-frost:echt`), Licht für stamm/bild-himmel.js und welt-licht.js (`gate:tag-achse:echt`).
   - Der Koordinator reichte den Ruf am Zweig `kosmos-bahn-2` 3bb9abb7 nach (derselbe Baum, Lauf 45731231617). Die Läufe am Kopf
     10c5f77 endeten „cancelled“ ohne Urteil.
-  - Leser: das Urteil `probe-post/kosmos-bahn-2/3bb9abb7.md` im Zweig `koordination`.
+  - Das Urteil `probe-post/kosmos-bahn-2/3bb9abb7.md` im Zweig `koordination`: GRÜN, 4 von 4 Wänden auf radeon-890m —
+    `gate:pruefbuehne-licht` 65 s (S0 Nacht luma 50,2 bei Gesetz 52,32, Mond 22,08°), `gate:weltbild-frost:echt` 140 s,
+    `gate:tag-achse:echt` 166 s, `gate:webgl-probe` 62 s.
+  - Offen: CI voll am Kopf 3bb9abb7 (Code-Check, Lauf 45731231484) wartet noch auf Läufer. Leser: der Zug.
 - **bahn-klima#2 „Schneelinie und Laub im Bild“:** die Zahl steht (152,2 m), das Bildpaar nur am Gerät. Leser: bahn-klima#2 `auge`.
 - **Kein Spielpfad fragt einen fremden Körper:** feld-leben.js:1298 reist ohne `koerper`. Das Gesetz antwortet, gespielt wird die Erde.
   Leser: bahn-klima#5/#6 (gebundene Welt, 1 000 Welten).
