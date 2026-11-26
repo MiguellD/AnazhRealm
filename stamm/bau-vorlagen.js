@@ -1775,8 +1775,21 @@ class AnazhRealm_bau_vorlagen {
             blech:    [0.5,  null,   0.6,   0.35, null],
             gras:     [0.6,  533,    0.4,   0.2,  0.000348],
             wasser:   [null, null,   null,  null, 0.003],
-            eis:      [0.05, null,   null,  null, null],
+            eis:      [0.05, null,   0.1,   0.07, null],
         };
+        // DER BODEN UNTER DEM RAD (fahrzeug-medium): je weichem Stoff sein Druck-Einsinken-Satz p = (kc/b + kφ)·zⁿ (Bekker; n,
+        // kc in kN/m^(n+1), kφ in kN/m^(n+2)), trocken und voll nass — das Rad sinkt, verdichtet und widersteht nach ihm (vehicle
+        // `radImBoden`, Leser `_fahrGrund`). Tafel-Werte (Wong, Theory of Ground Vehicles 2001, wiedergegeben in NASA/TM-20250006958
+        // Tafel 1): Lean Clay bei 22 % Wasser n 0,2 · kc 16,43 · kφ 1 724,69, bei 32 % n 0,15 · kc 1,52 · kφ 119,61. Die Wiese und
+        // der Waldboden stehen auf derselben Erde (Wong kennt keinen Wurzelfilz); Fels, Pflaster, Bohle, Metall, Glut und Eis sind
+        // fester Grund (keine Zeile: das Rad sinkt nicht). Und das Eis greift mit μ 0,1 (die Tafel des SAE 960959: „ein Kennwert
+        // 0,10“, Wong 1993 S. 26 die Spitze 0,10), unter seinem Schmelz-Film mit Wongs Gleit-Wert 0,07 (glattes Eis 0,054–0,19,
+        // Sokolovskij 2007) — bis hier stand unter dem Rad nie Eis (der Wagen las den Boden des Felds, nie den Spiegel).
+        const LEHM = Object.freeze({
+            trocken: Object.freeze({ n: 0.2, kc: 16.43, kphi: 1724.69 }),
+            nass: Object.freeze({ n: 0.15, kc: 1.52, kphi: 119.61 }),
+        });
+        const BODEN = { erde: LEHM, gras: LEHM, laub: LEHM };
         // die Spalten L und k (oben): nur das Eis wächst im Kern; L_v des Wassers (2,257 MJ/kg) trocknet das Bett vor der Zündung
         const PHASE = { eis: { L: 334000, k: 2.2 }, wasser: { Lv: 2257000 } };
         // prettier-ignore
@@ -1824,6 +1837,7 @@ class AnazhRealm_bau_vorlagen {
                 bindung: g.bindung,
                 ...PHASE[name],
                 brenn: BRENN[name] ? Object.freeze(BRENN[name]) : null,
+                radBoden: BODEN[name] || null,
             };
             // die Spalten des Gesetzes: je ein Zugriff auf die Zeile im Kern (wer sie ändert, ändert Klinge, Treffer, Schritt,
             // Knick-Last, Brennpunkt und Spiegel); die Dichte zählt den Stoff-Stand, an dem die Gedächtnisse der Masse hängen

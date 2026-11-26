@@ -79,6 +79,35 @@ function formVerdict(f) {
     return Math.abs(f.wattQ - 1) < 1e-9 ? [] : [`der Stempel baut einen anderen Motor ein (Leistung × ${f.wattQ.toFixed(4)} bei Masse × ${f.masseQ.toFixed(4)})`];
 }
 
+// ── B-i DIE SCHEIBE (fahrzeug-gestalt#1): das Glas des Wagens liest das EINE Gesetz der Scheibe (welt-licht `scheibe`, wie das
+// Fenster der Häuser) — Fresnel nach Schlick mit dem F₀ der Zeile glas der schmiede (n → F₀ ≈ 0,04 je Fläche), der Spiegel der
+// Welt steht voll im Bild, der Körper nach der Deckkraft. Am Kopf von main trug das Wagenglas KEIN Gesetz (Deckkraft 0,42 als
+// Spiegel-Anteil, ausgeglichen mit Klarlack und Umgebung × 3): ROT „Scheiben ohne Gesetz“. Eine eigene Zahl (F₀ ≠ Zeile) und
+// ein F₀, der der Zeile nicht folgt (die Zeile mit halber Brechkraft lässt ihn stehen), heißen je beim Namen.
+function scheibeVerdict(s) {
+    if (!s || !(s.durch > 0)) return [`der gestellte Wagen zeichnet keine Scheibe (durchsichtige Stoffe: ${s && s.durch})`];
+    const out = [];
+    if (s.mit < s.durch) out.push(`Scheiben ohne Gesetz: ${s.durch - s.mit} von ${s.durch} (die Deckkraft trägt den Spiegel)`);
+    if (!(s.abw < 1e-4)) out.push(`das F₀ der Scheibe ist eine eigene Zahl (Abstand zur Zeile glas ${s.abw})`);
+    if (s.folgt !== true) out.push("das F₀ folgt der Zeile glas nicht (die halbe Brechkraft lässt es stehen)");
+    return out;
+}
+
+// ── B-j DER REIFEN UNTER SEINER LAST (fahrzeug-gestalt#1): der Reifen des gestellten Wagens (die Rad-Blätter bis an den Umfang)
+// rollt nicht mit der Felge (sein Aufstand bliebe sonst nicht unten), liegt unter der Nabe als Sehne auf der Ebene der Vorlage
+// (≥ 2 cm breit: eine Fläche, keine Kante) und steht um dz = W / kz frei — W die Last des Fahr-Satzes, mit der das Rad im
+// Boden einsinkt. Am Kopf von main rollte der Reifen mit, stand kreisrund auf EINER Ecke und federte nicht (dz 0 statt 12,7 mm).
+function reifenVerdict(t) {
+    if (!t || !(t.blaetter > 0)) return [`der gestellte Wagen zeichnet keinen Reifen (Rad-Blätter am Umfang: ${t && t.blaetter})`];
+    const out = [];
+    if (t.rollt > 0) out.push(`der Reifen rollt mit der Felge (${t.rollt} von ${t.blaetter} Blättern — sein Aufstand wandert)`);
+    if (!(t.sehne >= 0.02)) out.push(`der Reifen steht auf einer Kante statt auf einer Fläche (Sehne ${t.sehne} m)`);
+    if (!(Math.abs(t.aufstand) < 1e-3)) out.push(`der Aufstand liegt neben der Ebene der Räder (${t.aufstand} m)`);
+    if (!(Math.abs(t.dzMesh - t.dzGesetz) <= 5e-4 + 0.03 * t.dzGesetz))
+        out.push(`der Reifen federt nicht nach seiner Last (frei ${t.dzMesh} m, Gesetz W / kz ${t.dzGesetz} m)`);
+    return out;
+}
+
 // ── A6 DIE REIBELLIPSE JE ACHSE (fahrzeug.K1, w28-reibellipse), am Kern je Rezept. Im Bogen (20 m/s, Einschlag 0,25, 1,5 s ohne
 // Gas) voll gebremst und in der Kehre unter Handbremse (15 m/s, Einschlag 0,6, 1 s) tragen die Reifen höchstens μ·g (der
 // Rollwiderstand liegt außerhalb des Reifens: abgezogen). DIE HANDBREMSE sperrt nur das Heck: ihr Zug über dem Ausrollen
@@ -387,6 +416,8 @@ hauptLauf(async () => {
             [driveVerdict, fahrt, { dist: 0, snapDist: 0 }, { sitzKern: false }, { huelleKern: false }],
             [standVerdict, stand, { spaltM: 0.49 }, { proben: 0 }],
             [formVerdict, { masseQ: 1.8963, wattQ: 1 }, { wattQ: 1.8963 }, { masseQ: 1 }],
+            [scheibeVerdict, { durch: 2, mit: 2, abw: 0, folgt: true }, { mit: 0 }, { abw: 0.0357 }, { folgt: false }, { durch: 0 }],
+            [reifenVerdict, { blaetter: 2, rollt: 0, sehne: 0.11, aufstand: 0, dzMesh: 0.0127, dzGesetz: 0.0127 }, { rollt: 2 }, { sehne: 0 }, { aufstand: 0.0127 }, { dzMesh: 0 }, { blaetter: 0 }],
         ])
             for (const b of [{}, ...brueche]) {
                 const v = V({ ...basis, ...b });
@@ -636,6 +667,89 @@ hauptLauf(async () => {
                 // Studio-Gestalt andocken lassen (der Bau ist async: Flat-Miss → Anfrage → Bau).
                 await __gebautNach(entry);
                 res.drive.visualKind = entry.instanced ? "instanced" : entry.mesh ? "mesh" : "kalt";
+                // B-i: DIE SCHEIBE (fahrzeug-gestalt) — die Stoffe, die der gestellte GT in der Welt zeichnet (seine Instanz-Gruppen):
+                // jede durchsichtige trägt das Gesetz der Scheibe (welt-licht `scheibe`) mit dem F₀ der Zeile glas, und eine Zeile mit
+                // halber Brechkraft (n − 1 × ½) setzt ihn (`_glasOptikWirkt`) — gelesen am Uniform, das der Stoff zeichnet
+                try {
+                    const mats = new Set();
+                    for (const ref of entry.instSlots || []) {
+                        const g = r.state.archInstanceGroups.get(ref.key);
+                        if (g && g.mesh && g.mesh.material) mats.add(g.mesh.material);
+                    }
+                    const durch = [...mats].filter((m) => m.transparent && m.opacity < 1);
+                    const SG = window.__schmiedeCore.STOFF_GESETZ;
+                    const zeile = () => SG.fresnel0(SG.kanaele(SG.zeile("glas"))[1]);
+                    const wert = () => durch.map((m) => (m.userData.scheibe ? m.userData.scheibe.value : NaN));
+                    const vor = wert();
+                    const z0 = SG.zeile;
+                    let nach = vor;
+                    SG.zeile = (n) => (n === "glas" ? Object.assign({}, z0(n), { n: 1 + (z0(n).n - 1) / 2 }) : z0(n));
+                    try {
+                        if (typeof r._glasOptikWirkt === "function") r._glasOptikWirkt();
+                        nach = wert();
+                    } finally {
+                        SG.zeile = z0;
+                        if (typeof r._glasOptikWirkt === "function") r._glasOptikWirkt();
+                    }
+                    res.scheibe = {
+                        stoffe: mats.size,
+                        durch: durch.length,
+                        mit: durch.filter((m) => m.userData.scheibe).length,
+                        f0: vor.map((v) => +v.toFixed(5)),
+                        abw: Math.max(...vor.map((v) => Math.abs(v - zeile()))),
+                        folgt: durch.length > 0 && nach.every((v, i) => Math.abs(v - vor[i]) > 1e-4),
+                    };
+                } catch (eS) {
+                    res.scheibeErr = fehlerText(eS);
+                }
+                // B-j: DER REIFEN (fahrzeug-gestalt) — die Rad-Blätter, die der gestellte GT in der Welt zeichnet (der Foundry-Flat
+                // der servierten Stufe, nabenrelativ gebacken): die Blätter bis an den Umfang (der Reifen) rollen nicht, ihr tiefster
+                // Punkt liegt als Sehne unter der Nabe, und sie stehen um dz = W / kz frei über dem Aufstand — W die Last des
+                // Fahr-Satzes (`_fahrSatz(…).rad.W`, dieselbe, mit der das Rad im Boden einsinkt), kz die Steifigkeit des Gesetzes
+                try {
+                    const VCp = window.__vehicleCore;
+                    const lodR = Number.isFinite(entry._servedLod) ? entry._servedLod : entry._lodLevel;
+                    const flat = r._foundryFlattenFor(entry, r._foundryPresetForEntry(entry), lodR);
+                    const SR = r._fahrSatz(entry, r._vehicleProfile(entry));
+                    const maß = new Map();
+                    for (const lf of (flat && flat.leaves) || []) {
+                        if (!lf.rad || !lf.geom || maß.has(lf.geom)) continue;
+                        const p = lf.geom.attributes.position;
+                        let minY = Infinity,
+                            maxR = 0;
+                        for (let i = 0; i < p.count; i++) {
+                            minY = Math.min(minY, p.getY(i));
+                            maxR = Math.max(maxR, Math.hypot(p.getX(i), p.getY(i)));
+                        }
+                        let sx0 = Infinity,
+                            sx1 = -Infinity;
+                        for (let i = 0; i < p.count; i++)
+                            if (p.getY(i) < minY + 5e-4) [sx0, sx1] = [Math.min(sx0, p.getX(i)), Math.max(sx1, p.getX(i))];
+                        const e = lf.localMatrix.elements;
+                        // die Nabe der Ecke: der Flat stellt jedes Rad-Blatt je Ecke als eigene Instanz (`_foundryFlattenFor`,
+                        // DIE RÄDER: rad = { ecke, hx, hy, hz, … }) — `rad.raeder` trägt nur die Vorlage vor dem Flat (bis
+                        // fahrzeug-stapel las die Linse es hier: „Cannot read properties of undefined (reading '0')“)
+                        maß.set(lf.geom, { minY, maxR, sehne: sx1 - sx0, dreht: !!lf.rad.dreht, k: Math.hypot(e[0], e[1], e[2]), hy: lf.rad.hy });
+                    }
+                    const alle = [...maß.values()],
+                        rMax = Math.max(...alle.map((m) => m.maxR)),
+                        reifen = alle.filter((m) => m.maxR > 0.97 * rMax);
+                    const lauf = reifen.reduce((a, m) => (m.minY < a.minY ? m : a), reifen[0]);
+                    const R = VCp.FAHR.reifen,
+                        rad = SR && SR.rad;
+                    const kz = rad ? R.kz * Math.sqrt((rad.b * rad.D) / (R.bezug.b * R.bezug.D)) : NaN;
+                    res.reifen = {
+                        blaetter: reifen.length,
+                        rollt: reifen.filter((m) => m.dreht).length,
+                        sehne: +(lauf.sehne * lauf.k).toFixed(4),
+                        dzMesh: +((rMax + lauf.minY) * lauf.k).toFixed(5), // freier Halbmesser − Abstand Nabe → Aufstand
+                        dzGesetz: rad ? +(rad.W / kz).toFixed(5) : NaN,
+                        W: rad ? +rad.W.toFixed(1) : NaN,
+                        aufstand: +((lauf.minY + lauf.hy) * lauf.k).toFixed(5), // 0: die Sehne liegt in der Ebene y 0 der Vorlage
+                    };
+                } catch (eR) {
+                    res.reifenErr = fehlerText(eR);
+                }
                 // KONSUM: die Instanz zieht über die EINE Flat-Quelle mit — die Foundry-Gestalt, ohne Foundry der Bauplan
                 const ruft = (k, n = 0, f0 = r[k]) => {
                     const zurueck = leihe(r, { [k]: (...a) => (n++, f0.apply(r, a)) }); // die EINE Leihe (welt-boot)
@@ -878,6 +992,22 @@ hauptLauf(async () => {
         "B-g: FORM — der schwere Stempel fährt den Motor seines Rezepts (Leistung × 1 am Fahr-Satz des Ritts)",
         fv.length === 0,
         out.formErr || `Masse × ${out.form && out.form.masseQ.toFixed(4)}, Leistung × ${out.form && out.form.wattQ.toFixed(6)}${fv.length ? " — Täter: " + fv.join(", ") : ""}`
+    );
+
+    // B-i: die Scheibe des gestellten Wagens — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
+    const scheibeV = scheibeVerdict(out.scheibe);
+    check(
+        "B-i: SCHEIBE — das Glas des gestellten Wagens trägt das Gesetz der Scheibe mit dem F₀ der Zeile glas und folgt ihr",
+        scheibeV.length === 0,
+        out.scheibeErr || `${JSON.stringify(out.scheibe)}${scheibeV.length ? " — Täter: " + scheibeV.join(", ") : ""}`
+    );
+
+    // B-j: der Reifen des gestellten Wagens unter seiner Last — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
+    const reifenV = reifenVerdict(out.reifen);
+    check(
+        "B-j: REIFEN — der Reifen des gestellten Wagens rollt nicht, liegt als Sehne auf und steht um W / kz frei (W die Last des Bodens)",
+        reifenV.length === 0,
+        out.reifenErr || `${JSON.stringify(out.reifen)}${reifenV.length ? " — Täter: " + reifenV.join(", ") : ""}`
     );
 
     wandEnde(

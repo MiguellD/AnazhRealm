@@ -86,14 +86,15 @@
                 clearcoatRoughness: 0.04,
                 envMapIntensity: 2.6,
             }),
-            glass: new THREE.MeshPhysicalMaterial({
+            // DIE SCHEIBE (fahrzeug-gestalt): Körper (die Tönung), Rauheit und Deckkraft — ihren Glanz trägt das Gesetz der
+            // Scheibe der Welt (welt-licht `scheibe`, F₀ aus der Zeile glas), dasselbe wie am Fenster des Hauses. Bis hier glich das
+            // Glas die Mischung mit eigenen Zahlen aus (Umgebung × 3, ein Klarlack auf dem Glas): ein zweiter Glanz neben dem der Welt.
+            glass: new THREE.MeshStandardMaterial({
                 color: 0x0a0f18,
                 metalness: 0,
                 roughness: 0.02,
                 transparent: true,
                 opacity: 0.42,
-                clearcoat: 1,
-                envMapIntensity: 3.0,
                 side: THREE.DoubleSide,
             }),
             // Die Paletten-Hex sind sRGB-Absichten (DAS FARB-GESETZ unten); die dunklen Stoffe liegen im Band der Natur
@@ -101,6 +102,13 @@
             tire: new THREE.MeshStandardMaterial({
                 color: 0x2a2c2f,
                 roughness: 0.85,
+                metalness: 0,
+                side: THREE.DoubleSide,
+            }),
+            // die Flanke (fahrzeug-gestalt): derselbe Gummi, glatt aus der Form gepresst — seidig statt rau wie die Lauffläche
+            flanke: new THREE.MeshStandardMaterial({
+                color: 0x2d2f32,
+                roughness: 0.6,
                 metalness: 0,
                 side: THREE.DoubleSide,
             }),
@@ -211,6 +219,7 @@
             paint: "metall",
             glass: "glas",
             tire: "stoff",
+            flanke: "stoff",
             rimM: "metall",
             rimD: "metall",
             cal: "stoff",
@@ -243,6 +252,7 @@
             paint: "lack",
             glass: "glas",
             tire: "gummi",
+            flanke: "gummi",
             rimM: "blank",
             rimD: "metall",
             steel: "metall",
@@ -698,10 +708,31 @@
     // (Nabe, Speichen, Felgen-Kranz, Reifen-Band — Kutsche und früher Motorwagen) und die Kufe (der Schlitten, ohne Rad). Ihre
     // Stoffe liest jedes aus der Tafel der Stufe: rimM das Holz der Scheibe/Speichen, rimD die Nabe, tire das Band.
     const RAD_FREI_AUSSEN = 0.26;
+    // DIE BREITE DES RADS (fahrzeug-medium): die Lauffläche, auf der es steht — der Bau (makeWheel, zeitRad, kufen) und das Rad im
+    // Boden (`radImBoden` über exportDrive.rad) lesen dieselbe Zahl: der Gummi 0,22 m, die Bohlen-Scheibe 0,16, das Speichenrad mit
+    // seinem Band 0,09, der Läufer der Kufe 2 × 0,035.
+    const RAD_BREITE = Object.freeze({ gummi: 0.22, voll: 0.16, speiche: 0.09, kufeHalb: 0.035 });
+    function radBreite(P) {
+        if (P.rad === "kufe") return 2 * RAD_BREITE.kufeHalb;
+        return P.rad === "voll" ? RAD_BREITE.voll : P.rad === "speiche" ? RAD_BREITE.speiche : RAD_BREITE.gummi;
+    }
+    // DER REIFEN UNTER SEINER LAST (fahrzeug-gestalt, FAHR.reifen.kz): die Last W je Rad (`radLast` der Masse der Form —
+    // carPhys, dieselbe, die fahrGesetz dem Boden reicht), die Steifigkeit kz des Reifens (b, D), die Einfederung dz = W / kz und
+    // der freie Halbmesser rFrei = radR + dz (radR ist der statische: die Nabe steht ihn über dem Aufstand). Das starre Rad der
+    // Zeit, die Kufe und das Boot federn nicht (dz 0). REIN + THREE-frei; Kosten: eine Formel je Bau.
+    function reifenGestalt(P) {
+        if (P.rad === "voll" || P.rad === "speiche" || P.rad === "kufe" || P.rad === "keins")
+            return { W: 0, kz: Infinity, dz: 0, rFrei: P.radR };
+        const R = FAHR.reifen,
+            W = radLast(carPhys(P).kg, false),
+            kz = R.kz * Math.sqrt((radBreite(P) * 2 * P.radR) / (R.bezug.b * R.bezug.D)),
+            dz = W / kz;
+        return { W, kz, dz, rFrei: P.radR + dz };
+    }
     function zeitRad(P, os, M, rEcke) {
         const g = new THREE.Group();
         const r = rEcke || P.radR,
-            w = P.rad === "voll" ? 0.16 : 0.09,
+            w = radBreite(P),
             band = Math.max(0.018, r * 0.05);
         const tyre = new THREE.Mesh(new THREE.TorusGeometry(r - band / 2, band / 2, teil(6, 3), teil(36, 12)), M.tire);
         tyre.scale.z = w / band;
@@ -736,17 +767,22 @@
         g.add(nabe); // die Nabe (Bronze, Messing)
         return baugruppe("rad", [g]); // je Stoff EIN Mesh (die Speichen ein Zug)
     }
-    // Die Kufe: zwei Läufer unter dem Kasten, vorn hochgebogen, je drei Stützen zum Boden des Kastens (ySill).
+    // Die Kufe: zwei Läufer unter dem Kasten, vorn hochgebogen, je drei Stützen zum Boden des Kastens (ySill). Der Läufer liegt
+    // bis `flach` seiner Länge auf (dahinter biegt er auf) — die Auflage, die der Boden trägt (exportDrive.huelle.kufeL).
+    const KUFE_FLACH = 0.55;
+    function kufeLauf(S) {
+        const x0 = S.tailX + 0.08,
+            x1 = S.noseX + 0.05;
+        return { x0, x1, len: x1 - x0 };
+    }
     function kufen(H, P, M) {
         const g = new THREE.Group();
         const S = scal(H, P),
             hz = P.spur / 2;
-        const x0 = S.tailX + 0.08,
-            x1 = S.noseX + 0.05,
-            len = x1 - x0;
+        const { x0, x1, len } = kufeLauf(S);
         for (const sd of [-1, 1]) {
-            const lauf = Bsub((x0 + x1) / 2, 0.025, sd * hz, len / 2, 0.025, 0.035, M.rimM, teil(16, 6), 1);
-            bend(lauf, "x", "y", (u) => (u > 0.55 ? Math.pow((u - 0.55) / 0.45, 2) * 0.32 : 0));
+            const lauf = Bsub((x0 + x1) / 2, 0.025, sd * hz, len / 2, 0.025, RAD_BREITE.kufeHalb, M.rimM, teil(16, 6), 1);
+            bend(lauf, "x", "y", (u) => (u > KUFE_FLACH ? Math.pow((u - KUFE_FLACH) / 0.45, 2) * 0.32 : 0));
             g.add(lauf); // der Läufer, vorn aufgebogen
             for (const f of [0.15, 0.5, 0.82]) {
                 const x = x0 + len * f * 0.92;
@@ -755,25 +791,33 @@
         }
         return g;
     }
+    // Das Rad zweier Teile: `dreht` rollt (die Felge mit Speichen, Bett, Scheibe, Nabe), `steht` hängt an der Nabe (lenkt und
+    // federt, rollt nie) — der Luft-Reifen ist um die Achse rund, sein Aufstand liegt immer unten. Das starre Rad der Zeit
+    // dreht ganz (`steht` null).
     function makeWheel(P, os, ctx, rEcke) {
         const M = (ctx && ctx.M) || materials();
-        if (P.rad === "voll" || P.rad === "speiche") return zeitRad(P, os, M, rEcke);
+        if (P.rad === "voll" || P.rad === "speiche") return { dreht: zeitRad(P, os, M, rEcke), steht: null };
         const g = new THREE.Group();
-        const w = 0.22,
+        const w = radBreite(P),
             r = P.radR;
         const rimLip = r * 0.66,
             hubR = r * 0.18,
             Rin = r * 0.2,
             Rout = r * 0.6;
-        // Reifen: offene Lauffläche + zwei Flanken-Ringe (Felge sichtbar). Der Scheitel der getonnten Lauffläche IST der Rad-Radius
-        // (die Nabe steht radR über dem Aufstand, die Rolle ist Weg/radR); die Schulter liegt um die Tonne darunter, die Flanke
-        // endet an ihr. Bis Gelände H5 wölbte die Tonne über radR hinaus: der Reifen stand 0,12 · radR (4 cm) im Boden (K8 rad).
+        // DER REIFEN UNTER SEINER LAST (fahrzeug-gestalt): drei Stoffe — die Lauffläche (tire, rauer Gummi), die Flanke
+        // (flanke, der glatt gepresste Gummi) und die Felge (rimM, unten). Die getonnte Lauffläche wölbt bis zum FREIEN
+        // Halbmesser rFrei = radR + dz (`reifenGestalt`: dz = W / kz, W die Last je Rad, mit der das Rad im Boden einsinkt) und
+        // liegt unter der Nabe auf der Sehne radR flach: der Aufstand, auf dem der Wagen steht (die Nabe radR darüber, die Rolle
+        // Weg/radR). Die Schulter liegt um die Tonne unter dem Scheitel, die Flanke endet an ihr. Bis hier wölbte der Reifen
+        // kreisrund bis radR und rollte mit der Felge: kein Aufstand, der Wagen stand auf einer Linie.
         const tonne = 0.12;
-        g.add(crownedTread(r, w, tonne, M.tire));
+        const RG = reifenGestalt(P);
+        const reifen = new THREE.Group();
+        reifen.add(crownedTread(RG.rFrei, w, tonne, M.tire, r));
         for (const s of [-1, 1]) {
-            const sw = new THREE.Mesh(new THREE.RingGeometry(rimLip, r / (1 + tonne), teil(36, 12)), M.tire);
+            const sw = new THREE.Mesh(new THREE.RingGeometry(rimLip, RG.rFrei / (1 + tonne), teil(36, 12)), M.flanke);
             sw.position.z = (s * w) / 2;
-            g.add(sw);
+            reifen.add(sw);
         }
         // Felgenbett + Bremsscheibe (dreht mit)
         const barrel = new THREE.Mesh(new THREE.CylinderGeometry(rimLip, rimLip, w * 0.84, teil(36, 12), 1, true), M.rimM);
@@ -872,7 +916,7 @@
             kante.position.z = os * w * 0.47;
             g.add(kante);
         }
-        return g;
+        return { dreht: g, steht: reifen };
     }
     function buildWheels(H, P, ctx) {
         const M = (ctx && ctx.M) || materials();
@@ -903,7 +947,8 @@
             spin.userData.radDreht = true;
             hub.add(spin);
             const rad = makeWheel(P, Math.sign(p[2]), ctx, p[1]);
-            spin.add(TOPO[P.topo] && !zeit ? baugruppe("rad", [rad]) : rad); // die Gestalt der Zeit: je Stoff EIN Mesh
+            spin.add(TOPO[P.topo] && !zeit ? baugruppe("rad", [rad.dreht]) : rad.dreht); // die Gestalt der Zeit: je Stoff EIN Mesh
+            if (rad.steht) hub.add(TOPO[P.topo] ? baugruppe("reifen", [rad.steht]) : rad.steht); // der Reifen rollt nicht (fahrzeug-gestalt)
             if (!zeit) {
                 const cal = box(0.05, P.radR * 0.24, 0.085, M.cal);
                 cal.position.set(0, P.radR * 0.5, -Math.sign(p[2]) * 0.07);
@@ -989,8 +1034,9 @@
         const coke = P.coke || 0;
         let zx = 1;
         if (coke > 0) {
-            const xF0 = fAx + P.radR + 0.05,
-                xR0 = rAx - P.radR - 0.05;
+            const rFrei = reifenGestalt(P).rFrei; // die Taille beginnt hinter dem freien Reifen (fahrzeug-gestalt)
+            const xF0 = fAx + rFrei + 0.05,
+                xR0 = rAx - rFrei - 0.05;
             if (x > xF0) {
                 const f = Math.min(1, (x - xF0) / Math.max(0.05, noseX - xF0));
                 zx = 1 - coke * f * f;
@@ -1084,8 +1130,9 @@
         return me;
     }
     // getonnte Lauffläche: Radius wölbt zur Mitte (Tonnenprofil), Schultern runden ab — echter Reifen statt gerader Zylinder;
-    // der Scheitel trägt den Radius r, die Schulter r / (1 + crown).
-    function crownedTread(r, w, crown, m) {
+    // der Scheitel trägt den Radius r, die Schulter r / (1 + crown). `flach` (fahrzeug-gestalt): unter der Nabe liegt die
+    // Lauffläche auf der Sehne in diesem Abstand auf (der Aufstand unter Last; die Geometrie-z ist nach der Drehung −y des Rads).
+    function crownedTread(r, w, crown, m, flach) {
         const g = new THREE.CylinderGeometry(r, r, w, teil(40, 14), teil(8, 2), true);
         const pos = g.attributes.position;
         for (let i = 0; i < pos.count; i++) {
@@ -1094,7 +1141,7 @@
                 z = pos.getZ(i);
             const f = (1 + crown * (1 - Math.pow((2 * y) / w, 2))) / (1 + crown);
             pos.setX(i, x * f);
-            pos.setZ(i, z * f);
+            pos.setZ(i, flach > 0 ? Math.min(z * f, flach) : z * f);
         }
         g.computeVertexNormals();
         const me = new THREE.Mesh(g, m);
@@ -1392,9 +1439,12 @@
         // Haut trägt kein Glashaus (Dach, Säulen, Scheiben), der Kasten endet am Gürtel
         const radFrei = !!P.radFrei,
             offen = P.haut === "offen";
+        // der Radlauf umschließt den FREIEN Reifen (fahrzeug-gestalt: rFrei = radR + dz, `reifenGestalt`) — die Nabe steht radR
+        // über dem Aufstand, der Scheitel des Reifens rFrei über ihr
+        const rFrei = reifenGestalt(P).rFrei;
         const t = 0.025,
             cwK = bw - 0.015,
-            archHalf = radFrei ? 0 : P.radR * 1.18,
+            archHalf = radFrei ? 0 : rFrei * 1.18,
             hz = P.spur / 2,
             clr = hz - 0.135;
         const yC = (ySill + yBelt) / 2,
@@ -1426,7 +1476,7 @@
             for (const ax of [fAx, rAx]) {
                 const d = Math.abs(xx - ax);
                 if (d < archHalf) {
-                    const archTopV = Math.max(yBelt + 0.015, 2 * P.radR + wheelClearance(P, ax, ax === fAx).gap); // Scheitel: Freigang aus LIVE-Nickphysik (deckt Bremstauchen+Squat)
+                    const archTopV = Math.max(yBelt + 0.015, P.radR + rFrei + wheelClearance(P, ax, ax === fAx).gap); // Scheitel: Freigang aus LIVE-Nickphysik (deckt Bremstauchen+Squat)
                     y = Math.max(y, yBelt + (archTopV - yBelt) * (1 - Math.pow(d / archHalf, 2)));
                 }
             }
@@ -1487,7 +1537,7 @@
                 // Freiraum GEMESSEN aus der LIVE-Fahrphysik: Nicktauchen+Squat (vertikal) · Einlenk-Schwenk+Wanken (inboard) — keine 1-g-Schaetzung
                 const WC = wheelClearance(P, x, isFront);
                 const archGap = WC.gap; // Spalt zum Rad = Bremstauchen+Squat+Reserve (aMax, ζ-Ueberschwingen)
-                const archTopV = Math.max(yBelt + 0.015, 2 * P.radR + archGap),
+                const archTopV = Math.max(yBelt + 0.015, P.radR + rFrei + archGap),
                     humpRise = archTopV - yBelt; // Bogenscheitel über dem Rad
                 {
                     const iwT = yBelt + humpRise + 0.04,
@@ -1535,8 +1585,8 @@
                 const tHalf = 0.115,
                     zTin = Math.max(clr + 0.005, hz - tHalf),
                     zTo = bw + 0.024; //   Reifenfenster (z) — voll (Bogen ist Master, wird NICHT geschrumpft)
-                const wF = x + P.radR + 0.01,
-                    wB = x - P.radR - 0.01; //   Reifen-Vorder-/Hinterkante
+                const wF = x + rFrei + 0.01,
+                    wB = x - rFrei - 0.01; //   Reifen-Vorder-/Hinterkante (der freie Reifen)
                 const par = (xx) => yBelt + humpRise * (1 - Math.pow((xx - x) / archHalf, 2)); //   Bogen-Parabel
                 // ── RADLAUF-KOTFLÜGEL: gebogene Streifen entlang par (statt ~30 Box-Segmenten) ──
                 const NA = Math.max(34, Math.round(archHalf * 72)),
@@ -1778,7 +1828,7 @@
         }
         // ── KULTUR Haltung: Heckflügel (aggressiv) + Seitenschweller ──
         {
-            const aH = P.radR * 1.18; // Radhaus-Halbbreite (für saubere Skirt-Länge zwischen den Rädern)
+            const aH = rFrei * 1.18; // Radhaus-Halbbreite (für saubere Skirt-Länge zwischen den Rädern)
             if ((P.heck || "stufe") !== "steil" && P.cGrille === "hex" && cSta > 0.7) {
                 const wy = yBelt + 0.135,
                     wx = tailX + 0.05,
@@ -1933,7 +1983,7 @@
         } // Radloch ausgespart
         for (const ax of radFrei ? [] : [fAx, rAx]) {
             const isFront = ax === fAx; // RADLAUF-BROW: EIN glatter Bogen je Seite (ersetzt 26 Facetten-Boxen → keine Treppe), folgt archShoulderY
-            const humpRise = Math.max(0.015, 2 * P.radR + wheelClearance(P, ax, isFront).gap - yBelt),
+            const humpRise = Math.max(0.015, P.radR + rFrei + wheelClearance(P, ax, isFront).gap - yBelt),
                 NB = Math.max(34, Math.round(archHalf * 72));
             for (const sd of [-1, 1]) {
                 const brow = Bsub(ax, yBelt, sd * (bw + 0.006), archHalf, 0.016, 0.022, bodyMat, NB, 1);
@@ -2215,7 +2265,7 @@
             zugtier = P.antrieb === "zugtier",
             offen = P.haut === "offen";
         const cwK = bw - 0.015,
-            archHalf = radFrei ? 0 : P.radR * 1.18,
+            archHalf = radFrei ? 0 : reifenGestalt(P).rFrei * 1.18, // der Radlauf um den freien Reifen (buildSkin)
             gaps = radFrei
                 ? []
                 : [
@@ -3808,6 +3858,29 @@
             spitzeGrad: 8.5,
             C: 1.6,
             taktHz: 240,
+            // ── fahrzeug-gestalt (rein additive DATEN-Zeile — Praezedenz: reifen) — DER REIFEN UNTER SEINER LAST: der Luft-
+            //    Reifen federt unter der Last W je Rad (`radLast`, dieselbe Zahl, mit der das Rad im Boden einsinkt) um
+            //    dz = W / kz ein — die Kennlinie ist ueber den Betriebsbereich nahezu linear (TRA: d = L / K_z). kz waechst
+            //    mit dem Reifen wie p·√(b·D) (Rhyne 2005, Tire Sci. Technol. 33(3): die Steifigkeit aus Druck, Breite und
+            //    Durchmesser — die Gestalt der Formel, nicht ihre Zahlen): kz = kz0 · √(b·D / (b0·D0)) am Bezugs-Reifen
+            //    205/60 R15 (b0 0,205 m, D0 0,621 m) mit kz0 = 240 kN/m — die Mitte des Pkw-Bands 200 … 300 kN/m (bei 4 … 5 kN
+            //    je Rad 15 … 25 mm Einfederung). radR ist der STATISCHE Halbmesser (die Nabe ueber dem Aufstand, die Rolle
+            //    Weg/radR), der freie Reifen steht um dz darueber; das starre Rad (Bohle, Speiche mit Eisen-Band) federt nicht. ──
+            kz: 240000, // N/m
+            bezug: { b: 0.205, D: 0.621 }, // m
+        },
+        // ── fahrzeug-medium (rein additive DATEN-Zeile — Praezedenz: reifen) — DAS RAD IM BODEN: die Fahrt ist eine Funktion
+        //    des Mediums am Ort. Der Stoff unter dem Rad (der EINE Leser des Leibs, _kontaktStoffAt) traegt seinen Druck-
+        //    Einsinken-Satz (Bekker p = (kc/b + kφ)·zⁿ, die Zeile `radBoden` in _defaultMaterials; fester Grund: keiner). Das
+        //    starre Rad sinkt z0 = [3W / ((3−n)(kc + b·kφ)·√D)]^(2/(2n+1)) (Bekker 1956, Wong „Theory of Ground Vehicles“ §2.4),
+        //    die Kufe als Platte z = (W/(b·l) / (kc/b + kφ))^(1/n); der Boden widersteht mit der Verdichtungs-Arbeit je Meter
+        //    Rc = (kc + b·kφ)·(z_nach^(n+1) − z_vor^(n+1)) / (n+1) — auf frischem Boden z_vor = 0, in der Spur die Tiefe, die
+        //    die Durchfahrten vor ihm schon gruben. Die Spurrinne waechst mit der Zahl k der Durchfahrten log-artig:
+        //    z_k = z1·(1 + rinne·ln k) — Verdichtung ∝ ln der Ueberfahrten (Thünen, literatur.thuenen.de dn070927); rinne 0,283
+        //    laesst 10 Durchfahrten 1,65 × der ersten graben (0,65 / ln 10 = 0,2823): die untere Kante des US-Army-Bands „die Rinne waechst unter
+        //    Mehrfach-Fahrt um 65 … 548 % ueber die erste“ (die Kurve, die das Band nach oben treibt, faehrt hier nicht mit). ──
+        boden: {
+            rinne: 0.283,
         },
     };
     // STEER_VIS — intentional dual steer visual (Feel-Entscheid .124). Do NOT merge.
@@ -4039,6 +4112,10 @@
                 // WELLE L (07.10., rein additiv): die Dichte der Huelle relativ zu Wasser (FAHR.huelleDichte) — der
                 // Wirt legt das Fahrzeug danach ins Wasser (Archimedes ueber Unterkoerper + Greenhouse).
                 dichte: FAHR.huelleDichte,
+                // fahrzeug-medium (rein additiv): das Rad im Boden — die Breite der Lauffläche (radBreite, dieselbe Zahl wie der
+                // Bau), die tragende Länge des Kufen-Läufers (kufeLauf × KUFE_FLACH, 0 = Rad); das Boot ohne Rad trägt keine (0).
+                radB: P.rad === "keins" ? 0 : radBreite(P),
+                kufeL: P.rad === "kufe" ? kufeLauf(scal(hardpoints(P), P)).len * KUFE_FLACH : 0,
             },
             topSpeedMul: ph.vmax / VMAX_REF,
             kAcc: ph.aEngine / ph.vmax,
@@ -4165,6 +4242,9 @@
             laenge: h.noseX > h.tailX ? (h.noseX - h.tailX) * k : NaN,
             dach: h.yRoof > 0 ? h.yRoof * k : NaN,
             ansaug: h.yBelt > 0 ? h.yBelt * k : NaN,
+            // fahrzeug-medium: das Rad im Boden (Durchmesser, Breite der Lauffläche, die Kufe mit ihrer tragenden Länge) × s —
+            // ohne Rad (Boot, Teile-Werk ohne Hülle) keines: der Boden bremst es nicht
+            rad: h.radB > 0 && h.radR > 0 ? { D: 2 * h.radR * k, b: h.radB * k, kufe: h.kufeL > 0, l: h.kufeL > 0 ? h.kufeL * k : 0 } : null,
         };
     }
     // Die Huelle im Wasser eines Fahr-Satzes (SCHAU-2): die getauchte Flaeche je m Tiefe (Stirn = Breite, Flanke = Laenge)
@@ -4202,6 +4282,7 @@
         if (!a || !(a.vorn > a.hinten) || !(a.quer > 0)) return null;
         const aEngine = d.kAcc * d.vmax;
         const sp = d.spring || {};
+        const masse = d.masseKg > 0 ? d.masseKg : zs.mass * FAHR.masseDichte; // die EINE Masse des Werks [kg]
         return {
             m: zs.mass,
             Izz: zs.Izz,
@@ -4255,10 +4336,47 @@
             },
             // SCHAU-2 (rein additiv): die Huelle im Wasser, EINE Masse — physik K1 (rein additiv): reicht der Wirt die Masse
             // des Werks (d.masseKg: Gestalt × Stoff-Zeile), traegt der Wasser-Term sie; ohne sie das Volumen × masseDichte.
-            wasser: fahrWasser(a, d.masseKg > 0 ? d.masseKg : zs.mass * FAHR.masseDichte),
-            luft: fahrLuft(a, d.masseKg > 0 ? d.masseKg : zs.mass * FAHR.masseDichte), // wetter.K5 (rein additiv): die Flanke im Wind, dieselbe Masse
+            wasser: fahrWasser(a, masse),
+            luft: fahrLuft(a, masse), // wetter.K5 (rein additiv): die Flanke im Wind, dieselbe Masse
             reifen: fahrReifen(zs), // K1 (rein additiv): die Kurve mit Spitze je Achse
+            // fahrzeug-medium (rein additiv): das Rad im Boden — die Geometrie aus den Aufstandspunkten, die Last je Rad aus
+            // derselben Masse (vier Räder, zwei Läufer); `radImBoden` liest sie
+            rad: a.rad ? Object.assign({ W: radLast(masse, a.rad.kufe) }, a.rad) : null,
         };
+    }
+    // DIE LAST JE RAD [N] (fahrzeug-gestalt): die EINE Masse des Werks × g durch die Räder, die sie tragen (vier, die Kufe
+    // zwei Läufer). Leser: das Rad im Boden (`radImBoden` über fahrGesetz.rad.W) und der Reifen unter seiner Last
+    // (`reifenGestalt`, der Bau) — dieselbe Zahl, nie zwei.
+    function radLast(masse, kufe) {
+        return (masse * FAHR.G) / (kufe ? 2 : 4);
+    }
+    // DAS RAD IM BODEN (fahrzeug-medium, FAHR.boden): Einsinken z [m], Roll-Widerstand des Bodens fr (Rc / W, die Verdichtungs-
+    // Arbeit je Meter durch die Last) und die Tiefe der ersten Durchfahrt z1 — für das Rad `rad` (fahrGesetz.rad) auf dem
+    // Druck-Einsinken-Satz `boden` ({trocken, nass}: n, kc [kN/m^(n+1)], kphi [kN/m^(n+2)] — die Stoff-Zeile radBoden) bei der
+    // Bodenfeuchte `nass` (0 … 1: der Satz gleitet trocken → nass, kc und kphi geometrisch), nachdem `k` Durchfahrten vor ihm die
+    // Spur schon gruben (die Rinne z_k, FAHR.boden.rinne). Ohne Boden-Satz (fester Grund: Fels, Pflaster, Eis) sinkt nichts ein.
+    // REIN + THREE-frei; Kosten: ein Rad, eine Formel — nie die Welt.
+    function radImBoden(rad, boden, nass, k) {
+        if (!rad || !boden || !boden.trocken || !(rad.W > 0) || !(rad.D > 0) || !(rad.b > 0)) return { z: 0, fr: 0, z1: 0 };
+        const B = boden.trocken,
+            Bn = boden.nass || B,
+            w = nass > 0 ? Math.min(1, nass) : 0;
+        const ex = B.n + (Bn.n - B.n) * w,
+            kc = B.kc * Math.pow(Bn.kc / B.kc, w),
+            kphi = B.kphi * Math.pow(Bn.kphi / B.kphi, w);
+        const Wk = rad.W / 1000, // kN
+            b = rad.b,
+            K = kc + b * kphi;
+        const z1 =
+            rad.kufe && rad.l > 0
+                ? Math.pow(Wk / (b * rad.l) / (K / b), 1 / ex) // die Platte (Bekker): p = (kc/b + kφ)·zⁿ
+                : Math.pow((3 * Wk) / ((3 - ex) * K * Math.sqrt(rad.D)), 2 / (2 * ex + 1)); // das starre Rad (Bekker)
+        const n = k > 0 ? k : 0;
+        const tief = (j) => (j > 0 ? z1 * (1 + FAHR.boden.rinne * Math.log(j)) : 0);
+        const vor = tief(n),
+            nach = tief(n + 1);
+        const Rc = (K * (Math.pow(nach, ex + 1) - Math.pow(vor, ex + 1))) / (ex + 1); // kN: die Verdichtung dieser Durchfahrt
+        return { z: nach, fr: Rc / Wk, z1 };
     }
     // DAS REIFEN-GESETZ eines Fahr-Satzes (K1, FAHR.reifen): B·D je Achse aus der Spitze der Vorderachse auf dem Bezugs-Boden und
     // dem Achs-Verhaeltnis des Rezepts (der Leser teilt durch D: B = bd / D, die Steifigkeit B·C·D steht, die Spitze wandert).
@@ -4301,7 +4419,9 @@
             fHubV: 0,
         };
     }
-    function fahrEbene(G, boden, x, z, yaw) {
+    // `sink` (fahrzeug-medium, optional): so tief steht das Rad im weichen Boden (radImBoden, der Zustand z.einsinken) — die Ebene
+    // der Räder liegt um ihn tiefer; der Bauch trägt weiter (sinkt der Wagen tiefer als sein Bauch hoch ist, sitzt er auf).
+    function fahrEbene(G, boden, x, z, yaw, sink) {
         const a = G.auf;
         const S = FAHR.schritt;
         const fx = Math.cos(yaw),
@@ -4333,7 +4453,7 @@
         // Rad nicht einzeln zu seinem Boden federt (auf.hub; ein starres Werk 0), hebt die Ebene — der Wagen steht auf der
         // hohen Diagonale, die tiefe haengt.
         const tau = Math.abs(vLi - vRe - hLi + hRe) / 4;
-        let y = traegt ? y0 + Math.max(0, tau - (a.hub > 0 ? a.hub : 0)) : -Infinity;
+        let y = traegt ? y0 - (sink > 0 ? sink : 0) + Math.max(0, tau - (a.hub > 0 ? a.hub : 0)) : -Infinity;
         // Kein Bauch im Boden: der Grund unter dem Ursprung traegt den Bauch (Kuppe, Kante; huelle.yFloor).
         if (Number.isFinite(mitte)) y = Math.max(y, mitte - a.bauch);
         if (!Number.isFinite(y)) return null;
@@ -4364,7 +4484,7 @@
     function fahrStand(z, G, boden, dt) {
         const S = FAHR.schritt;
         const g = G.g;
-        const eb = fahrEbene(G, boden, z.x, z.z, z.yaw);
+        const eb = fahrEbene(G, boden, z.x, z.z, z.yaw, z.einsinken);
         if (eb) {
             // Die Steig-Rate des Bodens unter der Fahrt (die Ableitung der Ebene laengs und quer).
             const vBoden = (e) => z.vlong * Math.tan(e.steig) + z.vlat * Math.tan(e.wank);
@@ -4448,6 +4568,10 @@
     // Geschwindigkeit an seinem Ende — so faehrt der Kontakt-Loeser der Welt sie (playerVel × dt): Labor = Welt.
     function fahrKraefte(z, e, G, dt) {
         const n = dt > 0 ? Math.max(1, Math.ceil(dt * G.reifen.taktHz - 1e-9)) : 1;
+        // das Rad im Boden (fahrzeug-medium, e.boden = radImBoden des Wirts): wie tief es steht, liest der Stand (fahrEbene); wer den
+        // weichen Boden verlässt, steigt aus der Spur — ohne e.boden byte-gleich (das Lab faehrt auf Asphalt)
+        if (e && e.boden) z.einsinken = e.boden.z > 0 ? e.boden.z : 0;
+        else if (z.einsinken) z.einsinken = 0;
         for (let i = 0; i < n; i++) fahrTakt(z, e, G, dt / n);
         // ── Lage aus der Koerper-Geschwindigkeit (vorwaerts = (cos, −sin), links = (−sin, −cos)) ──
         const cy = Math.cos(z.yaw),
@@ -4613,7 +4737,11 @@
                 xR = Math.max(-rR, Math.min(rR, FxR));
             }
             let Fx = xF === FxF && xR === FxR ? Fr + sperre : xF + xR;
-            if (rollt) Fx -= G.reibung * m * sgn;
+            // DER ROLLWIDERSTAND IST EINE FUNKTION DES BODENS (fahrzeug-medium): zum Rad selbst (cr · g der Zeit, carPhys) die
+            // Verdichtung des weichen Bodens unter ihm — fr = Rc / W (radImBoden, e.boden) × die Normalkraft am Hang. Ohne e.boden
+            // (fester Grund, das Lab) byte-gleich.
+            const fB = e && e.boden && e.boden.fr > 0 ? e.boden.fr * gN : 0;
+            if (rollt) Fx -= (G.reibung + fB) * m * sgn;
             Fx -= FlatF * sL;
             const Fy = FlatF * cL + FlatR;
             // ── Newton-Euler im Koerperframe (mit Rotationskopplung vlat·ω / vlong·ω) ──
@@ -5669,8 +5797,35 @@
         }
         if (P.antrieb === "zugtier") body.add(buildDeichsel(H, P, ctx)); // nach der Verjüngung: sie formt nur den Kasten
         g.userData = { kind: "vehicle", rezeptId: rezeptId, seed: seed, lod: st };
+        ausRaster(g);
         g.updateMatrixWorld(true);
         return g;
+    }
+    // ── DAS BYTE-RASTER AM AUSGANG (fahrzeug-gestalt; das Muster fachwerk-core/porta-core ausRaster — die Ratsche v3 nannte es
+    // als Soll: „das Raster kommt mit dem nächsten Re-Mint des Kerns, nie als eigener Byte-Akt“). Befund am Re-Mint des Reifens:
+    // die Plattform-Probe kippte mit hypot ±1 ULP 10 Fälle statt 5 (die A-Säule über dem Radlauf, der den freien Reifen
+    // umschließt), atan2/sin/cos 20/24/23 — jede Zahl der Gestalt hing an ihrem letzten Bit. Das Raster legt jede Zahl des
+    // Ausgangs auf ein Gitter, das kein letztes Bit erreicht: Attribute 2^-12, Normalen 2^-14, Lage und Maß 2^-16, Drehung
+    // 2^-20; −0 → 0. Die Stoff-Zahlen bleiben roh: sie SIND das Gesetz (die Lacke linear aus LACK_GESETZ, gate:gegenstand-stoff
+    // liest sie auf 1e-6), und keine Transzendente außer pow erreicht sie — pow kippt kein Byte (die Probe, hart 0).
+    function rasterZahl(x, q) {
+        return Math.round(x * q) / q + 0;
+    }
+    function ausRaster(g) {
+        g.traverse((o) => {
+            o.position.set(rasterZahl(o.position.x, 65536), rasterZahl(o.position.y, 65536), rasterZahl(o.position.z, 65536));
+            o.scale.set(rasterZahl(o.scale.x, 65536), rasterZahl(o.scale.y, 65536), rasterZahl(o.scale.z, 65536));
+            const q = o.quaternion;
+            q.set(rasterZahl(q.x, 1048576), rasterZahl(q.y, 1048576), rasterZahl(q.z, 1048576), rasterZahl(q.w, 1048576));
+            if (o.geometry && o.geometry.attributes) {
+                const A = o.geometry.attributes;
+                for (const name in A) {
+                    const s = name === "normal" ? 16384 : 4096,
+                        arr = A[name].array;
+                    for (let k = 0; k < arr.length; k++) arr[k] = rasterZahl(arr[k], s);
+                }
+            }
+        });
     }
 
     // W8 — die Gestalten je Rezept (B2c): JEDES Fahrzeug trägt GESTALTEN_JE_REZEPT Individuen (ein neues zählt mit).
@@ -5733,6 +5888,11 @@
         fahrKraefte: fahrKraefte,
         fahrSchritt: fahrSchritt,
         fahrLeistung: fahrLeistung, // w11-fahrzeug (rein additiv)
+        radImBoden: radImBoden, // fahrzeug-medium (rein additiv): das Rad im Boden — Einsinken, Roll-Widerstand, Rinne
+        radLast: radLast, // fahrzeug-gestalt: die Last je Rad (Boden und Reifen lesen dieselbe)
+        reifenGestalt: reifenGestalt, // fahrzeug-gestalt: der Reifen unter seiner Last (dz = W / kz, rFrei)
+        radBreite: radBreite,
+        RAD_BREITE: RAD_BREITE,
         fahrerLinie: fahrerLinie, // w11-fahrzeug (rein additiv): der Fahrer einer Linie des Gelände-Kerns
         pruefFahrt: pruefFahrt, // w11-fahrzeug (rein additiv): die Prüffahrt mit ihrer Telemetrie
         // F1 (rein additiv) — die EINE Chase-Cam (Probefahrt UND Welt-Ritt)

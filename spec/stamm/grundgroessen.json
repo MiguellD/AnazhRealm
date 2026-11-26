@@ -117,7 +117,7 @@
             "groesse": "stoff",
             "rx": "(?<![\\w.])(?:mu|reibung|maxGrip|gripK)\\s*:\\s*\\d+(?:\\.\\d+)?\\b",
             "was": "eigene Reib- oder Haft-Zahl",
-            "lies": "die Stoff-Zeile (`_stoff(name)`: mu, muRad, muRadNass)",
+            "lies": "die Stoff-Zeile (`_stoff(name)`: mu, muRad, muRadNass, radBoden)",
             "mutant": "const eis = { mu: 0.05 };"
         },
         "haftung-aus-sicht": {
@@ -253,7 +253,7 @@
         "stoff": {
             "name": "Stoff/Kontakt",
             "welle": "KRAFT",
-            "schreiber": "stamm/bau-vorlagen.js `_defaultMaterials` (mu · muRad · muRadNass), EIN Leser `_stoff`",
+            "schreiber": "stamm/bau-vorlagen.js `_defaultMaterials` (mu · muRad · muRadNass · radBoden), EIN Leser `_stoff`",
             "leser": "\\._stoff\\(",
             "kanon": {}
         },

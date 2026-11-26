@@ -687,6 +687,24 @@ class AnazhRealm_studio_stoff {
         };
     }
 
+    // DAS GLAS DER SCHEIBE (fahrzeug-gestalt): der Glanz EINER Fläche aus der Zeile glas des Stoff-Gesetzes (schmiede
+    // `STOFF_GESETZ`: Kieselglas 0,74 · Natron 0,16 · Kalk 0,1, n nach Gladstone-Dale 1,49) — F₀ = ((n − 1)/(n + 1))² 0,039 im
+    // Grün des Bilds (die Mitte der Kanäle, wie die Deckung des Wassers) — als EIN Uniform jeder Scheibe der Welt
+    // (`__weltLicht.scheibe`). Eine geänderte Zeile wirkt sofort (`_glasOptikWirkt`).
+    _glasOptikWert() {
+        const SG = globalThis.__schmiedeCore && globalThis.__schmiedeCore.STOFF_GESETZ;
+        const z = SG && SG.zeile("glas");
+        if (!z || !(z.n > 1)) AnazhRealm._kernPflichtBruch("schmiede:STOFF_GESETZ glas (die Brechzahl n)");
+        return SG.fresnel0(SG.kanaele(z)[1]);
+    }
+    _glasOptik() {
+        if (!this._glasOptikU) this._glasOptikU = THREE.TSL.uniform(this._glasOptikWert());
+        return this._glasOptikU;
+    }
+    _glasOptikWirkt() {
+        if (this._glasOptikU) this._glasOptikU.value = this._glasOptikWert();
+    }
+
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über
     // der Wurzel in Metern (Vorlage × Welt-Skala der Instanz) und dem Rauschen der Pflanze an ihrem Fuß, also für jede
     // Studio-Skala derselbe Stoff.
@@ -827,7 +845,9 @@ class AnazhRealm_studio_stoff {
         // zeichnet beide Seiten in EINEM Zug: r184 zieht einen doppelseitig-transparenten Stoff sonst zweimal (Rück-, dann
         // Vorderseite) — gemessen +1 Befehl je Wagen über den Budget-Deckel vehicle draws 12. Das Gesetz steht im Licht-Baustein
         // (welt-licht.js `durchsicht`), die Bühne jedes Studios zeichnet ihr Glas nach demselben (`buehneZeichnet`).
-        if (R.op < 1) __weltLicht.durchsicht(mat, R.op);
+        // Ein Stoff der Seh-Klasse glas ist eine SCHEIBE (`__weltLicht.scheibe`): sein Glanz liest die Zeile glas (`_glasOptik`) —
+        // dasselbe Gesetz am Fenster des Hauses, an der Scheibe des Wagens und am Kopf der Laterne.
+        if (R.op < 1) __weltLicht.durchsicht(mat, R.op, mp && mp.seh === "glas" ? this._glasOptik() : null);
         if (env !== 1) mat.envMapIntensity = env;
         if (emis) {
             mat.emissive = new T.Color(emis[0], emis[1], emis[2]);
