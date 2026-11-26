@@ -1,0 +1,132 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.437",
+  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   130,
+   94.35,
+   30
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 108.5,
+  "sigma": 24.4,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME ROT [kein bodenSatz im Bild: 2.7 % < 5.0 %] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 108.5 σ 24.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.437 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Inhalt bodenSatz 2.7 % (≥ 5.0 %) Luma 87, fern-ring 3.9 % (≥ 2.0 %) Luma 94",
+ "rot": [],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "imBild.bodenSatz",
+    "grund": "kein bodenSatz im Bild: 2.7 % < 5.0 %"
+   }
+  ],
+  "zeile": "Inhalt bodenSatz 2.7 % (≥ 5.0 %) Luma 87, fern-ring 3.9 % (≥ 2.0 %) Luma 94"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^bodenSatz([-_:].*)?$|^fern-ring([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 60,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1187,
+   "wechsel": 609319
+  },
+  "rinde": null,
+  "toene": [
+   "bodenSatz=255/80/80",
+   "fern-ring=80/255/80"
+  ],
+  "klassen": {
+   "bodenSatz": {
+    "objekte": 1,
+    "pixel": 56057,
+    "farbe": [
+     0.10713,
+     0.10164,
+     0.02879
+    ]
+   },
+   "fern-ring": {
+    "objekte": 4,
+    "pixel": 81498,
+    "farbe": [
+     0.10804,
+     0.11593,
+     0.09171
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\54b89949-radeon\\auge-erleben-bild-s6-rot.maske.png"
+ }
+}
