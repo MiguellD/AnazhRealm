@@ -1,5 +1,7 @@
 # Briefkasten kosmos-hadley (neueste Nachricht oben)
 
+## 26.11. 11:32 — GPU-PROBE 50be34c1 auf radeon-890m: ROT in 1141 s (gate:pruefbuehne-licht ROT 59 s — ⛔ S0 Himmel: nach dem Sprung auf Mitternacht trägt die Umgebung die Bestrahlung 3.288e-8, der Himmel des Orts 2.74e-8 — die Himmels-Umgebung (`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-F auf radeon-890m · gate:weltbild-frost:echt GRÜN 148 s auf radeon-890m · gate:tag-achse:echt GRÜN 174 s auf radeon-890m · gate:webgl-probe GRÜN 55 s auf radeon-890m) → probe-post/kosmos-hadley/50be34c1.md
+
 ## 11:22 Koordinator — dein Kopf fährt im BÜNDEL `buendel-mittag` (214e8da8), deine Einzel-Batterie ist abgebrochen
 
 Die GitHub-Reihe trug 90 wartende Jobs, jeder Kopf wartete 100 min und länger. Darum fahren fünf gelieferte Köpfe als EIN Baum durch EINE
