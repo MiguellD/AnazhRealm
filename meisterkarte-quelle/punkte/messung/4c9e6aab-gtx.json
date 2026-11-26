@@ -1,7 +1,7 @@
 {
  "sha": "4c9e6aab7a4d24859cee6b9173b6f26cd4611bdf",
  "geraet": "gtx",
- "zeit": "2026-11-26T02:02:21.251Z",
+ "zeit": "2026-11-26T02:17:42.381Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.menge.rhythmus#2": {
@@ -281,6 +281,146 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Umfang 0 < 2 Bewaffnete im Zweikampf — Täter: stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature) · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) — (Soll ≥ 1) · Treffer durch die Deckung — (Soll ≤ 0) · Umfang 0 (Soll ≥ 2 Bewaffnete im Zweikampf) · 7 Bewaffnete (6 von 1356 Bewohnern mit Waffe {\"langschwert\":6} und der Spieler, die leere Hand), 0 im Zweikampf · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.16,
+   "grund": "ROT: S1 ROT an Umfang 0 < 2 Bewaffnete im Zweikampf — Täter: stamm/siedlung-bewohner.js _bewohnerNahen — die Wache tritt mit der Waffe 1,5 m vor die Tat und hält: kein Hieb, keine Deckung, kein Gegenhieb; den Schwung führt nur der Spieler gegen Wesen (stamm/kampf.js _playerAttackCreature) · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) — (Soll ≥ 1) · Treffer durch die Deckung — (Soll ≤ 0) · Umfang 0 (Soll ≥ 2 Bewaffnete im Zweikampf) · 7 Bewaffnete (6 von 1356 Bewohnern mit Waffe {\"langschwert\":6} und der Spieler, die leere Hand), 0 im Zweikampf · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kfeb6dbce3b21",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k05a87765fff2",
+   "s": 8.9,
+   "fremd": {
+    "s": 13.1,
+    "takte": 6,
+    "fremdS": 8.94,
+    "kerne": 0.682,
+    "fensterKerne": 0.737,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.5
+     ],
+     [
+      "Explorer.EXE",
+      1.95
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.22
+     ]
+    ],
+    "dienerS": 3.23,
+    "diener": [
+     [
+      "dwm.exe",
+      1.55
+     ],
+     [
+      "System",
+      0.95
+     ]
+    ],
+    "geraetS": 5.97,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.75
+     ],
+     [
+      "svchost.exe",
+      1.33
+     ],
+     [
+      "SearchIndexer.exe",
+      0.64
+     ]
+    ],
+    "eigenS": 34.92,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T02:16:10.617Z",
+   "abdruck": "b2ca939fc27a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.fahrzeug.medium#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 1346 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.24,
+   "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 1346 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k037652aab5ff",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k05a87765fff2",
+   "s": 13.9,
+   "fremd": {
+    "s": 15.2,
+    "takte": 7,
+    "fremdS": 7.72,
+    "kerne": 0.509,
+    "fensterKerne": 0.615,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.03
+     ],
+     [
+      "Explorer.EXE",
+      1.45
+     ],
+     [
+      "node.exe dienst-omen/runde.cjs push-pfade AnazhRealm-OMEN/n0611-pm punkte-maschine gtx 4c9",
+      0.73
+     ]
+    ],
+    "dienerS": 3.44,
+    "diener": [
+     [
+      "dwm.exe",
+      1.53
+     ],
+     [
+      "System",
+      1.17
+     ]
+    ],
+    "geraetS": 4.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.02
+     ],
+     [
+      "svchost.exe",
+      1.44
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.11
+     ]
+    ],
+    "eigenS": 30.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T02:17:42.381Z",
+   "abdruck": "aacab6a06d8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -288,7 +428,8 @@
   "k106fb7d8e509": "jZXdcpswEIXfxZdNifgRATSTCzlkmqTjxukbrGAFxBgYCULGnb57B2zZBnLRvfHNWe3h2yP5z6qBZAcZ3r7rulqx1bfV95WGD7Q0qg9Ut+96xVZR4rjoMX4swjn/McgSVTStJmUhCIgK8j1anWqxKG+TsU3ege0LRvpHnm0JkeRA4p6f64Hf38+PKQWmtdWCRHOIjZ4fIpsLO52BQAs6OQ4+iX0a4Z3DyFhhzDcxOVefcL7tSb8Nn2aHCajSqXN0XEGB8f6Zc/42d5kWgK1VFpU2c500iKTNLrM2ix4FvXUAzEtUZkjoOFQYs+sByYBp1ijLTuvJsNBLfTdkhERzbYa6SPLWalQtsDrJReQGDrB1v6CdNZ0lrx2BEBCKOescsMpQTTzYXiIH0J/h/NAd7FGBVUF+kka2F7jiwoYQ8rT0Uo7GxxHGOKURhu6kcVjqETB/5ldFt4SQTxIalYkZvdI8LuOmk7xQ+ykuSdG1vTkDnUOKytrVuj0rPQyoLY634jkm4+82XM87Lx9m9gcA4VVYSEj404KjrmXbg0IrazoTGIp+4DOeLdKlW9jvzb49tFN78QHtEPJrG4FPfQqMkJsT0gWe45WwDliUpklKSiOfPazpXPyhYG+ByFQhpdm88BMZfRXUHsvWEnXdGpROEHgeIx6prpf9q+cPnG8uO3yNy9+0LV9uHvmkfvKXrybUqj3fUDcInITJPg4JCeVcXajW6iHJjdyVAiGaQzygKjHDCUbpOOCmbHxeTMUmd/HNJLyHxZYPBQ6AK91ps+QEqPDZKeXHcE2T26PaCah25s3zU9+NGOdxxjd8e0XllfP3Rvb8f+ttfRrUYEIaVctieBlJDp3OoWwvfxF//wE=",
   "k2ffb1f391462": "jVVNj6M4EP0vOU4PbT7MYCz1wWnS6oy2Jfo21zKUgQmByCbtVlb731ek4yTAaLW+gNCrqlfvVZm/VxW2gF2JXtFrfPxtVnyV+hJZwMUv8SKE2Ij/e9ai2Iqnp9X31QGKHVRjur5b8dW38VMLHQ53VUKMA0o5uZ7o+pbbjL7QjBC7GbMZ+EDPoP5AfSFYBCFG/FKWCCGeR1ihm8NgSNtIArKDeo/eUQ/YtI/FOUz9AD+WnNiNqHJCFDmRzN7ob764T9K0EsveG0ChS+JjFDPkc+DRVCDRg6M6F76AY5rij+DSI8vEW3Zr1xZC5JbYnL2KnJL1srqErpx2gEEoKXBht0KI9zm+bAAHr2064+oHZZIq/6axfVvEaLDeCbBuUbsiLAiodKTXozSjXLNA1R6NmRRjURmHjBOSzrEVmqaoB++ge4ndBS7TMAmAr+2i7+pw9NQ9I5ASmJxrXgN2FeoJBz8q1Cj4J5sn3cEeNXgd1Bdo6kdJKO/mj5DXJZf2TPxcwhGnNEUWTgJHc8nHKLDY3m8EzQkhn4Q5lBs3Kv5z7ExRN3o/lUtRDP2I/7WkaGooUXu73gxXdIQJ9eXXhmwzcn7mbD2PvDXnPAQAdjcwhBHxutDS9GqwoNGrDkc3NBTjJOZCbBfgAfZ753mEfunPjTTDOOj3NJKYxhQ4IQ9fC7Ns+mstvBM2rQtSitI05s9rOgd/aNh7ICvdKOXcl3Gh0j8Nq8V28GTfD07KIEmiaJSkuzc8P1t573ZWvdO3F1HNLsytEHm14H+u0uvhuqlhkgQFV1XGCGFqjm704FkoagcPlURIObHFPPEJdYsVTuRUQQBhyc9XzpWtm8HsYTLIp4XbpwZHoTtzNM7sAqiM+R+ssah3Erqdu//iMg5T/nP8ObyJfCrMc6VoRhbnkwmxyezD+1TFscgBC3LQvWrGm5HUcDQ1tMPtL/PPvw==",
   "k55bca07899b5": "jZXdcpswEIXfxZdNifgRATSTCzlkmqTjxukbrGAFxBgYCULGnb57B9uy+clF98Y3Z7WHb4/kP6sGkh1kePuu62rFVt9W31caPtDSqD5Q3b7rFVtFieOix/ipCOf8xyBLVNG0mpSFICAqyPdodarForxNjm3yDmxfMNI/8mxLiCQHEvf8Ug/8/n5+TCkwra0WJJpDbPT8ENlc2OkMBFrQyePgs9inEd45jBwrjPkmJpfqE863Pem34dPsMAFVOnWOjisoMN4/c87f5i7TArC1yqLSZq6TBpG02XXWZtGjoLcOgHmJygwJHYcKY3Y9IBkwzRpl2Wk9GRZ6qe+GjJBors1QF0neWo2qBVZnuYjcwAG27he0s6az5NgRCAGhmLPOAasM1cSD7SVyAP0Zzg/dwR4VWBXkZ2lke4ErrmwIIU9LL+XR+HGEMU5phKE7aRyWegLMn/mo6JYQ8klCozIxoyPN4zJuOskLtZ/ikhRd25sz0DmkqKxdrduL0sOA2uJ0K55jcvzdhut55/XDzP4AIByFhYSEPy046lq2PSi0sqYzgaHoBz7j2SJduoX93uzbQzu1Fx/QDiEf2wh86lNghNyckS7wnK6EdcCiNE1SUhr57GFN5+IPBXsLRKYKKc3mhZ/I6Kug9li2lqjr1qB0gsDzGPFINV72r54/cL4ZLTEuf9O2fLl55JP6yV++mlCr9nJD3SBwEib7OCQklHN1oVqrhyQ3clcKhGgO8YCqxAwnGKXjgJuy4/NycWlyF99MwntYbPlQ4AC40p02S06ACp+dU34K1zS5PaqdgGpn3jw/9d2IcR5nfMO3IyqvnL83suf/W2/r86AGE9KoWhbDy0hy6HQOZXv9i/j7Dw==",
-  "k037652aab5ff": "bVXbbqMwEP2XPG6XmotZjKU+OKVSI21X6SeMYQw0BCIb4iqr/fcVJKRcOo/ojM/xOePh7+YE6QFyfPwwTb3hmx+bnxsDZ3QM6jPqxw+z4Zs49XwMuHgXfe2FEM89LNXlqTWkKiUBWUNxRKfTLZbVYzq0qV/ghpIT+yLyPSGKXEhin56WrZXErHFaUDg2uhiEDPkS2JkcJDrQqYHsBg5pjL88ToZiiXhLyL0+mRB7S+yevS4Ok1Bnc7Xo+ZICF3YnhHhfqsxKwNapytqMvF4Wxcrldy77turRYJ0LYFGhHkmY51E5it32dvbWLBpV1RkzI2NBFvqMExIvsTmaMi1a56QbifUNLmM/8oBv127np85RU0UgJTC59LoArHPUMw1ukKre6E+2PPQAR9Tg1FDcoLEbRL788oYQ8rrWUg3CB4pROKUxMn/W2IdKzr3BYicmRfd9wISNqMTevk8wL2JFatKi1Me5XYqi7wb891qiKSBD7Rwa097RAUbUlXwg2CXk+ibYdtn5dbkxQwBgk4EhjIjXlZemUa0FjU5+6sahoRhGIRditwK3cDyOmQfoZu4ySNP2gz6VEYU0pMAJebg+lPWlr8/CuWBZjU1KURqHy8PPGo4OyFyXSo3JyzBV8XeDarFqHdk07WijF0VBwElA6mnYf4YYp0kn+Tttq619EbPaiaXugaHR7f2F+lHkpVzlCSOEqSW61K1jIS1GuK8kQi99lckFdYU5zmxUngd+xolVV92XftVEt1WgHmYDfFmfWGJvcG06M4acApUh/yYSi/ogoT6M+y7MQj8exm/7Nizjybw/54omhFg2+0y37rBpHsTVw60V4mF/FXXClJx0o8p+I5ICOlNA1X79Dv79Bw=="
+  "k037652aab5ff": "bVXbbqMwEP2XPG6XmotZjKU+OKVSI21X6SeMYQw0BCIb4iqr/fcVJKRcOo/ojM/xOePh7+YE6QFyfPwwTb3hmx+bnxsDZ3QM6jPqxw+z4Zs49XwMuHgXfe2FEM89LNXlqTWkKiUBWUNxRKfTLZbVYzq0qV/ghpIT+yLyPSGKXEhin56WrZXErHFaUDg2uhiEDPkS2JkcJDrQqYHsBg5pjL88ToZiiXhLyL0+mRB7S+yevS4Ok1Bnc7Xo+ZICF3YnhHhfqsxKwNapytqMvF4Wxcrldy77turRYJ0LYFGhHkmY51E5it32dvbWLBpV1RkzI2NBFvqMExIvsTmaMi1a56QbifUNLmM/8oBv127np85RU0UgJTC59LoArHPUMw1ukKre6E+2PPQAR9Tg1FDcoLEbRL788oYQ8rrWUg3CB4pROKUxMn/W2IdKzr3BYicmRfd9wISNqMTevk8wL2JFatKi1Me5XYqi7wb891qiKSBD7Rwa097RAUbUlXwg2CXk+ibYdtn5dbkxQwBgk4EhjIjXlZemUa0FjU5+6sahoRhGIRditwK3cDyOmQfoZu4ySNP2gz6VEYU0pMAJebg+lPWlr8/CuWBZjU1KURqHy8PPGo4OyFyXSo3JyzBV8XeDarFqHdk07WijF0VBwElA6mnYf4YYp0kn+Tttq619EbPaiaXugaHR7f2F+lHkpVzlCSOEqSW61K1jIS1GuK8kQi99lckFdYU5zmxUngd+xolVV92XftVEt1WgHmYDfFmfWGJvcG06M4acApUh/yYSi/ogoT6M+y7MQj8exm/7Nizjybw/54omhFg2+0y37rBpHsTVw60V4mF/FXXClJx0o8p+I5ICOlNA1X79Dv79Bw==",
+  "k05a87765fff2": "jZXdcpswEIXfxZdNifgRATSTCzlkmqTjxukbrGAFxBgYCULGnb57B9uy+clF98Y3Z7WHb4/kP6sGkh1kePuu62rFVt9W31caPtDSqD5Q3b7rFVtFieOix/ipCOf8xyBLVNG0mpSFICAqyPdodarForxNjm3yDmxfMNI/8mxLiCQHEvf8Ug/8/n5+TCkwra0WJJpDbPT8ENlc2OkMBFrQyePgs9inEd45jBwrjPkmJpfqE863Pem34dPsMAFVOnWOjisoMN4/c87f5i7TArC1yqLSZq6TBpG02XXWZtGjoLcOgHmJygwJHYcKY3Y9IBkwzRpl2Wk9GRZ6qe+GjJBors1QF0neWo2qBVZnuYjcwAG27he0s6az5NgRCAGhmLPOAasM1cSD7SVyAP0Zzg/dwR4VWBXkZ2lke4ErrmwIIU9LL+XR+HGEMU5phKE7aRyWegLMn/mo6JYQ8klCozIxoyPN4zJuOskLtZ/ikhRd25sz0DmkqKxdrduL0sOA2uJ0K55jcvzdhut55/XDzP4AIByFhYSEPy046lq2PSi0sqYzgaHoBz7j2SJduoX93uzbQzu1Fx/QDiEf2wh86lNghNyckS7wnK6EdcCiNE1SUhr57GFN5+IPBXsLRKYKKc3mhZ/I6Kug9li2lqjr1qB0gsDzGPFINV72r54/cL4ZPRlx+Zu25cvNI5/UT/7y1YRatZcb6gaBkzDZxyEhoZyrC9VaPSS5kbtSIERziAdUJWY4wSgdB9yUHZ8XU7HJXXwzCe9hseVDgQPgSnfaLDkBKnx2TvkpXNPk9qh2AqqdefP81Hcjxnmc8Q3fjqi8cv7eyJ7/b72tz4MaTEijalkMLyPJodM5lO31L+LvPw=="
  },
  "sitzung": {
   "start": "2026-11-26T01:49:19.255Z",
