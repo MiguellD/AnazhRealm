@@ -97,6 +97,12 @@ ampErde 20,816. Die Zahlen des Auftrags (37 % / 0,759) stammen von einem ältere
     arXiv 1906.05748; Lindzen & Hou 1988 Sonnwend-Fall).
   - Ein planetenweiter Schnitt (Gürtel, Regen, Wind jeder Neigung ≠ Erde) — in dieser Welle nicht geschnitten.
   - Leser: bahn-klima#2 `amp45Faktor`, bahn-klima#6 (Zonen).
+- **Die GPU-Probe der Abgabe:** am Kopf 10c5f77 trug der Ruf nur `gate:webgl-probe`, die Pflicht-Wände des Beitrags fehlten.
+  - Die Regel steht in PROBE_PFLICHT (im Zweig `koordination` `zug/dienst/werkzeug/zug.cjs`:1862): Bau für stamm/dirigent-ankunft.js
+    (`gate:pruefbuehne-licht`, `gate:weltbild-frost:echt`), Licht für stamm/bild-himmel.js und welt-licht.js (`gate:tag-achse:echt`).
+  - Der Koordinator reichte den Ruf am Zweig `kosmos-bahn-2` 3bb9abb7 nach (derselbe Baum, Lauf 45731231617). Die Läufe am Kopf
+    10c5f77 endeten „cancelled“ ohne Urteil.
+  - Leser: das Urteil `probe-post/kosmos-bahn-2/3bb9abb7.md` im Zweig `koordination`.
 - **bahn-klima#2 „Schneelinie und Laub im Bild“:** die Zahl steht (152,2 m), das Bildpaar nur am Gerät. Leser: bahn-klima#2 `auge`.
 - **Kein Spielpfad fragt einen fremden Körper:** feld-leben.js:1298 reist ohne `koerper`. Das Gesetz antwortet, gespielt wird die Erde.
   Leser: bahn-klima#5/#6 (gebundene Welt, 1 000 Welten).
