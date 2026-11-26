@@ -1,5 +1,5 @@
 {
- "kopf": "077b9aa7",
+ "kopf": "12029279",
  "je": {
   "affekt.K1": {
    "punkte": 1,
@@ -3064,7 +3064,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms an d39e0d6e radeon · gehalten: Gehen 198 Bilder · max 83.26 ms · 14.14 % > 33 ms · Fahrt 124 Bilder · max 158.36 ms · 46.77 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.14 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 158.36), 46.77 % > 33 ms an 64fcf12e gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an a954d698: Last: Referenz f 1,398 (Faden 1,398 · alle Kerne 1,037; vor 117,3/269,5 ms, nach 104,7/236,2 ms, Ruhe 83,9/259,9 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrj · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: klang-core.js, koerper-core.js, planet-core.js +6)",
+   "beleg": "Maschine: gehalten: Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms an d39e0d6e radeon · gehalten: Gehen 198 Bilder · max 83.26 ms · 14.14 % > 33 ms · Fahrt 124 Bilder · max 158.36 ms · 46.77 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.14 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 158.36), 46.77 % > 33 ms an 64fcf12e gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an a954d698: Last: Referenz f 1,398 (Faden 1,398 · alle Kerne 1,037; vor 117,3/269,5 ms, nach 104,7/236,2 ms, Ruhe 83,9/259,9 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrj · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: klang-core.js, koerper-core.js, planet-core.js +11) — zuletzt an a954d698: Last: Referenz f 1,28 (Faden 1,28 · alle Kerne 1,163; vor 113,8/258,1 ms, nach 91,9/207,7 ms, Ruhe 88,9/222 ms seit 2026-11-25) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3072,7 +3072,7 @@
      "gruen": true,
      "zahl": "Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms",
      "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/siedlung-bewohner.js)",
+     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, stamm/bild-diaet.js, stamm/bild-kosten.js +5)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3082,7 +3082,7 @@
      "gruen": true,
      "zahl": "Gehen 198 Bilder · max 83.26 ms · 14.14 % > 33 ms · Fahrt 124 Bilder · max 158.36 ms · 46.77 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.14 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 158.36), 46.77 % > 33 ms",
      "sha": "64fcf12e68b47704c5d88094e14476ea64a088da",
-     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, koerper-core.js, planet-core.js +6)",
+     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, stamm/bild-diaet.js, stamm/bild-kosten.js +5)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3101,7 +3101,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, koerper-core.js, planet-core.js +6)",
+     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, koerper-core.js, planet-core.js +11) — zuletzt an a954d698: Last: Referenz f 1,28 (Faden 1,28 · alle Kerne 1,163; vor 113,8/258,1 ms, nach 91,9/207,7 ms, Ruhe 88,9/222 ms seit 2026-11-25) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -3258,7 +3258,7 @@
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +32)",
+   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +34)",
    "stationen": [
     {
      "id": "siedlung.K1#1",
@@ -3285,7 +3285,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +32)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +34)",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -3563,7 +3563,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +250)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +251)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3599,7 +3599,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +250)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +251)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3609,7 +3609,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +250)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +251)",
      "gehalten": true,
      "r6": "naehe"
     }
@@ -5586,7 +5586,7 @@
   },
   "karte2.erleben.bild.nacht": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.bild.nacht#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/stand-linse.cjs +6) — zuletzt an 2d6a0447: Frist der Probe 185 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.bild.nacht) · Täter: @@PUNKTE@@ FRIST 185 s der Probe gerissen — Abba · karte2.erleben.bild.nacht#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/stand-linse.cjs +6) — zuletzt an 2d6a0447: Frist der Probe 177 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.bild.nacht) · Täter: @@PUNKTE@@ FRIST 177 s der Probe gerissen — Abba · karte2.erleben.bild.nacht#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/stand-linse.cjs +6) — zuletzt an eba9bf8f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"n · karte2.erleben.bild.nacht#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/stand-linse.cjs +6) · karte2.erleben.bild.nacht#3 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#3 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#4 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#4 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#5 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#5 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#6 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#6 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#7 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#7 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#8 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.bild.nacht#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/stand-linse.cjs +6) — zuletzt an 2d6a0447: Frist der Probe 185 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.bild.nacht) · Täter: @@PUNKTE@@ FRIST 185 s der Probe gerissen — Abba · karte2.erleben.bild.nacht#1 gtx: ROT: S1 · ROT ❌ schatten_kontrast 0,9472 (Soll ≥ 3) · ✅ kelvin_abw 38 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 495 — Täter: schatten_kontrast 0,9472 statt ≥ 3 an a954d698 · karte2.erleben.bild.nacht#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/stand-linse.cjs +6) — zuletzt an eba9bf8f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"n · karte2.erleben.bild.nacht#2 gtx: ROT: S2 · ROT ✅ bodenfleck_anteil 0,917 (Soll ≥ 0,9) · ❌ gasse_dev_median — (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 495 — Täter: Gassen-Histogramm gegen Fotosatz: kein Fotosatz nächtlicher Gassen im Baum, kein Leser des Histogramms · gasse_dev_median — statt ≤ 0,5 an a954d698 · karte2.erleben.bild.nacht#3 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#3 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#4 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#4 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#5 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#5 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#6 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#6 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#7 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#7 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#8 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.bild.nacht#1",
@@ -5603,10 +5603,9 @@
      "id": "karte2.erleben.bild.nacht#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/stand-linse.cjs +6) — zuletzt an 2d6a0447: Frist der Probe 177 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.bild.nacht) · Täter: @@PUNKTE@@ FRIST 177 s der Probe gerissen — Abba",
-     "ungemessen": true,
+     "zahl": "S1 · ROT ❌ schatten_kontrast 0,9472 (Soll ≥ 3) · ✅ kelvin_abw 38 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 495 — Täter: schatten_kontrast 0,9472 statt ≥ 3",
+     "sha": "a954d69818f4a60fb20927a70f39e5d150e9a734",
+     "grund": "ROT: S1 · ROT ❌ schatten_kontrast 0,9472 (Soll ≥ 3) · ✅ kelvin_abw 38 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 495 — Täter: schatten_kontrast 0,9472 statt ≥ 3",
      "r6": "konsum",
      "beide": true
     },
@@ -5624,10 +5623,9 @@
      "id": "karte2.erleben.bild.nacht#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/stand-linse.cjs +6)",
-     "ungemessen": true,
+     "zahl": "S2 · ROT ✅ bodenfleck_anteil 0,917 (Soll ≥ 0,9) · ❌ gasse_dev_median — (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 495 — Täter: Gassen-Histogramm gegen Fotosatz: kein Fotosatz nächtlicher Gassen im Baum, kein Leser des Histogramms · gasse_dev_median — statt ≤ 0,5",
+     "sha": "a954d69818f4a60fb20927a70f39e5d150e9a734",
+     "grund": "ROT: S2 · ROT ✅ bodenfleck_anteil 0,917 (Soll ≥ 0,9) · ❌ gasse_dev_median — (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 495 — Täter: Gassen-Histogramm gegen Fotosatz: kein Fotosatz nächtlicher Gassen im Baum, kein Leser des Histogramms · gasse_dev_median — statt ≤ 0,5",
      "r6": "konsum"
     },
     {
@@ -14520,7 +14518,7 @@
   },
   "karte2.leben.tiere.masse": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.masse#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +23) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.tiere.masse#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +57) — zuletzt an c2c7ed12: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":12,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Lera\",\"T · karte2.leben.tiere.masse#2 radeon: ungemessen (R10) · karte2.leben.tiere.masse#2 gtx: ungemessen (R10) · karte2.leben.tiere.masse#3 radeon: ungemessen (R10) · karte2.leben.tiere.masse#3 gtx: ungemessen (R10) · karte2.leben.tiere.masse#4 radeon: ungemessen (R10) · karte2.leben.tiere.masse#4 gtx: ungemessen (R10) · karte2.leben.tiere.masse#5 radeon: ungemessen (R10) · karte2.leben.tiere.masse#5 gtx: ungemessen (R10) · karte2.leben.tiere.masse#6 radeon: ungemessen (R10) · karte2.leben.tiere.masse#6 gtx: ungemessen (R10) · karte2.leben.tiere.masse#7 radeon: ungemessen (R10) · karte2.leben.tiere.masse#7 gtx: ungemessen (R10) · karte2.leben.tiere.masse#8 radeon: ungemessen (R10) · karte2.leben.tiere.masse#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.masse#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +27) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.tiere.masse#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +57) — zuletzt an c2c7ed12: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender leben weather · wie {\"creatures\":{\"vorher\":12,\"nachher\":0,\"fehlt\":[\"Yune ×2\",\"Nox ×2\",\"Lera\",\"T · karte2.leben.tiere.masse#2 radeon: ungemessen (R10) · karte2.leben.tiere.masse#2 gtx: ungemessen (R10) · karte2.leben.tiere.masse#3 radeon: ungemessen (R10) · karte2.leben.tiere.masse#3 gtx: ungemessen (R10) · karte2.leben.tiere.masse#4 radeon: ungemessen (R10) · karte2.leben.tiere.masse#4 gtx: ungemessen (R10) · karte2.leben.tiere.masse#5 radeon: ungemessen (R10) · karte2.leben.tiere.masse#5 gtx: ungemessen (R10) · karte2.leben.tiere.masse#6 radeon: ungemessen (R10) · karte2.leben.tiere.masse#6 gtx: ungemessen (R10) · karte2.leben.tiere.masse#7 radeon: ungemessen (R10) · karte2.leben.tiere.masse#7 gtx: ungemessen (R10) · karte2.leben.tiere.masse#8 radeon: ungemessen (R10) · karte2.leben.tiere.masse#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.tiere.masse#1",
@@ -14528,7 +14526,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +23) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +27) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -20950,7 +20948,7 @@
   },
   "karte2.mensch.menge.bevoelkerung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S2 GRÜN · Stichproben-Personen ± 2 m angetroffen 20 (Soll ≥ 20) · Umfang 1211 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (309 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 13 von 20 · [linse-gpu] nvidia/pascal an f68dbf09 gtx — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/urteil-zeile.cjs, stamm/koerper-leib.js +3) · karte2.mensch.menge.bevoelkerung#1 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/koerper-leib.js +1) · karte2.mensch.menge.bevoelkerung#3 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#3 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#4 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#4 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#5 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#5 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#6 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#6 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#7 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#7 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#8 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#8 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#9 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#9 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S2 GRÜN · Stichproben-Personen ± 2 m angetroffen 20 (Soll ≥ 20) · Umfang 1211 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (309 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 13 von 20 · [linse-gpu] nvidia/pascal an f68dbf09 gtx — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/urteil-zeile.cjs, stamm/koerper-leib.js +4) · karte2.mensch.menge.bevoelkerung#1 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/koerper-leib.js +1) · karte2.mensch.menge.bevoelkerung#3 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#3 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#4 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#4 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#5 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#5 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#6 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#6 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#7 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#7 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#8 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#8 gtx: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#9 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#9 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bevoelkerung#1",
@@ -20958,7 +20956,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/urteil-zeile.cjs, stamm/koerper-leib.js +3)",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/urteil-zeile.cjs, stamm/koerper-leib.js +4)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -29423,7 +29421,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an 64fcf12e: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 80.5 s · 309.3 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +26) — zuletzt an 4c9e6aab: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.032,0.034,0. (168 Uhren) · 90.9 s · 675.6 s) · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an 64fcf12e: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 80.5 s · 309.3 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +28) — zuletzt an 4c9e6aab: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.032,0.034,0. (168 Uhren) · 90.9 s · 675.6 s) · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -29441,7 +29439,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +26) — zuletzt an 4c9e6aab: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.032,0.034,0. (168 Uhren) · 90.9 s · 675.6 s)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +28) — zuletzt an 4c9e6aab: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.032,0.034,0. (168 Uhren) · 90.9 s · 675.6 s)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -29844,7 +29842,7 @@
      "gruen": true,
      "zahl": "✅ genesis: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 5, im Bild 5 (G -5.00) · ≥−3° max 1 · Nacht ≤−18° min 165 Median 208 · halbe Nacht bei Sonne -14.7° | -15.8° · γ 0.96 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 5, im Bild 5 (G -5.00) · ≥−3° max 2 · Nacht ≤−18° min 133 Median 167 · halbe Nacht bei Sonne -14.7° | -15.8° · γ 0.92 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 2, im Bild 2 (G -5.00) · ≥−3° max 2 · Nacht ≤−18° min 115 Median 149 · halbe Nacht bei Sonne -14.0° | -15.8° · γ 0.90 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 1 · schwächer als G max 0 · heller als G frei 3, im Bild 3 (G -5.00) · ≥−3° max 1 · Nacht ≤−18° min 73 Median 109 · halbe Nacht bei Sonne -14.7° | -15.8° · γ 0.92 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 165↔170 148↔143 136↔122 86↔86; roh 105↔106 77↔77 94↔86 47↔36) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":2,\"hell\":0.19,\"Y\":0.0127,\"X\":0.0072,\"rb\":0.00 · [linse-gpu] nvidia/pascal",
      "sha": "2d6a0447b80ae36b4b83e52e12757c457c536133",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/albedo-tafel.cjs +31)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/albedo-tafel.cjs +32)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -34353,7 +34351,7 @@
      "gruen": true,
      "zahl": "Herd -248,-1064 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +457 Pixel je Pixel, Median aus 5 Sätzen (Spanne 456–457; neu 457 − Rauschen 0, bei laufender Schleife 33; Soll ≥ 200; 64 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 559) · [linse-gpu] nvidia/pascal",
      "sha": "f63a69ef8086b12e4ed913535b7314068383c87f",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +17)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +20)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -34614,7 +34612,7 @@
      "gruen": true,
      "zahl": "Herd -248,-1064: Luma der Zelle vor 0.173 → nach 0.056 (÷ 0.324, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3",
      "sha": "f63a69ef8086b12e4ed913535b7314068383c87f",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +17)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +20)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -34625,7 +34623,7 @@
      "gruen": true,
      "zahl": "Herd -248,-1064: Luma der Zelle vor 0.173 → nach 0.06 (÷ 0.347, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal",
      "sha": "f63a69ef8086b12e4ed913535b7314068383c87f",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +17)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +20)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -35248,7 +35246,7 @@
   },
   "karte2.same.massstab.spanne": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.massstab.spanne#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +6) — zuletzt an eba9bf8f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"n · karte2.same.massstab.spanne#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +6) · karte2.same.massstab.spanne#2 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#2 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#3 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#3 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#4 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#4 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#5 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#5 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#6 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#6 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#7 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#7 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#8 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#8 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#9 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#9 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.massstab.spanne#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +6) — zuletzt an eba9bf8f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures worldMeta.kalender weather · wie {\"creatures\":{\"vorher\":8,\"nachher\":0,\"fehlt\":[\"Skara\",\"Orin\",\"Quin ×2\",\"Thal\"],\"n · karte2.same.massstab.spanne#1 gtx: ROT: S1 · ROT Leser fehlt: Steigflug 0,5 → 700 m in 30 s: kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe — Saaten: die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden) — in 1 von 21 Adressen (nahe Ebene 0.1 m, Auge über dem Grund 2.09 m; Fächer 1/21 Adressen (20 Saaten + 1) in 0 ms · Leser stamm/koerper-bewegung.js:1759 _loopCamera · Gesetz gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833) · 20 ohne Fähigkeit (die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)) · schlechteste {\"saat\":\"anazh-realm-seed\"} auge 2.09 · Bild dort Saat anazh-realm-seed an der Wiese, ego (das Auge am Leib) · ungemessen: Steigflug 0,5 → 700 m in 30 s (kein Verb hebt das Auge)) (verlangt 20 Saaten, die Welt erzeugte 1) an a954d698 · karte2.same.massstab.spanne#2 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#2 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#3 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#3 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#4 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#4 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#5 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#5 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#6 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#6 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#7 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#7 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#8 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#8 gtx: Station seit der Messung geändert · karte2.same.massstab.spanne#9 radeon: Station seit der Messung geändert · karte2.same.massstab.spanne#9 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.massstab.spanne#1",
@@ -35265,10 +35263,9 @@
      "id": "karte2.same.massstab.spanne#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +6)",
-     "ungemessen": true,
+     "zahl": "S1 · ROT Leser fehlt: Steigflug 0,5 → 700 m in 30 s: kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe — Saaten: die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden) — in 1 von 21 Adressen (nahe Ebene 0.1 m, Auge über dem Grund 2.09 m; Fächer 1/21 Adressen (20 Saaten + 1) in 0 ms · Leser stamm/koerper-bewegung.js:1759 _loopCamera · Gesetz gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833) · 20 ohne Fähigkeit (die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)) · schlechteste {\"saat\":\"anazh-realm-seed\"} auge 2.09 · Bild dort Saat anazh-realm-seed an der Wiese, ego (das Auge am Leib) · ungemessen: Steigflug 0,5 → 700 m in 30 s (kein Verb hebt das Auge)) (verlangt 20 Saaten, die Welt erzeugte 1)",
+     "sha": "a954d69818f4a60fb20927a70f39e5d150e9a734",
+     "grund": "ROT: S1 · ROT Leser fehlt: Steigflug 0,5 → 700 m in 30 s: kein Verb hebt das Auge vom Leib — die Kamera folgt ihm (`_loopCamera`, stamm/koerper-bewegung.js:1759), kein Steigflug zählt die Bruch-Bedingungen je Höhe — Saaten: die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden) — in 1 von 21 Adressen (nahe Ebene 0.1 m, Auge über dem Grund 2.09 m; Fächer 1/21 Adressen (20 Saaten + 1) in 0 ms · Leser stamm/koerper-bewegung.js:1759 _loopCamera · Gesetz gelaende-core.js hoehe über _gelaende (stamm/gelaende-boden.js:833) · 20 ohne Fähigkeit (die Lage des Gelände-Kerns lebt nur für die geladene Saat (stamm/gelaende-boden.js:833 _gelaende: Sicht auf state, _saatJe = worldMeta.seed, Hydrosphäre aus dem Faden)) · schlechteste {\"saat\":\"anazh-realm-seed\"} auge 2.09 · Bild dort Saat anazh-realm-seed an der Wiese, ego (das Auge am Leib) · ungemessen: Steigflug 0,5 → 700 m in 30 s (kein Verb hebt das Auge)) (verlangt 20 Saaten, die Welt erzeugte 1)",
      "r6": "konsum",
      "beide": true
     },
@@ -37778,8 +37775,8 @@
   ],
   "ohne": 3258
  },
- "kopfVoll": "077b9aa7d53cc11cba5a9bff2eb4b705a26a67e1",
- "zeit": "2026-11-26T08:58:20.708Z",
+ "kopfVoll": "12029279cf20ccfee440f695feef9d255d308782",
+ "zeit": "2026-11-26T09:10:57.022Z",
  "vorher": "077b9aa7",
  "bilanz": {
   "gewinn": [],
