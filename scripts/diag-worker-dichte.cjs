@@ -1915,8 +1915,10 @@ async function gebaut(page) {
 //     Tiefe, `da`: auch ihr Klon) und die Platte — je Minute im Kalt-Boot und in einer Minute Fahrt, Soll ≤ 5 MB/min.
 // K6: der Planet im Faden (Reise) — die Welt kennt ihren Ort, sein Anker trägt die Bytes des Kerns (Kopf von `planetSeite`).
 // K7 (`--faden --planet`): der Wuchs des Orts — die Reise an den heißen, trockenen Ort und heim (Kopf von `wuchsSeite`).
-//   --faden --planet [--echt] [--selftest]   NUR K6 nach dem Boot (ohne Gang, Fahrt und Damm): die gezielte Probe, an der echten
-//                          GPU die Zeit des Planeten im Faden und seine Geburt nach dem ersten Weltbild.
+// K8 (`--faden --planet`): die Hydrosphäre jedes Samens — die Region je Saat aus dem Planet-Faden (Kopf von `hydroSaatSeite`).
+//   --faden --planet [--echt] [--selftest] [--saaten N]   NUR K6–K8 nach dem Boot (ohne Gang, Fahrt und Damm): die gezielte
+//                          Probe, an der echten GPU die Zeit des Planeten im Faden und seine Geburt nach dem ersten Weltbild;
+//                          `--saaten` die Zahl der fremden Saaten in K8 (Vorgabe 6, die Station misst 100).
 //   --faden [--echt] [--selftest]   ein injizierter Hydro-Bau, ein Fußabdruck an einer unbenannten Sync-Stelle, ein Guss, ein
 //                          Wuchs eines Spawn-Bauplans (w4-b-pflanzen), die Naht und der Satz eines Faden-Netzes im Haupt-Faden
 //                          (w4-b-boden2), ein Stau-Feld, Klon (3 MB tief in einer Nachricht, 3 MB in 300 Krumen, zwei Kopien)
@@ -2274,8 +2276,9 @@ function planetSoll(wurzel, samen) {
         lage: [`${grad(A.breite)}° ${A.breite < 0 ? "S" : "N"}`, `${grad(A.laenge)}° ${A.laenge < 0 ? "W" : "O"}`, `${A.kuesteKm.toFixed(0)} km`],
     };
 }
-// die Leser des Planeten beim Namen (stamm `PLANET_LESER`): der Satz „reise“ · die Frage der Sonne (`_sonnenAnkerFragen`)
-const PLANET_LESER = ["Satz", "Sonne"];
+// die Leser des Planeten beim Namen (stamm `PLANET_LESER`): der Satz „reise“ · die Frage der Sonne (`_sonnenAnkerFragen`) · die
+// Hydrosphäre eines Samens (`_hydroSaat`, K8)
+const PLANET_LESER = ["Satz", "Sonne", "Hydro"];
 function planetUrteil(spiel, soll) {
     if (!spiel || spiel.fehlt) return ["die Welt kennt ihren Ort nicht — der Wirt trägt keinen Leser des Planeten (`_planetAnker` fehlt)"];
     const rot = [];
@@ -2569,6 +2572,153 @@ async function siedlungProbe(page) {
     }
     return rot.length > 0 || !sieht;
 }
+// ── K8 DIE HYDROSPHÄRE JEDES SAMENS (hydro-samen, Sprosse karte2.same.kopplung.kohaerenz#1) ──
+// Die Hydrosphäre ist f(Samen, Gesetz): der Leser des Spiels `_hydroSaat(samen)` bestellt die Heim-Region eines Samens unter dem
+// Gesetz der Welt im Planet-Faden (voxel-worker `hydroSaat`: die Lage aus ihrem Abbild, `hydrosphaere` über IHREM Boden). Bis
+// hier lebte sie nur für die Saat der Welt (die Lage des Fadens war sein Modul-Zustand; Station kohaerenz#1: 1 von 101 Saaten).
+// Gelesen wird je Saat (die Saat der Welt und `--saaten N` fremde, Vorgabe 6: same-saat-0 …) die Region des Fadens und gegen
+// das Gesetz des STAMMS gehalten, in DERSELBEN Engine (der Haupt-Faden der Seite: eine frische Welt der Saat auf der Klasse,
+// `_gelaende()`, Boden `_voxelSurfaceY` — der unabhängige Pfad zu `lageAus` und `flaecheY` des Fadens; SHA-256 der Flüsse und
+// Seen und des Wasser-Felds). Ein Soll aus node trägt keine Bytes: node 22 und Chromium rechnen `exp`, `pow`, `sin` … in der
+// letzten Stelle verschieden (an 3–12 % der Eingaben), der Lauf der Flüsse verstärkt das (42 ↔ 45 Läufe an same-saat-2).
+// Dazu das Maß der Station an der Region (50 Paare, bergab mit tol 0,05 m auf der Fläche, die der Kern am Punkt nahm —
+// `voxelY` —, der Lauf mit Ende). Band (Wang et al. 2018, Nature Geoscience 11, 926: Binnen-Senken entwässern ≈ 1/5 des Lands,
+// das Meer den Rest): JEDER Lauf endet in Meer oder Senke — die Klassen der Mündung sind Lesewert.
+// ROT beim Namen: der Wirt trägt keinen Leser je Samen (`_hydroSaat` fehlt) · der Faden rechnete für eine fremde Saat die
+// Region der Welt-Saat (die Bindung an den Modul-Zustand) · seine Region ist nicht die des Stamm-Gesetzes (die Bytes weichen
+// ab) · eine Saat ohne Flusslauf · das Maß unter 95 % · die Saat der Welt trägt über `_hydroSaat` eine andere Region als die
+// Welt selbst (`st.hydrosphere`: zwei Wahrheiten).
+// `--selftest`: der gepflanzte Täter geht durch DENSELBEN Leser — der Auftrag an den Faden trägt die Saat der Welt statt der
+// gefragten (der Fall „jeder Samen rechnet die Standard-Welt“); dazu ein Wirt ohne Leser.
+const HYDRO_SAAT = Object.freeze({ punkte: 50, tolM: 0.05, soll: 0.95 });
+function hydroSaatMass(rivers, mit) {
+    const rv = (rivers || []).filter((v) => v.points && v.points.length >= 3);
+    const y = (p) => (Number.isFinite(p.voxelY) ? p.voxelY : p.y);
+    const paare = [];
+    for (const v of rv) for (let i = 0; i + 1 < v.points.length; i++) paare.push([v.points[i], v.points[i + 1], !!v.mouth]);
+    const schritt = Math.max(1, Math.floor(paare.length / mit.punkte));
+    const wahl = paare.filter((_, i) => i % schritt === 0).slice(0, mit.punkte);
+    const ab = (p, q) => y(q) <= y(p) + mit.tolM;
+    const muendung = {};
+    for (const v of rv) muendung[v.mouth] = (muendung[v.mouth] || 0) + 1;
+    return { n: wahl.length, vor: wahl.filter(([p, q, e]) => ab(p, q) && e).length, fluesse: rv.length, muendung };
+}
+async function hydroSaatSeite(saaten, massQuelle, mit, mutant) {
+    if (typeof r._hydroSaat !== "function") return { fehlt: true, heim: st.hydrosphere && st.hydrosphere.daten ? await window.__sha(st.hydrosphere.daten) : null };
+    const mass = eval("(" + massQuelle + ")");
+    const welt = r._gelaende().seed;
+    const auftrag = r._planetAuftrag;
+    if (mutant)
+        // DER TÄTER „jeder Samen rechnet die Standard-Welt“: der Auftrag trägt die Saat der Welt statt der gefragten
+        r._planetAuftrag = function (m, leser) {
+            if (m && m.type === "hydro-saat") m = Object.assign({}, m, { lage: Object.assign({}, m.lage, { seed: welt }) });
+            return auftrag.call(this, m, leser);
+        };
+    // DER SOLL IN DERSELBEN ENGINE: das Gesetz des Stamms im Haupt-Faden über einer frischen Welt der Saat (die Klasse, ihre
+    // Lage `_gelaende()`, ihr Boden `_voxelSurfaceY`, der Kanal aus) — dieselben Bytes, die der Faden schickt (`hydroAntwort`)
+    const G = globalThis.__gelaendeCore;
+    const sollVon = async (saat) => {
+        const w = Object.create(AnazhRealm.prototype);
+        w.state = { worldMeta: { seed: saat }, terrainBaseHeight: G.GRUND.basis, waterLevel: G.GRUND.basis - G.GRUND.meerUnterBasis };
+        w.journalAppend = () => {};
+        w.worldsIndexUpsert = () => {};
+        w.ensureWorldMeta();
+        const L = w._gelaende();
+        L.hydroComputing = true;
+        let h;
+        try {
+            h = G.hydrosphaere(L, AnazhRealm.HYDROSPHERE, (x, z) => w._voxelSurfaceY(x, z), null);
+        } finally {
+            delete L.hydroComputing;
+        }
+        return {
+            daten: await window.__sha(new TextEncoder().encode(JSON.stringify({ rivers: h.rivers, lakes: h.lakes }))),
+            wasser: await window.__sha(h.water.waterY),
+            abbild: JSON.stringify(G.lageAbbild(L)),
+            fluesse: h.rivers.filter((v) => v.points && v.points.length >= 3).length,
+        };
+    };
+    const je = [];
+    try {
+        for (const saat of [welt, ...saaten]) {
+            const t0 = performance.now();
+            const h = await r._hydroSaat(saat);
+            const ms = performance.now() - t0;
+            je.push(
+                Object.assign(mass(h.rivers, mit), {
+                    saat,
+                    ms,
+                    daten: await window.__sha(h.daten),
+                    wasser: await window.__sha(h.water.waterY),
+                    abbild: JSON.stringify(Object.assign(G.lageAbbild(r._gelaende()), { seed: saat })),
+                    soll: await sollVon(saat),
+                })
+            );
+        }
+    } finally {
+        if (mutant) delete r._planetAuftrag;
+    }
+    return { welt, je, heim: st.hydrosphere && st.hydrosphere.daten ? await window.__sha(st.hydrosphere.daten) : null };
+}
+function hydroSaatUrteil(ist) {
+    if (!ist || ist.fehlt)
+        return ["die Hydrosphäre lebt nur für die Saat der Welt — der Wirt trägt keinen Leser je Samen (`_hydroSaat` fehlt)"];
+    const rot = [];
+    const welt = ist.je[0];
+    for (const m of ist.je) {
+        const s = m.soll;
+        if (m !== welt && m.daten === welt.daten)
+            rot.push(`der Faden rechnete für „${m.saat}“ die Region der Welt-Saat „${welt.saat}“ — die Lage ist der Modul-Zustand, nicht das Argument`);
+        else if (m.abbild !== s.abbild)
+            rot.push(`die Lage von „${m.saat}“ ist nicht die frische Welt des Gesetzes (Abbild ${m.abbild.slice(0, 80)} ≠ ${s.abbild.slice(0, 80)}) — der Soll ist unbaubar`);
+        else if (m.daten !== s.daten || m.wasser !== s.wasser)
+            rot.push(`die Region von „${m.saat}“ im Faden ist nicht die des Stamm-Gesetzes (${m.fluesse} Läufe im Faden, ${s.fluesse} im Stamm) — die Bytes weichen ab`);
+        if (!m.fluesse) rot.push(`die Saat „${m.saat}“ trägt keinen Flusslauf`);
+    }
+    if (ist.heim && welt && welt.daten !== ist.heim)
+        rot.push(`die Saat der Welt trägt über \`_hydroSaat\` eine andere Region als die Welt selbst (\`st.hydrosphere\`) — zwei Wahrheiten`);
+    const n = ist.je.reduce((a, m) => a + m.n, 0);
+    const vor = ist.je.reduce((a, m) => a + m.vor, 0);
+    if (!n || vor / n < HYDRO_SAAT.soll)
+        rot.push(`Wasser folgt dem Relief an ${n ? ((100 * vor) / n).toFixed(1) : "—"} % der Paare (${vor} von ${n}) — Soll ≥ ${100 * HYDRO_SAAT.soll} %`);
+    return rot;
+}
+async function hydroSaatProbe(page) {
+    const N = Number(opt("--saaten", 6));
+    const saaten = Array.from({ length: N }, (_, i) => "same-saat-" + i);
+    const t0 = Date.now();
+    const ist = await page.evaluate(hydroSaatSeite, saaten, String(hydroSaatMass), HYDRO_SAAT, false);
+    const tSeite = Date.now() - t0;
+    console.log(`\n=== DIE HYDROSPHÄRE JEDES SAMENS (K8) ===`);
+    if (ist.fehlt) {
+        console.log(`  Hydro (K8): der Wirt trägt keinen Leser je Samen · die Heim-Region der Welt ${ist.heim ? ist.heim.slice(0, 16) : "—"}`);
+        for (const t of hydroSaatUrteil(ist)) console.log(`  ⛔ K8: ${t}`);
+        return true;
+    }
+    const rot = hydroSaatUrteil(ist);
+    const n = ist.je.reduce((a, m) => a + m.n, 0);
+    const vor = ist.je.reduce((a, m) => a + m.vor, 0);
+    const lebt = ist.je.filter((m) => m.n >= HYDRO_SAAT.punkte && m.vor / m.n >= HYDRO_SAAT.soll).length;
+    const mu = {};
+    for (const m of ist.je) for (const k in m.muendung) mu[k] = (mu[k] || 0) + m.muendung[k];
+    const gleich = ist.je.filter((m) => m.soll.daten === m.daten && m.soll.wasser === m.wasser).length;
+    const ms = ist.je.map((m) => m.ms).sort((a, b) => a - b);
+    const schlecht = ist.je.slice().sort((p, q) => p.vor / Math.max(1, p.n) - q.vor / Math.max(1, q.n))[0];
+    console.log(
+        `  Hydro (K8): ${ist.je.length} Saaten über \`_hydroSaat\` — ${gleich} von ${ist.je.length} tragen die Bytes des Stamm-Gesetzes · Wasser folgt dem Relief an ${lebt} von ${ist.je.length} Saaten ≥ 95 %, ${vor} von ${n} Paaren = ${((100 * vor) / Math.max(1, n)).toFixed(1)} % (schlechteste „${schlecht.saat}“ ${schlecht.vor} von ${schlecht.n}) · Mündungen ${Object.entries(mu).map(([k, v]) => k + " " + v).join(" · ")} · die Saat der Welt = die Welt ${ist.heim === ist.je[0].daten ? "byte-gleich" : "WEICHT AB"} (${String(ist.heim).slice(0, 16)}) · je Saat im Faden Median ${ms[ms.length >> 1].toFixed(0)} ms, max ${ms[ms.length - 1].toFixed(0)} ms, Summe ${(ms.reduce((a, b) => a + b, 0) / 1000).toFixed(1)} s · Seite ${tSeite} ms (mit dem Soll)`
+    );
+    for (const t of rot) console.log(`  ⛔ K8: ${t}`);
+    let sieht = true;
+    if (SELBSTTEST) {
+        const M = hydroSaatUrteil(await page.evaluate(hydroSaatSeite, saaten.slice(0, 2), String(hydroSaatMass), HYDRO_SAAT, true));
+        const ohne = hydroSaatUrteil({ fehlt: true });
+        sieht = M.some((x) => x.includes("die Region der Welt-Saat")) && ohne.some((x) => x.includes("`_hydroSaat` fehlt"));
+        console.log(
+            `  ${sieht ? "✅" : "⛔"} SELBSTTEST K8: der Auftrag mit der Saat der Welt statt der gefragten, ein Wirt ohne Leser ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR (" + M.join(" | ") + ")"}`
+        );
+    }
+    return rot.length > 0 || !sieht;
+}
 async function faden(page, url) {
     // KALT: der Ursprung ohne Welt räumt Abbild und Platten, dann der erste Boot
     await page.evaluateOnNewDocument(fadenSeite, String(klonBytes), String(fadenHuelle));
@@ -2618,7 +2768,9 @@ async function faden(page, url) {
         if (!planetIst.fehlt) rotK6 = (await wuchsProbe(page)) || rotK6;
         // K7 DIE SIEDLUNG DES ORTS (w28-reise-ort): der leere Ort, die Wüste und heim
         if (!planetIst.fehlt) rotK6 = (await siedlungProbe(page)) || rotK6;
-        console.log(`\n${rotK6 ? "⛔ PLANET ROT" : "✅ PLANET GRÜN: der Anker im Faden = der Kern, der Faden schlank und geboren mit seinem ersten Leser, der Satz sagt die Lage · K7 der trockene Ort trägt weder den Wald noch die Wiese der Heimat, heim byte-gleich; der leere Ort trägt weder Prüfplatz noch Dorf noch Baum, der Hof-Baum der Wüste steht nur am Wasser"}\n`);
+        // K8 DIE HYDROSPHÄRE JEDES SAMENS (hydro-samen): die Region je Saat aus dem Planet-Faden gegen das Gesetz in node
+        rotK6 = (await hydroSaatProbe(page)) || rotK6;
+        console.log(`\n${rotK6 ? "⛔ PLANET ROT" : "✅ PLANET GRÜN: der Anker im Faden = der Kern, der Faden schlank und geboren mit seinem ersten Leser, der Satz sagt die Lage · K7 der trockene Ort trägt weder den Wald noch die Wiese der Heimat, heim byte-gleich; der leere Ort trägt weder Prüfplatz noch Dorf noch Baum, der Hof-Baum der Wüste steht nur am Wasser · K8 jede Saat trägt ihre Hydrosphäre, die Bytes des Stamm-Gesetzes"}\n`);
         return rotK6 ? 1 : 0;
     }
     await fenster("gang");

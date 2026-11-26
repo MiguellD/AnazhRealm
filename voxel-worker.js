@@ -382,6 +382,14 @@ function nachricht(e) {
             self.postMessage(
                 Object.assign({ type: "planet-ort-result", requestId: msg.requestId }, planetOrtAuftrag(msg))
             );
+        } else if (msg.type === "hydro-saat") {
+            // DIE HYDROSPHÄRE EINES SAMENS (hydro-samen, `hydroSaat`): die Heim-Region über der Lage seines Abbilds, dieselbe
+            // Antwort wie die der Welt (`hydroAntwort`, Lehre 24) — der Faden behält nichts, die Region ist f(Samen, Gesetz)
+            const a = hydroAntwort(hydroSaat(msg), true);
+            self.postMessage(
+                { type: "hydro-saat-result", requestId: msg.requestId, saat: msg.lage.seed, region: a.region },
+                a.transfer
+            );
         } else if (msg.type === "stau") {
             // DER STAU IM FADEN (`stauRechnen`): der Voxel-Faden antwortet dem Main (`stau-result`, er trägt die Rückfrage-Nummer),
             // die Felder als Kopie per Transfer (Lehre 24; er behält seine), wenn eines kam, fiel oder neu ist, und die Fenster,
@@ -1675,28 +1683,36 @@ function wuchsRechnen(msg) {
 // Darts Main = Worker Wort für Wort).
 // =============================================================================
 
-// Mirror von `_voxelSurfaceY`: von oben durchs Band bis zur ersten Luft→Fest-Grenze, der Nulldurchgang linear.
+// Mirror von `_voxelSurfaceY`: von oben durchs Band bis zur ersten Luft→Fest-Grenze, der Nulldurchgang linear — die Fläche der
+// Welt (`state`); ihre EINE Probe ist `flaecheY` über einer Lage.
 function voxelSurfaceY(x, z, gitter) {
-    const base = state.baseHeight || 0;
+    return flaecheY(state, x, z, gitter);
+}
+// DER BODEN EINER LAGE (hydro-samen, Sprosse kohaerenz#1): die Fläche des Felds über der Lage `L` — der Faden reicht seinen
+// Zustand (die Welt), der Auftrag `hydro-saat` die Lage aus dem Abbild einer Saat (`hydroSaat`). Bis hier las die Probe den
+// Modul-Zustand, und die Hydrosphäre, deren Boden sie ist, lebte nur für die Saat der Welt (Station kohaerenz#1: 1 von 101 Saaten,
+// das Gesetz in node an 101 von 101).
+function flaecheY(L, x, z, gitter) {
+    const base = L.baseHeight || 0;
     const cfg = voxelChunkConfig(0);
     const floorY = base - cfg.floorDrop;
     const top = floorY + cfg.dimY * cfg.step - 8;
     const bottom = floorY + 12;
-    const colCtx = terrainColumnContext(x, z);
+    const colCtx = terrainColumnContext(x, z, L);
     // DER KELLER IST HOHL (S4): die Fläche ist eine Probe des FELDS wie `_voxelSurfaceY` des Mains (`_fieldDensityAt`: die
     // Spalte über einem Keller, gelaende-core `erdbauKeller`, liest `erdbauHohl` je Probe) — das Gitter des Netzes nie. Bis
     // b-feuchte las der Faden hier die Dichte ohne Keller: an den Spalten über einem Keller fielen Steilheit und Würfe der Streu
     // (Fels 2219 gegen 2246 an der Region des Spielers) und des Walds anders als im Haupt-Faden. `gitter`: der Boden des Netzes
     // ohne Keller (die Hydrosphäre, deren Becken nie im Keller liegt).
-    const E = state.erdbau;
+    const E = L.erdbau;
     const K = !gitter && E && E.hohl && G.erdbauKeller(E, x, z) ? E : null;
     const feld = (y) => {
-        const d = terrainDensityAtCol(x, y, z, colCtx);
+        const d = terrainDensityAtCol(x, y, z, colCtx, L);
         return K ? G.erdbauHohl(K, x, y, z, d) : d;
     };
     const macroSurf = colCtx.surf;
     const skipAbove = Number.isFinite(macroSurf)
-        ? Math.max(macroSurf + 12 + 4 * cfg.step, editsFillTop() + 2)
+        ? Math.max(macroSurf + 12 + 4 * cfg.step, editsFillTop(L) + 2)
         : Infinity;
     let prevAir = true;
     let prevD = null;
@@ -1715,14 +1731,10 @@ function voxelSurfaceY(x, z, gitter) {
     return null;
 }
 
-function voxelGitterY(x, z) {
-    return voxelSurfaceY(x, z, true);
-}
-
-// Wie `_voxelEditsFillTop`: die Krone der Füll-Edits (`G.editKrone`), gemerkt je Edit-Liste und Länge.
+// Wie `_voxelEditsFillTop`: die Krone der Füll-Edits der Lage (`G.editKrone`), gemerkt je Edit-Liste und Länge.
 let fillTopMerk = null;
-function editsFillTop() {
-    const edits = state.voxelEdits;
+function editsFillTop(L) {
+    const edits = L.voxelEdits;
     const len = edits ? edits.length : 0;
     if (fillTopMerk && fillTopMerk.edits === edits && fillTopMerk.len === len) return fillTopMerk.top;
     const topY = G.editKrone(edits);
@@ -1971,8 +1983,8 @@ function applyStateDelta(delta) {
 // DIE EDIT-KARTE (K23): das Gesetz des Kerns (`G.editKarte`) über der EINEN Liste `state.voxelEdits` — je Chunk die Edits,
 // deren Reichweite ihn samt einem Chunk Rand berührt; Identität und Länge der Liste halten sie frisch.
 let editKarte = null;
-function editKarteFrisch() {
-    const edits = Array.isArray(state.voxelEdits) ? state.voxelEdits : null;
+function editKarteFrisch(L = state) {
+    const edits = Array.isArray(L.voxelEdits) ? L.voxelEdits : null;
     if (G.editKarteSteht(editKarte, edits)) return editKarte; // die stehende Karte: zwei Vergleiche (ek-schleife)
     return (editKarte = G.editKarte(editKarte, edits, voxelChunkConfig(0).span, null));
 }
@@ -1993,19 +2005,18 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
     const edits = G.editsImKasten(editKarteFrisch(), ox, ox + dimX * step, oz, oz + dimZ * step);
     return G.gitterMitEdits(state, basis, ox, oy, oz, Nx, Ny, Nz, step, edits);
 }
-// die Spalte (x, z) der Dichte (die Höhe, die Decke der Höhle, Kanal und See-Becken — einmal je Spalte)
-function terrainColumnContext(x, z) {
-    return G.dichteSpalte(state, x, z, {});
+// die Spalte (x, z) der Dichte über der Lage `L` (die Höhe, die Decke der Höhle, Kanal und See-Becken — einmal je Spalte);
+// ohne Lage die Welt dieses Fadens
+function terrainColumnContext(x, z, L = state) {
+    return G.dichteSpalte(L, x, z, {});
 }
-// die Dichte an (x, y, z) über der Spalte ctx, mit den Edits der Karte am Punkt — nie, solange der Faden eine Region der
-// Hydrosphäre rechnet (`hydroComputing`): sie ist f(Saat, Gesetz), nie f(Edits). Bis speicher-zwei las ihr Fluss-Spiegel
+// die Dichte an (x, y, z) über der Spalte ctx der Lage `L`, mit den Edits ihrer Karte am Punkt — nie, solange die Lage eine Region
+// der Hydrosphäre rechnet (`hydroComputing`): sie ist f(Saat, Gesetz), nie f(Edits). Bis speicher-zwei las ihr Fluss-Spiegel
 // (`hydroSampleRiverSurfaces`, `hydroRiverSpiegel`) den Boden samt Gruben — eine Grube am Bach der Mess-Wiese senkte den
 // Spiegel stromab um 9 cm, aber erst beim nächsten Boot: die Wiederkehr zeichnete Fluss, Ufer und Boden anders (speicher.K4).
-function terrainDensityAtCol(x, y, z, ctx) {
+function terrainDensityAtCol(x, y, z, ctx, L = state) {
     const edits =
-        !state.hydroComputing && state.voxelEdits && state.voxelEdits.length
-            ? G.editsAm(editKarteFrisch(), x, z)
-            : undefined;
+        !L.hydroComputing && L.voxelEdits && L.voxelEdits.length ? G.editsAm(editKarteFrisch(L), x, z) : undefined;
     return G.mitEdits(G.dichteBasis(x, y, z, ctx), x, y, z, edits);
 }
 // die EINE Punkt-API: die Dichte an (x, y, z) samt Edits
@@ -2045,21 +2056,37 @@ function stauRechnen(msg) {
     return r;
 }
 
-// DIE REGION ENTSTEHT IM FADEN (Karte hydro-faden): das Gesetz `hydrosphaere` des Gelände-Kerns an DIESEM Zustand, die
-// Fläche ungecarvt (`hydroComputing` hält den Kanal aus, wie der Stamm es bis dahin im Haupt-Faden tat); danach das
+// DIE REGION ENTSTEHT IM FADEN (Karte hydro-faden): das Gesetz `hydrosphaere` des Gelände-Kerns an DIESEM Zustand; danach das
 // globale Band über alle Regionen (gelaende-core `hydroBand`, derselbe Rechner wie `_computeHydroBand` im Stamm).
 function hydroRegion(key, origin) {
     if (!state.hydroGesetz)
         throw new Error("voxel-worker: die Hydrosphäre ohne ihr Gesetz (hydroGesetz fehlt im Zustand)");
-    state.hydroComputing = true;
-    let h;
-    try {
-        h = G.hydrosphaere(state, state.hydroGesetz, voxelGitterY, origin);
-    } finally {
-        state.hydroComputing = false;
-    }
+    const h = hydroRegionAn(state, state.hydroGesetz, origin);
     hydroSetzen(key, h);
     return h;
+}
+// DIE REGION EINER LAGE (hydro-samen, Sprosse kohaerenz#1): das Gesetz `hydrosphaere` über der Lage `L` und IHREM Boden
+// (`flaecheY(L, …)`, gitter: kein Keller), die Fläche ungecarvt (`hydroComputing` hält den Kanal aus, wie der Stamm es bis dahin
+// im Haupt-Faden tat). Die Welt reicht `state`, der Planet-Faden die Lage aus dem Abbild eines Samens (`hydroSaat`) — bis hier
+// war die Lage der Modul-Zustand, die Region jedes fremden Samens hatte keinen Rechner (Station kohaerenz#1: 1 von 101 Saaten).
+function hydroRegionAn(L, H, origin) {
+    L.hydroComputing = true;
+    try {
+        return G.hydrosphaere(L, H, (x, z) => flaecheY(L, x, z, true), origin);
+    } finally {
+        L.hydroComputing = false;
+    }
+}
+// DIE HYDROSPHÄRE EINES SAMENS (der Planet-Faden, `hydro-saat`): die Lage aus ihrem Abbild (`G.lageAus`: Saat, Grund, Meer, Ort,
+// Erbgut — derselbe Bau wie die Lage der Welt), das Gesetz des Stamms (`HYDROSPHERE`) reist mit. Kein Abbild, keine Saat oder kein
+// Gesetz bricht beim Namen — nie rechnet der Faden still die Welt dieses Zustands.
+function hydroSaat(msg) {
+    const a = msg && msg.lage;
+    if (!a || typeof a.seed !== "string" || !a.seed)
+        throw new Error("voxel-worker: hydro-saat ohne das Abbild einer Lage mit Saat (msg.lage.seed)");
+    if (!msg.gesetz || typeof msg.gesetz !== "object")
+        throw new Error("voxel-worker: hydro-saat ohne das Gesetz der Hydrosphäre (msg.gesetz)");
+    return hydroRegionAn(G.lageAus(a, SimplexNoise), msg.gesetz, msg.origin || null);
 }
 function hydroSetzen(key, h) {
     if (key === "heim") state.hydrosphere = h;
