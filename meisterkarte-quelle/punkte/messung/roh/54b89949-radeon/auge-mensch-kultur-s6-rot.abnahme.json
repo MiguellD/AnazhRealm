@@ -1,0 +1,135 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.437",
+  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.1312,
+  "taeter": {
+   "fscatter:geroell:L0": 0.1312
+  },
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.1649,
+   "taeter": {
+    "fscatter:geroell:L0": 0.1649
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   100,
+   92.592,
+   32
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 106.4,
+  "sigma": 30,
+  "schwarz": 0.0001,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 13.1 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): fscatter:geroell:L0 13.1 % · kein bodenSatz im Bild: 12.8 % < 15.0 % · kein portal-membran im Bild: 0.0 % < 0.3 %] · beweis · Sicht 13.1 % (fscatter:geroell:L0 13.1 %) · Ziel Blickziel im Bild frei 20 m · Luma 106.4 σ 30 schwarz 0.0 % weiß 0.0 % · Stand 18.546.437 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Inhalt bodenSatz 12.8 % (≥ 15.0 %) Luma 80, portal-membran 0.0 % (≥ 0.3 %)",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 13.1 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): fscatter:geroell:L0 13.1 %"
+  }
+ ],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "imBild.bodenSatz",
+    "grund": "kein bodenSatz im Bild: 12.8 % < 15.0 %"
+   },
+   {
+    "schluessel": "imBild.portal-membran",
+    "grund": "kein portal-membran im Bild: 0.0 % < 0.3 %"
+   }
+  ],
+  "zeile": "Inhalt bodenSatz 12.8 % (≥ 15.0 %) Luma 80, portal-membran 0.0 % (≥ 0.3 %)"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^bodenSatz([-_:].*)?$|^portal-membran([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 607,
+   "wechsel": 631853
+  },
+  "rinde": null,
+  "toene": [
+   "bodenSatz=255/80/80"
+  ],
+  "klassen": {
+   "bodenSatz": {
+    "objekte": 1,
+    "pixel": 264555,
+    "farbe": [
+     0.10129,
+     0.08162,
+     0.03172
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\54b89949-radeon\\auge-mensch-kultur-s6-rot.maske.png"
+ }
+}
