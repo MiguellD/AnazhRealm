@@ -616,6 +616,24 @@ class AnazhRealm_siedlung_bewohner {
             b.satzZeilen = [b.tonZeilen[0], R.tonZeile];
         }
     }
+    // DER LEIB, DEN DER BEWOHNER ZEIGT (stimme-leib, Gebot 4 — was das Ohr hört, kommt aus dem Leib, den das Auge sieht): die Höhe
+    // seines Genoms (8 · kh: `groesse` skaliert seine Gestalt auf sie), das Geschlecht seiner GESTALT (die Form des Weichen, in der
+    // er gegossen steht — Brust, Hüfte, Schulter, `G.dK`; an ihr ist das Stimm-Gesetz geeicht, klang-core STIMME.bezug sex 0,125
+    // nach Peterson & Barney 1952: f0 Mann 124–139 Hz, Frau 208–235 Hz) und die Jahre seines Lebenslaufs (`_bewohnerJahre`, = `b.alter`:
+    // sein Wuchs, seine Beine und sein Haar tragen sie; die Gestalt steht in derselben Lebensphase, koerper `alterAbstand`). Keine
+    // Kopie am Satz: die Gestalt liest er je Frage über seine Siedlung (`sied`) und die EINE Zuordnung `b.gestalt` (`_bewohnerGenome`).
+    // Ohne Gestalt kein Leib — ein benannter Bruch, nie der Rückfall auf den Wurf des Genoms. Bis stimme-leib las die Stimme
+    // `b.genom.sex` (ein Mann mit Gestalt sex 0,19 sprach mit 0,46): am Dorf der Zelle −4,−4 sprachen 15 von 28 Erwachsenen ±15 %
+    // nach der Tafel (max 65,1 %), danach 22 von 28 (max 20,8 %: der Rest ist das Gesetz, `stimmLeib`). Leser: die Stimme
+    // (`_bewohnerLaut`), die Klasse im Spiel (`_spielProgramm`).
+    _bewohnerZeigt(b) {
+        const G = b && b.sied && b.sied.gestalten ? b.sied.gestalten[b.gestalt] : null;
+        if (!b || !b.genom || !G || !G.gen || !Number.isFinite(G.gen.sex))
+            throw new Error(
+                `BEWOHNER: ${b && b.seed} trägt keine Gestalt seiner Siedlung (gestalt ${b && b.gestalt}) — kein Leib, den er zeigt`
+            );
+        return { hoeheM: 8 * b.genom.kh, sex: G.gen.sex, jahre: b.genom.jahre };
+    }
 
     // DIE LISTE DER BEWOHNER (einmal je Siedlung, wenn ihre Häuser stehen): je stehendem Haus (der Bau mit dem Samen des
     // Slots an seinem Ort) `leuteVon` Personen, jede mit den ORTEN ihres Tags (mensch.K2, koerper-core `tagesPlan`): die Tür
@@ -2675,7 +2693,8 @@ class AnazhRealm_siedlung_bewohner {
             const d = this._dialsAusGenom(b.genom);
             const P = KC.labProportionen(d);
             const U = b.uebung;
-            gaeste.push({ same: b.same, rolle: b.rolle, mann: d.gender >= 0.5, alterJ: b.alter, masse: d.mass, beinM: (P.thighLen + P.calfLen) * KC.leibMassstab(), kraft: b.koennen.kraft, kampf: U.kampf.koennen, brett: U.brett.koennen, orte: b.orte }); // prettier-ignore
+            // die Klasse nach dem Geschlecht, das sein Leib zeigt (`_bewohnerZeigt`); Masse, Beine und Kraft sind die seines Genoms
+            gaeste.push({ same: b.same, rolle: b.rolle, mann: this._bewohnerZeigt(b).sex <= 0.5, alterJ: b.alter, masse: d.mass, beinM: (P.thighLen + P.calfLen) * KC.leibMassstab(), kraft: b.koennen.kraft, kampf: U.kampf.koennen, brett: U.brett.koennen, orte: b.orte }); // prettier-ignore
             wer.push(b);
         }
         const programm = KC.spielProgramm(S.plan.seed >>> 0, tag, gaeste, { L, B }, sek);
