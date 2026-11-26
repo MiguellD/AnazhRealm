@@ -1,7 +1,7 @@
 {
  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
  "geraet": "radeon",
- "zeit": "2026-11-26T14:16:55.304Z",
+ "zeit": "2026-11-26T14:35:37.798Z",
  "host": "MiguellD",
  "je": {
   "profiband.K4#1": {
@@ -779,6 +779,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.oeko.netz#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: 10¹ Arten in 4 Ebenen — der Bestand trägt 4 Gattungen (deer, fox, wolf, bear) in 2 Ebenen (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072); im Fächer 32 von 32 Saaten × 100 Spieljahre · Fächer 32/32 Adressen (32 Saaten) in 19996 ms · Leser stamm _kreaturFra · saaten 32 gegen Soll ≥ 32 ✓ · jahre 100 Spieljahre gegen Soll ≥ 100 Spieljahre ✓ · wiederProzent 0 % gegen Soll ≥ 80 % ✗ · paareJeArt 0,2 gegen Soll 2–10 ✗ · Täter: tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen) · stamm/kreatur-leben.js _bestandSchritt",
+   "exit": 0,
+   "minuten": 1.4,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: 10¹ Arten in 4 Ebenen — der Bestand trägt 4 Gattungen (deer, fox, wolf, bear) in 2 Ebenen (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072); im Fächer 32 von 32 Saaten × 100 Spieljahre · Fächer 32/32 Adressen (32 Saaten) in 19996 ms · Leser stamm _kreaturFra · saaten 32 gegen Soll ≥ 32 ✓ · jahre 100 Spieljahre gegen Soll ≥ 100 Spieljahre ✓ · wiederProzent 0 % gegen Soll ≥ 80 % ✗ · paareJeArt 0,2 gegen Soll 2–10 ✗ · Täter: tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen) · stamm/kreatur-leben.js _bestandSchritt",
+   "gpu": "amd/rdna-3",
+   "konsum": "k158797b6a30f",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2e9343709e6d",
+   "s": 83,
+   "fremd": {
+    "s": 86.2,
+    "takte": 36,
+    "fremdS": 287.59,
+    "kerne": 3.338,
+    "fensterKerne": 15.591,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      225.81
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      13.27
+     ],
+     [
+      "bash.exe scratchpad/kette2.sh buendel-mittag d10695ec7e6c2ba0e3fcc900f6e8dab222649e44 scra",
+      3.81
+     ]
+    ],
+    "dienerS": 54.47,
+    "diener": [
+     [
+      "System",
+      27.7
+     ],
+     [
+      "WmiPrvSE.exe",
+      23.77
+     ]
+    ],
+    "geraetS": 44.23,
+    "geraet": [
+     [
+      "svchost.exe",
+      22.81
+     ],
+     [
+      "MsMpEng.exe",
+      17.5
+     ],
+     [
+      "SearchIndexer.exe",
+      2.84
+     ]
+    ],
+    "eigenS": 137.89,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-26T14:35:37.798Z",
+   "abdruck": "56927f059c1e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -803,7 +873,9 @@
   "k9656eb196b3c": "fVXRjps6EP2XPLbX6xBMMZb6MGlW2lRdlf2EMYyBDYHIJusqVf+9gg3ZANWdF17O+Jw5Z2x+r06YHbCgh1fXNiu1+rT6b+XwjZgj+0b24dWt1CrJgg2FCl6gLw4A33pYZqtT53heYcG6iiwrsCkesqHl0x2grjRH3WB5JHa2HVX1FWS+4DrSivtHKFLODb/wnYdbPcLXr/Njak15yzo0NB6ypjCSpObAsytQE8OzGYiv4Egk9CVQfCi5g+cdv9UvCZB67lP5BKmItkt2jU0+nSA0SSikAr8HgJc5Pq+QOlZXjRv5gzxOzFrdOP3zoseiZxeksiZ7bSIZBEKPore9Nb1ds0ZTn52bkMkwjzZScZ7MsQW5Kis7drKtpuYK18kmDlBt/WLu4nRm5l4Rao1Szz0vkZqC7ETDOsxMb/gvOT/0gEeyyBosr9BkHcYb/eEN5/xpqaUehA8Uo3AhEpKbSWMfLn/rDYY93JVI+6C5HFHjugn437VzWVnZ49QuI2izDtWPpURXYk6WHVrX3dAhxWKt1UCw3/Hhm8rtvPNjuDFDRJR3C8Mlh6eFl641nUdLrDidx6URFMWRAtgvwB0ej2M8eRZSNg/Sdf2i38uIIxEJVJx/fr8wy6HfrwW7UFXTbW+zOEzUt52Yg98sHhnqwlbGjOnrKDPJv5bVU90x3bbdaGUQx2HYW9LcB54OUd6nvSteRFdv/SNMag+QFgv9A0tru1G8Rh0KoUyxk5xLM0dXtmMes3KEb4wm7OUvsrmQramgiZ0mCHCTK+7Nu/ZL//TE1yfBfJ4s8mV5YkW90Y07u9HpDIWO1D+i8WQPGpvD7arEYSLVdwDYPkM68eXx9WQ8AE/5rJJhXT29PA24rQf4ueP7K9GJMn6yran615GXeHYl1t3H/+TPXw==",
   "k8017942af71c": "bVXbbqMwEP2XPLZLJ9yKsdQHp1RKpI02+YQxjIGGQGSTUGW1/76ChJRL5wUJnfE5nDMe/i7iSpN5OWKZKzL1y6epygVfPC1+LU4YHzCl4SuDF7IM6Qvpl0+z4Iswth1yudiLtkAI8d7CYp2fagNJjqklq6q2TN2eFHc9TwNEkUtAWWJ2JOusa8qLO0i94tKXHJqtSHcACq4QNW9v09ZCUlJZNSrqG5fk+oz4FHg2KUqy8Kw6sjvY90J6tTl0xSKxjeBRX0yIXQPNjq0nh0ksk7FaV4Wux3hngthPVSY5Um0VeWl6XjsJQrXkD65mO+vR2FhXpKwgfW8iZtue7MWuWqrWmkmjKs7GjMiYm/gO4wDhFJuSyeOstk66klTe4TJ0Ahv5au52ejpbaqgIpUQmp15nSGVKeqRh6caqNfqLTQ894JE0WiVmd2i4dANHfnsDAOu5lqIT3lH0wj0vJOaMGttQ4dIaLDZiUN6uDRhYj4qa+/sB5kPMSE2c5fo4tkt55Cxd/nsu0WSYkLYOlakfaJcCbylvg7KJoHvu2Gra+f1xfYaIyAYDAwzEeualqVTdoCYrPZ37ofHID3wuxGYGrvF47ONJYpfiaZCmbgd9KCPwPd9DDvB8uyjzj75dC+tKeUGPuY0DN+TvkTcFXzQeLZSpzpXq05d+rMKfhrWhou6WSW+lHQSuy+EK5TDwXSPexSjtKN17dbFqPsSkprZ3DJWue+ESpet5XKURA2Bqis51bTUYZz3cUZKwlT7L5Uq6oJRGVirbRifh0Kib7mu7boL7OlDPoyG+zk/MqTW5NGfTuxyjJ33+QywN6YPE8vC4JoEb3nbVait2Az9S8fF5Uo0QsBvzA4Su2IpVSvv1zblGiD8RbO5EJ4rhpCuVt5sRMjybDIvBv+Tffw==",
   "k59b2f779d442": "fVXRjpswEPyXPPbKOWAoxtI9mMtVSdVIuU9YmzVwIYBsEk6p+u8VJCQBTt0H8jLrHc/MOn8WNag9pPj8YatywRffFt8XFk7oWDQnNM8fdsEXkXI9pFxcigghXjuYMnndWFLkkoAsITugczQN5sWz6tv0D1gGkpP2TaQ7QjQ5k1UrbvUmXl6mxxQSk8ppQONwyBJpwJBPgUebgkQHjroffAUHfoQ/XE76YiuxXZFbtUqIXUvaHVsLIZ7i+XQJZTK+AdUR9RkX7eZViPcpPskBG6fISzvMd5Mw0kt+n7md9RhonTNgVqC5NiFzXV8OpONOmk6uSaMujtaOhjGaBB7jhERTbIo2V1nj1KaSWF7hMvJCF3jczu6d1kdHPzICKYHJqeYZYJmiGXFYUqU7wT/Z9NA9HNCAU0J2hUZLGnryrg0hZD3nUvTE+xEDcd+PkHmjxs5ccuoEFhvxUP6OEPJJ2IAa4uaL/8bOqiw3h7Fc2kdvSfnvOUWbQYLG2Ve2uaEphv5SXjZksyL9747F08775QYPAYA9BIYwItYzLW2lmxYMOml9HELjYxAGXIjNDNzA4TDYkyiKamqkbbqgP9IIAz/wgRPydFmY+aUva+GcMS/wllsV0oi/rsQUfDJwcECmJtd6cF8GSkdfhbXFonFkVTWDlG4YUtpJUj4avuutfHR7lb7725+ifROj2szo9BMq0wzEJUjq+1ynK0YI01N0bhqnBZUNcE9LhIgTOvPljKbAFEdSatcFL+H9c9Oz7JIQXp8D/TQK8Xl+Yo6dyKU92kFlBb4M+Be2tGj2Esr9bU1CGjH+SwgRb8VuLMpHrVsh+pUZVUTFNo5TVOseFqf9Z3NdkRoVqU2l8+5lJBkcbQZFc/+r+PsP",
-  "kd3ee2c81c280": "fVXRjpswEPyXPPbKOYA5jKV7cI6rkqqRiPoFa1gDFwKRDeGUqv9eQUIS4NR9gIfMeoeZWefP4gjxHlJ8/jBVueCLb4vvCwMntAzqE+rnD7PgiyC2HXR591Os82NtSJFLArKE7IBWo2vMi+e4h6oXWHqSk/ZdpBEhipxJ2IpbvYvX1+kxhcSksmpQOByyRNdjOJvXmBQkWtCofvAV7NEAX2xO+mKh2IbkVm0sRNSSNmJrIcRmcqCEMhmzd1XgUsYvXHdTpkkOWFtFXpphtp34gVry+7ztrEdDa50BswL1tQmZbVM5EF51ozqpJo2qaIwZDWNu4jmMExJMsSmaPM5q66grieUVLgPHt4Gv2pni6bGx1CMjkBKYnOqdAZYp6hGHpRurTuxPNj10DwfUYJWQXaHB0vUdedeGELKecyl64v2IgTilATJn1NgZS06dwGIjHopGhJBPwgbUEDUq/hs5E2e5PozlUhSdpct/zSmaDBLU1r4y9Q3tok+X8hKUTUj6d8RW0877xw0eAgB7CAxhRKxnWppK1S1otNJjM4SGoud7XIjNDFzD4TDYk8QuxlMjTd0F/ZGG71GPAifk6bIs84++rIV1xrzAW25j3w34W0in4JOGgwUy1blSg/vSi1XwVVhbLGpLVlU9SGn7vuty4pPy0fCot/LR7bD9Tbc/RPouxhXuonTGv59S6XogL0G6lHKVhowQpqboXNdWC3E2wB0lETr6M2/OqAtMcSSnsm1wEt5fNz2jLg3+9UpQT6Mgn+cn5tgJXZrGDErHQKXHv7CmRb2XUO5vq+K7AeM/hRCrrYjGurylqhWiX5tJie1qleJu3cNWaf/YXNfkiDE56krl3e1IMmhMBkV9/3v4+w8="
+  "kd3ee2c81c280": "fVXRjpswEPyXPPbKOYA5jKV7cI6rkqqRiPoFa1gDFwKRDeGUqv9eQUIS4NR9gIfMeoeZWefP4gjxHlJ8/jBVueCLb4vvCwMntAzqE+rnD7PgiyC2HXR591Os82NtSJFLArKE7IBWo2vMi+e4h6oXWHqSk/ZdpBEhipxJ2IpbvYvX1+kxhcSksmpQOByyRNdjOJvXmBQkWtCofvAV7NEAX2xO+mKh2IbkVm0sRNSSNmJrIcRmcqCEMhmzd1XgUsYvXHdTpkkOWFtFXpphtp34gVry+7ztrEdDa50BswL1tQmZbVM5EF51ozqpJo2qaIwZDWNu4jmMExJMsSmaPM5q66grieUVLgPHt4Gv2pni6bGx1CMjkBKYnOqdAZYp6hGHpRurTuxPNj10DwfUYJWQXaHB0vUdedeGELKecyl64v2IgTilATJn1NgZS06dwGIjHopGhJBPwgbUEDUq/hs5E2e5PozlUhSdpct/zSmaDBLU1r4y9Q3tok+X8hKUTUj6d8RW0877xw0eAgB7CAxhRKxnWppK1S1otNJjM4SGoud7XIjNDFzD4TDYk8QuxlMjTd0F/ZGG71GPAifk6bIs84++rIV1xrzAW25j3w34W0in4JOGgwUy1blSg/vSi1XwVVhbLGpLVlU9SGn7vuty4pPy0fCot/LR7bD9Tbc/RPouxhXuonTGv59S6XogL0G6lHKVhowQpqboXNdWC3E2wB0lETr6M2/OqAtMcSSnsm1wEt5fNz2jLg3+9UpQT6Mgn+cn5tgJXZrGDErHQKXHv7CmRb2XUO5vq+K7AeM/hRCrrYjGurylqhWiX5tJie1qleJu3cNWaf/YXNfkiDE56krl3e1IMmhMBkV9/3v4+w8=",
+  "k158797b6a30f": "fVXRbqMwEPyXPN4ddQBTjKU+OKWn5nSR6CeszRpoCEQ2hCqn+/cTpCQBqtsXXma945lZ82d1BLWHDB/ebV2t+Orb6sfKwgkdi+aE5uHdrvgqUq6HPheXIkKI5x6mTHFsLCkLSUBWkB/QaU2DRfmghjb9COtActK9iCwhRJMziTtxrRfx9DQ/ppSY1k4DGsdD1ugHDPkc2NoMJDrQ6mHwJzigET66nAzFYrGLybU6JUTSkS5hryKhwWY5XUKVTm/g68injItuK4R4m+PTArBxyqKy43w3DSO95reZu0WPgc45A+Ylms8mZK5L5Uh600vTyzVr1GVr7WQY89PAY5yQaI7N0BYqb5yjqSVWn3AZeaELfNMt7p0dW0ffMwIpgcm55jlglaGZcFj7SveCf7D5oXs4oAGngvwTGq390JM3bQghr0su5UB8GDESpzRC5k0ae3PJqRdYbMVd0YQQ8kHYiBrjRsV/Y2dVXpjDVC5N0Vv7/PeSos0hRePsa9tc0T6GdC0vG7KNyfBN2Gbeebvc6CEAsLvAEEbE60JLW+umA4NOdmzH0FAMwoALsV2AGzgcRntS5aOaG2mbPuj3NMKABhQ4Id8vC7O89GUtnDMWJV5zq0I/4s8xnYNPBg4OyMwUWo/uy0Dp6Kuwdlg2jqzrZpTSDUPf7yWp7g1PBivv3Y6zN7r7KbIXMamtEEm24D9MqU0zkpcgfUq5zmJGCNNzdGEapwOVj3BPS4SIk07NDz6jKTHDiZzadcFL+fDkXNmOGYy/T4J8Xrh9LrAXurKtHZVWQGXAv7CmQ7OXUO2vqxL6EeO/hBCbnUimwjxnetAwFtNVioa4dvgWT2W8DDqiIkdT66J/HUkOrc2hbG6/i7//AA==",
+  "k2e9343709e6d": "jZXdcpswEIXfxZdNiQwSRWgmF3LINEknrdM3WMEKiDEwEoSMO333jrGx+clF94abs9rDt0fwZ1VDvIMUb99sVa7E6svq68rCOzoWzTua2ze7Eqswdj2kQp6KSCm/H2WxyevGkiJXBFQJ2R6d1jSYF7dx36a/wdpXgnQPMt0SosmBRJ281L28u5sfUyhMKqcBjcMha6Q+RzEXtjYFhQ60uh98FvssxG+uIH3xSL5E5FJdLOW2I92WP84OU1AmU+dUh5RxIbsnKeXr3GWSAzZOkZd2mOsmQajX4jrrZdFjoHMOgFmB5tyE3HWZGsxujkiOmGaNumitnQzjNPE9LggJ59oUbR5njVObSmF5lqvQC1wQm25BO61bR48dgVLA1Zx1BlimaCYe1jTWR9AffH7oDvZowCkhO0vDNQ08dWVDCHlceil64/2IwThjIXJv0nhc6gmwfJKjYltCyAfhg2qIGRtpHpZxs3GWm/0Ul2boremcgc0gQePsKttclBQDtlanW/EUkf655Zt55/XFhv0BAB+FhXAiHxccbaWbDgw6ad0OgWHoB76Q6SJdtoH9flhNElOMFy/QHEM+thH4zGcgCLk5I13gOV0J54B5gZfMxgENxX3E5uJ3A3sHVGpyrYfNKz/W4WdB7bBoHFVVzYDSDQJKBaGkHC/7ZyfvpXwZLTEqfrOmeL55kJP6IZ8/m1CZZjCuQFHGhO4iTgjXc3VuGqeDOBvknlYI4RziAU2BKU4watcFLxH95+XicshddDMJ72Gx5UOOR8Clbe1AOAamfHFO+Slc0+R2aHYKyt3lmgQ05ELKKJUvcjui8kvKt1p38r/rdSP7QTXGpDaVzo9fRpJBazMomusv4u8/"
  },
  "ungemessen": {
   "profiband.K4#2": {
@@ -3594,20 +3666,6 @@
    "bahn": "sitzung",
    "zwilling": "karte2.leben.kopplung.evolution-planet#1",
    "modus": "session"
-  },
-  "karte2.leben.oeko.netz#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\fba94a62-0265-4d9c-a433-584144fc2a07.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\fba94a62-0265-4d9c-a433-584144fc2a07.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-26T14:16:55.123Z",
-   "abdruck": "56927f059c1e",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
   },
   "karte2.erleben.klang.stimme#1": {
    "gruen": false,
