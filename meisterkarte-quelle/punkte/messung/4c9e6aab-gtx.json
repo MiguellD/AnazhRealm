@@ -1,7 +1,7 @@
 {
  "sha": "4c9e6aab7a4d24859cee6b9173b6f26cd4611bdf",
  "geraet": "gtx",
- "zeit": "2026-11-26T02:16:10.617Z",
+ "zeit": "2026-11-26T02:17:42.381Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.menge.rhythmus#2": {
@@ -348,6 +348,76 @@
    },
    "zeit": "2026-11-26T02:16:10.617Z",
    "abdruck": "b2ca939fc27a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.fahrzeug.medium#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 1346 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.24,
+   "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 1346 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k037652aab5ff",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k05a87765fff2",
+   "s": 13.9,
+   "fremd": {
+    "s": 15.2,
+    "takte": 7,
+    "fremdS": 7.72,
+    "kerne": 0.509,
+    "fensterKerne": 0.615,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.03
+     ],
+     [
+      "Explorer.EXE",
+      1.45
+     ],
+     [
+      "node.exe dienst-omen/runde.cjs push-pfade AnazhRealm-OMEN/n0611-pm punkte-maschine gtx 4c9",
+      0.73
+     ]
+    ],
+    "dienerS": 3.44,
+    "diener": [
+     [
+      "dwm.exe",
+      1.53
+     ],
+     [
+      "System",
+      1.17
+     ]
+    ],
+    "geraetS": 4.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.02
+     ],
+     [
+      "svchost.exe",
+      1.44
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.11
+     ]
+    ],
+    "eigenS": 30.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T02:17:42.381Z",
+   "abdruck": "aacab6a06d8b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
