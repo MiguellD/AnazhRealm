@@ -1,0 +1,137 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.432",
+  "sha": "a954d69818f4a60fb20927a70f39e5d150e9a734"
+ },
+ "buehne": {
+  "saison": "winter",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 34,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   436.368,
+   -0.418,
+   10676.978
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 105.6,
+  "sigma": 32.3,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 105.6 σ 32.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.432 · Bühne winter sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt nahWiese 21.8 % (≥ 15.0 %) h 90° Luma 81",
+ "rot": [],
+ "inhalt": {
+  "rot": [],
+  "zeile": "Inhalt nahWiese 21.8 % (≥ 15.0 %) h 90° Luma 81"
+ },
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^nahWiese([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 18094,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 972,
+   "wechsel": 618771
+  },
+  "rinde": null,
+  "toene": [
+   "nahWiese:L1=255/80/80",
+   "nahWiese:L2=80/255/80",
+   "nahWiese:Lf=80/120/255"
+  ],
+  "klassen": {
+   "nahWiese:L1": {
+    "objekte": 2,
+    "pixel": 161728,
+    "farbe": [
+     0.12194,
+     0.09307,
+     0.02246
+    ]
+   },
+   "nahWiese:L2": {
+    "objekte": 2,
+    "pixel": 229139,
+    "farbe": [
+     0.08168,
+     0.05622,
+     0.01353
+    ]
+   },
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 61978,
+    "farbe": [
+     0.22817,
+     0.15817,
+     0.04347
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\a954d698-gtx\\auge-wasser-eis-s7.maske.png"
+ }
+}
