@@ -5567,11 +5567,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 47,
-    "kern": 3,
-    "kernDazu": 3,
-    "anteilHeute": 8,
-    "anteilKern": 0.5
+    "heute": 48,
+    "kern": 2,
+    "kernDazu": 2,
+    "anteilHeute": 8.2,
+    "anteilKern": 0.3
    },
    "perspektiven": [
     {
@@ -7515,8 +7515,8 @@
        "richter": "Flüsse aus dem Orbit gegen reale Netze der Epoche"
       }
      ],
-     "heute": 1,
-     "kern": 1,
+     "heute": 2,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "5–8 Wege je Tag, Wiederkehr 1,2 m (mensch.K2); Preis in der Szene unbelegt, Takt der Bewohner 1,52–1,82 ms an der Stadt — KARTE: 0 — die Messung mensch.K2 hebt den Kern von mensch.geist.tag (R9); der eigene Lauf (Wege je Tag im Bild gezählt) fehlt.",
      "alt": [
@@ -20094,12 +20094,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 124,
+  "heute": 125,
   "davonKopplungen": 33,
-  "kern": 3,
-  "kernDazu": 3,
-  "anteilHeute": 6.3,
-  "anteilKern": 0.1,
+  "kern": 2,
+  "kernDazu": 2,
+  "anteilHeute": 6.4,
+  "anteilKern": 0,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
@@ -20109,7 +20109,7 @@
   },
   "gliederLeitern": 9,
   "beide": 61,
-  "nachwache": 63
+  "nachwache": 64
  },
  "zusammengelegt": [
   {
