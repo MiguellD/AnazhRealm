@@ -494,12 +494,22 @@ class AnazhRealm_koerper_leib {
     // vermessen, Welt-Maß aus der Gelenk-Skala). Die Phase bleibt weg-getrieben (2π je Doppelschritt Λ, ω = 2π·v/Λ).
     // Vorher eichte ein Faktor des Schritt-Blocks (4,0 × Bein ≈ 3,4 m je Schritt) den Takt auf 5,5 rad/s beim Basistempo:
     // beim Gehen 0,34 Schritte/s, zwei Schritt-Töne in sechs Sekunden, der Fuß glitt 130 % des Wegs.
-    _gaitGesetz(rig, speed, L = this._gaitBeinMass(rig).L) {
+    // AUF DER STEIGUNG (fuss-liest-grund, koerper `leibSteigung`; `steigung` tan längs des Schritts) reicht der Doppelschritt
+    // höchstens bis zu ihrem Deckel: der Winkel des Beins (maxWinkel der Zeile) fällt, bis der Fuß je Schritt eine Stufe hebt.
+    _gaitGesetz(rig, speed, L = this._gaitBeinMass(rig).L, steigung = 0) {
         const core = typeof window !== "undefined" && window.__tetrapodaCore;
         if (!core || typeof core.gangSchritt !== "function")
             return AnazhRealm._kernPflichtBruch("tetrapoda:gangSchritt");
         const v = Number.isFinite(speed) && speed > 0 ? speed : 0;
-        return core.gangSchritt(v, L, this._gangZeile(true));
+        let Z = this._gangZeile(true);
+        if (steigung && L > 0) {
+            const H = AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]);
+            const deckel = AnazhRealm._leibTakt().leibSteigung(H, steigung, v || 1).schritt;
+            const mW = Math.atan((deckel * Z.tastgrad) / (2 * L));
+            if (mW < Z.maxWinkel)
+                Z = Object.assign(this._gangZeileSteig || (this._gangZeileSteig = {}), Z, { maxWinkel: mW });
+        }
+        return core.gangSchritt(v, L, Z);
     }
     // DIE ZEILE DES GANGS IN DER WELT (K07): das Gang-Gesetz misst Froude-Zahl und Becken an der Schwere der Welt
     // (`state.gravity`, die DSL setzt sie) — Mensch und Tier lesen sie aus EINER Zeile, Schritt und Becken aus derselben
@@ -559,9 +569,14 @@ class AnazhRealm_koerper_leib {
         const rig = mesh && mesh.userData && mesh.userData.rig;
         if (!rig || !halter) return null;
         const emoF = opts && Number.isFinite(opts.emoFaktor) && opts.emoFaktor > 0 ? opts.emoFaktor : 1;
-        const g = this._gaitTakt(this._gaitBeinMass(rig).L, halter, speed, dt, emoF);
+        const g = this._gaitTakt(this._gaitBeinMass(rig).L, halter, speed, dt, emoF, opts && opts.steigung);
         const d = Number.isFinite(dt) && dt > 0 ? dt : 0;
         g.ik = opts && opts.ik ? this._gaitIKPrep(mesh, opts.soleY, opts.yaw, d) : null;
+        // der Doppelschritt des Gesetzes (m je Zyklus: der Stand trägt S, der Tastgrad seinen Teil des Zyklus): so weit vor seinem
+        // letzten Stand setzt der Fuß wieder auf — der Schwung sucht dort seinen Auftritt (`_gaitLegIK`)
+        if (g.ik) g.ik.schritt = g.tast > 0 ? g.S / g.tast : 0;
+        // die Steigung unter dem Schritt (koerper `leibSteigung`): auf ihr sinkt das Becken bis zu einer Stufe (`_gaitApplyFussIK`)
+        if (g.ik) g.ik.steigung = (opts && opts.steigung) || 0;
         // der Stoß-Zustand des Leibs (physik.K5) reist mit dem Gang des lokalen Avatars zur Pose (der Ausfallschritt)
         g.stossLeib = opts && opts.ik ? this.state : null;
         // ohne Boden-IK (Luft, Peer) löst jeder Fuß-Lock — die Landung friert die Stand-Füße frisch ein
@@ -573,10 +588,10 @@ class AnazhRealm_koerper_leib {
     // `_gaitBeinMass`) — wer ohne Leib geht (der Bewohner jenseits des Nah-Rings: sein Stand trägt die Zahl seines Baus,
     // `_bewohnerBeinMass`), geht ihn hier mit derselben Phase und demselben Gewicht; `_gaitTick` ist dieser Takt am Rig, dazu
     // die Fuß-IK des lokalen Avatars. Kein Fuß-Ziel am Boden, kein Stoß (`ik`, `stossLeib` null).
-    _gaitTakt(L, halter, speed, dt, emoF = 1) {
+    _gaitTakt(L, halter, speed, dt, emoF = 1, steigung = 0) {
         const v = Number.isFinite(speed) && speed > 0 ? speed : 0;
         const d = Number.isFinite(dt) && dt > 0 ? dt : 0;
-        const gs = this._gaitGesetz(null, v, L);
+        const gs = this._gaitGesetz(null, v, L, steigung);
         // DER EINE GANG-TAKT (koerper-core `leibGangTakt`, w4-koerper-park — dasselbe Gesetz im Körper-Studio): DER STEHENDE FUSS
         // HÄLT (K07, tetrapoda `gangPhaseHaelt`: ändert sich die Zeile, behält das stehende Bein sein Fuß-Ziel; aus dem Stand
         // setzt das nähere Bein in der Mitte seines Stands ein), die Phase wächst mit dem Takt, das Blend-Gewicht glättet, die
@@ -787,7 +802,12 @@ class AnazhRealm_koerper_leib {
         let drop = Math.min(dyL, dyR, 0) * 0.9;
         const reach = ik.l1 + ik.l2;
         if (drop < -0.3 * reach) drop = -0.3 * reach;
-        if (drop < -0.005 && r.hips && ik.wpl > 0) r.hips.position.y += drop / ik.wpl;
+        // die Senke des Beckens in Metern (der Schwung-Fuß liest sie: seine Pose sank mit)
+        ik.senke = 0;
+        if (drop < -0.005 && r.hips && ik.wpl > 0) {
+            r.hips.position.y += drop / ik.wpl;
+            ik.senke = drop;
+        }
         if (r.spine) r.spine.rotation.x += ik.hang * 0.35;
         // der Stand jedes Beins kommt aus dem Gang-Gesetz (die Pose dieses Takts, _animateHumanoidRig)
         const st = r._gangStand;
@@ -800,12 +820,23 @@ class AnazhRealm_koerper_leib {
         // gelockter Fuß jenseits von R (der Boden der Probe weicht vom Ruhe-Maß der Pose ab — die Verhältnisse 0,9951 bis
         // 0,9969 lösten 3 von 213 Stand-Takten beim Gehen), senkt sich das Becken um den Fehlbetrag; der Lock löst nur, wo
         // auch das nicht reicht (vorn/hinten jenseits von R oder mehr als 0,05 Bein — Stufe, Kante: dort tritt der Fuß).
+        // AUF DER STEIGUNG (fuss-liest-grund, koerper `leibSteigung`: über steigFrei) sinkt es bis zu einer Stufe (hubSchritt): die
+        // Kapsel steht auf der Treppe eine Stufe vor dem Leib, der hintere Fuß eine bis zwei Stufen unter ihr — vorher löste
+        // dort jeder Lock, setzte im nächsten Bild neu und glitt mit der Pose (Mess-Treppe 15,8 cm)
         if (w >= 0.35 && r.hips && ik.wpl > 0) {
             let mehr = Math.max(
                 standL && ik.lockL.on ? this._gaitLockBedarf(r.legL, ik, ik.probeL, ik.lockL, rolle[0]) : 0,
                 standR && ik.lockR.on ? this._gaitLockBedarf(r.legR, ik, ik.probeR, ik.lockR, rolle[1]) : 0
             );
-            if (mehr > 0 && mehr <= 0.05 * (ik.l1 + ik.l2)) r.hips.position.y -= mehr / ik.wpl;
+            const H = AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]);
+            const tief =
+                Math.abs(ik.steigung || 0) > H.steigFrei
+                    ? Math.max(0.05 * (ik.l1 + ik.l2), H.hubSchritt)
+                    : 0.05 * (ik.l1 + ik.l2);
+            if (mehr > 0 && mehr <= tief) {
+                r.hips.position.y -= mehr / ik.wpl;
+                ik.senke -= mehr;
+            }
         }
         this._gaitLegIK(r.legL, ik, ik.probeL, ik.lockL, ik.footL, standL, w, rolle[0]);
         this._gaitLegIK(r.legR, ik, ik.probeR, ik.lockR, ik.footR, standR, w, rolle[1]);
@@ -850,7 +881,70 @@ class AnazhRealm_koerper_leib {
         const stance = (geht ? imStand : true) && !leg.hip.userData.stossSchwung; // Idle: beide Füße geplantet
         if (!stance) {
             lock.on = false;
-            return; // Schwung-Bein: die Pose bleibt (nur die Stance ankert)
+            // DER SCHWUNG LIEST DEN BODEN (fuss-liest-grund): die Pose hebt den Fuß über der Ebene der Kapsel-Sohle (`soleY`, mit
+            // dem Becken gesenkt, `ik.senke`) — der Schwung trägt denselben Hub über dem Boden unter ihm: dem höchsten unter den
+            // Stellen der Sohle, und davor und dahinter dem Boden bis 0,2 m weit, um seinen Abstand gesenkt (ein 45°-Kegel: die
+            // Stufe hebt den Fuß, bevor die Spitze an ihre Kante kommt; treppab sinkt er hinter der Ferse). Die Zwei-Knochen-Kette
+            // setzt den Knöchel um den Unterschied lotrecht, längs bleibt der Weg der Pose, der Fuß behält seine Neigung. Bis hier
+            // blieb die Pose: am 10°-Hang tauchte der Schwung-Fuß 4,8 cm in die Falllinie, auf der Mess-Treppe 30 cm in die Stufe.
+            // DER AUFTRITT IM SCHWUNG: wo er aufsetzen wird (sein letzter Stand + der Doppelschritt des Gesetzes, `ik.schritt`), sucht
+            // der Fuß EINMAL je Schwung seine Stelle (`_gaitSetzen`: die Sohle trägt, die Spitze frei vor der Setzstufe); mit dem Weg
+            // des Schwungs (`rolle.schwung`) geht sein Versatz gegen die Pose stetig von dem des Locks (`lock.ab`) zu dem des
+            // Auftritts (`lock.weg`) — er hebt ab, wo der Lock ihn hielt, und setzt auf, wo der nächste ihn hält. Bis hier rückte der
+            // Lock beim Aufsetzen um bis zu 12 cm, und beim Abheben sprang der Fuß zurück in die Pose (Mess-Treppe 9 cm, Balken 8 cm).
+            if (geht && !leg.hip.userData.stossSchwung) {
+                const u = ik.sohle || AnazhRealm.SOHLE_PUNKT;
+                const [s, c] = [Math.sin(ik.yaw), Math.cos(ik.yaw)];
+                const S = ik.schritt;
+                const p = rolle && rolle.schwung >= 0 ? rolle.schwung : -1;
+                let vers = 0;
+                if (S > 0 && p >= 0 && Math.hypot(av.x - lock.x, av.z - lock.z) < 2 * S) {
+                    if (lock.weg == null) {
+                        const A = this._gaitAuftritt || (this._gaitAuftritt = { lock: { x: 0, z: 0 }, probe: {} });
+                        [A.lock.x, A.lock.z] = [lock.x + S * s, lock.z + S * c];
+                        this._gaitSetzen(ik, A.probe, A.lock);
+                        lock.weg = (A.lock.x - lock.x) * s + (A.lock.z - lock.z) * c - S;
+                        lock.kippAuf = A.probe.kipp || 0;
+                    }
+                    vers = (lock.ab || 0) * (1 - p) + lock.weg * p;
+                }
+                // die Neigung der Sohle ebenso: von der des Stands (`lock.kipp`) zu der des Auftritts — am Hang hob die Spitze
+                // sonst um die Neigung × Fußlänge zurück in die Waagrechte der Pose (10°-Hang: 2,9 cm)
+                const kippS = p >= 0 && lock.kippAuf != null ? (lock.kipp || 0) * (1 - p) + lock.kippAuf * p : 0;
+                const [fx, fz] = [av.x + vers * s, av.z + vers * c];
+                const boden = (d) => this._gaitBodenY(fx + d * s, fz + d * c);
+                let g = -Infinity;
+                for (const d of u) g = Math.max(g, boden(d));
+                for (const a of [0.05, 0.1, 0.15, 0.2])
+                    g = Math.max(g, boden(u[u.length - 1] + a) - a, boden(u[0] - a) - a);
+                let d = g - (ik.soleY + (ik.senke || 0));
+                // lotrecht ebenso: er hebt ab, wo der Lock ihn hielt (`lock.abY`, die Höhe des Knöchels gegen die Pose), der Rest gegen
+                // den Boden-Hub des ersten Schwung-Takts klingt mit dem Weg des Schwungs aus
+                if (p >= 0 && lock.abY != null && Number.isFinite(d)) {
+                    if (lock.d0 == null) lock.d0 = d;
+                    d += (lock.abY - lock.d0) * (1 - p) ** 3;
+                }
+                // AUF DER STEIGUNG (koerper `leibSteigung`, über steigFrei) trägt der Schwung die Zehe frei: um die halbe Stufe
+                // (hubSchritt / 2) über dem Grund, an Abheben und Auftritt 0 — bei der Kadenz der Treppe hob die Pose die Zehe
+                // sonst sechs Takte lang keinen Zentimeter, sie schleifte 9 cm über die Stufe
+                const H = AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]);
+                if (p >= 0 && Math.abs(ik.steigung || 0) > H.steigFrei) d += (H.hubSchritt / 2) * Math.sin(Math.PI * p);
+                leg.ankle.rotation.x -= kippS;
+                if (Number.isFinite(d) && (Math.abs(d) >= 0.005 || Math.abs(vers) >= 0.005)) {
+                    const hv = this._gaitTmpV2 || (this._gaitTmpV2 = new THREE.Vector3());
+                    leg.hip.getWorldPosition(hv);
+                    const vor = ((fx - hv.x) * s + (fz - hv.z) * c) * (ik.wpl / (ik.wz || ik.wpl));
+                    const unten = (hv.y - av.y - d) / Math.cos(leg.hip.userData.stossRoll || 0);
+                    if (unten > 0.05) {
+                        const neig = leg.ankle.rotation.x + leg.hip.rotation.x + leg.knee.rotation.x;
+                        const res = this._twoBoneIK(ik.l1, ik.l2, vor, unten);
+                        leg.hip.rotation.x = res.hip;
+                        leg.knee.rotation.x = res.knee;
+                        leg.ankle.rotation.x = neig - res.hip - res.knee;
+                    }
+                }
+            }
+            return;
         }
         let tx = foot.x;
         let tz = foot.z;
@@ -858,11 +952,14 @@ class AnazhRealm_koerper_leib {
             if (!lock.on) {
                 lock.on = true; // Stance-Beginn: den Fuß-Weltpunkt EINMAL einfrieren, wo seine Sohle am meisten trägt
                 // der Lock hält den Knöchel des FLACHEN Fußes (nerv-schwung): setzt der Fuß rollend auf (Ferse oder Vorfuß), steht
-                // sein Knöchel um die Rolle versetzt — sie zieht ab, die Rolle jedes Takts legt sie wieder an (sonst zählte sie doppelt)
+                // sein Knöchel um die Rolle versetzt — sie zieht ab, die Rolle jedes Takts legt sie wieder an (sonst zählte sie doppelt);
+                // der Schwung trug ihn zu seinem Auftritt (`lock.weg`) — dort, nicht in der Pose, setzt er auf
                 const r0 =
-                    geht && rolle && rolle.roll
+                    (geht && rolle && rolle.roll
                         ? this._gaitRollung(rolle, probe, ik)[0] * ((ik.wz || ik.wpl) / ik.wpl)
-                        : 0;
+                        : 0) - (lock.weg || 0);
+                lock.weg = lock.d0 = lock.kippAuf = null; // der nächste Schwung sucht seinen Auftritt neu
+                lock.frisch = true;
                 lock.x = foot.x - r0 * Math.sin(ik.yaw);
                 lock.z = foot.z - r0 * Math.cos(ik.yaw);
                 this._gaitSetzen(ik, probe, lock);
@@ -889,17 +986,39 @@ class AnazhRealm_koerper_leib {
             lock.on = false;
             return; // Boden über der Hüfte (Klippe/ungebaut) — NaN-Wand
         }
-        if (geht && Math.hypot(vor, unten) > AnazhRealm._gaitReich(ik.l1 + ik.l2) + 1e-6) {
+        // der Lock dieses Takts hält einen Takt jenseits von R: das Becken sinkt erst im nächsten um seinen Fehlbetrag
+        // (`_gaitLockBedarf`), bis dahin streckt die Kette das Bein zu ihm
+        if (geht && Math.hypot(vor, unten) > AnazhRealm._gaitReich(ik.l1 + ik.l2) + 1e-6 && !lock.frisch) {
             lock.on = false;
             return; // das Ziel entläuft der Reichweite → Lock löst, die Pose übernimmt
         }
+        lock.frisch = false;
+        // der Versatz des Locks gegen die Pose (m längs und lotrecht am Knöchel): von ihm hebt der nächste Schwung ab
+        if (geht) {
+            lock.ab =
+                (vor -
+                    ((foot.x - hv.x) * Math.sin(ik.yaw) + (foot.z - hv.z) * Math.cos(ik.yaw)) *
+                        (ik.wpl / (ik.wz || ik.wpl))) *
+                ((ik.wz || ik.wpl) / ik.wpl);
+            lock.abY = probe.g + ik.soleH + ry - av.y;
+            lock.kipp = probe.kipp || 0;
+        }
         const res = this._twoBoneIK(ik.l1, ik.l2, vor, unten);
-        leg.hip.rotation.x = res.hip;
+        leg.hip.rotation.x = res.hip - this._gaitRahmen(leg, ik);
         leg.knee.rotation.x = res.knee;
         // die Sohle liegt dem Boden an (der rollende Fuß kippt um seine Rolle darüber hinaus)
         const kipp = this._gaitSohlenKipp(tx, tz, ik.yaw, probe.g);
         leg.ankle.rotation.x = (rollt ? rolle.roll : 0) - (res.hip + res.knee) - probe.kipp;
         leg.ankle.rotation.z = kipp.quer - (leg.hip.userData.stossRoll || 0);
+    }
+    // DER RAHMEN DER KETTE (fuss-liest-grund): die Kette rechnet gegen die Lotrechte, die Hüfte dreht im Rahmen ihres
+    // Elternknochens — die Neigung dieses Rahmens um die Achse quer zum Blick (rad, vorn hinab positiv). Neigt die Pose das
+    // Becken (die Lehne des Gangs, auf der Mess-Treppe bis −1,1°), zieht `_gaitLegIK` sie ab; vorher drehte sie das gelockte
+    // Bein mit, der Fuß kroch im Stand vor (Mess-Treppe 1,9 cm, 0,67 cm je 0,52°; gate:koerper-stand K8 „gleiten stufe“).
+    _gaitRahmen(leg, ik) {
+        const qp = leg.hip.parent.getWorldQuaternion(this._gaitTmpQ || (this._gaitTmpQ = new THREE.Quaternion()));
+        const fv = (this._gaitTmpV3 || (this._gaitTmpV3 = new THREE.Vector3())).set(0, 0, 1).applyQuaternion(qp);
+        return Math.atan2(-fv.y, fv.x * Math.sin(ik.yaw) + fv.z * Math.cos(ik.yaw));
     }
     // DIE SOHLE AM HANG (Gelände H5): die Neigung des gezeichneten Bodens unter dem Fuß (der Stand-Leser je ± 0,12 m längs und
     // quer zur Blick-Achse), bis ± 0,45 rad (das Sprunggelenk) — die Sohle kippt mit. Bis H5 blieb sie waagrecht: am 25°-Hang

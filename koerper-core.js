@@ -711,7 +711,17 @@
                         // => onSteepSlope: Input-Drossel + Hangabtrieb), malus =
                         // die Bewegungs-Drossel am Steilhang. Byte-gleich zu den
                         // historischen Stamm-Literalen (0.5 / 0.2).
-                        hang: { maxSlopeY: 0.5, malus: 0.2 },
+                        // DIE STEIGUNG DES GANGS (fuss-liest-grund, additiv) — Hang
+                        // und Treppe EIN Gesetz (`leibSteigung`): bis steigFrei
+                        // (tan, 10 %) bleibt das Tempo (Leroux, Fung & Barbeau
+                        // 2002, 0/5/10 %); je Schritt hebt der Fuß hoechstens
+                        // hubSchritt m (die Stufe der Welt, ein Auftritt je
+                        // Schritt) bei der Kadenz der Treppe (Schritte/s, Riener,
+                        // Rabuffetti & Frigo 2002, 30 Grad: Doppelschritt hinauf
+                        // 1,40-1,47 s, hinab 1,19-1,22 s) -- bei steigTreppe
+                        // (tan 30 Grad) ganz; steigBlick m voraus liest der
+                        // Schritt den Grund, steigGlatt s glaettet ihn.
+                        hang: { maxSlopeY: 0.5, malus: 0.2, steigFrei: 0.1, steigTreppe: 0.577, hubSchritt: 0.17, kadenzAuf: 1.4, kadenzAb: 1.66, steigBlick: 0.6, steigGlatt: 0.25 },
                         // LANDUNGS-GEFUEHL (Zensus-Rest V18.488, rein additiv):
                         // der Aufprall-Dip des Auges (View-Punch, Koerper faengt
                         // den Stoss) + die Kamera-Koerper-Glaettung -- dipProV m
@@ -7336,7 +7346,7 @@
     var LEIB_PFLICHT = {
         luft: ["kAcc", "kAccLuft", "kBrake", "kBrakeLuft"],
         sprung: ["coyoteSec", "bufferSec"],
-        hang: ["maxSlopeY", "malus"],
+        hang: ["maxSlopeY", "malus", "steigFrei", "steigTreppe", "hubSchritt", "kadenzAuf", "kadenzAb", "steigBlick", "steigGlatt"],
         parkour: ["doppelspruenge", "doppelsprungMul", "wandsprungMul", "wandAbstoss", "kletterV", "kletterAusdauerProS", "kontaktFrischeSec", "slideTempoMul", "slideDauerSec", "slideMinTempo"],
         slidePose: ["lehne", "beinVor", "knieKnick", "armStuetz", "armFrei", "kopf"],
         gang: ["schrittBasis", "schrittFroude", "tastgrad", "tastgradLauf", "laufFroude", "maxWinkel", "hub", "hubLauf", "hubForm", "beckenHub", "rollWinkel", "fersenAb", "ballen", "knoechel", "ferse", "fersenWinkel", "fersenFlach", "schwungTangente", "schwungWechsel", "schwungSpitze"],
@@ -7863,9 +7873,15 @@
     // Fuß (der Ort des Stoß-Zustands gegen den Schwerpunkt, quer zur Gier `gier`), die Sohle bleibt waagrecht; im Schwung hebt
     // das Knie den Fuß (hip.userData.stossSchwung: die Fuß-IK des Wirts lässt ihn los; stossRoll: der Roll). M = die Bein-Maße
     // (L, Meter).
+    // DIE SPUR DES BALKENS (fuss-liest-grund) ist derselbe Roll: im Verb `balancieren` rollt jedes Bein um seinen Hüft-Abstand zur
+    // Linie (asin(−quer / L) — Tandem-Gang, die Spur 0), die Sohle rollt wie im Gang (mit flacher Sohle entlief der Lock am Ende
+    // des Stands der Reichweite) — VOR der Fuß-IK, die so den Boden unter dem Fuß auf der Linie liest. Bis hier rollte `leibLuftPose`
+    // die Hüften NACH der IK: sie las das Gelände neben dem 0,10-m-Balken (0,37 m tiefer), senkte das Becken, löste jeden Lock —
+    // die Sohle stand 24 cm unter dem Holz.
     function leibStossPose(r, L, gier, M) {
         if (!r || !r.legL || !r.legR) return;
         var B = L && L.leibStoss,
+            bal = !B && L && L.leibVerb && L.leibVerb.verb === "balancieren",
             legs = [r.legL, r.legR],
             qx = Math.cos(gier),
             qz = -Math.sin(gier);
@@ -7878,6 +7894,8 @@
                     q = (f[0] - B.e[0]) * qx + (f[1] - B.e[1]) * qz;
                 th = Math.asin(Math.max(-0.6, Math.min(0.6, q / M.L)));
                 schwung = f[2];
+            } else if (bal && M && M.L > 0 && leg.hip) {
+                th = Math.asin(Math.max(-0.6, Math.min(0.6, (-leg.hip.position.x * (M.wz || M.wpl)) / M.L)));
             }
             if (!leg.hip) continue;
             // am Gelenk (userData), nie am Bein-Objekt: dessen Schlüssel sind die Gelenke, die der Wirt je Pose zurücksetzt
@@ -9030,6 +9048,20 @@
         if (!Number.isFinite(hip) || !Number.isFinite(knie)) return { hip: 0, knee: 0, reached: false };
         return { hip: hip, knee: knie, reached: true };
     }
+    // DIE STEIGUNG DES GANGS (fuss-liest-grund): Hang und Treppe EIN Gesetz — H = fx.bewegung.hang, g = die Steigung längs des
+    // Schritts (tan, + hinauf), v = das Tempo der Absicht (m/s). Der Doppelschritt reicht höchstens 2·hubSchritt/|g| (je Schritt
+    // hebt der Fuß um eine Stufe), das Tempo höchstens Kadenz × Schritt (hinauf kadenzAuf, hinab kadenzAb) — über steigFrei
+    // stetig zu, bei steigTreppe ganz. Zurück: { tempo (Faktor ≤ 1), schritt (m, Deckel des Doppelschritts; Infinity: frei) }.
+    // Bis hier ging der Leib die 30°-Treppe im Tempo der Wiese (1,58 m/s, 2,5 Stufen je Schritt): die Füße hingen eine bis
+    // zwei Stufen unter der Hüfte, der Lock löste, der Fuß glitt 10 cm (karte2.mensch.sport.koerper#2).
+    function leibSteigung(H, g, v) {
+        var a = Math.abs(g);
+        if (!(a > H.steigFrei) || !(v > 0)) return { tempo: 1, schritt: Infinity };
+        var schritt = (2 * H.hubSchritt) / a;
+        var vMax = ((g > 0 ? H.kadenzAuf : H.kadenzAb) * schritt) / 2;
+        var t = Math.min(1, (a - H.steigFrei) / (H.steigTreppe - H.steigFrei));
+        return { tempo: (v + (Math.min(v, vMax) - v) * t) / v, schritt: schritt };
+    }
     // DER GANG-TAKT je Bild: die Phase am Halter (der stehende Fuß hält, tetrapoda gangPhaseHaelt), das Blend-Gewicht, die
     // Amplitude mit dem Tempo. TC = der tetrapoda-Kern, gs = gangSchritt(v, L, Zeile), L = die Beinlänge (m), vRef = das
     // Bezugs-Tempo der Amplitude (das Geh-Tempo der Seele).
@@ -9414,16 +9446,16 @@
             // Becken trägt um R − d tiefer, Novacheck 1998: nie durchgestreckt). Becken, Versatz und Fußweg rechnen an ihr, die Rolle des
             // Fußes an R (Rf: derselbe Fuß).
             var Rtd = Math.min(R, Math.sqrt(MM.l1 * MM.l1 + MM.l2 * MM.l2 + 2 * MM.l1 * MM.l2 * Math.cos(SW.knieAufsatz)));
-            var FL = TC.gangFuss(walkPhase, Sl, tast, Zf, Rtd, R);
-            var FR = TC.gangFuss(walkPhase + Math.PI, Sl, tast, Zf, Rtd, R);
-            var roll = r._gangRoll || (r._gangRoll = [null, null]);
             // die Rolle des gebauten Fußes (`leibSohle`: Spitze, Sohle, Ferse um den Knöchel) — die Ferse, um die er beim Aufsetzen rollt,
             // ist die Ferse seiner Sohle (nerv-schwung: das Gesetz rollte um 5,8 cm, die Sohle reicht 9,2 cm hinter den Knöchel — die
             // Ferse stand 1,2 cm im Boden)
             var Zs = r._sohle && (r._sohleZ || (r._sohleZ = Object.assign({}, Zf, { ballen: r._sohle[0] / R, knoechel: r._sohle[1] / R }, r._sohle[2] < 0 ? { ferse: -r._sohle[2] / R } : null)));
             if (Zs) Zs.aufsatzWinkel = SW.aufsatz;
-            roll[0] = Zs ? TC.gangFuss(walkPhase, Sl, tast, Zs, Rtd, R) : FL;
-            roll[1] = Zs ? TC.gangFuss(walkPhase + Math.PI, Sl, tast, Zs, Rtd, R) : FR;
+            var FL = TC.gangFuss(walkPhase, Sl, tast, Zs || Zf, Rtd, R);
+            var FR = TC.gangFuss(walkPhase + Math.PI, Sl, tast, Zs || Zf, Rtd, R);
+            var roll = r._gangRoll || (r._gangRoll = [null, null]);
+            roll[0] = FL;
+            roll[1] = FR;
             // das Becken trägt den gebauten Fuß (Zs), sonst den der Zeile
             var tief = L12 - Rtd + TC.gangBecken(walkPhase, Sl, tast, Rtd, gait.omega, Zs || Zf, MM.wpl, R);
             r._gangSenke = tief;
@@ -9434,6 +9466,9 @@
             r._gangStand = r._gangStand || [false, false];
             r._gangStand[0] = uu(walkPhase) >= auf;
             r._gangStand[1] = uu(walkPhase + Math.PI) >= auf;
+            // der Weg des Schwungs (0 … 1, im Stand −1): an ihm trägt die Fuß-IK des Wirts den Fuß vom Lock zu seinem Auftritt
+            FL.schwung = r._gangStand[0] ? -1 : uu(walkPhase) / auf;
+            FR.schwung = r._gangStand[1] ? -1 : uu(walkPhase + Math.PI) / auf;
             // DAS KNIE IM SCHWUNG (nerv-schwung): die Beugung folgt im Schwung dem Bogen κ(t) = knie · sin(π · t^γ) mit der Spitze bei
             // schwungSpitze des Schwungs (t^γ = ½) — die Kette reicht dann d(κ) = √(l1² + l2² + 2·l1·l2·cos κ), der Fuß steht höchstens
             // √(d² − dz²) unter der Hüfte: die Ferse kommt zum Gesäß, statt knapp über den Boden zu streichen. Wo der Weg des Fußes das
@@ -10466,15 +10501,7 @@
                 if (b) b.rotation[ax] = v;
             };
         if (L.leibVerb && L.leibVerb.verb === "balancieren") {
-            // der Tandem-Gang auf dem Balken: die Füße auf der Linie (die Hüfte adduziert), die Arme abgespreizt, der Fuß FLACH auf
-            // dem Holz (kein Abrollen über die Spitze — wer balanciert, setzt die Sohle ganz auf und hebt sie ganz ab)
-            var hb = 0.15;
-            r.legL.hip.rotation.z += -hb;
-            r.legR.hip.rotation.z += hb;
-            r.legL.ankle.rotation.x = -(r.legL.hip.rotation.x + r.legL.knee.rotation.x);
-            r.legR.ankle.rotation.x = -(r.legR.hip.rotation.x + r.legR.knee.rotation.x);
-            r.legL.ankle.rotation.z = hb;
-            r.legR.ankle.rotation.z = -hb;
+            // der Tandem-Gang auf dem Balken: die Arme abgespreizt; die Füße auf der Linie setzt die Spur vor der Fuß-IK (`leibStossPose`)
             // abgespreizt heißt nach AUSSEN (links +z, rechts −z, wie MOTION_RIG_MAP und die Schwimm-Pose): bis w28-mensch-samen
             // trug die Zeile das Vorzeichen verkehrt — beide Arme 72° nach innen durch den Rumpf (L0: 294–531 Arm-Ecken in ihm);
             // VERB_SOLL maß den Winkel ohne Vorzeichen und blieb grün
@@ -12116,6 +12143,7 @@
         leibVec: leibVec,
         leibZustand: leibZustand,
         leibRichtung: leibRichtung,
+        leibSteigung: leibSteigung,
         leibSprungKraft: leibSprungKraft,
         leibAbdruck: leibAbdruck,
         leibSprungKlemme: leibSprungKlemme,

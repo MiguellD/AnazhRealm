@@ -1,0 +1,227 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-mensch-sport.js b/meisterkarte-quelle/punkte/stationen/k2-mensch-sport.js
+index ba7e1abfe..14e876f13 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-mensch-sport.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-mensch-sport.js
+@@ -257,32 +257,52 @@ const SPIEL = async (r, T, arg, HILF) => {
+ };
+ 
+ // DER LEIB IM TAKT (sport.koerper S1 + S2): der Spieler an der Mess-Wiese im Takt des Spiels (60 Hz, die Verb-Tafel `gehalten`):
+-// gehen und laufen je 150 Takte (das Tempo über die letzte Sekunde), springen aus dem Stand (der Hub der Lage über 84 Takte), dann
+-// den steilsten Hang im Umkreis von 12 m hinauf (die Richtung probiert die Gier aus: der Weg der Probe nennt seine Neigung). DER FUSS
+-// IM STAND: je Fuß seine Drehpunkte, Ferse und Ballen (die Sohle der Fuß-IK, `rig._sohle` aus koerper `leibSohle`, im Rahmen des
+-// Knöchels), je Punkt die Takte, in denen er höchstens 1 cm über seinem tiefsten Stand über dem Gelände steht (er trägt); je solcher
+-// Phase (≥ 3 Takte) der größte waagrechte Weg ab ihrem Beginn — das Gleiten. Bis nerv-bewegung maß die Probe den KNÖCHEL: rollt der
+-// Fuß über die Ferse ab (Perry 1992, der erste Wiegepunkt), schwenkt der Knöchel um die ruhende Ferse nach vorn — die Probe las
+-// die Drehung als Gleiten (1,89 cm an a69cac3 bei 1,15 m/s, die Ferse selbst steht).
++// gehen und laufen je 150 Takte (das Tempo über die letzte Sekunde), springen aus dem Stand (der Hub der Lage über 84 Takte). DIE
++// UNTERGRÜNDE (S2, „Stufe · Hang · Gerät“): die Mess-Treppe (zehn Stufen à 0,17 m, Auftritt 0,3 m — die Treppe von gate:koerper-stand
++// K8) 160 Takte hinauf und 120 hinab; der Schwebebalken des Spielplatzes (fachwerk WERKE, sein Angebot aus `_geraetAngebotWelt`) 150
++// Takte im Verb `balancieren`; der nächste trockene Hang 10–14° um die Wiese (die EINE Orts-Suche `__weltOrt`, wie K8) 150 Takte die
++// Falllinie hinauf — danach zurück an die Wiese (VERBEN stellt seine Geräte um die Lage des Leibs). DER FUSS IM STAND: je Fuß seine
++// Drehpunkte, Ferse und Ballen (die Sohle der Fuß-IK, `rig._sohle` aus koerper `leibSohle`, im Rahmen des Knöchels), je Punkt seine
++// Höhe über dem Boden, den der Fuß liest (`_gaitBodenY`: die Auflage eines Baus — Stufe, Balken —, sonst der Stand-Leser der Sicht;
++// das Gelände des Gesetzes trägt keinen Fuß auf der Treppe); eine Phase sind ≥ 3 Takte binnen 1 cm über diesem Boden (er trägt), auf
++// dem Untergrund des Laufs (die Treppe: ein Boden ≥ 0,1 m über dem Gelände; der Balken: das Verb `balancieren`) — je Phase der größte
++// waagrechte Weg ab ihrem Beginn: das Gleiten. Ein Untergrund zählt mit ≥ 3 Phasen (der Hang dazu ≥ 8° über den Lauf). Bis
++// fuss-liest-grund maß die Probe die Höhe über dem Gelände des Gesetzes (min + 1 cm je Lauf) und nur den steilsten Hang im Umkreis von
++// 12 m (3,4° an der Wiese): Stufe und Gerät stellte sie nicht (Umfang 0). Bis nerv-bewegung maß sie den KNÖCHEL: rollt der Fuß über
++// die Ferse ab (Perry 1992, der erste Wiegepunkt), schwenkt der Knöchel um die ruhende Ferse nach vorn — die Probe las die Drehung als
++// Gleiten (1,89 cm an a69cac3 bei 1,15 m/s, die Ferse selbst steht).
+ const LEIB = async (r, T, arg) => {
+     const st = r.state;
+     const pm = st.playerMesh;
+     if (!pm || typeof r._gameLoopTick !== "function") return { fehlt: "kein Spieler-Leib" };
++    if (typeof window.__weltOrt !== "function" || typeof window.__weltStehtNach !== "function") return { fehlt: "keine Orts-Suche der Welt (welt-orte `__weltOrt`, welt-boot `__weltStehtNach`)" };
+     const halt = st.verbTafel.gehalten;
+     const rig = pm.userData && pm.userData.rig;
+     const fuesse = rig ? [rig.legL && rig.legL.ankle, rig.legR && rig.legR.ankle].filter(Boolean) : [];
+     const punkte = []; // je Fuß [Knöchel, Ferse], [Knöchel, Ballen] — gesetzt, sobald die Fuß-IK ihre Sohle vermessen hat
+     let uhr = performance.now();
+-    const takt = () => r._gameLoopTick((uhr += 1000 / 60));
++    let takte = 0;
++    const takt = () => (takte++, r._gameLoopTick((uhr += 1000 / 60)));
+     const v = new T.Vector3();
+     const boden = (x, z) => r.getTerrainHeightAt(x, z);
++    const grund = (x, z) => r._gaitBodenY(x, z); // der EINE Leser der Fuß-IK (`_gaitBodenY` → `_fussBoden`)
++    const F0 = AnazhRealm.PLAYER_FOOT_OFFSET;
++    const setz = (x, y, z, gier) => {
++        st.leibVerb = null;
++        pm.position.set(x, y + F0, z);
++        if (st._fixedSimPos) st._fixedSimPos.copy(pm.position);
++        [st._fixedPrevPos, st._fieldVy, st.isInAir, st._fieldWasGrounded] = [null, 0, false, false];
++        st.playerVel.setValue(0, 0, 0);
++        st.yaw = gier;
++    };
+     const ruhe = (n) => {
+         halt.vor = false;
+         halt.sprint = false;
+         halt.jump = false;
+         for (let i = 0; i < n; i++) takt();
+     };
+-    const lauf = (sprint, n) => {
++    // ein Lauf: je Takt die Lage und je Drehpunkt [x, Höhe über seinem Boden, z, zählt] — `zaehlt(x, z)` nennt den Untergrund
++    const lauf = (sprint, n, zaehlt = () => true) => {
+         const spur = [];
+         const F = punkte.map(() => []);
+         halt.vor = true;
+@@ -293,7 +313,7 @@ const LEIB = async (r, T, arg) => {
+                 spur.push([pm.position.x, pm.position.y, pm.position.z]);
+                 punkte.forEach(([b, q], k) => {
+                     b.localToWorld(v.copy(q));
+-                    F[k].push([v.x, v.y - boden(v.x, v.z), v.z]);
++                    F[k].push([v.x, v.y - grund(v.x, v.z), v.z, zaehlt(v.x, v.z)]);
+                 });
+             }
+         } finally {
+@@ -305,16 +325,17 @@ const LEIB = async (r, T, arg) => {
+         const e = spur[spur.length - 1];
+         const weg = Math.hypot(e[0] - a[0], e[2] - a[2]);
+         const gleiten = [];
++        let tief = Infinity;
+         for (const S of F) {
+-            const s2 = S.slice(30);
++            const s2 = S.slice(30).filter((x) => Number.isFinite(x[1]));
+             if (s2.length < 10) continue;
+-            const min = Math.min(...s2.map((x) => x[1]));
++            tief = Math.min(tief, ...s2.map((x) => x[1]));
+             let start = -1;
+             for (let t = 0; t <= s2.length; t++) {
+-                const an = t < s2.length && s2[t][1] <= min + 0.01;
++                const an = t < s2.length && Math.abs(s2[t][1]) <= 0.01;
+                 if (an && start < 0) start = t;
+                 else if (!an && start >= 0) {
+-                    if (t - start >= 3) {
++                    if (t - start >= 3 && s2.slice(start, t).every((x) => x[3])) {
+                         let m = 0;
+                         for (let u = start; u < t; u++) m = Math.max(m, Math.hypot(s2[u][0] - s2[start][0], s2[u][2] - s2[start][2]));
+                         gleiten.push(m);
+@@ -323,10 +344,14 @@ const LEIB = async (r, T, arg) => {
+                 }
+             }
+         }
+-        return { tempo: weg / ((spur.length - 1 - i0) / 60), neig: (Math.atan2(e[1] - a[1], weg) * 180) / Math.PI, gleiten, richt: Math.atan2(e[0] - a[0], e[2] - a[2]) };
++        return { tempo: weg / ((spur.length - 1 - i0) / 60), neig: (Math.atan2(e[1] - a[1], weg) * 180) / Math.PI, gleiten, tief, richt: Math.atan2(e[0] - a[0], e[2] - a[2]) };
+     };
+-    const kurz = (L) => ({ tempo: +L.tempo.toFixed(3), neig: +L.neig.toFixed(1), phasen: L.gleiten.length, gleitenCm: L.gleiten.length ? +(100 * Math.max(...L.gleiten)).toFixed(2) : null });
+-    let gehen, sprint, hub, hang, steil;
++    const kurz = (L) => ({ tempo: +L.tempo.toFixed(3), neig: +L.neig.toFixed(1), phasen: L.gleiten.length, gleitenCm: L.gleiten.length ? +(100 * Math.max(...L.gleiten)).toFixed(2) : null, tiefCm: Number.isFinite(L.tief) ? +(100 * L.tief).toFixed(1) : null });
++    const kette = (...L) => ({ tempo: L[0].tempo, neig: L[0].neig, gleiten: [].concat(...L.map((x) => x.gleiten)), tief: Math.min(...L.map((x) => x.tief)), richt: L[0].richt });
++    let gehen, sprint, hub, hang, steil, stufe, geraet;
++    const orte = {};
++    const P0 = pm.position.clone();
++    const gier0 = st.yaw;
+     try {
+         ruhe(10);
+         const so = rig && rig._sohle;
+@@ -351,7 +376,49 @@ const LEIB = async (r, T, arg) => {
+             max = Math.max(max, pm.position.y);
+         }
+         hub = max - y0;
+-        // der steilste Hang um den Leib: die Richtung, in der das Gelände auf 6 und 12 m am meisten steigt
++        // DIE STUFE: die Mess-Treppe 3 m vor der Wiese, 0,6 m vor ihrem Fuß angesetzt; gezählt wird ein Stand auf einer Stufe
++        const [gx, gz] = [Math.sin(gier0), Math.cos(gier0)];
++        const [tx, tz] = [P0.x + 3 * gx, P0.z + 3 * gz];
++        if (!st.blueprints.messtreppe && r.createBlueprint("messtreppe"))
++            for (let i = 0; i <= 10; i++) {
++                const [top, tief] = [0.17 * Math.min(i + 1, 10), i < 10 ? 0.3 : 1.6];
++                r.addPartToBlueprint("messtreppe", { position: { x: 0, y: (top - 1.5) / 2, z: 0.3 * i + tief / 2 }, size: { x: 1.4, y: top + 1.5, z: tief } });
++            }
++        const treppe = r.spawnArchitecture("messtreppe", { x: tx, y: r._voxelSurfaceY(tx, tz) + 0.5, z: tz }, { precise: true, rotationY: gier0 });
++        if (treppe) {
++            const aufStufe = (x, z) => grund(x, z) - boden(x, z) >= 0.1;
++            setz(tx - 0.6 * gx, boden(tx - 0.6 * gx, tz - 0.6 * gz), tz - 0.6 * gz, gier0);
++            ruhe(10);
++            const hinauf = lauf(false, 160, aufStufe);
++            orte.treppeOben = +(pm.position.y - boden(pm.position.x, pm.position.z)).toFixed(2);
++            st.yaw = gier0 + Math.PI;
++            ruhe(10);
++            stufe = kette(hinauf, lauf(false, 120, aufStufe));
++            r.removeArchitecture(treppe);
++        }
++        // DAS GERÄT: der Schwebebalken des Spielplatzes 20 m neben der Wiese — aufgestiegen, vor auf der Linie
++        const FC = globalThis.__fachwerkCore;
++        const W = FC && FC.WERKE && FC.WERKE.schwebebalken;
++        if (W) {
++            const [bx, bz] = [P0.x + 20, P0.z + 20];
++            const e = r.spawnArchitecture(W.kind + "_schwebebalken", { x: bx, y: boden(bx, bz) + 0.5, z: bz }, { rotationY: 0, silent: true, precise: true, seed: 1 });
++            const ba = e && (r._geraetAngebotWelt(e, "schwebebalken") || []).find((a) => a.verb === "balancieren");
++            if (ba) {
++                const b = ba.bahn[0];
++                setz(b[0], b[1] + 0.05, b[2] + 0.3, 0);
++                ruhe(10);
++                geraet = lauf(false, 150, () => !!(st.leibVerb && st.leibVerb.verb === "balancieren"));
++            }
++            if (e) r.removeArchitecture(e);
++        }
++        // DER HANG: dort steht die Welt, bevor er geht; die Falllinie ist die Richtung, in der das Gelände auf 6 und 12 m am meisten steigt
++        const H = window.__weltOrt("hang", { mitte: [P0.x, P0.z], min: 10, max: 14, basis: 4 });
++        if (H) {
++            const [hx, hz] = [Math.round(H.x), Math.round(H.z)];
++            await window.__weltStehtNach(() => (setz(hx, boden(hx, hz), hz, gier0), takt()));
++            ruhe(10);
++            orte.hang = [hx, hz, +(+H.neigung).toFixed(1)];
++        }
+         const p = pm.position;
+         const h0 = boden(p.x, p.z);
+         for (let k = 0; k < 16; k++)
+@@ -360,7 +427,6 @@ const LEIB = async (r, T, arg) => {
+                 const s = (boden(p.x + R * Math.sin(w), p.z + R * Math.cos(w)) - h0) / R;
+                 if (!steil || s > steil.s) steil = { w, s, R };
+             }
+-        const gier0 = st.yaw;
+         const dw = steil.w - gehen.richt;
+         const ab = (a, b) => Math.abs(((((a - b) % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI)) - Math.PI);
+         st.yaw = gier0 + dw;
+@@ -370,17 +436,24 @@ const LEIB = async (r, T, arg) => {
+             probe = lauf(false, 20);
+         }
+         hang = lauf(false, 150);
++        if (H) await window.__weltStehtNach(() => (setz(P0.x, boden(P0.x, P0.z), P0.z, gier0), takt()));
+     } finally {
+         ruhe(1);
+     }
++    const da = { stufe: !!stufe && stufe.gleiten.length >= 3, hang: hang.neig >= 8 && hang.gleiten.length >= 3, geraet: !!geraet && geraet.gleiten.length >= 3 };
+     return {
+         fuesse: fuesse.length,
+         gehen: kurz(gehen),
+         sprint: kurz(sprint),
+         sprungM: +hub.toFixed(3),
+         hang: kurz(hang),
++        stufe: stufe ? kurz(stufe) : null,
++        geraet: geraet ? kurz(geraet) : null,
++        orte,
+         steilGrad: +((Math.atan(steil.s) * 180) / Math.PI).toFixed(1),
+-        gleitenCm: +(100 * Math.max(0, ...gehen.gleiten, ...sprint.gleiten, ...hang.gleiten)).toFixed(2),
++        untergruende: Object.keys(da).filter((k) => da[k]),
++        takte,
++        gleitenCm: +(100 * Math.max(0, ...gehen.gleiten, ...sprint.gleiten, ...hang.gleiten, ...(stufe ? stufe.gleiten : []), ...(geraet ? geraet.gleiten : []))).toFixed(2),
+     };
+ };
+ 
+@@ -804,7 +877,7 @@ module.exports = (F) => [
+     F.leiter("mensch.sport.koerper", {
+         sek: 60,
+         mutiert: true,
+-        pfad: ["koerper-core.js", "stamm/koerper-bewegung.js", "stamm/dirigent-kern.js", "stamm/gelaende-boden.js", "stamm/gelaende-kollision.js", "fachwerk-core.js"],
++        pfad: ["koerper-core.js", "stamm/koerper-bewegung.js", "stamm/koerper-leib.js", "stamm/koerper-seele.js", "stamm/dirigent-kern.js", "stamm/gelaende-boden.js", "stamm/gelaende-kollision.js", "fachwerk-core.js", "scripts/lib/welt-orte.cjs"],
+         seite: { LEIB, SPORT, VERBEN },
+         messe: async (H, K) => {
+             K.sicht = "third";
+@@ -843,12 +916,13 @@ module.exports = (F) => [
+             });
+             await K.schritt(2, async () => {
+                 if (L.fehlt) throw new Error(L.fehlt);
+-                const hangDa = L.hang.neig >= 8 && L.hang.phasen >= 3 ? 1 : 0;
++                // je Untergrund (LEIB untergruende): ≥ 3 Stand-Phasen auf ihm, der Hang dazu ≥ 8° über den Lauf
++                const fehl = ["stufe", "hang", "geraet"].filter((k) => !L.untergruende.includes(k));
+                 K.zahl(2, {
+-                    n: hangDa,
++                    n: L.untergruende.length,
+                     werte: { gleiten: L.gleitenCm },
+-                    beleg: "Fläche gehen " + JSON.stringify(L.gehen) + " · laufen " + JSON.stringify(L.sprint) + " · Hang " + JSON.stringify(L.hang) + " (steilster im Umkreis " + L.steilGrad + "°) · Stufe und Gerät stellt die Probe nicht",
+-                    taeter: L.gleitenCm > 2 ? "der Fuß im Stand (koerper-core.js leibPlan, Gang-Gesetz)" : "Stufe und Gerät ungemessen (Spielplatz am Genesis-Ort)",
++                    beleg: "Stufe " + JSON.stringify(L.stufe) + " · Hang " + JSON.stringify(L.hang) + " (" + JSON.stringify(L.orte.hang || null) + ", Falllinie " + L.steilGrad + "°) · Gerät " + JSON.stringify(L.geraet) + " · Fläche gehen " + JSON.stringify(L.gehen) + " · laufen " + JSON.stringify(L.sprint) + " · " + L.takte + " Takte",
++                    taeter: L.gleitenCm > 2 ? "der Fuß im Stand (stamm/koerper-leib.js _gaitLegIK, Gang-Gesetz; die Steigung koerper-core.js leibSteigung)" : fehl.length ? "ohne Stand-Phase auf " + fehl.join(", ") + " (der Fuß liest seinen Boden: stamm/koerper-leib.js _gaitBodenY · _gaitLegIK)" : "der Fuß im Stand (stamm/koerper-leib.js _gaitLegIK, Gang-Gesetz; die Steigung koerper-core.js leibSteigung)",
+                 });
+             });
+         },

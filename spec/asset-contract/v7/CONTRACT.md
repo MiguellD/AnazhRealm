@@ -61,3 +61,10 @@ der Gestalt). Wächter: gate:studio-vertrag, gate:kreatur-takt jagdkreis und rud
 Gemüt und die Beute lesen die EINE Masse des Leibs (Volumen der Gestalt × `MASSSTAB.dichteKgM3`, Wirt `_leibMasse`), die
 auch das Impuls-Gesetz liest; `temperamentDerGattung(dials, kg, gattung)`. Wächter: gate:studio-vertrag (die Dial-Masse
 kehrt nicht zurück), gate:kreatur-takt temperament (Täter `temperament-masse`), gate:fahr-leben --koerper (die Masse folgt der EINEN Stoff-Zeile, physik K1).
+
+**Vertrags-Akt 26.11.2026 (fuss-liest-grund — DIE STEIGUNG DES GANGS):** `koerper-core.js` neu gemintet (`1827ac1f7d23…` →
+`5829e10dff82…`, klang- und tetrapoda-core byte-gleich). Geändert sind genau 7 Felder, alle neu in
+`PRESETS.mensch.fx.bewegung.hang`: `steigFrei` 0,1 · `steigTreppe` 0,577 · `hubSchritt` 0,17 · `kadenzAuf` 1,4 · `kadenzAb` 1,66 ·
+`steigBlick` 0,6 · `steigGlatt` 0,25. Ohne diese Felder byte-gleich (geprüft). Hang und Treppe lesen EIN Gesetz `leibSteigung` (bis
+10 % das Tempo der Fläche, Leroux 2002; darüber Kadenz × Schritt, Riener 2002). Wächter: gate:koerper-kern G0–G4 (vier Täter der
+Steigung), gate:koerper-stand K8 (gleiten stufe, Täter `_gaitRahmen`).

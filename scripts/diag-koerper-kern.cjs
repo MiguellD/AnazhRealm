@@ -818,6 +818,61 @@ function verbenUrteil(C0, mutante = null) {
     return { rot, w, h, V, tast: gs.tast };
 }
 
+// DIE STEIGUNG DES GANGS (fuss-liest-grund; Meisterkarte 2 mensch.sport.koerper S2 — koerper `leibSteigung` · fx.bewegung.hang; Leser
+// im Wirt, der Stamm im vm über stamm.cjs `grundWirt`: `_gaitGesetz` (der Deckel des Doppelschritts), `_loopPlayerMovement` (das Tempo,
+// K.hang), `_gaitApplyFussIK` (das Becken sinkt eine Stufe)): Hang und Treppe EIN Gesetz, gegen das Profi-Band. Der Leib der
+// START_PARAMS (`leibVerben`: Gehen, Bein) geht die Steigung g (tan, + hinauf) im Tempo des Gesetzes, der Wirt rechnet seinen Gang.
+//   G1 bis 10 % bleibt der Gang (Leroux, Fung & Barbeau 2002, 0/5/10 %: das Tempo bleibt): Faktor 1, der Doppelschritt des Wirts
+//      wie in der Ebene, hinauf und hinab.
+//   G2 eine Stufe je Schritt: auf der 30°-Treppe (Riener, Rabuffetti & Frigo 2002) und der Mess-Treppe der Welt (0,17/0,30) hebt der
+//      Fuß je Schritt |g| · Doppelschritt/2 = hubSchritt ± 2 cm.
+//   G3 die Kadenz der 30°-Treppe: hinauf 81,6–85,7, hinab 98,4–100,8 Schritte/min (Doppelschritt 1,40–1,47 s / 1,19–1,22 s), ± 5 %.
+//   G4 stetig: der Faktor fällt über |g| 0 … 0,7 nie und springt je 0,01 um höchstens 0,1.
+// Täter (Selbsttest, je beim Namen): „alt“ (kein Gesetz der Steigung: der Leib geht die Treppe im Tempo der Wiese, 2,5 Stufen je
+// Schritt — der Stand vor fuss-liest-grund) → ROT an G2 · „ohneDeckel“ (der Wirt liest die Steigung im Gang nicht) → ROT an G2 ·
+// „frueh“ (das Tempo fällt ab 0 %) → ROT an G1 · „eineKadenz“ (hinab die Kadenz von hinauf) → ROT an G3.
+const STEIG_BAND = { auf: [81.6 * 0.95, 85.7 * 1.05], ab: [98.4 * 0.95, 100.8 * 1.05] };
+const STEIG_TAETER = "koerper leibSteigung · fx.bewegung.hang · stamm _gaitGesetz";
+function steigungUrteil(mutante = null) {
+    const path = require("path");
+    const eingriff = (A, ctx) => {
+        const K = ctx.__koerperCore, P = A.prototype, ls = K.leibSteigung, gg = P._gaitGesetz; // prettier-ignore
+        if (mutante === "alt") K.leibSteigung = () => ({ tempo: 1, schritt: Infinity });
+        if (mutante === "ohneDeckel") P._gaitGesetz = function (rig, v, L) { return gg.call(this, rig, v, L, 0); }; // prettier-ignore
+        if (mutante === "linear") K.leibSteigung = (H, g, v) => ({ tempo: 1 - 0.7 * Math.min(1, Math.abs(g) / H.steigTreppe), schritt: ls(H, g, v).schritt }); // prettier-ignore
+        if (mutante === "eineKadenz") K.leibSteigung = (H, g, v) => ls(Object.assign({}, H, { kadenzAb: H.kadenzAuf }), g, v);
+    };
+    const { r, A, ctx } = require("./lib/stamm.cjs").grundWirt(path.join(__dirname, ".."), null, eingriff);
+    const K = ctx.__koerperCore;
+    const rot = [];
+    if (typeof K.leibSteigung !== "function") return { rot: ["G0 der Kern trägt kein Gesetz der Steigung (koerper leibSteigung)"] };
+    const H = A._bewegungsBlock("hang", ["steigFrei", "steigTreppe", "hubSchritt", "kadenzAuf", "kadenzAb"]);
+    const V = K.leibVerben();
+    const [v, L] = [V.gehen, V.beinM];
+    const gang = (g) => {
+        const vz = v * K.leibSteigung(H, g, v).tempo, lam = r._gaitGesetz(null, vz, L, g).schritt; // prettier-ignore
+        return { g, vz, lam, hub: (Math.abs(g) * lam) / 2, kad: (120 * vz) / lam };
+    };
+    const eben = r._gaitGesetz(null, v, L, 0).schritt;
+    const frei = [0.05, 0.1, -0.05, -0.1].map(gang).filter((x) => !(x.vz === v && x.lam === eben));
+    if (frei.length) rot.push(`G1 bis 10 % ändert sich der Gang: ${frei.map((x) => `${(100 * x.g).toFixed(0)} % ${x.vz.toFixed(3)} m/s, Doppelschritt ${x.lam.toFixed(3)} m`).join(" · ")} (Soll ${v.toFixed(3)} m/s, ${eben.toFixed(3)} m)`); // prettier-ignore
+    const treppe = [Math.tan(Math.PI / 6), -Math.tan(Math.PI / 6), 0.17 / 0.3, -0.17 / 0.3].map(gang);
+    const hub = treppe.filter((x) => !(Math.abs(x.hub - H.hubSchritt) <= 0.02));
+    if (hub.length) rot.push(`G2 der Fuß hebt je Schritt nicht eine Stufe: ${hub.map((x) => `${x.g > 0 ? "hinauf" : "hinab"} ${(x.g).toFixed(3)} ${x.hub.toFixed(3)} m (${x.vz.toFixed(2)} m/s, Doppelschritt ${x.lam.toFixed(2)} m)`).join(" · ")} (Soll ${H.hubSchritt} ± 0,02)`); // prettier-ignore
+    const [auf, ab] = treppe;
+    const band = [["hinauf", auf.kad, STEIG_BAND.auf], ["hinab", ab.kad, STEIG_BAND.ab]].filter(([, k, [a, b]]) => !(k >= a && k <= b));
+    if (band.length) rot.push(`G3 die Kadenz der 30°-Treppe verfehlt das Band: ${band.map(([n, k, [a, b]]) => `${n} ${k.toFixed(1)}/min außer ${a.toFixed(1)}–${b.toFixed(1)}`).join(" · ")}`); // prettier-ignore
+    let [faellt, sprung] = [0, 0];
+    for (const s of [1, -1])
+        for (let i = 1; i <= 70; i++) {
+            const [f0, f1] = [K.leibSteigung(H, (s * (i - 1)) / 100, v).tempo, K.leibSteigung(H, (s * i) / 100, v).tempo];
+            if (f1 > f0 + 1e-12) faellt++;
+            sprung = Math.max(sprung, Math.abs(f1 - f0));
+        }
+    if (faellt || sprung > 0.1) rot.push(`G4 der Faktor ist nicht stetig: ${faellt} Anstiege über |g|, größter Sprung ${sprung.toFixed(3)} je 0,01 (Soll 0, ≤ 0,1)`);
+    return { rot, v, eben, auf, ab, sprung };
+}
+
 // TEIL D — DIE STOFFSTROM-KETTE (Meisterkarte 2 mensch.wirtschaft.stoffstrom#1; koerper `stoffstromHalter` · `stoffstromFassen`,
 // schmiede `STOFFSTROM`): Erz → Barren → Werkzeug. Zwei Öfen (die Werke zweier Schmiede, Same 4242 und 12345), die Halde aus dem
 // Samen 7, zwölf Hände; sieben Tage ab Tag 3, 6 Uhr, Stunde für Stunde über den Kern, wie der Wirt ihn ruft. D0 die Kette steht:
@@ -1494,18 +1549,20 @@ if (SELBSTTEST) {
     // der Satz des Leibs: das Gesetz hält, jeder Täter fällt ROT beim Namen (leib-liest-satz)
     const saGut = !satzUrteil().rot.length;
     const satzTaeter = [["alt", "L1 der Kranke steht wie der Gesunde"], ["ohneStufe", "L2 der Lehrling steht wie der Meister"], ["einmalRate", "L3 die Güte steht über der Übung still"], ["ohneWetter", "L4 die Tracht liest das Wetter nicht"], ["ohneZeile", "L5 der ferne Satz trägt die Namen des Satzes nicht"], ["tatOhneKunst", "L6 die Tat der Rolle liest den Satz nicht"]].map(([m, z]) => { const rr = satzUrteil(m).rot; console.log(`  ${saGut && rr.some((x) => x.startsWith(z)) ? "✅" : "⛔"} Satz-Täter „${m}“ → ROT an ${z.split(" ")[0]}`); return [saGut && rr.some((x) => x.startsWith(z)), "Satz " + m + " " + z]; }); // prettier-ignore
+    const stGut = !steigungUrteil().rot.length;
+    const steigTaeter = [["alt", "G2 der Fuß hebt je Schritt nicht eine Stufe"], ["ohneDeckel", "G2 der Fuß hebt je Schritt nicht eine Stufe"], ["linear", "G1 bis 10 % ändert sich der Gang"], ["eineKadenz", "G3 die Kadenz der 30°-Treppe"]].map(([m, z]) => { const rr = steigungUrteil(m).rot; console.log(`  ${stGut && rr.some((x) => x.startsWith(z)) ? "✅" : "⛔"} Steigungs-Täter „${m}“ → ROT an ${z.split(" ")[0]}`); return [stGut && rr.some((x) => x.startsWith(z)), "Steigung " + m + " " + z]; }); // prettier-ignore
     const ankGut = ankunftUrteil(core, 0.4), ankWende = ankunftUrteil(core, 0.4, "zurWende");
     const uGut = eigeneUhr(stammTexte()), uTaeter = eigeneUhr([["stamm/probe.js", "        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, regen, b.krank);"]]);
     // die Rolle und ihr Tages-Angebot: das Gesetz hält, jeder Täter fällt ROT beim Namen
     const roGut = !rollenUrteil(core).rot.length;
     const rollenTaeter = [["ohneStreife", "R1 die Wache geht keine Streife"], ["ohneRueckkehr", "R2 die Runde kehrt nicht an den Posten"], ["ohneRevier", "J1 der Plan trägt kein Revier"], ["ohneJaeger", "J2 die Siedlung trägt keinen Jäger"], ["ohneTat", "J3 die Rolle trägt ihre Tat nicht"], ["beuteImmer", "J5 die Beute fällt"], ["fangAusNichts", "J6 der Fischfang trägt Beute aus dem Nichts"], ["durchDeckung", "H1 "], ["ohneAntwort", "H2 der Getroffene antwortet nicht"], ["bindungAmPlatz", "J7 die Bindung trägt das Werk"], ["rundeSchiebt", "R6 die Runde frisst den Abend"]].map(([m, z]) => [roGut && rollenUrteil(core, m).rot.some((r) => r.startsWith(z)), `Rollen ${m} ${z}`]); // prettier-ignore
     const morgenTaeter = [...eTaeter, [ankGut.n >= 1000 && ankGut.frueh >= 0.99 && !ankGut.monoton && !ankGut.ohneAbschnitt && ankWende.frueh < 0.5, "Ankunft zurWende M3 der Aufbruch liegt nicht um die Gehzeit vor der Wende"], [!uGut.length && uTaeter.length === 1, "Ankunft eigeneUhr M4 ein Leser liest den Plan mit eigener Uhr"]]; // prettier-ignore
-    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...verbenTaeter, ...spielTaeter, ...morgenTaeter, ...rollenTaeter, ...satzTaeter])
+    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter, ...bestandTaeter, ...ackerTaeter, ...koennenTaeter, ...stoffTaeter, ...verbenTaeter, ...spielTaeter, ...morgenTaeter, ...rollenTaeter, ...satzTaeter, ...steigTaeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle neunundsechzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, acht Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, sieben Täter des Einkaufs und der Ankunft zur Stunde, elf Täter der Rolle und ihres Tages-Angebots, sechs Täter des Satzes des Leibs).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle dreiundsiebzig injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, acht Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, sieben Täter des Einkaufs und der Ankunft zur Stunde, elf Täter der Rolle und ihres Tages-Angebots, sechs Täter des Satzes des Leibs, vier Täter der Steigung des Gangs).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
@@ -1517,6 +1574,9 @@ console.log(`  VERB die Stadt um 12 Uhr: ${verb.join(" · ")}`);
 const sa = satzUrteil();
 for (const z of sa.rot) st.rot.push("SATZ " + z);
 console.log(`  SATZ des Leibs: L1 ${sa.krank.anders} von ${sa.krank.n} Kranken stehen anders · L2 ${sa.paare.length} von 3 Künsten trennen Meister und Lehrling [${sa.paare.join(" · ")}] · L3 R² ${sa.uebung.r2 == null ? "—" : sa.uebung.r2.toFixed(3)} über ${sa.uebung.spanne.toFixed(0)} h (Steigung ${sa.uebung.steigung == null ? "—" : sa.uebung.steigung.toFixed(4)}, Band ${Number.isFinite(sa.uebung.soll) ? sa.uebung.soll.toFixed(4) : "—"}) · L4 Lagen am Dorf Sommer ${sa.lagen.sommer.toFixed(3)} · Winter ${sa.lagen.winter.toFixed(3)} · Regen ${sa.lagen.regen.toFixed(3)} · L5 ${sa.namen} Namen im Satz · L6 ${sa.tat.length} Rollen mit Tat lesen den Satz [${sa.tat.join(" · ")}]`);
+const sg = steigungUrteil();
+for (const z of sg.rot) st.rot.push("STEIGUNG " + z + " — Täter: " + STEIG_TAETER);
+if (sg.auf) console.log(`  STEIGUNG des Gangs (Gehen ${sg.v.toFixed(3)} m/s, Doppelschritt ${sg.eben.toFixed(3)} m): bis 10 % gleich · 30°-Treppe hinauf ${sg.auf.vz.toFixed(3)} m/s, Doppelschritt ${sg.auf.lam.toFixed(3)} m, ${sg.auf.hub.toFixed(3)} m je Schritt, ${sg.auf.kad.toFixed(1)}/min · hinab ${sg.ab.vz.toFixed(3)} m/s, ${sg.ab.lam.toFixed(3)} m, ${sg.ab.hub.toFixed(3)} m, ${sg.ab.kad.toFixed(1)}/min (Riener 2002: 81,6–85,7 · 98,4–100,8) · größter Sprung des Faktors ${sg.sprung.toFixed(3)} je 0,01`); // prettier-ignore
 const be = bestandUrteil(core);
 for (const z of be.rot) st.rot.push("BESTAND " + z + " — Täter: koerper BESTAND_GESETZ");
 const ak = typeof core.scheuneFassen === "function" && typeof globalThis.__phytoCore.ackerStand === "function"

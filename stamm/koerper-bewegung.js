@@ -1520,7 +1520,32 @@ class AnazhRealm_koerper_bewegung {
             const K = this._leibOrt();
             K.tempo = currentSpeed;
             K.gehTempo = this.state.speed;
-            K.hang = slopePenalty;
+            // DIE STEIGUNG UNTER DEM SCHRITT (fuss-liest-grund, koerper `leibSteigung`): der Grund steigBlick m voraus längs der
+            // Absicht gegen den Grund hier — der Boden des Fußes (`_gaitBodenY`: die Auflage der Stufe, sonst der Stand-Leser),
+            // geglättet an der Uhr des Schritts; das Tempo folgt ihr, der Gang-Takt des Leibs deckelt an ihr den Doppelschritt (zu Fuß:
+            // im Sattel und im Wasser trägt sie nichts)
+            const H = AnazhRealm._bewegungsBlock("hang", [
+                "maxSlopeY",
+                "malus",
+                "steigFrei",
+                "steigTreppe",
+                "hubSchritt",
+                "kadenzAuf",
+                "kadenzAb",
+                "steigBlick",
+                "steigGlatt",
+            ]);
+            const md = this.state.moveDirection;
+            const mL = md ? Math.hypot(md.x, md.z) : 0;
+            let steig = 0;
+            if (mL > 1e-3 && this.state.playerMesh && !ride && !this.state.playerUnderwater) {
+                const [x, z, b] = [this.state.playerMesh.position.x, this.state.playerMesh.position.z, H.steigBlick];
+                const g = (this._gaitBodenY(x + (b * md.x) / mL, z + (b * md.z) / mL) - this._gaitBodenY(x, z)) / b;
+                if (Number.isFinite(g)) steig = g;
+            }
+            const s0 = Number.isFinite(this.state._steigung) ? this.state._steigung : 0;
+            this.state._steigung = s0 + (steig - s0) * (1 - Math.exp(-nowDt / H.steigGlatt));
+            K.hang = slopePenalty * AnazhRealm._leibTakt().leibSteigung(H, this.state._steigung, currentSpeed).tempo;
             K.ritt = ride;
             K.rittKAcc = rideKAcc;
             K.rittKBrake = rideKBrake;

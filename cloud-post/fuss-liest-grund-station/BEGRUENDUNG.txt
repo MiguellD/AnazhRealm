@@ -1,0 +1,36 @@
+Kandidat der Station karte2.mensch.sport.koerper#2 (meisterkarte-quelle/punkte/stationen/k2-mensch-sport.js, LEIB + S2)
+Basis: origin/punkte-maschine 404008d6 · Diff: kandidat.diff (git diff, 1 Datei, +99/−25)
+
+WARUM
+Die Sprosse misst „Umfang 0 < 3 Untergründe gemessen (Stufe · Hang · Gerät)“. Die LEIB-Probe der Station stellte keinen der drei:
+keine Stufe, kein Gerät, und der steilste Hang im Umkreis von 12 m um die Mess-Wiese steigt 3,7° (gezählt wird ein Hang ab 8°).
+Umfang 0 war damit Bau der Probe, nie Zahl des Fußes. Der Boden der Messung war die Fläche des Gesetzes (getTerrainHeightAt) —
+auf der Treppe und dem Balken trägt sie keinen Fuß.
+
+WAS
+- LEIB stellt die drei Untergründe in der Welt, je mit dem EINEN Leser, den die Welt schon hat:
+  Stufe = die Mess-Treppe von gate:koerper-stand K8 (10 Stufen à 0,17 m, Auftritt 0,3 m, Podest), hinauf und hinab;
+  Gerät = der Schwebebalken des Spielplatzes (fachwerk WERKE, sein Angebot `_geraetAngebotWelt`, Verb balancieren);
+  Hang = die EINE Orts-Suche `__weltOrt("hang", 10–14°)` (welt-orte, wie K8), dort die Falllinie hinauf; zurück an die Wiese.
+- Der Boden jeder Stand-Phase ist `_gaitBodenY` — der Leser der Fuß-IK (Auflage eines Baus, sonst der Stand-Leser der Sicht).
+- Gezählt wird ein Untergrund mit ≥ 3 Stand-Phasen (|h| ≤ 1 cm, ≥ 3 Takte, jede Probe auf dem Untergrund), der Hang ab 8°.
+- S2: der Täter nennt die fehlenden Untergründe beim Namen (ohne Stand-Phase auf …) oder das Gleiten (> 2 cm) beim Glied.
+- pfad + stamm/koerper-leib.js, stamm/koerper-seele.js, scripts/lib/welt-orte.cjs (die Leser, die die Probe jetzt liest).
+
+ZAHLEN (Null-Renderer-Welt der Kreatur-Linse, Mess-Wiese −280,4/−1045,6, Third; scratchpad leib-null + der Kandidaten-LEIB wortgleich)
+                 buendel-mittag 52c07c4a (vorher)  fuss-liest-grund 2 (nachher)
+  Umfang         2 [stufe, hang]                 3 [stufe, hang, geraet]
+  Stufe          22 Phasen, Gleiten 22,72 cm      12 Phasen, 0,14 cm (Tempo 0,45 m/s, 20,9°)
+  Hang 10,1°     10 Phasen, 0,13 cm               10 Phasen, 0,16 cm (9,8°)
+  Gerät          0 Phasen (Fuß −24,8 cm im Balken) 7 Phasen, 0,54 cm
+  Fläche gehen   1,72 cm · laufen 2,54 cm          0,04 cm · 0,03 cm
+  Gleiten max    22,72 cm → S2 ROT                 0,54 cm → S2 GRÜN
+  Takte          1 658                            1 661 (die alte Probe 605)
+  (am main c3631992 dasselbe Vorher, nachher 0,51 cm max)
+
+WÄNDE
+- node punkte.cjs liste: Basis = Kandidat = 1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0 (404008d6, 31,4 s / 33,8 s).
+- Leiter-Zeit ≤ 60 s: Null-Welt alte Station 34,0 s → Kandidat 46,0 s (LEIB 605 → 1 667 Takte, VERBEN unverändert); an der GTX
+  geschätzt ≈ 42 s (skaliert aus der Akte 31ea3847-gtx) — Messname: richter akte mensch.sport.koerper.2 preis/fenster.
+- Fächer-Stichprobe: entfällt (kein Fan-out im Kern).
+- k2-mensch Selbsttest sport GRÜN (54 / 557 / 0).

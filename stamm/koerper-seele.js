@@ -1876,6 +1876,8 @@ class AnazhRealm_koerper_seele {
                 ik: this.state.isInAir !== true,
                 soleY: mesh.position.y - AnazhRealm.PLAYER_FOOT_OFFSET,
                 yaw: mesh.rotation.y,
+                // die Steigung unter dem Schritt (`_loopPlayerMovement`, koerper `leibSteigung`): sie deckelt den Doppelschritt
+                steigung: this.state._steigung,
             });
         } else if (isMoving) {
             // Compound-/Nicht-Rig-Seelen bleiben zeit-getrieben (Flügel/Räder takten zur Uhr); Takt-Basis +

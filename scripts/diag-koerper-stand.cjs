@@ -275,6 +275,9 @@ function taeter(inj) {
     // fuss (K8): der Fuß steht 12 cm über seinem Boden, und die Treppe steht nie (eine Bahn ohne Kontakte)
     if (inj === "fuss")
         [r._gaitBodenY, r.createBlueprint] = [(x, z) => P._gaitBodenY.call(r, x, z) + 0.12, () => false];
+    // rahmen (K8): die Hüfte dreht ohne den Rahmen ihres Elternknochens (vor fuss-liest-grund: die Neigung des Beckens drehte
+    // das gelockte Bein mit, der Fuß kroch auf der Treppe im Stand vor)
+    if (inj === "rahmen") r._gaitRahmen = () => 0;
     // sohle (K8): die Sohle der Pfote kippt nicht mit dem Boden unter ihr (vor K8 huf hielt sie die Lage des Rumpfs)
     if (inj === "sohle") r._gaitSohlenKipp = (...a) => (a[4] ? { laengs: 0, quer: 0 } : P._gaitSohlenKipp.apply(r, a));
     // ring (K8): der Ring bleibt am Boden des ersten Weltbilds stehen (vor gelaende-ring-wachstum: Radeon Ring 2 von 4) — sein
@@ -1116,12 +1119,17 @@ async function rollen(n) {
         const auf = Math.atan2(h(X + 1, Z) - h(X - 1, Z), h(X, Z + 1) - h(X, Z - 1));
         const rig = pm.userData.rig;
         const fuss = sohle(pm, [rig.legL.ankle, rig.legR.ankle]);
+        // DAS GLEITEN IM STAND (fuss-liest-grund): Ferse und Ballen der Sohle (`rig._sohle`, die Maße der Fuß-IK) je Fuß im
+        // Lock — liegt ein Punkt ≥ 3 Takte an seinem Boden an (|h| ≤ 1 cm über `_gaitBodenY`, dem Leser der Fuß-IK), wandert er
+        // in dieser Phase höchstens so weit (cm) von seinem ersten Ort; vor `_gaitRahmen` kroch der Fuß auf der Treppe vor
+        const w = new T.Vector3();
         const bahn = (wege, zaehlt = () => true, x = X, z = Z) => {
             setz(x, z);
             for (let k = 0; k < 30; k++) takt(); // der Leib steht am neuen Ort, bevor er geht (kein Lock der Bahn davor)
             let [i, k, x0, z0, h0, stecken] = [0, 0, x, z, 0, 0];
             const vor = () => (P.x - x0) * Math.sin(s.yaw) + (P.z - z0) * Math.cos(s.yaw);
             [s.yaw, halt.vor] = [wege[0][0], true];
+            const [gl, gleit] = [[], []];
             const a = gehen((a) => {
                 if (++k % 30 === 0) [stecken, h0] = [stecken + (vor() - h0 < 0.15), vor()];
                 if (vor() >= wege[i % wege.length][1])
@@ -1130,9 +1138,24 @@ async function rollen(n) {
                 const ik = pm.userData._gaitIK;
                 for (const [j, l] of ik ? [ik.lockL, ik.lockR].entries() : [])
                     if (l.on && zaehlt(l) && (v.y = fuss(j)) !== null) a.push(v.y);
+                const so = rig._sohle;
+                for (const [j, l] of ik && so ? [ik.lockL, ik.lockR].entries() : [])
+                    for (const [b, q] of [-so[2], so[0]].entries()) {
+                        [rig.legL, rig.legR][j].ankle.localToWorld(w.set(0, -so[1], q));
+                        const an = l.on && zaehlt(l) && Math.abs(w.y - r._gaitBodenY(w.x, w.z)) <= 0.01;
+                        const g = gl[2 * j + b];
+                        if (an && !g) gl[2 * j + b] = { x: w.x, z: w.z, t: 1, m: 0 };
+                        else if (an) [g.t, g.m] = [g.t + 1, Math.max(g.m, Math.hypot(w.x - g.x, w.z - g.z))];
+                        else if (g) {
+                            if (g.t >= 3) gleit.push(g.m);
+                            gl[2 * j + b] = null;
+                        }
+                    }
             });
             halt.vor = false;
-            return { ...mass(a), stecken: stecken + (a.length < n) };
+            for (const g of gl) if (g && g.t >= 3) gleit.push(g.m);
+            const gleiten = { phasen: gleit.length, maxCm: +(100 * Math.max(0, ...gleit)).toFixed(2) };
+            return { ...mass(a), stecken: stecken + (a.length < n), gleiten };
         };
         R.fuss = bahn([auf - Math.PI / 2, auf + Math.PI / 2].map((y) => [y, 25]));
         // der Huf: je Grenze der Spanne des Lebens-Gesetzes (`__lebenCore.spanne()`: das Neugeborene an −4σ, das Art-Mittel 1, das
@@ -1401,6 +1424,14 @@ function urteilK8(o) {
             else if (!(m.p95 <= soll))
                 f.push(`K8 ${rolle} ${ort}: p95 ${m.p95} cm (Median ${m.median}, Soll ≤ ${soll}) — Täter: ${wer}`);
         }
+        // das Gleiten im Stand auf der Treppe (fuss-liest-grund, Station karte2.mensch.sport.koerper#2): ≤ 0,75 cm je Stand-Phase — mit Rahmen 0,14–0,36 cm, ohne 1,16–1,55 cm
+        const gs = (o[ort].stufe || {}).gleiten;
+        if (gs && !(gs.phasen >= 3))
+            f.push(`K8 Aufbau ${ort} gleiten: ${gs.phasen} Stand-Phasen auf der Treppe (Soll ≥ 3)`);
+        else if (gs && !(gs.maxCm <= 0.75))
+            f.push(
+                `K8 gleiten stufe ${ort}: ${gs.maxCm} cm in ${gs.phasen} Stand-Phasen (Soll ≤ 0,75) — Täter: die Kette im Rahmen des Beckens (koerper-leib _gaitRahmen: die Neigung des Beckens dreht das gelockte Bein)`
+            );
     }
     // K9 je Sicht: der Leib (Third) und das Auge (Ego) heben sich mit der Kapsel (≥ 80 %), die Masse ×1,25 senkt Höhe und
     // Weite, die Kraft ×1,25 hebt sie (je ≥ 10 %)
@@ -1471,6 +1502,8 @@ hauptLauf(async () => {
                 ring: ["K8 Ring wiese", "K8 Ring hang"],
                 nexus: ["K8 Aufbau: der Nexus"],
                 fuss: ["K8 fuss hang", "K8 Aufbau hang stufe", "K8 Aufbau wiese stufe"],
+                // die Treppe der Wiese trägt die Lehne (ohne Rahmen 1,16–1,55 cm); am 25°-Hang bleibt die Mutante unter der Grenze
+                rahmen: ["K8 gleiten stufe wiese"],
                 sprung: ["K9 Mutante masse first", "K9 Mutante kraft third"],
             };
             // `KOERPER_STAND_NUR=naht,rand`: nur diese Täter (der gezielte Beweis einer Linse; die CI fährt alle)
