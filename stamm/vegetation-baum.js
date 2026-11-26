@@ -2555,26 +2555,86 @@ class AnazhRealm_vegetation_baum {
     // Rasters auf dem Land (der Tor krönt Kuppe und Rücken), die Art der Anteil ihres λ. Die Höhen fragt der Chunk nur, wenn er eine
     // trägt (λ · Fläche ≤ 0,018). Bis hier warf jede Probe mit 1,4 % einen Bogen oder Turm, wo die dichte-Affinität 0,18 trug, Bogen
     // oder Turm nach Münzwurf: an der Ankunft 78 Bögen und 64 Türme auf 0,21 km² (≈ 680 je km², Arches trägt 6,5). → die Zahl.
+    // DER EINE WERFER (landmarken-geologie-7): je Chunk EINMAL — das Register `_landmarkeWurf` (Schlüssel „cx,cz“ → seine Einträge,
+    // `spawnArchitecture` legt sie ab) hält, was geworfen ist, bis seine Zelle die Reichweite verlässt (ZELL_GEDAECHTNISSE, Abschied
+    // der Einträge). Leser: die Saat des Chunks (`_tickSaat`) und der Fern-Takt (`_landmarkenFern`) — beide fragen denselben Wurf.
     _landmarkeChunk(cx, cz) {
+        const M = this._landmarkeWurf || (this._landmarkeWurf = new Map());
+        const key = `${cx},${cz}`;
+        if (M.has(key)) return 0;
+        M.set(key, []);
         const liste = this._landmarkenDesChunks(cx, cz);
         for (const l of liste)
-            this._enqueueVegetationSpawn(l.art, { x: l.x, y: l.y, z: l.z }, { seed: l.seed, silent: true });
+            this._enqueueVegetationSpawn(l.art, { x: l.x, y: l.y, z: l.z }, { seed: l.seed, silent: true, landmarke: key });
         return liste.length;
+    }
+
+    // Der Abschied der Würfe (ZELL_GEDAECHTNISSE „_landmarkeWurf“): die Einträge der gehenden Chunks fallen still, ihre wartenden
+    // Würfe verlassen die Pflanz-Schlange (sonst stünde ein Wurf ohne Register, den kein Abschied je nimmt). → die Abbauten.
+    _landmarkeGeht(schluessel, listen) {
+        const weg = new Set(schluessel);
+        const Q = this.state.pendingVegSpawns;
+        if (Q && Q.length) {
+            let j = 0;
+            for (const t of Q) if (!(t.opts && weg.has(t.opts.landmarke))) Q[j++] = t;
+            Q.length = j;
+        }
+        let n = 0;
+        for (const l of listen || []) for (const e of l || []) if (this.removeArchitecture(e, { still: true })) n++;
+        return n;
+    }
+
+    // DER FERN-WURF DER LANDMARKE (landmarken-geologie-7, erleben.spieler.wegfindung#1): die Saat hängt am Voxel-Ring (≤ 764 m), die
+    // Wegfindung braucht die Landmarke in 1–3 km. Der Takt geht in Chebyshev-Ringen um den Chunk des Spielers nach außen und wirft
+    // jeden Chunk, dessen Mitte binnen `LANDMARKE_FERN_M` liegt (`_landmarkeChunk`, idempotent) — bis zur Frist, mindestens
+    // `LANDMARKE_FERN_SCHRITTE` Chunks; ein Chunk-Wechsel beginnt innen neu (das Geworfene überspringt er im Register). Der Wurf
+    // liest das Gesetz (`_landmarkenDesChunks`), nie die geladene Welt: nah und fern derselbe. Leser: der Abräum-Gang des Bodens
+    // (`_pruneDistantVoxelChunks`). Gemessen (Heimat, Node): 15 465 Chunks in 3 km, die Dichte 2,6 µs je Chunk. → die Würfe.
+    _landmarkenFern(pos, frist) {
+        if (!pos) return 0;
+        const { span } = this._voxelChunkConfig();
+        const pcx = Math.floor(pos.x / span);
+        const pcz = Math.floor(pos.z / span);
+        const RM = AnazhRealm.LANDMARKE_FERN_M;
+        const R = Math.ceil(RM / span);
+        let c = this._landmarkeFernLauf;
+        if (!c || c.pcx !== pcx || c.pcz !== pcz) c = this._landmarkeFernLauf = { pcx, pcz, ring: 0, i: 0 };
+        let [n, schritte] = [0, 0];
+        while (c.ring <= R && (schritte < AnazhRealm.LANDMARKE_FERN_SCHRITTE || performance.now() < frist)) {
+            const k = c.ring;
+            const len = k ? 8 * k : 1;
+            if (c.i >= len) {
+                c.ring++;
+                c.i = 0;
+                continue;
+            }
+            const s = k ? Math.floor(c.i / (2 * k)) : 0;
+            const t = k ? c.i % (2 * k) : 0;
+            c.i++;
+            schritte++;
+            const [dx, dz] = !k ? [0, 0] : s === 0 ? [t - k, -k] : s === 1 ? [k, t - k] : s === 2 ? [k - t, k] : [-k, k - t];
+            if (Math.hypot(dx, dz) * span <= RM) n += this._landmarkeChunk(pcx + dx, pcz + dz);
+        }
+        return n;
     }
 
     // DER WURF DER LANDMARKE ALS FUNKTION (landmarken-geologie-4): die Felsbögen und -türme eines Chunks (cx, cz) aus dem Gesetz des
     // Orts — [{ art, x, y, z, seed }], ohne die Welt zu ändern. `welt` reicht die Leser einer Welt: `lage` (gelaende-core, die Dichte
     // `landmarke`), `saat` (der Samen des Wurfs), `hoehe(x, z)` (der Boden, auf dem sie steht) und `land(x, z)` (über dem Wasser). Ohne
-    // `welt` liest sie die geladene: ihre Lage, `_saatJe`, das gebaute Mesh (`_voxelSurfaceY`) und das Land der Hydrosphäre
-    // (`_landAt`, 0,4 m über dem Spiegel). Leser: die Saat des Chunks (`_landmarkeChunk`) und jeder Richter, der eine andere Saat
-    // fragt (die Lage aus gelaende-core `lageAus`, ihr Boden `hoehe`) — bis hier las der Wurf nur die geladene Welt, und die Station
-    // der Wegfindung (erleben.spieler.wegfindung#1) maß 1 von 51 Saaten: „der Wurf der Landmarke ist keine Funktion der Saat“.
+    // `welt` liest sie die geladene Lage und Saat (`_saatJe`) — ihren Boden und ihr Land aus dem GESETZ (gelaende-core `hoehe` und
+    // `wasserSpiegel`, 0,4 m darüber), nie aus dem gebauten Mesh: der Fern-Wurf (`_landmarkenFern`) fragt Chunks ohne Mesh, und nah wie
+    // fern steht derselbe Wurf (landmarken-geologie-7; bis dahin `_voxelSurfaceY` und `_landAt`). Leser: der Werfer (`_landmarkeChunk`)
+    // und jeder Richter, der eine andere Saat fragt (die Lage aus gelaende-core `lageAus`, ihr Boden `hoehe`) — bis hier las der Wurf
+    // nur die geladene Welt, und die Station der Wegfindung (erleben.spieler.wegfindung#1) maß 1 von 51 Saaten: „der Wurf der
+    // Landmarke ist keine Funktion der Saat“.
     _landmarkenDesChunks(cx, cz, welt) {
+        const K = globalThis.__gelaendeCore;
+        const lage = this._gelaende();
         const W = welt || {
-            lage: this._gelaende(),
+            lage,
             saat: AnazhRealm._saatJe(this),
-            hoehe: (x, z) => this._voxelSurfaceY(x, z),
-            land: (x, z) => this._landAt(x, z, 0.4),
+            hoehe: (x, z) => K.hoehe(lage, x, z, true),
+            land: (x, z) => K.hoehe(lage, x, z, true) > K.wasserSpiegel(lage, x, z) + 0.4,
         };
         const { span } = this._voxelChunkConfig();
         const N = 10; // das Raster der Saat (`_tickSaat`)
@@ -3292,6 +3352,10 @@ _stammZonen(AnazhRealm, [AnazhRealm_vegetation_baum]);
 // Totholz: Wahrscheinlichkeit eines `stamm_gefallen`-Sub-Spawns nach einem Baum-Spawn
 // (~10 % = bewohnter Wald ohne Dichte-Verdünnung).
 AnazhRealm.TOTHOLZ_RATE = 0.1;
+// DER FERN-WURF DER LANDMARKE (landmarken-geologie-7, `_landmarkenFern`): bis hierher wirft der Takt die Felsbögen und -türme
+// (die Richter-Weite der Wegfindung, erleben.spieler.wegfindung#1: 1–3 km); so viele Chunks geht er je Ruf mindestens.
+AnazhRealm.LANDMARKE_FERN_M = 3000;
+AnazhRealm.LANDMARKE_FERN_SCHRITTE = 64;
 // Die Landmark-Pool-Karte: Sieger-Name → { Pool-Präfix, Zahl }. Der Scatter würfelt
 // REGION-deterministisch einen `<prefix>_var<idx>` aus dem passenden Pool (tag-frozen
 // zum Wahrzeichen → kein Affinitäts-Shift, V17.17).

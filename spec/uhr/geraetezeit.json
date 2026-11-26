@@ -60,7 +60,7 @@
   "stoff-karte": "frist _karteBuehneRuhe _karteWeltBacken:7 _tickKarteAbzug _tickKarteWelt:2",
   "studio-bruecke": "laden _bedarfTakt _bedarfTempo _foundryAuftrag _foundryIngestTakt _foundryRequest _foundryWahl · speicher _foundrySchale",
   "studio-gestalt": "messung _foundryAwaitBook:2 · frist _tickHuellenNach",
-  "vegetation-baum": "messung _ensureFoliageClusterAtlas:2 · frist _pflanzGang _tickSaat tickArchitectureCulling:3",
+  "vegetation-baum": "messung _ensureFoliageClusterAtlas:2 · frist _landmarkenFern _pflanzGang _tickSaat tickArchitectureCulling:3",
   "vegetation-streu": "gpu _archGroupLeerDispose · frist _scatterPass _tickFoliageThin _tickScatterLod _tickScatterStreaming:2",
   "vegetation-wiese": "frist _nahWieseFernTakt:2 _tickNahStreu _tickNahWiese _tickPendingGrass _tickScatterRegrow:2 _tickWaldPlan:2 · laden _waldDartsAn",
   "wasser-zellen": "frist _tickPendingWaterIso:3",

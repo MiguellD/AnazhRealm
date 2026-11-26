@@ -412,6 +412,7 @@ function landmarkeBefunde(taeter, chunkZiel, saetze) {
     const S = [["Tafel der Heimat", L, 0.9, 1], ["Heimat außerhalb der Tafel", L, 0, 0], ["trockene Tafel", trocken, 0.9, 1]];
     for (const [name, Lx, lo, hi] of S.slice(0, saetze || S.length)) {
         r._gelaende = () => Lx;
+        if (r._landmarkeWurf) r._landmarkeWurf.clear(); // das Register des Werfers (`_landmarkeChunk`): je Satz eine neue Welt
         for (const k of Object.keys(n)) delete n[k];
         const mu = { felsbogen: 0, felsturm: 0 };
         let chunks = 0;
@@ -475,6 +476,46 @@ function landmarkeFunktion(taeter, chunkZiel) {
     const zeile = `Saat ${saat}: ${chunks} Tafel-Chunks ${km2.toFixed(1)} km², Bögen ${n.felsbogen} (Gesetz ${mu.felsbogen.toFixed(1)}) · Türme ${n.felsturm} (Gesetz ${mu.felsturm.toFixed(1)}), ${fremd} Chunks anders als die geladene`;
     return { out, zeile };
 }
+// DER FERN-WURF (landmarken-geologie-7, `_landmarkenFern`): der Takt am Ort der Heimat (0, 0) mit offener Frist wirft JEDEN Chunk,
+// dessen Mitte binnen `LANDMARKE_FERN_M` liegt (das Register `_landmarkeWurf`), genau die Würfe des Gesetzes (`_landmarkenDesChunks`
+// je Chunk), ein zweiter Gang wirft nichts doppelt. Die Würfe zählt ein Spion an der Pflanz-Schlange (`_enqueueVegetationSpawn`).
+function landmarkeFern(taeter) {
+    const { r, ctx } = stammLib.grundWirt(ROOT, taeter);
+    const A = vm.runInContext("AnazhRealm", ctx);
+    const wuerfe = [];
+    r._enqueueVegetationSpawn = (art, p, o) => wuerfe.push({ art, x: p.x, z: p.z, key: o && o.landmarke });
+    const span = r._voxelChunkConfig().span;
+    const RM = A.LANDMARKE_FERN_M;
+    r._landmarkenFern({ x: 0, y: 0, z: 0 }, Infinity);
+    const n1 = wuerfe.length;
+    r._landmarkeFernLauf = null;
+    r._landmarkenFern({ x: 0, y: 0, z: 0 }, Infinity);
+    const out = [];
+    const R = Math.ceil(RM / span);
+    let [chunks, fehlt, gesetz] = [0, 0, 0];
+    for (let i = -R; i <= R; i++)
+        for (let j = -R; j <= R; j++) {
+            if (Math.hypot(i, j) * span > RM) continue;
+            chunks++;
+            if (!(r._landmarkeWurf && r._landmarkeWurf.has(`${i},${j}`))) fehlt++;
+            gesetz += r._landmarkenDesChunks(i, j).length;
+        }
+    const weit = wuerfe.filter((w) => Math.hypot(w.x, w.z) >= 1000).length;
+    if (fehlt) out.push(`_landmarkenFern: ${fehlt} von ${chunks} Chunks binnen ${RM} m ungeworfen — der Wurf endet vor der Richter-Weite`);
+    if (n1 !== gesetz) out.push(`_landmarkenFern: ${n1} Würfe, das Gesetz wirft ${gesetz} binnen ${RM} m`);
+    if (wuerfe.length !== n1) out.push(`_landmarkenFern: der zweite Gang wirft ${wuerfe.length - n1} doppelt — das Register hält nicht`);
+    const zeile = `Fern-Wurf an (0, 0): ${chunks} Chunks binnen ${RM} m, Würfe ${n1} (Gesetz ${gesetz}), davon in 1–3 km ${weit}, zweiter Gang ${wuerfe.length - n1}`;
+    return { out, zeile };
+}
+{
+    const FW = landmarkeFern(null);
+    console.log("      LANDMARKE " + FW.zeile);
+    ok("Landmarke: der Fern-Wurf wirft jeden Chunk bis zur Richter-Weite, genau das Gesetz, nie doppelt (`_landmarkenFern`)", FW.out.length === 0, FW.out[0] || FW.zeile);
+    const ring = landmarkeFern([["_landmarkenFern", "const RM = AnazhRealm.LANDMARKE_FERN_M;", "const RM = 764;"]]).out.join(" | ");
+    ok("Landmarke Selbsttest: der Wurf bis zum Voxel-Ring (764 m) fällt an _landmarkenFern", /^_landmarkenFern: \d+ von \d+ Chunks binnen 3000 m ungeworfen/.test(ring), ring || "die Mutante blieb grün");
+    const doppelt = landmarkeFern([["_landmarkeChunk", "if (M.has(key)) return 0;", ""]]).out.join(" | ");
+    ok("Landmarke Selbsttest: ein Werfer ohne Register fällt an _landmarkenFern (doppelt)", /der zweite Gang wirft \d+ doppelt/.test(doppelt), doppelt || "die Mutante blieb grün");
+}
 {
     const B = landmarkeBefunde(null, 8000);
     for (const z of B.zeilen) console.log("      LANDMARKE " + z);
@@ -508,9 +549,8 @@ function landmarkeFunktion(taeter, chunkZiel) {
         const soll = bp ? Math.max(...bp.parts.map((q) => q.position.y + q.size.y / 2)) : 0;
         return `${art} gezeichnet ${hs[0].toFixed(2)}–${hs[hs.length - 1].toFixed(2)} m, Median ${med.toFixed(2)} m (${pr} × ${k}, ${hs.length} Gestalten) · Bauplan ${soll.toFixed(1)} m`;
     });
-    const C = B.r._voxelChunkConfig();
-    const ring = Math.max(1, Math.min(12, B.r.state.chunkRingRadius || 4));
-    bild.push(`Wurf bis ${((ring + 0.5) * C.span * Math.SQRT2).toFixed(0)} m (Ring ${ring} × ${C.span} m, höchstens ${((12 + 0.5) * C.span * Math.SQRT2).toFixed(0)} m) — der Richter fragt 1–3 km`);
+    // die Weite des Wurfs ist das Gesetz des Fern-Wurfs (`_landmarkenFern`, `LANDMARKE_FERN_M`), nicht mehr der Voxel-Ring (≤ 764 m)
+    bild.push(`Wurf bis ${B.A.LANDMARKE_FERN_M} m (Fern-Wurf, \`_landmarkenFern\`) — der Richter fragt 1–3 km`);
     console.log("      LANDMARKE IM BILD " + bild.join(" · "));
 }
 

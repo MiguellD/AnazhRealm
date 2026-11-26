@@ -1727,12 +1727,15 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         // unten μ − 3,3·√μ); KONSUM: je Art ihr erster Träger in A geht durch die volle Saat (`_populateVoxelChunkVegetation`,
         // der Pfad des Stroms) und trägt dort dieselbe Art.
         const vorArch = new Set(st.architectures);
+        // das Register des Werfers (`_landmarkeWurf`, landmarken-geologie-7: ein Chunk wirft einmal) — je Probe eine neue Welt
+        const frisch = () => r._landmarkeWurf && r._landmarkeWurf.clear();
         const span = r._voxelChunkConfig().span;
         const K = globalThis.__gelaendeCore;
         const L = r._gelaende();
         const LM = ["felsbogen", "felsturm"];
         const ort = (chunks) => {
             const o = { chunks: 0, km2: 0, mu: { felsbogen: 0, felsturm: 0 }, n: { felsbogen: 0, felsturm: 0 }, traeger: {} };
+            frisch();
             const vorher = r._vegSpawnImmediate;
             r._vegSpawnImmediate = true; // die Test-Naht der Saat (`_enqueueVegetationSpawn`: synchron statt Schlange)
             try {
@@ -1781,6 +1784,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
                 continue;
             }
             const vor = new Set(st.architectures);
+            frisch();
             r._populateVoxelChunkVegetation(t[0], t[1], { immediate: true });
             const neu = st.architectures.filter((x) => !vor.has(x) && x.type === a);
             out.konsum[a] = { key, n: neu.length };
@@ -1797,6 +1801,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         // Welt — die Station der Wegfindung maß 1 von 51 Saaten („keine Funktion der Saat“).
         const kurz = (l) => l.map((w) => `${w.art}@${w.x.toFixed(2)},${w.z.toFixed(2)}#${w.seed}`).join(" ");
         out.funktion = { gleich: 0, anders: 0, beispiel: null };
+        frisch();
         for (const [cx, cz] of tafel) {
             const liste = r._landmarkenDesChunks(cx, cz);
             if (!liste.length) continue;
@@ -1818,6 +1823,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             }
         }
         st.architectures = st.architectures.filter((x) => vorArch.has(x));
+        frisch();
         const wm = st.worldMeta;
         const saat2 = `${L.seed}-andere`;
         const L2 = K.lageAus(

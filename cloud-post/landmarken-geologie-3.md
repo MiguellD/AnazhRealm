@@ -25,8 +25,9 @@ danach im Bild steht.
 | K5-3 | Der Bogen hatte keine Öffnung. | phyto-core.js:2207 `buildFelsbogenGeometry`: ein Block mit Loch, innen die Ellipse der Öffnung, außen die kantige Superellipse, Füße 0,6 m im Boden; foundry-core.js:5663 `deriveParamsBogen`: Spanne log-gleich 17–26,5 m, lichte Höhe 0,60–0,65 · Spanne, Stärke 0,113 · Spanne (Prebischtor 26,5 / 16 / 3 m, Kuhstall 17 / 11 m; Wikipedia, Stand 2026); :5038 die Hülle als 9 Boxen je Gestalt (Pfeiler je Scheibe, Sturz). | Bogen: lichte Höhe 10,5–16,8 m, Breite 26–40 m, ≤ 1 280 Dreiecke; Öffnung am Boden ≥ 16,7 m in 16 von 16 Gestalten, der Turm Höhe : Breite ≥ 2,76 (Playtest W6.G P3) |
 | K5-4 | Die Kollision des Fels kannte nur EINE Box vom Boden: ein Bogen wäre ein Klotz ohne Durchgang. | stamm/gelaende-kollision.js:1362 `_felsBlockerParts` liest die Zeile als eine Box oder als Liste von Boxen, alles andere ist ein Kern-Pflicht-Bruch; der Leser :191 iteriert alle. Linse: scripts/diag-kollision-bild.cjs:25 (D) DURCHGANG (die Mitte der Öffnung in 0,5/1/1,8 m frei) und der Schmuggel :479 (eine Box über den ganzen Bogen wird beim Namen genannt); Selbsttest :239–240. | Box ohne Bild 0,18 / 1,06 m → 0,10 / 0,09 m · (D) frei in 16 von 16 Gestalten · Schmuggel `felsbogen#5` ROT beim Namen |
 | K5-5 | Jenseits der Nah-Grenze (64 m) zeichnet der Welt-March den Fels als Box-Fit: EINE Box je Mesh. Der Bogen stand fern als Klotz ohne Öffnung, der Turm als Platte von Fuß-Breite bis zum Gipfel. | stamm/gelaende-kollision.js:1374 `_felsHuellBoxen`: die Hülle als Boxen, die EINE Quelle für Kollision (:1362) und Ferne; stamm/studio-bruecke.js:3080 `_felsFernBoxen`: ein Fels mit Boxen-Liste steht fern in seiner Hülle (Welt-Skala, Farbe des Fits), gerufen am Satz :2992; der Turm trägt seine Hülle in fünf Scheiben (foundry-core.js:4995). Linse: scripts/diag-kollision-bild.cjs:28 (F) FERNE (Umriss des Satzes ≤ 0,3 m neben dem Bild, die Öffnung im Satz frei) und der Schmuggel :518 (der Box-Fit allein wird beim Namen genannt); der Bogen-Test hängt am Gesetz `ph.bogen` (:420). | Öffnung im Fern-Satz: zu → frei in 16 von 16 Gestalten · Turm fern: eine Box → 5 Scheiben, oben 0,78–0,96 der Fuß-Breite · Box ohne Bild 0,10 / 0,09 m (gleich) · Schmuggel `felsbogen#5` ROT beim Namen |
+| K5-6 | Die Saat der Landmarke endete am gebauten Voxel-Ring (`_populateVoxelChunkVegetation` hinter `voxelChunks.has`, ≤ 764 m), ihr Boden und ihr Land las sie am gebauten Mesh (`_voxelSurfaceY`, `_landAt`) — jenseits davon warf die Welt keine Landmarke, die der Richter in 1–3 km sucht. | stamm/vegetation-baum.js:2593 `_landmarkenFern`: ein Takt im Abräum-Gang (stamm/gelaende-fern.js:35) wirft Ring um Ring jeden Chunk, dessen Mitte binnen `LANDMARKE_FERN_M` (3 000 m) liegt, durch den EINEN Werfer `_landmarkeChunk` (:2561, idempotent im Register `_landmarkeWurf`, ein Zell-Gedächtnis mit Abschied `_landmarkeGeht` :2574, gelaende-fern.js:2487); Boden und Land aus dem Gesetz (gelaende-core `hoehe`, `wasserSpiegel`); die Saat-gehen-Regel lässt Landmarken stehen (gelaende-fern.js:89, :94). Linse: scripts/diag-phyto-tree.cjs:482 `landmarkeFern` mit zwei Mutanten (Wurf bis 764 m · Werfer ohne Register). | Wurf ≤ 764 m → 3 000 m · an der Heimat 15 169 Chunks binnen 3 km: Würfe 14 = Gesetz 14, davon 11 in 1–3 km · zweiter Gang 0 doppelt · Kosten (Node) 2,6 µs je Chunk, der ganze Wurf 128 ms, je Abräum-Gang ≥ 64 Schritte bis zur Frist |
 
-## Ehrlich halb: wegfindung#1 hat fünf Eingänge, drei tragen jetzt einen Leser des Spiels (60 %)
+## Ehrlich halb: wegfindung#1 hat fünf Eingänge, vier tragen jetzt einen Leser des Spiels (80 %)
 
 1. **Der Wurf als Funktion der Saat** — K4-1.
 2. **Die Dämpfung als Zahl** — K4-2.
@@ -34,9 +35,8 @@ danach im Bild steht.
    Quantil; der Katalog „List of longest natural arches“ trägt nur Spannen ≥ 54,9 m), die Schlankheit des Turms (3,8 aus dem Bauplan) und die Bank-Stärke haben kein äußeres Band, das Bild auf
    echter GPU fehlt (die Werkbank stürzt in diesem Container; das Bild kam aus dem Rasterer am gebauten Mesh). Messname: „LANDMARKE IM
    BILD … gezeichnet“ (`gate:phyto-core`).
-4. **Halb: die Landmarke in der Ferne.** Ihre Fernform steht (K5-5). Offen der Fern-Wurf: die Saat endet am gebauten Voxel-Ring (`_populateVoxelChunkVegetation` hinter
-   `voxelChunks.has`, ≤ 764 m). Seit K4-1 ist der Wurf eine Funktion; ein Fern-Wurf kann ihn für 1–3 km lesen, ohne Chunk. Messname:
-   „LANDMARKE IM BILD … Wurf bis“ (`gate:phyto-core`).
+4. **Die Landmarke in der Ferne** — K5-5 (Fernform) und K5-6 (Fern-Wurf bis 3 km). Ehrlich offen darin: das Bild auf echter GPU in
+   1–3 km (die Werkbank stürzt in diesem Container). Messname: „LANDMARKE Fern-Wurf an (0, 0)“ (`gate:phyto-core`).
 5. **Offen: C₀ der Landmarke.** Der Kontrast ist C₀ · Durchlass (Koschmieder 1924). Für C₀ fehlt die Leuchtdichte des Himmels je
    Richtung als CPU-Leser (welt-licht `himmelTexel` ist ein TSL-Knoten). Messname: der Richter der Karte, S1 „ungemessen: Kontrast“.
 
@@ -47,14 +47,14 @@ stehen mit Ursache, Schnitt und Zahl im Blatt von Kopf 3 (`git show e576d8cc:clo
 
 - **Geschnitten:** der Wurf der Landmarke als Funktion der Saat (stamm/vegetation-baum.js:2572), die Dämpfung der Luft als Zahl
   (stamm/bild-himmel.js:2683); Felsturm und Felsbogen in ihrer Größe (phyto-core.js:2087 und :2207, foundry-core.js:5632 und :5663),
-  die Kollision mit Öffnung und die Fernform aus derselben Hülle (stamm/gelaende-kollision.js:1374, stamm/studio-bruecke.js:3080); die Linsen in ihren Familien (scripts/diag-phyto-tree.cjs:441 und :493,
+  die Kollision mit Öffnung und die Fernform aus derselben Hülle (stamm/gelaende-kollision.js:1374, stamm/studio-bruecke.js:3080), der Fern-Wurf bis 3 km (stamm/vegetation-baum.js:2593); die Linsen in ihren Familien (scripts/diag-phyto-tree.cjs:441 und :493,
   scripts/lib/licht-linsen.cjs:3259, scripts/diag-kollision-bild.cjs:25, scripts/playtest/feld-leben.cjs:1779 und :1878). Goldens nur
   Daten (recipes, render-config, manifest), jedes Mesh der Benchmark byte-gleich.
 - **Gemessen (vorher → nachher):** Adressen der Station 1 → 51 von 51 · Durchlass am Ort: kein Leser → 0,4840/0,3744/0,2533 auf 5 km
   = Definition · gezeichnet 0,35–0,48 m → Turm 8,00–68,62 m, Bogen 12,72–19,91 m mit Öffnung, fern (> 64 m) Öffnung zu → frei in 16 von 16 · Landmarke im Bild in 1–3 km: 0 von 51
-  (Wurf ≤ 275 m) — die Zahl des Richters bleibt ROT bis zum Fern-Wurf.
+  (Wurf ≤ 275 m) · Wurf ≤ 764 m → 3 000 m, an der Heimat 11 Landmarken in 1–3 km (Gesetz = Wurf) — das Bild des Richters auf GPU ist offen.
 - **probeUrteil lokal:** PROBEURTEIL
-- **Offen:** der Fern-Wurf der Landmarke, C₀, das Band der Bögen aus einem Katalog (oben, mit Messnamen).
+- **Offen:** das Bild in 1–3 km auf echter GPU, C₀, das Band der Bögen aus einem Katalog (oben, mit Messnamen).
 - **Kopf:** KOPF40
 - **Beanspruchte Sprosse:** `karte2.erleben.spieler.wegfindung#1`.
 - Karte 2 gebucht 126 von 1 718. Status ZWISCHENSTAND.
