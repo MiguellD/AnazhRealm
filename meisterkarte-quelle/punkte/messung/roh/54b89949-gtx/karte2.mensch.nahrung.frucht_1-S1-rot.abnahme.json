@@ -1,0 +1,114 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.437",
+  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 1523,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.1393,
+  "taeter": {
+   "Laub baum_tanne": 0.1393
+  },
+  "vordergrund": {
+   "radius": 4.09,
+   "deckung": 0.328,
+   "taeter": {
+    "Laub baum_tanne": 0.2376,
+    "Gelände": 0.0556,
+    "siedlung-acker": 0.0174,
+    "siedlung-frucht": 0.0122
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 8.18,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -635.13,
+   45.25,
+   -805.91
+  ],
+  "blick": [
+   -0.77417,
+   -0.2177,
+   -0.59437
+  ]
+ },
+ "seitenfehler": 0,
+ "leiber": {
+  "nahM": 6,
+  "n": 1,
+  "halb": 0,
+  "teile": 7,
+  "ganz": true,
+  "fehlt": []
+ },
+ "bild": {
+  "w": 1280,
+  "h": 720,
+  "mittel": 0,
+  "sigma": 0,
+  "schwarz": 1,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [bild.mittel 0 < 6 · bild.sigma 0 < 4 · bild.schwarz 1 > 0.6 · Sicht verdeckt 13.9 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_tanne 13.9 % · Vordergrund 32.8 % näher als 4.09 m (der halbe Ziel-Abstand): Laub baum_tanne 23.8 %, Gelände 5.6 %, siedlung-acker 1.7 %] · beweis · Sicht 13.9 % (Laub baum_tanne 13.9 %) · Leiber näher als 6 m: 1 von 1 ganz (7 Teile) · Ziel Blickziel im Bild frei 8.18 m · Luma 0 σ 0 schwarz 100.0 % weiß 0.0 % · Stand 18.546.437 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal",
+ "rot": [
+  {
+   "feld": "bild.mittel",
+   "grund": "bild.mittel 0 < 6"
+  },
+  {
+   "feld": "bild.sigma",
+   "grund": "bild.sigma 0 < 4"
+  },
+  {
+   "feld": "bild.schwarz",
+   "grund": "bild.schwarz 1 > 0.6"
+  },
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 13.9 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_tanne 13.9 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 32.8 % näher als 4.09 m (der halbe Ziel-Abstand): Laub baum_tanne 23.8 %, Gelände 5.6 %, siedlung-acker 1.7 %"
+  }
+ ],
+ "urteil": "ROT"
+}
