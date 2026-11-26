@@ -1,0 +1,140 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.430",
+  "sha": "64fcf12e68b47704c5d88094e14476ea64a088da"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 137,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.2454,
+  "taeter": {
+   "Rinde baum_totholz": 0.2454
+  },
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.4358,
+   "taeter": {
+    "Rinde baum_totholz": 0.316,
+    "Laub grown_busch_hazel_v1": 0.066,
+    "Rinde baum_tanne": 0.0451,
+    "Rinde baum_kiefer": 0.0087
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   184,
+   50.03,
+   231
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 55,
+  "sigma": 31.1,
+  "schwarz": 0.001,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 24.5 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde baum_totholz 24.5 % · Vordergrund 43.6 % näher als 8 m (der halbe Ziel-Abstand): Rinde baum_totholz 31.6 %, Laub grown_busch_hazel_v1 6.6 %, Rinde baum_tanne 4.5 % · kein nahWiese im Bild: 0.2 % < 15.0 %] · beweis · Sicht 24.5 % (Rinde baum_totholz 24.5 %) · Ziel Blickziel im Bild frei 20 m · Luma 55 σ 31.1 schwarz 0.1 % weiß 0.0 % · Stand 18.546.430 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt nahWiese 0.2 % (≥ 15.0 %) h 117° Luma 97",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 24.5 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde baum_totholz 24.5 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 43.6 % näher als 8 m (der halbe Ziel-Abstand): Rinde baum_totholz 31.6 %, Laub grown_busch_hazel_v1 6.6 %, Rinde baum_tanne 4.5 %"
+  }
+ ],
+ "inhalt": {
+  "rot": [
+   {
+    "schluessel": "imBild.nahWiese",
+    "grund": "kein nahWiese im Bild: 0.2 % < 15.0 %"
+   }
+  ],
+  "zeile": "Inhalt nahWiese 0.2 % (≥ 15.0 %) h 117° Luma 97"
+ },
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^nahWiese([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1483,
+   "wechsel": 1160594
+  },
+  "rinde": null,
+  "toene": [
+   "nahWiese:L1=255/80/80",
+   "nahWiese:L2=80/255/80",
+   "nahWiese:Lf=80/120/255"
+  ],
+  "klassen": {
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 4912,
+    "farbe": [
+     0.09988,
+     0.13913,
+     0.02762
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\64fcf12e-gtx\\auge-same-kohaerenz-s6-rot.maske.png"
+ }
+}
