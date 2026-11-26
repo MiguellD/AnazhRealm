@@ -1586,6 +1586,7 @@ class AnazhRealm_koerper_fahrt {
         e.tiefe = this._fahrTiefe(fz);
         e.haft = this._fahrHaft(fz);
         e.wind = this._fahrWind(fz);
+        e.boden = this._fahrRad(fz, entry._fahrSatz, false); // das Rad im weichen Boden und seine Spur (fahrzeug-medium)
         vc.fahrKraefte(fz, e, entry._fahrSatz, dt);
         entry._rideYaw = fz.yaw + Math.PI / 2;
         const k = huelle ? this._fahrHuelle(entry) : null;
@@ -1818,38 +1819,85 @@ class AnazhRealm_koerper_fahrt {
     // nass; in der Sonne genau der Film der Welt.
     _fahrHaft(fz) {
         const n = Math.min(1, Math.max(0, this._naesseAm(fz.x, fz.y, fz.z)));
-        // DER MERKER am Fahr-Zustand (Lehre 25: der Takt kostet, was ihn betrifft): der Boden unter dem Rad ist derselbe, bis der
-        // Wagen `HAFT_MERK_M` weiter ist oder die Stoff-Zeile wechselt — Fahrer und Fahr-Schritt fragten ihn je Schritt neu (der
-        // Verkehr der Metropole: 27 Fragen je Schritt, 1,1 ms). Er trägt μ trocken und voll nass: die Zeile ist linear in der
-        // Nässe, und die Gewichte des Bodens hängen nicht an ihr — so mischt die Nässe beide, gleich der Rechnung bis auf die Rundung. Bis
-        // pflicht.C#1 merkte er die Nässe selbst: sie läuft nach jedem Wort des Wetters Bild für Bild zu ihrem Ziel
-        // (`_naesseTakt`), und jeder Ruf fragte den Boden neu (stadt-voll 10 Uhr: 0,41 ms je Bild für 20 Wagen)
-        const st = AnazhRealm._stoffStand || 0;
-        let M = fz._haft;
-        if (
-            !M ||
-            M.st !== st ||
-            !(Math.abs(M.x - fz.x) < AnazhRealm.HAFT_MERK_M) ||
-            !(Math.abs(M.z - fz.z) < AnazhRealm.HAFT_MERK_M)
-        ) {
-            const mu = (stoff, k) => {
-                const z = this._stoff(stoff, "das Rad auf „" + stoff + "“ greift nicht");
-                if (z && z.muRad > 0) return z.muRad + (z.muRadNass - z.muRad) * k;
-                this._bruchMelden("STOFF-ZEILE ohne Haftung: das Rad auf „" + stoff + "“ greift wie auf Asphalt");
-                return 1;
-            };
-            const gruen = this._bodenGruenUnter(fz.x, fz.z, fz.y);
-            const pfad = this._pfadFeldAt(fz.x, fz.z, fz.y);
-            const grund = this._terrainMaterialAt(fz.x, fz.z, fz.y);
-            const bei = (k) => {
-                let m = mu(grund, k);
-                if (gruen > 0) m += (mu("gras", k) - m) * gruen;
-                if (pfad > 0) m += (mu("erde", k) - m) * pfad;
-                return m;
-            };
-            M = fz._haft = { x: fz.x, z: fz.z, st, trocken: bei(0), nass: bei(1) };
-        }
+        const M = this._fahrGrund(fz);
         return M.trocken + (M.nass - M.trocken) * n;
+    }
+
+    // DER GRUND UNTER DEM RAD (fahrzeug-medium: „die Fahrt ist eine Funktion des Mediums am Ort“): der Stoff, auf dem der Wagen
+    // steht, durch den EINEN Leser des Leibs (`_kontaktStoffAt`: die Auflage eines Baus — nie der Wagen selbst, `ohne` —, das Eis
+    // des Spiegels, die Lava, das Pflaster, der Pfad, das Laub, die Wiese, der Stoff des Felds) — seine Zeile trägt μ des Rads
+    // trocken und nass (`muRad`, `muRadNass`) und den Boden, in den es sinkt (`radBoden`, null: fester Grund); auf weichem Grund
+    // dazu die Feuchte des Bodens (`_feuchteAt`, das Wasser der Saat: Fluss und Ufer). Bis fahrzeug-medium mischte der Wagen
+    // seinen Boden selbst — das Feld, darüber das Grün als Gras und der Pfad als Erde, ein zweiter Boden-Leser neben dem des Leibs
+    // (gate:constitution „haftung-aus-sicht“), und der Boden reiste nur als μ: Rollwiderstand und Einsinken kannten keinen.
+    // DER MERKER am Fahr-Zustand (Lehre 25: der Takt kostet, was ihn betrifft): der Boden unter dem Rad ist derselbe, bis der
+    // Wagen `HAFT_MERK_M` weiter ist oder die Stoff-Zeile wechselt — Fahrer und Fahr-Schritt fragten ihn je Schritt neu (der
+    // Verkehr der Metropole: 27 Fragen je Schritt, 1,1 ms). Die Nässe des Films merkt er nicht: sie läuft nach jedem Wort des
+    // Wetters Bild für Bild zu ihrem Ziel (`_naesseTakt`, pflicht.C#1), `_fahrHaft` mischt sie am Ruf.
+    _fahrGrund(fz) {
+        const st = AnazhRealm._stoffStand || 0;
+        const M = fz._haft;
+        if (
+            M &&
+            M.st === st &&
+            Math.abs(M.x - fz.x) < AnazhRealm.HAFT_MERK_M &&
+            Math.abs(M.z - fz.z) < AnazhRealm.HAFT_MERK_M
+        )
+            return M;
+        const stoff = this._kontaktStoffAt(fz.x, fz.z, fz.y, undefined, fz);
+        const z = this._stoff(stoff, "das Rad auf „" + stoff + "“ greift nicht");
+        const greift = !!(z && z.muRad > 0);
+        if (!greift) this._bruchMelden("STOFF-ZEILE ohne Haftung: das Rad auf „" + stoff + "“ greift wie auf Asphalt");
+        const boden = (z && z.radBoden) || null;
+        return (fz._haft = {
+            x: fz.x,
+            z: fz.z,
+            st,
+            stoff,
+            trocken: greift ? z.muRad : 1,
+            nass: greift ? z.muRadNass : 1,
+            boden,
+            feuchte: boden ? Math.min(1, Math.max(0, +this._feuchteAt(fz.x, fz.z, fz.y) || 0)) : 0,
+        });
+    }
+
+    // DAS RAD IM BODEN UND SEINE SPUR (fahrzeug-medium): je Rad des Wagens (die Aufstandspunkte des Fahr-Satzes, `G.auf`, in der
+    // Gier des Zustands) die Tiefe und der Widerstand des weichen Bodens unter ihm (vehicle-core `radImBoden`: Bekker, der Satz
+    // der Stoff-Zeile, die Feuchte des Bodens) nach den Durchfahrten, die die Zelle schon trägt (`_trittZahl`: das EINE Feld der
+    // Tritte, in das Fuß, Huf und Rad schreiben) — und das Rad schreibt zurück: betritt es eine neue Zelle weichen Bodens, tritt
+    // es sie (`_tritt`, die Spur verdichtet; ab der Stufe des Pfads malt die Wege-Karte sie als Erde, das Auge und der nächste
+    // Wagen lesen sie, der Stand trägt sie). Kosten am fahrenden Rad: je Rad nur, wenn es eine neue Zelle betritt (`TRITT.zelleM`),
+    // sonst die gemerkte Zahl; auf festem Grund nichts. → { fr, z } (der Mittelwert der Räder) oder null (fester Grund, kein Rad,
+    // in der Luft): der Kern fährt dann byte-alt.
+    _fahrRad(fz, G, spieler) {
+        const M = G && G.rad ? this._fahrGrund(fz) : null;
+        if (!M || !M.boden || fz.luft === true) return null;
+        const { vc } = AnazhRealm._fahrSchrittGesetz();
+        const T = AnazhRealm.TRITT;
+        const a = G.auf;
+        const [fx, fzv, lx, lz] = [Math.cos(fz.yaw), -Math.sin(fz.yaw), -Math.sin(fz.yaw), -Math.cos(fz.yaw)];
+        const R = fz._raeder || (fz._raeder = [{}, {}, {}, {}]);
+        let fr = 0;
+        let tief = 0;
+        for (let k = 0; k < 4; k++) {
+            const l = k < 2 ? a.vorn : a.hinten;
+            const q = k % 2 ? -a.quer : a.quer;
+            const x = fz.x + fx * l + lx * q;
+            const z = fz.z + fzv * l + lz * q;
+            const r = R[k];
+            const [i, j] = [Math.floor(x / T.zelleM), Math.floor(z / T.zelleM)];
+            if (r.i !== i || r.j !== j) {
+                // die Durchfahrten VOR diesem Rad, dann sein Tritt: der Boden unter ihm kennt sie, das nächste Rad zählt es mit
+                [r.k, r.i, r.j, r.M] = [this._trittZahl(x, z), i, j, null];
+                this._tritt(r, x, z, true, spieler);
+            }
+            if (r.M !== M) [r.boden, r.M] = [vc.radImBoden(G.rad, M.boden, M.feuchte, r.k), M];
+            fr += r.boden.fr;
+            tief += r.boden.z;
+        }
+        // je Schritt ein eigenes Ergebnis (wie `_fahrWind`): wer die Eingabe des Schritts bewahrt (die Spur der Probefahrt, der
+        // Labor-Ritt), liest den Boden DIESES Schritts — ein geteiltes Objekt trug ihm den letzten (gate:fahr-leben K8 „Labor = Welt“)
+        return { fr: fr / 4, z: tief / 4 };
     }
 
     // DER WIND AM WAGEN (wetter.K5): der EINE Wind am Ort des Fahr-Zustands (`_windAt` auf der Uhr des Sim-Schritts, nie der
