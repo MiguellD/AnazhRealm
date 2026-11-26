@@ -947,15 +947,86 @@ async function kernProbe(page, url) {
 // der Leser jedes Werks, das gesetzt wird: Wald, Genesis-Ort, `_landAt`) liegt in jeder Viertelstunde Wort für Wort gleich.
 // DIE GEBURT: zur Welt-Uhr 0 steht das Meer im Mittel (`_weltUhrNeu(0)`).
 // DER RING: der Fern-Ring an diesem Ort legt die Punkte der Gezeit zu jeder Stufe neu (`gezeitRing`, Leser `_fernRingY`).
-// Das Urteil nennt den Täter: STEHT (der Hub fiel) · HUB · PERIODE · SCHWEBUNG · SPIEGEL (Stamm ≠ Faden) · WATT · LAND · GEBURT · RING · TRÄGER.
+// DER KÖRPER (gezeiten-2): der Spieler am Ende des Profils im Meer, die Chunks um ihn gezeichnet — der Leib liest dort das
+// GEZEICHNETE Sheet (`_koerperWasser` → `_wasserBildAt`), nie das Gesetz; je Viertelstunde der Uhr ohne Neubau (das Sheet steht
+// in der Stufe seines Baus) muss er den Spiegel des Gesetzes tragen (`gezeitKoerper`). Am Gerät stand er: Hub 0, −3 m.
+// Das Urteil nennt den Täter: STEHT (der Hub fiel) · HUB · PERIODE · SCHWEBUNG · SPIEGEL (Stamm ≠ Faden) · WATT · LAND · GEBURT · RING · KÖRPER · TRÄGER.
 // Selbsttest: „Spiegel steht“ in Wirt und Faden MUSS STEHT nennen, nur im Faden MUSS SPIEGEL nennen, „Land mit Uhr“ MUSS LAND nennen,
-// „der Ring steht“ MUSS RING nennen.
+// „der Ring steht“ MUSS RING nennen, „der Körper ohne Hub“ (`_gezeitHubBild` 0: das Sheet trägt die Stufe seines Baus) MUSS KÖRPER nennen.
 const GEZEIT_ORT = Object.freeze({ x: 0, z0: 10430, dz: 40, n: 11, name: "Nordsee-Watt (Zensus Rang 6)" });
 const GEZEIT_SOLL = Object.freeze({ periodeH: 12.4206, periodeTol: 0.01, spring: 3.48, nipp: 2.54, hubTol: 0.05, schwebungD: 14.765, schwebungTol: 0.02, fensterH: 24.84, schrittH: 0.25, tage: 31 });
-async function gezeitLesen(page, ring) {
+// DER KÖRPER AM GEZEICHNETEN MEER: der Spieler am Meer-Ende des Profils, der Ring baut synchron um ihn (wie `wasserStrom`), dann
+// je Viertelstunde über das Fenster die Uhr mit dem Takt des Pegels (der Chunk wird schmutzig, nie neu gebaut): der Leib
+// (`_koerperWasser`) gegen das Gesetz (`_atlasWaterLevelAt`). `ohneHub` ist die Mutante des Selbsttests.
+async function gezeitKoerper(page, ohneHub) {
+    return page.evaluate(
+        async (O, S, ohneHub) => {
+            const r = window.anazhRealm;
+            const st = r.state;
+            const [sx, sz] = [O.x, O.z0 + O.dz * (O.n - 1)];
+            const zurueck = [];
+            const leihe = (o, t) => {
+                const a = {};
+                for (const k of Object.keys(t)) (a[k] = o[k]), (o[k] = t[k]);
+                return () => Object.assign(o, a);
+            };
+            st.playerMesh.position.set(sx, r._voxelSurfaceY(sx, sz) + 2, sz);
+            if (st._fixedSimPos) st._fixedSimPos.copy(st.playerMesh.position);
+            await __weltDa(() => !r._ensureHydroTilesAround(sx, sz, 2048));
+            // der Takt der Welt baut den Ring (`gezeitLesen` legte ihn still, die Uhr gehört der Probe)
+            zurueck.push(leihe(st, { voxelWorker: null }), leihe(r, { _syncStelle: "naht", _gameLoopTick: window.__gezeitTakt }));
+            try {
+                for (let last = -1, still = 0, n = 0; n < 9000; n++, await new Promise((f) => setTimeout(f, 0))) {
+                    __handTakt();
+                    const k = st.voxelChunks ? st.voxelChunks.size : 0;
+                    still = k === last ? still + 1 : 0;
+                    last = k;
+                    if (k >= 9 && still > 30 && !r._weltOffen().chunks) break;
+                }
+            } finally {
+                for (const z of zurueck.reverse()) z();
+            }
+            const span = r._voxelChunkConfig(0).span;
+            const key = `${Math.floor(sx / span)},${Math.floor(sz / span)}`;
+            const iso = st.voxelChunkWaterIso;
+            const z = { ort: [sx, sz], chunk: !!st.voxelChunks && st.voxelChunks.has(key), sheet: !!iso && !!iso.get(key), koerper: [], gesetz: [] };
+            if (ohneHub) zurueck.push(leihe(r, { _gezeitHubBild: () => 0 }));
+            try {
+                for (let h = 0; h <= S.fensterH + 1e-9; h += S.schrittH) {
+                    __gezeitUhr(h, true);
+                    z.koerper.push(r._koerperWasser(sx, sz, -Infinity));
+                    z.gesetz.push(r._atlasWaterLevelAt(sx, sz, -1e9));
+                }
+            } finally {
+                for (const f of zurueck.reverse()) f();
+                __gezeitUhr(0, true);
+            }
+            return z;
+        },
+        GEZEIT_ORT,
+        GEZEIT_SOLL,
+        !!ohneHub
+    );
+}
+function gezeitKoerperUrteil(k) {
+    const [x, z] = k.ort;
+    if (!k.chunk || !k.sheet) return [["KÖRPER", `KÖRPER: am Meer (${x}|${z}) ${k.chunk ? "zeichnet der Chunk kein Sheet" : "steht kein Chunk"} — die Linse ist blind (der Leib liest dort das Gesetz)`]];
+    let ab = 0;
+    let erst = null;
+    k.koerper.forEach((v, i) => {
+        if (Math.abs(v - k.gesetz[i]) <= 0.01) return;
+        ab++;
+        erst = erst || `Viertelstunde ${i}: Leib ${v} ↔ Gesetz ${k.gesetz[i]}`;
+    });
+    const hub = Math.max(...k.koerper) - Math.min(...k.koerper);
+    if (!ab && hub >= 0.5) return [];
+    return [["KÖRPER", `KÖRPER: am gezeichneten Meer (${x}|${z}) trägt der Leib (\`_koerperWasser\` → \`_wasserBildAt\`) Hub ${hub.toFixed(2)} m, ${ab} von ${k.koerper.length} Viertelstunden neben dem Gesetz (zuerst ${erst || "—"}) — das gezeichnete Sheet steht in der Stufe seines Baus, \`_wasserNetzHoehe\` hebt sein Meer nicht um den Hub der Uhr (\`_gezeitHubBild\`)`]];
+}
+async function gezeitLesen(page, ring, koerper) {
     const seite = await page.evaluate(async (O, S) => {
         const r = window.anazhRealm;
         const st = r.state;
+        window.__gezeitTakt = r._gameLoopTick; // der Takt der Welt (eine Eigenschaft der Welt): der Körper baut mit ihm seinen Ring
         r._gameLoopTick = () => {};
         const zM = O.z0 + (O.dz * (O.n - 1)) / 2;
         await __weltDa(() => !r._ensureHydroTilesAround(O.x, zM, 600));
@@ -1019,6 +1090,8 @@ async function gezeitLesen(page, ring) {
     }
     await page.evaluate(() => (anazhRealm._weltUhrNeu(__gezeitBasis), anazhRealm._pegelTakt()));
     if (ring != null) seite.ring = await gezeitRing(page, ring);
+    if (koerper != null) seite.koerper = await gezeitKoerper(page, koerper);
+    await page.evaluate(() => (anazhRealm._weltUhrNeu(__gezeitBasis), anazhRealm._pegelTakt()));
     return seite;
 }
 // DER RING (der Fern-Ring: der Faden rechnet je Punkt die Teile seines Spiegels, gelaende-core `spiegelTeile`, der Wirt setzt sie zu
@@ -1209,22 +1282,27 @@ function gezeitUrteil(s) {
     if (!(z.watt.nassHoch - z.watt.nassTief >= 2)) rot.push(["WATT", `WATT: das Profil ${GEZEIT_ORT.name} trägt bei Niedrigwasser ${z.watt.nassTief} und bei Hochwasser ${z.watt.nassHoch} nasse Punkte (\`_nassAt\`) — das Watt fällt nicht trocken`]);
     if (s.geburt.k !== 0) rot.push(["GEBURT", `GEBURT: zur Welt-Uhr 0 (\`_weltUhrNeu(0)\`) steht das Meer auf Stufe ${s.geburt.k} (Stunde ${s.geburt.stunde}) — die Uhr der Gezeit (\`_gezeitStunde\`) beginnt nicht mit der Welt`]);
     if ((z.ring = s.ring)) rot.push(...gezeitRingUrteil(s.ring));
+    if (s.koerper) {
+        const k = s.koerper;
+        z.koerper = { ort: k.ort, chunk: k.chunk, sheet: k.sheet, hub: Math.max(...k.koerper) - Math.min(...k.koerper), ab: k.koerper.filter((v, i) => Math.abs(v - k.gesetz[i]) > 0.01).length, werte: k.koerper.length };
+        rot.push(...gezeitKoerperUrteil(k));
+    }
     if (landZieht || landAb || wattLand || !Number.isFinite(z.land.meer) || gegen < s.proben.length / 2) rot.push(["LAND", `LAND: der Spiegel des Lands folgt der Gezeit in ${landZieht} von ${z.land.werte} Werten (zuerst ${landErst || "—"}; ${gegen} von ${s.proben.length} Proben mit anderer Gegen-Stufe), das Hochwasser deckt ${wattLand} Punkte, die er Land nennt, Faden \`landWaterLevelAt\` ≠ Stamm \`_landSpiegelAt\` in ${landAb}, am Meer ${z.land.meer} — gelaende-core \`landSpiegel\` (das höchste Hochwasser, \`lageHochwasser\`)`]);
     return { rot: rot.map((x) => x[1]), namen: rot.map((x) => x[0]), z };
 }
 async function gezeitProbe(page, url) {
     const t0 = Date.now();
-    const lauf = async (haupt = null, faden = haupt, ring = null) => {
+    const lauf = async (haupt = null, faden = haupt, ring = null, koerper = null) => {
         Object.assign(KERN_MODUS, { haupt, faden, probe: null });
         try {
             await frischBoot(page, url);
-            return gezeitUrteil(await gezeitLesen(page, ring));
+            return gezeitUrteil(await gezeitLesen(page, ring, koerper));
         } finally {
             Object.assign(KERN_MODUS, { haupt: null, faden: null });
         }
     };
     console.log(`\n========= DIE GEZEIT — der Spiegel des Meers an der Welt-Uhr, Stamm-Leser = Faden, das Watt fällt trocken (${GEZEIT_ORT.name}) =========`);
-    const u = await lauf(null, null, false);
+    const u = await lauf(null, null, false, false);
     const z = u.z;
     if (z) {
         console.log(`  Pegel am Meer über ${GEZEIT_SOLL.fensterH} h: Hub ${z.hub.toFixed(2)} m (Quelle Cuxhaven Spring ${GEZEIT_SOLL.spring} · Nipp ${GEZEIT_SOLL.nipp} m) · Periode ${z.periode.toFixed(3)} h aus ${z.durchgaenge} Durchgängen (M2 ${GEZEIT_SOLL.periodeH} h, ${(100 * (z.periode / GEZEIT_SOLL.periodeH - 1)).toFixed(2)} %)`);
@@ -1236,6 +1314,8 @@ async function gezeitProbe(page, url) {
         const R = z.ring;
         if (R && R.gebaut)
             console.log(`  Fern-Ring (${R.punkte} Punkte, ${R.gezeit} tragen die Gezeit, gebaut in ${R.bauMs} ms): ${R.stufen.map((s) => `Stufe ${s.k} → ${s.gesetzt} neu gelegt in ${s.ms} ms über ${s.takte} Takte (der längste ${s.tickMax} ms), ${s.nass} nass, ${s.falsch} neben dem Gesetz, Spiegel ≠ Lage ${s.ab} von ${s.region}`).join(" · ")}`);
+        const K = z.koerper;
+        if (K) console.log(`  Körper am gezeichneten Meer (${K.ort.join("|")}, Chunk ${K.chunk ? "geladen" : "fehlt"}, Sheet ${K.sheet ? "gezeichnet" : "fehlt"}): \`_koerperWasser\` Hub ${K.hub.toFixed(2)} m über ${GEZEIT_SOLL.fensterH} h ohne Neubau, ${K.ab} von ${K.werte} Viertelstunden neben dem Gesetz`);
     }
     for (const b of u.rot) console.log("  ⛔", b);
     let rot = u.rot.length > 0;
@@ -1246,6 +1326,10 @@ async function gezeitProbe(page, url) {
             console.log(`  ${nennt ? "✅" : "⛔"} SELBSTTEST (${haupt || faden} — ${wer}): ${m.namen.join(" · ") || "nichts"} → ${nennt ? `${soll} beim Namen ROT` : `${soll} BLIEB BLIND`}`);
             rot = rot || !nennt;
         }
+        const mk = await lauf(null, null, null, true);
+        const nenntK = mk.namen.includes("KÖRPER");
+        console.log(`  ${nenntK ? "✅" : "⛔"} SELBSTTEST (der Körper ohne Hub — \`_gezeitHubBild\` 0, das Sheet trägt die Stufe seines Baus): ${mk.namen.join(" · ") || "nichts"} → ${nenntK ? "KÖRPER beim Namen ROT" : "KÖRPER BLIEB BLIND"}`);
+        rot = rot || !nenntK;
         const m = await lauf(null, null, true);
         const nennt = m.namen.includes("RING");
         console.log(`  ${nennt ? "✅" : "⛔"} SELBSTTEST (der Ring steht — \`_fernRingWasserNeu\` sieht den Wechsel der Stufe nicht): ${m.namen.join(" · ") || "nichts"} → ${nennt ? "RING beim Namen ROT" : "RING BLIEB BLIND"}`);

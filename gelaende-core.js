@@ -8336,18 +8336,24 @@
     }
     // der Spiegel der Körper aus seinen Teilen zur Stufe k der Gezeit (`wl` der Ruhe-Spiegel des Meers der Lage): die Zelle trägt
     // das Meer ab ihrer Schwelle, sonst ihren See, sonst den Rand, wenn der Boden darunter liegt; darüber der Stau
-    function spiegelZurStufe(t, o, k, terrainTopY, wl) {
+    // `aus` (optional): `aus.meer` 1, wo das Meer samt seinem Hub den Spiegel trägt (∂Spiegel/∂Hub = 1), sonst 0 — der Leser des
+    // gezeichneten Wassers hebt mit ihm den Vertex an der Uhr (`_wasserNetzHoehe`, der Wasser-Stoff `uGezeit`)
+    function spiegelZurStufe(t, o, k, terrainTopY, wl, aus) {
         const hub = gezeitHubStufe(k);
         let level;
-        if (k >= t[o]) level = t[o + 1] + hub;
+        let meer = 0;
+        if (k >= t[o]) (level = t[o + 1] + hub), (meer = 1);
         else if (t[o + 2] > -Infinity) level = t[o + 2];
         else {
             let rim = t[o + 3];
-            if (t[o + 4] + hub > rim) rim = t[o + 4] + hub;
-            if (k >= t[o + 5] && wl + hub > rim) rim = wl + hub;
+            if (t[o + 4] + hub > rim) (rim = t[o + 4] + hub), (meer = 1);
+            if (k >= t[o + 5] && wl + hub > rim) (rim = wl + hub), (meer = 1);
             level = Number.isFinite(terrainTopY) && rim > -Infinity && terrainTopY < rim ? rim : -Infinity;
+            if (level === -Infinity) meer = 0;
         }
-        return t[o + 6] > level ? t[o + 6] : level;
+        if (t[o + 6] > level) (level = t[o + 6]), (meer = 0);
+        if (aus) aus.meer = meer;
+        return level;
     }
     // die Teile des Meers allein (der Ruhe-Spiegel `wl`, zu jeder Stufe samt der Gezeit): der Spiegel vor der Hydrosphäre
     function spiegelMeer(t, o, wl) {
@@ -8376,13 +8382,17 @@
     // Boden („unbekannt“ heißt keine Rand-Erweiterung, nie „immer nass“); jenseits der Region ist das Meer der Default-Körper
     // (der Ozean ist global, V17.117). Der Fluss zählt mit seiner ganzen Breite, bei unbekanntem Boden nur sein Kanal-Kern.
     // `aus` (optional) bekommt den Spiegel der Körper ohne den Fluss: `aus.koerper`.
+    // `aus.meer` (spiegelZurStufe): 1, wo das Meer mit seinem Hub den Spiegel trägt — nie, wo der Fluss darüber steht.
     function atlasSpiegel(L, x, z, terrainTopY, aus) {
         const g = L.gezeit;
         const wl = typeof L.waterLevel === "number" ? L.waterLevel : 0;
-        let level = spiegelZurStufe(spiegelTeile(L, x, z, terrainTopY, SPIEGEL_HIER, 0), 0, g ? g.k : 0, terrainTopY, wl);
+        let level = spiegelZurStufe(spiegelTeile(L, x, z, terrainTopY, SPIEGEL_HIER, 0), 0, g ? g.k : 0, terrainTopY, wl, aus);
         if (aus) aus.koerper = level;
         const river = flussAm(L, x, z);
-        if (river && river.surfaceY > level && (terrainTopY !== -Infinity || river.centerness > 0)) level = river.surfaceY;
+        if (river && river.surfaceY > level && (terrainTopY !== -Infinity || river.centerness > 0)) {
+            level = river.surfaceY;
+            if (aus) aus.meer = 0;
+        }
         return level;
     }
     // DER SPIEGEL DES LANDS (planet.wasser.gezeiten): was BLEIBT — der Wurf des Walds, der Platz des Orts, Weg, Zaun und Bau —
