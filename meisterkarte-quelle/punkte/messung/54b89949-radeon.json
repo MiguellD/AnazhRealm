@@ -1,7 +1,7 @@
 {
  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
  "geraet": "radeon",
- "zeit": "2026-11-26T14:35:37.798Z",
+ "zeit": "2026-11-26T14:53:03.667Z",
  "host": "MiguellD",
  "je": {
   "profiband.K4#1": {
@@ -849,6 +849,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.erleben.klang.stimme#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT ✅ formant_abweichung_pct 9 (Soll ≤ 15) — Täter: Attrappe: spiel_gleich_pct 0 < 100 (Laute der Bewohner über den Weg des Spiels (`_bewohnerLaut` → Werkstatt `rufPuffer`) bit-gleich zum Gesetz, je Bewohner der Sitzung) · gespielt 0 < 1 (Laute, die das Spiel am Bus spielte (`rufSpielen`, rufeGespielt)) · leute 0 < 1 (Erwachsene der Sitzung am Abgriff mit dem Leib ihres Rufs gemessen) — die Welt änderte sich nicht",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S1 · ROT ✅ formant_abweichung_pct 9 (Soll ≤ 15) — Täter: Attrappe: spiel_gleich_pct 0 < 100 (Laute der Bewohner über den Weg des Spiels (`_bewohnerLaut` → Werkstatt `rufPuffer`) bit-gleich zum Gesetz, je Bewohner der Sitzung) · gespielt 0 < 1 (Laute, die das Spiel am Bus spielte (`rufSpielen`, rufeGespielt)) · leute 0 < 1 (Erwachsene der Sitzung am Abgriff mit dem Leib ihres Rufs gemessen) — die Welt änderte sich nicht",
+   "gpu": "amd/rdna-3",
+   "konsum": "k150255fd0f4b",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k22c261056679",
+   "s": 1,
+   "fremd": {
+    "s": 4.9,
+    "takte": 2,
+    "fremdS": 4.92,
+    "kerne": 0.995,
+    "fensterKerne": 0.995,
+    "namen": [
+     [
+      "node.exe dienst/messplatz-blick.cjs --takt 60",
+      0.78
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.66
+     ],
+     [
+      "sh.exe werkzeug/zug.sh nachwache",
+      0.53
+     ]
+    ],
+    "dienerS": 2.73,
+    "diener": [
+     [
+      "System",
+      1.06
+     ],
+     [
+      "dwm.exe",
+      0.8
+     ]
+    ],
+    "geraetS": 6.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.38
+     ],
+     [
+      "svchost.exe",
+      1.89
+     ],
+     [
+      "SearchIndexer.exe",
+      0.53
+     ]
+    ],
+    "eigenS": 11.75,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-26T14:44:54.372Z",
+   "abdruck": "2a841240456c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -875,7 +945,10 @@
   "k59b2f779d442": "fVXRjpswEPyXPPbKOWAoxtI9mMtVSdVIuU9YmzVwIYBsEk6p+u8VJCQBTt0H8jLrHc/MOn8WNag9pPj8YatywRffFt8XFk7oWDQnNM8fdsEXkXI9pFxcigghXjuYMnndWFLkkoAsITugczQN5sWz6tv0D1gGkpP2TaQ7QjQ5k1UrbvUmXl6mxxQSk8ppQONwyBJpwJBPgUebgkQHjroffAUHfoQ/XE76YiuxXZFbtUqIXUvaHVsLIZ7i+XQJZTK+AdUR9RkX7eZViPcpPskBG6fISzvMd5Mw0kt+n7md9RhonTNgVqC5NiFzXV8OpONOmk6uSaMujtaOhjGaBB7jhERTbIo2V1nj1KaSWF7hMvJCF3jczu6d1kdHPzICKYHJqeYZYJmiGXFYUqU7wT/Z9NA9HNCAU0J2hUZLGnryrg0hZD3nUvTE+xEDcd+PkHmjxs5ccuoEFhvxUP6OEPJJ2IAa4uaL/8bOqiw3h7Fc2kdvSfnvOUWbQYLG2Ve2uaEphv5SXjZksyL9747F08775QYPAYA9BIYwItYzLW2lmxYMOml9HELjYxAGXIjNDNzA4TDYkyiKamqkbbqgP9IIAz/wgRPydFmY+aUva+GcMS/wllsV0oi/rsQUfDJwcECmJtd6cF8GSkdfhbXFonFkVTWDlG4YUtpJUj4avuutfHR7lb7725+ifROj2szo9BMq0wzEJUjq+1ynK0YI01N0bhqnBZUNcE9LhIgTOvPljKbAFEdSatcFL+H9c9Oz7JIQXp8D/TQK8Xl+Yo6dyKU92kFlBb4M+Be2tGj2Esr9bU1CGjH+SwgRb8VuLMpHrVsh+pUZVUTFNo5TVOseFqf9Z3NdkRoVqU2l8+5lJBkcbQZFc/+r+PsP",
   "kd3ee2c81c280": "fVXRjpswEPyXPPbKOYA5jKV7cI6rkqqRiPoFa1gDFwKRDeGUqv9eQUIS4NR9gIfMeoeZWefP4gjxHlJ8/jBVueCLb4vvCwMntAzqE+rnD7PgiyC2HXR591Os82NtSJFLArKE7IBWo2vMi+e4h6oXWHqSk/ZdpBEhipxJ2IpbvYvX1+kxhcSksmpQOByyRNdjOJvXmBQkWtCofvAV7NEAX2xO+mKh2IbkVm0sRNSSNmJrIcRmcqCEMhmzd1XgUsYvXHdTpkkOWFtFXpphtp34gVry+7ztrEdDa50BswL1tQmZbVM5EF51ozqpJo2qaIwZDWNu4jmMExJMsSmaPM5q66grieUVLgPHt4Gv2pni6bGx1CMjkBKYnOqdAZYp6hGHpRurTuxPNj10DwfUYJWQXaHB0vUdedeGELKecyl64v2IgTilATJn1NgZS06dwGIjHopGhJBPwgbUEDUq/hs5E2e5PozlUhSdpct/zSmaDBLU1r4y9Q3tok+X8hKUTUj6d8RW0877xw0eAgB7CAxhRKxnWppK1S1otNJjM4SGoud7XIjNDFzD4TDYk8QuxlMjTd0F/ZGG71GPAifk6bIs84++rIV1xrzAW25j3w34W0in4JOGgwUy1blSg/vSi1XwVVhbLGpLVlU9SGn7vuty4pPy0fCot/LR7bD9Tbc/RPouxhXuonTGv59S6XogL0G6lHKVhowQpqboXNdWC3E2wB0lETr6M2/OqAtMcSSnsm1wEt5fNz2jLg3+9UpQT6Mgn+cn5tgJXZrGDErHQKXHv7CmRb2XUO5vq+K7AeM/hRCrrYjGurylqhWiX5tJie1qleJu3cNWaf/YXNfkiDE56krl3e1IMmhMBkV9/3v4+w8=",
   "k158797b6a30f": "fVXRbqMwEPyXPN4ddQBTjKU+OKWn5nSR6CeszRpoCEQ2hCqn+/cTpCQBqtsXXma945lZ82d1BLWHDB/ebV2t+Orb6sfKwgkdi+aE5uHdrvgqUq6HPheXIkKI5x6mTHFsLCkLSUBWkB/QaU2DRfmghjb9COtActK9iCwhRJMziTtxrRfx9DQ/ppSY1k4DGsdD1ugHDPkc2NoMJDrQ6mHwJzigET66nAzFYrGLybU6JUTSkS5hryKhwWY5XUKVTm/g68injItuK4R4m+PTArBxyqKy43w3DSO95reZu0WPgc45A+Ylms8mZK5L5Uh600vTyzVr1GVr7WQY89PAY5yQaI7N0BYqb5yjqSVWn3AZeaELfNMt7p0dW0ffMwIpgcm55jlglaGZcFj7SveCf7D5oXs4oAGngvwTGq390JM3bQghr0su5UB8GDESpzRC5k0ae3PJqRdYbMVd0YQQ8kHYiBrjRsV/Y2dVXpjDVC5N0Vv7/PeSos0hRePsa9tc0T6GdC0vG7KNyfBN2Gbeebvc6CEAsLvAEEbE60JLW+umA4NOdmzH0FAMwoALsV2AGzgcRntS5aOaG2mbPuj3NMKABhQ4Id8vC7O89GUtnDMWJV5zq0I/4s8xnYNPBg4OyMwUWo/uy0Dp6Kuwdlg2jqzrZpTSDUPf7yWp7g1PBivv3Y6zN7r7KbIXMamtEEm24D9MqU0zkpcgfUq5zmJGCNNzdGEapwOVj3BPS4SIk07NDz6jKTHDiZzadcFL+fDkXNmOGYy/T4J8Xrh9LrAXurKtHZVWQGXAv7CmQ7OXUO2vqxL6EeO/hBCbnUimwjxnetAwFtNVioa4dvgWT2W8DDqiIkdT66J/HUkOrc2hbG6/i7//AA==",
-  "k2e9343709e6d": "jZXdcpswEIXfxZdNiQwSRWgmF3LINEknrdM3WMEKiDEwEoSMO333jrGx+clF94abs9rDt0fwZ1VDvIMUb99sVa7E6svq68rCOzoWzTua2ze7Eqswdj2kQp6KSCm/H2WxyevGkiJXBFQJ2R6d1jSYF7dx36a/wdpXgnQPMt0SosmBRJ281L28u5sfUyhMKqcBjcMha6Q+RzEXtjYFhQ60uh98FvssxG+uIH3xSL5E5FJdLOW2I92WP84OU1AmU+dUh5RxIbsnKeXr3GWSAzZOkZd2mOsmQajX4jrrZdFjoHMOgFmB5tyE3HWZGsxujkiOmGaNumitnQzjNPE9LggJ59oUbR5njVObSmF5lqvQC1wQm25BO61bR48dgVLA1Zx1BlimaCYe1jTWR9AffH7oDvZowCkhO0vDNQ08dWVDCHlceil64/2IwThjIXJv0nhc6gmwfJKjYltCyAfhg2qIGRtpHpZxs3GWm/0Ul2boremcgc0gQePsKttclBQDtlanW/EUkf655Zt55/XFhv0BAB+FhXAiHxccbaWbDgw6ad0OgWHoB76Q6SJdtoH9flhNElOMFy/QHEM+thH4zGcgCLk5I13gOV0J54B5gZfMxgENxX3E5uJ3A3sHVGpyrYfNKz/W4WdB7bBoHFVVzYDSDQJKBaGkHC/7ZyfvpXwZLTEqfrOmeL55kJP6IZ8/m1CZZjCuQFHGhO4iTgjXc3VuGqeDOBvknlYI4RziAU2BKU4watcFLxH95+XicshddDMJ72Gx5UOOR8Clbe1AOAamfHFO+Slc0+R2aHYKyt3lmgQ05ELKKJUvcjui8kvKt1p38r/rdSP7QTXGpDaVzo9fRpJBazMomusv4u8/"
+  "k2e9343709e6d": "jZXdcpswEIXfxZdNiQwSRWgmF3LINEknrdM3WMEKiDEwEoSMO333jrGx+clF94abs9rDt0fwZ1VDvIMUb99sVa7E6svq68rCOzoWzTua2ze7Eqswdj2kQp6KSCm/H2WxyevGkiJXBFQJ2R6d1jSYF7dx36a/wdpXgnQPMt0SosmBRJ281L28u5sfUyhMKqcBjcMha6Q+RzEXtjYFhQ60uh98FvssxG+uIH3xSL5E5FJdLOW2I92WP84OU1AmU+dUh5RxIbsnKeXr3GWSAzZOkZd2mOsmQajX4jrrZdFjoHMOgFmB5tyE3HWZGsxujkiOmGaNumitnQzjNPE9LggJ59oUbR5njVObSmF5lqvQC1wQm25BO61bR48dgVLA1Zx1BlimaCYe1jTWR9AffH7oDvZowCkhO0vDNQ08dWVDCHlceil64/2IwThjIXJv0nhc6gmwfJKjYltCyAfhg2qIGRtpHpZxs3GWm/0Ul2boremcgc0gQePsKttclBQDtlanW/EUkf655Zt55/XFhv0BAB+FhXAiHxccbaWbDgw6ad0OgWHoB76Q6SJdtoH9flhNElOMFy/QHEM+thH4zGcgCLk5I13gOV0J54B5gZfMxgENxX3E5uJ3A3sHVGpyrYfNKz/W4WdB7bBoHFVVzYDSDQJKBaGkHC/7ZyfvpXwZLTEqfrOmeL55kJP6IZ8/m1CZZjCuQFHGhO4iTgjXc3VuGqeDOBvknlYI4RziAU2BKU4watcFLxH95+XicshddDMJ72Gx5UOOR8Clbe1AOAamfHFO+Slc0+R2aHYKyt3lmgQ05ELKKJUvcjui8kvKt1p38r/rdSP7QTXGpDaVzo9fRpJBazMomusv4u8/",
+  "k150255fd0f4b": "bVXRbqMwEPyXPLbnbghQwFIfnNJTI13u0k9YwxpoCEQ2hIrT/fsJEpIA3RdLaHZ3PLNe/i6OGO0xoadPUxYLvnhY/FgYPBEzpE+knz7Ngi+CyFqRzcU5QAjx2sEinR0rA3GGCdvnWCSspcLU5inqsx7uMHkmAWWB6YFYrSvK8gtIPePSlRyaN5HsABS0EDYvL9PUXFJcsgoVDYlLsl2f+BRYmwQlMaxV3+wCdp2Ani0Offih2IZwjSYSYtdAs/PfJ8UkFvGYra0C2/EvQnxMWcYZUsXyrDBDXyv2ArXkt17bWY7GhrVIaU76kkS+ZTlyILvuWnXSTBJVXhszaubbsbvyOUAwxSZksiit2FGXkooLXAYrz0K+nqudHGum7hmhlOjLqdYpUpGQHnFY2pHqhP7yp0X3eCCNrMD0Ag2WtreSN20A4H3OJe+J9y0G4o4TkL8aJXamwqkTWGzEXTg7APgCf0CFzeX7HeZNzJqaKM30YSyXcmi1tPmvOUWTYkya7UtTXdE2ec5SngdlE0J/7vz1NPN2ucFDRPTvBgZ8EO8zLU2pqgY1seRYD0PjkOu5XIjNDFzh4TDYE0c2RVMjTdUN+j0Nz3VcBznA4/mhzC99fhaspSyn69xGnh1Mi580HhjKRGdKDc5LN1LBd4PaUF4xWZbVIKPlebbNoYXi3uzfvY33TofJh7P9KZK3Kc++YqmrgaREaTsOV0noA/hqis50xRqM0gG+UpIw4NBE08It6ZwSGsmmLAtXMe9XypXZMGvh42hg25mrbUb5eINShI50+TcWNKT3Eov99Ul4dnDeS+ut2IlRvCaqEfPYrO1+tfwRYVf4SBEcdamybutBirVJMa9uv4V//wE=",
+  "k7febb58de188": "bVVdb6MwEPwvebwe3YChGEt9cEqlRLrepT9hTdZAQyCySahyuv9+goSUj+4baNYzzOyav4sjJntM6fHDVuVCLH4sfi4snsmxZM5kHj/sQiyixPWICfku29pKKV9aWGLyY22hyBWgKjE7kHMyNeXFY9K16SdcBkpA8yrTLYCGC8TN8/O0tVC0q5waNfWNS2IBJzEFnmyKihw86Y7sBg78iJ5cAV3xWL7FcK9PLuW2gWbL15PDFJa7sVqmI+ZzIZvNi5TvU5W7HKl2iry0Pa+7CyO9FHeu5m3WY7BxLkhZQebWRNx1fdWLXbV2ttZMGnVxsnZExtku8LgAiKbYlGyeZLVzNJWi8gZXkRe6KFZzt9PjydFDRagUcjX1OkMqUzIjDUuW6NboTz49dI8HMuiUmN2g0ZKFnvryBgDWcy1FJ7yj6IX7fkTcGzW2ocK5NVhu5KD8bRsw8B4VN7f3A8yrnJHaJMvNYWyX9slbMvFrLtFmuCPj7Ctb39GMQn+pREewieG6E3w17fz6uD5DROSDgQEOcj3z0la6btCQkx5P/dD4FISBkHIzA9d4OPTx7BJGyTRIW7eDPpQRBn7gowB4uC7K/KOva+FcKC/oPrdJyKLp4WeDBwdVanKt++RVkOjou0FtqKgdVVV1b6MbhowJYFAOw/7dxThMOk7f/bpYNa9yVBs51d0xVKbuRStUzPeFTmMOwPUUnZvaaTDJerinFWEkgM0yuZApKKWRjdp10dsJaPRV96W9asLbVaAfRgN8mZ+YU2twaU+2dzhBXwXim0gaMnuF5f6+IiGLeDd+q7fuMh7M+0uqGynhzGHs1YpJuZLpH7nunleNlH9ikDeiIyVwNJXO21sRMjzZDIv665fw7z8=",
+  "kfeb331c5f1b1": "rVXRjps6EP2XPLZlHYJZjKU+OMtWm6sbif2EsRkDDYHIhnWV6v77FWxIAmylVqofkig6njlzZs745+oE6gA5Pny3Tb3iq0+rLysLb+hZNG9oHr7bFV/Fyt9gwMX7IUKIpx6mTHlqLclKyL2DQWg741UosX5QwzX1SLUKOPnrh730PF7FeBLxNPzx/PWOVlVKArKG4oheZ1osqwst/QjrUHLinkWeEqLJmSTuGks8i6+LMJXErPFa0DgGWWMQMuRzYGdzkOhBp4fEF3BIY3z0L0KwROyTWy1OCZE64lL2IlIabpfZJdTZtIJAxwFlXLhdX/Ucn5WArVeVtR3z+1kU6/WtEW6/uGPAeWfAokJzuYTM96kcSW97aXq5Zhd11Vk7ScaCLNwwTkg8x+ZoS1W03sk0tyGR8SbygW/dou781Hn6nhFICUzONS8A6xzNhMM6ULoX/AebBz3AEQ14NRQXaLwOoo2cDOnLkss43kesrSqubc000D+fb6d+FX6izCNESgMXv3u2d793v31rPPsZpWpo1SDqSIjSGNlmVi9LyFtf0zQlTQkhPwgbUaPB6B3mA6NZVZTmOJVBU9ysA/7vsim2gAyNd2hse0UHGNG1fBdtl5DhO2Xb+c1bcePUAgC7swhhRLwspsc2unVg0MtP3WgTimEUciF2C3ALx+M4kJkKUH3YSycWa8u2veXv6UUhDSlwQj6/r46lGO8LwjtjWeHVwSoKYv6U0Dn4zcDRA5mbUuvRBzJUOv7Itg6r1pNN044S+1EUDGu9vh+E1M0HL8lf6f6byJ+nBe+ESPMF/yFLY9qRvAQZUMp1njBCmJ6jS9N6DlQxwjdaIvT0Fz07o6kwx4mc2vdhk/Fh+Q5M+ymJLu7UnycDfl5GLLEXuradHZVWQGXIP2iNQ3OQUB+uFoqCmPF/ervuRToV5inXTgiSzvdFTHpzO3wdnj2xzYeP3cU+J1TkZBpd9u8EKaCzBVTt7T3/738="
  },
  "ungemessen": {
   "profiband.K4#2": {
@@ -3667,75 +3740,406 @@
    "zwilling": "karte2.leben.kopplung.evolution-planet#1",
    "modus": "session"
   },
-  "karte2.erleben.klang.stimme#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\fba94a62-0265-4d9c-a433-584144fc2a07.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\fba94a62-0265-4d9c-a433-584144fc2a07.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-26T14:16:55.154Z",
-   "abdruck": "2a841240456c",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
-  },
   "karte2.same.physik.feuer#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\fba94a62-0265-4d9c-a433-584144fc2a07.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\fba94a62-0265-4d9c-a433-584144fc2a07.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "zahl": "Last: Referenz f 1,262 (Faden 1,262 · alle Kerne 1,04; vor 105,9/271,2 ms, nach 101,5/248,5 ms, Ruhe 83,9/260,8 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 2,4 CPU-s · sh.exe dienst/radeon-dienst.sh 2,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 1,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 8,5 CPU-s · svchost.exe 7,7 CPU-s · SearchIndexer.exe 1,6 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S2 · ROT Umfang nicht erzeugbar: die Wiese 100 × 100 m trägt 44 brennbare Zellen zu 16 m (AnazhRealm.LIFE_FIELD.cell, stamm/feld-leben.js:3078) (verlangt 2000 brennbare Zellen der Wiese (10⁴ m²), die Welt erzeugte 44))",
+   "exit": 0,
+   "minuten": 0.37,
+   "grund": "Last: Referenz f 1,262 (Faden 1,262 · alle Kerne 1,04; vor 105,9/271,2 ms, nach 101,5/248,5 ms, Ruhe 83,9/260,8 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 2,4 CPU-s · sh.exe dienst/radeon-dienst.sh 2,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 1,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 8,5 CPU-s · svchost.exe 7,7 CPU-s · SearchIndexer.exe 1,6 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S2 · ROT Umfang nicht erzeugbar: die Wiese 100 × 100 m trägt 44 brennbare Zellen zu 16 m (AnazhRealm.LIFE_FIELD.cell, stamm/feld-leben.js:3078) (verlangt 2000 brennbare Zellen der Wiese (10⁴ m²), die Welt erzeugte 44))",
+   "mass": [],
+   "gpu": "amd/rdna-3",
+   "konsum": "k7febb58de188",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k22c261056679",
+   "s": 21.9,
+   "fremd": {
+    "s": 24.7,
+    "takte": 10,
+    "fremdS": 17.73,
+    "kerne": 0.718,
+    "fensterKerne": 0.912,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.38
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      2.25
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.98
+     ]
+    ],
+    "dienerS": 15.48,
+    "diener": [
+     [
+      "System",
+      6.97
+     ],
+     [
+      "dwm.exe",
+      4.66
+     ]
+    ],
+    "geraetS": 18.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.45
+     ],
+     [
+      "svchost.exe",
+      7.69
+     ],
+     [
+      "SearchIndexer.exe",
+      1.56
+     ]
+    ],
+    "eigenS": 119.7,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 1.002,
+     "nach": 0.445,
+     "station": 1.092
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 105.9,
+     "alle": 271.2,
+     "cpuEin": 110,
+     "tor": {
+      "ruhig": true,
+      "kerne": 3.24,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       1.51,
+       1.27,
+       2.51,
+       3.18,
+       4.83,
+       1.75
+      ]
+     },
+     "spanne": [
+      1795704372194,
+      1795704372715
+     ]
+    },
+    "nach": {
+     "ein": 101.5,
+     "alle": 248.5,
+     "cpuEin": 110,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.64,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       4.68,
+       3.18,
+       3.31,
+       3.56,
+       2.04,
+       2.4
+      ]
+     },
+     "spanne": [
+      1795704395037,
+      1795704395519
+     ]
+    },
+    "ruhe": {
+     "ein": 83.9,
+     "alle": 260.8,
+     "n": 1194,
+     "von": "2026-11-17"
+    },
+    "f": 1.262,
+    "fEin": 1.262,
+    "fAlle": 1.04,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
    "ungemessen": true,
-   "zeit": "2026-11-26T14:16:55.183Z",
+   "zeit": "2026-11-26T14:46:12.193Z",
    "abdruck": "7b30f40cd9b8",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.leben.evolution.fremde-physik#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\fba94a62-0265-4d9c-a433-584144fc2a07.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\fba94a62-0265-4d9c-a433-584144fc2a07.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
+   "zahl": "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.postProcessingFailed false → true) — kein Urteil, UNGEMESSEN (die Probe sah: S1 Umfang nicht erzeugbar: keine Saat trägt ihr g: die Schwere setzt das Gesetz der Welt (state.gravity), der Faden baut jeden Planeten mit PLANET_ERDE (voxel-worker.js:1429; planet-core.js:319 g der Saat ungelesen) — 1 Saat je g; das Quer-)",
+   "exit": 0,
+   "minuten": 1.32,
+   "grund": "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.postProcessingFailed false → true) — kein Urteil, UNGEMESSEN (die Probe sah: S1 Umfang nicht erzeugbar: keine Saat trägt ihr g: die Schwere setzt das Gesetz der Welt (state.gravity), der Faden baut jeden Planeten mit PLANET_ERDE (voxel-worker.js:1429; planet-core.js:319 g der Saat ungelesen) — 1 Saat je g; das Quer-)",
+   "gpu": "amd/rdna-3",
+   "konsum": "kfeb331c5f1b1",
+   "konsumN": 32,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k22c261056679",
+   "s": 79,
+   "fremd": {
+    "s": 84.1,
+    "takte": 36,
+    "fremdS": 62.36,
+    "kerne": 0.741,
+    "fensterKerne": 1.074,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.89
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      7.16
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      3.42
+     ]
+    ],
+    "dienerS": 33.52,
+    "diener": [
+     [
+      "System",
+      18.3
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.38
+     ]
+    ],
+    "geraetS": 38.5,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.17
+     ],
+     [
+      "svchost.exe",
+      17.16
+     ],
+     [
+      "SearchIndexer.exe",
+      3.19
+     ]
+    ],
+    "eigenS": 140.58,
+    "rechnerKerne": 24
+   },
    "ungemessen": true,
-   "zeit": "2026-11-26T14:16:55.214Z",
+   "zeit": "2026-11-26T14:46:50.594Z",
    "abdruck": "1dd8f597a7d1",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.planet.relief.grossform#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\fba94a62-0265-4d9c-a433-584144fc2a07.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\fba94a62-0265-4d9c-a433-584144fc2a07.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-26T14:16:55.242Z",
+   "zahl": "Deckel 180 s gerissen: Stille seit 179.9 s nach 180 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "exit": 1,
+   "minuten": 3.01,
+   "grund": "Deckel 180 s gerissen: Stille seit 179.9 s nach 180 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "s": 180.3,
+   "fremd": {
+    "s": 182.1,
+    "takte": 75,
+    "fremdS": 259.94,
+    "kerne": 1.428,
+    "fensterKerne": 8.553,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      104.36
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.19
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      16.23
+     ]
+    ],
+    "dienerS": 119.33,
+    "diener": [
+     [
+      "System",
+      60.2
+     ],
+     [
+      "WmiPrvSE.exe",
+      50.7
+     ]
+    ],
+    "geraetS": 130.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      62.17
+     ],
+     [
+      "svchost.exe",
+      59.3
+     ],
+     [
+      "SearchIndexer.exe",
+      7
+     ]
+    ],
+    "eigenS": 664.28,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-26T14:49:42.341Z",
    "abdruck": "9d14fbd22724",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "karte2.same.entfaltung.schirm#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\fba94a62-0265-4d9c-a433-584144fc2a07.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\fba94a62-0265-4d9c-a433-584144fc2a07.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-26T14:16:55.275Z",
+   "zahl": "Deckel 114 s gerissen: Stille seit 15 s nach 122.4 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego 107.3 s)",
+   "exit": 1,
+   "minuten": 2.05,
+   "grund": "Deckel 114 s gerissen: Stille seit 15 s nach 122.4 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego 107.3 s)",
+   "s": 122.8,
+   "fremd": {
+    "s": 127.9,
+    "takte": 53,
+    "fremdS": 343.38,
+    "kerne": 2.685,
+    "fensterKerne": 9.407,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      122.5
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf 54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
+      65.98
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      16.48
+     ]
+    ],
+    "dienerS": 133.33,
+    "diener": [
+     [
+      "System",
+      51.98
+     ],
+     [
+      "WmiPrvSE.exe",
+      41.83
+     ]
+    ],
+    "geraetS": 127.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      73.55
+     ],
+     [
+      "svchost.exe",
+      47.42
+     ],
+     [
+      "SearchIndexer.exe",
+      5.08
+     ]
+    ],
+    "eigenS": 302.89,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 0.892,
+     "nach": 0.989,
+     "station": 15.841
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 112.3,
+     "alle": 264.4,
+     "cpuEin": 110,
+     "tor": {
+      "ruhig": true,
+      "kerne": 3.58,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       9.89,
+       5.67,
+       6.82,
+       4.46,
+       3.34,
+       3
+      ]
+     },
+     "spanne": [
+      1795704783668,
+      1795704784201
+     ]
+    },
+    "nach": {
+     "ein": 214.7,
+     "alle": 429.1,
+     "cpuEin": 219,
+     "tor": {
+      "ruhig": true,
+      "kerne": 0.35,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       2.08,
+       1.38,
+       0.69,
+       0.24,
+       0.43,
+       0.36
+      ]
+     },
+     "spanne": [
+      1795704907024,
+      1795704907905
+     ]
+    },
+    "ruhe": {
+     "ein": 83.9,
+     "alle": 260.8,
+     "n": 1198,
+     "von": "2026-11-17"
+    },
+    "f": 2.559,
+    "fEin": 2.559,
+    "fAlle": 1.645,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-26T14:53:03.667Z",
    "abdruck": "0b389cec986f",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1
+   "modus": "session"
   },
   "gelaende.K2#1": {
    "gruen": false,
