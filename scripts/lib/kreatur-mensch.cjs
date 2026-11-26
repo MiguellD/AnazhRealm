@@ -39,7 +39,12 @@ async function menschBuehnen() {
                 return Math.abs(p.x + (q.x - p.x) * k - xT) <= wT / 2 + 0.05;
             });
         };
-        const wegeMesser = (liste) => {
+        // DIE ZEILE OHNE WEG (krieg-lage, „die Frage meldet keinen Bruch“): wer weder einen Anschluss an das Netz noch einen Ausweg
+        // hat, meldet EINE Bruch-Zeile je Bewohner und Ort (`_bewohnerStrecke`) — gezählt im Buch des EINEN Melders (`_bruchBuch`,
+        // dienst `_bruchMelden`), nie aus der Konsole: was seit `buch0` neu kam oder wiederkehrte (der Stand des Buchs vor der
+        // Gründung der Stadt, leer für das Start-Dorf — es wächst mit der Seite —, im Fenster eines Täters vor seinem Messer)
+        const buchStand = () => new Map([...(r._bruchBuch || [])].map(([t, e]) => [t, e.n]));
+        const wegeMesser = (liste, buch0 = buchStand()) => {
             const WG = { wand: new Map(), durch: 0, tuer: 0, falsch: [], geh: 0, aufWeg: 0, sprungN: 0, standN: 0, standUeber: 0, standMax: 0, standWer: "—" }; // prettier-ignore
             const [stecken, beruehr, kandW, wSpur, akten] = [[], [], [], new Map(), []];
             let minute = 0;
@@ -232,7 +237,13 @@ async function menschBuehnen() {
                 const je = liste.map((b) => ({ wer: wer(b), krank: krankAn(b), ...wSpur.get(b) }));
                 const gesund = je.filter((q) => !q.krank);
                 const vier = (n, l) => ({ [n + "N"]: l.length, [n]: l.slice(0, 4) });
+                const ohneWeg = [...(r._bruchBuch || [])].filter(([t, e]) => /erreicht keinen Weg frei/.test(t) && e.n > (buch0.get(t) || 0)); // prettier-ignore
                 return {
+                    ohneWeg: {
+                        zeilen: ohneWeg.length,
+                        n: ohneWeg.reduce((a, [t, e]) => a + e.n - (buch0.get(t) || 0), 0),
+                        wer: ohneWeg.slice(0, 2).map(([t]) => t.replace(/^BEWOHNER: /, "")),
+                    },
                     wandN: [...WG.wand.values()].reduce(addiere, 0),
                     wand: [...WG.wand]
                         .sort((a, b) => b[1] - a[1])
@@ -355,6 +366,7 @@ async function menschBuehnen() {
                 })
                 .map((p) => `Stand ${p.stand}`);
         const stadtTag = async (ort = "stadt") => {
+            const buchAb = buchStand();
             const G = await stadtAm(ort, "bewohner");
             if (G.fehler) return G;
             const { S, da, nH, voll } = G;
@@ -386,9 +398,12 @@ async function menschBuehnen() {
                               return v;
                           };
                       }, 19.5],
+                      // (die Frage findet nie einen Knoten frei: jeder Ort ohne Anschluss und ohne Ausweg, um 7 Uhr der Morgengang —
+                      // die Strecke meldet ihn je Bewohner und Ort; zuletzt: das Netz merkt den leeren Ausweg)
+                      ["bewohner-ohne-weg", "_bewohnerAnschluss", () => () => -1, 7],
                   ];
             for (const [t, ueber, mit = () => () => null, uhr = 5] of taeter ? T : [[]]) {
-                const [ab, M] = [[], (voll ? ringMesser : wegeMesser)(S.liste)];
+                const [ab, M] = [[], voll ? ringMesser(S.liste) : wegeMesser(S.liste, taeter ? undefined : buchAb)];
                 await uhrAuf(voll ? 7 : uhr, `bewohner: ${ort}`, da, 4 * nH);
                 if (ueber) decke(ueber, mit, ab);
                 for (let i = 0; i < (voll ? 600 : (taeter ? 30 : 240) * takte); i++) takt(voll ? 1 / 60 : DT, M);
@@ -492,7 +507,7 @@ async function menschBuehnen() {
         // Täter (Selbsttest): der Schritt liest seinen Grund am Raster des halben Meters — der Stehende trägt den Boden daneben
         if (hat("bewohner-grund"))
             decke("_koerperBodenUnter", (alt) => (x, y, z) => (Number.isFinite(y) ? alt.call(r, Math.round(x * 2) / 2, y, Math.round(z * 2) / 2) : alt.call(r, x, y, z))); // prettier-ignore
-        const SD = wegeMesser(liste);
+        const SD = wegeMesser(liste, new Map());
         // DAS KÖNNEN IM GANG (mensch-zahlen, koerper `leibKoennen`): je Bewohner das Tempo seines Gangs gegen das Gesetz (tetrapoda
         // koerper `leibGehen` an seinem Bein × `lauf` seines Könnens aus den Dials seines Genoms und seinem Alter)
         // und im Gang-Fenster das Tempo, das er wirklich geht (Weg ÷ Geh-Zeit, ≥ 5 s am Stück des Fensters): wer mehr kann,
@@ -1423,6 +1438,11 @@ function menschUrteil(name, z, soll) {
     ]) {
         if (!v) continue;
         soll(v.wandN === 0, `${wo}Durchdringung: ${v.wandN} Takte in einer Wand (${v.wand})`);
+        const ow = v.ohneWeg || { zeilen: "ungemessen", n: "ungemessen", wer: [] };
+        soll(
+            ow.zeilen === 0,
+            `${wo}ohne Weg: ${ow.zeilen} Bruch-Zeilen „erreicht keinen Weg frei“ im Buch des Melders (${ow.n}×; ${ow.wer.join(" · ") || "—"})`
+        );
         soll(
             v.durch > 0 && v.tuer === v.durch,
             `${wo}nicht über die Tür: ${v.durch - v.tuer} von ${v.durch} (${v.falsch})`
@@ -1570,6 +1590,7 @@ module.exports = {
             ["bewohner-stadt-blind", /Stadt: Durchdringung: [1-9]/],
             ["bewohner-stadt-rempeln", /Berührung: [1-9]/],
             ["bewohner-tuer", /Stadt: nicht über die Tür: [1-9]\d* von \d+ \([^·]*drinnen soll true, [\d.]+ m von seiner Tür/],
+            ["bewohner-ohne-weg", /Stadt: ohne Weg: [1-9]\d* Bruch-Zeilen „erreicht keinen Weg frei“ im Buch des Melders \(\d+×; [^#]+ #\d+ — der Ort/], // prettier-ignore
         ],
         // die volle Stadt (`--ort stadt-voll`)
         "bewohner@stadt-voll": [
