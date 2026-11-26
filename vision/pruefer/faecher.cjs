@@ -72,6 +72,30 @@ const REISE =
     "  if (!aus.some((z) => Array.isArray(z) && z[0] === 'chat.befehl.reise.ziel')) return { fehler: JSON.stringify(aus).slice(0, 300) };" +
     "  if ((await r.erwacht) === false) return { fehler: 'die Welt des Orts erwacht nicht' }; await window.__weltDa(() => r.state.voxelWorkerReady); } finally { window.__loop(); }" +
     " if (!da()) return { fehler: 'die Seite steht danach nicht an ' + b + ' ' + l }; return { neu: true, welt: r.state.worldMeta.worldId, ms: Math.round(performance.now() - t0) }; };";
+// DER RAHMEN DES MOTIVS (die EINE Pose jedes Ding-Motivs: Pflanze, Haus): das ganze Ding im Bild, freie Sicht. Kanonische Ansicht nach
+// Palmer, Rosch & Chase 1981 / Blanz, Tarr & Bülthoff 1999: Verdeckung wird gemieden, 30–45° neben der Front, Blick knapp über Grund
+// (12–15° Höhe) — Band hier: die Höhe des Dings füllt 1/1,3 der Bildhöhe (15 % Rand je Seite), Blick auf halbe Höhe, Neigung ≤ 30°,
+// das Auge 1,7 m über dem Gelände, unter keinem Dach; frei heißt: kein Strahl Auge → Mitte · Scheitel · Fuß trifft Gelände oder Bau
+// vor dem Ding (`_fieldRaycast`, die Bauten ohne das Ziel selbst) und keine Krone der Kronen-Karte (`wegeKarte.kronen`, Radius
+// `_kronenRadiusFuer`, Scheitel `_kronenOben`) steht im Kegel vom Auge zum Umriss des Dings über dessen unterem Sehstrahl.
+// T = { x, z, y0 (Fuß), h (Höhe), rad (halbe Breite), ohne (der Eintrag des Ziels) }; mehr = weitere Hindernisse { x, z, rad, oben }
+const RAHMEN =
+    "const RW = r.state, VF = RW.camera.fov * Math.PI / 180, HF = 2 * Math.atan(Math.tan(VF / 2) * 1280 / 720), RAND = 1.3, NEIG = 30 * Math.PI / 180;" +
+    "const KR = []; { const wk = RW.wegeKarte; if (wk && wk.kronen) for (const c of wk.kronen.values()) KR.push({ x: c[0], z: c[1], rad: c[2], oben: r._kronenOben(c) }); }" +
+    "const rahmen = (T, az, mehr) => {" +
+    " const d = T.rad + Math.max(RAND * T.h / (2 * Math.tan(VF / 2)), RAND * T.rad / Math.tan(HF / 2), 2);" +
+    " const ex = T.x + Math.cos(az) * d, ez = T.z + Math.sin(az) * d, ey = r.getTerrainHeightAt(ex, ez) + 1.7, ly = T.y0 + T.h / 2;" +
+    " const aus = { frei: false, az, d, pose: { px: +ex.toFixed(2), py: +ey.toFixed(2), pz: +ez.toFixed(2), lx: +T.x.toFixed(2), ly: +ly.toFixed(2), lz: +T.z.toFixed(2) } };" +
+    " if (Math.abs(Math.atan2(ly - ey, d)) > NEIG) return Object.assign(aus, { grund: 'Neigung' });" +
+    " const dach = r._fieldRaycast(ex, ey + 40, ez, ex, ey + 0.2, ez, { gelaende: false, durchPflanzen: true }); if (dach && dach.hit) return Object.assign(aus, { grund: 'Dach' });" +
+    " for (const ty of [ly, T.y0 + T.h * 0.95, T.y0 + Math.min(0.6, T.h * 0.3)]) { const q = r._fieldRaycast(ex, ey, ez, T.x, ty, T.z, { durchPflanzen: true, ohne: T.ohne || null });" +
+    "  if (q && q.hit && Math.hypot(q.x - T.x, q.z - T.z) > T.rad + 1) return Object.assign(aus, { grund: 'Strahl' }); }" +
+    " const L2 = Math.hypot(T.x - ex, T.z - ez), ux = (T.x - ex) / L2, uz = (T.z - ez) / L2; let n = 0;" +
+    " for (const c of (mehr || []).concat(KR)) { if (Math.abs(c.x - T.x) > d + 30 || Math.abs(c.z - T.z) > d + 30 || Math.hypot(c.x - T.x, c.z - T.z) < 0.6) continue;" +
+    "  const vx = c.x - ex, vz = c.z - ez, t = vx * ux + vz * uz; if (t <= -c.rad || t >= L2 - T.rad * 0.5) continue;" +
+    "  const tt = Math.max(0, t), p = Math.abs(vx * uz - vz * ux); if (p >= c.rad + (tt / L2) * T.rad * 1.15) continue;" +
+    "  if (Number.isFinite(c.oben) && c.oben < ey + (T.y0 - ey) * tt / L2) continue; n++; }" +
+    " return Object.assign(aus, { frei: n === 0, n, grund: n ? 'Krone' : null }); };";
 // DAS PROFIL-GESETZ DES FORMSCHATZES (k2-planet.js:2662 PROFIL_AN, im Rumpf der Planet-Probe, kein `seite`-Export): am Wortlaut aus der
 // Station gefasst — der Querschnitt je Saat × Stelle, die Klasse V-Tal/Trog aus dem Exponenten b; dazu die Richtung des Laufs (talauf)
 // und die Lagen der 20 Saaten (k2-planet.js:2610 lagePunkt, :2613 die Land-Orte). Ändert die Station den Wortlaut, wirft der Fächer
@@ -168,11 +192,14 @@ const SPROSSEN = {
     // ═══ ORDNEN × KLASSE (R11: der Prüfer nennt die Klasse eines Bilds, die Wahrheit sagt das Gesetz der Adresse) ═══
     // 50 Bauten nach Funktion: der Zensus der Station (k2-mensch-bau.js:30–49 zensusBau) zählt je Ort die stehenden Häuser seines
     // Plans mit ihrer Rolle (das Los trägt die Funktion, stamm/siedlung-ort.js:483) und setzt das Bild 10 m vor die Tür (:74) — der
-    // Fächer nimmt JEDES stehende Haus mit Tür ALLER Orte des Messorts an derselben Pose, die Rolle ist die Klasse
+    // Fächer nimmt JEDES stehende Haus mit Tür ALLER Orte des Messorts, die Rolle ist die Klasse, und rahmt das GANZE Haus (RAHMEN)
+    // von der Tür-Seite 30–45° neben ihrer Achse (erst dann 0°, ±60°). Der erste Bogen „10 m vor der Tür“ (26.11.) zeigte an 13 von 25
+    // Bildern kein benennbares Haus: das Auge in der Wand des Nachbarn, unter einem Scheunen-Dach, 20 m über dem Dach am Hang
     "mensch.bau.bedarf#1": {
         ort: "dorf",
         gesetz: "meisterkarte-quelle/punkte/stationen/k2-mensch-bau.js:38",
-        faecher: "jedes stehende Haus mit Tür aller Orte, 10 m vor der Tür (k2-mensch-bau.js:74), Klassen im Wechsel × Tageszeit",
+        faecher: "jedes stehende Haus mit Tür aller Orte, das ganze Haus im Bild (Höhe × 1,3, Blick auf halbe Höhe) von der Tür-Seite, freiester Azimut ±30/45/0/60°, Klassen im Wechsel × Tageszeit",
+        ordner: "mensch.bau.bedarf.1-b2",
         frage: "Welche Funktion hat das Gebäude in der Bildmitte?",
         je: 12,
         mehr: {},
@@ -181,17 +208,22 @@ const SPROSSEN = {
             SAAT +
             "const s = r.state, pm = s.playerMesh.position, hh = (x, z) => r.getTerrainHeightAt(x, z), steht = new Map(), gross = (t) => t.charAt(0).toUpperCase() + t.slice(1);" +
             "for (const e of s.architectures || []) if (e && Number.isFinite(e.seed) && e.position) steht.set((e.seed >>> 0) + '@' + Math.round(e.position.x) + ',' + Math.round(e.position.z), e);" +
-            "const H = [], orte = [];" +
+            RAHMEN +
+            "const H = [], orte = [], gruende = {}; let ohneGestalt = 0, ohneFrei = 0;" +
             "for (const S of (r._bewohnerSiedlungen || new Map()).values()) { if (!S || !S.plan || !Array.isArray(S.plan.slots)) continue; let n = 0;" +
             " for (const sl of S.plan.slots) { const wx = S.ox + sl.x, wz = S.oz + sl.z, e = steht.get((sl.seed >>> 0) + '@' + Math.round(wx) + ',' + Math.round(wz)); if (!e || !e.tuer) continue;" +
             "  const rolle = typeof sl.rolle === 'string' ? sl.rolle : 'wohnhaus';" +
             "  const c = Math.cos(sl.phi || 0), sn = Math.sin(sl.phi || 0), tu = sl.tuer || { x: 0, z: 0 }, tx = wx + tu.x * c + tu.z * sn, tz = wz - tu.x * sn + tu.z * c;" +
             "  const mx = sl.obb ? S.ox + sl.obb.cx : wx, mz = sl.obb ? S.oz + sl.obb.cz : wz, ul = Math.hypot(tx - mx, tz - mz) || 1, ux = (tx - mx) / ul, uz = (tz - mz) / ul;" +
-            "  n++; H.push({ d: Math.hypot(wx - pm.x, wz - pm.z), klasse: gross(rolle), pose: { px: +(tx + ux * 10).toFixed(2), py: +(hh(tx + ux * 10, tz + uz * 10) + 1.7).toFixed(2), pz: +(tz + uz * 10).toFixed(2), lx: +wx.toFixed(2), ly: +(e.position.y + 2.5).toFixed(2), lz: +wz.toFixed(2) }," +
-            "   wort: '10 m vor der Tür von ' + e.type + ' (' + rolle + ') in ' + (S.plan.name || '?') }); }" +
+            "  const B = e.mesh ? new T.Box3().setFromObject(e.mesh) : null; if (!B || B.isEmpty()) { ohneGestalt++; continue; }" +
+            "  const Z = { x: (B.min.x + B.max.x) / 2, z: (B.min.z + B.max.z) / 2, y0: e.position.y, h: B.max.y - e.position.y, rad: Math.hypot(B.max.x - B.min.x, B.max.z - B.min.z) / 2, ohne: e }, a0 = Math.atan2(uz, ux);" +
+            "  let f = null; for (const w of [-30, 30, -45, 45, 0, -60, 60]) { const g = rahmen(Z, a0 + w * Math.PI / 180); if (g.frei) { f = g; break; } gruende[g.grund] = (gruende[g.grund] || 0) + 1; }" +
+            "  if (!f) { ohneFrei++; continue; }" +
+            "  n++; H.push({ d: Math.hypot(wx - pm.x, wz - pm.z), klasse: gross(rolle), pose: f.pose," +
+            "   wort: e.type + ' (' + rolle + ') in ' + (S.plan.name || '?') + ', H ' + Z.h.toFixed(1) + ' m, Auge ' + f.d.toFixed(1) + ' m, ' + Math.round((f.az - a0) * 180 / Math.PI) + '° neben der Tür-Achse' }); }" +
             " if (n) orte.push((S.plan.name || '?') + ' ' + n); }" +
             "H.sort((a, b) => a.d - b.d); const je = {}; for (const h of H) je[h.klasse] = (je[h.klasse] || 0) + 1;" +
-            "return { saat, posen: H, lage: H.length + ' Häuser mit Tür in ' + orte.length + ' Orten (' + orte.join(', ') + ') · Rollen ' + JSON.stringify(je) };",
+            "return { saat, posen: H, lage: H.length + ' Häuser mit Tür gerahmt in ' + orte.length + ' Orten (' + orte.join(', ') + ') · Rollen ' + JSON.stringify(je) + ' · ohne Gestalt ' + ohneGestalt + ' · ohne freien Azimut ' + ohneFrei + ' · Gründe ' + JSON.stringify(gruende) };",
     },
     // der Raum hinter der Tür: die Station zählt die Werk-Bauten der vollen Stadt (jedes Haus mit Tür, dessen Rolle weder Wohnhaus
     // noch Scheune ist, k2-mensch-bau.js:79) und stellt das Auge 1,6 m hinter die Tür, 1,4 m über dem Grund, Blick 7 m ins Haus (:77) —
@@ -220,14 +252,20 @@ const SPROSSEN = {
             "return { saat, posen: H, lage: werk + ' Werk-Bauten mit Tür · Rollen ' + JSON.stringify(je) };",
     },
     // die Gattung: die Station zählt den Bestand am Spieler — Bauten der Art baum_/busch_/farn_/blume_ und die Zellen des Streuguts
-    // (k2-leben.js:161–170), „10 Bilder je Gestalt“ Ego am Waldrand der Mess-Wiese (:265) — der Fächer nimmt je Art die nächsten
-    // Pflanzen (höchstens 10), die Kamera 12 m (Baum) bzw. 4 m (Busch, Farn, Blume) vor der Pflanze auf der Seite des Spielers
+    // (k2-leben.js:161–170), „10 Bilder je Gestalt“ — der Fächer rahmt jede Pflanze GANZ (RAHMEN: die Höhe aus der Sichthöhe, die das
+    // Spiel stempelt, `_lodTreeVisHeight` am Eintrag, `_scatterSichtHoehe` an der Streu-Zelle; die Breite aus der Krone
+    // `_kronenRadiusFuer`, ohne Krone die halbe Höhe) aus dem freiesten von 8 Azimuten; ohne freien Azimut fällt die Pflanze aus. Je Art
+    // höchstens 10 Bilder; trägt eine Art binnen 250 m weniger als 10 Pflanzen, nimmt der Fächer mehrere freie Azimute derselben.
+    // Blatt 1 (Ego 12 m / 4 m zum Spieler) urteilte der Prüfer 7 von 40: die Krone abgeschnitten, fremde Stämme davor — die Pose war der Täter.
     "leben.pflanzen.arten#1": {
         ort: "wiese",
         gesetz: "meisterkarte-quelle/punkte/stationen/k2-leben.js:161",
-        faecher: "je Art die nächsten Pflanzen des Bestands (höchstens 10), Ego 12 m / 4 m vor ihr, Klassen im Wechsel × Tageszeit",
+        faecher: "je Art bis 10 Pflanzen des Bestands binnen 250 m, die ganze Pflanze im Bild (Höhe × 1,3, Blick auf halbe Höhe) aus dem freiesten von 8 Azimuten, seltene Arten mit mehreren Azimuten, Mittag",
         frage: "Welche Pflanzen-Gattung steht in der Bildmitte?",
+        ordner: "leben.pflanzen.arten.1-b2",
         je: 10,
+        max: 124,
+        uhren: [0.5],
         mehr: {},
         // das Ziel ist die Pflanze selbst: ihr eigenes Laub nahe am Ziel IST das Motiv, fremdes Laub oder Gelände davor nicht
         motiv: (a, P) => {
@@ -237,24 +275,43 @@ const SPROSSEN = {
         },
         rumpf: () =>
             SAAT +
-            "const st = r.state, p = st.playerMesh.position, art = (t) => String(t || '').replace(/^grown_/, '').replace(/_v[0-9]+$/, ''), pflanze = /^(baum_|busch_|farn_|blume_)/;" +
+            RAHMEN +
+            "const p = RW.playerMesh.position, art = (t) => String(t || '').replace(/^grown_/, '').replace(/_v[0-9]+$/, ''), pflanze = /^(baum_|busch_|farn_|blume_)/;" +
             "const NAME = " + JSON.stringify(PFLANZEN_NAME) + ";" +
             "const name = (sp) => NAME[sp] || (sp.split('_').slice(1).join(' ').replace(/^./, (c) => c.toUpperCase()) || sp);" +
-            "const L = [], gesehen = new Set(), nimm = (sp, x, y, z) => { const k = Math.round(x) + ',' + Math.round(z); if (gesehen.has(k)) return; gesehen.add(k); const d = Math.hypot(x - p.x, z - p.z); if (d <= 250) L.push({ sp, x, y, z, d }); };" +
-            "for (const e of st.architectures || []) { const sp = art(e._lodSpecies || e.type); if (pflanze.test(sp) && e.position) nimm(sp, e.position.x, e.position.y, e.position.z); }" +
-            "for (const reg of (st.scatterRegions || new Map()).values()) for (const c of reg.cells || []) { const sp = art(c.species); if ((c.layer === 'tree' || c.layer === 'under') && pflanze.test(sp)) nimm(sp, c.x, c.fuss && Number.isFinite(c.fuss.y) ? c.fuss.y : r.getTerrainHeightAt(c.x, c.z), c.z); }" +
-            "L.sort((a, b) => a.d - b.d); const je = {};" +
-            "const posen = L.map((q) => { const baum = /^baum_/.test(q.sp), dd = baum ? 12 : 4, l = Math.hypot(p.x - q.x, p.z - q.z), ux = l > 0.5 ? (p.x - q.x) / l : 1, uz = l > 0.5 ? (p.z - q.z) / l : 0, cx = q.x + ux * dd, cz = q.z + uz * dd; je[q.sp] = (je[q.sp] || 0) + 1;" +
-            " return { klasse: name(q.sp), ziel: { art: q.sp.split('_').slice(1).join('_'), d: dd }, pose: { px: +cx.toFixed(2), py: +(r.getTerrainHeightAt(cx, cz) + 1.7).toFixed(2), pz: +cz.toFixed(2), lx: +q.x.toFixed(2), ly: +(q.y + (baum ? 3 : 0.5)).toFixed(2), lz: +q.z.toFixed(2) }, wort: q.sp + ' ' + Math.round(q.d) + ' m vom Spieler, Ego ' + dd + ' m vor ihr' }; });" +
-            "return { saat, posen, lage: L.length + ' Pflanzen binnen 250 m · Arten ' + JSON.stringify(je) };",
+            "const kr = (sp, roh, s) => r._kronenRadiusFuer(roh, s) || r._kronenRadiusFuer(sp, s) || null;" +
+            "const L = [], gesehen = new Set(), ohneH = {};" +
+            "const nimm = (sp, x, y, z, h, rad, ohne) => { const k = Math.round(x) + ',' + Math.round(z); if (gesehen.has(k)) return; gesehen.add(k); const d = Math.hypot(x - p.x, z - p.z); if (d > 250) return;" +
+            " if (!(h > 0.1)) { ohneH[sp] = (ohneH[sp] || 0) + 1; return; } L.push({ sp, x, y, z, d, h, rad: rad > 0 ? rad : 0.5 * h, ohne }); };" +
+            "for (const e of RW.architectures || []) { const sp = art(e._lodSpecies || e.type); if (!pflanze.test(sp) || !e.position) continue; nimm(sp, e.position.x, e.position.y, e.position.z, r._lodTreeVisHeight(e), kr(sp, e._lodSpecies || e.type, e.scale), e); }" +
+            "for (const reg of (RW.scatterRegions || new Map()).values()) for (const c of reg.cells || []) { const sp = art(c.species); if (!((c.layer === 'tree' || c.layer === 'under') && pflanze.test(sp))) continue;" +
+            " const sl = r._scatterLayerByName && r._scatterLayerByName.get(c.layer); let h = null;" +
+            " if (sl) { const tf = r._scatterCellTransform(c.cellX, c.cellZ, c.cellM, sl.scaleBase, sl.scaleVar); h = r._scatterSichtHoehe(sl, c.species, c.cellX, c.cellZ, c.variantIndex, tf); }" +
+            " nimm(sp, c.x, c.fuss && Number.isFinite(c.fuss.y) ? c.fuss.y : r.getTerrainHeightAt(c.x, c.z), c.z, h, kr(sp, c.species, c.scale), null); }" +
+            // die Pflanzen ohne Krone der Karte (Busch, Farn, Blume) verdecken auch: sie stehen als Hindernis neben den Kronen
+            "const NIEDER = L.filter((q) => !/^baum_/.test(q.sp)).map((q) => ({ x: q.x, z: q.z, rad: q.rad, oben: q.y + q.h }));" +
+            "const sorte = {}; for (const q of L) (sorte[q.sp] = sorte[q.sp] || []).push(q);" +
+            "const posen = [], je = {}, ohneFrei = {}, gruende = {};" +
+            "const mach = (q, f) => ({ klasse: name(q.sp), ziel: { art: q.sp.split('_').slice(1).join('_'), d: +(f.d - q.rad).toFixed(1) }, pose: f.pose," +
+            " wort: q.sp + ' H ' + q.h.toFixed(1) + ' m, Krone ' + q.rad.toFixed(1) + ' m, ' + Math.round(q.d) + ' m vom Spieler, Auge ' + f.d.toFixed(1) + ' m, Azimut ' + Math.round(f.az * 180 / Math.PI) + '°' });" +
+            "for (const sp of Object.keys(sorte).sort()) { const Q = sorte[sp].sort((a, b) => a.d - b.d), selten = Q.length < 10, F = []; let n = 0, geprueft = 0;" +
+            " for (const q of Q) { if (n >= 10 || geprueft >= 120) break; geprueft++; const T = { x: q.x, z: q.z, y0: q.y, h: q.h, rad: q.rad, ohne: q.ohne }, a0 = Math.atan2(p.z - q.z, p.x - q.x), R = [];" +
+            "  for (let k = 0; k < 8; k++) { const f = rahmen(T, a0 + k * Math.PI / 4, NIEDER); if (f.frei) R.push(f); else gruende[f.grund] = (gruende[f.grund] || 0) + 1; }" +
+            "  if (!R.length) { ohneFrei[sp] = (ohneFrei[sp] || 0) + 1; continue; }" +
+            "  if (selten) F.push({ q, R }); else { n++; posen.push(mach(q, R[0])); } }" +
+            " for (let i = 0; selten && n < 10 && i < 8; i++) for (const x of F) if (n < 10 && x.R[i]) { n++; posen.push(mach(x.q, x.R[i])); }" +
+            " je[sp] = n + ' von ' + Q.length + (selten ? ' (selten)' : ''); }" +
+            "return { saat, posen, lage: L.length + ' Pflanzen binnen 250 m mit Sichthöhe · Bilder je Art ' + JSON.stringify(je) + ' · ohne Sichthöhe ' + JSON.stringify(ohneH) + ' · ohne freien Azimut ' + JSON.stringify(ohneFrei) + ' · Gründe ' + JSON.stringify(gruende) + ' · fov ' + RW.camera.fov };",
     },
     // arm/reich: die Station misst die Wohnfläche der Wohnbauten der vollen Stadt (W × D × Geschosse aus dem Plan, k2-mensch-macht.js:
     // 511–519) und nennt arm das ärmste, reich das reichste Zehntel (:532–533) — der Fächer nimmt JEDES stehende Wohnhaus beider
-    // Zehntel, 10 m vor seiner Tür (dieselbe Pose wie der Zensus der Bauten, k2-mensch-bau.js:74), das Zehntel ist die Klasse
+    // Zehntel, das ganze Haus von der Tür-Seite gerahmt (RAHMEN, wie bau.bedarf#1 — die Fläche liest nur, wer das ganze Haus sieht),
+    // das Zehntel ist die Klasse
     "mensch.macht.stand#1": {
         ort: "stadt-voll",
         gesetz: "meisterkarte-quelle/punkte/stationen/k2-mensch-macht.js:533",
-        faecher: "jedes stehende Wohnhaus des ärmsten und des reichsten Zehntels, 10 m vor der Tür, Klassen im Wechsel × Tageszeit",
+        faecher: "jedes stehende Wohnhaus des ärmsten und des reichsten Zehntels, das ganze Haus im Bild (Höhe × 1,3, Blick auf halbe Höhe) von der Tür-Seite, freiester Azimut ±30/45/0/60°, Klassen im Wechsel × Tageszeit",
+        ordner: "mensch.macht.stand.1-b2",
         frage: "Wohnt in dem Haus in der Bildmitte ein armer oder ein reicher Haushalt?",
         je: 30,
         mehr: {},
@@ -263,6 +320,8 @@ const SPROSSEN = {
             SAAT +
             "const s = r.state, pm = s.playerMesh.position, hh = (x, z) => r.getTerrainHeightAt(x, z), steht = new Map();" +
             "for (const e of s.architectures || []) if (e && Number.isFinite(e.seed) && e.position) steht.set((e.seed >>> 0) + '@' + Math.round(e.position.x) + ',' + Math.round(e.position.z), e);" +
+            RAHMEN +
+            "const gruende = {}; let ohneGestalt = 0, ohneFrei = 0;" +
             "const plaene = [...(r._ortPlaene || new Map()).values()].filter((q) => q && q.ort && Array.isArray(q.slots) && Math.hypot(q.ort.x - pm.x, q.ort.z - pm.z) < 1500);" +
             "const WOHN = { wohnhaus: 1, patrizierhaus: 1, wohnturm: 1, pfarrhaus: 1, kontor: 1 }, haus = [];" +
             "for (const q of plaene) for (const sl of q.slots) { if (!WOHN[sl.rolle]) continue; const ov = sl.ov || {}; const fl = (ov.W || 2 * ((sl.obb && sl.obb.ex) || 3)) * (ov.D || 2 * ((sl.obb && sl.obb.ez) || 3)) * (ov.storeys || 1); haus.push({ q, sl, fl }); }" +
@@ -271,9 +330,12 @@ const SPROSSEN = {
             "for (const h of haus) { const k = h.fl <= lo ? 'arm' : h.fl >= hi ? 'reich' : null; if (!k) continue; const sl = h.sl, ox = h.q.ort.x, oz = h.q.ort.z, wx = ox + sl.x, wz = oz + sl.z, e = steht.get((sl.seed >>> 0) + '@' + Math.round(wx) + ',' + Math.round(wz)); if (!e || !e.tuer) { ohne++; continue; }" +
             " const c = Math.cos(sl.phi || 0), sn = Math.sin(sl.phi || 0), tu = sl.tuer || { x: 0, z: 0 }, tx = wx + tu.x * c + tu.z * sn, tz = wz - tu.x * sn + tu.z * c;" +
             " const mx = sl.obb ? ox + sl.obb.cx : wx, mz = sl.obb ? oz + sl.obb.cz : wz, ul = Math.hypot(tx - mx, tz - mz) || 1, ux = (tx - mx) / ul, uz = (tz - mz) / ul;" +
-            " H.push({ d: Math.hypot(wx - pm.x, wz - pm.z), klasse: k, pose: { px: +(tx + ux * 10).toFixed(2), py: +(hh(tx + ux * 10, tz + uz * 10) + 1.7).toFixed(2), pz: +(tz + uz * 10).toFixed(2), lx: +wx.toFixed(2), ly: +(e.position.y + 2.5).toFixed(2), lz: +wz.toFixed(2) }, wort: k + ': ' + sl.rolle + ' ' + Math.round(h.fl) + ' m² (Zehntel ≤ ' + Math.round(lo) + ' / ≥ ' + Math.round(hi) + ' m²), 10 m vor der Tür' }); }" +
+            " const B = e.mesh ? new T.Box3().setFromObject(e.mesh) : null; if (!B || B.isEmpty()) { ohneGestalt++; continue; }" +
+            " const Z = { x: (B.min.x + B.max.x) / 2, z: (B.min.z + B.max.z) / 2, y0: e.position.y, h: B.max.y - e.position.y, rad: Math.hypot(B.max.x - B.min.x, B.max.z - B.min.z) / 2, ohne: e }, a0 = Math.atan2(uz, ux);" +
+            " let fr = null; for (const w of [-30, 30, -45, 45, 0, -60, 60]) { const g = rahmen(Z, a0 + w * Math.PI / 180); if (g.frei) { fr = g; break; } gruende[g.grund] = (gruende[g.grund] || 0) + 1; } if (!fr) { ohneFrei++; continue; }" +
+            " H.push({ d: Math.hypot(wx - pm.x, wz - pm.z), klasse: k, pose: fr.pose, wort: k + ': ' + sl.rolle + ' ' + Math.round(h.fl) + ' m² (Zehntel ≤ ' + Math.round(lo) + ' / ≥ ' + Math.round(hi) + ' m²), 10 m vor der Tür' }); }" +
             "H.sort((a, b) => a.d - b.d);" +
-            "return { saat, posen: H, lage: n + ' Wohnbauten in ' + plaene.length + ' Plänen, Zehntel ≤ ' + Math.round(lo) + ' m² / ≥ ' + Math.round(hi) + ' m², stehend mit Tür arm ' + H.filter((x) => x.klasse === 'arm').length + ' · reich ' + H.filter((x) => x.klasse === 'reich').length + ', ohne stehendes Haus mit Tür ' + ohne };",
+            "return { saat, posen: H, lage: n + ' Wohnbauten in ' + plaene.length + ' Plänen, Zehntel ≤ ' + Math.round(lo) + ' m² / ≥ ' + Math.round(hi) + ' m², stehend mit Tür arm ' + H.filter((x) => x.klasse === 'arm').length + ' · reich ' + H.filter((x) => x.klasse === 'reich').length + ', ohne stehendes Haus mit Tür ' + ohne + ', ohne Gestalt ' + ohneGestalt + ', ohne freien Azimut ' + ohneFrei + ' · Gründe ' + JSON.stringify(gruende) };",
     },
     // die Talform an 20 Saaten: die Station rechnet je Saat (Land-Lage der Fibonacci-Kugel) × Stelle 1/4 · 1/2 · 3/4 des größten Laufs
     // den Querschnitt (k2-planet.js:2662 PROFIL_AN, V-Tal b < 1,5 ≤ Trog) und nennt die Pose „Ego 8 m über der Sohle, Blick talauf“
@@ -433,12 +495,15 @@ async function schiesse() {
         const D = SPROSSEN[id];
         if (!D) throw new Error("kein Fächer für " + id + " (gebaut: " + Object.keys(SPROSSEN).join(", ") + ")");
         if (D.ort !== S.ort) throw new Error(id + " misst am Messort " + D.ort + ", die Sitzung steht an " + S.ort);
-        const hier = path.join(aus, ordner(id));
+        const hier = path.join(aus, D.ordner || ordner(id));
+        const max = D.max || MAX;
         fs.mkdirSync(path.join(hier, "bild"), { recursive: true });
         fs.mkdirSync(path.join(hier, "akte"), { recursive: true });
         const blatt = path.join(hier, "faecher.json");
         let G = fs.existsSync(blatt) ? JSON.parse(fs.readFileSync(blatt, "utf8")) : null;
-        if (!G || G.sha !== S.sha) {
+        // ein Ordner trägt EINEN Fächer: schoss er unter einem anderen Wortlaut, beginnt der neue in einem neuen Ordner (D.ordner), nie gemischt
+        if (G && G.faecher !== D.faecher && fs.readdirSync(path.join(hier, "akte")).length) throw new Error(id + ": " + hier + " trägt Akten des Fächers „" + G.faecher + "“ — der neue Fächer braucht einen neuen Ordner");
+        if (!G || G.sha !== S.sha || G.faecher !== D.faecher) {
             // die Posen EINMAL je Kopf aus dem Gesetz: jeder weitere Lauf schießt dieselbe Liste weiter
             const g = await evalSeite(port, D.rumpf(), 120000);
             const posen = faechern(D.je ? imWechsel(g.posen || [], D.je) : g.posen || [], D.uhren || UHREN, D.mehr);
@@ -457,7 +522,7 @@ async function schiesse() {
         };
         const ende = (wort) => {
             const s = stand();
-            const offen = s.traegt >= MAX ? 0 : G.posen.filter((p, i) => !s.A[i] && !s.fest.has(p.basis)).length;
+            const offen = s.traegt >= max ? 0 : G.posen.filter((p, i) => !s.A[i] && !s.fest.has(p.basis)).length;
             G.bilder = s.traegt;
             G.ohneMotiv = s.A.filter((a) => a && !a.traegt).length;
             G.urteil = s.traegt >= MIN || offen ? null : umfang(s.traegt, D.gesetz, "das Motiv im Bild an " + s.traegt + " von " + s.A.filter(Boolean).length + " geschossenen Posen, " + s.fest.size + " von " + G.posenDesGesetzes + " Posen des Gesetzes verdeckt");
@@ -469,7 +534,7 @@ async function schiesse() {
         for (let i = 0; i < G.posen.length && frei; i++) {
             const P = G.posen[i];
             const s = stand();
-            if (s.traegt >= MAX) break;
+            if (s.traegt >= max) break;
             if (s.A[i] || s.fest.has(P.basis)) continue;
             if (Date.now() + 35000 > frist) {
                 frei = false;

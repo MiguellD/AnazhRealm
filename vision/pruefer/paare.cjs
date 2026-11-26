@@ -5,6 +5,7 @@
 //
 //   node vision/pruefer/paare.cjs --sprosse <leiter#n> --spiel <Ordner der Spiel-Bilder> --sha <Kopf> --geraet "<Gerät>"
 //        --ziel <Korpus-Ordner> --zuordnung <Ordner außerhalb des Korpus> --bauer <Kennung> [--aus <Ordner, sonst der Korpus>] [--saat 1]
+//        [--kennung <leiter.n-bK>: das zweite Blatt derselben Sprosse in eigenem Ordner, das erste bleibt als Akte stehen]
 //
 // → <aus>/paare/<leiter.n>/ (paare.json + Bilder) · <aus>/blatt/<leiter.n>/teil-01 … (das sieht der Prüfer) ·
 //   <zuordnung>/<leiter.n>/teil-01 … (die Wahrheit, getrennt) · <aus>/kontakt/<leiter.n>/teil-NN.jpg (der Bogen für das Auge des Bauers)
@@ -55,7 +56,7 @@ async function haupt(argv) {
         if (n < P.MIN_PAARE) throw new Error("Korpus fehlt: " + id + " trägt " + farbig.length + " farbige Fotos des Motivs < " + P.MIN_PAARE + " (Sätze " + zeile.saetze.join(", ") + ")");
         // die Fang-Fotos: zuerst die unbenutzten, sonst vom Anfang (ein Foto steht dann in zwei Aufgaben, nie in derselben)
         const fang = farbig.slice(n).concat(farbig).slice(0, FANG);
-        const kennung = id.replace("#", "."), pd = path.join(aus, "paare", kennung), blattW = path.join(aus, "blatt", kennung), zuW = path.join(zuWurzel, kennung), kontaktW = path.join(aus, "kontakt", kennung);
+        const kennung = arg("--kennung") || id.replace("#", "."), pd = path.join(aus, "paare", kennung), blattW = path.join(aus, "blatt", kennung), zuW = path.join(zuWurzel, kennung), kontaktW = path.join(aus, "kontakt", kennung);
         for (const d of [pd, blattW, zuW, kontaktW]) fs.rmSync(d, { recursive: true, force: true });
         fs.mkdirSync(pd, { recursive: true });
         const norm = (b, stufe) => B.norm(b, { w: W, h: H, stufe, vor: W });
@@ -118,7 +119,7 @@ async function klasseBlatt(arg, P, bild, z, id, ziel, aus, zuWurzel, saat) {
     const B = await bild.oeffne();
     console.log("Canvas im headless-Browser (ohne GPU), PID " + B.pid);
     try {
-        const kennung = id.replace("#", "."), pd = path.join(aus, "paare", kennung), blattW = path.join(aus, "blatt", kennung), zuW = path.join(zuWurzel, kennung), kontaktW = path.join(aus, "kontakt", kennung);
+        const kennung = arg("--kennung") || id.replace("#", "."), pd = path.join(aus, "paare", kennung), blattW = path.join(aus, "blatt", kennung), zuW = path.join(zuWurzel, kennung), kontaktW = path.join(aus, "kontakt", kennung);
         for (const d of [pd, blattW, zuW, kontaktW]) fs.rmSync(d, { recursive: true, force: true });
         fs.mkdirSync(pd, { recursive: true });
         const aufgaben = [];
