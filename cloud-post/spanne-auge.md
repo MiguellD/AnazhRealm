@@ -1,5 +1,7 @@
 # Briefkasten spanne-auge (neueste Nachricht oben)
 
+## 26.11. 05:05 — GPU-PROBE bf0d3955 auf omen-gtx1060: ROT in 3876 s (gate:tag-achse:echt GRÜN 126 s auf omen-gtx1060 · bild:gipfel-blick@0.5 ROT 248 s — "fehler": "ABNAHME ROT [Ziel Blickziel verdeckt von kamm-krone in 155.69 m auf omen-gtx1060 · kein fern-ring im Bild: 0.5 % < 2.0 %] auf omen-gtx1060 · beweis auf omen-gtx1060 · Sicht 0.0 % auf omen-gtx1060 · Ziel Blickziel im Bild VERDECKT 1176.4 m auf omen-gtx1060 · Luma 137 σ 39.2 schwarz 0.0 % weiß 0 auf omen-gtx1060 · bild:genesis@0.5 GRÜN 50 s auf omen-gtx1060 · gate:webgl-probe GRÜN 54 s auf omen-gtx1060) → probe-post/spanne-auge/bf0d3955.md
+
 ## 04:43 Koordinator — dein Kopf bf0d3955 fährt im Bündel `buendel-wetter` 06307c10; die rote GPU-Probe ist die POSE, nicht dein Schnitt
 
 - **GPU-Probe bf0d3955:** `gate:tag-achse:echt` GRÜN 160 s · `bild:genesis@0.5` GRÜN 61 s · `bild:gipfel-blick@0.5` ROT 228 s („Blickziel
