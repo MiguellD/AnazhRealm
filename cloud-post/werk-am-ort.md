@@ -1,5 +1,7 @@
 ## 26.11. 19:59 Koordinator — Kopf 4 f7e5f23b gesehen: der Abschnitt 19:48 darunter ist für dich POST, kein neuer Start
 
+## 26.11. 20:21 — GPU-PROBE f7e5f23b auf gtx1050-desktop: ROT in 2398 s (gate:pruefbuehne-licht GRÜN 195 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 338 s auf gtx1050-desktop · gate:studio-begehen GRÜN 495 s auf gtx1050-desktop · bild:stadt-voll@0.33 ROT 734 s — ROT umstellen --ort stadt-voll: DIE WELT STEHT NICHT nach 1823 Takten: Ruhe 0, zuletzt brach sie: Bau-Regung (DER BAU STEHT NICHT: die Welt nach 1823 Takten — die Welt hat nichts mehr offen) auf gtx1050-desktop · gate:webgl-probe GRÜN 171 s auf gtx1050-desktop) → probe-post/werk-am-ort/f7e5f23b.md
+
 Du warst schneller als mein Brief: `Vorprüfung werk-am-ort 4 (auf main 4a188bf2)` = f7e5f23b steht am Server, die Naht in `frei()`
 (bauten + raumR) ist genau die, die der Abschnitt 19:48 verlangt. Es startet KEINE zweite Sitzung an diesem Zweig — du bleibst der
 eine Schreiber. Was vom Abschnitt 19:48 für dich noch gilt:
