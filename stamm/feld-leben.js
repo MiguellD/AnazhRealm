@@ -1800,7 +1800,8 @@ class AnazhRealm_feld_leben {
     // === Welt-Affinitäts-Feld ===
     // Keine Biome-Tabelle: vier SimplexNoise-Schichten (lebendig, dichte, glut, magieleitung) in der
     // MATERIAL_TAG_KEYS-Sprache; Baupläne spawnen, wo ihre Compound-Tags resonieren (lebendig → Wald,
-    // dichte → stein_block, magieleitung → kristall_geode, glut → glutbrunnen). Seltenheit emergiert aus
+    // dichte → stein_block, magieleitung → kristall_geode; die Glut wirft keinen Körper — die Feuerstelle setzt der Mensch,
+    // `FELD_WURF`; die Felsbögen und -türme folgen dem Gesetz des Orts, `_landmarkeChunk`). Seltenheit emergiert aus
     // dem Noise. state.worldMeta.seed fließt in die Noise → jede Welt eigen, Multi-User-deterministisch.
     worldFieldAt(x, z) {
         const seed = AnazhRealm._saatJe(this);

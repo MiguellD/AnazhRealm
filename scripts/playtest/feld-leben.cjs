@@ -1703,23 +1703,59 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             out.felsturmHasCollision = !!(et && Array.isArray(et.blockerAABBs) && et.blockerAABBs.length > 0);
         });
 
-        // Placement-Probe über den Voxel-Populator: über ein Raster frischer Chunks MUSS mindestens ein
-        // Felsbogen + ein Felsturm spawnen (Landmark-Wurf 0.014 × Affinitäts-Floor; 12×12=144 Chunks =
-        // statistisch sicher).
+        // Placement-Probe über den Voxel-Populator (landmarken-geologie): die Saat wirft Bogen und Turm nach dem Gesetz des
+        // Orts (gelaende-core `landmarke`, je Chunk `_landmarkeChunk`). (1) Der Wurf trocken (die Schlange gelesen, kein Bau)
+        // in Ringen um den Chunk des Spielers, bis das Gesetz je Art ≥ 6 erwartet und beide fielen: die Zahl je Art binnen
+        // 4 σ + 2 ihrer Erwartung Σ λ · Fläche. (2) Der echte Populator an den ersten frischen Chunks mit Bogen und mit Turm:
+        // dort stehen genau die Würfe des Gesetzes als Bau in der Welt. Bis hier: 144 Chunks MUSSTEN beide tragen (die alte
+        // Regel, jede Probe 1,4 %: 53 Bögen und 65 Türme auf 0,27 km², ≈ 440 je km²).
         const vorArch = new Set(st.architectures);
-        // Frische Voxel-Chunk-Indices, deutlich außerhalb des
-        // initialen 9×9-Voxel-Rings (cx,cz ∈ [-4..4]).
+        const K = globalThis.__gelaendeCore;
+        const L = r._gelaende();
+        const span = r._voxelChunkConfig().span;
+        const fl = span * span * 1e-6;
+        const [c0x, c0z] = [Math.floor(px / span), Math.floor(pz / span)];
+        const wurf = { mu: { felsbogen: 0, felsturm: 0 }, n: { felsbogen: 0, felsturm: 0 }, chunks: 0, je: [] };
+        const enq = r._enqueueVegetationSpawn;
+        let jetzt = null;
+        r._enqueueVegetationSpawn = function (art) {
+            if (jetzt) (jetzt[art] = (jetzt[art] || 0) + 1), wurf.n[art] !== undefined && wurf.n[art]++;
+        };
+        try {
+            const genug = () => wurf.mu.felsbogen >= 6 && wurf.mu.felsturm >= 6 && wurf.n.felsbogen > 0 && wurf.n.felsturm > 0;
+            for (let ring = 0; ring <= 300 && !genug(); ring++)
+                for (let cx = c0x - ring; cx <= c0x + ring; cx++)
+                    for (let cz = c0z - ring; cz <= c0z + ring; cz++) {
+                        if (Math.max(Math.abs(cx - c0x), Math.abs(cz - c0z)) !== ring) continue;
+                        const d = K.landmarke(L, (cx + 0.5) * span, (cz + 0.5) * span);
+                        wurf.mu.felsbogen += d.felsbogen * fl;
+                        wurf.mu.felsturm += d.felsturm * fl;
+                        wurf.chunks++;
+                        jetzt = {};
+                        if (r._landmarkeChunk(cx, cz) > 0) wurf.je.push({ cx, cz, arten: jetzt });
+                        jetzt = null;
+                    }
+        } finally {
+            r._enqueueVegetationSpawn = enq;
+        }
+        out.landmarkeWurf = {
+            km2: +(wurf.chunks * fl).toFixed(2),
+            felsbogen: [wurf.n.felsbogen, +wurf.mu.felsbogen.toFixed(1)],
+            felsturm: [wurf.n.felsturm, +wurf.mu.felsturm.toFixed(1)],
+        };
+        out.landmarkeImBand = ["felsbogen", "felsturm"].every(
+            (a) => wurf.mu[a] >= 6 && Math.abs(wurf.n[a] - wurf.mu[a]) <= 4 * Math.sqrt(wurf.mu[a]) + 2
+        );
+        // der Test-Pfad braucht synchrone Spawns (er misst gleich danach state.architectures); im echten Streaming geht das
+        // durch die Per-Frame-Queue
         const fresh = new Set();
-        for (let cx = 20; cx <= 31; cx++) {
-            for (let cz = 20; cz <= 31; cz++) {
-                const key = `${cx},${cz}`;
-                if (st.voxelPopulatedChunks && st.voxelPopulatedChunks.has(key)) continue;
-                fresh.add(key);
-                // der Test-Pfad braucht synchrone Spawns (er
-                // misst gleich danach state.architectures); im echten
-                // Streaming geht das durch die Per-Frame-Queue.
-                r._populateVoxelChunkVegetation(cx, cz, { immediate: true });
-            }
+        const frisch = (w) => !(st.voxelPopulatedChunks && st.voxelPopulatedChunks.has(`${w.cx},${w.cz}`));
+        const ziele = [wurf.je.find((w) => frisch(w) && w.arten.felsbogen), wurf.je.find((w) => frisch(w) && w.arten.felsturm)];
+        const soll = { felsbogen: 0, felsturm: 0 };
+        for (const w of new Set(ziele.filter(Boolean))) {
+            fresh.add(`${w.cx},${w.cz}`);
+            r._populateVoxelChunkVegetation(w.cx, w.cz, { immediate: true });
+            for (const a in soll) soll[a] += w.arten[a] || 0;
         }
         let fbCount = 0;
         let ftCount = 0;
@@ -1731,7 +1767,8 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         }
         out.placedFelsbogen = fbCount;
         out.placedFelsturm = ftCount;
-        out.placementWorks = fbCount > 0 && ftCount > 0;
+        out.placementWorks =
+            ziele.every(Boolean) && fbCount > 0 && ftCount > 0 && fbCount === soll.felsbogen && ftCount === soll.felsturm;
         // die Würfe ferner Daten-Chunks (nie gebaut) fallen nach Identität aus der Liste — der Abbau-Pfad schriebe je Wurf
         // einen Journal-Eintrag und füllte dessen Deckel (200)
         st.architectures = st.architectures.filter((x) => vorArch.has(x));
@@ -1771,8 +1808,13 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             "W6.G P3: spawnArchitecture('felsturm') erzeugt Eintrag + feld-native Kollision (blockerAABBs)",
             wave6gP3Results.felsturmSpawned && wave6gP3Results.felsturmHasCollision
         );
+        const LW = wave6gP3Results.landmarkeWurf || {};
         check(
-            `W6.G P3: Felsbögen UND Felstürme spawnen über das Welt-Affinitäts-Feld (Bögen=${wave6gP3Results.placedFelsbogen}, Türme=${wave6gP3Results.placedFelsturm})`,
+            `W6.G P3: die Saat wirft Felsbögen und Felstürme nach dem Gesetz des Orts (\`_landmarkeChunk\`) — auf ${LW.km2} km² Bögen ${LW.felsbogen?.[0]} (Gesetz ${LW.felsbogen?.[1]}), Türme ${LW.felsturm?.[0]} (Gesetz ${LW.felsturm?.[1]}), binnen 4 σ + 2`,
+            wave6gP3Results.landmarkeImBand
+        );
+        check(
+            `W6.G P3: der Populator setzt die Würfe des Gesetzes als Bau in die Welt (Bögen=${wave6gP3Results.placedFelsbogen}, Türme=${wave6gP3Results.placedFelsturm})`,
             wave6gP3Results.placementWorks
         );
     }

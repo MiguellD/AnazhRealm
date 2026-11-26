@@ -384,6 +384,68 @@ function findlingBefunde(wirtVon) {
     ok("Findling Selbsttest: der Findling am flachen Grund ohne Eis fällt an _rockGeologyClass", /^_rockGeologyClass: \d+ Findlinge von \d+ Hängen an der Heimat ohne Eis/.test(M), M);
 }
 
+// DIE LANDMARKE FOLGT DER GEOLOGIE (landmarken-geologie; der Schöpfer: „viele Glutbrunnen, Lagerfeuer bedecken die Karte —
+// unnatürlich"), am Wirt im vm (stamm.cjs `grundWirt`): (a) das Feld wirft keinen Bau — jede Art der EINEN Liste (`FELD_WURF`)
+// ist Natur (`_istNatur`); die Feuerstelle setzt der Mensch (bis hier warf das Glut-Feld sie an der Mess-Wiese 66-mal je 0,2 km²).
+// (b) der Wurf der Felsbögen und -türme (`_landmarkeChunk`) folgt dem Gesetz des Orts (gelaende-core `landmarke`, die Bänder
+// der Profis): über je 8 000 Chunks (15 km²) im Tafelland der Heimat, außerhalb und auf einer trockenen Tafel liegt die Zahl
+// je Art binnen 4 σ ihrer Erwartung (Poisson, Σ λ · Fläche des Chunks). Selbsttest: die alte Regel (jede Probe der Saat 1,4 %,
+// an der Ankunft ≈ 680 je km²) fällt an `_landmarkeChunk`, eine Feuerstelle in der Liste an `FELD_WURF`.
+function feldWurfBau(r, liste) {
+    const bau = liste.filter((t) => !r._istNatur({ type: t }));
+    return bau.length ? [`FELD_WURF: das Feld wirft ${bau.join(", ")} — ein Bau ohne Menschen`] : [];
+}
+function landmarkeBefunde(taeter, chunkZiel, saetze) {
+    const { r, A, ctx } = stammLib.grundWirt(ROOT, taeter);
+    const K = vm.runInContext("globalThis.__gelaendeCore", ctx);
+    const out = feldWurfBau(r, A.FELD_WURF);
+    const span = r._voxelChunkConfig().span;
+    const n = {};
+    r._enqueueVegetationSpawn = (art) => void (n[art] = (n[art] || 0) + 1);
+    const L = r._gelaende();
+    const wuchs = Object.assign({}, L.ort.wuchs, { decke: 0 }); // der trockene Ort: keine Decke des Wuchses (Arches)
+    const trocken = Object.create(L, { ort: { value: Object.assign({}, L.ort, { wuchs }) } });
+    const zeilen = [];
+    const S = [["Tafel der Heimat", L, 0.9, 1], ["Heimat außerhalb der Tafel", L, 0, 0], ["trockene Tafel", trocken, 0.9, 1]];
+    for (const [name, Lx, lo, hi] of S.slice(0, saetze || S.length)) {
+        r._gelaende = () => Lx;
+        for (const k of Object.keys(n)) delete n[k];
+        const mu = { felsbogen: 0, felsturm: 0 };
+        let chunks = 0;
+        for (let cx = -3000; cx < 3000 && chunks < chunkZiel; cx++)
+            for (let cz = -40; cz < 40 && chunks < chunkZiel; cz++) {
+                const x = (cx + 0.5) * span;
+                const z = (cz + 0.5) * span;
+                const s = K.grossform(Lx, x, z).stil;
+                if (s < lo || s > hi) continue;
+                chunks++;
+                const d = K.landmarke(Lx, x, z);
+                for (const art in mu) mu[art] += d[art] * span * span * 1e-6;
+                r._landmarkeChunk(cx, cz);
+            }
+        const km2 = (chunks * span * span) / 1e6;
+        const teil = [];
+        for (const art in mu) {
+            const z = n[art] || 0;
+            teil.push(`${art} ${(z / km2).toFixed(2)}/km² (Gesetz ${(mu[art] / km2).toFixed(2)})`);
+            if (Math.abs(z - mu[art]) > 4 * Math.sqrt(mu[art]) + 2)
+                out.push(`_landmarkeChunk: ${name} ${art} ${z} auf ${km2.toFixed(1)} km², das Gesetz erwartet ${mu[art].toFixed(1)} ± ${(4 * Math.sqrt(mu[art]) + 2).toFixed(1)}`);
+        }
+        zeilen.push(`${name}: ${teil.join(" · ")}`);
+    }
+    return { out, zeilen, r, A };
+}
+{
+    const B = landmarkeBefunde(null, 8000);
+    for (const z of B.zeilen) console.log("      LANDMARKE " + z);
+    ok("Landmarke: das Feld wirft keinen Bau, der Bogen und der Turm folgen dem Gesetz des Orts (`landmarke`)", B.out.length === 0, B.out[0] || B.zeilen.join(" | "));
+    const alt = [["_landmarkeChunk", "const lam = d.felsbogen + d.felsturm;", "const lam = (0.014 * N * N) / (span * span * 1e-6);"]];
+    const M = landmarkeBefunde(alt, 1000, 1).out.join(" | ");
+    ok("Landmarke Selbsttest: die alte Regel (jede Probe 1,4 %) fällt an _landmarkeChunk", /^_landmarkeChunk: Tafel der Heimat fels(bogen|turm) \d+/.test(M), M || "die Mutante blieb grün");
+    const F = feldWurfBau(B.r, B.A.FELD_WURF.concat(["glutbrunnen"])).join(" | ");
+    ok("Landmarke Selbsttest: die Feuerstelle in der Liste des Felds fällt an FELD_WURF", /^FELD_WURF: das Feld wirft glutbrunnen/.test(F), F || "die Mutante blieb grün");
+}
+
 // DER LEBENSLAUF DES BESTANDS (Bahn mischwald, karte2.leben.pflanzen.lebenslauf#1; phyto-core FOREST_ERTRAG): der Plan
 // (`planForestCell`) und das EINE Urteil (`forestStehende`) — dieselben Rufe wie Haupt-Faden (`_forestCellDarts`), Wald-Faden
 // (`waldDarts`), Kamm und Labor — auf je einem geschlossenen Bestand (52 ha, Stand 0,15: ohne Lichtung, voller Schluss):

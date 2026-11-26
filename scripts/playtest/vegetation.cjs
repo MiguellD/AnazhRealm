@@ -1994,15 +1994,30 @@ async function checkBandScatterScheibe({ page, check }) {
         o.balanceEqual = groupBalance() === balanceOne;
         // MAIN = FADEN: dieselbe Regel (phyto-core `streuRegion`) an den Lesern beider Fäden, Zahl für Zahl — an der Region des
         // Spielers samt Erdbau und Keller (die Fläche beider Fäden ist eine Probe des Felds, voxel-worker `voxelSurfaceY`) und an
-        // der Region eines Orts (die Mitte der ersten Siedlung der Wege-Karte: Platten, Grund und Trasse des Erdbaus, die Wege)
-        {
+        // der Region eines Orts (die Mitte der ersten Siedlung der Wege-Karte: Platten, Grund und Trasse des Erdbaus, die Wege).
+        // Den Ort setzt die Probe selbst, wenn die Welt um den Spieler keinen trägt: eine Feuerstelle des Menschen 60 m vom
+        // Spieler auf dem Land, ihre Trittfläche ist eine Siedlung der Wege-Karte (`_trittFlaecheSetzen`). Bis
+        // landmarken-geologie lieh ihn das Feld (der Glut-Kanal warf die Feuerstelle, ein Feuer ohne Menschen).
+        let feuer = null;
+        if (!(st.wegeKarte && st.wegeKarte.siedlungen.length))
+            for (let k = 0; k < 8 && !feuer; k++) {
+                const [fx, fz] = [pos.x + 60 * Math.cos((k * Math.PI) / 4), pos.z + 60 * Math.sin((k * Math.PI) / 4)];
+                if (!r._landAt(fx, fz, 0.4) || r._imGrundriss(fx, fz)) continue;
+                const fy = r._voxelSurfaceY(fx, fz);
+                const opt = { silent: true, precise: true, id: "streu-probe-feuerstelle" };
+                feuer = Number.isFinite(fy) ? r.spawnArchitecture("glutbrunnen", { x: fx, y: fy + 0.5, z: fz }, opt) : null;
+            }
+        if (feuer) await __gebautNach(feuer, { fertig: () => feuer._trittBox !== undefined }); // der erste Studio-Platz
+        o.feuer = feuer ? (feuer._trittBox ? "mit Trittfläche" : `ohne Trittfläche (${feuer._trittBox})`) : "keine";
+        try {
             const sd = st.wegeKarte && st.wegeKarte.siedlungen[0];
             const orte = [[rx, rz, pos.x, pos.z]];
             if (sd) {
                 const [ox, oz] = [(sd.x0 + sd.x1) / 2, (sd.z0 + sd.z1) / 2];
                 orte.push([Math.floor(ox / SC.regionM), Math.floor(oz / SC.regionM), ox, oz]);
             }
-            o.wuerfe = { n: 0, gleich: true, ort: sd ? orte[1].slice(0, 2).join(",") : null };
+            const ortName = sd ? orte[1].slice(0, 2).join(",") + (feuer ? " (die Feuerstelle der Probe)" : "") : null;
+            o.wuerfe = { n: 0, gleich: true, ort: ortName };
             for (const [qx, qz, ax, az] of orte) {
                 const mk = () => r._streuAuftrag(qx, qz, ax, az, 1);
                 const msg = await r._nebenAuftrag("streu", Object.assign({ type: "streu-region" }, mk()));
@@ -2013,6 +2028,8 @@ async function checkBandScatterScheibe({ page, check }) {
                     ma.length === fa.length &&
                     ma.every((m, li) => m.length === fa[li].length && m.every((v, k) => Object.is(v, fa[li][k])));
             }
+        } finally {
+            if (feuer && st.architectures.includes(feuer)) r.removeArchitecture(feuer);
         }
         // ── (4) DISPOSE-STORNO: mitten in der Fortsetzung disposen ──
         clean();
@@ -2184,7 +2201,7 @@ async function checkBandScatterScheibe({ page, check }) {
             out.storno.threw === false &&
             out.storno.contDead === true &&
             out.storno.rebuildOk === true,
-        JSON.stringify(out.storno)
+        JSON.stringify(out.storno) + ` · Feuerstelle der Probe: ${out.feuer}`
     );
     const w = out.wecker;
     // ihre Plätze halten, eine fremde Lieferung und die erste Zusage überleben, nach der zweiten weiterbauen, wie der One-Shot stehen
