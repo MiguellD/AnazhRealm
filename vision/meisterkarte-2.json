@@ -17587,10 +17587,10 @@
     "kriterien": 33,
     "sprossen": 213,
     "heute": 21,
-    "kern": 0,
-    "kernDazu": 0,
+    "kern": 1,
+    "kernDazu": 1,
     "anteilHeute": 9.4,
-    "anteilKern": 0
+    "anteilKern": 0.3
    },
    "perspektiven": [
     {
@@ -19867,7 +19867,7 @@
       }
      ],
      "heute": 1,
-     "kern": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "Lava-Zelle glüht und erstarrt als Spieler-Tat (gelaende-core.js:1787-1801); Frame-p95 im brennenden Hektar und Flucht der Bewohner nie gemessen.",
      "alt": []
@@ -20096,10 +20096,10 @@
   "sprossen": 1718,
   "heute": 130,
   "davonKopplungen": 33,
-  "kern": 2,
-  "kernDazu": 2,
+  "kern": 3,
+  "kernDazu": 3,
   "anteilHeute": 6.8,
-  "anteilKern": 0,
+  "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
