@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 45,
+    "heute": 46,
     "kern": 3,
     "kernDazu": 3,
-    "anteilHeute": 7.7,
+    "anteilHeute": 7.8,
     "anteilKern": 0.5
    },
    "perspektiven": [
@@ -7277,7 +7277,7 @@
        "richter": "1 000 Proben: Lebenslauf konsistent ≥ 0,99; dieselbe Person in t und t + 20 gealtert dieselbe"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "81/81 Häuser bewohnt, Test-Stadt 118 Bewohner (14.11.); Dorfplatz Radeon 26,9 fps ≈ 37 ms — Preis ROT (mensch.K1)",
@@ -20094,7 +20094,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 119,
+  "heute": 120,
   "davonKopplungen": 33,
   "kern": 6,
   "kernDazu": 6,
@@ -20109,7 +20109,7 @@
   },
   "gliederLeitern": 9,
   "beide": 61,
-  "nachwache": 58
+  "nachwache": 59
  },
  "zusammengelegt": [
   {
