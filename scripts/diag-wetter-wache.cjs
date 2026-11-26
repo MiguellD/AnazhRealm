@@ -765,10 +765,32 @@ function lmlSelbsttest() {
 // Böe im Stamm dreht ihre Phase mit der Uhr allein (`uWindTime·ω`) — Gras, Krone und Karte lesen uBoePhase (`_boePhase`), der Wind
 // am Ort dieselbe Phase. Selbst-Test: der Täter von vor wind-saison (die Böe wandert mit ω/k = 10,4 m/s in jedem Wetter) MUSS rot
 // sehen. Leser: `boeRot`.
+// JEDE PHASE DES ANKERS (rueckfall-drei): der Weg der Böe trägt seine Geschichte (`_boeAnker` — jedes Wort und jede Uhr davor
+// setzen ihn fort), und die Station misst an der Mess-Wiese nach dem Umstellen ihrer Sitzung (punkte-maschine 5ce9e0d1:
+// lebenslauf ruft `/umstellen --ort wiese` vor kraft) — an einer anderen Phase als der frische Wirt. Die Laufzeit gilt bei jeder:
+// `BOE_PHASEN` Phasen des Ankers über eine Wellenlänge, das Urteil liest die schlechteste. Bis hier maß die Wache EINE Phase bei
+// (40, −30), 50 m vom Ursprung, und sah die Drift an der Uhr allein nie (5,6–17,8 %); an der Wiese streute sie 12,6–23,9 %, das
+// Gerät nach dem Umstellen 23,7 % (GTX f63a69ef, Radeon 2da17e2e). Selbst-Test: die Drift an der Uhr allein (der Täter vor
+// rueckfall-drei) MUSS rot sehen.
 const BOE_SOLL = { laufzeitAbw: 20, kreuzR: 0.6, varianz: 3 };
+const BOE_PHASEN = 12;
 // die Phase der Böe aus der Uhr allein: `uWindTime.mul(B.omega)`, `.mul(float(B.omega))`, `t * B.omega − (x * d.x …)`
 const BOE_ALT = /\.mul\(\s*(?:float\()?\s*_?[A-Z][A-Za-z]*\.omega\b|\.omega\s*-\s*\(?\s*[a-z]+\s*\*\s*d\.x/;
-function boeMessung(r) {
+// das Maß über die Phasen des Ankers: je Phase S0 der Weg ab t 100 (die Ruhe zuerst, wie die Station), die schlechteste Phase
+// trägt Laufzeit und Lag, dazu das kleinste r und die kleinste Varianz und die Spanne der Laufzeit
+function boePhasen(r) {
+    const lam = (2 * Math.PI) / r.constructor.WIND_BOE.k;
+    const L = [];
+    for (let i = 0; i < BOE_PHASEN; i++) L.push(Object.assign(boeMessung(r, (i / BOE_PHASEN) * lam), { phase: i / BOE_PHASEN }));
+    const w = L.reduce((a, b) => (b.laufzeitAbw > a.laufzeitAbw ? b : a));
+    const ab = L.map((b) => b.laufzeitAbw);
+    return Object.assign({}, w, {
+        kreuzR: Math.min(...L.map((b) => b.kreuzR)),
+        varianz: Math.min(...L.map((b) => b.varianz)),
+        spanne: [Math.min(...ab), Math.max(...ab)],
+    });
+}
+function boeMessung(r, S0) {
     const st = r.state;
     const p = st.playerMesh.position;
     const reihe = (x, z) => {
@@ -786,6 +808,11 @@ function boeMessung(r) {
     let ruhe, A, B;
     try {
         st.weather = "sunny";
+        if (S0 != null) {
+            r._boeAnker = null;
+            r._boeWeg(100);
+            r._boeAnker.s = S0;
+        }
         ruhe = reihe(p.x, p.z);
         st.weather = "stormy";
         A = reihe(p.x, p.z);
@@ -836,18 +863,31 @@ function boeSelbsttest() {
     const { ctx } = require("./lib/stamm.cjs").ladeKlasse(R);
     const r = require("vm").runInContext("new AnazhRealm()", ctx);
     r.state.worldMeta = { seed: "anazh-realm-seed", voxelTerrain: true };
-    r.state.playerMesh = { position: { x: 40, y: 0, z: -30 } }; // BÜHNE: der Stand-Ort der Station kraft#2 am Wirt ohne Welt (Saat anazh-realm-seed), kein Welt-Ort
+    // der Stand-Ort der Station kraft#2: die Mess-Wiese (spec/profiband/haushalt.json, die Sitzung steht dort nach `/umstellen --ort
+    // wiese`), am Wirt ohne Welt — der Wind ist eine Funktion von Saat, Wort, Ort und Uhr, die Null-Welt misst an der Wiese dieselbe Zahl
+    const W = require("./lib/welt-orte.cjs").messort("wiese");
+    r.state.playerMesh = { position: { x: W.x, y: 0, z: W.z } };
     r.state.weatherTransition = null;
-    const Bm = boeMessung(r);
+    const Bm = boePhasen(r);
     const v = boeRot(Bm, boeQuelle(R)).map((x) => `böe am Wirt: ${x}`);
     // der Täter von vor wind-saison: die Phase der Böe läuft mit ω = 0,4 rad/s, gleich welches Wetter
     const alt = Object.create(r);
     alt._boePhase = (t) => t * 0.4;
-    const Ba = boeMessung(alt);
+    const Ba = boePhasen(alt);
     const ra = boeRot(Ba, []);
     if (!(ra.length === 1 && /^\(Ö\) BÖE:/.test(ra[0]))) v.push(`böe: der Täter „die Böe wandert mit ω/k“ fällt nicht rot (${JSON.stringify(Ba)})`);
+    // der Täter vor rueckfall-drei: die Drift atmet an der Uhr allein, die ganze Welt zugleich (`_windWob(t)` statt der Uhr des Musters)
+    const uhr = Object.create(r);
+    uhr._windAt = function (x, z, t) {
+        const w = r._windAt.call(this, x, z, t);
+        const f = this._windWob(t) / w.wob;
+        return Object.assign(w, { staerke: w.staerke * f, ms: w.ms * f, wob: w.wob * f });
+    };
+    const Bu = boePhasen(uhr);
+    const ru = boeRot(Bu, []);
+    if (!(ru.length === 1 && /^\(Ö\) BÖE:/.test(ru[0]))) v.push(`böe: der Täter „die Drift an der Uhr allein“ fällt nicht rot (${JSON.stringify(Bu)})`);
     if (boeRot(Bm, ["stamm/x.js:1"]).length !== boeRot(Bm, []).length + 1) v.push("böe: die Quelle mit ω/k fällt nicht rot");
-    return { v, Bm, Ba };
+    return { v, Bm, Ba, Bu };
 }
 
 function uhrSelbsttest() {
@@ -909,7 +949,7 @@ if (SELBSTTEST) {
     const boe = boeSelbsttest();
     v.push(...boe.v);
     console.log(
-        `  (Ö) Böe am Wirt · Laufzeit ${boe.Bm.lagS} s gegen ${boe.Bm.sollS} s (±${boe.Bm.laufzeitAbw} %) · r ${boe.Bm.kreuzR} · Varianz ${boe.Bm.varianz} — gepflanzt ω/k: ±${boe.Ba.laufzeitAbw} %`
+        `  (Ö) Böe am Wirt an der Mess-Wiese · ${BOE_PHASEN} Phasen des Ankers · Laufzeit ±${boe.Bm.spanne[0]}–${boe.Bm.spanne[1]} % (die schlechteste: ${boe.Bm.lagS} s gegen ${boe.Bm.sollS} s bei Phase ${boe.Bm.phase.toFixed(3)}) · r ${boe.Bm.kreuzR} · Varianz ${boe.Bm.varianz} ✅ — gepflanzt ω/k: ±${boe.Ba.laufzeitAbw} % → ROT · gepflanzt die Drift an der Uhr allein: ±${boe.Bu.spanne[0]}–${boe.Bu.spanne[1]} % → ROT`
     );
     const grund = grundSelbsttest();
     v.push(...grund.rot);
