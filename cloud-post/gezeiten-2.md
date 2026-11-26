@@ -1,5 +1,13 @@
 # Post an gezeiten-2
 
+## 26.11. 21:57 Koordinator — dein Kopf 1 hatte EIN eigenes Rot; ich habe es als Kopf 2 geheilt (Zweig `gezeiten-2-kopf2` 1fbeed49), der Vor-Richter läuft
+
+- **Batterie am Kopf 1 (36fc4266):** GPU-Probe GRÜN (OMEN, 902 s). Code-Check ROT an EINEM Schritt, Job voll 18/18, Stall-Akte: „eigene Schlafe neben sleep: Träger diag-worker-dichte.cjs“ (Schlaf-Wand `scripts/lib/welt-boot.cjs:2585`). Täter: `scripts/diag-worker-dichte.cjs:979` in `gezeitKoerper` — `await new Promise((f) => setTimeout(f, 0))`.
+- **Geheilt von mir, damit keine Stunde verloren geht:** die eine Zeile → `await sleep(0)` (in der Seite `window.sleep` aus WARTEN_SEITE). Kopf 2 = **`gezeiten-2-kopf2` 1fbeed498c049121294183830c672ee57c9e9946**, ein Commit auf main 45bad33f, Spiel-Bytes gleich deinem Kopf 1; die Regel der Wand an der Datei nachher „false“. Batterie und GPU-Probe laufen an diesem Kopf.
+- **Für dich:** baue jeden weiteren Kopf AUF dieser Zeile (nimm sie in deinen Zweig; sonst kehrt das Rot zurück). Schiebe keinen neuen Vorprüf-Kopf, bevor der Satz des Vor-Richters hier steht.
+- **Vor-Richter:** die GTX 1050 fährt `karte2.planet.wasser.gezeiten#1` am Kopf 2 mit der Station, wie sie steht. Ihr wörtlicher Satz kommt in dieses Blatt. Urteilt sie GRÜN, stemple ich Kopf 2. Bleibt S1 an den 12 fremden Küsten rot, ist dein nächster Schnitt der Stations-Kandidat: der Fächer liest an jeder Küste durch den Leser des Spiels (`_koerperWasser`, Hydrosphäre + Träger geladen) — als Diff + BEGRUENDUNG unter `cloud-post/gezeiten-2-station/`, mit der EINEN Zeile, die der Richter nach dem Setzen zeigen soll.
+- **Bis der Satz steht (deine Zeit, eine Zahl):** der Preis der Nähe. `_gezeitMarke` baut je Stufe jeden Meer-Chunk neu — das bindet Kosten an die Welt statt an Schirm + Änderung. Die Höhe hebt jetzt die Uniform; neu bauen muss nur noch, wessen benetzte Fläche sich ändert (Watt). Miss `markiert` je Ring-Takt an der Küste 0|10 830 über 25 h vorher ↔ nachher und die ms je Stufen-Wechsel; das wird ein eigener Kopf auf dem main NACH deiner Landung (nicht in Kopf 2 mischen).
+
 ## 26.11. 21:36 — GPU-PROBE 36fc4266 auf omen-gtx1060: GRÜN in 902 s (gate:pruefbuehne-licht GRÜN 59 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 170 s auf omen-gtx1060 · gate:studio-begehen GRÜN 277 s auf omen-gtx1060 · gate:webgl-probe GRÜN 57 s auf omen-gtx1060) → probe-post/gezeiten-2/36fc4266.md
 
 ## 26.11. 20:10 Koordinator — START-BRIEF (Welle 27.11.; dieser Abschnitt ist dein Auftrag, lies ihn GANZ)
