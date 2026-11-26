@@ -885,7 +885,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 54b89949: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: Prozess unbekannt · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\8b415d3e-d1f4-4b12-8",
+     "grund": "Station seit der Messung geändert — zuletzt an 54b89949: die Seite warf: (b)(d) 17.6 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
      "gehalten": true
     },
     {
@@ -37737,7 +37737,7 @@
   "ohne": 3276
  },
  "kopfVoll": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
- "zeit": "2026-11-26T16:13:09.654Z",
+ "zeit": "2026-11-26T16:29:24.691Z",
  "vorher": "54b89949",
  "bilanz": {
   "gewinn": [],
