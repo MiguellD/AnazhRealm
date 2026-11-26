@@ -399,7 +399,7 @@ class AnazhRealm_siedlung_bewohner {
             for (const art of U.kuenste) {
                 const proJ = (art === haupt ? U.lehrerH + g.axis(art) * (U.besteH - U.lehrerH) : g.axis(art) * U.amateurH) / U.ueberJ; // prettier-ignore
                 const h = proJ * Math.max(0, alter + seit - U.ab[art]);
-                aus[art] = { h, koennen: Math.pow(Math.max(h, 1) / U.guteH, U.alpha) };
+                aus[art] = { h, koennen: Math.pow(Math.max(h, 1) / U.guteH, U.alpha[art] / (1 - U.alpha[art])) };
             }
             return aus;
         }
@@ -467,7 +467,7 @@ class AnazhRealm_siedlung_bewohner {
             // koerper `alterGeschlecht`)
             const gen = this._rollHumanoidGenome(`${S.plan.seed >>> 0}:${gi}`, { jahr: S.plan.jahr, gestalt: gi, von });
             gen.sex = kc.alterGeschlecht(gi % 2 ? 0.75 + gen.sex * 0.25 : gen.sex * 0.25, gen.jahre);
-            const ov = Object.assign(this._bewohnerTracht(this._dialsAusGenom(gen), T, tuch), {
+            const ov = Object.assign(this._bewohnerTracht(this._dialsAusGenom(gen), T, tuch, { x: S.ox, z: S.oz }), {
                 hairStyle: gen.schnitt,
                 hairLen: gen.haarLaenge,
                 hairVol: gen.haarFuelle,
@@ -516,7 +516,8 @@ class AnazhRealm_siedlung_bewohner {
         const tracht = this._bewohnerTracht(
             { topColor: P.topColor, bottomColor: P.bottomColor, shoeColor: P.shoeColor },
             T,
-            Object.keys(kc.CLOTH_COLORS)
+            Object.keys(kc.CLOTH_COLORS),
+            { x: S.ox, z: S.oz }
         );
         const dB = Object.assign({}, this._bewohnerBuch() || {}, tracht, { height: 1 });
         const dK = kc.leibRaumVorlage(Object.assign({}, P, dB));
@@ -524,9 +525,47 @@ class AnazhRealm_siedlung_bewohner {
         const keys = [2, 3].map((lod) => this._ofenMenschKey(dK, f.skin, f.hair, lod));
         return { dK, f, keys, bestellt: keys.map(() => false), tonZeile: 0, pose: null };
     }
-    // DIE TRACHT DER EPOCHE an einem Satz Dials: ihr Schnitt (fachwerk `kleidung`), die Farben des Genoms in ihre Farben
-    _bewohnerTracht(d, T, tuch) {
-        const ov = Object.assign(d, { top: T.top, bottom: T.bottom, shoes: T.shoes });
+    // DIE TRACHT DES TAGS an einem Satz Dials (leib-liest-satz, mensch.kopplung.leib 1): der Schnitt der Epoche (fachwerk
+    // `kleidung`) unter der Luft und dem Regen an seinem Ort `ort` ({x, z}, Pflicht: die Tracht ohne Ort bricht laut) — koerper
+    // `trachtDesTags`: die Luft um 6 Uhr an der Höhe des Orts (der Gelände-Kern `temperaturAus` zur Saison der Welt unter dem Wetter
+    // am Ort, `_wetterFeldAm`), die Lagen, die das Soll der Kleidung trifft; die Farben des Genoms in die Farben der Epoche. Bis hier
+    // trug jeder Bewohner den Schnitt der Epoche, ob Sommer, Winter oder Regen (Lagen-Anteil 0,889 in jedem). Gemerkt je Schnitt,
+    // Ort, Uhr, Saison und Wetter (die Liste ruft je Bewohner).
+    _bewohnerTracht(d, T, tuch, ort) {
+        const kc = window.__koerperCore;
+        if (!kc || typeof kc.trachtDesTags !== "function") return AnazhRealm._kernPflichtBruch("koerper:trachtDesTags");
+        const st = this.state;
+        if (!ort || !Number.isFinite(ort.x) || !Number.isFinite(ort.z))
+            throw new Error(
+                "BEWOHNER: die Tracht des Tags ohne ihren Ort (_bewohnerTracht liest Luft und Regen am Ort {x, z})"
+            );
+        const [x, z] = [ort.x, ort.z];
+        const wt = st.weatherTransition;
+        const fort = wt && wt.from && wt.to ? wt.progress : null;
+        let M = this._bewohnerTrachtMerk;
+        if (
+            !M ||
+            M.T !== T ||
+            M.x !== x ||
+            M.z !== z ||
+            M.t !== st.spielZeit ||
+            M.phase !== st.seasonPhase ||
+            M.w !== st.weather ||
+            M.fort !== fort
+        ) {
+            const w = this._wetterFeldAm(x, z);
+            const grad = globalThis.__gelaendeCore.temperaturAus(
+                this._temperaturFeld(this.getTerrainHeightAt(x, z)),
+                st.seasonPhase,
+                kc.LEIB_SATZ.tracht.uhr,
+                w
+            );
+            M = this._bewohnerTrachtMerk = { T, x, z, t: st.spielZeit, phase: st.seasonPhase, w: st.weather, fort };
+            M.k = kc.trachtDesTags(T, grad, w.rain);
+            M.grad = grad;
+            M.regen = w.rain;
+        }
+        const ov = Object.assign(d, { top: M.k.top, bottom: M.k.bottom, shoes: M.k.shoes });
         for (const k of ["topColor", "bottomColor", "shoeColor"])
             if (!T.farben.includes(ov[k])) ov[k] = T.farben[Math.max(0, tuch.indexOf(ov[k])) % T.farben.length];
         return ov;
@@ -590,7 +629,8 @@ class AnazhRealm_siedlung_bewohner {
                     shoeColor: gen.shoeColor,
                 },
                 S.plan.kleidung,
-                tuch
+                tuch,
+                { x: S.ox, z: S.oz }
             );
             b.farben = { skinTone: d.skinTone, hairColor: d.hairColor, topColor: d.topColor, bottomColor: d.bottomColor, shoeColor: d.shoeColor }; // prettier-ignore
             const f = this._menschGussFarben(d);
@@ -1161,7 +1201,7 @@ class AnazhRealm_siedlung_bewohner {
                     heim: sl.seed >>> 0, rolle, beruf, same, epoche,
                     orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null, spiel: null, einkauf: null, hilft: !!bind.hilft },
                     seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
-                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, gangTempo: u, satzOrt: u,
+                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, gangTempo: u, gangBand: 0, satzOrt: u,
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
                     blick: u, begegnet: u, kopfY: u,
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
@@ -1342,8 +1382,14 @@ class AnazhRealm_siedlung_bewohner {
             // DAS KÖNNEN TRÄGT DAS WERK (mensch.sport.koennen#2, bewohner-satz): die Herstellung je Stunde ist die des Gesetzes mal
             // dem Können seiner Kunst (der Lebenslauf, `uebung.handwerk`: das Potenzgesetz der Übung, 1 = das Band der Guten) — der
             // Meister füllt sein Werk schneller als der Lehrling, und jedes Jahr der Welt hebt es (`absicht`). Bis hier stellte
-            // jeder Mensch desselben Berufs gleich viel her.
-            b.bestand.rate *= b.uebung.handwerk.koennen;
+            // jeder Mensch desselben Berufs gleich viel her. DIE GÜTE FOLGT DER ÜBUNG (leib-liest-satz, koennen#2): die Rate ist eine
+            // Funktion seines Satzes zur Zeit des Lesens (der Lebenslauf rechnet beim Lesen, `b.uebung`) — bis hier las sie das Können
+            // EINMAL beim Bau der Liste, über 100 Stunden Übung stand seine Güte still (R² 0).
+            const jeStunde = b.bestand.rate;
+            Object.defineProperty(b.bestand, "rate", {
+                get: () => jeStunde * b.uebung.handwerk.koennen,
+                enumerable: true,
+            });
             waren.add(P.ware);
         }
         const W = [...waren].sort();
@@ -1902,14 +1948,15 @@ class AnazhRealm_siedlung_bewohner {
         if (g.userData.rig) g.userData.rig._beinMass = b.beinMass;
         b.beinL = Math.max(0.3, G.mass.beinL * b.groesse);
         b.tempoBand = window.__koerperCore.leibGehen(b.beinL);
-        b.tempo = b.tempoBand * b.koennen.lauf;
+        this._bewohnerGang(b); // × lauf, mit dem Delta seines Satzes (der Kranke)
         this.state.scene.add(g);
         if (S.satz === null) S.satz = this._bewohnerSatz(S, b);
         // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, der Stand sofort
         if (G.lage === null) {
-            G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, gebacken: 0, fertig: false, tempo: b.tempoBand, gang: null };
+            const B = window.__koerperCore.LEIB_SATZ.baender.length; // (je Gang des Satzes ein Band, `_bewohnerGangPose`)
+            G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, baender: B, gebacken: 0, fertig: false, tempo: b.tempoBand, gaenge: null }; // prettier-ignore
             for (let h = 0; h < AnazhRealm._bewohnerStaende().length; h++)
-                this._bewohnerGangPose(g, G.lage, G.lage.n + h, null);
+                this._bewohnerGangPose(g, G.lage, B * G.lage.n + h, null);
         }
     }
 
@@ -2958,13 +3005,18 @@ class AnazhRealm_siedlung_bewohner {
         Object.values(KC.TAGES_GESETZ.haltung).forEach(nimm);
         for (const r of AnazhRealm.MOTION_EMOTION_PROFILES)
             if (r.koerper && AnazhRealm.BEWOHNER.gemuet.includes(r.axis)) nimm(r.koerper.idle);
+        // DIE NAMEN DES SATZES (leib-liest-satz, koerper `leibSatzNamen`): je Grund der Kranke, je Haltung einer Kunst die Stufe —
+        // hinten an (jede Zeile davor bleibt, wo sie stand); ihr Profil ist das des Gesetzes (`leibSatzProfil`)
+        if (typeof KC.leibSatzNamen !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibSatzNamen");
+        KC.leibSatzNamen().forEach(nimm);
         // DIE PHASEN DER GESTE (a-haltung 2): ein Stand, dessen Profil eine Seite über das Band der Ruhe hebt (koerper `leibGeste`
         // gegen das idle des Buchs: joy), backt `GESTE.phasen` Zeilen — die erste an seinem Platz, die übrigen hinten an (jede andere
         // Zeile bleibt, wo sie stand); `_bewohnerStandZeilen` nennt je Namen seine Zeilen
         const M = KC.MOTION;
         const Z = new Map(L.map((nm, h) => [nm, [h]]));
+        const P = (nm) => KC.leibSatzProfil(M, nm);
         for (const nm of L.slice())
-            if (KC.leibGeste(M[nm], M[L[0]], 0) || KC.leibGeste(M[nm], M[L[0]], 1))
+            if (KC.leibGeste(P(nm), M[L[0]], 0) || KC.leibGeste(P(nm), M[L[0]], 1))
                 for (let k = 1; k < KC.GESTE.phasen; k++) Z.get(nm).push(L.push(nm) - 1);
         AnazhRealm._bewohnerStandZeilen = Z;
         return (AnazhRealm._bewohnerStaendeListe = Object.freeze(L));
@@ -3003,21 +3055,52 @@ class AnazhRealm_siedlung_bewohner {
     // SEIN STAND WECHSELT (der Akt des Tags, die Furcht): gemerkt (`b.standZeile` — die Leser: `_bewohnerSatzSchreiben`, im Feld
     // `_bewohnerFeldLage`, dort sofort neu gestellt); liefert, ob der Satz ihn neu schreiben muss
     _bewohnerStandNeu(b, S) {
-        const h = this._bewohnerStandVon(b);
-        if (h === (b.standZeile || 0)) return false;
+        const band = b.gangBand;
+        const h = this._bewohnerStandVon(b); // (liest das Gemüt: an der Kante seines Satzes auch das Band seines Gangs)
+        if (h === (b.standZeile || 0) && band === b.gangBand) return false;
         b.standZeile = h;
         const g = b.leib;
         const echt = !(this.state.renderer && this.state.renderer._isHeadlessNull);
         if (g && echt && !b.nah && !b.drinnen && this._kzBesitztFeld(g)) this._bewohnerFeldLage(b, S);
         return true;
     }
+    // DER LEIB LIEST SEINEN SATZ (leib-liest-satz): die Haltung ist die seines ganzen Satzes — Akt, Rolle, Gesundheit (`b.krank`) und
+    // Können (`b.uebung`), koerper `tagesHaltung(akt, rolle, b)`. Der Satz rechnet beim Lesen (BEWOHNER_SATZ; die Übung ~40 µs): die
+    // Haltung gilt je Akt, Rolle und Tag der Prozesse (`_weltTag` — Krankheit und Stufe sind Gesetz des Tags) und rechnet erst neu,
+    // wenn einer davon wechselt (`g.schluessel`).
     _bewohnerGemuet(b) {
         const KC = window.__koerperCore;
         if (!KC || typeof KC.tagesHaltung !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesHaltung");
-        const g = b.gemuet || (b.gemuet = { haltung: null, sorrow: 0, chaos: 0 });
-        g.haltung = KC.tagesHaltung(b.akt, b.rolle);
+        const g = b.gemuet || (b.gemuet = { haltung: null, sorrow: 0, chaos: 0, schluessel: null });
+        const tag = Math.floor(this._weltTag());
+        if (
+            g.schluessel === null ||
+            g.schluessel.akt !== b.akt ||
+            g.schluessel.rolle !== b.rolle ||
+            g.schluessel.tag !== tag
+        ) {
+            g.haltung = KC.tagesHaltung(b.akt, b.rolle, b);
+            g.schluessel = { akt: b.akt, rolle: b.rolle, tag };
+            this._bewohnerGang(b); // (der Gang liest denselben Satz am selben Tag)
+        }
         g.sorrow = g.chaos = b.leib ? Math.max(0, this._kreaturFurchtErinnert(b.leib)) : 0;
         return g;
+    }
+    // DER GANG LIEST DEN SATZ (leib-liest-satz-2 — mensch.menge.seuche: der Kranke geht anders): das Tempo seines Gangs ist das
+    // Gehen seines Beins × `lauf` seines Könnens (die Geburt: `tempoBand`, mensch.K2) mit dem Delta seines Satzes (koerper
+    // `leibSatzTempo`: der Kranke −0,185 m/s, Lasselin 2020 — Schritt und Takt folgen im EINEN Gang-Gesetz), dazu das Band seines
+    // Gangs im fernen Satz (`leibSatzBand` → `gangBand`: die Zeilen des Kranken, `_bewohnerGangPose`). EIN Schreiber: die Geburt
+    // und die Kante seines Satzes (`_bewohnerGemuet`: Akt, Rolle, Tag — Krankheit ist Gesetz des Tags); während eines Laufs trägt
+    // ihn `gangTempo` (das Ende des Laufs gibt ihn zurück, `_bewohnerZiel`). Bis hier setzte allein die Geburt das Tempo: der
+    // Kranke ging im Tempo des Gesunden.
+    _bewohnerGang(b) {
+        if (!(b.tempoBand > 0)) return; // (vor der Geburt geht er nicht)
+        const KC = window.__koerperCore;
+        if (typeof KC.leibSatzTempo !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibSatzTempo");
+        const v = KC.leibSatzTempo(b.tempoBand * b.koennen.lauf, b);
+        if (b.gangTempo != null) b.gangTempo = v;
+        else b.tempo = v;
+        b.gangBand = KC.leibSatzBand(b);
     }
 
     // DAS ZIEL DER STUNDE (mensch.K2): das Soll (`_bewohnerSoll`). Ein neues Ziel verwirft den alten Weg; wer drinnen war und
@@ -3034,8 +3117,8 @@ class AnazhRealm_siedlung_bewohner {
         const sp = b.sied && b.sied.spiel;
         b.gegner = ziel && ziel.gegner != null && sp ? sp.wer[ziel.gegner] || null : null;
         // DER LÄUFER LÄUFT (koerper SPIEL_GESETZ): auf dem Weg ins Ziel seines Laufs trägt ihn das Tempo seiner Leistung (der Auftritt
-        // `tempo`) — geliehen: danach geht er das Tempo seines Gangs, wie es vor dem Lauf war (`gangTempo`); das Tempo des Gangs setzt
-        // allein die Geburt (`_bewohnerGeburt`). Bis sport-regeln 3 setzte jedes Ziel das Tempo neu aus dem Gesetz, ein Zwilling der
+        // `tempo`) — geliehen: danach geht er das Tempo seines Gangs (`gangTempo`); das Tempo des Gangs setzt allein sein Satz
+        // (`_bewohnerGang`: die Geburt und die Kante seines Satzes). Bis sport-regeln 3 setzte jedes Ziel das Tempo neu aus dem Gesetz, ein Zwilling der
         // Geburt: der Täter bewohner-koennen der Kreatur-Linse (der Stand vor dem Gesetz) blieb unsichtbar
         const lauf = !!(ziel && ziel.tempo > 0);
         if (lauf && b.gangTempo == null) b.gangTempo = b.tempo;
@@ -4861,14 +4944,18 @@ AnazhRealm.LEBENSLAUF = Object.freeze({
     }),
     // Dunbar-Schichten (Zhou, Sornette, Hill & Dunbar 2005): Stütz-Gruppe 5 · Sympathie-Gruppe 15 · 50 · 150 — der Besuch gilt der Sympathie-Gruppe
     freunde: Object.freeze({ gruppe: 15, schichten: Object.freeze([15, 50, 150]) }),
-    // Ericsson, Krampe & Tesch-Römer 1993: Übung ab ~5 bis 20 J — die besten Geiger 10 000 h, die guten 7 500, die Lehrer 4 000, Amateur-Pianisten 2 000; die Form nach Newell & Rosenbloom 1981 (Zeit ∝ N^−α, α gesetzt)
+    // Ericsson, Krampe & Tesch-Römer 1993: Übung ab ~5 bis 20 J — die besten Geiger 10 000 h, die guten 7 500, die Lehrer 4 000, Amateur-Pianisten 2 000; die Form nach Newell & Rosenbloom 1981 (Zeit je Versuch ∝ N^−α)
     uebung: Object.freeze({
         besteH: 10000,
         guteH: 7500,
         lehrerH: 4000,
         amateurH: 2000,
         ueberJ: 15,
-        alpha: 0.4,
+        // DAS BAND DER ÜBUNG (leib-liest-satz, Newell & Rosenbloom 1981, Tab. 1: α je Datensatz 0,06 … 0,51): je Kunst der Datensatz
+        // ihrer Art — das Handwerk Crossman 1959 (Zigarren am Werk) 0,21, der Tanz Snoddy 1926 (Spiegelzeichnen, Wahrnehmung und
+        // Motorik) 0,26, der Kampf Seibel 1963 (Wahl-Reaktion) 0,32, das Brett Stair (gewonnene Spiele) 0,21. Das Können zählt in
+        // STUNDEN (Gl. 22–27: das Potenzgesetz in Versuchen ist eines in der Zeit mit dem Exponenten α/(1−α)) — bis hier α 0,4 ohne Quelle.
+        alpha: Object.freeze({ handwerk: 0.21, tanz: 0.26, kampf: 0.32, brett: 0.21 }),
         kuenste: Object.freeze(["handwerk", "tanz", "kampf", "brett"]),
         // die Lehre (unten) · die Übung der Kindheit · die Waffenpflicht ab 15 (Winchester) · das Brett ab 7 (ANGENOMMEN: das Alter, in
         // dem ein Kind die Regel eines Brettspiels trägt — keine Quelle hier; das Brett ist Kunst der Liebhaber, nie ein Werk)

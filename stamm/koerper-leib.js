@@ -955,7 +955,11 @@ class AnazhRealm_koerper_leib {
         const mp = wB < 0.999 ? this._koerperMotionProfile(false, emotions) : null;
         const mref = mp ? this._koerperMotionProfile(false, null) : null;
         const SB = wB > 0.001 && gait && gait.S > 0 ? gait.S : 0;
-        AnazhRealm._leibTakt().leibRigPose(
+        // DER GANG LIEST DEN SATZ (leib-liest-satz-2, koerper `leibSatzPose`): die Haltung des Gemüts nennt seinen Satz („pwalk/krank“)
+        // — der Stand trägt ihn im Profil, der Gang dieselbe Zeile über den Beinen des Gesetzes; bis hier ging der Kranke wie der Gesunde
+        const KT = AnazhRealm._leibTakt();
+        const satz = wB > 0.001 && emotions && typeof emotions.haltung === "string" ? KT.leibSatzPose(emotions.haltung) : null; // prettier-ignore
+        KT.leibRigPose(
             r,
             t,
             walkPhase,
@@ -965,7 +969,8 @@ class AnazhRealm_koerper_leib {
             mref,
             SB > 0 ? this._gaitBeinMass(r) : null,
             SB > 0 ? this._gangZeile(true) : null,
-            window.__tetrapodaCore
+            window.__tetrapodaCore,
+            satz
         );
         // DER AUSFALLSCHRITT (koerper-core `leibStossPose`, physik.K5 — dieselbe Funktion setzt das Körper-Studio): die Hüfte rollt
         // jedes Bein quer zu seinem Fuß des Stoß-Zustands, im Schwung hebt das Knie ihn — vor der Fuß-IK, die den Stand hält
@@ -3098,7 +3103,12 @@ class AnazhRealm_koerper_leib {
         // DIE HALTUNG DES TAGS (w28-mensch-menge, koerper `tagesHaltung`): ein Gemüt mit `haltung` (der Bewohner,
         // `_bewohnerGemuet`) trägt nie den Kampf-Zustand des Spielers; im Stand steht es in der Haltung seines Akts, solange keine
         // Emotion über ihrer Schwelle die Zeile wählt (die Furcht schlägt die Arbeit)
-        const p = m[this._koerperMotionName(moving, emotions)];
+        // DER NAME MIT DEM SATZ (leib-liest-satz): ein Name mit Zusatz („sad/krank“) ist der Grund des Buchs plus das Delta seines
+        // Gesetzes (koerper `leibSatzProfil`, je Buch und Namen dasselbe Objekt)
+        const KC = window.__koerperCore;
+        if (!KC || typeof KC.leibSatzProfil !== "function")
+            return AnazhRealm._kernPflichtBruch("koerper:leibSatzProfil");
+        const p = KC.leibSatzProfil(m, this._koerperMotionName(moving, emotions));
         return p && typeof p === "object" ? p : null;
     }
     // DER NAME DES PROFILS (w28-steh-haltung — die EINE Wahl, die der Leser der Daten `_koerperMotionProfile` und der Stand
