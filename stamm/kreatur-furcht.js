@@ -288,10 +288,14 @@ class AnazhRealm_kreatur_furcht {
         return (ud._auge = A);
     }
 
-    // DAS ZIEL IM BLICK: seine Farbe (linear-sRGB — das Mittel der Stoffe seines Leibs nach Fläche, Stoff-Farbe × Mittel seiner
-    // Vertex-Farben: die Kleidung des Spielers, das Fell des Jägers) und die Kante des Quadrats gleicher Fläche (√(mittlere
-    // waagrechte Ausdehnung × Höhe) — Riccò liest die Fläche). Am Ziel gemerkt, frisch nach 1 s der Kreatur-Uhr: ein Wechsel der
-    // Kleidung zählt ab dem nächsten Blick, alle Tiere lesen dieselbe Zahl.
+    // DAS ZIEL IM BLICK: seine Farbe (linear-sRGB — das Mittel der Stoffe seines Leibs nach Fläche, je Stoff die Albedo, die r184
+    // zeichnet: die Ecke, wo der Farb-Knoten sie liest (`eckeImKnoten`, die Marke des Stoffs), sonst die Stoff-Farbe; × die Ecke,
+    // wo vertexColors sie dazu multipliziert — die Kleidung des Spielers, das Fell des Jägers) und die Kante des Quadrats
+    // gleicher Fläche (√(mittlere waagrechte Ausdehnung × Höhe) — Riccò liest die Fläche). Am Ziel gemerkt, frisch nach 1 s der
+    // Kreatur-Uhr: ein Wechsel der Kleidung zählt ab dem nächsten Blick, alle Tiere lesen dieselbe Zahl. Bis auge-farbe las sie
+    // nur das Flag vertexColors — der Node-Stoff der Leiber liest die Ecke im Farb-Knoten und trägt es aus: Spieler, Wolf und
+    // Hirsch standen jedem Auge als Weiß [1, 1, 1] (die Stoff-Farbe, die nie gezeichnet wird), das Fell des Hirschs zeigte sich
+    // auf jedem Boden.
     _sichtZiel(ziel) {
         const ud = ziel.userData || (ziel.userData = {});
         const t = this.state.creatureAnimationTime || 0;
@@ -310,8 +314,8 @@ class AnazhRealm_kreatur_furcht {
             if (!g.boundingSphere) g.computeBoundingSphere();
             const r = g.boundingSphere.radius * o.getWorldScale(v).x;
             const a = r * r;
-            const ton = [m.color.r, m.color.g, m.color.b];
-            const vc = m.vertexColors && g.attributes.color;
+            const vc = g.attributes.color;
+            const ecke = [1, 1, 1];
             if (vc) {
                 const schritt = Math.max(1, Math.floor(vc.count / 64));
                 const s = [0, 0, 0];
@@ -321,8 +325,11 @@ class AnazhRealm_kreatur_furcht {
                     s[1] += vc.getY(k);
                     s[2] += vc.getZ(k);
                 }
-                for (let c = 0; c < 3; c++) ton[c] *= s[c] / n;
+                for (let c = 0; c < 3; c++) ecke[c] = s[c] / n;
             }
+            // r184 setupDiffuseColor: (colorNode ?? Stoff-Farbe) × (vertexColors und color-Attribut ? Ecke : 1)
+            const ton = vc && m.userData && m.userData.eckeImKnoten ? ecke.slice() : [m.color.r, m.color.g, m.color.b];
+            if (vc && m.vertexColors) for (let c = 0; c < 3; c++) ton[c] *= ecke[c];
             for (let c = 0; c < 3; c++) farbe[c] += ton[c] * a;
             flaeche += a;
             box.expandByObject(o);

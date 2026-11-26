@@ -264,8 +264,51 @@ async function lebenBuehnen() {
         s.naesse = altNaesse;
         return { brand, orte };
         });
+        // (D) DAS AUGE DER ART (auge-farbe): ein Hirsch 30 m vor dem Spieler liest dessen GEZEICHNETE Farbe — jede Ecke seines Leibs
+        // auf eine Farbe (zurück im selben Takt) gegen den Boden unter ihm (`_kreaturSiehtM`). Orange und Grün gleicher
+        // Leuchtdichte (Y nach BT.709) trennt das Auge des Zweifarben-Sehers kaum (das Warn-Orange der Jäger), Dunkel und Hell
+        // trennt es weit — liest es die Ecke nicht, sieht es alle vier gleich
+        if (taeter === "auge-ecke")
+            decke("_sichtZiel", (alt) => function (z) { return Object.assign({}, alt.call(this, z), { farbe: [1, 1, 1] }); }); // prettier-ignore
+        if (taeter === "auge-helle") {
+            // der Abstand bis auge-farbe: jede Klasse ihre ln-Differenz für sich, die Helle in jeder noch einmal als Farbe
+            const K = globalThis.__tetrapodaCore,
+                neu = K.augeAbstand;
+            K.augeAbstand = (F, a, b) => Math.hypot(...F.fang.map((z) => Math.log(Math.max(0.05, z[0] * a[0] + z[1] * a[1] + z[2] * a[2]) / Math.max(0.05, z[0] * b[0] + z[1] * b[1] + z[2] * b[2])) / 0.05)); // prettier-ignore
+            restore.push(() => (K.augeAbstand = neu));
+        }
+        const auge = await teil("auge", async () => {
+            const ort = frei(70, -40, 20) || land(70, -40);
+            pm.set(ort.x + 30, boden(ort.x + 30, ort.z), ort.z);
+            const c = tier(ort, "wesen", 1);
+            ruhig(c);
+            const Y = (f) => 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+            const or = [1, 0.25, 0];
+            const farben = { orange: or, gruen: [0.05, (Y(or) - 0.2848 * 0.05) / 0.7152, 0.05], dunkel: [0.02, 0.02, 0.02], hell: [0.6, 0.6, 0.6] }; // prettier-ignore
+            const L = s.playerMesh,
+                m = {};
+            for (const [n, f] of Object.entries(farben)) {
+                const ecken = new Map();
+                L.traverse((o) => {
+                    const e = o.isMesh && o.geometry && o.geometry.attributes.color;
+                    if (!e || ecken.has(e)) return;
+                    ecken.set(e, e.array.slice());
+                    for (let k = 0; k < e.count; k++) e.setXYZ(k, f[0], f[1], f[2]);
+                });
+                delete L.userData._sichtZiel;
+                try {
+                    m[n] = rund(r._kreaturSiehtM(c, L), 1);
+                } finally {
+                    for (const [e, a] of ecken) e.array.set(a);
+                    delete L.userData._sichtZiel;
+                }
+            }
+            leer(1);
+            return m;
+        });
         const mittel = (a) => rund(a.reduce(addiere, 0) / a.length, 3);
         return {
+            auge,
             erinnert,
             fleeRadiusM: A._verhaltenGesetz().furcht.fleeRadius,
             ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) },
@@ -3100,6 +3143,15 @@ function lebenUrteil(name, z, soll) {
         );
     }
     if (name !== "furcht") return;
+    const Au = z.auge;
+    soll(
+        Au.gruen > 0 && Math.abs(Au.orange - Au.gruen) <= 0.15 * Au.gruen,
+        `das Auge des Hirschs trennt Orange und Grün gleicher Leuchtdichte: ${Au.orange} ↔ ${Au.gruen} m (Soll ±15 %) — die Helle zählt als Farbe`
+    );
+    soll(
+        Math.max(Au.hell, Au.dunkel) >= 1.3 * Math.min(Au.hell, Au.dunkel),
+        `das Auge liest die gezeichnete Ecke nicht: dunkel ${Au.dunkel} m, hell ${Au.hell} m (Soll ≥ 1,3×)`
+    );
     const { kontrolle: K, geschlagen: G, gefuettert: F, gebunden: B, baerRuhig, baerZornig, baerFrieden } = z.erinnert;
     const { wolf: W, fuchs: Fu } = z.erinnert;
     soll(
@@ -3232,6 +3284,8 @@ module.exports = {
             ["furcht-speicher", /reist nicht über den Speicherstand/, ["erinnert"]],
             ["furcht-aura", /die Aura treibt die Furcht nicht/, ["erinnert"]],
             ["brand-flucht", /die Glut ist keine Bedrohung/, ["brand"]],
+            ["auge-ecke", /das Auge liest die gezeichnete Ecke nicht/, ["auge"]],
+            ["auge-helle", /trennt Orange und Grün gleicher Leuchtdichte/, ["auge"]],
         ],
     },
     urteil: lebenUrteil,
