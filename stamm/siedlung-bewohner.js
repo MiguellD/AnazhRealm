@@ -2570,7 +2570,11 @@ class AnazhRealm_siedlung_bewohner {
         if (!b.leib || !b.da || b.weg || b.platz || b.hinaus || b.ankunft || b.nah || b.drehen != null || b._gaitW > 0)
             return false;
         const u = b.leib.userData;
-        if (u.rig) return false; // wer seinen Leib trägt, gibt ihn im Takt zurück (`_tickBewohner`, der Ring) — erst dann ruht er
+        // wer seinen Leib trägt, gibt ihn im Takt zurück (`_tickBewohner`, der Ring) — erst dann ruht er. AN WEM GEBACKEN WIRD
+        // (`backt`), der trägt ihn für den Satz, nicht für das Auge: er ruht wie einer ohne Leib (mittag-heiler). Bis hier hielt
+        // das Backen sechs Köpfe wach, die Reihe der Ruhenden (`ruhSoll`) rückte anders, und die Stunde hing an der Seite: mit den
+        // Zeilen der Stände (stand-lebt) reichte es in die Stunde, kind#3891861244 trat um 10 Uhr ein Bild früher an (VK-V Bild 614)
+        if (u.rig && !b.backt) return false;
         if (b.drinnen) return true;
         if (b.d2 < innen * innen) return false;
         if (!echt) return true;

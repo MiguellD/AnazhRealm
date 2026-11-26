@@ -410,7 +410,11 @@ class AnazhRealm_siedlung_menge {
         // (w28-leib-im-ring: gebacken wird an einem Leib — der Erste, der frei ist, trägt ihn für das Backen, `backt`, und
         // gibt ihn zurück, sobald Satz, Lagen und die Glieder seiner Gattung stehen)
         const frei = (gi) => {
-            const x = S.liste.find((x) => (gi < 0 || x.gestalt === gi) && x.leib && !x.nah && !x.amSteuer);
+            // (mittag-heiler: nie an einem, der seinen Leib für das Auge trägt — der Ring hält ihn wach, `_bewohnerRuhig`)
+            const x = S.liste.find(
+                (x) =>
+                    (gi < 0 || x.gestalt === gi) && x.leib && !x.nah && !x.amSteuer && (x.backt || !x.leib.userData.rig)
+            );
             return x && this._bewohnerLeibAn(S, x) ? this._bewohnerBackt(S, x) : null;
         };
         if (S.backt && S.backt.length) {
@@ -426,6 +430,8 @@ class AnazhRealm_siedlung_menge {
                     L.standFertig &&
                     warm(x)
                 );
+                // der Leib des Backens geht mit ihm (mittag-heiler): der Ruhende käme sonst erst in seinem Takt an den Ring
+                if (!x.backt && !x.nah && !x.amSteuer) this._bewohnerLeibAb(x);
                 return x.backt;
             });
         }
