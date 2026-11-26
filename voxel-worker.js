@@ -1481,7 +1481,8 @@ function planetAnker(msg) {
     const plan = planetPlanVon(msg.samen);
     const P = self.__planetCore;
     const A = P.planetAnker(plan, 0, G.ortGesetz());
-    // der Körper reist mit: die Sonnenbahn der Welt liest Schiefe und Drehsinn des Planeten (`_sonnenBahn`)
+    // der Körper reist mit: die Sonnenbahn der Welt liest Schiefe und Drehsinn des Planeten, der Mond seinen Radius (die
+    // Parallaxe, `_sonnenBahn`)
     const K = plan.koerper;
     return {
         samen: msg.samen,
@@ -1491,6 +1492,7 @@ function planetAnker(msg) {
         kuesteKm: A.kuesteKm,
         neigungRad: K.neigungRad,
         drehsinn: K.drehsinn,
+        radiusKm: K.radiusKm,
     };
 }
 // DER ORT AUF DEM PLANETEN IM FADEN (Reise, Schnitt 3): EIN Auftrag für Ort UND Zeit — die Scheibe zur Zeit `zeitMa` (die Zeit ist
