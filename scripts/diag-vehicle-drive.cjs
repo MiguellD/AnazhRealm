@@ -394,7 +394,7 @@ function wasserMessung(VC) {
             const wind = { x: 0, z: WASSER.wind },
                 yawAm = (th) => Math.atan2(Math.cos((th * Math.PI) / 180), Math.sin((th * Math.PI) / 180));
             let best = null;
-            for (let th = 25; th <= 90; th += 5) {
+            for (let th = 25; th <= 90; th += 2.5) {
                 const y0 = yawAm(th),
                     zz = zu(G, y0);
                 let x0 = 0,

@@ -3307,6 +3307,8 @@
             hullK: helm((2 * Alat) / (Lwl * Lwl)) * Alat, // Auftriebs-Anstieg × Flaeche des Rumpfs (Streckung gespiegelt 2T/L)
             mQuer: 0.5 * Math.PI * rho * T * T * Lwl, // die mitschwingende Wassermasse quer (Streifen: ½ π ρ T² je Laenge)
             BM: IT / vol,
+            // die Besatzung sitzt im Wind auf dem Dollbord (der Gewichtstrimm des Jollenseglers): ihr Moment um die Mitte, kg·m
+            trimm: (R.last * R.B) / 2,
             // die Traegheit um die Hochachse: der Rumpf (k = kYY · L) und die mitschwingende Wassermasse quer ueber die Laenge
             Iz: delta * (W.kYY * R.L) * (W.kYY * R.L) + (0.5 * Math.PI * rho * T * T * Lwl * Lwl * Lwl) / 12,
             ruder: { A: W.ruderK * Lwl * T, k: helm(2 * W.ruderAR), x: -Lwl / 2 },
@@ -4795,8 +4797,9 @@
                 // hoechstens bis krenSoll legt (Δ · g · GZ(krenSoll), dieselbe Wand-Seiten-Formel wie der Stand): das geschotete
                 // Segel (C_L*, darueber gefiert), das quer stehende (die Platte vor dem Wind, darueber laesst er es auswehen) oder
                 // das killende (im Wind: nur sein Widerstand)
+                // — die Besatzung auf dem Dollbord im Wind traegt ihr Moment dazu (g · trimm · cos krenSoll)
                 const ts = Math.tan(W.krenSoll),
-                    mMax = H.delta * g * Math.sin(W.krenSoll) * Math.max(0, H.GM + 0.5 * H.BM * ts * ts),
+                    mMax = H.delta * g * Math.sin(W.krenSoll) * Math.max(0, H.GM + 0.5 * H.BM * ts * ts) + g * H.trimm * Math.cos(W.krenSoll),
                     arm = H.segel.hCE - (H.schwert ? H.schwert.z : zH),
                     stellung = (cl, cd, f) => ({ cl, x: q * f * (cl * lx + cd * dx), y: q * f * (cl * ly + cd * dy) });
                 let cl = dx < 0 ? Math.min(W.clMax, lx / (2 * kI * -dx)) : W.clMax;
@@ -4812,6 +4815,9 @@
                 X += best.x;
                 quer(best.y, H.segel.hCE);
                 z.segel = best.cl;
+                // der Gewichtstrimm: die Besatzung rueckt in den Wind, bis sie das kraengende Moment aufhebt oder auf dem Dollbord sitzt
+                const kc = Math.min(Math.abs(K), g * H.trimm * Math.cos(z.fWank || 0));
+                K -= Math.sign(K) * kc;
             }
         }
         const mx = m * (1 + W.mLaengs),

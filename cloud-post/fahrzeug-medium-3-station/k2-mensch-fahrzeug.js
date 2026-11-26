@@ -190,8 +190,9 @@ const SPUR_SICHT = async (r) => {
 // last 200 kg 25 m weiter draußen — das Spitzboot mit Segel), gefahren durch den Schritt der Welt (`_wagenSchritt`: der Fahr-Satz aus
 // exportDrive, `_fahrSchwimmt` aus dem Spiegel am Körper). Gemessen: schwimmt es (die Welt trägt es), die Rollperiode aus dem freien
 // Ausrollen (Nulldurchgänge nach 0,1 rad) gegen die IMO-Formel (IS Code 2008 Teil A 2.3.4: T = 2·C·B/√GM, C = 0,373 + 0,023·B/d −
-// 0,043·L/100), am Wind die Polare 30–80° im Wind 5 m/s (der Wind des Prüfstands, `_fahrWind` gestellt wie fahr-proben) — die
-// beste Höhe (VMG) und ihr Kurs über Grund: die Wende ist zweimal der Kurs neben dem Wind, die Höhe der Weg gegen den Wind in 60 s.
+// 0,043·L/100), am Wind die Polare 30–80° im Wind 5 m/s (der Wind des Prüfstands, `_fahrWind` gestellt wie fahr-proben), je Kurs 30 s
+// einschwingen und 30 s gemessen — die beste Höhe (VMG) und ihr Kurs über Grund: die Wende ist zweimal der Kurs neben dem Wind, die
+// Höhe der Weg gegen den Wind in 60 s. Der Segler fährt im nächsten benannten See (seine Säule und 60 m ringsum tragen seinen Kiel).
 const WASSER_AN = async (r, T, arg) => {
     const VC = window.__vehicleCore;
     if (!VC || typeof VC.bootRumpf !== "function") return { fehlt: "der Fahrzeug-Kern trägt keinen Rumpf (vehicle-core bootRumpf)" };
@@ -219,9 +220,47 @@ const WASSER_AN = async (r, T, arg) => {
     r._fahrWind = () => ({ x: wind.x, z: wind.z });
     const boote = [];
     try {
-        const ux = Math.cos(a.boot.phi), uz = -Math.sin(a.boot.phi); // der Bug zum Wasser (phi = atan2(−uz, ux))
-        for (const [form, ov, raus] of [["kahn", a.boot.ov, 0], ["spitz", { welle: 0.5, last: 200 }, 25]]) {
-            const [x, z] = [a.boot.x + ux * raus, a.boot.z + uz * raus];
+        // das offene Wasser des Seglers: der nächste benannte See des Gelände-Gesetzes um den Messort (wie die Orte der Wasser-Linse,
+        // `__wasserOrte`: die Senke, deren Kachel einen See über dem Meer trägt), dort die tiefste Zelle, deren Säule seinen Kiel mit
+        // Luft trägt und je 60 m ringsum ebenso (die Polare fährt 60 s)
+        const SP = { welle: 0.5, last: 200 };
+        const RS = VC.bootRumpf(Object.assign({}, VC.DEFAULT_P, VC.presetPatch("boot"), SP));
+        const tief = (x, z) => {
+            const g = r._voxelSurfaceY(x, z);
+            if (!Number.isFinite(g)) return -1;
+            const w = r._atlasWaterLevelAt(x, z, g);
+            return w > g ? w - g : -1;
+        };
+        const noetig = (RS.T || RS.Tleer) + (RS.kiel || 0) + 0.3;
+        const raum = (x, z) => tief(x, z) >= noetig && [0, 1, 2, 3, 4, 5, 6, 7].every((k) => tief(x + 60 * Math.cos((k * Math.PI) / 4), z + 60 * Math.sin((k * Math.PI) / 4)) >= noetig);
+        const warte = (f) => new Promise((res) => { const t0 = Date.now(); const g = () => (f() || Date.now() - t0 > 60000 ? res() : setTimeout(g, 100)); g(); });
+        const GC = window.__gelaendeCore, wl = st.waterLevel || 0;
+        let offen = null;
+        if (GC && typeof GC.benannteSeen === "function") {
+            const kand = GC.benannteSeen(r._gelaende(), -12000, -12000, 64, 375)
+                .map((k) => ({ x: -12000 + (k % 375) * 64, z: -12000 + ((k / 375) | 0) * 64 }))
+                .sort((u, v) => Math.hypot(u.x - p.x, u.z - p.z) - Math.hypot(v.x - p.x, v.z - p.z));
+            for (const k of kand.slice(0, 12)) {
+                await warte(() => !r._ensureHydroTilesAround(k.x, k.z, 0));
+                const h = r._hydroFor(k.x, k.z);
+                const lake = h && (h.lakes || []).find((l) => l.level > wl + 2 && l.cells && l.cells.length >= 16);
+                if (!lake) continue;
+                const zellen = lake.cells
+                    .map((q) => ({ x: h.originX + ((q % h.dim) + 0.5) * h.cell, z: h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell }))
+                    .map((c) => Object.assign(c, { t: tief(c.x, c.z) }))
+                    .sort((u, v) => v.t - u.t);
+                const c = zellen.find((q) => raum(q.x, q.z));
+                if (c) {
+                    offen = [c.x, c.z];
+                    break;
+                }
+            }
+        }
+        if (offen) await warte(() => !r._ensureHydroTilesAround(offen[0], offen[1], 0));
+        const plaetze = [["kahn", a.boot.ov, [a.boot.x, a.boot.z]]];
+        if (offen) plaetze.push(["spitz", SP, offen]);
+        else boote.push({ form: "spitz", fehler: "kein See trägt den Segler (" + noetig.toFixed(2) + " m tief, 60 m ringsum) in den 12 nächsten Senken" });
+        for (const [form, ov, [x, z]] of plaetze) {
             const e = r.spawnArchitecture("fahrzeug_boot", { x, y: r._koerperWasser(x, z, -Infinity), z }, { silent: true, precise: true, rotationY: 0, studioOv: ov });
             if (!e) {
                 boote.push({ form, fehler: "das Werk stand nicht" });
@@ -249,7 +288,8 @@ const WASSER_AN = async (r, T, arg) => {
             };
             if (G) {
                 b.schwimmt = r._fahrSchwimmt(e, zu(0));
-                // die Rollperiode: das freie Ausrollen aus 0,1 rad
+                // die Rollperiode: das freie Ausrollen aus 0,1 rad in der Flaute (der Wind im Segel hielte die Krängung)
+                wind.z = 0;
                 const fz = zu(0);
                 fz.fWank = 0.1;
                 const nd = [];
@@ -265,6 +305,7 @@ const WASSER_AN = async (r, T, arg) => {
                     b.GM = +H.GM.toFixed(3);
                 }
                 b.rollQ = b.roll && b.imo ? +(b.roll / b.imo).toFixed(3) : null;
+                wind.z = 5;
                 if (H && H.segel) {
                     const kurs = (y0, w) => {
                         const f = Math.atan2(Math.sin(y0 - w.yaw), Math.cos(y0 - w.yaw));
@@ -272,15 +313,16 @@ const WASSER_AN = async (r, T, arg) => {
                     };
                     const yawAm = (th) => Math.atan2(Math.cos((th * Math.PI) / 180), Math.sin((th * Math.PI) / 180));
                     let best = null;
-                    for (let th = 30; th <= 80; th += 5) {
+                    for (let th = 30; th <= 80; th += 2.5) {
                         const y0 = yawAm(th), w = zu(y0);
                         let x0 = 0, q0 = 0, kren = 0;
-                        lauf(w, 2400 + 3600, (q, i) => {
-                            if (i === 2400) [x0, q0] = [q.x, q.z];
-                            if (i >= 2400) kren = Math.max(kren, Math.abs(q.fWank || 0));
+                        lauf(w, 1800 + 1800, (q, i) => {
+                            if (i === 1800) [x0, q0] = [q.x, q.z];
+                            if (i >= 1800) kren = Math.max(kren, Math.abs(q.fWank || 0));
                             return { steer: kurs(y0, q) };
                         });
-                        const vmg = -(w.z - q0) / 60, cog = (Math.atan2(w.x - x0, -(w.z - q0)) * 180) / Math.PI;
+                        const vmg = -(w.z - q0) / 30, cog = (Math.atan2(w.x - x0, -(w.z - q0)) * 180) / Math.PI;
+                        (b.polar = b.polar || []).push([th, +vmg.toFixed(3), +cog.toFixed(1)]);
                         if (!best || vmg > best.vmg) best = { th, vmg: +vmg.toFixed(3), cog: +cog.toFixed(1), kren: +((kren * 180) / Math.PI).toFixed(1), schwimmt: r._fahrSchwimmt(e, w) };
                     }
                     b.amWind = best;
@@ -1155,13 +1197,13 @@ module.exports = (F) => [
                 },
                 {
                     name: "der Segler steigt, aber rollt mit der Feder des Autos (Rollperiode 0,51 der Formel)",
-                    j: { leiter: "mensch.fahrzeug.medium", adapter: PROBE, sprossen: { 3: { art: "zahl", n: 2, werte: { wende: 95, hoehe: 47, rollQ: 0.51 } } } },
+                    j: { leiter: "mensch.fahrzeug.medium", adapter: PROBE, sprossen: { 3: { art: "zahl", n: 2, werte: { wende: 91.8, hoehe: 95.5, rollQ: 0.51 } } } },
                     gruen: false,
                     zahl: /ROT an Rollperiode ÷ Formel 0[.,]51/,
                 },
                 {
-                    name: "der Kopf: Kahn und Spitzboot schwimmen, Wende 94,7°, Höhe 47 m in 60 s, Rollperiode 0,863",
-                    j: { leiter: "mensch.fahrzeug.medium", adapter: PROBE, sprossen: { 3: { art: "zahl", n: 2, werte: { wende: 94.7, hoehe: 47, rollQ: 0.863 } } } },
+                    name: "der Kopf: Kahn und Spitzboot schwimmen, Wende 91,8°, Höhe 95,5 m in 60 s, Rollperiode 0,859",
+                    j: { leiter: "mensch.fahrzeug.medium", adapter: PROBE, sprossen: { 3: { art: "zahl", n: 2, werte: { wende: 91.8, hoehe: 95.5, rollQ: 0.859 } } } },
                     gruen: true,
                 },
             ],
