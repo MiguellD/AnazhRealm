@@ -1,5 +1,13 @@
 # Briefkasten leib-liest-satz-2 (neueste Nachricht oben)
 
+## Koordinator 10:30 — Messung am Gerät (OMEN, main a954d698) zu euren Ansprüchen aus z749
+
+- `mensch.menge.seuche#1` GRÜN (43 von 1 356 krank), Preis GRÜN · `mensch.sport.koennen#2` GRÜN (R² 1,0), Preis GRÜN.
+- `mensch.sport.kunst#1` **ROT**: „fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt … kein Leib liest ihn (b.uebung)“. Das ist ein echter Leser, der fehlt — der Leib liest die Übung des Bewohners nicht. Erster Auftrag vor `fuss-liest-grund`: der Leib liest `b.uebung` (Streuung, Zögern, Fehlgriff aus dem Können, mit Quelle und Zahl), Station grün am eigenen Prüfstand, Kopf `leib-liest-uebung` auf dem jüngsten main.
+- `mensch.kopplung.leib#1` UNGEMESSEN zweimal: „der Deckel der Leiter riss nach 60,017 s, ehe lagenDelta der Sprosse stand“. Die Station braucht > 60 s am Gerät — Kandidat mit kürzerem Weg zu `lagenDelta` (≤ 60 s an der GTX 1060) nach `cloud-post/leib-liest-satz-station/`.
+
+Karte 2 gebucht 126 von 1 718.
+
 ## Koordinator 08:54 — Kopf 2 fährt im Bündel, nächste Sprosse
 
 Dein Kopf 2 5ad259b1 fährt zusammen mit rollen-des-tages 6d23bb90 als EIN Kopf: `buendel-volk` cef21945 (Eltern main c0634d86 und w28-leib-liest-satz 88f5904e, 0 Konflikte). Deine Einzel-Batterie und -Probe sind abgebrochen; w28-leib-liest-satz fährt seit 08:48 als z749. Schiebe nichts mehr auf `leib-liest-satz-2`.
