@@ -389,8 +389,11 @@ function findlingBefunde(wirtVon) {
 // ist Natur (`_istNatur`); die Feuerstelle setzt der Mensch (bis hier warf das Glut-Feld sie an der Mess-Wiese 66-mal je 0,2 km²).
 // (b) der Wurf der Felsbögen und -türme (`_landmarkeChunk`) folgt dem Gesetz des Orts (gelaende-core `landmarke`, die Bänder
 // der Profis): über je 8 000 Chunks (15 km²) im Tafelland der Heimat, außerhalb und auf einer trockenen Tafel liegt die Zahl
-// je Art binnen 4 σ ihrer Erwartung (Poisson, Σ λ · Fläche des Chunks). Selbsttest: die alte Regel (jede Probe der Saat 1,4 %,
-// an der Ankunft ≈ 680 je km²) fällt an `_landmarkeChunk`, eine Feuerstelle in der Liste an `FELD_WURF`.
+// je Art binnen 4 σ ihrer Erwartung (Poisson, Σ λ · Fläche des Chunks). (c) der Wurf ist eine Funktion der Saat (landmarken-
+// geologie-4, `_landmarkenDesChunks`): eine andere Saat der Heimat (gelaende-core `lageAus`, ihr Boden `hoehe`, ihr Land über dem
+// Meer) wirft über 4 000 Tafel-Chunks im Band ihres Gesetzes, zweimal gefragt gleich und nicht wie die geladene Welt. Selbsttest: die
+// alte Regel (jede Probe der Saat 1,4 %, an der Ankunft ≈ 680 je km²) fällt an `_landmarkenDesChunks`, ein Wurf, der die gereichte
+// Welt nicht liest (bis landmarken-geologie-4: nur die geladene), an `_landmarkenDesChunks`, eine Feuerstelle in der Liste an `FELD_WURF`.
 function feldWurfBau(r, liste) {
     const bau = liste.filter((t) => !r._istNatur({ type: t }));
     return bau.length ? [`FELD_WURF: das Feld wirft ${bau.join(", ")} — ein Bau ohne Menschen`] : [];
@@ -429,21 +432,81 @@ function landmarkeBefunde(taeter, chunkZiel, saetze) {
             const z = n[art] || 0;
             teil.push(`${art} ${(z / km2).toFixed(2)}/km² (Gesetz ${(mu[art] / km2).toFixed(2)})`);
             if (Math.abs(z - mu[art]) > 4 * Math.sqrt(mu[art]) + 2)
-                out.push(`_landmarkeChunk: ${name} ${art} ${z} auf ${km2.toFixed(1)} km², das Gesetz erwartet ${mu[art].toFixed(1)} ± ${(4 * Math.sqrt(mu[art]) + 2).toFixed(1)}`);
+                out.push(`_landmarkenDesChunks: ${name} ${art} ${z} auf ${km2.toFixed(1)} km², das Gesetz erwartet ${mu[art].toFixed(1)} ± ${(4 * Math.sqrt(mu[art]) + 2).toFixed(1)}`);
         }
         zeilen.push(`${name}: ${teil.join(" · ")}`);
     }
     return { out, zeilen, r, A };
 }
+function landmarkeFunktion(taeter, chunkZiel) {
+    const { r, ctx } = stammLib.grundWirt(ROOT, taeter);
+    const K = vm.runInContext("globalThis.__gelaendeCore", ctx);
+    const L = r._gelaende();
+    // das Meer des Orts wie beim Boot des Spiels (`_buildWaterPlane`: Basis − `meerUnterBasisM`) — der Wirt ohne Szene trägt keins
+    r.state.waterLevel = (r.state.terrainBaseHeight || 0) - L.ort.meerUnterBasisM;
+    const saat = `${L.seed}-andere`;
+    const abbild = { seed: saat, baseHeight: L.baseHeight, waterLevel: L.waterLevel, ort: null, erbgut: L.erbgut, regionSize: L.regionSize };
+    const L2 = K.lageAus(abbild, vm.runInContext("SimplexNoise", ctx));
+    const W = { lage: L2, saat, hoehe: (x, z) => K.hoehe(L2, x, z, true), land: (x, z) => K.hoehe(L2, x, z, true) > L2.waterLevel + 0.4 };
+    const span = r._voxelChunkConfig().span;
+    const kurz = (l) => l.map((w) => `${w.art}@${w.x.toFixed(2)},${w.z.toFixed(2)}#${w.seed}`).join(" ");
+    const mu = { felsbogen: 0, felsturm: 0 };
+    const n = { felsbogen: 0, felsturm: 0 };
+    let [chunks, fremd, wackelt] = [0, 0, 0];
+    for (let cx = -3000; cx < 3000 && chunks < chunkZiel; cx++)
+        for (let cz = -40; cz < 40 && chunks < chunkZiel; cz++) {
+            const [x, z] = [(cx + 0.5) * span, (cz + 0.5) * span];
+            if (K.grossform(L2, x, z).stil < 0.9) continue;
+            chunks++;
+            const d = K.landmarke(L2, x, z);
+            for (const art in mu) mu[art] += d[art] * span * span * 1e-6;
+            const l = r._landmarkenDesChunks(cx, cz, W);
+            for (const w of l) n[w.art]++;
+            if (kurz(l) !== kurz(r._landmarkenDesChunks(cx, cz, W))) wackelt++;
+            if (l.length && kurz(l) !== kurz(r._landmarkenDesChunks(cx, cz))) fremd++;
+        }
+    const km2 = (chunks * span * span) / 1e6;
+    const out = [];
+    for (const art in mu)
+        if (Math.abs(n[art] - mu[art]) > 4 * Math.sqrt(mu[art]) + 2)
+            out.push(`_landmarkenDesChunks: Saat ${saat} ${art} ${n[art]} auf ${km2.toFixed(1)} km², ihr Gesetz erwartet ${mu[art].toFixed(1)} ± ${(4 * Math.sqrt(mu[art]) + 2).toFixed(1)} — der Wurf liest die gereichte Welt nicht`);
+    if (wackelt) out.push(`_landmarkenDesChunks: Saat ${saat} zweimal gefragt in ${wackelt} Chunks verschieden`);
+    if (!fremd && n.felsbogen + n.felsturm > 0) out.push(`_landmarkenDesChunks: Saat ${saat} wirft wie die geladene Welt — keine Funktion der Saat`);
+    const zeile = `Saat ${saat}: ${chunks} Tafel-Chunks ${km2.toFixed(1)} km², Bögen ${n.felsbogen} (Gesetz ${mu.felsbogen.toFixed(1)}) · Türme ${n.felsturm} (Gesetz ${mu.felsturm.toFixed(1)}), ${fremd} Chunks anders als die geladene`;
+    return { out, zeile };
+}
 {
     const B = landmarkeBefunde(null, 8000);
     for (const z of B.zeilen) console.log("      LANDMARKE " + z);
     ok("Landmarke: das Feld wirft keinen Bau, der Bogen und der Turm folgen dem Gesetz des Orts (`landmarke`)", B.out.length === 0, B.out[0] || B.zeilen.join(" | "));
-    const alt = [["_landmarkeChunk", "const lam = d.felsbogen + d.felsturm;", "const lam = (0.014 * N * N) / (span * span * 1e-6);"]];
+    const alt = [["_landmarkenDesChunks", "const lam = d.felsbogen + d.felsturm;", "const lam = (0.014 * N * N) / (span * span * 1e-6);"]];
     const M = landmarkeBefunde(alt, 1000, 1).out.join(" | ");
-    ok("Landmarke Selbsttest: die alte Regel (jede Probe 1,4 %) fällt an _landmarkeChunk", /^_landmarkeChunk: Tafel der Heimat fels(bogen|turm) \d+/.test(M), M || "die Mutante blieb grün");
+    ok("Landmarke Selbsttest: die alte Regel (jede Probe 1,4 %) fällt an _landmarkenDesChunks", /^_landmarkenDesChunks: Tafel der Heimat fels(bogen|turm) \d+/.test(M), M || "die Mutante blieb grün");
+    const FU = landmarkeFunktion(null, 4000);
+    console.log("      LANDMARKE " + FU.zeile);
+    ok("Landmarke: der Wurf ist eine Funktion der Saat (`_landmarkenDesChunks` liest die gereichte Welt)", FU.out.length === 0, FU.out[0] || FU.zeile);
+    const nurGeladen = [["_landmarkenDesChunks", "const W = welt || {", "const W = {"]];
+    const MF = landmarkeFunktion(nurGeladen, 4000).out.join(" | ");
+    ok("Landmarke Selbsttest: ein Wurf, der nur die geladene Welt liest, fällt an _landmarkenDesChunks", /^_landmarkenDesChunks: Saat \S+ /.test(MF), MF || "die Mutante blieb grün");
     const F = feldWurfBau(B.r, B.A.FELD_WURF.concat(["glutbrunnen"])).join(" | ");
     ok("Landmarke Selbsttest: die Feuerstelle in der Liste des Felds fällt an FELD_WURF", /^FELD_WURF: das Feld wirft glutbrunnen/.test(F), F || "die Mutante blieb grün");
+    // (d) DIE LANDMARKE IM BILD (Auskunft, kein Urteil; der offene Täter von erleben.spieler.wegfindung#1): die Höhe, in der das
+    // Studio die Art zeichnet (ihr Preset `_foundryPresetFor` × Welt-Skala `_foundryWorldScaleMatrix` × die höchste Hülle ihrer
+    // Gestalten, PHYTO_PRESETS `fx.huellen`), gegen den Bauplan (`_defaultBlueprints`), und wie weit der Wurf reicht (die Saat
+    // hängt am Voxel-Ring, `_populateVoxelChunkVegetation`: Ziel-Ring × `span`, Ecke) — die Richter-Weite ist 1–3 km.
+    const T = vm.runInContext("globalThis.__terrainCore.PHYTO_PRESETS", stammLib.grundWirt(ROOT, null).ctx);
+    const bild = ["felsturm", "felsbogen"].map((art) => {
+        const pr = B.r._foundryPresetFor(art);
+        const k = B.r._foundryWorldScaleMatrix(pr).elements[0];
+        const h = Math.max(...((T[pr] && T[pr].fx && T[pr].fx.huellen) || [[0, 0, 0]]).map((z) => z[2]));
+        const bp = B.r._defaultBlueprints()[art];
+        const soll = bp ? Math.max(...bp.parts.map((q) => q.position.y + q.size.y / 2)) : 0;
+        return `${art} gezeichnet ≤ ${(h * k).toFixed(2)} m (${pr} × ${k}) · Bauplan ${soll.toFixed(1)} m`;
+    });
+    const C = B.r._voxelChunkConfig();
+    const ring = Math.max(1, Math.min(12, B.r.state.chunkRingRadius || 4));
+    bild.push(`Wurf bis ${((ring + 0.5) * C.span * Math.SQRT2).toFixed(0)} m (Ring ${ring} × ${C.span} m, höchstens ${((12 + 0.5) * C.span * Math.SQRT2).toFixed(0)} m) — der Richter fragt 1–3 km`);
+    console.log("      LANDMARKE IM BILD " + bild.join(" · "));
 }
 
 // DER LEBENSLAUF DES BESTANDS (Bahn mischwald, karte2.leben.pflanzen.lebenslauf#1; phyto-core FOREST_ERTRAG): der Plan

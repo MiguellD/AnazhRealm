@@ -1,61 +1,50 @@
-# Vorprüfung landmarken-geologie-3 — die Linsen ziehen mit dem Gesetz der Landmarke
+# Vorprüfung landmarken-geologie-3 — die Landmarke folgt der Geologie, ihr Wurf ist eine Funktion der Saat
 
-Zweig `landmarken-geologie-3`, Kopf 3 auf `bruecke-quert` 5490269f (main 64fcf12e) — der Post des Koordinators vom 26.11. 08:00.
+Zweig `landmarken-geologie-3`, Kopf 4 auf main MAIN8 — nach dem Post des Koordinators vom 26.11. 11:22 („hast du nichts Rotes vor
+dir: die nächste rote Sprosse derselben Leiter-Familie“). Kopf 3 (e576d8cc) fuhr im Bündel `buendel-mittag` und steht auf main.
 Beanspruchte Sprosse: `karte2.erleben.spieler.wegfindung#1`. Status ZWISCHENSTAND.
 
-Der Schnitt des Spiels steht unverändert: Felsbogen und Felsturm folgen der Geologie (gelaende-core `landmarke`,
-gelaende-core.js:6115; der Wurf je Chunk `_landmarkeChunk`, stamm/vegetation-baum.js:2534), die Feuerstelle setzt nur der Mensch.
-Er reist byte-gleich: der Diff des Schnitts trägt in Kopf 2 (3bbd1e8f → 080ade19) und Kopf 3 (5490269f → Kopf) dieselbe
-patch-id (`stamm/` 1b53208cabf5, gelaende-core.js 1a3ba48429be). Keine Linse wird still gemacht, keine gelöscht, kein Täter gestrichen.
+Der Richter der Karte urteilt an main 64fcf12e (Radeon): „S1 · ROT Leser fehlt: der Wurf der Landmarke ist keine Funktion der Saat:
+`_vegetationSampleSpawn` liest die geladene Welt — gemessen 1 von 51 Adressen“. Kopf 4 schneidet genau diesen Grund und misst, was
+danach im Bild steht.
 
-## Kopf 3 — die drei Roten von Kopf 2 (080ade19, in der Batterie zweimal rot)
+## Kopf 4 — der Wurf als Funktion der Saat, die Dämpfung der Luft als Zahl
 
-| # | Linse | Ursache | Schnitt (Datei:Zeile) | Zahl vorher → nachher |
-| --- | --- | --- | --- | --- |
-| K3-1 | gate:werk-im-wasser (Z, voll 16/18) | Das Brücken-Etikett des Plans v2 machte jeden nassen Lauf einer Gasse zur Spanne, auch längs des Flusses (6b unten, am main gleich). Kopf 2 trug den Kern von main; erst ohne die Feld-Glutbrunnen fiel die Ufer-Wahl der Probe ans erste Ufer −102/−845, und dort legt das Dorf (Same 7, nH 18) seine Gasse längs ins Bett. | Kopf 3 steht auf `bruecke-quert` 5490269f: eine Gasse, die den Lauf nicht quert, führt der Plan am Ufer (fachwerk-core.js:5775 `BRUECKE_GESETZ.querGrad` 60, die Wand fachwerk-core.js:6040; Blatt cloud-post/bruecke-quert.md) — `git merge-tree` glatt | Jochfelder im Wasser am Dorf 2 (#6426 −97,38/−833,80 und #6427, je 0,80 m) → 0 · Ufer-Wahl das erste Ufer (0 Bauten) · Zensus 186 Werke, im Wasser 0 · WERK-IM-WASSER GRÜN, Selbsttest GRÜN (148 s) |
-| K3-2 | gate:kreatur-takt Teil 2 (herde-revier, voll 10/18) | Der Täter drehte den Anker jedes Glieds um seine Los-Nummer als Winkel. Die Lose eines Wurfs steigen um die FNV-Primzahl 16 777 619 ≡ −0,018 rad (mod 2π): die fünf Richtungen lagen in 4°, die Anker 3,4 m (Kopf) bzw. 4,3 m (main 64fcf12e) auseinander — kein Revier je Glied. Er traf nur, wo das Gelände am Wurf-Ort die Glieder zufällig über die Leine trug; der Schnitt verschob den Ort der Herde (`frei(0, 70, 40)`: main 86/153 → Kopf 109/95), und der Zufall fiel. Lokal ist main 64fcf12e ebenso rot (8,3 % ≤ 10 %). | scripts/lib/kreatur-proben.cjs:1064 — die Richtung aus dem Platz im Wurf: der goldene Winkel 2,39996 rad über die Reihe der Geburt im Verband, wie die Geburt selbst ihre Glieder legt (stamm/kreatur-leben.js:111). Die Bühne hängt an keiner Landmarke mehr. | Anker 3,4 m → 95,6 m · Glied-Bilder jenseits der Leine 4,4 % → 100 % · Wandern-Mittel 1 → 0,485 · Selbsttest herde 8 → 9 von 9 Tätern beim Namen; main 64fcf12e mit demselben Täter 4,3 → 97,2 m, 8,3 % → 100 %, GRÜN |
-| K3-3 | gate:chunk-satz (j) (voll 18/18) | Der Druck aus Kopf 2 (der Boden-Satz dicht auf der Drehung) stand, aber die Wand blieb vakuös: die Kaskaden wählen nur, was ein Empfänger des Hauptbilds braucht (`_hoehlenSichtLicht`), und drei gleiche Ring-Kaskaden wählen dieselben Zellen — der verdrängte Abschnitt landete auf seinen eigenen Bytes, `_satzSetze` lud nichts (Frame 2–4 je 0 B). Das Wachsen des Gesetzes rettete ihn obendrein, weil der verdrängte Abschnitt sein Hochwasser behielt. | scripts/diag-chunk-satz.cjs:1344 (die volle Last `vollSicht` auch im Selbsttest) und :1457 (drei Kaskaden verschiedener Weite — Ring, 400 m, 120 m —, der verdrängte Abschnitt vergisst sein Hochwasser `a.hoch = 0`) | Täter „nichts — die Wand ist vakuös“ → NEUSCHREIBEN (alt, Frame 2) k0 246 096 B · k2 246 096 B, die Wand nennt ihn; main 64fcf12e mit derselben Bühne gleich; (k) grün |
+| # | Ursache | Schnitt (Datei:Zeile) | Zahl vorher → nachher |
+| --- | --- | --- | --- |
+| K4-1 | Der Wurf der Landmarke las nur die geladene Welt: `_saatJe`, `_landAt` und `_voxelSurfaceY` im Rumpf von `_landmarkeChunk`. Kein Richter konnte eine andere Saat fragen, die Station maß 1 von 51 Adressen. | stamm/vegetation-baum.js:2572 `_landmarkenDesChunks(cx, cz, welt)` wirft für jede gereichte Welt (Lage, Saat, Boden, Land) und ändert nichts; ohne `welt` gilt die geladene. Der eine Leser im Spiel ist `_landmarkeChunk` (:2558). Linse: scripts/diag-phyto-tree.cjs:441 (eine andere Saat der Heimat, zweimal gefragt gleich, nicht wie die geladene; Selbsttest: ein Wurf, der nur die geladene Welt liest, fällt am Glied) und der Zeuge im Playtest scripts/playtest/feld-leben.cjs:1779. | Station: 1 → 51 von 51 Adressen · Linse: Saat „-andere“ 4 000 Tafel-Chunks, Bögen 3 (Gesetz 6,3) · Türme 17 (Gesetz 23,0), 20 Chunks anders als die geladene · Playtest W6.G P3: geladene Welt 12 Chunks wie gesetzt, 0 anders |
+| K4-2 | Die Sicht-Dämpfung gab es nur als Knoten der Luft (`_luftEnsure` → `faktor`). Kein Richter konnte den Durchlass zu einer Landmarke in 1–3 km als Zahl lesen. | stamm/bild-himmel.js:2683 `_luftDurchlass(auge, punkt)`: e^{−τ} je Kanal, aus denselben Uniforms wie der Knoten (ohne Szene aus dem Gesetz: `_luftBeta`, `_luftSpektrum`, `LUFT.skalenHoeheM`). Linse: scripts/lib/licht-linsen.cjs:3259 gegen die Definition (das Integral von β(y) längs des Strahls, 4 000 Schritte); Selbsttest ohne Höhen-Term und ohne Weg-Faktor fällt am Glied. | Durchlass waagrecht 5 km 0,4840/0,3744/0,2533 = Definition (Fehler ≤ 10⁻⁴) · vom Hügel 2 km 0,7806/0,7151/0,6258 · zum Grat 3 km 0,7534/0,6816/0,5852 · beide Mutanten ROT beim Namen |
+| K4-3 | Die erste Station (Kandidat 2bf58974) maß die Höhe aus dem Bauplan (Turm 16,8 m) und jeden Wurf des Gesetzes — die Zahl 34 von 51 war das Soll, nicht das Bild. | Die Linse misst die Landmarke im Bild mit den Lesern des Spiels (scripts/diag-phyto-tree.cjs:493, Auskunft, kein Urteil): Preset × Welt-Skala × höchste Hülle, gegen den Bauplan, und die Weite des Wurfs am Voxel-Ring. Der Kandidat liest dasselbe (Zweig `landmarken-station` 2096875d). | Linse: „felsturm gezeichnet ≤ 0.48 m (zacken × 0.34) · Bauplan 16.8 m · Wurf bis 275 m (Ring 4 × 43.2 m, höchstens 764 m)“ · Station: das Gesetz wirft in 1–3 km 720 Landmarken um 51 Saaten, im Bild 0 von 51 |
 
-## Kopf 1 und 2 — die sieben Roten des Starts (Stand Kopf 2; 6b und 7 heilt Kopf 3, oben)
+## Ehrlich halb: wegfindung#1 hat fünf Eingänge, zwei tragen jetzt einen Leser des Spiels (40 %)
 
-| # | Linse | Ursache (am main gegengeprüft) | Schnitt (Datei:Zeile) | Zahl vorher → nachher |
-| --- | --- | --- | --- | --- |
-| 1 | Playtest W6.G P3 | Die Linse maß die alte Regel (1,4 % je Probe der Saat) im Block 20..31², der keine Tafel trägt — nach dem Gesetz stehen dort 0,03 Bögen und 0,15 Türme. Am main grün nur, weil die alte Regel überall würfelte. | scripts/playtest/feld-leben.cjs:1720 — Ort A (alle Chunks in [0,96)² mit `grossform.stil` ≥ 0,9) gegen das Gesetz im Poisson-Band ±3,3 σ, Ort B (20..31²) beweist, dass dort keine stehen; Konsum: der erste Träger je Art wächst in der vollen Saat (`_populateVoxelChunkVegetation`) | Bögen 0 · Türme 0 → A 1 791 Chunks 3,34 km²: Bögen 2 (Gesetz 2,83) · Türme 10 (Gesetz 10,32); B 144 Chunks: 0 (0,03) · 0 (0,15); Konsum felsbogen 25,11 · felsturm 35,16 |
-| 2 | Playtest Scatter MAIN = FADEN | Kein Bruch zwischen Faden und Haupt (gleich true am Zweig). Das Register der Wege-Karte trug am main nur die Tritt-Kreise der Feld-Feuer (7 von 7 Einträgen, 2 × 2 m), der Genesis-Ort wird auf der Playtest-Seite nie gelegt (`ortZug(page,"genesis")`, der Dorf-Zug ruht) — nach dem Schnitt war das Register leer, die Probe würfelte ohne Ort. | scripts/playtest/vegetation.cjs:2007 — die Probe legt den Belag des Genesis-Orts durch dieselbe EINE Tür des Spiels (`_stlWegeBuild({zonen}, ort, "genesis")`, wie `_genesisOrt`) und würfelt die Region des Spielers und die des Orts; das Urteil verlangt Formen im Belag | 123 588 Zahlen, Ort null → 245 124 Zahlen, Regionen 0,-1 und 0,0, 278 Formen des Belags, Zahl für Zahl gleich |
-| 3 | gate:sicht-arbeit (F) | Die Kante der Fahrt trug der Zufall der Wiese: am main riss der Täter „rand“ 1 Loch an einer Formations-Zelle (Bild 30, Strecke 0,2 π, 2 306 Zellen). Ohne Landmarken trägt die Mess-Wiese nur boden + wasser (1 758 Zellen), 0 Löcher auf allen 8 Strecken — die Linse vakuös. | scripts/diag-sicht-arbeit.cjs:676 — die Linse stellt ihre Kante selbst: drei Felstürme als Werke 12 · 18 · 24 m vor dem Auge, quer in der Mitte des Fensters, das das Gesetz der Wahl (`_passTrifft`, Dreh-Rand des Ankers `drehRand` + `weg.drehRad`, `sichtRand`) vorgibt: dem Anker ohne Halt entgangen, 10 m später im Frustum | Täter „rand“ 0 → 15 Löcher (Bild 11–13 …), das Gesetz 0 Löcher in 1 693 Zellen, Strecke 0,2 π |
-| 4 | gate:klang-zensus (O) | Die Klang-Seite trägt kein Dorf; ihr „Dorf“ war ein Glutbrunnen des Felds 8 m vor dem Messort — ein Feuer ohne Menschen. Nach dem Schnitt keine Glut in Hörweite („DER BAU STEHT NICHT … 3000 Takte“). | scripts/diag-klang-zensus.cjs:264 — die Linse setzt die Feuerstelle des Menschen als Werk (`spawnArchitecture("glutbrunnen")`), am ersten trockenen, ebenen Ort ab Ring Hörweite (26 m) + längster Weg der Szenen (30 m) + 8 m, und wartet, bis das Ohr sie im Verzeichnis der Glut liest | keine Glut → dorf glut −27,2 dB (Soll ≥ −34), glutArm −15,2 dB, Wiese/gehend/fahrend ohne Glut (≤ wind), S1–S23 nennen jeden Täter |
-| 5 | gate:chunk-satz (j) | Den Druck der dritten Ring-Kaskade trug am main der Formations-Satz der Landmarken am Gürtel (14 Felsbögen + 13 Felstürme, Index 67 584 = Ende; Frame 2 k0 49 920 B · k1 103 680 B). Ohne ihn schreibt der Täter nichts neu — die Wand vakuös. | scripts/diag-chunk-satz.cjs:1450 — der Druck ist erzwungen, nie geliehen: der Boden-Satz (in jeder Welt) vergisst das Hochwasser seiner Abschnitte und liegt dicht auf dem Inhalt der Drehung, der Index trägt genau sie | Täter „drei Ring-Kaskaden“ nichts → k0 90 600 B · k1 211 512 B in Frame 2, die Wand nennt ihn |
-| 6a | gate:werk-im-wasser (das Warten ohne Ende) | Der Bruch liegt in der PROBE, nicht im Spiel. Die Ufer-Wahl nimmt das erste Ufer ohne Bau binnen 25 m. Am main trugen die Ufer 1–3 Feld-Glutbrunnen (Bauten 4 · 3 · 14), die Wahl fiel ans vierte (−209/−728). Am Zweig ist das erste Ufer −102/−845 frei. Das Dorf Z (Same 7, nH 18) wird dort gegründet, während der Spieler an der Rampe des Sees steht (1813/−6158, 5,5 km fern); der Ring hat die Kacheln fern des Spielers geräumt (w28-speicher-ring). Die Ort-Wahl (`_ortWahlImFaden`, stamm/gelaende-boden.js:1245) bestellt eine Kachel nach, die Probe hat den Voxel-Faden ausgehängt (scripts/diag-werk-im-wasser.cjs:803), die Bestellung parkt in `_hydroWarte` (`_hydroBestellen`, stamm/gelaende-boden.js:415) — `_ortWahl` kehrt nie zurück (Stufen-Marke `_ortWahl>30868` ohne Antwort, Async-Stapel `await r.spawnSettlement` in scripts/diag-werk-im-wasser.cjs:1073). Im Spiel steht der Faden, die Bestellung reist sofort. | scripts/diag-werk-im-wasser.cjs:776 — EINE Tür der Probe für die Kacheln eines Orts (`kacheln`, der Faden hängt für die Bestellung ein), gerufen von `stroemen` (:784) und vor dem Dorf Z (:1072) | Probe hängt > 20 min (Runtime.callFunctionOn timed out) → läuft durch, Selbsttest GRÜN, 2 Befunde (6b) |
-| 6b | gate:werk-im-wasser Z (die Brücke liegt längs) | **Am main rot — gemeldet, nicht geheilt.** Am Ufer 1 legt das Dorf (Same 7, nH 18) zwei `bruecke_jochfeld` längs ins Flussbett: −97,38/−833,80 (das Ufer quer 3 m, längs 10 m) und −101,33/−834,41 (quer 5 m, längs 12 m), je 0,80 m Wasser. Das Brücken-Etikett des Plans v2 (fachwerk-core.js:14009, `nasseLaeufe` → `bruecken`) macht jeden nassen Lauf einer Gasse zur Spanne, auch den längs des Flusses. Gegenprobe unter gleichen Bedingungen (`--nur zensus`, Ufer 1, der Spieler beim Gründen am See): main 4c9e6aab zeigt dieselben zwei Felder an denselben Orten (#1061/#1062), der Zweig ebenso (#1044/#1045). Der Schnitt nahm nur die Feld-Feuer, die die Linse von diesem Ufer fernhielten. | — (Ort-Gesetz, Kern fachwerk-core; geheilt an der Wurzel im Zweig `bruecke-quert`, Kopf 3 steht darauf: K3-1) | main = Zweig: 2 Felder längs im Wasser, 0,80 m → Kopf 3: 0 |
-| 7 | gate:kreatur-takt Teil 2 (herde-revier) | **Am main rot — gemeldet, nicht geheilt.** Unter dem Täter hält der Verband zusammen (Wandern Mittel 1,0, Soll < 0,9 für den Namen), und zu wenige Glied-Bilder stehen jenseits ihrer Leine. Ob der Täter sichtbar wird, entscheiden die Los-Nummern des Wurfs (kreatur-proben.cjs:4327 sagt es selbst: „welcher Weg fällt, entscheiden die Leib-Größen“). Lokal headless gemessen (`--proben herde --selftest`): main 4c9e6aab 8,3 % jenseits (bis 2,77 Leinen, Anker 4,3 m auseinander), der Zweig 4,4 % (bis 2,75 Leinen, Anker 3,4 m), Soll > 10 %. Die Glieder heißen am Zweig anders (Rae · Yto · Mira statt Una · Orin · Pyx): der Zähler der Leiber vor der Probe (`_creatureNetSeq`) folgt der Szene. | Kopf 3: die Bühne des Täters (K3-2) | main 8,3 % → Zweig 4,4 % (beide ≤ 10 %, beide rot) → Kopf 3: 100 % |
+1. **Der Wurf als Funktion der Saat** — K4-1.
+2. **Die Dämpfung als Zahl** — K4-2.
+3. **Offen: die Landmarke in Landmarken-Größe.** Das Studio zeichnet Felsturm und Felsbogen als `zacken` (Hülle ≤ 1,41 × Welt-Skala
+   0,34 = 0,48 m; stamm/studio-bruecke.js:3344, foundry-core.js:700). Die Profis der Bänder des Gesetzes: Delicate Arch 18 m hoch,
+   Öffnung 14 × 9,8 m; Double Arch Öffnung 45 m weit, 32 m hoch; Landscape Arch 93 m Spanne; ein Bogen zählt ab 0,9 m Öffnung (NPS,
+   Stand 2026); die Wände der Sandstein-Türme im Elbsandstein bis 90–100 m (DAV, Stand 2026) — 30- bis 200-mal das gezeichnete Maß.
+   Eine Verteilung der Höhen fand sich nicht; das Band der nächsten Welle braucht eine Gipfel-Liste. Der Playtest W6.G P3 prüft „Felsturm ist vertikal (Höhe 16,8)“ am Bauplan
+   (scripts/playtest/feld-leben.cjs:1861), den keiner zeichnet. Der Schnitt gehört ins Studio: die Gestalt des Turms und des Bogens in
+   ihrer Größe, mit Hülle und Stufen-Kette. Messname: „LANDMARKE IM BILD … gezeichnet“ (`gate:phyto-core`).
+4. **Offen: die Landmarke in der Ferne.** Die Saat endet am gebauten Voxel-Ring (`_populateVoxelChunkVegetation` hinter
+   `voxelChunks.has`, ≤ 764 m). Seit K4-1 ist der Wurf eine Funktion; ein Fern-Wurf kann ihn für 1–3 km lesen, ohne Chunk. Messname:
+   „LANDMARKE IM BILD … Wurf bis“ (`gate:phyto-core`).
+5. **Offen: C₀ der Landmarke.** Der Kontrast ist C₀ · Durchlass (Koschmieder 1924). Für C₀ fehlt die Leuchtdichte des Himmels je
+   Richtung als CPU-Leser (welt-licht `himmelTexel` ist ein TSL-Knoten). Messname: der Richter der Karte, S1 „ungemessen: Kontrast“.
 
-## Offen
+Kopf 1 bis 3 (die Feuerstelle setzt nur der Mensch, an 100 Zufalls-Orten Glutbrunnen 299 → 0 je km²; die zehn Roten der Batterie)
+stehen mit Ursache, Schnitt und Zahl im Blatt von Kopf 3 (`git show e576d8cc:cloud-post/landmarken-geologie-3.md`).
 
-- Der Sprung-Schritt von `gate:chunk-satz` (o)/(p) hängt lokal an main 64fcf12e UND am Kopf (headless, der Wald wird nie getaktet) —
-  lokal nur über eine Kopie ohne Sprung gemessen, (j) und (k) grün; der Richter ist der CI-Lauf (Messname `gate:chunk-satz`).
-- `gate:weltbild-frost:echt` fährt lokal nicht: swiftshader headful verliert das Device beim Start, am main genauso — der Richter
-  ist die Probe der Karte (Messname `gate:weltbild-frost:echt`).
-- Die Zahl der 100 Zufalls-Orte ist am Spiel-Schnitt von Kopf 2 gemessen; Kopf 3 rührt das Spiel nicht an (dieselbe patch-id, oben)
-  und trägt sie darum unverändert (cloud-post/landmarken-geologie.md, Tabelle der Orte).
+## Stand (Vorprüfung 4)
 
-## Stand (Vorprüfung 3)
-
-- **Geschnitten:** Kopf 3 steht auf `bruecke-quert` 5490269f — die Brücke quert, die Gasse am Fluss läuft am Ufer (K3-1); der Täter
-  herde-revier legt die Anker seiner Glieder im goldenen Winkel ihres Platzes im Wurf statt im Winkel der Los-Nummer
-  (scripts/lib/kreatur-proben.cjs:1064, K3-2); die Bühne der Satz-Wand trägt ihren Druck selbst mit voller Last und drei Kaskaden
-  verschiedener Weite (scripts/diag-chunk-satz.cjs:1344 und :1457, K3-3). Kein Spiel-Code und kein Kern über bruecke-quert hinaus.
-- **Gemessen (vorher → nachher):** an 100 Zufalls-Orten Glutbrunnen 299 → 0 je km² (der Schnitt des Spiels, byte-gleich zu Kopf 2) ·
-  Jochfelder im Wasser am Dorf 2 → 0 (Zensus 186 Werke, keines im Wasser) · herde-revier Anker 3,4 → 95,6 m, jenseits der Leine
-  4,4 % → 100 % (main 64fcf12e 4,3 → 97,2 m) · Satz-Wand (j) nichts → k0 · k2 je 246 096 B in Frame 2.
-- **probeUrteil lokal:** `gate:pruefbuehne-licht` GRÜN (57 s) · `gate:studio-begehen` GRÜN (214 s) · `gate:werk-im-wasser` GRÜN (148 s, Selbsttest
-  GRÜN) · `gate:weltbild-frost:echt` lokal nicht fahrbar (swiftshader headful verliert das Device, am main gleich; Richter die Karte) ·
-  `gate:kreatur-takt` Teil 2/3 EXIT 0, Selbsttest GRÜN, 56 von 56 Tätern beim Namen (805 s) · `gate:chunk-satz` (j) und (k) grün über
-  die Kopie ohne Sprung · Playtest „Alle Invarianten OK“ (106 s) · `check:statik` EXIT 0 (422 s).
-- **Probe-Ruf:** `gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen` (Pflicht: der Beitrag fasst
-  stamm/siedlung-satz.js an, `probe-tag`) und `gate:werk-im-wasser` (die Linse von K3-1). Der Einlass fasst vier; `gate:fachwerk-contract`
-  des Kopfs bruecke-quert und `bild:wiese@0.5` von Kopf 2 richtet die Batterie `[ci voll]` bzw. stand am byte-gleichen Schnitt GRÜN.
-- **Offen:** siehe oben — der Sprung-Schritt der Satz-Wand lokal (`gate:chunk-satz` (o)/(p)), `gate:weltbild-frost:echt` lokal.
-- **Kopf:** der Commit, der dieses Blatt trägt (Vorprüfung 3, auf bruecke-quert 5490269f, main 64fcf12e); die 40 Zeichen stehen
-  im letzten Stand nach dem Wartezimmer.
+- **Geschnitten:** der Wurf der Landmarke als Funktion der Saat (stamm/vegetation-baum.js:2572), die Dämpfung der Luft als Zahl
+  (stamm/bild-himmel.js:2683); die Linsen in ihren Familien (scripts/diag-phyto-tree.cjs:441 und :493, scripts/lib/licht-linsen.cjs:3259,
+  scripts/playtest/feld-leben.cjs:1779). Kein Kern.
+- **Gemessen (vorher → nachher):** Adressen der Station 1 → 51 von 51 · Durchlass am Ort: kein Leser → 0,4840/0,3744/0,2533 auf 5 km
+  = Definition · Landmarke im Bild in 1–3 km: 0 von 51 (gezeichnet ≤ 0,48 m, Wurf ≤ 275 m) — die Zahl des Richters bleibt ROT.
+- **probeUrteil lokal:** PROBEURTEIL
+- **Offen:** die Landmarke in Größe und Ferne, C₀ (oben, mit Messnamen).
+- **Kopf:** KOPF40
 - **Beanspruchte Sprosse:** `karte2.erleben.spieler.wegfindung#1`.
 - Karte 2 gebucht 126 von 1 718. Status ZWISCHENSTAND.

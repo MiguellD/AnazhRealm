@@ -2556,38 +2556,53 @@ class AnazhRealm_vegetation_baum {
     // trägt (λ · Fläche ≤ 0,018). Bis hier warf jede Probe mit 1,4 % einen Bogen oder Turm, wo die dichte-Affinität 0,18 trug, Bogen
     // oder Turm nach Münzwurf: an der Ankunft 78 Bögen und 64 Türme auf 0,21 km² (≈ 680 je km², Arches trägt 6,5). → die Zahl.
     _landmarkeChunk(cx, cz) {
+        const liste = this._landmarkenDesChunks(cx, cz);
+        for (const l of liste)
+            this._enqueueVegetationSpawn(l.art, { x: l.x, y: l.y, z: l.z }, { seed: l.seed, silent: true });
+        return liste.length;
+    }
+
+    // DER WURF DER LANDMARKE ALS FUNKTION (landmarken-geologie-4): die Felsbögen und -türme eines Chunks (cx, cz) aus dem Gesetz des
+    // Orts — [{ art, x, y, z, seed }], ohne die Welt zu ändern. `welt` reicht die Leser einer Welt: `lage` (gelaende-core, die Dichte
+    // `landmarke`), `saat` (der Samen des Wurfs), `hoehe(x, z)` (der Boden, auf dem sie steht) und `land(x, z)` (über dem Wasser). Ohne
+    // `welt` liest sie die geladene: ihre Lage, `_saatJe`, das gebaute Mesh (`_voxelSurfaceY`) und das Land der Hydrosphäre
+    // (`_landAt`, 0,4 m über dem Spiegel). Leser: die Saat des Chunks (`_landmarkeChunk`) und jeder Richter, der eine andere Saat
+    // fragt (die Lage aus gelaende-core `lageAus`, ihr Boden `hoehe`) — bis hier las der Wurf nur die geladene Welt, und die Station
+    // der Wegfindung (erleben.spieler.wegfindung#1) maß 1 von 51 Saaten: „der Wurf der Landmarke ist keine Funktion der Saat“.
+    _landmarkenDesChunks(cx, cz, welt) {
+        const W = welt || {
+            lage: this._gelaende(),
+            saat: AnazhRealm._saatJe(this),
+            hoehe: (x, z) => this._voxelSurfaceY(x, z),
+            land: (x, z) => this._landAt(x, z, 0.4),
+        };
         const { span } = this._voxelChunkConfig();
         const N = 10; // das Raster der Saat (`_tickSaat`)
         const step = span / N;
-        const d = globalThis.__gelaendeCore.landmarke(this._gelaende(), (cx + 0.5) * span, (cz + 0.5) * span);
+        const d = globalThis.__gelaendeCore.landmarke(W.lage, (cx + 0.5) * span, (cz + 0.5) * span);
         const lam = d.felsbogen + d.felsturm;
         const mu = lam * span * span * 1e-6;
-        const g = this._rollGenome(`${AnazhRealm._saatJe(this)}|${cx},${cz}`, "landmarke");
+        const g = this._rollGenome(`${W.saat}|${cx},${cz}`, "landmarke");
         const u = g.axis("zahl");
         let k = 0;
         for (let p = Math.exp(-mu), F = p; u > F && k < N * N; F += p) p *= mu / ++k; // Poisson: die Umkehr der Verteilung
-        if (!k) return 0;
+        const liste = [];
+        if (!k) return liste;
         const orte = [];
         for (let i = 0; i < N * N; i++) {
             const x = cx * span + ((i % N) + 0.5) * step;
             const z = cz * span + (((i / N) | 0) + 0.5) * step;
-            const y = this._voxelSurfaceY(x, z);
+            const y = W.hoehe(x, z);
             if (Number.isFinite(y)) orte.push({ x, y, z });
         }
         orte.sort((a, b) => b.y - a.y);
-        let n = 0;
         for (let j = 0; j < k && j < orte.length; j++) {
             const o = orte[j];
-            if (!this._landAt(o.x, o.z, 0.4)) continue;
+            if (!W.land(o.x, o.z)) continue;
             const art = g.axis(`art${j}`) * lam < d.felsbogen ? "felsbogen" : "felsturm";
-            this._enqueueVegetationSpawn(
-                art,
-                { x: o.x, y: o.y + 0.5, z: o.z },
-                { seed: (g.axis(`same${j}`) * 4294967296) >>> 0, silent: true }
-            );
-            n++;
+            liste.push({ art, x: o.x, y: o.y + 0.5, z: o.z, seed: (g.axis(`same${j}`) * 4294967296) >>> 0 });
         }
-        return n;
+        return liste;
     }
 
     // Sät bis zur Frist (`frist`, performance.now()): je Schritt eine Probe des 10×10-Rasters, nach der letzten der Wald
