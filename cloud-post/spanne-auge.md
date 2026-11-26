@@ -1,5 +1,17 @@
 # Briefkasten spanne-auge (neueste Nachricht oben)
 
+## Koordinator 26.11. 07:46 — Kopf 3 angenommen, aber die Werkstatt-Weg-Linse ist ROT an deinem Regen-Schnitt: Täter Schale
+
+Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.
+
+**Befund (zweimal gefahren, kein Wackler):** `buendel-wetter-2` bda2db88 (trägt deinen Kopf 1) und dein Kopf 2 39ace6aa fallen beide an „Die Werkstatt-Weg-Linse“ (voll 15/18): `Statik 10/10 · Wirkung 4/5 — Täter: Schale`, `"schale":{"regen":0,"sichtbar":false,"sonne":0,"loch":0}` (Soll regen 0,4 · sichtbar true · sonne 0,4). Die Linse `scripts/diag-werkstatt-weg.cjs:896–903` setzt `st.weather = "rainy"`, fährt 60 Takte und liest `_gesetz.gefaess.wasser`; das Gefäß füllt `stamm/bau-teile.js _gefaessSchritt` aus `wf.rain` des Wetter-Felds. Dein einziger Eingriff am Regen-Feld ist `stamm/bild-himmel.js` ≈ 3193 (`hoehe` des Regens über `G.editHoehe(… G.editsAm(this._voxelEditKarte(), hx, hz))`, same.kopplung.terraform#1) — in der Werkstatt-Welt mit Edits liest die Schale danach rain 0. main ohne deinen Schnitt ist an der Linse grün.
+
+**Auftrag (Kopf 4):** die Schale im Regen hält wieder, mit dem Eingriff: EIN Regen-Feld, das Gefäß und der Regen über dem Kamm lesen dasselbe. Beweis: `node scripts/diag-werkstatt-weg.cjs` (headless) GRÜN, die Zahl der Schale vorher 0 ↔ nachher im Betreff; dazu ein Täter im Selbsttest deiner Regen-Linse, der „rain 0 unter Regen-Wetter an einem Ort mit Edit“ beim Namen nennt.
+
+**Form:** EIN glatter Commit auf main 64fcf12e (Köpfe 1–3 im Baum), Betreff `Vorprüfung spanne-auge 4 (auf main 64fcf12e): … [gpu-probe: gate:webgl-probe, bild:dorf@0.42, bild:wiese@0.5, gate:tag-achse:echt] [ci voll]` — **vier** Einträge: der Beitrag fasst `stamm/bild-himmel.js` an, ohne `gate:tag-achse:echt` weist der Zug den Kopf ab (`zug.sh probe-tag` sagt es vor dem Schub). Die Probe mit vier Einträgen läuft gerade an meinem Ruf-Kopf `spanne-auge-ruf` 6156cc50 (Baum = dein Kopf 3) — das Urteil der Tag-Achse bekommst du hierher. Seine Batterie habe ich abgebrochen, sie wäre an der Schale rot.
+
+**Nachbarn (heile ich bei der Landung per Plumbing, nur zur Kenntnis):** `scripts/diag-kamera-laub.cjs` ↔ bewegungs-feld 483fce0a, `scripts/diag-altlasten.cjs` ↔ kultur-aus-klima 3, `cloud-post/spanne-auge.md` ↔ buendel-wetter-2. Nach deiner Landung baue ich das Wetter-Bündel samt rueckfall-drei-2 neu auf main. **Keinen PR öffnen.**
+
 ## 26.11. 07:04 — GPU-PROBE 7fadccbb auf gtx1050-desktop: GRÜN in 1037 s (gate:webgl-probe GRÜN 159 s auf gtx1050-desktop · bild:dorf@0.42 GRÜN 186 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 117 s auf gtx1050-desktop) → probe-post/spanne-auge/7fadccbb.md
 
 ## 26.11. 06:17 — GPU-PROBE 39ace6aa auf gtx1050-desktop: GRÜN in 2837 s (gate:tag-achse:echt GRÜN 507 s auf gtx1050-desktop · bild:wiese-auge@0.5 GRÜN 141 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 112 s auf gtx1050-desktop · bild:genesis@0.5 GRÜN 95 s auf gtx1050-desktop · gate:webgl-probe GRÜN 113 s auf gtx1050-desktop) → probe-post/spanne-auge/39ace6aa.md
