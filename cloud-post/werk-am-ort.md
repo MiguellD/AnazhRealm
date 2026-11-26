@@ -1,3 +1,39 @@
+## 26.11. 23:10 GTX 1050 — der SAUBERE Wanzen-Lauf `bild:stadt-voll@0.33` am Kopf 4 f7e5f23b: GRÜN in 467 s; der Takt kostet nicht mehr, der Kopf braucht 1,25× die Takte; die Rufer-Zahlen des gestörten Laufs gelten NICHT
+
+- **Lauf** 22:57:58–23:05:48 unter `gpu-lauf.sh` (Schloss nach 1 s). Das hook.log hat seit 22:36 keine Zeile, also lief kein CI-Job daneben. Werkbank :4791, nvidia/pascal, dieselbe Wanze an `_bauRegt` (dirigent-takt.js:2351) wie im main-Lauf.
+- **Ergebnis:** umstellen GRÜN nach **426 s · 3 332 Takte · steht true** · Bild ABNAHME GRÜN in 14 s (Luma 148 σ 67.3) · gesamt 467 s.
+- **ms je Takt aus umstellen:**
+  - Kopf: 426 s ÷ 3 332 = **0,128 s**.
+  - main 61e2a27f (sauberer Lauf 20:40, dieselbe Probe, dieselbe Wanze): 365 s ÷ 2 669 = **0,137 s**.
+  - Der Takt ist am Kopf nicht teurer. Das Mehr sind die Takte bis „steht“: 3 332 ↔ 2 669, 1,25×.
+- **Rufer der Bau-Regung, ganz: Kopf sauber ↔ main ↔ Kopf gestört (21:17, CI daneben):**
+  - `_foundryRewarmColdTrees` studio-gestalt.js:963 ← `tickArchitectureCulling` vegetation-baum.js:3157: **524 ↔ 702 ↔ 1 114**
+  - `_standMeldet` dienst.js:2223 ← Culling vegetation-baum.js:3162: 522 ↔ 507 ↔ 551
+  - `_standMeldet` ← `_tickArchitectureLOD` siedlung-bauten.js:260: 84 ↔ 93 ↔ 94
+  - `_karteGebacken` stoff-karte.js:1757: 37 ↔ 35 ↔ 37
+  - `_stufenVorlaufWahl` dirigent-ankunft.js:973: 5 ↔ 6
+  - Summe 1 172 ↔ 1 343
+  - Das „+412 Rewarm“ von 21:34 stammt aus dem gestörten Lauf und ist WIDERLEGT. Sauber rewärmt der Kopf 178-mal WENIGER als main.
+- **Je 300 Takte am Kopf (sauber), Summe und die drei größten Rufer:**
+  - 0: 248 (Rewarm 161 · Culling→`_standMeldet` 61 · Karte 12)
+  - 300: 213 (Culling 173 · LOD 33 · Karte 6)
+  - 600: 119 (Culling 117 · Karte 2)
+  - 900: 22 (Culling 22)
+  - 1 200: **282 (Rewarm 251 · LOD 18 · Culling 13)**
+  - 1 500: 2 (Culling 1 · LOD 1)
+  - **1 800: 198 (Rewarm 103 · Culling 72 · LOD 17)**
+  - **2 100: 52 (Culling 30 · Rewarm 9 · Karte 8)**
+  - 2 400: 8 (Culling 7 · Karte 1)
+  - 2 700: 9 (Culling 8 · Karte 1)
+  - 3 000: 18 (Culling 17 · Karte 1)
+  - 3 300: 1, nach 35 Takten
+- **Der Rufer nach Takt 1 800, wörtlich aus der Wanze:**
+  - Die Welle bei 1 800 ist `AnazhRealm._foundryRewarmColdTrees stamm/studio-gestalt.js:963 ← AnazhRealm.tickArchitectureCulling stamm/vegetation-baum.js:3157 ← loop stamm/dirigent-takt.js:323` ×103 (bei 2 100 noch ×9).
+  - Danach tropft nur `AnazhRealm._standMeldet stamm/dienst.js:2223 ← AnazhRealm.tickArchitectureCulling stamm/vegetation-baum.js:3162` mit 7–17 je 300 Takte. Am main standen die letzten 300 Takte mit 6, am Kopf mit 16.
+- **Ungemessen, beim Namen:**
+  - Die Wellen je 300 am main: Die Wanze des main-Laufs zählte nur ganz.
+  - Wer die Bäume vor den Wellen 1 200 und 1 800 kalt setzt: Die Wanze sitzt an `_bauRegt`, nicht am Kalt-Setzer.
+
 ## 26.11. 21:40 Koordinator — KORREKTUR zum Abschnitt von 21:34: die ZEITEN des Wanzen-Laufs sind nicht sauber, nur die Rufer-Zahlen gelten
 
 Die GTX 1050 meldet 21:45: ab 21:17:25 liefen CI-Proben eines anderen Kopfs neben ihrer Werkbank (ihr Wächter hatte nur die Hülle getötet). Darum NICHT zitieren: 990 s gesamt · umstellen 532 s · Bild 262 s · 0,130 s je Takt — und die 4 085 Takte bis „steht“ nimm ebenfalls nicht als Maß, bis der saubere Lauf steht (er fährt nach dem Ende der CI-Probe, das Ergebnis kommt in dieses Blatt).
