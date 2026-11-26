@@ -2813,6 +2813,10 @@
         return {
             hoeheAt: (x, z) => hoehe(L, x, z, true),
             wasserAt: typeof wasserAt === "function" ? wasserAt : (x, z) => hoehe(L, x, z, true) < L.waterLevel,
+            // DIE FLIESSRICHTUNG AM ORT (bruecke-quert): der Lauf des EINEN Fluss-Netzes (`flussAm`: flowX/flowZ, centerness,
+            // breite; null jenseits jeder Krone und ohne Hydrosphäre der Lage) — das Brücken-Etikett des Plans liest, ob seine
+            // Spanne den Lauf quert (fachwerk `ortPlan` → `amUfer`)
+            flussAt: (x, z) => flussAm(L, x, z),
             flaeche: (splats) => {
                 const E = erdbauNormal(splats);
                 return (x, z) => erdbauFlaeche(E, x, z);

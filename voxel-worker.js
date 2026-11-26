@@ -362,7 +362,9 @@ function nachricht(e) {
                 [0, 0, msg.wegHalbM, 0, -msg.wegHalbM, 0, 0, msg.wegHalbM, 0, -msg.wegHalbM].some(
                     (v, i, R) => i % 2 === 0 && ortNass(msg, null, msg.x + x + v, msg.z + z + R[i + 1])
                 );
-            const pts = self.__fachwerkCore.wegZwischen(raster, msg.a, msg.b, msg.sperren, nass);
+            // der Lauf des EINEN Fluss-Netzes (`hydroRiverAt`): der Feldweg quert ihn, nie längs (bruecke-quert, `querGrad`)
+            const fluss = (x, z) => hydroRiverAt(msg.x + x, msg.z + z);
+            const pts = self.__fachwerkCore.wegZwischen(raster, msg.a, msg.b, msg.sperren, nass, fluss);
             // je Punkt sein Wasser (dasselbe Urteil) und die Höhe des Gesetzes: die Brücken des Feldwegs (fachwerk `brueckenAmWeg`)
             self.postMessage({
                 type: "ort-weg-result",

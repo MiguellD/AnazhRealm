@@ -5768,7 +5768,11 @@
     // zwischen zwei Jochen · lichtM = die Breite zwischen den Radabweisern (ein Wagen 1,9 m, ein Feldweg 3,4 m) · gelaenderM =
     // der Handlauf über der Bahn · pfahlM = so tief reichen die Pfähle unter die Bahn · einbindM = so weit liegt die Bahn am
     // Widerlager unter dem Grund (sie bindet in das Ufer ein: Rad und Fuß treten vom Grund auf die Bohlen, nie gegen sie).
-    var BRUECKE_GESETZ = { feldM: 4, lichtM: 4, gelaenderM: 1.05, pfahlM: 3.5, einbindM: 0.05 };
+    // DIE BRÜCKE QUERT (bruecke-quert): ihre Achse schneidet den Lauf des Flusses am Ort unter mindestens `querGrad` — TxDOT
+    // Hydraulic Design Manual Kap. 9 (Bridges, Location Selection: die Kreuzung liegt normal zum Strom) und TxDOT Bridge Design
+    // Manual LRFD Kap. 3 (Geometric Constraints: Schiefe höchstens 30° ohne Sonder-Zeichnung). `uferSuchM`: so weit sucht der
+    // Weg, der längs im Bett lief, quer zum Lauf sein Ufer (`ortPlan` → `amUfer`), `uferSchrittM` der Schritt der Suche.
+    var BRUECKE_GESETZ = { feldM: 4, lichtM: 4, gelaenderM: 1.05, pfahlM: 3.5, einbindM: 0.05, querGrad: 60, uferSuchM: 60, uferSchrittM: 0.5 };
     // DER STEG AM ANLEGER (fahrzeug-gattung): das Jochfeld des Fußes — derselbe Zimmerbau (Bohlen auf Längsträgern, das Joch aus
     // Holm und Pfählen mit Andreaskreuz, das Geländer), schmal und ohne Radabweiser; er führt vom Ufer über den Schilfgürtel an
     // das offene Wasser, wo das Boot liegt (die Länge ist die Breite der Flachwasserzone, nie gewählt — der Wirt misst sie). Die
@@ -6024,8 +6028,22 @@
         }
         return aus;
     }
-    function wegZwischen(r, A, B, sperren, nass){
+    // DER FELDWEG QUERT (bruecke-quert): `fluss(x, z)` (optional, Raster-Koordinaten: der Lauf des EINEN Fluss-Netzes, {flowX,
+    // flowZ} oder null) — über das Wasser führt die Brücke, und sie ist gerade: vom trockenen Punkt vor dem Wasser geht der Lauf
+    // in EINEM Sprung in der Richtung seines Schritts bis zum ersten trockenen Punkt dahinter (die Sehne, die `brueckenAmWeg`
+    // spannt und `wegUeberBruecken` fährt), und jeder nasse Punkt darunter sieht den Lauf unter mindestens
+    // `BRUECKE_GESETZ.querGrad`. Eine Furt längs im Bett ist kein Weg: Schritt für Schritt durchs Wasser fand der Lauf die
+    // billigste Spur, am Rand des Betts entlang (am Fluss um −102/−845 lagen 5 von 148 Brücken des Feldwegs unter 30° zum Lauf,
+    // 33 schräg). Die nassen Punkte und ihre Widerlager rückt die Glättung nicht, und keinen Punkt rückt sie ins Wasser (`glaetten`).
+    function wegZwischen(r, A, B, sperren, nass, fluss){
       const n=r.n, d=r.d, h=r.h, lim=ORT_GESETZ.trasse, W=WEG_ZWISCHEN;
+      const cosQ=Math.cos(BRUECKE_GESETZ.querGrad*Math.PI/180), lauf=new Map();
+      // der Lauf an einem nassen Punkt: der Fluss des Netzes dort, sonst der nächste binnen zwei Teilungen (der Rand des Betts
+      // jenseits der Krone ist nass, trägt aber keinen Lauf — die Spanne über ihm schnitt den Fluss daneben längs)
+      const laufAn=(k)=>{ if(!lauf.has(k)){ const x=r.x0+(k%n)*d, z=r.z0+((k/n)|0)*d; let q=fluss(x,z);
+          for(let s=1;s<=4&&!(q&&(q.flowX||q.flowZ));s++){ let b=null; for(let a=0;a<8;a++){ const e=fluss(x+Math.cos(a*Math.PI/4)*s*d/2,z+Math.sin(a*Math.PI/4)*s*d/2); if(e&&(e.flowX||e.flowZ)&&(!b||e.centerness>b.centerness)) b=e; } q=b; }
+          const f=q&&Math.hypot(q.flowX||0,q.flowZ||0); lauf.set(k, f>1e-9 ? [q.flowX/f,q.flowZ/f] : null); } return lauf.get(k); };
+      const laengs=(kw,i,j,L)=>{ const t=laufAn(kw); return !!t&&Math.abs(i*d*t[0]+j*d*t[1])>cosQ*L; };
       const zu=new Uint8Array(n*n), feucht=new Int8Array(n*n).fill(-1); if(sperren&&sperren.length) for(let k=0;k<n*n;k++) zu[k]=gesperrt(sperren,r.x0+(k%n)*d,r.z0+((k/n)|0)*d)?1:0;
       const knoten=(p)=>Math.max(0,Math.min(n-1,Math.round((p.x-r.x0)/d)))+n*Math.max(0,Math.min(n-1,Math.round((p.z-r.z0)/d)));
       const drin=(p)=>p.x>=r.x0&&p.z>=r.z0&&p.x<=r.x0+(n-1)*d&&p.z<=r.z0+(n-1)*d;
@@ -6036,7 +6054,7 @@
       let gx=0, gz=0, gr=0; for(const k of ziel.keys()){ gx+=k%n/ziel.size; gz+=((k/n)|0)/ziel.size; }
       for(const k of ziel.keys()) gr=Math.max(gr,Math.hypot(k%n-gx,((k/n)|0)-gz));
       const NB=[]; for(let i=-2;i<=2;i++) for(let j=-2;j<=2;j++){ const g=Math.abs(i)===2&&Math.abs(j)===2||Math.abs(i)===2&&j===0||i===0&&Math.abs(j)===2; if((i||j)&&!g) NB.push([i,j,d*Math.hypot(i,j)]); }
-      const kost=new Float64Array(n*n).fill(Infinity), von=new Int32Array(n*n).fill(-1), heap=[];
+      const kost=new Float64Array(n*n).fill(Infinity), von=new Int32Array(n*n).fill(-1), sprung=new Int32Array(n*n), heap=[];
       const rest=(k)=>d*Math.max(0,Math.hypot(k%n-gx,((k/n)|0)-gz)-gr);
       const push=(f,k)=>{ heap.push([f,k]); let i=heap.length-1; while(i>0){ const p=(i-1)>>1; if(heap[p][0]<=heap[i][0]) break; [heap[p],heap[i]]=[heap[i],heap[p]]; i=p; } };
       const pop=()=>{ const top=heap[0], last=heap.pop(); if(heap.length){ heap[0]=last; let i=0; for(;;){ const l=2*i+1, q=l+1; let m=i;
@@ -6045,26 +6063,48 @@
       let fund=-1;
       while(heap.length){ const [f,k]=pop(); if(f-rest(k)>kost[k]+1e-9) continue; if(ziel.has(k)){ fund=k; break; }
         const x=k%n, z=(k/n)|0;
-        for(const [i,j,L] of NB){ const x2=x+i, z2=z+j; if(x2<0||z2<0||x2>=n||z2>=n) continue; const k2=x2+z2*n, g=Math.abs(h[k2]-h[k])/L;
+        for(const [i,j,L] of NB){ const x2=x+i, z2=z+j; if(x2<0||z2<0||x2>=n||z2>=n) continue; const k2=x2+z2*n;
+          if(fluss&&!zu[k2]){ if(feucht[k2]<0) feucht[k2]=nass&&nass(r.x0+x2*d,r.z0+z2*d)?1:0;
+            if(feucht[k2]===1){   /*DIE BRÜCKE: gerade über das Wasser, jeder nasse Punkt quer zum Lauf (`querGrad`)*/
+              let m=1, k3=k2, ok=true;
+              for(;;){ if(laengs(k3,i,j,L)){ ok=false; break; } if(ziel.has(k3)) break;
+                const x3=x+i*(m+1), z3=z+j*(m+1); if(x3<0||z3<0||x3>=n||z3>=n){ ok=false; break; }
+                k3=x3+z3*n; m++; if(zu[k3]){ ok=false; break; }
+                if(feucht[k3]<0) feucht[k3]=nass(r.x0+x3*d,r.z0+z3*d)?1:0; if(feucht[k3]!==1) break; }
+              if(!ok) continue;
+              const g=Math.abs(h[k3]-h[k])/(L*m); if(g>W.steilMax) continue; const u=Math.max(0,g-lim)/lim, w=feucht[k3]===1?m:m-1;
+              const c=kost[k]+L*(1+W.hang*u*u)*(w*W.furt+m-w);
+              if(c<kost[k3]){ kost[k3]=c; von[k3]=k; sprung[k3]=m; push(c+rest(k3),k3); }
+              continue; } }
+          const g=Math.abs(h[k2]-h[k])/L;
           if(g>W.steilMax||zu[k2]) continue; const u=Math.max(0,g-lim)/lim;
           if(feucht[k2]<0) feucht[k2]=nass&&nass(r.x0+x2*d,r.z0+z2*d)?1:0;
           const c=kost[k]+L*(1+W.hang*u*u)*(feucht[k2]?W.furt:1);
-          if(c<kost[k2]){ kost[k2]=c; von[k2]=k; push(c+rest(k2),k2); } } }
+          if(c<kost[k2]){ kost[k2]=c; von[k2]=k; sprung[k2]=0; push(c+rest(k2),k2); } } }
       if(fund<0) return null;
       const pts=[ziel.get(fund)];
+      // die Punkte unter der Brücke: der Sprung von von[c] nach c in seinen Teilungen
+      const unter=(c)=>{ const m=sprung[c]; if(m>1){ const p=von[c], di=((c%n)-(p%n))/m, dj=(((c/n)|0)-((p/n)|0))/m;
+          for(let s=1;s<m;s++) pts.push({x:r.x0+((c%n)-di*s)*d, z:r.z0+(((c/n)|0)-dj*s)*d}); } };
+      unter(fund);
       let k=von[fund];
-      for(;k>=0&&von[k]>=0;k=von[k]) pts.push({x:r.x0+(k%n)*d, z:r.z0+((k/n)|0)*d});
+      for(;k>=0&&von[k]>=0;k=von[k]){ pts.push({x:r.x0+(k%n)*d, z:r.z0+((k/n)|0)*d}); unter(k); }
       pts.push(k>=0?quelle.get(k):quelle.get(fund));
-      return glaetten(pts.reverse(), hoeheAusRaster(r), W.steilMax, sperren||[]); }
+      pts.reverse();
+      const wet=nass?pts.map(p=>!!nass(p.x,p.z)):null, fest=wet&&wet.some(Boolean)?wet.map((v,i)=>v||!!wet[i-1]||!!wet[i+1]):null;
+      return glaetten(pts, hoeheAusRaster(r), W.steilMax, sperren||[], fest, nass); }
     // der Lauf über das Raster knickt in seiner Teilung (26,6°): `WEG_ZWISCHEN.glaett` Durchgänge ¼ · ½ · ¼ über die Nachbarn
     // glätten ihn (≈ ±13 m), die Enden bleiben — ein Feldweg schlägt keine Haken (der Fahrer fuhr seine Knicke mit 8–11 m/s);
     // geglättet wird nur, was nicht steiler wird (die Kehre bleibt) und in keinen Grundriss rückt
-    function glaetten(pts, H, max, sperren){
+    // `fest` (optional, je Punkt): die Querung des Wassers — der nasse Punkt und sein Widerlager bleiben (der Feldweg quert);
+    // `nass` (optional): kein Punkt rückt ins Wasser (der geglättete Lauf zog am Fluss um −325/−630 fünf Punkte in den Rand des
+    // Betts, die Brücke darüber lag 2,5° zum Lauf)
+    function glaetten(pts, H, max, sperren, fest, nass){
       const g=(p,q)=>Math.abs(H(q.x,q.z)-H(p.x,p.z))/(Math.hypot(q.x-p.x,q.z-p.z)||1);
       for(let n=0;n<WEG_ZWISCHEN.glaett;n++)
-        pts=pts.map((p,i)=>{ if(i===0||i===pts.length-1) return p;
+        pts=pts.map((p,i)=>{ if(i===0||i===pts.length-1||(fest&&fest[i])) return p;
           const q={x:(pts[i-1].x+2*p.x+pts[i+1].x)/4, z:(pts[i-1].z+2*p.z+pts[i+1].z)/4};
-          return g(pts[i-1],q)<=Math.max(max,g(pts[i-1],p))&&g(q,pts[i+1])<=Math.max(max,g(p,pts[i+1]))&&!gesperrt(sperren,q.x,q.z)? q : p; });
+          return g(pts[i-1],q)<=Math.max(max,g(pts[i-1],p))&&g(q,pts[i+1])<=Math.max(max,g(p,pts[i+1]))&&!gesperrt(sperren,q.x,q.z)&&!(nass&&nass(q.x,q.z))? q : p; });
       return pts; }
     // WAS EINEM WEG IM PLAN IM WEG STEHT (fahrzeug.K2): der Grundriss jedes Slots (seine obb) und der Tritt jeder Ausstattung
     // (Stand, Brunnen, Laterne, Hof-Baum: AUSSTATTUNG `tritt`, der Baum 0,8 m) — je eine gedrehte Box {cx, cz, phi, ex, ez}, um
@@ -13625,6 +13665,228 @@
             var pts = fest.length ? umlegen(lauf, hw) : lauf;
             return pts === lauf ? { pts: lauf } : { pts: pts, lauf: lauf };
         };
+        // DIE BRÜCKE QUERT (bruecke-quert, `BRUECKE_GESETZ.querGrad`): das Deck spannt gerade von Widerlager zu Widerlager (das
+        // Etikett unten, `wegUeberBruecken`) — seine Sehne muss den Lauf des Flusses unter mindestens `querGrad` schneiden. Der
+        // Lauf einer Strecke ist der des EINEN Fluss-Netzes (ctx.flussAt, gelaende-core `flussAm`) an ihrem Punkt mit der größten
+        // centerness, je Meter gelesen (`laufAuf`). Ein nasser Lauf der Gasse (ctx.wasserAt, dasselbe Urteil wie das Etikett),
+        // dessen Sehne den Fluss längs schneidet, ist kein Weg — der Plan führt ihn am Ufer: jeder Punkt quer zum Fluss auf das
+        // erste Ufer gerückt, auf dem die Gasse samt halber Breite trocken und frei von jedem Grundriss liegt (`ufer`, binnen
+        // `uferSuchM`). Liegt das andere Widerlager Y am anderen Ufer, geht die Gasse am Ufer von X bis an die Kreuzung und quert
+        // dort NORMAL zum Lauf AM ORT der Kreuzung (`querUeber`: die Richtung aus dem Wasser vor Y, der Gegenpunkt C am Ufer von
+        // X); trägt das Ufer von X nicht, quert sie gleich bei X und geht am Ufer von Y. Endet sie im Wasser, endet sie am Ufer —
+        // ohne Ufer am letzten trockenen Punkt; liegt sie ganz längs im Bett, rückt sie ganz an das nähere Ufer. Unberührt bleiben
+        // Wasser ohne Lauf des Netzes (See, Meer, der Rand des Betts jenseits der Krone: `flussAt` null über der ganzen Sehne), ein
+        // Plan ohne ctx.flussAt (das Studio) und jede Sehne, die schon quert. Bis hier machte das Etikett jeden nassen Lauf zur
+        // Brücke, auch den längs im Bett: am Ufer −102/−845 (Same 7, nH 18) stand eine Brücke aus acht Jochfeldern längs im Fluss,
+        // je 0,80 m Wasser (gate:werk-im-wasser Z).
+        var amUfer = function (lage, hw) {
+            var pts = lage.pts;
+            if (typeof ctx.flussAt !== "function" || !ctx.wasserAt || pts.length < 2) return lage;
+            var BG = BRUECKE_GESETZ;
+            var nassAm = function (x, z) {
+                return !!ctx.wasserAt(ox + x, oz + z);
+            };
+            var nass = pts.map(function (p) {
+                return nassAm(p.x, p.z);
+            });
+            var laeufe = nasseLaeufe(nass);
+            if (!laeufe.length) return lage;
+            var cosQ = Math.cos((BG.querGrad * Math.PI) / 180);
+            var slots = (plan.slots || []).filter(function (s) {
+                return s && s.obb && isFinite(s.obb.ex) && isFinite(s.obb.ez);
+            });
+            var frei = function (x, z) {
+                if (nassAm(x, z)) return false;
+                for (var si = 0; si < slots.length; si++) {
+                    var o = slots[si].obb;
+                    var c = Math.cos(o.phi || 0);
+                    var sn = Math.sin(o.phi || 0);
+                    var rx = x - o.cx;
+                    var rz = z - o.cz;
+                    if (Math.abs(c * rx - sn * rz) <= o.ex + hw && Math.abs(sn * rx + c * rz) <= o.ez + hw) return false;
+                }
+                return true;
+            };
+            // der Lauf über der Strecke A→B (plan-lokal): die Richtung {tx, tz} am Punkt der größten centerness, null ohne Lauf
+            var laufAuf = function (A, B) {
+                var f = null;
+                var nS = Math.max(1, Math.ceil(Math.hypot(B.x - A.x, B.z - A.z)));
+                for (var i = 0; i <= nS; i++) {
+                    var q = ctx.flussAt(ox + A.x + ((B.x - A.x) * i) / nS, oz + A.z + ((B.z - A.z) * i) / nS);
+                    if (q && (q.flowX || q.flowZ) && (!f || q.centerness > f.centerness)) f = q;
+                }
+                if (!f) return null;
+                var l = Math.hypot(f.flowX, f.flowZ);
+                return { tx: f.flowX / l, tz: f.flowZ / l };
+            };
+            // schneidet die Sehne A→B den Lauf t unter mindestens `querGrad`?
+            var quert = function (A, B, t) {
+                var dx = B.x - A.x;
+                var dz = B.z - A.z;
+                var dl = Math.hypot(dx, dz);
+                return !(dl > 1e-6) || Math.abs(dx * t.tx + dz * t.tz) <= cosQ * dl; // die Spanne quert
+            };
+            // das Ufer von p aus in Richtung (nx, nz): der erste Punkt, an dem die Gasse samt halber Breite zum Wasser hin trocken
+            // und frei liegt, mit seinem Weg s (null: keins binnen `uferSuchM`)
+            var ufer = function (px, pz, nx, nz) {
+                for (var s = 0; s <= BG.uferSuchM; s += BG.uferSchrittM) {
+                    var x = px + nx * s;
+                    var z = pz + nz * s;
+                    if (frei(x, z) && frei(x - nx * hw, z - nz * hw)) return { x: x, z: z, s: s };
+                }
+                return null;
+            };
+            // der Weg am Ufer: von X längs des Laufs t bis auf die Höhe von Q, jeder Punkt quer auf das Ufer der Seite sg gerückt,
+            // je `ds` einer (null: an einem Punkt kein Ufer; `teil`: dann der Weg bis dorthin)
+            var amLauf = function (X, Q, t, sg, ds, teil) {
+                var u = (Q.x - X.x) * t.tx + (Q.z - X.z) * t.tz;
+                var nL = Math.max(1, Math.round(Math.abs(u) / ds));
+                var aus = [];
+                for (var i = 1; i <= nL; i++) {
+                    var p = ufer(X.x + (t.tx * u * i) / nL, X.z + (t.tz * u * i) / nL, -t.tz * sg, t.tx * sg);
+                    if (!p) return teil ? aus : null;
+                    aus.push({ x: p.x, z: p.z });
+                }
+                return aus;
+            };
+            // die Kreuzung an Y: normal zum Lauf am Ort (aus dem Wasser vor Y, auf der Seite von X), über das Wasser bis an das
+            // erste Ufer C — {C, t} oder null; zweimal gelesen: der Lauf über der Sehne C→Y richtet die Kreuzung nach
+            var querUeber = function (Y, X, t0) {
+                var t = t0;
+                var C = null;
+                for (var it = 0; it < 2; it++) {
+                    var nx = -t.tz;
+                    var nz = t.tx;
+                    if ((X.x - Y.x) * nx + (X.z - Y.z) * nz < 0) {
+                        nx = -nx;
+                        nz = -nz;
+                    }
+                    var t1 = laufAuf(Y, { x: Y.x + nx * BG.uferSuchM, z: Y.z + nz * BG.uferSuchM }) || t;
+                    nx = -t1.tz;
+                    nz = t1.tx;
+                    if ((X.x - Y.x) * nx + (X.z - Y.z) * nz < 0) {
+                        nx = -nx;
+                        nz = -nz;
+                    }
+                    var warNass = false;
+                    C = null;
+                    for (var s = BG.uferSchrittM; s <= 2 * BG.uferSuchM && !C; s += BG.uferSchrittM) {
+                        var x = Y.x + nx * s;
+                        var z = Y.z + nz * s;
+                        if (nassAm(x, z)) warNass = true;
+                        else if (warNass && frei(x, z) && frei(x - nx * hw, z - nz * hw)) C = { x: x, z: z };
+                    }
+                    if (!C) return null;
+                    t = laufAuf(C, Y) || t1;
+                    if (quert(C, Y, t)) return { C: C, t: t };
+                }
+                return null;
+            };
+            // die Punkte von A nach B (ohne A und B), je `d` einer
+            var strecke = function (A, B, d) {
+                var nQ = Math.max(1, Math.round(Math.hypot(B.x - A.x, B.z - A.z) / d));
+                var aus = [];
+                for (var i = 1; i < nQ; i++) aus.push({ x: A.x + ((B.x - A.x) * i) / nQ, z: A.z + ((B.z - A.z) * i) / nQ });
+                return aus;
+            };
+            var P = pts;
+            for (var li = laeufe.length - 1; li >= 0; li--) {
+                var lf = laeufe[li];
+                var ganz = nass[lf.wa] && nass[lf.wb]; // ganz im Wasser: kein trockenes Widerlager
+                var X = pts[ganz || !nass[lf.wa] ? lf.wa : lf.wb];
+                var Y = pts[ganz || !nass[lf.wa] ? lf.wb : lf.wa];
+                var t = laufAuf(X, Y);
+                if (!t || quert(X, Y, t)) continue; // kein Lauf des Netzes oder die Spanne quert: die Brücke steht
+                var weg = 0;
+                for (var m = lf.wa + 1; m <= lf.wb; m++) weg += Math.hypot(pts[m].x - pts[m - 1].x, pts[m].z - pts[m - 1].z);
+                var ds = Math.min(6, Math.max(1, weg / Math.max(1, lf.wb - lf.wa)));
+                if (ganz) {
+                    // ganz längs im Bett: jeder Punkt an das nähere Ufer
+                    var mi = pts[(lf.wa + lf.wb) >> 1];
+                    var uL = ufer(mi.x, mi.z, -t.tz, t.tx);
+                    var uR = ufer(mi.x, mi.z, t.tz, -t.tx);
+                    var sgG = uL && (!uR || uL.s <= uR.s) ? 1 : uR ? -1 : 0;
+                    if (!sgG) continue;
+                    var alle = [];
+                    for (m = lf.wa; m <= lf.wb && alle; m++) {
+                        var pu = ufer(pts[m].x, pts[m].z, -t.tz * sgG, t.tx * sgG);
+                        if (pu) alle.push({ x: pu.x, z: pu.z });
+                        else alle = null;
+                    }
+                    if (alle) P = alle;
+                    continue;
+                }
+                var nx = -t.tz;
+                var nz = t.tx;
+                // die Seite von X und von Y: vom Wasser des Laufs aus, quer zum Fluss
+                var wx = 0;
+                var wz = 0;
+                for (m = lf.k; m <= lf.e; m++) {
+                    wx += pts[m].x;
+                    wz += pts[m].z;
+                }
+                wx /= lf.e - lf.k + 1;
+                wz /= lf.e - lf.k + 1;
+                var sg = (X.x - wx) * nx + (X.z - wz) * nz < 0 ? -1 : 1;
+                var sY = (Y.x - wx) * nx + (Y.z - wz) * nz < 0 ? -1 : 1;
+                var mitte = !nass[lf.wa] && !nass[lf.wb];
+                var neu = null;
+                if (!mitte) {
+                    // endet er im Wasser, endet er am Ufer, so weit es trägt — sonst an der Kante des Wassers vor X (das erste
+                    // nasse Stück halbiert, bis es trocken ist), solange ihm zwei Punkte bleiben
+                    neu = amLauf(X, Y, t, sg, ds, true);
+                    if (!neu.length) {
+                        var N1 = pts[!nass[lf.wa] ? lf.k : lf.e];
+                        var lo = 0;
+                        var hi = 1;
+                        for (var bi = 0; bi < 12; bi++) {
+                            var mid = (lo + hi) / 2;
+                            if (nassAm(X.x + (N1.x - X.x) * mid, X.z + (N1.z - X.z) * mid)) hi = mid;
+                            else lo = mid;
+                        }
+                        if (lo * Math.hypot(N1.x - X.x, N1.z - X.z) > BG.uferSchrittM) neu = [{ x: X.x + (N1.x - X.x) * lo, z: X.z + (N1.z - X.z) * lo }];
+                    }
+                    if ((!nass[lf.wa] ? lf.wa + 1 : pts.length - lf.wb) + neu.length < 2) continue;
+                }
+                else if (sY === sg) {
+                    // Y am selben Ufer: am Ufer bis Y, keine Brücke
+                    neu = amLauf(X, Y, t, sg, ds);
+                    if (neu) neu = neu.concat(strecke(neu.length ? neu[neu.length - 1] : X, Y, ds));
+                } else {
+                    // am Ufer von X bis an die Kreuzung, dort normal zum Lauf nach Y (je Meter ein Punkt: das Etikett sieht jedes
+                    // Wasser unter dem Querstück)
+                    var kr = querUeber(Y, X, t);
+                    var bank = kr && amLauf(X, kr.C, t, sg, ds);
+                    if (bank) {
+                        var L1 = bank.length ? bank[bank.length - 1] : X;
+                        neu = bank.concat(strecke(L1, kr.C, ds), [kr.C], strecke(kr.C, Y, 1));
+                    } else {
+                        // das Ufer von X trägt nicht: gleich bei X quer, dann am Ufer von Y
+                        var kx = querUeber(X, Y, t);
+                        var bankY = kx && amLauf(Y, kx.C, t, sY, ds);
+                        if (bankY) {
+                            var L2 = bankY.length ? bankY[bankY.length - 1] : Y;
+                            neu = strecke(X, kx.C, 1).concat([kx.C], strecke(kx.C, L2, ds), bankY.reverse());
+                        }
+                    }
+                }
+                if (!neu) continue; // kein Ufer binnen `uferSuchM`: das Etikett wie bisher
+                if (mitte) P = P.slice(0, lf.wa + 1).concat(neu, P.slice(lf.wb));
+                else if (!nass[lf.wa]) P = P.slice(0, lf.wa + 1).concat(neu);
+                else P = neu.reverse().concat(P.slice(lf.wb));
+            }
+            if (P === pts) return lage;
+            // die Richtung `th` je neuem Punkt (die Sehne seiner Nachbarn, wie der Export sie trägt) — nur der neue Punkt trägt
+            // sie, ein Punkt des Exports bleibt unberührt (der Plan ist rein: derselbe Export rechnet am nächsten Ort wie vorher)
+            var alt = new Set(pts);
+            for (var k2 = 0; k2 < P.length; k2++)
+                if (!alt.has(P[k2])) {
+                    var a = P[Math.max(0, k2 - 1)];
+                    var b = P[Math.min(P.length - 1, k2 + 1)];
+                    P[k2] = { x: P[k2].x, z: P[k2].z, th: Math.atan2(b.z - a.z, b.x - a.x) };
+                }
+            return { pts: P, lauf: lage.lauf || pts };
+        };
         // 2) DIE WEGE (die Straßen der Gassen; die Feldwege folgen dem Grund)
         var profil = []; // [x, z, y, halbe Breite] je profiliertem Weg-Punkt (plan-lokal)
         // DAS NETZ DES PROFILS (siedlung.K5): ein Weg-Punkt sucht seinen gepinnten Nachbarn nur in den Zellen, die seine größte
@@ -13665,7 +13927,7 @@
         var k;
         var lagen = roads.map(function (r) {
             var b = (isFinite(r.w) ? r.w : 3) / 2;
-            return { hw: b, lage: gelegt(r, b) };
+            return { hw: b, lage: amUfer(gelegt(r, b), b) };
         });
         // DIE KREUZUNG (Leiter mensch.netz.verkehr): wo das Ende eines Wegs auf einem anderen liegt (an dessen Lauf oder Ende binnen seiner
         // halben Breite samt Saum: Kreuzung, Einmündung, Knick), liegt EINE Fläche — jeder Weg-Punkt in ihrer Scheibe und der

@@ -987,6 +987,121 @@ function feldWurfImOrt(anker, defekt) {
     return res;
 }
 
+// DIE BRÜCKE QUERT (bruecke-quert, Selbst-Test 14b): der Plan v2 (fachwerk `ortPlan` → `amUfer`) über einem Fluss, der längs z
+// fließt (das Wasser |x − 100| < 4, 2 m tief; ctx.flussAt: der Lauf (0, 1) binnen der Krone |x − 100| < 6), mit fünf Gassen —
+// längs im Bett (48 m bei x = −1), schräg (53° zum Lauf), quer (90°), eine, die längs im Wasser endet, und eine ganz im Bett.
+// Grün: jede Brücke schneidet den Lauf unter mindestens `BRUECKE_GESETZ.querGrad` und ist so lang, wie das Wasser quer breit ist
+// (8 m); die Gassen längs, endend und im Bett tragen keine und keinen Punkt im Wasser (sie liegen am Ufer); die schräge trägt
+// genau eine; die quere ist mit dem Lauf byte-gleich wie ohne ihn. `wo` nennt jeden Bruch beim Namen (Gasse, Widerlager, Winkel).
+function brueckeQuertUrteil(FC, Gb) {
+    const Q = FC.BRUECKE_GESETZ.querGrad;
+    const nass = (x) => Math.abs(x - 100) < 4;
+    const ctx = (mitLauf) => ({
+        hoeheAt: (x) => (nass(x) ? -2 : 0),
+        flaeche: (sp) => {
+            const E = Gb.erdbauNormal(sp);
+            return (x, z) => Gb.erdbauFlaeche(E, x, z);
+        },
+        wasserAt: (x) => nass(x),
+        ...(mitLauf
+            ? {
+                  flussAt: (x) =>
+                      Math.abs(x - 100) < 6
+                          ? { flowX: 0, flowZ: 1, centerness: Math.max(0, 1 - Math.abs(x - 100) / 4), breite: 8 }
+                          : null,
+              }
+            : null),
+    });
+    const linie = (P, d) => {
+        const aus = [{ x: P[0][0], z: P[0][1] }];
+        for (let j = 1; j < P.length; j++) {
+            const [ax, az] = P[j - 1];
+            const [bx, bz] = P[j];
+            const n = Math.max(1, Math.round(Math.hypot(bx - ax, bz - az) / d));
+            for (let i = 1; i <= n; i++) aus.push({ x: ax + ((bx - ax) * i) / n, z: az + ((bz - az) * i) / n });
+        }
+        return aus;
+    };
+    const plan = {
+        slots: [],
+        laternen: [],
+        roads: [
+            { pts: linie([[-9, -36], [-1, -24], [-1, 24], [-9, 36]], 3), w: 3 },
+            { pts: linie([[-20, -75], [20, -45]], 2.5), w: 3 },
+            { pts: linie([[-20, 60], [20, 60]], 2), w: 3 },
+            { pts: linie([[-12, 110], [-1, 120], [-1, 150]], 3), w: 3 },
+            { pts: linie([[1, 180], [1, 210]], 3), w: 3 },
+        ],
+    };
+    const mit = FC.ortPlan(plan, { x: 100, z: 0 }, ctx(true)); // BÜHNE: reines ortPlan-Fixture über einem gedachten Fluss
+    const ohne = FC.ortPlan(plan, { x: 100, z: 0 }, ctx(false)); // BÜHNE: reines ortPlan-Fixture über einem gedachten Fluss
+    const fehl = Q > 0 ? [] : ["BRUECKE_GESETZ trägt keinen querGrad — kein Gesetz des Winkels, den die Brücke zum Lauf hält"];
+    mit.roads.forEach((w, i) => {
+        for (const [wa, wb] of w.bruecken || []) {
+            const [a, b] = [w.pts[wa], w.pts[wb]];
+            const [dx, dz] = [b.x - a.x, b.z - a.z];
+            const th = (Math.acos(Math.min(1, Math.abs(dz) / Math.hypot(dx, dz))) * 180) / Math.PI;
+            if (th < Q) fehl.push(`Gasse ${i} Brücke [${wa}, ${wb}] liegt längs: ${th.toFixed(1)}° zum Lauf (Soll ≥ ${Q}°)`);
+            if (Math.abs(dx) < 8) fehl.push(`Gasse ${i} Brücke [${wa}, ${wb}] quer ${Math.abs(dx).toFixed(2)} m kürzer als das Wasser (8 m)`);
+        }
+    });
+    [[0, "die Gasse längs"], [3, "die Gasse, die im Wasser endet"], [4, "die Gasse im Bett"]].forEach(([i, wer]) => {
+        const imBett = mit.roads[i].pts.filter((p) => nass(100 + p.x)).length;
+        if (imBett) fehl.push(`${wer} hat ${imBett} Punkte im Wasser — sie liegt nicht am Ufer`);
+    });
+    const nS = (mit.roads[1].bruecken || []).length;
+    if (nS !== 1) fehl.push(`die schräge Gasse trägt ${nS} Brücken (Soll 1: normal zum Lauf über das andere Ufer)`);
+    if (!(mit.roads[2].bruecken || []).length) fehl.push("die quere Gasse trägt keine Brücke");
+    if (JSON.stringify(mit.roads[2]) !== JSON.stringify(ohne.roads[2])) fehl.push("die quere Gasse ist mit dem Lauf nicht byte-gleich wie ohne ihn");
+    return { gruen: !fehl.length, wo: fehl.join(" · ") };
+}
+
+// DER FELDWEG QUERT (bruecke-quert, Selbst-Test 14c): der Feldweg zwischen zwei Orten (fachwerk `wegZwischen` → `brueckenAmWeg`,
+// wie der Ort-Faden `ort-weg` und der Wirt `_wegenetzLegen` ihn legen) über einem flachen Raster (41 × 41 je 4 m) mit einem Fluss,
+// der längs x fließt (nass |z| < 6, der Lauf (1, 0) binnen |z| < 8), und einem Teich (nass r < 10 um 0/−50, derselbe Lauf). Vier
+// Fälle: frei (die Orte schräg über dem Fluss: er quert ≥ querGrad), gezwungen (Grundrisse lassen nur zwei Zugänge 80 m
+// versetzt — die Furt längs im Bett ist kein Weg: kein Lauf oder eine quere Brücke), der Teich (der Weg um ihn liegt nie im
+// Wasser) und trocken (ohne Wasser byte-gleich mit und ohne Lauf). `wo` nennt jeden Bruch beim Namen (Fall, Spanne, Winkel).
+function feldwegQuertUrteil(FC) {
+    const Q = FC.BRUECKE_GESETZ.querGrad;
+    const n = 41;
+    const raster = { x0: -80, z0: -80, d: 4, n, h: new Float32Array(n * n) };
+    const nassF = (x, z) => Math.abs(z) < 6 || Math.hypot(x, z + 50) < 10;
+    const flussF = (x, z) =>
+        Math.abs(z) < 8 || Math.hypot(x, z + 50) < 12 ? { flowX: 1, flowZ: 0, centerness: Math.max(0, 1 - Math.abs(z) / 8) } : null;
+    const box = (x0, x1, z0, z1) => ({ cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, phi: 0, ex: (x1 - x0) / 2, ez: (z1 - z0) / 2 });
+    const zwang = [box(-34, 80, 8, 80), box(-80, -46, 8, 80), box(-80, 34, -30, -8), box(46, 80, -30, -8)];
+    const faelle = [
+        ["frei", { x: -30, z: 40 }, { x: 30, z: -24 }, []], // BÜHNE: reines wegZwischen-Fixture über einem gedachten Raster
+        ["gezwungen", { x: -40, z: 60 }, { x: 40, z: -24 }, zwang], // BÜHNE: reines wegZwischen-Fixture über einem gedachten Raster
+        ["Teich", { x: -36, z: -50 }, { x: 36, z: -50 }, []], // BÜHNE: reines wegZwischen-Fixture über einem gedachten Raster
+        ["trocken", { x: -60, z: -70 }, { x: 60, z: -66 }, []], // BÜHNE: reines wegZwischen-Fixture über einem gedachten Raster
+    ];
+    const fehl = Q > 0 ? [] : ["BRUECKE_GESETZ trägt keinen querGrad"];
+    const aus = {};
+    for (const [wer, A, B, sp] of faelle) {
+        const pts = FC.wegZwischen(raster, [A], [B], sp, nassF, flussF);
+        aus[wer] = pts;
+        if (!pts) {
+            if (wer !== "gezwungen") fehl.push(`der Feldweg ${wer} trägt keinen Lauf`);
+            continue;
+        }
+        const nass = pts.map((p) => nassF(p.x, p.z));
+        const spannen = FC.brueckenAmWeg(pts, nass, pts.map(() => 0));
+        for (const s of spannen) {
+            const [dx, dz] = [s.b.x - s.a.x, s.b.z - s.a.z];
+            const th = (Math.acos(Math.min(1, Math.abs(dx) / (Math.hypot(dx, dz) || 1))) * 180) / Math.PI;
+            if (th < Q) fehl.push(`Feldweg ${wer} Brücke [${s.wa}, ${s.wb}] liegt längs: ${th.toFixed(1)}° zum Lauf (Soll ≥ ${Q}°)`);
+        }
+        const imWasser = nass.filter(Boolean).length;
+        if (wer === "frei" && !spannen.length) fehl.push("der Feldweg frei quert den Fluss ohne Brücke");
+        if ((wer === "Teich" || wer === "trocken") && imWasser) fehl.push(`der Feldweg ${wer} liegt mit ${imWasser} Punkten im Wasser`);
+    }
+    const ohneLauf = FC.wegZwischen(raster, [faelle[3][1]], [faelle[3][2]], [], nassF);
+    if (JSON.stringify(ohneLauf) !== JSON.stringify(aus.trocken)) fehl.push("der Feldweg trocken ist mit dem Lauf nicht byte-gleich wie ohne ihn");
+    return { gruen: !fehl.length, wo: fehl.join(" · ") };
+}
+
 // ===== TEIL K (Leiter mensch.netz.verkehr): DIE KREUZUNG IST EINE FLÄCHE — je Fixture (T · X · Knick · Fort · Schräg) über einem Hang
 // von 6, 12 und 20 % der Plan v2 (fachwerk `ortPlan`), sein Erdbau wie die Welt ihn liest (gelaende-core `erdbauY`, der Leser
 // jeder Höhe: Körper, Rad, die Stufen-Probe des Verkehrs `_verkehrAnlegen`): auf jeder Fahrbahn (den Kernen) springt der Boden
@@ -1445,6 +1560,37 @@ hauptLauf(async () => {
                 "Selbst-Test 14: das Brücken-Etikett — der Weg über die Rinne trägt EINE Brücke, ein FREI-Splat hält den Grund (kein Damm), ohne Wasser-Urteil staut der Erdbau",
                 br.length === 1 && freiN === 1 && yMit === -2 && yOhne > -1.5 && Math.abs(mit.roads[0].ys[10]) < 1e-9,
                 JSON.stringify({ br, freiN, yMit, yOhne, deck: mit.roads[0].ys[10] })
+            );
+            // V7b (bruecke-quert, `amUfer`): DIE BRÜCKE QUERT — derselbe Plan über einem Fluss, der längs z fließt (ctx.flussAt),
+            // mit drei Gassen: längs im Bett, schräg (53° zum Lauf) und quer. Das Gesetz: jede Brücke ≥ querGrad zum Lauf und so
+            // lang wie das Wasser quer breit ist, die Gasse längs ohne Brücke am Ufer, die schräge quert am anderen Ufer normal,
+            // die quere byte-gleich wie ohne Lauf. ROT beim Namen: der Kern ohne die Wand des Winkels (jeder Lauf bleibt Brücke).
+            const quert = brueckeQuertUrteil(FC, Gb);
+            const ohneWinkel = kernMutante(kernText(), [
+                ["return !(dl > 1e-6) || Math.abs(dx * t.tx + dz * t.tz) <= cosQ * dl; // die Spanne quert", "return true; // die Spanne quert"],
+            ]);
+            const quertRot = ohneWinkel.text ? brueckeQuertUrteil(kernAusText(ohneWinkel.text, "ohne-winkel"), Gb) : null;
+            check(
+                "Selbst-Test 14b: die Brücke quert — längs, endend und im Bett am Ufer ohne Brücke, schräg normal über das andere Ufer, quer byte-gleich; der Kern ohne Winkel-Wand ist ROT beim Namen",
+                quert.gruen && !!quertRot && !quertRot.gruen && /längs/.test(quertRot.wo),
+                `Gesetz: ${quert.wo || "grün"} · ohne Winkel: ${quertRot ? quertRot.wo || "grün (die Linse sieht ihn nicht)" : ohneWinkel.fehlt}`
+            );
+            // V7c (bruecke-quert, `wegZwischen`): DER FELDWEG QUERT — frei schräg über den Fluss, gezwungen zu einer Furt längs,
+            // um einen Teich, trocken. ROT beim Namen: der Kern ohne die gerade Brücke (Schritt für Schritt durchs Bett) und der
+            // Kern, dessen Glättung Punkte ins Wasser zieht.
+            const feld = feldwegQuertUrteil(FC);
+            const feldRot = [
+                ["ohne gerade Brücke", ["if(fluss&&!zu[k2]){ if(feucht[k2]<0)", "if(false){ if(feucht[k2]<0)"], /gezwungen.*längs/],
+                ["Glättung ins Wasser", ["&&!(nass&&nass(q.x,q.z))? q : p;", "? q : p;"], /Teich/],
+            ].map(([wer, mu, re]) => {
+                const m = kernMutante(kernText(), [mu]);
+                const u = m.text ? feldwegQuertUrteil(kernAusText(m.text, "feldweg")) : null;
+                return { wer, rot: !!u && !u.gruen && re.test(u.wo), wo: u ? u.wo || "grün (die Linse sieht ihn nicht)" : m.fehlt };
+            });
+            check(
+                "Selbst-Test 14c: der Feldweg quert — frei mit querer Brücke, die gezwungene Furt längs kein Weg, um den Teich nie im Wasser, trocken byte-gleich; der Kern ohne gerade Brücke und der mit der Glättung ins Wasser sind ROT beim Namen",
+                feld.gruen && feldRot.every((f) => f.rot),
+                `Gesetz: ${feld.wo || "grün"} · ${feldRot.map((f) => `${f.wer}: ${f.wo}`).join(" · ")}`
             );
         }
         // V-K (Leiter mensch.netz.verkehr): die Kreuzung — das Gesetz GRÜN, eine um 0,3 m gehobene Fahrbahn des zweiten Wegs ROT beim Namen
