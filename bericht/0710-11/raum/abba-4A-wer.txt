@@ -1,4 +1,0 @@
-{
- "ergebnis": "rechnung",
- "ms": 2
-}
