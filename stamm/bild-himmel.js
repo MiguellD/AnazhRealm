@@ -2222,6 +2222,8 @@ class AnazhRealm_bild_himmel {
             // z-Bogen-Formel gibt dem Mond eine eigene Normierung → eigene Höhe).
             dl.intensity = M.intensity * tint.lightMul * tint.direkt * this._mondDurchlass(md.y);
         }
+        // DER BLITZ (Bz auge): sein Licht über dasselbe Richtlicht, solange einer leuchtet (`_blitzLicht`)
+        this._blitzLicht(dl, focusX, focusY, focusZ, achse, sunDir);
         // `nightFactor` 0 = Tag → 1 = Nacht: das Auge der Nacht der Post-Kette (K66, mesopisch) liest ihn — am Tag fällt es. Es
         // ist das Auge der EINEN Tag-Achse (`tag`): es gleitet über die Sonnenhöhe vom Tag in die Nacht (mit
         // dem Rest der Dämmerung gemessen nahm es der Wiese 0,1–0,2 EV der Dämmerung, und ihr Schritt zur goldenen Stunde riss).
@@ -3268,6 +3270,200 @@ class AnazhRealm_bild_himmel {
             aus
         );
     }
+    // DAS FELD DER NATUR AM ORT (same.kopplung.gewalt#1): die Front über (x, z) zur Welt-Uhr t samt Steigungsregen, OHNE den
+    // Eingriff des Spielers — sein Wort gilt jetzt, nie in der Vergangenheit eines Orts. Leser: der Film der Streu am Fuß eines
+    // Blitzes (`_blitzFilm`, die Nässe-Kurve über die Züge davor).
+    _wetterNaturAm(x, z, t, aus) {
+        const st = this.state;
+        const E = Object.hasOwn(this, "_wetterFeldEin") ? this._wetterFeldEin : null;
+        if (!E || E.tafel !== AnazhRealm._weltGesetz(st.worldMeta || {}).wetter) this._wetterFeldAm(x, z, t, aus, false);
+        const N = this._wetterFeldEin.natur || (this._wetterFeldEin.natur = { zeilen: this._wetterFeldEin.mit.zeilen, hoehe: this._wetterFeldEin.mit.hoehe });
+        return globalThis.__phytoCore.wetterFeldAm(AnazhRealm._saatVon(st.worldMeta || {}), x, z, t, this._gelaende().ort.wetter, N, aus);
+    }
+
+    // DER BLITZ IST EIN EREIGNIS DES EINEN WETTERS (erleben.kopplung.ein-ereignis#2, same.kopplung.gewalt#1) — EIN Schreiber, drei
+    // Leser: das Ohr (`_blitz`, der Donner), das Feuer (`_blitzZuendet` → `_brandEntfachen`) und die Zahl `symphony.blitze`. Eine
+    // Poisson-Folge in Raum und Welt-Uhr als FUNKTION von Saat, Zelle und Schritt (Lockstep: jede Seite derselbe Blitz am selben
+    // Ort, ein Zeitraffer liest dieselbe Folge wie der Takt): je Zelle `BLITZ.zelleM`² und Schritt `BLITZ.schrittS` der Welt-Uhr
+    // Kandidaten mit der vollen Dichte (`BLITZ.jeKm2Jahr` je Jahr des Kalenders auf seine Sturm-Zeit), gleichverteilt in Zelle und
+    // Schritt; ein Kandidat ist eine LADUNG: sie schlägt mit dem Anteil des Sturms im Feld an ihrem Ort zu ihrer Zeit
+    // (`_blitzAnteilAm`, Verdünnung nach Lewis & Shedler 1979), ihr Kanal trifft den Boden um einen WURF daneben (`wurfM`) — der
+    // Fuß liegt auch vor der Front, wo der Regen noch nicht fiel (der trockene Blitz). Bis blitz-brand zog das Klang-Modul die
+    // Folge mit seinem eigenen Würfel auf der Uhr der Audio-Werkstatt — ohne Ohr (headless, stumm) schlug kein Blitz, und kein
+    // Leser des Gewitters zündete (Station same.kopplung.gewalt#1: 0 Zündungen in 249 Gewitter-Zügen). → [{ x, z (der Fuß), t,
+    // u: [Wolke-Erde, langer Strom, Zündung], saat (der Kanal, den Ohr und Auge lesen) }] im Kreis R um (cx, cz), Zeit in
+    // [k0·S, k1·S) der Schritte k0 … k1 − 1; `feld` (optional) bekommt je Blitz das Feld an seinem Fuß (`b.feld`).
+    _blitzeIn(k0, k1, cx, cz, R, feld = false) {
+        const B = AnazhRealm.BLITZ;
+        const saat = AnazhRealm._saatVon(this.state.worldMeta || {});
+        if (!this._blitzSaat || this._blitzSaat[0] !== saat)
+            this._blitzSaat = [saat, globalThis.__samenCore.samenHash("blitz:" + saat) >>> 0];
+        const s0 = this._blitzSaat[1];
+        const [L, S] = [B.zelleM, B.schrittS];
+        // DIE DICHTE JE WELT-JAHR: `jeKm2Jahr` Blitze je km² und Jahr des Kalenders, verteilt auf die Sturm-Zeit des Jahrs
+        // (`sturmAnteil` × `jahrK`) — je Sekunde der Welt-Uhr im Gang des Kalenders (normS ÷ tagS): der Zeitraffer und der
+        // Echtzeit-Gang tragen dieselbe Jahres-Dichte, eine Tag-Länge, die die Zeit anhält, hält den Blitz an
+        const K = this._kalender();
+        const lam = ((B.jeKm2Jahr * (K.normS / K.tagS)) / (K.jahrK * B.sturmAnteil)) * (L / 1000) ** 2 * S; // Kandidaten je Zelle und Schritt
+        const e0 = Math.exp(-lam);
+        const kw = 1 - Math.exp(-B.wurfMaxM / B.wurfM); // der Wurf: Exponential (Mittel wurfM), gestutzt bei wurfMaxM
+        const mix = (h) => {
+            h = Math.imul(h ^ (h >>> 16), 0x7feb352d);
+            h = Math.imul(h ^ (h >>> 15), 0x846ca68b);
+            return (h ^ (h >>> 16)) >>> 0;
+        };
+        const Rq = R + B.wurfMaxM; // die Ladung steht bis zu einem Wurf jenseits des Kreises, ihr Fuß in ihm
+        const [i0, i1, j0, j1] = [Math.floor((cx - Rq) / L), Math.floor((cx + Rq) / L), Math.floor((cz - Rq) / L), Math.floor((cz + Rq) / L)];
+        const aus = [];
+        for (let k = k0; k < k1; k++) {
+            const hk = mix(s0 ^ mix(k | 0));
+            for (let i = i0; i <= i1; i++) {
+                const hi = mix(hk ^ mix(i + 0x5bd1e995));
+                for (let j = j0; j <= j1; j++) {
+                    let h = mix(hi ^ mix(j + 0x1b873593));
+                    // die Zahl der Kandidaten: Poisson(λ) durch Inversion (EIN Würfel, meist 0)
+                    let u = h / 4294967296;
+                    let [n, p, c] = [0, e0, e0];
+                    while (u > c && n < 12) (n++, (p *= lam / n), (c += p));
+                    for (let m = 0; m < n; m++) {
+                        const w = [];
+                        for (let q = 0; q < 8; q++) w.push((h = mix(h + 0x9e3779b9)) / 4294967296);
+                        const [x, z, t] = [(i + w[0]) * L, (j + w[1]) * L, (k + w[2]) * S];
+                        // der Fuß: die Ladung (x, z) wirft den Kanal um r in die Richtung φ
+                        const [r, phi] = [-B.wurfM * Math.log(1 - w[6] * kw), 2 * Math.PI * w[7]];
+                        const [gx, gz] = [x + r * Math.cos(phi), z + r * Math.sin(phi)];
+                        if (Math.hypot(gx - cx, gz - cz) > R) continue;
+                        if (!(w[3] < this._blitzAnteilAm(x, z, t))) continue;
+                        const o = feld ? {} : undefined;
+                        if (o) this._wetterFeldAm(gx, gz, t, o, false);
+                        aus.push({ x: gx, z: gz, t, u: [w[4], w[5], (h = mix(h + 0x9e3779b9)) / 4294967296], saat: mix(h + 0x9e3779b9), feld: o });
+                    }
+                }
+            }
+        }
+        return aus;
+    }
+    // Der Anteil des Sturms im Wetter-Feld am Ort zur Welt-Uhr t (klang `blitzAnteil` über die EINE Tafel WEATHER_FIELD): das Feld
+    // ist das des Kerns (`_wetterFeldAm` — die Front am Ort, das Wort des Spielers als Eingriff in seiner Region, das Lee, das er
+    // trocknet), ohne den Steigungsregen (der Hang hebt den Regen, nie die Front). `aus` nimmt das Feld (sein `hier`: der Anteil
+    // des Eingriffs). Leser: der Blitz (`_blitzeIn`).
+    _blitzAnteilAm(x, z, t = this.state.spielZeit, aus) {
+        const kern = AnazhRealm._umweltGesetz().kern;
+        return kern.blitzAnteil(this._wetterFeldAm(x, z, t, aus, false), AnazhRealm.WEATHER_FIELD, "stormy");
+    }
+    // DER TAKT DES BLITZES: je voller Schritt der Welt-Uhr seine Blitze im Kreis der Hörweite um den Spieler (dem Kreis, den Ohr und
+    // Feld ohnehin tragen) — je Blitz das Ohr und das Feuer, EIN Ruf je Leser; ohne Kandidat kostet ein Schritt einen Würfel je
+    // Zelle (81 im Kreis), nie eine Frage an die Welt. Ein Sprung der Welt-Uhr (mehr als EIN Wetter-Zug: Laden, Mitspieler) schlägt nicht nach — der
+    // Blitz der Zwischenzeit traf eine Welt, die keiner trug.
+    _blitzTakt() {
+        const st = this.state;
+        const pm = st.playerMesh;
+        const S = AnazhRealm.BLITZ.schrittS;
+        const k1 = Math.floor(st.spielZeit / S);
+        const k0 = this._blitzSchritt;
+        this._blitzSchritt = k1;
+        if (!pm || !(k1 > k0) || (k1 - k0) * S > AnazhRealm.WETTER_ZUG_SEK) return;
+        const R = AnazhRealm._umweltGesetz().kern.DONNER.hoerweiteM;
+        for (const b of this._blitzeIn(k0, k1, pm.position.x, pm.position.z, R, true)) {
+            this._blitz(b);
+            this._blitzBild(b);
+            if (this._blitzZuendet(b)) this._brandEntfachen(b.x, b.z);
+        }
+    }
+    // DAS AUGE DES BLITZES (same.kopplung.gewalt#1, Messname Bz auge): der Einschlag (Wolke-Erde, `BRAND.blitz.wolkeErde`) steht
+    // im Bild — sein Kanal (klang-core `blitzKanal`, derselbe, den das Ohr hört) als Linie vom Fuß zur Wolke und sein Licht auf
+    // der Welt über das EINE Richtlicht (`_blitzLicht`). Gezeigt wird der hellste Blitz am Auge (E ∝ 1/d²: ein neuer verdrängt
+    // den leuchtenden nur, wenn er heller ist); die Kosten tragen nur Blitze — ohne einen ist die Linie verborgen und das Licht
+    // fragt ein Feld. Jenseits der Klippe der Kamera rückt der Kanal zur Kamera hin (derselbe Winkel, er bleibt im Bild).
+    _blitzBild(b) {
+        const st = this.state;
+        const pm = st.playerMesh;
+        const BB = AnazhRealm.BRAND.blitz;
+        if (!pm || !st.scene || !(b.u[0] < BB.wolkeErde)) return null;
+        const A = AnazhRealm.BLITZ.auge;
+        const [dx, dz] = [b.x - pm.position.x, b.z - pm.position.z];
+        const dH = Math.hypot(dx, dz);
+        const d = Math.max(A.nahM, Math.hypot(dH, A.wolkeM));
+        const lux = (A.energieJ * A.lmJeW * A.bildHz) / (4 * Math.PI * d * d); // je Strich, über ein Bild gemittelt
+        const alt = this._blitzBlick;
+        if (alt && alt.lux * this._blitzHell(alt, st.spielZeit) >= lux) return null;
+        const n = 1 + Math.floor((((b.saat >>> 8) & 1023) / 1024) * A.striche);
+        const lang = b.u[1] < BB.langStrom;
+        const ende = (n - 1) * A.strichS + Math.max(6 * A.abklingS, lang ? A.langS : 0);
+        const y0 = this._terrainMacroSurfaceY(b.x, b.z, false);
+        const B = { x: b.x, z: b.z, t0: st.spielZeit, lux, striche: n, lang, ende, oben: [b.x, y0 + A.wolkeM, b.z] };
+        const K = AnazhRealm._umweltGesetz().kern.blitzKanal(b.saat, 0);
+        const [ex, ez] = dH > 0 ? [dx / dH, dz / dH] : [1, 0];
+        const cam = st.camera;
+        const cp = cam ? cam.position : pm.position;
+        const s = cam ? Math.min(1, (0.9 * cam.far) / Math.max(1, Math.hypot(b.x - cp.x, y0 + A.wolkeM - cp.y, b.z - cp.z))) : 1;
+        let L = this._blitzLinie;
+        if (!L) {
+            const g = new THREE.BufferGeometry();
+            const pos = new THREE.BufferAttribute(new Float32Array(3 * A.punkteMax), 3);
+            pos.setUsage(THREE.DynamicDrawUsage);
+            g.setAttribute("position", pos);
+            const m = new THREE.LineBasicMaterial({ color: new THREE.Color(...A.farbe), transparent: true, opacity: 0, depthWrite: false, fog: false });
+            L = this._blitzLinie = new THREE.LineSegments(g, m);
+            L.frustumCulled = false;
+            L.visible = false;
+        }
+        if (L.parent !== st.scene) st.scene.add(L);
+        const P = L.geometry.attributes.position;
+        let v = 0;
+        for (const arm of K.arme)
+            for (let i = 1; i < arm.length && v + 6 <= P.array.length; i++)
+                for (const p of [arm[i - 1], arm[i]]) {
+                    const [wx, wy, wz] = [b.x + p[0] * ex - p[2] * ez, y0 + p[1], b.z + p[0] * ez + p[2] * ex];
+                    P.array[v++] = cp.x + (wx - cp.x) * s;
+                    P.array[v++] = cp.y + (wy - cp.y) * s;
+                    P.array[v++] = cp.z + (wz - cp.z) * s;
+                }
+        P.needsUpdate = true;
+        L.geometry.setDrawRange(0, v / 3);
+        L.visible = true;
+        this._blitzBlick = B;
+        return B;
+    }
+    // Die Helligkeit des Blitzes B zur Welt-Uhr t (1 = ein Strich in seinem Bild): je Strich ein Puls, der mit `abklingS` fällt,
+    // `strichS` nach dem vorigen; ein langer Strom glüht nach dem letzten Strich `langS` mit `langHell`.
+    _blitzHell(B, t) {
+        const A = AnazhRealm.BLITZ.auge;
+        const tau = t - B.t0;
+        if (!(tau >= 0 && tau <= B.ende)) return 0;
+        let h = 0;
+        for (let k = 0; k < B.striche && k * A.strichS <= tau; k++) h += Math.exp(-(tau - k * A.strichS) / A.abklingS);
+        const letzt = (B.striche - 1) * A.strichS;
+        if (B.lang && tau >= letzt && tau < letzt + A.langS) h += A.langHell;
+        return h;
+    }
+    // DAS LICHT DES BLITZES auf der Welt (aus `_dayNightApplyDirectionalLight`, je Bild): das Richtlicht nimmt die Beleuchtung des
+    // Blitzes am Auge (lux, `_blitzBild`) im Maß des Lichts, in dem die Welt gerade steht — am Tag dem der Sonne (KEY_BASE ·
+    // LEGACY_LICHT ↔ `luxSonne`), in der Nacht dem des Monds (MOONLIGHT ↔ `luxMond`), dazwischen geometrisch über die Tag-Achse;
+    // ist der Blitz heller als Sonne oder Mond, fällt das Licht von seiner Wolke. Ohne Blitz: ein Feld-Test.
+    _blitzLicht(dl, fx, fy, fz, achse, sunDir) {
+        const B = this._blitzBlick;
+        if (!B) return;
+        const L = this._blitzLinie;
+        const h = this._blitzHell(B, this.state.spielZeit);
+        if (!(h > 0)) {
+            this._blitzBlick = null;
+            if (L) L.visible = false;
+            return;
+        }
+        const A = AnazhRealm.BLITZ.auge;
+        if (L) L.material.opacity = Math.min(1, h);
+        const nacht = 1 - (achse || this._tagAchse(sunDir.y)).tag;
+        const [sonne, mond] = [(AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT) / A.luxSonne, AnazhRealm.MOONLIGHT.intensity / A.luxMond];
+        const I = Math.exp(Math.log(sonne) * (1 - nacht) + Math.log(mond) * nacht) * B.lux * h;
+        if (I > dl.intensity) {
+            const [ux, uy, uz] = [B.oben[0] - fx, B.oben[1] - fy, B.oben[2] - fz];
+            const l = Math.hypot(ux, uy, uz) || 1;
+            dl.position.set(fx + (ux / l) * 200, fy + (uy / l) * 200, fz + (uz / l) * 200);
+            dl.color.setRGB(...A.farbe);
+        }
+        dl.intensity += I;
+    }
 
     // DER WIND DER WOLKEN-SCHICHT (licht.K4, wetter-am-ort): die Schicht zieht mit dem EINEN Wind (phyto-core `windRichtung`: die
     // Richtung, die Gras, Krone, Wasser und Rauch an jedem Ort lesen) im Zug der Fronten (`WIND_FELD.front.zugMS`, 850 hPa) —
@@ -3811,6 +4007,48 @@ AnazhRealm.HIMMEL = Object.freeze({
     koerperAbstandM: 380,
     sonneWinkelGrad: 0.53,
     sonneCd: 1.6e9,
+});
+// DER BLITZ ALS FUNKTION DER WELT (`_blitzeIn`): die Zelle des Rasters (m) und der Schritt der Welt-Uhr (s), in denen die
+// Poisson-Folge gewürfelt wird — Größen der Rechnung, nie des Gesetzes. Das Gesetz:
+// jeKm2Jahr — Blitze (Wolke und Erde) je km² und Jahr: Christian et al. 2003 (JGR 108: 4005, OTD) 44 ± 5 je s weltweit = 2,7 je
+// km²·a im Mittel, Land : Meer ≈ 10 : 1 → Land ≈ 7, die gemäßigte und boreale Breite 1–4 → 2 (Band 0,7–6; Stocks et al. 2002,
+// die Real-Rate der Brände 10⁻³ je km²·a, misst dieselbe Breite). Die Jahres-Dichte zählt je Jahr des KALENDERS (`_kalender`):
+// sie fällt in die Sturm-Zeit des Jahrs, `sturmAnteil` — der Anteil des Sturms an der Front (phyto-core WIND_FELD: über 300
+// Saaten × 400 Orte 13 %; die Linse misst ihn je Lauf, (Bz) 13,8 %). Ein Spiel-Jahr (40 min) trägt so 5 min Sturm, ein
+// wahres 20–50 Gewitter-Stunden: der Sturm des Spiels ist ein Jahr Gewitter in Minuten, nie das Gewitter einer Stunde.
+// wurfM · wurfMaxM — der Wurf des Kanals: der Fuß liegt neben der Ladung, Mittel 3,2–4,2 km zwischen Blitzen eines Gewitters
+// (Krider, drei Gewitter in Florida), Fußpunkte eines Blitzes je ~3 km, bis 8 km („five miles“, Valine & Krider 2002) → 3 500 m,
+// gestutzt bei 8 000 m.
+// auge — das Bild des Einschlags (`_blitzBild`, `_blitzLicht`): je Strich `energieJ` Licht im Band 0,4–1 µm (negativer
+// Wolke-Erde-Strich: 130 MW Spitze, 20 kJ, Radiometrie in New Mexico, par.nsf.gov 10439533) × `lmJeW` (QUELLE UNGEPRUEFT im Wert:
+// die Lichtausbeute des Kanal-Spektrums), über ein Bild (`bildHz`) gemittelt, mit 1/(4π d²) am Auge (d zur Wolken-Basis
+// `wolkeM`, QUELLE UNGEPRUEFT im Wert: Basis eines Cumulonimbus 0,5–2 km; nie unter `nahM`); 1 bis `striche` Striche je Blitz,
+// `strichS` auseinander (Rakov & Uman 2003: 3–5 Striche je negativem Blitz, ~60 ms dazwischen), je Strich `abklingS`, der lange
+// Strom glüht `langS` nach (≥ 40 ms, Latham & Schlieter 1989). Das Maß des Lichts: die Sonne im Zenit `luxSonne` (≈ 110 000 lx),
+// der volle Mond `luxMond` (0,1–0,3 lx). `farbe`: das Blau-Weiß des Kanals; `punkteMax`: die Ecken der Linie.
+AnazhRealm.BLITZ = Object.freeze({
+    zelleM: 4000,
+    schrittS: 1,
+    jeKm2Jahr: 2,
+    sturmAnteil: 0.13,
+    wurfM: 3500,
+    wurfMaxM: 8000,
+    auge: Object.freeze({
+        wolkeM: 1000,
+        nahM: 300,
+        energieJ: 2e4,
+        lmJeW: 100,
+        bildHz: 60,
+        luxSonne: 1.1e5,
+        luxMond: 0.25,
+        striche: 6,
+        strichS: 0.06,
+        abklingS: 0.02,
+        langS: 0.15,
+        langHell: 0.15,
+        farbe: Object.freeze([0.85, 0.9, 1]),
+        punkteMax: 4096,
+    }),
 });
 // DER HALBMESSER DER SCHEIBE eines Punkts der Größenklasse m in Grad (`_sternPunkt`): θ0 · 10^(0,2·(G − m)) — der ferne Saum des
 // Auges fällt mit θ⁻², so steht er am Rand jeder Scheibe gleich hell (der eines Sterns der Feldgrenze G in θ0). Die Fläche wächst

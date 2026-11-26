@@ -316,7 +316,6 @@ class AnazhRealm_klang {
             } else {
                 this._tierRufTakt(um.rufDt);
                 this._bewohnerLautTakt(um.rufDt);
-                this._donnerTakt(um.rufDt);
             }
             return;
         }
@@ -936,53 +935,37 @@ class AnazhRealm_klang {
         M.lombardDb = kern.mengeLombard(M.laermDbA);
         [M.sprecher, M.klingen, M.rest] = [sprecher, klingen, energie > 0 ? rest / energie : 0];
     }
-    // DER DONNER (klang-leib, erleben.kopplung.ein-ereignis#2): der Blitz ist ein Ereignis des EINEN Wetters — eine Poisson-Folge
-    // mit der Dichte blitzJeKm2Min × dem Anteil des Sturms am Ort (`_blitzAnteilAm`), gezogen durch Verdünnung (Lewis & Shedler
-    // 1979): je Ruf-Takt ein Kandidat mit der vollen Dichte auf der Scheibe der Hörweite, sein Ort gleichverteilt in der Fläche,
-    // er schlägt mit der Wahrscheinlichkeit des Anteils dort.
-    _donnerTakt(dt) {
-        const st = this.state;
-        const um = st.symphony.umwelt;
-        const pm = st.playerMesh;
-        if (!(dt > 0) || !um || !um.kern.DONNER || !pm) return null;
-        const D = um.kern.DONNER;
-        const zug = () => this._klangZug("umwelt") / 4294967296;
-        const rate = (D.blitzJeKm2Min * Math.PI * (D.hoerweiteM / 1000) ** 2) / 60;
-        if (!(zug() < 1 - Math.exp(-rate * dt))) return null;
-        const r = D.hoerweiteM * Math.sqrt(zug());
-        const w = 2 * Math.PI * zug();
-        const [x, z] = [pm.position.x + r * Math.cos(w), pm.position.z + r * Math.sin(w)];
-        if (!(zug() < this._blitzAnteilAm(x, z))) return null;
-        return this._blitz(x, z);
-    }
-    // Der Anteil des Sturms im Wetter-Feld am Ort (klang `blitzAnteil` über die EINE Tafel WEATHER_FIELD): das Feld ist das des
-    // Kerns (`_wetterFeldAm` — die Front am Ort, das Wort des Spielers als Eingriff in seiner Region, das Lee, das er trocknet),
-    // ohne den Steigungsregen (der Hang hebt den Regen, nie die Front). Leser: `_donnerTakt`.
-    _blitzAnteilAm(x, z) {
-        const kern = AnazhRealm._umweltGesetz().kern;
-        return kern.blitzAnteil(
-            this._wetterFeldAm(x, z, this.state.spielZeit, undefined, false),
-            AnazhRealm.WEATHER_FIELD,
-            "stormy"
-        );
-    }
-    // Ein Blitz bei (x, z): zählt jeden (headless messbar); sein Donner geht an die Werkstatt, der Einsatz zählt ab dem Blitz.
-    _blitz(x, z) {
+    // DER DONNER (klang-leib, erleben.kopplung.ein-ereignis#2): das Ohr ist EIN Leser des Blitzes, den das Wetter schreibt
+    // (`_blitzeIn` über `_blitzTakt`, stamm/bild-himmel.js — dort auch das Feuer als zweiter Leser). Ein Blitz bei (x, z): zählt
+    // jeden (headless messbar); sein Donner geht an die Werkstatt, der Einsatz zählt ab dem Blitz. Der Kanal ist der des Blitzes
+    // (`b.saat`, klang-core `blitzKanal`: das Auge zeichnet denselben). DER DECKEL DES MISCHERS gilt auch dem Donner
+    // (`UMWELT.stimmenMax`, „die lautesten gewinnen“): ein Sturm trägt die Blitze eines Jahrs in Minuten (bis ~1,5 je s im Kreis
+    // der Hörweite) — höchstens so viele Donner klingen zugleich, ein neuer nur, wenn er lauter ist als der leiseste, der klingt.
+    _blitz(b) {
         const s = this.state.symphony;
         s.blitze = (s.blitze || 0) + 1;
         const um = s.umwelt;
         const pm = this.state.playerMesh;
         if (!s.enabled || !s.ctx || !um || !um.werkstatt || !pm) return null;
-        const [dx, dz] = [x - pm.position.x, z - pm.position.z];
+        const [dx, dz] = [b.x - pm.position.x, b.z - pm.position.z];
         const ruf = {
-            blitz: { x, z },
+            blitz: { x: b.x, z: b.z },
             d: Math.hypot(dx, dz),
             pan: this._umweltPanorama()(dx, dz),
-            saat: this._klangZug("umwelt"),
+            saat: b.saat,
             t0: s.ctx.currentTime,
             temperatur: um.lage && Number.isFinite(um.lage.luft) ? um.lage.luft : this._temperaturAt(pm.position.y, 0),
         };
-        if (!(um.kern.rufPegel(ruf) >= AnazhRealm._umweltGesetz().UMWELT.hoerschwelleDb)) return null;
+        const U = AnazhRealm._umweltGesetz().UMWELT;
+        const db = um.kern.rufPegel(ruf);
+        if (!(db >= U.hoerschwelleDb)) return null;
+        const klingt = (um.donner = (um.donner || []).filter((k) => k.bis > ruf.t0));
+        if (klingt.length >= U.stimmenMax) {
+            const leise = klingt.reduce((p, q) => (q.db < p.db ? q : p));
+            if (!(db > leise.db)) return null;
+            klingt.splice(klingt.indexOf(leise), 1);
+        }
+        klingt.push({ db, bis: ruf.t0 + ruf.d / um.kern.schallC(ruf.temperatur) + um.kern.DONNER.maxSek });
         um.rufeBestellt++;
         um.werkstatt.postMessage({ typ: "ruf", ruf });
         return ruf;

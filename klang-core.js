@@ -1743,9 +1743,10 @@
     }
     // ═══════════════════════════════════════════════════════════════════════
     //  DER DONNER (klang-leib, erleben.kopplung.ein-ereignis#2, rein additiv): ein Ereignis des EINEN Wetters. Der Blitz
-    //  schlaegt als Poisson-Folge mit der Dichte `blitzJeKm2Min` × dem Anteil des Sturms im Wetter-Feld am Ort (`blitzAnteil`:
-    //  der Wirt fragt das EINE Feld, phyto-core `wetterFeldAm` — die Front am Ort, das Wort des Spielers als Eingriff in seiner
-    //  Region) auf der Scheibe der Hoerweite (`hoerweiteM`: der Donner traegt etwa 10 Meilen, NWS). Der Blitz ist EIN Kanal vom
+    //  schlaegt als Poisson-Folge des Wirts (stamm/bild-himmel.js `_blitzeIn`, die Dichte je Welt-Jahr `BLITZ.jeKm2Jahr`) × dem
+    //  Anteil des Sturms im Wetter-Feld am Ort (`blitzAnteil`: der Wirt fragt das EINE Feld, phyto-core `wetterFeldAm` — die Front
+    //  am Ort, das Wort des Spielers als Eingriff in seiner Region) auf der Scheibe der Hoerweite (`hoerweiteM`: der Donner traegt
+    //  etwa 10 Meilen, NWS). Der Blitz ist EIN Kanal vom
     //  Boden zur Ladung der Wolke (`hoeheM`), gewunden (je `segmentM` ein Knick um `knickGrad`), mit `aeste` Seitenarmen.
     //  Jeder Punkt des Kanals strahlt eine N-Welle; ihre Dauer folgt dem Relaxations-Radius R0 = √(E_l / (π·p0)) (Few 1969:
     //  die Energie je Laenge E_l setzt die Skala, f_m = fFaktor·c / R0), ihr Gewicht 1/r. Die Ankunft je Punkt ist r / c(T):
@@ -1756,7 +1757,6 @@
     // ═══════════════════════════════════════════════════════════════════════
     // prettier-ignore
     var DONNER = {
-        blitzJeKm2Min: 0.01, // QUELLE UNGEPRUEFT im Wert: ein gewoehnliches Gewitter, wenige Blitze je Minute auf ~100 km²
         hoerweiteM: 16000,   // NWS „Understanding Lightning: Thunder": der Donner traegt etwa 10 Meilen
         hoeheM: 5000, segmentM: 40, knickGrad: 16, aeste: 3, astM: 1500, // QUELLE UNGEPRUEFT im Wert: die Gestalt des Kanals
         energieJeM: 1e6, streuung: 0.6, p0: 101325, fFaktor: 0.63,   // E_l: die Groesse, die Few aus dem Spektrum des Donners las
@@ -1766,7 +1766,7 @@
         // seinen Scheitel (`scheitelDb`, Spitze ueber RMS) und der Pegel deckelt dort, wo die Spitze −1 dBFS erreichte
         pegel: { refDb: -14, dRef: 500, dMin: 150, spitzeDb: -1 }
     };
-    // DER ANTEIL DES STURMS AM ORT (klang-leib, die Dichte der Blitze = DONNER.blitzJeKm2Min × dieser Anteil): das Wetter-Feld am
+    // DER ANTEIL DES STURMS AM ORT (klang-leib, die Dichte der Blitze = die des Wirts × dieser Anteil): das Wetter-Feld am
     // Ort (der Wirt fragt phyto-core `wetterFeldAm` ohne Relief: die Front, das Wort des Spielers als Eingriff in seiner Region)
     // ist eine affine Mischung der Zeilen der Wetter-Tafel — die Front mischt sie stufig, der Eingriff und sein Übergang linear.
     // Der Anteil EINER Zeile ist darum EIN lineares Mass über die Kanäle: der duale Vektor L der Tafel (L · Zeile = 1 für die
@@ -1826,10 +1826,11 @@
         }
         return a < 0 ? 0 : a > 1 ? 1 : a;
     }
-    // DER DONNER EINES BLITZES: ruf = { blitz, d (m bis zum Fusspunkt), saat, temperatur } → { sr, daten, dNah, f0, sek }
-    function donnerPuffer(ruf) {
-        var D = DONNER, r = ruf || {}, rnd = umweltRng((r.saat >>> 0) || 13), c = schallC(typeof r.temperatur === "number" && isFinite(r.temperatur) ? r.temperatur : UMWELT.luft.T);
-        var dH = Math.max(1, typeof r.d === "number" && isFinite(r.d) ? r.d : 1000), sr = D.sr;
+    // DER KANAL EINES BLITZES (blitz-brand: das Ohr und das Auge lesen DENSELBEN Kanal): die Saat des Blitzes → die Arme
+    // [[x, y, z] …] vom Fuss (x0, 0, 0) zur Ladung in `hoeheM` (je `segmentM` ein Knick um `knickGrad`, `aeste` Seitenarme), x
+    // zeigt vom Ohr zum Fuss, y nach oben; dazu die Normale, mit der der Donner weiterwuerfelt (die Energie je Segment).
+    function blitzKanal(saat, x0) {
+        var D = DONNER, rnd = umweltRng((saat >>> 0) || 13);
         var gauss = function () { return Math.sqrt(-2 * Math.log(1 - rnd())) * Math.cos(2 * Math.PI * rnd()); };
         var knick = Math.tan((D.knickGrad * Math.PI) / 180);
         // ein gewundener Arm: von p in Richtung v, je Segment ein Knick, `hebt` zieht ihn zur Wolke
@@ -1847,11 +1848,18 @@
             arme.push(pts);
             return pts;
         };
-        var stamm = arm([dH, 0, 0], [0, 1, 0], 4 * D.hoeheM, 0.35);
+        var stamm = arm([x0, 0, 0], [0, 1, 0], 4 * D.hoeheM, 0.35);
         for (var k = 0; k < D.aeste; k++) {
             var ab = stamm[Math.floor(stamm.length * (0.3 + 0.6 * rnd()))], phi = 2 * Math.PI * rnd();
             arm(ab, [Math.cos(phi), -0.15, Math.sin(phi)], D.astM, 0);
         }
+        return { arme: arme, gauss: gauss };
+    }
+    // DER DONNER EINES BLITZES: ruf = { blitz, d (m bis zum Fusspunkt), saat, temperatur } → { sr, daten, dNah, f0, sek }
+    function donnerPuffer(ruf) {
+        var D = DONNER, r = ruf || {}, c = schallC(typeof r.temperatur === "number" && isFinite(r.temperatur) ? r.temperatur : UMWELT.luft.T);
+        var dH = Math.max(1, typeof r.d === "number" && isFinite(r.d) ? r.d : 1000), sr = D.sr;
+        var K = blitzKanal(r.saat, dH), arme = K.arme, gauss = K.gauss;
         // die Strahler: je Segment seine Energie (log-normal), je Punkt Abstand, Dauer und Gewicht
         var R = [], TAU = [], G = [], rMin = Infinity, rMax = 0, tauMax = 0;
         arme.forEach(function (pts) {
@@ -2459,6 +2467,7 @@
         stimmForm: stimmForm,
         DONNER: DONNER,
         donnerPuffer: donnerPuffer,
+        blitzKanal: blitzKanal, // blitz-brand — der Kanal, den Ohr (donnerPuffer) und Auge (stamm/bild-himmel.js `_blitzBild`) lesen
         blitzAnteil: blitzAnteil,
         roehre: roehre,
         stimmLeib: stimmLeib,

@@ -375,9 +375,10 @@ class AnazhRealm_feld_brand {
     // hält (`nass`) — er löscht, wo sie die Erlöschungs-Feuchte des Betts erreicht. Bis stoffe.K2#2 trug die Nässe nur bis zur
     // Faser-Sättigung (0,35) und kein Ort sein eigenes Bett: das Laub fiel im Landregen erst nach 196 s, das Gras am Ufer
     // brannte wie das auf der Kuppe.
-    _brandFeuchte(boden) {
+    // `film`: die Nässe am Ort, wo sie nicht die der Welt ist (der Fuß eines Blitzes, `_blitzFilm`).
+    _brandFeuchte(boden, film = this.state.naesse || 0) {
         const F = AnazhRealm.BRAND.feuchte;
-        return F.trocken + (F.faser - F.trocken) * (boden || 0) + F.nass * (this.state.naesse || 0);
+        return F.trocken + (F.faser - F.trocken) * (boden || 0) + F.nass * film;
     }
 
     // DAS TEMPO DER FRONT (stoffe.K2) → { R, ecc, px, pz, tr } oder null (das Bett erstickt): Rothermel 1972 (USDA INT-115) mit
@@ -405,7 +406,7 @@ class AnazhRealm_feld_brand {
         // fing mit einem Tempo, das nie ausbrannte (stoffe.K2#2: 3 nasse Zellen am Ufer brannten)
         if (!(M < b.mx)) return null;
         const r = M / b.mx;
-        const etaM = 1 - 2.59 * r + 5.11 * r * r - 3.52 * r * r * r;
+        const etaM = AnazhRealm._brandEtaM(r);
         const IR = gam * w0 * (1 - B.mineral.gesamt) * b.heiz * 4.2992e-4 * etaM * 0.174 * B.mineral.frei ** -0.19;
         if (!(IR > 0)) return null;
         const [W, luft] = [this._stoff("wasser"), this._temperaturAt(f.y)];
@@ -448,6 +449,40 @@ class AnazhRealm_feld_brand {
     // es nur auf der Seite, deren Brennglas zündete.
     _brandEntfachen(x, z) {
         return this._feldAkt({ art: "brand", w: this.state.spielZeit, x, z }, true);
+    }
+
+    // DER BLITZ ZÜNDET AUS TROCKENHEIT × GEWITTER (same.kopplung.gewalt#1) — der Leser des Feuers am EINEN Blitz des Wetters
+    // (`_blitzeIn`, sein Takt `_blitzTakt`): der Blitz schlägt als Wolke-Erde-Blitz (`BRAND.blitz.wolkeErde`), trägt einen
+    // langen Strom (`langStrom`), und das Bett an seinem Fuß — dasselbe Bett, das die Front liest (`_brandStoff`) — fängt mit
+    // der Dämpfung seiner Feuchte (Rothermel 1972 η_M an M ÷ mx, `_brandEtaM`; M aus `_brandFeuchte` mit dem Film der Streu AM
+    // FUSS, `_blitzFilm`). Trocken (Gras: M 6 %, mx 12 %) η_M 0,54: je Wolke-Erde-Blitz 0,2 × 0,54 = 0,11 — eine Zündung je 9
+    // Entladungen, die „hohe Effizienz“ der Blitz-Karte (WFAS nach Latham & Schlieter 1989; „extrem“ ≤ 5); unter dem Regen-Kern
+    // steht der Film nach τ = 150 s Regen bei 1 − 1/e, M über mx: keine Zündung. → ob er zündet (der Takt ruft `_brandEntfachen`).
+    _blitzZuendet(b) {
+        const B = AnazhRealm.BRAND.blitz;
+        if (!(b.u[0] < B.wolkeErde && b.u[1] < B.langStrom)) return false;
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const f = this._brandStoff(Math.floor(b.x / cs), Math.floor(b.z / cs), b.t);
+        const mx = f && f.zeile.brenn.mx;
+        if (!mx || !(this._brandFeuchte(f.boden, 0) < mx)) return false; // kein Bett, oder der Boden allein erstickt es
+        const r = this._brandFeuchte(f.boden, this._blitzFilm(b)) / mx;
+        return r < 1 && b.u[2] < AnazhRealm._brandEtaM(r);
+    }
+    // DER FILM DER STREU AM FUSS (0 trocken … 1 nass): im Eingriff des Spielers (`feld.hier`) der Film der Welt (`state.naesse`,
+    // der Regen, den die Welt dort trug), in der Natur die EINE Nässe-Kurve (`_naesseKurve`) über das Feld der Natur am Fuß
+    // (`_wetterNaturAm`, mit Steigungsregen) die `filmS` vor dem Blitz in Schritten von `filmSchrittS`, von trocken an — nach
+    // `filmS` hat der Film jeden Anfang vergessen (die Nässe eines Regens trocknet bewölkt in 16 min, Regen benetzt in τ = 150 s).
+    _blitzFilm(b) {
+        const B = AnazhRealm.BRAND.blitz;
+        const hier = b.feld && b.feld.hier;
+        if (!Number.isFinite(hier)) throw new Error("_blitzFilm: der Blitz trägt das Feld an seinem Ort nicht (`_blitzeIn` mit feld)");
+        let n = 0;
+        if (hier < 1) {
+            const o = this._blitzFilmFeld || (this._blitzFilmFeld = {});
+            for (let t = b.t - B.filmS; t < b.t; t += B.filmSchrittS)
+                n = AnazhRealm._naesseKurve(n, this._wetterNaturAm(b.x, b.z, t, o), Math.min(B.filmSchrittS, b.t - t));
+        }
+        return hier * (this.state.naesse || 0) + (1 - hier) * n;
     }
 
     // Die Zelle unter (x, z) fängt Feuer → die Zelle oder null (sie brennt schon, trägt kein Bett, die Welt ist zu nass). `uhr`
@@ -1983,6 +2018,11 @@ AnazhRealm.BRAND = Object.freeze({
     // verschiebt die Kante um bis zu 4 m, eine halbe Zelle) und die Breite, über die sie fällt (0,18 im Anteil: ~2 m angesengter Saum)
     narbe: Object.freeze({ lambda: Object.freeze([14, 5]), amp: Object.freeze([0.7, 0.25]), band: 0.18 }),
     feuchte: Object.freeze({ trocken: 0.06, faser: 0.35, nass: 2.5 }),
+    // DER BLITZ AM BETT (`_blitzZuendet`): der Anteil Wolke-Erde an allen Blitzen — Prentice & Mackerras 1977 (J. Appl. Meteor.
+    // 16: 545) Wolke ÷ Erde Z = 4,16 + 2,16·cos 3λ, bei 45° Z 2,63 → 1 ÷ (1 + Z) = 0,275 (Band 0,14 am Äquator … 0,33 bei 60°);
+    // der Anteil mit langem Strom (der Strom, der zündet): alle positiven, ~20 % der negativen (WFAS nach Latham & Schlieter
+    // 1989, INT-411) → 0,2; der Film der Streu am Fuß über `filmS` in Schritten von `filmSchrittS` (`_blitzFilm`)
+    blitz: Object.freeze({ wolkeErde: 0.275, langStrom: 0.2, filmS: 1800, filmSchrittS: 60 }),
     mineral: Object.freeze({ gesamt: 0.0555, frei: 0.01 }),
     // DIE MASSE (`_brandMasse`, same.physik.reaktion#1): das Gitter je Zelle, auf dem das Buch den verzehrten Anteil ihres Betts
     // misst (32² Punkte, ½ m); der Schwebstoff des Rauchs — `jeKg` kg je kg verbranntem trockenem Brennstoff (Andreae & Merlet
@@ -2007,6 +2047,9 @@ AnazhRealm.BRAND = Object.freeze({
         ].map(Object.freeze)
     ),
 });
+// DIE DÄMPFUNG DER FEUCHTE (Rothermel 1972, USDA INT-115): η_M = 1 − 2,59 r + 5,11 r² − 3,52 r³ an r = M ÷ mx (0 … 1) — EINE
+// Funktion für das Tempo der Front (`_brandTempo`) und den Fang des Blitzes (`_blitzZuendet`).
+AnazhRealm._brandEtaM = (r) => 1 - 2.59 * r + 5.11 * r * r - 3.52 * r * r * r;
 
 // DIE DRUCKWELLE IM WIRT (same.physik.reaktion#2, `_druckWelle`): das Gesetz und seine Zahlen stehen im Kern (schmiede
 // `STOFF_GESETZ.DRUCK`); hier nur, was kein Stoff trägt — `funkeM`: so nah an der Hülle einer Ladung muss der Funke selbst

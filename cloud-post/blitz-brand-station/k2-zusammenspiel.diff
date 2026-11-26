@@ -1,0 +1,73 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+index e61dcf3..0aa8bbf 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+@@ -7896,7 +7896,8 @@ L.perspektive("same", (() => {
+         if (z.fehler) return "die Messung warf: " + z.fehler;
+         if (!(z.zuege >= 2000)) return "nur " + (z.zuege || 0) + " Wetter-Züge gelesen (100 Spieljahre = 2 000)";
+         if (!(z.takte >= 60)) return "nur " + (z.takte || 0) + " Takte der Welt im Gewitter";
+-        if (!(z.zuendSturm > 0)) return "kein Brand von selbst: 0 Zündungen im Gewitter";
++        if (z.blitzFehlt) return z.blitzFehlt;
++        if (!(z.zuendSturm > 0)) return "kein Brand von selbst: 0 Zündungen im Zeitraffer der Gewitter";
+         if (!(z.zuendOhne < z.zuendSturm)) return "der Gegenlauf ohne Gewitter zündet ebenso (" + z.zuendOhne + ") — keine Kopplung";
+         return null;
+     };
+@@ -7955,6 +7956,32 @@ L.perspektive("same", (() => {
+                             else lauf = 0;
+                         }
+                         aus.wetter = { zuege: nZ, sturm, sonne, sturmNachTrocken, jahre: a.jahre, zugS: Z };
++                        // DER BLITZ IM ZEITRAFFER DER WELT-ZEIT (blitz-brand): die Folge des EINEN Wetters (`_blitzeIn`, f(Saat, Zelle,
++                        // Schritt der Welt-Uhr)) an 4 Orten 40 km fern (die Natur, kein Eingriff des Spielers) über dieselben Spieljahre, je
++                        // Kreis der Hörweite; je Blitz der Fang am Fuß (`_blitzZuendet`: Wolke-Erde × langer Strom × Feuchte des Betts) —
++                        // dieselbe Achse, auf der Brand und Nachwuchs laufen. Bis blitz-brand rechnete die Station eine Zündung in 240 Takten
++                        // auf das Jahr hoch (× Sturm-Minuten ÷ 1 km², eine Zündung = Faktor ~74 700): das Band war unerreichbar.
++                        if (typeof r._blitzeIn !== "function" || typeof r._blitzZuendet !== "function") aus.blitz = { fehlt: "kein Blitz des Wetters (_blitzeIn · _blitzZuendet)" };
++                        else {
++                            const BS = C.BLITZ.schrittS;
++                            const Rk = C._umweltGesetz().kern.DONNER.hoerweiteM;
++                            const nK = Math.round((a.jahre * r._kalender().jahrK) / BS);
++                            const k0 = Math.floor(tA / BS);
++                            const bz = { orte: 0, jahre: a.jahre, blitze: 0, zuend: 0, flaecheKm2: 0 };
++                            const m0 = performance.now();
++                            for (let o = 0; o < 4; o++) {
++                                const [cx, cz] = [P.x + 40000 * Math.cos((o * Math.PI) / 2), P.z + 40000 * Math.sin((o * Math.PI) / 2)];
++                                for (let k = k0; k < k0 + nK; k += 5000)
++                                    for (const b of r._blitzeIn(k, Math.min(k + 5000, k0 + nK), cx, cz, Rk, true)) {
++                                        bz.blitze++;
++                                        if (r._blitzZuendet(b)) bz.zuend++;
++                                    }
++                                bz.orte++;
++                            }
++                            bz.flaecheKm2 = r3(bz.orte * Math.PI * (Rk / 1000) ** 2);
++                            bz.ms = Math.round(performance.now() - m0);
++                            aus.blitz = bz;
++                        }
+                         const eigen = Object.prototype.hasOwnProperty.call(r, "_brandEntfachen");
+                         const orig = r._brandEntfachen;
+                         let zuend = 0;
+@@ -8103,11 +8130,13 @@ L.perspektive("same", (() => {
+                     }
+                     const zs = (x.sturm || {}).zuend || 0;
+                     const zo = (x.ohne || {}).zuend || 0;
+-                    const sturmS = (a) => (w.sturm || 0) * (w.zugS || 120) / Math.max(1, w.jahre || 100);
+-                    const rate = (u1.takte || 240) > 0 ? (zs / ((u1.takte || 240) / 60)) * sturmS() / (u1.flaecheKm2 || 1) : null;
++                    // die Rate je km² und Jahr der Welt-Zeit: die Zündungen des Zeitraffers ÷ (Fläche × Jahre) — nie hochgerechnet
++                    const bz = x.blitz || {};
++                    const rate = bz.flaecheKm2 > 0 && bz.jahre > 0 ? bz.zuend / bz.flaecheKm2 / bz.jahre : null;
+                     const real = u1.realRateKm2a || 0.001;
+                     const faktor = rate > 0 ? Math.max(rate / real, real / rate) : null;
+-                    const zz = { zuege: w.zuege, takte: u1.takte || 240, sturm: w.sturm, sturmNachTrocken: w.sturmNachTrocken, zuendSturm: zs, zuendOhne: zo, zellen: [(x.sturm || {}).zellen, (x.ohne || {}).zellen], brandZurueck: x.brandZurueck, zurueck: x.zurueck, faecherOrte: R1g.werte.orte || 0, sturmJeOrt: R1g.werte.sturmJeOrt, nachTrockenOrte: R1g.werte.nachTrocken, akte: R1g.akte };
++                    const r3s = (v) => Math.round(v * 1e3) / 1e3;
++                    const zz = { zuege: w.zuege, takte: u1.takte || 240, sturm: w.sturm, sturmNachTrocken: w.sturmNachTrocken, zuendSturm: bz.zuend || 0, zuendTakt: zs, zuendOhne: zo, blitze: bz.blitze, blitzOrte: bz.orte, blitzFlaecheKm2: bz.flaecheKm2, blitzMs: bz.ms, blitzFehlt: bz.fehlt, zellen: [(x.sturm || {}).zellen, (x.ohne || {}).zellen], brandZurueck: x.brandZurueck, zurueck: x.zurueck, faecherOrte: R1g.werte.orte || 0, sturmJeOrt: R1g.werte.sturmJeOrt, nachTrockenOrte: R1g.werte.nachTrocken, akte: R1g.akte };
+                     const fl = x.fluss || {};
+                     const klassen = (zs > 0 ? 1 : 0) + (fl.sturm30 > fl.sonne30 ? 1 : 0) + (fl.duerre3t < fl.sonne30 ? 1 : 0);
+                     const s8 = x.saat8 || {};
+@@ -8120,7 +8149,7 @@ L.perspektive("same", (() => {
+                             1: {
+                                 werte: { brandRateKm2a: rate, faktorZurRealRate: faktor },
+                                 zeuge: zz,
+-                                nicht: "kein Brand von selbst: " + (u1.takte || 240) + " Takte der Welt im Gewitter zünden " + zs + ", in der Sonne " + zo + " (jeder Ruf von `_brandEntfachen` gezählt); die Front trägt " + w.sturm + " Sturm-Züge in " + w.jahre + " Spieljahren, " + w.sturmNachTrocken + " nach ≥ 10 trockenen Zügen — " + (R1g.fehlt || "kein Blitz schlägt ein") + " · am Fächer " + (R1g.werte.orte || 0) + " Orte × " + Math.round(R1g.werte.zuegeJeOrt || 0) + " Züge: im Mittel " + (R1g.werte.sturmJeOrt == null ? "—" : Math.round(R1g.werte.sturmJeOrt)) + " Gewitter je Ort, " + (R1g.werte.nachTrocken || 0) + " nach Trockenheit",
++                                nicht: (bz.fehlt || "der Zeitraffer der Welt-Zeit: " + bz.jahre + " Spieljahre × " + bz.orte + " Orte (" + bz.flaecheKm2 + " km²) tragen " + bz.blitze + " Blitze und " + bz.zuend + " Zündungen (" + (rate == null ? "—" : rate.toExponential(2)) + " je km²·a, Faktor " + (faktor == null ? "—" : r3s(faktor)) + " zur Real-Rate " + real + ")") + "; " + (u1.takte || 240) + " Takte der Welt im Gewitter zünden " + zs + ", in der Sonne " + zo + " (jeder Ruf von `_brandEntfachen` gezählt); die Front trägt " + w.sturm + " Sturm-Züge in " + w.jahre + " Spieljahren, " + w.sturmNachTrocken + " nach ≥ 10 trockenen Zügen — " + (R1g.fehlt || "kein Blitz schlägt ein") + " · am Fächer " + (R1g.werte.orte || 0) + " Orte × " + Math.round(R1g.werte.zuegeJeOrt || 0) + " Züge: im Mittel " + (R1g.werte.sturmJeOrt == null ? "—" : Math.round(R1g.werte.sturmJeOrt)) + " Gewitter je Ort, " + (R1g.werte.nachTrocken || 0) + " nach Trockenheit",
+                             },
+                             2: {
+                                 werte: { klassenVonSelbst: klassen, steigungFaktor: null },

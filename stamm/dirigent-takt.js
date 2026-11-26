@@ -2385,6 +2385,7 @@ class AnazhRealm_dirigent_takt {
         this._tickSeason(); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
         this._ackerKoerperTakt(playerPos); // der Acker trägt Furche und Frucht im Stand seiner Saat (mensch.nahrung, phyto ACKER_GESETZ)
         this._tickRain(); // WETTER: sichtbarer Regen bei rainy/stormy (auf der Bild-Uhr)
+        this._blitzTakt(); // BLITZ: das Ereignis des EINEN Wetters je Schritt der Welt-Uhr — Ohr und Feuer lesen es (same.kopplung.gewalt#1)
         this._tickBrand(); // BRAND: das Feuer auf dem Feld, nur in brennenden Zellen (feld.K3#2)
         this._tickDruck(); // DRUCKWELLE: die Fristen der Ladungen und der Körper, die eine Welle trifft (same.physik.reaktion#2)
         this._tickCanopyStreaming();
