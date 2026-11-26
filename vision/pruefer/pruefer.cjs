@@ -7,13 +7,18 @@
 //        Reihenfolge per Saat gemischt) und GETRENNT davon die Zuordnung (zuordnung.json: Wahrheit, Herkunft, Hashes). Das Blatt nennt
 //        nur den Hash der Zuordnung. Der Prüfer bekommt NUR den Blatt-Ordner.
 //   node vision/pruefer/pruefer.cjs eichung --blatt <ordner> --zuordnung <ordner> --antworten <datei> [--aus <ordner>]
-//        Anker mit bekannter Wahrheit → Eichungs-Akte: ≥ 200 Anker und Trefferquote ≥ 0,8 heißt „scharf“, sonst „urteilt nicht“.
+//        Anker mit bekannter Wahrheit → Eichungs-Akte(n): ≥ 200 Anker und Trefferquote ≥ 0,8 heißt „scharf“, sonst „urteilt nicht“.
+//        JE ART × FORM eine Akte (<art>.<form>.<modell>.<hash>.json): die Teile eines Blatts fallen nach ihrer Form auseinander, jede
+//        Form braucht ihre eigenen ≥ 200 Anker — eine Klassen-Eichung trägt keine Folge. [--datum <ISO>] [--auftrag <datei>]
 //        In TEILEN (ein Prüfer-Kontext trägt nicht 200 Bilder): --blatt und --zuordnung tragen teil-01 …, --antworten ist ein Ordner
 //        mit teil-01.json … — EIN Modell, jeder Teil ein frischer Kontext, die Anker zählen zusammen; tragen die Teile zwei
 //        Herkünfte (Foto gegen Render UND gestufte Störung), trifft der Prüfer in JEDER ≥ 0,8. `blatt --teil 25` legt Teil-Blätter.
 //        Die Eich-Blätter je Art baut vision/pruefer/eichblatt.cjs (Anker tragen die Aufgabe der Sprosse, nie ein fremdes Motiv).
-//   node vision/pruefer/pruefer.cjs urteil  --blatt <ordner> --zuordnung <ordner> --antworten <datei> --eichung <akte>
-//                                           [--akten <ordner>] [--richter <ordner> [--vorlage <datei>]]
+//   node vision/pruefer/pruefer.cjs urteil  --blatt <ordner> --zuordnung <ordner> --antworten <datei | ordner> [--eichung <akte | ordner>]
+//                                           [--akten <ordner>] [--richter <ordner> [--vorlage <datei>]] [--auftrag <datei>]
+//        In TEILEN wie die Eichung (teil-01 …, Antworten als Ordner): die Aufgaben zählen zusammen. Die Eichungs-Akte wählt das
+//        Werkzeug nach Art × Form × Modell aus vision/pruefer/eichung; der Auftrags-Text (pruefer-auftrag.md, sein Hash steht in
+//        jeder Akte) muss der der Eichung sein — ein anderer Text ist ein anderes Modell.
 //        Antworten → Trefferquote, exaktes Binomial-Intervall, Urteil gegen die WÖRTLICHE Schwelle der Sprosse (zensus.json) →
 //        Prüfer-Akte; mit --richter dazu die Fahrt für buche-2 (der Preis kommt aus der Vorlage der Mess-Sitzung, sonst höchstens Kern).
 //   node vision/pruefer/pruefer.cjs --selftest     gepflanzte Täter, jeder beim Namen
@@ -29,7 +34,7 @@
 //   Kennung>", "kontext": "<Kennung des frischen Kontexts>" }, "antworten": [ { "nr": 1, "antwort": "A" } ] }
 //
 // DIE WÄNDE (jede mit Täter im Selbsttest): falscher Hash (Bild, Blatt, Zuordnung, Eichung) → verweigert · ohne scharfe Eichung
-// desselben Modells und derselben Art → verweigert · Bauer = Prüfer → verweigert · Schlagseite (eine Seite, ein Etikett über Zufall,
+// desselben Modells, derselben Art UND Form und desselben Auftrags-Texts → verweigert · Bauer = Prüfer → verweigert · Schlagseite (eine Seite, ein Etikett über Zufall,
 // p < 0,01) → verweigert · unter 0,8 an den Fang-Aufgaben → verweigert · unter 40 Paaren → verweigert · ungleiche Form eines Paars
 // (Format, Pixelmaß) → verweigert („Form-Leck“) · Schwelle nicht im Satz oder Maß nicht getragen → verweigert, nie geraten.
 // Wo ein ratender Prüfer GRÜN läse (`stumpf: "gruen"` im Zensus), verlangt das Urteil ≥ 8 Fang-Aufgaben im Blatt und eine Eichung,
@@ -243,73 +248,119 @@ function schlagseiteVon(zeilen, erlaubt) {
 }
 
 // ── EICHUNG ──
+// JE ART × FORM (E1, 26.11.): eine Klassen-Eichung trägt nur Klassen-Sprossen, eine Folge-Eichung nur Folge-Sprossen — jede Form
+// braucht ihre EIGENEN ≥ 200 Anker bei ≥ 0,8 (gemessen am ersten Lauf: 20 Folge-Anker bei 0,60 ritten auf 200 Klassen-Ankern bei
+// 0,965). Die Teile eines Blatts fallen darum nach ihrer Form in je EINE Akte; `eichung` gibt die Liste der Akten zurück.
 // in TEILEN: blattDir und zuDir tragen teil-01 …, antwortDatei ist ein Ordner mit teil-01.json … — jeder Teil hält seine eigene
-// Hash-Kette, EIN Modell urteilt alle Teile, die Anker zählen zusammen, die Schlagseite misst sich über alle Teile gleicher Wahl
-function eichungTeile(blattDir, zuDir, antwortDir, datum, teile) {
+// Hash-Kette, EIN Modell urteilt alle Teile, die Anker zählen je Form zusammen, die Schlagseite misst sich je Form
+function eichungTeile(blattDir, zuDir, antwortDir, datum, teile, auftrag) {
     const Rs = teile.map((t) => {
         const af = path.join(antwortDir, t + ".json");
         if (!fs.existsSync(af)) weg("Teil " + t + " ist unbeantwortet (" + af + " fehlt) — eine Eichung wird ganz gefahren");
         try { return { t, ...zaehle(path.join(blattDir, t), path.join(zuDir, t), af) }; } catch (e) { if (e instanceof Verweigert) weg(t + ": " + e.message); throw e; }
     });
     const eins = (f, was) => { const m = [...new Set(Rs.map(f))]; if (m.length !== 1) weg("die Teile tragen nicht EIN " + was + ": " + m.join(" | ")); return m[0]; };
-    const art = eins((R) => R.Z.art, "Art"), modell = eins((R) => R.A.pruefer.modell, "Modell"), bauer = eins((R) => R.Z.bauer, "Bauer");
+    eins((R) => R.Z.art, "Art"); eins((R) => R.A.pruefer.modell, "Modell"); eins((R) => R.Z.bauer, "Bauer");
     for (const R of Rs) {
         if (!R.Z.anker) weg(R.t + ": das Blatt ist kein Anker-Blatt");
         if (R.zeilen.some((z) => z.richtig === null)) weg(R.t + ": ein Anker ohne Wahrheit");
         if (!["fremd", "stoerung", "spiel"].includes(R.Z.herkunft)) weg(R.t + ": Anker ohne Herkunft");
     }
+    return [...new Set(Rs.map((R) => R.Z.form))].map((form) => eichAkte(Rs.filter((R) => R.Z.form === form), datum, auftrag));
+}
+// EINE Akte aus den Läufen EINER Form (ein Blatt oder seine Teile)
+function eichAkte(Rs, datum, auftrag) {
+    const Z0 = Rs[0].Z, modell = Rs[0].A.pruefer.modell, inTeilen = Rs[0].t !== undefined;
     const gruppen = new Map();
-    for (const R of Rs) { const k = R.Z.form + "|" + (R.Z.optionen || []).join("|"); if (!gruppen.has(k)) gruppen.set(k, { erlaubt: R.Z.form === "paar" ? ["A", "B"] : R.Z.form === "klasse" ? R.Z.optionen : null, zeilen: [] }); gruppen.get(k).zeilen.push(...R.zeilen); }
+    for (const R of Rs) { const k = (R.Z.optionen || []).join("|"); if (!gruppen.has(k)) gruppen.set(k, { erlaubt: R.Z.form === "paar" ? ["A", "B"] : R.Z.form === "klasse" ? R.Z.optionen : null, zeilen: [] }); gruppen.get(k).zeilen.push(...R.zeilen); }
     const schlag = [...gruppen.values()].flatMap((g) => schlagseiteVon(g.zeilen, g.erlaubt));
     const n = Rs.reduce((m, R) => m + R.zeilen.length, 0), k = Rs.reduce((m, R) => m + R.zeilen.filter((z) => z.treffer).length, 0);
-    // JE HERKUNFT: trägt ein Blatt Anker zweier Herkünfte (Foto gegen Render UND gestufte Störung), so trifft der Prüfer in JEDER
+    // JE HERKUNFT: trägt eine Form Anker zweier Herkünfte (Foto gegen Render UND gestufte Störung), so trifft der Prüfer in JEDER
     // ≥ 0,8 — sonst trüge die leichte Hälfte die schwere (175 Störungs-Paare bei 0,95 und 48 Render-Paare bei 0,5 gäben 0,85)
     const jeHerkunft = {};
     for (const R of Rs) { const h = (jeHerkunft[R.Z.herkunft] = jeHerkunft[R.Z.herkunft] || { anker: 0, treffer: 0 }); h.anker += R.zeilen.length; h.treffer += R.zeilen.filter((z) => z.treffer).length; }
     const schwach = Object.entries(jeHerkunft).filter(([, h]) => h.treffer / h.anker < SCHARF).map(([name, h]) => "Herkunft „" + name + "“ " + h.treffer + " von " + h.anker + " = " + (h.treffer / h.anker).toFixed(3) + " < " + SCHARF);
     const scharf = n >= MIN_ANKER && k / n >= SCHARF && !schlag.length && !schwach.length;
-    const liste = (f) => [...new Set(Rs.map(f))].join("+");
-    return mitSumme({ eichung: true, art, form: liste((R) => R.Z.form), herkunft: liste((R) => R.Z.herkunft), modell, pruefer: { modell, kontext: Rs.map((R) => R.A.pruefer.kontext) }, bauer, frage: [...new Set(Rs.map((R) => R.Z.frage))], anker: n, treffer: k, quote: Math.round((k / n) * 1e4) / 1e4, intervall95: intervall(k, n), schlagseite: schlag, scharf,
-        grund: scharf ? "scharf: " + k + " von " + n + " Ankern in " + Rs.length + " Teilen" : n < MIN_ANKER ? "urteilt nicht: " + n + " Anker < " + MIN_ANKER : schlag.length ? "urteilt nicht: Schlagseite — " + schlag[0] : schwach.length ? "urteilt nicht: " + schwach.join(" · ") : "urteilt nicht: " + k + " von " + n + " = " + (k / n).toFixed(3) + " < " + SCHARF,
-        jeHerkunft, teile: Rs.map((R) => ({ teil: R.t, form: R.Z.form, herkunft: R.Z.herkunft, anker: R.zeilen.length, treffer: R.zeilen.filter((z) => z.treffer).length, zuordnungSha256: R.blatt.zuordnungSha256 })),
-        zuordnungSha256: sha256(Rs.map((R) => R.blatt.zuordnungSha256).join("\n")), datum });
+    const liste = (f) => [...new Set(Rs.map(f))];
+    return mitSumme({ eichung: true, art: Z0.art, form: Z0.form, herkunft: liste((R) => R.Z.herkunft).join("+"), modell, auftragSha256: auftrag || null, pruefer: { modell, kontext: inTeilen ? Rs.map((R) => R.A.pruefer.kontext) : Rs[0].A.pruefer.kontext }, bauer: Z0.bauer, frage: inTeilen ? liste((R) => R.Z.frage) : Z0.frage, anker: n, treffer: k, quote: Math.round((k / n) * 1e4) / 1e4, intervall95: intervall(k, n), schlagseite: schlag, scharf,
+        grund: scharf ? "scharf: " + k + " von " + n + " Ankern" + (inTeilen ? " in " + Rs.length + " Teilen" : "") : n < MIN_ANKER ? "urteilt nicht: " + n + " Anker < " + MIN_ANKER + " (" + k + " von " + n + " = " + (k / n).toFixed(3) + ")" : schlag.length ? "urteilt nicht: Schlagseite — " + schlag[0] : k / n < SCHARF ? "urteilt nicht: " + k + " von " + n + " = " + (k / n).toFixed(3) + " < " + SCHARF : "urteilt nicht: " + schwach.join(" · "),
+        jeHerkunft, teile: inTeilen ? Rs.map((R) => ({ teil: R.t, form: R.Z.form, herkunft: R.Z.herkunft, anker: R.zeilen.length, treffer: R.zeilen.filter((z) => z.treffer).length, zuordnungSha256: R.blatt.zuordnungSha256 })) : undefined,
+        zuordnungSha256: inTeilen ? sha256(Rs.map((R) => R.blatt.zuordnungSha256).join("\n")) : Rs[0].blatt.zuordnungSha256, datum });
 }
-function eichung(blattDir, zuDir, antwortDatei, datum) {
+// → die LISTE der Akten, je Form eine
+function eichung(blattDir, zuDir, antwortDatei, datum, auftrag) {
     const teile = teileVon(blattDir);
-    if (teile) return teile.length ? eichungTeile(blattDir, zuDir, antwortDatei, datum, teile) : weg("kein Blatt: weder blatt.json noch teil-01 … in " + blattDir);
+    if (teile) return teile.length ? eichungTeile(blattDir, zuDir, antwortDatei, datum, teile, auftrag) : weg("kein Blatt: weder blatt.json noch teil-01 … in " + blattDir);
     const R = zaehle(blattDir, zuDir, antwortDatei);
     if (!R.Z.anker) weg("das Blatt ist kein Anker-Blatt (es nennt die Sprosse " + R.Z.sprosse + ")");
     if (R.zeilen.some((z) => z.richtig === null)) weg("ein Anker ohne Wahrheit: jede Aufgabe der Eichung trägt ihre bekannte Antwort");
     if (!["fremd", "stoerung", "spiel"].includes(R.Z.herkunft)) weg("Anker ohne Herkunft: fremd (Foto gegen Render) | stoerung (gestuft) | spiel (Wahrheit aus dem Samen)");
-    const n = R.zeilen.length, k = R.zeilen.filter((z) => z.treffer).length;
-    const scharf = n >= MIN_ANKER && k / n >= SCHARF && !R.schlagseite.length;
-    return mitSumme({ eichung: true, art: R.Z.art, form: R.Z.form, herkunft: R.Z.herkunft, modell: R.A.pruefer.modell, pruefer: R.A.pruefer, bauer: R.Z.bauer, frage: R.Z.frage, anker: n, treffer: k, quote: Math.round((k / n) * 1e4) / 1e4, intervall95: intervall(k, n), schlagseite: R.schlagseite, scharf,
-        grund: scharf ? "scharf: " + k + " von " + n + " Ankern" : n < MIN_ANKER ? "urteilt nicht: " + n + " Anker < " + MIN_ANKER : R.schlagseite.length ? "urteilt nicht: Schlagseite — " + R.schlagseite[0] : "urteilt nicht: " + k + " von " + n + " = " + (k / n).toFixed(3) + " < " + SCHARF,
-        zuordnungSha256: R.blatt.zuordnungSha256, datum });
+    return [eichAkte([R], datum, auftrag)];
+}
+// DER AUFTRAGS-TEXT (E3): der eingefrorene Prüfer ist Modell + Effort + der Text, mit dem er gerufen wird — ein anderer Text ist
+// ein anderes Modell. Der Hash gilt dem Text zwischen den Marken von pruefer-auftrag.md (Zeilenenden und Rand genormt)
+const AUFTRAG = path.join(HIER, "pruefer-auftrag.md");
+function auftragSha(datei) {
+    const f = datei || AUFTRAG;
+    if (!fs.existsSync(f)) weg("der Auftrags-Text fehlt: " + f);
+    const t = fs.readFileSync(f, "utf8").replace(/\r\n/g, "\n"), m = /<!-- AUFTRAG ANFANG -->\n([\s\S]*?)\n<!-- AUFTRAG ENDE -->/.exec(t);
+    return sha256((m ? m[1] : t).trim());
+}
+// die Eichungs-Akte einer Art × Form × eines Modells: eine Datei oder der Ordner der Akten (vision/pruefer/eichung)
+function eichDatei(ort, { art, form, modell }) {
+    if (!ort || !fs.existsSync(ort)) weg("ungeeicht: keine Eichungs-Akte — ohne Eichung urteilt der Prüfer nicht (R11)");
+    if (!fs.statSync(ort).isDirectory()) return ort;
+    const alle = fs.readdirSync(ort).filter((n) => n.endsWith(".json")).map((n) => ({ n, E: lies(path.join(ort, n)) })).filter((x) => x.E.eichung);
+    const passt = alle.filter((x) => x.E.art === art && x.E.form === form && x.E.modell === modell);
+    const scharf = passt.find((x) => x.E.scharf === true) || passt[0];
+    if (!scharf) weg("ungeeicht: keine Eichungs-Akte für Art „" + art + "“ × Form „" + form + "“ × Modell „" + modell + "“ in " + path.basename(ort) + " (dort: " + (alle.map((x) => x.E.art + "/" + x.E.form + " " + x.E.modell).join(" · ") || "nichts") + ") — je Art × Form eigene ≥ " + MIN_ANKER + " Anker (R11)");
+    return path.join(ort, scharf.n);
 }
 // eine Eichungs-Akte gegen einen Lauf: scharf, dasselbe Modell, dieselbe Art, die Herkunft trägt die Richtung
-function eichungTraegt(E, { modell, art, stumpf }) {
+function eichungTraegt(E, { modell, art, form, stumpf, auftrag }) {
     if (!E || !E.eichung) return "ungeeicht: keine Eichungs-Akte";
     if (summe(E) !== E.pruefsumme) return "falscher Hash: die Prüfsumme der Eichungs-Akte stimmt nicht";
     if (!(E.anker >= MIN_ANKER && E.treffer / E.anker >= SCHARF && E.scharf === true && !(E.schlagseite || []).length)) return "ungeeicht: " + (E.grund || "nicht scharf") + " (scharf heißt ≥ " + MIN_ANKER + " Anker bei ≥ " + SCHARF + ")";
     if (E.modell !== modell) return "ungeeicht: die Eichung gilt dem Modell „" + E.modell + "“, geurteilt hat „" + modell + "“";
     if (E.art !== art) return "ungeeicht: die Eichung gilt der Art „" + E.art + "“, die Sprosse ist „" + art + "“";
+    if (E.form !== form) return "ungeeicht: die Eichung gilt der Form „" + E.form + "“, das Blatt ist „" + form + "“ (je Art × Form eigene Anker — eine Klassen-Eichung trägt keine Folge)";
+    if ((E.auftragSha256 || null) !== (auftrag || null)) return "ungeeicht: die Eichung gilt dem Auftrags-Text " + String(E.auftragSha256).slice(0, 12) + ", geurteilt wurde mit " + String(auftrag).slice(0, 12) + " (ein anderer Text ist ein anderes Modell)";
     if (stumpf === "gruen" && !String(E.herkunft).split("+").every((h) => ["fremd", "stoerung"].includes(h))) return "ungeeicht: ein ratender Prüfer läse hier GRÜN — die Wahrheit der Anker muss aus fremder Herkunft oder gestufter Störung stammen, nicht aus „" + E.herkunft + "“";
     return null;
 }
 
 // ── URTEIL ──
-function urteil(blattDir, zuDir, antwortDatei, eichDatei, datum, zensus) {
-    const R = zaehle(blattDir, zuDir, antwortDatei);
+// die Läufe eines Blatts in TEILEN (teil-01 …, Antworten als Ordner) als EIN Lauf: jeder Teil hält seine Hash-Kette, alle tragen
+// dieselbe Sprosse, dasselbe Modell, denselben Kopf — die Aufgaben zählen zusammen, die Schlagseite misst sich über alle
+function zaehleAlle(blattDir, zuDir, antwort) {
+    const teile = teileVon(blattDir);
+    if (!teile) return zaehle(blattDir, zuDir, antwort);
+    if (!teile.length) weg("kein Blatt: weder blatt.json noch teil-01 … in " + blattDir);
+    const Rs = teile.map((t) => {
+        const af = path.join(antwort, t + ".json");
+        if (!fs.existsSync(af)) weg("Teil " + t + " ist unbeantwortet (" + af + " fehlt) — ein Blatt wird ganz geurteilt");
+        try { return zaehle(path.join(blattDir, t), path.join(zuDir, t), af); } catch (e) { if (e instanceof Verweigert) weg(t + ": " + e.message); throw e; }
+    });
+    for (const [f, was] of [[(R) => R.Z.sprosse, "Sprosse"], [(R) => R.Z.art, "Art"], [(R) => R.Z.form, "Form"], [(R) => R.Z.bauer, "Bauer"], [(R) => R.Z.sha, "Kopf"], [(R) => R.Z.geraet, "Gerät"], [(R) => R.Z.frage, "Frage"], [(R) => (R.Z.optionen || []).join("|"), "Options-Satz"], [(R) => R.A.pruefer.modell, "Modell"]]) {
+        const m = [...new Set(Rs.map(f))];
+        if (m.length !== 1) weg("die Teile tragen nicht EIN " + was + ": " + m.join(" | "));
+    }
+    const zeilen = Rs.flatMap((R, i) => R.zeilen.map((z) => ({ ...z, teil: teile[i] })));
+    const Z = Rs[0].Z, fang = zeilen.filter((z) => z.fang);
+    return { blatt: { zuordnungSha256: sha256(Rs.map((R) => R.blatt.zuordnungSha256).join("\n")) }, Z, A: { pruefer: { modell: Rs[0].A.pruefer.modell, kontext: Rs.map((R) => R.A.pruefer.kontext) } }, zeilen, mess: zeilen.filter((z) => !z.fang), fang: { n: fang.length, treffer: fang.filter((z) => z.treffer).length },
+        schlagseite: schlagseiteVon(zeilen, Z.form === "paar" ? ["A", "B"] : Z.form === "klasse" ? Z.optionen : null), teile: teile.length };
+}
+function urteil(blattDir, zuDir, antwortDatei, eichOrt, datum, zensus, auftrag) {
+    const R = zaehleAlle(blattDir, zuDir, antwortDatei);
     if (R.Z.anker) weg("das Blatt ist ein Anker-Blatt — `eichung`, nicht `urteil`");
     const z = sprosseVon(R.Z.sprosse, zensus) || weg("die Sprosse " + R.Z.sprosse + " steht nicht im Zensus der Prüfer-Sprossen");
     if (!["2afc", "skala", "ordnen"].includes(z.art)) weg("Art „" + z.art + "“ trägt der Blind-Prüfer nicht: " + ((z.schwelle && z.schwelle.grund) || ""));
     if (z.art !== R.Z.art) weg("das Blatt nennt die Art „" + R.Z.art + "“, der Zensus die Art „" + z.art + "“");
     if (!z.schwelle.mass) weg("verweigert: " + z.schwelle.grund);
-    if (!eichDatei || !fs.existsSync(eichDatei)) weg("ungeeicht: keine Eichungs-Akte — ohne Eichung urteilt der Prüfer nicht (R11)");
-    const eichRoh = fs.readFileSync(eichDatei, "utf8");
+    const eichName = eichDatei(eichOrt, { art: z.art, form: R.Z.form, modell: R.A.pruefer.modell });
+    const eichRoh = fs.readFileSync(eichName, "utf8");
     const E = JSON.parse(eichRoh);
-    const eg = eichungTraegt(E, { modell: R.A.pruefer.modell, art: z.art, stumpf: z.stumpf });
+    const eg = eichungTraegt(E, { modell: R.A.pruefer.modell, art: z.art, form: R.Z.form, stumpf: z.stumpf, auftrag });
     if (eg) weg(eg);
     if (R.schlagseite.length) weg("Schlagseite: " + R.schlagseite.join(" · ") + " — der Prüfer urteilt nicht");
     if (z.stumpf === "gruen" && R.fang.n < MIN_FANG) weg("Fang-Aufgaben fehlen: " + R.fang.n + " < " + MIN_FANG + " — ein ratender Prüfer läse hier GRÜN, das Blatt braucht gepflanzte Aufgaben mit bekannter Antwort");
@@ -334,8 +385,8 @@ function urteil(blattDir, zuDir, antwortDatei, eichDatei, datum, zensus) {
     const u = urteilVon(quote, z.schwelle);
     if (k !== undefined) wert = (zaehlt === "ja" ? "„" + R.Z.optionen[0] + "“" : zaehlt === "fehler" ? "getäuscht" : "Treffer") + " " + k + " von " + n + " = " + (quote * 100).toFixed(1).replace(".", ",") + " % [" + iv.map((x) => (x * 100).toFixed(1).replace(".", ",")).join("–") + "] gegen „" + z.schwelle.wort + "“" + (lesart ? " · " + lesart : "");
     const [leiter, nr] = R.Z.sprosse.split("#");
-    return mitSumme({ pruefer: R.A.pruefer, leiter, sprosse: +nr, teil: z.teil, art: z.art, form: R.Z.form, schwelle: z.schwelle, zaehlt, stumpf: z.stumpf || null, sha: R.Z.sha, geraet: R.Z.geraet, datum, modell: R.A.pruefer.modell, bauer: R.Z.bauer, frage: R.Z.frage,
-        paare: n, gezaehlt: k === undefined ? null : k, quote, intervall95: iv, lesart, fang: R.fang, schlagseite: R.schlagseite, eichung: { datei: path.basename(eichDatei), sha256: sha256(eichRoh) }, blatt: { zuordnungSha256: R.blatt.zuordnungSha256, bilder: R.zeilen.flatMap((x) => x.sha256) }, wert, urteil: u });
+    return mitSumme({ pruefer: R.A.pruefer, leiter, sprosse: +nr, teil: z.teil, art: z.art, form: R.Z.form, schwelle: z.schwelle, zaehlt, stumpf: z.stumpf || null, sha: R.Z.sha, geraet: R.Z.geraet, datum, modell: R.A.pruefer.modell, auftragSha256: auftrag || null, bauer: R.Z.bauer, frage: R.Z.frage, teile: R.teile,
+        paare: n, gezaehlt: k === undefined ? null : k, quote, intervall95: iv, lesart, fang: R.fang, schlagseite: R.schlagseite, eichung: { datei: path.basename(eichName), sha256: sha256(eichRoh) }, blatt: { zuordnungSha256: R.blatt.zuordnungSha256, bilder: R.zeilen.flatMap((x) => x.sha256) }, wert, urteil: u });
 }
 
 // ── DER LESER (buche-2 fahrtUrteil): hält die Prüfer-Akte einer Fahrt? → null oder der Grund beim Namen ──
@@ -360,7 +411,7 @@ function akteGueltig(ref, erwartet, o = {}) {
     if ((a.schlagseite || []).length) return "Schlagseite: " + a.schlagseite[0];
     if (z.stumpf === "gruen" && !(a.fang && a.fang.n >= MIN_FANG)) return "Fang-Aufgaben fehlen (ein ratender Prüfer läse hier GRÜN)";
     if (a.fang && a.fang.n && a.fang.treffer / a.fang.n < SCHARF) return "Fang-Aufgaben verfehlt: " + a.fang.treffer + " von " + a.fang.n;
-    if (!a.pruefer || !a.pruefer.kontext || a.pruefer.kontext === a.bauer) return "Bauer = Prüfer (oder Prüfer ohne Kennung)";
+    if (!a.pruefer || !a.pruefer.kontext || [].concat(a.pruefer.kontext).includes(a.bauer)) return "Bauer = Prüfer (oder Prüfer ohne Kennung)";
     const quote = a.schwelle.mass === "median" ? a.quote : Math.round((a.gezaehlt / a.paare) * 1e4) / 1e4;
     if (quote !== a.quote || zaehltVon(z) !== a.zaehlt) return "die Quote der Akte widerspricht ihren Zahlen";
     const u = urteilVon(quote, z.schwelle);
@@ -371,7 +422,7 @@ function akteGueltig(ref, erwartet, o = {}) {
     const eRoh = fs.readFileSync(ef, "utf8");
     if (sha256(eRoh) !== a.eichung.sha256) return "falscher Hash: die Eichungs-Akte ist nicht die des Urteils";
     const E = JSON.parse(eRoh);
-    const eg = eichungTraegt(E, { modell: a.modell, art: a.art, stumpf: z.stumpf });
+    const eg = eichungTraegt(E, { modell: a.modell, art: a.art, form: a.form, stumpf: z.stumpf, auftrag: a.auftragSha256 });
     if (eg) return eg;
     if (E.datum && a.datum && Date.parse(E.datum) > Date.parse(a.datum)) return "ungeeicht: die Eichung ist jünger als das Urteil";
     return null;
@@ -420,7 +471,7 @@ function selftest() {
             const gleich = o.identisch && !fang;
             fs.writeFileSync(path.join(paare, i + "a.png"), png(200, 30, 30)); // „Foto“: rot
             fs.writeFileSync(path.join(paare, i + "b.png"), gleich ? png(200, 30, 30) : png(30, 30, 200, o.leck && i === 3 ? 2 : 1)); // „Render“: blau
-            aufgaben.push(o.form === "klasse" ? { bilder: [i % 2 ? i + "a.png" : i + "b.png"], wahr: i % 2 ? "Foto" : "Render" } : { bilder: [i + "a.png", i + "b.png"], wahr: 0, ...(fang ? { fang: true } : {}) });
+            aufgaben.push(o.form === "klasse" ? { bilder: [i % 2 ? i + "a.png" : i + "b.png"], wahr: i % 2 ? "Foto" : "Render" } : o.form === "folge" ? { bilder: [i + "a.png", i + "b.png"], wahr: true } : { bilder: [i + "a.png", i + "b.png"], wahr: 0, ...(fang ? { fang: true } : {}) });
         }
         fs.writeFileSync(path.join(paare, "paare.json"), JSON.stringify({ sprosse: o.sprosse || null, art: o.art || "2afc", form: o.form || "paar", frage: "Welches Bild ist das Foto?", optionen: o.form === "klasse" ? ["Foto", "Render"] : undefined, bauer: "bauer-kontext-1", sha: "2da17e2e72aa", geraet: "Radeon 890M", herkunft: o.herkunft, aufgaben }));
         const B = blattBauen(paare, blatt, zu, o.saat || 7);
@@ -436,18 +487,22 @@ function selftest() {
     const bildLesenIdat = (buf) => { for (let o = 8; o < buf.length; ) { const len = buf.readUInt32BE(o), typ = buf.toString("latin1", o + 4, o + 8); if (typ === "IDAT") return buf.subarray(o + 8, o + 8 + len); o += 12 + len; } };
     const siehtKlasse = (a, r, bildA) => (zlib.inflateSync(bildLesenIdat(bildA))[1] === 200 ? "Foto" : "Render");
     const raet = (a, r) => (r() < 0.5 ? "A" : "B");
+    const siehtFolge = (a, r, bildA) => (zlib.inflateSync(bildLesenIdat(bildA))[1] === 200 ? "AB" : "BA");
+    const AUFTRAG_T = sha256("der Auftrags-Text der Probe");
+    const SIEHT = { paar: sieht, klasse: siehtKlasse, folge: siehtFolge }, RAET = { paar: raet, klasse: (a, r) => (r() < 0.5 ? "Foto" : "Render"), folge: (a, r) => (r() < 0.5 ? "AB" : "BA") };
     const eichAkte = (o = {}) => {
-        const L = lauf({ n: o.n || 200, form: "klasse", art: o.art || "2afc", herkunft: o.herkunft || "fremd", denkt: o.denkt || siehtKlasse, modell: o.modell });
-        const E = eichung(L.blatt, L.zu, L.af, "2026-11-26T10:00:00Z");
+        const form = o.form || "paar";
+        const L = lauf({ n: o.n || 200, form, art: o.art || "2afc", herkunft: o.herkunft || "fremd", denkt: o.raet ? RAET[form] : SIEHT[form], modell: o.modell });
+        const E = eichung(L.blatt, L.zu, L.af, "2026-11-26T10:00:00Z", o.auftrag || AUFTRAG_T)[0];
         const f = path.join(X, "eichung-" + lfd + ".json");
         fs.writeFileSync(f, JSON.stringify(E, null, 1) + "\n");
         return { E, f };
     };
     const SCHARF_E = eichAkte();
-    const U = (L, ef) => urteil(L.blatt, L.zu, L.af, ef === undefined ? SCHARF_E.f : ef, "2026-11-26T11:00:00Z", ZENSUS_T);
+    const U = (L, ef, auftrag) => urteil(L.blatt, L.zu, L.af, ef === undefined ? SCHARF_E.f : ef, "2026-11-26T11:00:00Z", ZENSUS_T, auftrag || AUFTRAG_T);
 
     pruefe("Eichung: ein sehender Prüfer trifft 200 von 200 Ankern fremder Herkunft — scharf", () => (SCHARF_E.E.scharf && SCHARF_E.E.treffer === 200 ? true : JSON.stringify(SCHARF_E.E).slice(0, 200)));
-    pruefe("Eichung: ein ratender Prüfer bleibt unter 0,8 — „urteilt nicht“", () => { const E = eichAkte({ denkt: (a, r) => (r() < 0.5 ? "Foto" : "Render") }).E; return !E.scharf && /^urteilt nicht: \d+ von 200/.test(E.grund) ? true : E.grund; });
+    pruefe("Eichung: ein ratender Prüfer bleibt unter 0,8 — „urteilt nicht“", () => { const E = eichAkte({ raet: true }).E; return !E.scharf && /^urteilt nicht: \d+ von 200/.test(E.grund) ? true : E.grund; });
     pruefe("Eichung: 199 Anker sind keine Eichung — „urteilt nicht: 199 Anker < 200“", () => { const E = eichAkte({ n: 199 }).E; return !E.scharf && /199 Anker < 200/.test(E.grund) ? true : E.grund; });
     pruefe("Blatt: Metadaten fallen (tEXt), die Namen verraten nichts, die Zuordnung liegt getrennt", () => {
         const L = lauf({ n: 40, sprosse: "t.hoch#1", art: "ordnen", denkt: sieht });
@@ -467,10 +522,10 @@ function selftest() {
     pruefe("Täter FALSCHER HASH (Zuordnung): die Wahrheit nach dem Lauf geändert — verweigert", () => { const L = lauf({ n: 40, sprosse: "t.hoch#1", art: "ordnen", denkt: sieht }); const f = path.join(L.zu, "zuordnung.json"); fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace('"richtig": "A"', '"richtig": "B"')); return verweigert(/^falscher Hash: die Zuordnung ist nicht die des Blatts/, () => U(L)); });
     pruefe("Täter FALSCHER HASH (Antworten): die Antworten nennen ein anderes Blatt — verweigert", () => verweigert(/^falscher Hash: die Antworten nennen ein anderes Blatt/, () => U(lauf({ n: 40, sprosse: "t.hoch#1", art: "ordnen", denkt: sieht, falschesBlatt: true }))));
     pruefe("Täter UNGEEICHT (keine Akte): verweigert", () => verweigert(/^ungeeicht: keine Eichungs-Akte/, () => U(lauf({ n: 40, sprosse: "t.hoch#1", art: "ordnen", denkt: sieht }), null)));
-    pruefe("Täter UNGEEICHT (ratender Prüfer, Akte „urteilt nicht“): verweigert", () => { const E = eichAkte({ art: "ordnen", denkt: (a, r) => (r() < 0.5 ? "Foto" : "Render") }); return verweigert(/^ungeeicht: urteilt nicht: \d+ von 200/, () => U(lauf({ n: 40, sprosse: "t.hoch#1", art: "ordnen", denkt: sieht }), E.f)); });
+    pruefe("Täter UNGEEICHT (ratender Prüfer, Akte „urteilt nicht“): verweigert", () => { const E = eichAkte({ art: "ordnen", raet: true }); return verweigert(/^ungeeicht: urteilt nicht: \d+ von 200/, () => U(lauf({ n: 40, sprosse: "t.hoch#1", art: "ordnen", denkt: sieht }), E.f)); });
     pruefe("Täter UNGEEICHT (anderes Modell): die Eichung von Modell 1 trägt Modell 2 nicht — verweigert", () => verweigert(/^ungeeicht: die Eichung gilt dem Modell „modell-fest-1“, geurteilt hat „modell-fest-2“/, () => U(lauf({ n: 48, fang: 8, sprosse: "t.tief#1", denkt: sieht, modell: "modell-fest-2" }))));
     pruefe("Täter UNGEEICHT (Anker aus dem Spiel, wo ein Ratender GRÜN läse): verweigert", () => { const E = eichAkte({ herkunft: "spiel" }); return verweigert(/^ungeeicht: ein ratender Prüfer läse hier GRÜN/, () => U(lauf({ n: 48, fang: 8, sprosse: "t.tief#1", denkt: sieht }), E.f)); });
-    pruefe("Täter UNGEEICHT (Eichungs-Akte von Hand auf „scharf“ gestellt): die Prüfsumme fasst es — verweigert", () => { const E = eichAkte({ art: "ordnen", denkt: (a, r) => (r() < 0.5 ? "Foto" : "Render") }); const e = lies(E.f); e.scharf = true; e.treffer = 200; fs.writeFileSync(E.f, JSON.stringify(e)); return verweigert(/^falscher Hash: die Prüfsumme der Eichungs-Akte/, () => U(lauf({ n: 40, sprosse: "t.hoch#1", art: "ordnen", denkt: sieht }), E.f)); });
+    pruefe("Täter UNGEEICHT (Eichungs-Akte von Hand auf „scharf“ gestellt): die Prüfsumme fasst es — verweigert", () => { const E = eichAkte({ art: "ordnen", raet: true }); const e = lies(E.f); e.scharf = true; e.treffer = 200; fs.writeFileSync(E.f, JSON.stringify(e)); return verweigert(/^falscher Hash: die Prüfsumme der Eichungs-Akte/, () => U(lauf({ n: 40, sprosse: "t.hoch#1", art: "ordnen", denkt: sieht }), E.f)); });
     pruefe("Täter BAUER = PRÜFER: derselbe Kontext baute und prüft — verweigert", () => verweigert(/^Bauer = Prüfer: der Kontext „bauer-kontext-1“/, () => U(lauf({ n: 40, sprosse: "t.hoch#1", art: "ordnen", denkt: sieht, kontext: "bauer-kontext-1" }))));
     pruefe("Täter OHNE FANG: ein Blatt ohne Fang-Aufgaben gegen „≤ 55 %“ — verweigert", () => verweigert(/^Fang-Aufgaben fehlen: 0 < 8/, () => U(lauf({ n: 40, sprosse: "t.tief#1", denkt: raet }))));
     pruefe("Täter FANG VERFEHLT: der Prüfer rät auch an den gepflanzten Aufgaben — verweigert", () => verweigert(/^Fang-Aufgaben verfehlt: \d von 8/, () => U(lauf({ n: 208, fang: 8, identisch: true, sprosse: "t.tief#1", denkt: (z, r) => (z.fang ? (z.richtig === "A" ? "B" : r() < 0.6 ? "A" : "B") : raet(z, r)) }))));
@@ -500,6 +555,38 @@ function selftest() {
         fs.writeFileSync(path.join(dir, "t.hoch.1.json"), rohB);
         return /^falscher Hash: die Prüfsumme der Prüfer-Akte/.test(akteGueltig({ akte: "t.hoch.1.json", sha256: sha256(rohB) }, erw, o)) ? true : "die von Hand geänderte Akte hält";
     });
+    // E1 — je Art × Form: die Klassen-Eichung trägt keine Folge, die Paar-Eichung keine Klasse; E3 — ein anderer Auftrags-Text ist ein anderes Modell
+    pruefe("Täter KLASSEN-EICHUNG AN FOLGE-SPROSSE: 200 von 200 Klassen-Ankern scharf, das Blatt der Sprosse ist eine Folge — verweigert", () => { const E = eichAkte({ art: "ordnen", form: "klasse" }); return E.E.scharf ? verweigert(/^ungeeicht: die Eichung gilt der Form „klasse“, das Blatt ist „folge“/, () => U(lauf({ n: 40, form: "folge", sprosse: "t.hoch#1", art: "ordnen", denkt: siehtFolge }), E.f)) : E.E.grund; });
+    pruefe("Folge: mit der EIGENEN Folge-Eichung urteilt der Prüfer dieselbe Sprosse GRÜN (40 von 40 exakt)", () => { const a = U(lauf({ n: 40, form: "folge", sprosse: "t.hoch#1", art: "ordnen", denkt: siehtFolge }), eichAkte({ art: "ordnen", form: "folge" }).f); return a.urteil === "GRÜN" && a.form === "folge" && a.gezaehlt === 40 ? true : a.wert; });
+    pruefe("Täter ANDERER AUFTRAGS-TEXT: geeicht mit Text 1, geurteilt mit Text 2 — verweigert (ein anderer Text ist ein anderes Modell)", () => verweigert(/^ungeeicht: die Eichung gilt dem Auftrags-Text [0-9a-f]{12}, geurteilt wurde mit [0-9a-f]{12}/, () => U(lauf({ n: 40, sprosse: "t.hoch#1", art: "ordnen", denkt: sieht }), eichAkte({ art: "ordnen" }).f, sha256("ein anderer Text"))));
+    pruefe("Akten-Ordner: `urteil` wählt die Akte der Art × Form × des Modells; liegt nur die Klassen-Akte dort, verweigert es die Folge beim Namen", () => {
+        const ed = path.join(X, "eich-ordner");
+        fs.mkdirSync(ed, { recursive: true });
+        for (const o of [{ art: "ordnen", form: "klasse" }, { art: "ordnen", form: "paar" }, { art: "2afc", form: "paar" }]) { const E = eichAkte(o); fs.copyFileSync(E.f, path.join(ed, o.art + "." + o.form + ".json")); }
+        const a = U(lauf({ n: 40, sprosse: "t.hoch#1", art: "ordnen", denkt: sieht }), ed);
+        if (!(a.urteil === "GRÜN" && a.eichung.datei === "ordnen.paar.json")) return "falsche Akte: " + a.eichung.datei;
+        return verweigert(/^ungeeicht: keine Eichungs-Akte für Art „ordnen“ × Form „folge“ × Modell „modell-fest-1“ in eich-ordner \(dort: /, () => U(lauf({ n: 40, form: "folge", sprosse: "t.hoch#1", art: "ordnen", denkt: siehtFolge }), ed));
+    });
+    {
+        // das URTEIL in Teil-Blättern: 50 Paare in zwei Teilen, je Teil ein frischer Kontext — zusammen gezählt, ein fehlender Teil verweigert
+        const teilUrteil = (o = {}) => {
+            const d = path.join(X, "uteile" + ++lfd), paare = path.join(d, "paare");
+            fs.mkdirSync(paare, { recursive: true });
+            const aufgaben = [];
+            for (let i = 0; i < 50; i++) { fs.writeFileSync(path.join(paare, i + "a.png"), png(200, 30, 30)); fs.writeFileSync(path.join(paare, i + "b.png"), png(30, 30, 200)); aufgaben.push({ bilder: [i + "a.png", i + "b.png"], wahr: 0 }); }
+            fs.writeFileSync(path.join(paare, "paare.json"), JSON.stringify({ sprosse: "t.hoch#1", art: "ordnen", form: "paar", frage: "Welches Bild ist das Foto?", bauer: "bauer-kontext-1", sha: "2da17e2e72aa", geraet: "Radeon 890M", herkunft: "spiel", aufgaben }));
+            const T = teileBauen(paare, path.join(d, "blatt"), path.join(d, "zu"), 5, 25);
+            fs.mkdirSync(path.join(d, "antworten"));
+            T.forEach((t, i) => {
+                if (o.ohne === t.teil) return;
+                const b = lies(path.join(d, "blatt", t.teil, "blatt.json"));
+                fs.writeFileSync(path.join(d, "antworten", t.teil + ".json"), JSON.stringify({ blatt: b.zuordnungSha256, pruefer: { modell: "modell-fest-1", kontext: "pruefer-kontext-" + i }, antworten: b.aufgaben.map((a) => ({ nr: a.nr, antwort: sieht(a, null, fs.readFileSync(path.join(d, "blatt", t.teil, a.bilder[0]))) })) }));
+            });
+            return () => urteil(path.join(d, "blatt"), path.join(d, "zu"), path.join(d, "antworten"), eichAkte({ art: "ordnen" }).f, "2026-11-26T11:00:00Z", ZENSUS_T, AUFTRAG_T);
+        };
+        pruefe("URTEIL IN TEILEN: 50 Paare in 2 Teil-Blättern, je Teil ein Kontext — zusammen 50 von 50, GRÜN, die Akte nennt beide Kontexte", () => { const a = teilUrteil()(); return a.urteil === "GRÜN" && a.paare === 50 && a.teile === 2 && Array.isArray(a.pruefer.kontext) && a.pruefer.kontext.length === 2 ? true : a.wert; });
+        pruefe("Täter TEIL DES URTEILS FEHLT: ein Teil ohne Antworten — verweigert beim Namen (ein Blatt wird ganz geurteilt)", () => verweigert(/^Teil teil-02 ist unbeantwortet/, teilUrteil({ ohne: "teil-02" })));
+    }
     {
         // TEIL-BLÄTTER: 8 Teile zu 25 Ankern, je Teil ein frischer Prüfer-Kontext desselben Modells
         const teilLauf = (o = {}) => {
@@ -524,9 +611,9 @@ function selftest() {
                 fs.writeFileSync(path.join(d, "antworten", t.teil + ".json"), JSON.stringify({ blatt: b.zuordnungSha256, pruefer: { modell: o.fremdesModell === t.teil ? "modell-fest-2" : "modell-fest-1", kontext: "pruefer-kontext-" + i },
                     antworten: b.aufgaben.map((a) => ({ nr: a.nr, antwort: siehtKlasse(a, null, fs.readFileSync(path.join(d, "blatt", t.teil, a.bilder[0]))) })) }));
             });
-            return { d, T, E: () => eichung(path.join(d, "blatt"), path.join(d, "zu"), path.join(d, "antworten"), "2026-11-26T10:00:00Z") };
+            return { d, T, Es: () => eichung(path.join(d, "blatt"), path.join(d, "zu"), path.join(d, "antworten"), "2026-11-26T10:00:00Z", AUFTRAG_T), E: () => eichung(path.join(d, "blatt"), path.join(d, "zu"), path.join(d, "antworten"), "2026-11-26T10:00:00Z", AUFTRAG_T)[0] };
         };
-        pruefe("TEILE: 200 Anker in 8 Teil-Blättern zu 25, je Teil ein eigener Kontext — die Eichung liest sie zusammen und ist scharf", () => { const L = teilLauf(), E = L.E(); return L.T.length === 8 && E.scharf && E.anker === 200 && E.teile.length === 8 && eichungTraegt(E, { modell: "modell-fest-1", art: "ordnen", stumpf: "gruen" }) === null ? true : E.grund; });
+        pruefe("TEILE: 200 Anker in 8 Teil-Blättern zu 25, je Teil ein eigener Kontext — die Eichung liest sie zusammen und ist scharf", () => { const L = teilLauf(), E = L.E(); return L.T.length === 8 && E.scharf && E.anker === 200 && E.teile.length === 8 && eichungTraegt(E, { modell: "modell-fest-1", art: "ordnen", form: "klasse", stumpf: "gruen", auftrag: AUFTRAG_T }) === null ? true : E.grund; });
         pruefe("Täter TEIL FEHLT: ein Teil ohne Antworten — verweigert beim Namen (eine Eichung wird ganz gefahren)", () => verweigert(/^Teil teil-03 ist unbeantwortet/, () => teilLauf({ ohne: "teil-03" }).E()));
         pruefe("Täter BLINDE HÄLFTE: 200 von 200 an der Herkunft fremd, 0 von 50 an der Störung — zusammen 0,8, aber je Herkunft verfehlt: urteilt nicht", () => { const E = teilLauf({ blindeHaelfte: true }).E(); return E.anker === 250 && E.treffer === 200 && !E.scharf && /^urteilt nicht: Herkunft „stoerung“ 0 von 50/.test(E.grund) ? true : E.grund; });
         pruefe("Täter ZWEI MODELLE: ein Teil von einem anderen Modell geurteilt — verweigert", () => verweigert(/^die Teile tragen nicht EIN Modell: /, () => teilLauf({ fremdesModell: "teil-05" }).E()));
@@ -554,16 +641,18 @@ function haupt(argv) {
         return 0;
     }
     if (befehl === "eichung") {
-        const E = eichung(arg("--blatt"), arg("--zuordnung"), arg("--antworten"), jetzt);
+        const Es = eichung(arg("--blatt"), arg("--zuordnung"), arg("--antworten"), arg("--datum", jetzt), auftragSha(arg("--auftrag")));
         const dir = arg("--aus", EICHUNG);
         fs.mkdirSync(dir, { recursive: true });
-        const f = path.join(dir, E.art + "." + E.modell.replace(/[^a-z0-9.-]/gi, "-") + "." + E.zuordnungSha256.slice(0, 8) + ".json");
-        fs.writeFileSync(f, JSON.stringify(E, null, 1) + "\n");
-        console.log("EICHUNG " + E.grund + " (" + E.art + ", Modell " + E.modell + ", Herkunft " + E.herkunft + ", Intervall " + E.intervall95.join("–") + ") → " + f);
-        return E.scharf ? 0 : 1;
+        for (const E of Es) {
+            const f = path.join(dir, E.art + "." + E.form + "." + E.modell.replace(/[^a-z0-9.-]/gi, "-") + "." + E.zuordnungSha256.slice(0, 8) + ".json");
+            fs.writeFileSync(f, JSON.stringify(E, null, 1) + "\n");
+            console.log("EICHUNG " + E.art + " × " + E.form + ": " + E.grund + " (Modell " + E.modell + ", Herkunft " + E.herkunft + ", Intervall " + E.intervall95.join("–") + ") → " + f);
+        }
+        return Es.every((E) => E.scharf) ? 0 : 1;
     }
     if (befehl === "urteil") {
-        const a = urteil(arg("--blatt"), arg("--zuordnung"), arg("--antworten"), arg("--eichung"), jetzt);
+        const a = urteil(arg("--blatt"), arg("--zuordnung"), arg("--antworten"), arg("--eichung", EICHUNG), arg("--datum", jetzt), undefined, auftragSha(arg("--auftrag")));
         const dir = arg("--akten", AKTEN);
         fs.mkdirSync(dir, { recursive: true });
         const name = a.leiter + "." + a.sprosse + "." + String(a.sha).slice(0, 8) + "-" + GERAET_DATEI(a.geraet) + ".json";
@@ -593,4 +682,4 @@ if (require.main === module) {
         process.exit(e instanceof Verweigert ? 3 : 2);
     }
 }
-module.exports = { akteGueltig, eichungTraegt, blattBauen, teileBauen, eichung, urteil, fahrtAus, intervall, binomP, sprosseVon, sha256, summe, Verweigert, MIN_PAARE, MIN_ANKER, SCHARF };
+module.exports = { akteGueltig, eichungTraegt, blattBauen, teileBauen, eichung, urteil, fahrtAus, auftragSha, eichDatei, intervall, binomP, sprosseVon, sha256, summe, Verweigert, MIN_PAARE, MIN_ANKER, SCHARF };

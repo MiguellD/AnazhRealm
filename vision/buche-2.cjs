@@ -2304,7 +2304,7 @@ function selbsttest() {
         const eich = (name, o = {}) => ablage(pEich, name, { eichung: true, art: "ordnen", form: "klasse", herkunft: "spiel", modell: "modell-fest-1", anker: 200, treffer: 190, quote: 0.95, scharf: true, schlagseite: [], datum: "2026-11-14T00:00:00Z", ...o });
         const zM = PR.sprosseVon(M + "#1");
         const pAkte = (name, e, o = {}) =>
-            ablage(pAkten, name, { leiter: M, sprosse: 1, art: zM.art, schwelle: zM.schwelle, zaehlt: "treffer", sha: "7f778d44c1", geraet: "Radeon 890M", datum: "2026-11-14T19:00:00Z", modell: "modell-fest-1", pruefer: { modell: "modell-fest-1", kontext: "pruefer-9" }, bauer: "bauer-1",
+            ablage(pAkten, name, { leiter: M, sprosse: 1, art: zM.art, form: "klasse", schwelle: zM.schwelle, zaehlt: "treffer", sha: "7f778d44c1", geraet: "Radeon 890M", datum: "2026-11-14T19:00:00Z", modell: "modell-fest-1", pruefer: { modell: "modell-fest-1", kontext: "pruefer-9" }, bauer: "bauer-1",
                 paare: 50, gezaehlt: 45, quote: 0.9, fang: { n: 0, treffer: 0 }, schlagseite: [], eichung: { datei: e.datei, sha256: e.sha256 }, urteil: "GRÜN", ...o });
         const mitAkte = (ref, o = {}) => {
             const f = fahrt(M, 1, { geraete: ["Radeon 890M"], ...o });
@@ -2331,6 +2331,10 @@ function selbsttest() {
             const fremd = eich("ordnen.modell2.json", { modell: "modell-fest-2" });
             const { L, z } = lauf(mitAkte(pAkte(M + ".1.modell.json", fremd)), { pruefer: wand });
             return L(M).heute === 0 && /ungeeicht: die Eichung gilt dem Modell „modell-fest-2“/.test(z.bericht[0].warum) ? true : z.bericht[0].warum;
+        });
+        pruefe("PRÜFER ungeeicht: die Klassen-Eichung trägt eine Akte der Form Folge nicht (je Art × Form eigene Anker)", () => {
+            const { L, z } = lauf(mitAkte(pAkte(M + ".1.folge.json", scharf, { form: "folge" })), { pruefer: wand });
+            return L(M).heute === 0 && /ungeeicht: die Eichung gilt der Form „klasse“, das Blatt ist „folge“/.test(z.bericht[0].warum) ? true : z.bericht[0].warum;
         });
         pruefe("PRÜFER: ein GRÜN, das den eigenen Zahlen widerspricht (30 von 50 gegen „≥ 80 %“), hebt nichts", () => {
             const { L, z } = lauf(mitAkte(pAkte(M + ".1.luege.json", scharf, { gezaehlt: 30, quote: 0.6 })), { pruefer: wand });
