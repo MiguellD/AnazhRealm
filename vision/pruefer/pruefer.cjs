@@ -8,6 +8,10 @@
 //        nur den Hash der Zuordnung. Der Prüfer bekommt NUR den Blatt-Ordner.
 //   node vision/pruefer/pruefer.cjs eichung --blatt <ordner> --zuordnung <ordner> --antworten <datei> [--aus <ordner>]
 //        Anker mit bekannter Wahrheit → Eichungs-Akte: ≥ 200 Anker und Trefferquote ≥ 0,8 heißt „scharf“, sonst „urteilt nicht“.
+//        In TEILEN (ein Prüfer-Kontext trägt nicht 200 Bilder): --blatt und --zuordnung tragen teil-01 …, --antworten ist ein Ordner
+//        mit teil-01.json … — EIN Modell, jeder Teil ein frischer Kontext, die Anker zählen zusammen; tragen die Teile zwei
+//        Herkünfte (Foto gegen Render UND gestufte Störung), trifft der Prüfer in JEDER ≥ 0,8. `blatt --teil 25` legt Teil-Blätter.
+//        Die Eich-Blätter je Art baut vision/pruefer/eichblatt.cjs (Anker tragen die Aufgabe der Sprosse, nie ein fremdes Motiv).
 //   node vision/pruefer/pruefer.cjs urteil  --blatt <ordner> --zuordnung <ordner> --antworten <datei> --eichung <akte>
 //                                           [--akten <ordner>] [--richter <ordner> [--vorlage <datei>]]
 //        Antworten → Trefferquote, exaktes Binomial-Intervall, Urteil gegen die WÖRTLICHE Schwelle der Sprosse (zensus.json) →
@@ -141,8 +145,8 @@ function zaehltVon(z) {
 }
 
 // ── BLATT ──
-function blattBauen(paareDir, ausDir, zuDir, saat) {
-    const P = lies(path.join(paareDir, "paare.json"));
+function blattBauen(paareDir, ausDir, zuDir, saat, Pvor) {
+    const P = Pvor || lies(path.join(paareDir, "paare.json"));
     if (!["paar", "klasse", "folge"].includes(P.form)) weg("paare.json: form muss paar | klasse | folge sein");
     if (!P.frage || !Array.isArray(P.aufgaben) || !P.aufgaben.length) weg("paare.json: frage und aufgaben fehlen");
     if (!P.bauer) weg("paare.json: bauer fehlt (die Kennung des Kontexts, der Stück und Bilder baute — der Bauer ist nie der Prüfer)");
@@ -182,6 +186,17 @@ function blattBauen(paareDir, ausDir, zuDir, saat) {
     return { aufgaben: zu.length, fang: zu.filter((x) => x.fang).length, zuordnungSha256: blatt.zuordnungSha256 };
 }
 
+// TEIL-BLÄTTER: ein Prüfer-Kontext trägt nicht 200 Bilder — die Aufgaben per Saat gemischt in Teile zu `jeTeil`, jeder Teil ein
+// eigenes Blatt (teil-01 …) mit eigener, getrennter Zuordnung; die Eichung liest die Teil-Antworten zusammen
+const teilName = (i) => "teil-" + String(i + 1).padStart(2, "0");
+function teileBauen(paareDir, ausDir, zuDir, saat, jeTeil, ab = 0) {
+    const P = lies(path.join(paareDir, "paare.json"));
+    const alle = mische(P.aufgaben.slice(), zufall(saat)), r = [];
+    for (let i = 0; i * jeTeil < alle.length; i++) r.push({ teil: teilName(ab + i), ...blattBauen(paareDir, path.join(ausDir, teilName(ab + i)), path.join(zuDir, teilName(ab + i)), saat + ab + i + 1, { ...P, aufgaben: alle.slice(i * jeTeil, (i + 1) * jeTeil) }) });
+    return r;
+}
+const teileVon = (dir) => (fs.existsSync(path.join(dir, "blatt.json")) ? null : fs.readdirSync(dir).filter((n) => /^teil-\d+$/.test(n)).sort());
+
 // ── die Kette prüfen und zählen (Eichung wie Urteil) ──
 function zaehle(blattDir, zuDir, antwortDatei) {
     const blattRoh = fs.readFileSync(path.join(blattDir, "blatt.json"), "utf8");
@@ -209,6 +224,12 @@ function zaehle(blattDir, zuDir, antwortDatei) {
         return { ...a, antwort, treffer: a.richtig === null ? null : antwort === a.richtig };
     });
     // SCHLAGSEITE: eine Seite (paar) oder ein Etikett (klasse) öfter, als die gemischte Wahrheit es trägt — exakter Test je Wahl
+    const schlag = schlagseiteVon(zeilen, erlaubt);
+    const fang = zeilen.filter((z) => z.fang);
+    return { blatt, Z, A, zeilen, mess: zeilen.filter((z) => !z.fang), fang: { n: fang.length, treffer: fang.filter((z) => z.treffer).length }, schlagseite: schlag };
+}
+
+function schlagseiteVon(zeilen, erlaubt) {
     const schlag = [];
     if (erlaubt) {
         const mit = zeilen.filter((z) => z.richtig !== null);
@@ -218,12 +239,44 @@ function zaehle(blattDir, zuDir, antwortDatei) {
             if (p < ALPHA / erlaubt.length && k / mit.length > p0) schlag.push("„" + w + "“ in " + k + " von " + mit.length + " Antworten, die Wahrheit trägt es in " + Math.round(p0 * mit.length) + " (p = " + p.toExponential(1) + ")");
         }
     }
-    const fang = zeilen.filter((z) => z.fang);
-    return { blatt, Z, A, zeilen, mess: zeilen.filter((z) => !z.fang), fang: { n: fang.length, treffer: fang.filter((z) => z.treffer).length }, schlagseite: schlag };
+    return schlag;
 }
 
 // ── EICHUNG ──
+// in TEILEN: blattDir und zuDir tragen teil-01 …, antwortDatei ist ein Ordner mit teil-01.json … — jeder Teil hält seine eigene
+// Hash-Kette, EIN Modell urteilt alle Teile, die Anker zählen zusammen, die Schlagseite misst sich über alle Teile gleicher Wahl
+function eichungTeile(blattDir, zuDir, antwortDir, datum, teile) {
+    const Rs = teile.map((t) => {
+        const af = path.join(antwortDir, t + ".json");
+        if (!fs.existsSync(af)) weg("Teil " + t + " ist unbeantwortet (" + af + " fehlt) — eine Eichung wird ganz gefahren");
+        try { return { t, ...zaehle(path.join(blattDir, t), path.join(zuDir, t), af) }; } catch (e) { if (e instanceof Verweigert) weg(t + ": " + e.message); throw e; }
+    });
+    const eins = (f, was) => { const m = [...new Set(Rs.map(f))]; if (m.length !== 1) weg("die Teile tragen nicht EIN " + was + ": " + m.join(" | ")); return m[0]; };
+    const art = eins((R) => R.Z.art, "Art"), modell = eins((R) => R.A.pruefer.modell, "Modell"), bauer = eins((R) => R.Z.bauer, "Bauer");
+    for (const R of Rs) {
+        if (!R.Z.anker) weg(R.t + ": das Blatt ist kein Anker-Blatt");
+        if (R.zeilen.some((z) => z.richtig === null)) weg(R.t + ": ein Anker ohne Wahrheit");
+        if (!["fremd", "stoerung", "spiel"].includes(R.Z.herkunft)) weg(R.t + ": Anker ohne Herkunft");
+    }
+    const gruppen = new Map();
+    for (const R of Rs) { const k = R.Z.form + "|" + (R.Z.optionen || []).join("|"); if (!gruppen.has(k)) gruppen.set(k, { erlaubt: R.Z.form === "paar" ? ["A", "B"] : R.Z.form === "klasse" ? R.Z.optionen : null, zeilen: [] }); gruppen.get(k).zeilen.push(...R.zeilen); }
+    const schlag = [...gruppen.values()].flatMap((g) => schlagseiteVon(g.zeilen, g.erlaubt));
+    const n = Rs.reduce((m, R) => m + R.zeilen.length, 0), k = Rs.reduce((m, R) => m + R.zeilen.filter((z) => z.treffer).length, 0);
+    // JE HERKUNFT: trägt ein Blatt Anker zweier Herkünfte (Foto gegen Render UND gestufte Störung), so trifft der Prüfer in JEDER
+    // ≥ 0,8 — sonst trüge die leichte Hälfte die schwere (175 Störungs-Paare bei 0,95 und 48 Render-Paare bei 0,5 gäben 0,85)
+    const jeHerkunft = {};
+    for (const R of Rs) { const h = (jeHerkunft[R.Z.herkunft] = jeHerkunft[R.Z.herkunft] || { anker: 0, treffer: 0 }); h.anker += R.zeilen.length; h.treffer += R.zeilen.filter((z) => z.treffer).length; }
+    const schwach = Object.entries(jeHerkunft).filter(([, h]) => h.treffer / h.anker < SCHARF).map(([name, h]) => "Herkunft „" + name + "“ " + h.treffer + " von " + h.anker + " = " + (h.treffer / h.anker).toFixed(3) + " < " + SCHARF);
+    const scharf = n >= MIN_ANKER && k / n >= SCHARF && !schlag.length && !schwach.length;
+    const liste = (f) => [...new Set(Rs.map(f))].join("+");
+    return mitSumme({ eichung: true, art, form: liste((R) => R.Z.form), herkunft: liste((R) => R.Z.herkunft), modell, pruefer: { modell, kontext: Rs.map((R) => R.A.pruefer.kontext) }, bauer, frage: [...new Set(Rs.map((R) => R.Z.frage))], anker: n, treffer: k, quote: Math.round((k / n) * 1e4) / 1e4, intervall95: intervall(k, n), schlagseite: schlag, scharf,
+        grund: scharf ? "scharf: " + k + " von " + n + " Ankern in " + Rs.length + " Teilen" : n < MIN_ANKER ? "urteilt nicht: " + n + " Anker < " + MIN_ANKER : schlag.length ? "urteilt nicht: Schlagseite — " + schlag[0] : schwach.length ? "urteilt nicht: " + schwach.join(" · ") : "urteilt nicht: " + k + " von " + n + " = " + (k / n).toFixed(3) + " < " + SCHARF,
+        jeHerkunft, teile: Rs.map((R) => ({ teil: R.t, form: R.Z.form, herkunft: R.Z.herkunft, anker: R.zeilen.length, treffer: R.zeilen.filter((z) => z.treffer).length, zuordnungSha256: R.blatt.zuordnungSha256 })),
+        zuordnungSha256: sha256(Rs.map((R) => R.blatt.zuordnungSha256).join("\n")), datum });
+}
 function eichung(blattDir, zuDir, antwortDatei, datum) {
+    const teile = teileVon(blattDir);
+    if (teile) return teile.length ? eichungTeile(blattDir, zuDir, antwortDatei, datum, teile) : weg("kein Blatt: weder blatt.json noch teil-01 … in " + blattDir);
     const R = zaehle(blattDir, zuDir, antwortDatei);
     if (!R.Z.anker) weg("das Blatt ist kein Anker-Blatt (es nennt die Sprosse " + R.Z.sprosse + ")");
     if (R.zeilen.some((z) => z.richtig === null)) weg("ein Anker ohne Wahrheit: jede Aufgabe der Eichung trägt ihre bekannte Antwort");
@@ -241,7 +294,7 @@ function eichungTraegt(E, { modell, art, stumpf }) {
     if (!(E.anker >= MIN_ANKER && E.treffer / E.anker >= SCHARF && E.scharf === true && !(E.schlagseite || []).length)) return "ungeeicht: " + (E.grund || "nicht scharf") + " (scharf heißt ≥ " + MIN_ANKER + " Anker bei ≥ " + SCHARF + ")";
     if (E.modell !== modell) return "ungeeicht: die Eichung gilt dem Modell „" + E.modell + "“, geurteilt hat „" + modell + "“";
     if (E.art !== art) return "ungeeicht: die Eichung gilt der Art „" + E.art + "“, die Sprosse ist „" + art + "“";
-    if (stumpf === "gruen" && !["fremd", "stoerung"].includes(E.herkunft)) return "ungeeicht: ein ratender Prüfer läse hier GRÜN — die Wahrheit der Anker muss aus fremder Herkunft oder gestufter Störung stammen, nicht aus „" + E.herkunft + "“";
+    if (stumpf === "gruen" && !String(E.herkunft).split("+").every((h) => ["fremd", "stoerung"].includes(h))) return "ungeeicht: ein ratender Prüfer läse hier GRÜN — die Wahrheit der Anker muss aus fremder Herkunft oder gestufter Störung stammen, nicht aus „" + E.herkunft + "“";
     return null;
 }
 
@@ -447,6 +500,37 @@ function selftest() {
         fs.writeFileSync(path.join(dir, "t.hoch.1.json"), rohB);
         return /^falscher Hash: die Prüfsumme der Prüfer-Akte/.test(akteGueltig({ akte: "t.hoch.1.json", sha256: sha256(rohB) }, erw, o)) ? true : "die von Hand geänderte Akte hält";
     });
+    {
+        // TEIL-BLÄTTER: 8 Teile zu 25 Ankern, je Teil ein frischer Prüfer-Kontext desselben Modells
+        const teilLauf = (o = {}) => {
+            const d = path.join(X, "teile" + ++lfd), paare = path.join(d, "paare");
+            fs.mkdirSync(paare, { recursive: true });
+            const aufgaben = [];
+            for (let i = 0; i < 200; i++) { fs.writeFileSync(path.join(paare, i + ".png"), i % 2 ? png(200, 30, 30) : png(30, 30, 200)); aufgaben.push({ bilder: [i + ".png"], wahr: i % 2 ? "Foto" : "Render" }); }
+            fs.writeFileSync(path.join(paare, "paare.json"), JSON.stringify({ sprosse: null, art: "ordnen", form: "klasse", frage: "Foto oder Render?", optionen: ["Foto", "Render"], bauer: "bauer-kontext-1", herkunft: "fremd", aufgaben }));
+            const T = teileBauen(paare, path.join(d, "blatt"), path.join(d, "zu"), 5, 25);
+            if (o.blindeHaelfte) { // dazu 50 Anker der Herkunft „stoerung“ in zwei Teilen, an denen der Prüfer alles verfehlt
+                const p2 = path.join(d, "paare2");
+                fs.mkdirSync(p2);
+                const a2 = [];
+                for (let i = 0; i < 50; i++) { fs.writeFileSync(path.join(p2, i + ".png"), i % 2 ? png(200, 30, 30) : png(30, 30, 200)); a2.push({ bilder: [i + ".png"], wahr: i % 2 ? "Render" : "Foto" }); }
+                fs.writeFileSync(path.join(p2, "paare.json"), JSON.stringify({ sprosse: null, art: "ordnen", form: "klasse", frage: "Foto oder Render?", optionen: ["Foto", "Render"], bauer: "bauer-kontext-1", herkunft: "stoerung", aufgaben: a2 }));
+                T.push(...teileBauen(p2, path.join(d, "blatt"), path.join(d, "zu"), 6, 25, 8));
+            }
+            fs.mkdirSync(path.join(d, "antworten"));
+            T.forEach((t, i) => {
+                if (o.ohne === t.teil) return;
+                const b = lies(path.join(d, "blatt", t.teil, "blatt.json"));
+                fs.writeFileSync(path.join(d, "antworten", t.teil + ".json"), JSON.stringify({ blatt: b.zuordnungSha256, pruefer: { modell: o.fremdesModell === t.teil ? "modell-fest-2" : "modell-fest-1", kontext: "pruefer-kontext-" + i },
+                    antworten: b.aufgaben.map((a) => ({ nr: a.nr, antwort: siehtKlasse(a, null, fs.readFileSync(path.join(d, "blatt", t.teil, a.bilder[0]))) })) }));
+            });
+            return { d, T, E: () => eichung(path.join(d, "blatt"), path.join(d, "zu"), path.join(d, "antworten"), "2026-11-26T10:00:00Z") };
+        };
+        pruefe("TEILE: 200 Anker in 8 Teil-Blättern zu 25, je Teil ein eigener Kontext — die Eichung liest sie zusammen und ist scharf", () => { const L = teilLauf(), E = L.E(); return L.T.length === 8 && E.scharf && E.anker === 200 && E.teile.length === 8 && eichungTraegt(E, { modell: "modell-fest-1", art: "ordnen", stumpf: "gruen" }) === null ? true : E.grund; });
+        pruefe("Täter TEIL FEHLT: ein Teil ohne Antworten — verweigert beim Namen (eine Eichung wird ganz gefahren)", () => verweigert(/^Teil teil-03 ist unbeantwortet/, () => teilLauf({ ohne: "teil-03" }).E()));
+        pruefe("Täter BLINDE HÄLFTE: 200 von 200 an der Herkunft fremd, 0 von 50 an der Störung — zusammen 0,8, aber je Herkunft verfehlt: urteilt nicht", () => { const E = teilLauf({ blindeHaelfte: true }).E(); return E.anker === 250 && E.treffer === 200 && !E.scharf && /^urteilt nicht: Herkunft „stoerung“ 0 von 50/.test(E.grund) ? true : E.grund; });
+        pruefe("Täter ZWEI MODELLE: ein Teil von einem anderen Modell geurteilt — verweigert", () => verweigert(/^die Teile tragen nicht EIN Modell: /, () => teilLauf({ fremdesModell: "teil-05" }).E()));
+    }
     pruefe("Binomial: 20 von 40 → Intervall 33,8–66,2 % (Clopper-Pearson), 40 von 40 → untere Grenze 91,2 %", () => { const a = intervall(20, 40), b = intervall(40, 40); return Math.abs(a[0] - 0.338) < 0.002 && Math.abs(a[1] - 0.662) < 0.002 && Math.abs(b[0] - 0.9119) < 0.002 ? true : JSON.stringify([a, b]); });
     pruefe("Zensus am Stand: zensus.json steht am Wortlaut von Karte und Tafel", () => { const Zn = require("./zensus.cjs"); return Zn.fest(Zn.rechne()) === Zn.fest(lies(ZENSUS)) ? true : "zensus.json weicht ab — node vision/pruefer/zensus.cjs"; });
     fs.rmSync(X, { recursive: true, force: true });
@@ -460,6 +544,11 @@ function haupt(argv) {
     if (argv.includes("--selftest") || argv.includes("--selbsttest")) return selftest();
     const jetzt = new Date().toISOString();
     if (befehl === "blatt") {
+        if (arg("--teil")) {
+            const t = teileBauen(arg("--paare"), arg("--aus"), arg("--zuordnung"), +arg("--saat", "20261126"), +arg("--teil"));
+            console.log("BLATT in " + t.length + " Teilen, " + t.reduce((n, x) => n + x.aufgaben, 0) + " Aufgaben — Zuordnung je Teil getrennt in " + arg("--zuordnung"));
+            return 0;
+        }
         const r = blattBauen(arg("--paare"), arg("--aus"), arg("--zuordnung"), +arg("--saat", "20261126"));
         console.log("BLATT " + r.aufgaben + " Aufgaben (davon Fang " + r.fang + ") · Zuordnung " + r.zuordnungSha256.slice(0, 16) + " — getrennt in " + arg("--zuordnung"));
         return 0;
@@ -504,4 +593,4 @@ if (require.main === module) {
         process.exit(e instanceof Verweigert ? 3 : 2);
     }
 }
-module.exports = { akteGueltig, eichungTraegt, blattBauen, eichung, urteil, fahrtAus, intervall, binomP, sprosseVon, sha256, summe, Verweigert, MIN_PAARE, MIN_ANKER, SCHARF };
+module.exports = { akteGueltig, eichungTraegt, blattBauen, teileBauen, eichung, urteil, fahrtAus, intervall, binomP, sprosseVon, sha256, summe, Verweigert, MIN_PAARE, MIN_ANKER, SCHARF };

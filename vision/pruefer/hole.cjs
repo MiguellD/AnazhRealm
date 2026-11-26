@@ -3,7 +3,6 @@
 // in das Manifest. Die Dateien liegen NIE im Repo und nie neben diesem Skript: `--ziel` ist ein Ordner außerhalb jedes Repo-Baums.
 //
 //   node vision/pruefer/hole.cjs --ziel C:/…/AnazhRealm-korpus [--nur <satz-id>] [--trocken]
-//   node vision/pruefer/hole.cjs anker --ziel C:/…/AnazhRealm-korpus --zuordnung C:/…/AnazhRealm-pruefer-zuordnung --bauer <Kennung>
 //
 // DIE WÄNDE: nur Lizenzen der Liste (gemeinfrei · CC0 · CC BY · offene Behörden-Daten) — alles andere bleibt liegen und steht beim
 // Namen unter `liegenGeblieben` („Lizenz offen“) · nur JPEG und PNG (am Anfang der Datei geprüft, nie am Namen) · je Datei ≤ 30 MB ·
@@ -27,7 +26,9 @@ const warte = (ms) => new Promise((z) => setTimeout(z, ms));
 const ohneTags = (s) => String(s || "").replace(/<[^>]*>/g, " ").replace(/&[a-z]+;/g, " ").replace(/\s+/g, " ").trim().slice(0, 200);
 const AGENTUR = "ESA|JAXA|CNES|DLR|ASI|ISRO|Roscosmos|SpaceX|Boeing|Lockheed|Northrop|Blue Origin|ULA|Getty|Reuters|AP";
 const FREMD = new RegExp("\\b(" + AGENTUR + ")\\b", "i"), FREMD_IM_TEXT = new RegExp("credits?:[^.]{0,80}\\b(" + AGENTUR + ")\\b", "i");
-const freieLizenz =(code) => /^(pd|cc0|cc-zero|cc-by-\d)/i.test(code || "") && !/-(sa|nc|nd)/i.test(code || "");
+// CC BY-SA trägt der Korpus seit dem 26.11. (Entscheid des Koordinators: klare Lizenz, der Korpus liegt außerhalb jedes Repos, wird
+// nie verteilt und nie ein Asset des Spiels; die Namensnennung steht im Manifest) — nc und nd bleiben liegen.
+const freieLizenz = (code) => /^(pd|cc0|cc-zero|cc-by-\d|cc-by-sa-\d)/i.test(code || "") && !/-(nc|nd)/i.test(code || "");
 async function json(url) {
     await warte(PAUSE_MS);
     const r = await fetch(url, { headers: UA });
@@ -74,7 +75,7 @@ async function* commons(a, breite) {
         for (const p of seiten) {
             const ii = (p.imageinfo || [])[0];
             if (!ii || ii.mime !== "image/jpeg" || ii.width < breite) continue;
-            if (a.ohne && new RegExp(a.ohne, "i").test(p.title)) continue;
+            if ((a.ohne && new RegExp(a.ohne, "i").test(p.title)) || (a.mit && !new RegExp(a.mit, "i").test(p.title))) continue;
             const m = ii.extmetadata || {}, code = (m.License || {}).value || "", kurz = (m.LicenseShortName || {}).value || code || "ohne Angabe";
             yield { titel: p.title, adresse: ii.thumburl, seite: ii.descriptionurl, lizenz: kurz, urheber: ohneTags((m.Artist || {}).value || (m.Credit || {}).value || "ohne Angabe"), frei: freieLizenz(code), grund: freieLizenz(code) ? null : "Lizenz nicht in der Liste: " + kurz };
         }
@@ -91,7 +92,6 @@ async function haupt(argv) {
         if (fs.existsSync(path.join(d, ".git"))) throw new Error("--ziel liegt in einem Repo-Baum (" + d + ") — kein fremdes Bild im Repo");
         if (path.dirname(d) === d) break;
     }
-    if (argv[0] === "anker") return anker(argv, zielAbs);
     const M = JSON.parse(fs.readFileSync(MANIFEST, "utf8"));
     const trocken = argv.includes("--trocken");
     let welle = M.saetze.reduce((n, s) => n + (s.dateien || []).reduce((m, f) => m + f.bytes, 0), 0);
@@ -128,38 +128,10 @@ async function haupt(argv) {
     }
     return 0;
 }
-// anker: aus den Sätzen der Eichung (fuer "eichung", je Klasse gleich viele, reihum über die Sätze der Klasse) das BLINDE BLATT
-// und die GETRENNTE Zuordnung bauen — der Holer legt bereit, die Läufe startet ein anderer Kontext (der Bauer ist nie der Prüfer).
-//   node vision/pruefer/hole.cjs anker --ziel <korpus> --zuordnung <ordner außerhalb des Korpus> --bauer <Kennung> [--art 2afc] [--je 100] [--saat 1]
-function anker(argv, zielAbs) {
-    const arg = (n, d) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
-    const { blattBauen } = require("./pruefer.cjs");
-    const M = JSON.parse(fs.readFileSync(MANIFEST, "utf8")), E = M.eichung;
-    const art = arg("--art", "2afc"), je = +arg("--je", 100), saat = +arg("--saat", 1), id = "eichung-" + art;
-    if (!arg("--zuordnung") || !arg("--bauer")) throw new Error("--zuordnung und --bauer fehlen");
-    const zu = path.resolve(arg("--zuordnung"), id);
-    if (zu.startsWith(zielAbs + path.sep)) throw new Error("die Zuordnung liegt AUSSERHALB des Korpus-Ordners — der Prüfer sieht den Korpus");
-    const aufgaben = [];
-    for (const klasse of E.optionen) {
-        const saetze = M.saetze.filter((s) => s.fuer === "eichung" && s.klasse === klasse && (s.dateien || []).length), wahl = [];
-        for (let i = 0; wahl.length < je && saetze.some((s) => s.dateien[i]); i++)
-            for (const s of saetze) if (s.dateien[i] && wahl.length < je) wahl.push({ bilder: ["../../" + s.ablage + "/" + s.dateien[i].datei], wahr: klasse });
-        if (wahl.length < je) throw new Error("Korpus fehlt: die Klasse „" + klasse + "“ trägt " + wahl.length + " von " + je + " Ankern");
-        aufgaben.push(...wahl);
-    }
-    const paare = path.join(zielAbs, "paare", id), blatt = path.join(zielAbs, "blatt", id);
-    fs.mkdirSync(paare, { recursive: true });
-    fs.writeFileSync(path.join(paare, "paare.json"), JSON.stringify({ sprosse: null, art, form: E.form, frage: E.frage, optionen: E.optionen, herkunft: E.herkunft, bauer: arg("--bauer"), aufgaben }, null, 1) + "\n");
-    const r = blattBauen(paare, blatt, zu, saat);
-    M.blaetter = (M.blaetter || []).filter((b) => b.id !== id).concat({ id, art, form: E.form, herkunft: E.herkunft, aufgaben: r.aufgaben, jeKlasse: je, saat, bauer: arg("--bauer"), blatt: "blatt/" + id, zuordnungSha256: r.zuordnungSha256, zuordnung: "getrennt, außerhalb des Korpus-Ordners (" + path.basename(path.dirname(zu)) + "/" + id + "/zuordnung.json)", stand: "bereit · ungesichtet · kein Lauf gefahren" });
-    fs.writeFileSync(MANIFEST, JSON.stringify(summe(M), null, 1) + "\n");
-    console.log("BLATT " + id + ": " + r.aufgaben + " Anker (" + E.optionen.map((o) => je + " " + o).join(" · ") + ") → " + blatt + " · Zuordnung " + r.zuordnungSha256.slice(0, 16) + " getrennt in " + zu);
-    return 0;
-}
 function summe(M) {
     const alle = M.saetze.flatMap((s) => s.dateien || []);
     M.summe = { saetze: M.saetze.length, dateien: alle.length, bytes: alle.reduce((n, f) => n + f.bytes, 0), liegenGeblieben: M.saetze.reduce((n, s) => n + (s.liegenGeblieben || []).length, 0) };
     return M;
 }
-if (require.main === module) haupt(process.argv.slice(2)).then((c) => process.exit(c), (e) => { console.error(e.message); process.exit(2); });
+if (require.main === module) haupt(process.argv.slice(2)).then((c) => { process.exitCode = c; }, (e) => { console.error(e.message); process.exitCode = 2; });
 module.exports = { freieLizenz, summe };
