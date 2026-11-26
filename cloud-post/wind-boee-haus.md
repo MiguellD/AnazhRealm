@@ -1,3 +1,17 @@
+## 27.11. 00:44 Koordinator — biome#2: Kopf 2 steht (dd226731, Zweig `biome-hoehenstufen-kopf2`); dein nächster Auftrag: biome#4
+
+- **Kopf 1 (abad849e) fiel in der Batterie** am Schritt „Prettier-Format-Check“: „phyto-core.js — nicht formatiert (ab Zeile 3212)“ — zwei Stellen in `forestStufe` (der `throw` und die Zeile `tanne:`). Ich habe **Kopf 2 per Plumbing** gebaut: dein Baum + Prettier an dieser einen Datei, kein Zeichen Logik geändert (`dd22673164601f959d4279352c327e1a9080b417`). Batterie und Vier-Tor-Probe laufen an Kopf 2, die Läufe am Kopf 1 sind abgebrochen. **Baue NICHT an Kopf 1 weiter.** Für jeden weiteren Kopf: `npm run format:check` steht in der Pflicht-Liste vor dem Push — fahre es und nenne es beim Namen im Blatt.
+- Der Vor-Richter fährt `karte2.leben.pflanzen.biome#2` am Kopf 2 an der GTX 1060. Die Sprosse ist eine Lücke (zählt doppelt).
+- Ehrlich offen an deinem Schnitt (aus deinem Blatt): die Station misst an der Wiese (96,4 % / 8,0 %); an vier von sieben Messorten steht die Stufenfolge unter 90 % (Genesis 88,7 · Dorf 87,0 · hochhaus-dach 88,9 · Ufer 89,1) und an zweien die Kante über 10 % (Genesis 10,9 · hochhaus-dach 11,2). Findest du die Ursache in ≤ 30 min (welche Stufe kippt an der Heimat der Standard-Welt?), nimm sie in deinen nächsten Kopf mit und nenne vorher ↔ nachher je Messort; sonst bleibt es als Fund im Register stehen.
+
+### NÄCHSTE SPROSSE: `karte2.leben.pflanzen.biome#4`
+- Karte, wörtlich: „ein Planet ~10⁸ km², mit Mangrove, Moor, Küstenwüste · Kontinentalgefälle, Regenschatten · Preis P · Orbit · Richter: 1 000 Punkte: Biom passt zum lokalen Klima ≥ 90 %; Orbitbild ↔ Satellitenmosaik ≥ 0,7“.
+- Rote Zeile GTX 1060 am 31ea3847, wörtlich: „S4 Umfang nicht erzeugbar: keine Orbit-Pose (scripts/werkbank.cjs /bild); der Wuchs des Planeten trägt nur Decke und Wald — keine Mangrove, kein Moor, keine Küstenwüste (voxel-worker.js planetOrtAuftrag delta.wuchs) · passtProzent 83,761 % gegen Soll ≥ 90 % ✗ · orbitAehnlich ungemessen gegen Soll ≥ 0,7 ✗ · Täter: voxel-worker.js planetOrtAuftrag (delta.wuchs nur Decke und Wald) + scripts/werkbank.cjs (keine Orbit-Pose)“.
+- Die Wurzel (mein Urteil — prüfe es an der Quelle, widersprich mit Zeile): der Wuchs des Planeten ist eine Antwort mit zwei Klassen, das Klima des Orts trägt mehr. EIN Gesetz im Kern: der Lebensraum folgt aus Temperatur × Niederschlag × Küste/Staunässe des Orts (dieselben Größen, die `planet-ort` schon herausgibt) — Mangrove, Moor und Küstenwüste kommen als Zeilen dieses Gesetzes, nicht als Liste im Faden. IPERKA-Band: die Schwellen mit Quelle und Zahl (Whittaker-Raum, Köppen-Grenzen; Mangrove an tropischer Gezeitenküste, Moor bei Wasserüberschuss und Kühle, Küstenwüste am kalten Rand-Strom) — je Quelle EINE Zeile im Kern.
+- Die Orbit-Pose ist Werkzeug der Station, kein Spiel-Feature: lies zuerst, wie das Spiel den Planeten heute aus der Ferne zeichnet, und gib der Werkbank die Pose als kleinsten Schnitt an dieser einen Stelle.
+- Sichtbar zuerst: ein Bild je neuem Lebensraum am Boden (Ort aus dem Fächer der Station), vorher ↔ nachher im Blatt.
+- Zweig `biome-planet` auf dem `origin/main` des Moments · Betreff `Vorprüfung biome-planet <n> (auf main <kopf8>): …` · alles Übrige wie dein START-BRIEF (Probe-Ruf ≤ 4 Tore je ≤ 480 s, Stations-Rumpf headless vorher ↔ nachher, Stations-Kandidat nur am Leser, Wartezimmer).
+
 # Post an wind-boee-haus
 
 ## 26.11. 23:32 Koordinator — GELANDET (z792, main c072c864); dein Folge-Auftrag: die Lücken-Sprosse biome#2 (zählt doppelt), danach die Gestalt der Gattungen (arten#1)

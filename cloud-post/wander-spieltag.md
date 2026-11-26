@@ -1,3 +1,20 @@
+## 27.11. 00:44 Koordinator — wanderung#2: Kopf 2 steht (c6038905, Zweig `wander-spieltag-kopf2`); dein nächster Auftrag: wanderung#3
+
+- **Kopf 1 (c073a604): Batterie 20 grün, 1 rot** — Schritt „Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)“: „❌ GOLDEN byte-treu: tetrapoda-core.js — c6cb6dcac11b“. Dein Schnitt nahm `leashBaseM`/`leashSpanM` aus `VERHALTEN.wandern`; VERHALTEN reist in PRESETS, und der Fingerabdruck über PRESETS + PARAMS_BY_KIND ist eingefroren (`spec/asset-contract/v7/golden/daten.json`).
+- Ich habe **Kopf 2 per Plumbing** gebaut (`c6038905cd1a4615f0930da27f4a01e59eae9a17`): dein Baum auf main 38194f83 + `daten.json` (tetrapoda `9115267c6c32…` → `c6cb6dcac11b…`) + Vertrags-Akt 27.11. in `spec/asset-contract/v7/CONTRACT.md`. Geprüft Feld für Feld: genau 8 Felder fielen (`wandern.leashBaseM` 18 und `wandern.leashSpanM` 10 je wolf · fox · bear · deer), ohne sie ist das kanonische JSON byte-gleich; `gate:daten-contract` am Kopf 2 lokal GRÜN. Batterie und Probe laufen an Kopf 2. **Baue NICHT an Kopf 1 weiter.**
+- Lehre für jeden weiteren Kopf: wer PRESETS oder PARAMS eines MESHFREI-Kerns (klang · koerper · tetrapoda) berührt, fährt `npm run gate:daten-contract` vor dem Push, mintet (Golden löschen, Linse fahren, nur die eigene Zeile darf sich ändern) und schreibt den Vertrags-Akt.
+- Der Vor-Richter fährt `karte2.leben.tiere.wanderung#2` am Kopf 2 mit deinem Kandidaten `cloud-post/wander-spieltag-station/` (vorher ↔ nachher).
+
+### NÄCHSTE SPROSSE: `karte2.leben.tiere.wanderung#3`
+- Karte, wörtlich: „10³ m: Streifgebiet nach Feldmaß (Rothirsch 1–10 km²) · Wildwechsel als Pfad im Boden sichtbar · Preis P · Richter: Spur über 7 Spieltage: Streifgebiet im Band der Telemetrie ±Faktor 2“.
+- Stand: keine Station, keine Akte — du lieferst die Station als Kandidaten (`cloud-post/wander-pfad-station/`: Diff gegen `meisterkarte-quelle/punkte/stationen/k2-leben.js` am Kopf von `punkte-maschine` + BEGRUENDUNG.txt; Soll und Richter-Text wörtlich aus der Karte, nie von dir gesetzt).
+- Zwei Glieder, EINE Wurzel (das Tier läuft, wo sein Bedarf es hinführt):
+  1. **Die Spur im Band:** der Richter misst die FLÄCHE der wirklich gelaufenen Spur eines Individuums über 7 Spieltage (z. B. die konvexe Hülle oder 95 %-Fläche — nenne das Feldmaß deiner Quelle) gegen das Telemetrie-Band der Art ± Faktor 2. Dein `streifRadiusM` ist das Gesetz; gemessen wird, was das Tier daraus macht (Rothirsch 1–10 km² steht in der Karte).
+  2. **Der Wildwechsel im Boden:** wo das Tier wiederholt läuft, trägt der Boden den Pfad — sichtbar im Bild. Lies ZUERST, wie der Tritt des Menschen heute in den Boden kommt (Trampelpfad, Spur im Schnee, die Bodenspur der Bewohner): der Wildwechsel ist DASSELBE Gesetz mit dem Huf als Quelle, kein zweites Register. Kosten an Schirm und Änderung, nie an der Zahl der Tiere der Welt.
+- Sichtbar zuerst: Bild am Messort wiese nach 7 Spieltagen im Zeitraffer — der Pfad zur Tränke ist zu SEHEN; vorher ↔ nachher im Blatt.
+- Offen aus deinem Kopf 1, gehört in diese Sprosse: das Gedächtnis der Tränke im Streifgebiet (`tagesbudget.truenke`, `_tickCreatureDrink`).
+- Zweig `wander-pfad` auf dem `origin/main` des Moments · Betreff `Vorprüfung wander-pfad <n> (auf main <kopf8>): …` · alles Übrige wie dein START-BRIEF (Probe-Ruf ≤ 4 Tore je ≤ 480 s, `gate:kreatur-takt` richtet `[ci voll]`, Wartezimmer).
+
 ## 26.11. 19:48 Koordinator — START-BRIEF (Welle 27.11.; dieser Abschnitt ist dein Auftrag, lies ihn GANZ)
 
 ## 27.11. 00:11 — GPU-PROBE c073a604 auf omen-gtx1060: GRÜN in 1117 s (gate:pruefbuehne-licht GRÜN 55 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 143 s auf omen-gtx1060 · bild:wiese@0.5 GRÜN 46 s auf omen-gtx1060 · gate:webgl-probe GRÜN 45 s auf omen-gtx1060) → probe-post/wander-spieltag/c073a604.md
