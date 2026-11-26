@@ -1,5 +1,5 @@
-// stationen/auge-klasse.cjs — DIE KLASSE JEDER AUGE-SPROSSE der Meisterkarte 2 (21.11., Zweig pm-auge): EIN Ort für die Frage „verlangt
-// die Karte hier einen Menschen?“, gelesen von allen drei Gerüsten der k2-Register (der KERN in k2-planet.js für planet · leben ·
+// stationen/auge-klasse.cjs — DIE KLASSE JEDER AUGE-SPROSSE der Meisterkarte 2 (21.11., Zweig pm-auge): EIN Ort für die Frage „wer
+// spricht hier den Richter — die Zahl der Station, der Blind-Prüfer oder ein Band realer Daten?“, gelesen von allen drei Gerüsten der k2-Register (der KERN in k2-planet.js für planet · leben ·
 // zusammenspiel, das LEITER-GERÜST in k2-same.js für same · erleben · kosmos, k2-mensch.js für mensch.*). Entschieden je Sprosse am
 // WORTLAUT ihres Richters (`sprossen[].richter` in vision/meisterkarte-2.json) gegen die Regeln R6, R10 und R11 (vision/REGELN.md):
 //
@@ -7,14 +7,18 @@
 //               Gesetz oder gegen eine Referenz, die die Station mit Quelle trägt): die Tafel-Zeile ist „gleich“, die Station urteilt
 //               an der Zahl (Soll + Zeuge der Welt), das Bild der Pose bleibt Beleg und richtet nicht. Trägt die Station (noch) kein
 //               Soll des ganzen Satzes, bleibt die Zeile „fehlt“ mit dem Grund „ZAHL ohne Soll“ — nie GRÜN an einem Teil-Satz;
-//   P  PANEL  — der Satz verlangt ein menschliches Urteil oder einen von Menschen gewerteten Vergleich (Blindpaar, 2AFC, Jury, Prüfer,
-//               Klassifikator, „gegen Foto“, plausibel/stimmig/glaubhaft/echt nach R6): die Zeile bleibt „fehlt“, Grund
-//               „R11 Panel: <das Wort im Satz>“ — kein Ersatz-Richter, kein Auge am Gerät als GRÜN;
-//   K  KORPUS — die Zahl ist rechenbar, aber gegen ein Band REALER Daten (oder den eingefrorenen Leser der Fremdwelt-Probe R10), das
-//               laut R11 mit Quelle eingefroren im Repo liegen muss und dort nicht liegt: die Zeile bleibt „fehlt“, Grund
-//               „Korpus fehlt: <welcher, wofür>“.
+//   P  PRÜFER — der Satz verlangt ein Urteil am Bild (Blindpaar, 2AFC, Jury, Prüfer, Klassifikator, „gegen Foto“,
+//               plausibel/stimmig/glaubhaft/echt nach R6). Es spricht der BLIND-PRÜFER (R11, vision/pruefer/pruefer.cjs): ein
+//               eingefrorenes Modell in frischem Kontext, geeicht an 200 Ankern bekannter Wahrheit ≥ 0,8. Die STATION legt das Bild
+//               und nennt ihre Zahlen — ihre Zeile bleibt „fehlt“, Grund „R11 Prüfer: <das Wort im Satz>“ (der Bauer ist nie der
+//               Prüfer, die Station behauptet kein GRÜN). Die Sprosse hebt die Prüfer-Akte, gelesen in buche-2.cjs fahrtUrteil.
+//               Bis 26.11. stand hier „kein Ersatz-Richter, kein Auge am Gerät als GRÜN“ und verlangte ≥ 12 Menschen: das Menschen-
+//               Tor war der eigene Deckel (41 Fronten standen daran, Decke 963–1 219 von 1 718) und fiel mit R11 neu;
+//   K  KORPUS — die Zahl ist rechenbar, aber gegen ein Band REALER Daten (oder den eingefrorenen Leser der Fremdwelt-Probe R10), dessen
+//               Manifest laut R11 mit Quelle eingefroren in vision/pruefer/quellen.json stehen muss (die Dateien selbst liegen
+//               außerhalb des Repos) und dort nicht steht: die Zeile bleibt „fehlt“, Grund „Korpus fehlt: <welcher, wofür>“.
 //
-// Trägt ein Satz Zahl UND Panel, ist er P (die Station rechnet die Zahl-Hälfte und nennt sie, die Sprosse wartet auf das Panel). Die
+// Trägt ein Satz Zahl UND Prüfer-Urteil, ist er P (die Station rechnet die Zahl-Hälfte und nennt sie, das Urteil spricht der Prüfer). Die
 // Wände: jede Auge-Sprosse eines k2-Registers steht hier (sonst wirft ihr Register beim Laden), eine Z-Sprosse im KERN trägt Soll und
 // Zeugen (sonst wirft der KERN), und `punkte.cjs selbsttest` prüft, dass jede Zeile hier eine Auge-Sprosse eines Registers ist.
 "use strict";
@@ -321,7 +325,7 @@ function tafel(leiter, nr, mitSoll) {
     if (k.klasse === "zahl")
         return mitSoll ? { richter: "gleich" } : { richter: "fehlt", grund: "ZAHL ohne Soll: „" + k.wort + "“ — der Satz ist eine Zahl aus dem Spiel, die Station trägt noch kein Soll seines Wortlauts (die Probe legt das Bild)" };
     if (k.klasse === "panel")
-        return { richter: "fehlt", grund: "R11 Panel: „" + k.wort + "“ — der Richter-Satz verlangt ein menschliches Urteil (≥ 12 blinde Menschen im 2AFC über ≥ 40 Paare oder ein daran geeichtes, eingefrorenes Modell); die Station legt das Bild und nennt ihre Zahlen, GRÜN nie" };
-    return { richter: "fehlt", grund: "Korpus fehlt: " + k.wort + " — mit Quelle eingefroren im Repo (R11); bis dahin GRÜN nie" };
+        return { richter: "fehlt", grund: "R11 Prüfer: „" + k.wort + "“ — das Urteil spricht der Blind-Prüfer (eingefrorenes Modell, geeicht an 200 Ankern ≥ 0,8, ≥ 40 Paare: vision/pruefer/pruefer.cjs) an den Bildern dieser Station; die Station legt das Bild und nennt ihre Zahlen, GRÜN spricht sie nie selbst" };
+    return { richter: "fehlt", grund: "Korpus fehlt: " + k.wort + " — sein Manifest steht noch nicht eingefroren in vision/pruefer/quellen.json (R11); bis dahin GRÜN nie" };
 }
 module.exports = { KLASSE, klasse, tafel };

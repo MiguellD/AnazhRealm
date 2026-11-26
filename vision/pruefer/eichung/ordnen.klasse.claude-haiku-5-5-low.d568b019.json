@@ -1,0 +1,110 @@
+{
+ "eichung": true,
+ "art": "ordnen",
+ "form": "klasse",
+ "herkunft": "fremd",
+ "modell": "claude-haiku-5-5·low",
+ "auftragSha256": "562ce6769fcd70fa24534a90bea616768d1890699a7250eb2cc8d5ab6bc3c7ed",
+ "pruefer": {
+  "modell": "claude-haiku-5-5·low",
+  "kontext": [
+   "haiku-ordnen-teil-01-2611",
+   "haiku-ordnen-teil-02-2611",
+   "haiku-ordnen-teil-03-2611",
+   "haiku-ordnen-teil-04-2611",
+   "haiku-ordnen-teil-05-2611",
+   "haiku-ordnen-teil-06-2611",
+   "haiku-ordnen-teil-07-2611",
+   "haiku-ordnen-teil-08-2611"
+  ]
+ },
+ "bauer": "agent-aaf834b5a5c89f93a (Bauer der Eich-Blätter, 26.11.)",
+ "frage": [
+  "Welche der 7 Klassen zeigt das Bild?"
+ ],
+ "anker": 200,
+ "treffer": 193,
+ "quote": 0.965,
+ "intervall95": [
+  0.9292,
+  0.9858
+ ],
+ "schlagseite": [],
+ "scharf": true,
+ "grund": "scharf: 193 von 200 Ankern in 8 Teilen",
+ "jeHerkunft": {
+  "fremd": {
+   "anker": 200,
+   "treffer": 193
+  }
+ },
+ "teile": [
+  {
+   "teil": "teil-01",
+   "form": "klasse",
+   "herkunft": "fremd",
+   "anker": 25,
+   "treffer": 25,
+   "zuordnungSha256": "94abdf987898dba83c24aa283e9d2a9bc80a518decd4d6ded88d88c5f37a613c"
+  },
+  {
+   "teil": "teil-02",
+   "form": "klasse",
+   "herkunft": "fremd",
+   "anker": 25,
+   "treffer": 18,
+   "zuordnungSha256": "684e3e169280a97e824d40850bbb469eaa776fc6033ffe4d254b357f69860544"
+  },
+  {
+   "teil": "teil-03",
+   "form": "klasse",
+   "herkunft": "fremd",
+   "anker": 25,
+   "treffer": 25,
+   "zuordnungSha256": "732e19a9fc784654bc908884f664ddf56817313c68939699149e6422041b7450"
+  },
+  {
+   "teil": "teil-04",
+   "form": "klasse",
+   "herkunft": "fremd",
+   "anker": 25,
+   "treffer": 25,
+   "zuordnungSha256": "0be9d78c359fbbc42915d61583383ecf903670b46c164cd86ff98476baba2a6d"
+  },
+  {
+   "teil": "teil-05",
+   "form": "klasse",
+   "herkunft": "fremd",
+   "anker": 25,
+   "treffer": 25,
+   "zuordnungSha256": "46afe78b04c2e6533c5b615f86977db4379a1c01fd10ef827e5a41e27b76f86c"
+  },
+  {
+   "teil": "teil-06",
+   "form": "klasse",
+   "herkunft": "fremd",
+   "anker": 25,
+   "treffer": 25,
+   "zuordnungSha256": "6f5301d9528ea6f6aee43ff4ddb3ad91f9597bd8023bbe848c9671da92d3d3ba"
+  },
+  {
+   "teil": "teil-07",
+   "form": "klasse",
+   "herkunft": "fremd",
+   "anker": 25,
+   "treffer": 25,
+   "zuordnungSha256": "e3702b7c4ac94b3896ce9a7f262e770d125cef307fcee402c152653b434523f4"
+  },
+  {
+   "teil": "teil-08",
+   "form": "klasse",
+   "herkunft": "fremd",
+   "anker": 25,
+   "treffer": 25,
+   "zuordnungSha256": "9ab3753b7501266242798124356aae4c5612789039261e438b344a83f4e4134a"
+  }
+ ],
+ "zuordnungSha256": "d568b019a7778459c63275559f177f7147494aa27a140fba1d0d3d41451c55e4",
+ "datum": "2026-11-26T11:42:47.490Z",
+ "pruefsumme": "0b9fe114fff0c6a6a307a48c31aa0ed7695d8080d4d18e161f7a060d6c744a43"
+}
