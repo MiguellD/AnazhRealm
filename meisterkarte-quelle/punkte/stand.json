@@ -22464,7 +22464,7 @@
   },
   "karte2.mensch.nahrung.tier": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Abstand p95 zum Spieler über den Hang (m) 4.04 (Soll ≤ 5) · Anstieg des Wegs über den Hang (m) 8.09 (Soll > 0) · Umfang 1 (Soll ≥ 1 an den Spieler gebundenes Tier) · Hang 29.5°, bond 0.12 → 0.4119, Aufgabe follow_player, Gegenlauf: das ungebundene Tier 62.96 m; Bestand 9 Tiere, 0 zahm · [linse-gpu] nvidia/pascal an 30e01e75 gtx — offen: karte2.mensch.nahrung.tier#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#2 radeon: Station seit der Messung geändert · karte2.mensch.nahrung.tier#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +4) — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.mensch.nahrung.tier#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#6 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#7 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Abstand p95 zum Spieler über den Hang (m) 4.04 (Soll ≤ 5) · Anstieg des Wegs über den Hang (m) 8.09 (Soll > 0) · Umfang 1 (Soll ≥ 1 an den Spieler gebundenes Tier) · Hang 29.5°, bond 0.12 → 0.4119, Aufgabe follow_player, Gegenlauf: das ungebundene Tier 62.96 m; Bestand 9 Tiere, 0 zahm · [linse-gpu] nvidia/pascal an 30e01e75 gtx — offen: karte2.mensch.nahrung.tier#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#2 radeon: Station seit der Messung geändert · karte2.mensch.nahrung.tier#2 gtx: Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js) · karte2.mensch.nahrung.tier#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#6 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#7 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.tier#1",
@@ -22501,7 +22501,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +4) — zuletzt an 99649186: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -36758,7 +36758,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an 54b89949: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,309 (Faden 1,309 · alle Kerne 1,083; vor 109,8/278,7 ms, nach 103,6/282,5 ms, Ruhe 83,9/260,8 · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +38) — zuletzt an 99649186: kein Anfang in dieser Sitzung (profiband.K4#1 fuhr in einer früheren Sitzung dieses Laufs) — offen, UNGEMESSEN · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an 54b89949: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,309 (Faden 1,309 · alle Kerne 1,083; vor 109,8/278,7 ms, nach 103,6/282,5 ms, Ruhe 83,9/260,8 · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +38) — zuletzt an c3631992: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[ · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -36776,7 +36776,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +38) — zuletzt an 99649186: kein Anfang in dieser Sitzung (profiband.K4#1 fuhr in einer früheren Sitzung dieses Laufs) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +38) — zuletzt an c3631992: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -37767,7 +37767,7 @@
   "ohne": 3272
  },
  "kopfVoll": "4a188bf2d08cd6263e74d21d40d3ec220e789e9d",
- "zeit": "2026-11-26T18:15:46.575Z",
+ "zeit": "2026-11-26T18:23:23.090Z",
  "vorher": "4a188bf2",
  "bilanz": {
   "gewinn": [],
