@@ -1,0 +1,47 @@
+@@SK2 20:28:10 Baum n2611-k4 HEAD dee4417cba26c84d69b2ffe78af60c9af60791a5 (Soll dee4417cba26c84d69b2ffe78af60c9af60791a5)
+Punkte-Maschine: die Sperre des Spiel-Baums gtx ist verwaist (pid 17212 lebt nicht mehr) — gelöst
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4a188bf2 · Sitzung 1 Proben in EINER Welt (Deckel Σ 1 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  WELLEN gtx am 4a188bf2: 1 rest 1 Läufe Σ Deckel 60 s · das Älteste zuerst · hängt zuletzt: —
+  SITZUNG gtx · die Welt steht nach 6.8 s (Schloss nach 0.03 min) · 1 Proben · Welt :27804
+  KARTE2 Gerät GTX 1060 (Adapter „NVIDIA GeForce GTX 1060“) — Preis-Gerät
+  SITZUNG der Grund der Welt: 86 Größen in 0 s
+  SITZUNG Ort stadt-voll vor karte2.mensch.macht.krieg#1: 150 s (2154 Takte, 81 Chunks)
+  SITZUNG karte2.mensch.macht.krieg#1 — die Probe ließ stehen: window.__ortSchritt (getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit) · Heap 477.2 → 524.6 MB (+47.4) — zurück vor dem Preis
+  KARTE2 Preis-Lauf nach karte2.mensch.macht.krieg#1: 75.7 s Loop des Spiels an der Pose der Probe · Referenz f 1.097 (Faden 1 · alle 1.097) · Tor vor ruhig nach 0,0 s (eigen 1,98 Kerne, Soll ≤ 3) · Tor nach ruhig nach 0,0 s (eigen 2,15 Kerne, Soll ≤ 3) · nach GC VRAM 200.8 MB, Heap 502 MB · Ruhe nach 3.1 s · Skala 0.75 → 0.75 (Regler-Fenster bei 0.75: p95 33.5 ms · CPU p50 12.3 ms · Leine 0.76 · NICHT an die GPU gebunden) · das Stück nach der Ruhe p95 33.44 ms, max 41.77 ms (946 Bilder)
+  SITZUNG karte2.mensch.macht.krieg#1 ließ den Halter stehen (tiere) — frei
+  ROT  karte2.mensch.macht.krieg#1 · S1 ROT an Umfang 1 < 2 Bewaffnete im Zweikampf — Täter: stamm/siedlung-bewohner.js:2848 _bewohnerHiebTakt — die Wache naht, der Gang beginnt nicht · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) 1 (Soll ≥ 1) · Treffer durch die Deckung 0 (Soll ≤ 0) · Umfang 1 (Soll ≥ 2 Bewaffnete im Zweikampf) · 1 Bewaffnete im Zweikampf (1 Wache(n) im Gang, der Spieler mit der leeren Hand) · 1 Gänge geschlagen in 23.44 s Welt-Uhr, Treffer Wache/Spieler 1/2, Züge 8, 2 von 2 Treffern beantwortet, 0 durch die Deckung, Lagen ohne Feld · 1 von 3 Wachen draußen nahten (Wache 7:72:4, 4 m vor dem Spieler) · [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 1.02 min
+  KARTE2 Akte mensch.macht.krieg.1.4a188bf2-gtx.json: Richter ROT · Preis GRÜN: p95 33.44 ms · max 41.77 ms · Heap 502 MB gehalten (Spitze 546.8) · VRAM 200.8 MB gehalten (Spitze 202.7) · 563 Bilder · Referenz f 1.097 · Einlauf 41.2 s (Lesewert): p95 33.42 ms, max 83.45 ms · der Lauf selbst p95 33.44 ms (946 Bilder)
+  SITZUNG Fahrt 296.8 s (Soll ≤ 1800 s) · 1 Proben · Grundstellung 0×
+→ meisterkarte-quelle\punkte\messung\4a188bf2-gtx.json
+@@SK2 20:34:47 krieg am 4a188bf2 EXIT=0 nach 397 s
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am dee4417c · Sitzung 1 Proben in EINER Welt (Deckel Σ 1 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  WELLEN gtx am dee4417c: 1 rest 1 Läufe Σ Deckel 60 s · das Älteste zuerst · hängt zuletzt: —
+  SITZUNG gtx · die Welt steht nach 6.8 s (Schloss nach 0.02 min) · 1 Proben · Welt :27804
+  KARTE2 Gerät GTX 1060 (Adapter „NVIDIA GeForce GTX 1060“) — Preis-Gerät
+  SITZUNG der Grund der Welt: 86 Größen in 0 s
+  SITZUNG Ort stadt-voll vor karte2.mensch.macht.krieg#1: 153.6 s (2263 Takte, 81 Chunks)
+  SITZUNG karte2.mensch.macht.krieg#1 — die Probe ließ stehen: window.__ortSchritt (getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit) · Heap 477.5 → 520.7 MB (+43.2) — zurück vor dem Preis
+  KARTE2 Preis-Lauf nach karte2.mensch.macht.krieg#1: 76.9 s Loop des Spiels an der Pose der Probe · Referenz f 1.041 (Faden 1.041 · alle 1) · Tor vor ruhig nach 0,0 s (eigen 1,74 Kerne, Soll ≤ 3) · Tor nach ruhig nach 0,0 s (eigen 2,25 Kerne, Soll ≤ 3) · nach GC VRAM 188.8 MB, Heap 511 MB · Ruhe nach 3.1 s · Skala 0.5 → 0.5 (Regler-Fenster bei 0.5: p95 25.2 ms · CPU p50 10.1 ms · Leine 0.45 · NICHT an die GPU gebunden) · das Stück nach der Ruhe p95 25.2 ms, max 41.73 ms (1204 Bilder)
+  SITZUNG karte2.mensch.macht.krieg#1 ließ den Halter stehen (tiere) — frei
+  GRÜN karte2.mensch.macht.krieg#1 · S1 GRÜN · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) 1 (Soll ≥ 1) · der Getroffene antwortet (Anteil) 1 (Soll ≥ 1) · Treffer durch die Deckung 0 (Soll ≤ 0) · Umfang 2 (Soll ≥ 2 Bewaffnete im Zweikampf) · 2 Bewaffnete im Zweikampf (1 Wache(n) im Gang, der Spieler mit klinge_langschwert) · 1 Gänge geschlagen in 23.72 s Welt-Uhr, Treffer Wache/Spieler 1/2, Züge 8, 2 von 2 Treffern beantwortet, 0 durch die Deckung, Lagen bauch/bein/bein · 1 von 3 Wachen draußen nahten (Wache 7:72:4, 4 m vor dem Spieler) · [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 1.03 min
+  KARTE2 Akte mensch.macht.krieg.1.dee4417c-gtx.json: Richter GRÜN · Preis GRÜN: p95 25.23 ms · max 41.68 ms · Heap 511 MB gehalten (Spitze 550.9) · VRAM 188.8 MB gehalten (Spitze 188.8) · 662 Bilder · Referenz f 1.041 · Einlauf 42.2 s (Lesewert): p95 25.18 ms, max 91.71 ms · der Lauf selbst p95 25.2 ms (1204 Bilder)
+  SITZUNG Fahrt 302.2 s (Soll ≤ 1800 s) · 1 Proben · Grundstellung 0×
+→ meisterkarte-quelle\punkte\messung\dee4417c-gtx.json
+@@SK2 20:41:29 krieg am dee4417c EXIT=0 nach 402 s
+@@SK2 20:41:33 kern EXIT=0 nach 3 s
+  SATZ des Leibs: L1 25270 von 25270 Kranken stehen anders · L2 3 von 3 Künsten trennen Meister und Lehrling [arbeit: pwalk ↔ pwalk/lehrling · zweikampf: fight ↔ fight/lehrling · brett: pwalk ↔ pwalk/lehrling] · L3 R² 1.000 über 100 h (Steigung 0.2658, Band 0.2658) · L4 Lagen am Dorf Sommer 0.778 · Winter 1.000 · Regen 1.000 · L5 10 Namen im Satz · L6 2 Rollen mit Tat lesen den Satz [jaeger jagd 5.5 Uhr: pwalk ↔ pwalk/lehrling · pwalk/krank · fischer fischfang 5 Uhr: pwalk ↔ pwalk/lehrling · pwalk/krank]
+  ROLLEN die Streife: 295360 Proben in der Runde, 290218 am Posten (49.6 % des Werks), 29536 Runden (0 ohne jeden Punkt), die Kette an 4 Punkten, das Revier 4 Punkte, bei 0,3 h je Schritt 2856 Runden ausgelassen, der Abend höchstens 0.70 h später, 0 Tage mit gefallenen Abschnitten · die Jagd: 8/8 Saaten mit Revier, 8 mit Ufer, 8 mit Jäger, Jagd je Tag [6, 8.5, 5.85, 5.6, 6.25, 6.1, 6.65, 6.1] h, Fischfang [6, 8.5, 5.85, 5.6, 6.25, 6.1, 6.65, 6.1] h, 0 fremde Bindungen, Beute an 26.7 % der Jagdtage, Fang aus dem Nichts 0 · der Hieb: 2000 Zweikämpfe, 11501 Züge, 0 durch die Deckung, 3205 von 3205 Treffern beantwortet, der Stärkere siegt 738 von 1017
+✅ DER MENSCH IST EINER — Dial-Gitter 729 Punkte, 118181 Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch; DIE WACHE STEHT zu jeder Stunde; DER STOSS IM GANG: Ausfall 0.198 m (Masse ×2 0.079), erholt 0.883 s; aus dem Stand 4.425 m/s → höchstens 4.67 m/s, Ruhe nach 5.15 s und 14.3 m · 7 m/s → höchstens 7.19 m/s, Ruhe nach 12.42 s und 60.5 m.
+@@SK2 20:41:54 kern --selftest EXIT=0 nach 22 s
+  ✅ Satz-Täter „alt“ → ROT an L1
+  ✅ Satz-Täter „ohneStufe“ → ROT an L2
+  ✅ Satz-Täter „einmalRate“ → ROT an L3
+  ✅ Satz-Täter „ohneWetter“ → ROT an L4
+  ✅ Satz-Täter „ohneZeile“ → ROT an L5
+  ✅ Satz-Täter „tatOhneKunst“ → ROT an L6
+✅ Selbsttest: alle neunundsechzig injizierten Abweichungen erkannt (729/1/5 Treffer, die Wache, das Verb, fünf Täter des Stoßes, drei Täter des Bestands, drei Täter der Acker-Kette, fünf Täter des Könnens, acht Täter der Stoffstrom-Kette, sieben Täter der Verben aus der Gestalt, neun Täter der Regel-Grammatik, sieben Täter des Einkaufs und der Ankunft zur Stunde, elf Täter der Rolle und ihres Tages-Angebots, sechs Täter des Satzes des Leibs).
+@@SK2 20:41:54 Spiel-Dateien von main 4a188bf2 (git 0): M  koerper-core.js · M  stamm/siedlung-bewohner.js
+@@SK2 20:47:15 linse vorher-4a188bf2 (bewohner) EXIT=0 nach 321 s
+  (321 s) — Sekunden je Probe: bewohner: 303
+@@SK2 20:47:15 zurück am Kopf (git 0) · Baum sauber
+@@SK2 ENDE 20:47:15

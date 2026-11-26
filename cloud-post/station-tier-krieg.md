@@ -1,6 +1,6 @@
 # Stations-Kandidat tier#2 + krieg#1 — „die Station liest den Kern von rollen-des-tages“ (OMEN, 26.11.)
 
-**Kopf:** punkte-maschine Zweig `pm-station-liest-rollen` = a65555138b18a4a3a33f6f0cf1e7512d1c4d71a8 (geschoben 20:17, neuer Zweig, kein Force; der Lauf „nachher“ fuhr seinen Vorgänger 43aacf5f — einziger Unterschied: die Stelle vor der Wache, s. unten) (EIN Commit auf punkte-maschine a35231cd, nur
+**Kopf:** punkte-maschine Zweig `pm-station-liest-rollen` = **db9b54e64645f2471ed19975f007adc36ef2cd6d** (Nachtrag 20:37, fast-forward) — davor a65555138b18a4a3a33f6f0cf1e7512d1c4d71a8 (geschoben 20:17, neuer Zweig, kein Force; der Lauf „nachher“ fuhr seinen Vorgänger 43aacf5f — einziger Unterschied: die Stelle vor der Wache, s. unten) (EIN Commit auf punkte-maschine a35231cd, nur
 `meisterkarte-quelle/punkte/stationen/k2-mensch-nahrung.js` und `…/k2-mensch-macht.js`). Diff daneben: `station-tier-krieg.diff`.
 **Spiel:** main 4a188bf2d08cd6263e74d21d40d3ec220e789e9d (V18.546.439), GTX 1060, Hand-Lauf `punkte.cjs run --sha 4a188bf2 --geraet gtx
 --nur karte2.mensch.nahrung.tier#2,karte2.mensch.macht.krieg#1` zweimal im selben Slot: vorher = Stationen von a35231cd, nachher = Kopf.
@@ -78,3 +78,32 @@ Die Station liest den Umfang aus dem Spiel (Bewohner im Wache-Slot mit `b.waffe 
 imSicht FEST `{ rho: null, imSicht: null }` (MACHT:1016). Ein Spiel-Schnitt an `_bewohnerListe` DIE WACHE hebt höchstens den Umfang auf
 1; S1 bleibt ROT an „Antwortzeit ∝ Weg zur Wache ρ —“, bis die Station ρ/imSicht an einem Ausrücken aus der Wache misst — das Spiel
 kennt keins (heute naht nur, wer zufällig Zeuge ist, bew:2768). Gemeldet an die GTX 1050 und den Koordinator; nicht geschnitten.
+
+## Nachtrag 20:50 — Slot sk-2 (krieg#1 mit geheilter Stelle, am main und am Spiel-Kopf krieg-lage)
+
+Zweiter Stations-Fehler, geheilt in **db9b54e6** (fast-forward über a6555513, kein Force): der Spieler hielt die leere Hand —
+`equipHeld("langschwert")` kennt keinen Bauplan dieses Namens; die Welt nennt die Gattung der Schmiede mit dem Präfix ihrer Domäne
+(`KIND_POLICY.weapon.prefix` = `klinge_`, wie `_stoffstromBauplan`). Die Station nimmt jetzt `klinge_<Waffe der Wache>`, sonst das
+Langschwert, und nennt ohne Griff den Grund. Der Lauf am main fuhr noch a6555513 (leere Hand), der am Kopf schon db9b54e6.
+
+```
+@@SK2 20:28:10 Baum n2611-k4 HEAD dee4417cba26c84d69b2ffe78af60c9af60791a5 (Soll dee4417cba26c84d69b2ffe78af60c9af60791a5)
+  ROT  karte2.mensch.macht.krieg#1 · S1 ROT an Umfang 1 < 2 Bewaffnete im Zweikampf — Täter: stamm/siedlung-bewohner.js:2848 _bewohnerHiebTakt — die Wache naht, der Gang beginnt nicht · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) 1 (Soll ≥ 1) · Treffer durch die Deckung 0 (Soll ≤ 0) · Umfang 1 (Soll ≥ 2 Bewaffnete im Zweikampf) · 1 Bewaffnete im Zweikampf (1 Wache(n) im Gang, der Spieler mit der leeren Hand) · 1 Gänge geschlagen in 23.44 s Welt-Uhr, Treffer Wache/Spieler 1/2, Züge 8, 2 von 2 Treffern beantwortet, 0 durch die Deckung, Lagen ohne Feld · 1 von 3 Wachen draußen nahten (Wache 7:72:4, 4 m vor dem Spieler) · [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 1.02 min
+  KARTE2 Akte mensch.macht.krieg.1.4a188bf2-gtx.json: Richter ROT · Preis GRÜN: p95 33.44 ms · max 41.77 ms · Heap 502 MB gehalten (Spitze 546.8) · VRAM 200.8 MB gehalten (Spitze 202.7) · 563 Bilder · Referenz f 1.097 · Einlauf 41.2 s (Lesewert): p95 33.42 ms, max 83.45 ms · der Lauf selbst p95 33.44 ms (946 Bilder)
+@@SK2 20:34:47 krieg am 4a188bf2 EXIT=0 nach 397 s
+  GRÜN karte2.mensch.macht.krieg#1 · S1 GRÜN · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) 1 (Soll ≥ 1) · der Getroffene antwortet (Anteil) 1 (Soll ≥ 1) · Treffer durch die Deckung 0 (Soll ≤ 0) · Umfang 2 (Soll ≥ 2 Bewaffnete im Zweikampf) · 2 Bewaffnete im Zweikampf (1 Wache(n) im Gang, der Spieler mit klinge_langschwert) · 1 Gänge geschlagen in 23.72 s Welt-Uhr, Treffer Wache/Spieler 1/2, Züge 8, 2 von 2 Treffern beantwortet, 0 durch die Deckung, Lagen bauch/bein/bein · 1 von 3 Wachen draußen nahten (Wache 7:72:4, 4 m vor dem Spieler) · [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 1.03 min
+  KARTE2 Akte mensch.macht.krieg.1.dee4417c-gtx.json: Richter GRÜN · Preis GRÜN: p95 25.23 ms · max 41.68 ms · Heap 511 MB gehalten (Spitze 550.9) · VRAM 188.8 MB gehalten (Spitze 188.8) · 662 Bilder · Referenz f 1.041 · Einlauf 42.2 s (Lesewert): p95 25.18 ms, max 91.71 ms · der Lauf selbst p95 25.2 ms (1204 Bilder)
+@@SK2 20:41:29 krieg am dee4417c EXIT=0 nach 402 s
+@@SK2 20:41:33 kern EXIT=0 nach 3 s
+@@SK2 20:41:54 kern --selftest EXIT=0 nach 22 s
+@@SK2 20:41:54 Spiel-Dateien von main 4a188bf2 (git 0): M  koerper-core.js · M  stamm/siedlung-bewohner.js
+@@SK2 20:47:15 linse vorher-4a188bf2 (bewohner) EXIT=0 nach 321 s
+@@SK2 20:47:15 zurück am Kopf (git 0) · Baum sauber
+@@SK2 ENDE 20:47:15
+```
+
+- **krieg#1 GRÜN am Spiel-Kopf krieg-lage dee4417c** (auf main 4a188bf2; Lage im Zug von `spielKampf`, Franklin 2019 Longpoint):
+  sitzt 1 · antwortet 1 · durch die Deckung 0 · Umfang 2 · Lagen bauch/bein/bein · Preis GRÜN p95 25,23 ms. Am main: „Lagen ohne Feld“, sitzt —.
+- Kern-Linse am Kopf (diag-koerper-kern): EXIT 0; Selbsttest 69 von 69 (Täter ohneLage → H5). Die Lagen über 2 000 Zweikämpfe
+  (5 209 Treffer): bein 0,534 · kopf 0,204 · bauch 0,138 · brust 0,123 — Tafel 0,54 · 0,20 · 0,13 · 0,13 ± 0,03.
+- Roh: `station-tier-krieg-sk2.txt` (= OMEN p3/n2411/wechsel/sk-2.txt, Slot 20:28:10–20:47:15).
