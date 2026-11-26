@@ -1,0 +1,55 @@
+STATIONS-KANDIDAT fahrzeug-medium — meisterkarte-quelle/punkte/stationen/k2-mensch-fahrzeug.js, Leiter mensch.fahrzeug.medium S2
+Basis: origin/punkte-maschine 2e4ccc1b (die Datei ist byte-gleich ihrem Stand seit 8d0eba7e; der Diff k2-mensch-fahrzeug.diff
+gilt gegen sie). Nur BREMS_AN, die Maße von S2, ihr Beleg, die zwei Sprossen-Maße imBand/imBand50 und die Probe-Zeile von S2
+ändern sich; die anderen Schritte und Leitern der Datei bleiben byte-alt.
+
+WARUM
+
+1. Die alte Station fuhr den Wagen eben und ohne Boden (`boden: () => 0`, kein e.boden): jede Saat dieselbe Fahrt, gemessen
+   „1 Fahrt je Rezept über 20 Saaten“. Seit fahrzeug-medium trägt das Fahr-Gesetz das Rad im Boden (vehicle-core.js
+   `radImBoden`, `fahrGesetz(...).rad`), und der Wagen liest seinen Boden durch den EINEN Leser des Leibs
+   (stamm/koerper-fahrt.js `_fahrGrund` → stamm/gelaende-kollision.js `_kontaktStoffAt`). Die Station liest jetzt denselben
+   Leser des SPIELS (r._fahrGrund, r._fahrHaft, r._werkBoden, r._trittZahl) am Ort der Saat — kein Nachbau des Bodens.
+
+2. ZWEI FAHRTEN je Adresse, weil die Karte zwei Dinge verlangt:
+   - DIE WELT: der Wagen bremst 100 → 0 auf dem echten Gelände der Saat (Steigung, Wellen, Flug, Stoffwechsel). Das ist die Zahl
+     „verschiedene Fahrt je Boden“ (Maß physik = Anzahl verschiedener [weg100, weg50, rinne] je Rezept, Soll 20).
+   - DER PRÜFSTAND: dasselbe Rad auf dem Boden DER SAAT (Stoff, μ, Feuchte, Rollwiderstand), aber eben — so, wie die Profis
+     den Bremsweg messen: 49 CFR 571.135 (FMVSS 135) S6.2.2 „the test surface has no more than a 1% gradient in the direction
+     of testing and no more than a 2% gradient perpendicular“. Das Band der Karte „30–50 m ∝ v²/μ“ ist eine Aussage über
+     diesen Prüfstand; normiert wird mit μ + f_r (f_r = Rc/W, Bekker, Wong 2001 Theory of Ground Vehicles §2.4), weil der
+     Rollwiderstand im weichen Boden mitbremst. 50 → 0 hat das Band 7,5–12,5 m (∝ v²: ein Viertel).
+   Ein Versuch je Welt-Fahrt mit Filtern (eben am Ende, μ̄ wegmittel, max |steig|, Energie-Bilanz, FMVSS-Streifen-Suche)
+   scheiterte an Wellen, Flug und Querhang der Welt: am Genesis-Ort fliegen 78 von 120 Welt-Fahrten bei 100 km/h auch OHNE
+   Boden (ein Verhalten des Kerns, das diese Station nicht richtet). Die Welt-Fahrt bleibt darum Zahl im Beleg (Gefälle, Flüge),
+   der Prüfstand urteilt das Band.
+
+3. Nebenbefund der alten Schleife: sie bremste mit der S-Taste; unter `bremsV` wurde das der Rückwärtsgang und sprang über das
+   Fenster `speed ≤ 0,05` (Supersport 50 → 0 „1 230,92 m“). Der Kandidat bremst mit `brake: 1` bis `FAHR.schritt.bremsV`.
+
+4. karren und boot: der Karren fährt 5,8 km/h, das Boot hat kein Rad — beide stehen im Beleg unter „ohne“, nicht im Band.
+
+GEMESSEN (headless, Null-Renderer, Mechanik; Spiel-Kopf fahrzeug-medium; derselbe Zensus, derselbe Fächer, 20 Saaten × 6 Rezepte;
+„Rinne“ = die größte Tiefe der 10. Durchfahrt am Ort)
+
+              alte Station (main 4c9e6aab)        Kandidat (Kopf fahrzeug-medium)
+  genesis     physik 1 · Band 75 % · 50→0 63 %    physik 20 · Band 100 % (38,14–45,26 m) · 50→0 100 % · Rinne 0,6 cm · 2,9 s
+  dorf        —                                   physik 20 · Band 100 % (38,14–45,26 m) · 50→0 100 % · Rinne 14,3 cm · 2,8 s
+  wiese       —                                   physik 20 · Band 100 % (38,14–45,02 m) · 50→0 100 % · Rinne 0,6 cm · 3,0 s
+  Fels/fest   —                                   Rinne 0 (rinneFest 0 m an allen drei Orten)
+  Die neue Station am ALTEN main: Leser „kein Rezept des Kerns steht mit Rad im Boden bis 130 km/h“ (vehicle-core.js:4030
+  exportDrive huelle.radB) — sie ist ROT am alten exportDrive.
+
+DIE DREI WÄNDE
+  - node punkte.cjs liste: Basis genau zwei ROT gelaende.K2#1/#2 „Wand HAKEN“, sonst nichts (1 976 Stationen, „Fehler 2“, 22,7 s).
+  - die Leiter misst in ≤ 60 s: S2 2,8–3,0 s je Ort (Fächer 120 Adressen in 2,8–3,0 s).
+  - der Fächer läuft im SPIEL (K.welt, der Leser des Spiels), nicht im Kern unter node/worker_threads — jede Adresse ist eine
+    Fahrt durch r._fahrGrund/_fahrHaft/_werkBoden/_trittZahl; es gibt keinen Zweit-Leser, dessen Stichprobe gegen das Spiel zu
+    halten wäre.
+  - k2-mensch --selbsttest GRÜN: 544 Stationen, 5 398 Mutanten, 0 falsch (die Probe von S2: „ROT an Anteil der Saaten mit
+    Bremsweg 50 → 0 × (μ + f_r) auf dem Boden der Saat in 7,5–12,5 m 0 verfehlt“).
+
+OFFEN
+  - stadt-voll ist headless nicht gemessen (braucht die Werkbank /umstellen) — Messname: S2 an stadt-voll.
+  - „Spurrinne nach 10 Durchfahrten sichtbar“: die Station misst die Tiefe (Rinne nach 9 Vorfahrten), nicht das Bild —
+    Messname: rinne_sichtbar (Bild der Rinne).
