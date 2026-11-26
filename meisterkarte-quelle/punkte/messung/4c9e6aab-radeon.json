@@ -1,7 +1,7 @@
 {
  "sha": "4c9e6aab7a4d24859cee6b9173b6f26cd4611bdf",
  "geraet": "radeon",
- "zeit": "2026-11-26T05:18:08.503Z",
+ "zeit": "2026-11-26T05:58:02.669Z",
  "host": "MiguellD",
  "je": {
   "karte2.planet.kopplung.gegenwart#2": {
@@ -2703,6 +2703,70 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.fremde-physik#1": {
+   "gruen": false,
+   "zahl": "der Deckel der Leiter riss nach 25,04 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 25,04 s vor dem Wert der Sprosse · der Deckel der Leiter 25 s) · Täter: @@PUNKTE@@ PROBE 289.4 s · Exit 0",
+   "exit": 0,
+   "minuten": 4.9,
+   "grund": "der Deckel der Leiter riss nach 25,04 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 25,04 s vor dem Wert der Sprosse · der Deckel der Leiter 25 s) · Täter: @@PUNKTE@@ PROBE 289.4 s · Exit 0",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 290.8,
+   "fremd": {
+    "s": 299.3,
+    "takte": 99,
+    "fremdS": 4443.44,
+    "kerne": 14.846,
+    "fensterKerne": 16.534,
+    "namen": [
+     [
+      "chrome.exe --type=gpu-process --no-sandbox --headless=new --enable-unsafe-swiftshader --no",
+      3517.42
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-29752-profil-pCXRre --no-p",
+      228.03
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      69.11
+     ]
+    ],
+    "dienerS": 296.53,
+    "diener": [
+     [
+      "System",
+      157.53
+     ],
+     [
+      "WmiPrvSE.exe",
+      73.94
+     ]
+    ],
+    "geraetS": 335.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      173.53
+     ],
+     [
+      "svchost.exe",
+      147.3
+     ],
+     [
+      "SearchIndexer.exe",
+      12.84
+     ]
+    ],
+    "eigenS": 566.13,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-26T05:58:02.669Z",
+   "abdruck": "3d09062ce5dc",
+   "port": 7804,
+   "bahn": "sitzung",
    "modus": "session"
   }
  },
