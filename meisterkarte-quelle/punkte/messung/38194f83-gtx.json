@@ -1,7 +1,7 @@
 {
  "sha": "38194f8373828ba681647f1fb6c41255c41f7fd1",
  "geraet": "gtx",
- "zeit": "2026-11-26T23:26:58.658Z",
+ "zeit": "2026-11-26T23:55:37.886Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.leben.pflanzen.kraft#2": {
@@ -72,18 +72,89 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.planet.kopplung.stadtklima#1": {
+   "gruen": true,
+   "zahl": "S1 abweichungGrad 1,976 ° gegen Soll ≤ 20 ° ✓ · Zeuge: die Welt geändert",
+   "exit": 0,
+   "minuten": 2.03,
+   "gpu": "nvidia/pascal",
+   "konsum": "ke6d7d82f5c44",
+   "konsumN": 32,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k0f91bf40e6d9",
+   "s": 121.3,
+   "fremd": {
+    "s": 126.1,
+    "takte": 58,
+    "fremdS": 40.73,
+    "kerne": 0.323,
+    "fensterKerne": 0.456,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      12.13
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.25
+     ],
+     [
+      "Explorer.EXE",
+      4.7
+     ]
+    ],
+    "dienerS": 26.34,
+    "diener": [
+     [
+      "System",
+      12.05
+     ],
+     [
+      "dwm.exe",
+      7.8
+     ]
+    ],
+    "geraetS": 35.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.67
+     ],
+     [
+      "svchost.exe",
+      10.19
+     ],
+     [
+      "SearchProtocolHost.exe",
+      1.2
+     ]
+    ],
+    "eigenS": 389.67,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T23:55:37.886Z",
+   "abdruck": "5ec4314ed802",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "kfbda68d4616c": "bVXRjpswEPyXPLblDAEOsHQPTrjqUjVS8glrszZcCEQ2hCpV/70CAglw+wISs97ZmV3zd3UBcQKFL5+mLFZ09W31Y2XgipZBfUX98mlWdBUJZ40uZX0Qxti2hQmdXSpD8owT4AWkZ7RqXWGWv4guTb6C7XNKmnemDoRIciNxw8Z4Z29v82NyjklpVSBxOMRG1w+RzoG1UcDRglp2he9g34vw1aGkizBm+5iM0QjGDg1pDuEHO3j+ZlmdQ5FMO3CcCF4DyprdlrHjHJ9kgJWVZ4UZ6jtJEEmbPmruFzkaGusGmOao70kYOo7HB9KbVppWrlmizGtjJsVCN/HXISUkmmMVmkyklXXRJcfiDufROnCAbppF3+pSW/KZEXAOIZ9rngIWCvWEg+0K2Qr+J5wfeoIzarAKSO/QyHaDNX9oQwj5WHLJO+JdiYG47/iJhEliay65tgInbBKH7qMaUHIcNzFC1NJ4I9JMn6dySQ/Xtkt/LymaFBLU1qk01Yh2MfBs3m/ILiY9l3Azz3w0N3gIAOHTwJCQsI+FlqaUVQMaLXWph6Hx0A98ythuAa7gfB7sSYSLYm6kqdpBf6axjqTve5SQ7/3CLJvu18K6YZbjOLcicCO6jb05+KrhbAFXOpNycJ/7QkZfDWuDeWXxsqwGKZ0gcN1WkuLZ8ENn5e7J61gdvf1Ppt6nI7CLjwe14N9VKXU1kOfAXc+jUsUhIaGcozNdWQ2IdBRIcoSIkkbMD76hzlHhRE7pOLBOaHfljGy94eX7ZJBvC7dvGbZCF6Y2g9ICPO7TL6xpUJ84FKc70HNtJwjpL8bYZs8OU2G2ql2Hbm0mERHGNqzBY9zrxzb9oy90QUEuupRZezuSFGqTQl49fhf//gM=",
-  "kbe820ac97b64": "jZXRcpswEEX/xY9NFYGBAJrJgxwyTdJJ6/QPVmIFxBgYSYSOO/33DtjYBvLQfWI8d7WXsxf5z6oBuYMMb99NXa3Y6svq68rABxKD+gP17btZsVUs3TV6jB+Lcs6/9TKpi8YaWhaCgqgg3yNptcWivJVDm7oDJxCMdo8821Kq6IEmHT/XA7+/nx9TCkxrYkHheIiDXhAhmwtbk4FAAq0aBp/EgR/jncvoUFHCXxN6rk5yvu1ot42eZocJqNKpc9eN4S5kvHvmnL/NXaYFoCVlUZlxrpuGsXLYZdbrokdDRw6AeYn61ISR6/piNLvpkfSYZo2qbI2ZDIu8NFhHjNJ4rs3QFDK3pNG1wOokF/E6dIFtugXtrGmJunYEQkAk5qxzwCpDPfHgeFL1oH9H80N3sEcNpIL8JI0dL1yLCxtK6dPSSzkYH0aMxgM3SBVMGvulHgGnfFLb4ddsVKlzzORZki3jZmRe6P0Ul/Jx7XhzBiaHFDXZ1caelR6GviOOX8VzQo8+os288/Ji4/4AILoKC40of1pwNLWyHWgkWdOOgfExCAPGs0W6jIX9flxNKj2UixewfcivbaxjFQQ+o/TmhHSB5/hJkAMWJZ4zK0MvZg+JPxd/aNgTEJkulBo3LwKp4s+C2mFpiahrO6J0w9DzGPVodb3sHx1/4Pz16spIyl++LV9uHqfr/85fPptQazsaFyA832eqSyJKIzVXF9qSDmR+hqMEQjyHeEBdYoYTjMp1YZ2y4XoZK/HHh5tJeA+LLR8K7AFXpjUjYQm+CI7pOKX4eZrcDvVOQLU7Nfie44YR4zzJ+CvfXlH5yfl7ozr+3/W24cOgBiVtdK2K/makObQmh9Je/iL+/gM="
+  "kbe820ac97b64": "jZXRcpswEEX/xY9NFYGBAJrJgxwyTdJJ6/QPVmIFxBgYSYSOO/33DtjYBvLQfWI8d7WXsxf5z6oBuYMMb99NXa3Y6svq68rABxKD+gP17btZsVUs3TV6jB+Lcs6/9TKpi8YaWhaCgqgg3yNptcWivJVDm7oDJxCMdo8821Kq6IEmHT/XA7+/nx9TCkxrYkHheIiDXhAhmwtbk4FAAq0aBp/EgR/jncvoUFHCXxN6rk5yvu1ot42eZocJqNKpc9eN4S5kvHvmnL/NXaYFoCVlUZlxrpuGsXLYZdbrokdDRw6AeYn61ISR6/piNLvpkfSYZo2qbI2ZDIu8NFhHjNJ4rs3QFDK3pNG1wOokF/E6dIFtugXtrGmJunYEQkAk5qxzwCpDPfHgeFL1oH9H80N3sEcNpIL8JI0dL1yLCxtK6dPSSzkYH0aMxgM3SBVMGvulHgGnfFLb4ddsVKlzzORZki3jZmRe6P0Ul/Jx7XhzBiaHFDXZ1caelR6GviOOX8VzQo8+os288/Ji4/4AILoKC40of1pwNLWyHWgkWdOOgfExCAPGs0W6jIX9flxNKj2UixewfcivbaxjFQQ+o/TmhHSB5/hJkAMWJZ4zK0MvZg+JPxd/aNgTEJkulBo3LwKp4s+C2mFpiahrO6J0w9DzGPVodb3sHx1/4Pz16spIyl++LV9uHqfr/85fPptQazsaFyA832eqSyJKIzVXF9qSDmR+hqMEQjyHeEBdYoYTjMp1YZ2y4XoZK/HHh5tJeA+LLR8K7AFXpjUjYQm+CI7pOKX4eZrcDvVOQLU7Nfie44YR4zzJ+CvfXlH5yfl7ozr+3/W24cOgBiVtdK2K/makObQmh9Je/iL+/gM=",
+  "ke6d7d82f5c44": "jVVNj6M4EP0vOc4sYwimAUtzcJpuJattibnNtWzKhgmByCbtVVb731eQkPAxh/UJwauqV+9VmX82GmvApkBPtga//bIbtomTGKKQ8Z/8nXP+xv//+bF/5d83f2zOII+g+3Rts2GbL/2rGhrsJlUEKgwSRh4nfDzlLqOEJO90ryh33/uMFj7Rs2g+0dzCUxlsMWT3woRz/trDpKnOnSV1JQiIBsoTehfTYVV/k0OYegE/Eoy4N65zQhS5ksw9G3jjt2rTNLXAovU6UDgm8TGMEmRL4MVqEOjBRQ2F7+CIpvgS3PtMMv6RPVt2kvPcEZcne55TsltXF9AU8w6CIIWXmHF36AVf4osKsPPqqrFj/aCIU+U/dXYfqxgDzrsCljWaexAmQUDFSHrXS9PLtQhU9cXaWbEkLKJtb2q6xGq0lSw772xagc0dLtJtHADbuVXf+nzx1JQRCAGJWGpeAjYazYyDH0rVC/53skx6hBMa8Boo79DUD+OtmMwgIfs1l3ogPpQYiUdBVCiYBfbmks9e4GK+FPnwUY8o9Rg3+YDotfFWlpU5zeVSFLd+yP5aU7QlFGi8Y2u7BzrEmPritiGHjNy4JLtl5LO50UMASCYDQxLC9ystbas6BwY9fb6MQ0MxiiPG+WEF7uB0Gu0pZIhyaaTt+kGf0timKoooI+TrbWHWTd/WwrtiVeNjbmUcpuw1o0vwp4GTB0KbSqnRfRFJlf5uWB3WnSfathulDOI4DHtJmqnh+WDlYeJ1pn/Qj3euF5fmgfNcr/gPVVrTjeQFiJBSpnSWEJKoJboynedAlg+BlEBIGXFymfiKpkaNMzlVEMC2YMOV82BLx4evs0G+rty+VtgL3diLHZWWQEXEfmONQ3MU0BzvQBr6QZywPznnuw+ez4V51f06DGszO+kwrg5lNpfxVuiMkggoG1LD1vfp9DczfDubVlX9zUlKuNgS6u4J+fc/",
+  "k0f91bf40e6d9": "jZXRcpswEEX/xY9NFYGBAJrJgxwyTdpJ4/QPVmIFxBgYCaKOO/33DtjYBvLQfWKYu9rL2Qv8WTUgd5Dh7bupqxVbfVl9XRn4QGJQf6C+fTcrtoqlu0aP8WNRzvm3XiZ10bSGloWgICrI90g63WJR3sqhTd2BEwhG7SPPtpQqeqCJ5ed64Pf382NKgWlNWlA4HuKgF0TI5sLOZCCQQKeGwSdx4Md45zI6VJTwl4Sey0rOt5babfQ0O0xAlU6du24MdyHj9plz/jZ3mRaALSmLyoxz3TSMlcMus14WPRosOQDmJepTE0au64vR7KZH0mOaNaqyM2YyLPLSYB0xSuO5NkNTyLwlja4FVie5iNehC2xjF7SzpiPq2hEIAZGYs84Bqwz1xIPjSdWD/h3ND93BHjWQCvKTNHa8cC0ubCilT0sv5WB8GDEaD9wgVTBp7Jd6BJzySW2Hu9moUueYybMkW8bNyLzQ+yku5ePa8eYMTA4parKrTXtWehj6jji+Fc8JPfqINvPOy4ON+wOA6CosNKL8acHR1Kq1oJFkTTcGxscgDBjPFukyLez342pS6aFcPEDbh/zaxjpWQeAzSm9OSBd4jq8EOWBR4jmzMvRi9pD4c/GHhj0BkelCqXHzIpAq/iyoFsuWiLpuR5RuGHoeox6trpf90/IHzl8ua35Nyl9+W36/eZyu/wf//tmEWrejcQHC832mbBJRGqm5utAtsSDzMxwlEOI5xAPqEjOcYFSuC+uUDZ+XsRJ/vLiZhPew2PKhwB5wZTozEpbgi+CYjlOKn6fJtah3AqrdqcH3HDeMGOdJxl/49orKK+fvjbL8v+ttw4dBDUra6FoV/ZeR5tCZHMr28ov4+w8="
  },
  "sitzung": {
-  "start": "2026-11-26T23:26:15.184Z",
-  "ordner": "sitzung-20261127-002615",
+  "start": "2026-11-26T23:54:58.364Z",
+  "ordner": "sitzung-20261127-005458",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 7.4,
+  "bootS": 7.2,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
@@ -94,10 +165,10 @@
   },
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "karte2.leben.pflanzen.kraft#2",
-    "s": 28.7,
-    "takte": 737,
+    "ort": null,
+    "vor": "karte2.planet.kopplung.stadtklima#1",
+    "s": 25.9,
+    "takte": 792,
     "chunks": 81,
     "nach": null
    }
@@ -105,51 +176,61 @@
   "wegeTueren": [],
   "felder": [
    {
-    "probe": "karte2.leben.pflanzen.kraft#2",
+    "probe": "karte2.planet.kopplung.stadtklima#1",
     "weg": [
+     "__dorfDerProbe",
      "__rafferEnde",
      "__rafferKurz",
+     "__ortZeit",
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr",
      "__imSchuss",
      "__nahSpeicher",
      "__letzteSpiegel",
-     "__letzteTeilung",
-     "__zensusCalls",
-     "__abbruchEpoche"
+     "__letzteTeilung"
     ]
    }
   ],
   "wirt": [
    {
-    "probe": "karte2.leben.pflanzen.kraft#2",
+    "probe": "karte2.planet.kopplung.stadtklima#1",
     "anders": [
-     "r._tickNahWiese",
-     "r._ruheImBild",
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__ortSchritt",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
      "window.__raffer",
-     "window.__rafferRest"
+     "window.__rafferRest",
+     "window.__ortSchritt"
     ],
     "wie": {
-     "r._tickNahWiese": "neu: () => 0",
-     "r._ruheImBild": "neu: () => 0",
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
      "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
-     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()"
+     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     229,
-     234.1
+     193.4,
+     542.9
     ],
     "ungemessen": null
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.leben.pflanzen.kraft#2",
+    "probe": "karte2.planet.kopplung.stadtklima#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.planet.kopplung.stadtklima#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -161,20 +242,27 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 1979,
-   "frameP95": 33.58,
-   "taktP95": 22.15,
-   "vramMax": 164.2,
+   "bilder": 3307,
+   "frameP95": 25.09,
+   "taktP95": 16.59,
+   "vramMax": 133.4,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 229,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.planet.kopplung.stadtklima#1",
+     "m": 17778,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 227,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 242.9,
-  "minuten": 4.22
+  "fahrtS": 239.7,
+  "minuten": 4.12
  }
 }
