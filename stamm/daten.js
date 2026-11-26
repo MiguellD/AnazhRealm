@@ -2561,6 +2561,7 @@ class AnazhRealm_daten {
             "gestalt.farn": ["Farn", "Fern"],
             "gestalt.federpfahl": ["Federpfahl", "Spring post"],
             "gestalt.federstange": ["Feder-Stange", "Spring pole"],
+            "gestalt.felsturm": ["Felsturm", "Rock spire"],
             "gestalt.feuerstelle": ["Feuerstelle · Steinring, Scheite, Glut", "Campfire · stone ring, logs, embers"],
             "gestalt.fichte": ["Fichte", "Spruce"],
             "gestalt.findling": ["Findling", "Erratic boulder"],

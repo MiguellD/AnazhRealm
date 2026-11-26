@@ -317,14 +317,25 @@ async function probe(K) {
         };
     }
     r._torGesetzMemo = null;
-    // (E) DIE EXEMPLARE: je Klasse eines in einer Reihe 30 m südlich der Mess-Wiese (Abstand 9 m)
+    // (E) DIE EXEMPLARE: je Klasse eines in einer Reihe 30 m südlich der Mess-Wiese (Abstand 9 m). DER FELSTURM steht in der
+    // Gestalt mit der niedrigsten Hülle (8 m; der Same über `_foundryVariantFor`): an ihr lügt die alte Regel — die Spender-Parts
+    // (16,8 m) ragen über das Bild, (T) bleibt scharf. In Welt-Metern (landmarken-geologie-5, bis 69 m hoch, 26 m breit) passten
+    // die Parts sonst in sein Bild, und der Turm sprengte die Reihe.
+    const turmSame = () => {
+        const H = ((globalThis.__terrainCore.PHYTO_PRESETS.felsturm || {}).fx || {}).huellen || [];
+        const V = AnazhRealm._studioGestaltenKern("felsturm");
+        const gMin = 1 + H.reduce((m, h, i) => (h[2] < H[m][2] ? i : m), 0);
+        for (let s = 1; H.length && s < 1 << 16; s++) if (r._foundryVariantFor(s, "felsturm", V) === gMin) return s;
+        return undefined;
+    };
     const gesetzt = [];
     try {
         K.exemplare.forEach((typ, i) => {
             const [x, z] = [MW.x - 50 + i * 9, MW.z + 30];
+            const same = typ === "felsturm" ? { seed: turmSame() } : {};
             const e =
                 st.blueprints[typ] &&
-                r.spawnArchitecture(typ, { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, { silent: true, precise: true, rotationY: 0.6 + i * 0.37 });
+                r.spawnArchitecture(typ, { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, { silent: true, precise: true, rotationY: 0.6 + i * 0.37, ...same });
             if (e) gesetzt.push([typ, e]);
         });
         // die Exemplare bauen (das Studio liefert die Gestalt, das Haus seine Hülle), danach 240 Takte
@@ -438,9 +449,9 @@ async function probe(K) {
         r._blockerStampReach(e);
         return { wer, genannt: funde.some((t) => t.art === art && t.wer === wer) };
     };
-    const turm = st.architectures.find((e) => e && e.type === "felsturm" && e.blockerAABBs?.length);
-    if (turm) aus.schmuggel = await schmuggel(turm, st.blueprints.felsturm.parts.filter((p) => r._isPartSolid(p)).map((p) => r._blockerComputePartAABB(turm, p)), "blocker");
     const exemplar = (t) => (gesetzt.find(([typ]) => typ === t) || [])[1];
+    const turm = [exemplar("felsturm"), ...st.architectures.filter((e) => e && e.type === "felsturm")].find((e) => e && e.blockerAABBs?.length);
+    if (turm) aus.schmuggel = await schmuggel(turm, st.blueprints.felsturm.parts.filter((p) => r._isPartSolid(p)).map((p) => r._blockerComputePartAABB(turm, p)), "blocker");
     const tor = exemplar("welt_fachwerk");
     if (tor && (tor.blockerAABBs || []).length > 1) aus.schmuggelTor = await schmuggel(tor, tor.blockerAABBs.slice(1), "bild");
     // (Q) DIE QUELLE: der Konsum am Zähl-Spion des Versorgers, während der Erzeuger einmal läuft; die Absenzen kommentarfrei

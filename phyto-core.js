@@ -2076,6 +2076,125 @@
         return geo;
     }
 
+    // DER FELSTURM (landmarken-geologie-5, erleben.spieler.wegfindung#1): die Gestalt der Landmarke in ihrer Größe, in Welt-Metern
+    // — bis hier zeichnete das Studio den Turm als `zacken` (ein Block ≤ 0,48 m). Ein Ring-Körper über der Höhe: der Querschnitt ist
+    // das Rechteck zweier senkrechter Kluft-Scharen (gerundet als Superellipse, Exponent `kluft`); die Schichtung teilt ihn in Bänke
+    // ungleicher Dicke (0,5–1,5 · `bankM`), jede gegen die nächste versetzt, die Fugen wittern als Kehlen aus; 2–4 Klüfte reißen als
+    // senkrechte Rinnen von oben ein; das Profil verjüngt sich und neigt sich, die härtere Deckschicht kragt als Kopf aus, der Gipfel
+    // ist flach gerundet; der Fuß reicht 0,6 m unter den Boden. `P`: { hoehe, breite, tiefe, bankM, strat, rough, seed, detail,
+    // dreiecke } (Meter; `dreiecke` die Zeile der Stufe). Die Form ist gesetz-gleich je noise3 wie der Stein (`buildBoulderGeometry`).
+    // `seq` (0..1) ist Pflicht. → eine THREE.BufferGeometry, Boden y 0, Gipfel y = hoehe. Leser: foundry-core `buildFelsturm`.
+    function buildFelsturmGeometry(THREE, noise3, P, seq) {
+        if (!THREE || !THREE.BufferGeometry) return null;
+        if (typeof seq !== "function")
+            throw new Error("phyto-core buildFelsturmGeometry: ohne Strom `seq` (der Turm zieht nur aus seinem Samen)");
+        const H = P.hoehe,
+            A = P.breite / 2,
+            B = P.tiefe / 2;
+        if (!(H > 0 && A > 0 && B > 0))
+            throw new Error(`phyto-core buildFelsturmGeometry: Maß fehlt (hoehe ${H}, breite ${P.breite}, tiefe ${P.tiefe})`);
+        const n3 = typeof noise3 === "function" ? noise3 : (x, y, z) => Math.sin(x * 1.7 + y * 2.3 + z * 3.1) * 0.5;
+        const detail = Math.max(1, P.detail || 6);
+        const NS = detail >= 6 ? 16 : detail >= 4 ? 12 : 8; // Segmente je Ring
+        // Die Ringe stehen im halben Bank-Abstand (jede Fuge trifft einen Ring), höchstens so viele, wie die Zeile der Stufe trägt
+        // (`P.dreiecke`: 2 · NS je Band und 2 · NS die Kappen); darüber teilt die Höhe gleich.
+        const bankM = P.bankM > 0 ? P.bankM : 1.6;
+        const NRmax = P.dreiecke > 0 ? Math.max(6, Math.floor((P.dreiecke - 2 * NS) / (2 * NS)) - 1) : 12 * detail;
+        const NR = Math.max(6, Math.min(NRmax, Math.ceil(H / (bankM / 2))));
+        const dR = H / NR;
+        const off = (P.seed || 0) * 13.7;
+        const strat = P.strat != null ? P.strat : 0.6,
+            rough = P.rough != null ? P.rough : 0.5;
+        const kluft = 3 + 3 * seq(); // die Ecken der Kluft-Scharen: 3 rund … 6 kantig
+        const dreh = seq() * Math.PI; // die Richtung der Scharen
+        const verj = 0.12 + 0.2 * seq(); // die Verjüngung zum Gipfel
+        const neig = (seq() - 0.5) * 0.5, // die Neigung: der Gipfel steht bis ± ¼ Breite neben dem Fuß
+            neigR = seq() * 2 * Math.PI;
+        const kopf = 0.03 + 0.09 * seq(); // die Deckschicht kragt aus
+        const baenke = [];
+        for (let y = 0; y < H; ) {
+            const b = bankM * (0.5 + seq());
+            baenke.push({ y0: y, kehle: strat * (0.04 + 0.1 * seq()), dx: (seq() - 0.5) * 0.12, dz: (seq() - 0.5) * 0.12 });
+            y += b;
+        }
+        const klueft = [];
+        for (let k = 0, NK = 2 + Math.floor(seq() * 3); k < NK; k++)
+            klueft.push({ i: Math.floor(seq() * NS), tief: 0.08 + 0.14 * seq(), bis: 0.3 + 0.7 * seq() });
+        const kappe = Math.min(0.1, 2 / H);
+        const FUSS = -0.6;
+        const profil = (t) => {
+            let s = 1 - verj * t;
+            if (t > 0.78) s += kopf * Math.min(1, (t - 0.78) / 0.05);
+            if (t >= 1 - kappe) s *= Math.cbrt(Math.max(0, 1 - ((t - (1 - kappe)) / kappe) ** 3));
+            return s;
+        };
+        const bankBei = (y) => {
+            let k = 0;
+            while (k + 1 < baenke.length && baenke[k + 1].y0 <= y) k++;
+            return k;
+        };
+        const fbm = (x, y, z) => n3(x, y, z) * 0.6 + n3(x * 2.3, y * 2.3, z * 2.3) * 0.3 + n3(x * 5.1, y * 5.1, z * 5.1) * 0.1;
+        const pos = [];
+        const mitte = (t, bk) => [
+            neig * A * t ** 1.5 * Math.cos(neigR) + bk.dx * A,
+            neig * B * t ** 1.5 * Math.sin(neigR) + bk.dz * B,
+        ];
+        const NRinge = NR + 2;
+        for (let j = 0; j < NRinge; j++) {
+            const y = j === 0 ? FUSS : ((j - 1) / NR) * H;
+            const t = Math.max(0, y) / H;
+            const k = bankBei(y);
+            const bk = baenke[k];
+            // die Fuge: der Ring, der ihr am nächsten steht, trägt die Kehle der Bank über ihr
+            const naechste = k + 1 < baenke.length && baenke[k + 1].y0 - y < dR / 2 ? baenke[k + 1] : y - bk.y0 < dR / 2 && k > 0 ? bk : null;
+            const s = profil(t) * (naechste ? 1 - naechste.kehle : 1) * (j === 0 ? 1.08 : 1);
+            const [cx, cz] = mitte(t, bk);
+            for (let i = 0; i < NS; i++) {
+                const th = (i / NS) * 2 * Math.PI;
+                const c = Math.cos(th),
+                    d = Math.sin(th);
+                let r = 1 / ((Math.abs(c) / A) ** kluft + (Math.abs(d) / B) ** kluft) ** (1 / kluft);
+                for (const kl of klueft) {
+                    if (t < 1 - kl.bis) continue;
+                    const di = Math.min((i - kl.i + NS) % NS, (kl.i - i + NS) % NS);
+                    if (di === 0) r *= 1 - kl.tief;
+                    else if (di === 1) r *= 1 - kl.tief * 0.35;
+                }
+                const x0 = r * c,
+                    z0 = r * d;
+                const rr = s * (1 + rough * 0.18 * fbm(x0 / 6 + off, y / 5, z0 / 6));
+                const x = x0 * rr + cx,
+                    z = z0 * rr + cz;
+                pos.push(x * Math.cos(dreh) - z * Math.sin(dreh), y, x * Math.sin(dreh) + z * Math.cos(dreh));
+            }
+        }
+        const unten = pos.length / 3;
+        const [fx, fz] = mitte(0, baenke[0]);
+        pos.push(fx * Math.cos(dreh) - fz * Math.sin(dreh), FUSS, fx * Math.sin(dreh) + fz * Math.cos(dreh));
+        const oben = unten + 1;
+        const [gx, gz] = mitte(1, baenke[baenke.length - 1]);
+        pos.push(gx * Math.cos(dreh) - gz * Math.sin(dreh), H, gx * Math.sin(dreh) + gz * Math.cos(dreh));
+        const idx = [];
+        for (let j = 0; j < NRinge - 1; j++)
+            for (let i = 0; i < NS; i++) {
+                const a = j * NS + i,
+                    b = j * NS + ((i + 1) % NS),
+                    c = a + NS,
+                    d = b + NS;
+                idx.push(a, c, b, b, c, d);
+            }
+        const L = (NRinge - 1) * NS;
+        for (let i = 0; i < NS; i++) {
+            idx.push(unten, i, (i + 1) % NS);
+            idx.push(oben, L + ((i + 1) % NS), L + i);
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        geo.setIndex(idx);
+        geo.computeVertexNormals();
+        return geo;
+    }
+
     // DAS NEUE KLEID Welle „RINDE" — DIE STAMM-RINDE aus der Vorlage (`buildTube`
     // barkBase→barkTip). Ein Ring-Tube entlang jeder Skelett-Polylinie (branch.points
     // [{x,y,z,r}]): Frenet-freie Up-Referenz-Basis, radiale Ringe, Fuß-Flare mit Lobes
@@ -8242,6 +8361,7 @@
         superR: superR,
         LEAF_SHAPES: LEAF_SHAPES,
         buildBoulderGeometry: buildBoulderGeometry,
+        buildFelsturmGeometry: buildFelsturmGeometry, // die Gestalt der Landmarke in ihrer Größe (landmarken-geologie-5)
         buildCrystalPointGeometry: buildCrystalPointGeometry,
         buildBarkTubeArrays: buildBarkTubeArrays,
         lodDitherIGN: lodDitherIGN, // W5.3 — das foundry-core-_dh (Interleaved-Gradient-Noise), byte-genau

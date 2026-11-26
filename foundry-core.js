@@ -698,6 +698,7 @@ const PORTAL_RENDER_CONFIG = {
             strauch: 0.332,
             findling: 0.4,
             zacken: 0.34,
+            felsturm: 1, // in Welt-Metern gebaut (`deriveParamsTurm`, das Band der Klettergipfel)
             basalt: 0.42,
             sediment: 0.4,
             kristalle: 0.15,
@@ -4370,6 +4371,32 @@ function buildBoulder(P) {
     return felsStoffNetz(P, __g);
 }
 
+// DER FELSTURM (landmarken-geologie-5): die Gestalt aus phyto-core `buildFelsturmGeometry` in Welt-Metern (Skala 1), die Stufe
+// teilt das Detail (LOD 0/1/2 → 16/12/8 Segmente je Ring); der Stoff ist das Fels-Gesetz wie beim Stein.
+function buildFelsturm(P) {
+    var __core = typeof self !== "undefined" && self.__phytoCore;
+    if (!__core || typeof __core.buildFelsturmGeometry !== "function")
+        throw new Error("foundry-core: phyto-core buildFelsturmGeometry fehlt (Kern-Pflicht)");
+    var __g = __core.buildFelsturmGeometry(
+        THREE,
+        simplex3,
+        {
+            hoehe: P.hoehe,
+            breite: P.breite,
+            tiefe: P.tiefe,
+            bankM: P.bankM,
+            strat: P.strat,
+            rough: P.rough,
+            seed: P.seed,
+            detail: Math.max(2, (P.detail || 6) - __lod * 2),
+            dreiecke: (PORTAL_RENDER_CONFIG.lod.budget.rock[__lod] || PORTAL_RENDER_CONFIG.lod.budget.rock[0]).tris,
+        },
+        rnd
+    );
+    if (!__g) throw new Error("foundry-core: buildFelsturmGeometry lieferte kein Netz");
+    return felsStoffNetz(P, __g);
+}
+
 function clipPolygon(poly, a, b) {
     const out = [];
     const nx = b[0] - a[0],
@@ -4712,7 +4739,7 @@ function emitRock(P) {
     if (P.kind === "columns") return emitColumns(P);
     if (P.kind === "scree") return emitScree(P);
     if (P.kind === "crystal") return emitCrystals(P);
-    const geo = buildBoulder(P);
+    const geo = P.kind === "turm" ? buildFelsturm(P) : buildBoulder(P);
     const mat = new THREE.MeshStandardMaterial({
         vertexColors: true,
         roughness: P.matRough,
@@ -4927,6 +4954,49 @@ const PRESETS = {
             rockC: 0x7a7670,
             speckle: true,
             matRough: 0.8,
+            detail: 6,
+        },
+    },
+    // DER FELSTURM, die Landmarke in ihrer Größe (landmarken-geologie-5, erleben.spieler.wegfindung#1) — bis hier zeichnete ihn
+    // `zacken` (ein Block, Hülle ≤ 1,41 × Welt-Skala 0,34 = 0,48 m). Gebaut in Welt-Metern (Skala 1, `deriveParamsTurm`):
+    //   hoeheM · sigmaLn · band: die freistehenden Klettergipfel der Sächsischen Schweiz, „Maximale Felshöhe“ der Listen Brand-
+    //     und Rathener Gebiet (Wikipedia, Stand 07.02.2026): N = 233, 8–75 m, Median 20 m, P10 10 · P25 15 · P75 35 · P90 55 m;
+    //     log-normal: geometrisches Mittel 22,4 m, σ(ln) 0,60 (Quantile P10/P25/P75/P90 der Anpassung 10,4/14,9/33,6/48,3 m).
+    //   schlank: Höhe : Breite aus dem Bauplan des Felsturms (16,8 m über dem Fuß von 4,4 m, `_defaultBlueprints`) — ohne äußeres
+    //     Band, ebenso der Bank-Abstand `bankM` (offen, Messname „LANDMARKE IM BILD … gezeichnet“ in gate:phyto-core).
+    felsturm: {
+        kind: "rock",
+        panel: "rock",
+        s: { sph: 0.3, elong: 0.3, rnd: 0.4, rgh: 0.5, str: 0.6, gen: 0.6 },
+        ph: { turm: { hoeheM: 22.4, sigmaLn: 0.6, band: [8, 75], schlank: 3.8, bankM: [1.2, 3.2] } },
+        fx: {
+            // die Hülle je Gestalt 1..16 (LOD 0, Boden y 0) in Welt-Metern, gemessen über die Brücke wie die Steine — OHNE deren
+            // Rand +5 %: in Welt-Metern ragte er bis 0,7 m seitlich und 3,4 m über das Bild (gate:kollision-bild hält 0,3 m / 2 %),
+            // die Zeile ist die gezeichnete Gestalt, nach außen auf den Zentimeter
+            huellen: [
+                [-1.02, 0.97, 8, -0.79, 0.89],
+                [-1.3, 1.34, 10.16, -1.34, 1.36],
+                [-1.45, 1.31, 12.24, -1.11, 1.11],
+                [-2.76, 2.63, 14.08, -2.77, 2.89],
+                [-2.95, 2.85, 15.85, -2.71, 2.78],
+                [-2.28, 2.46, 17.62, -2, 1.92],
+                [-2.65, 2.62, 19.45, -2.54, 2.69],
+                [-3.19, 3.54, 21.38, -3.18, 3.22],
+                [-3.33, 3.63, 23.48, -3.23, 3.18],
+                [-3.03, 3.32, 25.82, -2.82, 2.33],
+                [-2.93, 2.99, 28.49, -3.88, 4.1],
+                [-4.19, 4.36, 31.67, -3.87, 4.11],
+                [-6.69, 6.41, 35.65, -6.8, 6.67],
+                [-3.67, 3.59, 41.02, -4.45, 4.89],
+                [-7.77, 7.77, 49.39, -8.91, 8.26],
+                [-13.28, 12.73, 68.62, -11.3, 11.95],
+            ],
+            rkind: "turm",
+            rockA: 0xa09478,
+            rockB: 0x4a4236,
+            rockC: 0xb8ac8e,
+            speckle: false,
+            matRough: 0.88,
             detail: 6,
         },
     },
@@ -5323,7 +5393,40 @@ function rockPhenotype(gen, sph, elong, round, rough, strat, IR) {
     };
 }
 
+// DER FELSTURM AUS SEINEM BAND (landmarken-geologie-5): die Höhe der Gestalt g (der Same 1..V der Art, `__gestaltenArt`) ist das
+// Quantil (g − ½)/V des Bands — log-normal um das geometrische Mittel `hoeheM` mit der Streuung `sigmaLn`, gekappt an `band` —, die
+// V Gestalten tragen so die Verteilung des Bands, nicht V Würfe; ein Same außerhalb 1..V (das Labor) zieht sein Quantil aus dem
+// Strom. Die Breite folgt der Schlankheit `schlank` (± 25 %), die Tiefe dem Seitenverhältnis der Kluft-Scharen 0,6–1, der
+// Bank-Abstand dem Band `bankM`. Der Strom ist der des Steins (Same + 7), die Ableitung der anderen Fels-Arten bleibt Byte für Byte.
+function deriveParamsTurm(pre) {
+    const T = pre.ph.turm;
+    const IR = mulberry32(((Math.floor(SEED) + 7) * 2246822519) >>> 0);
+    const V = __gestaltenArt(CURRENT);
+    const q = Number.isInteger(SEED) && SEED >= 1 && SEED <= V ? (SEED - 0.5) / V : 0.02 + 0.96 * IR();
+    const z = 4.91 * (q ** 0.14 - (1 - q) ** 0.14); // probit (Tukey-λ; Fehler < 0,01 für 0,0025 < q < 0,9975)
+    const hoehe = clamp(T.hoeheM * Math.exp(T.sigmaLn * z), T.band[0], T.band[1]);
+    const breite = (hoehe / T.schlank) * (0.75 + 0.5 * IR());
+    const fx = pre.fx;
+    return {
+        kind: "turm",
+        hoehe,
+        breite,
+        tiefe: breite * (0.6 + 0.4 * IR()),
+        bankM: T.bankM[0] + (T.bankM[1] - T.bankM[0]) * IR(),
+        strat: pre.s.str,
+        rough: pre.s.rgh,
+        round: pre.s.rnd,
+        seed: SEED * 0.001 + 1.3,
+        detail: fx.detail,
+        rockA: fx.rockA,
+        rockB: fx.rockB,
+        rockC: fx.rockC,
+        matRough: fx.matRough,
+    };
+}
+
 function deriveParamsRock(pre) {
+    if (pre.ph && pre.ph.turm) return deriveParamsTurm(pre);
     const _D = __dials; // der Dial-Kontext des Wirts (siehe deriveParamsPlant)
     const gen = _D.gen,
         sph = _D.sph,

@@ -495,13 +495,16 @@ function landmarkeFunktion(taeter, chunkZiel) {
     // Gestalten, PHYTO_PRESETS `fx.huellen`), gegen den Bauplan (`_defaultBlueprints`), und wie weit der Wurf reicht (die Saat
     // hängt am Voxel-Ring, `_populateVoxelChunkVegetation`: Ziel-Ring × `span`, Ecke) — die Richter-Weite ist 1–3 km.
     const T = vm.runInContext("globalThis.__terrainCore.PHYTO_PRESETS", stammLib.grundWirt(ROOT, null).ctx);
+    // Seit landmarken-geologie-5 trägt der Felsturm seine Gestalt in Welt-Metern: die Zeile nennt die Hüllen-Höhen aller Gestalten
+    // (kleinste · Median · größte), der Median ist die Zahl, die gegen das Band der Klettergipfel steht (Median 20 m, N = 233).
     const bild = ["felsturm", "felsbogen"].map((art) => {
         const pr = B.r._foundryPresetFor(art);
         const k = B.r._foundryWorldScaleMatrix(pr).elements[0];
-        const h = Math.max(...((T[pr] && T[pr].fx && T[pr].fx.huellen) || [[0, 0, 0]]).map((z) => z[2]));
+        const hs = ((T[pr] && T[pr].fx && T[pr].fx.huellen) || [[0, 0, 0]]).map((z) => z[2] * k).sort((a, b) => a - b);
+        const med = hs.length % 2 ? hs[(hs.length - 1) / 2] : (hs[hs.length / 2 - 1] + hs[hs.length / 2]) / 2;
         const bp = B.r._defaultBlueprints()[art];
         const soll = bp ? Math.max(...bp.parts.map((q) => q.position.y + q.size.y / 2)) : 0;
-        return `${art} gezeichnet ≤ ${(h * k).toFixed(2)} m (${pr} × ${k}) · Bauplan ${soll.toFixed(1)} m`;
+        return `${art} gezeichnet ${hs[0].toFixed(2)}–${hs[hs.length - 1].toFixed(2)} m, Median ${med.toFixed(2)} m (${pr} × ${k}, ${hs.length} Gestalten) · Bauplan ${soll.toFixed(1)} m`;
     });
     const C = B.r._voxelChunkConfig();
     const ring = Math.max(1, Math.min(12, B.r.state.chunkRingRadius || 4));
