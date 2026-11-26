@@ -2306,4 +2306,4 @@ if (require.main === module) {
         process.exit(2);
     }
 }
-module.exports = { rechne, fahrtUrteil, preisUrteil, treppeLesen, brueckeLesen, lastVon, kopfFolgeAusGit, kopfFolgeFest, tafelOhneKlasse, klassenGesetz, umfangLesen, klassenRechnen, klassenWache };
+module.exports = { STANDARD, rechne, fahrtUrteil, preisUrteil, treppeLesen, brueckeLesen, lastVon, kopfFolgeAusGit, kopfFolgeFest, tafelOhneKlasse, klassenGesetz, umfangLesen, klassenRechnen, klassenWache };

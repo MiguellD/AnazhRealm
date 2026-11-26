@@ -6,8 +6,9 @@
 // Strom im Fenster (weniger als MIN_BILDER Bilder), steht die Akte mit einem Preis ohne Zahl, der beim Namen sagt warum (preisFehlt;
 // buche-2: FEHLT) — nie ein Preis aus fremder Zeit, nie ein stilles Urteil ohne Akte.
 //
-//   akten({ station, probe, eintrag, bilder, von, bis, sha, geraet, karte, tafel, referenz, posten, stueck }) → [{ datei, akte } | { kein: true, sprosse, grund }]
-//   (kein: nur ohne Richter in der Station, ohne Standardgerät, ungemessen — ein leerer Preis ist eine Akte mit preis.fehlt)
+//   akten({ station, probe, eintrag, bilder, von, bis, sha, geraet, adapter, karte, tafel, referenz, posten, stueck }) → [{ datei, akte } | { kein: true, sprosse, grund }]
+//   (kein: nur ohne Richter in der Station, ohne Adapter der Klasse, ungemessen — ein leerer Preis ist eine Akte mit preis.fehlt; das
+//   Richter-Gerät (geraetVon) schreibt seine Akte mit preis: null und ohnePreis)
 //
 // DIE ZWILLINGE EINES LAUFS (16.11., Fund g6: pflicht.E#1 und karte2.same.preis.bytes#1 sind zweite Urteile auf einem bestehenden
 // Lauf): die Sitzung fährt eine Probe-Gruppe EINMAL, ihr Strom und ihr Preis-Lauf tragen den Namen des Laufs (`probe`, der erste der
@@ -30,7 +31,47 @@ const buche = require("./buche-2.cjs");
 const TAFEL = path.join(__dirname, "richter-tafel.json");
 const KARTE = path.join(__dirname, "meisterkarte-2.json");
 const AKTEN = path.join(__dirname, "richter");
-const GERAET = { radeon: "Radeon 890M", gtx: "GTX 1060" }; // Z7, Stand 2026 — die Namen, die buche-2 als Standardgeräte erkennt
+// DAS GERÄT NENNT SICH SELBST — DER 1050 TRÄGT RICHTER, NIE PREIS (26.11., der Koordinator). Bis hier hieß jede Sitzung mit
+// `--geraet gtx` in ihrer Akte „GTX 1060“ und schrieb nach `<…>-gtx.json`: der GTX 1050 (i7-950, 4 Kerne; Bild p95 50–67 ms im
+// Preis-Lauf, nie im Band der Klasse) stand in 22 Akten seiner drei Läufe an e71f2721 · 64fcf12e als Standardgerät — sein roter
+// Preis hätte gebuchte Sprossen gesenkt (geruch#1, bevoelkerung#1, absicht#1), und dieselbe Station am selben Kopf trug zwei Rechner
+// unter EINEM Dateinamen. Jetzt nennt `--geraet` nur die Klasse (den Hersteller); WELCHES Gerät misst, sagt der Adapter des Rechners,
+// wie das System ihn nennt (adapterLesen). Trägt ihn buche-2 STANDARD, ist er das Standardgerät der Klasse (Name und Datei wie
+// bisher); jeder andere Adapter der Klasse ist ein RICHTER-GERÄT (geraetVon): eigener Name („GTX 1050“), eigene Datei (`-gtx1050`),
+// KEIN Preis-Lauf (brauchtPreisLauf), die Akte trägt `preis: null` und den Grund „kein Preis-Gerät“ — buche-2 liest von ihm nur den
+// Richter (Z7: sein ROT nimmt, sein GRÜN hebt nichts). Ohne Adapter der Klasse steht KEINE Akte, der Grund beim Namen — nie ein
+// Standardgerät aus der Klasse geraten.
+const GERAET = { radeon: "Radeon 890M", gtx: "GTX 1060" }; // Z7, Stand 2026 — das Standardgerät je Klasse (sein Muster: buche-2 STANDARD)
+const HERSTELLER = { radeon: /\b(AMD|Radeon)/i, gtx: /\b(NVIDIA|GeForce)\b/i };
+// die Grafik-Adapter dieses Rechners (EINE Abfrage je Prozess): { namen: [...] } | { fehler }
+let adapterGelesen = null;
+function adapterLesen() {
+    if (adapterGelesen) return adapterGelesen;
+    try {
+        if (process.platform !== "win32") throw new Error("die Adapter-Abfrage kennt " + process.platform + " nicht (Win32_VideoController)");
+        const aus = require("child_process").execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance -ClassName Win32_VideoController | ForEach-Object { $_.Name }"],
+            { encoding: "utf8", timeout: 60000, windowsHide: true });
+        const namen = aus.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+        adapterGelesen = namen.length ? { namen } : { fehler: "Win32_VideoController nennt keinen Adapter" };
+    } catch (e) {
+        adapterGelesen = { fehler: String((e && e.message) || e).split(/\r?\n/)[0].slice(0, 160) };
+    }
+    return adapterGelesen;
+}
+// klasse ("radeon" | "gtx" | …) und der Adapter (adapterLesen) → { klasse, name, datei, preis, adapter?, grund? }; name null: keine Akte
+function geraetVon(klasse, adapter) {
+    const std = GERAET[klasse], H = HERSTELLER[klasse];
+    if (!std || !H) return { klasse, name: null, preis: false, grund: "Gerät " + klasse + " ist kein Standardgerät (Z7)" };
+    if (!adapter || !Array.isArray(adapter.namen)) return { klasse, name: null, preis: false, grund: "der Rechner nennt seinen Adapter nicht (" + ((adapter && adapter.fehler) || "keine Abfrage") + ")" };
+    const S = buche.STANDARD.find((s) => s.name === std);
+    const der = adapter.namen.filter((n) => H.test(n));
+    if (!der.length) return { klasse, name: null, preis: false, grund: "kein Adapter der Klasse " + klasse + " im Rechner (" + adapter.namen.join(" · ") + ")" };
+    const standard = der.find((n) => S.muster.test(n));
+    if (standard) return { klasse, name: std, datei: klasse, preis: true, adapter: standard };
+    const name = der[0].replace(/\((TM|R)\)/gi, "").replace(/\b(NVIDIA|GeForce|AMD|Graphics)\b/gi, "").replace(/\s+/g, " ").trim() || der[0];
+    return { klasse, name, datei: name.toLowerCase().replace(/[^a-z0-9]/g, ""), preis: false, adapter: der[0],
+        grund: "kein Preis-Gerät: " + name + " steht unter dem Preis-Band der Klasse " + klasse + " (Preis trägt " + std + ", buche-2 STANDARD, Z7)" };
+}
 const MIN_BILDER = 30;
 // DER PREIS-LAUF (14.11., Radeon 337846dc: vegetation.K2#1 GRÜN, im Strom 0 Bilder): die Werkbank ruht den Loop zwischen ihren Befehlen
 // (Lehre 17), und eine Probe, die ihre Bilder von Hand tickt, zeigt kein Bild des Spielers — der Haken des Stroms sieht nur, was der
@@ -38,8 +79,9 @@ const MIN_BILDER = 30;
 // ihrem Namen und an ihrer Pose den Loop des Spiels (`/lauf` der Werkbank) PREIS_S Sekunden: das ist der Preis derselben Fahrt.
 const PREIS_S = 20;
 // station: ein Name oder die Namen ALLER Stationen eines Laufs (die Zwillinge einer Probe-Gruppe) — der Lauf braucht den Preis, sobald
-// irgendeine von ihnen eine „gleich“-Zeile trägt
-const brauchtPreisLauf = (station, tafel) => {
+// irgendeine von ihnen eine „gleich“-Zeile trägt UND das Gerät der Sitzung (geraetVon) Preis trägt: ein Richter-Gerät fährt ihn nie
+const brauchtPreisLauf = (station, tafel, geraet) => {
+    if (!geraet || geraet.preis !== true) return false;
     const namen = new Set([].concat(station));
     return (tafel || JSON.parse(fs.readFileSync(TAFEL, "utf8"))).zeilen.some((z) => namen.has(z.station) && z.richter === "gleich");
 };
@@ -122,7 +164,7 @@ function akten(o) {
     const zeilen = tafel.zeilen.filter((z) => z.station === o.station);
     if (!zeilen.length) return [];
     const karte = o.karte || JSON.parse(fs.readFileSync(KARTE, "utf8"));
-    const geraet = GERAET[o.geraet];
+    const G = geraetVon(o.geraet, o.adapter); // DAS GERÄT NENNT SICH SELBST (Kopf): die Klasse aus dem Aufruf, das Gerät aus dem Adapter
     const aus = [];
     for (const z of zeilen) {
         const wo = z.leiter + " S " + z.sprosse;
@@ -130,8 +172,8 @@ function akten(o) {
             aus.push({ kein: true, sprosse: wo, grund: "der Richter fehlt in der Station: " + (z.grund || "ohne Grund") });
             continue;
         }
-        if (!geraet) {
-            aus.push({ kein: true, sprosse: wo, grund: "Gerät " + o.geraet + " ist kein Standardgerät (Z7)" });
+        if (!G.name) {
+            aus.push({ kein: true, sprosse: wo, grund: G.grund });
             continue;
         }
         const e = o.eintrag || {};
@@ -142,6 +184,15 @@ function akten(o) {
         let sp = null;
         for (const g of karte.gruppen) for (const L of g.kriterien) if (L.id === z.leiter) sp = L.sprossen.find((s) => s.nr === z.sprosse);
         if (!sp) throw new Error("richter-tafel: " + wo + " steht nicht in der Karte");
+        const richter = { wert: String(e.zahl || ""), urteil: e.gruen ? "GRÜN" : "ROT", ...(Array.isArray(e.mass) ? { mass: e.mass } : {}) };
+        const kopf = { leiter: z.leiter, sprosse: z.sprosse, sha: o.sha, datum: new Date(o.bis).toISOString(), soll: sp.richter, station: o.station,
+            ...(o.probe && o.probe !== o.station ? { lauf: o.probe } : {}) };
+        const datei = `${z.leiter}.${z.sprosse}.${String(o.sha).slice(0, 8)}-${G.datei}.json`;
+        if (!G.preis) {
+            // das RICHTER-GERÄT: kein Preis, auch nicht aus einem Strom, der doch Bilder trüge — der Grund steht in der Akte
+            aus.push({ datei, akte: { ...kopf, geraete: [{ geraet: G.name, adapter: G.adapter, richter, preis: null, ohnePreis: G.grund }] } });
+            continue;
+        }
         let preis = preisImFenster(o.bilder || [], o.probe || o.station, o.von, o.bis, o.stueck);
         if (preis.leer) preis = preisFehlt(preis, o);
         preis.referenz = referenzFuerAkte(o.referenz);
@@ -152,17 +203,7 @@ function akten(o) {
             preis.urteil = buche.preisUrteil(preis, T, wo, sp.klasse);
             if (T.fassung) preis.treppe = T.fassung;
         }
-        const akte = {
-            leiter: z.leiter,
-            sprosse: z.sprosse,
-            sha: o.sha,
-            datum: new Date(o.bis).toISOString(),
-            soll: sp.richter,
-            station: o.station,
-            ...(o.probe && o.probe !== o.station ? { lauf: o.probe } : {}),
-            geraete: [{ geraet, richter: { wert: String(e.zahl || ""), urteil: e.gruen ? "GRÜN" : "ROT", ...(Array.isArray(e.mass) ? { mass: e.mass } : {}) }, preis }],
-        };
-        aus.push({ datei: `${z.leiter}.${z.sprosse}.${String(o.sha).slice(0, 8)}-${o.geraet}.json`, akte });
+        aus.push({ datei, akte: { ...kopf, geraete: [{ geraet: G.name, richter, preis }] } });
     }
     return aus;
 }
@@ -184,6 +225,10 @@ function schreibe(o) {
         const folge = alt ? (Array.isArray(alt) ? alt : [alt]).concat([a.akte]) : null;
         fs.writeFileSync(f, JSON.stringify(folge || a.akte, null, 1) + "\n");
         const p = a.akte.geraete[0].preis;
+        if (!p) {
+            zeilen.push(`KARTE2 Akte ${a.datei}: Richter ${a.akte.geraete[0].richter.urteil} · ${a.akte.geraete[0].geraet} ${a.akte.geraete[0].ohnePreis}`);
+            continue;
+        }
         if (p.fehlt) {
             zeilen.push(`KARTE2 Akte ${a.datei}: Richter ${a.akte.geraete[0].richter.urteil} · Preis ${p.urteil || "FEHLT"} — ${p.fehlt}`);
             continue;
@@ -232,7 +277,9 @@ function selbsttest() {
     const ref = (f) => ({ vor: { ein: 100 * f, alle: 200, cpuEin: 90 }, nach: { ein: 100 * f, alle: 200 }, ruhe: { ein: 100, alle: 190, n: 12, von: "2026-11-14T10:00:00Z" },
         f, fEin: f, fAlle: 1.05, verdraengt: 1, schwankt: false, rechner: "win32 · 24 Kerne · Schein", umfeld: "sitzung" });
     const LAUF = { ruhe: { ruhig: true, sek: 3.1 }, skala: [0.5, 0.5], p95: 20, max: 48, bilder: 34 };
-    const basis = { station: "vegetation.K2#1", eintrag: { gruen: true, zahl: "Kamm/Tal 5.93" }, bilder, von: U + 10000, bis: U + 20000, sha: "7f778d44c1aa", geraet: "radeon", karte, referenz: ref(1.05),
+    // die Adapter der drei Rechner, wie Win32_VideoController sie nennt (der OMEN trägt dazu einen zweiten Adapter)
+    const ADAPTER = { radeon: { namen: ["AMD Radeon(TM) 890M Graphics"] }, omen: { namen: ["Intel(R) UHD Graphics 630", "NVIDIA GeForce GTX 1060"] }, gtx1050: { namen: ["NVIDIA GeForce GTX 1050"] } };
+    const basis = { station: "vegetation.K2#1", eintrag: { gruen: true, zahl: "Kamm/Tal 5.93" }, bilder, von: U + 10000, bis: U + 20000, sha: "7f778d44c1aa", geraet: "radeon", adapter: ADAPTER.radeon, karte, referenz: ref(1.05),
         stueck: { ab: U + AB, bis: U + BIS, lauf: LAUF } };
     let ok = 0, fehl = 0;
     const pruefe = (name, f) => {
@@ -384,8 +431,9 @@ function selbsttest() {
         return a.length === 2 && a.every((x) => x.akte) && a.map((x) => x.akte.sprosse).join() === "2,1" ? true : JSON.stringify(a).slice(0, 300);
     });
     pruefe("der Preis-Lauf fährt nur nach Stationen mit einer „gleich“-Zeile der Tafel", () =>
-        brauchtPreisLauf("vegetation.K2#1", scheinTafel) && !brauchtPreisLauf("schein.fehlt#1", scheinTafel) && !brauchtPreisLauf("schein.ohne-zeile#1", scheinTafel) &&
-        brauchtPreisLauf("vegetation.K2#1") && brauchtPreisLauf("klang.K4#2") && !brauchtPreisLauf("profiband.K1#1") ? true : "falsch gewählt");
+        [geraetVon("radeon", ADAPTER.radeon)].every((G) => brauchtPreisLauf("vegetation.K2#1", scheinTafel, G) && !brauchtPreisLauf("schein.fehlt#1", scheinTafel, G) &&
+        !brauchtPreisLauf("schein.ohne-zeile#1", scheinTafel, G) && brauchtPreisLauf("vegetation.K2#1", undefined, G) && brauchtPreisLauf("klang.K4#2", undefined, G) &&
+        !brauchtPreisLauf("profiband.K1#1", undefined, G)) ? true : "falsch gewählt");
     pruefe("buche-2 liest die geschriebene Akte: ein Gerät bucht (Z7, 18.11.) — Punkt, die Nachwache der GTX offen", () => {
         const dir = path.join(X, "richter");
         schreibe({ ...basis, dir });
@@ -398,7 +446,7 @@ function selbsttest() {
     });
     pruefe("buche-2 vereint Radeon- und GTX-Akte desselben SHA mit grünem Preis: Punkt", () => {
         const dir = path.join(X, "richter");
-        schreibe({ ...basis, dir, geraet: "gtx" });
+        schreibe({ ...basis, dir, geraet: "gtx", adapter: ADAPTER.omen });
         const k = JSON.parse(JSON.stringify(karte));
         const kern0 = buche.brueckeLesen(fs.readFileSync(path.join(__dirname, "BRUECKE.md"), "utf8"));
         const ak = {};
@@ -408,7 +456,7 @@ function selbsttest() {
     });
     pruefe("Mutant zweite Fahrt desselben SHA und Geräts: die erste bleibt als Beleg, die Folge trägt beide (buche-2 liest sie)", () => {
         const dir = path.join(X, "richter");
-        schreibe({ ...basis, dir, geraet: "gtx" });
+        schreibe({ ...basis, dir, geraet: "gtx", adapter: ADAPTER.omen });
         const n = fs.readdirSync(dir).find((x) => x.endsWith("-gtx.json"));
         const inhalt = JSON.parse(fs.readFileSync(path.join(dir, n), "utf8"));
         const k = JSON.parse(JSON.stringify(karte));
@@ -417,6 +465,55 @@ function selbsttest() {
         for (const m of fs.readdirSync(dir)) ak[m.slice(0, -5)] = JSON.parse(fs.readFileSync(path.join(dir, m), "utf8"));
         const z = buche.rechne(k, ak, kern0, buche.kopfFolgeFest({ main: [basis.sha] })); // die Probe-Akte am Schein-Kopf (buche-2 KOPF-FOLGE)
         return Array.isArray(inhalt) && inhalt.length === 2 && z.heute === 1 ? true : JSON.stringify(inhalt).slice(0, 200);
+    });
+    // DER 1050 TRÄGT RICHTER, NIE PREIS (Kopf: DAS GERÄT NENNT SICH SELBST). Die Klasse gtx nennt beide Rechner; der Adapter scheidet sie
+    const G1050 = geraetVon("gtx", ADAPTER.gtx1050), GOMEN = geraetVon("gtx", ADAPTER.omen);
+    pruefe("GERÄT der Adapter nennt das Gerät: OMEN „GTX 1060“ (Datei -gtx, Preis), GTX 1050 Richter-Gerät (Datei -gtx1050, kein Preis-Lauf), ohne Adapter der Klasse keine Akte", () => {
+        const ohne = [geraetVon("gtx", ADAPTER.radeon), geraetVon("gtx", { fehler: "Zugriff verweigert" }), geraetVon("gtx", undefined), geraetVon("headless", ADAPTER.gtx1050)];
+        const a = akten({ ...basis, geraet: "gtx", adapter: ADAPTER.radeon });
+        return GOMEN.name === "GTX 1060" && GOMEN.datei === "gtx" && GOMEN.preis === true && G1050.name === "GTX 1050" && G1050.datei === "gtx1050" && G1050.preis === false &&
+            /^kein Preis-Gerät: GTX 1050 steht unter dem Preis-Band der Klasse gtx/.test(G1050.grund) && ohne.every((G) => G.name === null && G.preis === false && G.grund) &&
+            brauchtPreisLauf("vegetation.K2#1", undefined, GOMEN) && !brauchtPreisLauf("vegetation.K2#1", undefined, G1050) && !brauchtPreisLauf("vegetation.K2#1") &&
+            a.length === 1 && a[0].kein && /kein Adapter der Klasse gtx im Rechner \(AMD Radeon\(TM\) 890M Graphics\)/.test(a[0].grund) ? true : JSON.stringify([GOMEN, G1050, ohne, a]).slice(0, 400);
+    });
+    pruefe("GERÄT der GTX 1050 schreibt auch aus einem Strom mit roten Bildern KEINEN Preis: preis null, „kein Preis-Gerät“, die Zeile des Logs nennt es", () => {
+        const dir = path.join(X, "g1050");
+        const a = akten({ ...basis, geraet: "gtx", adapter: ADAPTER.gtx1050, bilder: schwer });
+        const z = schreibe({ ...basis, geraet: "gtx", adapter: ADAPTER.gtx1050, bilder: schwer, dir });
+        const g = a.length === 1 && a[0].akte && a[0].akte.geraete[0];
+        return g && a[0].datei === "leben.pflanzen.kraft.1.7f778d44-gtx1050.json" && g.geraet === "GTX 1050" && g.preis === null && g.richter.urteil === "GRÜN" &&
+            /^kein Preis-Gerät/.test(g.ohnePreis) && z.length === 1 && /^KARTE2 Akte leben\.pflanzen\.kraft\.1\.7f778d44-gtx1050\.json: Richter GRÜN · GTX 1050 kein Preis-Gerät/.test(z[0])
+            ? true : JSON.stringify([a, z]).slice(0, 400);
+    });
+    // der Fall von 64fcf12e (geruch#1 · bevoelkerung#1 · absicht#1): die Sprosse steht gebucht (Radeon Richter und Preis GRÜN), am selben
+    // Kopf misst die Klasse gtx Richter GRÜN und einen Preis über dem Soll in Ruhe (ROT). Der OMEN senkt, der 1050 nie — auch nicht mit
+    // einer Akte, die doch einen roten Preis trägt (eine Akte von Hand oder aus der Zeit vor diesem Schnitt, unter seinem Namen)
+    const gebucht = (zweite) => {
+        const dir = path.join(X, "gebucht-" + Math.random().toString(36).slice(2, 8));
+        schreibe({ ...basis, dir });
+        zweite(dir);
+        const ak = {};
+        for (const n of fs.readdirSync(dir)) ak[n.slice(0, -5)] = JSON.parse(fs.readFileSync(path.join(dir, n), "utf8"));
+        const z = buche.rechne(JSON.parse(JSON.stringify(karte)), ak, buche.brueckeLesen(fs.readFileSync(path.join(__dirname, "BRUECKE.md"), "utf8")), buche.kopfFolgeFest({ main: [basis.sha] }));
+        return { z, b: z.bericht.find((x) => x.leiter === "leben.pflanzen.kraft" && x.sprosse === 1) };
+    };
+    pruefe("GERÄT gebuchte Sprosse, am selben Kopf der GTX 1050 mit rotem Preis (geschrieben und von Hand): heute bleibt 1; der OMEN mit rotem Preis senkt auf 0 (Kern, beim Namen)", () => {
+        const roterPreis = akten({ ...basis, geraet: "gtx", adapter: ADAPTER.omen, bilder: schwer })[0].akte.geraete[0].preis;
+        const g1050 = gebucht((dir) => schreibe({ ...basis, geraet: "gtx", adapter: ADAPTER.gtx1050, bilder: schwer, dir }));
+        const hand = gebucht((dir) => {
+            const a = akten({ ...basis, geraet: "gtx", adapter: ADAPTER.gtx1050 })[0];
+            a.akte.geraete[0] = { ...a.akte.geraete[0], preis: roterPreis };
+            fs.writeFileSync(path.join(dir, a.datei), JSON.stringify(a.akte));
+        });
+        const omen = gebucht((dir) => schreibe({ ...basis, geraet: "gtx", adapter: ADAPTER.omen, bilder: schwer, dir }));
+        const taeter = [["GTX 1050 geschrieben", g1050], ["GTX 1050 mit rotem Preis von Hand", hand]].filter(([, r]) => r.z.heute !== 1).map(([n, r]) => n + " senkte heute auf " + r.z.heute + ": " + r.b.warum);
+        if (taeter.length) return "TÄTER der Preis des 1050 nahm: " + taeter.join(" · ");
+        return roterPreis.urteil === "ROT" && g1050.b.stand === "PUNKT" && hand.b.stand === "PUNKT" && omen.z.heute === 0 && omen.b.stand === "KERN" &&
+            /Richter GRÜN an GTX 1060, Preis GTX 1060 ROT \(p95 /.test(omen.b.warum) ? true : JSON.stringify([roterPreis.urteil, g1050.b, hand.b, omen.b]).slice(0, 500);
+    });
+    pruefe("GERÄT buche-2 liest vom GTX 1050 den Richter: sein ROT am selben Kopf nimmt die gebuchte Sprosse (0, beim Namen)", () => {
+        const r = gebucht((dir) => schreibe({ ...basis, geraet: "gtx", adapter: ADAPTER.gtx1050, eintrag: { gruen: false, zahl: "Kamm/Tal 1.1" }, dir }));
+        return r.z.heute === 0 && r.b.stand === "NULL" && /Richter ROT an GTX 1050/.test(r.b.warum) ? true : JSON.stringify(r.b).slice(0, 300);
     });
     fs.rmSync(X, { recursive: true, force: true });
     console.log(`SELBSTTEST richter-akte: ${ok} GRÜN, ${fehl} ROT`);
@@ -427,4 +524,4 @@ if (require.main === module) {
     if (process.argv.includes("--selbsttest")) process.exit(selbsttest());
     console.log("Aufruf: node vision/richter-akte.cjs --selbsttest (gerufen wird die Datei von punkte.cjs fahreSitzung)");
 }
-module.exports = { akten, schreibe, preisImFenster, preisFehlt, brauchtPreisLauf, referenzFuerAkte, MIN_BILDER, PREIS_S, TAFEL };
+module.exports = { akten, schreibe, preisImFenster, preisFehlt, brauchtPreisLauf, referenzFuerAkte, geraetVon, adapterLesen, MIN_BILDER, PREIS_S, TAFEL };

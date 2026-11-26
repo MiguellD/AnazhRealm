@@ -3507,12 +3507,12 @@ function stromSeite(r, a) {
 const POSTEN_MIN_MB = 0.25;
 // namen: die Stationen der Probe-Gruppe (namen[0] ist der Lauf) — der Preis-Lauf fährt, sobald IRGENDEINE von ihnen eine Sprosse trägt
 // (16.11., Fund g6: bis hier fragte er nur den ersten Zwilling — pflicht.E#1, dritter auf PB_PROBE_GANG, bekam nie einen Preis)
-async function preisLauf(W, namen) {
+async function preisLauf(W, namen, geraet) {
     const station = namen[0];
     let RA = null;
     try {
         RA = require(path.join(KOORD, "vision", "richter-akte.cjs"));
-        if (!RA.brauchtPreisLauf(namen)) return null;
+        if (!RA.brauchtPreisLauf(namen, undefined, geraet)) return null;
     } catch (_e) {
         return null;
     }
@@ -3586,13 +3586,26 @@ async function preisPosten(W) {
         lesart: "nach erzwungenem GC (werkbank /puffer, der Zensus der Band-Wand); Listen [Erzeuger, MB, % der Summe] absteigend je Posten ab " + POSTEN_MIN_MB + " MB, der Rest als eine Zeile; heap_typed: nur Typed-Arrays ab r (__heapHalter), der übrige JS-Heap hat keinen Halter-Zensus" };
 }
 // braucht der Lauf dieser Probe-Gruppe den Preis? — EINE Frage für die Auffüllung der Ruhe und den Preis-Lauf: jede Station der Gruppe
-const karte2PreisLauf = (g, tafel) => {
+// geraet: das Gerät der Sitzung (karte2Geraet) — ein Richter-Gerät fährt nie den Preis-Lauf und füllt nie die Ruhe für ihn
+const karte2PreisLauf = (g, tafel, geraet) => {
     try {
-        return require(path.join(KOORD, "vision", "richter-akte.cjs")).brauchtPreisLauf(g.map(schluessel), tafel);
+        return require(path.join(KOORD, "vision", "richter-akte.cjs")).brauchtPreisLauf(g.map(schluessel), tafel, geraet);
     } catch (_e) {
         return false;
     }
 };
+// DAS GERÄT DER SITZUNG (richter-akte.cjs geraetVon, 26.11., der Koordinator: „der 1050 trägt Richter, nie Preis“): `--geraet` nennt die
+// Klasse, der Adapter des Rechners das Gerät — der GTX 1050 fuhr bis hier als „GTX 1060“, mit Preis-Lauf und Referenz je Probe, und
+// schrieb seine Akten in die Datei des OMEN. Die Sitzung fragt EINMAL; ihr Kopf und jede Akte tragen die Antwort
+function karte2Geraet(klasse) {
+    try {
+        const RA = require(path.join(KOORD, "vision", "richter-akte.cjs"));
+        const adapter = RA.adapterLesen();
+        return { ...RA.geraetVon(klasse, adapter), roh: adapter };
+    } catch (e) {
+        return { klasse, name: null, preis: false, grund: "richter-akte.cjs: " + String((e && e.message) || e).split(/\r?\n/)[0].slice(0, 160), roh: null };
+    }
+}
 // DIE ZWILLINGE EINES LAUFS (16.11., Fund g6): die Gruppe fuhr EINEN Lauf, der Strom trägt nur seinen Namen (schluessel(g[0])) — jede
 // Station der Gruppe schreibt ihre Akte mit dem Preis DIESES Laufs (`probe`), nie nur der erste. o.tafel/o.karte/o.dir: der Selbsttest
 function richterAkten(g, urteile, o) {
@@ -3605,7 +3618,7 @@ function richterAkten(g, urteile, o) {
     try {
         const bilder = stromLesen(o.strom).bilder;
         g.forEach((st, i) => {
-            for (const z of RA.schreibe({ station: schluessel(st), probe: schluessel(g[0]), eintrag: urteile[i], bilder, von: o.von, bis: o.bis, sha: o.sha, geraet: o.geraet, referenz: o.referenz, posten: o.posten, stueck: o.stueck, tafel: o.tafel, karte: o.karte, dir: o.dir }))
+            for (const z of RA.schreibe({ station: schluessel(st), probe: schluessel(g[0]), eintrag: urteile[i], bilder, von: o.von, bis: o.bis, sha: o.sha, geraet: o.geraet, adapter: o.adapter, referenz: o.referenz, posten: o.posten, stueck: o.stueck, tafel: o.tafel, karte: o.karte, dir: o.dir }))
                 console.log("  " + z);
         });
     } catch (e) {
@@ -4035,6 +4048,9 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         return kopf;
     }
     console.log("  SITZUNG " + ctx.geraet + " · die Welt steht nach " + s.bootS + " s (Schloss nach " + s.warten + " min) · " + gruppen.length + " Proben · Welt :" + (ctx.port + 20000));
+    const k2 = karte2Geraet(ctx.geraet); // DAS GERÄT DER SITZUNG (karte2Geraet): der Kopf nennt es, jede Preis-Frage und jede Akte trägt es
+    kopf.geraet = { name: k2.name, adapter: k2.adapter || null, preis: k2.preis, ...(k2.preis ? {} : { grund: k2.grund }) };
+    console.log("  KARTE2 Gerät " + (k2.name || "—") + (k2.adapter ? " (Adapter „" + k2.adapter + "“)" : "") + (k2.preis ? " — Preis-Gerät" : " — " + k2.grund + ": kein Preis-Lauf, die Akten tragen nur den Richter"));
     // DIE LEINE LERNT (grundDeckel): die Proben dieser Fahrt, deren Grund-Deckel aus ihrer Reihe über dem der Tafel steht — beim Namen
     {
         const gl = gruppen.map((g) => [schluessel(g[0]), probeSek(g[0], ctx.geraet), gelerntVon(ctx.geraet)[schluessel(g[0])] || 0]).filter((x) => x[2] > x[1]);
@@ -4107,7 +4123,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     const aufgeschoben = []; // die Proben, deren Grund-Deckel der Rest der Fahrt nicht trug (offen, die Fortsetzung misst sie)
     // DIE AUFFÜLLUNG DER RUHE (die Ablage der Fahrten): mit der Welt der Sitzung, ehe die erste Zeit-Probe misst
     // (auch vor dem Preis-Lauf der Meisterkarte 2: seine Referenz urteilt gegen dieselbe Ruhe)
-    if (gruppen.some(istZeit) || gruppen.some((g) => karte2PreisLauf(g))) await referenzAuffuellen("sitzung");
+    if (gruppen.some(istZeit) || gruppen.some((g) => karte2PreisLauf(g, undefined, k2))) await referenzAuffuellen("sitzung");
     // DER TÄTER-ORT (pm-tod-kostet-ort, 21.11.; Runde 2 an 31ea3847: „/umstellen hochhaus-dach“ riss die Seite — renderer, Speicher
     // erschöpft —, Radeon 471 und GTX 468 Stationen standen „die Welt der Sitzung trägt nicht mehr“, und jede Fortsetzung begann wieder
     // am Dach: stadt.vertikal, dann macht.megastadt, je ein Absturz und ein neuer Boot, bis der Dienst die Karte abgab): stirbt die Welt
@@ -4376,7 +4392,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             haltVor = await messHaltRuf(W, { frei: true });
         }
         // DIE WIRT-WACHE VOR DER PROBE (wirtRuf): das Gedächtnis der Seite, vor einer Probe mit Preis der Heap nach dem Collector
-        const mitPreis = karte2PreisLauf(g);
+        const mitPreis = karte2PreisLauf(g, undefined, k2);
         const wirtVor = await wirtRuf(W, false, mitPreis);
         if (wirtVor.fehler) (kopf.wirtBlind = kopf.wirtBlind || []).push({ probe: schluessel(g[0]), wann: "vor", fehler: wirtVor.fehler });
         // DIE FELDER DER PROBE (probeFelder): die Namen von window vor ihr
@@ -4411,7 +4427,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         }
         const wirtHaelt = wirt && !wirt.fehler && wirt.ungemessen ? "Wirt-Wache: " + wirt.ungemessen : null;
         // DER PREIS-LAUF der Meisterkarte 2 (richter-akte.cjs PREIS_S): noch unter dem Namen der Probe, an ihrer Pose, der Loop des Spiels
-        const preisFahrt = !gerissen && !tot && !wirtHaelt && es.some((e) => !e.ungemessen) ? await preisLauf(W, g.map(schluessel)) : null;
+        const preisFahrt = !gerissen && !tot && !wirtHaelt && es.some((e) => !e.ungemessen) ? await preisLauf(W, g.map(schluessel), k2) : null;
         await zapf(aktuell);
         const probeBis = Date.now(); // das Ende des Fensters der Probe (die Richter-Akte schneidet ihren Preis aus dem Strom darin)
         aktuell = "(sitzung)";
@@ -4512,7 +4528,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         if (urteile.some((e, i) => (kopf.messortOffen || []).includes(schluessel(g[i])) && /— offen, UNGEMESSEN$/.test(e.grund || "")))
             console.log("  SITZUNG " + schluessel(g[0]) + " — der Messort brach: offen, die Fortsetzung misst die Probe in einer neuen Sitzung");
         await melde(g, urteile, aus, zeit);
-        richterAkten(g, urteile, { strom, von: Date.parse(zeit), bis: probeBis, sha: ctx.sha, geraet: ctx.geraet, ...(preisFahrt || {}) });
+        richterAkten(g, urteile, { strom, von: Date.parse(zeit), bis: probeBis, sha: ctx.sha, geraet: ctx.geraet, adapter: k2.roh, ...(preisFahrt || {}) });
     }
     akteLaeuft("sitzung", null);
     clearInterval(takt);
@@ -9810,7 +9826,8 @@ async function selbsttest(o = {}) {
         fs.writeFileSync(sz, JSON.stringify({ probe: "zw.A#1", zeit: "z", bereit: true, seite: "s1", ursprung: U, heap: 300, verloren: 0, fehler: 0,
             namen: { wetter: ["klar"], zelle: [] }, zeilen: ts.map((t) => [t, 16, 1, 100, -1, 100, 1000, 0, 0, 1, 0, 0, 0, 1, 0, -1]) }) + "\n");
         const dir = path.join(tmp, "akten-zwilling");
-        const o = { strom: sz, von: U + 10000, bis: U + 20000, sha: "abcdef1234", geraet: "radeon", stueck: { ab: U + 12000, bis: U + 19000 }, karte, dir };
+        const adapter = { namen: ["AMD Radeon(TM) 890M Graphics"] }, GR = require(path.join(KOORD, "vision", "richter-akte.cjs")).geraetVon("radeon", adapter);
+        const o = { strom: sz, von: U + 10000, bis: U + 20000, sha: "abcdef1234", geraet: "radeon", adapter, stueck: { ab: U + 12000, bis: U + 19000 }, karte, dir };
         richterAkten(g, [{ gruen: true, zahl: "A" }, { gruen: false, zahl: "B" }], { ...o, tafel: { zeilen: [zA, zB] } });
         const datei = (z) => path.join(dir, z.leiter + "." + z.sprosse + ".abcdef12-radeon.json");
         const akteB = fs.existsSync(datei(zB)) ? JSON.parse(fs.readFileSync(datei(zB), "utf8")) : null;
@@ -9818,8 +9835,8 @@ async function selbsttest(o = {}) {
             akteB.geraete[0].richter.urteil === "ROT" && akteB.geraete[0].preis.bilder > 30;
         const nurB = { zeilen: [{ ...zA, richter: "fehlt", grund: "x" }, zB] };
         pruef("RICHTER-AKTE ZWILLINGE zwei Stationen auf einer Probe: beide schreiben ihre Akte mit dem Preis des EINEN Laufs; der Preis-Lauf fährt, wenn nur der zweite eine Sprosse trägt",
-            beide && karte2PreisLauf(g, nurB) && !karte2PreisLauf(g, { zeilen: [] }),
-            JSON.stringify({ A: fs.existsSync(datei(zA)), B: akteB && { station: akteB.station, lauf: akteB.lauf, bilder: akteB.geraete[0].preis.bilder }, preisNurB: karte2PreisLauf(g, nurB) }));
+            beide && karte2PreisLauf(g, nurB, GR) && !karte2PreisLauf(g, { zeilen: [] }, GR),
+            JSON.stringify({ A: fs.existsSync(datei(zA)), B: akteB && { station: akteB.station, lauf: akteB.lauf, bilder: akteB.geraete[0].preis.bilder }, preisNurB: karte2PreisLauf(g, nurB, GR) }));
     }
     fs.rmSync(tmp, { recursive: true, force: true });
     const rot = fall.filter((f) => !f.ok);
