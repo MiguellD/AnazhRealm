@@ -1,7 +1,7 @@
 {
  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
  "geraet": "gtx",
- "zeit": "2026-11-26T12:24:18.755Z",
+ "zeit": "2026-11-26T13:01:51.100Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -924,6 +924,70 @@
    "grund": "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.postProcessingFailed false → true) — kein Urteil, UNGEMESSEN (die Probe sah: 89 Bewohner, 20 Stichproben (5 Orte × 4 Uhren) + 8 Fahrer am Steuer (8 sitzen), Σ Soll 23 · jede Stichprobe ±10 %, niemand fehlt · Ankunft 3 Uhr 1.5 s/10 Uhr 1.5 s/15 Uhr 1.5 s/20 Uhr 1.5 s · doppelt 0 Hüllen / 0 Samen · third · [linse-gpu])",
    "zeit": "2026-11-26T12:08:40.199Z",
    "abdruck": "fbc0a7505e77",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.systeme#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.systeme) · Täter: @@ 0.2 s · planet.kosmos.systeme S1 warf: Cannot read properties of null (reading 'toFixed')",
+   "exit": 0,
+   "minuten": 0.42,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.systeme) · Täter: @@ 0.2 s · planet.kosmos.systeme S1 warf: Cannot read properties of null (reading 'toFixed')",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 24.2,
+   "fremd": {
+    "s": 26.8,
+    "takte": 12,
+    "fremdS": 11.45,
+    "kerne": 0.427,
+    "fensterKerne": 0.453,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.02
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      2
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.08
+     ]
+    ],
+    "dienerS": 7.61,
+    "diener": [
+     [
+      "dwm.exe",
+      3.09
+     ],
+     [
+      "System",
+      2.98
+     ]
+    ],
+    "geraetS": 10.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.63
+     ],
+     [
+      "svchost.exe",
+      3.23
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 116,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T13:01:51.100Z",
+   "abdruck": "f7481dafbbab",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
