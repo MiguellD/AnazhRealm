@@ -1,0 +1,27 @@
+Kandidat der Station erleben.klang.stimme (Leiter, S1–S5; beansprucht #1) — für den Zweig punkte-maschine, nicht für main
+
+Richter S1 (wörtlich, vision/meisterkarte-2.json): „F0 und Formanten am Abgriff gegen Peterson-Barney-Tafel ±15 % nach Leibmaßen“
+
+Stations-Fehler: meisterkarte-quelle/punkte/stationen/k2-erleben.js:4867/:4873 (punkte-maschine 179fab68 = 19ba05cd5, Blob 9c7c2e11) —
+  der Zensus /sprech|formant|murmel|vokal/ wirft jede Sprosse, sobald ein Leser erscheint; seit 5dcaf8cc7 (24.11., das Stimm-Gesetz
+  aus dem Leib) reicht klang-core.js `stimmFormanten`: S1–S4 werfen „Leser erschienen … misst ihn noch nicht“, 1 von 5 geurteilt.
+  S1 kannte nur das Urteil „fehlt“ (:4876).
+
+Schnitt (k2-erleben.stimme-s1.diff, 2 Hunks): S1 misst am Abgriff mit der Messung von gate:klang-zensus (St) — `stimmSeite`, PB_BAND,
+  PB_LEIB zur Laufzeit aus scripts/diag-klang-zensus.cjs gelesen, nie nachgebaut — (a) die Leiber der Tafel, (c) jeden Erwachsenen der
+  Sitzung mit dem Leib, den das Spiel seinem Ruf reicht; Zeuge der Weg des SPIELS (`_bewohnerLaut` → Werkstatt `rufPuffer` → Bus
+  `rufSpielen`, bit-gleich je Sample, gespielt); 3 Zeugen-Wörter, Täter beim Namen; `mutiert: true`; S2–S4 werfen nicht mehr an dem,
+  was S1 misst; Texte folgen der Welt.
+
+Gemessen (Wolke, Hand-Lauf stimme-hand.cjs, main eae94514):
+  vorher  Leiter 0,1 s · 1 von 5 Sprossen geurteilt
+  nachher Leiter 3,0–3,2 s (Deckel 20) · 5 von 5 geurteilt · Tafel max 9,0 % (Mittel 1,78 %, = 5dcaf8cc7) · Spiel 31 von 31 bit-gleich,
+          31 gespielt · Proben 2 137, 0 falsch · liste Fehler 0, Kandidat = Basis außerhalb der Stimme-Blöcke
+  Arten: spiel 62,2 ROT · heil 13,7 GRÜN · stumm Attrappe ROT · zwilling Attrappe ROT · pubertaet 77,3 ROT (Täter `stimmLeib`)
+
+Das SPIEL trägt #1 nicht: 7 von 13 Erwachsenen innerhalb ±15 %, max 62,2 % (Mann 1,70 m, f0 201 Hz) — stamm/klang.js:1004
+  `_bewohnerLaut` reicht der Stimme `b.genom.sex`, der Leib zeigt das Geschlecht der Gestalt (stamm/siedlung-bewohner.js:580/:469),
+  das Gesetz ist an der Gestalt geeicht (klang-core.js:1529). Mutante „heil“ 13 von 13, max 13,7 %. Kein Buchungs-Kandidat, bis das
+  Spiel heilt.
+
+Offen (nur das Gerät): [linse-gpu], der Klang am echten Ausgang, die Uhr der Leiter nach `ende` und die Bewohner der Wiese am Gerät.

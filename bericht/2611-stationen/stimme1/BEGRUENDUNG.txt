@@ -1,0 +1,83 @@
+BEGRÜNDUNG — erleben.klang.stimme#1 (die Leiter, S1–S5), Leser 2, 26.11.
+
+1. DER RICHTER (wörtlich, vision/meisterkarte-2.json)
+   S1 „F0 und Formanten am Abgriff gegen Peterson-Barney-Tafel ±15 % nach Leibmaßen“
+      (umfang „1 Stimme aus Gesetz, Laute ohne Bedeutung (Murmeln, Rufe)“, tiefe „Stimme folgt dem Leib: Kind, Frau, Mann, groß, klein“)
+   Station: Soll formant_abweichung_pct ≤ 15. Beansprucht ist #1; der Fehler reißt S1–S4 (EIN `lauf` trägt S1–S5).
+
+2. DER FEHLER DER STATION (meisterkarte-quelle/punkte/stationen/k2-erleben.js, punkte-maschine 179fab68 = 19ba05cd5, Blob 9c7c2e11)
+   :4867  der Zensus sucht Leser der Stimme: /sprech|formant|murmel|vokal/ über die Methoden der Welt und die Schlüssel des Klang-Kerns
+   :4873  `neu(nr)`: erscheint einer, wirft die Sprosse „Leser erschienen (…) — S nr misst ihn noch nicht“
+   :4876  S1 = `neu(1)` + L.leser(„kein Formant-Gesetz für Menschen“) — die Station kannte nur das Urteil „fehlt“.
+   Seit 5dcaf8cc7 (24.11., „Stimm-Gesetz aus dem Leib … der Bewohner spricht (erleben.klang.stimme#1)“) trägt klang-core.js das
+   Gesetz und reicht `stimmFormanten` (:2465 an main eae94514): S1, S2, S3, S4 werfen, nur S5 urteilt (Umfang). An den Geräten:
+   stand.json „S1 warf: Leser erschien“ (Radeon 2da17e2e, zuletzt 4c9e6aab — UNGEMESSEN).
+
+3. DER SCHNITT (k2-erleben.stimme-s1.diff, 2 Hunks, `git apply --check` an 179fab68 sauber; der Blob ist am Kopf 19ba05cd5 derselbe)
+   a) S1 misst am Abgriff mit der Messung von gate:klang-zensus (St) — `stimmSeite` und die Tafel PB_BAND / PB_LEIB werden zur Laufzeit
+      aus scripts/diag-klang-zensus.cjs:1548–1640 gelesen, NIE nachgebaut (EINE Quelle; die Datei steht im pfad der Station, ihr
+      Wechsel misst neu). Ein gehaltener Vokal je Leib über den EINEN Weg zum Ohr (`stimmPuffer` → `rufSpielen`, 1 m) gerendert; f0
+      (YIN, 92 ms) und F1–F3 (Kovarianz 14. Ordnung im freien Ausklingen); je Wert die Abweichung zur Tafel.
+      (a) die Leiber der Tafel: Mann und Frau = die Bezüge des Gesetzes (K.STIMME.bezug, bezugFrau), das Kind 10 J · 1,35 m.
+      (c) jeder ERWACHSENE der Sitzung (jahre ≥ ALTER_GESETZ.erwachsenJ 18) mit dem Leib, den das SPIEL seinem Ruf reicht (`ruf.leib`
+          aus `_bewohnerLaut`), gegen die Gruppe der Tafel, die sein Leib zeigt (das Geschlecht seiner Gestalt). Kinder messen nicht
+          gegen die Tafel: Peterson & Barney nennen für ihre 15 Kinder kein Alter — das Kind der Tafel ist die Vorhersage des Gesetzes (a).
+      formant_abweichung_pct = das Maximum über (a) und (c).
+   b) Der Weg des SPIELS (`stimmeSpiel`, Zeuge): jeder Bewohner der Sitzung mit Leib und Genom tritt für den EINEN Laut auf 2 m an das
+      Ohr (die Hörweite STIMME.pegel.hoerweiteM 30 m) und im selben Zug zurück; das Spiel baut den Ruf (stamm/klang.js:994
+      `_bewohnerLaut`), die Werkstatt rechnet (:243 `rufPuffer`), der Bus spielt (:192 `rufSpielen`). Gezählt: Laute bit-gleich zu
+      `K.rufPuffer` desselben Rufs (Object.is je Sample), gespielte Laute (rufeGespielt). Der Klang startet und fällt wie in
+      erleben.klang.raum (`initSymphony` … `disposeSymphony`) — darum `mutiert: true` (die Leiter fährt nach `ende`).
+   c) Zeugen S1: spiel_gleich_pct ≥ 100 · gespielt ≥ 1 · leute ≥ 1 — die Attrappe des Gerüsts setzt jeden auf 0 und fällt beim Namen.
+   d) Täter beim Namen: Leute außerhalb ±15 % mit Geschlecht der Stimme ≠ Geschlecht des Leibs → der Leser (stamm/klang.js:1004);
+      mit gleichem Geschlecht → das Gesetz (klang-core.js:1574 `stimmLeib`); die Tafel außerhalb → `stimmLeib` mit den Zeilen der Messung.
+   e) S2–S4: was S1 misst, ist kein neuer Leser für sie (`S1_LIEST = ["stimmFormanten"]`; jeder ANDERE Name wirft weiter). Der Text
+      folgt der Welt: „die Bewohner sprechen Laute ohne Bedeutung aus dem Stimm-Gesetz … kein Wort, keine Prosodie aus Affekt“ (vorher:
+      „kein Bewohner spricht“ — falsch seit 5dcaf8cc7); speechSynthesis stamm/werkstatt-hud.js:73 → :71. S5 unverändert.
+
+4. DAS SPIEL TRÄGT #1 HEUTE NICHT (Täter mit Zahl)
+   Die Tafel trägt das Gesetz: 30 Laute · 120 Werte · max 9,0 % (Kind) · Mittel 1,78 % · 100 % innerhalb — byte-dieselben Zahlen wie
+   5dcaf8cc7 („120/120 Werte ±15 %, Mittel 1,78 %, max 9,0 % (Kind)“). Der Weg des Spiels trägt das Gesetz: 31 von 31 Lauten bit-gleich,
+   31 gespielt. Doch die ERWACHSENEN der Sitzung sprechen nicht nach ihrem Leib: 7 von 13 innerhalb ±15 %, max 62,2 %:
+     Mann 1,70 m · 50 J · Stimme sex 0,463 · Leib sex 0,103 · f0 201 Hz (Tafel 124–139)  62,2 %
+     Mann 1,75 m · 55 J · Stimme sex 0,375 · Leib sex 0,103 · f0 173 Hz                  39,4 %
+     Mann 1,77 m · 36 J · Stimme sex 0,335 · Leib sex 0,074 · f0 163 Hz                  31,3 %
+     Mann 1,77 m · 25 J · 30,8 % · Mann 1,77 m · 58 J · 29,5 % · Mann 1,64 m · 16,0 % — alle sechs Männer; die vier Frauen innerhalb.
+   Täter: stamm/klang.js:1004 `_bewohnerLaut` reicht der Stimme `sex: b.genom.sex` — den Wurf des eigenen Genoms
+   (stamm/siedlung-bewohner.js:573 `_rollHumanoidGenome`; die Männer der Sitzung 0,138–0,463). Der Leib zeigt das Geschlecht seiner
+   GESTALT (:580 `b.gestalt`, die nächste von acht; ihr Geschlecht :469 — Männer 0,074 / 0,103; „das Weiche seiner GESTALT
+   (Geschlecht, Bau, Muskel, Alter, Haar — G.dK, der Guss, in dem er nah steht)“ :600), und an der Gestalt ist das Gesetz geeicht
+   (klang-core.js:1529 `bezug` sex 0,125 „das Geschlecht in der Mitte der maennlichen Gestalten“). mann = max(0, 1 − 2·sex): der
+   Mann mit Stimme sex 0,463 trägt 0,074 der Pubertät, der Bezug 0,75 — ein Mann, den das Auge als Mann sieht, spricht fast mit dem
+   Grundton der Frau. Zwei Quellen für das Geschlecht EINES Bewohners (Gebot 4). Die Höhe ist EINE Quelle (8 · genom.kh, der Leib
+   skaliert die Gestalt auf sie: :582 `b.groesse`).
+   Gegenprobe (stimme-hand.cjs heil, b.genom.sex := Gestalt.gen.sex, danach zurück): 13 von 13 innerhalb, max 13,7 % → GRÜN.
+   Die Heilung gehört ins Spiel (die Stimme liest das Geschlecht, das der Leib zeigt — oder die Gestalt das des Genoms), nicht in die
+   Station. Der Gate-Lauf (St) sah es nie: er misst nur die drei Leiber der Tafel.
+
+5. DIE ZAHL VORHER ↔ NACHHER (Hand-Lauf stimme-hand.cjs, Wolke, swiftshader, warme Welt der Sitzung, main eae94514)
+   vorher   Leiter 0,1 s · S1–S4 werfen „Leser erschienen (stimmFormanten) — S n misst ihn noch nicht“ · 1 von 5 geurteilt (S5 Umfang)
+   nachher  Leiter 3,0–3,2 s (Deckel 20) · 5 von 5 geurteilt:
+              S1 gemessen formant_abweichung_pct 62,2 → ROT, Täter stamm/klang.js:1004 (Tafel 9,0 · Leute 62,2 · 31/31 bit-gleich · 31 gespielt)
+              S2 Leser fehlt „keine Sprache am Abgriff“ · S3 Umfang 31 von 10³ · S4 Umfang 31 von 10⁶ · S5 Umfang 1 von 100
+   Arten (Urteil über die Werte mit dem Adapter der Probe; die Sitzung urteilt in der Wolke ROT R2):
+     spiel      62,2 → ROT (Täter der Leser)          heil      13,7 → GRÜN (13 von 13)
+     stumm      Tafel 9,0 ✅, Attrappe: spiel_gleich_pct 0 · gespielt 0 · leute 0 → ROT
+     zwilling   (die Werkstatt rechnet hoeheM × 1,1) Attrappe spiel_gleich_pct 0 → ROT
+     pubertaet  (Rachen, Kehle 0 — Täter S21 des Gates) Tafel 66,5 · Leute 77,3 → ROT, Täter klang-core.js:1574 `stimmLeib`
+   Wände    Proben der Datei 2 137, 0 falsch (Basis 2 137, 0 falsch) · `node punkte.cjs liste`: 1 976 Stationen · 420 Kriterien · fehlt
+            15 · Fehler 0 — Kandidat = Basis, Zeile für Zeile: außerhalb der fünf Blöcke der Stimme-Probe (je Sprosse ihr Befehl)
+            1 329 099 Zeilen gleich · sek 20 bleibt.
+
+6. DIE UHR (Korrektur 3)
+   Ungelesene Arbeit fällt keine: die 30 Laute der Tafel (0,5–0,6 s) und die 130 der Erwachsenen (≈ 2 s) liest das Urteil; die 31
+   Rufe des Spiels liest der Zeuge (0,16–0,26 s samt Werkstatt). Die Kosten hängen an den Bewohnern der Sitzung (31), nie an der Welt.
+
+7. WAS NUR DAS GERÄT MESSEN KANN
+   - der Zeuge der Karte ([linse-gpu]) — der Hand-Lauf der Wolke urteilt daran ROT R2, nicht an den Werten;
+   - der Klang am echten Ausgang (die Wolke rendert den Abgriff offline und spielt den Bus kopflos; das Ohr hört am Gerät);
+   - die Uhr der Leiter in der Reihe der Sitzung (jetzt mutierend: nach `ende`) und die Bewohner der Wiese am Gerät (hier 31, 13 Erwachsene).
+
+8. URTEIL
+   Kein Buchungs-Kandidat, bis das Spiel heilt: der Kandidat misst das heutige Spiel ROT mit dem Täter beim Namen und das geheilte grün.
+   Er misst kein rotes Spiel grün — die Tafel allein (9,0 %) hätte es getan.

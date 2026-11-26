@@ -1,0 +1,151 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-erleben.js b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
+index 9c7c2e11d..d66d5e1e8 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-erleben.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
+@@ -4814,16 +4814,28 @@ const LANDMARKE_AN = async (r, T, a) => {
+     );
+ 
+     // ─────────── erleben.klang.stimme — Stimme: Personen sprechen aus dem Leib ───────────
+-    // Kein Bewohner spricht; der Begleiter spricht über speechSynthesis des Browsers (stamm/werkstatt-hud.js:73) — eine Gerätestimme
+-    // außerhalb des Klang-Graphen (R4). S1/S2 urteilen „Leser fehlt“, S3/S4 zählen Bewohner je Siedlung und gesamt, S5 die Saaten.
++    // Die Bewohner sprechen Laute ohne Bedeutung aus dem Stimm-Gesetz (klang-core.js:1610 `stimmPuffer`, gerufen über `_bewohnerLaut`
++    // stamm/klang.js:994); der Begleiter spricht über speechSynthesis des Browsers (stamm/werkstatt-hud.js:71) — eine Gerätestimme
++    // außerhalb des Klang-Graphen (R4). S1 misst am Abgriff mit der Messung von gate:klang-zensus (St) — `stimmSeite`, gelesen aus
++    // scripts/diag-klang-zensus.cjs, nie nachgebaut: die Leiber der Tafel UND jeder Erwachsene der Sitzung mit dem Leib, den das
++    // Spiel seinem Ruf reicht, gegen die Gruppe, die sein Leib zeigt; Zeuge: jeder Bewohner spricht über den Weg des Spiels bit-gleich
++    // zum Gesetz. S2 urteilt „Leser fehlt“, S3/S4 zählen Bewohner je Siedlung und gesamt, S5 die Saaten.
+     LEITERN.push(
+         leiter({
+             leiter: "erleben.klang.stimme",
+             sek: 20,
+-            pfad: ["scripts/werkbank.cjs", "stamm/werkstatt-hud.js", "stamm/klang.js", "klang-core.js", "stamm/siedlung-bewohner.js", "fachwerk-core.js"],
++            mutiert: true,
++            pfad: ["scripts/werkbank.cjs", "scripts/diag-klang-zensus.cjs", "stamm/werkstatt-hud.js", "stamm/klang.js", "klang-core.js", "koerper-core.js", "stamm/siedlung-bewohner.js", "fachwerk-core.js"],
+             welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
+             sprossen: {
+-                1: { soll: [{ wort: "formant_abweichung_pct", richtung: "≤", wert: 15, wortlaut: "F0 und Formanten am Abgriff gegen Peterson-Barney-Tafel ±15 % nach Leibmaßen", feld: "richter" }] },
++                1: {
++                    soll: [{ wort: "formant_abweichung_pct", richtung: "≤", wert: 15, wortlaut: "F0 und Formanten am Abgriff gegen Peterson-Barney-Tafel ±15 % nach Leibmaßen", feld: "richter" }],
++                    welt: [
++                        { wort: "spiel_gleich_pct", ab: 100, was: "Laute der Bewohner über den Weg des Spiels (`_bewohnerLaut` → Werkstatt `rufPuffer`) bit-gleich zum Gesetz, je Bewohner der Sitzung" },
++                        { wort: "gespielt", ab: 1, was: "Laute, die das Spiel am Bus spielte (`rufSpielen`, rufeGespielt)" },
++                        { wort: "leute", ab: 1, was: "Erwachsene der Sitzung am Abgriff mit dem Leib ihres Rufs gemessen" },
++                    ],
++                },
+                 2: {
+                     soll: [
+                         { wort: "wer_pct", richtung: "≤", wert: 10, wortlaut: "Wortfehlerrate eines Spracherkenners am Abgriff ≤ 10 %", feld: "richter" },
+@@ -4867,23 +4879,105 @@ const LANDMARKE_AN = async (r, T, a) => {
+                     const leib = namen.concat(Object.keys(K)).filter((n) => /sprech|formant|murmel|vokal/i.test(n) || (/stimme/i.test(n) && /bewohner|leib|mensch/i.test(n)));
+                     return { saat: r.state.worldMeta && r.state.worldMeta.seed, bew, maxS, sied, leib, tts: typeof window.speechSynthesis === "object" };
+                 }
++                // DER WEG DES SPIELS (S1): jeder Bewohner mit Leib und Genom tritt für den EINEN Laut auf 2 m an das Ohr (die Hörweite des
++                // Gesetzes, STIMME.pegel.hoerweiteM) und sofort zurück; das Spiel baut den Ruf (`_bewohnerLaut`: der Leib aus dem Genom),
++                // die Werkstatt rechnet (`rufPuffer`), der Bus spielt (`rufSpielen`). Gezählt: Laute bit-gleich zum Gesetz desselben Rufs,
++                // gespielte Laute; gereicht: je Bewohner der Leib seines Rufs und das Geschlecht seiner Gestalt (was sein Leib zeigt)
++                async function stimmeSpiel(o) {
++                    const s = r.state, K = window.__klangCore, erw = window.__koerperCore.ALTER_GESETZ.erwachsenJ, t0 = performance.now();
++                    const war = !!(s.symphony && s.symphony.enabled), pm = s.playerMesh.position, bew = [], antwort = new Map();
++                    for (const Sd of (r._bewohnerSiedlungen || new Map()).values())
++                        for (const b of Sd.liste || []) if (b.leib && b.leib.position && b.genom) bew.push({ b, G: (Sd.gestalten || [])[b.gestalt] || null });
++                    let um = null, alt = null, gespielt = 0;
++                    try {
++                        if (!war) r.initSymphony();
++                        const sy = s.symphony;
++                        if (sy.ctx && sy.ctx.state !== "running") await sy.ctx.resume();
++                        um = sy.umwelt;
++                        if (!sy.enabled || !um || !um.werkstatt) return { fehler: "der Klang steht nicht (enabled " + !!sy.enabled + ", Werkstatt " + !!(um && um.werkstatt) + ")" };
++                        alt = um.werkstatt.onmessage;
++                        um.werkstatt.onmessage = (ev) => {
++                            const m = ev.data;
++                            if (m && m.typ === "ruf" && m.ruf && m.ruf.leib && m.tex) antwort.set(m.ruf.saat, m.tex.daten.slice(0));
++                            return alt.call(um.werkstatt, ev);
++                        };
++                        const g0 = um.rufeGespielt;
++                        for (const q of bew) {
++                            const g = q.b.leib, p0 = g.position.clone();
++                            try {
++                                g.position.set(pm.x + 2, g.position.y, pm.z);
++                                q.ruf = r._bewohnerLaut(q.b, "gruss");
++                            } finally {
++                                g.position.copy(p0);
++                            }
++                        }
++                        const n = bew.filter((q) => q.ruf).length, t = performance.now();
++                        while ((bew.some((q) => q.ruf && !antwort.has(q.ruf.saat)) || um.rufeGespielt - g0 < n) && performance.now() - t < o.antwortMs) await new Promise((f) => setTimeout(f, 10));
++                        gespielt = um.rufeGespielt - g0;
++                    } finally {
++                        if (um && alt) um.werkstatt.onmessage = alt;
++                        if (!war && s.symphony && s.symphony.enabled) r.disposeSymphony();
++                    }
++                    let gleich = 0;
++                    const leute = [];
++                    for (const q of bew) {
++                        if (!q.ruf) continue;
++                        const daten = antwort.get(q.ruf.saat), kern = K.rufPuffer(structuredClone(q.ruf)).daten;
++                        let ok = !!daten && daten.length === kern.length;
++                        for (let i = 0; ok && i < daten.length; i++) if (!Object.is(daten[i], kern[i])) ok = false;
++                        if (ok) gleich++;
++                        if (q.ruf.leib.jahre >= erw)
++                            leute.push({ leib: q.ruf.leib, sexLeib: q.G && q.G.gen && Number.isFinite(q.G.gen.sex) ? q.G.gen.sex : q.b.genom.sex, ausGenom: q.ruf.leib.sex === q.b.genom.sex });
++                    }
++                    return { bewohner: bew.length, rufe: bew.filter((q) => q.ruf).length, gleich, gespielt, leute, ms: Math.round(performance.now() - t0) };
++                }
+                 const z = await L.ev("return (" + stimmeZensus + ")();", 30);
+                 L.zeile("Zensus Stimme: " + JSON.stringify(z));
++                // was S1 misst, ist kein neuer Leser für S2–S4: das Stimm-Gesetz formt Laute ohne Bedeutung (kein Wort, keine Prosodie)
++                const S1_LIEST = ["stimmFormanten"];
+                 const neu = (nr) => {
+-                    if (z.leib.length) throw new Error("Leser erschienen (" + z.leib.join(", ") + ") — S" + nr + " misst ihn noch nicht");
++                    const n = z.leib.filter((x) => !S1_LIEST.includes(x));
++                    if (n.length) throw new Error("Leser erschienen (" + n.join(", ") + ") — S" + nr + " misst ihn noch nicht");
+                 };
+-                const stumm = "kein Bewohner spricht; der Begleiter spricht über speechSynthesis des Browsers (stamm/werkstatt-hud.js:73) — Gerätestimme außerhalb des Klang-Graphen, nicht aus Gesetz (R4)";
+-                await L.je(1, async () => (neu(1), L.leser(1, "keine Stimme aus dem Leib: kein Formant-Gesetz für Menschen (der Klang-Kern formt nur den Tier-Ruf, f1/f2 ∝ 1/L klang-core.js:497); " + stumm)));
+-                await L.je(2, async () => (neu(2), L.leser(2, "keine Sprache am Abgriff: " + stumm + "; keine Prosodie aus Affekt im Graphen")));
++                const laute = "die Bewohner sprechen Laute ohne Bedeutung aus dem Stimm-Gesetz (Silben aus Vokalen der Tafel, `stimmPuffer` klang-core.js:1610 über `_bewohnerLaut` stamm/klang.js:994) — kein Wort, keine Prosodie aus Affekt; der Begleiter spricht über speechSynthesis des Browsers (stamm/werkstatt-hud.js:71), Gerätestimme außerhalb des Klang-Graphen (R4)";
++                await L.je(1, async () => {
++                    const gate = require("fs").readFileSync(require("path").resolve("scripts/diag-klang-zensus.cjs"), "utf8");
++                    const fn = /\nasync function stimmSeite\(arg\) \{[\s\S]*?\n\}\n/.exec(gate), band = /\nconst PB_BAND = (\{.*\});\n/.exec(gate), pbLeib = /\nconst PB_LEIB = (\{.*?\});/.exec(gate);
++                    if (!fn || !band || !pbLeib) throw new Error("die Messung (St) fehlt in scripts/diag-klang-zensus.cjs (stimmSeite · PB_BAND · PB_LEIB)");
++                    const PB = JSON.parse(band[1]);
++                    const sp = await L.ev("return (" + stimmeSpiel + ")({ antwortMs: 2000 });", 30);
++                    if (sp.fehler) throw new Error(sp.fehler);
++                    // je Erwachsener eine Gruppe der Messung: die Tafel der Gruppe, die sein Leib zeigt, sein Leib der seines Rufs
++                    const bandL = {}, leibL = {};
++                    sp.leute.forEach((q, i) => ((bandL["b" + i] = PB[q.sexLeib >= 0.5 ? "frau" : "mann"]), (leibL["b" + i] = q.leib)));
++                    const [ta, le] = await L.ev("const stimmSeite = " + fn[0] + "; const PB_LEIB = " + pbLeib[1] + "; return [await stimmSeite({ band: " + band[1] + ", leiber: PB_LEIB, mut: false }), await stimmSeite({ band: " + JSON.stringify(bandL) + ", leiber: " + JSON.stringify(leibL) + ", mut: false })];", 40);
++                    const tafelMax = ta.maxPct, je = {};
++                    for (const q of le.je) je[q.gruppe] = Math.max(je[q.gruppe] || 0, ...q.abw);
++                    const leute = sp.leute.map((q, i) => ({ gruppe: q.sexLeib >= 0.5 ? "frau" : "mann", hoeheM: +q.leib.hoeheM.toFixed(2), sexStimme: +q.leib.sex.toFixed(3), sexLeib: +q.sexLeib.toFixed(3), jahre: Math.round(q.leib.jahre), maxPct: je["b" + i] })).sort((u, w) => w.maxPct - u.maxPct);
++                    const leuteMax = leute.length ? leute[0].maxPct : null, aus = leute.filter((q) => q.maxPct > 15);
++                    L.zeile("S1 Tafel: " + ta.je.length + " Laute · max " + tafelMax + " % · Mittel " + ta.mittelPct + " % · innerhalb " + ta.innerhalbPct + " % · Spiel: " + sp.gleich + " von " + sp.rufe + " Lauten bit-gleich (" + sp.bewohner + " Bewohner) · gespielt " + sp.gespielt + " · Erwachsene " + (leute.length - aus.length) + " von " + leute.length + " innerhalb ±15 % · schlimmste " + JSON.stringify(leute.slice(0, 3)) + " · " + sp.ms + " ms");
++                    const taeter = [];
++                    if (tafelMax > 15) taeter.push("klang-core.js:1574 `stimmLeib` (die Tafel am Abgriff: " + ta.rot.slice(0, 2).join(" · ") + ")");
++                    const zeig = (a) => a.slice(0, 2).map((q) => q.gruppe + " " + q.hoeheM + " m · Stimme sex " + q.sexStimme + " · Leib sex " + q.sexLeib + " · " + q.maxPct + " %").join(" · ");
++                    const fremd = aus.filter((q) => q.sexStimme !== q.sexLeib), eigen = aus.filter((q) => q.sexStimme === q.sexLeib);
++                    if (fremd.length)
++                        taeter.push("stamm/klang.js:1004 `_bewohnerLaut` reicht der Stimme `sex: b.genom.sex` (der Wurf des Genoms) — der Leib zeigt das Geschlecht seiner Gestalt (stamm/siedlung-bewohner.js:580 `b.gestalt`, :469), an ihr ist das Gesetz geeicht (klang-core.js:1529 `bezug` sex 0,125): " + fremd.length + " von " + leute.length + " Erwachsenen außerhalb ±15 %, " + zeig(fremd));
++                    if (eigen.length) taeter.push("klang-core.js:1574 `stimmLeib` (Erwachsene mit dem Geschlecht ihres Leibs am Abgriff außerhalb ±15 %: " + eigen.length + " von " + leute.length + ", " + zeig(eigen) + ")");
++                    L.gemessen(1, { formant_abweichung_pct: leuteMax == null ? tafelMax : Math.max(tafelMax, leuteMax) }, {
++                        welt: { spiel_gleich_pct: sp.rufe ? (100 * sp.gleich) / sp.rufe : 0, gespielt: sp.gespielt, leute: leute.length },
++                        taeter: taeter.join(" · ") || null,
++                    });
++                });
++                await L.je(2, async () => (neu(2), L.leser(2, "keine Sprache am Abgriff: " + laute)));
+                 await L.je(3, async () => {
+                     neu(3);
+-                    if (z.maxS < P.sprossen[3].umfang.verlangt) return L.umfang(3, z.maxS, "die größte Siedlung der Sitzung trägt " + z.maxS + " Bewohner (" + z.sied + " Siedlungen) — 10³ verlangt; und " + stumm);
+-                    L.leser(3, stumm, z.maxS);
++                    if (z.maxS < P.sprossen[3].umfang.verlangt) return L.umfang(3, z.maxS, "die größte Siedlung der Sitzung trägt " + z.maxS + " Bewohner (" + z.sied + " Siedlungen) — 10³ verlangt; und " + laute);
++                    L.leser(3, "keine Stimme nach Alter, Herkunft, Krankheit: die Stimme liest vom Leib nur Höhe und Geschlecht (`stimmLeib` klang-core.js:1574); " + laute, z.maxS);
+                 });
+                 await L.je(4, async () => {
+                     neu(4);
+-                    if (z.bew < P.sprossen[4].umfang.verlangt) return L.umfang(4, z.bew, "die Sitzung trägt " + z.bew + " Bewohner — keine Metropole mit 10⁶ Personen; und " + stumm);
+-                    L.leser(4, stumm, z.bew);
++                    if (z.bew < P.sprossen[4].umfang.verlangt) return L.umfang(4, z.bew, "die Sitzung trägt " + z.bew + " Bewohner — keine Metropole mit 10⁶ Personen; und " + laute);
++                    L.leser(4, "keine Antwort im Sinn: " + laute, z.bew);
+                 });
+                 await L.je(5, async () => L.umfang(5, 1, "die Sitzung hält EINE Saat (" + z.saat + ") — 100 Saaten verlangt; kein fremdes Sprechorgan"));
+             },
