@@ -1,3 +1,30 @@
+## 26.11. 20:52 Koordinator — stadt-voll ist NICHT geerbt: am main GRÜN, es ist dein Kopf — und er ist je Takt ≈ 3× teurer
+
+**Gemessen an der GTX 1050 (derselbe Rechner, dieselbe Probe `bild:stadt-voll@0.33`):**
+- main 61e2a27f: GRÜN in 447 s — „umstellen GRÜN nach 365 s (takte 2669, steht true, 81 Chunks)“, Bild GRÜN (bauSatz 19,4 %, bewohner 7,3 %).
+- dein Kopf 4 f7e5f23b: ROT nach 734 s — „DIE WELT STEHT NICHT nach 1823 Takten: Ruhe 0, zuletzt brach sie: Bau-Regung“ (Kopf 3 ebenso, 598 s).
+
+**Meine Lesart der zwei Zeilen (eine Rechnung, kein Beweis — prüfe sie):** am main 365 s für 2 669 Takte = 0,137 s je Takt; an deinem Kopf
+734 s für 1 823 Takte = 0,40 s je Takt. Dein Kopf ist an der vollen Stadt am schwachen Gerät je Takt rund 2,9× teurer — die Welt „steht
+nicht“, weil sie in der Zeit der Probe gar nicht so weit kommt wie am main (dort brauchte sie 2 669 Takte bis zur Ruhe), und/oder weil
+bei dir ein Rufer die Bau-Regung wach hält. Mein Verdacht „geerbt“ von 19:59 ist damit widerlegt.
+
+**Was am main die Bau-Regung ruft (Wanze der 1050 an `_bauRegt`, dirigent-takt.js:2351, 1 343 Rufe; in den letzten 300 Takten nur noch 6):**
+`_foundryRewarmColdTrees` studio-gestalt.js:963 ← `tickArchitectureCulling` vegetation-baum.js:3157 (702) · `_standMeldet` dienst.js:2223 ←
+`tickArchitectureCulling` vegetation-baum.js:3162 (507) · `_standMeldet` ← `_tickArchitectureLOD` siedlung-bauten.js:260 (93) ·
+`_karteGebacken` stoff-karte.js:1757 (35) · `_stufenVorlaufWahl` dirigent-ankunft.js:973 (6).
+
+**Dein Schnitt (kein dritter Wurf an der Probe):**
+1. Miss headless an stadt-voll die Kosten je Takt vorher (main) ↔ nachher (Kopf 4): ms je Takt gesamt und der Anteil deiner Wege
+   (`_bewohnerTritt`, die Kette je Bewohner, `frei()` mit bauten + raumR). 133 im Bild, 94 gehend — was kostet EIN Gehender je Takt, und
+   wächst es mit der Zahl der Häuser (325) statt mit der Zahl der Gehenden? Die Kosten gehören an Schirm + Änderung, nicht an die Stadt.
+2. Prüfe, ob ein Gehender die Bau-Regung ruft (jeder Ortswechsel über eine Chunk- oder LOD-Grenze → `tickArchitectureCulling` /
+   `_tickArchitectureLOD` → `_standMeldet`): dann hält das Platz-Leben selbst die Welt wach, und die Ruhe-Probe kann nie stehen. Die 1050
+   fährt denselben Lauf MIT Wanze an deinem Kopf und schreibt den Rufer nach 1 800 Takten (Datei:Zeile, Zahl je 300 Takte) in dieses Blatt.
+3. Kopf 5 erst mit der Zahl je Takt vorher ↔ nachher im Betreff.
+
+Dein Anspruch `menge.bild#2`: die Station läuft gerade an der 1050 am Kopf f7e5f23b; das Urteil folgt hier.
+
 ## 26.11. 19:59 Koordinator — Kopf 4 f7e5f23b gesehen: der Abschnitt 19:48 darunter ist für dich POST, kein neuer Start
 
 ## 26.11. 20:21 — GPU-PROBE f7e5f23b auf gtx1050-desktop: ROT in 2398 s (gate:pruefbuehne-licht GRÜN 195 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 338 s auf gtx1050-desktop · gate:studio-begehen GRÜN 495 s auf gtx1050-desktop · bild:stadt-voll@0.33 ROT 734 s — ROT umstellen --ort stadt-voll: DIE WELT STEHT NICHT nach 1823 Takten: Ruhe 0, zuletzt brach sie: Bau-Regung (DER BAU STEHT NICHT: die Welt nach 1823 Takten — die Welt hat nichts mehr offen) auf gtx1050-desktop · gate:webgl-probe GRÜN 171 s auf gtx1050-desktop) → probe-post/werk-am-ort/f7e5f23b.md
