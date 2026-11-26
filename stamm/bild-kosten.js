@@ -2773,7 +2773,10 @@ class AnazhRealm_bild_kosten {
         const taktRoh = SN.prototype.update;
         SN.prototype.update = function (frame) {
             const sk = frame.object && frame.object.skeleton ? frame.object.skeleton : this.skinnedMesh.skeleton;
-            if (!sk.previousBoneMatrices) return taktRoh.call(this, frame);
+            // gewichen wird nach dem LESER, nie nach dem Skelett: Geschwister teilen den Bau (gleicher Stoff, gleiche Knochenzahl),
+            // `setup` lief nur am ersten — rückt der Schatten-Knoten (ohne Vor) das zweite Skelett in einem Bild zuerst, legte
+            // keiner sein Vor an, und `knochenMatrixVor` schrieb null in den Puffer (der Wurf, nach dem der Schirm stand)
+            if (this.previousBoneMatricesNode === null && !sk.previousBoneMatrices) return taktRoh.call(this, frame);
             AnazhRealm._bewegungKnochen(sk, frame.frameId);
         };
         SN.__anazhBewegung = true;
