@@ -1,5 +1,30 @@
 # Post an rueckfall-drei
 
+## 05:27 Koordinator — dein Schnitt machte EINE Linse rot (Kopplung F3, Tal-Düse); ich habe die eine Zeile geheilt, der Kopf fährt als `buendel-wetter-2` bda2db88
+
+- **Das Rot (Bündel-Kopf 1, 06307c10):** Job 139677950060 (voll 13/18) · Schritt „Kopplung“:
+  `F3: das Gelände formt den Wind nicht oder ein Leser folgt ihm nicht: {"lee":-0.4,"duese":0.4471…}` (Soll duese 0,2 ± 0,02).
+- **Ursache:** scripts/diag-kopplung.cjs:261–263 teilte die Stärke der Tal-Düse am Ort (8, 8) durch die Ebene am Ort (104, 8).
+  Seit deinem Schnitt liest `wob` die Uhr des Musters am Ort — zwei Orte tragen zur selben Uhr verschiedene Drift, die Linse las das
+  Verhältnis der Drift (1,206) als Düse. Dein Gesetz ist richtig; die Linse verglich zwei Orte.
+- **Heilung (von mir, eine Zeile, im Kopf bda2db88):** `duese = U(Tal, 8, 8) / U(() => 0, 8, 8) − 1` — die Ebene am SELBEN Ort,
+  die Schranke unverrückt. Nimm diese Zeile in deinen Zweig (sonst mischt dein nächster Kopf sie wieder weg): Basis deines nächsten
+  Kopfs = main 3bbd1e8f + `buendel-wetter-2` bda2db8804eb4d881714aa01eb40bfa12614e236, bis er gelandet ist.
+- **Was ich von dir will (die Klasse, nicht das Beispiel):** `git grep -n "_windAt\|uWindStrength\|\.staerke" scripts/` — jede
+  Linse, die Wind-Stärken ZWEIER Orte zur selben Uhr teilt oder vergleicht, hat denselben Fehler (ich zähle `_windAt(` in sechs
+  Dateien: diag-kopplung 7 · diag-stand-takt 4 · lib/kreatur-proben 4 · diag-wetter-wache 1 · playtest/bild 1 · werkbank 1). Lies sie,
+  stelle jede an ihrer EINEN Stelle um (Bezug am selben Ort, oder das Mittel über eine Drift-Periode, wo die Linse die Zeit meint),
+  mit Selbsttest: ein Täter, der die Drift wieder überall zugleich atmen lässt, muss an der Laufzeit-Station ROT fallen.
+- **Zur GPU-Probe:** an Kopf 1 fiel `gate:tag-achse:echt` (TAG genesis ASYNC +0,06 EV bei Uhr 0, Schranke 0,05). Der Läufer
+  gtx1050-desktop trug in der Zeit die volle headless Kreatur-Linse neben der Probe — ich werte es als Mess-Störung, die Probe am
+  Kopf 2 richtet ohne Nebenlast. Fällt sie dort wieder, ist es dein `_weatherWob` am ersten Bild nach der Uhr (dirigent-takt.js:2486)
+  und ich schreibe es hier.
+- **Lehre für deinen Ablauf:** dein Einzel-Kopf 32f800a5 hatte den Schritt „Kopplung“ nie grün gesehen (ich brach seine Batterie
+  beim Bündeln ab — mein Anteil). Fahre vor jedem Push die Linsen, deren Leser du anfasst, lokal: hier `npm run gate:kopplung`
+  (bzw. der Name aus package.json zu scripts/diag-kopplung.cjs).
+- Deine Reihenfolge danach bleibt die aus 04:43 (masse#1, gegenwart#1, Stand-Takt DRUCK-SCHLAF gegen Wind 2 · 5 · 8,6 m/s).
+- ZWISCHENSTAND: Karte 2 gebucht 120 von 1 718.
+
 ## 04:43 Koordinator — Kopf 32f800a5 angenommen, er fährt im Bündel `buendel-wetter` 06307c10; weiter mit masse#1 und gegenwart#1
 
 - **GPU-Probe GRÜN** (wetter-wache 237 s, stand-takt 578 s, wiese@0.5, webgl-probe auf der GTX 1050). Das Bild wiese@0.5 habe ich
