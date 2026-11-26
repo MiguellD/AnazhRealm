@@ -3064,16 +3064,15 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 58 Bilder · max 92.33 ms · 82.76 % > 33 ms · Fahrt 42 Bilder · max 117.18 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 82.76 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 117.18), 100.00 % > 33 ms an 54b89949 radeon · gehalten: Gehen 92 Bilder · max 83.25 ms · 13.04 % > 33 ms · Fahrt 5 Bilder · max 75.02 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 13.04 % > 33 ms | Fahrt: blind (5 Bilder in 2.5 s), 80.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 99649186 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 99649186: Deckel 67 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT k4-geh 66.0 s) · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +31)",
+   "beleg": "Maschine: Gehen 69 Bilder · max 83.79 ms · 59.42 % > 33 ms · Fahrt 9 Bilder · max 58.65 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 59.42 % > 33 ms | Fahrt: blind (9 Bilder in 2.5 s), 100.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 45bad33f radeon · gehalten: Gehen 92 Bilder · max 83.25 ms · 13.04 % > 33 ms · Fahrt 5 Bilder · max 75.02 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 13.04 % > 33 ms | Fahrt: blind (5 Bilder in 2.5 s), 80.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 99649186 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 45bad33f: Last: Referenz f 1,401 (Faden 1,401 · alle Kerne 1,254; vor 117/327 ms, nach 105,5/272,9 ms, Ruhe 83,5/260,7 ms seit 2026-11-16) · fremd: node.exe punkte/punkte.cjs buchen --kopf 45bad33ff93297aed1d46 · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +31)",
    "stationen": [
     {
      "id": "profiband.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Gehen 58 Bilder · max 92.33 ms · 82.76 % > 33 ms · Fahrt 42 Bilder · max 117.18 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 82.76 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 117.18), 100.00 % > 33 ms",
-     "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +31) — zuletzt an 99649186: Deckel 67 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT k4-geh 66.0 s)",
-     "gehalten": true,
+     "zahl": "Gehen 69 Bilder · max 83.79 ms · 59.42 % > 33 ms · Fahrt 9 Bilder · max 58.65 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 59.42 % > 33 ms | Fahrt: blind (9 Bilder in 2.5 s), 100.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1)",
+     "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
+     "grund": "GRÜN trotz Last: Referenz f 1,401 (Faden 1,401 · alle Kerne 1,254; vor 117/327 ms, nach 105,5/272,9 ms, Ruhe 83,5/260,7 ms seit 2026-11-16) · fremd: node.exe punkte/punkte.cjs buchen --kopf 45bad33ff93297aed1d46e24df214ff014d1d0d8 45,5 CPU-s · node.exe punkte.cjs liste --kopf 9dbca78f9ab0fec76f68063cf4785dc26fce451b 36,7 CPU-s · bash.exe gpu-lauf.sh --selbsttest 5,7 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 29,0 CPU-s · svchost.exe 20,0 CPU-s · SearchIndexer.exe 1,3 CPU-s",
      "r6": "konsum"
     },
     {
@@ -3092,7 +3091,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 99649186: Deckel 67 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT k4-geh 66.0 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an 45bad33f: Last: Referenz f 1,401 (Faden 1,401 · alle Kerne 1,254; vor 117/327 ms, nach 105,5/272,9 ms, Ruhe 83,5/260,7 ms seit 2026-11-16) · fremd: node.exe punkte/punkte.cjs buchen --kopf 45bad33ff93297aed1d46",
      "ungemessen": true
     },
     {
@@ -18844,7 +18843,7 @@
   },
   "karte2.mensch.kultur.sprache": {
    "punkte": 0,
-   "beleg": "Maschine: S1 GRÜN · Namen richtig zugeordnet 0.99686 (Soll ≥ 0.9) · Saaten der Namen 4 (Soll ≥ 2) · Umfang 1273 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran/alpin/mitteleuropa/nordisch · [linse-gpu] nvidia/pascal an 45bad33f gtx · S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] amd/rdna-3 an 45bad33f radeon — offen: karte2.mensch.kultur.sprache#1 radeon: Station seit der Messung geändert · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#2 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#3 gtx: Station seit der Messung geändert · karte2.mensch.kultur.sprache#4 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: S1 GRÜN · Namen richtig zugeordnet 0.99686 (Soll ≥ 0.9) · Saaten der Namen 4 (Soll ≥ 2) · Umfang 1273 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran/alpin/mitteleuropa/nordisch · [linse-gpu] nvidia/pascal an 45bad33f gtx · S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] amd/rdna-3 an 45bad33f radeon · S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] nvidia/pascal an 45bad33f gtx — offen: karte2.mensch.kultur.sprache#1 radeon: Station seit der Messung geändert · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#2 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.sprache#1",
@@ -18896,11 +18895,11 @@
     {
      "id": "karte2.mensch.kultur.sprache#3",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] nvidia/pascal",
+     "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.kultur.sprache#4",
@@ -20402,16 +20401,15 @@
   },
   "karte2.mensch.macht.megastadt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.megastadt#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9) — zuletzt an c3631992: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.mensch.macht.megastadt#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9) · karte2.mensch.macht.megastadt#2 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#2 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#3 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#3 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#4 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#4 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#5 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#5 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#6 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#6 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#7 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.megastadt#1 radeon: ROT: S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (1 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] amd/rdna-3 an 45bad33f · karte2.mensch.macht.megastadt#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9) · karte2.mensch.macht.megastadt#2 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#2 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#3 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#3 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#4 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#4 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#5 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#5 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#6 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#6 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#7 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.macht.megastadt#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9) — zuletzt an c3631992: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (1 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] amd/rdna-3",
+     "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
+     "grund": "ROT: S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (1 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] amd/rdna-3",
      "r6": "konsum",
      "beide": true
     },
@@ -37577,7 +37575,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 337,
+  "konsum": 338,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37745,10 +37743,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3285
+  "ohne": 3284
  },
  "kopfVoll": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
- "zeit": "2026-11-26T21:19:32.333Z",
+ "zeit": "2026-11-26T21:26:55.805Z",
  "vorher": "45bad33f",
  "bilanz": {
   "gewinn": [],
