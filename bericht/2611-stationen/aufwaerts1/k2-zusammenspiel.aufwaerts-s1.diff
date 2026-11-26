@@ -1,0 +1,130 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+index daee18bc9..41cb1be6e 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+@@ -6934,11 +6934,13 @@ L.perspektive("same", (() => {
+         if (z.haus !== true) return "kein Haus gebaut (der Satz spawn_studio setzte nichts)";
+         if (!(z.blkNach > z.blkVor)) return "das Haus steht nicht an seiner Stelle (Blocker am Ort " + z.blkVor + " → " + z.blkNach + ")";
+         if (!(z.orte >= 10)) return "nur " + (z.orte || 0) + " Orte im Umkreis gemessen (Soll 10)";
++        if (z.akt !== true) return "der Bau wurde keine Tat (keine Zeile `bauen` des Hauses in worldMeta.taten nach " + (z.aktMs == null ? "—" : z.aktMs) + " ms, Hülle " + (z.huelle ? "da" : "fehlt") + ")";
+         if (z.gegen !== 0) return "der Gegenlauf ohne Tat ändert " + z.gegen + " Orte (Rauschen, keine Kopplung)";
++        if (z.zurueck !== 0) return "nach dem Abriss bleiben " + (z.zurueck == null ? "—" : z.zurueck) + " Orte geändert (nicht das Haus änderte sie)";
+         if (!(z.bytes > 0)) return "kein Speicher-Zuwachs der Tat gemessen";
+         return null;
+     };
+-    const HAUS_Z = { haus: true, blkVor: 0, blkNach: 6, orte: 10, gegen: 0, bytes: 262, bild: true };
++    const HAUS_Z = { haus: true, blkVor: 0, blkNach: 6, orte: 10, akt: true, aktMs: 20, huelle: true, gegen: 0, zurueck: 0, bytes: 262, bild: true };
+     const zeugePlanet = (min) => (roh) => {
+         const z = roh.zeuge || {};
+         if (!(z.saaten >= min)) return "nur " + (z.saaten || 0) + " Saaten des Planet-Fadens (Soll ≥ " + min + ")";
+@@ -7017,11 +7019,8 @@ L.perspektive("same", (() => {
+                             return { u8: (await window.__ausgabeAufnahme(960, 540)).u8, px: Math.round(((v.x + 1) / 2) * 960), py: Math.round(((1 - v.y) / 2) * 540) };
+                         };
+                         const aus = { ort: [P.x, P.z].map(Math.round), orte: orte.length };
+-                        const vor = lies();
+-                        aus.gegen = anders(vor, lies());
+                         const pVor = await planet();
+                         const [w0, f0, t0, y30] = [wald(), fluss(), [temp(P), temp(fern)], r._voxelSurfaceY(P.x + 30, P.z)];
+-                        const b0 = JSON.stringify(r.buildStateSnapshot()).length;
+                         aus.blkVor = r._blockerUmPlatz(P.x, P.z, 6, []).length;
+                         let bVor = null;
+                         if (a.bild) {
+@@ -7031,8 +7030,14 @@ L.perspektive("same", (() => {
+                                 aus.bild = { fehler: String((e && e.message) || e).slice(0, 200) };
+                             }
+                         }
++                        // DIE ORTE VOR DER TAT nach den Takten des Bilds (sie trieben die Welt 900 Takte: was die Folge da aufholte, ist
++                        // nicht das Haus), der Stand am Bau
++                        const vor = lies();
++                        aus.gegen = anders(vor, lies());
++                        const b0 = JSON.stringify(r.buildStateSnapshot()).length;
+                         const a0 = st.architectures.length;
+                         const halt = st.weatherEffectTime;
++                        st.worldMeta.taten ||= [];
+                         let haus = null;
+                         st.weatherEffectTime = 0;
+                         try {
+@@ -7042,7 +7047,32 @@ L.perspektive("same", (() => {
+                             aus.haus = !!haus;
+                             aus.typ = haus && haus.type;
+                             aus.blkNach = r._blockerUmPlatz(P.x, P.z, 6, []).length;
++                            // DER BAU IST EIN AKT DES FELDS (`_werkAkt` → `_feldAkt` → `_tatSchreiben` „bauen“): gelesen wird erst, wenn er
++                            // gewirkt hat — die Uhr steht, die Folge nimmt ihn (`tickFaunaLifecycle` → `_feldTakt`, wie diag-kreatur-leben.cjs:1812)
++                            const tatDa = () => !!haus && st.worldMeta.taten.some((q) => q && q.tat === "bauen" && q.id === String(haus.id));
++                            const inReihe = () => !!haus && (st.feldAkte || []).some((q) => q.art === "werk" && q.id === String(haus.id));
++                            const tW = performance.now();
++                            const frist = Math.min(a.aktMs, Math.max(0, window.__rafferRest()));
++                            while (haus && !tatDa() && performance.now() - tW < frist) (r.tickFaunaLifecycle(), await new Promise((q) => setTimeout(q, 25)));
++                            aus.akt = tatDa();
++                            aus.aktMs = Math.round(performance.now() - tW);
++                            aus.huelle = !!(haus && haus._hausHuelle);
++                            // die Zeit, nicht das Spiel: der Akt steht in der Reihe (die nahen Regionen standen nicht bis zu seinem Stempel) oder
++                            // die Hülle des Hauses kam nicht in der Frist — UNGEMESSEN mit Zahl; ohne Akt bei stehender Hülle urteilt der Zeuge
++                            if (!aus.akt && (inReihe() || !aus.huelle)) window.__rafferKurz.push({ name: inReihe() ? "der Akt des Baus in der Folge des Felds (die nahen Regionen standen nicht bis zu seinem Stempel)" : "die Hülle des Hauses (der Grundriss des Akts) kam nicht in der Frist", n: 0, soll: 1, s: aus.aktMs / 1000 });
+                             aus.orteGeaendert = anders(vor, lies());
++                            // DER GEGENLAUF DER TAT: dieselben Orte im selben Augenblick ohne die Zeile `bauen` (der Index der Taten neu,
++                            // `_tatGen`) — die Änderung trägt die Tat, nicht die Uhr; danach steht die Zeile wieder
++                            const L = st.worldMeta.taten;
++                            let iT = L.length - 1;
++                            while (iT >= 0 && !(haus && L[iT] && L[iT].tat === "bauen" && L[iT].id === String(haus.id))) iT--;
++                            if (iT >= 0) {
++                                const [zeile] = L.splice(iT, 1);
++                                r._tatGen = (r._tatGen | 0) + 1;
++                                aus.zurueck = anders(vor, lies());
++                                L.splice(iT, 0, zeile);
++                                r._tatGen = (r._tatGen | 0) + 1;
++                            }
+                             aus.bytes = JSON.stringify(r.buildStateSnapshot()).length - b0;
+                             aus.planet = [pVor, await planet()];
+                             aus.wald = [w0, wald()];
+@@ -7067,7 +7097,15 @@ L.perspektive("same", (() => {
+                             }
+                         } finally {
+                             st.weatherEffectTime = halt;
+-                            if (haus) r.removeArchitecture(haus);
++                            if (haus) {
++                                // der Abriss ohne Satz schreibt keine Tat (`removeArchitecture`): die Zeile des Baus und sein Akt in der
++                                // Reihe gehen mit dem Haus, sonst senkte es das Leben der Leitern nach ihm
++                                r.removeArchitecture(haus);
++                                const id = String(haus.id), L = st.worldMeta.taten, A = st.feldAkte || [];
++                                for (let i = L.length - 1; i >= 0; i--) if (L[i] && L[i].tat === "bauen" && L[i].id === id) L.splice(i, 1);
++                                for (let i = A.length - 1; i >= 0; i--) if (A[i].art === "werk" && A[i].id === id) A.splice(i, 1);
++                                r._tatGen = (r._tatGen | 0) + 1;
++                            }
+                         }
+                         // DIE LAVA auf einer Zelle ohne Bett im 3×3 (sie zündet nichts), 20–80 m vom Haus
+                         let Q = null;
+@@ -7124,14 +7162,14 @@ L.perspektive("same", (() => {
+                         aus.saaten = { n: S0.length, streuungM: r3(Math.sqrt(S0.reduce((s, q) => s + (q[0] - hm) * (q[0] - hm), 0) / S0.length)), dSommer: r3(S0.reduce((s, q) => s + q[1], 0) / S0.length), ziv: S0.filter((q) => q[2] > 0).length, zeitAendert: S0.reduce((s, q) => s + q[3], 0) };
+                         return aus;
+                     };
+-                    const x = await S(seite, { radien: [60, 120, 200, 300, 400, 500, 650, 800, 900, 1000], same: 7, bild: !M.swift, saaten: 100 });
++                    const x = await S(seite, { radien: [60, 120, 200, 300, 400, 500, 650, 800, 900, 1000], same: 7, bild: !M.swift, saaten: 100, aktMs: 3000 });
+                     if (x.fehler) throw new Error(x.fehler);
+                     const P0 = x.planet ? x.planet[0] : [];
+                     const P1 = x.planet ? x.planet[1] : [];
+                     const lv = x.lava || {};
+                     const sa = x.saaten || {};
+                     const auge7 = await M.auge("same-aufwaerts-s7", { ort: "wiese" });
+-                    const zh = { haus: x.haus, blkVor: x.blkVor, blkNach: x.blkNach, orte: x.orte, gegen: x.gegen, bytes: x.bytes, bild: !!(x.bild && x.bild.pixel != null), typ: x.typ };
++                    const zh = { haus: x.haus, blkVor: x.blkVor, blkNach: x.blkNach, orte: x.orte, akt: x.akt, aktMs: x.aktMs, huelle: x.huelle, gegen: x.gegen, zurueck: x.zurueck, bytes: x.bytes, bild: !!(x.bild && x.bild.pixel != null), typ: x.typ };
+                     const zp = { saaten: sa.n, streuungM: sa.streuungM, mitOhne: 0, zivilisation: sa.ziv };
+                     const wa = x.wald || [];
+                     const fl = x.fluss || [];
+@@ -7158,12 +7196,14 @@ L.perspektive("same", (() => {
+                         u: { tat: "haus", radienM: [60, 1000] },
+                         soll: [K.soll(A, 1, "Pixel aus 400 m an seiner Stelle", { key: "sichtHoeheM", rel: "≥", zahl: 400, einheit: "m" }), K.soll(A, 1, "Bildpaar an 10 Orten im Umkreis", { key: "orteGeaendert", rel: "≥", zahl: 10 })],
+                         zeuge: (roh) => zeugeHaus(roh) || ((roh.zeuge || {}).bild !== true ? "das Haus aus 400 m ohne Bildpaar (keine Pixel der Welt)" : null),
+-                        taeter: "stamm/feld-leben.js `_tatSchreiben` / phyto-core `forestStandDensity` (die Tat verschiebt keinen Elternknoten: Pegel, Wuchs, Wild um das Haus bleiben)",
+-                        leser: "stamm/vegetation-wiese.js:2799 `_forestStandDensity` und stamm/gelaende-boden.js:1619 `_feuchteAt` — kein Leser eines gebauten Hauses im Umkreis",
++                        taeter: "stamm/feld-leben.js:1899 `_werkAkt` (ohne Grundriss kein Akt: `_grundrissVon` trägt ihn erst mit der Hülle des Hauses, stamm/vegetation-baum.js:2142 — sie kommt nach dem Bau, stamm/feld-dsl.js:2134 ruft den Akt davor; der Bau wird keine Tat)",
++                        leser: "stamm/feld-leben.js:1845 `auraAt` lebendig ← :1872 `_werkStoerungAt` (die Zeile `bauen` in worldMeta.taten über `_tatIndex`.werk)",
+                         gruen: { werte: { sichtHoeheM: 400, orteGeaendert: 10 }, zeuge: HAUS_Z },
+                         attrappen: [
+                             { name: "zehn geänderte Orte ohne gebautes Haus", roh: { werte: { sichtHoeheM: 400, orteGeaendert: 10 }, zeuge: Object.assign({}, HAUS_Z, { haus: false }) } },
++                            { name: "zehn geänderte Orte, der Bau wurde keine Tat (der Akt fiel ohne Grundriss)", roh: { werte: { sichtHoeheM: 400, orteGeaendert: 10 }, zeuge: Object.assign({}, HAUS_Z, { akt: false, huelle: false }) } },
+                             { name: "die Orte ändern sich auch ohne Tat (das Rauschen der Welt zählt als Kopplung)", roh: { werte: { sichtHoeheM: 400, orteGeaendert: 10 }, zeuge: Object.assign({}, HAUS_Z, { gegen: 4 }) } },
++                            { name: "die Orte bleiben geändert ohne die Zeile des Baus (die Uhr änderte sie, nicht die Tat)", roh: { werte: { sichtHoeheM: 400, orteGeaendert: 10 }, zeuge: Object.assign({}, HAUS_Z, { zurueck: 4 }) } },
+                             { name: "400 m aus der Projektion statt aus dem Bild", roh: { werte: { sichtHoeheM: 400, orteGeaendert: 10 }, zeuge: Object.assign({}, HAUS_Z, { bild: false }) } },
+                         ],
+                     },

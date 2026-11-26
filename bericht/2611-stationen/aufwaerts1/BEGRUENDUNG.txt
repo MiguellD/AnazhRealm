@@ -1,0 +1,67 @@
+BEGRÜNDUNG — same.kopplung.aufwaerts#1 (S1), Leser 2, 26.11.
+
+1. DER RICHTER (wörtlich, vision/meisterkarte-2.json)
+   „Haus bauen, aufsteigen: Pixel aus 400 m an seiner Stelle; Bildpaar an 10 Orten im Umkreis“
+   Station: K.soll(A, 1, "Pixel aus 400 m an seiner Stelle", sichtHoeheM ≥ 400 m) + K.soll(A, 1, "Bildpaar an 10 Orten im Umkreis",
+   orteGeaendert ≥ 10). Die zehn Orte liegen 60 … 1 000 m um das Haus (Pegel · lebendig · Wuchs · Feuchte · Wild ≤ 150 m · Wald).
+
+2. DER FEHLER DER STATION (meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js, punkte-maschine 179fab68)
+   :7020  const vor = lies();                        — der Vor-Stand wird gelesen,
+   :7029  bVor = await bild();                       — dann laufen 900 Takte der Welt (der Bild-Lauf, `__weltStehtNach`),
+   :7039  r.dslRun(["spawn_studio", "haus", …]);     — dann wird gebaut,
+   :7045  aus.orteGeaendert = anders(vor, lies());   — und sofort gelesen, ohne dass der Akt gewirkt haben muss.
+   Folge: was die Station als „Kopplung“ zählt, ist die Drift der 900 Takte (kalt: 2 Orte, warm: 0), nicht das Haus. Es gibt keinen
+   Zeugen, dass der Bau eine Tat wurde (Zeile `bauen` in worldMeta.taten), und keinen Gegenlauf, der die Änderung der Tat zuschreibt.
+   Täter und Leser der Sprosse sind veraltet: „kein Leser eines gebauten Hauses im Umkreis“ — falsch, seit `auraAt`
+   (stamm/feld-leben.js:1820, die Zeile :1845) die Tat über `_werkStoerungAt` (:1872, `_tatIndex().werk`) liest.
+
+3. DAS SPIEL TRÄGT DIE SPROSSE HEUTE NICHT (Täter mit Zahl)
+   Kette: spawn_studio → stamm/feld-dsl.js:2134 `_werkAkt(werk, ctx, true)` → stamm/feld-leben.js:1897
+     :1898  if (!e || e.werk !== true || …) return false;
+     :1899  const g = this._grundrissVon(e);
+     :1900  if (!g) return false;                                      ← still, ohne Meldung (fail-soft)
+   `_grundrissVon` (stamm/vegetation-baum.js:2114) liefert obb → fundament → `_hausHuelle`; seit „eine-huelle“ (:2142–2150) hat das
+   Haus bis zur Hülle KEINEN Grundriss. Die Hülle kommt nach dem Bau (asynchron); der Akt wird davor gerufen und fällt.
+   Kollision: 6bf32259a („eine-huelle“, Merge e807eec74, 24.11. 10:34) ↔ die Landung 5c650d13c (gemessen auf einem älteren main),
+   gemergt 11:42 als 70157f2d3. Seitdem ist der Bau über den Satz nie eine Tat.
+   Zahl (s1-hand.cjs, warme Welt, 3 von 3 Läufen, gleiche Bedingung):
+     spiel  huelleBeimBau false · grundrissBeimBau false · tatBeimBau 0 · tat 0 · orteGeaendert 0 von 10
+     nach   derselbe Bau, `_werkAkt` von Hand, sobald die Hülle steht (huelleMs ≈ 20): tat 1 · orteGeaendert 10 von 10 ·
+            lebendig Δ −0,069 … −0,010 (60 m … 1 000 m) · orteNachAbbau 0
+     Die Folge des Felds stand in jedem Lauf (`_feldFolgeSteht` true) — die Reihe an stamm/feld-leben.js:2136 ist NICHT der Täter.
+   Heilung gehört ins Spiel (nicht in diesen Kandidaten): der Akt wartet auf den Grundriss, oder der Grundriss steht vor der Hülle.
+
+4. DER SCHNITT (k2-zusammenspiel.aufwaerts-s1.diff, 7 Hunks, `git apply --check` an 179fab68 sauber)
+   a) `vor = lies()` und der Gegenlauf `gegen` NACH dem Bild-Lauf (die Drift der 900 Takte zählt nicht mehr).
+   b) Nach `dslRun` warten — Uhr steht, nur `r.tickFaunaLifecycle()` (das Muster aus diag-kreatur-leben.cjs:1812) —, bis die Zeile
+      `bauen` des Hauses in worldMeta.taten steht; Frist min(aktMs 3 000, Rest des Deckels `__rafferRest`).
+   c) Zeugen: `akt` (die Zeile steht), `aktMs`, `huelle`; ROT „der Bau wurde keine Tat (…)“, wenn die Zeile fehlt.
+      Fehlt bei Fristende die Hülle (oder steht der Akt noch in der Folge), meldet `__rafferKurz` UNGEMESSEN statt ROT — das Gerät war
+      zu langsam, nicht das Spiel falsch.
+   d) Gegenlauf der Tat: die Zeile `bauen` heraus (`_tatGen++`) → `zurueck` = Orte, die geändert bleiben; ROT bei zurueck ≠ 0
+      („nicht das Haus änderte sie“); die Zeile zurück.
+   e) `finally`: das Haus, seine Zeilen `bauen` und eingereihte Akte `werk` heraus, `_tatGen++` — die Welt der nächsten Leiter ist byte-alt.
+   f) Zwei Attrappen neu: „zehn geänderte Orte, der Bau wurde keine Tat (der Akt fiel ohne Grundriss)“ {akt:false, huelle:false};
+      „die Orte bleiben geändert ohne die Zeile des Baus (die Uhr änderte sie, nicht die Tat)“ {zurueck:4}.
+   g) Täter „stamm/feld-leben.js:1899 `_werkAkt` (ohne Grundriss kein Akt …)“, Leser „stamm/feld-leben.js:1845 `auraAt` lebendig ←
+      :1872 `_werkStoerungAt`“. Kein Kern-Fächer, kein neuer Leser: die zehn Orte liest weiter das SPIEL (r.auraAt · r._wuchsAt · …).
+
+5. DIE ZAHL VORHER ↔ NACHHER (Hand-Lauf s1-kandidat.cjs, Wolke, swiftshader, gleiche Welt)
+   Basis      kalt  Leiter 42,6 s · orteGeaendert 2 (Drift) · kein Zeuge der Tat
+              warm  Leiter  8,5 s · orteGeaendert 0
+   Kandidat   Spiel heute     Leiter 7,5 / 9,2 s · akt false · aktMs 3 018 / 3 010 · huelle true · orte 0 → ROT „der Bau wurde keine Tat“
+              Mutante „das geheilte Spiel“ (s1-hand.cjs heil): Leiter 9,8 s · akt true · aktMs 25 · orteGeaendert 10 · zurueck 0
+              → das Orte-Kriterium grün; sichtHoeheM bleibt am Gerät (Bild).
+   Wände      Proben aller Stationen der Datei 2 004, 0 falsch (Attrappen ROT, grün grün) · `node punkte.cjs liste`:
+              1 976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0 (= Basis) · Deckel sek 45 ≤ 60.
+   Zu liste: die Basis zeigt in diesem Klon „Fehler 0“, nicht die zwei ROT `gelaende.K2#1/#2` „Wand HAKEN“ des Regel-Blatts — der
+   HAKEN prüft gegen origin/main des Klons (4c9e6aab); der Kandidat ändert daran nichts (Basis = Kandidat, Zeile für Zeile).
+
+6. WAS NUR DAS GERÄT MESSEN KANN
+   - das Bildpaar aus 400 m (sichtHoeheM, `bild` im Zeugen) — swiftshader wirft „A valid external Instance reference no longer exists“;
+   - die Uhr der Leiter unter Last (Wolke 7,5–9,8 s warm, 42,6 s kalt; Deckel 45);
+   - die Latenz der Hülle am Gerät (Wolke ≈ 20 ms nach dem Bau; Frist 3 000 ms — reißt sie, steht UNGEMESSEN mit Namen, nie ROT).
+
+7. URTEIL
+   Kein Buchungs-Kandidat, solange das Spiel fällt: der Kandidat misst das heutige Spiel ROT mit dem Täter beim Namen und das geheilte
+   Spiel grün. Er misst kein rotes Spiel grün.

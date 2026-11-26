@@ -1,0 +1,24 @@
+Kandidat der Station same.kopplung.aufwaerts#1 (S1) — für den Zweig punkte-maschine, nicht für main
+
+Richter (wörtlich, vision/meisterkarte-2.json): „Haus bauen, aufsteigen: Pixel aus 400 m an seiner Stelle; Bildpaar an 10 Orten im Umkreis“
+
+Stations-Fehler: meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js (punkte-maschine 179fab68), aufwaerts `seite`:
+  :7020 `const vor = lies();` steht VOR `bild()` (:7029, 900 Takte der Welt), :7045 `aus.orteGeaendert = anders(vor, lies())` liest
+  sofort nach `dslRun` — kein Zeuge, dass der Bau eine Tat wurde. Gezählt wird die Drift der Uhr, nicht das Haus (kalt 2 Orte, warm 0).
+
+Das SPIEL trägt die Sprosse heute nicht (Zahl und Täter in BEGRUENDUNG.txt): stamm/feld-leben.js:1899–1900 `_werkAkt` fällt still
+ohne Grundriss — `_grundrissVon` (stamm/vegetation-baum.js:2142 „eine-huelle“) trägt ihn erst mit der Hülle, die nach dem Bau kommt;
+stamm/feld-dsl.js:2134 ruft den Akt davor. Der Bau wird keine Zeile `bauen`, die Aura liest nichts: 0 von 10 Orten.
+
+Schnitt (k2-zusammenspiel.aufwaerts-s1.diff, gegen punkte-maschine 179fab68): `vor` nach dem Bild; warten (Uhr steht,
+`tickFaunaLifecycle`), bis die Zeile `bauen` des Hauses in worldMeta.taten steht (Frist aktMs 3 000, im Rest des Deckels);
+Zeuge `akt` + Gegenlauf `zurueck` (die Zeile heraus → die Orte kehren zurück); zwei Attrappen. Täter/Leser der Sprosse neu benannt.
+
+Gemessen (Wolke, swiftshader, Hand-Lauf s1-kandidat.cjs / s1-hand.cjs):
+  Spiel heute:            Zeile bauen 0 · Orte 0 von 10 (3 von 3 Läufen)       — Kandidat: ROT „der Bau wurde keine Tat“ (aktMs 3 018)
+  Akt von Hand an der Hülle (+20 ms): Zeile 1 · Orte 10 von 10 · lebendig Δ −0,069 … −0,010 · nach Abriss 0
+  Mutante „geheiltes Spiel“: akt true nach 25 ms · Orte 10 · zurueck 0       — Kandidat misst sie grün (S1 Orte-Kriterium)
+  Leiter: Basis 42,6 s kalt / 8,5 s warm · Kandidat 7,5–9,2 s (sek 45 bleibt) · Proben 2 004, 0 falsch · liste 1 976 · Fehler 0
+
+Offen (nur das Gerät): das Bildpaar aus 400 m (sichtHoeheM; swiftshader wirft „A valid external Instance reference no longer exists“),
+die Uhr der Leiter unter Last, die Latenz der Hülle am Gerät (Frist 3 000 ms).
