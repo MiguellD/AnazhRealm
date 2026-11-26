@@ -1,7 +1,7 @@
 {
  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
  "geraet": "radeon",
- "zeit": "2026-11-26T13:36:06.367Z",
+ "zeit": "2026-11-26T13:55:24.317Z",
  "host": "MiguellD",
  "je": {
   "profiband.K4#1": {
@@ -428,6 +428,146 @@
    "bahn": "sitzung",
    "zwilling": "karte2.planet.kopplung.bahn-klima#2",
    "modus": "session"
+  },
+  "karte2.erleben.kopplung.wahrnehmung#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: die Beute wählt keine Lage gegen den Wind: der Kreatur-Takt rief _windAt in 15 × 300 Schritten an 5 Orten 0×; mit gedrehtem Wind steht das Kitz nach 5 s im Mittel 0.00 m anders, im Rauschen zweier gleicher Läufe 0.00 m (stamm/kreatur-furcht.js:119 witterung is · ueberlebenFaktor ungemessen gegen Soll ≥ 1,5 × ✗ · Täter: stamm/kreatur-furcht.js _creatureWarinessSpieler (die Witterung der Beute ohne Wind)",
+   "exit": 0,
+   "minuten": 1.76,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: die Beute wählt keine Lage gegen den Wind: der Kreatur-Takt rief _windAt in 15 × 300 Schritten an 5 Orten 0×; mit gedrehtem Wind steht das Kitz nach 5 s im Mittel 0.00 m anders, im Rauschen zweier gleicher Läufe 0.00 m (stamm/kreatur-furcht.js:119 witterung is · ueberlebenFaktor ungemessen gegen Soll ≥ 1,5 × ✗ · Täter: stamm/kreatur-furcht.js _creatureWarinessSpieler (die Witterung der Beute ohne Wind)",
+   "gpu": "amd/rdna-3",
+   "konsum": "kec8cb1cc05bd",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k818cfe2748cc",
+   "s": 104.9,
+   "fremd": {
+    "s": 108.4,
+    "takte": 46,
+    "fremdS": 87.73,
+    "kerne": 0.809,
+    "fensterKerne": 2.823,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30380-profil-2QwB9R --no-p",
+      12.08
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      9.52
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      6.95
+     ]
+    ],
+    "dienerS": 49,
+    "diener": [
+     [
+      "System",
+      19.8
+     ],
+     [
+      "dwm.exe",
+      13.94
+     ]
+    ],
+    "geraetS": 61.06,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.16
+     ],
+     [
+      "svchost.exe",
+      23.42
+     ],
+     [
+      "SearchIndexer.exe",
+      5.3
+     ]
+    ],
+    "eigenS": 291.14,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-26T13:52:00.384Z",
+   "abdruck": "34aa5fc96862",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.tiere.wanderung#2": {
+   "gruen": false,
+   "zahl": "S2 ausdehnungM 17,894 m gegen Soll ≥ 100 m ✗ · spieltage 1 Spieltage gegen Soll ≥ 1 Spieltage ✓ · Täter: tetrapoda-core.js wandern.leashBaseM (die Leine um den Anker) / stamm/daten.js FAUNA_MAX_AGE_MS",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "ROT: S2 ausdehnungM 17,894 m gegen Soll ≥ 100 m ✗ · spieltage 1 Spieltage gegen Soll ≥ 1 Spieltage ✓ · Täter: tetrapoda-core.js wandern.leashBaseM (die Leine um den Anker) / stamm/daten.js FAUNA_MAX_AGE_MS",
+   "gpu": "amd/rdna-3",
+   "konsum": "k9656eb196b3c",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k818cfe2748cc",
+   "s": 67.2,
+   "fremd": {
+    "s": 69.9,
+    "takte": 29,
+    "fremdS": 80.69,
+    "kerne": 1.155,
+    "fensterKerne": 2.014,
+    "namen": [
+     [
+      "git stash create",
+      7.91
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf 54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
+      7.77
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.89
+     ]
+    ],
+    "dienerS": 33.84,
+    "diener": [
+     [
+      "System",
+      14.08
+     ],
+     [
+      "dwm.exe",
+      9.7
+     ]
+    ],
+    "geraetS": 44.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.67
+     ],
+     [
+      "svchost.exe",
+      19.94
+     ],
+     [
+      "SearchIndexer.exe",
+      2.06
+     ]
+    ],
+    "eigenS": 183.55,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-26T13:55:24.317Z",
+   "abdruck": "4600bd35e884",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -447,7 +587,9 @@
   "kd2a7fe9609b1": "bVXRjpswEPyXPLblNsRwGEv34BxXJVLT5j5hDWvgQiCySTil6r9XkJAEuH0AgWa9w8zu8nd2wHiHKT192Kqcidm32Y+ZxRM5lsyJzNOHnYlZGLsLYkJeAqSUry0sNvmhtlDkClCVmO3JOZqa8uIp7tL0M859JaB5k+kWQMMZoublZZxaKEoqp0ZNfeKcmM9JjIFHm6IiB4+6K3YF+15Iz66ALngkNxHcooml3DbQbPlqdJjCMhmyZTpkHheyWUsp38cskxypdoq8tH1dNwlCPRf3WptJjsHGOSNlBZlrEnHX9VRPdtnK2UozStTF0dpBMc4Sf8EFQDjGpmTzOKudg6kUlVe4CheBi2I5VTs9HB39yAiVQq7GWmdIZUpmwGHOYt0K/cnHh+5wTwadErMrNJyzYKHu2gDAasql6Ih3JXrinhcSXwwSW1Ph1Aos1/IhvC0AfALvUVFzff+AeZOTojbOcrMfyqU9WsyZ+DWlaDNMyDi7ytY3NKPAm6vLNKwj6O5bvhxn3j+u9xAR+UPDAAe5mmhpK103aMhJD8e+aTzyA19IuZ6Aa9zve3uSmFE8NtLWbaM/0gh8z/dQAHy/DMr0oy9j4ZwpL+jWt3HAQvEayTH4ZHDvoEpNrnXvvvJjHX7VrA0VtaOqqu6ldIOAMQEMykfDf3dWProdpe/e5qds3uQg1hM6XYXK1D1xhYp5ntBpxAG4HqNzUzsNxlkPX2hF2FKf+HImU1BKAym16+IiEd2a6Vi2nRBc14H+Pmji8/TEnFqRS3u0vcoxesoXX9jSkNkpLHe3MQlYyLsWXG7kdijKx0E3UsKJw1CriHXr5o9cdc/LtLusryNyoBgOptJ5uxkhw6PNsKjvv4V//wE=",
   "kec8cb1cc05bd": "fVXRbqMwEPyXPN4ddQBTjKU+OKWn5nSR6CeszRpoCEQ2hCqn+/cTpCQBqtsXXma945lZ82d1BLWHDB/ebV2t+Orb6sfKwgkdi+aE5uHdrvgqUq6HPheXIkKI5x6mTHFsLCkLSUBWkB/QaU2DRfmghjb9COtActK9iCwhRJMziTtxrRfx9DQ/ppSY1k4DGsdD1ugHDPkc2NoMJDrQ6mHwJzigET66nAzFYrGLybU6JUTSkS5hryKhZLOcLqFKpzfwdeRTxkW3FUK8zfFpAdg4ZVHZcb6bhpFe89vM3aLHQOecAfMSzWcTMtelciS96aXp5Zo16rK1djKM+WngMU5INMdmaAuVN87R1BKrT7iMvNAFvukW986OraPvGYGUwORc8xywytBMOKx9pXvBP9j80D0c0IBTQf4JjdZ+6MmbNoSQ1yWXciA+jBiJUxoh8yaNvbnk1AsstuKuaEII+SBsRI1xo+K/sbMqL8xhKpem6K19/ntJ0eaQonH2tW2uaB9DupaXDdnGZPgmbDPvvF1u9BAA2F1gCCPidaGlrXXTgUEnO7ZjaCgGYcCF2C7ADRwOoz2p8lHNjbRNH/R7GmFAAwqckO+XhVle+rIWzhmLEq+5VaEf8eeYzsEnAwcHZGYKrUf3ZaB09FVYOywbR9Z1M0rphqHv95JU94Yng5X3bsfZG939FNmLmNRWiCRb8B+m1KYZyUuQPqVcZzEjhOk5ujCN04HKR7inJULESafmB5/RlJjhRE7tuuClfHhyrmzHDMbfJ0E+L9w+F9gLXdnWjkoroDLgX1jTodlLqPbXVQn9iPFfQojNTiRTYZ4z3QkxrM2koiGuHap4KuNl0BEVOZpaF/3rSHJobQ5lc/td/P0H",
   "kcf0bc17857ff": "fVXRbqMwEPyXPF6POgRzGEt92DSRktNVl37CGtZAQyCySVzldP9+goY0QHX7POsdz8zaf2ZHTPaY0eObrauZnH2bfZ9ZPJNnyZzJPL7ZmZzFib+gQMIrtLUDgOcWlpji2FhWFoqhqjA/kHcyDRXlY9K16R84D5Vkbg3ZjjHNLmzl4FZreHoaH1MqSmuvQU39IXMKQkFyDDzZDBV5eNLd4Cs45DH98CXrSqzgZcVu9S4Ado65ndjAmj8sp9MVVunwBoGOAy4kuC0AvI7xaYHUeGVR2X6+n0axnsvbTPcy6THovAtSXpK5NpHwfa560stWmlauUaMuT9YOhokgDRdCMhaPsRnZIskb72hqRdUVruJF5KNcusm9s+PJ0/eMUCkUaqx5jlRlZAYc5kGiW8HfxfjQPR7IoFdhfoXG8yBaqE9tGGObKZeyI96N6IlzHpNYDBpbc9m5FRi2cFd81xrNRI/q48bhv7GzSV6Yw1AuzWkxD+SvKUWbY0rG29e2uaEDivhcyW7AdsU+9kQsx52fl+s9RERxFxgmGGwmWtpaNw4Nednx1IeGUxiFEmA7ATd4OPT2pElAydhI27RBv6cRhTzkKBl7+FiY6aU/1sK7UFHSLbdJFMTyecXH4LPBg4cqM4XWvfsqTHT8VVgdlY2n6rrppfSjKAhaSap7w3edlfdur7JX3pRLt4ZBbQF22YR/N6U2TU9eoQo4lzpbCcaEHqML03gOk7yHL7QibOlPvLmQKSmjgZza93GRSub0B/dL+/RE1ydBPwyCfJmeWFArdGVPtlc6Qa5C+YU1jsxeYbW/rUoUxEL+BIDlS/dQ3+X+OdMOoFubQcVdXB0lmw63dAC/V2x7HXSkhB1NrYv2dWQ5nmyOZfP5Xfz9Bw==",
-  "k5d16846a3fb5": "jVXRjps6EP2XPLalDmAWY2kfnGWr5Kqr0re+js0YaAhEhqyrXPXfK5OQBKiurl9A6MzMmXNmzL+rAmvAJkdPtQY//+xWfPWESvsBFz/EFyHEq/j/5/v2RTyvPq2OoPZQuHRts+KrD+5TDQ32D1WogmSdc3I74e0tsyn9QlPNxJvL1sE7eh2adzSX0ET5AYb8WpQIIV4cTJnq2HekriQB2UB5QO9keqzqz2oI00+wjiQn9lUUGSGanElq7+RfxfPzPE0tMW+9HjSOSdYYRgz5HHjqCpDowUkPha/giCb45F97ZKl4S+/t/mJCZJbYjG1FRslmWV1Ck087CHUSUsaF3Tmx5/i8Auy9umq6sb6fx4le3zW2b4sYA9Y7A5Y1mmsQMt+nciS9cdI4uWaBuj513aQYC/MoYJyQZI4tsKtU2XtH00psrnCZBLEPfGMXfRfHk6cfGYGUwORc8xKwKdBMOKxDpZ3gv9g86R4OaMBroLxCk3UYB/Jh/gjZLrnUA/GhxEic0gRZMAl05pJ3J7DYPe4DzZzRhI2ocdyo+M+x61RZmcNULk0xWIf865JiV0KOxtu3XX9DhxjTtbxsyC4lwzNjm3nkvbnRQwBgDwNDGBHbhZZdq3sLBr3ieBqHhmIUR1yI3QLcw+Ew2pOrENXcyK53g/5II45oRIET8vGyMMumL2vhnbGq8Ta3Kg4T/pLSOfjdwMEDWZhK69F9GSmd/G1YLda9J9u2H6X04zgMnSTNo+HZYOWj22nxnfb1xs4uzJ0QWbHgP1RpTT+SlyBDSrkuUkYI03N0ZXrPgipHeKAlgqO/8OaMpsYCJ3Jq34cg58TqC/ezu3ri65WgP04G+bzMWKETuulO3ai0Aioj/hdrLJq9hGZ/W5U4TBj/RwixeRPZRJfXn0dthRjWZnKSYVwtqu2A21ghvqVkdy10REWOptWVux1JCaeuhLq//2l+/wE="
+  "k5d16846a3fb5": "jVXRjps6EP2XPLalDmAWY2kfnGWr5Kqr0re+js0YaAhEhqyrXPXfK5OQBKiurl9A6MzMmXNmzL+rAmvAJkdPtQY//+xWfPWESvsBFz/EFyHEq/j/5/v2RTyvPq2OoPZQuHRts+KrD+5TDQ32D1WogmSdc3I74e0tsyn9QlPNxJvL1sE7eh2adzSX0ET5AYb8WpQIIV4cTJnq2HekriQB2UB5QO9keqzqz2oI00+wjiQn9lUUGSGanElq7+RfxfPzPE0tMW+9HjSOSdYYRgz5HHjqCpDowUkPha/giCb45F97ZKl4S+/t/mJCZJbYjG1FRslmWV1Ck087CHUSUsaF3Tmx5/i8Auy9umq6sb6fx4le3zW2b4sYA9Y7A5Y1mmsQMt+nciS9cdI4uWaBuj513aQYC/MoYJyQZI4tsKtU2XtH00psrnCZBLEPfGMXfRfHk6cfGYGUwORc8xKwKdBMOKxDpZ3gv9g86R4OaMBroLxCk3UYB/Jh/gjZLrnUA/GhxEic0gRZMAl05pJ3J7DYPe4DzZzRhI2ocdyo+M+x61RZmcNULk0xWIf865JiV0KOxtu3XX9DhxjTtbxsyC4lwzNjm3nkvbnRQwBgDwNDGBHbhZZdq3sLBr3ieBqHhmIUR1yI3QLcw+Ew2pOrENXcyK53g/5II45oRIET8vGyMMumL2vhnbGq8Ta3Kg4T/pLSOfjdwMEDWZhK69F9GSmd/G1YLda9J9u2H6X04zgMnSTNo+HZYOWj22nxnfb1xs4uzJ0QWbHgP1RpTT+SlyBDSrkuUkYI03N0ZXrPgipHeKAlgqO/8OaMpsYCJ3Jq34cg58TqC/ezu3ri65WgP04G+bzMWKETuulO3ai0Aioj/hdrLJq9hGZ/W5U4TBj/RwixeRPZRJfXn0dthRjWZnKSYVwtqu2A21ghvqVkdy10REWOptWVux1JCaeuhLq//2l+/wE=",
+  "k818cfe2748cc": "jZXBcpswEIbfxcemRAZEEJrJQQ6ZJum4cfoGK1gBMQZGgpBxp+/eMbZsAzl0L1z+1f58+wv+LBpItpDh7bupqwVffFt8Xxj4QMeg/kB9+24WfBElroc+F8ciQogfB1mii6Y1pCwkAVlBvkOn0y0W5W0ytKk7WAaSk/5RZBtCFNmTuBfnehD399NjSolp7bSg0B6yRD9gyKfCzmQg0YFODYNP4oBGeOdyMhSLxTom5+oTITY96TfsaXKYhCodO/dV5FPGRf8shHibukwLwNYpi8rYuW4aRmrJL7PWsx4NvbMHzEvUpyZkrkulNbs6IDlgmjSqsjNmNIz5aeAxTkg01WZoiiRvnUbXEquTXEZe6AJf9TPaWdM56toRSAlMTlnngFWGeuRh6SfqAPqTTQ/dwg41OBXkJ2m09ENPXtgQQp7mXsrB+DDCGqc0QuaNGg9LPQIWz+Kq6IYQ8kmYVdmY0SvN4zxuJskLvRvjUhS9pT9lYHJIUTvb2rRnpY8hXcrjrXiOyfDcsNW08/Jidn8AwK7CQhgRTzOOplZtDxqdrOlsYCgGYcBFNkuXaWG3s6tJEx+T2Qu0h5Bf2wgDGlDghNyckM7wHK+Es8eixHNmk9CP+ENMp+IPDTsHZKYLpezmZZCo6Kug9li2jqzr1qJ0w9D3OfFJdb3sX714EGJ92eFrXP6mbfly8yhG9VO8fDWh1q01LkH6lHLVx4wQpqbqQrdOD0lu5Z6SCNEU4h51iRmOMCrXBS/lw+fFVmxzF9+MwrufbXlf4AFwZTpjCSdAZcBPKT+Ga5zcHvVWQrU9X5PQjxgXIs7EWmyuqLwK8d6oXvx3va3EMKjBhDS6VsXhy0hy6EwOZXv5Rfz9Bw==",
+  "k9656eb196b3c": "fVXRjps6EP2XPLbX6xBMMZb6MGlW2lRdlf2EMYyBDYHIJusqVf+9gg3ZANWdF17O+Jw5Z2x+r06YHbCgh1fXNiu1+rT6b+XwjZgj+0b24dWt1CrJgg2FCl6gLw4A33pYZqtT53heYcG6iiwrsCkesqHl0x2grjRH3WB5JHa2HVX1FWS+4DrSivtHKFLODb/wnYdbPcLXr/Njak15yzo0NB6ypjCSpObAsytQE8OzGYiv4Egk9CVQfCi5g+cdv9UvCZB67lP5BKmItkt2jU0+nSA0SSikAr8HgJc5Pq+QOlZXjRv5gzxOzFrdOP3zoseiZxeksiZ7bSIZBEKPore9Nb1ds0ZTn52bkMkwjzZScZ7MsQW5Kis7drKtpuYK18kmDlBt/WLu4nRm5l4Rao1Szz0vkZqC7ETDOsxMb/gvOT/0gEeyyBosr9BkHcYb/eEN5/xpqaUehA8Uo3AhEpKbSWMfLn/rDYY93JVI+6C5HFHjugn437VzWVnZ49QuI2izDtWPpURXYk6WHVrX3dAhxWKt1UCw3/Hhm8rtvPNjuDFDRJR3C8Mlh6eFl641nUdLrDidx6URFMWRAtgvwB0ej2M8eRZSNg/Sdf2i38uIIxEJVJx/fr8wy6HfrwW7UFXTbW+zOEzUt52Yg98sHhnqwlbGjOnrKDPJv5bVU90x3bbdaGUQx2HYW9LcB54OUd6nvSteRFdv/SNMag+QFgv9A0tru1G8Rh0KoUyxk5xLM0dXtmMes3KEb4wm7OUvsrmQramgiZ0mCHCTK+7Nu/ZL//TE1yfBfJ4s8mV5YkW90Y07u9HpDIWO1D+i8WQPGpvD7arEYSLVdwDYPkM68eXx9WQ8AE/5rJJhXT29PA24rQf4ueP7K9GJMn6yran615GXeHYl1t3H/+TPXw=="
  },
  "ungemessen": {
   "profiband.K4#2": {
