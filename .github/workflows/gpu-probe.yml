@@ -28,8 +28,9 @@ run-name: GPU-Probe ${{ github.ref_name }} ${{ github.sha }}
 # Start-Hook des Läufers für jeden Job nimmt; je Probe ≤ 8 min, dann fällt ihr Prozessbaum; wartet ein Karten-Job aus check.yml
 # auf diesen Läufer, startet die Probe nicht oder gibt nach) → post (ubuntu, nach BEIDEN Beinen: probe-post/<zweig>/<sha8>.md mit den Bildern, je Probe
 # ihr Läufer, bei zeit: „Band-Gerät“, und eine Zeile oben in cloud-post/<zweig>.md im Zweig koordination; ein Push mit GITHUB_TOKEN
-# weckt keine Läufe). Der Lauf ist rot, wenn ein Bein nicht GRÜN ist. Ein Stempel ohne Inhalt über einem grün geprobten Elter
-# erbt dessen Probe (der Einlass, scripts/ci-kopf.cjs `probeErbeLesen`): kein Bein, der Post sagt „GEERBT von <eltern-sha8>“. Auslöser NUR push (nie pull_request: fremder Code auf eigenen
+# weckt keine Läufe). Der Lauf ist rot, wenn ein Bein nicht GRÜN ist. DER STEMPEL FÄHRT KEINEN JOB (zug-erbt-baum, 26.11.): ein w2*-Kopf
+# „Abgabe …“ weckt den Einlass nicht (dieselbe Bedingung STEMPEL wie check.yml, gate:ci-deckung (V) STEMPEL) — die Probe seines
+# Elters über demselben Baum liest der Zug-Dienst (zug.cjs `erbe`); das Erbe im Einlass (22.11.) fiel. Auslöser NUR push (nie pull_request: fremder Code auf eigenen
 # Rechnern); die Vertrauens-Wand des Hooks lässt nur push und schedule von MiguellD durch.
 on:
     push:
@@ -56,46 +57,33 @@ concurrency:
 
 jobs:
     einlass:
-        if: contains(github.event.head_commit.message, '[gpu-probe:')
+        if: contains(github.event.head_commit.message, '[gpu-probe:') && !(github.event_name == 'push' && startsWith(github.ref, 'refs/heads/w2') && startsWith(github.event.head_commit.message, 'Abgabe '))
         runs-on: ubuntu-latest
         timeout-minutes: 5
-        # die Kette des Kopfs und die Läufe seines Elters (der Stempel erbt): Commits und Läufe lesen, nie schreiben
         permissions:
             contents: read
-            actions: read
         outputs:
             matrix: ${{ steps.einlass.outputs.matrix }}
             abgewiesen: ${{ steps.einlass.outputs.abgewiesen }}
-            geerbt: ${{ steps.einlass.outputs.geerbt }}
-            lauf: ${{ steps.einlass.outputs.lauf }}
         steps:
-            # die Namen: package.json und die Orts-Tafel; dazu jede Datei, die der Einlass lädt — der Richter der Kette
-            # (scripts/ci-kopf.cjs) und seine require-Kette (gate:ci-deckung (V) KOPF liest sie nach, wie am Job `kopf`)
+            # die Namen: package.json und die Orts-Tafel, dazu die Zeit je Tor (der Deckel je Probe)
             - uses: actions/checkout@v4
               with:
                   sparse-checkout: |
                       /package.json
                       /spec/profiband/
-                      /scripts/ci-kopf.cjs
-                      /scripts/lib/urteil-zeile.cjs
                       /spec/ci/ci-zeiten.json
                   sparse-checkout-cone-mode: false
 
             # DER EINE LESER: die Message geht NUR über env hinein, nie in den Text eines run-Schritts (Injektion); heraus gehen
-            # die Zeilen `abgewiesen=<grund>`, `matrix=<die Arten>` oder `geerbt=<sha40>` + `lauf=<id>` (`\s+` → „ “: ein Umbruch
-            # schmuggelte sonst einen zweiten Ausgang; sha und id stehen geprüft hex und Ziffern).
+            # die Zeilen `abgewiesen=<grund>` oder `matrix=<die Arten>`, je EINE (Leerraum wird ein Leerzeichen: ein Umbruch schmuggelte
+            # sonst einen zweiten Ausgang).
             # DIE ZWEI ARTEN: `zeit:` geht auf gpu-zeit (die Band-Geräte), alles andere auf gpu-probe (jeder Probe-Läufer), je Art
             # {label, plan}; eine leere Art fehlt in der Matrix und weckt keinen Läufer.
-            # DER STEMPEL ERBT (stempel-erbt-probe, 22.11.: je Stempel 10–13 min einer Karte, zwei Proben hielten die Mess-Runde der
-            # OMEN 26 min bei 0 Stationen, e3d964c9 gab nach über einem Elter, der die Probe 3 von 3 grün trug): ist der Kopf ein
-            # Commit ohne Inhalt (EIN Elter, derselbe Baum, scripts/ci-kopf.cjs `kopfKette`, bis KETTE tief) und trägt das Ende seiner
-            # Kette einen Lauf `completed/success`, dessen Ruf jede Probe dieses Rufs nennt, bleibt die Matrix leer — kein Bein, der
-            # Post schreibt „GEERBT von <eltern-sha8>“. Jeder andere Fall fährt; ein Fehler der API ist ROT wie im Richter.
-            - name: Einlass (nur gate:<npm-skript>, zeit:gate:<npm-skript> und bild:<ort>[@<uhr>], die Namen gegen package.json und die Orts-Tafel; der Stempel erbt)
+            - name: Einlass (nur gate:<npm-skript>, zeit:gate:<npm-skript> und bild:<ort>[@<uhr>], die Namen gegen package.json und die Orts-Tafel)
               id: einlass
               env:
                   KOPF_NACHRICHT: ${{ github.event.head_commit.message }}
-                  GH_TOKEN: ${{ github.token }}
                   EINLASS_JS: |
                       const marken = (m) => [...String(m).matchAll(/\[gpu-probe:([^\]\n]*)\]/g)];
                       const rufVon = (m) => (marken(m).length === 1 ? marken(m)[0][1].split(",").map((p) => p.trim()) : null);
@@ -140,29 +128,8 @@ jobs:
                               console.log(z);
                           }
                       };
-                      const summe = (t) => env.GITHUB_STEP_SUMMARY && fs.appendFileSync(env.GITHUB_STEP_SUMMARY, t + "\n");
                       if (grund) aus(`abgewiesen=${grund}`);
-                      else {
-                          const K = require("./scripts/ci-kopf.cjs");
-                          const api = K.apiMit(`${env.GITHUB_API_URL || "https://api.github.com"}/repos/${env.GITHUB_REPOSITORY}`, env.GH_TOKEN);
-                          K.probeErbeLesen(api, { sha: env.GITHUB_SHA, lauf: env.GITHUB_RUN_ID, proben, rufVon })
-                              .then((u) => {
-                                  if (u.erbt) {
-                                      const [e, l] = [String(u.erbt.sha), String(u.erbt.lauf)];
-                                      if (!/^[0-9a-f]{40}$/.test(e) || !/^\d+$/.test(l)) throw new Error(`das Erbe trägt keine Form (${e.slice(0, 60)} ${l.slice(0, 20)})`);
-                                      summe(`GEERBT von ${e} (Lauf ${env.GITHUB_SERVER_URL}/${env.GITHUB_REPOSITORY}/actions/runs/${l}): \`geerbt=${e} lauf=${l}\` — kein Bein, keine Karte`);
-                                      aus(`geerbt=${e}`, `lauf=${l}`);
-                                  } else {
-                                      summe(`fährt: ${u.faehrt}`);
-                                      console.error(`Einlass: die Probe fährt — ${u.faehrt}`);
-                                      aus(`matrix=${JSON.stringify({ include: arten })}`);
-                                  }
-                              })
-                              .catch((e) => {
-                                  console.error(`❌ Einlass: die Erb-Frage scheiterte — ${e.message}`);
-                                  process.exitCode = 1;
-                              });
-                      }
+                      else aus(`matrix=${JSON.stringify({ include: arten })}`);
               run: node -e "$EINLASS_JS"
 
     # EIN Job, je Art des Einlasses ein Bein (die Matrix ist sein Ausgang, nie eine Liste hier): label gpu-probe oder gpu-zeit,
@@ -471,8 +438,6 @@ jobs:
             ZWEIG: ${{ github.ref_name }}
             MATRIX: ${{ needs.einlass.outputs.matrix }}
             ABGEWIESEN: ${{ needs.einlass.outputs.abgewiesen }}
-            GEERBT: ${{ needs.einlass.outputs.geerbt }}
-            GEERBT_LAUF: ${{ needs.einlass.outputs.lauf }}
             PROBE: ${{ needs.probe.result }}
         steps:
             # je Bein und Versuch ein Ordner probe/probe-<label>-v<versuch>/ (ein grünes Bein fährt bei „nur die roten Jobs neu“
@@ -505,15 +470,7 @@ jobs:
                   LAUF="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
                   P="$RUNNER_TEMP/post"
                   mkdir -p "$P"
-                  # DER GEERBTE LAUF (der Stempel ohne Inhalt, der Einlass): EIN Posten, erste Zeile „# GPU-PROBE <sha8> — GEERBT von
-                  # <eltern-sha8>“ — nachgeben_posten (zug-dienst.sh) stößt nur „— NACHGEGEBEN“ neu an, der Zug-Dienst liest den Lauf
-                  # (ci.sh: „GPU-Probe: completed success“), Urteil und Bilder stehen im Posten des Elters
-                  if [ -n "$GEERBT" ]; then
-                      URTEIL="GEERBT von ${GEERBT:0:8}"
-                      LAEUFER="—"
-                      KOPF="ohne Inhalt über ${GEERBT:0:8}, dessen Probe jede Probe dieses Rufs grün trug (Lauf $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GEERBT_LAUF)"
-                      KOERPER="GEERBT (keine GPU geweckt): der Kopf ist ein Commit ohne Inhalt über $GEERBT (scripts/ci-kopf.cjs kopfKette) — Urteil und Bilder im Posten probe-post/*/${GEERBT:0:8}.md, Lauf $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GEERBT_LAUF"
-                  elif [ -n "$ABGEWIESEN" ]; then
+                  if [ -n "$ABGEWIESEN" ]; then
                       URTEIL=ABGEWIESEN
                       LAEUFER="—"
                       KOPF="$ABGEWIESEN"
@@ -591,8 +548,7 @@ jobs:
                       [ "$versuch" = 8 ] && { echo "Push nach koordination 8× abgewiesen"; exit 1; }
                       sleep $((RANDOM % 20 + 5))
                   done
-                  # geerbt ist GRÜN: der Elter trug jede Probe dieses Rufs grün am selben Baum
-                  case "$URTEIL" in "GEERBT von "*) echo GRÜN ;; *) echo "${URTEIL%% · ROT wie an main*}" ;; esac > "$RUNNER_TEMP/urteil"
+                  echo "${URTEIL%% · ROT wie an main*}" > "$RUNNER_TEMP/urteil"
 
             # der Lauf trägt das Urteil: rot, wenn die Probe nicht GRÜN ist (abgewiesen, nachgegeben, ROT)
             - name: Urteil

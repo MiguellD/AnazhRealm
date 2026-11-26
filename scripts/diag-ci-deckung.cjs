@@ -12,7 +12,7 @@ const yaml = require("js-yaml");
 const R6 = require("./lib/ci-klasse.cjs");
 const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE, PULS_S, ueber, R6_SHELL } = R6;
 const { schluessel } = require("./ci-schluessel.cjs");
-const { kopfUrteil, kopfKette, KETTE } = require("./ci-kopf.cjs");
+const { kopfUrteil } = require("./ci-kopf.cjs");
 const { messe } = require("./ci-zeiten.cjs");
 const {
     taeterFaelle,
@@ -46,6 +46,18 @@ const normWenn = (x) =>
         .trim()
         .replace(/\s+/g, " ");
 const istVollWenn = (x) => normWenn(x) === VOLL_WENN;
+// (V) STEMPEL — DER STEMPEL FÄHRT KEINEN JOB (zug-erbt-baum, 26.11.; z747–z749 Stempel → bereit 24 · 44 · 21 min, je Stempel
+// 5 Jobs in check.yml und 3 in gpu-probe.yml in derselben GitHub-Reihe wie die Batterien): ein Push auf einen w2*-Zweig, dessen
+// Kopf-Message mit „Abgabe " beginnt, weckt weder Puls noch Kopf-Richter (und so keine Batterie) noch den Einlass der GPU-Probe —
+// das Urteil des Stempels erbt der Zug-Dienst über den Baum seines Elters (zug.cjs `erbe`). EINE Bedingung, wörtlich an drei
+// Jobs; der Einlass erbt nichts mehr selbst (kein Richter, kein Netz): ein zweiter Weg des Erbes wäre der Zwilling.
+const STEMPEL_WENN =
+    "github.event_name == 'push' && startsWith(github.ref, 'refs/heads/w2') && " +
+    "startsWith(github.event.head_commit.message, 'Abgabe ')";
+const PULS_WENN = "${{ !(" + STEMPEL_WENN + ") }}";
+const KOPF_WENN = "(" + VOLL_WENN + ") && !(" + STEMPEL_WENN + ")";
+const EINLASS_WENN = "contains(github.event.head_commit.message, '[gpu-probe:') && !(" + STEMPEL_WENN + ")";
+const istKopfWenn = (x) => normWenn(x) === KOPF_WENN;
 // EIN URTEIL JE KOPF: der Kopf-Richter läuft unter VOLL_WENN, die Batterie hinter ihm, wenn der Kopf noch kein
 // grünes Urteil der vollen Batterie trägt (scripts/ci-kopf.cjs)
 const KOPF_JOB = "kopf";
@@ -126,7 +138,7 @@ function echtForm(doc) {
 function vollArt(doc, job) {
     const J = jobsVon(doc)[job];
     if (!J) return false;
-    if (job === KOPF_JOB) return istVollWenn(J.if) && !needsVon(J).length;
+    if (job === KOPF_JOB) return istKopfWenn(J.if) && !needsVon(J).length;
     if (job === VOLL_JOB)
         return normWenn(J.if) === VOLL_NACH_KOPF && needsVon(J).includes(KOPF_JOB) && vollArt(doc, KOPF_JOB);
     return false;
@@ -350,7 +362,9 @@ function schrittStumm(datei, doc, job, j, s) {
     // die volle Stufe hält den Merge: der Kopf-Richter feuert unter VOLL_WENN, die Batterie hinter ihm läuft, solange
     // der Kopf kein grünes Urteil der vollen Batterie trägt — wo sie nicht läuft, steht das Urteil des Kopfs schon
     const vollStufe = datei === path.basename(DATEI) && imVollenLauf(doc, job);
-    if (j.if !== undefined && !IMMER.test(String(j.if)) && !vollStufe)
+    // der Puls unter PULS_WENN läuft je Push — nur der Stempel ruht, sein Urteil steht am Elter über demselben Baum (V) STEMPEL
+    const pulsStufe = datei === path.basename(DATEI) && job === PULS_JOB && normWenn(j.if) === PULS_WENN;
+    if (j.if !== undefined && !IMMER.test(String(j.if)) && !vollStufe && !pulsStufe)
         return `der Job „${job}" läuft nur unter „${j.if}"`;
     if (an(s["continue-on-error"])) return "continue-on-error am Schritt";
     if (s.if !== undefined && !IMMER.test(String(s.if))) {
@@ -610,16 +624,20 @@ function urteil(doc) {
             v.push(`(V) LEER: kein Job „${job}" in ${DATEI}`);
             continue;
         }
-        if (job === PULS_JOB && (J.if !== undefined || needsVon(J).length))
+        if (job === PULS_JOB && (normWenn(J.if) !== PULS_WENN || needsVon(J).length))
             v.push(
                 `(V) PULS: „${job}"` +
                     [
-                        J.if !== undefined ? ` trägt die Bedingung „${J.if}"` : "",
+                        J.if === undefined
+                            ? " fährt am Stempel (ohne die Bedingung des Stempels)"
+                            : normWenn(J.if) !== PULS_WENN
+                              ? ` trägt die Bedingung „${J.if}"`
+                              : "",
                         needsVon(J).length ? ` wartet auf ${needsVon(J).join(", ")}` : "",
                     ]
                         .filter(Boolean)
                         .join(" und") +
-                    " — der Puls läuft je Push, ohne Bedingung"
+                    ` — der Puls läuft je Push außer am Stempel (${PULS_WENN})`
             );
         if (job === VOLL_JOB && (normWenn(J.if) !== VOLL_NACH_KOPF || !needsVon(J).includes(KOPF_JOB)))
             v.push(
@@ -726,7 +744,7 @@ function kopfLaedt() {
 
 // der Richter läuft in einem Teil-Checkout: jede Datei seiner relativen require-Kette steht in sparse-checkout — sonst stirbt
 // er an MODULE_NOT_FOUND, bevor er urteilt (Lehre z398, 12.11.: die Urteils-Wache kam in ci-kopf.cjs, der Checkout nicht mit).
-// Zwei Leser: der Job `kopf` der check.yml und der Einlass der GPU-Probe (stempel-erbt-probe: der Stempel erbt über dieselbe Kette)
+// Der Leser: der Job `kopf` der check.yml (der Einlass der GPU-Probe lädt den Richter nicht mehr, (V) STEMPEL)
 function teilLaedt(J, wer) {
     const co = ((J && J.steps) || []).find((s) => String(s.uses).startsWith("actions/checkout@"));
     const teil = String((co && co.with && co.with["sparse-checkout"]) || "")
@@ -742,15 +760,21 @@ function teilLaedt(J, wer) {
               )
         : [];
 }
-// der Einlass der GPU-Probe (gpu-probe.yml, EINLASS_JS) ruft den Richter: sein Teil-Checkout trägt dessen require-Kette
+// (V) STEMPEL am Einlass der GPU-Probe (gpu-probe.yml): er läuft unter EINLASS_WENN (der Stempel weckt ihn nicht) und erbt
+// nichts selbst — kein Richter (scripts/ci-kopf.cjs), kein Netz, kein Ausgang „geerbt"; das Erbe hat EINEN Ort, den Zug-Dienst
 const PROBE_WF = "gpu-probe.yml";
 function einlassTeil(docs) {
     const E = docs[PROBE_WF]?.jobs?.einlass;
-    if (!E) return [`(V) KOPF: ${PROBE_WF} trägt keinen Job „einlass"`];
+    if (!E) return [`(V) STEMPEL: ${PROBE_WF} trägt keinen Job „einlass"`];
+    const v = [];
+    if (normWenn(E.if) !== EINLASS_WENN)
+        v.push(`(V) STEMPEL: der Einlass der GPU-Probe läuft unter „${E.if}" statt ${EINLASS_WENN} — der Stempel weckte ihn`);
     const js = String(E.steps.at(-1)?.env?.EINLASS_JS || "");
-    if (!/require\("\.\/scripts\/ci-kopf\.cjs"\)/.test(js))
-        return [`(V) KOPF: der Einlass der GPU-Probe ruft scripts/ci-kopf.cjs nicht — der Stempel erbt seine Probe nicht`];
-    return teilLaedt(E, "der Einlass der GPU-Probe");
+    if (/ci-kopf|fetch\(|GH_TOKEN/.test(js) || (E.outputs && E.outputs.geerbt !== undefined))
+        v.push(
+            "(V) STEMPEL: der Einlass der GPU-Probe erbt selbst (Richter, Netz oder Ausgang „geerbt“) — ein zweiter Weg neben dem Erbe des Zug-Diensts"
+        );
+    return v;
 }
 
 // (V) KOPF: der Kopf-Richter vor der vollen Batterie — unter VOLL_WENN, ohne Matrix, nie stumm, EIN Schritt außer
@@ -759,8 +783,8 @@ function kopfForm(doc) {
     const v = [];
     const K = jobsVon(doc)[KOPF_JOB];
     if (!K) return [`(V) KOPF: kein Job „${KOPF_JOB}" — die volle Batterie richtet denselben Kopf auf jedem Zweig neu`];
-    if (!istVollWenn(K.if))
-        v.push(`(V) KOPF: „${KOPF_JOB}" läuft unter „${K.if}" statt der EINEN Voll-Bedingung (${VOLL_WENN})`);
+    if (!istKopfWenn(K.if))
+        v.push(`(V) KOPF: „${KOPF_JOB}" läuft unter „${K.if}" statt der EINEN Voll-Bedingung ohne den Stempel (${KOPF_WENN})`);
     if (needsVon(K).length)
         v.push(`(V) KOPF: „${KOPF_JOB}" wartet auf ${needsVon(K).join(", ")} — er steht am Anfang des Laufs`);
     if (K.strategy) v.push(`(V) KOPF: „${KOPF_JOB}" trägt eine Matrix — er richtet einmal je Lauf`);
@@ -1015,7 +1039,9 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
                   `(T) UNGEMESSEN: „${name(s)}" (${job}) trägt keine Zeit in ${ZEITEN} — messen (node scripts/ci-zeiten.cjs)`
               ) && null;
     for (const [job, J] of Object.entries(jobsVon(doc))) {
-        const art = J.if === undefined && !needsVon(J).length ? "push" : imVollenLauf(doc, job) ? "voll" : null;
+        // je Push: ohne Bedingung, oder der Puls unter PULS_WENN (er ruht nur am Stempel, (V) STEMPEL)
+        const jePush = (J.if === undefined || (job === PULS_JOB && normWenn(J.if) === PULS_WENN)) && !needsVon(J).length;
+        const art = jePush ? "push" : imVollenLauf(doc, job) ? "voll" : null;
         if (!art) continue; // eine andere Bedingung urteilt (V)/(S)
         const M = J.strategy?.matrix || {};
         const gs = Array.isArray(M.gruppe) ? M.gruppe : [null];
@@ -1106,7 +1132,7 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
 // Fixture-Bausteine: der Kopf-Richter in seiner Form, ein Cache-Schritt
 const CHECKOUT = { uses: "actions/checkout@v4" };
 const kopfJob = () => ({
-    if: VOLL_WENN,
+    if: KOPF_WENN,
     outputs: { voll: "${{ steps.kopf.outputs.voll }}" },
     steps: [CHECKOUT, { name: "Kopf", id: "kopf", run: "node scripts/ci-kopf.cjs" }],
 });
@@ -1196,36 +1222,6 @@ function selbsttestSchluessel() {
 }
 
 // (V) KOPF: das Urteil des Kopf-Richters (scripts/ci-kopf.cjs) gegen die Fälle
-// DER KOPF IST SEIN INHALT: die Kette der leeren Vorfahren (scripts/ci-kopf.cjs `kopfKette`, Leser: der Job `kopf`) —
-// die Fälle, dazu zwei Mutanten, die beim Namen fallen (blind für den Baum · blind für den Merge)
-function selbsttestKette(kette = kopfKette) {
-    const c = (sha, baum, ...eltern) => [sha, { sha, tree: { sha: baum }, parents: eltern.map((e) => ({ sha: e })) }];
-    const lang = Array.from({ length: KETTE + 3 }, (_, i) => c("L" + i, "T", "L" + (i + 1)));
-    // [Name, Kopf, Commits, Soll-Kette]
-    const faelle = [
-        ["der Stempel ohne Inhalt trägt das Urteil des geprüften Kopfs", "S", [c("S", "T1", "K"), c("K", "T1", "A"), c("A", "T0", "B")], "S K"],
-        ["ein Commit mit Inhalt erbt nichts", "S", [c("S", "T2", "K"), c("K", "T1", "A")], "S"],
-        ["ein Merge erbt nichts, auch bei gleichem Baum", "M", [c("M", "T1", "K", "X"), c("K", "T1", "A")], "M"],
-        ["zwei leere Commits in Folge (Vorprüfung, dann Stempel)", "S", [c("S", "T1", "V"), c("V", "T1", "K"), c("K", "T1", "A"), c("A", "T0")], "S V K"],
-        ["der Elter ist nicht geladen", "S", [c("S", "T1", "K")], "S"],
-        ["ein Wurzel-Commit", "S", [c("S", "T1")], "S"],
-        [`die Kette endet nach ${KETTE} Vorfahren`, "L0", lang, lang.slice(0, KETTE + 1).map((x) => x[0]).join(" ")],
-    ];
-    const urteil = (k) => faelle.filter(([, kopf, cs, soll]) => k(kopf, Object.fromEntries(cs)).join(" ") !== soll).map((x) => x[0]);
-    const f = urteil(kette).map((n) => `Kette „${n}": fällt`);
-    for (const [n] of faelle) console.log(`  ${f.some((x) => x.includes(n)) ? "❌" : "✅"} Selbsttest Kette „${n}"`);
-    const mutanten = [
-        ["blind für den Baum (jeder Elter vererbt)", (s, cs) => kopfKette(s, Object.fromEntries(Object.entries(cs).map(([k, v]) => [k, { ...v, tree: { sha: "gleich" } }])))],
-        ["blind für den Merge (der erste Elter vererbt)", (s, cs) => kopfKette(s, Object.fromEntries(Object.entries(cs).map(([k, v]) => [k, { ...v, parents: v.parents.slice(0, 1) }])))],
-    ];
-    if (kette === kopfKette)
-        for (const [n, m] of mutanten) {
-            const rot = urteil(m);
-            console.log(`  ${rot.length ? "✅" : "❌"} Selbsttest Kette, Mutant „${n}" → ${rot.length ? "ROT an „" + rot[0] + '"' : "bleibt grün"}`);
-            if (!rot.length) f.push(`Kette: der Mutant „${n}" bleibt grün — die Fälle sind vakuös`);
-        }
-    return f;
-}
 function selbsttestKopf(urteile = kopfUrteil) {
     const gruen = (id, event = "push", voll = ["success", "success"]) => ({
         lauf: { id, event, status: "completed", conclusion: "success", head_branch: "w28-zweig" },
@@ -1326,6 +1322,7 @@ function selbsttest() {
     const gut = () => ({
         jobs: {
             puls: {
+                if: PULS_WENN,
                 strategy: { "fail-fast": false, matrix: { gruppe: [1] } },
                 "timeout-minutes": 10,
                 steps: prep({ name: "Lint", if: gr(1), run: "npm run lint" }, U),
@@ -1491,6 +1488,9 @@ function selbsttest() {
             ["jobs.puls.if=", "github.ref == 'refs/heads/main'"],
             /\(V\) PULS: „puls" trägt die Bedingung/,
         ],
+        // (V) STEMPEL: der Stand bis zug-erbt-baum — der Stempel weckt Puls und Kopf-Richter (z747–z749: 5 Jobs je Stempel)
+        ["der Puls fährt am Stempel", ["jobs.puls.if"], /\(V\) PULS: „puls" fährt am Stempel/],
+        ["der Kopf-Richter fährt am Stempel", ["jobs.kopf.if=", VOLL_WENN], /\(V\) KOPF: „kopf" läuft unter .* statt der EINEN Voll-Bedingung ohne den Stempel/], // prettier-ignore
         ["kein Job voll", ["jobs.voll"], /\(V\) LEER: kein Job „voll"/],
         // EIN URTEIL JE KOPF: der Kopf-Richter vor der Batterie, nie stumm, EIN Schritt
         ["kein Kopf-Richter", ["jobs.kopf"], /\(V\) KOPF: kein Job „kopf"/],
@@ -1578,20 +1578,18 @@ function selbsttest() {
         selbsttestKlasse(),
         selbsttestSchluessel(),
         selbsttestKopf(),
-        selbsttestKette(),
         selbsttestEinlass(),
         selbsttestZug()
     );
 }
 // (Z) gegen die echte check.yml: je Mutante der R6-Shell der Täter beim Namen
-// (V) KOPF am Einlass der GPU-Probe: die echten Workflows sind grün; der Teil-Checkout ohne die Urteils-Wache (der Fall z398 am
-// zweiten Leser) und ein Einlass, der den Richter nicht mehr ruft, fallen beim Namen
+// (V) STEMPEL am Einlass der GPU-Probe: die echten Workflows sind grün; ein Einlass, den der Stempel weckt (der Stand bis
+// zug-erbt-baum), und einer, der wieder selbst erbt (der Stand stempel-erbt-probe: der Richter im Einlass), fallen beim Namen
 function selbsttestEinlass() {
-    const teil = (z) => z[PROBE_WF].jobs.einlass.steps.find((s) => String(s.uses).startsWith("actions/checkout@")).with;
     return taeterFaelle(
         [
-            ["der Einlass ohne die Urteils-Wache im Teil-Checkout", (z) => { const w = teil(z); w["sparse-checkout"] = w["sparse-checkout"].replace("/scripts/lib/urteil-zeile.cjs", ""); }, /\(V\) KOPF: der Einlass der GPU-Probe lädt „scripts\/lib\/urteil-zeile\.cjs"/], // prettier-ignore
-            ["der Einlass ohne den Richter", (z) => { const e = z[PROBE_WF].jobs.einlass.steps.at(-1).env; e.EINLASS_JS = e.EINLASS_JS.replace('require("./scripts/ci-kopf.cjs")', "{}"); }, /\(V\) KOPF: der Einlass der GPU-Probe ruft scripts\/ci-kopf\.cjs nicht/], // prettier-ignore
+            ["der Einlass fährt am Stempel", (z) => { z[PROBE_WF].jobs.einlass.if = "contains(github.event.head_commit.message, '[gpu-probe:')"; }, /\(V\) STEMPEL: der Einlass der GPU-Probe läuft unter/], // prettier-ignore
+            ["der Einlass erbt selbst", (z) => { const e = z[PROBE_WF].jobs.einlass.steps.at(-1).env; e.EINLASS_JS += '\nconst K = require("./scripts/ci-kopf.cjs");'; }, /\(V\) STEMPEL: der Einlass der GPU-Probe erbt selbst/], // prettier-ignore
         ],
         einlassTeil,
         { gruen: workflowsLesen() }
@@ -1668,7 +1666,7 @@ function selbsttestWaage() {
     const schritt = (name, g) => ({ name, if: `matrix.gruppe == ${g}`, run: `npm run gate:${name}` });
     const doc = () => ({
         jobs: {
-            puls: { strategy: { matrix: { gruppe: [1] } }, steps: prep(schritt("Lint", 1)) },
+            puls: { if: PULS_WENN, strategy: { matrix: { gruppe: [1] } }, steps: prep(schritt("Lint", 1)) },
             voll: {
                 if: VOLL_WENN,
                 strategy: { matrix: { gruppe: [1, 2] } },
@@ -2031,6 +2029,7 @@ function selbsttestPlaytest() {
             on: { push: {} },
             jobs: {
                 puls: {
+                    if: PULS_WENN,
                     strategy: { "fail-fast": false, matrix: { gruppe: [1] } },
                     "timeout-minutes": 10,
                     steps: prep({ name: "Schnell", if: "matrix.gruppe == 1", run: "npm run playtest:fast" }),
