@@ -115,3 +115,5 @@ w28-auge-farbe karte2.erleben.sinne.gesehen#1,karte2.erleben.sinne.gesehen#2
 w28-bruecke-quert karte2.erleben.spieler.wegfindung#1
 # 754 (main 54b89949, 26.11. 12:14): z754 w28-kultur-aus-klima-4 (26.11.): die Wüste baut flach — gebaut 544 → 11 928 von 12 336 Häusern, Schwung 672 → 0; Ansprüche aus dem Kopf 5b21a935
 w28-kultur-aus-klima-4 karte2.mensch.kopplung.kultur#2,karte2.mensch.kultur.sprache#1,karte2.mensch.kultur.sprache#3
+# 788 (main 99649186, 26.11. 17:49): Landung buendel-mittag z788 (main 99649186): dreizehn Köpfe, kein Anspruch fährt mit — sechs Stationen am Vor-Richter rot, je mit Täter-Zeile
+w28-buendel-mittag
