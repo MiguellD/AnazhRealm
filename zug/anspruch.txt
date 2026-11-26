@@ -105,3 +105,5 @@ w28-buendel-jagd karte2.planet.wasser.gezeiten#1
 w28-absicht-zug-4 karte2.mensch.geist.absicht#1
 # 748 (main c0634d86, 26.11. 07:50): z748 08:35 w28-kosmos-bahn: Mond auf eigener Kepler-Bahn (179,77° → 0,082° gegen die Ephemeride), Jahreszeit folgt der Neigung (45°: 0,712× → 1,944×)
 w28-kosmos-bahn karte2.planet.kosmos.systeme#1,karte2.planet.kopplung.bahn-klima#2
+# 749 (main a954d698, 26.11. 08:52): z749 09:06 w28-leib-liest-satz: der Leib liest seinen Satz (Seuche, Kunst, Können, Kopplung Leib)
+w28-leib-liest-satz karte2.mensch.menge.seuche#1,karte2.mensch.sport.kunst#1,karte2.mensch.sport.koennen#2,karte2.mensch.kopplung.leib#1
