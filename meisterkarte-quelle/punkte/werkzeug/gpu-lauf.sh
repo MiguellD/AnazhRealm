@@ -12,6 +12,206 @@
 # die Wache hält keine Ausgabe offen (sonst wartete jeder Leser der Ausgabe auf ihr `sleep`: jede GTX-Station dauerte k × 5 min).
 # daneben, auch wenn der Pfad als Windows-Pfad kommt (C:\…\gpu-lauf.sh, path.join der Punkte-Maschine)
 case "${BASH_SOURCE[0]}" in */* | *\\*) HIER=${BASH_SOURCE[0]%[/\\]*} ;; *) HIER=. ;; esac
+# DER SELBSTTEST DES BAUMS (26.11.): `gpu-lauf.sh --selbsttest [<gpu-lauf.sh>]` — eigenes Schloss, eigenes Hook-Log, kein Runner; der
+# Befehl hat die Form des Bruchs: `bash` mit einem node im Hintergrund (die Werkbank) und einem im Vordergrund (`werkbank umstellen`).
+# DER SCHNITT AM ZUSTAND, NIE AN DER UHR (Radeon 22:20: bash.exe startet dort in 1–2,6 s, nach festen 5 s standen die pid-Dateien noch
+# nicht): h und i schneiden, sobald BEIDE Enkel ihre pid geschrieben haben UND das Schloss steht (Frist 60 s, sonst UNGEMESSEN beim
+# Namen, nie ROT); die Zeile nennt, wen besitzer.txt beim Schnitt nannte (Wächter oder gpu-lauf).
+#   g  der Deckel (GPU_LAUF_MAX_S=6)                          → Exit 124, beide Enkel tot, das Schloss gelöst
+#   h  TERM an gpu-lauf (der Wächter eines Rufers)            → Exit 143, beide Enkel tot, das Schloss gelöst
+#   i  `taskkill /F /T` auf gpu-lauf (punkte.cjs `baumTot`)   → beide Enkel tot binnen 15 s; eine Sekunde nach dem Schnitt nennt
+#      das Schloss einen LEBENDEN Halter (sonst löst es der Start-Hook als verwaist) oder ist gelöst, danach ist es gelöst
+#   j  `taskkill /F /T` auf gpu-lauf IM START-FENSTER: ein CI-Job endete vor 172 s, gpu-lauf nimmt das Schloss und wartet die
+#      CI-Ruhe (8 s) vor dem Kind; geschnitten wird, sobald besitzer.txt steht (Takt 0,05 s) → dasselbe Soll wie i. Bis hier hielt
+#      gpu-lauf das Schloss in der CI-Ruhe nach JEDEM CI-Job bis zu 180 s allein: ein Schnitt dort ließ es mit totem Halter stehen
+# Gegenprobe: die Fassung bis 26.11. (d820b662) reißt i und j, der Kandidat ab3e13a4 (der Wächter nach dem Kind) reißt j.
+if [ "$1" = --selbsttest ]; then
+    GL=${2:-${BASH_SOURCE[0]}}
+    command -v node >/dev/null 2>&1 && command -v taskkill >/dev/null 2>&1 || {
+        echo "UNGEMESSEN: kein node oder taskkill"
+        exit 2
+    }
+    T=$(mktemp -d)
+    rot=0
+    echo 'require("fs").writeFileSync(process.argv[2], String(process.pid)); setInterval(() => {}, 1000);' >"$T/enkel.js"
+    lebt() { tasklist -FI "PID eq $1" -NH 2>/dev/null | grep -qw "$1"; }
+    enkel() { cat "$T/$1/bg.pid" "$T/$1/fg.pid" 2>/dev/null | tr -c '0-9' ' '; }
+    fall() { # $1 Name · $2 wie (deckel|term|taskkill|start) · $3 Exit-Soll ("" = gleich)
+        local d=$T/$1 g E S w p k tot=nein halter="" nannte="" schloss ok=1 t0 bereit=0
+        mkdir -p "$d"
+        : >"$d/hook.log"
+        [ "$2" = start ] && echo "$(date -d "@$(($(date +%s) - 172))" "+%F %T") ende  ci-runner 1/1 probe: Schloss geloest (Selbsttest)" >"$d/hook.log"
+        printf '#!/bin/bash\nnode "%s" "%s" >/dev/null 2>&1 &\nnode "%s" "%s"\n' "$T/enkel.js" "$d/bg.pid" "$T/enkel.js" "$d/fg.pid" >"$d/befehl.sh"
+        t0=$(date +%s)
+        GPU_SCHLOSS=$d/schloss GPU_HOOK_LOG=$d/hook.log GPU_WORKER_BILD=nie-$$.exe GPU_LAUF_MAX_S=$([ "$2" = deckel ] && echo 6 || echo 120) \
+            GPU_LAUF_WARTE_S=30 bash "$GL" selbsttest-baum bash "$d/befehl.sh" >"$d/aus.txt" 2>&1 &
+        g=$!
+        if [ "$2" != deckel ]; then
+            for k in $(seq 1 1200); do
+                if [ "$2" = start ]; then [ -s "$d/schloss/besitzer.txt" ] && { bereit=1; break; }
+                else [ -s "$d/bg.pid" ] && [ -s "$d/fg.pid" ] && [ -s "$d/schloss/besitzer.txt" ] && { bereit=1; break; }; fi
+                kill -0 "$g" 2>/dev/null || break
+                sleep 0.05
+            done
+            w=$(cat /proc/$g/winpid 2>/dev/null)
+            p=$(grep -m1 "^pid=" "$d/schloss/besitzer.txt" 2>/dev/null | tr -dc 0-9)
+            nannte=gpu-lauf
+            [ -n "$p" ] && [ "$p" != "$w" ] && nannte=Wächter
+            if [ $bereit = 0 ]; then
+                kill -TERM "$g" 2>/dev/null
+                wait "$g" 2>/dev/null
+                for p in $(enkel "$1"); do lebt "$p" && taskkill -F -PID "$p" >/dev/null 2>&1; done
+                echo "UNGEMESSEN $1  $2: nach $(($(date +%s) - t0)) s standen pid-Dateien (bg $([ -s "$d/bg.pid" ] && echo ja || echo nein), fg $([ -s "$d/fg.pid" ] && echo ja || echo nein)) und Schloss ($([ -s "$d/schloss/besitzer.txt" ] && echo ja || echo nein)) nicht"
+                return
+            fi
+            if [ "$2" = term ]; then
+                kill -TERM "$g" 2>/dev/null
+            else
+                taskkill -F -T -PID "$w" >/dev/null 2>&1
+                sleep 1
+                p=$(grep -m1 "^pid=" "$d/schloss/besitzer.txt" 2>/dev/null | tr -dc 0-9)
+                halter=tot
+                [ -z "$p" ] && [ ! -d "$d/schloss" ] && halter=gelöst
+                [ -n "$p" ] && lebt "$p" && halter=lebt
+            fi
+        fi
+        wait "$g" 2>/dev/null
+        E=$?
+        for k in $(seq 1 15); do
+            tot=ja
+            for p in $(enkel "$1"); do lebt "$p" && tot=nein; done
+            [ "$tot" = ja ] && [ ! -d "$d/schloss" ] && break
+            sleep 1
+        done
+        S=$(($(date +%s) - t0))
+        schloss=gelöst
+        [ -d "$d/schloss" ] && schloss=steht
+        for p in $(enkel "$1"); do lebt "$p" && taskkill -F -PID "$p" >/dev/null 2>&1; done
+        [ "$2" = start ] || { [ -s "$d/bg.pid" ] && [ -s "$d/fg.pid" ]; } || ok=0
+        [ "$tot" = ja ] && [ "$schloss" = gelöst ] || ok=0
+        [ -n "$3" ] && [ "$E" != "$3" ] && ok=0
+        [ "$halter" = tot ] && ok=0
+        if [ $ok = 1 ]; then
+            echo "GRÜN $1  $2: Exit $E, Enkel tot, das Schloss gelöst${nannte:+ (beim Schnitt nannte es $nannte)}${halter:+ (eine Sekunde danach: Halter $halter)} ($S s)"
+        else
+            echo "ROT $1  $2: Exit $E${3:+ (Soll $3)} · Enkel tot: $tot · Schloss $schloss${nannte:+ · beim Schnitt nannte es $nannte}${halter:+ · Halter eine Sekunde nach dem Schnitt: $halter (Soll lebt oder gelöst)} · $S s"
+            rot=1
+        fi
+    }
+    fall g deckel 124
+    fall h term 143
+    fall i taskkill ""
+    fall j start ""
+    rm -rf "$T"
+    exit $rot
+fi
+# DER WÄCHTER (26.11., GTX 1050): `gpu-lauf.sh --waechter <gpu-lauf-pid> <wache-datei>` — läuft AUSSERHALB des Windows-Baums von
+# gpu-lauf. In Git-Bash trägt ein ausgeführtes Bash-Kind (fork + exec) eine neue winpid, sein Vater in Windows ist der fork-Stumpf,
+# der danach endet: `taskkill /F /T` auf gpu-lauf (punkte.cjs `baumTot`, der Wächter eines Rufers) traf nie das Kind und den Enkel
+# (die Werkbank, ihr Chrome) erst recht nicht; gpu-lauf starb ohne Falle, das Schloss nannte einen toten Halter, der Start-Hook löste
+# es als verwaist und die CI-Probe lief NEBEN dem Enkel (GTX 21:14 ci-runner 45889523490 neben hand-stadt-voll-kopf; Radeon 19:3x
+# „SCHLOSS VERWAIST … Halter pid=35452 lebt nicht“). Bis hier las gpu-lauf dazu die winpid des Kinds sofort nach `&` (vor seinem
+# exec) und fiel ohne sie auf `pkill`, das Git-Bash nicht hat.
+# DER HALTER VON DER ERSTEN ZEILE AN (Radeon 22:20, Kandidat ab3e13a4 ROT an i: der Schnitt traf gpu-lauf, BEVOR der Wächter
+# besitzer.txt übernommen hatte — 52 s stand das Schloss mit totem Halter): der Wächter startet VOR dem Nehmen, meldet seine winpid
+# (`<wache>.win`), und gpu-lauf nimmt Vorrang, Schloss und Platz in SEINEM Namen (GPU_ICH_PID) — kein Augenblick, in dem ein Halter
+# mit gpu-lauf stirbt. Das Kind erfährt er aus `<wache>.kind` („pid Platz“). Er schlägt das Herz, hält den Deckel und fällt den
+# Baum, sobald gpu-lauf ein Ende will (TERM/INT, `<wache>.stop`), der Deckel erreicht ist oder gpu-lauf ohne Falle starb: jede
+# msys-Nachfahrin des Kinds (ppid, `ps -e`), unter jeder ihr Windows-Baum (node → Chrome, `taskkill /T`), dann einzeln, was noch
+# lebt. Das Schloss löst er erst, wenn kein Glied mehr lebt; lebt nach 6 s noch eines, nennt besitzer.txt dessen winpid (die Hooks
+# lösen erst nach seinem Ende). Starb gpu-lauf vor dem Kind (im Warten, in der CI-Ruhe), löst er Schloss und Vorrang.
+if [ "$1" = --waechter ]; then
+    GL_PID=$2 W=$3
+    NAME=$GPU_LAUF_NAME ART=${GPU_LAUF_ART:-zeit} MAX=${GPU_LAUF_MAX_S:-900}
+    . "$HIER/gpu-schloss.sh"
+    echo "$GPU_ICH_PID" >"$W.win.neu" && mv -f "$W.win.neu" "$W.win"
+    UEBER="$GPU_SCHLOSS.ueber.$GL_PID" STOP="$W.stop"
+    # die msys-Prozesse: „pid ppid winpid“ (eine Zeile mit Status-Zeichen vor der pid verschiebt die Spalten)
+    msys_liste() { ps -e 2>/dev/null | awk 'NR > 1 { o = ($1 ~ /^[0-9]+$/) ? 0 : 1; print $(1 + o), $(2 + o), $(4 + o) }'; }
+    # msys-pid → „pid winpid“ je Glied: sie selbst und jede msys-Nachfahrin
+    msys_baum() {
+        msys_liste | awk -v w="$1" '{ wp[$1] = $3; k[$2] = k[$2] " " $1 }
+            END { if (!(w in wp)) exit; q[1] = w; s[w] = 1; n = 1
+                  for (i = 1; i <= n; i++) { m = split(k[q[i]], a, " "); for (j = 1; j <= m; j++) if (!(a[j] in s)) { s[a[j]] = 1; q[++n] = a[j] } }
+                  for (i = 1; i <= n; i++) print q[i], wp[q[i]] }'
+    }
+    # die Prozesse in Windows: „erstellt vater pid“ (wmic; ohne es PowerShell)
+    win_liste() {
+        { wmic process get CreationDate,ParentProcessId,ProcessId 2>/dev/null ||
+            powershell -NoProfile -Command 'Get-CimInstance Win32_Process | ForEach-Object { "{0} {1} {2}" -f $_.CreationDate.ToString("yyyyMMddHHmmss.ffffff"), $_.ParentProcessId, $_.ProcessId }'; } |
+            tr -d '\r' | awk '$2 ~ /^[0-9]+$/ && $3 ~ /^[0-9]+$/ { print $1, $2, $3 }'
+    }
+    # winpids (Leerzeichen) → „winpid erstellt“ je Glied ihrer Windows-Bäume (ein Kind nie älter als sein Vater: die wiederverwendete
+    # pid eines toten Vaters zieht keinen Fremden hinein)
+    win_baum() {
+        win_liste | W="$1" awk '{ er[$3] = $1; k[$2] = k[$2] " " $3 }
+            END { m0 = split(ENVIRON["W"], r, " "); n = 0
+                  for (i = 1; i <= m0; i++) if ((r[i] in er) && !(r[i] in s)) { s[r[i]] = 1; q[++n] = r[i] }
+                  for (i = 1; i <= n; i++) { m = split(k[q[i]], a, " "); for (j = 1; j <= m; j++) { c = a[j]; if (!(c in s) && er[c] >= er[q[i]]) { s[c] = 1; q[++n] = c } } }
+                  for (i = 1; i <= n; i++) print q[i], er[q[i]] }'
+    }
+    # „winpid erstellt“-Zeilen → die winpids, die noch leben (dieselbe pid mit derselben Geburt)
+    win_lebt() {
+        [ -n "$1" ] || return 0
+        win_liste | G="$1" awk 'BEGIN { m = split(ENVIRON["G"], z, "\n"); for (i = 1; i <= m; i++) { split(z[i], f, " "); if (f[1] != "") soll[f[1]] = f[2] } }
+            ($3 in soll) && soll[$3] == $1 { print $3 }'
+    }
+    BLEIBT=""
+    baum_ab() {
+        local glieder wins="" wbaum="" w p i rest=""
+        [ -n "$KIND" ] || return 0
+        glieder=$(msys_baum "$KIND")
+        if command -v taskkill >/dev/null 2>&1; then
+            wins=$(echo "$glieder" | awk '$2 ~ /^[0-9]+$/ { printf "%s ", $2 }')
+            wbaum=$(win_baum "$wins")
+            for w in $wins; do taskkill -F -T -PID "$w" >/dev/null 2>&1; done
+        fi
+        for p in $(echo "$glieder" | awk '{ print $1 }'); do kill -9 "$p" 2>/dev/null; done
+        [ -n "$wbaum" ] || return 0
+        for i in 1 2 3 4 5 6; do
+            rest=$(win_lebt "$wbaum")
+            [ -z "$rest" ] && return 0
+            for w in $rest; do taskkill -F -T -PID "$w" >/dev/null 2>&1; done
+            sleep 1
+        done
+        BLEIBT=$(echo "$rest" | head -n 1)
+    }
+    KIND="" n=0
+    while :; do
+        [ -z "$KIND" ] && [ -s "$W.kind" ] && read -r KIND GPU_PLATZ <"$W.kind"
+        [ -n "$KIND" ] && ! kill -0 "$KIND" 2>/dev/null && break
+        if [ -e "$STOP" ] || ! kill -0 "$GL_PID" 2>/dev/null; then
+            baum_ab
+            break
+        fi
+        if [ -n "$KIND" ]; then
+            if [ "$n" -ge "$MAX" ]; then
+                touch "$UEBER"
+                baum_ab
+                break
+            fi
+            [ $((n % 10)) -eq 0 ] && herz_schlag "$NAME"
+            n=$((n + 1))
+        fi
+        sleep 1
+    done
+    rm -f "$STOP" "$W.kind" "$W.win"
+    # starb gpu-lauf vor dem Kind, kennt der Wächter den Platz nicht aus `<wache>.kind`: er ist der, der IHN nennt
+    if [ -z "$GPU_PLATZ" ] && [ "$ART" = bild ]; then
+        for f in "$GPU_SCHLOSS"/platz.*/besitzer.txt; do
+            gs_meins "$f" "$NAME" && { GPU_PLATZ=${f%/besitzer.txt} && GPU_PLATZ=${GPU_PLATZ##*platz.}; break; }
+        done
+    fi
+    kill -0 "$GL_PID" 2>/dev/null || gs_vorrang_weg
+    if [ -n "$BLEIBT" ]; then
+        for f in "$GPU_SCHLOSS/besitzer.txt" ${GPU_PLATZ:+"$GPU_SCHLOSS/platz.$GPU_PLATZ/besitzer.txt"}; do
+            gs_meins "$f" "$NAME" && printf '%s (Enkel)\npid=%s\n' "$NAME" "$BLEIBT" >"$f"
+        done
+        exit 3
+    fi
+    if [ "$ART" = zeit ]; then ganz_loesen "$NAME"; else platz_loesen "$NAME"; fi
+    exit 0
+fi
 . "$HIER/gpu-schloss.sh"
 NAME="$1"
 shift
@@ -30,6 +230,25 @@ t0=$(date +%s)
 vorher=$t0
 gewartet=0
 letzte=0
+# DER WÄCHTER VOR DEM NEHMEN (oben, `--waechter`): fork + exec einer Bash — sie steht in Windows NICHT unter gpu-lauf und überlebt so
+# ein `taskkill /F /T` auf gpu-lauf; sie hält keine Ausgabe offen (sonst wartete jeder Leser der Ausgabe auf sie). Ihre winpid meldet
+# sie selbst (vor ihrem exec trüge /proc die des fork-Stumpfs); Vorrang, Schloss und Platz nennen ab jetzt SIE.
+WACHE_DATEI="$GPU_SCHLOSS.wache.$$"
+rm -f "$WACHE_DATEI".*
+GPU_SCHLOSS=$GPU_SCHLOSS GPU_HOOK_LOG=$GPU_HOOK_LOG GPU_LAUF_NAME=$NAME GPU_LAUF_ART=$ART GPU_LAUF_MAX_S=$MAX \
+    bash "${BASH_SOURCE[0]}" --waechter $$ "$WACHE_DATEI" >/dev/null 2>&1 </dev/null &
+WACHE=$!
+for _w in $(seq 1 600); do
+    [ -s "$WACHE_DATEI.win" ] && break
+    kill -0 "$WACHE" 2>/dev/null || break
+    sleep 0.1
+done
+GPU_ICH_PID=$(cat "$WACHE_DATEI.win" 2>/dev/null)
+if [ -z "$GPU_ICH_PID" ]; then
+    echo "gpu-lauf: ROT - der Wächter meldete binnen 60 s keine winpid ($WACHE_DATEI.win); ohne ihn nimmt gpu-lauf kein Schloss" >&2
+    kill "$WACHE" 2>/dev/null
+    exit 70
+fi
 nimm() { if [ "$ART" = zeit ]; then ganz_versuch "$NAME"; else platz_versuch "$NAME" "$PLAETZE"; fi; }
 [ "$ART" = zeit ] && gs_vorrang "$NAME"
 trap 'gs_vorrang_weg' EXIT
@@ -68,32 +287,19 @@ rm -f "$UEBER"
 export GPU_LAUF_HAELT="$NAME"
 "$@" &
 KIND=$!
-KWIN=$(cat /proc/$KIND/winpid 2>/dev/null)
-baum_ab() {
-    if [ -n "$KWIN" ] && command -v taskkill >/dev/null 2>&1; then taskkill -F -T -PID "$KWIN" >/dev/null 2>&1; else
-        pkill -9 -P "$KIND" 2>/dev/null
-        kill -9 "$KIND" 2>/dev/null
-    fi
+echo "$KIND ${GPU_PLATZ:-}" >"$WACHE_DATEI.kind"
+# TERM/INT: der Wächter fällt den Baum und löst das Schloss, gpu-lauf wartet auf ihn
+ende() {
+    touch "$WACHE_DATEI.stop"
+    wait "$WACHE" 2>/dev/null
+    exit "$1"
 }
-trap 'baum_ab; exit 130' INT
-trap 'baum_ab; exit 143' TERM
-(
-    n=0
-    while kill -0 "$KIND" 2>/dev/null; do
-        if [ "$n" -ge "$MAX" ]; then
-            touch "$UEBER"
-            baum_ab
-            exit 0
-        fi
-        [ $((n % 10)) -eq 0 ] && herz_schlag "$NAME"
-        sleep 5
-        n=$((n + 5))
-    done
-) >/dev/null 2>&1 </dev/null &
-WACHE=$!
+trap 'ende 130' INT
+trap 'ende 143' TERM
 wait "$KIND"
 rc=$?
-kill "$WACHE" 2>/dev/null
+wait "$WACHE" 2>/dev/null
+[ $? = 3 ] && echo "GPU-LAUF: ein Glied des Baums überlebt — das Schloss bleibt bei ihm, bis es endet" >&2
 if [ -e "$UEBER" ]; then
     rm -f "$UEBER"
     echo "GPU-LAUF ÜBER ${MAX} s — beendet samt Prozessbaum (Deckel GPU_LAUF_MAX_S)"
