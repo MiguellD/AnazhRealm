@@ -1168,7 +1168,7 @@ Skript-Stempel für ihn.
 Mutation, die Exponenten von Lebensdauer, Wachstum, Fasten und Wurf, die Breite der Nische, Geburts-Anteil, Reife, der Zeit-Anker Wolf), die Normale aus zwei
 Gleichverteilten `normal`, das Erbe nach dem Infinitesimal-Modell — der Gründer `gruender`, das Kind aus Mutter und Vater `kind`,
 die Umwelt-Streuung `umwelt`, der gemessene Leib ohne Herkunft `erbeAusLeib` —, der Leib als Physik des Erbes über das Alter — die Masse `masseAdult`, die Lebensdauer
-`lebensdauerS`, die Zeit-Konstante `tau`, das Wachstum `masseZurZeit` und seine Umkehr `alterZurMasse`, die Reife `reifeS` —, die Auslese nach dem Leib
+`lebensdauerS`, das Streifgebiet als Reichweite um den Anker `streifRadiusM` (Masse × Kost, Lindstedt et al. 1986), die Zeit-Konstante `tau`, das Wachstum `masseZurZeit` und seine Umkehr `alterZurMasse`, die Reife `reifeS` —, die Auslese nach dem Leib
 `fastenRang`/`rissGewicht`/`wurfGewicht` und die Nische der Art `eignung`, die Größen-Grenzen des Gesetzes `spanne` und die Adresse `artId`/`indId`;
 das Verhalten als Erbe (erbe-geburt, die zweite Achse scheu) — die Stelle einer Achse `achse`, das Maß der Art am Individuum `merkmal` (die
 Fluchtdistanz), das Gewicht im Riss `fangGewicht`, die Wandlung eines Erbes von vor einer Achse `erbeVoll` und die Normalen eines Zugs

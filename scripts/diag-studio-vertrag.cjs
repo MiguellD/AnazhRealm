@@ -831,7 +831,8 @@ function validateManifest(m, kern) {
             V.furcht.boldFromDichte === undefined &&
             V.furcht.shyFromLebendig === undefined &&
             V.wandern &&
-            Number.isFinite(V.wandern.leashBaseM) &&
+            Number.isFinite(V.wandern.anchorPull) &&
+            V.wandern.leashBaseM === undefined && // die Leine ist das Streifgebiet der Art (leben-core streifRadiusM)
             // SCHLUSS-WELLE 17.07. — die neun heimgekehrten Blöcke sind Vertrag
             // (dieselben Felder, die die _verhaltenGesetz-Wand des Wirts prüft):
             // DIE JAGD SCHLIESST SICH: der Ring der Hetze, die Pirsch-Sicht und die
@@ -874,7 +875,7 @@ function validateManifest(m, kern) {
             Number.isFinite(V.wasser.uferBias);
         if (!seeleOk)
             v.push(
-                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeCooldownSec/hetzM/pirschSichtM/beuteMasse ohne Gradienten-Schritt und Spieler-Radius, Reichweite um die Mitten und festen Pirsch-Stopp · furcht.fleeThreshold ohne Trab-Flucht · temperament{gattung,profile} ohne Substanz-Signaturen, furcht.mutGewicht ohne Substanz-Gewichte · wandern.leashBaseM · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · ohne Größen-Bänder (die Größe ist leben-core) · separation{raumKugel}/aufgaben/herde{fensterRaum} ohne festen Paar-Radius, Fenster und Neugier-Stopp/wasser)"
+                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeCooldownSec/hetzM/pirschSichtM/beuteMasse ohne Gradienten-Schritt und Spieler-Radius, Reichweite um die Mitten und festen Pirsch-Stopp · furcht.fleeThreshold ohne Trab-Flucht · temperament{gattung,profile} ohne Substanz-Signaturen, furcht.mutGewicht ohne Substanz-Gewichte · wandern.anchorPull ohne Grund-Leine (leashBaseM) · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · ohne Größen-Bänder (die Größe ist leben-core) · separation{raumKugel}/aufgaben/herde{fensterRaum} ohne festen Paar-Radius, Fenster und Neugier-Stopp/wasser)"
             );
     }
     return v;

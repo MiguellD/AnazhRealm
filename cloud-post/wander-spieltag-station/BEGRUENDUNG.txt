@@ -1,0 +1,32 @@
+STATIONS-KANDIDAT wander-spieltag — karte2.leben.tiere.wanderung#2 (Diff k2-leben.diff gegen meisterkarte-quelle/punkte/stationen/k2-leben.js
+im Zweig `punkte-maschine`, Stand origin/punkte-maschine vom 26.11.). Kein Soll und kein Richter-Text ändert sich.
+
+1. DER DECKEL, NICHT DER TOD (die Täter-Zahl): die 0,427 Spieltage der GTX 1060 (Runde 39, Kopf 99649186) enden am msDeckel 20 s der
+   Probe (30 744 von 72 000 Takten der vollen Welt), nie am Tod — headless am selben Messweg lebt der Hirsch den ganzen Tag (lebt true,
+   72 000 Takte), und die Radeon las am selben Kopf „spieltage 1“ (vision/richter/leben.tiere.wanderung.2.99649186-radeon.json im Zweig
+   `punkte-maschine`). Der Kommentar der Probe selbst (k2-leben.js:3440 im Zweig `punkte-maschine`) nennt „dt 0,25“; der Lauf fuhr 0,05.
+   → dt 0,05 → 0,25 und uhrJe 1200 → 240 (dieselbe Uhr: ein Schritt je 60 s Spielzeit), 72 000 → 14 400 Takte je Spieltag. Die Bahn
+   bleibt eine Probe je Spiel-Sekunde (k % 20 bei dt 0,05 ≙ k % 4 bei dt 0,25: `Math.round(1 / a.dt)`), also 3 600 Proben wie bisher.
+   Der Deckel 20 s bleibt.
+
+2. DIE LEBENSDAUER LIEST DAS GESETZ DES SPIELS: `A.FAUNA_MAX_AGE_MS` steht am main in keiner Datei mehr (git grep leer) — die Probe las
+   NaN (k2-leben.js:3491 im Zweig `punkte-maschine`). Jetzt `A._lebenKern().lebensdauerS(r._leibMasse(c))`: der Leser des Spiels
+   (leben-core.js `lebensdauerS`, gelesen stamm/kreatur-erbe.js `_bestandErbe`) an der Masse DESSELBEN Leibs, gelesen vor removeCreature.
+   Das trägt nur den Text von #3 und #6 (tageLeben); #2 urteilt allein über ausdehnungM und spieltage. Die Zeilen :2608 und :2815 (andere
+   Sprossen) bleiben unberührt — sie gehören nicht zu dieser Sprosse.
+
+3. DIE WÄNDE
+   - `node meisterkarte-quelle/punkte/punkte.cjs liste --kopf 61e2a27f` (Basis) und `--kopf 8cdef727` (Kopf dieses Zweigs), mit dem Kandidaten: genau zwei ROT
+     „gelaende.K2#1/#2 ruft window.__zielen — niemand setzt ihn (Wand HAKEN)“, 1976 Stationen · fehlt 15 · Fehler 2 — gleich der Basis.
+   - Leiter ≤ 60 s: der Lauf trägt 14 400 statt 72 000 Takte — headless 0,22 s (vorher 1,5 s); die GTX 1060 fuhr 30 744 Takte in
+     20 s (0,65 ms/Takt in der vollen Welt), der Kandidat dort ≈ 9,4 s für den ganzen Spieltag, unter dem Deckel 20 s.
+   - Fächer: wanderung#2 ist keine Fächer-Station (kein `gesetz`/`adressen`); der neue Wert liest den Leser des SPIELS
+     (`_lebenKern().lebensdauerS`, `_leibMasse`), nie eine Zahl der Station.
+
+4. GEMESSEN (der Messweg wörtlich, headless, Werkbank-Welt am Kopf dieses Zweigs, main 45bad33f + Schnitt):
+   - Probe wörtlich (dt 0,05): ausdehnungM 543,34 · spieltage 1 · lebt true · 72 000 Takte · 1 512 ms Wanduhr
+   - Kandidat (dt 0,25): ausdehnungM 706,361 · spieltage 1 · lebt true · 14 400 Takte · 219 ms Wanduhr · lebensdauerS 2 264,9
+     (Hirsch 93,4 kg, Leine 939,2 m)
+
+5. DIE EINE ZEILE, die der Richter nach dem Setzen wörtlich zeigen soll (die Zahl headless am Kopf; an der Radeon liest sie ihre eigene):
+   „S2 ausdehnungM 706,361 m gegen Soll ≥ 100 m ✓ · spieltage 1 Spieltage gegen Soll ≥ 1 Spieltage ✓“

@@ -580,24 +580,26 @@ class AnazhRealm_kreatur_verhalten {
 
     // CHARAKTER-BEWEGUNG liest vorhandene Achsen, gecacht pro Soul×bodySize×Tempo-Hauch:
     // speedMul = _creatureBodySpeedMultiplier (computeCreatureStats.speed / 7) × Tempo-Hauch, geklemmt auf [0.6, 1.6];
-    // leashM = Mut-Achse aus dem Temperament der Gattung (_kreaturMut: wehrhaft ~28 m … scheu 8 m) × bodySize
-    // (Differenzierung über Gattung und Größe, nie Tags): das scheue Kitz ~4,8 m, der wehrhafte Koloss-Hirsch ~67 m.
+    // leashM = DAS STREIFGEBIET DER ART (leben-core `streifRadiusM`: die Masse des Leibs `_leibMasse` und die Kost der Gattung,
+    // tetrapoda `kostDerGattung` — Differenzierung über Gattung und Größe, nie Tags): der Hirsch (93 kg) 0,94 km, der Wolf 6,3 km.
+    // Bis wander-spieltag (18 m ± 10 m über die Mut-Achse) × bodySize: der scheue Hirsch 8 m, über einen Spieltag 17 m vom Ort.
     _creatureMoveCharacter(creature) {
         const ud = creature.userData || {};
         const hauch = Number.isFinite(ud.tempoHauch) ? ud.tempoHauch : 1;
         const key = (ud.soul || "") + "|" + (Number.isFinite(ud.bodySize) ? ud.bodySize : 1) + "|" + hauch;
         if (ud._moveChar && ud._moveCharKey === key) return ud._moveChar;
-        // SPIEGEL-ZENSUS — Leine + Profile wohnen im tetrapoda-Gesetzbuch
-        // (VERHALTEN.wandern/temperament via _verhaltenGesetz, fail-soft byte-gleich).
+        // SPIEGEL-ZENSUS — das Wander-Band wohnt im tetrapoda-Gesetzbuch (VERHALTEN.wandern via _verhaltenGesetz)
         const VG = AnazhRealm._verhaltenGesetz();
         const K = VG.wandern;
         // Der TEMPO-HAUCH (creatures_speed_mul, `_kreaturTempoHauch`) wiegt den Charakter INNERHALB des Wander-Bands.
         const raw = this._creatureBodySpeedMultiplier(creature) * hauch;
         const speedMul = Math.min(K.speedMulMax, Math.max(K.speedMulMin, Number.isFinite(raw) ? raw : 1));
-        // Mut ∈ [0,1] aus dem Temperament der Gattung (_kreaturMut: fleeMul zwischen scheu und wehrhaft)
-        const mut = this._kreaturMut(creature);
-        const bs = Number.isFinite(ud.bodySize) ? ud.bodySize : 1;
-        const leashM = (K.leashBaseM + K.leashSpanM * (mut * 2 - 1)) * bs;
+        // die Kost der Gattung (wie sie gegossen ist) — ohne Gattungs-Dials bricht es laut, ohne Gestalt die Masse
+        const g = this._kreaturGattung(creature);
+        const d = this._ofenKreaturDials(g, ud.gussDials || null);
+        if (!d || !d.dials) return AnazhRealm._kernPflichtBruch("tetrapoda:GATTUNGEN." + g);
+        const kost = AnazhRealm._steuerGesetz().kostDerGattung(d.dials, VG.temperament.gattung);
+        const leashM = AnazhRealm._lebenKern().streifRadiusM(this._leibMasse(creature), kost);
         ud._moveChar = Object.freeze({ speedMul, leashM });
         ud._moveCharKey = key;
         return ud._moveChar;
@@ -3416,7 +3418,8 @@ AnazhRealm._verhaltenGesetz = function () {
             Number.isFinite(v.temperament.gattung.jagdKg) &&
             Number.isFinite(v.furcht.mutGewicht) &&
             v.wandern &&
-            Number.isFinite(v.wandern.leashBaseM) &&
+            Number.isFinite(v.wandern.anchorPull) &&
+            v.wandern.leashBaseM === undefined && // die Leine ist das Streifgebiet der Art (leben-core streifRadiusM)
             // SCHLUSS-WELLE (17.07.) — die neun heimgekehrten Blöcke sind
             // Kern-Pflicht: je Block deckt EIN Feld (alter Kern → Bruch,
             // nie ein Misch-Gesetz aus neuem Leser + fehlender Zeile).
@@ -3486,6 +3489,7 @@ AnazhRealm._steuerGesetz = function () {
         Number.isFinite(k.VERBAND_GESETZ.ausrichtung) &&
         Number.isFinite(k.VERBAND_GESETZ.leitGewicht) &&
         typeof k.temperamentDerGattung === "function" &&
+        typeof k.kostDerGattung === "function" &&
         Number.isFinite(S.sprint) &&
         typeof k.sprintTempo === "function" &&
         typeof k.zugTempo === "function"

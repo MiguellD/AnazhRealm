@@ -646,8 +646,8 @@ class AnazhRealm_kreatur_leben {
     }
 
     // DER MUT DER ART ∈ [0, 1] aus dem Temperament (Gattung × Größe): die Flucht-Neigung fleeMul seines Profils, gespannt
-    // zwischen dem scheuesten und dem kühnsten Profil des Gesetzbuchs (scheu 1,7 → 0 · wehrhaft 0,5 → 1). EINE Quelle für
-    // die Leine (_creatureMoveCharacter) und die Natur der Wariness (_creatureWarinessSpieler).
+    // zwischen dem scheuesten und dem kühnsten Profil des Gesetzbuchs (scheu 1,7 → 0 · wehrhaft 0,5 → 1). Die Quelle der Natur
+    // der Wariness (_creatureWarinessSpieler); die Leine las ihn bis wander-spieltag (heute das Streifgebiet der Art).
     _kreaturMut(creature) {
         const P = AnazhRealm._verhaltenGesetz().temperament.profile;
         let lo = Infinity,

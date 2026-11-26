@@ -844,6 +844,7 @@ AnazhRealm._lebenKern = function () {
     const leib = [
         "masseAdult",
         "lebensdauerS",
+        "streifRadiusM",
         "masseZurZeit",
         "alterZurMasse",
         "reifeS",

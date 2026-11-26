@@ -1438,56 +1438,62 @@ async function checkBandTierSeparation({ page, check }) {
         o.checks.b1PathDiff = pathSmall / o.b1EinheitSmall > (pathBig / o.b1EinheitBig) * 1.1; // und sie IST Bewegung
         cleanup([bSmall, bBig]);
     
-        // ── (B2) RADIUS-ACHSEN: die Leine liest Mut (fleeMul) × GRÖSSE (bodySize).
-        // Die Tiere sind bewusst tag-identisch (Lehre 8) → die behaviorale
-        // Radius-Differenz läuft über die sanktionierte GRÖSSEN-Achse (Kitz
-        // vs. Gigant derselben Soul); die Mut-Achse (wehrhaft 28 vs. wild
-        // ~24.7 Basis) wird als Konsum-Wert am Wolf mitgemessen. ──
+        // ── (B2) DAS STREIFGEBIET DER ART: die Leine ist leben-core `streifRadiusM` über die Masse des Leibs und die Kost der
+        // Gattung (Lindstedt, Miller & Buskirk 1986: Pflanzenfresser 2,71·M^1,02 ha, Fleischfresser 170·M^1,03 ha). Die Tiere sind
+        // bewusst tag-identisch (Lehre 8) → die Differenz läuft über die GRÖSSE (Kitz vs. Gigant derselben Soul) und die KOST
+        // (Wolf vs. Hirsch). Bis wander-spieltag: 18 m ± 10 m über die Mut-Achse × bodySize (Kitz 4,8 m, Gigant 67 m). ──
         const spotShy = findSpot(buehneM, 2.9);
         const spotBold = findSpot(buehneM, -2.9);
         if (!spotShy || !spotBold) return { error: "kein Land-Spot (B2)" };
-        const shy = spawn(spotShy, "wesen", 0.6); // Kitz (scheu) → Leine ~4,8 m
-        const bold = spawn(spotBold, "wesen", 2.4); // Gigant → Leine ~67.2 m
+        const shy = spawn(spotShy, "wesen", 0.6); // Kitz → Leine ~0,43 km
+        const bold = spawn(spotBold, "wesen", 2.4); // Gigant → Leine ~3,6 km
         if (!shy || !bold) return { error: "Spawn (B2) fehlgeschlagen" };
         o.b2TempShy = r._creatureTemperament(shy);
         o.b2TempBold = r._creatureTemperament(bold);
         o.b2LeashShy = r._creatureMoveCharacter(shy).leashM;
         o.b2LeashBold = r._creatureMoveCharacter(bold).leashM;
         o.checks.b2LeashDiff = o.b2LeashBold - o.b2LeashShy >= 25;
-        // Mut-Achsen-KONSUM: das Temperament der Gattung — der scheue Hirsch (fleeMul 1,7, Mut 0)
-        // hält eine kürzere Basis-Leine als der wilde Wolf (0,7) — fleeMul wird gelesen.
+        // KOST-KONSUM: der Fleischfresser braucht je kg die 60-fache Fläche (170 gegen 2,71 ha) — der Wolf streift weiter als der
+        // schwerere Hirsch; und die Leine IST das Gesetz (der Leser rechnet keine eigene Zahl)
         const wolfProbe = spawn(spotShy, "wolf", 1);
         const deerProbe = spawn(spotBold, "wesen", 1);
         o.b2LeashWolf = wolfProbe ? r._creatureMoveCharacter(wolfProbe).leashM : null;
         o.b2LeashDeer = deerProbe ? r._creatureMoveCharacter(deerProbe).leashM : null;
-        o.checks.b2MutConsumed =
-            Number.isFinite(o.b2LeashWolf) && Number.isFinite(o.b2LeashDeer) && o.b2LeashWolf - o.b2LeashDeer >= 2;
+        const LK = A._lebenKern();
+        o.b2GesetzDeer = deerProbe ? LK.streifRadiusM(r._leibMasse(deerProbe), "pflanze") : null;
+        o.b2GesetzWolf = wolfProbe ? LK.streifRadiusM(r._leibMasse(wolfProbe), "fleisch") : null;
+        o.checks.b2KostConsumed =
+            Number.isFinite(o.b2LeashWolf) &&
+            Number.isFinite(o.b2LeashDeer) &&
+            o.b2LeashWolf > 2 * o.b2LeashDeer &&
+            Math.abs(o.b2LeashDeer - o.b2GesetzDeer) <= 1e-9 &&
+            Math.abs(o.b2LeashWolf - o.b2GesetzWolf) <= 1e-9;
         cleanup([wolfProbe, deerProbe]);
         // der Anker (Geburtsort) initialisiert lazy im KI-Takt des Leibs — gestaffelt am Index der Liste (unter dem Bestand
         // stehen bis zur Kappe Leiber der Welt davor, oekologie.K2#2): höchstens 8 Takte, bis beide ihn tragen
         for (let k = 0; k < 8 && !(shy.userData.wanderAnchor && bold.userData.wanderAnchor); k++) tick(1, 0.05);
-        const anchShy = shy.userData.wanderAnchor;
-        const anchBold = bold.userData.wanderAnchor;
-        if (!anchShy || !anchBold) return { error: "Anker nicht initialisiert" };
-        // beide 45 m vom Anker aussetzen (jenseits der Kitz-Leine 4,8, klar
-        // innerhalb der Gigant-Leine 67.2) — RADIAL vom Spieler weg, damit die
-        // Distanz nie unter das 70-m-Raycast-Fenster fällt (Kopf-Disziplin).
-        const outDir = (anch) => {
-            const dx = anch.x - pm.x,
-                dz = anch.z - pm.z,
+        if (!shy.userData.wanderAnchor || !bold.userData.wanderAnchor) return { error: "Anker nicht initialisiert" };
+        // DER ZUG DER LEINE: der Anker des Kitzes rückt 1,5 Leinen fort, der des Giganten 45 m (klar in seiner Leine) — RADIAL
+        // vom Spieler weg, das Tier bleibt in der Nähe des Spielers (im Takt-Fenster seiner Kosten-Leiter); frei (kein Revier-Netz)
+        const outDir = (c) => {
+            const dx = c.position.x - pm.x,
+                dz = c.position.z - pm.z,
                 d = Math.hypot(dx, dz) || 1;
-            return { x: dx / d, z: dz / d };
+            return { x: -dx / d, z: -dz / d };
         };
-        const oS = outDir(anchShy),
-            oB = outDir(anchBold);
-        shy.position.set(anchShy.x + oS.x * 45, shy.position.y, anchShy.z + oS.z * 45);
-        bold.position.set(anchBold.x + oB.x * 45, bold.position.y, anchBold.z + oB.z * 45);
+        const oS = outDir(shy),
+            oB = outDir(bold);
+        const anchShy = { x: shy.position.x + oS.x * 1.5 * o.b2LeashShy, z: shy.position.z + oS.z * 1.5 * o.b2LeashShy, revier: true, frei: true };
+        const anchBold = { x: bold.position.x + oB.x * 45, z: bold.position.z + oB.z * 45, revier: true, frei: true };
+        shy.userData.wanderAnchor = anchShy;
+        bold.userData.wanderAnchor = anchBold;
+        o.b2StartShy = distXZ(shy, anchShy);
         tick(400, 0.05); // 20 s Sim
         o.b2DistShy = distXZ(shy, anchShy);
         o.b2DistBold = distXZ(bold, anchBold);
-        // harte Schranke der Leine: leash × (1 + wanderSpeedMul/anchorPull) ≈ 1.375× ≈ 23.1
-        o.checks.b2ShyReturns = o.b2DistShy < 26;
-        o.checks.b2BoldRoams = o.b2DistBold > 30 && o.b2DistBold > o.b2DistShy + 4; // frei — keine Leine unter 67 m
+        // jenseits der Leine zieht der Anker heim (anchorPull), in ihr streift das Tier frei
+        o.checks.b2ShyReturns = o.b2DistShy < o.b2StartShy - 5;
+        o.checks.b2BoldRoams = o.b2DistBold > 30; // frei — keine Leine unter 3,6 km
         cleanup([shy, bold]);
     
         // ── (D) LEIB AN LEIB, (E) TIER AM SPIELER, (F) LOCKSTEP, (C2) SELBST-TEST ──
@@ -1652,8 +1658,8 @@ async function checkBandTierSeparation({ page, check }) {
     const rot = (...k) => k.filter((x) => c[x] !== true).join(" · ");
     const a = rot("aStacked0", "aSeparated", "aBounded", "cLensFires");
     check(`Tier-Separation (A)(C): das deckungsgleiche Paar trennt sich nach 200 Ticks (${out.aGap && out.aGap.toFixed(2)} m > ${out.aBodyRadius} m), beschränkt; der Selbsttest feuert`, !a, a && "ROT: " + a);
-    const b = rot("b1MulDiff", "b1PathDiff", "b2LeashDiff", "b2MutConsumed", "b2ShyReturns", "b2BoldRoams");
-    check("Tier-Separation (B): Größe und Mut werden KONSUMIERT — verschiedene speedMul und Weg-Längen, verschiedene Leinen, das scheue kehrt heim, das kühne streift", !b, b && "ROT: " + b);
+    const b = rot("b1MulDiff", "b1PathDiff", "b2LeashDiff", "b2KostConsumed", "b2ShyReturns", "b2BoldRoams");
+    check(`Tier-Separation (B): Größe und Kost werden KONSUMIERT — verschiedene speedMul und Weg-Längen, die Leine ist das Streifgebiet der Art (Kitz ${Math.round(out.b2LeashShy)} m · Hirsch ${Math.round(out.b2LeashDeer)} m · Wolf ${Math.round(out.b2LeashWolf)} m), jenseits zieht der Anker heim, in ihr streift das Tier`, !b, b && "ROT: " + b);
     const L = out.leib || {};
     const lv = leibVerdict(L);
     check("Tier-Separation 0710-4 (D–F) LEIB AN LEIB: keine Durchdringung, Impuls nach Masse, der Spieler bekommt seinen Stoß, Lockstep", lv.length === 0, lv.join(" · "));
@@ -1755,6 +1761,14 @@ async function checkBandKreaturKosten({ page, check }) {
         const welt = s.creatures.filter((c) => !Object.values(probes).includes(c));
         for (const c of welt) s.creatures.splice(s.creatures.indexOf(c), 1);
         pin();
+        // DIE PROBE ZIEHT (ohne Aktion: ihre Stand-Pose ist die neutrale): ihr Anker drei Leinen fort (frei, ohne Revier-Netz) —
+        // die Leine ist das Streifgebiet der Art (wander-spieltag, der Hirsch 0,94 km); bis dahin lag jede Probe 16–60 m vor ihrem
+        // Geburtsort jenseits der Leine von 8 m und zog. In der Leine äste der Hirsch (Aktion scan, die Beine der Äsung 0,27 rad
+        // neben STAND_POSE), ein Revier-Anker läge im Lebensraum fern; die Linse misst die Kosten-Leiter, nie das Wandern
+        for (const pr of Object.values(probes)) {
+            const L = 3 * r._creatureMoveCharacter(pr).leashM;
+            pr.userData.wanderAnchor = { x: pr.position.x + L, z: pr.position.z, revier: true, frei: true };
+        }
         const savedACM = r._animateCompoundMotion;
         let counts = { voll: 0, halb: 0, viertel: 0, hinter: 0 };
         r._animateCompoundMotion = function (group) {

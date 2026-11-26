@@ -1,0 +1,34 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-leben.js	2026-11-26 19:29:07.870737394 +0000
++++ b/meisterkarte-quelle/punkte/stationen/k2-leben.js	2026-11-26 19:45:18.634795099 +0000
+@@ -3460,11 +3460,12 @@
+                         for (; k < n && performance.now() - t0 < a.msDeckel && s.creatures.includes(c); k++) {
+                             ruhigSpieler();
+                             takt(1, a.dt);
+-                            if (k % 20 === 0) bahn.push([c.position.x, c.position.z]);
++                            if (k % Math.max(1, Math.round(1 / a.dt)) === 0) bahn.push([c.position.x, c.position.z]);
+                             if (k % a.uhrJe === a.uhrJe - 1) r._uhrSetzen((tod0 + ((k + 1) * a.dt) / dayS) % 1, "regler");
+                         }
+                         r._uhrSetzen(tod0, "regler");
+                         const lebt = s.creatures.includes(c);
++                        const lebensdauerS = A._lebenKern().lebensdauerS(r._leibMasse(c));
+                         if (lebt) r.removeCreature(c);
+                         const P = bahn.map((p) => p.slice()).sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+                         const kreuz = (o, p, q) => (p[0] - o[0]) * (q[1] - o[1]) - (p[1] - o[1]) * (q[0] - o[0]);
+@@ -3488,7 +3489,7 @@
+                         for (let i = 1; i < bahn.length; i++) weg += Math.hypot(bahn[i][0] - bahn[i - 1][0], bahn[i][1] - bahn[i - 1][1]);
+                         const weit = Math.max(...bahn.map((p) => Math.hypot(p[0] - ort.x, p[1] - ort.z)));
+                         const neu = Object.keys((wm && wm.tritt) || {}).filter((q) => !vorT.has(q));
+-                        const aus = { tag: { takte: k, tage: r3((k * a.dt) / dayS), lebt, flaecheM2: r3(Math.abs(flaeche) / 2), weitM: r3(weit), wegM: r3(weg), proben: bahn.length, trittZellen: neu.length, pfadZellen: neu.filter((q) => A._trittStufe(wm.tritt[q][0]) > 0).length }, dayS, lebensdauerS: A.FAUNA_MAX_AGE_MS / 1000, leineM: A._verhaltenGesetz ? null : null };
++                        const aus = { tag: { takte: k, tage: r3((k * a.dt) / dayS), lebt, flaecheM2: r3(Math.abs(flaeche) / 2), weitM: r3(weit), wegM: r3(weg), proben: bahn.length, trittZellen: neu.length, pfadZellen: neu.filter((q) => A._trittStufe(wm.tritt[q][0]) > 0).length }, dayS, lebensdauerS, leineM: A._verhaltenGesetz ? null : null };
+                         // die frische Region unter Jahreszeit und Regen
+                         const F = r._bestandRegionen().regionen;
+                         const nah = r._bestandNah();
+@@ -3538,7 +3539,7 @@
+                         aus.region = { key, seiteM: r3(S), reliefM: r3(Math.max(...hs) - Math.min(...hs)), sommer: { n: sommer.length, median: r3(median(sommer)) }, winter: { n: winter.length, median: r3(median(winter)) }, hoehenDeltaM: sommer.length && winter.length ? r3(Math.abs(median(winter) - median(sommer))) : null, sonne: sonne.length, regen: regen.length, routeShiftM: ms && mr ? r3(Math.hypot(ms[0] - mr[0], ms[1] - mr[1])) : null };
+                         return aus;
+                     };
+-                    const z = await lauf(probe, { tage: 1, dt: 0.05, uhrJe: 1200, msDeckel: 20000 });
++                    const z = await lauf(probe, { tage: 1, dt: 0.25, uhrJe: 240, msDeckel: 20000 });
+                     const zeuge = { antworten: z.tag.proben, streuung: z.tag.weitM || 0, vor: 0, nach: z.tag.wegM || 0 };
+                     const km2 = z.tag.flaecheM2 / 1e6;
+                     const faktor = km2 > 0 ? Math.round(1000 * (km2 < 1 ? 1 / km2 : km2 > 10 ? km2 / 10 : 1)) / 1000 : null;

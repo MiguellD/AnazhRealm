@@ -25,6 +25,7 @@
 //   masseAdult(Mbar, a, e)                 → kg  Mbar·e^(a+e)  (die Achse lnM)
 //   lebensdauerS(M∞)                       → s   refS·(M∞/refKg)^0,20
 //   tau(M∞)                                → s   τ_ref·(M∞/refKg)^0,25
+//   streifRadiusM(M, kost)                 → m   √(a·M^b ha / π), kost "pflanze" · "alles" · "fleisch" (additiv, wander-spieltag)
 //   masseZurZeit(M∞, alterS)               → kg  M∞·[1 − (1 − q^¼)·e^(−alterS/tau(M∞))]⁴
 //   reifeS(M∞)                             → s   tau(M∞)·ln((1−q^¼)/(1−reifeMasse^¼))
 //   alterZurMasse(M∞, m)                   → s   die Umkehr von masseZurZeit: 0 für m ≤ q·M∞, Infinity für m ≥ M∞ (additiv)
@@ -61,7 +62,7 @@
 //       koepfe(z, i) → { beute, jaeger, rudel } · tiereIn(z, i) → [{ id, g, v, m, w, alterS, kg, M, r, a, e }] · frassAm(g, i, c)
 //       gauPack(g) → Uint8Array · gauEntpack(bytes, feld) → g      der Gau als reines Datum (Stand, Mitspieler)
 //   selbsttest(samen)                      → { steigung, steigungAus, steigungScheu, streuKind, saatGleich, eichung, masseMonoton,
-//                                              reifeTreffer, lebenWolf }
+//                                              reifeTreffer, lebenWolf, streifTelemetrie }
 //       steigung     Regression Kind auf Eltern-Mittel (Phänotyp lnM) über 10⁵ Paare, Soll h2 0,46 ± 0,02
 //       steigungAus  dieselbe Regression mit `gruender` statt `kind` (die Mutante), Soll 0 ± 0,02
 //       steigungScheu dieselbe Regression an der Achse scheu (`merkmal`), Soll ihr h2 0,35 ± 0,02 (erbe-geburt)
@@ -72,6 +73,7 @@
 //       reifeTreffer masseZurZeit(M, 0) = q·M und masseZurZeit(M, reifeS(M)) = 0,9·M auf 1e−9 (relativ), die Umkehr
 //                    alterZurMasse(M, 0,9·M) = reifeS(M) ebenso, erbeAusLeib(P): a + e = P und a = h²·P
 //       lebenWolf    lebensdauerS(64) (Soll 2100)
+//       streifTelemetrie  π·streifRadiusM² der Fleischfresser gegen Wolf und Rotfuchs der Telemetrie (Lindstedt 1986, Tab. 1), Soll Faktor ≤ 2
 //     Verfehlt eine Zahl ihr Soll, wirft selbsttest() mit dem Namen des Felds (fail-closed); sonst liefert es die Zahlen.
 //
 // bs eines Tiers (die Skala des Gusses): bs = (masseZurZeit(M∞, alterS) / M_guss)^⅓, M_guss = Masse des gegossenen Anker-Leibs
@@ -202,6 +204,22 @@
 
     function tau(M) {
         return TAU_REF * Math.pow(masse(M, "M∞") / G.refKg, G.wachsExp);
+    }
+
+    // DAS STREIFGEBIET (wander-spieltag, additiv; leben.tiere.wanderung#2): die Fläche, die ein Tier der Masse M zum Leben
+    // braucht, wächst linear mit der Masse, je Kost ihre Zeile — A = a·M^b ha (M in kg; Lindstedt, Miller & Buskirk 1986, Ecology
+    // 67:413: Pflanzenfresser 2,71·M^1,02, N 28 · Allesfresser 3,4·M^0,92, N 7 — Harestad & Bunnell 1979, ihre Gl. 7/8 —,
+    // Fleischfresser 170·M^1,03, N 38, Telemetrie, ihre Gl. 10). Die Reichweite um den Anker ist der Radius der Kreis-Fläche
+    // √(A/π): der Hirsch (93 kg) 0,94 km, der Wolf (64 kg) 6,3 km. Die Zeit rafft das Spiel (refS), den Raum nie.
+    const STREIF_GESETZ = Object.freeze({
+        pflanze: Object.freeze({ aHa: 2.71, b: 1.02 }),
+        alles: Object.freeze({ aHa: 3.4, b: 0.92 }),
+        fleisch: Object.freeze({ aHa: 170, b: 1.03 }),
+    });
+    function streifRadiusM(M, kost) {
+        if (!Object.prototype.hasOwnProperty.call(STREIF_GESETZ, kost)) throw new Error("leben-core: Kost " + kost + " ohne Zeile im Streifgebiet");
+        const Z = STREIF_GESETZ[kost];
+        return Math.sqrt((Z.aHa * Math.pow(masse(M, "M"), Z.b) * 1e4) / Math.PI);
     }
 
     function masseZurZeit(M, alterS) {
@@ -1548,6 +1566,9 @@
         if (Math.abs(leib.a[LN_M] + leib.e[LN_M] - 0.37) > 1e-12 || Math.abs(leib.a[LN_M] - G.achsen[LN_M].h2 * 0.37) > 1e-12)
             reifeTreffer = false;
         const lebenWolf = lebensdauerS(64);
+        // das Streifgebiet trifft die Telemetrie (Lindstedt et al. 1986, Tab. 1, je Art das geometrische Mittel ihrer Zeilen): der
+        // Wolf 39 kg 6 226 ha, der Rotfuchs 5,23 kg 959 ha — die Fläche des Gesetzes π·r² auf Faktor 2
+        const streifTelemetrie = [[39, 6226], [5.23, 959]].map(([kg, ha]) => (Math.PI * Math.pow(streifRadiusM(kg, "fleisch"), 2)) / 1e4 / ha);
         // die Anker-Tafel des Satzes 4: an den Ankern die Werte, dazwischen linear, außerhalb gehalten
         let ankerTreffer = true;
         for (const [f, D, soll] of [["ueberleben", 0.6, 0.49], ["ueberleben", 0.2, 0.49], ["ueberleben", 1.05, 0.66], ["ueberleben", 1.275, 0.755], ["ueberleben", 3, 0.85], ["welpeJaehrling", 0.825, 0.18], ["welpen", 0.825, 5.15], ["faehen", 1.5, 0.96]])
@@ -1565,8 +1586,9 @@
         if (!reifeTreffer) fehl.push("reifeTreffer");
         if (!ankerTreffer) fehl.push("ankerTreffer");
         if (!(Math.abs(lebenWolf - G.refS) <= 1e-9)) fehl.push("lebenWolf " + lebenWolf);
+        if (!streifTelemetrie.every((f) => f >= 0.5 && f <= 2)) fehl.push("streifTelemetrie " + streifTelemetrie.join(" "));
         if (fehl.length) throw new Error("leben-core selbsttest ROT: " + fehl.join(" · "));
-        return { steigung, steigungAus, steigungScheu, streuKind, saatGleich, eichung, masseMonoton, reifeTreffer, lebenWolf };
+        return { steigung, steigungAus, steigungScheu, streuKind, saatGleich, eichung, masseMonoton, reifeTreffer, lebenWolf, streifTelemetrie };
     }
 
     const api = Object.freeze({
@@ -1580,6 +1602,7 @@
         umwelt: umwelt,
         masseAdult: masseAdult,
         lebensdauerS: lebensdauerS,
+        streifRadiusM: streifRadiusM,
         tau: tau,
         masseZurZeit: masseZurZeit,
         reifeS: reifeS,
