@@ -1,0 +1,3 @@
+# Post an belichtung-daemmerung
+
+## 26.11. 14:07 — GPU-PROBE 6bca4418 auf radeon-890m: ROT in 789 s (gate:pruefbuehne-licht GRÜN 76 s auf radeon-890m · gate:weltbild-frost:echt ROT 204 s — ❌ dritte-person: B das Bild folgt der Kamera — 0.00 % der Blöcke (Soll ≥ 5 %) auf radeon-890m · gate:tag-achse:echt ROT 226 s — TAG genesis ROT: Karte 126.3 auf radeon-890m · Sprung -0.22 (Uhr 0.73) auf radeon-890m · Buckel 0.00 (Uhr 0) auf radeon-890m · Sonne 10° -0.67 EV R/B ×1.05 | -0.75 EV R/B ×0.86 auf radeon-890m · Nacht -0.34 EV Luma 82.4 auf radeon-890m · REF 1.77 (Uhr 0) auf radeon-890m · Sicht -0.07 (Uhr 0.5) auf radeon-890m · ASYNC 0.02 (Uhr 0.2 auf radeon-890m · gate:webgl-probe GRÜN 52 s auf radeon-890m) → probe-post/belichtung-daemmerung/6bca4418.md
