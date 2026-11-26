@@ -1,0 +1,93 @@
+BEGRÜNDUNG — karte2.erleben.bild.nacht#1 (der Pfosten am Feuer), Leser 2, 26.11.
+
+1. DER RICHTER (wörtlich, vision/meisterkarte-2.json, gruppen/4/kriterien/29/sprossen/0)
+   S1 „Schatten-Kontrast ≥ 3:1 an einem Pfosten 2 m vom Feuer; Gasse in der Kelvin-Farbe ±200 K“
+      (umfang „1 Quelle“, tiefe „das nächste Feuer wirft Licht und Schatten, auch vom gehenden Spieler“, preis „P“)
+   Station: meisterkarte-quelle/punkte/stationen/k2-erleben.js Leiter erleben.bild.nacht (sek 60), S1 = der Teil schatten.K5 der
+   NEUN-Seite (g3.js `neunSeite`, Gültigkeit `k5Gilt`) an stadt-voll third.
+
+2. DER BEFUND DER GERÄTE (hand.out §4, Messdateien von origin/punkte-maschine)
+   nacht#1: 27 Einträge, 0 GRÜN · 17 ROT · 10 UNGEMESSEN. Die ROT mit Zahl stehen bei Kontrast 1,4661–2,6165, die Pfosten-Zeile der
+   Sitzung nennt die Quelle: {quelle laterne_dorf, abM 2.15, Llicht 0, Lschatten 0, kontrast 2.61, kontrolle 0.90, n 12}. Das ist
+   Schwarz gegen Schwarz, gemessen an einer Dorf-Laterne und nicht an einem Feuer.
+   Derselbe Teil an der Pose der NEUN (schatten.K5#1, 56 Einträge): an der Studio-Feuerstelle (Bauplan glutbrunnen) 14 von 28 GRÜN mit
+   5,277–9,2753:1 (zuletzt 12.11. dreimal 5,277 in 9,4 m) · an der Dorf-Laterne 1 von 18 (0,22–0,25:1, einmal 9,03) · an der Esse 0 von 1.
+
+3. DER FEHLER DER STATION (origin/punkte-maschine dc2f3ca9, k2-erleben.js d66d5e1e8, g3.js 6abe301d4)
+   k2-erleben.js:3969–3981  der Pfosten steht an „die nächste Leuchtquelle des Gesetzes am Spieler“; der Kopf :3835 sagt „2 m neben
+                            dem nächsten Feuer“. Sage a, tue a: das Band verlangt ein FEUER, die Station nimmt jede Quelle.
+   g3.js:1982–1986          `qs` = jede Quelle aus `_leuchtQuellen` mit `_lichtDatum`, nur nach dem Abstand sortiert. An der Gasse
+                            von stadt-voll steht eine Laterne 1,68 m vor dem Spieler (Wolke, Pose third 842/452): sie ist immer die
+                            erste. Ein Feuer in 120 m wird nie gewählt.
+   :3986–3996               kein Zeuge nennt, WELCHE Quelle der Pfosten maß; das Urteil liest nur den Kontrast.
+
+4. WELCHES FEUER (die Bestellung 01:55: „ein Feuer, das es nach der Landung noch gibt (Herd, Lagerfeuer einer Siedlung) — nenne den Ort“)
+   Eine Siedlung setzt KEIN Feuer:
+   - stamm/siedlung-ort.js:3952 `ORT_AUSSTATTUNG` (main 64fcf12e) hat laterne, brunnen, stand, baum, grabstein, schild; eine
+     Feuerstelle fehlt.
+   - Der Herd des Hauses (fachwerk-core.js MK herd) ist nur Schornstein-Geometrie, ohne Glut. Leuchtquellen mit Glut-Teilen sind
+     nur glutbrunnen, esse und esse_meister.
+   - Die einzige Esse der Welt ist die Vorschau am Schmiede-Tor (fachwerk-core.js:14491).
+   - Die Stadt d:7@836,438 der Wolke trägt 0 Feuer der Menschen: 502 Lichter, davon 321 laterne_dorf, 173 wandlaterne_dorf und
+     8 glutbrunnen, alle mit `feldWurf`.
+   Nach landmarken-geologie (buendel-landmarken 080ade19, an main 64fcf12e noch nicht gelandet) wirft das Feld keine Glut mehr.
+   Die Feuerstelle setzt dann nur der Mensch: Bau-Modus (stamm/werkstatt-bauen.js:424 `spawnArchitecture(name, spawnPos, { id, … })`),
+   der Satz der KI oder ein Akt des Nexus.
+   Darum spielt die Station den Menschen. Sie setzt EIN Werk `glutbrunnen` mit id „nacht-feuerstelle“: die Studio-Gestalt feuerstelle,
+   fachwerk-core.js:8209, licht „feuer“ = LICHT_GESETZ.feuer 2000 K. Ein Eintrag mit id ist Werk und trägt nie die Marke des Felds
+   (siedlung-satz.js:1400/1407). So setzt es auch die Linse diag-klang-zensus nach der Landung.
+   DER ORT (Wolke, main eae94514, hand.out §1): stadt-voll, Stadt d:7@836,438, Pose third (842 | 452).
+   - Die Feuerstelle steht an (847,67 | 55,97 | 453,95), 6 m von third und 7,65 m frei von jeder anderen Quelle.
+   - Der Spieler steht an (850,55 | 454,79), 3,00 m daneben. Dort ist sie die nächste Quelle.
+   - Die Regel ist die der Linse: Land, kein Wasser in 3 m, ±1 m eben. Dazu kommen 7 m Abstand zu jeder anderen Quelle um Mitternacht,
+     und der Spieler steht abgewandt von der nächsten anderen.
+   Ein Gerät mit anderer Saat findet seinen Ort mit derselben Regel. Die Pfosten-Zeile nennt ihn.
+
+5. DER SCHNITT (k2-erleben.nacht-s1.diff, 4 Hunks, nur k2-erleben.js; `git apply --check` an origin/punkte-maschine dc2f3ca9 sauber,
+   Blob danach db144f91b3; g3.js und die NEUN unberührt — ihr Abdruck 2b82670c21fbcf74 bleibt)
+   a) FEUER: setzt das Werk an der ersten Stelle der Regel (Ringe 0–60 m um third, Schritt 2 m). Es wartet, bis das Werk im
+      Verzeichnis „licht“ steht, und hält den Spieler 3 m daneben. Rückgabe: typ, id, ort, feldWurf, imVerzeichnis, feuerGesetz (Datum =
+      LICHT_GESETZ.feuer), naechste (das Werk ist die erste Quelle am Spieler) und abM.
+   b) Dann läuft der Teil schatten.K5 unverändert: dieselbe Seite, dieselben Maße, dieselbe `k5Gilt`.
+   c) FORT läuft im finally: das Werk geht, der Spieler steht wieder an third. Der Zeuge `fort` meldet einen Bruch als Täter.
+   d) ZEUGEN S1 (Sprosse 1 `welt`, die Attrappe des Gerüsts setzt jeden auf 0):
+      - quellen ≥ 1;
+      - feuer_mensch ≥ 1: das Werk ohne `feldWurf`, im Verzeichnis, mit dem Herdfeuer des Gesetzbuchs, die nächste Quelle;
+      - pfosten_am_feuer ≥ 1: Art und Abstand der Quelle des Teils sind die des Werks, ±0,05 m.
+      Der Kontrast zählt nur am Feuer und nur, wenn `k5Gilt` gilt. Sonst steht null und der Täter wird beim Namen genannt.
+   e) `mutiert: true` (k2-mensch.js:15: „die Probe ändert die Welt (baut …) — die Sitzung stellt danach den Grund“).
+   Kelvin der Gasse, S2–S8, die Nacht-Linse und der Umfang bleiben unverändert.
+
+6. DIE ZAHL VORHER ↔ NACHHER (nacht-hand.cjs, hand.out §2, Wolke, warme Welt der Werkbank, main eae94514)
+   Die Wolke hat kein Bild: das Gerät der Werkbank ist verloren („A valid external Instance reference no longer exists“, auch /fenster
+   antwortet nie). Der Hand-Lauf ersetzt deshalb NUR die Nacht-Linse, /fenster und die Aufnahme durch leere Stubs. Gemessen wird die
+   Mechanik der Pose: Feuer, gewählte Quelle, Abstand, Werk fort. Ein Kontrast wird nicht gemessen.
+   An der Stadt zeichnet die Wolke keinen Boden: die Werkbank holt den Spieler je Takt an ihre Wiese, `_bodenSichtAt` liefert dort null.
+   Basis und Kandidat brechen an der Stadt gleich: „kein ebener Boden 2 m neben einer Leuchtquelle … (207 Quellen)“. Der Lauf steht
+   darum an der Wiese (0 | −30,17):
+     Basis      der Pfosten an laterne_dorf in 16,4827 m — dieselbe Klasse wie die Geräte (die nächste Quelle, kein Feuer)
+     Kandidat   das Werk an (0 | −30,17), feldWurf false, im Verzeichnis, Herdfeuer, nächste Quelle in 3,00 m; der Pfosten an
+                glutbrunnen in 3 m → feuer_mensch 1 · pfosten_am_feuer 1 · Werk fort
+     ATTRAPPE „kein Feuer der Menschen“ (die Suche findet keine Stelle): der Pfosten an laterne_dorf 16,48 m → feuer_mensch 0 ·
+                pfosten_am_feuer 0 → ROT „Attrappe: … die Welt änderte sich nicht“, Täter „kein Feuer der Menschen an der Pose“
+     ATTRAPPE „Feuer des Felds“ (dasselbe Werk mit `feldWurf`, ohne id): der Pfosten an ihm in 3 m → feuer_mensch 0 ·
+                pfosten_am_feuer 0 → ROT beim Namen. Die Station misst kein Feuer, das es nach der Landung nicht gibt.
+   Die Welt nach jedem Lauf: 0 Werke „nacht-feuerstelle“, kein Halter, die Aufnahme wieder die echte.
+   Wände
+   - Proben der Datei 2 137, 0 falsch (Basis 2 137, 0 falsch). Die Attrappe von #1 nennt jetzt drei Zeugen.
+   - `node punkte.cjs liste`: 1 976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0, Basis gleich.
+   - Kandidat = Basis, Zeile für Zeile: 72 Zeilen fallen, 616 kommen, alle in den 8 Blöcken karte2.erleben.bild.nacht#1–#8 (EIN
+     Befehl der Leiter). Die übrigen 1 331 707 Zeilen sind gleich.
+
+7. DIE UHR
+   FEUER kostet 0,1 s, FORT < 0,1 s (Ringe bis zum ersten Treffer, an stadt-voll 22 Stellen). Der Deckel 60 bleibt. Die Kosten hängen am
+   Ort um third, nie an der Welt.
+
+8. WAS NUR DAS GERÄT MESSEN KANN
+   - DAS BILD: der Kontrast am Pfosten der Feuerstelle der Stadt, nach der Landung. Die Wolke hat kein Gerät und an der Stadt keinen
+     gezeichneten Boden.
+   - Die 14 ROT am Feuer der NEUN-Pose (0,5474–2,6433:1). Ihre Ursache ist offen, Pose oder Wurf (Messname schatten.K5#1). Ein Teil
+     davon ist der benannte Fall „die Rückfall-Wahl las an der letzten Pose“ (g3.js w24-linse-feuer). Wenn derselbe Teil hier ROT misst,
+     misst er am FEUER ROT. Das ist dann eine Akte des Spiels oder seiner Pose, nie mehr eine Laterne mit Licht 0.
+   - Die Kelvin-Zahl der Gasse (die Linse, unverändert) und die Uhr der Leiter in der Reihe der Sitzung (jetzt `mutiert`: nach `ende`).
+   Buchbar erst, wenn das Gerät an der Feuerstelle der Station ≥ 3:1 misst.

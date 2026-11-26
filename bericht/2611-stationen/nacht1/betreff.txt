@@ -1,0 +1,33 @@
+PUNKT OHNE MACHER — die Station war der Fehler, das Spiel trägt (am Feuer der Studio-Gestalt feuerstelle 14 von 28 Geräte-Messungen ≥ 3:1, 5,28–9,28:1; an der Dorf-Laterne der Gasse misst nacht#1 17 ROT von 17 mit Licht 0 · Schatten 0)
+
+Kandidat der Station erleben.bild.nacht (S1, beansprucht #1) — für den Zweig punkte-maschine, nicht für main
+
+Richter S1 (wörtlich, vision/meisterkarte-2.json): „Schatten-Kontrast ≥ 3:1 an einem Pfosten 2 m vom Feuer; Gasse in der Kelvin-Farbe
+  ±200 K“ · umfang „1 Quelle“ · tiefe „das nächste Feuer wirft Licht und Schatten, auch vom gehenden Spieler“ · preis „P“
+
+Stations-Fehler (origin/punkte-maschine dc2f3ca9, k2-erleben.js d66d5e1e8, g3.js 6abe301d4):
+  k2-erleben.js:3969–3981 + g3.js:1982–1986  der Pfosten steht an der nächsten Leuchtquelle JEDER Art, sortiert nur nach Abstand; an der
+      Gasse ist das laterne_dorf in 2,15 m (Llicht 0) — das Band verlangt ein FEUER, der Kopf :3835 sagt es, die Station tut es nicht
+  :3986–3996  kein Zeuge nennt die Quelle des Pfostens; das Urteil liest nur den Kontrast
+
+Das Feuer nach der Landung (Bestellung 01:55): eine Siedlung setzt keins (stamm/siedlung-ort.js:3952 ORT_AUSSTATTUNG ohne
+  Feuerstelle; der Herd des Fachwerks ist nur Schornstein); nach landmarken-geologie wirft das Feld keine Glut mehr. Die Feuerstelle
+  setzt der Mensch (stamm/werkstatt-bauen.js:424). Die Station spielt ihn: EIN Werk `glutbrunnen` (Studio-Gestalt feuerstelle,
+  LICHT_GESETZ.feuer 2000 K), mit id, also nie feldWurf (siedlung-satz.js:1400/1407).
+  Ort: stadt-voll, Stadt d:7@836,438, Pose third (842 | 452) → Feuerstelle (847,67 | 453,95), 6 m von third, 7,65 m frei; Spieler
+  (850,55 | 454,79) 3 m daneben. Dieselbe Regel findet den Ort an jeder Saat.
+
+Schnitt (k2-erleben.nacht-s1.diff, 4 Hunks, nur k2-erleben.js): FEUER setzt das Werk und hält den Spieler, dann läuft schatten.K5
+  unverändert; FORT im finally (Werk geht, Spieler an third); Zeugen quellen · feuer_mensch · pfosten_am_feuer; `mutiert: true`.
+  g3.js und die NEUN unberührt.
+
+Gemessen (Wolke, main eae94514, hand.out; ohne Bild, das Gerät der Werkbank ist verloren, Stubs nur für Linse und Aufnahme):
+  Basis      Pfosten an laterne_dorf 16,48 m (dieselbe Klasse wie die Geräte)
+  Kandidat   Werk ohne feldWurf, im Verzeichnis, Herdfeuer; Pfosten an glutbrunnen 3,00 m → feuer_mensch 1 · pfosten_am_feuer 1 · fort
+  Attrappen  „kein Feuer der Menschen“ → 0 · 0 ROT; „Feuer des Felds“ (feldWurf) → 0 · 0 ROT, beide beim Namen
+  Wände      Proben 2 137 · 0 falsch = Basis; liste 1 976 · 420 · fehlt 15 · Fehler 0 = Basis, 72 Zeilen fallen, 616 kommen, alle in den
+             8 Blöcken nacht#1–#8 (EIN Befehl); die Uhr +0,1 s
+
+Offen (nur das Gerät): der Kontrast am Pfosten der Feuerstelle (das Bild); die 14 ROT am Feuer der NEUN-Pose, 0,55–2,64:1, Messname
+  schatten.K5#1; die Kelvin-Zahl der Gasse; die Uhr in der Reihe der Sitzung (mutiert → nach ende). Buchbar, wenn das Gerät an der
+  Feuerstelle der Station ≥ 3:1 misst.

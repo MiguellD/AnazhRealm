@@ -1,0 +1,130 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-erleben.js b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
+index d66d5e1e8c..db144f91b3 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-erleben.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
+@@ -3849,6 +3849,7 @@ const LANDMARKE_AN = async (r, T, a) => {
+         leiter({
+             leiter: "erleben.bild.nacht",
+             sek: 60,
++            mutiert: true,
+             seite: { NEUN_NUR: String(neunNur), K5_ANKER: JSON.stringify(K5_ANKER), NEUN_ABDRUCK: JSON.stringify(NEUN_NUR_ABDRUCK), NEUN_C: JSON.stringify(NEUN.neunC), K5_GILT: String(NEUN.k5Gilt) },
+             pfad: ["stamm/dirigent-kern.js", "stamm/gelaende-kollision.js", "stamm/stoff-material.js", "stamm/feld-leben.js", "welt-licht.js", "scripts/lib/licht-linsen.cjs", "spec/profiband/haushalt.json"],
+             welt: [{ wort: "quellen", ab: 1, was: "Leuchtquellen der Welt, gezählt im Verzeichnis „licht“" }],
+@@ -3859,6 +3860,11 @@ const LANDMARKE_AN = async (r, T, a) => {
+                         { wort: "kelvin_abw", richtung: "≤", wert: 200, wortlaut: "Gasse in der Kelvin-Farbe ±200 K" },
+                     ],
+                     umfang: { verlangt: 1, einheit: "Leuchtquellen", wortlaut: "1 Quelle", feld: "umfang" },
++                    welt: [
++                        { wort: "quellen", ab: 1, was: "Leuchtquellen der Welt, gezählt im Verzeichnis „licht“" },
++                        { wort: "feuer_mensch", ab: 1, was: "das Feuer der Menschen an der Pose: das Werk `glutbrunnen` der Station ohne Marke `feldWurf`, im Verzeichnis „licht“ mit LICHT_GESETZ.feuer, die nächste Quelle am Spieler" },
++                        { wort: "pfosten_am_feuer", ab: 1, was: "der Pfosten des Teils schatten.K5 stand an DIESEM Feuer (Art und Abstand seiner Quelle = die des Werks)" },
++                    ],
+                 },
+                 2: {
+                     soll: [
+@@ -3966,11 +3972,71 @@ const LANDMARKE_AN = async (r, T, a) => {
+                     if (n < P.sprossen[1].umfang.verlangt) return L.umfang(1, n, zaehlWas);
+                     if (!linse) return L.leser(1, "Kelvin der Gasse: " + ohneLinse, n);
+                     const { kMed, kel } = LL.nachtKelvin(nacht);
+-                    // DER PFOSTEN an der Gasse: der Teil schatten.K5 allein (die nächste Leuchtquelle des Gesetzes am Spieler, ihr Platz im Pool
++                    // DER PFOSTEN AM FEUER (nacht#1, Leser 2, 26.11.): das Band misst „an einem Pfosten 2 m vom FEUER“ — bis hier stand er an
++                    // der nächsten Leuchtquelle am Spieler, an der Gasse eine Dorf-Laterne (Geräte f63a69ef · 2da17e2e: laterne_dorf 2,15 m,
++                    // Llicht 0 · Lschatten 0, Schwarz gegen Schwarz, „Kontrast“ 2,61). Ein Feuer der Stadt gibt es nicht: der Ort setzt keine
++                    // Feuerstelle (stamm/siedlung-ort.js ORT_AUSSTATTUNG: Laterne, Brunnen, Stand, Baum …), und seit landmarken-geologie wirft
++                    // das Feld keine Glut mehr — die Feuerstelle setzt der Mensch (Bau-Modus, Satz der KI, Akt des Nexus). Die Station spielt
++                    // ihn: EIN Werk `glutbrunnen` (die Studio-Gestalt feuerstelle, LICHT_GESETZ.feuer) ohne Marke `feldWurf`, wie die Linse
++                    // diag-klang-zensus es setzt, an der ersten trockenen, ebenen Stelle um die Pose third (ihre Regel: Land, kein Wasser in
++                    // 3 m, ±1 m eben), 7 m frei von jeder anderen Quelle um Mitternacht; der Spieler 3 m neben ihm, abgewandt von der nächsten
++                    // anderen — dort ist das Werk die nächste Quelle, und der Teil schatten.K5 stellt den Pfosten an IHM auf. Gemessen wird nur,
++                    // wenn Art und Abstand der Quelle des Teils die des Werks sind; danach geht das Werk, der Spieler steht wieder an third
++                    const FEUER = `const st = r.state, pm = st.playerMesh.position, T0 = pm.clone();
++                    window.__buehne({ uhr: 0 });
++                    const haelt = (x, z) => {
++                        if (!r._landAt(x, z, 0.4)) return false;
++                        let lo = Infinity, hi = -Infinity;
++                        for (let k = 0; k <= 8; k++)
++                            for (const rad of k === 8 ? [0] : [1.5, 3]) {
++                                const a = (k / 8) * Math.PI * 2, px = x + Math.sin(a) * rad, pz = z + Math.cos(a) * rad;
++                                if (r._nassAt(px, pz)) return false;
++                                const y = r._voxelSurfaceY(px, pz);
++                                if (y == null) return false;
++                                lo = Math.min(lo, y); hi = Math.max(hi, y);
++                            }
++                        return hi - lo <= 1;
++                    };
++                    const quellen = (x, z, R) => (r._leuchtQuellen(x, T0.y, z, R) || []).filter((o) => o && o.id && o.id.position && r._lichtDatum(o.id) && Number.isFinite(o.y));
++                    const Q = quellen(T0.x, T0.z, 160);
++                    const naechste = (x, z) => { let b = null; for (const q of Q) { const d = Math.hypot(q.x - x, q.z - z); if (!b || d < b.d) b = { d, q }; } return b; };
++                    let ort = null;
++                    for (let rr = 0; rr <= 60 && !ort; rr += 2) {
++                        const n = Math.max(1, Math.round((2 * Math.PI * rr) / 2));
++                        for (let k = 0; k < n && !ort; k++) {
++                            const a = (k / n) * Math.PI * 2, x = T0.x + Math.cos(a) * rr, z = T0.z + Math.sin(a) * rr, f = naechste(x, z);
++                            if ((f && f.d < 7) || !haelt(x, z)) continue;
++                            const sx = x + (f ? (x - f.q.x) / f.d : 1) * 3, sz = z + (f ? (z - f.q.z) / f.d : 0) * 3, g = naechste(sx, sz);
++                            if (r._landAt(sx, sz, 0.4) && !r._nassAt(sx, sz) && !(g && g.d < 4)) ort = { x, z, rr, frei: f ? f.d : null, sx, sz };
++                        }
++                    }
++                    if (!ort) return { werk: null, third: [T0.x, T0.z], quellen: Q.length };
++                    const werk = r.spawnArchitecture("glutbrunnen", { x: ort.x, y: r.getTerrainHeightAt(ort.x, ort.z) + 0.5, z: ort.z }, { silent: true, precise: true, id: "nacht-feuerstelle" });
++                    for (let i = 0; werk && !r._blockerMit("licht").includes(werk) && i < 150; i++) await new Promise((f) => setTimeout(f, 20));
++                    const stelle = () => pm.set(ort.sx, r._voxelSurfaceY(ort.sx, ort.sz) + 1.8, ort.sz);
++                    stelle();
++                    window.__nachtFeuer = { werk, T0, halt: setInterval(stelle, 10) };
++                    if (r._leuchtPool) r._leuchtPool.t = r._leuchtPool.uhr = -Infinity;
++                    const am = quellen(ort.sx, ort.sz, 120).map((o) => ({ id: o.id, d: Math.hypot(o.x - ort.sx, o.z - ort.sz) })).sort((p, q) => p.d - q.d);
++                    const L = werk && r._lichtDatum(werk), F = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
++                    const k4 = (v) => Math.round(v * 1e4) / 1e4;
++                    return { werk: !!werk, typ: werk && werk.type, id: werk && werk.id, ort: werk && [k4(werk.position.x), k4(werk.position.z)], third: [k4(T0.x), k4(T0.z)], vonThird: ort.rr, freiM: ort.frei == null ? null : k4(ort.frei),
++                        spieler: [k4(pm.x), k4(pm.z)], feldWurf: !!werk && werk.feldWurf === true, imVerzeichnis: !!werk && r._blockerMit("licht").includes(werk),
++                        feuerGesetz: !!L && L.kelvin === F.kelvin && L.cd === F.cd, naechste: !!am[0] && am[0].id === werk, abM: am[0] && am[0].id === werk ? k4(am[0].d) : null };`;
++                    const FORT = `const f = window.__nachtFeuer;
++                    if (!f) return { fort: true, werk: false };
++                    clearInterval(f.halt);
++                    delete window.__nachtFeuer;
++                    if (f.werk) r.removeArchitecture(f.werk);
++                    r.state.playerMesh.position.copy(f.T0);
++                    return { fort: !f.werk || (!r._blockerMit("licht").includes(f.werk) && !(r.state.architectures || []).includes(f.werk)) };`;
++                    // DER PFOSTEN: der Teil schatten.K5 allein (die nächste Leuchtquelle des Gesetzes am Spieler — das Werk —, ihr Platz im Pool
+                     // trägt den Wurf), im Fenster der NEUN, danach das Fenster der Sitzung — die Leiter hält 60 s, ein Ortswechsel kostet 30
+                     const C = Object.assign(H.seite.NEUN_C, { teile: [], nur: ["schatten.K5"], rest: Math.max(5, Math.min(25, L.rest() - 20)) });
+-                    let k5;
++                    let k5, feuer, fort;
+                     try {
++                        feuer = await L.ev(FEUER, 30);
++                        L.zeile("Feuer der Station (stadt-voll): " + JSON.stringify(feuer));
+                         await L.wb("/fenster", { w: C.fenster[0], h: C.fenster[1] }, 30);
+                         const pf = require("path");
+                         const G = require(pf.join(pf.dirname(String(process.env.PUNKTE_MASCHINE || "")), "stationen", "g3.js"));
+@@ -3981,18 +4047,26 @@ const LANDMARKE_AN = async (r, T, a) => {
+                         k5 = (a && a.teile && a.teile["schatten.K5"]) || { fehler: "der Teil kam nicht dran (" + JSON.stringify((a && a.ausgelassen) || []) + ")" };
+                     } finally {
+                         await L.wb("/fenster", { w: 1920, h: 1080 }, 30).catch(() => {});
++                        fort = await L.ev(FORT, 30).catch((e) => ({ fort: false, fehler: String((e && e.message) || e).split("\n")[0] }));
+                     }
+-                    L.zeile("Pfosten (schatten.K5 an stadt-voll third): " + JSON.stringify(k5));
+-                    const gilt = !k5.fehler && H.seite.K5_GILT(k5);
++                    L.zeile("Pfosten (schatten.K5 am Feuer der Station): " + JSON.stringify(k5) + " · Werk fort " + JSON.stringify(fort));
++                    // die Zeugen: das Feuer der Menschen (das Werk ohne Marke des Felds, im Verzeichnis, mit dem Herdfeuer des Gesetzbuchs, die
++                    // nächste Quelle am Spieler) und der Pfosten an IHM (Art und Abstand der Quelle des Teils)
++                    const feuerMensch = !!(feuer && feuer.werk && !feuer.feldWurf && feuer.imVerzeichnis && feuer.feuerGesetz && feuer.naechste);
++                    const amFeuer = feuerMensch && !k5.fehler && k5.quelle === feuer.typ && Number.isFinite(k5.abM) && Math.abs(k5.abM - feuer.abM) <= 0.05;
++                    const gilt = amFeuer && H.seite.K5_GILT(k5);
+                     const taeter = [];
++                    if (!feuerMensch) taeter.push("kein Feuer der Menschen an der Pose (" + JSON.stringify(feuer) + ")");
+                     if (k5.fehler) taeter.push("der Pfosten-Teil brach: " + k5.fehler);
+-                    else if (!gilt) taeter.push("das Maß am Pfosten gilt nicht (im Blick " + k5.pfosten + ", im Pool " + k5.imPool + ", ohne Pfosten " + k5.kontrolle + ", Punkte " + k5.n + ")");
++                    else if (feuerMensch && !amFeuer) taeter.push("der Pfosten stand nicht am Feuer der Station (Quelle " + k5.quelle + " in " + k5.abM + " m, das Werk in " + feuer.abM + " m)");
++                    else if (amFeuer && !gilt) taeter.push("das Maß am Pfosten gilt nicht (im Blick " + k5.pfosten + ", im Pool " + k5.imPool + ", ohne Pfosten " + k5.kontrolle + ", Punkte " + k5.n + ")");
+                     if (!kel.length) taeter.push("keine Leuchte der Gasse mit Farbe gesehen");
++                    if (!(fort && fort.fort)) taeter.push("das Werk der Station ging nicht (" + JSON.stringify(fort) + ")");
+                     L.gemessen(1, { schatten_kontrast: gilt ? k5.kontrast : null, kelvin_abw: kMed }, {
+                         erzeugt: n,
+-                        welt: { quellen: n },
++                        welt: { quellen: n, feuer_mensch: feuerMensch ? 1 : 0, pfosten_am_feuer: amFeuer ? 1 : 0 },
+                         taeter: taeter.join(" · ") || null,
+-                        beleg: { pfosten: k5, kelvin: kel, gasse: "stadt-voll third" },
++                        beleg: { pfosten: k5, feuer, fort, kelvin: kel, gasse: "stadt-voll third" },
+                     });
+                 });
+                 const FEHLT = {

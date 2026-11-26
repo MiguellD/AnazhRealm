@@ -1,0 +1,111 @@
+# Hand-Lauf nacht#1 (Leser 2, 26.11. 06:25 UTC) · Wolke, main eae94514, Werkbank 24600, Kandidat-Blob db144f91b3 auf punkte-maschine dc2f3ca9d0 (k2-erleben.js d66d5e1e8c)
+
+## 1. die Feuerstelle an stadt-voll (node ev.cjs feuer-stadt.js 120)
+{"third":[842,452],"geprueft":22,"quellen":320,"feuer":{"typ":"glutbrunnen","id":"nacht-feuerstelle","ort":[847.67,55.97,453.95],"vonThird":6,"freiM":7.65,"feldWurf":false,"kelvin":2000,"cd":10.2,"imVerzeichnis":true,"takte":0},"spieler":[850.55,454.79],"erste":[["glutbrunnen",3,true],["laterne_dorf",6.97,false],["laterne_dorf",9.05,false]],"fort":true,"ms":405}
+
+## 2. die Leiter von Hand (node nacht-hand.cjs <stationen>/k2-erleben.js 4600 <art>, aus der Wurzel des Spiel-Baums) — an der Wiese der Werkbank (gezeichneter Boden; an der Stadt zeichnet die Wolke keinen: dort brechen Basis und Kandidat gleich, „kein ebener Boden 2 m neben einer Leuchtquelle … (207 Quellen)“)
+NACHT kandidat · k2-erleben.js · LAUF 0.6 s · Exit 0 · Leiter 0.4 s warf: {}
+  @@ 0.1 s · Feuer der Station (stadt-voll): {"werk":true,"typ":"glutbrunnen","id":"nacht-feuerstelle","ort":[0,-30.1682],"third":[0,-30.1682],"vonThird":0,"freiM":16.4827,"spieler":[2.2632,-32.1374],"feldWurf":false,"imVerzeichnis":true,"feuerGesetz":true,"naechste":true,"abM":3}
+  @@ 0.4 s · Pfosten (schatten.K5 am Feuer der Station): {"quelle":"glutbrunnen","abM":3,"imPool":true,"uhr":0,"boden":0,"pfosten":false,"Llicht":0,"Lschatten":0,"kontrast":null,"kontrolle":null,"n":12,"s":0.13} · Werk fort {"fort":true}
+  S1 ROT · S1 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)
+  S1 über die Zeugen ROT · S1 · ROT ❌ schatten_kontrast — (Soll ≥ 3) · ❌ kelvin_abw — (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 502 — Täter: das Maß am Pfosten gilt nicht (im Blick false, im Pool true, ohne Pfosten null, Punkte 12) · keine Leuchte der Gasse mit Farbe gesehen · schatten_kontrast — statt ≥ 3 · kelvin_abw — statt ≤ 200
+  ROH S1 welt {"quellen":502,"feuer_mensch":1,"pfosten_am_feuer":1} · Pfosten {"quelle":"glutbrunnen","abM":3,"imPool":true,"uhr":0,"boden":0,"pfosten":false,"Llicht":0,"Lschatten":0,"kontrast":null,"kontrolle":null,"n":12,"s":0.13} · Feuer {"werk":true,"typ":"glutbrunnen","id":"nacht-feuerstelle","ort":[0,-30.1682],"third":[0,-30.1682],"vonThird":0,"freiM":16.4827,"spieler":[2.2632,-32.1374],"feldWurf":false,"imVerzeichnis":true,"feuerGesetz":true,"naechste":true,"abM":3} · fort {"fort":true}
+
+NACHT laterne · k2-erleben.js · LAUF 0.4 s · Exit 0 · Leiter 0.2 s warf: {}
+  @@ 0 s · Feuer der Station (stadt-voll): {"werk":null,"third":[0,-30.168159992841538],"quellen":31}
+  @@ 0.2 s · Pfosten (schatten.K5 am Feuer der Station): {"quelle":"laterne_dorf","abM":16.4827,"imPool":true,"uhr":0,"boden":0,"pfosten":false,"Llicht":0,"Lschatten":0,"kontrast":null,"kontrolle":null,"n":12,"s":0.04} · Werk fort {"fort":true,"werk":false}
+  S1 ROT · S1 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)
+  S1 über die Zeugen ROT · S1 · ROT ❌ schatten_kontrast — (Soll ≥ 3) · ❌ kelvin_abw — (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 502 — Täter: kein Feuer der Menschen an der Pose ({"werk":null,"third":[0,-30.168159992841538],"quellen":31}) · keine Leuchte der Gasse mit Farbe gesehen · Attrappe: feuer_mensch 0 < 1 (das Feuer der Menschen an der Pose: das Werk `glutbrunnen` der Station ohne Marke `feldWurf`, im Verzeichnis „licht“ mit LICHT_GESETZ.feuer, die nächste Quelle am Spieler) · pfosten_am_feuer 0 < 1 (der Pfosten des Teils schatten.K5 stand an DIESEM Feuer (Art und Abstand seiner Quelle = die des Werks)) — die Welt änderte sich nicht · schatten_kontrast — statt ≥ 3 · kelvin_abw — statt ≤ 200
+  ROH S1 welt {"quellen":502,"feuer_mensch":0,"pfosten_am_feuer":0} · Pfosten {"quelle":"laterne_dorf","abM":16.4827,"imPool":true,"uhr":0,"boden":0,"pfosten":false,"Llicht":0,"Lschatten":0,"kontrast":null,"kontrolle":null,"n":12,"s":0.04} · Feuer {"werk":null,"third":[0,-30.168159992841538],"quellen":31} · fort {"fort":true,"werk":false}
+
+NACHT feld · k2-erleben.js · LAUF 0.4 s · Exit 0 · Leiter 0.2 s warf: {}
+  @@ 0.1 s · Feuer der Station (stadt-voll): {"werk":true,"typ":"glutbrunnen","id":2411,"ort":[0,-30.1682],"third":[0,-30.1682],"vonThird":0,"freiM":16.4827,"spieler":[2.2632,-32.1374],"feldWurf":true,"imVerzeichnis":true,"feuerGesetz":true,"naechste":true,"abM":3}
+  @@ 0.2 s · Pfosten (schatten.K5 am Feuer der Station): {"quelle":"glutbrunnen","abM":3,"imPool":true,"uhr":0,"boden":0,"pfosten":false,"Llicht":0,"Lschatten":0,"kontrast":null,"kontrolle":null,"n":12,"s":0.03} · Werk fort {"fort":true}
+  S1 ROT · S1 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)
+  S1 über die Zeugen ROT · S1 · ROT ❌ schatten_kontrast — (Soll ≥ 3) · ❌ kelvin_abw — (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 502 — Täter: kein Feuer der Menschen an der Pose ({"werk":true,"typ":"glutbrunnen","id":2411,"ort":[0,-30.1682],"third":[0,-30.1682],"vonThird":0,"freiM":16.4827,"spieler":[2.2632,-32.1374],"feldWurf":true,"imVerzeichnis":true,"feuerGesetz":true,"naechste":true,"abM":3}) · keine Leuchte der Gasse mit Farbe gesehen · Attrappe: feuer_mensch 0 < 1 (das Feuer der Menschen an der Pose: das Werk `glutbrunnen` der Station ohne Marke `feldWurf`, im Verzeichnis „licht“ mit LICHT_GESETZ.feuer, die nächste Quelle am Spieler) · pfosten_am_feuer 0 < 1 (der Pfosten des Teils schatten.K5 stand an DIESEM Feuer (Art und Abstand seiner Quelle = die des Werks)) — die Welt änderte sich nicht · schatten_kontrast — statt ≥ 3 · kelvin_abw — statt ≤ 200
+  ROH S1 welt {"quellen":502,"feuer_mensch":0,"pfosten_am_feuer":0} · Pfosten {"quelle":"glutbrunnen","abM":3,"imPool":true,"uhr":0,"boden":0,"pfosten":false,"Llicht":0,"Lschatten":0,"kontrast":null,"kontrolle":null,"n":12,"s":0.03} · Feuer {"werk":true,"typ":"glutbrunnen","id":2411,"ort":[0,-30.1682],"third":[0,-30.1682],"vonThird":0,"freiM":16.4827,"spieler":[2.2632,-32.1374],"feldWurf":true,"imVerzeichnis":true,"feuerGesetz":true,"naechste":true,"abM":3} · fort {"fort":true}
+
+NACHT basis · .k2-erleben-basis.js · LAUF 0.4 s · Exit 0 · Leiter 0.2 s warf: {}
+  @@ 0.2 s · Pfosten (schatten.K5 an stadt-voll third): {"quelle":"laterne_dorf","abM":16.4827,"imPool":true,"uhr":0,"boden":0,"pfosten":false,"Llicht":0,"Lschatten":0,"kontrast":null,"kontrolle":null,"n":12,"s":0.06}
+  S1 ROT · S1 · ROT keine echte GPU (R2): [linse-gpu] ungenannt (kein Log der Sitzung)
+  S1 über die Zeugen ROT · S1 · ROT ❌ schatten_kontrast — (Soll ≥ 3) · ❌ kelvin_abw — (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 502 — Täter: das Maß am Pfosten gilt nicht (im Blick false, im Pool true, ohne Pfosten null, Punkte 12) · keine Leuchte der Gasse mit Farbe gesehen · schatten_kontrast — statt ≥ 3 · kelvin_abw — statt ≤ 200
+  ROH S1 welt {"quellen":502} · Pfosten {"quelle":"laterne_dorf","abM":16.4827,"imPool":true,"uhr":0,"boden":0,"pfosten":false,"Llicht":0,"Lschatten":0,"kontrast":null,"kontrolle":null,"n":12,"s":0.06}
+
+## 3. die Wände
+Proben der Datei (node proben.cjs <stationen>/k2-erleben.js): Kandidat PROBEN 2137 · falsch 0 · Basis PROBEN 2137 · falsch 0
+die Attrappe der Sprosse (ZEIGE=1 node proben.cjs … 'erleben\.bild\.nacht#1$'):
+ROT  DIE ATTRAPPE: der Wortlaut erfüllt, die Welt unverändert · S1 · ROT ✅ schatten_kontrast 3 (Soll ≥ 3) · ✅ kelvin_abw 200 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 1 — Täter: Attrappe: quellen 0 < 1 (Leuchtquellen der Welt, gezählt im Verzeichnis „licht“) · feuer_mensch 0 < 1 (das Feuer der Menschen an der Pose: das Werk `glutbrunnen` der Station ohne Marke `feldWurf`, im Verzeichnis „licht“ mit LICHT_GESETZ.feuer, die nächste Quelle am Spieler) · pfosten_am_feuer 0 < 1 (der Pfosten des Teils schatten.K5 stand an DIESEM Feuer (Art und Abstand seiner Quelle = die des Werks)) — die Welt änderte sich nicht
+liste (node punkte.cjs liste, im Baum von punkte-maschine): Basis 1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0 · Kandidat 1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0 · Basis-Zeilen 1331779, fallen 72, kommen 616
+12 Hunks · karte2.erleben.bild.nacht#1
+12 Hunks · karte2.erleben.bild.nacht#2
+12 Hunks · karte2.erleben.bild.nacht#3
+12 Hunks · karte2.erleben.bild.nacht#4
+12 Hunks · karte2.erleben.bild.nacht#5
+12 Hunks · karte2.erleben.bild.nacht#6
+12 Hunks · karte2.erleben.bild.nacht#7
+12 Hunks · karte2.erleben.bild.nacht#8
+8 Blöcke
+
+## 4. die Geräte (node k5-geraete.cjs · node nacht-geraete.cjs, Messdateien von origin/punkte-maschine)
+nacht#1: 27 Einträge · ROT 17 · UNGEMESSEN 10 · GRÜN 0; jeder ROT mit Zahl am Pfosten: laterne_dorf 2,15 m, Llicht 0 · Lschatten 0 (Kontrast 1,4661–2,6165 aus Schwarz gegen Schwarz)
+schatten.K5#1 (derselbe Teil an der Pose der NEUN):
+  am glutbrunnen: GRÜN 14 · ROT 14 · Kontrast GRÜN Kontrast 5.277 Kontrast 9.2753 
+  am laterne_dorf: GRÜN 1 · ROT 17 · Kontrast GRÜN Kontrast 9.0259 Kontrast 9.0259 
+  am esse: GRÜN 0 · ROT 1 · Kontrast GRÜN 
+  Folge (Datum Datei Urteil Kontrast Quelle abM):
+    11-02T09:21 6a571e3b-radeon.json ROT 0.768:1 glutbrunnen 6.2689
+    11-02T15:40 5fba36ea-radeon.json ROT 0.768:1 glutbrunnen 6.2689
+    11-03T17:14 6eeeb856-radeon.json ROT 1.474:1 glutbrunnen 6.2689
+    11-03T18:13 d880c8e8-radeon.json ROT 1.474:1 glutbrunnen 6.2689
+    11-03T21:34 5edafa2a-radeon.json GRÜN 9.2753:1 glutbrunnen 6.2689
+    11-04T12:31 71ef6a0d-radeon.json ROT 1.3051:1 glutbrunnen 6.2689
+    11-04T12:40 f69a7305-radeon.json UNGEM 10
+    11-04T13:22 2674ff9a-radeon.json GRÜN 7.8487:1 glutbrunnen 6.2689
+    11-04T18:38 23d19f6f-radeon.json GRÜN 7.8487:1 glutbrunnen 6.2689
+    11-07T10:55 eb3cc7f3-radeon.json UNGEM Urteils-Zeile
+    11-07T16:50 95ba6fd6-radeon.json GRÜN 7.8721:1 glutbrunnen 7.9246
+    11-07T22:18 e84fd1fb-radeon.json GRÜN 5.8163:1 glutbrunnen 7.9246
+    11-08T02:18 a7a9d7bf-radeon.json GRÜN 5.8834:1 glutbrunnen 7.9246
+    11-08T06:48 e475c6b4-radeon.json GRÜN 5.8834:1 glutbrunnen 7.9246
+    11-08T14:56 77265b04-radeon.json ROT 2.6433:1 glutbrunnen 6.2689
+    11-08T23:32 46128b75-radeon.json ROT 1.5405:1 glutbrunnen 6.2689
+    11-09T12:48 87537d3f-radeon.json GRÜN 5.8033:1 glutbrunnen 7.9246
+    11-10T09:31 900c28e6-radeon.json GRÜN 5.81:1 glutbrunnen 7.9246
+    11-10T10:21 067bd771-radeon.json UNGEM Urteils-Zeile
+    11-10T10:28 dcc33615-radeon.json GRÜN 5.81:1 glutbrunnen 7.9246
+    11-10T10:57 fbbeb318-radeon.json GRÜN 5.8033:1 glutbrunnen 7.9246
+    11-10T13:28 6aa7a5a6-radeon.json ROT 0.989:1 glutbrunnen 7.9246
+    11-10T17:53 2d5f4146-radeon.json ROT 0.989:1 glutbrunnen 7.9246
+    11-10T18:21 5b9c6427-radeon.json ROT 0.989:1 glutbrunnen 7.9246
+    11-11T04:47 ab2f2eed-radeon.json ROT 0.5474:1 glutbrunnen 3.9061
+    11-11T14:27 e699a834-radeon.json ROT 0.5474:1 glutbrunnen 3.9061
+    11-11T17:25 e6f0cf7e-radeon.json ROT 0.5474:1 glutbrunnen 3.9061
+    11-11T19:01 b0112f7b-radeon.json UNGEM Urteils-Zeile
+    11-11T20:02 df6c4721-radeon.json UNGEM Welt
+    11-11T23:28 c4010773-radeon.json ROT 0.2235:1 laterne_dorf 2.45
+    11-12T04:31 b1531071-radeon.json UNGEM Urteils-Zeile
+    11-12T12:39 3552f058-radeon.json UNGEM Fahrt
+    11-12T15:24 bf2b1a2f-radeon.json GRÜN 5.2776:1 glutbrunnen 9.4054
+    11-12T16:51 4d52c7bc-radeon.json GRÜN 5.277:1 glutbrunnen 9.4054
+    11-12T19:52 350e6b11-radeon.json GRÜN 5.277:1 glutbrunnen 9.4054
+    11-13T00:08 507beba6-radeon.json ROT 0.22:1 laterne_dorf 2.45
+    11-13T04:25 1cd1c408-radeon.json ROT 0.22:1 laterne_dorf 2.45
+    11-13T07:46 dc9eacb0-radeon.json ROT 0.6005:1 glutbrunnen 3.9061
+    11-13T18:01 36f9d45a-radeon.json UNGEM Welt
+    11-13T21:35 ec281422-radeon.json ROT 0.22:1 laterne_dorf 2.45
+    11-14T02:01 7f778d44-radeon.json ROT 0.248:1 laterne_dorf 2.45
+    11-14T03:04 69bdc04c-radeon.json ROT 0.248:1 laterne_dorf 2.45
+    11-14T03:55 4c1b5dc5-radeon.json ROT 0.248:1 laterne_dorf 2.45
+    11-14T04:47 67f300c6-radeon.json ROT 0.248:1 laterne_dorf 2.45
+    11-14T06:34 5096d179-radeon.json ROT 0.248:1 laterne_dorf 2.45
+    11-14T08:18 90c90181-radeon.json ROT 0.248:1 laterne_dorf 2.45
+    11-14T12:27 cec92db1-radeon.json ROT 0.248:1 laterne_dorf 2.45
+    11-14T16:17 337846dc-radeon.json UNGEM Welt
+    11-14T19:43 41ec3a96-radeon.json ROT 0.248:1 laterne_dorf 2.45
+    11-14T22:44 68d24688-radeon.json ROT 0.2482:1 laterne_dorf 2.45
+    11-15T00:50 11d8de3d-radeon.json ROT 0.2482:1 laterne_dorf 2.45
+    11-15T04:04 01a6714a-radeon.json ROT 0.2482:1 laterne_dorf 2.45
+    11-15T04:45 a6555b12-radeon.json ROT 0.2482:1 laterne_dorf 2.45
+    11-15T12:59 4ee205bd-radeon.json ROT 0.2482:1 laterne_dorf 2.45
+    11-17T04:29 ee9c1965-radeon.json GRÜN 9.0259:1 laterne_dorf 2.45
+    11-17T09:31 63655917-radeon.json ROT 0.2484:1 esse 45.4574
