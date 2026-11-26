@@ -1439,7 +1439,11 @@ const { errs, check } = pruefer();
             } finally {
                 delete r._chunkSatzTausch;
             }
-            // der Selbsttest: die alte Verdrängung (am Exemplar, die Methode des Stamms bleibt), drei Ring-Kaskaden
+            // der Selbsttest: die alte Verdrängung (am Exemplar, die Methode des Stamms bleibt), drei Ring-Kaskaden — auf dem
+            // Index des Boden-Satzes, ERZWUNGEN klein wie in der Druck-Phase (er trägt genau die liegenden Abschnitte). Bis
+            // landmarken-geologie trug den Druck der Fels-Satz im Gürtel des Genesis-Orts (15 Bereiche: die Bögen und Türme, die jede
+            // Probe der Saat mit 1,4 % warf); nach dem Gesetz des Orts steht dort keiner, die Wand blieb vakuös.
+            if (bodenS) r._chunkSatzGeometrie(bodenS, bodenS.vKap, bodenS.iEnde);
             r._chunkSatzUmlegen = function (satz, neu, kapNeu, wer) {
                 const h = satz.abschnitte.get("haupt");
                 let summe = 0;

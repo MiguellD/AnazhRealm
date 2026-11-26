@@ -662,11 +662,24 @@ const server = statikServer();
                 __handTakt();
             };
             st.playerMesh.position.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
+            // DIE ZELLEN AM RAND DER FAHRT (F) setzt die Linse selbst: 16 Felstürme auf der Spirale 25–355 m um die Wiese, je
+            // ein Bereich im Fels-Satz — kleine Zellen, deren Fenster eine Fahrt quer zum Blick kreuzt (der Boden trägt nur
+            // Chunk-Zellen zu 43 m). Bis landmarken-geologie lieh sie das Feld (die Saat warf an der Wiese 535 Bögen und Türme
+            // je km²; der Kopf d9513b67 fuhr ohne sie in 8 Strecken ohne Rand 0 Löcher, die Linse fiel STUMPF).
+            let felsen = 0;
+            for (let k = 0; k < 16; k++) {
+                const [a, d] = [0.2 + (k * Math.PI) / 8, 25 + 22 * k];
+                const [fx, fz] = [MESS.x + d * Math.sin(a), MESS.z + d * Math.cos(a)];
+                const fy = r._voxelSurfaceY(fx, fz);
+                if (!Number.isFinite(fy) || !r._landAt(fx, fz, 0.4)) continue;
+                const opt = { silent: true, precise: true, id: `sicht-fahrt-fels-${k}` };
+                felsen += !!r.spawnArchitecture("felsturm", { x: fx, y: fy + 0.5, z: fz }, opt);
+            }
             // einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`)
             const takte = await __weltStehtNach(takt);
             const ring = st.voxelChunks.size;
             r._tickChunkSatz();
-            const aus = { ring, takte };
+            const aus = { ring, takte, felsen };
             const cam = st.camera;
             const S = r._kaskadenSchmier();
             // die Lage des Hauptbilds aus dem Blick der Kamera und die Generation ihres Ankers (D, F)
@@ -1006,7 +1019,7 @@ const server = statikServer();
           neu: ${x.taeter.join(", ")}`
             : "");
     console.log(
-        `  Ring ${befund.ring} Chunks nach ${befund.takte} Takten · Sätze ${befund.saetze.join(", ")} · Höhle ` +
+        `  Ring ${befund.ring} Chunks nach ${befund.takte} Takten · ${befund.felsen} Felstürme der Linse · Sätze ${befund.saetze.join(", ")} · Höhle ` +
             JSON.stringify(befund.hoehle)
     );
     const k = befund.ruheKalt;

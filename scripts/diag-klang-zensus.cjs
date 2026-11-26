@@ -252,34 +252,6 @@ function werkzeug() {
             await sleep(0);
         }
         if (wald) orte.wald = wald;
-        // Dorf: der nächste Glut-Bau (aus der gestreamten Welt um die Wiese), 4 m davor. Die Bauten streamen nach den
-        // Chunks (Pflanz-/Bau-Takt): der Loop läuft weiter, bis einer im Umkreis von 160 m steht (der Deckel zählt Takte).
-        const sucheGlut = () => {
-            let g;
-            for (const e of st.architectures || []) {
-                if (!e || !e.position || !(r._glutFlaeche(e) > 0)) continue;
-                const d = Math.hypot(e.position.x - wx, e.position.z - wz);
-                if (!g || d < g.d) g = { e, d };
-            }
-            return g;
-        };
-        let glut = sucheGlut();
-        for (const weiter = __deckel("eine Glut in Hörweite", 3000); !(glut?.d < 160) && weiter();) {
-            W.takt();
-            st.playerMesh.position.x = wx;
-            st.playerMesh.position.z = wz;
-            await sleep(30);
-            glut = sucheGlut();
-        }
-        if (glut) {
-            const ex = glut.e.position.x;
-            const ez = glut.e.position.z;
-            const d = Math.max(1e-3, glut.d);
-            const bau = { x: ex, z: ez, typ: glut.e.type };
-            orte.dorf = { x: ex + ((wx - ex) / d) * 4, z: ez + ((wz - ez) / d) * 4, glut: bau };
-            // ARMLÄNGE an der Glut: 1 m vor dem Bau (das Knistern aus nächster Nähe — die Spitzen-Probe).
-            orte.glutArm = { x: ex + (wx - ex) / d, z: ez + (wz - ez) / d, glut: bau };
-        }
         // DIE WIESE liegt jenseits der Hörweite jeder Glut (klang-core UMWELT.stimmen.glut.hoerweiteM): an der Mess-Wiese
         // steht ein Dorf des Gesetzes. Das Dorf wächst erst ganz (die Bau-Schlange leer), dann gilt der nächste trockene,
         // ebene Punkt um den Messort, an dem jede Glut außer Hörweite liegt, kein Wasser im Hör-Ring und kein Fluss in seiner
@@ -290,6 +262,31 @@ function werkzeug() {
             await sleep(30);
         }
         const hoerweite = __klangCore.UMWELT.stimmen.glut.hoerweiteM;
+        // Dorf: die Feuerstelle, die der Mensch setzt (die Linse, als Werk: `glutbrunnen`), 4 m davor — am ersten trockenen,
+        // ebenen Platz außerhalb jedes Grundrisses auf der Spirale ab 70 m um den Messort (jenseits ihrer Hörweite + 4 m, die
+        // Wiese bleibt am Messort). Bis landmarken-geologie lieh die Linse die nächste Glut der gestreamten Welt: die
+        // Feuerstelle, die der Glut-Kanal des Felds warf (ein Feuer ohne Menschen, 340 je km² an der Mess-Wiese).
+        let glut = null;
+        for (let rad = Math.max(70, hoerweite + 20); rad <= 160 && !glut; rad += 10)
+            for (let k = 0; k < 16 && !glut; k++) {
+                const [fx, fz] = [wx + rad * Math.sin((k * Math.PI) / 8), wz + rad * Math.cos((k * Math.PI) / 8)];
+                const fy = r._voxelSurfaceY(fx, fz);
+                if (!Number.isFinite(fy) || r._nassAt(fx, fz) || !r._landAt(fx, fz, 0.4) || r._imGrundriss(fx, fz, 1.5)) continue;
+                if (Math.abs(r._voxelSurfaceY(fx + 1.5, fz) - fy) > 0.4 || Math.abs(r._voxelSurfaceY(fx, fz + 1.5) - fy) > 0.4) continue;
+                const opt = { silent: true, precise: true, id: "klang-dorf-feuerstelle" };
+                const e = r.spawnArchitecture("glutbrunnen", { x: fx, y: fy + 0.5, z: fz }, opt);
+                if (e && r._glutFlaeche(e) > 0) glut = { e, d: Math.hypot(e.position.x - wx, e.position.z - wz) };
+            }
+        for (let i = 0; glut && i < 10; i++) (W.takt(), await sleep(30));
+        if (glut) {
+            const ex = glut.e.position.x;
+            const ez = glut.e.position.z;
+            const d = Math.max(1e-3, glut.d);
+            const bau = { x: ex, z: ez, typ: glut.e.type };
+            orte.dorf = { x: ex + ((wx - ex) / d) * 4, z: ez + ((wz - ez) / d) * 4, glut: bau };
+            // ARMLÄNGE an der Glut: 1 m vor dem Bau (das Knistern aus nächster Nähe — die Spitzen-Probe).
+            orte.glutArm = { x: ex + (wx - ex) / d, z: ez + (wz - ez) / d, glut: bau };
+        }
         const gluten = (st.architectures || []).filter((e) => e?.position && r._glutFlaeche(e) > 0);
         // offen wie der Messort: keine dichtere Krone, kein größerer Bestand im 15-m-Kreis (der Waldrand dämpft den Wind)
         const deckMess = r._kronenStreuAt(wx, wz);
