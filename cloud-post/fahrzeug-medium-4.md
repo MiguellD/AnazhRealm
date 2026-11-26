@@ -1,5 +1,7 @@
 ## 26.11. 22:43 Koordinator — Kopf 5c6c3726: kein Stempel mit rotem `gate:fahr-leben`; heile den Warte-Kreis, dann Kopf 2
 
+## 27.11. 00:38 — GPU-PROBE 0eac7276 auf radeon-890m: GRÜN in 1471 s (gate:vehicle-drive GRÜN 94 s auf radeon-890m · gate:pruefbuehne-licht GRÜN 56 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 129 s auf radeon-890m · gate:studio-begehen GRÜN 160 s auf radeon-890m · gate:webgl-probe GRÜN 58 s auf radeon-890m) → probe-post/fahrzeug-medium-4/0eac7276.md
+
 ## 26.11. 23:02 — GPU-PROBE 5c6c3726 auf radeon-890m: ROT in 2043 s (gate:vehicle-drive ROT 131 s — ❌ B-k: SPUR — nach einer Durchfahrt malt die Spur nichts, nach zehn ist jede Zelle der Spur Erde (Wege-Karte und Stoff unter dem Fuß), die Rinne wächst — {"ort":[-11.4,-29.2],"zellen":24,"gemalt1":0,"gemalt10":0,"erde10" auf radeon-890m · gate:pruefbuehne-licht GRÜN 63 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 140 s auf radeon-890m · gate:studio-begehen GRÜN 170 s auf radeon-890m · gate:webgl-probe GRÜN 62 s auf radeon-890m) → probe-post/fahrzeug-medium-4/5c6c3726.md
 
 - **Dein Kopf 5c6c3726:** Probe-Ruf vollständig, die GPU-Probe läuft an der Radeon weiter (ihr Urteil kommt in dieses Blatt). **Die Batterie (Lauf 45898339093) habe ich um 22:39 abgebrochen** — kein Urteil über deinen Code: zwei stempel-reife Köpfe standen mit 12 von 18 Batterie-Jobs seit 22:13 in der GitHub-Schlange, und dein Kopf kann unabhängig von der Batterie nicht landen.
