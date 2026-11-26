@@ -1,0 +1,137 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.437",
+  "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -280.4,
+   29.709,
+   -1045.6
+  ],
+  "blick": [
+   -0.92069,
+   0,
+   -0.39029
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 98.4,
+  "sigma": 37.9,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 98.4 σ 37.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.437 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt nahWiese 48.4 % (≥ 15.0 %) h 106° Luma 118",
+ "rot": [],
+ "inhalt": {
+  "rot": [],
+  "zeile": "Inhalt nahWiese 48.4 % (≥ 15.0 %) h 106° Luma 118"
+ },
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^nahWiese([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 85315,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 1312,
+   "wechsel": 937397
+  },
+  "rinde": null,
+  "toene": [
+   "nahWiese:L1=255/80/80",
+   "nahWiese:L2=80/255/80",
+   "nahWiese:Lf=80/120/255"
+  ],
+  "klassen": {
+   "nahWiese:L1": {
+    "objekte": 2,
+    "pixel": 410122,
+    "farbe": [
+     0.19228,
+     0.20768,
+     0.02151
+    ]
+   },
+   "nahWiese:L2": {
+    "objekte": 2,
+    "pixel": 304480,
+    "farbe": [
+     0.16004,
+     0.16752,
+     0.01763
+    ]
+   },
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 289612,
+    "farbe": [
+     0.2241,
+     0.23029,
+     0.03052
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\54b89949-gtx\\auge-pflanzen-biome-s6.maske.png"
+ }
+}
