@@ -137,6 +137,7 @@ Wände am Kopf: siehe „Kopf“.
 | Station form S2 an der Mess-Wiese, 63 Baupläne: Kipper am Tisch · tan θ ÷ SSF | 25 · 0 kippen (ROT, kippQ 0) | **25 · 25 kippen, 1,001–1,034** |
 | Station form S2: im Kreis liegend · Reifenkraft ÷ SSF · g · Rutscher, die kippen | 0 (liegt 0) · — · 0 von 65 | **9 · 0,962–1,013 · 0 von 65** |
 | Die sechs Straßen-Rezepte (SSF 1,16–1,93) | — | byte-gleich: fahrKipp kehrt vor dem Abheben zurück |
+| Mit dem Kipp (37d51e7 + Modul-Karte): `gate:vehicle-drive` · voller Playtest · `gate:persistence` · `gate:fahr-leben` · `check:statik` | — | GRÜN (A11 GRÜN, Selbsttest GRÜN) · 3 710 ✅, alle Invarianten · 21/21 · nur VK 10 Uhr Warte-Kreis 8>9 (siehe Offen) · GRÜN |
 
 ## Offen (Grund, Messname)
 
