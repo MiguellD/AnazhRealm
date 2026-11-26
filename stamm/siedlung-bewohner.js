@@ -1042,7 +1042,7 @@ class AnazhRealm_siedlung_bewohner {
         const binden = function* (P, namen) {
             for (let v = 0, neu = true; neu && v < 8; v++) {
                 // (`freund`: ein Haus, das Besuch bietet, nimmt ihn nur, wenn dort einer der Seinen wohnt — unten, der Besuch)
-                P.bind = KC.tagesBindung(TC, P.same, P.rolle, P.heimI, orte, (o, i) => P.voll.has(i) || (i !== P.heimI && ortTeil[i] !== P.heimTeil) || (P.freund && i !== P.heimI && o.bietet && o.bietet.besuch > 0 && !P.freund.has(i)), wegZu); // prettier-ignore
+                P.bind = KC.tagesBindung(TC, P.same, P.rolle, P.heimI, orte, (o, i) => P.voll.has(i) || (i !== P.heimI && ortTeil[i] !== P.heimTeil) || (P.freund && i !== P.heimI && o.bietet && o.bietet.besuch > 0 && !P.freund.has(i)), wegZu, P.jahre); // prettier-ignore
                 neu = false;
                 for (const wo of namen) {
                     const i = P.bind[wo];
@@ -1082,11 +1082,13 @@ class AnazhRealm_siedlung_bewohner {
                 S.listeRest--;
                 const g = this._rollGenome(`${plan.seed >>> 0}:${si}:${k}`, "bewohner");
                 // SEIN ALTER (koerper ALTER_GESETZ: die Epoche des Plans, sein Platz im Haushalt — die erste Person erwachsen): wer
-                // jünger ist als kindJ, trägt die Rolle des Kinds (TAGES_GESETZ.rollen.kind: das Spiel vor der Tür, kein Werk)
+                // jünger ist als kindJ, trägt die Rolle des Kinds (TAGES_GESETZ.rollen.kind: das Spiel; sein Alter geht in die Bindung — das fleißige hilft am Werk seines Hauses erst ab kindHilftAbJ)
                 const epoche = { jahr: plan.jahr, rang: k, n };
-                const kind =
-                    this._bewohnerJahre(this._rollGenome(`${plan.seed >>> 0}:${si}:${k}`, "humanoid"), epoche) <
-                    KC.ALTER_GESETZ.kindJ;
+                const jahre = this._bewohnerJahre(
+                    this._rollGenome(`${plan.seed >>> 0}:${si}:${k}`, "humanoid"),
+                    epoche
+                );
+                const kind = jahre < KC.ALTER_GESETZ.kindJ;
                 const heim = yield* ringStand(g, "", ex, ez, ux, uz, null, false, { x: tx, z: tz });
                 if (!heim) {
                     this._bruchMelden(
@@ -1094,7 +1096,7 @@ class AnazhRealm_siedlung_bewohner {
                     );
                     continue;
                 }
-                geboren.push({ sl, si, k, g, rolle: kind ? "kind" : rolle, epoche, tuer, vor, ein, heimI, heim, platz: null }); // prettier-ignore
+                geboren.push({ sl, si, k, g, rolle: kind ? "kind" : rolle, jahre, epoche, tuer, vor, ein, heimI, heim, platz: null }); // prettier-ignore
             }
         }
         // DER STAND AM MARKT GEHT ZUERST AN DEN EINKÄUFER (tages-gesetz, koerper `tagesEinkaeufer`): je Haushalt — die Leute hinter
@@ -1118,7 +1120,7 @@ class AnazhRealm_siedlung_bewohner {
         for (const P of zuerst) P.platz = yield* platzStand(P.g);
         for (const P of geboren) if (!zuerst.has(P)) P.platz = yield* platzStand(P.g);
         yield* anschliessen();
-        for (const { sl, si, k, g, rolle, epoche, tuer, vor, ein, heimI, heim, platz } of geboren) {
+        for (const { sl, si, k, g, rolle, jahre, epoche, tuer, vor, ein, heimI, heim, platz } of geboren) {
             yield;
             const same = Math.floor(g.axis("tag") * 4294967296) >>> 0;
             // DIE BINDUNG (`binden`): das Werk, der Tisch, der Abend — der Besuch folgt, wenn jeder steht
@@ -1126,6 +1128,7 @@ class AnazhRealm_siedlung_bewohner {
                 g,
                 same,
                 rolle,
+                jahre,
                 heimI,
                 heim,
                 heimTeil: teilVon(heim),
@@ -1156,7 +1159,7 @@ class AnazhRealm_siedlung_bewohner {
             const satz = {
                     sied: S,
                     heim: sl.seed >>> 0, rolle, beruf, same, epoche,
-                    orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null, spiel: null, einkauf: null },
+                    orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null, spiel: null, einkauf: null, hilft: !!bind.hilft },
                     seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
                     genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, koennen: u, beinL: u, tempo: u, tempoBand: u, gangTempo: u, satzOrt: u,
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
@@ -2212,16 +2215,27 @@ class AnazhRealm_siedlung_bewohner {
                 b.kreis = kreis;
                 const rN = b.nah ? BW.nahM + BW.nahHystM : BW.nahM;
                 if (kreis && ad2 < rN * rN) {
-                    // die Bedeutung (`_bedeutung`: Größe am Schirm mal Gang), wer lebt, mit der Hysterese der Gestalt bedeutender
-                    const bd = this._bedeutung(g.scale.y || 1, Math.sqrt(ad2), b.weg ? b.tempoJetzt : 0, g.position);
-                    b.bedeutung = b.nah ? bd / (1 - u._gelenk.hyst) ** 2 : bd;
-                    nah.push(b);
+                    // DIE BEDEUTUNG DES MENSCHEN IST SEINE GRÖSSE AM SCHIRM (`_bedeutung` ohne Gang; stand-lebt — der Schöpfer am Dorfplatz:
+                    // „die Personen stehen wie Puppen“): im Satz geht der Gang mit (`_bewohnerGangSchritt`: Phase und Gewicht), der Stand
+                    // erstarrt — ihm fehlen Atem, Haltung und Blick, und Stehen ist die häufigste Lage am Platz. Bis hier wog der Gang doppelt
+                    // (1 + Tempo / bewegungMS): der Stehende verlor gegen jeden Gehenden bis zum doppelten Abstand (Teil 1/3 an 40c7113c:
+                    // das häusliche Kind #16036 in 5,60 m ohne Leib, fünf Täter blind).
+                    const bd = (b.bedeutung = this._bedeutung(g.scale.y || 1, Math.sqrt(ad2), 0, g.position));
+                    // DIE SCHWELLE AM SCHIRM (Koordinator 26.11.: wer am Schirm groß genug ist, trägt den Leib): seine kleinste Regung im
+                    // Stand (`leibRegungM`) trägt einen Bildpunkt (LOD_SCHIRM.px) — die Hysterese in Bildpunkten (LOD_SCHIRM.hyst), nie im
+                    // Rang. Bis hier lebten die vier Bedeutendsten (`nahLeiber` 4): am Brunnen nächst dem Platz von stadt-voll um 13 Uhr
+                    // stand wohnhaus #742379 in 7,54 m im Bild (98 px Bedeutung) ohne Leib, der Fünfte hinter vier anderen, alle stehend.
+                    const L = AnazhRealm.LOD_SCHIRM;
+                    if (bd * BW.leibRegungM >= L.px * (b.nah ? 1 - L.hyst : 1)) nah.push(b);
                 }
             }
             S.ankunftOffen = ankuenfte >= BW.ankunftJeTakt; // es warten noch Ankünfte (der Verkehr hält, `_verkehrFolge`)
-            // DIE NAH-WAHL: höchstens `nahLeiber` der Bedeutendsten leben (Gang, Atem, Stufen, Blick des Leibs) — jeder andere im
-            // Nah-Kreis steht im Satz seiner Gestalt; der Wechsel schaltet nur `visible` und schreibt die Sätze neu
-            nah.sort((a, b) => b.bedeutung - a.bedeutung);
+            // DIE NAH-WAHL: jeder über der Schwelle lebt (Gang, Atem, Stufen, Blick des Leibs), bis der PREIS voll ist (`nahLeiber`
+            // aus dem Band p95 am Messort, `BEWOHNER.preis`) — dann die Größten am Schirm, wer lebt, mit der Hysterese seiner Gestalt
+            // vorn (gleich Große tauschen nicht je Takt); jeder andere im Nah-Kreis steht im Satz seiner Gestalt; der Wechsel schaltet
+            // nur `visible` und schreibt die Sätze neu
+            const vorn = (o) => o.bedeutung / (o.nah ? (1 - o.leib.userData._gelenk.hyst) ** 2 : 1);
+            nah.sort((a, c) => vorn(c) - vorn(a));
             if (nah.length > BW.nahLeiber) nah.length = BW.nahLeiber;
             // DER LEIB IM RING (w28-leib-im-ring): wen die Wahl trifft, dem zieht sein Leib in die Hülle (`_bewohnerLeibAn`,
             // unter dem Deckel der Geburten) — bis dahin trägt ihn der Satz, wie jeden anderen im Nah-Kreis. Wen die Wahl trifft
@@ -2669,7 +2683,7 @@ class AnazhRealm_siedlung_bewohner {
         const RO = KC.TAGES_GESETZ.rollen;
         const [gaeste, wer] = [[], []];
         const kand = L0.filter((b) => b.koennen && b.genom && !(RO[b.rolle] && RO[b.rolle].regenfest));
-        const wo = kand.map((b) => ({ abend: b.orte.abend, heim: b.orte.heim }));
+        const wo = kand.map((b) => ({ abend: b.orte.abend, heim: b.orte.heim, same: b.same }));
         for (const i of KC.spielGaesteWahl(wo, mx, mz, R)) {
             const b = kand[i];
             const d = this._dialsAusGenom(b.genom);
@@ -4793,7 +4807,8 @@ AnazhRealm.RAUCH_BILD = Object.freeze({
 // stehen am Tag auf dem Dorfplatz · raumM = der persönliche Raum zwischen zwei Ständen · saumM = der Saum um jeden Grundriss ·
 // geburtenJeTakt = Leiber je Takt (Klon aus dem Memo ~1 ms; das Werk der Liste rechnet unter der EINEN Frist der Bau-Arbeit,
 // `_bewohnerWerkTakt`) · fernFaktor = jenseits nearM × fernFaktor gehen die Leiber ·
-// nahM (+ nahHystM zurück) / nahLeiber = so nah und so viele leben als Leib (Atem, Stufen), jeder andere im Nah-Kreis steht
+// nahM (+ nahHystM zurück) = so nah lebt als Leib (Atem, Stufen), wer am Schirm groß genug ist (`leibRegungM`), bis der Preis voll ist
+// (`preis` → nahLeiber, der Ring `ringLeiber` hält zwei mehr); jeder andere im Nah-Kreis steht
 // im Satz seiner Gestalt (`_bewohnerSatz`: die Befehle hängen nie an der Kopfzahl; wo der Satz dem Feld weicht, sagt das Stufen-
 // Gesetz, `_feldGrenzen` mit LOD_SCHIRM.leib) · gangPhasen = die Phasen des Doppelschritts im Gang-Puffer, gangJeTakt = so viele backt ein
 // Takt · platzRandM = so weit vom Rand des Platzes steht, wer auf ihm keinen Stand fand. DER TAG (mensch.K2): planH = so viele
@@ -4923,9 +4938,21 @@ AnazhRealm.BEWOHNER = Object.freeze({
     fernFaktor: 1.25,
     nahM: 8,
     nahHystM: 1,
-    nahLeiber: 4,
+    // DIE SCHWELLE DES LEIBS (Koordinator 26.11., `_tickBewohner`): seine kleinste Regung im Stand trägt am Schirm einen Bildpunkt —
+    // die Gewichtsverlagerung des ruhigen Stands 17–35 mm (Duarte & Zatsiorsky 1999), die untere Grenze
+    leibRegungM: 0.017,
+    // DER PREIS DER LEIBER (Koordinator 26.11.: die Zahl begrenzt allein der Preis, nie die 4 aus der Zeit vor ihm): am Messort
+    // stadt-voll (GTX 1060, echte GPU, Mittag, ABAB Deckel 4 ↔ 64 je 20 s) trugen 9 Leiber den CPU-Takt p95 `ms`, je Leib
+    // `jeLeibMs` (das Mittel beider Paare: +2,66 und +0,79 ms für 5 Leiber); das Bild-p95 ging 41,63 → 41,66 und 33,38 → 33,42 ms
+    // (das zweite Vsync-Quantum mit 4 wie mit 9). So viele leben, bis der Takt das Band `bandMs` trägt; der Ring hält zwei mehr.
+    preis: Object.freeze({ bandMs: 33, leiber: 9, ms: 29.14, jeLeibMs: 0.345 }),
+    get nahLeiber() {
+        return this.preis.leiber + Math.floor((this.preis.bandMs - this.preis.ms) / this.preis.jeLeibMs);
+    },
     ringHystM: 3,
-    ringLeiber: 6,
+    get ringLeiber() {
+        return this.nahLeiber + 2;
+    },
     gangPhasen: 16,
     // die Achsen seines Gemüts (`_bewohnerGemuet`): die Furcht, die er erinnert — die Stände des Satzes lesen sie (`_bewohnerStaende`)
     gemuet: Object.freeze(["sorrow", "chaos"]),
