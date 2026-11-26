@@ -352,7 +352,13 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                     out.shaLeserSaaten = {};
                     const seedAlt = s.worldMeta.seed;
                     const macroAlt = s.worldMeta.macro;
+                    const erdbauAlt = s.worldMeta.erdbau;
+                    // DIE WELTGRENZE (erdbau-boeschung, wie `gebaut`): eine frische Saat trägt nie den Erdbau der Boot-Welt —
+                    // bis hier lag der Genesis-Ort der Boot-Saat (Rondell 90,31 m) im Abdruck jeder Sweep-Saat
                     const regenesis = (saat, macro) => {
+                        if (saat !== seedAlt) s.worldMeta.erdbau = {};
+                        else if (erdbauAlt === undefined) delete s.worldMeta.erdbau;
+                        else s.worldMeta.erdbau = erdbauAlt;
                         s.worldMeta.seed = saat;
                         if (macro !== undefined) s.worldMeta.macro = macro;
                         else delete s.worldMeta.macro;
@@ -1901,7 +1907,7 @@ async function gebaut(page) {
         console.log("  ⛔ GEBAUT: Boot nicht bereit nach 120 s");
         return 1;
     }
-    const { alle, stoerung } = await page.evaluate(
+    const { alle, stoerung, grenzeGestoert } = await page.evaluate(
         async (saaten, selbst) => {
             const s = st;
             await window
@@ -1979,11 +1985,34 @@ async function gebaut(page) {
             const bootMacro = s.worldMeta.macro;
             // die chirurgische Regenesis der Abdruck-Probe (die Ströme; das Netz des Gesetzbuchs ist je Saat gemerkt), dazu die
             // Hydrosphäre der Saat aus dem Faden (ihre Kacheln fallen; der Weg der Weltgen)
-            const regenesis = async (saat, macro) => {
+            // DIE WELTGRENZE (erdbau-boeschung): der Erdbau der Welt davor fällt, bevor die Saat ihren Genesis-Plan bestellt —
+            // eine neue Welt trägt nie den Grund der alten (`_weltMetaWechsel`). Bis hier blieb er: der Plan der Sweep-Saat las ihn
+            // im Faden (`ortCtx.hoeheAt`), sein Rondell stand auf 90,31 m über 37,64 m (alpha) und 35,11 m (beta) Naturboden — ein
+            // Hügel von 53 m, den kein Boot baut. `altGrund`: die Regenesis des alten Gesetzes (der Selbsttest, `planGrund`).
+            const regenesis = async (saat, macro, altGrund) => {
+                if (!altGrund) {
+                    for (const k of Object.keys(s.worldMeta.erdbau || {})) r._erdbauOrtFaellt(k);
+                    delete s.worldMeta.genesisOrt;
+                }
                 s.worldMeta.seed = saat;
                 if (macro !== undefined) s.worldMeta.macro = macro;
                 else delete s.worldMeta.macro;
                 await r._worldgenComputeAndBuildHydrosphere();
+            };
+            // DER PLAN STEHT AUF SEINER WELT (die Linse der Weltgrenze): das Rondell des Genesis-Plans (die Platte an der Mitte
+            // seines Orts) auf dem Boden seiner Saat ohne Erdbau (`_terrainSaatY`) — Abstand in m; ohne Plan null
+            const planGrund = () => {
+                const g = s.worldMeta.genesisOrt;
+                const P = g && (s.worldMeta.erdbau || {})[g.key];
+                let best = null;
+                for (const p of P || []) {
+                    if (p.art !== "platte") continue;
+                    const d = Math.hypot(p.cx - g.x, p.cz - g.z);
+                    if (!best || d < best.d) best = { d, y: Number(p.y) };
+                }
+                if (!best) return null;
+                const boden = r._terrainSaatY(g.x, g.z, true);
+                return { y: +best.y.toFixed(2), boden: +boden.toFixed(2), ab: +Math.abs(best.y - boden).toFixed(2) };
             };
             const out = [];
             for (const saat of [bootSaat, ...saaten.filter((x) => x !== bootSaat)]) {
@@ -2003,10 +2032,20 @@ async function gebaut(page) {
                     voll: kurz(G.statistik(voll, n, S, wl, [], 0)),
                     ohneKanal: kurz(G.statistik(ohne, n, S, wl, [], 0)),
                     makro: kurz(G.statistik(Hm, n, S, wl, [], 0)),
+                    grund: planGrund(),
                 });
             }
             if (s.worldMeta.seed !== bootSaat) await regenesis(bootSaat, bootMacro);
             let stoerung = null;
+            let grenzeGestoert = null;
+            if (selbst) {
+                // die Störung der Weltgrenze: die Regenesis des alten Gesetzes (der Erdbau der Boot-Saat bleibt) in die erste
+                // fremde Saat — der Plan der Linse MUSS dort auf fremdem Grund stehen; danach die Boot-Saat mit ihrer Grenze
+                const fremd = saaten.find((x) => x !== bootSaat);
+                await regenesis(fremd, undefined, true);
+                grenzeGestoert = { seed: fremd, grund: planGrund() };
+                await regenesis(bootSaat, bootMacro);
+            }
             if (selbst) {
                 // die Störung: die Bett-Tiefe des alten Gesetzes (der Kanal als Graben unter der Aue: ohne `kanalTiefe`)
                 await ausDemFaden({ ...AnazhRealm.HYDROSPHERE, kanalTiefe: Infinity });
@@ -2015,12 +2054,14 @@ async function gebaut(page) {
                 await ausDemFaden(null);
                 stoerung = kurz(G.statistik(gestoert, n, S, wl, [], 0));
             }
-            return { alle: out, stoerung };
+            return { alle: out, stoerung, grenzeGestoert };
         },
         REALISMUS_SAATEN,
         SELBSTTEST
     );
     const gruen = (x) => x.senken <= 1 && x.dorf >= 3;
+    // die Weltgrenze: das Rondell des Genesis-Plans steht ≤ 0,5 m über oder unter dem Boden seiner Saat (null: kein Plan)
+    const aufSeinerWelt = (g) => !!g && g.ab <= 0.5;
     // der Mäander im Wasser: Median der Sinuosität der flachen 400-m-Fenster ≥ 1,25 (ohne flaches Fenster kein Urteil)
     const maeanderGut = (m) => !m.fenster || m.sinuositaet >= 1.25;
     let rot = false;
@@ -2039,6 +2080,17 @@ async function gebaut(page) {
             rot = true;
             console.log(
                 "  ⛔ das Wasser läuft gerade: die Fluss-Punkte folgen der Sehne, nicht der Bahn (`hydroNetzFluesse` liest `bahn` des Kerns)"
+            );
+        }
+        console.log(
+            `  Weltgrenze: Rondell des Genesis-Plans ${out.grund ? `${out.grund.y} m über Boden ${out.grund.boden} m (Abstand ${out.grund.ab} m)` : "– (kein Plan)"}`
+        );
+        if (!aufSeinerWelt(out.grund)) {
+            rot = true;
+            console.log(
+                out.grund
+                    ? `  ⛔ DIE REGENESIS TRÄGT DEN GRUND DER WELT DAVOR: der Genesis-Plan der Saat ${out.seed} las den Erdbau der alten Welt im Faden (\`ortCtx.hoeheAt\`) — die Linse mäße einen Hügel, den kein Boot baut (\`regenesis\` ohne Weltgrenze)`
+                    : `  ⛔ OHNE PLAN: die Saat ${out.seed} trägt keinen Genesis-Plan — die Weltgrenze bleibt ungemessen`
             );
         }
         if (!out.hydro || !out.fluesse) {
@@ -2070,6 +2122,12 @@ async function gebaut(page) {
             `\n  Selbsttest-Störung (Bett-Tiefe des alten Gesetzes, Saat ${alle[0].seed}): Senken>1m ${st ? st.senken : "–"}/km² · Dorfplätze ${st ? st.dorf : "–"} → ${blind ? "⛔ SELBSTTEST ROT: die Störung blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Störung färbt den Boden rot"}`
         );
         if (blind) rot = true;
+        const g = grenzeGestoert;
+        const grenzeSieht = !!g && !!g.grund && !aufSeinerWelt(g.grund);
+        console.log(
+            `  Selbsttest-Weltgrenze (Regenesis ohne Grenze in ${g ? g.seed : "–"}): Rondell ${g && g.grund ? `${g.grund.y} m über Boden ${g.grund.boden} m` : "–"} → ${grenzeSieht ? "✅ rot erkannt" : "⛔ blind"}`
+        );
+        if (!grenzeSieht) rot = true;
     }
     console.log(
         `\n${rot ? "⛔ GEBAUTER BODEN ROT" : `✅ GEBAUTER BODEN GRÜN: Senken und Dorfplätze im Korridor, ${alle.length} Saaten`}\n`
