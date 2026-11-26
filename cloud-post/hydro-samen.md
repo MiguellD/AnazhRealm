@@ -76,6 +76,15 @@ Tore an diesem Stand: `gate:worker-dichte` ganz grün (`--selftest` 32 s · `--k
 `--faden --planet --selftest` 43 s mit K8, auf main ROT an K8 · `diag-planet --anker` 6 s) · `npm run check:statik` grün (die Wachstums-Wand braucht
 `origin/integ-probe` im Klon) · `diag-atlas --check` · `npm run stamm:lint` · `npm run lint` 0 Fehler · Prettier.
 
+**Das Bild** (`cloud-post/hydro-samen-bild/flussnetz-welt-und-drei-saaten.jpg`: die Heim-Region aus `_hydroSaat` im gebooteten
+Spiel, Relief aus der Höhe der Lage je Saat, die Läufe nach Mündung gefärbt — Zufluss hellblau, Rand magenta): die Welt-Saat
+21 Läufe (Zufluss 6 · Rand 15 — dieselben 21 wie `st.hydrosphere`), same-saat-0 54 (22 · 32), same-saat-29 41 (28 · 13),
+same-saat-33 21 (4 · 17) — vier eigene Netze, keines ein Abzug der Welt. Rand 77 von 137 Läufen = 56 %, wie über 101 Saaten (§ 5);
+Meer und See 0 in diesen vier (Binnen-Kacheln). Was das Auge außerdem liest: die Hauptläufe mäandern, die Zuflüsse laufen als
+Geraden bis ≈ 600 m — Gesetz des Kerns (`MAEANDER`, gelaende-core :854: gerade ab 1,5 % Gefälle) —, und an Knoten des Netzes
+münden 4 bis 8 Zuflüsse in EINEN Punkt (Welt-Saat 6, same-saat-29 8, im Bild gezählt). Die Sterne trägt schon die Standard-Welt;
+sie sind das Netz `flussLaeufe`, nicht dieser Schnitt, und das Maß der Sprosse (bergab in Senke oder Meer) zählt sie nicht.
+
 ## 4 · Der Vorschlag für die Station (Zweig `punkte-maschine`, setzt der Koordinator)
 
 `cloud-post/hydro-samen-station.diff` gegen `meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js:8865`
@@ -98,11 +107,11 @@ Ende über `mouth`/`inLake`; die Zeugen tragen die Mündungs-Klassen (`meer` · 
 - **Ferne Kacheln eines fremden Samens:** `_hydroSaat(samen, origin)` nimmt die Ecke, K8 misst nur die Heimat (`origin` null) —
   ungemessen.
 
-Kopf: der Schnitt ist der WIP-Commit `Schnitt hydro-samen` (SHA in § 6), der Vorprüf-Kopf ist der Commit, der dieses Blatt trägt.
-
 ## 6 · Kopf
 
-(folgt mit dem Vorprüf-Kopf)
+Schnitt: `cb3e2520c0882c5425327e64affd79253e1027f9` (WIP `Schnitt hydro-samen`). Der Vorprüf-Kopf ist der Commit, der dieses
+Blatt trägt (Betreff „Vorprüfung hydro-samen 1 (auf main 2da17e2e)“), auf main `2da17e2e72e57ee227b2f393f4a9eff074c23813`;
+`git merge-tree --write-tree origin/main HEAD` konfliktfrei (Baum `8957e664`, vor dem Blatt-Commit gerechnet).
 
 ## Äußere Quelle (Band)
 
