@@ -2373,8 +2373,10 @@ class AnazhRealm_stoff_material {
             if (licht) {
                 const glut = atmo.lichtGlut[licht];
                 if (!glut) throw new Error(`_leuchtStoff: das Licht-Datum „${licht}“ fehlt im Leuchtquellen-Gesetz`);
-                // die Leuchtdichte des Datums steht im Bild: ein durchsichtiges Glas mischt sein Fragment mit seiner Deckkraft
-                // (0,42) — ohne die Teilung trüge das Fenster 42 % seiner cd/m². DAS GLAS EINER LEUCHTE (nacht-lichter, Datum mit
+                // die Leuchtdichte des Datums steht GANZ im Bild: das Gesetz der Scheibe (`__weltLicht.scheibe`) teilt das
+                // Fragment durch seine Blende — bis fahrzeug-gestalt teilte hier jedes Datum durch die Deckkraft (0,42), und im
+                // Bau-Satz (Deckkraft je Ecke, `materialOpacity` 1) trug das Fenster 42 % seiner cd/m². Ein Datum an einem Stoff,
+                // der keine Scheibe ist, bricht laut. DAS GLAS EINER LEUCHTE (nacht-lichter, Datum mit
                 // `glasStreu`): die Glut ist seine Leuchtdichte je Luma der Vertex-Farbe (`_leuchtFlaeche`), die Ecke trägt im Ton
                 // die Bestrahlung ihrer Flamme (fachwerk `laterneGlasTon`) — die Scheibe ist in der Mitte hell, an der Ecke 3 EV
                 // dunkler. Bis hier stand der Kopf flach in 640 cd/m² (nachts das Glas als ein Fleck Orange).
@@ -2383,7 +2385,11 @@ class AnazhRealm_stoff_material {
                     LGl && LGl.glasStreu > 0
                         ? glut.mul(Te.dot(Te.attribute("color", "vec3"), Te.vec3(0.2126, 0.7152, 0.0722)))
                         : glut;
-                em = em.add(jeEcke.div(Te.materialOpacity));
+                if (!mat.userData.scheibe)
+                    throw new Error(
+                        `_leuchtStoff: das Licht-Datum „${licht}“ an einem Stoff, der keine Scheibe ist (Seh-Klasse glas, Deckkraft < 1)`
+                    );
+                em = em.add(jeEcke);
             }
             knoten[fach] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null, !!fern));
         }
