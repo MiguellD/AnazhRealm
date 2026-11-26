@@ -122,3 +122,65 @@ Alles nach `eingang/` mit dem INDEX. Befunde am Code: je Befund der Commit, an d
 - Der Maßstab ist Weltklasse. Sag mir, wo ein Bild von mir „Spiel“ verrät — beim Namen, mit dem Merkmal.
 
 Stand heute: Karte 2 gebucht 126 von 1 718, Ziel 17.12.
+
+
+# Auftrag 3 an Grok — Urteil über die Lieferung und die nächsten Bänder (26.11.2026, 17:30)
+
+Gelesen: INDEX, MERKMALE.md, die vier Bänder, beide Anker-Lieferungen, deine 19 Prüfer-Antworten; vier Bilder mit eigenem Auge.
+
+## Was trägt (Rangfolge nach Wert für die Karte 2)
+
+1. **Bänder** — 57 Zeilen mit Quelle und Stelle: das ist die Form, die hier zu Gesetzen wird. Vier sichtbare Fronten bekommen daraus ihre
+   Zahl: Feuerstellen (2,45 Ereignisse und 250 min je Tag, Spitzen 7–8 h und 18–20 h) · Nacht-Licht (mondlos < 0,006 lx, Feuer 19,2 lx in
+   40 cm, Reichweite 3,30 m) · Platz-Leben (55–70 % in Gruppen, Paar-Abstand 0,78 m) · Gang (1,45 m/s, Doppelschritt 1,51 m).
+2. **Anker-Listen** — 1 135 Zeilen mit belegter Wahrheit: daraus wird die Eichung des Blind-Prüfers.
+3. **MERKMALE.md + messen.py** — der Griff ist nachmessbar, das ist sein Wert. Die Soll-Zahl stammt aus einem erzeugten Bild und ist darum
+   Richtung, nie Beleg; maßgeblich bleibt das Band.
+4. **Referenzblätter** — 14 von 25 mit Mängeln, das Geh-Phasenblatt zeigt acht fast gleiche Posen, kein Leser hier konsumiert sie.
+   Dieser Strom ruht, bis eine Sprosse ein Blatt beim Namen verlangt.
+
+## Deine Frage zu „Boden R/G 2,9“
+
+Andere Region. 2,93 war der Boden IM LICHTKREIS unter der nahen Laterne (Genesis-Platz, Mitternacht ohne Mond; nach dem Licht-Schnitt
+2,25), nicht `ground_fore`. Dein Griff `ground_fore` Median(R/G) 1,671 → 1,355 gilt als eigene Zahl. Bitte lege in MERKMALE.md einen
+zweiten Griff „Boden im Lichtkreis“ als Rechteck am Soll-Bild 04 fest (unter der Laterne, keine Flamme im Feld) und miss beide Bilder
+daran, dazu R/B.
+
+## Rang 1 — Bänder (≤ 15 Zeilen je Achse, Primärmessung zuerst, zweite Hand mit `bedingung=unsicher`)
+
+Die Lücken der vier Achsen, in dieser Reihenfolge:
+
+a. **feuerstellen** — Anteil der Haushalte mit brennendem Feuer je Stunde der Nacht · Dauer der Glut nach dem letzten Nachlegen · Herd innen
+   gegen außen nach Klima · offene Feuer im Freien je 100 Einwohner bei Nacht.
+b. **platz-leben** — Anteile gehend, stehend, sitzend nach Tageszeit · Verweildauer · Kopfwendungen und Gesten je Minute im Gespräch ·
+   Wechsel des Standbeins je Minute.
+c. **nacht-licht** — Kerze, Öllampe, Laterne (cd, Farbtemperatur) · Halbmond (lx) · Beleuchtungsstärke gegen Sonnenhöhe von +5° bis −18° ·
+   Zeitkonstanten der Dunkel- und Hell-Anpassung des Auges.
+d. **gang** — Spannen der Gelenkwinkel von Hüfte, Knie und Sprunggelenk über den Zyklus · vertikale Auslenkung des Kopfs · Armschwung gegen
+   Tempo · Wolf und Hirsch.
+
+Neue Achsen — Sprossen, deren Station heute rot mit benanntem Täter steht:
+
+e. **gezeiten** — Periode 12,42 h · Springtide ÷ Nipptide · Hub nach Küstenform (offene Küste, Schelf, Bucht, Binnenmeer) · Breite des
+   Watts gegen Hub und Gefälle.
+f. **rollen** — Bewaffnete, Wachen, Jäger und Fuhrleute je 100 Einwohner nach Epoche und Größe der Siedlung · Länge und Takt einer Streife.
+g. **kuesten-winter-sued** — Winter-Normalwerte 1991–2020 von Stations-Paaren gleicher Breite, Westküste gegen Ostküste, Südhalbkugel.
+h. **stimme** — Lage der Formanten F1 bis F3 und Grundfrequenz nach Alter und Geschlecht, mit Streuung.
+i. **verkehr** — Tempo und Abstand von Karren, Fuhrwerk und Wagen nach Wegart und Epoche.
+
+## Rang 2 — Blind-Prüfer
+
+- Dein Befund zu 2afc 03–09 ist angenommen: diese Teile eichen Störungs-Erkennung, nicht Echtheit. Die Echtheits-Eichung baue ich aus deinen
+  Listen (echtes Foto ↔ Spielbild derselben Klasse, ohne künstliche Störung); du bekommst sie als neues Blatt in `blatt/`, gleiche Form,
+  frischer Kontext je Teil.
+- `bodentyp-anschnitt` auf ≥ 150 Zeilen (nur gemeinfrei oder CC0). Neue Klassen mit belegter Wahrheit: Tageszeit am Licht (Uhrzeit und Ort
+  der Aufnahme belegt) · Jahreszeit · Wetterlage.
+
+## Rang 3 — die Kritik um 07:00
+
+Je Tag eine Zwillings-Jagd im gelandeten Diff: wo erklärt ein Gesetz den Konsum, während ein vereinfachter Zweig rechnet — mit Datei:Zeile.
+Jede Zahl mit dem Kopf (acht Zeichen), an dem du sie gelesen hast.
+
+## Die Grenze (unverändert)
+
+Nichts Erzeugtes wird Asset oder Beleg · kein Code ins Repo · keine Läufe an den Geräten · jede Meldung geht durch meine Prüfung.
