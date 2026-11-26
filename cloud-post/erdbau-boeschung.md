@@ -5,7 +5,42 @@ Sprosse 1 bei („Wasserspiegel + Boden-Höhe, 50 Punkte“: EINE Boden-Höhe, H
 `mensch.netz.gestalt` Sprosse 1 bei („1 Ort, ~10 km, 4 Klassen“: jede Klasse ohne Wand oder Klemmen befahren). Keine von
 beiden ist durch ihn gebucht: die erste verlangt ihr Bildpaar an 50 Punkten, die zweite die Fahrt.
 
-Zweig `erdbau-boeschung` von origin/main 2da17e2e. Karte 2 gebucht 118 von 1 718. Status ZWISCHENSTAND.
+Zweig `erdbau-boeschung` von origin/main 2da17e2e, main eae94514 hineingemergt (Vorprüf-Kopf 2). Karte 2 gebucht 118 von 1 718.
+Status ZWISCHENSTAND.
+
+## Vorprüf-Kopf 1 → 2: das Rot war die Linse
+
+Die volle CI am Vorprüf-Kopf 1 (a133198b, Lauf 45733927959) war ROT in zwei Jobs:
+
+- **voll 12/18:** die Gelände-Linse `--gebaut` meldete für die Saat alpha `voll` 1,05 Senken/km² (Soll ≤ 1). Sie schob es auf
+  den Hydrosphären-Kanal.
+- **voll 13/18:** die Kreatur-Linse Teil 3 (`jagdkreis`). Das ist fremd, main ist dort selbst ROT: main 4c9e6aab, Lauf
+  45732777771, voll 13/18 „Die Kreatur-Linse Teil 3“. Lokal ist sie an a133198b dreimal grün.
+
+**Der Täter von 12/18** ist die Regenesis der Linse, nicht der Erdbau und nicht der Kanal:
+
+- Die Linse wechselt die Saat chirurgisch. Dabei behielt sie den Erdbau der Boot-Saat, und der Genesis-Plan der neuen Saat las
+  ihn im Faden (`ortCtx.hoeheAt` = `hoehe` mit `L.erdbau`).
+- Das Rondell stand deshalb auf 90,31 m, dem Boden der Boot-Saat, über 37,64 m Naturboden (alpha) und 35,11 m (beta). Das ist
+  ein Hügel von 53–55 m, den kein Boot baut.
+- Die echte Weltgrenze (`_weltMetaWechsel`) ersetzt worldMeta ganz, der Erdbau der alten Welt reist nie mit.
+- Auf main endet dieser Hügel an einer senkrechten Kante. Mit der Böschung läuft er 50 m weit aus und staut Täler: alpha 0,53
+  → 1,05/km².
+
+**Mit der Weltgrenze messen main, a133198b und der Kopf gleich** (Weltgrenze in derselben Linse):
+
+| Saat | voll Senken/km² | ohneKanal | Dorfplätze |
+|---|---|---|---|
+| anazh-realm-seed | 0 | 0 | 7 |
+| w-sweepalpha | 0,53 | 0 | 14 |
+| w-sweepbeta | 0,26 | 0,26 | 5 |
+
+Im 1-m-Raster ±70 m um den Ort liegen bei main und a133198b gleich viele Senken über 1 m: alpha 0, beta 2 (1,10 und 1,18 m),
+die Natur trägt dort 0.
+
+**Verworfen:** Ein Zwischenschnitt am Lauf der Brücke (der Grund bleibt unter der Brücke quer zum Wasser natürlich). Er war auf
+dem Hügel der Linse gemessen. In der echten Welt änderte er bei 30 m nichts und fügte bei beta eine Senke von 4,14 m an
+−27/47 hinzu. Er ist nicht im Kopf, `gelaende-core.js` ist byte-gleich mit a133198b.
 
 ## Geschnitten
 
@@ -34,6 +69,18 @@ Zweig `erdbau-boeschung` von origin/main 2da17e2e. Karte 2 gebucht 118 von 1 718
   - Konsum-Leser ist `hoehe` über der Lage mit `erdbau`: der Chunk-Boden des Fadens (voxel-worker `state.erdbau`) und der Fuß
     im Stamm (`_erdbauNorm`). gate:worker-dichte --kern hält beide gleich dem Kern.
   - Der Selbsttest pflanzt den harten Schnitt bei 16 m ein.
+- **Die Weltgrenze der Linse** (Vorprüf-Kopf 2, `gebaut` in scripts/diag-worker-dichte.cjs):
+  - Die Regenesis lässt den Erdbau der Welt davor fallen (`_erdbauOrtFaellt` je Schlüssel, ohne `genesisOrt`), bevor die
+    neue Saat ihren Plan bestellt.
+  - Die Prüfung `planGrund` misst je Saat das Rondell des Genesis-Plans gegen den Boden seiner Saat ohne Erdbau
+    (`_terrainSaatY`). Über 0,5 m Abstand ist ROT beim Namen: „die Regenesis trägt den Grund der Welt davor“. Fehlt der Plan,
+    ist es ebenfalls ROT.
+  - Vorher ROT am Täter: mit der alten Regenesis 52,67 m (alpha) und 55,2 m (beta).
+  - Der Selbsttest pflanzt die alte Regenesis in alpha ein und ist rot erkannt (Rondell 90,31 m über 37,64 m).
+  - Konsum-Leser: der Faden-Plan (voxel-worker `genesisPlan` → fachwerk `ortPlan`) über `ortCtx.hoeheAt`.
+  - Der Lauf mit Selbsttest dauert 9 s.
+- **Dieselbe Klasse im Abdruck** (`--abdruck`, die SHA je Sweep-Saat): eine frische Saat trägt dort keinen Erdbau mehr, die
+  Boot-Saat behält ihren. Ein Byte-Beweis über diesen Commit hinweg muss beide Seiten mit demselben Skript laufen lassen.
 
 ## Gemessen (vorher main 2da17e2e → nachher, node, gleiche 26 Erdbauten, gleiche Rechnung)
 
@@ -95,13 +142,17 @@ gezählt wird der Haupt-Kontext.
 `npm run check:statik` ist GRÜN (506 s), ebenso `gate:settlement --selftest` (104 s) und `--realismus --selftest` (8 s). `merge-tree` ist konfliktfrei gegen origin/main 2da17e2e und gegen
 origin/integ-probe 4c9e6aab.
 
+Am Vorprüf-Kopf 2 ist `npm run gate:gelaende-realismus` GRÜN (66 s, alle vier Läufe mit Böschung und Weltgrenze), ebenso
+`npm run check:statik` (410 s). Main eae94514 ist ohne Konflikt hineingemergt.
+
 ## Bild
 
 Ruf `bild:dorf@0.42` am Kopf. Vorher ist `probe-post/absicht-zug-3/40c7113c-dorf-0.42.png`, Stand 18.546.425: dasselbe
 Gelände-Gesetz wie main, `gelaende-core.js` und `voxel-worker.js` byte-gleich. Kamera −720,31/−922,46, Blick nach Osten.
 
 Nachher ist `probe-post/erdbau-boeschung/a133198b-dorf-0.42.png`: GPU-Probe GRÜN, Radeon 890M, 87 s, ABNAHME GRÜN, dieselbe
-Kamera und Uhr.
+Kamera und Uhr. Am Vorprüf-Kopf 2 ist das Gelände-Gesetz byte-gleich mit a133198b, nur die Linse und main sind neu. Der
+Vorprüf-Kopf ruft dasselbe Bild erneut.
 
 **Urteil (eigenes Auge, Ausschnitt links 860 × 640 px beider Bilder nebeneinander):**
 - **Vorher:** Die Böschung links über dem Dorf steigt als Felswand und endet unter einer dunklen, überhängenden Gras-Kante.
@@ -127,4 +178,6 @@ Kamera und Uhr.
   - Im Profi-Band trägt eine Böschung bis 1 : 1,5 (33,7°) Rasen; der Kegel 0,6 (31°) liegt darunter.
   - Die Wurzel ist die Regel der Wand (der Zweig über `hoeheGrund`), nicht die Höhe.
   - Messname: Wand-Summe Stadt, Bild `dorf@0.42` links.
-- **Die volle CI** (`[ci voll]` am Vorprüf-Kopf a133198b, Lauf 45733927959): bei Redaktion in der Schlange.
+- **Die Kreatur-Linse Teil 3** (`jagdkreis`, voll 13/18) ist fremd und auf main selbst ROT (4c9e6aab, Lauf 45732777771). Sie
+  ist nicht Teil dieses Schnitts. Messname: voll 13/18 „Die Kreatur-Linse Teil 3“.
+- **Die volle CI am Vorprüf-Kopf 2** (`[ci voll]`): bei Redaktion noch nicht gelaufen.
