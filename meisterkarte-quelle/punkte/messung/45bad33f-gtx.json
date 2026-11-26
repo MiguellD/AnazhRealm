@@ -1,7 +1,7 @@
 {
  "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
  "geraet": "gtx",
- "zeit": "2026-11-26T22:12:09.838Z",
+ "zeit": "2026-11-26T22:27:29.779Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -557,6 +557,76 @@
    },
    "zeit": "2026-11-26T22:12:09.838Z",
    "abdruck": "f77aeb02c98c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — verfehlt ≥ 1 — Täter: koerper-core.js:6559 spielKampf — der Zug {an, finte, gelesen, treffer} trägt keine Lage des Treffers, der Schaden fällt fest auf den Rumpf (stamm/siedlung-bewohner.js:2871 _kampfRohSchaden(null, \"rumpf\")) · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) 1 (Soll ≥ 1) · Treffer durch die Deckung 0 (Soll ≤ 0) · Umfang 2 (Soll ≥ 2 Bewaffnete im Zweikampf) · 2 Bewaffnete im Zweikampf (1 Wache(n) im Gang, der Spieler mit klinge_langschwert) · 1 Gänge geschlagen in 22.87 s Welt-Uhr, Treffer Wache/Spieler 1/2, Züge 8, 2 von 2 Treffern beantwortet, 0 durch die Deckung, Lagen ohne Feld · 1 von 3 Wachen draußen nahten (Wache 7:72:4, 4 m vor dem Spieler) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.09,
+   "grund": "ROT: S1 ROT an der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — verfehlt ≥ 1 — Täter: koerper-core.js:6559 spielKampf — der Zug {an, finte, gelesen, treffer} trägt keine Lage des Treffers, der Schaden fällt fest auf den Rumpf (stamm/siedlung-bewohner.js:2871 _kampfRohSchaden(null, \"rumpf\")) · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) — (Soll ≥ 1) · der Getroffene antwortet (Anteil) 1 (Soll ≥ 1) · Treffer durch die Deckung 0 (Soll ≤ 0) · Umfang 2 (Soll ≥ 2 Bewaffnete im Zweikampf) · 2 Bewaffnete im Zweikampf (1 Wache(n) im Gang, der Spieler mit klinge_langschwert) · 1 Gänge geschlagen in 22.87 s Welt-Uhr, Treffer Wache/Spieler 1/2, Züge 8, 2 von 2 Treffern beantwortet, 0 durch die Deckung, Lagen ohne Feld · 1 von 3 Wachen draußen nahten (Wache 7:72:4, 4 m vor dem Spieler) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k0204ec0d41fa",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kbe820ac97b64",
+   "s": 64.9,
+   "fremd": {
+    "s": 67,
+    "takte": 31,
+    "fremdS": 11.5,
+    "kerne": 0.172,
+    "fensterKerne": 0.217,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.45
+     ],
+     [
+      "Explorer.EXE",
+      1.31
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1
+     ]
+    ],
+    "dienerS": 8.88,
+    "diener": [
+     [
+      "System",
+      3.81
+     ],
+     [
+      "WmiPrvSE.exe",
+      2.59
+     ]
+    ],
+    "geraetS": 22.47,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.44
+     ],
+     [
+      "svchost.exe",
+      7.06
+     ],
+     [
+      "SearchIndexer.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 154.48,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T22:27:29.779Z",
+   "abdruck": "cf60e89e761b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"

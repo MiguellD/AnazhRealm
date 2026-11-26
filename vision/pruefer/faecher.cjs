@@ -82,12 +82,15 @@ const REISE =
 // das Auge 1,7 m über dem Gelände, unter keinem Dach; frei heißt: kein Strahl Auge → Mitte · Scheitel · Fuß trifft Gelände oder Bau
 // vor dem Ding (`_fieldRaycast`, die Bauten ohne das Ziel selbst) und keine Krone der Kronen-Karte (`wegeKarte.kronen`, Radius
 // `_kronenRadiusFuer`, Scheitel `_kronenOben`) steht im Kegel vom Auge zum Umriss des Dings über dessen unterem Sehstrahl.
-// T = { x, z, y0 (Fuß), h (Höhe), rad (halbe Breite), ohne (der Eintrag des Ziels) }; mehr = weitere Hindernisse { x, z, rad, oben }
+// T = { x, z, y0 (Fuß), h (Höhe), rad (halbe Breite), [hx, hz: die Halb-Maße der Hülle — dann misst der Abstand von der Front in
+// Blickrichtung, nicht von der Mitte: der erste Bogen der Häuser stand mit der halben Diagonale davor, das Haus füllte ~50 statt
+// 77 % der Bildhöhe], ohne (der Eintrag des Ziels) }; mehr = weitere Hindernisse { x, z, rad, oben }
 const RAHMEN =
     "const RW = r.state, VF = RW.camera.fov * Math.PI / 180, HF = 2 * Math.atan(Math.tan(VF / 2) * 1280 / 720), RAND = 1.3, NEIG = 30 * Math.PI / 180;" +
     "const KR = []; { const wk = RW.wegeKarte; if (wk && wk.kronen) for (const c of wk.kronen.values()) KR.push({ x: c[0], z: c[1], rad: c[2], oben: r._kronenOben(c) }); }" +
     "const rahmen = (T, az, mehr) => {" +
-    " const d = T.rad + Math.max(RAND * T.h / (2 * Math.tan(VF / 2)), RAND * T.rad / Math.tan(HF / 2), 2);" +
+    " const ca = Math.abs(Math.cos(az)), sa = Math.abs(Math.sin(az)), tief = T.hx != null ? T.hx * ca + T.hz * sa : T.rad, breit = T.hx != null ? T.hx * sa + T.hz * ca : T.rad;" +
+    " const d = tief + Math.max(RAND * T.h / (2 * Math.tan(VF / 2)), RAND * breit / Math.tan(HF / 2), 2);" +
     " const ex = T.x + Math.cos(az) * d, ez = T.z + Math.sin(az) * d, ey = r.getTerrainHeightAt(ex, ez) + 1.7, ly = T.y0 + T.h / 2;" +
     " const aus = { frei: false, az, d, pose: { px: +ex.toFixed(2), py: +ey.toFixed(2), pz: +ez.toFixed(2), lx: +T.x.toFixed(2), ly: +ly.toFixed(2), lz: +T.z.toFixed(2) } };" +
     " if (Math.abs(Math.atan2(ly - ey, d)) > NEIG) return Object.assign(aus, { grund: 'Neigung' });" +
@@ -202,13 +205,16 @@ const SPROSSEN = {
     "mensch.bau.bedarf#1": {
         ort: "dorf",
         gesetz: "meisterkarte-quelle/punkte/stationen/k2-mensch-bau.js:38",
-        faecher: "jedes stehende Haus mit Tür aller Orte, das ganze Haus im Bild (Höhe × 1,3, Blick auf halbe Höhe) von der Tür-Seite, freiester Azimut ±30/45/0/60°, Klassen im Wechsel × Tageszeit",
-        ordner: "mensch.bau.bedarf.1-b2",
+        faecher: "jedes stehende Haus mit Tür aller Orte, das ganze Haus im Bild (Abstand von der Front: Höhe × 1,3, Blick auf halbe Höhe) von der Tür-Seite, bis 3 freie Ansichten je Haus aus ±30/45/0/60°, erst die erste Ansicht aller Häuser, Klassen im Wechsel, Mittag",
+        ordner: "mensch.bau.bedarf.1-b3",
+        uhren: [0.5],
         frage: "Welche Funktion hat das Gebäude in der Bildmitte?",
-        je: 12,
+        je: 20,
         mehr: {},
         wahl: 0,
-        motiv: (a) => AN_DER_POSE(a) && (GRUEN(a) || /Blickziel verdeckt von (an Punkt \d+ )?bauSatz/.test(a)),
+        // das Haus selbst vor dem Blickziel trägt, nie eine verdeckte Sicht oder ein Vordergrund (dorf 26.11.: eine Wand 1 m vor dem Auge,
+        // ABNAHME ROT „Sicht verdeckt 49,5 % bauSatz“, las als Haus vor der Mitte)
+        motiv: (a) => AN_DER_POSE(a) && (GRUEN(a) || (/Blickziel verdeckt von (an Punkt \d+ )?bauSatz/.test(a) && !/Sicht verdeckt|Vordergrund/.test(a))),
         rumpf: () =>
             SAAT +
             "const s = r.state, pm = s.playerMesh.position, hh = (x, z) => r.getTerrainHeightAt(x, z), steht = new Map(), gross = (t) => t.charAt(0).toUpperCase() + t.slice(1);" +
@@ -221,14 +227,14 @@ const SPROSSEN = {
             "  const c = Math.cos(sl.phi || 0), sn = Math.sin(sl.phi || 0), tu = sl.tuer || { x: 0, z: 0 }, tx = wx + tu.x * c + tu.z * sn, tz = wz - tu.x * sn + tu.z * c;" +
             "  const mx = sl.obb ? S.ox + sl.obb.cx : wx, mz = sl.obb ? S.oz + sl.obb.cz : wz, ul = Math.hypot(tx - mx, tz - mz) || 1, ux = (tx - mx) / ul, uz = (tz - mz) / ul;" +
             "  const BX = e.blockerAABBs || []; if (!BX.length) { ohneGestalt++; continue; } const B = { min: { x: Infinity, z: Infinity }, max: { x: -Infinity, y: -Infinity, z: -Infinity } }; for (const b of BX) { B.min.x = Math.min(B.min.x, b.minX); B.min.z = Math.min(B.min.z, b.minZ); B.max.x = Math.max(B.max.x, b.maxX); B.max.z = Math.max(B.max.z, b.maxZ); B.max.y = Math.max(B.max.y, Number.isFinite(b.topY) ? b.topY : b.maxY); } if (!(B.max.y > e.position.y + 1)) { ohneGestalt++; continue; }" +
-            "  const Z = { x: (B.min.x + B.max.x) / 2, z: (B.min.z + B.max.z) / 2, y0: e.position.y, h: B.max.y - e.position.y, rad: Math.hypot(B.max.x - B.min.x, B.max.z - B.min.z) / 2, ohne: e }, a0 = Math.atan2(uz, ux);" +
-            "  let f = null; for (const w of [-30, 30, -45, 45, 0, -60, 60]) { const g = rahmen(Z, a0 + w * Math.PI / 180); if (g.frei) { f = g; break; } gruende[g.grund] = (gruende[g.grund] || 0) + 1; }" +
-            "  if (!f) { ohneFrei++; continue; }" +
-            "  n++; H.push({ d: Math.hypot(wx - pm.x, wz - pm.z), klasse: gross(rolle), pose: f.pose," +
-            "   wort: e.type + ' (' + rolle + ') in ' + (S.plan.name || '?') + ', H ' + Z.h.toFixed(1) + ' m, Auge ' + f.d.toFixed(1) + ' m, ' + Math.round((f.az - a0) * 180 / Math.PI) + '° neben der Tür-Achse' }); }" +
+            "  const Z = { x: (B.min.x + B.max.x) / 2, z: (B.min.z + B.max.z) / 2, y0: e.position.y, h: B.max.y - e.position.y, rad: Math.hypot(B.max.x - B.min.x, B.max.z - B.min.z) / 2, hx: (B.max.x - B.min.x) / 2, hz: (B.max.z - B.min.z) / 2, ohne: e }, a0 = Math.atan2(uz, ux);" +
+            "  const F = []; for (const w of [-30, 30, -45, 45, 0, -60, 60]) { if (F.length >= 3) break; const g = rahmen(Z, a0 + w * Math.PI / 180); if (g.frei) F.push(g); else gruende[g.grund] = (gruende[g.grund] || 0) + 1; }" +
+            "  if (!F.length) { ohneFrei++; continue; } n++;" +
+            "  F.forEach((f, rang) => H.push({ rang, d: Math.hypot(wx - pm.x, wz - pm.z), klasse: gross(rolle), pose: f.pose," +
+            "   wort: e.type + ' (' + rolle + ') in ' + (S.plan.name || '?') + ', H ' + Z.h.toFixed(1) + ' m, Auge ' + f.d.toFixed(1) + ' m, ' + Math.round((f.az - a0) * 180 / Math.PI) + '° neben der Tür-Achse, Ansicht ' + (rang + 1) })); }" +
             " if (n) orte.push((S.plan.name || '?') + ' ' + n); }" +
-            "H.sort((a, b) => a.d - b.d); const je = {}; for (const h of H) je[h.klasse] = (je[h.klasse] || 0) + 1;" +
-            "return { saat, posen: H, lage: H.length + ' Häuser mit Tür gerahmt in ' + orte.length + ' Orten (' + orte.join(', ') + ') · Rollen ' + JSON.stringify(je) + ' · ohne Gestalt ' + ohneGestalt + ' · ohne freien Azimut ' + ohneFrei + ' · Gründe ' + JSON.stringify(gruende) };",
+            "H.sort((a, b) => a.rang - b.rang || a.d - b.d); const je = {}; for (const h of H) if (!h.rang) je[h.klasse] = (je[h.klasse] || 0) + 1;" +
+            "return { saat, posen: H, lage: H.filter((h) => !h.rang).length + ' Häuser mit Tür gerahmt (' + H.length + ' Ansichten) in ' + orte.length + ' Orten (' + orte.join(', ') + ') · Rollen ' + JSON.stringify(je) + ' · ohne Gestalt ' + ohneGestalt + ' · ohne freien Azimut ' + ohneFrei + ' · Gründe ' + JSON.stringify(gruende) };",
     },
     // der Raum hinter der Tür: die Station zählt die Werk-Bauten der vollen Stadt (jedes Haus mit Tür, dessen Rolle weder Wohnhaus
     // noch Scheune ist, k2-mensch-bau.js:79) und stellt das Auge 1,6 m hinter die Tür, 1,4 m über dem Grund, Blick 7 m ins Haus (:77) —
@@ -317,13 +323,16 @@ const SPROSSEN = {
     "mensch.macht.stand#1": {
         ort: "stadt-voll",
         gesetz: "meisterkarte-quelle/punkte/stationen/k2-mensch-macht.js:533",
-        faecher: "jedes stehende Wohnhaus des ärmsten und des reichsten Zehntels, das ganze Haus im Bild (Höhe × 1,3, Blick auf halbe Höhe) von der Tür-Seite, freiester Azimut ±30/45/0/60°, Klassen im Wechsel × Tageszeit",
+        faecher: "jedes stehende Wohnhaus des ärmsten und des reichsten Zehntels, das ganze Haus im Bild (Höhe × 1,3, Blick auf halbe Höhe) von der Tür-Seite, bis 3 freie Ansichten je Haus aus ±30/45/0/60°, erst die erste Ansicht aller Häuser, Klassen im Wechsel, Mittag",
         ordner: "mensch.macht.stand.1-b2",
+        uhren: [0.5],
         frage: "Wohnt in dem Haus in der Bildmitte ein armer oder ein reicher Haushalt?",
         je: 30,
         mehr: {},
         wahl: 0,
-        motiv: (a) => AN_DER_POSE(a) && (GRUEN(a) || /Blickziel verdeckt von (an Punkt \d+ )?bauSatz/.test(a)),
+        // das Haus selbst vor dem Blickziel trägt, nie eine verdeckte Sicht oder ein Vordergrund (dorf 26.11.: eine Wand 1 m vor dem Auge,
+        // ABNAHME ROT „Sicht verdeckt 49,5 % bauSatz“, las als Haus vor der Mitte)
+        motiv: (a) => AN_DER_POSE(a) && (GRUEN(a) || (/Blickziel verdeckt von (an Punkt \d+ )?bauSatz/.test(a) && !/Sicht verdeckt|Vordergrund/.test(a))),
         rumpf: () =>
             SAAT +
             "const s = r.state, pm = s.playerMesh.position, hh = (x, z) => r.getTerrainHeightAt(x, z), steht = new Map();" +
@@ -339,10 +348,10 @@ const SPROSSEN = {
             " const c = Math.cos(sl.phi || 0), sn = Math.sin(sl.phi || 0), tu = sl.tuer || { x: 0, z: 0 }, tx = wx + tu.x * c + tu.z * sn, tz = wz - tu.x * sn + tu.z * c;" +
             " const mx = sl.obb ? ox + sl.obb.cx : wx, mz = sl.obb ? oz + sl.obb.cz : wz, ul = Math.hypot(tx - mx, tz - mz) || 1, ux = (tx - mx) / ul, uz = (tz - mz) / ul;" +
             " const BX = e.blockerAABBs || []; if (!BX.length) { ohneGestalt++; continue; } const B = { min: { x: Infinity, z: Infinity }, max: { x: -Infinity, y: -Infinity, z: -Infinity } }; for (const b of BX) { B.min.x = Math.min(B.min.x, b.minX); B.min.z = Math.min(B.min.z, b.minZ); B.max.x = Math.max(B.max.x, b.maxX); B.max.z = Math.max(B.max.z, b.maxZ); B.max.y = Math.max(B.max.y, Number.isFinite(b.topY) ? b.topY : b.maxY); } if (!(B.max.y > e.position.y + 1)) { ohneGestalt++; continue; }" +
-            " const Z = { x: (B.min.x + B.max.x) / 2, z: (B.min.z + B.max.z) / 2, y0: e.position.y, h: B.max.y - e.position.y, rad: Math.hypot(B.max.x - B.min.x, B.max.z - B.min.z) / 2, ohne: e }, a0 = Math.atan2(uz, ux);" +
-            " let fr = null; for (const w of [-30, 30, -45, 45, 0, -60, 60]) { const g = rahmen(Z, a0 + w * Math.PI / 180); if (g.frei) { fr = g; break; } gruende[g.grund] = (gruende[g.grund] || 0) + 1; } if (!fr) { ohneFrei++; continue; }" +
-            " H.push({ d: Math.hypot(wx - pm.x, wz - pm.z), klasse: k, pose: fr.pose, wort: k + ': ' + sl.rolle + ' ' + Math.round(h.fl) + ' m² (Zehntel ≤ ' + Math.round(lo) + ' / ≥ ' + Math.round(hi) + ' m²), 10 m vor der Tür' }); }" +
-            "H.sort((a, b) => a.d - b.d);" +
+            " const Z = { x: (B.min.x + B.max.x) / 2, z: (B.min.z + B.max.z) / 2, y0: e.position.y, h: B.max.y - e.position.y, rad: Math.hypot(B.max.x - B.min.x, B.max.z - B.min.z) / 2, hx: (B.max.x - B.min.x) / 2, hz: (B.max.z - B.min.z) / 2, ohne: e }, a0 = Math.atan2(uz, ux);" +
+            " const F = []; for (const w of [-30, 30, -45, 45, 0, -60, 60]) { if (F.length >= 3) break; const g = rahmen(Z, a0 + w * Math.PI / 180); if (g.frei) F.push(g); else gruende[g.grund] = (gruende[g.grund] || 0) + 1; } if (!F.length) { ohneFrei++; continue; }" +
+            " F.forEach((fr, rang) => H.push({ rang, d: Math.hypot(wx - pm.x, wz - pm.z), klasse: k, pose: fr.pose, wort: 'Ansicht ' + (rang + 1) + ', ' + k + ': ' + sl.rolle + ' ' + Math.round(h.fl) + ' m² (Zehntel ≤ ' + Math.round(lo) + ' / ≥ ' + Math.round(hi) + ' m²), ' + Math.round((fr.az - a0) * 180 / Math.PI) + '° neben der Tür-Achse' })); }" +
+            "H.sort((a, b) => a.rang - b.rang || a.d - b.d);" +
             "return { saat, posen: H, lage: n + ' Wohnbauten in ' + plaene.length + ' Plänen, Zehntel ≤ ' + Math.round(lo) + ' m² / ≥ ' + Math.round(hi) + ' m², stehend mit Tür arm ' + H.filter((x) => x.klasse === 'arm').length + ' · reich ' + H.filter((x) => x.klasse === 'reich').length + ', ohne stehendes Haus mit Tür ' + ohne + ', ohne Gestalt ' + ohneGestalt + ', ohne freien Azimut ' + ohneFrei + ' · Gründe ' + JSON.stringify(gruende) };",
     },
     // die Talform an 20 Saaten: die Station rechnet je Saat (Land-Lage der Fibonacci-Kugel) × Stelle 1/4 · 1/2 · 3/4 des größten Laufs
@@ -643,7 +652,7 @@ function selbsttest() {
     const w = imWechsel(kl, 3);
     t("die Klassen im Wechsel: höchstens 3 je Klasse, die seltene Klasse vor dem vierten Wohnhaus, die Klasse reist in die Pose", w.length === 8 && w.slice(0, 3).map((x) => x.klasse).join() === "Wohnhaus,Scheune,Schmiede" && w.filter((x) => x.klasse === "Wohnhaus").length === 3 && faechern(w, [0.5], {})[1].klasse === "Scheune" && faechern(w, [0.5], {})[0].ziel.art === "eiche" && !("klasse" in faechern(basis(2), [0.5], {})[0]));
     const PF = SPROSSEN["leben.pflanzen.arten#1"].motiv;
-    t("an der Pose: ein Bild, für das die Werkbank eine andere Kamera wählte (Blick-Wahl ≥ 2 Posen), trägt kein Rahmen-Motiv", AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 1 Pose") && !AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 2 Posen") && !AN_DER_POSE("Blick-Wahl 42 Posen") && !PF("ABNAHME GRÜN · Blick-Wahl 37 Posen", { ziel: { art: "eiche", d: 9 } }) && !SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME GRÜN · Blick-Wahl 3 Posen") && SPROSSEN["mensch.bau.bedarf#1"].wahl === 0 && SPROSSEN["leben.pflanzen.arten#1"].wahl === 0);
+    t("an der Pose: ein Bild, für das die Werkbank eine andere Kamera wählte (Blick-Wahl ≥ 2 Posen), trägt kein Rahmen-Motiv", AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 1 Pose") && !AN_DER_POSE("ABNAHME GRÜN · Blick-Wahl 2 Posen") && !AN_DER_POSE("Blick-Wahl 42 Posen") && !PF("ABNAHME GRÜN · Blick-Wahl 37 Posen", { ziel: { art: "eiche", d: 9 } }) && !SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME GRÜN · Blick-Wahl 3 Posen") && SPROSSEN["mensch.bau.bedarf#1"].wahl === 0 && !SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME ROT [Sicht verdeckt 49.5 % (Bau als 1 m): bauSatz 49.5 %] · Ziel Blickziel verdeckt von bauSatz in 1.2 m · Blick-Wahl 1 Pose") && SPROSSEN["mensch.bau.bedarf#1"].motiv("ABNAHME GRÜN · Blick-Wahl 1 Pose") && SPROSSEN["leben.pflanzen.arten#1"].wahl === 0);
     t("das Motiv der Pflanze: ihr eigenes Laub am Ziel trägt, fremdes oder nahes Laub nicht", PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:tanne:L1 in 9.2 m]", { ziel: { art: "eiche", d: 12 } }) && !PF("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:eiche:L1 in 2.1 m]", { ziel: { art: "eiche", d: 12 } }) && PF("ABNAHME GRÜN", {}));
     t("jede Klassen-Sprosse trägt ihre Frage", Object.values(SPROSSEN).filter((d) => d.je).every((d) => /\?$/.test(d.frage || "")));
     t("eine feste Uhr (Erntetag) fächert nur über Adressen", faechern(basis(12), [10 / 24], { uhr: 1 }).length === 12 && faechern(basis(12), [10 / 24], {})[0].mehr.uhr === 10 / 24);

@@ -1,0 +1,9 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 10.4 s · am Messort stadt-voll (ego) nach 10.4 s, 360 Takte, Anlauf stand
+@@ 10.4 s · Krieg: {"bewohner":1356,"bewaffneteBewohner":6,"bewaffnet":7,"imZweikampf":0,"waffen":{"langschwert":6},"haelt":null,"orte":1,"imKrieg":0,"pose":{"px":842.49,"py":95.47,"pz":476.79,"lx":842.49,"ly":55.47,"lz":451.79}}
+@@ 64.8 s · Krieg S1: {"wachen":3,"wache":"7:72:4","abstand":4,"haelt":"klinge_langschwert","nahten":1,"wachenImGang":1,"imZweikampf":2,"gaenge":1,"zuege":8,"treffer":[1,2],"antwort":2,"vorLetztem":2,"antwortet":1,"durchDeckungN":0,"durchDeckung":0,"sitzt":null,"lagen":null,"uhr":22.87}
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
