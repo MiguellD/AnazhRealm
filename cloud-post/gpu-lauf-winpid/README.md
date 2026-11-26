@@ -65,7 +65,4 @@ ROT j  start: Exit 0 · Enkel tot: ja · Schloss steht · beim Schnitt nannte es
 - Der Augenblick zwischen `"$@" &` und der Zeile `<wache>.kind`: Fällt gpu-lauf GENAU dort, kennt der Wächter das Kind nicht. Er löst das Schloss, und das Kind läuft ungefällt. Das Fenster sind zwei Befehle der Shell. j trifft es nicht.
 - Ein Enkel, der das NORMALE Ende seines Kinds überlebt, hängt an init. Das bleibt die Pflicht des Skripts.
 - `taskkill /F` auf den Wächter selbst fängt nichts. Er steht aber in keinem Baum eines Rufers.
-- Die OMEN-Fassung `zug/dienst-omen/ort/gpu-lauf.sh` trägt dasselbe Muster.
-  - Ihr Kandidat liegt an der GTX: a–i GRÜN; die alte Fassung ist ROT an h und i.
-  - Er trägt das Fenster noch: Der Wächter startet dort je Kind, nach dem Nehmen.
-  - Er folgt erst, wenn dieser Kandidat an der Radeon grün ist (Koordinator 22:20).
+- Die OMEN-Fassung `zug/dienst-omen/ort/gpu-lauf.sh` trägt dasselbe Gesetz (der Wächter vor dem Nehmen) in `omen/`, Selbsttest a–j GRÜN an der GTX 1050; die Fassung f6410812 ist ROT an i und j. Gesetzt ist der Kandidat oben seit punkte-maschine 7ea1c36d (Koordinator 23:06).

@@ -1,0 +1,258 @@
+--- a/zug/dienst-omen/ort/gpu-lauf.sh
++++ b/zug/dienst-omen/ort/gpu-lauf.sh
+@@ -22,9 +22,100 @@
+ # schreibt DIESES Skript dann eine Zeile hinein, endet node mit 0xC0000005 (bash nennt es Signal 11); ohne die Zeile lebt es zu Ende.
+ # Darum: was der Wickler dem Lauf zu sagen hat, steht im Dienst-Log, und auf stderr erst, wenn das Kind beendet ist.
+ # QUELLE: koordination zug/dienst-omen/ort/gpu-lauf.sh, installiert von p3/dienst-omen/start.sh (Hand-Änderung = ROT).
++# DER WÄCHTER (26.11., GTX 1050; dasselbe Gesetz wie meisterkarte-quelle/punkte/werkzeug/gpu-lauf.sh `--waechter`):
++# `gpu-lauf.sh --waechter <gpu-lauf-pid> <wache-datei> <name>` — läuft AUSSERHALB des Windows-Baums von gpu-lauf. In Git-Bash trägt
++# ein ausgeführtes Bash-Kind (fork + exec) eine neue winpid, sein Vater in Windows ist der fork-Stumpf, der danach endet: `taskkill
++# /F /T` auf gpu-lauf (punkte.cjs `baumTot`) traf nie das Kind und den Enkel (die Werkbank, ihr Chrome) erst recht nicht; gpu-lauf
++# starb ohne Falle, das Schloss nannte einen toten Halter, der Start-Hook löste es als verwaist und der CI-Job lief NEBEN dem Enkel
++# (GTX 26.11. 21:14 und 21:47). Bis hier las gpu-lauf dazu die winpid des Kinds sofort nach `&` (`WK`, vor seinem exec: leer) und
++# fällte mit `kill -9 $KIND` nur die Hülle. DER HALTER VON DER ERSTEN ZEILE AN (Radeon 22:20 am Kandidaten der Punkte-Maschine: ein
++# Schnitt zwischen dem Nehmen und der Übernahme ließ das Schloss mit totem Halter stehen): je Halte-Spanne startet der Wächter VOR
++# dem Nehmen (`wache_an`), meldet seine winpid (`<wache>.win`), und besitzer.txt nennt IHN, bis das Kind endet; das Kind erfährt er
++# aus `<wache>.kind`. Er fällt den Baum, sobald gpu-lauf es will (`<wache>.stop`: Deckel, Verdrängung, TERM/INT) oder ohne Falle
++# starb — jede msys-Nachfahrin des Kinds (ppid, `ps -e`), unter jeder ihr Windows-Baum (`taskkill /T`), dann einzeln, was noch lebt.
++# Starb gpu-lauf, löst ER das Schloss, erst wenn kein Glied mehr lebt (sonst nennt besitzer.txt den Überlebenden); lebt gpu-lauf,
++# nennt besitzer.txt wieder gpu-lauf, und `<wache>.bleibt` trägt den Überlebenden.
++if [ "$1" = --waechter ]; then
++    GL_PID=$2 W=$3 NAME=$4 STOP="$3.stop" KIND=""
++    GL_WIN=$(cat /proc/$GL_PID/winpid 2>/dev/null)
++    cat /proc/$$/winpid >"$W.win.neu" 2>/dev/null && mv -f "$W.win.neu" "$W.win"
++    # erst die Meldung, dann die Schloss-Bibliothek (ihr Ort kommt aus node schloss-ort.cjs, ~0,5 s): gpu-lauf wartet nur auf die winpid
++    . "${GPU_LAUF_SCHLOSS_SH:-/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh}"
++    GPU_SCHLOSS=${GPU_LAUF_SCHLOSS:-$GPU_SCHLOSS}; GPU_HOOK_LOG=${GPU_LAUF_HOOKLOG:-$GPU_HOOK_LOG}
++    msys_liste() { ps -e 2>/dev/null | awk 'NR > 1 { o = ($1 ~ /^[0-9]+$/) ? 0 : 1; print $(1 + o), $(2 + o), $(4 + o) }'; }
++    msys_baum() {
++        msys_liste | awk -v w="$1" '{ wp[$1] = $3; k[$2] = k[$2] " " $1 }
++            END { if (!(w in wp)) exit; q[1] = w; s[w] = 1; n = 1
++                  for (i = 1; i <= n; i++) { m = split(k[q[i]], a, " "); for (j = 1; j <= m; j++) if (!(a[j] in s)) { s[a[j]] = 1; q[++n] = a[j] } }
++                  for (i = 1; i <= n; i++) print q[i], wp[q[i]] }'
++    }
++    win_liste() {
++        { wmic process get CreationDate,ParentProcessId,ProcessId 2>/dev/null ||
++            powershell -NoProfile -Command 'Get-CimInstance Win32_Process | ForEach-Object { "{0} {1} {2}" -f $_.CreationDate.ToString("yyyyMMddHHmmss.ffffff"), $_.ParentProcessId, $_.ProcessId }'; } |
++            tr -d '\r' | awk '$2 ~ /^[0-9]+$/ && $3 ~ /^[0-9]+$/ { print $1, $2, $3 }'
++    }
++    win_baum() {
++        win_liste | W="$1" awk '{ er[$3] = $1; k[$2] = k[$2] " " $3 }
++            END { m0 = split(ENVIRON["W"], r, " "); n = 0
++                  for (i = 1; i <= m0; i++) if ((r[i] in er) && !(r[i] in s)) { s[r[i]] = 1; q[++n] = r[i] }
++                  for (i = 1; i <= n; i++) { m = split(k[q[i]], a, " "); for (j = 1; j <= m; j++) { c = a[j]; if (!(c in s) && er[c] >= er[q[i]]) { s[c] = 1; q[++n] = c } } }
++                  for (i = 1; i <= n; i++) print q[i], er[q[i]] }'
++    }
++    win_lebt() {
++        [ -n "$1" ] || return 0
++        win_liste | G="$1" awk 'BEGIN { m = split(ENVIRON["G"], z, "\n"); for (i = 1; i <= m; i++) { split(z[i], f, " "); if (f[1] != "") soll[f[1]] = f[2] } }
++            ($3 in soll) && soll[$3] == $1 { print $3 }'
++    }
++    BLEIBT=""
++    baum_ab() {
++        local glieder wins wbaum w p i rest=""
++        [ -n "$KIND" ] || return 0
++        glieder=$(msys_baum "$KIND")
++        wins=$(echo "$glieder" | awk '$2 ~ /^[0-9]+$/ { printf "%s ", $2 }')
++        wbaum=$(win_baum "$wins")
++        for w in $wins; do taskkill -F -T -PID "$w" >/dev/null 2>&1; done
++        for p in $(echo "$glieder" | awk '{ print $1 }'); do kill -9 "$p" 2>/dev/null; done
++        [ -n "$wbaum" ] || return 0
++        for i in 1 2 3 4 5 6; do
++            rest=$(win_lebt "$wbaum")
++            [ -z "$rest" ] && return 0
++            for w in $rest; do taskkill -F -T -PID "$w" >/dev/null 2>&1; done
++            sleep 1
++        done
++        BLEIBT=$(echo "$rest" | head -n 1)
++    }
++    B="$GPU_SCHLOSS/besitzer.txt"
++    while :; do
++        [ -z "$KIND" ] && [ -s "$W.kind" ] && KIND=$(cat "$W.kind")
++        [ -n "$KIND" ] && ! kill -0 "$KIND" 2>/dev/null && break
++        if [ -e "$STOP" ] || ! kill -0 "$GL_PID" 2>/dev/null; then baum_ab; break; fi
++        sleep 1
++    done
++    rm -f "$W.kind" "$W.win"
++    if kill -0 "$GL_PID" 2>/dev/null; then
++        [ "$(schloss_erster)" = "$NAME" ] && printf '%s\npid=%s\n' "$NAME" "$GL_WIN" >"$B"
++        echo "$BLEIBT" >"$W.bleibt"
++    elif [ -n "$BLEIBT" ]; then
++        [ "$(schloss_erster)" = "$NAME" ] && printf '%s (Enkel)\npid=%s\n' "$NAME" "$BLEIBT" >"$B"
++    else
++        schloss_loesen "$NAME"
++    fi
++    rm -f "$STOP"
++    exit 0
++fi
+ . "${GPU_LAUF_SCHLOSS_SH:-/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh}"
+ # nur für den Selbsttest: ein eigenes Schloss und ein eigenes Hook-Log (und eine andere Schloss-Quelle, GPU_LAUF_SCHLOSS_SH)
+ GPU_SCHLOSS=${GPU_LAUF_SCHLOSS:-$GPU_SCHLOSS}; GPU_HOOK_LOG=${GPU_LAUF_HOOKLOG:-$GPU_HOOK_LOG}
++# DER WÄCHTER JE HALTE-SPANNE (oben, `--waechter`): vor jedem Nehmen startet er (fork + exec, in Windows NICHT unter gpu-lauf, keine
++# Ausgabe), meldet seine winpid selbst (vor seinem exec trüge /proc die des fork-Stumpfs), und `nimm` schreibt SIE in besitzer.txt
++W="$GPU_SCHLOSS.wache.$$"; WACHE=; WACHE_WIN=; BLEIBT=
++wache_an() {
++  rm -f "$W".*
++  bash "${BASH_SOURCE[0]}" --waechter $$ "$W" "$NAME" >/dev/null 2>&1 </dev/null & WACHE=$!
++  local i; for i in $(seq 1 600); do [ -s "$W.win" ] && break; kill -0 "$WACHE" 2>/dev/null || break; sleep 0.1; done
++  WACHE_WIN=$(cat "$W.win" 2>/dev/null)
++  [ -n "$WACHE_WIN" ] || { echo "gpu-lauf: ROT - der Wächter meldete binnen 60 s keine winpid ($W.win); ohne ihn nimmt gpu-lauf kein Schloss" >&2; kill "$WACHE" 2>/dev/null; WACHE=; exit 70; }
++}
+ NAME="omen-${1:?name}"; shift
+ WARTE=${GPU_LAUF_WARTE_S:-2700}; MAX=${GPU_LAUF_MAX_S:-3600}; T0=$(date +%s); TOT=$(( T0 + WARTE + MAX ))
+ VMAX=${GPU_LAUF_VERDRAENGT_MAX:-3}; VERDR=0; WEICH=${GPU_LAUF_WEICH_S:-0}; DLOG=${GPU_LAUF_DLOG:-/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/messplatz/dienst.log}
+@@ -47,7 +138,7 @@
+     [ $(( j - w0 )) -ge "$wort" ] && { w0=$j; echo "gpu-lauf: wartet seit $(( j - T0 )) s ('$(schloss_erster)' hält das Schloss, ein CI-Job läuft oder wartet, oder CI-Ruhe)" >&2; }
+     sleep $(( wort < 15 ? wort : 15 ))
+   done
+-  printf '%s\npid=%s\n' "$NAME" "$(cat /proc/$$/winpid 2>/dev/null)" > "$GPU_SCHLOSS/besitzer.txt"
++  printf '%s\npid=%s\n' "$NAME" "$WACHE_WIN" > "$GPU_SCHLOSS/besitzer.txt"
+   # DIE MELDUNG (30.10.) — dasselbe Protokoll wie die kanonische artifacts/profiband/werkzeug/gpu-lauf.sh: punkte.cjs wartet auf genau
+   # „gpu-lauf: Schloss …“ (und liest „SCHLOSS BLOCKIERT …“ beim Exit 75). Ohne die Zeile starb der stille Warter der Mess-Sitzung nach
+   # 600 s („schwieg“), obwohl das Schloss stand — takt25b/p/h am 6b3da705 je 0 gemessen; die alte Fehlzeile „gpu-lauf: Schloss nach …
+@@ -57,18 +148,38 @@
+   ( while sleep 300; do [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt"; done ) >/dev/null 2>&1 & HERZ=$!
+ }
+ trap 'kill $HERZ 2>/dev/null; schloss_loesen "$NAME"' EXIT
++# DER BAUM DES KINDS FÄLLT ÜBER DEN WÄCHTER: `abbau` bittet ihn und wartet, bis er den Baum gefällt hat; BLEIBT nennt ein Glied, das
++# nach 6 s noch lebt — dann hält es das Schloss (`halte_ueberlebenden`), bis es endet (die Hooks lösen einen toten Halter). TERM/INT
++# (der Wächter eines Rufers) fällen den Baum; bis hier löste die EXIT-Falle das Schloss neben dem lebenden Kind.
++abbau() {
++  BLEIBT=
++  [ -n "$WACHE" ] || return 0
++  touch "$W.stop"; wait "$WACHE" 2>/dev/null; WACHE=
++  BLEIBT=$(cat "$W.bleibt" 2>/dev/null); rm -f "$W.bleibt"
++  [ -n "$KIND" ] && wait "$KIND" 2>/dev/null
++  return 0
++}
++halte_ueberlebenden() {
++  [ -n "$BLEIBT" ] || return 0
++  kill $HERZ 2>/dev/null; printf '%s (Enkel)\npid=%s\n' "$NAME" "$BLEIBT" > "$GPU_SCHLOSS/besitzer.txt"; trap - EXIT
++  echo "gpu-lauf: ein Glied des Baums überlebt (pid $BLEIBT) - das Schloss bleibt bei ihm, bis es endet" >&2
++}
++trap 'abbau; halte_ueberlebenden; exit 143' TERM
++trap 'abbau; halte_ueberlebenden; exit 130' INT
++KIND=
++wache_an
+ nimm $(( T0 + WARTE ))
+ while :; do
+   TS=$(( $(date +%s) - 1 )); W0=
+   "$@" & KIND=$!
+-  WK=$(cat /proc/$KIND/winpid 2>/dev/null)
++  echo "$KIND" > "$W.kind"
+   ENDE=$(( $(date +%s) + MAX )); [ $ENDE -gt $TOT ] && ENDE=$TOT
+   V=
+   while kill -0 $KIND 2>/dev/null; do
+     if [ $(date +%s) -ge $ENDE ]; then
+-      [ -n "$WK" ] && taskkill -F -T -PID "$WK" > /dev/null 2>&1
+-      kill -9 $KIND 2>/dev/null; wait $KIND 2>/dev/null
+-      echo "gpu-lauf: Deckel $(( ENDE - TS )) s - der Prozessbaum ab pid $WK fiel" >&2
++      abbau
++      echo "gpu-lauf: Deckel $(( ENDE - TS )) s - der Prozessbaum des Kinds fiel" >&2
++      halte_ueberlebenden
+       exit 124
+     fi
+     if [ $VERDR -lt $VMAX ] && ci_wartet; then
+@@ -84,6 +195,7 @@
+   done
+   if [ -z "$V" ]; then
+     wait $KIND; E=$?
++    wait "$WACHE" 2>/dev/null; WACHE=
+     [ -n "$W0" ] && [ "$WEICH" -gt 0 ] && echo "gpu-lauf: WICH - ein CI-Job wartete im Start-Hook $(( $(date +%s) - W0 )) s; der Lauf endete an seiner Grenze (Exit $E), die Karte geht frei" >&2
+     # EIN LAUF, DEN EIN SIGNAL FAELLTE, IST NIE GANZ (12.11., Koordinator): Exit > 128 heisst gestorben (139 = Segmentation fault) —
+     # am 12.11. starb ein Lauf zweimal binnen 2 s nach dem Eintreffen eines CI-Jobs im Start-Hook (17:33:50 sg-vk-ankunft, 17:58:53
+@@ -97,11 +209,11 @@
+   fi
+   VERDR=$(( VERDR + 1 ))
+   [ -f "$DLOG" ] && echo "$(date '+%F %T') gpu-lauf $NAME VERDRÄNGT $VERDR/$VMAX nach $(( $(date +%s) - TS )) s von einem CI-Job - Neustart nach dem Job" >> "$DLOG"
+-  [ -n "$WK" ] && taskkill -F -T -PID "$WK" > /dev/null 2>&1
+-  kill -9 $KIND 2>/dev/null; wait $KIND 2>/dev/null
++  abbau
+   echo "gpu-lauf: VERDRAENGT $VERDR/$VMAX nach $(( $(date +%s) - TS )) s - ein CI-Job wartet; der Lauf fiel samt Waisen, Neustart nach dem Job" >&2
+   powershell -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-verdraengt.ps1)" $TS "${GPU_LAUF_VERDR_NUR:-}" >&2
+   kill $HERZ 2>/dev/null; schloss_loesen "$NAME"
+   sleep 20   # der Hook greift in seinem 15-s-Takt zu; danach hält worker() bis zum Job-Ende fern
++  wache_an
+   nimm $(( TOT - 60 ))
+ done
+--- a/zug/dienst-omen/ort/gpu-lauf-selbsttest.sh
++++ b/zug/dienst-omen/ort/gpu-lauf-selbsttest.sh
+@@ -66,5 +66,78 @@
+ WO=$(grep -c "^gpu-lauf: wartet seit " "$d/aus.txt"); GEN=$(grep -n "^gpu-lauf: Schloss " "$d/aus.txt" | head -1 | cut -d: -f1); LETZT=$(grep -n "^gpu-lauf: wartet seit " "$d/aus.txt" | tail -1 | cut -d: -f1)
+ if [ "$E" = 0 ] && [ "$WO" -ge 2 ] && [ -n "$GEN" ] && [ "${LETZT:-999}" -lt "$GEN" ] && [ "$S" -ge 22 ] && [ ! -d "$d/schloss" ]; then echo "GRÜN f  der Wartende sprach $WO-mal in $S s am fremden Schloss, dann nahm er es, Exit 0"
+ else echo "ROT f  Exit $E (Soll 0) · „wartet seit“ $WO (Soll ≥ 2) · „Schloss“ in Zeile ${GEN:-?}, letztes Warte-Wort in Zeile ${LETZT:-?} · $S s (Soll ≥ 22)"; rot=1; fi
++# DER BAUM (26.11., GTX 1050; derselbe Test wie meisterkarte-quelle/punkte/werkzeug/gpu-lauf.sh --selbsttest): der Befehl hat die Form
++# des Bruchs — `bash` mit einem node im Hintergrund (die Werkbank) und einem im Vordergrund; beide schreiben ihre pid. DER SCHNITT AM
++# ZUSTAND, NIE AN DER UHR: h und i schneiden, sobald beide pid-Dateien UND besitzer.txt stehen (Frist 60 s, sonst UNGEMESSEN beim
++# Namen); die Zeile nennt, wen besitzer.txt beim Schnitt nannte (Wächter oder gpu-lauf).
++#   g  der Deckel (GPU_LAUF_MAX_S=6)                                → Exit 124, Enkel tot, das Schloss gelöst
++#   h  TERM an gpu-lauf (der Wächter eines Rufers)                  → Exit 143, Enkel tot, das Schloss gelöst
++#   i  `taskkill /F /T` auf gpu-lauf (punkte.cjs `baumTot`)         → Enkel tot binnen 15 s; eine Sekunde nach dem Schnitt nennt das
++#      Schloss einen LEBENDEN Halter (sonst löst es der Start-Hook als verwaist) oder ist gelöst, danach ist es gelöst
++#   j  `taskkill /F /T` auf gpu-lauf IM START-FENSTER: sobald besitzer.txt steht (Takt 0,05 s), vor dem Kind → dasselbe Soll wie i
++# Die Fassung bis 26.11. reißt h (die EXIT-Falle löste das Schloss neben dem lebenden Kind), i und j (der Halter tot).
++if command -v node >/dev/null 2>&1; then
++    echo 'require("fs").writeFileSync(process.argv[2], String(process.pid)); setInterval(() => {}, 1000);' >"$T/enkel.js"
++    lebt() { tasklist -FI "PID eq $1" -NH 2>/dev/null | grep -qw "$1"; }
++    enkel() { cat "$T/$1/bg.pid" "$T/$1/fg.pid" 2>/dev/null | tr -c '0-9' ' '; }
++    baum() { # $1 Name · $2 wie (deckel|term|taskkill|start) · $3 Exit-Soll ("" = gleich)
++        local d=$T/$1 g E S w p k tot=nein halter="" nannte="" schloss ok=1 t0 bereit=0
++        mkdir -p "$d"; : >"$d/dienst.log"
++        echo "2026-01-01 00:00:00 start ci-runner 1/1 echt: Schloss genommen (alt)" >"$d/hook.log"
++        printf '#!/bin/bash\nnode "%s" "%s" >/dev/null 2>&1 &\nnode "%s" "%s"\n' "$T/enkel.js" "$d/bg.pid" "$T/enkel.js" "$d/fg.pid" >"$d/befehl.sh"
++        t0=$(date +%s)
++        GPU_LAUF_SCHLOSS=$d/schloss GPU_LAUF_HOOKLOG=$d/hook.log GPU_LAUF_DLOG=$d/dienst.log GPU_LAUF_VERDR_NUR=selbsttest-$$-nie \
++            GPU_LAUF_WARTE_S=30 GPU_LAUF_MAX_S=$([ "$2" = deckel ] && echo 6 || echo 120) bash "$GL" selbsttest bash "$d/befehl.sh" >"$d/aus.txt" 2>&1 &
++        g=$!
++        if [ "$2" != deckel ]; then
++            for k in $(seq 1 1200); do
++                if [ "$2" = start ]; then [ -s "$d/schloss/besitzer.txt" ] && { bereit=1; break; }
++                else [ -s "$d/bg.pid" ] && [ -s "$d/fg.pid" ] && [ -s "$d/schloss/besitzer.txt" ] && { bereit=1; break; }; fi
++                kill -0 "$g" 2>/dev/null || break
++                sleep 0.05
++            done
++            w=$(cat /proc/$g/winpid 2>/dev/null)
++            p=$(grep -m1 "^pid=" "$d/schloss/besitzer.txt" 2>/dev/null | tr -dc 0-9)
++            nannte=gpu-lauf
++            [ -n "$p" ] && [ "$p" != "$w" ] && nannte=Wächter
++            if [ $bereit = 0 ]; then
++                kill -TERM "$g" 2>/dev/null; wait "$g" 2>/dev/null
++                for p in $(enkel "$1"); do lebt "$p" && taskkill -F -PID "$p" >/dev/null 2>&1; done
++                echo "UNGEMESSEN $1  $2: nach $(($(date +%s) - t0)) s standen pid-Dateien (bg $([ -s "$d/bg.pid" ] && echo ja || echo nein), fg $([ -s "$d/fg.pid" ] && echo ja || echo nein)) und Schloss ($([ -s "$d/schloss/besitzer.txt" ] && echo ja || echo nein)) nicht"
++                return
++            fi
++            if [ "$2" = term ]; then
++                kill -TERM "$g" 2>/dev/null
++            else
++                taskkill -F -T -PID "$w" >/dev/null 2>&1
++                sleep 1
++                p=$(grep -m1 "^pid=" "$d/schloss/besitzer.txt" 2>/dev/null | tr -dc 0-9)
++                halter=tot
++                [ -z "$p" ] && [ ! -d "$d/schloss" ] && halter=gelöst
++                [ -n "$p" ] && lebt "$p" && halter=lebt
++            fi
++        fi
++        wait "$g" 2>/dev/null; E=$?
++        for k in $(seq 1 15); do
++            tot=ja
++            for p in $(enkel "$1"); do lebt "$p" && tot=nein; done
++            [ "$tot" = ja ] && [ ! -d "$d/schloss" ] && break
++            sleep 1
++        done
++        S=$(($(date +%s) - t0))
++        schloss=gelöst; [ -d "$d/schloss" ] && schloss=steht
++        for p in $(enkel "$1"); do lebt "$p" && taskkill -F -PID "$p" >/dev/null 2>&1; done
++        [ "$2" = start ] || { [ -s "$d/bg.pid" ] && [ -s "$d/fg.pid" ]; } || ok=0
++        [ "$tot" = ja ] && [ "$schloss" = gelöst ] || ok=0
++        [ -n "$3" ] && [ "$E" != "$3" ] && ok=0
++        [ "$halter" = tot ] && ok=0
++        if [ $ok = 1 ]; then echo "GRÜN $1  $2: Exit $E, Enkel tot, das Schloss gelöst${nannte:+ (beim Schnitt nannte es $nannte)}${halter:+ (eine Sekunde danach: Halter $halter)} ($S s)"
++        else echo "ROT $1  $2: Exit $E${3:+ (Soll $3)} · Enkel tot: $tot · Schloss $schloss${nannte:+ · beim Schnitt nannte es $nannte}${halter:+ · Halter eine Sekunde nach dem Schnitt: $halter (Soll lebt oder gelöst)} · $S s"; rot=1; fi
++    }
++    baum g deckel 124
++    baum h term 143
++    baum i taskkill ""
++    baum j start ""
++else echo "UNGEMESSEN g h i j  kein node auf dem Pfad"; fi
+ rm -rf "$T"
+ exit $rot
