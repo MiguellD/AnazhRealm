@@ -17,6 +17,8 @@
 //   node scripts/diag-worker-dichte.cjs --selftest     der Faden lädt den Kern mit der Höhe + 1 cm — er MUSS rot werden
 //   node scripts/diag-worker-dichte.cjs --kern [--selftest] [--json datei]
 //                                                      die Kern-Probe (Kopf von `kernProbe`)
+//   node scripts/diag-worker-dichte.cjs --boeschung [--selftest] [--wurzel dir]
+//                                                      die Böschungs-Linse ohne Browser (Kopf von `boeschung`)
 //   node scripts/diag-worker-dichte.cjs --abdruck datei [--wurzel dir]
 //                                                      der BYTE-ABDRUCK beider Welten (SHA-256 je Gitter, Main UND
 //                                                      Worker, und der Makro-Höhe auf einem 64×64-Gitter für drei
@@ -350,7 +352,13 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                     out.shaLeserSaaten = {};
                     const seedAlt = s.worldMeta.seed;
                     const macroAlt = s.worldMeta.macro;
+                    const erdbauAlt = s.worldMeta.erdbau;
+                    // DIE WELTGRENZE (erdbau-boeschung, wie `gebaut`): eine frische Saat trägt nie den Erdbau der Boot-Welt —
+                    // bis hier lag der Genesis-Ort der Boot-Saat (Rondell 90,31 m) im Abdruck jeder Sweep-Saat
                     const regenesis = (saat, macro) => {
+                        if (saat !== seedAlt) s.worldMeta.erdbau = {};
+                        else if (erdbauAlt === undefined) delete s.worldMeta.erdbau;
+                        else s.worldMeta.erdbau = erdbauAlt;
                         s.worldMeta.seed = saat;
                         if (macro !== undefined) s.worldMeta.macro = macro;
                         else delete s.worldMeta.macro;
@@ -930,8 +938,9 @@ async function kernProbe(page, url) {
 // Kliff ≥ 60° ≥ 2 %, Schutthang 30–40° ≥ 5 %, Pediment 0,5–7° ≥ 20 %. Der Täter je Ziel steht beim Namen.
 //   --realismus [--json datei] [--selftest]   Selbsttest: eine Eier-Karton-Störung (±3 m, λ 80 m) MUSS die Senken rot färben
 const REALISMUS_SAATEN = ["anazh-realm-seed", "w-sweepalpha0001-aaaaaa", "w-sweepbeta00002-bbbbbb"];
-function gelaendeKern(wurzel) {
-    const c = require("./lib/asset-worker-harness.cjs").kernAusText([ausDatei(path.join(wurzel, "vendor", "simplex-noise.js")), kernQuelle(wurzel)]);
+// `mutante` [alt, neu] (optional): der Kern mit EINER ersetzten Zeile (der eingepflanzte Täter eines Selbsttests)
+function gelaendeKern(wurzel, mutante = ["", ""]) {
+    const c = require("./lib/asset-worker-harness.cjs").kernAusText([ausDatei(path.join(wurzel, "vendor", "simplex-noise.js")), String(kernQuelle(wurzel)).replace(...mutante)]);
     return { G: c.__gelaendeCore, SimplexNoise: c.SimplexNoise };
 }
 // Die Lage einer frisch geborenen Welt der Saat: der Grund und die Lage-Rechnung aus DIESEM Kern (`GRUND`, `lageAus`),
@@ -1277,6 +1286,177 @@ function realismus() {
     console.log(
         `\n${rot ? "⛔ GELÄNDE-LINSE ROT" : "✅ GELÄNDE-LINSE GRÜN: alle Natur-Zahlen im Korridor, drei Saaten, jedes Preset an jeder Saat"}\n`
     );
+    return rot ? 1 : 0;
+}
+
+// ── DIE BÖSCHUNGS-LINSE (erdbau-boeschung, `--boeschung`): der Erdbau eines Orts läuft stetig in die Natur aus. Je Ort die
+// größte Höhen-Stufe zwischen zwei Nachbar-Proben im 0,5-m-Raster, abzüglich der Stufe der Natur an derselben Kante, im Ring
+// 10–60 m Abstand zur nächsten Fläche (Platte/Trasse) — über die Reichweite des Kerns (`ERDBAU.reichweiteM`) hinaus. ROT ab
+// 0,6 m je 0,5 m (steiler als die steile Böschung des Kerns, 45°), beim Namen: Ort, (x, z), Höhe beider Proben, Abstand.
+// Die Orte: der Genesis-Ort, die Stadt des Haushalts (`stadt-voll`, ihre Gründung) und zwei Dörfer am Hang, an denen bis
+// erdbau-boeschung die Stufe stand (12,7 und 19,5 m bei 16 m). Der Konsum-Leser: `hoehe` über der Lage mit `erdbau` —
+// der Chunk-Boden des Fadens (voxel-worker `state.erdbau`) und der Fuß im Stamm (`_erdbauNorm`), gate:worker-dichte --kern
+// hält beide = Kern. Das Gesetz aus der gemessenen Wurzel (`--wurzel`), Plan und Linse aus DIESEM Baum.
+//   --boeschung [--selftest]   Selbsttest: der Kern mit der Reichweite von main bis erdbau-boeschung (der harte Schnitt bei
+//                              16 m) MUSS am Genesis-Ort rot werden, die Stufe bei 16 ± 1 m
+const BOESCHUNG = Object.freeze({
+    schrittM: 0.5,
+    schwelleM: 0.6,
+    ring: [10, 60],
+    doerfer: [
+        { name: "dorf 20 8", seed: 20, nH: 8, x: -730.4, z: -875.3 },
+        { name: "dorf 12 18", seed: 12, nH: 18, x: -1855, z: -1075 },
+    ],
+    mutante: ["const R = ERDBAU.reichweiteM;\n        let fest = NaN;", "const R = 16;\n        let fest = NaN;"],
+});
+function boeschungKerne(wurzel, mutiert) {
+    if (mutiert && String(kernQuelle(wurzel)).split(BOESCHUNG.mutante[0]).length !== 2) return null;
+    const K = gelaendeKern(wurzel, mutiert ? BOESCHUNG.mutante : undefined);
+    // der Plan aus DIESEM Baum (der Studio-Kern mit Samen und Schmiede, gegen die Engine der Kerne)
+    const FC = require("./lib/welt-boot.cjs").studioKern("fachwerk-core.js", "__fachwerkCore");
+    return { ...K, FC, EINGANG: globalThis.__samenCore.EINGANG };
+}
+// die Orte als Erdbau-Listen (der Plan v2, fachwerk `ortPlan` auf dem Gelände-Kern — derselbe Gang wie der Wirt)
+function boeschungOrte(K, L, nur) {
+    const { G, FC } = K;
+    const orte = [];
+    const ort = (name, seed, nH, anker) => {
+        const plan = FC.exportSettlement({ seed, nH, hoehe: G.hoehenRaster(L, anker.x, anker.z, FC.trasseRahmen(nH)) });
+        orte.push({ name, erdbau: FC.ortPlan(plan, anker, G.ortCtx(L)).erdbau });
+    };
+    const welten = FC.GENESIS_ORT.tafel.map((t) => t.welt);
+    orte.push({ name: "genesis", erdbau: FC.ortPlan(FC.genesisLayout(FC.genesisSaat(K.EINGANG), welten), { x: 0, z: 0 }, G.ortCtx(L)).erdbau });
+    if (nur) return orte;
+    const g = require("./lib/band-urteil.cjs").ladeSpec("stadt-voll").ort.gruendung;
+    const [same, haeuser] = g.wort.split(" ").slice(1).map(Number);
+    ort(`stadt-voll (${g.wort})`, same, haeuser, { x: g.anker[0], z: g.anker[1] });
+    for (const d of BOESCHUNG.doerfer) ort(d.name, d.seed, d.nH, d);
+    return orte;
+}
+// die größte Stufe im Ring um EINEN Erdbau (die Abstände aus einem eigenen 8-m-Netz der Flächen)
+function boeschungStufe(G, L, erdbau) {
+    const { schrittM: S, ring } = BOESCHUNG;
+    const [R0, R1] = ring;
+    const E = G.erdbauNormal(erdbau);
+    const Le = Object.assign({}, L, { erdbau: E });
+    const C = 8;
+    const netz = new Map();
+    let [bx0, bx1, bz0, bz1] = [Infinity, -Infinity, Infinity, -Infinity];
+    for (const p of E.splats) {
+        if (p.frei) continue;
+        let x0, x1, z0, z1;
+        if (p.platte) {
+            const hx = Math.abs(p.ex * p.c) + Math.abs(p.ez * p.s);
+            const hz = Math.abs(p.ex * p.s) + Math.abs(p.ez * p.c);
+            [x0, x1, z0, z1] = [p.cx - hx, p.cx + hx, p.cz - hz, p.cz + hz];
+        } else {
+            [x0, x1] = [Math.min(p.x0, p.x0 + p.dx) - p.hw, Math.max(p.x0, p.x0 + p.dx) + p.hw];
+            [z0, z1] = [Math.min(p.z0, p.z0 + p.dz) - p.hw, Math.max(p.z0, p.z0 + p.dz) + p.hw];
+        }
+        [bx0, bx1, bz0, bz1] = [Math.min(bx0, x0), Math.max(bx1, x1), Math.min(bz0, z0), Math.max(bz1, z1)];
+        for (let a = Math.floor((x0 - R1) / C); a <= Math.floor((x1 + R1) / C); a++)
+            for (let b = Math.floor((z0 - R1) / C); b <= Math.floor((z1 + R1) / C); b++) {
+                const k = a * 100000 + b;
+                const l = netz.get(k);
+                if (l) l.push(p);
+                else netz.set(k, [p]);
+            }
+    }
+    const abstand = (x, z) => {
+        const l = netz.get(Math.floor(x / C) * 100000 + Math.floor(z / C));
+        let m = Infinity;
+        for (const p of l || []) {
+            let d;
+            if (p.platte) {
+                const dx = x - p.cx;
+                const dz = z - p.cz;
+                const u = Math.abs(dx * p.c - dz * p.s) - p.ex;
+                const v = Math.abs(dx * p.s + dz * p.c) - p.ez;
+                d = u > 0 ? (v > 0 ? Math.hypot(u, v) : u) : v > 0 ? v : 0;
+            } else {
+                let q = p.len2 > 0 ? ((x - p.x0) * p.dx + (z - p.z0) * p.dz) / p.len2 : 0;
+                q = q < 0 ? 0 : q > 1 ? 1 : q;
+                d = Math.max(0, Math.hypot(x - (p.x0 + p.dx * q), z - (p.z0 + p.dz * q)) - p.hw);
+            }
+            if (d < m) m = d;
+        }
+        return m;
+    };
+    const X0 = Math.floor((bx0 - R1) / S) * S;
+    const Z0 = Math.floor((bz0 - R1) / S) * S;
+    const nx = Math.ceil((bx1 - bx0 + 2 * R1) / S) + 2;
+    const nz = Math.ceil((bz1 - bz0 + 2 * R1) / S) + 2;
+    const D = new Float32Array(nx * nz);
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) D[i + j * nx] = abstand(X0 + i * S, Z0 + j * S);
+    const HE = new Float64Array(nx * nz).fill(NaN);
+    const HN = new Float64Array(nx * nz);
+    const h = (i, j) => {
+        const k = i + j * nx;
+        if (HE[k] !== HE[k]) {
+            HN[k] = G.hoehe(L, X0 + i * S, Z0 + j * S, true);
+            HE[k] = G.hoehe(Le, X0 + i * S, Z0 + j * S, true);
+        }
+        return k;
+    };
+    let max = { s: 0 };
+    let ueber = 0;
+    let kanten = 0;
+    for (let j = 0; j + 1 < nz; j++)
+        for (let i = 0; i + 1 < nx; i++) {
+            const d = D[i + j * nx];
+            if (!(d >= R0 && d <= R1)) continue;
+            const a = h(i, j);
+            for (const b of [h(i + 1, j), h(i, j + 1)]) {
+                kanten++;
+                const s = Math.abs(HE[a] - HE[b]) - Math.abs(HN[a] - HN[b]);
+                if (s > BOESCHUNG.schwelleM) ueber++;
+                if (s > max.s) max = { s, x: X0 + i * S, z: Z0 + j * S, d, ha: HE[a], hb: HE[b], na: HN[a], nb: HN[b] };
+            }
+        }
+    return { max, ueber, kanten, splats: E.splats.length };
+}
+function boeschungLauf(K, nur) {
+    const L = K.G.lageGrund(K.EINGANG, K.SimplexNoise);
+    const t0 = Date.now();
+    const orte = boeschungOrte(K, L, nur);
+    const tPlan = Date.now() - t0;
+    const je = orte.map((o) => {
+        const t1 = Date.now();
+        const m = boeschungStufe(K.G, L, o.erdbau);
+        return { name: o.name, ...m, ms: Date.now() - t1 };
+    });
+    return { je, tPlan };
+}
+function boeschungZeile(z) {
+    const M = z.max;
+    const f = (v) => v.toFixed(2).replace(".", ",");
+    const wo = M.s > 0 ? ` an ${M.x}/${M.z}, ${f(M.d)} m neben der Fläche: Höhe ${f(M.ha)} → ${f(M.hb)} m (Natur ${f(M.na)} → ${f(M.nb)} m)` : "";
+    return `${z.name}: größte Stufe ${f(M.s)} m je ${String(BOESCHUNG.schrittM).replace(".", ",")} m${wo} · ${z.ueber}/${z.kanten} Kanten über ${String(BOESCHUNG.schwelleM).replace(".", ",")} m · ${z.splats} Splats · ${z.ms} ms`;
+}
+function boeschung() {
+    console.log(`\n========= DIE BÖSCHUNGS-LINSE — der Erdbau läuft stetig in die Natur aus (Ring ${BOESCHUNG.ring.join("–")} m, 0,5-m-Raster) =========`);
+    console.log("  Konsum-Leser: hoehe über der Lage mit erdbau — voxel-worker state.erdbau (der Chunk-Boden) · Stamm _erdbauNorm (der Fuß)");
+    let rot = false;
+    const { je, tPlan } = boeschungLauf(boeschungKerne(root, false), false);
+    console.log(`  (Pläne ${tPlan} ms)`);
+    for (const z of je) {
+        const r = z.max.s > BOESCHUNG.schwelleM;
+        rot = rot || r;
+        console.log(`  ${r ? "⛔ STUFE" : "✅"} ${boeschungZeile(z)}`);
+    }
+    if (SELBSTTEST) {
+        const K = boeschungKerne(root, true);
+        if (!K) {
+            console.log("  ⛔ SELBSTTEST: der Anker der Mutante (die Reichweite in erdbauY) steht nicht genau einmal im Kern");
+            rot = true;
+        } else {
+            const z = boeschungLauf(K, true).je[0];
+            const sieht = z.max.s > BOESCHUNG.schwelleM && Math.abs(z.max.d - 16) <= 1;
+            console.log(`  ${sieht ? "✅" : "⛔"} SELBSTTEST (der harte Schnitt bei 16 m eingepflanzt): ${sieht ? "ROT beim Namen" : "BLIEB UNSICHTBAR"} — ${boeschungZeile(z)}`);
+            rot = rot || !sieht;
+        }
+    }
+    console.log(`\n${rot ? "⛔ BÖSCHUNGS-LINSE ROT" : `✅ BÖSCHUNGS-LINSE GRÜN: ${je.length} Erdbauten ohne Stufe über ${String(BOESCHUNG.schwelleM).replace(".", ",")} m je 0,5 m`}\n`);
     return rot ? 1 : 0;
 }
 
@@ -1727,7 +1907,7 @@ async function gebaut(page) {
         console.log("  ⛔ GEBAUT: Boot nicht bereit nach 120 s");
         return 1;
     }
-    const { alle, stoerung } = await page.evaluate(
+    const { alle, stoerung, grenzeGestoert } = await page.evaluate(
         async (saaten, selbst) => {
             const s = st;
             await window
@@ -1805,11 +1985,34 @@ async function gebaut(page) {
             const bootMacro = s.worldMeta.macro;
             // die chirurgische Regenesis der Abdruck-Probe (die Ströme; das Netz des Gesetzbuchs ist je Saat gemerkt), dazu die
             // Hydrosphäre der Saat aus dem Faden (ihre Kacheln fallen; der Weg der Weltgen)
-            const regenesis = async (saat, macro) => {
+            // DIE WELTGRENZE (erdbau-boeschung): der Erdbau der Welt davor fällt, bevor die Saat ihren Genesis-Plan bestellt —
+            // eine neue Welt trägt nie den Grund der alten (`_weltMetaWechsel`). Bis hier blieb er: der Plan der Sweep-Saat las ihn
+            // im Faden (`ortCtx.hoeheAt`), sein Rondell stand auf 90,31 m über 37,64 m (alpha) und 35,11 m (beta) Naturboden — ein
+            // Hügel von 53 m, den kein Boot baut. `altGrund`: die Regenesis des alten Gesetzes (der Selbsttest, `planGrund`).
+            const regenesis = async (saat, macro, altGrund) => {
+                if (!altGrund) {
+                    for (const k of Object.keys(s.worldMeta.erdbau || {})) r._erdbauOrtFaellt(k);
+                    delete s.worldMeta.genesisOrt;
+                }
                 s.worldMeta.seed = saat;
                 if (macro !== undefined) s.worldMeta.macro = macro;
                 else delete s.worldMeta.macro;
                 await r._worldgenComputeAndBuildHydrosphere();
+            };
+            // DER PLAN STEHT AUF SEINER WELT (die Linse der Weltgrenze): das Rondell des Genesis-Plans (die Platte an der Mitte
+            // seines Orts) auf dem Boden seiner Saat ohne Erdbau (`_terrainSaatY`) — Abstand in m; ohne Plan null
+            const planGrund = () => {
+                const g = s.worldMeta.genesisOrt;
+                const P = g && (s.worldMeta.erdbau || {})[g.key];
+                let best = null;
+                for (const p of P || []) {
+                    if (p.art !== "platte") continue;
+                    const d = Math.hypot(p.cx - g.x, p.cz - g.z);
+                    if (!best || d < best.d) best = { d, y: Number(p.y) };
+                }
+                if (!best) return null;
+                const boden = r._terrainSaatY(g.x, g.z, true);
+                return { y: +best.y.toFixed(2), boden: +boden.toFixed(2), ab: +Math.abs(best.y - boden).toFixed(2) };
             };
             const out = [];
             for (const saat of [bootSaat, ...saaten.filter((x) => x !== bootSaat)]) {
@@ -1829,10 +2032,20 @@ async function gebaut(page) {
                     voll: kurz(G.statistik(voll, n, S, wl, [], 0)),
                     ohneKanal: kurz(G.statistik(ohne, n, S, wl, [], 0)),
                     makro: kurz(G.statistik(Hm, n, S, wl, [], 0)),
+                    grund: planGrund(),
                 });
             }
             if (s.worldMeta.seed !== bootSaat) await regenesis(bootSaat, bootMacro);
             let stoerung = null;
+            let grenzeGestoert = null;
+            if (selbst) {
+                // die Störung der Weltgrenze: die Regenesis des alten Gesetzes (der Erdbau der Boot-Saat bleibt) in die erste
+                // fremde Saat — der Plan der Linse MUSS dort auf fremdem Grund stehen; danach die Boot-Saat mit ihrer Grenze
+                const fremd = saaten.find((x) => x !== bootSaat);
+                await regenesis(fremd, undefined, true);
+                grenzeGestoert = { seed: fremd, grund: planGrund() };
+                await regenesis(bootSaat, bootMacro);
+            }
             if (selbst) {
                 // die Störung: die Bett-Tiefe des alten Gesetzes (der Kanal als Graben unter der Aue: ohne `kanalTiefe`)
                 await ausDemFaden({ ...AnazhRealm.HYDROSPHERE, kanalTiefe: Infinity });
@@ -1841,12 +2054,14 @@ async function gebaut(page) {
                 await ausDemFaden(null);
                 stoerung = kurz(G.statistik(gestoert, n, S, wl, [], 0));
             }
-            return { alle: out, stoerung };
+            return { alle: out, stoerung, grenzeGestoert };
         },
         REALISMUS_SAATEN,
         SELBSTTEST
     );
     const gruen = (x) => x.senken <= 1 && x.dorf >= 3;
+    // die Weltgrenze: das Rondell des Genesis-Plans steht ≤ 0,5 m über oder unter dem Boden seiner Saat (null: kein Plan)
+    const aufSeinerWelt = (g) => !!g && g.ab <= 0.5;
     // der Mäander im Wasser: Median der Sinuosität der flachen 400-m-Fenster ≥ 1,25 (ohne flaches Fenster kein Urteil)
     const maeanderGut = (m) => !m.fenster || m.sinuositaet >= 1.25;
     let rot = false;
@@ -1865,6 +2080,17 @@ async function gebaut(page) {
             rot = true;
             console.log(
                 "  ⛔ das Wasser läuft gerade: die Fluss-Punkte folgen der Sehne, nicht der Bahn (`hydroNetzFluesse` liest `bahn` des Kerns)"
+            );
+        }
+        console.log(
+            `  Weltgrenze: Rondell des Genesis-Plans ${out.grund ? `${out.grund.y} m über Boden ${out.grund.boden} m (Abstand ${out.grund.ab} m)` : "– (kein Plan)"}`
+        );
+        if (!aufSeinerWelt(out.grund)) {
+            rot = true;
+            console.log(
+                out.grund
+                    ? `  ⛔ DIE REGENESIS TRÄGT DEN GRUND DER WELT DAVOR: der Genesis-Plan der Saat ${out.seed} las den Erdbau der alten Welt im Faden (\`ortCtx.hoeheAt\`) — die Linse mäße einen Hügel, den kein Boot baut (\`regenesis\` ohne Weltgrenze)`
+                    : `  ⛔ OHNE PLAN: die Saat ${out.seed} trägt keinen Genesis-Plan — die Weltgrenze bleibt ungemessen`
             );
         }
         if (!out.hydro || !out.fluesse) {
@@ -1896,6 +2122,12 @@ async function gebaut(page) {
             `\n  Selbsttest-Störung (Bett-Tiefe des alten Gesetzes, Saat ${alle[0].seed}): Senken>1m ${st ? st.senken : "–"}/km² · Dorfplätze ${st ? st.dorf : "–"} → ${blind ? "⛔ SELBSTTEST ROT: die Störung blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Störung färbt den Boden rot"}`
         );
         if (blind) rot = true;
+        const g = grenzeGestoert;
+        const grenzeSieht = !!g && !!g.grund && !aufSeinerWelt(g.grund);
+        console.log(
+            `  Selbsttest-Weltgrenze (Regenesis ohne Grenze in ${g ? g.seed : "–"}): Rondell ${g && g.grund ? `${g.grund.y} m über Boden ${g.grund.boden} m` : "–"} → ${grenzeSieht ? "✅ rot erkannt" : "⛔ blind"}`
+        );
+        if (!grenzeSieht) rot = true;
     }
     console.log(
         `\n${rot ? "⛔ GEBAUTER BODEN ROT" : `✅ GEBAUTER BODEN GRÜN: Senken und Dorfplätze im Korridor, ${alle.length} Saaten`}\n`
@@ -2767,6 +2999,7 @@ async function faden(page, url) {
 
 hauptLauf(async () => {
     if (argv.includes("--realismus")) process.exit(realismus());
+    if (argv.includes("--boeschung")) process.exit(boeschung());
     await server.lausche(PORT);
     // `--faden --echt`: das Fenster an der echten GPU (die Adapter-Zeile `[linse-gpu]`), jede andere Probe am Null-Renderer
     const browser = await starteBrowser({ art: ECHT ? "echt" : "standard", headless: !ECHT, frist: 900000 });
