@@ -17586,10 +17586,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 17,
+    "heute": 18,
     "kern": 3,
     "kernDazu": 3,
-    "anteilHeute": 8,
+    "anteilHeute": 8.5,
     "anteilKern": 1
    },
    "perspektiven": [
@@ -18213,12 +18213,13 @@
        "richter": "1 000 Zufallsorte jeder Welt: Merkmale ohne Ursache = 0"
       }
      ],
-     "heute": 1,
+     "heute": 2,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Unter der Leiter: Findlinge „Eiszeit-Erratiker“ ohne je ein Eis (stamm/vegetation-baum.js:3246) — der erste Zwilling der Tiefen Zeit; die Landform ist Rauschen neben jeder Geschichte.",
      "alt": [],
      "heuteSprossen": [
+      2,
       6
      ],
      "kernSprossen": []
@@ -20093,11 +20094,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 118,
+  "heute": 119,
   "davonKopplungen": 33,
   "kern": 5,
   "kernDazu": 5,
-  "anteilHeute": 6.1,
+  "anteilHeute": 6.2,
   "anteilKern": 0.2,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20108,7 +20109,7 @@
   },
   "gliederLeitern": 9,
   "beide": 60,
-  "nachwache": 58
+  "nachwache": 59
  },
  "zusammengelegt": [
   {
