@@ -1,6 +1,477 @@
 {
  "proben": {
   "partner": {
+   "diag": [
+    {
+     "n": "streuNah:geroell:1:L0:0",
+     "vis": true,
+     "cnt": 21,
+     "kl": [
+      "streuNah:geroell",
+      "streuNah:geroell"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:blume:2:L0:0",
+     "vis": true,
+     "cnt": 50,
+     "kl": [
+      "streuNah:blume",
+      "streuNah:blume"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:blume:2:L0:1",
+     "vis": true,
+     "cnt": 50,
+     "kl": [
+      "streuNah:blume",
+      "streuNah:blume"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:blume:2:L2:0",
+     "vis": true,
+     "cnt": 50,
+     "kl": [
+      "streuNah:blume",
+      "streuNah:blume"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:blume:2:L2:1",
+     "vis": true,
+     "cnt": 50,
+     "kl": [
+      "streuNah:blume",
+      "streuNah:blume"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:gestruepp:1:L0:0",
+     "vis": true,
+     "cnt": 27,
+     "kl": [
+      "streuNah:gestruepp",
+      "streuNah:gestruepp"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:gestruepp:1:L0:1",
+     "vis": true,
+     "cnt": 27,
+     "kl": [
+      "streuNah:gestruepp",
+      "streuNah:gestruepp"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:gestruepp:1:L1:0",
+     "vis": true,
+     "cnt": 27,
+     "kl": [
+      "streuNah:gestruepp",
+      "streuNah:gestruepp"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:farn:1:L0:0",
+     "vis": true,
+     "cnt": 13,
+     "kl": [
+      "streuNah:farn",
+      "streuNah:farn"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:farn:1:L1:0",
+     "vis": true,
+     "cnt": 13,
+     "kl": [
+      "streuNah:farn",
+      "streuNah:farn"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:farn:2:L0:0",
+     "vis": true,
+     "cnt": 27,
+     "kl": [
+      "streuNah:farn",
+      "streuNah:farn"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:farn:2:L1:0",
+     "vis": true,
+     "cnt": 27,
+     "kl": [
+      "streuNah:farn",
+      "streuNah:farn"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:stumpf:1:L0:0",
+     "vis": true,
+     "cnt": 1,
+     "kl": [
+      "streuNah:stumpf",
+      "streuNah:stumpf"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:stumpf:1:L1:0",
+     "vis": true,
+     "cnt": 1,
+     "kl": [
+      "streuNah:stumpf",
+      "streuNah:stumpf"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:totstamm:1:L0:0",
+     "vis": true,
+     "cnt": 1,
+     "kl": [
+      "streuNah:totstamm",
+      "streuNah:totstamm"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:totstamm:1:L1:0",
+     "vis": true,
+     "cnt": 1,
+     "kl": [
+      "streuNah:totstamm",
+      "streuNah:totstamm"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:blume:1:L0:0",
+     "vis": true,
+     "cnt": 46,
+     "kl": [
+      "streuNah:blume",
+      "streuNah:blume"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:blume:1:L0:1",
+     "vis": true,
+     "cnt": 46,
+     "kl": [
+      "streuNah:blume",
+      "streuNah:blume"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:blume:1:L2:0",
+     "vis": true,
+     "cnt": 46,
+     "kl": [
+      "streuNah:blume",
+      "streuNah:blume"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "n": "streuNah:blume:1:L2:1",
+     "vis": true,
+     "cnt": 46,
+     "kl": [
+      "streuNah:blume",
+      "streuNah:blume"
+     ],
+     "ar": true,
+     "geo": true,
+     "inst": true,
+     "top": null,
+     "mv": true
+    },
+    {
+     "senken": [
+      {
+       "k": "blume:1:L0:0",
+       "anz": 46,
+       "bl": 42,
+       "n": 46,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "blume:1:L0:1",
+       "anz": 46,
+       "bl": 42,
+       "n": 46,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "blume:1:L2:0",
+       "anz": 46,
+       "bl": 42,
+       "n": 46,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "blume:1:L2:1",
+       "anz": 46,
+       "bl": 42,
+       "n": 46,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "geroell:1:L0:0",
+       "anz": 21,
+       "bl": 21,
+       "n": 21,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "blume:2:L0:0",
+       "anz": 50,
+       "bl": 44,
+       "n": 50,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "blume:2:L0:1",
+       "anz": 50,
+       "bl": 44,
+       "n": 50,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "blume:2:L2:0",
+       "anz": 50,
+       "bl": 44,
+       "n": 50,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "blume:2:L2:1",
+       "anz": 50,
+       "bl": 44,
+       "n": 50,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "gestruepp:1:L0:0",
+       "anz": 27,
+       "bl": 23,
+       "n": 27,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "gestruepp:1:L0:1",
+       "anz": 27,
+       "bl": 23,
+       "n": 27,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "gestruepp:1:L1:0",
+       "anz": 27,
+       "bl": 23,
+       "n": 27,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "farn:1:L0:0",
+       "anz": 13,
+       "bl": 9,
+       "n": 13,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "farn:1:L1:0",
+       "anz": 13,
+       "bl": 9,
+       "n": 13,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "farn:2:L0:0",
+       "anz": 27,
+       "bl": 18,
+       "n": 27,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "farn:2:L1:0",
+       "anz": 27,
+       "bl": 18,
+       "n": 27,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "stumpf:1:L0:0",
+       "anz": 1,
+       "bl": 1,
+       "n": 1,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "stumpf:1:L1:0",
+       "anz": 1,
+       "bl": 1,
+       "n": 1,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "totstamm:1:L0:0",
+       "anz": 1,
+       "bl": 1,
+       "n": 1,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      },
+      {
+       "k": "totstamm:1:L1:0",
+       "anz": 1,
+       "bl": 1,
+       "n": 1,
+       "mesh": true,
+       "vis": true,
+       "par": "Scene"
+      }
+     ],
+     "season": "summer",
+     "ort": [
+      -320.4,
+      -1045.6
+     ]
+    }
+   ],
    "orte": [
     [
      -320.4,
@@ -54,8 +525,8 @@
       -1085.6
      ],
      "klasse": "^tier:bestaeuber|blume",
-     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-1.png",
-     "fehler": "ABNAHME ROT [Ziel Blickziel verdeckt von Rinde grown_busch_hazel_v2 in 3.57 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 10.55 m · Luma 43.9 σ 29.5 schwarz 0.2 % weiß 0.0 % · Stand 18.546.299 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-1-rot.png",
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\blueten\\blueten-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-1.png",
+     "fehler": "ABNAHME ROT [Ziel Blickziel verdeckt von Rinde grown_busch_hazel_v2 in 3.57 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 10.55 m · Luma 43.9 σ 29.5 schwarz 0.2 % weiß 0.0 % · Stand 18.546.299 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\blueten\\blueten-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-1-rot.png",
      "klassen": null
     },
     {
@@ -72,11 +543,11 @@
       -1045.6
      ],
      "klasse": "^tier:bestaeuber|blume",
-     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-2.png",
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\blueten\\blueten-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-2.png",
      "fehler": null,
      "klassen": {
       "tier:bestaeuber": {
-       "pixel": 4,
+       "pixel": 9,
        "objekte": 1
       }
      }
@@ -95,8 +566,8 @@
       -1005.6
      ],
      "klasse": "^tier:bestaeuber|blume",
-     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-3.png",
-     "fehler": "ABNAHME ROT [Vordergrund 39.9 % näher als 5.24 m (der halbe Ziel-Abstand): Laub baum_erle 11.8 %, Laub baum_eiche 10.1 %, Laub baum_birke 9.6 %] · beweis · Sicht 0.1 % (Laub baum_birke 0.1 %) · Ziel Blickziel im Bild frei 10.49 m · Luma 34 σ 21.3 schwarz 0.6 % weiß 0.0 % · Stand 18.546.299 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-3-rot.png",
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\blueten\\blueten-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-3.png",
+     "fehler": "ABNAHME ROT [Vordergrund 39.9 % näher als 5.24 m (der halbe Ziel-Abstand): Laub baum_erle 11.8 %, Laub baum_eiche 10.1 %, Laub baum_birke 9.6 %] · beweis · Sicht 0.1 % (Laub baum_birke 0.1 %) · Ziel Blickziel im Bild frei 10.49 m · Luma 34 σ 21.2 schwarz 0.6 % weiß 0.0 % · Stand 18.546.299 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\blueten\\blueten-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-3-rot.png",
      "klassen": null
     },
     {
@@ -113,7 +584,7 @@
       -1085.6
      ],
      "klasse": "^tier:bestaeuber|blume",
-     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-4.png",
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\blueten\\blueten-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-4.png",
      "fehler": null,
      "klassen": {}
     },
@@ -131,11 +602,11 @@
       -1045.6
      ],
      "klasse": "^tier:bestaeuber|blume",
-     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-5.png",
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\blueten\\blueten-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-5.png",
      "fehler": null,
      "klassen": {
       "tier:bestaeuber": {
-       "pixel": 9,
+       "pixel": 5,
        "objekte": 1
       }
      }
@@ -154,9 +625,14 @@
       -1005.6
      ],
      "klasse": "^tier:bestaeuber|blume",
-     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-6.png",
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\blueten\\blueten-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-6.png",
      "fehler": null,
-     "klassen": {}
+     "klassen": {
+      "tier:bestaeuber": {
+       "pixel": 2,
+       "objekte": 1
+      }
+     }
     },
     {
      "vor": [
@@ -172,9 +648,14 @@
       -1085.6
      ],
      "klasse": "^tier:bestaeuber|blume",
-     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-7.png",
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\blueten\\blueten-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-7.png",
      "fehler": null,
-     "klassen": {}
+     "klassen": {
+      "tier:bestaeuber": {
+       "pixel": 24,
+       "objekte": 1
+      }
+     }
     },
     {
      "vor": [
@@ -190,9 +671,14 @@
       -1045.6
      ],
      "klasse": "^tier:bestaeuber|blume",
-     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-8.png",
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\blueten\\blueten-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-8.png",
      "fehler": null,
-     "klassen": {}
+     "klassen": {
+      "tier:bestaeuber": {
+       "pixel": 14,
+       "objekte": 1
+      }
+     }
     },
     {
      "vor": [
@@ -208,7 +694,7 @@
       -1005.6
      ],
      "klasse": "^tier:bestaeuber|blume",
-     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-9.png",
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\blueten\\blueten-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-9.png",
      "fehler": null,
      "klassen": {
       "tier:bestaeuber": {
@@ -218,7 +704,7 @@
      }
     }
    ],
-   "sek": 79.6
+   "sek": 82.2
   }
  },
  "fehler": []

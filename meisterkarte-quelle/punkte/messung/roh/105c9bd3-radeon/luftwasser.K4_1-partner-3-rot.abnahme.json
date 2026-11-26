@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 64,
+  "weltTakte": 185,
   "zeilen": 1080
  },
  "geraet": {
@@ -55,7 +55,7 @@
   "leiber": null,
   "abstand": 10.49,
   "gestalt": [
-   "grown_busch_hazel_v1 42"
+   "grown_busch_hazel_v1 202"
   ],
   "gezeichnet": true
  },
@@ -76,12 +76,12 @@
   "w": 1920,
   "h": 1080,
   "mittel": 34,
-  "sigma": 21.3,
-  "schwarz": 0.0056,
+  "sigma": 21.2,
+  "schwarz": 0.0057,
   "weiss": 0
  },
  "ok": false,
- "zeile": "ABNAHME ROT [Vordergrund 39.9 % näher als 5.24 m (der halbe Ziel-Abstand): Laub baum_erle 11.8 %, Laub baum_eiche 10.1 %, Laub baum_birke 9.6 %] · beweis · Sicht 0.1 % (Laub baum_birke 0.1 %) · Ziel Blickziel im Bild frei 10.49 m · Luma 34 σ 21.3 schwarz 0.6 % weiß 0.0 % · Stand 18.546.299 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "zeile": "ABNAHME ROT [Vordergrund 39.9 % näher als 5.24 m (der halbe Ziel-Abstand): Laub baum_erle 11.8 %, Laub baum_eiche 10.1 %, Laub baum_birke 9.6 %] · beweis · Sicht 0.1 % (Laub baum_birke 0.1 %) · Ziel Blickziel im Bild frei 10.49 m · Luma 34 σ 21.2 schwarz 0.6 % weiß 0.0 % · Stand 18.546.299 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
  "rot": [
   {
    "feld": "sicht.vordergrund.deckung",
@@ -95,15 +95,15 @@
   "rauschen": {
    "anteil": 0,
    "pixel": 0,
-   "max": 2
+   "max": 0
   },
   "misch": 0,
   "kenn": {
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 1375,
-   "wechsel": 1165931
+   "ms": 1297,
+   "wechsel": 1165465
   },
   "rinde": null,
   "toene": [
@@ -113,6 +113,6 @@
   "klassen": {},
   "abstand": null,
   "gesicht": null,
-  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-3-rot.maske.png"
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\blueten\\blueten-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-3-rot.maske.png"
  }
 }

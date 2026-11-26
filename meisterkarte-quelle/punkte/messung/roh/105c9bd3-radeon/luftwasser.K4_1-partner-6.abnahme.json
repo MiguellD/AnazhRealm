@@ -78,7 +78,7 @@
   "h": 1080,
   "mittel": 27.5,
   "sigma": 24.6,
-  "schwarz": 0.0137,
+  "schwarz": 0.0138,
   "weiss": 0
  },
  "ok": true,
@@ -98,8 +98,8 @@
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 2007,
-   "wechsel": 1161918
+   "ms": 2053,
+   "wechsel": 1161773
   },
   "rinde": null,
   "toene": [
@@ -107,9 +107,14 @@
    "streuNah:blume=80/255/80",
    "tier:bestaeuber=80/120/255"
   ],
-  "klassen": {},
+  "klassen": {
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 2
+   }
+  },
   "abstand": null,
   "gesicht": null,
-  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-6.maske.png"
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\blueten\\blueten-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-6.maske.png"
  }
 }

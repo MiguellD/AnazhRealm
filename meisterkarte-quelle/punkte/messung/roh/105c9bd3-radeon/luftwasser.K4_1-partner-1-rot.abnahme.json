@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 48,
+  "weltTakte": 50,
   "zeilen": 1080
  },
  "geraet": {
@@ -51,7 +51,7 @@
   "leiber": null,
   "abstand": 10.55,
   "gestalt": [
-   "grown_busch_hazel_v2 234"
+   "grown_busch_hazel_v2 208"
   ],
   "gezeichnet": true
  },
@@ -98,8 +98,8 @@
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 1316,
-   "wechsel": 1162650
+   "ms": 1652,
+   "wechsel": 1162661
   },
   "rinde": null,
   "toene": [
@@ -109,11 +109,11 @@
   "klassen": {
    "tier:bestaeuber": {
     "objekte": 1,
-    "pixel": 17
+    "pixel": 11
    }
   },
   "abstand": null,
   "gesicht": null,
-  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-1-rot.maske.png"
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\blueten\\blueten-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-1-rot.maske.png"
  }
 }

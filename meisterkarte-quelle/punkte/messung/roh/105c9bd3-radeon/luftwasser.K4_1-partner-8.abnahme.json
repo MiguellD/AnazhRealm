@@ -66,13 +66,13 @@
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 99.2,
-  "sigma": 32.5,
+  "mittel": 99.1,
+  "sigma": 32.4,
   "schwarz": 0,
   "weiss": 0
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 10.46 m · Luma 99.2 σ 32.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.299 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 10.46 m · Luma 99.1 σ 32.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.299 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
  "rot": [],
  "urteil": "GRÜN",
  "klasse": {
@@ -81,15 +81,15 @@
   "rauschen": {
    "anteil": 0,
    "pixel": 0,
-   "max": 0
+   "max": 7
   },
   "misch": 0,
   "kenn": {
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 1781,
-   "wechsel": 1020905
+   "ms": 1432,
+   "wechsel": 1020960
   },
   "rinde": null,
   "toene": [
@@ -97,9 +97,14 @@
    "streuNah:blume=80/255/80",
    "tier:bestaeuber=80/120/255"
   ],
-  "klassen": {},
+  "klassen": {
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 14
+   }
+  },
   "abstand": null,
   "gesicht": null,
-  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-8.maske.png"
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\blueten\\blueten-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\105c9bd3-radeon\\luftwasser.K4_1-partner-8.maske.png"
  }
 }
