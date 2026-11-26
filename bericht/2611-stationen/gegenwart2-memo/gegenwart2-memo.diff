@@ -1,0 +1,169 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+index f8058058f9..b01e1f0533 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+@@ -1720,9 +1720,16 @@ L.perspektive("planet", (() => {
+                     // des SPIELS — der Konsum-Zeuge: an denselben Saaten zählen Faden und Kern dieselben Gipfel (sonst ROT beim Namen)
+                     // der Kern-Fächer von S2 startet VOR der Seite und rechnet neben ihr (gemessen an der Radeon: 26 s Kern + 25 s Seite nacheinander
+                     // = 51 s gegen den Deckel 60 s) — sein Urteil fällt unten, nach der Antwort der Seite
++                    // DAS KERN-MEMO (Koordinator 26.11. 03:15: „Kosten hängen an der ÄNDERUNG“): das Kern-Urteil der 100 Saaten ist eine reine
++                    // Funktion der Kern-Bytes und wird inhalts-adressiert gemerkt. Schlüssel = sha256 über planet-core.js · gelaende-core.js (die
++                    // Bytes des Spiel-Baums) · den Quelltext des Fächer-Arbeiters (SAAT, wie die Probe ihn trägt) · die Saat-Folge. Die Datei
++                    // ist messung/kern-memo/<schlüssel16>.json im pm-Baum (neben punkte.cjs: PUNKTE_MASCHINE der Sitzung). Treffer → das
++                    // gemerkte `je` (je Saat gipfel · konv · land · landKonv · antworten · hSumme · hQuadrat); kein Treffer → der Fächer wie
++                    // zuvor, danach geschrieben. Ein Memo, dessen Schlüssel nicht aus den Bytes dieses Kopfs folgt, zählt 0 Saaten (der Zeuge
++                    // nennt es ROT) — nie still neu gerechnet. Der Faden des SPIELS fährt seine 4 Saaten in jedem Lauf, mit und ohne Treffer.
+                     const samenS2 = await H.seite("return r._planetSamen();");
+-                    const s2Kern = new Promise((gebenS2, fehlS2) => {
+-                        const { Worker } = require("worker_threads"), wurzel = require("path").resolve("."), F = Math.max(1, Math.min(8, require("os").cpus().length));
++                    const s2Kern = (async () => {
++                        const fs = require("fs"), path = require("path"), wurzel = path.resolve("."), F = Math.max(1, Math.min(8, require("os").cpus().length));
+                         const SAAT = `
+                             const { parentPort, workerData } = require("worker_threads"), path = require("path");
+                             globalThis.self = globalThis; require(path.join(workerData.wurzel, "gelaende-core.js"));
+@@ -1750,26 +1757,51 @@ L.perspektive("planet", (() => {
+                                 parentPort.postMessage(a);
+                             }
+                             parentPort.postMessage(null);`;
+-                        const saaten = Array.from({ length: 100 }, (_, si) => (si === 0 ? samenS2 : "zsp-" + (si - 1))), je = [], t2 = Date.now();
+-                        let offen = F;
+-                        for (let f = 0; f < F; f++) {
+-                            const wk = new Worker(SAAT, { eval: true, workerData: { wurzel, saaten: saaten.filter((_, i) => i % F === f) } });
+-                            wk.on("error", fehlS2);
+-                            wk.on("message", (m) => {
+-                                if (m) return je.push(m);
+-                                if (--offen) return;
+-                                const g = { gipfel: 0, konv: 0, saaten: je.length, antworten: 0, land: 0, landKonv: 0, faeden: F, ms: Date.now() - t2, version: require(require("path").resolve("planet-core.js")).VERSION };
+-                                let hs = 0, hq = 0;
+-                                for (const a of je) { for (const k of ["gipfel", "konv", "antworten", "land", "landKonv"]) g[k] += a[k]; hs += a.hSumme; hq += a.hQuadrat; }
+-                                const mh = hs / Math.max(1, g.antworten);
+-                                g.streuung = Math.round(1e3 * Math.sqrt(Math.max(0, hq / Math.max(1, g.antworten) - mh * mh))) / 1e3;
+-                                g.je = je.map((x) => ({ samen: x.samen, gipfel: x.gipfel, konv: x.konv, land: x.land, landKonv: x.landKonv }));
+-                                g.saatFolge = saaten;
+-                                g.unter95 = je.filter((a) => a.gipfel && a.konv / a.gipfel < 0.95).map((a) => a.samen + " " + a.konv + "/" + a.gipfel);
+-                                gebenS2(g);
+-                            });
++                        const saaten = Array.from({ length: 100 }, (_, si) => (si === 0 ? samenS2 : "zsp-" + (si - 1))), t2 = Date.now();
++                        const h = require("crypto").createHash("sha256");
++                        for (const [n, b] of [["planet-core.js", fs.readFileSync(path.join(wurzel, "planet-core.js"))], ["gelaende-core.js", fs.readFileSync(path.join(wurzel, "gelaende-core.js"))], ["SAAT", Buffer.from(SAAT)], ["saaten", Buffer.from(JSON.stringify(saaten))]])
++                            h.update(n + "\0" + b.length + "\0").update(b);
++                        const schluessel = h.digest("hex"), s16 = schluessel.slice(0, 16);
++                        const mdatei = process.env.PUNKTE_MASCHINE ? path.join(path.dirname(process.env.PUNKTE_MASCHINE), "messung", "kern-memo", s16 + ".json") : null;
++                        // das Urteil aus dem `je` der Saaten, in der Saat-Folge (nie in der Ankunft der Fäden) — EIN Weg für Fächer und Memo
++                        const fasse = (je0, faeden, kernAus, mehr) => {
++                            const je = je0.slice().sort((a, b) => saaten.indexOf(a.samen) - saaten.indexOf(b.samen));
++                            const g = { gipfel: 0, konv: 0, saaten: je.length, antworten: 0, land: 0, landKonv: 0, faeden, ms: Date.now() - t2, version: require(path.join(wurzel, "planet-core.js")).VERSION, kernAus, kernSchluessel: s16, ...mehr };
++                            let hs = 0, hq = 0;
++                            for (const a of je) { for (const k of ["gipfel", "konv", "antworten", "land", "landKonv"]) g[k] += a[k]; hs += a.hSumme; hq += a.hQuadrat; }
++                            const mh = hs / Math.max(1, g.antworten);
++                            g.streuung = Math.round(1e3 * Math.sqrt(Math.max(0, hq / Math.max(1, g.antworten) - mh * mh))) / 1e3;
++                            g.je = je.map((x) => ({ samen: x.samen, gipfel: x.gipfel, konv: x.konv, land: x.land, landKonv: x.landKonv }));
++                            g.saatFolge = saaten;
++                            g.unter95 = je.filter((a) => a.gipfel && a.konv / a.gipfel < 0.95).map((a) => a.samen + " " + a.konv + "/" + a.gipfel);
++                            return { g, je };
++                        };
++                        if (mdatei && fs.existsSync(mdatei)) {
++                            const m = JSON.parse(fs.readFileSync(mdatei, "utf8"));
++                            if (m.schluessel !== schluessel || JSON.stringify(m.saatFolge) !== JSON.stringify(saaten) || !Array.isArray(m.je))
++                                return fasse([], 0, "memo " + String(m.schluessel).slice(0, 16), { memoFremd: String(m.schluessel) }).g;
++                            return fasse(m.je, 0, "memo " + s16).g;
+                         }
+-                    });
++                        const je = await new Promise((gebenS2, fehlS2) => {
++                            const { Worker } = require("worker_threads"), je = [];
++                            let offen = F;
++                            for (let f = 0; f < F; f++) {
++                                const wk = new Worker(SAAT, { eval: true, workerData: { wurzel, saaten: saaten.filter((_, i) => i % F === f) } });
++                                wk.on("error", fehlS2);
++                                wk.on("message", (m) => {
++                                    if (m) return je.push(m);
++                                    if (!--offen) gebenS2(je);
++                                });
++                            }
++                        });
++                        const r = fasse(je, F, "gerechnet");
++                        if (mdatei) {
++                            fs.mkdirSync(path.dirname(mdatei), { recursive: true });
++                            fs.writeFileSync(mdatei + "." + process.pid, JSON.stringify({ schluessel, saatFolge: saaten, version: r.g.version, je: r.je }) + "\n");
++                            fs.renameSync(mdatei + "." + process.pid, mdatei);
++                        }
++                        return r.g;
++                    })();
+                     s2Kern.catch(() => {}); // wirft die Seite zuerst, bleibt der Fächer nicht als unbehandelter Wurf stehen; unten wird er erwartet
+                     const w = await S(seite, { saaten: 4, budgetMs: 22000 });
+                     const aus = M.teil || {};
+@@ -1937,7 +1969,11 @@ L.perspektive("planet", (() => {
+                         soll: [K.soll(P, 2, "Gipfel > 2 km an einer jemals konvergenten Grenze ≥ 95 %", { key: "gipfelProzent", einheit: "%" })],
+                         zeuge: (roh) => {
+                             const z = roh.zeuge || {};
++                            // das Kern-Memo: sein Schlüssel folgt aus den Bytes des gemessenen Kopfs, oder es zählt 0 Saaten
++                            if (z.memoFremd || (/^memo /.test(z.kernAus || "") && z.kernAus !== "memo " + z.kernSchluessel))
++                                return "das Kern-Memo trägt einen fremden Schlüssel (" + z.kernAus + ", die Bytes des Kopfs geben " + z.kernSchluessel + ") — es zählt 0 Saaten";
+                             if (!(z.saaten >= 100)) return "nur " + (z.saaten || 0) + " Saaten (Soll 100)";
++                            if (!/^(gerechnet|memo [0-9a-f]{16})$/.test(z.kernAus || "")) return "der Zeuge nennt nicht, woher das Kern-Urteil kommt (kernAus " + z.kernAus + ")";
+                             if (!(z.fadenSaaten >= 1)) return "der Planet-Faden des Spiels fuhr keine Saat — die 100 des Kerns sind ohne Konsum-Zeugen";
+                             if (z.fadenGleich !== true) return "Faden des Spiels und Kern trennen sich an denselben " + z.fadenSaaten + " Saaten (Gipfel " + ((z.faden || {}).gipfel) + " ↔ " + ((z.kernAnFadenSaaten || {}).gipfel) + ", konvergent " + ((z.faden || {}).konv) + " ↔ " + ((z.kernAnFadenSaaten || {}).konv) + ")";
+                             if (!(z.gipfel >= 100) || !(z.streuung > 0)) return "keine 100 Gipfel oder keine Streuung";
+@@ -1947,11 +1983,13 @@ L.perspektive("planet", (() => {
+                             return null;
+                         },
+                         taeter: "planet-core.js planetPunktR (Orogen an der konvergenten Grenze)",
+-                        gruen: { werte: { gipfelProzent: 97, landProzent: 30 }, zeuge: { saaten: 100, gipfel: 400, streuung: 1800, land: 5000, fadenSaaten: 12, fadenGleich: true } },
++                        gruen: { werte: { gipfelProzent: 97, landProzent: 30 }, zeuge: { saaten: 100, gipfel: 400, streuung: 1800, land: 5000, fadenSaaten: 12, fadenGleich: true, kernAus: "memo 0123456789abcdef", kernSchluessel: "0123456789abcdef" } },
+                         attrappen: [
++                            { name: "Memo mit fremdem Schlüssel", roh: { werte: { gipfelProzent: 97, landProzent: 30 }, zeuge: { saaten: 100, gipfel: 400, streuung: 1800, land: 5000, fadenSaaten: 12, fadenGleich: true, kernAus: "memo 0123456789abcdef", kernSchluessel: "fedcba9876543210" } } },
++                            { name: "100 Saaten ohne Herkunft des Kern-Urteils", roh: { werte: { gipfelProzent: 97, landProzent: 30 }, zeuge: { saaten: 100, gipfel: 400, streuung: 1800, land: 5000, fadenSaaten: 12, fadenGleich: true } } },
+                             { name: "97 % an zwölf Saaten", roh: { werte: { gipfelProzent: 97 }, zeuge: { saaten: 12, gipfel: 40, streuung: 1800 } } },
+-                            { name: "100 Saaten im Kern, keine im Faden des Spiels", roh: { werte: { gipfelProzent: 97, landProzent: 30 }, zeuge: { saaten: 100, gipfel: 400, streuung: 1800, land: 5000, fadenSaaten: 0 } } },
+-                            { name: "Faden und Kern zählen verschieden", roh: { werte: { gipfelProzent: 97, landProzent: 30 }, zeuge: { saaten: 100, gipfel: 400, streuung: 1800, land: 5000, fadenSaaten: 12, fadenGleich: false, faden: { gipfel: 44, konv: 43 }, kernAnFadenSaaten: { gipfel: 45, konv: 43 } } } },
++                            { name: "100 Saaten im Kern, keine im Faden des Spiels", roh: { werte: { gipfelProzent: 97, landProzent: 30 }, zeuge: { saaten: 100, gipfel: 400, streuung: 1800, land: 5000, fadenSaaten: 0, kernAus: "gerechnet" } } },
++                            { name: "Faden und Kern zählen verschieden", roh: { werte: { gipfelProzent: 97, landProzent: 30 }, zeuge: { saaten: 100, gipfel: 400, streuung: 1800, land: 5000, kernAus: "gerechnet", fadenSaaten: 12, fadenGleich: false, faden: { gipfel: 44, konv: 43 }, kernAnFadenSaaten: { gipfel: 45, konv: 43 } } } },
+                         ],
+                     },
+                     3: {
+diff --git a/zug/dienst/runde.cjs b/zug/dienst/runde.cjs
+index ffcfd146e5..fe93855c55 100644
+--- a/zug/dienst/runde.cjs
++++ b/zug/dienst/runde.cjs
+@@ -706,7 +706,10 @@ if (was === "lies") {
+     // Ablehnung von vorn — Arbeitsbaum-Zustand und fremde Dateien spielen keine Rolle.
+     // Die eigenen Pfade eines Geräts (EINE Quelle, eigenePfade): messung/<kopf8>-<g>.json, messung/roh/<kopf8>-<g>/** (ohne Sitzungs-
+     // Ordner sitzung-*), messung/referenz-<g>.json (je GERÄT, nie je Rechner), vision/richter/*.<kopf8>-<g>.json. Kein Pfad trägt ein
+-    // anderes Gerät — zwei Geräte schreiben nie dieselbe Datei.
++    // anderes Gerät — zwei Geräte schreiben nie dieselbe Datei. Dazu DAS KERN-MEMO (Koordinator 26.11. 03:15, stationen/k2-zusammenspiel.js
++    // gegenwart S2): messung/kern-memo/<schlüssel16>.json ist inhalts-adressiert (sha256 über die Kern-Bytes), jedes Gerät schreibt
++    // für denselben Schlüssel dieselben Bytes. Es reist mit, solange der Ursprung den Pfad NICHT trägt; ein liegendes Memo wird nie
++    // überschrieben (auch so schreiben zwei Geräte nie dieselbe Datei um). Es ist keine Messung und zählt nicht in `ungepusht`.
+     //   push-pfade <baum> <zweig> <geraet> <kopf|*|-> <botschaft>   („*“: alle Köpfe des Geräts — ein früherer Push scheiterte; „-“: alle
+     //       Köpfe, aber nur Pfade, die der Ursprung NICHT trägt — die Rettung eines Baums aus der Zeit des Rebase-Pushs)
+     //   ungepusht <baum> <zweig> <geraet> <seit-datei>            → "<n> <seit-iso|->": Mess-Dateien und Akten des Geräts, die vom Ursprung
+@@ -719,9 +722,10 @@ if (was === "lies") {
+     const ref = "refs/runde/push-" + zweig;
+     const eigen = (rel, kopf) => {
+         const k = kopf && kopf !== "-" && kopf !== "*" ? k8(kopf) : "[0-9a-f]{8}";
+-        const r = new RegExp("^(" + MDIR.replace(/\//g, "\\/") + "\\/(" + k + "-" + g + "\\.json|referenz-" + g + "\\.json|roh\\/" + k + "-" + g + "\\/(?!sitzung-)[^/]+)|vision\\/richter\\/[^/]+\\." + k + "-" + g + "\\.json)$");
++        const r = new RegExp("^(" + MDIR.replace(/\//g, "\\/") + "\\/(" + k + "-" + g + "\\.json|referenz-" + g + "\\.json|roh\\/" + k + "-" + g + "\\/(?!sitzung-)[^/]+|kern-memo\\/[0-9a-f]{16}\\.json)|vision\\/richter\\/[^/]+\\." + k + "-" + g + "\\.json)$");
+         return r.test(rel);
+     };
++    const memo = (rel) => /\/kern-memo\/[0-9a-f]{16}\.json$/.test(rel);
+     const liste = [];
+     const lauf = (d) => { let e = []; try { e = fs.readdirSync(path.join(baum, d), { withFileTypes: true }); } catch { return; } for (const x of e) { const rel = d + "/" + x.name; if (x.isDirectory()) lauf(rel); else liste.push(rel); } };
+     lauf(MDIR);
+@@ -734,7 +738,7 @@ if (was === "lies") {
+     const blobAm = (rel) => amUrsprung.get(rel) || "";
+     const hashe = (rels, schreiben) => (rels.length ? git(["hash-object", "--no-filters", ...(schreiben ? ["-w"] : []), "--stdin-paths"], { input: rels.map((rel) => path.join(baum, rel)).join("\n") + "\n" }).split(/\r?\n/) : []);
+     if (was === "ungepusht") {
+-        const nur = (rel) => eigen(rel, "-") && !/\/roh\//.test(rel) && !/referenz-/.test(rel); // die Messungen selbst: Mess-Dateien und Akten
++        const nur = (rel) => eigen(rel, "-") && !/\/roh\//.test(rel) && !/referenz-/.test(rel) && !memo(rel); // die Messungen selbst: Mess-Dateien und Akten
+         // nur Messungen der letzten 48 h: eine Datei, die seit Tagen ungepusht liegt (n0611-pm trägt messung/0ab95ff4-gtx.json vom 10.11.,
+         // am WIP-Kopf eines Zweigs, 0 Urteile), ist kein stiller Push von heute — sie zählt nicht und wird nicht einmal gehasht
+         const alt = Date.now() - 48 * 3600e3, kand = liste.filter((rel) => nur(rel)), jung = kand.filter((rel) => fs.statSync(path.join(baum, rel)).mtimeMs > alt);
+@@ -750,7 +754,7 @@ if (was === "lies") {
+     }
+     const [, , , kopf, botschaft] = arg;
+     // kopf „-“ (die Rettung): nur Pfade, die der Ursprung NICHT trägt — eine dort schon liegende Datei wird nie überschrieben
+-    const mein = liste.filter((rel) => eigen(rel, kopf) && (kopf !== "-" || !blobAm(rel)));
++    const mein = liste.filter((rel) => eigen(rel, kopf) && (kopf !== "-" || !blobAm(rel)) && !(memo(rel) && blobAm(rel)));
+     const IDX = path.join(os.tmpdir(), "runde-push-" + process.pid + ".tmp"), env = { ...process.env, ...WER, GIT_INDEX_FILE: IDX };
+     let fehler = "";
+     const versuche = Number(process.env.RUNDE_PUSH_VERSUCHE || 10);

@@ -1,0 +1,14 @@
+PUNKT OHNE MACHER — die Station war der Fehler, das Spiel trägt (Zahl): planet.kopplung.gegenwart#2 rechnet das Kern-Urteil der 100 Saaten nur noch, wenn sich die Kern-Bytes ändern — Fächer 7 860 ms → 3 ms beim Treffer (4 Fäden, Wolke), Werte bit-gleich mit und ohne Treffer (99,0 % · 68,2 % · Streuung 2 586,608 · unter95 6 Saaten · Fingerabdruck 597ad854), Proben 2 005 → 2 007 · 0 falsch, liste = Basis
+
+DAS KERN-MEMO (Auftrag Koordinator 26.11. 03:15). Das Kern-Urteil von gegenwart S2 ist eine reine Funktion der Kern-Bytes, also inhalts-
+adressiert gemerkt: Schlüssel = sha256 über planet-core.js · gelaende-core.js · den Quelltext des Fächer-Arbeiters (die Bytes der Probe,
+knapp) · die Saat-Folge. Datei meisterkarte-quelle/punkte/messung/kern-memo/<schlüssel16>.json neben punkte.cjs der Sitzung. Treffer → das
+gemerkte je (gipfel · konv · land · landKonv · antworten · hSumme · hQuadrat je Saat); kein Treffer → rechnen wie heute und schreiben. Der
+Faden des SPIELS fährt weiter jeden Lauf seine Saaten, der Zeuge verlangt weiter Gleichheit gegen den Kern.
+Zeuge kernAus „gerechnet“ | „memo <schlüssel16>“; ein Memo mit fremdem Schlüssel zählt 0 Saaten (Attrappe ROT beim Namen).
+Das Memo reist mit der Messung: die EINE Regel der Geräte-Pfade (zug/dienst push-pfade, eigen) nimmt kern-memo/<16 hex>.json mit, ein
+Memo, das der Ursprung schon trägt, überschreibt kein zweites Gerät; ungepusht zählt es nicht als Messung.
+Hand (hand.sh, 114 s): Lauf 1 gerechnet 8 313 ms, schreibt d211a11b17376097.json (15 255 B) · Lauf 2 Treffer 3 ms · fremder Schlüssel 0 Saaten
+· gelöscht und neu gerechnet byte-gleich · planet-core.js + 1 Zeile → neuer Schlüssel 1bb33528, gerechnet. Selbsttest der Geräte-Pfade
+gleich (e023ef31), liste 1976 · 420 · fehlt 15 · Fehler 0 an Basis und Kandidat, 26 Stations-Blöcke von planet.kopplung messen einmal neu.
+Treffer aus der Geschichte (14 Tage, Köpfe mit gegenwart#2 in den Mess-Dateien): 15 von 23 Läufen am selben Kern-Stand.

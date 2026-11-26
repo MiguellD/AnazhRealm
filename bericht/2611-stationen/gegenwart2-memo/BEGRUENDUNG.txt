@@ -1,0 +1,115 @@
+BEGRÜNDUNG — DAS KERN-MEMO VON planet.kopplung.gegenwart#2: Kosten an der ÄNDERUNG, nicht an jedem Lauf (Leser 2, 26.11.)
+
+0. DER AUFTRAG
+   origin/koordination:cloud-post/leser-2.md, 03:15 („ein Kandidat mehr, NACH deinen sieben“), 04:58 und 05:36 je Punkt 3 („Zuletzt wie
+   gehabt `gegenwart2-memo`“), wörtlich:
+   „Entscheid (mein Schnitt, du baust den Kandidaten): Kosten hängen an der ÄNDERUNG. Das Kern-Urteil der 100 Saaten wird
+   inhalts-adressiert gemerkt: Schlüssel = sha256 über die Bytes von `planet-core.js` + `gelaende-core.js` + den Quelltext des
+   Fächer-Arbeiters + die Saat-Folge. Treffer → das gemerkte `je` (je Saat gipfel · konv · land · landKonv · hSumme · hQuadrat); kein
+   Treffer → rechnen wie heute und schreiben. Die Datei liegt im pm-Baum unter `meisterkarte-quelle/punkte/messung/kern-memo/<schlüssel16>.json`
+   und reist mit der Messung (lies, wie `kandidat.sh` die Dateien unter `messung/` bucht, und nenne die Zeile). Unverändert je Lauf an
+   jedem Gerät: der Faden des SPIELS fährt seine 4 Saaten, und der Zeuge verlangt Gleichheit gegen den Kern an denselben Saaten.“
+   Wände 1–4 wörtlich in §5.
+   Basis: punkte-maschine 83288dfe (die zwei Dateien des Diffs byte-gleich zu 7f5d7d72: k2-zusammenspiel.js f8058058, runde.cjs ffcfd146).
+   Spiel: origin/main 12029279 (V18.546.434). planet-core.js und gelaende-core.js sind dort byte-gleich zu 077b9aa7 — derselbe Schlüssel.
+
+1. DER RICHTER (wörtlich)
+   vision/MEISTERKARTE-2.md:4872  „| 2 | Gebirge und Becken | jede Kette ihr Zusammenstoß, jedes Becken seine Absenkung | P | 100 Saaten:
+   Gipfel > 2 km an einer jemals konvergenten Grenze ≥ 95 % |“
+   Die Station (quelle): „KARTE2 planet.kopplung.gegenwart S2 = 100 Saaten: Gipfel > 2 km an einer jemals konvergenten Grenze ≥ 95 %“.
+   Das Spiel trägt ihn heute: 2 775 von 2 804 Gipfeln = 99,0 % (Radeon und OMEN GRÜN gebucht, Koordinator 03:15; diese Hand: dieselbe Zahl).
+
+2. DER FEHLER DER STATION
+   stationen/k2-zusammenspiel.js:1724 (Basis) `const s2Kern = new Promise((gebenS2, fehlS2) => {` — :1753 die 100 Saaten, :1756 je Faden
+   `new Worker(SAAT, …)`: das Kern-Urteil der 100 Saaten (138 000 Orte: planetScheibe · planetOrt am Ort-Gesetz des Gelände-Kerns ·
+   planetPunkt) wird in JEDEM Lauf an JEDEM Gerät neu gerechnet, obwohl es eine reine Funktion der Kern-Bytes ist. Die Kosten hängen am
+   Umfang der Welt, nicht an der Änderung (Gebot 7).
+   Die Zahl am Gerät (Koordinator 03:15): Leiter planet.kopplung.gegenwart Radeon 35,5 s · OMEN 54,9 s (Kern-Fächer 37,1 s bei 8 Fäden) ·
+   GTX 1050 60,03 s → der Deckel 60 riss, UNGEMESSEN. Täter-Zahl einfädig 618 ms je Saat (planetOrt × 430 Land-Orte = 372 ms).
+   Die Zahl hier (Wolke, 4 Fäden, node v22.23.5): Fächer 7 860 ms je Lauf (hand.out, BASIS).
+   Der Arbeiter liest nur die zwei Kerne: SAAT trägt `require(path.join(workerData.wurzel, "planet-core.js"))` und `… "gelaende-core.js"`
+   (dazu path und worker_threads); beide Kerne tragen kein require. Der Schlüssel deckt also jedes Byte, das das Urteil bestimmt.
+
+3. DER SCHNITT (gegenwart2-memo.diff, +62/−24 in der Station, +8/−4 in zug/dienst/runde.cjs)
+   a) Die Station (Kandidat-Zeilen):
+      k2-zusammenspiel.js:1723–1730  das Gesetz als Kommentar (Schlüssel, Datei, Treffer, Zeuge).
+      :1731 `const s2Kern = (async () => {` — der Fächer unverändert, davor das Memo.
+      :1761–1765 der Schlüssel: sha256 über „planet-core.js“ + Bytes · „gelaende-core.js“ + Bytes · „SAAT“ + der Quelltext des Arbeiters ·
+        „saaten“ + JSON der Saat-Folge (je Teil Name\0Länge\0Bytes); die Datei = dirname(PUNKTE_MASCHINE)/messung/kern-memo/<schlüssel16>.json.
+        PUNKTE_MASCHINE setzt die Sitzung (punkte.cjs:2097). Ohne Sitzung kein Memo: es wird gerechnet wie heute.
+      :1779–1783 Treffer: Schlüssel (alle 64 hex), Saat-Folge und je müssen stimmen — sonst zählt das Memo 0 Saaten (memoFremd, beim Namen).
+      :1797–1802 kein Treffer: rechnen wie heute, schreiben atomar (Datei.<pid> → rename), Inhalt { schluessel, saatFolge, version, je }.
+      Der Zeuge trägt kernAus „gerechnet“ | „memo <schlüssel16>“ und kernSchluessel (der Schlüssel aus den Bytes des gemessenen Kopfs).
+      :1973–1976 das Urteil: ein fremdes Memo (memoFremd oder kernAus ≠ „memo “ + kernSchluessel) ist ROT „es zählt 0 Saaten“; ein Zeuge
+        ohne kernAus ist ROT „nennt nicht, woher das Kern-Urteil kommt“.
+      :1988–1989 zwei neue Attrappen: „Memo mit fremdem Schlüssel“ und „100 Saaten ohne Herkunft des Kern-Urteils“, beide ROT beim Namen.
+      Die zwei Faden-Attrappen tragen kernAus „gerechnet“, damit jede an ihrem eigenen Befund fällt, nicht an der neuen Regel.
+      Unverändert: der Faden des Spiels fährt auf der Seite seine Saaten (w.s2), der Zeuge verlangt fadenGleich gegen den Kern an denselben
+      Saaten (:1871 ff.), je und saatFolge fallen danach aus dem Zeugen.
+   b) Die Reise der Datei — DIE EINE Stelle, über die beide Geräte unter messung/ buchen:
+      OMEN: zug/dienst-omen/ort/n0611/kandidat.sh:103 `node "$PUSH_CJS" push-pfade "$(cygpath -m "$PM")" punkte-maschine gtx "$K" …`
+        (:94 PUSH_CJS = RUNDE_CJS, :31 = $O/p3/dienst-omen/runde.cjs); :89 „Jetzt wie die Radeon: `runde.cjs push-pfade`“.
+      Radeon: dieselbe push-pfade (die Commits „Messung <kopf8> radeon: …“, z. B. ea19ad97, f731c7bb).
+      zug/werkzeug-w3/mess-kandidat.sh:23 (`git add …/${K:0:8}-radeon.json …/roh/${K:0:8}-radeon`) ist seit 07.11. (6469926b) unverändert
+      und nicht der Weg der Buchung.
+      Die Regel: zug/dienst/runde.cjs:720 (Basis) `const eigen = (rel, kopf) => {`, :722 die RegExp der eigenen Pfade — sie nahm
+      kern-memo/ NICHT mit (reise-hand, vorher: „das Memo im Ursprung: FEHLT“).
+      Kandidat: :709–712 das Gesetz als Kommentar; :725 die RegExp trägt `kern-memo\/[0-9a-f]{16}\.json` (unabhängig vom Gerät — ein
+      Schlüssel ist für jedes Gerät derselbe); :728 `memo(rel)`; :741 `ungepusht` zählt ein Memo nie als Messung; :757 `mein` nimmt ein
+      Memo nicht, wenn der Ursprung es schon trägt (blobAm) — zwei Geräte überschreiben einander nie.
+
+4. DIE ZAHL — vorher ↔ nachher (hand.out, ein Lauf, 114 s, Spiel 12029279 · pm 83288dfe · node v22.23.5 · 4 Kerne)
+   | Lauf | kernAus | Fächer | gipfel% | land% | Streuung | unter95 | Fingerabdruck |
+   | Basis | (kein Feld) | 7 860 ms | 99,0 | 68,2 | 2 586,608 | 6 Saaten | 597ad85438ffe98e |
+   | Kandidat ohne Sitzung | gerechnet | 8 311 ms | 99,0 | 68,2 | 2 586,608 | dieselben 6 | 597ad85438ffe98e |
+   | Kandidat Lauf 1 | gerechnet, schreibt d211a11b17376097.json (15 255 B) | 8 313 ms | 99,0 | 68,2 | 2 586,608 | dieselben 6 | 597ad85438ffe98e |
+   | Kandidat Lauf 2 | memo d211a11b17376097 | 3 ms (Hand 11 ms) | 99,0 | 68,2 | 2 586,608 | dieselben 6 | 597ad85438ffe98e |
+   | fremder Schlüssel | memo ffffa11b17376097 ↔ Kopf d211a11b17376097 | — | null | — | — | 0 Saaten | — |
+   | Memo gelöscht | gerechnet, 8 025 ms, das neue Memo byte-gleich zu Lauf 1 | | | | | | 597ad85438ffe98e |
+   | Mutante planet-core.js + 1 Zeile | gerechnet, Schlüssel 1bb335285143d898 (zweites Memo daneben) | 7 844 ms | | | | | 597ad85438ffe98e |
+   unter95: zsp-0 15/16 · zsp-8 22/24 · zsp-18 43/47 · zsp-21 40/44 · zsp-40 37/39 · zsp-42 29/31. Der Fingerabdruck ist sha256 über
+   samen · gipfel · konv · land · landKonv aller 100 Saaten in der Saat-Folge — gleich heißt: jede Saat Bit für Bit.
+   Proben k2-zusammenspiel.js: 2 005 → 2 007, 0 falsch (gegenwart S2: 11 → 13, beide neuen ROT beim Namen).
+   Treffer aus der Geschichte (punkte-maschine, Mess-Dateien der letzten 14 Tage, Köpfe mit gegenwart#2): Radeon 13 Läufe an 5 Kern-Ständen,
+   GTX 10 Läufe an 6; beide zusammen 23 Läufe an 8 Kern-Ständen → 15 von 23 Läufen Treffer, wenn das Memo zwischen den Geräten reist
+   (12 von 23, wenn jedes Gerät nur sein eigenes trüge). Zum Vergleich main: 26 von 1 666 Commits der letzten 7 Tage ändern die Kerne.
+
+5. DIE WÄNDE (wörtlich aus 03:15, dann die Zahl)
+   1. „Werte bit-gleich zu heute (gipfelProzent 99,0, landProzent 68,2, Streuung 2 586,6, unter95-Liste) — mit und ohne Treffer.“
+      → bit-gleich in 11 Feldern (gipfelProzent · landProzent · streuung · saaten · gipfel · konv · land · landKonv · antworten · unter95 ·
+      Fingerabdruck) für ohne Sitzung, Lauf 1 und Lauf 2 (hand.out „Wand 1 … bit-gleich (11 Felder)“ dreimal).
+   2. „Der Zeuge trägt `kernAus: "gerechnet"` oder `"memo <schlüssel16>"`; eine neue Attrappe „Memo mit fremdem Schlüssel“ ist ROT (ein
+      Memo, dessen Schlüssel nicht aus den Bytes des gemessenen Kopfs folgt, zählt als 0 Saaten).“
+      → am Kern: saaten 0, gipfelProzent null; im Urteil: „das Kern-Memo trägt einen fremden Schlüssel (memo 0123456789abcdef, die Bytes des
+      Kopfs geben fedcba9876543210) — es zählt 0 Saaten“.
+   3. „`node punkte.cjs liste`: Basis genau zwei ROT (`gelaende.K2#1/#2` „Wand HAKEN“). Der Deckel 60 bleibt.“
+      → Basis = Kandidat: 1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0, stderr 0 B beide. Dieser Klon zeigt an der Basis Fehler 0,
+      die Radeon Fehler 2 (Koordinator 04:58: „beides ist die Basis“). Der Deckel bleibt `sek: 60` (:1611 unberührt).
+   4. „Nenne die Uhr des Fächers bei Treffer (Soll < 1 s) und die der Leiter unter node, soweit sie ohne Seite geht.“
+      → Fächer bei Treffer 3 ms (das Memo lesen und prüfen; Hand mit Laden 11 ms) — Soll < 1 s ✓. Ohne Seite geht von der Leiter nur der
+      Kern: gerechnet 7 844–8 313 ms, Treffer 3 ms. Der Rest der Leiter (S1, S3–S6, der Faden des Spiels, das Auge) braucht die Seite.
+
+6. DER PREIS
+   Der Abdruck der Leiter ändert sich: `liste` an Basis und Kandidat unterscheidet sich in 26 Stations-Blöcken, alle planet.kopplung
+   (gegenwart #1–#6, kaskade, siedlungslage, stadtklima), weil der Leiter-Text der Perspektive in jedem ihrer Blöcke steht (48-mal) —
+   diese 26 messen einmal neu (liste-bloecke.cjs).
+   Ein Memo je Kern-Stand: 15 255 B. Ein Fehlschlag kostet wie heute, dazu ein Schreiben.
+
+7. WAS NUR DAS GERÄT MISST
+   - Die Uhr der Leiter planet.kopplung.gegenwart gegen den Deckel 60 s an GTX 1050, OMEN und Radeon — beim ersten Lauf an einem Kern-Stand
+     (gerechnet, wie heute) und beim Treffer. Der Fächer läuft neben der Seite; wie viel der Leiter-Zeit fällt, wenn 4–8 Fäden nicht mehr
+     neben der Seite rechnen, misst nur das Gerät. Die Uhr der Leiter schreibt das Gerät in aus.leitern["planet.kopplung.gegenwart"].s und in die ZEIT-Zeile
+     `H.schritt(id)` (stationen/k2-planet.js:410); die Uhr des Kerns trägt der Zeuge von gegenwart#2 als ms (beim Treffer einstellig).
+   - Dass das Memo im pm-Baum des Geräts von Lauf zu Lauf liegen bleibt und über push-pfade im Ursprung ankommt.
+   - Dass ein Gerät das Memo des anderen liest: der pm-Baum des Geräts muss den Ursprung punkte-maschine holen.
+   - Die Geräte fahren eigene Kopien von runde.cjs ($O/p3/dienst-omen/runde.cjs am OMEN, kandidat.sh:31): erst wenn sie die Regel
+     :725 tragen, reist das Memo; vorher bleibt es lokal am Gerät und trifft nur dort.
+
+8. OFFEN (Anlass, Messname)
+   - Leiter-Uhr gegenwart am Gerät nach dem Setzen: planet.kopplung.gegenwart aus.leitern["planet.kopplung.gegenwart"].s und die ZEIT-Zeile, dazu ms im
+     Zeugen von gegenwart#2 (GTX 1050: riss 60,03 s; Soll ≤ 60 s) — nur das Gerät.
+   - Reise am Gerät: messung/kern-memo/d211a11b17376097.json im Ursprung punkte-maschine nach dem ersten Lauf — braucht runde.cjs :725 in
+     den Geräte-Kopien.
+   - Der Schlüssel trägt die node-Version nicht (das Memo trägt version = planet-core VERSION). Zwei Geräte mit verschiedener node rechnen
+     denselben Schlüssel; dass Math-Ergebnisse dort gleich sind, zeigt der Fingerabdruck erst, wenn beide Geräte einmal gerechnet haben
+     (gegenwart#2 · kernAus gerechnet an Radeon und GTX am selben Kern-Stand).

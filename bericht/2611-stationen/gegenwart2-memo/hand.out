@@ -1,0 +1,74 @@
+== Köpfe: Spiel 12029279cf · pm 83288dfefe · node v22.23.5 · 4 Kerne
+
+== BASIS (origin/punkte-maschine, der Fächer rechnet jeden Lauf)
+   Fächer:  gipfelProzent 99 · landProzent 68.2 · streuung 2586.608 · saaten 100 · unter95 ["zsp-0 15/16","zsp-18 43/47","zsp-21 40/44","zsp-40 37/39","zsp-42 29/31","zsp-8 22/24"] · finger "597ad85438ffe98e" · kernAus "(Basis: kein Feld)" · kernSchluessel undefined · faeden 4 · msFaecher 7860 · msHand 7868
+     ok   GRÜN gemessen im Soll — S2 gipfelProzent 97 % gegen Soll ≥ 95 % ✓ · Zeuge: die Welt geändert
+     ok   ROT  ATTRAPPE 97 % an zwölf Saaten — S2 gipfelProzent 97 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: nur 12 Saaten (Soll 100) · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze)
+     ok   ROT  ATTRAPPE 100 Saaten im Kern, keine im Faden des Spiels — S2 gipfelProzent 97 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: der Planet-Faden des Spiels fuhr keine Saat — die 100 des Kerns sind ohne Konsum-Zeugen · Täter: planet-core.js planetPunktR (Orog
+     ok   ROT  ATTRAPPE Faden und Kern zählen verschieden — S2 gipfelProzent 97 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: Faden des Spiels und Kern trennen sich an denselben 12 Saaten (Gipfel 44 ↔ 45, konvergent 43 ↔ 43) · Täter: planet-core.js planetP
+     ok   ROT  Umfang nicht erzeugbar — S2 Umfang nicht erzeugbar: die Probe · gipfelProzent 97 % gegen Soll ≥ 95 % ✓ · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze)
+     ok   ROT  swiftshader — S2 die Karte ist google/swiftshader — kein Gerät, kein Urteil über das Bild
+     ok   ROT  die Leiter warf — S2 die Messung der Leiter warf nach 3 s: Error: Probe · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze)
+     ok   ROT  die Sprosse ungemessen — S2 die Sprosse ist im Lauf nicht gemessen · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze)
+     ok   ROT  der Deckel der Leiter riss vor dem Wert — S2 der Deckel der Leiter riss nach 25 s vor dem Wert der Sprosse · der Deckel der Leiter 25 s
+     ok   GRÜN gemessen vor dem Deckel der Leiter — S2 gipfelProzent 97 % gegen Soll ≥ 95 % ✓ · Zeuge: die Welt geändert · gemessen vor dem Wurf der Leiter nach 25 s: der Deckel der Leiter 25 s
+     ok   ROT  der Deckel der Leiter traf die halbe Sprosse — S2 der Deckel der Leiter riss nach 25 s, ehe gipfelProzent der Sprosse stand · der Deckel der Leiter 25 s
+   k2-zusammenspiel.js: 2005 Proben, 0 falsch
+   reise-hand (runde.cjs der Basis):
+fatal: expected 'acknowledgments', received 'packfile'
+warning: push negotiation failed; proceeding anyway with push
+   punkte-maschine 66d3316c0 · 1 Datei(en) von radeon
+      Ursprung nach radeon: meisterkarte-quelle/punkte/messung/01234567-radeon.json meisterkarte-quelle/punkte/messung/referenz-radeon.json 
+   punkte-maschine 876ecd42d · 1 Datei(en) von gtx
+      Ursprung nach gtx: meisterkarte-quelle/punkte/messung/01234567-gtx.json meisterkarte-quelle/punkte/messung/01234567-radeon.json meisterkarte-quelle/punkte/messung/referenz-radeon.json 
+      das Memo im Ursprung: FEHLT
+      ungepusht gtx: 0 - 
+   runde selbsttest: e023ef317f5a7c8e (sha256-16 der Ausgabe)
+      GRÜN WIDERSPRUCH DER GERÄTE: vorn w.a#1 · Schwanz w.c#1,w.d#1,w.b#1 · Mutante ohne die Regel: vorn - · Schwanz w.c#1,w.d#1,w.a#1,w.b#1
+      GRÜN DIE STATION DER SPROSSE: vorn gelaende.K2#1 (Reihe gtx: K1 1 · K2 0 · K3 0 · K4 0 · K5 0 · K6 0 → vorn 1 | Schwanz 0) · Mutante ohne Tafel: vorn -
+      GRÜN DER EINE ZÄHLER: zaehle „4 3 1 6“ (Soll „4 3 1 6“) · offen „z.d#1,z.e#1“ · Zeile 4/6 · Exit 6/6/6/6 (Soll 6/6/6/6), danach 4/6 · durch: radeon durch am cccccccc: 4/6 — 3 Urteile · 1 ungemessen → durch 4
+      GRÜN NACHWACHE-SCHULD: offen --anders gtx „n.a#1,n.f#1,n.b#1“ (Soll n.a#1,n.f#1,n.b#1 — die Schuld vorn) · Mutante ohne die Regel „n.b#1“ (Soll n.b#1) · zaehle „3 3 0 6“ (Soll 3 3 0 6)
+      GRÜN DIE STELLE DER STATION: vorn gelaende.K2#1,karte2.x.zwei#1 (Exit 0) · Mutante ohne das Erbe: vorn - (Exit 1)
+   liste: 1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0 · stderr 0 B · 34 s
+
+== KANDIDAT (gegenwart2-memo.diff auf dem pm-Baum)
+   ohne Sitzung (kein PUNKTE_MASCHINE → kein Memo): gipfelProzent 99 · landProzent 68.2 · streuung 2586.608 · saaten 100 · unter95 ["zsp-0 15/16","zsp-18 43/47","zsp-21 40/44","zsp-40 37/39","zsp-42 29/31","zsp-8 22/24"] · finger "597ad85438ffe98e" · kernAus "gerechnet" · kernSchluessel "d211a11b17376097" · faeden 4 · msFaecher 8311 · msHand 8322
+   Lauf 1 (Sitzung, kein Memo):   gipfelProzent 99 · landProzent 68.2 · streuung 2586.608 · saaten 100 · unter95 ["zsp-0 15/16","zsp-18 43/47","zsp-21 40/44","zsp-40 37/39","zsp-42 29/31","zsp-8 22/24"] · finger "597ad85438ffe98e" · kernAus "gerechnet" · kernSchluessel "d211a11b17376097" · faeden 4 · msFaecher 8313 · msHand 8322
+   geschrieben: kern-memo/d211a11b17376097.json · 15255 B
+   Lauf 2 (Treffer):              gipfelProzent 99 · landProzent 68.2 · streuung 2586.608 · saaten 100 · unter95 ["zsp-0 15/16","zsp-18 43/47","zsp-21 40/44","zsp-40 37/39","zsp-42 29/31","zsp-8 22/24"] · finger "597ad85438ffe98e" · kernAus "memo d211a11b17376097" · kernSchluessel "d211a11b17376097" · faeden 0 · msFaecher 3 · msHand 11
+   Wand 1 O gegen BASIS: bit-gleich (11 Felder)
+   Wand 1 L1 gegen BASIS: bit-gleich (11 Felder)
+   Wand 1 L2 gegen BASIS: bit-gleich (11 Felder)
+   Wand 2 Memo mit fremdem Schlüssel: saaten 0 · gipfelProzent null · kernAus "memo ffffa11b17376097" · kernSchluessel "d211a11b17376097"
+   Lauf 3 (Memo gelöscht, neu gerechnet): kernAus "gerechnet" · msFaecher 8025 · finger "597ad85438ffe98e" · Memo byte-gleich zu Lauf 1: ja
+   Mutante planet-core.js +1 Zeile: kernAus "gerechnet" · kernSchluessel "1bb335285143d898" · finger "597ad85438ffe98e" · msFaecher 7844 · Memos jetzt: 1bb335285143d898.json d211a11b17376097.json 
+     ok   GRÜN gemessen im Soll — S2 gipfelProzent 97 % gegen Soll ≥ 95 % ✓ · Zeuge: die Welt geändert
+     ok   ROT  ATTRAPPE Memo mit fremdem Schlüssel — S2 gipfelProzent 97 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: das Kern-Memo trägt einen fremden Schlüssel (memo 0123456789abcdef, die Bytes des Kopfs geben fedcba9876543210) — es zählt 0 Saate
+     ok   ROT  ATTRAPPE 100 Saaten ohne Herkunft des Kern-Urteils — S2 gipfelProzent 97 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: der Zeuge nennt nicht, woher das Kern-Urteil kommt (kernAus undefined) · Täter: planet-core.js planetPunktR (Orogen an der konverg
+     ok   ROT  ATTRAPPE 97 % an zwölf Saaten — S2 gipfelProzent 97 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: nur 12 Saaten (Soll 100) · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze)
+     ok   ROT  ATTRAPPE 100 Saaten im Kern, keine im Faden des Spiels — S2 gipfelProzent 97 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: der Planet-Faden des Spiels fuhr keine Saat — die 100 des Kerns sind ohne Konsum-Zeugen · Täter: planet-core.js planetPunktR (Orog
+     ok   ROT  ATTRAPPE Faden und Kern zählen verschieden — S2 gipfelProzent 97 % gegen Soll ≥ 95 % ✓ · der Zeuge der Welt fehlt: Faden des Spiels und Kern trennen sich an denselben 12 Saaten (Gipfel 44 ↔ 45, konvergent 43 ↔ 43) · Täter: planet-core.js planetP
+     ok   ROT  Umfang nicht erzeugbar — S2 Umfang nicht erzeugbar: die Probe · gipfelProzent 97 % gegen Soll ≥ 95 % ✓ · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze)
+     ok   ROT  swiftshader — S2 die Karte ist google/swiftshader — kein Gerät, kein Urteil über das Bild
+     ok   ROT  die Leiter warf — S2 die Messung der Leiter warf nach 3 s: Error: Probe · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze)
+     ok   ROT  die Sprosse ungemessen — S2 die Sprosse ist im Lauf nicht gemessen · Täter: planet-core.js planetPunktR (Orogen an der konvergenten Grenze)
+     ok   ROT  der Deckel der Leiter riss vor dem Wert — S2 der Deckel der Leiter riss nach 25 s vor dem Wert der Sprosse · der Deckel der Leiter 25 s
+     ok   GRÜN gemessen vor dem Deckel der Leiter — S2 gipfelProzent 97 % gegen Soll ≥ 95 % ✓ · Zeuge: die Welt geändert · gemessen vor dem Wurf der Leiter nach 25 s: der Deckel der Leiter 25 s
+     ok   ROT  der Deckel der Leiter traf die halbe Sprosse — S2 der Deckel der Leiter riss nach 25 s, ehe gipfelProzent der Sprosse stand · der Deckel der Leiter 25 s
+   k2-zusammenspiel.js: 2007 Proben, 0 falsch
+   reise-hand (runde.cjs des Kandidaten):
+fatal: expected 'acknowledgments', received 'packfile'
+warning: push negotiation failed; proceeding anyway with push
+   punkte-maschine 4b9513058 · 2 Datei(en) von radeon
+      Ursprung nach radeon: meisterkarte-quelle/punkte/messung/01234567-radeon.json meisterkarte-quelle/punkte/messung/kern-memo/d211a11b17376097.json meisterkarte-quelle/punkte/messung/referenz-radeon.json 
+   punkte-maschine aaccefa19 · 1 Datei(en) von gtx
+      Ursprung nach gtx: meisterkarte-quelle/punkte/messung/01234567-gtx.json meisterkarte-quelle/punkte/messung/01234567-radeon.json meisterkarte-quelle/punkte/messung/kern-memo/d211a11b17376097.json meisterkarte-quelle/punkte/messung/referenz-radeon.json 
+      das Memo im Ursprung: {"schluessel":"d211a11b17376097…","von":"radeon"}
+      ungepusht gtx: 0 - 
+   runde selbsttest: e023ef317f5a7c8e (sha256-16 der Ausgabe)
+   liste: 1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0 · stderr 0 B · 31 s · stderr gleich: ja
+   Blöcke 1892 → 1892 · geändert 26 · neu 0 · entfallen 0 {"planet.kopplung":26}
+   Leitern (4): gegenwart · kaskade · siedlungslage · stadtklima
+
+exit 0
+hand.sh Exit 0 · 114 s
