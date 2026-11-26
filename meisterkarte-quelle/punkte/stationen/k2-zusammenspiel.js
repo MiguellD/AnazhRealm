@@ -3605,7 +3605,7 @@ L.perspektive("mensch", (() => {
                             },
                             schlecht: { feld: "kh", richtung: "max" },
                             pose: (a, w) => "Third über dem Genom " + a.saat + " unter " + w.g + " g (kh " + (+w.kh).toFixed(3) + ")",
-                            ungemessen: ["Leib und Kultur kohärent aus dem Bild unter 2 g (R6/R11 Panel, am Gerät)"],
+                            ungemessen: ["Leib und Kultur kohärent aus dem Bild unter 2 g (R6/R11 Prüfer)"],
                         });
                     } finally {
                         await H.seite("const st = r.state, g = " + JSON.stringify(m.g) + ", halt = st.weatherEffectTime; if (st.gravity !== g) { st.weatherEffectTime = 0; try { r.dslRun([\"gravity\", g], { source: \"human\" }); } finally { st.weatherEffectTime = halt; } } if (st.gravity !== g) st.gravity = g; return 1;");
@@ -4248,7 +4248,7 @@ L.perspektive("mensch", (() => {
                         },
                         schlecht: { feld: "passend", richtung: "min" },
                         pose: (a, w) => "das Haus der Zelle der Saat " + a.saat + " (Plan " + w.ist + ", Boden " + w.soll + "), Third 12 m vor der Traufe",
-                        ungemessen: ["die Region aus dem Hausbild der 32 Zellen (R11 Panel, am Gerät)"],
+                        ungemessen: ["die Region aus dem Hausbild der 32 Zellen (R11 Prüfer)"],
                     });
                     const w1 = R1.werte, hashVor = {};
                     for (const x of R1.je) hashVor[x.a.saat] = x.w.hash;
@@ -4334,7 +4334,7 @@ L.perspektive("mensch", (() => {
                         masse: { zellen: { wie: "anzahl", feld: "da" }, orte: { wie: "summe", feld: "da" }, raenge: { wie: "verschieden", feld: "nH", nur: (a, w) => w.da === 1 } },
                         schlecht: { feld: "nH", richtung: "max" },
                         pose: (a, w) => "Ego vor dem Ort der Zelle " + a.ort.join(",") + " (Rang " + w.nH + ")",
-                        ungemessen: ["Klima, Gestein und Epoche aus dem Bild der 1 000 Orte (R11 Panel, am Gerät)"],
+                        ungemessen: ["Klima, Gestein und Epoche aus dem Bild der 1 000 Orte (R11 Prüfer)"],
                     });
                     const w6 = R6.werte;
                     aus[6] = { werte: { orte: w6.orte, zellen: w6.zellen }, zeuge: { orte: w6.orte, raenge: w6.raenge, akte: R6.akte }, auge: await M.auge("mensch-kultur-s6", { ort: "genesis" }, {}) };

@@ -7102,7 +7102,7 @@ async function selbsttest(o = {}) {
         const tfL = (c) => tfK.find((x) => x[1] === c)[0];
         const tfKlasse = tfAK.tafel(tfL("P")[0], +tfL("P")[1], true).richter === "fehlt" && tfAK.tafel(tfL("K")[0], +tfL("K")[1], true).richter === "fehlt" &&
             tfAK.tafel(tfL("Z")[0], +tfL("Z")[1], true).richter === "gleich" && tfAK.tafel(tfL("Z")[0], +tfL("Z")[1], false).richter === "fehlt" &&
-            /^R11 Panel: /.test(tfAK.tafel(tfL("P")[0], +tfL("P")[1], false).grund) && /^Korpus fehlt: /.test(tfAK.tafel(tfL("K")[0], +tfL("K")[1], false).grund);
+            /^R11 Prüfer: /.test(tfAK.tafel(tfL("P")[0], +tfL("P")[1], false).grund) && /^Korpus fehlt: /.test(tfAK.tafel(tfL("K")[0], +tfL("K")[1], false).grund);
         let tfWirft = false;
         try { tfAK.klasse("keine.leiter", 1); } catch { tfWirft = true; }
         pruef("TAFEL-FALTE: eine abweichende Zeile (Richter oder Grund) ersetzt das Register, eine gleiche bleibt still; die Klassen-Tafel: PANEL und KORPUS nie „gleich“, ZAHL nur mit Soll, eine Sprosse ohne Klasse tfWirft",

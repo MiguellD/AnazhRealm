@@ -2,6 +2,7 @@
 //
 // Aufruf:  node vision/buche-2.cjs                    liest vision/richter/, schreibt die Karte zurück, baut die Seite
 //          node vision/buche-2.cjs --akten DIR --karte DATEI [--trocken]   andere Akten/Karte (Probe); --trocken schreibt nichts
+//          … --pruefer DIR                             die Prüfer-Akten einer Probe (sonst vision/pruefer/akten, daneben ../eichung)
 //          node vision/buche-2.cjs --selbsttest        Mutanten gegen die echte Karte im Speicher, schreibt nichts
 //          node vision/buche-2.cjs --klassen [--trocken]   das Klassen-Gesetz: schreibt sprossen[].klasse und klasseGrund, dazu
 //                                                      vision/vorrat/klasse-offen.json und vision/richter/klassen-unsicher.md
@@ -322,11 +323,41 @@ function fahrtPruefen(f, sprosse, wo) {
     }
 }
 
+// DER BLIND-PRÜFER ALS RICHTER (R11, 26.11., der Koordinator: das Menschen-Panel war der eigene Deckel — 41 Leitern standen mit ihrer
+// Front an einer Sprosse der Klasse P oder K, die Decke der Karte lag bei 963–1 219 von 1 718). An einer Sprosse, die
+// stationen/auge-klasse.cjs als P (Prüfer) oder K (Korpus) führt, spricht den Richter NUR die Prüfer-Akte (vision/pruefer/pruefer.cjs
+// `urteil`): das Gerät der Fahrt nennt sie (`geraete[].pruefer = { akte, sha256 }`), und sie hält nur mit ihrer ganzen Kette — Hash
+// der Akte, Prüfsumme, Kopf und Gerät der Fahrt, die WÖRTLICHE Schwelle der Sprosse aus dem Zensus (nachgerechnet), ≥ 40 Paare,
+// keine Schlagseite, getroffene Fang-Aufgaben, Bauer ≠ Prüfer und eine scharfe Eichungs-Akte desselben Modells und derselben Art
+// (≥ 200 Anker bekannter Wahrheit bei ≥ 0,8). Hält sie nicht, ist die Fahrt KEIN Urteil: sie hebt nichts und nimmt nichts, der Grund
+// steht beim Namen im Bericht — nie ein GRÜN von Hand, nie ein stilles ROT eines ungeeichten Prüfers. EIN Leser: diese Funktion,
+// gerufen aus fahrtUrteil; die Tafel der Klassen bleibt auge-klasse.cjs (EINE Quelle), die Akte liest pruefer.cjs `akteGueltig`.
+const PRUEFER_AKTEN = path.join(__dirname, "pruefer", "akten");
+function prueferWand(aktenDir = PRUEFER_AKTEN, o = {}) {
+    const { KLASSE } = require(path.join(__dirname, "..", "meisterkarte-quelle", "punkte", "stationen", "auge-klasse.cjs"));
+    const P = require(path.join(__dirname, "pruefer", "pruefer.cjs"));
+    return {
+        // "P" | "K" | null — die Klasse der Sprosse am Wortlaut ihres Richters
+        klasse: (leiter, nr) => ((KLASSE[leiter + "#" + nr] || [])[0] === "P" ? "P" : (KLASSE[leiter + "#" + nr] || [])[0] === "K" ? "K" : null),
+        // null (die Akte hält) oder der Grund beim Namen
+        haelt: (ref, erwartet) => P.akteGueltig(ref, erwartet, { akten: aktenDir, ...o }),
+    };
+}
+let PRUEFER = null; // die Wand des Laufs (haupt setzt --pruefer DIR); ohne Angabe die Akten im Repo
+const prueferDesLaufs = () => PRUEFER || (PRUEFER = prueferWand());
+
 // EINE Fahrt (die Geräte EINES SHA, in rechne je Gerät eine) → { u: "ROT" | "NICHTS" | "KERN" | "PUNKT", warum }. EIN Standardgerät
-// hebt (Z7, 18.11.): geurteilt wird an den Standardgeräten, die gemessen haben; „NICHTS“ heißt nur noch: kein Standardgerät in der Fahrt.
-function fahrtUrteil(f, sprosse, T, wo) {
+// hebt (Z7, 18.11.): geurteilt wird an den Standardgeräten, die gemessen haben; „NICHTS“ heißt: kein Standardgerät in der Fahrt —
+// oder (R11, 26.11.) eine Sprosse der Klasse P | K ohne haltende Prüfer-Akte.
+function fahrtUrteil(f, sprosse, T, wo, pruefer = prueferDesLaufs()) {
     fahrtPruefen(f, sprosse, wo);
     const am = "am " + f.sha.slice(0, 8);
+    const pk = pruefer.klasse(f.leiter, f.sprosse);
+    if (pk) {
+        const ohne = f.geraete.map((g) => [g, pruefer.haelt(g.pruefer, { leiter: f.leiter, sprosse: f.sprosse, sha: f.sha, geraet: g.geraet, urteil: g.richter.urteil })]).filter(([, grund]) => grund);
+        if (ohne.length)
+            return { u: "NICHTS", warum: `PRÜFER-AKTE hält nicht (${ohne.map(([g, grund]) => g.geraet + ": " + grund).join(" · ")}) ${am} — an einer Sprosse der Klasse ${pk} urteilt nur der geeichte Blind-Prüfer (R11): die Fahrt hebt nichts und nimmt nichts` };
+    }
     const rot = f.geraete.filter((g) => g.richter.urteil === "ROT");
     if (rot.length) return { u: "ROT", warum: `Richter ROT an ${rot.map((g) => g.geraet).join(" + ")} ${am}` };
     // je Standardgerät die letzte Messung der Fahrt (zwei Läufe derselben Klasse sind EIN Gerät)
@@ -510,7 +541,7 @@ const RANG = { NULL: 0, KERN: 1, PUNKT: 2 };
 // Rechnet die Karte (in place) aus Akten { "<datei ohne .json>": fahrt | [fahrt, …] } und gibt die Zählung zurück; bericht: je
 // Sprosse mit Akten ihr Stand und der Grund der letzten Fahrt, die ihn setzte oder ließ.
 const AKTEN_NAME = /^(.+)\.(\d+)(?:\.([0-9a-f]{7,40})-([a-z0-9]+))?$/;
-function rechne(karte, akten, kern0, kopf) {
+function rechne(karte, akten, kern0, kopf, pruefer = prueferDesLaufs()) {
     if (!kopf || typeof kopf.istAhn !== "function") bruch("rechne ohne Kopf-Folge (kopfFolgeAusGit | kopfFolgeFest) — das Datum allein urteilt nie über Köpfe hinweg");
     const T = treppeLesen(karte);
     const leitern = new Map();
@@ -554,7 +585,7 @@ function rechne(karte, akten, kern0, kopf) {
             const d = { geraet, s: start, warum: "", kopf: null, rot: false, rote: [], last: null }; // rote: die main-Köpfe, an denen dieses Gerät den Richter ROT maß · last: sein Stand KERN stammt aus einer LAST-FAHRT („<gerät> ×f“)
             const setzer = []; // die vollen SHA der Fahrten dieses Geräts, die seinen Stand schon setzten (ROT, KERN, PUNKT)
             fahrten.forEach((f, i) => {
-                const r = fahrtUrteil(f, sp, T, `Sprosse ${id} S ${nr} ${geraet} Fahrt ${i + 1}`); // auch die nicht setzende Fahrt bricht laut
+                const r = fahrtUrteil(f, sp, T, `Sprosse ${id} S ${nr} ${geraet} Fahrt ${i + 1}`, pruefer); // auch die nicht setzende Fahrt bricht laut
                 const h = kopf.voll(f.sha),
                     h8 = h.slice(0, 8);
                 if (f.lastGehalten.length) notiz(`Preis am Kopf offen (Last): ${h8} ${f.lastGehalten.join(" · ")} — die GRÜNE Preis-Messung desselben Kopfes hält (Z4)`);
@@ -1381,6 +1412,9 @@ function selbsttest() {
             console.log("  ROT   " + name + " — " + e.message);
         }
     };
+    // DIE PROBE-LEITERN SIND STATISTEN (26.11.): A trägt in auge-klasse.cjs die Klasse P — ihre Proben messen Ratsche, Preis und
+    // Kopf-Folge, nicht den Prüfer-Satz; die Wand des Prüfers hat ihre eigenen Proben („PRÜFER …“, unten) an der echten Wand
+    const OHNE_PRUEFER = { klasse: () => null, haelt: () => null };
     // die Probe-Leitern A und G tragen im Speicher die Klasse Ort (die Proben messen den Preis der Zeile Ort; die Karte nennt für A
     // seit dem Klassen-Gesetz „Megastadt und Kontinent“) · `klasseWeg`: die Mutante, A ohne Klasse
     const lauf = (akten, o = {}) => {
@@ -1388,7 +1422,7 @@ function selbsttest() {
         if (!o.ohneKlasse) for (const id of [A, G]) for (const s of finde(k, id).sprossen) s.klasse = "Ort";
         if (o.klasseWeg) for (const s of finde(k, A).sprossen) delete s.klasse;
         if (o.klasse) finde(k, A).sprossen[0].klasse = o.klasse;
-        const z = (o.rechne || rechne)(k, akten, kern0, o.kopf || KOPF);
+        const z = (o.rechne || rechne)(k, akten, kern0, o.kopf || KOPF, o.pruefer || OHNE_PRUEFER);
         return { k, z, L: (id) => finde(k, id) };
     };
     const bricht = (akten, muster, o) => {
@@ -2251,6 +2285,87 @@ function selbsttest() {
         const erwartet = prozent1(1 / finde(k, A).sprossen.length / 7 / 6 / 7);
         return z.heute === 1 && k.summe.anteilHeute === erwartet ? true : `anteil ${k.summe.anteilHeute} ≠ ${erwartet}`;
     });
+    // ── DER PRÜFER-SATZ (R11, 26.11.) an der ECHTEN Wand: mensch.bau.bedarf S 1 trägt in auge-klasse.cjs die Klasse P („50 Bauten
+    // blind nach Funktion ≥ 80 %“, im Zensus ordnen · ≥ 0,8), in der Karte die Klasse Ort. Die Akten der Probe sind von Hand gebaut und
+    // mit der Prüfsumme des Prüfers versehen — den Bau der Akte aus Blatt und Antworten prüft `pruefer.cjs --selftest`.
+    {
+        const PR = require(path.join(__dirname, "pruefer", "pruefer.cjs"));
+        const M = "mensch.bau.bedarf";
+        const pd = fs.mkdtempSync(path.join(require("os").tmpdir(), "buche-2-pruefer-"));
+        const pAkten = path.join(pd, "akten"), pEich = path.join(pd, "eichung");
+        fs.mkdirSync(pAkten);
+        fs.mkdirSync(pEich);
+        const wand = prueferWand(pAkten);
+        const ablage = (dir, name, o) => {
+            const roh = JSON.stringify({ ...o, pruefsumme: PR.summe(o) }, null, 1) + "\n";
+            fs.writeFileSync(path.join(dir, name), roh);
+            return { datei: name, akte: name, sha256: PR.sha256(roh) };
+        };
+        const eich = (name, o = {}) => ablage(pEich, name, { eichung: true, art: "ordnen", form: "klasse", herkunft: "spiel", modell: "modell-fest-1", anker: 200, treffer: 190, quote: 0.95, scharf: true, schlagseite: [], datum: "2026-11-14T00:00:00Z", ...o });
+        const zM = PR.sprosseVon(M + "#1");
+        const pAkte = (name, e, o = {}) =>
+            ablage(pAkten, name, { leiter: M, sprosse: 1, art: zM.art, schwelle: zM.schwelle, zaehlt: "treffer", sha: "7f778d44c1", geraet: "Radeon 890M", datum: "2026-11-14T19:00:00Z", modell: "modell-fest-1", pruefer: { modell: "modell-fest-1", kontext: "pruefer-9" }, bauer: "bauer-1",
+                paare: 50, gezaehlt: 45, quote: 0.9, fang: { n: 0, treffer: 0 }, schlagseite: [], eichung: { datei: e.datei, sha256: e.sha256 }, urteil: "GRÜN", ...o });
+        const mitAkte = (ref, o = {}) => {
+            const f = fahrt(M, 1, { geraete: ["Radeon 890M"], ...o });
+            if (ref) f.geraete[0].pruefer = { akte: ref.akte, sha256: ref.sha256 };
+            return { [M + ".1"]: f };
+        };
+        const scharf = eich("ordnen.scharf.json");
+        pruefe("PRÜFER: GRÜN von Hand an einer Sprosse der Klasse P, ohne Prüfer-Akte — hebt nichts, der Grund beim Namen", () => {
+            const { L, z } = lauf(mitAkte(null), { pruefer: wand });
+            return L(M).heute === 0 && L(M).kern === 0 && /PRÜFER-AKTE hält nicht \(Radeon 890M: die Fahrt nennt keine Prüfer-Akte\) am 7f778d44 — an einer Sprosse der Klasse P/.test(z.bericht[0].warum) ? true : `heute ${L(M).heute} · ${z.bericht[0].warum}`;
+        });
+        pruefe("PRÜFER: EINE grüne Prüfer-Akte mit scharfer Eichung hebt genau diese eine Sprosse (PUNKT), keine andere Leiter bewegt sich", () => {
+            const leer = lauf({}, { pruefer: wand }), voll = lauf(mitAkte(pAkte(M + ".1.gruen.json", scharf)), { pruefer: wand });
+            const anders = [];
+            for (const g of voll.k.gruppen) for (const L of g.kriterien) { const v = leer.L(L.id); if (v.heute !== L.heute || v.kern !== L.kern) anders.push(`${L.id} ${v.heute} → ${L.heute}`); }
+            return anders.length === 1 && anders[0] === M + " 0 → 1" && voll.z.heute === leer.z.heute + 1 ? true : anders.join(" · ") || "nichts bewegt sich: " + voll.z.bericht[0].warum;
+        });
+        pruefe("PRÜFER ungeeicht: dieselbe Akte an einer Eichung unter 0,8 (150 von 200) hebt nichts — „ungeeicht“ beim Namen", () => {
+            const stumpf = eich("ordnen.stumpf.json", { treffer: 150, quote: 0.75, scharf: false, grund: "urteilt nicht: 150 von 200 = 0.750 < 0.8" });
+            const { L, z } = lauf(mitAkte(pAkte(M + ".1.ungeeicht.json", stumpf)), { pruefer: wand });
+            return L(M).heute === 0 && /PRÜFER-AKTE hält nicht \(Radeon 890M: ungeeicht: urteilt nicht: 150 von 200/.test(z.bericht[0].warum) ? true : `heute ${L(M).heute} · ${z.bericht[0].warum}`;
+        });
+        pruefe("PRÜFER ungeeicht: die Eichung eines ANDEREN Modells trägt das Urteil nicht", () => {
+            const fremd = eich("ordnen.modell2.json", { modell: "modell-fest-2" });
+            const { L, z } = lauf(mitAkte(pAkte(M + ".1.modell.json", fremd)), { pruefer: wand });
+            return L(M).heute === 0 && /ungeeicht: die Eichung gilt dem Modell „modell-fest-2“/.test(z.bericht[0].warum) ? true : z.bericht[0].warum;
+        });
+        pruefe("PRÜFER: ein GRÜN, das den eigenen Zahlen widerspricht (30 von 50 gegen „≥ 80 %“), hebt nichts", () => {
+            const { L, z } = lauf(mitAkte(pAkte(M + ".1.luege.json", scharf, { gezaehlt: 30, quote: 0.6 })), { pruefer: wand });
+            return L(M).heute === 0 && /das Urteil der Akte \(„GRÜN“\) widerspricht ihren Zahlen \(nachgerechnet ROT\)/.test(z.bericht[0].warum) ? true : z.bericht[0].warum;
+        });
+        pruefe("PRÜFER: die Akte eines anderen Kopfes, ein falscher Hash und Bauer = Prüfer heben nichts", () => {
+            const a = lauf(mitAkte(pAkte(M + ".1.kopf.json", scharf, { sha: "0123abcd99" })), { pruefer: wand }).z.bericht[0].warum;
+            const ref = pAkte(M + ".1.hash.json", scharf);
+            const b = lauf(mitAkte({ ...ref, sha256: "0".repeat(64) }), { pruefer: wand }).z.bericht[0].warum;
+            const c = lauf(mitAkte(pAkte(M + ".1.bauer.json", scharf, { bauer: "pruefer-9" })), { pruefer: wand }).z.bericht[0].warum;
+            return /gilt dem Kopf 0123abcd/.test(a) && /falscher Hash: die Prüfer-Akte/.test(b) && /Bauer = Prüfer/.test(c) ? true : [a, b, c].join(" ‖ ");
+        });
+        pruefe("PRÜFER: ein ROT ohne haltende Akte nimmt nichts — der gebuchte Punkt am Vorfahren hält", () => {
+            const gruen = fahrt(M, 1, { sha: ALT, geraete: ["Radeon 890M"], datum: "2026-11-14T10:00:00Z" });
+            gruen.geraete[0].pruefer = (({ akte, sha256 }) => ({ akte, sha256 }))(pAkte(M + ".1.alt.json", scharf, { sha: ALT }));
+            const { L, z } = lauf({ [M + ".1.e4eeee08-radeon"]: gruen, [M + ".1.a635bfee-radeon"]: fahrt(M, 1, { sha: NEU, geraete: ["Radeon 890M"], datum: "2026-11-15T10:00:00Z", rot: "Radeon 890M" }) }, { pruefer: wand });
+            return L(M).heute === 1 ? true : `heute ${L(M).heute} · ${z.bericht[0].warum}`;
+        });
+        pruefe("MUTANTE „die Wand fehlt“ (der Stand bis 26.11.): das GRÜN von Hand hebt die P-Sprosse — die Probe oben fängt sie", () => {
+            const r = mutante("    if (pk) {\n", "    if (false) {\n");
+            const { L } = lauf(mitAkte(null), { rechne: r, pruefer: wand });
+            return L(M).heute === 1 ? true : "die Mutante hob nicht — die Probe „GRÜN von Hand“ bewiese nichts";
+        });
+        pruefe("PRÜFER an den Akten im Repo: jede Akte einer Sprosse der Klasse P | K in vision/richter/ nennt eine Prüfer-Akte, die hält", () => {
+            const echt = prueferWand();
+            const aus = [];
+            for (const [datei, inhalt] of Object.entries(aktenLesen(AKTEN)))
+                for (const f of [].concat(inhalt)) {
+                    if (!f || !echt.klasse(f.leiter, f.sprosse)) continue;
+                    for (const g of f.geraete || []) { const grund = echt.haelt(g.pruefer, { leiter: f.leiter, sprosse: f.sprosse, sha: f.sha, geraet: g.geraet, urteil: g.richter && g.richter.urteil }); if (grund) aus.push(datei + " " + g.geraet + ": " + grund); }
+                }
+            return aus.length ? aus.length + " ohne haltende Prüfer-Akte: " + aus.slice(0, 3).join(" ‖ ") : true;
+        });
+        fs.rmSync(pd, { recursive: true, force: true });
+    }
     console.log(`SELBSTTEST buche-2: ${ok} GRÜN, ${fehl} ROT`);
     process.exit(fehl ? 1 : 0);
 }
@@ -2262,6 +2377,7 @@ function haupt(argv) {
     const arg = (n, d) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
     const karteDatei = path.resolve(arg("--karte", KARTE));
     const aktenDir = path.resolve(arg("--akten", AKTEN));
+    if (argv.includes("--pruefer")) PRUEFER = prueferWand(path.resolve(arg("--pruefer"))); // die Prüfer-Akten einer Probe (daneben ../eichung)
     const trocken = argv.includes("--trocken");
     const roh = fs.readFileSync(karteDatei, "utf8");
     const karte = JSON.parse(roh);
@@ -2306,4 +2422,4 @@ if (require.main === module) {
         process.exit(2);
     }
 }
-module.exports = { STANDARD, rechne, fahrtUrteil, preisUrteil, treppeLesen, brueckeLesen, lastVon, kopfFolgeAusGit, kopfFolgeFest, tafelOhneKlasse, klassenGesetz, umfangLesen, klassenRechnen, klassenWache };
+module.exports = { STANDARD, rechne, fahrtUrteil, prueferWand, preisUrteil, treppeLesen, brueckeLesen, lastVon, kopfFolgeAusGit, kopfFolgeFest, tafelOhneKlasse, klassenGesetz, umfangLesen, klassenRechnen, klassenWache };
