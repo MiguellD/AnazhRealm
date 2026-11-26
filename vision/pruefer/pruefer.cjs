@@ -150,6 +150,45 @@ function zaehltVon(z) {
 }
 
 // ── BLATT ──
+// DAS GRÖSSEN-LECK (26.11., Eich-Blatt 2afc × paar: „die größere Datei ist das Foto“ traf 203 von 222 = 0,914, ohne ein Bild zu
+// öffnen — ein Foto trägt mehr Bytes als seine gestörte Fassung oder ein Render): jedes Bild eines Blatts liegt in DERSELBEN
+// Bytezahl und mit DERSELBEN Dateizeit. Die Füllung steht, wo kein Decoder sie liest (JPEG: COM-Segmente nach SOI · PNG: ein
+// privater Chunk vor IEND), ihr Inhalt ist eine Hash-Kette über dem Bild (nicht komprimierbar, wiederholbar); `bildLesen` nimmt
+// sie wieder heraus — das Bild bleibt Byte für Byte das gereinigte.
+const CRC = (() => { const T = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; T[n] = c >>> 0; } return (b) => { let c = 0xffffffff; for (const x of b) c = T[(c ^ x) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }; })();
+const FUELL_KOPF = { jpg: 4, png: 12 };
+function rauschen(samen, n) {
+    const teile = [];
+    for (let h = crypto.createHash("sha256").update(samen).digest(), l = 0; l < n; h = crypto.createHash("sha256").update(h).digest(), l += 32) teile.push(h);
+    return Buffer.concat(teile).subarray(0, n);
+}
+function fuelle(rein, format, ziel) {
+    const mehr = ziel - rein.length;
+    const kopf = FUELL_KOPF[format === "png" ? "png" : "jpg"];
+    if (mehr < kopf) weg("Füllung: das Blatt-Maß " + ziel + " liegt unter Bild + Kopf (" + rein.length + " + " + kopf + ")");
+    const stoff = rauschen(rein, mehr);
+    if (format === "png") {
+        const iend = rein.length - 12;
+        if (rein.toString("latin1", iend + 4, iend + 8) !== "IEND") weg("Füllung: PNG ohne IEND am Ende");
+        const typUndDaten = Buffer.concat([Buffer.from("fiLl", "latin1"), stoff.subarray(0, mehr - 12)]);
+        const len = Buffer.alloc(4), crc = Buffer.alloc(4);
+        len.writeUInt32BE(mehr - 12, 0);
+        crc.writeUInt32BE(CRC(typUndDaten), 0);
+        return Buffer.concat([rein.subarray(0, iend), len, typUndDaten, crc, rein.subarray(iend)]);
+    }
+    const teile = [rein.subarray(0, 2)];
+    for (let rest = mehr; rest > 0; ) {
+        let stueck = Math.min(rest, 65537); // ein COM-Segment: 4 Bytes Kopf + ≤ 65 533 Bytes
+        if (rest - stueck > 0 && rest - stueck < 4) stueck -= 4;
+        const kopfB = Buffer.from([0xff, 0xfe, 0, 0]);
+        kopfB.writeUInt16BE(stueck - 2, 2);
+        teile.push(kopfB, stoff.subarray(mehr - rest, mehr - rest + stueck - 4));
+        rest -= stueck;
+    }
+    teile.push(rein.subarray(2));
+    return Buffer.concat(teile);
+}
+const BLATT_ZEIT = new Date("2000-01-01T00:00:00Z");
 function blattBauen(paareDir, ausDir, zuDir, saat, Pvor) {
     const P = Pvor || lies(path.join(paareDir, "paare.json"));
     if (!["paar", "klasse", "folge"].includes(P.form)) weg("paare.json: form muss paar | klasse | folge sein");
@@ -161,7 +200,7 @@ function blattBauen(paareDir, ausDir, zuDir, saat, Pvor) {
     fs.mkdirSync(ausDir, { recursive: true });
     fs.mkdirSync(zuDir, { recursive: true });
     const B = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const blattAufgaben = [], zu = [];
+    const blattAufgaben = [], zu = [], bilder = [];
     mische(P.aufgaben.map((a, i) => ({ a, i })), r).forEach(({ a, i }, k) => {
         const nr = k + 1;
         const roh = a.bilder.map((n) => { const b = fs.readFileSync(path.join(paareDir, n)); return { n, sha: sha256(b), ...bildLesen(b, n) }; });
@@ -173,7 +212,7 @@ function blattBauen(paareDir, ausDir, zuDir, saat, Pvor) {
         // die Seiten (paar, folge) per Saat mischen; klasse zeigt ihre Bilder in gegebener Folge
         const folge = P.form === "klasse" ? roh.map((_, j) => j) : mische(roh.map((_, j) => j), r);
         const namen = folge.map((j, pos) => String(nr).padStart(3, "0") + "-" + B[pos] + "." + (roh[j].format === "png" ? "png" : "jpg"));
-        folge.forEach((j, pos) => fs.writeFileSync(path.join(ausDir, namen[pos]), roh[j].rein));
+        folge.forEach((j, pos) => bilder.push({ datei: path.join(ausDir, namen[pos]), rein: roh[j].rein, format: roh[j].format, k, pos }));
         const richtig = a.wahr === null || a.wahr === undefined ? null : P.form === "paar" ? B[folge.indexOf(a.wahr)] : P.form === "folge" ? roh.map((_, j) => B[folge.indexOf(j)]).join("") : String(a.wahr);
         if (P.form === "paar" && ![0, 1].includes(a.wahr)) weg("Aufgabe " + (i + 1) + ": wahr muss 0 oder 1 sein");
         if (P.form === "klasse" && richtig !== null && !P.optionen.includes(richtig)) weg("Aufgabe " + (i + 1) + ": wahr „" + richtig + "“ steht nicht in optionen");
@@ -181,6 +220,14 @@ function blattBauen(paareDir, ausDir, zuDir, saat, Pvor) {
         blattAufgaben.push({ nr, bilder: namen });
         zu.push({ nr, richtig, fang: !!a.fang, quelle: folge.map((j) => roh[j].n), sha256: folge.map((j) => roh[j].sha), blattSha256: folge.map((j) => sha256(roh[j].rein)) });
     });
+    // jedes Bild des Blatts in derselben Bytezahl und Dateizeit (das Größen-Leck)
+    const mass = Math.max(...bilder.map((b) => b.rein.length + FUELL_KOPF[b.format === "png" ? "png" : "jpg"]));
+    for (const b of bilder) {
+        const voll = fuelle(b.rein, b.format, mass);
+        fs.writeFileSync(b.datei, voll);
+        fs.utimesSync(b.datei, BLATT_ZEIT, BLATT_ZEIT);
+        zu[b.k].blattSha256[b.pos] = sha256(voll);
+    }
     const antwort = P.form === "paar" ? 'genau "A" oder "B"' : P.form === "folge" ? "die Buchstaben der Bilder in deiner Folge, z. B. \"CABD\"" : "genau eine der Optionen";
     const kernStoff = { frage: P.frage, form: P.form, optionen: P.form === "klasse" ? P.optionen : undefined, aufgaben: blattAufgaben };
     const zuordnung = mitSumme({ sprosse: P.sprosse || null, anker: !P.sprosse, art: P.art, form: P.form, herkunft: P.herkunft || null, saat, bauer: P.bauer, sha: P.sha || null, geraet: P.geraet || null, frage: P.frage, optionen: kernStoff.optionen, blattKern: sha256(kanon(kernStoff)), aufgaben: zu });
@@ -530,6 +577,19 @@ function selftest() {
     pruefe("Täter OHNE FANG: ein Blatt ohne Fang-Aufgaben gegen „≤ 55 %“ — verweigert", () => verweigert(/^Fang-Aufgaben fehlen: 0 < 8/, () => U(lauf({ n: 40, sprosse: "t.tief#1", denkt: raet }))));
     pruefe("Täter FANG VERFEHLT: der Prüfer rät auch an den gepflanzten Aufgaben — verweigert", () => verweigert(/^Fang-Aufgaben verfehlt: \d von 8/, () => U(lauf({ n: 208, fang: 8, identisch: true, sprosse: "t.tief#1", denkt: (z, r) => (z.fang ? (z.richtig === "A" ? "B" : r() < 0.6 ? "A" : "B") : raet(z, r)) }))));
     pruefe("Täter ZU WENIGE PAARE: 39 Paare — verweigert", () => verweigert(/^zu wenige Paare: 39 < 40/, () => U(lauf({ n: 39, sprosse: "t.hoch#1", art: "ordnen", denkt: sieht }), eichAkte({ art: "ordnen" }).f)));
+    pruefe("Täter GRÖSSEN-LECK: ein Paar aus 99 und 140 021 Bytes liegt im Blatt gleich groß und gleich alt, die Füllung fällt beim Lesen wieder heraus (JPEG und PNG)", () => {
+        const d = fs.mkdtempSync(path.join(os.tmpdir(), "pruefer-leck-"));
+        const jpg = (n) => Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xc0, 0, 11, 8, 0, 1, 0, 1, 1, 1, 0x11, 0, 0xff, 0xda, 0, 2]), Buffer.alloc(n, 7), Buffer.from([0xff, 0xd9])]);
+        const klein = jpg(78), gross = jpg(140000), p1 = png(200, 30, 30), p2 = Buffer.from(p1);
+        fs.writeFileSync(path.join(d, "a.jpg"), klein); fs.writeFileSync(path.join(d, "b.jpg"), gross); fs.writeFileSync(path.join(d, "c.png"), p1); fs.writeFileSync(path.join(d, "e.png"), p2);
+        fs.writeFileSync(path.join(d, "paare.json"), JSON.stringify({ sprosse: null, art: "2afc", form: "paar", frage: "Welches Bild ist das Foto?", bauer: "bauer-kontext-1", herkunft: "fremd", aufgaben: [{ bilder: ["a.jpg", "b.jpg"], wahr: 1 }, { bilder: ["c.png", "e.png"], wahr: 0 }] }));
+        blattBauen(d, path.join(d, "blatt"), path.join(d + "-zu"), 7);
+        const B = fs.readdirSync(path.join(d, "blatt")).filter((n) => n !== "blatt.json").map((n) => ({ n, b: fs.readFileSync(path.join(d, "blatt", n)), ms: fs.statSync(path.join(d, "blatt", n)).mtimeMs }));
+        const Z = lies(path.join(d + "-zu", "zuordnung.json"));
+        const rein = B.map((x) => sha256(bildLesen(x.b, x.n).rein)).sort().join();
+        return B.length === 4 && new Set(B.map((x) => x.b.length)).size === 1 && new Set(B.map((x) => x.ms)).size === 1 && rein === [klein, gross, p1, p2].map((x) => sha256(bildLesen(x, "q").rein)).sort().join()
+            && Z.aufgaben.every((a, i) => a.blattSha256.every((h) => B.some((x) => sha256(x.b) === h))) && fuelle(klein, "jpg", klein.length + 4).length === klein.length + 4;
+    });
     pruefe("Täter FORM-LECK: ein Paar mit ungleichem Pixelmaß — das Blatt entsteht nicht", () => verweigert(/^Form-Leck: Aufgabe 4 — 3a\.png 1×1 png gegen 3b\.png 2×1 png/, () => lauf({ n: 40, sprosse: "t.hoch#1", art: "ordnen", denkt: sieht, leck: true })));
     pruefe("Täter OHNE SCHWELLE: der Satz nennt keine Zahl — verweigert, nie geraten", () => verweigert(/^verweigert: ohne Schwelle im Satz/, () => U(lauf({ n: 40, sprosse: "t.ohne#1", denkt: sieht }))));
     pruefe("Urteil ROT: ein sehender Prüfer trennt 48 von 48 gegen „≤ 55 %“ — unterscheidbar", () => { const a = U(lauf({ n: 48, fang: 8, sprosse: "t.tief#1", denkt: sieht })); return a.urteil === "ROT" && /^unterscheidbar/.test(a.lesart) ? true : a.wert; });

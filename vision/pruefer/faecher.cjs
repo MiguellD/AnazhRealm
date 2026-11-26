@@ -160,7 +160,8 @@ function faechern(basis, uhren, mehr) {
     return aus;
 }
 // eine Pose, deren Ziel hinter Gelände liegt, deren Sicht verdeckt ist oder deren Vordergrund das Bild füllt, bleibt es zu jeder Uhr
-const ORT_FEST = (abnahme) => /verdeckt|Vordergrund/.test(abnahme);
+// (nie bei „kamm-krone“: die schwarzen Punkte, die das Spiel ab ≈ 2 min Sitzung über den Himmel zeichnet, sind kein Ort)
+const ORT_FEST = (abnahme) => /verdeckt von (Gelände|Formation)|Sicht verdeckt|Vordergrund/.test(abnahme);
 const umfang = (n, gesetz, lage) => (n >= MIN ? null : "Umfang nicht erzeugbar: " + n + " von " + MIN + " (" + gesetz + (lage ? " — " + lage : "") + ")");
 // Breite und Zeilen eines PNG aus seinem Kopf (IHDR)
 function pngMass(b) {
@@ -348,7 +349,7 @@ function selbsttest() {
     const t = (name, ok) => F.push([name, !!ok]);
     const basis = (n) => Array.from({ length: n }, (_, i) => ({ pose: { px: i }, wort: "p" + i }));
     t("16 Posen × 9 Uhren = 144, Uhr um Uhr, jede mit ihrer Pose des Gesetzes", faechern(basis(16), UHREN, { wahl: 0 }).length === 144 && faechern(basis(16), UHREN, { wahl: 0 })[47].mehr.uhr === 0.6 && faechern(basis(16), UHREN, {})[17].basis === 1);
-    t("das Motiv: GRÜN trägt, ein Ziel hinter Gelände, Laub im Vordergrund oder verdeckte Sicht nicht; am Haus und am Weiler trägt ein Haus vor der Mitte", GRUEN("ABNAHME GRÜN · beweis") && !GRUEN("ABNAHME ROT [Ziel Blickziel verdeckt von Gelände in 27.49 m]") && SPROSSEN["mensch.bau.huelle#1"].motiv("ABNAHME ROT [Ziel Blickziel verdeckt von an Punkt 1 bauSatz in 108.8 m]") && !SPROSSEN["mensch.bau.huelle#1"].motiv("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:tanne:L1 in 3.47 m]") && !SPROSSEN["mensch.stadt.groesse#1"].motiv("ABNAHME ROT [Vordergrund 50.0 % näher als 8 m (der halbe Ziel-Abstand): Laub]") && SPROSSEN["mensch.stadt.groesse#1"].motiv("ABNAHME ROT [Ziel Blickziel verdeckt von bauSatz in 57.78 m]") && !SPROSSEN["mensch.stadt.groesse#1"].motiv("ABNAHME ROT [Sicht verdeckt 28.5 % (Laub)]") && ORT_FEST("ABNAHME ROT [Vordergrund 50.0 % näher als 8 m]") && ORT_FEST("ABNAHME ROT [Ziel Blickziel verdeckt von Formation in 18.17 m]") && !ORT_FEST("ABNAHME ROT [Leinwand]"));
+    t("das Motiv: GRÜN trägt, ein Ziel hinter Gelände, Laub im Vordergrund oder verdeckte Sicht nicht; am Haus und am Weiler trägt ein Haus vor der Mitte", GRUEN("ABNAHME GRÜN · beweis") && !GRUEN("ABNAHME ROT [Ziel Blickziel verdeckt von Gelände in 27.49 m]") && SPROSSEN["mensch.bau.huelle#1"].motiv("ABNAHME ROT [Ziel Blickziel verdeckt von an Punkt 1 bauSatz in 108.8 m]") && !SPROSSEN["mensch.bau.huelle#1"].motiv("ABNAHME ROT [Ziel Blickziel verdeckt von Laub fscatter:tanne:L1 in 3.47 m]") && !SPROSSEN["mensch.stadt.groesse#1"].motiv("ABNAHME ROT [Vordergrund 50.0 % näher als 8 m (der halbe Ziel-Abstand): Laub]") && SPROSSEN["mensch.stadt.groesse#1"].motiv("ABNAHME ROT [Ziel Blickziel verdeckt von bauSatz in 57.78 m]") && !SPROSSEN["mensch.stadt.groesse#1"].motiv("ABNAHME ROT [Sicht verdeckt 28.5 % (Laub)]") && ORT_FEST("ABNAHME ROT [Vordergrund 50.0 % näher als 8 m]") && ORT_FEST("ABNAHME ROT [Ziel Blickziel verdeckt von Formation in 18.17 m]") && !ORT_FEST("ABNAHME ROT [Leinwand]") && !ORT_FEST("ABNAHME ROT [Ziel Blickziel verdeckt von kamm-krone in 3.47 m]"));
     t("3 Posen × 9 Uhren = 27: Umfang nicht erzeugbar beim Namen", /^Umfang nicht erzeugbar: 27 von 40 \(x:1/.test(umfang(faechern(basis(3), UHREN, {}).length, "x:1", "")));
     t("0 Posen: 0 von 40, kein Bild", umfang(faechern([], UHREN, {}).length, "x:1", "leer").includes("0 von 40") && faechern([], UHREN, {}).length === 0);
     t("40 Posen tragen", umfang(40, "x:1") === null);
