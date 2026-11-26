@@ -29424,7 +29424,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an 54b89949: Last: Referenz f 1,84 (Faden 1,84 · alle Kerne 1,397; vor 154,4/364,2 ms, nach 121,2/318,6 ms, Ruhe 83,9/260,7 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an · karte2.planet.kosmos.himmelsmechanik#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +28) — zuletzt an c3631992: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[ · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an 54b89949: Last: Referenz f 1,84 (Faden 1,84 · alle Kerne 1,397; vor 154,4/364,2 ms, nach 121,2/318,6 ms, Ruhe 83,9/260,7 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an · karte2.planet.kosmos.himmelsmechanik#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +28) — zuletzt an af816566: Wirt-Wache: den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig = window.__aufnahmeRuhig; window.__aufnahmeRuhig = function ausgabeAufnahme(W, H, warm, o — Heap nach der Rücknahme 288.9 →  · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -29442,7 +29442,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +28) — zuletzt an c3631992: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/ausgabe-aufnahme.cjs +28) — zuletzt an af816566: Wirt-Wache: den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig = window.__aufnahmeRuhig; window.__aufnahmeRuhig = function ausgabeAufnahme(W, H, warm, o — Heap nach der Rücknahme 288.9 → ",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -29962,7 +29962,7 @@
   },
   "karte2.planet.kosmos.systeme": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.systeme#1 radeon: Station seit der Messung geändert — zuletzt an 54b89949: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.systeme) · Täter: @@ 0.1 s · planet.kosmos.systeme S1 warf: Cannot rea · karte2.planet.kosmos.systeme#1 gtx: Station seit der Messung geändert — zuletzt an a954d698: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.systeme) · Täter: @@ 0.2 s · planet.kosmos.systeme S1 warf: Cannot rea · karte2.planet.kosmos.systeme#2 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#3 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#4 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#5 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#6 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#7 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.systeme#1 radeon: Station seit der Messung geändert — zuletzt an 54b89949: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.systeme) · Täter: @@ 0.1 s · planet.kosmos.systeme S1 warf: Cannot rea · karte2.planet.kosmos.systeme#1 gtx: Station seit der Messung geändert — zuletzt an 54b89949: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.systeme) · Täter: @@ 0.2 s · planet.kosmos.systeme S1 warf: Cannot rea · karte2.planet.kosmos.systeme#2 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#3 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#4 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#5 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#6 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.systeme#7 radeon: ungemessen (R10) · karte2.planet.kosmos.systeme#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.systeme#1",
@@ -29980,7 +29980,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an a954d698: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.systeme) · Täter: @@ 0.2 s · planet.kosmos.systeme S1 warf: Cannot rea",
+     "grund": "Station seit der Messung geändert — zuletzt an 54b89949: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter planet.kosmos.systeme) · Täter: @@ 0.2 s · planet.kosmos.systeme S1 warf: Cannot rea",
      "ungemessen": true,
      "beide": true
     },
@@ -37782,7 +37782,7 @@
   "ohne": 3249
  },
  "kopfVoll": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
- "zeit": "2026-11-26T12:52:05.302Z",
+ "zeit": "2026-11-26T13:05:52.711Z",
  "vorher": "54b89949",
  "bilanz": {
   "gewinn": [],
