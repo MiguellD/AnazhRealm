@@ -1,7 +1,7 @@
 {
  "sha": "2da17e2e72e57ee227b2f393f4a9eff074c23813",
  "geraet": "gtx",
- "zeit": "2026-11-26T01:26:49.255Z",
+ "zeit": "2026-11-26T01:43:10.184Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.kopplung.land-meer-luft#4": {
@@ -1783,250 +1783,101 @@
   "k66c2d3172165": "bVVdb6MwEPwvebyWLh+mgKU+OKVVI11O6U9YwxpoCEQ2hCqn++8naGgC1A8gwaxnmFkvf1dHTPaY0cOHqasVX/1a3a8MnsgypE+kHz7Miq+ixHHJ4/2rRBfHxkBZSEBZYX4gq9UNFeVDMkDVI9q+5NC9iGwHoOAMcff0NC8tJaW11aCisdAmzw9pwdGaDCVZ2KqB7AL2WUSPDodhhbHYxvC9ukSIXQfdLnybbSaxSqdqyXElQy66zbMQ73OVaYHUWGVRmZHXSYNI2fzKtV3UaOysM1Jekh5JQsdhchS7FkIM1swKVdkaMyELvdR3Qw4QzbEZmSLJG+uoa0nVBS4jN3CQr5duZ8fWUreKUEoM5dzrHKnKSE802F6ieqM/w/mmezyQRqvC/AKNbC9w5dUbAHhbaikH4QPFKJyxiEJ3UtiHCqfeYLERN4vtAOATwhEVd5fnN5gXsSA1SV7ow9Quxci1Pf57KdHkmJK29rVpvtEeBcyWfCDYxDDcd+F6Xnn9uDFDRAxvGgZCEG8LL02tmg41WdmxHZuGkR/4XIjNAtzg4TBm7pGd2vMgTdM3+q2MwGc+Qw5w93VQlh/9dSysMxXlWKQUY5E/3/yk8WChzHSh1Ji89BMV/dSoHZWNJeu6GW10gsDzOHhQ3Yb9Z4jxNuk4e2fbV5G9iMnaiLnugaHWzfcJdYPASbjK4hAgVHN0oRurwyQf4a6ShL30RSZn0iVlNLFROQ66KR9GzKCy74LgMgrU3aSBz8sdC+oNrkxrxpATZNLnP0TSkd5LrPbjvPNT342G9ltvxW5qynOmWAwwpQf4tIV4Fdmd+PJwnQ2XgeRICRx1rYp+IkKOrcmxbK6/gH//AQ=="
  },
  "sitzung": {
-  "start": "2026-11-26T00:41:31.942Z",
-  "ordner": "sitzung-20261126-014131",
+  "start": "2026-11-26T01:42:28.840Z",
+  "ordner": "sitzung-20261126-024228",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 6.3,
-  "grundstellungS": [
-   7.2
-  ],
-  "proben": 2,
+  "bootS": 6.6,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
-  "offen": [
-   "karte2.leben.wasser.bild#1",
-   "karte2.same.preis.ankunft#2",
-   "karte2.erleben.schoepfen.satz#1",
-   "karte2.erleben.spieler.hand#1",
-   "karte2.same.physik.feuer#2",
-   "gelaende.K2#1"
-  ],
   "orte": [
    {
     "ort": null,
-    "vor": "karte2.leben.evolution.fremde-physik#1",
-    "s": 29.3,
-    "takte": 834,
+    "vor": "karte2.same.entfaltung.schirm#1",
+    "s": 28.7,
+    "takte": 915,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": null,
-    "vor": "karte2.leben.kopplung.evolution-planet#1",
-    "s": 21.1,
-    "takte": 668,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
   "felder": [
    {
-    "probe": "karte2.leben.evolution.fremde-physik#1",
+    "probe": "karte2.same.entfaltung.schirm#1",
     "weg": [
-     "__rafferEnde",
-     "__rafferKurz",
      "__ortZeit",
      "__weltaktSpionBuch",
      "__wetterSpionBuch",
      "__buehneUhr",
-     "__imSchuss",
-     "__nahSpeicher",
-     "__letzteSpiegel",
-     "__letzteTeilung",
-     "__abbruchEpoche"
+     "__bandDecke",
+     "__zensusCalls"
     ]
    }
   ],
   "wirt": [
    {
-    "probe": "karte2.leben.evolution.fremde-physik#1",
+    "probe": "karte2.same.entfaltung.schirm#1",
     "anders": [
      "r._bildZeit",
      "r._wolkenZeit",
      "r._weltaktGehalten",
      "r._setWeather",
-     "r._tickNahWiese",
-     "r._ruheImBild",
      "r.state.weather",
-     "window.r",
-     "window.st",
-     "window.pm",
-     "window.halt",
-     "window.__handTakt",
-     "window.aufsteigend",
-     "window.addiere",
-     "window.rang",
-     "window.__uebergangFaellt",
-     "window.rahmen",
-     "window.__png",
-     "window.__bundlesNeu",
-     "window.sleep",
-     "window.leihe",
-     "window.__fremd",
-     "window.__loopBild",
-     "window.__zielLesen",
-     "window.__messZiel",
-     "window.__pufferLesen",
-     "window.jsonKlon",
-     "window.fehlerText",
-     "window.fehlerStapel",
-     "window.__seitenTakt",
-     "window.__bedienung2",
-     "window.__takte",
-     "window.__streuTakte",
-     "window.__bildAus",
-     "window.__eichMs",
-     "window.__weltStehtNach",
-     "window.__gebautNach",
-     "window.__deckel",
-     "window.__weltDa",
-     "window.__abdruck",
-     "window.__farben",
-     "window.__lin",
-     "window.__stand",
-     "window.__standJson",
-     "window.__werkPutz",
-     "window.__bautenLeer",
-     "window.__bautenSeit",
-     "window.__peersWeg",
-     "window.__rufe",
-     "window.__raffer",
-     "window.__rafferRest",
-     "window.__ortSchritt",
-     "window.__codeOf",
-     "window.__dokuOf",
-     "window.__fehlt"
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt"
     ],
     "wie": {
      "r._bildZeit": "neu: () => S.T",
      "r._wolkenZeit": "neu: () => S.T",
      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r._tickNahWiese": "neu: () => 0",
-     "r._ruheImBild": "neu: () => 0",
      "r.state.weather": "neu: () => wert",
-     "window.r": "getauscht: () => window.anazhRealm",
-     "window.st": "getauscht: () => window.anazhRealm && window.anazhRealm.state",
-     "window.pm": "getauscht: () => st && st.playerMesh",
-     "window.halt": "getauscht: () => st && st.verbTafel.gehalten",
-     "window.__handTakt": "getauscht: function handTakt() { try { r._gameLoopTick(performance.now()); } catch (e) { r.",
-     "window.aufsteigend": "getauscht: (a, b) => a - b",
-     "window.addiere": "getauscht: (a, b) => a + b",
-     "window.rang": "getauscht: (s, q = 0.5) => s[Math.min(s.length - 1, Math.floor(q * s.length))]",
-     "window.__uebergangFaellt": "getauscht: function uebergangFaellt(r) { r.state.weatherTransition = null; r.requestWeather",
-     "window.rahmen": "getauscht: (b) => b.obb || { cx: (b.minX + b.maxX) / 2, cz: (b.minZ + b.maxZ) / 2, c: 1, s:",
-     "window.__png": "getauscht: function png(u8, W, H) { const cv = Object.assign(document.createElement(\"canvas",
-     "window.__bundlesNeu": "getauscht: () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true))",
-     "window.sleep": "getauscht: (ms) => { const e = globalThis.__abbruchEpoche; return new Promise((r, f) => set",
-     "window.leihe": "getauscht: function leihe(o, tausch) { const alt = Object.keys(tausch).map((k) => [k, Objec",
-     "window.__fremd": "getauscht: async function fremd() { const { privateKey: k } = await crypto.subtle.generateK",
-     "window.__loopBild": "getauscht: function loopBild() { st.renderer._nodes?.nodeFrame?.update(); r._loopRender(); ",
-     "window.__zielLesen": "getauscht: async function zielLesen(ziel, W, H, renderer = st.renderer) { const px = await ",
-     "window.__messZiel": "getauscht: function messZiel(W, H, o, T = window.THREE, art = \"RenderTarget\") { return art ",
-     "window.__pufferLesen": "getauscht: function pufferLesen(puffer, wer, renderer = st.renderer) { const q = puffer?.is",
-     "window.jsonKlon": "getauscht: (x) => JSON.parse(JSON.stringify(x))",
-     "window.fehlerText": "getauscht: (e) => e?.message || String(e)",
-     "window.fehlerStapel": "getauscht: (e) => e?.stack || String(e)",
-     "window.__seitenTakt": "getauscht: async function seitenTakt() { const vor = r._weltStand ? r._weltStand.takte : -1",
-     "window.__bedienung2": "getauscht: async function bedienung2(vor) { const taste = (code, art) => window.dispatchEve",
-     "window.__takte": "getauscht: async function takte(n, ms) { for (let i = 0; i < n; i++) { __handTakt(); await ",
-     "window.__streuTakte": "getauscht: async function streuTakte(n, ms) { for (let i = 0; i < n; i++) { st._frameOverBu",
-     "window.__bildAus": "getauscht: function bildAus() { if (st.renderer) { st.renderer.render = function () {}; if ",
-     "window.__eichMs": "getauscht: function eichMs(n) { const a = eichMs.puffer || (eichMs.puffer = new Float64Arra",
-     "window.__weltStehtNach": "getauscht: async function weltStehtNach(takt, max) { const W = () => r._weltStand || {}; co",
-     "window.__gebautNach": "getauscht: async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) { co",
-     "window.__deckel": "getauscht: function deckel(name, max, offen) { let n = 0, k = 0, still = 0, vor = \"\"; retur",
-     "window.__weltDa": "getauscht: async function weltDa(bed) { window.__weltDaWartet = bed ? String(bed).replace(/",
-     "window.__abdruck": "getauscht: function abdruck(x, alle) { let [h, n] = [0x811c9dc5, 0]; const ein = (a) => { c",
-     "window.__farben": "getauscht: function farben(g) { const set = new Set(); g?.traverse((o) => { const c = o.geo",
-     "window.__lin": "getauscht: (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255] .map((c) => Math.f16round(",
-     "window.__stand": "getauscht: async function stand() { await r._speicherStill(); return (await r._idbGetWorld(",
-     "window.__standJson": "getauscht: async function standJson() { const roh = await window.__stand(); try { return JS",
-     "window.__werkPutz": "getauscht: function werkPutz() { r.closeAllDrawers(); st.yaw = 0; if (st.playerMesh) st.pla",
-     "window.__bautenLeer": "getauscht: function bautenLeer() { r._bautenLeeren(); }",
-     "window.__bautenSeit": "getauscht: function bautenSeit() { const vor = new Set(st.architectures); return () => st.a",
-     "window.__peersWeg": "getauscht: function peersWeg() { for (const pid of Array.from(st.p2p.peers.keys())) r._p2pR",
-     "window.__rufe": "getauscht: function rufe(wer, methode, lieferer, name, args) { const echt = lieferer[name];",
-     "window.__raffer": "neu: (soll, schritt, name) => { const t0 = performance.now(); let n = 0; for (; n < s",
-     "window.__rafferRest": "neu: () => window.__rafferEnde - performance.now()",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
-     "window.__codeOf": "neu: (f) => oK(String(f))",
-     "window.__dokuOf": "neu: (f) => String(f)",
-     "window.__fehlt": "neu: (f, re) => [].concat(f).every((g, i) => { if (typeof g !== \"function\") throw new"
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
-    "haelt": [
-     "if (!window.__fehlt) { window.__codeOf = ((oK) => (f) => oK(String(f)))(function ohneKommentare(src, ohneLiterale = fals"
-    ],
+    "haelt": [],
     "heap": [
-     192.7,
-     315.6
+     192.8,
+     286.4
     ],
-    "ungemessen": "den Kontext der Probe hält noch: if (!window.__fehlt) { window.__codeOf = ((oK) => (f) => oK(String(f)))(function ohneKommentare(src, ohneLiterale = fals — Heap nach der Rücknahme 192.7 → 315.6 MB (+122.9 > 64)"
+    "ungemessen": null
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.leben.evolution.fremde-physik#1",
+    "probe": "karte2.same.entfaltung.schirm#1",
     "halt": -1000000000,
     "zurueck": 0
-   },
-   {
-    "probe": "karte2.leben.evolution.fremde-physik#1",
-    "gehalten": [
-     "skala",
-     "spiegel"
-    ],
-    "offen": []
    }
   ],
-  "felderBlind": [
-   {
-    "probe": "karte2.leben.kopplung.evolution-planet#1",
-    "wann": "nach",
-    "fehler": "ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\ed4b21c5-6dc0-4555-8f00"
-   }
-  ],
-  "wirtBlind": [
-   {
-    "probe": "karte2.leben.kopplung.evolution-planet#1",
-    "wann": "nach",
-    "fehler": "ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\ed4b21c5-6dc0-4555-8f00-6185f5e9f296.dmp"
-   }
-  ],
-  "zeichnerBlind": [
-   {
-    "probe": "karte2.leben.kopplung.evolution-planet#1",
-    "wann": "nach",
-    "fehler": "ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\ed4b21c5-6dc0-4555-8f00-6185f5e9f296.dmp"
-   }
-  ],
-  "grund": "die Welt trägt nicht mehr vor karte2.leben.wasser.bild#1: /eval: {\"ms\":0,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\ed4b21c5-6dc0-4555-8f00-6185f5e9f296.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRea — offen: karte2.leben.wasser.bild#1, karte2.same.preis.ankunft#2, karte2.erleben.schoepfen.satz#1, karte2.erleben.spieler.hand#1, karte2.same.physik.feuer#2, gelaende.K2#1",
-  "ciBlicke": 3,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 2,
+   "bilder": 538,
+   "frameP95": 33.38,
+   "taktP95": 23.13,
+   "vramMax": 129.8,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.leben.kopplung.evolution-planet#1",
-     "m": 340,
+     "probe": "karte2.same.entfaltung.schirm#1",
+     "m": 1092,
      "ringVor": 4,
      "ringMin": 0
     }
    ],
-   "zapfen": 274,
-   "luecken": 24,
-   "letzteLuecke": "ABSTURZ der Seite: renderer · V8 javascript OOM (Scavenger: semi-space copy) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\ed4b21c5-6dc0-4555-8f00"
+   "zapfen": 196,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 490.9,
-  "minuten": 8.29
+  "fahrtS": 199.4,
+  "minuten": 3.48
  },
  "ungemessen": {
   "karte2.erleben.klang.stimme#1": {
@@ -3892,6 +3743,135 @@
    },
    "zeit": "2026-11-26T01:26:49.255Z",
    "abdruck": "9d14fbd22724",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.entfaltung.schirm#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 139 s gerissen: Stille seit 15 s nach 159.4 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego-geht 144.2 s)",
+   "exit": 1,
+   "minuten": 2.66,
+   "grund": "Deckel 139 s gerissen: Stille seit 15 s nach 159.4 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego-geht 144.2 s)",
+   "s": 159.5,
+   "fremd": {
+    "s": 163,
+    "takte": 75,
+    "fremdS": 33.06,
+    "kerne": 0.203,
+    "fensterKerne": 0.558,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.34
+     ],
+     [
+      "Explorer.EXE",
+      4.11
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.05
+     ]
+    ],
+    "dienerS": 34.08,
+    "diener": [
+     [
+      "System",
+      16.47
+     ],
+     [
+      "dwm.exe",
+      9.31
+     ]
+    ],
+    "geraetS": 64.25,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      40.7
+     ],
+     [
+      "svchost.exe",
+      16.22
+     ],
+     [
+      "SearchIndexer.exe",
+      4.88
+     ]
+    ],
+    "eigenS": 442.8,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.871,
+     "nach": 0.138,
+     "station": 0.939
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 102.1,
+     "alle": 245.3,
+     "cpuEin": 94,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.7,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       7.43,
+       4.22,
+       3.39,
+       2.83,
+       2.44,
+       2.82
+      ]
+     },
+     "spanne": [
+      1795657390186,
+      1795657390673
+     ]
+    },
+    "nach": {
+     "ein": 128.3,
+     "alle": 384.6,
+     "cpuEin": 125,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.83,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       7.46,
+       4.86,
+       4.47,
+       2.57,
+       2.9,
+       3.03
+      ]
+     },
+     "spanne": [
+      1795657550204,
+      1795657550952
+     ]
+    },
+    "ruhe": {
+     "ein": 89,
+     "alle": 222.7,
+     "n": 1190,
+     "von": "2026-11-17"
+    },
+    "f": 1.727,
+    "fEin": 1.442,
+    "fAlle": 1.727,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-26T01:43:10.184Z",
+   "abdruck": "a16a54631e99",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
