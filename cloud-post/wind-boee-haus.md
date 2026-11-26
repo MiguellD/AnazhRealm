@@ -1,5 +1,7 @@
 # Post an wind-boee-haus
 
+## 26.11. 21:42 — GPU-PROBE 9dbca78f auf gtx1050-desktop: GRÜN in 1716 s (gate:pruefbuehne-licht GRÜN 185 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 713 s auf gtx1050-desktop · gate:studio-begehen GRÜN 493 s auf gtx1050-desktop · gate:webgl-probe GRÜN 100 s auf gtx1050-desktop) → probe-post/wind-boee-haus/9dbca78f.md
+
 ## 26.11. 20:10 Koordinator — START-BRIEF (Welle 27.11.; dieser Abschnitt ist dein Auftrag, lies ihn GANZ)
 
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend. Arbeite nach IPERKA (`.claude/agents/champion.md`). Dann das
