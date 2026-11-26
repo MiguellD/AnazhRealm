@@ -13,26 +13,115 @@ const { FAECHER } = require("./faecher.js");
 
 // DER TAG DER BEWOHNER AN EINER ADRESSE (mensch.nahrung.tier#2, das Gesetz des Fächers, stationen/faecher.js): an der Saat a.saat der
 // Plan des Dorfs, wie der Faden ihn baut (fachwerk `exportSettlement`, die Epoche der Saat; ~1 s je Saat, darum je Saat einmal im
-// `mit` des Fächers gehalten), seine Orte nach dem Gesetz des Tags (koerper-core `tagesOrte`), und zur Stunde a.zeit je Slot der Plan
-// seines Bewohners (koerper-core `tagesPlan` — derselbe Ruf wie der Wirt, stamm/siedlung-bewohner.js:2239): gezählt, wer zur Jagd oder
-// zum Fischen geht (Tat, Ort oder Rolle: Jagd, Wild, Fisch)
+// `mit` des Fächers gehalten), seine Orte nach dem Gesetz des Tags (koerper-core `tagesOrte`: das Revier hinter dem Saum der Äcker),
+// die Jäger, wie der Wirt sie wählt (stamm/siedlung-bewohner.js `_bewohnerListe` DER JÄGER UND DER FISCHER: je Rolle mit Tat und Ort
+// des Werks `tagesJagdWahl` über die Wohnhäuser, so viele wie `tagesJagdHaushalte` der Häuser — die Station hält je Slot EINEN
+// Bewohner, der Slot ist seine Tür), und zur Stunde a.zeit je Slot der Plan seines Bewohners in SEINER Rolle (koerper-core
+// `tagesPlan`, derselbe Ruf wie der Wirt): gezählt, wer zur Stunde jagt oder fischt (die Tat des Plans: Jagd, Fischfang). Bis hier
+// rief die Probe `tagesPlan` mit der Rolle des HAUSES und nie die Wahl: 0 Jäger in 8 Saaten, während der Wirt sie stellt.
 const JAGD_AN = async (r, T, a, mit) => {
     const FC = globalThis.__fachwerkCore, KC = window.__koerperCore;
     if (!FC || !KC || typeof KC.tagesPlan !== "function" || typeof KC.tagesOrte !== "function") return { fehlt: "der Kern trägt kein Gesetz des Tags (koerper-core tagesPlan / tagesOrte)" };
+    if (typeof KC.tagesJagdWahl !== "function" || !KC.TAGES_GESETZ || !KC.TAGES_GESETZ.rollen) return { fehlt: "der Kern trägt keine Wahl der Jäger (koerper-core tagesJagdWahl / TAGES_GESETZ.rollen)" };
     const halt = (mit.plaene = mit.plaene || {});
-    if (!halt[a.saat]) halt[a.saat] = KC.tagesOrte(FC.exportSettlement({ seed: a.saat, nH: mit.nH, epoche: FC.siedlungsEpoche(a.saat) }));
-    const orte = halt[a.saat];
+    if (!halt[a.saat]) {
+        const orte = KC.tagesOrte(FC.exportSettlement({ seed: a.saat, nH: mit.nH, epoche: FC.siedlungsEpoche(a.saat) }));
+        const slots = orte.filter((o) => o.slot != null);
+        const rolle = {};
+        for (const [name, R] of Object.entries(KC.TAGES_GESETZ.rollen)) {
+            const ort = R.tat && R.werkAm && orte.find((o) => o.art === R.werkAm);
+            if (!ort) continue;
+            const kand = slots.filter((o) => o.art === "wohnhaus" && rolle[o.slot] == null);
+            for (const i of KC.tagesJagdWahl(kand, slots.length, ort)) rolle[kand[i].slot] = name;
+        }
+        halt[a.saat] = { orte, rolle };
+    }
+    const { orte, rolle } = halt[a.saat];
     const JAGD = /jag|jagd|fisch|angel|wild|beute/i;
     let jagd = 0, bewohner = 0;
-    const taten = {};
+    const taten = {}, jaeger = [];
     for (const o of orte) {
         if (o.slot == null) continue;
         bewohner++;
-        const p = KC.tagesPlan(a.saat * 1000 + o.slot, o.art, a.zeit, orte);
+        const p = KC.tagesPlan(a.saat * 1000 + o.slot, rolle[o.slot] || o.art, a.zeit, orte);
         taten[p.akt] = (taten[p.akt] || 0) + 1;
-        if (JAGD.test(String(p.akt)) || JAGD.test(String(p.wo)) || JAGD.test(String(o.art))) jagd++;
+        if (JAGD.test(String(p.akt))) {
+            jagd++;
+            jaeger.push(o.slot);
+        }
     }
-    return { jagd, bewohner, taten, rollen: [...new Set(orte.map((o) => o.art))].join(",") };
+    const ro = orte.filter((o) => o.slot != null).map((o) => rolle[o.slot] || o.art);
+    return { jagd, jaeger, bewohner, taten, rollen: [...new Set(ro)].join(","), revier: orte.some((o) => o.art === "revier") ? 1 : 0 };
+};
+
+// DAS WILD AM REVIER (tier S2, wildDelta): die Siedlung am Messort, ihre Jäger (`b.rolle` jaeger — der Wirt wählt sie über
+// `tagesJagdWahl`), der Bestand der Beute-Art am Stand ihres Werks (`_bestandArt`, der EINE Leser des Bestands, `GAU.beute`) vor ↔
+// nach geraffter Welt-Uhr: Stunde für Stunde je Jäger das Ziel über den Leser des Wirts (`_bewohnerZiel` — verlässt er die Jagd, bucht
+// `_bewohnerBeute` die Beute aus dem Bestand und zählt sie in `S.jagd`), ganze Tage bis zur ersten Beute (höchstens `tage`), danach
+// Takte der Welt, bis der Gau den Bestand neu nennt. Die Welt-Uhr steht danach auf derselben Stunde wie vorher (ganze Tage).
+const WILD = async (r, T, arg) => {
+    const s = r.state;
+    const pm = s.playerMesh.position;
+    const G = r.constructor.GAU;
+    if (!G || G.beute == null || typeof r._bestandArt !== "function" || typeof r._bewohnerZiel !== "function") return { fehlt: "kein Leser des Bestands der Beute (AnazhRealm.GAU.beute, _bestandArt, _bewohnerZiel)" };
+    const SL = [...(r._bewohnerSiedlungen || new Map()).values()].filter((S) => S && S.plan && Array.isArray(S.liste) && S.liste.length);
+    SL.sort((a, b) => Math.hypot(a.ox - pm.x, a.oz - pm.z) - Math.hypot(b.ox - pm.x, b.oz - pm.z));
+    const S = SL[0];
+    if (!S) return { fehlt: "keine Siedlung mit Bewohnern am Messort" };
+    const jaeger = S.liste.filter((b) => b.rolle === "jaeger" && b.orte && b.orte.werk);
+    const rollen = {};
+    for (const b of S.liste) rollen[b.rolle] = (rollen[b.rolle] || 0) + 1;
+    if (!jaeger.length) return { siedlung: S.plan.name || S.key, jaeger: 0, rollen, fehlt: "kein Jäger in der Siedlung am Messort (b.rolle jaeger, _bewohnerListe)" };
+    const keys = [...new Set(jaeger.map((b) => r._bestandKey(b.orte.werk.x, b.orte.werk.z)))];
+    const zaehle = () => {
+        let n = 0;
+        for (const k of keys) {
+            const A = r._bestandArt(k, G.beute);
+            if (!A) return null;
+            n += A.n;
+        }
+        return n;
+    };
+    const warte = async () => {
+        for (let i = 0; i < 40 && zaehle() == null; i++) await window.__werkTakt();
+        return zaehle();
+    };
+    const n0 = await warte();
+    const J = () => Object.assign({ jagden: 0, beute: 0, leer: 0, ohneAntwort: 0 }, S.jagd || {});
+    const j0 = J();
+    const stdJeS = (r._weltStunde(s.spielZeit + 1000) - r._weltStunde(s.spielZeit)) / 1000;
+    const z0 = s.spielZeit;
+    let tage = 0, wurf = "";
+    try {
+        for (let t = 1; t <= (arg.tage || 6) && J().beute - j0.beute < 1; t++) {
+            for (let i = 1; i <= 24; i++) {
+                s.spielZeit = z0 + ((t - 1) * 24 + i) / stdJeS;
+                const h = r._weltStunde();
+                for (const b of jaeger) r._bewohnerZiel(b, h);
+            }
+            tage = t;
+        }
+    } catch (e) {
+        wurf = String((e && e.message) || e).slice(0, 200);
+    }
+    const j1 = J();
+    for (let i = 0; i < 20; i++) await window.__werkTakt();
+    const n1 = await warte();
+    return {
+        siedlung: S.plan.name || S.key,
+        jaeger: jaeger.length,
+        reviere: keys.length,
+        art: G.beute,
+        tage,
+        jagden: j1.jagden - j0.jagden,
+        beute: j1.beute - j0.beute,
+        leer: j1.leer - j0.leer,
+        ohneAntwort: j1.ohneAntwort - j0.ohneAntwort,
+        n0,
+        n1,
+        delta: n0 != null && n1 != null ? n1 - n0 : null,
+        wurf,
+    };
 };
 
 // DER ZENSUS DER SIEDLUNG (jede Leiter der Perspektive): warten, bis die Siedlung am Messort ihre Bewohner trägt und nichts mehr offen
@@ -773,32 +862,50 @@ module.exports = (F) => [
             const ms = () => Math.max(5000, Math.floor((H.rest() - 3) * 1000));
             const ruf = (name, arg) => K.welt("return await (" + H.seite[name] + ")(r, T, " + JSON.stringify(arg || {}) + ");", ms());
             // S2 ÜBER DEN FÄCHER (stationen/faecher.js): 8 Saaten × 24 Stunden, je Adresse der Tag jedes Bewohners nach dem Gesetz des
-            // Kerns (JAGD_AN) — der Umfang je Saat ist die kleinste Zahl der Jäger über die 8 Saaten (die Karte: je Saat); vor dem Zensus:
-            // der Fächer braucht die Bühne nicht
+            // Kerns (JAGD_AN: die Jäger, wie der Wirt sie wählt) — der Umfang je Saat ist die kleinste Zahl der Jäger über die 8 Saaten
+            // (die Karte: je Saat), die Jagden je Tag die Jäger, die am Tag ihrer Saat jagen (Mittel der 8 Saaten); dazu das Wild am Revier
+            // der Siedlung am Messort vor ↔ nach geraffter Welt-Uhr (WILD). Der Fächer zuerst: er braucht die Bühne nicht
             await K.schritt(2, async () => {
                 const R = await H.seite.FAECHER(K.welt, {
-                    gesetz: { fn: H.seite.JAGD_AN, export: "koerper-core.js:5459 tagesOrte + :5630 tagesPlan (TAGES_GESETZ :5300)", leser: "stamm/siedlung-bewohner.js:2239" },
+                    gesetz: { fn: H.seite.JAGD_AN, export: "koerper-core.js:5831 tagesOrte + :5880 tagesJagdWahl + :6384 tagesPlan (TAGES_GESETZ.rollen.jaeger :5482, .jagd :5566)", leser: "stamm/siedlung-bewohner.js:1373 _bewohnerListe" },
                     adressen: { saaten: 8, zeiten: Array.from({ length: 24 }, (_, h) => h + 0.5) },
                     mit: { nH: 60 },
                     ms: Math.max(4000, Math.floor((H.rest() - 4) * 1000)),
                     masse: {
                         jaegerJeSaat: { wie: (v, aus) => Math.min(...[1, 2, 3, 4, 5, 6, 7, 8].map((s) => Math.max(0, ...aus.filter((x) => x.a.saat === s).map((x) => x.w.jagd)))) },
-                        jagdJeTag: { wie: (v) => v.reduce((q, x) => q + x, 0) / 8, feld: "jagd" },
+                        jagdJeTag: { wie: (v, aus) => [1, 2, 3, 4, 5, 6, 7, 8].reduce((q, s) => q + new Set(aus.filter((x) => x.a.saat === s).flatMap((x) => x.w.jaeger || [])).size, 0) / 8, feld: "jagd" },
                         bewohner: { wie: "summe", feld: "bewohner" },
                         taten: { wie: "zaehle", feld: "taten" },
                         rollen: { wie: "verschieden", feld: "rollen" },
                     },
                     schlecht: { feld: "jagd", richtung: "min" },
-                    ungemessen: ["der Wildbestand unter der Jagd (ohne Jäger keine Jagd, die ihn senkt)"],
+                    ungemessen: ["der Wildbestand im Fächer (er misst nur den Plan; das Wild misst WILD an der Welt des Messorts)"],
                 });
                 H.zeile("Tier S2: " + R.akte.slice(0, 400));
-                if (R.fehlt) return K.leser(2, { fehlt: R.fehlt, wo: "koerper-core.js:5630" });
+                if (R.fehlt) return K.leser(2, { fehlt: R.fehlt, wo: "koerper-core.js:5880" });
                 const w = R.werte;
-                return K.nicht(2, {
+                let W = null;
+                try {
+                    W = await ruf("WILD", { tage: 6 });
+                } catch (e) {
+                    W = { fehlt: "WILD warf: " + String((e && e.message) || e).slice(0, 160) };
+                }
+                H.zeile("Tier S2 Wild: " + JSON.stringify(W).slice(0, 400));
+                const wildDelta = W && !W.fehlt && W.delta != null && W.beute > 0 ? W.delta : null;
+                const wild = !W || W.fehlt ? "Wild ungemessen: " + ((W && W.fehlt) || "ohne Antwort") : W.jaeger + " Jäger in " + W.siedlung + " über " + W.tage + " geraffte Tage: " + W.jagden + " Jagden, " + W.beute + " Beute, " + W.leer + " leer, " + W.ohneAntwort + " ohne Antwort des Gaus · Bestand " + W.art + " am Revier " + W.n0 + " → " + W.n1 + (W.wurf ? " · warf: " + W.wurf : "");
+                return K.zahl(2, {
                     n: w.jaegerJeSaat,
-                    fehlt: "Bewohner, die jagen und fischen (8 Saaten): " + w.jaegerJeSaat + " Jäger je Saat, " + w.jagdJeTag + " Jagden je Tag; die Taten des Tags " + Object.keys(w.taten).join("/") +
-                        " — koerper-core.js:5300 TAGES_GESETZ trägt keine Rolle, die jagt oder fischt · " + R.akte,
+                    werte: { jagdJeTag: w.jagdJeTag, wildDelta },
+                    beleg: w.jaegerJeSaat + " Jäger je Saat (kleinste der 8 Saaten), " + w.jagdJeTag + " Jagden je Tag; die Taten des Tags " + Object.keys(w.taten).join("/") + " · " + wild + " · " + R.akte.slice(0, 300),
+                    taeter: !(w.jaegerJeSaat >= 1)
+                        ? "koerper-core.js:5880 tagesJagdWahl / :5566 TAGES_GESETZ.jagd — der Plan einer Saat trägt keinen Jäger (kein Revier hinter dem Saum)"
+                        : wildDelta == null
+                          ? "stamm/siedlung-bewohner.js:2895 _bewohnerBeute — " + (W && W.fehlt ? W.fehlt : W.beute > 0 ? "der Bestand antwortet nicht" : "keine Beute in " + W.tage + " Tagen")
+                          : !(wildDelta < 0)
+                            ? "stamm/siedlung-bewohner.js:2895 _bewohnerBeute — " + W.beute + " Beute, der Bestand am Revier sinkt nicht (" + W.n0 + " → " + W.n1 + ")"
+                            : null,
                 });
+            });
             let Z = null, zf = "";
             try {
                 Z = await ruf("ZENSUS");
@@ -810,7 +917,6 @@ module.exports = (F) => [
                 return Z;
             };
             const wer = () => "Bewohner " + z().bewohner + " (Berufe " + Object.keys(z().berufe).join("/") + "), Tiere " + z().kreaturen + ", zahm " + z().zahm;
-            });
             await K.schritt(3, async () => K.nicht(3, { n: z().hirten, fehlt: "10² Tiere in einer Herde mit Hirte: " + z().hirten + " Hirten — " + wer() }));
             await K.schritt(4, async () => K.nicht(4, { n: z().zahm, fehlt: "10³ Haustiere aus der Wildfauna (32 Saaten): " + z().zahm + " zahme Tiere (bond ≥ 0,5)" }));
             await K.schritt(5, async () => K.nicht(5, { n: z().jaeger, fehlt: "Fischerei und Aquakultur mit Bestand und Fang: kein Fischer, kein Fang — " + wer() }));
@@ -827,10 +933,10 @@ module.exports = (F) => [
                 });
             });
         },
-        seite: { ZENSUS, TIER, FAECHER, JAGD_AN },
+        seite: { ZENSUS, TIER, FAECHER, JAGD_AN, WILD },
         sprossen: {
             1: { umfang: { soll: 1, wort: "an den Spieler gebundenes Tier" }, masse: [{ key: "p95", wort: "Abstand p95 zum Spieler über den Hang (m)", soll: 5, richtung: "≤" }, { key: "hub", wort: "Anstieg des Wegs über den Hang (m)", soll: 0, richtung: ">" }] },
-            2: { umfang: { soll: 1, wort: "jagende oder fischende Bewohner (je Saat, 8 Saaten)" }, masse: [{ key: "jagdJeTag", wort: "Jagden je Tag", soll: 1, richtung: "≥" }, { key: "wildDelta", wort: "Änderung des Wildbestands", soll: 0, richtung: "<" }], erwartet: "nicht", fehlt: "kein Bewohner jagt oder fischt" },
+            2: { umfang: { soll: 1, wort: "jagende oder fischende Bewohner (je Saat, 8 Saaten)" }, masse: [{ key: "jagdJeTag", wort: "Jagden je Tag", soll: 1, richtung: "≥" }, { key: "wildDelta", wort: "Änderung des Wildbestands", soll: 0, richtung: "<" }] },
             3: { umfang: { soll: 100, wort: "Tiere in einer Herde mit Hirte" }, masse: [{ key: "gras", wort: "Rückgang der Grasdeckung nach 30 Tagen (Anteil)", soll: 0.2, richtung: "≥" }, { key: "viehpfad", wort: "Viehpfad im Boden (getretene Fläche, m²)", soll: 0, richtung: ">" }], erwartet: "nicht", fehlt: "keine Herde, kein Hirte" },
             4: { umfang: { soll: 1000, wort: "Haustiere aus der Wildfauna" }, masse: [{ key: "haustier", wort: "Saaten mit Haustier", soll: 0.8, richtung: "≥" }, { key: "gestalt", wort: "Gestalt-Distanz Haustier ↔ Wildform im Soll (Anteil)", soll: 1, richtung: "≥" }], erwartet: "nicht", fehlt: "keine Haustiere" },
             5: { umfang: { soll: 1, wort: "Fischerei mit Bestand und Fang" }, masse: [{ key: "kollaps", wort: "Bestandsrückgang bei Übernutzung (Anteil)", soll: 0.5, richtung: "≥" }], erwartet: "nicht", fehlt: "keine Fischerei" },
