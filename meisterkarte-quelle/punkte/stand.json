@@ -3064,7 +3064,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 58 Bilder · max 92.33 ms · 82.76 % > 33 ms · Fahrt 42 Bilder · max 117.18 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 82.76 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 117.18), 100.00 % > 33 ms an 54b89949 radeon · gehalten: Gehen 93 Bilder · max 76.35 ms · 12.90 % > 33 ms · Fahrt 45 Bilder · max 241.63 ms · 73.33 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 12.90 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 241.63), 73.33 % > 33 ms an 54b89949 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 54b89949: Last: Referenz f 1,309 (Faden 1,309 · alle Kerne 1,083; vor 109,8/278,7 ms, nach 103,6/282,5 ms, Ruhe 83,9/260,8 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --user-data-dir=anazh-28164-pro · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +31)",
+   "beleg": "Maschine: gehalten: Gehen 58 Bilder · max 92.33 ms · 82.76 % > 33 ms · Fahrt 42 Bilder · max 117.18 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 82.76 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 117.18), 100.00 % > 33 ms an 54b89949 radeon · Gehen 92 Bilder · max 83.25 ms · 13.04 % > 33 ms · Fahrt 5 Bilder · max 75.02 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 13.04 % > 33 ms | Fahrt: blind (5 Bilder in 2.5 s), 80.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 99649186 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 54b89949: Last: Referenz f 1,309 (Faden 1,309 · alle Kerne 1,083; vor 109,8/278,7 ms, nach 103,6/282,5 ms, Ruhe 83,9/260,8 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --user-data-dir=anazh-28164-pro · profiband.K4#2 gtx: ROT: Gehen 92 Bilder · max 83.25 ms · 13.04 % > 33 ms · Fahrt 5 Bilder · max 75.02 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 13.04 % > 33 ms | Fahrt: blind (5 Bilder in 2.5 s), 80.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 99649186",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3080,10 +3080,9 @@
      "id": "profiband.K4#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Gehen 93 Bilder · max 76.35 ms · 12.90 % > 33 ms · Fahrt 45 Bilder · max 241.63 ms · 73.33 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 12.90 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 241.63), 73.33 % > 33 ms",
-     "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +31)",
-     "gehalten": true,
+     "zahl": "Gehen 92 Bilder · max 83.25 ms · 13.04 % > 33 ms · Fahrt 5 Bilder · max 75.02 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 13.04 % > 33 ms | Fahrt: blind (5 Bilder in 2.5 s), 80.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1)",
+     "sha": "9964918608a72e1bbc6972925a4820eac5b53d0f",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -3099,10 +3098,9 @@
      "id": "profiband.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +31)",
-     "ungemessen": true,
+     "zahl": "Gehen 92 Bilder · max 83.25 ms · 13.04 % > 33 ms · Fahrt 5 Bilder · max 75.02 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 13.04 % > 33 ms | Fahrt: blind (5 Bilder in 2.5 s), 80.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1)",
+     "sha": "9964918608a72e1bbc6972925a4820eac5b53d0f",
+     "grund": "ROT: Gehen 92 Bilder · max 83.25 ms · 13.04 % > 33 ms · Fahrt 5 Bilder · max 75.02 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 13.04 % > 33 ms | Fahrt: blind (5 Bilder in 2.5 s), 80.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1)",
      "r6": "konsum"
     }
    ]
@@ -16458,7 +16456,7 @@
   },
   "karte2.mensch.fahrzeug.medium": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 11,10 ms (Soll ≤ 33), größtes 144,40 ms, 2839 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 15,70 ms (Soll ≤ 33), größtes 363,20 ms, 3115 Bilder · Exit 0 · [linse-gpu] nvidia/pascal an e4e3f363 gtx — offen: karte2.mensch.fahrzeug.medium#2 radeon: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#2 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#6 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#7 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#7 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#8 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 11,10 ms (Soll ≤ 33), größtes 144,40 ms, 2839 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 15,70 ms (Soll ≤ 33), größtes 363,20 ms, 3115 Bilder · Exit 0 · [linse-gpu] nvidia/pascal an e4e3f363 gtx — offen: karte2.mensch.fahrzeug.medium#2 radeon: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#2 gtx: ROT: S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 3125 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] nvidia/pascal an 99649186 · karte2.mensch.fahrzeug.medium#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#6 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#7 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#7 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#8 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.medium#1",
@@ -16495,10 +16493,10 @@
      "id": "karte2.mensch.fahrzeug.medium#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 3125 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] nvidia/pascal",
+     "sha": "9964918608a72e1bbc6972925a4820eac5b53d0f",
+     "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 3125 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.fahrzeug.medium#3",
@@ -37592,7 +37590,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 349,
+  "konsum": 350,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37760,10 +37758,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3273
+  "ohne": 3272
  },
  "kopfVoll": "9964918608a72e1bbc6972925a4820eac5b53d0f",
- "zeit": "2026-11-26T17:45:31.659Z",
+ "zeit": "2026-11-26T17:55:00.985Z",
  "vorher": "99649186",
  "bilanz": {
   "gewinn": [],
