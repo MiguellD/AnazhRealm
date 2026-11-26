@@ -5568,10 +5568,10 @@
     "kriterien": 84,
     "sprossen": 569,
     "heute": 45,
-    "kern": 2,
-    "kernDazu": 2,
+    "kern": 3,
+    "kernDazu": 3,
     "anteilHeute": 7.7,
-    "anteilKern": 0.3
+    "anteilKern": 0.5
    },
    "perspektiven": [
     {
@@ -7516,7 +7516,7 @@
       }
      ],
      "heute": 1,
-     "kern": 0,
+     "kern": 1,
      "fuss": "gemessen",
      "beleg": "5–8 Wege je Tag, Wiederkehr 1,2 m (mensch.K2); Preis in der Szene unbelegt, Takt der Bewohner 1,52–1,82 ms an der Stadt — KARTE: 0 — die Messung mensch.K2 hebt den Kern von mensch.geist.tag (R9); der eigene Lauf (Wege je Tag im Bild gezählt) fehlt.",
      "alt": [
@@ -20096,8 +20096,8 @@
   "sprossen": 1718,
   "heute": 119,
   "davonKopplungen": 33,
-  "kern": 5,
-  "kernDazu": 5,
+  "kern": 6,
+  "kernDazu": 6,
   "anteilHeute": 6.2,
   "anteilKern": 0.2,
   "kapitel": 7,

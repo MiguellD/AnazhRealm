@@ -21503,7 +21503,7 @@
   },
   "karte2.mensch.menge.rhythmus": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.rhythmus#2 radeon: ungemessen (R10) — zuletzt an 4c9e6aab: Deckel 50 s gerissen: Stille seit 40 s nach 50 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 9.9 s · am Messort stadt-voll (ego) nach 9.9 s, 240  · karte2.mensch.menge.rhythmus#2 gtx: Station seit der Messung geändert · karte2.mensch.menge.rhythmus#3 radeon: ungemessen (R10) · karte2.mensch.menge.rhythmus#3 gtx: ungemessen (R10) · karte2.mensch.menge.rhythmus#4 radeon: ungemessen (R10) · karte2.mensch.menge.rhythmus#4 gtx: ungemessen (R10) · karte2.mensch.menge.rhythmus#5 radeon: ungemessen (R10) · karte2.mensch.menge.rhythmus#5 gtx: ungemessen (R10) · karte2.mensch.menge.rhythmus#6 radeon: ungemessen (R10) · karte2.mensch.menge.rhythmus#6 gtx: ungemessen (R10) · karte2.mensch.menge.rhythmus#7 radeon: ungemessen (R10) · karte2.mensch.menge.rhythmus#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: S2 GRÜN · Wege je Stunde an der Spitze (Umfang der Stadt) 970 (Soll ≥ 316) · Spitzen der Wege je Stunde 2 (Soll 2–2) · Spitze zu Tal 19 (Soll ≥ 3) · Umfang 1356 (Soll ≥ 1000 Bewohner der Stadt) · Wege je Stunde 0–23 Uhr [0,0,0,0,30,80,190,480,570,510,40,120,230,170,30,140,610,970,820,430,230,110,170,210], Spitzen um [8,17] Uhr, 1356 Bewohner, 6140 Wege am Tag · [linse-gpu] nvidia/pascal an 4c9e6aab gtx — offen: karte2.mensch.menge.rhythmus#2 radeon: ungemessen (R10) — zuletzt an 4c9e6aab: Deckel 50 s gerissen: Stille seit 40 s nach 50 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 9.9 s · am Messort stadt-voll (ego) nach 9.9 s, 240  · karte2.mensch.menge.rhythmus#3 radeon: ungemessen (R10) · karte2.mensch.menge.rhythmus#3 gtx: ungemessen (R10) · karte2.mensch.menge.rhythmus#4 radeon: ungemessen (R10) · karte2.mensch.menge.rhythmus#4 gtx: ungemessen (R10) · karte2.mensch.menge.rhythmus#5 radeon: ungemessen (R10) · karte2.mensch.menge.rhythmus#5 gtx: ungemessen (R10) · karte2.mensch.menge.rhythmus#6 radeon: ungemessen (R10) · karte2.mensch.menge.rhythmus#6 gtx: ungemessen (R10) · karte2.mensch.menge.rhythmus#7 radeon: ungemessen (R10) · karte2.mensch.menge.rhythmus#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.menge.rhythmus#2",
@@ -21517,11 +21517,11 @@
     {
      "id": "karte2.mensch.menge.rhythmus#2",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "S2 GRÜN · Wege je Stunde an der Spitze (Umfang der Stadt) 970 (Soll ≥ 316) · Spitzen der Wege je Stunde 2 (Soll 2–2) · Spitze zu Tal 19 (Soll ≥ 3) · Umfang 1356 (Soll ≥ 1000 Bewohner der Stadt) · Wege je Stunde 0–23 Uhr [0,0,0,0,30,80,190,480,570,510,40,120,230,170,30,140,610,970,820,430,230,110,170,210], Spitzen um [8,17] Uhr, 1356 Bewohner, 6140 Wege am Tag · [linse-gpu] nvidia/pascal",
+     "sha": "4c9e6aab7a4d24859cee6b9173b6f26cd4611bdf",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.rhythmus#3",
@@ -37598,7 +37598,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 364,
+  "konsum": 365,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37767,10 +37767,10 @@
    "karte2.leben.kopplung.stadt-im-netz#2 radeon",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3257
+  "ohne": 3256
  },
  "kopfVoll": "4c9e6aab7a4d24859cee6b9173b6f26cd4611bdf",
- "zeit": "2026-11-26T01:37:48.549Z",
+ "zeit": "2026-11-26T01:43:47.858Z",
  "vorher": "4c9e6aab",
  "bilanz": {
   "gewinn": [],
