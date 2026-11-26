@@ -1,6 +1,6 @@
 // halter-tafel.cjs — die Tafel „beansprucht, nicht gebucht“ je Sprosse mit ihrem HALTER (G/U/S/T), Leser 26.11.
 // Aufruf (in einem Baum, der vision/ und zug/ von punkte-maschine trägt und dessen git origin/main kennt):
-//   node bericht/2611-stationen/halter-tafel.cjs <wurzel-pm> <halter.json> > tafel.md
+//   node bericht/2611-stationen/halter-tafel.cjs <wurzel-pm> <halter.json> > cloud-post/leser-2611.md
 // Liest: zug/anspruch.txt (Ansprüche, Kopf-Kommentar), vision/meisterkarte-2.json (heute/heuteSprossen), vision/richter/*.json
 // (jüngste Fahrt je Gerät). Die Landung ist der main-SHA im Kopf-Kommentar; „nach“ heißt: die Landung ist Vorfahr des gemessenen Kopfes
 // (git merge-base --is-ancestor), sonst das Datum des Kommentars gegen das Datum der Fahrt. Der HALTER steht in <halter.json> von Hand
