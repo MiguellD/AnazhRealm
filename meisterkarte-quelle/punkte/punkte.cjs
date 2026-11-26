@@ -4048,7 +4048,8 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         return kopf;
     }
     console.log("  SITZUNG " + ctx.geraet + " · die Welt steht nach " + s.bootS + " s (Schloss nach " + s.warten + " min) · " + gruppen.length + " Proben · Welt :" + (ctx.port + 20000));
-    const k2 = karte2Geraet(ctx.geraet); // DAS GERÄT DER SITZUNG (karte2Geraet): der Kopf nennt es, jede Preis-Frage und jede Akte trägt es
+    const k2 = ctx.k2; // DAS GERÄT DER SITZUNG (run fragt es EINMAL: karte2Geraet): der Kopf nennt es, jede Preis-Frage und jede Akte trägt es
+    if (!k2) throw new Error("fahreSitzung ohne Gerät: run fragt es (karte2Geraet) und trägt es als ctx.k2 herein");
     kopf.geraet = { name: k2.name, adapter: k2.adapter || null, preis: k2.preis, ...(k2.preis ? {} : { grund: k2.grund }) };
     console.log("  KARTE2 Gerät " + (k2.name || "—") + (k2.adapter ? " (Adapter „" + k2.adapter + "“)" : "") + (k2.preis ? " — Preis-Gerät" : " — " + k2.grund + ": kein Preis-Lauf, die Akten tragen nur den Richter"));
     // DIE LEINE LERNT (grundDeckel): die Proben dieser Fahrt, deren Grund-Deckel aus ihrer Reihe über dem der Tafel steht — beim Namen
@@ -4601,6 +4602,18 @@ async function fahreFortsetzung(gruppen, kopf, fahre, lauf = {}) {
 }
 
 const messDatei = (sha, geraet, mdir = path.join(DIR, "messung")) => path.join(mdir, sha.slice(0, 8) + "-" + geraet + ".json");
+// DIE MESS-DATEI DES GERÄTS (Z7, Koordinator 26.11.: dieselbe Klasse wie die Akte — „Gerät schreibt unter dem Namen der Klasse“; Fund GTX
+// 1050: seine Läufe schrieben <sha8>-gtx.json, denselben Namen, den die OMEN am selben Kopf schreibt — 64fcf12e-gtx.json trug am Rechner des
+// 1050 seine Urteile, am Ursprung die der OMEN, und jeder Leser der Klasse gtx lernte Deckel, Gewicht und Wellen von beiden). G =
+// karte2Geraet der Klasse. Das Standardgerät (G.preis) schreibt messung/<sha8>-<klasse>.json und roh/<sha8>-<klasse>/ wie bisher, Byte für
+// Byte; ein Richter-Gerät seine eigene Datei <sha8>-<G.datei>.json mit roh/<sha8>-<G.datei>/, der Kopf trägt klasse · name · adapter ·
+// preis false · ohnePreis. Die Leser der Klasse (m.geraet === klasse: Deckel, Gewicht, Wellen, Eich-Tafel) lernen nie von ihm, die Buchung
+// nimmt von ihm nur den Richter (frischUrteil). headless (G null) wie bisher.
+function messKopf(sha, klasse, G, mdir = path.join(DIR, "messung")) {
+    const ich = G ? G.datei : klasse;
+    const kopf = G && !G.preis ? { sha, geraet: ich, klasse, name: G.name, adapter: G.adapter || null, preis: false, ohnePreis: G.grund } : { sha, geraet: ich };
+    return { datei: messDatei(sha, ich, mdir), rohDir: path.join(mdir, "roh", sha.slice(0, 8) + "-" + ich), kopf };
+}
 // die Dateien am Stand (Wand PFAD)
 const dateienAm = (repo, sha) => git(["ls-tree", "-r", "--name-only", sha], repo).split(/\r?\n/).filter(Boolean);
 // die Roh-Ausgabe einer Messung (Wand GPU für Messungen ohne eigenen Zeugen); "" wenn keine
@@ -4925,6 +4938,12 @@ async function run(opt) {
         if (pr.length) wellenDerFahrt(opt, sha, pr);
         return null;
     }
+    // DAS GERÄT DES LAUFS (karte2Geraet, EINMAL je Lauf): `--geraet` nennt die Klasse, der Adapter das Gerät — die Mess-Datei trägt es
+    // (messKopf), die Sitzung und jede Akte tragen dasselbe. Nennt der Rechner keinen Adapter der Klasse, misst kein Lauf: er schriebe
+    // unter dem Namen der Klasse, was sein Gerät nicht nennt
+    const G = opt.geraet === "headless" ? null : karte2Geraet(opt.geraet);
+    if (G && !G.name) throw new Error("--geraet " + opt.geraet + ": " + G.grund + " — kein Lauf ohne sein Gerät (karte2Geraet)");
+    if (G && !G.preis && opt.eich) throw new Error("--eich: " + G.grund + " — die Eich-Fahrt lernt die Deckel der Klasse, sie fährt nur am Preis-Gerät");
     // EIN Lauf je Spiel-Baum: ein zweiter Lauf auf demselben Gerät checkte sonst seinen SHA in den Baum des ersten
     await baumSperre(repo, opt.geraet);
     const baum = baumAmSha(repo, opt.geraet, sha);
@@ -4934,12 +4953,13 @@ async function run(opt) {
     if (opt.drossel != null && !drossel) throw new Error("--drossel " + opt.drossel + ": eine Zahl > 0 (der Haupt-Faden n-mal langsamer)");
     if (drossel) process.env.PUNKTE_DROSSEL = String(drossel);
     const mdir = drossel ? path.join(DIR, "messung", "drossel-" + drossel) : path.join(DIR, "messung");
-    const datei = messDatei(sha, opt.geraet, mdir);
-    const rohDir = path.join(mdir, "roh", sha.slice(0, 8) + "-" + opt.geraet);
+    const mk = messKopf(sha, opt.geraet, G, mdir);
+    const datei = mk.datei;
+    const rohDir = mk.rohDir;
     fs.mkdirSync(path.dirname(datei), { recursive: true }); // die Farm checkt messung/ nie aus (ihr Teil trägt nur die Scheibe)
     let m = fs.existsSync(datei) ? messungLesen(fs.readFileSync(datei, "utf8")) : null;
     const host = opt.farm || os.hostname();
-    if (!m || m.sha !== sha) m = { sha, geraet: opt.geraet, zeit: null, host, je: {} };
+    if (!m || m.sha !== sha) m = { ...mk.kopf, zeit: null, host, je: {} };
     const hilfe = hilfeText();
     // DIE WAND PFAD: eine Station mit totem Glob am SHA fährt nie — sie ist ROT beim Glob (R6 wäre für ihn blind)
     for (const st of meine.filter((s) => tot(s).length)) {
@@ -4954,13 +4974,13 @@ async function run(opt) {
         return m;
     }
     // die Akte für die Wache (laeuferWache): was dieser Lauf misst — stirbt er ohne exit-Haken, schreibt sie es UNGEMESSEN beim Namen
-    laeuferAkte({ datei, sha, geraet: opt.geraet, host, ids: meine.map(schluessel) });
+    laeuferAkte({ datei, sha, geraet: mk.kopf.geraet, host, ids: meine.map(schluessel) });
     const alle = gruppiere(meine);
     // DIE SITZUNG zuerst (eine Welt, jede Probe darin), danach der Rest auf den Bahnen wie bisher
     const proben = opt.geraet === "headless" ? [] : alle.filter((g) => g[0].probe);
     const gruppen = alle.filter((g) => !proben.includes(g));
     const bahnen = Math.max(1, Math.min(bahnenSoll, gruppen.filter((g) => !istZeit(g)).length));
-    const ctx0 = { koord: KOORD, geraet: opt.geraet, bash: findeBash(), plaetze: bahnen, gpuLauf };
+    const ctx0 = { koord: KOORD, geraet: opt.geraet, k2: G, bash: findeBash(), plaetze: bahnen, gpuLauf };
     // je Bahn der EIGENE Spiel-Baum (Spielstände, Rohdateien) und das eigene Port-Band
     const baeume = [baum];
     for (let i = 2; i <= bahnen && gruppen.length; i++) baeume.push(baumAmSha(repo, opt.geraet + "-" + i, sha));
@@ -5193,7 +5213,8 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
         }
         return diffCache.get(sha);
     };
-    return (st, g) => {
+    // urteil(st, g, von): das jüngste frische Urteil der Station über die Mess-Dateien, die `von` nennt
+    const urteil = (st, g, von) => {
         const id = schluessel(st);
         const tot = opt.tot ? opt.tot(st) : [];
         if (tot.length) return { gruen: false, ungemessen: true, tot: true, grund: pfadGrund(tot, "am Kopf") };
@@ -5205,9 +5226,9 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
         const frisch = [];
         for (const m of messungen) {
             // der jüngste Lauf ohne Messung (m.ungemessen: kein Urteil, Deckel, Schloss) nennt sich im Grund — nie still gehalten
-            const u = m.geraet === g && m.ungemessen && m.ungemessen[id];
+            const u = von(m) && m.ungemessen && m.ungemessen[id];
             if (u && u.abdruck === ab && (!zuletzt || String(u.zeit) > String(zuletzt.zeit))) zuletzt = { ...u, sha: m.sha };
-            if (m.geraet !== g || !m.je || !m.je[id]) continue;
+            if (!von(m) || !m.je || !m.je[id]) continue;
             const e = m.je[id];
             if (e.abdruck !== ab) { fremd++; continue; }
             // der Konsum des Eintrags aus der Tafel seiner Mess-Datei; nennt er einen Abdruck, den die Tafel nicht trägt, fehlt er beim Namen
@@ -5229,11 +5250,11 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
             }
             // ein GRÜN einer GPU-Station trägt den Zeugen der Karte: im Eintrag (seit der Wand) oder in seiner Roh-Ausgabe
             if (st.gpu && e.gruen) {
-                const z = "gpu" in e ? { karte: e.gpu, fremd: e.gpuFremd || null, nie: e.gpuNie || 0 } : gpuZeuge(opt.roh ? opt.roh(m.sha, g, id) : "");
+                const z = "gpu" in e ? { karte: e.gpu, fremd: e.gpuFremd || null, nie: e.gpuNie || 0 } : gpuZeuge(opt.roh ? opt.roh(m.sha, m.geraet, id) : "");
                 const w = gpuWand(z);
                 if (w) { ohneZeugen = w; continue; }
             }
-            frisch.push({ ...e, sha: m.sha, geraet: g, r6: K ? "konsum" : "naehe" });
+            frisch.push({ ...e, sha: m.sha, geraet: g, r6: K ? "konsum" : "naehe", ...(m.preis === false ? { richterGeraet: m.name || m.geraet } : {}) });
         }
         frisch.sort((a, b) => String(b.zeit).localeCompare(String(a.zeit)));
         const r6 = juengste ? (juengste.konsum ? { r6: "konsum" } : { r6: "naehe", ...(juengste.konsumFehlt ? { r6Grund: juengste.konsumFehlt } : {}) }) : {};
@@ -5242,6 +5263,18 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
         const nenne = (xs) => xs.slice(0, 3).join(", ") + (xs.length > 3 ? " +" + (xs.length - 3) : "");
         const grund = ohneZeugen ? "Wand GPU: " + ohneZeugen : konsumAlt && r6.r6 === "konsum" ? "Konsum seit der Messung geändert (R6: " + nenne(konsumTaeter) + ")" : linse ? "Linse seit der Messung geändert (R6: " + nenne(linsenTaeter) + ")" : alt ? "Pfad seit der Messung geändert (R6: " + nenne(taeter) + ")" : unlesbar ? "Linse unlesbar — kein R6-Urteil (" + unlesbar + ")" : unbekannt ? "Mess-SHA unbekannt — kein R6-Urteil" : fremd ? "Station seit der Messung geändert" : "ungemessen (R10)";
         return { gruen: false, ungemessen: true, ...r6, grund: grund + (zuletzt ? " — zuletzt an " + String(zuletzt.sha).slice(0, 8) + ": " + String(zuletzt.grund).slice(0, 200) : "") };
+    };
+    // DER RICHTER DES RICHTER-GERÄTS (Z7, Koordinator 26.11.: „der Leser der Buchung nimmt von ihr nur den Richter“): die Mess-Datei eines
+    // Geräts unter dem Preis-Band seiner Klasse (messKopf: klasse, preis false) gibt der Klasse nur ihr jüngstes frisches Urteil, und nur,
+    // wenn es ROT ist — sein ROT nimmt (die Station steht ROT beim Namen des Geräts), sein GRÜN hebt nichts. Eine Zeit-Station (das Urteil
+    // fällt in ms) urteilt es nie: das ist Preis. Ein frisches ROT des Standardgeräts bleibt sein eigenes
+    const mitRichter = messungen.some((m) => m && m.preis === false && m.klasse);
+    return (st, g) => {
+        const e = urteil(st, g, (m) => m.geraet === g);
+        if (!mitRichter || e.tot || st.zeit === true || (!e.ungemessen && !e.gruen)) return e;
+        const r = urteil(st, g, (m) => m.klasse === g && m.preis === false);
+        if (r.ungemessen || r.gruen) return e;
+        return { ...r, grund: "Richter ROT an " + r.richterGeraet + " (Z7: sein ROT nimmt, sein GRÜN hebt nichts)" + (r.zahl ? ": " + String(r.zahl).slice(0, 160) : "") };
     };
 }
 
@@ -6084,7 +6117,7 @@ function r6Quelle(repo, kopf, messungen, stationen = [], opt = {}) {
                 if (typeof m.sha !== "string" || !baumVon.get(m.sha)) continue;
                 for (const [id, e] of Object.entries(m.je || {})) {
                     if (e.konsum && konsumVon(e, m)) continue;
-                    for (const st of jeId.get(id) || []) if (geraeteVon(st).includes(m.geraet)) for (const s of [m.sha, kopf]) {
+                    for (const st of jeId.get(id) || []) if (geraeteVon(st).includes(m.klasse || m.geraet)) for (const s of [m.sha, kopf]) {
                         const k = stationen.indexOf(st) + "|" + baumVon.get(s);
                         if (!paare.has(k)) paare.set(k, [st, s]);
                     }
@@ -8898,11 +8931,12 @@ async function selbsttest(o = {}) {
         const S = (k, s, probe, urteil) => ({ ...gp, kriterium: k, staffel: s, probe, urteil });
         const hookLog = path.join(tmp, "sitzung-hook.log");
         fs.writeFileSync(hookLog, "2026-10-29 10:00:00 ende ci-probe 1/1 echt\n");
+        const k2R = karte2Geraet("radeon"); // das Gerät der Sitzung, wie run es EINMAL fragt (ctx.k2)
         const lauf = async (gruppen, art, gpuLauf, fahrtMaxS, eich, mehr = {}) => {
             fs.rmSync(zaehler, { force: true });
             const rohDir = path.join(tmp, "roh-" + art);
             const es = {}, reihe = [];
-            const kopf = await fahreSitzung(gruppen, { koord: KOORD, geraet: "radeon", bash: findeBash(), gpuLauf, baum: tmp, port: P, band: [P, P + 20000, P + 19999],
+            const kopf = await fahreSitzung(gruppen, { koord: KOORD, geraet: "radeon", k2: k2R, bash: findeBash(), gpuLauf, baum: tmp, port: P, band: [P, P + 20000, P + 19999],
                 rohDir, welt: art === "kein-start" ? undefined : welt(art), stillS: 20, stilleS: 1, stromTaktMs: 200, hookLog, ...(fahrtMaxS ? { fahrtMaxS } : {}), ...(eich ? { eich } : {}), ...mehr },
             (g, xs, aus, zeit) => g.forEach((st, i) => { reihe.push(schluessel(st)); es[schluessel(st)] = stationsEintrag(xs[i], { zeit, abdruck: abdruck(st, h), port: P, bahn: "sitzung", zwilling: i ? schluessel(g[0]) : null, modus: "session" }); }));
             return { es, kopf, reihe, rohDir, z: fs.existsSync(zaehler) ? fs.readFileSync(zaehler, "utf8").trim().split("\n") : [] };
@@ -9837,6 +9871,34 @@ async function selbsttest(o = {}) {
         pruef("RICHTER-AKTE ZWILLINGE zwei Stationen auf einer Probe: beide schreiben ihre Akte mit dem Preis des EINEN Laufs; der Preis-Lauf fährt, wenn nur der zweite eine Sprosse trägt",
             beide && karte2PreisLauf(g, nurB, GR) && !karte2PreisLauf(g, { zeilen: [] }, GR),
             JSON.stringify({ A: fs.existsSync(datei(zA)), B: akteB && { station: akteB.station, lauf: akteB.lauf, bilder: akteB.geraete[0].preis.bilder }, preisNurB: karte2PreisLauf(g, nurB, GR) }));
+    }
+    // DIE MESS-DATEI DES RICHTER-GERÄTS (Z7, Koordinator 26.11.; der Mutant „1050 schreibt -gtx.json“): messKopf nennt Datei und Roh-Ordner
+    // nach dem Gerät aus seinem Adapter (geraetVon, dieselbe Quelle wie die Akte); frischUrteil nimmt von der Datei des 1050 nur den Richter —
+    // sein ROT nimmt, sein GRÜN hebt nichts, eine Zeit-Station urteilt er nie. Die alte Form (der 1050 unter {geraet: "gtx"}) buchte sein GRÜN
+    // als GRÜN der Klasse: der Fall trennt beide
+    {
+        const RA = require(path.join(KOORD, "vision", "richter-akte.cjs"));
+        const g50 = RA.geraetVon("gtx", { namen: ["NVIDIA GeForce GTX 1050"] }), gom = RA.geraetVon("gtx", { namen: ["Intel(R) UHD Graphics 630", "NVIDIA GeForce GTX 1060"] });
+        const sha = "64fcf12e" + "0".repeat(32), md = path.join(tmp, "mess-geraet");
+        const k50 = messKopf(sha, "gtx", g50, md), kom = messKopf(sha, "gtx", gom, md), kh = messKopf(sha, "headless", null, md);
+        const ort = (k) => path.basename(k.datei) + " · roh/" + path.basename(k.rohDir);
+        pruef("MESS-DATEI DES RICHTER-GERÄTS der GTX 1050 schreibt <sha8>-gtx1050.json (klasse gtx, preis false), die OMEN und headless ihre Datei wie bisher",
+            ort(k50) === "64fcf12e-gtx1050.json · roh/64fcf12e-gtx1050" && k50.kopf.geraet === "gtx1050" && k50.kopf.klasse === "gtx" && k50.kopf.preis === false &&
+                k50.kopf.name === "GTX 1050" && ort(kom) === "64fcf12e-gtx.json · roh/64fcf12e-gtx" && JSON.stringify(kom.kopf) === JSON.stringify({ sha, geraet: "gtx" }) &&
+                ort(kh) === "64fcf12e-headless.json · roh/64fcf12e-headless",
+            k50.kopf.geraet === "gtx" ? "der GTX 1050 schrieb " + ort(k50) + " — unter dem Namen der Klasse, die Datei des Standardgeräts GTX 1060" :
+                ort(k50) + " | " + ort(kom) + " | " + JSON.stringify(k50.kopf));
+        const sr = { ...st0, kriterium: "gelaende.K4", geraet: ["radeon", "gtx"], gpu: false, zeit: false }, sz = { ...sr, zeit: true };
+        const ein = (kopf, st, gruen, zahl, zeit) => ({ ...kopf, je: { [schluessel(st)]: { gruen, zahl, exit: 0, minuten: 1, zeit, abdruck: abdruck(st, "h", "gtx") } } });
+        const om = (st, gruen) => ein(kom.kopf, st, gruen, "omen " + (gruen ? "grün" : "rot"), "2026-11-26T07:00:00Z");
+        const m50 = (st, gruen, kopf = k50.kopf) => ein(kopf, st, gruen, "1050 " + (gruen ? "grün" : "rot"), "2026-11-26T07:30:00Z");
+        const fr = (ms, st = sr, g = "gtx") => frischUrteil(ms, () => [], "h")(st, g);
+        const a = fr([om(sr, true), m50(sr, false)]), b = fr([m50(sr, true)]), c = fr([om(sr, true), m50(sr, true)]), d = fr([om(sz, true), m50(sz, false)], sz),
+            e = fr([om(sr, false), m50(sr, false)]), r = fr([om(sr, true), m50(sr, false)], sr, "radeon"), alt = fr([m50(sr, true, { sha, geraet: "gtx" })]);
+        pruef("MESS-DATEI DES RICHTER-GERÄTS die Buchung nimmt vom GTX 1050 nur den Richter: sein ROT nimmt beim Namen, sein GRÜN hebt nichts, eine Zeit-Station urteilt er nie; die alte Form buchte sein GRÜN",
+            a.gruen === false && !a.ungemessen && /^Richter ROT an GTX 1050 \(Z7/.test(a.grund) && b.ungemessen === true && c.gruen === true && c.zahl === "omen grün" &&
+                d.gruen === true && d.zahl === "omen grün" && e.gruen === false && e.zahl === "omen rot" && !e.richterGeraet && r.ungemessen === true && alt.gruen === true,
+            JSON.stringify({ a: [a.gruen, a.grund], b: [b.gruen, b.ungemessen], c: c.zahl, d: d.zahl, e: e.zahl, r: r.ungemessen, alt: alt.gruen }));
     }
     fs.rmSync(tmp, { recursive: true, force: true });
     const rot = fall.filter((f) => !f.ok);
