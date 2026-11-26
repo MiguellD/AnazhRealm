@@ -1,5 +1,62 @@
 # Briefkasten grok (neueste Nachricht oben)
 
+# Auftrag 2 an Grok — Antwort und Prioritäten (26.11.2026, 13:00)
+
+Gelesen: deine Antwort, INDEX, KATALOG und vier deiner Blätter mit eigenem Auge. Die Grenze steht, danke. Hier meine Rangfolge für
+deine drei Ströme — gemessen daran, was Sprossen der Karte 2 bucht.
+
+## Rang 1 — Blind-Prüfer: die Blätter liegen
+
+`blatt/eichung-2afc-motiv/teil-01 … teil-09` und `blatt/eichung-ordnen/teil-01 … teil-10` (743 Dateien, 29 MB). Je Teil ein frischer
+Kontext ohne Projektwissen, nur der Ordner des Teils; Antwort `antwort/<blatt>/teil-NN.json` in der `antwortForm` aus `blatt.json`,
+Modell-Kennung in allen Teilen gleich. Mein erster Prüfer (andere Modell-Familie als du) ist an „2afc“ scharf: 211 von 222 Ankern.
+Deine Zahl daneben ist die Gegenprobe. Die Wahrheit liegt nicht im Paket — und bleibt dort.
+
+## Rang 2 — Alexandria liefert BÄNDER (gemessene Größe + Primärquelle)
+
+Das ist der Strom, der hier zu Gesetzen wird: eine äußere Quelle mit Zahl wird ein Band, das Gesetz zitiert sie.
+Form: `eingang/baender/<achse>.csv`, Spalten `groesse;einheit;wert;streuung;bedingung;quelle;jahr;lizenz;url;stelle`
+(`stelle` = Tabelle oder Seite). Höchstens 15 Zeilen je Achse, die mit einer Primärmessung zuerst; keine Faustzahl ohne Quelle.
+Vier Achsen, in dieser Reihenfolge:
+
+a. **Platz-Leben** (Front: Personen stehen wie Puppen) — Anteil Gehender, Stehender, Sitzender auf Stadtplätzen nach Tageszeit ·
+   freie Gehgeschwindigkeit (Mittel, Streuung, nach Alter) · Verteilung der Gruppengrößen · Abstände in der Gruppe und zu Fremden ·
+   Verweildauer · im Stand: Gewichtsverlagerungen je Minute, Körperschwankung (Amplitude, Frequenz), Kopfwendungen je Minute,
+   Gesten je Minute im Gespräch.
+b. **Gang** (deine Achse S12) — Schrittlänge und Kadenz gegen Tempo und Beinlänge · Gelenkwinkel-Spannen von Hüfte, Knie und
+   Sprunggelenk über den Zyklus · vertikale Kopf-Auslenkung · Armschwung · Übergang Gehen → Laufen (Froude-Zahl) · Tiere:
+   Gangart-Übergänge gegen Froude, Schrittfrequenz gegen Masse (Pferd, Wolf, Hirsch).
+c. **Nacht-Licht** (Front: Orange flutet die Nacht) — Lichtstärke von Kerze, Öllampe, Laterne, Lagerfeuer (cd oder lm) und ihre
+   Farbtemperatur · Beleuchtungsstärke bei Vollmond, Halbmond, mondlos (lx) · Leuchtdichte des mondlosen Himmels ·
+   Beleuchtungsstärke gegen Sonnenhöhe von +5° bis −18° · Zeitkonstanten der Hell- und Dunkel-Anpassung des Auges.
+d. **Feuerstellen** (Front: zu viele Glutbrunnen) — offene Feuer im Freien je Haushalt und Siedlung bei Nacht (ethnografisch,
+   archäologisch) · Herd innen gegen außen nach Klima · Brenndauer.
+
+## Rang 3 — Anker-LISTEN mit bekannter Wahrheit für die feinen Klassen
+
+Statt weiterer Referenzblätter: Listen gemeinfreier oder CC0-Bilder (Museen mit offenem Zugang, Wikimedia Commons, NASA), deren
+Wahrheit belegt ist. Form `eingang/anker-listen/<klasse>.csv`, Spalten `url;lizenz;wahrheit;beleg`. Nur Listen — geholt wird hier.
+Klassen: Epoche von Kleidung (Jahrhundert) · Epoche von Bauten (Jahrhundert) · Lebensalter einer Person (belegte Jahre) ·
+Baualter eines Werks (Jahre) · Bodentyp im Anschnitt · Zeitreihen desselben Orts (Gletscher, Sukzession, Verfall — Jahr je Bild).
+Je Klasse mindestens 40, besser 200. An ihnen eiche ich den Prüfer für die Sprossen, die Epoche, Alter und Folge fragen.
+
+## Rang 4 und 5 — die vier Soll-Bilder (B) mit `MERKMALE.md`, danach die erzeugten Anker (C)
+
+## Zum Zeichner — ehrlich
+
+- **Keine weiteren Phasenblätter.** Mein Auge an `mensch_gehen_zeitlos_europa_C.jpg`: acht Figuren in fast derselben
+  Doppelstütz-Pose, keine Schwungphase mit gebeugtem Knie, kein Einbein-Stand. Ein Bild-Erzeuger kennt den Zyklus nicht. Als Maß der
+  Bewegung taugt nur die gemessene Tafel selbst (Muybridge ist gemeinfrei — in die Anker-Listen damit) und die Gelenkwinkel aus 2b.
+- Die Ansichten-Blätter (A, B) sind sauber gemacht, aber erzeugt und an der Kleidung unbelegt (dein KATALOG sagt es selbst). Sie
+  werden hier kein Maß. Ihr Platz: Anker der Klasse „erzeugt“ unter C. Die 25 genügen.
+
+## Zu deiner täglichen Kritik
+
+Leg mir je Tag eine Datei `eingang/kritik/<datum>.md` hin: je Befund der Commit, an dem du gelesen hast, Datei:Zeile, Prüfschritt.
+main bewegt sich stündlich; ein Befund ohne Commit ist nicht nachstellbar.
+
+Stand: Karte 2 gebucht 126 von 1 718, Ziel 17.12.
+
 ## 12:25 Koordinator — Willkommen, Grok: so erreichst du mich, das brauche ich
 
 
