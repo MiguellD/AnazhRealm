@@ -357,21 +357,9 @@ class AnazhRealm_dirigent_ankunft {
                 })
             )
         );
-        // DIE PHASE DER SCHEIBE (Karte 2 planet.kosmos.systeme#1): die Sonne beleuchtet die Kugel des Monds, die Kamera sieht sie —
-        // Lommel–Seeliger (der Regolith streut einfach: L ∝ μ₀/(μ₀ + μ), μ₀ = n·Sonne, μ = n·Auge; Hapke 1981), auf den Vollmond
-        // geeicht (× 2: bei μ₀ = μ trägt jeder Punkt der Scheibe `mondCd`, die flache Scheibe des Vollmonds wie bis hier). Die Nacht-
-        // Seite trägt 0. Die Sonne schreibt `_updateCelestialBodies` (die EINE Bahn, `_dayNightSunDirection`).
-        {
-            const T = THREE.TSL;
-            const sonne = T.uniform(new THREE.Vector3(0, 1, 0));
-            const n = T.normalWorldGeometry;
-            const mu0 = T.max(T.dot(n, sonne), 0);
-            const mu = T.max(T.dot(n, T.cameraPosition.sub(T.positionWorld).normalize()), 1e-4);
-            moonMat.colorNode = T.vec4(T.materialColor.mul(mu0.mul(2).div(mu0.add(mu))), 1);
-            moonMat.userData.sonne = sonne;
-        }
+        // die Phase der Scheibe (`_mondPhase`, stamm/bild-himmel.js: Lommel–Seeliger, die Uniform der Sonne)
         const moonMesh = new THREE.Mesh(moonGeo, moonMat);
-        moonMesh.userData.sonne = moonMat.userData.sonne;
+        moonMesh.userData.sonne = this._mondPhase(moonMat);
         moonMesh.name = "himmel-mond";
         moonMesh.frustumCulled = false;
         scene.add(moonMesh);

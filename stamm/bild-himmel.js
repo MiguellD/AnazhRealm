@@ -1625,6 +1625,21 @@ class AnazhRealm_bild_himmel {
         return new THREE.Vector3(x, y, z);
     }
 
+    // DIE PHASE DER SCHEIBE (Karte 2 planet.kosmos.systeme#1): die Sonne beleuchtet die Kugel des Monds, die Kamera sieht sie —
+    // Lommel–Seeliger (der Regolith streut einfach: L ∝ μ₀/(μ₀ + μ), μ₀ = n·Sonne, μ = n·Auge; Hapke 1981), auf den Vollmond
+    // geeicht (× 2: bei μ₀ = μ trägt jeder Punkt der Scheibe `mondCd`, die flache Scheibe des Vollmonds wie bis hier). Die Nacht-
+    // Seite trägt 0. Der Stoff des Monds (`init`, stamm/dirigent-ankunft.js) nimmt den Knoten → die Uniform der Sonne, die
+    // `_updateCelestialBodies` schreibt (die EINE Bahn, `_dayNightSunDirection`).
+    _mondPhase(stoff) {
+        const T = THREE.TSL;
+        const sonne = T.uniform(new THREE.Vector3(0, 1, 0));
+        const n = T.normalWorldGeometry;
+        const mu0 = T.max(T.dot(n, sonne), 0);
+        const mu = T.max(T.dot(n, T.cameraPosition.sub(T.positionWorld).normalize()), 1e-4);
+        stoff.colorNode = T.vec4(T.materialColor.mul(mu0.mul(2).div(mu0.add(mu))), 1);
+        return sonne;
+    }
+
     // DIE BAHN DER SONNE JETZT (sonnenbahn, Meeus Kap. 13): die Breite der Welt auf ihrem Planeten — die Heimat am Anker
     // (`_planetAnker`, im Planet-Faden gerechnet), eine Reise-Welt am Ort ihres Teils (`ort.teil.breite`, Grad) —, der Körper des
     // Planeten (Schiefe und Drehsinn, mit dem Anker) und die Saison-Phase der Welt (`seasonPhase`) → `__weltLicht.sonnenBahn`.
