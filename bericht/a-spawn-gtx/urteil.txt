@@ -1,3 +1,0 @@
-messen ego exit 0
-messen third exit 0
-urteil exit 0
