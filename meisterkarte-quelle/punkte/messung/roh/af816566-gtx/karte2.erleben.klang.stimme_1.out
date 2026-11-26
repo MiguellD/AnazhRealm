@@ -1,0 +1,13 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 0 s · Zensus Stimme: {"saat":"anazh-realm-seed","bew":0,"maxS":0,"sied":0,"leib":["stimmFormanten"],"tts":true}
+@@ 0.9 s · S1 Tafel: 30 Laute · max 9 % · Mittel 1.78 % · innerhalb 100 % · Spiel: 0 von 0 Lauten bit-gleich (0 Bewohner) · gespielt 0 · Erwachsene 0 von 0 innerhalb ±15 % · schlimmste [] · 290 ms
+@@ 0.9 s · erleben.klang.stimme S1 gemessen {"art":"gemessen","werte":{"formant_abweichung_pct":9},"welt":{"spiel_gleich_pct":0,"gespielt":0,"leute":0},"taeter":null,"beleg":null,"t":0.9}
+@@ 0.9 s · erleben.klang.stimme S2 leser {"art":"leser","fehlt":"keine Sprache am Abgriff: die Bewohner sprechen Laute ohne Bedeutung aus dem Stimm-Gesetz (Silben aus Vokalen der Tafel, `stimmPuffer` klang-core.js:1610 über `_bewohnerLaut` stamm/klang.js:994) —
+@@ 0.9 s · erleben.klang.stimme S3 umfang {"art":"umfang","erzeugt":0,"was":"die größte Siedlung der Sitzung trägt 0 Bewohner (0 Siedlungen) — 10³ verlangt; und die Bewohner sprechen Laute ohne Bedeutung aus dem Stimm-Gesetz (Silben aus Vokalen der Tafel, `stimm
+@@ 0.9 s · erleben.klang.stimme S4 umfang {"art":"umfang","erzeugt":0,"was":"die Sitzung trägt 0 Bewohner — keine Metropole mit 10⁶ Personen; und die Bewohner sprechen Laute ohne Bedeutung aus dem Stimm-Gesetz (Silben aus Vokalen der Tafel, `stimmPuffer` klang-c
+@@ 0.9 s · erleben.klang.stimme S5 umfang {"art":"umfang","erzeugt":1,"was":"die Sitzung hält EINE Saat (anazh-realm-seed) — 100 Saaten verlangt; kein fremdes Sprechorgan","t":0.9}
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
