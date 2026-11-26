@@ -1901,7 +1901,8 @@ const BEWOHNER_SITZUNG = { sek: 90, befehl: [
 // meisten stehen sollen (je ≥ R_M auseinander). Die UHREN liegen zwischen den Wenden des Tags (koerper TAGES_GESETZ: wach 6,5,
 // Werk 8–17, Ruhe 22, je ±0,5 h): 3 Uhr (alle drinnen — am Ort steht niemand), 10 und 15 Uhr (am Werk), 20 Uhr (der Abend).
 // Je Uhr die Uhr am Regler des Spielers und das EINE Warten wie platzAcht (`__gebautNach`: jeder angekommen, jeder Leib draußen
-// mit Feld), je Ort ein Stand der Third-Kamera 9–17 m vom Ort mit freiem Blick auf ihn (die Abnahme ohne Pixel wie platzAcht),
+// mit Feld), je Ort ein Stand der Third-Kamera 9–17 m vom Ort mit freiem Blick auf ihn (die Abnahme ohne Pixel wie platzAcht) und
+// auf jeden Stand seines Kreises (die EINE Sicht `sperre`, dieselbe wie die der Zählung; sieht kein Stand alle: nicht im Bild),
 // 2 Spiel-Sekunden im Takt des Spiels, dann gezählt im Frustum der Spiel-Kamera: SOLL = die Bewohner, deren Ziel der Stunde
 // dieser Ort ist und die nicht drinnen sind; IST = die Stände (Hülle mit `_feldLageVon` und `heim`, derselbe Filter wie
 // platzAcht), gezeichnet und nicht drinnen, die Brust im Frustum, die Sichtlinie frei von Hausgrundrissen, ≤ R_M vom Ort und
@@ -1968,6 +1969,29 @@ async function dorfZaehlung(r, T) {
     };
     const leiber = () => s.scene.children.filter((o) => o && o.userData && o.userData._feldLageVon && o.userData.heim != null);
     const gez = (g) => !!g && !g.userData._drinnen && (g.visible || g.userData._satz === true || !!(r._kzBesitztFeld && r._kzBesitztFeld(g)));
+    // DIE EINE SICHT (bevoelkerung#1, 26.11.; Radeon und GTX 2da17e2e „10/15/20 Uhr Ort 3 Ist 0/Soll 1“ ohne „fehlt“, Wolke am Dorf
+    // d:7 „Ort 2 Ist 0/Soll 1“ zu drei Uhren: der Wirt steht auf seinem Ziel, dO 0, die Linie vom Auge zu ihm quert ein Haus): der
+    // Stand prüfte die Abnahme und den Ort im Frustum, die Zählung danach Frustum UND Sichtlinie — zwei Tests, der Stand sah den
+    // Menschen nie, den die Zählung sehen musste. `sperre` ist der EINE Test für Stand und Zählung: null = gesehen, sonst die Sperre
+    // beim Namen (`frustum` · `haus`); die Sichtlinie wie platzAcht, ab dem Rand des Grundrisses unter dem Auge
+    const blick = () => { cam.updateMatrixWorld(true); return { fr: new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)), auge: cam.getWorldPosition(new T.Vector3()) }; };
+    const sperre = (B, g) => {
+        const brust = new T.Vector3(g.position.x, g.position.y + 0.4, g.position.z);
+        if (!B.fr.containsPoint(brust)) return "frustum";
+        const dA = B.auge.distanceTo(brust);
+        let raus = r._imGrundriss(B.auge.x, B.auge.z, 0) !== "haus";
+        for (let t = 0.6; t < dA - 0.6; t += 0.5) { const f = t / dA, hs = r._imGrundriss(B.auge.x + (brust.x - B.auge.x) * f, B.auge.z + (brust.z - B.auge.z) * f, 0) === "haus"; if (!raus) raus = !hs; else if (hs) return "haus"; }
+        return null;
+    };
+    // DER KREIS DES ORTS: jeder Stand ≤ R_M vom Ort, nicht drinnen, nicht am Steuer, dem Ort näher als jedem anderen Ziel der Stunde —
+    // der Filter der Zählung ohne das Zeichnen (vor dem Stand zeichnet das Spiel nach dem Ort des Spielers)
+    const imKreis = (g, O, ok, h, ziele) => {
+        if (g.userData._drinnen) return false;
+        const b = g.userData._feldLageVon.b, dO = Math.hypot(g.position.x - O.x, g.position.z - O.z);
+        if (dO > R_M || amWagen(b, r._bewohnerSoll(b, h))) return false;
+        for (const [kz, z] of ziele) if (kz !== ok && Math.hypot(g.position.x - z.x, g.position.z - z.z) < dO) return false;
+        return true;
+    };
     const samenDoppelt = L.length - new Set(L.map((b) => b.seed)).size;
     const proben = [], fahrer = [], ankunft = [];
     let doppelt = 0;
@@ -2017,17 +2041,22 @@ async function dorfZaehlung(r, T) {
         }
         for (let oi = 0; oi < orte.length; oi++) {
             const O = orte[oi], ok = schl(O);
-            let stand = null;
-            for (const d of [9, 13, 17]) { for (let w = 0; w < 8 && !stand; w++) { const a = (w * Math.PI) / 4, q = { x: O.x + Math.cos(a) * d, z: O.z + Math.sin(a) * d }; const g = r._imGrundriss(q.x, q.z, 0.5); if (g !== "haus" && g !== "bau" && r._landAt(q.x, q.z) && (await stelle(q, O))) stand = q; } if (stand) break; }
+            // DER STAND SIEHT DEN KREIS: der Blick auf die Mitte des Orts und seines Kreises; Stand ist der erste freie (die Abnahme ohne
+            // Pixel, die Mitte im Frustum), an dem `sperre` für JEDEN des Kreises null ist. Sieht keiner alle, steht der mit den
+            // wenigsten Gesperrten, und der Ort ist nicht im Bild — nie ein Ist 0 an einem Menschen, den die Kamera nicht sehen konnte
+            const kreisL = leiber().filter((g) => imKreis(g, O, ok, h, ziele));
+            const mitte = kreisL.length ? { x: (O.x + kreisL.reduce((a, g) => a + g.position.x, 0)) / (kreisL.length + 1), z: (O.z + kreisL.reduce((a, g) => a + g.position.z, 0)) / (kreisL.length + 1) } : O;
+            let stand = null, best = null, versuche = 0;
+            for (const d of [9, 13, 17]) { for (let w = 0; w < 8 && !stand; w++) { const a = (w * Math.PI) / 4, q = { x: O.x + Math.cos(a) * d, z: O.z + Math.sin(a) * d }; const g = r._imGrundriss(q.x, q.z, 0.5); if (g === "haus" || g === "bau" || !r._landAt(q.x, q.z)) continue; versuche++; if (!(await stelle(q, mitte))) continue; const B = blick(), n = kreisL.filter((x) => sperre(B, x)).length; if (!n) stand = q; else if (!best || n < best.n) best = { q, n }; } if (stand) break; }
+            if (!stand && best) await stelle(best.q, mitte);
             let uhr = performance.now();
             for (let k = 0; k < Math.round(2 / A.TAKT_DECKEL_S); k++) { uhr += A.TAKT_DECKEL_S * 1000; r._gameLoopTick(uhr); await window.sleep(); }
-            cam.updateMatrixWorld(true);
-            const fr = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
-            const auge = cam.getWorldPosition(new T.Vector3());
+            const B = blick();
             const je = new Map();
             let ist = 0, fahrerImKreis = 0;
             const amOrt = new Set(),
-                gezaehlt = [];
+                gezaehlt = [],
+                gesperrt = [];
             for (const g of leiber()) {
                 const b = g.userData._feldLageVon.b;
                 je.set(b, (je.get(b) || 0) + 1);
@@ -2043,12 +2072,9 @@ async function dorfZaehlung(r, T) {
                 for (const [kz, z] of ziele) if (kz !== ok && Math.hypot(g.position.x - z.x, g.position.z - z.z) < dO) naechst = false;
                 if (!naechst) continue;
                 amOrt.add(b);
-                const brust = new T.Vector3(g.position.x, g.position.y + 0.4, g.position.z);
-                if (!fr.containsPoint(brust)) continue;
-                const dA = auge.distanceTo(brust);
-                let frei = true, raus = r._imGrundriss(auge.x, auge.z, 0) !== "haus"; // wie platzAcht: ab dem Rand des Grundrisses unter dem Auge
-                for (let t = 0.6; t < dA - 0.6 && frei; t += 0.5) { const f = t / dA, h = r._imGrundriss(auge.x + (brust.x - auge.x) * f, auge.z + (brust.z - auge.z) * f, 0) === "haus"; if (!raus) raus = !h; else if (h) frei = false; }
-                if (frei) ist++, gezaehlt.push(b);
+                const sp = sperre(B, g);
+                if (!sp) ist++, gezaehlt.push(b);
+                else gesperrt.push({ rolle: b.rolle || b.beruf || null, sperre: sp, dO: +dO.toFixed(1) });
             }
             doppelt = Math.max(doppelt, [...je.values()].filter((n) => n > 1).length);
             const sollL = L.filter((b) => { const z = zielVon(b, h); return z && schl(z) === ok; });
@@ -2067,7 +2093,9 @@ async function dorfZaehlung(r, T) {
                 const g = leiber().find((x) => x.userData._feldLageVon.b === b), z = r._bewohnerSoll(b, h);
                 return { rolle: b.rolle || b.beruf || null, akt: z && z.akt != null ? String(z.akt) : null, planDrinnen: !!(z && z.drinnen), drinnen: !!b.drinnen, dZiel: g && z && z.ziel ? +Math.hypot(g.position.x - z.ziel.x, g.position.z - z.ziel.z).toFixed(1) : null };
             });
-            proben.push({ uhr: h, ort: oi, tod: +s.timeOfDay.toFixed(4), soll: sollL.length, ist, fehlt, imBild: !!stand, stand: stand ? [+stand.x.toFixed(1), +stand.z.toFixed(1)] : null, takte, ...(fahrerImKreis ? { fahrerImKreis } : {}), ...(wer.length ? { wer } : {}), ...(mehr.length ? { mehr } : {}) });
+            // DIE SICHT BEIM NAMEN (Lesewerte): `kreis` die Stände, die der Stand sehen musste, `versuche` die geprüften Stände, `gesperrt`
+            // je Stand am Ort, den die Zählung nicht sah, seine Sperre (frustum · haus) — der Richter verlangt `gesperrt` leer
+            proben.push({ uhr: h, ort: oi, tod: +s.timeOfDay.toFixed(4), soll: sollL.length, ist, fehlt, imBild: !!stand, stand: stand ? [+stand.x.toFixed(1), +stand.z.toFixed(1)] : null, kreis: kreisL.length, versuche, gesperrt, takte, ...(fahrerImKreis ? { fahrerImKreis } : {}), ...(wer.length ? { wer } : {}), ...(mehr.length ? { mehr } : {}) });
         }
     }
     const spaet = ankunft.filter((a) => a.offen > 0);
@@ -5134,7 +5162,9 @@ const stationen = [
             if (!z) return { gruen: false, zahl: "keine Zeile ZAEHLUNG (Exit " + lauf.exit + ") · " + ad };
             if (z.fehler) return { gruen: false, zahl: "Zählung: " + z.fehler + " · " + ad };
             const P = Array.isArray(z.proben) ? z.proben : [];
-            const je = P.map((p) => ({ p, ok: p.imBild === true && Math.abs(p.ist - p.soll) <= 0.1 * p.soll && p.fehlt === 0 }));
+            // DIE EINE SICHT ist Zeuge (bevoelkerung#1, 26.11.): je Stichprobe `gesperrt` — wen am Ort die Zählung nicht sah, mit der
+            // Sperre; leer, oder die Stichprobe ist ROT beim Namen (ein Ist, das einen Ungesehenen nicht zählt, ist keine Zählung im Bild)
+            const je = P.map((p) => ({ p, ok: p.imBild === true && Math.abs(p.ist - p.soll) <= 0.1 * p.soll && p.fehlt === 0 && Array.isArray(p.gesperrt) && !p.gesperrt.length }));
             // DER FAHRER AM STEUER zählt MIT (17.11., Entscheid des Koordinators): je Uhr und Fahrer Soll 1 an der laufenden Lage seines
             // Wagens, erfüllt, wenn sein Leib auf dem Sitz des Gesetzes steht (`_verkehrSitz`, Abstand x/z 0); die Schranke Σ Soll ≥ 20 bleibt
             const F = Array.isArray(z.fahrer) ? z.fahrer : [];
@@ -5159,7 +5189,8 @@ const stationen = [
             // WER ZU VIEL STEHT (Lesewert, 17.11., Radeon 602607bb: „3 Uhr Ort 2 Ist 1/Soll 0“ ohne den Menschen): je Gezähltem außerhalb
             // des Solls Rolle, Akt, Plan drinnen, drinnen im Spiel, Abstand zum eigenen Ziel der Stunde
             const mehrVon = (p) => (Array.isArray(p.mehr) && p.mehr.length ? ", zu viel: " + p.mehr.map((m) => (m.rolle || "?") + " " + (m.akt || "?") + (m.planDrinnen ? " (Plan drinnen" : " (Plan draußen") + (m.drinnen ? ", drinnen" : "") + (m.dZiel != null ? ", " + m.dZiel + " m vom Ziel" : "") + ")").join(", ") : "");
-            const rot = je.filter((x) => !x.ok).map((x) => x.p.uhr + " Uhr Ort " + x.p.ort + " Ist " + x.p.ist + "/Soll " + x.p.soll + (x.p.fehlt ? ", fehlt " + x.p.fehlt : "") + (x.p.imBild ? "" : ", Ort nicht im Bild") + mehrVon(x.p));
+            const sichtVon = (p) => (!Array.isArray(p.gesperrt) ? ", ohne Sicht-Zeuge (gesperrt)" : p.gesperrt.length ? ", gesperrt: " + p.gesperrt.map((g) => (g.rolle || "?") + " " + g.sperre + " " + g.dO + " m vom Ort").join(", ") + " (Kreis " + p.kreis + ", " + p.versuche + " Stände geprüft)" : "");
+            const rot = je.filter((x) => !x.ok).map((x) => x.p.uhr + " Uhr Ort " + x.p.ort + " Ist " + x.p.ist + "/Soll " + x.p.soll + (x.p.fehlt ? ", fehlt " + x.p.fehlt : "") + (x.p.imBild ? "" : ", Ort nicht im Bild") + sichtVon(x.p) + mehrVon(x.p));
             // die Ankunft stand nicht (die Probe sagt dazu die Marke MESSORT — der Läufer urteilt UNGEMESSEN): nie GRÜN, nie ein Urteil
             if (z.messort) return { gruen: false, zahl: "Messort: " + z.messort + " · " + ad };
             const gruen = !reisst.length && !rot.length && !fahrerRot.length;
@@ -5185,7 +5216,7 @@ const stationen = [
                 for (const uhr of [3, 10, 15, 20])
                     for (let ort = 0; ort < 5; ort++) {
                         const soll = uhr === 3 ? 0 : [12, 7, 5, 4, 3][ort];
-                        proben.push({ uhr, ort, tod: +(uhr / 24).toFixed(4), soll, ist: soll, fehlt: 0, imBild: true, stand: [10.5, -30.2], takte: 40 });
+                        proben.push({ uhr, ort, tod: +(uhr / 24).toFixed(4), soll, ist: soll, fehlt: 0, imBild: true, stand: [10.5, -30.2], kreis: soll, versuche: 1, gesperrt: [], takte: 40 });
                     }
                 const z = { bewohner: 77, orte: [[20.2, -31.7, 34], [5, -12, 21], [40, -2, 15], [-8, 22, 12], [31, 30, 9]], rM: 10, samenDoppelt: 0, doppelt: 0, sicht: "third", proben, version: "V18.546.305" };
                 f(z);
@@ -5200,6 +5231,11 @@ const stationen = [
                 { name: "ein Bewohner mit zwei Hüllen", stdout: roh((z) => (z.doppelt = 1)), gruen: false, zahl: /✗ doppelt 1 Hüllen ≠ 0/ },
                 { name: "zwei Bewohner mit einem Samen", stdout: roh((z) => (z.samenDoppelt = 1)), gruen: false, zahl: /✗ doppelt 1 Samen ≠ 0/ },
                 { name: "der Ort nicht im Bild", stdout: roh((z) => (z.proben[12].imBild = false)), gruen: false },
+                // DIE EINE SICHT (bevoelkerung#1, 26.11.): die Geräte am 2da17e2e — der Mensch des Solls steht am Ort (fehlt 0), die Linie
+                // vom Auge quert ein Haus; kein Stand sah ihn: ROT, die Sperre beim Namen. Und die zwei Attrappen des Zeugen
+                { name: "die Geräte am 2da17e2e: der Wirt am Ort hinter einem Haus, kein Stand sieht ihn — ROT, die Sperre beim Namen", stdout: roh((z) => Object.assign(z.proben[13], { soll: 1, ist: 0, kreis: 1, versuche: 22, imBild: false, gesperrt: [{ rolle: "gasthaus", sperre: "haus", dO: 0 }] })), gruen: false, zahl: /✗ .*15 Uhr Ort 3 Ist 0\/Soll 1, Ort nicht im Bild, gesperrt: gasthaus haus 0 m vom Ort \(Kreis 1, 22 Stände geprüft\)/ },
+                { name: "ATTRAPPE Ist gleich Soll, aber ein Fremder am Ort ungesehen (gesperrt frustum) — ROT", stdout: roh((z) => Object.assign(z.proben[7], { kreis: z.proben[7].soll + 1, gesperrt: [{ rolle: "bauer", sperre: "frustum", dO: 8.7 }] })), gruen: false, zahl: /✗ 10 Uhr Ort 2 Ist 5\/Soll 5, gesperrt: bauer frustum 8\.7 m vom Ort/ },
+                { name: "ATTRAPPE die Zählung ohne die EINE Sicht (kein Zeuge gesperrt) — ROT", stdout: roh((z) => z.proben.forEach((p) => delete p.gesperrt)), gruen: false, zahl: /ohne Sicht-Zeuge \(gesperrt\)/ },
                 { name: "19 Stichproben", stdout: roh((z) => z.proben.pop()), gruen: false, zahl: /✗ Stichproben 19 < 20/ },
                 { name: "die Zählung leer (Σ Soll 0)", stdout: roh((z) => z.proben.forEach((p) => (p.soll = p.ist = 0))), gruen: false, zahl: /✗ Σ Soll 0 < 20/ },
                 // die GTX am 602607bb: jede Stichprobe gleich dem Soll, aber je Ort und Uhr höchstens EIN Mensch — Σ Soll 12; bis hier ROT
