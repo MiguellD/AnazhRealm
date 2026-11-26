@@ -53,8 +53,8 @@ stehen mit Ursache, Schnitt und Zahl im Blatt von Kopf 3 (`git show e576d8cc:clo
 - **Gemessen (vorher → nachher):** Adressen der Station 1 → 51 von 51 · Durchlass am Ort: kein Leser → 0,4840/0,3744/0,2533 auf 5 km
   = Definition · gezeichnet 0,35–0,48 m → Turm 8,00–68,62 m, Bogen 12,72–19,91 m mit Öffnung, fern (> 64 m) Öffnung zu → frei in 16 von 16 · Landmarke im Bild in 1–3 km: 0 von 51
   (Wurf ≤ 275 m) · Wurf ≤ 764 m → 3 000 m, an der Heimat 11 Landmarken in 1–3 km (Gesetz = Wurf) — das Bild des Richters auf GPU ist offen.
-- **probeUrteil lokal:** PROBEURTEIL
+- **probeUrteil:** nicht gelaufen. Kopf 3 fährt im Bündel `buendel-mittag`; dessen Proben sind ROT an fremden Dateien, und ohne roten Job mit meiner Datei pushe ich nicht (Post b807ede64). Das Wartezimmer endete 14:20 UTC nach 4 h ohne Post, main 54b89949.
 - **Offen:** das Bild in 1–3 km auf echter GPU, C₀, das Band der Bögen aus einem Katalog (oben, mit Messnamen).
-- **Kopf:** KOPF40
-- **Beanspruchte Sprosse:** `karte2.erleben.spieler.wegfindung#1`.
+- **Kopf:** d217368fe8c0dc4502cc1c2e094aa38d36520f71 (Zweig `landmarken-geologie-7`; gestapelt: lg-4 db31f040 → Turm 311329c1 → Bogen ebf9f5d0 → Ferne 1dc3205e → Fern-Wurf d217368f; glatt auf main als Vorprüfung 4, sobald das Bündel landet).
+- **Beanspruchte Sprosse:** `karte2.erleben.spieler.wegfindung#1` (vier von fünf Eingängen tragen einen Leser des Spiels, 80 %).
 - Karte 2 gebucht 126 von 1 718. Status ZWISCHENSTAND.
