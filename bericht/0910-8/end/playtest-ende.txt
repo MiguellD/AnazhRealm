@@ -1,4 +1,0 @@
-
-Laufzeit: 120s
-
-✅ Alle Invarianten OK
