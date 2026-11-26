@@ -12079,10 +12079,10 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 14,
+    "heute": 17,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 5.1,
+    "anteilHeute": 6.3,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -14270,7 +14270,7 @@
        "richter": "N = 20 Planeten: Beute-Boden-Abstand im Jäger-Farbraum unter Zufall in ≥ 0,8"
       }
      ],
-     "heute": 0,
+     "heute": 3,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Wild bemerkt den Spieler über Radien, nicht über Farbe.",
@@ -20094,11 +20094,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 126,
+  "heute": 129,
   "davonKopplungen": 33,
   "kern": 2,
   "kernDazu": 2,
-  "anteilHeute": 6.4,
+  "anteilHeute": 6.6,
   "anteilKern": 0,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20109,7 +20109,7 @@
   },
   "gliederLeitern": 9,
   "beide": 62,
-  "nachwache": 64
+  "nachwache": 67
  },
  "zusammengelegt": [
   {

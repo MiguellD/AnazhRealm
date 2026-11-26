@@ -9426,7 +9426,7 @@
   },
   "karte2.erleben.sinne.gesehen": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S3 · GRÜN ✅ unterschied_pct 77,1 (Soll ≥ 30) an 2da17e2e gtx — offen: karte2.erleben.sinne.gesehen#1 radeon: ungemessen (R10) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.erleben.sinne.gesehen#1 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#2 radeon: ungemessen (R10) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.erleben.sinne.gesehen#2 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#3 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#4 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#4 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#5 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#5 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#6 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: S1 · GRÜN ✅ abweichung_orange_gruen_pct 2,1 (Soll ≤ 15) an 54b89949 gtx · S2 · GRÜN ✅ distanz_minus_pct 40,4 (Soll ≥ 30) an 54b89949 gtx · gehalten: S3 · GRÜN ✅ unterschied_pct 77,1 (Soll ≥ 30) an 2da17e2e gtx — offen: karte2.erleben.sinne.gesehen#1 radeon: ungemessen (R10) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.erleben.sinne.gesehen#2 radeon: ungemessen (R10) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.erleben.sinne.gesehen#3 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#4 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#4 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#5 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#5 gtx: Station seit der Messung geändert · karte2.erleben.sinne.gesehen#6 radeon: ungemessen (R10) · karte2.erleben.sinne.gesehen#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.sinne.gesehen#1",
@@ -9441,11 +9441,11 @@
     {
      "id": "karte2.erleben.sinne.gesehen#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 · GRÜN ✅ abweichung_orange_gruen_pct 2,1 (Soll ≤ 15)",
+     "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -9460,11 +9460,11 @@
     {
      "id": "karte2.erleben.sinne.gesehen#2",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "S2 · GRÜN ✅ distanz_minus_pct 40,4 (Soll ≥ 30)",
+     "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.sinne.gesehen#3",
@@ -23651,7 +23651,7 @@
   },
   "karte2.mensch.sport.kunst": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +10) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.mensch.sport.kunst#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +9) · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +10) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.mensch.sport.kunst#1 gtx: ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":5,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1087,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal an 54b89949 · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.kunst#1",
@@ -23668,10 +23668,9 @@
      "id": "karte2.mensch.sport.kunst#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +9)",
-     "ungemessen": true,
+     "zahl": "S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":5,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1087,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
+     "sha": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
+     "grund": "ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":5,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1087,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -37611,7 +37610,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 370,
+  "konsum": 372,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37780,10 +37779,10 @@
    "karte2.leben.kopplung.stadt-im-netz#2 radeon",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3251
+  "ohne": 3249
  },
  "kopfVoll": "54b89949812d0fe6e2a9ff0bba31fb18f1ae9afb",
- "zeit": "2026-11-26T12:21:22.192Z",
+ "zeit": "2026-11-26T12:30:22.771Z",
  "vorher": "54b89949",
  "bilanz": {
   "gewinn": [],
