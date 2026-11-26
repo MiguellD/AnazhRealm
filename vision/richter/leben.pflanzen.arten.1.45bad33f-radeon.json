@@ -2,18 +2,18 @@
  "leiter": "leben.pflanzen.arten",
  "sprosse": 1,
  "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
- "datum": "2026-11-26T21:05:30.522Z",
+ "datum": "2026-11-26T22:25:23.796Z",
  "soll": "Blindtest 10 Bilder je Gestalt: Gattung ≥ 80 % richtig; Herbar-Bildpaar je Gestalt ≥ 0,7",
  "geraete": [
   {
    "geraet": "Radeon 890M",
    "richter": {
-    "wert": "Treffer 7 von 40 = 17,5 % [7,3–32,8] gegen „≥ 80 %“",
+    "wert": "Treffer 17 von 53 = 32,1 % [19,9–46,3] gegen „≥ 80 %“",
     "urteil": "ROT"
    },
    "pruefer": {
     "akte": "leben.pflanzen.arten.1.45bad33f-radeon.json",
-    "sha256": "9232bb2aef26edf29c02f06be224ea462cd4e01ee8b65571d428f8d26f7733ec"
+    "sha256": "8be007c77a13aba50f0cfe1636e48fb5e4e561fd344dbf8c0388682bdfb5653a"
    },
    "preis": null,
    "ohnePreis": "kein Preis: die Vorlage der Mess-Sitzung fehlt (höchstens Kern, R3)"
