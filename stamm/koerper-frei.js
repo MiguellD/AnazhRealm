@@ -1158,9 +1158,11 @@ class AnazhRealm_koerper_frei {
     // DIE LUFT DES KÖRPERS in den Puffer (same.physik.flug#1): ½ ρ c_w A / m seiner Quer-Fläche (38) — die Fläche der Hülle
     // mit dem größten c_w·A (die Kiste je Flächen-Paar, die Walze quer oder längs ihrer Achse): ein fallender Körper stellt
     // sie der Strömung entgegen (die Platte, das Blatt fällt quer: der Druckpunkt liegt vor der Mitte, Hoerner 1965 Kap. 3),
-    // und der EINE Wind an seinem Ort (41, 42: m/s in Welt-x/z, `_windAt` zur Uhr des Sim-Schritts). Der Widerstand im
+    // und der EINE Wind an seinem Ort IN SEINER HÖHE über dem Grund (41, 42: m/s in Welt-x/z, `_rauchWindAt` zur Uhr des
+    // Sim-Schritts — der Wind am Ort gilt in 10 m, darunter das Profil des Kerns, phyto-core `windProfil`). Der Widerstand im
     // Teil-Schritt (`_freiZiehen`) liest sie gegen das Tempo durch die Luft. Vorher kannte der Löser keine Luft: die Feder
-    // (1,9 g) flog wie der Stein, 2 260 % weiter als die Rechnung.
+    // (1,9 g) flog wie der Stein, 2 260 % weiter als die Rechnung. Bis rueckfall-drei-2 las der Körper am Boden den Wind in 10 m:
+    // die Scherben der Druckwelle krochen bei 8,6 m/s am Ort über 4 s (DRUCK-SCHLAF 4,333 s, bei 2 und 5 m/s 1,2 und 1,0 s).
     _freiLuftPacken(K, X, x, rho) {
         const L = AnazhRealm.FREI.luft;
         const [a, b, c] = [K.hx, K.hy, K.hz];
@@ -1172,7 +1174,20 @@ class AnazhRealm_koerper_frei {
               )
             : Math.max(L.cwWalzeQuer * 4 * K.r * b, this._freiLuftZahl(2 * b, 2 * K.r) * Math.PI * K.r * K.r);
         X[x + 38] = (0.5 * rho * cwA) / K.m;
-        const w = this._windAt(K.p[0], K.p[2], this.state._simZeit, this._freiWindAus || (this._freiWindAus = {}));
+        // die Höhe über dem Grund: die Ebene seines Grunds (`_freiGrund`), ohne sie die Höhe des Gesetzes unter ihm
+        const [p, gr] = [K.p, K.grund];
+        const g =
+            gr && Number.isFinite(gr.a)
+                ? gr.a + gr.b * (p[0] - gr.x) + gr.c * (p[2] - gr.z)
+                : this._voxelSurfaceY(p[0], p[2]);
+        const w = this._rauchWindAt(
+            p[0],
+            p[2],
+            this.state._simZeit,
+            p[1] - g,
+            null,
+            this._freiWindAus || (this._freiWindAus = {})
+        );
         X[x + 41] = w.x * w.ms;
         X[x + 42] = w.z * w.ms;
     }

@@ -1,0 +1,119 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+index e61dcf3bf..176678052 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js
+@@ -1621,8 +1621,6 @@ L.perspektive("planet", (() => {
+                         const tj = (o) => (kh.sommer + o.delta.klima.sommer + kh.winter + o.delta.klima.winter) / 2;
+                         const zeiten = [0, -0.02, -0.1, -0.5, -1, -2, -2.6];
+                         const gesch = await Promise.all(zeiten.map((t) => ort(samen, B0, L0, t)));
+-                        const tMin = Math.min(...gesch.map(tj));
+-                        const eis = tMin < -10;
+                         const p = st.playerMesh.position;
+                         const wl = st.waterLevel;
+                         let relikte = 0, punkte = 0;
+@@ -1633,7 +1631,8 @@ L.perspektive("planet", (() => {
+                             punkte++;
+                             if (r._rockGeologyClass(r._slopeAt(x, z), 0) === "findling") relikte++;
+                         }
+-                        const aus = { s1: { relikte, punkte, eis, tMinC: r3(tMin), zeiten: zeiten.length, mitUrsache: eis ? relikte : 0 } };
++                        // die Eis-Geschichte der Heimat liest der Kern des Kopfs am Gesetz (S1: ortEisZeit am Anker), hier nur die Relikte
++                        const aus = { s1: { relikte, punkte, zeiten: zeiten.length } };
+                         const gip = { gipfel: 0, konv: 0, saaten: 0, antworten: 0, land: 0, landKonv: 0 };
+                         const hs = [];
+                         for (let si = 0; si < a.saaten; si++) {
+@@ -1775,11 +1774,20 @@ L.perspektive("planet", (() => {
+                     // (planet-core planetKlima tJahrC) in jeder Zeit der EIS_ZEITEN des Kerns (je Zeit um den Gang der Zone verschoben,
+                     // planetKlimaGlobal T0 + T2·P2) unter der Eis-Linie KLIMA.tEisC (−10 °C, North 1975) — gerechnet hier im Kern des Kopfs,
+                     // kein eigener Zeitsatz, kein auf Meereshöhe reduziertes Klima (vorher: kh + Δ des Fadens über −0,02 … −2,6 Ma, 44,1 %).
++                    // Die Ursache IST das Gesetz (rueckfall-drei, 26.11.): planet-core `ortEisZeit` — dieselbe Funktion, die planetOrt im
++                    // Faden für o.eis rechnet. Bis hier rechnete die Station ihren Zwilling (sin statt ksin, das Minimum auf 0,01 K gerundet,
++                    // dann < −10): am Rand 70°/−130,5° (tJahr −10,0016 °C) urteilte er „kein Eis“, das Gesetz und der Findling „Eis“ —
++                    // 1 088 von 1 089, 99,9 %. Der Zeuge DER GLEICHHEIT (Kern ↔ Faden, an denselben Orten derselben Saat): die Eis-Zeit des
++                    // Kerns am Ort gegen Anker + Δ des Fadens (`zwist`, der Anker aus EINEM planetOrt des Kerns) — der Zwilling zeigte dort 1.
+                     // Der Gegenlauf: Orte mit Eis-Geschichte ohne Findling. Das Raster (2° × 4,5°) trägt den Zeugen ≥ 1 000 Relikte.
+                     const PCk = require(require("path").resolve("planet-core.js"));
++                    require(require("path").resolve("gelaende-core.js"));
+                     const samenK = await H.seite("return r._planetSamen();");
+-                    const planK = PCk.planetPlan(samenK, PCk.PLANET_ERDE), S0k = PCk.planetScheibe(planK, 0), G0k = PCk.planetKlimaGlobal(planK, 0);
+-                    const gangK = PCk.EIS_ZEITEN.map((t) => { const G = PCk.planetKlimaGlobal(planK, t); return [G.T0 - G0k.T0, G.T2 - G0k.T2]; });
++                    const planK = PCk.planetPlan(samenK, PCk.PLANET_ERDE), S0k = PCk.planetScheibe(planK, 0);
++                    const oAk = PCk.planetOrt(S0k, 0, 0, globalThis.__gelaendeCore.ortGesetz(), undefined, planK), eisAnkerK = oAk.eis.zeit - oAk.delta.eis.zeit;
++                    // S6 an der Heimat: dieselbe Ursache — die Eis-Zeit des Ankers am Gesetz (bis hier ein zweiter Zwilling auf der Seite:
++                    // das Jahresmittel aus Heimat + Δ über ein Literal der Zeiten unter dem Literal −10; an der Saat anazh-realm-seed beide 0)
++                    Object.assign(s1, { eis: eisAnkerK === 1, mitUrsache: eisAnkerK === 1 ? s1.relikte : 0 });
+                     const pole = [], eisK = {};
+                     for (let b = 36; b <= 88; b += 2)
+                         for (let l = -180; l < 180; l += 4.5)
+@@ -1789,24 +1797,24 @@ L.perspektive("planet", (() => {
+                                 PCk.planetPunkt(S0k, (bb * Math.PI) / 180, (l * Math.PI) / 180, 16, pk);
+                                 if (!(pk.hoeheM > 0)) continue;
+                                 const K = PCk.planetKlima(S0k, (bb * Math.PI) / 180, (l * Math.PI) / 180, -1, {}, pk);
+-                                const y = Math.sin((bb * Math.PI) / 180), p2 = 1.5 * y * y - 0.5;
+-                                eisK[bb + "," + l] = Math.round(100 * Math.min(...gangK.map(([d0, d2]) => K.tJahrC + d0 + d2 * p2))) / 100;
++                                eisK[bb + "," + l] = { eis: PCk.ortEisZeit(planK, (bb * Math.PI) / 180, K.tJahrC, 0), tJahrC: Math.round(100 * K.tJahrC) / 100 };
+                             }
+                     const RELIKT_AN = async (r, T, a, mit) => {
+                         const samen = r._planetSamen();
+                         const o0 = await r._planetAuftrag({ type: "planet-ort", samen, breite: a.ort[0], laenge: a.ort[1], zeitMa: 0 });
+                         if (!o0 || !o0.delta || !o0.delta.eis) return { fehlt: "der Faden trägt keine Eis-Zeit am Ort (delta.eis)" };
+-                        const tMin = mit.eis[a.ort[0] + "," + a.ort[1]];
++                        const k = mit.eis[a.ort[0] + "," + a.ort[1]];
+                         const relikt = o0.land && o0.delta.eis.zeit >= 1 ? 1 : 0;
+-                        if (relikt && !Number.isFinite(tMin)) return { land: 1, relikt, fehlt: "das Gesetz trägt am Ort kein Land (planetPunkt hoeheM ≤ 0), der Faden einen Findling" };
+-                        const eis = Number.isFinite(tMin) && tMin < mit.tEisC ? 1 : 0;
+-                        return { land: o0.land ? 1 : 0, relikt, eisGeschichte: eis, tMin, ursache: relikt ? eis : null, ohneFindling: !relikt && o0.land && eis ? 1 : 0 };
++                        if (relikt && !k) return { land: 1, relikt, fehlt: "das Gesetz trägt am Ort kein Land (planetPunkt hoeheM ≤ 0), der Faden einen Findling" };
++                        const eis = k ? k.eis : 0;
++                        const zwist = o0.land && k && eis !== mit.eisAnker + o0.delta.eis.zeit ? 1 : 0;
++                        return { land: o0.land ? 1 : 0, relikt, eisGeschichte: eis, tJahrC: k ? k.tJahrC : null, ursache: relikt ? eis : null, ohneFindling: !relikt && o0.land && eis ? 1 : 0, zwist };
+                     };
+                     await H.seite("await r._fadenQuelle(); return 1;");
+                     const R1p = await FAECHER((c) => H.seite(c), {
+-                        gesetz: { fn: RELIKT_AN, export: "voxel-worker.js planetOrtAuftrag (planet-ort: delta.eis.zeit) über r._planetAuftrag · planet-core.js planetKlima tJahrC × EIS_ZEITEN (die Ursache)", leser: "stamm/vegetation-baum.js:1433 _rockGeologyClass liest gelaende-core.js:5990 ort.eis (der Findling am flachen Grund)" },
++                        gesetz: { fn: RELIKT_AN, export: "voxel-worker.js planetOrtAuftrag (planet-ort: delta.eis.zeit) über r._planetAuftrag · planet-core.js ortEisZeit (die Ursache, dasselbe Gesetz wie planetOrt o.eis im Faden)", leser: "stamm/vegetation-baum.js:1433 _rockGeologyClass liest gelaende-core.js:5990 ort.eis (der Findling am flachen Grund)" },
+                         adressen: { orte: pole, zeiten: [{ k: "heute" }] },
+-                        mit: { eis: eisK, tEisC: PCk.KLIMA.tEisC },
++                        mit: { eis: eisK, eisAnker: eisAnkerK },
+                         ms: 30000,
+                         masse: {
+                             orte: { wie: "anzahl", feld: "land" },
+@@ -1815,15 +1823,17 @@ L.perspektive("planet", (() => {
+                             ursache: { wie: "mittel", feld: "ursache", nur: (a, w) => w.relikt === 1 },
+                             eisGeschichte: { wie: "summe", feld: "eisGeschichte" },
+                             ohneFindling: { wie: "summe", feld: "ohneFindling" },
++                            zwist: { wie: "summe", feld: "zwist" },
++                            zwistOrte: { wie: (v, aus) => aus.slice(0, 3).map((x) => x.a.ort.join("°/") + "°"), nur: (a, w) => w.zwist === 1 },
+                         },
+-                        schlecht: { feld: "tMin", richtung: "max" },
+-                        pose: (a, w) => "der flache Grund am Ort " + a.ort.join("°/") + "° (Findling " + (w.relikt ? "ja" : "nein") + ", tMin " + Math.round(w.tMin) + " °C) — Third 3 m über dem Stein",
++                        schlecht: { feld: "tJahrC", richtung: "max" },
++                        pose: (a, w) => "der flache Grund am Ort " + a.ort.join("°/") + "° (Findling " + (w.relikt ? "ja" : "nein") + ", tJahr " + Math.round(w.tJahrC) + " °C) — Third 3 m über dem Stein",
+                         ungemessen: ["das Bild des Findlings am Ort (am Gerät)"],
+                     });
+                     const w1p = R1p.werte;
+                     aus[1] = {
+                         werte: { ursacheProzent: w1p.ursache == null ? null : Math.round(1000 * w1p.ursache) / 10, ohneFindlingOrte: w1p.ohneFindling },
+-                        zeuge: { relikte: w1p.relikte, zeiten: gangK.length, land: w1p.land, orte: w1p.orte, eisGeschichte: w1p.eisGeschichte, ohneFindling: w1p.ohneFindling, heimat: s1, akte: R1p.akte },
++                        zeuge: { relikte: w1p.relikte, zeiten: PCk.EIS_ZEITEN.length, land: w1p.land, orte: w1p.orte, eisGeschichte: w1p.eisGeschichte, ohneFindling: w1p.ohneFindling, zwist: w1p.zwist, zwistOrte: w1p.zwistOrte, heimat: s1, akte: R1p.akte },
+                     };
+                     // S2 IM KERN DES KOPFS (wie S1): die 100 Saaten des Richters, wörtlich — vorher das Literal 12 auf der Seite (98,6 %, „der Zeuge
+                     // der Welt fehlt: nur 12 Saaten“). Derselbe Auftrag wie voxel-worker.js planetOrtAuftrag (planet-core planetScheibe ·
+@@ -1916,13 +1926,17 @@ L.perspektive("planet", (() => {
+                             const z = roh.zeuge || {};
+                             if (!(z.relikte >= 1000)) return "nur " + (z.relikte || 0) + " Relikte gezählt (Soll 1 000)";
+                             if (!(z.zeiten >= 5)) return "keine Geschichte des Orts gefragt";
++                            // DIE GLEICHHEIT Kern ↔ Faden: die Ursache des Kerns am Ort gegen die Eis-Zeit, die das Spiel dort liest (Anker + Δ)
++                            if (z.zwist !== 0) return "die Ursache der Station weicht an " + (z.zwist ?? "?") + " Orten vom Faden des Spiels ab (" + ((z.zwistOrte || []).join(" · ") || "ohne Ort") + ") — ein Zwilling des Gesetzes ortEisZeit misst, nicht die Welt";
+                             return null;
+                         },
+                         taeter: "stamm/vegetation-baum.js:1433 _rockGeologyClass (der Findling liest die Eis-Zeit des Planeten, ort.eis — nicht die Geschichte des Orts)",
+                         leser: "stamm/vegetation-baum.js:1433 _rockGeologyClass(slope, relH): am flachen Grund ein Findling, wo gelaende-core.js:5990 ort.eis = Heimat + delta.eis.zeit des Planet-Fadens (planet-core ortEisZeit) 1 ist",
+-                        gruen: { werte: { ursacheProzent: 100 }, zeuge: { relikte: 1200, zeiten: 5 } },
++                        gruen: { werte: { ursacheProzent: 100 }, zeuge: { relikte: 1200, zeiten: 5, zwist: 0 } },
+                         attrappen: [
+                             { name: "100 % ohne Relikte", roh: { werte: { ursacheProzent: 100 }, zeuge: { relikte: 0 } } },
++                            { name: "die Ursache ein Zwilling des Gesetzes (Mutant b698b286: die gerundete Temperatur, Zwist an 70°/−130,5°)", roh: { werte: { ursacheProzent: 100 }, zeuge: { relikte: 1200, zeiten: 5, zwist: 1, zwistOrte: ["70°/-130.5°"] } } },
++                            { name: "100 % ohne Zeugen der Gleichheit", roh: { werte: { ursacheProzent: 100 }, zeuge: { relikte: 1200, zeiten: 5 } } },
+                             { name: "Findlinge ohne Eis in der Geschichte (Mutant: ursache 62 %)", roh: { werte: { ursacheProzent: 62 }, zeuge: { relikte: 1200, zeiten: 5 } } },
+                         ],
+                     },

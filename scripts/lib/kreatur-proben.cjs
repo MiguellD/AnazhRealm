@@ -172,18 +172,22 @@ async function kreaturProben(r, T, opts) {
             }
         return false;
     };
-    // DAS LAND DER WILDNIS im Umkreis R: Land und kein Grundriss (`_imGrundriss`: Haus, Bau, Weg eines Dorfs und die Flächen des
-    // Genesis-Orts — Kern, Ring, Mall, Allee, Wiese, Ufer, die Bühnen), an der Mitte und auf zwei Kreisen je acht Orte — dort wirft
-    // das Feld (`_kreaturGrundFrei`: kein Wurf eines Verbands auf einer Fläche des Plans). Bis Pflicht F trug die Ankunft eine
-    // Scheibe von 6,5 m, die Wildnis begann am Spieler; seit dem Plan liegt 0/70 auf der Mall (herde: 1 Glied von 5) und der
-    // Jagd-Kreis über Wiese, Allee und Ufer (rudel 28/60 Risse auf dem Rasen).
+    // DAS LAND DER WILDNIS im Umkreis R: dort wirft das Feld — das EINE Gesetz des Geburts-Orts (`_kreaturGrundFrei`: Wildnis, kein
+    // Grundriss, keine Box einer Siedlung der Wege-Karte, nicht im Reich eines Orts, der kommt, Land), an der Mitte und auf zwei
+    // Kreisen je acht Orte. Bis Pflicht F trug die Ankunft eine Scheibe von 6,5 m, die Wildnis begann am Spieler; seit dem Plan liegt
+    // 0/70 auf der Mall (herde: 1 Glied von 5) und der Jagd-Kreis über Wiese, Allee und Ufer (rudel 28/60 Risse auf dem Rasen). Bis
+    // rueckfall-drei fragte der Umkreis einen Zwilling (Land + `_imGrundriss`), der das Reich nicht kannte: in der warmen Sitzung nach
+    // der Gründung von stadt-voll (`mensch.stadt.form#2` lässt den Spieler in der Gasse 842/452) lag die Herde im Reich der Metropole,
+    // der Wurf trug nur den Erstgeborenen (masse#1 an 2da17e2e: Glieder 1 / 1, Φ null über 0 Takte) — 14 von 17 Orten der Proben dort
+    // im Reich (Täter herde-stadt: der alte Zwilling, Land und kein Grundriss — blind für Wildnis, Siedlung und Reich).
+    const grundFrei =
+        taeter === "herde-stadt" ? (x, z) => !!r._landAt(x, z) && !r._imGrundriss(x, z) : (x, z) => r._kreaturGrundFrei(x, z);
     const imUmkreisLand = (x, z, R) => {
-        if (r._imGrundriss(x, z)) return false;
+        if (!grundFrei(x, z)) return false;
         for (const f of [0.5, 1])
             for (let q = 0; q < 8; q++) {
                 const a = (q / 8) * TAU;
-                const [px, pz] = [x + Math.cos(a) * R * f, z + Math.sin(a) * R * f];
-                if (!r._landAt(px, pz) || r._imGrundriss(px, pz)) return false;
+                if (!grundFrei(x + Math.cos(a) * R * f, z + Math.sin(a) * R * f)) return false;
             }
         return true;
     };
@@ -1103,6 +1107,22 @@ async function kreaturProben(r, T, opts) {
             restore.push(() => (A._furchtGesetzMemo = FG));
         }
         const VH = A._verhaltenGesetz().herde;
+        // DER ORT, DER KOMMT, UNTER DER HERDE (rueckfall-drei, masse#1 an 2da17e2e): die warme Sitzung lässt den Spieler, wo die
+        // Station davor ihn ließ — nach der Gründung von stadt-voll in der Gasse 842/452, und 0/70 lag im Reich der Metropole (Glieder
+        // 1 / 1, Φ null über 0 Takte). Die Bühne trägt darum immer einen kommenden Ort am Platz, den die Herde ohne ihn wählte: ein
+        // Dorf (nH 7) mit dem Reich des Gesetzes (fachwerk `siedlungsReich`, 88 m), gelesen am EINEN Leser `_imReichEinesOrts` —
+        // der Wurf (`_kreaturGrundFrei`) und der Ort der Herde (`frei`) fragen dasselbe Reich, die Herde steht außerhalb. Täter
+        // herde-stadt: der Umkreis des alten Zwillings kennt kein Reich und bleibt am Platz.
+        const reichM = A.Gesetz("fachwerk:siedlungsReich")(A._siedlungGesetz(), 7);
+        const kommt = frei(0, 70, 40);
+        if (!kommt) throw new Error("kein freies Land für den kommenden Ort der Herde (frei(0, 70, 40))");
+        decke(
+            "_imReichEinesOrts",
+            (alt) =>
+                function (x, z) {
+                    return Math.hypot(x - kommt.x, z - kommt.z) < reichM || alt.call(this, x, z);
+                }
+        );
         // Täter (Selbsttest): die Herde am alten Ort ohne die Wildnis-Prüfung — 0/70 liegt auf der Mall des Genesis-Orts, der
         // Wurf trägt dort nur seinen Erstgeborenen
         const heim = taeter === "herde-park" ? neben(P0.x, P0.z + 70) : frei(0, 70, 40);
@@ -4804,6 +4824,9 @@ const TAETER = {
         ["herde-fluchtweg", /Fluchtweg \d(\.\d+)? m/, ["flucht"]],
         ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/, ["wander", "flucht"]],
         ["herde-park", /Probe vakuös: Glieder 1 \/ 1 /, ["wander", "flucht"]],
+        // der Ort der Herde fragt den alten Zwilling (Land + Grundriss, kein Reich): er liegt im Reich des kommenden Orts an 0/70,
+        // der Wurf trägt den Erstgeborenen (masse#1 an 2da17e2e nach der Gründung von stadt-voll)
+        ["herde-stadt", /Probe vakuös: Glieder 1 \/ 1 /, ["wander", "flucht"]],
         ["herde-dorf", /Geburt im Reich des kommenden Orts -?\d+,-?\d+: 8 von 8/, []],
     ],
     schwarm: [

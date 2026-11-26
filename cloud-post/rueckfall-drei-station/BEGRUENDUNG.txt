@@ -1,0 +1,61 @@
+STATIONS-KANDIDAT rueckfall-drei-2 — karte2.planet.kopplung.gegenwart#1 (S1) und #6 (die Heimat): die Ursache IST das Gesetz
+Datei: meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js (Diff gegen origin/punkte-maschine c23e7c1d in k2-zusammenspiel.diff;
+gemessen an 72b63818, auf c23e7c1d drei-Wege ohne Konflikt gesetzt — dort urteilen alle 2 007 Proben der Datei wie erwartet, 0 falsch;
+die Datei steht bis zum Kopf 718f986e unverändert, der Diff gilt dort wörtlich)
+
+DER TÄTER (Zweig punkte-maschine)
+  b698b28633d57ff666f9309b84055d7ab2253f77
+  „Station planet.kopplung.gegenwart S1: die Ursache liest die Geschichte des Orts, wie das Gesetz sie liest — Ortshöhe, EIS_ZEITEN
+  und KLIMA.tEisC aus dem Kern des Kopfs, kein eigener Zeitsatz, kein auf Meereshöhe reduziertes Klima“ (44,1 % → 99,9 %; seine
+  Nachricht nannte 100 %).
+
+DER FINDLING OHNE EIS-GESCHICHTE (node, Null-Welt am Spiel-Baum main eae94514, dasselbe Raster 2° × 4,5° polwärts 36°)
+  Saat anazh-realm-seed · Adresse 70°/−130,5° · Land (hoeheM 283,6 m im Kern und im Faden) · tJahr −10,00157 °C, das Minimum über
+  den EIS_ZEITEN liegt heute (Zeit 0).
+  Die Regel, die den Findling setzt: planet-core.js ortEisZeit — G.T0 + G.T2·P2 + ab < KLIMA.tEisC (−10 °C) an einer der Zeiten
+  → o.eis.zeit 1; planetOrt reicht Δ = o − Anker (Anker 0) in den Faden (voxel-worker planetOrtAuftrag delta.eis.zeit 1), der
+  Leser gelaende-core ort.eis → stamm/vegetation-baum.js _rockGeologyClass legt den Findling. Das Gesetz hat am Ort Eis.
+  Die Regel, die ihn „ohne Eis“ nannte: der ZWILLING der Station — das Minimum mit Math.sin statt ksin selbst gerechnet, auf
+  0,01 K gerundet (Math.round(100·tMin)/100 = −10,00), dann −10,00 < −10 → nein.
+
+MECHANISMUS (zwei Sätze)
+  Die Station urteilte die Ursache an einer eigenen Formel über einen auf zwei Stellen gerundeten Wert, nicht am Gesetz, das der
+  Findling liest. Am Rand der Eis-Linie (−10,0016 °C) fiel die Rundung auf die Linie, der Zwilling sagte nein, Gesetz und Welt ja:
+  1 088 von 1 089 Relikten, 99,9 %.
+
+DER SCHNITT (die Regel, nicht die Rundung des Prozents, nicht das Soll)
+  S1: die Ursache am Ort ist PCk.ortEisZeit(planK, Breite, K.tJahrC, 0) — dieselbe Funktion mit denselben Argumenten, die planetOrt
+  im Faden für o.eis rechnet (Scheibe zur Zeit 0, planetPunkt Band 16, planetKlima). Der eigene Gang (gangK), das gerundete tMin und
+  die Schwelle mit.tEisC fallen; die Pose nennt das Jahresmittel des Gesetzes (tJahrC), das Schlechteste ist der wärmste Ort.
+  S6 (dieselbe Klasse, dieselbe Welle): die Eis-Geschichte der Heimat las auf der Seite einen zweiten Zwilling (Heimat + Δ des
+  Fadens über ein Literal der Zeiten unter dem Literal −10); sie ist jetzt die Eis-Zeit des Ankers am Gesetz (eisAnker aus EINEM
+  planetOrt des Kerns: o.eis − Δ). An der Saat anazh-realm-seed beide 0, Relikte an der Heimat 0 → ohneUrsache 0 wie vorher.
+
+ZAHL VORHER → NACHHER (gleiche Bedingungen: Saat anazh-realm-seed, 4 320 Orte, 1 705 Land, Faden des Spiels am Baum main)
+  ursacheProzent 99,9 % (1 088 / 1 089) → 100 % (1 089 / 1 089) · ohneFindlingOrte 0 → 0 · Zwist Kern ↔ Faden 1 (70°/−130,5°) → 0
+  S6 ohneUrsache 0 → 0 (Heimat −50,5°/−98,3°: Zwilling tMin 7,0 °C kein Eis, Gesetz 0, Relikte 0 von 1 000 Punkten).
+
+DIE LINSE (bestehende Familie: der Zeuge der Sprosse und ihr Selbsttest gruen/attrappen, gelesen vom Kern k2-planet.js —
+`ATTRAPPE …` muss ROT sein, `gemessen im Soll` GRÜN)
+  DER ZEUGE DER GLEICHHEIT Kern ↔ Faden: je Land-Ort die Ursache des Kerns gegen die Eis-Zeit, die das Spiel dort liest
+  (Anker + Δ des Fadens), gezählt als `zwist`, die ersten drei Orte beim Namen (`zwistOrte`). zwist ≠ 0 → der Zeuge verwirft die
+  Messung: „die Ursache der Station weicht an n Orten vom Faden des Spiels ab (…) — ein Zwilling des Gesetzes ortEisZeit misst, nicht
+  die Welt“. Am Täter (die Regel von b698b286 im selben Lauf): zwist 1 an 70°/−130,5° → ROT beim Ort; nach dem Schnitt 0.
+  Selbsttest: gruen trägt zwist 0; Attrappe „die Ursache ein Zwilling des Gesetzes (Mutant b698b286 …)“ mit 100 % und zwist 1 → ROT;
+  Attrappe „100 % ohne Zeugen der Gleichheit“ (zwist fehlt) → ROT (fail-closed).
+
+DIE DREI WÄNDE
+  1) node punkte.cjs liste (Kandidat am Spiel-Kopf main eae94514): „1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0“, EXIT 0 —
+     kein ROT; die zwei ROT gelaende.K2#1/#2 „Wand HAKEN“ des Regel-Blatts stehen an diesem Kopf nicht mehr (beide gelistet ohne Wand),
+     der Kandidat berührt nur k2-zusammenspiel.js. Selbsttest (`selbsttest --ohne 3c`): PROBEN „jede Station urteilt ihre Roh-Ausgaben
+     wie erwartet (16622 Proben)“ GRÜN, darin gruen und beide Attrappen der Sprosse; ROT stehen BEFEHL TRÄGT (an der Basis 72b63818
+     ohne den Kandidaten ebenso ROT, dieselben zwei Namen mensch.kopplung.antwort#1, mensch.zeit.kausal#1) und WACHE ×2 (der Tod des
+     Läufers unter Windows-Exit-Codes, an der Basis nicht eigens gefahren).
+  2) die Leiter in ≤ 60 s: der Teil S1 im Kern 1,0 s (1 705 × ortEisZeit + EIN planetOrt) + Faden 4,7 s (4 320 Aufträge) — vorher
+     derselbe Faden, im Kern der Gang; die Seite fährt unverändert (die sieben Aufträge der Geschichte lesen S3 und S4 weiter).
+  3) die Stichprobe durch den Leser des SPIELS: jeder der 4 320 Orte fährt durch den Faden (r._planetAuftrag planet-ort); der Zeuge
+     verlangt Gleichheit Kern ↔ Faden an denselben Orten derselben Saat (zwist 0).
+
+OFFEN (mit Grund und Messname)
+  gegenwart S3 (Fjord „ohne Eis heute und −20 ka“) urteilt an tj (Heimat + Δ) gegen das Literal −10 statt KLIMA.tEisC — eine andere
+  Frage als ortEisZeit (zwei Zeiten, nicht die Geschichte), nicht geschnitten; Messname karte2.planet.kopplung.gegenwart#3.

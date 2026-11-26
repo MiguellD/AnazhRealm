@@ -458,7 +458,7 @@ class AnazhRealm_stoff_material {
     // Grund — sein Betrag über das Profil des Kerns (phyto-core `windProfil`, Hellmann: der Wind am Ort gilt in 10 m). `grund`:
     // der Wind am Boden, den der Leser schon fragte (der Brand je Zelle und Bild); `aus` wird gefüllt statt neu gebaut. Bis
     // wetter-am-ort zog jeder Rauch in jeder Höhe mit dem Wind am Boden. Leser: die Fahne des Brands, der Rauch der Kamine, der
-    // Staub der Druckwelle.
+    // Staub der Druckwelle, der freie Körper (`_freiLuftPacken`, rueckfall-drei-2: die Scherbe am Boden im Wind ihrer Höhe).
     _rauchWindAt(x, z, t, h, grund, aus) {
         const w = grund || this._windAt(x, z, t, aus);
         const o = aus || (grund ? {} : w);

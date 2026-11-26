@@ -113,8 +113,8 @@
             "datei": 1
         },
         "scripts/diag-stand-takt.cjs": {
-            "zweck": "Messung: die Mutante der Ruhe der freien Körper (HAUFEN-SCHLAF, Marke druck) — der Rumpf von `_freiRuhig` live getauscht (die Ruhe liest das Tempo des Augenblicks statt der Kugeln der Testpunkte), an EINER Anker-Zeile gebaut; fehlt sie, ist die Linse BLIND",
-            "seite": 1
+            "zweck": "Messung: die Mutante der Ruhe der freien Körper (HAUFEN-SCHLAF, Marke druck) — der Rumpf von `_freiRuhig` live getauscht (die Ruhe liest das Tempo des Augenblicks statt der Kugeln der Testpunkte), an EINER Anker-Zeile gebaut; fehlt sie, ist die Linse BLIND. Und die Mutante des Haufens im Wind der Nachwache (HAUFEN-WIND, rueckfall-drei-2) — der Rumpf von `_freiLuftPacken` live getauscht (der freie Körper liest den Wind in 10 m statt in seiner Höhe über dem Grund), an EINEM Anker gebaut (die Höhe `p[1] - g`); fehlt er, ist die Linse BLIND",
+            "seite": 2
         },
         "scripts/diag-streu-wahrheit.cjs": {
             "zweck": "Messung: führt phyto-core und foundry-core im vm aus (Kern-Daten, Karten-Codec) und liest die Emitter je Art am Kern",

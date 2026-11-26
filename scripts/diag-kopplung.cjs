@@ -262,7 +262,14 @@ hauptLauf(async () => {
                 const lee = U((x) => 60 * Math.exp(-((x / 120) ** 2)), 104, 8) / eben - 1;
                 // die Düse gegen die Ebene am SELBEN Ort: seit rueckfall-drei zieht die Böen-Drift mit dem Wind (Taylor), zwei Orte tragen
                 // zur selben Uhr verschiedene Drift — gegen die Ebene bei x 104 las die Linse die Drift als Düse (+45 % statt +20 %)
-                const duese = U((x, z) => 40 * (1 - Math.exp(-((z / 80) ** 2))), 8, 8) / U(() => 0, 8, 8) - 1;
+                const tal = (x, z) => 40 * (1 - Math.exp(-((z / 80) ** 2)));
+                const duese = U(tal, 8, 8) / U(() => 0, 8, 8) - 1;
+                // SELBSTTEST DER KLASSE (rueckfall-drei-2: jede Wind-Linse nimmt ihren Bezug am selben Ort): der Täter von 06307c10 — die
+                // Düse gegen die Ebene am FREMDEN Ort x 104 — liest unter dem Gesetz die Drift zweier Orte als Düse und MUSS rot sehen;
+                // atmet die Drift wieder überall zugleich (der Täter vor rueckfall-drei), sieht er nichts, und F3 nennt die Uhr
+                const dueseFremd = U(tal, 8, 8) / eben - 1;
+                if (!(Math.abs(dueseFremd - 0.2) >= 0.02))
+                    fail(`F3-Selbsttest: die Düse gegen die Ebene am fremden Ort (x 104) bleibt unerkannt (${dueseFremd}) — die Böen-Drift trägt an zwei Orten dieselbe Uhr (\`_windAt\` wob ohne die Lage)`);
                 const [st, P] = [r.state, r.state.playerMesh.position];
                 const form = Array.from({ length: 1681 }, (_, i) => r._windAt(P.x + (i % 41) * 64 - 1280, P.z + ((i / 41) | 0) * 64 - 1280, 9).form);
                 const alt = [st.weather, st.dorfRauch, st.hydroSurfaceUniforms];
@@ -304,7 +311,7 @@ hauptLauf(async () => {
                     [st.weather, st.dorfRauch, st.hydroSurfaceUniforms] = alt;
                 }
                 const folgt = Object.keys(L).filter((k) => L[k][0] > 1e-4 && L[k][1] <= (k === "regen" ? 0.15 : 0) * L[k][0]);
-                const fd = (o.zahlen.feld = { lee, duese, min: Math.min(...form), max: Math.max(...form), L, folgt });
+                const fd = (o.zahlen.feld = { lee, duese, dueseFremd, min: Math.min(...form), max: Math.max(...form), L, folgt });
                 if (!(Math.abs(lee + 0.4) < 0.02 && Math.abs(duese - 0.2) < 0.02 && fd.min <= 0.7 && fd.max >= 1.1 && folgt.length === 6))
                     fail(`F3: das Gelände formt den Wind nicht oder ein Leser folgt ihm nicht: ${JSON.stringify(fd)}`);
             }
@@ -612,7 +619,7 @@ hauptLauf(async () => {
     const fd = z.feld;
     if (fd)
         console.log(
-            `  F3 Feld: Lee ${(100 * fd.lee).toFixed(0)} % · Tal-Düse +${(100 * fd.duese).toFixed(0)} % · Welt ${fd.min.toFixed(2)}–${fd.max.toFixed(2)} · Leser ${fd.folgt.length}/${Object.keys(fd.L).length} folgen ×0 (` +
+            `  F3 Feld: Lee ${(100 * fd.lee).toFixed(0)} % · Tal-Düse +${(100 * fd.duese).toFixed(0)} % (gegen den fremden Ort ${(100 * fd.dueseFremd).toFixed(0)} %: der Selbsttest sieht die Drift) · Welt ${fd.min.toFixed(2)}–${fd.max.toFixed(2)} · Leser ${fd.folgt.length}/${Object.keys(fd.L).length} folgen ×0 (` +
                 Object.entries(fd.L).map(([n, [a, b]]) => `${n} ${a.toFixed(3)} → ${b.toFixed(3)}`).join(" · ") + ")"
         );
     if (z.gasse)

@@ -247,14 +247,14 @@ function selbsttest() {
                 rest: 0,
                 grenze: 29.982,
                 scheiben: [[8.031, 5.557, 1, 16], [12.037, 3.234, 2, 32], [16.045, 2.177, 1, 16], [24.064, 1.296, 1, 6], [36.097, 0.811, 1, 0], [48.142, 0.593, 1, 0]].map(([R, last, n, scherben]) => ({ R, gebrochen: scherben > 0, last, kreuz: 4 * n, scherben, ...(scherben ? ((k) => ({ soll: scherben, kanteSoll: k.slice(), kante: k.slice() }))(scherben === 6 ? [0.085, 0.25] : [0.066, 0.184]) : {}) })), // prettier-ignore
-                ...{ scherben: 70, zaehler: 70, vorrat: { rest: 5, scherben: [9, 4] }, wach: 0, schlafS: 2.167, verzug: 0.032, brueche: { zugleich: 2, ueber: 0, bilder: 12 }, uhr: { zugleich: 3, ueber: 0, bilder: 3 } },
+                ...{ scherben: 70, zaehler: 70, vorrat: { rest: 5, scherben: [9, 4] }, wach: 0, schlafS: 2.167, windMS: 8.6, verzug: 0.032, brueche: { zugleich: 2, ueber: 0, bilder: 12 }, uhr: { zugleich: 3, ueber: 0, bilder: 3 } },
                 staub: { randM: 43.173, kornMm: 0.111, ostM: 8, narbeM2: 2300, sollG: 1200, echt: { ballen: 9, lebend: 9 }, gesaet: 384, ballen: 384, max: 384, grob: 150, masseG: 1190, aussen: 0, jenseits: 0, lebenS: 13.9, bilder: 700, ballenMax: 384, satzMax: 384, luftMaxG: 1150, satzMaxG: 1150, ohneSatz: 0, nebenG: 0.01, steigt: 0, endeS: 12.2, danach: { satz: 0, uhr: null } },
                 bildLage: Object.fromEntries([["geburt", 70], ["neubau", 16], ["stand", 1]].map(([k, n]) => [k, { n, schief: 0, grad: 0, mm: 0 }])), // prettier-ignore
                 kiste: { R: 6, dv: 1.542, soll: 1.542, wegM: 0.202 },
                 spieler: { R: 16, dv: 1.005 },
                 ohr: { dp: 18281.248, dauer: 0.008 },
                 mutante: { raeumt: 4, bruch: [3254, 6318, 3516, 1832], bild: { geburt: [70, 92.148], neubau: [16, 172.125], stand: [1, 57.296] }, staub: { aussen: 180, masseG: 2400, sollG: 1200 } },
-                haufen: { saaten: 21, echt: { saat: 7, schlafS: 0.95, nie: 0 }, mutanten: { schlaf: { saat: 20, schlafS: null, n: 21 } } },
+                haufen: { saaten: 21, echt: { saat: 7, schlafS: 0.95, nie: 0 }, mutanten: { schlaf: { saat: 20, schlafS: null, n: 21 } }, wind: { ms: 8.6, saaten: 112, echt: { saat: 33, schlafS: 0.833, nie: 0 }, mutante: { saat: 111, schlafS: 3.017, n: 112 } } },
                 nachher: simPh(0, 60),
             }))([
                 { art: "welle", einheiten: 2245, blick: 71, netz: 4136 },
@@ -810,12 +810,19 @@ function selbsttest() {
             /DRUCK-SCHLAF: die letzte der 70 Scherben schlief nach 6 s \(Soll ≤ 3 s\) — Beweis: Ort O \(-310.50, -1044.25\) Grund 28.90 m, Neigung 4.3°, 3 fremde freie Körper ≤ 30 m \(1 wach\) · Welt-Uhr 12345.50 s · Sim-Uhr 345.25 s · 4516 Takte seit dem Boot · 1 Sprünge der Welt-Uhr \(2.50 s\) · verworfene Sim-Zeit 0.000 s · Wind am Ort 3.21 m\/s · 2 wach beim Soll: Scherbe \[1.5, 20.25, -3\] 0.042 m\/s auf Grund \+ 1 Körper \(Grund 3.8°, μ 0.60\), 5.90 s alt, 0.40 s ruhig, schlief nach 6.00 s; Kiste \[4, 20.1, 6\] 0.011 m\/s auf Grund, \? s alt, 1.25 s ruhig, schlief nach 4.50 s$/,
         ],
         ["ROT ohne Beweis sagt es", ["simWecken.druck.schlafS=", 6], /\(Soll ≤ 3 s\) — ohne Beweis \(die Probe trug keinen\)$/],
+        // DER WIND DER HÖHE (rueckfall-drei-2): die Welle bricht im Wind der Nachwache (8,6 m/s), sonst LEER; der Täter am main eae94514 —
+        // der freie Körper las am Boden den Wind in 10 m: im Haufen im Wind schlief die Saat 111 nach 3,533 s (das Gesetz: alle 300 ≤ 0,833 s)
+        ["die Welle bricht im Wind der Uhr", ["simWecken.druck.windMS=", 2.1], /LEER: die Welle brach im Wind 2.1 m\/s am Ort, nicht im Wind der Nachwache \(8.6 m\/s\)/],
         // DER HAUFEN (die Ruhe der freien Körper): die Saat 20 schlief unter dem Tempo-Gesetz der Ruhe nie (eine Platte wippte im
         // Grenz-Zyklus über ruheMs) — die Mutante muss ihre Saat finden, das Gesetz jede schlafen lassen
         ["ein Haufen schläft nie", ["simWecken.druck.haufen.echt", { saat: 20, schlafS: null, nie: 1 }], /HAUFEN-SCHLAF: von 21 Haufen aus sechs Platten schliefen 1 nie, der späteste nach \? s \(Saat 20, Soll ≤ 3 s\) — die Ruhe liest das Tempo des Augenblicks/],
         ["ein Haufen schläft spät", ["simWecken.druck.haufen.echt", { saat: 4, schlafS: 3.5 }], /HAUFEN-SCHLAF: von 21 Haufen aus sechs Platten schliefen 0 nie, der späteste nach 3.5 s \(Saat 4, Soll ≤ 3 s\)/],
         ["die Mutante schlaf schläft überall im Soll", ["simWecken.druck.haufen.mutanten.schlaf", { saat: null, schlafS: null, n: 300 }], /BLIND: die Mutante schlaf \(das Tempo des Augenblicks statt der Kugeln\) schlief in allen 300 Saaten binnen 3 s — der Haufen trifft sie nicht/],
         ["die Mutante schlaf läuft nicht", ["simWecken.druck.haufen.mutanten.schlaf"], /BLIND: die Mutante schlaf \(das Tempo des Augenblicks statt der Kugeln\) lief nicht \(der Löser trägt ihren Anker nicht mehr\)/],
+        ["der freie Körper liest den Wind in 10 m (der Täter)", ["simWecken.druck.haufen.wind", { saaten: 300, echt: { saat: 277, schlafS: 3.533, nie: 0 } }], /HAUFEN-WIND: im Wind 8.6 m\/s schliefen von 300 Haufen 0 nie, der späteste nach 3.533 s \(Saat 277, Soll ≤ 3 s\) — der freie Körper trägt am Boden den Wind in 10 m/],
+        ["die Mutante wind10 schläft überall im Soll", ["simWecken.druck.haufen.wind.mutante", { saat: null, schlafS: null, n: 300 }], /BLIND: die Mutante wind10 \(der freie Körper liest den Wind in 10 m, nicht in seiner Höhe\) schlief im Wind 8.6 m\/s in allen 300 Saaten binnen 3 s — der Haufen im Wind trifft sie nicht/],
+        ["die Mutante wind10 läuft nicht", ["simWecken.druck.haufen.wind.mutante"], /BLIND: die Mutante wind10 \(.*\) lief nicht \(`_freiLuftPacken` trägt ihren Anker nicht mehr\)/],
+        ["kein Haufen im Wind", ["simWecken.druck.haufen.wind"], /LEER: die Probe legte keinen Haufen im Wind der Nachwache \(8.6 m\/s\)/],
         ["kein Haufen", ["simWecken.druck.haufen"], /LEER: die Probe legte keinen Haufen/],
         ["die Welle der Probe bricht keine Scheibe", ["simWecken.druck.scherben=", 0], /LEER: die Welle der Probe brach keine Scheibe/],
         ["die Welle schläft nicht", ["simWecken.druck.nachher=", simPh(2, 60, "druck")], /DRUCK-RUHE: nach der Welle arbeitet ihr Takt — 120 Einheiten/],
@@ -3564,6 +3571,8 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                     const proto = Object.getPrototypeOf(r);
                     const MUT = {
                         schlaf: ["_freiRuhig", proto._freiRuhig.toString(), "let ruhig = KG[3] >= 0;", "return Math.max(Math.hypot(K.v[0], K.v[1], K.v[2]), Math.hypot(K.w[0], K.w[1], K.w[2]) * K.rad) < AnazhRealm.FREI.ruheMs; let ruhig = 0;"],
+                        // die Mutante des Haufens im Wind (rueckfall-drei-2): der freie Körper liest den Wind in 10 m statt in seiner Höhe
+                        wind10: ["_freiLuftPacken", proto._freiLuftPacken.toString(), "p[1] - g", "10"],
                     }; // prettier-ignore
                     // die Mutante als Skript der Seite (ihre CSP trägt kein 'unsafe-eval', blob: ist erlaubt): der Rumpf als Glied eines Objekts
                     const mutBau = (rumpf) =>
@@ -3574,7 +3583,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             el.onerror = () => nein(new Error("die Mutante des Haufens lud nicht"));
                             document.head.appendChild(el);
                         });
-                    const haufen = async (saaten, m) => {
+                    const haufen = async (saaten, m, ms = 0) => {
                         if (m && m[1].split(m[2]).length !== 2) return null;
                         const eigen = {};
                         for (const g of ["_windAt", ...(m ? [m[0]] : [])]) eigen[g] = Object.prototype.hasOwnProperty.call(r, g) ? r[g] : null;
@@ -3582,7 +3591,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         const [SOLL, H] = [window.__druckSchlafS, { nieSaat: null, spaetSaat: null, schlafS: 0, nie: 0, n: 0, bruch: null, bruchS: null }];
                         try {
                             if (m) r[m[0]] = (await mutBau(m[1].replace(m[2], m[3])))[m[0]];
-                            r._windAt = (x, z, t, aus) => Object.assign(aus || {}, { x: 1, z: 0, staerke: 0, boe: 0, form: 1, ms: 0 });
+                            r._windAt = (x, z, t, aus) => Object.assign(aus || {}, { x: 1, z: 0, staerke: 0, boe: 0, form: 1, ms });
                             st.blueprints[name] = AnazhRealm._etikett({ name, builtIn: false, vomGesetz: true, frei: true, parts: [{ shape: "box", material: "quarz", size: { x: 0.12, y: 0.004, z: 0.12 }, position: { x: 0, y: 0.002, z: 0 } }] }); // prettier-ignore
                             for (let k = 0; k < saaten && !(m && H.bruch != null); k++) {
                                 let s = 1 + k * 7919;
@@ -3606,7 +3615,9 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 H.n++;
                                 if (t == null) (H.nie++, H.nieSaat == null && (H.nieSaat = k));
                                 if (H.bruch == null && (t == null || t > SOLL)) [H.bruch, H.bruchS] = [k, t];
-                                else if (t > H.schlafS) [H.schlafS, H.spaetSaat] = [t, k];
+                                // der späteste Schlaf über JEDE Saat — bis rueckfall-drei-2 fiel die erste, die reißt, nur in `bruch`
+                                // und blieb dem Gesetz unsichtbar (ein Haufen nach 3,5 s, der einzige späte, hieß GRÜN)
+                                if (t > H.schlafS) [H.schlafS, H.spaetSaat] = [t, k];
                             }
                         } finally {
                             delete st.blueprints[name];
@@ -3621,6 +3632,14 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         const HE = await haufen(bis || 60, null);
                         const mu = (H) => H && { saat: H.bruch, schlafS: H.bruchS, n: H.n };
                         HAUFEN = { saaten: HE.n, echt: { saat: HE.saat, schlafS: HE.schlafS, nie: HE.nie }, mutanten: { schlaf: mu(HS) } };
+                        // DER HAUFEN IM WIND DER NACHWACHE (rueckfall-drei-2): dieselben Platten im Wind `__druckWindMS` längs x; zuerst die
+                        // Mutante wind10 (der freie Körper liest den Wind in 10 m), bis eine Saat das Soll reißt, dann das Gesetz über dieselben
+                        const WMS = window.__druckWindMS;
+                        const HWM = await haufen(300, MUT.wind10, WMS);
+                        const bisW = HWM && HWM.bruch != null ? HWM.bruch + 1 : 0;
+                        // ohne Saat der Mutante (ihr Anker fehlt: der Stand vor rueckfall-drei-2) geht das Gesetz alle 300 (2,4 s)
+                        const HWE = await haufen(bisW || 300, null, WMS);
+                        HAUFEN.wind = { ms: WMS, saaten: HWE.n, echt: { saat: HWE.saat, schlafS: HWE.schlafS, nie: HWE.nie }, mutante: mu(HWM) };
                     }
                     const S = window.__simLinseAn();
                     const simPhase = async (n, schritt) => {
@@ -3898,7 +3917,15 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                             delete this._werkPoseZeigen;
                                         }
                                     };
-                                const eigen = ["_tickDruck", "_ladungUmsatz", "_druckWelle", "_druckStaub", "_druckTrifft", "_druckEnde", "_druckStoss", "_substanzKlang", "_grundrissRaeumen", "_rebuildArchitectureMesh", "_brandZellen", "_brandNarbeFn", "_weltUhrNimm", "_loopFixedStep"];
+                                // DER WIND DER PROBE (rueckfall-drei-2): der Betrag des EINEN Winds am Ort im Wind der Nachwache
+                                // (`__druckWindMS`), Richtung, Form und Böe aus dem Gesetz
+                                r._windAt = function (...a) {
+                                    const w = P._windAt.apply(this, a);
+                                    w.ms = window.__druckWindMS;
+                                    return w;
+                                };
+                                D.windMS = r3(r._windAt(O.x, O.z, st.spielZeit).ms);
+                                const eigen = ["_tickDruck", "_ladungUmsatz", "_druckWelle", "_druckStaub", "_druckTrifft", "_druckEnde", "_druckStoss", "_substanzKlang", "_grundrissRaeumen", "_rebuildArchitectureMesh", "_brandZellen", "_brandNarbeFn", "_weltUhrNimm", "_loopFixedStep", "_windAt"];
                                 const [kiste0, kisteR] = [kiste._frei.p.slice(), Array.from(kiste._frei.R)];
                                 const wachN = () => st.architectures.filter((e) => e._frei && !e._frei.schlaf && !bautenVor.has(e)).length;
                                 const loesche = () => (st.brandFeld && (r._brandRest = st.brandFeld.clear()), (st.worldMeta.taten.length = taten0)); // das Feuer des Funkens: von Hand, ohne Asche

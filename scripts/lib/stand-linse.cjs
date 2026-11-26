@@ -528,6 +528,10 @@ const [DRUCK_STAUB_MASSE, DRUCK_STAUB_BILD, DRUCK_STAUB_HOCH] = [0.05, 0.002, 0.
 const DRUCK_VERZUG_S = 0.35;
 const [DRUCK_BILD_GRAD, DRUCK_BILD_MM] = [0.1, 1]; // das Bild der Scherbe gegen die Lage ihres Körpers
 const DRUCK_SCHLAF_S = 3;
+// DER WIND DER PROBE (rueckfall-drei-2): die Welle bricht im Wind der Nachwache am main 4c9e6aab (8,59 m/s am Ort, DRUCK-SCHLAF dort
+// 5,517 s) — der Betrag des EINEN Winds am Ort fest, Richtung, Form und Böe aus dem Gesetz. Bis rueckfall-drei-2 lag die Probe im Wind
+// der Uhr (2 bis 8,6 m/s je Kopf): grün an einem Kopf, rot am nächsten.
+const DRUCK_WIND_MS = 8.6;
 // DER BEWEIS VON DRUCK-SCHLAF (nur im ROT, nur Ausgabe — das Urteil liest ihn nie): die Uhren an der Probe (Welt-Uhr, Sim-Uhr, die
 // Takte seit dem Boot, die Sprünge der Welt-Uhr und die Sim-Zeit, die der feste Schritt am Deckel verwarf), der Wind am Ort und je
 // Körper, der beim Soll noch wach lag, Ort, Tempo, Auflage (die Neigung und Reibung seines Grunds) und Alter in seinem letzten
@@ -712,6 +716,8 @@ function druckUrteil(D, v) {
     }
     if (!(D.scherben > 0)) v.push("LEER: die Welle der Probe brach keine Scheibe — keine Scherbe, deren Schlaf die Linse misst");
     else if (D.schlafS == null || !(D.schlafS <= DRUCK_SCHLAF_S)) v.push(`DRUCK-SCHLAF: die letzte der ${D.scherben} Scherben schlief ${D.schlafS == null ? `nie (${D.wach} liegen nach 10 s wach)` : `nach ${D.schlafS} s`} (Soll ≤ ${DRUCK_SCHLAF_S} s)${druckSchlafBeweis(D.schlafBeweis)}`);
+    // DER WIND DER NACHWACHE (rueckfall-drei-2): die Welle bricht im Wind `DRUCK_WIND_MS` am Ort, nie im Wind der Uhr
+    if (D.scherben > 0 && !(D.windMS === DRUCK_WIND_MS)) v.push(`LEER: die Welle brach im Wind ${D.windMS ?? "?"} m/s am Ort, nicht im Wind der Nachwache (${DRUCK_WIND_MS} m/s) — der Wind der Höhe ungemessen`);
     // DER HAUFEN (die Ruhe der freien Körper): je Saat sechs Quarz-Platten auf dem Ort der Probe, gestreut, der Löser im festen
     // Schritt ohne Wind — jeder Haufen schläft im Soll von DRUCK-SCHLAF. Die Mutante (schlaf: die Ruhe liest das Tempo des
     // Augenblicks statt der Kugeln der Testpunkte, `_freiRuhig`) sucht ihre Saat, die das Soll reißt; das Gesetz geht dieselben
@@ -724,6 +730,18 @@ function druckUrteil(D, v) {
         for (const [k, was] of [["schlaf", "das Tempo des Augenblicks statt der Kugeln"]]) {
             const M = H.mutanten && H.mutanten[k];
             if (!M || M.saat == null) v.push(`BLIND: die Mutante ${k} (${was}) ${M ? `schlief in allen ${M.n} Saaten binnen ${DRUCK_SCHLAF_S} s` : "lief nicht (der Löser trägt ihren Anker nicht mehr)"} — der Haufen trifft sie nicht`);
+        }
+        // DER HAUFEN IM WIND DER NACHWACHE (rueckfall-drei-2): dieselben Platten im Wind `DRUCK_WIND_MS` längs x. Die Mutante wind10 (der
+        // freie Körper liest den Wind in 10 m statt in seiner Höhe über dem Grund — der Stand vor rueckfall-drei-2) sucht ihre Saat, die
+        // das Soll reißt (Saat 111: 3,533 s), das Gesetz geht dieselben Saaten. Die Welle selbst richtet hier nicht: ihre Scherben liegen
+        // je Lauf anders (am Täter-Baum 4,333 s und 1,683 s bei demselben Wind), der Haufen ist eine reine Funktion seiner Saat.
+        const HW = H.wind;
+        if (!HW || !HW.echt || !(HW.saaten > 0) || !(HW.ms === DRUCK_WIND_MS)) v.push(`LEER: die Probe legte keinen Haufen im Wind der Nachwache (${DRUCK_WIND_MS} m/s) — der Wind der Höhe ungemessen`);
+        else {
+            if (!(HW.echt.nie === 0) || HW.echt.schlafS == null || !(HW.echt.schlafS <= DRUCK_SCHLAF_S))
+                v.push(`HAUFEN-WIND: im Wind ${HW.ms} m/s schliefen von ${HW.saaten} Haufen ${HW.echt.nie} nie, der späteste nach ${HW.echt.schlafS ?? "?"} s (Saat ${HW.echt.saat}, Soll ≤ ${DRUCK_SCHLAF_S} s) — der freie Körper trägt am Boden den Wind in 10 m (\`_freiLuftPacken\` ohne seine Höhe über dem Grund, phyto-core \`windProfil\`)`);
+            const M = HW.mutante;
+            if (!M || M.saat == null) v.push(`BLIND: die Mutante wind10 (der freie Körper liest den Wind in 10 m, nicht in seiner Höhe) ${M ? `schlief im Wind ${HW.ms} m/s in allen ${M.n} Saaten binnen ${DRUCK_SCHLAF_S} s` : "lief nicht (\`_freiLuftPacken\` trägt ihren Anker nicht mehr)"} — der Haufen im Wind trifft sie nicht`);
         }
     }
     const ruhe = D.nachher && D.nachher.sims.druck ? D.nachher.sims.druck.summe : NaN;
@@ -1276,5 +1294,6 @@ module.exports = {
         `window.__simPhase = ${simPhase.toString()};` +
         `window.__standPhase = ${standPhase.toString()};` +
         `window.__standLauf = ${standLauf.toString()};` +
-        `window.__druckSchlafS = ${DRUCK_SCHLAF_S};`,
+        `window.__druckSchlafS = ${DRUCK_SCHLAF_S};` +
+        `window.__druckWindMS = ${DRUCK_WIND_MS};`,
 };
