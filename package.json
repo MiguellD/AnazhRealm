@@ -48,7 +48,7 @@
         "gate:welt-boot": "node scripts/lib/welt-boot.cjs --selbsttest",
         "gate:warm-start": "node scripts/diag-warm-start.cjs",
         "gate:kopplung": "node scripts/diag-kopplung.cjs",
-        "gate:gelaende-realismus": "node scripts/diag-worker-dichte.cjs --realismus --selftest && node scripts/diag-worker-dichte.cjs --realismus && node scripts/diag-worker-dichte.cjs --gebaut --selftest",
+        "gate:gelaende-realismus": "node scripts/diag-worker-dichte.cjs --realismus --selftest && node scripts/diag-worker-dichte.cjs --realismus && node scripts/diag-worker-dichte.cjs --boeschung --selftest && node scripts/diag-worker-dichte.cjs --gebaut --selftest",
         "gate:gelaende-studio": "node scripts/diag-worker-dichte.cjs --studio --selftest",
         "gate:worker-dichte": "node scripts/diag-worker-dichte.cjs --selftest && node scripts/diag-worker-dichte.cjs --faden --selftest && node scripts/diag-worker-dichte.cjs --kern --selftest && node scripts/diag-worker-dichte.cjs --faden --planet --selftest && node scripts/diag-planet.cjs --anker --selftest && node scripts/diag-planet.cjs --anker",
         "gate:wasser-leben": "node scripts/diag-wasser-leben.cjs --selftest && node scripts/diag-wasser-leben.cjs",

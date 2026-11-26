@@ -17,6 +17,8 @@
 //   node scripts/diag-worker-dichte.cjs --selftest     der Faden lädt den Kern mit der Höhe + 1 cm — er MUSS rot werden
 //   node scripts/diag-worker-dichte.cjs --kern [--selftest] [--json datei]
 //                                                      die Kern-Probe (Kopf von `kernProbe`)
+//   node scripts/diag-worker-dichte.cjs --boeschung [--selftest] [--wurzel dir]
+//                                                      die Böschungs-Linse ohne Browser (Kopf von `boeschung`)
 //   node scripts/diag-worker-dichte.cjs --abdruck datei [--wurzel dir]
 //                                                      der BYTE-ABDRUCK beider Welten (SHA-256 je Gitter, Main UND
 //                                                      Worker, und der Makro-Höhe auf einem 64×64-Gitter für drei
@@ -1277,6 +1279,185 @@ function realismus() {
     console.log(
         `\n${rot ? "⛔ GELÄNDE-LINSE ROT" : "✅ GELÄNDE-LINSE GRÜN: alle Natur-Zahlen im Korridor, drei Saaten, jedes Preset an jeder Saat"}\n`
     );
+    return rot ? 1 : 0;
+}
+
+// ── DIE BÖSCHUNGS-LINSE (erdbau-boeschung, `--boeschung`): der Erdbau eines Orts läuft stetig in die Natur aus. Je Ort die
+// größte Höhen-Stufe zwischen zwei Nachbar-Proben im 0,5-m-Raster, abzüglich der Stufe der Natur an derselben Kante, im Ring
+// 10–60 m Abstand zur nächsten Fläche (Platte/Trasse) — über die Reichweite des Kerns (`ERDBAU.reichweiteM`) hinaus. ROT ab
+// 0,6 m je 0,5 m (steiler als die steile Böschung des Kerns, 45°), beim Namen: Ort, (x, z), Höhe beider Proben, Abstand.
+// Die Orte: der Genesis-Ort, die Stadt des Haushalts (`stadt-voll`, ihre Gründung) und zwei Dörfer am Hang, an denen bis
+// erdbau-boeschung die Stufe stand (12,7 und 19,5 m bei 16 m). Der Konsum-Leser: `hoehe` über der Lage mit `erdbau` —
+// der Chunk-Boden des Fadens (voxel-worker `state.erdbau`) und der Fuß im Stamm (`_erdbauNorm`), gate:worker-dichte --kern
+// hält beide = Kern. Das Gesetz aus der gemessenen Wurzel (`--wurzel`), Plan und Linse aus DIESEM Baum.
+//   --boeschung [--selftest]   Selbsttest: der Kern mit der Reichweite von main bis erdbau-boeschung (der harte Schnitt bei
+//                              16 m) MUSS am Genesis-Ort rot werden, die Stufe bei 16 ± 1 m
+const BOESCHUNG = Object.freeze({
+    schrittM: 0.5,
+    schwelleM: 0.6,
+    ring: [10, 60],
+    doerfer: [
+        { name: "dorf 20 8", seed: 20, nH: 8, x: -730.4, z: -875.3 },
+        { name: "dorf 12 18", seed: 12, nH: 18, x: -1855, z: -1075 },
+    ],
+    mutante: ["const R = ERDBAU.reichweiteM;\n        let fest = NaN;", "const R = 16;\n        let fest = NaN;"],
+});
+function boeschungKerne(wurzel, mutiert) {
+    const hier = path.resolve(__dirname, "..");
+    const roh = String(kernQuelle(wurzel));
+    const [alt, neu] = BOESCHUNG.mutante;
+    if (mutiert && roh.split(alt).length !== 2) return null;
+    global.THREE ||= require("./lib/welt-boot.cjs").ENGINE_THREE(); // der Plan baut seine Häuser gegen die Engine der Kerne
+    const c = require("./lib/asset-worker-harness.cjs").kernAusText([
+        ausDatei(path.join(hier, "vendor", "simplex-noise.js")),
+        mutiert ? roh.replace(alt, neu) : roh,
+        ausDatei(path.join(hier, "samen-core.js")),
+        ausDatei(path.join(hier, "schmiede-core.js")),
+        ausDatei(path.join(hier, "fachwerk-core.js")),
+    ]);
+    return { G: c.__gelaendeCore, FC: c.__fachwerkCore, EINGANG: c.__samenCore.EINGANG, SimplexNoise: c.SimplexNoise };
+}
+// die Orte als Erdbau-Listen (der Plan v2, fachwerk `ortPlan` auf dem Gelände-Kern — derselbe Gang wie der Wirt)
+function boeschungOrte(K, L, nur) {
+    const { G, FC } = K;
+    const orte = [];
+    const ort = (name, seed, nH, anker) => {
+        const plan = FC.exportSettlement({ seed, nH, hoehe: G.hoehenRaster(L, anker.x, anker.z, FC.trasseRahmen(nH)) });
+        orte.push({ name, erdbau: FC.ortPlan(plan, anker, G.ortCtx(L)).erdbau });
+    };
+    const welten = FC.GENESIS_ORT.tafel.map((t) => t.welt);
+    orte.push({ name: "genesis", erdbau: FC.ortPlan(FC.genesisLayout(FC.genesisSaat(K.EINGANG), welten), { x: 0, z: 0 }, G.ortCtx(L)).erdbau });
+    if (nur) return orte;
+    const g = require("./lib/band-urteil.cjs").ladeSpec("stadt-voll").ort.gruendung;
+    const [same, haeuser] = g.wort.split(" ").slice(1).map(Number);
+    ort(`stadt-voll (${g.wort})`, same, haeuser, { x: g.anker[0], z: g.anker[1] });
+    for (const d of BOESCHUNG.doerfer) ort(d.name, d.seed, d.nH, d);
+    return orte;
+}
+// die größte Stufe im Ring um EINEN Erdbau (die Abstände aus einem eigenen 8-m-Netz der Flächen)
+function boeschungStufe(G, L, erdbau) {
+    const { schrittM: S, ring } = BOESCHUNG;
+    const [R0, R1] = ring;
+    const E = G.erdbauNormal(erdbau);
+    const Le = Object.assign({}, L, { erdbau: E });
+    const C = 8;
+    const netz = new Map();
+    let [bx0, bx1, bz0, bz1] = [Infinity, -Infinity, Infinity, -Infinity];
+    for (const p of E.splats) {
+        if (p.frei) continue;
+        let x0, x1, z0, z1;
+        if (p.platte) {
+            const hx = Math.abs(p.ex * p.c) + Math.abs(p.ez * p.s);
+            const hz = Math.abs(p.ex * p.s) + Math.abs(p.ez * p.c);
+            [x0, x1, z0, z1] = [p.cx - hx, p.cx + hx, p.cz - hz, p.cz + hz];
+        } else {
+            [x0, x1] = [Math.min(p.x0, p.x0 + p.dx) - p.hw, Math.max(p.x0, p.x0 + p.dx) + p.hw];
+            [z0, z1] = [Math.min(p.z0, p.z0 + p.dz) - p.hw, Math.max(p.z0, p.z0 + p.dz) + p.hw];
+        }
+        [bx0, bx1, bz0, bz1] = [Math.min(bx0, x0), Math.max(bx1, x1), Math.min(bz0, z0), Math.max(bz1, z1)];
+        for (let a = Math.floor((x0 - R1) / C); a <= Math.floor((x1 + R1) / C); a++)
+            for (let b = Math.floor((z0 - R1) / C); b <= Math.floor((z1 + R1) / C); b++) {
+                const k = a * 100000 + b;
+                const l = netz.get(k);
+                if (l) l.push(p);
+                else netz.set(k, [p]);
+            }
+    }
+    const abstand = (x, z) => {
+        const l = netz.get(Math.floor(x / C) * 100000 + Math.floor(z / C));
+        let m = Infinity;
+        for (const p of l || []) {
+            let d;
+            if (p.platte) {
+                const dx = x - p.cx;
+                const dz = z - p.cz;
+                const u = Math.abs(dx * p.c - dz * p.s) - p.ex;
+                const v = Math.abs(dx * p.s + dz * p.c) - p.ez;
+                d = u > 0 ? (v > 0 ? Math.hypot(u, v) : u) : v > 0 ? v : 0;
+            } else {
+                let q = p.len2 > 0 ? ((x - p.x0) * p.dx + (z - p.z0) * p.dz) / p.len2 : 0;
+                q = q < 0 ? 0 : q > 1 ? 1 : q;
+                d = Math.max(0, Math.hypot(x - (p.x0 + p.dx * q), z - (p.z0 + p.dz * q)) - p.hw);
+            }
+            if (d < m) m = d;
+        }
+        return m;
+    };
+    const X0 = Math.floor((bx0 - R1) / S) * S;
+    const Z0 = Math.floor((bz0 - R1) / S) * S;
+    const nx = Math.ceil((bx1 - bx0 + 2 * R1) / S) + 2;
+    const nz = Math.ceil((bz1 - bz0 + 2 * R1) / S) + 2;
+    const D = new Float32Array(nx * nz);
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) D[i + j * nx] = abstand(X0 + i * S, Z0 + j * S);
+    const HE = new Float64Array(nx * nz).fill(NaN);
+    const HN = new Float64Array(nx * nz);
+    const h = (i, j) => {
+        const k = i + j * nx;
+        if (HE[k] !== HE[k]) {
+            HN[k] = G.hoehe(L, X0 + i * S, Z0 + j * S, true);
+            HE[k] = G.hoehe(Le, X0 + i * S, Z0 + j * S, true);
+        }
+        return k;
+    };
+    let max = { s: 0 };
+    let ueber = 0;
+    let kanten = 0;
+    for (let j = 0; j + 1 < nz; j++)
+        for (let i = 0; i + 1 < nx; i++) {
+            const d = D[i + j * nx];
+            if (!(d >= R0 && d <= R1)) continue;
+            const a = h(i, j);
+            for (const b of [h(i + 1, j), h(i, j + 1)]) {
+                kanten++;
+                const s = Math.abs(HE[a] - HE[b]) - Math.abs(HN[a] - HN[b]);
+                if (s > BOESCHUNG.schwelleM) ueber++;
+                if (s > max.s) max = { s, x: X0 + i * S, z: Z0 + j * S, d, ha: HE[a], hb: HE[b], na: HN[a], nb: HN[b] };
+            }
+        }
+    return { max, ueber, kanten, splats: E.splats.length };
+}
+function boeschungLauf(K, nur) {
+    const L = K.G.lageGrund(K.EINGANG, K.SimplexNoise);
+    const t0 = Date.now();
+    const orte = boeschungOrte(K, L, nur);
+    const tPlan = Date.now() - t0;
+    const je = orte.map((o) => {
+        const t1 = Date.now();
+        const m = boeschungStufe(K.G, L, o.erdbau);
+        return { name: o.name, ...m, ms: Date.now() - t1 };
+    });
+    return { je, tPlan };
+}
+function boeschungZeile(z) {
+    const M = z.max;
+    const f = (v) => v.toFixed(2).replace(".", ",");
+    const wo = M.s > 0 ? ` an ${M.x}/${M.z}, ${f(M.d)} m neben der Fläche: Höhe ${f(M.ha)} → ${f(M.hb)} m (Natur ${f(M.na)} → ${f(M.nb)} m)` : "";
+    return `${z.name}: größte Stufe ${f(M.s)} m je ${String(BOESCHUNG.schrittM).replace(".", ",")} m${wo} · ${z.ueber}/${z.kanten} Kanten über ${String(BOESCHUNG.schwelleM).replace(".", ",")} m · ${z.splats} Splats · ${z.ms} ms`;
+}
+function boeschung() {
+    console.log(`\n========= DIE BÖSCHUNGS-LINSE — der Erdbau läuft stetig in die Natur aus (Ring ${BOESCHUNG.ring.join("–")} m, 0,5-m-Raster) =========`);
+    console.log("  Konsum-Leser: hoehe über der Lage mit erdbau — voxel-worker state.erdbau (der Chunk-Boden) · Stamm _erdbauNorm (der Fuß)");
+    let rot = false;
+    const { je, tPlan } = boeschungLauf(boeschungKerne(root, false), false);
+    console.log(`  (Pläne ${tPlan} ms)`);
+    for (const z of je) {
+        const r = z.max.s > BOESCHUNG.schwelleM;
+        rot = rot || r;
+        console.log(`  ${r ? "⛔ STUFE" : "✅"} ${boeschungZeile(z)}`);
+    }
+    if (SELBSTTEST) {
+        const K = boeschungKerne(root, true);
+        if (!K) {
+            console.log("  ⛔ SELBSTTEST: der Anker der Mutante (die Reichweite in erdbauY) steht nicht genau einmal im Kern");
+            rot = true;
+        } else {
+            const z = boeschungLauf(K, true).je[0];
+            const sieht = z.max.s > BOESCHUNG.schwelleM && Math.abs(z.max.d - 16) <= 1;
+            console.log(`  ${sieht ? "✅" : "⛔"} SELBSTTEST (der harte Schnitt bei 16 m eingepflanzt): ${sieht ? "ROT beim Namen" : "BLIEB UNSICHTBAR"} — ${boeschungZeile(z)}`);
+            rot = rot || !sieht;
+        }
+    }
+    console.log(`\n${rot ? "⛔ BÖSCHUNGS-LINSE ROT" : `✅ BÖSCHUNGS-LINSE GRÜN: ${je.length} Erdbauten ohne Stufe über ${String(BOESCHUNG.schwelleM).replace(".", ",")} m je 0,5 m`}\n`);
     return rot ? 1 : 0;
 }
 
@@ -2767,6 +2948,7 @@ async function faden(page, url) {
 
 hauptLauf(async () => {
     if (argv.includes("--realismus")) process.exit(realismus());
+    if (argv.includes("--boeschung")) process.exit(boeschung());
     await server.lausche(PORT);
     // `--faden --echt`: das Fenster an der echten GPU (die Adapter-Zeile `[linse-gpu]`), jede andere Probe am Null-Renderer
     const browser = await starteBrowser({ art: ECHT ? "echt" : "standard", headless: !ECHT, frist: 900000 });
