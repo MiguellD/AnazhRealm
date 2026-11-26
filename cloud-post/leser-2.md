@@ -51,4 +51,21 @@ Nebenbefund an main: 9 Zeilen `abriss` zu 0 Zeilen `bauen` — der Abriss liest 
 paarweise. Probe-Fehler unterwegs, benannt: der erste Abriss-Lauf zählte 0 von 10 an beiden Köpfen, weil meine Probe den Mess-Halt
 (`_messHalt`, weatherEffectTime < 0) um `remove_architecture` nicht löste — das DSL hielt den Welt-Akt („weltakt_gehalten“); berichtigt.
 
-Status ZWISCHENSTAND. Karte 2 gebucht 126 von 1 718 (vision/karte-2-stand.json an punkte-maschine 83288dfe).
+## Stand nach dem Warteraum (26.11., 10:35–14:33 alle ≤ 9 min, Briefkasten oben unverändert 07:37)
+
+- **Geschnitten:** 12 Ordner unter `bericht/2611-stationen/` (je Diff · Hand · betreff · BEGRUENDUNG): aufwaerts1 · gewalt1 · stimme1 ·
+  bevoelkerung1 · ausdauer1 · nacht1 · recht1 · zeit · stadtklima1 · masse1 · leser-zeilen · gegenwart2-memo (zuletzt cb9f780f).
+- **Gemessen (zuletzt):** gegenwart2-memo Fächer 7 860 ms → 3 ms beim Treffer, Werte bit-gleich in 11 Feldern, Proben 2 005 → 2 007/0
+  falsch, liste = Basis; leser-zeilen 847 → 408 von 956.
+- **Offen (Anlass, Messname):** aufwaerts#1 und gewalt#1 S1 — das Spiel (Akt nach buendel-jagd; kein Blitz, Zündungen je Sturm-Zug) ·
+  stimme#1, ausdauer#1, recht#1 — DAS SPIEL IST ROT (Erwachsene 7 von 13; erste Minute > 50 MB/min; Schlag 50 s), bei einem Macher ·
+  nacht#1 das Bild am Feuer (schatten.K5#1) · stadtklima#1 die Sekunden des Gangs am Gerät · masse#1 nicht findbar (rohe Zeile herde der
+  Geräte-Sitzung) · Uhr der Leiter: welcher Schritt an der GTX 1050 die 30/45 s nimmt · leser-zeilen 333 im Abdruck, 63 mehrdeutig, 12 fehlt ·
+  gegenwart2-memo die Leiter-Uhr am Gerät (aus.leitern, ms im Zeugen) und die Geräte-Kopien der Pfad-Regel (runde.cjs :725).
+- **Kopf:** leser-2 cb9f780f · die Diffs greifen an punkte-maschine 1bd623df (k2-zusammenspiel.js f8058058, runde.cjs ffcfd146
+  unverändert) · main 12029279.
+- **Beanspruchte Sprossen:** same.kopplung.aufwaerts#1 · same.kopplung.gewalt#1 · erleben.klang.stimme#1 · mensch.menge.bevoelkerung#1 ·
+  same.preis.ausdauer#1 · erleben.bild.nacht#1 · mensch.macht.recht#1 · planet.kopplung.stadtklima#1 · leben.tiere.masse#1 ·
+  same.kopplung.stoerung#2 (Uhr der Leiter) · planet.kopplung.gegenwart#2.
+
+Status ZWISCHENSTAND. Karte 2 gebucht 129 von 1 718 (vision/karte-2-stand.json an punkte-maschine 1bd623df).
