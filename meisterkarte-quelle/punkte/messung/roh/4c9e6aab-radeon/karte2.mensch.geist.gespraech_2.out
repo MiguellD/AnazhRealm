@@ -459,8 +459,8 @@ H.fahre(async (H) => {
     return K.ende();
 }); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\4c9e6aab-radeon\karte2.mensch.geist.gespraech_2.json 45
 [linse-gpu] amd/rdna-3
-@@ 7.6 s · am Messort stadt-voll (ego) nach 7.6 s, 291 Takte, Anlauf stand
-@@ 7.9 s · S2 gerufen 30, erreichbar 30, Persona mit Lebenslauf 30, Stimme false
+@@ 7 s · am Messort stadt-voll (ego) nach 7.0 s, 221 Takte, Anlauf stand
+@@ 7.3 s · S2 gerufen 30, erreichbar 30, Persona mit Lebenslauf 30, Stimme false
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
