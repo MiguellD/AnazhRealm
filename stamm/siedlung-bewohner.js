@@ -1110,8 +1110,11 @@ class AnazhRealm_siedlung_bewohner {
                 S.listeRest--;
                 const g = this._rollGenome(`${plan.seed >>> 0}:${si}:${k}`, "bewohner");
                 // SEIN ALTER (koerper ALTER_GESETZ: die Epoche des Plans, sein Platz im Haushalt — die erste Person erwachsen): wer
-                // jünger ist als kindJ, trägt die Rolle des Kinds (TAGES_GESETZ.rollen.kind: das Spiel; sein Alter geht in die Bindung — das fleißige hilft am Werk seines Hauses erst ab kindHilftAbJ)
-                const epoche = { jahr: plan.jahr, rang: k, n };
+                // jünger ist als kindJ, trägt die Rolle des Kinds (TAGES_GESETZ.rollen.kind: das Spiel; sein Alter geht in die Bindung — das fleißige hilft am Werk seines Hauses erst ab kindHilftAbJ).
+                // DIE MANNSCHAFT DER WACHE IST ERWACHSEN (megastadt#1): der Bau der Wache (fachwerk BAU_NUTZUNG.wache) ist kein
+                // Haushalt — jeder seiner Leute steht im Rang der ersten Person (erwachsen). Bis hier trug die Hauptwache Kinder nach
+                // dem Rang im Haus, und keiner ihrer vier rückte aus.
+                const epoche = { jahr: plan.jahr, rang: rolle === "wache" ? 0 : k, n };
                 const jahre = this._bewohnerJahre(
                     this._rollGenome(`${plan.seed >>> 0}:${si}:${k}`, "humanoid"),
                     epoche
@@ -1274,8 +1277,16 @@ class AnazhRealm_siedlung_bewohner {
             tore.push({ x: S.ox + gx * k, z: S.oz + gz * k, fort: Math.atan2(gx, gz) });
         }
         const amPlatz = pz ? { x: S.ox + pz.cx, z: S.oz + pz.cz } : null;
-        const posten = [...tore.slice(0, 1), ...(amPlatz ? [amPlatz] : []), ...tore.slice(1)];
-        const nPosten = Math.max(tore.length ? 1 : 0, Math.round(liste.length / WL.jeKoepfe));
+        // DIE WACHE IST DER ERSTE POSTEN (megastadt#1, „Streife aus der Wache“): steht ihr Bau im Plan (fachwerk `wacheLose`, die
+        // Rolle „wache“ eines Slots), hält ihn seine Mannschaft vor der Tür — der Stand im Ring um den Punkt vor ihr, der Blick
+        // hinaus auf die Gasse; von dort rückt sie aus (DER RUF, `_bewohnerZeuge`). Jeder Bau der Wache trägt seinen Posten, auch
+        // wo das Band der Köpfe keinen nennt. Bis hier stand die Wache an Tor und Platz, ihr Bau war ein Haus ohne Wächter.
+        const wachen = [];
+        for (const b of liste)
+            if (b.rolle === "wache" && !wachen.some((P) => P.tuer === b.orte.tuer))
+                wachen.push({ x: b.orte.vor.x, z: b.orte.vor.z, fort: Math.atan2(b.orte.vor.x - b.orte.tuer.x, b.orte.vor.z - b.orte.tuer.z), tuer: b.orte.tuer }); // prettier-ignore
+        const posten = [...wachen, ...tore.slice(0, 1), ...(amPlatz ? [amPlatz] : []), ...tore.slice(1)];
+        const nPosten = Math.max(wachen.length, tore.length ? 1 : 0, Math.round(liste.length / WL.jeKoepfe));
         // DER POSTEN IM FREIEN IST EINE FUNKTION VON PLAN UND BAUTEN (jaeger-stand): sein Wurf fragt nur die Bauten (`frei` mit
         // `bauten`), die Natur richtet der Stand selbst vom Ursprung (`_bewohnerStandPruefen`). Bis hier las der Wurf das
         // Blocker-Netz, wie es beim Werk der Liste stand: die erste Liste gab dem Jäger am Revier den Ursprung 118,2/−192,3 (Stufe 1
@@ -1343,10 +1354,13 @@ class AnazhRealm_siedlung_bewohner {
                 for (const b of liste) {
                     if (b.rolle === "kind" || b.rolle === "haendler" || WL.rollen.includes(b.rolle)) continue;
                     const q = amPl ? b.orte.platz : b.orte.tuer;
-                    if (!q || +b.seed.split(":")[2] < frueh) continue;
+                    // (die ersten zwei eines Hauses der Stadt tragen den Wagen — nie die der Wache: ihr Fahrer ist kein Wächter,
+                    // `_verkehrAnlegen`)
+                    if (!q || (b.rolle !== "wache" && +b.seed.split(":")[2] < frueh)) continue;
                     // DIE WACHE RÜCKT AUS IHREM BAU AUS (rollen-des-tages, megastadt#1): wer im Bau der Wache wohnt (fachwerk
                     // BAU_NUTZUNG.wache, die Hauptwache: 4 Personen) geht vor jedem anderen auf Posten — bis hier wählte das Gesetz
-                    // den Wächter aus dem Wohnhaus nächst dem Posten, und keiner rückte aus der Wache aus
+                    // den Wächter aus dem Wohnhaus nächst dem Posten, und keiner rückte aus der Wache aus (die Stadt-Regel nahm
+                    // ihr die ersten zwei, der Rang im Haus die übrigen als Kinder)
                     const g = b.rolle === "wache" ? 3 : b.rolle === "wohnhaus" ? 2 : 1;
                     const d = Math.hypot(q.x - P.x, q.z - P.z);
                     if (g > guete || (g === guete && d < dMin)) [wer, dMin, guete] = [b, d, g];
@@ -2770,19 +2784,54 @@ class AnazhRealm_siedlung_bewohner {
         const cells = (this.state.worldMeta || {}).settlementCells || {};
         const stunde = ((((Number.isFinite(this.state.timeOfDay) ? this.state.timeOfDay : 0.5) % 1) + 1) % 1) * 24; // wie der Takt
         for (const S of (this._bewohnerSiedlungen || new Map()).values()) {
-            let sah = false;
+            let [sah, naht] = [false, false];
             let belegt = null;
             for (const b of S.liste || [])
                 if (b.leib && !b.drinnen && (b.leib.position.x - o.x) ** 2 + (b.leib.position.z - o.z) ** 2 < R2) {
                     this._creatureRemember(b.leib, "gewalt", { von: "spieler" });
                     sah = true;
                     if (b.waffe) {
-                        this._bewohnerNahen(S, b, o, stunde); // die Wache flieht nicht, sie naht
+                        if (this._bewohnerNahen(S, b, o, stunde)) naht = true; // die Wache flieht nicht, sie naht
                         continue;
                     }
                     belegt = belegt || new Set(S.liste.map((x) => x.ziel));
                     this._bewohnerWeichen(S, b, o, stunde, belegt);
                 }
+            // DER RUF DER WACHE (megastadt#1, „Streife aus der Wache“): sah einer die Tat und naht ihr keine Wache aus dem Kreis der
+            // Zeugen, ruft die Siedlung ihre Wache — der Wächter im Dienst (draußen, sein Soll ist sein Posten oder ein Punkt seiner
+            // Runde) mit dem kürzesten Weg über das Netz der Gassen (`S.netzGrund`, tetrapoda `wegLaengen` vom Knoten des Täters,
+            // gemerkt am Grund wie die Längen der Türen) rückt aus und geht über dieses Netz zum Ort der Tat (`_bewohnerNahen` mit
+            // dem Ruf: keine Gerade verlangt; steht der Täter noch dort, stellt er ihn); jede Antwort ist eine Akte der Siedlung
+            // (`S.rufe`: der Weg, die Uhr des Rufs, die Ankunft am Ort der Tat, `_bewohnerHiebTakt`). Das Band der Profis: die Antwort ist Meldung + Disposition + Weg, der Weg
+            // wächst mit der Distanz (Kansas City Response Time Analysis 1977), und die Distanz zur Wache verursacht die Antwortzeit
+            // (Blanes i Vidal & Kirchmaier 2018, Rev. Econ. Stud. 85:855 — +10 % Antwortzeit, −4,7 Pp. Aufklärung). Bis hier
+            // nahte nur, wer die Tat selbst sah: die Wache am Posten hörte nie von ihr.
+            const G = sah && !naht && S.netzGrund;
+            const t = this.state.playerMesh.position;
+            const an = G && this._bewohnerGrundAn(G, t);
+            if (an) {
+                const LL = G.laengen || (G.laengen = new Map());
+                const L = LL.get(an.i) || LL.set(an.i, globalThis.__tetrapodaCore.wegLaengen(G.knoten.length, G.kanten, an.i)).get(an.i); // prettier-ignore
+                const zuT = Math.hypot(t.x - an.k.x, t.z - an.k.z);
+                let [wer, weg] = [null, Infinity];
+                for (const b of S.liste) {
+                    if (!b.waffe || !b.leib || b.drinnen || b.amSteuer || b.ankunft || (this._hiebe && this._hiebe.has(b))) continue; // prettier-ignore
+                    const z = this._bewohnerSoll(b, stunde);
+                    if (z.drinnen || !(z.ziel === b.orte.werk || (b.orte.streife || []).includes(z.ziel))) continue;
+                    const p = b.leib.position;
+                    const a = this._bewohnerGrundAn(G, p);
+                    const w = a ? Math.hypot(p.x - a.k.x, p.z - a.k.z) + L[a.i] + zuT : Infinity;
+                    if (w < weg) [wer, weg] = [b, w];
+                }
+                const p = wer && wer.leib.position;
+                const von = zuT > 0.5 ? { x: an.k.x, z: an.k.z } : null; // (der Knoten am Täter: von dort tritt er vor ihn)
+                const ruf = wer && { wer: wer.seed, weg, luft: Math.hypot(p.x - t.x, p.z - t.z), ab: this.state.spielZeit, an: null, tat: { x: t.x, z: t.z }, von }; // prettier-ignore
+                if (ruf && this._bewohnerNahen(S, wer, o, stunde, ruf)) {
+                    const R = S.rufe || (S.rufe = []);
+                    R.push(ruf);
+                    R.splice(0, R.length - AnazhRealm.LEBENSLAUF.wache.rufeMax);
+                }
+            }
             const c = sah && cells[S.key];
             if (!c || !c.wachs) continue;
             c.akten = (c.akten || []).concat([{ t: this.state.spielZeit, type: "gewalt" }]);
@@ -2818,20 +2867,29 @@ class AnazhRealm_siedlung_bewohner {
     // dem TÄTER — dem Spieler, der schlug —, bis sie ihm die Länge der Klinge gegenüber steht (`abstandM`, der Akt „hieb“, ihr Gegner
     // der Spieler), und stellt ihn zum Zweikampf (`_bewohnerHiebTakt`). Bis hier trat sie 1,5 m vor den Ort der Tat und hielt: kein
     // Gegner, kein Hieb — 0 Bewaffnete im Zweikampf.
-    _bewohnerNahen(S, b, o, stunde) {
+    // DER GERUFENE (`ruf`, DER RUF DER WACHE in `_bewohnerZeuge`): er geht zum ORT der Tat (`ruf.tat`: wo der Täter stand, als sie
+    // geschah) über das Netz — sein Punkt dort liegt auf der Seite des Knotens, über den der Weg ihn erreicht (`ruf.von`), und keine
+    // Gerade zu ihm wird verlangt; die Akte des Rufs reist mit seinem Hieb (die Ankunft, `_bewohnerHiebTakt`).
+    // DIE WACHE EILT (megastadt#1): sie läuft zur Tat im Tempo ihres Leibs am Tag (koerper `spielLeistung` „lauf“: sein Bein, seine
+    // Kraft, seine Übung, seine Form — derselbe Lauf wie der des Wettkampfs, `_bewohnerZiel` leiht ihn dem Weg); wessen Leib nicht
+    // läuft (`null`, der Greis), der geht. Bis hier ging sie im Tempo ihres Tags (1,3 m/s: 46 m über das Netz in 35 s).
+    _bewohnerNahen(S, b, o, stunde, ruf = null) {
         if (b.amSteuer || b.ankunft || !b.ziel) return false;
         const p = b.leib.position;
-        const t = this.state.playerMesh.position;
-        const H = window.__koerperCore.SPIEL_GESETZ.arten.hieb;
-        const d = Math.hypot(p.x - t.x, p.z - t.z) || 1;
-        const q = { x: t.x + ((p.x - t.x) / d) * H.abstandM, z: t.z + ((p.z - t.z) / d) * H.abstandM, blick: Math.atan2(t.x - p.x, t.z - p.z), gegner: "spieler" }; // prettier-ignore
-        if (!this._landAt(q.x, q.z) || ["haus", "bau"].includes(this._imGrundriss(q.x, q.z, 0.5)) || this._bewohnerWand(p, q)) return false; // prettier-ignore
+        const s = (ruf && ruf.von) || p;
+        const t = ruf ? ruf.tat : this.state.playerMesh.position;
+        const KC = window.__koerperCore;
+        const H = KC.SPIEL_GESETZ.arten.hieb;
+        const d = Math.hypot(s.x - t.x, s.z - t.z) || 1;
+        const v = KC.spielLeistung("lauf", { same: b.same, beinM: b.beinL, kraft: b.koennen.kraft, kampf: b.uebung.kampf.koennen }, Math.floor(this._weltTag())); // prettier-ignore
+        const q = { x: t.x + ((s.x - t.x) / d) * H.abstandM, z: t.z + ((s.z - t.z) / d) * H.abstandM, blick: Math.atan2(t.x - s.x, t.z - s.z), gegner: "spieler", tempo: v || 0 }; // prettier-ignore
+        if (!this._landAt(q.x, q.z) || ["haus", "bau"].includes(this._imGrundriss(q.x, q.z, 0.5)) || (!ruf && this._bewohnerWand(p, q))) return false; // prettier-ignore
         b.weichen = null;
         const soll = this._bewohnerSoll(b, stunde);
         if (soll.drinnen) return false;
         const bis = this._bewohnerWende(b, stunde, stunde + 24);
         b.weichen = { ort: q, plan: soll.ziel, ab: stunde, dauer: bis === null ? 24 : bis - stunde, akt: "hieb" };
-        (this._hiebe || (this._hiebe = new Map())).set(b, { S, K: null, t0: null, i: 0, treffer: [0, 0] });
+        (this._hiebe || (this._hiebe = new Map())).set(b, { S, K: null, t0: null, i: 0, treffer: [0, 0], ruf });
         this._bewohnerUhrNach(S, b);
         this._bewohnerZiel(b, stunde, true);
         this._bewohnerWecken(S, b);
@@ -2850,11 +2908,29 @@ class AnazhRealm_siedlung_bewohner {
         const H = KC.SPIEL_GESETZ.arten.hieb;
         const t = this.state.playerMesh.position;
         const jetzt = this.state.spielZeit;
+        // die Wache geht in ihren Tag zurück (der Kampf ist entschieden, oder der Gerufene fand den Täter nicht am Ort der Tat)
+        const zurueck = (S, b) => {
+            this._hiebe.delete(b);
+            const tg = this.state.timeOfDay;
+            const stunde = ((((Number.isFinite(tg) ? tg : 0.5) % 1) + 1) % 1) * 24;
+            b.weichen = null;
+            this._bewohnerUhrNach(S, b);
+            this._bewohnerZiel(b, stunde, true);
+            this._bewohnerWecken(S, b);
+        };
         for (const [b, F] of this._hiebe) {
             const L = b.leib;
             const d = L ? Math.hypot(L.position.x - t.x, L.position.z - t.z) : Infinity;
             if (!F.K) {
-                if (b.akt !== "hieb" || !(d <= AnazhRealm.BEWOHNER.zeugeM)) this._hiebe.delete(b);
+                // DER GERUFENE (DER RUF DER WACHE, `_bewohnerZeuge`): ihn hält der Kreis der Zeugen nicht — nur sein Akt. Steht er am
+                // Ort der Tat (sein Ziel ist der Punkt dort, er ist da) oder trifft er den Täter unterwegs auf Klingenlänge, schließt
+                // die Ankunft die Akte des Rufs (`S.rufe`); ist der Täter am Ort fort, geht er in seinen Tag zurück
+                if (b.akt !== "hieb" || (!F.ruf && !(d <= AnazhRealm.BEWOHNER.zeugeM))) this._hiebe.delete(b);
+                const amOrt =
+                    F.ruf && F.ruf.an == null && b.akt === "hieb" && b.da && !!b.weichen && b.ziel === b.weichen.ort;
+                if (F.ruf && F.ruf.an == null && (amOrt || (b.akt === "hieb" && d <= H.abstandM + 0.5)))
+                    F.ruf.an = jetzt;
+                if (amOrt && !(d <= H.abstandM + 0.5)) zurueck(F.S, b);
                 if (b.akt !== "hieb" || !(d <= H.abstandM + 0.5)) continue;
                 const tag = Math.floor(this._weltTag());
                 const kP = KC.leibKoennen(Object.assign({}, KC.START_PARAMS, this._koerperStudioDials() || {})).kraft;
@@ -2877,13 +2953,7 @@ class AnazhRealm_siedlung_bewohner {
             const antwort = Z.filter((z, k) => z.treffer && k + 1 < Z.length && Z[k + 1].an !== z.an).length;
             const vorLetztem = Z.filter((z, k) => z.treffer && k + 1 < Z.length).length;
             (F.S.hiebe || (F.S.hiebe = [])).push({ zuege: Z.length, treffer: F.treffer, sieger: F.K.sieger, antwort, vorLetztem, durchDeckung: Z.filter((z) => z.gelesen && z.treffer).length }); // prettier-ignore
-            this._hiebe.delete(b);
-            const tg = this.state.timeOfDay;
-            const stunde = ((((Number.isFinite(tg) ? tg : 0.5) % 1) + 1) % 1) * 24;
-            b.weichen = null;
-            this._bewohnerUhrNach(F.S, b);
-            this._bewohnerZiel(b, stunde, true);
-            this._bewohnerWecken(F.S, b);
+            zurueck(F.S, b);
         }
     }
     // DIE BEUTE DES JÄGERS (rollen-des-tages, Meisterkarte 2 mensch.nahrung.tier#2; koerper `tagesBeute`): verlässt der Jäger die
@@ -5253,6 +5323,7 @@ AnazhRealm.LEBENSLAUF = Object.freeze({
         rollen: Object.freeze(["waechter", "nachtwaechter"]),
         // (wie nah die Wache dem Täter tritt, trägt der Hieb des Kerns: SPIEL_GESETZ.arten.hieb.abstandM, rollen-des-tages)
         torInnenM: 6, // der Posten steht so weit innerhalb des Tors
+        rufeMax: 32, // so viele Akten des Rufs trägt eine Siedlung (`S.rufe`, DER RUF DER WACHE: die letzten)
         // der Ring der Stände um den Posten (`postenStand`; die Kreatur-Linse liest ihn als Schranke, zielplan): je Stufe `jeStufe`
         // Würfe, die erste `r0M` vom Posten, jede weitere `stufeM` weiter; jeder dort, wo der Gang den Boden der Ankunft erreicht,
         // gegangen in Schritten zu `schrittM` (der größte Halt des Grunds, `_bewohnerSchritt`; `postenStand`, rollen-des-tages)
