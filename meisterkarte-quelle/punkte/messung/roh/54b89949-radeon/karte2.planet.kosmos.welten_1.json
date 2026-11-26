@@ -1,0 +1,79 @@
+{
+ "plan": "karte2.planet.kosmos.welten#1",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "schritte": {
+  "fenster": {
+   "exit": 0,
+   "json": {
+    "ms": 6,
+    "fenster": [
+     1920,
+     1080
+    ],
+    "takte": 0
+   },
+   "rest": "{\n \"ms\": 6,\n \"fenster\": [\n  1920,\n  1080\n ],\n \"takte\": 0\n}\n"
+  },
+  "umstellen": {
+   "exit": 0,
+   "json": {
+    "ms": 760,
+    "ort": "wiese",
+    "sicht": "ego",
+    "pose": null,
+    "welt": null,
+    "spieler": [
+     -280.4,
+     -1045.6
+    ],
+    "wiese": {
+     "messung": {
+      "x": -280.4,
+      "z": -1045.6,
+      "y": 27.48,
+      "hang": 1.81,
+      "rauh": 0.14,
+      "nass": 0,
+      "krone": 0.015,
+      "baeume": 1,
+      "kranz": 0.487,
+      "imBlick": 0,
+      "horizont": 2.6,
+      "blick": [
+       -289.6,
+       -1049.5
+      ],
+      "gras": 1
+     },
+     "befunde": []
+    },
+    "takte": 69,
+    "steht": true,
+    "chunks": 81,
+    "gier": -1.9717,
+    "dorfZug": false,
+    "ortTakt": [],
+    "dorfSchwebt": null,
+    "anlauf": null
+   },
+   "rest": "{\n \"ms\": 760,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.015,\n   \"baeume\": 1,\n   \"kranz\": 0.487,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 69,\n \"steht\": true,\n \"chunks\": 81,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null,\n \"anlauf\": null\n}\n"
+  },
+  "kugel-heim": {
+   "exit": 1,
+   "json": {
+    "ms": 2176,
+    "fehler": "Cannot read properties of undefined (reading 'format')",
+    "stapel": [
+     "dC.copyTextureToBuffer (http://localhost:7804/vendor/three.webgpu.min.js:6:541861)",
+     "VC.copyTextureToBuffer (http://localhost:7804/vendor/three.webgpu.min.js:6:615846)",
+     "at zielLesen ( at page.<computed> [as evaluate] (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\lib\\welt-boot.cjs:1532:102), <anonymous>:848:30)",
+     "at  ( at page.<computed> [as evaluate] (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\lib\\welt-boot.cjs:1532:102), <anonymous>:1876:38)"
+    ]
+   },
+   "rest": "{\n \"ms\": 2176,\n \"fehler\": \"Cannot read properties of undefined (reading 'format')\",\n \"stapel\": [\n  \"dC.copyTextureToBuffer (http://localhost:7804/vendor/three.webgpu.min.js:6:541861)\",\n  \"VC.copyTextureToBuffer (http://localhost:7804/vendor/three.webgpu.min.js:6:615846)\",\n  \"at zielLesen ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\lib\\\\welt-boot.cjs:1532:102), <anonymous>:848:30)\",\n  \"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\lib\\\\welt-boot.cjs:1532:102), <anonymous>:1876:38)\"\n ]\n}\n"
+  }
+ },
+ "dateien": {},
+ "fehler": "kugel-heim: Exit 1 azhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\lib\\\\welt-boot.cjs:1532:102), <anonymous>:848:30)\",\n  \"at  ( at page.<computed> [as evaluate] (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\lib\\\\welt-boot.cjs:1532:102), <anonymous>:1876:38)\"\n ]\n}\n",
+ "messort": "kugel-heim: Cannot read properties of undefined (reading 'format')"
+}
