@@ -8791,7 +8791,21 @@
     // (`leibStandZeile`, wie die Phase des Gangs k0 und k1 wählt); der nahe Leib (`leibRigPose`) geht dieselben Wellen derselben Uhr —
     // EIN Weg. Der Atem in ganzen Zügen je Zyklus (`leibStandAtem`: `atem` × das Tempo des Profils gegen das Labor-idle, gerundet,
     // mindestens einer — idle 2 Züge: 3,6 s, 16,7 je Minute), das Becken schwankt seitlich `schwanken[0]`-mal und vor und zurück
-    // `schwanken[1]`-mal je Zyklus (0,14 und 0,28 Hz), die Geste geht 3 Takte je Zyklus. STAND_BAND
+    // `schwanken[1]`-mal je Zyklus (0,14 und 0,28 Hz), die Geste geht 3 Takte je Zyklus.
+    // DIE HALTUNG DES STANDS (stand-lebt 2, Koordinator 26.11. 04:56: „die Regung kommt aus dem Gesetz der Haltung, nicht aus einem
+    // Wackel-Faktor“): (1) DER GEWICHTSWECHSEL — das Gewicht wandert vom Standbein aufs andere (`leibStandBein`): im freien Stand
+    // wechselt der Mensch die Haltung 2,2-mal je Minute (Freitas et al. 2005, Gait Posture 22:322 — `wechselS` 27,3 s), die Intervalle
+    // streuen um ein Drittel (Duarte & Zatsiorsky 1999, Motor Control 3:12: 49 ± 16 s seitlich — `wechselStreu`), das Becken
+    // verlagert sich seitlich um 22 mm (dieselben: 22 ± 38 mm medio-lateral — `verlagerungRad` auf 0,92 m Hüfthöhe); Phase UND
+    // Periode trägt die Person (`r.standPerson`, aus ihrem Samen — zwei Stehende wechseln nie im selben Takt), die Verlagerung
+    // selbst geht in `wechselDauerS` (ANGENOMMEN: „schnell“ nach Duarte 1999, ohne Zahl). (2) DIE ARME DES TUNS — was die Person
+    // tut, nennt das Profil ihres Stands (der Wirt: `_koerperMotionName` über `tagesHaltung` des Akts); `tun` legt je Profil die
+    // Arbeit der Hände fest, `arme` ihre Takte je Zyklus (ganz: der Satz backt sie mit), ihren Hub und ihre Gelenke: wer redet,
+    // gestikuliert 8–22-mal je Minute (Alibali et al. 2001, J Mem Lang 44:169 — 2 je Zyklus, 16,7/min) vor der Brust (McNeill 1992,
+    // „Hand and Mind“: der Gestenraum Mitte-Mitte — der Unterarm hebt sich um 70°); wer mit den Händen arbeitet, greift 4-mal je
+    // Zyklus (1,8 s = 50 TMU je Griff; MTM-1: 1 TMU = 0,036 s, Greifen G1A und Loslassen RL1 je 2 TMU — die Summe mit Hinlangen und
+    // Bringen über 30–40 cm ANGENOMMEN). Wer wartet oder schaut, rührt die Hände nicht: ihn tragen Gewicht, Atem und Blick (der
+    // Blick folgt dem Reiz im Wirt, `_bewohnerKopf`).
     // Bis hier atmete der nahe Leib mit 1,6 rad/s × Tempo und schwankte mit 1,1 und 0,7 rad/s, und Satz und Feld buken je Stand EINE
     // Zeile zur Uhr 0 (joy vier Phasen, je Leib fest aus seinem Samen): am Dorfplatz um 10 Uhr standen 39 von 40, und kein Glied
     // eines Stehenden im Feld rührte sich über 5 s (0,000 m; die vier nahen Leiber 0,05–0,17 m — Täter-Messung 26.11., GTX).
@@ -8800,7 +8814,36 @@
         zeilen: 12, // die Zeilen je Stand im Satz und im Feld (0,6 s, je um eine halbe versetzt: jede Geste trifft eine nahe ihrer Spitze)
         atem: 2, // Züge je Zyklus am Labor-idle
         schwanken: Object.freeze([1, 2]), // Wellen des Beckens je Zyklus: seitlich, vor und zurück
+        wechselS: 27.3, // s zwischen zwei Gewichtswechseln im Mittel (60 / 2,2; die Welle hin und zurück trägt zwei)
+        wechselStreu: 0.33, // ± Anteil der Periode je Person
+        wechselDauerS: 1, // s, in denen das Gewicht hinüber wandert
+        verlagerungRad: 0.024, // das Becken seitlich (22 mm auf 0,92 m)
+        tun: Object.freeze({ showcase: "reden", pwalk: "hand" }), // je Profil des Stands die Arbeit der Hände
+        arme: Object.freeze({
+            reden: Object.freeze({ je: 2, hub: 0.5, schulter: 0.35, ellbogen: 1.2 }), // rad: Beugung vor, Ellbogen
+            hand: Object.freeze({ je: 4, hub: 0.6, schulter: 0.5, ellbogen: 0.9 }),
+        }),
     });
+    // das Bein, das trägt (+1: das rechte trägt, das linke ist das Spielbein — die Pose des Labors; −1 gespiegelt), zur Uhr t der
+    // Person p (0 … 1: Phase und Periode aus ihrem Samen); ohne Person (der Satz backt den Stand, `_bewohnerGangPose`) trägt das rechte
+    function leibStandBein(t, p) {
+        if (!Number.isFinite(p)) return 1;
+        var P = 2 * STAND.wechselS * (1 + STAND.wechselStreu * (2 * ((p * 7.31) % 1) - 1)), // zwei Wechsel je Welle
+            w = Math.sin(2 * Math.PI * ((Number.isFinite(t) ? t : 0) / P + p)),
+            d = Math.sin((Math.PI * STAND.wechselDauerS) / P);
+        return Math.max(-1, Math.min(1, w / d));
+    }
+    // der Anteil, den die Arme des Tuns A zur Uhr t an der Seite s heben (0 … 1): ganze Takte je Zyklus wie die Geste
+    // (`leibGesteWert`), die rechte Seite um `GESTE.versatz` versetzt, der Ausschlag je Takt aus seiner Zahl im Zyklus
+    function leibTunWert(t, s, A) {
+        var x = leibStandPhase(t) * A.je + (s ? GESTE.versatz : 0),
+            n = Math.floor(x),
+            u = x - n;
+        if (!(u < A.hub)) return 0;
+        var h = Math.sin(((n % A.je) + 1) * 12.9898 + (s ? 78.233 : 0)) * 43758.5453,
+            b = Math.sin((Math.PI * u) / A.hub);
+        return (GESTE.ausschlag[0] + (GESTE.ausschlag[1] - GESTE.ausschlag[0]) * (h - Math.floor(h))) * b * b;
+    }
     function leibStandAtem(mp, mref) {
         var f = mp && mref && Number.isFinite(mp.freq) && mref.freq > 0 ? mp.freq / mref.freq : 1;
         return Math.max(1, Math.round(STAND.atem * f));
@@ -8867,13 +8910,21 @@
             var bAmp = mp && mref && Number.isFinite(mp.breath) && mref.breath > 0 ? 0.02 * (mp.breath / mref.breath) : 0.02;
             // (der Atem und das Schwanken in ganzen Wellen des Zyklus, `STAND` — der ferne Leib backt dieselben Wellen)
             var breath = leibStandWelle(t, leibStandAtem(mp, mref)) * bAmp;
-            add(r.spine, "z", 0.1 * wi);
-            add(r.chest, "z", -0.06 * wi);
-            add(r.neck, "z", 0.05 * wi);
+            // DAS KONTRAPOST AUF DEM TRAGENDEN BEIN (stand-lebt 2, `leibStandBein`): die Pose des Labors (das rechte trägt) gespiegelt,
+            // sobald das Gewicht der Person hinüber wandert — das Spielbein beugt Hüfte und Knie, Rumpf, Brust und Hals neigen sich
+            // gegen das Becken, das Becken verlagert sich über das Standbein. Bis hier stand jeder Mensch zu jeder Zeit auf dem rechten.
+            var sb = leibStandBein(t, r.standPerson),
+                fL = (1 + sb) / 2,
+                fR = (1 - sb) / 2;
+            add(r.spine, "z", 0.1 * sb * wi);
+            add(r.chest, "z", -0.06 * sb * wi);
+            add(r.neck, "z", 0.05 * sb * wi);
+            add(r.hips, "z", -STAND.verlagerungRad * sb * wi);
             add(r.spine, "x", (-0.02 + breath) * wi);
-            add(r.legL.hip, "x", 0.08 * wi);
-            add(r.legL.knee, "x", 0.16 * wi);
-            add(r.legR.knee, "x", 0.04 * wi);
+            add(r.legL.hip, "x", 0.08 * fL * wi);
+            add(r.legR.hip, "x", 0.08 * fR * wi);
+            add(r.legL.knee, "x", (0.16 * fL + 0.04 * fR) * wi);
+            add(r.legR.knee, "x", (0.16 * fR + 0.04 * fL) * wi);
             add(r.armL.elbow, "x", -0.18 * wi);
             add(r.armR.elbow, "x", -0.1 * wi);
             var kpMul = mp && Number.isFinite(Number(mp.kpMul)) ? Number(mp.kpMul) : 1;
@@ -9016,6 +9067,18 @@
         lot[1] = sR && uR ? (sR.rotation.z - uR[2]) * (leibGeste(mp, mref, 1) ? leibGesteWert(t, 1) : 1) : 0;
         if (sL && uL) sL.rotation.z = Math.max(uL[2], lot[0]);
         if (sR && uR) sR.rotation.z = Math.min(uR[2], lot[1]);
+        // DIE ARME DES TUNS (stand-lebt 2, `STAND.tun`/`arme`): wer steht, rührt die Hände nach dem, was er tut (`r.standTun`, der
+        // Wirt setzt es aus dem Profil seines Stands, `_animateHumanoidRig`) — die Schulter beugt sich vor, der Ellbogen hebt den
+        // Unterarm, je Seite im eigenen Takt; im Gehen tragen die Arme den Gang
+        var AT = w < 0.999 && r.standTun ? STAND.arme[r.standTun] : null;
+        if (AT)
+            for (var si = 0; si < 2; si++) {
+                var arm = si ? r.armR : r.armL,
+                    hb = leibTunWert(t, si, AT) * (1 - w);
+                if (!hb || !arm) continue;
+                add(arm.shoulder, "x", -AT.schulter * hb);
+                add(arm.elbow, "x", -AT.ellbogen * hb);
+            }
         if (r.hips) {
             if (r._baseHipY == null) r._baseHipY = r.hips.position.y;
             r.hips.position.y = r._baseHipY - r._gangSenke * w;
@@ -11624,6 +11687,8 @@
         leibRigEingeschwungen: leibRigEingeschwungen,
         GESTE: GESTE,
         STAND: STAND,
+        leibStandBein: leibStandBein,
+        leibTunWert: leibTunWert,
         leibGeste: leibGeste,
         leibStandAtem: leibStandAtem,
         leibStandZeile: leibStandZeile,

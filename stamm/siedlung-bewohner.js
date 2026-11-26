@@ -2194,6 +2194,7 @@ class AnazhRealm_siedlung_bewohner {
                     // wer aus dem Feld in den Nah-Kreis tritt, nimmt seine Pose mit: im Feld ging sein Rig nicht
                     // (`_bewohnerFeldLage`), die schwindenden Glieder folgen ab hier seinen Knochen
                     if (u._kzGlieder && this._kzBesitztFeld(g)) {
+                        if (g.userData.rig) g.userData.rig.standPerson = b.atem / 10;
                         this._animateHuman(
                             g,
                             b.uhr + b.atem,
@@ -2336,6 +2337,8 @@ class AnazhRealm_siedlung_bewohner {
                         const dtA = Math.min(0.25, b.animDt);
                         b.animDt = 0;
                         const gang = this._gaitTick(g, b, geht ? (b.tempoJetzt ?? b.tempo) : 0, dtA, null);
+                        // die Person trägt ihren Gewichtswechsel (koerper `leibStandBein`: Phase und Periode aus ihrem Samen, `atem`)
+                        if (g.userData.rig) g.userData.rig.standPerson = b.atem / 10;
                         this._animateHuman(
                             g,
                             b.uhr + b.atem,
@@ -2557,7 +2560,19 @@ class AnazhRealm_siedlung_bewohner {
             const voll = BW.kopfMaxRad + BW.rumpfMaxRad;
             soll = Math.max(-voll, Math.min(voll, da));
             if (!b.weg && Math.abs(da) > voll) b.drehen = a;
-        } else if (war && b.da && !b.weg && !b.platz && Number.isFinite(b.ziel.blick)) b.drehen = b.ziel.blick;
+        } else {
+            if (war && b.da && !b.weg && !b.platz && Number.isFinite(b.ziel.blick)) b.drehen = b.ziel.blick;
+            // DER BLICK FOLGT DEM REIZ (stand-lebt 2, `_bewohnerReiz`): wer steht, schaut dem nächsten Bewegten nach — die ersten
+            // `augeNurRad` tragen die Augen, den Rest Kopf und Rumpf; der Leib wendet sich ihm nicht zu (er bleibt bei seinem Ziel)
+            const rz = b.weg ? null : this._bewohnerReiz(b, dt);
+            if (rz) {
+                const q = rz.leib.position;
+                let da = Math.atan2(q.x - g.position.x, q.z - g.position.z) - g.rotation.y;
+                da -= Math.PI * 2 * Math.round(da / (Math.PI * 2));
+                const voll = BW.kopfMaxRad + BW.rumpfMaxRad;
+                soll = Math.max(-voll, Math.min(voll, Math.sign(da) * Math.max(0, Math.abs(da) - BW.augeNurRad)));
+            }
+        }
         const om = BW.kopfRadS * dt;
         b.kopfY = (b.kopfY || 0) + Math.max(-om, Math.min(om, soll - (b.kopfY || 0)));
         const kopf = Math.max(-BW.kopfMaxRad, Math.min(BW.kopfMaxRad, b.kopfY));
@@ -2566,6 +2581,30 @@ class AnazhRealm_siedlung_bewohner {
             [r.spine.rotation.y, neu] = [r.spine.rotation.y + b.kopfY - kopf, true];
         if (k.rotation.y !== kopf) [k.rotation.y, neu] = [kopf, true];
         return neu;
+    }
+
+    // DER REIZ (stand-lebt 2): der nächste bewegte Mensch bis `reizM` um b — Passant, Fahrer, der Spieler —, gehalten `reizS` (die
+    // Fixation), solange er sich regt und im Kreis bleibt; dann wählt der Blick neu. Liefert ihn (mit `leib.position`) oder null.
+    _bewohnerReiz(b, dt) {
+        const BW = AnazhRealm.BEWOHNER;
+        const g = b.leib;
+        const R2 = BW.reizM * BW.reizM;
+        const regt = (o) =>
+            !!(o && o.leib && (o.spieler ? Math.abs(o.vx) + Math.abs(o.vz) > 0.1 : o.weg && !o.drinnen));
+        const d2 = (o) => (o.leib.position.x - g.position.x) ** 2 + (o.leib.position.z - g.position.z) ** 2;
+        b.reizUhr = (b.reizUhr || 0) + dt;
+        if (b.reiz && b.reizUhr < BW.reizS && regt(b.reiz) && d2(b.reiz) < R2) return b.reiz;
+        b.reizUhr = 0;
+        let best = null;
+        let bd = R2;
+        const sp = this._bewohnerSpieler;
+        if (regt(sp) && d2(sp) < bd) [best, bd] = [sp, d2(sp)];
+        for (const o of (b.sied && b.sied.liste) || [])
+            if (o !== b && regt(o)) {
+                const e = d2(o);
+                if (e < bd) [best, bd] = [o, e];
+            }
+        return (b.reiz = best);
     }
 
     // DER ABSTAND ZUM SPIELER (mensch.K5, „die Erinnerung lenkt den Abstand"): dem Gehenden zwei Kapseln und der persönliche
@@ -5041,6 +5080,14 @@ AnazhRealm.BEWOHNER = Object.freeze({
     kopfMaxRad: 1.2,
     rumpfMaxRad: 0.45,
     kopfRadS: 4.5,
+    // DER BLICK FOLGT DEM REIZ (stand-lebt 2, `_bewohnerReiz`): wer steht und keinem begegnet, wendet Kopf und Rumpf dem nächsten
+    // bewegten Menschen zu — Passant, Fahrer, der Spieler; der Beginn einer Bewegung fängt die Aufmerksamkeit (Abrams & Christ 2003,
+    // Psychol Sci 14:427) —, der Fußgänger fixiert andere in 15 m für 500 ms (Fotios, Uttley & Fox 2018, Light Res Technol 50:511:
+    // `reizM`, `reizS` — so lange hält der Blick, ehe er neu wählt); bis `augeNurRad` folgen ihm die Augen allein (Stahl 1999, Exp
+    // Brain Res 126:41: die Spanne ohne Kopf 35,8°, je Seite 17,9°), darüber der Kopf bis `kopfMaxRad`, darüber der Rumpf
+    reizM: 15,
+    reizS: 0.5,
+    augeNurRad: 0.312,
     // der Zuschauer jenseits der Nah-Wahl wendet den Leib, liegt das Geschehen mehr als 15° neben seinem Blick (ANGENOMMEN: die Hälfte
     // der ± 30°, in denen ein Blick dem Geschehen folgt — keine Quelle; `_tickBewohner`)
     fernBlickRad: Math.PI / 12,
