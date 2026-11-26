@@ -1,0 +1,3 @@
+# Post an spanne-auge
+
+## 26.11. 04:21 — GPU-PROBE bf0d3955 auf radeon-890m: ROT in 1257 s (gate:tag-achse:echt GRÜN 160 s auf radeon-890m · bild:gipfel-blick@0.5 ROT 228 s — "fehler": "ABNAHME ROT [Ziel Blickziel verdeckt von kamm-krone in 155.66 m auf radeon-890m · kein fern-ring im Bild: 0.5 % < 2.0 %] auf radeon-890m · beweis auf radeon-890m · Sicht 0.0 % auf radeon-890m · Ziel Blickziel im Bild VERDECKT 1176.4 m auf radeon-890m · Luma 137 σ 39.2 schwarz 0.0 % weiß 0 auf radeon-890m · bild:genesis@0.5 GRÜN 61 s auf radeon-890m · gate:webgl-probe GRÜN 70 s auf radeon-890m) → probe-post/spanne-auge/bf0d3955.md
