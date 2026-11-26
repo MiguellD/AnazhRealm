@@ -1,7 +1,0 @@
-{
- "device": [],
- "draws": [],
- "pass": "?",
- "objekt": "atmo-himmel",
- "ms": 2
-}
