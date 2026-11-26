@@ -268,6 +268,9 @@ class AnazhRealm_siedlung_ort {
         const d = Object.assign({}, dp || {});
         const ort = d.ort;
         delete d.ort;
+        // DER HIMMEL IST EIN EINGANG JEDES PLANS (`_himmelDesPlans`): das gehaltene Wort regnet in jeden Auftrag, auch in den des Worts
+        const himmel = this._himmelDesPlans();
+        if (himmel !== undefined) d.himmel = himmel;
         // DAS KLIMA IST EIN EINGANG DES PLANS (haus-gestalt, fachwerk `REGION_KLIMA`): der Kanal liest kein Klima selbst — wer ein Dorf
         // OHNE WORT bestellt, legt das Klima seines Orts in den Auftrag (`_zellEingang`: die Zelle des Dorf-Zugs, ihr Gedächtnis), und
         // wer den Plan nachrechnet, rechnet mit demselben Eingang denselben Plan (gate:settlement Teil O: der Plan-Hash Studio = Welt).
@@ -1553,6 +1556,14 @@ class AnazhRealm_siedlung_ort {
     // Dazu die Wasser-Spende relativ zur Heimat (haus-stoff, fachwerk `sockelImWasser`: `ortGesetz(teil).spendeVerh`, die Heimat 1):
     // der Sockel jedes Baus steht über dem Spritzwasser des Orts. Dazu der Niederschlag und der Schneefall am Meer (kultur-aus-klima,
     // fachwerk `ortNeigung`: das Dach folgt dem Himmel des Orts) — die EINE Tafel ist gelaende-core `ortKlima`, der Wirt reicht sie.
+    // DER GEHALTENE HIMMEL DES PLANS (fachwerk `himmelNeigung`, Karte 2 mensch.kopplung.kultur#2): hält der Spieler oder das Gesetz ein Wort
+    // des Himmels (`state.wetterWort`, der EINE Schreiber `_setWeather`), ist sein Regen — gelesen durch den EINEN Wetter-Leser
+    // `_weatherFieldFor(wort, rein)` — ein Eingang jedes Plans; ohne Wort (die Front zieht) keiner: der Plan bleibt eine Funktion von Wort
+    // und Ort, die ziehende Front würfelt ihn nie. Leser: der Export (`_foundryRequestSettlement`) und die Massen der fernen Stadt (`kachelMassen`).
+    _himmelDesPlans() {
+        const w = this.state.wetterWort;
+        return w ? this._weatherFieldFor(w, true).rain : undefined;
+    }
     _siedlungKlima() {
         return globalThis.__gelaendeCore.ortKlima(this._gelaende().ort);
     }

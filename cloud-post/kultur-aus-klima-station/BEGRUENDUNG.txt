@@ -1,7 +1,8 @@
-kultur-aus-klima — Kandidat der Stationen (gegen origin/punkte-maschine 55313a8b)
+kultur-aus-klima — Kandidat der Stationen (gegen origin/punkte-maschine 0e4cf4ac; Kopf 5)
 
 Datei: stationen.diff (meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js, k2-mensch-kultur.js). Der Zweig des Spiels
-trägt keine Stations-Änderung; dieser Kandidat gehört in punkte-maschine, wenn der Kopf des Spiels landet.
+trägt keine Stations-Änderung; dieser Kandidat gehört in punkte-maschine, wenn der Kopf des Spiels landet. Die Punkte 1 und 2
+tragen das gelandete Gesetz von Kopf 4 (main 54b8994); Punkt 3 kommt mit Kopf 5.
 
 1. karte2.mensch.kopplung.kultur#2 (KULTUR, S2) — die Mutation ist das KLIMA des Orts, nicht das Wetter der Stunde
    - Vorher: der Fächer setzte das Wetter (`__wetterSetzen("rainy")`), las `_weatherFieldFor().rain` und bestellte den Plan als
@@ -28,12 +29,30 @@ trägt keine Stations-Änderung; dieser Kandidat gehört in punkte-maschine, wen
    - Der Zeuge (Wand 3): die ersten 50 Bewohner der geladenen Siedlung, durch denselben Ruf mit nichts als ihrem Plan
      (`{ plan }`), tragen Name für Name den Namen, den die Welt ihnen gibt (`b.name`); sonst wirft die Leiter beim Namen.
    - Erwartung (node, dasselbe Gesetz, 32 Zellen der Heimat): Saaten 3 (mitteleuropa · alpin · nordisch), 672 Namen,
-     zugeordnet 0,993. Mit stadt-voll (mediterran) dazu: 4 Saaten.
+     zugeordnet 0,993 (Gesetz von Kopf 4), 0,996 (Kopf 5). Mit stadt-voll (mediterran) dazu: 4 Saaten.
 
-Die drei Wände (gemessen in der Wolke, 26.11.):
+3. karte2.mensch.kultur.sprache#3 (SPRACHE, S3) — der Stammbaum aus den Wortlisten (nur mit dem Gesetz des Spiels, das die Liste trägt)
+   - Vorher: `{ n: 3, art: "nicht" }` — „je Region EINE Silben-Tafel der Ortsnamen, keine Wortliste, keine Familie“.
+   - Nachher: die Seiten-Funktion `sprachBaum` liest in der Welt `__fachwerkCore` (SPRACHE_GESETZ, SPRACH_BAUM, spracheVon,
+     sprachWort): je Familie die 32 Blätter (der Same wählt das Blatt), je Blatt die Liste der Bedeutungen, den Baum GELESEN mit der
+     Kompatibilitäts-Methode (Buneman 1971; Ringe, Warnow & Taylor 2002), RF gegen den Baum des Gesetzes, normiert auf 2(n − 3)
+     (Robinson & Foulds 1981). Werte: rf (Median der Familien), anteil (RF ≤ 0,3), familien; Umfang U_eff = verschiedene Listen.
+   - Der Zeuge (Wand 3): die Orte des Fächers (Namen der Gießerei, sprache#1) — ihr Bestimmungswort ist ein Wort der Liste ihrer
+     Sprache (`SPRACH_BAUM.bestimmung`), Soll alle (≥ 20), sonst wirft die Leiter beim Namen.
+   - Am alten Gesetz (ohne `sprachWort`) misst die Sprosse ehrlich „nicht“ mit dem alten Fehlt-Satz.
+   - Zwei Proben: „die Attrappe: Wortlisten nur aus Lautgesetzen, kein Ersatz“ (rf 0,6, anteil 0) → ROT an Robinson-Foulds; „der
+     Stammbaum aus den Wortlisten“ (rf 0,12, anteil 1, 6 Familien) GRÜN.
+   - Erwartung (node, dasselbe Gesetz): 6 Familien, U_eff 192, RF 0,017–0,19 (Median 0,155), anteil 1,0, Zeuge 32 von 32, 93 ms.
+   - Wände: `node punkte.cjs liste` wie die Basis (genau zwei ROT HAKEN); `node punkte.cjs selbsttest` dieselben fünf ROT wie die
+     Basis 55313a8b (BEFEHL TRÄGT, WACHE ×2, LEBENSZEICHEN, RICHTER-AKTE — Umgebung der Wolke), PROBEN 16 624 GRÜN.
+
+Die drei Wände (gemessen in der Wolke, 26.11., Kopf 5 gegen origin/punkte-maschine 0e4cf4ac):
    - Wand 1 `node punkte.cjs liste`: die Basis trägt genau zwei ROT (gelaende.K2#1/#2 „ruft window.__zielen … (Wand HAKEN)“),
-     der Kandidat dieselben zwei, sonst nichts — am Kopf origin/main 4c9e6aab und am Kopf des Zweigs (1976 Stationen, Fehler 2).
+     der Kandidat dieselben zwei, sonst nichts — am Kopf origin/main 54b89949 (1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 2).
    - Wand 2 (die Leiter misst ≤ 60 s): der Deckel steht (KULTUR sek 60 wie zuvor, SPRACHE sek 30 → 45). Die Zeit misst nur das
      Gerät; in der Wolke steht keine GPU-Werkbank. KULTUR rechnet 182 statt 116 Pläne der Gießerei (S2: 4 × 32 + 2 volle
-     Aufträge), SPRACHE 32 Pläne dazu. Offen bis zum ersten Lauf am Gerät.
+     Aufträge), SPRACHE 32 Pläne dazu, S3 liest 192 Blätter (node 93 ms). Offen bis zum ersten Lauf am Gerät.
    - Wand 3: die Zeugen oben.
+   - Der Selbsttest `node punkte.cjs selbsttest`: Basis 289 GRÜN · 5 ROT, Kandidat 290 GRÜN · 4 ROT; die ROT des Kandidaten sind eine
+     Teilmenge der Basis (BEFEHL TRÄGT · WACHE ×2 · RICHTER-AKTE — die Umgebung der Wolke; LEBENSZEICHEN DES ZEUGEN, zwei
+     node-Prozesse auf Zeit, war an der Basis ROT, am Kandidaten GRÜN). PROBEN 16 630 → 16 634 GRÜN. Der Kandidat fügt kein ROT hinzu.

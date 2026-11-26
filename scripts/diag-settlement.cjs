@@ -365,7 +365,7 @@ function klimaGang(FC) {
             d = FC.deckungVon({ stil: st });
         if (g < FC.DECKUNG_GESETZ[d].grad) unter.push(`stil ${st}: Grenze ${g}° unter ${d} ${FC.DECKUNG_GESETZ[d].grad}°`);
     }
-    return { je, aus, r4, unter, sockel: sockelGang(FC), dach: dachGang(FC), regen: regenGang(FC), planet: planetGang(FC), sprache: spracheGang(FC) };
+    return { je, aus, r4, unter, sockel: sockelGang(FC), dach: dachGang(FC), regen: regenGang(FC), planet: planetGang(FC), sprache: spracheGang(FC), baum: baumGang(FC), himmel: himmelGang(FC) };
 }
 function klimaUrteil(K, check) {
     const fremd = Object.entries(K.aus)
@@ -396,6 +396,8 @@ function klimaUrteil(K, check) {
     if (K.regen) regenUrteil(K.regen, check);
     if (K.planet) planetUrteil(K.planet, check);
     if (K.sprache) spracheUrteil(K.sprache, check);
+    if (K.baum) baumUrteil(K.baum, check);
+    if (K.himmel) himmelUrteil(K.himmel, check);
 }
 // R6/R7 (haus-dach): DIE DECKUNG FOLGT DEM ORT, DIE NEIGUNG DER DECKUNG — R6 die Wand: kein Bau trägt eine Deckung unter ihrer
 // Regeldachneigung (Reet 45°, Mönch-Nonne 40°, Biber 30°, Schiefer 26,5°, Schindel 22°, Hohlziegel 16,7°; fachwerk DECKUNG_GESETZ);
@@ -669,6 +671,128 @@ function spracheUrteil(G, check) {
         G.saaten >= 2 && G.zugeordnet >= 0.9 && G.fuge === 0
     );
 }
+// R11 (Karte 2 mensch.kultur.sprache#3): DER STAMMBAUM IST AUS DEN WORTLISTEN LESBAR — je Familie (fachwerk `SPRACHE_GESETZ`) die
+// 2^tiefe Blätter ihres Baums (die Saaten 1, 2, … bis jedes Blatt eine Sprache trägt), je Blatt die Wortliste der Grundliste
+// (fachwerk `sprachWort`, `SPRACH_BAUM.bedeutungen`). Der Leser kennt nur die Formen: je Bedeutung ist jede Form eine Klasse, die
+// Splits nach der Zahl der Bedeutungen, die sie tragen, gierig, solange verträglich (die Kompatibilität der Kognaten-Bäume:
+// Buneman 1971; Ringe, Warnow & Taylor 2002). Gegen den wahren Baum (der Weg des Blatts, `zweig`) misst Robinson-Foulds (Robinson &
+// Foulds 1981, normiert auf 2(n − 3)). Soll (Karte 2): U_eff ≥ 100 unterscheidbare Sprachen, ≥ 5 Familien, RF ≤ 0,3 in ≥ 70 % der
+// Familien. Dazu der Leser in der Welt: jeder Ortsname (`ORTSNAME`, der Name auf der Karte und am Ort) beginnt mit einem Wort seiner
+// Sprache (`SPRACH_BAUM.bestimmung`). Die Mutanten „die Wortliste kennt keinen Ersatz“ (nur die Lautgesetze: RF 0,36–0,62) und
+// „der Ort liest die Wortliste nicht“ fallen in R11 beim Namen; der Kern ohne Wortliste (main bis kultur-aus-klima 3) auch.
+function baumGang(FC) {
+    const SB = FC.SPRACH_BAUM;
+    if (typeof FC.sprachWort !== "function" || !SB || !Array.isArray(SB.bestimmung))
+        return { familien: 0, ueff: 0, gut: 0, rf: [], leser: 0, namen: 0, beispiel: ["der Kern trägt keine Wortliste (fachwerk sprachWort fehlt)"] };
+    const T = SB.tiefe,
+        N = 1 << T,
+        NB = SB.bedeutungen.length;
+    const kanon = (S) => {
+        const M = new Set(S),
+            seite = M.has(0) ? [...Array(N).keys()].filter((k) => !M.has(k)) : [...M];
+        return seite.sort((a, b) => a - b).join(",");
+    };
+    // der wahre Baum: je Knoten der Tiefe 1 … tiefe − 1 die Blätter unter ihm
+    const wahr = new Set();
+    for (let t = 1; t < T; t++)
+        for (let q = 0; q < 1 << t; q++) {
+            const S = [...Array(N).keys()].filter((x) => x >> (T - t) === q);
+            if (S.length > 1 && S.length < N - 1) wahr.add(kanon(S));
+        }
+    const vertraeglich = (a, b) => {
+        const A = new Set(a),
+            B = new Set(b);
+        let ab = 0,
+            an = 0,
+            nb = 0;
+        for (const x of A) B.has(x) ? ab++ : an++;
+        for (const x of B) if (!A.has(x)) nb++;
+        return !ab || !an || !nb || N - ab - an - nb === 0;
+    };
+    const rf = [],
+        listen = new Set(),
+        beispiel = [];
+    let leser = 0,
+        namen = 0;
+    for (const R of Object.keys(FC.SPRACHE_GESETZ)) {
+        const blatt = new Array(N).fill(null);
+        for (let s = 1; blatt.some((b) => !b) && s < 100000; s++) {
+            const L = FC.spracheVon(R, s);
+            if (blatt[L.blatt]) continue;
+            blatt[L.blatt] = L;
+            const name = String(FC.ORTSNAME(R, s)).toLowerCase();
+            namen++;
+            if (SB.bestimmung.some((b) => name.startsWith(FC.sprachWort(L, b)))) leser++;
+            else if (beispiel.length < 3) beispiel.push(`${R} ${name}`);
+        }
+        const lex = blatt.map((L) => SB.bedeutungen.map((b) => FC.sprachWort(L, b)));
+        lex.forEach((l) => listen.add(R + "|" + l.join(" ")));
+        const zahl = new Map();
+        for (let i = 0; i < NB; i++) {
+            const kl = new Map();
+            lex.forEach((l, k) => (kl.has(l[i]) ? kl.get(l[i]).push(k) : kl.set(l[i], [k])));
+            for (const S of kl.values()) if (S.length > 1 && S.length < N - 1) zahl.set(kanon(S), (zahl.get(kanon(S)) || 0) + 1);
+        }
+        const an = [];
+        for (const [k] of [...zahl.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))) {
+            const S = k.split(",").map(Number);
+            if (an.every((a) => vertraeglich(a, S))) an.push(S);
+            if (an.length >= N - 3) break;
+        }
+        const gelesen = new Set(an.map(kanon)),
+            gemein = [...wahr].filter((w) => gelesen.has(w)).length;
+        rf.push({ R, rf: +((wahr.size - gemein + gelesen.size - gemein) / (2 * (N - 3))).toFixed(3) });
+    }
+    return {
+        familien: rf.length,
+        ueff: listen.size,
+        gut: rf.filter((x) => x.rf <= 0.3).length,
+        rf,
+        leser,
+        namen,
+        beispiel,
+    };
+}
+function baumUrteil(G, check) {
+    const anteil = G.familien ? Math.round((100 * G.gut) / G.familien) : 0;
+    check(
+        `R11 der Stammbaum ist aus den Wortlisten lesbar — ${G.ueff} Sprachen (Soll ≥ 100) in ${G.familien} Familien (Soll ≥ 5), RF ≤ 0,3 in ${G.gut} von ${G.familien} (${anteil} %, Soll ≥ 70 %: ${G.rf.map((x) => x.R + " " + x.rf).join(" · ")}) · der Ortsname liest die Wortliste ${G.leser} von ${G.namen}${G.beispiel.length ? " (" + G.beispiel.join(", ") + ")" : ""}`,
+        G.ueff >= 100 && G.familien >= 5 && anteil >= 70 && G.namen > 0 && G.leser === G.namen
+    );
+}
+// R12 (sprache-familie, Karte 2 mensch.kopplung.kultur#2, die Station S2 am Fächer wörtlich): DER GEHALTENE HIMMEL HEBT DAS DACH —
+// die 32 Saaten von R8 als Plan des Worts (14 Häuser, OHNE Klima: die Station bestellt `_foundryRequestSettlement({seed, nH})`) unter
+// dem Himmel klar (kein Eingang, der Wirt `_himmelDesPlans` ohne Wort), Regen (`himmel` 0,6: die Zeile `regen` von WX_GESETZ, der EINE
+// Wetter-Leser) und klar als Gegenlauf; dazu klar als Wort (`himmel` 0: derselbe Plan wie ohne Wort). Das Soll der Station: r über
+// (Regen, mittlere Neigung) ≥ 0,5, Mutation ≥ 90 %, der Gegenlauf gleich. Die Mutante „das Dach liest den Himmel nicht“ (der Deck-Schritt
+// ohne `himmelNeigung`; main bis sprache-familie: der Export kennt keinen Himmel) fällt in R12 beim Namen.
+const HIMMEL_REGEN = 0.6;
+function himmelGang(FC) {
+    const hash = (P) => JSON.stringify(P.slots.map((x) => [x.kultur, x.x, x.z, x.ov && x.ov.W, x.ov && x.ov.D, x.ov && x.ov.storeys, x.ov && x.ov.pitchDeg, x.ov && x.ov.stil]));
+    const dach = (P) => P.slots.reduce((q, x) => q + ((x.ov && x.ov.pitchDeg) || 0), 0) / P.slots.length;
+    const paare = [];
+    let mutation = 0, gegen = 0, wort0 = 0, sonne = 0, regen = 0;
+    for (const seed of REGEN_SAATEN) {
+        const a = FC.exportSettlement({ seed, nH: 14 }), b = FC.exportSettlement({ seed, nH: 14, himmel: HIMMEL_REGEN });
+        const c = FC.exportSettlement({ seed, nH: 14 }), d = FC.exportSettlement({ seed, nH: 14, himmel: 0 });
+        paare.push([0, dach(a)], [HIMMEL_REGEN, dach(b)]);
+        (sonne += dach(a)), (regen += dach(b));
+        mutation += hash(a) !== hash(b);
+        gegen += hash(a) === hash(c);
+        wort0 += hash(a) === hash(d);
+    }
+    const n = REGEN_SAATEN.length, mx = paare.reduce((q, x) => q + x[0], 0) / paare.length, my = paare.reduce((q, x) => q + x[1], 0) / paare.length;
+    let sxy = 0, sxx = 0, syy = 0;
+    for (const [x, y] of paare) (sxy += (x - mx) * (y - my)), (sxx += (x - mx) ** 2), (syy += (y - my) ** 2);
+    const r = sxx > 0 && syy > 0 ? sxy / Math.sqrt(sxx * syy) : 0;
+    return { n, r: Math.round(r * 1000) / 1000, mutation: Math.round((1000 * mutation) / n) / 10, gegen, wort0, sonne: Math.round((10 * sonne) / n) / 10, regen: Math.round((10 * regen) / n) / 10 };
+}
+function himmelUrteil(G, check) {
+    check(
+        `R12 der gehaltene Himmel hebt das Dach — ${G.n} Pläne des Worts ohne Klima: klar ${G.sonne}° · Regen ${G.regen}°: r ${G.r} (Soll ≥ 0,5), Mutation ${G.mutation} % (Soll ≥ 90), Gegenlauf ${G.gegen} von ${G.n} gleich, klar als Wort ${G.wort0} von ${G.n} gleich dem freien Himmel`,
+        G.r >= 0.5 && G.mutation >= 90 && G.gegen === G.n && G.wort0 === G.n
+    );
+}
 const KLIMA_TAETER = {
     "der Kern liest das Klima nicht": [
         ["var im = Z.filter(function (z) { return klimaAbstand(z, klima) === 0; });", "var im = Z.slice();"],
@@ -684,6 +808,15 @@ KLIMA_TAETER["die alte Grenze (stroh 38°, die Deckung zählt nicht)"] = [
 KLIMA_TAETER["die Deckung liest den Ort nicht"] = [["if (klima.winter >= 4) return \"hohlziegel\";", "return d;"]];
 // das alte Gesetz (vor kultur-aus-klima): die Neigung aus Kultur und Samen, die Grenze der Deckung — kein Niederschlag, kein Schnee
 KLIMA_TAETER["die Sprache kennt keine Region"] = [['var R = SPRACHE_GESETZ[region] ? region : "mitteleuropa"', 'var R = "mitteleuropa"']];
+// die Grundliste ohne den Ersatz des Worts (Lees 1953): nur die Lautgesetze tragen den Baum
+KLIMA_TAETER["die Wortliste kennt keinen Ersatz"] = [["var ERSATZ = { halten: 0.86,", "var ERSATZ = { halten: 1,"]];
+// der Ortsname aus einer Silbe der Ursprache (bis kultur-aus-klima 3): die Wortliste trägt keinen Namen der Welt
+KLIMA_TAETER["der Ort liest die Wortliste nicht"] = [
+    [
+        "return _gross(_ocp(L, sprachWort(L, B[Math.floor(_sprachU(z, \"bestimmung\") * B.length) % B.length]) + L.grund[g])); }",
+        "return _gross(_ocp(L, wandle(L, _urWort(L, z, _sprachU(z, \"n\") < 0.6 ? 1 : 2, false) + U.grund[g]))); }",
+    ],
+];
 KLIMA_TAETER["die Fuge kennt kein OCP"] = [["var D = L.gesetz.doppel; return w.replace(", "var D = L.gesetz.doppel; return w; w.replace("]];
 KLIMA_TAETER["das Dach liest den Niederschlag nicht"] = [
     ["b.pitchDeg=ortNeigung(DP.klima, b, b.pitchDeg, d0);", "b.pitchDeg=Math.max(b.pitchDeg, Math.ceil(grenzNeigung(b)));"],
@@ -693,12 +826,14 @@ KLIMA_TAETER["das Dach liest den Niederschlag nicht"] = [
 KLIMA_TAETER["die Wüste deckt nicht flach"] = [["if (ariditaet(klima) <= DACH_KLIMA.wueste) return \"flach\";", ""]];
 KLIMA_TAETER["die Wüste lässt das Werk des Stils stehen"] = [["if (A <= K.wueste) return K.flachGrad;", ""]];
 // das Haus von Kopf 3 (der Plan sagt flach, HAUS baut den Sattel und behält den Schwung): die Wüste baut nicht, was sie deckt
-KLIMA_TAETER["die Wüste baut den Sattel"] = [["(P.zinnen||P.arkade||FLACH)?'flat'", "(P.zinnen||P.arkade)?'flat'"]];
+KLIMA_TAETER["die Wüste baut den Sattel"] = [['P.zinnen || P.arkade || dachFlach(P, pitch) ? "flat"', 'P.zinnen || P.arkade ? "flat"']];
 KLIMA_TAETER["die Wüste behält den Schwung"] = [["const DEF_cv=(P.roofCurve>0&&ROOFMODE!=='flat')?P.roofCurve:0", "const DEF_cv=(P.roofCurve>0)?P.roofCurve:0"]];
 // das Gesetz ohne die Reihe Kotteks (B vor E): die Polwüste deckt flach wie die Wüste
+KLIMA_TAETER["das Dach liest den Himmel nicht"] = [["b.pitchDeg=himmelNeigung(b, b.pitchDeg, DP.himmel);", ""]];
 KLIMA_TAETER["die Trockenheit kennt den Pol nicht"] = [["if (klima.sommer < K.polar) return Infinity;", ""]];
 const KLIMA_SOLL = {
     "die Trockenheit kennt den Pol nicht": "R8",
+    "das Dach liest den Himmel nicht": "R12",
     "die Wüste deckt nicht flach": "R10",
     "die Wüste lässt das Werk des Stils stehen": "R10",
     "die Wüste baut den Sattel": "R10",
@@ -710,6 +845,8 @@ const KLIMA_SOLL = {
     "das Dach liest den Niederschlag nicht": "R8",
     "die Sprache kennt keine Region": "R9",
     "die Fuge kennt kein OCP": "R9",
+    "die Wortliste kennt keinen Ersatz": "R11",
+    "der Ort liest die Wortliste nicht": "R11",
 };
 
 
