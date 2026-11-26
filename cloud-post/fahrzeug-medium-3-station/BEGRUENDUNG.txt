@@ -1,0 +1,39 @@
+STATIONS-KANDIDAT fahrzeug-medium-3 — meisterkarte-quelle/punkte/stationen/k2-mensch-fahrzeug.js, Leiter mensch.fahrzeug.medium S3
+(das Wasser: Floß bis Segler)
+Basis: origin/punkte-maschine 3f60b710. Die Datei ist byte-gleich ihrem Stand seit 8d0eba7e; der Diff k2-mensch-fahrzeug.diff gilt
+gegen sie. Der Kandidat baut auf den Kandidaten von fahrzeug-medium und fahrzeug-medium-2 (cloud-post/fahrzeug-medium-station,
+cloud-post/fahrzeug-medium-2-station, noch nicht gelandet), darum trägt der Diff alle drei. Neu gegen fahrzeug-medium-2 sind nur:
+die Seiten-Funktion WASSER_AN, Schritt 3 (zahl statt nicht), die Herkunft von rollQ, erwartet "zahl" an S3 und drei Proben S3.
+Die anderen Schritte und Leitern der Datei bleiben byte-alt.
+
+WARUM
+
+1. S3 ZÄHLTE NUR. `K.nicht(3, { n: medien.wasser })` zählte, ob ein Boot in der Welt steht. Das Gesetz, das es fährt, urteilte
+   niemand. Am Kern bis fahrzeug-medium-3 fuhr das Boot das Gesetz des Wagens: gerudert 0,01 m/s, Rollperiode 1,333 s (die
+   Wank-Feder des Autos) gegen IMO 2,612 s, kein Segel. In der Welt lag der Kahn 0,37 m unter dem Spiegel, weil das Studio-Werk
+   als Blech wog.
+
+2. WASSER_AN MISST DIE WELT. Der Kahn liegt am Anleger der Welt (`_anlegerOrt`, am Messort oder auf 24 Strahlen der Vogel-Spirale
+   bis 3 km), mit der Welle seines Orts. Das Spitzboot (welle 0,5 m, last 200 kg) liegt im nächsten benannten See des
+   Gelände-Gesetzes, an der tiefsten Zelle, deren Säule und 60 m ringsum seinen Kiel mit 0,3 m Luft tragen. Die Seen sucht es wie
+   die Wasser-Linse (`__wasserOrte`). Beide Boote kommen aus dem Stempel der Welt (spawnArchitecture fahrzeug_boot + studioOv) und
+   fahren durch `_wagenSchritt` (der Fahr-Satz aus exportDrive, `_fahrSchwimmt` aus dem Spiegel am Körper).
+   - rollQ: das freie Ausrollen aus 0,1 rad in der Flaute, gegen die IMO-Formel (IS Code 2008 Teil A 2.3.4). Geurteilt wird das
+     Boot, das weiter von 1 liegt.
+   - Wende und Höhe: die Polare 30–80° je 2,5° im Wind 5 m/s (`_fahrWind` gestellt wie fahr-proben), je Kurs 30 s einschwingen und
+     30 s messen. Die Wende ist zweimal der Kurs über Grund an der besten VMG, die Höhe der Weg gegen den Wind in 60 s.
+   - Täter beim Namen: ein Boot, das die Welt nicht trägt, heißt „stamm/koerper-fahrt.js _vehicleProfile“; kein Segler am Wind
+     heißt „vehicle-core.js exportDrive — schwimmForm/segel fehlt“.
+
+3. GEMESSEN (Null-Welt am Start-Ort, Baum fahrzeug-medium-3 8a5da9b, 19 s):
+   - Kahn am Anleger −436/410 (Hs 0,03 m, Streichlänge 50 m): schwimmt, Roll 2,213 ÷ 2,576 s = 0,859.
+   - Spitzboot im See: schwimmt, Roll 6,722 ÷ 7,221 s = 0,931, beste VMG 1,592 m/s bei 40°, Kurs 45,9°, Wende 91,8°,
+     Höhe 95,5 m in 60 s.
+   → S3 GRÜN: Wende 91,8 in 80–100, Höhe 95,5 > 0, rollQ 0,859 in 1 ± 0,15.
+
+GEPRÜFT
+
+- Selbsttest `node stationen/k2-mensch.js --selbsttest` mit dem Kandidaten: 544 Stationen, 5 411 Mutanten, 0 falsch. Die Proben S3:
+  „das Boot fährt das Gesetz des Wagens“ (ROT an der Wende), „rollt mit der Feder des Autos“ (ROT an rollQ 0,51), „der Kopf“ (GRÜN).
+- Der Messort von S3 ist `dorf` (K.messort in Schritt 3). Gemessen ist die Seite am Start-Ort der Null-Welt; der Lauf am Messort
+  dorf steht aus (der Anleger sucht von dort aus, der See nach dem Gesetz).
