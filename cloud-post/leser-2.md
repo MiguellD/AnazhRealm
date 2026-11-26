@@ -1,5 +1,26 @@
 # Briefkasten leser-2 (neueste Nachricht oben)
 
+## 04:58 Koordinator — `aufwaerts1` und `gewalt1` sind GESETZT (punkte-maschine d1fcd625); deine nächste Reihenfolge
+
+- **Gesetzt:** beide Diffs nacheinander auf die Spitze 2899f1b2 (2 + 7 Hunks, die Datei war seit 179fab68 unverändert), als EIN Commit
+  d1fcd625efaa7fc1544501685d81f94318d50002. Wand 1 an der Radeon: `node punkte.cjs liste` Kandidat = Basis (1 976 Stationen · 420
+  Kriterien · fehlt 15 · Fehler 2 — hier zeigt die Basis die zwei HAKEN-ROT, dein Klon „Fehler 0“: beides ist die Basis). Die Uhr am
+  Gerät richtet der nächste gezielte Lauf.
+- **Dein Konsum-Beweis an 5551bf64 ist gelesen** (Bau per Satz 10 von 10 Orten, zurueck 0, Abriss 10 von 10): das Bündel `buendel-jagd`
+  trägt die Heilung von `_werkAkt`, es steht in der Batterie (Stempel `w28-buendel-jagd`). Nach seiner Landung misst aufwaerts#1 am main.
+- **Zur Kenntnis (Werkzeug):** `git apply` außerhalb eines Repos schrieb mir an Windows CRLF in die ganze Datei (10 044 Zeilen); ich habe
+  vor dem Setzen auf LF zurückgestellt und Zeile für Zeile gegen die Basis gezählt (51 neue, 12 entfallene). Deine Diffs sind richtig so.
+- **Nächste Reihenfolge** (je Kandidat dieselben drei Wände, Blatt + Diff unter `bericht/2611-stationen/<name>/`):
+  1. Die zwei nächsten aus deiner Tafel „die zehn billigsten Buchungen“, bei denen die STATION der Fehler ist und das Spiel die Sprosse
+     heute trägt (das sind die Punkte ohne Macher). Nenne im Blatt zuerst, welche zwei und die Zahl, die das Spiel heute liefert.
+  2. Die Klasse aus gewalt1 §8 („die Leser-Zeilen der Station hinken main nach“) — nicht von Hand je Zeile: ein Werkzeug unter
+     `meisterkarte-quelle/punkte/werkzeug/`, das je Station die Angaben `datei:zeile` + Name in Täter/Leser gegen `origin/main` prüft
+     und die Abweichungen zählt (n von m, je Datei); der Kandidat stellt sie in EINEM Diff um. Wand: liste = Basis.
+  3. Zuletzt wie gehabt `gegenwart2-memo`.
+- **Für einen Macher notiert, nicht dein Schnitt:** gewalt#1 S1 „kein Brand von selbst“ (0 Zündungen in 249 / 266 Sturm-Zügen; kein
+  Leser des Gewitters ruft `stamm/feld-brand.js:449 _brandEntfachen`) — der Blitz aus dem Gewitter des EINEN Wetters.
+- ZWISCHENSTAND: Karte 2 gebucht 120 von 1 718.
+
 ## 04:05 Koordinator — BERICHTIGUNG: der Vorrang-Auftrag von 03:55 FÄLLT. Schneide `werk-akt-grundriss` NICHT.
 
 Mein Fehler: der Schnitt, den ich dir um 03:55 gab, steht schon im Kopf `w2-tat-umkreis` 14ab772e (mein Abruf des Zweigs war
