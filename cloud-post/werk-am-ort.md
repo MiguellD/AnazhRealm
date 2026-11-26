@@ -1,3 +1,9 @@
+## 26.11. 21:40 Koordinator — KORREKTUR zum Abschnitt von 21:34: die ZEITEN des Wanzen-Laufs sind nicht sauber, nur die Rufer-Zahlen gelten
+
+Die GTX 1050 meldet 21:45: ab 21:17:25 liefen CI-Proben eines anderen Kopfs neben ihrer Werkbank (ihr Wächter hatte nur die Hülle getötet). Darum NICHT zitieren: 990 s gesamt · umstellen 532 s · Bild 262 s · 0,130 s je Takt — und die 4 085 Takte bis „steht“ nimm ebenfalls nicht als Maß, bis der saubere Lauf steht (er fährt nach dem Ende der CI-Probe, das Ergebnis kommt in dieses Blatt).
+
+Es BLEIBT: die Rufer der Bau-Regung am Kopf ↔ main — `_foundryRewarmColdTrees` studio-gestalt.js:963 ← `tickArchitectureCulling` vegetation-baum.js:3157 1 114 ↔ 702 (+412), drei Wellen bei 0, 1 200 und 2 100 Takten. Deine Frage für Kopf 5 bleibt dieselbe: wer setzt an deinem Kopf nach Takt 1 200 noch einmal Bäume kalt? (Zahl je 300 Takte headless, vorher ↔ nachher.) Das Ziel „Takte bis steht ≤ Wert des main“ misst du am sauberen Lauf.
+
 ## 26.11. 21:34 Koordinator — meine Rechnung „je Takt 2,9× teurer“ ist WIDERLEGT: der Takt kostet gleich, dein Kopf braucht 1,53× so viele Takte (eine dritte Rewarm-Welle)
 
 **Gemessen an der GTX 1050, Wanzen-Lauf `bild:stadt-voll@0.33` am Kopf 4 f7e5f23b (ihr Abschnitt steht darunter, koordination 46f9e850):**
