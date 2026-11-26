@@ -1,7 +1,7 @@
 {
  "sha": "9964918608a72e1bbc6972925a4820eac5b53d0f",
  "geraet": "gtx",
- "zeit": "2026-11-26T18:25:48.600Z",
+ "zeit": "2026-11-26T18:28:52.267Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -1650,17 +1650,67 @@
   },
   "karte2.erleben.kopplung.wahrnehmung#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "zahl": "der Deckel der Leiter riss nach 25,018 s, ehe ueberlebenFaktor der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 25,018 s, ehe ueberlebenFaktor der Sprosse stand · der Deckel der Leiter 25 s) · Täter: @@PUNKTE@@ PROBE 179.0 s · Exit 0",
+   "exit": 0,
+   "minuten": 2.99,
+   "grund": "der Deckel der Leiter riss nach 25,018 s, ehe ueberlebenFaktor der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 25,018 s, ehe ueberlebenFaktor der Sprosse stand · der Deckel der Leiter 25 s) · Täter: @@PUNKTE@@ PROBE 179.0 s · Exit 0",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-26T18:21:45.143Z",
+   "s": 179.3,
+   "fremd": {
+    "s": 183.6,
+    "takte": 85,
+    "fremdS": 76.66,
+    "kerne": 0.417,
+    "fensterKerne": 0.829,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      16.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      15.97
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      7.89
+     ]
+    ],
+    "dienerS": 32.7,
+    "diener": [
+     [
+      "System",
+      13.97
+     ],
+     [
+      "dwm.exe",
+      8
+     ]
+    ],
+    "geraetS": 72.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      42.02
+     ],
+     [
+      "svchost.exe",
+      22.02
+     ],
+     [
+      "SearchIndexer.exe",
+      5.86
+     ]
+    ],
+    "eigenS": 266,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-26T18:28:52.267Z",
    "abdruck": "60fd019dc4f4",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "offen": 2
+   "modus": "session"
   },
   "karte2.leben.evolution.fremde-physik#1": {
    "gruen": false,
