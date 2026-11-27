@@ -14849,7 +14849,7 @@
   },
   "karte2.leben.tiere.wanderung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4 Gattungen · deer 150 m² = 0.74× π·8², im Lebensraum 0.992, 1440 Punkte · deer 113 m² = 0.56× π·8², im Lebensraum 0.995, 1440 Punkte · deer 147 m² = 0.73× π·8², im Lebensraum 0.999, 1440 Punkte · bear 1485 m² = 0.60× π·28², im Lebensraum 1, 1440 Punkte · bear 1619 m² = 0.66× π·28², im Lebensraum 0.992, 1440 Punkte · bear 1820 m² = 0.74× π·28², im Lebensraum 1, 1440 Punkte · fox 190 m² = 0.95× π·8², im Lebensraum 0.958, 1440 Punkte · fox 202 m² = 1.01× π·8², im Lebensraum 0.982, 1440 Punkte · fox 213 m² = 1.06× π·8², im Lebensraum 0.995, 1440 Punkte · wolf 1691 m² = 0.88× π·24.67², im Lebensraum 0.985, 1440 Punkte · wolf 1446 m² = 0.76× π·24.67², im Lebensraum 0.966, 1440 Punkte · wolf 1579 m² = 0.83× π·24.67², im Lebensraum 0.968, 1440 Punkte · [linse-gpu] nvidia/pascal an e1a54023 gtx — offen: karte2.leben.tiere.wanderung#1 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +108) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.tiere.wanderung#2 radeon: Station seit der Messung geändert · karte2.leben.tiere.wanderung#2 gtx: Station seit der Messung geändert · karte2.leben.tiere.wanderung#3 radeon: ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 225 s von karte2.leben.tiere.wanderung#3) — offen, UNGEMESSEN · karte2.leben.tiere.wanderung#3 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#4 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#4 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#5 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#5 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#6 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#6 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#7 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 4 Gattungen · deer 150 m² = 0.74× π·8², im Lebensraum 0.992, 1440 Punkte · deer 113 m² = 0.56× π·8², im Lebensraum 0.995, 1440 Punkte · deer 147 m² = 0.73× π·8², im Lebensraum 0.999, 1440 Punkte · bear 1485 m² = 0.60× π·28², im Lebensraum 1, 1440 Punkte · bear 1619 m² = 0.66× π·28², im Lebensraum 0.992, 1440 Punkte · bear 1820 m² = 0.74× π·28², im Lebensraum 1, 1440 Punkte · fox 190 m² = 0.95× π·8², im Lebensraum 0.958, 1440 Punkte · fox 202 m² = 1.01× π·8², im Lebensraum 0.982, 1440 Punkte · fox 213 m² = 1.06× π·8², im Lebensraum 0.995, 1440 Punkte · wolf 1691 m² = 0.88× π·24.67², im Lebensraum 0.985, 1440 Punkte · wolf 1446 m² = 0.76× π·24.67², im Lebensraum 0.966, 1440 Punkte · wolf 1579 m² = 0.83× π·24.67², im Lebensraum 0.968, 1440 Punkte · [linse-gpu] nvidia/pascal an e1a54023 gtx — offen: karte2.leben.tiere.wanderung#1 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +108) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.tiere.wanderung#2 radeon: Station seit der Messung geändert · karte2.leben.tiere.wanderung#2 gtx: Station seit der Messung geändert · karte2.leben.tiere.wanderung#3 radeon: ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 225 s von karte2.leben.tiere.wanderung#3) — offen, UNGEMESSEN · karte2.leben.tiere.wanderung#3 gtx: ROT: S3 Umfang nicht erzeugbar: 7 Spieltage: das Tier lebt 0.63 Spieltage, an der Leine seines Ankers · faktor 207,296 gegen Soll ≤ 2 ✗ · spieltage 1 Spieltage gegen Soll ≥ 7 Spieltage ✗ · Täter: tetrapoda-core.js wandern.leashBaseM 18 m (die Leine um den Geburtsort) an b3740dd5 · karte2.leben.tiere.wanderung#4 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#4 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#5 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#5 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#6 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#6 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#7 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.tiere.wanderung#1",
@@ -14904,10 +14904,10 @@
      "id": "karte2.leben.tiere.wanderung#3",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S3 Umfang nicht erzeugbar: 7 Spieltage: das Tier lebt 0.63 Spieltage, an der Leine seines Ankers · faktor 207,296 gegen Soll ≤ 2 ✗ · spieltage 1 Spieltage gegen Soll ≥ 7 Spieltage ✗ · Täter: tetrapoda-core.js wandern.leashBaseM 18 m (die Leine um den Geburtsort)",
+     "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
+     "grund": "ROT: S3 Umfang nicht erzeugbar: 7 Spieltage: das Tier lebt 0.63 Spieltage, an der Leine seines Ankers · faktor 207,296 gegen Soll ≤ 2 ✗ · spieltage 1 Spieltage gegen Soll ≥ 7 Spieltage ✗ · Täter: tetrapoda-core.js wandern.leashBaseM 18 m (die Leine um den Geburtsort)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.leben.tiere.wanderung#4",
@@ -37464,7 +37464,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 285,
+  "konsum": 286,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37587,10 +37587,10 @@
    "ultiversum.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3382
+  "ohne": 3381
  },
  "kopfVoll": "b3740dd5566793ae66152d955e5a55d9c272884c",
- "zeit": "2026-11-27T21:34:26.017Z",
+ "zeit": "2026-11-27T21:40:44.183Z",
  "vorher": "b3740dd5",
  "bilanz": {
   "gewinn": [],
