@@ -3000,8 +3000,11 @@ class AnazhRealm_vegetation_wiese {
     // Die GEBORENEN Darts einer Zelle, reine Funktion von (cx, cz, seed): standDensity-Wurf → Boden/Wasser → Slope →
     // Arten-Nische → reverse-J-Größe → Mammut (phyto-core `planForestCell`). Nur geborene Darts treten in die
     // Kronen-Schüchternheit ein (`forestStehende`); ihr Leser ist der Bestand (`_forestCellDarts`). `vorlaeufig`: die Antwort
-    // steht vor der Wahrheit des Gesetzes (oder ohne die Kacheln ihrer Nachbarn) und wird nie gemerkt.
-    _forestGeborene(cx, cz, seedInt, vorlaeufig) {
+    // steht vor der Wahrheit des Gesetzes (oder ohne die Kacheln ihrer Nachbarn) und wird nie gemerkt. `boden` (optional): der
+    // FERN-LESER des Bodens, mit dem die Ferne ihren Wald plant (die Kamm-Krone im Faden, voxel-worker `kammKrone`: das Gesetz ohne
+    // Detail, Steilheit ±2 m) — sein Leser ist die Sicht der Landmarke (`_landmarkeSicht`) jenseits der Nah-Streu; ohne ihn die
+    // Oberfläche der Voxel-Welt, wie der Bestand sie zeichnet.
+    _forestGeborene(cx, cz, seedInt, vorlaeufig, boden) {
         // Die Pflanz-Logik lebt EINMAL in phyto-core (planForestCell); hier nur die Welt-Reads als ctx-
         // Funktionen (Oberfläche · Wasser · Slope · Feuchte · fbm). Ohne Kern → leerer Wald.
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
@@ -3014,6 +3017,7 @@ class AnazhRealm_vegetation_wiese {
         let bodenZ = NaN;
         let bodenY = null;
         const raender = this._ortRaender(); // die Ränder der Siedlungen (die Waldgrenze am Siedlungsrand, phyto-core `forestOrt`)
+        const grund = boden || ((x, z) => this._voxelSurfaceY(x, z));
         const out =
             core && typeof core.planForestCell === "function"
                 ? core.planForestCell(cx, cz, seedInt, {
@@ -3029,14 +3033,14 @@ class AnazhRealm_vegetation_wiese {
                       surfaceYAt: (x, z) => {
                           bodenX = x;
                           bodenZ = z;
-                          bodenY = this._voxelSurfaceY(x, z);
+                          bodenY = grund(x, z);
                           return bodenY;
                       },
                       waterYAt: (x, z) =>
-                          this._landSpiegelAt(x, z, x === bodenX && z === bodenZ ? bodenY : this._voxelSurfaceY(x, z)),
+                          this._landSpiegelAt(x, z, x === bodenX && z === bodenZ ? bodenY : grund(x, z)),
                       slopeAt: (x, z) =>
                           typeof this._slopeAt === "function"
-                              ? this._slopeAt(x, z, (px, pz) => this.getTerrainHeightAt(px, pz), 2)
+                              ? this._slopeAt(x, z, boden || ((px, pz) => this.getTerrainHeightAt(px, pz)), 2)
                               : 0,
                       feuchteAt: (x, z, sy) => (typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, sy) : 0),
                       // der Ort vor dem Wald (K10): keine Krone über dem Grund eines Orts (`_ortFrei`, der Erdbau)
