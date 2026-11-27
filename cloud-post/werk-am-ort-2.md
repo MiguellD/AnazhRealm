@@ -142,5 +142,11 @@ Seite der Fahrbahn → `wer`).
   Gruppen, schwerste 21,0 min, Puls-Frist 16 aus `pulsFristMin`; keine `timeout-minutes`-Zeile von mir), `gate:ci-deckung` GRÜN.
   Kopf 5 folgt auf dem neuen main, sobald er in alle.md steht: dasselbe Rezept, `check:statik` ganz, Ruf ohne Leerzeichen.
   Die Folge-Arbeit (`bleibt`, die zwei Welt-Brüche, `DAUER_S` neu) fährt NICHT in Kopf 5.
+- **Kopf 5 steht: `werk-am-ort-2-kopf5` 2b129915** (EIN Elter main 23b593ac V18.546.459; Ruf ohne Leerzeichen, `[ci voll]`).
+  Die 17 Dateien von Kopf 4, jede außer den zwei des Schreibers byte-gleich im Diff; an `check.yml`/`ci-zeiten.json` der Heil-Kopf +
+  die vier Teile, Schreiber neu (Teile in 11 · 8 · 12 · 10, schwerste Gruppe 21,0 min, Puls-Frist 16; keine Frist von mir).
+  `check:statik` GRÜN 596 s · `gate:ci-deckung` GRÜN 25 s · `gate:welt-boot` GRÜN 83 s · `gate:fachwerk-contract` GRÜN 119 s ·
+  format · lint GRÜN. merge-tree gegen main 23b593ac, w28-sprache-dialekt-2b und w28-wurf-mit-luft-3 (z812) sauber. Probe-Ruf
+  von Hand gegen die Tafel gehalten (`zug.sh` liegt in keinem Zweig), derselbe Ruf wie Kopf 4.
 
 Karte 2 gebucht 156 von 1 718. Status ZWISCHENSTAND.
