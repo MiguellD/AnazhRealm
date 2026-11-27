@@ -17586,11 +17586,11 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 27,
-    "kern": 1,
-    "kernDazu": 1,
-    "anteilHeute": 12.1,
-    "anteilKern": 0.3
+    "heute": 28,
+    "kern": 0,
+    "kernDazu": 0,
+    "anteilHeute": 12.4,
+    "anteilKern": 0
    },
    "perspektiven": [
     {
@@ -19489,8 +19489,8 @@
        "richter": "Anteil der Planeten, die sich vom Zustand ohne Zivilisation messbar unterscheiden ≥ 80 % (Bildpaar Orbit)"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Unter der Leiter: die Siedlung liest Natur nur als Verbot und Kosten (fachwerk-core.js:8623, :3861); keine Tat verschiebt ihren Elternknoten; ein gebautes Haus aus 400 m nie gemessen.",
      "alt": []
@@ -20099,11 +20099,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 149,
+  "heute": 150,
   "davonKopplungen": 33,
-  "kern": 1,
-  "kernDazu": 1,
-  "anteilHeute": 7.7,
+  "kern": 0,
+  "kernDazu": 0,
+  "anteilHeute": 7.8,
   "anteilKern": 0,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20114,7 +20114,7 @@
   },
   "gliederLeitern": 9,
   "beide": 73,
-  "nachwache": 76
+  "nachwache": 77
  },
  "zusammengelegt": [
   {
