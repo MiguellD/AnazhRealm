@@ -3020,15 +3020,15 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 61 Bilder · max 83.88 ms · 75.41 % > 33 ms · Fahrt 42 Bilder · max 150.66 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 75.41 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 150.66), 100.00 % > 33 ms an 948f68ee radeon · Gehen 73 Bilder · max 99.86 ms · 27.40 % > 33 ms · Fahrt 43 Bilder · max 149.98 ms · 97.67 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 27.40 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 149.98), 97.67 % > 33 ms an 948f68ee gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 948f68ee: Last: Referenz f 1,311 (Faden 1,311 · alle Kerne 1,296; vor 109,5/336,3 ms, nach 104,1/295,1 ms, Ruhe 83,5/259,5 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 14,3 CPU-s · chrome.exe  · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 948f68ee: Last: Referenz f 1,232 (Faden 1,232 · alle Kerne 1,065; vor 109,4/234,6 ms, nach 99,9/221,2 ms, Ruhe 88,8/220,2 ms seit 2026-11-17) · fremd: Runner.Worker.exe spawnclient 1564 3012 6,0 CPU-s · Claude.",
+   "beleg": "Maschine: Gehen 65 Bilder · max 75.58 ms · 66.15 % > 33 ms · Fahrt 38 Bilder · max 133.93 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 66.15 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 133.93), 100.00 % > 33 ms an 948f68ee radeon · Gehen 73 Bilder · max 99.86 ms · 27.40 % > 33 ms · Fahrt 43 Bilder · max 149.98 ms · 97.67 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 27.40 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 149.98), 97.67 % > 33 ms an 948f68ee gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 948f68ee: Last: Referenz f 1,368 (Faden 1,368 · alle Kerne 1,15; vor 114,2/298,8 ms, nach 108,6/294,6 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node scripts/diag-ci-deckung.cjs --selftest 21,3 CPU-s · no · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 948f68ee: Last: Referenz f 1,232 (Faden 1,232 · alle Kerne 1,065; vor 109,4/234,6 ms, nach 99,9/221,2 ms, Ruhe 88,8/220,2 ms seit 2026-11-17) · fremd: Runner.Worker.exe spawnclient 1564 3012 6,0 CPU-s · Claude.",
    "stationen": [
     {
      "id": "profiband.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Gehen 61 Bilder · max 83.88 ms · 75.41 % > 33 ms · Fahrt 42 Bilder · max 150.66 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 75.41 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 150.66), 100.00 % > 33 ms",
+     "zahl": "Gehen 65 Bilder · max 75.58 ms · 66.15 % > 33 ms · Fahrt 38 Bilder · max 133.93 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 66.15 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 133.93), 100.00 % > 33 ms",
      "sha": "948f68eeee479d4db0192c99c448e887313eefb3",
-     "grund": "GRÜN trotz Last: Referenz f 1,311 (Faden 1,311 · alle Kerne 1,296; vor 109,5/336,3 ms, nach 104,1/295,1 ms, Ruhe 83,5/259,5 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 14,3 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-32272-profil-5rGIeB --no-p 11,8 CPU-s · bash.exe werkzeug/gpu-lauf.sh --waechter 1587109 claude/gpu-schloss.wache.1587109 7,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 33,3 CPU-s · svchost.exe 26,8 CPU-s · SearchProtocolHost.exe 8,4 CPU-s",
+     "grund": "GRÜN trotz Last: Referenz f 1,368 (Faden 1,368 · alle Kerne 1,15; vor 114,2/298,8 ms, nach 108,6/294,6 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node scripts/diag-ci-deckung.cjs --selftest 21,3 CPU-s · node scripts/diag-sprache.cjs --selftest 12,9 CPU-s · bash.exe scratchpad/wache-0331.sh 11,7 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 47,8 CPU-s · svchost.exe 28,4 CPU-s · SearchIndexer.exe 7,8 CPU-s",
      "r6": "konsum"
     },
     {
@@ -3046,7 +3046,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 948f68ee: Last: Referenz f 1,311 (Faden 1,311 · alle Kerne 1,296; vor 109,5/336,3 ms, nach 104,1/295,1 ms, Ruhe 83,5/259,5 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 14,3 CPU-s · chrome.exe ",
+     "grund": "Station seit der Messung geändert — zuletzt an 948f68ee: Last: Referenz f 1,368 (Faden 1,368 · alle Kerne 1,15; vor 114,2/298,8 ms, nach 108,6/294,6 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node scripts/diag-ci-deckung.cjs --selftest 21,3 CPU-s · no",
      "ungemessen": true
     },
     {
@@ -18761,7 +18761,7 @@
   },
   "karte2.mensch.kultur.sprache": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Namen richtig zugeordnet 0.99686 (Soll ≥ 0.9) · Saaten der Namen 4 (Soll ≥ 2) · Umfang 1273 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran/alpin/mitteleuropa/nordisch · [linse-gpu] nvidia/pascal an 45bad33f gtx · gehalten: S2 GRÜN · Sprachen an Sätzen getrennt 0.92308 (Soll ≥ 0.85) · Sätze 20 (Soll ≥ 20) · Umfang 26 (Soll ≥ 10 Sprachen (U_eff)) · 26 Sprachen aus 4 Familien (alpin/mitteleuropa/mediterran/nordisch) · 48 von 52 Hälften richtig (C&T N 1–5, P 400) · die Rede der Menge: 7 von 7 Sprechern sprechen den Satz des Lesers (7 Sätze, 1686 ms) · „Dastau moscau cau samau tom sore li da baup.“ · „Po momau pe li cau pani.“ · „Mau cogramau.“ · [linse-gpu] nvidia/pascal an 031f4700 gtx · gehalten: S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] amd/rdna-3 an 45bad33f radeon · gehalten: S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] nvidia/pascal an 45bad33f gtx — offen: karte2.mensch.kultur.sprache#1 radeon: Station seit der Messung geändert · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +5) · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Namen richtig zugeordnet 0.99686 (Soll ≥ 0.9) · Saaten der Namen 4 (Soll ≥ 2) · Umfang 1273 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran/alpin/mitteleuropa/nordisch · [linse-gpu] nvidia/pascal an 45bad33f gtx · gehalten: S2 GRÜN · Sprachen an Sätzen getrennt 0.92308 (Soll ≥ 0.85) · Sätze 20 (Soll ≥ 20) · Umfang 26 (Soll ≥ 10 Sprachen (U_eff)) · 26 Sprachen aus 4 Familien (alpin/mitteleuropa/mediterran/nordisch) · 48 von 52 Hälften richtig (C&T N 1–5, P 400) · die Rede der Menge: 7 von 7 Sprechern sprechen den Satz des Lesers (7 Sätze, 1686 ms) · „Dastau moscau cau samau tom sore li da baup.“ · „Po momau pe li cau pani.“ · „Mau cogramau.“ · [linse-gpu] nvidia/pascal an 031f4700 gtx · gehalten: S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] amd/rdna-3 an 45bad33f radeon · gehalten: S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] nvidia/pascal an 45bad33f gtx — offen: karte2.mensch.kultur.sprache#1 radeon: Station seit der Messung geändert · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ROT: S4 ROT: Umfang nicht erzeugbar: Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt (gemessen 4 < 1000) (gemessen 4, Soll 1000 Sprachen (U_eff) mit Dialekt-Kontinua) · [linse-gpu] amd/rdna-3 an 948f68ee · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.sprache#1",
@@ -18823,10 +18823,9 @@
      "id": "karte2.mensch.kultur.sprache#4",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +5)",
-     "ungemessen": true,
+     "zahl": "S4 ROT: Umfang nicht erzeugbar: Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt (gemessen 4 < 1000) (gemessen 4, Soll 1000 Sprachen (U_eff) mit Dialekt-Kontinua) · [linse-gpu] amd/rdna-3",
+     "sha": "948f68eeee479d4db0192c99c448e887313eefb3",
+     "grund": "ROT: S4 ROT: Umfang nicht erzeugbar: Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt (gemessen 4 < 1000) (gemessen 4, Soll 1000 Sprachen (U_eff) mit Dialekt-Kontinua) · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -20322,16 +20321,15 @@
   },
   "karte2.mensch.macht.megastadt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.megastadt#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +12) — zuletzt an c3631992: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.mensch.macht.megastadt#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/welt-boot.cjs, scripts/lib/wirt-wache.cjs +4) · karte2.mensch.macht.megastadt#2 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#2 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#3 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#3 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#4 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#4 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#5 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#5 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#6 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#6 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#7 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.megastadt#1 radeon: ROT: S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (1 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] amd/rdna-3 an 948f68ee · karte2.mensch.macht.megastadt#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/welt-boot.cjs, scripts/lib/wirt-wache.cjs +4) · karte2.mensch.macht.megastadt#2 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#2 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#3 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#3 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#4 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#4 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#5 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#5 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#6 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#6 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#7 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.macht.megastadt#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +12) — zuletzt an c3631992: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (1 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] amd/rdna-3",
+     "sha": "948f68eeee479d4db0192c99c448e887313eefb3",
+     "grund": "ROT: S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (1 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] amd/rdna-3",
      "r6": "konsum",
      "beide": true
     },
@@ -37605,7 +37603,7 @@
   "ohne": 3384
  },
  "kopfVoll": "948f68eeee479d4db0192c99c448e887313eefb3",
- "zeit": "2026-11-27T17:52:14.893Z",
+ "zeit": "2026-11-27T17:58:53.510Z",
  "vorher": "948f68ee",
  "bilanz": {
   "gewinn": [],
