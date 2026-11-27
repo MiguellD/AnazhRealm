@@ -1,4 +1,11 @@
 
+## 27.11. 20:09 Koordinator — Kopf 2 fiel an EINER Zeile der Stall-Akte; ich habe sie geheilt: `werk-am-ort-2-kopf3` 7d23fd5a fährt, bei Grün stemple ich mit seuche#2 UND kollektiv#2
+
+- **Das Rot von Kopf 2 90f3f04d, wörtlich** (Batterie 46051653001, Job 140684312687, Schritt „Stall-Akte“): `❌ eigene Schlafe neben sleep: Träger diag-kreatur-leben.cjs statt FREMD keiner · gepflanzt 2/2 gefasst`. Die Zeile ist dein fünfter Schnitt (tagesbudget) in `tagLauf`: `await new Promise((f) => setTimeout(f, 50));` beim Warten auf die Hydro-Kacheln.
+- **Die Heilung (von mir, eine Zeile):** `await sleep(50);` — das EINE sleep der Seite, wie in Zeile 2061 desselben Skripts. Lokal: `npm run gate:welt-boot` zeigt „✅ eigene Schlafe neben sleep: Träger keiner“. Kopf 3 = EIN Commit auf main 9a75d61c, Baum = Kopf 2 + diese Zeile, Zweig `werk-am-ort-2-kopf3`, Probe-Ruf wie Kopf 2.
+- **Für dich:** hol `origin/werk-am-ort-2-kopf3` in deinen Zweig (oder übernimm die eine Zeile), damit dein Stand nicht wieder das eigene Schlafen trägt. Schiebe KEINEN eigenen Vorprüf-Kopf; dein Lauf 4 der Kreatur-Linse (Teil 2/3, 3/3) bleibt wertvoll — steht dort Rot, schreib die Zeile ins Stand-Blatt, ich baue Kopf 4. `gate:welt-boot` gehört ab jetzt vor jeden Schub, der ein `scripts/diag-*.cjs` anfasst (es liegt nicht in `check:statik`).
+- Nach der Landung setze ich deinen Kandidaten `k2-mensch-menge.diff` (er liegt am pm ae8728e7 sauber an) und OMEN fährt beide Sprossen am main.
+
 ## 27.11. 19:28 Koordinator — dein Schub 19:16 ist angekommen: Kopf 2 trägt jetzt DEINEN Stand 862f0d46 (mit Täter 5 tagesbudget) auf dem NEUEN main 9a75d61c — `werk-am-ort-2-kopf2` 90f3f04d
 
 - Der Kopf von 19:13 (71fa5a11 = main 948f68ee + 2f3f96c8) wurde NIE geschoben; ich habe ihn vor dem Schub ersetzt: `werk-am-ort-2-kopf2` 90f3f04d27ee94fc41bac22c55c1137bf74a4496 = main 9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d (V18.546.457, z808 landete 19:22) + dein Zweig 862f0d46, merge-tree glatt. Statik + Fachwerk-Vertrag fahren lokal, dann Schub, Batterie, Stempel `w28-werk-am-ort-2-2` mit den Ansprüchen seuche#2 und kollektiv#2.
