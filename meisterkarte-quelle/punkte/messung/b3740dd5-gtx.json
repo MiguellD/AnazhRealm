@@ -1,7 +1,7 @@
 {
  "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
  "geraet": "gtx",
- "zeit": "2026-11-27T22:36:59.669Z",
+ "zeit": "2026-11-27T22:56:01.957Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -1862,6 +1862,237 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.entfaltung.schirm#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 139 s gerissen: Stille seit 15.1 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego 123.8 s)",
+   "exit": 1,
+   "minuten": 2.32,
+   "grund": "Deckel 139 s gerissen: Stille seit 15.1 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego 123.8 s)",
+   "s": 139.2,
+   "fremd": {
+    "s": 145.8,
+    "takte": 65,
+    "fremdS": 89.14,
+    "kerne": 0.611,
+    "fensterKerne": 1.163,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      14.3
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      8.3
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      7.92
+     ]
+    ],
+    "dienerS": 62.81,
+    "diener": [
+     [
+      "dwm.exe",
+      29.58
+     ],
+     [
+      "System",
+      21.59
+     ]
+    ],
+    "geraetS": 119.05,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      85.34
+     ],
+     [
+      "svchost.exe",
+      29.19
+     ],
+     [
+      "svchost.exe -k UnistackSvcGroup -s WpnUserService",
+      1.88
+     ]
+    ],
+    "eigenS": 411.31,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.478,
+     "nach": 0.393,
+     "station": 2.052
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 95,
+     "alle": 222,
+     "cpuEin": 94,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.97,
+      "s": 2,
+      "soll": 3,
+      "reihe": [
+       6.07,
+       4.76,
+       4.05,
+       3.03,
+       3.1,
+       2.77
+      ]
+     },
+     "spanne": [
+      1795820163962,
+      1795820164405
+     ]
+    },
+    "nach": {
+     "ein": 130.8,
+     "alle": 348.6,
+     "cpuEin": 141,
+     "tor": {
+      "ruhig": true,
+      "kerne": 0.34,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       3.39,
+       1.33,
+       0.63,
+       0.25,
+       0.35,
+       0.43
+      ]
+     },
+     "spanne": [
+      1795820303632,
+      1795820304287
+     ]
+    },
+    "ruhe": {
+     "ein": 89.1,
+     "alle": 220.9,
+     "n": 1190,
+     "von": "2026-11-17"
+    },
+    "f": 1.578,
+    "fEin": 1.468,
+    "fAlle": 1.578,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-27T22:56:01.957Z",
+   "abdruck": "0b389cec986f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
+ },
+ "sitzung": {
+  "start": "2026-11-27T22:55:18.013Z",
+  "ordner": "sitzung-20261127-235518",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 6.9,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "geraet": {
+   "name": "GTX 1060",
+   "adapter": "NVIDIA GeForce GTX 1060",
+   "preis": true
+  },
+  "orte": [
+   {
+    "ort": null,
+    "vor": "karte2.same.entfaltung.schirm#1",
+    "s": 29.7,
+    "takte": 830,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "felder": [
+   {
+    "probe": "karte2.same.entfaltung.schirm#1",
+    "weg": [
+     "__ortZeit",
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr",
+     "__bandDecke",
+     "__zensusCalls"
+    ]
+   }
+  ],
+  "wirt": [
+   {
+    "probe": "karte2.same.entfaltung.schirm#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "getauscht: () => S.T → der Wert 12.5",
+     "r._wolkenZeit": "getauscht: () => S.T → der Wert 12.5",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "getauscht: () => wert → der Wert sunny",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     201.1,
+     309.6
+    ],
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "karte2.same.entfaltung.schirm#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 394,
+   "frameP95": 33.39,
+   "taktP95": 21.97,
+   "vramMax": 144.8,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.same.entfaltung.schirm#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 176,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 183.3,
+  "minuten": 3.23
  }
 }
