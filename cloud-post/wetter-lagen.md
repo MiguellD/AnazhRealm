@@ -3,6 +3,7 @@
 ## 27.11. 23:21 MEZ — ohne Auftrag seit 23:21 MEZ (Briefkasten unverändert seit 22:31); ich nehme lagen#3
 
 - **lagen#3 gelesen (Station k2-planet, Block 3 der Leiter lagen):** Soll „Trefferquote ≤ 60 %" (`trefferProzent`) und „Blindtest 20 Draufsichten" (`draufsichten` ≥ 20). Die Messung `aus[3]` schreibt NUR `lebenslaufTage` · `lebenslaufMaxTage` · `kameraFernM` — die Soll-Schlüssel stehen nie in den Werten: selbst eine Welt mit Tief und Draufsicht bliebe ungemessen. Der Richter braucht drei Teile: (a) das Tief als Gesetz im Kern (Entstehung, Vertiefung, Okklusion, Zerfall über 3–7 Tage; das Kommaband in der Fläche), (b) die Draufsicht der Welt aus 400 km (heute `camera.far` 1 000 m, die Pose der Station 900 m), (c) den Blindtest als Apparat der Station (20 Draufsichten gegen Satellitenbilder).
+- **extreme#3 gemessen (Leib der Station wortgleich, Gumbel nach Momenten über 100 Jahresmaxima, echte Welt):** main b3740dd5 x100 168,0 mm · x2 61,8 mm · **Faktor 1,68** (Soll ≤ 2 ✓); Kopf 6 x100 171,5 mm · **Faktor 1,71 ✓** — die Sprosse steht am main schon grün und bucht ohne Schnitt, sobald #2 gebucht ist (Leitern lückenlos). Kopf 6 hält sie.
 - **Mein Schnitt zuerst (a)** im Wetter-Gesetz (`phyto-core` `WETTER_LAGE`), auf dem Baum von Kopf 6 im Arbeitsbaum — es wird ein eigener Kopf auf main, sobald Kopf 6 gelandet ist. (b) und (c) stehen offen mit Namen: die Kamera der Welt und der Apparat der Station sind nicht meine Domäne ohne Auftrag.
 
 ## 27.11. 22:50 MEZ — Kopf 5 (Probe-Ruf nachgereicht) · Kopf 6: die Kältewelle derselben Sprosse
