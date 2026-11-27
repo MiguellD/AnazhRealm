@@ -1062,8 +1062,8 @@ Boden-Farbe am Fluss und `_terrainMaterialAt` lesen es; die Sohle des fließende
 Klassen am Rechteck `pegelKlassen` (die Marke des Chunks), die
 Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DER PEGEL IM REGEN: der Abflussanteil
 `ABFLUSS_CN` (planet.wetter.extreme: der schnelle Abfluss faltet den Regen jedes Ereignisses nach seinem Anfangsverlust,
-SCS-Curve-Number — NEH-4, TR-55 —, Wiese CN 58, Brandfläche CN 95, ein Ereignis höchstens ein Tag `tagH`; `PEGEL.regen` 10 mm/h des Regens selbst, der Hub über dem Mittel des Flusses in seinem Klima — `pegelKlima`, die Lage
-`abflussMittel` —: die gewöhnliche Front bleibt unter der Krone, 100 mm treten über sie), die Aue `AUE`/`auenBreite` (über der Krone trägt der gegliederte Querschnitt
+SCS-Curve-Number — NEH-4, TR-55 —, Wiese CN 58, Brandfläche CN 95, ein Ereignis höchstens ein Tag `tagH`; `PEGEL.regen` 10 mm/h des Regens selbst, der Hub über dem Grund des Flusses (trocken steht er im geschnitzten Bett, Hub 0), der Grund trägt im Klima
+den Anteil `PEGEL.bfi` 0,7 des Mittels — der Base-Flow-Index, `pegelKlima`, die Lage `abflussMittel` —: das Mittel bleibt im Bett, 100 mm treten über die Krone), die Aue `AUE`/`auenBreite` (über der Krone trägt der gegliederte Querschnitt
 Q = Q_Bett + R·Q_Aue, R = (2F − B)/B · n_Bett/n_Aue nach Chow 1959; die Tafel trägt `aueF` und, wo ihr höchster Hub über der
 Krone steht, `flut` — dann steht das Wasser in `flussAm` jenseits der Krone binnen F, der Boden entscheidet, die Marke des Chunks
 liest den Hub im Band ihres Wassers `band`, über der Krone in Stufen `AUE.stufe` von 1 ft; ohne Flut byte-gleich), der Abfluss nach Brand `pegelBrand` (same.kopplung.stoerung#3:

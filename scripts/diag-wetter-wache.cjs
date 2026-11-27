@@ -842,11 +842,11 @@ function brandAbflussSelbsttest() {
     return v;
 }
 // ── (A) DIE KRONE IM KLIMA (planet.wetter.extreme#1, gelaende-core `laufQ` · `pegelKlima`, die Lage `abflussMittel`): der Fluss
-// führt im Mittel, was sein Klima abfließen lässt — gewöhnlicher Regen bleibt unter der Krone, das Bett formt das Hochwasser, das je
+// steht trocken im Bett, sein Grund trägt den Anteil `bfi` des Mittels, das sein Klima abfließen lässt — das Mittel bleibt unter der Krone, das Bett formt das Hochwasser, das je
 // 1–2 Jahre wiederkehrt (Leopold, Wolman & Miller 1964). Am Ort des Klimas (0, 0) die Züge der Front über das Fenster des Grunds
 // (`LAUF.fenster`) und `zuege` danach, je `schritt` Züge der Lauf des Gesetzes; der Hub an der Zeile ohne Schmelze, höchster über die
 // Lag-Klassen. Das Maß: der Median steht unter der Krone. GEPFLANZT am lebenden Kern: die Lage ohne das Klima des Abflusses
-// (`abflussMittel` 0 — der Hub über der Spende der Erde statt über dem Mittel seines Klimas) muss ROT fallen. Am main 9a75d61c (die
+// (`abflussMittel` 0 — der Grund trägt nur die Spende der Erde statt des Anteils `bfi` am Mittel seines Klimas) muss ROT fallen. Am main 9a75d61c (die
 // stehende Front der Lage, wetter-lagen-3) stand der Hub 100 % der Zeit über der Krone, Median +0,61 m. Leser: `kroneKlimaRot`.
 async function kroneKlimaProbe(a) {
     const K = globalThis.__gelaendeCore;
@@ -885,8 +885,8 @@ function kroneKlimaRot(B) {
     const r3 = (v) => (Number.isFinite(v) ? +v.toFixed(3) : v);
     if (!(B.n > 0 && Number.isFinite(B.krone) && Number.isFinite(B.median)))
         return [`(A) KLIMA: ${B.n} Läufe, Krone ${r3(B.krone)} — die Probe misst den Fluss im Klima nicht`];
-    if (B.median > B.krone + 1e-6)
-        return [`(A) KRONE: im Klima seiner Welt steht der Fluss im Median ${r3(B.median)} m (Krone ${r3(B.krone)} m), ${(100 * B.anteil).toFixed(1)} % der Zeit über ihr — gewöhnlicher Regen tritt über das Bett (Soll: Median unter der Krone; gelaende-core laufQ liest das Mittel seines Klimas nicht, abflussMittel ${r3(B.abfluss)})`]; // prettier-ignore
+    if (!(B.median < B.krone - 1e-6))
+        return [`(A) KRONE: im Klima seiner Welt steht der Fluss im Median ${r3(B.median)} m (Krone ${r3(B.krone)} m), ${(100 * B.anteil).toFixed(1)} % der Zeit über ihr — gewöhnlicher Regen tritt über das Bett (Soll: Median unter der Krone; gelaende-core laufQ: der Grund trägt das Mittel seines Klimas nicht, abflussMittel ${r3(B.abfluss)})`]; // prettier-ignore
     return [];
 }
 function kroneKlimaSelbsttest() {
@@ -894,6 +894,7 @@ function kroneKlimaSelbsttest() {
     const v = kroneKlimaRot(B).map((x) => `krone-klima: der grüne Befund fällt rot: ${x}`);
     for (const [name, o, klinge] of [
         ["der Hub über der Spende der Erde (abflussMittel 0)", { median: 0.81, anteil: 1, abfluss: 0 }, "KRONE"],
+        ["der Median auf der Krone (das Mittel füllt das Bett)", { median: 0.2, anteil: 0.233, abfluss: 0.04 }, "KRONE"],
         ["kein Lauf im Klima", { n: 0 }, "KLIMA"],
     ]) {
         const rot = kroneKlimaRot(Object.assign({}, B, o));

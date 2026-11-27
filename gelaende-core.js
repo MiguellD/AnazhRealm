@@ -1989,7 +1989,7 @@
     // Hub hängt am Spiegel und am Lauf: ein ebener Abschnitt hebt sich eben, und stromab steigt kein Spiegel durch die Schmelze —
     // der Hub fällt mit der Höhe höchstens 0,2 m je Meter (die Linie der Schmelze rampt über 0,09 K, 0,8 m Höhe). Ohne Stempel
     // (`pegelLauf` null) ist die Tafel die der Schmelze allein, Hub für Hub.
-    const PEGEL = Object.freeze({ spende: 0.0009, unter: 40, ueber: 300, dy: 1, stufe: 0.01, regen: 0.24 });
+    const PEGEL = Object.freeze({ spende: 0.0009, unter: 40, ueber: 300, dy: 1, stufe: 0.01, regen: 0.24, bfi: 0.7 });
     // DIE KURVENZAHL DES ABFLUSSES (die Eichung, planet.wetter.extreme#1; USDA SCS NEH-4 Kap. 10, TR-55 1986): vom Regen P (mm)
     // einer Strecke fließt Q = (P − Ia)²/(P − Ia + S) ab, S = 25 400/CN − 254 mm, der Anfangsverlust Ia = `ia`·S; der Anteil des
     // Regens, der JETZT abfließt, ist dQ/dP = 1 − (S/(P − Ia + S))² (0 bis Ia). Die Wiese CN 58 (TR-55 Tafel 2-2c, Meadow,
@@ -2103,15 +2103,19 @@
         for (let j = 0; j < LAUF.n; j++) q[j] = laufQ(L, bett, f.grund, f.schnell[j], klima);
         return { q, grund: f.grund, schnell: f.schnell, brand: fb ? fb.schnell : null, klima };
     }
-    // Der Abfluss q über dem Mittel, der den gerundeten Hub trägt: der Grund und der schnelle Abfluss F (der abfließende Regen
-    // der Fläche — die Wiese, oder mit `pegelBrand` gemischt die Brandfläche) im Bett `bett` (`pegelBett`), bezogen auf das
-    // Mittel des Flusses im Klima seiner Welt: Q/Q̄ = (s·B + r·F)/(s + r·F̄), q = s·(Q/Q̄ − 1) (das Mittel des Zählers ist der
-    // Nenner — der Grund B steht im Mittel auf 1, F im Mittel auf F̄; ohne schnellen Abfluss im Klima, F̄ = 0, byte-gleich
-    // s·(B − 1) + r·F). Die Krone trägt bankvoll das (1 + Krone/tf)^(5/3)-Fache des Mittels.
+    // Der Abfluss q über dem Grund, der den gerundeten Hub trägt: der Grund B und der schnelle Abfluss F (der abfließende Regen
+    // der Fläche — die Wiese, oder mit `pegelBrand` gemischt die Brandfläche) im Bett `bett` (`pegelBett`), bezogen auf den
+    // BASISABFLUSS g des Flusses: Q/Q_g = B + r·F/g, q = s·(Q/Q_g − 1) — der trockene Fluss (B = 1, F = 0) steht im geschnitzten
+    // Bett (Hub 0), der Regen hebt ihn. g trägt im Klima seiner Welt den Anteil `bfi` des Mittels (der Base-Flow-Index, das
+    // Mittel des Grunds durch das Mittel des Flusses; Beck et al. 2013 über 3 394 Einzugsgebiete: 0,7 hält das Mittel im Bett,
+    // 1/bfi < (1 + Krone/tf)^(5/3)): g = max(s, r·F̄·bfi/(1 − bfi))
+    // — derselbe Regen, der schnell abfließt, speist den Grund; die Erd-Spende s allein trüge im Klima der Welt 8 % des Mittels,
+    // und der Fluss stünde dauernd an der Krone. Ohne schnellen Abfluss im Klima (F̄ = 0) byte-gleich s·(B − 1) + r·F. Die Krone
+    // trägt bankvoll das (1 + Krone/tf)^(5/3)-Fache des Grunds.
     function laufQ(L, bett, grund, F, klima) {
         const P = PEGEL;
-        const k = P.spende / (P.spende + P.regen * klima);
-        const q = (P.spende * (grund - 1) + P.regen * (Math.max(0, F) - klima)) * k;
+        const g = Math.max(P.spende, (P.regen * klima * P.bfi) / (1 - P.bfi));
+        const q = (g * (grund - 1) + P.regen * Math.max(0, F)) * (P.spende / g);
         const k1 = Math.round(pegelHubVon(q, bett[0], bett[1], bett[2]) / P.stufe);
         return k1 ? pegelAbfluss(L, k1 * P.stufe) : 0;
     }
