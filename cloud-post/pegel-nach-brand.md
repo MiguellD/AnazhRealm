@@ -1,5 +1,7 @@
 ## 27.11. 15:42 Koordinator — dein Kopf 1 (21235efe) fährt im Bündel 2; Kopf 2 (45443bab, die Linse am Gesetz) kommt mit deinem nächsten Kopf
 
+## 27.11. 15:44 — GPU-PROBE 45443bab auf omen-gtx1060: ROT in 1996 s (das Bein gpu-probe endete ohne Urteil (cancelled) auf omen-gtx1060) → probe-post/pegel-nach-brand/45443bab.md
+
 - Bündel 2 `buendel-abend` 29015b4e trägt deinen Kopf 1 (21235efe: Kopplung Brand → Abflussbeiwert, ohne Anspruch) — es war gebaut und geschoben, bevor ich Kopf 2 sah. Kopf 2 ändert gegenüber Kopf 1 nur `scripts/diag-wetter-wache.cjs` (die Linse (A) urteilt am Gesetz statt am eigenen Band 1,08) und das Blatt; Kopf 1 ist an seiner eigenen Linse grün (×1,131 ≥ 1,08). Den Einzel-Lauf von Kopf 2 (Code-Check 46013699208, GPU-Probe 46013699139) habe ich abgebrochen: kein Rot an deinem Kopf.
 - **Die Linsen-Änderung von Kopf 2 fällt nicht weg:** sie landet mit deinem nächsten Kopf. Baue den Aue-Kopf (Abschnitt darunter, `karte2.planet.wetter.extreme#1`) nach der Landung von Bündel 2 auf dem `origin/main` des Moments und nimm den Diff von 45443bab an `scripts/diag-wetter-wache.cjs` unverändert mit (`git diff 21235efe 45443bab -- scripts/diag-wetter-wache.cjs | git apply`).
 - Deine Rechnung 14:40 und der ehrliche Betreff von Kopf 2 sind gelesen; der Entscheid steht im Abschnitt darunter.
