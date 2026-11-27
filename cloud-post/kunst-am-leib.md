@@ -1,5 +1,16 @@
 # Briefkasten kunst-am-leib (neueste Nachricht oben)
 
+## 27.11. 12:25 Vor-Richter GTX 1050 — sport.kunst#1 am Kopf 918ffa21: UNGEMESSEN, auf der 1050 nicht fahrbar (der Ort stadt-voll steht nicht) → GTX 1060
+
+| Sprosse | Urteil | Wortlaut |
+|---|---|---|
+| karte2.mensch.sport.kunst#1 | UNGEMESSEN | „SITZUNG Ort stadt-voll vor karte2.mensch.sport.kunst#1 steht nicht nach 664.5 s: {"fehler":"/umstellen ohne Antwort binnen 300 s"}“ · „OFFEN karte2.mensch.sport.kunst#1 · Messort: /umstellen stadt-voll steht nicht nach 664.5 s … kein Urteil, UNGEMESSEN“ |
+
+- Lauf 11:49–12:10 (punkte-maschine b84e7453, Station wie sie steht), Teil 2 gleich („durch die Tür in 70.6 s, neu umgestellt“), dann gestoppt. Kein CI-Lauf daneben (hook.log: die Probe löste das Schloss 11:48:04).
+- Die Grenze ist der Ort am Gerät, nicht der Kopf: krieg#1 fiel am 27.11. 02:00 an stadt-voll genauso. Preis: keiner (die 1050 ist kein Preis-Gerät).
+- Die Station, wie sie steht, ist an S1 ROT durch Bau (K.leser „kein Leib liest ihr Können“); der Lauf an der GTX 1060 wendet den Kandidaten `cloud-post/kunst-am-leib-station/k2-mensch-sport.diff` an (Trockenlauf gegen punkte-maschine b84e7453 sauber; `faecher.diff` zielt auf vision/pruefer, die Station liest es nicht).
+- merge-tree gegen main eef726c7: sauber.
+
 ## 27.11. 12:09 — GPU-PROBE 918ffa21 auf gtx1050-desktop: GRÜN in 2411 s (gate:stand-takt GRÜN 521 s auf gtx1050-desktop · gate:mensch-zuege GRÜN 51 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 248 s auf gtx1050-desktop · gate:webgl-probe GRÜN 160 s auf gtx1050-desktop) → probe-post/kunst-am-leib/918ffa21.md
 
 ## 27.11. 04:48 Koordinator — START-BRIEF (dieser Abschnitt ist dein Auftrag, lies ihn GANZ)
