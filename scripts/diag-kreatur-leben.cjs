@@ -1074,7 +1074,7 @@ async function lebenBuehnen() {
             x: U.x + Math.cos(i * 2.1 + seele.length) * 6,
             z: U.z + Math.sin(i * 2.1 + seele.length) * 6,
         });
-        const tagLauf = (seelen, ein, mess, z, ort = amUfer) => {
+        const tagLauf = async (seelen, ein, mess, z, ort = amUfer) => {
             const tiere = seelen.flatMap((seele) =>
                 [0, 1, 2].map((i) => {
                     const { x, z: zz } = ort(seele, i);
@@ -1083,6 +1083,16 @@ async function lebenBuehnen() {
                     return { c, g: A.TETRAPODA_SOUL_MAP[seele], x, z: zz, ruhK: 0, trunk: 0, nass: 0, spur: [] };
                 })
             );
+            // DER TAG LÄUFT ÜBER STEHENDER WAHRHEIT (die Klasse `_bestandBereit`): der Durst liest den Rand des nächsten Flusses
+            // (`_kreaturDurstig` → `_hydroDistAt`) in der Hydro-Kachel am Tier — fehlt sie, antwortet der Kern aus der Heimat „kein
+            // Fluss“, und die Suche ruht. Der Tag rechnet ohne Pause (keine Kachel kommt in ihm an), also steht jede Kachel über dem
+            // Streifgebiet seiner Tiere vor dem ersten Takt. Bis werk-am-ort-2 stand nur, was die Probe davor bestellt hatte: allein
+            // trank kein Wolf (je Art 12,25,2,0, main 948f68ee), hinter herde 1–2 je Wolf — der Teil der Linse entschied den Durst
+            const weit = Math.max(...tiere.map((t) => Math.hypot(t.x - U.x, t.z - U.z) + r._creatureMoveCharacter(t.c).leashM));
+            for (const weiter = window.__deckel("tagesbudget: die Hydro-Kacheln über dem Streifgebiet", 600, false); weiter(); ) {
+                if (!r._ensureHydroTilesAround(U.x, U.z, weit)) break;
+                await new Promise((f) => setTimeout(f, 50));
+            }
             pm.set(U.x, r.getTerrainHeightAt(U.x, U.z + 90) + 0.5, U.z + 90);
             for (let i = 0; i < (ein + mess) * 10; i++) {
                 r._uhrSetzen(((s.timeOfDay * 24 + 0.1) % 24) / 24, "regler");
@@ -1118,7 +1128,7 @@ async function lebenBuehnen() {
             }
             return tiere;
         };
-        const tiere = tagLauf(["wesen", "baer", "fuchs", "wolf"], ...(taeter ? [2, 12] : [12, 72]), z);
+        const tiere = await tagLauf(["wesen", "baer", "fuchs", "wolf"], ...(taeter ? [2, 12] : [12, 72]), z);
         for (const g in z.budget) {
             const B = z.budget[g],
                 n = B.ruhen + B.nahrung + B.ziehen,
@@ -1153,7 +1163,7 @@ async function lebenBuehnen() {
                 if (!O[i]) throw new Error("kein Lebensraum der Gattung " + g + " im Quadrat 400 m um das Ufer");
                 return O[i];
             };
-            z.wander = tagLauf(["wesen", "baer", "fuchs", "wolf"], 2, 24, { budget: {}, ruhe: [0, 0] }, imRaum).map(
+            z.wander = (await tagLauf(["wesen", "baer", "fuchs", "wolf"], 2, 24, { budget: {}, ruhe: [0, 0] }, imRaum)).map(
                 (t) => {
                     const w = {
                         g: t.g,
@@ -1206,7 +1216,7 @@ async function lebenBuehnen() {
             );
         }
         durstAus();
-        z.durstAus = tagLauf(["wesen"], 0, 10, { budget: {}, ruhe: [0, 0] }).reduce((a, t) => a + t.trunk, 0);
+        z.durstAus = (await tagLauf(["wesen"], 0, 10, { budget: {}, ruhe: [0, 0] })).reduce((a, t) => a + t.trunk, 0);
         return z;
     });
     // ── lebensraum (Tiere K4; die Geburt außer Blick, in Gruppen, der Leib am Ort seines Tiers): an neun Orten (Raster 300 m) je

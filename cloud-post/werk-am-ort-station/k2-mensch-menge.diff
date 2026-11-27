@@ -1,0 +1,68 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-mensch-menge.js b/meisterkarte-quelle/punkte/stationen/k2-mensch-menge.js
+index 9521d39..8d2e694 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-mensch-menge.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-mensch-menge.js
+@@ -12,7 +12,12 @@ const { SAATEN } = require("./sitzung-seite.js");
+ 
+ // 20 STICHPROBEN-PERSONEN (bevoelkerung S2): um die Stunde des Werks (Wohnort ≠ Arbeitsort) springt die Uhr, jeder kommt an, dann
+ // 2 Spiel-Sekunden im Takt des Spiels (wie dorfZaehlung je Ort); je Person über die Liste gestreut ihr Soll der Stunde
+-// (`_bewohnerSoll`): drinnen → drinnen; am Steuer → der Leib auf dem Sitz ≤ 2 m am Wagen; sonst der gezeichnete Leib ≤ 2 m am Ziel
++// (`_bewohnerSoll`): wer laut der Kette seines Tags geht (koerper `tagesKette`, Entscheid des Koordinators 25.11.: der Abschnitt
++// der Stunde, sein Aufbruch `auf`, seine Ankunft `an`) — auch auf dem Weg ins Haus —, der Leib im Raum ≤ 2 m am Punkt der Kette:
++// (an − Stunde) × Tempo × Sekunden der Stunde vor dem Ende seines Wegs (der Umweg um einen Stehenden zählt nicht; wer beiseite
++// tritt, `_bewohnerPlatz`, geht von dort seinen Pfad, `_bewohnerPfad`); sonst drinnen → drinnen; am Steuer → der Leib auf dem Sitz ≤ 2 m am Wagen; sonst
++// der gezeichnete Leib ≤ 2 m am Ziel. Bis werk-am-ort zählte, wer laut Plan noch ging, als verfehlt (main a954d698: der
++// Feldarbeiter auf dem Weg zum Einkauf, die Kette lässt ihm um 10,01 Uhr 3,6 m)
+ const STICHPROBE = async (r, T, arg, HILF) => {
+     const { s, A, S, L, ab } = HILF;
+     if (!L.length) return { fehler: "keine Bewohner am Messort" };
+@@ -21,6 +26,36 @@ const STICHPROBE = async (r, T, arg, HILF) => {
+     await HILF.takt(Math.round(2 / A.TAKT_DECKEL_S));
+     const h = HILF.stunde();
+     const gez = (g) => !!g && !g.userData._drinnen && (g.visible || g.userData._satz === true || !!(r._kzBesitztFeld && r._kzBesitztFeld(g)));
++    // der Abstand eines Gehenden vom Punkt seiner Kette (null: er geht nicht, oder die Kette sieht ihn schon am Ziel)
++    const sek = r._bewohnerStundeSek();
++    const kettenPunkt = (b) => {
++        const K = b.kette && b.kette.K;
++        if (!K || !b.weg || b.da || b.drinnen || !b.leib) return null;
++        // (endet der letzte Abschnitt — der Weg zurück zum Anker — nach dem Anker, liegt die Stunde danach noch in der Kette, + 24)
++        const Z = K.kette[K.kette.length - 1];
++        const hr0 = (((h - K.v - K.A) % 24) + 24) % 24;
++        const hr = Z.an > 24 && hr0 + 24 < Z.an ? hr0 + 24 : hr0;
++        let i = 0;
++        for (let j = 1; j < K.kette.length && K.kette[j].auf <= hr; j++) i = j;
++        if (!Number.isFinite(K.kette[i].an)) throw new Error("die Kette des Tags trägt keine Ankunft (koerper tagesKette `an`)");
++        const plan = Math.max(0, K.kette[i].an - hr) * (b.gangTempo ?? b.tempo) * sek;
++        if (!(plan > 0)) return null;
++        // der Punkt der Kette: `plan` Meter vor dem Ende seines Wegs — über den Leib, dahinter die gegangenen Punkte (ohne die
++        // Punkte um einen Stehenden, `_um`, `_bewohnerUm`; wer beiseite trat, `_bewohnerPlatz`, dahinter sein Pfad, `_bewohnerPfad`;
++        // reicht der Weg nicht, so weit davor)
++        const E = b.weg[b.weg.length - 1];
++        const Q = b.platz ? r._bewohnerPfad(S, b, E, b.ziel) : null;
++        const wi = Math.min(b.wi | 0, b.weg.length - 1);
++        const V = [...b.weg.slice(0, wi), b.leib.position, ...b.weg.slice(wi), ...(Q || [])].filter((q) => !q._um);
++        let [rest, P] = [plan, V[V.length - 1]];
++        for (let k = V.length - 1; k > 0 && rest > 0; k--) {
++            const l = ab(V[k - 1], V[k]);
++            const f = Math.min(1, rest / (l || 1));
++            P = { x: V[k].x + (V[k - 1].x - V[k].x) * f, z: V[k].z + (V[k - 1].z - V[k].z) * f };
++            rest -= l;
++        }
++        return ab(b.leib.position, P) + Math.max(0, rest);
++    };
+     const wahl = [];
+     for (let i = 0; i < arg.n; i++) wahl.push(L[Math.floor(((i + 0.5) * L.length) / arg.n)]);
+     let an = 0, pendler = 0;
+@@ -30,7 +65,11 @@ const STICHPROBE = async (r, T, arg, HILF) => {
+         const g = b.leib;
+         const amWagen = !!(z.ziel && b.wagen && b.wagen.entry && z.ziel === b.wagen.entry.position);
+         let ok = false, d = null;
+-        if (z.drinnen) ok = !!b.drinnen || !!(g && g.userData._drinnen);
++        const P = amWagen ? null : kettenPunkt(b);
++        if (P != null) {
++            d = P;
++            ok = d <= 2 && gez(g);
++        } else if (z.drinnen) ok = !!b.drinnen || !!(g && g.userData._drinnen);
+         else if (amWagen) {
+             d = g ? ab(g.position, b.wagen.gleitJetzt || b.wagen.entry.position) : null;
+             ok = !!b.amSteuer && d != null && d <= 2;

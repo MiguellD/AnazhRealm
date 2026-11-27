@@ -1,0 +1,32 @@
+Kandidat werk-am-ort — meisterkarte-quelle/punkte/stationen/k2-mensch-menge.js, STICHPROBE (karte2.mensch.menge.bevoelkerung#2)
+Diff: k2-mensch-menge.diff gegen origin/punkte-maschine 77058b05 (die Datei seit 41ba48cc unverändert, auch an der Spitze 86b9af43; `git apply --check` dort OK).
+
+WAS: die Stichprobe urteilt den Gehenden an der Kette seines Tags (Entscheid des Koordinators 25.11.: koerper `tagesKette`, der
+Abschnitt der Stunde, Aufbruch `auf`, Ankunft `an`). Wer laut der Kette zur Stunde noch geht — auch auf dem Weg ins Haus —, ist
+angetroffen, wenn sein Leib im Raum höchstens 2 m am Punkt der Kette steht: (an − Stunde) × Tempo × Sekunden der Stunde vor dem
+Ende seines Wegs (`b.weg` über den Leib, dahinter die gegangenen Punkte; die Punkte um einen Stehenden, `_um` aus `_bewohnerUm`, zählen nicht — der Tag kennt keinen, der Umweg
+führt auf ihn zurück; wer beiseite tritt, `_bewohnerPlatz`, von dort über seinen Pfad, `_bewohnerPfad`; reicht der Weg nicht, so
+weit davor). Endet der letzte Abschnitt — der Weg zurück zum Anker — nach dem Anker, liegt die Stunde danach noch in der Kette
+(+ 24). Sonst gilt das Urteil wie bisher: drinnen → drinnen, am Steuer → ≤ 2 m am Wagen, sonst der gezeichnete Leib ≤ 2 m am
+Ziel. Eine Kette ohne `an` (ein Kern vor werk-am-ort) ist ein Fehler beim Namen, nie ein stilles Verfehlt.
+
+WARUM: bis hier verfehlte jeder, den der Plan zur Stunde gehen ließ — am main a954d698 um 10,01 Uhr der Feldarbeiter #469977 auf
+dem Weg zum Einkauf (19 von 20); das Soll (`_bewohnerSoll`) nennt das Ziel, das Gesetz des Tags lässt ihn aber noch gehen. Wer
+auf dem Heimweg ist, wurde als „drinnen“ geurteilt, bevor er die Tür erreichen konnte. Der Abstand im Raum statt Rest − Rest:
+der Bogen um zwei Patrizier an ihrem Werk zählte dem Jäger #114167 (Bündel 8d0a9ebe, 10,01 Uhr) 1,8 m Umweg als Rückstand —
+im Raum stand er am Punkt seiner Kette. Der Anker + 24: der Nachtwächter #468983 auf dem Heimweg nach Mitternacht las „am Anker
+ohne Weg“, 61 m daneben. Gemessen headless an der vollen Stadt um 10,013 Uhr: der HEUTIGE Wortlaut liest am Bündel 8d0a9ebe und
+am Kopf werk-am-ort 2 je 18 von 20 — dieselben zwei gehen laut ihrer Kette noch (jaeger #114167 zum Besuch, 135,9 → 101,0 m vor
+dem Ziel; wohnhaus #469977 zum Einkauf, 22,1 → 3,2 m); dieser Kandidat am Kopf 20 von 20, die Klasse 87 von 89.
+
+DIE WÄNDE:
+- `node punkte.cjs liste --kopf 8d0a9ebe` (Arbeitsbaum punkte-maschine 18f2c6ee, die Datei gleich der Spitze 77058b05): Basis und
+  Kandidat je 1 976 Stationen · 420 Kriterien · fehlt 15 · Fehler 0, je 25 s; der Unterschied der Listen ist allein der Rumpf
+  dieser Stichprobe.
+- Die Leiter misst wie bisher in einer Sitzung ≤ 45 s: der Kandidat fügt je Person der Stichprobe (20) eine Schleife über ihren Weg
+  und nur für den, der beiseite tritt, EINEN Pfad (`_bewohnerPfad`) hinzu.
+- Kein Fächern im Kern.
+
+DER LESER IM SPIEL: die Probe `werkort` in gate:kreatur-takt (scripts/lib/kreatur-mensch.cjs) fährt dieselbe Stichprobe wörtlich an
+der vollen Stadt und dazu die KLASSE (jeder Gehende der Stadt zur selben Stunde, mit Vorzeichen: dahinter +); ihr Täter `werk-netz`
+(die Kette misst den Weg über das Netz des Plans, der Stand vor werk-am-ort) ist ROT beim Namen.

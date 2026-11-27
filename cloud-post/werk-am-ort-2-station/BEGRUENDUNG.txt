@@ -1,0 +1,18 @@
+werk-am-ort-2 — Kandidat der Station k2-mensch-menge.js (karte2.mensch.menge.seuche#2): NUR der Leser
+
+Was sich ändert (k2-mensch-menge.diff gegen punkte-maschine meisterkarte-quelle/punkte/stationen/k2-mensch-menge.js):
+- S2 war `leser(…)` mit der Zeile „kein Erreger und keine Ansteckung“ — der Wirt trug keinen Ausbruch. Jetzt trägt er ihn
+  (`_bewohnerSeuche`, koerper `SEUCHE_GESETZ` · `seucheAusbruch`), also liest die Station ihn: die neue Seite `SEUCHE` ruft
+  `r._bewohnerSeuche(S, 0)` (den Ausbruch 0 der Stadt) und gibt die Fälle, wie viele davon ohne Leib sind (die Kontakte kommen
+  aus der Tageskette jedes Bewohners, gezeichnet oder nicht), die Form der Kurve und R0 der frühen Fälle (ihre mittlere Zahl
+  Angesteckter im Baum der Ansteckung, Anderson & May 1991) gegen das Band des Gesetzes. K.schritt(2) ruft K.zahl statt K.leser.
+- Umfang (≥ 100 Bewohner im Ausbruch) und die zwei Maße (S-I-R 1 = ja, R0 im Band 1 = ja) stehen UNVERÄNDERT, wie die Station
+  sie schon nennt; kein neues Soll, keine neue Schwelle. Die Proben der Sprosse 2 (Attrappe ohne Kurve, R0 fremd) bleiben.
+
+Die EINE Zeile, die der Richter nach dem Setzen wörtlich zeigen soll (headless, Null-Renderer, der vereinte Baum):
+S2 Ausbruch 0 der Stadt (Influenza): 799 von 1356 krank, davon ohne Leib 0, S-I-R 1, R0 2.4 (Band 2–3), Spitze am Tag 11 von 36
+
+Die Zahl kommt aus der Kreatur-Linse (Probe seuche, stadt-voll, headless, dieselbe Seite `_bewohnerSeuche(S, 0)`): 1 356 Bewohner,
+alle mit Leib; die Station am Messort ihrer Sitzung kann andere Zahlen tragen. OFFEN: die drei Wände des Kandidaten (die Liste der
+Punkte-Maschine · ≤ 60 s je Leiter · Stichprobe durch den Leser des Spiels) sind in der Wolke nicht gefahren — der Zweig punkte-maschine ist nur
+als einzelne Datei erreichbar; die Seite misst ≈ 190 ms.
