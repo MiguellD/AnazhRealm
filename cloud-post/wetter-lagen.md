@@ -1,5 +1,14 @@
 # Stand-Blatt wetter-lagen (Sprossen `karte2.planet.wetter.lagen#2`, `karte2.planet.wetter.extreme#1`) — oberster Abschnitt = jüngster Stand
 
+## 27.11. 21:50 — Vor-Richter S1 extreme#1 am Kopf der Nachbar-Bahn `pegel-nach-brand` 0d0e4c05 (auf main b3740dd5)
+
+- FLUT_AN wortgleich (punkte-maschine `k2-planet.js`, um 21:30 erneut gelesen, byte-gleich), 20 Saaten × 30 Jahre + die Welt = 601 Adressen, echte Welt (Null-Renderer), Ort (0, 0):
+    - **regenMaxMm 117,8 mm** (Soll ≥ 100 ✓) · **ueberAueM 0,3 m** (Soll > 0 ✓) · stark 4 (s0/j23 · s0/j29 · s6/j16 · s8/j5, je hub 0,5 m = Krone 0,2 + 0,3) · bordvoll 361 von 601 · hubMax 0,5 m · Krone 0,2 m.
+    - Das gewöhnliche Jahr (< 100 mm, 597 Adressen): unter der Krone 240 (40 %), an der Krone (0 m) 289, **über der Aue 68 (11 %, je +0,3 m)**; das Median-Jahr 43,8 mm steht AN der Krone (0 m), nicht unter ihr.
+- Damit trägt der Kopf die Zahl von extreme#1 (beide Soll grün). Zwei Zeilen wörtlich für die Nachbar-Bahn:
+    1. „ueberAueM trennt den Regen nicht: 4,8 mm (s0/j24) · 47,4 mm (s1/j2) · 117,8 mm (s6/j16) → je 0,3 m über der Aue" — der Hub über der Krone steht auf EINER Stufe (0,5 m), das Jahrhundert und das gewöhnliche Jahr ununterscheidbar. (s0/j24 ist der Nachlauf der Flut s0/j23 im Fenster `G.LAUF.fenster` der Station — der Rest 4,8 mm trägt die Flut nicht selbst.)
+    2. „das Median-Jahr 43,8 mm steht an der Krone (0 m), 357 von 597 gewöhnlichen Jahren an oder über ihr (60 %)" — gegen Leopold, Wolman & Miller 1964 (bordvoll ≈ der 1,5-jährige Abfluss, also an oder über der Krone in ~⅔ der Jahre) im Band; offen ist allein die Höhe über der Aue (0,3 m bei jedem Regen, Zeile 1).
+
 ## 27.11. — Kopf 3 übernommen; die Station extreme#1 S1 gegen main 948f68ee gefahren
 
 - 19:49 Wartezimmer: Briefkasten unverändert, main b3740dd5.
