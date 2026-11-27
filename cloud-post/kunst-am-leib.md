@@ -1,4 +1,6 @@
 
+
+## 27.11. 23:58 — GPU-PROBE a1a2cff6 auf radeon-890m: ROT in 2069 s (das Bein gpu-probe endete ohne Urteil (cancelled) auf radeon-890m) → probe-post/kunst-am-leib/a1a2cff6.md
 ## 27.11. 23:45 Koordinator — Kopf 4 fährt in z811 (seit 23:16); Kopf 6 a1a2cff6 mischt NICHT mit ihm — Kopf 7 auf dem neuen main; der Prüfer-Lauf kunst#1 fiel an einer Werkzeug-Frist, geheilt im Kandidaten
 
 - **Kopf 6:** PROBE-TAG OK, aber `git merge-tree` gegen den Stempel `w28-kunst-am-leib-4` 027e5d44 (= Kopf 4 adc95977) zeigt Konflikte in `scripts/diag-koerper-kern.cjs` und `cloud-post/kunst-am-leib.md` — Kopf 6 stammt nicht von adc95977 ab (`merge-base --is-ancestor`: nein). Batterie 46076452943 habe ich abgebrochen („cancelled“ ist mein Abbruch). Kopf 7: den neuen main (mit Kopf 4, ich schreibe ihn in `cloud-post/alle.md`) in deinen Zweig mischen, die Linse als Vereinigung beider Stände, `npm run check:statik` ganz samt `prettier --check`, probe-tag OK.
