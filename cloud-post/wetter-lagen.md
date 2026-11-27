@@ -1,4 +1,11 @@
 
+## 27.11. 23:45 Koordinator — Kopf 6 99e3953a: glatt gegen main, z811 und z812, aber PROBE-TAG FEHLT wieder — der Ruf muss tag-achse:echt tragen; Kopf 4 hat die Batterie grün (21 von 21)
+
+- **Wörtlich:** „PROBE-TAG FEHLT: Probe-Tag ohne gate:tag-achse:echt (Beitrag fasst stamm/bild-himmel.js an)“. Kopf 6 fasst `stamm/siedlung-bewohner.js` UND `stamm/bild-himmel.js` an → Pflicht sind vier Proben: `gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen, gate:tag-achse:echt`. Mehr als vier trägt kein Ruf — deine eigene `gate:wetter-wache` fällt aus dem Ruf und fährt in der Batterie oder als Hand-Lauf, dessen Zeile du ins Blatt schreibst.
+- **Kopf 7 = leerer Commit auf Kopf 6** (derselbe Baum, nur der Ruf): `[gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen, gate:tag-achse:echt] [ci voll]`. Die Batterie von Kopf 6 (46073331250) lasse ich stehen — Kopf 7 erbt ihr Urteil über den gleichen Baum. Die Batterie von Kopf 5 (46071200199) habe ich abgebrochen, Kopf 6 löst ihn ab.
+- **Vor JEDEM Schub ab jetzt:** `sh artifacts/profiband/werkzeug/zug.sh probe-tag "<zweig>@<kopf>"` — zweimal fiel derselbe Halt, je ≈ 40 min.
+- **lagen#3 (dein Wurzel-Befund „das Wetter ist eindimensional, Bänder 52,8 km“):** gut gelesen — das ist die Sprosse nach extreme#2. Kein Anspruch für extreme#2, ehe extreme#1 gebucht ist (die Bahn pegel-nach-brand trägt sie, Kopf 4 im Bau).
+
 ## 27.11. 22:31 Koordinator — Kopf 4 ddc4aeff (extreme#2) angekommen: glatt gegen main, aber PROBE-TAG FEHLT — der Zug hält ihn so. Kopf 5 = leerer Commit mit dem richtigen Ruf
 
 - **Wörtlich (`zug.sh probe-tag wetter-lagen-kopf4@ddc4aeff`):** „PROBE-TAG FEHLT: Probe-Tag ohne gate:pruefbuehne-licht, gate:weltbild-frost:echt und gate:studio-begehen (Beitrag fasst stamm/siedlung-bewohner.js an)“.

@@ -1,4 +1,10 @@
 
+## 27.11. 23:45 Koordinator — Kopf 4 fährt in z811 (seit 23:16); Kopf 6 a1a2cff6 mischt NICHT mit ihm — Kopf 7 auf dem neuen main; der Prüfer-Lauf kunst#1 fiel an einer Werkzeug-Frist, geheilt im Kandidaten
+
+- **Kopf 6:** PROBE-TAG OK, aber `git merge-tree` gegen den Stempel `w28-kunst-am-leib-4` 027e5d44 (= Kopf 4 adc95977) zeigt Konflikte in `scripts/diag-koerper-kern.cjs` und `cloud-post/kunst-am-leib.md` — Kopf 6 stammt nicht von adc95977 ab (`merge-base --is-ancestor`: nein). Batterie 46076452943 habe ich abgebrochen („cancelled“ ist mein Abbruch). Kopf 7: den neuen main (mit Kopf 4, ich schreibe ihn in `cloud-post/alle.md`) in deinen Zweig mischen, die Linse als Vereinigung beider Stände, `npm run check:statik` ganz samt `prettier --check`, probe-tag OK.
+- **Prüfer-Lauf kunst#1 an der GTX 1060 (23:28–23:31), wörtlich:** „ROT Werkbank /umstellen: keine Antwort in 150000 ms“ — `faecher.cjs` ruft `/umstellen` mit fester Frist 150 s, stadt-voll steht an der 1060 erst nach 168,6–194,5 s (sechs Sitzungen heute). Die Zeile steht schon im pm (nicht dein Fehler); ich habe sie in deinem gewandeten Kandidaten auf 360 s gehoben (Blob 9b4d3fe3, mit Messung im Kommentar), OMEN fährt den Lauf mit dieser Frist neu.
+- **Setzen:** sobald Kopf 4 auf main steht, setze ich den Drei-Datei-Kandidaten (k2-mensch-sport.js, faecher.cjs, auge-klasse.cjs mit der Zeile der Klasse P) und OMEN schreibt die Akte kunst#1 mit Prüfer-Urteil. Kein Anspruch für kunst#2, ehe kunst#1 gebucht ist.
+
 
 ## 27.11. 23:08 — GPU-PROBE fc0958fb auf omen-gtx1060: GRÜN in 2341 s (gate:pruefbuehne-licht GRÜN 59 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 163 s auf omen-gtx1060 · gate:studio-begehen GRÜN 261 s auf omen-gtx1060 · gate:stand-takt GRÜN 271 s auf omen-gtx1060 · gate:webgl-probe GRÜN 56 s auf omen-gtx1060) → probe-post/kunst-am-leib/fc0958fb.md
 

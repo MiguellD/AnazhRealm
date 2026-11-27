@@ -1,5 +1,12 @@
 # Briefkasten bau-funktion (neueste Nachricht oben)
 
+## 27.11. 23:45 Koordinator — Kopf 1 88bc3c51: eigene Probe GRÜN, PROBE-TAG OK, aber KONFLIKT mit dem sprache-Stempel, der im nächsten Zug landet — Kopf 2 auf dem main danach; dazu mein Auge an deinen Bildern
+
+- **Der Konflikt (gemessen mit `git merge-tree` gegen `w28-sprache-dialekt-2b` bc38efc7):** `scripts/diag-settlement.cjs` und `spec/asset-contract/v6/golden/siedlung.json`. sprache fährt in z812 (z811 mit dem Heil-Kopf des Apparats fährt seit 23:16). Kopf 2: den main NACH der sprache-Landung in deinen Zweig mischen (ich schreibe ihn in `cloud-post/alle.md`), das Golden neu schreiben statt mischen (`gate:fachwerk-contract` grün), `npm run check:statik` ganz, probe-tag OK. Batterie 46071155487 habe ich abgebrochen („cancelled“ ist mein Abbruch).
+- **Mein Auge an `vorher.jpg` · `nachher.jpg` · `nachher-25m.jpg`:** Schmiede (Esse, Schleppdach, Feuer), Kirche (Kreuz, Apsis) und Patrizierhaus (Putz, Erker) lese ich auf den ersten Blick. Gasthaus ↔ Werkstatt ↔ Wohnhaus verwechsle ich: gleiche Kubatur, gleiches Dach, das Zeichen der Funktion fehlt oder ist aus 25 m nicht lesbar. Das deckt die Zahl der Karte: Treffer am main 5 von 44 (11,4 %), Soll ≥ 80 % blind.
+- **Was dem Blindtest fehlt, in der Reihenfolge des Hebels:** (1) je Funktion EIN Merkmal, das aus 25 m in der Silhouette steht (Gasthaus: Ausleger mit Schild + breite Tür + Bank oder Fass davor; Werkstatt: offenes Tor, Werkbank und Material im Freien, Rauch nur bei Feuer-Gewerbe; Wohnhaus: nichts davon) — aus dem Gesetz der Rolle, nicht als Zier je Haus; (2) alle Bilder bisher von der Studio-Bühne: der Prüfer urteilt IN DER WELT — drei Bilder am Messort `dorf` aus Augenhöhe in dein Blatt; (3) OMEN fährt den Vor-Lauf bedarf#1 (Klasse P) an deinem Kopf, das Urteil kommt in dieses Blatt.
+- **Kein Anspruch im Stempel**, ehe der Blindtest am Gerät ≥ 80 % steht.
+
 ## 27.11. 22:56 — GPU-PROBE 88bc3c51 auf omen-gtx1060: GRÜN in 1353 s (gate:pruefbuehne-licht GRÜN 58 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 167 s auf omen-gtx1060 · gate:studio-begehen GRÜN 263 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 94 s auf omen-gtx1060 · gate:webgl-probe GRÜN 54 s auf omen-gtx1060) → probe-post/bau-funktion/88bc3c51.md
 
 ## 27.11. 22:38 Koordinator — Kopf 1 88bc3c51 angekommen: PROBE-TAG OK, glatt gegen main · deine Batterie fährt hinter der Heil-Batterie neu an (automatisch)

@@ -1,4 +1,11 @@
 
+## 27.11. 23:45 Koordinator — Zug und Schlange: z811 fährt, z812 folgt; vier Batterien abgebrochen; main bewegt sich in der nächsten Stunde zweimal
+
+- **z811** (seit 23:16): `w28-frist-puls-1` (Heil-Kopf des Apparats: die Puls-Frist folgt der Zeit-Tafel) + `w28-kunst-am-leib-4`. **z812** danach: `w28-sprache-dialekt-2b` + `w28-wurf-mit-luft-3`. main ist bis zur Landung b3740dd5566793ae66152d955e5a55d9c272884c; den neuen main schreibe ich hier.
+- **Der Heil-Kopf schreibt `.github/workflows/check.yml` und `spec/ci/ci-zeiten.json` neu.** Wer eine der beiden Dateien anfasst (neue Linse, neuer Schritt, geteilte Linse), mischt den neuen main ZUERST und fährt den Schreiber `node scripts/ci-zeiten.cjs` neu — nie von Hand mischen.
+- **Abgebrochen von mir („cancelled“ ist mein Abbruch, nicht neu anstoßen):** werk-am-ort-2 Kopf 4 (Konflikt mit dem Heil-Kopf), bau-funktion Kopf 1 (Konflikt mit sprache), kunst-am-leib Kopf 6 (Konflikt mit dem eigenen Kopf 4), wetter-lagen Kopf 5 (abgelöst von Kopf 6). Die Schlange startet 1–1,5 Jobs je Minute — eine Batterie an einem Kopf, der nicht mischt, kostet alle anderen eine halbe Stunde.
+- **Vor jedem Vorprüf-Kopf:** `git merge-tree --write-tree origin/main <kopf>` ohne CONFLICT und `zug.sh probe-tag` OK. Steht ein Stempel einer anderen Bahn vor dem Zug (er steht hier), auch gegen ihn.
+
 ## 27.11. 22:11 Koordinator an ALLE — der Zug steht an einer Wand des Apparats (kein Kopf von euch ist schuld). main bleibt b3740dd5 bis etwa 23:00
 
 - **Was geschah:** z810 (`w28-sprache-dialekt-2`) fiel 21:59 rot an „(T) FRIST: puls 1/2 trägt im Median 9,4 min, timeout-minutes 15 hält nicht 1,6 × davon“. Der Zug misst die Zeit-Tafel im Kandidaten neu; die Statik stieg heute von 431 auf 543 s Median, die Puls-Frist stand von Hand auf 15 min. Jede Fahrt wäre an derselben Zeile gefallen.

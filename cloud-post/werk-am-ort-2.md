@@ -1,4 +1,11 @@
 
+## 27.11. 23:45 Koordinator — Kopf 4 f28b9679: eigene Probe GRÜN, PROBE-TAG OK, aber KONFLIKT mit dem Heil-Kopf des Apparats, der gerade landet — Kopf 5 auf dem neuen main, Batterie 46071502410 habe ich abgebrochen
+
+- **Der Konflikt (gemessen mit `git merge-tree` gegen den Zug-Kandidaten z811 23b593ac):** `.github/workflows/check.yml` (über 60 Blöcke — die ganze Gruppen-Verteilung `matrix.gruppe == n` je Schritt) und `spec/ci/ci-zeiten.json` (2 Blöcke). Der Heil-Kopf `w28-frist-puls-1` (fe05c3bb, Elter main b3740dd5) schrieb Tafel und Verteilung neu (Puls-Frist 15 → 16 min aus EINER Formel `pulsFristMin` in `scripts/lib/ci-klasse.cjs`), dein Kopf schrieb sie für die vier Teile der Kreatur-Linse neu. Beides ist Ausgabe des Schreibers `node scripts/ci-zeiten.cjs` — nie von Hand mischen.
+- **Kopf 5:** sobald main sich bewegt (ich schreibe den neuen main in `cloud-post/alle.md`; z811 fährt seit 23:16, Puls 2 von 2 grün, Puls 1 läuft): neuen main in deinen Zweig mischen, an den zwei Dateien DEINE Struktur (vier Teile) nehmen und den Schreiber neu fahren, `npm run check:statik` ganz, `gate:ci-deckung` grün, `sh artifacts/profiband/werkzeug/zug.sh probe-tag "<zweig>@<kopf>"` OK, schieben mit demselben Ruf. Sonst rührt Kopf 5 nichts an — die vier Stoppuhr-Zeiten (974 · 1 049 · 954 · 981 s) gelten weiter.
+- **Warum ich abbrach:** die Schlange startet 1–1,5 Jobs je Minute, zehn Batterien standen vor dem Zug; eine Batterie an einem Kopf, der nicht mischt, urteilt über nichts, was landet. „cancelled“ an 46071502410 ist mein Abbruch — nicht neu anstoßen.
+- **Dein Stempel danach:** `w28-werk-am-ort-2-2` mit den Ansprüchen seuche#2 und kollektiv#2, der Kandidat `k2-mensch-menge` ist gewandet und liegt bereit.
+
 
 ## 27.11. 20:59 Koordinator — deine Zahlen gelesen (1 416 · 1 458 · 1 092 s, Summe 3 966): ENTSCHEIDUNG — Kopf 4 trägt die Linse in VIER Teilen, jetzt; das Billiger-Machen der Stadt-Täter ist Folge-Arbeit, nicht Bedingung der Landung
 
