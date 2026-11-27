@@ -2005,13 +2005,15 @@ LEITERN.push(
     // (ρ Luft 1,2 kg/m³, c_w Würfel 1,05, Platte quer 1,17, Masse aus dem Löser) in der Luft des Orts: v_rel = v − Wind (`_windAt`, der EINE
     // Wind-Leser, zur Uhr des Sim-Schritts) — die Welt weht, die Feder treibt mit ihm. S2 an der Mess-Wiese: der Fußball als freier
     // Körper — die Ablenkung des Freistoßes mit Drall gegen die Rechnung mit den gemessenen Beiwerten, sein Abprall auf Gras und Stein
-    // gegen das Band der FIFA (`drall`).
+    // gegen das Band der FIFA (`drall`). S3 am nächsten benannten See des Gelände-Gesetzes: ein Holz- und ein Eis-Würfel 0,3 m als freie
+    // Körper fallen aufrecht aus 0,2 m in stilles Wasser mit ≥ 1,5 m Säule — ihre Tauchtiefe (Spiegel der EINEN Wasser-Wahrheit
+    // `_koerperWasser` − Unterkante, gemittelt über die letzten 4 von 10 s) gegen ρ_Stoff / ρ_Wasser · Kante der Stoff-Tafel (`tauch`).
     LEITERN.push(
         leiter({
             leiter: "same.physik.flug",
             sek: 40,
             mutiert: true,
-            pfad: ["scripts/werkbank.cjs", "stamm/koerper-frei.js", "stamm/siedlung-satz.js", "stamm/werkstatt-bauen.js", "stamm/kreatur-leben.js", "stamm/gelaende-boden.js", "stamm/gelaende-kollision.js", "stamm/koerper-bewegung.js", "stamm/wasser-hydro.js", "stamm/stoff-material.js"],
+            pfad: ["scripts/werkbank.cjs", "stamm/koerper-frei.js", "stamm/siedlung-satz.js", "stamm/werkstatt-bauen.js", "stamm/kreatur-leben.js", "stamm/gelaende-boden.js", "stamm/gelaende-kollision.js", "stamm/koerper-bewegung.js", "stamm/wasser-hydro.js", "stamm/wasser-zellen.js", "stamm/stoff-material.js"],
             welt: [{ wort: "weg_m", ab: 1, was: "Flugweite des Steins in der Welt (m)" }],
             sprossen: {
                 1: {
@@ -2027,7 +2029,10 @@ LEITERN.push(
                         { wort: "abprall_abw_pct", richtung: "≤", wert: 10, wortlaut: "Abprall Rasen/Beton nach Stoßzahl ±10 %", feld: "richter" },
                     ],
                 },
-                3: { soll: [{ wort: "tauch_abw_pct", richtung: "≤", wert: 5, wortlaut: "Tauchtiefe = Dichteverhältnis ±5 %", feld: "richter" }] },
+                3: {
+                    soll: [{ wort: "tauch_abw_pct", richtung: "≤", wert: 5, wortlaut: "Tauchtiefe = Dichteverhältnis ±5 %", feld: "richter" }],
+                    welt: [{ wort: "tauch_m", ab: 0.1, was: "Tauchtiefe des Holz-Würfels im Wasser der Welt (m)" }],
+                },
                 4: { soll: [{ wort: "fahrt_abw_pct", richtung: "≤", wert: 15, wortlaut: "Mindestfahrt gegen √(2mg/(ρ·S·C_L)) ±15 %", feld: "richter" }] },
                 5: { auge: { pose: "stadt-voll third · Straßenschlucht im Lee, ein Blatt Papier im Wind", vorbild: "Video eines Blatts Papier, das im Lee einer Straßenschlucht umdreht (Blindpaar)" } },
                 6: {
@@ -2259,6 +2264,68 @@ LEITERN.push(
                         delete s.blueprints[typ];
                     }
                 }
+                async function tauch(r) {
+                    const s = r.state, A = AnazhRealm, dt = A.FIXED_DT, m = s.playerMesh, kante = 0.3, hh = (a, b) => r.getTerrainHeightAt(a, b);
+                    const warte = async (fertig) => {
+                        for (let i = 0; i < 300 && !fertig(); i++) await new Promise((f) => setTimeout(f, 50));
+                    };
+                    // der Ort: der nächste benannte See des Gelände-Gesetzes (`benannteSeen`, sein Wasser über dem Meer, ≥ 16 Zellen), seine
+                    // tiefste Zelle ohne Fluss, um sie stilles Wasser mit ≥ 1,5 m Säule (`_koerperWasser`, die EINE Wasser-Wahrheit)
+                    const G = globalThis.__gelaendeCore, wl = s.waterLevel || 0, [mx, mz] = [m.position.x, m.position.z];
+                    const kand = G.benannteSeen(r._gelaende(), -12000, -12000, 64, 375)
+                        .map((k) => ({ x: -12000 + (k % 375) * 64, z: -12000 + ((k / 375) | 0) * 64 }))
+                        .sort((a, b) => Math.hypot(a.x - mx, a.z - mz) - Math.hypot(b.x - mx, b.z - mz));
+                    let ort = null, see = null;
+                    for (let n = 0; n < Math.min(6, kand.length) && !ort; n++) {
+                        const k = kand[n];
+                        await warte(() => !r._ensureHydroTilesAround(k.x, k.z, 0));
+                        const h = r._hydroFor(k.x, k.z), lake = h && (h.lakes || []).find((l) => l.level > wl + 2 && l.cells && l.cells.length >= 16);
+                        if (!lake) continue;
+                        let tief = null;
+                        for (const q of lake.cells) {
+                            const x = h.originX + ((q % h.dim) + 0.5) * h.cell, z = h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell, t = r._koerperWasser(x, z, hh(x, z)) - hh(x, z);
+                            if (t > 0 && !r._hydroRiverAt(x, z) && (!tief || t > tief.t)) tief = { x, z, t };
+                        }
+                        if (!tief) continue;
+                        see = tief;
+                        for (let ring = 0; ring <= 60 && !ort; ring++)
+                            for (let j = 0; j < Math.max(1, ring * 6) && !ort; j++) {
+                                const w = (j / Math.max(1, ring * 6)) * Math.PI * 2, x = tief.x + Math.cos(w) * ring * 3, z = tief.z + Math.sin(w) * ring * 3;
+                                if ([-1, 0, 1].every((d) => r._koerperWasser(x + d, z + d, hh(x + d, z + d)) - hh(x + d, z + d) >= 1.5 && !r._waterFlowAt(x + d, z + d))) ort = { x, z, g: hh(x, z), sp: r._koerperWasser(x, z, hh(x, z)) };
+                            }
+                    }
+                    if (!ort) return { fehler: see ? "kein stilles Wasser mit ≥ 1,5 m Säule am See " + Math.round(see.x) + "/" + Math.round(see.z) : "kein benannter See des Gelände-Gesetzes trägt Wasser (`benannteSeen`, `_hydroFor`)" };
+                    // der Wurf: ein Würfel 0,3 m je Stoff, aufrecht 0,2 m über dem Spiegel, 10 s Sim-Schritt; die Tauchtiefe (Spiegel −
+                    // Unterkante) gemittelt über die letzten 4 s gegen ρ_Stoff / ρ_Wasser · Kante (die Stoff-Tafel, `_stoff`)
+                    const rhoW = r._stoff("wasser").rho, r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                    const wurf = (stoff) => {
+                        const typ = "k2_tauch_" + stoff;
+                        s.blueprints[typ] = { name: typ, label: typ, frei: true, builtIn: false, parts: [{ shape: "box", material: stoff, size: { x: kante, y: kante, z: kante }, position: { x: 0, y: kante / 2, z: 0 } }] };
+                        const e = r.spawnArchitecture(typ, { x: ort.x, y: ort.sp + 0.2, z: ort.z }, { precise: true, silent: true }), K = e && e._frei;
+                        try {
+                            if (!K) return { fehler: "der Würfel aus " + stoff + " ist kein freier Körper (`_freiKoerperSetzen`)" };
+                            [K.p[0], K.p[1], K.p[2]] = [ort.x, ort.sp + 0.2 + kante / 2, ort.z];
+                            K.v.fill(0);
+                            K.w.fill(0);
+                            r._freiWecken(K);
+                            K.grund = null;
+                            r._freiLage(K);
+                            let [summe, n] = [0, 0];
+                            for (let i = 0; i < Math.round(10 / dt); i++) {
+                                r._freiSchritt(dt);
+                                if (i >= Math.round(6 / dt)) [summe, n] = [summe + r._koerperWasser(K.p[0], K.p[2], ort.g) - (K.p[1] - kante / 2), n + 1];
+                            }
+                            const [tiefe, soll] = [summe / n, (r._stoff(stoff).rho / rhoW) * kante];
+                            return { rho: r._stoff(stoff).rho, tiefe: r3(tiefe), soll: r3(soll), abw: Math.round((10000 * Math.abs(tiefe - soll)) / soll) / 100, ueberGrund: r3(K.p[1] - kante / 2 - ort.g) };
+                        } finally {
+                            if (e) r.removeArchitecture(e, { still: true });
+                            delete s.blueprints[typ];
+                        }
+                    };
+                    const [holz, eis] = [wurf("holz"), wurf("eis")];
+                    if (holz.fehler || eis.fehler) return { fehler: holz.fehler || eis.fehler };
+                    return { ort: { x: Math.round(ort.x), z: Math.round(ort.z), saeule: r3(ort.sp - ort.g) }, holz, eis, tauch_abw_pct: Math.max(holz.abw, eis.abw) };
+                }
                 await L.ort("wiese", "ego");
                 L.preisPose("wiese", "ego");
                 await L.je(1, async () => {
@@ -2275,7 +2342,12 @@ LEITERN.push(
                     if (!d.ball.kugel) return L.leser(2, "der Ball ist keine Kugel: der Löser trägt ihn als Kiste (stamm/koerper-frei.js `_freiKoerperSetzen`)");
                     L.gemessen(2, { ablenkung_abw_pct: d.ablenkung_abw_pct, abprall_abw_pct: d.abprall_abw_pct }, { welt: { weg_m: d.ablenkung.weg }, taeter: "Ablenkung " + d.ablenkung.welt + " m gegen Rechnung " + d.ablenkung.rechnung + " m (Magnus im Luft-Paket, stamm/koerper-frei.js `_freiZiehen`), Stoßzahl Rasen " + d.abprall.rasen.e + " gegen " + d.abprall.rasen.band + ", harte Fläche " + d.abprall.hart.e + " gegen " + d.abprall.hart.band + " (`_freiPrallZahl`)" });
                 });
-                await L.je(3, async () => L.leser(3, "Auftrieb am freien Körper: der Löser liest kein Wasser — " + ohneLuft));
+                await L.je(3, async () => {
+                    const t = await ev(tauch, null, Math.max(5, L.rest() - 6));
+                    L.zeile("Holz und Eis, Würfel 0,3 m im stillen Wasser: " + JSON.stringify(t));
+                    if (t.fehler) throw new Error(t.fehler);
+                    L.gemessen(3, { tauch_abw_pct: t.tauch_abw_pct }, { welt: { tauch_m: t.holz.tiefe }, taeter: "Holz " + t.holz.tiefe + " m gegen " + t.holz.soll + " m, Eis " + t.eis.tiefe + " m gegen " + t.eis.soll + " m am See " + t.ort.x + "/" + t.ort.z + " (Säule " + t.ort.saeule + " m) — der Auftrieb des Lösers (stamm/koerper-frei.js `_freiAuftrieb`, `_freiWasserPacken`)" });
+                });
                 await L.je(4, async () => L.leser(4, "Auftrieb am Flügel: kein Gesetz des Auftriebs — " + ohneLuft));
                 await L.je(5, async () => L.leser(5, "Wind am Körper: der Löser liest das EINE Wind-Feld nicht (stamm/stoff-material.js:233 `_windAt`) — " + ohneLuft));
                 const saat = await L.ev("return r.state.worldMeta && r.state.worldMeta.seed;", 20);
