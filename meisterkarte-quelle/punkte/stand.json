@@ -3020,15 +3020,15 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 59 Bilder · max 75.25 ms · 77.97 % > 33 ms · Fahrt 44 Bilder · max 159.03 ms · 95.45 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 77.97 % > 33 ms | Fahrt: 5 Bild(er) > 100 ms (max 159.03), 95.45 % > 33 ms an bed6256c radeon · gehalten: Gehen 177 Bilder · max 91.69 ms · 14.12 % > 33 ms · Fahrt 50 Bilder · max 158.38 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.12 % > 33 ms | Fahrt: 5 Bild(er) > 100 ms (max 158.38), 80.00 % > 33 ms an 52937c92 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an bed6256c: Last: Referenz f 1,323 (Faden 1,323 · alle Kerne 1,312; vor 110,5/341 ms, nach 103,3/296,3 ms, Ruhe 83,5/259,9 ms seit 2026-11-16) · fremd: node scripts/diag-altlasten.cjs --selftest 49,9 CPU-s · bash · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/wirt-wache.cjs, stamm/bild-himmel.js +15) — zuletzt an bed6256c: Last: Referenz f 1,207 (Faden 1,207 · alle Kerne 1,103; vor 103,6/242,4 ms, nach 106,9/214,4 ms, Ruhe 88,6/219,8 ms seit 2026-11-27) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
+   "beleg": "Maschine: Gehen 61 Bilder · max 108.65 ms · 77.05 % > 33 ms · Fahrt 51 Bilder · max 92.02 ms · 90.20 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 2 Bild(er) > 100 ms (max 108.65), 77.05 % > 33 ms | Fahrt: 90.20 % > 33 ms an bed6256c radeon · gehalten: Gehen 177 Bilder · max 91.69 ms · 14.12 % > 33 ms · Fahrt 50 Bilder · max 158.38 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.12 % > 33 ms | Fahrt: 5 Bild(er) > 100 ms (max 158.38), 80.00 % > 33 ms an 52937c92 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an bed6256c: Last: Referenz f 1,456 (Faden 1,456 · alle Kerne 1,171; vor 121,6/304,1 ms, nach 104/254,4 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 22,5 CPU-s · Claude.exe -- · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/wirt-wache.cjs, stamm/bild-himmel.js +15) — zuletzt an bed6256c: Last: Referenz f 1,207 (Faden 1,207 · alle Kerne 1,103; vor 103,6/242,4 ms, nach 106,9/214,4 ms, Ruhe 88,6/219,8 ms seit 2026-11-27) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
    "stationen": [
     {
      "id": "profiband.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Gehen 59 Bilder · max 75.25 ms · 77.97 % > 33 ms · Fahrt 44 Bilder · max 159.03 ms · 95.45 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 77.97 % > 33 ms | Fahrt: 5 Bild(er) > 100 ms (max 159.03), 95.45 % > 33 ms",
+     "zahl": "Gehen 61 Bilder · max 108.65 ms · 77.05 % > 33 ms · Fahrt 51 Bilder · max 92.02 ms · 90.20 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 2 Bild(er) > 100 ms (max 108.65), 77.05 % > 33 ms | Fahrt: 90.20 % > 33 ms",
      "sha": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
-     "grund": "GRÜN trotz Last: Referenz f 1,362 (Faden 1,362 · alle Kerne 1,152; vor 107,9/299,5 ms, nach 113,7/291,8 ms, Ruhe 83,5/259,9 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 11,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 10,4 CPU-s · sh.exe dienst/radeon-dienst.sh 9,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 28,9 CPU-s · svchost.exe 24,9 CPU-s · SearchIndexer.exe 9,1 CPU-s",
+     "grund": "GRÜN trotz Last: Referenz f 1,456 (Faden 1,456 · alle Kerne 1,171; vor 121,6/304,1 ms, nach 104/254,4 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 22,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,5 CPU-s · bash.exe werkzeug/gpu-lauf.sh --waechter 1556837 claude/gpu-schloss.wache.1556837 6,4 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 23,8 CPU-s · MsMpEng.exe 22,3 CPU-s · SearchFilterHost.exe 11,1 CPU-s",
      "r6": "konsum"
     },
     {
@@ -3047,7 +3047,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an bed6256c: Last: Referenz f 1,323 (Faden 1,323 · alle Kerne 1,312; vor 110,5/341 ms, nach 103,3/296,3 ms, Ruhe 83,5/259,9 ms seit 2026-11-16) · fremd: node scripts/diag-altlasten.cjs --selftest 49,9 CPU-s · bash",
+     "grund": "Station seit der Messung geändert — zuletzt an bed6256c: Last: Referenz f 1,456 (Faden 1,456 · alle Kerne 1,171; vor 121,6/304,1 ms, nach 104/254,4 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 22,5 CPU-s · Claude.exe --",
      "ungemessen": true
     },
     {
@@ -18758,7 +18758,7 @@
   },
   "karte2.mensch.kultur.sprache": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Namen richtig zugeordnet 0.99686 (Soll ≥ 0.9) · Saaten der Namen 4 (Soll ≥ 2) · Umfang 1273 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran/alpin/mitteleuropa/nordisch · [linse-gpu] nvidia/pascal an 45bad33f gtx · gehalten: S2 GRÜN · Sprachen an Sätzen getrennt 0.92308 (Soll ≥ 0.85) · Sätze 20 (Soll ≥ 20) · Umfang 26 (Soll ≥ 10 Sprachen (U_eff)) · 26 Sprachen aus 4 Familien (alpin/mitteleuropa/mediterran/nordisch) · 48 von 52 Hälften richtig (C&T N 1–5, P 400) · die Rede der Menge: 7 von 7 Sprechern sprechen den Satz des Lesers (7 Sätze, 1686 ms) · „Dastau moscau cau samau tom sore li da baup.“ · „Po momau pe li cau pani.“ · „Mau cogramau.“ · [linse-gpu] nvidia/pascal an 031f4700 gtx · gehalten: S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] amd/rdna-3 an 45bad33f radeon · gehalten: S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] nvidia/pascal an 45bad33f gtx — offen: karte2.mensch.kultur.sprache#1 radeon: Station seit der Messung geändert · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/wirt-wache.cjs) · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Namen richtig zugeordnet 0.99686 (Soll ≥ 0.9) · Saaten der Namen 4 (Soll ≥ 2) · Umfang 1273 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran/alpin/mitteleuropa/nordisch · [linse-gpu] nvidia/pascal an 45bad33f gtx · gehalten: S2 GRÜN · Sprachen an Sätzen getrennt 0.92308 (Soll ≥ 0.85) · Sätze 20 (Soll ≥ 20) · Umfang 26 (Soll ≥ 10 Sprachen (U_eff)) · 26 Sprachen aus 4 Familien (alpin/mitteleuropa/mediterran/nordisch) · 48 von 52 Hälften richtig (C&T N 1–5, P 400) · die Rede der Menge: 7 von 7 Sprechern sprechen den Satz des Lesers (7 Sätze, 1686 ms) · „Dastau moscau cau samau tom sore li da baup.“ · „Po momau pe li cau pani.“ · „Mau cogramau.“ · [linse-gpu] nvidia/pascal an 031f4700 gtx · gehalten: S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] amd/rdna-3 an 45bad33f radeon · gehalten: S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] nvidia/pascal an 45bad33f gtx — offen: karte2.mensch.kultur.sprache#1 radeon: Station seit der Messung geändert · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ROT: S4 ROT: Umfang nicht erzeugbar: Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt (gemessen 2 < 1000) (gemessen 2, Soll 1000 Sprachen (U_eff) mit Dialekt-Kontinua) · [linse-gpu] amd/rdna-3 an bed6256c · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.sprache#1",
@@ -18820,10 +18820,9 @@
      "id": "karte2.mensch.kultur.sprache#4",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/wirt-wache.cjs)",
-     "ungemessen": true,
+     "zahl": "S4 ROT: Umfang nicht erzeugbar: Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt (gemessen 2 < 1000) (gemessen 2, Soll 1000 Sprachen (U_eff) mit Dialekt-Kontinua) · [linse-gpu] amd/rdna-3",
+     "sha": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
+     "grund": "ROT: S4 ROT: Umfang nicht erzeugbar: Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt (gemessen 2 < 1000) (gemessen 2, Soll 1000 Sprachen (U_eff) mit Dialekt-Kontinua) · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -21636,7 +21635,7 @@
   },
   "karte2.mensch.nahrung.erdbau": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.erdbau#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.erdbau#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.erdbau#3 radeon: Konsum seit der Messung geändert (R6: scripts/lib/wirt-wache.cjs, stamm/gelaende-chunks.js, stamm/gelaende-fern.js +3) · karte2.mensch.nahrung.erdbau#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.erdbau#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.erdbau#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.erdbau#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.erdbau#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.erdbau#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.erdbau#6 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.erdbau#7 radeon: ungemessen (R10) · karte2.mensch.nahrung.erdbau#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.erdbau#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.erdbau#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.erdbau#3 radeon: ROT: S3 ROT: Umfang nicht erzeugbar: Terrasse, Mühlteich, Damm: kein Erdbau der Bewohner im Plan (Rollen kirche/gasthaus/wohnhaus/scheune/schmiede/pfarrhaus/kapelle/rathaus/kaufhaus/patrizierhaus/werkstatt/kontor/wohnturm/wache/gerberei/speicher/backhaus/burg/bergfried/torhaus) (gemessen 0) · [linse-gpu] amd/rdna-3 an bed6256c · karte2.mensch.nahrung.erdbau#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.erdbau#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.erdbau#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.erdbau#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.erdbau#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.erdbau#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.erdbau#6 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.erdbau#7 radeon: ungemessen (R10) · karte2.mensch.nahrung.erdbau#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.erdbau#2",
@@ -21660,10 +21659,9 @@
      "id": "karte2.mensch.nahrung.erdbau#3",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/wirt-wache.cjs, stamm/gelaende-chunks.js, stamm/gelaende-fern.js +3)",
-     "ungemessen": true,
+     "zahl": "S3 ROT: Umfang nicht erzeugbar: Terrasse, Mühlteich, Damm: kein Erdbau der Bewohner im Plan (Rollen kirche/gasthaus/wohnhaus/scheune/schmiede/pfarrhaus/kapelle/rathaus/kaufhaus/patrizierhaus/werkstatt/kontor/wohnturm/wache/gerberei/speicher/backhaus/burg/bergfried/torhaus) (gemessen 0) · [linse-gpu] amd/rdna-3",
+     "sha": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
+     "grund": "ROT: S3 ROT: Umfang nicht erzeugbar: Terrasse, Mühlteich, Damm: kein Erdbau der Bewohner im Plan (Rollen kirche/gasthaus/wohnhaus/scheune/schmiede/pfarrhaus/kapelle/rathaus/kaufhaus/patrizierhaus/werkstatt/kontor/wohnturm/wache/gerberei/speicher/backhaus/burg/bergfried/torhaus) (gemessen 0) · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -32301,16 +32299,16 @@
   },
   "karte2.planet.zeit.klimageschichte": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.zeit.klimageschichte#1 radeon: Station seit der Messung geändert — zuletzt an 52937c92: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.planet.zeit.klimageschichte#1 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#2 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#2 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#3 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#3 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#4 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#4 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#5 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#5 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#6 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#6 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#7 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#7 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#8 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#8 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#9 radeon: ungemessen (R10) · karte2.planet.zeit.klimageschichte#9 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.zeit.klimageschichte#1 radeon: ROT: S1 dT100aGrad -0,106 °C gegen Soll ≥ 2 °C ✗ · schneegrenzeDeltaM -1,37 gegen Soll 300 ± 30 % ✗ · kuesteJeSoll 2,351 gegen Soll 1 ± 25 % ✗ · Täter: keine Treibhaus-Drift in 100 a: die Welt erwärmt sich um -0.106 °C, die Schneegrenze wandert -1.37 m, die Küste 3 m (planet-core.js:2092 planetKlimaGlobal: Sternfluss und Walker-Thermostat über Ma, kein CO₂-Antrieb in Jahren) · Fächer 122/136 Adressen (48 Saaten × 2 Zeiten + 40) in 82 ms · Leser stamm/feld-leben.js:1298 _planetAuftrag planet-ort (die Reise: Ort und Zeit der Welt) · Gesetz voxel-worker.js:1446 planetOrtAuftrag → planet-core.js:2092 planetKlimaGlobal · gelaende-core.js:5911 ortGesetz (Sommer, Winter, schneeBandM) · 14 ohne Fähigkeit (kein Küstenpunkt k13 unter 800 Lagen (planet-ort kuesteKm)) · schlechteste {\"saat\":1,\"ort\":null,\"zeit\":0.0001} schnee -0.934 · Bild dort Ego an der Schneegrenze des Punkts [78.28,-180] (-0.934 m) zur Zeit +100 a, Blick hangauf · ungemessen: das Bildpaar der Schneegrenze heute / +100 a (am Gerät); der Sprung ≤ 5 s des Preises (die Maschine) an bed6256c · karte2.planet.zeit.klimageschichte#1 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#2 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#2 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#3 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#3 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#4 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#4 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#5 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#5 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#6 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#6 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#7 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#7 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#8 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#8 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#9 radeon: ungemessen (R10) · karte2.planet.zeit.klimageschichte#9 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.zeit.klimageschichte#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 52937c92: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
-     "ungemessen": true,
+     "zahl": "S1 dT100aGrad -0,106 °C gegen Soll ≥ 2 °C ✗ · schneegrenzeDeltaM -1,37 gegen Soll 300 ± 30 % ✗ · kuesteJeSoll 2,351 gegen Soll 1 ± 25 % ✗ · Täter: keine Treibhaus-Drift in 100 a: die Welt erwärmt sich um -0.106 °C, die Schneegrenze wandert -1.37 m, die Küste 3 m (planet-core.js:2092 planetKlimaGlobal: Sternfluss und Walker-Thermostat über Ma, kein CO₂-Antrieb in Jahren) · Fächer 122/136 Adressen (48 Saaten × 2 Zeiten + 40) in 82 ms · Leser stamm/feld-leben.js:1298 _planetAuftrag planet-ort (die Reise: Ort und Zeit der Welt) · Gesetz voxel-worker.js:1446 planetOrtAuftrag → planet-core.js:2092 planetKlimaGlobal · gelaende-core.js:5911 ortGesetz (Sommer, Winter, schneeBandM) · 14 ohne Fähigkeit (kein Küstenpunkt k13 unter 800 Lagen (planet-ort kuesteKm)) · schlechteste {\"saat\":1,\"ort\":null,\"zeit\":0.0001} schnee -0.934 · Bild dort Ego an der Schneegrenze des Punkts [78.28,-180] (-0.934 m) zur Zeit +100 a, Blick hangauf · ungemessen: das Bildpaar der Schneegrenze heute / +100 a (am Gerät); der Sprung ≤ 5 s des Preises (die Maschine)",
+     "sha": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
+     "grund": "ROT: S1 dT100aGrad -0,106 °C gegen Soll ≥ 2 °C ✗ · schneegrenzeDeltaM -1,37 gegen Soll 300 ± 30 % ✗ · kuesteJeSoll 2,351 gegen Soll 1 ± 25 % ✗ · Täter: keine Treibhaus-Drift in 100 a: die Welt erwärmt sich um -0.106 °C, die Schneegrenze wandert -1.37 m, die Küste 3 m (planet-core.js:2092 planetKlimaGlobal: Sternfluss und Walker-Thermostat über Ma, kein CO₂-Antrieb in Jahren) · Fächer 122/136 Adressen (48 Saaten × 2 Zeiten + 40) in 82 ms · Leser stamm/feld-leben.js:1298 _planetAuftrag planet-ort (die Reise: Ort und Zeit der Welt) · Gesetz voxel-worker.js:1446 planetOrtAuftrag → planet-core.js:2092 planetKlimaGlobal · gelaende-core.js:5911 ortGesetz (Sommer, Winter, schneeBandM) · 14 ohne Fähigkeit (kein Küstenpunkt k13 unter 800 Lagen (planet-ort kuesteKm)) · schlechteste {\"saat\":1,\"ort\":null,\"zeit\":0.0001} schnee -0.934 · Bild dort Ego an der Schneegrenze des Punkts [78.28,-180] (-0.934 m) zur Zeit +100 a, Blick hangauf · ungemessen: das Bildpaar der Schneegrenze heute / +100 a (am Gerät); der Sprung ≤ 5 s des Preises (die Maschine)",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -37473,7 +37471,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 279,
+  "konsum": 280,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37596,10 +37594,10 @@
    "ultiversum.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3388
+  "ohne": 3387
  },
  "kopfVoll": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
- "zeit": "2026-11-27T15:38:55.366Z",
+ "zeit": "2026-11-27T15:55:56.530Z",
  "vorher": "bed6256c",
  "bilanz": {
   "gewinn": [],

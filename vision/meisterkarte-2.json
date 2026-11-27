@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 56,
+    "heute": 57,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 9.3,
+    "anteilHeute": 9.5,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -8991,7 +8991,7 @@
        "richter": "Leistung je Masse steigt; Ahnen im Nachfahren erkannt ≥ 70 %"
       }
      ],
-     "heute": 1,
+     "heute": 2,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Teile-Werk fährt mit seiner Hülle (stamm/koerper-fahrt.js:550), Preis nicht gemessen",
@@ -20099,11 +20099,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 153,
+  "heute": 154,
   "davonKopplungen": 33,
   "kern": 0,
   "kernDazu": 0,
-  "anteilHeute": 7.9,
+  "anteilHeute": 8,
   "anteilKern": 0,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20114,7 +20114,7 @@
   },
   "gliederLeitern": 9,
   "beide": 75,
-  "nachwache": 78
+  "nachwache": 79
  },
  "zusammengelegt": [
   {
