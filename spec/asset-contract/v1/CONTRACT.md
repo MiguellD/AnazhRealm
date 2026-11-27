@@ -184,3 +184,10 @@ zählt quer in Adern (Mittel-Rippe 0), uv.y trägt die Narbe über der Ecke (Bla
 L1 am Fuß 1,86/2,51); die Ähre wächst als Spindel des Stängels mit wechselständigen Ährchen (L1 6, L2 2, je ein Dreieck, die
 Breite des Gesetzes); der Stoff trägt die Cuticula (roughness 0,7 → 0,55) und den Himmel ganz (envMapIntensity 0,18 → 1:
 die Narbe verdeckt ihn in der Tiefe). Dieselben Würfe je Halm (Strom-Erhalt): dieselben Individuen.
+
+**Re-Mint 27.11.2026 (kunst-am-leib 3, begründet — DAS BRETT TRÄGT SEINEN LEIB):** nur `recipes.json` (+ Manifest), per
+`MINT_NUR_DATEN=1`; die 128 Mesh-Goldens, `world-params.json` und `render-config.json` byte-gleich (`gate:asset-contract` vor dem
+Re-Mint 128 von 128, EINE Verletzung: `mensch.fx.motion.presets.brett` fehlt). Genau EIN Feld neu (`mensch.fx.motion.presets.brett`,
+additiv), der Rest byte-gleich: koerper `MOTION.brett` — der Spieler am Brett über die Partie gebeugt (Kopf und Rumpf 0,50 rad, der
+Lidschlag des Lesers) — trennt das Brett vom Handwerk (`pwalk`); vorher trugen beide Künste denselben Leib, und der Blick am Blindpaar
+der Station mensch.sport.kunst#1 trennte sie nicht (gate:koerper-kern L7 „drei Künste, drei Leiber“).

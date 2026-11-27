@@ -1,14 +1,14 @@
 {
     "{\"seed\":7,\"nH\":12}": {
-        "sha256": "f23c07168255a16da4f153c4f9b5073cdce694635fe4897663b1ddc341f53d3d",
+        "sha256": "60d17b616cfab1a1de71f575b41d1957423f5cb44381a6e5508654f1c21f271b",
         "slots": 16,
-        "name": "Lausi",
+        "name": "Lusi",
         "groesse": "dorf"
     },
     "{\"seed\":12345,\"nH\":6}": {
-        "sha256": "1bb21f113b961661a90ece6e84bd852bb4353b49fd690b321935329c5d2d198e",
+        "sha256": "2d7e7e48611aa71bcc773850906c3ac3c2655048f60843fddea7c1765c215f58",
         "slots": 7,
-        "name": "Dindwirt",
+        "name": "Kolenwert",
         "groesse": "weiler"
     }
 }

@@ -1,0 +1,55 @@
+Stations-Kandidat sprache-dialekt — Sprosse karte2.mensch.kultur.sprache#4
+Diff: kandidat.diff gegen punkte-maschine d14d0aa2 (meisterkarte-quelle/punkte/stationen/k2-mensch-kultur.js, +135/−17).
+Soll und Richter-Text bleiben unberührt: Umfang „1000 Sprachen (U_eff) mit Dialekt-Kontinua“, Maße „KL ≤ 0,2; Isoglossen auf Barrieren ≥ 70 %“.
+
+WARUM DIE STATION SICH ÄNDERN MUSS
+Am Kopf misst #4 den Umfang über `sprachen = z.regionen`, also die Regionen der geladenen Stadt (gemessen 2). Das Glied heißt
+{ n:4, art:"nicht" }. Damit hat die Sprosse keinen Leser für KL und Isoglossen; selbst ein Gesetz in der Welt bliebe dort ROT.
+
+DER TÄTER IM SPIEL (main 52937c92)
+fachwerk-core `spracheVon(region, seed)`: das Blatt ist ein Hash des Orts-Samens, kein Ort im Raum. Nachbarn ziehen beliebige Blätter
+(KL bis 0,95), und jede Kante ist mit p ≈ 0,97 eine Sprachgrenze, ob Barriere oder nicht.
+
+DAS GESETZ (Spiel-Zweig sprache-dialekt)
+Die Mundart eines Orts = mundartVon(Welt-Saat, Senke seines Einzugsgebiets). Die Senke kommt aus gelaende-core `talWeg`, entlang der
+Kette `unter`. Je Baum-Ebene t setzt der nächste Herd im Maßstab σ·2^(5−t) das Bit (σ = 5 km). Jedes Wort liest seinen Punkt
+um 0,3·Maßstab versetzt (lexikalische Diffusion, der Fächer).
+Bänder: Burridge 2017 (PRX 7, 031008): σ 5–15 km, Isoglossen an Küsten und Flüssen. Séguy 1971 / Nerbonne 2010: der Abstand wächst
+log. Wang 1969 (lexikalische Diffusion) und der Rheinische Fächer.
+Der Leser des Spiels: der Wirt `_mundartAm(x, z)` (stamm/siedlung-ort.js). Die Zelle legt ihre Mundart in den Plan (`_zellEingang`);
+der Export trägt `mundart`; `_bewohnerLauf` spricht Name und Rede über `spracheVon(region, mundart)`.
+
+WAS DER KANDIDAT MISST (neue Seite MUNDART, `mundartRaum`)
+Ein Gitter von 48×48 Orten auf 1,6 km um den Ursprung, auf `r._gelaende()`, über den Leser des Spiels `r._mundartAm`.
+  · KL: symmetrisch über die Laut-Tokens der Grundliste, Glättung 0,5, p95 über die Nachbar-Kanten × 6 Familien
+  · Isoglossen auf Barrieren: der Anteil der Wörter, die über eine Kante wechseln und deren Kante eine andere Senke oder Wasser
+    (8 Stiche) quert; daneben die Basis, der Barrieren-Anteil aller Kanten
+  · U_eff: verschiedene Paare Familie|lex
+Der Zeuge (wirft, wenn er nicht ganz gleich ist): der Plan des Fächers trägt die Mundart von `_mundartAm` an der Zellmitte (≥ 20 Pläne),
+und die Namen der Leute stammen aus `sprachName(spracheVon(region, mundart), …)` (≥ 400 Leute). Damit misst die Station den Konsum,
+nicht die Existenz.
+#2 (der Namen-Fächer) liest seine Zellen jetzt im Schritt 24 (≈ 6 km), sonst lägen alle in einem Tal; #3 (sprachBaum) liest die
+Blätter über `mundartBlatt`. Fehlt im Spiel `_mundartAm`/`mundartVon`/`talWeg`, dann ist #4 art "nicht" mit dem Grund beim Namen.
+
+DIE DREI WÄNDE
+1. `node punkte.cjs liste --kopf HEAD` am Spiel-Kopf f757fb6a mit Kandidat: 1976 Stationen · 420 Kriterien · fehlt 15 · Fehler 2.
+   Genau zwei ROT: gelaende.K2#1/#2 „ruft window.__zielen — niemand setzt ihn (Wand HAKEN)“, sonst nichts (32 s).
+2. Leiter ≤ 60 s: in node braucht das Gitter 48×48 4,5 s je Welt (0,57 ms je Ort samt talWeg). Die Seite hat 60 s Frist und wirft
+   bei Überschreitung. In der Welt kostet sie zusätzlich ≈ 5 s auf die Leiter.
+3. Konsum: `_mundartAm` ist der Leser des Spiels. Die Welt-Probe (anazh-realm-seed, 12 Zellen im Schritt 24, 5,6 s) ergibt 12/12
+   GLEICH: der Plan der Zelle = die Mundart des Tals, und Name und Rede der Leute folgen ihr.
+Proben (probenUrteil über die 7 Sprach-Stationen: []): Attrappe main (n 1176, kl 0,384, iso 0,404) → ROT „an KL der Laut-Verteilung“;
+Attrappe ohne Fächer (n 192) → ROT; gesund (n 1176, kl 0,094, iso 1) ✅ GRÜN.
+
+ZAHLEN (node, je Welt 48×48 auf 1,6 km)
+                KL-p95   Isoglossen auf Barrieren   Basis    U_eff
+  vorher main   bis 0,95 (Nachbar-Blätter beliebig) —        2 (die Akte; Regionen)
+  welt-1        0,094    1,000                       0,395    1 097
+  welt-2        0,107    1,000                       0,402    1 233
+  anazh         0,094    1,000                       0,412    1 190
+  7             0,097    1,000                       0,416    1 167
+
+MESSORT, EHRLICH
+stadt-voll. Der Vor-Richter fährt nur an der GTX 1060. Die Kacheln der Stadt des Worts und die Wort-Pläne sprechen die Ursprache ihrer
+Familie: ihr Ort steht erst nach dem Plan fest, und ohne Ort gibt es keine Drift (wie der Klima-Präzedenzfall). Die Seite MUNDART misst
+darum das Gitter der Welt um den Ursprung, nicht die Kacheln.
