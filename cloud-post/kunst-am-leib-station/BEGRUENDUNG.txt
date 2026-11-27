@@ -28,7 +28,10 @@ die Bewegung urteilt S1 an Zahlen; ob der Blindtest am Bild ≥ 80 % trägt, sag
 Akt in der Welt (kunst#3) — die Klasse Tanz fehlt im Fach, nicht still: LEIB_SATZ.kunst nennt keinen Tanz-Akt.
 
 Kandidat 3 (karte2.mensch.sport.kunst#2, Welle 27.11. abends — ohne Auftrag seit 20:03 die nächste rote Sprosse der Leiter) — NICHT
-gesetzt; k2-mensch-sport-3.diff gegen dieselbe Basis (punkte-maschine, byte-gleich um 20:28 Uhr der Wolke), trägt Kandidat 2 unverändert und dazu:
+gesetzt; k2-mensch-sport-3.diff + auge-klasse-3.diff gegen dieselbe Basis (punkte-maschine, byte-gleich um 20:28 Uhr der Wolke), trägt
+Kandidat 2 unverändert und dazu:
+- die Klassen-Zeile von S1 (Post 21:41): stationen/auge-klasse.cjs `"mensch.sport.kunst#1": [P, "Blindtest Anfänger ↔ Meister ≥ 80 %"]`
+  nach `mensch.menge.bild#3` (S2 trägt kein auge, also keine Klasse);
 - neue Seiten-Funktion WERK: je Ort mit Kette der Schmiede (`S.stoffstrom`) die Werkzeuge in den Händen der Leute aus dem Zensus
   (`_stoffstromZensus`.stuecke: je Stück die Hand seines Schmieds und seine Güte, schmiede `gueteAnteil(beil, null, hand)`); trägt ein
   Ort < 10 Stücke, läuft seine Kette 7 Tage (wie energie#1). S2 = K.zahl(2, { n Stücke, werte { r2 } }), R² linear Güte ↔ Hand.
