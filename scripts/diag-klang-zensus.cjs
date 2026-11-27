@@ -2118,10 +2118,10 @@ async function marktSeite(o) {
     if (o.mut === "duck") tausche(DG.gespraech, "db", -13.27);
     if (o.mut === "stumm") tausche(K, "mengeRedet", () => null);
     if (o.mut === "lombard") tausche(K.MENGE.lombard, "dbJeDb", 0);
-    // S29: die Rede verliert die Kerne ihres Satzes (die Stimme spricht Vokale ohne Sprache, das Gesetz bis sprache-saaten-2) ·
+    // S29: die Rede verliert die Silben ihres Satzes, ihr Einsatz bleibt (die Stimme spricht Vokale ohne Sprache, das Gesetz bis sprache-saaten-2) ·
     // S30: die Rede spricht einen fremden Satz (die Nummer daneben — nicht der Satz, den der Wirt ihr gibt)
     if (o.mut === "satzlos") tausche(r, "_bewohnerLaut", ((alt) => function (b, laut, rede) {
-        return alt.call(this, b, laut, rede && { ...rede, kerne: undefined });
+        return alt.call(this, b, laut, rede && { ...rede, rede: undefined });
     })(r._bewohnerLaut));
     if (o.mut === "fremd") tausche(r, "_bewohnerLauf", ((alt) => function (S, b, feld, tag) {
         return alt.call(this, S, b, feld, feld === "rede" ? tag + 1 : tag);
@@ -2146,7 +2146,7 @@ async function marktSeite(o) {
     })(r._bewohnerLaut));
     tausche(um.kern, "rufSpielen", ((alt) => function (c, aus, ruf) {
         const e = alt.apply(this, arguments);
-        if (e) rufe.push({ t0: e.einsatz, t1: e.einsatz + e.sek, rede: !!(ruf && ruf.rede), an: (ruf && ruf.anstrengungDb) || 0, silben: ruf && Array.isArray(ruf.rede) ? ruf.rede.length : 0 }); // prettier-ignore
+        if (e) rufe.push({ t0: e.einsatz, t1: e.einsatz + e.sek, rede: !!(ruf && ruf.einsatz), an: (ruf && ruf.anstrengungDb) || 0, silben: ruf && Array.isArray(ruf.rede) ? ruf.rede.length : 0 }); // prettier-ignore
         return e;
     })(um.kern.rufSpielen));
     tausche(r, "_musikDuck", ((alt) => function (art) {
