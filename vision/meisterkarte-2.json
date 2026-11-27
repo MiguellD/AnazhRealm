@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 50,
+    "heute": 51,
     "kern": 2,
     "kernDazu": 2,
-    "anteilHeute": 8.5,
+    "anteilHeute": 8.6,
     "anteilKern": 0.3
    },
    "perspektiven": [
@@ -10572,7 +10572,7 @@
        "richter": "Konflikt-Spuren aus dem Samen ≥ 70 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Hieb-Physik, Treffer am Leib (stamm/kampf.js), an beiden Geräten im Bild (halten.K1); das umringende Rudel (tiere.K2, oekologie.K4) ist Jagd und zählt bei leben.tiere.verhalten und leben.tiere.mensch. — KARTE: 0 — ein Zweikampf zwischen zwei Bewaffneten ist nicht gemessen.",
@@ -20098,7 +20098,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 136,
+  "heute": 137,
   "davonKopplungen": 33,
   "kern": 2,
   "kernDazu": 2,
@@ -20113,7 +20113,7 @@
   },
   "gliederLeitern": 9,
   "beide": 65,
-  "nachwache": 71
+  "nachwache": 72
  },
  "zusammengelegt": [
   {

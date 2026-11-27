@@ -20242,7 +20242,7 @@
   },
   "karte2.mensch.macht.krieg": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.krieg#1 radeon: Station seit der Messung geändert · karte2.mensch.macht.krieg#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js, stamm/siedlung-ort.js) · karte2.mensch.macht.krieg#2 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#3 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#4 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#5 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#6 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#7 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#8 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#8 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#9 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#9 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: S1 GRÜN · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) 1 (Soll ≥ 1) · der Getroffene antwortet (Anteil) 1 (Soll ≥ 1) · Treffer durch die Deckung 0 (Soll ≤ 0) · Umfang 2 (Soll ≥ 2 Bewaffnete im Zweikampf) · 2 Bewaffnete im Zweikampf (1 Wache(n) im Gang, der Spieler mit klinge_langschwert) · 1 Gänge geschlagen in 19.84 s Welt-Uhr, Treffer Wache/Spieler 1/2, Züge 8, 2 von 2 Treffern beantwortet, 0 durch die Deckung, Lagen bauch/bein/bein · 1 von 3 Wachen draußen nahten (Wache 7:72:4, 4 m vor dem Spieler) · [linse-gpu] nvidia/pascal an 38194f83 gtx — offen: karte2.mensch.macht.krieg#1 radeon: Station seit der Messung geändert · karte2.mensch.macht.krieg#2 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#3 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#4 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#5 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#6 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#7 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#7 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#8 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#8 gtx: Station seit der Messung geändert · karte2.mensch.macht.krieg#9 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#9 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.macht.krieg#1",
@@ -20257,11 +20257,10 @@
     {
      "id": "karte2.mensch.macht.krieg#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/siedlung-bewohner.js, stamm/siedlung-ort.js)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 GRÜN · der Treffer sitzt, wo die Klinge den Leib kreuzt (Anteil von 20) 1 (Soll ≥ 1) · der Getroffene antwortet (Anteil) 1 (Soll ≥ 1) · Treffer durch die Deckung 0 (Soll ≤ 0) · Umfang 2 (Soll ≥ 2 Bewaffnete im Zweikampf) · 2 Bewaffnete im Zweikampf (1 Wache(n) im Gang, der Spieler mit klinge_langschwert) · 1 Gänge geschlagen in 19.84 s Welt-Uhr, Treffer Wache/Spieler 1/2, Züge 8, 2 von 2 Treffern beantwortet, 0 durch die Deckung, Lagen bauch/bein/bein · 1 von 3 Wachen draußen nahten (Wache 7:72:4, 4 m vor dem Spieler) · [linse-gpu] nvidia/pascal",
+     "sha": "38194f8373828ba681647f1fb6c41255c41f7fd1",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -37760,7 +37759,7 @@
   "ohne": 3278
  },
  "kopfVoll": "38194f8373828ba681647f1fb6c41255c41f7fd1",
- "zeit": "2026-11-27T00:16:42.549Z",
+ "zeit": "2026-11-27T00:23:09.808Z",
  "vorher": "38194f83",
  "bilanz": {
   "gewinn": [],
