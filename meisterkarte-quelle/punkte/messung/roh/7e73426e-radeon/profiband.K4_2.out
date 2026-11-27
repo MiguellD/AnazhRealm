@@ -350,12 +350,12 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 7c15c71fc0 */ const K = {"budge
     console.log("PROFIBAND " + JSON.stringify(zus));
 })(process.argv[1], process.argv[2]).catch((e) => { console.log("PROBE ROT: " + String((e && e.stack) || e).split("\n").slice(0, 3).join(" | ")); process.exitCode = 1; }); glaette C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\7e73426e-radeon\profiband.K4_1.json
 [linse-gpu] amd/rdna-3
-@@PUNKTE@@ ZEIT anfang 18.6 s
-@@PUNKTE@@ ZEIT k4-geh 22.8 s
-@@PUNKTE@@ ZEIT k4-fahrt 29.6 s
-@@PUNKTE@@ ZEIT strom 29.6 s
-@@PUNKTE@@ ZEIT strom-gelesen 29.7 s (376 Bilder)
-PROFIBAND {"art":"glaette","sekunden":29.7,"uhrS":84,"schritte":[["anfang",18.6],["k4-geh",4.1],["k4-fahrt",6.9]],"offen":[],"fehler":{},"strom":{"bloecke":104,"bilder":376,"seiten":1,"fehler":0,"verloren":0},"glaette":{"k4-geh":{"n":123,"frame":66.95,"p99":83.65,"max":117.1,"ueber33":97,"ueber100":1,"takt":59.28,"vram":149.8,"gpu":27.4,"gpuN":20,"befehle":133,"dreiecke":320463,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":7,"sattel":"0","wetter":["sunny"],"buehne":0,"laeufe":2,"sek":2.5,"befunde":[],"tasten":{"v":5}},"k4-fahrt":{"n":85,"frame":125.41,"p99":175.35,"max":175.35,"ueber33":85,"ueber100":7,"takt":112.06,"vram":150.1,"gpu":27.92,"gpuN":20,"befehle":213,"dreiecke":639209,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":4,"sattel":"10101","wetter":["sunny"],"buehne":0,"laeufe":2,"sek":2.5,"befunde":[],"tasten":{"wagen":"werkbank-fahrt","aus":null,"ein":"werkbank-fahrt"}}},"anfang":true}
+@@PUNKTE@@ ZEIT anfang 38.8 s
+@@PUNKTE@@ ZEIT k4-geh 43.2 s
+@@PUNKTE@@ ZEIT k4-fahrt 54.2 s
+@@PUNKTE@@ ZEIT strom 54.2 s
+@@PUNKTE@@ ZEIT strom-gelesen 54.2 s (180 Bilder)
+PROFIBAND {"art":"glaette","sekunden":54.2,"uhrS":84,"schritte":[["anfang",38.8],["k4-geh",4.4],["k4-fahrt",11]],"offen":[],"fehler":{},"strom":{"bloecke":70,"bilder":180,"seiten":1,"fehler":0,"verloren":0},"glaette":{"k4-geh":{"n":62,"frame":75.37,"p99":83.58,"max":83.58,"ueber33":47,"ueber100":0,"takt":65.04,"vram":144.6,"gpu":25,"gpuN":9,"befehle":130,"dreiecke":299352,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":3,"sattel":"0","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"v":5}},"k4-fahrt":{"n":38,"frame":125.6,"p99":125.65,"max":125.65,"ueber33":38,"ueber100":9,"takt":117.74,"vram":148.9,"gpu":25.96,"gpuN":10,"befehle":160,"dreiecke":660474,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":2,"sattel":"101","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"wagen":"werkbank-fahrt","aus":null,"ein":"werkbank-fahrt"}}},"anfang":true}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
