@@ -1053,7 +1053,8 @@ async function kreaturProben(r, T, opts) {
             if (taeter === "herde-park") {
                 // der alte Ort: 70 m nördlich der Plan-Mitte (`_genesisMitte`), auf der Mall — seit Kopf 2 steht der Spieler am
                 // Stand der Landmarke (34/−34), P0 + 70 lag auf der Wildnis und der Täter warf fünf
-                const M = r._genesisMitte() || P0;
+                const M = r._genesisMitte();
+                if (!M) throw new Error("herde-park: keine Plan-Mitte (`_genesisMitte`)");
                 return neben(M.x, M.z + 70);
             }
             const seq = s._creatureNetSeq;
