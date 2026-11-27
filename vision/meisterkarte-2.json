@@ -15259,10 +15259,10 @@
    "summe": {
     "kriterien": 28,
     "sprossen": 198,
-    "heute": 14,
+    "heute": 15,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 6.7,
+    "anteilHeute": 7.1,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -15852,7 +15852,7 @@
        "richter": "N = 100 Planeten: Wurfweite ∝ 1/g ±10 %, Mindestfahrt ∝ 1/√ρ ±15 %; Blind-Jury ordnet Sprung-Videos der Schwere zu ≥ 80 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Nichts als Gesetz belegt: kein Widerstand, kein Drall, kein Auftrieb am Körper gesehen.",
@@ -20099,7 +20099,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 152,
+  "heute": 153,
   "davonKopplungen": 33,
   "kern": 0,
   "kernDazu": 0,
@@ -20114,7 +20114,7 @@
   },
   "gliederLeitern": 9,
   "beide": 74,
-  "nachwache": 78
+  "nachwache": 79
  },
  "zusammengelegt": [
   {
