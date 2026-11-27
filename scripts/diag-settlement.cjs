@@ -897,9 +897,9 @@ function mundartGang(FC) {
             }
         }
     }
-    kls.sort((x, y) => x - y);
+    kls.sort(aufsteigend);
     return {
-        kl: kls.length ? +kls[Math.floor(kls.length * 0.95)].toFixed(3) : Infinity,
+        kl: kls.length ? +rang(kls, 0.95).toFixed(3) : Infinity,
         iso: iso ? +(isoB / iso).toFixed(3) : 0,
         basis: n ? +(bar / n).toFixed(3) : 0,
         ueff: ueff.size,
