@@ -419,7 +419,7 @@ const FISCH = async (k) => {
     const s = st,
         A = AnazhRealm;
     const pm = s.playerMesh;
-    const vor = { p: pm.position.clone(), uhr: s.spielZeit, karte: r._fischKarte };
+    const vor = { p: pm.position.clone(), karte: r._fischKarte };
     const zur = k.stub
         ? leihe(A, {
               _fischGesetz: (() => {
@@ -463,8 +463,9 @@ const FISCH = async (k) => {
         pm.position.set(ufer.x, r.getTerrainHeightAt(ufer.x, ufer.z) + A.PLAYER_FOOT_OFFSET, ufer.z);
         r._fischKarte = null;
         const dt = 1 / 60;
+        // die Welt-Uhr geht vor wie im Spiel (`_weltUhrNimm`, der EINE Schreiber; die Probe stellt sie nie zurück)
         const takt = () => {
-            s.spielZeit += dt;
+            r._weltUhrNimm(s.spielZeit + dt);
             r._fischTakt(dt);
         };
         // die Ankunft: der Takt baut zelleJeTakt Zellen je Takt; dann steht der Bestand still (der Spieler ruht)
@@ -539,7 +540,6 @@ const FISCH = async (k) => {
     } finally {
         zur();
         pm.position.copy(vor.p);
-        s.spielZeit = vor.uhr;
         if (s.fischPool) A._instanzZahl(s.fischPool.mesh, 0);
         r._fischKarte = vor.karte;
     }

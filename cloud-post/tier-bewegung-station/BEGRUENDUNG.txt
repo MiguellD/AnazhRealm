@@ -23,3 +23,6 @@ GTX 1050 oder 1060 fahren.
 
 Wände: `node punkte.cjs liste` nicht gefahren (der Zweig `punkte-maschine` ist in der Wolke nicht ausgecheckt, nur diese Datei per
 roher Adresse); die Leiter fährt FISCH in ≈ 0,5 s zusätzlich (12 s Spielzeit, gemessen 279–458 ms in der Seite); kein Fächern im Kern.
+
+Selbsttest der Probe (gate:tier-gang, 27.11.): mit dem starren Leib gepflanzt (alle Glieder auf der Achse, Gier-Wippe 2,5 Hz · 0,1 rad)
+misst sie Biegung 0 rad → ROT mit „Täter: tetrapoda FISCH_GESETZ / fischLeib (der starre Leib ohne Körperwelle)“; gesund GRÜN.
