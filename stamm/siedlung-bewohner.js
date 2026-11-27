@@ -1741,7 +1741,9 @@ class AnazhRealm_siedlung_bewohner {
             // Werkzeugs der Kette mit dieser Hand) — die EINE Güte eines Schmiede-Geräts, nun mit der Hand
             stuecke: Z.haende.slice(0, Z.gegeben).map((b) => ({
                 hand: +b.werkzeugHand.toFixed(4),
-                guete: +globalThis.__schmiedeCore.gueteAnteil(globalThis.__schmiedeCore.STOFFSTROM.werkzeug, null, b.werkzeugHand).toFixed(4),
+                guete: +globalThis.__schmiedeCore
+                    .gueteAnteil(globalThis.__schmiedeCore.STOFFSTROM.werkzeug, null, b.werkzeugHand)
+                    .toFixed(4),
             })),
             erzKg: +K.erz.toFixed(3),
             eisenKg: +K.eisen.toFixed(3),

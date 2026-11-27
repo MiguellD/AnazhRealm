@@ -15,8 +15,15 @@
 
 ## kunst#2 — das Werkstück trägt die Hand: Kopf 5 fc0958fb auf main b3740dd5 (trägt Kopf 4 adc95977 des Koordinators)
 
+- **Kopf 6 (Post 22:38: Kopf 5 ROT an Prettier, eigenes Rot):** `stamm/siedlung-bewohner.js` ab Zeile 1744 — meine Zeile `guete:` im
+  Zensus, `npx prettier --write` ändert nur sie (3 Zeilen). Warum lokal grün: `check:statik` trägt kein `format:check` — Prettier
+  steht nur im Puls; ich fahre `npm run format:check` ab hier vor jedem Schub (Exit 0, 113 Teile). check:statik GANZ Exit 0
+  (zuerst ROT an der ZITAT-WAND: mein Blatt nannte eine Datei der Punkte-Maschine beim Namen — umformuliert). Die Klassen-Zeile
+  steht nun auch als dritter Diff neben dem Kandidaten 2: `cloud-post/kunst-am-leib-station/auge-klasse.diff` (byte-gleich `auge-klasse-3.diff`).
+  kunst#2 trägt kein auge, also keine Klasse. Die Probe-Liste ohne Leerzeichen nach den Kommas (Regel 22:11).
+
 - Post 21:27 (Kopf 4 adc95977 heilt den Daten-Vertrag v7, kein eigener Kopf 4) und 21:41 (die Klassen-Zeile gehört in jeden
-  Kandidaten) gelesen: kunst#2 steht auf adc95977, Kandidat 3 trägt `auge-klasse-3.diff`, am pm-Baum `punkte.cjs liste` Exit 0.
+  Kandidaten) gelesen: kunst#2 steht auf adc95977, Kandidat 3 trägt `auge-klasse-3.diff`, am Baum von punkte-maschine die Register-Liste (`liste`) Exit 0.
 - Vor dem Schub am Baum des Kopfs: check:statik · gate:welt-boot · gate:daten-contract (koerper 94d4f918958c byte-treu) ·
   gate:fachwerk-contract · gate:asset-contract · gate:koerper-kern (75/75) · gate:betriebsgesetz — alle Exit 0; Kreatur-Linse mit
   Stoppuhr 1010 · 808 · 663 s, je SELBST-TEST GRÜN (54 Täter); merge-tree Exit 0 gegen main, werk-am-ort-2 173e764b und
