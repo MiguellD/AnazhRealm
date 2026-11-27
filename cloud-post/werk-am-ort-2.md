@@ -106,8 +106,11 @@ Seite der Fahrbahn → `wer`).
   der Schluss schließt. schreck+seuche Selbst-Test GRÜN, EXIT 0, 0 Würfe: seuche 88 s (DAUER 310), schreck 238 s (DAUER 297).
   werkort · mengebild · zielplan mit `bleibt` Selbst-Test GRÜN, EXIT 0, 0 Würfe (12 Täter): 424 → 228, 380 → 155, 330 → 105 s.
   `DAUER_S` neu: Summe 3 958 → 3 006 s (−24 %); die vier Teile im Plan 878 (bewohner allein) · 710 · 709 · 709 (drei Teile
-  trügen 1 002 je Teil — `check.yml` bleibt bis zum Heil-Zug unberührt, also vier). Die vier Teile laufen mit Stoppuhr; danach
-  die Tore und der Schub. bewohner (878 s, ein Lauf) ist jetzt der Engpass.
+  trügen 1 002 je Teil — `check.yml` bleibt bis zum Heil-Zug unberührt, also vier). Die vier Teile mit Stoppuhr (--selftest,
+  Container): 892 · 741 · 764 · 731 s, jeder GRÜN, EXIT 0, 0 Würfe, 166 Täter beim Namen (Kopf 4: 974 · 1 049 · 954 · 981; Summe
+  3 958 → 3 128 s, −21 %). Teil 3 lief zum Teil neben `check:statik` von Kopf 5 — die Zahl steht so, sie liegt weit unter 1 150.
+  bewohner (878 s, ein Lauf) ist jetzt der Engpass. Die `ci-zeiten.json`-Zeilen der Teile bleiben die von Kopf 4 (geschaetzt,
+  größer), bis die CI misst. main b56b51f0 in den Zweig gemischt (die zwei Dateien des Schreibers wie Kopf 5).
 
 ## Heap an der GTX 1060 (Koordinator 18:04)
 
@@ -140,7 +143,7 @@ Seite der Fahrbahn → `wer`).
   gemischt, an `check.yml` und `ci-zeiten.json` der Stand des Heil-Kopfs + MEINE Struktur (`--teil=k/4`, Schritt „Teil 4“, die
   vier Stoppuhr-Zeilen 974 · 1 049 · 954 · 981, `gate:kreatur-takt` 3958), der Schreiber `verteile` neu gefahren (93 Schritte, 18
   Gruppen, schwerste 21,0 min, Puls-Frist 16 aus `pulsFristMin`; keine `timeout-minutes`-Zeile von mir), `gate:ci-deckung` GRÜN.
-  Kopf 5 folgt auf dem neuen main, sobald er in alle.md steht: dasselbe Rezept, `check:statik` ganz, Ruf ohne Leerzeichen.
+  Kopf 5 folgt auf dem neuen main, sobald die Post an alle ihn nennt: dasselbe Rezept, `check:statik` ganz, Ruf ohne Leerzeichen.
   Die Folge-Arbeit (`bleibt`, die zwei Welt-Brüche, `DAUER_S` neu) fährt NICHT in Kopf 5.
 - **Kopf 5 steht: `werk-am-ort-2-kopf5` 2b129915** (EIN Elter main 23b593ac V18.546.459; Ruf ohne Leerzeichen, `[ci voll]`).
   Die 17 Dateien von Kopf 4, jede außer den zwei des Schreibers byte-gleich im Diff; an `check.yml`/`ci-zeiten.json` der Heil-Kopf +
