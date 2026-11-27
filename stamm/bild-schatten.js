@@ -119,10 +119,9 @@ class AnazhRealm_bild_schatten {
     // DIE UNTERE HEMISPHÄRE DER BESTRAHLUNG (rgb, TSL) — das EINE Gesetz für die Umgebung der Stoffe (`_spiegelUmgebung`) und das
     // Licht der Welt (`_weltLicht`: Feld, Panorama, Spiegel, Wasser): der Himmel der Normale `n` plus der gezeichnete Boden
     // anstelle des Bodens der Atmosphäre, gewichtet mit dem Anteil des Halbraums unter dem Horizont, den die Fläche sieht.
+    // Das Gesetz ist `halbraum` (welt-licht.js), derselbe Rumpf rechnet auf Zahlen (`_weltLichtAn`).
     _rueckstrahlHalbraum(himmel, n) {
-        const T = THREE.TSL;
-        const unten = this._rueckstrahlLeser().unten;
-        return T.max(himmel.add(unten.mul(T.float(1).sub(n.y).mul(0.5))), T.vec3(0));
+        return __weltLicht.halbraum(__weltLicht.RECHNEN_TSL, himmel, this._rueckstrahlLeser().unten, n);
     }
 
     // DIE KASKADEN, DEREN SCHATTEN DAS BILD ZEICHNET — für den zweiten Block des Passes (die Sicht des Bildes), gefragt nur, wo

@@ -96,7 +96,11 @@ const DACH_LESER = new Set(["getTerrainHeightAt", "_voxelSurfaceY", "findSurface
 const OBERKANTE_BENANNT = {
     _genesisAnkunft: [
         ["getTerrainHeightAt"],
-        "Platzierung: der Spieler kommt an der Mitte des Genesis-Orts auf der Oberfläche an (die erste Ankunft und jede Rückkehr nach dem Tod)",
+        "Platzierung: der Spieler kommt am Stand des Ankunfts-Gesetzes um die Mitte des Genesis-Orts auf der Oberfläche an (die erste Ankunft und jede Rückkehr nach dem Tod)",
+    ],
+    _ankunft: [
+        ["getTerrainHeightAt"],
+        "Platzierung: das Auge am Stand der Ankunft (das Gesetz der Ankunft, gerufen von `_genesisAnkunft`; die Position setzt es nur an der Kamera seines Kegels, nie an einem Leib)",
     ],
     _rescuePlayerFromVoid: [["getTerrainHeightAt"], "Platzierung: die Rettung aus der Leere auf die Oberfläche"],
     _stepCharacter: [

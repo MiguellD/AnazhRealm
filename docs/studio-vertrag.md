@@ -1092,7 +1092,8 @@ Ein-Slot-Ort (bauen.K2): seinen Slot rechnet der Foundry-Faden, Kanal `slot-plan
 mit Platte, Grund und Vorplatz der Ort-Faden über `ortPlan`) mit
 seinem Grundriss-Leser `erdbauGrund`, dem hohlen Keller `erdbauHohl` (das Feld des Wirts, je Spalte gefragt über `erdbauKeller`) und dem Schnitt des gezeichneten
 Bodens `erdbauSchnitt` (Voxel-Faden und Sync-Bau), der Lese-Kontext eines Orts `ortCtx` (Höhe samt Erdbau, Fläche, Welt-Wasser — EIN ctx für Wirt,
-Fachwerk-Studio und Linse), die Lage einer Welt ohne Wirt `LAGE_GRUND`/`lageGrund`, die Hang-Suche eines Orts `hangOrt` und das
+Fachwerk-Studio und Linse), die Lage einer Welt ohne Wirt `LAGE_GRUND`/`lageGrund`, die Hang-Suche eines Orts `hangOrt`, die
+Ring-Spirale des Orts `RING_SPIRALE`/`ringSpirale` (der Genesis-Ort im Voxel-Faden und der Stand der Ankunft, Stamm `_ankunft`) und das
 Höhen-Raster der Trasse `hoehenRaster` (siedlung.K3: der Grund im Rahmen fachwerk `trasseRahmen` um den Ort, dem die Gassen folgen). DER WIND AM GELÄNDE
 (wetter.K5): der Faktor `windForm` mit seinem Gesetz `WIND_FORM` — Lee hinter dem Kamm, Tal-Düse zwischen zwei Flanken an der Höhe
 des Wirts; ihn liest der EINE Wind der Welt (`_windAt`).

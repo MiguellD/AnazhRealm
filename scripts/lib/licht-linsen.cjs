@@ -3314,6 +3314,53 @@ function luftTiefeSelbsttest(R) {
     ].filter((x) => x !== true);
 }
 
+// DER LESER DER LUFT ALS ZAHL (landmarken-geologie-4): `_luftDurchlass` (stamm/bild-himmel.js) gegen die DEFINITION der optischen
+// Tiefe — das Integral der Extinktion β(y) = β·e^{−(y−y0)/H} längs des Strahls (Mittelpunkt-Regel, 4 000 Schritte), je Kanal mit dem
+// Spektrum s des Gesetzes (`_luftBeta`, `_luftSpektrum`, `LUFT.skalenHoeheM`, das Meer des Orts als Bezug wie beim Boot). Die Wege
+// der Landmarke: waagrecht 5 km am Bezug, vom Hügel 300 m über ihm 2 km hinab, 3 km hinauf zum Grat. Leser des Lesers: die Station
+// der Landmarke (Kontrast je Saat, Karte 2 erleben.spieler.wegfindung#1). Selbsttest: ein Durchlass ohne Weg-Faktor (der Grat, der
+// Hügel) und einer ohne Höhen-Term (der Hügel) fallen am Glied beim Namen.
+function luftLeser(stammLib, root, taeter) {
+    const { r, A, imWirt } = stammLib.grundWirt(root, taeter);
+    r.state.waterLevel = (r.state.terrainBaseHeight || 0) - r._gelaende().ort.meerUnterBasisM;
+    const [y0, H, beta] = [r.state.waterLevel, A.LUFT.skalenHoeheM, r._luftBeta()];
+    const sv = r._luftSpektrum(beta, null, imWirt("new THREE.Vector3()"));
+    const s = [sv.x, sv.y, sv.z];
+    const wege = [
+        // BÜHNE: Wege der Definition über dem Bezug y0 (dem Meer des Orts), keine Orte der Welt — es zählen Länge und Höhen
+        ["waagrecht 5 km am Bezug", { x: 0, y: y0, z: 0 }, { x: 5000, y: y0, z: 0 }],
+        ["vom Hügel 2 km hinab", { x: 0, y: y0 + 300, z: 0 }, { x: 1600, y: y0 + 40, z: 1200 }],
+        // BÜHNE: ein Weg der Definition wie oben (Strahl zum Grat), kein Ort der Welt
+        ["3 km hinauf zum Grat", { x: 0, y: y0 + 20, z: 0 }, { x: 0, y: y0 + 900, z: 2860 }],
+    ];
+    const [out, zeilen] = [[], []];
+    for (const [name, a, b] of wege) {
+        const T = r._luftDurchlass(a, b);
+        const d = Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z);
+        let tau = 0;
+        for (let i = 0, N = 4000; i < N; i++) tau += (beta * Math.exp(-(a.y + ((b.y - a.y) * (i + 0.5)) / N - y0) / H) * d) / N;
+        const soll = s.map((k) => Math.exp(-tau * k));
+        const f = Math.max(...T.map((t, c) => Math.abs(t / soll[c] - 1)));
+        zeilen.push(`${name}: Durchlass ${T.map((t) => t.toFixed(4)).join("/")} · Definition ${soll.map((t) => t.toFixed(4)).join("/")}`);
+        if (!(f <= 1e-4)) out.push(`_luftDurchlass: ${name} Durchlass ${T.map((t) => t.toFixed(4)).join("/")} gegen die Definition ${soll.map((t) => t.toFixed(4)).join("/")}`);
+    }
+    return { out, zeilen };
+}
+function luftLeserSelbsttest(stammLib, root) {
+    const echt = luftLeser(stammLib, root, null);
+    for (const z of echt.zeilen) console.log("      LUFT ALS ZAHL " + z);
+    const glied = "_luftDurchlass";
+    const ohneWeg = luftLeser(stammLib, root, [[glied, "Math.hypot(dx, dy, dz) * fk;", "Math.hypot(dx, dy, dz);"]]).out.join(" | ");
+    const ohneHoehe = luftLeser(stammLib, root, [[glied, "beta * Math.exp(-(auge.y - y0) / H) * Math.hypot", "beta * Math.hypot"]]).out.join(" | ");
+    console.log("  " + (/^_luftDurchlass: vom Hügel/.test(ohneHoehe) ? "✅" : "❌") + " Durchlass ohne Höhen-Term → ROT am Glied: " + (ohneHoehe || "blieb grün"));
+    console.log("  " + (/3 km hinauf zum Grat/.test(ohneWeg) ? "✅" : "❌") + " Durchlass ohne Weg-Faktor → ROT am Glied: " + (ohneWeg || "blieb grün"));
+    return [
+        echt.out.length === 0 || "der Leser der Luft trifft die Definition nicht: " + echt.out.join(" | "),
+        /^_luftDurchlass: vom Hügel/.test(ohneHoehe) || "ein Durchlass ohne Höhen-Term ist nicht ROT",
+        /3 km hinauf zum Grat/.test(ohneWeg) || "ein Durchlass ohne Weg-Faktor ist nicht ROT",
+    ].filter((x) => x !== true);
+}
+
 // DIE EICHUNG DER TONKURVE (Lehre 21, F1): die Kurven von three (r184 TSL, r128 GLSL gleich) auf einem GRAUEN Eingang
 // (Belichtung × Leuchtdichte; die Farb-Matrizen von ACES halten Grau). `kartenEichung(kurve, ev)` ist das k·L, das die 18-%-Karte
 // auf Mittelgrau + ev EV legt: kurve(k·L / 2^ev) = 0,18 — die Labore auf + 1 EV (die Albedo-Tafel), die Welt auf den Anker
@@ -4153,6 +4200,7 @@ module.exports = {
     luftTiefe,
     luftTiefeUrteil,
     luftTiefeSelbsttest,
+    luftLeserSelbsttest,
     wetterZug,
     wetterLuftUrteil,
     kartenEichung,

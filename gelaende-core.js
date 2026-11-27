@@ -2452,6 +2452,23 @@
     // 16 m: 12 von 26 Orten trugen dort eine Stufe bis 23,7 m (die Stadt 16,2 m an 937/83,5).
     const ERDBAU = Object.freeze({ boeschung: 0.6, steil: 1.0, reichweiteM: 48, zelleM: 16, wandM: 0.5 });
     const ERDBAU_ZAHL = ["cx", "cz", "phi", "ex", "ez", "y"];
+
+    // DIE RING-SPIRALE DES ORTS (landmarken-geologie-8 Kopf 4): der erste Punkt, an dem `traegt(x, z, r)` gilt — 0/0, dann je
+    // `schrittM` bis `bisM` in `richtungen` Richtungen (x, z auf den Meter gerundet), { x, z, r }; keiner: null. EINE Spirale für
+    // jeden Ort, der um die Heimat einer Saat rückt: den Genesis-Ort im Faden (voxel-worker `genesisPlan`: der Kern trägt dort)
+    // und die Ankunft des Spielers (Stamm `_ankunft`: der erste Blick trägt dort eine Landmarke). Bis hier lebte sie als Schleife
+    // im Faden allein.
+    const RING_SPIRALE = Object.freeze({ schrittM: 12, bisM: 240, richtungen: 8 });
+    function ringSpirale(traegt, S = RING_SPIRALE) {
+        if (traegt(0, 0, 0)) return { x: 0, z: 0, r: 0 };
+        for (let rr = S.schrittM; rr <= S.bisM; rr += S.schrittM)
+            for (let k = 0; k < S.richtungen; k++) {
+                const x = Math.round(Math.cos((k / S.richtungen) * 2 * Math.PI) * rr);
+                const z = Math.round(Math.sin((k / S.richtungen) * 2 * Math.PI) * rr);
+                if (traegt(x, z, rr)) return { x, z, r: rr };
+            }
+        return null;
+    }
     const TRASSE_ZAHL = ["x0", "z0", "y0", "x1", "z1", "y1", "w"];
     // FREI {cx, cz, phi, ex, ez} (das Brücken-Etikett des Plans v2): in seinem Rechteck gilt der Grund allein — keine Fläche,
     // keine Böschung (der Weg über das Welt-Wasser staut es nicht).
@@ -3303,6 +3320,9 @@
         const s = seed;
         const terme = erbgutNormal(undefined);
         return {
+            // das Ort-Gesetz der Heimat (`ortGesetz(null)`, wie die lebende Lage des Wirts ohne worldMeta): bis landmarken-geologie-8 trug
+            // die Lage einer Saat keins, und jeder Leser über `ortDer` (Landmarke, Klima, Schnee, Pegel) brach an jeder fremden Saat
+            ort: ortGesetz(null),
             seed: s,
             noise: new Noise(s + ":voxel"),
             baseHeight: LAGE_GRUND.baseHeight,
@@ -8836,6 +8856,8 @@
         RELIEF_KNOTEN: RELIEF_KNOTEN,
         NETZ_KANTE: NETZ_KANTE,
         hoehe: hoehe,
+        RING_SPIRALE: RING_SPIRALE,
+        ringSpirale: ringSpirale,
         ERDBAU: ERDBAU,
         erdbauNormal: erdbauNormal,
         erdbauY: erdbauY,

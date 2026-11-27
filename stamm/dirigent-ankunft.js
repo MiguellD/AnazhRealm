@@ -1564,6 +1564,27 @@ class AnazhRealm_dirigent_ankunft {
         return T.mix(T.float(1), licht, AnazhRealm._imEinheitsQuadrat(q).mul(K.U.aktiv));
     }
 
+    // DIE SICHT DES GELÄNDES ZUM LICHT ALS ZAHL (landmarken-geologie-8 Kopf 5): am Welt-Punkt `p` ({x, y, z}) zum Licht in Richtung
+    // `l` ({x, y, z}, zur Quelle) dasselbe Gesetz, das die Karte malt — die Schatten-Höhe H = max_s (h(p + â·s) − s · tan h☉) über
+    // denselben Marsch (`schrittM` × `schritte`), der Weg s* des Grats, der Halbschatten max(`bandM`, s* · `sonneTan`/2) — auf der
+    // Höhe des Gesetzes selbst (`_terrainMacroSurfaceY(x, z, false)`, die Funktion, die das Gitter abtastet; ohne Masche und ohne
+    // Rand des Gitters). → 0 Schatten … 1 Licht. Leser: das Licht der Landmarke (`_landmarkeKontrast`).
+    _horizontSichtAn(p, l) {
+        const H = AnazhRealm.HORIZONT_KARTE;
+        const flach = Math.max(Math.hypot(l.x, l.z), 1e-4);
+        const [ax, az, tanH] = [l.x / flach, l.z / flach, l.y / flach];
+        let best = -H.leerM,
+            weg = 0;
+        for (let k = 1; k <= H.schritte; k++) {
+            const s = k * H.schrittM;
+            const z = this._terrainMacroSurfaceY(p.x + ax * s, p.z + az * s, false) - tanH * s;
+            if (z > best) [best, weg] = [z, s];
+        }
+        const band = Math.max(H.bandM, weg * AnazhRealm.SCHATTEN_KASKADE.sonneTan * 0.5);
+        const t = Math.min(Math.max((p.y - (best - band)) / (2 * band), 0), 1);
+        return t * t * (3 - 2 * t);
+    }
+
     // DER BODEN DES GESETZES für einen Empfänger, der das Gesetz nur NÄHERT (der Fern-Ring): der Punkt, an dem der Blick des
     // Auges durch `p` das Gesetz TRIFFT (der Boden des Gitters, Kanal b der Karte, bilinear wie die Schatten-Höhe daneben), wo
     // die Masche des Empfängers (`masche`, m) gröber steht als das Gitter —

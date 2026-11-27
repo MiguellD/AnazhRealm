@@ -2733,15 +2733,18 @@ class AnazhRealm_bild_sicht {
         const licht = (farbe) => this._umgebungLicht(farbe);
         // `sicht` (optional): die Sonnen-Sicht am Punkt des Lesers (`_sonnenSicht`: Horizont des Gesetzes × Wurf der Wolke) auf
         // dem direkten Licht — wie jeder Empfänger der Kaskaden; Feld und Panorama reichen ihren Treffer (`at(n, p)`).
-        const baue = (sicht) => {
-            const direkt = U.l0c.mul(TSL.max(TSL.dot(sicht.n, U.l0d), 0.0));
-            // der Boden um das Auge in der unteren Hemisphäre — dasselbe Gesetz wie die Umgebung der Stoffe (schatten.K4)
-            const umgebung = this._rueckstrahlHalbraum(
-                licht(sonde.sample(TSL.equirectUV(sicht.n)).level(0).rgb),
-                sicht.n
-            ).mul(U.ei);
-            return (sicht.s ? direkt.mul(sicht.s) : direkt).mul(1 / Math.PI).add(umgebung);
-        };
+        // DAS GESETZ ist `flaechenLicht` (welt-licht.js) — derselbe Rumpf rechnet auf der CPU (`_weltLichtAn`); der Boden um das
+        // Auge in der unteren Hemisphäre ist dasselbe Gesetz wie die Umgebung der Stoffe (schatten.K4, `halbraum`)
+        const baue = (sicht) =>
+            __weltLicht.flaechenLicht(__weltLicht.RECHNEN_TSL, {
+                n: sicht.n,
+                l0d: U.l0d,
+                l0c: U.l0c,
+                s: sicht.s,
+                himmel: licht(sonde.sample(TSL.equirectUV(sicht.n)).level(0).rgb),
+                unten: this._rueckstrahlLeser().unten,
+                ei: U.ei,
+            });
         const fn = TSL.Fn(([n]) => baue({ n }));
         const fnOrt = TSL.Fn(([n, s]) => baue({ n, s }));
         // `s` (optional): eine Sonnen-Sicht, die der Leser schon hält (das Wasser liest sie auch für seinen Glanz) — EIN Knoten
@@ -2853,6 +2856,92 @@ class AnazhRealm_bild_sicht {
         return this._himmelsIrr;
     }
 
+    // DER HIMMEL JE RICHTUNG AUF DER CPU (landmarken-geologie-8 Kopf 5): die Strahldichte der Umgebung der EINEN Atmosphäre in
+    // Richtung `dir` ({x, y, z}, normiert) aus der Rücklesung (`_skyEnvData`, je Einheit des Lichts, Zeile 0 = Nadir; bilinear,
+    // das Azimut ringsum wie `equirectUV` es legt: u = atan2(z, x)/2π + ½, v = asin(y)/π + ½), als das Licht jetzt
+    // (`umgebungLichtZahl`: × E0 × Tönung, ergraut — dieselben Uniforms, die die Kuppel liest). `roh`: je Einheit, ohne das Licht.
+    // null vor der ersten Lesung. Leser: der Kontrast der Landmarke (`_landmarkeKontrast`: der Himmel hinter dem Gipfel und die
+    // In-Streuung der Luft in Blickrichtung).
+    _himmelStrahlAn(dir, roh = false) {
+        const st = this.state;
+        const d = st._skyEnvData;
+        const A = st.atmoLut;
+        if (!d || !A) return null;
+        const W = A.rtEq.width;
+        const H = A.rtEq.height;
+        const u = (Math.atan2(dir.z, dir.x) / (2 * Math.PI) + 0.5) * W - 0.5;
+        const v = Math.min(Math.max((Math.asin(Math.max(-1, Math.min(1, dir.y))) / Math.PI + 0.5) * H - 0.5, 0), H - 1);
+        const [x0, y0] = [Math.floor(u), Math.floor(v)];
+        const [fx, fy] = [u - x0, v - y0];
+        const y1 = Math.min(y0 + 1, H - 1);
+        const rgb = [0, 0, 0];
+        for (const [x, y, w] of [
+            [x0, y0, (1 - fx) * (1 - fy)],
+            [x0 + 1, y0, fx * (1 - fy)],
+            [x0, y1, (1 - fx) * fy],
+            [x0 + 1, y1, fx * fy],
+        ]) {
+            const i = (y * W + (((x % W) + W) % W)) * 4;
+            for (let c = 0; c < 3; c++) rgb[c] += d[i + c] * w;
+        }
+        return roh ? rgb : __weltLicht.umgebungLichtZahl(A.U, rgb);
+    }
+
+    // DIE BESTRAHLUNG DES HIMMELS an einer Normale `n` auf der CPU (E/π je Einheit des Lichts, dann das Licht jetzt): je Texel der
+    // Rücklesung L · max(n·ω, 0) dω / π — das Integral, das `_himmelsIrradianz` für oben und waagrecht rechnet, für JEDE Normale.
+    // Die Sonde des Bilds (`_weltLicht`) liest dieselbe Umgebung in der PMREM-Stufe der Rauheit 1; sie trifft die Kosinus-
+    // Bestrahlung der Tafel auf 7 % (ferne.K4, der Grat-Himmel). null vor der ersten Lesung.
+    _himmelBestrahlungAn(n) {
+        const st = this.state;
+        const d = st._skyEnvData;
+        const A = st.atmoLut;
+        if (!d || !A) return null;
+        const W = A.rtEq.width;
+        const H = A.rtEq.height;
+        const e = [0, 0, 0];
+        const dEl = Math.PI / H,
+            dPhi = (2 * Math.PI) / W;
+        for (let y = 0; y < H; y++) {
+            const el = ((y + 0.5) / H - 0.5) * Math.PI;
+            const ce = Math.cos(el),
+                se = Math.sin(el);
+            for (let x = 0; x < W; x++) {
+                const phi = ((x + 0.5) / W - 0.5) * 2 * Math.PI;
+                const w = Math.max(n.x * ce * Math.cos(phi) + n.y * se + n.z * ce * Math.sin(phi), 0) * ce * dEl * dPhi;
+                if (!(w > 0)) continue;
+                const i = (y * W + x) * 4;
+                for (let c = 0; c < 3; c++) e[c] += (d[i + c] * w) / Math.PI;
+            }
+        }
+        return __weltLicht.umgebungLichtZahl(A.U, e);
+    }
+
+    // DAS LICHT DER WELT ALS ZAHL (landmarken-geologie-8 Kopf 5, Koordinator 27.11.: „EIN Leser auf der CPU aus derselben Quelle,
+    // aus der `_weltLicht` rechnet"): E(n)/π einer Fläche mit der Normale `n` ({x, y, z}) und der Sonnen-Sicht `s` (0 … 1) — DAS
+    // Gesetz `flaechenLicht` (welt-licht.js) auf Zahlen, mit denselben Uniforms, die der Knoten liest (`U.l0d`, `U.l0c`, `U.ei` aus
+    // `_weltLichtTakt`; der Rückstrahl `unten` = (Boden − Atmosphäre) · an aus `_rueckstrahlLeser`) und dem Himmel der Normale
+    // (`_himmelBestrahlungAn`). × Albedo ist die Strahldichte, die der Welt-March zeichnet (`feldAlbedo · WL.at`). → [r, g, b] linear,
+    // null ohne Licht oder vor der ersten Lesung des Himmels.
+    _weltLichtAn(n, s) {
+        const st = this.state;
+        const WL = st.weltLicht;
+        const himmel = this._himmelBestrahlungAn(n);
+        if (!WL || !himmel) return null;
+        const U = WL.U;
+        const R = this._rueckstrahlLeser();
+        const [b, a] = [R.boden.value, R.atmo.value];
+        const an = R.an.value;
+        return __weltLicht.flaechenLicht(__weltLicht.RECHNEN_ZAHL, {
+            n: [n.x, n.y, n.z],
+            l0d: [U.l0d.value.x, U.l0d.value.y, U.l0d.value.z],
+            l0c: [U.l0c.value.x, U.l0c.value.y, U.l0c.value.z],
+            s,
+            himmel,
+            unten: [(b.x - a.x) * an, (b.y - a.y) * an, (b.z - a.z) * an],
+            ei: U.ei.value,
+        });
+    }
+
     _feldPassDispose() {
         const fp = this.state.feldPass;
         if (!fp) return;
@@ -2917,14 +3006,22 @@ class AnazhRealm_bild_sicht {
         // DIE KAMM-KRONE (ferne.K3): der Wald trägt den Umriss der Ferne — je Anker bestellt beim Feld-Faden.
         this._kammKroneTakt(fr);
         // Kamera-Klippe: camera.far muss Schalen-Rand + Marge umfassen, sonst clippt der Horizont. Der Ring
-        // besitzt diese Voraussetzung (EIN Ort, idempotent über _fernRingCamFar); der Dispose stellt das
-        // alte far wieder her.
-        const aussen = F.schalen[F.schalen.length - 1].aussen;
-        if (fr.ready && st.camera && st.camera.far < aussen + 500) {
+        // besitzt diese Voraussetzung (EIN Ort, idempotent über _fernRingCamFar, die Weite `_weltKameraFern`); der Dispose
+        // stellt das alte far wieder her.
+        const weite = this._weltKameraFern();
+        if (fr.ready && st.camera && st.camera.far < weite) {
             if (!Number.isFinite(this._fernRingCamFarAlt)) this._fernRingCamFarAlt = st.camera.far;
-            st.camera.far = aussen + 500;
+            st.camera.far = weite;
             st.camera.updateProjectionMatrix();
         }
+    }
+
+    // DIE WEITE DER KAMERA EINER STEHENDEN WELT: der Rand der äußersten Schale des Fern-Rings + 500 m — so weit öffnet der Ring
+    // die Kamera, sobald er steht (`_tickFernRing`); vorher (frische Welt, headless ruht der Ring) trägt sie ihr Boot-far.
+    // Leser: der Ring und das Gesetz der Ankunft (`_ankunft`: sein Kegel fragt die Richtung, nie den Ladezustand des Rings).
+    _weltKameraFern() {
+        const F = AnazhRealm.FERN_RING;
+        return F.schalen[F.schalen.length - 1].aussen + 500;
     }
 
     // Gehört der Horizont zu dieser Welt? Die EINE Frage für seinen Takt (`_tickFernRing`) und das erste Weltbild

@@ -300,10 +300,11 @@ function nachricht(e) {
                 },
                 [daten.hoehen.buffer, daten.stoff.buffer, daten.hoechste.buffer]
             );
-        } else if (msg.type === "wald-darts" || msg.type === "wuchs") {
+        } else if (msg.type === "wald-darts" || msg.type === "wuchs" || msg.type === "ankunft") {
             // DIE SCHLANGE IM FADEN (B-Wald): der Auftrag wartet in `waldAuftraege`, der Faden rechnet je Takt den nächsten
             // (`waldTakt`) — ein später bestellter naher überholt die fernen, die vor ihm reisten; der Wuchs eines Bauplans
-            // (w4-b-pflanzen, `wuchsRechnen`) steht in derselben Schlange
+            // (w4-b-pflanzen, `wuchsRechnen`) und die Ankunft (landmarken-9, `ankunftRechnen`, Rang −1: vor jeder Zelle) stehen in
+            // derselben Schlange
             waldAuftraege.push(msg);
             waldWecken();
         } else if (msg.type === "streu-region") {
@@ -1406,15 +1407,10 @@ function genesisPlan(msg) {
         }
         return (hi - lo) / (2 * r) <= G.ERDBAU.boeschung;
     };
-    let o = { x: 0, z: 0 };
-    let gerueckt = false;
-    if (!traegt(0, 0))
-        for (let rr = 12; rr <= 240 && !gerueckt; rr += 12)
-            for (let k = 0; k < 8 && !gerueckt; k++) {
-                const x = Math.round(Math.cos((k / 8) * 2 * Math.PI) * rr);
-                const z = Math.round(Math.sin((k / 8) * 2 * Math.PI) * rr);
-                if (traegt(x, z)) [o, gerueckt] = [{ x, z }, true];
-            }
+    // die EINE Ring-Spirale des Gesetzes (gelaende-core `ringSpirale`, dieselbe, die die Ankunft des Spielers rückt)
+    const ring = G.ringSpirale(traegt);
+    const o = ring ? { x: ring.x, z: ring.z } : { x: 0, z: 0 };
+    const gerueckt = !!ring && ring.r > 0;
     // DER FREMDE ORT TRÄGT KEINEN PRÜFPLATZ (w28-reise-ort: `ortGesetz(teil).siedlung.platz` 0) — die Antwort ist die Ankunft allein
     const plan = state.ort.siedlung.platz
         ? FC.ortPlan(
@@ -1583,6 +1579,7 @@ waldTakt.port1.onmessage = () => {
     const msg = waldAuftraege.splice(i, 1)[0];
     try {
         if (msg.type === "wuchs") wuchsRechnen(msg);
+        else if (msg.type === "ankunft") ankunftRechnen(msg);
         else waldDarts(msg);
     } catch (err) {
         self.postMessage({
@@ -1684,10 +1681,10 @@ function geborenRaum(karte, cap) {
     }
     return n;
 }
-function waldDarts(msg) {
-    const z = msg.zellen;
-    const n = (z.length / 2) | 0;
-    const ctx = waldCtx(msg);
+// DAS GEDÄCHTNIS DES AUFTRAGS (EIN Leser für `waldDarts` und `ankunftRechnen`): der Stand des Main-Gedächtnisses (ein neuer legt
+// es neu an), die Schranke, und die geborenen Darts einer Zelle — entpackt EINMAL je Auftrag, sonst geplant und gepackt gemerkt
+// (`zahl.geplant` zählt die geplanten).
+function waldGedaechtnis(msg) {
     if (msg.stand == null || waldGeboren.stand !== msg.stand)
         waldGeboren = {
             stand: msg.stand == null ? null : msg.stand,
@@ -1698,18 +1695,30 @@ function waldDarts(msg) {
         };
     geborenRaum(waldGeboren.karte, fernK().geboren);
     geborenRaum(waldGeboren.urteil, fernK().geboren);
-    const W = waldGeboren;
+    return waldGeboren;
+}
+function waldGeborene(W, ctx, seedInt, zahl) {
     const imAuftrag = new Map();
-    const geboren = (cx, cz) => {
+    return (cx, cz) => {
         const k = cx + "," + cz;
         let a = imAuftrag.get(k);
         if (a) return a;
         const p = W.karte.get(k);
         if (p) a = waldEntpacken(W, p);
-        else W.karte.set(k, waldPacken(W, (a = self.__phytoCore.planForestCell(cx, cz, msg.seedInt, ctx))));
+        else {
+            W.karte.set(k, waldPacken(W, (a = self.__phytoCore.planForestCell(cx, cz, seedInt, ctx))));
+            if (zahl) zahl.geplant++;
+        }
         imAuftrag.set(k, a);
         return a;
     };
+}
+function waldDarts(msg) {
+    const z = msg.zellen;
+    const n = (z.length / 2) | 0;
+    const ctx = waldCtx(msg);
+    const W = waldGedaechtnis(msg);
+    const geboren = waldGeborene(W, ctx, msg.seedInt, null);
     const pack = ctx.F.pack;
     const arten = [];
     const lokal = []; // Index in W.arten → Index in `arten` dieser Antwort (in der Reihe des ersten Auftritts)
@@ -1758,6 +1767,67 @@ function waldDarts(msg) {
             arten,
         },
         [anzahl.buffer, werte.buffer]
+    );
+}
+
+// DIE ANKUNFT IM FADEN (landmarken-9, erleben.spieler.wegfindung#1, Lehre 14): die Wahl des ersten Blicks (phyto-core
+// `landmarkeAnkunft`) mit der Sicht des Gesetzes auf den Gipfel (`landmarkeSicht`) über DEMSELBEN Bestand, den dieser
+// Faden für das Bild plant — nah das Gedächtnis des Walds (`waldGeboren`, Leser `waldCtx`: die Zellen der Ankunft sind die
+// ersten Zellen des Bilds, gepackt wie dort: `waldGedaechtnis` · `waldGeborene`), fern je Auftrag über die Leser der Kamm-Krone
+// (`fernWaldCtx`; sie fallen mit ihm wie dort — das Gedächtnis hält Zahlen, nie Objekte, stadt-am-schirm). Bis landmarken-9 rechnete
+// der Haupt-Faden sie (`_sichtWald`): kalt 147–8 380 ms je Ankunft an 12 Saaten, in EINEM Bild. Der Wirt reicht Stände (das
+// Auge über seinem Boden, die Spirale gefiltert), Marken und Kegel (`_ankunft`) und setzt die Antwort.
+function ankunftRechnen(msg) {
+    const pc = self.__phytoCore;
+    const t0 = self.performance ? self.performance.now() : Date.now();
+    const [nahCtx, fernCtx] = [waldCtx(msg), fernWaldCtx(msg)];
+    const zahl = { geplant: 0, bestand: 0 };
+    const fernImAuftrag = new Map();
+    const geb = [
+        waldGeborene(waldGedaechtnis(msg), nahCtx, msg.seedInt, zahl),
+        (cx, cz) => {
+            const k = cx * 1048576 + cz;
+            let a = fernImAuftrag.get(k);
+            if (!a) {
+                fernImAuftrag.set(k, (a = pc.planForestCell(cx, cz, msg.seedInt, fernCtx)));
+                zahl.geplant++;
+            }
+            return a;
+        },
+    ];
+    const bestand = [new Map(), new Map()];
+    const pack = nahCtx.F.pack;
+    const leser = {
+        hoehe: (x, z) => G.hoehe(state, x, z, true),
+        stehende: (cx, cz, nah) => {
+            const i = nah ? 0 : 1;
+            const k = cx + "," + cz;
+            let a = bestand[i].get(k);
+            if (!a) {
+                bestand[i].set(k, (a = pc.forestStehende(cx, cz, geb[i], pack, !nah)));
+                zahl.bestand++;
+            }
+            return a;
+        },
+        arten: msg.arten,
+        cell: msg.cell,
+        hMax: msg.hMax,
+        nahM: msg.nahM,
+    };
+    const w = pc.landmarkeAnkunft({
+        staende: msg.staende,
+        marken: msg.marken,
+        innen: msg.innen,
+        aussen: msg.aussen,
+        kegel: msg.kegel,
+        verdeckt: (auge, q) => pc.landmarkeSicht(Object.assign({ auge, q }, leser)),
+    });
+    const ms = (self.performance ? self.performance.now() : Date.now()) - t0;
+    self.postMessage(
+        Object.assign(
+            { type: "ankunft-result", requestId: msg.requestId, ms, geplant: zahl.geplant, bestand: zahl.bestand },
+            w
+        )
     );
 }
 
@@ -4929,26 +4999,7 @@ function kammKrone(msg) {
     if (KS.anker !== anker) [KS.anker, KS.az, KS.alt, KS.neu] = [anker, 0, KS.neu, new Map()];
     KS.az += (msg.azBis == null ? 2 * Math.PI : msg.azBis) - (msg.azVon || 0);
     const law = (x, z) => G.hoehe(state, x, z, false);
-    let [bx, bz, by] = [NaN, NaN, null];
-    const ctx = {
-        F: fernK().forest,
-        baseH: state.baseHeight || 0,
-        extras: msg.extras,
-        fbm: forestFbm,
-        stand: waldStand,
-        schnee: waldSchnee,
-        stufe: waldStufe,
-        ort: waldOrt,
-        wuchs: state.ort.wuchs,
-        surfaceYAt: (x, z) => {
-            [bx, bz, by] = [x, z, law(x, z)];
-            return by;
-        },
-        waterYAt: (x, z) => landWaterLevelAt(x, z, x === bx && z === bz ? by : law(x, z)),
-        slopeAt: (x, z) => Math.hypot((law(x + 2, z) - law(x - 2, z)) / 4, (law(x, z + 2) - law(x, z - 2)) / 4),
-        feuchteAt: (x, z, sy) => feuchteAt(x, z, sy),
-        ortFrei: (x, z, T) => ortFrei(x, z, T),
-    };
+    const ctx = fernWaldCtx(msg);
     // die geborenen Darts der Zellen, die dieser Auftrag liest (Band-Zellen und ihr Fenster ±FOREST_URTEIL_REICH): sie
     // fallen mit ihm
     const imAuftrag = new Map();
@@ -4996,6 +5047,31 @@ function kammKrone(msg) {
     return {
         antwort: { baeume: r.baeume, arten: r.arten, zellen: r.zellen, rufe: r.rufe, kandidaten: r.kandidaten, ms },
         transfer: [r.baeume.buffer],
+    };
+}
+// DIE LESER DES FERNEN WALDS (die Kamm-Krone `kammKrone`, die Sicht der Ankunft `ankunftRechnen`): der Plan (`planForestCell`)
+// mit dem FERN-LESER des Bodens — das Gesetz ohne Detail, Wasser, Steilheit ±2 m, Feuchte, Ort und Same wie der Wald-Faden.
+function fernWaldCtx(msg) {
+    const law = (x, z) => G.hoehe(state, x, z, false);
+    let [bx, bz, by] = [NaN, NaN, null];
+    return {
+        F: fernK().forest,
+        baseH: state.baseHeight || 0,
+        extras: msg.extras,
+        fbm: forestFbm,
+        stand: waldStand,
+        schnee: waldSchnee,
+        stufe: waldStufe,
+        ort: waldOrt,
+        wuchs: state.ort.wuchs,
+        surfaceYAt: (x, z) => {
+            [bx, bz, by] = [x, z, law(x, z)];
+            return by;
+        },
+        waterYAt: (x, z) => landWaterLevelAt(x, z, x === bx && z === bz ? by : law(x, z)),
+        slopeAt: (x, z) => Math.hypot((law(x + 2, z) - law(x - 2, z)) / 4, (law(x, z + 2) - law(x, z - 2)) / 4),
+        feuchteAt: (x, z, sy) => feuchteAt(x, z, sy),
+        ortFrei: (x, z, T) => ortFrei(x, z, T),
     };
 }
 

@@ -631,29 +631,57 @@ class AnazhRealm_gelaende_boden {
         return n;
     }
 
-    // DIE ANKUNFT AM GENESIS-ORT (Pflicht F): der Spieler steht an der Mitte des Plans auf dem Grund (das EINE Boden-Gesetz samt
-    // dem Erdbau des Kerns, `getTerrainHeightAt`) + 1,2 m, ruhend — die erste Ankunft einer Welt (die Weltgen) und jede Rückkehr
-    // nach dem Tod (`_playerDeathRespawn`). Ohne Plan oder Grund bricht sie laut (`_bruchMelden`): der Plan entsteht mit der Welt
-    // im Faden, nie ein Ersatz-Ort. → {x, y, z}
+    // DIE ANKUNFT AM GENESIS-ORT (Pflicht F): der Spieler steht am Stand des Ankunfts-Gesetzes um die Mitte des Plans
+    // (`_ankunft`: die Heimat, oder ihr Ring-Stand mit freier Sicht — gerechnet im Wald-Faden, gemerkt je Welt-Stand) auf dem Grund
+    // ruhend dort, wo das Gesetz SAH: das Body-Zentrum `EGO_AUGE_M` unter seinem Auge (Grund samt Erdbau + Box-halfExtent 0,5,
+    // `getTerrainHeightAt`) — der erste Blick der Kamera IST die Gerade des Gesetzes (landmarken-9: der frühere Stand Grund + 1,2 m
+    // hob das Auge 0,70 m über das des Gesetzes, die Gerade der Kamera traf an Saat s1-2 die Tanne in 82 m, die des Gesetzes lief unter
+    // ihrer Krone); nie unter dem Grund, falls das Mesh seit der Bestellung wuchs. Den Blick (Gier, Neigung 0) auf
+    // seiner tragenden Landmarke — die erste Ankunft einer Welt (die Weltgen wartet auf sie) und jede Rückkehr nach dem Tod
+    // (`_playerDeathRespawn`). Ohne Plan oder Grund bricht sie laut (`_bruchMelden`): der Plan entsteht mit der Welt im Faden, nie
+    // ein Ersatz-Ort. Kommt die Antwort, nachdem eine andere Welt begann (ein anderes `worldMeta`), setzt sie nichts.
+    // → das Versprechen {x, y, z, yaw, glied, marke} (null: eine neuere Welt kam ihr zuvor)
     _genesisAnkunft() {
         const M = this._genesisMitte();
-        const g = M ? this.getTerrainHeightAt(M.x, M.z) : NaN;
-        if (!Number.isFinite(g)) {
-            const text = M
-                ? `GENESIS-ORT: kein Grund an der Mitte ${M.x}/${M.z}`
-                : "GENESIS-ORT: die Ankunft ohne Plan — der Plan entsteht mit der Welt im Faden";
+        if (!M) {
+            const text = "GENESIS-ORT: die Ankunft ohne Plan — der Plan entsteht mit der Welt im Faden";
             this._bruchMelden(text);
-            throw new Error(text);
+            return Promise.reject(new Error(text));
         }
-        const a = { x: M.x, y: g + 1.2, z: M.z };
-        const pm = this.state.playerMesh;
-        if (pm) {
-            pm.position.set(a.x, a.y, a.z);
-            // Feld-nativ: Velocity nullen + vertikalen Feld-Zustand zurück (kein Ammo-Body).
-            if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
-            this.state._fieldVy = 0;
-        }
-        return a;
+        const welt = this.state.worldMeta;
+        return this._ankunft(M).then((an) => {
+            if (this.state.worldMeta !== welt) return null;
+            const g = this.getTerrainHeightAt(an.x, an.z);
+            if (!Number.isFinite(g)) {
+                const text = `GENESIS-ORT: kein Grund an der Ankunft ${an.x}/${an.z}`;
+                this._bruchMelden(text);
+                throw new Error(text);
+            }
+            const t0 = performance.now();
+            // die Marke des ersten Blicks reist mit (der Leser der Station: das Blickziel IST die Wahl des Gesetzes, nie eine zweite)
+            const a = {
+                x: an.x,
+                y: Math.max(g + 0.5, an.auge.y - AnazhRealm.EGO_AUGE_M),
+                z: an.z,
+                yaw: an.yaw,
+                glied: an.glied,
+                marke: an.marke,
+            };
+            this.state.yaw = an.yaw;
+            this.state.pitch = 0;
+            const pm = this.state.playerMesh;
+            if (pm) {
+                pm.position.set(a.x, a.y, a.z);
+                // Feld-nativ: Velocity nullen + vertikalen Feld-Zustand zurück (kein Ammo-Body).
+                if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
+                this.state._fieldVy = 0;
+            }
+            this._zielGangBeginn(an.marke); // der Gang zur Marke des ersten Blicks (erleben.spieler.wegfindung#2)
+            // die Kosten im Haupt-Faden je Ankunft (landmarken-9): die Bestellung (Marken, Stände, Kegel) + das Setzen
+            an.kosten.gesetzt = performance.now() - t0;
+            this.state.ankunftKosten = an.kosten;
+            return a;
+        });
     }
 
     // ### Terrain-Erweiterung ###
@@ -3443,3 +3471,7 @@ AnazhRealm.EXPLORE = Object.freeze({
     maxRegions: 4000, // die visitedRegions-Map bounded halten
     pruneRegions: 1000, // beim Überlauf die ältesten Regionen vergessen
 });
+
+// DAS BAND DER ANKUNFT (`_ankunft`): die Mittelsicht beginnt beim `mittelsichtBaumX`-fachen der Höhe des herrschenden Baums
+// (Higuchi; die Higuchi-Viewsheds bei Wheatley & Gillings 2000, „Vision, perception and GIS“: nah bis 60 ×, fern ab 1 100 ×).
+AnazhRealm.ANKUNFT_SICHT = Object.freeze({ mittelsichtBaumX: 60 });
