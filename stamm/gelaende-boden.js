@@ -631,21 +631,25 @@ class AnazhRealm_gelaende_boden {
         return n;
     }
 
-    // DIE ANKUNFT AM GENESIS-ORT (Pflicht F): der Spieler steht an der Mitte des Plans auf dem Grund (das EINE Boden-Gesetz samt
-    // dem Erdbau des Kerns, `getTerrainHeightAt`) + 1,2 m, ruhend — die erste Ankunft einer Welt (die Weltgen) und jede Rückkehr
-    // nach dem Tod (`_playerDeathRespawn`). Ohne Plan oder Grund bricht sie laut (`_bruchMelden`): der Plan entsteht mit der Welt
-    // im Faden, nie ein Ersatz-Ort. → {x, y, z}
+    // DIE ANKUNFT AM GENESIS-ORT (Pflicht F): der Spieler steht am Stand des Ankunfts-Gesetzes um die Mitte des Plans
+    // (`_ankunft`: die Heimat, oder ihr Ring-Stand mit freier Sicht) auf dem Grund (das EINE Boden-Gesetz samt dem Erdbau des
+    // Kerns, `getTerrainHeightAt`) + 1,2 m, ruhend, den Blick (Gier, Neigung 0) auf seiner tragenden Landmarke — die erste
+    // Ankunft einer Welt (die Weltgen) und jede Rückkehr nach dem Tod (`_playerDeathRespawn`). Ohne Plan oder Grund bricht sie
+    // laut (`_bruchMelden`): der Plan entsteht mit der Welt im Faden, nie ein Ersatz-Ort. → {x, y, z, yaw, glied}
     _genesisAnkunft() {
         const M = this._genesisMitte();
-        const g = M ? this.getTerrainHeightAt(M.x, M.z) : NaN;
+        const an = M ? this._ankunft(M) : null;
+        const g = an ? this.getTerrainHeightAt(an.x, an.z) : NaN;
         if (!Number.isFinite(g)) {
             const text = M
-                ? `GENESIS-ORT: kein Grund an der Mitte ${M.x}/${M.z}`
+                ? `GENESIS-ORT: kein Grund an der Ankunft ${an.x}/${an.z}`
                 : "GENESIS-ORT: die Ankunft ohne Plan — der Plan entsteht mit der Welt im Faden";
             this._bruchMelden(text);
             throw new Error(text);
         }
-        const a = { x: M.x, y: g + 1.2, z: M.z };
+        const a = { x: an.x, y: g + 1.2, z: an.z, yaw: an.yaw, glied: an.glied };
+        this.state.yaw = an.yaw;
+        this.state.pitch = 0;
         const pm = this.state.playerMesh;
         if (pm) {
             pm.position.set(a.x, a.y, a.z);
@@ -653,6 +657,7 @@ class AnazhRealm_gelaende_boden {
             if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
             this.state._fieldVy = 0;
         }
+        this._zielGangBeginn(an.marke); // der Gang zur Marke des ersten Blicks (erleben.spieler.wegfindung#2)
         return a;
     }
 

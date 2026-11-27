@@ -2555,39 +2555,351 @@ class AnazhRealm_vegetation_baum {
     // Rasters auf dem Land (der Tor krönt Kuppe und Rücken), die Art der Anteil ihres λ. Die Höhen fragt der Chunk nur, wenn er eine
     // trägt (λ · Fläche ≤ 0,018). Bis hier warf jede Probe mit 1,4 % einen Bogen oder Turm, wo die dichte-Affinität 0,18 trug, Bogen
     // oder Turm nach Münzwurf: an der Ankunft 78 Bögen und 64 Türme auf 0,21 km² (≈ 680 je km², Arches trägt 6,5). → die Zahl.
+    // DER EINE WERFER (landmarken-geologie-7): je Chunk EINMAL — das Register `_landmarkeWurf` (Schlüssel „cx,cz“ → seine Einträge,
+    // `spawnArchitecture` legt sie ab) hält, was geworfen ist, bis seine Zelle die Reichweite verlässt (ZELL_GEDAECHTNISSE, Abschied
+    // der Einträge). Leser: die Saat des Chunks (`_tickSaat`) und der Fern-Takt (`_landmarkenFern`) — beide fragen denselben Wurf.
     _landmarkeChunk(cx, cz) {
+        const M = this._landmarkeWurf || (this._landmarkeWurf = new Map());
+        const key = `${cx},${cz}`;
+        if (M.has(key)) return 0;
+        M.set(key, []);
+        const liste = this._landmarkenDesChunks(cx, cz);
+        for (const l of liste)
+            this._enqueueVegetationSpawn(
+                l.art,
+                { x: l.x, y: l.y, z: l.z },
+                { seed: l.seed, silent: true, landmarke: key }
+            );
+        return liste.length;
+    }
+
+    // Der Abschied der Würfe (ZELL_GEDAECHTNISSE „_landmarkeWurf“): die Einträge der gehenden Chunks fallen still, ihre wartenden
+    // Würfe verlassen die Pflanz-Schlange (sonst stünde ein Wurf ohne Register, den kein Abschied je nimmt). → die Abbauten.
+    _landmarkeGeht(schluessel, listen) {
+        const weg = new Set(schluessel);
+        const Q = this.state.pendingVegSpawns;
+        if (Q && Q.length) {
+            let j = 0;
+            for (const t of Q) if (!(t.opts && weg.has(t.opts.landmarke))) Q[j++] = t;
+            Q.length = j;
+        }
+        let n = 0;
+        for (const l of listen || []) for (const e of l || []) if (this.removeArchitecture(e, { still: true })) n++;
+        return n;
+    }
+
+    // DER FERN-WURF DER LANDMARKE (landmarken-geologie-7, erleben.spieler.wegfindung#1): die Saat hängt am Voxel-Ring (≤ 764 m), die
+    // Wegfindung braucht die Landmarke in 1–3 km. Der Takt geht in Chebyshev-Ringen um den Chunk des Spielers nach außen und wirft
+    // jeden Chunk, dessen Mitte binnen `LANDMARKE_FERN_M` liegt (`_landmarkeChunk`, idempotent) — bis zur Frist, mindestens
+    // `LANDMARKE_FERN_SCHRITTE` Chunks; ein Chunk-Wechsel beginnt innen neu (das Geworfene überspringt er im Register). Der Wurf
+    // liest das Gesetz (`_landmarkenDesChunks`), nie die geladene Welt: nah und fern derselbe. Leser: der Abräum-Gang des Bodens
+    // (`_pruneDistantVoxelChunks`). Gemessen (Heimat, Node): 15 465 Chunks in 3 km, die Dichte 2,6 µs je Chunk. → die Würfe.
+    _landmarkenFern(pos, frist) {
+        if (!pos) return 0;
+        const { span } = this._voxelChunkConfig();
+        const pcx = Math.floor(pos.x / span);
+        const pcz = Math.floor(pos.z / span);
+        const RM = AnazhRealm.LANDMARKE_FERN_M;
+        const R = Math.ceil(RM / span);
+        let c = this._landmarkeFernLauf;
+        if (!c || c.pcx !== pcx || c.pcz !== pcz) c = this._landmarkeFernLauf = { pcx, pcz, ring: 0, i: 0 };
+        let [n, schritte] = [0, 0];
+        while (c.ring <= R && (schritte < AnazhRealm.LANDMARKE_FERN_SCHRITTE || performance.now() < frist)) {
+            const k = c.ring;
+            const len = k ? 8 * k : 1;
+            if (c.i >= len) {
+                c.ring++;
+                c.i = 0;
+                continue;
+            }
+            const s = k ? Math.floor(c.i / (2 * k)) : 0;
+            const t = k ? c.i % (2 * k) : 0;
+            c.i++;
+            schritte++;
+            const [dx, dz] = !k
+                ? [0, 0]
+                : s === 0
+                  ? [t - k, -k]
+                  : s === 1
+                    ? [k, t - k]
+                    : s === 2
+                      ? [k - t, k]
+                      : [-k, k - t];
+            if (Math.hypot(dx, dz) * span <= RM) n += this._landmarkeChunk(pcx + dx, pcz + dz);
+        }
+        return n;
+    }
+
+    // DER WURF DER LANDMARKE ALS FUNKTION (landmarken-geologie-4): die Felsbögen und -türme eines Chunks (cx, cz) aus dem Gesetz des
+    // Orts — [{ art, x, y, z, seed }], ohne die Welt zu ändern. `saat` (optional) ist die Adresse: die Lage DIESER Saat (`_gelaende(saat)`,
+    // ohne Saat oder mit der geladenen die lebende Sicht, sonst gelaende-core `lageGrund` — dieselbe Lage, die jeder Leser einer fremden
+    // Saat fragt), ihr Samen (`lage.seed`), ihr Boden und ihr Land aus dem GESETZ (gelaende-core `hoehe` und `wasserSpiegel`, 0,4 m
+    // darüber), nie aus dem gebauten Mesh: der Fern-Wurf (`_landmarkenFern`) fragt Chunks ohne Mesh, und nah wie fern steht derselbe Wurf
+    // (landmarken-geologie-7; bis dahin `_voxelSurfaceY` und `_landAt`). Leser: der Werfer (`_landmarkeChunk`) und jeder Richter, der
+    // eine andere Saat fragt — bis landmarken-geologie-8 reichte er ein eigenes Bündel der Welt (`lageAus` aus der Normalform der
+    // Heimat), ein Zwilling von `_gelaende(saat)`; bis landmarken-geologie-4 las der Wurf nur die geladene Welt, und die Station der
+    // Wegfindung (erleben.spieler.wegfindung#1) maß 1 von 51 Saaten: „der Wurf der Landmarke ist keine Funktion der Saat“.
+    _landmarkenDesChunks(cx, cz, saat) {
+        const K = globalThis.__gelaendeCore;
+        const lage = this._gelaende(saat);
         const { span } = this._voxelChunkConfig();
         const N = 10; // das Raster der Saat (`_tickSaat`)
         const step = span / N;
-        const d = globalThis.__gelaendeCore.landmarke(this._gelaende(), (cx + 0.5) * span, (cz + 0.5) * span);
+        const d = K.landmarke(lage, (cx + 0.5) * span, (cz + 0.5) * span);
         const lam = d.felsbogen + d.felsturm;
         const mu = lam * span * span * 1e-6;
-        const g = this._rollGenome(`${AnazhRealm._saatJe(this)}|${cx},${cz}`, "landmarke");
+        const g = this._rollGenome(`${lage.seed}|${cx},${cz}`, "landmarke");
         const u = g.axis("zahl");
         let k = 0;
         for (let p = Math.exp(-mu), F = p; u > F && k < N * N; F += p) p *= mu / ++k; // Poisson: die Umkehr der Verteilung
-        if (!k) return 0;
+        const liste = [];
+        if (!k) return liste;
         const orte = [];
         for (let i = 0; i < N * N; i++) {
             const x = cx * span + ((i % N) + 0.5) * step;
             const z = cz * span + (((i / N) | 0) + 0.5) * step;
-            const y = this._voxelSurfaceY(x, z);
+            const y = K.hoehe(lage, x, z, true);
             if (Number.isFinite(y)) orte.push({ x, y, z });
         }
         orte.sort((a, b) => b.y - a.y);
-        let n = 0;
         for (let j = 0; j < k && j < orte.length; j++) {
             const o = orte[j];
-            if (!this._landAt(o.x, o.z, 0.4)) continue;
+            if (!(o.y > K.wasserSpiegel(lage, o.x, o.z) + 0.4)) continue;
             const art = g.axis(`art${j}`) * lam < d.felsbogen ? "felsbogen" : "felsturm";
-            this._enqueueVegetationSpawn(
-                art,
-                { x: o.x, y: o.y + 0.5, z: o.z },
-                { seed: (g.axis(`same${j}`) * 4294967296) >>> 0, silent: true }
-            );
-            n++;
+            liste.push({ art, x: o.x, y: o.y + 0.5, z: o.z, seed: (g.axis(`same${j}`) * 4294967296) >>> 0 });
         }
-        return n;
+        return liste;
+    }
+
+    // DIE HÖHE EINER GEWORFENEN LANDMARKE (landmarken-geologie-8 Kopf 4): ihre Gestalt über ihrem Fuß — die Hülle (`_felsHuellBoxen`,
+    // Boxen im Vorlagen-Raum, Boden y 0) × Welt-Skala ihres Presets; null ohne Hülle. Leser: die Ankunft (`_ankunft`, der Gipfel als
+    // Ziel des ersten Blicks) und die Station der Wegfindung (erleben.spieler.wegfindung#1) — bis hier rechnete die Station sie allein.
+    _landmarkeHoehe(l) {
+        const boxen = this._felsHuellBoxen({ type: l.art, seed: l.seed });
+        if (!boxen) return null;
+        return (
+            Math.max(...boxen.map((b) => b[3])) *
+            this._foundryWorldScaleMatrix(this._foundryPresetFor(l.art)).elements[0]
+        );
+    }
+
+    // DER FUSS EINER GEWORFENEN LANDMARKE (landmarken-geologie-8 Kopf 6): der Umkreis ihrer Hülle in der Ebene (`_felsHuellBoxen`
+    // × Welt-Skala ihres Presets, wie `_landmarkeHoehe`; der Kreis um jede Drehung der Gestalt) — wer ihn plus seinen Leib-Radius
+    // erreicht, steht an ihr. Leser: der Ziel-Gang (`_zielGangBeginn`). null ohne Hülle.
+    _landmarkeFuss(l) {
+        const boxen = this._felsHuellBoxen({ type: l.art, seed: l.seed });
+        if (!boxen) return null;
+        const s = this._foundryWorldScaleMatrix(this._foundryPresetFor(l.art)).elements[0];
+        const weit = ([x0, x1, , , z0, z1]) =>
+            Math.hypot(Math.max(Math.abs(x0), Math.abs(x1)), Math.max(Math.abs(z0), Math.abs(z1)));
+        return s * Math.max(...boxen.map(weit));
+    }
+
+    // DIE ALBEDO EINER LANDMARKE IN DER FERNE (landmarken-geologie-8 Kopf 5): die Farbe, mit der der Welt-March sie zeichnet — der
+    // Satz ihres Fits aus der Lieferung der Stufe 1 (`_archFitVon`: ihre Hülle in der Farbe des Fits, das Mittel ihrer Boxen nach
+    // Volumen), derselbe Rumpf wie der Satz des Baus (`_archFoundryZiegel`). Die Lieferung bestellt der Flatten selbst (`_foundryZug`,
+    // am Ort der Marke); bis sie liegt null (der Leser wartet, wie der March wartet). → {r, g, b} linear.
+    _landmarkeFarbe(l) {
+        const entry = { type: l.art, seed: l.seed, position: { x: l.x, y: l.y, z: l.z } };
+        const preset = this._foundryPresetForEntry(entry);
+        const bf = preset ? this._foundryFlattenFor(entry, preset, 1) : null;
+        if (!bf || !Array.isArray(bf.leaves) || !bf.leaves.length) return null;
+        let [r, g, b, w] = [0, 0, 0, 0];
+        for (const d of this._archFitVon(entry, bf) || [])
+            if (d.farbe)
+                [r, g, b, w] = [r + d.farbe.r * d.vol, g + d.farbe.g * d.vol, b + d.farbe.b * d.vol, w + d.vol];
+        return w > 0 ? { r: r / w, g: g / w, b: b / w } : null;
+    }
+
+    // DIE SICHT DES AUGES AUF DEN GIPFEL EINER LANDMARKE (landmarken-geologie-8 Kopf 6, erleben.spieler.wegfindung#1): die Gerade vom
+    // Auge zum Gipfel `q` {x, y, z} trifft (1) den Grund der Saat (gelaende-core `hoehe`, je 25 m bis 30 m vor den Fuß, den die
+    // Landmarke selbst trägt) oder (2) eine Krone des Walds — derselbe Plan, mit dem die Welt zeichnet: binnen der Nah-Streu
+    // (`SCATTER.outerM`) der Bestand (`_forestGeborene` über der Oberfläche der Voxel-Welt, `forestStehende`), jenseits die
+    // Kamm-Krone (der Plan über dem Gesetz ohne Detail, nur das Dach, wie der Faden sie rechnet); je Krone ihr Umriss wie in der
+    // Ferne (`_kammKroneArten`: Laub die Ellipse über [Ansatz, Wipfel], Nadel der Kegel, Radius T des Plans). Gefragt werden nur die
+    // Zellen, in denen ein Baum der Höhe `KAMM_KRONE.hMax` die Gerade erreicht, nah zuerst; der erste Treffer endet. Leser: der
+    // Kontrast der Landmarke (verdeckt heißt Kontrast 0) und die Ankunft (`_ankunft`: frei heißt null). Bis hier trug die Ankunft
+    // das Glied des Grunds allein, und der Zeuge am Gerät (GTX 27.11.) sah an 3 von 3 Saaten den Gipfel, dem das Gesetz Kontrast
+    // gab, hinter Bäumen (Kiefer 74 m, Tanne 100 m, die Kamm-Krone 390 m). → null (frei) oder { von: "grund" | <Art>, d } (d: Weg
+    // vom Auge in m).
+    _landmarkeSicht(auge, q) {
+        const K = globalThis.__gelaendeCore;
+        const A = AnazhRealm;
+        const L = this._gelaende();
+        const [vx, vy, vz] = [q.x - auge.x, q.y - auge.y, q.z - auge.z];
+        const d = Math.hypot(vx, vz);
+        if (!(d > 30)) return null;
+        const [ux, uz, m] = [vx / d, vz / d, vy / d];
+        let treffer = null;
+        for (let s = 25; s < d - 30; s += 25)
+            if (K.hoehe(L, auge.x + ux * s, auge.z + uz * s, true) > auge.y + m * s) {
+                treffer = { von: "grund", d: s };
+                break;
+            }
+        const ende = treffer ? treffer.d : d - 30;
+        const W = this._sichtWald();
+        const C = A.FOREST.cell;
+        const hMax = A.KAMM_KRONE.hMax;
+        // die Zellen am Strahl, in denen ein Baum der Höhe hMax die Gerade erreicht, je Zelle ihr kleinster Weg
+        const zellen = new Map();
+        for (let s = 0; s < ende + C; s += C / 2) {
+            const [x, z] = [auge.x + ux * s, auge.z + uz * s];
+            if (K.hoehe(L, x, z, true) + hMax < auge.y + m * s) continue;
+            for (const k of [-1, 0, 1]) {
+                const [cx, cz] = [Math.floor((x - uz * k * C) / C), Math.floor((z + ux * k * C) / C)];
+                const key = cx + "," + cz;
+                if (!zellen.has(key)) zellen.set(key, [s, cx, cz]);
+            }
+        }
+        let wald = null;
+        for (const [s0, cx, cz] of [...zellen.values()].sort((a, b) => a[0] - b[0])) {
+            if (wald && s0 - C > wald.d) break;
+            const nah = Math.hypot((cx + 0.5) * C - auge.x, (cz + 0.5) * C - auge.z) <= A.SCATTER.outerM;
+            const stehen = W.stehende(cx, cz, nah);
+            for (let i = 0; i < stehen.length; i++) {
+                const t = stehen[i];
+                const p = W.arten[t.sp];
+                if (!p || !(p.h > 0) || !(t.T > 0) || !Number.isFinite(t.surfaceY)) continue;
+                const [tx, tz] = [t.x - auge.x, t.z - auge.z];
+                const s = tx * ux + tz * uz;
+                if (!(s > 1) || s >= ende || (wald && s >= wald.d)) continue;
+                const v = Math.abs(tx * uz - tz * ux) / t.T;
+                if (v >= 1) continue;
+                const hoch = p.h * t.s;
+                const y0 = t.surfaceY + hoch * p.ansatz;
+                const kh = hoch - hoch * p.ansatz;
+                const w = Math.sqrt(1 - v * v);
+                const [unten, oben] = p.nadel
+                    ? [y0, y0 + kh * (1 - v)]
+                    : [y0 + (kh / 2) * (1 - w), y0 + (kh / 2) * (1 + w)];
+                const y = auge.y + m * s;
+                if (y >= unten && y <= oben) wald = { von: t.sp, d: s };
+            }
+        }
+        for (; W.gemeldet < W.geplant; W.gemeldet++)
+            this._fadenUmgangen("der Wald-Plan einer Zelle für die Sicht der Landmarke");
+        return wald || treffer;
+    }
+
+    // DAS GEDÄCHTNIS DER SICHT (`_landmarkeSicht`): die geborenen Darts und der Bestand je Zelle, nah (die Oberfläche der Voxel-Welt,
+    // der ganze Bestand) und fern (das Gesetz ohne Detail, das Dach), dazu die Krone jeder Art — je Same und Stand des Walds
+    // (`_waldStandSchluessel`, die Hydrosphäre), über 65 536 geborenen Zellen neu (wie das Gedächtnis der Kamm-Krone im Faden).
+    _sichtWald() {
+        const A = AnazhRealm;
+        const pc = globalThis.__phytoCore;
+        const schluessel = this._waldStandSchluessel() + "|" + (this.state.hydrosphere ? 1 : 0);
+        let W = this._sichtWaldStand;
+        if (W && W.schluessel === schluessel && W.geboren[0].size + W.geboren[1].size <= 65536) return W;
+        const K = globalThis.__gelaendeCore;
+        const L = this._gelaende();
+        const seedInt = this._forestSeedInt();
+        const fern = (x, z) => K.hoehe(L, x, z, false);
+        const geboren = [new Map(), new Map()];
+        const bestand = [new Map(), new Map()];
+        const gebVon = (i) => (gx, gz) => {
+            const k = gx + "," + gz;
+            let a = geboren[i].get(k);
+            if (!a) {
+                geboren[i].set(k, (a = this._forestGeborene(gx, gz, seedInt, true, i ? fern : undefined)));
+                W.geplant++;
+            }
+            return a;
+        };
+        const geb = [gebVon(0), gebVon(1)];
+        // `geplant`: die Zellen, die die Sicht im Haupt-Faden plant — Zellen, die der Wald-Faden (nah) und der Kamm-Faden (fern)
+        // ohnehin planen: je Zelle EIN „FADEN-UMGANGEN“ (Lehre 14, `_fadenUmgangen`, gemeldet von `_landmarkeSicht`)
+        W = this._sichtWaldStand = {
+            schluessel,
+            geboren,
+            geplant: 0,
+            gemeldet: 0,
+            arten: this._kammKroneArten(),
+            stehende: (cx, cz, nah) => {
+                const i = nah ? 0 : 1;
+                const k = cx + "," + cz;
+                let a = bestand[i].get(k);
+                if (!a) bestand[i].set(k, (a = pc.forestStehende(cx, cz, geb[i], A.FOREST.pack, !nah)));
+                return a;
+            },
+        };
+        return W;
+    }
+
+    // DER KONTRAST EINER LANDMARKE GEGEN IHREN GRUND, wie das Auge ihn sieht (landmarken-geologie-8 Kopf 5, erleben.spieler.
+    // wegfindung#1; Koschmieder 1924: C = C₀ · e^{−σd} vor dem Horizont-Himmel). Die Leuchtdichte jeder Seite aus dem EINEN Licht
+    // der Welt (`_weltLichtAn`, das Gesetz `flaechenLicht` des Knotens): die Marke in ihrer Albedo (`_landmarkeFarbe`) an ihrer
+    // Mitte, die Fläche zum Auge gewandt (waagrecht), die Sonnen-Sicht des Gesetzes (`_horizontSichtAn`); der Grund ist der Himmel
+    // hinter dem Gipfel (`_himmelStrahlAn`) oder der Hang, den die Gerade dahinter trifft (`hinter.punkt`: Albedo `_bodenFarbeAt`,
+    // Normale des Gesetzes, dieselbe Sonnen-Sicht). Die Luft dämpft jede Seite mit ihrem Durchlass T (`_luftDurchlass`) und mischt
+    // mit 1 − T die Himmels-Sicht in Blickrichtung hinein (unter dem Horizont der Horizont-Himmel), wie der Knoten der Luft.
+    // `l` = {art, seed, x, y (Fuß), z, h}; `hinter` = {hinter: "himmel"} | {hinter: "hang", punkt}. → {kontrast, c0, y, …} (Y nach
+    // Rec. 709) oder {fehlt} mit dem Namen des Lesers, der noch nicht liest. Die Wolke wirft hier keinen Schatten (ihr Wurf trägt
+    // keinen Leser auf der CPU — die Marke gilt als unbewölkt besonnt, wo das Gesetz sie besonnt). DIE SICHT ZUERST (Kopf 6): ist der
+    // Gipfel vom Auge verdeckt (`_landmarkeSicht`: Grund oder Krone), ist der Kontrast 0 → {kontrast: 0, verdeckt: {von, d}}.
+    _landmarkeKontrast(auge, l, hinter) {
+        const verdeckt = this._landmarkeSicht(auge, { x: l.x, y: l.y + l.h, z: l.z });
+        if (verdeckt) return { kontrast: 0, verdeckt };
+        const st = this.state;
+        const WL = st.weltLicht;
+        if (!WL) return { fehlt: "das Licht der Welt (`_weltLicht`) steht nicht" };
+        const farbe = this._landmarkeFarbe(l);
+        if (!farbe) return { fehlt: "die Albedo der Marke (`_landmarkeFarbe`: die Lieferung der Stufe 1 lädt)" };
+        const Y = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        const l0 = WL.U.l0d.value;
+        const richtung = (q) => {
+            const [x, y, z] = [q.x - auge.x, q.y - auge.y, q.z - auge.z];
+            const d = Math.hypot(x, y, z) || 1;
+            return { x: x / d, y: y / d, z: z / d };
+        };
+        // die Leuchtdichte am Auge: L · T + Himmel in Blickrichtung (über dem Horizont geklemmt) · (1 − T)
+        const amAuge = (L, q) => {
+            const T = this._luftDurchlass(auge, q);
+            const r = richtung(q);
+            const fl = Math.hypot(r.x, r.z) || 1;
+            const A = r.y >= 0 ? this._himmelStrahlAn(r) : this._himmelStrahlAn({ x: r.x / fl, y: 0, z: r.z / fl });
+            return { L: L.map((v, c) => v * T[c] + A[c] * (1 - T[c])), T };
+        };
+        const mitte = { x: l.x, y: l.y + l.h * 0.5, z: l.z };
+        const zum = { x: auge.x - l.x, y: 0, z: auge.z - l.z };
+        const fz = Math.hypot(zum.x, zum.z) || 1;
+        const sM = this._horizontSichtAn(mitte, l0);
+        const eM = this._weltLichtAn({ x: zum.x / fz, y: 0, z: zum.z / fz }, sM);
+        if (!eM) return { fehlt: "der Himmel auf der CPU (`_skyEnvData`) ist noch nicht gelesen" };
+        const Lm = [farbe.r * eM[0], farbe.g * eM[1], farbe.b * eM[2]];
+        const m = amAuge(Lm, mitte);
+        let Lg, g;
+        if (hinter && hinter.hinter === "hang" && hinter.punkt) {
+            const p = hinter.punkt;
+            const yG = this._terrainMacroSurfaceY(p.x, p.z, true);
+            const nx = this._terrainMacroSurfaceY(p.x - 2, p.z, true) - this._terrainMacroSurfaceY(p.x + 2, p.z, true);
+            const nz = this._terrainMacroSurfaceY(p.x, p.z - 2, true) - this._terrainMacroSurfaceY(p.x, p.z + 2, true);
+            const nl = Math.hypot(nx, 4, nz);
+            const boden = this._bodenFarbeAt(p.x, yG, p.z, [0, 0, 0]);
+            const eG = this._weltLichtAn(
+                { x: nx / nl, y: 4 / nl, z: nz / nl },
+                this._horizontSichtAn({ x: p.x, y: yG, z: p.z }, l0)
+            );
+            Lg = boden.map((a, c) => a * eG[c]);
+            g = amAuge(Lg, { x: p.x, y: yG, z: p.z });
+        } else {
+            // der Himmel knapp über dem Gipfel (ein halbes Grad), dort steht die Kante der Marke gegen ihn
+            const r = richtung({ x: l.x, y: l.y + l.h, z: l.z });
+            const el = Math.asin(r.y) + (0.5 * Math.PI) / 180;
+            const fl = Math.hypot(r.x, r.z) || 1;
+            Lg = this._himmelStrahlAn({ x: (r.x / fl) * Math.cos(el), y: Math.sin(el), z: (r.z / fl) * Math.cos(el) });
+            g = { L: Lg, T: [1, 1, 1] };
+        }
+        const [ym, yg, ym0, yg0] = [Y(m.L), Y(g.L), Y(Lm), Y(Lg)];
+        return {
+            kontrast: yg > 0 ? Math.abs(ym - yg) / yg : null,
+            c0: yg0 > 0 ? Math.abs(ym0 - yg0) / yg0 : null,
+            yMarke: ym,
+            yGrund: yg,
+            sonne: sM,
+            albedo: [farbe.r, farbe.g, farbe.b],
+            durchlass: m.T[1],
+            grund: hinter && hinter.hinter === "hang" ? "hang" : "himmel",
+        };
     }
 
     // Sät bis zur Frist (`frist`, performance.now()): je Schritt eine Probe des 10×10-Rasters, nach der letzten der Wald
@@ -3277,6 +3589,10 @@ _stammZonen(AnazhRealm, [AnazhRealm_vegetation_baum]);
 // Totholz: Wahrscheinlichkeit eines `stamm_gefallen`-Sub-Spawns nach einem Baum-Spawn
 // (~10 % = bewohnter Wald ohne Dichte-Verdünnung).
 AnazhRealm.TOTHOLZ_RATE = 0.1;
+// DER FERN-WURF DER LANDMARKE (landmarken-geologie-7, `_landmarkenFern`): bis hierher wirft der Takt die Felsbögen und -türme
+// (die Richter-Weite der Wegfindung, erleben.spieler.wegfindung#1: 1–3 km); so viele Chunks geht er je Ruf mindestens.
+AnazhRealm.LANDMARKE_FERN_M = 3000;
+AnazhRealm.LANDMARKE_FERN_SCHRITTE = 64;
 // Die Landmark-Pool-Karte: Sieger-Name → { Pool-Präfix, Zahl }. Der Scatter würfelt
 // REGION-deterministisch einen `<prefix>_var<idx>` aus dem passenden Pool (tag-frozen
 // zum Wahrzeichen → kein Affinitäts-Shift, V17.17).

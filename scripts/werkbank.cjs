@@ -4150,8 +4150,9 @@ hauptLauf(async () => {
         // externe Referenz spec/farbe/luft-referenz.json. `--wetter <wort>` misst nur vom Hügel die Sicht im Wetter (Ferne K5),
         // mit `--zug` den Wetter-Zug klar → Wort → klar, die Ausgabe-Luma je Sekunde (Licht K5); Urteil `wetterLuftUrteil`.
         const ref = jsonLesen(path.join(__dirname, "../spec/farbe/luft-referenz.json"));
-        const fehl = LL.luftTiefeSelbsttest(ref);
-        // der Selbsttest: grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m, Sprung 0,5 EV/s und der Ton je Pixel beim Namen ROT
+        const fehl = [...LL.luftTiefeSelbsttest(ref), ...LL.luftLeserSelbsttest(stammLib, root)];
+        // der Selbsttest: grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m, Sprung 0,5 EV/s und der Ton je Pixel beim Namen ROT;
+        // der Leser der Luft als Zahl (`_luftDurchlass`) gegen die Definition, ohne Höhen-Term und ohne Weg-Faktor ROT am Glied
         selbsttestEnde(fehl);
         if (SELBST) process.exit(0);
         const halt = await eigeneWelt();

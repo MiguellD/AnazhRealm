@@ -1,0 +1,79 @@
+Stations-Kandidat erleben.spieler.wegfindung#1 — der Kontrast der Landmarke im ersten Blick der ANKUNFT jeder Saat, gelesen vom Spiel
+(landmarken-geologie-8, Kopf 5, 27.11.; Koordinator 27.11. 02:29, Aufträge 1 und 2)
+
+Basis: Zweig `punkte-maschine` b93a50c5 (basis.txt; k2-erleben.js dort byte-gleich mit 068a8fb3 und 8bffede). diff.txt ist der ganze
+Unterschied an meisterkarte-quelle/punkte/stationen/k2-erleben.js (Zweig `punkte-maschine`) und trägt sauber auf b93a50c5. Soll und
+Richter-Wortlaut sind unberührt; geändert sind LANDMARKE_AN, der Lauf der Leiter (S1 zuerst, der Puls) und `pfad` (+ stamm/bild-sicht.js,
+stamm/koerper-bewegung.js, stamm/siedlung-ort.js, die das Programm liest). `sek` bleibt 45 (der Kandidat von Kopf 4 trug 60).
+
+WIP (Zweig `landmarken-geologie-8-wip`, Kopf 6, auf Kopf 5 b32c6773; Koordinator 27.11. 04:40 Auftrag 3) — wegfindung#2
+- Der Leser des Ziel-Gangs steht im Spiel (stamm/koerper-bewegung.js `_zielGangBeginn` · `_zielGangSchritt`): Start, Ziel, gegangener
+  Weg je Sim-Schritt (`_stepFixedSim`, stamm/dirigent-takt.js), am Ziel = Fuß der Marke (`_landmarkeFuss`, Umkreis der Hülle
+  `_felsHuellBoxen` × Skala) + `PLAYER_WALL_RADIUS`; Umweg = Weg ÷ Luftlinie bis zu diesem Kreis; ein Sprung der Lage (`_augeSprung`)
+  endet ohne Erfolg beim Namen. Die Ankunft beginnt den Gang mit ihrer Marke (`_genesisAnkunft`).
+- Der Kandidat: ZIEL_GANG geht von der Wiese zu jeder Landmarke in 1 km (das Gesetz `_landmarkenDesChunks`), der Testspieler nach Sicht
+  (die Peilung, Taste „vor", Gehen) im Sim-Schritt des Spiels, synchron; steckt (10 s ohne 1 m) und frist (> 3 × Luftlinie) beim Namen;
+  S2 gemessen {erfolg, umweg (der größte)} statt LESER.
+- ZAHL (WebGL2 in der Wolke, Standard-Welt): 2 Landmarken in 1 km um die Wiese — Felsturm 519 m: an nach 513,5 m, Umweg 1,0000, 326 s
+  Spielzeit · Felsturm 897 m: an nach 892,5 m, Umweg 1,0000, 566 s · 53 547 Sim-Schritte in 1,5 s Wanduhr → Erfolg 1, Umweg 1,0000.
+- Die Wand des Gangs: in der Welt tragen 6 von 423 Einträgen Blocker, alle 6 Landmarken (4 Felsturm, 2 Felsbogen) — Bäume blocken
+  den Spieler nicht; das Gelände ist Gesetz (`getTerrainHeightAt`). Der Sim-Schritt ohne Takt verpasst keinen gestreamten Blocker.
+  Tempo 1,58 m/s = das volle Gehen: kein Hang drosselte.
+- Der Himmel der Stunde (S1): LANDMARKE_AN wartet vor dem Kontrast ≤ 3 s auf `_himmelFrisch` (stamm/bild-himmel.js — die Umgebung
+  frisch gemalt und gelesen, ein Versprechen). Wolke WebGL2: gelesen 12 → 50 von 50 Saaten; Median 0,431; ≥ 0,1 an 44 + die warme Welt
+  = 45 von 51 = 0,882. Unter 0,1: s1-27 Durchlass 0 in 1 407 m (das Wetter des Moments), s1-2 · s1-22 · s1-23 · s1-29 · s1-44 vor
+  fast gleich hellem Grund (C₀ 0,002–0,10). Die Radeon las an Kopf 5 „zu schwach 0“ — ihr Lauf ist schneller, das Wetter des Moments ein
+  anderes. Der nächste Schnitt (benannt, nicht gebaut): die Ankunft wählt die tragende Marke nach dem Winkel Höhe/Weg (`_ankunft`),
+  nie nach ihrem Kontrast.
+- Ehrlich offen: der Testspieler ist ein Peil-Gänger, kein Mensch (die Sprosse nennt „menschlicher Testspieler"; das Panel R11 setzt
+  der Schöpfer) · die Wiese-Route kreuzt kein Wasser und keinen Steilhang — die Station misst die Wiese, die die Sprosse nennt.
+
+AUFTRAG 1 — DER LESER VON C₀ (im Spiel, Kopf 5)
+- EIN Gesetz, zwei Leser: `flaechenLicht` und `halbraum` stehen in welt-licht.js mit zwei Sätzen von Rechen-Gliedern (`RECHNEN_TSL` reicht
+  Knoten, `RECHNEN_ZAHL` rechnet je Kanal). `_weltLicht` (stamm/bild-sicht.js) und `_rueckstrahlHalbraum` (stamm/bild-schatten.js) bauen
+  ihren Knoten aus ihm (derselbe Graph wie vorher); `_weltLichtAn(n, s)` rechnet ihn auf Zahlen mit denselben Uniforms (l0d, l0c, ei,
+  der Rückstrahl unten) und dem Himmel der Normale (`_himmelBestrahlungAn`: das Kosinus-Integral über die Rücklesung `_skyEnvData`).
+- Die Sonnen-Sicht als Zahl: `_horizontSichtAn(p, l)` (stamm/dirigent-ankunft.js) — dieselbe Schatten-Höhe, derselbe Marsch, derselbe
+  Halbschatten wie die Karte, auf der Höhe des Gesetzes selbst.
+- Die Albedo der Marke: `_landmarkeFarbe(l)` (stamm/vegetation-baum.js) aus dem Satz des Fits (`_archFitVon`, stamm/studio-bruecke.js —
+  derselbe Rumpf, aus dem der Welt-March den Bau zeichnet).
+- `_landmarkeKontrast(auge, l, hinter)`: Marke und Grund (Himmel über dem Gipfel oder der Hang hinter ihm) aus dem Licht der Welt, je
+  Seite × Durchlass + Himmels-Sicht in Blickrichtung × (1 − Durchlass), Y nach Rec. 709 → Kontrast und C₀.
+- Band zur Schwelle 0,1: Middleton 1952 (Vision through the Atmosphere) — die Schwelle von 1 000 Beobachtern liegt zwischen 0,01 und
+  0,20; Koschmieder 1924 rechnet mit 0,02 (schwarzes Ziel, C₀ = −1), die WMO mit 0,05. Die Sprosse verlangt 0,1: im Band.
+
+DIE STATION (der Kandidat)
+- LANDMARKE_AN misst je Adresse die nächsten vier sichtbaren Marken mit `_landmarkeKontrast`; eine Adresse trifft, wenn eine von ihnen
+  ≥ 0,1 trägt. Ursache je Adresse: sichtbar · kontrast · verdeckt · keine_im_kegel. Die Albedo wartet höchstens 3 s je Marke auf ihre
+  Lieferung; ohne Himmel auf der CPU steht der Kontrast ungemessen beim Namen.
+- Urteil: unter 0,9 → gemessen ROT beim Täter; ≥ 0,9 → LESER beim Namen: der Zeuge am Gerät (|Kontrast Gesetz − Kontrast Pixel| ≤ 0,03
+  an ≥ 3 Saaten mit Bild und Maske) hat keinen Leser. BEFUND (Karte ≠ Code): dieser Zeuge stand bis hier nur im Wortlaut der Station.
+
+AUFTRAG 2 — DER DECKEL
+- Was nach der letzten Ankunft still lief: der Heimweg der Saaten lädt die Welt der Sitzung neu, danach ließ der Rahmen die Preis-Pose
+  `L.ort(wiese)` die Wiese ein ZWEITES Mal wachsen — EIN `/umstellen` ohne Zeile (Radeon: „Stille seit 15 s nach 74.3 s“).
+- Schnitt: S1 läuft zuerst, die Wiese wächst danach EINMAL (ihr Stand ist die Preis-Pose; der Rahmen kommt dort nur noch an). Der Puls
+  liest neben jedem langen Ruf (die warme Welt, die Saaten, das Wachsen der Wiese) je ≤ 5 s den Stand der Seite (Saat, Welt, Chunks)
+  und schreibt ihn als Zeile. Weniger Arbeit je Saat: die Erde im Ring 1–3 km auf 200-m-Zellen (vorher 100 m; Gewicht 0,04 km²),
+  die Saaten bleiben 50.
+- Der Zeuge der warmen Welt wartet höchstens 5 s auf die Würfe des Fern-Takts in der Pflanz-Schlange (S1 läuft jetzt vor der Wiese).
+
+ZAHL (Werkbank swiftshader, Mechanik, nie Bild; der GPU-Prozess der Wolke stürzt am Boot, das Gerät ist verloren — der Himmel wird dort
+nie zurückgelesen)
+- S1 (51 Adressen) 39,0 s (Kopf 4) → 29,7 s; Lebenszeichen nach 5,1 · 10,3 · 15,4 · 20,7 · 26,0 s, die Wiese mit Zeilen nach 5,1 und
+  10,2 s; der Lauf 41,8 s mit der Wiese als 12-s-Attrappe (die Wolke wächst keine Wiese).
+- LANDMARKE_AN an der Standard-Welt 226 ms; der Kontrast-Weg mit einer synthetischen Himmels-Lesung (nur Mechanik, danach gelöscht):
+  Kontrast 0,600, C₀ 0,858, Albedo des Fits 0,281/0,240/0,151, Sonnen-Sicht 1.
+- Das Gesetz auf Zahlen = die Rechnung von Hand (0,73786/0,76843/0,81032 je Kanal, Δ ≤ 1e-16); der Knoten baut aus demselben Rumpf.
+
+WÄNDE
+- `node punkte.cjs liste` am Kandidaten: siehe Blatt (genau die zwei ROT gelaende.K2#1/#2 „Wand HAKEN“ = Basis).
+- Leiter ≤ 45 s (`sek` 45): S1 29,7 s in der Wolke; am Gerät entscheidet die Probe.
+- Fächer im Kern: keiner — jede Adresse ist eine Welt, die der Spieler betritt.
+
+EHRLICH OFFEN (mit Messnamen)
+1. Der Zeuge am Gerät (Bild + Maske an ≥ 3 Saaten) · S1 LESER „der Zeuge am Gerät … kein Leser“ — über dem Soll bleibt die Sprosse ROT.
+2. Der Wurf der Wolke trägt keinen CPU-Leser · die Marke gilt als unbewölkt besonnt, wo das Gesetz sie besonnt (`_landmarkeKontrast`).
+3. Die Sonde des Bilds liest die PMREM-Stufe der Rauheit 1, der Leser das Kosinus-Integral (ferne.K4: 7 %) · `_himmelBestrahlungAn`.
+4. Wald vor dem Gipfel: die Gerade liest nur den Boden.
+5. Die Kamera des ersten Bilds 0,7 m über dem stehenden Auge.

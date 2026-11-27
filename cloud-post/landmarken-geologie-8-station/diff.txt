@@ -1,0 +1,423 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/k2-erleben.js b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
+index 6d514937a..41956f5de 100644
+--- a/meisterkarte-quelle/punkte/stationen/k2-erleben.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
+@@ -5,33 +5,249 @@
+ "use strict";
+ const { leiter } = require("./k2-same.js").geruest;
+ const { SAATEN } = require("./sitzung-seite.js");
+-const { FAECHER } = require("./faecher.js");
+ const LEITERN = [];
+ 
+-// DIE LANDMARKE AN EINER ADRESSE (erleben.spieler.wegfindung#1, das Gesetz des Fächers, stationen/faecher.js): a.saat ist die Saat.
+-// Der Wurf der Landmarke (stamm/vegetation-baum.js:1534, im Landmarken-Pass von `_vegetationSampleSpawn` :1482, gerufen je Probe des
+-// Chunks :2607) liest die GELADENE Welt — das Feld über `_saatJe(this)` = worldMeta.seed (stamm/feld-leben.js:1805), das Land der Spalte
+-// (`_landAt`), die Feuchte aus der Hydrosphäre des Fadens (`_hydroDistAt`, stamm/gelaende-boden.js:1619) und die Höhe des gebauten
+-// Meshs (`_voxelSurfaceY`). An der geladenen Saat zählt das Gesetz, was der Wurf trug (r.state.architectures: felsturm/felsbogen in
+-// 1–3 km, davon im Kegel der Kamera); jede andere Saat ist keine Funktion, die die warme Welt rufen kann — sie nennt das Fehlende
++// DIE LANDMARKE AN DER ANKUNFT EINER SAAT (erleben.spieler.wegfindung#1): a.saat ist die Saat der GELADENEN Welt — die Station betritt
++// jede Saat mit dem Satz des Spielers („neue welt saat <s>“, `SAATEN`) und misst den ersten Blick dort, wo das Spiel ihn ankommen
++// lässt: die EINE Ankunft (`_genesisAnkunft`, stamm/gelaende-boden.js: die erste einer Welt und jede Rückkehr nach dem Tod) setzt
++// Stand und Gier aus dem Gesetz der Ankunft (`_ankunft(heim)`, stamm/gelaende-chunks.js, landmarken-geologie-8 Kopf 4) — die
++// Station wählt weder Ort noch Blick, sie liest die Kamera des Spiels (`_loopCamera`, der Kegel aus `_frustumVon`). DER ZEUGE DER
++// KARTE (a.besucht: eine betretene Welt): Stand und Gier, mit denen der Spieler ankam, gleich dem Gesetz (≤ 0,5 m, ≤ 0,001 rad) — sonst
++// trüge die Station eine andere Ankunft als das Spiel. Der Wurf der Landmarke ist der EINE Werfer des Spiels
++// `_landmarkenDesChunks(cx, cz, saat)` (stamm/vegetation-baum.js) bis zur Weite des Fern-Takts (`_landmarkenFern`: jeder Chunk, dessen
++// Mitte binnen `LANDMARKE_FERN_M` um den Chunk des Spielers liegt); je Landmarke in 1–3 km im Kegel die freie Sicht vom Auge zu ihrem
++// Gipfel — die Höhe IHRER Gestalt (`_landmarkeHoehe`: die Hülle `_felsHuellBoxen` je Samen × Welt-Skala, derselbe Leser, mit dem das
++// Gesetz der Ankunft wählt) —, der Grund hinter dem Gipfel (die Gerade weiter: Hang oder Himmel) und die Sicht-Dämpfung als Zahl
++// (stamm/bild-himmel.js `_luftDurchlass`). Die nächste sichtbare Landmarke trägt den Wert.
++// DER KONTRAST (Koschmieder 1924: C = C₀ · e^{−σd} vor dem Horizont-Himmel) liest das Spiel selbst: `_landmarkeKontrast` (stamm/vegetation-baum.js)
++// rechnet die Leuchtdichte der Marke und ihres Grunds aus dem EINEN Licht der Welt (`_weltLichtAn`, das Gesetz `flaechenLicht` aus
++// welt-licht.js, das auch der Knoten `_weltLicht` rechnet), die Albedo aus dem Fit des Welt-Marchs (`_landmarkeFarbe`), den Himmel aus der
++// Rücklesung (`_himmelStrahlAn`) und die Luft aus `_luftDurchlass`. Eine Adresse trifft, wenn eine sichtbare Landmarke im Kegel ≥ 0,1
++// Kontrast trägt (die Schwelle liegt im Band der Beobachter, Middleton 1952: 0,01 … 0,20 bei 1 000 Personen; Koschmieder 0,02, WMO 0,05).
++// DER ZEUGE DES WURFS an der warmen Welt der Sitzung (a.zeuge) liest den Leser des SPIELS: das Register des Werfers (`_landmarkeWurf`, Schlüssel „cx,cz“ → die
++// gesetzten Einträge) — je geworfenem Chunk in 1–3 km, dessen Würfe nicht mehr in der Pflanz-Schlange warten, Art und Ort der Einträge
++// gleich der Funktion; ein anderer Chunk ist ROT beim Namen (die Station würfe anders als das Spiel).
+ const LANDMARKE_AN = async (r, T, a) => {
+     const st = r.state;
+-    if (!st.worldMeta || a.saat !== st.worldMeta.seed)
+-        return { fehlt: "der Wurf der Landmarke ist keine Funktion der Saat: stamm/vegetation-baum.js:1482 _vegetationSampleSpawn liest die geladene Welt (_saatJe → worldMeta.seed, _landAt, _hydroDistAt, _voxelSurfaceY)" };
+-    r._loopCamera(performance.now());
+-    const cam = st.camera;
+-    cam.updateMatrixWorld(true);
+-    const F = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
++    const K = globalThis.__gelaendeCore;
++    const A = r.constructor;
++    if (typeof r._landmarkenDesChunks !== "function" || !/^\s*_landmarkenDesChunks\s*\(\s*cx\s*,\s*cz\s*,\s*saat\s*\)/.test(String(r._landmarkenDesChunks)))
++        return { fehlt: "der Wurf der Landmarke ist keine Funktion der Saat: stamm/vegetation-baum.js `_landmarkenDesChunks(cx, cz, saat)` fehlt (landmarken-geologie-8)" };
++    if (!(A.LANDMARKE_FERN_M >= 3000) || typeof r._landmarkenFern !== "function")
++        return { fehlt: "der Wurf der Landmarke endet vor der Richter-Weite: stamm/vegetation-baum.js `_landmarkenFern` / `LANDMARKE_FERN_M` ≥ 3 000 m fehlt (landmarken-geologie-7)" };
++    if (typeof r._luftDurchlass !== "function")
++        return { fehlt: "die Sicht-Dämpfung am Ort ist keine Zahl: stamm/bild-himmel.js trägt den Durchlass nur als Knoten der Luft (landmarken-geologie-4 `_luftDurchlass`)" };
++    if (typeof r._landmarkeHoehe !== "function")
++        return { fehlt: "die gezeichnete Höhe der Landmarke: stamm/vegetation-baum.js `_landmarkeHoehe` fehlt (landmarken-geologie-8 Kopf 4)" };
++    if (typeof r._ankunft !== "function" || typeof r._genesisAnkunft !== "function" || !/_ankunft\(/.test(String(r._genesisAnkunft)))
++        return { fehlt: "die Ankunft ist kein Gesetz: stamm/gelaende-chunks.js `_ankunft(heim)`, gerufen von stamm/gelaende-boden.js `_genesisAnkunft`, fehlt (landmarken-geologie-8 Kopf 4)" };
++    const wm = st.worldMeta;
++    if (!wm || a.saat !== wm.seed) return { fehlt: "die Adresse " + a.saat + " ist nicht die geladene Welt (" + (wm && wm.seed) + ") — die Ankunft liest nur die Welt, in die der Spieler kam" };
++    const L2 = r._gelaende();
++    const hoehe = (x, z) => K.hoehe(L2, x, z, true);
+     const p = st.playerMesh.position;
+-    let n13 = 0, imBild = 0;
+-    for (const e of st.architectures || []) {
+-        if (!e || typeof e.type !== "string" || !e.position || !(e.type.indexOf("felsturm") === 0 || e.type.indexOf("felsbogen") === 0)) continue;
+-        const d = Math.hypot(e.position.x - p.x, e.position.z - p.z);
+-        if (d < 1000 || d > 3000) continue;
+-        n13++;
+-        if (F.containsPoint(new T.Vector3(e.position.x, e.position.y, e.position.z))) imBild++;
++    const span = r._voxelChunkConfig().span;
++    const RM = A.LANDMARKE_FERN_M;
++    const RC = Math.ceil(RM / span);
++    // DER ZEUGE DES WURFS (a.zeuge, die warme Welt, VOR dem Sprung zur Ankunft: dort hat der Fern-Takt geworfen): das Register des
++    // Werfers (`_landmarkeWurf`) — je Chunk mit Würfen in 1–3 km um den Spieler, dessen Würfe gesetzt sind, Art und Ort gleich der Funktion
++    let zeuge = null;
++    if (a.zeuge) {
++        // S1 läuft vor der Wiese (der Deckel): die Würfe des Fern-Takts warten dort noch in der Pflanz-Schlange — der Zeuge wartet auf sie,
++        // höchstens 5 s (der Loop des Spiels pflanzt; was danach wartet, zählt als „wartend“)
++        for (const t0 = Date.now(); Date.now() - t0 < 5000 && (st.pendingVegSpawns || []).some((t) => t && t.opts && t.opts.landmarke); ) await new Promise((w) => setTimeout(w, 100));
++        const [zcx, zcz] = [Math.floor(p.x / span), Math.floor(p.z / span)];
++        const band = new Map();
++        for (let dx = -RC; dx <= RC; dx++)
++            for (let dz = -RC; dz <= RC; dz++) {
++                if (Math.hypot(dx, dz) * span > RM) continue;
++                for (const l of r._landmarkenDesChunks(zcx + dx, zcz + dz, a.saat)) {
++                    const d = Math.hypot(l.x - p.x, l.z - p.z);
++                    if (d < 1000 || d > 3000) continue;
++                    const k = zcx + dx + "," + (zcz + dz);
++                    if (!band.has(k)) band.set(k, []);
++                    band.get(k).push(l.art + "@" + l.x.toFixed(2) + "," + l.z.toFixed(2));
++                }
++            }
++        const M = r._landmarkeWurf || new Map();
++        const wartet = new Set((st.pendingVegSpawns || []).map((t) => t && t.opts && t.opts.landmarke).filter(Boolean));
++        zeuge = { zeugeChunks: band.size, zeugeGleich: 0, zeugeWartet: 0, zeugeUngeworfen: 0, zeugeAnders: 0, zeugeBeispiel: null };
++        for (const [k, soll] of band) {
++            if (!M.has(k)) zeuge.zeugeUngeworfen++;
++            else if (wartet.has(k)) zeuge.zeugeWartet++;
++            else {
++                const ist = M.get(k).filter((e) => e && e.position && !e.harvested).map((e) => e.type + "@" + e.position.x.toFixed(2) + "," + e.position.z.toFixed(2));
++                if (ist.sort().join(" ") === soll.slice().sort().join(" ")) zeuge.zeugeGleich++;
++                else {
++                    zeuge.zeugeAnders++;
++                    zeuge.zeugeBeispiel = zeuge.zeugeBeispiel || k + ": gesetzt " + (ist.join(" ") || "—") + " · Funktion " + soll.join(" ");
++                }
++            }
++        }
++    }
++    const kam0 = { x: p.x, z: p.z, yaw: st.yaw };
++    const an = r._genesisAnkunft();
++    r._loopCamera(performance.now());
++    // der Kegel der Kamera, wie die Welt steht: ihre Weite die des Fern-Rings (`_weltKameraFern`, stamm/bild-sicht.js) — eine frische
++    // Welt (und jede headless) trägt bis zum Ring ihr Boot-far 1 000 m, die Marke in 1–3 km fiele am Ladezustand, nie an der Sicht
++    if (typeof r._weltKameraFern !== "function") return { fehlt: "die Weite der stehenden Welt: stamm/bild-sicht.js `_weltKameraFern` fehlt (landmarken-geologie-8 Kopf 4)" };
++    const kam = st.camera.clone();
++    kam.far = Math.max(kam.far, r._weltKameraFern());
++    kam.updateProjectionMatrix();
++    const F = r._frustumVon(kam, true);
++    const auge = { x: kam.position.x, y: kam.position.y, z: kam.position.z };
++    const hochVon = (l) => r._landmarkeHoehe(l);
++    const [pcx, pcz] = [Math.floor(p.x / span), Math.floor(p.z / span)];
++    const liste = [];
++    const hs = [];
++    let ohneHuelle = null;
++    for (let dx = -RC; dx <= RC; dx++)
++        for (let dz = -RC; dz <= RC; dz++) {
++            if (Math.hypot(dx, dz) * span > RM) continue; // die Weite des Fern-Takts (`_landmarkenFern`)
++            const [cx, cz] = [pcx + dx, pcz + dz];
++            for (const l of r._landmarkenDesChunks(cx, cz, a.saat)) {
++                const d = Math.hypot(l.x - p.x, l.z - p.z);
++                if (d < 1000 || d > 3000) continue;
++                const h = hochVon(l);
++                if (!(h > 0)) {
++                    ohneHuelle = ohneHuelle || l.art + "#" + l.seed;
++                    continue;
++                }
++                hs.push(h);
++                liste.push({ art: l.art, seed: l.seed, x: l.x, y: l.y + h, z: l.z, fuss: l.y, d, h });
++            }
++        }
++    if (ohneHuelle) return { fehlt: "die gezeichnete Höhe der Landmarke: " + ohneHuelle + " trägt keine Hülle (`_felsHuellBoxen`)" };
++    liste.sort((u, v) => u.d - v.d);
++    // die Gerade vom Auge durch den Gipfel: frei bis vor den Fuß (die letzten 30 m trägt die Landmarke selbst), dahinter der Grund
++    const strahl = (q) => {
++        const [vx, vy, vz] = [q.x - auge.x, q.y - auge.y, q.z - auge.z];
++        const d = Math.hypot(vx, vz);
++        for (let s = 25; s < d - 30; s += 25) if (hoehe(auge.x + (vx * s) / d, auge.z + (vz * s) / d) > auge.y + (vy * s) / d) return { verdeckt: s / d };
++        for (let s = d + 50; s < d + 20000; s += 50) {
++            const y = auge.y + (vy * s) / d;
++            if (y > 4000) break;
++            const [x, z] = [auge.x + (vx * s) / d, auge.z + (vz * s) / d];
++            if (hoehe(x, z) > y) return { hinter: "hang", dh: s, punkt: { x, y, z } };
++        }
++        return { hinter: "himmel" };
++    };
++    let imKegel = 0, sichtbar = 0, best = null;
++    const brueche = []; // je verdeckter Landmarke im Kegel: wo die Gerade den Grund trifft, als Anteil ihres Wegs (0 = am Auge)
++    const offen = [];
++    for (const q of liste) {
++        if (!F.containsPoint(new T.Vector3(q.x, q.y, q.z))) continue;
++        imKegel++;
++        const s = strahl(q);
++        if (s.verdeckt != null) {
++            brueche.push(s.verdeckt);
++            continue;
++        }
++        sichtbar++;
++        offen.push(Object.assign({ q }, s));
+     }
+-    return { n13, imBild, treffer: imBild > 0 ? 1 : 0, geladen: (st.architectures || []).length, x: p.x, z: p.z };
++    // DER KONTRAST je sichtbarer Landmarke (die nächsten vier, nah zuerst) aus dem Leser des Spiels: die erste mit ≥ 0,1 trägt den Wert,
++    // sonst die nächste sichtbare. Die Albedo kommt mit der Lieferung der Stufe 1 (`_landmarkeFarbe`: bis sie liegt, wartet der Leser,
++    // höchstens 3 s je Marke — wie der March wartet); ohne Himmel auf der CPU (`_skyEnvData`) bleibt der Kontrast ungemessen beim Namen.
++    let kontrastFehlt = null;
++    if (typeof r._landmarkeKontrast !== "function") kontrastFehlt = "der Kontrast der Landmarke: stamm/vegetation-baum.js `_landmarkeKontrast` fehlt (landmarken-geologie-8 Kopf 5)";
++    // DER HIMMEL DER STUNDE (`_himmelFrisch`, stamm/bild-himmel.js: die Umgebung frisch gemalt und gelesen — ein Versprechen): nach dem
++    // Wechsel der Welt liegt ihre Lesung erst eine Lesung nach der Malung (die Wolke maß an 38 von 50 Saaten davor); der Leser wartet
++    // höchstens 3 s, wie auf die Albedo.
++    if (!kontrastFehlt && typeof r._himmelFrisch === "function") await Promise.race([r._himmelFrisch(), new Promise((w) => setTimeout(w, 3000))]);
++    for (const f of kontrastFehlt ? [] : offen.slice(0, 4)) {
++        const l = { art: f.q.art, seed: f.q.seed, x: f.q.x, y: f.q.fuss, z: f.q.z, h: f.q.h };
++        let k = r._landmarkeKontrast(auge, l, f);
++        for (const t = Date.now(); k.fehlt && /Albedo/.test(k.fehlt) && Date.now() - t < 3000; k = r._landmarkeKontrast(auge, l, f)) await new Promise((w) => setTimeout(w, 50));
++        if (k.fehlt) {
++            kontrastFehlt = k.fehlt;
++            break;
++        }
++        f.k = k;
++        if (!best || (best.k.kontrast < 0.1 && k.kontrast >= 0.1)) best = f;
++        if (k.kontrast >= 0.1) break;
++    }
++    if (kontrastFehlt || !best) best = best || offen[0] || null;
++    hs.sort((u, v) => u - v);
++    brueche.sort((u, v) => u - v);
++    const hMedian = hs.length ? hs[hs.length >> 1] : null;
++    // WAS DIE ERDE HIER TRÄGT (das Umfang-Glied, Koordinator 26.11. 22:43): je Zelle 200 m (Koordinator 27.11.: weniger Arbeit je Saat) im Ring 1–3 km über dem Land (Boden über dem
++    // Wasser + 0,4 m wie der Wurf) eine Marke in der Median-Höhe der Gestalten DIESER Saat — im Kegel? frei? Die Dichte je Zelle ist das
++    // Gesetz des Wurfs (gelaende-core `landmarke`, die Bänder Sächsische Schweiz 1 134 Gipfel / 363 km² und Dartmoor 160 Tors / 954 km²);
++    // Λ_frei = Σ Dichte · Fläche über den freien Zellen ist die Erwartung sichtbarer Marken, 1 − e^{−Λ_frei} die Wahrscheinlichkeit, mit
++    // der das Gesetz an dieser Adresse überhaupt eine sichtbare stellt (Poisson, wie der Wurf). Der Anteil dieser Erwartung über die
++    // Adressen ist die Decke, die die Erde dem Soll lässt — der Wurf einer Saat ist ein Los daraus.
++    let zellen = 0, frei = 0, lamFrei = 0;
++    if (hMedian != null)
++        for (let gx = -3000; gx <= 3000; gx += 200)
++            for (let gz = -3000; gz <= 3000; gz += 200) {
++                const dd = Math.hypot(gx, gz);
++                if (dd < 1000 || dd > 3000) continue;
++                const [x, z] = [p.x + gx, p.z + gz];
++                const y = hoehe(x, z);
++                if (!(y > K.wasserSpiegel(L2, x, z) + 0.4)) continue;
++                const q = { x, y: y + hMedian, z };
++                if (!F.containsPoint(new T.Vector3(q.x, q.y, q.z))) continue;
++                zellen++;
++                if (strahl(q).verdeckt != null) continue;
++                frei++;
++                const dl = K.landmarke(L2, x, z);
++                lamFrei += (dl.felsturm + dl.felsbogen) * 0.04;
++            }
++    const ursache = best ? (best.k && !(best.k.kontrast >= 0.1) ? "kontrast" : "sichtbar") : imKegel ? "verdeckt" : "keine_im_kegel";
++    const karte = a.besucht ? { abstand: +Math.hypot(kam0.x - an.x, kam0.z - an.z).toFixed(2), gier: +Math.abs(kam0.yaw - an.yaw).toFixed(4) } : null;
++    const w = { glied: an.glied, ankunft: [+an.x.toFixed(1), +an.z.toFixed(1), +an.yaw.toFixed(3)], karteGleich: karte ? karte.abstand <= 0.5 && karte.gier <= 0.001 : null, karte, n13: liste.length, imKegel, sichtbar, treffer: best && best.k && best.k.kontrast >= 0.1 ? 1 : 0, sichtbarTreffer: best ? 1 : 0, kontrastFehlt, saatBoden: +hoehe(p.x, p.z).toFixed(2), kontrast: best && best.k ? +best.k.kontrast.toFixed(4) : null, hoeheMedian: hMedian == null ? null : +hMedian.toFixed(2), wurfBis: RM, ursache, verdeckt: ursache === "verdeckt", keineImKegel: ursache === "keine_im_kegel", bruchMedian: brueche.length ? +brueche[brueche.length >> 1].toFixed(3) : null, freiKegel: zellen ? +(frei / zellen).toFixed(3) : null, lamFrei: +lamFrei.toFixed(3), erdeErwartet: +(1 - Math.exp(-lamFrei)).toFixed(3) };
++    if (best) {
++        const T0 = r._luftDurchlass(auge, best.q);
++        Object.assign(w, { art: best.q.art, d: +best.q.d.toFixed(1), hoehe: +best.q.h.toFixed(2), durchlass: +T0[1].toFixed(4), durchlassRgb: T0.map((t) => +t.toFixed(4)), hinter: best.hinter, vorHimmel: best.hinter === "himmel" });
++        if (best.k) Object.assign(w, { c0: +best.k.c0.toFixed(4), sonne: +best.k.sonne.toFixed(3), albedo: best.k.albedo.map((a) => +a.toFixed(3)) });
++        if (best.punkt) Object.assign(w, { dHinter: best.dh, durchlassHinter: +r._luftDurchlass(auge, best.punkt)[1].toFixed(4) });
++    }
++    if (zeuge) Object.assign(w, zeuge);
++    return w;
++};
++
++// DER ZIEL-GANG (erleben.spieler.wegfindung#2): je Landmarke in a.umM um den Stand des Spielers (das Gesetz `_landmarkenDesChunks`,
++// derselbe Wurf wie LANDMARKE_AN) geht der Testspieler nach Sicht — die Peilung auf die Marke ist sein einziges Wissen (kein Weg,
++// keine Karte), die Taste „vor" im EINEN Sim-Schritt des Spiels (`_stepFixedSim`, Gehen) —, bis der Leser des Spiels das Ende nennt
++// (`_zielGangBeginn` · `_zielGangSchritt`, stamm/koerper-bewegung.js, landmarken-geologie-8 Kopf 6: am Fuß der Marke + Leib-Radius,
++// Umweg = Weg ÷ Luftlinie). Ohne 1 m Fortschritt in 10 s heißt er „steckt", über 3 × Luftlinie „frist" (jenseits des doppelten Solls).
++// Der Gang läuft synchron (kein Takt der Seite dazwischen); danach steht der Spieler wieder an Stand und Gier.
++const ZIEL_GANG = (r, T, a) => {
++    const st = r.state, dt = r.constructor.FIXED_DT, p = st.playerMesh.position; // prettier-ignore
++    if (typeof r._zielGangBeginn !== "function" || typeof r._zielGangSchritt !== "function") return { fehlt: "der Ziel-Gang: stamm/koerper-bewegung.js `_zielGangBeginn`/`_zielGangSchritt` fehlt (landmarken-geologie-8 Kopf 6)" }; // prettier-ignore
++    const span = r._voxelChunkConfig().span, R = Math.ceil(a.umM / span) + 1, [x0, z0] = [p.x, p.z], [c0, d0] = [Math.floor(x0 / span), Math.floor(z0 / span)]; // prettier-ignore
++    const marken = [];
++    for (let cx = c0 - R; cx <= c0 + R; cx++) for (let cz = d0 - R; cz <= d0 + R; cz++) for (const l of r._landmarkenDesChunks(cx, cz)) { const d = Math.hypot(l.x - x0, l.z - z0); if (d <= a.umM) marken.push(Object.assign({ d }, l)); } // prettier-ignore
++    marken.sort((u, v) => u.d - v.d);
++    const [y0, gier, G] = [p.y, st.yaw, st.verbTafel.gehalten];
++    const je = [];
++    let sim = st._simZeit || 0;
++    for (const m of marken) {
++        p.set(x0, y0, z0);
++        if (st.playerVel) st.playerVel.setValue(0, 0, 0);
++        const g = r._zielGangBeginn(m);
++        if (!g) { je.push({ art: m.art, d: Math.round(m.d), ende: { erfolg: false, grund: "ohne Hülle (`_landmarkeFuss`)" } }); continue; } // prettier-ignore
++        let [n, bestD, bestS] = [0, Infinity, 0];
++        G.vor = true;
++        try {
++            while (!g.ende) {
++                st.yaw = r._blickGierZu(m.x - p.x, m.z - p.z);
++                r._stepFixedSim((sim += dt * 1000), dt);
++                const [d, s] = [Math.hypot(m.x - p.x, m.z - p.z), ++n * dt];
++                if (d < bestD - 1) [bestD, bestS] = [d, s];
++                if (s - bestS > 10) g.ende = { erfolg: false, grund: "steckt", weg: g.weg, luft: g.luft, s, bei: [Math.round(p.x), Math.round(p.z)], rest: Math.round(d) }; // prettier-ignore
++                else if (g.weg > 3 * g.luft + 1) g.ende = { erfolg: false, grund: "frist", weg: g.weg, luft: g.luft, s };
++            }
++        } finally {
++            G.vor = false;
++        }
++        je.push({ art: m.art, d: Math.round(m.d), r: +g.ziel.r.toFixed(2), ende: g.ende, schritte: n });
++    }
++    p.set(x0, y0, z0);
++    if (st.playerVel) st.playerVel.setValue(0, 0, 0);
++    st.yaw = gier;
++    return { je, tempo: st.speed };
+ };
+ 
+ // ═══════════════════════════════════════ Perspektive spieler ═══════════════════════════════════════
+@@ -395,7 +611,7 @@ const LANDMARKE_AN = async (r, T, a) => {
+         leiter({
+             leiter: "erleben.spieler.wegfindung",
+             sek: 45,
+-            pfad: ["scripts/werkbank.cjs", "spec/profiband/haushalt.json", "stamm/vegetation-baum.js", "stamm/siedlung-satz.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-wege.js", "stamm/bild-himmel.js", "welt-licht.js", "stamm/dirigent-takt.js", "stamm/gelaende-chunks.js", "voxel-worker.js", "planet-core.js", "stamm/feld-leben.js", "stamm/netz-portal.js"],
++            pfad: ["scripts/werkbank.cjs", "spec/profiband/haushalt.json", "stamm/vegetation-baum.js", "stamm/siedlung-satz.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-wege.js", "stamm/bild-himmel.js", "welt-licht.js", "stamm/dirigent-takt.js", "stamm/gelaende-chunks.js", "voxel-worker.js", "planet-core.js", "stamm/feld-leben.js", "stamm/netz-portal.js", "gelaende-core.js", "stamm/bau-vorlagen.js", "stamm/gelaende-boden.js", "stamm/gelaende-fern.js", "stamm/gelaende-kollision.js", "stamm/studio-bruecke.js", "foundry-core.js", "phyto-core.js", "stamm/bild-sicht.js", "stamm/koerper-bewegung.js", "stamm/siedlung-ort.js"],
+             welt: [{ wort: "gestirn_proben", ab: 5, was: "Gestirn-Lagen aus der Welt: die Mittags-Sonne je Saison-Wort und die Achse des Sternfelds" }],
+             sprossen: {
+                 1: {
+@@ -445,13 +661,88 @@ const LANDMARKE_AN = async (r, T, a) => {
+                     umfang: { verlangt: 100, einheit: "Saaten der Sitzung", wortlaut: "N = 100 Saaten × 10 Ziele", feld: "richter" },
+                 },
+             },
+-            seite: { FAECHER, LANDMARKE_AN },
++            seite: { SAATEN, LANDMARKE_AN, ZIEL_GANG },
+             lauf: async function wegfindungLauf(H, P, L) {
+                 const path = require("path");
++                // DER PULS (Koordinator 27.11., der Deckel): neben jedem langen Ruf (die Saaten in EINEM Ruf, das Wachsen der Wiese in EINEM
++                // `/umstellen`) liest die Station je ≤ 5 s den Stand der Seite (die Saat der Welt, die Ankunft, die Zahl der Chunks) und schreibt
++                // ihn als Zeile — die Probe hört je Schritt ein Lebenszeichen, auch nach dem Deckel; ein Stand, der nicht kommt, steht beim Namen.
++                const puls = async (was, versprechen) => {
++                    const t = Date.now();
++                    let da = false;
++                    const ende = versprechen.then((x) => ((da = true), x), (e) => ((da = true), Promise.reject(e)));
++                    while (!da) {
++                        await Promise.race([ende.catch(() => null), new Promise((w) => setTimeout(w, 5000))]);
++                        if (da) break;
++                        const st = await L.ev("const st = r.state; return { saat: st.worldMeta && st.worldMeta.seed, welt: r.activeWorldGet(), chunks: st.voxelChunks ? st.voxelChunks.size : null };", 4).catch((e) => ({ unlesbar: String((e && e.message) || e).split("\n")[0].slice(0, 80) }));
++                        L.zeile(was + " · Lebenszeichen nach " + (Date.now() - t) + " ms: " + JSON.stringify(st));
++                    }
++                    return ende;
++                };
++                // S1 ZUERST (Koordinator 27.11., der Deckel): die Saaten verlassen die Welt der Sitzung und kehren heim — danach wächst die Wiese
++                // EINMAL (`L.ort`, ihr Stand ist die Preis-Pose, an der der Rahmen nach dem Lauf nur noch ankommt). Bis hier wuchs sie zweimal:
++                // vor den Saaten und still nach ihnen im Rahmen (Radeon: „Stille seit 15 s nach 74.3 s“).
++                // S1 AN DER ANKUNFT JEDER SAAT: die 50 Saaten der Sprosse (P.leiter-s1-i) betritt die Station mit dem Satz des Spielers
++                // (`SAATEN`, „neue welt saat <s>“: die Welt wechselt am Ort, ihr Spieler kommt an, wo das Spiel ihn ankommen lässt) und die
++                // warme Welt der Sitzung an ihrer eigenen Ankunft; je Adresse misst LANDMARKE_AN den ersten Blick (die Kamera des Spiels
++                // nach `_genesisAnkunft`): die sichtbaren Landmarken im Kegel in 1–3 km, ihren Kontrast gegen den Grund (`_landmarkeKontrast`,
++                // der Leser des Spiels) und den Durchlass (`_luftDurchlass`). Der Anteil der Adressen mit einer sichtbaren Marke ≥ 0,1 Kontrast
++                // ist der Wert; unter dem Soll urteilt er ROT beim Namen, mit der Ursache je Adresse. Darüber entscheidet der Zeuge am Gerät
++                // (|Kontrast Gesetz − Kontrast Pixel| ≤ 0,03 an ≥ 3 Saaten mit Bild und Maske) — er hat noch keinen Leser: die Sprosse
++                // bleibt dort beim Namen offen. DER ZEUGE DER KARTE: in jeder betretenen Welt kam der
++                // Spieler am Stand und mit der Gier des Gesetzes an (`_ankunft`), sonst ROT beim Namen; der Zeuge des Wurfs liest das
++                // Register des Werfers in der warmen Welt (`_landmarkeWurf`).
++                await L.je(1, async () => {
++                    const v = P.sprossen[1].umfang.verlangt;
++                    const t1 = Date.now();
++                    const heim = await puls("wegfindung S1 die warme Welt", L.ev("return await (" + H.seite.LANDMARKE_AN + ")(r, T, { saat: r.state.worldMeta.seed, zeuge: true });", 20));
++                    const arg = { stamm: P.leiter + "-s1", n: v, bis: Date.now() + Math.max(0, (L.rest() - 4) * 1000) };
++                    const s = await puls("wegfindung S1 die Saaten", L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", (r) => (" + H.seite.LANDMARKE_AN + ")(r, T, { saat: r.state.worldMeta.seed, besucht: true }));", Math.max(5, L.rest() - 2)));
++                    if (s.fehler) throw new Error(s.fehler);
++                    const je = s.je.map((x) => Object.assign({ saat: x.saat }, x.z)).concat([Object.assign({ saat: "geladen" }, heim)]);
++                    const fehlt = je.find((w) => w.fehlt);
++                    if (fehlt) return L.leser(1, fehlt.fehlt + " — gemessen 0 von " + (v + 1) + " Adressen");
++                    const mittel = (f) => { const x = je.map(f).filter((y) => typeof y === "number" && Number.isFinite(y)); return x.length ? x.reduce((a, b) => a + b, 0) / x.length : null; };
++                    const anteil = (f) => je.filter(f).length / je.length;
++                    const zahl3 = (x) => (x == null ? null : +x.toFixed(3));
++                    const w = {
++                        anteil_landmarke: zahl3(mittel((x) => x.treffer)),
++                        anteil_sichtbar: zahl3(mittel((x) => x.sichtbarTreffer)),
++                        kontrast_zu_klein: zahl3(anteil((x) => x.ursache === "kontrast")),
++                        kontrast_median: (() => { const k = je.map((x) => x.kontrast).filter((y) => y != null).sort((a, b) => a - b); return k.length ? zahl3(k[k.length >> 1]) : null; })(),
++                        verdeckt: zahl3(anteil((x) => x.verdeckt)),
++                        keine_im_kegel: zahl3(anteil((x) => x.keineImKegel)),
++                        vor_himmel: zahl3(anteil((x) => x.vorHimmel)),
++                        durchlass_min: zahl3(Math.min(...je.filter((x) => x.durchlass != null).map((x) => x.durchlass))),
++                        erde_erwartet: zahl3(mittel((x) => x.erdeErwartet)),
++                        glieder: je.reduce((o, x) => ((o[x.glied] = (o[x.glied] || 0) + 1), o), {}),
++                    };
++                    const besucht = je.filter((x) => x.karte);
++                    const anders = besucht.filter((x) => !x.karteGleich);
++                    const tafel = je.map((x) => x.saat.replace(P.leiter + "-", "") + " " + x.glied + " " + x.ankunft.join("/") + " " + x.ursache + (x.d ? " " + Math.round(x.d) + " m" : "") + (x.kontrast != null ? " C " + x.kontrast.toFixed(3) + " (C₀ " + x.c0.toFixed(3) + ", " + x.hinter + ")" : "")).join(" · ");
++                    const akte = "Ankunft " + je.length + " Adressen (" + s.je.length + " betreten + die warme Welt) in " + (Date.now() - t1) + " ms · Gesetz stamm/gelaende-chunks.js `_ankunft` · Leser stamm/gelaende-boden.js `_genesisAnkunft` · Zeuge der Karte " + (besucht.length - anders.length) + "/" + besucht.length + " gleich · Glieder " + JSON.stringify(w.glieder) +
++                        " · je Saat " + (s.msJe.join(" · ") || "—") + " ms, Heimweg " + s.heimweg.ms + " ms (zurück " + s.heimweg.zurueck + ") · Kontrast (Leser stamm/vegetation-baum.js `_landmarkeKontrast`) Median " + w.kontrast_median + ", sichtbar " + w.anteil_sichtbar + ", zu schwach " + w.kontrast_zu_klein;
++                    L.zeile("wegfindung S1: " + akte);
++                    L.zeile("wegfindung S1 Ursache je Adresse (Glied, Stand x/z/Gier, Ursache): " + tafel);
++                    if (heim.zeugeChunks != null) {
++                        L.zeile("wegfindung S1 Zeuge der warmen Welt (Register `_landmarkeWurf`): " + heim.zeugeChunks + " Chunks mit Würfen in 1–3 km — gleich " + heim.zeugeGleich + " · wartend " + heim.zeugeWartet + " · ungeworfen " + heim.zeugeUngeworfen + " · anders " + heim.zeugeAnders);
++                        if (heim.zeugeAnders > 0) return L.leser(1, "der Zeuge der warmen Welt: " + heim.zeugeAnders + " Chunks tragen im Spiel andere Landmarken als die Funktion (" + heim.zeugeBeispiel + ") — die Station würfe anders als das Spiel");
++                        if (!(heim.zeugeGleich > 0)) return L.leser(1, "der Zeuge der warmen Welt: kein Chunk in 1–3 km trägt seine Würfe im Register des Spiels (gleich 0 von " + heim.zeugeChunks + ", wartend " + heim.zeugeWartet + ", ungeworfen " + heim.zeugeUngeworfen + ") — der Leser des Spiels ist unbelegt");
++                    }
++                    if (anders.length) return L.leser(1, "der Zeuge der Karte: in " + anders.length + " von " + besucht.length + " betretenen Welten kam der Spieler nicht am Gesetz der Ankunft an (" + anders[0].saat + ": " + JSON.stringify(anders[0].karte) + ") — die Station mäße eine andere Ankunft als das Spiel · " + akte);
++                    if (s.je.length < v) return L.leser(1, "die Welt wechselte am Ort in " + s.je.length + " von " + v + " Saaten (Ende: " + s.grund + ") · " + akte, s.je.length);
++                    // ohne Himmel auf der CPU (der Renderer liest die Umgebung nicht zurück) bleibt der Kontrast ungemessen beim Namen
++                    const ohne = je.filter((x) => x.kontrastFehlt);
++                    if (ohne.length) return L.leser(1, "Kontrast ≥ 0,1 der Landmarke gegen ihren Grund: an " + ohne.length + " von " + je.length + " Adressen ungelesen — " + ohne[0].kontrastFehlt + "; gemessen die Obergrenze (sichtbar) " + w.anteil_sichtbar + " und der Durchlass min " + w.durchlass_min + " · " + akte, s.je.length);
++                    if (w.anteil_landmarke < P.sprossen[1].soll[0].wert)
++                        return L.gemessen(1, { anteil_landmarke: w.anteil_landmarke }, { erzeugt: s.je.length, welt: { saaten: s.je.length }, taeter: "sichtbare Landmarke ≥ 0,1 Kontrast im ersten Blick der Ankunft in 1–3 km: Anteil " + w.anteil_landmarke + " · ohne: zu schwach " + w.kontrast_zu_klein + ", verdeckt " + w.verdeckt + ", keine im Kegel " + w.keine_im_kegel + " · die Erde trägt " + w.erde_erwartet + " · " + akte });
++                    L.leser(1, "der Zeuge am Gerät |Kontrast Gesetz − Kontrast Pixel| ≤ 0,03 an ≥ 3 Saaten mit Bild und Maske: kein Leser (die Station schießt kein Bild der Ankunft mit der Maske der Marke) — gemessen nach dem Gesetz " + w.anteil_landmarke + " (Kontrast Median " + w.kontrast_median + ") · " + akte, s.je.length);
++                });
+                 const tOrt = Date.now();
+-                await L.ort("wiese", "ego");
++                await puls("wegfindung die Wiese wächst", L.ort("wiese", "ego"));
+                 L.preisPose("wiese", "ego");
+                 const ortMs = Date.now() - tOrt;
++                L.zeile("wegfindung: die Wiese wuchs in " + ortMs + " ms");
+                 const z = await L.ev(`
+                     const st = r.state;
+                     const p = st.playerMesh.position;
+@@ -501,7 +792,16 @@ const LANDMARKE_AN = async (r, T, a) => {
+                 const zahl = (x, n) => String(+Number(x).toFixed(n == null ? 1 : n)).replace(".", ",");
+                 await L.je(2, async () => {
+                     if (z.lm1 < P.sprossen[2].umfang.verlangt) return L.umfang(2, z.lm1, "in 1 km um die Wiese steht keine Landmarke (felsturm/felsbogen, stamm/vegetation-baum.js:1519; " + z.lm13 + " in 1–3 km, " + z.lmAlle + " geladen)");
+-                    L.leser(2, "Erfolg und Umweg eines menschlichen Testspielers: kein Leser des Ziel-Gangs (Start, Ziel, gegangener Weg) — der Ort wäre eine Route neben `/latenz` (scripts/werkbank.cjs:1892), der Testspieler ein Panel (R11)", z.lm1);
++                    // DER ZIEL-GANG (H.seite.ZIEL_GANG): von der Wiese zu jeder Landmarke in 1 km, der Testspieler nach Sicht im Sim-Schritt des Spiels
++                    const g = await L.ev("return (" + H.seite.ZIEL_GANG + ")(r, T, { umM: 1000 });", Math.max(5, L.rest() - 2));
++                    if (g.fehlt) return L.leser(2, g.fehlt, z.lm1);
++                    if (!g.je.length) return L.umfang(2, 0, "das Gesetz wirft in 1 km um die Wiese keine Landmarke (`_landmarkenDesChunks`; geladen " + z.lm1 + ")");
++                    const gut = g.je.filter((x) => x.ende && x.ende.erfolg);
++                    const erfolg = +(gut.length / g.je.length).toFixed(3);
++                    const umweg = gut.length ? +Math.max(...gut.map((x) => x.ende.umweg)).toFixed(4) : null;
++                    const tafel = g.je.map((x) => x.art + " " + x.d + " m: " + (x.ende.erfolg ? "an nach " + Math.round(x.ende.weg) + " m (Umweg " + x.ende.umweg.toFixed(3) + ", " + Math.round(x.ende.s) + " s)" : x.ende.grund + (x.ende.rest != null ? " " + x.ende.rest + " m vor dem Ziel bei " + x.ende.bei.join("/") : ""))).join(" · ");
++                    L.zeile("wegfindung S2 Ziel-Gang (Leser stamm/koerper-bewegung.js `_zielGangSchritt`, Tempo " + g.tempo.toFixed(2) + " m/s): " + tafel);
++                    L.gemessen(2, umweg == null ? { erfolg } : { erfolg, umweg }, { erzeugt: g.je.length, welt: { landmarken: g.je.length }, taeter: "Ziel-Gang von der Wiese (der Testspieler nach Sicht: die Peilung auf die Marke, Gehen im Sim-Schritt des Spiels): Erfolg " + erfolg + ", Umweg (der größte) " + umweg + " · " + tafel });
+                 });
+                 await L.je(3, async () => {
+                     if (umfangKm < P.sprossen[3].umfang.verlangt) return L.umfang(3, umfangKm, "der Planet der Welt misst " + zahl(umfangKm) + " km Umfang");
+@@ -539,28 +839,7 @@ const LANDMARKE_AN = async (r, T, a) => {
+                     L.leser(6, "Mittel der Epoche: die Reise ist ein Sprung der Konsole in eine neue Welt (stamm/feld-leben.js:1278 → `_reiseBetreten` stamm/netz-portal.js:660), keine Fahrt mit Karte, Schiff oder Fahrzeug der Epoche", umfangKm);
+                 });
+                 await L.je(7, async () => L.umfang(7, 1, "die Sitzung hält eine Saat (" + z.saat + ") und einen Planeten — kein Nachbarplanet, keine Bahn zwischen Planeten"));
+-                // S1 ÜBER DEN FÄCHER (stationen/faecher.js; vorher die Bühne H.seite.SAATEN, je Saat ein Welt-Wechsel am Ort): die 50 Saaten der
+-                // Sprosse (dieselben Namen wie die Bühne, P.leiter-s1-i) und die geladene Saat; je Adresse der Wurf der Landmarke an der Wiese.
+-                // Der Anteil mit ≥ 1 Landmarke in 1–3 km im Kegel ist die Obergrenze des Solls (der Kontrast ist ein Bild, ungemessen); eine Saat,
+-                // die die warme Welt nicht rufen kann, zählt ohne Fähigkeit — trägt keine der 50 Saaten, bleibt S1 beim Namen offen
+-                await L.je(1, async () => {
+-                    const v = P.sprossen[1].umfang.verlangt;
+-                    const geladen = await L.ev("return r.state.worldMeta && r.state.worldMeta.seed;", 10);
+-                    const R = await H.seite.FAECHER((c, ms) => L.ev(c, ms / 1000), {
+-                        gesetz: { fn: H.seite.LANDMARKE_AN, export: "stamm/vegetation-baum.js:1534 Landmarken-Pass", leser: "stamm/vegetation-baum.js:2607" },
+-                        adressen: { saaten: Array.from({ length: v }, (_, i) => P.leiter + "-s1-" + (i + 1)), dazu: [{ saat: geladen }] },
+-                        ms: Math.max(4000, Math.floor((L.rest() - 6) * 1000)),
+-                        masse: { saaten: { wie: "anzahl", nur: "saat" }, anteil_landmarke: { wie: "mittel", feld: "treffer" }, n13: { wie: "min", feld: "n13" }, geladen: { wie: "min", feld: "geladen" } },
+-                        schlecht: { feld: "n13", richtung: "min" },
+-                        pose: (a) => "Saat " + a.saat + " an der Wiese, ego, Blick in den Kegel der Landmarke (Kontrast im Bild)",
+-                        ungemessen: ["Kontrast ≥ 0,1 der Landmarke gegen ihren Grund (ein Bild je Saat, am Gerät)"],
+-                    });
+-                    L.zeile("wegfindung S1 (die Wiese wuchs in " + ortMs + " ms): " + R.akte.slice(0, 400));
+-                    const w = R.werte;
+-                    if (R.gemessen >= v && w.anteil_landmarke < P.sprossen[1].soll[0].wert)
+-                        return L.gemessen(1, { anteil_landmarke: +w.anteil_landmarke.toFixed(3) }, { erzeugt: R.gemessen, welt: { saaten: R.gemessen }, taeter: "Landmarke im Kegel in 1–3 km: Anteil " + w.anteil_landmarke + " · " + R.akte });
+-                    L.leser(1, (R.gemessen >= v ? "Kontrast ≥ 0,1 der Landmarke gegen ihren Grund im Bild: kein Leser des Pixel-Kontrasts je Saat" : (R.fehlt || "keine Saat gemessen") + " — gemessen " + R.gemessen + " von " + (v + 1) + " Adressen (die geladene " + geladen + ": " + (w.n13 == null ? "—" : w.n13) + " Landmarken in 1–3 km, im Kegel-Anteil " + (w.anteil_landmarke == null ? "—" : w.anteil_landmarke) + ")") + " · " + R.akte, R.gemessen);
+-                });
++
+             },
+         })
+     );

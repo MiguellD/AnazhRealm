@@ -1636,6 +1636,20 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             out.felsturmVertical = maxY - minY > (maxX - minX) * 2;
         }
 
+        // DIE GEZEICHNETE GESTALT (landmarken-geologie-5): unter dem Studio zeichnet die Welt nicht den Bauplan, sondern die Gestalt
+        // des Presets in Welt-Metern — ihre Hülle je Gestalt (PHYTO_PRESETS `fx.huellen`, dieselbe Zeile, die der Blocker liest)
+        // trägt die Zahl: der Turm Höhe : Breite, der Bogen die Öffnung am Boden zwischen den Pfeiler-Boxen
+        const T = (globalThis.__terrainCore || {}).PHYTO_PRESETS || {};
+        const zeilen = (art) => ((T[r._foundryPresetFor(art)] || {}).fx || {}).huellen || [];
+        // (die Zeile des Turms ist seit landmarken-geologie-6 eine Liste von Scheiben [x0, x1, y0, y1, z0, z1])
+        const boxen = (h) => (Array.isArray(h[0]) ? h : [[h[0], h[1], 0, h[2], h[3], h[4]]]);
+        out.turmBild = zeilen("felsturm").map((h) => Math.max(...boxen(h).map((b) => b[3])) / Math.max(...boxen(h).map((b) => Math.max(b[1] - b[0], b[5] - b[4]))));
+        out.bogenBild = zeilen("felsbogen").map((h) => {
+            const unten = Array.isArray(h[0]) ? h.filter((b) => b[2] === 0) : [];
+            const [L, R] = [unten.find((b) => b[1] <= 0), unten.find((b) => b[0] >= 0)];
+            return L && R ? R[0] - L[1] : 0;
+        });
+
         // Felsbogen ist ein Stein-Compound — dicht.
         if (fb) {
             const tags = r.computeCompoundTags(fb);
@@ -1713,12 +1727,15 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         // unten μ − 3,3·√μ); KONSUM: je Art ihr erster Träger in A geht durch die volle Saat (`_populateVoxelChunkVegetation`,
         // der Pfad des Stroms) und trägt dort dieselbe Art.
         const vorArch = new Set(st.architectures);
+        // das Register des Werfers (`_landmarkeWurf`, landmarken-geologie-7: ein Chunk wirft einmal) — je Probe eine neue Welt
+        const frisch = () => r._landmarkeWurf && r._landmarkeWurf.clear();
         const span = r._voxelChunkConfig().span;
         const K = globalThis.__gelaendeCore;
         const L = r._gelaende();
         const LM = ["felsbogen", "felsturm"];
         const ort = (chunks) => {
             const o = { chunks: 0, km2: 0, mu: { felsbogen: 0, felsturm: 0 }, n: { felsbogen: 0, felsturm: 0 }, traeger: {} };
+            frisch();
             const vorher = r._vegSpawnImmediate;
             r._vegSpawnImmediate = true; // die Test-Naht der Saat (`_enqueueVegetationSpawn`: synchron statt Schlange)
             try {
@@ -1767,6 +1784,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
                 continue;
             }
             const vor = new Set(st.architectures);
+            frisch();
             r._populateVoxelChunkVegetation(t[0], t[1], { immediate: true });
             const neu = st.architectures.filter((x) => !vor.has(x) && x.type === a);
             out.konsum[a] = { key, n: neu.length };
@@ -1776,6 +1794,55 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             st.architectures = st.architectures.filter((x) => vorArch.has(x));
             st.voxelPopulatedChunks.delete(key);
         }
+        // DER WURF IST EINE FUNKTION DER SAAT (landmarken-geologie-4, `_landmarkenDesChunks`): (1) mit den Lesern der geladenen
+        // Welt nennt sie genau die Würfe, die die Saat in A setzte (Art und Ort je Chunk); (2) eine ANDERE Saat (ihre Lage
+        // `_gelaende(saat)`, ihr Boden `hoehe`, ihr Land über dem Meer — der Werfer fragt sie selbst) gibt ihre eigenen Würfe im Poisson-Band
+        // ihres Gesetzes, zweimal gefragt Zahl für Zahl gleich, und nicht die der geladenen. Bis hier las der Wurf nur die geladene
+        // Welt — die Station der Wegfindung maß 1 von 51 Saaten („keine Funktion der Saat“).
+        const kurz = (l) => l.map((w) => `${w.art}@${w.x.toFixed(2)},${w.z.toFixed(2)}#${w.seed}`).join(" ");
+        out.funktion = { gleich: 0, anders: 0, beispiel: null };
+        frisch();
+        for (const [cx, cz] of tafel) {
+            const liste = r._landmarkenDesChunks(cx, cz);
+            if (!liste.length) continue;
+            const i0 = st.architectures.length;
+            const vorher = r._vegSpawnImmediate;
+            r._vegSpawnImmediate = true;
+            try {
+                r._landmarkeChunk(cx, cz);
+            } finally {
+                r._vegSpawnImmediate = vorher;
+            }
+            const gesetzt = st.architectures.slice(i0).filter((x) => LM.includes(x.type));
+            const ist = gesetzt.map((x) => `${x.type}@${x.position.x.toFixed(2)},${x.position.z.toFixed(2)}`).join(" ");
+            const soll = liste.map((w) => `${w.art}@${w.x.toFixed(2)},${w.z.toFixed(2)}`).join(" ");
+            if (ist === soll) out.funktion.gleich++;
+            else {
+                out.funktion.anders++;
+                out.funktion.beispiel = out.funktion.beispiel || `${cx},${cz}: gesetzt ${ist || "—"} · Funktion ${soll}`;
+            }
+        }
+        st.architectures = st.architectures.filter((x) => vorArch.has(x));
+        frisch();
+        const saat2 = `${L.seed}-andere`;
+        const L2 = r._gelaende(saat2);
+        const o2 = { chunks: 0, mu: { felsbogen: 0, felsturm: 0 }, n: { felsbogen: 0, felsturm: 0 }, gleich: true, fremd: 0 };
+        for (let cx = 0; cx < 96; cx++)
+            for (let cz = 0; cz < 96; cz++) {
+                if (K.grossform(L2, (cx + 0.5) * span, (cz + 0.5) * span).stil < 0.9) continue;
+                const d = K.landmarke(L2, (cx + 0.5) * span, (cz + 0.5) * span);
+                for (const a of LM) o2.mu[a] += d[a] * span * span * 1e-6;
+                o2.chunks++;
+                const l1 = r._landmarkenDesChunks(cx, cz, saat2);
+                if (kurz(l1) !== kurz(r._landmarkenDesChunks(cx, cz, saat2))) o2.gleich = false;
+                for (const w of l1) o2.n[w.art]++;
+                if (l1.length && kurz(l1) !== kurz(r._landmarkenDesChunks(cx, cz))) o2.fremd++;
+            }
+        o2.band = LM.every((a) => {
+            const w = 3.3 * Math.sqrt(o2.mu[a]);
+            return o2.n[a] <= o2.mu[a] + w + 1 && o2.n[a] >= o2.mu[a] - w;
+        });
+        out.andereSaat = Object.assign(o2, { saat: saat2, km2: (o2.chunks * span * span) / 1e6 });
         const A = out.ortA,
             B = out.ortB;
         out.placementWorks =
@@ -1796,6 +1863,15 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         check(
             `W6.G P3: Felsturm ist vertikal (Höhe ${(wave6gP3Results.felsturmSpanY || 0).toFixed(1)} >> Breite ${(wave6gP3Results.felsturmSpanX || 0).toFixed(1)})`,
             wave6gP3Results.felsturmVertical
+        );
+        const [tb, bb] = [wave6gP3Results.turmBild || [], wave6gP3Results.bogenBild || []];
+        check(
+            `W6.G P3: der Felsturm im Bild ist vertikal in jeder Gestalt (Höhe : Breite ≥ ${(tb.length ? Math.min(...tb) : 0).toFixed(2)} > 2, ${tb.length} Gestalten)`,
+            tb.length >= 1 && Math.min(...tb) > 2
+        );
+        check(
+            `W6.G P3: der Felsbogen im Bild ist begehbar in jeder Gestalt (Öffnung am Boden ≥ ${(bb.length ? Math.min(...bb) : 0).toFixed(1)} m > 2 m, ${bb.length} Gestalten)`,
+            bb.length >= 1 && Math.min(...bb) > 2
         );
         check("W6.G P3: Felsbogen ist ein dichtes Stein-Compound", wave6gP3Results.felsbogenIsDense);
         check(
@@ -1827,6 +1903,15 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             `W6.G P3: Felsbögen und Felstürme folgen der Geologie (gelaende-core \`landmarke\`) — A Tafel [0,96)² ${zahl(A)}; ` +
                 `B ohne Tafel 20..31² ${zahl(B)}; Konsum der vollen Saat: felsbogen ${konsum("felsbogen")} · felsturm ${konsum("felsturm")}`,
             wave6gP3Results.placementWorks
+        );
+        const F = wave6gP3Results.funktion || {},
+            O = wave6gP3Results.andereSaat || {};
+        check(
+            `W6.G P3: der Wurf der Landmarke ist eine Funktion der Saat (\`_landmarkenDesChunks\`) — geladene Welt: ${F.gleich} Chunks wie gesetzt, ${F.anders} anders` +
+                `${F.beispiel ? ` (${F.beispiel})` : ""}; Saat ${O.saat}: ${O.chunks} Tafel-Chunks ${(O.km2 || 0).toFixed(2)} km², ` +
+                `Bögen ${O.n?.felsbogen} (Gesetz ${(O.mu?.felsbogen || 0).toFixed(2)}) · Türme ${O.n?.felsturm} (Gesetz ${(O.mu?.felsturm || 0).toFixed(2)}), ` +
+                `zweimal gefragt ${O.gleich ? "gleich" : "VERSCHIEDEN"}, ${O.fremd} Chunks anders als die geladene Saat`,
+            F.gleich > 0 && F.anders === 0 && O.band && O.gleich && O.n.felsbogen + O.n.felsturm > 0 && O.fremd > 0
         );
     }
 

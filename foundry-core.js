@@ -698,6 +698,8 @@ const PORTAL_RENDER_CONFIG = {
             strauch: 0.332,
             findling: 0.4,
             zacken: 0.34,
+            felsturm: 1, // in Welt-Metern gebaut (`deriveParamsTurm`, das Band der Klettergipfel)
+            felsbogen: 1, // in Welt-Metern gebaut (`deriveParamsBogen`, das Band der Felstore)
             basalt: 0.42,
             sediment: 0.4,
             kristalle: 0.15,
@@ -4370,6 +4372,59 @@ function buildBoulder(P) {
     return felsStoffNetz(P, __g);
 }
 
+// DER FELSTURM (landmarken-geologie-5): die Gestalt aus phyto-core `buildFelsturmGeometry` in Welt-Metern (Skala 1), die Stufe
+// teilt das Detail (LOD 0/1/2 → 16/12/8 Segmente je Ring); der Stoff ist das Fels-Gesetz wie beim Stein.
+function buildFelsturm(P) {
+    var __core = typeof self !== "undefined" && self.__phytoCore;
+    if (!__core || typeof __core.buildFelsturmGeometry !== "function")
+        throw new Error("foundry-core: phyto-core buildFelsturmGeometry fehlt (Kern-Pflicht)");
+    var __g = __core.buildFelsturmGeometry(
+        THREE,
+        simplex3,
+        {
+            hoehe: P.hoehe,
+            breite: P.breite,
+            tiefe: P.tiefe,
+            bankM: P.bankM,
+            strat: P.strat,
+            rough: P.rough,
+            seed: P.seed,
+            detail: Math.max(2, (P.detail || 6) - __lod * 2),
+            dreiecke: (PORTAL_RENDER_CONFIG.lod.budget.rock[__lod] || PORTAL_RENDER_CONFIG.lod.budget.rock[0]).tris,
+        },
+        rnd
+    );
+    if (!__g) throw new Error("foundry-core: buildFelsturmGeometry lieferte kein Netz");
+    return felsStoffNetz(P, __g);
+}
+
+// DER FELSBOGEN (landmarken-geologie-5): die Gestalt aus phyto-core `buildFelsbogenGeometry` in Welt-Metern (Skala 1), mit der
+// Öffnung um x 0; die Stufe teilt das Detail wie beim Turm, der Stoff ist das Fels-Gesetz.
+function buildFelsbogen(P) {
+    var __core = typeof self !== "undefined" && self.__phytoCore;
+    if (!__core || typeof __core.buildFelsbogenGeometry !== "function")
+        throw new Error("foundry-core: phyto-core buildFelsbogenGeometry fehlt (Kern-Pflicht)");
+    var __g = __core.buildFelsbogenGeometry(
+        THREE,
+        simplex3,
+        {
+            spann: P.spann,
+            lichte: P.lichte,
+            staerke: P.staerke,
+            tiefe: P.tiefe,
+            bankM: P.bankM,
+            strat: P.strat,
+            rough: P.rough,
+            seed: P.seed,
+            detail: Math.max(2, (P.detail || 6) - __lod * 2),
+            dreiecke: (PORTAL_RENDER_CONFIG.lod.budget.rock[__lod] || PORTAL_RENDER_CONFIG.lod.budget.rock[0]).tris,
+        },
+        rnd
+    );
+    if (!__g) throw new Error("foundry-core: buildFelsbogenGeometry lieferte kein Netz");
+    return felsStoffNetz(P, __g);
+}
+
 function clipPolygon(poly, a, b) {
     const out = [];
     const nx = b[0] - a[0],
@@ -4712,7 +4767,7 @@ function emitRock(P) {
     if (P.kind === "columns") return emitColumns(P);
     if (P.kind === "scree") return emitScree(P);
     if (P.kind === "crystal") return emitCrystals(P);
-    const geo = buildBoulder(P);
+    const geo = P.kind === "turm" ? buildFelsturm(P) : P.kind === "bogen" ? buildFelsbogen(P) : buildBoulder(P);
     const mat = new THREE.MeshStandardMaterial({
         vertexColors: true,
         roughness: P.matRough,
@@ -4927,6 +4982,348 @@ const PRESETS = {
             rockC: 0x7a7670,
             speckle: true,
             matRough: 0.8,
+            detail: 6,
+        },
+    },
+    // DER FELSTURM, die Landmarke in ihrer Größe (landmarken-geologie-5, erleben.spieler.wegfindung#1) — bis hier zeichnete ihn
+    // `zacken` (ein Block, Hülle ≤ 1,41 × Welt-Skala 0,34 = 0,48 m). Gebaut in Welt-Metern (Skala 1, `deriveParamsTurm`):
+    //   hoeheM · sigmaLn · band: die freistehenden Klettergipfel der Sächsischen Schweiz, „Maximale Felshöhe“ der Listen Brand-
+    //     und Rathener Gebiet (Wikipedia, Stand 07.02.2026): N = 233, 8–75 m, Median 20 m, P10 10 · P25 15 · P75 35 · P90 55 m;
+    //     log-normal: geometrisches Mittel 22,4 m, σ(ln) 0,60 (Quantile P10/P25/P75/P90 der Anpassung 10,4/14,9/33,6/48,3 m).
+    //   schlank: Höhe : Breite aus dem Bauplan des Felsturms (16,8 m über dem Fuß von 4,4 m, `_defaultBlueprints`) — ohne äußeres
+    //     Band, ebenso der Bank-Abstand `bankM` (offen, Messname „LANDMARKE IM BILD … gezeichnet“ in gate:phyto-core).
+    felsturm: {
+        kind: "rock",
+        panel: "rock",
+        s: { sph: 0.3, elong: 0.3, rnd: 0.4, rgh: 0.5, str: 0.6, gen: 0.6 },
+        ph: { turm: { hoeheM: 22.4, sigmaLn: 0.6, band: [8, 75], schlank: 3.8, bankM: [1.2, 3.2] } },
+        fx: {
+            // die Hülle je Gestalt 1..16 (LOD 0, Boden y 0) in Welt-Metern, gemessen über die Brücke wie die Steine — OHNE deren
+            // Rand +5 %: in Welt-Metern ragte er bis 0,7 m seitlich und 3,4 m über das Bild (gate:kollision-bild hält 0,3 m / 2 %),
+            // die Zeile ist die gezeichnete Gestalt, nach außen auf den Zentimeter
+            huellen: [
+                [
+                    [-0.95, 0.91, 0, 1.61, -0.72, 0.82],
+                    [-0.88, 0.83, 1.6, 3.21, -0.7, 0.73],
+                    [-0.79, 0.85, 3.2, 4.81, -0.73, 0.65],
+                    [-0.72, 0.9, 4.8, 6.41, -0.71, 0.62],
+                    [-0.58, 0.95, 6.4, 8.01, -0.67, 0.6],
+                ],
+                [
+                    [-1.21, 1.24, 0, 2.04, -1.23, 1.24],
+                    [-1.14, 1.15, 2.03, 4.07, -1.14, 1.13],
+                    [-1.13, 1.17, 4.06, 6.1, -1.14, 1.13],
+                    [-0.97, 1.21, 6.09, 8.13, -1.1, 1.07],
+                    [-0.98, 1.27, 8.12, 10.16, -1.15, 1.14],
+                ],
+                [
+                    [-1.36, 1.21, 0, 2.45, -1.01, 1.02],
+                    [-1.27, 1.17, 2.44, 4.9, -0.9, 1.01],
+                    [-1.19, 1.21, 4.89, 7.34, -0.86, 1.03],
+                    [-1.12, 1.13, 7.33, 9.79, -0.76, 1],
+                    [-1.08, 1.1, 9.78, 12.24, -0.75, 1.05],
+                ],
+                [
+                    [-2.54, 2.38, 0, 2.82, -2.52, 2.59],
+                    [-2.56, 2.42, 2.81, 5.64, -2.51, 2.5],
+                    [-1.88, 2.46, 5.63, 8.45, -2.36, 2.34],
+                    [-1.74, 2.42, 8.44, 11.27, -2.46, 2.1],
+                    [-1.63, 2.63, 11.26, 14.08, -2.67, 2.13],
+                ],
+                [
+                    [-2.66, 2.58, 0, 3.17, -2.46, 2.61],
+                    [-2.45, 2.62, 3.16, 6.34, -2.37, 2.62],
+                    [-2.24, 2.51, 6.33, 9.51, -2.17, 2.55],
+                    [-2.42, 2.22, 9.5, 12.68, -2.17, 2.3],
+                    [-2.58, 2.43, 12.67, 15.85, -2.13, 2.43],
+                ],
+                [
+                    [-2.28, 2.3, 0, 3.53, -1.84, 1.79],
+                    [-2.03, 2.27, 3.52, 7.05, -1.63, 1.75],
+                    [-1.8, 2.25, 7.04, 10.57, -1.54, 1.7],
+                    [-1.72, 2.02, 10.56, 14.1, -1.37, 1.59],
+                    [-1.58, 2.06, 14.09, 17.62, -1.39, 1.48],
+                ],
+                [
+                    [-2.53, 2.46, 0, 3.89, -2.34, 2.49],
+                    [-2.37, 2.28, 3.88, 7.78, -2.16, 2.19],
+                    [-2.36, 2.05, 7.77, 11.67, -2.11, 2.1],
+                    [-2.11, 1.93, 11.66, 15.56, -2.03, 2.08],
+                    [-2.12, 1.82, 15.55, 19.45, -1.97, 1.72],
+                ],
+                [
+                    [-2.92, 3.28, 0, 4.28, -2.9, 3.06],
+                    [-2.74, 3.04, 4.27, 8.56, -2.97, 2.96],
+                    [-2.86, 2.88, 8.55, 12.83, -2.72, 2.78],
+                    [-2.69, 2.91, 12.82, 17.11, -2.6, 2.75],
+                    [-2.66, 3.05, 17.1, 21.38, -2.86, 2.76],
+                ],
+                [
+                    [-3.1, 3.32, 0, 4.7, -3.08, 2.74],
+                    [-3.19, 3.03, 4.69, 9.39, -2.89, 2.93],
+                    [-2.98, 2.68, 9.38, 14.09, -2.57, 2.95],
+                    [-2.81, 2.64, 14.08, 18.78, -2.4, 2.92],
+                    [-2.85, 2.88, 18.77, 23.48, -2.54, 3.18],
+                ],
+                [
+                    [-2.82, 3.05, 0, 5.17, -2.58, 2.33],
+                    [-2.63, 2.88, 5.16, 10.33, -2.08, 2.21],
+                    [-2.22, 2.43, 10.32, 15.49, -2, 2.16],
+                    [-2.23, 2.42, 15.48, 20.65, -1.91, 2],
+                    [-2.13, 2.47, 20.64, 25.82, -2, 2.06],
+                ],
+                [
+                    [-2.69, 2.75, 0, 5.7, -3.83, 3.87],
+                    [-2.44, 2.53, 5.69, 11.4, -3.39, 3.65],
+                    [-2.41, 2.45, 11.39, 17.1, -3.26, 3.68],
+                    [-2.04, 2.42, 17.09, 22.79, -3.03, 3.38],
+                    [-2.18, 2.43, 22.78, 28.49, -2.97, 3.4],
+                ],
+                [
+                    [-4.07, 4.11, 0, 6.34, -3.5, 3.86],
+                    [-3.87, 4.05, 6.33, 12.67, -3.19, 3.63],
+                    [-3.49, 3.72, 12.66, 19.01, -3.18, 3.45],
+                    [-3.09, 3.47, 19, 25.34, -2.8, 3.17],
+                    [-3.05, 3.47, 25.33, 31.67, -2.69, 3.48],
+                ],
+                [
+                    [-6.18, 6.17, 0, 7.13, -5.96, 6.19],
+                    [-5.55, 5.56, 7.12, 14.26, -6.14, 5.57],
+                    [-5.91, 5.54, 14.25, 21.39, -6.41, 5.05],
+                    [-5.6, 5.14, 21.38, 28.52, -5.91, 4.33],
+                    [-5.56, 5.25, 28.51, 35.65, -6.8, 4.01],
+                ],
+                [
+                    [-3.35, 3.59, 0, 8.21, -4.14, 4.63],
+                    [-3.11, 3.19, 8.2, 16.41, -4.17, 4.01],
+                    [-2.86, 3.31, 16.4, 24.62, -4, 3.73],
+                    [-2.58, 3.07, 24.61, 32.82, -3.63, 3.65],
+                    [-2.9, 3.3, 32.81, 41.02, -3.92, 3.71],
+                ],
+                [
+                    [-7.41, 7.46, 0, 9.88, -8.67, 7.97],
+                    [-6.01, 7.34, 9.87, 19.76, -6.89, 7.86],
+                    [-5.96, 6.69, 19.75, 29.64, -7.01, 7.6],
+                    [-5.34, 6.32, 29.63, 39.52, -6.3, 7.46],
+                    [-5.75, 6.64, 39.51, 49.39, -6.86, 7.38],
+                ],
+                [
+                    [-12.33, 11.51, 0, 13.73, -11.16, 11.28],
+                    [-10.49, 10.97, 13.72, 27.45, -9.17, 10.77],
+                    [-10.37, 10.52, 27.44, 41.17, -8.07, 9.46],
+                    [-9.82, 9.85, 41.16, 54.9, -7.51, 9.26],
+                    [-8.93, 9.83, 54.89, 68.62, -7.71, 9.2],
+                ],
+            ],
+            rkind: "turm",
+            rockA: 0xa09478,
+            rockB: 0x4a4236,
+            rockC: 0xb8ac8e,
+            speckle: false,
+            matRough: 0.88,
+            detail: 6,
+        },
+    },
+    // DER FELSBOGEN, das Felstor in seiner Größe (landmarken-geologie-5, erleben.spieler.wegfindung#1) — bis hier zeichnete ihn
+    // `zacken` (ein Block ≤ 0,48 m, ohne Öffnung). Gebaut in Welt-Metern (Skala 1, `deriveParamsBogen`):
+    //   spannM · lichteZuSpann: die zwei größten Felstore des Elbsandsteins (Wikipedia, Stand 2026) — Prebischtor Spannweite
+    //     26,5 m, lichte Höhe 16 m (0,60), Kuhstall Breite 17 m, Höhe 11 m (0,65); N = 2, kein Quantil-Band (offen: ein Katalog
+    //     der Felstore mit Spannweiten). Zum Vergleich der Arches-Nationalpark (NPS): über 2 000 Bögen, der weiteste 88–93 m.
+    //   staerkeZuSpann · tiefeZuSpann: der Prebischtor, Torbogenstärke 3 m, größte Breite 8 m (je ÷ 26,5 m) — eine Quelle.
+    //   bankM wie beim Turm, ohne äußeres Band (offen, Messname „LANDMARKE IM BILD … gezeichnet“ in gate:phyto-core).
+    felsbogen: {
+        kind: "rock",
+        panel: "rock",
+        s: { sph: 0.3, elong: 0.3, rnd: 0.4, rgh: 0.5, str: 0.6, gen: 0.6 },
+        ph: { bogen: { spannM: [17, 26.5], lichteZuSpann: [0.6, 0.65], staerkeZuSpann: 0.113, tiefeZuSpann: 0.3, bankM: [1.2, 3.2] } },
+        fx: {
+            // die Hülle je Gestalt 1..16 (LOD 0, Boden y 0) in Welt-Metern als BOXEN [x0, x1, y0, y1, z0, z1], gemessen über die
+            // Brücke an der Fläche, nach außen auf den Zentimeter: die Pfeiler je Scheibe (0 · ¼ · ½ · ¾ · 0,9 der lichten Höhe,
+            // links und rechts der Öffnung), darüber der Sturz über die ganze Breite — die Öffnung bleibt frei (gate:kollision-bild (D))
+            huellen: [
+                [
+                    [-12.47, -8.36, 0, 2.63, -2.65, 2.74],
+                    [8.37, 13.93, 0, 2.63, -2.75, 2.58],
+                    [-12.38, -7.37, 2.62, 5.26, -2.72, 2.76],
+                    [7.44, 13.78, 2.62, 5.26, -2.7, 2.67],
+                    [-12.3, -5.84, 5.25, 7.89, -2.69, 2.75],
+                    [5.68, 13.74, 5.25, 7.89, -2.76, 2.67],
+                    [-11.95, -3.81, 7.88, 9.46, -2.72, 2.67],
+                    [3.79, 13.34, 7.88, 9.46, -2.66, 2.57],
+                    [-11.35, 12.72, 9.45, 12.72, -2.7, 2.73],
+                ],
+                [
+                    [-13.14, -8.6, 0, 2.66, -3.04, 3.07],
+                    [8.65, 14.4, 0, 2.66, -3.12, 2.94],
+                    [-12.96, -7.72, 2.65, 5.32, -3.01, 3.05],
+                    [7.76, 14.2, 2.65, 5.32, -2.96, 2.98],
+                    [-12.89, -6.03, 5.31, 7.98, -2.92, 2.98],
+                    [5.8, 13.9, 5.31, 7.98, -2.89, 2.93],
+                    [-12.17, -4.18, 7.97, 9.57, -2.82, 2.86],
+                    [4.15, 13.33, 7.97, 9.57, -2.81, 2.78],
+                    [-11.42, 12.51, 9.56, 12.84, -2.8, 2.87],
+                ],
+                [
+                    [-13.65, -8.82, 0, 2.75, -2.84, 2.86],
+                    [8.9, 14.6, 0, 2.75, -2.92, 2.75],
+                    [-13.39, -7.82, 2.74, 5.49, -2.89, 2.88],
+                    [7.84, 14.34, 2.74, 5.49, -2.84, 2.85],
+                    [-13.01, -6.19, 5.48, 8.23, -2.85, 2.9],
+                    [6.07, 13.85, 5.48, 8.23, -2.83, 2.81],
+                    [-11.85, -3.95, 8.22, 9.87, -2.89, 2.77],
+                    [3.95, 12.74, 8.22, 9.87, -2.79, 2.74],
+                    [-10.65, 11.61, 9.86, 13.08, -2.86, 2.84],
+                ],
+                [
+                    [-15.32, -8.98, 0, 3.03, -3.21, 3.26],
+                    [9.15, 14.41, 0, 3.03, -3.28, 3.15],
+                    [-15.01, -8.03, 3.02, 6.06, -3.2, 3.17],
+                    [8.03, 14.16, 3.02, 6.06, -3.13, 3.19],
+                    [-14.59, -6.26, 6.05, 9.08, -3.06, 3.07],
+                    [6.23, 13.69, 6.05, 9.08, -3.05, 3.03],
+                    [-13.34, -4.21, 9.07, 10.9, -2.98, 3.03],
+                    [4.23, 12.39, 9.07, 10.9, -2.96, 2.93],
+                    [-12.07, 10.85, 10.89, 14.31, -2.98, 2.95],
+                ],
+                [
+                    [-15.61, -9.35, 0, 3.04, -3.87, 3.88],
+                    [9.46, 14.14, 0, 3.04, -3.83, 3.69],
+                    [-15.4, -8.25, 3.03, 6.07, -3.64, 3.66],
+                    [8.21, 13.97, 3.03, 6.07, -3.68, 3.61],
+                    [-15.33, -6.37, 6.06, 9.1, -3.35, 3.45],
+                    [6.36, 13.9, 6.06, 9.1, -3.32, 3.44],
+                    [-14.68, -4.51, 9.09, 10.91, -3.18, 3.29],
+                    [4.52, 13.15, 9.09, 10.91, -3.26, 3.33],
+                    [-13.84, 12.11, 10.9, 14.47, -3.12, 3.22],
+                ],
+                [
+                    [-14.86, -9.53, 0, 3.07, -3.11, 3.16],
+                    [9.62, 15.12, 0, 3.07, -3.16, 3.06],
+                    [-14.63, -8.67, 3.06, 6.13, -3.14, 3.08],
+                    [8.66, 14.88, 3.06, 6.13, -3.07, 3.11],
+                    [-14.44, -6.6, 6.12, 9.19, -3.06, 3.08],
+                    [6.6, 14.52, 6.12, 9.19, -3.06, 3.13],
+                    [-13.35, -4.34, 9.18, 11.03, -3.11, 3.07],
+                    [4.36, 13.44, 9.18, 11.03, -3.03, 3.14],
+                    [-12.16, 12.16, 11.02, 14.56, -3.14, 3.11],
+                ],
+                [
+                    [-14.35, -9.82, 0, 3.16, -3.24, 3.24],
+                    [9.85, 14.52, 0, 3.16, -3.31, 3.19],
+                    [-14.25, -8.76, 3.15, 6.32, -3.27, 3.2],
+                    [8.72, 14.39, 3.15, 6.32, -3.15, 3.24],
+                    [-14.26, -6.82, 6.31, 9.47, -3.12, 3.2],
+                    [6.82, 14.27, 6.31, 9.47, -3.17, 3.19],
+                    [-13.6, -4.49, 9.46, 11.36, -3.14, 3.18],
+                    [4.51, 13.61, 9.46, 11.36, -3.13, 3.17],
+                    [-12.73, 12.74, 11.35, 15.03, -3.22, 3.21],
+                ],
+                [
+                    [-14.91, -10.1, 0, 3.28, -4.04, 3.99],
+                    [10.13, 15.31, 0, 3.28, -3.96, 3.84],
+                    [-14.84, -9, 3.27, 6.55, -3.77, 3.75],
+                    [8.96, 15.14, 3.27, 6.55, -3.65, 3.76],
+                    [-14.79, -6.97, 6.54, 9.82, -3.5, 3.61],
+                    [7.03, 15, 6.54, 9.82, -3.51, 3.64],
+                    [-14.24, -4.68, 9.8, 11.78, -3.41, 3.45],
+                    [4.69, 14.52, 9.8, 11.78, -3.38, 3.56],
+                    [-13.37, 13.54, 11.77, 15.55, -3.41, 3.45],
+                ],
+                [
+                    [-15.16, -10.37, 0, 3.35, -4.49, 4.41],
+                    [10.37, 15.96, 0, 3.35, -4.29, 4.26],
+                    [-15.12, -9.28, 3.34, 6.7, -4.1, 4.18],
+                    [9.24, 15.95, 3.34, 6.7, -4.14, 4.06],
+                    [-15.15, -7.17, 6.69, 10.05, -3.68, 3.9],
+                    [7.42, 15.84, 6.69, 10.05, -3.85, 3.94],
+                    [-14.43, -4.8, 10.04, 12.06, -3.6, 3.63],
+                    [4.82, 15.39, 10.04, 12.06, -3.63, 3.73],
+                    [-13.56, 14.63, 12.05, 16.01, -3.61, 3.53],
+                ],
+                [
+                    [-16.78, -10.68, 0, 3.36, -4.6, 4.68],
+                    [10.66, 16.51, 0, 3.36, -4.57, 4.58],
+                    [-16.64, -9.51, 3.35, 6.71, -4.29, 4.47],
+                    [9.48, 16.55, 3.35, 6.71, -4.24, 4.23],
+                    [-16.53, -7.17, 6.7, 10.06, -3.89, 4.06],
+                    [7.54, 16.36, 6.7, 10.06, -4.08, 4.14],
+                    [-15.9, -4.83, 10.05, 12.07, -3.81, 3.75],
+                    [4.83, 15.91, 10.05, 12.07, -3.86, 3.86],
+                    [-15.12, 15.12, 12.06, 16.02, -3.75, 3.73],
+                ],
+                [
+                    [-16.44, -10.95, 0, 3.55, -4.22, 4.32],
+                    [10.93, 17.83, 0, 3.55, -4.14, 4.25],
+                    [-16.34, -9.85, 3.54, 7.1, -4.01, 4.14],
+                    [9.78, 17.71, 3.54, 7.1, -3.99, 3.99],
+                    [-16.28, -7.57, 7.09, 10.65, -3.7, 3.86],
+                    [7.83, 17.48, 7.09, 10.65, -3.8, 3.99],
+                    [-15.12, -5.12, 10.64, 12.77, -3.58, 3.67],
+                    [5.09, 16.83, 10.64, 12.77, -3.72, 3.73],
+                    [-14.24, 15.66, 12.76, 17.01, -3.59, 3.66],
+                ],
+                [
+                    [-17.92, -11.3, 0, 3.6, -3.72, 3.78],
+                    [11.31, 16.41, 0, 3.6, -3.68, 3.69],
+                    [-17.81, -10.12, 3.59, 7.2, -3.68, 3.7],
+                    [9.98, 16.37, 3.59, 7.2, -3.57, 3.72],
+                    [-17.68, -7.9, 7.19, 10.8, -3.65, 3.65],
+                    [8.1, 16.3, 7.19, 10.8, -3.61, 3.73],
+                    [-17.21, -5.2, 10.79, 12.96, -3.73, 3.64],
+                    [5.17, 15.74, 10.79, 12.96, -3.53, 3.69],
+                    [-16.19, 14.94, 12.95, 17.35, -3.68, 3.62],
+                ],
+                [
+                    [-19.25, -11.6, 0, 3.81, -4.13, 4.3],
+                    [11.59, 17.12, 0, 3.81, -4.07, 4.11],
+                    [-19.06, -10.42, 3.8, 7.61, -4.05, 4.07],
+                    [10.4, 17.03, 3.8, 7.61, -3.9, 4.09],
+                    [-18.39, -8.09, 7.6, 11.41, -3.89, 3.86],
+                    [8.11, 16.48, 7.6, 11.41, -3.89, 4.07],
+                    [-16.82, -5.32, 11.4, 13.69, -3.87, 3.8],
+                    [5.3, 14.92, 11.4, 13.69, -3.7, 3.75],
+                    [-15.43, 13.08, 13.68, 18.09, -3.74, 3.73],
+                ],
+                [
+                    [-19.17, -11.94, 0, 3.7, -4.38, 4.51],
+                    [11.89, 17.81, 0, 3.7, -4.25, 4.44],
+                    [-19.04, -10.65, 3.69, 7.39, -4.29, 4.33],
+                    [10.7, 17.76, 3.69, 7.39, -4.22, 4.18],
+                    [-18.61, -8.18, 7.38, 11.08, -4.12, 4.07],
+                    [8.35, 17.36, 7.38, 11.08, -4.04, 4.2],
+                    [-17.74, -5.53, 11.07, 13.3, -4.15, 4.09],
+                    [5.52, 16.23, 11.07, 13.3, -3.97, 4.02],
+                    [-16.5, 14.91, 13.29, 17.73, -3.92, 3.89],
+                ],
+                [
+                    [-19.2, -12.35, 0, 4.09, -4.43, 4.61],
+                    [12.29, 17.9, 0, 4.09, -4.38, 4.48],
+                    [-19.06, -10.95, 4.08, 8.18, -4.39, 4.37],
+                    [10.94, 17.83, 4.08, 8.18, -4.26, 4.27],
+                    [-18.7, -8.44, 8.17, 12.27, -4.21, 4.18],
+                    [8.44, 17.57, 8.17, 12.27, -4.17, 4.26],
+                    [-17.74, -5.64, 12.26, 14.73, -4.22, 4.2],
+                    [5.65, 16.46, 12.26, 14.73, -4.12, 3.97],
+                    [-16.43, 15.39, 14.72, 19.28, -4.06, 4.03],
+                ],
+                [
+                    [-20.37, -12.64, 0, 4.2, -4.23, 4.38],
+                    [12.68, 19.66, 0, 4.2, -4.21, 4.35],
+                    [-20.23, -11.34, 4.19, 8.4, -4.26, 4.2],
+                    [11.46, 19.48, 4.19, 8.4, -4.22, 4.15],
+                    [-19.91, -8.68, 8.39, 12.6, -4.2, 4.11],
+                    [8.65, 19.1, 8.39, 12.6, -4.19, 4.23],
+                    [-18.72, -6.26, 12.59, 15.12, -4.16, 4.1],
+                    [6.26, 18.14, 12.59, 15.12, -4.17, 4.06],
+                    [-17.41, 16.75, 15.11, 19.91, -4.18, 4.07],
+                ],
+            ],
+            rkind: "bogen",
+            rockA: 0xa09478,
+            rockB: 0x4a4236,
+            rockC: 0xb8ac8e,
+            speckle: false,
+            matRough: 0.88,
             detail: 6,
         },
     },
@@ -5323,7 +5720,71 @@ function rockPhenotype(gen, sph, elong, round, rough, strat, IR) {
     };
 }
 
+// DER FELSTURM AUS SEINEM BAND (landmarken-geologie-5): die Höhe der Gestalt g (der Same 1..V der Art, `__gestaltenArt`) ist das
+// Quantil (g − ½)/V des Bands — log-normal um das geometrische Mittel `hoeheM` mit der Streuung `sigmaLn`, gekappt an `band` —, die
+// V Gestalten tragen so die Verteilung des Bands, nicht V Würfe; ein Same außerhalb 1..V (das Labor) zieht sein Quantil aus dem
+// Strom. Die Breite folgt der Schlankheit `schlank` (± 25 %), die Tiefe dem Seitenverhältnis der Kluft-Scharen 0,6–1, der
+// Bank-Abstand dem Band `bankM`. Der Strom ist der des Steins (Same + 7), die Ableitung der anderen Fels-Arten bleibt Byte für Byte.
+function deriveParamsTurm(pre) {
+    const T = pre.ph.turm;
+    const IR = mulberry32(((Math.floor(SEED) + 7) * 2246822519) >>> 0);
+    const V = __gestaltenArt(CURRENT);
+    const q = Number.isInteger(SEED) && SEED >= 1 && SEED <= V ? (SEED - 0.5) / V : 0.02 + 0.96 * IR();
+    const z = 4.91 * (q ** 0.14 - (1 - q) ** 0.14); // probit (Tukey-λ; Fehler < 0,01 für 0,0025 < q < 0,9975)
+    const hoehe = clamp(T.hoeheM * Math.exp(T.sigmaLn * z), T.band[0], T.band[1]);
+    const breite = (hoehe / T.schlank) * (0.75 + 0.5 * IR());
+    const fx = pre.fx;
+    return {
+        kind: "turm",
+        hoehe,
+        breite,
+        tiefe: breite * (0.6 + 0.4 * IR()),
+        bankM: T.bankM[0] + (T.bankM[1] - T.bankM[0]) * IR(),
+        strat: pre.s.str,
+        rough: pre.s.rgh,
+        round: pre.s.rnd,
+        seed: SEED * 0.001 + 1.3,
+        detail: fx.detail,
+        rockA: fx.rockA,
+        rockB: fx.rockB,
+        rockC: fx.rockC,
+        matRough: fx.matRough,
+    };
+}
+
+// DER FELSBOGEN AUS SEINEM BAND (landmarken-geologie-5): die Spannweite der Gestalt g ist das Quantil (g − ½)/V zwischen den Toren
+// des Bands (log-gleich in `spannM`), die lichte Höhe folgt ihrem Verhältnis `lichteZuSpann` (im Band der Tore), Scheitel-
+// Stärke und Tiefe den Verhältnissen des Prebischtors; ein Same außerhalb 1..V (das Labor) zieht sein Quantil aus dem Strom.
+// Der Strom ist der des Steins (Same + 7), die Ableitung der anderen Fels-Arten bleibt Byte für Byte.
+function deriveParamsBogen(pre) {
+    const B = pre.ph.bogen;
+    const IR = mulberry32(((Math.floor(SEED) + 7) * 2246822519) >>> 0);
+    const V = __gestaltenArt(CURRENT);
+    const q = Number.isInteger(SEED) && SEED >= 1 && SEED <= V ? (SEED - 0.5) / V : IR();
+    const spann = B.spannM[0] * (B.spannM[1] / B.spannM[0]) ** q;
+    const fx = pre.fx;
+    return {
+        kind: "bogen",
+        spann,
+        lichte: spann * (B.lichteZuSpann[0] + (B.lichteZuSpann[1] - B.lichteZuSpann[0]) * IR()),
+        staerke: spann * B.staerkeZuSpann,
+        tiefe: spann * B.tiefeZuSpann,
+        bankM: B.bankM[0] + (B.bankM[1] - B.bankM[0]) * IR(),
+        strat: pre.s.str,
+        rough: pre.s.rgh,
+        round: pre.s.rnd,
+        seed: SEED * 0.001 + 1.3,
+        detail: fx.detail,
+        rockA: fx.rockA,
+        rockB: fx.rockB,
+        rockC: fx.rockC,
+        matRough: fx.matRough,
+    };
+}
+
 function deriveParamsRock(pre) {
+    if (pre.ph && pre.ph.turm) return deriveParamsTurm(pre);
+    if (pre.ph && pre.ph.bogen) return deriveParamsBogen(pre);
     const _D = __dials; // der Dial-Kontext des Wirts (siehe deriveParamsPlant)
     const gen = _D.gen,
         sph = _D.sph,
