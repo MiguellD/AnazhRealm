@@ -783,30 +783,21 @@ class AnazhRealm_feld_leben {
         if (vc === "voxel carve" || vc === "voxel fill") {
             const pm = this.state.playerMesh;
             if (pm) {
-                if (vc === "voxel fill") {
-                    // Phase 3c — pfad: kostet Material; frieden/schöpfer frei.
-                    const matGate = this._voxelFillGate();
-                    if (!matGate.ok) {
-                        this.log("Aufschütten: kein Material im Inventar — erst graben.", "INFO");
-                        return true;
-                    }
-                    // Das Chat-Graben reist wie jedes Graben (K23): über den DSL-Op, der den Mitspielern broadcastet;
-                    // der Material-Konsum bleibt lokal (wie beim Aufschütten mit der Hand).
-                    this.dslRun(["voxel_fill", pm.position.x, pm.position.y - 1.5, pm.position.z, 5], {
-                        source: "human",
-                    });
+                // Das Chat-Graben reist wie jedes Graben (K23): über den EINEN Weg des Erdbaus (`_erdbauAkt`: der DSL-Op, der den
+                // Mitspielern broadcastet; Phase 3c — pfad: das Aufschütten kostet Material, erst nach dem Edit, den das Feld
+                // trägt; frieden/schöpfer frei). Der Satz an den Spieler sagt, was geschah.
+                const fill = vc === "voxel fill";
+                const akt = this._erdbauAkt(fill ? "fill" : "carve", pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
+                if (!akt.gate.ok) this.log("Aufschütten: kein Material im Inventar — erst graben.", "INFO");
+                else if (!akt.getan) this.log(`${fill ? "Aufschütten" : "Graben"}: der Boden blieb, wie er war.`, "INFO");
+                else if (!fill) this.log("Voxel-Terrain gegraben — eine Mulde unter dir.", "INFO");
+                else
                     this.log(
-                        matGate.free
+                        akt.gate.free
                             ? "Voxel-Terrain aufgeschüttet — ein Hügel unter dir."
-                            : `Voxel-Terrain aufgeschüttet (${matGate.cost}× Material verbraucht).`,
+                            : `Voxel-Terrain aufgeschüttet (${akt.gate.cost}× Material verbraucht).`,
                         "INFO"
                     );
-                } else {
-                    this.dslRun(["voxel_carve", pm.position.x, pm.position.y - 1.5, pm.position.z, 5], {
-                        source: "human",
-                    });
-                    this.log("Voxel-Terrain gegraben — eine Mulde unter dir.", "INFO");
-                }
             }
             return true;
         }

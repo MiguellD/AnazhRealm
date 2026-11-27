@@ -994,17 +994,19 @@ class AnazhRealm_feld_dsl {
             // der Nexus soll die Geometrie unter dem Spieler nicht willkürlich umpflügen.
             // Der Ort des Edits ist ein at-Knoten an der Engstelle (`dslEvalPos`): eine fehlende oder ungültige Koordinate
             // bricht die Op benannt ab (bis 07.10. machte `Number(null)` daraus die 0 — der Edit grub am Ursprung).
+            // Der Bericht sagt, was das Feld trägt (erdbau#1): ein Edit, den `_addVoxelEdit` verwirft (y jenseits des Bands, keine
+            // Welt), heißt `invalid_edit` — kein Leser bucht ihn, er reist nicht (`dslRun` zählt ihn als Fehler).
             voxel_carve: ([x, y, z, radius], ctx) => {
                 const p = this.dslEvalPos(["at", x, y, z], ctx);
                 const r = c(radius, 0.5, 12);
-                this.carveVoxel(p.x, p.y, p.z, r);
-                ctx.log.push({ event: "voxel_carved", x: p.x, y: p.y, z: p.z, r });
+                const ok = this.carveVoxel(p.x, p.y, p.z, r);
+                ctx.log.push({ event: ok ? "voxel_carved" : "invalid_edit", op: "voxel_carve", x: p.x, y: p.y, z: p.z, r });
             },
             voxel_fill: ([x, y, z, radius], ctx) => {
                 const p = this.dslEvalPos(["at", x, y, z], ctx);
                 const r = c(radius, 0.5, 12);
-                this.fillVoxel(p.x, p.y, p.z, r);
-                ctx.log.push({ event: "voxel_filled", x: p.x, y: p.y, z: p.z, r });
+                const ok = this.fillVoxel(p.x, p.y, p.z, r);
+                ctx.log.push({ event: ok ? "voxel_filled" : "invalid_edit", op: "voxel_fill", x: p.x, y: p.y, z: p.z, r });
             },
             // lava(x, y, z): der Schreib-Akt der Lava (stoffe.K3-2, `_lavaGiessen`) — die 16-m-Zelle am Ort trägt eine Decke
             // geschmolzenen Steins, die über die glut-Achse zu Stein erstarrt (broadcastable wie jeder Welt-Akt).
