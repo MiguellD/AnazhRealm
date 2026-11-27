@@ -1,304 +1,302 @@
 {
  "sha": "7e73426efae8578f057c9d5b8548f52affb8dd93",
  "geraet": "radeon",
- "zeit": "2026-11-27T13:12:26.434Z",
+ "zeit": "2026-11-27T13:26:34.664Z",
  "host": "MiguellD",
- "je": {},
- "konsumTafel": {
-  "k7312c1ab654f": "bVVdb6MwEPwvebweNZ/BWOqDCZEaqb1Lf8Ia1kBDILIh9HK6/34CQhKgfmXGMzu7a/6uThAfIMXnT12VK7b6sfq50nBGQ6M6o3r+1Cu2CmLLRofx4RDO+aaDxSo/1ZoUuSAgSsiOaDSqxrx4jnuaXIPpCUbaLU/3hEhyIVH78jKnFgKTyqhB4kg00fEosjmw0SkINKCRvdgV7LkBri1G+kMj/h6R2/minO9b0u7p6+wyAWUydWtZAax9xtvdhvOPucskB6yNIi/1qGslfiBNdtNq3xccBa1xAcwKVFcSUstyxWg27OLsopkRZdFoPRGjTuLZlBESzLEp6jzOauOkKoHlFS4C27eAhcu001NjyEdHIARQMc86AyxTVBMPphPLIWjZ29d/9rILOORzkQMcUYFRQnalBqbj2+KeFSHkdemt6AvpJcdCAtcWiTkhdk0m5y7whE/Ovv+YjijZjh/iGyTlC1EdZ7k6TuOTLtqmw97SJTqDBJVxqHR9Qzvou6YYtmMXkcELDefMe3FjTwGAPtZGCX+lC8VK1i0oNNJTMw6Ri57vMc53C3ANx+PNlkPhtrQPZ/sNq0wm1uxAep7LCHkalmnZq2F1jAvmBd5mO/adYD5JZwVHA0SqcinHpgovlsF3w9xiURuiquqxBsv3HaeLqHwcgF99a3cPNUXph1sXYbudlrpbjGavUKl6NC1AOK7LZBpRQqico3NVGy3E2b3GBITNyJeeX3xBVWCKkxilZYGdMNIOC0Mu3XPkX58L+TQZ6sui85ccu4BL3ehRPQZXeOyblrSoDgLKwxUYW2uIbfbGOQ/f+f4eSJjy7SbtVoOcKZlmFTr9imx4NEBbzn9HhF+FThiTk6pk3r2cJINGZ1DU99/Gv/8=",
-  "ka0ca1bf726ff": "jVVdc5swEPwvfmxKxKcBzeRBDpkm6bh1+g9O4gTEGBgJQsed/vcOGLCBPPSeGGZPu7e3gj+bCsQRErx/12WxoZsvm68bDR9oaFQfqO7f9YZuQmHZ6FB2KcIY+9bBhMqqWpM84wR4AekJjUbVmOX3om+TWzA9Tkn7xJIDIZKcSdSyqR7Zw8PymJxjXBo1SBwPMdHxAqRLYKMT4GhAI3viAey5IW4tSvoKIraPyFStYOzQkvYQPC8O41DEc+WWFcLWp6x9YYy9LVXGGWBt5FmhR14r9kNp0ivXftWjoDXOgGmOamjCwLJcPorddZZ0Ni0aZd5oPSMLnNizA0pIuMQmqDOR1kalSo7FAOeh7VtAd+3K7aRqDHmrCDiHgC+9TgGLBNVMg+kI2Rn9O1geeoQTKjAKSAdoaDq+za/eEEKe11ryXnhPMQoPXZvH5qyxW+rF4JjN6tC/TUaUnGImJkiyjpsWaaZOc7uki7bpLD3QKcSojGOp6wnpoO+a/HIrXiJy0RHslp3Xwcb9AUBwO1dA2PPKR13KugWFRlI1Y2Bc9HyPsmSVLl3D6TTJcgJYD1B3Ib+VYYfS81xKyN1g6cqey5UwzpjlOGVW+E5IHyN3Cf5QcDKAJyqTclwg94QMPwtqi3lt8LKsR82W7zsOJQ4pbpf9o2WPjO1v9hzlv9w6f717mq//O3v9jKFU9SicA3dcl8o2CggJ5BKdqdpoQaTXOWPg9tLEM6ocE5zZKC0L7Jj2n5dJpTs+3M3Ce15t+ZxhZ3ChGz0yC3C5d0nHkOKXeXJbVEcOxXFoENYWhE0ZixK2Z4cbV34y9l7Jlv13ve1YT1ShIJUqZdZ9GUkKjU4hr6+/iL//AA=="
- },
- "ungemessen": {
+ "je": {
   "profiband.K4#1": {
-   "gruen": false,
-   "zahl": "Last: Referenz f 1,495 (Faden 1,495 · alle Kerne 1,35; vor 103/288,7 ms, nach 124,8/350,7 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: find.exe micha/AnazhRealm-pm-kand Temp/claude -maxdepth 7 -type d -name sitzung-20261127-1 18,7 CPU-s · bash.exe scratchpad/wache-0331.sh 7,9 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 14,8 CPU-s · svchost.exe 13,5 CPU-s · SearchIndexer.exe 1,6 CPU-s — unscharf unter Last: Gehen Frame max ms roh 117,1, entlastet ≥ 58,55 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 123 Bilder · max 117.1 ms · 78.86 % > 33 ms · Fahrt 85 Bilder · max 175.35 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 117.1), 78.86 % > 33 ms | Fahrt: )",
+   "gruen": true,
+   "zahl": "Gehen 62 Bilder · max 83.58 ms · 75.81 % > 33 ms · Fahrt 38 Bilder · max 125.65 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 75.81 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 125.65), 100.00 % > 33 ms",
    "exit": 0,
-   "minuten": 0.5,
-   "grund": "Last: Referenz f 1,495 (Faden 1,495 · alle Kerne 1,35; vor 103/288,7 ms, nach 124,8/350,7 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: find.exe micha/AnazhRealm-pm-kand Temp/claude -maxdepth 7 -type d -name sitzung-20261127-1 18,7 CPU-s · bash.exe scratchpad/wache-0331.sh 7,9 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 14,8 CPU-s · svchost.exe 13,5 CPU-s · SearchIndexer.exe 1,6 CPU-s — unscharf unter Last: Gehen Frame max ms roh 117,1, entlastet ≥ 58,55 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 123 Bilder · max 117.1 ms · 78.86 % > 33 ms · Fahrt 85 Bilder · max 175.35 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 117.1), 78.86 % > 33 ms | Fahrt: )",
+   "minuten": 0.93,
    "mass": [
     {
      "wort": "Gehen Frame max ms",
-     "wert": 117.1,
+     "wert": 83.58,
      "soll": 100
     }
    ],
    "gpu": "amd/rdna-3",
-   "konsum": "k7312c1ab654f",
+   "konsum": "k84df1009912b",
    "konsumN": 29,
    "konsumSeite": false,
    "konsumGanz": {
     "gelesen": 2
    },
    "konsumBoot": "ka0ca1bf726ff",
-   "s": 29.9,
+   "s": 54.7,
    "fremd": {
-    "s": 32.2,
-    "takte": 13,
-    "fremdS": 74.95,
-    "kerne": 2.325,
-    "fensterKerne": 2.894,
+    "s": 61.4,
+    "takte": 23,
+    "fremdS": 188.08,
+    "kerne": 3.062,
+    "fensterKerne": 4.034,
     "namen": [
      [
-      "find.exe micha/AnazhRealm-pm-kand Temp/claude -maxdepth 7 -type d -name sitzung-20261127-1",
-      18.66
+      "node scripts/diag-studio-uebergabe.cjs",
+      28.52
      ],
      [
-      "bash.exe scratchpad/wache-0331.sh",
-      7.92
+      "node scripts/diag-altlasten.cjs --selftest",
+      20.52
      ],
      [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
-      4.53
+      "node scripts/diag-phyto-tree.cjs",
+      16.52
      ]
     ],
-    "dienerS": 29.53,
+    "dienerS": 51.05,
     "diener": [
      [
       "dwm.exe",
-      11.28
+      22.39
      ],
      [
       "System",
-      9.42
+      15.72
      ]
     ],
-    "geraetS": 29.89,
+    "geraetS": 68.28,
     "geraet": [
      [
       "MsMpEng.exe",
-      14.75
+      38.25
      ],
      [
       "svchost.exe",
-      13.47
+      26.33
      ],
      [
       "SearchIndexer.exe",
-      1.56
+      2.97
      ]
     ],
-    "eigenS": 89.59,
+    "eigenS": 303.28,
     "rechnerKerne": 24,
     "spannen": {
-     "vor": 1.958,
-     "nach": 2.701,
-     "station": 3.643
+     "vor": 2.464,
+     "nach": 2.177,
+     "station": 5.779
     }
    },
    "referenz": {
     "vor": {
-     "ein": 103,
-     "alle": 288.7,
+     "ein": 127,
+     "alle": 325,
      "cpuEin": 109,
      "tor": {
       "ruhig": true,
-      "kerne": 4.36,
+      "kerne": 3.48,
       "s": 0,
       "soll": 6,
       "reihe": [
-       3.83,
-       4.47,
-       2.58,
-       2.9,
-       6,
-       4.07
+       0.66,
+       1.64,
+       5.62,
+       7.22,
+       2.06,
+       0.87
       ]
      },
      "spanne": [
-      1795785200513,
-      1795785201059
+      1795785994668,
+      1795785995324
      ]
     },
     "nach": {
-     "ein": 124.8,
-     "alle": 350.7,
+     "ein": 120.6,
+     "alle": 304.5,
      "cpuEin": 125,
      "tor": {
       "ruhig": true,
-      "kerne": 3.62,
+      "kerne": 4.2,
       "s": 0,
       "soll": 6,
       "reihe": [
-       1.8,
-       2.11,
-       4.24,
-       3.95,
-       2.58,
-       4.35
+       2.98,
+       4.5,
+       5.19,
+       3.65,
+       3.34,
+       5.65
       ]
      },
      "spanne": [
-      1795785231046,
-      1795785231702
+      1795786050914,
+      1795786051504
      ]
     },
     "ruhe": {
      "ein": 83.5,
      "alle": 259.8,
-     "n": 1194,
+     "n": 1192,
      "von": "2026-11-16"
     },
-    "f": 1.495,
-    "fEin": 1.495,
-    "fAlle": 1.35,
-    "verdraengt": 1,
+    "f": 1.521,
+    "fEin": 1.521,
+    "fAlle": 1.251,
+    "verdraengt": 1.019,
     "schwankt": false,
     "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
     "umfeld": "sitzung"
    },
-   "ungemessen": true,
-   "wiederholt": "Last: Referenz f 1,427 (Faden 1,304 · alle Kerne 1,427; vor 108,9/370,7 ms, nach 106,4/296,3 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 12,4 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 8,2 CPU-s · find.exe micha/AnazhRealm-pm-kand Temp/claude -maxd",
-   "zeit": "2026-11-27T13:12:26.434Z",
+   "grund": "GRÜN trotz Last: Referenz f 1,521 (Faden 1,521 · alle Kerne 1,251; vor 127/325 ms, nach 120,6/304,5 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node scripts/diag-studio-uebergabe.cjs 28,5 CPU-s · node scripts/diag-altlasten.cjs --selftest 20,5 CPU-s · node scripts/diag-phyto-tree.cjs 16,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 38,3 CPU-s · svchost.exe 26,3 CPU-s · SearchIndexer.exe 3,0 CPU-s",
+   "zeit": "2026-11-27T13:26:34.664Z",
    "abdruck": "67957095b356",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
+  }
+ },
+ "konsumTafel": {
+  "ka0ca1bf726ff": "jVVdc5swEPwvfmxKxKcBzeRBDpkm6bh1+g9O4gTEGBgJQsed/vcOGLCBPPSeGGZPu7e3gj+bCsQRErx/12WxoZsvm68bDR9oaFQfqO7f9YZuQmHZ6FB2KcIY+9bBhMqqWpM84wR4AekJjUbVmOX3om+TWzA9Tkn7xJIDIZKcSdSyqR7Zw8PymJxjXBo1SBwPMdHxAqRLYKMT4GhAI3viAey5IW4tSvoKIraPyFStYOzQkvYQPC8O41DEc+WWFcLWp6x9YYy9LVXGGWBt5FmhR14r9kNp0ivXftWjoDXOgGmOamjCwLJcPorddZZ0Ni0aZd5oPSMLnNizA0pIuMQmqDOR1kalSo7FAOeh7VtAd+3K7aRqDHmrCDiHgC+9TgGLBNVMg+kI2Rn9O1geeoQTKjAKSAdoaDq+za/eEEKe11ryXnhPMQoPXZvH5qyxW+rF4JjN6tC/TUaUnGImJkiyjpsWaaZOc7uki7bpLD3QKcSojGOp6wnpoO+a/HIrXiJy0RHslp3Xwcb9AUBwO1dA2PPKR13KugWFRlI1Y2Bc9HyPsmSVLl3D6TTJcgJYD1B3Ib+VYYfS81xKyN1g6cqey5UwzpjlOGVW+E5IHyN3Cf5QcDKAJyqTclwg94QMPwtqi3lt8LKsR82W7zsOJQ4pbpf9o2WPjO1v9hzlv9w6f717mq//O3v9jKFU9SicA3dcl8o2CggJ5BKdqdpoQaTXOWPg9tLEM6ocE5zZKC0L7Jj2n5dJpTs+3M3Ce15t+ZxhZ3ChGz0yC3C5d0nHkOKXeXJbVEcOxXFoENYWhE0ZixK2Z4cbV34y9l7Jlv13ve1YT1ShIJUqZdZ9GUkKjU4hr6+/iL//AA==",
+  "k84df1009912b": "bVVdb6MwEPwvebweNZ/FWOqDKZEaXXuX/oS1WQMNgciGUOV0//0ECUmA+pUZz+zsrvm7OoDcQYaPn6auVmz1Y/VzZeCIlkF9RP34aVZsFUnHRY/xD94fwjl/6WFSF4fGkLIQBEQF+R6tVjdYlI9yoKknsAPBSLfm2ZYQRU4k6Z6f59RSYFpbDSgciTZ6AUU2B7YmA4EWtGoQu4ADP8Inh5Hh0IS/J+R6vijn2450W/o6u0xAlU7dOk4ETyHj3eaF84+5y7QAbKyyqMyo66RhpGx21ereFxwNnXUCzEvUFxJSx/HFaDbu4+yjmRFV2RozEaNeGriUERLNsRmaQuaNddC1wOoCF5EbOsDiZdrZobXUvSMQAqiYZ50DVhnqiQfbk+octBrsG3er+oBjPhfZwR41WBXkF2pke6ErblkRQl6X3sqhkEFyLCTyXZHaE2LfZHLsA0/55GyHj9mIUt34QV4hGV+IGpkXej+NT/no2h57W1o0OaSorV1tmivaw9C3BRsENgk5e6HxnHkrbuwpAND72ijhr3ShWKumA41WdmjHIfIxCAPG+WYBbmC/v9ryKHiML876G1aVTqy5kQoCnxHycF6mZRDn1bFOWJR4nW0ZetF8ko4a9haITBdKjU0VgVTRd8PcYdlYoq6bsQYnDD2vj6i6H4DfQ2s3dzUl2YfflHG3npa6WYzmoFDrZjQtQHi+z1SWUEKomqML3VgdyPxWYwrCZeRr0acT6hIznMSoHAfclJHuvDDk1D9H4eW5UA+ToT4tbyywD7gyrRnVJfgiYN+0pEO9E1DtLkDpPIF02RvnPH7n21sgccbXL1m/GuRIyTSr2BtW5BdPztCO8z8J4RehA0py0LUq+peT5NCaHMrm9tv49x8="
+ },
+ "ungemessen": {
   "profiband.K4#2": {
    "gruen": false,
-   "zahl": "Last: Referenz f 1,495 (Faden 1,495 · alle Kerne 1,35; vor 103/288,7 ms, nach 124,8/350,7 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: find.exe micha/AnazhRealm-pm-kand Temp/claude -maxdepth 7 -type d -name sitzung-20261127-1 18,7 CPU-s · bash.exe scratchpad/wache-0331.sh 7,9 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 14,8 CPU-s · svchost.exe 13,5 CPU-s · SearchIndexer.exe 1,6 CPU-s — unscharf unter Last: Gehen Frame max ms roh 117,1, entlastet ≥ 58,55 (÷ 2, Karte), Schwelle ≤ 100 · Fahrt Frame max ms roh 175,3, entlastet ≥ 87,67 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 123 Bilder · max 117.1 ms · 78.86 % > 33 ms · Fahrt 85 Bilder · max 175.35 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 117.1), 78.86 % > 33 ms | Fahrt: )",
+   "zahl": "Last: Referenz f 1,521 (Faden 1,521 · alle Kerne 1,251; vor 127/325 ms, nach 120,6/304,5 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node scripts/diag-studio-uebergabe.cjs 28,5 CPU-s · node scripts/diag-altlasten.cjs --selftest 20,5 CPU-s · node scripts/diag-phyto-tree.cjs 16,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 38,3 CPU-s · svchost.exe 26,3 CPU-s · SearchIndexer.exe 3,0 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 125,7, entlastet ≥ 62,83 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 62 Bilder · max 83.58 ms · 75.81 % > 33 ms · Fahrt 38 Bilder · max 125.65 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 75.81 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 125.65), )",
    "exit": 0,
-   "minuten": 0.5,
-   "grund": "Last: Referenz f 1,495 (Faden 1,495 · alle Kerne 1,35; vor 103/288,7 ms, nach 124,8/350,7 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: find.exe micha/AnazhRealm-pm-kand Temp/claude -maxdepth 7 -type d -name sitzung-20261127-1 18,7 CPU-s · bash.exe scratchpad/wache-0331.sh 7,9 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 14,8 CPU-s · svchost.exe 13,5 CPU-s · SearchIndexer.exe 1,6 CPU-s — unscharf unter Last: Gehen Frame max ms roh 117,1, entlastet ≥ 58,55 (÷ 2, Karte), Schwelle ≤ 100 · Fahrt Frame max ms roh 175,3, entlastet ≥ 87,67 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 123 Bilder · max 117.1 ms · 78.86 % > 33 ms · Fahrt 85 Bilder · max 175.35 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 117.1), 78.86 % > 33 ms | Fahrt: )",
+   "minuten": 0.93,
+   "grund": "Last: Referenz f 1,521 (Faden 1,521 · alle Kerne 1,251; vor 127/325 ms, nach 120,6/304,5 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node scripts/diag-studio-uebergabe.cjs 28,5 CPU-s · node scripts/diag-altlasten.cjs --selftest 20,5 CPU-s · node scripts/diag-phyto-tree.cjs 16,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 38,3 CPU-s · svchost.exe 26,3 CPU-s · SearchIndexer.exe 3,0 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 125,7, entlastet ≥ 62,83 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 62 Bilder · max 83.58 ms · 75.81 % > 33 ms · Fahrt 38 Bilder · max 125.65 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 75.81 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 125.65), )",
    "mass": [
     {
      "wort": "Gehen Frame max ms",
-     "wert": 117.1,
+     "wert": 83.58,
      "soll": 100
     },
     {
      "wort": "Fahrt Frame max ms",
-     "wert": 175.35,
+     "wert": 125.65,
      "soll": 100
     }
    ],
    "gpu": "amd/rdna-3",
-   "konsum": "k7312c1ab654f",
+   "konsum": "k84df1009912b",
    "konsumN": 29,
    "konsumSeite": false,
    "konsumGanz": {
     "gelesen": 2
    },
    "konsumBoot": "ka0ca1bf726ff",
-   "s": 29.9,
+   "s": 54.7,
    "fremd": {
-    "s": 32.2,
-    "takte": 13,
-    "fremdS": 74.95,
-    "kerne": 2.325,
-    "fensterKerne": 2.894,
+    "s": 61.4,
+    "takte": 23,
+    "fremdS": 188.08,
+    "kerne": 3.062,
+    "fensterKerne": 4.034,
     "namen": [
      [
-      "find.exe micha/AnazhRealm-pm-kand Temp/claude -maxdepth 7 -type d -name sitzung-20261127-1",
-      18.66
+      "node scripts/diag-studio-uebergabe.cjs",
+      28.52
      ],
      [
-      "bash.exe scratchpad/wache-0331.sh",
-      7.92
+      "node scripts/diag-altlasten.cjs --selftest",
+      20.52
      ],
      [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
-      4.53
+      "node scripts/diag-phyto-tree.cjs",
+      16.52
      ]
     ],
-    "dienerS": 29.53,
+    "dienerS": 51.05,
     "diener": [
      [
       "dwm.exe",
-      11.28
+      22.39
      ],
      [
       "System",
-      9.42
+      15.72
      ]
     ],
-    "geraetS": 29.89,
+    "geraetS": 68.28,
     "geraet": [
      [
       "MsMpEng.exe",
-      14.75
+      38.25
      ],
      [
       "svchost.exe",
-      13.47
+      26.33
      ],
      [
       "SearchIndexer.exe",
-      1.56
+      2.97
      ]
     ],
-    "eigenS": 89.59,
+    "eigenS": 303.28,
     "rechnerKerne": 24,
     "spannen": {
-     "vor": 1.958,
-     "nach": 2.701,
-     "station": 3.643
+     "vor": 2.464,
+     "nach": 2.177,
+     "station": 5.779
     }
    },
    "referenz": {
     "vor": {
-     "ein": 103,
-     "alle": 288.7,
+     "ein": 127,
+     "alle": 325,
      "cpuEin": 109,
      "tor": {
       "ruhig": true,
-      "kerne": 4.36,
+      "kerne": 3.48,
       "s": 0,
       "soll": 6,
       "reihe": [
-       3.83,
-       4.47,
-       2.58,
-       2.9,
-       6,
-       4.07
+       0.66,
+       1.64,
+       5.62,
+       7.22,
+       2.06,
+       0.87
       ]
      },
      "spanne": [
-      1795785200513,
-      1795785201059
+      1795785994668,
+      1795785995324
      ]
     },
     "nach": {
-     "ein": 124.8,
-     "alle": 350.7,
+     "ein": 120.6,
+     "alle": 304.5,
      "cpuEin": 125,
      "tor": {
       "ruhig": true,
-      "kerne": 3.62,
+      "kerne": 4.2,
       "s": 0,
       "soll": 6,
       "reihe": [
-       1.8,
-       2.11,
-       4.24,
-       3.95,
-       2.58,
-       4.35
+       2.98,
+       4.5,
+       5.19,
+       3.65,
+       3.34,
+       5.65
       ]
      },
      "spanne": [
-      1795785231046,
-      1795785231702
+      1795786050914,
+      1795786051504
      ]
     },
     "ruhe": {
      "ein": 83.5,
      "alle": 259.8,
-     "n": 1194,
+     "n": 1192,
      "von": "2026-11-16"
     },
-    "f": 1.495,
-    "fEin": 1.495,
-    "fAlle": 1.35,
-    "verdraengt": 1,
+    "f": 1.521,
+    "fEin": 1.521,
+    "fAlle": 1.251,
+    "verdraengt": 1.019,
     "schwankt": false,
     "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
     "umfeld": "sitzung"
    },
    "ungemessen": true,
-   "wiederholt": "Last: Referenz f 1,427 (Faden 1,304 · alle Kerne 1,427; vor 108,9/370,7 ms, nach 106,4/296,3 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 12,4 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 8,2 CPU-s · find.exe micha/AnazhRealm-pm-kand Temp/claude -maxd",
-   "zeit": "2026-11-27T13:12:26.434Z",
+   "zeit": "2026-11-27T13:26:34.664Z",
    "abdruck": "464abdde1514",
    "port": 7804,
    "bahn": "sitzung",
