@@ -90,3 +90,12 @@ ZWISCHENSTAND. Karte 2 gebucht 155 von 1 718.
   nimmt den Betreff an (vier Tore, dazu gate:webgl-probe).
 
 ZWISCHENSTAND. Karte 2 gebucht 156 von 1 718.
+
+## 28.11. 00:05 UTC — Wartezimmer: Vorprüf-Kopf a7282983 (auf main b3740dd5)
+- GPU-Probe omen-gtx1060 GRÜN in 1 946 s: pruefbuehne-licht 65 s · weltbild-frost:echt 181 s · studio-begehen 264 s · tag-achse:echt
+  132 s · webgl-probe 62 s — das lokale Rot der drei Tore war swiftshader dieses Containers (an main gleich), nicht der Schnitt.
+- `git merge-tree` gegen den neuen main 23b593ac und gegen z811/z812 (frist-puls-1, kunst-am-leib-4, sprache-dialekt-2b,
+  wurf-mit-luft-3): ohne Konflikt. Der Kopf fasst weder check.yml noch die Zeit-Tafel an.
+- Offen beim Namen: 10⁴ (1 664 von 9 310 nach 60 s), der Export je Kachel im Werk-Faden; die Station zählt EINE Kachel.
+
+ZWISCHENSTAND. Karte 2 gebucht 156 von 1 718.
