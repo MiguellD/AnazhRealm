@@ -2259,6 +2259,18 @@ module.exports = {
     // DIE DORF-PROBEN (`startDorf`): ihr Start-Dorf bleibt in der Welt der Seite — sie laufen nach allen anderen, auch nach den
     // Lebens-Proben und den Proben der Städte (die Reihe des Laufs ist die Reihe von PROBEN, je Teil gefiltert)
     PROBEN: ["werkort", "mengebild", "schreck", "seuche", "zielplan", "bewohner", "begegnung"],
+    // DIE STADT DES MESSORTS (`stadtAm`) bleibt in der Welt der Seite wie das Start-Dorf: stadt und stadt-voll tragen denselben
+    // Samen 7, 174 m auseinander — die kleine stünde im Grundriss der vollen (ihr Wege-Netz zerfiel in 30 Teile, die Seite hing
+    // 900 s nativ). Wechselt der Messort von einem Lauf zum nächsten, fährt der Lauf in einer frischen Welt; `--ort` setzt den
+    // Messort der Proben mit „stadt"
+    STADT_ORT: {
+        werkort: "stadt-voll",
+        mengebild: "stadt-voll",
+        schreck: "stadt-voll",
+        seuche: "stadt-voll",
+        zielplan: "stadt",
+        bewohner: "stadt",
+    },
     // die Probe mit EINEM Lauf im Selbsttest: alle ihre Täter in ihm, das Urteil je Täter an seiner Sicht (`sicht`)
     EIN_LAUF: ["bewohner", "begegnung"],
     TAETER: {

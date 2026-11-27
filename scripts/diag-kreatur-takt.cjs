@@ -11,7 +11,7 @@
 //   --teil=k/n  Teil k: die längste Probe (DAUER_S) zuerst in den leichtesten Teil, jede in GENAU einem
 "use strict";
 const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullWelt, urteilEnde, argOpt: opt, weltTor, path, SELBSTTEST, jsonLesen } = require("./lib/welt-boot.cjs"); // prettier-ignore
-const { KREATUR_PROBEN_SRC, PROBEN, TAETER, EIN_LAUF, urteil } = require("./lib/kreatur-proben.cjs");
+const { KREATUR_PROBEN_SRC, PROBEN, TAETER, EIN_LAUF, STADT_ORT, urteil } = require("./lib/kreatur-proben.cjs");
 
 const PORT = Number(process.env.KREATUR_TAKT_PORT || 4478);
 const argv = process.argv.slice(2);
@@ -141,8 +141,21 @@ async function headless(laeufe) {
     try {
         await bereit();
         await einschwingen();
+        // der Messort der Stadt (`STADT_ORT`, „stadt" folgt `--ort`): wechselt er, fährt der Lauf in einer frischen Welt —
+        // die Stadt des vorigen bleibt sonst stehen (dieselbe Platte, die der erste Lauf las)
+        let stadt = null;
         // ein Täter mit Teilen liest die Teile seines Grund-Laufs (er lief vor ihm auf derselben Seite)
         for (const l of laeufe) {
+            const o = STADT_ORT[l.proben[0]];
+            const ort = o === "stadt" ? l.ort || o : o;
+            if (ort && stadt && ort !== stadt)
+                await zeit(l.proben[0], async () => {
+                    await page.evaluate(() => localStorage.clear());
+                    await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
+                    await bereit();
+                    await einschwingen();
+                });
+            stadt = ort || stadt;
             const grundTeile = l.grundVon != null ? aus[l.grundVon]?.[l.proben[0]]?.__teile : undefined;
             aus.push(await zeit(l.proben[0], () => lauf(grundTeile ? { ...l, grundTeile } : l)));
         }

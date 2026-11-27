@@ -3980,6 +3980,11 @@ async function kreaturProben(r, T, opts) {
     // Anker (stadt 30 Häuser, sonst 300), der Spieler am Rand ihres Platzes (die volle Stadt: an ihrem Ursprung am Markt), bis
     // jeder Bewohner seinen Leib trägt, in der stehenden Welt. Leser: die Proben bewohner (`stadtTag`) und zielplan.
     const stadtAm = async (ort, wo) => {
+        // die Stadt eines anderen Messorts steht in dieser Welt (`STADT_ORT`: der Lauf wechselt die Welt mit dem Messort) — ROT
+        // beim Namen, nie eine zweite Stadt in ihrem Grundriss
+        if (window.__stadtVon && window.__stadtVon !== ort)
+            return { fehler: `${wo}: die Stadt von ${window.__stadtVon} steht in dieser Welt — ${ort} lief ohne frische Welt` };
+        window.__stadtVon = ort;
         const voll = ort !== "stadt";
         const orte = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.filter((m) => m.gruendung);
         const o = orte.find((m) => m.id === ort);
@@ -4916,5 +4921,6 @@ module.exports = {
     TAETER: Object.assign(TAETER, LEBEN.TAETER, MENSCH.TAETER, { "zielplan@stadt-voll": LEBEN.TAETER.zielplan }),
     // die Probe mit EINEM Lauf im Selbsttest: alle ihre Täter in ihm, das Urteil je Täter an seiner Sicht (`sicht`)
     EIN_LAUF: [...MENSCH.EIN_LAUF, ...LEBEN.EIN_LAUF],
+    STADT_ORT: MENSCH.STADT_ORT,
     urteil,
 };
