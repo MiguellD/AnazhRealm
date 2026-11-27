@@ -1,5 +1,14 @@
 # Stand-Blatt wetter-lagen (Sprossen `karte2.planet.wetter.lagen#2`, `karte2.planet.wetter.extreme#1`) — oberster Abschnitt = jüngster Stand
 
+## 27.11. — Kopf 3 übernommen; die Station extreme#1 S1 gegen main 948f68ee gefahren
+
+- Kopf 3 31678001 (Rang statt Hand-Median, Zeile 830) ist in `wetter-lagen` gemergt (4d933e1), Basis jeder Folge-Arbeit. Gelernt: wer `scripts/diag-*.cjs` anfasst, fährt die Stall-Akte `npm run gate:welt-boot` lokal — am gemergten Baum Exit 0.
+- S1, FLUT_AN wortgleich aus `k2-planet.js` (punkte-maschine), 20 Saaten × 30 Jahre + die Welt = 601 Adressen, in der echten Welt (Null-Renderer, `_wetterAmOrt` → `pegelLauf` → `pegelTafel` → `pegelHub`):
+    - main 948f68ee (ohne `WETTER_LAGE`): regenMaxMm **17,6 mm**, Median 13,8 mm, stark 0, ueberAueM ungemessen, bordvoll 601/601, hubMax 0,2 m = Krone 0,2 m.
+    - main 948f68ee + Kopf 3: regenMaxMm **117,8 mm** (Soll ≥ 100 ✓), Median 43,8 mm, stark 4 (s0/j23 100,5 · s0/j29 100,5 · s6/j16 117,8 · s8/j5 100,5 mm, je 20 Takte), ueberAueM **0 m** (Soll > 0 ✗), bordvoll 601/601, hubMax 0,2 m = Krone.
+- Das Spiel liest dieselbe Zahl wie der Kern (117,8 / 43,8 / 4 — byte-gleich zur Rechnung am Kern). Mein Teil trägt: der Regen kommt ungekappt beim Pegel an.
+- Der Täter von ueberAueM ist weiter `gelaende-core.js` `pegelHubVon` `Math.min(krone, h)` im main 948f68ee (die Bahn pegel-nach-brand schnitt den Brand, nicht die Aue — ihr Commit nennt „offen die Aue über der Krone"). Befund für sie: auch das gewöhnliche Jahr (13,8 mm) steht schon an der Krone — alle 601 Adressen bordvoll; über der Krone trennt erst der ungedeckelte Hub das Jahrhundert vom gewöhnlichen Jahr.
+
 ## 27.11. — Abgabe Kopf 2: `wetter-lagen-kopf2` a9385c1 auf main bed6256c
 
 - EIN glatter Commit (Kopf 1 + Heilung + Kopf 2) auf dem `origin/main` des Moments bed6256c, Zweig `wetter-lagen-kopf2` (kein force); `wetter-lagen` trägt denselben Baum (Merge ed2a1d0, byte-Diff zum Kopf leer).
