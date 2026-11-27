@@ -76,6 +76,27 @@ Der Vorprüf-Kopf trägt den glatten Baum auf main 7e73426e (erster Elter, `git 
 Elter ist die Spitze meiner WIP-Kette 457526ae, weil der Auftrag „nie force“ sagt: der Schub ist ein Fast-Forward, kein Stand wird
 überschrieben. Wer einen Elter braucht, nimmt den Baum (`git commit-tree <kopf>^{tree} -p 7e73426e`), er ist byte-gleich.
 
+## Post 27.11. 16:54 (buendel-abend 29015b4e, Lauf 46017245179) — abgearbeitet für Kopf 2
+
+- **Stall-Akte** („eigene Ränge neben rang: Träger diag-settlement.cjs“): R13 las das p95 der KL von Hand
+  (`kls[Math.floor(kls.length * 0.95)]`). Jetzt liest es das geteilte `rang` aus `scripts/lib/welt-boot.cjs` (`rang(kls, 0.95)`,
+  `kls.sort(aufsteigend)`); die eigene Kopie fällt. Die Zahl ändert sich nicht, denn für q < 1 ist die Definition dieselbe. Lokal
+  `npm run gate:welt-boot` GRÜN (79 s), die Zeile lautet „✅ eigene Ränge neben rang: Träger keiner statt FREMD keiner · gepflanzt 2/2 gefasst“.
+  Über alle `scripts/**/*.cjs` gefahren, trägt außer welt-boot keine Datei das Muster.
+- **mengebild ist nicht meins.** Die Probe gibt es nur im Zweig `werk-am-ort-2` (e0f43e13). Ich habe sie dort zweimal gefahren
+  (`--proben mengebild`), unter gleichen Bedingungen:
+  - werk-am-ort-2 allein: **Menschen im Bild 127**, Gehende 90, Bewohner 1 356 · GRÜN;
+  - werk-am-ort-2 mit meinem Diff (7e73426e..a5d9417): **Menschen im Bild 127**, Gehende 90, Bewohner 1 356 · GRÜN, byte-gleich.
+
+  Mein Stamm-Schnitt ändert nur den Namen und die Rede (`spracheVon(region, plan.mundart)`, gecacht), nie den Ort oder den Takt eines
+  Menschen. Die 24 im Bild des Bündels kommen aus seiner Mischung, nicht aus sprache-dialekt.
+- **Kreatur-Linse am Kopf (auf main bed6256c), GANZ:**
+  - `--teil=1/3` GRÜN (54/54 Täter, Grund 9/9).
+  - `--teil=3/3` GRÜN (48/48, Grund 12/12).
+  - `--teil=2/3`: Täter 56/56, Grund 14/15. Das eine Rot ist die Grund-Probe **mahl**: „das Rudel frisst nicht: 19.1 kg in seine Mägen
+    (50.8 kg) … (Soll ≥ 40 %)“, knapp unter 20,3 kg. Allein gefahren (`--proben mahl`) steht mahl GRÜN, am main bed6256c wie an meinem
+    Kopf. Mein Diff berührt keine Kreatur; mahl ist die Bahn mahl-uhr (buendel-a). Genannt, nicht geheilt.
+
 ## Offen (mit Adresse)
 
 - Messort stadt-voll, Station nicht gefahren: GPU (der Vor-Richter fährt nur an der GTX 1060).
