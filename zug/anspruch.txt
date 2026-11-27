@@ -131,3 +131,5 @@ w28-krieg-lage karte2.mensch.macht.krieg#1
 w28-nacht-boden-licht karte2.erleben.bild.nacht#1
 # z796 (main 2a2e8a54, 27.11. 02:04): Wanderung: Vor-Richter GTX 1060 am c6038905 mit Stations-Kandidat GRÜN (494,061 m ≥ 100 m, 1 Spieltag) — Kandidat k2-leben 582ad140 noch zu setzen
 w28-wander-spieltag karte2.leben.tiere.wanderung#2
+# z797 (main 1336dcb8, 27.11. 02:23): Sprache: Namen und Sätze aus den Saaten der Kulturen
+w28-sprache-saaten-2 karte2.mensch.kultur.sprache#2
