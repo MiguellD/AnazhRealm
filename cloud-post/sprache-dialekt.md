@@ -168,6 +168,7 @@ Gemessen, node, 24–60 Sätze je Familie:
 Linse gate:klang-zensus (Sp):
 - %V ≤ 0,70 je Familie und der Gipfel je Frikativ ±15 % zu Jongman.
 - Selbsttest S29 „die Rede ohne An- und Abglied“, also der Stand am main, ist **ROT** mit 7 Befunden: 6 Familien mit %V 1, dazu „kein Frikativ“.
+- Ganzer Zensus auf der Seite (`--selftest`, 453 s): ✅ S1–S23, S28, S29 · Markt 259 Reden, 0 ohne Silben, L_Aeq 65,35 dB(A). Der Mk-Mutant S29 löschte noch `kerne` und blieb unbemerkt (rc=1). Er trifft jetzt die Fracht `rede`, die Rede wird an ihrem Einsatz erkannt: `--markt --selftest` ✅ S24–S27, S29 („97 von 97 Reden ohne die Silben eines Satzes“), S30, rc=0 (4e782ea).
 
 Ehrlich offen:
 - Vier Familien liegen über dem Band ≤ 0,54: mediterran 0,654, fernost 0,675, alpin 0,544 und nordisch 0,541 (die letzten zwei knapp). Die Wand prüft ≤ 0,70. Klatts Dauern sind Englisch, ein Sprecher. Das Japanische trägt kurze Kurzvokale, das Italienische lange Konsonanten. Messname `Sp %V außer Band`.
