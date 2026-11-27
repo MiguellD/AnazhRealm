@@ -1150,6 +1150,7 @@ async function kreaturProben(r, T, opts) {
             Object.assign(t, { fs: 0, fb: 0, fMin: 1, phi: [0, 0], lauf: [], weg: glieder.map(() => 0), id: [0, 0] });
             Object.assign(t, { enge: 0, engst: [Infinity], leine: [0, 0, 0] });
             const [alt, beginn] = [glieder.map((c) => c.position.clone()), []];
+            t.weg0 = glieder.map((c) => c.position.clone());
             // DAS WANDERN DAUERT 120 s (z353): ohne den Zug des Verbands (Täter herde-zerfall) trieb die Herde am Ort des
             // dichteren Walds (heim2-w20-wald-kosten) in 50 s nur auf 0,916 (Soll ≥ 0,9) auseinander, an main 0,791 — die Zahl der
             // Wanderung hing am Ort, nicht am Gesetz; der Verband hält, solange er wandert, also urteilt die Probe über 10–120 s
@@ -1216,6 +1217,14 @@ async function kreaturProben(r, T, opts) {
             // wie weit die Anker der Glieder auseinander liegen (das Revier des Wurfs ist EINES)
             const an = glieder.map((c) => c.userData.wanderAnchor).filter(Boolean);
             t.anker = rund(Math.max(0, ...an.flatMap((A, i) => an.slice(0, i).map((o) => ab(A, o)))), 1);
+            // je Glied am Ende: Zustand, Auftrag, Pixel-Horizont (`_kzFern`), Abstand zum Anker und zum Wurf-Ort
+            t.glied = glieder.map((c, i) => [
+                c.userData._motionZustand || "–",
+                c.userData.task ? c.userData.task.name : "–",
+                c.userData._kzFern ?? null,
+                c.userData.wanderAnchor ? rund(ab(c.position, c.userData.wanderAnchor), 1) : null,
+                rund(ab(c.position, t.weg0[i]), 1),
+            ]);
             return t;
         };
         // je Lauf ein Teil (die Tafel TAETER nennt, welche ein Täter trägt — der fremde Verband, 36 000 der 48 000 Takte, nur die ID)
@@ -1234,6 +1243,7 @@ async function kreaturProben(r, T, opts) {
             engst: t.engst,
             leine: t.leine[1] ? { jenseits: rund(t.leine[0] / t.leine[1], 3), max: rund(t.leine[2], 2) } : null,
             anker: t.anker,
+            glied: t.glied,
         });
         // DER GRUND EINES KOMMENDEN ORTS (tiere.K1#2, Herde am Hang: das Dorf erwachte nach dem Wurf, sein Erdbau trug den Hang
         // unter zwei der fünf Leiber ab): der erste Nachbar des Start-Dorfs im Wegenetz (`_wegenetzNachbarn`, ein Ort des Gesetzes
@@ -1254,6 +1264,7 @@ async function kreaturProben(r, T, opts) {
         return {
             dorf,
             heim: [rund(heim.x, 1), rund(heim.z, 1)],
+            p0: [rund(P0.x, 1), rund(P0.z, 1)],
             // die Landmarken bis 80 m um das Heim (`_landmarkenDesChunks`): Fels, an dem ein Verband stehen bleibt
             marken: (() => {
                 const sp = r._voxelChunkConfig(0).span;
