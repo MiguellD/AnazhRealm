@@ -108,6 +108,25 @@ function reifenVerdict(t) {
     return out;
 }
 
+// ── B-k DIE SPUR IM BODEN (fahrzeug-medium-2, rinne_sichtbar; Karte: „Spurrinne nach 10 Durchfahrten sichtbar“): der gestellte
+// Wagen fährt zehnmal dieselbe Zeile weichen Bodens — durch den Schreib-Akt der Welt (`_fahrRad` → `_tritt`, das EINE Feld der
+// Tritte → die Wege-Karte), gelesen von den Lesern der Welt (`_pfadFeldAt`, den Wiese und Streu dünnen, und der Stoff unter dem
+// Fuß, `_kontaktStoffAt`). Nach EINER Durchfahrt malt die Spur nichts (ein Weg entsteht erst durch Wiederholung), nach zehn ist
+// jede Zelle der Spur Erde, und die Rinne ist tiefer als nach der ersten. Am Kopf vor fahrzeug-medium-2 trat das Rad wie ein Fuß:
+// zehn Durchfahrten trugen der Zelle 20 Tritte, der Pfad beginnt bei 27,7 — die Spur blieb unsichtbar.
+function spurVerdict(s) {
+    if (!s || !(s.zellen > 0)) return [`die Probe fand keine Zeile weichen Bodens für die Spur (${s && s.grund})`];
+    const out = [];
+    if (s.gemalt10 < s.zellen)
+        out.push(
+            `die Spur von 10 Durchfahrten bleibt unsichtbar (gemalt ${s.gemalt10} von ${s.zellen} Zellen, je Zelle ${s.tritte10} Tritte, der Pfad ab 27,7) — das Rad tritt wie ein Fuß (\`_fahrRad\` → \`_tritt\`, \`TRITT.rad\`), der Pfad erreicht die Wege-Karte vor ihrem ersten Takt (\`_tritt\` → \`_wegeKarteEnsure\`, zentriert)`
+        );
+    if (s.gemalt1 > 0) out.push(`eine Durchfahrt malt schon den Pfad (${s.gemalt1} von ${s.zellen} Zellen) — ein Weg entsteht erst durch Wiederholung`);
+    if (s.erde10 < s.zellen) out.push(`der Leib hört auf der Spur keine Erde (\`_kontaktStoffAt\`: ${s.erde10} von ${s.zellen} Zellen)`);
+    if (!(s.tief10 > s.tief1)) out.push(`die Rinne wächst nicht mit den Durchfahrten (${s.tief1} → ${s.tief10} cm, \`_trittDurchfahrten\`)`);
+    return out;
+}
+
 // ── A6 DIE REIBELLIPSE JE ACHSE (fahrzeug.K1, w28-reibellipse), am Kern je Rezept. Im Bogen (20 m/s, Einschlag 0,25, 1,5 s ohne
 // Gas) voll gebremst und in der Kehre unter Handbremse (15 m/s, Einschlag 0,6, 1 s) tragen die Reifen höchstens μ·g (der
 // Rollwiderstand liegt außerhalb des Reifens: abgezogen). DIE HANDBREMSE sperrt nur das Heck: ihr Zug über dem Ausrollen
@@ -153,6 +172,167 @@ function ellipseVerdict(m) {
         else if (!(e.hand >= ELLIPSE.hand[0] && e.hand <= ELLIPSE.hand[1])) out.push(`${pid} Handbremse ${e.hand} μ·g·b/L`);
         else if (!(Math.abs(e.weg / w - 1) <= ELLIPSE.weg)) out.push(`${pid} weg ${e.weg} m gegen ${w}`);
     }
+    return out;
+}
+
+// ── A10 DER FLUG (fahrzeug-medium-2, Karte 2 mensch.fahrzeug.medium): ein Rad verliert seinen Boden erst, wenn die Ebene
+// weiter unter die Fallkurve des Aufbaus faellt als sein Federweg (`auf.hub`) und der Reifen (luftEps) — am Kern je Gattung, die
+// 100 km/h faehrt. Eine Bodenwelle von 3 cm auf 4 m bei 100 km/h (die Ebene beschleunigt bis 5,8 g, das Rad federt sie aus) hebt
+// keinen Wagen ab; die Kuppe einer Rampe von 25 % bei 90 km/h wirft jeden in die Luft (die Steig-Rate 6,25 m/s traegt ihn ueber
+// den Federweg). Am Kopf von main verlor das Rad den Griff 2 cm unter der Fallkurve: ueber der Welle hingen GT · Supersport ·
+// Limousine · Kompakt · SUV · Transporter 84 · 100 · 82 · 98 · 81 · 80 von 180 Bildern in der Luft, und am Genesis-Ort flogen
+// 78 von 120 Bremsungen aus 100 km/h, 60 davon ohne Kuppe (nachher 18, keine ohne Kuppe: drei Saaten mit Rampen-Kuppe und
+// Kante, jede Gattung). DIE KANTE: der Federweg traegt das Rad nur, wo die Ebene der vier eine Ebene ist (fahrEbene `traegt`);
+// an einer Stufe von 6 m bei 15 m/s liegt der Bauch am Rand, die Raeder haengen darueber, und der Wagen fliegt, sobald der Spalt
+// den Reifen uebersteigt (Soll 0 Bilder am Boden auf einer Kante, die nicht traegt). Griff der Federweg auch dort, ritt der GT
+// 5 Bilder mit 40 Grad Bug-unten auf der Kante (je Gattung), und in der Welt (gate:fahr-leben S4) kroch er 330 Bilder an der Klippe.
+const FLUG = { v: 100 / 3.6, welle: [0.03, 4], rampe: [0.25, 20], vRampe: 25, kante: [6, 20], vKante: 15, bilder: 180 };
+function flugMessung(VC) {
+    const dt = 1 / 60;
+    const m = {};
+    const lauf = (G, boden, v) => {
+        const z = VC.fahrZustand(-10, 0, 0);
+        VC.fahrStand(z, G, boden, 0);
+        z.vlong = v;
+        z.speed = v;
+        let luft = 0,
+            griff = 0;
+        for (let i = 0; i < FLUG.bilder; i++) {
+            VC.fahrKraefte(z, { throttle: 0.4 }, G, dt);
+            VC.fahrStand(z, G, boden, dt);
+            if (z.luft === true) luft++;
+            const eb = VC.fahrEbene(G, boden, z.x, z.z, z.yaw, z.einsinken);
+            if (z.luft !== true && eb && !eb.traegt && z.y - eb.y > VC.FAHR.schritt.luftEps) griff++;
+        }
+        return { luft, griff };
+    };
+    const [A, lam] = FLUG.welle,
+        [s, l] = FLUG.rampe,
+        [k, kx] = FLUG.kante;
+    for (const pid of VC.GATTUNGEN || []) {
+        const P = { ...VC.DEFAULT_P, ...VC.presetPatch(pid) };
+        const drv = VC.exportDrive(P);
+        if (!(drv && drv.vmax >= FLUG.v)) continue;
+        const G = VC.fahrGesetz(drv);
+        const kante = lauf(G, (x) => (x < kx ? 0 : -k), FLUG.vKante);
+        m[pid] = {
+            hub: G.auf.hub,
+            welle: lauf(G, (x) => A * Math.sin((2 * Math.PI * x) / lam), FLUG.v).luft,
+            rampe: lauf(G, (x) => (x < 0 ? 0 : x < l ? s * x : s * l), FLUG.vRampe).luft,
+            kante: kante.griff,
+            kanteLuft: kante.luft,
+        };
+    }
+    return m;
+}
+function flugVerdict(m) {
+    const out = [];
+    const ids = Object.keys(m || {});
+    if (ids.length < GATTUNG.min) out.push(`${ids.length} Gattungen mit 100 km/h gemessen (Soll ≥ ${GATTUNG.min})`);
+    for (const [pid, f] of Object.entries(m || {})) {
+        if (!(f.welle === 0))
+            out.push(`${pid} hebt über der Welle ${FLUG.welle[0]} m / ${FLUG.welle[1]} m ab (${f.welle} von ${FLUG.bilder} Bildern in der Luft, Federweg ${f.hub.toFixed(3)} m)`);
+        if (!(f.rampe > 0)) out.push(`${pid} springt nicht über die Kuppe der Rampe ${FLUG.rampe[0] * 100} %`);
+        if (!(f.kante === 0))
+            out.push(`${pid} greift auf der Kante ${FLUG.kante[0]} m (${f.kante} Bilder am Boden, wo die Ebene nicht trägt — vehicle-core.js fahrStand: der Federweg gilt nur, wo die Ebene trägt)`);
+        if (!(f.kanteLuft > 0)) out.push(`${pid} fliegt nicht über die Kante ${FLUG.kante[0]} m (vakuös)`);
+    }
+    return out;
+}
+
+// ── A11 DIE KIPPGRENZE (mensch.fahrzeug.form#2, Karte 2: „Kippgrenze ± 15 % gegen statische Formel“): am Kern je Gattung und
+// ihr hoher Bauplan (Dach × 1,6, Bodenfreiheit × 3, Spur × 0,8 — die Hebel der Werkstatt). Die statische Formel (NHTSA Static
+// Stability Factor, 68 FR 59250): die innere Spur hebt ab bei a_quer = SSF · g, auf dem Kipptisch bei tan θ = SSF, SSF = Spur ÷ 2h.
+// Der Reifen trägt höchstens μ · g: wessen μ über dem SSF liegt, KIPPT (Kipptisch tan θ ÷ SSF und im Kreis a_quer vor dem Abheben
+// ÷ SSF · g im Band ± 15 %, er liegt am Ende auf der Seite); wessen μ darunter liegt, RUTSCHT und bleibt stehen. Am Kopf von main
+// kippte kein Bauplan: der Kern trug nur die Längs-Lastverlagerung, der Wank war eine Feder mit Anschlag 0,12 rad — 7 von 16
+// Bauplänen mit μ > SSF rutschten mit 0,76–1,0 g durch den Kreis und erst bei tan θ = μ vom Tisch.
+const KIPP = { band: 0.15, rand: 1.15, v: 20, bilder: 480, tisch: 0.025, stehen: 180, min: 3 };
+function kippMessung(VC) {
+    const dt = 1 / 60;
+    const m = {};
+    const kreis = (G) => {
+        const z = VC.fahrZustand(0, 0, 0),
+            boden = () => 0;
+        VC.fahrStand(z, G, boden, 0);
+        z.vlong = z.speed = KIPP.v;
+        let a = 0,
+            vh = 0;
+        for (let i = 0; i < KIPP.bilder; i++) {
+            const v = Math.hypot(z.vlong, z.vlat);
+            if (i === 60) vh = v;
+            VC.fahrKraefte(z, { steer: Math.min(1, i / 360), throttle: z.kipp ? 0 : Math.max(0, Math.min(1, (KIPP.v - v) * 0.5)) }, G, dt);
+            VC.fahrStand(z, G, boden, dt);
+            if (i > 30 && !z.kipp) a = Math.max(a, Math.abs(z.aLat || 0)); // die Querkraft der Reifen je Masse (Fy / m)
+        }
+        return { aQ: a / G.g, liegt: !!z.umgekippt, v: vh };
+    };
+    // der Kipptisch: tan θ in Stufen KIPP.tisch, dann die Grenze auf 1/64 Stufe halbiert
+    const neige = (G, t) => {
+        const z = VC.fahrZustand(0, 0, 0),
+            boden = (x, q) => -q * t;
+        VC.fahrStand(z, G, boden, 0);
+        const q0 = z.z;
+        for (let i = 0; i < KIPP.stehen; i++) {
+            VC.fahrKraefte(z, {}, G, dt);
+            VC.fahrStand(z, G, boden, dt);
+        }
+        return z.umgekippt ? "kippt" : Math.abs(z.z - q0) > 0.05 ? "rutscht" : null;
+    };
+    const tisch = (G) => {
+        for (let t = KIPP.tisch; t <= 2; t += KIPP.tisch) {
+            if (!neige(G, t)) continue;
+            let lo = t - KIPP.tisch,
+                hi = t;
+            for (let k = 0; k < 6; k++) {
+                const m = (lo + hi) / 2;
+                if (neige(G, m)) hi = m;
+                else lo = m;
+            }
+            return { tan: hi, kippt: neige(G, hi) === "kippt" };
+        }
+        return { tan: null, kippt: false };
+    };
+    for (const pid of VC.GATTUNGEN || []) {
+        const P = { ...VC.DEFAULT_P, ...VC.presetPatch(pid) };
+        for (const [name, ov] of [
+            [pid, {}],
+            [pid + "+hoch", { dach: P.dach * 1.6, fahrhoehe: P.fahrhoehe * 3, spur: P.spur * 0.8 }],
+        ]) {
+            const G = VC.fahrGesetz(VC.exportDrive({ ...P, ...ov }));
+            if (!G) continue;
+            const ssf = G.kipp ? G.kipp.ssf : G.auf.quer / G.cgH;
+            m[name] = { ssf, mu: G.maxGrip * G.grip, kreis: kreis(G), tisch: tisch(G) };
+        }
+    }
+    return m;
+}
+function kippVerdict(m) {
+    const out = [];
+    const e = Object.entries(m || {});
+    const kippen = e.filter(([, k]) => k.mu > k.ssf * KIPP.rand);
+    const rutschen = e.filter(([, k]) => k.mu * KIPP.rand < k.ssf);
+    if (kippen.length < KIPP.min) out.push(`${kippen.length} Baupläne mit μ über dem SSF gemessen (Soll ≥ ${KIPP.min})`);
+    if (rutschen.length < KIPP.min) out.push(`${rutschen.length} Baupläne mit μ unter dem SSF gemessen (Soll ≥ ${KIPP.min})`);
+    // der Kreis urteilt, wer die Probe-Geschwindigkeit hält (der Karren fährt 1,6 m/s: sein SSF liegt jenseits seines Kreises)
+    const imKreis = kippen.filter(([, k]) => !(k.kreis.v < KIPP.v * 0.8));
+    if (kippen.length >= KIPP.min && imKreis.length < KIPP.min) out.push(`${imKreis.length} Baupläne mit μ über dem SSF im Kreis gemessen (Soll ≥ ${KIPP.min})`);
+    const nie = kippen.filter(([, k]) => !k.tisch.kippt && !k.kreis.liegt);
+    if (nie.length)
+        out.push(
+            `${nie.length} von ${kippen.length} Bauplänen mit μ > SSF kippen nie (${nie.map(([p, k]) => `${p} SSF ${k.ssf.toFixed(2)} μ ${k.mu.toFixed(2)}: Kreis ${k.kreis.aQ.toFixed(2)} g, Tisch rutscht bei tan ${k.tisch.tan == null ? "—" : (+k.tisch.tan).toFixed(3)}`).join(" · ")} — vehicle-core.js fahrTakt: keine Quer-Lastverlagerung, der Aufbau dreht nie um die äußere Radlinie)`
+        );
+    for (const [p, k] of kippen) {
+        if (nie.some(([q]) => q === p)) continue;
+        const qT = k.tisch.kippt ? k.tisch.tan / k.ssf : null;
+        const qK = k.kreis.aQ / k.ssf;
+        if (!(qT != null && Math.abs(qT - 1) <= KIPP.band)) out.push(`${p} Kipptisch tan θ ÷ SSF ${qT == null ? "— (" + (k.tisch.tan == null ? "steht" : "rutscht bei tan " + k.tisch.tan) + ")" : qT.toFixed(2)} (Soll 1 ± ${KIPP.band})`);
+        if (k.kreis.v < KIPP.v * 0.8) continue;
+        if (!k.kreis.liegt) out.push(`${p} liegt im Kreis nicht auf der Seite (a_quer ${k.kreis.aQ.toFixed(2)} g gegen SSF ${k.ssf.toFixed(2)})`);
+        else if (!(Math.abs(qK - 1) <= KIPP.band)) out.push(`${p} Kreis a_quer vor dem Abheben ÷ SSF · g ${qK.toFixed(2)} (Soll 1 ± ${KIPP.band})`);
+    }
+    for (const [p, k] of rutschen)
+        if (k.tisch.kippt || k.kreis.liegt) out.push(`${p} kippt mit μ ${k.mu.toFixed(2)} unter dem SSF ${k.ssf.toFixed(2)} (${k.tisch.kippt ? "Tisch tan " + k.tisch.tan : "im Kreis"}) — er müsste rutschen`);
     return out;
 }
 
@@ -418,6 +598,9 @@ hauptLauf(async () => {
             [formVerdict, { masseQ: 1.8963, wattQ: 1 }, { wattQ: 1.8963 }, { masseQ: 1 }],
             [scheibeVerdict, { durch: 2, mit: 2, abw: 0, folgt: true }, { mit: 0 }, { abw: 0.0357 }, { folgt: false }, { durch: 0 }],
             [reifenVerdict, { blaetter: 2, rollt: 0, sehne: 0.11, aufstand: 0, dzMesh: 0.0127, dzGesetz: 0.0127 }, { rollt: 2 }, { sehne: 0 }, { aufstand: 0.0127 }, { dzMesh: 0 }, { blaetter: 0 }],
+            // B-k: gesund schweigt; die Spur des Kopfs vor fahrzeug-medium-2 (20 Tritte, 0 gemalt), eine Durchfahrt, die malt, eine
+            // Spur ohne Erde unter dem Fuß und eine Rinne, die nicht wächst, nennen je ihren Täter
+            [spurVerdict, { zellen: 16, gemalt1: 0, gemalt10: 16, erde10: 16, tritte10: 90, tief1: 0.6, tief10: 1.1 }, { gemalt10: 0 }, { gemalt1: 16 }, { erde10: 0 }, { tief10: 0.6 }, { zellen: 0 }],
         ])
             for (const b of [{}, ...brueche]) {
                 const v = V({ ...basis, ...b });
@@ -436,6 +619,46 @@ hauptLauf(async () => {
             const v = ellipseVerdict({ ...ellipse, ...b });
             check(`Selbst-Test ellipseVerdict ${JSON.stringify(b)}`, v.length === n, v.join(" · "));
         }
+        // A10: der Flug — gesund schweigt er; die Welle von main (GT 84 Bilder in der Luft), eine Rampe ohne Sprung, der Griff
+        // auf der Kante (der Federweg ohne `traegt`: GT 5 Bilder), eine Kante ohne Flug und eine Messung mit 3 Gattungen nennen je
+        // ihren Täter
+        const flugGesund = Object.fromEntries(["gt", "supersport", "limousine", "kompakt_fwd", "suv", "transporter"].map((p) => [p, { hub: 0.2, welle: 0, rampe: 60, kante: 0, kanteLuft: 90 }]));
+        for (const [b, n] of [
+            [{}, 0],
+            [{ gt: { hub: 0.204, welle: 84, rampe: 70, kante: 0, kanteLuft: 90 } }, 1],
+            [{ suv: { hub: 0.246, welle: 0, rampe: 0, kante: 0, kanteLuft: 90 } }, 1],
+            [{ gt: { hub: 0.204, welle: 0, rampe: 60, kante: 5, kanteLuft: 84 } }, 1],
+            [{ limousine: { hub: 0.204, welle: 0, rampe: 58, kante: 0, kanteLuft: 0 } }, 1],
+        ]) {
+            const v = flugVerdict({ ...flugGesund, ...b });
+            check(`Selbst-Test flugVerdict ${JSON.stringify(b)}`, v.length === n, v.join(" · "));
+        }
+        const flugDrei = flugVerdict({ gt: flugGesund.gt, suv: flugGesund.suv, limousine: flugGesund.limousine });
+        check("Selbst-Test flugVerdict: 3 Gattungen gemessen", flugDrei.length === 1, flugDrei.join(" · "));
+        // A11: die Kippgrenze — gesund schweigt sie; der Kern von main (kein Bauplan kippt), ein Tisch weit neben der Formel,
+        // ein Kreis ohne Liegen, ein rutschender Bauplan, der kippt, und eine Messung ohne hohe Baupläne nennen je ihren Täter
+        const kG = (ssf, mu, tan, liegt, aQ) => ({ ssf, mu, kreis: { aQ, liegt, v: 20 }, tisch: { tan, kippt: tan != null && liegt } });
+        const kippGesund = {
+            gt: { ...kG(1.75, 1, 1, false, 1.0), tisch: { tan: 1, kippt: false } },
+            suv: { ...kG(1.31, 1, 1, false, 1.0), tisch: { tan: 1, kippt: false } },
+            transporter: { ...kG(1.16, 0.8, 0.8, false, 0.8), tisch: { tan: 0.8, kippt: false } },
+            "gt+hoch": kG(0.8, 1, 0.85, true, 0.8),
+            "suv+hoch": kG(0.63, 1, 0.65, true, 0.63),
+            "transporter+hoch": kG(0.63, 1, 0.65, true, 0.62),
+        };
+        for (const [b, n] of [
+            [{}, 0],
+            [{ "gt+hoch": { ssf: 0.8, mu: 1, kreis: { aQ: 0.98, liegt: false }, tisch: { tan: 1, kippt: false } }, "suv+hoch": { ssf: 0.63, mu: 1, kreis: { aQ: 0.99, liegt: false }, tisch: { tan: 1, kippt: false } } }, 1],
+            [{ "gt+hoch": kG(0.8, 1, 0.6, true, 0.8) }, 1],
+            [{ "gt+hoch": { ...kG(0.8, 1, 0.85, true, 0.1), kreis: { aQ: 0.1, liegt: false, v: 1.6 } } }, 1],
+            [{ "suv+hoch": { ...kG(0.63, 1, 0.65, true, 0.63), kreis: { aQ: 0.99, liegt: false } } }, 1],
+            [{ suv: { ...kG(1.31, 1, 0.5, true, 0.5) } }, 1],
+        ]) {
+            const v = kippVerdict({ ...kippGesund, ...b });
+            check(`Selbst-Test kippVerdict ${JSON.stringify(b)}`, v.length === n, v.join(" · "));
+        }
+        const kippOhne = kippVerdict({ gt: kippGesund.gt, suv: kippGesund.suv, transporter: kippGesund.transporter });
+        check("Selbst-Test kippVerdict: keine hohen Baupläne", kippOhne.length === 1, kippOhne.join(" · "));
         // A7/B-h: die Mutante „feste Liste mit 3 Typen“ (die Tafel von main) heißt beim Namen, eine Stadt mit 3 Gattungen und ein
         // Kern mit 3 sind ROT, ein Wort-Katalog mit Kulturen (kein reines Rezept-Feld) schweigt
         const tafel = typTafeln(
@@ -614,6 +837,25 @@ hauptLauf(async () => {
         ellV.join(" · ") || Object.entries(ell).map(([p, e]) => `${p} ${e.bogen} μ·g Hand ${e.hand} ${e.weg} m`).join(" · ")
     );
 
+    const flug = flugMessung(VC);
+    const flV = flugVerdict(flug);
+    check(
+        `A10: der Flug — über der Welle ${FLUG.welle[0]} m / ${FLUG.welle[1]} m bei 100 km/h federt jedes Rad seinen Boden aus (0 Bilder in der Luft), über die Kuppe der Rampe ${FLUG.rampe[0] * 100} % springt jeder Wagen, an der Kante ${FLUG.kante[0]} m greift keiner (er fliegt)`,
+        flV.length === 0,
+        flV.join(" · ") || Object.entries(flug).map(([p, f]) => `${p} Welle ${f.welle} · Rampe ${f.rampe} · Kante ${f.kante} am Boden, ${f.kanteLuft} in der Luft (Federweg ${f.hub.toFixed(3)} m)`).join(" · ")
+    );
+
+    const kipp = kippMessung(VC);
+    const kpV = kippVerdict(kipp);
+    check(
+        `A11: die Kippgrenze — wessen μ über dem SSF (Spur ÷ 2h) liegt, kippt auf dem Kipptisch bei tan θ und im Kreis bei a_quer = SSF · g (± ${KIPP.band * 100} %) und liegt auf der Seite; wessen μ darunter liegt, rutscht`,
+        kpV.length === 0,
+        kpV.join(" · ") ||
+            Object.entries(kipp)
+                .map(([p, k]) => `${p} SSF ${k.ssf.toFixed(2)} μ ${k.mu.toFixed(2)}: Tisch ${k.tisch.kippt ? "kippt" : "rutscht"} bei tan ${k.tisch.tan == null ? "—" : k.tisch.tan.toFixed(3)} · Kreis ${k.kreis.aQ.toFixed(2)} g${k.kreis.liegt ? ", liegt" : ""}`)
+                .join(" · ")
+    );
+
     // A2 (die Hand-Ableitung exportDrive == carPhys-Primitive) fiel in w11-fahrzeug: sie war ein Zwilling der Formel im Skript —
     // die Probefahrt liest exportDrive selbst (Welle L), das Antriebs-Gesetz richtet gate:garage-labor G9 an der Fahrt; dort
     // steht seit w12-fahrzeug-decke auch A3/H7 (jede Gattung ihr eigenes Tempo, vorher: GT ≠ Supersport in zwei Skalaren).
@@ -749,6 +991,80 @@ hauptLauf(async () => {
                     };
                 } catch (eR) {
                     res.reifenErr = fehlerText(eR);
+                }
+                // B-k: DIE SPUR (fahrzeug-medium-2) — der gestellte GT fährt zehnmal dieselben 12 m weichen Bodens (Gier 0, längs +x)
+                // durch den Schreib-Akt der Welt (`_fahrRad`: je Rad die Rinne der Durchfahrten vor ihm, dann sein Tritt), je Durchfahrt
+                // ein frischer Fahr-Zustand; gelesen an den Zellen beider Spuren, über die Vorder- und Hinterrad rollten. Das Feld
+                // der Tritte kehrt danach zurück (die Wege-Karte behält die Farbe der Spur, fern von B-h).
+                try {
+                    const VCk = window.__vehicleCore;
+                    const SK = r._fahrSatz(entry, r._vehicleProfile(entry));
+                    const TT = r.constructor.TRITT;
+                    const wm = r.state.worldMeta;
+                    const vorher = [{ ...((wm && wm.tritt) || {}) }, new Map(r._trittSchwach || [])];
+                    const hk = (x, z) => r._voxelSurfaceY(x, z);
+                    const weich = (x, z) => {
+                        const y = hk(x, z);
+                        const Z = Number.isFinite(y) && r._stoff(r._kontaktStoffAt(x, z, y));
+                        return !!(Z && Z.radBoden) && !(r._atlasWaterLevelAt(x, z, y) > y - 0.3);
+                    };
+                    const q = SK.auf.quer;
+                    const pmk = r.state.playerMesh.position;
+                    let ort = null;
+                    for (let k = 0; k < 600 && !ort; k++) {
+                        const [x0, z0] = [pmk.x + Math.cos(k * 2.4) * (8 + k * 0.2), pmk.z + Math.sin(k * 2.4) * (8 + k * 0.2)];
+                        let ja = true;
+                        for (let sx = -3; sx <= 15 && ja; sx += 1) for (const dz of [-q, 0, q]) ja = ja && weich(x0 + sx, z0 + dz);
+                        if (ja) ort = { x0, z0 };
+                    }
+                    const zellen = [];
+                    if (ort)
+                        for (let x = ort.x0 + 3.25; x < ort.x0 + 9; x += TT.zelleM)
+                            for (const zz of [ort.z0 - q, ort.z0 + q]) {
+                                const [i, j] = [Math.floor(x / TT.zelleM), Math.floor(zz / TT.zelleM)];
+                                zellen.push([(i + 0.5) * TT.zelleM, (j + 0.5) * TT.zelleM]);
+                            }
+                    const fahre = () => {
+                        const z = VCk.fahrZustand(ort.x0, ort.z0, 0);
+                        let tief = 0;
+                        for (let sx = 0; sx <= 12; sx += 0.2) {
+                            [z.x, z.y, z.luft] = [ort.x0 + sx, hk(ort.x0 + sx, ort.z0), false];
+                            const b = r._fahrRad(z, SK, false);
+                            if (b && sx >= 6 && sx < 6.2) tief = b.z;
+                        }
+                        return +(tief * 100).toFixed(2);
+                    };
+                    const lies = () => ({
+                        gemalt: zellen.filter(([x, z]) => r._pfadFeldAt(x, z, hk(x, z)) >= 0.5).length,
+                        erde: zellen.filter(([x, z]) => r._kontaktStoffAt(x, z, hk(x, z)) === "erde").length,
+                        tritte: rang(zellen.map(([x, z]) => r._trittZahl(x, z)).sort(aufsteigend)),
+                    });
+                    if (ort) {
+                        // VOR DEM ERSTEN TAKT DER KARTE (an jedem Gerät gleich): die Stufen stehen unzentriert, wie an der Radeon, wo der
+                        // gestellte GT fuhr, bevor `_tickWegeKarte` lief — der erste Pfad zentriert sie selbst (`_tritt`). Bis hier hing
+                        // B-k am Takt des Geräts: swiftshader zentrierte vorher (24 von 24), die Radeon nicht (0 von 24, 90 Tritte je Zelle)
+                        if (r.state.wegeKarte) for (const st0 of r.state.wegeKarte.stufen) st0.zentriert = false;
+                        const tief1 = fahre();
+                        const l1 = lies();
+                        let tief10 = tief1;
+                        for (let n = 2; n <= 10; n++) tief10 = fahre();
+                        const l10 = lies();
+                        res.spur = {
+                            ort: [+ort.x0.toFixed(1), +ort.z0.toFixed(1)],
+                            zellen: zellen.length,
+                            gemalt1: l1.gemalt,
+                            gemalt10: l10.gemalt,
+                            erde10: l10.erde,
+                            tritte1: +(l1.tritte || 0).toFixed(2),
+                            tritte10: +(l10.tritte || 0).toFixed(2),
+                            tief1,
+                            tief10,
+                        };
+                    } else res.spur = { zellen: 0, grund: "kein weicher Ort in 600 Proben um den Spieler" };
+                    if (wm) wm.tritt = vorher[0];
+                    r._trittSchwach = vorher[1];
+                } catch (eK) {
+                    res.spurErr = fehlerText(eK);
                 }
                 // KONSUM: die Instanz zieht über die EINE Flat-Quelle mit — die Foundry-Gestalt, ohne Foundry der Bauplan
                 const ruft = (k, n = 0, f0 = r[k]) => {
@@ -1008,6 +1324,14 @@ hauptLauf(async () => {
         "B-j: REIFEN — der Reifen des gestellten Wagens rollt nicht, liegt als Sehne auf und steht um W / kz frei (W die Last des Bodens)",
         reifenV.length === 0,
         out.reifenErr || `${JSON.stringify(out.reifen)}${reifenV.length ? " — Täter: " + reifenV.join(", ") : ""}`
+    );
+
+    // B-k: die Spur des gestellten Wagens im Boden — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
+    const spurV = spurVerdict(out.spur);
+    check(
+        "B-k: SPUR — nach einer Durchfahrt malt die Spur nichts, nach zehn ist jede Zelle der Spur Erde (Wege-Karte und Stoff unter dem Fuß), die Rinne wächst",
+        spurV.length === 0 && !out.spurErr,
+        out.spurErr || `${JSON.stringify(out.spur)}${spurV.length ? " — Täter: " + spurV.join(", ") : ""}`
     );
 
     wandEnde(
