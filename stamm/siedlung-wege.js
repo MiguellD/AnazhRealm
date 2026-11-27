@@ -2184,7 +2184,9 @@ class AnazhRealm_siedlung_wege {
                     if (!e) continue;
                     // der Zug endete: ein Los, das kein Haus trägt (es fiel an der Bau-Wand), trägt auch keine Masse
                     // (die Kachel STEHT: die Sitzung kennt ihre Siedlung und ihr Zug ist durch — ein Vorrat steht noch nicht)
-                    if (e.los && !e.steht && !imZug && B && B.has(key)) this._stadtMasseZugEnde(F, e);
+                    // (ein gemeldeter Eintrag steht nicht: der Nachbar vor seinem Erwachen, die Kachel, die schlief)
+                    if (e.los && !e.steht && !imZug && B && B.get(key) && !B.get(key).gemeldet)
+                        this._stadtMasseZugEnde(F, e);
                     const d = Math.hypot(s.x + i * M - playerPos.x, s.z + k * M - playerPos.z);
                     // eine Kachel, die ihren Plan ohne Stufe 1 bekam (der Reload: die Sitzung kennt ihre Siedlung), holt die
                     // Gassen ihres Netzes für das Band, sobald sie jenseits `bandAbM` liegt
@@ -2294,6 +2296,18 @@ class AnazhRealm_siedlung_wege {
         e.steht = true;
         for (let j = 0; j < e.anH.length; j++)
             if (e.anH[j] && !e.gebunden[j]) this._stadtMasseSchreiben(F, e, j, false);
+    }
+    // DIE KACHEL SCHLÄFT (`_kachelSchlafTakt`): ihre Häuser fielen (jedes meldete sein Los „weg“, `_stadtMasseRegt`) — jedes ihrer
+    // Lose ist wieder frei und trägt seine Masse wie vor dem Erwachen; das nächste Erwachen bindet seine Häuser neu
+    _stadtFerneSchlaf(key) {
+        const F = this.state.stadtFerne;
+        const e = F && F.je.get(key);
+        if (!e || !e.los) return;
+        this._stadtMasseStand();
+        for (const m of F.los.values()) if (m.e === e) m.weg = false;
+        e.gebunden.fill(0);
+        e.steht = false;
+        for (let j = 0; j < e.anH.length; j++) if (!e.anH[j]) this._stadtMasseSchreiben(F, e, j, true);
     }
     // die zwei Pools der Ferne: die Kiste (die Wände) und das Dach — das Prisma der Einheit: Grund 1 × 1 um die Mitte, der First
     // längs x in der Höhe 1 (zwei Schrägen, zwei Giebel)
