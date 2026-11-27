@@ -649,7 +649,7 @@ class AnazhRealm_gelaende_boden {
             return Promise.reject(new Error(text));
         }
         const welt = this.state.worldMeta;
-        return this._ankunft(M).then((an) => {
+        const setzen = (an) => {
             if (this.state.worldMeta !== welt) return null;
             const g = this.getTerrainHeightAt(an.x, an.z);
             if (!Number.isFinite(g)) {
@@ -681,7 +681,19 @@ class AnazhRealm_gelaende_boden {
             an.kosten.gesetzt = performance.now() - t0;
             this.state.ankunftKosten = an.kosten;
             return a;
-        });
+        };
+        // trifft die Ankunft das Gedächtnis mit gekommener Antwort (die Rückkehr nach dem Tod in derselben Welt), setzt sie im
+        // selben Takt: der Leib steht am Anker, bevor das nächste Bild läuft — nur die neue Frage wartet auf den Faden
+        const ankunft = this._ankunft(M);
+        const st = this._ankunftStand;
+        if (st && st.ankunft === ankunft && st.wert) {
+            try {
+                return Promise.resolve(setzen(st.wert));
+            } catch (e) {
+                return Promise.reject(e);
+            }
+        }
+        return ankunft.then(setzen);
     }
 
     // ### Terrain-Erweiterung ###
