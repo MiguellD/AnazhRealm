@@ -8251,7 +8251,7 @@ L.perspektive("evolution", (() => {
 
             // ═══ MIKROBEN: die unsichtbare Mehrheit ═══
             [MI]: {
-                sek: 10,
+                sek: 20,
                 pfad: PFAD_GRUND,
                 ungefahren: "die Bildvergleiche der Matten und des Zooms (S1–S3) — auf swiftshader kein Schuss",
                 mess: async function (H, U, M) {
@@ -8295,16 +8295,18 @@ L.perspektive("evolution", (() => {
                     const z = { fehler: a.fehler, antworten: a.orte || 0, streuung: Math.max(0, (a.klassen || 0) - 1) };
                     const keine = "kein mikrobielles Leben: " + (a.matten || 0) + " Treffer unter " + (a.objekte || 0) + " Objekten der Szene";
                     const zoom = "die Kamera sieht bis " + Math.round((a.nearM || 0) * 1000) + " mm (near)";
-                    return {
-                        sprossen: {
-                            1: { werte: { matten: a.matten }, zeuge: z, auge: await M.auge("evolution-mikroben-s1", { ort: "wiese" }), nicht: keine },
-                            2: { werte: { zoomMinMm: a.nearM * 1000 }, zeuge: z, auge: await M.auge("evolution-mikroben-s2", { ort: "wiese" }), nicht: keine + "; " + zoom },
-                            3: { werte: { orte: a.orte, zoomMinM: a.nearM }, zeuge: z, auge: await M.auge("evolution-mikroben-s3", { ort: "wiese" }), nicht: keine + "; " + zoom },
-                            4: { werte: { mikrobenArten: a.matten }, zeuge: { fehler: a.fehler, antworten: a.lebenZellen || 0, streuung: a.abbauProS || 0 }, nicht: keine + "; das Feld des Lebens zerfällt mit einer Konstante (" + a.abbauProS + "/s) — keine Mutante „Mikroben aus“" },
-                            5: { werte: {}, zeuge: z, nicht: "Leben entsteht nicht: jede Saat trägt dieselben " + (a.lebenJeSaat || 0) + " Gattungen (der Lebensraum liest keinen Samen, keine Energie)" },
-                            6: { werte: { orte: a.orte, planeten: 1 }, zeuge: z, nicht: keine + "; " + zoom },
-                        },
-                    };
+                    // DIE WERTE VOR DEN AUGEN (27.11., GTX 1060 + Radeon am 920fa974: S4 riss bei 10,0 s „vor dem Wert der Sprosse“ — S1–S6
+                    // standen nach dem Eval, die Leiter gab sie erst nach drei Schüssen à ≈ 5 s zurück): jede Sprosse liegt in M.teil, ehe ein
+                    // Auge schießt; der Deckel trifft dann nur noch das Bild (Beleg), nie den Wert
+                    const aus = M.teil || {};
+                    aus[1] = { werte: { matten: a.matten }, zeuge: z, nicht: keine };
+                    aus[2] = { werte: { zoomMinMm: a.nearM * 1000 }, zeuge: z, nicht: keine + "; " + zoom };
+                    aus[3] = { werte: { orte: a.orte, zoomMinM: a.nearM }, zeuge: z, nicht: keine + "; " + zoom };
+                    aus[4] = { werte: { mikrobenArten: a.matten }, zeuge: { fehler: a.fehler, antworten: a.lebenZellen || 0, streuung: a.abbauProS || 0 }, nicht: keine + "; das Feld des Lebens zerfällt mit einer Konstante (" + a.abbauProS + "/s) — keine Mutante „Mikroben aus“" };
+                    aus[5] = { werte: {}, zeuge: z, nicht: "Leben entsteht nicht: jede Saat trägt dieselben " + (a.lebenJeSaat || 0) + " Gattungen (der Lebensraum liest keinen Samen, keine Energie)" };
+                    aus[6] = { werte: { orte: a.orte, planeten: 1 }, zeuge: z, nicht: keine + "; " + zoom };
+                    for (const nr of [1, 2, 3]) aus[nr].auge = await M.auge("evolution-mikroben-s" + nr, { ort: "wiese" });
+                    return { sprossen: aus };
                 },
                 sprossen: {
                     1: S({
