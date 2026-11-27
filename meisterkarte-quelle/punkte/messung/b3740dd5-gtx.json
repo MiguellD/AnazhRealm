@@ -1,7 +1,7 @@
 {
  "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
  "geraet": "gtx",
- "zeit": "2026-11-27T21:32:29.814Z",
+ "zeit": "2026-11-27T21:36:32.501Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -925,6 +925,360 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.kopplung.aufwaerts#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: kein Dorf rodet: r._staedte() trägt 0 Städte, der Wald im Umkreis 5 km steht nach der Tat bei 0.716 (vor 0.716) — phyto-core forestStandDensity liest keine Bevölkerung · rWaldBevoelkerung ungemessen gegen Soll ≥ 0,6 ✗ · deltaETat ungemessen gegen Soll ≥ 5 ✗ · deltaESonst ungemessen gegen Soll ≤ 1 ✗ · Täter: phyto-core.js forestStandDensity (liest keine Bevölkerung) · stamm/siedlung-ort.js `_staedte`",
+   "exit": 0,
+   "minuten": 3.4,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: kein Dorf rodet: r._staedte() trägt 0 Städte, der Wald im Umkreis 5 km steht nach der Tat bei 0.716 (vor 0.716) — phyto-core forestStandDensity liest keine Bevölkerung · rWaldBevoelkerung ungemessen gegen Soll ≥ 0,6 ✗ · deltaETat ungemessen gegen Soll ≥ 5 ✗ · deltaESonst ungemessen gegen Soll ≤ 1 ✗ · Täter: phyto-core.js forestStandDensity (liest keine Bevölkerung) · stamm/siedlung-ort.js `_staedte`",
+   "gpu": "nvidia/pascal",
+   "konsum": "k3c22a5530b74",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kff06e4f5a2ae",
+   "s": 203.7,
+   "fremd": {
+    "s": 206.2,
+    "takte": 93,
+    "fremdS": 115.95,
+    "kerne": 0.562,
+    "fensterKerne": 1.153,
+    "namen": [
+     [
+      "bash.exe sk/wacht6.sh",
+      11.38
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      10.3
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      9.39
+     ]
+    ],
+    "dienerS": 59.16,
+    "diener": [
+     [
+      "System",
+      30.66
+     ],
+     [
+      "dwm.exe",
+      11.61
+     ]
+    ],
+    "geraetS": 162.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      113.16
+     ],
+     [
+      "svchost.exe",
+      43.52
+     ],
+     [
+      "svchost.exe -k UnistackSvcGroup -s WpnUserService",
+      1.97
+     ]
+    ],
+    "eigenS": 563.23,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T21:36:32.501Z",
+   "abdruck": "83e3a9705219",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.ereignis#2": {
+   "gruen": false,
+   "zahl": "S2 brennendHa 1,024 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 100 % gegen Soll = 100 % ✓ · der Zeuge der Welt fehlt: nur 39 ↔ 27 Bilder mit ↔ ohne Brand (Soll je 30) · Täter: stamm/siedlung-bewohner.js `_bewohnerSoll` (liest kein Brand-Feld) · stamm/feld-brand.js `_tickBrand` (die Kosten der Front)",
+   "exit": 0,
+   "minuten": 3.4,
+   "grund": "ROT: S2 brennendHa 1,024 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 100 % gegen Soll = 100 % ✓ · der Zeuge der Welt fehlt: nur 39 ↔ 27 Bilder mit ↔ ohne Brand (Soll je 30) · Täter: stamm/siedlung-bewohner.js `_bewohnerSoll` (liest kein Brand-Feld) · stamm/feld-brand.js `_tickBrand` (die Kosten der Front)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k3c22a5530b74",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kff06e4f5a2ae",
+   "s": 203.7,
+   "fremd": {
+    "s": 206.2,
+    "takte": 93,
+    "fremdS": 115.95,
+    "kerne": 0.562,
+    "fensterKerne": 1.153,
+    "namen": [
+     [
+      "bash.exe sk/wacht6.sh",
+      11.38
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      10.3
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      9.39
+     ]
+    ],
+    "dienerS": 59.16,
+    "diener": [
+     [
+      "System",
+      30.66
+     ],
+     [
+      "dwm.exe",
+      11.61
+     ]
+    ],
+    "geraetS": 162.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      113.16
+     ],
+     [
+      "svchost.exe",
+      43.52
+     ],
+     [
+      "svchost.exe -k UnistackSvcGroup -s WpnUserService",
+      1.97
+     ]
+    ],
+    "eigenS": 563.23,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T21:36:32.501Z",
+   "abdruck": "90ba0955651f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#2",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.gewalt#1": {
+   "gruen": false,
+   "zahl": "S1 Umfang nicht erzeugbar: kein Brand von selbst: 240 Takte der Welt im Gewitter zünden 0, in der Sonne 0 (jeder Ruf von `_brandEntfachen` gezählt); die Front trägt 146 Sturm-Züge in 100 Spieljahren, 0 nach ≥ 10 trockenen Zügen — kein Blitz schlägt ein · am Fächer 12 Orte × 2000 Züge: i · faktorZurRealRate ungemessen gegen Soll ≤ 3 × ✗ · Täter: stamm/feld-brand.js `_brandEntfachen` (gerufen nur von der Tat: Brennglas, Unfall, Lava — kein Blitz im Gewitter)",
+   "exit": 0,
+   "minuten": 3.4,
+   "grund": "ROT: S1 Umfang nicht erzeugbar: kein Brand von selbst: 240 Takte der Welt im Gewitter zünden 0, in der Sonne 0 (jeder Ruf von `_brandEntfachen` gezählt); die Front trägt 146 Sturm-Züge in 100 Spieljahren, 0 nach ≥ 10 trockenen Zügen — kein Blitz schlägt ein · am Fächer 12 Orte × 2000 Züge: i · faktorZurRealRate ungemessen gegen Soll ≤ 3 × ✗ · Täter: stamm/feld-brand.js `_brandEntfachen` (gerufen nur von der Tat: Brennglas, Unfall, Lava — kein Blitz im Gewitter)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k3c22a5530b74",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kff06e4f5a2ae",
+   "s": 203.7,
+   "fremd": {
+    "s": 206.2,
+    "takte": 93,
+    "fremdS": 115.95,
+    "kerne": 0.562,
+    "fensterKerne": 1.153,
+    "namen": [
+     [
+      "bash.exe sk/wacht6.sh",
+      11.38
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      10.3
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      9.39
+     ]
+    ],
+    "dienerS": 59.16,
+    "diener": [
+     [
+      "System",
+      30.66
+     ],
+     [
+      "dwm.exe",
+      11.61
+     ]
+    ],
+    "geraetS": 162.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      113.16
+     ],
+     [
+      "svchost.exe",
+      43.52
+     ],
+     [
+      "svchost.exe -k UnistackSvcGroup -s WpnUserService",
+      1.97
+     ]
+    ],
+    "eigenS": 563.23,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T21:36:32.501Z",
+   "abdruck": "2b9db5348a37",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#2",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.kohaerenz#1": {
+   "gruen": false,
+   "zahl": "S1 Umfang nicht erzeugbar: die Hydrosphäre lebt nur für die Saat der Welt (gelaende-core.js:6107 hydrosphaere im Faden über seiner Lage, voxel-worker.js:1997; der Planet-Faden antwortet ohne Flusslauf) — an der Saat der Welt: 50 von 50 Punkten bergab in Senke oder Meer, rückwärts steige · anteilProzent 100 % gegen Soll ≥ 95 % ✓ · Täter: gelaende-core.js hydroRegion (die Flüsse) · stamm/gelaende-boden.js `_hydroFor`",
+   "exit": 0,
+   "minuten": 3.4,
+   "grund": "ROT: S1 Umfang nicht erzeugbar: die Hydrosphäre lebt nur für die Saat der Welt (gelaende-core.js:6107 hydrosphaere im Faden über seiner Lage, voxel-worker.js:1997; der Planet-Faden antwortet ohne Flusslauf) — an der Saat der Welt: 50 von 50 Punkten bergab in Senke oder Meer, rückwärts steige · anteilProzent 100 % gegen Soll ≥ 95 % ✓ · Täter: gelaende-core.js hydroRegion (die Flüsse) · stamm/gelaende-boden.js `_hydroFor`",
+   "gpu": "nvidia/pascal",
+   "konsum": "k3c22a5530b74",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kff06e4f5a2ae",
+   "s": 203.7,
+   "fremd": {
+    "s": 206.2,
+    "takte": 93,
+    "fremdS": 115.95,
+    "kerne": 0.562,
+    "fensterKerne": 1.153,
+    "namen": [
+     [
+      "bash.exe sk/wacht6.sh",
+      11.38
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      10.3
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      9.39
+     ]
+    ],
+    "dienerS": 59.16,
+    "diener": [
+     [
+      "System",
+      30.66
+     ],
+     [
+      "dwm.exe",
+      11.61
+     ]
+    ],
+    "geraetS": 162.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      113.16
+     ],
+     [
+      "svchost.exe",
+      43.52
+     ],
+     [
+      "svchost.exe -k UnistackSvcGroup -s WpnUserService",
+      1.97
+     ]
+    ],
+    "eigenS": 563.23,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T21:36:32.501Z",
+   "abdruck": "5344fc44e9fd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#2",
+   "modus": "session"
+  },
+  "karte2.same.kopplung.terraform#1": {
+   "gruen": false,
+   "zahl": "S1 Umfang nicht erzeugbar: am Fächer 10 Orte mit dem Wort „rainy“: Ziel 0.008987369570127671 → 0.6606160379562411, Lee (13200 m windab) 0.2376823359282539 → 0.07248461887206825, fern 0.017628065111893455 → 0.017628065111893455, Lee der Karte (0.05°) 0 → 0.1728604095034653; der Planet tr · zielMehr 0,652 gegen Soll > 0 ✓ · leeWeniger -0,165 gegen Soll < 0 ✓ · bilanzVerh 2,972 gegen Soll 1 ± 10 % ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":12206,\"fehler\":\"ABNAHME ROT [kein nahWiese im Bild: 2.0 % < 15.0 %]) · Täter: stamm/bild-himmel.js `_weatherFieldFor` (Mess-Kopf 8544438f: der Regen ist ein Wort ohne Ort; main 60e8909d trägt `_wetterFeldAm`)",
+   "exit": 0,
+   "minuten": 3.4,
+   "grund": "ROT: S1 Umfang nicht erzeugbar: am Fächer 10 Orte mit dem Wort „rainy“: Ziel 0.008987369570127671 → 0.6606160379562411, Lee (13200 m windab) 0.2376823359282539 → 0.07248461887206825, fern 0.017628065111893455 → 0.017628065111893455, Lee der Karte (0.05°) 0 → 0.1728604095034653; der Planet tr · zielMehr 0,652 gegen Soll > 0 ✓ · leeWeniger -0,165 gegen Soll < 0 ✓ · bilanzVerh 2,972 gegen Soll 1 ± 10 % ✗ · Bild (Beleg) fehlt (/bild: {\"ms\":12206,\"fehler\":\"ABNAHME ROT [kein nahWiese im Bild: 2.0 % < 15.0 %]) · Täter: stamm/bild-himmel.js `_weatherFieldFor` (Mess-Kopf 8544438f: der Regen ist ein Wort ohne Ort; main 60e8909d trägt `_wetterFeldAm`)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k3c22a5530b74",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kff06e4f5a2ae",
+   "s": 203.7,
+   "fremd": {
+    "s": 206.2,
+    "takte": 93,
+    "fremdS": 115.95,
+    "kerne": 0.562,
+    "fensterKerne": 1.153,
+    "namen": [
+     [
+      "bash.exe sk/wacht6.sh",
+      11.38
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      10.3
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      9.39
+     ]
+    ],
+    "dienerS": 59.16,
+    "diener": [
+     [
+      "System",
+      30.66
+     ],
+     [
+      "dwm.exe",
+      11.61
+     ]
+    ],
+    "geraetS": 162.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      113.16
+     ],
+     [
+      "svchost.exe",
+      43.52
+     ],
+     [
+      "svchost.exe -k UnistackSvcGroup -s WpnUserService",
+      1.97
+     ]
+    ],
+    "eigenS": 563.23,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T21:36:32.501Z",
+   "abdruck": "60d98052c42d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#2",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -941,7 +1295,8 @@
   "kc2c50e512494": "bVVdj5swEPwveWzKmc/DWLoHp1x1qXpS7ieszRq4EEA2hCpV/3sFCSTA7UNemPWOZ2adv5sa5BFSfPo0Vblhm2+b7xsDZ7QM6jPqp0+zYZtIOi56jF+LcM5/9DCp87oxpMgFAVFCdkKr1Q3mxZMc2tQz2IFgpHvl6YEQRS4k7vhUr/zlZXlMITCprAYUjofY6AUU2RLYmhQEWtCqYfANHPgRPjuMDEVj/h6TqTrJ+aEj3YG+cc63u/V0AWUyv4HjRPAcMt7tOecfS3ySAzZWkZdmnO8kYaRsdp/5vurR0FkXwKxAfWtC6ji+GEnveml6uRaNqmiNmQ2jXhK4lBESLbEpmlxmjVXrSmB5g4vIDR1gu25177RuLfXICIQAKpaaZ4BlinrGwfak6gX/Q5eHHuGEGqwSshs0sr3QFXdtCCFvay7FQHwYMRL3PepSZ9bYm0vOvcAJn9Vh+JiOKDXFTU6QdG28kVmuT3O5lI+u7bHfa4omgwS1daxMM6E9DH1bXDdkH5MrF7pbdt4vN3oIAPQhMIQS/rbS0lSq6UCjldbtGBofgzBgnO9X4AZOp4mWR8FbGmmaPuiPNNxIBYHPCNleF2Z96etaWBfMC5xyK0MvYj9ivgSfNZwsEKnOlRrdF4FU0Vdh7bBoLFFVzcjFs20Z9JKUj4YfBiv3D17H6Yf//pN3r/MI7Fd0hgmVbkbiAoTn+0ylMSWEqiU6143VgcxGeOgJRI/1mVtAL6gLTHEmpXIccBM2PDcDyz4J4e05UNtZiC8rpy859iKXpjWjyhJ8EbAvbOlQHwWUx+ntoyJC9otzvnvnh7kon3W/CsPKzOs8fDbbER9ff65vXY2S1LpSef8ykgxak0HR3P8q/v0H",
   "kca6f5c26898e": "bVXbbqMwFPyXPG6XHq7FWOqDUyo10naV/YRjOAYaAsiGUGW1/76ChDRA/eo5zHhmbP5uGkwOmNHjh6mrDd/82PzcGDyRZUifSD9+mA3fRInjksfFZYEQ4mWAJbpoWgNlIQFlhfmRrE63VJSPyTimntAOJIf+VWR7AAVniPvn5+VoKSmtrRYVTYM2eQEjvgR2JkNJFnZqJLuCAz+iJ4fDuFgs3mO4rU8mxL6Hfs/eFh+TWKVztY4T4VPIRb8TQvxZqkwLpNYqi8pMvE4aRsrmN67+fTWjsbfOSHlJ+jpEzHF8OYndDnYO1iwGVdkZMyNjXhq4jANES2xGpkjy1mp0Lam6wmXkhg7y7drtrOksda8IpUQml17nSFVGeqbB9hI1GP3Jlh894JE0WhXmV2hke6Erv7wBgLe1lnIUPlJMwn2PucyZDQ6hwmkwOBWztR83swml+mkjuUEysSI1SV7o49wu5ZNre/zXWqLJMSVtHWrT3tAehb4tL7dhF8NFC9suJ78ON2WIiOyuMMBAvK28NLVqe9RkZU03lcanIAy4ELsVuMXj8SbLY+gtgzTtUPR7GW6kgsDnAA+Xi7I+9OVaWGcqSrr1Ngm9iL/EYgk+aTxaKDNdKDWlL4NERd+VtaeytWRdt5MWz7aTgIMH1X3gv8cod3dZx9kfvy23/eu8AruVnJGh1u0kXKL0fJ+rLGYATC3RhW6tHpN8goeeJPL40LkF9Ey6pIxmVirHQTfl0KuL7vPw3ITX50A9zEp8XiV9LmgwuTKdmVxO0JcB/yaWnvRBYnW4vXlMRjRWcPsu9jNPXj+a4SrAac4PAKdx3xz3V+9iIWKmrkQNJdDoWhXDywg5dibHsv36Lfz7Dw==",
   "k4d904a5fd3a5": "bVVdb6MwEPwvebweXT6LsdQHp0RKpPaU/oQ1rIGGQGSTUOV0//0ECUmA7iszntnZtfm7OGCyw4yev0xdLfji1+L3wuCJLEP6RPr5yyz4IkoclzwuPkVXIIR462CJLg6NgbKQgLLCfE/WUTdUlM9JT1MvaAeSQ7sS2RZAwRni9vV1Si0lpbXVoKKBaJMXMOJT4NFkKMnCo+rFruDAj+jF4dAXi8VHDLf6ZkJsW2i3bD05TGKVjt06ToQvIRft5k2Iz6nLtEBqrLKozKDrpGGkbH7Taj9mHI2tdUbKS9JXEjHH8eVgdtnF2UUzIaryaMxIjHlp4DIOEE2xGZkiyRvroGtJ1RUuIzd0kC/naWeHo6UeHaGUyOQ06xypykiPPNheoi5Bq96+cbeqC3gppiI73JNGq8L8So1sL3TlPSsAWM+9lX0jveTQiO8xlzkjYjdkOHWBp2JU2/5jNqBUO3xIbpBMzERNkhd6P45P+eTaHn+fWzQ5pqStXW2aG9qj0Lcl7wU2MVy8sOWUeW9umCkisocFAgZizWaKtWpa1GRlh+OwRD4FYcCF2MzADe73N1seQ4+LWa1+YFXpyJobqSDwOcDT5TLNg7hcHetMRUm33U5CL5pu0knj3kKZ6UKpYRtkkKjop2VuqWwsWdfN4MOz7SToIqoeF+BPP9rNQ09x9uk35bJdjVvdzFazV6h1M5iWKD3f5yqLGQBTU3ShG6vFJB/goSeJPA7fszmdSZeU0ShG5Tjophzay4WBc/cchdfnQj2Nlvo8P7GgLuDKHM2QcIK+DPgPI2lJ7yRWu9ubyGRE/F0IsfwQ23sgy0ys3rLuasCJwTir+HRZj9X6ml0sRMzUVehACRx0rYru5YQcjybHsrn/Nv79Bw==",
-  "k43ffdebe9921": "bVVdb6MwEPwveeydaz6LsdQHp/TUVFeJ/oQ1rIGGALJJOOV0//0ECSRA94EXZr3DzKz5u2kg2UOGj1+mrjZ887D5uTFwQmJQn1A/fpkN34SJ7aDLxaWoEOKlhyW6aFpD0wIy0haoSQZV9pgMLQ93gLKQFGQF+QHJUbdYlFeQegLLl5x2ryKLKVX0TKNOTPUqnp+Xx5QS05q0oHA8xELXZ8iXwKPJQCKBoxoGX8G+F+KTzelQLBIfEZ2qS4SIO9rF7E3E3vviQAlVOmdv2yE8BVx0OyHE55JpWgC2pCwqM8620yBUFr/N+1j1aOjIGTAvUV+bkNm2J0fC216WXqpFoyqPxsyGMTf1HcYpDZfYDE2R5C1pdC2xusJl6AQ28G23UjxrjkTdMwIpgcml3jlglaGecbDcRPVi/2HLQ/dwQA2kgvwKDS03cORNG0rp25pLORAfRozEPZc5zJ419sbSUy9wKmYVDy+zEaWmqCUTJFtHziR5oQ9zuZSHjuXy32uKJocUNdnXpp3QLgaeJS/rs4vohQvbLjtvHzd6CADsLjCUUfG20tLUqu1AI8ma4xgaD/3A50LsVuAWDoeJlsvAXRpp2j7o9zScUPm+xyn9cVmW9Udf1oKcsShxym0SuCF/ibwl+KThQEBmulBqdF/6iQq/C2uHZUtkXbcjF9eyEr+XpLo3PB6s3N15HWWf3scv0b3OI7ATQq0tHqbUuh3JS5Cu53GVRYxSppboQrekgyQf4YErEV3e524BPaMuMcOZnMq2wUn5cN0MTPs0BNcrQf2YBfm8cvtcYC90ZY5mVDoBT/r8G2s61HsJ1X66+5gMkb8LIbYfIp4L89X060BjuqphLcxhxEeXx2VQgwltdK2K/nakORxNDmV7+5f8+w8="
+  "k43ffdebe9921": "bVVdb6MwEPwveeydaz6LsdQHp/TUVFeJ/oQ1rIGGALJJOOV0//0ECSRA94EXZr3DzKz5u2kg2UOGj1+mrjZ887D5uTFwQmJQn1A/fpkN34SJ7aDLxaWoEOKlhyW6aFpD0wIy0haoSQZV9pgMLQ93gLKQFGQF+QHJUbdYlFeQegLLl5x2ryKLKVX0TKNOTPUqnp+Xx5QS05q0oHA8xELXZ8iXwKPJQCKBoxoGX8G+F+KTzelQLBIfEZ2qS4SIO9rF7E3E3vviQAlVOmdv2yE8BVx0OyHE55JpWgC2pCwqM8620yBUFr/N+1j1aOjIGTAvUV+bkNm2J0fC216WXqpFoyqPxsyGMTf1HcYpDZfYDE2R5C1pdC2xusJl6AQ28G23UjxrjkTdMwIpgcml3jlglaGecbDcRPVi/2HLQ/dwQA2kgvwKDS03cORNG0rp25pLORAfRozEPZc5zJ419sbSUy9wKmYVDy+zEaWmqCUTJFtHziR5oQ9zuZSHjuXy32uKJocUNdnXpp3QLgaeJS/rs4vohQvbLjtvHzd6CADsLjCUUfG20tLUqu1AI8ma4xgaD/3A50LsVuAWDoeJlsvAXRpp2j7o9zScUPm+xyn9cVmW9Udf1oKcsShxym0SuCF/ibwl+KThQEBmulBqdF/6iQq/C2uHZUtkXbcjF9eyEr+XpLo3PB6s3N15HWWf3scv0b3OI7ATQq0tHqbUuh3JS5Cu53GVRYxSppboQrekgyQf4YErEV3e524BPaMuMcOZnMq2wUn5cN0MTPs0BNcrQf2YBfm8cvtcYC90ZY5mVDoBT/r8G2s61HsJ1X66+5gMkb8LIbYfIp4L89X060BjuqphLcxhxEeXx2VQgwltdK2K/nakORxNDmV7+5f8+w8=",
+  "k3c22a5530b74": "bVXbbqMwEP2XPG6XmmsxlvrglEjNaiuxnzCGMdAQQDbUVVb77ytIoAE6r5zxnDlnZvi7ayE9QY6P77qpd2z3Y/dzp+EDLY3qA9Xju96xXZQ6LnqMX4Nwzl8GWKrKttOkKgUBUUNxRqtXHZbVYzqmySewA8GIOfA8IUSSC4kNn+PAn5/Xz1QCs8bqQOL0iI1eQJGtgb3OQaAFvRwL38CBH+GTw8gYNOZvMZnjk3KeGGIS+soTn+y31QXU2bIDx4ngKWTcHDnnf9b4rATsrKqs9VTfycJI2myuad42OQqMdQEsKlS3JKSO44uJ9H6QZpBrlSirXutFMeplgUsZIdEam6Mu06KzWtUIrG9wEbmhA2xvNn3nbW/Je0YgBFCx1rwArHNUCw62l8pB8E+6fvQEZ1Rg1VDcoJHtha740oYQ8rrlUo3ExxITcd+jLnUWiYO55GMQOOOLSMaP+YSS87ilMyTfGq/TolTnpVzSR9f22O8tRV1Ahso6Nbqb0R6Gvi2uG3KMyZUL3a8zv5qbPAQAejcwhBL+utFSN7IzoNDK234aGh+DMGCcHzfgDs7nmZZHwVsbqbth0O9puJEMAp8R8nBdmG3T17WwLlhWOM9tGnoRe4n9NfhDwdkCkatSysl9EaQy+m5YDVadJZqmm7h4tp0GgyT1veHJaOXxzus4/+N31d4cliNw5FxuLR6rNKqbyAsQnu8zmceUECrX6FJ1loG0mOChJxA9NszdCnpBVWGOCzml44CbMWLklftlOD3h7STIh8UgXzZuX0ochK51ryelU/BFwL6xxqA6CahP8/2jIkL2i3O+f+PJQpfDezusw7g2qxjXQj8kN/1izmMqzfXetZiSVjWyHK4jKaDXBVTd1+/i338="
  },
  "ungemessen": {
   "profiband.K4#2": {
