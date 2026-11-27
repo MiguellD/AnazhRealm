@@ -84,7 +84,15 @@ Seite der Fahrbahn → `wer`).
     je Teil ≤ 1 150 s.
 - Kopf 4 (Koordinator 20:59: VIER Teile): am Baum main b3740dd5 + werk-am-ort-2, `DAUER_S` gemessen, `--selftest --teil=k/4` mit
   Stoppuhr — Teil 1/4 GRÜN 974 s (44 Täter, 8 Proben; bewohner 861) · Teil 2/4 GRÜN 1 049 s (42 Täter, 9 Proben; kaskade 528,
-  schreck 342 samt Gründung der vollen Stadt) · Teil 3/4 GRÜN 954 s (38 Täter, 12 Proben; werkort 416, seuche 278) · Teil 4/4 fährt.
+  schreck 342 samt Gründung der vollen Stadt) · Teil 3/4 GRÜN 954 s (38 Täter, 12 Proben; werkort 416, seuche 278) · Teil 4/4 GRÜN
+  981 s (42 Täter, 11 Proben; mengebild 371, zielplan 321). Summe 3 958 s, 166 Täter beim Namen, 40 Proben im Grund grün.
+  Die Waage: `spec/ci/ci-zeiten.json` trägt die vier Zahlen (`geschaetzt`, bis ein gelandeter Lauf sie wiegt), die Gruppen verteilt
+  `scripts/ci-zeiten.cjs` (`verteile` über der Tafel, ohne neue Messung): die Teile in den Gruppen 11 · 8 · 12 · 10, jede voll-Gruppe
+  20,4 min im Plan, Deckel 21,1, Frist 29 unberührt; `gate:ci-deckung` GRÜN · `check:statik` GRÜN · `gate:welt-boot` GRÜN ·
+  `gate:fachwerk-contract` · format · lint GRÜN; `merge-tree` gegen main b3740dd5 und gegen sprache-dialekt 0413162b sauber.
+- OFFEN (Folge-Arbeit, nicht Bedingung der Landung): die Täter der Stadt-Proben billiger (seuche 3 Läufe à ≈ 90 s um einen
+  Ausbruch von 0,2 s); bewohner allein 861 s gegen `DAUER_S` 660 am main — ob meine Schnitte in `stamm/siedlung-bewohner.js` ihn
+  langsamer machen, ist nicht gemessen (derselbe Lauf am Baum von main steht aus).
   Je Lauf gemessen: seuche Grund 124 s, je Täter 88 s (die Rechnung des Ausbruchs ≈ 0,2 s — der Rest ist die Stadt um den Lauf);
   zielplan je Täter 29–35 s (sein Tag an fünf Stunden); der Wechsel in die frische Welt 12 s.
 
