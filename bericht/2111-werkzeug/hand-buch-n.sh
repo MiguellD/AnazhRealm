@@ -10,6 +10,8 @@ cd "$K" || exit 9
 T=$(git ls-remote origin refs/heads/punkte-maschine | cut -f1); [ -n "$T" ] && git fetch -q origin "$T" || { echo "$N PM-SPITZE nicht geholt" >> "$L"; exit 7; }
 git checkout -q "$T" -- meisterkarte-quelle/src meisterkarte-quelle/punkte/punkte.cjs meisterkarte-quelle/punkte/hilfe.cjs meisterkarte-quelle/punkte/gpu-zeuge.cjs meisterkarte-quelle/punkte/konsum-zeuge.cjs meisterkarte-quelle/punkte/deckel.json meisterkarte-quelle/punkte/stand.json meisterkarte-quelle/punkte/weg.json meisterkarte-quelle/punkte/stationen meisterkarte-quelle/punkte/werkzeug meisterkarte-quelle/punkte/gegenlauf ':(glob)meisterkarte-quelle/punkte/messung/*.json' ':(glob)vision/*' vision/richter vision/vorrat/klasse-offen.json || { echo "$N HEBEN gescheitert" >> "$L"; exit 8; }
 git diff --quiet "$T" -- meisterkarte-quelle/punkte/stationen/ || { echo "$N STATIONEN ≠ Spitze ${T:0:8}" >> "$L"; exit 6; }
+# die Skripte der Seite, die Stationen unter bericht/ nennen (27.11.: gelaende.K2#1 UNGEMESSEN an ENOENT …\skripte\zielen.js)
+node "$S/wz/ber-holen.cjs" "$K" "$T" >> "$L" 2>&1 || { echo "$N BERICHT-Skripte nicht geholt" >> "$L"; exit 5; }
 cd meisterkarte-quelle/punkte || exit 5
 mkdir -p "$S/vr"
 echo "$N START $(date +%H:%M:%S) ${H:0:8} $SP (pm ${T:0:8})" >> "$L"
