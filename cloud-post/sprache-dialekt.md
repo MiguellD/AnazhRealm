@@ -169,6 +169,7 @@ Linse gate:klang-zensus (Sp):
 - %V ≤ 0,70 je Familie und der Gipfel je Frikativ ±15 % zu Jongman.
 - Selbsttest S29 „die Rede ohne An- und Abglied“, also der Stand am main, ist **ROT** mit 7 Befunden: 6 Familien mit %V 1, dazu „kein Frikativ“.
 - Ganzer Zensus auf der Seite (`--selftest`, 453 s): ✅ S1–S23, S28, S29 · Markt 259 Reden, 0 ohne Silben, L_Aeq 65,35 dB(A). Der Mk-Mutant S29 löschte noch `kerne` und blieb unbemerkt (rc=1). Er trifft jetzt die Fracht `rede`, die Rede wird an ihrem Einsatz erkannt: `--markt --selftest` ✅ S24–S27, S29 („97 von 97 Reden ohne die Silben eines Satzes“), S30, rc=0 (4e782ea).
+- Nach Regel 7 (8e7bcdf) ganzer Zensus auf der Seite, 446 s, rc=0: %V mitteleuropa 0,466 · alpin 0,53 · mediterran 0,653 (außer Band) · nordisch 0,527 · fernost 0,668 (außer Band) · antik 0,491; Gipfel f 7 850 · s 6 725 · v 7 175 · ʃ 3 700 · z 7 250 Hz; ✅ S1–S23, S28, S29 · ✅ S24–S27, S29, S30.
 
 Ehrlich offen:
 - Regel 7 nach Klatt S. 296: die Segmente der unbetonten Silbe kürzen, das Abglied der betonten nicht mehr (mein Schnitt kürzte es). Damit liegen alpin und nordisch im Band; ΔC mitteleuropa 5,39 cs (Englisch bei Ramus 5,35).
