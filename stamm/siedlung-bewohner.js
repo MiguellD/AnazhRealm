@@ -4225,6 +4225,11 @@ class AnazhRealm_siedlung_bewohner {
     // Sein Tempo (`vx`, `vz`) lesen die anderen. Die Ankunft geht ohne Zuschauer (`_bewohnerSchritt` allein). Liefert, ob sich
     // die Lage änderte.
     _bewohnerGehen(S, b, dt) {
+        // OHNE ZEIT KEIN SCHRITT (werk-am-ort-2): ein Takt ohne Zeit (`delta` 0 — das Warten auf die Ankunft, ein Takt im Halt)
+        // geht nicht und ändert nichts. Bis hier teilte er durch sie: der Rückstand 0 ÷ 0 machte `tempoTag` NaN, der Schritt trug
+        // den Leib nach NaN, sein Tritt schrieb die Zelle „NaN,NaN", und der Stand brach beim Packen (schreck in der stehenden
+        // Stadt: Rathaus #619833, „Trampelpfad: NaN ist kein Varint")
+        if (!(dt > 0)) return false;
         const g = b.leib;
         const BW = AnazhRealm.BEWOHNER;
         const [x0, z0] = [g.position.x, g.position.z];
@@ -4251,7 +4256,7 @@ class AnazhRealm_siedlung_bewohner {
         b.tempoTag = Math.max(b.tempo / 2, Math.min(b.tempo * (1 + BW.aufholen), soll));
         const dtW = (dt * b.tempoTag) / b.tempo;
         const [weg0, rest0] = [b.weg, b.wegRest];
-        let lenk = b.drinnen || !(dt > 0) ? null : this._bewohnerAusweichen(S, b, dtW);
+        let lenk = b.drinnen ? null : this._bewohnerAusweichen(S, b, dtW);
         // DER VORRANG DER FAHRBAHN (Leiter mensch.netz.verkehr, das EINE Gesetz der Straße): wer neben der Bahn eines Wagens steht und mit dem
         // Tempo seines Wegs in sie träte, wartet am Rand, solange ein Wagen seine Querung beansprucht (`_verkehrVorrang`) — wer
         // schon in ihr geht, geht hinüber, und der Wagen wartet die Dauer seiner Querung. Bis hier nahm der
@@ -4262,7 +4267,7 @@ class AnazhRealm_siedlung_bewohner {
         // vor einem Leib neben der Fahrbahn).
         // DIE QUERUNG IST EINE RAUM-ZEIT-RESERVIERUNG (w27-verkehr-leib, `_verkehrVorrang`): am Rand prüft er seine ganze Querung
         // gegen die Zeit der Wagen, nie nur den nächsten Schritt — wer die Fahrbahn betritt, hat sie bis hinter die letzte Bahn.
-        if (S.verkehr && b.weg && !b.drinnen && dt > 0) {
+        if (S.verkehr && b.weg && !b.drinnen) {
             const e = lenk ? null : this._bewohnerLinie(b, x0, z0);
             // (sein Wunsch zum nächsten Punkt seines Plans: tetrapoda `zielWunsch`, die Ziel-Kette — kein Halt voraus)
             const w = e && TC.zielWunsch(e.x - x0, e.z - z0, Infinity, b.tempo);

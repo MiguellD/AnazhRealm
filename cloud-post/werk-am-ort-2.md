@@ -95,6 +95,12 @@ Seite der Fahrbahn → `wer`).
   langsamer machen, ist nicht gemessen (derselbe Lauf am Baum von main steht aus).
   Je Lauf gemessen: seuche Grund 124 s, je Täter 88 s (die Rechnung des Ausbruchs ≈ 0,2 s — der Rest ist die Stadt um den Lauf);
   zielplan je Täter 29–35 s (sein Tag an fünf Stunden); der Wechsel in die frische Welt 12 s.
+- Folge, Stand 22:2x (WIP am Zweig, nicht im Kopf 4): `bleibt` — die Stadt kehrt zwischen Grund und Täter derselben Stadt-Probe
+  nicht heim (die Heimkehr ließ die Liste fallen, jeder Täter wartete 82–113 s auf jeden Leib): seuche 304 → 128 s, schreck
+  342 → 213 s. Die stehende Stadt hob einen Welt-Bruch: `_bewohnerGehen` teilte durch einen Takt ohne Zeit (0 ÷ 0 → `tempoTag`
+  NaN → Leib in NaN → Tritt „NaN,NaN" → „Trampelpfad: NaN ist kein Varint"; Täter benannt: Rathaus #619833 in schreck). Schnitt
+  an der Wurzel: ohne Zeit kein Schritt (`stamm/siedlung-bewohner.js`), merge-tree gegen main und sprache-dialekt-2 sauber.
+  Messung schreck+seuche mit Selbst-Test läuft; danach die übrigen Stadt-Proben und die Teile neu mit Stoppuhr.
 
 ## Heap an der GTX 1060 (Koordinator 18:04)
 
@@ -118,6 +124,9 @@ Seite der Fahrbahn → `wer`).
 - Der Kopf fährt im Bündel 2 `buendel-abend` (Koordinator 15:39); kein neuer Vorprüf-Kopf vor der Landung. Offen: bild#2 und
   bevoelkerung#2 am Rumpf der Station (Gerät), der Stations-Kandidat seuche#2 (Vor-Richter GTX 1050/1060).
 - Wartezimmer: Post bis 20:59 gelesen; Kopf 4 steht: `werk-am-ort-2-kopf4` f28b9679 (EIN Elter main b3740dd5, Baum = der Zweig
-  df008c95, Probe-Ruf wie Kopf 3, `[ci voll]`). Der Zweig trägt main b3740dd5 vereint.
+  df008c95, Probe-Ruf wie Kopf 3, `[ci voll]`). Der Zweig trägt main b3740dd5 vereint. Post bis 22:11 gelesen (der Heil-Zug
+  `frist-puls`): `check.yml`, `ci-zeiten.json`, `ci-zeiten.cjs` fasse ich bis zu seiner Landung nicht an; der Probe-Ruf ohne
+  Leerzeichen nach den Kommas — Kopf 4 f28b9679 trägt sie noch (geschoben vor der Regel, Ruf wie Kopf 3); ich lasse ihn stehen, ein
+  Kopf mit demselben Baum und dem Ruf ohne Leerzeichen kostet einen Schub, auf Zuruf.
 
 Karte 2 gebucht 156 von 1 718. Status ZWISCHENSTAND.
