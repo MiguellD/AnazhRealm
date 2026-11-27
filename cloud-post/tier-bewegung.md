@@ -47,3 +47,9 @@ Messort der Station: die Gang-Linse fährt an der Pose des Spielers (Preis-Pose 
 - Belegt mit echtem Renderer (Werkbank, swiftshader): ein Leib, am Auge 90 m ins Feld gefallen, Kamera ohne Takt auf 43 m → visible false, Feld, Abnahme UNGEZEICHNET; derselbe Schuss mit `_leiberAmAuge` → nah, visible, gezeichnet.
 - Schnitt (Zweig `tier-bewegung` 46d1422, als Kopf nach dem Urteil von Kopf 3): EIN Glied `_leiberAmAuge` (Ziegel · Tier-Satz · Blick des Bilds · Sicht je Leib am Auge der Kamera), gerufen von `__nahFolgt` (jeder Schuss, jede Pose der Blick-Wahl); der Zwilling `stufenAm` der Kreatur-Probe ruft es. EIN Leser `_leibGezeichnet` (Mesh · Satz · Feld-Eintrag, `_weltFeldZeichnet`) für Abnahme und Menge. Linse: `werkbank lauf --selbsttest` (`nahFolgtSelbsttest`), Mutante ohne `_leiberAmAuge` ROT beim Namen.
 - Offen: das Bild der Serie selbst — die Welt der Werkbank steht unter swiftshader hier nicht (Fege-Takt nahWiese wartet); Richter ist der Vor-Richter an GTX und Radeon.
+
+- masse#1, lokale Batterie am Kopf-Baum (swiftshader): welt-boot GRÜN (82 s) · fachwerk-contract GRÜN (123 s) ·
+  gate:analog-nah Selbsttest GRÜN, Lauf ROT nur in E („eingeschwungen … ab Takt null“, Spitze 0 Sätze < 64 m, R/T/X GRÜN) —
+  derselbe Lauf auf origin/main 23b593ac ist gleich ROT (55 s): die Welt steht in diesem Container nicht (wie Werkbank
+  „DIE WELT STEHT NICHT“); kein Satz < 64 m in 1 500 Takten. Probe-Ruf darum `gate:analog-nah,gate:tier-gang` auf der echten GPU.
+  `zug.sh probe-tag`: liegt in keinem Zweig (`artifacts/profiband/werkzeug/` ist ignoriert) — nicht fahrbar.
