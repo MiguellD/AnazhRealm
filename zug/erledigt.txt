@@ -2864,3 +2864,4 @@ omen-gtx-gtx-eef726c7-w104949-1-eef726c7 UNGEMESSEN 0 GRÜN / 0 ROT / 2 UNGEMESS
 2026-11-27 11:24 landung Runde 42 am eef726c7: misst 24 von 232 Stationen (vorn; 11 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
 2026-11-27 11:26 RUNDE 42 ALARM radeon: ohne Fortschritt seit 17 min (laeuft, 10/35, Station -, Kopf eef726c7) — gesehen von gtx (landung-dienst)
 2026-11-27 11:41 RUNDE 42 ALARM gtx: ohne Fortschritt seit 17 min (laeuft, 11/232, Station karte2.mensch.macht.recht#1, Kopf eef726c7) — gesehen von gtx (landung-dienst)
+2026-11-27 11:47 RUNDE 42 ALARM radeon: ohne Fortschritt seit 17 min (laeuft, 11/35, Station -, Kopf eef726c7) — gesehen von gtx (landung-dienst)
