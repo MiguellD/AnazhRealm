@@ -1,3 +1,17 @@
+## 27.11. 10:32 Koordinator — ZWEITE SITZUNG dieser Bahn: NEUER START-BRIEF (Übernahme gezeiten#1, Zweig gezeiten-3) — ersetzt den Start-Brief vom 26.11.; NUR dieser Abschnitt ist dein Auftrag
+
+Du bist die ZWEITE Sitzung dieser Bahn (gestartet 27.11. ≈ 10:15). Die erste hat geliefert und schweigt; alles UNTER diesem Abschnitt ist ihre Geschichte — lies sie als Wissen, baue nichts davon noch einmal. Stand heute: main `eef726c7` (V18.546.450), Karte 2 gebucht 149 von 1 718.
+
+**STAND:** die erste Sitzung endete am 27.11. 01:20 („4 h ohne Post“ — sie las einen alten Stand dieses Briefkastens; die Post vom 26.11. 21:57–22:53 steht unten). `karte2.planet.wasser.gezeiten#1` ist weiter ROT (GTX 1060 am 031f4700, Radeon am 99649186).
+
+**DEIN AUFTRAG ist der Abschnitt „26.11. 22:53 Koordinator“ unten:** der Kopf 2 (`gezeiten-2-kopf2` 1fbeed49, auf main 45bad33f) trug die Gezeit nur am gezeichneten Meer (Hub 0 → 3,45 m im Null-Renderer), am Gerät stand der Hub bei 0 m — dein Kopf hebt die Gezeit ins GESETZ: EIN Leser (`_pegelTakt` → `_koerperWasser`), Ufer, Wasser-Bild und Station lesen denselben Spiegel unter der Welt-Uhr; kein zweiter Rechen-Weg. Lies den Vor-Richter-Abschnitt „26.11. 22:50“ ganz (er nennt wörtlich, was die Station am Gerät liest und warum 0 m), dann den Diff von 1fbeed49; bringe das Ganze als EINEN glatten Kopf auf main eef726c7 (`git merge-tree` zuerst). Maß: periodeH 12,42 ± 2 % und Hub > 0 m an den 12 Küsten × 25 Stunden der Station — headless an derselben Funktion vorrechnen, die die echte Sitzung liest.
+
+**Regeln** wie im Start-Satz und im Regel-Blatt (`cloud-post/welle-2611-regeln.md`): EIN glatter Vorprüf-Kopf auf dem heutigen main, Zweig `gezeiten-3`, Betreff `Vorprüfung gezeiten-3 <n> (auf main <kopf8>): <vorher → nachher mit Zahl> [gpu-probe: höchstens vier Tore, je ≤ 480 s] [ci voll]`; `npm run check:statik` GANZ vor dem Schub; `probe-tag` muss OK sagen; kein Siegel-Wort (fertig · RUND · vollendet · vollzogen · Schluss · SCOPE ZU), kein fail-soft, kein Zwilling, kein Schalter. Die Station (Richter) änderst du nie im Spiel-Zweig — ein Stations-Kandidat liegt nur als `cloud-post/gezeiten-3-station/kandidat.diff` + `BEGRUENDUNG.txt` in deinem Zweig. Schiebe NIE auf einen bestehenden Zweig (`gezeiten`, `gezeiten-2`, `gezeiten-2-kopf2`) und nie mit `--force`.
+
+**Briefkasten bleibt DIESE Datei** (Wartezimmer wie im Start-Satz). Hole sie so, dass der Zeiger wirklich wandert: `git fetch -q origin +refs/heads/koordination:refs/remotes/origin/koordination` — eine frühere Bahn las 4 h lang einen alten Stand und sah ihre Post nie. Die rote Zeile einer Sprosse steht im Zweig `punkte-maschine` unter `vision/richter/<leiter>.<n>.<kopf8>-<geraet>.json` (jüngste Datei je Gerät, Feld `geraete[].richter.wert`), die Station unter `meisterkarte-quelle/punkte/stationen/` — lies beide GANZ, bevor du schneidest. Gilt die rote Zeile am heutigen main nicht mehr, melde das als ERSTES im Stand-Blatt deines Zweigs (`[skip ci]`) — dann messe ich nach und du bekommst die nächste Sprosse. Bericht: ZWISCHENSTAND in drei Sätzen (Geschnitten · Gemessen mit Zahl vorher ↔ nachher · offen mit Adresse und Messnamen).
+
+---
+
 # Post an gezeiten-2
 
 ## 26.11. 22:53 Koordinator — Kopf 2 wird NICHT gestempelt (gezeiten#1 an der GPU ROT, Hub 0 m); dein nächster Kopf hebt die Gezeit ins GESETZ

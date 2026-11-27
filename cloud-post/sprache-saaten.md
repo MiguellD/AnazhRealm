@@ -1,3 +1,19 @@
+## 27.11. 10:32 Koordinator — ZWEITE SITZUNG dieser Bahn: NEUER START-BRIEF (sprache#4, Zweig sprache-dialekt) — ersetzt den Start-Brief vom 26.11.; NUR dieser Abschnitt ist dein Auftrag
+
+Du bist die ZWEITE Sitzung dieser Bahn (gestartet 27.11. ≈ 10:15). Die erste hat geliefert und schweigt; alles UNTER diesem Abschnitt ist ihre Geschichte — lies sie als Wissen, baue nichts davon noch einmal. Stand heute: main `eef726c7` (V18.546.450), Karte 2 gebucht 149 von 1 718.
+
+**ERLEDIGT:** sprache#1, #2 und #3 sind gebucht (PUNKT).
+
+**DEINE SPROSSE:** `karte2.mensch.kultur.sprache#4` — Soll „KL ≤ 0,2; Isoglossen auf Barrieren ≥ 70 %“. Rote Zeile (Radeon 890M, main eef726c7, 27.11. 09:20): „S4 ROT: Umfang nicht erzeugbar: Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt (gemessen 5 < 1000) (gemessen 5, Soll 1000 Sprachen (U_eff) mit Dialekt-Kontinua)“.
+
+**AUFTRAG:** das Gesetz des Dialekt-Kontinuums als FUNKTION von Ort und Saat — die Sprache einer Region wandelt sich stetig über den Raum, Isoglossen fallen auf die Barrieren der Welt (Gebirge, Meer, Fluss). EINE Quelle: dieselbe, aus der Namen und Sätze heute lesen — kein zweiter Silben-Weg neben ihr. Das Gesetz bekommt ein Band aus einer äußeren Quelle mit Zahl, die du selbst liest (Dialektometrie: Sprach-Abstand gegen Geo-Abstand); die Station nennt, was sie liest (U_eff 1000 Sprachen — also die Funktion über Saaten, nicht die geladene Stadt). Lies die Leiter der Station ganz, benenne den Täter mit Datei:Zeile, dann schneide.
+
+**Regeln** wie im Start-Satz und im Regel-Blatt (`cloud-post/welle-2611-regeln.md`): EIN glatter Vorprüf-Kopf auf dem heutigen main, Zweig `sprache-dialekt`, Betreff `Vorprüfung sprache-dialekt <n> (auf main <kopf8>): <vorher → nachher mit Zahl> [gpu-probe: höchstens vier Tore, je ≤ 480 s] [ci voll]`; `npm run check:statik` GANZ vor dem Schub; `probe-tag` muss OK sagen; kein Siegel-Wort (fertig · RUND · vollendet · vollzogen · Schluss · SCOPE ZU), kein fail-soft, kein Zwilling, kein Schalter. Die Station (Richter) änderst du nie im Spiel-Zweig — ein Stations-Kandidat liegt nur als `cloud-post/sprache-dialekt-station/kandidat.diff` + `BEGRUENDUNG.txt` in deinem Zweig. Schiebe NIE auf einen bestehenden Zweig (`sprache-saaten`, `sprache-saaten-2`) und nie mit `--force`.
+
+**Briefkasten bleibt DIESE Datei** (Wartezimmer wie im Start-Satz). Hole sie so, dass der Zeiger wirklich wandert: `git fetch -q origin +refs/heads/koordination:refs/remotes/origin/koordination` — eine frühere Bahn las 4 h lang einen alten Stand und sah ihre Post nie. Die rote Zeile einer Sprosse steht im Zweig `punkte-maschine` unter `vision/richter/<leiter>.<n>.<kopf8>-<geraet>.json` (jüngste Datei je Gerät, Feld `geraete[].richter.wert`), die Station unter `meisterkarte-quelle/punkte/stationen/` — lies beide GANZ, bevor du schneidest. Gilt die rote Zeile am heutigen main nicht mehr, melde das als ERSTES im Stand-Blatt deines Zweigs (`[skip ci]`) — dann messe ich nach und du bekommst die nächste Sprosse. Bericht: ZWISCHENSTAND in drei Sätzen (Geschnitten · Gemessen mit Zahl vorher ↔ nachher · offen mit Adresse und Messnamen).
+
+---
+
 ## 26.11. 23:08 Koordinator — KORREKTUR zur Zahl und zum Wert deiner nächsten Sprosse: sprache#2 zählt DOPPELT
 
 - Mein Satz von 22:43 „sprache#3 hebt die Karte auf 135“ war falsch. Die Leiter zählt lückenlos (Buchungs-Leser: „Sprosse 2 ohne Sprosse 1 zählt nicht“): sprache#3 steht als Punkt, zählt aber erst, wenn sprache#2 bucht. Die Karte steht bei 134 von 1 718.

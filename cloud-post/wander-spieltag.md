@@ -1,3 +1,19 @@
+## 27.11. 10:32 Koordinator — ZWEITE SITZUNG dieser Bahn: NEUER START-BRIEF (leben.tiere.bewegung#2, Zweig tier-bewegung) — ersetzt den Start-Brief vom 26.11.; NUR dieser Abschnitt ist dein Auftrag
+
+Du bist die ZWEITE Sitzung dieser Bahn (gestartet 27.11. ≈ 10:15). Die erste hat geliefert und schweigt; alles UNTER diesem Abschnitt ist ihre Geschichte — lies sie als Wissen, baue nichts davon noch einmal. Stand heute: main `eef726c7` (V18.546.450), Karte 2 gebucht 149 von 1 718.
+
+**ERLEDIGT:** wanderung#1 und #2 sind gebucht (PUNKT); wanderung#3 trägt die Bahn `wander-pfad` (Kopf 284a63ca) — fasse sie nicht an; der Abschnitt „27.11. 00:44“ unten galt der ersten Sitzung.
+
+**DEINE SPROSSE:** `karte2.leben.tiere.bewegung#2` — Richter ROT an GTX 1060 am 486a6685 und an Radeon 890M am b1f0de0e (beide Akten lesen: `vision/richter/leben.tiere.bewegung.2.*`).
+
+**AUFTRAG:** lies die rote Zeile beider Geräte und die Leiter `leben.tiere.bewegung` in der Station ganz; benenne den Täter an der Quelle mit Datei:Zeile; schneide am EINEN Leser der Bewegung (kein zweiter Gang-Weg). Das Gesetz bekommt ein Band aus einer äußeren Quelle mit Zahl, die du selbst liest (Gangart und Tempo gegen Körpermasse). Kosten an Schirm + Änderung: Zahl vorher ↔ nachher (ms je Tier-Takt an einer Herde).
+
+**Regeln** wie im Start-Satz und im Regel-Blatt (`cloud-post/welle-2611-regeln.md`): EIN glatter Vorprüf-Kopf auf dem heutigen main, Zweig `tier-bewegung`, Betreff `Vorprüfung tier-bewegung <n> (auf main <kopf8>): <vorher → nachher mit Zahl> [gpu-probe: höchstens vier Tore, je ≤ 480 s] [ci voll]`; `npm run check:statik` GANZ vor dem Schub; `probe-tag` muss OK sagen; kein Siegel-Wort (fertig · RUND · vollendet · vollzogen · Schluss · SCOPE ZU), kein fail-soft, kein Zwilling, kein Schalter. Die Station (Richter) änderst du nie im Spiel-Zweig — ein Stations-Kandidat liegt nur als `cloud-post/tier-bewegung-station/kandidat.diff` + `BEGRUENDUNG.txt` in deinem Zweig. Schiebe NIE auf einen bestehenden Zweig (`wander-spieltag`, `wander-spieltag-kopf2`, `wander-pfad`) und nie mit `--force`.
+
+**Briefkasten bleibt DIESE Datei** (Wartezimmer wie im Start-Satz). Hole sie so, dass der Zeiger wirklich wandert: `git fetch -q origin +refs/heads/koordination:refs/remotes/origin/koordination` — eine frühere Bahn las 4 h lang einen alten Stand und sah ihre Post nie. Die rote Zeile einer Sprosse steht im Zweig `punkte-maschine` unter `vision/richter/<leiter>.<n>.<kopf8>-<geraet>.json` (jüngste Datei je Gerät, Feld `geraete[].richter.wert`), die Station unter `meisterkarte-quelle/punkte/stationen/` — lies beide GANZ, bevor du schneidest. Gilt die rote Zeile am heutigen main nicht mehr, melde das als ERSTES im Stand-Blatt deines Zweigs (`[skip ci]`) — dann messe ich nach und du bekommst die nächste Sprosse. Bericht: ZWISCHENSTAND in drei Sätzen (Geschnitten · Gemessen mit Zahl vorher ↔ nachher · offen mit Adresse und Messnamen).
+
+---
+
 ## 27.11. 00:44 Koordinator — wanderung#2: Kopf 2 steht (c6038905, Zweig `wander-spieltag-kopf2`); dein nächster Auftrag: wanderung#3
 
 - **Kopf 1 (c073a604): Batterie 20 grün, 1 rot** — Schritt „Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)“: „❌ GOLDEN byte-treu: tetrapoda-core.js — c6cb6dcac11b“. Dein Schnitt nahm `leashBaseM`/`leashSpanM` aus `VERHALTEN.wandern`; VERHALTEN reist in PRESETS, und der Fingerabdruck über PRESETS + PARAMS_BY_KIND ist eingefroren (`spec/asset-contract/v7/golden/daten.json`).

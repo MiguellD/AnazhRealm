@@ -1,3 +1,19 @@
+## 27.11. 10:32 Koordinator — ZWEITE SITZUNG dieser Bahn: NEUER START-BRIEF (planet.wetter.lagen#2, Zweig wetter-lagen) — ersetzt den Start-Brief vom 26.11.; NUR dieser Abschnitt ist dein Auftrag
+
+Du bist die ZWEITE Sitzung dieser Bahn (gestartet 27.11. ≈ 10:15). Die erste hat geliefert und schweigt; alles UNTER diesem Abschnitt ist ihre Geschichte — lies sie als Wissen, baue nichts davon noch einmal. Stand heute: main `eef726c7` (V18.546.450), Karte 2 gebucht 149 von 1 718.
+
+**ERLEDIGT:** kraft#2 und stadtklima#1 sind gelandet und gebucht (z792, main c072c864). Die Folge-Aufträge biome#2 / biome#4 unten gehörten der ersten Sitzung (Zweige `biome-hoehenstufen*`) — fasse sie nicht an.
+
+**DEINE SPROSSE:** `karte2.planet.wetter.lagen#2` — Richter ROT an GTX 1060 am f0a89f7e (23.11.; Akte `vision/richter/planet.wetter.lagen.2.*`). An der Radeon steht nur ein altes Apparat-Rot (Start: spawn ENAMETOOLONG), dort messe ich selbst nach.
+
+**AUFTRAG:** die rote Zeile ist vier Tage alt — prüfe ZUERST an der Quelle, ob sie am heutigen main noch gilt (die Leiter `planet.wetter.lagen` in `k2-planet.js` ganz lesen; was sie liest, headless an der Funktion des Wetters nachrechnen). Gilt sie: Täter mit Datei:Zeile, Schnitt am EINEN Leser des Wetters (`_wetterAmOrt` / `wetterFeldAm` — kein zweiter Wetter-Weg, kein Schalter), Band aus einer äußeren Quelle mit Zahl (Wetterlagen-Klimatologie: Häufigkeit und Dauer der Lagen), Zahl vorher ↔ nachher. Du kennst `_windAt` aus dem Start-Brief unten — derselbe Leser, kein Zwilling.
+
+**Regeln** wie im Start-Satz und im Regel-Blatt (`cloud-post/welle-2611-regeln.md`): EIN glatter Vorprüf-Kopf auf dem heutigen main, Zweig `wetter-lagen`, Betreff `Vorprüfung wetter-lagen <n> (auf main <kopf8>): <vorher → nachher mit Zahl> [gpu-probe: höchstens vier Tore, je ≤ 480 s] [ci voll]`; `npm run check:statik` GANZ vor dem Schub; `probe-tag` muss OK sagen; kein Siegel-Wort (fertig · RUND · vollendet · vollzogen · Schluss · SCOPE ZU), kein fail-soft, kein Zwilling, kein Schalter. Die Station (Richter) änderst du nie im Spiel-Zweig — ein Stations-Kandidat liegt nur als `cloud-post/wetter-lagen-station/kandidat.diff` + `BEGRUENDUNG.txt` in deinem Zweig. Schiebe NIE auf einen bestehenden Zweig (`wind-boee-haus`, `biome-hoehenstufen`, `biome-hoehenstufen-kopf2`, `biome-hoehenstufen-kopf3`, `biome-planet`) und nie mit `--force`.
+
+**Briefkasten bleibt DIESE Datei** (Wartezimmer wie im Start-Satz). Hole sie so, dass der Zeiger wirklich wandert: `git fetch -q origin +refs/heads/koordination:refs/remotes/origin/koordination` — eine frühere Bahn las 4 h lang einen alten Stand und sah ihre Post nie. Die rote Zeile einer Sprosse steht im Zweig `punkte-maschine` unter `vision/richter/<leiter>.<n>.<kopf8>-<geraet>.json` (jüngste Datei je Gerät, Feld `geraete[].richter.wert`), die Station unter `meisterkarte-quelle/punkte/stationen/` — lies beide GANZ, bevor du schneidest. Gilt die rote Zeile am heutigen main nicht mehr, melde das als ERSTES im Stand-Blatt deines Zweigs (`[skip ci]`) — dann messe ich nach und du bekommst die nächste Sprosse. Bericht: ZWISCHENSTAND in drei Sätzen (Geschnitten · Gemessen mit Zahl vorher ↔ nachher · offen mit Adresse und Messnamen).
+
+---
+
 ## 27.11. 00:44 Koordinator — biome#2: Kopf 2 steht (dd226731, Zweig `biome-hoehenstufen-kopf2`); dein nächster Auftrag: biome#4
 
 - **Kopf 1 (abad849e) fiel in der Batterie** am Schritt „Prettier-Format-Check“: „phyto-core.js — nicht formatiert (ab Zeile 3212)“ — zwei Stellen in `forestStufe` (der `throw` und die Zeile `tanne:`). Ich habe **Kopf 2 per Plumbing** gebaut: dein Baum + Prettier an dieser einen Datei, kein Zeichen Logik geändert (`dd22673164601f959d4279352c327e1a9080b417`). Batterie und Vier-Tor-Probe laufen an Kopf 2, die Läufe am Kopf 1 sind abgebrochen. **Baue NICHT an Kopf 1 weiter.** Für jeden weiteren Kopf: `npm run format:check` steht in der Pflicht-Liste vor dem Push — fahre es und nenne es beim Namen im Blatt.

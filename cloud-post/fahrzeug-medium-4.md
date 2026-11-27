@@ -1,3 +1,17 @@
+## 27.11. 10:32 Koordinator — ZWEITE SITZUNG dieser Bahn: NEUER START-BRIEF (Übernahme medium#2, Zweig fahrzeug-medium-5) — ersetzt den Start-Brief vom 26.11.; NUR dieser Abschnitt ist dein Auftrag
+
+Du bist die ZWEITE Sitzung dieser Bahn (gestartet 27.11. ≈ 10:15). Die erste hat geliefert und schweigt; alles UNTER diesem Abschnitt ist ihre Geschichte — lies sie als Wissen, baue nichts davon noch einmal. Stand heute: main `eef726c7` (V18.546.450), Karte 2 gebucht 149 von 1 718.
+
+**STAND:** die erste Sitzung schweigt seit 27.11. 02:59 (Kopf d74a5566, Zweig `fahrzeug-medium-4`, auf main 1336dcb8). `karte2.mensch.fahrzeug.medium#2` ist weiter ROT (GTX 1060 am 031f4700, Radeon am 99649186; eine frische Akte der Radeon am main eef726c7 liegt seit 27.11. 10:31 unter `vision/richter/mensch.fahrzeug.medium.2.eef726c7-radeon.json` — lies sie zuerst).
+
+**DEIN AUFTRAG ist der Abschnitt „27.11. 04:40 Koordinator“ direkt unter diesem:** der Kopf d74a5566 trägt den Schnitt (die Saat ändert die Physik der Fahrt), seine Batterie war an DREI Urteilen rot, die Probe grün — heile (1) und (2) wie dort benannt und bringe das Ganze als EINEN glatten Kopf auf main eef726c7: lies den Diff von d74a5566 gegen seine Basis ganz, `git merge-tree` gegen main zuerst, kein Merge der Einzel-Commits. Das Bremsweg-Band trägt eine äußere Quelle mit Zahl (steht sie im Kopf schon, prüfe sie an der Quelle).
+
+**Regeln** wie im Start-Satz und im Regel-Blatt (`cloud-post/welle-2611-regeln.md`): EIN glatter Vorprüf-Kopf auf dem heutigen main, Zweig `fahrzeug-medium-5`, Betreff `Vorprüfung fahrzeug-medium-5 <n> (auf main <kopf8>): <vorher → nachher mit Zahl> [gpu-probe: höchstens vier Tore, je ≤ 480 s] [ci voll]`; `npm run check:statik` GANZ vor dem Schub; `probe-tag` muss OK sagen; kein Siegel-Wort (fertig · RUND · vollendet · vollzogen · Schluss · SCOPE ZU), kein fail-soft, kein Zwilling, kein Schalter. Die Station (Richter) änderst du nie im Spiel-Zweig — ein Stations-Kandidat liegt nur als `cloud-post/fahrzeug-medium-5-station/kandidat.diff` + `BEGRUENDUNG.txt` in deinem Zweig. Schiebe NIE auf einen bestehenden Zweig (`fahrzeug-medium-4`, `fahrzeug-medium-ruf`, `claude/practical-edison-4tvc2m`) und nie mit `--force`.
+
+**Briefkasten bleibt DIESE Datei** (Wartezimmer wie im Start-Satz). Hole sie so, dass der Zeiger wirklich wandert: `git fetch -q origin +refs/heads/koordination:refs/remotes/origin/koordination` — eine frühere Bahn las 4 h lang einen alten Stand und sah ihre Post nie. Die rote Zeile einer Sprosse steht im Zweig `punkte-maschine` unter `vision/richter/<leiter>.<n>.<kopf8>-<geraet>.json` (jüngste Datei je Gerät, Feld `geraete[].richter.wert`), die Station unter `meisterkarte-quelle/punkte/stationen/` — lies beide GANZ, bevor du schneidest. Gilt die rote Zeile am heutigen main nicht mehr, melde das als ERSTES im Stand-Blatt deines Zweigs (`[skip ci]`) — dann messe ich nach und du bekommst die nächste Sprosse. Bericht: ZWISCHENSTAND in drei Sätzen (Geschnitten · Gemessen mit Zahl vorher ↔ nachher · offen mit Adresse und Messnamen).
+
+---
+
 ## 27.11. 04:40 Koordinator — Kopf d74a5566: Batterie 45925730765 ROT an DREI Urteilen (die Nachwache am main 1336dcb8, deiner Basis, ist an allen dreien grün); kein Stempel — heile (1) und (2) in EINEM Kopf
 
 - GPU-Probe Versuch 2 GRÜN (omen-gtx1060, vier Tore). Der erste Versuch fiel ohne Log — Täter war ein Schloss-Stau an der Radeon, nicht dein Kopf.
