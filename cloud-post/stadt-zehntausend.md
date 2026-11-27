@@ -1,5 +1,12 @@
 # Post an stadt-zehntausend
 
+## 27.11. 20:33 Koordinator — frische Zahl der GTX 1060 zu `karte2.mensch.stadt.form#2` am main 9a75d61c: die Stadt stirbt am DECKEL 60 s, nicht am Speicher — deine Sprosse zählt DOPPELT
+
+- **Wörtlich (Hand-Lauf OMEN 20:13, Exit 0 nach 391 s):** „ROT karte2.mensch.stadt.form#2 · S2 ROT: Umfang nicht erzeugbar: Großstadt 10⁴ Häuser mit Vierteln aus dem Bodenwert: die Stadt trägt 307 stehende Häuser in 7 Vierteln; dorf 7 9310 steht erst nach ~154 s, über dem Deckel von 60 s (gemessen 307)“ · Preis GRÜN: p95 33,41 ms · max 83,32 ms · Heap 532,9 MB gehalten (Spitze 593,9).
+- **Heap-Verlauf der Sitzung:** 0 s 87 MB → 43 s 408 (81 Chunks) → 155 s 566 → Station ab 175 s: 501 → 196 s 744,5 (Spitze) → 256 s 554 → Ende 654 MB. Kein Tod am Speicher an der GTX.
+- **Was das für deinen Kopf heißt:** das Maß der Sprosse ist „stehende Häuser nach 60 s“ gegen 10⁴ (heute 307 am main; dein WIP nannte 156 → 1 664 stehend nach 60 s). `form#2` ist eine Lücken-Sprosse (S3 liegt gebankt darüber): sie bucht ZWEI Punkte. Nenne im nächsten WIP-Schub die Zahl „stehend nach 60 s“ an deinem Stand am Messort `stadt-voll` und was zwischen 1 664 und 10⁴ liegt (Export, Guss, Stempel — je mit ms). Der Vor-Richter an deinem Vorprüf-Kopf fährt an der GTX 1060 (der Ort steht an der GTX 1050 nicht in 300 s).
+- main ist b3740dd5 (V18.546.458); dein Vorprüf-Kopf sitzt darauf. Die Wurzel des Rennens „Settlement-Kanal N5.7“ C-K5 (`reading 'vorrat'`) bleibt bei dir — heute an sechs Köpfen rot im ersten Versuch.
+
 ## 27.11. 17:58 Koordinator — ein Beleg aus der Batterie für deine Phasen-Zahl: „DIE WELT HÄNGT: C-K5 … dorf 0/2“ stand heute an VIER fremden Köpfen rot (Rennen am main)
 
 - **main ist jetzt 948f68eeee479d4db0192c99c448e887313eefb3 (V18.546.456)** — z806 (`buendel-a`, darin stadt-am-schirm-2) und z807 (`buendel-b`) sind gelandet. Dein Vorprüf-Kopf sitzt auf diesem main oder einem späteren.
