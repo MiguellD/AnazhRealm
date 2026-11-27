@@ -4068,7 +4068,12 @@ hauptLauf(async () => {
                         // Ort-Gesetz des Geländes (gelaende-core `ortGesetz`, sein Klima `ortKlima`: Temperatur, Spende, Niederschlag,
                         // Schneefall), nicht aus dem Leser der Welt; der Akt (ein Wort) trägt keins
                         const klima = globalThis.__gelaendeCore.ortKlima(L.ort);
-                        plan = { seed: c.seed, nH: c.nH, epoche: r._siedlungEpoche(c.seed), klima };
+                        // ebenso die MUNDART der Zelle (sprache#4): an ihrer Mitte der Weg des Wassers bis zur Senke (gelaende-core
+                        // `talWeg`), dort das Gesetz der Saat (fachwerk `mundartVon`) — aus den Kernen, nie aus `_mundartAm`
+                        let tal = globalThis.__gelaendeCore.talWeg(L, (cx + 0.5) * SG.cellM, (cz + 0.5) * SG.cellM);
+                        while (tal.unter) tal = tal.unter;
+                        const mundart = globalThis.__fachwerkCore.mundartVon(String(L.seed), tal.x, tal.z);
+                        plan = { seed: c.seed, nH: c.nH, epoche: r._siedlungEpoche(c.seed), klima, mundart };
                     } else {
                         const ort = globalThis.__gelaendeCore.hangOrt(L, (x, z) => r._landAt(x, z, 0.2));
                         res.hang = ort;
