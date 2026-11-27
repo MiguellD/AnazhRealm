@@ -135,3 +135,5 @@ w28-wander-spieltag karte2.leben.tiere.wanderung#2
 w28-sprache-saaten-2 karte2.mensch.kultur.sprache#2
 # z798 (main 031f4700, 27.11. 02:55): z798 gelandet 03:17 (w28-bahn-klima-2 72d56e4e → main 031f4700): Lücken-Sprosse bahn-klima#2 im main, Buchungs-Läufe an Radeon und OMEN folgen
 w28-bahn-klima-2 karte2.planet.kopplung.bahn-klima#2
+# z799 (main 920fa974, 27.11. 03:36): z799 gelandet 03:59 (w28-biome-hoehenstufen 152ddf8f + w28-ci-puls-frist 255026f1): Lücken-Sprosse biome#2 im main, Buchungs-Läufe an Radeon und OMEN folgen
+w28-biome-hoehenstufen karte2.leben.pflanzen.biome#2
