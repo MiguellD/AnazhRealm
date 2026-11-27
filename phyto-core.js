@@ -4454,7 +4454,9 @@
     // Oberfläche der Welt, sonst über dem Gesetz ohne Detail, nur das Dach), je Krone ihr Umriss wie in der Ferne (`arten[sp]`
     // {h, ansatz, nadel}: Laub die Ellipse über [Ansatz, Wipfel], Nadel der Kegel, Radius T des Plans). Gefragt werden nur die
     // Zellen (Kante `cell`), in denen ein Baum der Höhe `hMax` die Gerade erreicht, nah zuerst; der erste Treffer endet.
-    // → null (frei) oder { von: "grund" | <Art>, d } (d: Weg vom Auge in m).
+    // `nurOb` (die Wahl der Ankunft fragt nur, OB die Gerade frei ist): trifft sie den Grund, endet die Frage dort — keine Zelle
+    // wird für eine frühere Krone geplant (landmarken-9: der Faden plante je Zelle ≈ 0,8 ms, bis 6 405 Zellen je Ankunft).
+    // → null (frei) oder { von: "grund" | <Art>, d } (d: Weg vom Auge in m; mit `nurOb` beim Grund der erste Grund-Treffer).
     function landmarkeSicht(o) {
         const auge = o.auge;
         const q = o.q;
@@ -4469,6 +4471,7 @@
                 treffer = { von: "grund", d: s };
                 break;
             }
+        if (treffer && o.nurOb) return treffer;
         const ende = treffer ? treffer.d : d - 30;
         // die Zellen am Strahl, in denen ein Baum der Höhe hMax die Gerade erreicht, je Zelle ihr kleinster Weg
         const zellen = new Map();

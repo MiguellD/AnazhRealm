@@ -1820,7 +1820,7 @@ function ankunftRechnen(msg) {
         innen: msg.innen,
         aussen: msg.aussen,
         kegel: msg.kegel,
-        verdeckt: (auge, q) => pc.landmarkeSicht(Object.assign({ auge, q }, leser)),
+        verdeckt: (auge, q) => pc.landmarkeSicht(Object.assign({ auge, q, nurOb: true }, leser)),
     });
     const ms = (self.performance ? self.performance.now() : Date.now()) - t0;
     self.postMessage(
