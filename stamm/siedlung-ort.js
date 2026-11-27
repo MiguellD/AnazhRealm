@@ -1694,6 +1694,24 @@ class AnazhRealm_siedlung_ort {
         M.set(mk, aus);
         return aus;
     }
+    // DER ORT AM SCHIRM (stadt-am-schirm, Gebot 7: die Kosten an Schirm und Änderung, nie an der Weltgröße): der Ort `key` (Zelle
+    // "cx,cz" oder Schlüssel eines Gedächtnisses) mit dem Anker (x, z) und seinem Mehr-Reich `mehrM`, vom Spieler `p` aus →
+    // [qx, qz, nah, kachel]: der Punkt des Orts, an dem die Bahn ihn erreicht, sein Ring und ob er eine Kachel ist. Ein Dorf und eine Stadt aus EINEM Plan: ihr
+    // Anker und ihr Reich (nearM + mehrM, siedlung.K2 — unverändert). DIE KACHEL EINER STADT des Worts (ein Viertel, `_viertelInfo`,
+    // oder ihr Kern, `_staedte`) ist ein Quadrat von `cellM` um ihre Mitte: ihr Punkt nächst dem Spieler und der Ring des Bilds
+    // (STADT_FERNE.nahM, bis dahin trägt ein Haus der Stadt seinen Satz, dahinter seine Masse — `_archSatzHorizont`). Bis hier
+    // erwachte die Kachel wie ein Dorf mit ihrem Reich: 260 + 196 m um ihre Mitte, im Stand 19–30 Kacheln und 2 721–3 797 Häuser
+    // Stufe 2 (Radeon, dorf 7 9310, Gründung an der Mess-Wiese: der Renderer starb bei +3,4 GB, „Speicher erschöpft"), wo das Bild
+    // in 300 m rund 730 Häuser trägt. Leser: das Erwachen und der Vorrat (`_autoSettlementZelle`, `_dorfVorlauf`, `_dorfVorbacken`),
+    // die Wiederkehr (`_dorfWiederkehrZelle`, `_ortReistNicht`), das Wachstum (`_ortWachstumTakt`) und der Schlaf (`_kachelSchlafTakt`).
+    _ortAmSchirm(key, x, z, mehrM, p) {
+        const m = typeof key === "string" ? /^(-?\d+),(-?\d+)$/.exec(key) : null;
+        const t = (m && this._viertelInfo(+m[1], +m[2])) || this._staedte().find((s) => s.key === key);
+        if (!t) return [x, z, AnazhRealm.AUTO_SETTLEMENT.nearM + (mehrM || 0), false];
+        const h = AnazhRealm._siedlungGesetz().cellM / 2;
+        const [qx, qz] = [Math.min(t.x + h, Math.max(t.x - h, p.x)), Math.min(t.z + h, Math.max(t.z - h, p.z))];
+        return [qx, qz, AnazhRealm.STADT_FERNE.nahM, true];
+    }
     // DER EINGANG EINER ZELLE (haus-gestalt): ihre Zeit (`_zellZeit`), dazu das Klima ihres Orts, wenn kein Wort sie plant — das Viertel
     // einer Stadt des Worts (`kachel`) trägt keins. Leser: der Export der Zelle (`_dorfBereiten`) und ihres Gedächtnisses (`_ortDp`).
     _zellEingang(key, seed) {
@@ -2233,20 +2251,26 @@ class AnazhRealm_siedlung_ort {
     // Der Grund eines Vorrats, der nie erwachte (der Spieler ging, `_tickAutoSettlement`), fällt mit ihm — der Ort liegt
     // nur als Welt, wenn er erwacht; kehrt der Spieler zurück, legt der neue Vorrat ihn wieder.
     _dorfVorratGrundFaellt(w) {
+        if (!w.grund || !this._ortGrundFaellt(w.ort, w.wasser.nass)) return false;
+        w.grund = false;
+        return true;
+    }
+    // DER GRUND EINES ORTS FÄLLT GANZ (der Erdbau unter seinem Schlüssel `ort`, mit dem Wasser-Urteil `nass`): der Vorrat, der nie
+    // erwachte (`_dorfVorratGrundFaellt`), und die Kachel, die schläft (`_kachelSchlafTakt`). → ob er lag.
+    _ortGrundFaellt(ort, nass) {
         const wm = this.state.worldMeta;
-        const splats = w.grund && wm && wm.erdbau ? wm.erdbau[w.ort] : null;
+        const splats = wm && wm.erdbau ? wm.erdbau[ort] : null;
         if (!Array.isArray(splats)) return false;
         const ohne = [];
         let i = 0;
         for (const k of Object.keys(wm.erdbau)) {
             const l = wm.erdbau[k];
             if (!Array.isArray(l)) continue;
-            if (k === w.ort) for (let j = 0; j < l.length; j++) ohne.push(i + j);
+            if (k === ort) for (let j = 0; j < l.length; j++) ohne.push(i + j);
             i += l.length;
         }
-        delete wm.erdbau[w.ort];
-        this._erdbauWirkt(splats, w.wasser.nass, { erdbauOhne: ohne });
-        w.grund = false;
+        delete wm.erdbau[ort];
+        this._erdbauWirkt(splats, nass, { erdbauOhne: ohne });
         return true;
     }
     // DAS WASSER-URTEIL DES ERDBAUS IM VORLAUF (Lehre 14: im Idle vorgebacken): ändert der Erdbau des Plans v2 (seine Splats
@@ -2377,16 +2401,18 @@ class AnazhRealm_siedlung_ort {
     // eine eigene nach dem Abstand zum Auge. Bis sk5-haus lagen gebacken die vier nächsten (nH 300, gate:settlement C-K5: 13,7–23,6 m außer
     // Schirm), der Zug hob das Haus 117,7 m in der Mitte des Schirms — das erste Haus wartete 11 Takte auf die Foundry-Schlange.
     // Rückgabe: ob jede Stufe steht (der Takt fragt bis zum Erwachen neu).
-    _dorfVorbacken(w, p) {
+    _dorfVorbacken(w, p, key) {
         const f = this._foundry;
         if (!w.v2 || !f || !f.recipes) return false;
         const A = AnazhRealm.AUTO_SETTLEMENT;
         if (!w.vorback || Math.hypot(p.x - w.vorbackBei.x, p.z - w.vorbackBei.z) >= A.vorbackNeuM) {
             w.vorbackBei = { x: p.x, z: p.z };
             const o = w.v2.ort;
-            const d = Math.hypot(p.x - o.x, p.z - o.z) || 1;
-            const k = (A.nearM + (w.mehrM || 0)) / d;
-            const auge = { x: o.x + (p.x - o.x) * k, z: o.z + (p.z - o.z) * k };
+            // das Auge des Erwachens auf dem Ring um den Punkt des Orts, den die Bahn erreicht (`_ortAmSchirm`)
+            const [qx, qz, nah] = this._ortAmSchirm(key, o.x, o.z, w.mehrM, p);
+            const d = Math.hypot(p.x - qx, p.z - qz) || 1;
+            const k = nah / d;
+            const auge = { x: qx + (p.x - qx) * k, z: qz + (p.z - qz) * k };
             const d2 = (e) => (e.position.x - auge.x) ** 2 + (e.position.z - auge.z) ** 2;
             const haeuser = [];
             const reihe = this._dorfZug(w.v2, o, null, null, auge).reihe;
@@ -2962,6 +2988,7 @@ class AnazhRealm_siedlung_ort {
         }
         // ein Erwachen zur Zeit; ohne Kanal (M8) oder Gesetz (`reihe` null) kein Akt
         if (this._autoSettlementPendingKey || !reihe) return;
+        if (this._kachelSchlafTakt(playerPos)) return; // EIN Dorf-Akt pro Tick: die Kachel der Stadt hinter dem Blick schläft
         const wm = st.worldMeta || {};
         const cells = wm.settlementCells && typeof wm.settlementCells === "object" ? wm.settlementCells : null;
         // DER ORT KEHRT WIEDER (speicher.K3, Lehre 7): eine Zelle mit Gedächtnis {seed, nH, x, z} steht je Sitzung, sobald
@@ -3031,11 +3058,12 @@ class AnazhRealm_siedlung_ort {
         const V = this._dorfVorraete || (this._dorfVorraete = new Map());
         let rate = 1; // je Takt EINE Rate des Wasser-Urteils eines bereiten Vorrats (`_dorfWasserUrteil`)
         for (const [k, w] of V) {
-            const sicht = A.nearM + w.mehrM + A.vorlaufM;
+            const [qx, qz, nah] = this._ortAmSchirm(k, w.x, w.z, w.mehrM, playerPos);
+            const sicht = nah + A.vorlaufM;
             if (
                 w.da &&
-                (w.x - playerPos.x) ** 2 + (w.z - playerPos.z) ** 2 > (sicht + A.vorlaufM) ** 2 &&
-                !(this._bedarfZeit(w.x, w.z, sicht) <= 2 * (A.bereitS + (this._dorfRate ? A.bauZeitMaxS : 0)))
+                (qx - playerPos.x) ** 2 + (qz - playerPos.z) ** 2 > (sicht + A.vorlaufM) ** 2 &&
+                !(this._bedarfZeit(qx, qz, sicht) <= 2 * (A.bereitS + (this._dorfRate ? A.bauZeitMaxS : 0)))
             ) {
                 this._dorfVorratGrundFaellt(w);
                 V.delete(k);
@@ -3052,7 +3080,7 @@ class AnazhRealm_siedlung_ort {
                 w.grund = true;
                 rate = 0;
             }
-            if (w.da && V.has(k)) w.vorgebacken = this._dorfVorbacken(w, playerPos);
+            if (w.da && V.has(k)) w.vorgebacken = this._dorfVorbacken(w, playerPos, k);
         }
         // DIE ZELLEN NACH DER ZEIT BIS BEDARF (w13-dorf-strom): die Ringe um den Spieler reichen so weit, wie der Vorlauf eines
         // Orts im Tempo der Bahn trägt (im Stand zwei Zellen, je `cellM` Weg in `bereitS` eine mehr), die Zellen in der Reihe
@@ -3069,8 +3097,70 @@ class AnazhRealm_siedlung_ort {
                 reihe.push([info ? this._spielerD2(info.x, info.z) : 0, pcx + dx, pcz + dz]);
             }
         reihe.sort((a, b) => a[0] - b[0]);
-        for (const [, cx, cz] of reihe) if (this._autoSettlementZelle(cx, cz, playerPos, cells, false)) break; // EIN Vorrat je Takt
+        // DER VORRAT FOLGT DEM ZUG (stadt-am-schirm, Gebot 7): ein Ort wird gebraucht, wenn die Bahn seinen Ring erreicht UND der
+        // Zug ihn nimmt — der Zug hebt EINEN Ort zur Zeit, vor dem nächsten liegen sein Rest und jeder Vorrat, der schon wartet
+        // (je Ort seine Bau-Zeit wie in `_autoSettlementZelle`: seine Häuser durch die gemessene Rate, mindestens der Vorlauf der
+        // Bahn). Ein neuer Vorrat beginnt nur, solange diese Zeit im Horizont des Vorlaufs liegt (derselbe wie seine Ringe).
+        // Bis hier begann jede Zelle des Rings ihren Vorrat: im Stand an der Stadt (dorf 7 9310, Radeon) flogen 18, der Grund von 14 Kacheln lag
+        // nach 28 s im Stand jedes Fadens (41 029 Splats, `erdbau` 5,5 → 75,5 MB je Faden), die Kachel am Spieler wartete hinter
+        // ihnen auf ihren Export, und der Renderer starb nach 38–69 s am Speicher. (Unreal World Partition, Epic-Dokumentation:
+        // Zellen 256 m laden nur im Ladebereich ihrer Quelle, 768 m — der Rest wartet in der Reihe nach Vorrang.)
+        const R = this._dorfRate > 0 ? this._dorfRate : 0;
+        let vor = this._dorfBauZeit(0); // der Rest des offenen Zugs
+        for (const w of V.values())
+            vor += Math.max(AnazhRealm.BEDARF.vorlaufS, Math.min(A.bauZeitMaxS, R ? (w.nH || 0) / R : 0));
+        if (vor <= A.bereitS + (R ? A.bauZeitMaxS : 0))
+            for (const [, cx, cz] of reihe) if (this._autoSettlementZelle(cx, cz, playerPos, cells, false)) break; // EIN Vorrat je Takt
         return reihe;
+    }
+    // DIE KACHEL SCHLÄFT (stadt-am-schirm, Gebot 7: die Welt ist eine FUNKTION des Blicks, kein Sack): eine wache Kachel einer Stadt
+    // (ihre Siedlung steht in dieser Sitzung — ihre Wege, `_stlWegeKeys` —, ungemeldet, kein Zug und keine Wiederkehr im Gang), deren
+    // Punkt am Schirm (`_ortAmSchirm`) weiter als ihr Ring und `vorlaufM` vom Spieler liegt und die die Bahn nicht binnen `bereitS`
+    // erreicht, schläft wieder: ihre Leute gehen (`_bewohnerFort`) und sie ist nur noch gemeldet (Plan und Namen, wie ein Nachbar);
+    // ihr Grund fällt wie der eines Vorrats, der nie erwachte (`_ortGrundFaellt`: EIN Wirken für die ganze Kachel, danach trägt
+    // kein Haus mehr einen Grund), ihre Häuser und ihre Ausstattung fallen ohne Stimme (`removeArchitecture` still,
+    // `_ortAusstattungFaellt`), und jedes ihrer Lose trägt wieder seine Masse (`_stadtFerneSchlaf`). Naht der Spieler wieder, steht
+    // sie aus ihrem Gedächtnis auf wie nach dem Reload (`_dorfWiederkehrZelle`). EINE Kachel je Takt; Wege, Brücken und Rand bleiben.
+    // Bis hier schlief keine: jeder Gang durch die Stadt legte Kacheln dazu, bis der Renderer starb (Radeon, dorf 7 9310: 30
+    // Siedlungen, 3 797 Häuser, +3,4 GB). → true, wenn eine Kachel schlief.
+    _kachelSchlafTakt(p) {
+        const B = this._bewohnerSiedlungen;
+        const W = this._stlWegeKeys;
+        if (!B || !B.size || !W || this._autoSettlementQueue || this._autoSettlementPendingKey || this._stlWegePending)
+            return false;
+        const A = AnazhRealm.AUTO_SETTLEMENT;
+        for (const [k, S] of B) {
+            if (S.gemeldet || !W.has(k) || !S.plan || !S.plan.ort || !Array.isArray(S.plan.slots)) continue;
+            const [qx, qz, nah, kachel] = this._ortAmSchirm(k, S.ox, S.oz, 0, p);
+            const r = nah + A.vorlaufM;
+            if (!kachel || (qx - p.x) ** 2 + (qz - p.z) ** 2 <= r * r || this._bedarfZeit(qx, qz, r) <= A.bereitS)
+                continue;
+            const plan = S.plan;
+            const o = plan.ort;
+            const c = ((this.state.worldMeta || {}).settlementCells || {})[k];
+            this._bewohnerFort(S);
+            Object.assign(S, { gemeldet: true, schlaeft: true }); // gemeldet wie ein Nachbar, doch ihr Ort und ihre Gassen stehen
+            // (das Wasser-Urteil ihres Grunds wie das des Grunds eines Hauses, `_erdbauGrundFaellt`)
+            const ort = (c && c.ort) || AnazhRealm._ortSchluessel(plan, o);
+            const grund = ((this.state.worldMeta || {}).erdbau || {})[ort];
+            if (Array.isArray(grund))
+                this._ortGrundFaellt(ort, this._erdbauAmWasser(globalThis.__gelaendeCore.erdbauNormal(grund)));
+            const samen = new Map(plan.slots.map((s) => [s.seed >>> 0, s]));
+            const weg = [];
+            for (const e of this.state.architectures.slice()) {
+                const s = e && e._ausGesetz && samen.get(e.seed >>> 0);
+                if (!s || Math.abs(e.position.x - o.x - s.x) >= 0.05 || Math.abs(e.position.z - o.z - s.z) >= 0.05)
+                    continue;
+                const fp = this._grundrissVon(s);
+                weg.push({ x: e.position.x, z: e.position.z, r: (fp ? Math.hypot(fp.ex, fp.ez) : 4) + 1.5 });
+                this.removeArchitecture(e, { still: true });
+            }
+            this._ortAusstattungFaellt(plan, weg, null);
+            this._stadtFerneSchlaf(k);
+            this.log(`Siedlung „${plan.name || "?"}" (${k}) schläft: ${weg.length} Häuser tragen ihre Masse.`, "INFO");
+            return true;
+        }
+        return false;
     }
     // DER ORT IN ARBEIT (w28-ort-vor-wald, das EINE Urteil des Dorf-Zugs für den Wald): ein Ort, dessen Grund noch nicht liegt — ein
     // Vorrat (`_dorfVorraete`) vor seinem Grund oder die Zelle des Zugs vor ihrem Erdbau (`_dorfErwachen`, das Erwachen ohne
@@ -3154,8 +3244,9 @@ class AnazhRealm_siedlung_ort {
                 this._stlWegeKeys &&
                 this._stlWegeKeys.has(k) &&
                 this._ortPlaene.get(c.ort);
-            const nah = AnazhRealm.AUTO_SETTLEMENT.nearM + this._siedlungMehrM(c && c.nH);
-            if (!alt || !alt.chronik || (c.x - p.x) ** 2 + (c.z - p.z) ** 2 > nah * nah) continue;
+            if (!alt || !alt.chronik) continue;
+            const [qx, qz, nah] = this._ortAmSchirm(k, c.x, c.z, this._siedlungMehrM(c.nH), p);
+            if ((qx - p.x) ** 2 + (qz - p.z) ** 2 > nah * nah) continue;
             const furcht = (a) => FG.furchtErinnert(a, FG.F);
             const Z = FC.wachstum(alt.chronik, c.wachs, c.akten || [], st.spielZeit, furcht, FG.F.fluchtJeFurcht);
             c.wachs = { jahr: Z.jahr, kraft: Z.kraft, uhr: Z.uhr };
@@ -3263,8 +3354,11 @@ class AnazhRealm_siedlung_ort {
         if (!(c.x === c.wx && c.z === c.wz && c.ort === AnazhRealm._ortSchluessel(c, c))) return false;
         const [A, W, wm] = [AnazhRealm.AUTO_SETTLEMENT, AnazhRealm.ORT_WAHL, this.state.worldMeta || {}];
         const pm = this.state.playerMesh && this.state.playerMesh.position;
-        const vor = A.nearM + info.mehrM + A.vorlaufM;
-        if (pm && (pm.x - c.x) ** 2 + (pm.z - c.z) ** 2 <= vor * vor) return false;
+        if (pm) {
+            const [qx, qz, nah] = this._ortAmSchirm(k, c.x, c.z, info.mehrM, pm);
+            const vor = nah + A.vorlaufM;
+            if ((pm.x - qx) ** 2 + (pm.z - qz) ** 2 <= vor * vor) return false;
+        }
         let reich = 0;
         for (const s of v2.slots) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
         const R = reich + W.ringe * W.schrittM + SG.cellM * Math.max(...A.siteProbeR);
@@ -3301,9 +3395,11 @@ class AnazhRealm_siedlung_ort {
         for (const k in cells || {}) {
             const c = cells[k];
             if (!c || typeof c !== "object" || !Number.isFinite(c.x) || !Number.isFinite(c.seed)) continue;
-            if (this._stlWegeKeys && this._stlWegeKeys.has(k)) continue;
-            const nahW = AnazhRealm.AUTO_SETTLEMENT.nearM + this._siedlungMehrM(c.nH); // die Stadt ab ihrem Rand (siedlung.K2)
-            if ((c.x - p.x) ** 2 + (c.z - p.z) ** 2 <= nahW * nahW) return [k, c];
+            const S = this._bewohnerSiedlungen && this._bewohnerSiedlungen.get(k);
+            if (this._stlWegeKeys && this._stlWegeKeys.has(k) && !(S && S.schlaeft)) continue; // die Kachel, die schlief, kehrt wieder (`_kachelSchlafTakt`)
+            // die Stadt ab ihrem Rand (siedlung.K2), die Kachel einer Stadt am Schirm (`_ortAmSchirm`)
+            const [qx, qz, nahW] = this._ortAmSchirm(k, c.x, c.z, this._siedlungMehrM(c.nH), p);
+            if ((qx - p.x) ** 2 + (qz - p.z) ** 2 <= nahW * nahW) return [k, c];
         }
         return null;
     }
@@ -3317,7 +3413,8 @@ class AnazhRealm_siedlung_ort {
         const [S, reich] = [AnazhRealm._siedlungGesetz(), AnazhRealm.Gesetz("fachwerk:siedlungsReich")];
         for (const q of (this._bewohnerSiedlungen || new Map()).values()) {
             const n = q.plan.slots.length;
-            if (q.gemeldet || !String(q.key).startsWith("d:") || n <= info.nH || info.stadt === q.key) continue; // das Viertel steht im Reich SEINES Kerns
+            if ((q.gemeldet && !q.schlaeft) || !String(q.key).startsWith("d:") || n <= info.nH || info.stadt === q.key)
+                continue; // das Viertel steht im Reich SEINES Kerns
             if (Math.hypot(q.ox - info.x, q.oz - info.z) < reich(S, info.nH) + reich(S, n)) return true;
         }
         return false;
@@ -3346,7 +3443,8 @@ class AnazhRealm_siedlung_ort {
             this._autoSettlementRejected.add(key); // im Reich einer größeren Stadt des Worts (das Rang-Gesetz)
             return false;
         }
-        const nah = A.nearM + info.mehrM; // die Stadt erwacht an ihrem Rand, das Dorf bei nearM (`mehrM` 0)
+        // die Stadt erwacht an ihrem Rand, das Dorf bei nearM (`mehrM` 0), die Kachel einer Stadt am Schirm (`_ortAmSchirm`)
+        const nah = this._ortAmSchirm(key, info.x, info.z, info.mehrM, playerPos)[2];
         const sicht = nah + A.vorlaufM;
         // DER VORLAUF IST DIE BAU-ZEIT (w28-stadt-netz): die Zelle erwacht, sobald die Bahn ihren Ring binnen der Zeit erreicht,
         // die ihr Zug brauchen wird (`_dorfBauZeit`: ihre Häuser durch die GEMESSENE Rate des Zugs, hinter dem offenen Zug) —
@@ -3355,8 +3453,11 @@ class AnazhRealm_siedlung_ort {
         // HINTER ihrer Kante.
         const bau = Math.max(AnazhRealm.BEDARF.vorlaufS, Math.min(A.bauZeitMaxS, this._dorfBauZeit(info.nH)));
         const bereit = A.bereitS + bau - AnazhRealm.BEDARF.vorlaufS;
-        const imRing = (x, z, r, T) =>
-            (x - playerPos.x) ** 2 + (z - playerPos.z) ** 2 <= r * r || this._bedarfZeit(x, z, r) <= T;
+        // der Ring misst am Punkt des Orts, den die Bahn erreicht (`_ortAmSchirm`: der Anker, an der Kachel ihr nächster Punkt)
+        const imRing = (x, z, r, T) => {
+            const [qx, qz] = this._ortAmSchirm(key, x, z, info.mehrM, playerPos);
+            return (qx - playerPos.x) ** 2 + (qz - playerPos.z) ** 2 <= r * r || this._bedarfZeit(qx, qz, r) <= T;
+        };
         const w = this._dorfVorraete && this._dorfVorraete.get(key);
         // OHNE VORRAT FRAGT DER TAKT DIE STELLE NUR, WENN EIN AKT MÖGLICH IST: sie liegt höchstens `siteProbeR` Zellen neben dem
         // Zellpunkt (`um`) — erwachen kann die Zelle, wenn die Bahn diesen Ring um `nah` binnen ihres Vorlaufs erreicht, bereiten,

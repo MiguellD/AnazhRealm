@@ -576,4 +576,116 @@ function landmarkeBefunde(taeter, chunkZiel, saetze) {
     ok("Höhenstufen Selbsttest: ohne Ökoton fällt „die Kante“ an forestStufe", /die Kante/.test(kante), kante || "die Mutante blieb grün");
 }
 
+// DIE KASSE IM FADEN HÄLT DAS GELESENE, NICHT DIE QUELLE (stadt-am-schirm, mensch.stadt.form#2): die Gedächtnisse des Walds
+// (voxel-worker `waldGeboren`) und der Kamm-Krone (`kammStand`) tragen je Zelle EIN Zahlen-Feld — kein Dart-Objekt und keine Kasse
+// des Kerns an ihm; die Objekte von `planForestCell` leben nur im Auftrag. An der Stadt (Radeon, s = 48) hielten die alten Kassen
+// 490 MB im kamm- und ≈ 680 MB im wald-Faden. Bühne: die Eingangs-Welt (das Gesetz ohne Hydrosphäre und Erdbau), der Wald 24 × 24
+// Zellen um 0,9216 in Aufträgen à 64 nach Abstand, die Krone ein Sechzehntel des Kreises; gewogen wird alles, was von der Kasse aus
+// erreichbar ist (beim Wald die Geborenen und das Urteil). Decke: kamm ≤ 256 B, wald ≤ 4 096 B je Zelle, kein Objekt; die Krone
+// antwortet aus der Kasse byte-gleich wie kalt, der Wald auf denselben Auftrag ein zweites Mal byte-gleich wie beim ersten.
+// Selbsttest: die Kasse, die die Quelle hält (der Auftrag legt seine Darts in ein bleibendes Feld), fällt ROT.
+{
+    const VOR = `
+const G = self.__gelaendeCore;
+const FP = self.__phytoCore.FOREST_PACK;
+const crown = {};
+for (const [id, r] of Object.entries(FP.crown)) crown[self.__phytoCore.FOREST_SPECIES.labToHost[id] || "baum_" + id] = r;
+const F = { cell: FP.cell, pack: FP.pack, dartsPerCell: 36, slopeLo: 0.35, slopeHi: 1.25, dryScale: 40, standFreq: 0.006, crown };
+const L = G.lageAus({ seed: "anazh-realm-seed", baseHeight: 0, waterLevel: -3, ort: null, erbgut: { terme: G.erbgutNormal(undefined), wildnis: 1 }, regionSize: 2048 }, SimplexNoise);
+const state = Object.assign(L, { fern: { forest: F, geboren: 16384 }, orte: [], erdbau: null });
+const fernK = () => state.fern;
+let waldRausch = null;
+function forestFbm(px, pz) {
+    if (!waldRausch) waldRausch = { n: new SimplexNoise(state.seed + ":forest") };
+    const n = waldRausch.n;
+    return (n.noise2D(px, pz) + 1) * 0.5 * 0.65 + (n.noise2D(px * 2.7 + 11.3, pz * 2.7 - 5.9) + 1) * 0.5 * 0.35;
+}
+const waldStand = (x, z) => (forestFbm(0, 0), waldRausch.n.noise2D(x * F.standFreq, z * F.standFreq));
+const waldSchnee = (x, z, y) => G.schnee(state, y, x, z, 0);
+const waldStufe = (x, z, y) => G.waldStufe(state, y, x, z);
+const waldOrt = (x, z) => self.__phytoCore.forestOrtAbstand(state.orte, x, z);
+const ortFrei = () => true;
+const landWaterLevelAt = () => state.waterLevel;
+const feuchteAt = (x, z, sy) => Math.max(0, Math.min(1, 0.55 - (sy - state.waterLevel) / 400));
+const law = (x, z) => G.hoehe(state, x, z, false);
+const waldCtx = (msg) => ({ F, baseH: 0, extras: msg.extras, fbm: forestFbm, stand: waldStand, schnee: waldSchnee, stufe: waldStufe, ort: waldOrt, wuchs: state.ort.wuchs, surfaceYAt: law, waterYAt: () => state.waterLevel, slopeAt: (x, z) => Math.hypot((law(x + 2, z) - law(x - 2, z)) / 4, (law(x, z + 2) - law(x, z - 2)) / 4), feuchteAt, ortFrei });
+self.postMessage = (m) => (self.__post = m);
+`;
+    const block = (text, von, bis) => {
+        const a = text.indexOf(von);
+        const b = text.indexOf(bis);
+        if (a < 0 || b < a) throw new Error("diag-phyto-tree Kasse: der Block fehlt in voxel-worker.js — " + von);
+        return text.slice(a, b);
+    };
+    // gewogen: Bytes der Zahlen-Felder und die Objekte, die von den Werten der Karte aus erreichbar sind
+    const wiege = (werte) => {
+        const ges = new Set();
+        const st = [...werte];
+        let bytes = 0;
+        let objekte = 0;
+        while (st.length) {
+            const o = st.pop();
+            if (!o || typeof o !== "object" || ges.has(o)) continue;
+            ges.add(o);
+            if (ArrayBuffer.isView(o)) {
+                bytes += o.byteLength;
+                continue;
+            }
+            objekte++;
+            for (const v of Array.isArray(o) ? o : Object.values(o)) st.push(v);
+        }
+        return { bytes, objekte };
+    };
+    const IM_AUFTRAG = "const imAuftrag = new Map();";
+    const kassenBefunde = (mutante) => {
+        const text = ausDatei("voxel-worker.js");
+        let kamm = block(text, "// DIE KAMM-KRONE (ferne.K3, w10-ferne", "// DER AUFTRAG DER FERNE.");
+        let wald = block(text, "// DER BESTAND DES WALDS (K60-3", "// DER WUCHS IM FADEN");
+        for (const t of [kamm, wald]) if (t.split(IM_AUFTRAG).length !== 2) throw new Error("diag-phyto-tree Kasse: „" + IM_AUFTRAG + "“ fehlt");
+        if (mutante) {
+            kamm = kamm.replace(IM_AUFTRAG, "const imAuftrag = (KS.quelle ||= new Map());");
+            wald = wald.replace(IM_AUFTRAG, "const imAuftrag = (W.quelle ||= new Map());");
+        }
+        const sb = fadenScope(["vendor/simplex-noise.js", "phyto-core.js", "gelaende-core.js"]);
+        vm.runInContext(VOR + kamm + wald, sb, { filename: "voxel-worker.kasse.js" });
+        const seedInt = sb.__samenCore.samenHash("anazh-realm-seed");
+        const cell = vm.runInContext("F.cell", sb);
+        const zellen = [];
+        for (let i = -12; i < 12; i++) for (let j = -12; j < 12; j++) zellen.push([Math.floor(0 / cell) + i, Math.floor(9216 / cell) + j, i * i + j * j]); // prettier-ignore
+        zellen.sort((p, q) => p[2] - q[2]);
+        // zweimal gefragt (ein verworfener Auftrag kommt wieder, `_waldDartsAn`): die zweite Antwort aus der Kasse byte-gleich
+        const antwort = [[], []];
+        for (const lauf of antwort)
+            for (let s = 0; s < zellen.length; s += 64) {
+                sb.__msg = { zellen: Int32Array.from(zellen.slice(s, s + 64).flat().filter((_, k) => k % 3 !== 2)), seedInt, stand: "s", extras: [], requestId: s }; // prettier-ignore
+                vm.runInContext("waldDarts(__msg)", sb);
+                const m = sb.__post;
+                lauf.push(Buffer.from(m.anzahl).toString("hex") + Buffer.from(m.werte).toString("hex") + m.arten.join("/"));
+            }
+        const arten = {};
+        for (const sp of Object.keys(vm.runInContext("F.crown", sb))) arten[sp] = { h: 28, ansatz: 0.45, nadel: /tanne|kiefer|mammut/.test(sp) }; // prettier-ignore
+        sb.__msg = { ax: 0, az: 9216, augen: [2, 25, 60, 120], dVon: 384, dBis: 6000, azN: 64, marsch: 1.05, hMax: 45, tiefeM: 48, saumM: 2, seedInt, stand: "s", extras: [], arten, azVon: 0, azBis: Math.PI / 8 }; // prettier-ignore
+        const bytes = () => Array.from(new Uint8Array(vm.runInContext("kammKrone(__msg)", sb).antwort.baeume.buffer)).join(",");
+        const kalt = bytes();
+        const warm = bytes();
+        const W = vm.runInContext("[...waldGeboren.karte.values(), ...waldGeboren.urteil.values(), ...(waldGeboren.quelle ? waldGeboren.quelle.values() : [])]", sb); // prettier-ignore
+        const K = vm.runInContext("[...kammStand.neu.values(), ...kammStand.alt.values(), ...(kammStand.quelle ? kammStand.quelle.values() : [])]", sb); // prettier-ignore
+        const nW = vm.runInContext("waldGeboren.karte.size", sb);
+        const nK = vm.runInContext("kammStand.neu.size + kammStand.alt.size", sb);
+        const w = wiege(W);
+        const k = wiege(K);
+        const out = [];
+        if (w.objekte > 0 || !(w.bytes / nW <= 4096)) out.push(`wald: die Kasse hält ${w.objekte} Objekte, ${(w.bytes / nW).toFixed(0)} B je Zelle (${nW} Zellen; Decke 4 096 B, kein Objekt) — voxel-worker waldDarts`); // prettier-ignore
+        if (k.objekte > 0 || !(k.bytes / nK <= 256)) out.push(`kamm: die Kasse hält ${k.objekte} Objekte, ${(k.bytes / nK).toFixed(0)} B je Zelle (${nK} Zellen; Decke 256 B, kein Objekt) — voxel-worker kammKrone`); // prettier-ignore
+        if (antwort[0].join() !== antwort[1].join()) out.push("wald: die Antwort aus der Kasse weicht von der ersten ab — voxel-worker waldDarts `urteil`");
+        if (kalt !== warm) out.push("kamm: die Krone aus der Kasse weicht von der kalten ab — voxel-worker kammKrone `stehende`");
+        if (!(nW > 0 && nK > 0 && kalt.length > 0)) out.push(`die Bühne ist leer (wald ${nW} Zellen, kamm ${nK} Zellen, ${kalt.length} Zeichen der Krone)`);
+        return { out, wB: w.bytes / nW, kB: k.bytes / nK, nW, nK };
+    };
+    const K = kassenBefunde(false);
+    ok("Kasse im Faden: Wald und Kamm-Krone halten je Zelle ein Zahlen-Feld, die Krone aus der Kasse byte-gleich", K.out.length === 0, K.out[0] || `wald ${K.wB.toFixed(0)} B je Zelle (${K.nW}) · kamm ${K.kB.toFixed(0)} B je Zelle (${K.nK})`); // prettier-ignore
+    const M = kassenBefunde(true).out.join(" | ");
+    ok("Kasse im Faden Selbsttest: die Kasse, die die Quelle hält, fällt an wald und kamm", /wald: die Kasse hält/.test(M) && /kamm: die Kasse hält/.test(M), M || "die Mutante blieb grün"); // prettier-ignore
+}
+
 wandEnde(errs, "PHYTO-KERN: der Wuchs trägt die Gesetze, Main + Worker aus EINER Quelle (Gesetz #0).");
