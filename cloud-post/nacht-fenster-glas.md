@@ -1,5 +1,7 @@
 # nacht-fenster-glas: jede Quelle der Nacht geht durch den EINEN Lichtweg (GTX 1050, 27.11.)
 
+## 27.11. 05:41 — GPU-PROBE 69e777d7 auf gtx1050-desktop: GRÜN in 1126 s (gate:studio-begehen GRÜN 559 s auf gtx1050-desktop · bild:dorf@0 GRÜN 270 s auf gtx1050-desktop · gate:webgl-probe GRÜN 162 s auf gtx1050-desktop) → probe-post/nacht-fenster-glas/69e777d7.md
+
 ZWISCHENSTAND. Vorprüf-Kopf `69e777d7` auf `origin/nacht-fenster-glas`, EIN Commit auf main 920fa974 (V18.546.448).
 - Tag `[gpu-probe: gate:studio-begehen, bild:dorf@0] [ci voll]`. Der Beitrag fasst `fachwerk-core.js` an, die Regel „Haus“ verlangt `gate:studio-begehen`.
 - `bild:dorf@0` ist das Nachtbild am Dorf um Mitternacht.
