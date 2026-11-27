@@ -1726,7 +1726,9 @@ class AnazhRealm_vegetation_wiese {
     }
 
     // Ein Kachel-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Senken, die Ernte-Identität je Pflanze, Fuß und Weite
-    // je Pflanze n×3): die Senke merkt ihn, ihr Bestand schreibt ihn bei seiner Geburt (`_nahStreuBestand`).
+    // je Pflanze n×3): die Senke merkt ihn, ihr Bestand schreibt ihn bei seiner Geburt (`_nahStreuBestand`). Die werfende
+    // Senke (`wurf`, Holz und Stein) trägt je Block die Hülle seiner Pflanzen (`huelle`: die Kugel des Teils je Matrix, einmal je
+    // Eintritt) — die Box der Kaskaden liest sie (`_kaskadenHuellen`), sonst verlöre der Werfer über der nahen Ebene seinen Schatten.
     _streuNahEin(a, kachelKey, matrizen, farben, ids, fuss) {
         const n = matrizen.length / 16;
         if (a.tint && (!farben || farben.length !== n * 3))
@@ -1735,7 +1737,22 @@ class AnazhRealm_vegetation_wiese {
             throw new Error(`_streuNahEin(${a.name}, ${kachelKey}): je Pflanze eine Ernte-Identität`);
         if (!fuss || fuss.length !== n * 3)
             throw new Error(`_streuNahEin(${a.name}, ${kachelKey}): je Pflanze Fuß und Weite (n×3)`);
-        a.bloecke.set(kachelKey, { n, ids, matrizen, farben: a.tint ? farben : null, fuss });
+        let huelle = null;
+        if (a.wurf && n) {
+            if (!a.geo.boundingSphere) a.geo.computeBoundingSphere();
+            const ks = a.geo.boundingSphere;
+            const kr = ks.center.length() + ks.radius;
+            huelle = new THREE.Box3();
+            const v = new THREE.Vector3();
+            for (let i = 0, o = 0; i < n; i++, o += 16) {
+                const m = matrizen;
+                const sk = Math.sqrt(Math.max(m[o] ** 2 + m[o + 1] ** 2 + m[o + 2] ** 2, m[o + 4] ** 2 + m[o + 5] ** 2 + m[o + 6] ** 2, m[o + 8] ** 2 + m[o + 9] ** 2 + m[o + 10] ** 2)); // prettier-ignore
+                const r = kr * sk;
+                huelle.expandByPoint(v.set(m[o + 12] - r, m[o + 13] - r, m[o + 14] - r));
+                huelle.expandByPoint(v.set(m[o + 12] + r, m[o + 13] + r, m[o + 14] + r));
+            }
+        }
+        a.bloecke.set(kachelKey, { n, ids, matrizen, farben: a.tint ? farben : null, fuss, huelle });
         this.state.nahStreu.bestandNeu = true;
     }
 
