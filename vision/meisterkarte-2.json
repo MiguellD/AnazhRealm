@@ -5567,11 +5567,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 53,
-    "kern": 2,
-    "kernDazu": 2,
-    "anteilHeute": 8.8,
-    "anteilKern": 0.3
+    "heute": 55,
+    "kern": 0,
+    "kernDazu": 0,
+    "anteilHeute": 9.1,
+    "anteilKern": 0
    },
    "perspektiven": [
     {
@@ -9500,8 +9500,8 @@
        "richter": "64 Welten: Terrassenhöhe skaliert mit g"
       }
      ],
-     "heute": 0,
-     "kern": 2,
+     "heute": 2,
+     "kern": 0,
      "fuss": "kern",
      "beleg": "Graben füllt sich ≤ 2 s, eine Wasserfläche (gelaende.K2); Bewohner bauen keine Gräben — KARTE: Kern 1 — Graben füllt sich im Ausgabe-Bild an beiden Geräten (gelaende.K2); Bild-Preis beim Graben nicht gemessen.",
      "alt": [
@@ -15259,10 +15259,10 @@
    "summe": {
     "kriterien": 28,
     "sprossen": 198,
-    "heute": 13,
+    "heute": 14,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 6.4,
+    "anteilHeute": 6.7,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -15544,7 +15544,7 @@
        "richter": "N = 100 Planeten: Dispersion ω² = g·k im Bild ±15 %; Tropfen- und Wellenbild skaliert sichtbar mit g"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Zellen-Feld Uint8Array Luft/Wasser/fest je Chunk (stamm/wasser-zellen.js:3), kein Impuls; die gegrabene Grube füllt sich im Code, im Spiel-Bild nie gesehen. Gas als Feld: nichts.",
@@ -20099,10 +20099,10 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 146,
+  "heute": 149,
   "davonKopplungen": 33,
-  "kern": 2,
-  "kernDazu": 2,
+  "kern": 0,
+  "kernDazu": 0,
   "anteilHeute": 7.7,
   "anteilKern": 0,
   "kapitel": 7,
@@ -20114,7 +20114,7 @@
   },
   "gliederLeitern": 9,
   "beide": 71,
-  "nachwache": 75
+  "nachwache": 78
  },
  "zusammengelegt": [
   {
