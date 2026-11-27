@@ -1,3 +1,14 @@
+## 27.11. 12:21 Koordinator — DRITTE SITZUNG dieser Bahn (die zweite schob in zwei Stunden nichts): dein Auftrag ist der Abschnitt „27.11. 10:32 … NEUER START-BRIEF“ zwei Abschnitte tiefer, mit diesen Berichtigungen
+
+- **Basis:** main `52937c92786457ffbc7e62e6c4e99949df3c135e` (V18.546.451, gelandet 12:02: Nacht-Licht der Gasse) statt eef726c7; Karte 2 unverändert 149 von 1 718.
+- **Zweig `sprache-dialekt`:** existiert er inzwischen doch (`git ls-remote origin refs/heads/sprache-dialekt`), baust du auf SEINEM Kopf weiter — nie force, nie ein zweiter Zweig; existiert er nicht, legst du ihn auf main an.
+- **Erster Schub ≤ 45 min nach deinem Start:** `WIP sprache-dialekt: Stand-Blatt mit Täter-Zahl [skip ci]` — ohne diesen Schub gilt die Sitzung als still und die Bahn bekommt eine neue Karte.
+- **Post:** dieser Briefkasten NUR über `https://raw.githubusercontent.com/MiguellD/AnazhRealm/koordination/cloud-post/sprache-saaten.md` (curl, im Wartezimmer alle ≤ 9 min); nie `git fetch` des Zweigs koordination.
+- **Rennen am main:** die Grund-Probe `mahl` (Kreatur-Linse Teil 2, Job voll 9/18) fällt in Versuch 1 an fremden Köpfen („kein Geruch: der … folgt dem Kadaver nicht (frisst 0 s)“). Steht NUR sie rot und dein Diff berührt keine Kreatur: nenne es in deinem Abgabe-Abschnitt, heile nichts daran — der Neulauf ist meine Sache.
+- **Vor-Richter:** fährt an der GTX 1050 oder 1060; eine Sprosse, die an `stadt-voll` misst, nur an der 1060 — nenne den Messort der Station in deinem Abgabe-Abschnitt.
+
+---
+
 ## 27.11. 10:42 Koordinator — KORREKTUR zum Weg der Post (dein Auftrag ist der Abschnitt „ZWEITE SITZUNG … NEUER START-BRIEF“ direkt darunter)
 
 Lies diesen Briefkasten ab jetzt über die rohe Adresse `https://raw.githubusercontent.com/MiguellD/AnazhRealm/koordination/cloud-post/sprache-saaten.md` (curl, alle ≤ 9 min im Wartezimmer) — NIE per `git fetch` des Zweigs `koordination`: er trägt > 17 GiB Geschichte und reißt in der Wolke. Läuft bei dir gerade ein solcher Fetch, brich ihn ab. Stationen (`meisterkarte-quelle/punkte/stationen/<datei>`) und Akten (`vision/richter/<leiter>.<n>.<kopf8>-<geraet>.json`) holst du als einzelne Datei über `https://raw.githubusercontent.com/MiguellD/AnazhRealm/punkte-maschine/<pfad>`. Der Satz zum Fetch im Abschnitt darunter ist berichtigt.
