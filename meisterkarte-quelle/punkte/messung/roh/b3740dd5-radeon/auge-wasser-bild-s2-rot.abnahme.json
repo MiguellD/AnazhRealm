@@ -1,0 +1,93 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.458",
+  "sha": "b3740dd5566793ae66152d955e5a55d9c272884c"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 270,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 0.9853284985222063,
+  "deckung": 0.2963,
+  "taeter": {
+   "Gelände": 0.2963
+  },
+  "vordergrund": {
+   "radius": 0.99,
+   "deckung": 0.2951,
+   "taeter": {
+    "Gelände": 0.2951
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0.581,
+   0.103
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 1.97,
+  "gestalt": [
+   "wasser"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -267.2,
+   25.76,
+   -1127.4
+  ],
+  "blick": [
+   -1,
+   0,
+   0.00005
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 182.5,
+  "sigma": 21.5,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 29.6 % (Laub · Rinde · Fels · Böschung näher als 0.9853284985222063 m, Bau als 0.49266424926110314 m): Gelände 29.6 % · Vordergrund 29.5 % näher als 0.99 m (der halbe Ziel-Abstand): Gelände 29.5 %] · beweis · Sicht 29.6 % (Gelände 29.6 %) · Ziel Blickziel im Bild frei 1.97 m · Luma 182.5 σ 21.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.458 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 29.6 % (Laub · Rinde · Fels · Böschung näher als 0.9853284985222063 m, Bau als 0.49266424926110314 m): Gelände 29.6 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 29.5 % näher als 0.99 m (der halbe Ziel-Abstand): Gelände 29.5 %"
+  }
+ ],
+ "urteil": "ROT"
+}
