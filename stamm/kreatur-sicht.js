@@ -105,6 +105,36 @@ class AnazhRealm_kreatur_sicht {
         return !!(u._kzGlieder || u._kzVersuch);
     }
 
+    // ZEICHNET DIESER LEIB? (die EINE Antwort für jeden Leser: die Abnahme des Blicks `gestaltLeben`, die Menge der Bewohner) —
+    // nah sein Mesh (`visible`), im Satz der Satz (`_satz`: das Tier trägt sein Satz-Objekt, der Bewohner der Menge einen
+    // Wahrheitswert), fern das Feld seiner Glieder, wenn ein Eintrag zeichnet (`_weltFeldZeichnet`, derselbe Leser wie
+    // `_archImBild`). Ein ruhender Leib und einer, dessen Fern-Fit scheiterte, zeichnet nirgends. Vorher fragte die Abnahme
+    // nur Mesh und Satz: der ferne Leib (`_kzLeib` setzt `visible = false`, das Feld IST die Gestalt) hieß UNGEZEICHNET
+    // (leben.tiere.masse#1, Herde am Hang: die fliehende Herde 5 von 5 „UNGEZEICHNET“ bei freiem Ziel, GTX und Radeon).
+    _leibGezeichnet(cr) {
+        if (!cr || this.state.creaturesHidden === true) return false;
+        const u = cr.userData || {};
+        if (cr.visible !== false || u._satz) return true;
+        return !!u._kzGlieder && u._kzGlieder.some((gl) => this._weltFeldZeichnet(gl.handle));
+    }
+
+    // DIE LEIBER FOLGEN DEM AUGE (das Bild ohne Takt: der Schuss der Aufnahme, `__nahFolgt`, und die Pose einer Probe): das
+    // Stufen-Gesetz wählt am Auge der Kamera neu, wie es der nächste Takt des Spiels täte — der Ziegel (Leib oder Feld, `_kzLeib`),
+    // der Tier-Satz, der Blick des Bilds (`_ruheImBild`) und die Sicht je Leib (`_leibSicht`: ein Leib, der eben aus dem Feld kam,
+    // zeichnet erst mit ihr). Die Wahl lebt im Takt; ein Bild, das die Kamera ohne Takt umsetzt, zeichnete bis hier die Stufe des
+    // vorigen Auges: leben.tiere.masse#1 (Herde am Hang, GTX bed6256c und Radeon b3740dd5) — die fliehende Herde jenseits
+    // ANALOG_NAH_M des vorigen Auges stand im Schuss auf 42,9 m als Feld-Kapseln, die Abnahme nannte 5 von 5 UNGEZEICHNET.
+    // Vorher lebte die Wahl als Zwilling in der Kreatur-Probe (`stufenAm`, scripts/lib/kreatur-proben.cjs).
+    _leiberAmAuge() {
+        const au = this._lodAuge();
+        if (!au) return;
+        this._loopFrustumCulling();
+        this._tickKreaturZiegel(au, this._feldGrenzen(false));
+        this._tickTierSatz(au);
+        this._ruheImBild();
+        for (const c of this.state.creatures) if (c && c.userData) this._leibSicht(c, this.isInFrustum(c), au);
+    }
+
     // DAS FELL-BILDSCHIRM-GESETZ (Gebot 7: Kosten an den Schirm): das Fell (die Schalen, dazu Rest-Strähnen wie der
     // Nasenrücken) ist eine STUFE der Gestalt — es zeichnet nur, wo die feine Gestalt das Bild trägt (`gestalt`: nicht
     // jenseits der Gelenk-Grenze, im Satz, im Feld — die Grobstufe ist kahl) und solange die Höhe seines Schalen-Stapels

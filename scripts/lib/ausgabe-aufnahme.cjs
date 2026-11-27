@@ -690,7 +690,7 @@ function gestaltLeben(z, um) {
     const nah = (p) => um.punkte.some(([x, , zz]) => Math.hypot(p.x - x, p.z - zz) <= um.r);
     (st.creatures || []).forEach((c, i) => {
         if (c?.position && nah(c.position))
-            teile.push({ name: `${r._taeterKlasse(c)} ${i}`, gezeichnet: st.creaturesHidden !== true && (c.visible !== false || !!c.userData?._satz) });
+            teile.push({ name: `${r._taeterKlasse(c)} ${i}`, gezeichnet: r._leibGezeichnet(c) });
     });
     const spiegel = r._nassAt?.(z.x, z.z) ? r._koerperWasser(z.x, z.z, -Infinity) : -Infinity;
     if (Math.abs(spiegel - z.y) <= um.r) {
@@ -905,9 +905,29 @@ function abnahmeMessen(opt) {
 }
 
 // DIE NAH-SÄTZE FOLGEN DER KAMERA (der Schuss und die Pose der Blick-Wahl): Wiese und Streu schwingen ihre Kachel-Ringe um sie ein,
-// Kachel um Kachel, bis keine mehr fehlt
+// Kachel um Kachel, bis keine mehr fehlt; die Leiber wählen ihre Stufe an ihr (`_leiberAmAuge`: Leib, Satz oder Feld, wie der nächste
+// Takt — bis hier zeichnete der Schuss die Stufe des vorigen Auges, leben.tiere.masse#1)
 function nahFolgt() {
     for (const t of ["_tickNahWiese", "_tickNahStreu"]) for (let i = 0; i < 200 && r[t]() > 0; i++);
+    r._leiberAmAuge();
+}
+// DER SELBSTTEST DES SCHUSSES (leben.tiere.masse#1, in Node mit einer gestellten Welt, `werkbank lauf --selbsttest`): ein Leib, der am
+// vorigen Auge ins Feld fiel, steht nach `nahFolgt` an der Wahl des neuen Auges; der Täter ist der Schuss von vorher (die Nah-Sätze
+// allein, ohne `_leiberAmAuge`) — der Leib bleibt im Feld, ROT beim Namen.
+function nahFolgtSelbsttest() {
+    const v = [];
+    const lauf = (src) => {
+        const leib = { stufe: "feld" };
+        const welt = { _tickNahWiese: () => 0, _tickNahStreu: () => 0, _leiberAmAuge: () => (leib.stufe = "leib") };
+        new Function("r", `return (${src})`)(welt)();
+        return leib.stufe;
+    };
+    const echt = lauf(String(nahFolgt));
+    if (echt !== "leib") v.push(`der Schuss lässt die Leiber nicht am Auge wählen: der Leib bleibt ${echt} (nahFolgt ohne _leiberAmAuge)`);
+    const vorher = String(nahFolgt).replace(/\n\s*r\._leiberAmAuge\(\);/, "");
+    if (vorher === String(nahFolgt)) v.push("der Täter (der Schuss ohne _leiberAmAuge) ist nicht herstellbar");
+    else if (lauf(vorher) !== "feld") v.push("die Linse sieht den Täter nicht: der Schuss ohne _leiberAmAuge hielt den Leib nicht im Feld");
+    return v;
 }
 
 // DIE BLICK-WAHL (K32; Lehre 17 „die Blick-Wahl sucht freie Sicht"): vor dem Schuss sucht die Aufnahme bis zu `opt.wahl` Posen
@@ -2254,6 +2274,7 @@ module.exports = {
     weltaktUrteil,
     weltaktSelbsttest,
     buehneSelbsttest,
+    nahFolgtSelbsttest,
     AUSGABE_INSTALL:
         KAMERA_NAH_INSTALL +
         ABNAHME_INSTALL +
