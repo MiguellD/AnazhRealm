@@ -983,6 +983,70 @@ function boeSelbsttest() {
     return { v, Bm, Ba };
 }
 
+// (Ö2) DIE BÖE IST ENDLICH — Anker-Reihe, Phase, Uniform (rauch-nan; GTX 1060 am eef726c7, aufwaerts#1: `_boePhase` nicht endlich,
+// die Fahne des Brands warf jeden Takt in die Fehler-Grenze, der Preis-Lauf 0 Bilder). Der Weg, nachgefahren wie die Sitzung: die Bühne
+// macht die Bild-Uhr zum Getter (`uhrHalten`), die Rücknahme der Wirt-Wache (scripts/lib/wirt-wache.cjs) gibt das Datenfeld zurück, das
+// erste Bild danach fragt `_boePhase(_bildZeit)` (stamm/dirigent-takt.js `_loopRender`), der Spieler stand woanders als am letzten
+// Anker. Bis rauch-nan löschte die Rücknahme das Feld (undefined), `_boeWeg` speicherte den Anker t NaN, s NaN — und weil jeder
+// Vergleich `H.t[i] > t` an NaN falsch ist, las JEDE spätere Frage ihn: Böe, Wind am Rauch und `uBoePhase` nie mehr endlich.
+// `pflanze(r)` greift nach der Rücknahme ein (der Selbsttest). → { uhr, gesetz, anker, schlecht, boe, ms, phase }
+function boeEndlichBefund(r, pflanze) {
+    const st = r.state;
+    const WW = require("./lib/wirt-wache.cjs");
+    const W = {};
+    r._bildZeit = 46; // die Bild-Uhr der Welt vor der Probe (die Böe fragt ihre Uhr ausdrücklich, die Welt-Uhr bleibt)
+    r._boePhase(46);
+    WW.wirtWache(r, false, W); // das Gedächtnis der Seite vor der Probe
+    const get = Object.assign(() => 12.5, { __buehne: true }); // die Uhr der Bühne (scripts/lib/ausgabe-aufnahme.cjs `uhrHalten`)
+    Object.defineProperty(r, "_bildZeit", { configurable: true, enumerable: true, get, set: () => {} });
+    WW.wirtWache(r, true, W); // die Rücknahme nach der Probe
+    if (pflanze) pflanze(r);
+    const uhr = r._bildZeit;
+    st.playerMesh.position.x += 3; // die Probe zog den Spieler (aufwaerts#1: 295 m), der Tempo-Merk sieht einen neuen Ort
+    const [jetzt, f] = [{}, (fn) => { try { return fn(); } catch (e) { return { wurf: String(e.message) }; } }]; // prettier-ignore
+    jetzt.bild = f(() => r._boePhase(uhr)); // das erste Bild nach der Rücknahme
+    const gesetz = f(() => r._boePhase(undefined)); // die Uhr selbst nicht endlich: das Gesetz wirft beim Namen, nie ein Anker
+    const H = r._boeAnker;
+    const schlecht = [];
+    for (let i = 0; i < H.n; i++) if (![H.t[i], H.s[i], H.c[i], H.ox[i], H.oz[i]].every(Number.isFinite)) schlecht.push(i);
+    r._bildZeit = 96.373;
+    const w = f(() => r._windAt(142.727, 114.994, 96.373)); // der Ort des Ballens an der GTX 1060
+    return { uhr, gesetz: gesetz && gesetz.wurf, anker: H.n, schlecht, boe: w.boe, ms: w.ms, phase: f(() => r._boePhase(96.373)) };
+}
+function boeEndlichRot(B) {
+    const rot = [];
+    if (!Number.isFinite(B.uhr))
+        rot.push(`(Ö2) UHR: nach der Rücknahme der Bühnen-Uhr steht r._bildZeit ${B.uhr} — scripts/lib/wirt-wache.cjs \`zurueck\` löscht ein Datenfeld, das die Probe zum Getter machte, statt es auf seinen Wert zurückzustellen`); // prettier-ignore
+    if (!/_boeWeg: die Uhr der Böe ist endlich/.test(B.gesetz || ""))
+        rot.push(`(Ö2) GESETZ: _boePhase(undefined) wirft nicht beim Namen (${B.gesetz || "still"}) — stamm/stoff-material.js \`_boeWeg\` nimmt eine nicht-endliche Uhr in die Anker-Reihe`); // prettier-ignore
+    if (B.schlecht.length)
+        rot.push(`(Ö2) ANKER: die Anker-Reihe der Böe trägt ${B.schlecht.length} nicht-endliche von ${B.anker} (zuerst Anker ${B.schlecht[0]}) — stamm/stoff-material.js \`_boeWeg\``); // prettier-ignore
+    if (!(Number.isFinite(B.boe) && Number.isFinite(B.ms) && Number.isFinite(B.phase)))
+        rot.push(`(Ö2) PHASE: am endlichen Ort und zur endlichen Uhr boe ${B.boe}, ms ${B.ms}, uBoePhase ${B.phase} — ihre Leser: die Fahne des Brands (stamm/feld-brand.js \`_brandRauch\`), das Gras (\`uBoePhase\`, stamm/dirigent-takt.js \`_loopRender\`)`); // prettier-ignore
+    return rot;
+}
+function boeEndlichSelbsttest() {
+    const R = require("path").join(__dirname, "..");
+    const STAMM = require("./lib/stamm.cjs");
+    const B = boeEndlichBefund(STAMM.grundWirt(R).r);
+    const v = boeEndlichRot(B).map((x) => `böe endlich am Wirt: ${x}`);
+    // gepflanzt: der Anker t NaN (die Reihe von main eef726c7 nach dem ersten Bild) → ANKER und PHASE beim Namen
+    const anker = boeEndlichRot(
+        boeEndlichBefund(STAMM.grundWirt(R).r, (r) => {
+            const H = r._boeAnker;
+            [H.t[H.n], H.s[H.n], H.c[H.n], H.ox[H.n], H.oz[H.n]] = [NaN, NaN, H.c[0], H.ox[0], H.oz[0]];
+            H.n++;
+        })
+    );
+    if (!(anker.some((x) => /^\(Ö2\) ANKER: .* — stamm\/stoff-material\.js `_boeWeg`/.test(x)) && anker.some((x) => /^\(Ö2\) PHASE:/.test(x))))
+        v.push(`böe endlich: der gepflanzte Anker t NaN fällt nicht rot beim Namen (${anker.join(" | ") || "grün"})`);
+    // gepflanzt: die Rücknahme von main eef726c7 (das Feld fällt weg) → UHR beim Namen der Wirt-Wache
+    const uhr = boeEndlichRot(boeEndlichBefund(STAMM.grundWirt(R).r, (r) => delete r._bildZeit));
+    if (!uhr.some((x) => /^\(Ö2\) UHR: .*scripts\/lib\/wirt-wache\.cjs/.test(x)))
+        v.push(`böe endlich: die gelöschte Bild-Uhr fällt nicht rot beim Namen der Wirt-Wache (${uhr.join(" | ") || "grün"})`);
+    return { v, B, gepflanzt: [anker.length, uhr.length] };
+}
+
 function uhrSelbsttest() {
     const K = (r) => `class A {\n${r}\n}`;
     const U = (text, leser, sp) =>
@@ -1044,6 +1108,11 @@ if (SELBSTTEST) {
     v.push(...boe.v);
     console.log(
         `  (Ö) Böe am Wirt · Laufzeit ${boe.Bm.lagS} s gegen ${boe.Bm.sollS} s (±${boe.Bm.laufzeitAbw} %) · r ${boe.Bm.kreuzR} · Varianz ${boe.Bm.varianz} — gepflanzt ω/k: ±${boe.Ba.laufzeitAbw} %`
+    );
+    const be = boeEndlichSelbsttest();
+    v.push(...be.v);
+    console.log(
+        `  (Ö2) Böe endlich nach der Bühnen-Uhr · Bild-Uhr ${be.B.uhr} · Anker ${be.B.anker}, nicht endlich ${be.B.schlecht.length} · boe ${be.B.boe} · uBoePhase ${be.B.phase} — gepflanzt Anker NaN: ${be.gepflanzt[0]} rot, gelöschte Uhr: ${be.gepflanzt[1]} rot`
     );
     const grund = grundSelbsttest();
     v.push(...grund.rot);
