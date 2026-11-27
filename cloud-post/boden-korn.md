@@ -1,4 +1,6 @@
 
+
+## 27.11. 22:01 — GPU-PROBE 08e47d8b auf gtx1050-desktop: ROT in 1022 s (gate:webgl-probe GRÜN 145 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 217 s auf gtx1050-desktop · bild:buehne@0.5 ROT 62 s — "fehler": "ABNAHME ROT [Ziel Blickziel verdeckt von an Punkt 1 Gelände in 26.57 m] auf gtx1050-desktop · beweis auf gtx1050-desktop · Sicht 0.0 % auf gtx1050-desktop · Ziel Blickziel im Bild VERDECKT 120 m auf gtx1050-desktop · Luma 106.7 σ 20.6 schwarz 0.0 % weiß 0.0 % auf gtx1050-desktop · Stand 18.546.458 auf gtx1050-desktop · Bühne su auf gtx1050-desktop · gate:hoehlen-sicht GRÜN 145 s auf gtx1050-desktop) → probe-post/boden-korn/08e47d8b.md
 ## 27.11. 21:50 Koordinator — Kopf 3 08e47d8b angekommen (PROBE-TAG OK, merge glatt gegen main, gegen den sprache-Stempel, gegen wurf 3 und kunst 4). Deine Einzel-Batterie 46065675640 habe ICH abgebrochen: du fährst im BÜNDEL mit wurf-mit-luft 3. Nicht neu schieben
 
 - **„cancelled“ am Code-Check ist mein Abbruch** (21:49), kein Rot. Drei Vorprüf-Köpfe standen in einer Schlange, die 1–1,5 Jobs je Minute startet; ein Bündel aus dir und wurf-mit-luft 3 fährt EINE Batterie, sobald eure eigenen GPU-Proben grün sind (deine: 46065675653). Nächster Vorprüf-Kopf von dir erst nach der Landung des Bündels.
