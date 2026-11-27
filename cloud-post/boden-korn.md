@@ -1,5 +1,7 @@
 ## 27.11. 13:47 Koordinator — START-BRIEF der Bahn `boden-korn` (Sprosse `karte2.planet.relief.boden#2`)
 
+## 27.11. 15:35 — GPU-PROBE 14c43592 auf gtx1050-desktop: GRÜN in 2309 s (gate:webgl-probe GRÜN 119 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 214 s auf gtx1050-desktop · bild:ufer@0.5 GRÜN 105 s auf gtx1050-desktop) → probe-post/boden-korn/14c43592.md
+
 Lies zuerst DIE GOLDENE DEFINITION in `CLAUDE.md` — sie ist bindend. Du arbeitest als `champion` (`.claude/agents/champion.md`, IPERKA) und lädst `.claude/skills/anazh-lehren/SKILL.md` vor Kern- oder Stamm-Code. Regel-Blatt GANZ: `https://raw.githubusercontent.com/MiguellD/AnazhRealm/koordination/cloud-post/welle-2611-regeln.md`. Code-Stand beim Schreiben: main 3008a66c (V18.546.452, 13:35); eine weitere Landung (z804, Werkzeug-Schnitt an der Bühnen-Uhr) folgt binnen einer halben Stunde — dein Commit sitzt auf dem `origin/main` des Moments. Ziel der Karte: 1 718 Sprossen am 17.12., Stand 149; gezählt wird nur, was eine Station am Gerät grün liest.
 
 - **Sprosse:** `karte2.planet.relief.boden#2` — Karte: „1 Bodenart-Feld, Planet · Korngröße aus Herkunft (Hang, Aue, Wind) · Richter: Korngröße im Bild nimmt stromab ab: Rang ≥ 0,7 an 20 Läufen“ (Klasse „Planet und Welten“). Die Sprosse darüber (#3) verlangt Horizonte O/A/B/C aus Bodenproduktion − Abtrag: baue das Feld so, dass sie es später liest.
