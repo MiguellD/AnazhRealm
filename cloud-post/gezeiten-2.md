@@ -1,5 +1,26 @@
 # gezeiten-2 — Stand-Blatt (oberster Abschnitt = jüngster Stand)
 
+## 27.11. 00:20 — Letzter Stand nach dem Wartezimmer (ZWISCHENSTAND)
+
+- **Ergebnis des Wartezimmers:** 4 h ohne Post (20:20–00:20).
+  - Briefkasten `cloud-post/gezeiten-2.md` unverändert (Blob 9d51a59).
+  - Kein `probe-post/gezeiten-2/`.
+  - Kein Stempel in main.
+- **Vorprüf-Kopf:** `36fc4266` (auf main 45bad33): „Vorprüfung gezeiten-2 1 … Hub 0 → 3,45 m, Periode ungemessen → 12,353 h am
+  geladenen Chunk“. Gegen den heutigen main 38194f8 ist er konfliktfrei (`git merge-tree`, Überlapp nur `spec/stamm/modul-karte.json`).
+  Dieser Blatt-Commit darüber trägt nur das Blatt `[skip ci]`; der Kopf zum Stempeln ist `36fc4266`.
+- **Geschnitten:** Das Meer des gezeichneten Sheets trägt den Hub der Uhr (`aMeer` + Uniform `gezeit`). Körper und Bild lesen
+  denselben Hub (`_gezeitHubBild`).
+- **Gemessen:**
+  - Leib am geladenen Chunk: Hub 0 → 3,450 m, Periode ungemessen → 12,353 h.
+  - Linse KÖRPER: am main ROT (99 von 100 neben dem Gesetz), am Kopf 0 von 100.
+- **Offen** (jeweils mit Grund und Messname):
+  - Neubau je Stufe (`markiert`).
+  - S1 der fremden Saaten (Station: die Lage ohne Uhr und Hydrosphäre, Kandidat ungebaut).
+  - Watt-Bild ungemessen.
+  - `probe-tag`: zug.sh fehlt im Container.
+- **Beanspruchte Sprosse:** `karte2.planet.wasser.gezeiten#1`. Karte 2 gebucht 131 von 1 718. Status ZWISCHENSTAND.
+
 ## 26.11. 20:15 — Vorprüf-Kopf 1 (ZWISCHENSTAND)
 
 Sprosse `karte2.planet.wasser.gezeiten#1`. Karte 2 gebucht 131 von 1 718.
