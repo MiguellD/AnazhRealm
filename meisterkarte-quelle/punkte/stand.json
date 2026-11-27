@@ -3020,7 +3020,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 62 Bilder · max 83.58 ms · 75.81 % > 33 ms · Fahrt 38 Bilder · max 125.65 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 75.81 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 125.65), 100.00 % > 33 ms an 7e73426e radeon · gehalten: Gehen 177 Bilder · max 91.69 ms · 14.12 % > 33 ms · Fahrt 50 Bilder · max 158.38 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.12 % > 33 ms | Fahrt: 5 Bild(er) > 100 ms (max 158.38), 80.00 % > 33 ms an 52937c92 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 7e73426e: Last: Referenz f 1,521 (Faden 1,521 · alle Kerne 1,251; vor 127/325 ms, nach 120,6/304,5 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node scripts/diag-studio-uebergabe.cjs 28,5 CPU-s · node scrip · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/wirt-wache.cjs, stamm/bild-himmel.js +15) — zuletzt an 7e73426e: Last: Referenz f 1,376 (Faden 1,376 · alle Kerne 1,185; vor 121,9/260,1 ms, nach 98,9/241,1 ms, Ruhe 88,6/219,5 ms seit 2026-11-26) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+   "beleg": "Maschine: gehalten: Gehen 62 Bilder · max 83.58 ms · 75.81 % > 33 ms · Fahrt 38 Bilder · max 125.65 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 75.81 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 125.65), 100.00 % > 33 ms an 7e73426e radeon · gehalten: Gehen 177 Bilder · max 91.69 ms · 14.12 % > 33 ms · Fahrt 50 Bilder · max 158.38 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.12 % > 33 ms | Fahrt: 5 Bild(er) > 100 ms (max 158.38), 80.00 % > 33 ms an 52937c92 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an bed6256c: Last: Referenz f 1,574 (Faden 1,574 · alle Kerne 1,168; vor 109,4/281,9 ms, nach 131,4/303,5 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node scripts/diag-koerper-kern.cjs --selftest 45,1 CPU-s · · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/wirt-wache.cjs, stamm/bild-himmel.js +15) — zuletzt an 7e73426e: Last: Referenz f 1,376 (Faden 1,376 · alle Kerne 1,185; vor 121,9/260,1 ms, nach 98,9/241,1 ms, Ruhe 88,6/219,5 ms seit 2026-11-26) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3028,7 +3028,7 @@
      "gruen": true,
      "zahl": "Gehen 62 Bilder · max 83.58 ms · 75.81 % > 33 ms · Fahrt 38 Bilder · max 125.65 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 75.81 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 125.65), 100.00 % > 33 ms",
      "sha": "7e73426efae8578f057c9d5b8548f52affb8dd93",
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/wirt-wache.cjs, stamm/bild-himmel.js +15) — zuletzt an 031f4700: Last: Referenz f 1,413 (Faden 1,413 · alle Kerne 1,208; vor 118/314,1 ms, nach 110,1/267,9 ms, Ruhe 83,5/260,1 ms seit 2026-11-16) · fremd: git stash create 17,2 CPU-s · bash.exe werkzeug/gpu-lauf.sh ",
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/wirt-wache.cjs, stamm/bild-himmel.js +15) — zuletzt an bed6256c: Last: Referenz f 1,574 (Faden 1,574 · alle Kerne 1,168; vor 109,4/281,9 ms, nach 131,4/303,5 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node scripts/diag-koerper-kern.cjs --selftest 45,1 CPU-s ·",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3048,7 +3048,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 7e73426e: Last: Referenz f 1,521 (Faden 1,521 · alle Kerne 1,251; vor 127/325 ms, nach 120,6/304,5 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node scripts/diag-studio-uebergabe.cjs 28,5 CPU-s · node scrip",
+     "grund": "Station seit der Messung geändert — zuletzt an bed6256c: Last: Referenz f 1,574 (Faden 1,574 · alle Kerne 1,168; vor 109,4/281,9 ms, nach 131,4/303,5 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node scripts/diag-koerper-kern.cjs --selftest 45,1 CPU-s ·",
      "ungemessen": true
     },
     {
@@ -16790,16 +16790,15 @@
   },
   "karte2.mensch.geist.gespraech": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.gespraech#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +29) · karte2.mensch.geist.gespraech#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +29) · karte2.mensch.geist.gespraech#3 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#4 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#5 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#6 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#7 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.gespraech#2 radeon: ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] amd/rdna-3 an bed6256c · karte2.mensch.geist.gespraech#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +29) · karte2.mensch.geist.gespraech#3 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#4 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#5 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#6 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#7 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.gespraech#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +29)",
-     "ungemessen": true,
+     "zahl": "S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] amd/rdna-3",
+     "sha": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
+     "grund": "ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -37605,7 +37604,7 @@
   "ohne": 3389
  },
  "kopfVoll": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
- "zeit": "2026-11-27T14:45:46.415Z",
+ "zeit": "2026-11-27T14:52:49.333Z",
  "vorher": "bed6256c",
  "bilanz": {
   "gewinn": [],
