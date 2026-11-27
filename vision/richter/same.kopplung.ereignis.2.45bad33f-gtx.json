@@ -1,0 +1,81 @@
+{
+ "leiter": "same.kopplung.ereignis",
+ "sprosse": 2,
+ "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
+ "datum": "2026-11-27T01:56:26.189Z",
+ "soll": "Frame p95 während 1 ha brennt; Bewohner meiden die Front = 100 %",
+ "station": "karte2.same.kopplung.ereignis#2",
+ "lauf": "karte2.same.kopplung.aufwaerts#1",
+ "geraete": [
+  {
+   "geraet": "GTX 1060",
+   "richter": {
+    "wert": "S2 brennendHa 1,05 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 100 % gegen Soll = 100 % ✓ · der Zeuge der Welt fehlt: Frame p95 41.22 ms während des Brands über dem Preis P (REGELN R8, Klasse Ort: p95 ≤ 34 ms) · Täter: stamm/siedlung-bewohner.js `_bewohnerSoll` (liest kein Brand-Feld) · stamm/feld-brand.js `_tickBrand` (die Kosten der Front) · gemessen vor dem Abbruch: Deckel 609 s gerissen: Stille seit 343.6 s nach 609.1 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt)",
+    "urteil": "ROT"
+   },
+   "preis": {
+    "fehlt": "der Preis-Lauf nannte sein Stück nicht (kein Ergebnis von `/lauf`)",
+    "bilder": 0,
+    "fenster": {
+     "von": "2026-11-27T01:39:23.087Z",
+     "bis": "2026-11-27T01:56:26.189Z"
+    },
+    "quelle": "kein Preis: der Preis-Lauf nannte sein Stück nicht (kein Ergebnis von `/lauf`)",
+    "referenz": {
+     "f": 1.218,
+     "fEin": 1.105,
+     "fAlle": 1.218,
+     "vor": {
+      "ein": 97.8,
+      "alle": 258.4,
+      "tor": {
+       "ruhig": true,
+       "s": 0,
+       "kerne": 0.17,
+       "soll": 3,
+       "reihe": [
+        0.18,
+        0.1,
+        0.13,
+        0.13,
+        0.22,
+        0.17
+       ]
+      }
+     },
+     "nach": {
+      "ein": 89.4,
+      "alle": 268.5,
+      "tor": {
+       "ruhig": true,
+       "s": 0,
+       "kerne": 1.05,
+       "soll": 3,
+       "reihe": [
+        1.06,
+        1.01,
+        1.07,
+        1.06,
+        1.03,
+        1.05
+       ]
+      }
+     },
+     "ruhe": {
+      "ein": 88.5,
+      "alle": 220.5,
+      "n": 1192,
+      "von": "2026-11-26"
+     },
+     "umfeld": "sitzung",
+     "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz"
+    },
+    "posten": {
+     "fehler": "/puffer ohne Antwort binnen 120 s"
+    },
+    "urteil": "FEHLT",
+    "treppe": "2026-11-23b"
+   }
+  }
+ ]
+}
