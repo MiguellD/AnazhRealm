@@ -613,7 +613,8 @@ async function checkBandM6ErnteSpawn({ page, check }) {
             const nix = () => null;
             const buehne = { _heldBogenRecipe: nix, _pickArchitectureAtCrosshair: nix, _pickCreatureAtCrosshair: nix,
                 _pickScatterAtCrosshair: nix, _kampfKegelZiel: nix, _geraetGraebt: () => true, _raycastWorldHit: () => ziel,
-                dslRun: (prog) => (prog[0] === "voxel_carve" && loecher.push(prog), true) };
+                dslRun: (prog) => (prog[0] === "voxel_carve" && loecher.push(prog),
+                    { ok: true, log: prog[0] === "voxel_carve" ? [{ event: "voxel_carved", op: "voxel_carve" }] : [] }) };
             Object.assign(r, buehne);
             const mausVerb = st.player._mausVerb;
             try {

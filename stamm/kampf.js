@@ -2423,8 +2423,12 @@ class AnazhRealm_kampf {
         const carveRadius = 3.5;
         // Graben läuft durch dslRun (source:"human" → p2pBroadcastDsl), damit Mitspieler dieselbe Mulde
         // sehen; lokal ruft voxel_carve dieselbe carveVoxel. Der DSL-Op ist der EINE Broadcast-Anker
-        // — ein direkter API-Call wäre eine Sync-Lücke.
-        this.dslRun(["voxel_carve", target.x, target.y, target.z, carveRadius], { source: "human" });
+        // — ein direkter API-Call wäre eine Sync-Lücke. Der EINE Weg des Erdbaus (`_erdbauAkt`): Boden gibt nur die Grube, die
+        // das Feld trägt.
+        if (!this._erdbauAkt("carve", target.x, target.y, target.z, carveRadius).getan) {
+            this.log("Graben: der Boden blieb, wie er war.", "INFO");
+            return false;
+        }
         // Der Boden gibt Materie wie harvestArchitecture: Material aus dem Welt-Affinitäts-Feld am Grabe-Ort
         // (was man SIEHT, bekommt man), geschichtet nach Tiefe (target.y — tief gibt Stein, kein Humus).
         // Yield ist LOKAL, nicht im DSL-Op — ein gebroadcastetes voxel_carve füllt kein fremdes Inventar.
@@ -2626,16 +2630,19 @@ class AnazhRealm_kampf {
             }
             // Phase 3c — im pfad-Modus kostet das Aufschütten Material
             // (der Erhaltungs-Kreis); in frieden + schöpfer ist es frei.
-            const matGate = this._voxelFillGate();
-            if (!matGate.ok) {
+            if (!this._voxelFillGate().ok) {
                 this.log("Aufschütten: kein Material im Inventar — erst graben.", "INFO");
                 return false;
             }
             this._consumeMouseStamina();
-            // Aufschütten via dslRun (voxel_fill, broadcastet; lokal fillVoxel). Der Material-Konsum
-            // (matGate oben) bleibt lokal — Inventar-Geste, nicht broadcastbar.
-            this.dslRun(["voxel_fill", fillHit.x, fillHit.y, fillHit.z, 3.5], { source: "human" });
-            if (!matGate.free) this.log(`Aufgeschüttet (${matGate.cost}× Material verbraucht).`, "INFO");
+            // Aufschütten via dslRun (voxel_fill, broadcastet; lokal fillVoxel) über den EINEN Weg des Erdbaus (`_erdbauAkt`):
+            // das Material zahlt erst der Edit, den das Feld trägt — lokal, Inventar-Geste, nicht broadcastbar.
+            const akt = this._erdbauAkt("fill", fillHit.x, fillHit.y, fillHit.z, 3.5);
+            if (!akt.getan) {
+                this.log("Aufschütten: der Boden blieb, wie er war.", "INFO");
+                return false;
+            }
+            if (!akt.gate.free) this.log(`Aufgeschüttet (${akt.gate.cost}× Material verbraucht).`, "INFO");
             return true;
         }
         if (!this.state.buildMode || !this.state.buildMode.active) return false;

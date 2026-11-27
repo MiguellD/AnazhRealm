@@ -388,12 +388,12 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         st.player.inventory = new Array(27).fill(null);
         const gF = r._voxelFillGate();
         out.gateFriedenFree = gF.ok === true && gF.free === true;
-        // Gate in pfad mit Material → ok + verbraucht.
+        // Gate in pfad mit Material → ok, es prüft nur (bezahlt wird nach dem Edit, `_erdbauAkt`).
         r.setGameMode("pfad");
         st.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 10);
         const gP = r._voxelFillGate();
-        out.gatePfadConsumes = gP.ok === true && gP.free === false && matTotal() === 6;
+        out.gatePfadPrueft = gP.ok === true && gP.free === false && gP.cost === 4 && matTotal() === 10;
         // Gate in pfad ohne Material → abgelehnt.
         st.player.inventory = new Array(27).fill(null);
         out.gatePfadDeniesEmpty = r._voxelFillGate().ok === false;
@@ -402,11 +402,11 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         wm.voxelEdits = [];
         r.processChatCommand("voxel fill");
         out.chatFillDeniedNoMat = wm.voxelEdits.length === 0;
-        // Chat `voxel fill` in pfad mit Material → Edit + Verbrauch.
+        // Chat `voxel fill` in pfad mit Material → Edit + Verbrauch (erst der Edit zahlt).
         r.addMaterialToInventory("stein", 10);
         wm.voxelEdits = [];
         r.processChatCommand("voxel fill");
-        out.chatFillWorksWithMat = wm.voxelEdits.length === 1;
+        out.chatFillWorksWithMat = wm.voxelEdits.length === 1 && matTotal() === 6;
         // sauber zurücklassen.
         wm.voxelEdits = [];
         st.player.inventory = invBackup;
@@ -426,12 +426,12 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
             voxelP3cResults.gateFriedenFree
         );
         check(
-            "Voxel P3c: das Füll-Gate verbraucht im pfad-Modus Material (Erhaltungs-Kreis)",
-            voxelP3cResults.gatePfadConsumes
+            "Voxel P3c: das Füll-Gate prüft im pfad-Modus das Material, der Edit zahlt (Erhaltungs-Kreis)",
+            voxelP3cResults.gatePfadPrueft
         );
         check("Voxel P3c: das Füll-Gate lehnt im pfad-Modus ohne Material ab", voxelP3cResults.gatePfadDeniesEmpty);
         check(
-            "Voxel P3c: `voxel fill` in pfad ohne Material schüttet nicht / mit Material schon",
+            "Voxel P3c: `voxel fill` in pfad ohne Material schüttet nicht / mit Material schon und zahlt 4",
             voxelP3cResults.chatFillDeniedNoMat && voxelP3cResults.chatFillWorksWithMat
         );
     }
