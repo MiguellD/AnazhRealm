@@ -1,0 +1,16 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 22.5 s · Fackel trocken / nass, Eis: {"grasZellen":18,"feld_neu":9,"zuendet_trocken":1,"trockenR":0.074,"naesse":1,"haelt_nass":1,"eis":[-261.7,-1133.6,25.784],"fuss":25.784,"eis_y_cm":0}
+@@ 22.5 s · same.physik.feuer S1 gemessen {"art":"gemessen","werte":{"zuendet_trocken":1,"haelt_nass":1,"eis_y_cm":0},"erzeugt":1,"welt":{"feld_neu":9},"taeter":"Fuß 25.784 m auf dem Eis [-261.7,-1133.6,25.784] · trocken R 0.074 m/s · Nässe im Regen 1","beleg":n
+@@ 22.7 s · Brand-Feld und Häuser der Welt: {"zelle":16,"wiese":44,"laubKm2":0.074,"haeuser":0,"maxHaus":0,"flaeche":151165,"chunks":81,"saat":"anazh-realm-seed"}
+@@ 22.7 s · same.physik.feuer S2 umfang {"art":"umfang","erzeugt":44,"was":"die Wiese 100 × 100 m trägt 44 brennbare Zellen zu 16 m (AnazhRealm.LIFE_FIELD.cell, stamm/feld-leben.js:3078)","t":22.7}
+@@ 22.7 s · same.physik.feuer S3 umfang {"art":"umfang","erzeugt":0,"was":"das größte Haus der geladenen Welt misst 0 m³ (0 Häuser)","t":22.7}
+@@ 22.7 s · same.physik.feuer S4 umfang {"art":"umfang","erzeugt":0.074,"was":"der km² um den Spieler trägt 0.074 km² Laub-Bett (Stichprobe je 64 m)","t":22.7}
+@@ 22.7 s · same.physik.feuer S5 umfang {"art":"umfang","erzeugt":0,"was":"die geladene Welt trägt 0 Häuser","t":22.7}
+@@ 22.7 s · same.physik.feuer S6 umfang {"art":"umfang","erzeugt":0,"was":"die geladene Welt trägt 0 Häuser","t":22.7}
+@@ 22.7 s · same.physik.feuer S7 umfang {"art":"umfang","erzeugt":151165,"was":"die Sitzung hält 81 Chunks Gelände (151165 m²)","t":22.7}
+@@ 22.7 s · same.physik.feuer S8 umfang {"art":"umfang","erzeugt":1,"was":"die Sitzung hält eine Planeten-Saat (anazh-realm-seed)","t":22.7}
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
