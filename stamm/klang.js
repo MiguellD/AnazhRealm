@@ -915,20 +915,34 @@ class AnazhRealm_klang {
                     const db = kern.rufPegel({ leib: true, d, anstrengungDb: an });
                     energie += Math.pow(10, db / 10);
                     quelle += Math.pow(10, (kern.MENGE.stufen.sprech + an) / 10);
-                    if (!(z.klingtBis > jetzt)) kand.push({ b, z, db, an });
+                    if (!(z.klingtBis > jetzt)) kand.push({ S, b, z, db, an });
                     continue;
                 }
                 const [laut, rate] = ST.akte[b.akt] || ST.sonst;
                 if (zug() < (rate / 60) * dt) this._bewohnerLaut(b, laut);
             }
         }
-        // DER DECKEL: die lautesten Sprecher in Rede, die noch nicht klingen, bekommen ihre Stimme — je ein Teil bis zum Ende ihrer Rede
+        // DER DECKEL: die lautesten Sprecher in Rede, die noch nicht klingen, bekommen ihre Stimme — je ein Teil bis zum Ende ihrer Rede.
+        // DER TEIL IST EIN STÜCK SEINES SATZES (sprache#2): die Rede spricht den Satz seiner Sprache (der Wirt `_bewohnerLauf` „rede“,
+        // fachwerk `sprachSatz`), Silbe um Silbe — ihre Kerne (`sprachKerne`) sind die Vokale der Stimme (klang `stimmPuffer`). Ein
+        // Satz läuft über die Teile, bis er gesprochen ist; dann der nächste (`M.saetze` zählt sie, die Nummer ist der Same der Rede).
+        // Bis hier sprach die Menge Vokale aus einer Tafel ohne Sprache: jede Stadt klang gleich.
         kand.sort((a, c) => c.db - a.db);
         let rest = 0;
         for (const k of kand) {
             const silben = klingen < UMWELT.stimmenMax ? kern.mengeSilben(k.z.bis - jetzt) : 0;
-            if (silben && this._bewohnerLaut(k.b, kern.MENGE.laut, { silben, anstrengungDb: k.an })) {
-                k.z.klingtBis = jetzt + kern.mengeSek(silben);
+            const z = k.z;
+            if (silben && !(z.kerne && z.ab < z.kerne.length)) {
+                z.nr = M.saetze = (M.saetze || 0) + 1;
+                z.satz = this._bewohnerLauf(k.S, k.b, "rede", z.nr);
+                if (typeof z.satz !== "string") return; // der Kern fehlt: `_kernPflichtBruch` hat laut gebrochen
+                [z.kerne, z.ab] = [globalThis.__fachwerkCore.sprachKerne(z.satz), 0];
+            }
+            const n = silben && Math.min(silben, z.kerne.length - z.ab);
+            const kerne = n ? z.kerne.slice(z.ab, z.ab + n) : null;
+            if (n && this._bewohnerLaut(k.b, kern.MENGE.laut, { silben: n, kerne, anstrengungDb: k.an })) {
+                z.ab += n;
+                z.klingtBis = jetzt + kern.mengeSek(n);
                 klingen++;
             } else rest += Math.pow(10, k.db / 10);
         }
@@ -1010,7 +1024,7 @@ class AnazhRealm_klang {
             verdeckung: this._klangVerdeckung(pm, g),
             temperatur: um.lage && Number.isFinite(um.lage.luft) ? um.lage.luft : this._temperaturAt(pm.position.y, 0),
         };
-        if (rede) [ruf.silben, ruf.anstrengungDb] = [rede.silben, rede.anstrengungDb];
+        if (rede) [ruf.silben, ruf.kerne, ruf.anstrengungDb] = [rede.silben, rede.kerne, rede.anstrengungDb];
         if (!(um.kern.rufPegel(ruf) >= AnazhRealm._umweltGesetz().UMWELT.hoerschwelleDb)) return null;
         um.rufeBestellt++;
         um.werkstatt.postMessage({ typ: "ruf", ruf });

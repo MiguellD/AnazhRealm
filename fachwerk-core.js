@@ -4985,6 +4985,86 @@
     }
     // prettier-ignore
     function ORTSNAME(region, seed){ return sprachName(spracheVon(region, seed), "ort", seed >>> 0); }
+    // DER SATZ in der Sprache L (Karte 2 mensch.kultur.sprache#2): ein Bewohner spricht aus den Wörtern SEINER Sprache (`sprachWort`,
+    // die Grundliste nach Swadesh: Laute und Silben aus dem Gesetz der Familie, gewandelt nach den Lautgesetzen des Zweigs) in der
+    // Folge seiner Familie. Die Folge ist ein Erbe der Ursprache (ein Wurf je Familie, nach dem Rang der Typologie gewogen — Dryer 2013,
+    // WALS 81A über 1 376 Sprachen: SOV 564 · SVO 488 · VSO 95 · VOS 25 · OVS 11 · OSV 4; 87A über 1 252: Nomen–Adjektiv 879 ·
+    // Adjektiv–Nomen 373; 143A die Verneinung als Wort vor dem Verb 525 · danach 171, als Vorsilbe 162 · als Nachsilbe 202; 69A die
+    // Zeit am Verb als Nachsilbe 667 · Vorsilbe 153 · ohne 152; 85A die Adposition danach 577 · davor 511). Die Wörter der Grammatik
+    // (Zeit, Ort) sind Wörter der Ursprache (`_urWort`), gewandelt wie jedes Wort des Zweigs.
+    // DAS BAND DER TRENNBARKEIT (Cavnar & Trenkle 1994, Table 2): Dokumente ≤ 300 Bytes, Profil 400 — 98,3 % der Sprache richtig erkannt.
+    // Der Rahmen ist ein Verb der Grundliste mit dem, was es trägt (`verben`: wer es tut, woran — ein Hund fliegt nicht, man trinkt
+    // Wasser, nie Stein); die Glieder sind Wörter derselben Liste. `anteil` (QUELLE UNGEPRUEFT im Wert): die Hälfte der Nomen trägt
+    // ein Adjektiv, ein Achtel der Sätze ist verneint. Leser: der Wirt (`_bewohnerLauf` „rede“), die Rede der Menge (klang.js
+    // `_bewohnerLautTakt`: die Silben-Kerne des Satzes `sprachKerne` sind die Vokale der Stimme), die Station (die Sätze getrennt).
+    // prettier-ignore
+    var SATZ_GESETZ = {
+      folge: ['SOV', 'SVO', 'VSO', 'VOS', 'OVS', 'OSV'], folgeZahl: [564, 488, 95, 25, 11, 4],
+      adjektiv: ['NA', 'AN'], adjektivZahl: [879, 373],
+      nicht: ['vor', 'nach', 'vorsilbe', 'nachsilbe'], nichtZahl: [525, 171, 162, 202],
+      zeit: ['nachsilbe', 'vorsilbe', 'ohne'], zeitZahl: [667, 153, 152],
+      adposition: ['nach', 'vor'], adpositionZahl: [577, 511],
+      orte: ['wald', 'berg', 'feld', 'wasser', 'haus', 'siedlung', 'weg', 'burg', 'erde', 'stein', 'baum', 'feuer'],
+      anteil: { adjektiv: 0.5, nicht: 0.125, ort: 0.5 },
+      klassen: {
+        leute: ['ich', 'du', 'wir', 'wer', 'frau', 'mann', 'mensch'],
+        tier: ['hund', 'vogel', 'fisch'],
+        speise: ['fisch', 'fleisch', 'ei', 'same', 'blatt', 'fett', 'wurzel'],
+        trank: ['wasser', 'blut'],
+        ding: ['stein', 'baum', 'feuer', 'wasser', 'ei', 'feder', 'horn', 'knochen', 'blatt', 'same', 'sand', 'asche', 'haus', 'weg',
+          'berg', 'feld', 'wald', 'burg', 'siedlung', 'sonne', 'mond', 'stern', 'wolke', 'rauch', 'regen', 'erde'],
+        laut: ['vogel', 'hund', 'regen', 'feuer', 'name'],
+        wissen: ['name', 'weg', 'wasser', 'berg', 'wald'],
+      },
+      // je Verb: [wer es tut, woran (ohne: es steht allein)] — Klassen oder Wörter der Grundliste
+      verben: {
+        essen: [['leute', 'tier'], ['speise']], trinken: [['leute', 'tier'], ['trank']], 'beißen': [['tier', 'leute'], ['speise', 'tier']],
+        sehen: [['leute', 'tier'], ['ding', 'tier', 'leute']], 'hören': [['leute', 'tier'], ['laut', 'leute']], wissen: [['leute'], ['wissen']],
+        'töten': [['leute', 'tier'], ['tier']], geben: [['leute'], ['ding', 'speise']], sagen: [['leute'], ['name']],
+        schlafen: [['leute', 'tier']], sterben: [['leute', 'tier', 'baum', 'feuer']], schwimmen: [['leute', 'fisch', 'hund']],
+        fliegen: [['vogel', 'feder', 'rauch', 'wolke', 'asche']], gehen: [['leute', 'hund']], kommen: [['leute', 'tier', 'regen', 'nacht', 'wolke']],
+        liegen: [['leute', 'tier', 'stein', 'knochen', 'baum']], sitzen: [['leute', 'vogel']], stehen: [['leute', 'baum', 'haus', 'burg', 'berg', 'stein']],
+        brennen: [['feuer', 'baum', 'haus', 'wald', 'sonne']],
+      },
+      adjektive: ['groß', 'klein', 'lang', 'rot', 'grün', 'gelb', 'weiß', 'schwarz', 'warm', 'kalt', 'voll', 'neu', 'gut', 'rund', 'trocken'],
+      // die Fürwörter tragen kein Adjektiv (*„großer ich“)
+      fuerwort: ['ich', 'du', 'wir', 'wer'],
+    };
+    // der Wurf nach den Zahlen der Typologie (Gewicht = Zahl der Sprachen)
+    function _zahlZug(A, Z, u) { var H = 0, i; for (i = 0; i < Z.length; i++) H += Z[i]; var a = u * H; for (i = 0; i < A.length; i++) if ((a -= Z[i]) < 0) return A[i]; return A[A.length - 1]; }
+    // die Satz-Gestalt der Familie (ein Erbe der Ursprache, gemerkt)
+    var _SATZBAU = new Map();
+    function _satzBau(region) {
+      var g = _SATZBAU.get(region); if (g) return g;
+      var G = SATZ_GESETZ, z = "satz|" + region;
+      var U = _ursprache(region);
+      g = Object.freeze({ folge: _zahlZug(G.folge, G.folgeZahl, _sprachU(z, "folge")), adjektiv: _zahlZug(G.adjektiv, G.adjektivZahl, _sprachU(z, "adjektiv")),
+        nicht: _zahlZug(G.nicht, G.nichtZahl, _sprachU(z, "nicht")), zeit: _zahlZug(G.zeit, G.zeitZahl, _sprachU(z, "zeit")),
+        adposition: _zahlZug(G.adposition, G.adpositionZahl, _sprachU(z, "adposition")),
+        gram: { zeit: _urWort(U, z + "|zeit", 1, true), ort: _urWort(U, z + "|ort", 1, true) } });
+      _SATZBAU.set(region, g); return g; }
+    // prettier-ignore
+    function sprachSatz(L, saat) {
+      var G = SATZ_GESETZ, B = _satzBau(L.region), z = "satz|" + saat, u = function (k) { return _sprachU(z, k); };
+      var aus = function (liste, k) { var W = []; liste.forEach(function (x) { W = W.concat(G.klassen[x] || [x]); }); return W[Math.floor(u(k) * W.length) % W.length]; };
+      var V = Object.keys(G.verben), verb = V[Math.floor(u("verb") * V.length) % V.length], R = G.verben[verb];
+      var nominal = function (b, k) { var w = sprachWort(L, b);
+        if (G.fuerwort.indexOf(b) >= 0 || !(u(k + "-adj") < G.anteil.adjektiv)) return w;
+        var a = sprachWort(L, G.adjektive[Math.floor(u(k + "-adj-zug") * G.adjektive.length) % G.adjektive.length]);
+        return B.adjektiv === "AN" ? a + " " + w : w + " " + a; };
+      var S = nominal(aus(R[0], "s"), "s"), O = R[1] ? nominal(aus(R[1], "o"), "o") : null, v = sprachWort(L, verb);
+      var zeit = wandle(L, B.gram.zeit);
+      if (B.zeit === "nachsilbe") v = _ocp(L, v + zeit); else if (B.zeit === "vorsilbe") v = _ocp(L, zeit + v);
+      if (u("nicht") < G.anteil.nicht) { var n = sprachWort(L, "nicht");
+        v = B.nicht === "vor" ? n + " " + v : B.nicht === "nach" ? v + " " + n : B.nicht === "vorsilbe" ? _ocp(L, n + v) : _ocp(L, v + n); }
+      var ort = null;
+      if (u("ort") < G.anteil.ort) { var an = nominal(G.orte[Math.floor(u("ort-zug") * G.orte.length) % G.orte.length], "ort"), ad = wandle(L, B.gram.ort);
+        ort = B.adposition === "nach" ? an + " " + ad : ad + " " + an; }
+      var glied = { S: S, O: O, V: v }, teile = [], ov = B.folge.indexOf("O") < B.folge.indexOf("V");
+      B.folge.split("").forEach(function (c) { if (c === "V" && ort && ov) teile.push(ort); if (glied[c]) teile.push(glied[c]); if (c === "V" && ort && !ov) teile.push(ort); });
+      return _gross(teile.join(" ")) + "."; }
+    // die Silben-Kerne eines Satzes (die Vokal-Folgen, `_SILBE`: ein Zwielaut ist EIN Kern) — die Vokale, die die Stimme trägt
+    function sprachKerne(satz) { return String(satz).toLowerCase().match(_SILBE) || []; }
     // prettier-ignore
     // VERTRAGS-AKT 18.07.: LOD1SKIP ist GESTRICHEN (0 Leser — der tote LOD1F-Zwilling).
     // prettier-ignore
@@ -16179,6 +16259,9 @@
         spracheVon: spracheVon,
         sprachName: sprachName,
         sprachWort: sprachWort, // das Wort einer Bedeutung (SPRACH_BAUM.bedeutungen) in der Sprache des Orts
+        SATZ_GESETZ: SATZ_GESETZ, // die Folge der Glieder je Familie (WALS 81A/87A/143A) und die Rahmen der Verben der Grundliste
+        sprachSatz: sprachSatz, // der Satz eines Sprechers in der Sprache des Orts (Leser: der Wirt _bewohnerLauf „rede“)
+        sprachKerne: sprachKerne, // die Silben-Kerne eines Satzes (Leser: die Rede der Menge, klang.js _bewohnerLautTakt)
         lautGesetz: lautGesetz, // ein Lautgesetz „typ:laut“ als Funktion des Worts (LAUTWANDEL)
         wandle: wandle,
         DORF_NORM: DORF_NORM,

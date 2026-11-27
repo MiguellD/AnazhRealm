@@ -1562,6 +1562,10 @@
         akte: { arbeit: ["muehe", 0.5], spiel: ["lachen", 1.2], mittag: ["plaudern", 1.5], besuch: ["plaudern", 1.5],
                 abend: ["seufzer", 0.3] },
         sonst: ["plaudern", 0.6], grussM: 6,
+        // DER KERN EINER SILBE (sprache#2): der Buchstabe des Vokals (fachwerk `SPRACHE_GESETZ.vokale`; ein Zwielaut beginnt mit
+        // seinem ersten) → die Qualitaet der Tafel Peterson & Barney, deren F1/F2 ihm am naechsten liegen: die Zungen-Lage des
+        // Kardinal-Vokals (IPA a e i o u, ä [ɛ], æ, å [ɔ]); die gerundeten Vorderen ü/y [y] auf I, ö/ø [ø] auf er (F1/F2 der Mitte)
+        kern: { a: "A", e: "E", i: "i", o: "O", u: "u", "ä": "E", "æ": "ae", "å": "O", "ü": "I", y: "I", "ö": "er", "ø": "er" },
         tier: { traktJeLaenge: 0, form: null }   // gesetzt aus UMWELT.tier (unten): dieselben Zahlen, nun als Roehre
     };
     // die Roehre: F_n = form_n·(2n − 1)·c_t / (4·L_t), n = 1 … form.length
@@ -1628,9 +1632,14 @@
         var leib = stimmLeib(r.leib), Lt = S.laute[r.laut] || S.laute.gruss;
         // die Rede der Menge (MENGE.rede) bestellt ihre Silben nach der Dauer (`mengeSilben`), sonst traegt der Laut seine Zahl
         var nS = typeof r.silben === "number" && r.silben >= 1 ? Math.min(MENGE.silbenMax, Math.round(r.silben)) : Lt.silben;
+        // die Kerne des Satzes (sprache#2, fachwerk `sprachKerne`): je Silbe der Vokal ihres Kerns (`STIMME.kern`) — ein Kern ohne Zeile bricht
+        var K = Array.isArray(r.kerne) && r.kerne.length ? r.kerne : null;
+        if (K) nS = Math.min(nS, K.length);
         var silben = [], t = 0;
         for (var i = 0; i < nS; i++) {
-            var v = r.vokal && STIMME_FORM.mann[r.vokal] ? r.vokal : Lt.vokale[Math.floor(rnd() * Lt.vokale.length) % Lt.vokale.length];
+            var kv = K && STIMME.kern[String(K[i]).charAt(0)];
+            if (K && !kv) throw new Error("klang stimmPuffer: der Kern „" + K[i] + "“ steht nicht in STIMME.kern");
+            var v = kv || (r.vokal && STIMME_FORM.mann[r.vokal] ? r.vokal : Lt.vokale[Math.floor(rnd() * Lt.vokale.length) % Lt.vokale.length]);
             var sek = Lt.sek[0] + (Lt.sek[1] - Lt.sek[0]) * rnd();
             silben.push({ v: v, von: t, bis: t + sek, F: roehre(leib.traktM, stimmForm(v, leib.mann)) });
             t += sek + Lt.pause;
