@@ -143,7 +143,9 @@ async function headless(laeufe) {
         // die Stadt des vorigen bleibt sonst stehen (dieselbe Platte, die der erste Lauf las)
         let stadt = null;
         // ein Täter mit Teilen liest die Teile seines Grund-Laufs (er lief vor ihm auf derselben Seite)
-        for (const l of laeufe) {
+        for (const [li, l0] of laeufe.entries()) {
+            // die Stadt bleibt stehen, wenn derselbe Lauf am selben Messort folgt (ein Täter nach seinem Grund): `bleibt`
+            const l = STADT_ORT[l0.proben[0]] && laeufe[li + 1]?.proben[0] === l0.proben[0] ? { ...l0, bleibt: true } : l0;
             const o = STADT_ORT[l.proben[0]];
             const ort = o === "stadt" ? l.ort || o : o;
             if (ort && stadt && ort !== stadt)

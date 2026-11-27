@@ -146,9 +146,13 @@ async function kreaturProben(r, T, opts) {
             // `__gebautNach`), streamt sie dort (Chunks, Streu, Wald) — die nächste Probe stünde mit ihren Tieren am Ort des
             // Spielers in einer Welt um den fremden Ort (jagdkreis nach dem Leittier: 1 von 42 Jagden ohne Ende, allein 0).
             // Steht der Strom in einem anderen Chunk als der Spieler, steht die Welt um ihn neu auf, ehe ihre Tiere zurückkehren.
+            // DIE STADT BLEIBT FÜR IHRE TÄTER (`opts.bleibt`, werk-am-ort-2 Kopf 4): folgt dieser Probe derselbe Lauf am selben
+            // Messort (der Täter nach seinem Grund), kehrt sie nicht heim — die Heimkehr ließ die Stadt ihre Liste fallen, und jeder
+            // Täter wartete auf jeden Leib neu (seuche: der Ausbruch 0,2 s, das Warten 82–113 s je Lauf, drei Läufe 300 s)
             pm.copy(P0);
             const [{ span }, pc] = [r._voxelChunkConfig(), s.lastPlayerVoxelChunk];
-            if (pc && (pc.cx !== Math.floor(P0.x / span) || pc.cz !== Math.floor(P0.z / span))) await __weltStehtNach();
+            if (!opts?.bleibt && pc && (pc.cx !== Math.floor(P0.x / span) || pc.cz !== Math.floor(P0.z / span)))
+                await __weltStehtNach();
             for (const f of zurueck) f();
             r.setGameMode(altModus);
             if (s.player.emotions) Object.assign(s.player.emotions, altGefuehl);
