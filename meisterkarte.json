@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "52937c92",
-    "zeit": "2026-11-27T11:54:10.616Z",
+    "zeit": "2026-11-27T12:05:31.388Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -3794,7 +3794,7 @@
           "punkte": 1,
           "staffel": "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
           "messung": "`werkbank haenger 60 --regler frei --wandern bahn` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`). Der Regler ist der des Spielers (R8): ohne Angabe fährt `haenger` voll; `--wandern kreis` kennt der Kopf nicht.",
-          "beleg": "Maschine: Gehen 64 Bilder · max 75.47 ms · 73.44 % > 33 ms · Fahrt 50 Bilder · max 133.89 ms · 94.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 73.44 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 133.89), 94.00 % > 33 ms an 52937c92 radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 52937c92: Last: Referenz f 1,345 (Faden 1,345 · alle Kerne 1,234; vor 112,3/319,9 ms, nach 102,3/286,1 ms, Ruhe 83,5/259,3 ms seit 2026-11-16) · fremd: git stash create 14,3 CPU-s · bash.exe werkzeug/gpu-lauf.s · profiband.K4#2 gtx: ROT: Gehen 76 Bilder · max 108.29 ms · 23.68 % > 33 ms · Fahrt 42 Bilder · max 133.32 ms · 80.95 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.29), 23.68 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 133.32), 80.95 % > 33 ms an 52937c92",
+          "beleg": "Maschine: Gehen 62 Bilder · max 92.24 ms · 79.03 % > 33 ms · Fahrt 51 Bilder · max 167.42 ms · 92.16 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 79.03 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 167.42), 92.16 % > 33 ms an 52937c92 radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 52937c92: Last: Referenz f 1,316 (Faden 1,316 · alle Kerne 1,166; vor 109,9/302,3 ms, nach 101,6/274,3 ms, Ruhe 83,5/259,3 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 11,3 CPU-s · bash.exe -c · profiband.K4#2 gtx: ROT: Gehen 76 Bilder · max 108.29 ms · 23.68 % > 33 ms · Fahrt 42 Bilder · max 133.32 ms · 80.95 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.29), 23.68 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 133.32), 80.95 % > 33 ms an 52937c92",
           "schlupfloch": "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt; den Regler auf voll stellen, um den Spieler-Takt zu meiden: R8 fährt den Regler des Spielers.",
           "aenderung": "Gemessen 0 → 1 (M29, e5003509, GTX, Regler des Spielers): kein Schnitt, die Messung am Kopf; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an b0b2d8ed gemessen (M34) 22.10. 0 → 1.; nach R6 (stadt-takt, fahrt-takt-Folge-Morphs, 16dd81d0) 23.10. 1 → 0.",
           "maschine": true
