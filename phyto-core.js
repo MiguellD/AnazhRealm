@@ -4977,9 +4977,9 @@
         druck: Object.freeze({ p0: 1013, hub: 12, tief: 0.62, trog: 3, trogBreite: 0.03, trogVersatz: 0.0125 }),
         drehGrad: 80,
         drehMitte: 0.4875,
-        taktS: 120,
-        stark: Object.freeze({ abschnitt: 2, staerke: 0.9, mu: -2, beta: 1.5, bis: 10 }),
         drehGlieder: 9,
+        taktS: 120,
+        stau: Object.freeze({ abschnitt: 2, staerke: 0.9, mu: -5, beta: 3, bis: 16 }),
     });
     function lageGlatt(a, b, v) {
         if (v <= a) return 0;
@@ -4993,10 +4993,9 @@
     }
     // die Front-Stärke der Lage g(ζ) und das Gewicht der Textur A(ζ) in `o`: der Abschnitt, in dem ζ liegt, an seinem Beginn
     // glatt (±`kante`) aus dem vorigen (Leser: `wetterAt`, `frontVerteilung`)
-    function lageProfil(ze, o, kern) {
+    function lageProfil(ze, o) {
         var L = WETTER_LAGE,
             F = L.folge,
-            S = L.stark,
             n = F.length,
             i = n - 1;
         for (var j = 1; j < n; j++)
@@ -5004,53 +5003,67 @@
                 i = j - 1;
                 break;
             }
-        // die Stärke des Abschnitts k: im Kern der stehenden Front (`stark`, bis zur Phase `kern`) die des Starkregens
-        var stufe = function (k) {
-            return k === S.abschnitt && kern > F[k][0] && (k !== i || ze < kern) ? S.staerke : F[k][1];
-        };
-        var nach = i + 1 < n ? i + 1 : -1,
-            vor = (i + n - 1) % n,
-            g = stufe(i),
+        var nach = i + 1 < n ? F[i + 1] : null,
+            vor = F[(i + n - 1) % n],
+            g = F[i][1],
             a = L.textur[F[i][2]],
             u;
         if (ze < F[i][0] + L.kante && i > 0) {
             u = lageGlatt(F[i][0] - L.kante, F[i][0] + L.kante, ze);
-            g = stufe(vor) + (g - stufe(vor)) * u;
-            a = L.textur[F[vor][2]] + (a - L.textur[F[vor][2]]) * u;
-        } else if (nach >= 0 && ze > F[nach][0] - L.kante) {
-            u = lageGlatt(F[nach][0] - L.kante, F[nach][0] + L.kante, ze);
-            g += (stufe(nach) - g) * u;
-            a += (L.textur[F[nach][2]] - a) * u;
+            g = vor[1] + (g - vor[1]) * u;
+            a = L.textur[vor[2]] + (a - L.textur[vor[2]]) * u;
+        } else if (nach && ze > nach[0] - L.kante) {
+            u = lageGlatt(nach[0] - L.kante, nach[0] + L.kante, ze);
+            g += (nach[1] - g) * u;
+            a += (L.textur[nach[2]] - a) * u;
         }
         o.g = g;
         o.a = a;
         return o;
     }
-    // DER STARKREGEN DER LAGE (planet.wetter.extreme#1): je Lage n (der n-te Zyklus längs des Zugs) steht die Warmfront
-    // E_n Takte still — ihr Kern regnet in Sturm-Stärke (die Zeile sturm: 10 mm je Stunde, gelaende-core PEGEL), danach zieht der
-    // Landregen weiter; die nasse Zeit bleibt dieselbe (die Quote der Heimat hält). E_n = ⌊μ + β · (−ln(−ln u_n))⌋ in Takten,
-    // 0 ≤ E_n ≤ `bis`, u_n gleichverteilt aus der Saat und n (FNV-1a über saat + "-stark-" + n): die Maxima einer Extremwert-
-    // Verteilung (Gumbel 1958). Band: KOSTRA-DWD (Dauerstufe 24 h, Wiederkehr 100 a: 87–105 mm je nach Rasterzelle) — die
-    // Strecke eines Jahrs trägt ≥ 100 mm im Mittel einmal in rund 100 Jahren, das gewöhnliche Jahr nicht. Die Phase, bis zu der der
-    // Kern reicht (0: keiner). Leser: `wetterAt`, `frontVerteilung` (dieselbe Gumbel-Regel als Anteil je Takt).
-    var _kernMerk = { saat: null, n: 0, kern: 0 };
-    function lageKern(saat, n) {
-        if (_kernMerk.saat === saat && _kernMerk.n === n) return _kernMerk.kern;
-        var S = WETTER_LAGE.stark,
-            u = (saatFnv(saat + "-stark-" + n) + 0.5) / 4294967296,
-            e = Math.floor(S.mu + S.beta * -Math.log(-Math.log(u)));
-        e = Math.max(0, Math.min(S.bis, e));
-        var kern = e > 0 ? WETTER_LAGE.folge[S.abschnitt][0] + (e * WETTER_LAGE.taktS) / WETTER_LAGE.zyklusS : 0;
-        _kernMerk.saat = saat;
-        _kernMerk.n = n;
-        _kernMerk.kern = kern;
-        return kern;
+    // DER STARKREGEN DER LAGE (planet.wetter.extreme#1): die quasi-stationäre Front — je Lage n kommt die Warmfront pünktlich
+    // und steht dann E_n Takte am Ort: sie regnet in der Stärke `stau.staerke` (die Zeile sturm: 10 mm je Stunde der Welt-Uhr,
+    // gelaende-core PEGEL), Warmsektor, Kaltfront und Rückseite folgen um E_n Takte später, das Hoch danach ist um sie kürzer (der
+    // Takt der Lagen bleibt: die Phase ist eine Funktion von Saat, Ort und Zeit, kein Kalender). E_n = ⌊μ + β · G_n⌋ Takte,
+    // 0 ≤ E_n ≤ `bis` (das Hoch trägt 17 Takte), G_n = −ln(−ln u_n) gumbelverteilt, u_n aus der Saat und n (FNV-1a über saat +
+    // "-stau", mit n · φ·2³² gemischt, der Avalanche von MurmurHash3): die Extremwert-Verteilung der Maxima (Gumbel 1958). Band:
+    // KOSTRA-DWD 2020 (Dauerstufe 24 h, Wiederkehr 100 a: 87–105 mm in Mitteleuropa) — eine Strecke trägt ≥ 100 mm im Mittel
+    // einmal in rund 100 Jahren (1,1 % der Jahre, 200 Saaten × 100 Jahre), das gewöhnliche Jahr nicht (Median 44 mm). `o.ze` die
+    // gestaute Phase, `o.kern` das Gewicht des Kerns (glatt über ±`kante`). Die Drehung am Anker (`windRichtung`, `windWeg`
+    // geschlossen) läuft an ihrer Uhr weiter und kennt den Stau nicht. Leser: `wetterAt` (Zeile, Front, Druck), `frontVerteilung`;
+    // die Linse: gate:wetter-wache (X) STARKREGEN.
+    var _stauMerk = { saat: null, n: 0, e: 0 };
+    function lageStauTakte(saat, n) {
+        if (_stauMerk.saat === saat && _stauMerk.n === n) return _stauMerk.e;
+        var S = WETTER_LAGE.stau,
+            h = saatFnv(saat + "-stau") ^ Math.imul(n, 0x9e3779b9);
+        h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+        h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+        var u = (((h ^ (h >>> 16)) >>> 0) + 0.5) / 4294967296,
+            e = Math.max(0, Math.min(S.bis, Math.floor(S.mu + S.beta * -Math.log(-Math.log(u)))));
+        _stauMerk.saat = saat;
+        _stauMerk.n = n;
+        _stauMerk.e = e;
+        return e;
     }
-    // der Anteil der Lagen, deren Kern den k-ten Takt des Landregens noch trägt: P(E > k) (Leser: `frontVerteilung`)
-    function lageKernAnteil(k) {
-        var S = WETTER_LAGE.stark;
-        if (k + 1 > S.bis) return 0;
-        return 1 - Math.exp(-Math.exp(-(k + 1 - S.mu) / S.beta));
+    function lageStau(zr, e, o) {
+        var L = WETTER_LAGE,
+            F = L.folge,
+            A = F[1][0],
+            uL = F[L.stau.abschnitt][0] - A,
+            uH = F[F.length - 1][0] - A,
+            d = (e * L.taktS) / L.zyklusS,
+            u = zr - A;
+        u -= Math.floor(u);
+        var v = u < uL ? u : u < uL + d ? uL : u < uH + d ? u - d : uH + ((u - uH - d) * (1 - uH)) / (1 - uH - d);
+        o.ze = A + v - Math.floor(A + v);
+        o.kern =
+            d > 0 ? lageGlatt(uL - L.kante, uL + L.kante, u) - lageGlatt(uL + d - L.kante, uL + d + L.kante, u) : 0;
+        return o;
+    }
+    // die Lage n eines Orts (der Aufzug der `folge` zählt sie: mit ihm beginnt die nächste)
+    function lageNummer(zr) {
+        return Math.floor(zr - WETTER_LAGE.folge[1][0]);
     }
     // der Druck der Lage an ihrer Phase (hPa): jeder Anstieg der `folge` hinter dem Tief ist ein Nebentrog, seine Senke liegt
     // `trogVersatz` hinter seinem Beginn (Leser: `wetterAt`)
@@ -5138,19 +5151,28 @@
                             W[1][1] * Math.sin((2 * Math.PI * (b + 0.5)) / N) +
                             W[2][1] * Math.sin((2 * Math.PI * (c + 0.5)) / N)) /
                         sw;
+        // der Stau der Front (`lageStau`): jeder Textur-Probe ihr E aus der Gumbel-Regel am Quantil (j + ½)·φ mod 1 (φ der
+        // goldene Schnitt: Textur und Stau unabhängig)
+        var S = WETTER_LAGE.stau,
+            E = new Uint8Array(tex.length);
+        for (var j = 0; j < tex.length; j++) {
+            var uq = ((j + 0.5) * 0.6180339887498949) % 1;
+            E[j] = Math.max(0, Math.min(S.bis, Math.floor(S.mu + S.beta * -Math.log(-Math.log(uq)))));
+        }
         var v = new Float64Array(NZ * tex.length),
-            pr = { g: 0, a: 0 };
+            pr = { g: 0, a: 0 },
+            so = { ze: 0, kern: 0 },
+            gE = new Float64Array(S.bis + 1),
+            aE = new Float64Array(S.bis + 1);
         k = 0;
-        var LS = WETTER_LAGE.folge[WETTER_LAGE.stark.abschnitt][0];
         for (var z = 0; z < NZ; z++) {
-            var ze = (z + 0.5) / NZ;
-            // der Kern der stehenden Front: ein Anteil P(E > k) der Lagen regnet im k-ten Takt des Landregens in Sturm-Stärke
-            var q = ze >= LS ? lageKernAnteil(Math.floor(((ze - LS) * WETTER_LAGE.zyklusS) / WETTER_LAGE.taktS)) : 0,
-                nk = Math.round(q * tex.length);
-            lageProfil(ze, pr, 1);
-            for (var j = 0; j < nk; j++) v[k++] = pr.g + pr.a * tex[j];
-            lageProfil(ze, pr, 0);
-            for (j = nk; j < tex.length; j++) v[k++] = pr.g + pr.a * tex[j];
+            for (var e = 0; e <= S.bis; e++) {
+                lageStau((z + 0.5) / NZ, e, so);
+                lageProfil(so.ze, pr);
+                gE[e] = pr.g + so.kern * (S.staerke - pr.g);
+                aE[e] = pr.a;
+            }
+            for (j = 0; j < tex.length; j++) v[k++] = gE[E[j]] + aE[E[j]] * tex[j];
         }
         v.sort();
         return (_frontV = v);
@@ -5222,9 +5244,12 @@
             sw += F.wellen[i][1];
         }
         // die Lage am Ort (WETTER_LAGE): ihre Phase ζ längs des Zugs, die Front-Stärke g(ζ) und die Textur der drei Wellen darin
-        var zr = w.lage / (2 * Math.PI) - s / (F.zugMS * WETTER_LAGE.zyklusS),
-            ze = zr - Math.floor(zr);
-        var pr = lageProfil(ze, _lageAus, lageKern(saat, Math.floor(zr)));
+        // — gestaut, wo die Front der Lage steht (`lageStau`)
+        var zr = w.lage / (2 * Math.PI) - s / (F.zugMS * WETTER_LAGE.zyklusS);
+        var st0 = lageStau(zr, lageStauTakte(saat, lageNummer(zr)), _stauAus),
+            ze = st0.ze;
+        var pr = lageProfil(ze, _lageAus);
+        pr.g += st0.kern * (WETTER_LAGE.stau.staerke - pr.g);
         var f = pr.g + (pr.a * b) / sw;
         var feuchte = 0.5 + 0.5 * Math.sin((2 * Math.PI * s) / F.feuchteM + w.feuchte);
         var st = F.stufen;
@@ -5244,7 +5269,8 @@
         else if (feuchte >= stNebel) zeile = "nebel";
         return { zeile: zeile, front: f, feuchte: feuchte, druck: lageDruck(ze), lage: ze };
     }
-    var _lageAus = { g: 0, a: 0 };
+    var _lageAus = { g: 0, a: 0 },
+        _stauAus = { ze: 0, kern: 0 };
 
     // DAS WETTER-FELD AM ORT (wetter-am-ort, rein additiv — `wetterAt`, WIND_FELD und jede Zahl davor stehen byte-gleich). Das
     // Wetter ist kein Wort der Welt, es ist ein FELD: je Ort (x, z) zur Zeit t die fünf Kanäle {fog, sun, grey, wind, rain} der

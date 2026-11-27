@@ -706,7 +706,7 @@ function ortSelbsttest() {
 // Druck der Zeile (`wetterAt` … druck) über die 3 Takte vor dem Regen fällt und der Wind (`windRichtung`) über ±3 Takte ≥ 15°
 // rechts dreht (Bjerknes & Solberg 1922). Soll: 50 Passagen, an jeder ein Druck, ≥ 80 % stimmen, Drehung und Beginn streuen.
 // Am Kern von main 52937c92 (drei Sinus-Wellen, `windRichtung` blind für die Front): 0 % stimmen, Druck an 0 von 50, Drehung
-// ≥ 15° an 0 — ROT; an der Lage 94 %, Drehung 100 %, Druckfall 50 von 50. Der Selbsttest pflanzt die drei Täter je in EINE Zeile des Kerns. Leser: `durchzugRot`.
+// ≥ 15° an 0 — ROT; an der Lage 94 %, Drehung 100 %, Druckfall 50 von 50; mit dem Stau der Front (X) 92 %, Drehung 98 %. Der Selbsttest pflanzt die drei Täter je in EINE Zeile des Kerns. Leser: `durchzugRot`.
 const DURCHZUG = { saaten: 50, takte: 400, stimmt: 80, dreh: 15 };
 function durchzugMessung(P) {
     const Z = 120;
@@ -788,6 +788,76 @@ function durchzugSelbsttest() {
         return `${name} → ${an ? `ROT an (D) ${klinge} (stimmt ${T.stimmtProzent} %, Druck an ${T.druck})` : "GRÜN"}`;
     });
     return { v, D, taeter };
+}
+
+// ── (X) STARKREGEN (planet.wetter.extreme#1, rein, im Selbsttest am echten Kern): die Lage kennt die stehende Front (phyto-core
+// `WETTER_LAGE.stau`, `lageStau`). Der Mess-Leib der Station (k2-planet FLUT_AN, ohne Pegel): je Adresse (Saat `wetter-s<k>` 20 ×
+// Jahr 30; das Jahr der Welt-Uhr 2 400 s = 20 Takte des Zugs) die stärkste nasse Strecke des Jahrs am Ort (0, 0), der Regen je
+// Takt `WX_GESETZ` rain × 10 mm je Stunde (1 h = 150 s). Soll: der Fächer trägt ≥ 100 mm, das gewöhnliche Jahr nicht (Median
+// < 100 mm), und über 200 Saaten × 100 Jahre trägt ein Jahr ≥ 100 mm mit 0,5–2 % (Wiederkehr 50–200 a; KOSTRA-DWD 2020: 100 a
+// zu 87–105 mm in 24 h). Am Kern von main 3008a66c (die Lage ohne Stau) trägt der Fächer 83,2 mm — ROT; mit dem Stau 117,8 mm an
+// 4 von 600 Adressen, 1,13 % von 20 000 Jahren. Der Selbsttest pflanzt die zwei Täter je in EINE Zeile des Kerns. Leser: `starkRot`.
+const STARK = { saaten: 20, jahre: 30, jeJahr: 20, mm: 100, weit: 200, weitJahre: 100, rate: [0.5, 2] };
+function starkMessung(P) {
+    const Z = 120,
+        mmJe = (z) => P.WX_GESETZ[z].rain * 10 * (Z / 150);
+    const jahrMax = (saat, jahre) => {
+        const o = [];
+        for (let y = 0; y < jahre; y++) {
+            let lauf = 0,
+                m = 0;
+            for (let i = y * STARK.jeJahr; i < (y + 1) * STARK.jeJahr; i++) {
+                const mm = mmJe(P.wetterAt(saat, 0, 0, i * Z).zeile);
+                lauf = mm > 0 ? lauf + mm : 0;
+                if (lauf > m) m = lauf;
+            }
+            o.push(m);
+        }
+        return o;
+    };
+    let F = [];
+    for (let k = 0; k < STARK.saaten; k++) F = F.concat(jahrMax("wetter-s" + k, STARK.jahre));
+    let n = 0,
+        ueber = 0;
+    for (let k = 0; k < STARK.weit; k++)
+        for (const m of jahrMax("stark-" + k, STARK.weitJahre)) {
+            n++;
+            if (m >= STARK.mm) ueber++;
+        }
+    const s = F.slice().sort((a, b) => a - b);
+    return {
+        maxMm: Math.round(10 * s[s.length - 1]) / 10,
+        medianMm: Math.round(10 * s[s.length >> 1]) / 10,
+        stark: F.filter((m) => m >= STARK.mm).length,
+        adressen: F.length,
+        rateProzent: Math.round((10000 * ueber) / n) / 100,
+    };
+}
+function starkRot(X) {
+    const rot = [];
+    if (!(X.maxMm >= STARK.mm))
+        rot.push(`(X) STARK: der größte Regen einer Strecke im Fächer ${X.maxMm} mm gegen Soll ≥ ${STARK.mm} mm (${X.adressen} Adressen) — die Lage kennt keine stehende Front (phyto-core lageStau, WETTER_LAGE.stau)`); // prettier-ignore
+    if (!(X.medianMm < STARK.mm && X.rateProzent >= STARK.rate[0] && X.rateProzent <= STARK.rate[1]))
+        rot.push(`(X) GEWOEHNLICH: Median ${X.medianMm} mm, ${X.rateProzent} % der Jahre ≥ ${STARK.mm} mm gegen Soll ${STARK.rate[0]}–${STARK.rate[1]} % (Wiederkehr 50–200 a, KOSTRA-DWD) — der Starkregen ist kein Ereignis vieler Jahrzehnte`); // prettier-ignore
+    return rot;
+}
+const STARK_TAETER = [
+    ["STARK", "die Front zieht immer (main 3008a66c)", /pr\.g \+= st0\.kern \* \(WETTER_LAGE\.stau\.staerke - pr\.g\);/, ""],
+    ["GEWOEHNLICH", "der Stau in jeder Lage", /e = Math\.max\(0, Math\.min\(S\.bis, Math\.floor\(/, "e = Math.max(S.bis, Math.min(S.bis, Math.floor("], // prettier-ignore
+];
+function starkSelbsttest() {
+    const X = starkMessung(kernGepflanzt("phyto-core.js", "__phytoCore", null));
+    const v = starkRot(X).map((r) => `stark am Kern: ${r}`);
+    const A = (o) => starkRot(Object.assign({}, X, o)).length;
+    if ([{ maxMm: 99.9 }, { medianMm: 100 }, { rateProzent: 0.4 }, { rateProzent: 2.1 }].some((o) => A(o) !== 1))
+        v.push("stark: ein eingeschmuggelter Täter (Maximum, Median, Wiederkehr) fällt nicht genau einmal rot");
+    const taeter = STARK_TAETER.map(([klinge, name, re, ersatz]) => {
+        const rot = starkRot(starkMessung(kernGepflanzt("phyto-core.js", "__phytoCore", [klinge, name, re, ersatz])));
+        const an = rot.some((r) => r.startsWith(`(X) ${klinge}:`));
+        if (!an) v.push(`stark: der Täter „${name}" fällt nicht an (X) ${klinge} rot: ${rot.join(" · ") || "grün"}`);
+        return `${name} → ${an ? `ROT an (X) ${klinge}` : "GRÜN"}`;
+    });
+    return { v, X, taeter };
 }
 
 // (L) LAND-MEER-LUFT (klima-kontinent, Karte 2 planet.kopplung.land-meer-luft): das Wetter am Ort liest das Klima des Planeten — der
@@ -1133,6 +1203,12 @@ if (SELBSTTEST) {
         `  (D) Durchzug am Kern · ${Dz.passagen} Passagen · stimmt ${Dz.stimmtProzent} % (Abfolge ${Dz.abfolgeProzent} · Drehung ${Dz.drehungProzent} · Druckfall ${Dz.druckFallProzent} %) · Druck an ${Dz.druck} · Drehung ±${Dz.streuDreh}° · Beginn ±${Dz.streuBeginn} Takte`
     );
     for (const t of dz.taeter) console.log(`      gepflanzt: ${t}`);
+    const sk = starkSelbsttest();
+    v.push(...sk.v);
+    console.log(
+        `  (X) Starkregen am Kern · Fächer max ${sk.X.maxMm} mm (${sk.X.stark} von ${sk.X.adressen} ≥ ${STARK.mm}) · Median ${sk.X.medianMm} mm · ${sk.X.rateProzent} % von ${STARK.weit * STARK.weitJahre} Jahren ≥ ${STARK.mm} mm`
+    );
+    for (const t of sk.taeter) console.log(`      gepflanzt: ${t}`);
     const lml = lmlSelbsttest();
     v.push(...lml.v);
     const L = lml.L;

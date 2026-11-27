@@ -1,4 +1,18 @@
-# Stand-Blatt wetter-lagen (Sprosse `karte2.planet.wetter.lagen#2`) — oberster Abschnitt = jüngster Stand
+# Stand-Blatt wetter-lagen (Sprossen `karte2.planet.wetter.lagen#2`, `karte2.planet.wetter.extreme#1`) — oberster Abschnitt = jüngster Stand
+
+## 27.11. — extreme#1 Schub 1: der Starkregen der stehenden Front (mein Teil: das Wetter-Gesetz)
+
+- Die Zahl zuerst (Rumpf S1 der Station im Zweig `punkte-maschine`, Teil FLUT_AN, am Kern nachgerechnet: je Adresse Saat 0–19 × Jahr 0–29 die stärkste nasse Strecke im Jahr der Welt-Uhr, 20 Takte; der Regen je Takt das Feld des Worts × 10 mm je Stunde, 1 h = 150 s): am Kern von Kopf 1 (die Lage ohne Stau) **regenMaxMm 83,2 mm**, kein Jahr ≥ 100 (die rote Zeile 14,72 mm maß den Kern vor der Lage). Die Station liest das Ereignis über `_wetterAmOrt` → die Zeile sturm → das Wort stormy (rain 1): kein Stations-Kandidat nötig.
+- Befund: das Jahr der Station (2 400 s) ist die Hälfte des Lagen-Zyklus (4 800 s) — die Jahres-Grenze steht an jeder Saat für immer an derselben Phase (Heimat ζ 0,497, mitten im Landregen). Ein Umfärben der Worte ohne mehr Regen-Zeit trägt an der Heimat höchstens ~68 mm.
+- Der Schnitt in `phyto-core.js`, EINE Wurzel in `WETTER_LAGE`: `stau` {μ −5, β 3, bis 16 Takte} · `lageStauTakte` (E_n = ⌊μ + β·G_n⌋, G gumbelverteilt aus Saat und Lage n) · `lageStau` (die Warmfront kommt pünktlich und steht E_n Takte in Sturm-Stärke 0,9; was folgt, kommt später, das Hoch danach ist kürzer — der Takt der Lagen bleibt, reine Funktion von Saat, Ort, Zeit) · `wetterAt` liest Zeile, Front und Druck an der gestauten Phase · `frontVerteilung` mischt den Stau (das Δ des Planeten trifft dieselbe Verteilung).
+- Band: Gumbel 1958; KOSTRA-DWD 2020, Dauerstufe 24 h, Wiederkehr 100 a: 87–105 mm.
+- Gemessen am Kern: **regenMaxMm 83,2 → 117,8 mm** (4 von 600 Adressen ≥ 100, Median 43,8 mm, das gewöhnliche Jahr nicht) · über 200 Saaten × 100 Jahre 0 → 1,13 % der Jahre ≥ 100 mm (Wiederkehr ≈ 90 a) · Heimat 100 Jahre: Max 49,6 → 117,8 mm (EIN Jahr ≥ 100), Gumbel-x100 62,0 → 83,5 mm.
+- Gegenlauf: lagen#2 am Mess-Leib FRONT_AN 94 → 92 % (Soll ≥ 80; Drehung 100 → 98 %: an EINER Passage, der Kaltfront hinter einem Stau, dreht der Wind an seiner Uhr weiter) · klimazonen#1 liest kein Wetter am Ort: byte-gleich · vorhersage#1 S1 am Kern-Nachbau 35 → 39 % (Soll ≥ 70, rot vorher wie nachher) · Heimat nass 37,8 → 38,9 % · **die Jahres-Summe des Regens der Heimat +3,6 mm (43,2 → 46,8 mm je Jahr der Station, +8,3 %); über 200 Saaten +4,2 %** — höchstens diese Zahl.
+- Der Leser zum Pegel: stamm/wasser-hydro.js `_regenVergangen` (Zug für Zug `_wetterAmOrt` → `_regenWeg`, die Knoten [t, rain]) → gelaende-core `pegelLauf` (Faltung `laufFalte`, rain ungekappt) → `pegelHubVon`: dort deckelt `Math.min(krone, h)` den Hub an der Krone — der Schnitt der Bahn `pegel-nach-brand`. Die 100 mm tragen die Stempel ungekappt bis an diesen Deckel.
+- Linse gate:wetter-wache (X) STARKREGEN im Selbsttest (14 s): GRÜN am Kern; gepflanzt „die Front zieht immer" → ROT an (X) STARK (83,2 mm), „der Stau in jeder Lage" → ROT an (X) GEWOEHNLICH.
+- Ehrlich offen: ueberAueM wartet auf den Kopf von `pegel-nach-brand` (der Deckel an der Krone); die Drehung am Anker (`windRichtung`, `windWeg` geschlossen) kennt den Stau nicht (lagen#2 Drehung 98 %); das Bildpaar der Flut schießt der Vor-Richter; der Kopf 2 wartet auf die Landung des Bündels im main.
+
+Karte 2 gebucht 149 von 1 718 · Status ZWISCHENSTAND.
 
 ## 27.11. — GPU-Probe am Kopf 1 (71c7f166, GTX 1060): GRÜN
 
