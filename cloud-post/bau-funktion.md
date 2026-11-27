@@ -103,7 +103,8 @@ nicht mehr; Fixture dazu das Dorf 35/24 (Gesetz 0, Snap 1: Los 5 kaufhaus −5 c
   pruefbuehne-licht 43 s · weltbild-frost:echt 135 s · studio-begehen 185 s, jedes ≤ 480 s.
 - `gate:weltbild-frost:echt` lokal ohne Urteil (Station nicht gefahren: GPU): swiftshader unter xvfb auf 4 Kernen baut je Programm
   4–7 min (Stall-Akte: 41 Pipelines, nach 1 800 s `URTEIL AWAIT` an `createRenderPipelineAsync #41`, der Haupt-Thread lebt). Das Urteil
-  fällt die GPU-Probe des Kopfs.
+  fällt die GPU-Probe des Kopfs: **88bc3c51 auf omen-gtx1060 GRÜN in 1 353 s** — pruefbuehne-licht 58 s · weltbild-frost:echt 167 s ·
+  studio-begehen 263 s · bild:dorf@0.5 94 s · webgl-probe 54 s (`probe-post/bau-funktion/88bc3c51.md`).
 - `gate:settlement` C-K5b „NACH DEM ZUG STEHT DIE WELT“: in EINEM von vier Läufen ROT (nachZug 2 — dieselben 6 Exporte wie grün,
   2 davon nach dem Ruhe-Fenster 20 × 20 ms der Linse); allein wiederholt und am Merge-Kopf mit main b3740dd5 GRÜN (nachZug 0).
 
