@@ -1,5 +1,7 @@
 # Stand-Blatt wetter-lagen (Sprossen `karte2.planet.wetter.lagen#2`, `karte2.planet.wetter.extreme#1`) — oberster Abschnitt = jüngster Stand
 
+## 28.11. 00:31 MEZ — Lebenszeichen: Briefkasten unverändert seit dem Post von 23:45 MEZ; Kopf 7 fc063dcf wartet auf den Zug, lagen#3 (a) wartet auf das Maß der Lage (Abschnitt unten)
+
 ## 27.11. 23:58 MEZ — Kopf 7 (Probe-Ruf mit tag-achse:echt)
 
 - **Kopf 7** `wetter-lagen-kopf7` fc063dcf = leerer Commit auf Kopf 6 99e3953a, Baum 88959df3 gleich; Ruf `[gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen, gate:tag-achse:echt]` (die Pflicht für `stamm/siedlung-bewohner.js` UND `stamm/bild-himmel.js`).
