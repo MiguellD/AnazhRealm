@@ -223,8 +223,8 @@
         wandern: {
             speedMulMin: 0.6, // Klemm-Boden der Charakter-Geschwindigkeit (stats.speed / STAT-Base 7)
             speedMulMax: 1.6, // Klemm-Deckel
-            leashBaseM: 18, // m — die Grund-Leine um den Anker (Geburtsort), × bodySize
-            leashSpanM: 10, // m — ± Spanne ueber die Mut-Achse
+            // die Leine um den Anker ist das Streifgebiet der Art (leben-core streifRadiusM: Masse × Kost, Lindstedt et al. 1986);
+            // die Grund-Leine 18 m ± 10 m ueber die Mut-Achse × bodySize fiel (wander-spieltag: der Hirsch streifte 17 m am Tag)
             anchorPull: 1.2, // Heim-Zug jenseits der Leine (× speed, geklemmt auf 1×)
             strideSec: 2.5, // s — die Wander-Schritt-Periode (deterministisch aus netId × Slot)
             wanderSpeedMul: 0.45, // Wander-Tempo relativ zur vollen Bewegungs-Geschwindigkeit
@@ -2035,9 +2035,17 @@
     // liest), T = VERHALTEN.temperament.gattung. Liefert "wild" · "wehrhaft" · "sanft" · "scheu" — die Art und die Groesse
     // unterscheiden das Gemuet, nie ein Tag (Lehre 8).
     function temperamentDerGattung(g, kg, T) {
-        if (g.diet >= T.fleischDiet) return kg >= T.jagdKg ? "wild" : "scheu";
-        if (g.diet <= T.pflanzDiet) return kg >= T.kolossKg ? "wehrhaft" : "scheu";
+        var kost = kostDerGattung(g, T);
+        if (kost === "fleisch") return kg >= T.jagdKg ? "wild" : "scheu";
+        if (kost === "pflanze") return kg >= T.kolossKg ? "wehrhaft" : "scheu";
         return kg >= T.wehrKg ? "wehrhaft" : "sanft";
+    }
+    // DIE KOST DER GATTUNG (wander-spieltag, additiv): "fleisch" ab T.fleischDiet, "pflanze" bis T.pflanzDiet, dazwischen "alles" —
+    // die EINE Schwelle fuer das Temperament und das Streifgebiet (leben-core streifRadiusM liest die Zeile der Kost)
+    function kostDerGattung(g, T) {
+        if (g.diet >= T.fleischDiet) return "fleisch";
+        if (g.diet <= T.pflanzDiet) return "pflanze";
+        return "alles";
     }
 
     // DAS FURCHT-GESETZ (Oekologie K3, 23.10., additiv — FURCHT_GESETZ wohnt nicht in VERHALTEN, VERHALTEN reist in PRESETS und
@@ -5919,6 +5927,7 @@
         verbandZug: verbandZug,
         rudelPlatz: rudelPlatz,
         temperamentDerGattung: temperamentDerGattung,
+        kostDerGattung: kostDerGattung,
         FURCHT_GESETZ: FURCHT_GESETZ,
         bedrohung: bedrohung,
         furchtErinnert: furchtErinnert,

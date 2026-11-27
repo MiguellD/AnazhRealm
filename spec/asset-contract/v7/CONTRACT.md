@@ -61,3 +61,12 @@ der Gestalt). Wächter: gate:studio-vertrag, gate:kreatur-takt jagdkreis und rud
 Gemüt und die Beute lesen die EINE Masse des Leibs (Volumen der Gestalt × `MASSSTAB.dichteKgM3`, Wirt `_leibMasse`), die
 auch das Impuls-Gesetz liest; `temperamentDerGattung(dials, kg, gattung)`. Wächter: gate:studio-vertrag (die Dial-Masse
 kehrt nicht zurück), gate:kreatur-takt temperament (Täter `temperament-masse`), gate:fahr-leben --koerper (die Masse folgt der EINEN Stoff-Zeile, physik K1).
+
+**Vertrags-Akt 27.11.2026 (wander-spieltag — DAS STREIFGEBIET DER ART):** `tetrapoda-core.js` neu gemintet
+(`9115267c6c32…` → `c6cb6dcac11b…`, klang- und koerper-core byte-gleich). Geändert sind genau 8 Felder in
+`PRESETS.<tier>.fx.verhalten` (wolf · fox · bear · deer): `wandern.leashBaseM` (18) und `wandern.leashSpanM` (10) fielen.
+Ohne diese Felder ist das kanonische JSON byte-gleich (geprüft, Feld für Feld). Die Leine um den Anker ist das Streifgebiet
+der Art (`leben-core` `streifRadiusM(M, kost)` = √(A/π), A nach Lindstedt, Miller & Buskirk 1986); die Grund-Leine
+18 m ± 10 m × bodySize war ihr Zwilling (der Hirsch streifte 13 m am Spieltag, nachher 543 m). Additiv außerhalb der
+Rezepte: `kostDerGattung(g, T)`, die EINE Diät-Schwelle für Temperament und Streifgebiet. Wächter: gate:studio-vertrag
+(`wandern.leashBaseM` kehrt nicht zurück), gate:daten-contract (dieser Fingerabdruck).

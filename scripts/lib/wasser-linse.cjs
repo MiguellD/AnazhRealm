@@ -189,12 +189,14 @@ async function wasserKoerper(o = {}) {
     };
     // DAS TIER IN DER SEE-MITTE, der Spieler `abstand` daneben: nach 90 Kreatur-Takten (x/z gehalten) der Median der Sohle
     // unter dem Spiegel über die Takte ohne Hüpfer (der Hüpf-Würfel ist eine eigene Klasse, Q1/Q2), seine Wasserlinie (das
-    // Schultergelenk, Gelenk-Höhe des Vorderlaufs × Größe) und ob er schwimmt; `ohneBaum` nimmt ihm den Gestalt-Baum.
+    // Schultergelenk, Gelenk-Höhe des Vorderlaufs × Größe) und ob er schwimmt; `ohneBaum` nimmt ihm den Gestalt-Baum — nachdem
+    // seine Leine aus dem Leib steht (das Streifgebiet der Art aus seiner Masse, wander-spieltag: ohne Gestalt bricht die Masse
+    // laut, `_leibMasse`); die Frage der Linse ist die Wasserlinie, nie die Leine.
     const tierLage = (seele, abstand, ohneBaum) => {
         pm.position.set(mx + abstand, spiegel + 1, mz);
         const c = wasserTier(r, mx, spiegel, mz, seele);
         if (!c) return null;
-        if (ohneBaum) delete c.userData._tierBaum;
+        if (ohneBaum) (r._creatureMoveCharacter(c), delete c.userData._tierBaum);
         const tb = c.userData._tierBaum;
         const tiefen = [];
         for (let k = 0; k < 90; k++) {

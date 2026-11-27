@@ -3132,9 +3132,14 @@ function lebenUrteil(name, z, soll) {
             z.ruhe[0] >= 1000 && z.ruhe[1] < 0.03 * z.ruhe[0],
             `${((100 * z.ruhe[1]) / z.ruhe[0]).toFixed(1)} % bewegt während ruhen (${z.ruhe[0]} Takte)`
         );
+        // DER DURST JE GATTUNG (wander-spieltag): die Leine ist das Streifgebiet der Art (leben-core streifRadiusM — der Fuchs
+        // streift 1,7 km, der Wolf 6,3 km), das Tier trinkt, wo sein Weg das Wasser im Umkreis trinkSuchM (40 m) kreuzt; je Art
+        // dürsten und trinken ihre drei Tiere, jeder Trunk am Wasser. Bis wander-spieltag hielt die Leine 8–28 m jedes Tier am
+        // Ufer, und jedes Einzelne trank (am Kopf des Schnitts 11 von 12, Σ 48)
+        const jeArt = [0, 3, 6, 9].map((i) => z.truenke.slice(i, i + 3).reduce(addiere, 0));
         soll(
-            z.truenke.length >= 12 && z.truenke.every((n) => n >= 1) && z.amWasser === z.truenke.reduce(addiere, 0),
-            `kein Tier trinkt aus Durst: Trünke ${z.truenke}, ${z.amWasser} am Wasser`
+            z.truenke.length >= 12 && jeArt.every((n) => n >= 1) && z.amWasser === z.truenke.reduce(addiere, 0),
+            `kein Tier trinkt aus Durst: Trünke ${z.truenke} (je Art ${jeArt}), ${z.amWasser} am Wasser`
         );
         soll(z.durstAus === 0, `das Trinken folgt dem Durst nicht: ohne Durst ${z.durstAus} Trünke`);
     }
