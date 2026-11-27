@@ -23550,7 +23550,7 @@
   },
   "karte2.mensch.sport.kunst": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +13) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.mensch.sport.kunst#1 gtx: ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal an 7e73426e · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +13) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.mensch.sport.kunst#1 gtx: ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal an bed6256c · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.kunst#1",
@@ -23568,7 +23568,7 @@
      "geraet": "gtx",
      "gruen": false,
      "zahl": "S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
-     "sha": "7e73426efae8578f057c9d5b8548f52affb8dd93",
+     "sha": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
      "grund": "ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
@@ -37603,7 +37603,7 @@
   "ohne": 3389
  },
  "kopfVoll": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
- "zeit": "2026-11-27T15:00:23.346Z",
+ "zeit": "2026-11-27T15:07:36.894Z",
  "vorher": "bed6256c",
  "bilanz": {
   "gewinn": [],
