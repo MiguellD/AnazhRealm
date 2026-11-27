@@ -78,6 +78,21 @@ Dateien; gegen Kopf 1 kommt allein der Rang über `rang` und dieses Blatt hinzu)
 
 ## Heap 740 MB und Einlauf 83 s am Vor-Richter (Post 21:27): was ich messen konnte, was offen bleibt
 
+**Gemessen nach der Landung (27.11., main b56b51f0 gegen 23b593ac):** an stadt-voll unter gleichen Bedingungen, Null-Renderer.
+Die Stadt ist von Hand aufgezogen wie in gate:klang-zensus Mk („dorf 7 300“ am Anker, bis jeder Bewohner seinen Leib trägt, dann 10 s
+Spielzeit), Heap nach doppelter GC:
+
+| main | `_mundartAm` | Bewohner | Stadt steht nach | Heap gehalten |
+|---|---|---|---|---|
+| 23b593ac (vor) | nein | 1 356 | 149,1 s | 115,7 MB |
+| b56b51f0 (nach) | ja | 1 356 | 150,0 s | 115,6 MB |
+| 23b593ac (vor) | nein | 1 356 | 150,0 s | 115,9 MB |
+
+Das Spiel mit Mundart trägt **0 MB** und **0 s** mehr. Die 200 MB und 42 s des Vor-Richters kommen aus der Sitzung der Station
+(die Seiten #2, #3 und #4 und das Gitter MUNDART in EINER Sitzung) oder aus dem Renderer, nicht aus dem Spiel. Ein Heap-Schnitt
+in Kopf 3 entfällt.
+
+
 **Gemessen im Kern** (node, `--expose-gc`, Heap nach GC vor ↔ nach, Kopf = Stempel 2fa60e40):
 - **Gesetz im Spiel:** `_mundartAm` je Zelle (talWeg → mundartVon) an 1 089 Zellen zu 256 m um den Ort (±4 km, mehr als der Nah-Ring
   260 m fragt) kostet 610 ms und **+0,2 MB** gehalten.
