@@ -135,5 +135,12 @@ Seite der Fahrbahn → `wer`).
   `frist-puls`): `check.yml`, `ci-zeiten.json`, `ci-zeiten.cjs` fasse ich bis zu seiner Landung nicht an; der Probe-Ruf ohne
   Leerzeichen nach den Kommas — Kopf 4 f28b9679 trägt sie noch (geschoben vor der Regel, Ruf wie Kopf 3); ich lasse ihn stehen, ein
   Kopf mit demselben Baum und dem Ruf ohne Leerzeichen kostet einen Schub, auf Zuruf.
+- Post 23:45 gelesen (Kopf 4: eigene Probe GRÜN, PROBE-TAG OK, Konflikt mit dem Heil-Kopf `w28-frist-puls-1`, Batterie
+  abgebrochen — nicht neu angestoßen). Kopf 5 GEPROBT gegen den Heil-Kopf fe05c3bb (Arbeitsbaum, nicht geschoben): Kopf 4
+  gemischt, an `check.yml` und `ci-zeiten.json` der Stand des Heil-Kopfs + MEINE Struktur (`--teil=k/4`, Schritt „Teil 4“, die
+  vier Stoppuhr-Zeilen 974 · 1 049 · 954 · 981, `gate:kreatur-takt` 3958), der Schreiber `verteile` neu gefahren (93 Schritte, 18
+  Gruppen, schwerste 21,0 min, Puls-Frist 16 aus `pulsFristMin`; keine `timeout-minutes`-Zeile von mir), `gate:ci-deckung` GRÜN.
+  Kopf 5 folgt auf dem neuen main, sobald er in alle.md steht: dasselbe Rezept, `check:statik` ganz, Ruf ohne Leerzeichen.
+  Die Folge-Arbeit (`bleibt`, die zwei Welt-Brüche, `DAUER_S` neu) fährt NICHT in Kopf 5.
 
 Karte 2 gebucht 156 von 1 718. Status ZWISCHENSTAND.
