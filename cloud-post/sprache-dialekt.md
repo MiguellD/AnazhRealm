@@ -76,6 +76,33 @@ Kopf 1 trug den glatten Baum auf main 7e73426e, Kopf 2 trägt ihn auf main 9a75d
 Dateien; gegen Kopf 1 kommt allein der Rang über `rang` und dieses Blatt hinzu). Der zweite Elter ist die Spitze meiner WIP-Kette, weil der Auftrag „nie force“ sagt: der Schub ist ein Fast-Forward, kein Stand wird
 überschrieben. Wer einen Elter braucht, nimmt den Baum (`git commit-tree <kopf>^{tree} -p 9a75d61c`), er ist byte-gleich.
 
+## Die nächste rote Sprosse: `karte2.mensch.kultur.sprache#5` „hörbare Sprachen“ (Täter-Zahl am main b3740dd5, Post 20:57)
+
+Die Leiter (Zweig `punkte-maschine`, `meisterkarte-quelle/punkte/stationen/k2-mensch-kultur.js:764`): `{ n: 5, art: "auge", um: 7000 }`. Vorbild:
+„Tonaufnahme einer realen, den Hörern unbekannten Sprache (Linguisten-Blindtest 2AFC ≤ 60 %); Satz ↔ Handlung ≥ 80 %“. Der Umfang liest
+`sprachen` (die Regionen der Stadt, 2), genau wie #4 vor dem Kandidaten. Darüber liegen #6 (Stufen über Epochen) und #7 (Planeten).
+
+**Täter 1, das Ohr hört nur Vokale:** `klang-core.js:1640` `stimmPuffer` macht aus jeder Silbe den ERSTEN Vokal ihres Kerns
+(`STIMME.kern[K[i].charAt(0)]`). Die Quelle ist allein stimmhaft (Rosenberg-Puls, Klatt-Kaskade aus fünf Resonatoren). Es gibt keinen
+Verschluss, kein Reibe-Rauschen und keinen Nasal. `fachwerk-core.js:5071` `sprachKerne` reicht nur die Vokal-Folgen weiter.
+Gemessen über 3 000 Sätze in 6 Familien (`sprachSatz`, Ursprache):
+- 59 307 Laute, davon 35 790 Konsonanten (0,603);
+- im Ohr kommen davon 20 548 an (**0,346**), die Konsonanten **0**;
+- 2 964 von 20 548 Zwielauten sind auf ihren ersten Vokal gekürzt.
+
+Ein 2AFC-Blindtest gegen eine Tonaufnahme trennt eine Rede ohne Konsonanten mit Sicherheit (Soll ≤ 60 %).
+
+**Täter 2, der Satz kennt seine Handlung nicht:** `stamm/siedlung-bewohner.js:403` `sprachSatz(…, \`${b.seed}:${tag}\`)`. Der Same ist
+der Mensch und die Nummer der Rede, der Akt (`b.akt`) geht nie ein. Das Verb zieht `sprachSatz` aus 19 Verben des `SATZ_GESETZ` unabhängig
+vom Tun. Satz ↔ Handlung liegt also beim Zufall (1/19 ≈ 0,05), das Soll ist ≥ 0,8.
+
+**Täter 3, der Umfang:** die Station zählt Regionen (2 < 7 000). Mit #4 trägt die Welt Mundarten, gemessen U_eff 1 097–1 233 je Welt
+auf 77 km. Die Zahl 7 000 verlangt den Leser der Mundarten über Welten (die Seite MUNDART des Kandidaten) und nicht den der Regionen.
+
+Art „auge“: auch mit Gesetz bleibt die Sprosse bis zum Blindpaar am Gerät offen (Klasse P). Meine Bahn kann den Laut bauen (die
+Konsonanten als Quelle aus Rauschen und Verschluss im EINEN `stimmPuffer`, Band: Klatt 1980, die Parallel-Zweige für Frikative) und den
+Satz an den Akt binden. Das Urteil spricht das Ohr.
+
 ## Antwort auf 19:50 (Stand 2. Merge d. h. main 948f68ee herein, 730f25b4)
 
 Die Stall-Akte steht an meinem Stand GRÜN („✅ eigene Ränge neben rang: Träger keiner statt FREMD keiner · gepflanzt 2/2 gefasst“,
