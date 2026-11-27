@@ -9,28 +9,179 @@
 const { FAECHER } = require("./faecher.js");
 
 // DER BREMSWEG AN EINER ADRESSE (mensch.fahrzeug.medium#2, das Gesetz des Fächers, stationen/faecher.js): a.ort ist das Rezept, a.saat
-// die Saat des Wagens. Gerufen wird, was der Wagen der Welt fährt (stamm/gelaende-kollision.js:1238 `_fahrzeugGesetzFor`: exportDrive
-// aus s + fx des Rezepts → fahrGesetz), gefahren vom EINEN Fahr-Schritt des Kerns (`fahrSchritt`, die Probefahrt) auf der Ebene: aus
-// 100 und 50 km/h die volle Bremse bis zum Stand; dazu die Spitze nach `fahrLeistung` (90 s Vollgas). Die Saat hat im Gesetz keinen
-// Eingang — sie reist mit, damit der Fächer zählt, ob sie die Physik ändert
+// wählt den Ort des Wagens in der warmen Welt — die Vogel-Spirale um den Messort (Winkel saat · 137,508°, Abstand 24 m · √saat, nach
+// außen bis Land ohne Wasser, `_landAt`), in die Richtung der Spirale: „die Fahrt ist eine Funktion des Mediums am Ort“
+// (fahrzeug-medium). Gerufen wird, was der Wagen der Welt fährt (stamm/koerper-fahrt.js `_wagenSchritt`): der Fahr-Satz aus exportDrive →
+// fahrGesetz (stamm/gelaende-kollision.js `_fahrzeugGesetzFor`), der Boden unter ihm durch DEN Leser des Wagens (`_fahrGrund`: der EINE
+// Leser des Leibs `_kontaktStoffAt` — Pflaster, Pfad, Laub, Wiese, Stoff des Felds —, die Stoff-Zeile mit μ trocken/nass und dem Satz
+// `radBoden`, die Feuchte `_feuchteAt`), die Haftung `_fahrHaft` (mit dem Film `_naesseAm`) und je Schritt der Kern: fahrKraefte mit
+// e.haft und e.boden (vehicle-core radImBoden an den Durchfahrten, die die Zelle trägt, `_trittDurchfahrten` — gelesen, nie geschrieben),
+// fahrStand auf dem Grund. Aus 100 und 50 km/h die volle Bremse bis bremsV des Kerns (darunter fährt er rückwärts: bis hier zählte der
+// Halt bei 0,05 m/s die Rückfahrt mit — supersport 50 → 0 „1 230,92 m“). ZWEI FAHRTEN je Geschwindigkeit, zwei Fragen der Karte:
+//   die WELT — auf dem Grund des Orts (`_werkBoden`: Hang, Buckel, Kanten), je Schritt der Stoff unter dem Rad (die Bahn kreuzt Stoffe):
+//     die Physik der Saat (`weg100`, `weg50`; das größte Gefälle am Wagen `steil`, die Bilder in der Luft `luft`);
+//   der PRÜFSTAND — das Band „30–50 m ∝ v²/μ“ gilt auf der Bahn der Profis (höchstens 1 % Gefälle längs, 2 % quer: 49 CFR 571.135
+//     S6.2.2), und das Gelände trägt sie nicht (an Genesis und am Dorf hielt keine von 120 Bahnen die Norm, je 5 m in drei Spuren
+//     abgetastet; Genesis Saat 12 nickte 0,22 rad und flog: 117,6 m statt 86) — darum bremst derselbe Wagen auf dem BODEN DER SAAT
+//     eben: derselbe Stoff, dieselbe Haftung, derselbe Satz im Boden, dieselbe Feuchte und Rinne wie am Ort, die Ebene seiner Höhe.
+//     Gemessen der Weg × (μ + f_r) (`norm100`, `norm50`: der Weg des Labors auf μ 1, die Haftung und der Widerstand des weichen Bodens).
+// Dazu die Spitze nach `fahrLeistung` (90 s Vollgas) und die Spurrinne nach 10 Durchfahrten (radImBoden mit 9 davor, in m; fester Grund
+// 0). Bis fahrzeug-medium hatte die Saat im Gesetz keinen Eingang: der Wagen bremste auf `() => 0` mit μ 1 — 1 Fahrt je Rezept über 20 Saaten
 const BREMS_AN = async (r, T, a) => {
     const VC = window.__vehicleCore;
-    if (!VC || typeof VC.fahrSchritt !== "function" || typeof VC.fahrGesetz !== "function") return { fehlt: "der Fahrzeug-Kern trägt keinen Fahr-Schritt (vehicle-core fahrSchritt)" };
+    if (!VC || typeof VC.fahrKraefte !== "function" || typeof VC.fahrStand !== "function" || typeof VC.radImBoden !== "function")
+        return { fehlt: "der Fahrzeug-Kern trägt kein Rad im Boden (vehicle-core radImBoden)" };
+    if (typeof r._fahrGrund !== "function" || typeof r._fahrHaft !== "function" || typeof r._werkBoden !== "function")
+        return { fehlt: "der Wagen liest keinen Boden (stamm/koerper-fahrt.js _fahrGrund)" };
     const pre = VC.PRESETS[a.ort];
     const G = VC.fahrGesetz(VC.exportDrive(Object.assign({}, pre.s, pre.fx), a.ort));
     if (!G) return { fehlt: "das Rezept " + a.ort + " trägt kein Fahr-Gesetz" };
-    const eben = () => 0;
-    const weg = (kmh) => {
-        const z = VC.fahrZustand(0, 0, 0);
-        VC.fahrStand(z, G, eben, 0);
+    if (!G.rad) return { fehlt: "das Rezept " + a.ort + " trägt kein Rad im Boden (vehicle-core fahrAufstand rad)" };
+    const p0 = r.state.playerMesh.position;
+    const C = window.__bremsOrte || (window.__bremsOrte = {});
+    const key = a.saat + "@" + Math.round(p0.x) + "," + Math.round(p0.z);
+    if (!(key in C)) {
+        const w = (a.saat * 137.508 * Math.PI) / 180;
+        C[key] = null;
+        for (let d = 24 * Math.sqrt(a.saat), i = 0; i < 12 && !C[key]; i++, d += 6) {
+            const x = p0.x + d * Math.cos(w), z = p0.z + d * Math.sin(w);
+            if (r._landAt(x, z, 1)) C[key] = { x, z, yaw: w };
+        }
+    }
+    const O = C[key];
+    if (!O) return { wasser: true };
+    const DT = 1 / 60, bremsV = VC.FAHR.schritt.bremsV, r3 = (v) => Math.round(v * 1000) / 1000, r2 = (v) => Math.round(v * 100) / 100;
+    const rad = (M, k) => (M.boden ? VC.radImBoden(G.rad, M.boden, M.feuchte, k) : null);
+    const z0 = VC.fahrZustand(O.x, O.z, O.yaw);
+    VC.fahrStand(z0, G, r._werkBoden({ _fahr: z0 }), 0);
+    const M0 = r._fahrGrund(z0), mu0 = r._fahrHaft(z0), k0 = r._trittDurchfahrten(z0.x, z0.z);
+    // die Bremsung aus kmh: `stand` null — die Welt (Grund und Stoff je Schritt), sonst der Prüfstand (die Ebene, der Boden des Orts)
+    const fahrt = (kmh, stand) => {
+        const z = VC.fahrZustand(O.x, O.z, O.yaw);
+        const boden = stand ? () => z0.y : r._werkBoden({ _fahr: z });
+        VC.fahrStand(z, G, boden, 0);
         z.vlong = kmh / VC.FAHR.kmh;
         z.speed = z.vlong;
-        let i = 0;
-        while (z.speed > 0.05 && i++ < 3600) VC.fahrSchritt(z, { brake: 1 }, G, eben, 1 / 60);
-        return Math.round(Math.hypot(z.x, z.z) * 100) / 100;
+        let steil = 0, luft = 0, halt = 0, spalt = 0;
+        const y0 = z.y;
+        for (let i = 0; z.vlong > bremsV && i < 3600; i++) {
+            const M = stand ? M0 : r._fahrGrund(z), mu = stand ? mu0 : r._fahrHaft(z), rb = rad(M, stand ? k0 : r._trittDurchfahrten(z.x, z.z));
+            const [x0, q0, flog] = [z.x, z.z, z.luft === true];
+            VC.fahrKraefte(z, { brake: 1, haft: mu, boden: rb }, G, DT);
+            VC.fahrStand(z, G, boden, DT);
+            if (z.luft === true) {
+                luft++;
+                const eb = VC.fahrEbene(G, boden, z.x, z.z, z.yaw, z.einsinken);
+                if (eb) spalt = Math.max(spalt, z.y - eb.y);
+            }
+            if (!flog) halt += (mu + (rb ? rb.fr : 0)) * Math.hypot(z.x - x0, z.z - q0);
+            steil = Math.max(steil, Math.abs(Math.tan(z.steig || 0)));
+        }
+        // die WELT im Band des Prüfstands (fahrzeug-medium-2): der Weg am Boden × (μ + f_r) des Schritts, die Höhe gutgeschrieben —
+        // ½v² = g·Σ(μ + f_r)·Δs + g·(y_Ende − y_0): bremst der Wagen am Hang, zahlt die Höhe; fliegt er, bremst er nicht (am Kern
+        // bei 15 und 30 % Steigung auf und ab 39,0–40,4 m gegen 38,6 m eben). Ein Flug OHNE KUPPE: der Wagen hob ab, und der Boden fiel
+        // nie weiter als den Federweg unter ihn (`auf.hub`, um den jedes Rad seinem Boden folgt) — er flatterte über eine Welle
+        return { s: r2(Math.hypot(z.x - O.x, z.z - O.z)), steil: r3(steil), luft, welt: r2(halt - (y0 - z.y)), flattert: luft > 0 && !(spalt > G.auf.hub) ? 1 : 0 };
+    };
+    const frisch = rad(M0, k0), rinne = rad(M0, 9), halt = mu0 + (frisch ? frisch.fr : 0);
+    // DIE KURVENGRENZE (Karte: a_quer = μ·g): derselbe Wagen auf dem Prüfstand der Saat im Kreis — die Lenkung steigt in 6 s auf
+    // den vollen Einschlag, das Gas hält 20 m/s; die Spitze der Querbeschleunigung gegen μ·g, μ = der Boden der Saat (`_fahrHaft`,
+    // derselbe Leser wie `_wagenSchritt`) × der Reifen des Rezepts (maxGrip · grip)
+    const kreis = () => {
+        const z = VC.fahrZustand(O.x, O.z, O.yaw), boden = () => z0.y;
+        VC.fahrStand(z, G, boden, 0);
+        z.vlong = 20;
+        z.speed = 20;
+        let a = 0;
+        for (let i = 0; i < 480; i++) {
+            const v = Math.hypot(z.vlong, z.vlat);
+            VC.fahrKraefte(z, { steer: Math.min(1, i / 360), throttle: Math.max(0, Math.min(1, (20 - v) * 0.5)), haft: mu0, boden: frisch }, G, DT);
+            VC.fahrStand(z, G, boden, DT);
+            if (i > 30) a = Math.max(a, Math.abs(z.aLat));
+        }
+        return r3(a / (Math.min(1, mu0) * G.maxGrip * G.grip * G.g));
     };
     const L = VC.fahrLeistung(Object.assign({}, pre.s, pre.fx), a.ort);
-    return { weg100: weg(100), weg50: weg(50), vmaxKmh: L ? L.kmh : null };
+    const w100 = fahrt(100), w50 = fahrt(50);
+    return {
+        weg100: w100.s, weg50: w50.s, steil: w100.steil, luft: w100.luft, welt100: w100.welt, flattert: w100.flattert,
+        norm100: r2(fahrt(100, true).s * halt), norm50: r2(fahrt(50, true).s * halt),
+        kurve: kreis(), vmaxKmh: L ? L.kmh : null, mu: r3(mu0), fr: frisch ? r3(frisch.fr) : 0, rinne: rinne ? r3(rinne.z) : 0,
+        stoff: M0.stoff, weich: M0.boden ? 1 : 0, feuchte: r3(M0.feuchte),
+    };
+};
+
+// DIE SPUR SICHTBAR (Karte: „Spurrinne nach 10 Durchfahrten sichtbar“; fahrzeug-medium-2): der gt des Kerns fährt zehnmal dieselben
+// 12 m weichen Bodens (der erste Ort um den Spieler, an dem jeder Punkt 3 m vor bis 15 m hinter dem Anfang in beiden Spuren und der
+// Mitte einen Satz im Boden trägt und kein Wasser) durch den Schreib-Akt der Welt (stamm/koerper-fahrt.js `_fahrRad` → `_tritt`: je
+// Rad die Rinne der Durchfahrten vor ihm, dann sein Tritt, `TRITT.rad`); gelesen an den Zellen beider Spuren der Anteil, den die
+// Wege-Karte als Pfad malt (`_pfadFeldAt` ≥ ½ — dieselben Bytes, die der Boden-Shader liest), nach einer Durchfahrt und nach zehn,
+// und der Stoff unter dem Fuß (`_kontaktStoffAt`). Danach kehren das Feld der Tritte und die Karte zurück: der Kasten der Spur malt
+// neu wie eine Fläche, die aus der Karte fällt (`_wegeStufeMalen` mit dem Kasten); `rest` nennt die Zellen, deren Bytes nicht
+// zurückkehrten. Gerufen NACH dem Fächer: keine Bremsung der Saaten fährt über die Spur.
+const SPUR_SICHT = async (r) => {
+    const VC = window.__vehicleCore;
+    if (typeof r._fahrRad !== "function" || typeof r._trittDurchfahrten !== "function") return { fehlt: "das Rad schreibt keine Spur (stamm/koerper-fahrt.js _fahrRad)" };
+    const pre = VC.PRESETS.gt;
+    const G = pre && VC.fahrGesetz(VC.exportDrive(Object.assign({}, pre.s, pre.fx), "gt"));
+    if (!G || !G.rad) return { fehlt: "der gt trägt kein Rad im Boden (vehicle-core fahrAufstand rad)" };
+    const TT = r.constructor.TRITT, wm = r.state.worldMeta, wk = r.state.wegeKarte;
+    if (!wm || !wk) return { fehlt: "die Welt trägt kein Feld der Tritte oder keine Wege-Karte" };
+    const hk = (x, z) => r._voxelSurfaceY(x, z);
+    const weich = (x, z) => {
+        const y = hk(x, z);
+        const Z = Number.isFinite(y) && r._stoff(r._kontaktStoffAt(x, z, y));
+        return !!(Z && Z.radBoden) && !(r._atlasWaterLevelAt(x, z, y) > y - 0.3);
+    };
+    const q = G.auf.quer, p0 = r.state.playerMesh.position;
+    let ort = null;
+    for (let k = 0; k < 1200 && !ort; k++) {
+        const [x0, z0] = [p0.x + Math.cos(k * 2.4) * (8 + k * 0.2), p0.z + Math.sin(k * 2.4) * (8 + k * 0.2)];
+        let ja = true;
+        for (let sx = -3; sx <= 15 && ja; sx += 1) for (const dz of [-q, 0, q]) ja = ja && weich(x0 + sx, z0 + dz);
+        if (ja) ort = { x0, z0 };
+    }
+    if (!ort) return { zellen: 0, grund: "kein weicher Ort in 1 200 Proben bis 248 m um den Spieler" };
+    const zellen = [];
+    for (let x = ort.x0 + 3.25; x < ort.x0 + 9; x += TT.zelleM)
+        for (const zz of [ort.z0 - q, ort.z0 + q]) zellen.push([(Math.floor(x / TT.zelleM) + 0.5) * TT.zelleM, (Math.floor(zz / TT.zelleM) + 0.5) * TT.zelleM]);
+    const pfad = () => zellen.map(([x, z]) => Math.round(r._pfadFeldAt(x, z, hk(x, z)) * 1000));
+    const vor = [Object.assign({}, wm.tritt || {}), new Map(r._trittSchwach || []), new Map(wk.trittGemalt), new Set(wk.trittOffen), pfad()];
+    const fahre = () => {
+        const z = VC.fahrZustand(ort.x0, ort.z0, 0);
+        for (let sx = 0; sx <= 12; sx += 0.2) {
+            [z.x, z.y, z.luft] = [ort.x0 + sx, hk(ort.x0 + sx, ort.z0), false];
+            r._fahrRad(z, G, false);
+        }
+    };
+    const gemalt = () => pfad().filter((v) => v >= 500).length;
+    fahre();
+    const nach1 = gemalt();
+    for (let n = 2; n <= 10; n++) fahre();
+    const nach10 = gemalt();
+    const erde = zellen.filter(([x, z]) => r._kontaktStoffAt(x, z, hk(x, z)) === "erde").length;
+    const tritte = r._trittZahl(zellen[0][0], zellen[0][1]);
+    // zurück: das Feld, das flüchtige Gedächtnis, das Gemalte, die Wiese von morgen — und der Kasten der Spur malt neu
+    wm.tritt = vor[0];
+    r._trittSchwach = vor[1];
+    r._trittSchrieb = (r._trittSchrieb || 0) + 1;
+    wk.trittGemalt.clear();
+    for (const [k, v] of vor[2]) wk.trittGemalt.set(k, v);
+    wk.trittOffen.clear();
+    for (const k of vor[3]) wk.trittOffen.add(k);
+    const R = TT.halbM + TT.randM + 4;
+    const box = { x0: ort.x0 - R, x1: ort.x0 + 12 + R, z0: ort.z0 - q - R, z1: ort.z0 + q + R };
+    for (const st of wk.stufen) if (st.zentriert) r._wegeStufeMalen(st, null, null, box);
+    const nachher = pfad();
+    return {
+        ort: [Math.round(ort.x0 * 10) / 10, Math.round(ort.z0 * 10) / 10],
+        zellen: zellen.length,
+        anteil1: nach1 / zellen.length,
+        anteil: nach10 / zellen.length,
+        erde: erde / zellen.length,
+        tritte: Math.round(tritte * 10) / 10,
+        rest: nachher.filter((v, i) => v !== vor[4][i]).length,
+    };
 };
 
 // DER ZENSUS DER FAHRZEUGE UND MASCHINEN (Seite der Welt)
@@ -59,7 +210,8 @@ const zensusFahr = async (r, T, arg) => {
             try {
                 d = VC.exportDrive(Object.assign({}, pre.s, pre.fx));
             } catch (_e) {}
-            rezepte.push({ k, m: d ? +(+d.mass).toFixed(3) : null, v: d ? +(+d.vmax).toFixed(2) : null });
+            // rad: das Rezept steht auf Rädern oder Kufen im Boden (exportDrive huelle.radB, fahrzeug-medium) — das Boot trägt keins
+            rezepte.push({ k, m: d ? +(+d.mass).toFixed(3) : null, v: d ? +(+d.vmax).toFixed(2) : null, rad: d && d.huelle && d.huelle.radB > 0 ? 1 : 0 });
         }
     const wagen = [];
     let nah = null;
@@ -280,6 +432,137 @@ const haspelKurbel = async (r, T, arg) => {
 // Radstand, Spur und Dach (die Masse des Kerns: Länge × Spur × Dach, vehicle-core carPhys) —, aufgesessen, eingeschwungen, dann
 // `arg.takte` Takte zu 1/60 s mit gehaltenem Gas (die Verb-Tafel); gemessen die Masse des Fahr-Gesetzes am Werk
 // (`_fahrzeugGesetzFor`), das Tempo des Spielers im Sattel und der Weg.
+// form#2 DIE KIPPGRENZE: Baupläne an Land aus dem Stempel der Welt (spawnArchitecture fahrzeug_<Gattung> + studioOv — die
+// Hebel der Werkstatt Dach, Spur, Fahrhöhe), ihr Fahr-Satz aus der Welt (`_fahrSatz`). Je Bauplan: der Kipptisch (der Kern auf
+// dem Satz der Welt, Boden quer geneigt tan θ in Schritten 0,025, 3 s Stand) und der Kreis in der Welt (`_wagenSchritt` ·
+// `_wagenLage` über ihrem Boden, 25 m/s, Lenkung voll in 4 s, gelesen die Querkraft der Reifen je Masse vor dem Abheben). Die statische Formel (NHTSA Static Stability Factor, 68 FR
+// 59250): SSF = Spur ÷ 2h; wessen μ über dem SSF liegt, kippt bei tan θ = SSF und bei a_quer = SSF · g; wessen μ darunter
+// liegt, rutscht. kippQ = der Quotient (Tisch und Kreis), der am weitesten von 1 liegt; liegt = Anteil der Kipper, die im Kreis
+// auf der Seite liegen; steht = Anteil der Rutscher, die nie kippen.
+const kippForm = async (r, T, arg) => {
+    const s = r.state;
+    const VC = window.__vehicleCore;
+    const pm = s.playerMesh.position;
+    if (!VC || !VC.GATTUNGEN) return { n: 0, fehler: "kein Fahrzeug-Kern" };
+    const dt = 1 / 60;
+    const PLAN = [
+        ["serie", () => ({})],
+        ["hoch", (P) => ({ dach: P.dach * 1.6, fahrhoehe: P.fahrhoehe * 3, spur: P.spur * 0.8 })],
+        ["turm", (P) => ({ dach: P.dach * 2, fahrhoehe: P.fahrhoehe * 2, spur: P.spur * 0.7 })],
+        ["dach", (P) => ({ dach: P.dach * 1.3 })],
+        ["schmal", (P) => ({ spur: P.spur * 0.75, fahrhoehe: P.fahrhoehe * 1.5 })],
+        ["gelaende", (P) => ({ fahrhoehe: P.fahrhoehe * 2.5 })],
+        ["breit", (P) => ({ spur: P.spur * 1.2 })],
+        ["tief", (P) => ({ fahrhoehe: P.fahrhoehe * 0.6, dach: P.dach * 0.9 })],
+        ["kran", (P) => ({ dach: P.dach * 2.4, fahrhoehe: P.fahrhoehe * 3, spur: P.spur * 0.6 })],
+    ];
+    // der Kipptisch: tan θ in Stufen 0,025, dann die Grenze zwischen der letzten stehenden und der ersten Stufe auf 1/64 Stufe
+    // halbiert (ein SSF von 0,18 läge sonst um eine Stufe = 14 % daneben)
+    const neige = (G, t) => {
+        const z = VC.fahrZustand(0, 0, 0),
+            boden = (x, q) => -q * t;
+        VC.fahrStand(z, G, boden, 0);
+        const q0 = z.z;
+        for (let i = 0; i < 180; i++) {
+            VC.fahrKraefte(z, {}, G, dt);
+            VC.fahrStand(z, G, boden, dt);
+        }
+        return z.umgekippt ? "kippt" : Math.abs(z.z - q0) > 0.05 ? "rutscht" : null;
+    };
+    const tisch = (G) => {
+        for (let t = 0.025; t <= 2; t += 0.025) {
+            const w = neige(G, t);
+            if (!w) continue;
+            let lo = t - 0.025,
+                hi = t;
+            for (let k = 0; k < 6; k++) {
+                const m = (lo + hi) / 2;
+                if (neige(G, m)) hi = m;
+                else lo = m;
+            }
+            return { tan: +hi.toFixed(4), kippt: neige(G, hi) === "kippt" };
+        }
+        return { tan: null, kippt: false };
+    };
+    const plaene = [];
+    let k = 0;
+    for (const gid of VC.GATTUNGEN) {
+        const pr = VC.PRESETS[gid];
+        if (!pr || /boot/.test(gid)) continue;
+        const P = Object.assign({}, VC.DEFAULT_P, VC.presetPatch(gid));
+        for (const [pname, f] of PLAN) {
+            const ov = f(P);
+            const x = pm.x + 40 + (k % 4) * 6,
+                zz = pm.z + 40 + Math.floor(k / 4) * 0.01;
+            k++;
+            const e = r.spawnArchitecture("fahrzeug_" + gid, { x, y: r.getTerrainHeightAt(x, zz) + 0.5, z: zz }, Object.assign({ silent: true, precise: true, rotationY: 0 }, Object.keys(ov).length ? { studioOv: ov } : {}));
+            if (!e) {
+                plaene.push({ p: gid + "·" + pname, fehler: "das Werk stand nicht" });
+                continue;
+            }
+            try {
+                await window.__gebautNach(e);
+            } catch (_e) {}
+            const G = r._fahrSatz(e, r._vehicleProfile(e));
+            if (!G || !(G.cgH > 0)) {
+                plaene.push({ p: gid + "·" + pname, fehler: "kein Fahr-Satz" });
+                r.removeArchitecture(e);
+                continue;
+            }
+            // die statische Formel aus dem Satz (ein Kern ohne Kippgrenze trägt Spur und Schwerpunkt ebenso)
+            const ssf = G.kipp ? G.kipp.ssf : G.auf.quer / G.cgH;
+            e._fahrSatz = G;
+            const fz = (e._fahr = VC.fahrZustand(e.position.x, e.position.z, 0));
+            const boden = r._fahrBoden(e);
+            VC.fahrStand(fz, G, boden, 0);
+            const haft = r._fahrHaft(fz);
+            fz.vlong = fz.speed = arg.v || 25;
+            let a = 0,
+                vh = 0,
+                muMax = 0;
+            for (let i = 0; i < (arg.bilder || 600); i++) {
+                const v = Math.hypot(fz.vlong, fz.vlat);
+                if (i === 60) vh = v;
+                // die Haftung wechselt mit dem Boden unter dem Kreis (Gras, Erde, Weg): der Reibkreis ist der größte vor dem Abheben
+                if (!fz.kipp) muMax = Math.max(muMax, G.maxGrip * G.grip * r._fahrHaft(fz));
+                VC.fahrStand(fz, G, r._fahrBoden(e), dt);
+                r._wagenSchritt(e, { steer: Math.min(1, i / 240), throttle: fz.kipp ? 0 : Math.max(0, Math.min(1, ((arg.v || 25) - v) * 0.5)) }, dt, true, false);
+                r._wagenLage(e, fz);
+                // die Querkraft der Reifen je Masse (z.aLat = Fy / m): die Kraft, die den Aufbau um die äußere Radlinie dreht —
+                // die Bahn v · ω läge im Schleudern darüber
+                if (i > 1 && !fz.kipp) a = Math.max(a, Math.abs(fz.aLat || 0));
+            }
+            const liegt = !!fz.umgekippt,
+                rolle = +(e._rideRoll || 0).toFixed(3);
+            r.removeArchitecture(e);
+            plaene.push({ p: gid + "·" + pname, ssf: +ssf.toFixed(3), mu: +(G.maxGrip * G.grip * haft).toFixed(3), muMax: +muMax.toFixed(3), muT: +(G.maxGrip * G.grip).toFixed(3), tisch: tisch(G), aQ: +(a / G.g).toFixed(3), liegt, rolle, vh: +vh.toFixed(1) });
+        }
+    }
+    const gem = plaene.filter((q) => !q.fehler);
+    // Kipptisch: der Satz am Tisch trägt μ ohne Boden (muT); Kreis: μ mit der Haftung des Bodens unter dem Wagen (mu)
+    const tK = gem.filter((q) => q.muT > q.ssf * 1.15),
+        tR = gem.filter((q) => q.muT * 1.15 < q.ssf);
+    const kK = gem.filter((q) => q.mu > q.ssf * 1.15 && q.vh >= (arg.v || 25) * 0.8),
+        kR = gem.filter((q) => q.muMax * 1.15 < q.ssf && q.vh >= (arg.v || 25) * 0.8);
+    const qs = [];
+    for (const q of tK) qs.push({ p: q.p, wo: "Tisch", q: q.tisch.kippt ? q.tisch.tan / q.ssf : 0 });
+    for (const q of kK) if (q.liegt) qs.push({ p: q.p, wo: "Kreis", q: q.aQ / q.ssf });
+    let w = null;
+    for (const x of qs) if (!w || Math.abs(x.q - 1) > Math.abs(w.q - 1)) w = x;
+    const steht = tR.length + kR.length ? (tR.filter((q) => !q.tisch.kippt).length + kR.filter((q) => !q.liegt).length) / (tR.length + kR.length) : null;
+    return {
+        n: gem.length,
+        plaene,
+        kipper: tK.length,
+        kreisKipper: kK.length,
+        rutscher: tR.length + kR.length,
+        kippQ: w ? +w.q.toFixed(3) : null,
+        schlimmst: w,
+        liegt: kK.length ? kK.filter((q) => q.liegt).length / kK.length : null,
+        steht,
+    };
+};
+
 const formTempo = async (r, T, arg) => {
     const s = r.state;
     const VC = window.__vehicleCore;
@@ -523,33 +806,68 @@ module.exports = (F) => [
                 if (!z) throw new Error("kein Zensus der Welt");
                 return z;
             };
-            // S2 ÜBER DEN FÄCHER (stationen/faecher.js): 20 Saaten × die Rezepte des Kerns, je Adresse die Probefahrt des EINEN
-            // Fahr-Schritts (BREMS_AN) — das Band 30–50 m und 7,5–12,5 m sind die Karte; die Spurrinne hat kein Gesetz (ungemessen beim Namen)
+            // S2 ÜBER DEN FÄCHER (stationen/faecher.js): 20 Saaten × die Land-Rezepte des Kerns bis 130 km/h (Rad im Boden, Spitze ≥ 130 —
+            // das Boot trägt kein Rad, der Leiterwagen zieht 5,8 km/h: beide beim Namen im Beleg), je Adresse die Bremsung des Wagens der
+            // Welt am Ort der Saat (BREMS_AN): die Physik je Saat aus der Fahrt der Welt (verschiedene Fahrten — Wege und Rinne — am ärmsten
+            // Rezept), das Band „30–50 m ∝ v²/μ“ auf dem Prüfstand mit dem Boden der Saat (der Weg × (μ + f_r): 30–50 m aus 100 km/h,
+            // 7,5–12,5 m aus 50 km/h; `steil` nennt das größte Gefälle am Wagen der Welt, `flug` die Fahrten, auf denen er abhob), die
+            // Spurrinne nach 10 Durchfahrten in m am weichsten Boden der Saaten (fester Grund 0, `rinneFest` nennt ihn)
             await K.schritt(2, async () => {
-                const orte = da().rezepte.filter((x) => x.m != null).map((x) => x.k);
+                const R0 = da().rezepte.filter((x) => x.m != null);
+                const orte = R0.filter((x) => x.rad && x.v * 3.6 >= 130).map((x) => x.k);
+                const ohne = R0.filter((x) => !orte.includes(x.k)).map((x) => x.k + (x.rad ? " " + Math.round(x.v * 36) / 10 + " km/h" : " ohne Rad"));
+                if (!orte.length) return K.leser(2, { fehlt: "kein Rezept des Kerns steht mit Rad im Boden bis 130 km/h (" + ohne.join(", ") + ")", wo: "vehicle-core.js:4077 exportDrive huelle.radB" });
+                const land = (a, w) => !w.wasser;
                 const anteil = (von, bis) => (v) => (v.length ? v.filter((x) => x >= von && x <= bis).length / v.length : null);
                 const R = await H.seite.FAECHER(K.welt, {
-                    gesetz: { fn: H.seite.BREMS_AN, export: "vehicle-core.js:3474 exportDrive → :3662 fahrGesetz → :4146 fahrSchritt", leser: "stamm/gelaende-kollision.js:1238" },
+                    gesetz: {
+                        fn: H.seite.BREMS_AN,
+                        export: "vehicle-core.js:4077 exportDrive → :4273 fahrGesetz → :4627 fahrKraefte (e.haft, e.boden = :4360 radImBoden) → :4532 fahrStand",
+                        leser: "stamm/koerper-fahrt.js:1599 _wagenSchritt (:1855 _fahrGrund → stamm/gelaende-kollision.js:1113 _kontaktStoffAt)",
+                    },
                     adressen: { saaten: 20, orte },
                     ms: Math.max(4000, Math.floor((H.rest() - 4) * 1000)),
                     masse: {
-                        imBand: { wie: anteil(30, 50), feld: "weg100" },
-                        imBand50: { wie: anteil(7.5, 12.5), feld: "weg50" },
-                        weg100: { wie: (v) => (v.length ? Math.min(...v) + "–" + Math.max(...v) : "—"), feld: "weg100" },
-                        bis130: { wie: (v) => v.filter((x) => x >= 130).length, feld: "vmaxKmh" },
-                        // die eigene Physik je Saat: verschiedene Fahrten über die 20 Saaten, am ärmsten Rezept
-                        physik: { wie: (v, aus) => Math.min(...orte.map((o) => new Set(aus.filter((x) => x.a.ort === o).map((x) => JSON.stringify(x.w))).size)) },
+                        imBand: { wie: anteil(30, 50), feld: "norm100", nur: land },
+                        imBand50: { wie: anteil(7.5, 12.5), feld: "norm50", nur: land },
+                        norm100: { wie: (v) => (v.length ? Math.min(...v) + "–" + Math.max(...v) : "—"), feld: "norm100", nur: land },
+                        steil: { wie: "max", feld: "steil", nur: land },
+                        flug: { wie: (v) => v.filter((x) => x > 0).length, feld: "luft", nur: land },
+                        weg100: { wie: (v) => (v.length ? Math.min(...v) + "–" + Math.max(...v) : "—"), feld: "weg100", nur: land },
+                        bis130: { wie: (v) => v.filter((x) => x >= 130).length, feld: "vmaxKmh", nur: land },
+                        imWelt: { wie: anteil(30, 50), feld: "welt100", nur: land },
+                        flattert: { wie: "summe", feld: "flattert", nur: land },
+                        welt100: { wie: (v) => (v.length ? Math.min(...v) + "–" + Math.max(...v) : "—"), feld: "welt100", nur: land },
+                        imKreis: { wie: anteil(0.95, 1.01), feld: "kurve", nur: land },
+                        kurve: { wie: (v) => (v.length ? Math.min(...v) + "–" + Math.max(...v) : "—"), feld: "kurve", nur: land },
+                        muSpanne: { wie: (v) => (v.length ? Math.min(...v) + "–" + Math.max(...v) : "—"), feld: "mu", nur: land },
+                        rinne: { wie: "max", feld: "rinne", nur: land },
+                        rinneFest: { wie: (v) => (v.length ? Math.max(...v) : 0), feld: "rinne", nur: (a, w) => land(a, w) && !w.weich },
+                        weich: { wie: "summe", feld: "weich", nur: land },
+                        stoffe: { wie: "verschieden", feld: "stoff", nur: land },
+                        wasser: { wie: "anzahl", nur: (a, w) => !!w.wasser },
+                        physik: { wie: (v, aus) => Math.min(...orte.map((o) => new Set(aus.filter((x) => x.a.ort === o).map((x) => JSON.stringify([x.w.weg100, x.w.weg50, x.w.rinne]))).size)), nur: land },
                     },
                     schlecht: { feld: "weg100", richtung: "max" },
-                    ungemessen: ["Spurrinne nach 10 Durchfahrten (kein Gesetz der Spur im Boden)"],
                 });
                 H.zeile("Medium S2: " + R.akte.slice(0, 400));
-                if (R.fehlt) return K.leser(2, { fehlt: R.fehlt, wo: "vehicle-core.js:4146 fahrSchritt" });
-                const w = R.werte;
-                return K.nicht(2, {
+                if (R.fehlt) return K.leser(2, { fehlt: R.fehlt, wo: "stamm/koerper-fahrt.js:1855 _fahrGrund · vehicle-core.js:4360 radImBoden" });
+                // die Spur nach 10 Durchfahrten im Bild der Karte (SPUR_SICHT) — nach dem Fächer, an einem weichen Ort um den Spieler
+                let sp = null;
+                try {
+                    sp = await K.welt("return await (" + H.seite.SPUR_SICHT + ")(r, T, {});");
+                } catch (e) {
+                    H.zeile("Spur warf: " + String(e && e.message).slice(0, 200));
+                }
+                if (sp && sp.fehlt) return K.leser(2, { fehlt: sp.fehlt, wo: "stamm/koerper-fahrt.js _fahrRad → stamm/siedlung-wege.js _tritt" });
+                H.zeile("Medium S2 Spur: " + JSON.stringify(sp));
+                const w = Object.assign({}, R.werte, { sicht: sp && sp.zellen ? sp.anteil : 0 }), pz = (q) => (q == null ? "—" : Math.round(q * 100) + " %");
+                return K.zahl(2, {
                     n: w.physik,
-                    fehlt: "Bremsweg 100→0 " + w.weg100 + " m (im Band " + Math.round(w.imBand * 100) + " %), 50→0 im Band " + Math.round(w.imBand50 * 100) + " %, ≥ 130 km/h " + w.bis130 + "/" + R.gemessen +
-                        " · die Saat ändert die Physik nicht (" + w.physik + " Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · " + R.akte,
+                    werte: { imBand: w.imBand, imBand50: w.imBand50, imKreis: w.imKreis, imWelt: w.imWelt, flattert: w.flattert, rinne: w.rinne, sicht: w.sicht },
+                    beleg: w.physik + " Fahrten je Rezept über 20 Saaten · Prüfstand auf dem Boden der Saat (eben, 49 CFR 571.135 S6.2.2): Weg × (μ + f_r) im Band 100→0 " + pz(w.imBand) + " (" + w.norm100 + " m), 50→0 " + pz(w.imBand50) + " · die Kurvengrenze im Kreis " + w.kurve + " μ·g (μ " + w.muSpanne + "), im Band 0,95–1,01 " + pz(w.imKreis) + " · die Welt: Bremsweg 100→0 " + w.weg100 + " m am Ort (Gefälle am Wagen bis " + pz(w.steil) + ", " + w.flug + " Fahrten mit Flug, " + w.flattert + " ohne Kuppe), der Weg am Boden × (μ + f_r) mit der Höhe im Band 30–50 m " + pz(w.imWelt) + " (" + w.welt100 + " m) · Rinne " + w.rinne + " m (fest " + w.rinneFest + " m) · die Spur nach 10 Durchfahrten gemalt " + pz(w.sicht) + (sp && sp.zellen ? " von " + sp.zellen + " Zellen (nach einer " + pz(sp.anteil1) + ", Erde " + pz(sp.erde) + ", " + sp.tritte + " Tritte je Zelle, zurück bis auf " + sp.rest + ", Ort " + sp.ort + ")" : " (" + ((sp && sp.grund) || "keine Spur") + ")") + " · " +
+                        w.stoffe + " Böden, " + w.weich + " Adressen weich, " + w.wasser + " im Wasser · ≥ 130 km/h " + w.bis130 + "/" + R.gemessen + " · ohne: " + ohne.join(", ") + " · " + R.akte,
+                    taeter: w.physik < 20 ? w.physik + " Fahrten je Rezept über 20 Saaten (gleicher Boden, gleicher Hang)" : w.flattert > 0 ? w.flattert + " Welt-Fahrten heben ohne Kuppe ab (vehicle-core.js fahrStand: das Rad verliert den Griff vor dem Federweg)" : !(w.rinne > 0) ? "kein weicher Boden auf der Spirale der Saaten (" + w.stoffe + " Böden)" : !(w.sicht >= 1) ? (sp && sp.zellen ? "die Spur von 10 Durchfahrten bleibt unsichtbar (gemalt " + pz(w.sicht) + ", " + sp.tritte + " Tritte je Zelle, der Pfad ab 27,7 — stamm/koerper-fahrt.js _fahrRad → stamm/siedlung-wege.js _tritt, TRITT.rad)" : "kein weicher Ort für die Spur (" + ((sp && sp.grund) || "SPUR_SICHT warf") + ")") : null,
                 });
             });
             await K.schritt(3, async () => K.nicht(3, { n: da().medien.wasser, fehlt: "Wasser: kein Floß, Boot oder Segler steht in der Welt" }));
@@ -559,23 +877,49 @@ module.exports = (F) => [
             await K.schritt(7, async () => K.leser(7, { n: da().g === 9.8 ? 1 : 0, fehlt: "kein Planet trägt sein g und ρ: der Fahr-Kern liest die Konstante FAHR.G = " + da().g, wo: "vehicle-core.js:3080" }));
             await K.schritt(8, async () => K.nicht(8, { n: da().medien.raum, fehlt: "zwischen Sonnensystemen: kein Raum-Werk, keine Uhr an Bord neben der Uhr daheim" }));
         },
-        seite: { ZENSUS: zensusFahr, FAECHER, BREMS_AN },
+        seite: { ZENSUS: zensusFahr, FAECHER, BREMS_AN, SPUR_SICHT },
         sprossen: {
             2: {
                 umfang: { soll: 20, wort: "Saaten bis 130 km/h mit eigener Physik" },
                 masse: [
-                    { key: "imBand", wort: "Anteil der Saaten mit Bremsweg 100 → 0 in 30–50 m", soll: 1, richtung: "≥" },
                     {
-                        key: "imBand50",
-                        wort: "Anteil der Saaten mit Bremsweg 50 → 0 in 7,5–12,5 m",
+                        key: "imBand",
+                        wort: "Anteil der Saaten mit Bremsweg 100 → 0 × (μ + f_r) auf dem Boden der Saat in 30–50 m",
                         soll: 1,
                         richtung: "≥",
-                        herkunft: "„∝ v²“: das Band 30–50 m bei 100 km/h mal (50/100)² = 0,25 ergibt 7,5–12,5 m bei 50 km/h",
+                        herkunft: "„30–50 m ∝ v²/μ“ (der Richter der Karte) auf der Bahn der Profis — höchstens 1 % Gefälle längs, 2 % quer (49 CFR 571.135 S6.2.2): derselbe Wagen bremst eben auf dem Boden der Saat (ihr Stoff, μ, Satz im Boden, Feuchte, Rinne — die Leser des Wagens am Ort), gemessen der Weg × (μ + f_r): die Haftung und der Widerstand des weichen Bodens (Bekker Rc/W, Wong 2001 §2.4), auf dem Asphalt des Labors der Weg selbst",
+                    },
+                    {
+                        key: "imBand50",
+                        wort: "Anteil der Saaten mit Bremsweg 50 → 0 × (μ + f_r) auf dem Boden der Saat in 7,5–12,5 m",
+                        soll: 1,
+                        richtung: "≥",
+                        herkunft: "„∝ v²/μ“: das Band 30–50 m bei 100 km/h mal (50/100)² = 0,25 ergibt 7,5–12,5 m bei 50 km/h, auf dem Prüfstand wie oben",
+                    },
+                    {
+                        key: "imKreis",
+                        wort: "Anteil der Saaten mit Kurvengrenze a_quer ÷ μ·g im Kreis in 0,95–1,01",
+                        soll: 1,
+                        richtung: "≥",
+                        herkunft: "die Karte: a_quer = μ·g — derselbe Wagen im Kreis auf dem Prüfstand der Saat, μ = der Boden der Saat (`_fahrHaft`) × der Reifen des Rezepts (maxGrip · grip); das Band: der Reifen gibt im Grenzbereich höchstens μ·g (1,01: das Raster der Zahl), und ein Wagen, der vor 95 % der Haftung ausbricht, verschenkt die Kurve",
+                    },
+                    {
+                        key: "flattert",
+                        wort: "Welt-Fahrten 100 → 0, die ohne Kuppe abheben (der Boden fiel nie weiter als den Federweg unter den Wagen)",
+                        soll: 0,
+                        richtung: "≤",
+                        herkunft: "die Fallkurve: ein Rad verliert den Griff erst, wenn der Boden schneller fällt, als der Wagen fällt, und weiter, als sein Federweg reicht — über einer Welle federt das Rad aus, es fliegt nicht; bis fahrzeug-medium-2 hob der Wagen 2 cm unter der Fallkurve ab (Genesis 60 von 120 Welt-Fahrten)",
                     },
                     { key: "rinne", wort: "Spurrinne nach 10 Durchfahrten in m", soll: 0, richtung: ">" },
+                    {
+                        key: "sicht",
+                        wort: "Anteil der Zellen der Spur, die die Wege-Karte nach 10 Durchfahrten als Pfad malt",
+                        soll: 1,
+                        richtung: "≥",
+                        herkunft: "die Karte: „Spurrinne nach 10 Durchfahrten sichtbar“ — sichtbar ist, was der Boden-Shader liest: die Wege-Karte malt eine Zelle ab der Stufe des Pfads (27,7 Tritte des Fußes, `_trittStufe`); das Gewicht des Rads nach Weaver & Dale 1978 (J. Appl. Ecol. 15; USDA SDTDC 0423-1201, Kap. 3): 200 Durchfahrten eines Motorrads nahmen 9× so viel Bewuchs wie 200 Wanderer, zwei Räder in einer Spur — 4,5 Tritte je Rad",
+                    },
                 ],
-                erwartet: "nicht",
-                fehlt: "20 Saaten mit eigener Physik: die Welt trägt sechs Fahr-Rezepte",
+                erwartet: "zahl",
             },
             3: {
                 umfang: { soll: 1, wort: "Wasserfahrzeug (Floß bis Segler)" },
@@ -637,7 +981,7 @@ module.exports = (F) => [
             2: [
                 {
                     name: "ATTRAPPE: 20 Saaten bremsen im Band, der Boden bleibt glatt (Spurrinne 0)",
-                    j: { leiter: "mensch.fahrzeug.medium", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 20, werte: { imBand: 1, imBand50: 1, rinne: 0 } } } },
+                    j: { leiter: "mensch.fahrzeug.medium", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 20, werte: { imBand: 1, imBand50: 1, imKreis: 1, flattert: 0, rinne: 0, sicht: 1 } } } },
                     gruen: false,
                     zahl: /ROT an Spurrinne nach 10 Durchfahrten in m 0 verfehlt/,
                 },
@@ -645,7 +989,13 @@ module.exports = (F) => [
                     name: "der Bremsweg wächst linear mit v (50 → 0 in 15–25 m, die Hälfte von 100 → 0)",
                     j: { leiter: "mensch.fahrzeug.medium", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 20, werte: { imBand: 1, imBand50: 0, rinne: 0.05 } } } },
                     gruen: false,
-                    zahl: /ROT an Anteil der Saaten mit Bremsweg 50 → 0 in 7,5–12,5 m 0 verfehlt/,
+                    zahl: /ROT an Anteil der Saaten mit Bremsweg 50 → 0 × \(μ \+ f_r\) auf dem Boden der Saat in 7,5–12,5 m 0 verfehlt/,
+                },
+                {
+                    name: "das Rad tritt wie ein Fuß: die Rinne gräbt, die Spur von 10 Durchfahrten bleibt unsichtbar (20 Tritte, der Pfad ab 27,7)",
+                    j: { leiter: "mensch.fahrzeug.medium", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 20, werte: { imBand: 1, imBand50: 1, imKreis: 1, flattert: 0, rinne: 0.05, sicht: 0 } } } },
+                    gruen: false,
+                    zahl: /ROT an Anteil der Zellen der Spur, die die Wege-Karte nach 10 Durchfahrten als Pfad malt 0 verfehlt/,
                 },
             ],
             4: [
@@ -701,8 +1051,24 @@ module.exports = (F) => [
                     taeter: o.tempoQ != null && o.tempoQ >= 1 ? "carPhys: die Leistung je Masse ist fest (P.leistung kW/t, vehicle-core.js:3412) — die schwere Form zieht gleich" : null,
                 });
             });
+            await K.schritt(2, async () => {
+                const o = await K.welt("return await (" + H.seite.KIPP + ")(r, T, " + JSON.stringify({ v: 25, bilder: 600 }) + ");", 600000);
+                const pl = (o.plaene || []).filter((q) => !q.fehler);
+                H.zeile("Kippgrenze: " + o.n + " Baupläne · Kipper Tisch " + o.kipper + " · im Kreis " + o.kreisKipper + " · Rutscher " + o.rutscher + " · kippQ " + o.kippQ + " (" + JSON.stringify(o.schlimmst) + ") · liegt " + o.liegt + " · steht " + o.steht);
+                const nie = pl.filter((q) => q.muT > q.ssf * 1.15 && !q.tisch.kippt);
+                K.zahl(2, {
+                    n: o.n,
+                    werte: { kippQ: o.kipper ? (o.kippQ == null ? 0 : o.kippQ) : null, liegt: o.kreisKipper ? o.liegt : null, steht: o.steht },
+                    beleg:
+                        o.n + " Baupläne an Land aus dem Stempel der Welt (" + (o.plaene || []).filter((q) => q.fehler).length + " ohne Satz): " +
+                        pl.slice(0, 8).map((q) => q.p + " SSF " + q.ssf + " μ " + q.mu + " Tisch " + (q.tisch.kippt ? "kippt" : "rutscht") + " " + q.tisch.tan + " · Kreis " + q.aQ + " g" + (q.liegt ? ", liegt" : "")).join(" · "),
+                    taeter: nie.length
+                        ? "vehicle-core.js fahrTakt: " + nie.length + " von " + o.kipper + " Bauplänen mit μ > SSF kippen nie (" + nie.slice(0, 3).map((q) => q.p + " SSF " + q.ssf).join(" · ") + ") — keine Quer-Lastverlagerung, der Aufbau dreht nie um die äußere Radlinie"
+                        : null,
+                });
+            });
         },
-        seite: { ZENSUS: zensusFahr, FORM: formTempo, SAETZE: saetzeFahr },
+        seite: { ZENSUS: zensusFahr, FORM: formTempo, KIPP: kippForm, SAETZE: saetzeFahr },
         sprossen: {
             1: {
                 umfang: { soll: 1, wort: "Werkstatt-Wagen, in zwei Bauplänen gefahren" },
@@ -713,9 +1079,11 @@ module.exports = (F) => [
             },
             2: {
                 umfang: { soll: 50, wort: "Baupläne an Land" },
-                masse: [{ key: "kippQ", wort: "Kippgrenze ÷ statische Formel", soll: 1, tol: 0.15 }],
-                erwartet: "nicht",
-                fehlt: "50 Baupläne an Land: der Kern trägt sechs Rezepte",
+                masse: [
+                    { key: "kippQ", wort: "Kippgrenze ÷ statische Formel", soll: 1, tol: 0.15, herkunft: "NHTSA Static Stability Factor SSF = Spur ÷ 2h (68 FR 59250, 49 CFR 575.105)" },
+                    { key: "liegt", wort: "Anteil der Baupläne mit μ > SSF, die im Kreis auf der Seite liegen", soll: 1, richtung: "≥" },
+                    { key: "steht", wort: "Anteil der Baupläne mit μ < SSF, die rutschen statt zu kippen", soll: 1, richtung: "≥" },
+                ],
             },
             3: {
                 umfang: { soll: 2, wort: "Werke mit gebauter Hülle (Floß, Gleiter)", herkunft: "der Richter nennt zwei Werke aus Teilen: das Floß (sinkt/schwimmt) und den Gleiter (fällt/fliegt)" },
@@ -760,6 +1128,31 @@ module.exports = (F) => [
                     j: { leiter: "mensch.fahrzeug.form", adapter: PROBE, sprossen: { 1: { art: "zahl", n: 1, werte: { masseQ: 1, tempoQ: 0.9 } } } },
                     gruen: false,
                     zahl: /ROT an Masse schwer ÷ leicht 1 verfehlt/,
+                },
+            ],
+            2: [
+                {
+                    name: "der Kern von main: kein Bauplan kippt (der Tisch rutscht bei tan θ = μ, der Kreis rutscht mit 1 g)",
+                    j: { leiter: "mensch.fahrzeug.form", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 63, werte: { kippQ: 0, liegt: 0, steht: 1 } } } },
+                    gruen: false,
+                    zahl: /ROT an Kippgrenze ÷ statische Formel 0 verfehlt/,
+                },
+                {
+                    name: "ATTRAPPE: der Aufbau kippt an einer festen Neigung (tan 0,6 für jeden Bauplan, unabhängig von Spur und Höhe)",
+                    j: { leiter: "mensch.fahrzeug.form", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 63, werte: { kippQ: 0.62, liegt: 1, steht: 0.4 } } } },
+                    gruen: false,
+                    zahl: /ROT an Kippgrenze ÷ statische Formel 0\.62 verfehlt/,
+                },
+                {
+                    name: "ATTRAPPE: der Wagen liegt im Bild auf der Seite, doch er rutscht weiter wie aufrecht (die Lage ohne den Kreis)",
+                    j: { leiter: "mensch.fahrzeug.form", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 63, werte: { kippQ: 1.02, liegt: 0, steht: 1 } } } },
+                    gruen: false,
+                    zahl: /ROT an Anteil der Baupläne mit μ > SSF, die im Kreis auf der Seite liegen 0 verfehlt/,
+                },
+                {
+                    name: "ATTRAPPE: zu wenig Baupläne (die sechs Rezepte des Kerns)",
+                    j: { leiter: "mensch.fahrzeug.form", adapter: PROBE, sprossen: { 2: { art: "zahl", n: 6, werte: { kippQ: 1, liegt: 1, steht: 1 } } } },
+                    gruen: false,
                 },
             ],
         },
