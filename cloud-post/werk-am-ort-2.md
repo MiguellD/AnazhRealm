@@ -67,7 +67,8 @@ Seite der Fahrbahn → `wer`).
   dem Streifgebiet vor dem ersten Takt: allein wie hinter tiersatz Trünke 4,8,2,3,9,10,4,2,0,2,9,3, GRÜN, Selbsttest 4 von 4.
 - OFFEN in der Welt (nicht im Schnitt): `_kreaturDurstig` merkt die Pause der vergeblichen Suche auch dort, wo nur die Kachel fehlt
   (jenseits der Reichweite der Kachel-Leser um den Spieler) — dieselbe Klasse wie `_bestandBereit`, Bahn der Tiere.
-- Teil 1/3 · 2/3 · 3/3 am Baum main 948f68ee + werk-am-ort-2: Lauf 4 fährt (Teil 3 war am Baum davor GRÜN, 46 Täter, 13 Proben).
+- Lauf 5 am Baum main 9a75d61c + werk-am-ort-2 (= Kopf 2 90f3f04d): Teil 1/3 GRÜN (64 Täter beim Namen, 13 Proben im Grund grün,
+  18:53 UTC) · Teil 2/3 fährt · Teil 3/3 folgt (am Baum davor GRÜN, 46 Täter, 13 Proben).
 
 ## Heap an der GTX 1060 (Koordinator 18:04)
 
