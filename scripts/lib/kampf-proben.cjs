@@ -3221,8 +3221,9 @@ async function WELLE_L(ort) {
 // erste mit der Tafel des Leerlaufs bei 60 Hz, der zweite ohne Leerlauf (die Last) bei 15 Hz — Kipp-Winkel und Höhe bei
 // 0,6 s Kreatur-Uhr. (tod) vor dem Tod Holz, Stein und ein Fuchs, den die Geste bindet (85 m abseits, außer Witterung); der
 // Wolf jagt den Spieler am Rand seines Lebens über den Biss-Weg, die Rückkehr (Leben, Wunde, Gnade, Lebens-Spur, Seele,
-// Trauer, Journal, Wunde senkt hpMax, der Vitals-Takt heilt sie und füllt die Ausdauer) und ihr Abstand zum Genesis-Anker
-// (`_genesisMitte`, die Mitte des Plans der Welt — fehlt sie, wirft die Probe); die Landung am Ort der Rückkehr, verwundet, und ein
+// Trauer, Journal, Wunde senkt hpMax, der Vitals-Takt heilt sie und füllt die Ausdauer) und ihr Abstand zum Anker — der Ankunft
+// des Gesetzes im selben Takt (`_ankunftStand`, vorgebacken; um die Mitte des Plans, `_genesisMitte` — fehlt sie, wirft die
+// Probe); die Landung am Ort der Rückkehr, verwundet, und ein
 // Takt des Lebenszyklus lang (taktS Spiel-Zeit, auch ohne Bild-Schleife: an der Uhr des Stands zählte eine Wiederkehr ohne
 // Marke sein Intervall ein zweites Mal, `wiederkehr-alter`), dann `saveState`. `abdruck` ist K5_ABDRUCK.
 async function K5_VOR(abdruck) {
@@ -3289,11 +3290,16 @@ async function K5_VOR(abdruck) {
     const hpMax0 = ruhe(1e-4) / 1e-4;
     const [wolf, seele] = [neu("wolf", 0.4, 6, Math.PI), p.soul];
     for (let k = 0; k < 1200 && !(p.respawnGraceUntil > s.spielZeit); k++) takt(1 / 60);
-    const [e, a] = [p.emotions, r._genesisMitte()];
-    if (!a) throw new Error("K5: kein Genesis-Ort (der Plan der Welt)");
+    const [e, M] = [p.emotions, r._genesisMitte()];
+    if (!M) throw new Error("K5: kein Genesis-Ort (der Plan der Welt)");
+    // der Anker ist die Ankunft des Gesetzes (`_ankunft`: die Heimat oder ihr Ring-Stand mit freier Sicht), gemerkt je Stand
+    // der Welt; stand sie im Tod nicht im Gedächtnis, wartete die Rückkehr auf den Faden — der Leib stünde am Ort des Tods
+    const a = r._ankunftStand && r._ankunftStand.wert;
     K.tod = {
         q: quelle,
-        anker: Math.hypot(pm.position.x - a.x, pm.position.z - a.z),
+        anker: a ? Math.hypot(pm.position.x - a.x, pm.position.z - a.z) : "ohne Gedächtnis",
+        mitte: Math.round(Math.hypot(pm.position.x - M.x, pm.position.z - M.z) * 10) / 10,
+        glied: a ? a.glied : null,
         rueckkehr: [
             p.hp === p.hpMax,
             p.deathWoundIntensity === 1,

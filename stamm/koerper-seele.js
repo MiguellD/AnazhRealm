@@ -403,6 +403,16 @@ class AnazhRealm_koerper_seele {
         if (currentTime - (this.state.player.deathLastTick || -Infinity) < 1.0) return;
         const dt = Math.max(0.1, Math.min(10, currentTime - this.state.player.deathLastTick));
         this.state.player.deathLastTick = currentTime;
+        // die Rückkehr nach dem Tod steht vorgebacken (Lehre 14): wechselt der Stand der Ankunft (Wald, Hydrosphäre, Heimat; eine
+        // geladene Welt), fragt sie nach dem ersten Weltbild neu (`_ankunft`, Rang 1 hinter dem Wald des Bilds) — der Tod setzt den
+        // Leib im selben Takt (`_genesisAnkunft`), nie ein Bild am Ort des Tods. Die Kosten binden an die Änderung: sonst ein Schlüssel.
+        const M = this.state._weltbildDa && this._genesisMitte();
+        if (M) {
+            const vor = this._ankunftStand;
+            const an = this._ankunft(M, 1);
+            if (!vor || an !== vor.ankunft)
+                an.catch((e) => this._stoffBruch("das Vorbacken der Rückkehr (die Ankunft am Genesis-Ort)", e));
+        }
         // Welle 6.D Etappe 3a+ — Wunde regenerieren UNABHÄNGIG von der
         // Respawn-Rückkehr. Die Stat-Wunde bleibt 10 min als Erinnerung.
         const woundIntensity = this.state.player.deathWoundIntensity || 0;

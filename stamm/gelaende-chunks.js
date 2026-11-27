@@ -1409,10 +1409,12 @@ class AnazhRealm_gelaende_chunks {
     // und Kegel; Wahl und Sicht rechnet der Wald-Faden (voxel-worker `ankunftRechnen`) über DEMSELBEN Bestand, den er für das Bild
     // plant — bis hier plante der Haupt-Faden den Wald der Sicht selbst (`_sichtWald`), kalt 147–8 380 ms je Ankunft in EINEM Bild.
     // Die Antwort merkt der Wirt je Stand des Walds, Hydrosphäre und Heimat (`_ankunftStand`): die Rückkehr nach dem Tod in derselben
-    // Welt fragt nicht neu. → das Versprechen { x, z, yaw, auge: {x, y, z}, glied, marke: {art, seed, x, y, z, d}, kosten }.
+    // Welt fragt nicht neu — und steht vorgebacken, sobald ihr Stand wechselt (`tickPlayerVitals`, Rang 1 hinter dem Wald des
+    // Bilds): auch eine geladene Welt kehrt im selben Takt zurück (`_genesisAnkunft`). → das Versprechen
+    // { x, z, yaw, auge: {x, y, z}, glied, marke: {art, seed, x, y, z, d}, kosten }.
     // Bis landmarken-geologie-8 kam jede Welt an der Mitte ihres Plans mit Gier 0 an: an 18 von 51 Saaten der Station trug der erste
     // Blick keine Landmarke in 1–3 km.
-    _ankunft(heim) {
+    _ankunft(heim, rang = -1) {
         const schluessel = [this._waldStandSchluessel(), this.state.hydrosphere ? 1 : 0, heim.x, heim.z].join("|");
         const st = this._ankunftStand;
         if (st && st.schluessel === schluessel) return st.ankunft;
@@ -1467,7 +1469,7 @@ class AnazhRealm_gelaende_chunks {
         marken.forEach((q, i) => F0.containsPoint(p.set(q.x, q.y, q.z)) && kegel.push(i));
         const auftrag = {
             type: "ankunft",
-            rang: -1,
+            rang,
             staende,
             marken: marken.map((q) => ({ x: q.x, y: q.y, z: q.z, h: q.h })),
             innen,
@@ -1485,7 +1487,7 @@ class AnazhRealm_gelaende_chunks {
         const ankunft = this._nebenAuftrag("wald", auftrag).then((w) => {
             const o = w.stand < 0 ? h0 : staende[w.stand];
             const q = w.marke < 0 ? null : marken[w.marke];
-            return {
+            const an = {
                 x: o.x,
                 z: o.z,
                 yaw: q && w.glied !== "heimat" ? this._blickGierZu(q.x - o.x, q.z - o.z) : 0,
@@ -1494,6 +1496,9 @@ class AnazhRealm_gelaende_chunks {
                 marke: q && { art: q.art, seed: q.seed, x: q.x, y: q.y, z: q.z, d: w.d },
                 kosten: { bestellt, faden: w.ms, fragen: w.fragen, geplant: w.geplant, staende: staende.length },
             };
+            // die Antwort steht im Gedächtnis: die Rückkehr in derselben Welt setzt im selben Takt (`_genesisAnkunft`)
+            if (this._ankunftStand && this._ankunftStand.ankunft === ankunft) this._ankunftStand.wert = an;
+            return an;
         });
         this._ankunftStand = { schluessel, ankunft };
         return ankunft;
