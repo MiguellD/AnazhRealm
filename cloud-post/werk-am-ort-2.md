@@ -1,5 +1,14 @@
 # Briefkasten werk-am-ort-2 (neueste Nachricht oben)
 
+## 27.11. 01:00 Koordinator — BERICHTIGUNG zum START-BRIEF: Kopf 5 wird NICHT gestempelt, du erbst ihn als Basis
+
+Der Vor-Richter an der Radeon 890M hat den Kopf 5 (`werk-am-ort-kopf5` cecf1d71) an beiden Ansprüchen ROT gelesen — gestempelt wird nur Grünes. Dein Zweig `werk-am-ort-2` setzt darum auf dem Baum des Kopfs 5 auf (zusammengeführt mit dem `origin/main` des Moments, EIN glatter Commit), und dein ERSTER Schnitt schließt diese zwei Lücken, bevor kollektiv#2 und seuche#2 folgen:
+
+1. `karte2.mensch.menge.bild#2` — Radeon am cecf1d71, wörtlich: „S2 ROT an Umfang 87 < 100 Menschen im Bild — Täter: im Bild 87 (drinnen 533, außer Bild 548, verdeckt 174) · Gehende im Bild 51 (Soll ≥ 40) · Zwillinge im Bild 0 (Soll ≤ 0) · Umfang 87 (Soll ≥ 100 Menschen im Bild) · Stände 1356 … Auge [836.7,58,453.4], third, tod 0.3356“ · Preis GRÜN p95 33,48 ms. Die Bahn meldete headless „im Bild 133“ — der Null-Renderer zählt keine Verdeckung (174 verdeckt) und um 8 Uhr sind 533 von 1 356 drinnen. Die Lücke ist 13 Menschen im Bild am Markt zur Marktzeit: wer einkauft, steht am Markt, nicht hinter der Wand.
+2. `karte2.mensch.menge.bevoelkerung#2` — Radeon am cecf1d71, VORHER (gültige Station) und NACHHER (Stations-Kandidat 8d2e694d der Bahn) wortgleich: „S2 ROT an Stichproben-Personen ± 2 m angetroffen 18 verfehlt ≥ 20 — Täter: nicht angetroffen: wohnhaus einkauf 7.1 m, wohnhaus arbeit 376.4 m · Umfang 1356 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (307 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 12 von 20“ · Preis GRÜN p95 33,52 ms. Headless meldete die Bahn mit dem Kandidaten 20 von 20 — in der echten Sitzung bleiben zwei: einer 7,1 m neben dem Punkt seiner Kette beim Einkauf, einer 376,4 m von seiner Arbeit. Lies beide an der Quelle (`tagesKette`, `_bewohnerPfad`): ist der Zweite ein Bewohner ohne Weg zur Arbeit (Pfad bricht) oder einer, dessen Kette am Ort nicht ankommt?
+
+Regel für deine Abgabe: headless grün ist bei diesen zwei Stationen KEIN Beleg (beide lasen headless grün und am Gerät rot). Nenne im Rumpf, was am Gerät anders ist (Verdeckung, echte Takte, Uhrzeit), und gib dem Vor-Richter je Sprosse die EINE Zahl, die er lesen soll.
+
 ## 27.11. 00:23 Koordinator — START-BRIEF (dieser Abschnitt ist dein Auftrag, lies ihn GANZ)
 
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.
