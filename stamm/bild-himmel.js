@@ -1824,6 +1824,13 @@ class AnazhRealm_bild_himmel {
     // im Maß der REF, 1/793 des Vollmonds — bis w28-nacht-bilanz die Zahl `ATMO_GESETZ.nacht.himmel` selbst, das 510-Fache) im
     // Maß der Nacht (1 − Dämmerung der EINEN Tag-Achse, `_tagAchse`: wie die Sterne erscheinen, erscheint ihr Licht). Bis D3-2 trug der Himmel der EINEN Atmosphäre nachts nur die Streuung des Mondes
     // (Zenit 0,009): der Himmel der Nacht war schwarz, Wiese Mitternacht Luma 4,9 (vor D3 31,7), Dämmerung 0,78 4,2 (38,1).
+    // DIE LICHTGLOCKE (nacht-gasse-licht) — der Nacht-Sockel des Orts, ein eigener Term NEBEN dem Sternen-Licht in derselben
+    // Leuchtdichte der Nacht: die Leuchten der Wahl (`_leuchtPool.alle` — dieselben Quellen und dieselbe Stärke wie Karte und
+    // Messer, `_leuchtStaerke` mit Schaltplan, ohne Flackern), je Quelle ihr waagrechter Abstand zum Auge der Wahl, die Glocke aus
+    // der EINEN Luft (welt-licht `lichtGlocke`) in der Farbe ihrer Leuchten (ihr Mittel nach Stärke). Das Fenster (eine Quelle mit
+    // Normale: sein Licht geht waagrecht hinaus), das Licht des Auges und der Stahl an der Hand zählen nicht. Die Glocke steht in
+    // Stufen (`GLOCKE.stufe` EV, `_atmoGlocke.stufe`): die Himmels-Sicht zeichnet nur, wenn sie eine Stufe wandert — ihr Schlüssel
+    // trägt sie (`_atmoTakt`). Bis hier trug die Nacht über dem Dorf das Sternen-Licht allein (1,6·10⁻⁴ cd/m²).
     _atmoSternenLicht(e) {
         const N = __weltLicht.STERNENLICHT;
         const w = __weltLicht.nachtHimmel(this._tagAchse(e));
@@ -1831,6 +1838,34 @@ class AnazhRealm_bild_himmel {
         o[0] = N.r * w;
         o[1] = N.g * w;
         o[2] = N.b * w;
+        const pool = this._leuchtPool;
+        const A = this._atmoGlocke || (this._atmoGlocke = { alle: null, lage: null, stufe: -Infinity, rgb: [0, 0, 0] });
+        if (pool && pool.alle !== A.alle) {
+            const c = this._atmoGlockeC || (this._atmoGlockeC = new THREE.Color());
+            const [q0, rgb, GL] = [[], [0, 0, 0], __weltLicht.GLOCKE];
+            let summe = 0;
+            this._zeitplanFest(() => {
+                for (const q of pool.alle) {
+                    if (q.quelle === "auge" || q.quelle === "stahl" || q.normale || q.L.ersatz) continue;
+                    const I = this._leuchtStaerke(q, 0, true) * __weltLicht.EINHEIT_LX;
+                    if (!(I > 0)) continue;
+                    q0.push([I, Math.hypot(q.x - pool.x, q.z - pool.z)]);
+                    this._lichtLinear(q.L, c);
+                    rgb[0] += I * c.r;
+                    rgb[1] += I * c.g;
+                    rgb[2] += I * c.b;
+                    summe += I;
+                }
+            });
+            const L = __weltLicht.lichtGlocke(q0) / __weltLicht.EINHEIT_LX;
+            A.alle = pool.alle;
+            A.stufe = L > 0 ? Math.round(Math.log2(L) / GL.stufe) : -Infinity;
+            const Lq = L > 0 ? 2 ** (A.stufe * GL.stufe) : 0;
+            for (let k = 0; k < 3; k++) A.rgb[k] = summe > 0 ? (Lq * rgb[k]) / summe : 0;
+        }
+        o[0] += A.rgb[0];
+        o[1] += A.rgb[1];
+        o[2] += A.rgb[2];
         return o;
     }
 
@@ -1940,7 +1975,9 @@ class AnazhRealm_bild_himmel {
         __weltLicht.tafelLicht(U, E0, [Mo.r * mi, Mo.g * mi, Mo.b * mi], this._atmoSternenLicht(sunDir.y));
         const s = st._sonne;
         // der Mond trägt seine eigene Stufe (die Zeit des Kosmos): die Himmels-Sicht zeichnet mit seiner Richtung neu
-        const schluessel = `${s ? s.winkel : 0}:${h}:${A.mediumBeta}:${moonDir.x}:${moonDir.y}:${moonDir.z}`;
+        // ... und die Lichtglocke des Orts ihre Stufe (`_atmoSternenLicht`): die Nacht über den Leuchten zeichnet mit ihr neu
+        const glocke = this._atmoGlocke ? this._atmoGlocke.stufe : -Infinity;
+        const schluessel = `${s ? s.winkel : 0}:${h}:${A.mediumBeta}:${moonDir.x}:${moonDir.y}:${moonDir.z}:${glocke}`;
         const rend = st.renderer;
         if (!rend || rend._isHeadlessNull || !st.rendererReady) return A;
         // DIE LEINE FRAGT DIE TAFELN (wie das Bild, die Karte und die Umgebung, `_gpuLeineStraff`): an gespannter Leine zeichnet

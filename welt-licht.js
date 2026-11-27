@@ -227,6 +227,64 @@ var __weltLicht = (function () {
     function nachtHimmel(achse) {
         return STERNENLICHT.leuchtdichte * (1 - Math.max(0, Math.min(1, achse.daemmerung)));
     }
+    // DIE LICHTGLOCKE (nacht-gasse-licht) — DER NACHT-SOCKEL DES HIMMELS ÜBER DEM ORT, ein eigener Term neben dem Sternen-Licht:
+    // was die Leuchten des Orts nach oben werfen, streut in DERSELBEN Luft zum Auge zurück (Einfach-Streuung wie Garstang 1986,
+    // PASP 98:364, „Model for artificial night-sky illumination“). Je Quelle `[I, s]` — ihre Lichtstärke in cd (die Leuchte des
+    // Gesetzes strahlt nach oben wie nach unten) und ihr waagrechter Abstand zum Auge in m — die Zenit-Leuchtdichte
+    // L = I · ∫ β(z) p(Θ) T(z) (1 + 2 ρ cos ψ) ÷ (s² + z²) dz über die Höhe z: β die Streuung der Luft des Gesetzes (foundry-core
+    // `ATMO_GESETZ`: Rayleigh `luft.betaRayleigh` mit `rayleighH`; der Dunst der klaren Luft — Koschmieder −ln(`kontrast`) ÷
+    // `sichtKlarM` über dem Rayleigh — × `mieAlbedo` mit `luft.skalenHoeheM`), p die Phase (Rayleigh 3 ÷ 16π · (1 + cos² Θ),
+    // Henyey-Greenstein `mieG`; cos Θ = −z ÷ √(s² + z²): das Licht geht hinauf, der Blick hinab), T der Durchlass hinauf und
+    // zurück, ρ der Boden der Atmosphäre (`ATMO_BODEN`: was der Boden unter der Leuchte nach oben zurückwirft, Lambert, cos ψ =
+    // z ÷ √(s² + z²)). Gerechnet im Logarithmus der Höhe (`GLOCKE.schritte` Mittelpunkte von s ÷ 100 bis 60 km) → cd/m², EINMAL
+    // je Luft als Tafel über den Abstand (`GLOCKE.s`, `GLOCKE.stufen` Stufen im Logarithmus; dazwischen log-log, J ~ 1/s) — die
+    // Wahl der Leuchten (40 Quellen) kostet so ein Nachschlagen je Quelle statt 6 ms Integral. Nicht gerechnet: das Fenster
+    // (sein Licht geht waagrecht hinaus) und die Wolke (unter der Decke wirft sie die Glocke vielfach zurück). Bezug: der klare
+    // Stadthimmel 1,1·10⁻² cd/m² (Jechow u. a. 2020), der Himmel ohne Leuchten das Sternen-Licht oben (1,6·10⁻⁴).
+    // `stufe`: die Glocke der Welt steht in Viertel-Stufen (EV) — die Himmels-Sicht zeichnet nur, wenn sie eine Stufe wandert.
+    const GLOCKE = Object.freeze({ schritte: 48, s: Object.freeze([1, 20000]), stufen: 64, stufe: 0.25 });
+    function glockeKern(s, G) {
+        const L = G.luft;
+        const bR = L.betaRayleigh;
+        const bD = Math.max(0, -Math.log(L.kontrast) / L.sichtKlarM - bR);
+        const [hR, hD, g] = [G.rayleighH, L.skalenHoeheM, G.mieG];
+        const rho = lumaVon(ATMO_BODEN);
+        // die optische Tiefe von 0 bis z (senkrecht)
+        const tau = (z) => bR * hR * (1 - Math.exp(-z / hR)) + bD * hD * (1 - Math.exp(-z / hD));
+        const [a, b] = [Math.log(s / 100), Math.log(60000)];
+        const du = (b - a) / GLOCKE.schritte;
+        let J = 0;
+        for (let i = 0; i < GLOCKE.schritte; i++) {
+            const z = Math.exp(a + (i + 0.5) * du);
+            const d = Math.hypot(s, z);
+            const c = -z / d; // cos Θ
+            const pR = (3 / (16 * Math.PI)) * (1 + c * c);
+            const pD = (1 - g * g) / (4 * Math.PI * (1 + g * g - 2 * g * c) ** 1.5);
+            const streu = bR * Math.exp(-z / hR) * pR + bD * G.mieAlbedo * Math.exp(-z / hD) * pD;
+            const T = Math.exp(-tau(z) * (1 + d / z));
+            // dz = z · du (der Logarithmus der Höhe)
+            J += (streu * T * (1 + 2 * rho * (z / d)) * z * du) / (d * d);
+        }
+        return J;
+    }
+    const glockeTafeln = new WeakMap();
+    function lichtGlocke(quellen, G = KERN.ATMO_GESETZ) {
+        let t = glockeTafeln.get(G);
+        if (!t) {
+            const [a, b] = GLOCKE.s.map(Math.log);
+            t = { a, du: (b - a) / GLOCKE.stufen, lnJ: new Float64Array(GLOCKE.stufen + 1) };
+            for (let i = 0; i <= GLOCKE.stufen; i++) t.lnJ[i] = Math.log(glockeKern(Math.exp(a + i * t.du), G));
+            glockeTafeln.set(G, t);
+        }
+        let summe = 0;
+        for (const [I, s] of quellen) {
+            if (!(I > 0)) continue;
+            const x = Math.max(0, Math.min(GLOCKE.stufen, (Math.log(Math.max(GLOCKE.s[0], s)) - t.a) / t.du));
+            const i = Math.min(GLOCKE.stufen - 1, Math.floor(x));
+            summe += I * Math.exp(t.lnJ[i] + (x - i) * (t.lnJ[i + 1] - t.lnJ[i]));
+        }
+        return summe;
+    }
     // DIE GPU-LEINE (Welt `_gpuLeineFrei`, Bühne `buehneZeichnet`): höchstens so viele Bilder zugleich auf der GPU unterwegs — mehr
     // ist nur Eingabe-Verzug (gemessen 04.10.: 600 ms bei ≈ 10 Frames in der Schlange), nie mehr Durchsatz.
     const GPU_FRAMES_IM_FLUG = 2;
@@ -2460,6 +2518,8 @@ var __weltLicht = (function () {
         MOONLIGHT,
         STERNENLICHT,
         nachtHimmel,
+        GLOCKE,
+        lichtGlocke,
         schirmDreieck,
         umgebungRichtung,
         atmoTafeln,

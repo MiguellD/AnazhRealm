@@ -1803,7 +1803,7 @@ class AnazhRealm {
         const cp = cam.position;
         if (!Z.bau && !(Math.hypot(cp.x - Z.mx, cp.z - Z.mz) <= K.nachM)) {
             const [tx, tz] = [Math.round(cp.x / zm), Math.round(cp.z / zm)];
-            Z.bau = { tx, tz, zeiger: 0, g: gitter(), beitrag: new Map(), liste: null, i: 0, ms: 0 };
+            Z.bau = { tx, tz, zeiger: 0, g: gitter(), beitrag: new Map(), liste: null, i: 0, j: null, ms: 0 };
         }
         if (Z.bau) {
             const B = Z.bau;
@@ -1830,10 +1830,17 @@ class AnazhRealm {
             if (B.zeiger >= n * n) {
                 if (!B.liste) B.liste = [...soll.values()];
                 const tb = performance.now();
-                for (; B.i < B.liste.length && performance.now() - t0 < K.bauMs; B.i++) {
+                // je Quelle ihr Fleck Zeile um Zeile bis zur Frist (`B.j`: die Zeile, an der der nächste Takt weiterschreibt)
+                while (B.i < B.liste.length && performance.now() - t0 < K.bauMs) {
                     const s = B.liste[B.i];
-                    this._lichtKarteFleck(B.g, B.tx * zm, B.tz * zm, s, s.I);
+                    const f = this._lichtKarteFleck(B.g, B.tx * zm, B.tz * zm, s, s.I, B.j, t0 + K.bauMs);
+                    if (f && f.weiter != null) {
+                        B.j = f.weiter;
+                        break;
+                    }
+                    B.j = null;
                     B.beitrag.set(s.q.id, s);
+                    B.i++;
                 }
                 // die Bänder der neuen Mitte entstehen Zeile um Zeile in ihrer eigenen Ablage (`_lichtKarteHalb`), bis zur Frist
                 if (B.i >= B.liste.length) {
@@ -1854,6 +1861,7 @@ class AnazhRealm {
                         mx: B.tx * zm,
                         mz: B.tz * zm,
                         bau: null,
+                        teil: [], // die halb geschriebenen Flecken trafen das alte Gitter: die neue Mitte prüft ihre Beiträge
                         bauMs: B.ms,
                         pruefen: true, // ihre Beiträge sind das Soll, als ihr Bau begann: der Unterschied prüft sie
                     });
@@ -1871,7 +1879,33 @@ class AnazhRealm {
         // DER UNTERSCHIED je Quelle: was geht, kommt oder seine Stärke ändert (> `stufe` relativ), trägt nur seinen Fleck — die
         // nächste zuerst (am Auge), bis zur Frist `bauMs` und höchstens `zellenJeBild` Zellen hochzuladen; der Rest bleibt Unterschied
         // und folgt im nächsten Bild (die Nacht bricht
-        // an: 42 Laternen der Stadt kamen in EINEM Takt, 23,8 ms)
+        // an: 42 Laternen der Stadt kamen in EINEM Takt, 23,8 ms). EIN FLECK ÜBER DIE FRIST (nacht-gasse-licht): der Fleck schreibt
+        // Zeile um Zeile (`_lichtKarteFleck`); was die Frist unterbrach, steht als Auftrag in `Z.teil` (sein Beitrag gilt schon) und
+        // schreibt im nächsten Takt zuerst weiter — erst ein leerer Auftrag nimmt den nächsten Unterschied.
+        const frist = t0 + K.bauMs;
+        const teil = Z.teil || (Z.teil = []);
+        let rand = null; // das Rechteck [i0, j0, i1, j1], das hochlädt
+        const dazu = (r4) =>
+            r4 &&
+            (rand = rand
+                ? [
+                      Math.min(rand[0], r4[0]),
+                      Math.min(rand[1], r4[1]),
+                      Math.max(rand[2], r4[2]),
+                      Math.max(rand[3], r4[3]),
+                  ]
+                : r4);
+        const schreibe = () => {
+            while (teil.length) {
+                const a = teil[0];
+                const f = this._lichtKarteFleck(Z.g, Z.mx, Z.mz, a.s, a.I, a.j, frist);
+                if (f) dazu(f.rand);
+                if (f && f.weiter != null) return void (a.j = f.weiter);
+                teil.shift();
+                if (performance.now() >= frist) return;
+            }
+        };
+        schreibe();
         const wechsel = [];
         for (const [id, alt] of Z.beitrag) {
             const s = soll.get(id);
@@ -1884,34 +1918,25 @@ class AnazhRealm {
             return (q.x - cp.x) * (q.x - cp.x) + (q.z - cp.z) * (q.z - cp.z);
         };
         if (wechsel.length > 1) wechsel.sort((a, b) => nah(a) - nah(b));
-        let rand = null; // das Rechteck [i0, j0, i1, j1], das hochlädt
-        const dazu = (r4) =>
-            r4 &&
-            (rand = rand
-                ? [
-                      Math.min(rand[0], r4[0]),
-                      Math.min(rand[1], r4[1]),
-                      Math.max(rand[2], r4[2]),
-                      Math.max(rand[3], r4[3]),
-                  ]
-                : r4);
         Z.offen = wechsel.length;
         for (const [id, alt, s, ort] of wechsel) {
             if (
-                rand &&
-                (performance.now() - t0 >= K.bauMs ||
-                    (rand[2] - rand[0] + 1) * (rand[3] - rand[1] + 1) > K.zellenJeBild)
+                teil.length ||
+                (rand &&
+                    (performance.now() >= frist || (rand[2] - rand[0] + 1) * (rand[3] - rand[1] + 1) > K.zellenJeBild))
             )
                 break;
             Z.offen--;
-            if (ort) dazu(this._lichtKarteFleck(Z.g, Z.mx, Z.mz, s, s.I - alt.I));
+            if (ort) teil.push({ s, I: s.I - alt.I, j: null });
             else {
-                if (alt) dazu(this._lichtKarteFleck(Z.g, Z.mx, Z.mz, alt, -alt.I));
-                if (s) dazu(this._lichtKarteFleck(Z.g, Z.mx, Z.mz, s, s.I));
+                if (alt) teil.push({ s: alt, I: -alt.I, j: null });
+                if (s) teil.push({ s, I: s.I, j: null });
             }
             if (s) Z.beitrag.set(id, s);
             else Z.beitrag.delete(id);
+            schreibe();
         }
+        Z.offen += teil.length;
         if (rand) {
             this._lichtKarteHalb(Z.g, LK.gitter.image.data, rand);
             LK.gitter.needsUpdate = true;
@@ -1949,7 +1974,11 @@ class AnazhRealm {
     // Gesetz des Platzes). Der Rand des Gitters trägt nie (das Band blutet nicht). → das Rechteck der Zellen [i0, j0, i1, j1] | null.
     // DAS GLAS STRAHLT VOR SEINE WAND (nacht-fenster-glas): eine Quelle mit Normale (`normale`, das wache Fenster, `_leuchtQuellen`)
     // ist eine Lambert-Fläche — ihr Licht × cos θ zur Normale, hinter der Wand (cos θ ≤ 0) trägt keine Zelle.
-    _lichtKarteFleck(G, mx, mz, s, I) {
+    // ZEILE UM ZEILE BIS ZUR FRIST (nacht-gasse-licht, Gebot 7): ab der Zeile `ab` (null: die erste), nach jeder Zeile der Blick auf
+    // die Uhr — `weiter` ist die nächste Zeile oder null, wenn der Fleck steht. Die Zellen eines Flecks wachsen mit dem Quadrat
+    // seiner Reichweite (28 m: 2 480 Zellen, 70 m: 15 374): am Stück trug ein Fleck sie alle in EINEN Takt, jetzt höchstens die
+    // Frist — die Kosten hängen am Takt, nie an der Größe des Lichts. → { rand: [i0, jA, i1, jE], weiter } | null
+    _lichtKarteFleck(G, mx, mz, s, I, ab = null, frist = Infinity) {
         const K = AnazhRealm.LICHT_KARTE;
         const n = K.texel;
         const zm = K.zelleM;
@@ -1966,7 +1995,10 @@ class AnazhRealm {
         const j1 = Math.min(n - 2, Math.ceil((s.z + R - mz) / zm + n / 2 - 0.5));
         if (i0 > i1 || j0 > j1) return null;
         const { d, c, e, boden } = G;
-        for (let j = j0; j <= j1; j++) {
+        const jA = ab == null ? j0 : Math.max(j0, ab);
+        let j = jA;
+        for (; j <= j1; j++) {
+            if (j > jA && performance.now() >= frist) break;
             const vz = s.z - (mz + (j + 0.5 - n / 2) * zm);
             for (let i = i0; i <= i1; i++) {
                 const vx = s.x - (mx + (i + 0.5 - n / 2) * zm);
@@ -1991,8 +2023,8 @@ class AnazhRealm {
                 }
             }
         }
-        this._lichtKarteZ.flecken++;
-        return [i0, j0, i1, j1];
+        if (j > j1) this._lichtKarteZ.flecken++;
+        return { rand: [i0, jA, i1, j - 1], weiter: j > j1 ? null : j };
     }
 
     // DIE WAHL DES ORTS (der eine Schritt, den Licht-Takt, Lichtmesser und Licht-Karte teilen): jede brennende Quelle im Umkreis

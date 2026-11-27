@@ -11,9 +11,9 @@
 //                              aus three.core.
 //   - `three.webgpu.min.js` — WebGPURenderer + NodeMaterial-Klassen +
 //                              WebGPU-Capability + alle Lighting-Modelle.
-//   - `three.tsl.min.js`    — TSL-Helpers (texture, vec2, float, attribute,
-//                              uniform, positionLocal, transformedNormalView,
-//                              tslFn, ...).
+//   - `three.tsl.min.js`    — eine feste Liste der TSL-Helpers aus `TSL` von
+//                              three/webgpu (die Addons CSM und TRAA lesen sie);
+//                              die Welt liest den Namensraum der Engine selbst.
 //
 // Import-Map (index.html) mapped:
 //   "three"        → "./vendor/three.module.min.js"
@@ -37,7 +37,6 @@
 
 import * as THREE from "three";
 import * as WEBGPU from "three/webgpu";
-import * as TSL from "three/tsl";
 // B4 (V18.130, gigant-plan §5 — U5 Schatten-CSM): das r184-Addon
 // `examples/jsm/csm/CSMShadowNode.js` + `CSMFrustum.js`, verbatim vendort
 // (Quelle: npm three@0.184.0). Importiert 'three/webgpu' + 'three/tsl' —
@@ -123,7 +122,13 @@ if (typeof WEBGPU.RenderPipeline === "function") {
 if (typeof WEBGPU.PMREMGenerator === "function") {
     THREE_GLOBAL.PMREMGenerator = WEBGPU.PMREMGenerator;
 }
-THREE_GLOBAL.TSL = TSL;
+// DIE TÜR REICHT DIE GANZE TSL DER ENGINE (nacht-gasse-licht): `three/tsl` (vendor/three.tsl.min.js) reicht eine feste Liste aus
+// `TSL` von three/webgpu weiter — ihr fehlen `specularColorBlended` und `diffuseContribution` der Beleuchtung von r184. Das Gesetz
+// der Scheibe (welt-licht `scheibe`) las beide: sein setupVariants warf, und r184 baute jeden Scheiben-Stoff still als leeren
+// NodeMaterial neu (`getForRender`: catch → neuer Bau, „TSL: TypeError …“) — kein Fenster, kein Laternenkopf glühte, kein Glas
+// spiegelte (GTX 1050, Dorf third: das nahe Glas mit einem Leuchten von 50 cd/m² änderte 0 von 518 400 Pixeln). Der Namensraum
+// der Engine ist die Obermenge derselben Knoten (gate:vendor-anker, DIE TÜR DER TSL).
+THREE_GLOBAL.TSL = requireWebGPU("TSL");
 // DER TEXEL-ABGRIFF GEHT NIE DURCH DIE UV-MATRIX (w28-ankunft-faden). r184 `TextureNode.load(texel)` klont den Knoten samt
 // `updateMatrix` — true an jedem `texture(tex)` ohne UV —, und jeder Klon legt sich seine EIGENE mat3-Uniform an und
 // multipliziert sein ganzzahliges Texel mit ihr: `vec2<i32>( ( object.nodeUniformN * vec3<f32>( vec2<f32>( texel ), 1.0 ) ).xy )`.

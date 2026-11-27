@@ -1917,8 +1917,9 @@ function scanNormalWand(srcRoh) {
 //       byte-alt weiter);
 //   (b) eine Fehler-Variable `window.__…Error` (der Fehler wandert in ein Fach, das kein Spiel-Leser liest);
 //   (c) ein AUSSTATTUNGS-WENN: der Bau fragt, ob TSL (THREE.TSL, im Stoff T · _T · TSL …) ein Glied trägt. Der Vendor ist
-//       gepinnt (three-bootstrap importiert three/tsl ganz, gate:vendor-anker), ein fehlendes Glied bricht beim ersten Ruf
-//       mit seinem Namen; das Wenn machte daraus einen Stoff ohne seinen Knoten;
+//       gepinnt (three-bootstrap reicht den Namensraum der Engine, gate:vendor-anker „DIE TÜR DER TSL“ nennt jedes Glied, das
+//       die Welt liest und die Tür nicht reicht — r184 fängt den Wurf eines Stoff-Baus selbst und zeichnet ihn leer); das Wenn
+//       machte daraus einen Stoff ohne seinen Knoten;
 //   (d) ein NULL-KNOTEN: ein Knoten-Bauer, dessen Ergebnis ein Stoff in einen `…Node` setzt, gibt null zurück, oder sein
 //       Aufrufer setzt den Knoten nur unter Wenn.
 // Stoff-Bau = jede Methode, die TSL liest (ein Bezeichner aus THREE.TSL oder ein Parameter T/TSL, der TSL-Knoten baut);
