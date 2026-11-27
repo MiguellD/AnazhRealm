@@ -32,6 +32,8 @@ gesetzt; k2-mensch-sport-3.diff + auge-klasse-3.diff gegen dieselbe Basis (punkt
 Kandidat 2 unverändert und dazu:
 - die Klassen-Zeile von S1 (Post 21:41): stationen/auge-klasse.cjs `"mensch.sport.kunst#1": [P, "Blindtest Anfänger ↔ Meister ≥ 80 %"]`
   nach `mensch.menge.bild#3` (S2 trägt kein auge, also keine Klasse);
+  geprüft am pm-Baum (punkte-maschine, depth 1): `node punkte.cjs liste` mit Kandidat 3 Exit 0 · 1976 Stationen · Fehler 0; Kandidat 2
+  ohne die Zeile Exit 2 „S1 trägt auge, aber keine Klasse“ (der Befund der GTX 1060 21:37, nachgestellt);
 - neue Seiten-Funktion WERK: je Ort mit Kette der Schmiede (`S.stoffstrom`) die Werkzeuge in den Händen der Leute aus dem Zensus
   (`_stoffstromZensus`.stuecke: je Stück die Hand seines Schmieds und seine Güte, schmiede `gueteAnteil(beil, null, hand)`); trägt ein
   Ort < 10 Stücke, läuft seine Kette 7 Tage (wie energie#1). S2 = K.zahl(2, { n Stücke, werte { r2 } }), R² linear Güte ↔ Hand.
