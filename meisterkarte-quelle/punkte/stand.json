@@ -3020,15 +3020,15 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 67 Bilder · max 75.42 ms · 59.70 % > 33 ms · Fahrt 49 Bilder · max 108.71 ms · 93.88 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 59.70 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 108.71), 93.88 % > 33 ms an b3740dd5 radeon · Gehen 80 Bilder · max 91.59 ms · 18.75 % > 33 ms · Fahrt 38 Bilder · max 183.31 ms · 86.84 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 18.75 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 183.31), 86.84 % > 33 ms an b3740dd5 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: Last: Referenz f 1,317 (Faden 1,275 · alle Kerne 1,317; vor 106,5/342,3 ms, nach 105/309 ms, Ruhe 83,5/259,9 ms seit 2026-11-16) · fremd: node scripts/diag-altlasten.cjs 36,9 CPU-s · node scripts/diag · profiband.K4#2 gtx: ROT: Gehen 80 Bilder · max 91.59 ms · 18.75 % > 33 ms · Fahrt 38 Bilder · max 183.31 ms · 86.84 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 18.75 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 183.31), 86.84 % > 33 ms an b3740dd5",
+   "beleg": "Maschine: Gehen 65 Bilder · max 75.24 ms · 69.23 % > 33 ms · Fahrt 9 Bilder · max 66.97 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 69.23 % > 33 ms | Fahrt: blind (9 Bilder in 2.5 s), 100.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an b3740dd5 radeon · Gehen 80 Bilder · max 91.59 ms · 18.75 % > 33 ms · Fahrt 38 Bilder · max 183.31 ms · 86.84 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 18.75 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 183.31), 86.84 % > 33 ms an b3740dd5 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: Last: Referenz f 1,363 (Faden 1,363 · alle Kerne 1,247; vor 107,2/324,1 ms, nach 113,8/280,3 ms, Ruhe 83,5/260 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 15,7 CPU-s · sh.exe dienst · profiband.K4#2 gtx: ROT: Gehen 80 Bilder · max 91.59 ms · 18.75 % > 33 ms · Fahrt 38 Bilder · max 183.31 ms · 86.84 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 18.75 % > 33 ms | Fahrt: 9 Bild(er) > 100 ms (max 183.31), 86.84 % > 33 ms an b3740dd5",
    "stationen": [
     {
      "id": "profiband.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Gehen 67 Bilder · max 75.42 ms · 59.70 % > 33 ms · Fahrt 49 Bilder · max 108.71 ms · 93.88 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 59.70 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 108.71), 93.88 % > 33 ms",
+     "zahl": "Gehen 65 Bilder · max 75.24 ms · 69.23 % > 33 ms · Fahrt 9 Bilder · max 66.97 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 69.23 % > 33 ms | Fahrt: blind (9 Bilder in 2.5 s), 100.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1)",
      "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
-     "grund": "GRÜN trotz Last: Referenz f 1,289 (Faden 1,289 · alle Kerne 1,181; vor 107,6/306,1 ms, nach 102,5/305,8 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 15,6 CPU-s · bash.exe werkzeug/gpu-lauf.sh --waechter 1632694 claude/gpu-schloss.wache.1632694 8,5 CPU-s · sh.exe dienst/radeon-dienst.sh 6,7 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 25,8 CPU-s · SearchIndexer.exe 19,6 CPU-s · svchost.exe 18,5 CPU-s",
+     "grund": "GRÜN trotz Last: Referenz f 1,363 (Faden 1,363 · alle Kerne 1,247; vor 107,2/324,1 ms, nach 113,8/280,3 ms, Ruhe 83,5/260 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 15,7 CPU-s · sh.exe dienst/radeon-dienst.sh 7,9 CPU-s · bash.exe werkzeug/gpu-lauf.sh --waechter 1652832 claude/gpu-schloss.wache.1652832 7,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,8 CPU-s · svchost.exe 20,9 CPU-s · SearchProtocolHost.exe 8,2 CPU-s",
      "r6": "konsum"
     },
     {
@@ -3046,7 +3046,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: Last: Referenz f 1,317 (Faden 1,275 · alle Kerne 1,317; vor 106,5/342,3 ms, nach 105/309 ms, Ruhe 83,5/259,9 ms seit 2026-11-16) · fremd: node scripts/diag-altlasten.cjs 36,9 CPU-s · node scripts/diag",
+     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: Last: Referenz f 1,363 (Faden 1,363 · alle Kerne 1,247; vor 107,2/324,1 ms, nach 113,8/280,3 ms, Ruhe 83,5/260 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 15,7 CPU-s · sh.exe dienst",
      "ungemessen": true
     },
     {
@@ -6299,7 +6299,7 @@
   },
   "karte2.erleben.klang.stimme": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.stimme#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +8) · karte2.erleben.klang.stimme#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +8) — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.erleben.klang.stimme#2 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#2 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#3 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#3 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#4 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#4 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#5 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#5 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.stimme#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +8) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 45 s von karte2.erleben.klang.stimme#1) — offen, UNGEMESSEN · karte2.erleben.klang.stimme#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +8) — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.erleben.klang.stimme#2 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#2 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#3 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#3 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#4 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#4 gtx: Station seit der Messung geändert · karte2.erleben.klang.stimme#5 radeon: ungemessen (R10) · karte2.erleben.klang.stimme#5 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.klang.stimme#1",
@@ -6307,7 +6307,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +8)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +8) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 45 s von karte2.erleben.klang.stimme#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -7132,7 +7132,7 @@
   },
   "karte2.erleben.kopplung.wahrnehmung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.6/12.1/12/12.1/12.1/12.2/14.6/12.3 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.3/12.4/12.3/12.4/12.2/12.2/14.3/13.7 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.erleben.kopplung.wahrnehmung#2 radeon: Station seit der Messung geändert · karte2.erleben.kopplung.wahrnehmung#2 gtx: Station seit der Messung geändert · karte2.erleben.kopplung.wahrnehmung#3 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#3 gtx: Station seit der Messung geändert · karte2.erleben.kopplung.wahrnehmung#4 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#4 gtx: Station seit der Messung geändert · karte2.erleben.kopplung.wahrnehmung#5 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#5 gtx: Station seit der Messung geändert · karte2.erleben.kopplung.wahrnehmung#6 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.6/12.1/12/12.1/12.1/12.2/14.6/12.3 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.3/12.4/12.3/12.4/12.2/12.2/14.3/13.7 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.erleben.kopplung.wahrnehmung#2 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 333 s von karte2.erleben.kopplung.wahrnehmung#2) — offen, UNGEMESSEN · karte2.erleben.kopplung.wahrnehmung#2 gtx: Station seit der Messung geändert · karte2.erleben.kopplung.wahrnehmung#3 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#3 gtx: Station seit der Messung geändert · karte2.erleben.kopplung.wahrnehmung#4 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#4 gtx: Station seit der Messung geändert · karte2.erleben.kopplung.wahrnehmung#5 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#5 gtx: Station seit der Messung geändert · karte2.erleben.kopplung.wahrnehmung#6 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.wahrnehmung#1",
@@ -7160,7 +7160,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 333 s von karte2.erleben.kopplung.wahrnehmung#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -10086,7 +10086,7 @@
   },
   "karte2.erleben.spieler.hand": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.hand#1 radeon: ungemessen (R10) — zuletzt an 031f4700: Last: Referenz f 1,266 (Faden 1,266 · alle Kerne 1,135; vor 105,7/294,5 ms, nach 101,3/258,4 ms, Ruhe 83,5/259,5 ms seit 2026-11-16) · fremd: git stash create 6,6 CPU-s · bash.exe werkzeug/gpu-lauf.sh · karte2.erleben.spieler.hand#1 gtx: ungemessen (R10) — zuletzt an 031f4700: Last: Referenz f 1,489 (Faden 1,287 · alle Kerne 1,489; vor 108,4/327,8 ms, nach 114/233,9 ms, Ruhe 88,6/220,2 ms seit 2026-11-26) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf · karte2.erleben.spieler.hand#2 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#2 gtx: ungemessen (R10) · karte2.erleben.spieler.hand#3 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.hand#4 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#4 gtx: ungemessen (R10) · karte2.erleben.spieler.hand#5 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#5 gtx: Station seit der Messung geändert · karte2.erleben.spieler.hand#6 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.hand#1 radeon: ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 60 s von karte2.erleben.spieler.hand#1) — offen, UNGEMESSEN · karte2.erleben.spieler.hand#1 gtx: ungemessen (R10) — zuletzt an 031f4700: Last: Referenz f 1,489 (Faden 1,287 · alle Kerne 1,489; vor 108,4/327,8 ms, nach 114/233,9 ms, Ruhe 88,6/220,2 ms seit 2026-11-26) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf · karte2.erleben.spieler.hand#2 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#2 gtx: ungemessen (R10) · karte2.erleben.spieler.hand#3 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.hand#4 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#4 gtx: ungemessen (R10) · karte2.erleben.spieler.hand#5 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#5 gtx: Station seit der Messung geändert · karte2.erleben.spieler.hand#6 radeon: ungemessen (R10) · karte2.erleben.spieler.hand#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.hand#1",
@@ -10094,7 +10094,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 031f4700: Last: Referenz f 1,266 (Faden 1,266 · alle Kerne 1,135; vor 105,7/294,5 ms, nach 101,3/258,4 ms, Ruhe 83,5/259,5 ms seit 2026-11-16) · fremd: git stash create 6,6 CPU-s · bash.exe werkzeug/gpu-lauf.sh",
+     "grund": "ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 60 s von karte2.erleben.spieler.hand#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -11242,7 +11242,7 @@
   },
   "karte2.leben.evolution.fremde-physik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#1 gtx: Station seit der Messung geändert — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 360 s von karte2.leben.evolution.fremde-physik#1) — offen, UNGEMESSEN · karte2.leben.evolution.fremde-physik#1 gtx: Station seit der Messung geändert — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.fremde-physik#1",
@@ -11250,7 +11250,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 360 s von karte2.leben.evolution.fremde-physik#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -12028,7 +12028,7 @@
   },
   "karte2.leben.kopplung.evolution-planet": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.evolution-planet#1 radeon: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#1 gtx: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#2 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#2 gtx: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#4 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#5 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#5 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#6 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.evolution-planet#1 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 326 s von karte2.leben.kopplung.evolution-planet#1) — offen, UNGEMESSEN · karte2.leben.kopplung.evolution-planet#1 gtx: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#2 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#2 gtx: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#4 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#5 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#5 gtx: Station seit der Messung geändert · karte2.leben.kopplung.evolution-planet#6 radeon: ungemessen (R10) · karte2.leben.kopplung.evolution-planet#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.leben.kopplung.evolution-planet#1",
@@ -12036,7 +12036,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 326 s von karte2.leben.kopplung.evolution-planet#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -12278,7 +12278,7 @@
   },
   "karte2.leben.kopplung.stadt-im-netz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.stadt-im-netz#2 radeon: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#2 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#3 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#4 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#5 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#5 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#6 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#6 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#7 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#7 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#8 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.stadt-im-netz#2 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 326 s von karte2.leben.kopplung.evolution-planet#1) — offen, UNGEMESSEN · karte2.leben.kopplung.stadt-im-netz#2 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#3 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#3 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#4 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#4 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#5 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#5 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#6 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#6 gtx: Station seit der Messung geändert · karte2.leben.kopplung.stadt-im-netz#7 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#7 gtx: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#8 radeon: ungemessen (R10) · karte2.leben.kopplung.stadt-im-netz#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.kopplung.stadt-im-netz#2",
@@ -12286,7 +12286,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 326 s von karte2.leben.kopplung.evolution-planet#1) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -12546,7 +12546,7 @@
   },
   "karte2.leben.oeko.netz": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–1.81× · außer Band 0 · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.oeko.netz#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +31) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.leben.oeko.netz#2 radeon: Station seit der Messung geändert · karte2.leben.oeko.netz#2 gtx: Station seit der Messung geändert — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.leben.oeko.netz#3 radeon: ungemessen (R10) · karte2.leben.oeko.netz#3 gtx: ungemessen (R10) · karte2.leben.oeko.netz#4 radeon: ungemessen (R10) · karte2.leben.oeko.netz#4 gtx: ungemessen (R10) · karte2.leben.oeko.netz#5 radeon: ungemessen (R10) · karte2.leben.oeko.netz#5 gtx: ungemessen (R10) · karte2.leben.oeko.netz#6 radeon: ungemessen (R10) · karte2.leben.oeko.netz#6 gtx: ungemessen (R10) · karte2.leben.oeko.netz#7 radeon: ungemessen (R10) · karte2.leben.oeko.netz#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–1.81× · außer Band 0 · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.oeko.netz#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +31) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.leben.oeko.netz#2 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 171 s von karte2.leben.oeko.netz#2) — offen, UNGEMESSEN · karte2.leben.oeko.netz#2 gtx: Station seit der Messung geändert — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.leben.oeko.netz#3 radeon: ungemessen (R10) · karte2.leben.oeko.netz#3 gtx: ungemessen (R10) · karte2.leben.oeko.netz#4 radeon: ungemessen (R10) · karte2.leben.oeko.netz#4 gtx: ungemessen (R10) · karte2.leben.oeko.netz#5 radeon: ungemessen (R10) · karte2.leben.oeko.netz#5 gtx: ungemessen (R10) · karte2.leben.oeko.netz#6 radeon: ungemessen (R10) · karte2.leben.oeko.netz#6 gtx: ungemessen (R10) · karte2.leben.oeko.netz#7 radeon: ungemessen (R10) · karte2.leben.oeko.netz#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.oeko.netz#1",
@@ -12576,7 +12576,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 171 s von karte2.leben.oeko.netz#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -14426,16 +14426,15 @@
   },
   "karte2.leben.tiere.masse": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.masse#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +43) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, ...rest) { const ) — kein Urteil, UNGEMESSEN (d · karte2.leben.tiere.masse#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +59) — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.leben.tiere.masse#2 radeon: ungemessen (R10) · karte2.leben.tiere.masse#2 gtx: ungemessen (R10) · karte2.leben.tiere.masse#3 radeon: ungemessen (R10) · karte2.leben.tiere.masse#3 gtx: ungemessen (R10) · karte2.leben.tiere.masse#4 radeon: ungemessen (R10) · karte2.leben.tiere.masse#4 gtx: ungemessen (R10) · karte2.leben.tiere.masse#5 radeon: ungemessen (R10) · karte2.leben.tiere.masse#5 gtx: ungemessen (R10) · karte2.leben.tiere.masse#6 radeon: ungemessen (R10) · karte2.leben.tiere.masse#6 gtx: ungemessen (R10) · karte2.leben.tiere.masse#7 radeon: ungemessen (R10) · karte2.leben.tiere.masse#7 gtx: ungemessen (R10) · karte2.leben.tiere.masse#8 radeon: ungemessen (R10) · karte2.leben.tiere.masse#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.masse#1 radeon: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.998 über 570 Takte, letzter Flüchter 0.32 s (4 aus zweiter Hand), Fluchtweg 31 m, ID 600 s hält (Flucht 5 / 4 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 11.1 m: 46.5 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (246 px) · 42.9 m 5/5 fliehen ABNAHME ROT [Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 51.02 m · Luma 101.5 σ 38.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.458 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b3740dd5-radeon\\karte2.leben.tiere.masse_1-herde-2-rot.png · 46.4 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (310 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] amd/rdna-3 an b3740dd5 · karte2.leben.tiere.masse#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +59) — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.leben.tiere.masse#2 radeon: ungemessen (R10) · karte2.leben.tiere.masse#2 gtx: ungemessen (R10) · karte2.leben.tiere.masse#3 radeon: ungemessen (R10) · karte2.leben.tiere.masse#3 gtx: ungemessen (R10) · karte2.leben.tiere.masse#4 radeon: ungemessen (R10) · karte2.leben.tiere.masse#4 gtx: ungemessen (R10) · karte2.leben.tiere.masse#5 radeon: ungemessen (R10) · karte2.leben.tiere.masse#5 gtx: ungemessen (R10) · karte2.leben.tiere.masse#6 radeon: ungemessen (R10) · karte2.leben.tiere.masse#6 gtx: ungemessen (R10) · karte2.leben.tiere.masse#7 radeon: ungemessen (R10) · karte2.leben.tiere.masse#7 gtx: ungemessen (R10) · karte2.leben.tiere.masse#8 radeon: ungemessen (R10) · karte2.leben.tiere.masse#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.tiere.masse#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +43) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, ...rest) { const ) — kein Urteil, UNGEMESSEN (d",
-     "ungemessen": true,
+     "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.998 über 570 Takte, letzter Flüchter 0.32 s (4 aus zweiter Hand), Fluchtweg 31 m, ID 600 s hält (Flucht 5 / 4 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 11.1 m: 46.5 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (246 px) · 42.9 m 5/5 fliehen ABNAHME ROT [Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 51.02 m · Luma 101.5 σ 38.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.458 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b3740dd5-radeon\\karte2.leben.tiere.masse_1-herde-2-rot.png · 46.4 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (310 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] amd/rdna-3",
+     "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
+     "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.998 über 570 Takte, letzter Flüchter 0.32 s (4 aus zweiter Hand), Fluchtweg 31 m, ID 600 s hält (Flucht 5 / 4 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 11.1 m: 46.5 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (246 px) · 42.9 m 5/5 fliehen ABNAHME ROT [Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 51.02 m · Luma 101.5 σ 38.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.458 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b3740dd5-radeon\\karte2.leben.tiere.masse_1-herde-2-rot.png · 46.4 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (310 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] amd/rdna-3",
      "r6": "konsum",
      "beide": true
     },
@@ -14850,7 +14849,7 @@
   },
   "karte2.leben.tiere.wanderung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4 Gattungen · deer 150 m² = 0.74× π·8², im Lebensraum 0.992, 1440 Punkte · deer 113 m² = 0.56× π·8², im Lebensraum 0.995, 1440 Punkte · deer 147 m² = 0.73× π·8², im Lebensraum 0.999, 1440 Punkte · bear 1485 m² = 0.60× π·28², im Lebensraum 1, 1440 Punkte · bear 1619 m² = 0.66× π·28², im Lebensraum 0.992, 1440 Punkte · bear 1820 m² = 0.74× π·28², im Lebensraum 1, 1440 Punkte · fox 190 m² = 0.95× π·8², im Lebensraum 0.958, 1440 Punkte · fox 202 m² = 1.01× π·8², im Lebensraum 0.982, 1440 Punkte · fox 213 m² = 1.06× π·8², im Lebensraum 0.995, 1440 Punkte · wolf 1691 m² = 0.88× π·24.67², im Lebensraum 0.985, 1440 Punkte · wolf 1446 m² = 0.76× π·24.67², im Lebensraum 0.966, 1440 Punkte · wolf 1579 m² = 0.83× π·24.67², im Lebensraum 0.968, 1440 Punkte · [linse-gpu] nvidia/pascal an e1a54023 gtx — offen: karte2.leben.tiere.wanderung#1 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +108) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.tiere.wanderung#2 radeon: Station seit der Messung geändert · karte2.leben.tiere.wanderung#2 gtx: Station seit der Messung geändert · karte2.leben.tiere.wanderung#3 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#3 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#4 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#4 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#5 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#5 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#6 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#6 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#7 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 4 Gattungen · deer 150 m² = 0.74× π·8², im Lebensraum 0.992, 1440 Punkte · deer 113 m² = 0.56× π·8², im Lebensraum 0.995, 1440 Punkte · deer 147 m² = 0.73× π·8², im Lebensraum 0.999, 1440 Punkte · bear 1485 m² = 0.60× π·28², im Lebensraum 1, 1440 Punkte · bear 1619 m² = 0.66× π·28², im Lebensraum 0.992, 1440 Punkte · bear 1820 m² = 0.74× π·28², im Lebensraum 1, 1440 Punkte · fox 190 m² = 0.95× π·8², im Lebensraum 0.958, 1440 Punkte · fox 202 m² = 1.01× π·8², im Lebensraum 0.982, 1440 Punkte · fox 213 m² = 1.06× π·8², im Lebensraum 0.995, 1440 Punkte · wolf 1691 m² = 0.88× π·24.67², im Lebensraum 0.985, 1440 Punkte · wolf 1446 m² = 0.76× π·24.67², im Lebensraum 0.966, 1440 Punkte · wolf 1579 m² = 0.83× π·24.67², im Lebensraum 0.968, 1440 Punkte · [linse-gpu] nvidia/pascal an e1a54023 gtx — offen: karte2.leben.tiere.wanderung#1 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +108) — zuletzt an 0692960c: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · karte2.leben.tiere.wanderung#2 radeon: Station seit der Messung geändert · karte2.leben.tiere.wanderung#2 gtx: Station seit der Messung geändert · karte2.leben.tiere.wanderung#3 radeon: ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 225 s von karte2.leben.tiere.wanderung#3) — offen, UNGEMESSEN · karte2.leben.tiere.wanderung#3 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#4 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#4 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#5 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#5 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#6 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#6 gtx: ungemessen (R10) · karte2.leben.tiere.wanderung#7 radeon: ungemessen (R10) · karte2.leben.tiere.wanderung#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.tiere.wanderung#1",
@@ -14898,7 +14897,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 225 s von karte2.leben.tiere.wanderung#3) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -14986,7 +14985,7 @@
   },
   "karte2.leben.wasser.bild": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.wasser.bild#1 radeon: ungemessen (R10) · karte2.leben.wasser.bild#1 gtx: ungemessen (R10) · karte2.leben.wasser.bild#2 radeon: ungemessen (R10) · karte2.leben.wasser.bild#2 gtx: ungemessen (R10) · karte2.leben.wasser.bild#3 radeon: ungemessen (R10) · karte2.leben.wasser.bild#3 gtx: ungemessen (R10) · karte2.leben.wasser.bild#4 radeon: ungemessen (R10) · karte2.leben.wasser.bild#4 gtx: ungemessen (R10) · karte2.leben.wasser.bild#5 radeon: ungemessen (R10) · karte2.leben.wasser.bild#5 gtx: ungemessen (R10) · karte2.leben.wasser.bild#6 radeon: ungemessen (R10) · karte2.leben.wasser.bild#6 gtx: ungemessen (R10) · karte2.leben.wasser.bild#7 radeon: ungemessen (R10) · karte2.leben.wasser.bild#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.wasser.bild#1 radeon: ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 75 s von karte2.leben.wasser.bild#1) — offen, UNGEMESSEN · karte2.leben.wasser.bild#1 gtx: ungemessen (R10) · karte2.leben.wasser.bild#2 radeon: ungemessen (R10) · karte2.leben.wasser.bild#2 gtx: ungemessen (R10) · karte2.leben.wasser.bild#3 radeon: ungemessen (R10) · karte2.leben.wasser.bild#3 gtx: ungemessen (R10) · karte2.leben.wasser.bild#4 radeon: ungemessen (R10) · karte2.leben.wasser.bild#4 gtx: ungemessen (R10) · karte2.leben.wasser.bild#5 radeon: ungemessen (R10) · karte2.leben.wasser.bild#5 gtx: ungemessen (R10) · karte2.leben.wasser.bild#6 radeon: ungemessen (R10) · karte2.leben.wasser.bild#6 gtx: ungemessen (R10) · karte2.leben.wasser.bild#7 radeon: ungemessen (R10) · karte2.leben.wasser.bild#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.wasser.bild#1",
@@ -14994,7 +14993,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 75 s von karte2.leben.wasser.bild#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -15894,7 +15893,7 @@
   },
   "karte2.mensch.fahrzeug.form": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S2 GRÜN · Kippgrenze ÷ statische Formel 0.962 (Soll 1 ±0.15) · Anteil der Baupläne mit μ > SSF, die im Kreis auf der Seite liegen 1 (Soll ≥ 1) · Anteil der Baupläne mit μ < SSF, die rutschen statt zu kippen 1 (Soll ≥ 1) · Umfang 63 (Soll ≥ 50 Baupläne an Land) · 63 Baupläne an Land aus dem Stempel der Welt (0 ohne Satz): gt·serie SSF 1.749 μ 0.4 Tisch rutscht 1 · Kreis 0.699 g · gt·hoch SSF 0.904 μ 0.4 Tisch kippt 0.9055 · Kreis 0.713 g · gt·turm SSF 0.841 μ 0.45 Tisch kippt 0.8426 · Kreis 0.692 g · gt·dach SSF 1.623 μ 0.45 Tisch rutscht 1 · Kreis 0.704 g · · [linse-gpu] nvidia/pascal an bed6256c gtx — offen: karte2.mensch.fahrzeug.form#1 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#1 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#3 gtx: ROT: S3 ROT: Umfang nicht erzeugbar: Rumpf, Segel, Flügel aus Teilen: kein Floß und kein Gleiter steht in der Welt (gemessen 0, Soll 2 Werke mit gebauter Hülle (Floß, Gleiter)) · [linse-gpu] nvidia/pascal an b3740dd5 · karte2.mensch.fahrzeug.form#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S2 GRÜN · Kippgrenze ÷ statische Formel 0.962 (Soll 1 ±0.15) · Anteil der Baupläne mit μ > SSF, die im Kreis auf der Seite liegen 1 (Soll ≥ 1) · Anteil der Baupläne mit μ < SSF, die rutschen statt zu kippen 1 (Soll ≥ 1) · Umfang 63 (Soll ≥ 50 Baupläne an Land) · 63 Baupläne an Land aus dem Stempel der Welt (0 ohne Satz): gt·serie SSF 1.749 μ 0.4 Tisch rutscht 1 · Kreis 0.699 g · gt·hoch SSF 0.904 μ 0.4 Tisch kippt 0.9055 · Kreis 0.713 g · gt·turm SSF 0.841 μ 0.45 Tisch kippt 0.8426 · Kreis 0.692 g · gt·dach SSF 1.623 μ 0.45 Tisch rutscht 1 · Kreis 0.704 g · · [linse-gpu] nvidia/pascal an bed6256c gtx — offen: karte2.mensch.fahrzeug.form#1 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#1 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#3 radeon: ROT: S3 ROT: Umfang nicht erzeugbar: Rumpf, Segel, Flügel aus Teilen: kein Floß und kein Gleiter steht in der Welt (gemessen 0, Soll 2 Werke mit gebauter Hülle (Floß, Gleiter)) · [linse-gpu] amd/rdna-3 an b3740dd5 · karte2.mensch.fahrzeug.form#3 gtx: ROT: S3 ROT: Umfang nicht erzeugbar: Rumpf, Segel, Flügel aus Teilen: kein Floß und kein Gleiter steht in der Welt (gemessen 0, Soll 2 Werke mit gebauter Hülle (Floß, Gleiter)) · [linse-gpu] nvidia/pascal an b3740dd5 · karte2.mensch.fahrzeug.form#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.form#1",
@@ -15939,10 +15938,10 @@
      "id": "karte2.mensch.fahrzeug.form#3",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S3 ROT: Umfang nicht erzeugbar: Rumpf, Segel, Flügel aus Teilen: kein Floß und kein Gleiter steht in der Welt (gemessen 0, Soll 2 Werke mit gebauter Hülle (Floß, Gleiter)) · [linse-gpu] amd/rdna-3",
+     "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
+     "grund": "ROT: S3 ROT: Umfang nicht erzeugbar: Rumpf, Segel, Flügel aus Teilen: kein Floß und kein Gleiter steht in der Welt (gemessen 0, Soll 2 Werke mit gebauter Hülle (Floß, Gleiter)) · [linse-gpu] amd/rdna-3",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.fahrzeug.form#3",
@@ -16127,7 +16126,7 @@
   },
   "karte2.mensch.fahrzeug.lenker": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.lenker#1 radeon: ungemessen (R10) — zuletzt an bed6256c: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 84 von 2500000000000 s in 2520 Tak · karte2.mensch.fahrzeug.lenker#1 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#2 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.lenker#1 radeon: ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 60 s von karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN · karte2.mensch.fahrzeug.lenker#1 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#2 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.lenker#1",
@@ -16135,7 +16134,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an bed6256c: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 84 von 2500000000000 s in 2520 Tak",
+     "grund": "ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 60 s von karte2.mensch.fahrzeug.lenker#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -19025,7 +19024,7 @@
   },
   "karte2.mensch.kultur.verstaendigung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.verstaendigung#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stamm.cjs +9) — zuletzt an 99649186: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 55 s · S1 warf: /eval ohne Antwort binnen 40 s · karte2.mensch.kultur.verstaendigung#1 gtx: ungemessen (R10) — zuletzt an 45bad33f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 51.4 s · S1 warf: /eval ohne Antwort binnen 40 s · karte2.mensch.kultur.verstaendigung#2 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#2 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.verstaendigung#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stamm.cjs +9) — zuletzt an b3740dd5: Frist der Probe 40 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 40 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.verstaendigung#1 gtx: ungemessen (R10) — zuletzt an 45bad33f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 51.4 s · S1 warf: /eval ohne Antwort binnen 40 s · karte2.mensch.kultur.verstaendigung#2 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#2 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.verstaendigung#1",
@@ -19033,7 +19032,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stamm.cjs +9) — zuletzt an 99649186: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 55 s · S1 warf: /eval ohne Antwort binnen 40 s",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/stamm.cjs +9) — zuletzt an b3740dd5: Frist der Probe 40 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 40 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -20451,16 +20450,15 @@
   },
   "karte2.mensch.macht.recht": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.recht#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/licht-linsen.cjs +9) — zuletzt an 99649186: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.macht.recht#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/licht-linsen.cjs +7) — zuletzt an bed6256c: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eva · karte2.mensch.macht.recht#2 radeon: ungemessen (R10) · karte2.mensch.macht.recht#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#3 radeon: ungemessen (R10) · karte2.mensch.macht.recht#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#4 radeon: ungemessen (R10) · karte2.mensch.macht.recht#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#5 radeon: ungemessen (R10) · karte2.mensch.macht.recht#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#6 radeon: ungemessen (R10) · karte2.mensch.macht.recht#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#7 radeon: ungemessen (R10) · karte2.mensch.macht.recht#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.recht#1 radeon: ROT: S1 ROT an Umfang 3 < 20 Regelbrüche in Sicht der Wache — Täter: stamm/siedlung-bewohner.js `_bewohnerZeuge`: die Wache weicht wie jeder Zeuge · Antwort der Wache 0 (Soll ≥ 0.8) · Umfang 3 (Soll ≥ 20 Regelbrüche in Sicht der Wache) · 6 Wächter in der Welt; 3 Taten in ihrer Sicht · [linse-gpu] amd/rdna-3 an b3740dd5 · karte2.mensch.macht.recht#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/licht-linsen.cjs +7) — zuletzt an bed6256c: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER Error: /eval ohne Antwort binnen 40 s |     at ClientRequest.<anonymous> ([eva · karte2.mensch.macht.recht#2 radeon: ungemessen (R10) · karte2.mensch.macht.recht#2 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#3 radeon: ungemessen (R10) · karte2.mensch.macht.recht#3 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#4 radeon: ungemessen (R10) · karte2.mensch.macht.recht#4 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#5 radeon: ungemessen (R10) · karte2.mensch.macht.recht#5 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#6 radeon: ungemessen (R10) · karte2.mensch.macht.recht#6 gtx: Station seit der Messung geändert · karte2.mensch.macht.recht#7 radeon: ungemessen (R10) · karte2.mensch.macht.recht#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.macht.recht#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/licht-linsen.cjs +9) — zuletzt an 99649186: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Umfang 3 < 20 Regelbrüche in Sicht der Wache — Täter: stamm/siedlung-bewohner.js `_bewohnerZeuge`: die Wache weicht wie jeder Zeuge · Antwort der Wache 0 (Soll ≥ 0.8) · Umfang 3 (Soll ≥ 20 Regelbrüche in Sicht der Wache) · 6 Wächter in der Welt; 3 Taten in ihrer Sicht · [linse-gpu] amd/rdna-3",
+     "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
+     "grund": "ROT: S1 ROT an Umfang 3 < 20 Regelbrüche in Sicht der Wache — Täter: stamm/siedlung-bewohner.js `_bewohnerZeuge`: die Wache weicht wie jeder Zeuge · Antwort der Wache 0 (Soll ≥ 0.8) · Umfang 3 (Soll ≥ 20 Regelbrüche in Sicht der Wache) · 6 Wächter in der Welt; 3 Taten in ihrer Sicht · [linse-gpu] amd/rdna-3",
      "r6": "konsum",
      "beide": true
     },
@@ -21885,16 +21883,15 @@
   },
   "karte2.mensch.nahrung.frucht": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.frucht#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an 99649186: Messort: /umstellen dorf: Protocol error (Runtime.callFunctionOn): Target closed — die Welt starb am Ort (vor karte2.mensch.nahrung.frucht#1), kein Urteil, UNGEMESSEN · karte2.mensch.nahrung.frucht#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +18) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.postProcessingFail · karte2.mensch.nahrung.frucht#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.nahrung.frucht#1 radeon: ROT: S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1-rot.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 429 Pflanzen im Acker (weizen in 429 Strecken · Wildwuchs 0) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] amd/rdna-3 an b3740dd5 · karte2.mensch.nahrung.frucht#1 gtx: ROT: S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1-rot.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 429 Pflanzen im Acker (weizen in 429 Strecken · Wildwuchs 0) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal an b3740dd5 · karte2.mensch.nahrung.frucht#2 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#2 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.frucht#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.frucht#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.frucht#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an 99649186: Messort: /umstellen dorf: Protocol error (Runtime.callFunctionOn): Target closed — die Welt starb am Ort (vor karte2.mensch.nahrung.frucht#1), kein Urteil, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1-rot.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 429 Pflanzen im Acker (weizen in 429 Strecken · Wildwuchs 0) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] amd/rdna-3",
+     "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
+     "grund": "ROT: S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1-rot.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 429 Pflanzen im Acker (weizen in 429 Strecken · Wildwuchs 0) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] amd/rdna-3",
      "r6": "konsum",
      "beide": true
     },
@@ -21902,10 +21899,9 @@
      "id": "karte2.mensch.nahrung.frucht#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/albedo-tafel.cjs +18) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.postProcessingFail",
-     "ungemessen": true,
+     "zahl": "S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1-rot.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 429 Pflanzen im Acker (weizen in 429 Strecken · Wildwuchs 0) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal",
+     "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
+     "grund": "ROT: S1 auge: Bild karte2.mensch.nahrung.frucht_1-S1-rot.png an Pose 3 m vor der Kante des nächsten Ackers, Ego 1,7 m, Blick auf seine Mitte gegen Vorbild Foto eines realen Getreideackers in Reihen (Weizen, BBCH 30–60): Reihen im Bildspektrum ≥ 3σ, Blindurteil ≤ 65 % · 429 Pflanzen im Acker (weizen in 429 Strecken · Wildwuchs 0) — GRÜN erst mit dem Urteil am Gerät (Blindpaar) · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -22359,7 +22355,7 @@
   },
   "karte2.mensch.nahrung.tier": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Abstand p95 zum Spieler über den Hang (m) 4.04 (Soll ≤ 5) · Anstieg des Wegs über den Hang (m) 8.09 (Soll > 0) · Umfang 1 (Soll ≥ 1 an den Spieler gebundenes Tier) · Hang 29.5°, bond 0.12 → 0.4119, Aufgabe follow_player, Gegenlauf: das ungebundene Tier 62.96 m; Bestand 9 Tiere, 0 zahm · [linse-gpu] nvidia/pascal an 30e01e75 gtx — offen: karte2.mensch.nahrung.tier#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/welt-boot.cjs +4) — zuletzt an 99649186: Messort: /umstellen dorf: Protocol error (Runtime.callFunctionOn): Target closed — die Welt starb am Ort (vor karte2.mensch.nahrung.frucht#1), kein Urteil, UNGEMESSEN · karte2.mensch.nahrung.tier#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/welt-boot.cjs +5) · karte2.mensch.nahrung.tier#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#6 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#7 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Abstand p95 zum Spieler über den Hang (m) 4.04 (Soll ≤ 5) · Anstieg des Wegs über den Hang (m) 8.09 (Soll > 0) · Umfang 1 (Soll ≥ 1 an den Spieler gebundenes Tier) · Hang 29.5°, bond 0.12 → 0.4119, Aufgabe follow_player, Gegenlauf: das ungebundene Tier 62.96 m; Bestand 9 Tiere, 0 zahm · [linse-gpu] nvidia/pascal an 30e01e75 gtx — offen: karte2.mensch.nahrung.tier#1 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/welt-boot.cjs +4) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 174 s von karte2.mensch.nahrung.tier#2) — offen, UNGEMESSEN · karte2.mensch.nahrung.tier#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/welt-boot.cjs +5) · karte2.mensch.nahrung.tier#3 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#3 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#4 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#4 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#5 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#5 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#6 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#6 gtx: Station seit der Messung geändert · karte2.mensch.nahrung.tier#7 radeon: ungemessen (R10) · karte2.mensch.nahrung.tier#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.nahrung.tier#1",
@@ -22387,7 +22383,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/welt-boot.cjs +4) — zuletzt an 99649186: Messort: /umstellen dorf: Protocol error (Runtime.callFunctionOn): Target closed — die Welt starb am Ort (vor karte2.mensch.nahrung.frucht#1), kein Urteil, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/welt-boot.cjs +4) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 174 s von karte2.mensch.nahrung.tier#2) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -29308,7 +29304,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an 948f68ee: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"genesis\",\"sicht\":\"third\"} · 16.3 s · 428.6 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: Station seit der Messung geändert — zuletzt an b3740dd5: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"wiese\",\"sicht\":\"third\"} · 21.6 s · 627.4 s) · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"genesis\",\"sicht\":\"third\"} · 16.1 s · 394.6 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: Station seit der Messung geändert — zuletzt an b3740dd5: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"wiese\",\"sicht\":\"third\"} · 21.6 s · 627.4 s) · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -29316,7 +29312,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 948f68ee: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"genesis\",\"sicht\":\"third\"} · 16.3 s · 428.6 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"genesis\",\"sicht\":\"third\"} · 16.1 s · 394.6 s)",
      "ungemessen": true,
      "beide": true
     },
@@ -30363,7 +30359,7 @@
   },
   "karte2.planet.relief.grossform": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) — zuletzt an 031f4700: Deckel 180 s gerissen: Stille seit 179.7 s nach 180 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · karte2.planet.relief.grossform#1 gtx: Station seit der Messung geändert — zuletzt an 031f4700: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · karte2.planet.relief.grossform#2 radeon: ungemessen (R10) · karte2.planet.relief.grossform#2 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#3 radeon: ungemessen (R10) · karte2.planet.relief.grossform#3 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#4 radeon: ungemessen (R10) · karte2.planet.relief.grossform#4 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#5 radeon: ungemessen (R10) · karte2.planet.relief.grossform#5 gtx: ungemessen (R10) · karte2.planet.relief.grossform#6 radeon: ungemessen (R10) · karte2.planet.relief.grossform#6 gtx: ungemessen (R10) · karte2.planet.relief.grossform#7 radeon: ungemessen (R10) · karte2.planet.relief.grossform#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 35 s unter dem Grund-Deckel 180 s von karte2.planet.relief.grossform#1) — offen, UNGEMESSEN · karte2.planet.relief.grossform#1 gtx: Station seit der Messung geändert — zuletzt an 031f4700: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · karte2.planet.relief.grossform#2 radeon: ungemessen (R10) · karte2.planet.relief.grossform#2 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#3 radeon: ungemessen (R10) · karte2.planet.relief.grossform#3 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#4 radeon: ungemessen (R10) · karte2.planet.relief.grossform#4 gtx: Station seit der Messung geändert · karte2.planet.relief.grossform#5 radeon: ungemessen (R10) · karte2.planet.relief.grossform#5 gtx: ungemessen (R10) · karte2.planet.relief.grossform#6 radeon: ungemessen (R10) · karte2.planet.relief.grossform#6 gtx: ungemessen (R10) · karte2.planet.relief.grossform#7 radeon: ungemessen (R10) · karte2.planet.relief.grossform#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.relief.grossform#1",
@@ -30371,7 +30367,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 031f4700: Deckel 180 s gerissen: Stille seit 179.7 s nach 180 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "grund": "ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 35 s unter dem Grund-Deckel 180 s von karte2.planet.relief.grossform#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -30765,7 +30761,7 @@
   },
   "karte2.planet.wasser.gezeiten": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 periodeH 12,353 gegen Soll 12,42 ± 2 % ✓ · Zeuge: der Fächer: ≥ 200 Adressen an ≥ 5 Küsten über 25 Stunden (die Heimat unter ihrer Uhr), der Spiegel stieg und fiel, das W an 7e73426e gtx — offen: karte2.planet.wasser.gezeiten#1 radeon: Station seit der Messung geändert · karte2.planet.wasser.gezeiten#2 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#2 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#3 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#3 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#4 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#4 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#5 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#5 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#6 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#6 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#7 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 periodeH 12,353 gegen Soll 12,42 ± 2 % ✓ · Zeuge: der Fächer: ≥ 200 Adressen an ≥ 5 Küsten über 25 Stunden (die Heimat unter ihrer Uhr), der Spiegel stieg und fiel, das W an 7e73426e gtx — offen: karte2.planet.wasser.gezeiten#1 radeon: Station seit der Messung geändert · karte2.planet.wasser.gezeiten#2 radeon: ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 265 s von karte2.planet.wasser.gezeiten#2) — offen, UNGEMESSEN · karte2.planet.wasser.gezeiten#2 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#3 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#3 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#4 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#4 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#5 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#5 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#6 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#6 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#7 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.wasser.gezeiten#1",
@@ -30794,7 +30790,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 265 s von karte2.planet.wasser.gezeiten#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -33038,7 +33034,7 @@
   },
   "karte2.same.entfaltung.schirm": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.schirm#1 radeon: Station seit der Messung geändert — zuletzt an 031f4700: Deckel 114 s gerissen: Stille seit 56.5 s nach 114 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT genesis-third 57.3 s) · karte2.same.entfaltung.schirm#1 gtx: ungemessen (R10) — zuletzt an 031f4700: Deckel 139 s gerissen: Stille seit 15 s nach 167.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego-geht 152.4 s) · karte2.same.entfaltung.schirm#2 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#2 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#3 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#3 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#4 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#4 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#5 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#5 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#6 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#6 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#7 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.schirm#1 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 35 s unter dem Grund-Deckel 114 s von karte2.same.entfaltung.schirm#1) — offen, UNGEMESSEN · karte2.same.entfaltung.schirm#1 gtx: ungemessen (R10) — zuletzt an 031f4700: Deckel 139 s gerissen: Stille seit 15 s nach 167.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT wiese-ego-geht 152.4 s) · karte2.same.entfaltung.schirm#2 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#2 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#3 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#3 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#4 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#4 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#5 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#5 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#6 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#6 gtx: ungemessen (R10) · karte2.same.entfaltung.schirm#7 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.entfaltung.schirm#1",
@@ -33046,7 +33042,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 031f4700: Deckel 114 s gerissen: Stille seit 56.5 s nach 114 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT genesis-third 57.3 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 35 s unter dem Grund-Deckel 114 s von karte2.same.entfaltung.schirm#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -33690,7 +33686,7 @@
   },
   "karte2.same.kopplung.aufwaerts": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.aufwaerts#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.aufwaerts#1 gtx: Station seit der Messung geändert — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.same.kopplung.aufwaerts#2 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#2 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#3 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#3 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#4 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#4 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#5 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#5 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#6 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#6 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#7 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#7 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#8 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.aufwaerts#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.aufwaerts#1 gtx: Station seit der Messung geändert — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.same.kopplung.aufwaerts#2 radeon: ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN · karte2.same.kopplung.aufwaerts#2 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#3 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#3 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#4 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#4 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#5 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#5 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#6 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#6 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#7 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#7 gtx: ungemessen (R10) · karte2.same.kopplung.aufwaerts#8 radeon: ungemessen (R10) · karte2.same.kopplung.aufwaerts#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.aufwaerts#1",
@@ -33718,7 +33714,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -33958,7 +33954,7 @@
   },
   "karte2.same.kopplung.ereignis": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Guss -268,-1046: Glut R/G 2.483 (Soll ≥ 2), Luma 0.122, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.98 (Soll ≤ 1,25), Luma 0.062, Stoff stein · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: Guss -268,-1046: Glut R/G 2.733 (Soll ≥ 2), Luma 0.119, glut-Achse 1 · erstarrt nach 1 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 1 Schritten = 0.007 h Welt (Soll 1–60), Schuss bei 0.492 h, Gesetz-glut 0 (Soll 0): R/G 0.989 (Soll ≤ 1,25), Luma 0.053, Stoff stein · Brand am Guss 8 Zellen, auf seiner Uhr 20000 s, danach um den Guss 0 brennend (die Front lebt fern: 34 Zellen) · [linse-gpu] nvidia/pascal an b7ed8419 gtx · gehalten: S2 brennendHa 1,024 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 100 % gegen Soll = 100 % ✓ · Zeuge: 1 ha brennt, Frame p95 im Preis P, die Front lag auf ihren Wegen und sie mieden sie an 54b89949 gtx — offen: karte2.same.kopplung.ereignis#2 radeon: Station seit der Messung geändert · karte2.same.kopplung.ereignis#3 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#3 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#4 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#4 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#5 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#5 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#6 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#6 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#7 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: Guss -268,-1046: Glut R/G 2.483 (Soll ≥ 2), Luma 0.122, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.98 (Soll ≤ 1,25), Luma 0.062, Stoff stein · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: Guss -268,-1046: Glut R/G 2.733 (Soll ≥ 2), Luma 0.119, glut-Achse 1 · erstarrt nach 1 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 1 Schritten = 0.007 h Welt (Soll 1–60), Schuss bei 0.492 h, Gesetz-glut 0 (Soll 0): R/G 0.989 (Soll ≤ 1,25), Luma 0.053, Stoff stein · Brand am Guss 8 Zellen, auf seiner Uhr 20000 s, danach um den Guss 0 brennend (die Front lebt fern: 34 Zellen) · [linse-gpu] nvidia/pascal an b7ed8419 gtx · gehalten: S2 brennendHa 1,024 ha gegen Soll ≥ 1 ha ✓ · meidenProzent 100 % gegen Soll = 100 % ✓ · Zeuge: 1 ha brennt, Frame p95 im Preis P, die Front lag auf ihren Wegen und sie mieden sie an 54b89949 gtx — offen: karte2.same.kopplung.ereignis#2 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN · karte2.same.kopplung.ereignis#3 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#3 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#4 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#4 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#5 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#5 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#6 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#6 gtx: ungemessen (R10) · karte2.same.kopplung.ereignis#7 radeon: ungemessen (R10) · karte2.same.kopplung.ereignis#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.ereignis#1",
@@ -33986,7 +33982,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -34092,7 +34088,7 @@
   },
   "karte2.same.kopplung.gewalt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.gewalt#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.gewalt#1 gtx: Station seit der Messung geändert — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.same.kopplung.gewalt#2 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#2 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#3 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#3 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#4 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#4 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#5 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#5 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#6 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.gewalt#1 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN · karte2.same.kopplung.gewalt#1 gtx: Station seit der Messung geändert — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.same.kopplung.gewalt#2 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#2 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#3 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#3 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#4 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#4 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#5 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#5 gtx: ungemessen (R10) · karte2.same.kopplung.gewalt#6 radeon: ungemessen (R10) · karte2.same.kopplung.gewalt#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.gewalt#1",
@@ -34100,7 +34096,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -34342,7 +34338,7 @@
   },
   "karte2.same.kopplung.kohaerenz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kohaerenz#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.kohaerenz#1 gtx: Station seit der Messung geändert — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.same.kopplung.kohaerenz#2 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#2 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kohaerenz#1 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN · karte2.same.kopplung.kohaerenz#1 gtx: Station seit der Messung geändert — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.same.kopplung.kohaerenz#2 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#2 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#3 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#4 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#5 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#6 gtx: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 radeon: ungemessen (R10) · karte2.same.kopplung.kohaerenz#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kohaerenz#1",
@@ -34350,7 +34346,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -34610,7 +34606,7 @@
   },
   "karte2.same.kopplung.terraform": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.terraform#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.terraform#1 gtx: Station seit der Messung geändert — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.same.kopplung.terraform#2 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#2 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#3 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#3 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#4 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#4 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#5 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#5 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#6 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.terraform#1 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN · karte2.same.kopplung.terraform#1 gtx: Station seit der Messung geändert — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: /fenster ohne Antwort binnen 30 s) — offen, UNGEMESSEN · karte2.same.kopplung.terraform#2 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#2 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#3 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#3 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#4 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#4 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#5 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#5 gtx: ungemessen (R10) · karte2.same.kopplung.terraform#6 radeon: ungemessen (R10) · karte2.same.kopplung.terraform#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.terraform#1",
@@ -34618,7 +34614,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 395 s von karte2.same.kopplung.aufwaerts#2) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -35436,7 +35432,7 @@
   },
   "karte2.same.physik.feuer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.feuer#1 radeon: ungemessen (R10) · karte2.same.physik.feuer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +21) · karte2.same.physik.feuer#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/stamm.cjs, scripts/lib/stand-linse.cjs +13) — zuletzt an 031f4700: Last: Referenz f 1,357 (Faden 1,357 · alle Kerne 1,049; vor 113,3/272,9 ms, nach 102,9/266 ms, Ruhe 83,5/260,1 ms seit 2026-11-16) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an · karte2.same.physik.feuer#2 gtx: ungemessen (R10) — zuletzt an 031f4700: Last: Referenz f 1,638 (Faden 1,638 · alle Kerne 1,522; vor 145,1/335,6 ms, nach 113,1/276,4 ms, Ruhe 88,6/220,5 ms seit 2026-11-27) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrj · karte2.same.physik.feuer#3 radeon: ungemessen (R10) · karte2.same.physik.feuer#3 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#4 radeon: ungemessen (R10) · karte2.same.physik.feuer#4 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#5 radeon: ungemessen (R10) · karte2.same.physik.feuer#5 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#6 radeon: ungemessen (R10) · karte2.same.physik.feuer#6 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#7 radeon: ungemessen (R10) · karte2.same.physik.feuer#7 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#8 radeon: ungemessen (R10) · karte2.same.physik.feuer#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.feuer#1 radeon: ungemessen (R10) · karte2.same.physik.feuer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +21) · karte2.same.physik.feuer#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/stamm.cjs, scripts/lib/stand-linse.cjs +13) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 60 s von karte2.same.physik.feuer#2) — offen, UNGEMESSEN · karte2.same.physik.feuer#2 gtx: ungemessen (R10) — zuletzt an 031f4700: Last: Referenz f 1,638 (Faden 1,638 · alle Kerne 1,522; vor 145,1/335,6 ms, nach 113,1/276,4 ms, Ruhe 88,6/220,5 ms seit 2026-11-27) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrj · karte2.same.physik.feuer#3 radeon: ungemessen (R10) · karte2.same.physik.feuer#3 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#4 radeon: ungemessen (R10) · karte2.same.physik.feuer#4 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#5 radeon: ungemessen (R10) · karte2.same.physik.feuer#5 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#6 radeon: ungemessen (R10) · karte2.same.physik.feuer#6 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#7 radeon: ungemessen (R10) · karte2.same.physik.feuer#7 gtx: Station seit der Messung geändert · karte2.same.physik.feuer#8 radeon: ungemessen (R10) · karte2.same.physik.feuer#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.feuer#1",
@@ -35465,7 +35461,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/stamm.cjs, scripts/lib/stand-linse.cjs +13) — zuletzt an 031f4700: Last: Referenz f 1,357 (Faden 1,357 · alle Kerne 1,049; vor 113,3/272,9 ms, nach 102,9/266 ms, Ruhe 83,5/260,1 ms seit 2026-11-16) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/stamm.cjs, scripts/lib/stand-linse.cjs +13) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 36 s unter dem Grund-Deckel 60 s von karte2.same.physik.feuer#2) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -36632,7 +36628,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an bed6256c: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,287 (Faden 1,287 · alle Kerne 1,203; vor 107,4/310 ms, nach 107,5/312,5 ms, Ruhe 83,5/259,8 m · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +17) — zuletzt an b3740dd5: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,243 (Faden 1,196 · alle Kerne 1,243; vor 106,4/220,5 ms, nach 93,6/274,1 ms, Ruhe 89/220,5 ms · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an b3740dd5: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,363 (Faden 1,363 · alle Kerne 1,247; vor 107,2/324,1 ms, nach 113,8/280,3 ms, Ruhe 83,5/260 m · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +17) — zuletzt an b3740dd5: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,296 (Faden 1,296 · alle Kerne 1,123; vor 99,6/218 ms, nach 115,3/247,7 ms, Ruhe 89/220,5 ms s · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -36640,7 +36636,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an bed6256c: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,287 (Faden 1,287 · alle Kerne 1,203; vor 107,4/310 ms, nach 107,5/312,5 ms, Ruhe 83,5/259,8 m",
+     "grund": "Station seit der Messung geändert — zuletzt an b3740dd5: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,363 (Faden 1,363 · alle Kerne 1,247; vor 107,2/324,1 ms, nach 113,8/280,3 ms, Ruhe 83,5/260 m",
      "ungemessen": true,
      "beide": true
     },
@@ -36650,7 +36646,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +17) — zuletzt an b3740dd5: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,243 (Faden 1,196 · alle Kerne 1,243; vor 106,4/220,5 ms, nach 93,6/274,1 ms, Ruhe 89/220,5 ms",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +17) — zuletzt an b3740dd5: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,296 (Faden 1,296 · alle Kerne 1,123; vor 99,6/218 ms, nach 115,3/247,7 ms, Ruhe 89/220,5 ms s",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -37470,7 +37466,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 284,
+  "konsum": 285,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37593,10 +37589,10 @@
    "ultiversum.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3383
+  "ohne": 3382
  },
  "kopfVoll": "b3740dd5566793ae66152d955e5a55d9c272884c",
- "zeit": "2026-11-27T21:03:32.317Z",
+ "zeit": "2026-11-27T21:20:16.316Z",
  "vorher": "b3740dd5",
  "bilanz": {
   "gewinn": [],
