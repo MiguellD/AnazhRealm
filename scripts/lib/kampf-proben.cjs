@@ -2302,13 +2302,23 @@ async function WELLE_L(ort) {
                 gnade: p.respawnGraceUntil,
                 ort: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
             };
+            // DER WOLF STEHT WINDAB (landmarken-9 Kopf 2): 6 m vom Spieler in der Richtung, in die der Wind seine Witterung trägt
+            // (`_rauchWindAt` am Spieler, dieselbe Uhr wie die Witterung `_scentAt`: cos > 0 heißt windab). Bis hier stand er fest
+            // 6 m nördlich — am Start 34/−34 roch er den Spieler nur, wenn der Wind gerade nach Norden wehte (Posten 5 „kein Biss
+            // im Takt“ 2 von 3 Läufen); in Windstille trägt der Mäander nach allen Seiten, dann bleibt Norden.
+            const wolfAb = (() => {
+                const wd = {};
+                r._rauchWindAt(pm.position.x, pm.position.z, s._simZeit, A.SCENT.hoeheM, null, wd);
+                const n = Math.hypot(wd.x, wd.z);
+                return wd.ms > 0 && n > 0 ? { x: (6 * wd.x) / n, z: (6 * wd.z) / n } : { x: 0, z: 6 };
+            })();
             // der Spieler steht auf dem Boden (seine Füße auf der Höhe, auf der auch die Tiere stehen), auf freiem Feld: kein Bau
             // in 12 m um ihn und den Wolf (die Start-Plattform stünde zwischen ihnen)
             const frei = (x, z) =>
                 s.architectures.every(
                     (e) =>
                         Math.hypot(e.position.x - x, e.position.z - z) > 12 &&
-                        Math.hypot(e.position.x - x - 0.4, e.position.z - z - 6) > 12
+                        Math.hypot(e.position.x - x - wolfAb.x, e.position.z - z - wolfAb.z) > 12
                 );
             let fx = pm.position.x,
                 fz = pm.position.z;
@@ -2333,9 +2343,9 @@ async function WELLE_L(ort) {
                 r.setGameMode("pfad");
                 for (const c of tiere) if (c.parent) parke(c);
                 // (a) die Jagd auf den stehenden Spieler
-                const wolf = neu("wolf", P.x + 0.4, P.z + 6, 1);
+                const wolf = neu("wolf", P.x + wolfAb.x, P.z + wolfAb.z, 1);
                 if (wolf) {
-                    wolf.rotation.set(0, Math.PI, 0);
+                    wolf.rotation.set(0, Math.atan2(-wolfAb.x, -wolfAb.z), 0);
                     mitBiss.spieler = wolf;
                     const spur = new Map();
                     for (let k = 0; k < 1500 && bisse.jagd.length < 3; k++) {
