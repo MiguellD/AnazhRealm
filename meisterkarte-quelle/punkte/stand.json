@@ -3020,7 +3020,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 64 Bilder · max 75.47 ms · 73.44 % > 33 ms · Fahrt 50 Bilder · max 133.89 ms · 94.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 73.44 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 133.89), 94.00 % > 33 ms an 52937c92 radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 52937c92: Last: Referenz f 1,457 (Faden 1,457 · alle Kerne 1,364; vor 121,7/353,5 ms, nach 104/327,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node.exe scripts/diag-wetter-wache.cjs --selftest 15,1 CPU-s · profiband.K4#2 gtx: ROT: Gehen 148 Bilder · max 141.71 ms · 25.68 % > 33 ms · Fahrt 104 Bilder · max 141.68 ms · 83.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 3 Bild(er) > 100 ms (max 141.71), 25.68 % > 33 ms | Fahrt: 5 Bild(er) > 100 ms (max 141.68), 83.65 % > 33 ms an 52937c92",
+   "beleg": "Maschine: Gehen 64 Bilder · max 75.47 ms · 73.44 % > 33 ms · Fahrt 50 Bilder · max 133.89 ms · 94.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 73.44 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 133.89), 94.00 % > 33 ms an 52937c92 radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 52937c92: Last: Referenz f 1,345 (Faden 1,345 · alle Kerne 1,234; vor 112,3/319,9 ms, nach 102,3/286,1 ms, Ruhe 83,5/259,3 ms seit 2026-11-16) · fremd: git stash create 14,3 CPU-s · bash.exe werkzeug/gpu-lauf.s · profiband.K4#2 gtx: ROT: Gehen 148 Bilder · max 141.71 ms · 25.68 % > 33 ms · Fahrt 104 Bilder · max 141.68 ms · 83.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 3 Bild(er) > 100 ms (max 141.71), 25.68 % > 33 ms | Fahrt: 5 Bild(er) > 100 ms (max 141.68), 83.65 % > 33 ms an 52937c92",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3046,7 +3046,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 52937c92: Last: Referenz f 1,457 (Faden 1,457 · alle Kerne 1,364; vor 121,7/353,5 ms, nach 104/327,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node.exe scripts/diag-wetter-wache.cjs --selftest 15,1 CPU-s",
+     "grund": "Station seit der Messung geändert — zuletzt an 52937c92: Last: Referenz f 1,345 (Faden 1,345 · alle Kerne 1,234; vor 112,3/319,9 ms, nach 102,3/286,1 ms, Ruhe 83,5/259,3 ms seit 2026-11-16) · fremd: git stash create 14,3 CPU-s · bash.exe werkzeug/gpu-lauf.s",
      "ungemessen": true
     },
     {
@@ -18764,7 +18764,7 @@
   },
   "karte2.mensch.kultur.sprache": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Namen richtig zugeordnet 0.99686 (Soll ≥ 0.9) · Saaten der Namen 4 (Soll ≥ 2) · Umfang 1273 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran/alpin/mitteleuropa/nordisch · [linse-gpu] nvidia/pascal an 45bad33f gtx · gehalten: S2 GRÜN · Sprachen an Sätzen getrennt 0.92308 (Soll ≥ 0.85) · Sätze 20 (Soll ≥ 20) · Umfang 26 (Soll ≥ 10 Sprachen (U_eff)) · 26 Sprachen aus 4 Familien (alpin/mitteleuropa/mediterran/nordisch) · 48 von 52 Hälften richtig (C&T N 1–5, P 400) · die Rede der Menge: 7 von 7 Sprechern sprechen den Satz des Lesers (7 Sätze, 1686 ms) · „Dastau moscau cau samau tom sore li da baup.“ · „Po momau pe li cau pani.“ · „Mau cogramau.“ · [linse-gpu] nvidia/pascal an 031f4700 gtx · gehalten: S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] amd/rdna-3 an 45bad33f radeon · gehalten: S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] nvidia/pascal an 45bad33f gtx — offen: karte2.mensch.kultur.sprache#1 radeon: Station seit der Messung geändert · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ROT: S4 ROT: Umfang nicht erzeugbar: Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt (gemessen 5 < 1000) (gemessen 5, Soll 1000 Sprachen (U_eff) mit Dialekt-Kontinua) · [linse-gpu] amd/rdna-3 an eef726c7 · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Namen richtig zugeordnet 0.99686 (Soll ≥ 0.9) · Saaten der Namen 4 (Soll ≥ 2) · Umfang 1273 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran/alpin/mitteleuropa/nordisch · [linse-gpu] nvidia/pascal an 45bad33f gtx · gehalten: S2 GRÜN · Sprachen an Sätzen getrennt 0.92308 (Soll ≥ 0.85) · Sätze 20 (Soll ≥ 20) · Umfang 26 (Soll ≥ 10 Sprachen (U_eff)) · 26 Sprachen aus 4 Familien (alpin/mitteleuropa/mediterran/nordisch) · 48 von 52 Hälften richtig (C&T N 1–5, P 400) · die Rede der Menge: 7 von 7 Sprechern sprechen den Satz des Lesers (7 Sätze, 1686 ms) · „Dastau moscau cau samau tom sore li da baup.“ · „Po momau pe li cau pani.“ · „Mau cogramau.“ · [linse-gpu] nvidia/pascal an 031f4700 gtx · gehalten: S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] amd/rdna-3 an 45bad33f radeon · gehalten: S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] nvidia/pascal an 45bad33f gtx — offen: karte2.mensch.kultur.sprache#1 radeon: Station seit der Messung geändert · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ROT: S4 ROT: Umfang nicht erzeugbar: Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt (gemessen 2 < 1000) (gemessen 2, Soll 1000 Sprachen (U_eff) mit Dialekt-Kontinua) · [linse-gpu] amd/rdna-3 an 52937c92 · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.sprache#1",
@@ -18826,9 +18826,9 @@
      "id": "karte2.mensch.kultur.sprache#4",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "S4 ROT: Umfang nicht erzeugbar: Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt (gemessen 5 < 1000) (gemessen 5, Soll 1000 Sprachen (U_eff) mit Dialekt-Kontinua) · [linse-gpu] amd/rdna-3",
-     "sha": "eef726c747050e60042a4a0c9f65fea3ff3e9077",
-     "grund": "ROT: S4 ROT: Umfang nicht erzeugbar: Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt (gemessen 5 < 1000) (gemessen 5, Soll 1000 Sprachen (U_eff) mit Dialekt-Kontinua) · [linse-gpu] amd/rdna-3",
+     "zahl": "S4 ROT: Umfang nicht erzeugbar: Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt (gemessen 2 < 1000) (gemessen 2, Soll 1000 Sprachen (U_eff) mit Dialekt-Kontinua) · [linse-gpu] amd/rdna-3",
+     "sha": "52937c92786457ffbc7e62e6c4e99949df3c135e",
+     "grund": "ROT: S4 ROT: Umfang nicht erzeugbar: Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt (gemessen 2 < 1000) (gemessen 2, Soll 1000 Sprachen (U_eff) mit Dialekt-Kontinua) · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -23547,16 +23547,15 @@
   },
   "karte2.mensch.sport.kunst": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +12) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.mensch.sport.kunst#1 gtx: ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal an 52937c92 · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.kunst#1 radeon: ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] amd/rdna-3 an 52937c92 · karte2.mensch.sport.kunst#1 gtx: ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal an 52937c92 · karte2.mensch.sport.kunst#2 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#2 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#3 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#3 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#4 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#4 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#5 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#5 gtx: Station seit der Messung geändert · karte2.mensch.sport.kunst#6 radeon: ungemessen (R10) · karte2.mensch.sport.kunst#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.sport.kunst#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, schmiede-core.js +12) — zuletzt an 54b89949: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d",
-     "ungemessen": true,
+     "zahl": "S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] amd/rdna-3",
+     "sha": "52937c92786457ffbc7e62e6c4e99949df3c135e",
+     "grund": "ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] amd/rdna-3",
      "r6": "konsum",
      "beide": true
     },
@@ -37600,7 +37599,7 @@
   "ohne": 3384
  },
  "kopfVoll": "52937c92786457ffbc7e62e6c4e99949df3c135e",
- "zeit": "2026-11-27T11:40:42.394Z",
+ "zeit": "2026-11-27T11:47:32.828Z",
  "vorher": "52937c92",
  "bilanz": {
   "gewinn": [],
