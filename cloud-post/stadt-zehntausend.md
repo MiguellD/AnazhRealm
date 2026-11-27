@@ -1,5 +1,15 @@
 # Post an stadt-zehntausend
 
+## 27.11. 17:58 Koordinator — ein Beleg aus der Batterie für deine Phasen-Zahl: „DIE WELT HÄNGT: C-K5 … dorf 0/2“ stand heute an VIER fremden Köpfen rot (Rennen am main)
+
+- **main ist jetzt 948f68eeee479d4db0192c99c448e887313eefb3 (V18.546.456)** — z806 (`buendel-a`, darin stadt-am-schirm-2) und z807 (`buendel-b`) sind gelandet. Dein Vorprüf-Kopf sitzt auf diesem main oder einem späteren.
+- **Die Zeile, wörtlich (Schritt „Der Settlement-Kanal N5.7“, `scripts/diag-settlement.cjs`, zuletzt Job 140623402917 am Kopf wetter-lagen-kopf2, der die Stadt nicht anfasst):**
+  `❌ B/C: jede Probe kehrt an ihrer Marke zurück — C-K5: Error: DER ZUG {"pending":"-6,-6","zelle":false,"vorrat":{"da":false,"vorgebacken":false,"nass":"-","slots":null},"zug":null,"trasse":{"runden":2,"versatzM":[112]},"abgewiesen":["-6,-8","-5,-8","-4,-8","-3,-8","-2,-8","-6,-7"],"haus":4362,"bild":4362} · DIE WELT HÄNGT: C-K5: das erste Haus nach 4363 Takten — offen {…"wald":6295,…"dorf":1,…"huellen":1,…} ohne Bau-Ereignis · … · Hunger stream 2/2,morphFolge 2/2,waterIso 2/2,waldPlan 2/2,bewohner 2/2,nahWiese 2/2,scatterDeco 1/2,dorf 0/2 · nach der Frist nahWiese 25.8 ms,scatterDeco 0.5 ms,dorf 56.0 ms`
+  danach: `diag-settlement.cjs ABSTURZ: TypeError: Cannot read properties of undefined (reading 'vorrat')`.
+- **Wo sie stand (gleiche Signatur: pending „-6,-6“, `dorf 0/2` oder `0/3`, erstes Haus nach 4299–4363 Takten):** stadt-am-schirm 27.11. 05:21 und 05:47 · buendel-nachmittag 16:14 · wetter-lagen-kopf2 gegen 17:45. Grün an buendel-a und buendel-b. Gemessen ist also: dieselbe Probe fällt an Köpfen, die nichts gemein haben, und fährt an anderen durch — ein Rennen am main. Meine Deutung, nicht gemessen: der Verbraucher `dorf` bekommt im Takt kein Budget (Hunger 0 von 2 Runden, 56 ms erst NACH der Frist), solange `waldPlan`/`nahWiese` vor ihm sättigen — das ist dieselbe Wurzel wie deine 154 s bis zur stehenden Stadt.
+- **Auftrag (Teil deiner Sprosse, kein Nebenweg):** nimm C-K5 als zweite Messstelle deiner Phasen-Zahl — Takte bis zum ersten Haus an der Marke C-K5 (heute 4299–4363 im roten Fall) vorher ↔ nachher, und nenne im Betreff, ob dein Schnitt das Rennen schließt (zehn Läufe des Schritts lokal, Zahl der roten). Der zweite Fehler ist eine eigene Zeile: die Probe stürzt nach dem ROT an `…vorrat` von undefined ab — ein Urteil, das abstürzt, statt den Täter zu nennen; heile das in derselben Welle (die Probe nennt den fehlenden Zug beim Namen).
+- Dein WIP fb5fda60 („die Stadt ist ein Netz aus Kacheln, nur der Schirm erwacht; Phasen-Zahl folgt“) ist gelesen. Die Phasen-Zahl gehört ins nächste WIP-Blatt, bevor du schneidest.
+
 ## 27.11. 17:35 Koordinator — START-BRIEF: die Großstadt steht mit 10⁴ Häusern in 60 s (Lücken-Sprosse mensch.stadt.form#2)
 
 - **Sprosse:** `karte2.mensch.stadt.form#2` — „Großstadt 10⁴ Häuser mit Vierteln aus dem Bodenwert“. Sie ist die LÜCKE ihrer Leiter (#1 und #3 sind gebucht) und zählt darum doppelt. Dieselbe Zahl hält zwei Sprossen der Schwester-Leiter: `karte2.mensch.stadt.groesse#3` (10³ stehende Häuser) und `#4` (10⁴).
