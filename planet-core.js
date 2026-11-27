@@ -2382,6 +2382,7 @@
     return phiH * hadleyJahr(KLIMA.schubMeer * neigung / phiH);
   }
   let HADLEY_ERDE = null;   // die Kante des Körpers der Erde heute (einmal je Kern): der Nenner der Eichung (KLIMA.hadleyErdeRad)
+  let T2_ERDE = null;       // das Gefälle des Körpers der Erde heute (einmal je Kern): der Nenner der Wirbel (planetKlimaR, bahn-klima#2)
   let KAPPE_ERDE = null;    // die Eis-Kappe des Körpers der Erde heute ohne Glazial (1 − x_s): der Nenner der tiefen Zeit (EIS_BAHN)
   function planetKlimaGlobal(plan, zeitMa) {
     if (!plan || !plan.koerper) throw new Error('planetKlimaGlobal: plan fehlt (K10)');
@@ -2613,14 +2614,21 @@
     // erster Ordnung von e (S0/π)·[(f₊ − f₋) − 2·sg·e·sin ϖ·(f₊ + f₋)], f± = h0·sin φ·sin(±ε) + cos φ·cos ε·sin h0 (Berger 1978); die
     // Spanne der Heimat trägt das e·sin ϖ von heute schon, die Zeit trägt die Änderung (dPraez, heute 0: dieselben Bytes). Am Äquator
     // trägt sie allein den Gang (f₊ − f₋ = 0): das Perihel macht die Jahreszeit der Tropen.
+    // DIE WIRBEL (Karte 2 planet.kopplung.bahn-klima#2): die Spanne des Lands ist die Antwort der P1-Mode auf den Gang, Q₁/(B + 2D)
+    // (North & Coakley 1979); ihr D tragen die Wirbel der Mittelbreiten, und die nährt das Gefälle des Jahrs (Green 1970, Stone 1972).
+    // Band: Ferreira u. a. 2014 (Icarus 243, Wasserplanet gekoppelt) D 0,7–0,8 bei 23° und 90° Neigung, 0,15 bei 54° — D ∝ |T2| trägt hier ×0,43 bei 45°.
+    // Das Jahres-Gleichgewicht (klimaStrahlung) hält sein D geeicht: D(T2) dort hob das Glazial der Erde von −5,73 auf −4,80 K, aus dem Band −6,1 K.
+    // Am Körper der Erde x/x = 1 genau (die Heimat steht Bit für Bit).
+    const T2E = T2_ERDE === null ? (T2_ERDE = klimaStrahlung(PLANET_ERDE, 0, 0, 1, 0).T2) : T2_ERDE;
+    const fD = (KLIMA.olrB + 2 * KLIMA.diffD) / (KLIMA.olrB + 2 * KLIMA.diffD * Math.abs(G.T2 / T2E));
     let ampP = 0;
     if (G.dPraez !== 0) {
       const ay = y < 0 ? -y : y, cb2 = kcos(beta);
       let ch = cphi * cb2 > 0 ? -(ay * sb) / (cphi * cb2) : -1; if (ch < -1) ch = -1; if (ch > 1) ch = 1;
       const h0 = kacos(ch), summe = ay * sb * (2 * h0 - PI) + 2 * cphi * cb2 * Math.sqrt(1 - ch * ch);
-      ampP = (5 + 28 * cL) / (PI * 0.39782) * (-2 * sg * G.dPraez * summe) * fJ;
+      ampP = (5 + 28 * cL * fD) / (PI * 0.39782) * (-2 * sg * G.dPraez * summe) * fJ;
     }
-    const amp = (5 + 28 * cL) * (sb / 0.39782) * (y < 0 ? -y : y) * fJ + ampP;  // halbe Jahres-Spanne: Meer 5 K, Inneres 33 K bei sin φ = 1 (gesetzt)
+    const amp = (5 + 28 * cL * fD) * (sb / 0.39782) * (y < 0 ? -y : y) * fJ + ampP;  // halbe Jahres-Spanne: Meer 5 K, Inneres 33 K bei sin φ = 1 (gesetzt)
     // Trockenes Land heizt (Gegner 2, heiße Wüste 4 % statt ~14 %): ohne Verdunstung und Wolken liegt die Wüste über dem Zonen-Mittel —
     // klima-kontinent: nur die warme Zone (voll ab 20 °C, aus unter 10 °C; vorher ab 0 °C halb bei 10 °C: die trockene Ostküste der
     // Mittelbreiten lag 2–3 K über ihrer Westküste). Band: Gobi und Kasachstan liegen im Jahr UNTER der Breite, nicht über ihr.
