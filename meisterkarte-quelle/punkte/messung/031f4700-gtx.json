@@ -1,7 +1,7 @@
 {
  "sha": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e",
  "geraet": "gtx",
- "zeit": "2026-11-27T05:10:10.988Z",
+ "zeit": "2026-11-27T05:10:56.234Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#2": {
@@ -1133,6 +1133,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.tiere.masse#1": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.991 über 565 Takte, letzter Flüchter 0.32 s (4 aus zweiter Hand), Fluchtweg 31 m, ID 600 s hält (Flucht 11 / 4 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 11.1 m: 46.5 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (270 px) · 42.9 m 5/5 fliehen ABNAHME ROT [Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 51.02 m · Luma 99 σ 40.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.447 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\031f4700-gtx\\karte2.leben.tiere.masse_1-herde-2-rot.png · 46.4 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (339 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.33,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.991 über 565 Takte, letzter Flüchter 0.32 s (4 aus zweiter Hand), Fluchtweg 31 m, ID 600 s hält (Flucht 11 / 4 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 11.1 m: 46.5 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (270 px) · 42.9 m 5/5 fliehen ABNAHME ROT [Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 51.02 m · Luma 99 σ 40.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.447 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\031f4700-gtx\\karte2.leben.tiere.masse_1-herde-2-rot.png · 46.4 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (339 px) · Glieder im Pulk je Schuss 5/0/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k63a9a1370958",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k2aa5aa297f1d",
+   "s": 79.4,
+   "fremd": {
+    "s": 80.5,
+    "takte": 37,
+    "fremdS": 33.11,
+    "kerne": 0.411,
+    "fensterKerne": 0.613,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6.09
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.77
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.55
+     ]
+    ],
+    "dienerS": 23.52,
+    "diener": [
+     [
+      "System",
+      12.34
+     ],
+     [
+      "dwm.exe",
+      6.64
+     ]
+    ],
+    "geraetS": 34.2,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.67
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.44
+     ]
+    ],
+    "eigenS": 188.23,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T05:10:56.234Z",
+   "abdruck": "5f316e994d1d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1149,7 +1219,8 @@
   "k616295682af0": "jVVNj6M4EP0vOc4sYz5MA5bm4DTdSlbbEnOba9mUDRMCkSHtVVb731eQQPiYw/qE4FXVq/eqzD87jRVgnaMjG4PffrU7toviCMKA8Z/8nXP+xv//+XF45d93f+wuIE+g+3RNvWO7L/2rCmrsZlVC6edCMjKdYHrKbEoJid/pQVFuv/cZW/hEp0XzieYenkjPx4A9ChPO+WsPk6a8dC2pSkFA1FCc0bmaDsvqmxzC1Au4oWDEvnGdEaLIjaT22cAbv1ebp6kE5o3TgcIxiYtBGCNbA6+tBoEOXNVQ+AEOaYIv3qPPOOUf6bNlKznPLLFZfOAZJfttdQF1vuzA8xJ4iRi3x17wNT4vATunKut2rO/lUaLcp872YxNjwDo3wKJC8wjC2POoGEnve2l6uVaBqrq27aJYHOShHzNCkjVWY1vKonMuphFYP+Ai8SMP2N5u+taXq6PmjEAIiMVa8wKw1mgWHNxAql7wv+N10hOc0YBTQ/GAJm4Q+WI2g4QctlyqgfhQYiLuueDBIrA3l3z2AufLpciGj3pEqWnc5ATRW+NbWZTmvJRLUfTdgP21pdgWkKNxTk3bTegAI+qK+4YcU3LnEu/Xkc/mRg8BIJ4NDIkJP2y0bBvVWTDo6Mt1HBqKYRQyzo8bcAfn82hPLgOUayPbrh/0OQ0/UWFIGSFf7wuzbfq+Fs4NywqnuZVRkLDXlK7BnwbODghtSqVG90UoVfK7YbVYdY5omm6U0ouiIOglqeeGZ4OVx5nXqf5BP965Xl2aR84zveE/VGlMN5IXIAJKmdJpTEis1ujSdI4FWUwCKYGQMGLlOvENTYUaF3IqzwM/Z8OVM7Gl48PXxSDfNm7fSuyFrttrOyotgYqQ/cYai+YkoD49gNJ7AemzPznn+w+eLYV51f06DGuzOMkwrhZlupTxXuiCkggoalKB77p0/psZvl1Mo8r+5iQFXNsCqu4J+fc/",
   "ka782391ac588": "bVVdb6MwEPwvebweNZ8BLPXBKZGS01VHf8LarIGEALIhVDndfz9BAw3QfWXWMzuzNn83NYgzpPh80lW5oZsfm58bDVc0NKorqueT3tBNKCwbHcreWV+EMfbaw4TK60aTIucEeAnZBY1WNZgXz2Jok1swPU5Jt2dpTIgkNxJ1bKo9e3lZHlNwTCqjAYnjISY6XoB0CWx1ChwNaOVAfAd7bohbi5Khgoi9RWSqj4CxuCNdHBxY7JLdmp1DmcwnsKwQtj5l3ZEx9r7EJzlgYxR5qUd+K/FDadKJs3tb9SjojBtgVqC6N2FgWS4fRe96a3q7Fo2yaLWekQVO4tkBJSRcYlPUucgao1YVx/IO56HtW0B33WrutG4N+agIOIeALz3PAMsU1UyD6QjZG/4RLA89wwUVGCVkd2hoOr7Nv7whhBzWWopB+EAxCbdMsGDW2IdLrr3BCZtVPHxMR5Sc1k1MkHQdvBZZri5zu6SLtunQ32uJOoMElXGudDOhHfRdk9OB4BiRTy3Bbtn5NdyYIQAEDwtDAsIOKy91JZsOFBpp3Y5L46Lne5Sx4wrcwOUyxpMIB8UySN30i/4oww6l57mUkKfPC7Me+vNaGDfMC5z2VvhOSF8jdwm+KrgYwFOVSzmmzz0hw++WtcOiMXhVNaOVlu87Tm9J+Rh4PER5fMg6St/dpth1+/kKHBmL05X+gaVSzSieA3dcl8o0CggJ5BKdq8boQGSTQZIj9PJX2dxQFZjizE5pWWAnlHTyU/upf3r8+5Mgn2aLfFufmGNvdKlbPTotwOUe/SaaDtWZQ3m+A4W1BWHTX4yx3RuLZ77sT3V/HYZrM6twWNcOxWHA7TrG/kTkeCeqUZBaVTLvX0eSQaszKJqv38W//w==",
   "ke73d9d1a308e": "bVVdc5swEPwvfmxKxGcAzeRBBM/E06R1fsJJnIAYg0cCq3Wn/70DNraB6JVd7d7enfi7OoDYQY6Pn7qpV3T1bfV9peGIlkZ1RPX4qVd0FQvHRY+yD9Yfwhh76WFClYdWk6rkBHgNxR6tTrVYVo9ioMknsANOiVmzfEuIJCeSmufnObXimDVWCxJHoo1eECGdAzudA0cLOjmIXcCBH+OTQ8lwopS9p+R6fkeMbQ0x2+h1dhmHOpu6dZwYnkLKzOaFsY+5y6wEbK2qrPWo62RhLG161TLvC44CY50AiwrVhYSR4/h8NJv0cfbRzIiy6rSeiEVeFrgRJSSeY3PUpSha66AajvUFzmM3dIAmy7TzQ2fJe0fAOUR8nnUBWOeoJh5sT8hz0HKwr/9sZR9wwuYiO9ijAquG4kKNbS90+S0rQsjr0ls1FDJIXgtxbHBgQuybTI594BmbnO3wMR9R0owfxBWSs4WoFkWp9tP4pI+u7dG3pUVdQIbK2jW6vaI9DH2b00Fgk5KzlyiZM2/FjT0FgOhugEhE2Gu0UGxka0ChlR+6cYh8DMKAMrZZgFvY78d2ZcJDQdnirL9g1dnEmhvLIPApIQ/nZVoGcV4d64RlhdfZFqEXzyfpqGBvAc9VKeU4DTwQMv5qmA1WrcWbph2jdcLQ8/qI6vsB+Dm0dnNXU5p/+G2VmPW01M1iNAeFRrWjaQ7c830q8zQiJJJzdKlay4AorsFIjhBTYsT84hOqCnOcxCgdB9yMEnNeGHLqn6Pw8lzIh8lQnxadP5XYB1zrTo8JC/B5QL9oiUG141DvLkDhPIFw6RtjLHln21sgSc7WL3m/GuQYkWlWiTesyA+WnqGGsV8pYRehAwpyUI0s+5eTFNDpAqr29tv49x8=",
-  "k09224374c721": "bVXbjpswFPyXPHbLmmsAS/vgLFslUtNmP+HYHBs2BCKbhCpV/73CG5IA6wfEZY5nPGds/i6OIPag8PnDNPWCLr4tvi8MnNExqM+onz/Mgi5S4fkY0P6T0OWxNaQqOQFeQ3FA56RbLKtnYaFyCW7EKenemNoRIsmFZN3Ly7S04pg3TgsSh0IXgyjBGcfJKODowElasis4ClNcepTYkWRsm5Hb6ARju450u2Q9mYxDnY/Vel4Ky5iybsMYe5+qzEvA1qnK2gy8Xh6n0qV3ru2sRkPnXACLCvW1CBPPC/kgdsUYs9ZMCmV1MmZElgR55CeUkHSKVWhKUbTOUTcc6yucp37sAV3N3VbHkyMfFQHnkPCp1wVgrVCPNLiBkL3Rf5LppHs4oAanhuIKTd0g9vndG0LIeq6lssItxU2454IHo8K+qZ8G52w0dvatGlCyGz6IG0Td7rJPXDfTbkRR6sPYPhmi7wb051yyKSBH7ewb097QAcahy6ml2WTkU1uymlbeFzv0FACShwCRhLD1XF8j2w40Oup4GkIUYhRHlLHNDNzC4TC0KxcBimljTdsH/1GGn8ooCikhT1ebZ4v+3CbOBcsKbzkWcZDS1yycgs8aDg5wpUsphzTwSMj0q/B2WLUOb5p2sNKL4yCgJCD1YwB+2dZuHnqfqfdw+4Opt3EkNmwqxzI0uh2Ec+BBGFKpsoSQRE7RpW6dDkRxM0dyhF76rC8X1BUqHFkpPQ/8nNpjx6rskxBfjwf5NAr1ZT5jib3JtTmZwWUBIY/oF23pUO851PsrUHhLEL6N4GrLdmNTXlW/Ncg5IWOvVoHdIr/Z2j6vlL30JEcU5KgbWfanJCngZAqo2vtv4d9/"
+  "k09224374c721": "bVXbjpswFPyXPHbLmmsAS/vgLFslUtNmP+HYHBs2BCKbhCpV/73CG5IA6wfEZY5nPGds/i6OIPag8PnDNPWCLr4tvi8MnNExqM+onz/Mgi5S4fkY0P6T0OWxNaQqOQFeQ3FA56RbLKtnYaFyCW7EKenemNoRIsmFZN3Ly7S04pg3TgsSh0IXgyjBGcfJKODowElasis4ClNcepTYkWRsm5Hb6ARju450u2Q9mYxDnY/Vel4Ky5iybsMYe5+qzEvA1qnK2gy8Xh6n0qV3ru2sRkPnXACLCvW1CBPPC/kgdsUYs9ZMCmV1MmZElgR55CeUkHSKVWhKUbTOUTcc6yucp37sAV3N3VbHkyMfFQHnkPCp1wVgrVCPNLiBkL3Rf5LppHs4oAanhuIKTd0g9vndG0LIeq6lssItxU2454IHo8K+qZ8G52w0dvatGlCyGz6IG0Td7rJPXDfTbkRR6sPYPhmi7wb051yyKSBH7ewb097QAcahy6ml2WTkU1uymlbeFzv0FACShwCRhLD1XF8j2w40Oup4GkIUYhRHlLHNDNzC4TC0KxcBimljTdsH/1GGn8ooCikhT1ebZ4v+3CbOBcsKbzkWcZDS1yycgs8aDg5wpUsphzTwSMj0q/B2WLUOb5p2sNKL4yCgJCD1YwB+2dZuHnqfqfdw+4Opt3EkNmwqxzI0uh2Ec+BBGFKpsoSQRE7RpW6dDkRxM0dyhF76rC8X1BUqHFkpPQ/8nNpjx6rskxBfjwf5NAr1ZT5jib3JtTmZwWUBIY/oF23pUO851PsrUHhLEL6N4GrLdmNTXlW/Ncg5IWOvVoHdIr/Z2j6vlL30JEcU5KgbWfanJCngZAqo2vtv4d9/",
+  "k63a9a1370958": "tVZNr6M2FP0vWfaVZwgQwNIsnJDqpe2TMstZXptrw4RAZENcpep/ryAhCZCRRpXqFSTnfp17jpO/FycQB1D4/t3U1YIufln8ujBwRsegPqN+/24WdJEIb4k+ZddDGGObDiZ0cWoMyQpQzkEjNK12SuRYvYs+zE1QhjEl/8NJLWNsx+5HrbfdBz9sq4FDc+tKYhKCS9eKMcu+fHmKKAtOgFeQH9FpdYNFOYSswA05JXbL1J4QSS7XBm5n+yJNyTGrnQYkDklc9MMY6RTYGgUcHWhlX/gGDoMEV96Nujhln+ljdisY21ti9/EHY+xtPa/OocrGE3heAquIMrvbMPZ1is8KwMYpi8oM9b0sSqT7WJ39nMVosM4FMC9R34Iw9ryAD02v+73sCZkEyrI1ZlQs9rNw2ekkmWIVmkLkjXPS9UNWPFlGHtC1nc2tTq0jnzsCziHmU85zwEqhHvXg+kJ2hP8VT5Me4IganAryGzRx/WjJR7L+mPcyKO+IlRFDqOdLDMR/cEQsf5B+xEyYrZDHlP3s2Yze1j8d1y2Wbb9NWir7VfWk3lflueDBZN44JedOUtk4477/Ug0oeTeYeCo6o9mIvNDHMQ0ywKXr0z/nSzE5ZKidQ22aO9rHKHD5lbRdSq69xOtp5GO4QbUAED9ZhMSEfczUY2rZWNDoqFM72CTAMAopY7sZuIHjcRBkJnwUL3dp2fZFZJWN2lsmMgwDSsjb9eqYk3G9IJwLFiXeHSwiP6GbNJiCzxqODnClCykHH/BQyOSVbS2WjcPrerhyfS+KfL+jqnoWwr5f8dMtzlL1Nfj8janteOA/2MdZzWbuq9S6GZrnwP0goNKm8QvD2EI3jgWR3wmSHCGhxIpp4gvqEhWO6JSeB8uM9pfvvdtgeHgbCfwyU8GlwI7oyrRmYFpAwEP6YjUW9YFDdbgBhbcCsaS/dwb9ZPsxMRvV2aS30+gkpLOzQpE+o3c3+5xQkJOuZdH9TpAcWpND2Yz+AVwhLUreYl5hp6+mqCusHqh//gU="
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
@@ -1355,28 +1426,13 @@
   },
   "karte2.same.preis.ausdauer#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "zahl": "kein Anfang in dieser Sitzung (profiband.K4#1 fuhr in einer früheren Sitzung dieses Laufs) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
+   "grund": "kein Anfang in dieser Sitzung (profiband.K4#1 fuhr in einer früheren Sitzung dieses Laufs) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-27T05:10:10.673Z",
+   "zeit": "2026-11-27T05:10:23.607Z",
    "abdruck": "f7f6385a7cbf",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "21016@mwyimcjy"
-  },
-  "karte2.leben.tiere.masse#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-27T05:10:10.709Z",
-   "abdruck": "5f316e994d1d",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
@@ -1537,5 +1593,186 @@
    "offen": 1,
    "fahrt": "21016@mwyimcjy"
   }
+ },
+ "sitzung": {
+  "start": "2026-11-27T05:02:55.035Z",
+  "ordner": "sitzung-20261127-060255",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 6.8,
+  "grundstellungS": [],
+  "proben": 2,
+  "freigaben": [],
+  "geraet": {
+   "name": "GTX 1060",
+   "adapter": "NVIDIA GeForce GTX 1060",
+   "preis": true
+  },
+  "offen": [
+   "karte2.same.preis.ausdauer#1",
+   "karte2.leben.tiere.masse#1",
+   "karte2.leben.tiere.wanderung#2",
+   "karte2.erleben.klang.stimme#1",
+   "karte2.leben.oeko.netz#2",
+   "karte2.erleben.kopplung.wahrnehmung#2",
+   "karte2.leben.evolution.fremde-physik#1",
+   "karte2.same.kopplung.aufwaerts#1",
+   "karte2.same.kopplung.ereignis#2",
+   "karte2.same.kopplung.gewalt#1",
+   "karte2.same.kopplung.kohaerenz#1",
+   "karte2.same.kopplung.terraform#1"
+  ],
+  "orte": [
+   {
+    "ort": "dorf",
+    "vor": "karte2.erleben.bild.nacht#2",
+    "s": 50.6,
+    "takte": 1043,
+    "chunks": 95,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "felder": [
+   {
+    "probe": "profiband.K4#1",
+    "weg": [
+     "__ortZeit",
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr",
+     "__impostorRttBaked",
+     "__flussBibliothekS",
+     "__zensusCalls",
+     "__k4"
+    ]
+   },
+   {
+    "probe": "karte2.erleben.bild.nacht#2",
+    "weg": [
+     "__imSchuss"
+    ]
+   }
+  ],
+  "wirt": [
+   {
+    "probe": "profiband.K4#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r._feuchteLeser",
+     "r._knotenRate",
+     "r.state.weather",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "r._knotenRate": "neu: function (N, ro) { const t0 = performance.now(); const s = kr.apply(this, argume",
+     "r.state.weather": "neu: () => wert",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     null,
+     294.7
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.erleben.bild.nacht#2",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._feuchteLeser",
+     "r.state.weather",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "r.state.weather": "neu: () => wert",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     414.8,
+     566.7
+    ],
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "profiband.K4#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.erleben.bild.nacht#2",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "haenger": [
+   {
+    "probe": "profiband.K4#1",
+    "zurueck": 9
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "karte2.erleben.bild.nacht#2",
+    "wie": "orte +d:7@836,438 · wege +4 [425.5,53.4,1072.3,817.4/2666] [660.2,284.5,992.9,577.1/4] [661.5,278.1,1001.2,585.2/1314] … (d:7@836,438, netz:d:7@836,438, verkehr:d:7@836,438)"
+   }
+  ],
+  "wanderung": [
+   {
+    "probe": "karte2.erleben.bild.nacht#2",
+    "ort": "dorf",
+    "m": 2081.08,
+    "dreh": 0.342
+   }
+  ],
+  "grund": "die Welt trägt nicht mehr vor karte2.same.preis.ausdauer#1: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"} — offen: karte2.same.preis.ausdauer#1, karte2.leben.tiere.masse#1, karte2.leben.tiere.wanderung#2, karte2.erleben.klang.stimme#1, karte2.leben.oeko.netz#2, karte2.erleben.kopplung.wahrnehmung#2, karte2.leben.evolution.fremde-physik#1, karte2.same.kopplung.aufwaerts#1, karte2.same.kopplung.ereignis#2, karte2.same.kopplung.gewalt#1, karte2.same.kopplung.kohaerenz#1, karte2.same.kopplung.terraform#1",
+  "ciBlicke": 4,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 279,
+   "frameP95": 66.79,
+   "taktP95": 65.97,
+   "vramMax": 232.4,
+   "seiten": 2,
+   "marken": 1,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.erleben.bild.nacht#2",
+     "m": 2081,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 336,
+   "luecken": 5,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 431,
+  "minuten": 7.31
  }
 }
