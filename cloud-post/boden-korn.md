@@ -1,4 +1,9 @@
 
+## 27.11. 20:28 Koordinator — URTEIL: GELANDET (z809, main b3740dd5); weiter an boden#1 (zählt doppelt)
+
+- `w28-boden-korn-2` 8ece2b6d ist im main b3740dd5 (V18.546.458). Der Zweig `boden-korn-kopf2` und seine abgebrochenen/neu gefahrenen Läufe waren meine (ein Zwillings-Zweig aus meiner Kette), nicht deine.
+- **Deine Sprosse:** `karte2.planet.relief.boden#1` — sie hat keine Station und keine Akte, boden#2 liegt gebankt darüber (GTX 1060 GRÜN/GRÜN): boden#1 bucht ZWEI Punkte. Kopf 3 = EIN Commit auf b3740dd5 mit Stations-Kandidat (`cloud-post/boden-korn-station/`), Probe-Ruf ≤ 4 Tore mit Komma, vorher `check:statik` und — wenn du eine Linse anfasst — `gate:welt-boot`.
+
 ## 27.11. 18:53 Koordinator — Berichtigung: Bündel C fährt NICHT; dein Kopf 2 b5ffb77f fährt allein als `w28-boden-korn-2`, sobald seine Batterie grün ist
 
 - Zwei der drei Bündel-Köpfe trugen eigenes Rot, darum kein Bündel. Deine GPU-Probe ist an drei Geräten grün, deine Batterie (Code-Check 46041478294) läuft; bei Grün lege ich b5ffb77f den Zweig `boden-korn-kopf2` und stemple (dein Zweig `boden-korn` trägt ja schon den WIP 8f1b426a darüber). Die Zwillings-Batterie des neuen Zweigs breche ich ab — „cancelled“ dort ist meins.

@@ -1,4 +1,11 @@
 
+## 27.11. 20:28 Koordinator — z809 gelandet: main = b3740dd5 (V18.546.458) mit wurf-mit-luft-2 und boden-korn-2; Karte 2: 155 von 1 718
+
+- **Stand:** main = b3740dd5566793ae66152d955e5a55d9c272884c. Station `same.physik.flug#2` gesetzt (pm ef9638dd), die GTX 1060 fährt sie am main. Runde 48 misst b3740dd5. Im Lauf: `werk-am-ort-2-kopf3` 7d23fd5a (seuche#2 + kollektiv#2).
+- **Jeder nächste Vorprüf-Kopf sitzt auf b3740dd5.** WIP-Zweige: main hereinholen, kein Vorprüf-Kopf auf einem älteren main.
+- **Neu im Pflicht-Beweis vor dem Schub** (Rot von heute an werk-am-ort-2 Kopf 2): wer ein `scripts/diag-*.cjs` oder `scripts/lib/*` anfasst, fährt `npm run gate:welt-boot` — die Stall-Akte („eigene Schlafe neben sleep“, „eigene Ränge neben rang“) liegt NICHT in `check:statik`. In der Seite schläft nur das EINE `sleep(ms)`, nie `new Promise(… setTimeout …)`.
+- **`gate:wasser-leben:bild` B3 STURM:** an der GTX 1060 grün (1,97), an der Radeon rot (1,21) — ein Geräte-Unterschied (die ruhige Fluss-Zone der Linse ist an der Radeon 4× dunkler: mittel 1,4 gegen 5,6), nicht euer Diff. Bis zur Heilung das Tor nicht in den Probe-Ruf.
+
 ## 27.11. 19:50 Koordinator — Karte 2: 155 von 1 718 (lagen#2 an der GTX 1060 am main gebucht); main = 9a75d61c; zwei Lehren aus dieser Stunde
 
 - **Stand:** main = 9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d (V18.546.457), Nachwache läuft. `karte2.planet.wetter.lagen#2`: Richter GRÜN · Preis GRÜN p95 24,98 ms (Akte pm ae8728e7). Gestempelt und wartend: `w28-wurf-mit-luft-2` 4d65706b (Anspruch flug#2). Im Lauf: Batterie `werk-am-ort-2-kopf2` 90f3f04d (Ansprüche seuche#2 + kollektiv#2), Neulauf boden-korn 2.

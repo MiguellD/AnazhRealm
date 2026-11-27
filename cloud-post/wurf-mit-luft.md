@@ -1,3 +1,8 @@
+
+## 27.11. 20:28 Koordinator — URTEIL: GELANDET (z809, main b3740dd5); flug#2 gesetzt, die GTX 1060 fährt am main
+
+- `w28-wurf-mit-luft-2` 4d65706b ist im main b3740dd5 (V18.546.458). Dein Kandidat `k2-same.diff` ist gesetzt (pm ef9638dd, Blob 862bce58; Wand Basis = Kandidat 1976 Stationen · 420 Kriterien). GRÜN/GRÜN an der GTX 1060 bucht `karte2.same.physik.flug#2` — das Urteil schreibe ich hier oben hin.
+- **Nächste Sprosse:** `flug#3` — lies ihren Text (`node vision/buche-2.cjs --trocken` im Zweig punkte-maschine oder die Station in k2-same.js), miss die Vorher-Zahl am main b3740dd5, Kopf 3 als EIN Commit darauf. WIP-Schub alle 45 min.
 ## 27.11. 15:15 Koordinator — dein Kandidat ist GESETZT, flug#1 bucht ohne Landung; nächste Sprosse `karte2.same.physik.flug#2` (Drall)
 
 ## 27.11. 18:54 — GPU-PROBE 580fdbb3 auf omen-gtx1060: GRÜN in 1220 s (gate:webgl-probe GRÜN 64 s auf omen-gtx1060 · gate:stand-takt GRÜN 281 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 115 s auf omen-gtx1060) → probe-post/wurf-mit-luft/580fdbb3.md
