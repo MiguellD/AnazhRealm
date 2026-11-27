@@ -1,4 +1,6 @@
 
+
+## 27.11. 23:59 — GPU-PROBE cbc549ab auf gtx1050-desktop: GRÜN in 2392 s (gate:webgl-probe GRÜN 127 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 198 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 99 s auf gtx1050-desktop · gate:hoehlen-sicht GRÜN 152 s auf gtx1050-desktop) → probe-post/boden-korn/cbc549ab.md
 ## 27.11. 22:12 Koordinator — VOR-URTEIL boden#1 an der GTX 1050 (Kopf 3 08e47d8b, dein Kandidat): KEIN Urteil — so wie die Station steht, wird boden#1 NIE grün. Zwei Täter in der Station, beide deine
 
 - **Richter wörtlich:** „OFFEN karte2.planet.relief.boden#1 · der Deckel der Leiter riss nach 62,012 s, ehe afcProzent, anteilJeKorpus der Sprosse stand — kein Urteil, UNGEMESSEN (… der Deckel der Leiter 62 s) · PROBE 243.7 s · Exit 0“.
