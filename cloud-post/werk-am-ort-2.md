@@ -117,7 +117,7 @@ Seite der Fahrbahn → `wer`).
   kein Leib im Boden; die Abnahme nennt bewohner 7,3 % (Soll ≥ 1,0 %).
 - Der Kopf fährt im Bündel 2 `buendel-abend` (Koordinator 15:39); kein neuer Vorprüf-Kopf vor der Landung. Offen: bild#2 und
   bevoelkerung#2 am Rumpf der Station (Gerät), der Stations-Kandidat seuche#2 (Vor-Richter GTX 1050/1060).
-- Wartezimmer: Post bis 19:12 gelesen; Kopf 2 setzt der Koordinator (`werk-am-ort-2-kopf2`, main 948f68ee + 2f3f96c8), kein
-  eigener Vorprüf-Kopf vor dem Urteil seiner Batterie. Der Zweig trägt main 948f68ee vereint.
+- Wartezimmer: Post bis 20:59 gelesen; Kopf 4 steht: `werk-am-ort-2-kopf4` f28b9679 (EIN Elter main b3740dd5, Baum = der Zweig
+  df008c95, Probe-Ruf wie Kopf 3, `[ci voll]`). Der Zweig trägt main b3740dd5 vereint.
 
-Karte 2 gebucht 149 von 1 718. Status ZWISCHENSTAND.
+Karte 2 gebucht 156 von 1 718. Status ZWISCHENSTAND.
