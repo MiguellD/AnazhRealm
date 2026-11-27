@@ -1,12 +1,12 @@
 {
     "{\"seed\":7,\"nH\":12}": {
-        "sha256": "4117dce2a0f42e2e6ab3e538645199f21f3ce435b7e29f699b2d0d739dec503e",
+        "sha256": "cab3612297f9cb0d01263b10a178cd9538289aebd593639f7b9104d0b25d5531",
         "slots": 16,
         "name": "Lausi",
         "groesse": "dorf"
     },
     "{\"seed\":12345,\"nH\":6}": {
-        "sha256": "d8718eefd3b24fbd545a057057fac89a27188db6d5b2f9ca6bc297a354601f8f",
+        "sha256": "1e4d4f32767dcf4d9f09f8a616cb119259c417931a6dd8f055d51208e152217d",
         "slots": 7,
         "name": "Dindwirt",
         "groesse": "weiler"
