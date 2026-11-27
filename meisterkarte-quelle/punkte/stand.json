@@ -15894,7 +15894,7 @@
   },
   "karte2.mensch.fahrzeug.form": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S2 GRÜN · Kippgrenze ÷ statische Formel 0.962 (Soll 1 ±0.15) · Anteil der Baupläne mit μ > SSF, die im Kreis auf der Seite liegen 1 (Soll ≥ 1) · Anteil der Baupläne mit μ < SSF, die rutschen statt zu kippen 1 (Soll ≥ 1) · Umfang 63 (Soll ≥ 50 Baupläne an Land) · 63 Baupläne an Land aus dem Stempel der Welt (0 ohne Satz): gt·serie SSF 1.749 μ 0.4 Tisch rutscht 1 · Kreis 0.699 g · gt·hoch SSF 0.904 μ 0.4 Tisch kippt 0.9055 · Kreis 0.713 g · gt·turm SSF 0.841 μ 0.45 Tisch kippt 0.8426 · Kreis 0.692 g · gt·dach SSF 1.623 μ 0.45 Tisch rutscht 1 · Kreis 0.704 g · · [linse-gpu] nvidia/pascal an bed6256c gtx — offen: karte2.mensch.fahrzeug.form#1 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#1 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S2 GRÜN · Kippgrenze ÷ statische Formel 0.962 (Soll 1 ±0.15) · Anteil der Baupläne mit μ > SSF, die im Kreis auf der Seite liegen 1 (Soll ≥ 1) · Anteil der Baupläne mit μ < SSF, die rutschen statt zu kippen 1 (Soll ≥ 1) · Umfang 63 (Soll ≥ 50 Baupläne an Land) · 63 Baupläne an Land aus dem Stempel der Welt (0 ohne Satz): gt·serie SSF 1.749 μ 0.4 Tisch rutscht 1 · Kreis 0.699 g · gt·hoch SSF 0.904 μ 0.4 Tisch kippt 0.9055 · Kreis 0.713 g · gt·turm SSF 0.841 μ 0.45 Tisch kippt 0.8426 · Kreis 0.692 g · gt·dach SSF 1.623 μ 0.45 Tisch rutscht 1 · Kreis 0.704 g · · [linse-gpu] nvidia/pascal an bed6256c gtx — offen: karte2.mensch.fahrzeug.form#1 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#1 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#3 gtx: ROT: S3 ROT: Umfang nicht erzeugbar: Rumpf, Segel, Flügel aus Teilen: kein Floß und kein Gleiter steht in der Welt (gemessen 0, Soll 2 Werke mit gebauter Hülle (Floß, Gleiter)) · [linse-gpu] nvidia/pascal an b3740dd5 · karte2.mensch.fahrzeug.form#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.form#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.form#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.form#1",
@@ -15948,10 +15948,10 @@
      "id": "karte2.mensch.fahrzeug.form#3",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "S3 ROT: Umfang nicht erzeugbar: Rumpf, Segel, Flügel aus Teilen: kein Floß und kein Gleiter steht in der Welt (gemessen 0, Soll 2 Werke mit gebauter Hülle (Floß, Gleiter)) · [linse-gpu] nvidia/pascal",
+     "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
+     "grund": "ROT: S3 ROT: Umfang nicht erzeugbar: Rumpf, Segel, Flügel aus Teilen: kein Floß und kein Gleiter steht in der Welt (gemessen 0, Soll 2 Werke mit gebauter Hülle (Floß, Gleiter)) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.fahrzeug.form#4",
@@ -36632,7 +36632,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an bed6256c: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,287 (Faden 1,287 · alle Kerne 1,203; vor 107,4/310 ms, nach 107,5/312,5 ms, Ruhe 83,5/259,8 m · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +17) — zuletzt an 52937c92: die Dauer misst nie über ein Neuladen: die Welt hing vor karte2.same.preis.ausdauer#1, die Sitzung ging durch die Tür — offen, UNGEMESSEN · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an bed6256c: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,287 (Faden 1,287 · alle Kerne 1,203; vor 107,4/310 ms, nach 107,5/312,5 ms, Ruhe 83,5/259,8 m · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +17) — zuletzt an b3740dd5: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,243 (Faden 1,196 · alle Kerne 1,243; vor 106,4/220,5 ms, nach 93,6/274,1 ms, Ruhe 89/220,5 ms · karte2.same.preis.ausdauer#2 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#2 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#3 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#3 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#4 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#4 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#5 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#5 gtx: Station seit der Messung geändert · karte2.same.preis.ausdauer#6 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -36650,7 +36650,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +17) — zuletzt an 52937c92: die Dauer misst nie über ein Neuladen: die Welt hing vor karte2.same.preis.ausdauer#1, die Sitzung ging durch die Tür — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +17) — zuletzt an b3740dd5: die Dauer misst nie über ein Neuladen: die Seite lud vor dem Grund neu (profiband.K4#1: Last: Referenz f 1,243 (Faden 1,196 · alle Kerne 1,243; vor 106,4/220,5 ms, nach 93,6/274,1 ms, Ruhe 89/220,5 ms",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -37470,7 +37470,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 283,
+  "konsum": 284,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37593,10 +37593,10 @@
    "ultiversum.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3384
+  "ohne": 3383
  },
  "kopfVoll": "b3740dd5566793ae66152d955e5a55d9c272884c",
- "zeit": "2026-11-27T20:56:08.023Z",
+ "zeit": "2026-11-27T21:03:32.317Z",
  "vorher": "b3740dd5",
  "bilanz": {
   "gewinn": [],
