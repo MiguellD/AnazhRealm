@@ -2242,10 +2242,10 @@ async function marktSeite(o) {
     }
     // DER SATZ DER REDE (sprache#2): je Sprecher der Stadt, dessen Rede einen Satz trägt (`_mengeRede`: Nummer und Satz), der Satz
     // des Wirts mit derselben Nummer (`_bewohnerLauf` „rede“, die Mutanten sind zurück) — gleich, Wort für Wort; die Vokale der Kerne
-    // aus dem Gesetz seiner Sprache (fachwerk `spracheVon(region, same).gesetz.vokale`)
+    // aus dem Gesetz seiner Sprache (fachwerk `spracheVon(region, mundart).gesetz.vokale`)
     const satz = { saetze: (sy.menge && sy.menge.saetze) || 0, sprecher: 0, gleich: 0, fremd: [], beispiel: [], vokaleFremd: [] };
     const FC = window.__fachwerkCore;
-    const vokale = new Set(FC.spracheVon(W.S.plan.region, W.S.plan.seed >>> 0).gesetz.vokale.join(""));
+    const vokale = new Set(FC.spracheVon(W.S.plan.region, W.S.plan.mundart).gesetz.vokale.join(""));
     for (const b of W.S.liste) {
         const z = r._mengeRede && r._mengeRede.get(b);
         if (!z || typeof z.satz !== "string") continue;
