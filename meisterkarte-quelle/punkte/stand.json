@@ -3020,7 +3020,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 60 Bilder · max 92.35 ms · 78.33 % > 33 ms · Fahrt 48 Bilder · max 100.42 ms · 95.83 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 78.33 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.42), 95.83 % > 33 ms an 948f68ee radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 948f68ee: Last: Referenz f 1,305 (Faden 1,305 · alle Kerne 1,179; vor 109/306,4 ms, nach 102,1/263 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 13,4 CPU-s · bash.exe werkze · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 7e73426e: Last: Referenz f 1,376 (Faden 1,376 · alle Kerne 1,185; vor 121,9/260,1 ms, nach 98,9/241,1 ms, Ruhe 88,6/219,5 ms seit 2026-11-26) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+   "beleg": "Maschine: gehalten: Gehen 60 Bilder · max 92.35 ms · 78.33 % > 33 ms · Fahrt 48 Bilder · max 100.42 ms · 95.83 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 78.33 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.42), 95.83 % > 33 ms an 948f68ee radeon · Gehen 77 Bilder · max 99.93 ms · 24.68 % > 33 ms · Fahrt 56 Bilder · max 141.66 ms · 69.64 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 24.68 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 141.66), 69.64 % > 33 ms an 9a75d61c gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 948f68ee: Last: Referenz f 1,486 (Faden 1,486 · alle Kerne 1,243; vor 124,1/322,3 ms, nach 106,9/271,4 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-koerper-kern.cjs --selftest 70,4 CPU-s · · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 9a75d61c: Last: Referenz f 1,301 (Faden 1,301 · alle Kerne 1,164; vor 99,9/257 ms, nach 115,7/235,8 ms, Ruhe 88,9/220,7 ms seit 2026-11-27) · fremd: bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\";",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3035,11 +3035,10 @@
     {
      "id": "profiband.K4#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "Gehen 77 Bilder · max 99.93 ms · 24.68 % > 33 ms · Fahrt 56 Bilder · max 141.66 ms · 69.64 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 24.68 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 141.66), 69.64 % > 33 ms",
+     "sha": "9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d",
+     "grund": "GRÜN trotz Last: Referenz f 1,301 (Faden 1,301 · alle Kerne 1,164; vor 99,9/257 ms, nach 115,7/235,8 ms, Ruhe 88,9/220,7 ms seit 2026-11-27) · fremd: bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \" 3,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 2,6 CPU-s · bash.exe sk/wacht6.sh 2,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 38,8 CPU-s · svchost.exe 12,3 CPU-s · SearchIndexer.exe 2,0 CPU-s",
      "r6": "konsum"
     },
     {
@@ -3048,7 +3047,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 948f68ee: Last: Referenz f 1,305 (Faden 1,305 · alle Kerne 1,179; vor 109/306,4 ms, nach 102,1/263 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 13,4 CPU-s · bash.exe werkze",
+     "grund": "Station seit der Messung geändert — zuletzt an 948f68ee: Last: Referenz f 1,486 (Faden 1,486 · alle Kerne 1,243; vor 124,1/322,3 ms, nach 106,9/271,4 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node scripts/diag-koerper-kern.cjs --selftest 70,4 CPU-s ·",
      "ungemessen": true
     },
     {
@@ -3057,7 +3056,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 7e73426e: Last: Referenz f 1,376 (Faden 1,376 · alle Kerne 1,185; vor 121,9/260,1 ms, nach 98,9/241,1 ms, Ruhe 88,6/219,5 ms seit 2026-11-26) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 9a75d61c: Last: Referenz f 1,301 (Faden 1,301 · alle Kerne 1,164; vor 99,9/257 ms, nach 115,7/235,8 ms, Ruhe 88,9/220,7 ms seit 2026-11-27) · fremd: bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\";",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -5515,7 +5514,7 @@
   },
   "karte2.erleben.bild.nacht": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 · GRÜN ✅ schatten_kontrast 4,6456 (Soll ≥ 3) · ✅ kelvin_abw 38 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 482 an 2a2e8a54 radeon — offen: karte2.erleben.bild.nacht#1 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs, scripts/lib/wirt-wache.cjs +4) · karte2.erleben.bild.nacht#2 gtx: ROT: S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,67 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.42 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -1 · p75 -1.17 · p90 -1.68 · p99 3.67 — Belichtung k 10370, Mittelgrau bei 0.2793 cd/m² · gasse_dev_median 2,67 statt ≤ 0,5 an 948f68ee · karte2.erleben.bild.nacht#3 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#3 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#4 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#4 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#5 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#5 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#6 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#6 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#7 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#7 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#8 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 · GRÜN ✅ schatten_kontrast 4,6456 (Soll ≥ 3) · ✅ kelvin_abw 38 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 482 an 2a2e8a54 radeon — offen: karte2.erleben.bild.nacht#1 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs, scripts/lib/wirt-wache.cjs +4) · karte2.erleben.bild.nacht#2 gtx: ROT: S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,87 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.33 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -0.95 · p75 -1.09 · p90 -1.58 · p99 4.15 — Belichtung k 10210, Mittelgrau bei 0.2837 cd/m² · gasse_dev_median 2,87 statt ≤ 0,5 an 9a75d61c · karte2.erleben.bild.nacht#3 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#3 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#4 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#4 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#5 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#5 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#6 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#6 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#7 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#7 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#8 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.bild.nacht#1",
@@ -5551,9 +5550,9 @@
      "id": "karte2.erleben.bild.nacht#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,67 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.42 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -1 · p75 -1.17 · p90 -1.68 · p99 3.67 — Belichtung k 10370, Mittelgrau bei 0.2793 cd/m² · gasse_dev_median 2,67 statt ≤ 0,5",
-     "sha": "948f68eeee479d4db0192c99c448e887313eefb3",
-     "grund": "ROT: S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,67 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.42 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -1 · p75 -1.17 · p90 -1.68 · p99 3.67 — Belichtung k 10370, Mittelgrau bei 0.2793 cd/m² · gasse_dev_median 2,67 statt ≤ 0,5",
+     "zahl": "S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,87 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.33 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -0.95 · p75 -1.09 · p90 -1.58 · p99 4.15 — Belichtung k 10210, Mittelgrau bei 0.2837 cd/m² · gasse_dev_median 2,87 statt ≤ 0,5",
+     "sha": "9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d",
+     "grund": "ROT: S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 2,87 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -1.33 EV): ΔEV p10 -6.62 · p25 -5.87 · p50 -0.95 · p75 -1.09 · p90 -1.58 · p99 4.15 — Belichtung k 10210, Mittelgrau bei 0.2837 cd/m² · gasse_dev_median 2,87 statt ≤ 0,5",
      "r6": "konsum"
     },
     {
@@ -29312,7 +29311,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an bed6256c: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"genesis\",\"sicht\":\"third\"} · 16.6 s · 418.2 s) · Wirt-Wache: den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig · karte2.planet.kosmos.himmelsmechanik#1 gtx: Station seit der Messung geändert — zuletzt an 948f68ee: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 57.8 s · 667.9 s) · Wirt-Wache: die Arbeit der Probe läuft noch: /eval we · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an 948f68ee: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"genesis\",\"sicht\":\"third\"} · 16.3 s · 428.6 s) · karte2.planet.kosmos.himmelsmechanik#1 gtx: Station seit der Messung geändert — zuletzt an 948f68ee: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 57.8 s · 667.9 s) · Wirt-Wache: die Arbeit der Probe läuft noch: /eval we · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -29320,7 +29319,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an bed6256c: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"genesis\",\"sicht\":\"third\"} · 16.6 s · 418.2 s) · Wirt-Wache: den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig",
+     "grund": "Station seit der Messung geändert — zuletzt an 948f68ee: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"genesis\",\"sicht\":\"third\"} · 16.3 s · 428.6 s)",
      "ungemessen": true,
      "beide": true
     },
@@ -32302,16 +32301,15 @@
   },
   "karte2.planet.zeit.klimageschichte": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.zeit.klimageschichte#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/kreatur-proben.cjs, scripts/lib/welt-boot.cjs +5) — zuletzt an 52937c92: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb · karte2.planet.zeit.klimageschichte#1 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#2 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#2 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#3 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#3 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#4 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#4 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#5 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#5 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#6 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#6 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#7 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#7 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#8 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#8 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#9 radeon: ungemessen (R10) · karte2.planet.zeit.klimageschichte#9 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.zeit.klimageschichte#1 radeon: ROT: S1 dT100aGrad -0,106 °C gegen Soll ≥ 2 °C ✗ · schneegrenzeDeltaM -1,37 gegen Soll 300 ± 30 % ✗ · kuesteJeSoll 2,351 gegen Soll 1 ± 25 % ✗ · Täter: keine Treibhaus-Drift in 100 a: die Welt erwärmt sich um -0.106 °C, die Schneegrenze wandert -1.37 m, die Küste 3 m (planet-core.js:2092 planetKlimaGlobal: Sternfluss und Walker-Thermostat über Ma, kein CO₂-Antrieb in Jahren) · Fächer 122/136 Adressen (48 Saaten × 2 Zeiten + 40) in 98 ms · Leser stamm/feld-leben.js:1298 _planetAuftrag planet-ort (die Reise: Ort und Zeit der Welt) · Gesetz voxel-worker.js:1446 planetOrtAuftrag → planet-core.js:2092 planetKlimaGlobal · gelaende-core.js:5911 ortGesetz (Sommer, Winter, schneeBandM) · 14 ohne Fähigkeit (kein Küstenpunkt k13 unter 800 Lagen (planet-ort kuesteKm)) · schlechteste {\"saat\":1,\"ort\":null,\"zeit\":0.0001} schnee -0.934 · Bild dort Ego an der Schneegrenze des Punkts [78.28,-180] (-0.934 m) zur Zeit +100 a, Blick hangauf · ungemessen: das Bildpaar der Schneegrenze heute / +100 a (am Gerät); der Sprung ≤ 5 s des Preises (die Maschine) an 948f68ee · karte2.planet.zeit.klimageschichte#1 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#2 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#2 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#3 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#3 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#4 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#4 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#5 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#5 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#6 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#6 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#7 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#7 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#8 radeon: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#8 gtx: Station seit der Messung geändert · karte2.planet.zeit.klimageschichte#9 radeon: ungemessen (R10) · karte2.planet.zeit.klimageschichte#9 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.zeit.klimageschichte#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/kreatur-proben.cjs, scripts/lib/welt-boot.cjs +5) — zuletzt an 52937c92: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group · zeichner.renderer._renderOb",
-     "ungemessen": true,
+     "zahl": "S1 dT100aGrad -0,106 °C gegen Soll ≥ 2 °C ✗ · schneegrenzeDeltaM -1,37 gegen Soll 300 ± 30 % ✗ · kuesteJeSoll 2,351 gegen Soll 1 ± 25 % ✗ · Täter: keine Treibhaus-Drift in 100 a: die Welt erwärmt sich um -0.106 °C, die Schneegrenze wandert -1.37 m, die Küste 3 m (planet-core.js:2092 planetKlimaGlobal: Sternfluss und Walker-Thermostat über Ma, kein CO₂-Antrieb in Jahren) · Fächer 122/136 Adressen (48 Saaten × 2 Zeiten + 40) in 98 ms · Leser stamm/feld-leben.js:1298 _planetAuftrag planet-ort (die Reise: Ort und Zeit der Welt) · Gesetz voxel-worker.js:1446 planetOrtAuftrag → planet-core.js:2092 planetKlimaGlobal · gelaende-core.js:5911 ortGesetz (Sommer, Winter, schneeBandM) · 14 ohne Fähigkeit (kein Küstenpunkt k13 unter 800 Lagen (planet-ort kuesteKm)) · schlechteste {\"saat\":1,\"ort\":null,\"zeit\":0.0001} schnee -0.934 · Bild dort Ego an der Schneegrenze des Punkts [78.28,-180] (-0.934 m) zur Zeit +100 a, Blick hangauf · ungemessen: das Bildpaar der Schneegrenze heute / +100 a (am Gerät); der Sprung ≤ 5 s des Preises (die Maschine)",
+     "sha": "948f68eeee479d4db0192c99c448e887313eefb3",
+     "grund": "ROT: S1 dT100aGrad -0,106 °C gegen Soll ≥ 2 °C ✗ · schneegrenzeDeltaM -1,37 gegen Soll 300 ± 30 % ✗ · kuesteJeSoll 2,351 gegen Soll 1 ± 25 % ✗ · Täter: keine Treibhaus-Drift in 100 a: die Welt erwärmt sich um -0.106 °C, die Schneegrenze wandert -1.37 m, die Küste 3 m (planet-core.js:2092 planetKlimaGlobal: Sternfluss und Walker-Thermostat über Ma, kein CO₂-Antrieb in Jahren) · Fächer 122/136 Adressen (48 Saaten × 2 Zeiten + 40) in 98 ms · Leser stamm/feld-leben.js:1298 _planetAuftrag planet-ort (die Reise: Ort und Zeit der Welt) · Gesetz voxel-worker.js:1446 planetOrtAuftrag → planet-core.js:2092 planetKlimaGlobal · gelaende-core.js:5911 ortGesetz (Sommer, Winter, schneeBandM) · 14 ohne Fähigkeit (kein Küstenpunkt k13 unter 800 Lagen (planet-ort kuesteKm)) · schlechteste {\"saat\":1,\"ort\":null,\"zeit\":0.0001} schnee -0.934 · Bild dort Ego an der Schneegrenze des Punkts [78.28,-180] (-0.934 m) zur Zeit +100 a, Blick hangauf · ungemessen: das Bildpaar der Schneegrenze heute / +100 a (am Gerät); der Sprung ≤ 5 s des Preises (die Maschine)",
      "r6": "konsum",
      "beide": true
     },
@@ -37601,7 +37599,7 @@
   "ohne": 3384
  },
  "kopfVoll": "9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d",
- "zeit": "2026-11-27T18:32:40.512Z",
+ "zeit": "2026-11-27T18:39:43.789Z",
  "vorher": "9a75d61c",
  "bilanz": {
   "gewinn": [],
