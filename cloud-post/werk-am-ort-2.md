@@ -104,7 +104,10 @@ Seite der Fahrbahn → `wer`).
   der Erschrockene (`fort`), dessen Ausweichen das besetzte Ende erreichte, las im Schritt den Punkt hinter dem Ende und warf vor
   dem Schluss des Wegs — jeder Takt neu (wohnhaus #440491, 7 von 7, 12 Loop-Würfe). Schnitt im Schritt: ohne Punkt kein Erreichen,
   der Schluss schließt. schreck+seuche Selbst-Test GRÜN, EXIT 0, 0 Würfe: seuche 88 s (DAUER 310), schreck 238 s (DAUER 297).
-  Weiter: werkort, mengebild, zielplan mit `bleibt`, dann die vier Teile neu mit Stoppuhr.
+  werkort · mengebild · zielplan mit `bleibt` Selbst-Test GRÜN, EXIT 0, 0 Würfe (12 Täter): 424 → 228, 380 → 155, 330 → 105 s.
+  `DAUER_S` neu: Summe 3 958 → 3 006 s (−24 %); die vier Teile im Plan 878 (bewohner allein) · 710 · 709 · 709 (drei Teile
+  trügen 1 002 je Teil — `check.yml` bleibt bis zum Heil-Zug unberührt, also vier). Die vier Teile laufen mit Stoppuhr; danach
+  die Tore und der Schub. bewohner (878 s, ein Lauf) ist jetzt der Engpass.
 
 ## Heap an der GTX 1060 (Koordinator 18:04)
 
