@@ -1,0 +1,189 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-erleben.js
++++ b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
+@@ -3845,11 +3845,116 @@
+         return s.replace(anker, anker + " if (C.nur && !C.nur.includes(name)) return;");
+     };
+     const NEUN_NUR_ABDRUCK = require("crypto").createHash("sha1").update(neunNur(String(NEUN.neunSeite), K5_ANKER)).digest("hex").slice(0, 16);
++    // DAS BAND DER GASSE (S2 gasse_dev_median; IPERKA „lernt von den Profis“, kein Bild im Baum): die Leuchtdichte einer beleuchteten
++    // Fußgänger-Gasse bei Nacht je Perzentil des Bilds in cd/m² (EV bei ISO 100, K 12,5: EV = log2(8·L)). Ganzbild-Perzentile nächtlicher
++    // Gassen veröffentlicht keine gefundene Quelle (Suche 27.11.); das Band setzt sie aus GEMESSENEN Medianen und Mitteln mit
++    // Leuchtdichte-Kamera zusammen, die Norm als zweite Quelle:
++    //   Winter, Fotios & Völker 2019, LRT 51(3):384, Tab. 2 — LMK, Wohnstraße Berlin: Median Straße 0,10 · Rand 0,13–0,30 · 10°-Kreis 0,46
++    //     cd/m², Umgebung ~10⁻²
++    //   Burattini, Bisegna & De Santoli 2024, J. Urban Design 30(1):52, Tab. 3 — LMK in 1,5 m Augenhöhe längs fünf Wohnstraßen Roms:
++    //     Ganzbild-Mittel 0,6–1,8 · Gehweg 0,5–1,4 · Wände 0,9–2,6 cd/m², Lmin/Lmed 0,1
++    //   Vaaja u. a. 2018, Photogramm. J. Finland 26(1), Tab. 1 — Wohnstraße: Fahrbahn 0,41–0,71, unter Bäumen 0,16 cd/m²
++    //   EN 13201-2:2015 (= CIE 115:2010) P1–P6: Ē 15 … 2 lx, Emin 0,2·Ē; L = q0·E mit q0 0,07 (CIE 144:2001, R2/C2) → 1,05 … 0,14 cd/m²
++    //   CIE 150:2017: beleuchtete Fassade im Mittel ≤ 5 · 10 · 25 cd/m² (E2 · E3 · E4)
++    // Geurteilt wird an der MITTE je Perzentil; `tol` (die Breite, die die Quellen tragen) steht als Zeuge im Beleg, nie im Urteil.
++    const GASSE_BAND = { p: [10, 25, 50, 75, 90, 99], cd: [0.04, 0.1, 0.35, 0.9, 2.0, 15], tol: [1.5, 1.3, 1.3, 1.0, 1.0, 2.0] };
++    // die Gasse STEHT im Bild, wenn die Lichter des Orts ≥ 5 % der Pixel um ≥ 1 EV heben (und mindestens 2 000 Pixel): darunter misst das
++    // Histogramm Himmel und Nacht, nie die Gasse — ROT beim Namen
++    const GASSE_MASS = { W: 960, H: 540, abEv: 1, minAnteil: 0.05, minPx: 2000 };
++    // DAS BILD DER GASSE (die Seite, an der Pose der Nacht-Linse): EIN Schuss in das lineare Ziel der Linsen (`__linsenZiel`: HalfFloat, ohne
++    // Luft, VOR der Belichtung und der Tonkurve — der Raum des Bands), Y nach Rec. 709 × `EINHEIT_LX` = cd/m² (die EINE Skala, welt-licht.js:77).
++    // Die Belichtung des Spiels beim Namen: k = toneMappingExposure, die Tonkurve legt 0,18 ÷ k Welt-Einheiten auf Mittelgrau. Derselbe
++    // Schuss mit den Laternen aus (die Wahl hält nur das Licht des Auges, wie `nachtSicht` „ohne“): die LEBENDE Mutante und die Maske der
++    // Gasse (beleuchtet = von den Lichtern des Orts um ≥ abEv gehoben). Zurück: Perzentile je Bild, Anteil, Belichtung, ms je Glied.
++    async function gasseSicht(o) {
++        const [r, T] = [window.anazhRealm, window.THREE];
++        const st = r.state, rend = st.renderer, cam = st.camera, proto = Object.getPrototypeOf(r);
++        const t0 = performance.now(), ms = {};
++        const uhr = (wer) => (ms[wer] = Math.round(performance.now() - t0));
++        rend.setAnimationLoop(null);
++        window.__buehne({ uhr: o.uhr });
++        const { W, H } = o, LX = window.__weltLicht.EINHEIT_LX;
++        const Z = window.__linsenZiel(W, H);
++        const kamZ = Z.kamera(cam), luftZ = Z.ohneLuft();
++        const takt = async (wer) => {
++            r._leuchtPool = null;
++            r._leuchtTakt();
++            for (let k = 0; k < 400 && r._lichtKarteZ && (r._lichtKarteZ.bau || !r._lichtKarteZ.g || r._lichtKarteZ.offen > 0); k++) r._leuchtTakt();
++            await Z.ruhe(cam, wer);
++            r._leuchtTakt();
++        };
++        const leucht = async () => {
++            Z.zeichne(cam);
++            const b = await Z.lies();
++            const y = new Float32Array(W * H);
++            for (let i = 0; i < y.length; i++) y[i] = (0.2126 * b[4 * i] + 0.7152 * b[4 * i + 1] + 0.0722 * b[4 * i + 2]) * LX;
++            return y;
++        };
++        const wahl = r._leuchtQuellen;
++        let mit, ohne, k;
++        try {
++            Z.bundles();
++            await takt("die Gasse");
++            k = rend.toneMappingExposure;
++            uhr("takt");
++            mit = await leucht();
++            uhr("mit");
++            r._leuchtQuellen = function (...a) {
++                return proto._leuchtQuellen.apply(this, a).filter((q) => q.quelle === "auge");
++            };
++            await takt("die Gasse ohne Laternen");
++            ohne = await leucht();
++            uhr("ohne");
++        } finally {
++            r._leuchtQuellen = wahl;
++            if (r._leuchtQuellen === proto._leuchtQuellen) delete r._leuchtQuellen;
++            Z.bundles();
++            luftZ();
++            kamZ();
++            cam.updateMatrixWorld(true);
++            r._leuchtPool = null;
++            r._leuchtTakt();
++            if (Z.rt && Z.rt.dispose) Z.rt.dispose();
++        }
++        const n = W * H;
++        let nichtEndlich = 0, null0 = 0, beleuchtet = 0;
++        const f = 2 ** o.abEv;
++        for (let i = 0; i < n; i++) {
++            if (!Number.isFinite(mit[i]) || !Number.isFinite(ohne[i])) nichtEndlich++;
++            else if (mit[i] <= 0) null0++;
++            else if (mit[i] >= f * Math.max(ohne[i], 1e-9)) beleuchtet++;
++        }
++        const pct = (y) => {
++            const a = y.filter(Number.isFinite).sort();
++            return o.p.map((q) => (a.length ? +a[Math.min(a.length - 1, Math.floor((q / 100) * a.length))].toPrecision(4) : null));
++        };
++        uhr("ende");
++        return { W, H, n, nichtEndlich, null0, beleuchtet, anteil: +(beleuchtet / n).toFixed(4), mit: pct(mit), ohne: pct(ohne), k: +k.toPrecision(4), einheitLx: LX, mittelgrauCd: +((0.18 / k) * LX).toPrecision(4), ms };
++    }
++    // DAS URTEIL DES HISTOGRAMMS (auch der Selbsttest liest es): ΔEV je Perzentil gegen die Mitte des Bands, der Median ihrer Beträge —
++    // FAIL-CLOSED: kein Bild, ein leeres oder unendliches, keine Gasse im Bild (zu wenige beleuchtete Pixel) → kein Wert, der Täter beim Namen
++    function gasseUrteil(m, band, mass) {
++        const ev = (cd) => Math.log2(8 * Math.max(cd, 1e-6));
++        if (!m || m.fehler) return { dev: null, taeter: "kein Bild der Gasse" + (m && m.fehler ? " — " + String(m.fehler).slice(0, 160) : "") };
++        if (!(m.n > 0) || m.nichtEndlich > 0.01 * m.n || !Array.isArray(m.mit) || m.mit.length !== band.p.length || !(m.mit[m.mit.length - 1] > 0))
++            return { dev: null, taeter: "das Bild der Gasse trägt keine Leuchtdichte (" + m.n + " Pixel, " + m.nichtEndlich + " unendlich, p" + band.p[band.p.length - 1] + " " + (m.mit && m.mit[m.mit.length - 1]) + " cd/m²)" };
++        if (!(m.beleuchtet >= mass.minPx && m.anteil >= mass.minAnteil))
++            return { dev: null, taeter: "keine Gasse im Bild: die Lichter des Orts heben " + m.beleuchtet + " Pixel um ≥ " + mass.abEv + " EV (Anteil " + m.anteil + ", Soll ≥ " + mass.minAnteil + " und ≥ " + mass.minPx + " Pixel)" };
++        const je = band.cd.map((c, i) => +(ev(m.mit[i]) - ev(c)).toFixed(2));
++        const a = je.map(Math.abs).sort((x, y) => x - y);
++        const s = je.slice().sort((x, y) => x - y);
++        const mitte = (v) => (v[(v.length - 1) >> 1] + v[v.length >> 1]) / 2;
++        return { dev: +mitte(a).toFixed(2), richtung: +mitte(s).toFixed(2), je, taeter: null };
++    }
+     LEITERN.push(
+         leiter({
+             leiter: "erleben.bild.nacht",
+             sek: 60,
+-            seite: { NEUN_NUR: String(neunNur), K5_ANKER: JSON.stringify(K5_ANKER), NEUN_ABDRUCK: JSON.stringify(NEUN_NUR_ABDRUCK), NEUN_C: JSON.stringify(NEUN.neunC), K5_GILT: String(NEUN.k5Gilt) },
++            // DER ORT ZUERST (die Frist, Koordinator 27.11.: die Probe riss 257 s): `probeOrt` (punkte.cjs ORT_MUSTER) nimmt das ERSTE
++            // „umstellen --ort“ im Text der Probe — bis hier stand es in NEUN_C (das Ort-Glied der NEUN-Seite, „dorf“): die Sitzung stellte
++            // die Probe an das Dorf, und die Probe zahlte den Weg zur dichtesten Pose (stadt-voll third, `L.ort` bis 240 s) in ihrer
++            // eigenen Frist von 60 s. Jetzt steht der Ort der Leiter vor NEUN_C, die Sitzung stellt ihn vor der Frist (warme Welt)
++            seite: { ORT: JSON.stringify(["umstellen", "--ort", "stadt-voll", "--sicht", "third"]), NEUN_NUR: String(neunNur), K5_ANKER: JSON.stringify(K5_ANKER), NEUN_ABDRUCK: JSON.stringify(NEUN_NUR_ABDRUCK), NEUN_C: JSON.stringify(NEUN.neunC), K5_GILT: String(NEUN.k5Gilt), GASSE_BAND: JSON.stringify(GASSE_BAND), GASSE_MASS: JSON.stringify(GASSE_MASS), GASSE_SICHT: String(gasseSicht), GASSE_URTEIL: String(gasseUrteil) },
+             pfad: ["stamm/dirigent-kern.js", "stamm/gelaende-kollision.js", "stamm/stoff-material.js", "stamm/feld-leben.js", "welt-licht.js", "scripts/lib/licht-linsen.cjs", "spec/profiband/haushalt.json"],
+             welt: [{ wort: "quellen", ab: 1, was: "Leuchtquellen der Welt, gezählt im Verzeichnis „licht“" }],
+             sprossen: {
+@@ -3909,11 +4014,15 @@
+                 },
+             },
+             lauf: async function nachtLauf(H, P, L) {
+-                const ort = await L.ort("stadt-voll", "third").then(
++                // DER ORT DER LEITER (H.seite.ORT, das ERSTE Glied der Seite): die Sitzung liest ihn aus dem Text der Probe (punkte.cjs
++                // `probeOrt`) und stellt ihn VOR der Frist; die Probe steht ihn hier warm in der Sicht der Leiter
++                const [, , ortName, , ortSicht] = H.seite.ORT;
++                const ort = await L.ort(ortName, ortSicht).then(
+                     () => null,
+                     (e) => String((e && e.message) || e).split("\n")[0]
+                 );
+-                L.preisPose("stadt-voll", "third");
++                L.zeile("Ort " + ortName + " " + ortSicht + " steht (" + H.sek() + " s der Probe)");
++                L.preisPose(ortName, ortSicht);
+                 if (ort) {
+                     // ohne die dichteste Pose wäre die Zählung zu klein und „Umfang nicht erzeugbar“ gelogen: jede Sprosse wirft beim Ort
+                     L.zeile("Nacht: stadt-voll nicht gestellt — " + ort);
+@@ -3955,11 +4064,47 @@
+                     if (n < P.sprossen[2].umfang.verlangt) return L.umfang(2, n, zaehlWas);
+                     if (!linse) return L.leser(2, "Bodenfleck ≥ 1 EV je sichtbarer Quelle in 50 m: " + ohneLinse, n);
+                     if (!(nacht.sichtbar > 0)) throw new Error("die Nacht-Linse sah an stadt-voll third keine Quelle (" + nacht.quellen + " in 50 m)");
+-                    L.gemessen(2, { bodenfleck_anteil: nacht.anteil, gasse_dev_median: null }, {
++                    // DAS HISTOGRAMM DER GASSE gegen das Band (GASSE_BAND, die Profis mit Zahl): an derselben Pose, Mitternacht wie die Linse
++                    const B = H.seite.GASSE_BAND, M = H.seite.GASSE_MASS, U = H.seite.GASSE_URTEIL;
++                    const soll = P.sprossen[2].soll.find((z) => z.wort === "gasse_dev_median").wert;
++                    const rot = (u) => !(u && u.dev != null && u.dev <= soll);
++                    // DER SELBSTTEST DES LESERS (je Lauf, im node der Probe): das Band selbst GRÜN; die Belichtung ×4, die Laternen aus (die Lichter
++                    // des Orts heben kein Pixel), kein Bild und ein leeres Bild ROT — sonst urteilt der Leser nicht
++                    const fall = (cd, o) => Object.assign({ n: M.W * M.H, nichtEndlich: 0, null0: 0, beleuchtet: 60000, anteil: 0.116, mit: cd }, o || {});
++                    const selbst = [
++                        ["das Band", U(fall(B.cd), B, M), false],
++                        ["Belichtung ×4", U(fall(B.cd.map((c) => 4 * c)), B, M), true],
++                        ["Laternen aus", U(fall(B.cd.map((c) => c / 16), { beleuchtet: 0, anteil: 0 }), B, M), true],
++                        ["kein Bild", U(null, B, M), true],
++                        ["leeres Bild", U(fall(B.cd.map(() => 0)), B, M), true],
++                    ]
++                        .filter(([, u, sollRot]) => rot(u) !== sollRot)
++                        .map(([name, u]) => name + " " + (u.dev != null ? u.dev + " EV" : u.taeter));
++                    let g = null, gFehler = null;
++                    try {
++                        g = await L.ev("return await (" + H.seite.GASSE_SICHT + ")(" + JSON.stringify(Object.assign({ uhr: 0, p: B.p }, M)) + ");", Math.max(15, Math.min(40, L.rest() - 25)));
++                    } catch (e) {
++                        gFehler = String((e && e.message) || e).split("\n")[0].slice(0, 200);
++                    }
++                    if (g) L.zeile("Gasse (stadt-voll third, " + g.W + "×" + g.H + ", linear vor der Tonkurve): " + JSON.stringify(g).slice(0, 700));
++                    const u = U(g || { fehler: gFehler || "die Seite gab nichts" }, B, M);
++                    const uOhne = g ? U(Object.assign({}, g, { mit: g.ohne }), B, M) : null;
++                    let dev = u.dev, gTaeter = u.taeter;
++                    if (selbst.length) (dev = null), (gTaeter = "Selbsttest des Lesers: " + selbst.join(" · ") + " — der Leser urteilt nicht");
++                    else if (dev != null && !rot(uOhne)) (dev = null), (gTaeter = "die Linse sieht die Laternen nicht: ohne die Lichter des Orts ΔEV-Median " + uOhne.dev + " EV (Soll > " + soll + ")");
++                    else if (dev != null && dev > soll)
++                        gTaeter = "das Histogramm der Gasse liegt " + (u.richtung < 0 ? "unter" : "über") + " dem Band (Median " + u.richtung + " EV): ΔEV " + B.p.map((q, i) => "p" + q + " " + u.je[i]).join(" · ") + " — Belichtung k " + g.k + ", Mittelgrau bei " + g.mittelgrauCd + " cd/m²";
++                    L.gemessen(2, { bodenfleck_anteil: nacht.anteil, gasse_dev_median: dev }, {
+                         erzeugt: n,
+                         welt: { quellen: n },
+-                        taeter: "Gassen-Histogramm gegen Fotosatz: kein Fotosatz nächtlicher Gassen im Baum, kein Leser des Histogramms" + (nacht.anteil >= 0.9 ? "" : " · Bodenfleck " + nacht.gut + " von " + nacht.sichtbar),
+-                        beleg: { sichtbar: nacht.sichtbar, gut: nacht.gut, ohneKarte: nacht.ohneKarte, quellen50: nacht.quellen },
++                        taeter: [gTaeter, nacht.anteil >= 0.9 ? null : "Bodenfleck " + nacht.gut + " von " + nacht.sichtbar].filter(Boolean).join(" · ") || null,
++                        beleg: {
++                            sichtbar: nacht.sichtbar,
++                            gut: nacht.gut,
++                            ohneKarte: nacht.ohneKarte,
++                            quellen50: nacht.quellen,
++                            gasse: g ? { band: B, ist: g.mit, ohneLaternen: g.ohne, je: u.je || null, richtung: u.richtung != null ? u.richtung : null, ohneDev: uOhne && uOhne.dev, beleuchtet: g.beleuchtet, anteil: g.anteil, k: g.k, mittelgrauCd: g.mittelgrauCd, ms: g.ms } : { fehler: gFehler },
++                        },
+                     });
+                 });
+                 await L.je(1, async () => {
