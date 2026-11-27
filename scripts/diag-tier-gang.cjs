@@ -551,6 +551,7 @@ const FISCH = async (k) => {
 // --selftest: der Fisch ohne Volumen (seine Glieder galten als offene Haut, bis 27.11.) → ROT an den Dekaden (1,354).
 const MASSEN_SOLL = { dekaden: 3 };
 const MASSEN = (k) => {
+    /* eslint-disable no-undef */
     const s = st,
         A = AnazhRealm;
     const zur = k.stub ? leihe(A, { _fischGesetz: ((echt) => () => Object.assign({}, echt(), { leibV: 0 }))(A._fischGesetz.bind(A)) }) : () => {};
@@ -585,6 +586,7 @@ const MASSEN = (k) => {
         zur();
     }
     const m = Object.values(kg).filter((x) => x > 0);
+    /* eslint-enable no-undef */
     return { kg, ohne, dekaden: m.length > 1 ? Math.round(1000 * Math.log10(Math.max(...m) / Math.min(...m))) / 1000 : 0 };
 };
 

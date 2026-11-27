@@ -3513,7 +3513,12 @@ AnazhRealm._geschlossenesVolumen = function (geo) {
         const orte = new Map();
         lage = new Uint32Array(N);
         for (let i = 0; i < N; i++) {
-            const k = Math.round(p[3 * i] * 1e6) + "," + Math.round(p[3 * i + 1] * 1e6) + "," + Math.round(p[3 * i + 2] * 1e6);
+            const k =
+                Math.round(p[3 * i] * 1e6) +
+                "," +
+                Math.round(p[3 * i + 1] * 1e6) +
+                "," +
+                Math.round(p[3 * i + 2] * 1e6);
             if (!orte.has(k)) orte.set(k, i);
             lage[i] = orte.get(k);
         }

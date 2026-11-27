@@ -859,7 +859,8 @@ AnazhRealm._fischGesetz = function () {
         // (`_kleintierForm`, geschlossen gemessen wie jede Haut, `_geschlossenesVolumen`) × seine Ausdehnung — 0,3 m Leib → 0,24 kg
         // (das Band: Fulton 1904, K = 100·W/L³ [g, cm], Salmoniden 0,9–1,3 — OMAFA 2024 → 30 cm: 0,24–0,35 kg)
         const form = AnazhRealm._geschlossenesVolumen(AnazhRealm._kleintierForm());
-        if (!form.geschlossen || !(form.v > 0)) return AnazhRealm._kernPflichtBruch("leib:Keil des Fischs ohne geschlossene Haut");
+        if (!form.geschlossen || !(form.v > 0))
+            return AnazhRealm._kernPflichtBruch("leib:Keil des Fischs ohne geschlossene Haut");
         const leibV = glieder.reduce((a, g) => a + form.v * g[0] * g[1] * g[2], 0);
         return (AnazhRealm._fischGesetzMemo = Object.freeze({
             leibV,
