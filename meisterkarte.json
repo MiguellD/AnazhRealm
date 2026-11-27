@@ -1,13 +1,13 @@
 {
   "stand": "2026-11-27",
-  "kopf": "42a14279",
-  "version": "V18.546.455",
+  "kopf": "948f68ee",
+  "version": "V18.546.456",
   "skala": "2.0",
   "summe": 219,
   "max": 330,
   "maschine": {
-    "kopf": "42a14279",
-    "zeit": "2026-11-27T16:48:32.619Z",
+    "kopf": "948f68ee",
+    "zeit": "2026-11-27T16:58:53.830Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -3794,7 +3794,7 @@
           "punkte": 1,
           "staffel": "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
           "messung": "`werkbank haenger 60 --regler frei --wandern bahn` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`). Der Regler ist der des Spielers (R8): ohne Angabe fährt `haenger` voll; `--wandern kreis` kennt der Kopf nicht.",
-          "beleg": "Maschine: gehalten: Gehen 61 Bilder · max 108.65 ms · 77.05 % > 33 ms · Fahrt 51 Bilder · max 92.02 ms · 90.20 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 2 Bild(er) > 100 ms (max 108.65), 77.05 % > 33 ms | Fahrt: 90.20 % > 33 ms an bed6256c radeon · gehalten: Gehen 82 Bilder · max 75 ms · 24.39 % > 33 ms · Fahrt 46 Bilder · max 116.68 ms · 82.61 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 24.39 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 82.61 % > 33 ms an bed6256c gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an bed6256c: Last: Referenz f 1,287 (Faden 1,287 · alle Kerne 1,203; vor 107,4/310 ms, nach 107,5/312,5 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node.exe punkte/punkte.cjs buchen --kopf bed6256cc52c9489d5f · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +25) — zuletzt an 7e73426e: Last: Referenz f 1,376 (Faden 1,376 · alle Kerne 1,185; vor 121,9/260,1 ms, nach 98,9/241,1 ms, Ruhe 88,6/219,5 ms seit 2026-11-26) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+          "beleg": "Maschine: gehalten: Gehen 61 Bilder · max 108.65 ms · 77.05 % > 33 ms · Fahrt 51 Bilder · max 92.02 ms · 90.20 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 2 Bild(er) > 100 ms (max 108.65), 77.05 % > 33 ms | Fahrt: 90.20 % > 33 ms an bed6256c radeon · gehalten: Gehen 82 Bilder · max 75 ms · 24.39 % > 33 ms · Fahrt 46 Bilder · max 116.68 ms · 82.61 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 24.39 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 116.68), 82.61 % > 33 ms an bed6256c gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an bed6256c: Last: Referenz f 1,287 (Faden 1,287 · alle Kerne 1,203; vor 107,4/310 ms, nach 107,5/312,5 ms, Ruhe 83,5/259,8 ms seit 2026-11-16) · fremd: node.exe punkte/punkte.cjs buchen --kopf bed6256cc52c9489d5f · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, koerper-core.js +28) — zuletzt an 7e73426e: Last: Referenz f 1,376 (Faden 1,376 · alle Kerne 1,185; vor 121,9/260,1 ms, nach 98,9/241,1 ms, Ruhe 88,6/219,5 ms seit 2026-11-26) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
           "schlupfloch": "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt; den Regler auf voll stellen, um den Spieler-Takt zu meiden: R8 fährt den Regler des Spielers.",
           "aenderung": "Gemessen 0 → 1 (M29, e5003509, GTX, Regler des Spielers): kein Schnitt, die Messung am Kopf; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an b0b2d8ed gemessen (M34) 22.10. 0 → 1.; nach R6 (stadt-takt, fahrt-takt-Folge-Morphs, 16dd81d0) 23.10. 1 → 0.",
           "maschine": true
@@ -4606,7 +4606,7 @@
     },
     {
       "stand": "2026-11-27",
-      "kopf": "42a14279",
+      "kopf": "948f68ee",
       "summe": 219,
       "max": 330,
       "skala": "2.0",
@@ -4614,7 +4614,7 @@
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 27.11.2026, Kopf main 42a14279 (V18.546.455)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 27.11.2026, Kopf main 948f68ee (V18.546.456)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
