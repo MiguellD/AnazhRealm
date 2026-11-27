@@ -4102,8 +4102,11 @@ class AnazhRealm_siedlung_bewohner {
             const l = Math.hypot(lenk.vx, lenk.vz);
             [x, z, rx, rz] = [x + lenk.vx * dt, z + lenk.vz * dt, lenk.vx / l, lenk.vz / l];
             // der Punkt gilt als erreicht, wenn das Bein von hier zum nächsten frei ist (sonst, und am Ende seines Wegs, geht er
-            // ihn genau)
-            const [n, d] = [pts[b.wi + 1], Math.hypot(pts[b.wi].x - x, pts[b.wi].z - z)];
+            // ihn genau). Ist kein Punkt mehr (das Ausweichen erreichte das besetzte Ende, und der Erschrockene läuft doch fort,
+            // `fort`), schließt der Schluss unten den Weg — bis werk-am-ort-2 las der Schritt den Punkt hinter dem Ende, warf vor
+            // dem Schluss, und der Weg blieb offen: jeder Takt warf neu (schreck in der stehenden Stadt: wohnhaus #440491, 7 von 7)
+            const [n, q] = [pts[b.wi + 1], pts[b.wi]];
+            const d = q ? Math.hypot(q.x - x, q.z - z) : Infinity;
             if (d <= Math.max(0.3, l * dt) && (n ? !this._bewohnerWand({ x, z }, n) : d < 1e-6))
                 this._bewohnerErreicht(b);
         }
@@ -4225,11 +4228,6 @@ class AnazhRealm_siedlung_bewohner {
     // Sein Tempo (`vx`, `vz`) lesen die anderen. Die Ankunft geht ohne Zuschauer (`_bewohnerSchritt` allein). Liefert, ob sich
     // die Lage änderte.
     _bewohnerGehen(S, b, dt) {
-        // OHNE ZEIT KEIN SCHRITT (werk-am-ort-2): ein Takt ohne Zeit (`delta` 0 — das Warten auf die Ankunft, ein Takt im Halt)
-        // geht nicht und ändert nichts. Bis hier teilte er durch sie: der Rückstand 0 ÷ 0 machte `tempoTag` NaN, der Schritt trug
-        // den Leib nach NaN, sein Tritt schrieb die Zelle „NaN,NaN", und der Stand brach beim Packen (schreck in der stehenden
-        // Stadt: Rathaus #619833, „Trampelpfad: NaN ist kein Varint")
-        if (!(dt > 0)) return false;
         const g = b.leib;
         const BW = AnazhRealm.BEWOHNER;
         const [x0, z0] = [g.position.x, g.position.z];
@@ -4247,7 +4245,11 @@ class AnazhRealm_siedlung_bewohner {
         const [SG, gE] = [TC.STEUER_GESETZ, TC.GANG_GESETZ.g];
         const roh = Number.isFinite(b.zielUhr) ? (b.uhr - b.zielUhr) * b.tempo - b.gegangen : 0;
         const rueck = (b.rueck = Number.isFinite(b.wegRest) ? Math.min(roh, b.wegRest) : roh);
-        const mehr = Math.min(Math.sqrt(2 * SG.brems * gE * Math.abs(rueck)), Math.abs(rueck) / dt);
+        // EIN TAKT OHNE ZEIT (`dt` 0 — das Warten auf die Ankunft, ein Takt im Halt) geht keinen Meter, er schließt nur den Weg
+        // an seinem Ende (`_bewohnerSchritt`); er teilt nie durch sie. Bis werk-am-ort-2 machte der Rückstand 0 ÷ 0 `tempoTag`
+        // NaN, der Schritt trug den Leib nach NaN, sein Tritt schrieb die Zelle „NaN,NaN", und der Stand brach beim Packen
+        // („Trampelpfad: NaN ist kein Varint"; schreck in der stehenden Stadt: rathaus #619833)
+        const mehr = dt > 0 ? Math.min(Math.sqrt(2 * SG.brems * gE * Math.abs(rueck)), Math.abs(rueck) / dt) : 0;
         const v0 = b.tempoJetzt > 0 && Number.isFinite(b.tempoTag) ? b.tempoTag : b.tempo;
         const soll = Math.max(
             v0 - SG.brems * gE * dt,
@@ -4256,7 +4258,7 @@ class AnazhRealm_siedlung_bewohner {
         b.tempoTag = Math.max(b.tempo / 2, Math.min(b.tempo * (1 + BW.aufholen), soll));
         const dtW = (dt * b.tempoTag) / b.tempo;
         const [weg0, rest0] = [b.weg, b.wegRest];
-        let lenk = b.drinnen ? null : this._bewohnerAusweichen(S, b, dtW);
+        let lenk = b.drinnen || !(dt > 0) ? null : this._bewohnerAusweichen(S, b, dtW);
         // DER VORRANG DER FAHRBAHN (Leiter mensch.netz.verkehr, das EINE Gesetz der Straße): wer neben der Bahn eines Wagens steht und mit dem
         // Tempo seines Wegs in sie träte, wartet am Rand, solange ein Wagen seine Querung beansprucht (`_verkehrVorrang`) — wer
         // schon in ihr geht, geht hinüber, und der Wagen wartet die Dauer seiner Querung. Bis hier nahm der
@@ -4267,7 +4269,7 @@ class AnazhRealm_siedlung_bewohner {
         // vor einem Leib neben der Fahrbahn).
         // DIE QUERUNG IST EINE RAUM-ZEIT-RESERVIERUNG (w27-verkehr-leib, `_verkehrVorrang`): am Rand prüft er seine ganze Querung
         // gegen die Zeit der Wagen, nie nur den nächsten Schritt — wer die Fahrbahn betritt, hat sie bis hinter die letzte Bahn.
-        if (S.verkehr && b.weg && !b.drinnen) {
+        if (S.verkehr && b.weg && !b.drinnen && dt > 0) {
             const e = lenk ? null : this._bewohnerLinie(b, x0, z0);
             // (sein Wunsch zum nächsten Punkt seines Plans: tetrapoda `zielWunsch`, die Ziel-Kette — kein Halt voraus)
             const w = e && TC.zielWunsch(e.x - x0, e.z - z0, Infinity, b.tempo);
@@ -4282,8 +4284,7 @@ class AnazhRealm_siedlung_bewohner {
         if (fort && Math.hypot(x0 - fort.x, z0 - fort.z) < window.__koerperCore.SCHRECK_GESETZ.gefahrM)
             lenk = { vx: fort.ux * b.tempo, vz: fort.uz * b.tempo };
         const bewegt = this._bewohnerSchritt(b, dtW, lenk);
-        b.vx = (g.position.x - x0) / dt;
-        b.vz = (g.position.z - z0) / dt;
+        if (dt > 0) [b.vx, b.vz] = [(g.position.x - x0) / dt, (g.position.z - z0) / dt]; // ohne Zeit gilt sein Tempo
         if (weg0 && (b.weg === weg0 || !b.weg)) b.gegangen = (b.gegangen || 0) + rest0 - (b.wegRest || 0);
         b.tempoJetzt = b.weg ? Math.hypot(b.vx, b.vz) : 0; // der Gang geht das Tempo, das er geht
         return bewegt;

@@ -99,8 +99,12 @@ Seite der Fahrbahn → `wer`).
   nicht heim (die Heimkehr ließ die Liste fallen, jeder Täter wartete 82–113 s auf jeden Leib): seuche 304 → 128 s, schreck
   342 → 213 s. Die stehende Stadt hob einen Welt-Bruch: `_bewohnerGehen` teilte durch einen Takt ohne Zeit (0 ÷ 0 → `tempoTag`
   NaN → Leib in NaN → Tritt „NaN,NaN" → „Trampelpfad: NaN ist kein Varint"; Täter benannt: Rathaus #619833 in schreck). Schnitt
-  an der Wurzel: ohne Zeit kein Schritt (`stamm/siedlung-bewohner.js`), merge-tree gegen main und sprache-dialekt-2 sauber.
-  Messung schreck+seuche mit Selbst-Test läuft; danach die übrigen Stadt-Proben und die Teile neu mit Stoppuhr.
+  an der Wurzel: ein Takt ohne Zeit teilt nie durch sie (`mehr`, `vx`/`vz` in `_bewohnerGehen`; der Takt selbst bleibt — er
+  schließt den Weg an seinem Ende, ein früher Ausstieg ließ ihn offen). Darunter stand ein zweiter Bruch, den der NaN verdeckte:
+  der Erschrockene (`fort`), dessen Ausweichen das besetzte Ende erreichte, las im Schritt den Punkt hinter dem Ende und warf vor
+  dem Schluss des Wegs — jeder Takt neu (wohnhaus #440491, 7 von 7, 12 Loop-Würfe). Schnitt im Schritt: ohne Punkt kein Erreichen,
+  der Schluss schließt. schreck+seuche Selbst-Test GRÜN, EXIT 0, 0 Würfe: seuche 88 s (DAUER 310), schreck 238 s (DAUER 297).
+  Weiter: werkort, mengebild, zielplan mit `bleibt`, dann die vier Teile neu mit Stoppuhr.
 
 ## Heap an der GTX 1060 (Koordinator 18:04)
 
