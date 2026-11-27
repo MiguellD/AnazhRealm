@@ -90,8 +90,9 @@ async function WELLE_L(ort) {
     };
     r.dslRun = function (prog, opts) {
         const op = Array.isArray(prog) ? prog[0] : null;
-        if (op === "voxel_carve") return (zaehl.carve++, { ok: true });
-        if (op === "voxel_fill") return (zaehl.fill++, { ok: true });
+        // die Antwort in der EINEN Form des Feldes: `_erdbauAkt` bucht nur den Edit, den das Log trägt
+        if (op === "voxel_carve") return (zaehl.carve++, { ok: true, log: [{ event: "voxel_carved", op }] });
+        if (op === "voxel_fill") return (zaehl.fill++, { ok: true, log: [{ event: "voxel_filled", op }] });
         return orig.dsl.call(this, prog, opts);
     };
     r.damagePlayer = function (amount, source) {
@@ -1475,7 +1476,7 @@ async function WELLE_L(ort) {
                     neige(-0.5);
                     const PC = bodenPunkt();
                     const abC = PC ? strahlAb(PC) : null;
-                    r.dslRun = (op) => (erde.push(op && op[0]), { ok: true });
+                    r.dslRun = (op) => (erde.push(op && op[0]), { ok: true, log: [{ event: "voxel_carved", op: "voxel_carve" }] });
                     fall(
                         "graben",
                         !!s.blueprints.klinge_spitzhacke &&

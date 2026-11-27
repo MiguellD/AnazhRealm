@@ -3117,16 +3117,37 @@ class AnazhRealm_gelaende_chunks {
         return this._addVoxelEdit(x, y, z, r, "fill");
     }
 
+    // DER ERDBAU DES SPIELERS (erdbau#1, 27.11.): EIN Weg für Graben und Aufschütten aus Hand und Wort — der DSL-Op (er reist zu
+    // den Mitspielern) und seine Antwort: es gilt nur der Edit, den das Feld trägt (`voxel_carved`/`voxel_filled` im Log des
+    // Programms); das Aufschütten zahlt sein Material erst danach (`_voxelFillGate` prüft nur). Bis hier buchte jeder Leser blind:
+    // unter dem Halt einer Messung („Welt-Akt gehalten: human wollte voxel_carve“, `_messHalt`) grub der Klick nichts, und das
+    // Inventar bekam 5× quarz (Radeon 27.11. am Fluss −714/616: Edits 3 → 3, Boden 22,28 → 22,28). → { getan, gate }; ohne
+    // Material (`gate.ok` false) läuft kein Op.
+    _erdbauAkt(mode, x, y, z, r) {
+        const fill = mode === "fill";
+        const gate = fill ? this._voxelFillGate() : { ok: true, free: true };
+        if (!gate.ok) return { getan: false, gate };
+        const res = this.dslRun([fill ? "voxel_fill" : "voxel_carve", x, y, z, r], { source: "human" });
+        const getan = !!res && res.log.some((e) => e.event === (fill ? "voxel_filled" : "voxel_carved"));
+        if (getan && !gate.free) this._consumeAnyMaterial(gate.cost);
+        return { getan, gate };
+    }
+
+    // Die Material-Einheiten im Inventar (alle Material-Slots).
+    _materialVorrat() {
+        const inv = this.state.player && this.state.player.inventory;
+        if (!Array.isArray(inv)) return 0;
+        let total = 0;
+        for (const slot of inv) if (slot && slot.kind === "material") total += slot.count || 0;
+        return total;
+    }
+
     // Zieht `n` Material-Einheiten aus dem Inventar (alle Material-Slots, FIFO); false + Inventar
     // unberührt, wenn nicht genug da ist. Irgendein Material — die Voxel-Farbe kommt aus dem Welt-Feld.
     _consumeAnyMaterial(n) {
         const inv = this.state.player && this.state.player.inventory;
         if (!Array.isArray(inv)) return false;
-        let total = 0;
-        for (const slot of inv) {
-            if (slot && slot.kind === "material") total += slot.count || 0;
-        }
-        if (total < n) return false;
+        if (this._materialVorrat() < n) return false;
         let remaining = n;
         for (let i = 0; i < inv.length && remaining > 0; i++) {
             const slot = inv[i];
@@ -3141,12 +3162,13 @@ class AnazhRealm_gelaende_chunks {
     }
 
     // Modus-Gate fürs Aufschütten (Spiegel von `_buildMaterialGate`): pfad = Material-Kreis (graben
-    // gibt, aufschütten kostet COST Material); frieden + schöpfer formen frei.
+    // gibt, aufschütten kostet COST Material); frieden + schöpfer formen frei. Es PRÜFT nur — bezahlt wird nach dem Edit
+    // (`_erdbauAkt`).
     _voxelFillGate() {
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         if (mode !== "pfad") return { ok: true, free: true };
         const COST = 4;
-        if (this._consumeAnyMaterial(COST)) return { ok: true, free: false, cost: COST };
+        if (this._materialVorrat() >= COST) return { ok: true, free: false, cost: COST };
         return { ok: false, reason: "kein Material" };
     }
 
