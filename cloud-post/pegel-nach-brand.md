@@ -172,3 +172,12 @@ Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
 - K10 LEER (die Höhlen-Probe fand 8 statt ≥ 20 Proben, Spieler/Kamera/Tier 0) — läuft in der Batterie gegen main gemessen.
 
 Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
+
+## 28.11. 00:30 — Lebenszeichen: Kopf 4 am main 23b593ac gemessen; main b56b51f0 (sprache-dialekt-2b, wurf-mit-luft-3) gemischt, glatt — die Batterie läuft neu
+- **Schnitte:** `laufQ` misst den Hub über dem Grund (trocken im geschnitzten Bett, Hub 0), der Grund trägt `PEGEL.bfi` 0,7 seines Klimas (Beck et al. 2013); `laufFalte` gibt der Kurvenzahl den Knoten auf jetzt (der gehaltene Sturm fließt ab); Linse wetter-wache (A) KRONE streng mit Mutant.
+- **Die vier Namen vom 22:31-Blatt:** `gate:wasser-leben` GRÜN bis auf K10 LEER (8 Proben — am main b3740dd5 in derselben Kiste wortgleich: die Kiste, nicht der Kopf), P4 REGEN Hub 0,01 → 0,20 m, Körper 0,20 · Playtest „Voxel V9.43-d → Welle L“ ✅ · WERK-IM-WASSER GRÜN (Furt F) · `gate:kamera-laub` K7 ✅.
+- **Zahlen:** breitester Fluss trocken 0,43 → 0,71 m; über der Krone im Klima 23 % → 1,7 % der Zeit (Median 0,160 < 0,200); S1 ueberAueM 0,30 m, regenMax 89,3 mm, bordvoll 20 → 29 von 40; Linse Brand ×1,896; S3-Kandidat ×1,134. Gegenlauf ohne Brand am gemischten Baum byte-gleich (tafel cf236202…, spiegel 65038fad…).
+- Dazu grün: stand-takt ×3, worker-dichte ×5, anker, welt-boot, fachwerk, statik, format, lint, daten-contract, betriebsgesetz.
+- **offen:** stoerung#3 ROT (×1,134 < 1,3); das Bildpaar der Flut an der Station ungefahren (Kandidat S1-Bild, Richter die GTX 1060).
+
+Karte 2 gebucht 156 von 1 718 · Status ZWISCHENSTAND.
