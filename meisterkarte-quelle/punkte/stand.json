@@ -870,8 +870,9 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 031f4700: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild",
-     "gehalten": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/stamm.cjs, stamm/dirigent-kern.js +3)",
+     "gehalten": true,
+     "r6": "konsum"
     },
     {
      "id": "gelaende.K2#2",
@@ -37503,7 +37504,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 299,
+  "konsum": 300,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37626,10 +37627,10 @@
    "ultiversum.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3368
+  "ohne": 3367
  },
  "kopfVoll": "eef726c747050e60042a4a0c9f65fea3ff3e9077",
- "zeit": "2026-11-27T07:07:42.091Z",
+ "zeit": "2026-11-27T07:24:30.883Z",
  "vorher": "eef726c7",
  "bilanz": {
   "gewinn": [],
