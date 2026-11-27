@@ -1,0 +1,29 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-leben.js	2026-11-27 01:11:38.935188866 +0000
++++ b/meisterkarte-quelle/punkte/stationen/k2-leben.js	2026-11-27 01:15:42.991484704 +0000
+@@ -471,7 +471,7 @@
+                             const kh = r._gelaende().ort.klimaHeute;
+                             const grad = 180 / Math.PI;
+                             const frage = (samen, P) => Promise.all(P.map((b) => r._planetAuftrag({ type: "planet-ort", samen, breite: b[0], laenge: b[1], zeitMa: 0 })));
+-                            const zeile = (x) => [x.land ? 1 : 0, kh.sommer + x.delta.klima.sommer, kh.spendeMm * x.delta.klima.spendeVerh, x.delta.wuchs.wald, x.delta.klima.sommerPhase];
++                            const zeile = (x) => [x.land ? 1 : 0, kh.sommer + x.delta.klima.sommer, kh.spendeMm * x.delta.klima.spendeVerh, x.delta.wuchs.wald, x.delta.klima.sommerPhase, x.lebensraum.mangrove, x.lebensraum.moor, x.lebensraum.kuestenwueste];
+                             let h = 0x2545f491;
+                             const q = () => {
+                                 h = (h + 0x6d2b79f5) >>> 0;
+@@ -500,6 +500,8 @@
+                     const spiel = (z) => (z[3] >= 0.5 ? 1 : 0);
+                     const land = (L) => L.filter((z) => z[0] === 1);
+                     const passt = (L) => (L.length ? (100 * L.filter((z) => ref(z) === spiel(z)).length) / L.length : null);
++                    // der Lebensraum des Orts (planet-ort `lebensraum`, planet-core pflanzenDeckung): Anteil des Lands ≥ 0,5 je Zeile
++                    const lebensraum = (L) => (L.length ? Object.fromEntries(["mangrove", "moor", "kuestenwueste"].map((k, i) => [k, (100 * L.filter((z) => z[5 + i] >= 0.5).length) / L.length])) : null);
+                     const kappa = (L) => {
+                         const n = L.length;
+                         if (!n) return null;
+@@ -590,7 +592,7 @@
+                         1: { werte: lok ? { uferProzent: lz.uferArten ? (100 * lz.uferNass) / lz.uferArten : null, waermeAussen: lz.waermeAussen, gipfelBaeume: lz.gipfelBaeume } : {}, zeuge: lz },
+                         2: { werte: lok ? { stufenProzent: haenge ? (100 * richtig) / haenge : null, kantenProzent: wechsel ? (100 * kanten) / wechsel : null, haenge } : {}, zeuge: lok ? { antworten: lok.antworten, haenge } : { fehler: lokFehler } },
+                         3: { werte: pl ? { kappa: kappa(kont), landPunkte: kont.length, waldProzent: kont.length ? (100 * kont.filter((z) => spiel(z) === 1).length) / kont.length : null } : {}, zeuge: Object.assign({}, planetZ, { klassen: new Set(kont.map(ref)).size }) },
+-                        4: { werte: pl ? { passtProzent: passt(planet), landPunkte: planet.length } : {}, zeuge: planetZ, nicht: "keine Orbit-Pose (scripts/werkbank.cjs /bild); der Wuchs des Planeten trägt nur Decke und Wald — keine Mangrove, kein Moor, keine Küstenwüste (voxel-worker.js planetOrtAuftrag delta.wuchs)" },
++                        4: { werte: pl ? { passtProzent: passt(planet), landPunkte: planet.length, lebensraumProzent: lebensraum(planet) } : {}, zeuge: planetZ, nicht: "keine Orbit-Pose: das Spiel zeichnet den Planeten nicht aus der Ferne (planet-core planetKarte liest nur scripts/diag-planet.cjs) — orbitAehnlich ungemessen" },
+                         5: { werte: pl ? { vorhersagbarProzent: vorhersagbar, planeten: ss.length } : {}, zeuge: planetZ, nicht: "fremde Klimata: jede Saat steht an ihrem Anker im Klima der Heimat (klimaHeute " + "18/−4 °C), Stern, Achse und Atmosphäre reisen nicht durch den Planet-Faden" },
+                         6: { werte: pl ? { konsistenzProzent: passt(saatAlle), saaten: ss.length } : {}, zeuge: planetZ },
+                     };

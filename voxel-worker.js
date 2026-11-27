@@ -1524,6 +1524,15 @@ function planetOrtAuftrag(msg) {
         // die Stauchung s_v des Orts (planetOrt: Spiel-m = s_v · Erd-m, aus dem Ort-Gesetz gelesen): der Leser rechnet das Meer in
         // Erd-Metern mit der Zahl des Kerns, nie mit einer eigenen (Karte 2 planet.zeit.klimageschichte#2: −21 ka gegen −120 m)
         stauchung: o.stauchung,
+        // DER LEBENSRAUM DES ORTS (Karte 2 leben.pflanzen.biome#4): die Klasse des Kerns (Köppen, Whittaker) und die Zeilen seines
+        // Lebensraums (planet-core `pflanzenDeckung`: Gezeiten-Wald, Moor, Nebel-Wüste, je ∈ [0, 1]) — der Ort selbst, kein Δ: sie
+        // reisen nicht in die Tafel des Orts (dort tragen Wald und Decke sie, `delta.wuchs`), der Leser ist die Station
+        biom: { koeppen: o.biom.koeppen, hauptklasse: o.biom.hauptklasse, biom: o.biom.biom },
+        lebensraum: {
+            mangrove: o.lebensraum.mangrove,
+            moor: o.lebensraum.moor,
+            kuestenwueste: o.lebensraum.kuestenwueste,
+        },
         delta: {
             klima: {
                 sommer: d.klima.sommer,

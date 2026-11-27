@@ -911,7 +911,8 @@ const VERSION_SHA = { 'planet-g3-2': '553f0a6918332df9d1589834559598eb22d65df5c6
   'planet-h2-11': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
   'planet-h2-12': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
   'planet-h2-13': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',   // h2-13 (klima-kontinent: das Klima aus Land, Meer und Luft — Sperre und Zehren der Feuchte, Wirbel der Sturmbahn, Meeresluft längs des Winds, der Nebel; ks liest die Konvergenz jemals, das Eis die Kälte des Orts) — das Relief steht   // h2-12 (die Treppe der Suche des Ankers: jede Saat des Spiels trägt eine Heimat; eine Saat mit Ort bei 512 Proben bitgleich) — das Relief steht   // h2-11 (Bau-Welle 1, Jahreszeiten-Vertrag): das Δ des Jahres-Gangs zur selben Zeit des Jahres, „Sommer“ die wärmere Jahreszeit mit ihrer Phase — das Relief steht   // h2-10 (Bau-Welle 1, FÄLLT): die drei Δ ≡ 0 der Wildnis (kontinentLambda, schichtDicke, hartAnteil) reisen nicht mehr — das Relief steht   // h2-9 (Bau-Welle 1, B5): der Anker im Band des Orts (fuss 16), er trägt Spende, Wuchs und kein E — das Relief steht   // h2-8 (Bau-Welle 1, B3): S5 Wasser im Kern (planetWasserGitter · planetWasserR, DIE PET) — Relief und Klima stehen   // h2-7 (Bau-Welle 1, B2): das Klima ohne Land-Schalter (EIN Land-Gewicht, EINE PET, die Feuchte-Knoten auf den Hüllen-Schritten) — das Relief steht   // h2-6 (Bau-Welle 1, B4): der Anden-Bogen eine Schürze + 150 km hinter dem Graben, EINE Lage je Platte — das Relief bewegt sich   // h2-5 (Bau-Welle 1, B1): die Naht gehört dem Paar — ω_p über ξ(p, j), stetig über Platte, Scholle und Kruste; das Relief bewegt sich   // h2-4 (Reise, Welle 3): der Wuchs als Verhältnis-Feld des Orts, EINE Rechnung mit der Farbe des Atlas — Relief und Biom-Karte bewegen sich nicht   // h2-3 (Reise, Gegner F4): EIN Jahr — PLANET_ERDE trägt 365, die Normierung liest es; das Relief bewegt sich nicht   // h2-2 (Reise K): die Jahres-Phase als Δ-Feld des Orts — das Relief bewegt sich nicht
-  'planet-h2-14': '112f7c97882806d92110536ea09b2e2a778fd3e41237e4b35d03522722429535' };   // h2-14 (klima-hebung: die Hebung eines Gebirges folgt der Konvergenz — Reife 1 − e^(−Alter·u0/h∞), u0 = konv/40; die Relief-Karte erde-09 bewegt sich, wo ein Abschnitt jung ist)
+  'planet-h2-14': '112f7c97882806d92110536ea09b2e2a778fd3e41237e4b35d03522722429535',   // h2-14 (klima-hebung: die Hebung eines Gebirges folgt der Konvergenz — Reife 1 − e^(−Alter·u0/h∞), u0 = konv/40; die Relief-Karte erde-09 bewegt sich, wo ein Abschnitt jung ist)
+  'planet-h2-15': '112f7c97882806d92110536ea09b2e2a778fd3e41237e4b35d03522722429535' };   // h2-15 (biome-planet: EIN Verdunstungs-Anspruch für Abfluss und Deckung, Turc-Pike liest `petMm`; der Lebensraum Mangrove · Moor · Küsten-Wüste als Zeilen von `pflanzenDeckung` — das Relief bleibt Bit für Bit)
 function versionUrteil(version, s, tafel) { const soll = tafel[version];
   if (!soll) return { ok: false, wert: 'VERSION ' + version + ' fehlt in der Tafel (SHA ' + s.slice(0, 16) + ')' };
   return { ok: soll === s, wert: 'VERSION ' + version + ' → ' + s.slice(0, 16) + (soll === s ? ' = Tafel' : ' ≠ Tafel ' + soll.slice(0, 16)) }; }
@@ -1256,7 +1257,11 @@ function selbsttest() {
   zeile('koeppen.tafel', kl === 0, KOEPPEN_FAELLE.length + ' Normal-Klimata, ' + kl + ' falsch');
   const gestoert = (K, h, o) => { P.planetBiom(K, h, o); if (o.koeppen === 14) o.koeppen = 13; return o; };
   zeile('koeppen.tafel feuert', koeppenLinse(gestoert) > 0, 'gepflanzt Cfb → Cfa: ' + koeppenLinse(gestoert) + ' falsch → ROT');
-  const sp = farbSprung(P._intern.biomFarbe);
+  // die Farbe des Atlas über die EINE Deckung (planet-core `pflanzenDeckung`): Klima (tJ, tS, N) → Abfluss (Pike, `aetPike` mit planetPet) →
+  // Deckung → `biomFarbe`; Küste und Gebirge fern (kein Lebensraum der Küste, kein Moor-Grund), Meereshöhe
+  const I = P._intern, Kf = { stromK: 0 }, Pf = { kont: 1000, orogenStaerke: 1, hoeheKm: 0 }, Df = {};
+  const sp = farbSprung((tJ, tS, N, out) => { Kf.tJahrC = tJ; Kf.tSommerC = tS; Kf.tWinterC = 2 * tJ - tS; Kf.niederschlagMm = N;
+    Kf.abflussMm = N - I.aetPike(N, P.planetPet(tJ, tS - tJ)); I.pflanzenDeckung(Kf, Pf, Df); return I.biomFarbe(tJ, tS, Df, out); });
   zeile('farbe.stetig', sp.stetig, 'Biom-Farbe: größter Sprung ' + sp.grob.toFixed(2) + ' RGB je 0,2 K / 20 mm → ' + sp.fein.toFixed(2) + ' je 0,05 K / 5 mm');
   const stufe = (tJ, tS, N, out) => { const o = {}; P.planetBiom({ tSommerC: tS, tWinterC: tJ - 10, tJahrC: tJ, niederschlagMm: N, sommerAnteil: 0.5 }, 100, o); const c = o.biom * 23; out[0] = c; out[1] = 255 - c; out[2] = (c * 7) % 255; return out; };
   const sps = farbSprung(stufe);
@@ -1410,9 +1415,12 @@ function gegner2Selbsttest(zeile) {
 //                    jetzt 4 von 4 900 (0,08 %; Saaten sha256('klima-kontinent-' + i), i < 4 900, in der Form des Spiels).
 //                    Neu gedruckt am Kern kuesten-kontrast: `ostWinterK` −6 → −12 K (Normalwerte 1991–2020 gleicher Breite, Kaspi &
 //                    Schneider 2011), die Heimat von mr4t9z rückt 60 km (auch bei 512 Proben bitgleich); azvhsr und h4uio8 bitgleich.
-const ANKER_OHNE = ['w-549d70713064-ybhbkh', 'w-a35ea78d2ddf-ocd04u', 'w-2547d735a0a9-u9clj0', 'w-f3b1679a7155-w49s5c'];
+//                    Neu gedruckt am Kern biome-planet (h2-15: EINE PET nach Holdridge, der Wald am Überschuss): ocd04u und w49s5c tragen
+//                    bei 512 Proben einen Anker; ohne Ort bei 512 jetzt 5 von 6 000 (0,083 %; Saaten sha256('biome-planet-' + i) →
+//                    'w-' + hex[0, 12) + '-' + base36(hex[12, 40))[0, 6), i < 6 000): 21x0cu (2 538) und 26z7ei (3 175) treten ein.
+const ANKER_OHNE = ['w-549d70713064-ybhbkh', 'w-2547d735a0a9-u9clj0', 'w-0fe98554f742-21x0cu', 'w-b2b711e3929e-26z7ei'];
 const ANKER_512 = { 'w-d10e897e3fad-azvhsr': [0.872109983490599, 1.8701752196816235], 'w-e6ea6c6b804e-mr4t9z': [0.7873447093650003, 1.7214563045445765], 'w-4a2768b6253a-h4uio8': [0.7638875402809908, -2.8201081782321613] };
-const WELLE1_BASIS = 'b7ed8419', W1_SAATEN = SAATEN.slice(0, 10), W1_ZIEL = 400, PET_FORMEL = /\b400\s*\+\s*45\s*\*/g;
+const WELLE1_BASIS = 'b7ed8419', W1_SAATEN = SAATEN.slice(0, 10), W1_ZIEL = 400, PET_FORMEL = /PET_HOLDRIDGE \* /g;
 function basisKern() { // der Kern vor der Welle: git show WELLE1_BASIS:planet-core.js → tmp; fehlt das Objekt, bricht der Selbsttest beim Namen
   const aus = path.join(os.tmpdir(), 'planet-core-' + WELLE1_BASIS + '-' + process.pid + '.js');
   const text = execFileSync('git', ['show', WELLE1_BASIS + ':planet-core.js'], { cwd: path.join(__dirname, '..'), maxBuffer: 1 << 26, encoding: 'utf8' });
@@ -1466,8 +1474,13 @@ function neigungZeile(Q, og, ohneHeimat) {
 // keiner) und jede Antwort der 9 Saaten, deren Anker unter dem Eis lag und auf der Stufe der Eis-Zeit neu gesucht wird (12 420 = 9 × 1 380:
 // Klima, Wetter, Wuchs, Wildnis gegen den neuen Anker; Linse anker.eis). Höhe, Land, Kontinent und Meer stehen bit-gleich an 138 000,
 // die Gipfel-Suche 2 804 Gipfel, 99,0 % an konvergenter Grenze wie vorher. Ohne die Stufe stand die Eis-Zeit an 9 816 Antworten auf −1.
+// NEU EINGEFROREN mit dem Gesetz biome-planet (h2-15: EINE PET nach Holdridge für Trocken-Zuschlag, Abfluss nach Pike, Deckung und
+// Wasser; der Wald am Überschuss; die Zeilen des Lebensraums): vorher b1545ac3 / 34fd43fc (nachgerechnet bit-gleich), nachher 9c5f0a85 /
+// 697ddec1. Vier Heimaten verlegt das Klima (zsp-73, zsp-89, zsp-95, zsp-97: jede ihrer 5 520 Antworten); an den übrigen 132 480 bewegt:
+// Sommer und Winter an 14 862 (≤ 1,12 K, der Trocken-Zuschlag), Spende an 43 525, Nebel an 130 684 (≤ 0,30), Decke an 50 014 (ohne warmen Monat 0), Wald an
+// 93 292, Eis an 23, Trog an 4 207 (≤ 0,022); Höhe, Land, Kontinent und Meer bit-gleich an 138 000, die Gipfel-Suche 2 804 Gipfel.
 const FRAGE_SAATEN = 100, FRAGE_PUNKTE_JE_ORT = 2;
-const FRAGE_SHA = { alle: 'b1545ac3a13a6f9c4ee01693af8294730336f67a14aba6aec78a8ba289951080', erste: '34fd43fcf43764758175b3a9583913c9f45ab5e8b9166bdf03773b102484682d' };
+const FRAGE_SHA = { alle: '9c5f0a85f688b6b5637c75125c9948d938b008ecb86e455ac531cf3564bddc58', erste: '697ddec1114dc5d1982041f8071dee3d9d863fa48b951c9921304eb320c6fac6' };
 const frageSaat = (i) => (i === 0 ? 'anazh-realm-seed' : 'zsp-' + (i - 1));
 const FRAGE_ORTE = (() => { const L = []; for (let b = -66; b <= 66; b += 6) for (let l = -180; l < 180; l += 6) L.push([b, l]); return L; })();
 // die Antwort des Fadens als Zahlen in fester Folge (wörtlich planetOrtAuftrag) — bit-genau gehasht, nie über JSON (−0, NaN)
@@ -1707,14 +1720,14 @@ function saatWelle1(Q, samen) { // c3 über 40 000 Adressen, c6 über das Gitter
   }
   const r = { samen, c3: hoch && landRand ? (hochRand / hoch) / (landRand / land) : NaN };
   if (typeof Q.planetWasserGitter !== 'function') return r;
-  const W = Q.planetWasserGitter(S), NW = W.N; let wLand = 0, wEnd = 0, tEnd = 0, tExo = 0, qMeer = 0, kreise = 0;
+  const W = Q.planetWasserGitter(S), NW = W.N; let wLand = 0, wEnd = 0, nEnd = 0, nExo = 0, tEnd = 0, tExo = 0, qMeer = 0, kreise = 0;
   for (let i = 0; i < NW; i++) {
-    if (W.h[i] <= 0) continue; wLand++; const ar = W.pM[i] / Q.planetPet(W.tJ[i]);
-    if (W.zielMeer[i] < 0) { wEnd++; tEnd += ar; } else tExo += ar;
+    if (W.h[i] <= 0) continue; wLand++; const pet = Q.planetPet(W.tJ[i], W.tA[i]), ar = W.pM[i] / pet;   // PET 0 (Eis ohne warmen Monat): P/PET undefiniert
+    if (W.zielMeer[i] < 0) { wEnd++; if (pet > 0) { nEnd++; tEnd += ar; } } else if (pet > 0) { nExo++; tExo += ar; }
     if (W.h[W.emp[i]] <= 0 && W.zielMeer[i] >= 0) qMeer += W.acc[i];
     let c = i, n = 0; while (c >= 0 && W.h[c] > 0 && W.endseeVon[c] < 0 && n <= NW) { c = W.emp[c]; n++; } if (n > NW || c < 0) kreise++;
   }
-  return Object.assign(r, { N: NW, endsee: wEnd / wLand, trocken: (tEnd / wEnd) / (tExo / (wLand - wEnd)), abflussKm3a: qMeer / 1e9, kreise });
+  return Object.assign(r, { N: NW, endsee: wEnd / wLand, trocken: (tEnd / nEnd) / (tExo / nExo), abflussKm3a: qMeer / 1e9, kreise });
 }
 const JZ_SAMEN = ['anazh-realm-seed', 'erde-01', '7', '42'], JZ_PLAENE = new Map();
 function jahreszeit(Q, og, ortVon) { // ortVon (Selbsttest): der gepflanzte Täter an der Stelle von planetOrt

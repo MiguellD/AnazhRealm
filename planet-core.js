@@ -55,7 +55,7 @@
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-h2-14';
+  const VERSION = 'planet-h2-15';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -1949,7 +1949,8 @@
     const klima = SCHICHT[schicht] >= SCHICHT.biom, n = W * H;
     return { S, W, H, schicht, geo, klima, fertig: new Uint8Array(H),
       hoehe: new Float32Array(n), platte: new Int16Array(n), art: new Uint8Array(n), alter: new Float32Array(n), vul: new Uint8Array(n),
-      kT: klima ? new Float32Array(n) : null, kS: klima ? new Float32Array(n) : null, kN: klima ? new Float32Array(n) : null, kK: klima ? new Int8Array(n) : null, kW: klima ? new Float32Array(n) : null };
+      kT: klima ? new Float32Array(n) : null, kS: klima ? new Float32Array(n) : null, kN: klima ? new Float32Array(n) : null, kK: klima ? new Int8Array(n) : null, kW: klima ? new Float32Array(n) : null,
+      kD: klima ? new Float32Array(5 * n) : null };   // die Deckung je Punkt: decke, wald, mangrove, moor, kuestenwueste
   }
   const _kP = {}, _kK = {}, _kB = {}, _kV = new Float64Array(3);
   function kartePunkte(Z, r0, r1) {
@@ -1963,6 +1964,8 @@
         if (Z.klima) {
           planetKlimaR(S, x, y, z, -1, _kK, _kP); planetBiom(_kK, _kP.hoeheM, _kB);
           Z.kT[idx] = _kK.tJahrC; Z.kS[idx] = _kK.tSommerC; Z.kN[idx] = _kK.niederschlagMm; Z.kK[idx] = _kB.koeppen; Z.kW[idx] = _kK.tWinterC;
+          pflanzenDeckung(_kK, _kP, _pd); const kd = Z.kD, j = 5 * idx;
+          kd[j] = _pd.decke; kd[j + 1] = _pd.wald; kd[j + 2] = _pd.mangrove; kd[j + 3] = _pd.moor; kd[j + 4] = _pd.kuestenwueste;
         }
       }
       Z.fertig[r] = 1;
@@ -1970,8 +1973,8 @@
   }
   function karteFarben(Z, r0, r1, out) {
     const S = Z.S, W = Z.W, H = Z.H, g = Z.geo, fuss = g.fuss, schicht = Z.schicht, hoehe = Z.hoehe, platte = Z.platte, art = Z.art, alter = Z.alter, vul = Z.vul;
-    const kT = Z.kT, kS = Z.kS, kN = Z.kN, kK = Z.kK, kW = Z.kW;
-    const f = new Float64Array(3);
+    const kT = Z.kT, kS = Z.kS, kN = Z.kN, kK = Z.kK, kW = Z.kW, kD = Z.kD;
+    const f = new Float64Array(3), D = { decke: 0, wald: 0, mangrove: 0, moor: 0, kuestenwueste: 0 };
     for (let r = r0; r < r1; r++) {
       const dxKm = g.dxKm(r), dyKm = fuss;
       for (let i = 0; i < W; i++) {
@@ -1998,7 +2001,8 @@
           if (kueste && !grenze) { f[0] = 20; f[1] = 20; f[2] = 20; }
           if (vul[idx]) { f[0] = 255; f[1] = 120; f[2] = 0; }
         } else if (schicht === 'biom') {
-          if (h > 0) { biomFarbe(kT[idx], kS[idx], kN[idx], f); for (let c = 0; c < 3; c++) f[c] *= sh; }
+          if (h > 0) { const j = 5 * idx; D.decke = kD[j]; D.wald = kD[j + 1]; D.mangrove = kD[j + 2]; D.moor = kD[j + 3]; D.kuestenwueste = kD[j + 4];
+            biomFarbe(kT[idx], kS[idx], D, f); for (let c = 0; c < 3; c++) f[c] *= sh; }
           else {
             const tief = glatt(-0.2, -4.5, h); f[0] = 34 + (8 - 34) * tief; f[1] = 78 + (22 - 78) * tief; f[2] = 118 + (58 - 118) * tief;
             const eis = glatt(MEEREIS_WINTER_C + 3, MEEREIS_WINTER_C - 3, kW[idx]); f[0] += (232 - f[0]) * eis; f[1] += (238 - f[1]) * eis; f[2] += (244 - f[2]) * eis;
@@ -2445,9 +2449,22 @@
   // es je cm um ≤ 4·10⁻⁵.
   const KUESTE_SAUM_KM = 0.2;
   function landGewicht(hKm) { return glatt(-KUESTE_SAUM_KM, 0, hKm); }
-  // B2 DIE Verdunstung (PET, mm/a; Turc-Form, gesetzt): EINE Formel für den Trocken-Zuschlag des Klimas, die Pflanzen-Deckung (Atlas und
-  // Wuchs des Orts) und das Wasser (planetPet) — vorher stand sie zweimal im Kern und einmal im Wasser-Prototyp
-  function petMm(tC) { return 400 + 45 * (tC > 0 ? tC : 0); }
+  // B2 DIE Verdunstung (PET, mm/a): EINE Formel für den Trocken-Zuschlag des Klimas, den Abfluss, die Pflanzen-Deckung (Atlas und Wuchs
+  // des Orts) und das Wasser (planetPet). Holdridge 1967 (Life Zone Ecology): PET = 58,93 mm/K · die Biotemperatur, das Mittel der zwölf
+  // Monate mit jedem Monat unter 0 °C als 0 und über 30 °C als 30 (der Monat folgt dem Jahres-Gang: Mittel `tC`, halbe Spanne `amp`).
+  // Vorher 400 + 45·T⁺ (Turc-Form, gesetzt): 400 mm auch bei −20 °C — das kalte Innere las Trockenheit, wo die Taiga steht (N 238 mm bei
+  // −8,8 °C: N/PET 0,59), und der Abfluss rechnete mit einem eigenen L(T) dagegen (biome-planet, main 38194f83: Station 76,9 %).
+  // Gemessen gegen Thornthwaite 1948 (unkorrigiert): die Spende der Heimat fiel auf 229 mm (das Spiel trägt 328,5), Station 84,9 %;
+  // Holdridge trägt 335 mm. Eis ohne warmen Monat hat PET 0: kein Anspruch, P/PET ist dort nicht definiert (ihr Leser fragt `pet > 0`).
+  const PET_HOLDRIDGE = 58.93, PET_MONAT = Object.freeze(Array.from({ length: 12 }, (_, m) => Math.cos(2 * PI * (m + 0.5) / 12)));
+  function petMm(tC, amp) {
+    let s = 0;
+    for (let m = 0; m < 12; m++) { const t = tC + amp * PET_MONAT[m]; s += t <= 0 ? 0 : t >= 30 ? 30 : t; }
+    return PET_HOLDRIDGE * s / 12;
+  }
+  // die tatsächliche Verdunstung (mm/a) aus Niederschlag und Anspruch, Pike 1964: E = P / √(1 + (P/PET)²) — ohne Anspruch (PET 0, Eis
+  // ohne warmen Monat) oder ohne Regen verdunstet nichts
+  function aetPike(p, pet) { return p > 0 && pet > 0 ? p / Math.sqrt(1 + (p / pet) * (p / pet)) : 0; }
   // klima-kontinent: EIN Schritt des Feuchte-Integrals längs des Winds über einen Knoten mit Meer-Anteil sj und Hülle hk (km), Schritt-
   // Faktoren eM (Meer) und eL (Land). Zustand KL_W: [0] mW Nachladen/Zehren, [1] sp die Sperre, [2] hS die Sperrhöhe (−1 am Rand des
   // Fensters: der erste Knoten setzt sie, ohne zu sperren — jenseits des Fensters ist nichts bekannt), [3] mLand die Rückführung.
@@ -2624,7 +2641,7 @@
     // Trockenes Land heizt (Gegner 2, heiße Wüste 4 % statt ~14 %): ohne Verdunstung und Wolken liegt die Wüste über dem Zonen-Mittel —
     // klima-kontinent: nur die warme Zone (voll ab 20 °C, aus unter 10 °C; vorher ab 0 °C halb bei 10 °C: die trockene Ostküste der
     // Mittelbreiten lag 2–3 K über ihrer Westküste). Band: Gobi und Kasachstan liegen im Jahr UNTER der Breite, nicht über ihr.
-    const trocken = lam * KLIMA.trockenK * glatt(0.6, 0.2, pJahr / petMm(tZ)) * glatt(10, 20, tZ);
+    const trocken = lam * KLIMA.trockenK * glatt(0.6, 0.2, pJahr / petMm(tZ, amp)) * glatt(10, 20, tZ);
     const tJ = tZ - KLIMA.lapse * hPos + dTj + trocken;
     // Gegner 2 (F5 Meereis als Breitenkreis): die stehenden Wellen führen im Winter Luft aus der Breite, aus der sie kommen — dreht der
     // Wind (woher) polwärts, kommt Polarluft (kälter), dreht er äquatorwärts, Warmluft. 12 K je Einheit der meridionalen Abweichung
@@ -2636,9 +2653,11 @@
     // kein Winter, keine winterkalte Festlandsluft. Am Körper der Erde ist das Verhältnis x/x = 1 genau (Lehre 11: die Heimat byte-gleich).
     const jG = sb / ksin(PLANET_ERDE.neigungRad);
     const tS = tJ + amp + dTs * jG, tW = tJ - amp + dTw * jG + advW * jG;
-    // Abfluss: Turc-Pike, L(T) = 300 + 25T + 0,05T³
-    const tl = tJ < -10 ? -10 : tJ, L = Math.max(50, 300 + 25 * tl + 0.05 * tl * tl * tl);
-    const et = pJahr / Math.sqrt(0.9 + (pJahr / L) * (pJahr / L));
+    // Abfluss: Pike 1964, E = P / √(1 + (P/PET)²) mit PET = DER Verdunstungs-Anspruch des Kerns (`petMm`, B2 — derselbe, den Pflanzen-
+    // Deckung, Trocken-Zuschlag und Überlauf lesen). Hier stand Turcs eigenes L(T) = 300 + 25T + 0,05T³ (Turc 1954, mit 0,9): der Abfluss
+    // sah im kalten Inneren Wasser-Überschuss (N 238 mm bei −8,8 °C: 186 mm), wo die Deckung desselben Orts Trockenheit las (N/PET 0,59
+    // → Wald 0,48) — biome#4 am Rumpf der Station: 80 von 81 Fehl-Orten, passtProzent 76,9 % (biome-planet, main 38194f83).
+    const L = petMm(tJ, (tS - tW) / 2), et = aetPike(pJahr, L);
     o.tJahrC = tJ; o.tSommerC = tS; o.tWinterC = tW; o.tagAmpC = 4 + 10 * c * (1 - Math.min(1, pJahr / 1500));
     o.niederschlagMm = pJahr; o.sommerAnteil = sommerAnteil; o.kontinental = c;
     o.windOst = wl > 1e-9 ? uO / wl : 0; o.windNord = wl > 1e-9 ? vN / wl : 0;
@@ -2648,7 +2667,7 @@
     // vom kalten Auftrieb gekühlte Luft (der Rand-Strom dTj < 0 der Westküste, voll beim Taupunkt-Abstand — er klingt landein mit seinem
     // eigenen Gesetz ab, 350 km) den Advektions-Nebel; feuchte Luft (N/PET) den Strahlungs-Nebel.
     const kuesteNah = (1 - lam) + lam * kexpS(-Math.max(0, kont) / KLIMA.nebelKm), auftrieb = glatt(0, KLIMA.nebelTaupunktK, -dTj);
-    o.nebel = KLIMA.nebelKueste * kuesteNah + KLIMA.nebelAuftrieb * auftrieb + KLIMA.nebelFeucht * glatt(0.2, 1.5, pJahr / petMm(tJ));
+    o.nebel = KLIMA.nebelKueste * kuesteNah + KLIMA.nebelAuftrieb * auftrieb + KLIMA.nebelFeucht * glatt(0.2, 1.5, pJahr / L);
     o.schneeKm = hPos + tS / KLIMA.lapse;
     o.abflussMm = lam * Math.max(0, pJahr - et);                        // B2 mit dem Land-Gewicht (offenes Meer: 0; das Wasser liest ihn nur an Land)
     o.hoeheKm = hKm;
@@ -2707,21 +2726,71 @@
   // DIE PFLANZEN-DECKUNG (Reise, Welle 3) — EINE Rechnung für die Farbe des Atlas (`biomFarbe`) und den Wuchs des Orts
   // (`planetOrt().wuchs`): was der Niederschlag gegen die Verdunstung trägt (veg aus N / PET), daraus der Anteil der Krautschicht
   // (`decke`: kahl → Gras) und der des Walds (`wald`: Gras → Wald). Dieselben Zahlen wie in der Farbe davor, Bit für Bit.
-  const _pd = { veg: 0, decke: 0, wald: 0 };
-  function pflanzenDeckung(tJ, P, o) {
-    const veg = glatt(0.1, 0.85, P / petMm(tJ));
-    o.veg = veg; o.decke = glatt(0, 0.55, veg); o.wald = glatt(0.45, 1, veg);
+  // DER LEBENSRAUM DES ORTS (Karte 2 leben.pflanzen.biome#4) — dieselbe Rechnung, ihre Zeilen aus Temperatur × Niederschlag × Küste ×
+  // Staunässe des Orts (planetKlimaR und planetPunktR, die Größen, die der Ort ohnehin trägt); je Quelle EINE Zeile:
+  //   baumC         die Baumgrenze am 10-°C-Sommer (Köppen 1936, die Grenze der E-Klimate; Körner & Paulsen 2004: 6,4 °C Wachstumszeit)
+  //                 im Rahmen, in dem der Ort reist: dem Sommer auf MEERESHÖHE (tSommer + Lapse · Höhe, wie `delta.klima`) — die Höhe des
+  //                 Orts trägt das Spiel an SEINEM Gelände (phyto-core `forestWaldgrenze`). Am Gipfel des Planeten zählte sie die Höhe
+  //                 doppelt (Station 93,7 → 85,5 % gemessen); ohne sie trug die Tundra der Pol-Küste Wald 1 (23 kalte Fehl-Orte).
+  //   waldAbflussMm der Wald am Wasser-Überschuss des Orts (`abflussMm`, P − AET derselben PET): Biome folgen der Wasser-Bilanz aus AET
+  //                 und Defizit (Stephenson 1990, Am. Nat. 135: 649) — Wald, wo der Überschuss 50 mm/a trägt (halb bei 50). Vorher las
+  //                 der Wald ein zweites Feuchte-Maß (N/PET, glatt 0,45…1 über veg) neben dem Abfluss: Station 76,9 %.
+  //   mangrove     der Gezeiten-Wald der warmen Küste: das kälteste Monatsmittel der Luft über 20 °C (Walsh 1974; die Pol-Grenzen
+  //                 folgen dem 20-°C-Winter-Isotherm des Meers, Duke 1998) auf dem Küsten-Saum — 137 760 km² auf ~150 000 km tropischer
+  //                 Küste (Giri et al. 2011), in den Deltas bis 80 km landein (Sundarbans); voll am Ufer, fort bei `mangroveKm` von der
+  //                 Küste (je Seite: auch die Insel jenseits des Schelfs, kont < 0) und über der Gezeiten-Zone (zwischen Mittelwasser und
+  //                 Springflut, Alongi 2002): das 16-km-Relief trägt die Küsten-Ebene auf 25 m (152 warme Küsten-Proben, q10…q90 = 25 m),
+  //                 die Gezeiten-Zone liegt in ihr — voll bis 30 m, fort bei 80 m (`mangroveM`). Vorher stand er auf 468–984 m.
+  //   moor          Wasser-Überschuss × Kühle × Wuchs-Wärme × Staunässe: Moore wachsen, wo P/PET über 1 liegt (die Klima-Hülle der
+  //                 Deckenmoore, Gallego-Sala & Prentice 2013, Nature Clim. Change 3: 152), ~80 % ihres Torfs in den kühlen Breiten (Yu et
+  //                 al. 2010), nur wo die Wachstumszeit Torf bildet (Charman et al. 2013, Biogeosciences 10: 929 — die Biotemperatur
+  //                 `moorBioC`, PET / 58,93), auf dem flachen Grund, der das Wasser staut (`orogenStaerke`). Die Kanten geeicht an
+  //                 PEATMAP (Xu et al. 2018: 4,23 Mio km², 2,84 % des Landes): ≥ 0,5 auf 1,66 % des Landes (4 164 Land-Orte, anazh-realm-seed;
+  //                 P/PET ab 1 ohne Wuchs-Wärme 14,1 %: die Tundra). Wärme und Verdunstung des Moors im Rahmen der Reise (Meereshöhe,
+  //                 `petS`): am Ort der Höhe las es die Heimat (816 m, −1,5 °C, PET 166 mm) als Moor, Wald 0,3 am Anker. Das Hochmoor
+  //                 ist baumarm (Succow & Joosten 2001): `moorWald`.
+  //   kuestenwueste der Nebel-Wüsten-Saum am kalten Rand-Strom: arid (UNEP 1992: Ariditäts-Index P/PET < 0,2) über kaltem Auftrieb (der
+  //                 Rand-Strom `stromK` < 0, voll beim Taupunkt-Abstand `KLIMA.nebelTaupunktK`, derselbe wie der Nebel) und landein mit
+  //                 seiner Luft abklingend (Namib, Atacama: der Nebel reicht ~100 km, Seely & Henschel 1998 — `KLIMA.nebelKm`); er trägt
+  //                 keine Krautschicht außer der Flechte des Nebels: die Decke fällt mit ihm.
+  const LEBENSRAUM = Object.freeze({
+    baumC: Object.freeze([8, 12]), waldAbflussMm: Object.freeze([25, 75]),
+    mangroveWinterC: Object.freeze([18, 22]), mangroveKm: Object.freeze([30, 0]), mangroveM: Object.freeze([80, 30]),
+    moorFeucht: Object.freeze([1.5, 2.5]), moorJahrC: Object.freeze([12, 4]), moorBioC: Object.freeze([1, 3]), moorFlach: Object.freeze([0.3, 0.05]), moorWald: 0.7,
+    wuesteFeucht: Object.freeze([0.2, 0.05]),
+  });
+  // `K` das Klima des Orts (planetKlimaR), `p` sein Punkt (planetPunktR: kont, orogenStaerke); o = { veg, decke, wald, mangrove, moor, kuestenwueste }
+  const _pd = { veg: 0, decke: 0, wald: 0, mangrove: 0, moor: 0, kuestenwueste: 0 };
+  function pflanzenDeckung(K, p, o) {
+    const tJ = K.tJahrC, P = K.niederschlagMm, L = LEBENSRAUM;
+    if (!(Number.isFinite(tJ) && Number.isFinite(P) && Number.isFinite(K.tSommerC) && Number.isFinite(K.tWinterC) && Number.isFinite(K.stromK)))
+      throw new Error('pflanzenDeckung: das Klima des Orts fehlt (K10)');
+    if (!(Number.isFinite(p.kont) && Number.isFinite(p.orogenStaerke) && Number.isFinite(p.hoeheKm))) throw new Error('pflanzenDeckung: Küste, Gebirge oder Höhe des Orts fehlt (K10)');
+    const amp = (K.tSommerC - K.tWinterC) / 2, dT = KLIMA.lapse * (p.hoeheKm > 0 ? p.hoeheKm : 0), tSee = K.tSommerC + dT, tJs = tJ + dT;
+    // ohne warmen Monat (PET 0, Holdridge: Biotemperatur 0) wächst nichts: P/PET ist dort 0, nie 0/0
+    const pet = petMm(tJ, amp), mi = pet > 0 ? P / pet : 0, veg = glatt(0.1, 0.85, mi), kont = p.kont > 0 ? p.kont : 0;
+    o.veg = veg;
+    o.mangrove = glatt(L.mangroveWinterC[0], L.mangroveWinterC[1], K.tWinterC) * glatt(L.mangroveKm[0], L.mangroveKm[1], p.kont < 0 ? -p.kont : p.kont)
+      * glatt(L.mangroveM[0], L.mangroveM[1], p.hoeheKm * 1000);
+    const petS = petMm(tJs, amp);   // der Verdunstungs-Anspruch im Rahmen der Reise (Meereshöhe): der Lebensraum des Orts, den das Spiel trägt
+    o.moor = glatt(L.moorFeucht[0], L.moorFeucht[1], petS > 0 ? P / petS : 0) * glatt(L.moorJahrC[0], L.moorJahrC[1], tJs) * glatt(L.moorBioC[0], L.moorBioC[1], petS / PET_HOLDRIDGE) * glatt(L.moorFlach[0], L.moorFlach[1], p.orogenStaerke);
+    o.kuestenwueste = glatt(L.wuesteFeucht[0], L.wuesteFeucht[1], mi) * glatt(0, KLIMA.nebelTaupunktK, -K.stromK) * kexpS(-kont / KLIMA.nebelKm);
+    o.decke = glatt(0, 0.55, veg) * (1 - o.kuestenwueste);
+    o.wald = glatt(L.waldAbflussMm[0], L.waldAbflussMm[1], K.abflussMm) * glatt(L.baumC[0], L.baumC[1], tSee) * (1 - L.moorWald * o.moor);
     return o;
   }
-  function biomFarbe(tJ, tS, P, out) {
-    pflanzenDeckung(tJ, P, _pd);
+  const F_MANGROVE = [22, 64, 40], F_MOOR = [96, 88, 58], F_NEBELWUESTE = [184, 178, 164];
+  // die Farbe aus der Deckung `D` des Orts (pflanzenDeckung — die Karte rechnet sie je Punkt in `kartePunkte`)
+  function biomFarbe(tJ, tS, D, out) {
     const warm = glatt(0, 24, tJ);
     mischF(F_WUESTE_K, F_WUESTE_H, warm, _fa);                          // kahl
     mischF(F_GRAS_K, F_GRAS_W, warm, _fb);                              // Gras
     if (tJ < 12) mischF(F_WALD_B, F_WALD_G, glatt(-6, 12, tJ), _fc); else mischF(F_WALD_G, F_WALD_T, glatt(12, 26, tJ), _fc);   // Wald
-    const g1 = _pd.decke, g2 = _pd.wald;
+    const g1 = D.decke, g2 = D.wald;
     mischF(_fa, _fb, g1, out); const t0 = out[0], t1 = out[1], t2 = out[2];
     out[0] = t0 + (_fc[0] - t0) * g2; out[1] = t1 + (_fc[1] - t1) * g2; out[2] = t2 + (_fc[2] - t2) * g2;
+    // die Zeilen des Lebensraums: der Nebel-Saum fahl, das Moor torfbraun, der Gezeiten-Wald dunkel am Ufer
+    mischF(out, F_NEBELWUESTE, D.kuestenwueste, out); mischF(out, F_MOOR, D.moor, out); mischF(out, F_MANGROVE, D.mangrove, out);
     const tun = 1 - glatt(4, 15, tS);                                   // Tundra: kurzer, kühler Sommer
     out[0] += (F_TUNDRA[0] - out[0]) * tun; out[1] += (F_TUNDRA[1] - out[1]) * tun; out[2] += (F_TUNDRA[2] - out[2]) * tun;
     const sch = glatt(3, -3, tS);                                       // Dauer-Schnee
@@ -2761,17 +2830,17 @@
   function wasserZellen(S) {
     pruefScheibe(S);
     const N = WASSER_N, R = S.R, F = fib(N), d = Math.sqrt(8 * PI / (Math.sqrt(3) * N)), fuss = 0.5 * d * R;   // Gitterweite (rad), hexagonal
-    const h = new Float64Array(N), q = new Float64Array(N), pM = new Float64Array(N), tJ = new Float64Array(N);
+    const h = new Float64Array(N), q = new Float64Array(N), pM = new Float64Array(N), tJ = new Float64Array(N), tA = new Float64Array(N);
     for (let i = 0; i < N; i++) {
       const x = F[3 * i], y = F[3 * i + 1], z = F[3 * i + 2];
       h[i] = planetPunktR(S, x, y, z, fuss, W_P);
       planetKlimaR(S, x, y, z, -1, W_K, W_P);
-      q[i] = h[i] > 0 ? W_K.abflussMm : 0; pM[i] = W_K.niederschlagMm; tJ[i] = W_K.tJahrC;
+      q[i] = h[i] > 0 ? W_K.abflussMm : 0; pM[i] = W_K.niederschlagMm; tJ[i] = W_K.tJahrC; tA[i] = (W_K.tSommerC - W_K.tWinterC) / 2;
     }
-    return { S, N, R, F, d, A: 4 * PI * R * R / N, h, q, pM, tJ };
+    return { S, N, R, F, d, A: 4 * PI * R * R / N, h, q, pM, tJ, tA };
   }
   function wasserLauf(Z) {
-    const { N, F, d, A, h, q, pM, tJ } = Z, I = wasserIndex(F, N, 2 * d), K = I.K, ze = I.ze, kopf = I.kopf, li = I.liste;
+    const { N, F, d, A, h, q, pM, tJ, tA } = Z, I = wasserIndex(F, N, 2 * d), K = I.K, ze = I.ze, kopf = I.kopf, li = I.liste;
     // Nachbarn im Umkreis WASSER_NACHBAR·d (CSR, zwei Gänge: zählen, füllen)
     const cN = kcos(WASSER_NACHBAR * d), nbKopf = new Int32Array(N + 1);
     let nbListe = null;
@@ -2829,7 +2898,7 @@
       const id = seeAus.length; let sp = 0, pSum = 0, eSum = 0, nz = 0;
       stapel[sp++] = i; see[i] = id;
       while (sp) {
-        const c = stapel[--sp]; nz++; pSum += pM[c]; eSum += petMm(tJ[c]);
+        const c = stapel[--sp]; nz++; pSum += pM[c]; eSum += petMm(tJ[c], tA[c]);
         for (let e = nbKopf[c], e1 = nbKopf[c + 1]; e < e1; e++) { const j = nbListe[e]; if (see[j] < 0 && voll[j] > h[j] + 1e-6 && voll[j] > 0) { see[j] = id; stapel[sp++] = j; } }
       }
       seeAus.push(-1); seeFl.push(nz * A); seeP.push(pSum / nz); seePet.push(eSum / nz);
@@ -2858,7 +2927,7 @@
       if (endseeVon[i] >= 0) { zielSee[i] = endseeVon[i]; continue; }
       zielMeer[i] = zielMeer[emp[i]]; zielSee[i] = zielSee[emp[i]];
     }
-    return Object.freeze({ S: Z.S, N, R: Z.R, F, d, A, cR: kcos(2 * d), idx: I, h, q, pM, tJ, voll, emp, acc, seeN, endN, zielMeer, zielSee, endseeVon });
+    return Object.freeze({ S: Z.S, N, R: Z.R, F, d, A, cR: kcos(2 * d), idx: I, h, q, pM, tJ, tA, voll, emp, acc, seeN, endN, zielMeer, zielSee, endseeVon });
   }
   // DAS Wasser-Gitter der Scheibe (je Aufruf neu gerechnet, ~0,8 s; der Leser hält es)
   function planetWasserGitter(S) { return wasserLauf(wasserZellen(S)); }
@@ -2943,7 +3012,7 @@
       if (!(h > 0) || _ankP.kont < 0 || _ankP.kont > 300 || (_ankP.randArt === RAND_ART.konvergent && _ankP.randAbstandKm < 500) || _ankP.orogenAktiv) return Infinity;
       planetKlimaR(S, x, y, z, -1, _ankK, _ankP);
       if (!(_ankK.abflussMm > 0)) return Infinity;
-      pflanzenDeckung(_ankK.tJahrC, _ankK.niederschlagMm, _ankD); if (!(_ankD.decke > 0) || !(_ankD.wald > 0)) return Infinity;
+      pflanzenDeckung(_ankK, _ankP, _ankD); if (!(_ankD.decke > 0) || !(_ankD.wald > 0)) return Infinity;
       planetBiom(_ankK, h, _ankB); if (_ankB.hauptklasse === 4) return Infinity;
       if (mitEis && eisZeitY(plan, y, _ankK.tJahrC, G) === 1) return Infinity;   // die Heimat trägt kein Eis des Quartärs (ORT_HEIMAT eis 0)
       const hk = _ankP.hoeheKm > 0 ? _ankP.hoeheKm : 0, dS = (_ankK.tSommerC + KLIMA.lapse * hk - kh.sommer) / 4, dW = (_ankK.tWinterC + KLIMA.lapse * hk - kh.winter) / 6;
@@ -3149,7 +3218,8 @@
     o.biom = { koeppen: B.koeppen, hauptklasse: B.hauptklasse, biom: B.biom };
     o.eis = { zeit: ortEisZeit(plan, breite, K.tJahrC, S.zeitMa) };   // das Eis des Quartärs liest das Jahresmittel des Orts
     // der Wuchs, den das Klima des Orts trägt — die stetige Form des Bioms, dieselbe Rechnung wie die Farbe des Atlas (`pflanzenDeckung`)
-    pflanzenDeckung(K.tJahrC, K.niederschlagMm, _pd); o.wuchs = { decke: _pd.decke, wald: _pd.wald };
+    pflanzenDeckung(K, _orP, _pd); o.wuchs = { decke: _pd.decke, wald: _pd.wald };
+    o.lebensraum = { mangrove: _pd.mangrove, moor: _pd.moor, kuestenwueste: _pd.kuestenwueste };
     // DIE FRAGE BINDET DIE KOSTEN (Karte 2 planet.kopplung.gegenwart#2): hier standen Leit-Stützen 9×9 über 64 km — 81 von 83
     // planetPunktR je Ort (96 % der Punkt-Zeit), gelesen von keinem Leser (der Faden gibt delta.leit nie zurück, gelaende-core liest
     // sie nie). Sie fallen ganz; wer die Höhe neben dem Ort braucht, fragt planetPunktR an planetFlaeche selbst.
@@ -3196,7 +3266,7 @@
     KLIMA, KOEPPEN, WHITTAKER, planetKlimaGlobal, planetKlima, planetKlimaR, planetBiom, planetPet: petMm,
     PLANET_WASSER_N: WASSER_N, planetWasserGitter, planetWasserR,
     planetAnker, planetFlaeche, planetKarteVon, planetOrt, ortEisZeit, EIS_ZEITEN, planetOrtDerZeit, NACHKLANG_MA,
-    _intern: Object.freeze({ terme, planBytes, scheibeBytes, abschnitt, acosF, gdh1, fib, biomFarbe, wasserZellen, wasserLauf, guertelP, scheibeKern, tempoAbl, abschnittIndex,
+    _intern: Object.freeze({ terme, planBytes, scheibeBytes, abschnitt, acosF, gdh1, fib, biomFarbe, pflanzenDeckung, aetPike, wasserZellen, wasserLauf, guertelP, scheibeKern, tempoAbl, abschnittIndex,
       bahnElemente, tagesEinstrahlung, bahnKoerper, eisZustand, eisMeerM, klimaStrahlung, EIS_BAHN }),
   });
   root.__planetCore = api;
