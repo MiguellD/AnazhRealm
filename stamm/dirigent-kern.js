@@ -1975,9 +1975,9 @@ class AnazhRealm {
     // DAS GLAS STRAHLT VOR SEINE WAND (nacht-fenster-glas): eine Quelle mit Normale (`normale`, das wache Fenster, `_leuchtQuellen`)
     // ist eine Lambert-Fläche — ihr Licht × cos θ zur Normale, hinter der Wand (cos θ ≤ 0) trägt keine Zelle.
     // ZEILE UM ZEILE BIS ZUR FRIST (nacht-gasse-licht, Gebot 7): ab der Zeile `ab` (null: die erste), nach jeder Zeile der Blick auf
-    // die Uhr — `weiter` ist die nächste Zeile oder null, wenn der Fleck steht. Die Laterne trägt seit ihrem Lichtstrom 70 m
-    // Reichweite (15 374 Zellen statt 2 480): ihr Fleck am Stück kostete einen Takt 9,7 ms (GTX 1050, dorf third), jetzt höchstens
-    // die Frist. → { rand: [i0, jA, i1, jE], weiter } | null
+    // die Uhr — `weiter` ist die nächste Zeile oder null, wenn der Fleck steht. Die Zellen eines Flecks wachsen mit dem Quadrat
+    // seiner Reichweite (28 m: 2 480 Zellen, 70 m: 15 374): am Stück trug ein Fleck sie alle in EINEN Takt, jetzt höchstens die
+    // Frist — die Kosten hängen am Takt, nie an der Größe des Lichts. → { rand: [i0, jA, i1, jE], weiter } | null
     _lichtKarteFleck(G, mx, mz, s, I, ab = null, frist = Infinity) {
         const K = AnazhRealm.LICHT_KARTE;
         const n = K.texel;
