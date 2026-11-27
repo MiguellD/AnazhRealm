@@ -370,7 +370,7 @@ class AnazhRealm_koerper_seele {
         // Das dritte Verb: der Todesort trägt eine Lebens-Spur ins Feld.
         const pm = this.state.playerMesh;
         if (pm && pm.position) this._lebenGabe(pm.position.x, pm.position.z, AnazhRealm.LIFE_FIELD.pulseCenter, null);
-        // Rückkehr an der Mitte des Genesis-Orts (`_genesisAnkunft`: der Plan der Welt, Grund + 1,2 m — dieselbe Ankunft wie
+        // Rückkehr an der Mitte des Genesis-Orts (`_genesisAnkunft`: der Plan der Welt, am Auge des Gesetzes — dieselbe Ankunft wie
         // beim ersten Spawn, gemerkt je Welt-Stand; ein neuer Stand fragt den Wald-Faden)
         const ankunft = this._genesisAnkunft();
         // Die Lebenswerte kehren voll zurück (das Maximum der verwundeten Gestalt) — die WUNDE (Stat-Penalty,

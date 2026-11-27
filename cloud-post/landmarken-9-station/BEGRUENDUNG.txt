@@ -1,0 +1,50 @@
+STATIONS-KANDIDAT landmarken-9 — erleben.spieler.wegfindung#1 (S1, LANDMARKE_AN in meisterkarte-quelle/punkte/stationen/k2-erleben.js)
+
+BASIS UND SCHICHTEN
+- kandidat.diff gilt gegen punkte-maschine 6bbccfe3, Blob e71c1770 (die Station am 27.11. 16:20 UTC unverändert) und trägt drei Schichten:
+  1. die S1-Station der Bahn (landmarken-geologie-8-station/diff.txt, Blob 6d514937 → cc8f5e1a; sie gilt glatt auf e71c1770),
+  2. den Zeugen am Gerät (landmarken-zeuge-station eb3a532, zeuge.diff, Ergebnis Blob 2975b938 — die Station, die die GTX am f07abc1a fuhr),
+  3. die eigene Schicht (kandidat-eigen.diff, 2975b938 → 1197c4b1, 31 + / 6 −).
+- Gesetzt wird nach der Landung des Vorprüf-Kopfs landmarken-9: der Kopf macht `_genesisAnkunft` zum Versprechen (die Ankunft
+  rechnet im Wald-Faden). Die Station der GTX ruft sie synchron (`const an = r._genesisAnkunft()`, Zeile 99 von 2975b938) und
+  liest `an.x` von einem Versprechen → ohne Schicht 3 bricht S1 an jeder Saat mit TypeError. Kopf und Station gehören zusammen.
+
+DIE ZEILEN DER EIGENEN SCHICHT UND IHR GRUND
+1. Z. 51–52 (neu): fehlt `r._landmarkeSicht`, nennt S1 das beim Namen (die Frage der Sicht ist ein Gesetz des Spiels).
+2. Z. 101–104: `await r._genesisAnkunft()`; null (die Welt wechselte während des Gesetzes) → fehlt beim Namen. Nach dem Schuss
+   (a.schuss) liest S1 die Marke der Ankunft davor aus `st.zielGang.ziel` (gesetzt von `_zielGangBeginn(an.marke)`).
+3. Z. 144–151 `strahl`: VERDECKT ist, was das EINE Sicht-Gesetz des Spiels verdeckt nennt — `r._landmarkeSicht(auge, q)` (phyto-core
+   `landmarkeSicht`: Grund alle 25 m UND die Kronen am Strahl), dieselbe Frage, mit der die Ankunft wählt. Der Grund-Marsch allein
+   (die alte Zeile 140) war der zweite Sichttest: er nannte den Baum 74/100 m und die Kamm-Krone 390 m frei, das Bild sah sie
+   (GTX 27.11. f07abc1a: „Blickziel verdeckt“ an 3 von 3 Saaten). „hinter“ (Hang oder Himmel jenseits des Gipfels) bleibt der Grund.
+4. Z. 158–188: das BLICKZIEL ist die Wahl der Ankunft (`an.marke`) — in `offen` vorn (stabil sortiert), der Kontrast misst sie
+   zuerst; erst unter 0,1 misst S1 die nächsten sichtbaren (der Soll der Sprosse: irgendeine sichtbare Marke im ersten Blick).
+   S1 wählt keine eigene Marke mehr. `verdecker` zählt je Art des Verdeckers (grund · baum_<art>).
+5. Z. 230–237: `w.blickziel` = { ziel: frei · verdeckt_<von> · nicht_im_kegel · nicht_im_band · keine, marke, traegt, verdecker }.
+
+DIE WURZEL IM SPIEL (im Kopf, nicht in der Station): das Auge der Kamera stand 0,70 m über dem des Gesetzes. `_genesisAnkunft`
+setzte den Leib auf Grund + 1,2 m (Kamera Grund + 2,8), das Gesetz sah von Grund + 0,5 + EGO_AUGE_M (+ 2,1). An Saat s1-2 lief die
+Gerade des Gesetzes unter der Krone einer Tanne in 82 m durch, die Gerade der Kamera traf sie. Jetzt steht der Leib dort, wo das
+Gesetz sah (stamm/gelaende-boden.js `_genesisAnkunft`: y = max(Grund + 0,5, auge.y − EGO_AUGE_M)): Kamera − Auge des Gesetzes 0,00 m
+an s1-1 und s1-2 (vorher 0,70 m).
+
+GEMESSEN (Werkbank, swiftshader, Kandidat 1197c4b1 am Kopf landmarken-9, Saaten erleben.spieler.wegfindung-s1-<n>)
+- n = 1…7: das Blickziel der Ankunft frei nach S1 an 7 von 7 und trägt den Wert an 7 von 7 (blickziel.ziel „frei“, traegt true);
+  n = 9 (Gesetz: glied „keine“): ziel „keine“, ursache „verdeckt“ (5 im Kegel, alle von Kronen verdeckt).
+- Kontrast in der Werkbank ungemessen („der Himmel auf der CPU (`_skyEnvData`) ist noch nicht gelesen“) — die GTX misst ihn.
+- Preis der Station: S1 je Saat 0,6–8,4 s (der Kronen-Leser im Haupt-Faden, `_landmarkeSicht` → `_sichtWald`, auch für die
+  Erde-Decke im 200-m-Gitter). Vorher (nur Grund) nicht gemessen; ehrlich offen: das Gitter der Erde-Decke fragt jetzt Kronen mit.
+
+MUTANTEN (je Zeile, gemessen am Kopf landmarken-9 in der Werkbank; „sichtbar“ = Marken im Kegel, die S1 frei nennt)
+- M1 `strahl` wieder nur Grund (Zeile 3 zurück): S1 nennt Marken frei, die das Gesetz von Kronen verdeckt nennt — sichtbar
+  s1-3 2 → 3, s1-4 1 → 4, s1-7 4 → 5 (Kandidat → Mutant). Das Blickziel bleibt dort die Marke der Ankunft (sie steht vorn und ist
+  frei); M1 trifft den Wert, sobald S1 hinter sie greift (Kontrast unter 0,1) — dann misst es eine Marke, die das Bild verdeckt
+  zeigt (der GTX-Befund vom f07abc1a: „Ziel … verdeckt von …“).
+- M2 S1 wählt die nächste sichtbare statt der Marke der Ankunft (Zeile 4 zurück): an s1-3, s1-4, s1-7 KEIN Unterschied (die Marke
+  der Ankunft ist dort auch die nächste freie). Ehrlich: dieser Mutant fällt an diesen Saaten nicht; er fällt erst an einer Saat,
+  deren Ankunfts-Marke nicht die nächste freie ist (das Gesetz ordnet nach h/d, nicht nach d).
+- M1 + M2 zusammen (die Station der GTX ohne die Schicht 3): ungemessen in der Werkbank (der Lauf brach an `an.x.toFixed` — die alte
+  Zeile liest das Versprechen synchron, s. BASIS); auf der GTX gemessen: Blickziel verdeckt an 3 von 3 Saaten.
+- M3 (Spiel) Leib wieder auf Grund + 1,2 m: an s1-2 ziel „verdeckt_baum_tanne“ (d 81,6 m), traegt false — gemessen vor dem Schnitt;
+  danach frei, Kamera − Auge des Gesetzes 0,70 → 0,00 m.
+- M4 (Spiel) `_genesisAnkunft` ohne `marke`: blickziel.ziel „keine“ an jeder Saat (Lesart des Kandidaten, Zeile 4).
