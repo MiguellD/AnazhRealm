@@ -1,0 +1,87 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.458",
+  "sha": "b3740dd5566793ae66152d955e5a55d9c272884c"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 300,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": false,
+  "ndc": [
+   0.033,
+   -0.319
+  ],
+  "frei": false,
+  "vor": "Rinde baum_eiche",
+  "vorAbstand": 14.97,
+  "leiber": null,
+  "abstand": 183.42,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   176,
+   54.913,
+   170
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 81.5,
+  "sigma": 32.5,
+  "schwarz": 0.0002,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel Blickziel nicht im Bild (ndc [0.033,-0.319]) · Ziel Blickziel verdeckt von Rinde baum_eiche in 14.97 m] · beweis · Sicht 0.0 % · Ziel Blickziel NICHT im Bild VERDECKT 183.42 m · Luma 81.5 σ 32.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.458 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
+ "rot": [
+  {
+   "feld": "ziel.imBild",
+   "grund": "Ziel Blickziel nicht im Bild (ndc [0.033,-0.319])"
+  },
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von Rinde baum_eiche in 14.97 m"
+  }
+ ],
+ "urteil": "ROT"
+}
