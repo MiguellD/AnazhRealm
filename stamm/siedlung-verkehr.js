@@ -717,20 +717,21 @@ class AnazhRealm_siedlung_verkehr {
             if (!(H > 0) || (x - e.position.x) ** 2 + (z - e.position.z) ** 2 > (W.hl + H + r0 + VG.breiteM + 1) ** 2)
                 continue;
             // sein Ort an der Linie voraus (der Fußpunkt, `_verkehrFolge`): quer (rechts +) und längs, je Stück der Linie
-            let [bq, bi, bs, bQ] = [Infinity, -1, 0, 0];
+            let [bq, bi, bs, bQ, bt] = [Infinity, -1, 0, 0, 0];
             for (let i = F.i; i + 1 < F.pts.length && F.bogen[i] <= F.s + W.hl + H; i++) {
                 const [a, c] = [F.pts[i], F.pts[i + 1]];
                 const [dx, dz] = [c.x - a.x, c.z - a.z];
                 const l = Math.hypot(dx, dz) || 1;
                 const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / (l * l)));
                 const q2 = (x - a.x - dx * t) ** 2 + (z - a.z - dz * t) ** 2;
-                if (q2 < bq) [bq, bi, bs, bQ] = [q2, i, F.bogen[i] + t * l, ((x - a.x) * -dz + (z - a.z) * dx) / l];
+                if (q2 < bq)
+                    [bq, bi, bs, bQ, bt] = [q2, i, F.bogen[i] + t * l, ((x - a.x) * -dz + (z - a.z) * dx) / l, t];
             }
             const d = bs - F.s - W.hl - R;
             if (bi < 0 || d < -R) continue;
             const [a, c] = [F.pts[bi], F.pts[bi + 1]];
             const l = Math.hypot(c.x - a.x, c.z - a.z) || 1;
-            const B = r0 + F.rund[bi];
+            const B = r0 + AnazhRealm._verkehrRundAm(F, bi, bt);
             const u = (vx * -(c.z - a.z) + vz * (c.x - a.x)) / l;
             // wer längs in die Bahn tritt (quer langsamer als `querMs`), belegt sie, solange er in ihr ginge
             const Q =
@@ -1893,7 +1894,7 @@ class AnazhRealm_siedlung_verkehr {
         // ein Punkt (x, z) auf der Linie voraus zwischen den Punkten `vonI` und `bisI`: Weg und Abstand quer (null: nicht im
         // Fenster)
         const auf = (x, z, bisI = j1, vonI = F.i) => {
-            let [bq, bs, bi] = [Infinity, 0, -1];
+            let [bq, bs, bi, bt] = [Infinity, 0, -1, 0];
             for (let i = vonI; i < bisI; i++) {
                 const a = F.pts[i];
                 const b = F.pts[i + 1];
@@ -1908,9 +1909,10 @@ class AnazhRealm_siedlung_verkehr {
                     bq = q2;
                     bs = F.bogen[i] + t * Math.sqrt(l2);
                     bi = i;
+                    bt = t;
                 }
             }
-            return bi < 0 ? null : { s: bs, quer: Math.sqrt(bq), i: bi };
+            return bi < 0 ? null : { s: bs, quer: Math.sqrt(bq), i: bi, t: bt };
         };
         // er hält `abstandM` hinter dem Punkt, an dem der vor ihm hielte (v² = vO² + 2·b·(Lücke − Abstand); wer näher ist als der
         // Abstand, fährt langsamer als der vor ihm, im Maß der Lücke — ohne Lücke steht er, nie in ihn)
@@ -1948,7 +1950,7 @@ class AnazhRealm_siedlung_verkehr {
         }
         const kurveR = globalThis.__fachwerkCore.VERKEHR_GESETZ.kurveR;
         const rund = this._verkehrAusscheren(W, Math.min(2 * kMax, 1 / kurveR));
-        const rundAn = (i) => F.rund[i];
+        const rundAn = (q) => AnazhRealm._verkehrRundAm(F, q.i, q.t);
         const rand = W.hw + V.seitM + 3;
         // nur wer in den Zellen der Belegung um das Fenster steht (`_verkehrBelegung`, samt dem Weg eines Schritts), nie die Stadt
         const BM = V.belegungM;
@@ -1992,6 +1994,7 @@ class AnazhRealm_siedlung_verkehr {
             const ruht = !(O.zustand === "faehrt" && o._fahr && !(o._fahr.speed < V.ruheMs));
             let a = null;
             let lt = 0;
+            let eng = false; // reicht sein Leib samt Ausscheren an eine Ecke, ohne jeden Rand (`_verkehrKreisDurch`: wer vorbeikommt)
             for (let ek = 0; ek < 5; ek++) {
                 const [u, w] = AnazhRealm._verkehrEcken[ek];
                 const q = auf(
@@ -2000,17 +2003,19 @@ class AnazhRealm_siedlung_verkehr {
                     bis,
                     von
                 );
-                if (!q || q.s <= F.s || (a && q.s >= a.s)) continue;
+                if (!q || q.s <= F.s) continue;
+                if (q.quer <= W.hw + rundAn(q)) eng = true;
+                if (a && q.s >= a.s) continue;
                 const b = F.pts[Math.min(F.pts.length - 1, q.i + 1)];
                 const t = Math.atan2(b.x - F.pts[q.i].x, b.z - F.pts[q.i].z);
-                if (q.quer > W.hw + rundAn(q.i) + (O === durch ? 0 : ruht || Math.cos(ry - t) < -0.5 ? V.begegnungM : V.seitM)) continue; // prettier-ignore
+                if (q.quer > W.hw + rundAn(q) + (O === durch ? 0 : ruht || Math.cos(ry - t) < -0.5 ? V.begegnungM : V.seitM)) continue; // prettier-ignore
                 [a, lt] = [q, t];
             }
             if (!a) continue;
             const of = o._fahr;
             const vO = of && O.zustand === "faehrt" ? Math.max(0, of.vlong * Math.cos(ry - lt)) : 0;
             const gap = a.s - F.s - W.hl;
-            const d = { gap, v: vO, s: a.s, O, quer: a.quer, rund: rundAn(a.i) };
+            const d = { gap, v: vO, s: a.s, O, quer: a.quer, rund: rundAn(a), eng };
             if (!W.vorne || gap < W.vorne.gap) W.vorne = d;
             // DER VORDERE IN SEINER RICHTUNG (`vorder`: sein Weg liegt längs der Linie, wie die Begegnung entgegen cos < −0,5): der
             // Kopf der Reihe vor ihm, die der Stauraum und der Kopf der Wartenden lesen (`_verkehrZonen`) — wer seine Linie quert,
@@ -2037,7 +2042,7 @@ class AnazhRealm_siedlung_verkehr {
             // Begegnung, wer quert oder vor ihm geht, braucht den Seitenraum (bis w27-verkehr-leib jeder: wer am Rand entgegenkam,
             // hielt ihn, ~150 Wagen-Sekunden je Stunde, stadt-voll 10 Uhr)
             const sp = Math.hypot(vx || 0, vz || 0);
-            const B = W.hw + R + rundAn(a.i) + (sp < V.umfahrMs || (vx || 0) * tx + (vz || 0) * tz < -0.5 * sp ? V.begegnungM : V.seitM); // prettier-ignore
+            const B = W.hw + R + rundAn(a) + (sp < V.umfahrMs || (vx || 0) * tx + (vz || 0) * tz < -0.5 * sp ? V.begegnungM : V.seitM); // prettier-ignore
             if (a.quer > B) return;
             // wer quert, ist nach `tAus` aus seiner Bahn (quer zur Linie am Fußpunkt, rechts +: (−tz, tx)) — der Wagen wartet die
             // Dauer der Querung; wer steht oder ihr folgt, hält ihn, bis er beiseite tritt (unten)
@@ -2050,7 +2055,7 @@ class AnazhRealm_siedlung_verkehr {
             // (wer die Bahn nicht verlässt, w27-verkehr-leib: wer steht, und wer in ihr längs geht — `tAus` Infinity — wie er)
             const steht = sp < V.umfahrMs || (leib && tAus === Infinity);
             if (steht && (!leib || W.leibS >= V.umfahrNachS) && !(W.umfahr && W.umfahr.s <= a.s))
-                W.umfahr = { x, z, i: a.i, s: a.s };
+                W.umfahr = { x, z, i: a.i, t: a.t, s: a.s };
             // Platz verlangt er von dem, der ihn hält — dem Stehenden wie dem Gehenden, der nicht aus der Bahn kommt (ein langsamer
             // Gänger hielt die Enge 30 s, sechs Wagen dahinter) — gegen die Bahn AM ORT des Leibs (das Stück der Linie um seinen
             // Fußpunkt, je `platzBahnM` davor und dahinter, jedes Stück der Bahn — nie ihre Sehne) und je `platzS` wieder, solange
@@ -2068,7 +2073,7 @@ class AnazhRealm_siedlung_verkehr {
                 while (i2 < F.pts.length - 1 && F.bogen[i2] - F.bogen[a.i] < V.platzBahnM) i2++;
                 const q = F.pts[i2];
                 const fuer = W.platzLeib || (W.platzLeib = { leib: e, weg: [q], wi: 0, drinnen: false, kF: 0 });
-                [fuer.weg[0], fuer.kF, W.warteS] = [q, W.hw + R + V.seitM + rundAn(a.i), 1e-9]; // gefragt: wieder nach `platzS`
+                [fuer.weg[0], fuer.kF, W.warteS] = [q, W.hw + R + V.seitM + rundAn(a), 1e-9]; // gefragt: wieder nach `platzS`
                 this._bewohnerPlatz(S, leib, F.pts.slice(i0, i2 + 1), null, fuer, fuer.kF);
             }
         };
@@ -2136,7 +2141,7 @@ class AnazhRealm_siedlung_verkehr {
         const b = F.pts[Math.min(F.pts.length - 1, u.i + 1)];
         const l = Math.hypot(b.x - a.x, b.z - a.z) || 1;
         const q = ((u.x - a.x) * -(b.z - a.z) + (u.z - a.z) * (b.x - a.x)) / l; // rechts der Fahrt (+): (−tz, tx)
-        const noetig = W.hw + R + V.seitM + F.rund[u.i] + V.umfahrRandM;
+        const noetig = W.hw + R + V.seitM + AnazhRealm._verkehrRundAm(F, u.i, u.t) + V.umfahrRandM;
         if (Math.abs(q) >= noetig) return false;
         // die Linie rechts an ihm vorbei (er bleibt links), sonst links (er bleibt rechts) — `off` > 0 schert nach links
         const rechts = noetig + q;
@@ -2195,12 +2200,27 @@ class AnazhRealm_siedlung_verkehr {
     // Eintrag der Stadt — derselbe Rang wie die übrige Regel des Graphen). Der Erste fährt an dem vorbei, vor dem er hält, ohne den
     // Raum der Begegnung (`durch`, gelesen in `_verkehrFolge`): sein Leib samt Ausscheren bleibt frei, nur der Rand fällt — bis zwei
     // Wagenlängen weiter auf seiner Linie. Liefert { O, F, bis } für den Ersten, sonst null; der Täter `--mutante-kreis`
-    // (diag-fahr-leben) stellt ihn still
+    // (diag-fahr-leben) stellt ihn still.
+    // VOR DEM RANG: ES FÄHRT, WER VORBEIKOMMT. Reicht sein Leib samt Ausscheren selbst an den, vor dem er hält (`eng`, die Ecke
+    // des anderen binnen seiner halben Breite und dem `rund` an ihrem Fuß, `_verkehrFolge`), nimmt ihm `durch` nur den Rand, nie
+    // den Leib — er stünde mit dem Vortritt weiter, der andere ohne. Dann fährt der Erste derer, die vorbeikommen; kommt keiner
+    // vorbei, gilt der Rang allein. Bis hier fuhr stets der Rang: im Bogen vor der Wende 746/573 hielt Wagen 8 (der kleinere)
+    // 0,8 m tiefer als sonst, die Bug-Ecke von 9 lag 1,84 m neben seiner Linie, sein Leib im Bogen reichte 1,88 m — 8 hatte
+    // `durch` und stand, 9 kam vorbei und wartete (stadt-voll 10 Uhr, ab Sekunde 30 „8>9“: jede Änderung der Vertikale, die 9
+    // einen Zentimeter anders halten ließ, rückte seine Ecke über die Grenze zweier Stücke der Linie, an der das `rund` um 0,12 m
+    // sprang — 8 sah ihn erst 2,93 statt 8,9 m vor sich; die Bahn ist jetzt stetig, `_verkehrRundAm`)
     _verkehrKreisDurch(W, kreis) {
         const haelt = (X) => !!X.F && X.zonen.some((z) => z.hat && !z.weg);
+        const frei = (X) => !(X.vorne && X.vorne.O === X.wer && X.vorne.eng);
         let erster = null;
         for (const [X] of kreis)
-            if (!erster || haelt(X) > haelt(erster) || (haelt(X) === haelt(erster) && X.nr < erster.nr)) erster = X;
+            if (
+                !erster ||
+                frei(X) > frei(erster) ||
+                (frei(X) === frei(erster) &&
+                    (haelt(X) > haelt(erster) || (haelt(X) === haelt(erster) && X.nr < erster.nr)))
+            )
+                erster = X;
         if (erster !== W || !W.wer) return null;
         return { O: W.wer, F: W.F, bis: W.F.s + 2 * (W.hl + W.wer.hl) + AnazhRealm.VERKEHR.abstandM };
     }
@@ -2686,6 +2706,22 @@ AnazhRealm._verkehrReihe = function (Z, W, an) {
         W.reihe.delete(Z);
         Z.warte.splice(Z.warte.indexOf(W), 1);
     }
+};
+
+// DAS AUSSCHEREN AM FUSS (i, t) eines Stücks der Linie F (`F.rund` je Punkt, `_verkehrLinie`): stetig längs der Linie — linear
+// zwischen den Punkten des Stücks, an jedem Punkt das größte `rund` um ihn (er und seine Nachbarn): nie kleiner als das `rund` am
+// Anfang des Stücks, das bis hier galt, und ohne Sprung an der Grenze zweier Stücke. Bis hier las jeder Leser `F.rund[i]` am
+// Anfang des Stücks: an der Grenze zweier Stücke sprang die Bahn des Wagens um bis zu 0,12 m — eine Ecke, 1 cm neben der Grenze,
+// lag einmal in ihr und einmal nicht (stadt-voll 10 und 23 Uhr, die Haltelinie vor der Wende 746/573: die Bug-Ecke des Wartenden
+// 1,827 m neben der Linie, die Schwelle 1,941 oder 1,821 m; der Entgegenkommende sah ihn 8,9 m oder erst 2,9 m vor sich, hielt dann
+// 0,8 m tiefer im Bogen, sein Leib reichte an ihn, und beide standen — „8>9“, „2>8“). Leser: die Folge (`_verkehrFolge`: Wagen,
+// Leib, Platz), die Querung (`_verkehrQuerung`) und das Umfahren (`_verkehrUmfahren`).
+AnazhRealm._verkehrRundAm = function (F, i, t = 0) {
+    const r = F.rund;
+    const n = r.length - 1;
+    const am = (k) => Math.max(r[k], r[k > 0 ? k - 1 : k], r[k < n ? k + 1 : k]);
+    const a = am(i);
+    return i < n ? a + (am(i + 1) - a) * (t || 0) : a;
 };
 
 // DER KREIS DURCH W IM WARTE-GRAPHEN (`_verkehrZonen`): die Kanten eines Wagens sind, worauf er an einem Ort wartet (`wartet`), und

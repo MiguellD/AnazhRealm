@@ -272,8 +272,9 @@ async function probeLeben(expected) {
     // Rinne der nächsten Durchfahrt), läse jede Probe auf derselben Bahn die Spur der vorigen — die W-Kette bremste trocken 23,65 m
     // und mit gehaltenem Regen 25,18 m (die Rinne der Vorfahrt widersteht weniger), T6 fuhr über und vor der Karte 31,41 ↔ 31,61 m.
     // Jede Probe setzt an DERSELBEN Welt an: was ihr Wagen trat (`worldMeta.tritt`, `_trittSchwach`), fällt mit ihm (`weg`). Die
-    // Karte malt eine Zelle erst ab der Stufe des Pfads (27,7 Tritte, `_trittStufe`) — eine Probe tritt höchstens zwei je Zelle und
-    // Fahrt (Vorder- und Hinterrad), keine malt. Die Rinne selbst misst K11 (Kern) und die Station mensch.fahrzeug.medium#2.
+    // Karte malt eine Zelle erst ab der Stufe des Pfads (27,7 Tritte, `_trittStufe`) — eine Probe fährt eine Zelle höchstens einmal,
+    // Vorder- und Hinterrad treten je `TRITT.rad` (4,5): 9 Tritte, die Stufe 2/8 unter dem Pfad 6/8, keine malt. Die Rinne selbst
+    // misst K11 (Kern), die Spur nach zehn Durchfahrten B-k (diag-vehicle-drive) und die Station mensch.fahrzeug.medium#2.
     let spurVor = null;
     // Ein Werk setzen, aufsitzen, einschwingen. `fahrt` = Fahrt-Richtung (sin, cos); ein Studio-Fahrzeug liegt längs x.
     const setzen = async (typ, x, zz, fahrt, vorAufsitzen) => {
@@ -2483,14 +2484,51 @@ async function probeLeben(expected) {
                     }
                     S.huelleHang = { schub, eindringen: Math.max(0, eindringen), x, anWand: WX - (x + k.hw) };
                 }
+                // H4b — DIE HÜLLE LIEGT MIT DEM BILD (form#2): der GT liegt auf der Flanke (Kipp π/2 · 1,02, die Lage
+                // schreibt der EINE Schreiber `_wagenLage`); die Quer-Weite der Hülle (k.pq) gegen die gezeichneten Ecken
+                // — Boden UND Dach jeder Ecke in Ruhe durch die Matrix des Bilds (`_archEntryWorldMatrix`), quer projiziert
+                const fz = gT._fahr;
+                const kL = kEcht && fz && gT._fahrSatz && gT._fahrSatz.kipp ? kEcht : null;
+                if (kL) {
+                    const vor = [fz.kipp, fz.umgekippt];
+                    fz.kipp = (Math.PI / 2) * 1.02;
+                    fz.umgekippt = true;
+                    r._wagenLage(gT, fz);
+                    r._fahrHuelleKontakt(gT, kL, fz.x, fz.z, 0, 0, DT);
+                    const M = new THREE.Matrix4();
+                    const V = new THREE.Vector3();
+                    r._archEntryWorldMatrix(gT, M);
+                    const m0 = kL.m0 || kL.m;
+                    const spanne = (f, n) => {
+                        let [lo, hi] = [Infinity, -Infinity];
+                        for (let i = 0; i < n; i++) [lo, hi] = [Math.min(lo, f(i)), Math.max(hi, f(i))];
+                        return [lo, hi];
+                    };
+                    const bild = spanne((i) => {
+                        const [j, y] = i < m0 ? [i, kL.ry[i]] : [i - m0, kL.dach];
+                        V.set(kL.rl[j], y, -kL.rq[j]).applyMatrix4(M);
+                        return (V.x - gT.position.x) * kL.qX + (V.z - gT.position.z) * kL.qZ;
+                    }, 2 * m0);
+                    const huelle = spanne((i) => kL.pq[i], kL.m);
+                    S.huelleLiegt = {
+                        kipp: fz.kipp,
+                        bild,
+                        huelle,
+                        fehl: Math.max(Math.abs(bild[0] - huelle[0]), Math.abs(bild[1] - huelle[1])),
+                    };
+                    [fz.kipp, fz.umgekippt] = vor;
+                    r._wagenLage(gT, fz);
+                }
                 weg(gT);
             }
         }
 
         // ═══ L — DIE ORTE DER LEBEN-SCHAU ═══
         // An GENAU den Orten der Leben-Schau, mit ihrem Tempo und ihrer Gier, durch den echten Sim-Schritt. Je Sim-Schritt:
-        // `unter` — die Ebene der Räder (der Kern selbst: fahrEbene an der Lage und Gier des Stands) über der Höhe des Wagens,
-        // solange er nicht fliegt; `schub` — was der Kontakt-Löser die Lage über die eigene Fahrt hinaus versetzte.
+        // `unter` — die Ebene der Räder (der Kern selbst: fahrEbene an der Lage und Gier des Stands, um das Einsinken im weichen
+        // Boden, `zf.einsinken` — dieselbe Ebene, auf die fahrStand den Wagen legt; ohne sie zählte die Rinne der Spur als
+        // „unter dem Gesetz“: Dorf-Hangfuß 0,060 m, 45 Schritte, genau das Einsinken) über der Höhe des Wagens, solange er nicht
+        // fliegt; `schub` — was der Kontakt-Löser die Lage über die eigene Fahrt hinaus versetzte.
         const VCl = window.__vehicleCore;
         const lebenFahrt = async (L, n) => {
             // die Welt um den Ort steht (die Chunks und ihre Streu — der Glutbrunnen ist Welt-Genese)
@@ -2506,6 +2544,7 @@ async function probeLeben(expected) {
                 ziel: !!ziel,
                 unterMax: 0,
                 unterN: 0,
+                sinkMax: 0,
                 schubMax: 0,
                 kontakte: 0,
                 vor: -Infinity,
@@ -2536,9 +2575,10 @@ async function probeLeben(expected) {
                 const syaw = zf.yaw;
                 const aus = standRoh.call(this, zf, G, boden, dt);
                 if (zf === gL._fahr && dt > 0 && !zf.luft && Number.isFinite(zf.y)) {
-                    const eb = VCl.fahrEbene(G, boden, sx, sz, syaw);
+                    const eb = VCl.fahrEbene(G, boden, sx, sz, syaw, zf.einsinken);
                     if (eb) {
                         const u = eb.y - zf.y;
+                        m.sinkMax = Math.max(m.sinkMax, zf.einsinken > 0 ? zf.einsinken : 0);
                         m.unterMax = Math.max(m.unterMax, u);
                         if (u > 0.05) m.unterN++;
                     }
