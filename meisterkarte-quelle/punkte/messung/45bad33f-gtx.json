@@ -1,7 +1,7 @@
 {
  "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
  "geraet": "gtx",
- "zeit": "2026-11-27T02:20:14.670Z",
+ "zeit": "2026-11-27T02:23:57.494Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -2934,6 +2934,70 @@
    },
    "zeit": "2026-11-27T02:20:14.670Z",
    "abdruck": "55183cc3768b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.fahrzeug.lenker#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 63.2 von 2500000000000 s in 10715 Takten, 171.9 s Wand (16 ms je Takt)",
+   "exit": 0,
+   "minuten": 3.02,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 63.2 von 2500000000000 s in 10715 Takten, 171.9 s Wand (16 ms je Takt)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 181.2,
+   "fremd": {
+    "s": 184,
+    "takte": 84,
+    "fremdS": 67.73,
+    "kerne": 0.368,
+    "fensterKerne": 0.667,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      8.97
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      7.17
+     ],
+     [
+      "bash.exe sk/wacht3.sh",
+      7.11
+     ]
+    ],
+    "dienerS": 53.3,
+    "diener": [
+     [
+      "dwm.exe",
+      19.81
+     ],
+     [
+      "System",
+      18.41
+     ]
+    ],
+    "geraetS": 154.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      110.09
+     ],
+     [
+      "svchost.exe",
+      41.63
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 295.66,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T02:23:57.494Z",
+   "abdruck": "b6c3c3996fb0",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
