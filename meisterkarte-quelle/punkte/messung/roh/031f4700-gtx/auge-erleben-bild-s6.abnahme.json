@@ -1,0 +1,127 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.447",
+  "sha": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "foggy",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 9,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 20,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   130,
+   94.35,
+   30
+  ],
+  "blick": [
+   0,
+   0,
+   1
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 121,
+  "sigma": 36.1,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 20 m · Luma 121 σ 36.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.447 · Bühne summer foggy 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Inhalt bodenSatz 22.5 % (≥ 5.0 %) Luma 90, fern-ring 4.3 % (≥ 2.0 %) Luma 125",
+ "rot": [],
+ "inhalt": {
+  "rot": [],
+  "zeile": "Inhalt bodenSatz 22.5 % (≥ 5.0 %) Luma 90, fern-ring 4.3 % (≥ 2.0 %) Luma 125"
+ },
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^bodenSatz([-_:].*)?$|^fern-ring([-_:].*)?$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0.341035,
+   "pixel": 707171,
+   "max": 438
+  },
+  "misch": 651167,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 976,
+   "wechsel": 606724
+  },
+  "rinde": null,
+  "toene": [
+   "bodenSatz=255/80/80",
+   "fern-ring=80/255/80"
+  ],
+  "klassen": {
+   "bodenSatz": {
+    "objekte": 1,
+    "pixel": 466250,
+    "farbe": [
+     0.10439,
+     0.1138,
+     0.02011
+    ]
+   },
+   "fern-ring": {
+    "objekte": 4,
+    "pixel": 88444,
+    "farbe": [
+     0.21374,
+     0.20444,
+     0.17811
+    ]
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\031f4700-gtx\\auge-erleben-bild-s6.maske.png"
+ }
+}
