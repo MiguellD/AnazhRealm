@@ -827,7 +827,7 @@ function starkMessung(P) {
     const s = F.slice().sort((a, b) => a - b);
     return {
         maxMm: Math.round(10 * s[s.length - 1]) / 10,
-        medianMm: Math.round(10 * s[s.length >> 1]) / 10,
+        medianMm: Math.round(10 * rang(s)) / 10, // der EINE Rang der Boot-Lib (Rang-Wand der Stall-Akte)
         stark: F.filter((m) => m >= STARK.mm).length,
         adressen: F.length,
         rateProzent: Math.round((10000 * ueber) / n) / 100,
