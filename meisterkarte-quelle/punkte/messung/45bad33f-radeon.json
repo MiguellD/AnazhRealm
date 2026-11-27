@@ -1,7 +1,7 @@
 {
  "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
  "geraet": "radeon",
- "zeit": "2026-11-27T00:06:39.378Z",
+ "zeit": "2026-11-27T01:36:28.329Z",
  "host": "MiguellD",
  "je": {
   "karte2.same.massstab.spanne#1": {
@@ -867,6 +867,135 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 51.6 s · 426.6 s) · Wirt-Wache: den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig = window.__aufnahmeRuhig; window.__aufnahmeRuhig = function ausgabeAufnahme(W, H, warm, o — Heap nach der Rücknahme 230.5 → 982.8 MB (+752.3 > 64)",
+   "exit": 1,
+   "minuten": 7.34,
+   "grund": "Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 51.6 s · 426.6 s) · Wirt-Wache: den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig = window.__aufnahmeRuhig; window.__aufnahmeRuhig = function ausgabeAufnahme(W, H, warm, o — Heap nach der Rücknahme 230.5 → 982.8 MB (+752.3 > 64)",
+   "s": 440.3,
+   "fremd": {
+    "s": 442.4,
+    "takte": 179,
+    "fremdS": 902.72,
+    "kerne": 2.04,
+    "fensterKerne": 3.142,
+    "namen": [
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf 1336dcb80c4ad604eb2f8298589dcdc6a7872fa9",
+      72.31
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… WERKBANK |Fehler/|BLOCKIERT kopf/wb.l",
+      60.78
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      57.95
+     ]
+    ],
+    "dienerS": 255.94,
+    "diener": [
+     [
+      "System",
+      122.19
+     ],
+     [
+      "WmiPrvSE.exe",
+      94.97
+     ]
+    ],
+    "geraetS": 358.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      221.52
+     ],
+     [
+      "svchost.exe",
+      119.44
+     ],
+     [
+      "SearchIndexer.exe",
+      13.02
+     ]
+    ],
+    "eigenS": 616.56,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 0.755,
+     "nach": 1.573,
+     "station": 3.777
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 104.3,
+     "alle": 271.7,
+     "cpuEin": 110,
+     "tor": {
+      "ruhig": true,
+      "kerne": 5.16,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       3.02,
+       1.25,
+       12.02,
+       8.47,
+       3.71,
+       3.23
+      ]
+     },
+     "spanne": [
+      1795743388331,
+      1795743388863
+     ]
+    },
+    "nach": {
+     "ein": 111.3,
+     "alle": 244.8,
+     "cpuEin": 125,
+     "tor": {
+      "ruhig": true,
+      "kerne": 1.09,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       1.08,
+       1.1,
+       1.12,
+       1.27,
+       0.9,
+       1.08
+      ]
+     },
+     "spanne": [
+      1795743829204,
+      1795743829723
+     ]
+    },
+    "ruhe": {
+     "ein": 83.5,
+     "alle": 260.2,
+     "n": 1192,
+     "von": "2026-11-16"
+    },
+    "f": 1.333,
+    "fEin": 1.333,
+    "fAlle": 1.044,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-27T01:36:28.329Z",
+   "abdruck": "c91f97507ed2",
+   "port": 7804,
+   "bahn": "sitzung",
    "modus": "session"
   }
  },
