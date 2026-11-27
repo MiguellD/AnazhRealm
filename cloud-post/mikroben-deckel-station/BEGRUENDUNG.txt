@@ -1,0 +1,24 @@
+mikroben-deckel-station — Stations-Kandidat der Leiter leben.evolution.mikroben (OMEN, GTX 1060, 27.11.)
+Auftrag: Koordinator 06:41 (Entscheid 4) — die Werte S1–S6 VOR den drei Augen, sek 10 → 20; Zweig mit kandidat.diff + Urteils-Zeile.
+
+Befund (beide Geräte, main 920fa974):
+  Radeon:   „der Deckel der Leiter riss nach 10,032 s vor dem Wert der Sprosse“ (mikroben#4 UNGEMESSEN)
+  GTX 1060: „der Deckel der Leiter riss nach 10,005 s vor dem Wert der Sprosse“ (front4, 06:29)
+  Ursache: der Eval der Leiter liefert S1–S6 sofort, die Leiter gab sie aber erst nach M.auge s1, s2, s3 zurück
+  (je Schuss ≈ 5 s: s1 06:29:51, s2 06:29:56, dann der Deckel — s3 fehlte). Die Leiter braucht ≈ 15 s, der Deckel war 10 s.
+
+Schnitt (stationen/k2-leben.js, Leiter [MI], Basis pm 05c86da3, Blob 582ad140 → 4f1f8108):
+  1. sek: 10 → 20 (≈ 15 s gemessen, Rand für die Radeon)
+  2. `const aus = M.teil || {}`: aus[1..6] = dieselben Werte, Zeugen und `nicht` wie bisher, VOR dem ersten Schuss
+  3. die drei Augen danach in einer Schleife (aus[nr].auge = await M.auge("evolution-mikroben-s" + nr, { ort: "wiese" }))
+  Reißt der Deckel künftig, trifft er nur noch das Bild (Beleg) — der Wert der Sprosse steht (urteilBauen liest M.teil, pm-front-f1).
+  Kein Soll, keine Schwelle, kein Wert geändert.
+
+Urteil am Kandidaten (GTX 1060, vr2 --nur-b --diff-datei, Kopf main 920fa974, pm 416b8196, 27.11. 08:07–08:14):
+ROT  karte2.leben.evolution.mikroben#4 · S4 Umfang nicht erzeugbar: kein mikrobielles Leben: 0 Treffer unter 1774 Objekten der Szene; das Feld des Lebens zerfällt mit einer Konstante (0.008/s) — keine Mutante „Mikroben aus“ · abbauVerh ungemessen gegen Soll < 0,5 ✗ · mikrobenArten 0 gegen Soll ≥ 1,00e+6 ✗ · Täter: stamm/feld-leben.js LIFE_FIELD.decayPerSec (Abbau ohne Mikroben) · Sitzung · Exit 0 · 3.37 min
+Akte leben.evolution.mikroben.4.920fa974-gtx.json: Richter ROT · Preis GRÜN: p95 33.39 ms · max 49.98 ms · Heap 306.9 MB gehalten (Spitze 356.8) · VRAM 140.2 MB gehalten (Spitze 140.2) · 465 Bilder · Referenz f 1.441 · Einlauf 40.6 s (Lesewert): p95 41.62 ms, max 341.6 ms · der Lauf selbst p95 33.39 ms (747 Bilder)
+
+Zeiten: Leiter mikroben 184,4 → 200,9 s der Probe = 16,5 s (Deckel 20 s hält; vorher riss er nach 10,005 s). Probe 200,9 s · Exit 0.
+Das ROT ist ein Befund am Spiel (S4: kein mikrobielles Leben in der Szene, Täter stamm/feld-leben.js LIFE_FIELD.decayPerSec), kein Riss des Deckels mehr.
+
+Wände (fährt der Koordinator): selbsttest --nur befehl-traegt · selbsttest --ohne 3c
