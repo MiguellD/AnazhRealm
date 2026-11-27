@@ -160,11 +160,14 @@ function markenLies(W) {
 // ── Urteil (node) ─────────────────────────────────────────────────────
 // ab: Rückgabe von `wirtWache(gib)`, haelt: lebende Marken, heapVor/heapNach: MB nach dem Collector → { anders, wie, erklaert, haelt,
 // heapVor, heapNach, deltaMB, ungemessen: Grund | null, zeile }
-function wirtUrteil({ ab = {}, haelt = [], heapVor = null, heapNach = null, schwelle = WIRT_SCHWELLE_MB } = {}) {
+// tot: die Arbeit der Probe (jeder tragende Rufer, lebend oder tot), die bei der Rücknahme noch lief (die Werkbank wartet zuerst auf ihr
+// Ende, `/wirt` gib) — beim Namen UNGEMESSEN
+function wirtUrteil({ ab = {}, haelt = [], heapVor = null, heapNach = null, schwelle = WIRT_SCHWELLE_MB, tot = [] } = {}) {
     const anders = ab.anders || [], wie = ab.wie || {};
     const deltaMB = Number.isFinite(heapVor) && Number.isFinite(heapNach) ? +(heapNach - heapVor).toFixed(1) : null;
     const gruende = [];
     if (ab.fehler) gruende.push("die Wache blind: " + ab.fehler);
+    if (tot.length) gruende.push("die Arbeit der Probe läuft noch: " + tot.slice(0, 3).join(" | "));
     if ((ab.bleibt || []).length) gruende.push("nicht zurück: " + ab.bleibt.join(", "));
     // der Heap-Zuwachs allein ist die Welt (eine Probe baut, stellt um, lädt eine andere Pose — vegetation.K4#1: +309,8 MB nach der
     // Rücknahme, gleich dem Kopf ohne Haken); was die PROBE hält, sagt die Marke — lebt eine, ist der Zuwachs ihre obere Schranke
@@ -173,8 +176,9 @@ function wirtUrteil({ ab = {}, haelt = [], heapVor = null, heapNach = null, schw
             (deltaMB != null ? " — Heap nach der Rücknahme " + heapVor + " → " + heapNach + " MB (+" + deltaMB + " > " + schwelle + ")" : " — Heap ungemessen"));
     const zeile = (anders.length ? "die Probe ließ stehen: " + anders.map((k) => k + " (" + wie[k] + ")").join(" · ") : "nichts am Wirt") +
         (haelt.length ? " · Kontext gehalten: " + haelt.length : "") +
+        (tot.length ? " · Arbeit der Probe läuft: " + tot.length : "") +
         (deltaMB != null ? " · Heap " + heapVor + " → " + heapNach + " MB (" + (deltaMB >= 0 ? "+" : "") + deltaMB + ")" : "");
-    return { anders, wie, erklaert: ab.erklaert || [], haelt, heapVor, heapNach, deltaMB, ungemessen: gruende.length ? gruende.join(" · ") : null, zeile };
+    return { anders, wie, erklaert: ab.erklaert || [], haelt, tot, heapVor, heapNach, deltaMB, ungemessen: gruende.length ? gruende.join(" · ") : null, zeile };
 }
 
 // ── Selbsttest (ohne Welt) ─────────────────────────────────────────────
@@ -272,6 +276,11 @@ async function wirtSelbsttest() {
     // die Welt wächst, die Probe hält nichts (vegetation.K4#1 an der Radeon, w28-probe-wirt: 239,1 → 548,9 MB, keine Marke lebt): gemessen
     pruef("die Welt wächst ohne gehaltenen Kontext", !wirtUrteil({ ab: haken.ab, haelt: [], heapVor: 239.1, heapNach: 548.9 }).ungemessen, "+309,8 MB ist die Welt");
     pruef("Mutante die Wache blind", /blind/.test(wirtUrteil({ ab: wirtWache(new Welt(), true, {}) }).ungemessen || ""), "ohne nimm UNGEMESSEN");
+    // die Arbeit der Probe läuft bei der Rücknahme noch (aufwaerts#1 Radeon am 96fb9575: die Leiter kaskade über ihren Deckel,
+    // ihr Kontext lebte bei der Wache): die Werkbank wartet auf ihr Ende — was dann noch läuft, steht beim Namen, UNGEMESSEN
+    const tot = wirtUrteil({ ab: g.ab, haelt: [], heapVor: 500, heapNach: 510, tot: ["/eval werkbank/eval/kette.js (Rufer tot seit 31.2 s)"] });
+    pruef("Mutante die Arbeit der Probe läuft noch", /Arbeit der Probe läuft noch: \/eval werkbank\/eval\/kette\.js/.test(tot.ungemessen || "") && /Arbeit der Probe läuft: 1/.test(tot.zeile),
+        tot.ungemessen || "BLIND");
     return fehler;
 }
 
