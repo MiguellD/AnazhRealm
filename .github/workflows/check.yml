@@ -994,20 +994,25 @@ jobs:
               # und K2: acht Saaten im Band, Geburt und Tod aus der Nahrung, der Bestand je Region fern als Zahl, nah als Körper) · folgen (K5: zehn Minuten über Wand, gedrehtes Haus
               # und Sockel — kein Strahl, der EINE Leib, die Auflage, nie die Parkour-Wand des Spielers). --selftest zuerst: je Probe spielt
               # jeder alte Defekt als Täter ein, die Linse muss ROT lesen und ihn beim Namen nennen.
-              # Drei Teile in drei Gruppen (ein Schritt trug 1 069–1 162 s und riss mit seiner Gruppe die 20-min-Frist, Zug 15b
-              # 40070549989): jede Probe samt ihren Tätern in GENAU einem Teil, die längste zuerst in den leichtesten nach ihrer
+              # Vier Teile in vier Gruppen (ein Schritt trug 1 069–1 162 s und riss mit seiner Gruppe die 20-min-Frist, Zug 15b
+              # 40070549989; mit den Stadt-Proben von werk-am-ort-2 riss Teil 1 von dreien die 28-min-Frist, Kopf 3: > 1 568 s):
+              # jede Probe samt ihren Tätern in GENAU einem Teil, die längste zuerst in den leichtesten nach ihrer
               # gemessenen Dauer (DAUER_S der Linse); je Teil EIN Boot: der Selbsttest fährt je Probe zuerst den Grund-Lauf (sein
               # Urteil ist das der Probe), dann jeden Täter nur in den Teilen seines Urteils (Kreatur-Takt 22.11.).
-              # `npm run gate:kreatur-takt` fährt alle drei.
-              run: node scripts/diag-kreatur-takt.cjs --selftest --teil=1/3
+              # `npm run gate:kreatur-takt` fährt alle vier.
+              run: node scripts/diag-kreatur-takt.cjs --selftest --teil=1/4
 
             - name: Die Kreatur-Linse Teil 2
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 10
-              run: node scripts/diag-kreatur-takt.cjs --selftest --teil=2/3
+              run: node scripts/diag-kreatur-takt.cjs --selftest --teil=2/4
 
             - name: Die Kreatur-Linse Teil 3
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 9
-              run: node scripts/diag-kreatur-takt.cjs --selftest --teil=3/3
+              run: node scripts/diag-kreatur-takt.cjs --selftest --teil=3/4
+
+            - name: Die Kreatur-Linse Teil 4
+              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 8
+              run: node scripts/diag-kreatur-takt.cjs --selftest --teil=4/4
 
             - name: Ofen-Vertrag (S1 Waende — Tier- und Mensch-Bake je Stoff-Klasse x Gelenk byte-eingefroren)
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 15

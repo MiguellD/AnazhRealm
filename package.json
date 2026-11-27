@@ -96,7 +96,7 @@
         "gate:studio-uebergabe": "node scripts/diag-studio-uebergabe.cjs --welt",
         "gate:hitch-telemetrie": "node scripts/diag-hitch-telemetrie.cjs --teil=1 && node scripts/diag-hitch-telemetrie.cjs --teil=2",
         "gate:kreatur-leben": "node scripts/diag-kreatur-leben.cjs",
-        "gate:kreatur-takt": "node scripts/diag-kreatur-takt.cjs --selftest --teil=1/3 && node scripts/diag-kreatur-takt.cjs --selftest --teil=2/3 && node scripts/diag-kreatur-takt.cjs --selftest --teil=3/3",
+        "gate:kreatur-takt": "node scripts/diag-kreatur-takt.cjs --selftest --teil=1/4 && node scripts/diag-kreatur-takt.cjs --selftest --teil=2/4 && node scripts/diag-kreatur-takt.cjs --selftest --teil=3/4 && node scripts/diag-kreatur-takt.cjs --selftest --teil=4/4",
         "gate:tier-anatomie": "node scripts/diag-tier-anatomie.cjs --selftest && node scripts/diag-tier-anatomie.cjs",
         "gate:tier-gang": "node scripts/diag-tier-gang.cjs --selftest && node scripts/diag-tier-gang.cjs",
         "gate:mensch-anatomie": "node scripts/diag-mensch-anatomie.cjs --selftest && node scripts/diag-mensch-anatomie.cjs",
