@@ -1,7 +1,7 @@
 {
  "sha": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e",
  "geraet": "gtx",
- "zeit": "2026-11-27T06:48:25.409Z",
+ "zeit": "2026-11-27T06:51:59.559Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#2": {
@@ -2398,6 +2398,70 @@
    },
    "zeit": "2026-11-27T06:48:25.409Z",
    "abdruck": "b6c3c3996fb0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.wasser.bild#1": {
+   "gruen": false,
+   "zahl": "der Deckel der Leiter riss nach 10,014 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,014 s, ehe sichtFlussM der Sprosse stand · der Deckel der Leiter 10 s) · Täter: @@PUNKTE@@ PROBE 51.0 s · Exit 0",
+   "exit": 0,
+   "minuten": 0.86,
+   "grund": "der Deckel der Leiter riss nach 10,014 s, ehe sichtFlussM der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 10,014 s, ehe sichtFlussM der Sprosse stand · der Deckel der Leiter 10 s) · Täter: @@PUNKTE@@ PROBE 51.0 s · Exit 0",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 51.2,
+   "fremd": {
+    "s": 55.4,
+    "takte": 25,
+    "fremdS": 18.67,
+    "kerne": 0.337,
+    "fensterKerne": 0.409,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.41
+     ],
+     [
+      "Explorer.EXE",
+      2.44
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      1.77
+     ]
+    ],
+    "dienerS": 12.27,
+    "diener": [
+     [
+      "System",
+      6.09
+     ],
+     [
+      "WmiPrvSE.exe",
+      2.63
+     ]
+    ],
+    "geraetS": 38.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.52
+     ],
+     [
+      "svchost.exe",
+      9.81
+     ],
+     [
+      "SearchIndexer.exe",
+      0.47
+     ]
+    ],
+    "eigenS": 174.8,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T06:51:59.559Z",
+   "abdruck": "6a7e36a39a80",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
