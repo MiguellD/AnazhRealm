@@ -2002,7 +2002,8 @@ LEITERN.push(
     // ─────────── same.physik.flug — Ballistik ───────────
     // S1 an der Mess-Wiese: ein Steinwürfel 0,1 m und eine Feder (Federn-Platte 0,25 × 0,003 × 0,05 m) als freie Körper des Lösers, je aus
     // 1,5 m mit 10 m/s unter 45° geworfen (`_freiSchritt`, FIXED_DT) — die Weite bis zum Grund gegen die Rechnung mit Luftwiderstand
-    // (ρ Luft 1,2 kg/m³, c_w Würfel 1,05, Platte quer 1,17, Masse aus dem Löser). Der Löser kennt keine Luft: die Feder fliegt wie der Stein.
+    // (ρ Luft 1,2 kg/m³, c_w Würfel 1,05, Platte quer 1,17, Masse aus dem Löser) in der Luft des Orts: v_rel = v − Wind (`_windAt`, der EINE
+    // Wind-Leser, zur Uhr des Sim-Schritts) — die Welt weht, die Feder treibt mit ihm.
     LEITERN.push(
         leiter({
             leiter: "same.physik.flug",
@@ -2059,14 +2060,20 @@ LEITERN.push(
                         k2_wurf_feder: { name: "k2_wurf_feder", label: "k2_wurf_feder", frei: true, builtIn: false, parts: [{ shape: "box", material: "federn", size: { x: 0.25, y: 0.003, z: 0.05 }, position: { x: 0, y: 0.0015, z: 0 } }] },
                     };
                     const RHO = 1.2, v0 = 10, h0 = 1.5, c45 = Math.SQRT1_2;
-                    // die Rechnung: m dv/dt = −m g ŷ − ½ ρ c_w A |v| v, bis die Unterkante den Grund erreicht (RK-frei, dt 1 ms)
+                    // die Rechnung: m dv/dt = −m g ŷ − ½ ρ c_w A |v − w| (v − w), w der Wind am Ort (der EINE Wind-Leser der Welt `_windAt`,
+                    // stamm/stoff-material.js, zur Uhr des Sim-Schritts `state._simZeit` — die Station rückt sie nicht vor), längs der Bahn
+                    // (x), quer (q) und hoch (y), bis die Unterkante den Grund erreicht (RK-frei, dt 1 ms); die Weite längs der Bahn
+                    const wa = {}, [cx, cz] = [bahn.uz, -bahn.ux];
                     const rechnung = (mk, cw, fl, hy) => {
-                        let [x, y, vx, vy] = [0, h0 + bahn.g0, v0 * c45, v0 * c45];
+                        let [x, q, y, vx, vq, vy] = [0, 0, h0 + bahn.g0, v0 * c45, 0, v0 * c45];
                         for (let i = 0; i < 20000; i++) {
-                            const v = Math.hypot(vx, vy), k = (0.5 * RHO * cw * fl * v) / mk;
-                            [vx, vy] = [vx - k * vx * 0.001, vy - (g + k * vy) * 0.001];
-                            [x, y] = [x + vx * 0.001, y + vy * 0.001];
-                            const gr = r._koerperBodenUnter(bahn.x0 + x * bahn.ux, y, bahn.z0 + x * bahn.uz);
+                            const [px, pz] = [bahn.x0 + x * bahn.ux + q * cx, bahn.z0 + x * bahn.uz + q * cz];
+                            const w = r._windAt(px, pz, s._simZeit, wa), [wx, wz] = [w.x * w.ms, w.z * w.ms];
+                            const [ux, uq] = [vx - (wx * bahn.ux + wz * bahn.uz), vq - (wx * cx + wz * cz)];
+                            const k = (0.5 * RHO * cw * fl * Math.hypot(ux, uq, vy)) / mk;
+                            [vx, vq, vy] = [vx - k * ux * 0.001, vq - k * uq * 0.001, vy - (g + k * vy) * 0.001];
+                            [x, q, y] = [x + vx * 0.001, q + vq * 0.001, y + vy * 0.001];
+                            const gr = r._koerperBodenUnter(bahn.x0 + x * bahn.ux + q * cx, y, bahn.z0 + x * bahn.uz + q * cz);
                             if (vy < 0 && y - hy <= (Number.isFinite(gr) ? gr : bahn.g0)) return x;
                         }
                         return null;
@@ -2115,6 +2122,7 @@ LEITERN.push(
                         stein_abw_pct: abw(st.weite, rs),
                         feder_abw_pct: abw(fe.weite, rf),
                         wuerfe: (Number.isFinite(st.weite) ? 1 : 0) + (Number.isFinite(fe.weite) ? 1 : 0),
+                        wind_ms: r3(r._windAt(bahn.x0, bahn.z0, s._simZeit).ms),
                     };
                 }
                 await L.ort("wiese", "ego");
@@ -2123,7 +2131,7 @@ LEITERN.push(
                     const w = await ev(wurf, null, Math.max(5, L.rest() - 6));
                     L.zeile("Stein und Feder, 10 m/s unter 45°: " + JSON.stringify(w));
                     if (w.fehler) throw new Error(w.fehler);
-                    L.gemessen(1, { stein_abw_pct: w.stein_abw_pct, feder_abw_pct: w.feder_abw_pct }, { erzeugt: w.wuerfe, welt: { weg_m: w.stein.weite }, taeter: "Feder " + w.feder.weite + " m gegen Rechnung " + w.feder.rechnung + " m, Stein " + w.stein.weite + " m gegen " + w.stein.rechnung + " m — der Löser kennt keine Luft (stamm/koerper-frei.js:421 `_freiSchritt`)" });
+                    L.gemessen(1, { stein_abw_pct: w.stein_abw_pct, feder_abw_pct: w.feder_abw_pct }, { erzeugt: w.wuerfe, welt: { weg_m: w.stein.weite }, taeter: "Feder " + w.feder.weite + " m gegen Rechnung " + w.feder.rechnung + " m, Stein " + w.stein.weite + " m gegen " + w.stein.rechnung + " m, Wind am Ort " + w.wind_ms + " m/s — die Luft des Lösers (stamm/koerper-frei.js `_freiLuftPacken` · `_freiZiehen`)" });
                 });
                 const ohneLuft = "der Löser trägt nur Schwere, Kontakt und Reibung (stamm/koerper-frei.js:421 `_freiSchritt`)";
                 await L.je(2, async () => L.leser(2, "Drall: keine Magnus-Kraft am Körper — " + ohneLuft));
