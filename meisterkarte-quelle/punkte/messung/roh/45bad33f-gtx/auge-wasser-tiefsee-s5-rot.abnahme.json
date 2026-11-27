@@ -1,0 +1,87 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.441",
+  "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 120,
+  "zeilen": 1080
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 3.5,
+   "deckung": 0,
+   "taeter": {},
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "Gelände",
+  "vorAbstand": 4.92,
+  "leiber": null,
+  "abstand": 7,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   452.131,
+   -9.633,
+   11062.656
+  ],
+  "blick": [
+   0.85714,
+   -0.42857,
+   0.28573
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 51.3,
+  "sigma": 0,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [bild.sigma 0 < 4 · Ziel Blickziel verdeckt von Gelände in 4.92 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 7 m · Luma 51.3 σ 0 schwarz 0.0 % weiß 0.0 % · Stand 18.546.441 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal",
+ "rot": [
+  {
+   "feld": "bild.sigma",
+   "grund": "bild.sigma 0 < 4"
+  },
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Blickziel verdeckt von Gelände in 4.92 m"
+  }
+ ],
+ "urteil": "ROT"
+}
