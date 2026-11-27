@@ -221,6 +221,18 @@ WÄNDE: die Liste der Punkte-Maschine (`liste --kopf <dieser Kopf>`) mit dem Kan
 genau zwei ROT gelaende.K2#1/#2 „Wand HAKEN“ (= Basis); wegfindung#1 „Sitzung ≤ 45 s“. Headless: lint · format · check:statik ganz ·
 fall-waechter · v1-pfad · playtest (110 s) RC 0 · gate:betriebsgesetz GRÜN.
 
+## Kopf 5 am Gerät und Kopf 6 (WIP) — der Zeuge als Wegweiser, der Leser des Ziel-Gangs (Koordinator 27.11. 04:40)
+
+Radeon am b32c6773: Ankunft 50 von 50, Kontrast Median 0,461, Leiter 0,75 min, p95 25,16 ms; GPU-Probe GRÜN
+(probe-post/landmarken-geologie-8/b32c6773.md im Zweig `koordination`). Kopf 5 bleibt, wie er ist; der Zeuge mit Bild gehört dem Macher
+mit GPU, sein Wegweiser steht in `cloud-post/landmarken-geologie-8-station/zeuge.txt` (8f114916, c89df8ee).
+
+| # | Ursache | Schnitt | Zahl vorher → nachher |
+| --- | --- | --- | --- |
+| Z-1 | Der Kontrast der drei stärksten Saaten stand nirgends (das Gerät nennt nur den Median). | Der WebGL2-Rückfall liest den Himmel auch in der Wolke zurück (23,8 s nach dem Weltbild): `_landmarkeKontrast` je Saat. | s1-4: 0,584 · s1-41: 0,565 · s1-12: 0,520 (12 von 50 gelesen) |
+| H-1 | In der Wolke maß S1 an 38 von 50 Saaten vor der Lesung des Himmels der neuen Welt. | Kandidat: LANDMARKE_AN wartet ≤ 3 s auf `_himmelFrisch` (stamm/bild-himmel.js, das Versprechen des Spiels). | gelesen 12 → 50 von 50 · Median 0,431 · ≥ 0,1: 45 von 51 = 0,882 (s1-27 Durchlass 0: Nebel; 5 vor gleich hellem Grund) |
+| G-1 | wegfindung#2 hatte keinen Leser des Ziel-Gangs. | WIP: stamm/koerper-bewegung.js die Glieder Beginn · Schritt des Ziel-Gangs (Zweig landmarken-geologie-8-wip) im EINEN Sim-Schritt, der Fuß der Marke (stamm/vegetation-baum.js), die Ankunft beginnt den Gang; der Kandidat geht von der Wiese zu jeder Landmarke in 1 km. | S2 LESER → gemessen: Erfolg 1 (2 von 2), Umweg 1,0000 (Felsturm 519 m und 897 m) |
+
 ## Offen (Grund · Messname · Adresse)
 
 1. Der Zeuge am Gerät: kein Bild der Ankunft mit Maske der Marke · S1 LESER „der Zeuge am Gerät … kein Leser“ ·
@@ -231,3 +243,21 @@ fall-waechter · v1-pfad · playtest (110 s) RC 0 · gate:betriebsgesetz GRÜN.
 5. Wald vor dem Gipfel: die Gerade liest nur den Boden · `karte2.erleben.spieler.wegfindung#1`.
 6. Das erste Bild: die Kamera 0,7 m über dem stehenden Auge · s1-1.
 7. Das Bogen-Band N = 2 · `gate:phyto-core`.
+8. Der Testspieler von wegfindung#2 ist ein Peil-Gänger, kein Mensch (die Sprosse nennt „menschlicher Testspieler“; das Panel R11
+   setzt der Schöpfer) · S2 `karte2.erleben.spieler.wegfindung#2`.
+9. Die Ankunft wählt die tragende Marke nach dem Winkel Höhe/Weg, nie nach ihrem Kontrast: mit frischem Himmel 6 von 50 Saaten unter
+   0,1 (Wolke, WebGL2; Anteil 0,882) · S1 `anteil_landmarke` · stamm/gelaende-chunks.js `_ankunft`.
+
+## Stand 27.11. 06:36 UTC (Wartezimmer 4 h, letzte Post 04:40)
+
+- **Geschnitten:** Kopf 5 b32c6773 — EIN Licht-Gesetz `flaechenLicht` mit zwei Lesern, `_landmarkeKontrast` im Spiel, S1 zuerst mit
+  Puls · Wegweiser des Zeugen `cloud-post/landmarken-geologie-8-station/zeuge.txt` · WIP 63d6e65e (Zweig `landmarken-geologie-8-wip`):
+  der Leser des Ziel-Gangs (die Glieder Beginn · Schritt des Ziel-Gangs (Zweig landmarken-geologie-8-wip) im Sim-Schritt, der Fuß der Marke), S1 wartet auf `_himmelFrisch`.
+- **Gemessen:** Radeon an b32c6773 Ankunft 50/50, Kontrast Median 0,461, Leiter 74,3 → 45 s (0,75 min), p95 25,16 ms · Wolke WebGL2:
+  Ziel-Gang an der Wiese 2 von 2, Umweg 1,0000 · S1 mit frischem Himmel gelesen 12 → 50 von 50, Anteil 0,882.
+- **Offen:** der Zeuge mit Bild (Bild + Maske, Macher mit GPU; S1 LESER) · die Ankunft wählt nach Winkel, nie nach Kontrast (6 von 50
+  unter 0,1; `anteil_landmarke`, stamm/gelaende-chunks.js `_ankunft`) · der Testspieler von #2 ist ein Peil-Gänger (Panel R11; S2) ·
+  Offen 3–7 oben.
+- **Kopf:** landmarken-geologie-8 c89df8ee (Vorprüfung 5 b32c6773) · WIP 63d6e65e
+- **Beanspruchte Sprossen:** `karte2.erleben.spieler.wegfindung#1` · im WIP `karte2.erleben.spieler.wegfindung#2`
+- **Karte 2 gebucht:** 137 von 1 718 · **Status:** ZWISCHENSTAND
