@@ -1733,7 +1733,10 @@ function ankunftRechnen(msg) {
     });
     const ms = (self.performance ? self.performance.now() : Date.now()) - t0;
     self.postMessage(
-        Object.assign({ type: "ankunft-result", requestId: msg.requestId, ms, geplant: zahl.geplant, bestand: zahl.bestand }, w)
+        Object.assign(
+            { type: "ankunft-result", requestId: msg.requestId, ms, geplant: zahl.geplant, bestand: zahl.bestand },
+            w
+        )
     );
 }
 

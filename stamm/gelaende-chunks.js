@@ -1449,7 +1449,8 @@ class AnazhRealm_gelaende_chunks {
         const staende = [h0];
         K.ringSpirale((dx, dz, r) => {
             const [x, z] = [heim.x + dx, heim.z + dz];
-            if (r && grund(x, z) > K.wasserSpiegel(L, x, z) + 0.4 && !this._imGrundriss(x, z)) staende.push(augeAn(x, z));
+            if (r && grund(x, z) > K.wasserSpiegel(L, x, z) + 0.4 && !this._imGrundriss(x, z))
+                staende.push(augeAn(x, z));
             return false;
         });
         // der Kegel der Kamera der Welt an der Heimat, Gier 0: ihre Weite die des Rings (`_weltKameraFern`), nie das Boot-far einer

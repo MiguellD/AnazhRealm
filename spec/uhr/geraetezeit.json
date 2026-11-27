@@ -36,8 +36,8 @@
   "feld-brand": "frist _brandArbeit _tickBrand",
   "feld-leben": "messung _analogEMetrologieStempelLog · speicher chatSystemPatterns",
   "feld-nexus": "ki llmBuildSystemPrompt maybeAnswerWithLlm",
-  "gelaende-boden": "messung _ortWahlImFaden:2",
-  "gelaende-chunks": "messung _acquireVoxelChunkBuild:2 _faedenStumm _nebenFaden:2 · frist _tickFoliageGrowth:2 _tickVoxelChunkStreaming:4",
+  "gelaende-boden": "messung _genesisAnkunft:2 _ortWahlImFaden:2",
+  "gelaende-chunks": "messung _acquireVoxelChunkBuild:2 _ankunft:2 _faedenStumm _nebenFaden:2 · frist _tickFoliageGrowth:2 _tickVoxelChunkStreaming:4",
   "gelaende-fern": "messung _ensureFarWaterSheet:2 · frist _fernRingEinhaengen:2 _fernRingWasserNeu _pruneDistantVoxelChunks _saatGehtZuEnde _zellGedaechtnisGeht:2",
   "klang": "anzeige playInventoryHoverPing",
   "koerper-fahrt": "messung _tuchTakt · ruhe _tuchGitterRuhe",
@@ -69,6 +69,6 @@
   "werkstatt-hud": "anzeige _untertitelTakt _untertitelZeile grokSpeak",
   "werkstatt-sozial": "speicher _renderWorldPicker _socialSignOwnComment _socialSignOwnRating renderWorldJournal updateWorldInfo",
   "werkstatt-vorschau": "werkstatt _workshopInstallPreviewListeners:4 _workshopProbeJoints _workshopStartRAF:2 · frist _werkstattBau",
-  "voxel-worker": "messung genesisPlan:2 kammKrone:4 ortWahl:4 gauFeldBauen:5 gauAuftrag:6"
+  "voxel-worker": "messung ankunftRechnen:4 genesisPlan:2 kammKrone:4 ortWahl:4 gauFeldBauen:5 gauAuftrag:6"
  }
 }
