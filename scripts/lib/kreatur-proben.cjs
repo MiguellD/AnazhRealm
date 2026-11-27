@@ -1254,6 +1254,19 @@ async function kreaturProben(r, T, opts) {
         return {
             dorf,
             heim: [rund(heim.x, 1), rund(heim.z, 1)],
+            // die Landmarken bis 80 m um das Heim (`_landmarkenDesChunks`): Fels, an dem ein Verband stehen bleibt
+            marken: (() => {
+                const sp = r._voxelChunkConfig(0).span;
+                const L = [];
+                for (let i = -1; i <= 1; i++)
+                    for (let j = -1; j <= 1; j++)
+                        for (const l of r._landmarkenDesChunks(
+                            Math.floor(heim.x / sp) + i,
+                            Math.floor(heim.z / sp) + j
+                        ) || [])
+                            if (ab(l, heim) < 80) L.push([l.art, rund(l.x, 1), rund(l.z, 1), rund(ab(l, heim), 1)]);
+                return L;
+            })(),
             fremdN: X.fremdN,
             blickDiffM: rund(Math.max(...W.lage.map((p, i) => ab(p, B.lage[i]))), 4),
             verband: { fensterRaum: VH.fensterRaum, wander: zahl(W), flucht: zahl(F) },
