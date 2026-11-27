@@ -1,5 +1,19 @@
 # gezeiten-3 — Stand-Blatt (oberster Abschnitt = jüngster Stand; darunter die Geschichte der Bahn gezeiten-2)
 
+## 27.11. 14:35 Wartezimmer zu — der Kopf 0078a6e2 steht in main, der Vor-Richter liest GRÜN (ZWISCHENSTAND)
+
+Sprosse `karte2.planet.wasser.gezeiten#1`. Karte 2 gebucht 149 von 1 718 (Stand des Briefs; die Buchung setzt der Koordinator).
+
+- **Gelandet in main:** „Abgabe w28-gezeiten-3“ 494538d über integ-probe, Versions-Stufe V18.546.452 (3008a66).
+- **CI:** Code-Check 0078a6e2 success; GPU-Probe omen-gtx1060 GRÜN in 1 945 s (pruefbuehne-licht 55 s · weltbild-frost:echt
+  166 s · studio-begehen 264 s · webgl-probe 54 s). Das lokale ROT „S0 Himmel“ war swiftshader, byte-gleich am main.
+- **Vor-Richter GTX 1050, 13:10** (Post an gezeiten-3 im Zweig `koordination`): GRÜN mit dem Kandidaten — periodeH 12,353 gegen
+  12,42 ± 2 %, Akte planet.wasser.gezeiten.1.b1fda1e4-gtx1050.json; 12:35 UNGEMESSEN durch den Wrapper in `stamm/bild-kosten.js`
+  (rauch-nan, nicht dieser Kopf). Der Kandidat trägt; die Station im Zweig `punkte-maschine` nimmt ihn nur der Koordinator.
+- **Offen** wie unten: dieselbe Klasse der Stations-Uhr (Zeilen 3829 … 6285, Linse Wand LÄNGE), der Preis der Nähe
+  (`_gezeitMarke`, Messname `markiert`), das Watt-Bild ungemessen, `probe-tag` (zug.sh fehlt im Container).
+- Kein GELANDET/ENDE im Briefkasten bis 14:35; das Wartezimmer schloss nach 4 h.
+
 ## 27.11. Vorprüfung gezeiten-3 1 — die Gezeit im Export, die Täter-Zahl des Vor-Richters (ZWISCHENSTAND)
 
 Sprosse `karte2.planet.wasser.gezeiten#1`. Karte 2 gebucht 149 von 1 718.
