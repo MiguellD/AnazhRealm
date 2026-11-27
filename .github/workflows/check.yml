@@ -67,7 +67,11 @@ jobs:
             matrix:
                 gruppe: [1, 2]
         runs-on: ubuntu-latest
-        timeout-minutes: 10
+        # DIE FRIST HÄLT DEN LANGSAMEN LAUF (27.11., z795): die Statik trägt den Puls 1 allein (Tafel 444 s Median, an neun
+        # Zug-Kandidaten 364–586 s). Der Deckel 10 min brach den Kandidaten 6e0ea3fc in beiden Versuchen bei 585 s ab — kein Job
+        # war rot, der grüne Stempel stand als „gefahren“ draussen. gate:ci-deckung (T) FRIST urteilt seither auch am Puls
+        # (1,6 × Plan); wächst die Statik weiter, nennt die Wand sie beim Namen, bevor ein Zug daran bricht.
+        timeout-minutes: 15
         permissions:
             actions: read
             contents: read

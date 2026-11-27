@@ -152,6 +152,9 @@ const imVollenLauf = (doc, job) =>
 // laufen auf SwiftShader bis 2,8× langsamer, die Kamera-Leib-Linse am selben Kopf 319 s und 841 s), ihr Deckel hält 1,2 × die Gruppe (T).
 const RAND_S = 30;
 const DECKEL_MIN = 45;
+// (T) FRIST am Puls: seine Tafel trägt den MEDIAN (voll den p90). Der langsamste gelandete Lauf der Statik trug 1,32 × den Median
+// (586 s gegen 444 s, neun Zug-Kandidaten 26.–27.11.); mit demselben Rand 1,2 wie in voll hält die Frist 1,6 × den Plan.
+const PULS_FRIST = 1.6;
 const VORBEREITUNG = [
     ["checkout", (s) => String(s.uses).startsWith("actions/checkout@")],
     ["setup-node", (s) => String(s.uses).startsWith("actions/setup-node@")],
@@ -1065,6 +1068,11 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
                 v.push(
                     `(T) FRIST: „${wer}" trägt im langsamen Lauf ${minuten(summe)} min, timeout-minutes ${J["timeout-minutes"]} hält nicht 1,2 × davon`
                 );
+            // z795 (27.11.): der Puls 1 lief am Zug-Kandidaten zweimal in seinen Deckel 10 min — abgebrochen ist kein Urteil
+            if (art === "push" && PULS_FRIST * summe > 60 * J["timeout-minutes"])
+                v.push(
+                    `(T) FRIST: „${wer}" trägt im Median ${minuten(summe)} min, timeout-minutes ${J["timeout-minutes"]} hält nicht ${String(PULS_FRIST).replace(".", ",")} × davon`
+                );
             const k = deckel.get(klasse) || deckel.set(klasse, { s: 0, n: 0, art }).get(klasse);
             [k.s, k.n, k.d] = [k.s + summe, k.n + 1, art === "push" ? PULS_S : (k.s + summe) / (k.n + 1) + RAND_S];
         }
@@ -1750,6 +1758,19 @@ function selbsttestWaage() {
                 Object.assign(d.jobs.voll, { "timeout-minutes": 20 }) &&
                 Object.assign(z.schritte, { A: { s: 898 }, C: { s: 287 } }),
             /\(T\) FRIST: „voll 1\/2" trägt im langsamen Lauf 20,1 min, timeout-minutes 20 hält nicht 1,2 × davon/,
+        ],
+        // (T) FRIST am Puls (z795, 27.11.): die Statik trug 444 s Median allein, der Deckel 10 min brach den Kandidaten bei 585 s ab
+        [
+            "ein Puls-Deckel, der den langsamen Lauf nicht hält",
+            (d, z) =>
+                Object.assign(d.jobs.puls, { "timeout-minutes": 10 }) && Object.assign(z.schritte, { Lint: { s: 444 } }),
+            /\(T\) FRIST: „puls 1\/1" trägt im Median 7,7 min, timeout-minutes 10 hält nicht 1,6 × davon/,
+        ],
+        [
+            "derselbe Puls unter 15 min (grün, der Große beim Namen)",
+            (d, z) =>
+                Object.assign(d.jobs.puls, { "timeout-minutes": 15 }) && Object.assign(z.schritte, { Lint: { s: 444 } }),
+            (w) => !w.v.length && w.gross.includes('„Lint" 7,4'),
         ],
         [
             "eine Voll-Gruppe über dem Mittel ihrer Klasse",
