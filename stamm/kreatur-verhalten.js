@@ -819,7 +819,7 @@ class AnazhRealm_kreatur_verhalten {
 
     // DIE MASSE EINES LEIBS (kg, das EINE Impuls-Gesetz AnazhRealm.STOSS): das Volumen seiner Gestalt (die geschlossene
     // Haut, `_leibVolumen`, bei Größe 1 gemessen) × Skala³ × ρ seines Stoffs (`_leibRho`) — ein Tier (`_tierBaum.leibV`)
-    // oder ein Mensch (`userData._leibV` am Avatar oder an einem Kind). Fail-closed: ein Leib ohne gemessene Gestalt bricht
+    // oder ein Mensch (`userData._leibV` am Avatar oder an einem Kind) oder ein Leib ohne Baum (der Fisch, `leibV`). Fail-closed: ein Leib ohne gemessene Gestalt bricht
     // laut. Vorher: eine Kapsel aus der Hüft-Höhe × 1000 im Wirt (Bär 255 kg, Hirsch 436 kg).
     _leibMasse(koerper) {
         const tb = koerper && koerper.userData ? koerper.userData._tierBaum : null;
@@ -832,6 +832,8 @@ class AnazhRealm_kreatur_verhalten {
             return v;
         };
         if (tb && tb.leibV > 0) return tb.leibV * kette(koerper) * this._leibRho(false);
+        // ein Leib ohne Baum (der Fisch: seine Gestalt sind die Glieder seines Pools, `_fischGesetz` leibV) trägt sein Volumen selbst
+        if (koerper && !koerper.isObject3D && koerper.leibV > 0) return koerper.leibV * this._leibRho(false);
         let avatar = null;
         if (koerper && typeof koerper.traverse === "function")
             koerper.traverse((o) => {

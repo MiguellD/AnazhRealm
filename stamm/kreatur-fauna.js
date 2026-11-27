@@ -751,7 +751,7 @@ class AnazhRealm_kreatur_fauna {
         }
         if (!P) {
             const cap = Math.max(64, 2 * liste.length);
-            const mesh = this._kistenPool(name, cap, new THREE.OctahedronGeometry(0.5));
+            const mesh = this._kistenPool(name, cap, AnazhRealm._kleintierForm());
             const farbe = new THREE.Color(L.farbe);
             for (let i = 0; i < cap; i++) mesh.setColorAt(i, farbe);
             mesh.instanceColor.needsUpdate = true;
@@ -855,7 +855,14 @@ AnazhRealm._fischGesetz = function () {
         const glieder = Object.freeze(
             F.leib.glieder.map((p) => Object.freeze([gx * p, gy * p, (gz / n) * F.leib.ueberlapp]))
         );
+        // DAS VOLUMEN DER GEZEICHNETEN GESTALT (m³, das EINE Massen-Gesetz `_leibMasse`: Volumen × ρ): je Glied der Keil des Pools
+        // (`_kleintierForm`, geschlossen gemessen wie jede Haut, `_geschlossenesVolumen`) × seine Ausdehnung — 0,3 m Leib → 0,24 kg
+        // (das Band: Fulton 1904, K = 100·W/L³ [g, cm], Salmoniden 0,9–1,3 — OMAFA 2024 → 30 cm: 0,24–0,35 kg)
+        const form = AnazhRealm._geschlossenesVolumen(AnazhRealm._kleintierForm());
+        if (!form.geschlossen || !(form.v > 0)) return AnazhRealm._kernPflichtBruch("leib:Keil des Fischs ohne geschlossene Haut");
+        const leibV = glieder.reduce((a, g) => a + form.v * g[0] * g[1] * g[2], 0);
         return (AnazhRealm._fischGesetzMemo = Object.freeze({
+            leibV,
             F,
             wurf: k.vogelWurf,
             stand: k.fischStand,
@@ -867,6 +874,11 @@ AnazhRealm._fischGesetz = function () {
         }));
     }
     return AnazhRealm._kernPflichtBruch("tetrapoda:FISCH_GESETZ");
+};
+// DIE FORM DER KLEINTIERE (ein Keil je Glied: Fisch und Bestäuber im Pool, `_kleintierZeichnen`) — EINE Quelle für den Pool und
+// das Volumen des Fischs (`_fischGesetz` leibV)
+AnazhRealm._kleintierForm = function () {
+    return new THREE.OctahedronGeometry(0.5);
 };
 AnazhRealm._bestaeuberGesetz = function () {
     if (AnazhRealm._bestaeuberGesetzMemo) return AnazhRealm._bestaeuberGesetzMemo;

@@ -545,6 +545,49 @@ const FISCH = async (k) => {
     }
 };
 
+// DIE MASSEN DES BESTANDS (Karte 2 leben.tiere.bewegung#2: „3 Dekaden 1–10³ kg: Vierbeiner, Laufvogel, Fisch mit Körperwelle“):
+// je Seele der Welt (`CREATURE_SOULS`, bei Größe 1 gesetzt) und der Fisch (sein Leib ohne Baum, `_fischGesetz`) die EINE Masse
+// `_leibMasse` (Volumen der Gestalt × ρ); die Dekaden = log10(größte / kleinste). Ein Leib ohne Masse steht beim Namen.
+// --selftest: der Fisch ohne Volumen (seine Glieder galten als offene Haut, bis 27.11.) → ROT an den Dekaden (1,354).
+const MASSEN_SOLL = { dekaden: 3 };
+const MASSEN = (k) => {
+    const s = st,
+        A = AnazhRealm;
+    const zur = k.stub ? leihe(A, { _fischGesetz: ((echt) => () => Object.assign({}, echt(), { leibV: 0 }))(A._fischGesetz.bind(A)) }) : () => {};
+    const pm = s.playerMesh.position;
+    const max = s.maxCreatures;
+    const kg = {},
+        ohne = [];
+    try {
+        s.maxCreatures = Math.max(max || 0, s.creatures.length + 2);
+        for (const seele of Object.keys(A.CREATURE_SOULS)) {
+            const x = pm.x + 40;
+            const c = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, pm.z) + 0.5, pm.z, "happy", seele, { precise: true, bodySize: 1 });
+            if (!c) {
+                ohne.push(seele + " (kein Leib)");
+                continue;
+            }
+            try {
+                kg[seele] = r._leibMasse(c);
+            } catch (e) {
+                ohne.push(seele + " (" + e.message + ")");
+            } finally {
+                r.removeCreature(c);
+            }
+        }
+        try {
+            kg.fisch = r._leibMasse(A._fischGesetz());
+        } catch (e) {
+            ohne.push("fisch (" + e.message + ")");
+        }
+    } finally {
+        s.maxCreatures = max;
+        zur();
+    }
+    const m = Object.values(kg).filter((x) => x > 0);
+    return { kg, ohne, dekaden: m.length > 1 ? Math.round(1000 * Math.log10(Math.max(...m) / Math.min(...m))) / 1000 : 0 };
+};
+
 // DIE SCHWERE DES GANGS (K07, dieselbe Linse): Schritt und Becken lesen die Schwere der Welt (state.gravity, die DSL setzt
 // sie) aus EINER Zeile, Mensch und Tier. Unter der Mond-Schwere (1,62 m/s²) gleicht der Takt des Menschen beim Laufen
 // gangSchritt mit dieser Schwere, das Becken des Menschen bekommt dieselbe Zeile (der Spion am Kern liest ihre Schwere), und
@@ -852,6 +895,7 @@ hauptLauf(async () => {
     let schwereRot = false;
     let taktRot = false;
     let fischRot = false;
+    let massenRot = false;
     let bewegtFeuert = 0;
     let gangRot = false,
         tastRot = false;
@@ -1004,6 +1048,19 @@ hauptLauf(async () => {
                 }
             }
         }
+        // DIE MASSEN DES BESTANDS (MASSEN, oben)
+        {
+            const mz = await page.evaluate(MASSEN, { stub: SELBST });
+            const ok = mz.dekaden >= MASSEN_SOLL.dekaden && !mz.ohne.length;
+            const je = Object.entries(mz.kg).map(([n, v]) => n + " " + (Math.round(1000 * v) / 1000)).join(" · ");
+            log(
+                `  ${ok ? "✅" : "❌"} Massen des Bestands über ${mz.dekaden} Dekaden (Soll ≥ ${MASSEN_SOLL.dekaden}): ${je} kg${mz.ohne.length ? " · ohne Masse: " + mz.ohne.join(" · ") : ""}${ok ? "" : " — Täter: stamm/kreatur-fauna.js _fischGesetz leibV / _leibMasse (ein Leib des Bestands ohne Masse)"}`
+            );
+            if (!ok) {
+                rot++;
+                massenRot = true;
+            }
+        }
         // das Labor (oben: sein Browser und beide Studios laufen seit dem Anfang neben der Welt)
         const sp = await koerper;
         // LABOR = WELT IM BEWEGUNGS-TAKT (w4-koerper-park): dieselbe Spur im Körper-Studio, die erste Abweichung beim Namen
@@ -1054,6 +1111,7 @@ hauptLauf(async () => {
             [gefeuert.has("wechsel"), "der Wechsel über der Natur (die Hysterese beidseits) blieb grün: die Wechsel-Wand"],
             [taktRot, "die Takt-Wand (Labor = Welt)"],
             [fischRot, "der starre Fisch-Leib (Gier-Wippe 2,5 Hz ohne Körperwelle) blieb grün: die Wellen-Wand"],
+            [massenRot, "der Fisch ohne Volumen (der Bestand über 1,354 Dekaden) blieb grün: die Massen-Wand"],
             [bewegtFeuert === Object.keys(BEWEGUNG_BRUCH).length, "die Bewegungs-Wand (VERB_SOLL)"],
         ].find(([ok]) => !ok);
         urteilEnde(vakuoes, () => `\n❌ SELBST-TEST ROT — ${vakuoes[1]} ist vakuös.`, `\n✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (${rot} Läufe über ${SCHWELLE}).`);
