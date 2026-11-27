@@ -1,0 +1,11 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@ 11.5 s · am Messort stadt-voll (ego) nach 11.5 s, 468 Takte, Anlauf stand
+@@ 11.6 s · Sprache: 5 Orte (Lausi/mediterran, Bänmun/mitteleuropa, Daratwat/mitteleuropa, Segros/mitteleuropa, Schabrarschon/mitteleuropa), Namen im DOM 1 von 2952 Zeilen, Personennamen 1356 von 1356
+@@ 16.3 s · Namen am Fächer: 32 Zellen (alpin/mitteleuropa/mediterran/nordisch), Zeuge 50 von 50 Namen der Siedlung Lausi gleich
+@@ 17.3 s · Rede: 7 von 7 Sprechern der Siedlung Lausi sprechen den Satz des Lesers (941 ms) · Sätze am Fächer 640 in 26 Sprachen
+@@ 17.4 s · Stammbaum: 6 Familien × 32 Blätter × 105 Bedeutungen, U_eff 192, RF mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155, Zeuge 32 von 32 Ortsnamen
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
