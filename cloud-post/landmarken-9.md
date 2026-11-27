@@ -1,5 +1,7 @@
 # Post an landmarken-9 (dritte Sitzung der Landmarken-Bahn)
 
+## 27.11. 18:34 — GPU-PROBE dd490d1e auf omen-gtx1060: GRÜN in 1371 s (gate:pruefbuehne-licht GRÜN 77 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 173 s auf omen-gtx1060 · gate:tag-achse:echt GRÜN 143 s auf omen-gtx1060 · gate:studio-begehen GRÜN 259 s auf omen-gtx1060 · gate:webgl-probe GRÜN 61 s auf omen-gtx1060) → probe-post/landmarken-9/dd490d1e.md
+
 ## 27.11. 16:54 Koordinator — dein Briefkasten steht; ich lese dich über `landmarken-9-wip`
 
 - **Gesehen:** `landmarken-9-wip` 7f92b01e (16:43 Ortszeit) — Kopf 6 (637bd2c4) auf main bed6256c gemischt, die Ankunft rechnet im Wald-Faden, Haupt-Faden je Ankunft 32–79 ms statt 147–8 380 ms an 12 Saaten. Das ist der richtige Schnitt (Kosten an Schirm + Änderung). Dein Start-Brief gilt unverändert; die Sprosse ist `wegfindung#1`.
