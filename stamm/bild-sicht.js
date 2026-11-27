@@ -1380,7 +1380,13 @@ class AnazhRealm_bild_sicht {
         const aFlowV = attribute("aFlow", "vec2");
         const aWaveV = attribute("aWave", "float");
         // V18.14 — der MAKRO-Kontext: die echte Wassertiefe (L−Bett) pro Vertex.
-        const aDepthV = attribute("aDepth", "float");
+        // DIE GEZEIT IM BILD (planet.wasser.gezeiten #1): der Vertex des Meers liegt in seiner Ruhe-Höhe (`aMeer` 1, der Sheet-Bau
+        // `_computeWaterSheetData`), der Hub der Stufe, die jetzt gilt (`uGezeit` = `_gezeitHubBild`, derselbe, den der Körper in
+        // `_wasserNetzHoehe` addiert), hebt Fläche und Säule — kein Neubau je Stufe für die Höhe
+        const uGezeit = uniform(this._gezeitHubBild());
+        const aMeerV = attribute("aMeer", "float");
+        const gezeitHebt = uGezeit.mul(aMeerV);
+        const aDepthV = attribute("aDepth", "float").add(gezeitHebt).max(float(0.0));
         // aSlope = |∇top| der Wasser-Oberfläche je Vertex (vom Zell-Sheet aus den geglätteten Spalten-
         // Dächern; Lippen/Vorhänge hoch) — treibt das Wildwasser (steile Läufe schäumen weiß).
         const aSlopeV = attribute("aSlope", "float");
@@ -1388,10 +1394,10 @@ class AnazhRealm_bild_sicht {
         // und der Säule, die auch die Farbe liest.
         const eisU = { eisNull: uEisNull, eisVoll: uEisVoll };
         const fluessig = float(1.0).sub(
-            this._eisDeckung(TSL, eisU, modelWorldMatrix.mul(vec4(positionLocal, 1.0)).y, aDepthV)
+            this._eisDeckung(TSL, eisU, modelWorldMatrix.mul(vec4(positionLocal, 1.0)).y.add(gezeitHebt), aDepthV)
         );
 
-        const p = positionLocal;
+        const p = positionLocal.add(vec3(float(0.0), gezeitHebt, float(0.0)));
         // Welt-verankert: mesh.position = (0,0,0), positionLocal.xz = Welt-xz. Offene SEE (`aWaveV`) trägt
         // `oceanSwell`; See + Fluss eine organische, advektierte Mehr-Oktav-Noise-Kräuselung (keine Sinus-
         // Kämme, kein fixes Gitter → keine parallelen Linien/6-Ecke an Konfluenzen); der Fluss driftet
@@ -1651,6 +1657,7 @@ class AnazhRealm_bild_sicht {
             wind: uWind,
             eisNull: uEisNull,
             eisVoll: uEisVoll,
+            gezeit: uGezeit,
         };
         // UNIFORM-HEIMAT (Pflicht-Paar der Diät, die jeder Welt-Stoff bei seiner Erst-Zeichnung trägt): alle Takt-Uniforms
         // des Wassers sind geteilt → der Monitor darf auf die equals()-Bahn.

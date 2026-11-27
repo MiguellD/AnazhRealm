@@ -418,6 +418,8 @@ class AnazhRealm_gelaende_fern {
             geom.setAttribute("aWave", new THREE.Float32BufferAttribute(aWave, 1));
             geom.setAttribute("aDepth", new THREE.Float32BufferAttribute(aDepth, 1));
             geom.setAttribute("aSlope", new THREE.Float32BufferAttribute(new Float32Array(vCount), 1));
+            // die Gezeit trägt der Ring selbst (`_fernRingWasserNeu` legt je Stufe seine Punkte): kein Vertex hebt sich am Hub
+            geom.setAttribute("aMeer", new THREE.Float32BufferAttribute(new Float32Array(vCount), 1));
             geom.setIndex(indices);
             mesh = new THREE.Mesh(geom, this._ensureHydroSurfaceMaterial());
             mesh.renderOrder = 1;

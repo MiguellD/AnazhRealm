@@ -1712,7 +1712,7 @@ async function checkBandWasserWahrheit({ page, check }) {
             alt.set(quad(1, 1, 8), 12); // Bereich 2 (das Sheet des Chunks 0,0)
             const mesh = {
                 geometry: {
-                    attributes: { position: { array: alt.subarray(12, 24) } },
+                    attributes: { position: { array: alt.subarray(12, 24) }, aMeer: { array: new Float32Array(4) } },
                     index: { array: new Uint32Array([0, 2, 1, 1, 2, 3]) },
                 },
             };
@@ -1723,15 +1723,15 @@ async function checkBandWasserWahrheit({ page, check }) {
                 voxelChunkWaterIso: new Map([["0,0", mesh]]),
             };
             // der Täter an der Naht: das Netz bekommt den View des Satzes statt seiner Kopie
-            if (haeltView) shim._wasserNetzBau = (cx, cz, pos, idx) => r._wasserNetzBau.call(shim, cx, cz, mesh.geometry.attributes.position.array, idx);
-            const h0 = AR._wasserNetzHoehe(netzFn.call(shim, 0, 0), 5, 5);
+            if (haeltView) shim._wasserNetzBau = (cx, cz, pos, idx, meer) => r._wasserNetzBau.call(shim, cx, cz, mesh.geometry.attributes.position.array, idx, meer); // prettier-ignore
+            const h0 = AR._wasserNetzHoehe(netzFn.call(shim, 0, 0), 5, 5, 0);
             // das Verdichten: Bereich 2 rückt nach vorn, ein dritter Bereich (fremd, y 2) zieht in seinen alten Platz
             alt.copyWithin(0, 12, 24);
             alt.set(quad(30, 30, 2), 12);
             const neu = new Float32Array(12);
             neu.set(alt.subarray(0, 12));
             mesh.geometry.attributes.position.array = neu.subarray(0, 12);
-            const h1 = AR._wasserNetzHoehe(netzFn.call(shim, 0, 0), 5, 5);
+            const h1 = AR._wasserNetzHoehe(netzFn.call(shim, 0, 0), 5, 5, 0);
             return { h0, h1 };
         };
         const f7 = runNetz(r._wasserNetz);
