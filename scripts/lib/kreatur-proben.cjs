@@ -1044,6 +1044,41 @@ async function kreaturProben(r, T, opts) {
     // Leiber des Wurfs, kein fremder dazu ──
     await buehne("herde", async (restore) => {
         r.setGameMode("frieden");
+        // DAS HEIM HÄLT DEN ANKER (landmarken-9 Kopf 2): der Ort des Wurfs ist einer, an dem das Gesetz den Anker des Verbands
+        // lässt (`_kreaturRevier` über das Leittier eines Probe-Wurfs: nicht frei, nicht verschoben) — dieselbe Frage wie die
+        // Bühne herde-bild (T3). Am Start 34/−34 trug `frei(0, 70, 40)` den Lebensraum nicht ganz: das Revier legte den Anker
+        // 1,5 Leinen fort, die Glieder zogen 372 m dorthin und standen 1 040 m vor ihm — die Flucht fand niemanden (vakuös).
+        // Gewählt vor jedem Täter (herde-revier deckt `_kreaturRevier`).
+        const heim = (() => {
+            if (taeter === "herde-park") return neben(P0.x, P0.z + 70);
+            const seq = s._creatureNetSeq;
+            let lt = null;
+            const haelt = (o) => {
+                if (!o) return false;
+                if (!lt) {
+                    leer();
+                    pm.set(o.x + 140, o.y, o.z);
+                    kamera(1, 0);
+                    const gl = r._kreaturWurf({ x: o.x, z: o.z }, "wesen", "happy", r._faunaRng("verband"), 7);
+                    if (!gl.length) return false;
+                    lt = r._kreaturLeittier(gl[0]);
+                }
+                const leine = r._gehegeLeine(lt, r._creatureMoveCharacter(lt).leashM);
+                const rv = r._kreaturRevier(lt, { x: o.x, z: o.z }, leine);
+                return !rv.frei && Math.hypot(rv.x - o.x, rv.z - o.z) < 0.01;
+            };
+            const o0 = frei(0, 70, 40);
+            const o = haelt(o0)
+                ? o0
+                : spirale(0, 70, 40, 8, (x, z) => {
+                      const q = r._landAt(x, z) && imUmkreisLand(x, z, 40) && neben(x, z);
+                      return q && !huelleNah(x, z, q.y - 0.5, 40) && haelt(q) ? q : null;
+                  });
+            leer();
+            s._creatureNetSeq = seq;
+            return o;
+        })();
+        if (!heim) throw new Error("kein freies Land für die Herde, dessen Revier den Anker hält (frei(0, 70, 40))");
         // die Bewegung am Blick; fünf Tiere auf einem Punkt (jedes Glied nach dem Takt am Ort des ersten)
         if (/^herde(-punkt)?$/.test(taeter))
             decke(
@@ -1122,10 +1157,8 @@ async function kreaturProben(r, T, opts) {
             restore.push(() => (A._furchtGesetzMemo = FG));
         }
         const VH = A._verhaltenGesetz().herde;
-        // Täter (Selbsttest): die Herde am alten Ort ohne die Wildnis-Prüfung — 0/70 liegt auf der Mall des Genesis-Orts, der
-        // Wurf trägt dort nur seinen Erstgeborenen
-        const heim = taeter === "herde-park" ? neben(P0.x, P0.z + 70) : frei(0, 70, 40);
-        if (!heim) throw new Error("kein freies Land für die Herde (frei(0, 70, 40))");
+        // Täter (Selbsttest) herde-park: die Herde am alten Ort ohne die Wildnis-Prüfung — 0/70 liegt auf der Mall des
+        // Genesis-Orts, der Wurf trägt dort nur seinen Erstgeborenen (das Heim oben)
         const seq0 = s._creatureNetSeq || 0;
         const lauf = (art) => {
             const flucht = art === "flucht";
@@ -1265,19 +1298,6 @@ async function kreaturProben(r, T, opts) {
             dorf,
             heim: [rund(heim.x, 1), rund(heim.z, 1)],
             p0: [rund(P0.x, 1), rund(P0.z, 1)],
-            // die Landmarken bis 80 m um das Heim (`_landmarkenDesChunks`): Fels, an dem ein Verband stehen bleibt
-            marken: (() => {
-                const sp = r._voxelChunkConfig(0).span;
-                const L = [];
-                for (let i = -1; i <= 1; i++)
-                    for (let j = -1; j <= 1; j++)
-                        for (const l of r._landmarkenDesChunks(
-                            Math.floor(heim.x / sp) + i,
-                            Math.floor(heim.z / sp) + j
-                        ) || [])
-                            if (ab(l, heim) < 80) L.push([l.art, rund(l.x, 1), rund(l.z, 1), rund(ab(l, heim), 1)]);
-                return L;
-            })(),
             fremdN: X.fremdN,
             blickDiffM: rund(Math.max(...W.lage.map((p, i) => ab(p, B.lage[i]))), 4),
             verband: { fensterRaum: VH.fensterRaum, wander: zahl(W), flucht: zahl(F) },
