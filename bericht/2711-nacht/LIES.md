@@ -46,3 +46,22 @@ Vorher = main 948f68ee · nachher = Kopf C 85c3ee24. Nacht-Linse des Spiels (`we
 Offen beim Namen (das Auge vom 455 gilt weiter, dieser Kopf heilt es NICHT): das Gras im Lichtkreis brennt gelb-orange aus,
 die Nacht bleibt einfarbig rotbraun, der Laternenkopf ist eine flache helle Fläche · Gasse dev 0,68 über Soll 0,5 ·
 Wurf am freien Boden ungemessen (0 gesehene Punkte um laterne_dorf).
+
+## Die Farbe der Nacht je Glied (main b3740dd5, Dorf third, EINE Kamera, Mitternacht, GTX 1050)
+
+Sonde `farbe.js` in einer Welt: dieselbe Pose für jedes Bild, die Licht-Karte steht, gemessen im Ausgabe-Pfad (sRGB).
+Kreis = 188 Bodenpunkte 0,5–4 m um laterne_dorf (1 900 K, 9,6 m vor der Kamera).
+
+| Bild | Glied | Kreis Sättigung | Kreis rot-orange | Kreis geklippt | Bild rot-orange | Bild Sättigung |
+|---|---|---|---|---|---|---|
+| `farbe-A` | main | 0,709 | 0,952 | 0,016 | 0,994 | 0,793 |
+| `farbe-B` | Spektrum weiß, gleiche Luma (`_lichtLinear`) | 0,248 | 0,043 | 0 | 0,110 | 0,219 |
+| `farbe-C` | Blende −1 EV (`_blendeBestellen` mal 0,5) | 0,746 | 0,952 | 0 | 0,994 | 0,874 |
+
+18-%-Karte im Kreis: unter A G/R 0,537 · B/R 0,219 (das Licht selbst), unter B Sättigung 0,03. Das Gras im Kreis unter A G/R 0,588 —
+grüner als die graue Karte: die Albedo zieht nicht nach Orange.
+
+Täter: das Spektrum der Laterne — fachwerk-core.js:8711 `LICHT_GESETZ.laterne.kelvin 1900` (die Wandlaterne erbt es, :8670), gelesen
+in stamm/dirigent-kern.js:2215 `_lichtLinear` (Planck-Ort, Luma 1). Die Tonkurve ändert den Ton nicht (−1 EV: rot-orange gleich,
+geklippt 1,6 % → 0). Kein Glied des Ausgabe-Pfads passt die Farbe an das Licht an (nur die Belichtung). Offen beim Namen: ferne
+Bewohner schwarze Scheiben, der Laternenkopf eine flache helle Fläche (in A und B gleich).
