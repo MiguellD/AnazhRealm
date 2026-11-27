@@ -12628,7 +12628,7 @@
   },
   "karte2.leben.oeko.netz": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–1.81× · außer Band 0 · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.oeko.netz#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +31) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.leben.oeko.netz#2 radeon: Station seit der Messung geändert · karte2.leben.oeko.netz#2 gtx: Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[ · karte2.leben.oeko.netz#3 radeon: ungemessen (R10) · karte2.leben.oeko.netz#3 gtx: ungemessen (R10) · karte2.leben.oeko.netz#4 radeon: ungemessen (R10) · karte2.leben.oeko.netz#4 gtx: ungemessen (R10) · karte2.leben.oeko.netz#5 radeon: ungemessen (R10) · karte2.leben.oeko.netz#5 gtx: ungemessen (R10) · karte2.leben.oeko.netz#6 radeon: ungemessen (R10) · karte2.leben.oeko.netz#6 gtx: ungemessen (R10) · karte2.leben.oeko.netz#7 radeon: ungemessen (R10) · karte2.leben.oeko.netz#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–1.81× · außer Band 0 · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.oeko.netz#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +31) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN · karte2.leben.oeko.netz#2 radeon: Station seit der Messung geändert · karte2.leben.oeko.netz#2 gtx: ROT: S2 Umfang nicht erzeugbar: 10¹ Arten in 4 Ebenen — der Bestand trägt 4 Gattungen (deer, fox, wolf, bear) in 2 Ebenen (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072); im Fächer 32 von 32 Saaten × 100 Spieljahre · Fächer 32/32 Adressen (32 Saaten) in 19999 ms · Leser stamm _kreaturFra · saaten 32 gegen Soll ≥ 32 ✓ · jahre 100 Spieljahre gegen Soll ≥ 100 Spieljahre ✓ · wiederProzent 0 % gegen Soll ≥ 80 % ✗ · paareJeArt 0,2 gegen Soll 2–10 ✗ · Täter: tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen) · stamm/kreatur-leben.js _bestandSchritt an 45bad33f · karte2.leben.oeko.netz#3 radeon: ungemessen (R10) · karte2.leben.oeko.netz#3 gtx: ungemessen (R10) · karte2.leben.oeko.netz#4 radeon: ungemessen (R10) · karte2.leben.oeko.netz#4 gtx: ungemessen (R10) · karte2.leben.oeko.netz#5 radeon: ungemessen (R10) · karte2.leben.oeko.netz#5 gtx: ungemessen (R10) · karte2.leben.oeko.netz#6 radeon: ungemessen (R10) · karte2.leben.oeko.netz#6 gtx: ungemessen (R10) · karte2.leben.oeko.netz#7 radeon: ungemessen (R10) · karte2.leben.oeko.netz#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.oeko.netz#1",
@@ -12665,10 +12665,10 @@
      "id": "karte2.leben.oeko.netz#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 45bad33f: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[",
-     "ungemessen": true
+     "zahl": "S2 Umfang nicht erzeugbar: 10¹ Arten in 4 Ebenen — der Bestand trägt 4 Gattungen (deer, fox, wolf, bear) in 2 Ebenen (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072); im Fächer 32 von 32 Saaten × 100 Spieljahre · Fächer 32/32 Adressen (32 Saaten) in 19999 ms · Leser stamm _kreaturFra · saaten 32 gegen Soll ≥ 32 ✓ · jahre 100 Spieljahre gegen Soll ≥ 100 Spieljahre ✓ · wiederProzent 0 % gegen Soll ≥ 80 % ✗ · paareJeArt 0,2 gegen Soll 2–10 ✗ · Täter: tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen) · stamm/kreatur-leben.js _bestandSchritt",
+     "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
+     "grund": "ROT: S2 Umfang nicht erzeugbar: 10¹ Arten in 4 Ebenen — der Bestand trägt 4 Gattungen (deer, fox, wolf, bear) in 2 Ebenen (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072); im Fächer 32 von 32 Saaten × 100 Spieljahre · Fächer 32/32 Adressen (32 Saaten) in 19999 ms · Leser stamm _kreaturFra · saaten 32 gegen Soll ≥ 32 ✓ · jahre 100 Spieljahre gegen Soll ≥ 100 Spieljahre ✓ · wiederProzent 0 % gegen Soll ≥ 80 % ✗ · paareJeArt 0,2 gegen Soll 2–10 ✗ · Täter: tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen) · stamm/kreatur-leben.js _bestandSchritt",
+     "r6": "konsum"
     },
     {
      "id": "karte2.leben.oeko.netz#3",
@@ -37589,7 +37589,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 347,
+  "konsum": 348,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37757,10 +37757,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3275
+  "ohne": 3274
  },
  "kopfVoll": "38194f8373828ba681647f1fb6c41255c41f7fd1",
- "zeit": "2026-11-27T00:50:01.400Z",
+ "zeit": "2026-11-27T01:06:52.355Z",
  "vorher": "38194f83",
  "bilanz": {
   "gewinn": [],
