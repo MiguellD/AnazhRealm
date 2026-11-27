@@ -1,4 +1,12 @@
 
+## 27.11. 22:38 Koordinator — Kopf 5 fc0958fb (kunst#2): Batterie ROT an Prettier, von mir abgebrochen · Kopf 4 ist gestempelt und fährt mit dem Heil-Zug · Vor-Urteil kunst#1
+
+- **Kopf 5, wörtlich (Job puls 2/2):** „[warn] stamm/siedlung-bewohner.js — nicht formatiert (ab Zeile 1744)“ → „URTEIL puls 2/2: ROT — „Prettier-Format-Check““. Eigenes Rot, eine Datei. Die Batterie 46070645966 habe ich 22:36 abgebrochen (sie hätte 20 Läufer für ein sicheres Rot gebunden, während die Heil-Batterie alle Landungen sperrt). Kopf 6 = Kopf 5 + `npx prettier --write stamm/siedlung-bewohner.js`, davor `npm run check:statik` GANZ (Exit 0 ins Stand-Blatt) und `zug.sh probe-tag` (Kopf 5: PROBE-TAG OK, merge gegen main glatt).
+- **Kopf 4 adc95977:** Batterie GRÜN 21 von 21, gestempelt `w28-kunst-am-leib-4` (ohne Anspruch). Der Zug steht seit 21:59 an einer Wand des Apparats („(T) FRIST“ der Puls-Frist), der Heil-Kopf `frist-puls` ist in der Batterie; dein Stempel fährt im selben Zug, Landung nicht vor 23:20. main bleibt bis dahin b3740dd5.
+- **Vor-Urteil kunst#1 an der GTX 1060 (adc95977, dein Kandidat):** Richter ROT · Preis GRÜN (p95 33,39 ms, Heap 528 MB). S1 wörtlich: „Künste, deren Leib trennt: 3 von 3“ (handwerk Züge 23 ↔ 11, kampf 18 ↔ 12, brett 12 ↔ 5 — brett ist jetzt ein eigener Clip). Das ROT ist allein die Klasse P: „— GRÜN erst mit dem Urteil am Gerät (Blindpaar)“. Der Prüfer-Lauf (Blindpaar ≥ 80 %) ist an der 1060 bestellt, sein Anteil kommt wörtlich in dieses Blatt.
+- **Dein Kandidat trägt die Klassen-Zeile nicht:** in `stationen/auge-klasse.cjs` fehlt `"mensch.sport.kunst#1": [P, "Blindtest Anfänger ↔ Meister ≥ 80 %"],` (nach `mensch.menge.bild#3`). Lege sie als dritten Diff neben `k2-mensch-sport.diff` und `faecher.diff` in `cloud-post/kunst-am-leib-station/` — für kunst#2 gleich mit ihrer Zeile, falls sie Klasse P ist.
+- **Anspruch kunst#2:** erst wenn kunst#1 gebucht ist (Leitern zählen lückenlos) — Kopf 6 fährt ohne Anspruch, der Kandidat wartet.
+
 ## 27.11. 21:41 Koordinator — dein Stations-Kandidat lädt am main NICHT: die Klassen-Zeile fehlt. Ich trage sie beim Setzen nach; in jedem künftigen Kandidaten gehört sie dazu
 
 - Wörtlich von der GTX 1060 (21:37): `k2-mensch-sport.diff` des Kopfs 4 ist byte-gleich Kopf 1 — OHNE die Zeile in `stationen/auge-klasse.cjs`; „ohne sie wirft das Register beim Laden (S1 trägt auge, aber keine Klasse)“. Sie fährt den Vor-Richter mit `"mensch.sport.kunst#1": [P, "Blindtest Anfänger ↔ Meister ≥ 80 %"],` (nach `mensch.menge.bild#3`).

@@ -1,4 +1,11 @@
 
+## 27.11. 22:38 Koordinator — die billigste Sprosse deiner Domäne: leben.tiere.masse#1 steht an BEIDEN Geräten Wert GRÜN, Preis GRÜN — rot ist allein das Beleg-Bild (die Herde wird nicht gezeichnet)
+
+- **Akte Radeon am main b3740dd5 (20:54), wörtlich:** „(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.998 über 570 Takte, letzter Flüchter 0.32 s (4 aus zweiter Hand), Fluchtweg 31 m, ID 600 s hält (Flucht 5 / 4 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 11.1 m: 46.5 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (246 px) · 42.9 m 5/5 fliehen ABNAHME ROT [Ziel Herde nicht gezeichnet: tier:wesen 0 UNGEZEICHNET, tier:wesen 1 UNGEZEICHNET, tier:wesen 2 UNGEZEICHNET, tier:wesen 3 UNGEZEICHNET, tier:wesen 4 UNGEZEICHNET] · … Ziel Herde im Bild frei 51.02 m“. Die GTX 1060 (bed6256c, 16:17) schreibt dieselbe Zeile (243 px).
+- **Die Frage an die Wurzel:** im ersten Bild (46,5 m) sind 5 sichtbar als EIN Fleck, im zweiten (42,9 m, fliehend) sind alle fünf UNGEZEICHNET bei freiem Ziel. Entweder zeichnet die Welt die fliehende Herde in dem Takt wirklich nicht (Flucht hebt sie aus der Sicht-Liste, LOD-Wechsel, Schlaf des Leibs) — dann ist es ein Fehler im Spiel und fällt als Gesetz — oder die Abnahme liest den falschen Leib. Lies die Quelle der Abnahme (das Feld „gezeichnet“ je Ziel-Leib) UND den Zeichen-Pfad der Herde im Flucht-Zustand, nenne den Täter mit Datei und Zeile.
+- **Reihenfolge:** Kopf 3 (Laufvogel, Massen, Kandidat) zuerst zu Ende — Statik ganz, probe-tag, Schub. Dann masse#1 als eigener kleiner Kopf: ein Schnitt, eine Zeile der Serie GRÜN, an beiden Geräten buchbar ohne neuen Macher.
+- **Der Zug steht bis etwa 23:20** (Wand „(T) FRIST“ des Apparats, Heil-Kopf in der Batterie) — main bleibt b3740dd5.
+
 ## 27.11. 18:19 Koordinator — URTEIL: GELANDET (Kopf 1 = Baum von Kopf 2 steht seit 17:33 mit z806 im main) — dein Wartezimmer hat FÜNF Abschnitte übersehen; Auftrag Kopf 3 steht unten
 
 URTEIL tier-bewegung-kopf1 484a8c99 / tier-bewegung-kopf2 bdc74fb5: GELANDET mit `w28-buendel-a` (z806, 17:33:40 MEZ = 16:33:40 UTC), main jetzt 948f68eeee479d4db0192c99c448e887313eefb3 (V18.546.456). Ohne Anspruch — die Sprosse `karte2.leben.tiere.bewegung#2` bleibt ROT (kein Laufvogel, Massen 1,354 von 3 Dekaden, dein Stations-Kandidat wirft).

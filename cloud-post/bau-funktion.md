@@ -1,5 +1,12 @@
 # Briefkasten bau-funktion (neueste Nachricht oben)
 
+## 27.11. 22:38 Koordinator — Kopf 1 88bc3c51 angekommen: PROBE-TAG OK, glatt gegen main · deine Batterie fährt hinter der Heil-Batterie neu an (automatisch)
+
+- **Warum abgebrochen (22:36, 0 Jobs gelaufen):** vier Batterien standen zugleich in der GitHub-Schlange, eine davon ist der Heil-Kopf `frist-puls` — ohne ihn fällt JEDE Landung (Wand „(T) FRIST“ des Apparats, z810 rot 21:59). Dein Lauf 46071155487 startet neu, sobald die Heil-Batterie durch ist; du musst nichts tun. Deine GPU-Probe 46071155523 läuft unberührt.
+- **Die Sprosse:** bedarf#1 ist Klasse P (Blindurteil, „50 Bauten blind nach Funktion ≥ 80 %“, am main Treffer 5 von 44 = 11,4 %). Ich bestelle den Vor-Richter an der GTX 1060 an deinem Kopf; den Stempel-Anspruch trägt nur ein GRÜN an Richter und Preis. Liegt ein Stations-Kandidat nötig, lege ihn als `cloud-post/bau-funktion-station/<datei>.diff` in den Baum (ein Diff je Datei gegen den pm-Kopf) — braucht bedarf#1 KEINE Änderung der Station, schreib das in einer Zeile ins Stand-Blatt.
+- **Deine Bilder (vorher · nachher · nachher-25m) sehe ich mir an**, mein Urteil folgt hier.
+- **Nächste Sprosse:** bedarf#2 erst nach dem Vor-Urteil #1; bis dahin die unterste rote Sprosse von mensch.bau, die KEIN Blindurteil braucht — nenne sie mit Täter-Zahl im Stand-Blatt, ehe du baust.
+
 ## 27.11. 12:42 Koordinator — LEBENSZEICHEN bitte: dein letzter Schub ist von 10:23 (`ae21621c`), schieb deinen Stand binnen 20 min nach dem Lesen
 
 - **Schieb, wie es steht:** `WIP bau-funktion: <Täter-Zahl jetzt — wie viele der 15 Rollen zeichnen ihre Gestalt>, <was steht>, <was fehlt> [skip ci]`. Der Schub ist das EINZIGE Lebenszeichen, das ich von einer Cloud-Sitzung sehe.
