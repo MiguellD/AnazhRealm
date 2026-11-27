@@ -1,7 +1,7 @@
 {
  "sha": "eef726c747050e60042a4a0c9f65fea3ff3e9077",
  "geraet": "gtx",
- "zeit": "2026-11-27T08:04:59.646Z",
+ "zeit": "2026-11-27T08:06:30.803Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.geist.gespraech#2": {
@@ -73,10 +73,81 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.sport.kunst#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.28,
+   "grund": "ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k580fa7b3c16d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "ka71c8a7254d1",
+   "s": 16.3,
+   "fremd": {
+    "s": 20,
+    "takte": 9,
+    "fremdS": 21.27,
+    "kerne": 1.063,
+    "fensterKerne": 1.244,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.83
+     ],
+     [
+      "Explorer.EXE",
+      2.7
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      2.48
+     ]
+    ],
+    "dienerS": 7.7,
+    "diener": [
+     [
+      "dwm.exe",
+      2.92
+     ],
+     [
+      "System",
+      2.88
+     ]
+    ],
+    "geraetS": 17.91,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      12.08
+     ],
+     [
+      "svchost.exe",
+      5.31
+     ],
+     [
+      "SearchIndexer.exe",
+      0.22
+     ]
+    ],
+    "eigenS": 37.75,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T08:06:30.803Z",
+   "abdruck": "64bbef8b031b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "k954f1070b0cc": "bVXRjpswEPyXPPbKGTAEsHQPzuWqi9S0uU9Ym7XhQiCyIVSp+u8VJCQBbp+QPLs7ntk1fxdHkHvQ+Pxpq3LBFt8W3xcWTuhYNCc0z592wRaJ9HykjF+CcM5fO5g0+bG2pMgFAVFCdkCnMTXmxbPs09QS3FAw0r5xvSNEkTNZty8v09RCYFo5NSgcEl2kYYxsCmysBoEONKpvdgWHQYJLj5E+4jXfrsktWsn5riXtLn6fFBNQpmO2npfAMmK83XDOP6Ys0xywdoq8tENfL40S5bJ7r+0sx0DrnAGzAs01CWPPC8RAdtXJ2UkzSVRFY+2oWUzT0I8ZIckUq9HmMqudo6kElle4SPzIA7aaq62PjaMeGYEQEIup1hlgqdGMOLhUqk7oP/G06B4OaMApIbtCE5dGvrhrQwh5n3MpeuJ9i4F4EvgidUeJnank1Amc8lHs+kM9oFQ7HMgbRPNZUyuz3BzGcqkAfZeyn3OKNoMUjbOvbH1DU4wCV1y2YbMmFy7xapp5v9zgIQDEj3eLCX+faWkrVbdg0NHHZhiaAMMoZJxvZuAaDocbLRoDnRpp627QH2n4iQrDgBHydFmU+aUva+GcMS/wNrcyosm0+MnAwQGhTa7UYKAIpUq+GtQWi9oRVVUPfL0oopQRSspHs3/1Nm4efF7rj2D7g+u3sf0bPuXdd6hMPZAWIGgQMKXXMSGxmqJzUzstyOwmjBIICSOtnBY+oylQ40hG5Xngp6x/Ym5Mg+HjaTTA55nL5xw7gUvb2EFhCYEI2ReWtGj2Asr9FSi9JUi/H7/Vlu/Gorzqbg3IKSZjrVa0X4fffN0VPqIkR1OpvHsFSQaNzaCo77+Af/8B",
-  "ka71c8a7254d1": "jZXdcpswEIXfxZdNifg1oJlcyCHTJB23Tt9gJVZAjIGRIHTc6bt3wIAN5KJ7xXjOao++PeA/mwrEERK8f9dlsaGbL5uvGw0faGhUH6ju3/WGbkJh2ehQdinCGPvWyYTKqlqTPOMEeAHpCY1G1Zjl96Jvk1swPU5J+8SSAyGSnEnUsqke2cPD8picY1waNUgcDzHR8QKkS2GjE+BoQCP7wYPYc0PcWpT0FURsH5GpWsHYoSXtIXheHMahiOfOLSuErU9Z+8IYe1u6jDPA2sizQo9zrdgPpUmvs/arHgWtcQZMc1RDEwaW5fLR7K5D0mFaNMq80Xo2LHBizw4oIeFSm6DORFoblSo5FoOch7ZvAd21K9pJ1Rjy1hFwDgFfsk4BiwTVzIPpCNmB/h0sDz3CCRUYBaSDNDQd3+ZXNoSQ57WXvDfejxiNh67NY3PW2C31Ajhmszr0vyajSk4xE5MkWcdNizRTpzku6aJtOksGOoUYlXEsdT0pHfRdk1/eipeIXHwEu2Xn9WLj/gAguL1XQNjziqMuZd2CQiOpmjEwLnq+R1mySpeu4XSabDkBrC9QdyG/tWGH0vNcSsjdgHSF5/JKGGfMcpwyK3wnpI+RuxR/KDgZwBOVSTkukHtChp8FtcW8NnhZ1qNny/cdhxKHFLfL/tGyR8b2N3uO8l9unb/ePc3X/529fjahVPVonAN3XJfKNgoICeRSnanaaEGkExzJEcIlxDOqHBOcYZSWBXZM+8/L5NIdH+5m4T2vtnzOsANc6EaPhAW43LukY0jxyzy5Laojh+I4NAhrC8KmjEUJ27PDDZWfjL1XsmX/XW871g+qUJBKlTLrvowkhUankNfXv4i//wA="
+  "ka71c8a7254d1": "jZXdcpswEIXfxZdNifg1oJlcyCHTJB23Tt9gJVZAjIGRIHTc6bt3wIAN5KJ7xXjOao++PeA/mwrEERK8f9dlsaGbL5uvGw0faGhUH6ju3/WGbkJh2ehQdinCGPvWyYTKqlqTPOMEeAHpCY1G1Zjl96Jvk1swPU5J+8SSAyGSnEnUsqke2cPD8picY1waNUgcDzHR8QKkS2GjE+BoQCP7wYPYc0PcWpT0FURsH5GpWsHYoSXtIXheHMahiOfOLSuErU9Z+8IYe1u6jDPA2sizQo9zrdgPpUmvs/arHgWtcQZMc1RDEwaW5fLR7K5D0mFaNMq80Xo2LHBizw4oIeFSm6DORFoblSo5FoOch7ZvAd21K9pJ1Rjy1hFwDgFfsk4BiwTVzIPpCNmB/h0sDz3CCRUYBaSDNDQd3+ZXNoSQ57WXvDfejxiNh67NY3PW2C31Ajhmszr0vyajSk4xE5MkWcdNizRTpzku6aJtOksGOoUYlXEsdT0pHfRdk1/eipeIXHwEu2Xn9WLj/gAguL1XQNjziqMuZd2CQiOpmjEwLnq+R1mySpeu4XSabDkBrC9QdyG/tWGH0vNcSsjdgHSF5/JKGGfMcpwyK3wnpI+RuxR/KDgZwBOVSTkukHtChp8FtcW8NnhZ1qNny/cdhxKHFLfL/tGyR8b2N3uO8l9unb/ePc3X/529fjahVPVonAN3XJfKNgoICeRSnanaaEGkExzJEcIlxDOqHBOcYZSWBXZM+8/L5NIdH+5m4T2vtnzOsANc6EaPhAW43LukY0jxyzy5Laojh+I4NAhrC8KmjEUJ27PDDZWfjL1XsmX/XW871g+qUJBKlTLrvowkhUankNfXv4i//wA=",
+  "k580fa7b3c16d": "bVVdb6MwEPwvebyeaz6DsdQHp6mUSNe79CesYQ00BCLbhCqn++8nSEgCdN+QZz3jmbX5uzhCsocMnz9NXS344sfi58LACYlBfUL9/GkWfBEnroc+Fx+iq50Q4rWDJbo4WkPLQlKQFeQHJI22WJTPSd+mluCEktP2TWQ7ShU903X78jJtLSWmNbGgcGh00A8Z8imwMRlIJNConuwKDoMYly6nfbG1eF/TW30xIXYtbXdsM9lMQpWO1bpuDMuIi3YrhPiYqkwLQEvKojIDr5tGsXL4jat9n/VoaMkZMC9RX5uQuW4gB7Grzs7OmkmjKhtjRmTMT0OPcUrjKTZDUyS5JUddS6yucBl7kQt8NXc7OzZEPSoCKYHJqdc5YJWhHmlw/ER1Rn+x6aZ7OKAGUkF+hcaOH3ny7g2ldDPXUvbCe4pBeBx4MnVGjV2o9NQZnIpR7frFbECpdlhIbpBMzEhNkhf6MLZLBeg5Pv81l2hySFGTfW3sDe1jFDiS9wTbNb1oYatp5/1wQ4YAwB7PxqjYzLw0tbItaCTZsRmGJsAwCrkQ2xnYwuFwk+Uz8KdBGtsN+qMML1ZhGHBKny4XZX7oy7UgZyxKvM1tEvnxdPOThgMBmelCqSFAGSYq/m5QWywtkXVtB71uFPk+pz6tHsP+3ce4fch5nX0Etly1b+P4t2Kqu2eotR1ES5B+EHCVrRmlTE3RhbakhSS/GaMkQid9lskZdYkZjmxUrgteymmrLrrP3VMTXZ8C9TQa4PN8xwI7gyvTmMHhBAIZ8m8iaVHvJVT7KzBxl5B4/fit3vvH+F5vr1l3DeiJ0bFXK7+/Dn/Epv9etUL8WVNxJTpiQo+6VkX3KtIcGpNDae+/hH//AQ=="
  }
 }
