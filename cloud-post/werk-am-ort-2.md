@@ -71,6 +71,17 @@ Seite der Fahrbahn → `wer`).
   18:53 UTC) · Teil 2/3 GRÜN (56 Täter, 14 Proben, darin tagesbudget und mengebild, 19:17 UTC) · Teil 3/3 GRÜN (46 Täter, 13 Proben, 19:35
   UTC; werkort 20 von 20, schreck Front 7,29 m/s, Flucht 0,992). Alle drei Teile GRÜN mit Selbsttest; `gate:welt-boot` GRÜN
   (Träger keiner) nach der Zeile von Kopf 3 (`sleep(50)` statt eigenem Schlafen). Der Zweig trägt die Skripte von Kopf 3 byte-gleich.
+- Sekunden je Probe aus Lauf 5 (Koordinator 20:50 (1); mein Container, headless, `--selftest` samt Tätern und dem Wechsel des
+  Messorts, der Wechsel zählt bei der ersten Probe danach; in Klammern `DAUER_S`):
+  - Teil 1 = 1 416 s: bewohner 878 (660) · seuche 310 (60) · erbe 78 (26) · jagd 69 (207) · herde 33 (44) · schwarm 12 (4) ·
+    querhang 12 (13) · tiersatz 8 (7) · wachsen 1 · witterung 1 · sattel 0 · nexus 0 · todlage 0.
+  - Teil 2 = 1 458 s: kaskade 519 (400) · mengebild 380 (288) · zielplan 330 (80) · gehege 63 (70) · tagesbudget 56 (15) ·
+    gau 43 (35) · furcht 29 (31) · mahl 14 (89) · rudel 8 (7) · zerfall 2 · reload 1 · ferngang 1 · peer 0 · temperament 0.
+  - Teil 3 = 1 092 s: werkort 424 (182) · schreck 297 (400) · muster 104 (62) · jagdkreis 98 (281) · folgen 71 (59) ·
+    begegnung 54 (10) · lebensraum 18 (21) · gier 6 · abstand 2 · huepfer 3 · gestalt 1 · geister 0 · zufall 0.
+  - Summe 3 966 s gegen geplant 3 076: die Stadt-Proben tragen den Unterschied (seuche +250, zielplan +250, werkort +242,
+    bewohner +218, kaskade +119, mengebild +92). Der Schnitt folgt: `DAUER_S` = diese Zahlen, die Täter der Stadt-Proben billiger,
+    je Teil ≤ 1 150 s.
 
 ## Heap an der GTX 1060 (Koordinator 18:04)
 
