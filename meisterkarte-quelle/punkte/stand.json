@@ -16216,7 +16216,7 @@
   },
   "karte2.mensch.fahrzeug.lenker": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.lenker#1 radeon: ungemessen (R10) — zuletzt an 99649186: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 84.4 von 2500000000000 s in 3355 T · karte2.mensch.fahrzeug.lenker#1 gtx: ungemessen (R10) — zuletzt an 99649186: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181.1 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 184.4 von 2500000000000 s in 12 · karte2.mensch.fahrzeug.lenker#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#2 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.lenker#1 radeon: ungemessen (R10) — zuletzt an 99649186: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 84.4 von 2500000000000 s in 3355 T · karte2.mensch.fahrzeug.lenker#1 gtx: ungemessen (R10) — zuletzt an 45bad33f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 63.2 von 2500000000000 s in 10715 · karte2.mensch.fahrzeug.lenker#2 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#2 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#3 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#4 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#5 gtx: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.lenker#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.lenker#1",
@@ -16234,7 +16234,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 99649186: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181.1 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 184.4 von 2500000000000 s in 12",
+     "grund": "ungemessen (R10) — zuletzt an 45bad33f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 181 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 63.2 von 2500000000000 s in 10715",
      "ungemessen": true,
      "beide": true
     },
@@ -37768,7 +37768,7 @@
   "ohne": 3275
  },
  "kopfVoll": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e",
- "zeit": "2026-11-27T02:26:48.031Z",
+ "zeit": "2026-11-27T02:34:17.054Z",
  "vorher": "031f4700",
  "bilanz": {
   "gewinn": [],
