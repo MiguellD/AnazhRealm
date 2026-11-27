@@ -1,7 +1,7 @@
 {
  "sha": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e",
  "geraet": "gtx",
- "zeit": "2026-11-27T07:05:33.506Z",
+ "zeit": "2026-11-27T07:16:47.299Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#2": {
@@ -2045,6 +2045,149 @@
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
    "modus": "session"
+  },
+  "gelaende.K2#1": {
+   "gruen": true,
+   "zahl": "gefüllt 4 von 4 · 4 von 4 Gräben über das Verb, in 338 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 75.6–736.3 ms (1 m 2, 3 m 2)",
+   "exit": 0,
+   "minuten": 0.56,
+   "mass": [
+    {
+     "wort": "gefüllt nach ms (der langsamste Graben)",
+     "wert": 736.3,
+     "soll": 2000
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d39c808da11",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k79b20c35c4c1",
+   "s": 32.9,
+   "fremd": {
+    "s": 44.2,
+    "takte": 20,
+    "fremdS": 20.91,
+    "kerne": 0.473,
+    "fensterKerne": 0.785,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.78
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.63
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      2.42
+     ]
+    ],
+    "dienerS": 15.42,
+    "diener": [
+     [
+      "System",
+      8.25
+     ],
+     [
+      "dwm.exe",
+      3.84
+     ]
+    ],
+    "geraetS": 34.05,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.66
+     ],
+     [
+      "svchost.exe",
+      10.33
+     ],
+     [
+      "SearchIndexer.exe",
+      0.52
+     ]
+    ],
+    "eigenS": 142.39,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.571,
+     "nach": 0.288,
+     "station": 1.24
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 96.2,
+     "alle": 220.9,
+     "cpuEin": 109,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.32,
+      "s": 4,
+      "soll": 3,
+      "reihe": [
+       3.08,
+       3.6,
+       3.03,
+       3.14,
+       3.16,
+       0.65
+      ]
+     },
+     "spanne": [
+      1795763811310,
+      1795763811786
+     ]
+    },
+    "nach": {
+     "ein": 97.9,
+     "alle": 296.6,
+     "cpuEin": 93,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.64,
+      "s": 4,
+      "soll": 3,
+      "reihe": [
+       3.34,
+       2.28,
+       3.07,
+       4.69,
+       2.14,
+       1.1
+      ]
+     },
+     "spanne": [
+      1795763849667,
+      1795763850188
+     ]
+    },
+    "ruhe": {
+     "ein": 88.6,
+     "alle": 220.2,
+     "n": 1190,
+     "von": "2026-11-26"
+    },
+    "f": 1.347,
+    "fEin": 1.105,
+    "fAlle": 1.347,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "grund": "GRÜN trotz Last: Referenz f 1,347 (Faden 1,105 · alle Kerne 1,347; vor 96,2/220,9 ms, nach 97,9/296,6 ms, Ruhe 88,6/220,2 ms seit 2026-11-26) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,8 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 2,6 CPU-s · claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh 2,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 22,7 CPU-s · svchost.exe 10,3 CPU-s · SearchIndexer.exe 0,5 CPU-s",
+   "zeit": "2026-11-27T07:16:47.299Z",
+   "abdruck": "46837d8616aa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -2072,7 +2215,8 @@
   "k390e40a2559c": "tVXBjqM4EP2XHHfGbQgQwFIfnCar7tG2RB/nWDZlQ4dAZEMzymr/fQUJSYBeqbXS1AmSV+VXr16Zv1dHkHvQ+PBu62rFVn+svq8sfCCxaD7QPLzbFVvF0l2jx/g5KOf8qYdJUxwbS7MCNNkbhKY1pESB1YMc0pwYVRAx+hti23HOX/g19HbX/3BPqywEBVFBfkDSmgaL8kJLbcAJBKPdjuuUUkVPNOlupXb88XFephSY1aQBhWMRB70gQjYHtlaDQAKtGg6+gAM/xo17ESJK+Gty66STnKcd7dLomac+3S5PF1Bl0w5cN4ZNyHjXK/A2x2cFYEPKorLj+W4Wxsq5DaJ7XeQY6MgJMC/RXJIwcl1fjKS3g8oppbNEVbbWTg6LvCxY91OP51iNtpB5Q46mvplExOvQBbbtFn3rY0vUPSMQAiIx1zwHrDSaCQfHk6oX/Fc0L7qHAxogFeQXaOx44VpMTPq85DLa+4CVlWOq6yn05f/wd5T+R/mJMkG2QREx/tV4mrxtv5x3jp8zSuUwqkHU66hcB1yY9Rsl9KO3VDYtlw5/6hGlrgsmbzu7tLqVeWEOUxmUj2vHY38th2JzyNCQfW2bK9rD0HfEWbSXhJ65RNt55q250bUAEN2tCI0of164x9aq6cAg0cd2XBMfgzBgnL8swA0cDqMhM+mh/HSWHd99klllE3rrWAWBzyj9dr46lmKcLwhywqLE6wbL0IvZU+LPwR8GDgSENoVS4x6IQKr4s7XtsGyIqOtmlNgNQ8/rparujZAOI767k3mi3/zXP7neTRt+Sd5SveA/nFKbZiQvQHi+z5ROIkojNUcXpiEdyPwqkBIIMaOdnBc+oSlR40RO5bqwzthw+V7Z+uPDt4nBTwsXnArsha5sa0elJfgiYJ+MpkOzF1DtL0DpbkCu2Y9+QV95OhXmSfdrMqzTJOLBxh3KZCLjZX2OKOnR1KrovxM0h9bmUDa37/k//wI=",
   "k17390e032811": "bVXbbqMwEP2XPG6XOtwCWOqDUyIlq62WfsLYjIGGQGRDXGW1/76CBhog88qZmTNnjoe/qzOII2T4/KHrakVXP1Y/VxouaGlUF1TPH3pFV5GwHXQpe2ddJIyx1w4mVHFuNCkLToBXkJ/QalWDRfks+jS5gbXPKTE7liWESHIlsWFj7NjLy7xMyTGtrQYkDkXW6Poh0jmw1RlwtKCVfeMb2Pci3NiU9BHG7C0mY3yGjCWGmCTcs8Qj22V3DlU6ncC2I9gElJkDY+x9jk8LwMYqi0oP/e00iOSajj3N2yJHgbGugHmJ6paEoW17fCC97aTp5JolyrLVetIsdFPfCSkh0RyboS5E3lhnVXOsbnAeOYENdGsWc2fn1pL3jIBzCPlc8xywylBNOKxdITvBP8N50SOcUIFVQX6DRms3cPi3NoSQ/ZJL2RPvW4zE7TXYMEnslksuncApm0TSf8wGlBztJkZItly8FnmhTlO5pIfO2qW/lxR1Dikq61jrZkS7GHhrTvsGh5h8cQm388zv4YYdAkB4ZxgSErZfaKlr2RhQaGXndjCNh37gU8YOC3ADp9OwnlS4KCh7EIbtHmRW6YSeE0nf9yghT18PaSnG13OxrliUOPpZBG5EX2NvDr4oOFnAM1VIObiC+0JGj0xssGwsXtfNILEdBK7bSVXdGyHpV3y4myzO3r2m3JrddODDliXZgn/fpVbNQJ4Ddz2PyiwOCQnlHF2oxjIg8lEgyRE6+oudXVGVmOFETmnb4KSUGPnF/aM7ScHtVMinicGvy4oFdkJXutWD0gI87tMHqzGojhyq4w0o7A0Ih/5ijG3f+gN+d4Zfs+6Z9M9pElFvY4Ni3+O2hrE/MTncGp1RkLOqZdFdTZJDq3Mom+/fyL//",
   "kc6e637bef08f": "bVXbjpswEP2XPHbrNdcFLO2Ds9lqUzVS9hPGZmxoCEQ2hCpV/72CBBJg5wmJMzNnzpmBv6sTyANofP5tq3LFVt9W31cWzkgsmjOa5992xVaJdD30Gb8G5Zy/dTBp8lNtaZELCqKE7IikMTXmxbPs09QLOKFgtH3nek+pohe6afkY7/z1dV6mEJhWpAaFQxEH/TBGNgc2VoNAAo3qG9/AYZDgi8toH/GG7zZ0jFZyvm9pu48/OOdP62V3AWU6ncB1E3iJGG+3b5x/zvFpDliTIi/t0N9No0Q57N5zt8gx0JILYFaguSVh7LqBGEivO2k6uWaJqmisnTSL/TT0YkZpMsdqtLnManIylcDyBheJF7nA1u1ibn1qiHpkBEJALOaaZ4ClRjPh4PhSdYL/iedFD3BEA6SE7AZNHD/yxF0bSunHkkvRE+9bjMRdB1yYJHbm0nMncMonse9f6gGlxnWTI0Qvjbcyy81xKpcK0HN89mtJ0WaQoiGHytYj2scocMT1QrYbeuUSr+eZ9+EGDwEgflgYGlP+sdDSVqpuwSDRp2ZYmgDDKGScbxfgGo7HwZ5U+ijnRtq6W/RHGl6iwjBglD5dD2Y59PUsyAXzAse9lZGfzIufDRwJCG1ypQbnRShV8tWitljURFRVPcjoRpHvd3KUj2bvexu3Dz5v9Gew+8H1+9T+LZ/z7jtUph5ICxB+EDClNzGlsZqjc1OTFmQ2CqMEQsJoK+eFL2gK1DiRUbkueCnrPzUj02B4eJos8GXh8iXHTuDSNnZQWEIgQvaFJS2ag4DycANK9wWkx35yztc7vp+K8qa7M+jPZRKJz/maa9xtZhL2jU4o6clUKu++ijSDxmZQ1PffxL//",
-  "kb9cd04dfccee": "bVRdj5swEPwveWzrM58BLN2Dc7nqIjVV7ieszdpwIRDZEKpU/e8VXCABzk9Int0ZZtb7d3UGeQSNTx+2Klds9W31Y2XhgsSiuaB5+rArtkqk66HPuitp8nNtaZELCqKE7ISkMTXmxZPsoWoNTigYbV+5PlCq6JVu2+fneWkhMK1IDQqHQgf9MMYFR2M1CCTQqJ7sBg6DBNcuo/2Jt3y/peNpJeeHlraH+G3WTECZTtW6bgLriPF298L5+1xlmgPWpMhLO/C6aZQoh9259osaAy25AmYFmlsRxq4biEHshnPeWzMrVEVj7YQs9tPQixmlyRyr0eYyq8nZVALLG1wkXuQC2yzd1ueGqEdFIATEYu51BlhqNBMNji9VZ/SfeN70CCc0QErIbtDE8SNP3L2hlL4ttRS98J5iFO464MKksAuVXjqDUz45h/5SDyjVDhdyhGi+ILUyy81papcK0HN89msp0WaQoiHHytYj2scocATrCXZb+qkl3swr7z83ZAgA8cPA0Jjyt4WXtlJ1CwaJPjfD0AQYRiHjfLcA13A6DfGk0kc5D9LW3aA/yvASFYYBo/T750NZ/vTnsyBXzAsc51ZGfjJvfjFwIiC0yZUakhehVMlXg9piURNRVfVgoxtFvs+oT8vHsH/3Me4ect7q92D/k+vXafw7PtfdM1SmHkQLEH4QMKW3MaWxmqNzU5MWZDYaowRCJ32RyRVNgRonNirXBS9l/YoZlQbDx/fJAF+XHXPsDC5tYweHJQQiZF9E0qI5CiiPN6B01yC9fvw2e36YmvKiu2dAL1N+ShOf8w3XyPs9eEZJz6ZSebcFaQaNzaCo72v/338="
+  "kb9cd04dfccee": "bVRdj5swEPwveWzrM58BLN2Dc7nqIjVV7ieszdpwIRDZEKpU/e8VXCABzk9Int0ZZtb7d3UGeQSNTx+2Klds9W31Y2XhgsSiuaB5+rArtkqk66HPuitp8nNtaZELCqKE7ISkMTXmxZPsoWoNTigYbV+5PlCq6JVu2+fneWkhMK1IDQqHQgf9MMYFR2M1CCTQqJ7sBg6DBNcuo/2Jt3y/peNpJeeHlraH+G3WTECZTtW6bgLriPF298L5+1xlmgPWpMhLO/C6aZQoh9259osaAy25AmYFmlsRxq4biEHshnPeWzMrVEVj7YQs9tPQixmlyRyr0eYyq8nZVALLG1wkXuQC2yzd1ueGqEdFIATEYu51BlhqNBMNji9VZ/SfeN70CCc0QErIbtDE8SNP3L2hlL4ttRS98J5iFO464MKksAuVXjqDUz45h/5SDyjVDhdyhGi+ILUyy81papcK0HN89msp0WaQoiHHytYj2scocATrCXZb+qkl3swr7z83ZAgA8cPA0Jjyt4WXtlJ1CwaJPjfD0AQYRiHjfLcA13A6DfGk0kc5D9LW3aA/yvASFYYBo/T750NZ/vTnsyBXzAsc51ZGfjJvfjFwIiC0yZUakhehVMlXg9piURNRVfVgoxtFvs+oT8vHsH/3Me4ect7q92D/k+vXafw7PtfdM1SmHkQLEH4QMKW3MaWxmqNzU5MWZDYaowRCJ32RyRVNgRonNirXBS9l/YoZlQbDx/fJAF+XHXPsDC5tYweHJQQiZF9E0qI5CiiPN6B01yC9fvw2e36YmvKiu2dAL1N+ShOf8w3XyPs9eEZJz6ZSebcFaQaNzaCo72v/338=",
+  "k2d39c808da11": "bVVdj5swEPwveeyVM58HWLoHJ1x1kZo29xPWZm24EIhsEqpU/e8VJCTB3D4lYnZ3PDOGv4sDiB0ofP40Tb2gi2+L7wsDJ3QM6hPq50+zoItUeD4GlF2KMMZWPUzo8tAaUpWcAK+h2KNz1C2W1bMY2uQLuBGnpHtjakuIJGeSda+vdmvFMW+cFiSOjS4GUYLUBh6NAo4OHOWw7AqOwhRfPEqGSjK2ycitOsHYtiPdNnm3hnGo8ylbz0vhJaasW68Y+7BZ5iVg61Rlbca9Xh6n0qX3XZtZj4bOOQMWFeprEyaeF/KR7LKXs5fGapTV0ZjJsiTIIz+hhKQ2VqEpRdE6B91wrK9wnvqxB3Q5V1sdjo58ZAScQ8JtrQvAWqGecHADIXuh/yT20B3sUYNTQ3GFpm4Q+/yuDSHkfc6lGogPK27EPRc8mDT2ppJTL3DOJrUdHqoRJbvxgbhBFJstNaIo9X4qlwzRdwP6c07RFJCjdnaNaW/oAOPQ5ZfbsM7IhUuytDvvhxs9BIDkITAkIex9pqVpZNuBRkcdjmNoQoziiDK2noFb2O9He3IRoLCNNG0f9EcafiqjKKSEPF0uyvzQl2vhnLGs8JZbEQcpXWWhDT5p2DvAlS6lHN3nkZDpV2HtwBg7VZBHQW45blfCuu3k/2wwVq3Dm6YdPfLiOAgoCUj92PdryMj6IUSZ+gg3P5h6m2ZrzexzDhsa3Y68OfAgDKnssoSQRNroUrdOB6K4qS45QkpJJ+zBZ9QVKpyIIj0P/JwO768b03D88TTR5jyL0LnE3r3aHM1on4CQR/QLvzvUOw717goU3gsIf8j2csO2D4ooxlaqv2PklJCpVsuAbZZL9Ztl/eADCnLQjSz7Vywp4GgKqNr79+Xffw=="
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
@@ -2872,21 +3016,6 @@
    "bahn": "sitzung",
    "zwilling": "karte2.leben.kopplung.evolution-planet#1",
    "modus": "session"
-  },
-  "gelaende.K2#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\375d2784-c5d6-4e68-bb9e-ad2604f4fc8b.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\375d2784-c5d6-4e68-bb9e-ad2604f4fc8b.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-27T07:05:33.458Z",
-   "abdruck": "46837d8616aa",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "9792@mwymtgs6"
   },
   "karte2.planet.relief.grossform#1": {
    "gruen": false,
