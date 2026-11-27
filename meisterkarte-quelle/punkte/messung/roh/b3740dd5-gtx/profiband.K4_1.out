@@ -350,12 +350,10 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 7c15c71fc0 */ const K = {"budge
     console.log("PROFIBAND " + JSON.stringify(zus));
 })(process.argv[1], process.argv[2]).catch((e) => { console.log("PROBE ROT: " + String((e && e.stack) || e).split("\n").slice(0, 3).join(" | ")); process.exitCode = 1; }); glaette C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\b3740dd5-gtx\profiband.K4_1.json
 [linse-gpu] nvidia/pascal
-@@PUNKTE@@ ZEIT anfang 20.2 s
-@@PUNKTE@@ ZEIT k4-geh 25.0 s
-@@PUNKTE@@ ZEIT k4-fahrt 34.6 s
-@@PUNKTE@@ ZEIT strom 34.6 s
-@@PUNKTE@@ ZEIT strom-gelesen 34.6 s (448 Bilder)
-PROFIBAND {"art":"glaette","sekunden":34.6,"uhrS":98,"schritte":[["anfang",20.2],["k4-geh",4.8],["k4-fahrt",9.6]],"offen":[],"fehler":{},"strom":{"bloecke":116,"bilder":448,"seiten":1,"fehler":0,"verloren":0},"glaette":{"k4-geh":{"n":152,"frame":66.68,"p99":108.31,"max":108.35,"ueber33":35,"ueber100":2,"takt":58.83,"vram":151.4,"gpu":7.23,"gpuN":21,"befehle":155,"dreiecke":341063,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":7,"sattel":"0","wetter":["sunny"],"buehne":0,"laeufe":2,"sek":2.5,"befunde":[],"tasten":{"v":5}},"k4-fahrt":{"n":61,"frame":83.33,"p99":149.99,"max":149.99,"ueber33":39,"ueber100":1,"takt":78.72,"vram":152.3,"gpu":8,"gpuN":12,"befehle":169,"dreiecke":621624,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":2,"sattel":"101","wetter":["sunny"],"buehne":0,"laeufe":2,"sek":2.5,"befunde":[],"tasten":{"wagen":"werkbank-fahrt","aus":"werkbank-fahrt","ein":"werkbank-fahrt"}}},"anfang":true}
+@@PUNKTE@@ ZEIT k4-geh 39.5 s
+@@PUNKTE@@ ZEIT strom 75.5 s
+@@PUNKTE@@ ZEIT strom-gelesen 75.5 s (198 Bilder)
+PROFIBAND {"art":"glaette","sekunden":75.5,"uhrS":98,"schritte":[["anfang","Fehler"],["k4-geh",3.5],["k4-fahrt","Fehler"]],"offen":[],"fehler":{"dauer-anfang":"/umstellen: DIE WELT STEHT NICHT nach 3601 Takten: Ruhe 0, zuletzt brach sie: Welt-Regung (DIE WELT HÄNGT: die Welt nach 3601 Takten — offen {\"foundry\":0,\"chunks\":0,\"wald\":1,\"karten\":0,\"spiegel\":22,\"f","k4-fahrt":"/umstellen: DIE WELT STEHT NICHT nach 3601 Takten: Ruhe 0, zuletzt brach sie: Welt-Regung (DIE WELT HÄNGT: die Welt nach 3601 Takten — offen {\"foundry\":0,\"chunks\":0,\"wald\":1,\"karten\":0,\"spiegel\":22,\"f"},"strom":{"bloecke":153,"bilder":198,"seiten":1,"fehler":0,"verloren":0},"glaette":{"k4-geh":{"n":69,"frame":66.69,"p99":116.71,"max":116.71,"ueber33":23,"ueber100":2,"takt":67.75,"vram":143.4,"gpu":9.41,"gpuN":10,"befehle":118,"dreiecke":286954,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":4,"sattel":"0","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"v":4}}},"anfang":false}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
