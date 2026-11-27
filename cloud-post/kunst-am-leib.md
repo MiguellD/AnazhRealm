@@ -9,6 +9,27 @@
   Können-Profil ≥ 0,7 an 10 Werkstücken; Täter am main: schmiede-core `gueteFaktor` liest Rezept und Prägung, nie die Hand —
   schmiede-core.js:4430). WIP über dem Vorprüf-Kopf, nie ein Rebase unter ihm (Post 19:50). Die Kreatur-Regel (Stoppuhr je Teil)
   trifft diese Bahn nicht: sie lässt keine Kreatur-Linse wachsen.
+- GPU-Probe Kopf 3 (033ff310, radeon-890m, 21:10, Lauf 46060329667): GRÜN, probeUrteil GRÜN — gate:stand-takt 218 s ·
+  gate:mensch-zuege 34 s · bild:dorf@0.5 86 s (ABNAHME GRÜN, Inhalt bauSatz 17,0 %) · gate:webgl-probe 56 s. Kopf 3 wartet auf den
+  Koordinator (Kandidat 2 setzen, Blatt an der OMEN).
+
+## kunst#2 — das Werkstück trägt die Hand (WIP über Kopf 3, der flache Kopf 4 folgt mit dem vollen Prüf-Satz)
+
+- **Geschnitten (EIN Chokepoint je Gesetz, additiv):** schmiede `gueteAnteil(rezeptId, ov, hand)` — die EINE Güte eines
+  Schmiede-Geräts mal 1 − `handFehler(hand)`; das Band: der Fehler fällt wie 1/Können (das Potenzgesetz der Übung, Newell &
+  Rosenbloom 1981, ANGENOMMEN: Fehler wie Zeit), `HAND.gut` 0,052 am Band der Guten — Birkmeyer et al. 2013 (N Engl J Med
+  369:1434: unterstes ↔ oberstes Quartil des Könnens 14,5 % ↔ 5,2 % Komplikationen; 14,5 % trifft k 0,36). Ohne Hand byte-gleich
+  (23 Rezepte, 0 Abweichungen in gueteAnteil und gueteFaktor). koerper `bestandHalter` trägt die Hand des Werks (`koennen`),
+  `stoffstromFassen` schreibt sie in jedes Stück (`K.stueck` je Ofen → `K.hand` in der Reihe der Ausgabe), ohne Hand bricht es laut.
+  Der Wirt bindet die Hand an den Lebenslauf (`_bestandAnlegen`: `koennen` = uebung.handwerk, die Rate liest sie — EINE Naht),
+  gibt sie mit dem Werkzeug (`b.werkzeugHand`), der Zensus trägt je Stück Hand und Güte (`stuecke`).
+- **Gemessen:** Linse gate:koerper-kern D11 (Familie Stoffstrom): vorher (Kerne von main) ROT „0 Stücke in 12 Händen“, nachher 12
+  Stücke (Lehrling 0,55: 6 · Meister 1,4: 6), Güte 0,8643 ↔ 0,9191, R² Güte ↔ Hand 1,000; Selbsttest 75 von 75 (zwei neue Täter:
+  „die Güte ohne die Hand“, „das Stück vergisst seinen Schmied“). Station-Kandidat 3 (k2-mensch-sport-3.diff, BEGRUENDUNG.txt):
+  headless 12 Stücke R² 1,000; eine Hand R² 0 (ROT, Täter genannt); an main leser.
+- **Ehrlich offen:** stadt-voll trägt keine Schmiede, ein Dorf EINE — der Messort mit ≥ 2 Händen ist Wahl des Koordinators. Die
+  Güte in der Hand eines Bewohners liest heute nur der Zensus (kein Bewohner schlägt mit seinem Werkzeug); das Schmieden des Spielers
+  liest keine Hand.
 
 ## Wartezimmer (27.11., nach Kopf 2)
 
