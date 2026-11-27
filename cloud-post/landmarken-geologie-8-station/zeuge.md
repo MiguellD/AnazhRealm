@@ -1,0 +1,18 @@
+# Der Zeuge mit Bild — Wegweiser für den Macher (wegfindung#1, am Kopf b32c6773; Koordinator 27.11. 04:40)
+
+1. **Die Maske der Marke.** Die Marke steht in 1–3 km (`_ankunft` innen = 60 × mittlere Baumhöhe, außen `LANDMARKE_FERN_M` 3000) — immer jenseits des Cull-Radius, also im Feld-Pass des Welt-Marchs, NIE als Szenen-Objekt: `werkbank bild --klasse` (scripts/werkbank.cjs:1393) sieht sie nicht.
+   Maske = zwei Bilder des Ausgabe-Pfads (Lehre 5), die sich nur im Feld der Marke unterscheiden: `_weltFeldAktiv(entry._ziegelSlot, false, true)` (stamm/dienst.js:1456, `sofort` = ohne Schwund) aus ↔ an; Pixel mit Δ > 0 = Maske.
+   Der Eintrag zur Marke: `entry._landmarke` = Chunk-Schlüssel, `this._landmarkeWurf.get(key)` (stamm/siedlung-satz.js:1471); ob er zeichnet: `_archImBild(entry)` (stamm/siedlung-bauten.js:1823) → `_weltFeldZeichnet` (stamm/dienst.js:1451).
+2. **Stoff und Uniform im Bild.** Der Feld-Pass `_feldPassEnsure` (stamm/bild-sicht.js:1696) liest das Licht über `_weltLicht()` (Zeile 1752) = `flaechenLicht` (welt-licht.js), dieselben Uniforms `l0d · l0c · ei` und den Rückstrahl, die `_weltLichtAn` als Zahl rechnet.
+   Die Albedo ist die Farbe des Fits: Kapsel-Texel B.w von `welt-march-kapseln` (stamm/dienst.js:978), Liste-Texel 6.w (`_weltFeldFarbe`, Zeile 1628), gebaut aus `_archFitVon` (stamm/studio-bruecke.js:2999).
+   Der Welt-March zeichnet nur mit Compute (`_weltMarchGezeichnet` = `_gpuComputeFaehig`, stamm/dienst.js:1230): Unter WebGL2 fehlt die Marke im Bild, der Zeuge braucht WebGPU (Radeon).
+3. **Die Kamera der Ankunft.** `_ankunft(heim)` (stamm/gelaende-chunks.js:1408) → `_genesisAnkunft` (stamm/gelaende-boden.js:639): Spieler auf Grund + 1,2 m, `state.yaw = an.yaw`, `pitch = 0`.
+   Die Marke ist `an.marke` {x, y = Gipfel, z, d} und liegt im Kegel der Weltkamera (`_frustumVon`, Weite `_weltKameraFern`).
+   Das erste Bild steht 0,7 m über dem Auge, das `_landmarkeKontrast` nimmt (`EGO_AUGE_M` 1,6 + 0,5): Der Zeuge setzt die Kamera auf `auge` des Gesetzes oder nennt den Versatz.
+4. **Was `_landmarkeKontrast` (stamm/vegetation-baum.js:2712) an den drei stärksten Saaten nennt.** Gemessen in der Wolke auf dem erzwungenen WebGL2-Backend, Himmel zurückgelesen; Mechanik, kein Bild:
+   - s1-4: Felsturm, 1 176 m, vor Himmel — C 0,584 · C₀ 0,711 · Durchlass 0,815
+   - s1-41: Felsbogen, 1 429 m, vor Hang — C 0,565 · C₀ 0,764 · Durchlass 0,774
+   - s1-12: Felsturm, 1 656 m, vor Hang — C 0,520 · C₀ 0,738 · Durchlass 0,747
+   Sonne 1 an allen drei; Albedo des Fits ≈ 0,29/0,25/0,16. Die warme Welt: Felsturm, 2 049 m, vor Hang — C 0,242 · C₀ 0,399.
+   Ehrlich: gelesen sind 12 von 50 Saaten (Median 0,501, 11 davon ≥ 0,1). An 38 Saaten lag nach dem Weltwechsel noch keine neue Himmels-Lesung (S1 nennt sie „ungelesen“); die Radeon las alle 50 (Median 0,461).
+   Saat = Stamm `erleben.spieler.wegfindung-s1-<n>` (SAATEN, Zweig `punkte-maschine` sitzung-seite.js).
