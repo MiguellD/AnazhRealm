@@ -1,7 +1,7 @@
 {
  "sha": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
  "geraet": "gtx",
- "zeit": "2026-11-27T15:23:06.789Z",
+ "zeit": "2026-11-27T15:25:48.728Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.fahrzeug.medium#2": {
@@ -655,6 +655,135 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 55.5 s · 614.2 s) · Wirt-Wache: den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig = window.__aufnahmeRuhig; window.__aufnahmeRuhig = function ausgabeAufnahme(W, H, warm, o | return await __tagKurve({\"uhren\":[0.082,0.084,0.086,0.088,0.092,0.094,0.096,0.098,0.102,0.104,0.106,0.108,0.112,0.114,0. — Heap nach der Rücknahme 309.4 → 1241.8 MB (+932.4 > 64)",
+   "exit": 1,
+   "minuten": 11.3,
+   "grund": "Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 55.5 s · 614.2 s) · Wirt-Wache: den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig = window.__aufnahmeRuhig; window.__aufnahmeRuhig = function ausgabeAufnahme(W, H, warm, o | return await __tagKurve({\"uhren\":[0.082,0.084,0.086,0.088,0.092,0.094,0.096,0.098,0.102,0.104,0.106,0.108,0.112,0.114,0. — Heap nach der Rücknahme 309.4 → 1241.8 MB (+932.4 > 64)",
+   "s": 678.2,
+   "fremd": {
+    "s": 680.5,
+    "takte": 311,
+    "fremdS": 279.17,
+    "kerne": 0.41,
+    "fensterKerne": 1.262,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      33.59
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      32.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      28.7
+     ]
+    ],
+    "dienerS": 197,
+    "diener": [
+     [
+      "System",
+      107.8
+     ],
+     [
+      "dwm.exe",
+      41.69
+     ]
+    ],
+    "geraetS": 426.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      298.44
+     ],
+     [
+      "svchost.exe",
+      116.38
+     ],
+     [
+      "SearchIndexer.exe",
+      4.33
+     ]
+    ],
+    "eigenS": 1120.97,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.517,
+     "nach": 0.295,
+     "station": 2.183
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 125.5,
+     "alle": 272.8,
+     "cpuEin": 125,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.89,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       4.27,
+       2.77,
+       2.52,
+       2.61,
+       2.93,
+       3.13
+      ]
+     },
+     "spanne": [
+      1795793148729,
+      1795793149285
+     ]
+    },
+    "nach": {
+     "ein": 100.5,
+     "alle": 274,
+     "cpuEin": 109,
+     "tor": {
+      "ruhig": true,
+      "kerne": 0.81,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       1.11,
+       1.15,
+       0.87,
+       0.72,
+       0.86,
+       0.84
+      ]
+     },
+     "spanne": [
+      1795793827504,
+      1795793828019
+     ]
+    },
+    "ruhe": {
+     "ein": 88.7,
+     "alle": 219.9,
+     "n": 1194,
+     "von": "2026-11-27"
+    },
+    "f": 1.415,
+    "fEin": 1.415,
+    "fAlle": 1.246,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-27T15:25:48.728Z",
+   "abdruck": "c2532e791c76",
+   "port": 7804,
+   "bahn": "sitzung",
    "modus": "session"
   }
  }
