@@ -64,5 +64,6 @@ Seite der Fahrbahn → `wer`).
   kein Leib im Boden; die Abnahme nennt bewohner 7,3 % (Soll ≥ 1,0 %).
 - Der Kopf fährt im Bündel 2 `buendel-abend` (Koordinator 15:39); kein neuer Vorprüf-Kopf vor der Landung. Offen: bild#2 und
   bevoelkerung#2 am Rumpf der Station (Gerät), der Stations-Kandidat seuche#2 (Vor-Richter GTX 1050/1060).
+- Wartezimmer: zuletzt gelesen 15:30 UTC — keine neue Post des Koordinators seit 15:39 (Bündel), main bed6256c.
 
 Karte 2 gebucht 149 von 1 718. Status ZWISCHENSTAND.
