@@ -3048,6 +3048,104 @@ async function probeLeben(expected) {
             };
             S.frei.windPreis = windPreis(true);
             S.frei.windPreisOhneMerken = windPreis(false);
+            // (4c) DER BALL (same.physik.flug#2): ein Fußball Gr. 5 (Kugel ⌀ 0,22 m, Leder, Wand 3,5 mm, Innendruck 0,8 bar) fliegt
+            // in stiller Luft 0,5 s mit 25 m/s längs der Gasse, mit Seiten-Drall 8 U/s und ohne — die Querlage gegen die Rechnung
+            // mit den Messwerten des Fußballs (Goff & Carré 2009: C_D 0,25, C_L 0,25 bei S 0,2–0,3); dann fällt er aus 2 m auf eine
+            // Stein-Platte (Bau 2 × 0,3 × 2 m): seine Stoßzahl √(h / 2 m) gegen die Mitte des FIFA-Bands der harten Fläche (1,35–1,55 m).
+            // Der Drall zerfällt bis kurz nach dem Scheitel (0,41 s) um 4–8 % (das Band der Messungen, FREI.luft.drallZerfall).
+            // Die Mutanten: ohne Magnus (`_freiLuftPacken` 39 leer), die Stoßzahl EINE Zahl 0,2 (wie main, `_freiPrallZahl`),
+            // der Drall ohne Zerfall (43 leer).
+            const ball = () => {
+                const windAt = r._windAt;
+                r._windAt = (x, zz, t, aus) => Object.assign(aus || {}, { x: 1, z: 0, ms: 0, staerke: 0, boe: 1, form: 1 });
+                const [g, R, T, v0, W] = [-st.gravity, 0.11, 0.5, 25, 2 * Math.PI * 8];
+                const [cx, cz] = [gasse.uz, -gasse.ux];
+                const bp = { name: "k3_ball", label: "k3_ball", frei: true, builtIn: false, parts: [{ shape: "sphere", material: "leder", wand: 0.0035, druck: 80000, size: { x: 2 * R, y: 2 * R, z: 2 * R }, position: { x: 0, y: R, z: 0 } }] }; // prettier-ignore
+                st.blueprints[bp.name] = bp;
+                const los = (x, y, zz, v, w) => {
+                    const e = r.spawnArchitecture(bp.name, { x, y: y + 3, z: zz }, { precise: true, silent: true });
+                    const K = e._frei;
+                    [K.p[0], K.p[1], K.p[2]] = [x, y, zz];
+                    K.v.set(v);
+                    K.w.set([0, w, 0]);
+                    r._freiWecken(K);
+                    K.grund = null;
+                    r._freiLage(K);
+                    return e;
+                };
+                const R3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                try {
+                    const g0 = hh(gasse.x, gasse.z) + 3;
+                    const quer = (w) => {
+                        const e = los(gasse.x, g0, gasse.z, [v0 * gasse.ux, 4, v0 * gasse.uz], w);
+                        for (let i = 0; i < Math.round(T / A.FIXED_DT); i++) r._freiSchritt(A.FIXED_DT);
+                        const [q, m, kugel] = [(e._frei.p[0] - gasse.x) * cx + (e._frei.p[2] - gasse.z) * cz, e._frei.m, !!e._frei.ball];
+                        const wEnde = Math.hypot(e._frei.w[0], e._frei.w[1], e._frei.w[2]);
+                        r.removeArchitecture(e, { still: true });
+                        return { q, m, kugel, wEnde };
+                    };
+                    const [mit, ohne] = [quer(W), quer(0)];
+                    // die Rechnung (1 ms): längs x, quer q, hoch y; ω = W ŷ, ŷ × u = −u_q x̂ + u_x ĉ
+                    const rho = A._fahrSchrittGesetz().vc.FAHR.luft.rho;
+                    let [vx, vq, vy, q] = [v0, 0, 4, 0];
+                    for (let i = 0; i < Math.round(T / 0.001); i++) {
+                        const k = (0.5 * rho * Math.PI * R * R * Math.hypot(vx, vq, vy)) / mit.m;
+                        [vx, vq, vy] = [vx + k * (-0.25 * vx - 0.25 * vq) * 0.001, vq + k * (-0.25 * vq + 0.25 * vx) * 0.001, vy + (-g - 0.25 * k * vy) * 0.001];
+                        q += vq * 0.001;
+                    }
+                    // der Abprall auf der Stein-Platte
+                    const pb = { name: "k3_platte", label: "k3_platte", builtIn: false, parts: [{ shape: "box", material: "stein", size: { x: 2, y: 0.3, z: 2 }, position: { x: 0, y: 0.15, z: 0 } }] }; // prettier-ignore
+                    st.blueprints[pb.name] = pb;
+                    const [px, pz] = [gasse.x - 4 * gasse.ux, gasse.z - 4 * gasse.uz];
+                    const pe = r.spawnArchitecture(pb.name, { x: px, y: hh(px, pz) + 0.5, z: pz }, { precise: true, silent: true });
+                    let top = -Infinity;
+                    try {
+                        const oben = Math.max(...pe.blockerAABBs.map((b) => b.topY));
+                        const e = los(px, oben + 2 + R, pz, [0, 0, 0], 0);
+                        let auf = false;
+                        for (let i = 0; i < 300; i++) {
+                            r._freiSchritt(A.FIXED_DT);
+                            if (!auf) auf = e._frei.v[1] > 0;
+                            else if (e._frei.v[1] < 0) break;
+                            else top = Math.max(top, e._frei.p[1] - R - oben);
+                        }
+                        r.removeArchitecture(e, { still: true });
+                    } finally {
+                        r.removeArchitecture(pe, { still: true });
+                        delete st.blueprints[pb.name];
+                    }
+                    const [eW, eB] = [Math.sqrt(Math.max(0, top) / 2), Math.sqrt(1.45 / 2)];
+                    return {
+                        kugel: mit.kugel,
+                        ablenkung: R3(mit.q - ohne.q),
+                        rechnung: R3(q),
+                        ablenkAbwPct: R3((100 * Math.abs(mit.q - ohne.q - q)) / q),
+                        prallH: R3(top),
+                        prallAbwPct: R3((100 * Math.abs(eW - eB)) / eB),
+                        zerfallPct: R3(100 * (1 - mit.wEnde / W)),
+                    };
+                } finally {
+                    r._windAt = windAt;
+                    delete st.blueprints[bp.name];
+                }
+            };
+            S.frei.ball = ball();
+            const luftPacken = r._freiLuftPacken;
+            r._freiLuftPacken = function (K, X, x, rho) {
+                luftPacken.call(this, K, X, x, rho);
+                X[x + 39] = 0;
+            };
+            S.frei.ballOhneMagnus = ball();
+            delete r._freiLuftPacken;
+            r._freiPrallZahl = (A_, B, zb, aus) => ((aus[0] = 0.2), (aus[1] = Infinity), aus);
+            S.frei.ballPrallEins = ball();
+            delete r._freiPrallZahl;
+            r._freiLuftPacken = function (K, X, x, rho) {
+                luftPacken.call(this, K, X, x, rho);
+                X[x + 43] = 0;
+            };
+            S.frei.ballOhneZerfall = ball();
+            delete r._freiLuftPacken;
             // (5) DER FLACHE KÖRPER (same.physik.reaktion#2: der Trümmer, die Scherbe — dünner als der Spalt des Lösers, Ober- und
             // Unterseite sind zugleich Kontakt): ein Brett 25 × 5 × 25 cm fällt 20 cm und liegt, zwei Scheiben 25 × 0,4 × 25 cm
             // fallen halb übereinander. Bis alle drei schlafen (null: nach 4 s wach, `wach` ihre Zahl) und wie das Brett liegt
