@@ -3352,13 +3352,25 @@ class AnazhRealm_bild_himmel {
         return globalThis.__gelaendeCore.temperaturFeld(this._gelaende(), y, traegTage);
     }
     _temperaturAt(y, traegTage) {
-        const st = this.state;
+        const st = this.state,
+            p = (st.playerMesh || st.camera).position;
         return globalThis.__gelaendeCore.temperaturAus(
             this._temperaturFeld(y, traegTage),
             st.seasonPhase,
             st.timeOfDay,
-            this._weatherFieldFor()
+            this._weatherFieldFor(),
+            this._luftmasseWaerme(p.x, p.z, traegTage)
         );
+    }
+    // DIE WÄRME DER LUFTMASSE an (x, z) zur Welt-Uhr (planet.wetter.extreme#2): der Block der Lage (phyto-core `lageWaerme`, die
+    // Hitzewelle unter dem stehenden Hoch) in K; ein Körper mit Trägheit `traegTage` folgt ihrem Aufbau gedämpft (1 / (1 + τ_Körper /
+    // `aufS`), die Antwort eines trägen Glieds auf die Rampe der Luftmasse). Leser: `_temperaturAt` (Brand, Grillen, Zündung, Lava),
+    // `_bewohnerTracht` (die Kleidung des Tags).
+    _luftmasseWaerme(x, z, traegTage) {
+        const P = globalThis.__phytoCore,
+            W = P.WETTER_LAGE.block.waerme,
+            tau = traegTage > 0 ? traegTage * this._kalender().normS : 0;
+        return P.lageWaerme(AnazhRealm._saatVon(this.state.worldMeta || {}), x, z, this.state.spielZeit) / (1 + tau / W.aufS);
     }
 
     // DER TRITT IN DIE SCHNEE-DECKE (wetter.K4): wie tief ein Körper an (x, z) auf der gezeichneten Fläche y in die Decke sinkt —

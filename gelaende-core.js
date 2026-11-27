@@ -1696,15 +1696,21 @@
     // die Sonne, in der Nacht die Ausstrahlung zurück (bedeckt schrumpft die Tagesspanne um 25–50 %, Dai 1999): die Welle des Tags
     // trägt 1 − `daempft`·(1 − sun); der Regen kühlt (Verdunstung, die kalte Luft der Front) um `regen` K je Regen 1. Ohne Wetter
     // und unter klarem Himmel (sun 1, rain 0) bit-gleich zur Formel davor.
+    // DIE WÄRME DER LUFTMASSE (planet.wetter.extreme#2, `waerme` in K, optional): die Luft unter dem Block der Lage (phyto-core
+    // `lageWaerme`) steht um sie über dem Wetter des Worts; der Wirt reicht sie an Ort und Uhr (`_temperaturAt`, `_bewohnerTracht`).
+    // Ein Körper mit Trägheit folgt ihr nur zum Teil: `waerme` gilt für die Luft, die Welle des Körpers (`traegTage`) reicht der Wirt
+    // gedämpft. Ohne `waerme` bit-gleich zur Formel davor.
     const WOLKE = Object.freeze({ daempft: 0.5, regen: 3 });
-    function temperaturAus(F, saison, uhr, wetter) {
+    function temperaturAus(F, saison, uhr, wetter, waerme) {
         if (!Number.isFinite(saison) || !Number.isFinite(uhr)) throw new Error("gelaende-core temperaturAus: Saison oder Uhr fehlt");
+        if (waerme !== undefined && !Number.isFinite(waerme)) throw new Error("gelaende-core temperaturAus: die Wärme der Luftmasse ist keine Zahl");
         const welle = (W, phase) => W.amp * Math.cos(2 * Math.PI * (phase - W.gipfel) - W.spaet);
-        if (!wetter) return F.mittel + welle(F.jahr, saison) + welle(F.tag, uhr) - F.kuehlung;
+        const luft = waerme === undefined ? 0 : waerme;
+        if (!wetter) return F.mittel + welle(F.jahr, saison) + welle(F.tag, uhr) - F.kuehlung + luft;
         if (!Number.isFinite(wetter.sun) || !Number.isFinite(wetter.rain))
             throw new Error("gelaende-core temperaturAus: das Wetter trägt sun oder rain nicht");
         const tag = welle(F.tag, uhr) * (1 - WOLKE.daempft * (1 - wetter.sun));
-        return F.mittel + welle(F.jahr, saison) + tag - F.kuehlung - WOLKE.regen * wetter.rain;
+        return F.mittel + welle(F.jahr, saison) + tag - F.kuehlung - WOLKE.regen * wetter.rain + luft;
     }
     function temperatur(L, y, saison, uhr, traegTage, wetter) {
         return temperaturAus(temperaturFeld(L, y, traegTage), saison, uhr, wetter);

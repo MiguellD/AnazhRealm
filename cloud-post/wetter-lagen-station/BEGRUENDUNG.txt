@@ -1,0 +1,18 @@
+Kandidat der Station planet.wetter.extreme (S2, die Hitzewelle) — wetter-lagen, 27.11., gegen punkte-maschine 429560b6
+(git apply --check GRÜN, meisterkarte-quelle/punkte/stationen/k2-planet.js).
+
+WARUM: die Station misst amplitudeK = Tw.sunny − tMittel — die Temperatur des WORTS „sunny" aus der Tafel WEATHER_FIELD über
+dem Mittel der Worte. Die Tafel kennt keine Luftmasse: ein Block der Lage (phyto-core lageBlock) macht nur mehr klare Worte,
+also sinkt die Wort-Amplitude sogar (heimat, 100 Jahre: 1,91 → 1,69 K), obwohl die Welt über der Strecke wärmer ist. Die Welt
+liest die Wärme des Blocks (phyto-core lageWaerme → gelaende-core temperaturAus, 5. Glied → stamm/bild-himmel.js _temperaturAt
+· _luftmasseWaerme; Leser Brand, Grillen, Zündung, Lava, Tracht der Bewohner). Die Station misst damit die Tafel, nicht die Welt.
+
+WAS DER KANDIDAT ÄNDERT: der Block `welt` rechnet je Takt die Temperatur am Ort so, wie die Welt sie liest (Wort UND Wärme der
+Luftmasse, Sommer 0,375, Uhr 0,6); amplitudeK = Mittel über die längste klare Strecke − Mittel aller Takte (HWDI: Temperatur
+der Welle über dem Mittel, Frich et al. 2002, 5 K ±50 %). Ohne den Leser (alter Kern) ist amplitudeK null mit Täter
+„Leser fehlt: phyto-core lageWaerme" — ungemessen, nie still grün. Zeugen: spitzeK, wortK (die alte Zahl bleibt sichtbar).
+
+GEMESSEN (echte Welt, Null-Renderer, heimat, 100 Jahre, scratchpad probe s2):
+  main b3740dd5:          dauerTage 0,5  · amplitudeK (Wort) 1,91 K
+  Kopf 4, alte Station:   dauerTage 6,9 ✓ · amplitudeK (Wort) 1,69 K ✗ (die Tafel sieht den Block nicht)
+  Kopf 4, Kandidat:       dauerTage 6,9 ✓ · amplitudeK 6,52 K ✓ (Spitze 8,72 K)        Soll 3–9 d · 2,5–7,5 K

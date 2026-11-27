@@ -1,0 +1,59 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-planet.js	2026-11-27 20:41:37.262348495 +0000
++++ b/meisterkarte-quelle/punkte/stationen/k2-planet.js	2026-11-27 20:41:37.286321424 +0000
+@@ -5993,6 +5993,20 @@
+ for (const w of W) freq[w] = (freq[w] || 0) + 1;
+ let tMittel = 0;
+ for (const w of Object.keys(freq)) tMittel += (Tw[w] * freq[w]) / W.length;
++// DIE HITZE DER STRECKE (planet.wetter.extreme#2): die Temperatur je Takt am Ort (Sommer, Nachmittag) unter dem Wort UND der Wärme
++// der Luftmasse (phyto-core lageWaerme: der Block der Lage sammelt Wärme über Tage), gelesen wie die Welt sie liest (gelaende-core
++// temperaturAus, 5. Glied); die Amplitude ist das Mittel über die längste klare Strecke über dem Mittel aller Takte
++const lw = typeof P.lageWaerme === "function" ? P.lageWaerme : null, saatW = A._saatVon(wm);
++const Tt = lw ? W.map((w, i) => G.temperaturAus(r._temperaturFeld(wl), 0.375, 0.6, FELD[w], lw(saatW, 0, 0, i * Z))) : null;
++let hitze = null;
++if (Tt) {
++const mT = Tt.reduce((s, v) => s + v, 0) / Tt.length;
++let bi = 0, bl = 0;
++for (let i = 0; i < W.length; ) { if (W[i] === "sunny") { let e = i; while (e < W.length && W[e] === "sunny") e++; if (e - i > bl) { bl = e - i; bi = i; } i = e; } else i++; }
++let mL = 0, spitze = -Infinity;
++for (let i = bi; i < bi + bl; i++) { mL += Tt[i] / bl; if (Tt[i] > spitze) spitze = Tt[i]; }
++hitze = { amplitudeK: bl ? mL - mT : null, spitzeK: bl ? spitze - mT : null, takte: bl };
++}
+ const tele = [];
+ try {
+ for (let k = 0; k < ${Number(u4.saaten) || 100}; k++) {
+@@ -6004,7 +6018,7 @@
+ }
+ } finally { wm.seed = s0; }
+ const sichtSturm = -Math.log(A.LUFT.kontrast) / r._luftBeta(FELD.stormy);
+-return { jahrMax, maxAll, sonnig, Tw, tMittel, tele, sichtSturm, saatZurueck: wm.seed === s0, jeJahr, stundeS, worte: Object.keys(freq).length };
++return { jahrMax, maxAll, sonnig, Tw, tMittel, hitze, tele, sichtSturm, saatZurueck: wm.seed === s0, jeJahr, stundeS, worte: Object.keys(freq).length };
+ `);
+             // die Bild-Zeit über 2,5 s im Wetter der Welt (requestAnimationFrame) — headless die Zeit des Software-Renderers
+             const takt = await H.seite(`
+@@ -6096,11 +6110,13 @@
+                 auge: await M.auge("wetter-extreme-s1", { ort: "wiese" }, { wetter: "stormy" }),
+                 taeter: (RF.fehler.length && !RF.gemessen ? "Leser fehlt: " + RF.fehler[0].fehler + " · " : "") + "gelaende-core.js:1627 pegelHubVon deckelt den Hub an der Krone (Math.min(krone, h)), " + RF.werte.bordvoll + " von " + RF.gemessen + " Adressen bordvoll, " + RF.werte.stark + " mit ≥ " + stark + " mm — die Aue trägt den Überschuss „nicht gerechnet“ (gelaende-core.js:1569) · " + RF.akte,
+             };
+-            // S2 die Hitzewelle: die längste Strecke klarer Worte (Spieltage) und der Überschuss der Temperatur des klaren Worts über
+-            // das Mittel der Worte (Sommer, Nachmittag)
++            // S2 die Hitzewelle: die längste Strecke klarer Worte (Spieltage) und die Temperatur über ihr — das Mittel der Strecke über
++            // dem Mittel aller Takte (Sommer, Nachmittag), unter Wort und Wärme der Luftmasse (welt.hitze); ohne den Leser der Wärme
++            // ist die Amplitude ungemessen (bis hier: das klare Wort über dem Mittel der Worte — die Tafel kennt den Block nicht)
+             aus[2] = {
+-                werte: { dauerTage: R(Math.max(0, ...welt.sonnig)), amplitudeK: R(welt.Tw.sunny - welt.tMittel) },
+-                zeuge: { strecken: welt.sonnig.length, streuDauer: R(streu(welt.sonnig)), streuT: R(streu(Object.values(welt.Tw))), worte: welt.worte },
++                werte: { dauerTage: R(Math.max(0, ...welt.sonnig)), amplitudeK: welt.hitze ? R(welt.hitze.amplitudeK) : null },
++                zeuge: { strecken: welt.sonnig.length, streuDauer: R(streu(welt.sonnig)), streuT: R(streu(Object.values(welt.Tw))), worte: welt.worte, spitzeK: welt.hitze ? R(welt.hitze.spitzeK) : null, wortK: R(welt.Tw.sunny - welt.tMittel) },
++                taeter: welt.hitze ? "phyto-core.js lageBlock · lageWaerme (die Blockierlage der WETTER_LAGE)" : "Leser fehlt: phyto-core lageWaerme (die Wärme der Luftmasse) — die Amplitude ist ungemessen",
+             };
+             // S3 die Wiederkehr: Gumbel über die Jahresmaxima des Strecken-Regens (Momente), x100 ÷ x2 gegen die Erd-Erwartung
+             const jm = welt.jahrMax;
+@@ -6171,7 +6187,7 @@
+                 ],
+                 zeuge: zMinStreu({ strecken: 10, worte: 3 }, ["streuDauer", "streuT"]),
+                 taeter: "phyto-core.js wetterAt (keine Blockierlage)",
+-                leser: "phyto-core.js:4423 — wetterAt kennt keine Blockierlage: die längste klare Strecke ist ein Bruchteil eines Tages",
++                leser: "phyto-core.js wetterAt → lageBlock (das Hoch, das steht) · lageWaerme → gelaende-core temperaturAus (5. Glied) — die Welt: stamm/bild-himmel.js _temperaturAt · _luftmasseWaerme (Brand, Grillen, Zündung, Lava), stamm/siedlung-bewohner.js _bewohnerTracht",
+                 gruen: { werte: { dauerTage: 7, amplitudeK: 5.5 }, zeuge: { strecken: 40, streuDauer: 2, streuT: 3, worte: 5 } },
+                 attrappen: [
+                     { name: "Welle aus der Statistik ohne Welt", roh: leer({ dauerTage: 7, amplitudeK: 5.5 }) },
