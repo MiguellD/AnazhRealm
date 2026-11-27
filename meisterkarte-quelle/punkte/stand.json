@@ -3064,7 +3064,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 69 Bilder · max 83.79 ms · 59.42 % > 33 ms · Fahrt 9 Bilder · max 58.65 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 59.42 % > 33 ms | Fahrt: blind (9 Bilder in 2.5 s), 100.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 45bad33f radeon · gehalten: Gehen 92 Bilder · max 83.25 ms · 13.04 % > 33 ms · Fahrt 5 Bilder · max 75.02 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 13.04 % > 33 ms | Fahrt: blind (5 Bilder in 2.5 s), 80.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 99649186 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 031f4700: Last: Referenz f 1,346 (Faden 1,346 · alle Kerne 1,128; vor 107,8/293,6 ms, nach 112,4/278,4 ms, Ruhe 83,5/260,2 ms seit 2026-11-16) · fremd: node scripts/diag-profiband.cjs 18,1 CPU-s · Claude.exe -- · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +40)",
+   "beleg": "Maschine: gehalten: Gehen 69 Bilder · max 83.79 ms · 59.42 % > 33 ms · Fahrt 9 Bilder · max 58.65 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 59.42 % > 33 ms | Fahrt: blind (9 Bilder in 2.5 s), 100.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 45bad33f radeon · gehalten: Gehen 92 Bilder · max 83.25 ms · 13.04 % > 33 ms · Fahrt 5 Bilder · max 75.02 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 13.04 % > 33 ms | Fahrt: blind (5 Bilder in 2.5 s), 80.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 99649186 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 031f4700: Last: Referenz f 1,289 (Faden 1,289 · alle Kerne 1,088; vor 107,6/283,1 ms, nach 102/252,9 ms, Ruhe 83,5/260,1 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +40)",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3092,7 +3092,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 031f4700: Last: Referenz f 1,346 (Faden 1,346 · alle Kerne 1,128; vor 107,8/293,6 ms, nach 112,4/278,4 ms, Ruhe 83,5/260,2 ms seit 2026-11-16) · fremd: node scripts/diag-profiband.cjs 18,1 CPU-s · Claude.exe --",
+     "grund": "Station seit der Messung geändert — zuletzt an 031f4700: Last: Referenz f 1,289 (Faden 1,289 · alle Kerne 1,088; vor 107,6/283,1 ms, nach 102/252,9 ms, Ruhe 83,5/260,1 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf",
      "ungemessen": true
     },
     {
@@ -28792,7 +28792,7 @@
   },
   "karte2.planet.kopplung.stadtklima": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 abweichungGrad 1,976 ° gegen Soll ≤ 20 ° ✓ · Zeuge: die Welt geändert an 38194f83 gtx — offen: karte2.planet.kopplung.stadtklima#1 radeon: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#2 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#2 gtx: ungemessen (R10) · karte2.planet.kopplung.stadtklima#3 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#4 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#5 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#6 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 abweichungGrad 1,976 ° gegen Soll ≤ 20 ° ✓ · Zeuge: die Welt geändert an 38194f83 gtx — offen: karte2.planet.kopplung.stadtklima#1 radeon: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#2 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#2 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js) · karte2.planet.kopplung.stadtklima#3 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#3 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#4 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#4 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#5 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#5 gtx: Station seit der Messung geändert · karte2.planet.kopplung.stadtklima#6 radeon: ungemessen (R10) · karte2.planet.kopplung.stadtklima#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.stadtklima#1",
@@ -28830,8 +28830,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kopplung.stadtklima#3",
@@ -37591,7 +37592,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 346,
+  "konsum": 347,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37761,10 +37762,10 @@
    "karte2.same.kopplung.terraform#1 gtx",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3274
+  "ohne": 3273
  },
  "kopfVoll": "920fa974711202dddf9a7f43cc49fee3d1d5fe47",
- "zeit": "2026-11-27T04:15:19.320Z",
+ "zeit": "2026-11-27T04:26:57.869Z",
  "vorher": "920fa974",
  "bilanz": {
   "gewinn": [],
