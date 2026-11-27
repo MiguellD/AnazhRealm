@@ -369,6 +369,12 @@ const KERN = (() => {
     async function probeRumpf(H, M, LEITERN, DORF) {
         const fs = require("fs");
         await H.frist();
+        // EIN MASSSTAB FÜR JEDEN DECKEL (Koordinator 27.11., Schnitt A): der Deckel der Probe trägt den Takt-Faktor der Karte
+        // (punkte.cjs `grundDeckel` ← `taktVon`), also tragen ihn die Deckel in ihr — Dorf und jede Leiter, ihr Raffer-Budget mit —
+        // aus derselben Quelle (PUNKTE_TAKT, gerundet wie `grundDeckel`); `sek` bleibt die Zahl der Radeon (≤ 60 s je Leiter). Bis
+        // hier maß die Leiter roh `sek`: an der GTX (Faktor 1,54) rissen in same.kopplung 6 von 9 Leitern am Deckel (aufw1, eef726c7)
+        const TAKT = Math.max(1, Number(process.env.PUNKTE_TAKT) || 1);
+        const amGeraet = (sek) => (TAKT > 1 ? Math.ceil(+(sek * TAKT).toFixed(6)) : sek);
         const aus = { fassung: 1, leitern: {} };
         if (DORF) {
             const t0 = Date.now();
@@ -376,7 +382,7 @@ const KERN = (() => {
             try {
                 M.dorf = await Promise.race([
                     H.seite("return await (" + DORF.code + ")(r, " + JSON.stringify(DORF.a) + ");"),
-                    new Promise((_, nein) => (uhr = setTimeout(() => nein(new Error("der Deckel des Dorfs " + DORF.sek + " s")), DORF.sek * 1000))),
+                    new Promise((_, nein) => (uhr = setTimeout(() => nein(new Error("der Deckel des Dorfs " + amGeraet(DORF.sek) + " s")), amGeraet(DORF.sek) * 1000))),
                 ]);
             } catch (e) {
                 M.dorf = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 300) };
@@ -394,11 +400,12 @@ const KERN = (() => {
             M.t0 = Date.now();
             M.teil = {};
             let uhr = null, deckel = false;
-            await rafferStellen(H, L.sek);
+            const sekL = amGeraet(L.sek);
+            await rafferStellen(H, sekL);
             try {
                 const r = await Promise.race([
                     L.mess(H, L.U, M),
-                    new Promise((_, nein) => (uhr = setTimeout(() => ((deckel = true), nein(new Error("der Deckel der Leiter " + L.sek + " s"))), L.sek * 1000))),
+                    new Promise((_, nein) => (uhr = setTimeout(() => ((deckel = true), nein(new Error("der Deckel der Leiter " + sekL + " s"))), sekL * 1000))),
                 ]);
                 aus.leitern[id] = { s: (Date.now() - M.t0) / 1000, sprossen: (r && r.sprossen) || {} };
             } catch (e) {
