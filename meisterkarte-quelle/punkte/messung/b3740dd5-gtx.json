@@ -1,7 +1,7 @@
 {
  "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
  "geraet": "gtx",
- "zeit": "2026-11-27T21:36:32.501Z",
+ "zeit": "2026-11-27T22:19:50.600Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -1592,6 +1592,70 @@
    "modus": "session",
    "offen": 3,
    "fahrt": "11232@mwzhwakx"
+  },
+  "karte2.mensch.kultur.verstaendigung#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 50.9 s · S1 warf: /eval ohne Antwort binnen 40 s",
+   "exit": 0,
+   "minuten": 0.87,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 50.9 s · S1 warf: /eval ohne Antwort binnen 40 s",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 51.3,
+   "fremd": {
+    "s": 54.3,
+    "takte": 25,
+    "fremdS": 16.95,
+    "kerne": 0.312,
+    "fensterKerne": 0.435,
+    "namen": [
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      2.84
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.03
+     ],
+     [
+      "bash.exe sk/wacht6.sh",
+      1.73
+     ]
+    ],
+    "dienerS": 9.78,
+    "diener": [
+     [
+      "System",
+      3.8
+     ],
+     [
+      "dwm.exe",
+      2.41
+     ]
+    ],
+    "geraetS": 28.44,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.48
+     ],
+     [
+      "svchost.exe",
+      6.77
+     ],
+     [
+      "svchost.exe -k UnistackSvcGroup -s WpnUserService",
+      0.66
+     ]
+    ],
+    "eigenS": 89.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T22:19:50.600Z",
+   "abdruck": "55183cc3768b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  }
 }
