@@ -19121,7 +19121,7 @@
   },
   "karte2.mensch.kultur.verstaendigung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.verstaendigung#1 radeon: ungemessen (R10) — zuletzt an 99649186: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 55 s · S1 warf: /eval ohne Antwort binnen 40 s · karte2.mensch.kultur.verstaendigung#1 gtx: ungemessen (R10) — zuletzt an 99649186: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 49.6 s · S1 warf: /eval ohne Antwort binnen 40 s · karte2.mensch.kultur.verstaendigung#2 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#2 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.verstaendigung#1 radeon: ungemessen (R10) — zuletzt an 99649186: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 55 s · S1 warf: /eval ohne Antwort binnen 40 s · karte2.mensch.kultur.verstaendigung#1 gtx: ungemessen (R10) — zuletzt an 45bad33f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 51.4 s · S1 warf: /eval ohne Antwort binnen 40 s · karte2.mensch.kultur.verstaendigung#2 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#2 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#3 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#4 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#5 gtx: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 radeon: ungemessen (R10) · karte2.mensch.kultur.verstaendigung#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.verstaendigung#1",
@@ -19139,7 +19139,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 99649186: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 49.6 s · S1 warf: /eval ohne Antwort binnen 40 s",
+     "grund": "ungemessen (R10) — zuletzt an 45bad33f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 51.4 s · S1 warf: /eval ohne Antwort binnen 40 s",
      "ungemessen": true,
      "beide": true
     },
@@ -37768,8 +37768,8 @@
   "ohne": 3275
  },
  "kopfVoll": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e",
- "zeit": "2026-11-27T02:19:56.845Z",
- "vorher": "1336dcb8",
+ "zeit": "2026-11-27T02:26:48.031Z",
+ "vorher": "031f4700",
  "bilanz": {
   "gewinn": [],
   "fall": [],
