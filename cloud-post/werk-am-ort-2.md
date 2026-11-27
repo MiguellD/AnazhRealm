@@ -1,4 +1,11 @@
 
+
+## 27.11. 20:59 Koordinator — deine Zahlen gelesen (1 416 · 1 458 · 1 092 s, Summe 3 966): ENTSCHEIDUNG — Kopf 4 trägt die Linse in VIER Teilen, jetzt; das Billiger-Machen der Stadt-Täter ist Folge-Arbeit, nicht Bedingung der Landung
+
+- Rechnung: 3 966 s über drei Teile = 1 322 s je Teil, über der Marke 1 150 und nahe der Kante (ein Teil hat in der CI rund 1 500 s, Teil 2 des main schwankt 715 geplant ↔ 926 gefahren). Über VIER Teile sind es 992 s je Teil — das trägt ohne weiteren Schnitt.
+- Kopf 4 = Kopf 3 7d23fd5a (auf main b3740dd5 gesetzt) + (a) `DAUER_S` = deine gemessenen Zahlen, (b) `--teil=k/4`: vier Schritte in `.github/workflows/check.yml` (bei Zeile 987, der vierte Schritt nach dem Muster der drei), `gate:kreatur-takt` fährt alle vier, `npm run check:statik` ganz (`gate:ci-deckung` urteilt über die Schritte; verlangt es einen Eintrag in `spec/ci/ci-zeiten.json`, trag die vier gemessenen Zahlen ein und nenne es im Commit-Text). Greif die Frist `timeout-minutes` nicht an.
+- Kostet (b) mehr als 30 min, weil `gate:ci-deckung` oder der Plan der 18 Gruppen einen vierten Schritt nicht nimmt: schreib die rote Zeile wörtlich als WIP ins Blatt, dann nimm den anderen Weg (Täter der Stadt-Proben lesen EINEN Grund-Lauf, bis jeder der drei Teile ≤ 1 150 s steht).
+- Vor dem Schub die vier Teile mit Stoppuhr, die vier Zahlen in den Commit-Text; `npm run gate:welt-boot`. Achtung Nachbar: sprache-dialekt Kopf 2 (10 Zeilen in `stamm/siedlung-bewohner.js`) landet voraussichtlich vor dir — vor dem Schub `git merge-tree --write-tree origin/main HEAD`.
 ## 27.11. 20:50 Koordinator — URTEIL Kopf 3 7d23fd5a: GPU-Probe GRÜN 3/3, Batterie 20 von 21 Jobs grün, EIN Job an der FRIST abgeschnitten: „Die Kreatur-Linse Teil 1“ lief 1 568 s und war nicht durch (Job-Frist 28 min). Kein Rennen — dein Kopf macht die Linse zu schwer für drei Teile. Kopf 4 = Kopf 3 + die Heilung unten, nichts sonst
 
 - **Gemessen in der CI (Sekunden je Schritt, cpu-Klasse):** main 9a75d61c Teil 1 · 2 · 3 = 713 · 926 · 709 s. Kopf 3: **> 1 568 (abgeschnitten) · 1 354 · 820 s**. Die Job-Frist der voll-Gruppen ist 28 min = 1 680 s, davon ≈ 180 s Vorbereitung — ein Teil hat ≈ 1 500 s, und Teil 2 steht mit 1 354 s schon an der Kante. Kopf 2 trug dasselbe (Teil 1 nach 930 s, Teil 2 nach 1 115 s noch offen, als der Lauf endete).
