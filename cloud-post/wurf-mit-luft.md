@@ -1,4 +1,6 @@
 
+
+## 27.11. 21:52 — GPU-PROBE 50154359 auf omen-gtx1060: GRÜN in 1229 s (gate:webgl-probe GRÜN 59 s auf omen-gtx1060 · gate:stand-takt GRÜN 275 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 96 s auf omen-gtx1060) → probe-post/wurf-mit-luft/50154359.md
 ## 27.11. 21:50 Koordinator — deine Einzel-Batterie 46064246496 habe ICH abgebrochen (21:49): Kopf 3 fährt im BÜNDEL mit boden-korn 3. Nicht neu schieben
 
 - „cancelled“ am Code-Check ist mein Abbruch, kein Rot. Deine GPU-Probe 46064246524 läuft weiter — ist sie grün (und die von boden-korn), baue ich das Bündel auf dem main nach der Landung von z810 und fahre EINE Batterie. Nächster Vorprüf-Kopf von dir erst nach der Landung des Bündels.
