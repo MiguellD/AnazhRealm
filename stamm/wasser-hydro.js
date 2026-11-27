@@ -85,6 +85,10 @@ class AnazhRealm_wasser_hydro {
     // ist die Tafel, die die Welt trägt: der Spiegel des Kerns liest sie über die Lage (`L.pegel`) im Main und im Faden (`pegel`
     // im Stand), bit-gleich; `_pegelTakt` zieht sie nach — gerufen vom Takt der Saison, vom Takt der Nässe (`_naesseTakt`) und
     // je Sekunde der Welt-Uhr (`_pegelUhr`: der Bach fällt nach dem Regen, die Dürre senkt ihn, auch wenn das Wetter ruht).
+    // DER BRAND IM EINZUGSGEBIET (same.kopplung.stoerung#3, gelaende-core `pegelBrand`): jede Tat „brand“ (das Gedächtnis des
+    // Brands, es reist im Stand) ist eine verbrannte Zelle des Lebens, gewogen mit ihrer Asche (`_sukzession`: dieselbe Uhr, mit der
+    // Gras, Busch und Wald zurückkehren) — der Kern führt sie stromab durch das Netz, der Regen ihrer Flüsse fließt stärker ab.
+    // Neu gerechnet, wenn sich die Taten oder eine Stufe ihrer Asche ändern, nie je Bild.
     _pegelTafel() {
         const K = globalThis.__gelaendeCore;
         const L = this._gelaende();
@@ -105,7 +109,20 @@ class AnazhRealm_wasser_hydro {
             c && c.tag === tag && c.feld === this._temperaturFeld && c.wl === L.waterLevel
                 ? c.schmelze
                 : K.pegelSchmelze(L, tag, (y, tr) => this._temperaturFeld(y, tr));
-        const tafel = c && c.schmelze === schmelze && c.q === q ? c.tafel : K.pegelTafel(L, schmelze, lauf);
+        const I = this._tatIndex();
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const fl = [];
+        let bk = I.L ? 0 : -1;
+        for (const a of I.brand) {
+            const asche = this._sukzession(a).asche;
+            if (asche > 0) (fl.push([a.x, a.z, cs * cs * asche]), (bk += asche + a.x * 1e-3 + a.z * 1e-6));
+        }
+        const bKey = fl.length + ":" + bk;
+        const brand = c && c.bKey === bKey && c.bL === I.L ? c.brand : K.pegelBrand(L, fl);
+        const tafel =
+            c && c.schmelze === schmelze && c.q === q && c.brand === brand
+                ? c.tafel
+                : K.pegelTafel(L, schmelze, lauf, brand);
         this._pegelStand = {
             tag,
             feld: this._temperaturFeld,
@@ -119,6 +136,9 @@ class AnazhRealm_wasser_hydro {
             Z,
             lauf,
             q,
+            bKey,
+            bL: I.L,
+            brand,
             tafel,
         };
         return tafel;
@@ -445,6 +465,14 @@ class AnazhRealm_wasser_hydro {
                 const v = K.pegelHub(P, T.y0 + i * T.dy, j);
                 if (v !== 0) h = (Math.imul(h ^ (i + 512 * j), 31) + Math.round(v * 100)) | 0;
             }
+        // der Brand im Einzugsgebiet (`pegelBrand`): ein Segment, dessen Knoten brennt, trägt seine eigene Reihe
+        if (T.brand)
+            for (const [j, kn] of o.klassen.knoten)
+                if (T.brand.has(kn))
+                    for (let i = i0; i <= i1; i++) {
+                        const v = K.pegelHub(P, T.y0 + i * T.dy, j, kn);
+                        h = (Math.imul(h ^ (i + 512 * j + 7), 31) + Math.round(v * 100)) | 0;
+                    }
         const marke = h ? (h >>> 0).toString(36) : "";
         je.set(key, marke);
         return marke;

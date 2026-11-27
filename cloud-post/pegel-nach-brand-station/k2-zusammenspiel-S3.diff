@@ -1,0 +1,32 @@
+--- a/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js   (punkte-maschine, Teil S3, Zeilen ~8376–8400)
++++ b/meisterkarte-quelle/punkte/stationen/k2-zusammenspiel.js   (KANDIDAT — Soll und Richter-Text unverändert)
+@@
+                         const fluss = () => r3(flussP.reduce((s, p) => { const b = r._voxelSurfaceY(p.x, p.z); return s + Math.max(0, r._atlasWaterLevelAt(p.x, p.z, b) - b); }, 0) / Math.max(1, flussP.length));
++                        // die Pegel-SPITZE ist die Antwort des Abflusses auf Regen: ohne Regen trägt kein Einzugsgebiet einen Beiwert. Derselbe
++                        // Regen (Stärke a.regen über a.regenS Kalender-Sekunden) vor und nach dem Brand, der Lauf neu aus dem Gesetz.
++                        const spitze = () => {
++                            const [kz, rs, pz] = [r._kalenderZeit, st.regenStempel, st.pegelZustand];
++                            const t0 = Math.floor(kz.call(r));
++                            try {
++                                r._kalenderZeit = () => t0 + a.regenS;
++                                st.regenStempel = [t0, 0, t0 + 1, a.regen, t0 + 1 + a.regenS, a.regen];
++                                st.pegelZustand = null;
++                                r._pegelStand = null;
++                                r._regenGen = (r._regenGen | 0) + 1;
++                                r._pegelTakt();
++                                return fluss();
++                            } finally {
++                                delete r._kalenderZeit;
++                                [st.regenStempel, st.pegelZustand, r._pegelStand] = [rs, pz, null];
++                                r._regenGen = (r._regenGen | 0) + 1;
++                                r._pegelTakt();
++                            }
++                        };
+@@
+-                        const blockVor = { aesung: aesung(), fluss: fluss(), tiere: tiere(), punkte: flussP.length };
++                        const blockVor = { aesung: aesung(), fluss: spitze(), tiere: tiere(), punkte: flussP.length };
+@@
+-                            aus.block = { vor: blockVor, nach: { aesung: aesung(), fluss: fluss(), tiere: tiere() }, jahre: …
++                            aus.block = { vor: blockVor, nach: { aesung: aesung(), fluss: spitze(), tiere: tiere() }, jahre: …
+@@ (Aufruf-Argumente des Teils S3)
++                        regen: 0.004, regenS: 1800,

@@ -1027,7 +1027,8 @@ je Lage über `landformRegler` —, die Landmarke des Orts `LANDMARKE`/`landmark
 Felsturm je km² aus der Großform × der Trockenheit des Orts, die Bänder der Profis; Leser der Wurf je Chunk `_landmarkeChunk`
 und die Phyto-Linse), das Flussnetz mit den Kanten `NETZ_KANTE`, seinen Läufen `flussLaeufe` und seinen Senken als
 den benannten Seen `benannteSeen`, die Arbeit des Netzes `netzZaehler` (Knoten und gebaute Talprofile je Ebene, das
-Einzugsgebiet ohne Leser — der Leser ist die Gelände-Linse „netz“), die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, die Art des Gewässers
+Einzugsgebiet ohne Leser — der Leser ist die Gelände-Linse „netz“), der Tal-Weg eines Orts `talWeg` (das eingefrorene Glied des
+Netzes, über `unter` bis zur Senke seines Einzugsgebiets; Leser der Wirt `_mundartAm` — die Mundart folgt dem Tal, sprache#4), die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, die Art des Gewässers
 `GEWAESSER_ART`/`gewaesserArt` (w13-bach-klar: see · bach · fluss nach der LAWA-Größenklasse, Bach < 100 km² Einzugsgebiet,
 über die Breite), das Gewässer am Ort `gewaesserAm` (unter-wasser: der Typ aus der Hydrosphäre — Lauf nach der Breite, sonst
 Meer oder See der Zelle — und der Abfluss Q/Q̄ aus dem Pegel), die Optik der Gewässer `GEWAESSER_OPTIK`/`gewaesserOptik`
@@ -1054,8 +1055,14 @@ Spiegel des Kerns liest sie, nie das Bett; `koerperY` der Spiegel jedes stehende
 (wetter.K3: die Faltung der Stempel des Regens über die Welt-Uhr mit der Nash-Ganglinie je Lag-Klasse, dazu der Grund gegen das
 Mittel des Klimas — eine Funktion der Uhr; was vor den Stempeln fiel, trägt der Zustand des Laufs `pegelZustand`, der Grund und
 je Klasse die zwei Speicher der Kaskade, 50 Zahlen im Stand statt jedes Stempels), der Lag-Klasse eines Laufs `laufKlasse` (Snyder aus Lauflänge und
-Einzugsgebiet, die Länge stromauf nach Hack `hackLaenge`; der Kanal trägt sie je Segment, das Wasser-Feld je See-Zelle) und den
-Klassen am Rechteck `pegelKlassen` (die Marke des Chunks), die
+Einzugsgebiet, die Länge stromauf nach Hack `hackLaenge`; der Kanal trägt sie je Segment, das Wasser-Feld je See-Zelle), dem Korn
+nach Herkunft `korn(L, x, z, aus)` (karte2.planet.relief.boden#2: Bett — Sternberg-Abrieb `kornBett` über die Hack-Länge, Aue,
+Hang, Wind; die Tafel `KORN`, die Wentworth-Klassen `KORN_KLASSEN` mit `kornKlasse`, die Farbe des Sediments `sedimentFarbe`, die
+Boden-Farbe am Fluss und `_terrainMaterialAt` lesen es) und den
+Klassen am Rechteck `pegelKlassen` (die Marke des Chunks), dem Abfluss nach Brand `BRAND_ABFLUSS`/`pegelBrand` (same.kopplung.stoerung#3:
+die Taten „brand“ des Wirts, gewogen mit ihrer Asche, stromab durch das Knoten-Netz; je Knoten hebt der verbrannte Anteil seines
+Einzugsgebiets den Abflussbeiwert des Regens 0,3 → 0,56 nach SCS-CN 95 — BAER; Moody & Martin 2001 —, die Tafel trägt je
+verbranntem Knoten ihre Reihe, der Kanal je Segment seinen Knoten; ohne Brand liest der Pegel byte-gleich), die
 Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DIE HYDROSPHÄRE (Karte hydro-faden): das
 Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, der gepackte Kanal `kanal` mit
 `KANAL_FELDER` Zahlen je Segment, Wasser-Feld; `H` das Gesetz des Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet

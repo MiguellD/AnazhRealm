@@ -3776,17 +3776,25 @@ function bodenFarbe(x, y, z, out, fussM) {
     const aboveWater = y - uf.see;
     const aboveFluss = !ab && uf.fluss !== null ? y - uf.fluss : null;
     let schlick = ss(-0.5, -4, aboveWater);
-    if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
-    // Das Watt (die Gezeit, gelaende-core wattSchlick): wo das Meer den Grund mehr als ein Achtel der Zeit deckt, liegt Schlick
-    if (uf.watt) schlick = Math.max(schlick, G.wattSchlick(aboveWater));
+    // DAS KORN DER SOHLE (Mirror von \`_bodenFarbeAt\`, bit-identisch): wo der Fluss den Grund trägt, ist das Sediment sein Korn
+    // (gelaende-core \`korn\` → \`sedimentFarbe\`) — EINE Frage des Felds je Vertex, nur am Fluss; mit fussM tragen die Bänder des
+    // Abdrucks den Fluss (\`flussAbdruck\`)
+    let flussSchlick = aboveFluss !== null ? uf.ufer * ss(-0.5, -4, aboveFluss) : 0;
+    const seeSchlick = schlick;
+    let kornFarbe = null;
+    const kornAm = () => kornFarbe || (kornFarbe = G.sedimentFarbe(P, G.korn(state, x, z), [0, 0, 0]));
+    const amFluss = (f, s0, z0) => (f > s0 ? z0.map((v, k) => v + (kornAm()[k] - v) * (1 - s0 / f)) : z0);
     const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
     let flussStrand = false;
     if (ab)
         for (let i = 0; i < ab.n; i++) {
-            schlick = Math.max(schlick, ab.mu[i] * ss(-0.5, -4, y - ab.sp[i]));
+            flussSchlick = Math.max(flussSchlick, ab.mu[i] * ss(-0.5, -4, y - ab.sp[i]));
             if (ab.mu[i] > 0 && imStrand(y - ab.sp[i])) flussStrand = true;
         }
-    mix(P.sediment, schlick);
+    if (flussSchlick > schlick) schlick = flussSchlick;
+    // Das Watt (die Gezeit, gelaende-core wattSchlick): wo das Meer den Grund mehr als ein Achtel der Zeit deckt, liegt Schlick
+    if (uf.watt) schlick = Math.max(schlick, G.wattSchlick(aboveWater));
+    mix(amFluss(flussSchlick, seeSchlick, P.sediment), schlick);
     if (imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss)) || flussStrand) {
         const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5;
         const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
@@ -3795,9 +3803,11 @@ function bodenFarbe(x, y, z, out, fussM) {
             const intensity = 0.25 + 0.55 * intenseNoise;
             const glocke = (a) => Math.max(0, 1 - Math.abs(a - 0.6) / width);
             let shoreBlend = glocke(aboveWater);
-            if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
-            if (ab) for (let i = 0; i < ab.n; i++) shoreBlend = Math.max(shoreBlend, ab.mu[i] * glocke(y - ab.sp[i]));
-            mix(P.sand, shoreBlend * intensity);
+            const seeBlend = shoreBlend;
+            let flussBlend = aboveFluss !== null ? uf.ufer * glocke(aboveFluss) : 0;
+            if (ab) for (let i = 0; i < ab.n; i++) flussBlend = Math.max(flussBlend, ab.mu[i] * glocke(y - ab.sp[i]));
+            if (flussBlend > shoreBlend) shoreBlend = flussBlend;
+            mix(amFluss(flussBlend, seeBlend, P.sand), shoreBlend * intensity);
         }
     }
     // die PFADE: die Fluss-Bänke als getrampelte, gepackte Erde

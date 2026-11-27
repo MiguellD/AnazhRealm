@@ -60,6 +60,10 @@ const DAUER_S = {
     kaskade: 400,
     folgen: 59,
     zielplan: 80,
+    werkort: 182,
+    mengebild: 288,
+    schreck: 400,
+    seuche: 60,
     gehege: 70,
     // (herde-gesetz: headless an der Laptop-Maschine unter fremder Last, eine Saat, ohne Täter — der Bestand liest den Gau)
     erbe: 26,
