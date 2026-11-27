@@ -20412,7 +20412,7 @@
   },
   "karte2.mensch.macht.megastadt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.megastadt#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9) — zuletzt an c3631992: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.mensch.macht.megastadt#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9) · karte2.mensch.macht.megastadt#2 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#2 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#3 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#3 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#4 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#4 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#5 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#5 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#6 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#6 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#7 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.megastadt#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9) — zuletzt an c3631992: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._handleObjectFunction getauscht: function (object, material, scene, camera, lightsNode, group) — kein Urteil, UNGEMESSEN (d · karte2.mensch.macht.megastadt#1 gtx: ROT: S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (1 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] nvidia/pascal an 031f4700 · karte2.mensch.macht.megastadt#2 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#2 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#3 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#3 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#4 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#4 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#5 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#5 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#6 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#6 gtx: ungemessen (R10) · karte2.mensch.macht.megastadt#7 radeon: ungemessen (R10) · karte2.mensch.macht.megastadt#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.macht.megastadt#1",
@@ -20429,10 +20429,9 @@
      "id": "karte2.mensch.macht.megastadt#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9)",
-     "ungemessen": true,
+     "zahl": "S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (1 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] nvidia/pascal",
+     "sha": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e",
+     "grund": "ROT: S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (1 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     },
@@ -37768,8 +37767,8 @@
   "ohne": 3274
  },
  "kopfVoll": "920fa974711202dddf9a7f43cc49fee3d1d5fe47",
- "zeit": "2026-11-27T03:03:55.545Z",
- "vorher": "031f4700",
+ "zeit": "2026-11-27T03:16:00.131Z",
+ "vorher": "920fa974",
  "bilanz": {
   "gewinn": [],
   "fall": [],
