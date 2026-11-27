@@ -3020,7 +3020,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 62 Bilder · max 92.24 ms · 79.03 % > 33 ms · Fahrt 51 Bilder · max 167.42 ms · 92.16 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 79.03 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 167.42), 92.16 % > 33 ms an 52937c92 radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 52937c92: Last: Referenz f 1,316 (Faden 1,316 · alle Kerne 1,166; vor 109,9/302,3 ms, nach 101,6/274,3 ms, Ruhe 83,5/259,3 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 11,3 CPU-s · bash.exe -c · profiband.K4#2 gtx: ROT: Gehen 76 Bilder · max 108.29 ms · 23.68 % > 33 ms · Fahrt 42 Bilder · max 133.32 ms · 80.95 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.29), 23.68 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 133.32), 80.95 % > 33 ms an 52937c92",
+   "beleg": "Maschine: Gehen 62 Bilder · max 92.24 ms · 79.03 % > 33 ms · Fahrt 51 Bilder · max 167.42 ms · 92.16 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 79.03 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 167.42), 92.16 % > 33 ms an 52937c92 radeon · Gehen 76 Bilder · max 99.97 ms · 30.26 % > 33 ms · Fahrt 8 Bilder · max 91.62 ms · 87.50 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 30.26 % > 33 ms | Fahrt: blind (8 Bilder in 2.5 s), 87.50 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 52937c92 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 52937c92: Last: Referenz f 1,316 (Faden 1,316 · alle Kerne 1,166; vor 109,9/302,3 ms, nach 101,6/274,3 ms, Ruhe 83,5/259,3 ms seit 2026-11-16) · fremd: bash.exe scratchpad/wache-0331.sh 11,3 CPU-s · bash.exe -c · profiband.K4#2 gtx: ROT: Gehen 76 Bilder · max 108.29 ms · 23.68 % > 33 ms · Fahrt 42 Bilder · max 133.32 ms · 80.95 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.29), 23.68 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 133.32), 80.95 % > 33 ms an 52937c92",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3034,10 +3034,10 @@
     {
      "id": "profiband.K4#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": "Gehen 76 Bilder · max 108.29 ms · 23.68 % > 33 ms · Fahrt 42 Bilder · max 133.32 ms · 80.95 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.29), 23.68 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 133.32), 80.95 % > 33 ms",
+     "gruen": true,
+     "zahl": "Gehen 76 Bilder · max 99.97 ms · 30.26 % > 33 ms · Fahrt 8 Bilder · max 91.62 ms · 87.50 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 30.26 % > 33 ms | Fahrt: blind (8 Bilder in 2.5 s), 87.50 % > 33 ms, nicht aus- und eingestiegen (Sattel 1)",
      "sha": "52937c92786457ffbc7e62e6c4e99949df3c135e",
-     "grund": "ROT: Gehen 76 Bilder · max 108.29 ms · 23.68 % > 33 ms · Fahrt 42 Bilder · max 133.32 ms · 80.95 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.29), 23.68 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 133.32), 80.95 % > 33 ms",
+     "grund": "GRÜN trotz Last: Referenz f 1,234 (Faden 1,231 · alle Kerne 1,234; vor 109,1/271,3 ms, nach 107,4/230,5 ms, Ruhe 88,6/219,9 ms seit 2026-11-27) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,1 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 3,9 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,7 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 34,2 CPU-s · svchost.exe 10,7 CPU-s · SearchIndexer.exe 2,5 CPU-s",
      "r6": "konsum"
     },
     {
@@ -29311,7 +29311,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an eef726c7: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"genesis\",\"sicht\":\"third\"} · 15.7 s · 412.3 s) · Wirt-Wache: den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig · karte2.planet.kosmos.himmelsmechanik#1 gtx: Station seit der Messung geändert — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\ · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an eef726c7: Deckel 440 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"genesis\",\"sicht\":\"third\"} · 15.7 s · 412.3 s) · Wirt-Wache: den Kontext der Probe hält noch: window.__linse___aufnahmeRuhig · karte2.planet.kosmos.himmelsmechanik#1 gtx: Station seit der Messung geändert — zuletzt an 52937c92: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 52.5 s · 609.7 s) · Wirt-Wache: den Kontext der Probe hält noch: window._ · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -29329,7 +29329,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 52937c92: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\",
+     "grund": "Station seit der Messung geändert — zuletzt an 52937c92: Deckel 678 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 52.5 s · 609.7 s) · Wirt-Wache: den Kontext der Probe hält noch: window._",
      "ungemessen": true,
      "beide": true
     },
@@ -37598,7 +37598,7 @@
   "ohne": 3383
  },
  "kopfVoll": "52937c92786457ffbc7e62e6c4e99949df3c135e",
- "zeit": "2026-11-27T12:05:31.388Z",
+ "zeit": "2026-11-27T12:17:00.080Z",
  "vorher": "52937c92",
  "bilanz": {
   "gewinn": [],
