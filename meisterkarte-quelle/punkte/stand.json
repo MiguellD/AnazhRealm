@@ -3020,16 +3020,15 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 58 Bilder · max 92.38 ms · 81.03 % > 33 ms · Fahrt 43 Bilder · max 150.54 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 81.03 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 150.54), 100.00 % > 33 ms an eef726c7 radeon · gehalten: Gehen 78 Bilder · max 83.36 ms · 21.79 % > 33 ms · Fahrt 35 Bilder · max 183.33 ms · 91.43 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.79 % > 33 ms | Fahrt: 7 Bild(er) > 100 ms (max 183.33), 91.43 % > 33 ms an eef726c7 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an eef726c7: Last: Referenz f 1,381 (Faden 1,381 · alle Kerne 1,148; vor 107,1/297,5 ms, nach 115,3/289,6 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node.exe --expose-gc wald-beweis2.cjs alt 120 0,9216;300,9 · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/dirigent-kern.js) — zuletzt an eef726c7: Last: Referenz f 1,202 (Faden 1,202 · alle Kerne 1,165; vor 93,3/226,3 ms, nach 103,4/256,2 ms, Ruhe 88,6/219,9 ms seit 2026-11-26) · fremd: bash.exe sk/wacht5.sh 6,1 CPU-s · Claude.exe --type=gpu-pro",
+   "beleg": "Maschine: Gehen 64 Bilder · max 75.47 ms · 73.44 % > 33 ms · Fahrt 50 Bilder · max 133.89 ms · 94.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 73.44 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 133.89), 94.00 % > 33 ms an 52937c92 radeon · gehalten: Gehen 78 Bilder · max 83.36 ms · 21.79 % > 33 ms · Fahrt 35 Bilder · max 183.33 ms · 91.43 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 21.79 % > 33 ms | Fahrt: 7 Bild(er) > 100 ms (max 183.33), 91.43 % > 33 ms an eef726c7 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 52937c92: Last: Referenz f 1,457 (Faden 1,457 · alle Kerne 1,364; vor 121,7/353,5 ms, nach 104/327,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node.exe scripts/diag-wetter-wache.cjs --selftest 15,1 CPU-s · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/dirigent-kern.js) — zuletzt an eef726c7: Last: Referenz f 1,202 (Faden 1,202 · alle Kerne 1,165; vor 93,3/226,3 ms, nach 103,4/256,2 ms, Ruhe 88,6/219,9 ms seit 2026-11-26) · fremd: bash.exe sk/wacht5.sh 6,1 CPU-s · Claude.exe --type=gpu-pro",
    "stationen": [
     {
      "id": "profiband.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Gehen 58 Bilder · max 92.38 ms · 81.03 % > 33 ms · Fahrt 43 Bilder · max 150.54 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 81.03 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 150.54), 100.00 % > 33 ms",
-     "sha": "eef726c747050e60042a4a0c9f65fea3ff3e9077",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/dirigent-kern.js) — zuletzt an 031f4700: Last: Referenz f 1,413 (Faden 1,413 · alle Kerne 1,208; vor 118/314,1 ms, nach 110,1/267,9 ms, Ruhe 83,5/260,1 ms seit 2026-11-16) · fremd: git stash create 17,2 CPU-s · bash.exe werkzeug/gpu-lauf.sh ",
-     "gehalten": true,
+     "zahl": "Gehen 64 Bilder · max 75.47 ms · 73.44 % > 33 ms · Fahrt 50 Bilder · max 133.89 ms · 94.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 73.44 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 133.89), 94.00 % > 33 ms",
+     "sha": "52937c92786457ffbc7e62e6c4e99949df3c135e",
+     "grund": "GRÜN trotz Last: Referenz f 1,457 (Faden 1,457 · alle Kerne 1,364; vor 121,7/353,5 ms, nach 104/327,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node.exe scripts/diag-wetter-wache.cjs --selftest 15,1 CPU-s · bash.exe -c source /c/Users/micha/.claude/shell-sna… $f ] && echo $f; done; ls -d worktree 9,8 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 7,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 33,7 CPU-s · svchost.exe 14,9 CPU-s · SearchIndexer.exe 2,1 CPU-s",
      "r6": "konsum"
     },
     {
@@ -3048,7 +3047,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an eef726c7: Last: Referenz f 1,381 (Faden 1,381 · alle Kerne 1,148; vor 107,1/297,5 ms, nach 115,3/289,6 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node.exe --expose-gc wald-beweis2.cjs alt 120 0,9216;300,9",
+     "grund": "Station seit der Messung geändert — zuletzt an 52937c92: Last: Referenz f 1,457 (Faden 1,457 · alle Kerne 1,364; vor 121,7/353,5 ms, nach 104/327,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node.exe scripts/diag-wetter-wache.cjs --selftest 15,1 CPU-s",
      "ungemessen": true
     },
     {
@@ -16370,7 +16369,7 @@
   },
   "karte2.mensch.fahrzeug.medium": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 11,10 ms (Soll ≤ 33), größtes 144,40 ms, 2839 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 15,70 ms (Soll ≤ 33), größtes 363,20 ms, 3115 Bilder · Exit 0 · [linse-gpu] nvidia/pascal an e4e3f363 gtx — offen: karte2.mensch.fahrzeug.medium#2 radeon: ROT: S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 1794 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] amd/rdna-3 an eef726c7 · karte2.mensch.fahrzeug.medium#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/stamm.cjs, scripts/werkbank.cjs +4) · karte2.mensch.fahrzeug.medium#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#6 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#7 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#7 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#8 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 11,10 ms (Soll ≤ 33), größtes 144,40 ms, 2839 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 15,70 ms (Soll ≤ 33), größtes 363,20 ms, 3115 Bilder · Exit 0 · [linse-gpu] nvidia/pascal an e4e3f363 gtx — offen: karte2.mensch.fahrzeug.medium#2 radeon: ROT: S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 1794 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] amd/rdna-3 an eef726c7 · karte2.mensch.fahrzeug.medium#2 gtx: ROT: S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 3374 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] nvidia/pascal an 52937c92 · karte2.mensch.fahrzeug.medium#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#6 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#7 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#7 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#8 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.medium#1",
@@ -16405,10 +16404,9 @@
      "id": "karte2.mensch.fahrzeug.medium#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/stamm.cjs, scripts/werkbank.cjs +4)",
-     "ungemessen": true,
+     "zahl": "S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 3374 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] nvidia/pascal",
+     "sha": "52937c92786457ffbc7e62e6c4e99949df3c135e",
+     "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 3374 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] nvidia/pascal",
      "r6": "konsum"
     },
     {
@@ -16796,7 +16794,7 @@
   },
   "karte2.mensch.geist.gespraech": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.gespraech#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +26) · karte2.mensch.geist.gespraech#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +26) · karte2.mensch.geist.gespraech#3 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#4 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#5 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#6 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#7 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.gespraech#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +26) · karte2.mensch.geist.gespraech#2 gtx: ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal an 52937c92 · karte2.mensch.geist.gespraech#3 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#4 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#5 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#6 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#7 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.gespraech#2",
@@ -16812,10 +16810,9 @@
      "id": "karte2.mensch.geist.gespraech#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +26)",
-     "ungemessen": true,
+     "zahl": "S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal",
+     "sha": "52937c92786457ffbc7e62e6c4e99949df3c135e",
+     "grund": "ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal",
      "r6": "konsum"
     },
     {
@@ -37605,8 +37602,8 @@
   "ohne": 3384
  },
  "kopfVoll": "52937c92786457ffbc7e62e6c4e99949df3c135e",
- "zeit": "2026-11-27T11:09:16.515Z",
- "vorher": "eef726c7",
+ "zeit": "2026-11-27T11:21:31.746Z",
+ "vorher": "52937c92",
  "bilanz": {
   "gewinn": [],
   "fall": [],
