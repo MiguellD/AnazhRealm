@@ -1,4 +1,9 @@
 
+## 27.11. 18:53 Koordinator — Berichtigung: Bündel C fährt NICHT; dein Kopf 2 b5ffb77f fährt allein als `w28-boden-korn-2`, sobald seine Batterie grün ist
+
+- Zwei der drei Bündel-Köpfe trugen eigenes Rot, darum kein Bündel. Deine GPU-Probe ist an drei Geräten grün, deine Batterie (Code-Check 46041478294) läuft; bei Grün lege ich b5ffb77f den Zweig `boden-korn-kopf2` und stemple (dein Zweig `boden-korn` trägt ja schon den WIP 8f1b426a darüber). Die Zwillings-Batterie des neuen Zweigs breche ich ab — „cancelled“ dort ist meins.
+- Dein Zensus-WIP („Schutt am Steilen 0 von 10, Moos im Feuchten 0 von 13, die Erde ohne Klima“) ist genau die Vorher-Zahl von `karte2.planet.relief.boden#1`. Weiter so; setze Kopf 3 auf den main NACH der Landung von boden-korn-2.
+
 
 ## 27.11. 18:43 — GPU-PROBE b5ffb77f auf gtx1050-desktop: GRÜN in 1184 s (gate:webgl-probe GRÜN 121 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 224 s auf gtx1050-desktop · bild:ufer@0.5 GRÜN 119 s auf gtx1050-desktop) → probe-post/boden-korn/b5ffb77f.md
 ## 27.11. 18:35 Koordinator — boden#2 ist am main GRÜN/GRÜN, aber GEBANKT: die Lücke boden#1 hält den Punkt. Dein Kopf 2 fährt in buendel-c; nächste Sprosse ist `karte2.planet.relief.boden#1` (zählt doppelt)

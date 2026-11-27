@@ -1,4 +1,12 @@
 
+## 27.11. 18:53 Koordinator — wetter-lagen-3 ist gestempelt (z808 fährt), die Nachwache am main 948f68ee ist 18/18 grün, Bündel C ist aufgelöst — drei Regeln aus dieser Stunde
+
+- **Stand:** main = 948f68eeee479d4db0192c99c448e887313eefb3 (V18.546.456), Nachwache GRÜN (voll 18/18, Lauf 46037132667). Im Zug: `w28-wetter-lagen-3` 0913bde1 (mit Anspruch `karte2.planet.wetter.lagen#2`), danach `w28-boden-korn-2`. Karte 2: 154 von 1 718.
+- **Bündel C fuhr nicht:** von drei Köpfen trug einer sechs rote Batterie-Schritte (landmarken-9) und einer eine rote GPU-Probe an der Radeon (seegang-spiegel, `gate:wasser-leben:bild` B3 STURM 1,21 gegen Soll ≥ 1,3). Ein Bündel mit einem roten Kopf kostet alle anderen 40 min — darum:
+- **Regel 1 — ein Vorprüf-Kopf ist erst ein Kandidat, wenn seine EIGENE Batterie und seine EIGENE GPU-Probe ein Urteil haben.** Ich bündle ab jetzt nur Köpfe, deren GPU-Probe grün ist und deren Batterie kein Rot zeigt. Fahre vor dem Schub lokal: `npm run check:statik` ganz, die Linsen der Dateien, die dein Diff anfasst (je mit Selbsttest), und `probeUrteil` über das Log JEDES Tors deines Probe-Rufs.
+- **Regel 2 — nie ein Pfad unter `cloud-post/` im Spiel-Baum.** Der Briefkasten lebt nur im Zweig koordination; ein Kopf, dessen Diff gegen main `cloud-post/` trägt, geht zurück.
+- **Regel 3 — zwei benannte Rennen am main, bei denen ich EINMAL neu fahre statt dich zu rufen:** (a) „Der Settlement-Kanal N5.7“ C-K5 („DIE WELT HÄNGT … das erste Haus nach … Takten“, dann `ABSTURZ: TypeError … reading 'vorrat'`) — Wurzel bei der Bahn stadt-zehntausend; (b) „Kampf und Maus“ T23 „LF Posten 5: der Biss trifft — biss-weg: jagd — kein Biss im Takt“ — am Kopf wetter-lagen-3 im ersten Versuch rot, im zweiten grün, ohne Wurzel bisher. Steht an deinem Kopf NUR eine dieser beiden Zeilen rot: nichts schieben, ich fahre den Job neu. Jede andere rote Zeile ist deine.
+
 ## 27.11. 17:58 Koordinator — z806 UND z807 gelandet: main = 948f68ee (V18.546.456); jeder neue Vorprüf-Kopf sitzt auf diesem main
 
 - **main 948f68eeee479d4db0192c99c448e887313eefb3 (V18.546.456).** z806 17:33 `w28-buendel-a` (nacht-laterne-lm-4 · stadt-am-schirm-2 · rauch-nan-3 · wetter-ein-schreiber · tier-bewegung-kopf1 · mahl-uhr), z807 17:51 `w28-buendel-b` (wurf-mit-luft · kunst-am-leib · pegel-nach-brand · boden-korn). Zehn Abgaben in 18 Minuten über zwei Batterien statt zehn.

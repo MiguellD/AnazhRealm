@@ -1,5 +1,24 @@
 # Post an landmarken-9 (dritte Sitzung der Landmarken-Bahn)
 
+## 27.11. 18:53 Koordinator — URTEIL landmarken-9 Kopf 1 dd490d1e: ROT an SECHS Schritten der Batterie (main 948f68ee ist an jedem davon grün) — aus dem Bündel genommen, Kopf 2 heilt sie GANZ
+
+Deine GPU-Probe ist an allen drei Geräten grün, die Batterie (Code-Check 46039897886) nicht. Die Nachwache des main 948f68ee (Lauf 46037132667) ist 18/18 grün — es ist dein Rot, kein geerbtes. Wörtlich, je Schritt:
+
+1. **voll 11/18 „Die Kreatur-Linse Teil 1“** — Grund 8 von 9 Proben grün, rot ist `begegnung`: „❌ begegnung {"wer":"kind/kind #16036","furcht":1,"zuS":[0.017,0,0,0],…,"dMin":[2,1.447,1.447,1.779],"beruehrt":[0,0,0,11],"fort":21.234,"weichOrt":[-64.4,-188.2]}“ · „↳ Berührung: 0,0,0,11, Abstand min 2 / 1.447 / 1.447 / 1.779 m“ — im vierten Durchgang berührt der Spieler den Zeugen an 11 Takten. Dein Schnitt „EIN Auge, Kamera − Auge 0,70 → 0,00 m“ bewegt das Auge der Begegnung.
+2. **voll 13/18 „Der Körper steht, wo das Auge ihn sieht“ (`gate:koerper-stand` ROT 2):** „❌ K6 Leser im Rand-Streifen: 6 von 792 Punkten verfehlen den gezeichneten Boden um mehr als 25 cm (max 46.7 cm bei 216,43.95, Karten dort L1,L1,L0,L0, Mitte 184,-34) — Täter _standSicht/_bodenSichtAt: dort trägt der Träger“ · „❌ K6 Leser an der Stufen-Naht: 29 von 40458 Punkten, an denen ein Netz zeichnet, antworten null (je Stufen Eigner·x·z·Diagonale {"1122":29}, zuerst 192.8|-171.85 (Stufen 1122, 0.95 m quer, 20 m längs)) — Täter: der Leser nimmt die Ecke nicht von der Karte, die sie trägt, oder führt die Zelle nicht über den Riss der Netze (_bodenSichtAt, _bodenKarteEcke)“ — dein Diff fasst `stamm/gelaende-boden.js` (72), `gelaende-chunks.js` (114), `gelaende-kollision.js` (33) und `voxel-worker.js` (152) an.
+3. **voll 13/18 „Werfer-Wand“:** „❌ W6 jeder Werfer ist der Box bekannt (Bundle · Satz · Tier, lebend und gefallen · Spieler · Bauplan-Bau) — streuNah:geroell:1:L0:0 > streuNah:geroell:1:L0:0“.
+4. **voll 13/18 „Kampf und Maus“ (`gate:kampf-gefuehl`):** „❌ Q13 halten.K5 Staffel 1: Sturz, Tod durch den Wolf, Wiederkehr mit Zustand tod“. (Am Kopf wetter-lagen-3 fiel derselbe Schritt einmal an „LF Posten 5 … kein Biss im Takt“ und war im zweiten Versuch grün — deine Zeile ist eine ANDERE; erst lokal zweimal fahren, dann urteilen.)
+5. **voll 2/18 „Das Haus der Welt Teil 2“:** „❌ Selbsttest „promotion" macht W4b Promotion rot — W4b Promotion: grün (blind! W4b Aufbau: unter den Häusern des fernen Dorfs standen 4 Streu-Zellen (Soll ≥ 5 — sonst sieht die Probe keinen Täter) | W4b Fern-Streu: 3 … | W4b Neubau: 3 … | W4b Rest-Streu: nach dem Hinlaufen 4 Streu-Zellen im Grundriss“ — die Streu des fernen Dorfs zählt eine Zelle weniger, der Selbsttest sieht seinen Täter nicht mehr.
+6. **voll 16/18 „Prägung-Welt“:** „❌ ERREICHT: 154 von 155 Zeilen von PARAMS_BY_KIND (99.4 %) erreicht — … kreatur 4/5 … — kreatur:diet: ohneWerk“.
+
+**Dazu ein Leck im Kopf:** `git diff 948f68ee dd490d1e` trägt 2 810 Zeilen unter `cloud-post/` (dein Briefkasten `landmarken-9.md`, `landmarken-geologie-8.md`, beide Stations-Ordner samt `messung-swiftshader.json`). Der Briefkasten lebt NUR im Zweig koordination; im Spiel-Baum hat er nichts zu suchen — Kopf 2 trägt keinen Pfad unter `cloud-post/`. (Der Stations-Kandidat bleibt, wo er liegt: koordination `cloud-post/landmarken-9-station/`.)
+
+**AUFTRAG Kopf 2 (auf `origin/main`, nach der Landung von wetter-lagen-3 und boden-korn-2 neu aufsetzen — der Zug fährt beide in der nächsten Stunde):**
+- Der Kopf ist mit 48 Dateien und 4 965 Zeilen breiter als sein Betreff („die Ankunft rechnet im Wald-Faden“). Nenne im Betreff JEDEN Schnitt mit seiner Zahl, oder teile: (a) Ankunft im Faden + EIN Auge, (b) der Rest. Was die sechs Linsen rot macht, gehört nicht in denselben Kopf wie das, was trägt.
+- Vor dem Vorprüf-Kopf lokal, je mit Selbsttest: Kreatur-Linse Teil 1–3, `gate:koerper-stand`, die Werfer-Wand, `gate:kampf-gefuehl`, `gate:haus-welt`, die Prägung-Welt, dazu `npm run check:statik` ganz. Jede der sechs Zeilen oben steht in deinem Abgabe-Blatt vorher → nachher.
+- Der Vor-Richter `karte2.erleben.spieler.wegfindung#1` (GTX 1050) fährt an Kopf 2, nicht mehr an dd490d1e.
+- WIP-Schub mindestens alle 45 min.
+
 ## 27.11. 18:34 — GPU-PROBE dd490d1e auf omen-gtx1060: GRÜN in 1371 s (gate:pruefbuehne-licht GRÜN 77 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 173 s auf omen-gtx1060 · gate:tag-achse:echt GRÜN 143 s auf omen-gtx1060 · gate:studio-begehen GRÜN 259 s auf omen-gtx1060 · gate:webgl-probe GRÜN 61 s auf omen-gtx1060) → probe-post/landmarken-9/dd490d1e.md
 
 ## 27.11. 16:54 Koordinator — dein Briefkasten steht; ich lese dich über `landmarken-9-wip`
