@@ -50,8 +50,27 @@ function wirtWache(r, gib, W) {
         }
         return m;
     };
+    // DIE DATENFELDER MIT EINFACHEM WERT (rauch-nan): macht eine Probe ein solches Feld zum Getter (die Bühne die Bild-Uhr `_bildZeit`,
+    // `uhrHalten`; der Wetter-Spion `state.weather`), wird es zurück ein Datenfeld mit dem Wert, den es bei der Rücknahme liest — das,
+    // was jeder Leser zuletzt sah (die Bild-Uhr der Bühne; das Wetter der Welt jetzt, nie das Wort beim ersten `nimm` der Seite). Bis
+    // hier fiel das Feld weg, das erste Bild danach las `_bildZeit` undefined, und die Anker-Reihe der Böe trug NaN für immer (GTX 1060
+    // am eef726c7, aufwaerts#1: Preis-Lauf 0 Bilder). Das Gedächtnis hält nur die NAMEN (Text): nichts aus dem Kontext einer Probe
+    const daten = (o) => {
+        const m = new Set();
+        for (const k of Object.getOwnPropertyNames(o)) {
+            let d = null;
+            try {
+                d = Object.getOwnPropertyDescriptor(o, k);
+            } catch (_e) {
+                continue;
+            }
+            if (d && "value" in d && (d.value === null || (typeof d.value !== "object" && typeof d.value !== "function"))) m.add(k);
+        }
+        return m;
+    };
+    const einfach = (x) => x === null || (typeof x !== "object" && typeof x !== "function");
     if (!gib) {
-        if (!W.__wirtWache || W.__wirtWache.r !== r) W.__wirtWache = { r, glieder: glieder().map(([n, o]) => [n, o, fns(o)]) };
+        if (!W.__wirtWache || W.__wirtWache.r !== r) W.__wirtWache = { r, glieder: glieder().map(([n, o]) => [n, o, fns(o), daten(o)]) };
         return { glieder: W.__wirtWache.glieder.map(([n, , m]) => [n, m.size]) };
     }
     const L = W.__wirtWache;
@@ -79,10 +98,10 @@ function wirtWache(r, gib, W) {
         }
         if (v ? !(d && gleich(d, v)) : d && (d.value !== undefined || d.get || d.set)) bleibt.push(name);
     };
-    for (const [n, o, vor] of L.glieder) {
+    for (const [n, o, vor, wert] of L.glieder) {
         const jetzt = fns(o);
         for (const [k, d] of jetzt) {
-            const v = vor.get(k);
+            let v = vor.get(k);
             if (v && gleich(v, d)) continue;
             const name = n + "." + k;
             const f = d.value || d.get || d.set;
@@ -91,7 +110,21 @@ function wirtWache(r, gib, W) {
                 continue;
             }
             anders.push(name);
-            wie[name] = (v ? "getauscht: " : "neu: ") + kurz(f);
+            if (!v && wert && wert.has(k) && d.get) {
+                // das Datenfeld, das die Probe zum Getter machte: sein Wert jetzt (ein Wurf oder ein Gegenstand bleibt beim Namen stehen)
+                let x;
+                try {
+                    x = d.get.call(o);
+                } catch (e) {
+                    x = { wurf: e };
+                }
+                if (einfach(x)) v = { value: x, writable: true, enumerable: d.enumerable, configurable: true };
+                wie[name] = "getauscht: " + kurz(f) + (v ? " → der Wert " + String(x).slice(0, 40) : " → kein einfacher Wert");
+                if (!v) {
+                    bleibt.push(name);
+                    continue;
+                }
+            } else wie[name] = (v ? "getauscht: " : "neu: ") + kurz(f);
             zurueck(o, k, v, name);
         }
         for (const [k, v] of vor)
@@ -169,15 +202,16 @@ async function wirtSelbsttest() {
         const r = new Welt();
         r.state = { tick() {} };
         r._eigen = function () {};
+        r._bildZeit = 46; // die Bild-Uhr der Welt: ein Datenfeld mit Zahl
         const W = { r, gross: null };
         return { r, W };
     };
     // die Probe läuft wie in der Werkbank: der Rumpf mit Marke zwischen nimm und gib
-    const fahre = async (probe, ohneGib) => {
+    const fahre = async (probe, ohneGib, wache = wirtWache) => {
         const { r, W } = neu();
-        wirtWache(r, false, W);
+        wache(r, false, W);
         await new Function("r", "W", "__wirtMarke", evalRumpf(probe))(r, W, wirtMarke(W, probe));
-        const ab = ohneGib ? { anders: [] } : wirtWache(r, true, W);
+        const ab = ohneGib ? { anders: [] } : wache(r, true, W);
         await require("timers/promises").setImmediate();
         gc();
         gc();
@@ -201,6 +235,22 @@ async function wirtSelbsttest() {
         tausch.ab.anders.join(", "));
     const proto = await fahre("const P = Object.getPrototypeOf(r); const t = P._gameLoopTick; P._gameLoopTick = function () { return t.call(this) + 1; }; return 1;");
     pruef("Mutante der Prototyp getauscht", proto.ab.anders.includes("r.proto._gameLoopTick") && proto.r._gameLoopTick() === 1, proto.ab.anders.join(", "));
+    // die Bühne macht die Bild-Uhr zum Getter (`uhrHalten`, aufwaerts#1 an der GTX 1060 am eef726c7): zurück heißt ein Datenfeld mit
+    // der Zahl, die es bei der Rücknahme liest (12,5 s, das letzte Bild der Probe), nie ein gelöschtes Feld (dort las das erste Bild
+    // `_bildZeit` undefined, die Anker-Reihe der Böe trug NaN für immer) — und der Kontext der Probe ist frei
+    const UHR = "const S = { T: 12.5 }; Object.defineProperty(r, '_bildZeit', { configurable: true, enumerable: true, get: () => S.T, set: () => {} }); return 1;";
+    const uhr = await fahre(UHR);
+    const du = Object.getOwnPropertyDescriptor(uhr.r, "_bildZeit");
+    pruef("Mutante die Bild-Uhr als Getter der Bühne", uhr.ab.anders.includes("r._bildZeit") && !uhr.ab.bleibt.length && du && du.value === 12.5 && du.writable && !du.get && !uhr.haelt.length,
+        (uhr.ab.wie["r._bildZeit"] || "nicht genannt") + " → r._bildZeit " + (du ? (du.get ? "Getter" : du.value) : "gelöscht") + ", " + uhr.haelt.length + " Marken leben");
+    // die Wache selbst hält die Funktion der Probe (Beweis-Lauf rauch-nan Kopf 1 an der Radeon: der Verdacht „die Wache hält sie in
+    // ihrem Gedächtnis“): ihr Gedächtnis darf nur Text tragen — eine Wache, die den Getter der Probe aufhebt, hält die Marke am Leben
+    const HALTER = "zurueck(o, k, v, name);\n        }";
+    const quelle = String(wirtWache);
+    const boese = quelle.includes(HALTER) ? new Function("return (" + quelle.replace(HALTER, "(L.halt = L.halt || []).push(d); " + HALTER) + ")")() : null;
+    const gehalten = boese ? await fahre(UHR, false, boese) : { haelt: [] };
+    pruef("Mutante die Wache hält die Funktion der Probe", !!boese && gehalten.haelt.length === 1 && !uhr.haelt.length,
+        boese ? "die Marke lebt: " + gehalten.haelt.length + " (die echte Wache: " + uhr.haelt.length + ")" : "die Rücknahme `" + HALTER.split("\n")[0] + "` fehlt in der Quelle");
     const zustand = await fahre("r.state.tick = () => 0; r.state.neu = () => 0; return 1;");
     pruef("Mutante r.state", zustand.ab.anders.includes("r.state.tick") && zustand.ab.anders.includes("r.state.neu") && !("neu" in zustand.r.state), zustand.ab.anders.join(", "));
     const fenster = await fahre("W.__halten = (q) => q; return 1;");
