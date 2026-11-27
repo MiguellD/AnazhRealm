@@ -24,6 +24,7 @@ while [ $i -lt ${#PAARE[@]} ]; do
     git cat-file blob "$B" > "meisterkarte-quelle/punkte/stationen/$D" || { echo "$N KANDIDAT-BLOB fehlt: $D $B" >> "$L"; exit 6; }
     KURZ="$KURZ $D=${B:0:8}"; i=$((i + 2))
 done
+node "$S/wz/ber-holen.cjs" "$K" "$T" >> "$L" 2>&1 || { echo "$N BERICHT-Skripte nicht geholt" >> "$L"; exit 5; }
 cd meisterkarte-quelle/punkte || exit 5
 mkdir -p "$S/vr"
 if [ "${WAND_AE:-0}" = 1 ]; then
