@@ -1,5 +1,11 @@
 # Stand-Blatt wetter-lagen (Sprossen `karte2.planet.wetter.lagen#2`, `karte2.planet.wetter.extreme#1`) — oberster Abschnitt = jüngster Stand
 
+## 27.11. — Abgabe Kopf 2: `wetter-lagen-kopf2` a9385c1 auf main bed6256c
+
+- EIN glatter Commit (Kopf 1 + Heilung + Kopf 2) auf dem `origin/main` des Moments bed6256c, Zweig `wetter-lagen-kopf2` (kein force); `wetter-lagen` trägt denselben Baum (Merge ed2a1d0, byte-Diff zum Kopf leer).
+- Am Kopf lokal (Null-Renderer): check:statik · gate:wetter-wache · gate:stand-takt (Selbsttest · Lauf · Narbe) · format:check — je Exit 0.
+- Ruf: `[gpu-probe: gate:wetter-wache, gate:tag-achse:echt, gate:stand-takt, bild:wiese@0.5]`. Die Station selbst läuft am Vor-Richter.
+
 ## 27.11. — Heilung am Stand-Takt: der gesetzte Wind setzt seine Richtung (Kopf 1 + Heilung + Kopf 2)
 
 - Gemessen zuerst (`windRichtung` der Heimat-Saat an den Uhren der Herde, main ↔ Kopf): 41 150 → 1,0° ↔ 38,7° zum Gitter (der Lauf meldete 38,8°), 40 766 → 23,4° ↔ 24,7°, 40 713 → 44,2° ↔ 41,6°. Die Deutung stimmt: die Richtung zur Uhr trägt seit lagen#2 die Drehung der Lage, der Herd „grob“ steht nicht mehr längs der Achse.
