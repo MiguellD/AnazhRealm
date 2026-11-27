@@ -1600,3 +1600,4 @@
 2026-11-27T18:11 karte=219 (gebucht am 948f68ee, buche.sh) karte2=154
 2026-11-27T18:18 karte=219 (gebucht am 948f68ee, buche.sh) karte2=154
 2026-11-27T18:30 karte=219 (gebucht am 948f68ee, buche.sh) karte2=154
+2026-11-27T18:52 karte=219 (gebucht am 948f68ee, buche.sh) karte2=154
