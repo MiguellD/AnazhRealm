@@ -3779,7 +3779,7 @@ function bodenFarbe(x, y, z, out, fussM) {
     // DAS KORN DER SOHLE (Mirror von \`_bodenFarbeAt\`, bit-identisch): wo der Fluss den Grund trägt, ist das Sediment sein Korn
     // (gelaende-core \`korn\` → \`sedimentFarbe\`) — EINE Frage des Felds je Vertex, nur am Fluss; mit fussM tragen die Bänder des
     // Abdrucks den Fluss (\`flussAbdruck\`)
-    let flussSchlick = aboveFluss !== null ? uf.ufer * ss(-0.5, -4, aboveFluss) : 0;
+    let flussSchlick = aboveFluss !== null ? uf.ufer * G.flussSohle(aboveFluss) : 0;
     const seeSchlick = schlick;
     let kornFarbe = null;
     const kornAm = () => kornFarbe || (kornFarbe = G.sedimentFarbe(P, G.korn(state, x, z), [0, 0, 0]));
@@ -3788,9 +3788,14 @@ function bodenFarbe(x, y, z, out, fussM) {
     let flussStrand = false;
     if (ab)
         for (let i = 0; i < ab.n; i++) {
-            flussSchlick = Math.max(flussSchlick, ab.mu[i] * ss(-0.5, -4, y - ab.sp[i]));
-            if (ab.mu[i] > 0 && imStrand(y - ab.sp[i])) flussStrand = true;
+            flussSchlick = Math.max(flussSchlick, ab.mu[i] * G.flussSohle(y - ab.sp[i]));
+            if (ab.bank[i] > 0 && imStrand(y - ab.sp[i])) flussStrand = true;
         }
+    // DIE BANK DES KANALS (Mirror von \`_bodenFarbeAt\`, gelaende-core \`flussBank\`): das Ufer-Band trägt bis an den Saum der
+    // Bank, die der Kanal schneidet; mit fussM ihr Mittel über die Fläche (\`flussAbdruck\`, je Segment)
+    const bank = ab ? null : G.flussBank(state, x, z);
+    const aboveBank = bank !== null ? y - bank.spiegel : null;
+    if (imStrand(aboveBank)) flussStrand = true;
     if (flussSchlick > schlick) schlick = flussSchlick;
     // Das Watt (die Gezeit, gelaende-core wattSchlick): wo das Meer den Grund mehr als ein Achtel der Zeit deckt, liegt Schlick
     if (uf.watt) schlick = Math.max(schlick, G.wattSchlick(aboveWater));
@@ -3805,7 +3810,8 @@ function bodenFarbe(x, y, z, out, fussM) {
             let shoreBlend = glocke(aboveWater);
             const seeBlend = shoreBlend;
             let flussBlend = aboveFluss !== null ? uf.ufer * glocke(aboveFluss) : 0;
-            if (ab) for (let i = 0; i < ab.n; i++) flussBlend = Math.max(flussBlend, ab.mu[i] * glocke(y - ab.sp[i]));
+            if (bank !== null) flussBlend = Math.max(flussBlend, bank.w * glocke(aboveBank));
+            if (ab) for (let i = 0; i < ab.n; i++) flussBlend = Math.max(flussBlend, ab.bank[i] * glocke(y - ab.sp[i]));
             if (flussBlend > shoreBlend) shoreBlend = flussBlend;
             mix(amFluss(flussBlend, seeBlend, P.sand), shoreBlend * intensity);
         }
@@ -4526,8 +4532,9 @@ function stammPfadUfer(s, inner, bank, hw, kappa) {
 }
 
 // DIE FLÜSSE UNTER EINEM ABDRUCK (K16): je Segment in Reichweite (die Buckets bis F/2 weiter) Abstand, Halbbreite, Weite der
-// Bank bis zur Krone, Spiegel und das Mittel der Kronen-Blende über den Abdruck — die Leser (Feuchte, Pfad, Schlick, Strand)
-// falten ihre Bänder genauso und nehmen das Maximum der Segmente. Der Abdruck wächst ohne Kappe.
+// Bank bis zur Krone, Spiegel, das Mittel der Kronen-Blende und das der Bank des Kanals (`flussBank`) über den Abdruck — die
+// Leser (Feuchte, Pfad, Schlick, Strand) falten ihre Bänder genauso und nehmen das Maximum der Segmente. Der Abdruck wächst
+// ohne Kappe.
 const flussAbdruckMemo = {
     x: NaN,
     z: NaN,
@@ -4541,6 +4548,7 @@ const flussAbdruckMemo = {
     kappa: new Float64Array(32),
     sp: new Float64Array(32),
     mu: new Float64Array(32),
+    bank: new Float64Array(32),
 };
 function flussAbdruck(x, z, F) {
     const A = flussAbdruckMemo;
@@ -4556,6 +4564,7 @@ function flussAbdruck(x, z, F) {
     if (!bereit) return A;
     const kanal = h.kanal;
     const reich = FEUCHTE_FLUSS_REICHWEITE;
+    const weite = state.hydroGesetz.dammBreite + state.hydroGesetz.bankWeite;
     const bs = h.bucketSize;
     const bd = h.bucketsDim;
     const bi0 = Math.floor((x - h.originX) / bs);
@@ -4587,7 +4596,7 @@ function flussAbdruck(x, z, F) {
                 const dist = Math.hypot(x - (ax + ex * t), z - (az + ez * t));
                 const hw = hwA + (hwB - hwA) * t;
                 const kappa = Math.max(1e-3, (dA + (dB - dA) * t) / state.hydroGesetz.bankNeigung);
-                if (dist - F / 2 >= Math.max(Math.max(1, hw) + reich, hw + kappa)) continue;
+                if (dist - F / 2 >= Math.max(Math.max(1, hw) + reich, hw + kappa + weite)) continue;
                 let schon = false;
                 for (let k = 0; k < A.n; k++)
                     if (A.seg[k] === kanal.idx[q]) {
@@ -4596,7 +4605,7 @@ function flussAbdruck(x, z, F) {
                     }
                 if (schon) continue;
                 if (A.n === A.dist.length)
-                    for (const key of ["dist", "hw", "kappa", "sp", "mu"]) {
+                    for (const key of ["dist", "hw", "kappa", "sp", "mu", "bank"]) {
                         const neu = new Float64Array(A[key].length * 2);
                         neu.set(A[key]);
                         A[key] = neu;
@@ -4608,6 +4617,8 @@ function flussAbdruck(x, z, F) {
                 A.kappa[n] = kappa;
                 A.sp[n] = sA + (sB - sA) * t;
                 A.mu[n] = kastenMittel(stammUfer, dist, F, hw, kappa);
+                // die Bank des Kanals (gelaende-core \`flussBank\`): 1 bis zur Krone, smoothstep auf 0 über dammBreite + bankWeite
+                A.bank[n] = kastenMittel(stammUfer, dist, F, hw + kappa, weite);
             }
         }
     }
