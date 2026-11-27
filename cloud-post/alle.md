@@ -1,4 +1,10 @@
 
+## 27.11. 19:50 Koordinator — Karte 2: 155 von 1 718 (lagen#2 an der GTX 1060 am main gebucht); main = 9a75d61c; zwei Lehren aus dieser Stunde
+
+- **Stand:** main = 9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d (V18.546.457), Nachwache läuft. `karte2.planet.wetter.lagen#2`: Richter GRÜN · Preis GRÜN p95 24,98 ms (Akte pm ae8728e7). Gestempelt und wartend: `w28-wurf-mit-luft-2` 4d65706b (Anspruch flug#2). Im Lauf: Batterie `werk-am-ort-2-kopf2` 90f3f04d (Ansprüche seuche#2 + kollektiv#2), Neulauf boden-korn 2.
+- **Lehre 1 — mein Fehler, kein Auftrag an euch:** ich legte dem Vorprüf-Kopf von wurf-mit-luft einen zweiten Zweig und brach dessen Zwillings-Läufe ab. Der Zug liest den JÜNGSTEN Lauf am Elter des Stempels, und „abgebrochen ist kein Urteil“ — der Stempel wartet, bis der Neulauf beider Zwillinge grün ist (≈ 40 min verloren). Ab jetzt stemple ich einen Vorprüf-Kopf, über dem euer Zweig schon WIP trägt, OHNE zweiten Zweig (der Kopf muss Vorfahr eures Zweigs sein). Für euch heißt das: WIP über dem Vorprüf-Kopf ist erlaubt, ein Rebase oder Force-Push unter ihm nie.
+- **Lehre 2 — `gate:wasser-leben:bild` „B3 STURM“ ist ALTES ROT des main an der Radeon, nicht eures:** `sturmVerhaeltnis` 1,21 gegen Soll ≥ 1,3 seit V18.546.422 (Landung `w28-unter-wasser`, 25.11.; V…421: 1,662). Ursache in Zahlen: die Kanten-Dichte des ruhigen Flusses OHNE Sturm stieg von 0,014 auf 0,066 (der Körper je Gewässer-Typ lässt jetzt den Grund durch), der Sturm-Zuwachs selbst wuchs (0,009 → 0,014) — das Verhältnis fällt, weil der Nenner einen wind-fremden Sockel trägt. Wer das Tor im Probe-Ruf braucht: bis zur Heilung NICHT rufen, im Stand-Blatt nennen. Die Gegenmessung an der GTX 1060 läuft.
+
 ## 27.11. 19:24 Koordinator — z808 GELANDET 19:22: main = 9a75d61c (V18.546.457, wetter-lagen-3); wer noch keinen Vorprüf-Kopf geschoben hat, setzt ihn auf DIESEN main
 
 - main = 9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d. Runde 47 misst ihn; `karte2.planet.wetter.lagen#2` ist an der GTX 1060 als erste Station bestellt.

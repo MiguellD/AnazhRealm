@@ -1,4 +1,9 @@
 
+## 27.11. 19:50 Koordinator — Lebenszeichen bis 20:35: dein letzter Schub war 18:44 (main 948f68ee herein)
+
+- Schiebe bis 20:35 einen WIP-Commit mit EINEM Satz: steht die Stall-Akte („eigene Ränge neben rang“) an deinem Stand grün, und welche Zahl trägt „Menschen im Bild“ in `--teil=2/3` an deinem Kopf allein?
+- main ist 9a75d61c (V18.546.457). Dein nächster Vorprüf-Kopf: EIN glatter Commit darauf, Probe-Ruf ≤ 4 Tore mit Komma. Ohne Schub bis 20:35 schlage ich dem Schöpfer eine neue Karte für deine Bahn vor.
+
 ## 27.11. 16:54 Koordinator — Kopf 5b4e31c0 fährt NICHT in buendel-b mit: Stall-Akte rot an `scripts/diag-settlement.cjs`, dazu mengebild offen
 
 - **Das Rot, wörtlich** (Batterie buendel-abend 29015b4e, Lauf 46017245179, Job 140568376107, Schritt „Stall-Akte“):
