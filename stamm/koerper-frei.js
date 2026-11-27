@@ -9,21 +9,23 @@ class AnazhRealm_koerper_frei {
     // eine Ebene der vier Räder ohne Drall, der Leib-Löser (`_leibKontakte`) löst Strecken in der Ebene. Vorher gab es in der
     // Welt keinen freien Körper: was fiel, fiel als ½ g t² ohne Boden-Kontakt, was kippte, kippte als Pendel um eine Kante
     // (`_werkSturzSchritt`), nichts stapelte, nichts warf ein Wagen um.
-    // Die Gestalt: der Zylinder ist rund (size.x = ⌀, seine Achse die Hoch-Achse des Teils), jede andere Form trägt die Kiste
-    // ihrer Größe (die Trümmer eines Werks: Kugel, Keil, Kegel stoßen als ihre Hülle). Die Lage trägt der Eintrag: `drehung`
-    // (die Quaternion [w, x, y, z] des Stands oder des Bruchs, `_werkBricht`), sonst die Gier; `ruht` (der Stand) legt ihn
-    // schlafend hin, wie er lag.
+    // Die Gestalt: der Zylinder hat den Kreis als Querschnitt (size.x = ⌀, seine Achse die Hoch-Achse des Teils), die Kugel ihn in jeder Richtung
+    // (size.x = ⌀, `_makePartGeometry`; same.physik.flug#2: der Ball), jede andere Form trägt die Kiste ihrer Größe (die
+    // Trümmer eines Werks: Keil, Kegel stoßen als ihre Hülle). Die Lage trägt der Eintrag: `drehung` (die Quaternion
+    // [w, x, y, z] des Stands oder des Bruchs, `_werkBricht`), sonst die Gier; `ruht` (der Stand) legt ihn schlafend hin, wie
+    // er lag. `druck` (Pa über der Luft, der aufgepumpte Ball): er trägt mit seinem Innendruck (`_freiPrallZahl`).
     _freiKoerperSetzen(entry, bp) {
         const teil = bp && bp.frei === true && Array.isArray(bp.parts) && bp.parts.length === 1 ? bp.parts[0] : null;
         if (!teil) return null;
-        const kiste = teil.shape !== "cylinder";
+        const ball = teil.shape === "sphere";
+        const kiste = !ball && teil.shape !== "cylinder";
         const F = AnazhRealm.FREI;
         const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
         const sz = teil.size || {};
         const tp0 = teil.position || {};
         const hx = ((sz.x || 1) / 2) * s;
-        const hy = ((sz.y || sz.x || 1) / 2) * s;
-        const hz = ((sz.z || sz.x || 1) / 2) * s;
+        const hy = ball ? hx : ((sz.y || sz.x || 1) / 2) * s;
+        const hz = ball ? hx : ((sz.z || sz.x || 1) / 2) * s;
         const r = hx; // der Zylinder: size.x = ⌀ (`_makePartGeometry`), seine Achse die Hoch-Achse des Teils
         if (tp0.x || tp0.z) return null; // der Schwerpunkt über dem Ursprung des Plans
         // MASSE UND TRÄGHEIT der Gestalt (um den Schwerpunkt, Hauptachsen = Achsen des Teils): der volle Körper minus seinen
@@ -32,11 +34,15 @@ class AnazhRealm_koerper_frei {
         const w = Number.isFinite(teil.wand) && teil.wand > 0 ? teil.wand * s : 0;
         const koerper = (ax, ay, az) => {
             if (!(ax > 0 && ay > 0 && az > 0)) return [0, 0, 0, 0];
-            const mk = (kiste ? 8 * ax * ay * az : 2 * Math.PI * ax * ax * ay) * rho;
+            const mk =
+                (kiste ? 8 * ax * ay * az : ball ? (4 / 3) * Math.PI * ax * ax * ax : 2 * Math.PI * ax * ax * ay) * rho;
             const quer = (mk * (3 * ax * ax + 4 * ay * ay)) / 12;
+            const kugel = 0.4 * mk * ax * ax;
             return kiste
                 ? [mk, (mk * (ay * ay + az * az)) / 3, (mk * (ax * ax + az * az)) / 3, (mk * (ax * ax + ay * ay)) / 3]
-                : [mk, quer, (mk * ax * ax) / 2, quer];
+                : ball
+                  ? [mk, kugel, kugel, kugel]
+                  : [mk, quer, (mk * ax * ax) / 2, quer];
         };
         const voll = koerper(hx, hy, hz);
         const hohl = w ? koerper(hx - w, hy - w, hz - w) : [0, 0, 0, 0];
@@ -44,9 +50,18 @@ class AnazhRealm_koerper_frei {
         if (!(m > 0)) return null;
         // DIE PUNKTE DER GESTALT (im Rahmen des Schwerpunkts): die Kiste ihre 8 Ecken und 12 Kanten-Mitten, das Fass je Rand
         // FREI.rundPunkte Punkte — sie berühren Boden, Bau und den anderen Körper; dazu je Rand sein FUSS (die letzten zwei: der
-        // tiefste Punkt des Kreises gegen den Grund, `_freiRandFuss` je Schritt) — der Rand rollt als Kreis, nie als Vieleck
+        // tiefste Punkt des Kreises gegen den Grund, `_freiRandFuss` je Schritt) — der Rand rollt als Kreis, nie als Vieleck. Die
+        // Kugel: die 26 Richtungen der Kisten-Punkte auf ihrer Fläche (Bau und Körper) und ihr FUSS (der letzte: die Mitte
+        // minus r längs der Normalen des Grunds, `_freiUmwelt` je Schritt) — sie rollt als Kugel
         const pk = kiste ? this._freiKistenPunkte(hx, hy, hz) : [];
-        if (!kiste) {
+        if (ball) {
+            for (let i = 0; i < 27; i++) {
+                const d = [(i % 3) - 1, (((i / 3) | 0) % 3) - 1, ((i / 9) | 0) - 1];
+                const l = Math.hypot(...d);
+                if (l > 0) pk.push((r * d[0]) / l, (r * d[1]) / l, (r * d[2]) / l);
+            }
+            pk.push(0, -r, 0);
+        } else if (!kiste) {
             for (let i = 0; i < F.rundPunkte; i++) {
                 const a = (2 * Math.PI * i) / F.rundPunkte;
                 pk.push(r * Math.cos(a), hy, r * Math.sin(a), r * Math.cos(a), -hy, r * Math.sin(a));
@@ -66,12 +81,14 @@ class AnazhRealm_koerper_frei {
             e: entry,
             id: (this._freiZaehler = (this._freiZaehler || 0) + 1),
             kiste,
+            ball,
             hx,
             hy,
             hz,
             halb: [hx, hy, hz],
             r,
             s,
+            druck: Number.isFinite(teil.druck) && teil.druck > 0 ? teil.druck : 0,
             stoff: teil.material,
             m,
             invM: 1 / m,
@@ -80,7 +97,7 @@ class AnazhRealm_koerper_frei {
             pw: new Float64Array(pk.length),
             kasten: new Float64Array(6),
             ebene: new Float64Array((pk.length / 3) * 4), // je Punkt die Ebene des Bodens dieses Schritts (y, n)
-            rad: kiste ? Math.hypot(hx, hy, hz) : Math.hypot(r, hy),
+            rad: kiste ? Math.hypot(hx, hy, hz) : ball ? r : Math.hypot(r, hy),
             // die Vektoren des Körpers sind Float64Array (EINE Form je Feld: der Gang liest sie je Kontakt)
             p: Float64Array.of(entry.position.x, entry.position.y - 0.5 + um.y * s, entry.position.z),
             p0: new Float64Array(3),
@@ -194,6 +211,14 @@ class AnazhRealm_koerper_frei {
         const dx = x - K.p[0];
         const dy = y - K.p[1];
         const dz = z - K.p[2];
+        if (K.ball) {
+            // die Kugel: die Tiefe unter ihrer Fläche, die Normale aus ihrer Mitte
+            const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            out.tiefe = K.r - d;
+            if (!(out.tiefe > -rand)) return false;
+            [out.nx, out.ny, out.nz] = d > 1e-9 ? [dx / d, dy / d, dz / d] : [0, 1, 0];
+            return true;
+        }
         const lx = R[0] * dx + R[3] * dy + R[6] * dz;
         const ly = R[1] * dx + R[4] * dy + R[7] * dz;
         const lz = R[2] * dx + R[5] * dy + R[8] * dz;
@@ -256,7 +281,14 @@ class AnazhRealm_koerper_frei {
         const n0 = -gr.b / gr.l;
         const n1 = 1 / gr.l;
         const n2 = -gr.c / gr.l;
-        if (!K.kiste) this._freiRandFuss(K, n0, n1, n2, dt);
+        if (K.ball) {
+            // der Fuss der Kugel: die Mitte minus r längs der Normalen des Grunds (im Rahmen Rᵀ · (−r n))
+            const [R, i, r] = [K.R, pw.length - 3, K.r];
+            K.pk[i] = -r * (R[0] * n0 + R[3] * n1 + R[6] * n2);
+            K.pk[i + 1] = -r * (R[1] * n0 + R[4] * n1 + R[7] * n2);
+            K.pk[i + 2] = -r * (R[2] * n0 + R[5] * n1 + R[8] * n2);
+            [pw[i], pw[i + 1], pw[i + 2]] = [p[0] - r * n0, p[1] - r * n1, p[2] - r * n2];
+        } else if (!K.kiste) this._freiRandFuss(K, n0, n1, n2, dt);
         for (let i = 0, j = 0; i < pw.length; i += 3, j += 4) {
             const g = gr.a + gr.b * (pw[i] - gr.x) + gr.c * (pw[i + 2] - gr.z);
             if ((pw[i + 1] - g) * n1 > weg) {
@@ -362,7 +394,16 @@ class AnazhRealm_koerper_frei {
             : null;
         const z = this._stoff(K.stoff, "der freie Körper aus „" + K.stoff + "“ reibt nicht");
         K.mu = z && z.mu > 0 ? z.mu : 0;
+        K.zeile = z;
+        const prall = this._freiPrallZahl(
+            K,
+            null,
+            st,
+            this._freiStossJetzt || (this._freiStossJetzt = new Float64Array(2))
+        );
         return (K.grund = {
+            e: prall[0],
+            vy: prall[1],
             x: p[0],
             y: p[1],
             z: p[2],
@@ -386,6 +427,41 @@ class AnazhRealm_koerper_frei {
         if (!a || !b) return 0;
         const w = a.E <= b.E ? a : b;
         return w.eta > 0 ? w.eta : 0;
+    }
+
+    // DIE STOSSZAHL ZWEIER STOFFE (same.physik.flug#2) — e = e_η · e_σ, nach `aus` [e_η, V_Y] (der Prall des Kontakts liest
+    // beide gegen sein Tempo, `_freiGang`):
+    // e_η = e^(−π η / 2), η der Verlustfaktor des WEICHEREN Partners (derselbe, der im Rollen walkt, `_rollWiderstand`): die
+    //   viskoelastische Feder verliert je halber Schwingung den Anteil π η ihrer Arbeit (e² = 1 − π η ≈ e^(−π η)).
+    // e_σ = min(1, 1,185 · (V_Y / V)^¼) über der Fließ-Geschwindigkeit V_Y (Thornton, J. Appl. Mech. 64, 383, 1997): dort fließt
+    //   der weichere — die Hertz-Pressung p₀ = 2 E* a / (π R) erreicht FREI.prall.fliessDruck · σ_Y, ½ m V_Y² = (8/15) E* √R δ_Y^(5/2)
+    //   (Johnson, Contact Mechanics 1985, §11.4): V_Y = √(k σ_Y⁵ R³ / (E*⁴ m)), k = (16/15) (0,64 π²)^(5/2) = 107; m und R die
+    //   reduzierten beider (der Grund, die Box eines Baus: unendlich; R der Roll-Radius), E* aus beiden E und dem ν der Tafel
+    //   (STOFF_GESETZ.DRUCK.nu). Der aufgepumpte Ball (`druck`) trägt mit seinem Innendruck: liegt er unter der Fließ-Pressung
+    //   des weicheren, fließt nichts, er prallt nach e_η allein.
+    // Vorher prallte jedes Paar mit EINER Zahl (STOSS.stossZahl.starr 0,2): der Ball sprang aus 2 m auf Gras 0,059 m, auf Stein
+    // 0,354 m (FIFA: 0,60–0,85 / 1,35–1,55 m). Ohne Zeile eines Partners prallt er nicht (e 0; der Melder `_stoff` nennt ihn).
+    _freiPrallZahl(A, B, zb, aus) {
+        const za = A.zeile || (A.zeile = this._stoff(A.stoff, "der freie Körper aus „" + A.stoff + "“ prallt nicht"));
+        if (!za || !zb || !(za.E > 0) || !(zb.E > 0)) {
+            [aus[0], aus[1]] = [0, Infinity];
+            return aus;
+        }
+        const P = AnazhRealm.FREI.prall;
+        const nu = globalThis.__schmiedeCore.STOFF_GESETZ.DRUCK.nu;
+        const Es = 1 / ((1 - nu * nu) / za.E + (1 - nu * nu) / zb.E);
+        const Y = (za.E <= zb.E ? za : zb).sigY;
+        const roll = (K) => (!K || K.statisch ? Infinity : K.kiste ? Math.min(K.hx, K.hy, K.hz) : K.r);
+        const R = 1 / (1 / roll(A) + 1 / roll(B));
+        const m = 1 / (1 / A.m + (B && !B.statisch ? 1 / B.m : 0));
+        const druck = Math.max(A.druck || 0, (B && B.druck) || 0);
+        const k = (16 / 15) * Math.pow(0.64 * Math.PI * Math.PI, 2.5);
+        aus[0] = Math.exp(-0.5 * Math.PI * this._rollWiderstand(za, zb));
+        aus[1] =
+            !(Y > 0) || (druck > 0 && druck < P.fliessDruck * Y)
+                ? Infinity
+                : Math.sqrt((k * Math.pow(Y / Es, 4) * Y * R * R * R) / m);
+        return aus;
     }
 
     // EIN ABBAU ODER EDIT WECKT, WAS DORT RUHT: jeder schlafende freie Körper, dessen Hülle den Kasten [x0, x1] × [z0, z1] (± 0,1 m)
@@ -446,6 +522,7 @@ class AnazhRealm_koerper_frei {
             w: new Float64Array(3),
             R: Float64Array.of(c, 0, s, 0, 1, 0, -s, 0, c),
             mu: bs && bs.mu > 0 ? bs.mu : 0,
+            zeile: bs,
             m0: b.minX,
             m1: b.maxX,
             m2: b.botY,
@@ -471,7 +548,7 @@ class AnazhRealm_koerper_frei {
     // ein Wort des Spielers ändert sie), der Warmstart, ein Gang mit der weichen Feder des Kontakts (FREI.hertz, FREI.daempfung;
     // die Durchdringung drückt sie mit höchstens FREI.schubMs heraus — kein getrennter Lage-Impuls mehr), die Lage (die Anker
     // drehen mit, die Trennung des Punkts folgt seinem Weg), ein Gang ohne Feder (die Entspannung: kein Schub fliegt weg), dann
-    // die Stoß-Zahl des starren Paars (STOSS.stossZahl.starr) über FREI.prallMs; Reibung nach Coulomb (μ = √(μ₁ μ₂) der
+    // die Stoßzahl der Stoffe beider (`_freiPrallZahl`, je Kontakt) über FREI.prallMs; Reibung nach Coulomb (μ = √(μ₁ μ₂) der
     // Stoff-Zeilen), der Rollwiderstand der Stoffe (`_rollWiderstand`) am Boden. Ein Körper, der FREI.ruheS ruhig
     // liegt und dessen Nachbarn ruhen, schläft — der Schlaf kostet nichts: ruht jeder Körper, rechnet der Löser nichts, bis ein
     // Stoß, ein Wort oder ein bewegter Nachbar ihn weckt. Vorher trug jeder der 4 Teil-Schritte seine eigene Kontakt-Suche und
@@ -534,12 +611,15 @@ class AnazhRealm_koerper_frei {
         const X = this._freiKoerperPacken(W, Math.abs(g));
         // DIE KONTAKTE des Schritts: der Boden (je Punkt der Abstand zur Ebene des Gesetzes unter ihm), die Bauten, die Paare
         const o = this._freiInnenAus || (this._freiInnenAus = {});
+        // die Stoßzahl der Kontakte, die jetzt entstehen (`_freiPrallZahl`: je Grund, Bau und Paar; `_freiKontakt` schreibt sie)
+        const SJ = this._freiStossJetzt || (this._freiStossJetzt = new Float64Array(2));
         let n = 0;
         for (const K of W) {
             const pw = K.pw;
             const eb = K.ebene;
             const muB = Math.sqrt(K.muBoden * K.mu);
             const n0 = n;
+            [SJ[0], SJ[1]] = [K.grund.e, K.grund.vy];
             for (let i = 0, j = 0; i < pw.length; i += 3, j += 4)
                 if (eb[j] === eb[j]) {
                     const tiefe = (eb[j] - pw[i + 1]) * eb[j + 2];
@@ -564,6 +644,7 @@ class AnazhRealm_koerper_frei {
                 if (!this._freiKastenNah(K, Z, K.weg)) continue;
                 const m0 = n;
                 const mu = Math.sqrt(Z.mu * K.mu);
+                this._freiPrallZahl(K, Z, Z.zeile, SJ);
                 n = K.kiste
                     ? this._freiPaarKisten(n, K, Z, mu, K.weg)
                     : this._freiPaar(this._freiPaar(n, K, Z, mu, o, K.weg), Z, K, mu, o, K.weg);
@@ -577,6 +658,12 @@ class AnazhRealm_koerper_frei {
             if (!this._freiKastenNah(A, Z, rand)) continue;
             const mu = Math.sqrt(A.mu * Z.mu);
             const n0 = n;
+            this._freiPrallZahl(
+                A,
+                Z,
+                Z.zeile || (Z.zeile = this._stoff(Z.stoff, "der freie Körper aus „" + Z.stoff + "“ prallt nicht")),
+                SJ
+            );
             if (A.kiste && Z.kiste) n = this._freiVier(n0, this._freiPaarKisten(n, A, Z, mu, rand));
             else {
                 n = this._freiVier(n0, this._freiPaar(n, A, Z, mu, o, rand));
@@ -599,10 +686,11 @@ class AnazhRealm_koerper_frei {
             this._freiZiehen(X, W.length, h, g, false);
             this._freiGang(G, n, X, invH, false, F.schubMs, false);
         }
-        // der Prall: wer schneller als FREI.prallMs aufschlug und getragen wurde, springt mit der Stoß-Zahl des Starren zurück
+        // der Prall: wer schneller als FREI.prallMs aufschlug und getragen wurde, springt mit der Stoßzahl seiner Stoffe zurück
+        // (je Kontakt, `_freiPrallZahl`)
         const prall = this._freiPrall || (this._freiPrall = {});
         prall.ab = F.prallMs;
-        prall.e = AnazhRealm.STOSS.stossZahl.starr;
+        prall.thornton = F.prall.thornton;
         this._freiGang(G, n, X, invH, false, F.schubMs, false, prall);
         // zurück aus dem Puffer: Bewegung und Lage in die Körper
         for (const K of W) {
@@ -1029,6 +1117,8 @@ class AnazhRealm_koerper_frei {
         G[c + 73] = b ? z - b.p[2] : 0;
         G[c + 74] = key;
         G[c + 75] = tiefe;
+        G[c + 76] = this._freiStossJetzt[0];
+        G[c + 77] = this._freiStossJetzt[1];
         if (!b || b.statisch) a.welt = true;
         return n + 1;
     }
@@ -1090,6 +1180,15 @@ class AnazhRealm_koerper_frei {
             G[L + 1] = X[R + 1] * G[r] + X[R + 4] * G[r + 1] + X[R + 7] * G[r + 2];
             G[L + 2] = X[R + 2] * G[r] + X[R + 5] * G[r + 1] + X[R + 8] * G[r + 2];
         }
+        // DIE KUGEL ROLLT UNTER IHREM ANKER WEG: ihr Kontakt liegt je Teil-Schritt bei der Mitte minus r längs der Normalen,
+        // nie am mitgedrehten Punkt ihrer Fläche (der Ball rollt 10 m/s: 1,5 rad je Schritt, der mitgedrehte Fuss stiege
+        // 10 cm) — die Trennung folgt der Mitte allein (die Anker 0; die Jacobi-Zeilen oben tragen den Hebel des Beginns)
+        for (let seite = 0; seite < 2; seite++) {
+            const K = seite ? b : a;
+            if (K < 0 || !X[K + 37]) continue;
+            const q = c + (seite ? 68 : 62);
+            G[q] = G[q + 1] = G[q + 2] = G[q + 3] = G[q + 4] = G[q + 5] = 0;
+        }
         G[c + 51] = -G[c + 75];
         let vn =
             X[a] * n0 + X[a + 1] * n1 + X[a + 2] * n2 + X[a + 3] * G[c + 3] + X[a + 4] * G[c + 4] + X[a + 5] * G[c + 5];
@@ -1117,12 +1216,13 @@ class AnazhRealm_koerper_frei {
 
     // DIE PACKUNG der wachen Körper (EIN Puffer, kein Objekt je Körper im Gang): je Körper FREI_KOERPER Zahlen — v, ω, Lage, Lage
     // am Beginn, Quaternion, Dreh-Matrix (0–24), der Rollwiderstand je Drehung und ob er die Welt berührt (25, 26), die inverse
-    // Masse und die Welt-Trägheit⁻¹ (27–36), die Luft je Fläche und der Wind (38–42, `_freiLuftPacken`); sein
+    // Masse und die Welt-Trägheit⁻¹ (27–36), ob er eine Kugel ist (37: ihre Anker drehen nicht mit, `_freiKontaktBereit`), die
+    // Luft je Fläche, der Magnus-Kraft und der Wind (38–42, `_freiLuftPacken`), der Zerfall des Dralls (43); sein
     // Platz (`slot`) steht in jedem seiner Kontakte. Je Kontakt FREI_KONTAKT Zahlen
     // (`_freiKontakt`, `_freiKontaktBereit`): die Jacobi-Zeilen der Normalen und der zwei Tangenten (je 15), die wirksamen Massen
     // (45), die Impulse (48), Trennung, Feder, μ, der größte Normal-Impuls und das Tempo vor dem Stoß (51–57), die Plätze seiner
     // Körper (58, 59; −1: Welt), ihre inversen Massen (60, 61), die Anker (62–73: r_a im Rahmen und in der Welt, dasselbe für b),
-    // der Schlüssel des Warmstarts (74) und die Tiefe (75).
+    // der Schlüssel des Warmstarts (74), die Tiefe (75) und die Stoßzahl seiner Stoffe (76: e_η, 77: V_Y, `_freiPrallZahl`).
     _freiKoerperPacken(W, schwere) {
         const KS = AnazhRealm.FREI_KOERPER;
         if (!this._freiX || this._freiX.length < W.length * KS) this._freiX = new Float64Array(W.length * KS * 2);
@@ -1143,12 +1243,13 @@ class AnazhRealm_koerper_frei {
             // die Walze walkt nur, soweit ihr Fuss läuft: der Anteil des Laufs an ihrer Drehung (≤ 1; kippt sie um einen festen
             // Punkt ihres Rands, 0 — vorher hielt die volle Bremse jede Drehung: das Fass stand 0,9° vor dem Kipp-Punkt still)
             const wm = Math.hypot(K.w[0], K.w[1], K.w[2]);
-            const lauf = K.kiste ? 1 : wm > 1e-9 ? Math.min(1, (K.fussLauf || 0) / wm) : 0;
+            const lauf = K.kiste || K.ball ? 1 : wm > 1e-9 ? Math.min(1, (K.fussLauf || 0) / wm) : 0;
             const crr = K.grund ? K.grund.roll : 0;
             X[x + 25] =
                 (lauf * crr * schwere * K.m * rr) / (1 / Math.max(K.invI[0], K.invI[1], K.invI[2]) + K.m * rr * rr);
             X[x + 26] = 0;
             X[x + 27] = K.invM;
+            X[x + 37] = K.ball ? 1 : 0;
             X.set(K.Iw, x + 28);
             this._freiLuftPacken(K, X, x, rho);
         }
@@ -1164,14 +1265,32 @@ class AnazhRealm_koerper_frei {
     _freiLuftPacken(K, X, x, rho) {
         const L = AnazhRealm.FREI.luft;
         const [a, b, c] = [K.hx, K.hy, K.hz];
-        const cwA = K.kiste
-            ? Math.max(
-                  this._freiLuftZahl(2 * a, 2 * Math.sqrt(b * c)) * 4 * b * c,
-                  this._freiLuftZahl(2 * b, 2 * Math.sqrt(a * c)) * 4 * a * c,
-                  this._freiLuftZahl(2 * c, 2 * Math.sqrt(a * b)) * 4 * a * b
-              )
-            : Math.max(L.cwWalzeQuer * 4 * K.r * b, this._freiLuftZahl(2 * b, 2 * K.r) * Math.PI * K.r * K.r);
-        X[x + 38] = (0.5 * rho * cwA) / K.m;
+        X[x + 39] = 0;
+        X[x + 43] = 0;
+        if (K.ball) {
+            // DIE KUGEL (same.physik.flug#2): c_w nach ihrer Reynolds-Zahl Re = |u| · 2r / ν (ν der Luft, STOFF_GESETZ.DRUCK.nyLuft)
+            // — unter der Krise L.cwKugel, über ihr L.cwKugelUeber, dazwischen gerade; dazu ½ ρ A / m und r der Magnus-Kraft
+            // (39, 40; `_freiZiehen`) und der Zerfall ihres Dralls je Meter Weg durch die Luft (43: drallZerfall · ½ ρ A r² / I)
+            const ux = K.v[0] - (K.wind ? K.wind[3] : 0);
+            const uz = K.v[2] - (K.wind ? K.wind[4] : 0);
+            const re = (Math.hypot(ux, K.v[1], uz) * 2 * K.r) / globalThis.__schmiedeCore.STOFF_GESETZ.DRUCK.nyLuft;
+            const t = Math.min(1, Math.max(0, (re - L.reKrise[0]) / (L.reKrise[1] - L.reKrise[0])));
+            const A = Math.PI * K.r * K.r;
+            X[x + 38] = (0.5 * rho * (L.cwKugel + (L.cwKugelUeber - L.cwKugel) * t) * A) / K.m;
+            X[x + 39] = (0.5 * rho * A) / K.m;
+            X[x + 40] = K.r;
+            X[x + 43] = L.drallZerfall * 0.5 * rho * A * K.r * K.r * K.invI[0];
+        }
+        const cwA = K.ball
+            ? 0
+            : K.kiste
+              ? Math.max(
+                    this._freiLuftZahl(2 * a, 2 * Math.sqrt(b * c)) * 4 * b * c,
+                    this._freiLuftZahl(2 * b, 2 * Math.sqrt(a * c)) * 4 * a * c,
+                    this._freiLuftZahl(2 * c, 2 * Math.sqrt(a * b)) * 4 * a * b
+                )
+              : Math.max(L.cwWalzeQuer * 4 * K.r * b, this._freiLuftZahl(2 * b, 2 * K.r) * Math.PI * K.r * K.r);
+        if (!K.ball) X[x + 38] = (0.5 * rho * cwA) / K.m;
         // DER WIND KOSTET, WAS IHN ÄNDERT (Gebot 7): der Körper liest den EINEN Wind neu, wenn er FREI.luft.windM quer weiter
         // steht oder die Uhr des Sim-Schritts FREI.luft.windS weiter ist — dazwischen trägt er seinen (`K.wind`: x, z, Uhr, Wind
         // x, z). Vorher fragte jeder wache Körper je Schritt `_windAt` (5,6 µs: das Wetter-Feld 3,8, die Böe 2,5): 200 fallende
@@ -1208,7 +1327,10 @@ class AnazhRealm_koerper_frei {
             let is = 0;
             if (prall !== undefined) {
                 if (G[c + 57] > -prall.ab || !(G[c + 56] > 0)) continue;
-                ziel = prall.e * G[c + 57];
+                const vy = G[c + 77];
+                const fliesst =
+                    -G[c + 57] > vy ? Math.min(1, prall.thornton * Math.sqrt(Math.sqrt(-vy / G[c + 57]))) : 1;
+                ziel = G[c + 76] * fliesst * G[c + 57];
             } else if (!warm) {
                 const r0 = G[c + 62];
                 const r1 = G[c + 63];
@@ -1335,6 +1457,28 @@ class AnazhRealm_koerper_frei {
                     X[x] = X[x + 41] + ux * f;
                     X[x + 1] = uy * f;
                     X[x + 2] = X[x + 42] + uz * f;
+                    // DIE MAGNUS-KRAFT (same.physik.flug#2) der drehenden Kugel: F = ½ ρ A C_L |u| (ω̂ × u), C_L aus dem Drall-Maß
+                    // S = r |ω| / |u| (Sawicki, Hubbard & Stronge 2003, Am. J. Phys. 71, 1152: 1,5 S unter S 0,1, sonst 0,09 + 0,6 S;
+                    // Goff & Carré 2009, Am. J. Phys. 77, 1020, maßen am Fußball C_L ≈ 0,25 bei S 0,2–0,3). Wer nicht dreht
+                    // oder keine Kugel ist, zahlt nichts (39: 0)
+                    const km = X[x + 39];
+                    const wx = X[x + 3];
+                    const wy = X[x + 4];
+                    const wz = X[x + 5];
+                    const wm = km > 0 ? Math.sqrt(wx * wx + wy * wy + wz * wz) : 0;
+                    if (wm > 1e-6) {
+                        const M = AnazhRealm.FREI.luft.magnus;
+                        const S = (X[x + 40] * wm) / u;
+                        const k = (km * (S < M.knick ? M.steil * S : M.sockel + M.anstieg * S) * u * h) / wm;
+                        X[x] += k * (wy * uz - wz * uy);
+                        X[x + 1] += k * (wz * ux - wx * uz);
+                        X[x + 2] += k * (wx * uy - wy * ux);
+                        // DER DRALL ZERFÄLLT (FREI.luft.drallZerfall): dω = −(43) · |u| ω · h, implizit
+                        const z = 1 / (1 + X[x + 43] * u * h);
+                        X[x + 3] = wx * z;
+                        X[x + 4] = wy * z;
+                        X[x + 5] = wz * z;
+                    }
                 }
                 continue;
             }
@@ -1500,14 +1644,14 @@ _stammZonen(AnazhRealm, [AnazhRealm_koerper_frei]);
 // mit Feder je Teil-Schritt; die Feder des Kontakts (Hertz, Dämpfung ζ; der starre Gegner mit doppelter Hertz — Box2D v3: 30 Hz,
 // ζ 10) und das höchste Tempo, mit dem sie eine Durchdringung herausdrückt (m/s); der Spalt (m), ab dem ein Punkt vor einer
 // Fläche schon ein Kontakt ist (Boden und Bau; Körper an Körper enger — ein weiter Spalt hielt die Kiste über der Seite der
-// unteren), dazu sein Weg im Schritt; ab prallMs Aufprall prallt der Körper mit der Stoß-Zahl des Starren; ruhig, solange seine
+// unteren), dazu sein Weg im Schritt; ab prallMs Aufprall prallt der Körper mit der Stoßzahl seiner Stoffe (`_freiPrallZahl`); ruhig, solange seine
 // drei Testpunkte binnen ½ ruheMs · ruheS (0,75 cm) bleiben (`_freiRuhig`, die Kugeln nach Jolt), nach ruheS schläft er; ein Fass trägt je Rand rundPunkte Punkte; die Hülle stempelt neu nach huelleM Weg (dazwischen folgt sie an Ort und Stelle); Grund und
 // Bauten gelten umweltM (m) Weg (`_freiUmwelt`).
 // Die Kosten je Schritt mit 100 wachen Kisten (Median; physik.K3#2, Null-Renderer an der Mess-Wiese): das Trümmerfeld (aus 2–4 m
 // gefallen) main 4,8 → 0,7 ms, der Haufen 4 hoch main 8,8 → 1,2 ms; die Bank (Node, flacher Boden) 4,2 → 0,93 ms; der Schlaf
 // kostet nichts (ruht jeder, rechnet der Löser nicht).
 // Die Packung des Lösers (`_freiKoerperPacken`, `_freiKontakt`): Zahlen je wachem Körper und je Kontakt im Puffer.
-AnazhRealm.FREI_KONTAKT = 76;
+AnazhRealm.FREI_KONTAKT = 78;
 // die Marke eines Baus ohne freien Körper (die Stand-Tafel, `architectures`): vier leere Plätze der Drehung
 AnazhRealm.FREI_OHNE_DREHUNG = Object.freeze([null, null, null, null]);
 AnazhRealm.FREI_KOERPER = 44;
@@ -1534,5 +1678,27 @@ AnazhRealm.FREI = Object.freeze({
     // Gestalt des Winds ist die Böe (λ = 2π / WIND_BOE.k = 164 m; ihr Gang k · 0,9 · 24 m/s im Sturm: in 0,1 s ≤ 5 % des Winds,
     // auf 1 m 1,7 % der Böe) und die Gasse (Häuser-Schlucht, Meter); die Feder (Platte 25 × 5 cm, 1,9 g) sinkt nach Hoerner
     // √(2 m g / (ρ c_w A)) = 1,45 m/s, aus 2 m in 1,50 s gegen den Stein 0,65 s (Vakuum 0,64 s).
-    luft: Object.freeze({ cwPlatte: 1.17, cwWuerfel: 1.05, cwWalzeQuer: 0.8, windM: 1, windS: 0.1 }),
+    // DIE KUGEL (same.physik.flug#2): c_w unter der Krise 0,47 (Hoerner 1965, 3-7: die Kugel unterkritisch), über ihr 0,25
+    // (Goff & Carré 2009, der Fußball im Flug), die Krise des Fußballs bei Re 2,2–3,0 · 10⁵ (Asai, Seo, Kobayashi & Sakashita,
+    // Sports Engineering 10, 101, 2007: die Nähte senken sie unter die der glatten Kugel, 3,5–4 · 10⁵); die Magnus-Kraft nach
+    // Sawicki, Hubbard & Stronge 2003 (C_L = steil · S unter S knick, sonst sockel + anstieg · S). DER DRALL ZERFÄLLT im Flug
+    // nach der Form von James & Haake 2008 (dω/dt ∝ ω · |u|): das Reib-Moment drallZerfall · ½ ρ A r² · ω |u| durch die
+    // Trägheit — die Zahl aus dem Band der Messungen am Fußball: 4–8 % Drall-Verlust bis zum Scheitel (Hochgeschwindigkeits-
+    // Kamera, „Trajectory analysis of a soccer ball“), ≈ 10 % über den Freistoß (Goff & Carré); 0,06 gibt dem Ball Gr. 5
+    // (I ≈ ⅔ m r²) 0,46 % je Meter Weg durch die Luft: 25 m/s, Scheitel nach 14 m → 6,3 %, 22 m → 9,6 %.
+    luft: Object.freeze({
+        cwPlatte: 1.17,
+        cwWuerfel: 1.05,
+        cwWalzeQuer: 0.8,
+        windM: 1,
+        windS: 0.1,
+        cwKugel: 0.47,
+        cwKugelUeber: 0.25,
+        reKrise: Object.freeze([2.2e5, 3.0e5]),
+        magnus: Object.freeze({ knick: 0.1, steil: 1.5, sockel: 0.09, anstieg: 0.6 }),
+        drallZerfall: 0.06,
+    }),
+    // DER PRALL (same.physik.flug#2, `_freiPrallZahl`): der weichere fließt, wo die Hertz-Pressung p₀ das fliessDruck-fache
+    // seiner Streckgrenze σ_Y erreicht (Tabor; Johnson 1985, §6.2); darüber e_σ = thornton · (V_Y / V)^¼ (Thornton 1997).
+    prall: Object.freeze({ fliessDruck: 1.6, thornton: 1.185 }),
 });

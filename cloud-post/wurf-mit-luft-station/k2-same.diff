@@ -1,56 +1,167 @@
 --- a/meisterkarte-quelle/punkte/stationen/k2-same.js
 +++ b/meisterkarte-quelle/punkte/stationen/k2-same.js
-@@ -2002,7 +2002,8 @@
-     // ─────────── same.physik.flug — Ballistik ───────────
+@@ -2003,7 +2003,9 @@
      // S1 an der Mess-Wiese: ein Steinwürfel 0,1 m und eine Feder (Federn-Platte 0,25 × 0,003 × 0,05 m) als freie Körper des Lösers, je aus
      // 1,5 m mit 10 m/s unter 45° geworfen (`_freiSchritt`, FIXED_DT) — die Weite bis zum Grund gegen die Rechnung mit Luftwiderstand
--    // (ρ Luft 1,2 kg/m³, c_w Würfel 1,05, Platte quer 1,17, Masse aus dem Löser). Der Löser kennt keine Luft: die Feder fliegt wie der Stein.
-+    // (ρ Luft 1,2 kg/m³, c_w Würfel 1,05, Platte quer 1,17, Masse aus dem Löser) in der Luft des Orts: v_rel = v − Wind (`_windAt`, der EINE
-+    // Wind-Leser, zur Uhr des Sim-Schritts) — die Welt weht, die Feder treibt mit ihm.
+     // (ρ Luft 1,2 kg/m³, c_w Würfel 1,05, Platte quer 1,17, Masse aus dem Löser) in der Luft des Orts: v_rel = v − Wind (`_windAt`, der EINE
+-    // Wind-Leser, zur Uhr des Sim-Schritts) — die Welt weht, die Feder treibt mit ihm.
++    // Wind-Leser, zur Uhr des Sim-Schritts) — die Welt weht, die Feder treibt mit ihm. S2 an der Mess-Wiese: der Fußball als freier
++    // Körper — die Ablenkung des Freistoßes mit Drall gegen die Rechnung mit den gemessenen Beiwerten, sein Abprall auf Gras und Stein
++    // gegen das Band der FIFA (`drall`).
      LEITERN.push(
          leiter({
              leiter: "same.physik.flug",
-@@ -2059,14 +2060,20 @@
-                         k2_wurf_feder: { name: "k2_wurf_feder", label: "k2_wurf_feder", frei: true, builtIn: false, parts: [{ shape: "box", material: "federn", size: { x: 0.25, y: 0.003, z: 0.05 }, position: { x: 0, y: 0.0015, z: 0 } }] },
-                     };
-                     const RHO = 1.2, v0 = 10, h0 = 1.5, c45 = Math.SQRT1_2;
--                    // die Rechnung: m dv/dt = −m g ŷ − ½ ρ c_w A |v| v, bis die Unterkante den Grund erreicht (RK-frei, dt 1 ms)
-+                    // die Rechnung: m dv/dt = −m g ŷ − ½ ρ c_w A |v − w| (v − w), w der Wind am Ort (der EINE Wind-Leser der Welt `_windAt`,
-+                    // stamm/stoff-material.js, zur Uhr des Sim-Schritts `state._simZeit` — die Station rückt sie nicht vor), längs der Bahn
-+                    // (x), quer (q) und hoch (y), bis die Unterkante den Grund erreicht (RK-frei, dt 1 ms); die Weite längs der Bahn
-+                    const wa = {}, [cx, cz] = [bahn.uz, -bahn.ux];
-                     const rechnung = (mk, cw, fl, hy) => {
--                        let [x, y, vx, vy] = [0, h0 + bahn.g0, v0 * c45, v0 * c45];
-+                        let [x, q, y, vx, vq, vy] = [0, 0, h0 + bahn.g0, v0 * c45, 0, v0 * c45];
-                         for (let i = 0; i < 20000; i++) {
--                            const v = Math.hypot(vx, vy), k = (0.5 * RHO * cw * fl * v) / mk;
--                            [vx, vy] = [vx - k * vx * 0.001, vy - (g + k * vy) * 0.001];
--                            [x, y] = [x + vx * 0.001, y + vy * 0.001];
--                            const gr = r._koerperBodenUnter(bahn.x0 + x * bahn.ux, y, bahn.z0 + x * bahn.uz);
-+                            const [px, pz] = [bahn.x0 + x * bahn.ux + q * cx, bahn.z0 + x * bahn.uz + q * cz];
-+                            const w = r._windAt(px, pz, s._simZeit, wa), [wx, wz] = [w.x * w.ms, w.z * w.ms];
-+                            const [ux, uq] = [vx - (wx * bahn.ux + wz * bahn.uz), vq - (wx * cx + wz * cz)];
-+                            const k = (0.5 * RHO * cw * fl * Math.hypot(ux, uq, vy)) / mk;
-+                            [vx, vq, vy] = [vx - k * ux * 0.001, vq - k * uq * 0.001, vy - (g + k * vy) * 0.001];
-+                            [x, q, y] = [x + vx * 0.001, q + vq * 0.001, y + vy * 0.001];
-+                            const gr = r._koerperBodenUnter(bahn.x0 + x * bahn.ux + q * cx, y, bahn.z0 + x * bahn.uz + q * cz);
-                             if (vy < 0 && y - hy <= (Number.isFinite(gr) ? gr : bahn.g0)) return x;
-                         }
-                         return null;
-@@ -2115,6 +2122,7 @@
-                         stein_abw_pct: abw(st.weite, rs),
-                         feder_abw_pct: abw(fe.weite, rf),
-                         wuerfe: (Number.isFinite(st.weite) ? 1 : 0) + (Number.isFinite(fe.weite) ? 1 : 0),
-+                        wind_ms: r3(r._windAt(bahn.x0, bahn.z0, s._simZeit).ms),
+@@ -2125,6 +2127,138 @@
+                         wind_ms: r3(r._windAt(bahn.x0, bahn.z0, s._simZeit).ms),
                      };
                  }
++                // S2 — der Ball im Sport: ein Fußball Gr. 5 (Kugel ⌀ 0,22 m aus Leder, Wand 3,5 mm: 0,44 kg, FIFA 410–450 g; Innendruck
++                // 0,8 bar, FIFA 0,6–1,1 bar) als freier Körper des Lösers.
++                // DIE ABLENKUNG: ein Freistoß 25 m/s längs der Bahn und 6 m/s hoch aus 1,5 m, Seiten-Drall 8 U/s (S = rω/v ≈ 0,22) — die
++                // Querlage nach 0,8 s mit Drall minus ohne (der Wind fällt heraus) gegen die Rechnung mit den MESSWERTEN des Fußballs im
++                // Flug (Goff & Carré, Am. J. Phys. 77, 1020, 2009: C_D 0,25, C_L 0,25 bei S 0,2–0,3; der Drall bleibt), m dv/dt = −m g ŷ
++                // − ½ ρ A |u| (C_D u − C_L ω̂ × u), u = v − Wind (`_windAt`, wie S1), ρ 1,2 (RK-frei, dt 1 ms).
++                // DER ABPRALL: der Ball fällt aus 2 m (Unterkante) auf Gras (ein Fleck, an dem `_kontaktStoffAt` „gras“ liest) und auf
++                // eine Platte aus Stein (Bau 2 × 0,3 × 2 m, die harte Fläche); seine Stoßzahl e = √(h / 2 m) gegen die des Bands der
++                // FIFA aus 2 m: Rasen 0,60–0,85 m (FIFA Quality Programme for Football Turf, Quality Pro), die harte Fläche 1,35–1,55 m
++                // (FIFA Quality Programme for Footballs, Quality Pro, auf der Stahlplatte) — je die Mitte; das Urteil die größere
++                // Abweichung der zwei.
++                async function drall(r) {
++                    const s = r.state, A = AnazhRealm, dt = A.FIXED_DT, m = s.playerMesh, g = Number.isFinite(s.gravity) ? -s.gravity : 9.81;
++                    const fuss = m.position.y - A.PLAYER_FOOT_OFFSET, kand = [];
++                    let bahn = null;
++                    for (let k = 0; k < 8 && !bahn; k++) {
++                        const a = (k * Math.PI) / 4, [ux, uz] = [Math.sin(a), Math.cos(a)];
++                        const x0 = m.position.x + 2 * ux, z0 = m.position.z + 2 * uz, g0 = r._koerperBodenUnter(x0, fuss + 1, z0);
++                        if (!Number.isFinite(g0)) continue;
++                        let gut = true;
++                        for (let t = 0; t <= 22 && gut; t += 1) {
++                            const x = x0 + t * ux, z = z0 + t * uz, gt = r._koerperBodenUnter(x, g0 + 1, z);
++                            kand.length = 0;
++                            r._blockerNahe(x, z, 1.5, -Infinity, kand);
++                            gut = Number.isFinite(gt) && Math.abs(gt - g0) <= 1 && !kand.some((e) => (e.blockerAABBs || []).some((b) => r._boxAbstand2(b, x, z) <= 2.25));
++                        }
++                        if (gut) bahn = { x0, z0, g0, ux, uz };
++                    }
++                    if (!bahn) return { fehler: "keine freie Bahn von 22 m um den Spieler" };
++                    if (!(s.materials && s.materials.leder && s.materials.stein)) return { fehler: "die Welt trägt die Zeile leder oder stein nicht (state.materials)" };
++                    const typ = "k2_ball", RHO = 1.2, R = 0.11, T = 0.8, h0 = 1.5, [v0, vh, W] = [25, 6, 2 * Math.PI * 8], [cx, cz] = [bahn.uz, -bahn.ux];
++                    s.blueprints[typ] = { name: typ, label: typ, frei: true, builtIn: false, parts: [{ shape: "sphere", material: "leder", wand: 0.0035, druck: 80000, size: { x: 2 * R, y: 2 * R, z: 2 * R }, position: { x: 0, y: R, z: 0 } }] };
++                    const ball = (ort, setze, schritte, mess) => {
++                        const e = r.spawnArchitecture(typ, { x: ort.x, y: ort.g + 3, z: ort.z }, { precise: true, silent: true });
++                        const K = e && e._frei;
++                        if (!K) {
++                            if (e) r.removeArchitecture(e, { still: true });
++                            return { fehler: "der Ball trägt keinen freien Körper" };
++                        }
++                        try {
++                            setze(K);
++                            r._freiWecken(K);
++                            K.grund = null;
++                            r._freiLage(K);
++                            const o = { m: K.m, kugel: !K.kiste && K.hx === K.hy && K.hy === K.hz };
++                            for (let i = 0; i < schritte; i++) {
++                                r._freiSchritt(dt);
++                                if (mess(K, (i + 1) * dt, o)) break;
++                            }
++                            return o;
++                        } finally {
++                            r.removeArchitecture(e, { still: true });
++                        }
++                    };
++                    try {
++                        // die Ablenkung (Welt): die Querlage nach T, mit und ohne Drall um die Hoch-Achse
++                        const stoss = (w) =>
++                            ball({ x: bahn.x0, z: bahn.z0, g: bahn.g0 }, (K) => {
++                                [K.p[0], K.p[1], K.p[2]] = [bahn.x0, bahn.g0 + h0, bahn.z0];
++                                [K.v[0], K.v[1], K.v[2]] = [v0 * bahn.ux, vh, v0 * bahn.uz];
++                                [K.w[0], K.w[1], K.w[2]] = [0, w, 0];
++                            }, Math.round(T / dt), (K, t, o) => {
++                                [o.quer, o.weg, o.t] = [(K.p[0] - bahn.x0) * cx + (K.p[2] - bahn.z0) * cz, (K.p[0] - bahn.x0) * bahn.ux + (K.p[2] - bahn.z0) * bahn.uz, t];
++                                return t >= T - 1e-9;
++                            });
++                        const mit = stoss(W), ohne = stoss(0);
++                        if (mit.fehler || ohne.fehler) return { fehler: mit.fehler || ohne.fehler };
++                        // die Rechnung: dieselbe Bahn mit den gemessenen Beiwerten, der Drall ω = W ŷ bleibt
++                        const wa = {}, A_ = Math.PI * R * R;
++                        const rechnung = (w, mk) => {
++                            let [x, q, y, vx, vq, vy] = [0, 0, h0, v0, 0, vh];
++                            for (let i = 0; i < Math.round(T / 0.001); i++) {
++                                const ww = r._windAt(bahn.x0 + x * bahn.ux + q * cx, bahn.z0 + x * bahn.uz + q * cz, s._simZeit, wa);
++                                const [wx, wz] = [ww.x * ww.ms, ww.z * ww.ms];
++                                const [ux, uq, uy] = [vx - (wx * bahn.ux + wz * bahn.uz), vq - (wx * cx + wz * cz), vy];
++                                const u = Math.hypot(ux, uq, uy), k = (0.5 * RHO * A_ * u) / mk;
++                                // ω̂ × u mit ω̂ = ŷ im Rahmen (längs x̂, quer ĉ = ŷ × x̂, hoch ŷ): ŷ × u = −u_q x̂ + u_x ĉ
++                                const [mx, mq] = w ? [-uq, ux] : [0, 0];
++                                [vx, vq, vy] = [vx + (-0.25 * k * ux + 0.25 * k * mx) * 0.001, vq + (-0.25 * k * uq + 0.25 * k * mq) * 0.001, vy + (-g - 0.25 * k * uy) * 0.001];
++                                [x, q, y] = [x + vx * 0.001, q + vq * 0.001, y + vy * 0.001];
++                            }
++                            return q;
++                        };
++                        const ablenkWelt = mit.quer - ohne.quer, ablenkRechnung = rechnung(W, mit.m) - rechnung(0, mit.m);
++                        // der Abprall: der höchste Punkt (Unterkante) nach dem ersten Aufschlag
++                        const prall = (ort, h) =>
++                            ball(ort, (K) => {
++                                [K.p[0], K.p[1], K.p[2]] = [ort.x, h + 2 + R, ort.z];
++                                K.v.fill(0);
++                                K.w.fill(0);
++                            }, 300, (K, t, o) => {
++                                if (o.auf === undefined) return void (K.v[1] > 0 && (o.auf = t));
++                                o.top = Math.max(Number.isFinite(o.top) ? o.top : -Infinity, K.p[1] - R - h);
++                                return K.v[1] < 0;
++                            });
++                        let gp = null;
++                        for (let i = 0; i < 3600 && !gp; i++) {
++                            const [x, z] = [m.position.x + ((i % 60) - 30), m.position.z + (((i / 60) | 0) - 30)];
++                            const gg = r._koerperBodenUnter(x, fuss + 3, z), g1 = r._koerperBodenUnter(x + 0.3, fuss + 3, z);
++                            kand.length = 0;
++                            r._blockerNahe(x, z, 1, -Infinity, kand);
++                            if (Number.isFinite(gg) && Math.abs(g1 - gg) < 0.05 && !kand.length && r._kontaktStoffAt(x, z, gg, 0) === "gras" && r._kontaktStoffAt(x + 0.3, z, g1, 0) === "gras") gp = { x, z, g: gg };
++                        }
++                        if (!gp) return { fehler: "kein Gras-Fleck binnen 30 m um den Spieler (`_kontaktStoffAt`)" };
++                        const gras = prall(gp, gp.g);
++                        const platte = "k2_platte", px = bahn.x0 - 4 * bahn.ux, pz = bahn.z0 - 4 * bahn.uz, pg = r._koerperBodenUnter(px, fuss + 3, pz);
++                        s.blueprints[platte] = { name: platte, label: platte, builtIn: false, parts: [{ shape: "box", material: "stein", size: { x: 2, y: 0.3, z: 2 }, position: { x: 0, y: 0.15, z: 0 } }] };
++                        const pe = r.spawnArchitecture(platte, { x: px, y: pg + 0.5, z: pz }, { precise: true, silent: true });
++                        let stein;
++                        try {
++                            const oben = Math.max(...(pe.blockerAABBs || []).map((b) => b.topY));
++                            stein = Number.isFinite(oben) ? prall({ x: px, z: pz, g: pg }, oben) : { fehler: "die Platte trägt keine Box" };
++                        } finally {
++                            r.removeArchitecture(pe, { still: true });
++                            delete s.blueprints[platte];
++                        }
++                        if (gras.fehler || stein.fehler) return { fehler: gras.fehler || stein.fehler };
++                        const e = (h) => (h > 0 ? Math.sqrt(h / 2) : 0), eRasen = e((0.6 + 0.85) / 2), eHart = e((1.35 + 1.55) / 2);
++                        const abw = (a, b) => (Number.isFinite(a) && b ? Math.round((10000 * Math.abs(a - b)) / Math.abs(b)) / 100 : null);
++                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
++                        const [aRasen, aHart] = [abw(e(gras.top), eRasen), abw(e(stein.top), eHart)];
++                        return {
++                            ball: { m: r3(mit.m), kugel: mit.kugel },
++                            ablenkung: { welt: r3(ablenkWelt), rechnung: r3(ablenkRechnung), mit: r3(mit.quer), ohne: r3(ohne.quer), weg: r3(mit.weg), t: r3(mit.t) },
++                            abprall: { rasen: { h: r3(gras.top), e: r3(e(gras.top)), band: r3(eRasen), abw: aRasen }, hart: { h: r3(stein.top), e: r3(e(stein.top)), band: r3(eHart), abw: aHart } },
++                            ablenkung_abw_pct: abw(ablenkWelt, ablenkRechnung),
++                            abprall_abw_pct: aRasen === null || aHart === null ? null : Math.max(aRasen, aHart),
++                        };
++                    } finally {
++                        delete s.blueprints[typ];
++                    }
++                }
                  await L.ort("wiese", "ego");
-@@ -2123,7 +2131,7 @@
-                     const w = await ev(wurf, null, Math.max(5, L.rest() - 6));
-                     L.zeile("Stein und Feder, 10 m/s unter 45°: " + JSON.stringify(w));
-                     if (w.fehler) throw new Error(w.fehler);
--                    L.gemessen(1, { stein_abw_pct: w.stein_abw_pct, feder_abw_pct: w.feder_abw_pct }, { erzeugt: w.wuerfe, welt: { weg_m: w.stein.weite }, taeter: "Feder " + w.feder.weite + " m gegen Rechnung " + w.feder.rechnung + " m, Stein " + w.stein.weite + " m gegen " + w.stein.rechnung + " m — der Löser kennt keine Luft (stamm/koerper-frei.js:421 `_freiSchritt`)" });
-+                    L.gemessen(1, { stein_abw_pct: w.stein_abw_pct, feder_abw_pct: w.feder_abw_pct }, { erzeugt: w.wuerfe, welt: { weg_m: w.stein.weite }, taeter: "Feder " + w.feder.weite + " m gegen Rechnung " + w.feder.rechnung + " m, Stein " + w.stein.weite + " m gegen " + w.stein.rechnung + " m, Wind am Ort " + w.wind_ms + " m/s — die Luft des Lösers (stamm/koerper-frei.js `_freiLuftPacken` · `_freiZiehen`)" });
+                 L.preisPose("wiese", "ego");
+                 await L.je(1, async () => {
+@@ -2134,7 +2268,13 @@
+                     L.gemessen(1, { stein_abw_pct: w.stein_abw_pct, feder_abw_pct: w.feder_abw_pct }, { erzeugt: w.wuerfe, welt: { weg_m: w.stein.weite }, taeter: "Feder " + w.feder.weite + " m gegen Rechnung " + w.feder.rechnung + " m, Stein " + w.stein.weite + " m gegen " + w.stein.rechnung + " m, Wind am Ort " + w.wind_ms + " m/s — die Luft des Lösers (stamm/koerper-frei.js `_freiLuftPacken` · `_freiZiehen`)" });
                  });
                  const ohneLuft = "der Löser trägt nur Schwere, Kontakt und Reibung (stamm/koerper-frei.js:421 `_freiSchritt`)";
-                 await L.je(2, async () => L.leser(2, "Drall: keine Magnus-Kraft am Körper — " + ohneLuft));
+-                await L.je(2, async () => L.leser(2, "Drall: keine Magnus-Kraft am Körper — " + ohneLuft));
++                await L.je(2, async () => {
++                    const d = await ev(drall, null, Math.max(5, L.rest() - 6));
++                    L.zeile("Fußball, Freistoß mit Drall und Abprall aus 2 m: " + JSON.stringify(d));
++                    if (d.fehler) throw new Error(d.fehler);
++                    if (!d.ball.kugel) return L.leser(2, "der Ball ist keine Kugel: der Löser trägt ihn als Kiste (stamm/koerper-frei.js `_freiKoerperSetzen`)");
++                    L.gemessen(2, { ablenkung_abw_pct: d.ablenkung_abw_pct, abprall_abw_pct: d.abprall_abw_pct }, { welt: { weg_m: d.ablenkung.weg }, taeter: "Ablenkung " + d.ablenkung.welt + " m gegen Rechnung " + d.ablenkung.rechnung + " m (Magnus im Luft-Paket, stamm/koerper-frei.js `_freiZiehen`), Stoßzahl Rasen " + d.abprall.rasen.e + " gegen " + d.abprall.rasen.band + ", harte Fläche " + d.abprall.hart.e + " gegen " + d.abprall.hart.band + " (`_freiPrallZahl`)" });
++                });
+                 await L.je(3, async () => L.leser(3, "Auftrieb am freien Körper: der Löser liest kein Wasser — " + ohneLuft));
+                 await L.je(4, async () => L.leser(4, "Auftrieb am Flügel: kein Gesetz des Auftriebs — " + ohneLuft));
+                 await L.je(5, async () => L.leser(5, "Wind am Körper: der Löser liest das EINE Wind-Feld nicht (stamm/stoff-material.js:233 `_windAt`) — " + ohneLuft));

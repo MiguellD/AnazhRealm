@@ -845,6 +845,42 @@
         const D = KORN.quelleMm * Math.exp((-KORN.alphaJeKm * L) / 1000);
         return lnMisch(D, KORN.sandMm, glatt(KORN.kiesSand[0], KORN.kiesSand[1], D));
     }
+    // das Bett eines Segments sg an der Stelle sT längs der Sehne, quer m von seiner Bahn → { A, t }: das Einzugsgebiet (längs
+    // zwischen den Knoten) und die Lage im Bett [0 Sohle … 1 jenseits der Bank, `bankBreiten` Bett-Breiten]
+    function bettIm(N, sg, sT, sQ) {
+        const kn = sg.von;
+        const S2 = N.S[kn.k] * N.S[kn.k];
+        const Aob = knotenA(N, kn) * S2;
+        const Aun = kn.fluss ? knotenA(N, kn.fluss) * S2 : Aob;
+        const A = Aob + (Aun - Aob) * sT;
+        const b = flussBreite(A) / 2;
+        return { A, t: glatt(b, b * (1 + 2 * KORN.bankBreiten), sQ) };
+    }
+    // DER NÄCHSTE LAUF an (x, z) → { A, t } oder null: über den Segmenten der Ebenen 0 und 1 (die Läufe, `flussLaeufe` — die
+    // Bahn, auf die die Hydrosphäre den Kanal legt) das Bett, in dem der Ort am tiefsten liegt; quer der Abstand zur BAHN des
+    // Mäanders (der Versatz quer zur Sehne, `bahnVersatz`), an den Knoten zur Sehne.
+    function laufBahn(N, x, z) {
+        let best = null;
+        for (let k = 0; k <= 1; k++) {
+            const S = N.S[k];
+            const segs = zelle(N, k, Math.floor(x / S), Math.floor(z / S)).nah;
+            for (let q = 0; q < segs.length; q++) {
+                const s = segs[q];
+                const dx = x - s.ax;
+                const dz = z - s.az;
+                let t = (dx * s.ex + dz * s.ez) / s.len2;
+                t = t < 0 ? 0 : t > 1 ? 1 : t;
+                const quer =
+                    s.mo && t > 0 && t < 1
+                        ? Math.abs((dz * s.ex - dx * s.ez) / Math.sqrt(s.len2) - bahnVersatz(s, t))
+                        : Math.hypot(dx - s.ex * t, dz - s.ez * t);
+                const w = bettIm(N, s, t, quer);
+                if (!best || w.t < best.t) best = w;
+                if (best.t === 0) return best;
+            }
+        }
+        return best;
+    }
     function korn(L, x, z, aus) {
         const T = L.erbgut && L.erbgut.terme;
         if (!T || !T.length) throw new Error("gelaende-core korn: der Lage fehlt ihr Erbgut");
@@ -874,31 +910,34 @@
         let D;
         let herkunft;
         let A = 0;
-        // die Aue trägt ihr Netz, auch wo eine feinere Rinne sie nachher schneidet (die Rinne in der Aue liegt im Schotter der Aue)
-        if (seg) {
-            const kn = seg.von;
-            const S2 = N.S[kn.k] * N.S[kn.k];
-            const Aob = knotenA(N, kn) * S2;
-            const Aun = kn.fluss ? knotenA(N, kn.fluss) * S2 : Aob;
-            A = Aob + (Aun - Aob) * segT;
-            const b = flussBreite(A) / 2;
-            const Db = kornBett(A);
-            const t = glatt(b, b * (1 + 2 * KORN.bankBreiten), quer);
-            D = lnMisch(Db, KORN.auelehmMm, t);
-            herkunft = t < 0.5 ? "bett" : "aue";
-        } else {
-            D = lnMisch(KORN.lehmMm, KORN.hangGrobMm, glatt(KORN.hangTan[0], KORN.hangTan[1], hang));
-            herkunft = "hang";
+        // die Aue trägt ihr Netz, auch wo eine feinere Rinne sie nachher schneidet (die Rinne in der Aue liegt im Schotter der Aue);
+        // ein LAUF (`laufBahn`: die Bahn, auf die die Hydrosphäre den Kanal legt) trägt sein eigenes Bett: wo der Ort näher an
+        // seiner Sohle liegt (in Bett-Breiten) als an der der Aue, ist das Korn das des Laufs. Bis hier las die Sohle eines
+        // Zuflusses quer durch die Aue seines Hauptlaufs dessen Auelehm (an (2517, −5120): 5 km², 10,5 m breit, „aue“ 0,3 mm), und
+        // wo die Bahn eines kleinen Laufs über seine schmale Aue schwingt, las sie den Hang (an (−547, −567): 0,16 km², „hang“).
+        const hangKorn = () => {
+            let d = lnMisch(KORN.lehmMm, KORN.hangGrobMm, glatt(KORN.hangTan[0], KORN.hangTan[1], hang));
+            let her = "hang";
             if (schutt > 0) {
-                D = lnMisch(D, KORN.schuttMm, schutt);
-                if (schutt >= 0.5) herkunft = "schutt";
+                d = lnMisch(d, KORN.schuttMm, schutt);
+                if (schutt >= 0.5) her = "schutt";
             }
             const w = KORN.windAnteil * (1 - glatt(KORN.windTan[0], KORN.windTan[1], hang)) * glatt(KORN.windNah[0], KORN.windNah[1], nah);
             if (w > 0) {
-                D = lnMisch(D, KORN.loessMm, w);
-                if (w >= 0.5) herkunft = "wind";
+                d = lnMisch(d, KORN.loessMm, w);
+                if (w >= 0.5) her = "wind";
             }
-        }
+            return [d, her];
+        };
+        let w = seg ? bettIm(N, seg, segT, quer) : null;
+        const lb = N ? laufBahn(N, x, z) : null;
+        if (lb && (!w || lb.t < w.t)) w = lb;
+        if (w && (seg || w.t < 1)) {
+            A = w.A;
+            const rand = seg ? [KORN.auelehmMm, "aue"] : hangKorn();
+            D = lnMisch(kornBett(A), rand[0], w.t);
+            herkunft = w.t < 0.5 ? "bett" : rand[1];
+        } else [D, herkunft] = hangKorn();
         if (aus) {
             aus.herkunft = herkunft;
             aus.einzug = A;
@@ -933,6 +972,18 @@
             out[k] = a + (farbe(S[i + 1], k) - a) * t;
         }
         return out;
+    }
+    // DIE SOHLE DES FLIESSENDEN WASSERS (karte2.planet.relief.boden#2) → [0, 1]: der Anteil des Sediments am Grund in der Höhe
+    // `ueber` (m, negativ unter dem Fluss-Spiegel) — voll ab `vollM` unter dem Spiegel. Das strömende Wasser hält die Sohle offen:
+    // unter der Mittelwasser-Linie wurzelt keine Landpflanze (Ellenberg & Leuschner 2010, die Zonierung des Ufers: die Linie des
+    // mittleren Wasserstands ist die untere Grenze der Landvegetation), die Sohle ist ihr Korn. Bis hier trug der Fluss die
+    // Rampe des stehenden Wassers (voll ab 4 m): unter dem Bach des Messorts `ufer` (0,6 m tief) lag zu 99,8 % Wiese. Leser:
+    // Schlick und Korn der Sohle in `_bodenFarbeAt` und voxel-worker `bodenFarbe` (je Fluss-Bezug, die Ferne je Segment).
+    const SOHLE = Object.freeze({ vollM: 0.3 });
+    function flussSohle(ueber) {
+        let t = ueber / -SOHLE.vollM;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        return t * t * (3 - 2 * t);
     }
 
     // DIE ART EINES GEWÄSSERS (w13-bach-klar) — die EINE Quelle: stehendes Wasser (See, Teich, Meer, die Flut des Automaten)
@@ -7874,6 +7925,49 @@
         return P < Infinity ? { P, L: Ld, k: fuss } : null;
     }
 
+    // DIE BANK DES KANALS an (x, z) → { w, spiegel } oder null (karte2.planet.relief.boden#2): w ∈ [0, 1] das Gewicht der Bank,
+    // die der Kanal schneidet (`flussKanal`) — 1 bis zur Krone, smoothstep auf 0 über dammBreite + bankWeite hinter ihr, das
+    // Maximum der Segmente; spiegel der Spiegel des nächsten Segments samt Pegel (wie `spiegelQuer`). Der Fluss-Spiegel
+    // (`flussAm`) endet an der Krone, die Bank, die der Kanal bis bankWeite hinter ihr schneidet, liegt trocken über ihm — dort trug
+    // der Boden bis hier keinen Bezug zum Fluss und so kein Korn: die Wiese deckte das Ufer bis an die Krone. Leser: das Ufer-Band
+    // der Boden-Farbe (`_bodenFarbeAt`, voxel-worker `bodenFarbe`): der Strand des Flusses hängt an der Höhe über DIESEM Spiegel.
+    function flussBank(L, x, z) {
+        const h = hydroRegion(L, x, z);
+        const kb = flussBucket(h, x, z);
+        if (kb < 0) return null;
+        const { seg, idx, ab } = h.kanal;
+        const H = L.hydroGesetz;
+        const weite = H.dammBreite + H.bankWeite;
+        let w = 0;
+        let bestD = Infinity;
+        let spiegel = 0;
+        let j = 0;
+        let kn = NaN;
+        for (let q = ab[kb]; q < ab[kb + 1]; q++) {
+            const o = idx[q] * KANAL_FELDER;
+            const ax = seg[o];
+            const az = seg[o + 1];
+            const ex = seg[o + 2] - ax;
+            const ez = seg[o + 3] - az;
+            const len2 = ex * ex + ez * ez || 1;
+            let t = ((x - ax) * ex + (z - az) * ez) / len2;
+            if (t < 0) t = 0;
+            else if (t > 1) t = 1;
+            const dist = Math.hypot(x - (ax + ex * t), z - (az + ez * t));
+            const dK = seg[o + 4] + (seg[o + 5] - seg[o + 4]) * t + (seg[o + 6] + (seg[o + 7] - seg[o + 6]) * t) / H.bankNeigung;
+            if (dist >= dK + weite) continue;
+            const u = dist <= dK ? 0 : (dist - dK) / weite;
+            const ws = 1 - u * u * (3 - 2 * u);
+            if (ws > w) w = ws;
+            if (dist < bestD) {
+                bestD = dist;
+                spiegel = seg[o + 8] + (seg[o + 9] - seg[o + 8]) * t;
+                [j, kn] = [seg[o + 10], seg[o + 11]];
+            }
+        }
+        return w > 0 ? { w, spiegel: spiegel + pegelHub(L, spiegel, j, kn) } : null;
+    }
+
     // DAS SEE-BECKEN an (x, z) → { bedY, w } oder null: bedY die flache, dichte Bett-Höhe, w ∈ [0, 1] die Zugehörigkeit (rampt
     // über den 1-Zellen-Ring zum Ufer); bilinear, der `lakeNear`-Early-Out hält die wasserlose Welt billig.
     function seeBecken(L, x, z) {
@@ -8923,6 +9017,8 @@
         KORN: KORN,
         KORN_KLASSEN: KORN_KLASSEN,
         sedimentFarbe: sedimentFarbe,
+        SOHLE: SOHLE,
+        flussSohle: flussSohle,
         pegelLauf: pegelLauf,
         pegelZustand: pegelZustand,
         pegelSchmelze: pegelSchmelze,
@@ -8951,6 +9047,7 @@
         hydroBand: hydroBand,
         hydroRegion: hydroRegion,
         flussKanal: flussKanal,
+        flussBank: flussBank,
         seeBecken: seeBecken,
         gewaesserForm: gewaesserForm,
         dichteSpalte: dichteSpalte,
