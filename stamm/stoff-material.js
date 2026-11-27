@@ -407,7 +407,12 @@ class AnazhRealm_stoff_material {
     //   Wechsel an t verwirft die Anker danach (ihre Zukunft galt anderen Bedingungen). Höchstens 256 Anker in fünf
     //   Float64Array: die Frage baut nichts; voll fallen die ältesten 128.
     // → m. Leser: `_boePhase` (CPU `_windAt`, GPU uBoePhase).
+    // DIE UHR IST ENDLICH (rauch-nan): eine Uhr, die keine Zahl ist, wirft hier beim Namen — sie wird nie ein Anker. Bis hier nahm
+    // die Reihe `undefined` (die Bild-Uhr nach der Rücknahme der Bühne; `_wetterFeldAm` und phyto-core `windRichtung` ersetzen sie
+    // still) als Anker t NaN, s NaN, und weil `H.t[i] > t` an NaN falsch ist, las jede spätere Frage ihn: GTX 1060 am eef726c7,
+    // aufwaerts#1 — Böe, Wind am Rauch und `uBoePhase` nie mehr endlich, die Fahne des Brands warf jeden Takt (gate:wetter-wache Ö2)
     _boeWeg(t) {
+        if (!Number.isFinite(t)) throw new Error("_boeWeg: die Uhr der Böe ist endlich (" + t + ")");
         const pm = this.state.playerMesh;
         const [ox, oz] = pm ? [pm.position.x, pm.position.z] : [0, 0];
         const U = this._wetterFeldAm(ox, oz, t, this._boeFeldAus || (this._boeFeldAus = {}), false).wind;
