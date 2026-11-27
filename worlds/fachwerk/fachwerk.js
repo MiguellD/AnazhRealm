@@ -208,7 +208,7 @@ function buildDorf(dp){
   const maxDyn=Math.max(3,Math.min(9,(plan.norm.budget/42000)|0));                          // VOGEL-GESETZ: nichts initial voll — der Budget-Regler ist die Ring-Tiefe
   let prims=0, nVoll=0, nProxy=0;
   for(const hp of plan.houses){
-    { const st=stapelBau(Object.assign({},hp,{nur:MASSNUR}), LOD1F);                          // MASS-BUILD: Systemmaß in ~½ Zeit, Δext=0 bewiesen
+    { const st=stapelBau(Object.assign({},hp,{nur:MASSNUR,__nurMass:true}), LOD1F);                         // MASS-BUILD: Systemmaß in ~½ Zeit, Δext=0 bewiesen
       const bx=FC.koerperHuelle(st.g);                                                           // DIE EINE Hülle (los-huelle): der Körper ohne die Teile der Öffnungen — dieselbe Box wie massBau, das Los der Welt
       const eB={x0:bx.min.x,x1:bx.max.x,z0:bx.min.z,z1:bx.max.z,y1:bx.max.y};
       st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); });
@@ -744,7 +744,7 @@ function buildAusstattungLab(){
 const LODNAME=['Editor · voll (live)','Ring A · Promotion (gebakt)','Chunk Stufe 1 · nah','Chunk Stufe 2 · Destillat','Chunk Stufe 3 · Vogel'];
 function buildHausLOD(params, stufe){
   haus=null; solids=[]; doorList.length=0;
-  const mass=stapelBau(Object.assign({},params,{nur:MASSNUR}), LOD1F);                       // MASS-BUILD liefert ext/dims — identisch zu buildDorf
+  const mass=stapelBau(Object.assign({},params,{nur:MASSNUR,__nurMass:true}), LOD1F);                      // MASS-BUILD liefert ext/dims — identisch zu buildDorf
   const bx=FC.koerperHuelle(mass.g);                                                          // DIE EINE Hülle (los-huelle), wie massBau
   const B={p:params, q:{phi:0,x:0,y:0,z:0,obb:{cx:0,cz:0}}, lod:'chunk', dyn:false,
            ext:{x0:bx.min.x,x1:bx.max.x,z0:bx.min.z,z1:bx.max.z,y1:bx.max.y}, dims:mass.H.dims, fp:fpVon(mass.H), masse:masseVon(mass),
