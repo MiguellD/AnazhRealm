@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "eef726c7",
-    "zeit": "2026-11-27T09:28:51.568Z",
+    "zeit": "2026-11-27T09:36:31.982Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -3794,7 +3794,7 @@
           "punkte": 1,
           "staffel": "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
           "messung": "`werkbank haenger 60 --regler frei --wandern bahn` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`). Der Regler ist der des Spielers (R8): ohne Angabe fährt `haenger` voll; `--wandern kreis` kennt der Kopf nicht.",
-          "beleg": "Maschine: Gehen 58 Bilder · max 91.93 ms · 79.31 % > 33 ms · Fahrt 52 Bilder · max 100.41 ms · 92.31 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 79.31 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.41), 92.31 % > 33 ms an eef726c7 radeon · gehalten: Gehen 92 Bilder · max 83.25 ms · 13.04 % > 33 ms · Fahrt 5 Bilder · max 75.02 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 13.04 % > 33 ms | Fahrt: blind (5 Bilder in 2.5 s), 80.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 99649186 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an eef726c7: Last: Referenz f 1,277 (Faden 1,277 · alle Kerne 1,056; vor 106,6/273,1 ms, nach 85,6/249,4 ms, Ruhe 83,5/258,5 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +44)",
+          "beleg": "Maschine: Gehen 58 Bilder · max 91.93 ms · 79.31 % > 33 ms · Fahrt 52 Bilder · max 100.41 ms · 92.31 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 79.31 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.41), 92.31 % > 33 ms an eef726c7 radeon · Gehen 76 Bilder · max 91.67 ms · 26.32 % > 33 ms · Fahrt 45 Bilder · max 133.38 ms · 95.56 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 26.32 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 133.38), 95.56 % > 33 ms an eef726c7 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an eef726c7: Last: Referenz f 1,277 (Faden 1,277 · alle Kerne 1,056; vor 106,6/273,1 ms, nach 85,6/249,4 ms, Ruhe 83,5/258,5 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · profiband.K4#2 gtx: ROT: Gehen 76 Bilder · max 91.67 ms · 26.32 % > 33 ms · Fahrt 45 Bilder · max 133.38 ms · 95.56 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 26.32 % > 33 ms | Fahrt: 6 Bild(er) > 100 ms (max 133.38), 95.56 % > 33 ms an eef726c7",
           "schlupfloch": "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt; den Regler auf voll stellen, um den Spieler-Takt zu meiden: R8 fährt den Regler des Spielers.",
           "aenderung": "Gemessen 0 → 1 (M29, e5003509, GTX, Regler des Spielers): kein Schnitt, die Messung am Kopf; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an b0b2d8ed gemessen (M34) 22.10. 0 → 1.; nach R6 (stadt-takt, fahrt-takt-Folge-Morphs, 16dd81d0) 23.10. 1 → 0.",
           "maschine": true
@@ -4388,8 +4388,8 @@
     "art": {
       "linse": 1,
       "ungemessen": 11,
-      "rot": 0,
-      "anderes": 37
+      "rot": 1,
+      "anderes": 36
     }
   },
   "ohneHebel": [
