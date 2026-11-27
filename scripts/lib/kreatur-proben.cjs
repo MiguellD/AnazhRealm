@@ -3992,7 +3992,10 @@ async function kreaturProben(r, T, opts) {
         const [seed, [x, z], nH] = [same(o), o.gruendung.anker, voll ? 300 : 30];
         // die Stadt DIESES Orts: Same gleich und ihr Ursprung näher an seinem Anker als an dem jedes anderen Orts mit demselben
         // Samen (stadt und stadt-voll tragen beide Same 7, 174 m auseinander — ein Kreis von 200 m nahm die Stadt des anderen)
-        const fremd = orte.filter((m) => m !== o && same(m) === seed).map((m) => m.gruendung.anker);
+        // (ort-zeichen gründet dieselbe Stadt wie stadt-voll: derselbe Anker ist dieselbe Stadt, nie eine fremde)
+        const fremd = orte
+            .filter((m) => same(m) === seed && Math.hypot(m.gruendung.anker[0] - x, m.gruendung.anker[1] - z) > 1)
+            .map((m) => m.gruendung.anker);
         const S0 = () =>
             [...(r._bewohnerSiedlungen || new Map()).values()]
                 .filter((q) => q.plan.seed === seed && Math.hypot(q.ox - x, q.oz - z) < 200)
