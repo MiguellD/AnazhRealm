@@ -1,7 +1,7 @@
 {
  "sha": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e",
  "geraet": "gtx",
- "zeit": "2026-11-27T05:41:50.921Z",
+ "zeit": "2026-11-27T05:44:46.604Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#2": {
@@ -1275,6 +1275,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.tiere.wanderung#2": {
+   "gruen": true,
+   "zahl": "S2 ausdehnungM 378,385 m gegen Soll ≥ 100 m ✓ · spieltage 1 Spieltage gegen Soll ≥ 1 Spieltage ✓ · Zeuge: die Welt geändert",
+   "exit": 0,
+   "minuten": 1.54,
+   "gpu": "nvidia/pascal",
+   "konsum": "kf78e24ec2f4f",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kad50ecd94cab",
+   "s": 92.5,
+   "fremd": {
+    "s": 95.1,
+    "takte": 43,
+    "fremdS": 49.09,
+    "kerne": 0.516,
+    "fensterKerne": 0.974,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      10.89
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      9.2
+     ],
+     [
+      "Explorer.EXE",
+      4.66
+     ]
+    ],
+    "dienerS": 28.3,
+    "diener": [
+     [
+      "System",
+      12.77
+     ],
+     [
+      "dwm.exe",
+      8.45
+     ]
+    ],
+    "geraetS": 41.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.69
+     ],
+     [
+      "svchost.exe",
+      12.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.75
+     ]
+    ],
+    "eigenS": 236.56,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T05:44:46.604Z",
+   "abdruck": "567ca9f1f3a3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1293,7 +1362,8 @@
   "k09224374c721": "bVXbjpswFPyXPHbLmmsAS/vgLFslUtNmP+HYHBs2BCKbhCpV/73CG5IA6wfEZY5nPGds/i6OIPag8PnDNPWCLr4tvi8MnNExqM+onz/Mgi5S4fkY0P6T0OWxNaQqOQFeQ3FA56RbLKtnYaFyCW7EKenemNoRIsmFZN3Ly7S04pg3TgsSh0IXgyjBGcfJKODowElasis4ClNcepTYkWRsm5Hb6ARju450u2Q9mYxDnY/Vel4Ky5iybsMYe5+qzEvA1qnK2gy8Xh6n0qV3ru2sRkPnXACLCvW1CBPPC/kgdsUYs9ZMCmV1MmZElgR55CeUkHSKVWhKUbTOUTcc6yucp37sAV3N3VbHkyMfFQHnkPCp1wVgrVCPNLiBkL3Rf5LppHs4oAanhuIKTd0g9vndG0LIeq6lssItxU2454IHo8K+qZ8G52w0dvatGlCyGz6IG0Td7rJPXDfTbkRR6sPYPhmi7wb051yyKSBH7ewb097QAcahy6ml2WTkU1uymlbeFzv0FACShwCRhLD1XF8j2w40Oup4GkIUYhRHlLHNDNzC4TC0KxcBimljTdsH/1GGn8ooCikhT1ebZ4v+3CbOBcsKbzkWcZDS1yycgs8aDg5wpUsphzTwSMj0q/B2WLUOb5p2sNKL4yCgJCD1YwB+2dZuHnqfqfdw+4Opt3EkNmwqxzI0uh2Ec+BBGFKpsoSQRE7RpW6dDkRxM0dyhF76rC8X1BUqHFkpPQ/8nNpjx6rskxBfjwf5NAr1ZT5jib3JtTmZwWUBIY/oF23pUO851PsrUHhLEL6N4GrLdmNTXlW/Ncg5IWOvVoHdIr/Z2j6vlL30JEcU5KgbWfanJCngZAqo2vtv4d9/",
   "k63a9a1370958": "tVZNr6M2FP0vWfaVZwgQwNIsnJDqpe2TMstZXptrw4RAZENcpep/ryAhCZCRRpXqFSTnfp17jpO/FycQB1D4/t3U1YIufln8ujBwRsegPqN+/24WdJEIb4k+ZddDGGObDiZ0cWoMyQpQzkEjNK12SuRYvYs+zE1QhjEl/8NJLWNsx+5HrbfdBz9sq4FDc+tKYhKCS9eKMcu+fHmKKAtOgFeQH9FpdYNFOYSswA05JXbL1J4QSS7XBm5n+yJNyTGrnQYkDklc9MMY6RTYGgUcHWhlX/gGDoMEV96Nujhln+ljdisY21ti9/EHY+xtPa/OocrGE3heAquIMrvbMPZ1is8KwMYpi8oM9b0sSqT7WJ39nMVosM4FMC9R34Iw9ryAD02v+73sCZkEyrI1ZlQs9rNw2ekkmWIVmkLkjXPS9UNWPFlGHtC1nc2tTq0jnzsCziHmU85zwEqhHvXg+kJ2hP8VT5Me4IganAryGzRx/WjJR7L+mPcyKO+IlRFDqOdLDMR/cEQsf5B+xEyYrZDHlP3s2Yze1j8d1y2Wbb9NWir7VfWk3lflueDBZN44JedOUtk4477/Ug0oeTeYeCo6o9mIvNDHMQ0ywKXr0z/nSzE5ZKidQ22aO9rHKHD5lbRdSq69xOtp5GO4QbUAED9ZhMSEfczUY2rZWNDoqFM72CTAMAopY7sZuIHjcRBkJnwUL3dp2fZFZJWN2lsmMgwDSsjb9eqYk3G9IJwLFiXeHSwiP6GbNJiCzxqODnClCykHH/BQyOSVbS2WjcPrerhyfS+KfL+jqnoWwr5f8dMtzlL1Nfj8janteOA/2MdZzWbuq9S6GZrnwP0goNKm8QvD2EI3jgWR3wmSHCGhxIpp4gvqEhWO6JSeB8uM9pfvvdtgeHgbCfwyU8GlwI7oyrRmYFpAwEP6YjUW9YFDdbgBhbcCsaS/dwb9ZPsxMRvV2aS30+gkpLOzQpE+o3c3+5xQkJOuZdH9TpAcWpND2Yz+AVwhLUreYl5hp6+mqCusHqh//gU=",
   "k0fc63a6d6a0a": "bVVdj5swEPwveeyVM58HWLoHEyJdpF6be+zj2qyBC4HIhrhK1f9eQUIS4PzKjGd2dtf8XR1B7CHH50/d1Cu6+rb6vtJwQkujOqF6/tQruoqF46JH2eUQxti6hwlVHltNqpIT4DUUB7Q61WJZPYuBJl/ADjglZsPyHSGSnElqXl/n1Ipj1lgtSByJNnpBhHQO7HQOHC3o5CB2BQd+jC8OJcOJUvaektv5EzG2M8TsorfZZRzqbOrWcWJ4CSkz2zVjH3OXWQnYWlVZ61HXycJY2vSmZd4XHAXGOgMWFaorCSPH8floNunj7KOZEWXVaT0Ri7wscCNKSDzH5qhLUbTWUTUc6yucx27oAE2WaefHzpKPjoBziPg86wKwzlFNPNiekJeg5WBfP+1kH3DC5iJ7OKACq4biSo1tL3T5PStCyNvSWzUUMkjeCnFscGBC7JtMTn3gGZuc3fAxH1HSjB/EDZKzhagWRakO0/ikj67t0R/5El1AhsraN7q9oT0MfZtftmObkouXKJkz78WNPQWA6GGASETYW7RQbGRrQKGVH7txiHwMwoAytl2AWzgcxnZlwkNB2eJsvmDV2cSaG8sg8CkhT5dlWvbqsjrWGcsKb7MtQi+eT9JJwcECnqtSynEaeCBk/NUwG6xaizdNO0brhKHn9RHVjwPwc2jt9qGmNP/w2yoxm2mp28VoDgqNakfTHLjn+1TmaURIJOfoUrWWAVHcgpEcIabE/J5ffEZVYY6TGKXjgJtRYi4LQ879cxRenwv5NBnq86Lz5xL7gGvd6TFhAT4P6BctMaj2HOr9FSicFxAu/cEYS97Z7h5IkrPNuulXg5wiMs0q8YYVWbP0AjWM/UoJuwodUZCjamTZv5ykgE4XULX338a//w==",
-  "k7f551da007d8": "bVVdj5swEPwveezVZz4DWLoHp7kqqRop9xPWZg1cCCAbQpWq/72CBBLg9oGXzHrHM7PO31UF8gQJvn6aslix1bfV95WBCxKD+oL69dOs2CqStoMu47einPMfHUzqrKoNzTNBQRSQnpE0usYsf5V9m1qD5QtG23eeHClV9Eq3LR/rnb+9zY/JBcYlqUHhcIiFrh8imwMbk4BAAo3qB9/Bvhfh2ma0r3DLD1s6Vis5P7a0PYY7zvnLZjldQBFPb2DbEawDxts95/xjjo8zwJrkWWGG+XYcRMpij5mHRY+GllwB0xz1vQlD2/bEQHrTSdPJNWtUeWPMZFjoxr4TMkqjOTZBk8m0JpUuBRZ3uIicwAa2aRf3TqqGqGdGIASEYq55ClgkqCccLFeqTvA/4fzQE5xRAykgvUMjyw0c8dCGUrpbcsl74v2IkbhtgQ2Txs5ceukEjvmkjv2PyYBSY9zkCEmWxhuZZvo8lUt56Fgu+72kaFKIUZNTaeoR7WLgWeK2IfstvXEJN/POx+UGDwEgfAoMDSnfLbQ0papb0EiSqhlC46Ef+Izz/QJcw/k82BNLF+XcSFN3QX+m4UTK9z1G6cttYZaXvq0FuWKW45hbGbgR+7Hlc/BFw5mASHSm1OC+8KWKvgpri3lNRFnWg5R2ELhuJ0nxbPixt3L/5PU2+fAOP3n7Po3AfkGnn1DqeiAuQLiex1SyDSkN1Ryd6Zq0INNRHCUQOuoLX66oc0xwIqWybXBi1j83PcsuCcH9OVAvkxBflydm2IlcmMYMKkvwhM++sKVFfRJQnO5Aaa9BOuwX53xz4MepKJ9Vtwr9ykzL7VcC5a6HbZL+s7+vSIWSVrpUWfcy0hQak0JeP/4q/v0H"
+  "k7f551da007d8": "bVVdj5swEPwveezVZz4DWLoHp7kqqRop9xPWZg1cCCAbQpWq/72CBBLg9oGXzHrHM7PO31UF8gQJvn6aslix1bfV95WBCxKD+oL69dOs2CqStoMu47einPMfHUzqrKoNzTNBQRSQnpE0usYsf5V9m1qD5QtG23eeHClV9Eq3LR/rnb+9zY/JBcYlqUHhcIiFrh8imwMbk4BAAo3qB9/Bvhfh2ma0r3DLD1s6Vis5P7a0PYY7zvnLZjldQBFPb2DbEawDxts95/xjjo8zwJrkWWGG+XYcRMpij5mHRY+GllwB0xz1vQlD2/bEQHrTSdPJNWtUeWPMZFjoxr4TMkqjOTZBk8m0JpUuBRZ3uIicwAa2aRf3TqqGqGdGIASEYq55ClgkqCccLFeqTvA/4fzQE5xRAykgvUMjyw0c8dCGUrpbcsl74v2IkbhtgQ2Txs5ceukEjvmkjv2PyYBSY9zkCEmWxhuZZvo8lUt56Fgu+72kaFKIUZNTaeoR7WLgWeK2IfstvXEJN/POx+UGDwEgfAoMDSnfLbQ0papb0EiSqhlC46Ef+Izz/QJcw/k82BNLF+XcSFN3QX+m4UTK9z1G6cttYZaXvq0FuWKW45hbGbgR+7Hlc/BFw5mASHSm1OC+8KWKvgpri3lNRFnWg5R2ELhuJ0nxbPixt3L/5PU2+fAOP3n7Po3AfkGnn1DqeiAuQLiex1SyDSkN1Ryd6Zq0INNRHCUQOuoLX66oc0xwIqWybXBi1j83PcsuCcH9OVAvkxBflydm2IlcmMYMKkvwhM++sKVFfRJQnO5Aaa9BOuwX53xz4MepKJ9Vtwr9ykzL7VcC5a6HbZL+s7+vSIWSVrpUWfcy0hQak0JeP/4q/v0H",
+  "kf78e24ec2f4f": "bVXRbqMwEPyXPLbnGgIUsNQHp4mUVFcd/YS1WRsaApFNQpXT/fsJEmiA7iuzu+OZsfm7OILcg8anT1uVC7Z4WPxaWDgjsWjOaJ4+7YItYuku0WP8WpRz/trCpMmPtaVpDprUORqiodRPsmt5uAMUuaAgSsgOSE6mxry4gdQzOIFgtNlwnVCq6IWuGz7Uhr+8TMcUAtOK1KCwH+KgF0TIpsCT1SCQwEl1i2/gwI/x2WW0q2jN39d0qK+I86ShTRJteeK/TQYKKNMxe9eN4TlkvNlxzj+mTNMcsCZFXtp+t5uGsXLYsK95n/UYaMgFMCvQ3Jowcl1f9IRXrSytVJNGVZysHS2LvDRYRozSeIrVaHOZ1eRoKoHlDS7iZegCWzUzxfXxRNQ9IxACIjHVOwMsNZoRB8eTqhX7K5oO3cMBDZASshs0drxwKb61oZRu51yKjni3YiDuOuDCqLE1lp5bgVM+qqT7qHuUGqImB4ieR87KLDeHsVzKx6Xjsd9zijaDFA3ZV7Ye0B6GviOu12e3plcu0Wra+X243kMAiO4CQyPKtzMtbaXqBgwSfTz1ofExCAPG+W4GruFw6O1JpYdyaqSt26Df01jGKgh8Runj9bLMD329FuSCeYFDbmXoxex17U/BZwMHAkKbXKnefRFIFf8U1gaLmoiqqnsp3TD0vFaS8t7wpLNyd+f1Wn/4dbFqNuMI7DhP9Ix/t6UydU9egPB8nym9jiiN1BSdm5o0ILNBICUQWvozby5oCtQ4klO5LixTRht15X5pn53w9iSox1GQL/OJObZCl/Zke6Ul+CJgP1jToNkLKPc3oHSfQS7ZG+d89c6TkS6bz2N7HWhCJxV3cW3wY9vhVg3nf9aU3xYdUdKjqVTevo40g5PNoKi//yX//gM="
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
@@ -1511,21 +1581,6 @@
    "modus": "session",
    "offen": 2,
    "fahrt": "19276@mwyjv7oh"
-  },
-  "karte2.leben.tiere.wanderung#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-27T05:10:10.749Z",
-   "abdruck": "567ca9f1f3a3",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "offen": 1,
-   "fahrt": "21016@mwyimcjy"
   },
   "karte2.erleben.klang.stimme#1": {
    "gruen": false,
