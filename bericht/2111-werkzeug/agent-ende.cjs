@@ -1,12 +1,15 @@
-// node agent-ende.cjs <agent-id> [n] — die letzten n Text-Blöcke (Assistent) eines Arbeiters aus seinem Live-Protokoll, mit Zeit (lokal).
-const fs = require("fs"), path = require("path");
-const id = process.argv[2], n = +process.argv[3] || 1;
-const f = path.join("C:\\Users\\micha\\.claude\\projects\\C--Users-micha-AnazhRealm-profiband\\8102ed24-705b-45e3-93c0-62b2433d4fab\\subagents", "agent-" + id + ".jsonl");
-const zeilen = fs.readFileSync(f, "utf8").split("\n").filter(Boolean);
-const texte = [];
-for (const z of zeilen) {
-    let o; try { o = JSON.parse(z); } catch (e) { continue; }
-    const m = o.message; if (!m || m.role !== "assistant" || !Array.isArray(m.content)) continue;
-    for (const c of m.content) if (c.type === "text" && c.text && c.text.trim()) texte.push([o.timestamp, c.text]);
+// liest die letzten n Text-Blöcke (assistant) und Werkzeug-Rufe eines Agenten-Verlaufs (JSONL) — nur die letzten 400 KB
+const fs = require("fs");
+const f = process.argv[2], n = Number(process.argv[3] || 4);
+const st = fs.statSync(f), len = Math.min(st.size, 6000000), b = Buffer.alloc(len);
+const fd = fs.openSync(f, "r"); fs.readSync(fd, b, 0, len, st.size - len); fs.closeSync(fd);
+const out = [];
+for (const z of b.toString("utf8").split("\n")) {
+    let j; try { j = JSON.parse(z); } catch { continue; }
+    const m = j && j.message; if (!m || m.role !== "assistant" || !Array.isArray(m.content)) continue;
+    for (const c of m.content) {
+        if (c.type === "text" && c.text.trim()) out.push((j.timestamp || "").slice(11, 19) + " TEXT " + c.text.replace(/\s+/g, " ").slice(0, 700));
+        if (c.type === "tool_use") out.push((j.timestamp || "").slice(11, 19) + " RUF " + c.name + " " + JSON.stringify(c.input.description || c.input.command || c.input.file_path || "").slice(0, 220));
+    }
 }
-for (const [t, x] of texte.slice(-n)) console.log("=== " + new Date(t).toLocaleTimeString("de-DE") + " ===\n" + x + "\n");
+console.log(out.slice(-n).join("\n"));
