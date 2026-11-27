@@ -1424,7 +1424,7 @@ class AnazhRealm_gelaende_chunks {
                 if (Math.hypot((cx + 0.5) * span - heim.x, (cz + 0.5) * span - heim.z) > reich + span) continue;
                 for (const l of this._landmarkenDesChunks(cx, cz)) {
                     const h = this._landmarkeHoehe(l);
-                    if (h > 0) marken.push({ art: l.art, x: l.x, y: l.y + h, z: l.z, h });
+                    if (h > 0) marken.push({ art: l.art, seed: l.seed, x: l.x, y: l.y + h, z: l.z, h });
                 }
             }
         const grund = (x, z) => K.hoehe(L, x, z, true);
@@ -1458,7 +1458,7 @@ class AnazhRealm_gelaende_chunks {
             const F = this._frustumVon(kam, true);
             return m.find((w) => F.containsPoint(new THREE.Vector3(w.q.x, w.q.y, w.q.z))) || null;
         };
-        const marke = (w) => ({ art: w.q.art, x: w.q.x, y: w.q.y, z: w.q.z, d: w.d });
+        const marke = (w) => ({ art: w.q.art, seed: w.q.seed, x: w.q.x, y: w.q.y, z: w.q.z, d: w.d });
         const h0 = augeAn(heim.x, heim.z);
         const f0 = freie(h0);
         const traegt = f0.length ? imKegel(h0, 0, f0) : null;

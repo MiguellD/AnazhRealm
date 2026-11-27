@@ -1696,6 +1696,51 @@ class AnazhRealm_koerper_bewegung {
         return F;
     }
 
+    // DER ZIEL-GANG (landmarken-geologie-8 Kopf 6, erleben.spieler.wegfindung#2): der Gang des Spielers zu einer Landmarke — Start,
+    // Ziel, gegangener Weg. Die Ankunft beginnt ihn mit ihrer Marke (`_genesisAnkunft`: die Welt zeigt sie im ersten Blick), jeder
+    // Sim-Schritt trägt ihn fort (`_zielGangSchritt` in `_stepFixedSim`). Am Ziel steht, wer den Fuß der Marke (`_landmarkeFuss`)
+    // plus seinen Leib-Radius erreicht — ihre Hülle ist sein Blocker, dort berührt er sie. Umweg = gegangener Weg ÷ Luftlinie bis
+    // zu diesem Kreis (die „path efficiency“ der Wegfindungs-Forschung). `marke` = {art, seed, x, z} → der Gang (`state.zielGang`)
+    // oder null, wo die Marke keine Hülle trägt.
+    _zielGangBeginn(marke) {
+        const fuss = marke ? this._landmarkeFuss(marke) : null;
+        if (!(fuss > 0)) return (this.state.zielGang = null);
+        const p = this.state.playerMesh.position;
+        const r = fuss + AnazhRealm.PLAYER_WALL_RADIUS;
+        const g = {
+            ziel: { art: marke.art, x: marke.x, z: marke.z, r },
+            start: { x: p.x, z: p.z },
+            luft: Math.max(0, Math.hypot(marke.x - p.x, marke.z - p.z) - r),
+            weg: 0,
+            schritte: 0,
+            ende: null,
+        };
+        this._augeSprung(g, p.x, p.y, p.z); // die Lage des Starts: das EINE Sprung-Maß kennt sie
+        return (this.state.zielGang = g);
+    }
+
+    // Ein Sim-Schritt des Ziel-Gangs: der waagrechte Weg seit dem letzten Schritt (die Lage nach Bewegung und Physik); am Kreis
+    // des Ziels das Ende {erfolg, weg, luft, umweg, s}. Ein Sprung der Lage (Tor, Umsetzen — `_augeSprung`, ZEIT_SPRUNG_M) ist
+    // kein Gang: er endet ohne Erfolg beim Namen. Leser: die Station der Wegfindung (erleben.spieler.wegfindung#2).
+    _zielGangSchritt(dt) {
+        const g = this.state.zielGang;
+        if (!g || g.ende) return;
+        const p = this.state.playerMesh.position;
+        const schritt = Math.hypot(p.x - g.augeX, p.z - g.augeZ);
+        g.schritte++;
+        if (this._augeSprung(g, p.x, p.y, p.z))
+            return void (g.ende = { erfolg: false, grund: "sprung", weg: g.weg, luft: g.luft, s: g.schritte * dt });
+        g.weg += schritt;
+        if (Math.hypot(g.ziel.x - p.x, g.ziel.z - p.z) <= g.ziel.r)
+            g.ende = {
+                erfolg: true,
+                weg: g.weg,
+                luft: g.luft,
+                umweg: g.luft > 0 ? g.weg / g.luft : 1,
+                s: g.schritte * dt,
+            };
+    }
+
     // DER FADENKREUZ-PUNKT: wo der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`) zuerst trifft — ein Tier (_pickCreatureAtCrosshair)
     // oder die Welt (Gelände und Bauten, _raycastWorldHit) —, sonst der Punkt in maxDist auf dem Strahl. Der Pfeil zielt darauf:
     // aus der Mündung an der Schulter kreuzt er das Fadenkreuz am Ziel. DAS TIER ZUERST (Welle LF, Posten 4): vorher zählte nur

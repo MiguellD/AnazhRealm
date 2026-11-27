@@ -1,8 +1,8 @@
 diff --git a/meisterkarte-quelle/punkte/stationen/k2-erleben.js b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
-index 6d514937a..cc8f5e1aa 100644
+index 6d514937a..f6f6e087e 100644
 --- a/meisterkarte-quelle/punkte/stationen/k2-erleben.js
 +++ b/meisterkarte-quelle/punkte/stationen/k2-erleben.js
-@@ -5,33 +5,202 @@
+@@ -5,33 +5,245 @@
  "use strict";
  const { leiter } = require("./k2-same.js").geruest;
  const { SAATEN } = require("./sitzung-seite.js");
@@ -166,7 +166,8 @@ index 6d514937a..cc8f5e1aa 100644
 +        }
 +        sichtbar++;
 +        offen.push(Object.assign({ q }, s));
-+    }
+     }
+-    return { n13, imBild, treffer: imBild > 0 ? 1 : 0, geladen: (st.architectures || []).length, x: p.x, z: p.z };
 +    // DER KONTRAST je sichtbarer Landmarke (die nächsten vier, nah zuerst) aus dem Leser des Spiels: die erste mit ≥ 0,1 trägt den Wert,
 +    // sonst die nächste sichtbare. Die Albedo kommt mit der Lieferung der Stufe 1 (`_landmarkeFarbe`: bis sie liegt, wartet der Leser,
 +    // höchstens 3 s je Marke — wie der March wartet); ohne Himmel auf der CPU (`_skyEnvData`) bleibt der Kontrast ungemessen beim Namen.
@@ -219,14 +220,56 @@ index 6d514937a..cc8f5e1aa 100644
 +        Object.assign(w, { art: best.q.art, d: +best.q.d.toFixed(1), hoehe: +best.q.h.toFixed(2), durchlass: +T0[1].toFixed(4), durchlassRgb: T0.map((t) => +t.toFixed(4)), hinter: best.hinter, vorHimmel: best.hinter === "himmel" });
 +        if (best.k) Object.assign(w, { c0: +best.k.c0.toFixed(4), sonne: +best.k.sonne.toFixed(3), albedo: best.k.albedo.map((a) => +a.toFixed(3)) });
 +        if (best.punkt) Object.assign(w, { dHinter: best.dh, durchlassHinter: +r._luftDurchlass(auge, best.punkt)[1].toFixed(4) });
-     }
--    return { n13, imBild, treffer: imBild > 0 ? 1 : 0, geladen: (st.architectures || []).length, x: p.x, z: p.z };
++    }
 +    if (zeuge) Object.assign(w, zeuge);
 +    return w;
++};
++
++// DER ZIEL-GANG (erleben.spieler.wegfindung#2): je Landmarke in a.umM um den Stand des Spielers (das Gesetz `_landmarkenDesChunks`,
++// derselbe Wurf wie LANDMARKE_AN) geht der Testspieler nach Sicht — die Peilung auf die Marke ist sein einziges Wissen (kein Weg,
++// keine Karte), die Taste „vor" im EINEN Sim-Schritt des Spiels (`_stepFixedSim`, Gehen) —, bis der Leser des Spiels das Ende nennt
++// (`_zielGangBeginn` · `_zielGangSchritt`, stamm/koerper-bewegung.js, landmarken-geologie-8 Kopf 6: am Fuß der Marke + Leib-Radius,
++// Umweg = Weg ÷ Luftlinie). Ohne 1 m Fortschritt in 10 s heißt er „steckt", über 3 × Luftlinie „frist" (jenseits des doppelten Solls).
++// Der Gang läuft synchron (kein Takt der Seite dazwischen); danach steht der Spieler wieder an Stand und Gier.
++const ZIEL_GANG = (r, T, a) => {
++    const st = r.state, dt = r.constructor.FIXED_DT, p = st.playerMesh.position; // prettier-ignore
++    if (typeof r._zielGangBeginn !== "function" || typeof r._zielGangSchritt !== "function") return { fehlt: "der Ziel-Gang: stamm/koerper-bewegung.js `_zielGangBeginn`/`_zielGangSchritt` fehlt (landmarken-geologie-8 Kopf 6)" }; // prettier-ignore
++    const span = r._voxelChunkConfig().span, R = Math.ceil(a.umM / span) + 1, [x0, z0] = [p.x, p.z], [c0, d0] = [Math.floor(x0 / span), Math.floor(z0 / span)]; // prettier-ignore
++    const marken = [];
++    for (let cx = c0 - R; cx <= c0 + R; cx++) for (let cz = d0 - R; cz <= d0 + R; cz++) for (const l of r._landmarkenDesChunks(cx, cz)) { const d = Math.hypot(l.x - x0, l.z - z0); if (d <= a.umM) marken.push(Object.assign({ d }, l)); } // prettier-ignore
++    marken.sort((u, v) => u.d - v.d);
++    const [y0, gier, G] = [p.y, st.yaw, st.verbTafel.gehalten];
++    const je = [];
++    let sim = st._simZeit || 0;
++    for (const m of marken) {
++        p.set(x0, y0, z0);
++        if (st.playerVel) st.playerVel.setValue(0, 0, 0);
++        const g = r._zielGangBeginn(m);
++        if (!g) { je.push({ art: m.art, d: Math.round(m.d), ende: { erfolg: false, grund: "ohne Hülle (`_landmarkeFuss`)" } }); continue; } // prettier-ignore
++        let [n, bestD, bestS] = [0, Infinity, 0];
++        G.vor = true;
++        try {
++            while (!g.ende) {
++                st.yaw = r._blickGierZu(m.x - p.x, m.z - p.z);
++                r._stepFixedSim((sim += dt * 1000), dt);
++                const [d, s] = [Math.hypot(m.x - p.x, m.z - p.z), ++n * dt];
++                if (d < bestD - 1) [bestD, bestS] = [d, s];
++                if (s - bestS > 10) g.ende = { erfolg: false, grund: "steckt", weg: g.weg, luft: g.luft, s, bei: [Math.round(p.x), Math.round(p.z)], rest: Math.round(d) }; // prettier-ignore
++                else if (g.weg > 3 * g.luft + 1) g.ende = { erfolg: false, grund: "frist", weg: g.weg, luft: g.luft, s };
++            }
++        } finally {
++            G.vor = false;
++        }
++        je.push({ art: m.art, d: Math.round(m.d), r: +g.ziel.r.toFixed(2), ende: g.ende, schritte: n });
++    }
++    p.set(x0, y0, z0);
++    if (st.playerVel) st.playerVel.setValue(0, 0, 0);
++    st.yaw = gier;
++    return { je, tempo: st.speed };
  };
  
  // ═══════════════════════════════════════ Perspektive spieler ═══════════════════════════════════════
-@@ -395,7 +564,7 @@ const LANDMARKE_AN = async (r, T, a) => {
+@@ -395,7 +607,7 @@ const LANDMARKE_AN = async (r, T, a) => {
          leiter({
              leiter: "erleben.spieler.wegfindung",
              sek: 45,
@@ -235,12 +278,12 @@ index 6d514937a..cc8f5e1aa 100644
              welt: [{ wort: "gestirn_proben", ab: 5, was: "Gestirn-Lagen aus der Welt: die Mittags-Sonne je Saison-Wort und die Achse des Sternfelds" }],
              sprossen: {
                  1: {
-@@ -445,13 +614,88 @@ const LANDMARKE_AN = async (r, T, a) => {
+@@ -445,13 +657,88 @@ const LANDMARKE_AN = async (r, T, a) => {
                      umfang: { verlangt: 100, einheit: "Saaten der Sitzung", wortlaut: "N = 100 Saaten × 10 Ziele", feld: "richter" },
                  },
              },
 -            seite: { FAECHER, LANDMARKE_AN },
-+            seite: { SAATEN, LANDMARKE_AN },
++            seite: { SAATEN, LANDMARKE_AN, ZIEL_GANG },
              lauf: async function wegfindungLauf(H, P, L) {
                  const path = require("path");
 +                // DER PULS (Koordinator 27.11., der Deckel): neben jedem langen Ruf (die Saaten in EINEM Ruf, das Wachsen der Wiese in EINEM
@@ -326,7 +369,25 @@ index 6d514937a..cc8f5e1aa 100644
                  const z = await L.ev(`
                      const st = r.state;
                      const p = st.playerMesh.position;
-@@ -539,28 +783,7 @@ const LANDMARKE_AN = async (r, T, a) => {
+@@ -501,7 +788,16 @@ const LANDMARKE_AN = async (r, T, a) => {
+                 const zahl = (x, n) => String(+Number(x).toFixed(n == null ? 1 : n)).replace(".", ",");
+                 await L.je(2, async () => {
+                     if (z.lm1 < P.sprossen[2].umfang.verlangt) return L.umfang(2, z.lm1, "in 1 km um die Wiese steht keine Landmarke (felsturm/felsbogen, stamm/vegetation-baum.js:1519; " + z.lm13 + " in 1–3 km, " + z.lmAlle + " geladen)");
+-                    L.leser(2, "Erfolg und Umweg eines menschlichen Testspielers: kein Leser des Ziel-Gangs (Start, Ziel, gegangener Weg) — der Ort wäre eine Route neben `/latenz` (scripts/werkbank.cjs:1892), der Testspieler ein Panel (R11)", z.lm1);
++                    // DER ZIEL-GANG (H.seite.ZIEL_GANG): von der Wiese zu jeder Landmarke in 1 km, der Testspieler nach Sicht im Sim-Schritt des Spiels
++                    const g = await L.ev("return (" + H.seite.ZIEL_GANG + ")(r, T, { umM: 1000 });", Math.max(5, L.rest() - 2));
++                    if (g.fehlt) return L.leser(2, g.fehlt, z.lm1);
++                    if (!g.je.length) return L.umfang(2, 0, "das Gesetz wirft in 1 km um die Wiese keine Landmarke (`_landmarkenDesChunks`; geladen " + z.lm1 + ")");
++                    const gut = g.je.filter((x) => x.ende && x.ende.erfolg);
++                    const erfolg = +(gut.length / g.je.length).toFixed(3);
++                    const umweg = gut.length ? +Math.max(...gut.map((x) => x.ende.umweg)).toFixed(4) : null;
++                    const tafel = g.je.map((x) => x.art + " " + x.d + " m: " + (x.ende.erfolg ? "an nach " + Math.round(x.ende.weg) + " m (Umweg " + x.ende.umweg.toFixed(3) + ", " + Math.round(x.ende.s) + " s)" : x.ende.grund + (x.ende.rest != null ? " " + x.ende.rest + " m vor dem Ziel bei " + x.ende.bei.join("/") : ""))).join(" · ");
++                    L.zeile("wegfindung S2 Ziel-Gang (Leser stamm/koerper-bewegung.js `_zielGangSchritt`, Tempo " + g.tempo.toFixed(2) + " m/s): " + tafel);
++                    L.gemessen(2, umweg == null ? { erfolg } : { erfolg, umweg }, { erzeugt: g.je.length, welt: { landmarken: g.je.length }, taeter: "Ziel-Gang von der Wiese (der Testspieler nach Sicht: die Peilung auf die Marke, Gehen im Sim-Schritt des Spiels): Erfolg " + erfolg + ", Umweg (der größte) " + umweg + " · " + tafel });
+                 });
+                 await L.je(3, async () => {
+                     if (umfangKm < P.sprossen[3].umfang.verlangt) return L.umfang(3, umfangKm, "der Planet der Welt misst " + zahl(umfangKm) + " km Umfang");
+@@ -539,28 +835,7 @@ const LANDMARKE_AN = async (r, T, a) => {
                      L.leser(6, "Mittel der Epoche: die Reise ist ein Sprung der Konsole in eine neue Welt (stamm/feld-leben.js:1278 → `_reiseBetreten` stamm/netz-portal.js:660), keine Fahrt mit Karte, Schiff oder Fahrzeug der Epoche", umfangKm);
                  });
                  await L.je(7, async () => L.umfang(7, 1, "die Sitzung hält eine Saat (" + z.saat + ") und einen Planeten — kein Nachbarplanet, keine Bahn zwischen Planeten"));

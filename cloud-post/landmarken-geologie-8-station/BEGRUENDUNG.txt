@@ -6,6 +6,22 @@ Unterschied an meisterkarte-quelle/punkte/stationen/k2-erleben.js (Zweig `punkte
 Richter-Wortlaut sind unberührt; geändert sind LANDMARKE_AN, der Lauf der Leiter (S1 zuerst, der Puls) und `pfad` (+ stamm/bild-sicht.js,
 stamm/koerper-bewegung.js, stamm/siedlung-ort.js, die das Programm liest). `sek` bleibt 45 (der Kandidat von Kopf 4 trug 60).
 
+WIP (Zweig `landmarken-geologie-8-wip`, Kopf 6, auf Kopf 5 b32c6773; Koordinator 27.11. 04:40 Auftrag 3) — wegfindung#2
+- Der Leser des Ziel-Gangs steht im Spiel (stamm/koerper-bewegung.js `_zielGangBeginn` · `_zielGangSchritt`): Start, Ziel, gegangener
+  Weg je Sim-Schritt (`_stepFixedSim`, stamm/dirigent-takt.js), am Ziel = Fuß der Marke (`_landmarkeFuss`, Umkreis der Hülle
+  `_felsHuellBoxen` × Skala) + `PLAYER_WALL_RADIUS`; Umweg = Weg ÷ Luftlinie bis zu diesem Kreis; ein Sprung der Lage (`_augeSprung`)
+  endet ohne Erfolg beim Namen. Die Ankunft beginnt den Gang mit ihrer Marke (`_genesisAnkunft`).
+- Der Kandidat: ZIEL_GANG geht von der Wiese zu jeder Landmarke in 1 km (das Gesetz `_landmarkenDesChunks`), der Testspieler nach Sicht
+  (die Peilung, Taste „vor", Gehen) im Sim-Schritt des Spiels, synchron; steckt (10 s ohne 1 m) und frist (> 3 × Luftlinie) beim Namen;
+  S2 gemessen {erfolg, umweg (der größte)} statt LESER.
+- ZAHL (WebGL2 in der Wolke, Standard-Welt): 2 Landmarken in 1 km um die Wiese — Felsturm 519 m: an nach 513,5 m, Umweg 1,0000, 326 s
+  Spielzeit · Felsturm 897 m: an nach 892,5 m, Umweg 1,0000, 566 s · 53 547 Sim-Schritte in 1,5 s Wanduhr → Erfolg 1, Umweg 1,0000.
+- Die Wand des Gangs: in der Welt tragen 6 von 423 Einträgen Blocker, alle 6 Landmarken (4 Felsturm, 2 Felsbogen) — Bäume blocken
+  den Spieler nicht; das Gelände ist Gesetz (`getTerrainHeightAt`). Der Sim-Schritt ohne Takt verpasst keinen gestreamten Blocker.
+  Tempo 1,58 m/s = das volle Gehen: kein Hang drosselte.
+- Ehrlich offen: der Testspieler ist ein Peil-Gänger, kein Mensch (die Sprosse nennt „menschlicher Testspieler"; das Panel R11 setzt
+  der Schöpfer) · die Wiese-Route kreuzt kein Wasser und keinen Steilhang — die Station misst die Wiese, die die Sprosse nennt.
+
 AUFTRAG 1 — DER LESER VON C₀ (im Spiel, Kopf 5)
 - EIN Gesetz, zwei Leser: `flaechenLicht` und `halbraum` stehen in welt-licht.js mit zwei Sätzen von Rechen-Gliedern (`RECHNEN_TSL` reicht
   Knoten, `RECHNEN_ZAHL` rechnet je Kanal). `_weltLicht` (stamm/bild-sicht.js) und `_rueckstrahlHalbraum` (stamm/bild-schatten.js) bauen

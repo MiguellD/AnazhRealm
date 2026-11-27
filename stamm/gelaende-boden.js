@@ -657,6 +657,7 @@ class AnazhRealm_gelaende_boden {
             if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
             this.state._fieldVy = 0;
         }
+        this._zielGangBeginn(an.marke); // der Gang zur Marke des ersten Blicks (erleben.spieler.wegfindung#2)
         return a;
     }
 

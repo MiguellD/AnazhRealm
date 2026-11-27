@@ -1190,6 +1190,7 @@ class AnazhRealm_dirigent_takt {
         if (this._mountedEntry) this._mountedEntry._gierVor = this._mountedEntry._rideYaw;
         this._loopPlayerMovement(simTime, dt);
         this._loopPhysicsSync(dt, simTime);
+        this._zielGangSchritt(dt); // der Gang zur Landmarke an der Lage dieses Schritts (erleben.spieler.wegfindung#2)
         // DIE GERÄTE SCHWINGEN AUS (w4-koerper-park): ein Gerät, das kein Leib führt, schwingt nach dem Gesetz des Verbs aus, bis
         // es ruht (die Schaukel, die Wippe) — nur die wachen in Reichweite (`_leibAngebote`), jedes andere ruht als Zahl
         this._geraeteSchwingen(dt);

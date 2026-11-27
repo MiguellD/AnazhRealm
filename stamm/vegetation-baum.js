@@ -2683,6 +2683,18 @@ class AnazhRealm_vegetation_baum {
         );
     }
 
+    // DER FUSS EINER GEWORFENEN LANDMARKE (landmarken-geologie-8 Kopf 6): der Umkreis ihrer Hülle in der Ebene (`_felsHuellBoxen`
+    // × Welt-Skala ihres Presets, wie `_landmarkeHoehe`; der Kreis um jede Drehung der Gestalt) — wer ihn plus seinen Leib-Radius
+    // erreicht, steht an ihr. Leser: der Ziel-Gang (`_zielGangBeginn`). null ohne Hülle.
+    _landmarkeFuss(l) {
+        const boxen = this._felsHuellBoxen({ type: l.art, seed: l.seed });
+        if (!boxen) return null;
+        const s = this._foundryWorldScaleMatrix(this._foundryPresetFor(l.art)).elements[0];
+        const weit = ([x0, x1, , , z0, z1]) =>
+            Math.hypot(Math.max(Math.abs(x0), Math.abs(x1)), Math.max(Math.abs(z0), Math.abs(z1)));
+        return s * Math.max(...boxen.map(weit));
+    }
+
     // DIE ALBEDO EINER LANDMARKE IN DER FERNE (landmarken-geologie-8 Kopf 5): die Farbe, mit der der Welt-March sie zeichnet — der
     // Satz ihres Fits aus der Lieferung der Stufe 1 (`_archFitVon`: ihre Hülle in der Farbe des Fits, das Mittel ihrer Boxen nach
     // Volumen), derselbe Rumpf wie der Satz des Baus (`_archFoundryZiegel`). Die Lieferung bestellt der Flatten selbst (`_foundryZug`,
