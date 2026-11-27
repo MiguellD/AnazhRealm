@@ -2886,7 +2886,8 @@ class AnazhRealm_vegetation_wiese {
     // mit dem Stand des Erdbaus, der ihn warf, im Gedächtnis der Fälle (`_erdbauFaelle`) — eine Lieferung des Wald-Fadens, die vor
     // ihm geschickt wurde, verwirft nur ihre Zellen darin (`_erdbauFielSeit`, `_waldDartsAn`).
     // DER FALL IST EIN KASTEN AUCH FÜR DIE GEBORENEN (w14-strom-tempo): das Gedächtnis der geborenen Darts (`_forestGeborenKarte`,
-    // im Faden `waldGeboren` und `kammGeboren`) verliert nur die Zellen des Kastens — der Faden mit dem Erdbau im selben Zustand
+    // im Faden `waldGeboren`, der Stand der Kamm-Krone `kammStand` mit dem Fenster des Urteils) verliert nur die Zellen des
+    // Kastens — der Faden mit dem Erdbau im selben Zustand
     // (`waldFall`, voxel-worker `applyStateDelta`). Bis w14-strom-tempo trug der Stand-Schlüssel den Stand des Erdbaus und des
     // Falls: jeder Ort im Vorlauf warf beide Gedächtnisse ganz, und der Faden plante jede Zelle mit ihren Urteils-Nachbarn neu
     // (25 Zellen je Bestand). → der Kasten der geborenen Zellen [ga, gb, ha, hb].

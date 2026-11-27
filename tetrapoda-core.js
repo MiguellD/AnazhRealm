@@ -2940,8 +2940,8 @@
     // sie die Drift sehen und wenig Kraft zahlen; Fausch 1984), nie über haltMs (die Dauer-Schwimmleistung einer Bachforelle
     // ~1,5 m/s), nie im stehenden Wasser unter minMs. Je Stand glieder Fische, je Fisch sein Platz im Trupp (truppM, längs und
     // quer im Rahmen der Strömung). DIE RHEOTAXIS (fischSchritt): der Kopf steht GEGEN die Strömung am Ort des Fischs (positive
-    // Rheotaxis, Arnold 1974), gewendet mit wendeRad je s; der Leib pendelt um seinen Platz (pendelM, pendelHz) und schlägt mit
-    // dem Schwanz (schlagHz, schlagRad — die Gier des Bilds, nie die des Gesetzes). Ohne Strömung (See, Tümpel) zieht er seine
+    // Rheotaxis, Arnold 1974), gewendet mit wendeRad je s; der Leib pendelt um seinen Platz (pendelM, pendelHz) und schwimmt mit seiner
+    // Körperwelle (fischWelle, unten). Ohne Strömung (See, Tümpel) zieht er seine
     // Bahn ohne Richtung (kreisHz). DIE FLUCHT (fischFlucht): kommt der Spieler näher als fluchtM (der Schatten über dem Bach:
     // Forellen fliehen auf 3–6 m), schießt der Fisch mit fluchtMs längs des Laufs fort — stromauf oder stromab, auf der Seite,
     // auf der er steht —, bis wegM vom Spieler, und hält dort, Kopf wieder gegen die Strömung; nach ruheS kehrt er heim, wenn der
@@ -2951,6 +2951,15 @@
     // Wassertiefe über dem Bett. DER FISCH FOLGT DEM PEGEL (front-leben, Karte 2 leben.wasser.netz S1: Fisch-Hub ≥ 0,8 ×
     // Pegel-Hub): steigt der Spiegel um dh, steigt der Stand um tiefe × dh — mit 0,4 stand er in der unteren Säule und hob
     // sich mit 0,38 des Pegels (GTX 5b36f69a); der Rücken bleibt eine Leib-Höhe unter dem Spiegel (stamm `_fischTiefeY`).
+    // DIE KÖRPERWELLE (leben.tiere.bewegung#2, 27.11., ersetzt den starren Schlag schlagHz 2,5 / schlagRad 0,1, der St = 0,107
+    // trug): der Leib schwimmt, indem eine Welle vom Kopf zum Schwanz läuft — die Auslenkung an der Stelle x (0 Kopf … 1 Schwanz)
+    // ist h(x) = L·(c0 + c1·x + c2·x²)·sin(φ − 2π·x/λ) mit der Hülle huelle (Videler 1993, Köhler: 0,02 L am Kopf, 0,01 L
+    // bei 0,2, 0,10 L am Schwanz), der Wellenlänge wellenL × L (karangiform λ ≈ L) und der Welle, die schneller läuft als der
+    // Fisch: c = U / schlupf (Schlupf 0,6–0,8, Videler 1993; Forellen 0,60 und 0,82). Die Frequenz ist f = c/λ, getragen vom Tempo
+    // U des Leibs DURCH das Wasser (der Kolk-Steher schwimmt mit der Strömung am Ort, der Fliehende mit seiner Flucht) —
+    // St = f·A/U = 2·h(1)/(schlupf·wellenL) = 0,286, im Band der Tiere 0,2–0,4 (Taylor, Nudds & Thomas 2003), gesetzt wird
+    // keine Zahl davon (fischWelle). Der Leib wird als glieder Doppel-Keile längs der Welle gezeichnet, jeder auf seiner Stelle
+    // und gedreht in die Tangente der Welle (fischLeib; Quer- und Hoch-Maß je Glied × groesse, das Glied ueberlapp × L/n lang).
     var FISCH_GESETZ = Object.freeze({
         zelleM: 6,
         anteil: 0.55,
@@ -2965,13 +2974,53 @@
         pendelM: 0.3,
         pendelHz: 0.07,
         kreisHz: 0.05,
-        schlagHz: 2.5,
-        schlagRad: 0.1,
+        welle: Object.freeze({ huelle: [0.02, -0.0825, 0.1625], wellenL: 1, schlupf: 0.7 }),
         flucht: Object.freeze({ fluchtM: 4.5, fluchtMs: 2.8, wegM: 10, ruheS: 8 }),
         nahM: 48,
         zelleJeTakt: 48,
-        leib: Object.freeze({ groesse: [0.06, 0.075, 0.3], farbe: 0x6b6a52 }),
+        leib: Object.freeze({ groesse: [0.06, 0.075, 0.3], farbe: 0x6b6a52, glieder: [0.75, 1, 0.8, 0.45], ueberlapp: 1.8 }),
     });
+    // Die Welle bei dem Tempo U (m/s) des Leibs durch das Wasser: { hz, A (Schwanz-Ausschlag Spitze–Spitze, m), lambdaM, cMs, st }
+    // (st null ohne Tempo — der stehende Fisch schlägt nicht).
+    function fischWelle(U, F) {
+        var W = F.welle,
+            L = F.leib.groesse[2],
+            h = W.huelle;
+        var u = U > 0 ? U : 0,
+            lam = W.wellenL * L,
+            c = u / W.schlupf,
+            A = 2 * L * (h[0] + h[1] + h[2]),
+            hz = c / lam;
+        return { hz: hz, A: A, lambdaM: lam, cMs: c, st: u > 0 ? (hz * A) / u : null };
+    }
+    // Die Glieder des Leibs: f = der Fisch {x, y, z, gier, welle (φ, rad)}; schreibt out[3i … 3i+2] = x, z, Gier des Glieds i
+    // (0 am Kopf), die Mitte des Glieds auf der Welle (Blick +z, rechts = (cos Gier, −sin Gier)), seine Gier in der Tangente. Das
+    // Glied ist ueberlapp/n des Leibs lang; die Mitten liegen so, dass die Spitze des ersten den Kopf, die des letzten den
+    // Schwanz trifft (der gezeichnete Leib ist L lang).
+    function fischLeib(f, F, out) {
+        var W = F.welle,
+            h = W.huelle,
+            L = F.leib.groesse[2],
+            n = F.leib.glieder.length,
+            r = Math.min(0.5, F.leib.ueberlapp / (2 * n)),
+            k = 6.283185307179586 / W.wellenL,
+            sg = Math.sin(f.gier),
+            cg = Math.cos(f.gier),
+            phi = f.welle || 0;
+        for (var i = 0; i < n; i++) {
+            var x = n > 1 ? r + (i * (1 - 2 * r)) / (n - 1) : 0.5,
+                a = h[0] + h[1] * x + h[2] * x * x,
+                da = h[1] + 2 * h[2] * x,
+                q = phi - k * x,
+                y = L * a * Math.sin(q),
+                dydx = L * (da * Math.sin(q) - a * k * Math.cos(q)),
+                s = (0.5 - x) * L;
+            out[3 * i] = f.x + sg * s + cg * y;
+            out[3 * i + 1] = f.z + cg * s - sg * y;
+            out[3 * i + 2] = f.gier + Math.atan(-dydx / L);
+        }
+        return n;
+    }
     // proben = je Wurf der Zelle die Strömung dort (m/s) oder null (trocken, ohne Lauf). Liefert den Index des Stands (der Kolk:
     // die langsamste Stelle im haltbaren Band) oder −1.
     function fischStand(proben, F) {
@@ -2984,8 +3033,9 @@
         return best;
     }
     // f = der Fisch {x, y, z, gier, vx, vz}, ziel = {x, y, z} sein Platz (oder das Ziel der Flucht), w = die Strömung am Ort
-    // des Fischs {x, z} (m/s) oder null, eilt = er flieht, ph = sein Wurf (0..1), t = die Uhr der Welt, dt (s). Schreibt f;
-    // liefert die Gier des Bilds (Blick +z, mit dem Schwanzschlag).
+    // des Fischs {x, z} (m/s) oder null, eilt = er flieht, ph = sein Wurf (0..1), t = die Uhr der Welt, dt (s). Schreibt f —
+    // dazu f.tempo, sein Tempo durch das Wasser (der Weg des Leibs gegen die Strömung am Ort), und f.welle, die Phase seiner
+    // Körperwelle, die mit f = fischWelle(f.tempo).hz läuft (der erste Takt beginnt beim Wurf ph); liefert die Gier (Blick +z).
     function fischSchritt(f, ziel, w, eilt, ph, t, dt, F) {
         var dx = ziel.x - f.x,
             dz = ziel.z - f.z,
@@ -2995,6 +3045,15 @@
         f.x += dx * s;
         f.z += dz * s;
         f.y += (ziel.y - f.y) * Math.min(1, 2 * dt);
+        var ux = dt > 0 ? (dx * s) / dt : 0,
+            uz = dt > 0 ? (dz * s) / dt : 0;
+        if (w) {
+            ux -= w.x;
+            uz -= w.z;
+        }
+        f.tempo = Math.sqrt(ux * ux + uz * uz);
+        if (!(typeof f.welle === "number")) f.welle = ph * 6.283185307179586;
+        f.welle = (f.welle + 6.283185307179586 * fischWelle(f.tempo, F).hz * dt) % 6.283185307179586;
         var m = w ? Math.sqrt(w.x * w.x + w.z * w.z) : 0;
         var wunsch;
         if (eilt && d > 0.5) wunsch = Math.atan2(dx, dz);
@@ -3004,7 +3063,7 @@
         dg -= 6.283185307179586 * Math.round(dg / 6.283185307179586);
         var max = F.wendeRad * (eilt ? 3 : 1) * dt;
         f.gier += dg > max ? max : dg < -max ? -max : dg;
-        return f.gier + F.schlagRad * (eilt ? 2 : 1) * Math.sin(6.283185307179586 * F.schlagHz * (eilt ? 3 : 1) * t + ph * 97);
+        return f.gier;
     }
     // Das Ziel der Flucht: der Fisch (fx, fz) vor dem Spieler (px, pz), u = die Richtung des Laufs am Stand {x, z} (normiert)
     // oder null. Schreibt out {x, z}: wegM vom Spieler, längs des Laufs auf der Seite des Fischs (ohne Lauf radial fort).
@@ -5979,6 +6038,8 @@
         fischStand: fischStand,
         fischSchritt: fischSchritt,
         fischFlucht: fischFlucht,
+        fischWelle: fischWelle,
+        fischLeib: fischLeib,
         BESTAEUBER_GESETZ: BESTAEUBER_GESETZ,
         bestaeuberAktiv: bestaeuberAktiv,
         bestaeuberBesuch: bestaeuberBesuch,

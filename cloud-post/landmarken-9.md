@@ -23,7 +23,13 @@ Zeuge 3 ohne Lesung · Richter ROT an drei Saaten („Blickziel verdeckt“ von 
    1 378 Sicht-Prüfungen an 114 Ständen der Spirale, 4 459 Wald-Zellen geplant (`_forestGeborene` 5 240 ms, davon `_voxelSurfaceY`
    3 304 ms in 424 762 Rufen), 4 459 Stapel-Texte `_fadenUmgangen` 897 ms. Glieder an 12 Saaten: heimat 2 · blick 3 · ort 6 · keine 1.
 
-## Geschnitten (Kopf landmarken-9 auf main bed6256c)
+## Geschnitten (Vorprüf-Kopf landmarken-9 1 auf main 42a14279)
+
+0. **Gemischt mit buendel-a** (main bed6256c → 42a14279): `voxel-worker.js` — stadt-am-schirm hält das Wald-Gedächtnis gepackt und strich
+   `kammGeboren`; die Ankunft liest jetzt dasselbe gepackte Gedächtnis über EINEN Helfer (`waldGedaechtnis` · `waldGeborene`, auch
+   `waldDarts` ruft ihn), fern je Auftrag wie `kammKrone`. Die Goldens `recipes.json` / `manifest.json` als Vereinigung (die Bahn:
+   felsturm · felsbogen; main: Laterne 2 000 lm). Gleichheit nach der Mischung: 12 von 12 Saaten derselbe Stand, dieselbe Gier,
+   dasselbe Ziel; Haupt-Faden je Ankunft 36–107 ms.
 
 1. **Preis an der Wurzel — die Ankunft rechnet im Wald-Faden.** Wahl und Sicht sind Kern-Gesetz (phyto-core `landmarkeSicht`:4457,
    `landmarkeAnkunft`:4517); der Wirt reicht Stände, Marken und Kegel (`_ankunft`, stamm/gelaende-chunks.js:1415), der Wald-Faden rechnet

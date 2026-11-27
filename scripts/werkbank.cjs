@@ -835,6 +835,8 @@ async function starte() {
     if (!ECHT) await page.setViewport(START_FENSTER);
     const spur = { an: null }; // DIE BELEGUNG: der Lauf ruft die Spur vor seinem ersten gemessenen Takt an (`/lauf`)
     let wirt = null; // DIE WIRT-WACHE zwischen `/wirt` nimm und gib: { heapVor } — solange trägt jeder `/eval` die Marke
+    const totArbeit = new Set(); // die Arbeit jedes tragenden Rufers, bis sie in der Seite endet (unten, `x-rufer`; ihr Leser: `/wirt` gib)
+    const TOT_ENDE_MS = 30000; // so lange wartet die Wache auf sie: ein Bild oder ein Schlaf weit, ein synchroner Schritt bis zum Abbruch (≤ 11 s)
     await page.exposeFunction("__spurAn", () => spur.an && spur.an());
     await page.evaluateOnNewDocument(WARTEN_SEITE); // die Seiten-Werkzeuge jeder Seite (`r`, sleep, das Warten), wie welt-boot
     await page.evaluateOnNewDocument(FALTE_INSTALL);
@@ -2247,8 +2249,19 @@ async function starte() {
             // die Werkbank sie ab (welt-boot `seitenAbbruch`). Ein Ruf mit eigener Frist (der Zapfen der Sitzung, die Grundstellung) trägt den Kopf
             // nie: seine Frist ist kein Abbruch. Bis hier rechnete die Seite nach dem Deckel weiter (Radeon 5fb21e29: mensch.K1#1 am
             // Deckel 45 s, die Grundstellung vor mensch.K5#1 „/eval ohne Antwort binnen 60 s“, die Sitzung tot)
-            if (req.headers["x-rufer"] === "traegt")
-                res.on("close", async () => res.writableEnded || console.log(`[abbruch] ${req.url}: der Rufer ist fort, ${await abbrechen()} Abbruch`));
+            // DIE ARBEIT DES RUFERS (rauch-nan Kopf 3): von ihrem Eingang bis zu ihrem Ende in der Seite steht sie in `totArbeit`, mit der
+            // Zeit seines Tods — die Wache (`/wirt` gib, der Läufer ruft sie erst nach dem Ende der Probe) liest erst, wenn keine mehr läuft (an der Radeon las sie den Kontext einer Leiter, die über ihren
+            // Deckel Bild um Bild weiter wartete: „Kontext gehalten“, aufwaerts#1 UNGEMESSEN)
+            const lauf = { weg: req.url, name: "", tot: 0, fertig: false };
+            lauf.ende = new Promise((ja) => (lauf.endet = ja));
+            if (req.headers["x-rufer"] === "traegt") {
+                totArbeit.add(lauf);
+                res.on("close", async () => {
+                    if (res.writableEnded || lauf.fertig) return;
+                    lauf.tot = Date.now();
+                    console.log(`[abbruch] ${req.url}${lauf.name ? " " + lauf.name : ""}: der Rufer ist fort, ${await abbrechen()} Abbruch`);
+                });
+            }
             // DIE STEMPEL-WACHE (scripts/lib/zerlege-linse.cjs): sobald der Pool steht, zählt sie jede verweigerte Abfrage.
             const stempel = () =>
                 page
@@ -2660,6 +2673,7 @@ async function starte() {
                     // jede Akte nennt so die Stelle der Probe. Der Rumpf endet auf einer eigenen Zeile: ein Text, der mit einem
                     // Zeilen-Kommentar schließt, nimmt das Ende des Rahmens nicht mehr mit.
                     const url = evalName(b);
+                    lauf.name = url;
                     const o = await page.evaluate(
                         (rumpf, code, marke) =>
                             new Function("r", "T", "__wirtMarke", rumpf)(r, THREE, marke ? (0, eval)(`(${marke})`)(window, code) : null),
@@ -2689,12 +2703,21 @@ async function starte() {
                     }
                     const vor = wirt;
                     wirt = null;
+                    // ERST ENDET DIE ARBEIT TOTER RUFER (rauch-nan Kopf 3): sie endet an ihrem nächsten Schlaf oder Bild mit ihrem finally
+                    // (welt-boot `sleep` · `seitenTakt`); eine abgebrochene, deren Versprechen niemand mehr hält, meldet der Collector
+                    // („Promise was collected“). Was nach TOT_ENDE_MS noch läuft, steht beim Namen — UNGEMESSEN, nie ein Urteil über ihr
+                    const t1 = Date.now();
+                    const andere = () => [...totArbeit].filter((l) => l !== lauf); // die Wache selbst (ein Ruf der Werkbank-Zeile trägt) wartet nie auf sich
+                    if (andere().length) await heap();
+                    if (andere().length) await Promise.race([Promise.all(andere().map((l) => l.ende)), sleep(TOT_ENDE_MS)]);
+                    const tot = andere().map((l) => `${l.weg}${l.name ? " " + l.name : ""} (${l.tot ? "Rufer tot seit " + ((Date.now() - l.tot) / 1000).toFixed(1) + " s" : "Rufer lebt"})`);
+                    if (Date.now() - t1 > 100) console.log(`[wirt] wartete ${Date.now() - t1} ms auf die Arbeit der Probe${tot.length ? ", läuft noch: " + tot.join(" | ") : ""}`);
                     let ab = await lies(true);
                     // die Seite ist neu seit `nimm` (eine Probe lud sie): an ihr steht nichts der Probe; das Gedächtnis nimmt der nächste `nimm`
                     if (vor && ab.fehler) ab = { anders: [], wie: {}, erklaert: [], bleibt: [], neu: true };
                     const heapNach = b.heap ? await heap() : null;
                     const haelt = await page.evaluate((m) => (0, eval)(`(${m})`)(window), String(WW.markenLies));
-                    return send(Object.assign(WW.wirtUrteil({ ab: vor ? ab : { fehler: "nimm fehlt" }, haelt, heapVor: vor && vor.heapVor, heapNach }), { neu: !!ab.neu }));
+                    return send(Object.assign(WW.wirtUrteil({ ab: vor ? ab : { fehler: "nimm fehlt" }, haelt, heapVor: vor && vor.heapVor, heapNach, tot }), { neu: !!ab.neu, totMs: Date.now() - t1 }));
                 }
                 if (req.url === "/methode") {
                     // `--quelle <datei>`: die Methode aus einem anderen Stand (die Basis eines A/B in EINER Welt)
@@ -3644,6 +3667,10 @@ async function starte() {
                         .slice(1, 5)
                         .map((s) => s.trim()),
                 });
+            } finally {
+                lauf.fertig = true;
+                lauf.endet();
+                if (totArbeit.delete(lauf) && lauf.tot) console.log(`[abbruch] ${lauf.weg}${lauf.name ? " " + lauf.name : ""}: endete ${((Date.now() - lauf.tot) / 1000).toFixed(1)} s nach dem Tod des Rufers`);
             }
         });
     });

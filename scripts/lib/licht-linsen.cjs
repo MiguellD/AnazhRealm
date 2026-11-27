@@ -4047,8 +4047,13 @@ function nachtSicht(o) {
                     const [a, b, c] = [mit, ohne, ohneK].map((bild) => med(meine.map((j) => Y(bild, j))));
                     e.ev = +ev(a, b).toFixed(2);
                     e.evOhneKarte = +ev(c, b).toFixed(2);
+                    // DER ANTEIL DER KARTE am Fleck (nacht-gasse-licht): ohne Karte steht ein Fleck nur, wenn er ohne sie um weniger als
+                    // 1 EV fällt — fällt er weiter, trug ihn die Karte. Seit die Laterne ihren Lichtstrom trägt (70 m Reichweite), hebt das
+                    // Licht der vier Plätze JEDEN Fleck über die Umgebung: „≥ 1 EV über dunkel“ allein sah die Karte nicht mehr (dorf
+                    // ego und third ohne Karte 5/5 = 1, die Linse blind) — und eine Karte, die nichts schreibt, stand grün.
+                    e.evKarte = +ev(a, c).toFixed(2);
                     if (e.ev >= 1) gut++;
-                    if (e.evOhneKarte >= 1) gutOhneK++;
+                    if (e.evOhneKarte >= 1 && e.evKarte < 1) gutOhneK++;
                 }
                 // die Karte der Quelle: ihre Mitte im Bild, gesehen (nicht verdeckt: die Karte steht in beiden Schüssen, die Differenz trägt
                 // nur, wo sie liegt) — die Farbe ihres Lichts, mit minus ohne die Lichter des Orts
@@ -4100,7 +4105,8 @@ function nachtSicht(o) {
 
 // DAS URTEIL DER NACHT (erleben.bild.nacht S2 und S1-Kelvin) je Ort: der Anteil sichtbarer Quellen in 50 m mit Bodenfleck ≥ 1 EV
 // ≥ 0,9; die Kelvin-Farbe je Quelle (Median der Abweichung) ≤ 200 K; DIE LINSE SIEHT DEN TÄTER: wo mehr Quellen sichtbar sind als der
-// Pool Plätze hat, MUSS die Pose ohne Karte unter dem Soll liegen (sonst misst die Linse den Pool, nie die Karte — ROT beim Namen).
+// Pool Plätze hat, MUSS die Pose ohne Karte unter dem Soll liegen (sonst misst die Linse den Pool, nie die Karte — ROT beim Namen);
+// ohne Karte zählt ein Fleck, der ohne sie ≥ 1 EV über der Umgebung steht UND um weniger als 1 EV fällt (`evKarte`).
 // Ein Ort ohne sichtbare Quelle urteilt nichts (die Wildnis: nur die Kosten).
 // `wurfEv`: der Wurf am freien Boden um seine Quelle (`nachtSicht` → `wurf`), der Median mit gegen ohne Wurf — ein Werfer im Ring
 // nimmt einzelne Punkte, nie den Median

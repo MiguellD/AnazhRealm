@@ -3101,8 +3101,8 @@ class AnazhRealm_bild_himmel {
     //               der geteilten Stimme („remote-voice"); für das GETEILTE Wetter auch ein Mitspieler („remote:…" — die Uhr
     //               reist nie, set_time_of_day ist NON_BROADCASTABLE).
     //   „gesetz"  — ein Gesetz, das der Spieler gab („rule:" + eine Quelle des Spielers), und der Vorschlag eines Wesens,
-    //               dem der Spieler mit seinem Klick zusagte („zusage:…", `_executeCreatureProgram`): es schreibt wie er (ein
-    //               stehendes Wort folgt ihm).
+    //               dem der Spieler mit seinem Klick zusagte („zusage:…", `_executeCreatureProgram`): es schreibt wie er — sein
+    //               Wort steht (`wetterWort`), bis der Spieler es freigibt.
     //   „eigen"   — der Gang der Uhr („uhr"), der Wetter-Zug („auto-zug"), das Laden eines Spielstands („laden").
     //   „welt"    — alles andere: der Nexus, seine Gesetze, die Emotion, die Wesen („creature:…" — auch das Wesen, das im
     //               Schöpfer-Modus von selbst handelt; bis zur Gegenprüfung las es sich als Zusage und nahm dem Spieler sein
@@ -3655,10 +3655,14 @@ class AnazhRealm_bild_himmel {
                 return "wunsch";
             }
         }
-        if (wer === "spieler") {
+        // DAS GESETZ DES SPIELERS SCHREIBT WIE ER (wetter-ein-schreiber): sein Wort steht, bis der Spieler es freigibt. Bis dahin
+        // schrieb ein Gesetz ohne stehendes Wort `state.weather` neben dem Zug — zog eine Seite den Zug für einen späten Wunsch neu
+        // (`_wunschNimm`, nach einem Reload `_akteNachholen`), überschrieb er das Gesetz nur dort (CI 140255711447, gate:mp-sync (f)
+        // „A sunny von rule:human · B rainy von rule:emotion:sorrow“; die Linse gate:wetter-wache (GZ)).
+        if (wer === "spieler" || wer === "gesetz") {
             this.state.wetterWort = name;
             this.state.wetterWuensche = [];
-        } else if (wer === "gesetz" && this.state.wetterWort) this.state.wetterWort = name;
+        }
         const oldWeather = this.state.weather;
         this.state.weather = name;
         // der wahre Schreiber (affekt.K4#2): der Zug nennt den Wunsch der Welt, den er zog, oder die Front — auch wenn das Wort
