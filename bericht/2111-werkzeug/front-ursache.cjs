@@ -3,7 +3,9 @@ const fs = require("fs"), path = require("path");
 const z = fs.readFileSync(process.argv[2], "utf8").split(/\r?\n/), dir = "vision/richter", alle = fs.readdirSync(dir);
 const leitern = new Map();
 for (const l of z) { const m = l.match(/^\s+([a-z0-9.\-]+) S (\d+): (PUNKT|KERN|0)\b(.*)$/i); if (!m) continue; if (!leitern.has(m[1])) leitern.set(m[1], []); leitern.get(m[1]).push({ n: Number(m[2]), stand: m[3], rest: m[4] }); }
-const klasse = (w) => /ENAMETOOLONG/.test(w) ? "A:ENAMETOOLONG" : /im Lauf nicht gemessen|die Probe endete vor ihr/.test(w) ? "A:nicht gemessen (Abbruch davor)" : /Frist der Probe|Deckel \d+ s gerissen|Stille seit/.test(w) ? "A:Frist/Deckel gerissen" : /Bild \(Beleg\) fehlt|ABNAHME ROT/.test(w) ? "A:Bild-Abnahme" : /^Start:|spawn /.test(w) ? "A:Start" : /Umfang nicht erzeugbar/.test(w) ? "R:Umfang nicht erzeugbar" : /Leser fehlt|fehlender Leser|kein Leser/.test(w) ? "R:Leser fehlt" : /nicht gebaut|fehlt:/.test(w) ? "R:nicht gebaut" : "R:gemessen ROT";
+const klasse = (w) => /ENAMETOOLONG/.test(w) ? "A:ENAMETOOLONG" : /im Lauf nicht gemessen|die Probe endete vor ihr/.test(w) ? "A:nicht gemessen (Abbruch davor)" : /Frist der Probe|Deckel \d+ s gerissen|Stille seit/.test(w) ? "A:Frist/Deckel gerissen" : /^Start:|spawn /.test(w) ? "A:Start" : /Umfang nicht erzeugbar/.test(w) ? "R:Umfang nicht erzeugbar" : /Leser fehlt|fehlender Leser|kein Leser/.test(w) ? "R:Leser fehlt" : /nicht gebaut|fehlt:/.test(w) ? "R:nicht gebaut"
+    // 27.11. 12:15: das Apparat-Wort „Bild (Beleg) fehlt“ zählt nur, wenn VOR ihm kein Wert sein Soll verfehlt (kaskade#1 trug vorn „Umfang nicht erzeugbar“ und stand als Apparat)
+    : /Bild \(Beleg\) fehlt|ABNAHME ROT/.test(w) && !/✗|verfehlt|ungemessen/.test(w.replace(/Bild \(Beleg\) fehlt[\s\S]*$/, "").replace(/ABNAHME ROT[\s\S]*$/, "")) ? "A:Bild-Abnahme (Wert grün)" : "R:gemessen ROT";
 const zahl = {}, apparat = [];
 for (const [name, sp] of leitern) {
     sp.sort((a, b) => a.n - b.n); const f = sp.find((s) => s.stand !== "PUNKT"); if (!f) continue;

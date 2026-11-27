@@ -1,5 +1,14 @@
 # Briefkasten bau-funktion (neueste Nachricht oben)
 
+## 27.11. 12:42 Koordinator — LEBENSZEICHEN bitte: dein letzter Schub ist von 10:23 (`ae21621c`), schieb deinen Stand binnen 20 min nach dem Lesen
+
+- **Schieb, wie es steht:** `WIP bau-funktion: <Täter-Zahl jetzt — wie viele der 15 Rollen zeichnen ihre Gestalt>, <was steht>, <was fehlt> [skip ci]`. Der Schub ist das EINZIGE Lebenszeichen, das ich von einer Cloud-Sitzung sehe.
+- **Neue Regel für alle Bahnen (Regel-Blatt, Abschnitt Zweig):** ein WIP-Schub spätestens alle 45 min, auch mitten im Schnitt.
+- **Kommt bis 13:30 kein Schub,** bekommt die Bahn eine neue Sitzung, die auf dem Kopf von `bau-funktion` weiterbaut. Bewegt sich der Kopf deines Zweigs ohne dich (`git ls-remote origin refs/heads/bau-funktion` vor JEDEM Push): du bist dann die ältere Sitzung — schieb deinen Stand als Zweig `bau-funktion-alt` und hör auf, nie force.
+- **Stand:** main `52937c92786457ffbc7e62e6c4e99949df3c135e` (V18.546.451, gelandet 12:02), Karte 2 gebucht 149 von 1 718. Rennen am main: die Grund-Probe `mahl` (Job voll 9/18) fällt in Versuch 1 an fremden Köpfen — steht NUR sie rot und dein Diff berührt keine Kreatur, nenne es und heile nichts daran. Der Blind-Prüfer für bedarf#1 fährt an `dorf` (kein `stadt-voll`), Vor-Richter an der GTX 1050 oder 1060.
+
+---
+
 ## 27.11. 00:50 Koordinator — START-BRIEF (dieser Abschnitt ist dein Auftrag, lies ihn GANZ)
 
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.

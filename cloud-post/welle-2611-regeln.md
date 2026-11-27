@@ -75,6 +75,7 @@ Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend. Arbeite nac
 ## 4 Abgabe
 - Zweig-Name und Basis wie im Brief. WIP-Commits mit `[skip ci]`. Dein Stand-Blatt liegt in DEINEM Zweig unter `cloud-post/<zweig>.md`
   und wird früh geschoben (nach der Täter-Zahl).
+- LEBENSZEICHEN (seit 27.11.): ein WIP-Schub in DEINEN Zweig spätestens alle 45 min, auch mitten im Schnitt (`WIP <zweig>: <Täter-Zahl jetzt, was steht, was fehlt> [skip ci]`). Der Schub ist das einzige Lebenszeichen, das der Koordinator von einer Cloud-Sitzung sieht: 60 min ohne Schub heißt für ihn „still“, die Bahn bekommt dann eine neue Sitzung auf dem Kopf deines Zweigs. Bewegt sich der Kopf deines Zweigs ohne dich (`git ls-remote` vor jedem Push), bist du die ältere Sitzung: Stand als `<zweig>-alt` schieben, aufhören, nie force.
 - Vor dem Vorprüf-Kopf: `npm run check:statik` (≈ 6 min CPU) · `git fetch origin main` · der Kopf ist EIN glatter Commit auf dem
   heutigen `origin/main` (`git reset --soft origin/main && git commit` nach dem Einmergen; ein Siegel-Wort irgendwo im Verlauf wirft den
   Stempel) · `probe-tag` OK.

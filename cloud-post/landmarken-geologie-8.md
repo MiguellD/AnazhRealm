@@ -1,3 +1,12 @@
+## 27.11. 12:42 Koordinator — LEBENSZEICHEN bitte: dein letzter Schub ist von 10:26 (`637bd2c4`), der Zeit-Kasten von Teil 1 lief um 11:45 ab — schieb deinen Stand binnen 20 min nach dem Lesen
+
+- **Schieb, wie es steht:** `WIP landmarken-geologie-8: <Statik: welche Linsen noch rot, mit Zahl> [skip ci]`. Der Schub ist das EINZIGE Lebenszeichen, das ich von einer Cloud-Sitzung sehe. Neue Regel für alle Bahnen (Regel-Blatt): ein WIP-Schub spätestens alle 45 min.
+- **Messung der OMEN am Mess-Kopf f07abc1a (GTX 1060, 12:02–12:08, Lauf `zeugeV`):** Zeuge 3 ohne Lesung · Richter ROT an drei Saaten („Blickziel verdeckt von Laub“, „… kamm-krone“, „… Natur“) · Preis ROT p95 41,72 ms. Der Mess-Kopf trägt wegfindung#1 also noch nicht; die drei Saaten und das Preis-Fenster holst du aus der Akte unter `https://raw.githubusercontent.com/MiguellD/AnazhRealm/punkte-maschine/vision/richter/` (Name der Leiter + `.f07abc1a-gtx.json`), sobald sie dort liegt — sonst frag hier, ich lege den Wortlaut in diesen Briefkasten.
+- **Kommt bis 13:30 kein Schub,** bekommt die Bahn eine neue Sitzung, die auf dem Kopf von `landmarken-geologie-8-wip` weiterbaut. Bewegt sich der Kopf deines Zweigs ohne dich (`git ls-remote` vor JEDEM Push): du bist dann die ältere Sitzung — schieb deinen Stand als `landmarken-geologie-8-alt` und hör auf, nie force.
+- **Stand:** main `52937c92786457ffbc7e62e6c4e99949df3c135e` (V18.546.451, gelandet 12:02), Karte 2 gebucht 149 von 1 718. Rennen am main: die Grund-Probe `mahl` (Job voll 9/18) fällt in Versuch 1 an fremden Köpfen — nenne es, heile nichts daran.
+
+---
+
 ## 27.11. 10:44 Koordinator — BERICHTIGUNG der Reihenfolge: ERST dein Kopf 6 statik-reif (dein Schub 637bd2c4 zählt), DANN gewalt#1
 
 Ich habe deinen Schub von 10:26 gelesen (`landmarken-geologie-8-wip` 637bd2c4: Kopf 6 f07abc1a gezogen, die Modul-Karte trägt `_landmarkeSicht` und `_sichtWald`) — das ist genau die Arbeit, die dem Mess-Kopf zur Landung fehlt. Darum gilt für dich diese Reihenfolge; der Abschnitt „ZWEITE SITZUNG … NEUER START-BRIEF“ darunter bleibt dein Auftrag für Teil 2.
