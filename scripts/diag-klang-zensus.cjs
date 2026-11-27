@@ -1650,8 +1650,7 @@ async function redeSeite(arg) {
     }
     const mitte = {};
     for (const [l, a] of Object.entries(gipfel)) {
-        a.sort((u, w) => u - w);
-        mitte[l] = Math.round(a[a.length >> 1]);
+        mitte[l] = Math.round(rang(a.sort(aufsteigend)));
         if (Math.abs(mitte[l] / jongman[l] - 1) > 0.15) rot.push(`Sp Gipfel ${l} ${mitte[l]} Hz gegen ${jongman[l]} Hz (Jongman et al. 2000, ±15 %; klang STIMME.reibung)`); // prettier-ignore
     }
     if (!Object.keys(mitte).length) rot.push("Sp Gipfel: kein Frikativ im Puffer (klang stimmPuffer ohne Reibung)");
