@@ -1,6 +1,6 @@
 # Stand-Blatt sprache-dialekt (Sprosse `karte2.mensch.kultur.sprache#4`) — dritte Sitzung, Start 27.11. 11:52 UTC
 
-Basis: main 52937c92 (V18.546.451). Status: ZWISCHENSTAND. Karte 2 gebucht 149 von 1 718.
+Basis: main 52937c92 (V18.546.451), Kopf 1 auf 7e73426e, Kopf 2 auf main 9a75d61c (V18.546.457). Status: ZWISCHENSTAND. Karte 2 gebucht 149 von 1 718.
 
 ## Die rote Zeile gilt am heutigen main
 
@@ -72,9 +72,9 @@ gate:settlement Selbsttest GRÜN (beide R13-Täter → ROT beim Namen) · Lauf G
 
 ## Form des Kopfs
 
-Der Vorprüf-Kopf trägt den glatten Baum auf main 7e73426e (erster Elter, `git diff 7e73426e <kopf>` = genau 12 Dateien). Der zweite
-Elter ist die Spitze meiner WIP-Kette 457526ae, weil der Auftrag „nie force“ sagt: der Schub ist ein Fast-Forward, kein Stand wird
-überschrieben. Wer einen Elter braucht, nimmt den Baum (`git commit-tree <kopf>^{tree} -p 7e73426e`), er ist byte-gleich.
+Kopf 1 trug den glatten Baum auf main 7e73426e, Kopf 2 trägt ihn auf main 9a75d61c (erster Elter, `git diff 9a75d61c <kopf>` = genau 12
+Dateien; gegen Kopf 1 kommt allein der Rang über `rang` und dieses Blatt hinzu). Der zweite Elter ist die Spitze meiner WIP-Kette, weil der Auftrag „nie force“ sagt: der Schub ist ein Fast-Forward, kein Stand wird
+überschrieben. Wer einen Elter braucht, nimmt den Baum (`git commit-tree <kopf>^{tree} -p 9a75d61c`), er ist byte-gleich.
 
 ## Antwort auf 19:50 (Stand 2. Merge d. h. main 948f68ee herein, 730f25b4)
 
