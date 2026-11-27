@@ -365,8 +365,14 @@ class AnazhRealm_koerper_bewegung {
             uq,
             // der Stand dieses Schritts (`_fahrHuelleStellen` setzt ihn): die Ecken im Grundriss (pl · pq), je Richtung ihre
             // Stütz-Weite (h) und die Richtung in der Welt (wx · wz), Bug-Achse, Quer-Achse, Band, Schübe
-            pl: new Float64Array(m),
-            pq: new Float64Array(m),
+            // m0 die Ecken in Ruhe; der liegende Aufbau (form#2) stützt dazu jede Ecke auf Dach-Höhe: m = 2 · m0. pl · pq sind
+            // je Stand genau m Ecken lang (die Sicht auf den einen Puffer, `_fahrHuelleStellen` wählt sie) — ein Leser, der die
+            // Reihe ganz liest, liest keine leere Ecke (vorher Puffer 2 · m0 in Ruhe: Kollision = Bild las NaN als Spalt 999 m)
+            m0: m,
+            plPuffer: new Float64Array(2 * m),
+            pqPuffer: new Float64Array(2 * m),
+            pl: null,
+            pq: null,
             h: new Float64Array(n),
             wx: new Float64Array(n),
             wz: new Float64Array(n),
@@ -389,13 +395,23 @@ class AnazhRealm_koerper_bewegung {
     // Instanz gezeichnet wird (`_archRittNeigung`: R_z(−rp) · R_x(rr) im Vorlagen-Raum) —, das Band unten/oben, die Schübe leer.
     // Der Nick trägt eine Ecke in der Höhe y um y · sin rp nach vorn: ohne ihn stand der gezeichnete Bug (0,55 m hoch) bei
     // 1,8° Nick 1,7 cm vor seiner Hülle.
-    _fahrHuelleStellen(k, fX, fZ, rp, rr, unten, oben) {
+    // Der gekippte Aufbau (form#2, `dq` ≠ 0: der Querversatz der Stütze aus `_wagenLage`) liegt mit seiner Flanke: die Ecken in
+    // Ruhe tragen den Boden des Wagens, darum stützt die Hülle jede Ecke dazu auf Dach-Höhe (k.dach) — sonst läge der Grundriss
+    // des liegenden Wagens 4 cm breit statt Radlinie bis Dach.
+    _fahrHuelleStellen(k, fX, fZ, rp, rr, unten, oben, dq = 0) {
         const [qX, qZ] = [fZ, -fX];
         const [cp, sp, cr, sr] = [Math.cos(rp), Math.sin(rp), Math.cos(rr), Math.sin(rr)];
-        for (let i = 0; i < k.m; i++) {
-            k.pq[i] = k.rq[i] * cr - k.ry[i] * sr;
-            k.pl[i] = k.rl[i] * cp + (k.ry[i] * cr + k.rq[i] * sr) * sp;
+        const [m0, pl, pq] = [k.m0, k.plPuffer, k.pqPuffer];
+        for (let i = 0; i < m0; i++) {
+            pq[i] = k.rq[i] * cr - k.ry[i] * sr + dq;
+            pl[i] = k.rl[i] * cp + (k.ry[i] * cr + k.rq[i] * sr) * sp;
+            if (dq) {
+                pq[m0 + i] = k.rq[i] * cr - k.dach * sr + dq;
+                pl[m0 + i] = k.rl[i] * cp + (k.dach * cr + k.rq[i] * sr) * sp;
+            }
         }
+        k.m = dq ? 2 * m0 : m0;
+        if (!k.pl || k.pl.length !== k.m) [k.pl, k.pq] = [pl.subarray(0, k.m), pq.subarray(0, k.m)];
         for (let j = 0; j < k.n; j++) {
             let h = -Infinity;
             for (let i = 0; i < k.m; i++) h = Math.max(h, k.pl[i] * k.ul[j] + k.pq[i] * k.uq[j]);
@@ -580,14 +596,18 @@ class AnazhRealm_koerper_bewegung {
         // Wagen zeichnet; ein Teile-Werk trägt seine Ecken am Boden); zwei Durchgänge (eine Ecke zwischen zwei Boxen).
         const neigt = entry._fahrAchseX ? 1 : 0;
         const rp = -neigt * ((fz.steig || 0) + (fz.fNick || 0));
+        // der gekippte Aufbau (form#2): die Hülle liegt, wie `_wagenLage` ihn zeichnet — die Rolle um den Kipp, die Ecken quer um
+        // den Versatz der Stütze (`_rideKippX/Z` liegt auf der Quer-Achse der Hülle: _rideYaw = yaw + π/2)
+        const kipp = fz.kipp && entry._fahrSatz && entry._fahrSatz.kipp ? fz.kipp : 0;
         this._fahrHuelleStellen(
             k,
             fX,
             fZ,
             rp,
-            neigt * ((fz.wank || 0) + (fz.fWank || 0)),
+            neigt * ((fz.wank || 0) + (fz.fWank || 0)) + kipp,
             fz.y + k.stufe,
-            fz.y + k.dach
+            fz.y + k.dach,
+            kipp ? (entry._rideKippX || 0) * qX + (entry._rideKippZ || 0) * qZ : 0
         );
         const pos = this._fahrHuellePos || (this._fahrHuellePos = { x: 0, z: 0 });
         pos.x = nx;

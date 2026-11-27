@@ -1,0 +1,624 @@
+From 4715d1d2d68415030e0617c8ddaf165fb65fb1f0 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 26 Nov 2026 21:31:43 +0000
+Subject: [PATCH 1/4] =?UTF-8?q?WIP=20fahrzeug-medium-4=20S7:=20der=20Fahr-?=
+ =?UTF-8?q?Satz=20liest=20die=20Schwere=20der=20Welt=20(Ferne=20100?=
+ =?UTF-8?q?=E2=86=920=2038,63=20=E2=86=92=20102,53=20m,=20Soll=20100,31)?=
+ =?UTF-8?q?=20[skip=20ci]?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ stamm/koerper-fahrt.js |  8 ++++++--
+ vehicle-core.js        | 12 +++++++++---
+ 2 files changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/stamm/koerper-fahrt.js b/stamm/koerper-fahrt.js
+index 39e084ef..f4e71325 100644
+--- a/stamm/koerper-fahrt.js
++++ b/stamm/koerper-fahrt.js
+@@ -1443,8 +1443,11 @@ class AnazhRealm_koerper_fahrt {
+             Number.isFinite(prof.vmax) && prof.vmax > 0
+                 ? prof.vmax
+                 : this.state.speed * (Number.isFinite(prof.topSpeedMul) ? prof.topSpeedMul : 1);
++        // die Schwere der Welt (mensch.fahrzeug.medium#7, wie der Guss des Leibs): g der Welt ÷ g der Erde aus dem Gesetz der Welt —
++        // ein Welt-Tor oder das Wort `gravity` baut den Satz neu; an der Erde reist sie nicht
++        const schwere = this.state.gravity / AnazhRealm.WELT_GESETZ_ERDE.schwere;
+         const k = entry._fahrSatzKey;
+-        if (entry._fahrSatz && k && k.prof === prof && k.vmax === vmax) return entry._fahrSatz;
++        if (entry._fahrSatz && k && k.prof === prof && k.vmax === vmax && k.schwere === schwere) return entry._fahrSatz;
+         entry._fahrSatz = vc.fahrGesetz(
+             {
+                 zweispur: prof.zweispur,
+@@ -1457,11 +1460,12 @@ class AnazhRealm_koerper_fahrt {
+                 spring: prof.spring,
+                 // die EINE Masse des Werks (physik K1, `_fahrMasse`): die Trägheit des Wasser-Terms im Kern
+                 masseKg: this._fahrMasse(entry, prof.zweispur.mass),
++                schwere: schwere !== 1 ? schwere : undefined,
+             },
+             this._rittAufstand(entry)
+         );
+         if (!entry._fahrSatz) return AnazhRealm._kernPflichtBruch("vehicle:fahrGesetz (" + entry.type + ")");
+-        entry._fahrSatzKey = { prof, vmax };
++        entry._fahrSatzKey = { prof, vmax, schwere };
+         return entry._fahrSatz;
+     }
+ 
+diff --git a/vehicle-core.js b/vehicle-core.js
+index e521f09c..212718ea 100644
+--- a/vehicle-core.js
++++ b/vehicle-core.js
+@@ -4283,6 +4283,12 @@
+         const aEngine = d.kAcc * d.vmax;
+         const sp = d.spring || {};
+         const masse = d.masseKg > 0 ? d.masseKg : zs.mass * FAHR.masseDichte; // die EINE Masse des Werks [kg]
++        // DIE SCHWERE DER WELT (mensch.fahrzeug.medium#7): `d.schwere` = g der Welt ÷ g der Erde, gelesen vom Wirt aus dem Gesetz der
++        // Welt (`state.gravity`, `_weltGesetz` schwere — derselbe Anteil, unter dem der Leib gegossen wird). Sie trägt die Last
++        // (Reibkreis μ · g, Hangabtrieb, Rollwiderstand, die Last je Rad im Boden); an der Erde reist sie nicht (1: byte-gleich,
++        // FAHR.G 9,8 bleibt der Feel-Entscheid .150). Bis hier trug jeder Fahr-Satz 9,8 — die Ferne (3,71 m/s²) bremste
++        // 100 → 0 in 38,63 m wie die Erde, ihr Gesetz verlangt 100,31 m.
++        const sk = d.schwere > 0 ? d.schwere : 1;
+         return {
+             m: zs.mass,
+             Izz: zs.Izz,
+@@ -4293,7 +4299,7 @@
+             cgH: d.cgH,
+             radR: d.radR,
+             grip: zs.grip,
+-            g: zs.G,
++            g: zs.G * sk,
+             CA_F: zs.CA_F,
+             CA_R: zs.CA_R,
+             maxGrip: zs.maxGrip,
+@@ -4305,7 +4311,7 @@
+             // Gleichgewicht (carPhys), dieselbe Zahl. Vorher fuhr der Pad-Wagen (vmax 1,76 m/s) mit der Luft des GT ungebremst
+             // in die Klemme des Tempos (gate:playtest leib.K5: Gas 0,644/1,284/1,758 m/s, die Hälfte des Abzugs 73 % des Vollen).
+             dragK: Math.max(zs.dragK, (Math.min(aEngine, zs.aLeist / d.vmax) - zs.reibung) / (d.vmax * d.vmax)),
+-            reibung: zs.reibung, // Roll- bzw. Gleitreibung der Räder (Kufe) der Zeit
++            reibung: zs.reibung * sk, // Roll- bzw. Gleitreibung der Räder (Kufe) der Zeit, unter der Schwere der Welt
+             schlepp: zs.schlepp, // ohne Gas: Schleppmoment des Motors bzw. das haltende Gespann
+             vmax: d.vmax,
+             maxSteer: lk.maxSteer,
+@@ -4341,7 +4347,7 @@
+             reifen: fahrReifen(zs), // K1 (rein additiv): die Kurve mit Spitze je Achse
+             // fahrzeug-medium (rein additiv): das Rad im Boden — die Geometrie aus den Aufstandspunkten, die Last je Rad aus
+             // derselben Masse (vier Räder, zwei Läufer); `radImBoden` liest sie
+-            rad: a.rad ? Object.assign({ W: radLast(masse, a.rad.kufe) }, a.rad) : null,
++            rad: a.rad ? Object.assign({ W: radLast(masse, a.rad.kufe) * sk }, a.rad) : null,
+             kipp: fahrKippForm(a.quer, d.cgH, a.breite, a.bauch),
+         };
+     }
+-- 
+2.43.0
+
+
+From 4b103c6585026aa727121c9f305ae707b6905d10 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 26 Nov 2026 21:35:03 +0000
+Subject: [PATCH 2/4] WIP fahrzeug-medium-4 S7: die Linse SW an der W-Kette
+ [skip ci]
+
+---
+ scripts/diag-fahr-leben.cjs | 28 ++++++++++++++++++++++++++++
+ scripts/lib/fahr-proben.cjs |  8 ++++++++
+ 2 files changed, 36 insertions(+)
+
+diff --git a/scripts/diag-fahr-leben.cjs b/scripts/diag-fahr-leben.cjs
+index 6c2559b0..c29076e3 100644
+--- a/scripts/diag-fahr-leben.cjs
++++ b/scripts/diag-fahr-leben.cjs
+@@ -1020,6 +1020,20 @@ function reifenWeltVerdict(k) {
+         .filter((n) => !(m[n] >= REIFEN[n]))
+         .map((n) => n + " " + m[n]);
+ }
++// DIE SCHWERE DER WELT (mensch.fahrzeug.medium#7) an der W-Kette: dieselbe Bremsung ab 50 km/h unter dem Gesetz der Ferne
++// (`ferne`, `state.gravity` = ULTIVERSUM.ferne.schwere, gehalten nur für die Bremsung) gegen trocken — der Weg trägt g_Erde ÷ g_Welt
++// (Reibkreis μ · g; ρ liest der Fahr-Satz noch nicht, die Luft der Ferne bremst wie die der Erde: Toleranz `schwereTol`). Bis
++// medium#7 trug jeder Fahr-Satz 9,8: Weg ÷ trocken 1,00 gegen Soll 2,64. Rückgabe: der Täter beim Namen oder null.
++const SCHWERE = { tol: 0.05 };
++function schwereVerdict(k) {
++    const f = k && k.ferne;
++    if (!f || !(f.s > 0) || !(k.trocken && k.trocken.s > 0) || !(f.gWelt > 0) || !(f.gErde > 0))
++        return "die Bremsung unter der Schwere der Ferne fehlt";
++    const [q, soll] = [f.s / k.trocken.s, f.gErde / f.gWelt];
++    return Math.abs(q / soll - 1) <= SCHWERE.tol
++        ? null
++        : `der Weg unter g ${f.gWelt} trägt ${q.toFixed(3)} × trocken, das Gesetz ${soll.toFixed(3)} (stamm/koerper-fahrt.js _fahrSatz → vehicle-core fahrGesetz schwere)`;
++}
+ function ketteBericht(k, err) {
+     const v = ketteVerdict(k);
+     check(
+@@ -1027,6 +1041,12 @@ function ketteBericht(k, err) {
+         !err && v.tiefe >= KETTE.tiefe && !v.befunde.length,
+         `Tiefe ${v.tiefe} ${JSON.stringify(k)} ${err || ""}${v.befunde.join(" · ")}`
+     );
++    const sw = err ? String(err) : schwereVerdict(k);
++    check(
++        "SW die Schwere der Welt (mensch.fahrzeug.medium#7): die Bremsung ab 50 km/h unter dem Gesetz der Ferne trägt g_Erde ÷ g_Welt",
++        !sw,
++        sw || `Weg ${k.ferne.s.toFixed(2)} m unter g ${k.ferne.gWelt} gegen ${k.trocken.s.toFixed(2)} m trocken: ${(k.ferne.s / k.trocken.s).toFixed(3)} (Gesetz ${(k.ferne.gErde / k.ferne.gWelt).toFixed(3)})`
++    );
+     const r8 = k ? reifenWeltVerdict(k) : ["keine Kette"];
+     check(
+         "K8 Reifen in der Welt (fahrzeug.K1): Bremsweg Gras/Weg, nass, μ(gras) halb, Takt, Labor = Welt",
+@@ -2026,6 +2046,14 @@ hauptLauf(async () => {
+                 v.befunde.join()
+             );
+         }
++        // SW: das Gesetz der Ferne trägt der Weg (grün), der alte Fahr-Satz mit 9,8 überall (1,00 × trocken) ROT beim Namen
++        for (const [name, fs, gruen] of [
++            ["Gesetz", 20 * (9.81 / 3.71), true],
++            ["9,8 überall", 20, false],
++        ]) {
++            const v = schwereVerdict({ trocken: { s: 20 }, ferne: { s: fs, gWelt: 3.71, gErde: 9.81 } });
++            check(`Selbst-Test SW ${name} → ${gruen ? "GRÜN" : "ROT"}`, !v === gruen, v || "");
++        }
+ 
+         // K1: ein grüner Lauf, je Täter ROT beim Namen
+         {
+diff --git a/scripts/lib/fahr-proben.cjs b/scripts/lib/fahr-proben.cjs
+index 1239c819..27ce59b4 100644
+--- a/scripts/lib/fahr-proben.cjs
++++ b/scripts/lib/fahr-proben.cjs
+@@ -490,6 +490,14 @@ async function probeLeben(expected) {
+             halte("_weatherFieldFor", () => P0._weatherFieldFor.call(r, "sunny"))
+         );
+         await lage("festNaesse", "stormy", fest);
++        // DIE SCHWERE DER WELT (mensch.fahrzeug.medium#7): trocken unter dem Gesetz der Ferne, die Schwere gehalten nur für diese Lage
++        const [gErde, gWelt] = [-A.WELT_GESETZ_ERDE.schwere, -A.ULTIVERSUM.ferne.schwere];
++        await lage("ferne", "sunny", () => {
++            const g0 = st.gravity;
++            st.gravity = -gWelt;
++            return () => (st.gravity = g0);
++        });
++        Object.assign(out.ferne, { gWelt, gErde });
+         await lage(
+             "festBrand",
+             "stormy",
+-- 
+2.43.0
+
+
+From 72a7945c95db1cb884e22124c3e15d58df6c1ee3 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 26 Nov 2026 23:28:26 +0000
+Subject: [PATCH 3/4] =?UTF-8?q?WIP=20fahrzeug-medium-4=20S7:=20die=20Luft?=
+ =?UTF-8?q?=20der=20Welt=20=E2=80=94=20das=20Gesetz=20tr=C3=A4gt=20=CF=81?=
+ =?UTF-8?q?=20(Erde=20FAHR.luft.rho,=20Ferne=200,020),=20der=20Fahr-Satz?=
+ =?UTF-8?q?=20liest=20sie,=20Linse=20LR=20(Ausrollen=202=20s=20ab=2050=20k?=
+ =?UTF-8?q?m/h=20dv=202,035=20=E2=86=92=201,938=20m/s)=20[skip=20ci]?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018GqBDaYZq8BLx1dX6b1SwT
+---
+ node_modules                |  1 +
+ scripts/diag-fahr-leben.cjs | 82 ++++++++++++++++++++++++++-----------
+ scripts/lib/fahr-proben.cjs | 35 ++++++++++++----
+ stamm/daten.js              |  4 ++
+ stamm/koerper-fahrt.js      | 14 ++++---
+ stamm/netz-p2p.js           |  1 +
+ stamm/netz-portal.js        |  1 +
+ stamm/speicher-welten.js    |  5 +++
+ vehicle-core.js             | 14 ++++++-
+ 9 files changed, 118 insertions(+), 39 deletions(-)
+ create mode 120000 node_modules
+
+diff --git a/node_modules b/node_modules
+new file mode 120000
+index 00000000..ea957196
+--- /dev/null
++++ b/node_modules
+@@ -0,0 +1 @@
++/home/user/AnazhRealm/node_modules
+\ No newline at end of file
+diff --git a/scripts/diag-fahr-leben.cjs b/scripts/diag-fahr-leben.cjs
+index c29076e3..eff455e3 100644
+--- a/scripts/diag-fahr-leben.cjs
++++ b/scripts/diag-fahr-leben.cjs
+@@ -972,7 +972,7 @@ const { probeLeben, probeKoerper, tempoVerdict, tempoSpion, kernTempo, ruckJeBil
+ // (`kette` in lib/fahr-proben.cjs), und nur hinter einem zählenden Vorgänger; die Tiefe ist der längste Ast (Staffel 1 =
+ // Tiefe 2–3, 2 = ≥ 4): Regen-Feld → Nässe → Grip (zieht ab Bremsweg × `nass`) und Nässe → Brand (der Herd erlischt, wo die
+ // Welt nass ist) → Licht (sein Feuer im Licht der Welt). Ein zweiter Leser am selben Vorgänger verlängert keinen Ast.
+-const KETTE = { v0: 50 / 3.6, bremsMax: 400, sprungS: 1200, eps: 0.02, tiefe: 4 };
++const KETTE = { v0: 50 / 3.6, bremsMax: 400, sprungS: 1200, eps: 0.02, tiefe: 4, auslauf: 120 };
+ function ketteVerdict(m) {
+     const f = ["trocken", "sturm", "festRegen", "festNaesse", "festBrand"].filter((l) => !(m && m[l] && m[l].s > 0));
+     if (f.length) return { tiefe: 0, befunde: [`ohne Bremsung: ${f}`] };
+@@ -1020,19 +1020,34 @@ function reifenWeltVerdict(k) {
+         .filter((n) => !(m[n] >= REIFEN[n]))
+         .map((n) => n + " " + m[n]);
+ }
+-// DIE SCHWERE DER WELT (mensch.fahrzeug.medium#7) an der W-Kette: dieselbe Bremsung ab 50 km/h unter dem Gesetz der Ferne
+-// (`ferne`, `state.gravity` = ULTIVERSUM.ferne.schwere, gehalten nur für die Bremsung) gegen trocken — der Weg trägt g_Erde ÷ g_Welt
+-// (Reibkreis μ · g; ρ liest der Fahr-Satz noch nicht, die Luft der Ferne bremst wie die der Erde: Toleranz `schwereTol`). Bis
+-// medium#7 trug jeder Fahr-Satz 9,8: Weg ÷ trocken 1,00 gegen Soll 2,64. Rückgabe: der Täter beim Namen oder null.
+-const SCHWERE = { tol: 0.05 };
++// DIE SCHWERE UND DIE LUFT DER WELT (mensch.fahrzeug.medium#7) an der W-Kette: dieselbe Bremsung ab 50 km/h und dasselbe Ausrollen
++// (`auslauf` Bilder ohne Gas) unter dem Gesetz der Ferne (`ferne`: g und ρ aus ULTIVERSUM.ferne, gehalten nur für die Lage durch
++// `_weltGesetzSetzen`) und unter ihrer Schwere mit der Luft der Erde (`ferneErdluft`) gegen trocken. SW: der Bremsweg unter der
++// Schwere trägt g_Erde ÷ g_Welt (Reibkreis μ · g, Toleranz `tol`), der Fahr-Satz des Wagens g_Welt ÷ g_Erde. LR: die Luft des
++// Fahr-Satzes (`luftK`, ½ ρ cw A / m) trägt ρ_Welt ÷ ρ_Erde, der Fahrwiderstand verliert genau ihren Rest (der Deckel des Tempos
++// darüber ist keine Luft, fahrzeug.K1), und die dünne Luft lässt den Wagen weiter ausrollen (dv ferne < ferneErdluft). Der
++// Bremsweg liest ρ nicht: der Fahrwiderstand zieht über den Reibkreis (fahrzeug.K1). Bis medium#7 trug jeder Fahr-Satz 9,8 und
++// 1,2 kg/m³: Weg ÷ trocken 1,00 gegen Soll 2,64, Luft × 1. Rückgabe: [Täter SW, Täter LR] oder null.
++const SCHWERE = { tol: 0.05, eps: 1e-9 };
+ function schwereVerdict(k) {
+-    const f = k && k.ferne;
+-    if (!f || !(f.s > 0) || !(k.trocken && k.trocken.s > 0) || !(f.gWelt > 0) || !(f.gErde > 0))
+-        return "die Bremsung unter der Schwere der Ferne fehlt";
+-    const [q, soll] = [f.s / k.trocken.s, f.gErde / f.gWelt];
+-    return Math.abs(q / soll - 1) <= SCHWERE.tol
+-        ? null
+-        : `der Weg unter g ${f.gWelt} trägt ${q.toFixed(3)} × trocken, das Gesetz ${soll.toFixed(3)} (stamm/koerper-fahrt.js _fahrSatz → vehicle-core fahrGesetz schwere)`;
++    const [t, g, f] = [k && k.trocken, k && k.ferneErdluft, k && k.ferne];
++    if (!t || !g || !f || !(t.s > 0) || !(g.s > 0) || !(f.gWelt > 0) || !(f.gErde > 0) || !(f.rhoWelt > 0))
++        return ["die Bremsung unter dem Gesetz der Ferne fehlt", "die Bremsung unter dem Gesetz der Ferne fehlt"];
++    if (!t.satz || !g.satz || !f.satz || !(g.satz.luftK > 0)) return ["kein Fahr-Satz am Wagen", "kein Fahr-Satz (luftK) am Wagen"];
++    const [q, soll, qg] = [g.s / t.s, f.gErde / f.gWelt, g.satz.g / t.satz.g];
++    const sw =
++        Math.abs(q / soll - 1) > SCHWERE.tol || Math.abs(qg * soll - 1) > SCHWERE.eps
++            ? `der Weg unter g ${f.gWelt} trägt ${q.toFixed(3)} × trocken, das Gesetz ${soll.toFixed(3)}; der Fahr-Satz g × ${qg.toFixed(4)} (stamm/koerper-fahrt.js _fahrSatz → vehicle-core fahrGesetz schwere)`
++            : null;
++    const [ql, sollL] = [f.satz.luftK / g.satz.luftK, f.rhoWelt / f.rhoErde];
++    const rest = (g.satz.dragK - f.satz.dragK) / (g.satz.luftK - f.satz.luftK);
++    const lr =
++        Math.abs(ql / sollL - 1) > SCHWERE.eps ||
++        Math.abs(rest - 1) > 1e-6 ||
++        !(f.auslauf >= 0 && g.auslauf > f.auslauf)
++            ? `die Luft unter ρ ${f.rhoWelt} trägt × ${ql.toFixed(4)}, das Gesetz × ${sollL.toFixed(4)}; der Fahrwiderstand verliert × ${rest.toFixed(4)} der Luft; Ausrollen dv ${f.auslauf} gegen ${g.auslauf} m/s mit der Luft der Erde (stamm/koerper-fahrt.js _fahrSatz → vehicle-core fahrGesetz luft)`
++            : null;
++    return sw || lr ? [sw, lr] : null;
+ }
+ function ketteBericht(k, err) {
+     const v = ketteVerdict(k);
+@@ -1041,11 +1056,17 @@ function ketteBericht(k, err) {
+         !err && v.tiefe >= KETTE.tiefe && !v.befunde.length,
+         `Tiefe ${v.tiefe} ${JSON.stringify(k)} ${err || ""}${v.befunde.join(" · ")}`
+     );
+-    const sw = err ? String(err) : schwereVerdict(k);
++    const [sw, lr] = err ? [String(err), String(err)] : schwereVerdict(k) || [null, null];
+     check(
+-        "SW die Schwere der Welt (mensch.fahrzeug.medium#7): die Bremsung ab 50 km/h unter dem Gesetz der Ferne trägt g_Erde ÷ g_Welt",
++        "SW die Schwere der Welt (mensch.fahrzeug.medium#7): die Bremsung ab 50 km/h unter der Schwere der Ferne trägt g_Erde ÷ g_Welt",
+         !sw,
+-        sw || `Weg ${k.ferne.s.toFixed(2)} m unter g ${k.ferne.gWelt} gegen ${k.trocken.s.toFixed(2)} m trocken: ${(k.ferne.s / k.trocken.s).toFixed(3)} (Gesetz ${(k.ferne.gErde / k.ferne.gWelt).toFixed(3)})`
++        sw || `Weg ${k.ferneErdluft.s.toFixed(2)} m unter g ${k.ferne.gWelt} gegen ${k.trocken.s.toFixed(2)} m trocken: ${(k.ferneErdluft.s / k.trocken.s).toFixed(3)} (Gesetz ${(k.ferne.gErde / k.ferne.gWelt).toFixed(3)})`
++    );
++    check(
++        "LR die Luft der Welt (mensch.fahrzeug.medium#7): die Luft des Fahr-Satzes trägt ρ_Welt ÷ ρ_Erde, die dünne Luft lässt den Wagen weiter ausrollen",
++        !lr,
++        lr ||
++            `Luft × ${(k.ferne.satz.luftK / k.ferneErdluft.satz.luftK).toFixed(4)} (ρ ${k.ferne.rhoWelt} ÷ ${k.ferne.rhoErde}) · Ausrollen dv ${k.ferne.auslauf.toFixed(3)} gegen ${k.ferneErdluft.auslauf.toFixed(3)} m/s mit der Luft der Erde · Bremsweg ${k.ferne.s.toFixed(2)} gegen ${k.ferneErdluft.s.toFixed(2)} m`
+     );
+     const r8 = k ? reifenWeltVerdict(k) : ["keine Kette"];
+     check(
+@@ -2046,13 +2067,28 @@ hauptLauf(async () => {
+                 v.befunde.join()
+             );
+         }
+-        // SW: das Gesetz der Ferne trägt der Weg (grün), der alte Fahr-Satz mit 9,8 überall (1,00 × trocken) ROT beim Namen
+-        for (const [name, fs, gruen] of [
+-            ["Gesetz", 20 * (9.81 / 3.71), true],
+-            ["9,8 überall", 20, false],
+-        ]) {
+-            const v = schwereVerdict({ trocken: { s: 20 }, ferne: { s: fs, gWelt: 3.71, gErde: 9.81 } });
+-            check(`Selbst-Test SW ${name} → ${gruen ? "GRÜN" : "ROT"}`, !v === gruen, v || "");
++        // SW/LR: das Gesetz der Ferne trägt Weg und Fahr-Satz (grün); der alte Fahr-Satz mit 9,8 und 1,2 überall ROT beim Namen,
++        // je Hälfte allein
++        {
++            const satz = (g, d, l) => ({ g, dragK: d, luftK: l });
++            const [L, D, rho] = [0.0003, 0.002, 0.02 / 1.2];
++            const lauf = (sG, gG, l, dvF) => ({
++                trocken: { s: 20, auslauf: 0.6, satz: satz(9.8, D, L) },
++                ferneErdluft: { s: sG, auslauf: 0.5, satz: satz(gG, D, L) },
++                ferne: { s: sG, auslauf: dvF, satz: satz(gG, D - L + l, l), gWelt: 3.71, gErde: 9.81, rhoWelt: 0.02, rhoErde: 1.2 },
++            });
++            const gG = 9.8 * (3.71 / 9.81);
++            for (const [name, k, sw, lr] of [
++                ["Gesetz", lauf(20 * (9.81 / 3.71), gG, L * rho, 0.45), false, false],
++                ["9,8 und 1,2 überall", lauf(20, 9.8, L, 0.5), true, true],
++                ["9,8 überall", lauf(20, 9.8, L * rho, 0.45), true, false],
++                ["1,2 überall", lauf(20 * (9.81 / 3.71), gG, L, 0.5), false, true],
++                ["ρ am Deckel", lauf(20 * (9.81 / 3.71), gG, L * rho, 0.3), false, true],
++            ]) {
++                if (name === "ρ am Deckel") k.ferne.satz.dragK = D * rho; // der ganze Fahrwiderstand × ρ: der Deckel des Tempos hieße Luft
++                const v = schwereVerdict(k) || [null, null];
++                check(`Selbst-Test SW/LR ${name} → SW ${sw ? "ROT" : "GRÜN"}, LR ${lr ? "ROT" : "GRÜN"}`, !!v[0] === sw && !!v[1] === lr, v.join(" · "));
++            }
+         }
+ 
+         // K1: ein grüner Lauf, je Täter ROT beim Namen
+diff --git a/scripts/lib/fahr-proben.cjs b/scripts/lib/fahr-proben.cjs
+index 27ce59b4..a65dcdcb 100644
+--- a/scripts/lib/fahr-proben.cjs
++++ b/scripts/lib/fahr-proben.cjs
+@@ -453,8 +453,21 @@ async function probeLeben(expected) {
+                 s = q.x - x0;
+             }
+             [z.spur, z.ent, halt.zurueck] = [null, null, false];
++            const G = e._fahrSatz; // der Fahr-Satz, den der Schritt dieses Wagens las: g, Fahrwiderstand, Luft (medium#7)
+             weg(e);
+-            return { s };
++            // DAS AUSROLLEN (medium#7): ein zweiter Wagen am Start, v0 ohne Gas und Bremse `auslauf` Bilder lang — die Luft der
++            // Welt zieht hier, nicht am Reibkreis der Vollbremsung: dv = v0 − v am Ende
++            const e2 = await gtAmStart();
++            let auslauf = null;
++            if (e2 && e2._fahr) {
++                anfahren(e2, K.v0, Math.PI / 2);
++                bahnWache = { sx: start.x, sz: start.z, ux: 1, uz: 0, len: 40, quer: 4, n: 0 };
++                bilder(K.auslauf);
++                bahnWache = null;
++                auslauf = K.v0 - e2._fahr.vlong;
++                weg(e2);
++            }
++            return { s, auslauf, satz: G ? { g: G.g, dragK: G.dragK, luftK: G.luftK } : null };
+         };
+         const lage = async (name, wort, halt) => {
+             wetter("sunny", 1e6);
+@@ -490,14 +503,18 @@ async function probeLeben(expected) {
+             halte("_weatherFieldFor", () => P0._weatherFieldFor.call(r, "sunny"))
+         );
+         await lage("festNaesse", "stormy", fest);
+-        // DIE SCHWERE DER WELT (mensch.fahrzeug.medium#7): trocken unter dem Gesetz der Ferne, die Schwere gehalten nur für diese Lage
+-        const [gErde, gWelt] = [-A.WELT_GESETZ_ERDE.schwere, -A.ULTIVERSUM.ferne.schwere];
+-        await lage("ferne", "sunny", () => {
+-            const g0 = st.gravity;
+-            st.gravity = -gWelt;
+-            return () => (st.gravity = g0);
+-        });
+-        Object.assign(out.ferne, { gWelt, gErde });
++        // DIE SCHWERE UND DIE LUFT DER WELT (mensch.fahrzeug.medium#7): trocken unter dem Gesetz der Ferne (g und ρ), gehalten nur für
++        // diese Lage durch die EINE Wand des Gesetzes (`_weltGesetzSetzen`); `ferneErdluft` hält allein die Schwere — der Unterschied
++        // beider Wege ist die Luft (`satz` je Lage: g und Fahrwiderstand des Fahr-Satzes, den der Schritt des Wagens las).
++        const [Erde, Ferne] = [A.WELT_GESETZ_ERDE, A.ULTIVERSUM.ferne];
++        const gesetz = (teile) => () => {
++            const alt = A._weltGesetz(st.worldMeta);
++            for (const [t, w] of Object.entries(teile)) A._weltGesetzSetzen(st.worldMeta, t, w);
++            return () => (st.worldMeta.gesetz = alt);
++        };
++        await lage("ferneErdluft", "sunny", gesetz({ schwere: Ferne.schwere }));
++        await lage("ferne", "sunny", gesetz({ schwere: Ferne.schwere, luft: Ferne.luft }));
++        Object.assign(out.ferne, { gWelt: -Ferne.schwere, gErde: -Erde.schwere, rhoWelt: Ferne.luft, rhoErde: Erde.luft });
+         await lage(
+             "festBrand",
+             "stormy",
+diff --git a/stamm/daten.js b/stamm/daten.js
+index 8567af8c..00266b66 100644
+--- a/stamm/daten.js
++++ b/stamm/daten.js
+@@ -79,6 +79,9 @@ class AnazhRealm_daten {
+             "WELT_GESETZ_ERDE",
+             Object.freeze({
+                 schwere: -9.81,
++                // die Luft (kg/m³, mensch.fahrzeug.medium#7): die Dichte am Boden, aus der der Fahr-Kern Fahrwiderstand und Wind
++                // an der Flanke rechnet — die EINE Zahl des Kerns (vehicle-core `FAHR.luft.rho`, Luft bei 15 °C), kein Zwilling
++                luft: AnazhRealm.Gesetz("vehicle:FAHR.luft.rho"),
+                 himmel: Object.freeze({ rayleighTiefe: Object.freeze(A.rayleighTiefe.slice()) }),
+                 wetter: AnazhRealm.WETTER_WORT,
+                 gelaende: null,
+@@ -98,6 +101,7 @@ class AnazhRealm_daten {
+                 erde: AnazhRealm.WELT_GESETZ_ERDE,
+                 ferne: Object.freeze({
+                     schwere: -3.71,
++                    luft: 0.02, // die Luft des Mars am Boden (NASA Mars Fact Sheet: ~0,020 kg/m³) — ein Sechzigstel der Erde
+                     himmel: Object.freeze({ rayleighTiefe: Object.freeze([0.13, 0.085, 0.05]) }),
+                     wetter: Object.freeze({
+                         klar: "sunny",
+diff --git a/stamm/koerper-fahrt.js b/stamm/koerper-fahrt.js
+index f4e71325..f07fec95 100644
+--- a/stamm/koerper-fahrt.js
++++ b/stamm/koerper-fahrt.js
+@@ -1443,11 +1443,14 @@ class AnazhRealm_koerper_fahrt {
+             Number.isFinite(prof.vmax) && prof.vmax > 0
+                 ? prof.vmax
+                 : this.state.speed * (Number.isFinite(prof.topSpeedMul) ? prof.topSpeedMul : 1);
+-        // die Schwere der Welt (mensch.fahrzeug.medium#7, wie der Guss des Leibs): g der Welt ÷ g der Erde aus dem Gesetz der Welt —
+-        // ein Welt-Tor oder das Wort `gravity` baut den Satz neu; an der Erde reist sie nicht
+-        const schwere = this.state.gravity / AnazhRealm.WELT_GESETZ_ERDE.schwere;
++        // die Schwere und die Luft der Welt (mensch.fahrzeug.medium#7, wie der Guss des Leibs): g der Welt ÷ g der Erde und ρ der
++        // Welt ÷ ρ der Erde aus dem Gesetz der Welt — ein Welt-Tor oder das Wort `gravity` baut den Satz neu; an der Erde reisen sie nicht
++        const E = AnazhRealm.WELT_GESETZ_ERDE;
++        const schwere = this.state.gravity / E.schwere;
++        const luft = AnazhRealm._weltGesetz(this.state.worldMeta).luft / E.luft;
+         const k = entry._fahrSatzKey;
+-        if (entry._fahrSatz && k && k.prof === prof && k.vmax === vmax && k.schwere === schwere) return entry._fahrSatz;
++        if (entry._fahrSatz && k && k.prof === prof && k.vmax === vmax && k.schwere === schwere && k.luft === luft)
++            return entry._fahrSatz;
+         entry._fahrSatz = vc.fahrGesetz(
+             {
+                 zweispur: prof.zweispur,
+@@ -1461,11 +1464,12 @@ class AnazhRealm_koerper_fahrt {
+                 // die EINE Masse des Werks (physik K1, `_fahrMasse`): die Trägheit des Wasser-Terms im Kern
+                 masseKg: this._fahrMasse(entry, prof.zweispur.mass),
+                 schwere: schwere !== 1 ? schwere : undefined,
++                luft: luft !== 1 ? luft : undefined,
+             },
+             this._rittAufstand(entry)
+         );
+         if (!entry._fahrSatz) return AnazhRealm._kernPflichtBruch("vehicle:fahrGesetz (" + entry.type + ")");
+-        entry._fahrSatzKey = { prof, vmax, schwere };
++        entry._fahrSatzKey = { prof, vmax, schwere, luft };
+         return entry._fahrSatz;
+     }
+ 
+diff --git a/stamm/netz-p2p.js b/stamm/netz-p2p.js
+index f4971dc7..6ed2adc9 100644
+--- a/stamm/netz-p2p.js
++++ b/stamm/netz-p2p.js
+@@ -3355,6 +3355,7 @@ class AnazhRealm_netz_p2p {
+         const E = AnazhRealm.WELT_GESETZ_ERDE;
+         const erde =
+             G.schwere === E.schwere &&
++            G.luft === E.luft &&
+             G.himmel.rayleighTiefe.every((v, i) => v === E.himmel.rayleighTiefe[i]) &&
+             Object.keys(E.wetter).every((z) => G.wetter[z] === E.wetter[z]);
+         if (erde && terme.length === 1 && terme[0].art === "wildnis" && Object.keys(terme[0]).length === 1) return null;
+diff --git a/stamm/netz-portal.js b/stamm/netz-portal.js
+index cc854f3a..e878b3b4 100644
+--- a/stamm/netz-portal.js
++++ b/stamm/netz-portal.js
+@@ -702,6 +702,7 @@ class AnazhRealm_netz_portal {
+         snap.worldMeta.voxelTerrain = true;
+         snap.worldMeta.gesetz = {
+             schwere: heim.schwere,
++            luft: heim.luft,
+             himmel: { rayleighTiefe: heim.himmel.rayleighTiefe.slice() },
+             wetter: Object.assign({}, heim.wetter),
+             gelaende: K.ortErbgut(K.erbgutNormal(heim.gelaende == null ? undefined : heim.gelaende), o.delta.wildnis),
+diff --git a/stamm/speicher-welten.js b/stamm/speicher-welten.js
+index 8e0e2f77..9dec9650 100644
+--- a/stamm/speicher-welten.js
++++ b/stamm/speicher-welten.js
+@@ -126,6 +126,9 @@ class AnazhRealm_speicher_welten {
+         };
+         const schwere = q.schwere === undefined ? E.schwere : q.schwere;
+         if (!(typeof schwere === "number" && schwere >= -30 && schwere <= 0)) nein(`schwere ${schwere} (−30–0 m/s²)`);
++        // die Luft am Boden (kg/m³): vom Vakuum knapp darüber bis über die Venus (65 kg/m³)
++        const luft = q.luft === undefined ? E.luft : q.luft;
++        if (!(typeof luft === "number" && luft > 0 && luft <= 100)) nein(`luft ${luft} ((0, 100] kg/m³)`);
+         const rt = q.himmel && q.himmel.rayleighTiefe !== undefined ? q.himmel.rayleighTiefe : E.himmel.rayleighTiefe;
+         if (!Array.isArray(rt) || rt.length !== 3 || !rt.every((v) => typeof v === "number" && v > 0 && v <= 1))
+             nein(`himmel.rayleighTiefe ${JSON.stringify(rt)} (drei Tiefen in (0, 1])`);
+@@ -140,6 +143,7 @@ class AnazhRealm_speicher_welten {
+         delete meta.erbgut;
+         const n = {
+             schwere,
++            luft,
+             himmel: { rayleighTiefe: rt.slice() },
+             wetter,
+             gelaende: gelaende == null ? null : gelaende,
+@@ -1216,6 +1220,7 @@ class AnazhRealm_speicher_welten {
+                     const E = AnazhRealm.WELT_GESETZ_ERDE;
+                     const ab = {};
+                     if (G.schwere !== E.schwere) ab.schwere = G.schwere;
++                    if (G.luft !== E.luft) ab.luft = G.luft;
+                     if (G.himmel.rayleighTiefe.some((v, i) => v !== E.himmel.rayleighTiefe[i])) ab.himmel = G.himmel;
+                     const wetter = Object.keys(E.wetter).filter((z) => G.wetter[z] !== E.wetter[z]);
+                     if (wetter.length) ab.wetter = Object.fromEntries(wetter.map((z) => [z, G.wetter[z]]));
+diff --git a/vehicle-core.js b/vehicle-core.js
+index 212718ea..71838f60 100644
+--- a/vehicle-core.js
++++ b/vehicle-core.js
+@@ -4289,6 +4289,13 @@
+         // FAHR.G 9,8 bleibt der Feel-Entscheid .150). Bis hier trug jeder Fahr-Satz 9,8 — die Ferne (3,71 m/s²) bremste
+         // 100 → 0 in 38,63 m wie die Erde, ihr Gesetz verlangt 100,31 m.
+         const sk = d.schwere > 0 ? d.schwere : 1;
++        // DIE LUFT DER WELT (medium#7): `d.luft` = ρ der Welt ÷ ρ der Erde (`_weltGesetz` luft, die Erde liest FAHR.luft.rho).
++        // ½ ρ trägt die LUFT im Fahrwiderstand — der Anteil ½ ρ cw A / m des Antriebs-Gesetzes (`zs.dragK`, carPhys; `luftK`),
++        // nie der Deckel des Tempos darüber (das Gleichgewicht am vmax, fahrzeug.K1: kein Teil der Luft) — und die Flanke im
++        // Wind. Die dünne Luft des Mars (0,020 kg/m³) lässt den Wagen weiter ausrollen und hält ihn im Sturm; an der Erde 1
++        // (byte-gleich: der Abzug ist 0).
++        const lr = d.luft > 0 ? d.luft : 1;
++        const luft = fahrLuft(a, masse);
+         return {
+             m: zs.mass,
+             Izz: zs.Izz,
+@@ -4310,7 +4317,10 @@
+             // der Widerstand ihn dort, min(aEngine, aLeist / vmax) = Reibung + dragK · vmax². Im Gesetz des Kerns ist vmax das
+             // Gleichgewicht (carPhys), dieselbe Zahl. Vorher fuhr der Pad-Wagen (vmax 1,76 m/s) mit der Luft des GT ungebremst
+             // in die Klemme des Tempos (gate:playtest leib.K5: Gas 0,644/1,284/1,758 m/s, die Hälfte des Abzugs 73 % des Vollen).
+-            dragK: Math.max(zs.dragK, (Math.min(aEngine, zs.aLeist / d.vmax) - zs.reibung) / (d.vmax * d.vmax)),
++            dragK:
++                Math.max(zs.dragK, (Math.min(aEngine, zs.aLeist / d.vmax) - zs.reibung) / (d.vmax * d.vmax)) -
++                zs.dragK * (1 - lr),
++            luftK: zs.dragK * lr, // die Luft im Fahrwiderstand unter der Luft der Welt (medium#7, rein additiv: der Leser ist die Linse LR)
+             reibung: zs.reibung * sk, // Roll- bzw. Gleitreibung der Räder (Kufe) der Zeit, unter der Schwere der Welt
+             schlepp: zs.schlepp, // ohne Gas: Schleppmoment des Motors bzw. das haltende Gespann
+             vmax: d.vmax,
+@@ -4343,7 +4353,7 @@
+             // SCHAU-2 (rein additiv): die Huelle im Wasser, EINE Masse — physik K1 (rein additiv): reicht der Wirt die Masse
+             // des Werks (d.masseKg: Gestalt × Stoff-Zeile), traegt der Wasser-Term sie; ohne sie das Volumen × masseDichte.
+             wasser: fahrWasser(a, masse),
+-            luft: fahrLuft(a, masse), // wetter.K5 (rein additiv): die Flanke im Wind, dieselbe Masse
++            luft: luft && lr !== 1 ? { kFlanke: luft.kFlanke * lr } : luft, // wetter.K5 (rein additiv): die Flanke im Wind, dieselbe Masse, die Luft der Welt
+             reifen: fahrReifen(zs), // K1 (rein additiv): die Kurve mit Spitze je Achse
+             // fahrzeug-medium (rein additiv): das Rad im Boden — die Geometrie aus den Aufstandspunkten, die Last je Rad aus
+             // derselben Masse (vier Räder, zwei Läufer); `radImBoden` liest sie
+-- 
+2.43.0
+
+
+From a3e65d7b532516bdc47fd3e04224f7b8c66ed884 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 26 Nov 2026 23:35:19 +0000
+Subject: [PATCH 4/4] =?UTF-8?q?WIP=20fahrzeug-medium-4=20S7:=20LR=20liest?=
+ =?UTF-8?q?=20die=20Flanke=20im=20Wind=20(=C3=97=200,0167=20=3D=20=CF=81?=
+ =?UTF-8?q?=20Ferne=20=C3=B7=20Erde)=20[skip=20ci]?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018GqBDaYZq8BLx1dX6b1SwT
+---
+ scripts/diag-fahr-leben.cjs | 11 +++++++----
+ scripts/lib/fahr-proben.cjs |  2 +-
+ 2 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/scripts/diag-fahr-leben.cjs b/scripts/diag-fahr-leben.cjs
+index eff455e3..246322c3 100644
+--- a/scripts/diag-fahr-leben.cjs
++++ b/scripts/diag-fahr-leben.cjs
+@@ -1025,7 +1025,8 @@ function reifenWeltVerdict(k) {
+ // `_weltGesetzSetzen`) und unter ihrer Schwere mit der Luft der Erde (`ferneErdluft`) gegen trocken. SW: der Bremsweg unter der
+ // Schwere trägt g_Erde ÷ g_Welt (Reibkreis μ · g, Toleranz `tol`), der Fahr-Satz des Wagens g_Welt ÷ g_Erde. LR: die Luft des
+ // Fahr-Satzes (`luftK`, ½ ρ cw A / m) trägt ρ_Welt ÷ ρ_Erde, der Fahrwiderstand verliert genau ihren Rest (der Deckel des Tempos
+-// darüber ist keine Luft, fahrzeug.K1), und die dünne Luft lässt den Wagen weiter ausrollen (dv ferne < ferneErdluft). Der
++// darüber ist keine Luft, fahrzeug.K1), die Flanke im Wind ebenso, und die dünne Luft lässt den Wagen weiter ausrollen (dv
++// ferne < ferneErdluft). Der
+ // Bremsweg liest ρ nicht: der Fahrwiderstand zieht über den Reibkreis (fahrzeug.K1). Bis medium#7 trug jeder Fahr-Satz 9,8 und
+ // 1,2 kg/m³: Weg ÷ trocken 1,00 gegen Soll 2,64, Luft × 1. Rückgabe: [Täter SW, Täter LR] oder null.
+ const SCHWERE = { tol: 0.05, eps: 1e-9 };
+@@ -1041,11 +1042,13 @@ function schwereVerdict(k) {
+             : null;
+     const [ql, sollL] = [f.satz.luftK / g.satz.luftK, f.rhoWelt / f.rhoErde];
+     const rest = (g.satz.dragK - f.satz.dragK) / (g.satz.luftK - f.satz.luftK);
++    const qf = f.satz.flanke / g.satz.flanke; // die Flanke im Wind (wetter.K5): ½ ρ cSeite A / m
+     const lr =
+         Math.abs(ql / sollL - 1) > SCHWERE.eps ||
+         Math.abs(rest - 1) > 1e-6 ||
++        !(Math.abs(qf / sollL - 1) <= SCHWERE.eps) ||
+         !(f.auslauf >= 0 && g.auslauf > f.auslauf)
+-            ? `die Luft unter ρ ${f.rhoWelt} trägt × ${ql.toFixed(4)}, das Gesetz × ${sollL.toFixed(4)}; der Fahrwiderstand verliert × ${rest.toFixed(4)} der Luft; Ausrollen dv ${f.auslauf} gegen ${g.auslauf} m/s mit der Luft der Erde (stamm/koerper-fahrt.js _fahrSatz → vehicle-core fahrGesetz luft)`
++            ? `die Luft unter ρ ${f.rhoWelt} trägt × ${ql.toFixed(4)}, das Gesetz × ${sollL.toFixed(4)}; der Fahrwiderstand verliert × ${rest.toFixed(4)} der Luft; die Flanke × ${qf.toFixed(4)}; Ausrollen dv ${f.auslauf} gegen ${g.auslauf} m/s mit der Luft der Erde (stamm/koerper-fahrt.js _fahrSatz → vehicle-core fahrGesetz luft)`
+             : null;
+     return sw || lr ? [sw, lr] : null;
+ }
+@@ -1066,7 +1069,7 @@ function ketteBericht(k, err) {
+         "LR die Luft der Welt (mensch.fahrzeug.medium#7): die Luft des Fahr-Satzes trägt ρ_Welt ÷ ρ_Erde, die dünne Luft lässt den Wagen weiter ausrollen",
+         !lr,
+         lr ||
+-            `Luft × ${(k.ferne.satz.luftK / k.ferneErdluft.satz.luftK).toFixed(4)} (ρ ${k.ferne.rhoWelt} ÷ ${k.ferne.rhoErde}) · Ausrollen dv ${k.ferne.auslauf.toFixed(3)} gegen ${k.ferneErdluft.auslauf.toFixed(3)} m/s mit der Luft der Erde · Bremsweg ${k.ferne.s.toFixed(2)} gegen ${k.ferneErdluft.s.toFixed(2)} m`
++            `Luft × ${(k.ferne.satz.luftK / k.ferneErdluft.satz.luftK).toFixed(4)}, Flanke × ${(k.ferne.satz.flanke / k.ferneErdluft.satz.flanke).toFixed(4)} (ρ ${k.ferne.rhoWelt} ÷ ${k.ferne.rhoErde}) · Ausrollen dv ${k.ferne.auslauf.toFixed(3)} gegen ${k.ferneErdluft.auslauf.toFixed(3)} m/s mit der Luft der Erde · Bremsweg ${k.ferne.s.toFixed(2)} gegen ${k.ferneErdluft.s.toFixed(2)} m`
+     );
+     const r8 = k ? reifenWeltVerdict(k) : ["keine Kette"];
+     check(
+@@ -2070,7 +2073,7 @@ hauptLauf(async () => {
+         // SW/LR: das Gesetz der Ferne trägt Weg und Fahr-Satz (grün); der alte Fahr-Satz mit 9,8 und 1,2 überall ROT beim Namen,
+         // je Hälfte allein
+         {
+-            const satz = (g, d, l) => ({ g, dragK: d, luftK: l });
++            const satz = (g, d, l) => ({ g, dragK: d, luftK: l, flanke: l * 10 });
+             const [L, D, rho] = [0.0003, 0.002, 0.02 / 1.2];
+             const lauf = (sG, gG, l, dvF) => ({
+                 trocken: { s: 20, auslauf: 0.6, satz: satz(9.8, D, L) },
+diff --git a/scripts/lib/fahr-proben.cjs b/scripts/lib/fahr-proben.cjs
+index a65dcdcb..07d8d310 100644
+--- a/scripts/lib/fahr-proben.cjs
++++ b/scripts/lib/fahr-proben.cjs
+@@ -467,7 +467,7 @@ async function probeLeben(expected) {
+                 auslauf = K.v0 - e2._fahr.vlong;
+                 weg(e2);
+             }
+-            return { s, auslauf, satz: G ? { g: G.g, dragK: G.dragK, luftK: G.luftK } : null };
++            return { s, auslauf, satz: G ? { g: G.g, dragK: G.dragK, luftK: G.luftK, flanke: G.luft ? G.luft.kFlanke : null } : null };
+         };
+         const lage = async (name, wort, halt) => {
+             wetter("sunny", 1e6);
+-- 
+2.43.0
+

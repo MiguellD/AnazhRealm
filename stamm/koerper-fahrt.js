@@ -1538,9 +1538,9 @@ class AnazhRealm_koerper_fahrt {
         const m = entry.mesh;
         if (!m) return;
         m.position.set(
-            entry.position.x,
+            entry.position.x + (entry._rideKippX || 0),
             entry.position.y - 0.5 + (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0),
-            entry.position.z
+            entry.position.z + (entry._rideKippZ || 0)
         );
         const rp =
             (Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0) +
@@ -1557,13 +1557,33 @@ class AnazhRealm_koerper_fahrt {
     // DIE LAGE EINES GESETZ-WAGENS aus seinem Fahr-Zustand (der Ritt des Spielers und der Wagen des Verkehrs): Höhe, Lage (Nick
     // Bug ab = +, Wank die Flanke (cos, −sin) oben = +), Federn, Gier und die Fahr-Phase (der Rad-Winkel des Kerns, Weg/radR;
     // applyJoint multipliziert den rad-Kanal ×1.6) — die Kurven-Feder neigt den Aufbau nach außen wie die Probefahrt.
+    // DER KIPP (mensch.fahrzeug.form#2): hebt die innere Spur ab, dreht der Kern den Aufbau um die äußere Radlinie (`fz.kipp`,
+    // links oben +, wie der Wank) — gezeichnet als Wank um den Ursprung des Werks (`clear` über dem Boden, mittig), der mit der
+    // Drehung wandert. Der Aufbau ruht auf der äußersten seiner zwei Stützen (`_wagenKippLage`): die Radlinie (halbe Spur w2, am
+    // Boden) und die Flanke (halbe Breite b2, Unterkante hb am Bauch) — liegt er, liegt er auf der Flanke. Beide Pfade des Bilds
+    // lesen den Versatz quer (`_rideKippX/Z`); die Höhe trägt der Eintrag.
+    _wagenKippLage(K, phi, clear) {
+        const [c, s] = [Math.cos(phi), Math.sin(phi)];
+        // je Stütze: die Höhe des Ursprungs über dem Boden (L·sin φ − u·cos φ, u die Höhe der Stütze unter dem Ursprung) und
+        // der Weg quer zur oberen Seite (L·(cos φ − 1) + u·sin φ), solange sie trägt (die höhere trägt)
+        const hR = K.w2 * s + clear * c;
+        const hF = K.b2 * s - (K.hb - clear) * c;
+        return hF > hR
+            ? { hoch: hF - clear, quer: K.b2 * (c - 1) + (K.hb - clear) * s }
+            : { hoch: hR - clear, quer: K.w2 * (c - 1) - clear * s };
+    }
     _wagenLage(entry, fz) {
         const clear = entry._fahrAchseX ? 0 : Number.isFinite(entry._groundClear) ? entry._groundClear : 0;
-        entry.position.y = fz.y + 0.5 + clear;
+        const K = fz.kipp && entry._fahrSatz && entry._fahrSatz.kipp;
+        const L = K ? this._wagenKippLage(K, Math.abs(fz.kipp), clear) : null;
+        const quer = L ? Math.sign(fz.kipp) * L.quer : 0;
+        entry._rideKippX = -quer * Math.sin(fz.yaw);
+        entry._rideKippZ = -quer * Math.cos(fz.yaw);
+        entry.position.y = fz.y + 0.5 + clear + (L ? L.hoch : 0);
         entry._rideY = entry.position.y;
         entry._rideVy = fz.vy;
         entry._terrainPitchZiel = entry._rideTerrainPitch = -fz.steig;
-        entry._terrainRollZiel = entry._rideRoll = fz.wank;
+        entry._terrainRollZiel = entry._rideRoll = fz.wank + (K ? fz.kipp : 0);
         entry._ridePitch = -fz.fNick;
         entry._rideKurvenRoll = fz.fWank;
         entry._rideHeave = fz.fHub;
@@ -1863,10 +1883,10 @@ class AnazhRealm_koerper_fahrt {
 
     // DAS RAD IM BODEN UND SEINE SPUR (fahrzeug-medium): je Rad des Wagens (die Aufstandspunkte des Fahr-Satzes, `G.auf`, in der
     // Gier des Zustands) die Tiefe und der Widerstand des weichen Bodens unter ihm (vehicle-core `radImBoden`: Bekker, der Satz
-    // der Stoff-Zeile, die Feuchte des Bodens) nach den Durchfahrten, die die Zelle schon trägt (`_trittZahl`: das EINE Feld der
-    // Tritte, in das Fuß, Huf und Rad schreiben) — und das Rad schreibt zurück: betritt es eine neue Zelle weichen Bodens, tritt
-    // es sie (`_tritt`, die Spur verdichtet; ab der Stufe des Pfads malt die Wege-Karte sie als Erde, das Auge und der nächste
-    // Wagen lesen sie, der Stand trägt sie). Kosten am fahrenden Rad: je Rad nur, wenn es eine neue Zelle betritt (`TRITT.zelleM`),
+    // der Stoff-Zeile, die Feuchte des Bodens) nach den Durchfahrten, die die Zelle schon trägt (`_trittDurchfahrten`: das EINE
+    // Feld der Tritte, in das Fuß, Huf und Rad schreiben) — und das Rad schreibt zurück: betritt es eine neue Zelle weichen Bodens,
+    // tritt es sie mit `TRITT.rad` Tritten des Fußes (`_tritt`, die Spur verdichtet; ab der Stufe des Pfads malt die Wege-Karte sie
+    // als Erde — nach 4 Durchfahrten eines Wagens, eine malt nichts —, das Auge und der nächste Wagen lesen sie, der Stand trägt sie). Kosten am fahrenden Rad: je Rad nur, wenn es eine neue Zelle betritt (`TRITT.zelleM`),
     // sonst die gemerkte Zahl; auf festem Grund nichts. → { fr, z } (der Mittelwert der Räder) oder null (fester Grund, kein Rad,
     // in der Luft): der Kern fährt dann byte-alt.
     _fahrRad(fz, G, spieler) {
@@ -1888,8 +1908,8 @@ class AnazhRealm_koerper_fahrt {
             const [i, j] = [Math.floor(x / T.zelleM), Math.floor(z / T.zelleM)];
             if (r.i !== i || r.j !== j) {
                 // die Durchfahrten VOR diesem Rad, dann sein Tritt: der Boden unter ihm kennt sie, das nächste Rad zählt es mit
-                [r.k, r.i, r.j, r.M] = [this._trittZahl(x, z), i, j, null];
-                this._tritt(r, x, z, true, spieler);
+                [r.k, r.i, r.j, r.M] = [this._trittDurchfahrten(x, z), i, j, null];
+                this._tritt(r, x, z, true, spieler, T.rad);
             }
             if (r.M !== M) [r.boden, r.M] = [vc.radImBoden(G.rad, M.boden, M.feuchte, r.k), M];
             fr += r.boden.fr;
