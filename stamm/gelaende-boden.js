@@ -65,32 +65,34 @@ class AnazhRealm_gelaende_boden {
             k.j0 = T - az * ce.dim * T;
             [k.E, k.ax, k.az, k.st] = [E, ax, az, undefined];
         }
-        // DIE ZELLE GEHÖRT DEM NETZ, DAS SIE GANZ TRÄGT (landmarken-9): trägt eine Karte alle vier Ecken der Zelle, zeichnet ihr
-        // Netz die Zelle — die Ecken nehmen dann nur die Karten, die die ganze Zelle tragen (die oberste von ihnen: ein Höhlen-Boden
-        // darunter trägt sie auch). Eine Karte, die nur eine Kante trägt, steht dort mit ihrem Rand: an der Vier-Chunk-Ecke 216/44,1
-        // (Stufen L1,L1 über L0,L0) trug die L1-Karte des x-Nachbarn die obere Kante 0,54 m über der L0-Karte, die die Zelle zeichnet —
-        // das Maximum je Ecke hob den Leser bis 0,47 m über den gezeichneten Boden (gate:koerper-stand K6: 6 von 792 Punkten). Trägt
-        // keine Karte die ganze Zelle (die Stufen-Naht, w28-pop-treue), nimmt jede Ecke wie bisher die oberste Fläche aller Karten.
+        // DER RAND DER GRÖBEREN KARTE TRÄGT NICHT, WO EINE FEINERE DIE ZELLE GANZ TRÄGT (landmarken-9): trägt eine Karte alle vier
+        // Ecken der Zelle, zeichnet ihr Netz die Zelle — eine GRÖBERE Karte, die dort nur eine Kante trägt, steht mit ihrem Rand
+        // darüber: an der Vier-Chunk-Ecke 216/44,1 (Stufen L1,L1 über L0,L0) trug die L1-Karte des x-Nachbarn die obere Kante 0,54 m
+        // über der L0-Karte, die die Zelle zeichnet — das Maximum je Ecke hob den Leser bis 0,47 m über den gezeichneten Boden
+        // (gate:koerper-stand K6: 6 von 792 Punkten). Ein Nachbar DERSELBEN oder einer feineren Stufe zeichnet dagegen den
+        // Rand-Streifen (K07, oben): er trägt je Ecke mit, wie bisher (die Klasse aller Karten fiel mit dem ersten Schnitt und
+        // nahm die Fläche des Streifens — gate:kreatur-takt querhang: Stand-Schlupf des Wolfs 0,024 → 0,178). Trägt keine Karte
+        // die ganze Zelle (die Stufen-Naht, w28-pop-treue), nimmt jede Ecke die oberste Fläche aller Karten.
+        const E4 = this._bodenEcken4 || (this._bodenEcken4 = [[], [], [], []]);
+        let ganz = Infinity;
+        for (let q = 0; q < n; q++) {
+            const Y = E4[q];
+            Y[0] = this._bodenFlaeche(n, gx, gz, lod, q);
+            Y[1] = this._bodenFlaeche(n, gx + 1, gz, lod, q);
+            Y[2] = this._bodenFlaeche(n, gx, gz + 1, lod, q);
+            Y[3] = this._bodenFlaeche(n, gx + 1, gz + 1, lod, q);
+            if (Y[0] > -Infinity && Y[1] > -Infinity && Y[2] > -Infinity && Y[3] > -Infinity)
+                ganz = Math.min(ganz, K[q].el);
+        }
         let a = -Infinity,
             b = -Infinity,
             c = -Infinity,
             d = -Infinity;
         for (let q = 0; q < n; q++) {
-            const qa = this._bodenFlaeche(n, gx, gz, lod, q);
-            if (!(qa > -Infinity)) continue;
-            const qb = this._bodenFlaeche(n, gx + 1, gz, lod, q);
-            if (!(qb > -Infinity)) continue;
-            const qc = this._bodenFlaeche(n, gx, gz + 1, lod, q);
-            if (!(qc > -Infinity)) continue;
-            const qd = this._bodenFlaeche(n, gx + 1, gz + 1, lod, q);
-            if (!(qd > -Infinity)) continue;
-            [a, b, c, d] = [Math.max(a, qa), Math.max(b, qb), Math.max(c, qc), Math.max(d, qd)];
-        }
-        if (!(a > -Infinity)) {
-            a = this._bodenFlaeche(n, gx, gz, lod);
-            b = this._bodenFlaeche(n, gx + 1, gz, lod);
-            c = this._bodenFlaeche(n, gx, gz + 1, lod);
-            d = this._bodenFlaeche(n, gx + 1, gz + 1, lod);
+            const Y = E4[q];
+            if (K[q].el > ganz && !(Y[0] > -Infinity && Y[1] > -Infinity && Y[2] > -Infinity && Y[3] > -Infinity))
+                continue;
+            [a, b, c, d] = [Math.max(a, Y[0]), Math.max(b, Y[1]), Math.max(c, Y[2]), Math.max(d, Y[3])];
         }
         // DIE FUGE DER NETZE (w28-pop-treue): wo ein feines Netz an die Rand-Ecke eines groben stößt, klafft zwischen ihnen ein
         // Splitter (Mess-Wiese: 1–12 cm an 5 Ecken von 81 Chunks) — der Rasterpunkt in ihm trägt keine Karte. Trägt GENAU EINE Ecke
