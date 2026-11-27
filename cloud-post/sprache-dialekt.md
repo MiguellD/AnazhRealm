@@ -121,6 +121,13 @@ vom Tun. Satz ↔ Handlung liegt also beim Zufall (1/19 ≈ 0,05), das Soll ist 
 **Täter 3, der Umfang:** die Station zählt Regionen (2 < 7 000). Mit #4 trägt die Welt Mundarten, gemessen U_eff 1 097–1 233 je Welt
 auf 77 km. Die Zahl 7 000 verlangt den Leser der Mundarten über Welten (die Seite MUNDART des Kandidaten) und nicht den der Regionen.
 
+**Soll mit Quelle, zur Entscheidung (ich ändere es nicht):** das Band für „Satz ↔ Handlung“ ist schmal. Ibbotson, Lieven & Tomasello
+2013 (Journal of Child Language) zählen in der Rede an Kinder etwa **30 %** der Beschreibungen als Handlungen im Hier und Jetzt;
+gelesen habe ich nur die Kurzfassung. Bindet das Gesetz 30 % der Sätze an den Akt und lässt den Rest frei, trifft ein Hörer im 2AFC
+0,3 + 0,7 · 0,5 = **0,65**, also unter dem Soll 0,8. Das Soll 0,8 verlangt mindestens 60 % gebundene Sätze, das Doppelte des Bands.
+Ich baue Täter 2 erst, wenn das Soll oder die Lesart (2AFC über Sätze am Akt, nicht über alle Sätze) feststeht. Täter 1, die
+Konsonanten im Ohr, hängt nicht daran.
+
 Art „auge“: auch mit Gesetz bleibt die Sprosse bis zum Blindpaar am Gerät offen (Klasse P). Meine Bahn kann den Laut bauen (die
 Konsonanten als Quelle aus Rauschen und Verschluss im EINEN `stimmPuffer`, Band: Klatt 1980, die Parallel-Zweige für Frikative) und den
 Satz an den Akt binden. Das Urteil spricht das Ohr.
