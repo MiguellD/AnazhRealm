@@ -3981,12 +3981,18 @@ async function kreaturProben(r, T, opts) {
     // jeder Bewohner seinen Leib trägt, in der stehenden Welt. Leser: die Proben bewohner (`stadtTag`) und zielplan.
     const stadtAm = async (ort, wo) => {
         const voll = ort !== "stadt";
-        const o = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find((m) => m.id === ort);
-        const [seed, [x, z], nH] = [Number(o.gruendung.wort.split(" ")[1]), o.gruendung.anker, voll ? 300 : 30];
+        const orte = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.filter((m) => m.gruendung);
+        const o = orte.find((m) => m.id === ort);
+        const same = (m) => Number(m.gruendung.wort.split(" ")[1]);
+        const [seed, [x, z], nH] = [same(o), o.gruendung.anker, voll ? 300 : 30];
+        // die Stadt DIESES Orts: Same gleich und ihr Ursprung näher an seinem Anker als an dem jedes anderen Orts mit demselben
+        // Samen (stadt und stadt-voll tragen beide Same 7, 174 m auseinander — ein Kreis von 200 m nahm die Stadt des anderen)
+        const fremd = orte.filter((m) => m !== o && same(m) === seed).map((m) => m.gruendung.anker);
         const S0 = () =>
-            [...(r._bewohnerSiedlungen || new Map()).values()].find(
-                (q) => q.plan.seed === seed && Math.hypot(q.ox - x, q.oz - z) < 200
-            );
+            [...(r._bewohnerSiedlungen || new Map()).values()]
+                .filter((q) => q.plan.seed === seed && Math.hypot(q.ox - x, q.oz - z) < 200)
+                .filter((q) => fremd.every(([fx, fz]) => Math.hypot(q.ox - x, q.oz - z) < Math.hypot(q.ox - fx, q.oz - fz)))
+                .sort((a, b) => Math.hypot(a.ox - x, a.oz - z) - Math.hypot(b.ox - x, b.oz - z))[0];
         if (!S0()) await r.spawnSettlement({ seed, nH, position: { x, y: 0, z } });
         const S = S0();
         if (!S || !amPlatz(S.ox, S.oz, S.plan.platz))

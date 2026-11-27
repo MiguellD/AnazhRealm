@@ -2257,8 +2257,8 @@ function menschUrteil(name, z, soll) {
 module.exports = {
     BUEHNEN: `await (${menschBuehnen.toString()})();`,
     // DIE DORF-PROBEN (`startDorf`): ihr Start-Dorf bleibt in der Welt der Seite — sie laufen nach allen anderen, auch nach den
-    // Lebens-Proben (die Reihe des Laufs ist die Reihe von PROBEN, je Teil gefiltert)
-    PROBEN: ["bewohner", "begegnung", "zielplan", "werkort", "mengebild", "schreck", "seuche"],
+    // Lebens-Proben und den Proben der Städte (die Reihe des Laufs ist die Reihe von PROBEN, je Teil gefiltert)
+    PROBEN: ["werkort", "mengebild", "schreck", "seuche", "zielplan", "bewohner", "begegnung"],
     // die Probe mit EINEM Lauf im Selbsttest: alle ihre Täter in ihm, das Urteil je Täter an seiner Sicht (`sicht`)
     EIN_LAUF: ["bewohner", "begegnung"],
     TAETER: {
