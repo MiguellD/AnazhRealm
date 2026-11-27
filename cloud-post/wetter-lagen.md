@@ -1,5 +1,13 @@
 # Stand-Blatt wetter-lagen (Sprossen `karte2.planet.wetter.lagen#2`, `karte2.planet.wetter.extreme#1`) — oberster Abschnitt = jüngster Stand
 
+## 27.11. — Heilung am Stand-Takt: der gesetzte Wind setzt seine Richtung (Kopf 1 + Heilung + Kopf 2)
+
+- Gemessen zuerst (`windRichtung` der Heimat-Saat an den Uhren der Herde, main ↔ Kopf): 41 150 → 1,0° ↔ 38,7° zum Gitter (der Lauf meldete 38,8°), 40 766 → 23,4° ↔ 24,7°, 40 713 → 44,2° ↔ 41,6°. Die Deutung stimmt: die Richtung zur Uhr trägt seit lagen#2 die Drehung der Lage, der Herd „grob“ steht nicht mehr längs der Achse.
+- Der Chokepoint: im Spiel setzt niemand den Wind; die Bühnen, die ihn setzen, sind die Proben, und jeder Leser des Spiels liest die Richtung über den EINEN Leser `_windDirAt` (stamm/stoff-material.js:351), den `_windAt` (:370) ruft. Geheilt im EINEN Setzer der Herde (`herd` in scripts/diag-stand-takt.cjs): der gesetzte Wind setzt Stärke (seine Uhr) UND Richtung (`richtung` → `_windDirAt`): achse 90° · schraeg 22,5° · diagonal/wieder/langsam 45° · grob 90°. FRONT_TREUE, das Muster des Selbsttests und der Winkel von „grob“ (= achse) stehen unverändert.
+- Die Klasse, jeder Setzer eines Winds: scripts/diag-stand-takt.cjs `herd` (Brand: Uhr → jetzt Uhr + Richtung, geheilt) · scripts/diag-stand-takt.cjs:3596 (Druck-Platte: x 1, z 0, ms 0 — gesetzt) · scripts/lib/fahr-proben.cjs:2923 (Wurf und Feder: längs der Gasse — gesetzt) · scripts/diag-kopplung.cjs:296 (setzt nur die Stärke 0, die Richtung bleibt die der Welt — kein gesetzter Wind) · scripts/werkbank.cjs:2180 (`_windWob` 0 — stille Luft).
+- Die Leser des Winds im Spiel (alle über `_windAt` → `_windDirAt`): Brand stamm/feld-brand.js:417 · :900 · Rauch :1021 · Regen-Schlag und Himmel stamm/bild-himmel.js:1338 · :2955 · Segel/Wagen stamm/koerper-fahrt.js:1907 · Wurf stamm/koerper-frei.js:1175 · Leib stamm/koerper-leib.js:1912 · :3307 · Ohr stamm/klang.js:440 · Vögel stamm/kreatur-fauna.js:34 · :631 · Auge stamm/dirigent-takt.js:2511 · Gras/Krone stamm/stoff-material.js:481.
+- STAND_ZAHLEN
+
 ## 27.11. — extreme#1 Schub 1: der Starkregen der stehenden Front (mein Teil: das Wetter-Gesetz)
 
 - Die Zahl zuerst (Rumpf S1 der Station im Zweig `punkte-maschine`, Teil FLUT_AN, am Kern nachgerechnet: je Adresse Saat 0–19 × Jahr 0–29 die stärkste nasse Strecke im Jahr der Welt-Uhr, 20 Takte; der Regen je Takt das Feld des Worts × 10 mm je Stunde, 1 h = 150 s): am Kern von Kopf 1 (die Lage ohne Stau) **regenMaxMm 83,2 mm**, kein Jahr ≥ 100 (die rote Zeile 14,72 mm maß den Kern vor der Lage). Die Station liest das Ereignis über `_wetterAmOrt` → die Zeile sturm → das Wort stormy (rain 1): kein Stations-Kandidat nötig.
