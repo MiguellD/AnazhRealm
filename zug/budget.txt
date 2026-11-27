@@ -1545,3 +1545,4 @@
 2026-11-27T07:20 karte=219 (gebucht am 7d793605, buche.sh) karte2=146
 2026-11-27T07:37 karte=219 (gebucht am 7d793605, buche.sh) karte2=149
 2026-11-27T07:45 karte=219 (gebucht am 7d793605, buche.sh) karte2=149
+2026-11-27T07:52 karte=219 (gebucht am eef726c7, buche.sh) karte2=149

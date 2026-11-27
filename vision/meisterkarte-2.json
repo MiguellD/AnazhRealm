@@ -17587,10 +17587,10 @@
     "kriterien": 33,
     "sprossen": 213,
     "heute": 27,
-    "kern": 0,
-    "kernDazu": 0,
+    "kern": 1,
+    "kernDazu": 1,
     "anteilHeute": 12.1,
-    "anteilKern": 0
+    "anteilKern": 0.3
    },
    "perspektiven": [
     {
@@ -19490,7 +19490,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "Unter der Leiter: die Siedlung liest Natur nur als Verbot und Kosten (fachwerk-core.js:8623, :3861); keine Tat verschiebt ihren Elternknoten; ein gebautes Haus aus 400 m nie gemessen.",
      "alt": []
@@ -20101,8 +20101,8 @@
   "sprossen": 1718,
   "heute": 149,
   "davonKopplungen": 33,
-  "kern": 0,
-  "kernDazu": 0,
+  "kern": 1,
+  "kernDazu": 1,
   "anteilHeute": 7.7,
   "anteilKern": 0,
   "kapitel": 7,
