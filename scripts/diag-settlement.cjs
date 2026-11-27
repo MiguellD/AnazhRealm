@@ -844,7 +844,7 @@ function mundartOrte() {
     return _mundartOrte;
 }
 function mundartGang(FC) {
-    if (typeof FC.mundartVon !== "function") return { kl: Infinity, iso: 0, basis: 0, ueff: 0, orte: 0, beispiel: ["der Kern trägt keine Mundart (fachwerk mundartVon fehlt)"] };
+    if (typeof FC.mundartVon !== "function") return { kl: Infinity, iso: 0, basis: 0, ueff: 0, orte: 0, beispiel: ["der Kern trägt keine Mundart: fachwerk spracheVon(region, seed) — das Blatt ein Wurf des Samens, kein Ort im Raum (mundartVon fehlt)"] };
     const LAUT = /[aeiouyäöüøåæ]+|[^aeiouyäöüøåæ]/g,
         vert = new Map(),
         verteilung = (L) => {
@@ -951,9 +951,10 @@ KLIMA_TAETER["die Wüste behält den Schwung"] = [["const DEF_cv=(P.roofCurve>0&
 // das Gesetz ohne die Reihe Kotteks (B vor E): die Polwüste deckt flach wie die Wüste
 KLIMA_TAETER["das Dach liest den Himmel nicht"] = [["b.pitchDeg=himmelNeigung(b, b.pitchDeg, DP.himmel);", ""]];
 KLIMA_TAETER["die Trockenheit kennt den Pol nicht"] = [["if (klima.sommer < K.polar) return Infinity;", ""]];
-// das Blatt als Wurf des Orts (der Täter von main bis sprache-dialekt: `spracheVon(region, seed)`, kein Raum): die Herde stehen je
-// 5 m, jedes Tal zieht ein beliebiges Blatt — zwei Nachbarn sprechen so fremd wie zwei Enden der Welt
-KLIMA_TAETER["die Sprache liest den Raum nicht"] = [["var SPRACH_RAUM = { sigma: 5000,", "var SPRACH_RAUM = { sigma: 5,"]];
+// das Blatt als Wurf des Orts (der Täter von main bis sprache-dialekt: `spracheVon(region, seed)`, EIN Blatt je Ort, kein Raum): die
+// Herde stehen je 5 m, ohne Fächer — jedes Tal zieht EIN beliebiges Blatt für alle Wörter, zwei Nachbarn sprechen so fremd wie zwei Enden
+// der Welt. (Mit dem Fächer zöge jedes Wort sein eigenes Blatt: die Mischung gleicht jede Laut-Verteilung dem Mittel der Familie an.)
+KLIMA_TAETER["die Sprache liest den Raum nicht"] = [["var SPRACH_RAUM = { sigma: 5000, faecher: 0.3 };", "var SPRACH_RAUM = { sigma: 5, faecher: 0 };"]];
 // der Fächer fehlt: jedes Wort eines Tals stammt aus dem Kern-Blatt, die Isoglossen bündeln sich zu einer Linie, U_eff fällt auf die Blätter
 KLIMA_TAETER["die Mundart kennt keinen Fächer"] = [["var SPRACH_RAUM = { sigma: 5000, faecher: 0.3 };", "var SPRACH_RAUM = { sigma: 5000, faecher: 0 };"]];
 const KLIMA_SOLL = {

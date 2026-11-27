@@ -13381,6 +13381,7 @@
             seed: plan.seed,
             name: plan.name,
             region: plan.region,
+            mundart: plan.mundart, // die Mundart des Orts (sprache#4, `mundartVon`; Leser: der Wirt, `_bewohnerLauf` Name und Rede)
             groesse: plan.schnitt.groesse,
             kernel: plan.kernel,
             jahr: plan.schnitt.jahr,

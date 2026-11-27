@@ -1710,11 +1710,13 @@ class AnazhRealm_siedlung_ort {
     }
     // DIE MUNDART AM ORT (fachwerk `mundartVon`, sprache#4): der Weg des Wassers bis zur Senke seines Tals (gelaende-core `talWeg`
     // auf der Lage der Welt), dort liest das Gesetz der Welt-Saat die Blätter des Stammbaums — der Ort spricht, was sein Tal spricht.
-    // Leser: der Eingang jeder Zelle (`_zellEingang` → `DP.mundart` → der Plan → `_bewohnerLauf`), die Station sprache#4.
-    _mundartAm(x, z) {
-        let w = AnazhRealm.Gesetz("gelaende:talWeg")(this._gelaende(), x, z);
+    // `saat`: die Welt des Orts (ohne: diese Welt; `_gelaende(saat)` trägt die Lage jeder Saat). Leser: der Eingang jeder Zelle
+    // (`_zellEingang` → `DP.mundart` → der Plan → `_bewohnerLauf`), die Station sprache#4 (das Kontinuum über Welten).
+    _mundartAm(x, z, saat) {
+        const s = saat == null ? AnazhRealm._saatJe(this) : saat;
+        let w = AnazhRealm.Gesetz("gelaende:talWeg")(this._gelaende(s), x, z);
         while (w.unter) w = w.unter;
-        return AnazhRealm.Gesetz("fachwerk:mundartVon")(String(AnazhRealm._saatJe(this)), w.x, w.z);
+        return AnazhRealm.Gesetz("fachwerk:mundartVon")(String(s), w.x, w.z);
     }
     // DIE ZEIT EINER ZELLE: das Viertel einer Stadt trägt die Epoche und das Erbe seiner Stadt (`_viertelInfo`: Region, Jahr und
     // Spanne ihres Kerns), jede andere Zelle die Legende ihres Samens (`_siedlungEpoche`). Leser: der Export der Zelle
