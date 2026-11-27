@@ -138,4 +138,20 @@ GRÜN; davor am Kopf mit dem Schnitt der Halle: gate:studio-begehen · gate:haus
 - Kopf 2 baue ich auf dem main nach der Landung von z812 (sprache im main), nie vorab mit fremden Commits; ich fasse weder
   `check.yml` noch `spec/ci/ci-zeiten.json` an.
 
+## Post 23:45 (bau-funktion) — die Gasse vor dem Haus
+
+- **Wurzel:** der Blick aus 20–30 m liest die Stufe 1 (L1NUR/LOD1F setzen `moebel:false`); `LEER=FERN||N.moebel===false` nahm dort
+  Tisch und Bank des Gasthauses mit. Schnitt im Kern: `GASSE=!FERN&&!P.__nurMass` — was die Gasse vor dem Haus trägt, steht nah UND
+  in Stufe 1, nie in der Masse des Baus (der Mass-Bau, `__nurMass`), nie fern. Ohne Solid (wie die Bank): Layout Labor = Export.
+- **Gasthaus:** Ausleger L 2,02 m, Schild 0,64 × 0,75 m (Wirtshaus-Ausleger 19. Jh., Schmiedeeisen; Bayerisches Nationalmuseum,
+  ovales Eisenschild) + Tisch und zwei Bänke je Seite der Tür, jetzt auch in Stufe 1.
+- **Werkstatt:** gerahmtes Tor 2,2 × 2,3 m, Klappläden; neu im Freien je Seite des Tors die Werkbank L 2,00 · B 0,61 · H 0,84 m
+  (Tischlerbank, museum-digital rlp 33575) und der Bretterstapel auf Unterlegern 2,4 × 0,9 × 0,9 m (Maß Hypothese, offen an
+  `karte2.mensch.bau.bedarf#2`).
+- **Wohnhaus:** ohne Zeichen, byte-gleich.
+- **Tris (L0 · L1):** Gasthaus 120330 · 41142→41358 · Werkstatt 111008→111380 · 30076→30448; die übrigen sieben byte-gleich.
+- **Offen:** die drei Bilder in der WELT am Messort `dorf` aus Augenhöhe (lokal swiftshader: je Pipeline 4–7 min, kein Bild der
+  Welt) — sie liefert `bild:dorf@0.5` der GPU-Probe am Kopf 2; der Vorlauf bedarf#1 auf OMEN am Kopf 2. Kein Anspruch im Stempel
+  vor blind ≥ 80 %; bedarf#2 erst nach dem Vor-Urteil.
+
 Karte 2 gebucht 156 von 1 718 (`vision/karte-2-stand.json`) · Status ZWISCHENSTAND

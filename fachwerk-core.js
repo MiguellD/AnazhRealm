@@ -2122,14 +2122,12 @@
       const WB=BG.werkbank, wb=WB&&neben(seiteE,WB.l);
       if(wb){ beam(g,wb.x,WB.h-0.05,zt,wb.l,0.1,WB.t,'lattung');                                                  // das Blatt
         [-1,1].forEach(i=>[-1,1].forEach(k=>beam(g,wb.x+i*(wb.l/2-0.12),(WB.h-0.1)/2,zt+k*(WB.t/2-0.08),0.1,WB.h-0.1,0.1,'holz')));
-        beam(g,wb.x,0.18,zt,wb.l-0.2,0.05,WB.t-0.1,'holz'); beam(g,wb.x-seiteE*(wb.l/2-0.15),WB.h-0.12,zt-WB.t/2-0.06,0.3,0.14,0.1,'dunkel');   // Ablage und Vorderzange
-        addSolid(wb.x,WB.h/2,zt,wb.l,WB.h,WB.t,'bedarf'); }
+        beam(g,wb.x,0.18,zt,wb.l-0.2,0.05,WB.t-0.1,'holz'); beam(g,wb.x-seiteE*(wb.l/2-0.15),WB.h-0.12,zt-WB.t/2-0.06,0.3,0.14,0.1,'dunkel'); }   // Ablage und Vorderzange
       const ST=BG.stapel, sp=ST&&neben(-seiteE,ST.l);
       if(sp){ const lagen=6, lh=ST.h/lagen;
         [-1,0,1].forEach(i=>beam(g,sp.x+i*(sp.l/2-0.2),0.05,zt,0.1,0.1,ST.t,'dunkel'));                          // die Unterleger
         for(let k=0;k<lagen;k++){ const y=0.1+k*lh; beam(g,sp.x,y+(lh-0.03)/2,zt,sp.l,lh-0.03,ST.t,'lattung');      // je Lage die Bretter und die Stapellatten darüber
-          if(k<lagen-1) [-1,0,1].forEach(i=>beam(g,sp.x+i*(sp.l/2-0.2),y+lh-0.015,zt,0.04,0.03,ST.t+0.04,'dunkel')); }
-        addSolid(sp.x,(ST.h+0.1)/2,zt,sp.l,ST.h+0.1,ST.t,'bedarf'); } }
+          if(k<lagen-1) [-1,0,1].forEach(i=>beam(g,sp.x+i*(sp.l/2-0.2),y+lh-0.015,zt,0.04,0.03,ST.t+0.04,'dunkel')); } } }
 
     if(BG.erker&&levels.length>1){ const E=BG.erker, L=levels[1], eb=Math.min(E.b,W*0.4), et=E.t, zm=zF-et/2;   // der Erker der Sala am ersten Obergeschoss, über der Tür
       beam(g,0,(L.y+L.top)/2,zm,eb,L.top-L.y,et,'gefach'); beam(g,0,L.y-0.2,zm+0.08,eb-0.3,0.4,et-0.16,'stein');
