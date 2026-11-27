@@ -1,0 +1,10 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] nvidia/pascal
+@@ 0.9 s · am Messort wiese (ego) nach 0.9 s, 58 Takte
+@@ 1 s · Sätze → Fahrzeug: 15/100
+@@ 11.5 s · Werkstatt-Wagen: {"n":1,"laeufe":[{"name":"leicht","masse":8.9424,"v":22.286,"weg":66.75},{"name":"schwer","masse":16.9575,"v":19.046,"weg":62.34}],"masseQ":1.8963030059044552,"tempoQ":0.8546172484968141}
+@@ 30.3 s · Kippgrenze: 63 Baupläne · Kipper Tisch 25 · im Kreis 6 · Rutscher 65 · kippQ 0.962 ({"p":"suv·kran","wo":"Kreis","q":0.9619952494061759}) · liegt 1 · steht 1
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
