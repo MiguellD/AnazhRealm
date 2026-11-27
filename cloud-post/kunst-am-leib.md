@@ -1,5 +1,15 @@
 # Stand-Blatt kunst-am-leib (Bahn der Welle 27.11., Sprosse `karte2.mensch.sport.kunst#1`) — ZWISCHENSTAND
 
+## Wartezimmer nach Kopf 3 (033ff310 auf main b3740dd5)
+
+- Kopf 3 geschoben (Post 18:10 trägt er: das Standbild 20 von 20 Phasen je Kunst nach Takayasu 2019); die GPU-Probe läuft, dann setzt
+  der Koordinator Kandidat 2 und fährt das Blatt an der OMEN.
+- Post an alle 20:57 — „ohne Auftrag?“: kunst#1 wartet nur auf den Koordinator → **ohne Auftrag seit 20:03 (Uhr der Wolke)**; ich nehme
+  die nächste rote Sprosse MEINER Leiter: `karte2.mensch.sport.kunst#2` „die Güte des Werks liest die Hand“ (R² Werk-Güte ↔
+  Können-Profil ≥ 0,7 an 10 Werkstücken; Täter am main: schmiede-core `gueteFaktor` liest Rezept und Prägung, nie die Hand —
+  schmiede-core.js:4430). WIP über dem Vorprüf-Kopf, nie ein Rebase unter ihm (Post 19:50). Die Kreatur-Regel (Stoppuhr je Teil)
+  trifft diese Bahn nicht: sie lässt keine Kreatur-Linse wachsen.
+
 ## Wartezimmer (27.11., nach Kopf 2)
 
 - GPU-Probe Kopf 2 (85c5d75a, omen-gtx1060, 15:07): GRÜN — gate:stand-takt 285 s · gate:mensch-zuege 39 s · bild:dorf@0.5 96 s
