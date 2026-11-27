@@ -28,7 +28,9 @@ if (!RAMPE || !Number.isFinite(RAMPE.winkel))
 // Sekunden je Probe samt Täter, fremder Welt und dem Wechsel des Messorts (er zählt bei der ersten Probe danach), die Zeilen
 // „Sekunden je Probe" der drei Teile mit --selftest (werk-am-ort-2 Lauf 5, Cloud-Container, 27.11.: 1 416 · 1 458 · 1 092 s), unter
 // 1 s zählt 1. Die Stadt-Proben trugen hier ihr Fünffaches (seuche 60 → 310, zielplan 80 → 330; je Täter-Lauf
-// seuche 88 s, zielplan 29–35 s), die Teile der CI rissen die Frist (Kopf 3: Teil 1 > 1 568 s) — vier Teile
+// seuche 88 s, zielplan 29–35 s), die Teile der CI rissen die Frist (Kopf 3: Teil 1 > 1 568 s) — vier Teile. Die Stadt bleibt
+// seit werk-am-ort-2 für die Täter ihrer Probe stehen (`bleibt`): werkort · mengebild · zielplan · schreck · seuche gemessen mit
+// --selftest je für sich (424 → 228, 380 → 155, 330 → 105, 297 → 238, 310 → 88 s)
 const DAUER_S = {
     geister: 1,
     sattel: 1,
@@ -60,11 +62,11 @@ const DAUER_S = {
     tagesbudget: 56,
     kaskade: 519,
     folgen: 71,
-    zielplan: 330,
-    werkort: 424,
-    mengebild: 380,
-    schreck: 297,
-    seuche: 310,
+    zielplan: 105,
+    werkort: 228,
+    mengebild: 155,
+    schreck: 238,
+    seuche: 88,
     gehege: 63,
     erbe: 78,
     muster: 104,
