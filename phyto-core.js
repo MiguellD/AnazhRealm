@@ -4977,6 +4977,8 @@
         druck: Object.freeze({ p0: 1013, hub: 12, tief: 0.62, trog: 3, trogBreite: 0.03, trogVersatz: 0.0125 }),
         drehGrad: 80,
         drehMitte: 0.4875,
+        taktS: 120,
+        stark: Object.freeze({ abschnitt: 2, staerke: 0.9, mu: -2, beta: 1.5, bis: 10 }),
         drehGlieder: 9,
     });
     function lageGlatt(a, b, v) {
@@ -4991,9 +4993,10 @@
     }
     // die Front-Stärke der Lage g(ζ) und das Gewicht der Textur A(ζ) in `o`: der Abschnitt, in dem ζ liegt, an seinem Beginn
     // glatt (±`kante`) aus dem vorigen (Leser: `wetterAt`, `frontVerteilung`)
-    function lageProfil(ze, o) {
+    function lageProfil(ze, o, kern) {
         var L = WETTER_LAGE,
             F = L.folge,
+            S = L.stark,
             n = F.length,
             i = n - 1;
         for (var j = 1; j < n; j++)
@@ -5001,23 +5004,53 @@
                 i = j - 1;
                 break;
             }
-        var nach = i + 1 < n ? F[i + 1] : null,
-            vor = F[(i + n - 1) % n],
-            g = F[i][1],
+        // die Stärke des Abschnitts k: im Kern der stehenden Front (`stark`, bis zur Phase `kern`) die des Starkregens
+        var stufe = function (k) {
+            return k === S.abschnitt && kern > F[k][0] && (k !== i || ze < kern) ? S.staerke : F[k][1];
+        };
+        var nach = i + 1 < n ? i + 1 : -1,
+            vor = (i + n - 1) % n,
+            g = stufe(i),
             a = L.textur[F[i][2]],
             u;
         if (ze < F[i][0] + L.kante && i > 0) {
             u = lageGlatt(F[i][0] - L.kante, F[i][0] + L.kante, ze);
-            g = vor[1] + (g - vor[1]) * u;
-            a = L.textur[vor[2]] + (a - L.textur[vor[2]]) * u;
-        } else if (nach && ze > nach[0] - L.kante) {
-            u = lageGlatt(nach[0] - L.kante, nach[0] + L.kante, ze);
-            g += (nach[1] - g) * u;
-            a += (L.textur[nach[2]] - a) * u;
+            g = stufe(vor) + (g - stufe(vor)) * u;
+            a = L.textur[F[vor][2]] + (a - L.textur[F[vor][2]]) * u;
+        } else if (nach >= 0 && ze > F[nach][0] - L.kante) {
+            u = lageGlatt(F[nach][0] - L.kante, F[nach][0] + L.kante, ze);
+            g += (stufe(nach) - g) * u;
+            a += (L.textur[F[nach][2]] - a) * u;
         }
         o.g = g;
         o.a = a;
         return o;
+    }
+    // DER STARKREGEN DER LAGE (planet.wetter.extreme#1): je Lage n (der n-te Zyklus längs des Zugs) steht die Warmfront
+    // E_n Takte still — ihr Kern regnet in Sturm-Stärke (die Zeile sturm: 10 mm je Stunde, gelaende-core PEGEL), danach zieht der
+    // Landregen weiter; die nasse Zeit bleibt dieselbe (die Quote der Heimat hält). E_n = ⌊μ + β · (−ln(−ln u_n))⌋ in Takten,
+    // 0 ≤ E_n ≤ `bis`, u_n gleichverteilt aus der Saat und n (FNV-1a über saat + "-stark-" + n): die Maxima einer Extremwert-
+    // Verteilung (Gumbel 1958). Band: KOSTRA-DWD (Dauerstufe 24 h, Wiederkehr 100 a: 87–105 mm je nach Rasterzelle) — die
+    // Strecke eines Jahrs trägt ≥ 100 mm im Mittel einmal in rund 100 Jahren, das gewöhnliche Jahr nicht. Die Phase, bis zu der der
+    // Kern reicht (0: keiner). Leser: `wetterAt`, `frontVerteilung` (dieselbe Gumbel-Regel als Anteil je Takt).
+    var _kernMerk = { saat: null, n: 0, kern: 0 };
+    function lageKern(saat, n) {
+        if (_kernMerk.saat === saat && _kernMerk.n === n) return _kernMerk.kern;
+        var S = WETTER_LAGE.stark,
+            u = (saatFnv(saat + "-stark-" + n) + 0.5) / 4294967296,
+            e = Math.floor(S.mu + S.beta * -Math.log(-Math.log(u)));
+        e = Math.max(0, Math.min(S.bis, e));
+        var kern = e > 0 ? WETTER_LAGE.folge[S.abschnitt][0] + (e * WETTER_LAGE.taktS) / WETTER_LAGE.zyklusS : 0;
+        _kernMerk.saat = saat;
+        _kernMerk.n = n;
+        _kernMerk.kern = kern;
+        return kern;
+    }
+    // der Anteil der Lagen, deren Kern den k-ten Takt des Landregens noch trägt: P(E > k) (Leser: `frontVerteilung`)
+    function lageKernAnteil(k) {
+        var S = WETTER_LAGE.stark;
+        if (k + 1 > S.bis) return 0;
+        return 1 - Math.exp(-Math.exp(-(k + 1 - S.mu) / S.beta));
     }
     // der Druck der Lage an ihrer Phase (hPa): jeder Anstieg der `folge` hinter dem Tief ist ein Nebentrog, seine Senke liegt
     // `trogVersatz` hinter seinem Beginn (Leser: `wetterAt`)
@@ -5108,9 +5141,16 @@
         var v = new Float64Array(NZ * tex.length),
             pr = { g: 0, a: 0 };
         k = 0;
+        var LS = WETTER_LAGE.folge[WETTER_LAGE.stark.abschnitt][0];
         for (var z = 0; z < NZ; z++) {
-            lageProfil((z + 0.5) / NZ, pr);
-            for (var j = 0; j < tex.length; j++) v[k++] = pr.g + pr.a * tex[j];
+            var ze = (z + 0.5) / NZ;
+            // der Kern der stehenden Front: ein Anteil P(E > k) der Lagen regnet im k-ten Takt des Landregens in Sturm-Stärke
+            var q = ze >= LS ? lageKernAnteil(Math.floor(((ze - LS) * WETTER_LAGE.zyklusS) / WETTER_LAGE.taktS)) : 0,
+                nk = Math.round(q * tex.length);
+            lageProfil(ze, pr, 1);
+            for (var j = 0; j < nk; j++) v[k++] = pr.g + pr.a * tex[j];
+            lageProfil(ze, pr, 0);
+            for (j = nk; j < tex.length; j++) v[k++] = pr.g + pr.a * tex[j];
         }
         v.sort();
         return (_frontV = v);
@@ -5182,9 +5222,9 @@
             sw += F.wellen[i][1];
         }
         // die Lage am Ort (WETTER_LAGE): ihre Phase ζ längs des Zugs, die Front-Stärke g(ζ) und die Textur der drei Wellen darin
-        var ze = w.lage / (2 * Math.PI) - s / (F.zugMS * WETTER_LAGE.zyklusS);
-        ze -= Math.floor(ze);
-        var pr = lageProfil(ze, _lageAus);
+        var zr = w.lage / (2 * Math.PI) - s / (F.zugMS * WETTER_LAGE.zyklusS),
+            ze = zr - Math.floor(zr);
+        var pr = lageProfil(ze, _lageAus, lageKern(saat, Math.floor(zr)));
         var f = pr.g + (pr.a * b) / sw;
         var feuchte = 0.5 + 0.5 * Math.sin((2 * Math.PI * s) / F.feuchteM + w.feuchte);
         var st = F.stufen;
