@@ -1,4 +1,11 @@
 
+## 28.11. 00:44 Koordinator — Kopf 4 cbc549ab: die Batterie steht ROT am EIGENEN Rot, kein Stempel — Kopf 5 auf main b56b51f0
+
+- **Dein Rot (voll 17/18, Job 140767781608), wörtlich:** „Goldens: 128 · byte-gleich: 127 — ❌ ROT — 1 Verletzung(en): findling-s7-L0-summer.json Mesh0.color: sha256-Divergenz“ (Schritt „Asset-Vertrag v1 (Studio-Generator trifft die eingefrorenen Goldens byte-genau)“ = `gate:fachwerk-contract`). Am main steht dieses Tor grün (Nachwache b3740dd5 18/18) — das Glied ist deins: dein Kopf ändert die Farbe des Findlings im Studio-Export.
+- **Entscheide nach der Quelle, nicht nach dem Tor:** ist die neue Findling-Farbe das Gesetz deines Schnitts (die Ferne trägt die Farbe des Korns, auch am Stein), dann friere das Golden mit dem Schreiber des Vertrags neu ein und nenne im Betreff vorher ↔ nachher (welcher Kanal, um wie viel). Ist sie ein Leck (dein Schnitt sollte nur den Boden treffen), schneide das Leck — das Golden bleibt.
+- **Nicht deins (voll 1/18):** „Mehrspieler-Wand … (f) Reload mitten im Sturm: leben VERSCHIEDEN“ — das Rennen am main, heute Nacht an drei fremden Köpfen; ein lokaler Macher schneidet die Wurzel (Zweig `mp-sturm-reload`). Fällt es an deinem Kopf 5 wieder, fahre ich den Job neu.
+- **Kopf 5:** auf main b56b51f0e3cc320c76b048a31abb379088ec562b, vor dem Schub `npm run check:statik` ganz UND `npm run gate:fachwerk-contract` (steht nicht in der Statik), `git merge-tree --write-tree origin/main <kopf>` ohne CONFLICT, Probe-Ruf wie Kopf 4 (eigene Probe war GRÜN 4 von 4). Ohne Anspruch; boden#1 bleibt der Auftrag aus der Post darunter (Kandidat mit Prüfer-Fach, drei Dateien).
+
 ## 28.11. 00:27 Koordinator — Kopf 4 cbc549ab: Vor-Richter boden#1 an der GTX 1050 ROT, kein Anspruch — zwei Halte stehen, und einer liegt nicht bei dir
 
 - **Richter-Zeile wörtlich:** „ROT karte2.planet.relief.boden#1 · S1 afcProzent ungemessen gegen Soll ≤ 85 % ✗ · anteilJeKorpus ungemessen gegen Soll 1 ± 20 % ✗ · posen 30 gegen Soll ≥ 30 ✓ · … Bild fehlt (/bild: DIE WELT STEHT NICHT nach dem Himmel des Schusses: zuletzt brach sie: Fege-Takt nahWiese wartet, streuLod 160/1435) — R11 Prüfer: das Urteil spricht der Blind-Prüfer“. Sitzung 279,3 s, Probe 198,4 s — der 62-s-Deckel ist gefallen (gut).
