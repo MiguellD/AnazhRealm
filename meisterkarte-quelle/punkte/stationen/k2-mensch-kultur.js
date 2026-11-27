@@ -440,12 +440,15 @@ async function begegnung(r, T, arg) {
 // DIE SÄTZE (sprache#2): je Zelle `arg.saetze` Reden aus demselben Leser (`_bewohnerLauf` „rede“, die erste Rede des k-ten Bewohners)
 // und die Sprache des Orts (fachwerk `spracheVon(region, same)`: Familie und Blatt — die Gruppe, nie ein Merkmal des Trenners).
 // Kennt der Leser das Feld nicht, steht sein Wort wörtlich in `rede` (die Sprosse 2 urteilt es; Namen und Baum messen weiter).
+// DER SCHRITT (sprache-dialekt): die Zellen stehen je `arg.schritt` Zellen auseinander (24 × 256 m ≈ 6 km, der Pendel-Radius σ der
+// Mundart, Burridge 2017) — seit die Sprache eines Orts die Mundart seines Tals ist, sprächen 32 Nachbar-Zellen in 1 km EINE Sprache.
 async function namenFaecher(r, T, arg) {
-    const zellen = [];
+    const zellen = [], q = arg.schritt || 1;
     for (let R = 0; R <= 26 && zellen.length < arg.n; R++)
-        for (let cx = -R; cx <= R; cx++)
-            for (let cz = -R; cz <= R; cz++) {
-                if (Math.max(Math.abs(cx), Math.abs(cz)) !== R || zellen.length >= arg.n) continue;
+        for (let i = -R; i <= R; i++)
+            for (let k = -R; k <= R; k++) {
+                if (Math.max(Math.abs(i), Math.abs(k)) !== R || zellen.length >= arg.n) continue;
+                const [cx, cz] = [i * q, k * q];
                 const c = r._autoSettlementCellInfo(cx, cz);
                 if (c) zellen.push([cx + "," + cz, c]);
             }
@@ -464,8 +467,9 @@ async function namenFaecher(r, T, arg) {
             } catch (e) {
                 rede = String((e && e.message) || e);
             }
-        const L = FC && typeof FC.spracheVon === "function" ? FC.spracheVon(P.region, P.seed >>> 0) : null;
-        orte.push({ name: P.name || null, region: P.region || null, seed: P.seed >>> 0, zelle: key, personenNamen: leute, saetze: rede ? [] : saetze, sprache: L ? L.region + "|" + L.blatt : null });
+        // die Sprache des Plans: seit sprache-dialekt aus der Mundart seines Orts (`P.mundart`), davor aus seinem Samen
+        const L = FC && typeof FC.spracheVon === "function" ? FC.spracheVon(P.region, typeof FC.mundartVon === "function" ? P.mundart : P.seed >>> 0) : null;
+        orte.push({ name: P.name || null, region: P.region || null, seed: P.seed >>> 0, mundart: P.mundart || null, haeuser: nh, zelle: key, personenNamen: leute, saetze: rede ? [] : saetze, sprache: L ? L.region + "|" + L.blatt : null });
     }
     const S = [...(r._bewohnerSiedlungen || new Map()).values()].find((Q) => Q && Q.plan && Array.isArray(Q.liste) && Q.liste.length);
     let gleich = 0, n = 0;
@@ -500,7 +504,7 @@ async function redeZeuge(r, T, arg) {
         while (mitSatz().length < arg.sprecher && performance.now() - t0 < arg.ms) await warte(100);
         rend.setAnimationLoop(null);
         o.saetze = (sy.menge && sy.menge.saetze) || 0;
-        const vokale = new Set(FC.spracheVon(S.plan.region, S.plan.seed >>> 0).gesetz.vokale.join(""));
+        const vokale = new Set(FC.spracheVon(S.plan.region, typeof FC.mundartVon === "function" ? S.plan.mundart : S.plan.seed >>> 0).gesetz.vokale.join(""));
         for (const b of mitSatz()) {
             const z = r._mengeRede.get(b);
             o.sprecher++;
@@ -555,10 +559,13 @@ async function sprachBaum(r, T, arg) {
         listen = new Set();
     for (const R of Object.keys(FC.SPRACHE_GESETZ)) {
         const blatt = new Array(N).fill(null);
-        for (let s = 1; blatt.some((b) => !b) && s < 100000; s++) {
-            const L = FC.spracheVon(R, s);
-            if (!blatt[L.blatt]) blatt[L.blatt] = L;
-        }
+        // je Blatt seine Sprache: seit sprache-dialekt die Mundart, die ganz dieses Blatt spricht (`mundartBlatt`), davor der Same, der es wählt
+        if (typeof FC.mundartBlatt === "function") for (let b = 0; b < N; b++) blatt[b] = FC.spracheVon(R, FC.mundartBlatt(b));
+        else
+            for (let s = 1; blatt.some((b) => !b) && s < 100000; s++) {
+                const L = FC.spracheVon(R, s);
+                if (!blatt[L.blatt]) blatt[L.blatt] = L;
+            }
         if (blatt.some((b) => !b)) return { leer: "die Familie " + R + " trägt nicht alle " + N + " Blätter (spracheVon(region, same).blatt)" };
         const lex = blatt.map((L) => SB.bedeutungen.map((b) => FC.sprachWort(L, b)));
         lex.forEach((l) => listen.add(R + "|" + l.join(" ")));
@@ -584,12 +591,102 @@ async function sprachBaum(r, T, arg) {
     for (const o of arg.orte || []) {
         if (typeof o.name !== "string" || !o.name) continue;
         n++;
-        const L = FC.spracheVon(o.region, o.seed),
+        const L = FC.spracheVon(o.region, typeof FC.mundartVon === "function" ? o.mundart : o.seed),
             w = o.name.toLowerCase();
         if (SB.bestimmung.some((b) => w.startsWith(FC.sprachWort(L, b)))) gleich++;
         else if (fremd.length < 3) fremd.push(o.name + "/" + o.region);
     }
     return { familien: rf.length, ueff: listen.size, blaetter: N, bedeutungen: SB.bedeutungen.length, rf, zeuge: { gleich, n, fremd } };
+}
+
+// ───────── DAS DIALEKT-KONTINUUM (sprache#4, sprache-dialekt, Seite der Welt) ─────────
+// Die Sprache eines Orts ist die Mundart seines Tals (fachwerk `mundartVon` an der Senke seines Einzugsgebiets, gelaende-core
+// `talWeg`); der Leser des Spiels ist `r._mundartAm(x, z, saat)` — derselbe, der jeder Zelle der Welt ihre Mundart gibt
+// (`_zellEingang` → `DP.mundart` → `_bewohnerLauf`). Gemessen über `arg.gitter`² Orte im Abstand `arg.schrittM` um den Ursprung der Welt
+// (ihre Lage `r._gelaende()`): je Familie (fachwerk `SPRACHE_GESETZ`) die Sprache jedes trockenen Orts (`spracheVon(region, mundart)`).
+// KL: die symmetrische Kullback-Leibler-Divergenz der Laut-Verteilung (Vokal-Ketten und Konsonanten der Grundliste, Glättung 0,5)
+// zwischen Nachbarn im Gitter, p95 über alle Kanten und Familien. ISOGLOSSEN: je Kante die Wörter der Grundliste, die wechseln; der
+// Anteil auf Barrieren (ein anderes Tal — die Senke von `talWeg` — oder Wasser auf der Strecke, `arg.stich` Proben der Höhe), daneben
+// die Basis: der Anteil der Barrieren-Kanten (die Isoglossen beliebiger Kanten). U_eff: die verschiedenen Sprachen (Familie × Wortliste).
+// DER ZEUGE DES KONSUMS: die Pläne des Fächers (Zellen der Welt, `_ortDp` → die Gießerei) tragen die Mundart, die `_mundartAm` an der Mitte
+// ihrer Zelle liest (`plan.mundart`), und ihre Leute heißen in ihr (`_bewohnerLauf` „name“ gleich dem Namen aus `spracheVon(region,
+// _mundartAm)`) — sonst misst das Kontinuum eine Sprache, die kein Bewohner spricht.
+async function mundartRaum(r, T, arg) {
+    const FC = globalThis.__fachwerkCore, GC = globalThis.__gelaendeCore;
+    if (typeof r._mundartAm !== "function" || !FC || typeof FC.mundartVon !== "function" || !GC || typeof GC.talWeg !== "function")
+        return { leer: "die Sprache eines Orts ist ein Wurf seines Samens (fachwerk spracheVon(region, same)), kein Ort im Raum: r._mundartAm / fachwerk mundartVon / gelaende-core talWeg fehlt" };
+    const L = r._gelaende(), H = (x, z) => GC.hoehe(L, x, z, false), G = arg.gitter, D = arg.schrittM, t0 = performance.now();
+    const orte = [];
+    for (let i = 0; i < G; i++)
+        for (let j = 0; j < G; j++) {
+            const [x, z] = [(i - G / 2) * D, (j - G / 2) * D];
+            let w = GC.talWeg(L, x, z);
+            while (w.unter) w = w.unter;
+            orte.push({ i, j, x, z, nass: H(x, z) < L.waterLevel, senke: w.i + "," + w.j, m: r._mundartAm(x, z) });
+        }
+    const LAUT = /[aeiouyäöüøåæ]+|[^aeiouyäöüøåæ]/g, vert = new Map();
+    const verteilung = (S) => {
+        if (vert.has(S)) return vert.get(S);
+        const m = new Map();
+        let t = 0;
+        for (const w of S.lex) for (const c of w.match(LAUT) || []) (m.set(c, (m.get(c) || 0) + 1), t++);
+        vert.set(S, [m, t]);
+        return [m, t];
+    };
+    const kl = ([ma, ta], [mb, tb]) => {
+        const K = new Set([...ma.keys(), ...mb.keys()]), na = ta + 0.5 * K.size, nb = tb + 0.5 * K.size;
+        let d = 0;
+        for (const k of K) {
+            const p = ((ma.get(k) || 0) + 0.5) / na, q = ((mb.get(k) || 0) + 0.5) / nb;
+            d += 0.5 * (p * Math.log(p / q) + q * Math.log(q / p));
+        }
+        return d;
+    };
+    const R = Object.keys(FC.SPRACHE_GESETZ), ueff = new Set(), kls = [];
+    let iso = 0, isoB = 0, bar = 0, n = 0, trocken = 0;
+    for (const o of orte) if (!o.nass) (trocken++, R.forEach((g) => ueff.add(g + "|" + FC.spracheVon(g, o.m).lex.join(" "))));
+    for (const a of orte)
+        for (const [di, dj] of [[1, 0], [0, 1]]) {
+            const b = a.i + di < G && a.j + dj < G ? orte[(a.i + di) * G + a.j + dj] : null;
+            if (!b || a.nass || b.nass) continue;
+            let barriere = a.senke !== b.senke;
+            for (let k = 1; k < arg.stich && !barriere; k++) barriere = H(a.x + ((b.x - a.x) * k) / arg.stich, a.z + ((b.z - a.z) * k) / arg.stich) < L.waterLevel;
+            n++;
+            if (barriere) bar++;
+            for (const g of R) {
+                const A = FC.spracheVon(g, a.m), B = FC.spracheVon(g, b.m);
+                kls.push(kl(verteilung(A), verteilung(B)));
+                let q = 0;
+                for (let i = 0; i < A.lex.length; i++) if (A.lex[i] !== B.lex[i]) q++;
+                iso += q;
+                if (barriere) isoB += q;
+            }
+        }
+    kls.sort((x, y) => x - y);
+    // der Zeuge: die Pläne des Fächers tragen die Mundart ihrer Zelle, ihre Leute heißen in ihr
+    const SG = AnazhRealm._siedlungGesetz(), zeuge = { plaene: 0, gleich: 0, leute: 0, leuteGleich: 0, fremd: [] };
+    for (const o of arg.faecher || []) {
+        const m = /^(-?\d+),(-?\d+)$/.exec(o.zelle);
+        if (!m || !o.mundart) continue;
+        zeuge.plaene++;
+        const soll = r._mundartAm((+m[1] + 0.5) * SG.cellM, (+m[2] + 0.5) * SG.cellM);
+        if (JSON.stringify(soll) === JSON.stringify(o.mundart)) zeuge.gleich++;
+        else if (zeuge.fremd.length < 3) zeuge.fremd.push(o.zelle + ": Plan " + o.mundart.kern + " ≠ Ort " + soll.kern);
+        const S2 = FC.spracheVon(o.region, soll);
+        o.personenNamen.forEach((name, k) => {
+            zeuge.leute++;
+            if (name === FC.sprachName(S2, "vorname", o.seed + ":" + k) + " " + FC.sprachName(S2, "familie", o.seed + ":" + (k % o.haeuser))) zeuge.leuteGleich++;
+        });
+    }
+    return {
+        orte: trocken, kanten: n, ueff: ueff.size,
+        kl: kls.length ? kls[Math.floor(kls.length * 0.95)] : NaN,
+        klMedian: kls.length ? kls[kls.length >> 1] : NaN,
+        isoglossen: iso ? isoB / iso : NaN,
+        basis: n ? bar / n : NaN,
+        senken: new Set(orte.map((o) => o.senke)).size,
+        zeuge, ms: Math.round(performance.now() - t0),
+    };
 }
 
 async function stufen(H, K, z, liste) {
@@ -622,7 +719,7 @@ module.exports = (F) => [
     F.leiter("mensch.kultur.sprache", {
         sek: 45,
         pfad: [...ORT, "stamm/feld-leben.js", "index.html", "gelaende-core.js", "stamm/klang.js", "klang-core.js"],
-        seite: { ZENSUS: zensus, STUFEN: stufen, ZAEHLE: SPRACHE_LESER, NAMEN: namenFaecher, BAUM: sprachBaum, REDE: redeZeuge },
+        seite: { ZENSUS: zensus, STUFEN: stufen, ZAEHLE: SPRACHE_LESER, NAMEN: namenFaecher, BAUM: sprachBaum, REDE: redeZeuge, MUNDART: mundartRaum },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const z = await K.welt("return await (" + H.seite.ZENSUS + ")(r, T, " + JSON.stringify({}) + ");", 30000);
@@ -634,7 +731,7 @@ module.exports = (F) => [
             H.zeile("Sprache: " + z.orte.length + " Orte (" + z.orte.map((o) => o.name + "/" + o.region).join(", ") + "), Namen im DOM " + z.imBild + " von " + ((dom && dom.zeilen) || 0) + " Zeilen, Personennamen " + z.bewohner.namen + " von " + z.bewohner.n);
             // DIE NAMEN AM FÄCHER (kultur-aus-klima): 32 Zellen der Welt, je Ortsname und 20 Bewohner — der Zeuge verlangt, dass der Ruf
             // des Fächers die Namen der geladenen Siedlung Name für Name trifft (sonst misst der Fächer einen Zwilling)
-            const F = await K.welt("return await (" + H.seite.NAMEN + ")(r, T, " + JSON.stringify({ n: 32, leute: 20, zeuge: 50, saetze: 20 }) + ");", 30000);
+            const F = await K.welt("return await (" + H.seite.NAMEN + ")(r, T, " + JSON.stringify({ n: 32, leute: 20, zeuge: 50, saetze: 20, schritt: 24 }) + ");", 30000);
             if (!F || F.fehler) throw new Error("die Namen am Fächer: " + ((F && F.fehler) || "ohne Antwort"));
             if (!(F.zeuge.n >= 20 && F.zeuge.gleich === F.zeuge.n))
                 throw new Error("der Zeuge der Namen: der Ruf des Fächers trifft " + F.zeuge.gleich + " von " + F.zeuge.n + " Namen der Siedlung „" + F.zeuge.ort + "“ (Soll alle, ≥ 20) — der Fächer misst einen Zwilling");
@@ -739,12 +836,28 @@ module.exports = (F) => [
                 z.rede.leer = "die Rede der Menge (klang.js _bewohnerLautTakt) spricht nicht den Satz des Lesers: " + z.rede.gleich + " von " + z.rede.sprecher + " Sprechern gleich (Soll alle, ≥ " + ZEUGE_REDE.sprecher + "), " + z.rede.vokaleFremd + " Kerne fremder Vokale" + (z.rede.fremd.length ? " — " + z.rede.fremd.join(" · ") : "");
             H.zeile("Rede: " + (z.rede.leer || z.rede.gleich + " von " + z.rede.sprecher + " Sprechern der Siedlung " + z.rede.ort + " sprechen den Satz des Lesers (" + z.rede.ms + " ms)") + " · Sätze am Fächer " + z.faecher.reduce((a, o) => a + o.saetze.length, 0) + " in " + new Set(z.faecher.map((o) => o.sprache)).size + " Sprachen");
             // DER STAMMBAUM AUS DEN WORTLISTEN (sprache#3, kultur-aus-klima): der Zeuge sind die Orte des Fächers — ihr Name liest die Liste
-            const B = await K.welt("return await (" + H.seite.BAUM + ")(r, T, " + JSON.stringify({ orte: F.orte.map((o) => ({ name: o.name, region: o.region, seed: o.seed })) }) + ");", 30000);
+            const B = await K.welt("return await (" + H.seite.BAUM + ")(r, T, " + JSON.stringify({ orte: F.orte.map((o) => ({ name: o.name, region: o.region, seed: o.seed, mundart: o.mundart })) }) + ");", 30000);
             if (!B) throw new Error("der Stammbaum der Sprachen: ohne Antwort");
             if (!B.leer && !(B.zeuge.n >= 20 && B.zeuge.gleich === B.zeuge.n))
                 throw new Error("der Zeuge des Stammbaums: " + B.zeuge.gleich + " von " + B.zeuge.n + " Ortsnamen des Fächers tragen ein Wort der Liste ihrer Sprache (Soll alle, ≥ 20; fremd " + B.zeuge.fremd.join(", ") + ") — der Baum misst eine Liste, die kein Ort spricht");
             z.baum = B;
             if (!B.leer) H.zeile("Stammbaum: " + B.familien + " Familien × " + B.blaetter + " Blätter × " + B.bedeutungen + " Bedeutungen, U_eff " + B.ueff + ", RF " + B.rf.map((x) => x.R + " " + x.rf).join(" · ") + ", Zeuge " + B.zeuge.gleich + " von " + B.zeuge.n + " Ortsnamen");
+            // DAS DIALEKT-KONTINUUM (sprache#4, sprache-dialekt): die Mundart je Ort über das Gitter der Welt, der Zeuge sind die Pläne des Fächers
+            const MUNDART_GITTER = { gitter: 48, schrittM: 1600, stich: 8 };
+            z.dialekt = await K.welt("return await (" + H.seite.MUNDART + ")(r, T, " + JSON.stringify({ ...MUNDART_GITTER, faecher: F.orte.map((o) => ({ zelle: o.zelle, region: o.region, seed: o.seed, mundart: o.mundart, haeuser: o.haeuser, personenNamen: o.personenNamen })) }) + ");", 60000);
+            if (!z.dialekt) throw new Error("das Dialekt-Kontinuum: ohne Antwort");
+            if (!z.dialekt.leer) {
+                const Z = z.dialekt.zeuge;
+                if (!(Z.plaene >= 20 && Z.gleich === Z.plaene && Z.leute >= 20 * 20 && Z.leuteGleich === Z.leute))
+                    throw new Error("der Zeuge der Mundart: " + Z.gleich + " von " + Z.plaene + " Plänen des Fächers tragen die Mundart ihres Orts (Soll alle, ≥ 20; " + Z.fremd.join(", ") + "), " + Z.leuteGleich + " von " + Z.leute + " Leuten heißen in ihr (Soll alle, ≥ 400) — das Kontinuum misst eine Sprache, die kein Bewohner spricht");
+                H.zeile("Dialekt: " + z.dialekt.orte + " Orte (" + MUNDART_GITTER.gitter + "² je " + MUNDART_GITTER.schrittM + " m) in " + z.dialekt.senken + " Tälern, U_eff " + z.dialekt.ueff + ", KL p95 " + z.dialekt.kl.toFixed(3) + " (Median " + z.dialekt.klMedian.toFixed(3) + "), Isoglossen auf Barrieren " + z.dialekt.isoglossen.toFixed(3) + " (Basis " + z.dialekt.basis.toFixed(3) + "), Zeuge " + Z.gleich + "/" + Z.plaene + " Pläne · " + Z.leuteGleich + "/" + Z.leute + " Leute (" + z.dialekt.ms + " ms)");
+            }
+            const dialekt = (z) => ({
+                n: z.dialekt.ueff,
+                werte: { kl: z.dialekt.kl, isoglossen: z.dialekt.isoglossen },
+                beleg: z.dialekt.orte + " Orte in " + z.dialekt.senken + " Tälern · KL Median " + z.dialekt.klMedian.toFixed(3) + " · Barrieren-Kanten (Basis) " + z.dialekt.basis.toFixed(3) + " · Zeuge " + z.dialekt.zeuge.gleich + " von " + z.dialekt.zeuge.plaene + " Plänen, " + z.dialekt.zeuge.leuteGleich + " von " + z.dialekt.zeuge.leute + " Leuten",
+                taeter: "fachwerk-core.js mundartVon / spracheVon (die Mundart des Tals) · stamm/siedlung-ort.js _mundartAm · gelaende-core.js talWeg",
+            });
             const baum = (z) => {
                 const rf = z.baum.rf.map((x) => x.rf).sort((a, b) => a - b);
                 return {
@@ -760,7 +873,7 @@ module.exports = (F) => [
                     ? { n: 2, art: "leser", wert: () => 0, da: () => false, wo: "stamm/siedlung-bewohner.js _bewohnerLauf „rede“ · stamm/klang.js _bewohnerLautTakt", fehlt: "kein Bewohner spricht einen Satz seiner Sprache — " + z.rede.leer }
                     : { n: 2, art: "zahl", wert: (z) => trennung(z).n, zahl: trennung, wo: "fachwerk-core.js sprachSatz · stamm/siedlung-bewohner.js _bewohnerLauf „rede“" },
                 z.baum.leer ? { n: 3, art: "nicht", wert: () => 0, fehlt: z.baum.leer } : { n: 3, art: "zahl", wert: (z) => z.baum.ueff, zahl: baum, wo: "fachwerk-core.js spracheVon · sprachWort" },
-                { n: 4, art: "nicht", wert: sprachen, fehlt: "Sprachen mit Dialekt-Kontinuum: die Silben-Tafel einer Region kennt keinen Dialekt" },
+                z.dialekt.leer ? { n: 4, art: "nicht", wert: sprachen, fehlt: "Sprachen mit Dialekt-Kontinuum: " + z.dialekt.leer } : { n: 4, art: "zahl", wert: (z) => z.dialekt.ueff, zahl: dialekt, wo: "fachwerk-core.js mundartVon · stamm/siedlung-ort.js _mundartAm" },
                 { n: 5, art: "auge", um: 7000, wert: sprachen, fehlt: "hörbare Sprachen: kein Laut einer Sprache in der Welt" },
                 { n: 6, art: "nicht", wert: sprachen, fehlt: "Sprachstufen über Epochen: die Silben-Tafel ist zeitlos (dieselbe in jedem Jahr)" },
                 { n: 7, art: "nicht", wert: sprachen, fehlt: "Sprachen über Planeten und fremde Medien: eine Welt, keine fremde Art spricht" },
@@ -770,7 +883,7 @@ module.exports = (F) => [
             1: { umfang: { soll: 100, wort: "Namen (Orts- und Personennamen) aus 2 Saaten" }, masse: [{ key: "zugeordnet", wort: "Namen richtig zugeordnet", soll: 0.9, richtung: "≥" }, { key: "saaten", wort: "Saaten der Namen", soll: 2, richtung: "≥" }], erwartet: "leser", fehlt: "Personennamen: kein Bewohner trägt einen Namen", wo: "stamm/siedlung-bewohner.js:887" },
             2: { umfang: { soll: 10, wort: "Sprachen (U_eff)" }, masse: [{ key: "getrennt", wort: "Sprachen an Sätzen getrennt", soll: 0.85, richtung: "≥" }, { key: "saetze", wort: "Sätze", soll: 20, richtung: "≥" }] },
             3: { umfang: { soll: 100, wort: "Sprachen (U_eff)" }, masse: [{ key: "rf", wort: "Robinson-Foulds des Stammbaums", soll: 0.3, richtung: "≤" }, { key: "anteil", wort: "Anteil der Bäume mit RF ≤ 0,3", soll: 0.7, richtung: "≥" }, { key: "familien", wort: "Sprachfamilien", soll: 5, richtung: "≥" }] },
-            4: { umfang: { soll: 1000, wort: "Sprachen (U_eff) mit Dialekt-Kontinua" }, masse: [{ key: "kl", wort: "KL der Laut-Verteilung", soll: 0.2, richtung: "≤" }, { key: "isoglossen", wort: "Isoglossen auf Barrieren", soll: 0.7, richtung: "≥" }], erwartet: "nicht", fehlt: "Dialekt-Kontinua: keine" },
+            4: { umfang: { soll: 1000, wort: "Sprachen (U_eff) mit Dialekt-Kontinua" }, masse: [{ key: "kl", wort: "KL der Laut-Verteilung", soll: 0.2, richtung: "≤" }, { key: "isoglossen", wort: "Isoglossen auf Barrieren", soll: 0.7, richtung: "≥" }] },
             5: { auge: { pose: POSE, vorbild: "Tonaufnahme einer realen, den Hörern unbekannten Sprache (Linguisten-Blindtest 2AFC ≤ 60 %); Satz ↔ Handlung ≥ 80 %" }, erwartet: "nicht", fehlt: "hörbare Sprachen: kein Laut einer Sprache" },
             6: { umfang: { soll: 100000, wort: "Sprachstufen über Epochen" }, masse: [{ key: "swadesh", wort: "Swadesh-Retention je 1 000 J", von: 0.7, bis: 0.86 }, { key: "ursprache", wort: "Ursprache rekonstruiert", soll: 0.6, richtung: "≥" }], erwartet: "nicht", fehlt: "Sprachstufen: die Silben-Tafel ist zeitlos" },
             7: { umfang: { soll: 1000000, wort: "Sprachen über Planeten" }, masse: [{ key: "treffen", wort: "Treffen am genannten Ort", soll: 0.8, richtung: "≥" }, { key: "zipf", wort: "Zipf-Exponent", von: 0.8, bis: 1.2 }], erwartet: "nicht", fehlt: "Sprachen über Planeten: eine Welt" },
@@ -785,6 +898,11 @@ module.exports = (F) => [
             3: [
                 { name: "die Attrappe: Wortlisten nur aus Lautgesetzen, kein Ersatz (RF 0,53–0,71, kein Baum gelesen)", j: mut("mensch.kultur.sprache", 3, { art: "zahl", n: 191, werte: { rf: 0.6, anteil: 0, familien: 6 } }), gruen: false, zahl: /ROT an Robinson-Foulds des Stammbaums / },
                 { name: "der Stammbaum aus den Wortlisten (6 Familien, RF ≤ 0,21)", j: mut("mensch.kultur.sprache", 3, { art: "zahl", n: 192, werte: { rf: 0.12, anteil: 1, familien: 6 } }), gruen: true },
+            ],
+            4: [
+                { name: "die Attrappe: das Blatt ein Wurf des Orts (main 52937c92: Nachbarn so fremd wie zwei Enden der Welt, Isoglossen beim Zufall)", j: mut("mensch.kultur.sprache", 4, { art: "zahl", n: 1176, werte: { kl: 0.384, isoglossen: 0.404 } }), gruen: false, zahl: /ROT an KL der Laut-Verteilung / },
+                { name: "die Attrappe: das Kontinuum ohne Fächer (die Blätter des Baums, U_eff unter 1 000)", j: mut("mensch.kultur.sprache", 4, { art: "zahl", n: 192, werte: { kl: 0.09, isoglossen: 1 } }), gruen: false },
+                { name: "die Mundart folgt dem Tal (KL p95 0,09, Isoglossen auf Wasserscheiden 1,0 gegen die Basis 0,40)", j: mut("mensch.kultur.sprache", 4, { art: "zahl", n: 1176, werte: { kl: 0.094, isoglossen: 1 } }), gruen: true },
             ],
         },
     }),
