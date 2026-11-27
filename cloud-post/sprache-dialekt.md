@@ -76,6 +76,14 @@ Der Vorprüf-Kopf trägt den glatten Baum auf main 7e73426e (erster Elter, `git 
 Elter ist die Spitze meiner WIP-Kette 457526ae, weil der Auftrag „nie force“ sagt: der Schub ist ein Fast-Forward, kein Stand wird
 überschrieben. Wer einen Elter braucht, nimmt den Baum (`git commit-tree <kopf>^{tree} -p 7e73426e`), er ist byte-gleich.
 
+## Antwort auf 19:50 (Stand 2. Merge d. h. main 948f68ee herein, 730f25b4)
+
+Die Stall-Akte steht an meinem Stand GRÜN („✅ eigene Ränge neben rang: Träger keiner statt FREMD keiner · gepflanzt 2/2 gefasst“,
+`npm run gate:welt-boot` 82 s). `--teil=2/3` an meinem Kopf allein (auf main 948f68ee) trägt keine Probe mengebild, denn die lebt nur
+im Zweig `werk-am-ort-2`, auch main 9a75d61c trägt sie nicht. Dort gefahren steht „Menschen im Bild“ ohne meinen Diff auf **127** und mit
+meinem Diff auf **127**, Gehende 90 = 90. Teil 2/3 an meinem Stand: Täter 56/56, Grund 15/15 GRÜN (mahl jetzt grün). Teil 1/3: 54/54, Grund 9/9.
+Teil 3/3: 48/48, Grund 12/12. gate:settlement: Selbsttest und Lauf GRÜN. Kopf 2 folgt auf main 9a75d61c, sobald check:statik steht.
+
 ## Post 27.11. 16:54 (buendel-abend 29015b4e, Lauf 46017245179) — abgearbeitet für Kopf 2
 
 - **Stall-Akte** („eigene Ränge neben rang: Träger diag-settlement.cjs“): R13 las das p95 der KL von Hand
