@@ -1,7 +1,7 @@
 {
  "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
  "geraet": "gtx",
- "zeit": "2026-11-27T00:40:29.505Z",
+ "zeit": "2026-11-27T00:41:50.045Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -1843,6 +1843,143 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.preis.ankunft#2": {
+   "gruen": false,
+   "zahl": "4 Kalt-Boots, 0 ganz (≤ 2 % Lücke gegen die Ruhe, nichts offen) in ≤ 20 s: Boot 1: t(Kontrolle) kalt 11.12 s von außen (Eigenmeldung 10.83 s), Bild 3.21 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht | Boot 2: t(Kontrolle) kalt 12.57 s von außen (Eigenmeldung 12.25 s), Bild 3.27 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht | Boot 3: t(Kontrolle) kalt 11.54 s von außen (Eigenmeldung 11.20 s), Bild 3.24 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht | Boot 4: t(Kontrolle) kalt 10.79 s von außen (Eigenmeldung 10.46 s), Bild 3.24 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.56,
+   "grund": "ROT: 4 Kalt-Boots, 0 ganz (≤ 2 % Lücke gegen die Ruhe, nichts offen) in ≤ 20 s: Boot 1: t(Kontrolle) kalt 11.12 s von außen (Eigenmeldung 10.83 s), Bild 3.21 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht | Boot 2: t(Kontrolle) kalt 12.57 s von außen (Eigenmeldung 12.25 s), Bild 3.27 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht | Boot 3: t(Kontrolle) kalt 11.54 s von außen (Eigenmeldung 11.20 s), Bild 3.24 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht | Boot 4: t(Kontrolle) kalt 10.79 s von außen (Eigenmeldung 10.46 s), Bild 3.24 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal",
+   "mass": [],
+   "gpu": "nvidia/pascal",
+   "konsum": "k8d378b79bb1d",
+   "konsumN": 31,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 4
+   },
+   "konsumBoot": "k0f91bf40e6d9",
+   "s": 93.2,
+   "fremd": {
+    "s": 101.6,
+    "takte": 44,
+    "fremdS": 41.97,
+    "kerne": 0.413,
+    "fensterKerne": 0.811,
+    "namen": [
+     [
+      "Explorer.EXE",
+      6.09
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.56
+     ],
+     [
+      "node.exe dienst-omen/runde.cjs push-pfade AnazhRealm-OMEN/n0611-pm punkte-maschine gtx 45b",
+      1.77
+     ]
+    ],
+    "dienerS": 45.69,
+    "diener": [
+     [
+      "System",
+      23.94
+     ],
+     [
+      "dwm.exe",
+      13.61
+     ]
+    ],
+    "geraetS": 71.77,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      43.11
+     ],
+     [
+      "svchost.exe",
+      25.55
+     ],
+     [
+      "SearchIndexer.exe",
+      1.58
+     ]
+    ],
+    "eigenS": 622.7,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.254,
+     "nach": 0.161,
+     "station": 1.441
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 91.3,
+     "alle": 263.5,
+     "cpuEin": 78,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.38,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       1.12,
+       2.52,
+       2.91,
+       3.85,
+       1.85,
+       1.39
+      ]
+     },
+     "spanne": [
+      1795740110046,
+      1795740110520
+     ]
+    },
+    "nach": {
+     "ein": 94.2,
+     "alle": 228.9,
+     "cpuEin": 93,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.96,
+      "s": 6,
+      "soll": 3,
+      "reihe": [
+       7.93,
+       5.29,
+       5.46,
+       6.01,
+       2.46,
+       0.34
+      ]
+     },
+     "spanne": [
+      1795740209984,
+      1795740210430
+     ]
+    },
+    "ruhe": {
+     "ein": 88.5,
+     "alle": 220.7,
+     "n": 1192,
+     "von": "2026-11-26"
+    },
+    "f": 1.194,
+    "fEin": 1.064,
+    "fAlle": 1.194,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-27T00:41:50.045Z",
+   "abdruck": "624782505670",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1864,7 +2001,8 @@
   "k89a933d3bb6f": "bVXRbqMwEPyXPF6PGgIUsNQHp0RKTlcd/YS1WQMNgciGuMrp/v0ECSRA95VZ73hm1vxdnUAcIMPnT11XK7r6sfq50nBGS6M6o3r+1Cu6ioSzRpeyaxHG2FsHE6o4NZqUBSfAK8iPaLWqwaJ8Fn2bfAHb55SYLcsSQiS5kNiwsbbs9XV+TMkxra0GJA6H2Oj6IdI5sNUZcLSglf3gG9j3InxxKOkrjNl7TMb6ChlLDDFJuGOJRzbL6RyqdHoDx4ngJaDM7BljH3N8WgA2VllUepjvpEEkbTrONO+LHgXGugDmJapbE4aO4/GB9KaTppNr1ijLVuvJsNBN/XVICYnm2Ax1IfLGOqmaY3WD82gdOEA3ZnHv7NRa8pERcA4hn2ueA1YZqgkH2xWyE/wrnB96gCMqsCrIb9DIdoM1v2tDCNktuZQ98X7EQNx3/FTCpLEzl5w7gVM2qaT/mA0oOcZNjJBsabwWeaGOU7mkh2vbpb+XFHUOKSrrUOtmRLsYeDa/bsg+Jlcu4Wbeeb/c4CEAhA+BISFhu4WWupaNAYVWdmqH0HjoBz5lbL8AN3A8DvakwkUxN1I3XdAfaawj6fseJeTpujDLS1/XwrpgUeKYWxG4EX2LvTn4rOBoAc9UIeXgPveFjL4Lq8GysXhdN4OUThC4bidJ9Wh40lu5f/A6zj68ptyY7TQCe8aSbMG/n1KrZiDPgbueR2UWh4SEco4uVGMZEPkokOQIHf2FNxdUJWY4kVM6DqxTSoy8cr90T09wexLk0yTIl+WJBXZCV7rVg9ICPO7Tb6wxqA4cqsMN6Lm2E4T0F2Ns886SiS7bt6xbh35tJhX1cTUodj1uYxj7E5P9bdAJBTmpWhbd60hyaHUOZXP/Xfz7Dw==",
   "kf91f5142af88": "bVXbjpswEP2XPHbrNdcFLO2D02y1qRop+wljMzZsCEQ2hCpV/72CBBJg5wmJMzNnzpmBv6sTyANofP60Vbliq2+r7ysLZyQWzRnN86ddsVUiXQ99xq9BOec/Opg0+am2tMgFBVFCdkTSmBrz4ln2aeoFnFAw2r5xvadU0QvdtHyMN/76Oi9TCEwrUoPCoYiDfhgjmwMbq0EggUb1jW/gMEjwxWW0j3jDdxs6Ris537e03cfvnPOn9bK7gDKdTuC6CbxEjLdbzvnHHJ/mgDUp8tIO/d00SpTD7j13ixwDLbkAZgWaWxLGrhuIgfS6k6aTa5aoisbaSbPYT0MvZpQmc6xGm8usJidTCSxvcJF4kQts3S7m1qeGqEdGIATEYq55BlhqNBMOji9VJ/ifeF70AEc0QErIbtDE8SNP3LWhlL4vuRQ98b7FQDx0w1TBJLEzl547gVM+iX3/Ug8oNa6bHCF6abyVWW6OU7lUgJ7js99LijaDFA05VLYe0T5GgSOuF7Ld0CuXeD3PvA83eAgA8cPC0Jjy94WWtlJ1CwaJPjXD0gQYRiHjfLsA13A8Dvak0kc5N9LW3aI/0vASFYYBo/TpejDLoa9nQS6YFzjurYz8ZF78bOBIQGiTKzU4L0Kpkq8WtcWiJqKq6kFGN4p8v5OjfDR739u4ffB5oz+C3U+u36b2b/mcd9+hMvVAWoDwg4ApvYkpjdUcnZuatCCzURglEBJGWzkvfEFToMaJjMp1wUtZ/6kZmQbDw9NkgS8Lly85dgKXtrGDwhICEbIvLGnRHASUhxsw8B03itkvzvl6x/dTUX7o7gz6c5lE4vfngHIzk7BvdEJJT6ZSefdVpBk0NoOivv8m/v0H",
   "k203a470cccd8": "jVVNk6M2EP0vPmbDCowYhKr2IA+zZacyFeaWa0u0gDUGl8CjLafy31PCxuZjD+HkMq/7vX6vJf7ZFFgDNjl6qjX49Ue34ZuYxRCFXPwtvgsh3sT/fz72r+Lb5vfNGdQRCteubTZ885v7q4YG+wmLRI0B4+TxhI9fmU0pIew73Wsq7DfXsYNP9Do0n2hu5YkKthhy8TEQEyHEq4MpU537jtSVJCAbKE/oXUyPVf1VDWX6BfxIcmLfRJERosmVpPY5wJu4sU3b1BLz1utB49jExzBiyJfAS1eARA8ueiC+gyOa4Etwn5Ol4j19jvyTCZFZYjO2FxkluzW7hCafTxAECbzEXNiDM3yJzyvA3qurphv5gzxOtP/02b6vagxY7wpY1mjuRciCgMpR9M5Z4+xaFOr60nUzMhbm0daFmiyxBXaVKnvvbFqJzR0uk20cAN/Z1dzF+eLpqSKQEphcel4CNgWamQY/VNoZ/pMtmx7hhAa8Bso7NPHDeCsnO0jIfq2lHoQPFKPwKIhyDbNCFy75dAbn80ORDS+LEaUf66YekGIdfKfKypzmdmmKWz/kf64ldiXkaLxj2/UPdIgx9SUfCA4puWlhu2Xlc7gxQwBgk4UhjIj9ysuu1b0Fg15xvoxLQzGKIy7EYQXu4XQa48lViGoZZNe7RZ/K2CY6iign5MvtwKyHvh0L74pVjY+9VXGY8NeULsGfBk4eyMJUWo/py0jp5FfLarHuPdm2/WhlEMdh6CxppoFnQ5SHSdZp8UH7emcXl+ZBiKxY6R9YWtOP4iXIkFKui5QRwvQSXZnes6DKh0FaIjj5q2yuaGoscGanDgLY5pxYfdN+dVdPfL8S9JfZIl/XHSt0RjfdpRudVkBlxH8RjUVzlNAc70Aa+kHM+B9CiN27yGa+vP04u+MwHJvZkwzralHtB9zOCvFXSg53ojMqIqFsSA1b36fTz8zw7mxaXbmbk5Rw6Uqo+yfk3/8A",
-  "k295887d63ae0": "bVXRbqMwEPyXPLZ1DQEKWOqD0/TUSJe79BPWZm1oCEQ2hBOn+/cTJCQBuk9IzO4OM2Pzd3EEuQeNz1+2LBZs8bB4Wlg4IbFoTmiev+yCLWLpLtFj/FyUc/7WwaTJjpWlSQaa7HMoNGmxsLV9ln3Xwx0mzwQFUUB6QFKbCrP8AlIv4ASC0ead6x2lirZ03by+TltzgUlJKlA4NDroBRGyKbC2GgQSqFW/7AIO/BhfXEb7itZ8u6bXaiTnu4Y2u+hjMkxAkYzZum4ML+FFiM8pyyQDrEieFXbY6yZhrBx227Wd9RhoSAuY5mguTRi5ri8GsqtuVSfNpFHltbWjZZGXBMuIURpPsRptJtOKHE0psLjARbwMXWCrudr6WBN1zwiEgEhMtU4BC41mxMHxpOqE/hNNh+7hgAZIAekFGjteuBQ3bSilH3MueU+8XzEQD9wgUTBq7Eylp07ghI9q17/UA0o1wwt5hWg+W2plmpnDWC7l49Lx2M85RZtCgobsS1td0R6GviPOQdms6ZlLtJp23j5u8BAAorvA0Ijyj5mWtlRVAwaJPtZDaHwMwoBxvpmBKzgcBnsS6aGcGmmrLuj3NJaxCgKfUfp4Pijzjz4fC9JiluM1tzL04unwk4EDAaFNptTgvAikir8LaoN5RURZVoOMbhh6HqMtLe7N/tXbuLnzea0//e0Prt+nPPuJpakGkgKE5/tM6XVEaaSm6MxUpAGZXoVQAiFmtJHTwS2aHDWOZFOuC8uE9VfKlZk/PDyOAtvOXG0zzMc3KErwRcC+saBBsxdQ7C9A33PcMOrjttry3fgMvOlb7O9qs/L6+P/m627wESU9mlJl3a1HU6htCnl1+y38+w8="
+  "k295887d63ae0": "bVXRbqMwEPyXPLZ1DQEKWOqD0/TUSJe79BPWZm1oCEQ2hBOn+/cTJCQBuk9IzO4OM2Pzd3EEuQeNz1+2LBZs8bB4Wlg4IbFoTmiev+yCLWLpLtFj/FyUc/7WwaTJjpWlSQaa7HMoNGmxsLV9ln3Xwx0mzwQFUUB6QFKbCrP8AlIv4ASC0ead6x2lirZ03by+TltzgUlJKlA4NDroBRGyKbC2GgQSqFW/7AIO/BhfXEb7itZ8u6bXaiTnu4Y2u+hjMkxAkYzZum4ML+FFiM8pyyQDrEieFXbY6yZhrBx227Wd9RhoSAuY5mguTRi5ri8GsqtuVSfNpFHltbWjZZGXBMuIURpPsRptJtOKHE0psLjARbwMXWCrudr6WBN1zwiEgEhMtU4BC41mxMHxpOqE/hNNh+7hgAZIAekFGjteuBQ3bSilH3MueU+8XzEQD9wgUTBq7Eylp07ghI9q17/UA0o1wwt5hWg+W2plmpnDWC7l49Lx2M85RZtCgobsS1td0R6GviPOQdms6ZlLtJp23j5u8BAAorvA0Ijyj5mWtlRVAwaJPtZDaHwMwoBxvpmBKzgcBnsS6aGcGmmrLuj3NJaxCgKfUfp4Pijzjz4fC9JiluM1tzL04unwk4EDAaFNptTgvAikir8LaoN5RURZVoOMbhh6HqMtLe7N/tXbuLnzea0//e0Prt+nPPuJpakGkgKE5/tM6XVEaaSm6MxUpAGZXoVQAiFmtJHTwS2aHDWOZFOuC8uE9VfKlZk/PDyOAtvOXG0zzMc3KErwRcC+saBBsxdQ7C9A33PcMOrjttry3fgMvOlb7O9qs/L6+P/m627wESU9mlJl3a1HU6htCnl1+y38+w8=",
+  "k8d378b79bb1d": "bVVdb6MwEPwveWzPNQQoYKkPTqmUSBdd+hPWsAYSAsg2ocrp/vsJElI+uo941jOeWZu/q7hSqF/OUOYStXk56qpcsdXT6teqhvgEKY4/abgg0aguqF6OesVWYWyv0WH8k3dFOefvHSxWeW00TXJIiagqQ7Tpdor7nqcRosgFBVFCdkbSKIN5cQfJV7A8wWi75+mBUkmvNGrf3uathcCkIgYkDo0WOl6AbA5sdAoCCTSyJ7uDPTfEV5vRvoKI7yP6qK+A80NL20OwnW0moEymam07hFef9Sbwz7nKJAc0pMhLPfDaiR9Kiz242v2iR0FLroBZgerehIFtu2IQu+moOmtmjbJotJ6QBU7irQNGaTjHpqjzODOkVpXA8g4X4dq3gW2Wbqd1Q+RYEQgBgZh7nQGWKaqJBsuJZWf0VzDf9ARnVEBKyO7Q0HL8tfj2hlK6XWopeuE9xSDcs71EwqSxC5VeOoMTPqlDv5gOKNkOC/EDkvIFqY6zXJ2ndkkX15bDfi8l6gwSVORUafNAO+i7lrgNyi6iNy3BZt75fbghQwAIRgNDA8q3Cy91JU0LCklaN8PQuOj5HuN8twAbOJ+HeJLYwXgepDbdoI9lrEPpeS6j9Pl2UZaHvl0LcsW8wMfcxr4TsvfInYMvCs4ERKpyKYf0hRfL8KdhbbEw/WMyWGn7vuMweqXlOPBDy985342yjtJP1xSb9oPPam57z1ApMwgXIBzXZTKNAkoDOUfnypAW4uxhjhQIIaPOIpcrqgJTnFgpbRvWCaOtvOk+ds+Nf38O5PNkiK/LHXPsTC51oweXY3CFx36IpUV1ElCe7kDXsWw/6Edws+eHkR8p/zjW31dhVLuNw/d8k/7h25tzLed/Irq7E9UY01pVMu9eRppBozMoRv+Sf/8B"
  },
  "sitzung": {
   "start": "2026-11-26T22:43:44.094Z",
