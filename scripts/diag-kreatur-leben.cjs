@@ -1091,7 +1091,7 @@ async function lebenBuehnen() {
             const weit = Math.max(...tiere.map((t) => Math.hypot(t.x - U.x, t.z - U.z) + r._creatureMoveCharacter(t.c).leashM));
             for (const weiter = window.__deckel("tagesbudget: die Hydro-Kacheln über dem Streifgebiet", 600, false); weiter(); ) {
                 if (!r._ensureHydroTilesAround(U.x, U.z, weit)) break;
-                await new Promise((f) => setTimeout(f, 50));
+                await sleep(50);
             }
             pm.set(U.x, r.getTerrainHeightAt(U.x, U.z + 90) + 0.5, U.z + 90);
             for (let i = 0; i < (ein + mess) * 10; i++) {
