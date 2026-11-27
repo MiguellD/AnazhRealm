@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 55,
+    "heute": 56,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 9.1,
+    "anteilHeute": 9.3,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -8919,7 +8919,7 @@
        "richter": "Flug mit 0,9 c: Uhren weichen um den Lorentz-Faktor ± 1 % ab"
       }
      ],
-     "heute": 1,
+     "heute": 2,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Bremsweg Gras/Weg 1,63×, nass 1,48–1,72× (fahrzeug.K1); GTX reißt bei 36 km/h (Bild 35,4 ms); fahrWasser/fahrLuft nur Widerstand (vehicle-core.js:3619/3633)",
@@ -20099,11 +20099,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 151,
+  "heute": 152,
   "davonKopplungen": 33,
   "kern": 0,
   "kernDazu": 0,
-  "anteilHeute": 7.8,
+  "anteilHeute": 7.9,
   "anteilKern": 0,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20114,7 +20114,7 @@
   },
   "gliederLeitern": 9,
   "beide": 74,
-  "nachwache": 77
+  "nachwache": 78
  },
  "zusammengelegt": [
   {
