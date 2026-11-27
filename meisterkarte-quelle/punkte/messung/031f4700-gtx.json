@@ -1,7 +1,7 @@
 {
  "sha": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e",
  "geraet": "gtx",
- "zeit": "2026-11-27T07:02:03.070Z",
+ "zeit": "2026-11-27T07:05:33.506Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#2": {
@@ -2743,16 +2743,193 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.kopplung.evolution-planet#1": {
+   "gruen": false,
+   "zahl": "der Deckel der Leiter riss nach 20,013 s, ehe anteilImRaum der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,013 s, ehe anteilImRaum der Sprosse stand · der Deckel der Leiter 20 s) · Täter: @@PUNKTE@@ PROBE 162.7 s · Exit 0",
+   "exit": 0,
+   "minuten": 2.72,
+   "grund": "der Deckel der Leiter riss nach 20,013 s, ehe anteilImRaum der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S1 der Deckel der Leiter riss nach 20,013 s, ehe anteilImRaum der Sprosse stand · der Deckel der Leiter 20 s) · Täter: @@PUNKTE@@ PROBE 162.7 s · Exit 0",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 163.1,
+   "fremd": {
+    "s": 165.6,
+    "takte": 75,
+    "fremdS": 96.25,
+    "kerne": 0.581,
+    "fensterKerne": 0.932,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      21.84
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      16.39
+     ],
+     [
+      "bash.exe sk/wacht4.sh",
+      6.77
+     ]
+    ],
+    "dienerS": 49.44,
+    "diener": [
+     [
+      "System",
+      22.27
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 123.33,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      92.97
+     ],
+     [
+      "svchost.exe",
+      28.36
+     ],
+     [
+      "SearchIndexer.exe",
+      0.84
+     ]
+    ],
+    "eigenS": 436.66,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T07:02:48.576Z",
+   "abdruck": "26dc6ce347e8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.kopplung.stadt-im-netz#2": {
+   "gruen": false,
+   "zahl": "der Deckel der Leiter riss nach 30,014 s, ehe fangR der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 30,014 s, ehe fangR der Sprosse stand · der Deckel der Leiter 30 s) · Täter: @@PUNKTE@@ PROBE 162.7 s · Exit 0",
+   "exit": 0,
+   "minuten": 2.72,
+   "grund": "der Deckel der Leiter riss nach 30,014 s, ehe fangR der Sprosse stand — kein Urteil, UNGEMESSEN (die Probe sah: S2 der Deckel der Leiter riss nach 30,014 s, ehe fangR der Sprosse stand · der Deckel der Leiter 30 s) · Täter: @@PUNKTE@@ PROBE 162.7 s · Exit 0",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 163.1,
+   "fremd": {
+    "s": 165.6,
+    "takte": 75,
+    "fremdS": 96.25,
+    "kerne": 0.581,
+    "fensterKerne": 0.932,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      21.84
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      16.39
+     ],
+     [
+      "bash.exe sk/wacht4.sh",
+      6.77
+     ]
+    ],
+    "dienerS": 49.44,
+    "diener": [
+     [
+      "System",
+      22.27
+     ],
+     [
+      "dwm.exe",
+      14.83
+     ]
+    ],
+    "geraetS": 123.33,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      92.97
+     ],
+     [
+      "svchost.exe",
+      28.36
+     ],
+     [
+      "SearchIndexer.exe",
+      0.84
+     ]
+    ],
+    "eigenS": 436.66,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T07:02:48.576Z",
+   "abdruck": "76372c675782",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.kopplung.evolution-planet#1",
+   "modus": "session"
+  },
+  "gelaende.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\375d2784-c5d6-4e68-bb9e-ad2604f4fc8b.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\375d2784-c5d6-4e68-bb9e-ad2604f4fc8b.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T07:05:33.458Z",
+   "abdruck": "46837d8616aa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "9792@mwymtgs6"
+  },
+  "karte2.planet.relief.grossform#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\375d2784-c5d6-4e68-bb9e-ad2604f4fc8b.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\375d2784-c5d6-4e68-bb9e-ad2604f4fc8b.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T07:05:33.481Z",
+   "abdruck": "562950e4c769",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "9792@mwymtgs6"
+  },
+  "karte2.same.entfaltung.schirm#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\375d2784-c5d6-4e68-bb9e-ad2604f4fc8b.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\375d2784-c5d6-4e68-bb9e-ad2604f4fc8b.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T07:05:33.506Z",
+   "abdruck": "0b389cec986f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "9792@mwymtgs6"
   }
  },
  "sitzung": {
-  "start": "2026-11-27T05:02:55.035Z",
-  "ordner": "sitzung-20261127-060255",
+  "start": "2026-11-27T07:00:26.081Z",
+  "ordner": "sitzung-20261127-080026",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 6.8,
-  "grundstellungS": [],
-  "proben": 2,
+  "warten": 0.03,
+  "bootS": 7.1,
+  "grundstellungS": [
+   0.2,
+   0.1
+  ],
+  "proben": 3,
   "freigaben": [],
   "geraet": {
    "name": "GTX 1060",
@@ -2760,62 +2937,71 @@
    "preis": true
   },
   "offen": [
-   "karte2.same.preis.ausdauer#1",
-   "karte2.leben.tiere.masse#1",
-   "karte2.leben.tiere.wanderung#2",
-   "karte2.erleben.klang.stimme#1",
-   "karte2.leben.oeko.netz#2",
-   "karte2.erleben.kopplung.wahrnehmung#2",
-   "karte2.leben.evolution.fremde-physik#1",
-   "karte2.same.kopplung.aufwaerts#1",
-   "karte2.same.kopplung.ereignis#2",
-   "karte2.same.kopplung.gewalt#1",
-   "karte2.same.kopplung.kohaerenz#1",
-   "karte2.same.kopplung.terraform#1"
+   "gelaende.K2#1",
+   "karte2.planet.relief.grossform#1",
+   "karte2.same.entfaltung.schirm#1"
   ],
   "orte": [
    {
-    "ort": "dorf",
-    "vor": "karte2.erleben.bild.nacht#2",
-    "s": 50.6,
-    "takte": 1043,
-    "chunks": 95,
+    "ort": null,
+    "vor": "karte2.erleben.spieler.hand#1",
+    "s": 29,
+    "takte": 783,
+    "chunks": 81,
     "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "karte2.same.physik.feuer#2",
+    "s": 18.7,
+    "takte": 648,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "karte2.leben.kopplung.evolution-planet#1",
+    "s": 17.6,
+    "takte": 631,
+    "chunks": 81,
+    "nach": "der Grundstellung"
    }
   ],
   "wegeTueren": [],
   "felder": [
    {
-    "probe": "profiband.K4#1",
+    "probe": "karte2.erleben.spieler.hand#1",
     "weg": [
      "__ortZeit",
      "__weltaktSpionBuch",
      "__wetterSpionBuch",
      "__buehneUhr",
-     "__impostorRttBaked",
-     "__flussBibliothekS",
-     "__zensusCalls",
-     "__k4"
+     "__imSchuss",
+     "__nahSpeicher",
+     "__letzteSpiegel"
     ]
    },
    {
-    "probe": "karte2.erleben.bild.nacht#2",
+    "probe": "karte2.same.physik.feuer#2",
     "weg": [
-     "__imSchuss"
+     "__ortZeit",
+     "__weltaktSpionBuch",
+     "__wetterSpionBuch",
+     "__buehneUhr"
     ]
    }
   ],
   "wirt": [
    {
-    "probe": "profiband.K4#1",
+    "probe": "karte2.erleben.spieler.hand#1",
     "anders": [
      "r._bildZeit",
      "r._wolkenZeit",
      "r._weltaktGehalten",
      "r._setWeather",
-     "r._feuchteLeser",
-     "r._knotenRate",
      "r.state.weather",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
@@ -2823,107 +3009,126 @@
      "r._wolkenZeit": "neu: () => S.T",
      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
-     "r._knotenRate": "neu: function (N, ro) { const t0 = performance.now(); const s = kr.apply(this, argume",
      "r.state.weather": "neu: () => wert",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     null,
-     294.7
+     199.1,
+     241.2
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.erleben.bild.nacht#2",
+    "probe": "karte2.same.physik.feuer#2",
     "anders": [
-     "r._weltaktGehalten",
-     "r._setWeather",
      "r._bildZeit",
      "r._wolkenZeit",
-     "r._feuchteLeser",
+     "r._weltaktGehalten",
+     "r._setWeather",
      "r.state.weather",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
      "r._bildZeit": "neu: () => S.T",
      "r._wolkenZeit": "neu: () => S.T",
-     "r._feuchteLeser": "neu: (px, pz, py) => this._feuchteAt(px, pz, py)",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
      "r.state.weather": "neu: () => wert",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     414.8,
-     566.7
+     223.9,
+     251.3
     ],
     "ungemessen": null
    }
   ],
   "messHalt": [
    {
-    "probe": "profiband.K4#1",
+    "probe": "karte2.erleben.spieler.hand#1",
     "halt": -1000000000,
     "zurueck": 0
    },
    {
-    "probe": "karte2.erleben.bild.nacht#2",
+    "probe": "karte2.erleben.spieler.hand#1",
     "gehalten": [
      "skala",
-     "spiegel",
-     "tiere"
+     "spiegel"
     ],
     "offen": []
-   }
-  ],
-  "haenger": [
+   },
    {
-    "probe": "profiband.K4#1",
-    "zurueck": 9
+    "probe": "karte2.same.physik.feuer#2",
+    "halt": -1000000000,
+    "zurueck": 0
    }
   ],
-  "unerklaert": [
+  "felderBlind": [
    {
-    "probe": "karte2.erleben.bild.nacht#2",
-    "wie": "orte +d:7@836,438 · wege +4 [425.5,53.4,1072.3,817.4/2666] [660.2,284.5,992.9,577.1/4] [661.5,278.1,1001.2,585.2/1314] … (d:7@836,438, netz:d:7@836,438, verkehr:d:7@836,438)"
+    "probe": "karte2.leben.kopplung.evolution-planet#1",
+    "wann": "nach",
+    "fehler": "ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\375d2784-c5d6-4e68-bb9e-ad2604"
    }
   ],
-  "wanderung": [
+  "wirtBlind": [
    {
-    "probe": "karte2.erleben.bild.nacht#2",
-    "ort": "dorf",
-    "m": 2081.08,
-    "dreh": 0.342
+    "probe": "karte2.leben.kopplung.evolution-planet#1",
+    "wann": "nach",
+    "fehler": "ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\375d2784-c5d6-4e68-bb9e-ad2604f4fc8b.dmp"
    }
   ],
-  "grund": "die Welt trägt nicht mehr vor karte2.same.preis.ausdauer#1: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30], → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.010986477912198709,30],[\\\"-8,-8\\\",-0.056207644872154267,30],\"} — offen: karte2.same.preis.ausdauer#1, karte2.leben.tiere.masse#1, karte2.leben.tiere.wanderung#2, karte2.erleben.klang.stimme#1, karte2.leben.oeko.netz#2, karte2.erleben.kopplung.wahrnehmung#2, karte2.leben.evolution.fremde-physik#1, karte2.same.kopplung.aufwaerts#1, karte2.same.kopplung.ereignis#2, karte2.same.kopplung.gewalt#1, karte2.same.kopplung.kohaerenz#1, karte2.same.kopplung.terraform#1",
+  "zeichnerBlind": [
+   {
+    "probe": "karte2.leben.kopplung.evolution-planet#1",
+    "wann": "nach",
+    "fehler": "ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\375d2784-c5d6-4e68-bb9e-ad2604f4fc8b.dmp"
+   }
+  ],
+  "grund": "die Welt trägt nicht mehr vor gelaende.K2#1: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-absturz\\\\375d2784-c5d6-4e68-bb9e-ad2604f4fc8b.dmp\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN — offen: gelaende.K2#1, karte2.planet.relief.grossform#1, karte2.same.entfaltung.schirm#1",
   "ciBlicke": 4,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 279,
-   "frameP95": 66.79,
-   "taktP95": 65.97,
-   "vramMax": 232.4,
-   "seiten": 2,
-   "marken": 1,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.erleben.bild.nacht#2",
-     "m": 2081,
+     "probe": "karte2.erleben.spieler.hand#1",
+     "m": 1083,
      "ringVor": 4,
      "ringMin": -1
+    },
+    {
+     "probe": "karte2.same.physik.feuer#2",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "karte2.leben.kopplung.evolution-planet#1",
+     "m": 340,
+     "ringVor": 4,
+     "ringMin": 0
     }
    ],
-   "zapfen": 336,
-   "luecken": 5,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 191,
+   "luecken": 16,
+   "letzteLuecke": "ABSTURZ der Seite: renderer · V8 javascript OOM (CALL_AND_RETRY_LAST) · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-absturz\\375d2784-c5d6-4e68-bb9e-ad2604"
   },
-  "fahrtS": 431,
-  "minuten": 7.31
+  "fahrtS": 301.6,
+  "minuten": 5.18
  }
 }
