@@ -1218,8 +1218,22 @@ function ortWahl(msg) {
               erdbau: G.erdbauNormal((state.erdbauRoh || []).filter((_p, i) => i < msg.ohne[0] || i >= msg.ohne[1])),
           })
         : state;
+    // JEDER PUNKT EIN URTEIL JE KANDIDAT (bau-funktion, C-K5): das Wasser am Punkt ist eine Funktion des Gesetzes (`ortNass`) —
+    // `ortImWasser` urteilt jedes Haus des Kandidaten trocken, und der Boden vor dem Bau (`hochAm` → `ortPlan` nurBoden) und der
+    // Plan des Kandidaten fragen dieselben Punkte (`slotImWasser`) noch einmal; das Gedächtnis des Kandidaten (`nass`, je Ort
+    // geleert) trägt die zweite Frage. `wasser` nennt die Fragen und die Urteile (gate:settlement C-K5). Gemessen an der Zelle
+    // −6,−6 (Saat 1862753406, nH 13, neben der Stadt: 145 Kandidaten, 71 im stehenden Bau): 230 586 → 119 951 Urteile, die Wahl
+    // 17,9 → 13,5 s — bis hier stand die Welt dort länger als der Deckel ihres Stillstands (3 600 Takte), das erste Haus kam nie.
+    const nass = new Map();
+    const wasser = { fragen: 0, urteile: 0 };
     const ctx = Object.assign(
-        G.ortCtx(L, (x, z) => ortNass(msg, null, x, z, L)),
+        G.ortCtx(L, (x, z) => {
+            wasser.fragen++;
+            const k = x + "," + z;
+            let v = nass.get(k);
+            if (v === undefined) (nass.set(k, (v = ortNass(msg, null, x, z, L))), wasser.urteile++);
+            return v;
+        }),
         { fest: msg.fest || [] }
     );
     // DER STEHENDE BAU VOR DEM PLAN (siedlung.K5, Lehre 25: billige Urteile zuerst): die Boxen der Bauten um die Suche
@@ -1280,6 +1294,7 @@ function ortWahl(msg) {
                         imBau,
                         faellt,
                         ms: self.performance.now() - t0,
+                        wasser,
                     };
                 }
             }
@@ -1300,7 +1315,9 @@ function ortWahl(msg) {
                 imBau,
                 faellt,
                 ms: self.performance.now() - t0,
+                wasser,
             });
+            nass.clear(); // das Gedächtnis des Kandidaten
             const imWasser = i !== msg.wand ? FC.ortImWasser(plan, o, ctx) : -1;
             if (imWasser >= 0) {
                 faellt[imWasser >= plan.slots.length ? "platz" : "wasser"]++;
@@ -1326,6 +1343,7 @@ function ortWahl(msg) {
         imBau,
         faellt,
         ms: self.performance.now() - t0,
+        wasser,
     };
 }
 // TRÄGT DER PLAN v2 `k` JEDES HAUS des Exports? Jeder Punkt des Fundament-Rasters (`grob` im Schritt ORT_WAHL.grobM, sonst

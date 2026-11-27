@@ -351,6 +351,14 @@
   P.doppel = P.doppel?1:0; if(P.doppel){ P.wing=0; P.annex=0; }                                          // DOPPELHAUS: +x ist die geteilte Brandwand → kein Flügel/Anbau dort; 2. Einheit wird gespiegelt drangebaut
   P.annexN=(P.annexN!=null)?+P.annexN:(P.annex?1:0); if(P.doppel)P.annexN=0; P.annex=P.annexN?1:0;   // MEHRFACH-ANBAU: annexN=0/1/2 Zellen, rückwärtskompatibel
   if(P.treppgiebel) P.hip=0;                                            // GIEBEL-GESETZ: Krähenstufen erzwingen den VOLLEN Giebel — Hanse/Holland bauten nie Walm über Treppengiebeln
+  // DER BEDARF ZEICHNET DIE GESTALT (BEDARF_GESTALT, bau.bedarf#1): die Räume der Nutzung setzen die Maße, die sie von der Straße zeigen —
+  // der Stoff (der Kontor baut in Stein), das Tor (Tenne, Werkraum: die Tür wird Tor, das Erdgeschoss trägt es), der Saal (das Schiff EIN
+  // Raum über die Höhe, die Trinkstube ein hohes Geschoss); Anbauten und Zeichen baut `bedarf` unten. Ohne Nutzung liest HAUS nichts.
+  const BG=bedarfGestalt(P.rolle);
+  if(BG){
+    if(BG.stoff && !['modern','stein','glas','klinker'].includes(P.stil)) P.stil=BG.stoff.stil;
+    if(BG.halle){ P.egH=P.egH+P.ogH*Math.max(1,P.storeys-1); P.storeys=1; }
+    if(BG.tor){ P.doorW=Math.min(BG.tor.w[0], P.W-0.8); P.doorH=BG.tor.h[0]; P.egH=Math.max(P.egH, P.doorH+0.5); } }
   // ════ STIL/EPOCHE — EIN Profil dreht Material-Hülle + Parameter (keine neue Geometrie). alt=Fachwerk · modern=Putz · huette=Blockholz · stein=Putz/Stein (FR/IT) · glas=Glasfassade (Hochhaus) ════
   P.stil = ['alt','modern','huette','stein','glas','klinker','stroh'].includes(P.stil) ? P.stil : 'alt';
   if((P.portikus||P.zinnen||P.kuppel||P.arkade) && (P.stil==='alt'||P.stil==='huette'||P.stil==='stroh')) P.stil='stein';   // FEATURE→MATERIAL (Parametererweiterung wie STILMODE): Tempel/Burg/Kuppel/Riad implizieren monumentale Fassade — kein Fachwerk am Monument
@@ -379,7 +387,7 @@
   const baseY=P.foundH+(P.pilotis?2.6:0);   // PILOTIS: das ganze Haus steigt → alles relativ zu baseY folgt automatisch (Synergie)
   P.keller = (P.keller===0)?0:1;                                                 // Keller default an (abschaltbar via {keller:0}); echtes Untergeschoss unter Grade
   const kellerH=2.40, kellerY=-kellerH;                                          // Kellerboden unter Grade; Decke = Fundamentunterseite (y=0) → lichte Höhe = kellerH
-  const levels=[]; { let y=baseY; for(let k=0;k<P.storeys;k++){const h=k===0?P.egH:P.ogH; levels.push({y, h, top:y+h}); y+=h;} }
+  const levels=[]; { let y=baseY; for(let k=0;k<P.storeys;k++){const h=k===0?P.egH:((k===1&&BG&&BG.saal)?BG.saal.h:P.ogH); levels.push({y, h, top:y+h}); y+=h;} }   // der Saal des Bedarfs ist das erste Obergeschoss
   const eaveY=levels[levels.length-1].top;
   const ridgeY=eaveY+(P.D/2)*Math.tan(pitch);
   // DIE WÜSTE BAUT FLACH (kultur-aus-klima 4, Karte 2 mensch.kopplung.kultur#2): liegt die Neigung, die der Bau trägt, unter der Grenze, unter
@@ -441,7 +449,9 @@
       if(_fl2)_band(); } }
   // ════ NORM · Wohnbau (SIA 500 / DIN 18065) — öffentliche Mindestwerte, GESETZT, nicht verhandelbar ════
   const NORM={flur:1.00, treppe:0.90, auftritt:0.26, steigung:0.19, steigungSpar:0.21, schritt:0.62, podest:0.90, kopf:2.00, kopfSpar:1.90, eingang:1.30};
-  const hasAttic = (ridgeY - eaveY) > NORM.kopfSpar;          // GESETZ: nutzbarer Dachraum nur wenn First ≥1.9 m über Traufe — FRÜH gezogen, denn der Schacht hängt davon ab
+  // DIE HALLE ERSCHLIESST KEINEN DACHRAUM (BEDARF_GESTALT.halle): das Schiff ist EIN Raum bis unter die Decke — kein Lauf, kein Loch, keine Gaube
+  // Dachstuhl: der Dachraum über dem Kirchenschiff wird über den Turm oder eine Wendeltreppe in der Mauer erschlossen, nie über einen Lauf im Schiff
+  const hasAttic = (ridgeY - eaveY) > NORM.kopfSpar && !(BG&&BG.halle);          // GESETZ: nutzbarer Dachraum nur wenn First ≥1.9 m über Traufe — FRÜH gezogen, denn der Schacht hängt davon ab
   const dachRaum = hasAttic && ROOFMODE!=='flat';   /*DAS FLACHE DACH TRAEGT KEINEN DACHRAUM (w28-bau-rezept-tuer) — kein Lauf, kein Loch im Estrich: `ROOFMODE` ist die EINE Dach-Quelle — Arkade und Zinnen decken flach (`dachdeckung`: EINE Platte auf eaveY ueber dem ganzen Grundriss, ohne Loch). Bis hier fragte der Dachraum nur die Neigung des Sattels, den das flache Dach nie baut: das gasthaus #846868 (Arkade, Dorf 7/18) trug einen Speicherlauf N 12 in die Platte — auf Stufe 11 Kopfraum 0,32 m, auf der letzten Stufe der Kopf ueber der Platte (gate:studio-begehen: Kopfraum 99)*/          // GESETZ: nutzbarer Dachraum nur wenn First ≥1.9 m über Traufe — FRÜH gezogen, denn der Schacht hängt davon ab
   const DORMER = (hasAttic && !modern && P.hip<0.45 && Dp>5.5) ? (()=>{ const gx=clamp(((P.seed%5)-2)*0.5, -W/2+1.5, W/2-1.5), gW=clamp(W*0.16,1.15,1.6), zBack=-Dp*0.22, zFront=zBack-1.0; const yBack=roofSkinY(gx,zBack), baseY2=roofSkinY(gx,zFront)+0.02, frontTop=yBack-0.08; return (frontTop-baseY2>0.85)?{gx,gW,zBack,zFront,yBack,baseY2,frontTop}:null; })() : null;   // EINE Gauben-Quelle: Struktur (dachwerk) UND Dachhaut-Aussparung (dachdeckung) lesen sie
   const GAUBEN_FENSTER = (DORMER&&ROOFMODE==='sattel') ? {cx:DORMER.gx, cy:(DORMER.baseY2+DORMER.frontTop)/2+0.05, cz:DORMER.zFront+0.02, w:DORMER.gW-0.30, h:(DORMER.frontTop-DORMER.baseY2)-0.25} : null;   // DAS FENSTER DER GAUBE (EINE Quelle): das Dachwerk baut es, die Öffnungen des Lichts nennen es auch dem Plan ohne Dachwerk (`_oeffnungenDerEinheit`)
@@ -624,12 +634,12 @@
     flights.push({base:kellerY, tr:'R', x0:lxL, x1:lxR, zFoot:wz1, dir:-1, N:kN, rise:kRise, go:kGo, isLoft:false, atLevel:'keller', topEdge:'front', footEdge:'back'}); }   // DER ABGANG AN DER OFFENEN KANTE (w28-bau-rezept): das Kellermaul ist vorn offen (Brüstung hinten und seitlich, der Zustieg GBLK davor) — der Lauf tritt VORN aus; bis hier stieg er vorn aus kellerY auf und trat hinten hinter der Brüstung aus: wer an der offenen Kante eintrat, stand über 3 m Tiefe (gate:haus-welt W2 haus_italienisch 204 cm, W10 haus_schwarzwald keller-kopf 0,36 m)
 
 
-  function axis(half,special){ let pts=[-half,...special,half].filter(v=>Math.abs(v)<=half+1e-6);
+  function axis(half,special,frei){ let pts=[-half,...special,half].filter(v=>Math.abs(v)<=half+1e-6);   // frei: das Feld der Öffnung, das kein Ständer teilt (das Tor)
     pts=[...new Set(pts.map(v=>+v.toFixed(3)))].sort((a,b)=>a-b); const out=[pts[0]];
-    for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],n=Math.max(1,Math.ceil((b-a)/P.bayMax-1e-6));
+    for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],n=(frei&&Math.abs(a-frei)<1e-3&&Math.abs(b+frei)<1e-3)?1:Math.max(1,Math.ceil((b-a)/P.bayMax-1e-6));
       for(let k=1;k<=n;k++)out.push(+(a+(b-a)*k/n).toFixed(3));} return out; }
   const bx     = axis(W/2,[-fw,fw]);
-  const bxFront = axis(W/2,[-fw,fw,-doorW/2-ps,doorW/2+ps]);
+  const bxFront = axis(W/2,[-fw,fw].filter(v=>Math.abs(v)>doorW/2+ps+0.05).concat([-doorW/2-ps,doorW/2+ps]),+(-doorW/2-ps).toFixed(3));   // DAS TOR TRÄGT SEIN FELD (BEDARF_GESTALT.tor): ein Flur-Ständer, der in der Öffnung stünde, fällt (die Haustür ist schmaler als der Flur: byte-gleich)
   const bz     = axis(Dp/2,[0]);
 
   function fundament(){const g=grp(); if(P.pilotis) return g; const kWi=W/2-0.08, kDi=Dp/2-0.08;
@@ -683,9 +693,12 @@
     return g; }
 
   const winEG = modern?{off:1.18,ch:1.55}:{off:0.95,ch:0.95}, winOG = modern?{off:1.02,ch:1.45}:{off:0.80,ch:0.92};   // modern: grosse Fensterbänder
+  // DAS LICHT DES BEDARFS (BEDARF_GESTALT.fenster): der Raum an der Straße setzt sein Fenster — die Gaststube und der Werkraum das hohe Erdgeschoss-Fenster, der Saal sein Geschoss, das Schiff der Halle das hohe schmale über die Höhe ihres Raums (Anteil `halle.fenster`)
+  const BF=BG&&BG.fenster, _hl=BG&&BG.halle&&(P.egH-P.sill-P.raehm)*BG.halle.fenster;
+  const winEGb=_hl?{off:(P.egH-P.sill-P.raehm)/2+0.15, ch:_hl}:(BF&&BF.eg?{off:BF.eg[0],ch:BF.eg[1]}:winEG), winSaal=BF&&BF.saal?{off:BF.saal[0],ch:BF.saal[1]}:null;
   function wallSpec(){const S=[];
     const isAxis=c=>Math.abs(Math.abs(c)-fw)<0.28||Math.abs(c)<0.28;        // ±fw und Mitte: Ständer/Treppe → dort kein Fenster
-    const takt=modern?1:((rnd()<0.5)?1:2);                                             // Fenstertakt pro GEBÄUDE: jedes / jedes zweite geeignete Feld
+    const takt0=modern?1:((rnd()<0.5)?1:2), takt=(BF&&BF.takt)||takt0;                                             // Fenstertakt pro GEBÄUDE: jedes / jedes zweite geeignete Feld
     const ogPlaster=rnd()<0.6;                                             // OG-Material pro Gebäude (konsistent)
     const patternFor=(ax,wantDoor)=>{ const n=ax.length-1, flds=[];        // symmetrisches Rollen-Muster nach Feldindex (gilt für ALLE Geschosse → Fenster fluchten)
       for(let i=0;i<n;i++){const lo=ax[i]+ps,hi=ax[i+1]-ps; flds.push({i,lo,hi,c:(lo+hi)/2,wdt:hi-lo});}
@@ -697,11 +710,11 @@
     [ {h:true,f:-(Dp/2)+0.02,ax:bxFront,door:true}, {h:true,f:(Dp/2)-0.02,ax:bx,door:false},
       {h:false,f:-(W/2)+0.02,ax:bz,door:false},     {h:false,f:(W/2)-0.02,ax:bz,door:false} ].forEach(F=>{
       const {flds,role}=patternFor(F.ax,F.door); const ne=flds.length-1;
-      levels.forEach((L,k)=>{ const ground=k===0, yLo=L.y+(ground?P.sill:P.raehm), yHi=L.top-P.raehm, wp=ground?winEG:winOG;
+      levels.forEach((L,k)=>{ const ground=k===0, yLo=L.y+(ground?P.sill:P.raehm), yHi=L.top-P.raehm, wp=ground?winEGb:((k===1&&winSaal)?winSaal:winOG);
         const brick=ground?true:!ogPlaster, sillY=yLo+wp.off-wp.ch/2, lintelY=yLo+wp.off+wp.ch/2;
         flds.forEach(f=>{ if(f.wdt<0.12)return; let t=role[f.i]; if(t==='door'&&!ground)t='pier';
           const corner = (t==='corner') ? (f.i===0?'lo':'hi') : null;       // an welcher Seite der Eckständer steht
-          let win=null; if(t==='window'){ const wd=Math.min(modern?1.7:1.05,f.wdt-0.34); win={cy:yLo+wp.off,ch:wp.ch,wd}; }
+          let win=null; if(t==='window'){ const wd=Math.min(modern?1.7:((BF&&BF.wd)||1.05),f.wdt-0.34); win={cy:yLo+wp.off,ch:wp.ch,wd}; }
           S.push({horiz:F.h,fixed:F.f,lo:f.lo,hi:f.hi,c:f.c,yLo,yHi,type:t,corner,brick,win,sillY,lintelY}); }); }); });
     return S; }
   const WALLS=wallSpec();
@@ -754,6 +767,13 @@
   GAs.forEach(A=>FOOTPRINT.push({x0:A.x0,x1:A.x1,z0:A.z0,z1:A.z1,h:A.yHigh+0.06,a:1}));           // JEDE Zelle wird Grundriss-Bürger
   GAs.forEach(A=>WALLS.forEach(w=>{ if(!w.horiz && w.fixed*A.sx>0 && w.win && w.c>A.z0-0.3 && w.c<A.z1+0.3 && w.yLo<A.yHigh-0.05){ w.type='wand'; w.win=null; } }));   // FENSTER-OKKLUSION je Zelle
   const OCC=new Set(['S']); wings.forEach(w=>OCC.add(w.oz>0?'N':w.oz<0?'S':w.ox>0?'E':'W')); GAs.forEach(A=>OCC.add(A.sx>0?'E':'W'));   // BELEGUNGS-QUELLE (top-level): speist Balkontür-Wahl UND Turm-Standort
+  // DIE LAGE DES CHORS (BEDARF_GESTALT.chor): der Giebel gegenüber dem Turm (dieselbe Belegung, aus der der Turm seinen Standort nimmt), einmal für jede Stufe —
+  // die Giebelwand öffnet sich dort in den Chorbogen: die Fenster, die Chor-Körper und Chor-Dach decken, fallen (dieselbe FENSTER-OKKLUSION wie je Zelle)
+  const CHOR_LAGE=(()=>{ if(!BG||!BG.chor||ROUND) return null; const oE=OCC.has('E'),oW=OCC.has('W'),oN=OCC.has('N'), tsx=(P.turm&&!(oE&&oW&&oN))?(!oE?1:(!oW?-1:0)):0;
+    let cs=tsx>0?-1:tsx<0?1:-1; if(OCC.has(cs<0?'W':'E')) cs=-cs; if(OCC.has(cs<0?'W':'E')) return null;
+    const B=clamp(Dp*BG.chor.breite,3,Dp-1), eY2=baseY+(eaveY-baseY)*0.8, r2=Math.min(eY2+(B/2)*Math.tan(pitch), ridgeY-0.4); return {cs,B,eY2,r2}; })();
+  if(CHOR_LAGE){ const {cs,B,eY2,r2}=CHOR_LAGE, hw=B/2+0.3, dach=c=>Math.min(r2, eY2+Math.max(0,hw-Math.abs(c))*(r2-eY2)/(B/2));
+    WALLS.forEach(w=>{ if(!w.horiz && w.fixed*cs>0 && w.win && Math.abs(w.c)<hw && w.win.cy-w.win.ch/2<dach(w.c)){ w.type='wand'; w.win=null; } }); }
 
   // ── Balkontür-Seite erst HIER entscheiden (Flügel & Garage sind jetzt bekannt) ──
   let balcDoor=null;                                              // Balkontür-Öffnung — GESETZ: auf einer FREIEN Wand (kein Flügel/Garage, nicht der Eingang Süd)
@@ -826,7 +846,10 @@
     const Lp=prog(k,isServ(-W/2+0.12,-fw)), Rp=prog(k,isServ(fw,W/2-0.12));
     return { L:mk(-W/2+0.12,-fw,Lp), R:mk(fw,W/2-0.12,Rp) }; });
   const rooms=[];
-  layout.forEach((lay,k)=>{ const y=levels[k].y,h=levels[k].h; [['L',lay.L],['R',lay.R]].forEach(([side,s])=>{ const zs=[zMinI,...s.cuts,zMaxI];
+  // DAS TOR ÖFFNET EINEN RAUM (BEDARF_GESTALT.tor): Tenne und Werkraum sind das ganze Erdgeschoss — keine Kammer, keine Flurwand, kein
+  // Wohn-Möbel im Weg des Tors (die Diele des niederdeutschen Hallenhauses: EIN Raum vom Tor bis zum Herd)
+  const TENNE=!!(BG&&BG.tor);
+  layout.forEach((lay,k)=>{ if(k===0&&TENNE) return; const y=levels[k].y,h=levels[k].h; [['L',lay.L],['R',lay.R]].forEach(([side,s])=>{ const zs=[zMinI,...s.cuts,zMaxI];
       for(let i=0;i<zs.length-1;i++){ const z0=zs[i],z1=zs[i+1]; if(z1-z0<1.2)continue; rooms.push({side,x0:s.x0,x1:s.x1,z0,z1,floor:k,y,h,cx:(s.x0+s.x1)/2,cz:(z0+z1)/2,func:null}); } }); });
   // Raumfunktionen vergeben
   { const eg=rooms.filter(r=>r.floor===0); let kueche=null,kd=1e9;
@@ -1129,7 +1152,7 @@
       if(cz)ops.push({a:cz[0],b:cz[1],door:false}); ops.sort((p,q)=>p.a-q.a); let z=z0;
       ops.forEach(o=>{ seg(false,x,z,Math.max(z,o.a),hh,y0); if(o.door)door(false,x,o.c,y0,hh); z=Math.max(z,o.b); }); seg(false,x,z,z1,hh,y0); };
     const wallX=(z,x0,x1,ds,hh,y0)=>{ const cs=ds.map(d=>[d-dW/2,d+dW/2]).sort((a,b)=>a[0]-b[0]); let x=x0; cs.forEach(([a,b])=>{seg(true,z,x,a,hh,y0);door(true,z,(a+b)/2,y0,hh);x=b;}); seg(true,z,x,x1,hh,y0); };
-    levels.forEach((L,k)=>{ curK=k; const hh=L.h-0.05, y0=L.y; const lay=layout[k];
+    levels.forEach((L,k)=>{ curK=k; const hh=L.h-0.05, y0=L.y; const lay=layout[k]; if(k===0&&TENNE) return;   // die Tenne: keine Flurwand steht im Tor
       [['L',-fw,lay.L,-W/2+0.1],['R',fw,lay.R,W/2-0.1]].forEach(([side,xf,s,xOut])=>{
         const zs=[zMinI,...s.cuts,zMaxI]; const centers=[];
         for(let i=0;i<zs.length-1;i++){ if(zs[i+1]-zs[i]>=1.2) centers.push((zs[i]+zs[i+1])/2); }
@@ -1141,10 +1164,10 @@
   // über den First, je [Mitte x, y, z, Maß x, y, z] — EINE Quelle: der Herd baut sie (`herd`), das Fern-Fenster der L2 liest sie
   // (`kamin` am Bau → `fensterFern`: der Raum hinter der Scheibe trägt den Stein, soweit er die Scheibe deckt). Bis hier sah die
   // L0 der Hütte durch ihr Giebel-Fenster den Stein-Schornstein, die L2 Holz (gate:haus-fern G, holzhuette/s1 Farbe 0,195).
-  function herdKaesten(){ if(ROUND||P.kuppel||modern) return null; const hx=hearthX, hz=hearthZ, bD=hearthBD, bW=hearthBW, bH=1.0, top=ridgeY+0.9;
+  function herdKaesten(){ if(ROUND||P.kuppel||modern||(BG&&BG.ohneFeuer)) return null; const hx=hearthX, hz=hearthZ, bD=hearthBD, bW=hearthBW, bH=1.0, top=ridgeY+0.9;
     return { feuer:[hx,baseY+bH/2,hz,bD,bH,bW], sammler:[[hx,baseY+bH+0.45,hz,bD*0.78,0.80,bW*0.72],[hx,baseY+bH+1.05,hz,bD*0.62,0.55,bW*0.5]],
       rohr:[hx,(baseY+bH+1.3+top)/2,hz,STACK_W*0.83,top-(baseY+bH+1.3),STACK_W*0.83] }; }
-  function herd(){const g=grp(); if(ROUND||P.kuppel){chimney=null;return g;} if(modern){ chimney=null; return g; }   // KAMIN-GESETZ (Realität): Rücken an der Giebelwand · Feuerraum mit Wangen+Sturz · SIMS · verjüngter Rauchsammler · VERWAHRUNG am Dachdurchgang · Kopfplatte
+  function herd(){const g=grp(); if(ROUND||P.kuppel||(BG&&BG.ohneFeuer)){chimney=null;return g;} if(modern){ chimney=null; return g; }   // KAMIN-GESETZ (Realität): Rücken an der Giebelwand · Feuerraum mit Wangen+Sturz · SIMS · verjüngter Rauchsammler · VERWAHRUNG am Dachdurchgang · Kopfplatte
     const hx=hearthX, hz=hearthZ, nx=hearthNX, bD=hearthBD, bW=hearthBW, bH=1.0, fO=hx+nx*(bD/2);
     if(!P.flaechig){   // FLÄCHEN-STUFE (Stufe 1): der Feuerraum schläft im Innern — es bleibt der Schornstein über Dach
     const HK=herdKaesten(); beam(g,...HK.feuer,'stein'); addSolid(...HK.feuer);
@@ -1967,6 +1990,7 @@
   function turm(){ const g=grp(); if(!P.turm) return g;   // TURM — HOHL (LOCHWAND-GESETZ: echte Fenster + echtes Portal + Geschossböden), an die Ringmauer gebunden, Standort aus der BELEGUNGS-QUELLE, bei Burg ZINNENKRANZ
     const tw=Math.min(2.2,Math.max(1.4,W*0.22)), _oE=OCC.has('E'),_oW=OCC.has('W'),_oN=OCC.has('N'), sx=!_oE?1:(!_oW?-1:0), szT=(!_oE||!_oW)?-1:1, tx=(sx===0)?0:sx*(W/2+tw/2-0.18), tz=szT<0?(-Dp/2+tw/2-0.18):(Dp/2+tw/2-0.18), h=ridgeY-baseY+Math.max(4.5,P.storeys*2.0), wr=(P.stil==='huette'||P.stil==='stroh')?'holz':'stein', twT=0.26;
     if(_oE&&_oW&&_oN) return g;
+    TURM_LAGE={tx,tz,tw,h,szT,zinnen:!!P.zinnen};   // die Lage, die die Uhr des Bedarfs liest
     addMasse({art:'turm',x0:tx-tw/2,x1:tx+tw/2,z0:tz-tw/2,z1:tz+tw/2,y0:baseY,y1:baseY+h,spitze:P.zinnen?0:tw*2.4,zinnen:P.zinnen?1:0});   // TURM-VERZICHTS-GESETZ: kein freier Platz an der Hülle — ehrlich statt Kollision (E→W→Heck-Mitte)
     const fw2=Math.min(0.85,tw*0.5), fh=1.05, nLv=Math.max(1,Math.floor(h*0.72/2.4)), pw2=Math.min(0.6,tw*0.36), pH=1.55;
     const zF=tz-tw/2+twT/2, zB=tz+tw/2-twT/2, xL=tx-tw/2+twT/2, xR=tx+tw/2-twT/2, zP=(szT<0?zF:zB), zQ=(szT<0?zB:zF), lvH=2.4, nB=Math.ceil(h/lvH);   // GESCHOSS-BAND-GESETZ: jede Fassade bandweise — lochWand je Ebene (Löcher übereinander sauber getrennt)
@@ -2046,11 +2070,84 @@
   // DER FLÜGEL FÄNGT NICHT MEHR STILL (w28-bau-rezept): bis hier schluckte ein catch seinen Fehler (console.warn, das Haus ohne Flügel —
   // fail-soft); gezählt an main 0 Fänge über 32 Kulturen × 16 Samen und 324 Häuser der Pläne Messort + s7. Treibt das Raumprogramm die
   // Flügel, bricht ein Flügel jetzt beim Namen.
+  // DER BEDARF ZEICHNET DIE GESTALT (BEDARF_GESTALT, bau.bedarf#1): die Anbauten und Zeichen, die die Räume der Nutzung an der Straße
+  // zeigen — Esse, Schlot und offener Beschlagstand der Schmiede (mit dem Trog, der bis hier in der Parzelle stand), Ausleger, Tische und
+  // Bänke der Gaststube (statt der drei Kisten der Parzelle), der Erker der Sala, die Uhr am Turm, der Chor mit dem Kreuz, das Tor fern.
+  // Die Stoffe sind die, die jede Stufe schon trägt: die Stufen ohne Möbel und Glut setzen Latte und Dunkel für sie.
+  let TURM_LAGE=null;   // die Lage des Turms (turm), die die Uhr liest
+  function bedarf(){ const g=grp(); if(!BG||ROUND) return g;
+    const N=P.nur||{}, FERN=N.fern===true, LEER=FERN||N.moebel===false, glasOK=N.fenster!==false, zF=-Dp/2;
+    const R=r=>(LEER&&r==='moebel')?'lattung':(LEER&&r==='feuer')?'dunkel':r;
+    const seiteE=OCC.has('E')?-1:1;   // die freie Giebelseite (dieselbe Wahl wie der Turm)
+    const neigt=(cx,zW,yW,zA,yA,b,dick,role)=>{ const t=zW-zA, h=yW-yA, len=Math.hypot(t,h), a=-Math.atan2(h,t);   // eine Platte von der Wand (zW,yW) zur Traufe (zA,yA)
+      beam(g,cx,(yW+yA)/2+dick/2,(zW+zA)/2,b,dick,len,role,[a,0,0]); };
+    const prisma=(pts,d,role)=>{ const n=pts.length, c=[0,0,0], q=[], add=(A,B,C)=>q.push(A[0],A[1],A[2],B[0],B[1],B[2],C[0],C[1],C[2]);   // ein ebenes Vieleck mit Dicke d (ein Körper: die ferne Stufe wirft flache Teile, KULLVOL)
+      pts.forEach(p=>{ c[0]+=p[0]/n; c[1]+=p[1]/n; c[2]+=p[2]/n; }); c[0]+=d[0]/2; c[1]+=d[1]/2; c[2]+=d[2]/2;
+      const nrm=(A,B,C)=>{ const u=[B[0]-A[0],B[1]-A[1],B[2]-A[2]], v=[C[0]-A[0],C[1]-A[1],C[2]-A[2]]; return [u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]]; };
+      const aus=(A,B,C)=>{ const N=nrm(A,B,C), m=[(A[0]+B[0]+C[0])/3-c[0],(A[1]+B[1]+C[1])/3-c[1],(A[2]+B[2]+C[2])/3-c[2]]; if(N[0]*m[0]+N[1]*m[1]+N[2]*m[2]>=0) add(A,B,C); else add(A,C,B); };   // jede Fläche nach außen
+      const hin=pts.map(p=>[p[0]+d[0],p[1]+d[1],p[2]+d[2]]);
+      for(let k=1;k<n-1;k++){ aus(pts[0],pts[k],pts[k+1]); aus(hin[0],hin[k],hin[k+1]); }
+      for(let k=0;k<n;k++){ const k1=(k+1)%n; aus(pts[k],pts[k1],hin[k1]); aus(pts[k],hin[k1],hin[k]); }
+      const flach=(DEF_bk===0&&DEF_cv===0)||g.noDeform; if(!flach) for(let i=0;i<q.length;i+=3){ const w=deform(q[i],q[i+1],q[i+2]); q[i]=w[0]; q[i+1]=w[1]; q[i+2]=w[2]; }
+      const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(q,3)); geo.computeVertexNormals();
+      const m=new THREE.Mesh(geo,mat(role)); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return tintWood(m,role,c[0],c[1],c[2]); };
+    const scheibe=(cx,cy,cz,r,quer,s,role)=>{ const n=16, p=k=>{ const a=k/n*2*Math.PI, u=Math.cos(a)*r, v=Math.sin(a)*r; return quer?[cx,cy+v,cz+u]:[cx+u,cy+v,cz]; };   // eine Scheibe in der Wand (quer: in der x-Wand), 6 cm dick nach außen (s)
+      prisma(Array.from({length:n},(_,k)=>p(k)), quer?[s*0.06,0,0]:[0,0,s*0.06], role); };
+    if(BG.schlot){ const S=BG.schlot, sx=seiteE*(W/2+S.t/2+0.02), sz=zF+S.b/2+0.35, top=ridgeY+S.ueber;   // der Schlot der Esse am freien Giebel der Straßenecke, über den First
+      beam(g,sx,top/2,sz,S.t,top,S.b,'stein'); beam(g,sx,top+0.06,sz,S.t+0.16,0.12,S.b+0.16,'stein'); addSolid(sx,top/2,sz,S.t,top,S.b,'bedarf'); }
+    if(BG.vordach){ const V=BG.vordach, E=BG.esse, s=seiteE, frei=W/2-doorW/2-ps-0.6, wv=Math.min(Math.max(2.4,V.m2/V.tief),frei);   // der Beschlagstand: offen unter dem Pultdach, Fläche aus der Zeile
+      if(wv>1.2){ const x0=s*(doorW/2+ps+0.45), x1=x0+s*wv, xa=Math.min(x0,x1), xb=Math.max(x0,x1), xc=(xa+xb)/2, zA=zF-V.tief, yW=Math.min(levels[0].top,eaveY)-0.12, yT=V.traufe;
+        [xa+0.09,xb-0.09].forEach(px=>{ beam(g,px,yT/2,zA+0.09,0.16,yT,0.16,'lattung'); addSolid(px,yT/2,zA+0.09,0.16,yT,0.16,'bedarf'); });
+        beam(g,xc,yT-0.08,zA+0.09,wv,0.16,0.14,'lattung');                                             // das Rähm über den Pfosten
+        neigt(xc,zF,yW,zA-0.25,yT-0.04,wv+0.3,0.08,'ziegel');
+        const eb=Math.min(E.b,wv-0.3), xe=xc+s*(wv/2-eb/2-0.12), el=Math.min(E.l,V.tief-0.6);          // die Esse an der Wand, der Rauchfang darüber
+        beam(g,xe,E.h/2,zF-el/2-0.02,eb,E.h,el,'stein'); beam(g,xe,E.h+0.03,zF-el/2-0.05,eb*0.45,0.06,el*0.5,R('feuer'));
+        beam(g,xe,1.95,zF-0.45,eb*0.8,0.5,0.85,'stein'); beam(g,xe,(2.2+yW)/2,zF-0.2,0.6,Math.max(0.1,yW-2.2),0.4,'stein'); addSolid(xe,E.h/2,zF-el/2,eb,E.h,el,'bedarf');
+        const xn=x0+s*0.7; if(!FERN){ beam(g,xn,0.25,zF-1.4,0.42,0.5,0.42,R('moebel')); beam(g,xn,0.64,zF-1.4,0.62,0.28,0.2,'dunkel'); }   // der Amboss auf dem Klotz
+        const T=BG.trog; beam(g,xn+s*0.4,T[1]/2,zA+0.45,T[0],T[1],T[2],'stein'); addSolid(xn+s*0.4,T[1]/2,zA+0.45,T[0],T[1],T[2],'bedarf'); } }
+    if(BG.ausleger){ const A=BG.ausleger, xa=(doorW/2+ps+0.75), ya=Math.min(levels[0].top+0.3,eaveY-0.25), zm=zF-A.aus/2;   // der Ausleger der Gaststube: Arm, Strebe, das Schild quer zur Front
+      beam(g,xa,ya,zm,0.07,0.07,A.aus,'dunkel'); beam(g,xa,ya-0.28,zF-0.03,0.14,0.7,0.06,'dunkel'); strut(g,xa,ya-0.6,zF-0.02,xa,ya-0.02,zF-A.aus*0.65,0.05,'dunkel');
+      const sy=ya-0.12-A.schild[1]/2, sz=zF-A.aus+0.1+A.schild[0]/2; beam(g,xa,sy,sz,0.05,A.schild[1],A.schild[0],'putz'); beam(g,xa,sy,sz,0.03,A.schild[1]+0.1,A.schild[0]+0.1,'dunkel'); }
+    if(BG.bank&&!LEER){ [-1,1].forEach(i=>{   // Möbel der Gaststube auf der Gasse: nie Masse des Baus (der Mass-Bau baut ohne Möbel, `MASSNUR`)
+      const xc=i*(doorW/2+ps+1.55), zt=zF-1.8; if(Math.abs(xc)+0.85>W/2) return;   // Tisch und zwei Bänke je Seite der Tür
+      beam(g,xc,0.75,zt,1.6,0.06,0.72,'lattung'); [-0.62,0.62].forEach(dx=>beam(g,xc+dx,0.36,zt,0.08,0.72,0.56,'lattung'));   // helles Holz: der Tisch steht vor der dunklen Wand
+      [-0.62,0.62].forEach(dz=>{ beam(g,xc,0.45,zt+dz,1.6,0.05,0.3,'lattung'); beam(g,xc-0.6,0.21,zt+dz,0.06,0.42,0.24,'lattung'); beam(g,xc+0.6,0.21,zt+dz,0.06,0.42,0.24,'lattung'); }); }); }
+    if(BG.laden){ const La=BG.laden, a=La.winkel*D2R;   // die Klappläden des Werkraums: je Fenster der Straßenfront im Erdgeschoss das Ladenbrett (Tisch) und die Klappe darüber (Schutzdach)
+      WALLS.forEach(w=>{ if(!w.horiz||w.fixed>0||!w.win||w.yLo>baseY+0.8) return; const c=(w.lo+w.hi)/2, wd=winW(w)+0.1, y0=w.win.cy-w.win.ch/2, y1=w.win.cy+w.win.ch/2;
+        beam(g,c,y0-0.05,zF-La.tief/2,wd,0.06,La.tief,'lattung'); [-1,1].forEach(i=>strut(g,c+i*(wd/2-0.08),y0-0.45,zF-0.02,c+i*(wd/2-0.08),y0-0.08,zF-La.tief*0.8,0.05,'dunkel'));
+        beam(g,c,y1+0.05+Math.sin(a)*La.klappe/2,zF-Math.cos(a)*La.klappe/2,wd,0.05,La.klappe,'lattung',[a,0,0]); }); }
+
+    if(BG.erker&&levels.length>1){ const E=BG.erker, L=levels[1], eb=Math.min(E.b,W*0.4), et=E.t, zm=zF-et/2;   // der Erker der Sala am ersten Obergeschoss, über der Tür
+      beam(g,0,(L.y+L.top)/2,zm,eb,L.top-L.y,et,'gefach'); beam(g,0,L.y-0.2,zm+0.08,eb-0.3,0.4,et-0.16,'stein');
+      neigt(0,zF,L.top+0.55,zF-et-0.2,L.top+0.02,eb+0.25,0.1,'ziegel');
+      if(glasOK){ fensterAt(g,0,(L.y+L.top)/2+0.1,zF-et-0.03,eb-0.7,1.3,true); [-1,1].forEach(i=>fensterAt(g,i*(eb/2+0.03),(L.y+L.top)/2+0.1,zm,0.42,1.2,false)); } }
+    if(BG.uhr){ const U=BG.uhr, T=TURM_LAGE;   // die Uhr: am Turm unter dem Kranz (je Front und freier Seite), ohne Turm in der Achse der Tür unter der Traufe
+      const uhr=(cx,cy,cz,r,quer,s)=>{ const d=quer?[s*0.04,0,0]:[0,0,s*0.04]; scheibe(cx-d[0]*0.5,cy,cz-d[2]*0.5,r+0.1,quer,s,'dunkel'); scheibe(cx+d[0],cy,cz+d[2],r,quer,s,'putz');
+        const zx=cx+d[0]*1.6, zz=cz+d[2]*1.6, rot=quer?[-0.6,0,0]:[0,0,0.6]; beam(g,zx,cy+r*0.28,zz,quer?0.03:0.07,r*0.56,quer?0.07:0.03,'dunkel');
+        beam(g,zx+(quer?0:r*0.22),cy+r*0.1,zz+(quer?r*0.22:0),quer?0.03:0.06,r*0.45,quer?0.06:0.03,'dunkel',rot); };
+      if(T){ const d=Math.min(U.d[1],Math.max(U.d[0],T.tw-0.3)), cy=T.zinnen?baseY+T.h-d/2-0.45:baseY+T.h*0.82-d/2-0.35;
+        uhr(T.tx,cy,T.tz-T.tw/2-0.02,d/2,false,-1); if(T.tx!==0) uhr(T.tx+Math.sign(T.tx)*(T.tw/2+0.02),cy,T.tz,d/2,true,Math.sign(T.tx)); }
+      else { const d=U.d[1]; uhr(0,eaveY-d/2-0.3,zF-0.02,d/2,false,-1); } }
+    if(CHOR_LAGE){ const C=BG.chor, {cs,B,eY2,r2}=CHOR_LAGE;   // der Chor am Giebel gegenüber dem Turm, eingezogen (die Lage: CHOR_LAGE)
+      { const Lc=clamp(C.m2/B,2.5,Math.max(2.5,W*0.45)), xw=cs*W/2, xe=cs*(W/2+Lc), xc=(xw+xe)/2,
+        ov=0.3, hw=B/2+ov, a=Math.atan2(r2-eY2+0.15,hw), w=Math.hypot(hw,r2-eY2+0.15);
+        addSolid(xc,eY2/2,0,Lc,eY2,B,'bedarf'); addMasse({art:'fluegel',x0:Math.min(xw,xe),x1:Math.max(xw,xe),z0:-B/2,z1:B/2,eY:eY2,rY:r2,first:'x',eOv:0});   // ein Körper des Baus wie jeder Flügel: Fern-Hülle, Dach-Pool, Licht-Zeile
+        if(!FERN){ beam(g,xc,baseY/2,0,Lc+0.1,baseY,B+0.1,'stein'); beam(g,xc,(baseY+eY2)/2,0,Lc,eY2-baseY,B,'gefach');   // fern zeichnet ihn die Masse (lod2Koerper)
+          [1,-1].forEach(sz=>beam(g,xc+cs*ov/2,(r2+eY2-0.15)/2+0.07,sz*hw/2,Lc+ov,0.14,w,'ziegel',[sz*a,0,0]));
+          prisma([[xe,eY2,-B/2],[xe,eY2,B/2],[xe,r2,0]],[-cs*0.3,0,0],'gefach'); }   // der Giebel des Chors
+        if(glasOK){ const cy=baseY+(eY2-baseY)*0.5, fh=(eY2-baseY)*0.55; [1,-1].forEach(sz=>fensterAt(g,xc,cy,sz*(B/2+0.03),0.7,fh,true)); fensterAt(g,xe+cs*0.03,cy,0,0.7,fh,false); }
+        const K=BG.kreuz; if(K){ beam(g,xe-cs*0.1,r2+K.h/2,0,0.12,K.h,0.12,'dunkel'); beam(g,xe-cs*0.1,r2+K.h*0.68,0,K.b,0.12,0.12,'dunkel'); } } }
+    if(BG.kreuz&&TURM_LAGE&&!TURM_LAGE.zinnen){ const T=TURM_LAGE, K=BG.kreuz, ty=baseY+T.h+T.tw*2.4+0.15;   // das Kreuz auf dem Helm des Turms
+      beam(g,T.tx,ty+K.h/2,T.tz,0.12,K.h,0.12,'dunkel'); beam(g,T.tx,ty+K.h*0.68,T.tz,K.b,0.12,0.12,'dunkel'); }
+    if(BG.tor){ const tf=0.2;   // das Tor: der Rahmen (Pfosten und Sturz) in Dunkel um die Öffnung — fern trägt die Stufe keine Tür, dort steht das Tor als Tafel
+      [-1,1].forEach(i=>beam(g,i*(doorW/2+tf/2),baseY+doorH/2,zF-0.05,tf,doorH,0.08,'dunkel')); beam(g,0,baseY+doorH+tf/2,zF-0.05,doorW+2*tf,tf,0.08,'dunkel');
+      if(FERN) beam(g,0,baseY+doorH/2,zF-0.07,doorW,doorH,0.06,'lattung'); }
+    return g; }
   const MK=(k,f)=>(P.nur&&P.nur[k]===false)?grp():f();   // LAZY-KERN: Mass-Modus baut Verdichter gar nicht erst
   const _mkSubs=()=>({ fundament:MK('fundament',fundament), gelaende:MK('gelaende',gelaende), geruest:MK('geruest',geruest), riegel:MK('riegel',riegel), streben:MK('streben',streben), zimmermann:MK('zimmermann',zimmermann),
     gefache:MK('gefache',gefache), giebel:MK('giebel',giebel), dachwerk:MK('dachwerk',dachwerk), dachdeckung:MK('dachdeckung',dachdeckung),
     boeden:MK('boeden',boeden), innenwaende:MK('innenwaende',innenwaende), herd:MK('herd',herd), treppe:MK('treppe',treppe), tueren:MK('tueren',tueren), fenster:MK('fenster',fenster), moebel:MK('moebel',moebel),
-    anbau:MK('anbau',anbau), fluegel:MK('fluegel',()=>{ try{ return fluegel(); }catch(e){ throw new Error('fachwerk: der Flügel bricht ('+P.grundriss+', W '+W+', D '+Dp+'): '+e.message); } }), balkon:MK('balkon',balkon), kuppel:MK('kuppel',kuppel), portikus:MK('portikus',portikus), hof:MK('hof',hof), dachAlt:MK('dachAlt',dachAlt), arkade:MK('arkade',arkade), turm:MK('turm',turm), zinnen:MK('zinnen',zinnen), veranda:MK('veranda',veranda), vorkragung:MK('vorkragung',vorkragung), pilotis:MK('pilotis',pilotis), terrasse:MK('terrasse',terrasse), rundbau:MK('rundbau',rundbau) });   // NUR-VOLLGATTER-GESETZ: JEDE Fabrik durch MK — 16 von 30 liefen am nur-Gate vorbei, DESTNUR/Aufsatz-Schlüssel waren drei Runden lang TOT (Eigendach- und Giebel-Fix griffen nie)
+    anbau:MK('anbau',anbau), fluegel:MK('fluegel',()=>{ try{ return fluegel(); }catch(e){ throw new Error('fachwerk: der Flügel bricht ('+P.grundriss+', W '+W+', D '+Dp+'): '+e.message); } }), balkon:MK('balkon',balkon), kuppel:MK('kuppel',kuppel), portikus:MK('portikus',portikus), hof:MK('hof',hof), dachAlt:MK('dachAlt',dachAlt), arkade:MK('arkade',arkade), turm:MK('turm',turm), zinnen:MK('zinnen',zinnen), veranda:MK('veranda',veranda), vorkragung:MK('vorkragung',vorkragung), pilotis:MK('pilotis',pilotis), terrasse:MK('terrasse',terrasse), rundbau:MK('rundbau',rundbau), bedarf:MK('bedarf',bedarf) });   // NUR-VOLLGATTER-GESETZ: JEDE Fabrik durch MK — 16 von 30 liefen am nur-Gate vorbei, DESTNUR/Aufsatz-Schlüssel waren drei Runden lang TOT (Eigendach- und Giebel-Fix griffen nie)
   const _s0=_s;                                                                                          // RNG-Schnappschuss vor Einheit A
   const subsystems=_mkSubs();                                                                            // Einheit A
   if(P.doppel){ _s=_s0; SHIFT=W; const B=_mkSubs(); SHIFT=0;                                             // Einheit B: identisch, Collision um +W (SHIFT), Geometrie um +W über Gruppen-Transform
@@ -2068,7 +2165,7 @@
       for(const key in subsystems){ if(key==='gelaende')continue; warp(subsystems[key]); }
     }catch(e){ /* Headless-Stub → reine Render-Verformung */ } }
   /* bendPlan() ENTFERNT — Biegung im deform-Feld */
-  const order=['fundament','gelaende','geruest','riegel','streben','zimmermann','gefache','giebel','dachwerk','dachdeckung','boeden','innenwaende','herd','treppe','tueren','fenster','moebel','anbau','fluegel','balkon','kuppel','portikus','hof','dachAlt','arkade','turm','zinnen','veranda','vorkragung','pilotis','terrasse','rundbau'];
+  const order=['fundament','gelaende','geruest','riegel','streben','zimmermann','gefache','giebel','dachwerk','dachdeckung','boeden','innenwaende','herd','treppe','tueren','fenster','moebel','anbau','fluegel','balkon','kuppel','portikus','hof','dachAlt','arkade','turm','zinnen','veranda','vorkragung','pilotis','terrasse','rundbau','bedarf'];
   function build(enabled){const root=grp(); order.forEach(k=>{ if(!enabled||enabled[k]!==false){ subsystems[k].position.y=0; root.add(subsystems[k]); } }); return root; }
   const spawn={x:0,y:baseY+1.6,z:-Dp/2-2.0};
   const windowOpenings=[];
@@ -2889,6 +2986,46 @@
       burg:{ zeile:'herrschaft:palas', geschosse:[3,3], grundriss:['I'], personen:12, raeume:[['saal','b',90,0,'og','kern'],['kammer','s',14,0,'og','kern',4],['kueche','b',30,0,'eg','hinten'],['wache','b',20,0,'eg','strasse']], mass:[['turm','setze',1],['zinnen','setze',1],['keller','setze',0],['annexN','setze',0],['balcony','setze',0],['grundriss','setze','I'],['arm','setze',0]] },
       scheune:{ zeile:'hof:scheune', geschosse:[1,1], grundriss:['I'], personen:0, raeume:[['tenne','b',14,0,'eg','kern'],['stall','b',8,0,'eg','kern']], mass:[['keller','setze',0],['annexN','setze',0],['balcony','setze',0],['grundriss','setze','I']] },
     };
+    // DER BEDARF ZEICHNET DIE GESTALT (bau.bedarf#1, 27.11.): je Raum des Programms an seiner Lage (`wo`, die Lage seiner Zeile oben)
+    // das, was er von der Straße zeigt — Stoff, Öffnung, Anbau, Zeichen. HAUS liest es über die Nutzung des Baus (`P.rolle` →
+    // `bedarfGestalt`): kein Register je Rolle, der Raum zeichnet in JEDER Nutzung, die ihn trägt (der Chor der Kirche und der Kapelle).
+    // Bis hier zeichnete die Rolle nur die Parzelle (drei Kisten, ein Trog in `hofFuer`): 0 von 15 Rollen änderten das Haus; der
+    // Blind-Prüfer las 5 von 44 Bildern (11,4 %). Das Wohnhaus und ein Bau ohne Nutzung lesen nichts — byte-gleich.
+    //   tor      Tenntor: Baulehre des 19. Jh. (UB Paderborn, Digitalisat 7442341): Einfahrt 3,2–4,8 m breit, 3,4–4,4 m hoch, zweiflügelig
+    //            nach dem Erntewagen · Werkstatt: „eine breite Toröffnung“ (Bauforschung BW, Schwarzwaldhaus) — 2,2 m Hypothese, unter dem Tenntor
+    //   esse     Schmiedeherd (museum-digital bawue 105171): H 0,75 · B 2,10 · L 1,75 m, der Rauchfang über dem Herd; die Schmiede 5,3 × 5,2 m
+    //            (Roscheider Hof, museum-digital rlp 54868) — der Beschlagstand davor offen unter dem Vordach, Fläche aus seiner Zeile
+    //   ausleger Nasenschild: Werbeanlagen-Satzung Nürnberg, Ausladung ≤ 1,0 m; VG Regensburg RN 6 K 20.1379 (2021): 0,97 m
+    //   saal     der Saal im Obergeschoss bis 6 m unter die Balken (Nachrichtenblatt der Denkmalpflege BW, Bauforschung) — 4,0 m gesetzt
+    //   uhr      Zifferblätter der Ortskirchen: 1,20 m (Kirchdaun) · 1,50 m (Laumersheim) · 1,70 m (Schönaich) — das Band 1,2–1,7 m
+    //   chor     Saalkirche mit eingezogenem Chor (Propylaeum Heidelberg, Grabung): Schiff 18 m lang, ≤ 9 m breit, Chor außen 5,5–6 m
+    //   halle    die Saalkirche: das Schiff EIN Raum über die Höhe der Geschosse, die das Programm ihm gab (keine Zwischendecke)
+    //   erker    Erker am Obergeschoss der Straße, lichte Breite ≥ 2 m — 2,4 m gesetzt; fenster: Gaststube und Werkraum mit dem Licht
+    //            der Arbeit (jedes Feld, 1,3 m hoch, Hypothese mit Band über dem Wohnfenster 0,95 m)
+    //   laden    „Laden“ heißt mhd. das Brett, das in der Bude niedergelassen die Ware trägt (Wiley-VCH, Geschichte des Handels, Kap. 1);
+    //            der Klappladen teilt die Öffnung des Erdgeschosses waagerecht (Aachener Hausstudie 1930) — Brett 0,6 m, Klappe 0,7 m unter
+    //            20°: Hypothese (ohne Messwert), offen an bedarf#2
+    // prettier-ignore
+    const BEDARF_GESTALT={
+      gaststube:{ wo:'strasse', fenster:{takt:1, wd:1.3, eg:[1.0,1.3]}, ausleger:{aus:0.97, schild:[0.9,0.7]}, bank:{n:2} },
+      esse_werkraum:{ wo:'kern', schlot:{b:1.2, t:1.0, ueber:1.0} },
+      beschlagstand:{ wo:'strasse', vordach:{tief:2.5, traufe:2.4}, esse:{b:2.1, h:0.75, l:1.75}, trog:[1.35,0.42,0.5] },
+      trinkstube:{ wo:'strasse', saal:{h:4.0}, fenster:{takt:1, wd:1.2, saal:[1.9,2.4]} },
+      sala:{ wo:'strasse', erker:{b:2.4, t:0.9} },
+      kontor:{ wo:'strasse', stoff:{stil:'stein'} },
+      uhrturm:{ wo:'turm', uhr:{d:[1.2,1.7]} },
+      schiff:{ wo:'kern', halle:{fenster:0.62}, fenster:{takt:1, wd:0.9} },
+      chor:{ wo:'kern', chor:{breite:0.62}, kreuz:{h:1.8, b:0.9} },
+      // Feuer: die Feuerordnungen der Frühen Neuzeit verboten Herd und offenes Licht in Scheune und Tenne (Heu und Stroh) — die Tenne baut keinen Herd
+      tenne:{ wo:'kern', tor:{w:[3.2,4.8], h:[3.4,4.4]}, ohneFeuer:{} },
+      werkraum:{ wo:'strasse', tor:{w:[2.2,2.2], h:[2.3,2.3]}, fenster:{takt:1, wd:1.3, eg:[1.0,1.3]}, laden:{tief:0.6, klappe:0.7, winkel:20} },
+    };
+    // die Gestalt einer Nutzung: je Raum ihrer Zeile an seiner Lage die Merkmale des Gesetzes (m² des Raums als `m2`); null ohne Merkmal
+    // prettier-ignore
+    function bedarfGestalt(rolle){ const N=rolle&&BAU_NUTZUNG[rolle]; if(!N||!N.raeume) return null; let G=null;
+      for(const r of N.raeume){ const g=BEDARF_GESTALT[r[0]]; if(!g||g.wo!==r[5]) continue; G=G||{};
+        for(const k in g) if(k!=='wo') G[k]=Object.assign({raum:r[0], m2:r[2]}, g[k]); }
+      return G; }
     // DIE NUTZUNG DES WOHN-LOSES (rahmen): die erste Zeile, deren Bedingungen alle treffen — das Hofhaus der Antike und des Südens,
     // wo der Haushalt es trägt (wohl ≥ 1), in der dichten Stadt das Reihenhaus, ab dem Baujahr 1850 das Mietshaus, sonst das Wohnhaus
     // prettier-ignore
@@ -4510,7 +4647,7 @@
   for(let i=0;i<I.length;i++) G.idx.push(I[i]+off);
   G.vo+=S.vo; } }
     // prettier-ignore
-    function hofFuer(B){                                                                         // HOF-GESETZ: die Parzelle EMERGIERT aus dem Haus-Wissen — Tür→Weg, Armut→Holzstapel, Land→Beete+Leine, Rolle→Kisten/Trog. Keine Deko-Streuung: jede Setzung hat eine System-Wurzel.
+    function hofFuer(B){                                                                         // HOF-GESETZ: die Parzelle EMERGIERT aus dem Haus-Wissen — Tür→Weg, Armut→Holzstapel, Land→Beete+Leine (die Rolle zeichnet am Haus, BEDARF_GESTALT). Keine Deko-Streuung: jede Setzung hat eine System-Wurzel.
   if(B.hofFrag) return B.hofFrag;
   const geoms={}; B.hofFrag=geoms;
   const gap=B.hofGap||0, sp=B.spawnL, e=B.ext, rolle=(B.p&&B.p.rolle)||'wohnhaus';
@@ -4552,11 +4689,10 @@
       const lx=e.x0-0.7, za=e.z0+0.8, zb=za+2.6;
       box(lx,0.8,za, 0.07,1.6,0.07, mLay('holz')); box(lx,0.8,zb, 0.07,1.6,0.07, mLay('holz'));
       box(lx,1.52,(za+zb)/2, 0.025,0.025, zb-za, M.dunkel); } }
-  if(rolle==='gasthaus'){ for(let k2=0;k2<3;k2++) box(e.x0+0.5+((k2%2)*0.6), 0.28+((k2/2)|0)*0.56, e.z0-0.55, 0.55,0.55,0.55, mLay('holz')); }   // ROLLE → KISTEN am Eingang
+  // die Kisten der Gaststube und der Trog der Schmiede standen hier: die Rolle zeichnet jetzt am Haus (BEDARF_GESTALT — Tische und Bänke, der Trog im Beschlagstand)
   /*SCHICHT-2: die WANDLATERNE neben der Tuer von Gasthaus und Schmiede reist seit K66-2 mit dem Dorf-Licht (wandLaternen: die Gestalt wandlaterne mit ihrem Licht an der Wand des Kerns) — bis K66-2 ein Glas-Kopf ohne Lichtquelle vor der Traufe*/
   if((B.p.baujahr||1900)<1800 && rnd()<0.35){ const ex3=(rnd()<0.5)?e.x0-0.03:e.x1+0.03;      // SCHICHT-2: EFEU — das Alter begrünt die Wetterecke
     for(let k3=0;k3<3;k3++) box(ex3, 0.7+k3*1.05+rnd()*0.3, e.z1-0.5-k3*0.4-rnd()*0.5, 0.1, 0.9+rnd()*0.5, 0.5+rnd()*0.4, M.laub); }
-  if(rolle==='schmiede'){ box(e.x1+0.7, 0.24, e.z0+0.6, 1.35,0.42,0.5, mLay('stein')); }            // ROLLE → TRÄNKTROG
   const wrap=bauOrtWrap(B); wrap.add(grp); wrap.updateMatrixWorld(true);
   bakeLOD(grp, B.p.col, geoms, 0, true);
   return geoms; }

@@ -802,6 +802,64 @@ function himmelUrteil(G, check) {
         G.r >= 0.5 && G.mutation >= 90 && G.gegen === G.n && G.wort0 === G.n
     );
 }
+// ===== TEIL B (mensch.bau.bedarf#1): DIE ROLLE ZEICHNET DIE GESTALT — je Rolle des Blind-Prüfers ein Haus des Dorfs (DORF, die
+// Saaten bis jede Rolle steht), gebaut vom EINEN Leser `buildInstance` (Studio = Welt = Bake) nah (L0) und fern (L2), gegen denselben
+// Vektor mit `rolle: "wohnhaus"`. Täter am main eef726c7: 0 von 8 Rollen änderten das Haus (die Gestalt folgte nur den Maßen); das
+// Wohnhaus bleibt byte-gleich (das Gesetz zeichnet nur, was das Raumprogramm an der Straße trägt).
+const BEDARF_ROLLEN = ["gasthaus", "kirche", "patrizierhaus", "rathaus", "scheune", "schmiede", "werkstatt", "zunfthaus", "wohnhaus"];
+function bedarfGang(FC, o = {}) {
+    const crypto = require("crypto");
+    const abdruck = (g) => {
+        const h = crypto.createHash("sha1");
+        g.updateMatrixWorld(true);
+        g.traverse((m) => {
+            if (!m.isMesh || !m.geometry) return;
+            const p = m.geometry.attributes.position;
+            h.update(Buffer.from(p.array.buffer, p.array.byteOffset, p.array.byteLength));
+            h.update(JSON.stringify(m.matrixWorld.elements));
+        });
+        return h.digest("hex").slice(0, 8);
+    };
+    const rollen = o.rollen || BEDARF_ROLLEN, haus = {};
+    for (let s = 1; s <= 24 && rollen.some((r) => !haus[r]); s++)
+        for (const h of FC.DORF({ seed: s, nH: 24 }).houses) if (rollen.includes(h.rolle) && !haus[h.rolle]) haus[h.rolle] = h;
+    const je = {};
+    for (const r of rollen) {
+        const h = haus[r];
+        if (!h) {
+            je[r] = null;
+            continue;
+        }
+        // der Zwilling: die Rolle als Wohnhaus (B1); am Wohnhaus selbst derselbe Vektor OHNE Rolle — der Bau, den cv:6 einfriert (B2)
+        const w = Object.assign({}, h, { rolle: "wohnhaus" }), z = {};
+        if (r === "wohnhaus") delete w.rolle;
+        for (const L of o.stufen || [0, 2]) z["L" + L] = [abdruck(FC.buildInstance(h.kultur, h.seed, L, h)), abdruck(FC.buildInstance(h.kultur, h.seed, L, w))];
+        je[r] = z;
+    }
+    return { je };
+}
+// B1 jede Rolle außer dem Wohnhaus zeichnet nah UND fern ein anderes Haus als ihr Wohnhaus-Zwilling · B2 das Wohnhaus bleibt es selbst
+function bedarfUrteil(B, check) {
+    const rollen = Object.keys(B.je).filter((r) => r !== "wohnhaus");
+    const fehlt = rollen.filter((r) => !B.je[r]);
+    const gleich = rollen.filter((r) => B.je[r] && Object.entries(B.je[r]).some(([, [a, b]]) => a === b)).map((r) => r + " " + Object.entries(B.je[r]).filter(([, [a, b]]) => a === b).map(([L]) => L).join("+"));
+    check(
+        `B1 DIE ROLLE ZEICHNET DIE GESTALT: ${rollen.length - fehlt.length - gleich.length} von ${rollen.length} Rollen bauen nah und fern ein anderes Haus als ihr Wohnhaus-Zwilling (Soll alle; Leser buildInstance)`,
+        !fehlt.length && !gleich.length,
+        [...fehlt.map((r) => r + " ohne Haus im Dorf"), ...gleich.map((r) => r + " byte-gleich")].join(" · ")
+    );
+    const W = B.je.wohnhaus;
+    if (W !== undefined)
+        check("B2 das Wohnhaus bleibt das Wohnhaus (byte-gleich mit demselben Vektor ohne Rolle, dem Bau des Vertrags cv:6)", W && Object.values(W).every(([a, b]) => a === b), JSON.stringify(W));
+}
+// der Täter von main (die Rolle zeichnet die Gestalt nicht), der Übergriff (jede Rolle zeichnet die Gaststube: die Rolle ist nicht
+// mehr zu lesen) und das gezeichnete Wohnhaus (die Rolle „wohnhaus“ trägt ein Zeichen, das der Bau ohne Rolle nicht trägt)
+const BEDARF_TAETER = {
+    "die Rolle zeichnet die Gestalt nicht": [["const BG=bedarfGestalt(P.rolle);", "const BG=null;"]],
+    "jede Rolle zeichnet die Gaststube": [["const BG=bedarfGestalt(P.rolle);", "const BG=bedarfGestalt('gasthaus');"]],
+    "das Wohnhaus zeichnet die Gaststube": [["const BG=bedarfGestalt(P.rolle);", "const BG=bedarfGestalt(P.rolle==='wohnhaus'?'gasthaus':P.rolle);"]],
+};
+const BEDARF_SOLL = { "die Rolle zeichnet die Gestalt nicht": "B1", "jede Rolle zeichnet die Gaststube": "B1", "das Wohnhaus zeichnet die Gaststube": "B2" }; // prettier-ignore
 const KLIMA_TAETER = {
     "der Kern liest das Klima nicht": [
         ["var im = Z.filter(function (z) { return klimaAbstand(z, klima) === 0; });", "var im = Z.slice();"],
@@ -2169,6 +2227,22 @@ hauptLauf(async () => {
                 v.slice(0, 2).join(" · ")
             );
         }
+        // Selbst-Test B (mensch.bau.bedarf#1): je Mutante des Bedarf-Gesetzes fällt ihr Urteil beim Namen (zwei Rollen, nah: die Gaststube
+        // zeichnet fern nichts am Wohnhaus — Ausleger und Schild fallen unter das Kull-Volumen der L2, die Möbel stehen nur nah)
+        for (const [name, R] of Object.entries(BEDARF_TAETER)) {
+            const m = kernMutante(kernText(), R),
+                rot = [];
+            if (m.text)
+                bedarfUrteil(
+                    bedarfGang(kernAusText(m.text, "bedarf-" + name), { rollen: ["scheune", "wohnhaus"], stufen: [0] }),
+                    (w, ok, d) => ok || rot.push(`${w} — ${d || ""}`.slice(0, 220))
+                );
+            check(
+                `Selbst-Test B: „${name}“ → ROT in ${BEDARF_SOLL[name]} beim Namen`,
+                rot.some((w) => w.startsWith(BEDARF_SOLL[name])),
+                m.fehlt || rot.join(" · ")
+            );
+        }
         selbsttestEnde(errs);
         process.exit(0);
     }
@@ -2223,6 +2297,15 @@ hauptLauf(async () => {
         klimaUrteil(K, check);
         console.log(`  Teil R: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
         if (nur("r")) wandEnde(errs, "DIE BAUWEISE FOLGT DEM KLIMA (Teil R).");
+    }
+    if (nur("b") || (!nur("z") && !nur("w") && !nur("j") && !nur("t") && !nur("f") && !nur("r") && !ww)) {
+        console.log("=== TEIL B: DIE ROLLE ZEICHNET DIE GESTALT (mensch.bau.bedarf#1) ===");
+        const t0 = Date.now(),
+            B = bedarfGang(FC);
+        console.log("BEDARF " + JSON.stringify(B.je));
+        bedarfUrteil(B, check);
+        console.log(`  Teil B: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+        if (nur("b")) wandEnde(errs, "DIE ROLLE ZEICHNET DIE GESTALT (Teil B).");
     }
     if (nur("t") || (!nur("z") && !nur("w") && !nur("j") && !nur("r") && !ww)) {
         console.log("=== TEIL T: DIE TECHNIK WÄCHST AUS VORAUSSETZUNGEN (mensch.wirtschaft.technik) ===");
@@ -3585,12 +3668,19 @@ hauptLauf(async () => {
                 };
                 // JEDER Plan des Ort-Fadens in JEDER Runde der Trasse (`_ortMitTrasse`): `_ortWahlMass` nennt nur die letzte Wahl —
                 // das Dorf, das nach 11 Plänen 48 m rückte und am neuen Ort 2 rechnete, zählte 2, die Stadt in EINER Runde alle
+                // `wasser`: die Wasser-Fragen der Wahl und ihre Urteile (`ortNass`), je Kandidat ein Urteil je Punkt (bau-funktion)
                 const neben = r._nebenAuftrag;
+                const wasser = { fragen: 0, urteile: 0, ohne: 0 };
                 r._nebenAuftrag = function (wer, msg, ...a) {
                     const p = neben.call(this, wer, msg, ...a);
                     if (msg?.type === "ort-wahl")
                         p.then(
-                            (x) => (faden += x.kandidaten),
+                            (x) => {
+                                faden += x.kandidaten;
+                                if (!x.wasser) return void wasser.ohne++;
+                                wasser.fragen += x.wasser.fragen;
+                                wasser.urteile += x.wasser.urteile;
+                            },
                             () => {}
                         );
                     return p;
@@ -3702,6 +3792,7 @@ hauptLauf(async () => {
                     erst && {
                         nH,
                         plaene: haupt + faden,
+                        wasser,
                         letzteWahl: r._ortWahlMass.kandidaten,
                         faellt: { ...r._ortWahlMass.faellt, wirt: r._ortWahlMass.wirt },
                         runden: r._ortTrasseMass.runden,
@@ -5073,6 +5164,26 @@ hauptLauf(async () => {
         "C-K5 OHNE VORLAUF: Pläne bis zum ersten Haus nH 300 / nH 12 ≤ 1,2",
         je(["teleport12", "teleport300"], () => k5.teleport300.plaene / k5.teleport12.plaene <= 1.2),
         k5
+    );
+    // DAS WASSER EINMAL JE PUNKT (bau-funktion): die Ort-Wahl im Faden fragt das Wasser je Kandidat mehrfach am selben Punkt
+    // (`ortImWasser`, der Boden vor dem Bau, der Plan); jede Wahl nennt Fragen und Urteile, und ein Punkt wird je Kandidat
+    // EINMAL geurteilt — bis hier urteilte sie jede Frage neu (−6,−6: 230 586 Urteile, die Wahl 20,9 s gegen 3 600 Takte Deckel)
+    const wasserSumme = (lauf) =>
+        Object.values(lauf)
+            .filter((w) => w && w.wasser)
+            .reduce((s, w) => ((s.fragen += w.wasser.fragen), (s.urteile += w.wasser.urteile), (s.ohne += w.wasser.ohne), s), { fragen: 0, urteile: 0, ohne: 0 }); // prettier-ignore
+    const wasserEinmal = (s) => s.fragen > 0 && s.urteile < s.fragen && s.ohne === 0;
+    const wasserS = wasserSumme(k5);
+    check(
+        "C-K5: DAS WASSER EINMAL JE PUNKT — jede Wahl im Faden nennt Fragen und Urteile, Urteile < Fragen",
+        wasserEinmal(wasserS),
+        wasserS
+    );
+    check(
+        // die Mutanten: jede Frage ein Urteil (das Gedächtnis fehlt) · eine Wahl ohne Zahl (der Faden von vorher)
+        "C-K5 Selbsttest: jede Frage ein Urteil und eine Wahl ohne Zahl sind ROT",
+        !wasserEinmal({ ...wasserS, urteile: wasserS.fragen }) && !wasserEinmal({ ...wasserS, ohne: 1 }),
+        wasserS
     );
     check(
         // 40 m voraus, 11 m bei 70°, 15 m daneben

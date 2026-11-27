@@ -519,11 +519,7 @@ function buildDorf(dp){
   sun.shadow.camera.left=-R2-6; sun.shadow.camera.right=R2+6; sun.shadow.camera.top=R2+6; sun.shadow.camera.bottom=-R2-6; sun.shadow.camera.far=R2*2.8+120; sun.shadow.camera.updateProjectionMatrix();   // FAR-GESETZ: Schatten enden nicht mehr bei 140m — die ferne Stadt lag schattenlos
   sichtWeit=R2*3.2+140;
   dorfRauch.quellen=[]; dorfRauch.teilchen.forEach(T2=>{scene.remove(T2.m);}); dorfRauch.teilchen.length=0;   // Quellen entstehen mit der Promotion
-  { const gi=plan.houses.findIndex(h2=>h2.rolle==='gasthaus');                                 // AUSLEGER am Gasthaus
-    if(gi>=0&&dorfB[gi]&&dorfB[gi].lod==='voll'){ const q=lay.pl[gi], e=ext[gi], c2=Math.cos(q.phi), s3=Math.sin(q.phi);
-      const fx=q.x+((e.x0+e.x1)/2*0.4)*c2+(e.z0-0.35)*s3, fz=q.z-((e.x0+e.x1)/2*0.4)*s3+(e.z0-0.35)*c2;
-      const ba=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.1,1.1),mLay('holz')); ba.position.set(fx,3.3,fz); ba.rotation.y=q.phi; dorfGroup.add(ba);
-      const br=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.55,0.06),M.ziegel2); br.position.set(fx-0.45*s3*0+fx*0+fx- (0.0), 2.85, fz); br.position.set(fx,2.85,fz); br.rotation.y=q.phi; dorfGroup.add(br); } }
+  // der Ausleger des Gasthauses stand hier als Studio-Zwilling: das Haus zeichnet ihn selbst aus seinem Raumprogramm (fachwerk-core BEDARF_GESTALT)
   const chd=document.getElementById('chronik')||(()=>{ const d2=document.createElement('div'); d2.id='chronik';
     d2.style.cssText='position:fixed;left:12px;bottom:10px;padding:7px 12px;background:rgba(12,15,20,.82);border:1px solid #2a3442;border-radius:8px;color:#dce6f5;font:12px ui-sans-serif;z-index:30;pointer-events:none';
     document.body.appendChild(d2); return d2; })();

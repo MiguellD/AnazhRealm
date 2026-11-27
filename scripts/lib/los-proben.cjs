@@ -300,7 +300,9 @@ function huelleProben(FC, check, { kernText, golden, taeter = false }) {
 // der Versuch zu 1,1 m, die Kirche als Anker ihres Viertels) — die Linse misst den Würfel allein. Wo eine Front eine Schwelle kreuzt
 // (7/18 -5 cm an der Kirche: 15 Häuser, 7/60 -5 cm Los 10: 41), rückt das Gesetz, nicht der Wurf (p3/n1911/samen/messung-26baeab7/
 // loswurf-final.log); die Dörfer 3/12 und 12345/6 kippen auch am EINEN Strom nie.
-const WURF_FAELLE = [{ seed: 7, nH: 30 }];
+// das Dorf 35/24 (bau-funktion): seit die Rolle ihre Anbauten in die Masse trägt (Chor, Beschlagstand, Schlot, Erker) rücken die Lose
+// der Stadt 7/30, dort beißt der Snap der harten Kante nicht mehr; an 35/24 beißt er, das Gesetz rückt dort nicht (Suche 1..40 × nH 24)
+const WURF_FAELLE = [{ seed: 7, nH: 30 }, { seed: 35, nH: 24 }]; // prettier-ignore
 const [WURF_DELTAS, WURF_WANDER] = [[-0.05, 0.01], 0.5];
 const LOS_HAKEN = ["var L = dorfLayout(p, ext.slice(von, bis), ", "var L = dorfLayout(p, (globalThis.__losStoer || function (e) { return e; })(ext.slice(von, bis), von), "]; // prettier-ignore
 const WURF_TAETER = [
