@@ -15,4 +15,4 @@
    - s1-12: Felsturm, 1 656 m, vor Hang — C 0,520 · C₀ 0,738 · Durchlass 0,747
    Sonne 1 an allen drei; Albedo des Fits ≈ 0,29/0,25/0,16. Die warme Welt: Felsturm, 2 049 m, vor Hang — C 0,242 · C₀ 0,399.
    Ehrlich: gelesen sind 12 von 50 Saaten (Median 0,501, 11 davon ≥ 0,1). An 38 Saaten lag nach dem Weltwechsel noch keine neue Himmels-Lesung (S1 nennt sie „ungelesen“); die Radeon las alle 50 (Median 0,461).
-   Saat = Stamm `erleben.spieler.wegfindung-s1-<n>` (SAATEN, Zweig `punkte-maschine` sitzung-seite.js).
+   Saat = Stamm `erleben.spieler.wegfindung-s1-<n>` (SAATEN der Sitzungs-Seite im Zweig `punkte-maschine`).
