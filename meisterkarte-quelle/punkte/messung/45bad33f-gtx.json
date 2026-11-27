@@ -1,7 +1,7 @@
 {
  "sha": "45bad33ff93297aed1d46e24df214ff014d1d0d8",
  "geraet": "gtx",
- "zeit": "2026-11-26T23:40:27.944Z",
+ "zeit": "2026-11-27T00:08:50.654Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.kultur.sprache#1": {
@@ -773,141 +773,141 @@
   },
   "profiband.K4#1": {
    "gruen": true,
-   "zahl": "Gehen 91 Bilder · max 99.99 ms · 12.09 % > 33 ms · Fahrt 6 Bilder · max 108.36 ms · 83.33 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 12.09 % > 33 ms | Fahrt: blind (6 Bilder in 2.5 s), 1 Bild(er) > 100 ms (max 108.36), 83.33 % > 33 ms, nicht aus- und eingestiegen (Sattel 1)",
+   "zahl": "Gehen 87 Bilder · max 83.25 ms · 18.39 % > 33 ms · Fahrt 58 Bilder · max 91.81 ms · 72.41 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 18.39 % > 33 ms | Fahrt: 72.41 % > 33 ms",
    "exit": 0,
-   "minuten": 0.88,
+   "minuten": 0.94,
    "mass": [
     {
      "wort": "Gehen Frame max ms",
-     "wert": 99.99,
+     "wert": 83.25,
      "soll": 100
     }
    ],
    "gpu": "nvidia/pascal",
-   "konsum": "k2ca85dfd9b61",
+   "konsum": "k703a15ee3196",
    "konsumN": 29,
    "konsumSeite": false,
    "konsumGanz": {
     "gelesen": 2
    },
-   "konsumBoot": "kbe820ac97b64",
-   "s": 52.1,
+   "konsumBoot": "k0ea5edef6fd5",
+   "s": 55.3,
    "fremd": {
-    "s": 66.4,
+    "s": 69.6,
     "takte": 30,
-    "fremdS": 14.95,
-    "kerne": 0.225,
-    "fensterKerne": 0.284,
+    "fremdS": 27.31,
+    "kerne": 0.393,
+    "fensterKerne": 0.621,
     "namen": [
      [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.58
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6.41
+     ],
+     [
       "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      3.53
-     ],
-     [
-      "Explorer.EXE",
-      2
-     ],
-     [
-      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
-      1.11
+      2.63
      ]
     ],
-    "dienerS": 15.95,
+    "dienerS": 23.36,
     "diener": [
      [
-      "System",
-      7.16
+      "dwm.exe",
+      11.5
      ],
      [
-      "dwm.exe",
-      4.63
+      "System",
+      7.59
      ]
     ],
-    "geraetS": 33.77,
+    "geraetS": 36.27,
     "geraet": [
      [
       "MsMpEng.exe",
-      23.3
+      24.63
      ],
      [
       "svchost.exe",
-      8
+      8.81
      ],
      [
       "SearchIndexer.exe",
-      1.75
+      2.06
      ]
     ],
-    "eigenS": 287.2,
+    "eigenS": 300.47,
     "rechnerKerne": 12,
     "spannen": {
-     "vor": 0.073,
-     "nach": 0.204,
-     "station": 0.584
+     "vor": 0.255,
+     "nach": 0.234,
+     "station": 0.671
     }
    },
    "referenz": {
     "vor": {
      "ein": 87.9,
-     "alle": 221.5,
-     "cpuEin": 78,
+     "alle": 205.3,
+     "cpuEin": 94,
      "tor": {
       "ruhig": true,
-      "kerne": 2.32,
+      "kerne": 2.5,
       "s": 4,
       "soll": 3,
       "reihe": [
-       1.04,
-       3.85,
-       7.82,
-       4.33,
-       2.07,
-       0.49
+       0.77,
+       4.49,
+       7,
+       5.48,
+       1.52,
+       0.44
       ]
      },
      "spanne": [
-      1795736067788,
-      1795736068214
+      1795737724181,
+      1795737724597
      ]
     },
     "nach": {
-     "ein": 85,
-     "alle": 212.7,
-     "cpuEin": 93,
+     "ein": 86.9,
+     "alle": 221.8,
+     "cpuEin": 94,
      "tor": {
       "ruhig": true,
-      "kerne": 1.18,
+      "kerne": 1.09,
       "s": 6,
       "soll": 3,
       "reihe": [
-       4.03,
-       3.82,
-       7.75,
-       3.1,
-       0.29,
-       0.12
+       4.06,
+       5.37,
+       6,
+       2.66,
+       0.41,
+       0.13
       ]
      },
      "spanne": [
-      1795736127115,
-      1795736127518
+      1795737786747,
+      1795737787165
      ]
     },
     "ruhe": {
-     "ein": 88.5,
-     "alle": 220.2,
+     "ein": 88.4,
+     "alle": 219.9,
      "n": 1190,
-     "von": "2026-11-26"
+     "von": "2026-11-17"
     },
-    "f": 1.006,
+    "f": 1.009,
     "fEin": 1,
-    "fAlle": 1.006,
+    "fAlle": 1.009,
     "verdraengt": 1,
     "schwankt": false,
     "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
     "umfeld": "sitzung"
    },
-   "zeit": "2026-11-26T23:34:23.782Z",
+   "zeit": "2026-11-27T00:02:00.165Z",
    "abdruck": "3b3c71fffc8f",
    "port": 7804,
    "bahn": "sitzung",
@@ -915,147 +915,147 @@
   },
   "profiband.K4#2": {
    "gruen": false,
-   "zahl": "Gehen 91 Bilder · max 99.99 ms · 12.09 % > 33 ms · Fahrt 6 Bilder · max 108.36 ms · 83.33 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 12.09 % > 33 ms | Fahrt: blind (6 Bilder in 2.5 s), 1 Bild(er) > 100 ms (max 108.36), 83.33 % > 33 ms, nicht aus- und eingestiegen (Sattel 1)",
+   "zahl": "Gehen 87 Bilder · max 83.25 ms · 18.39 % > 33 ms · Fahrt 58 Bilder · max 91.81 ms · 72.41 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 18.39 % > 33 ms | Fahrt: 72.41 % > 33 ms",
    "exit": 0,
-   "minuten": 0.88,
-   "grund": "ROT: Gehen 91 Bilder · max 99.99 ms · 12.09 % > 33 ms · Fahrt 6 Bilder · max 108.36 ms · 83.33 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 12.09 % > 33 ms | Fahrt: blind (6 Bilder in 2.5 s), 1 Bild(er) > 100 ms (max 108.36), 83.33 % > 33 ms, nicht aus- und eingestiegen (Sattel 1)",
+   "minuten": 0.94,
+   "grund": "ROT: Gehen 87 Bilder · max 83.25 ms · 18.39 % > 33 ms · Fahrt 58 Bilder · max 91.81 ms · 72.41 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 18.39 % > 33 ms | Fahrt: 72.41 % > 33 ms",
    "mass": [
     {
      "wort": "Gehen Frame max ms",
-     "wert": 99.99,
+     "wert": 83.25,
      "soll": 100
     },
     {
      "wort": "Fahrt Frame max ms",
-     "wert": 108.36,
+     "wert": 91.81,
      "soll": 100
     }
    ],
    "gpu": "nvidia/pascal",
-   "konsum": "k2ca85dfd9b61",
+   "konsum": "k703a15ee3196",
    "konsumN": 29,
    "konsumSeite": false,
    "konsumGanz": {
     "gelesen": 2
    },
-   "konsumBoot": "kbe820ac97b64",
-   "s": 52.1,
+   "konsumBoot": "k0ea5edef6fd5",
+   "s": 55.3,
    "fremd": {
-    "s": 66.4,
+    "s": 69.6,
     "takte": 30,
-    "fremdS": 14.95,
-    "kerne": 0.225,
-    "fensterKerne": 0.284,
+    "fremdS": 27.31,
+    "kerne": 0.393,
+    "fensterKerne": 0.621,
     "namen": [
      [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.58
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6.41
+     ],
+     [
       "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      3.53
-     ],
-     [
-      "Explorer.EXE",
-      2
-     ],
-     [
-      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
-      1.11
+      2.63
      ]
     ],
-    "dienerS": 15.95,
+    "dienerS": 23.36,
     "diener": [
      [
-      "System",
-      7.16
+      "dwm.exe",
+      11.5
      ],
      [
-      "dwm.exe",
-      4.63
+      "System",
+      7.59
      ]
     ],
-    "geraetS": 33.77,
+    "geraetS": 36.27,
     "geraet": [
      [
       "MsMpEng.exe",
-      23.3
+      24.63
      ],
      [
       "svchost.exe",
-      8
+      8.81
      ],
      [
       "SearchIndexer.exe",
-      1.75
+      2.06
      ]
     ],
-    "eigenS": 287.2,
+    "eigenS": 300.47,
     "rechnerKerne": 12,
     "spannen": {
-     "vor": 0.073,
-     "nach": 0.204,
-     "station": 0.584
+     "vor": 0.255,
+     "nach": 0.234,
+     "station": 0.671
     }
    },
    "referenz": {
     "vor": {
      "ein": 87.9,
-     "alle": 221.5,
-     "cpuEin": 78,
+     "alle": 205.3,
+     "cpuEin": 94,
      "tor": {
       "ruhig": true,
-      "kerne": 2.32,
+      "kerne": 2.5,
       "s": 4,
       "soll": 3,
       "reihe": [
-       1.04,
-       3.85,
-       7.82,
-       4.33,
-       2.07,
-       0.49
+       0.77,
+       4.49,
+       7,
+       5.48,
+       1.52,
+       0.44
       ]
      },
      "spanne": [
-      1795736067788,
-      1795736068214
+      1795737724181,
+      1795737724597
      ]
     },
     "nach": {
-     "ein": 85,
-     "alle": 212.7,
-     "cpuEin": 93,
+     "ein": 86.9,
+     "alle": 221.8,
+     "cpuEin": 94,
      "tor": {
       "ruhig": true,
-      "kerne": 1.18,
+      "kerne": 1.09,
       "s": 6,
       "soll": 3,
       "reihe": [
-       4.03,
-       3.82,
-       7.75,
-       3.1,
-       0.29,
-       0.12
+       4.06,
+       5.37,
+       6,
+       2.66,
+       0.41,
+       0.13
       ]
      },
      "spanne": [
-      1795736127115,
-      1795736127518
+      1795737786747,
+      1795737787165
      ]
     },
     "ruhe": {
-     "ein": 88.5,
-     "alle": 220.2,
+     "ein": 88.4,
+     "alle": 219.9,
      "n": 1190,
-     "von": "2026-11-26"
+     "von": "2026-11-17"
     },
-    "f": 1.006,
+    "f": 1.009,
     "fEin": 1,
-    "fAlle": 1.006,
+    "fAlle": 1.009,
     "verdraengt": 1,
     "schwankt": false,
     "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
     "umfeld": "sitzung"
    },
-   "zeit": "2026-11-26T23:34:23.782Z",
+   "zeit": "2026-11-27T00:02:00.165Z",
    "abdruck": "6fe61218623e",
    "port": 7804,
    "bahn": "sitzung",
@@ -1342,6 +1342,227 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.preis.ausdauer#1": {
+   "gruen": false,
+   "zahl": "Spielgang 1.59 min in 1 Seite(n), davon die Station 20.2 s in 1 Fenster(n) auf der Bahn (die Sitzung trug 59.1 s, Ziel 70 s, Deckel 93 s) · nach dem Collector 237.3 → 327.2 MB: 56.5 MB/min (Soll ≤ 50) · Heap-Kurve 27 Punkte über 1.36 min, 262.9 → 372.3 MB (max 402.5), roh 61.64 MB/min (der Takt des Collectors, kein Urteil) · [linse-gpu] nvidia/pascal — ROT 1: Heap nach dem Collector 237.3 → 327.2 MB: 56.5 MB/min > 50",
+   "exit": 0,
+   "minuten": 0.74,
+   "grund": "ROT: Spielgang 1.59 min in 1 Seite(n), davon die Station 20.2 s in 1 Fenster(n) auf der Bahn (die Sitzung trug 59.1 s, Ziel 70 s, Deckel 93 s) · nach dem Collector 237.3 → 327.2 MB: 56.5 MB/min (Soll ≤ 50) · Heap-Kurve 27 Punkte über 1.36 min, 262.9 → 372.3 MB (max 402.5), roh 61.64 MB/min (der Takt des Collectors, kein Urteil) · [linse-gpu] nvidia/pascal — ROT 1: Heap nach dem Collector 237.3 → 327.2 MB: 56.5 MB/min > 50",
+   "mass": [
+    {
+     "wort": "am Stück min",
+     "wert": 1.59,
+     "soll": 1,
+     "richtung": "≥",
+     "fest": true
+    },
+    {
+     "wort": "Heap nach dem Collector MB/min",
+     "wert": 56.5,
+     "soll": 50,
+     "fest": true
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k1e9e09afbb9b",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0ea5edef6fd5",
+   "s": 43.9,
+   "fremd": {
+    "s": 51.7,
+    "takte": 24,
+    "fremdS": 18.2,
+    "kerne": 0.352,
+    "fensterKerne": 0.47,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      5.22
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.13
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.97
+     ]
+    ],
+    "dienerS": 16.33,
+    "diener": [
+     [
+      "dwm.exe",
+      9.39
+     ],
+     [
+      "System",
+      4.61
+     ]
+    ],
+    "geraetS": 17.83,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      12.11
+     ],
+     [
+      "svchost.exe",
+      4.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 83.7,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.463,
+     "nach": 0.529,
+     "station": 0.956
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 104.3,
+     "alle": 256.6,
+     "cpuEin": 94,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2.16,
+      "s": 4,
+      "soll": 3,
+      "reihe": [
+       9.09,
+       9.63,
+       7.02,
+       2.27,
+       1.56,
+       2.65
+      ]
+     },
+     "spanne": [
+      1795737803929,
+      1795737804431
+     ]
+    },
+    "nach": {
+     "ein": 105.1,
+     "alle": 248,
+     "cpuEin": 109,
+     "tor": {
+      "ruhig": true,
+      "kerne": 2,
+      "s": 0,
+      "soll": 3,
+      "reihe": [
+       0.19,
+       0.3,
+       0.68,
+       1.37,
+       1.91,
+       2.72
+      ]
+     },
+     "spanne": [
+      1795737848544,
+      1795737849047
+     ]
+    },
+    "ruhe": {
+     "ein": 88.4,
+     "alle": 220.1,
+     "n": 1192,
+     "von": "2026-11-17"
+    },
+    "f": 1.189,
+    "fEin": 1.189,
+    "fAlle": 1.166,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-27T00:03:19.909Z",
+   "abdruck": "f7f6385a7cbf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.wasser.gezeiten#1": {
+   "gruen": false,
+   "zahl": "S1 periodeH ungemessen gegen Soll 12,42 ± 2 % ✗ · Täter: gelaende-core.js:5884 waterLevel = GRUND.basis − meerUnterBasisM (eine Konstante je Lage) und gelaende-core.js:7767 wasserSpiegel(L, x, z) ohne Zeit — kein Leser hebt den Spiegel mit Mond und Uhr: Hub 0 m über 12 Küsten × 25 Stunden (25 unter der Uhr der Heimat), Watt 0 Punkte · Fächer 325/325 Adressen (12 Saaten × 25 Zeiten + 25) in 559 ms · Leser stamm/wasser-hydro.js:681 _koerperWasser (der Spiegel am Körper) · stamm/wasser-hydro.js:325 _pegelTakt unter der Welt-Uhr · Gesetz gelaende-core.js:7767 wasserSpiegel(L, x, z) über den Meeres-Spiegel gelaende-core.js:5884 waterLevel = GRUND.basis − meerUnterBasisM · schlechteste {\"saat\":3,\"ort\":null,\"zeit\":0} nass 5 · Bild dort Ego am Ufer der Saat 3 zur Stunde 0 der Welt-Uhr, Blick quer übers Watt (5 von 11 Punkten nass, Spiegel -3 m) · ungemessen: das Bild des trockenfallenden Watts (die Welt zeichnet den Spiegel, den der Leser trägt — am Gerät)",
+   "exit": 0,
+   "minuten": 1.99,
+   "grund": "ROT: S1 periodeH ungemessen gegen Soll 12,42 ± 2 % ✗ · Täter: gelaende-core.js:5884 waterLevel = GRUND.basis − meerUnterBasisM (eine Konstante je Lage) und gelaende-core.js:7767 wasserSpiegel(L, x, z) ohne Zeit — kein Leser hebt den Spiegel mit Mond und Uhr: Hub 0 m über 12 Küsten × 25 Stunden (25 unter der Uhr der Heimat), Watt 0 Punkte · Fächer 325/325 Adressen (12 Saaten × 25 Zeiten + 25) in 559 ms · Leser stamm/wasser-hydro.js:681 _koerperWasser (der Spiegel am Körper) · stamm/wasser-hydro.js:325 _pegelTakt unter der Welt-Uhr · Gesetz gelaende-core.js:7767 wasserSpiegel(L, x, z) über den Meeres-Spiegel gelaende-core.js:5884 waterLevel = GRUND.basis − meerUnterBasisM · schlechteste {\"saat\":3,\"ort\":null,\"zeit\":0} nass 5 · Bild dort Ego am Ufer der Saat 3 zur Stunde 0 der Welt-Uhr, Blick quer übers Watt (5 von 11 Punkten nass, Spiegel -3 m) · ungemessen: das Bild des trockenfallenden Watts (die Welt zeichnet den Spiegel, den der Leser trägt — am Gerät)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k89a933d3bb6f",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0ea5edef6fd5",
+   "s": 119.6,
+   "fremd": {
+    "s": 121.2,
+    "takte": 55,
+    "fremdS": 55.09,
+    "kerne": 0.455,
+    "fensterKerne": 0.994,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      9.97
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.39
+     ],
+     [
+      "Explorer.EXE",
+      6.08
+     ]
+    ],
+    "dienerS": 46.95,
+    "diener": [
+     [
+      "System",
+      22.81
+     ],
+     [
+      "dwm.exe",
+      14.7
+     ]
+    ],
+    "geraetS": 59.31,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      36.31
+     ],
+     [
+      "svchost.exe",
+      20.03
+     ],
+     [
+      "SearchIndexer.exe",
+      1.28
+     ]
+    ],
+    "eigenS": 418.95,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T00:05:28.461Z",
+   "abdruck": "3359157673e9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1356,9 +1577,11 @@
   "ka720c7ab3037": "bVXRbqMwEPyXPF6PLgQoxlIfnFIpka536SesYQ00BJANocrp/v0ECWmA7hvyrGc8szZ/VzXGB0zp8cNU5Yqvfqx+rgyeyDKkT6QfP8yKr8LYWZPLxbvoC4QQLz0s1nndGChyCShLzI5ktbqhvHiMhzb1hLYvOXSvIt0DKDhD1D0/z1sLSUllNahobLTJ9RnxObA1KUqysFUD2RXseyE9ORyGYpF4i+BWn0yIfQfdnm1nm0ksk6laxwnxKeCi2wkh3ucqkxypsYq8NCOvkwShsvmNq3tb9GjsrDNSVpC+NhFzHE+OYje9nb01s0ZVtMZMyJib+GvGAcI5NiWTx1lj1bqSVF7hMlwHDvLN0u20bi11rwilRCbnXmdIZUp6osF2Y9Ub/cnmmx7wSBqtErMrNLTdYC2/vAGA7VJLMQgfKEbhvuMnCieNfahw6g1OxKT2w2I6olQ3LsQ3SCoWpCbOcn2c2qU8Wtsu/7WUaDJMSFuHyjQ3tEuBZ0s+EOwiuGhhm3nn1+HGDBGR3Q0MMBDbhZemUk2Hmqy0bseh8cgPfC7EbgFu8Hgc40lil+J5kKbpB/1exjpUvu9xgIfLRVke+nItrDPlBd3mNg7ckL9EYg4+aTxaKFOdKzWmL/1Yhd8Na0dFY8mqakYrnSBwXQ4ulPeB/x6i3N1lHaXvXlNsutfpCOwWcgaGSjejcInS9Tyu0ogBMDVH57qxOoyzmzlKEvbSF7mcSReU0sRK5Ti4Tjh06qL73D83wfU5UA+TIT4vd8ypN7k0rRldjtGTPv8mlo70QWJ5uAI913YCNozg5k3sJ568ftT9VYATg6lXG3e4En/EdvjedEL8iUBciWqKodaVyvuXETJsTYZF8/Vb+Pcf",
   "k1a9d61770388": "bVVdj5swEPwveWzLmc8DLN2Dc1x1qRqJ+wlrszZcCEQ2hCpV/3sFCSTA7RMSs97xzCz83ZxAHEDh06epqw3dfNv82Bg4o2VQn1E/fZoN3cTCcdGj7FqEMfbaw4QuTo0hZcEJ8AryI1qtbrAon8TQJp/BDjgl3RtTKSGSXEjSsane2MvL8piSY1ZbDUgcD7HRCyKkS2BrFHC0oJXD4Bs48GN8digZKkrYPiFTdYKxtCNdGr2z1Cfb9XQOVTa/gePE8BxS1u0YYx9LfFYANlZZVGac72RhLG16n7lf9WjorAtgXqK+NWHkOD4fSW97aXq5Fo2ybI2ZDYu8LHAjSki8xCo0hcgb66RrjtUNzmM3dIBuu9W91am15CMj4BwivtQ8B6wU6hkH2xOyF/xPtDz0AEfUYFWQ36Cx7YUuv2tDCHlfcykH4sOIkXjgBJmEWWNvLjn3AmdsVunwUo0oOcVNTBC1Nt6IvNDHuVzSR9f26O81RZNDhto61KaZ0B6Gvs2vG7JLyJVLtF123i83eggA0UNgSETY+0pLU8umA42WOrVjaHwMwoAytluBGzgeR3sy4aFYGmmaPuiPNNxYBoFPCfl+XZj1pa9rYV2wKHHKrQi9mL4m/hJ81nC0gCtdSDm6zwMh46/C2mHZWLyum1FKJww9r5ekejQ8HazcPXidqA9//5Opt3kEdslHqlb8hym1bkbyHLjn+1SqJCIkkkt0oRurA5FPAkmOEFPSieXBF9QlKpzJKR0H3IwOn5yJrT8+fJ8F+bJy+1JgL3RlWjMqLcDnAf3Cmg71gUN1uAF9z3bCiP5ijG33LJ0L86r6dRjWZlbxENcORTKT8bYmJxTkpGtZ9F9HkkNrciib++/i338=",
   "ka896261da885": "dVVdb5swFP0veVxHDQEKWOqDUzol0rKlP+HaXBsaApENYcq0/z7hhiRA6wfEx7k+x+cem7+LI4g9KHx8N3W1oItvi+8LAyd0DOoT6sd3s6CLRHhL9Gn/Seji2BhSFpwAryA/oNPqBovyUViofAI35JR0r0ztCJHkTNLu+XlaWnLMaqcBiUOhi34Y44yjNQo4OtBKS3YBh0GCTx4ldsQp26bkOjrB2K4j3S5eTybjUGVjtZ6XwFNEWbdhjL1NVWYFYOOURWUGXi+LEunSG9d2VqOhc86AeYn6UoSx5wV8ELtijFlrJoWybI0ZkcV+Fi5jSkgyxSo0hcgb56hrjtUFzpNl5AFdzd1Wx9aR94qAc4j51OscsFKoRxpcX8je6D/xdNI9HFCDU0F+gSauHy35zRtCyHqupbTCLcUgPPTCTMKosG/qh8EZG42dfasGlOyGD+IKUde7VH0hwoi80IexfTLApevTn5+gc8hQO/vaNFe0j1HgcmppNin50BavppW3xQ49BYD4LkAkJmw989bUsulAo6OO7RCiAMMopIxtZuAGDoehXZnwUUwba5o++PcylokMw4AS8nCxebboj23inLEo8ZpjEfkJfUmDKfik4eAAV7qQckgDD4VMPgtvh2Xj8LpuBiu9KPJ9SnxS3Qfgl23t5q73qXoLtj+Yeh1HYsOmcixDrZtBOAfuBwGVKo0JieUUXejG6UDkV3MkR+ilz/pyRl2iwpGV0vNgmVF77FiVfRKiy/EgH0ahPs9nLLA3uTKtGVwWEPCQftKWDvWeQ7W/AAPf9aLYRnC1ZbuxKS+q3xrkFJOxVyvfbpHfbG2fV8peepIjCnLUtSz6U5Lk0Jocyub2W/j3Hw==",
-  "k2ca85dfd9b61": "bVXRcpswEPwXPzYlAgNBaCYPIngmniat8wkncQJiDB4JW607/fcO2NgGold2tXt7d+LvYg9yCzk+fpqmXrDFt8X3hYEjOgb1EfXjp1mwRSy9JfqMf/DuEM75SweTuty3hlSlICBqKHboHHSLZfUoe5p6AjcUjNgVzzeEKHIiqX1+nlIrgVnjtKBwILrohxTZFHgwOQh04KB6sQs4DGJ88hjpD035e0qu5zflfGOJ3dDXyWUC6mzs1vNieIoYt+sXzj+mLrMSsHWqsjaDrpdFsXLZVcu+zzgarHMCLCrUFxJSzwvEYDbp4uyimRBVdTBmJEb9LFxSRkg8xeZoSlm0zl43AusLXMTLyAOWzNPO9wdH3TsCIYCKadYFYJ2jHnlwfanOQavevvmzUV3ACZ+KbGGHGpwaigs1dv1oKW5ZEUJe596qvpBecigk9MJMwYjYNZkcu8AzPjqb/mM+oJQdPsgrJOczUSOLUu/G8akAl67P3uYWTQEZamfbmPaK9jEKXMF6gXVKzl5oMmXeiht6CgD0boAIJfyVzhQb1VrQ6OT7wzBEAYZRyDhfz8At7HZDuzLpo2R8dlZfsOpsZG0ZqzAMGCEP52WaB3FeHeeEZYXX2ZaRH08n6ahh54DIdanUMA0ilCr+apgtVq0jmqYdovWiyPe7iOr7AfjZt3Z9V1OafwRtldjVuNT1bDR7hUa3g2kBwg8CpvKUEkLVFF3q1rEgi2swSiDEjFg5vfiEusIcRzEqz4Nlxog9Lww5dc9RdHku1MNoqE+zzp9K7AKuzcEMCUsIRMi+aIlFvRVQby/AwHe9iLI3znnyzje3QJKcr16abjXIkZJxVonfr8gPnp6hlvNfKeEXoT1KsteNKruXkxRwMAVU7e238e8/",
   "k078afbee4d78": "bVXRjpswEPyXPPbKGTAcYOkenOOqRGra3CeszRq4EEA2hCpV/72ChCTA+QEJedY7zMyav6sa5AFSfP40Vbliq2+r7ysDJ7QM6hPq50+zYqtIOi5Sxi+LcM7fepjUed0YUuSCgCghO6LV6gbz4lkOZeoFbF8w0r3zdE+IImcSd6+v89JCYFJZDSgcC22kfohsDmxNCgItaNXQ7Ar2vQhfHEaGFcZ8F5Pb6iTn+450+3AzO0xAmUzZOk4ELwHj3ZZz/jFnmeSAjVXkpRn7OkkQKZvde+0WNRo66wyYFaivRRg6jidGsutezl6aWaEqWmMmzUKa+G7ICInm2BRNLrPGqnUlsLzCReQGDrD1Uu20bi31yAiEgFDMtc4AyxT1hINNpeqF/hPODz3AETVYJWRXaGTTwBV3bQghmyWXYiA+tBiJ+46fKJgU9qaSUy9wwidrP2ymI0p144a8QVK+aGpkluvjVC7loWtT9nNJ0WSQoLYOlWluaIqBZ4vLNGxjcuESrueV948bPQSA8CEwJCR8s9DSVKrpQKOV1u0YGg/9wGecbxfgBo7H0Z5EUpRzI03TB/2Rhhsp3/cYIU+XQVl+9GUsrDPmBd5yKwMasbeYz8EnDUcLRKpzpUb3hS9V9FVYOywaS1RVM0rpBAGljFBSPhr+a7By++B1nH54ux+8e59GYLugM3SodDMSFyCo5zGVxiEhoZqjc91YHcjsJo4SCD31hS9n1AWmOJFSOQ64CRuumYFln4Tgeh2op0mIz8sTc+xFLk1rRpUleMJnX9jSoT4IKA9XoEdtJwiHCK53fD8V5bPuR4GcQjLVKqbDSPzmm+F9nQ6P7XVEapSk1pXK+5uRZNCaDIrm/lv49x8=",
-  "kfe2988b8d17b": "tVbBkps4EP0XHzPLCAwYUFUO8uAqO5upOMc9tkQLGGNwSWClvJV/T2HANuCtzR62b+DX6tev+wn/vTiBOECKrx+6Khd08Wnxx0LDGS2N6ozq9UMv6CISzhJdyrogjLG3FiZUfqo1SXJIrYNCqBtlFcixfBVdWsS9wKPkf4jYMMY27BaGpe2L9T/RquFQ96wkRj7YdJ22WZ8/P2QUOSfAS8iOaDWqxrwYUlZg+5wSs2HpnhBJLh2BPjZPjik4JpVVg8ThEBtdP0Q6BTY6BY4WNPJauAf7XoQrp5cujNl7fO/9R8jY3hCzD7eMsZf1vDqHMhl34DgRrALKzO6Nse9TfJID1laRl3qo7yRBJO376Mz7LEeBsS6AWYGqT8LQcTw+kF630rRyTRJl0Wg9Kha6ib8MKSHRFJuizkVWWydV3deKR8vAAbo2s77TU2PJR0bAOYR8qnkGWKaoRhxsV8hW8B/h9NADHFGBVUI2rLXtBks+WuvtnMuweUcstRhSIZGwEv/dEZc5q/74kTJ+skIeUva78TZ6Wv92XjtYtvlrQqm4juoq6o2Q4ycSJv2GMTm3K5WMT9xff0wHlLwZTDwUncmsRZar41gG6eHSdunX+VB0Bgkq61Dp+oZ2MfBs3om2i0nHJVxPM+/NDVsLAOGDRUhI2HY2J13J2oBCKz01g0089AOfMrabgWs4HoeFTISL4uksDds8ySyTEb1lJH2/vXxfuqtjLkZ3QVgXzAu8OVgEbkTfYm8KPis4WsBTlUs5+ID7QkbPbGuwqC1eVcOV6zpB4LqtVOXjIuyvI949dBan3726WJvNuOE/2facznq+VqlUPZDnwF3Po9LEISGhnKJzVVsGRHYTSHKElv5sZhdUBaY4klM6DiwTSowcHMnYPugvR/nyL2695NgKXepGD0oL8LhPn4zGoDpwKA890HNtJwjpl9ag72w/0mXzcWptcrXTKCLS2jlFse2cbRj7FpNdX+iEgpxUJfP2O0EyaHQGRT36B9BBGpS8wazEdr/qvCqxvKN+/gI="
+  "kfe2988b8d17b": "tVbBkps4EP0XHzPLCAwYUFUO8uAqO5upOMc9tkQLGGNwSWClvJV/T2HANuCtzR62b+DX6tev+wn/vTiBOECKrx+6Khd08Wnxx0LDGS2N6ozq9UMv6CISzhJdyrogjLG3FiZUfqo1SXJIrYNCqBtlFcixfBVdWsS9wKPkf4jYMMY27BaGpe2L9T/RquFQ96wkRj7YdJ22WZ8/P2QUOSfAS8iOaDWqxrwYUlZg+5wSs2HpnhBJLh2BPjZPjik4JpVVg8ThEBtdP0Q6BTY6BY4WNPJauAf7XoQrp5cujNl7fO/9R8jY3hCzD7eMsZf1vDqHMhl34DgRrALKzO6Nse9TfJID1laRl3qo7yRBJO376Mz7LEeBsS6AWYGqT8LQcTw+kF630rRyTRJl0Wg9Kha6ib8MKSHRFJuizkVWWydV3deKR8vAAbo2s77TU2PJR0bAOYR8qnkGWKaoRhxsV8hW8B/h9NADHFGBVUI2rLXtBks+WuvtnMuweUcstRhSIZGwEv/dEZc5q/74kTJ+skIeUva78TZ6Wv92XjtYtvlrQqm4juoq6o2Q4ycSJv2GMTm3K5WMT9xff0wHlLwZTDwUncmsRZar41gG6eHSdunX+VB0Bgkq61Dp+oZ2MfBs3om2i0nHJVxPM+/NDVsLAOGDRUhI2HY2J13J2oBCKz01g0089AOfMrabgWs4HoeFTISL4uksDds8ySyTEb1lJH2/vXxfuqtjLkZ3QVgXzAu8OVgEbkTfYm8KPis4WsBTlUs5+ID7QkbPbGuwqC1eVcOV6zpB4LqtVOXjIuyvI949dBan3726WJvNuOE/2facznq+VqlUPZDnwF3Po9LEISGhnKJzVVsGRHYTSHKElv5sZhdUBaY4klM6DiwTSowcHMnYPugvR/nyL2695NgKXepGD0oL8LhPn4zGoDpwKA890HNtJwjpl9ag72w/0mXzcWptcrXTKCLS2jlFse2cbRj7FpNdX+iEgpxUJfP2O0EyaHQGRT36B9BBGpS8wazEdr/qvCqxvKN+/gI=",
+  "k703a15ee3196": "bVXRcpswEPwXPzYlAgNBaCYPImQmnjat8wkncQJiDB4JrI47/fcO2NgGold2tXt7d+Lv6gByBzk+fpqmXrHVt9X3lYEjOgb1EfXjp1mxVSy9NfqMf/D+EM75Sw+Tujy0hlSlICBqKPbodLrFsnqUA009gRsKRuwrz7eEKHIiqX1+nlMrgVnjtKBwJLrohxTZHNiZHAQ60KlB7AIOgxifPEaGQ1P+npLr+UM531pit/RtdpmAOpu69bwYniLG7eaF84+5y6wEbJ2qrM2o62VRrFx21bLvC44G65wAiwr1hYTU8wIxmk36OPtoZkRVdcZMxKifhWvKCInn2BxNKYvWOehGYH2Bi3gdecCSZdr5oXPUvSMQAqiYZ10A1jnqiQfXl+octBrsm4et6gNO+FxkB3vU4NRQXKix60drccuKEPK29FYNhQySYyGhF2YKJsS+yeTYB57xydkOH/MRpez4QV4hOV+IGlmUej+NTwW4dn32c2nRFJChdnaNaa9oH6PAFWwQ2KTk7IUmc+atuLGnAEDvBohQwt/oQrFRrQWNTn7oxiEKMIxCxvlmAW5hvx/blUkfJeOL8/oFq84m1taxCsOAEfJwXqZlEOfVcU5YVnidbRn58XySjhr2Dohcl0qN0yBCqeKvhtli1TqiadoxWi+KfL+PqL4fgF9Dazd3NaX5R9BWiX2dlrpZjOag0Oh2NC1A+EHAVJ5SQqiao0vdOhZkcQ1GCYSYESvnF59QV5jjJEblebDOGLHnhSGn/jmKLs+FepgM9WnR+VOJfcC16cyYsIRAhOyLlljUOwH17gIMfNeLKPvJOU/e+fYWSJLz15e8Xw1ypGSaVeIPK/KDp2eo5fx3SvhF6ICSHHSjyv7lJAV0poCqvf02/v0H",
+  "k1e9e09afbb9b": "bVXRbqMwEPyXPF7PXQhQjKU+OE2lRLrepZ+whjXQEIhsCFVO9+8nSEgDdN+QZ3fHM7vm7+KI8R5TevywVbkQix+LnwuLJ2KWzInM44ddiEUUu0vyhLwESClfOlhs8mNtocgVoCoxOxBrTE158Rj3afoJnUAJaF9lugPQcIZ1+/w8TS0UJRWrUdOQ6JAXcBJTYGNTVMSw0X2zKzjwI3pyBfTB1/JtDbf45FLuWmh3fDMpprBMxmxdN8KnUMh2+yLl+5RlkiPVrMhLO/R1kzDSjrj1at9mOQZbdkbKCjLXJOKu66uB7Ophx3tpJom6aKwdNeNeEiy5AIim2JRsHmc1O5pKUXmFq2gZuihWc7XTY8P0PSNUCrmaap0hlSmZEQfHi3Un9CefFt3jgQyyErMrNHK8cKm+tAGAzZxL0RPvWwzEAzdINI4SO1Ph1AmcyFHs+sN0QOl2OIhvkFTOmto4y81hLJf2ael44tecos0wIcP2la1vaI9C31GXbdiu4cKFr6aZX5cbPEREfjcwwEFuZlraStctGmLpsRmGxqcgDISU2xm4xsNhsCeJPYqnRtq6G/R7GstIB4EvAB4uizK/9GUt2Jnygm5zG4deNC1+MnhgqFKTaz04r4JYR98NaktFzVRV1YOMbhh6ngAPynuzf/c2bu98Xqfvfl2s2tex/Vs55d13qEw9kFaoPN8XOl1zAK6n6NzUrMU4uwmjFWFHfebJmUxBKY1k1K6Ly0RAqy+8z91TE16fAv0wGuDzvGJOncClbeygcIy+CsQ3lrRk9grL/RXoe44b8n78Vm9yN9Lk9aXq1gBOHMZarbx+Hf7ITf+9aqX8swZ5bXSkGI6m0nn3KkKGjc2wqL9+Cf/+Aw==",
+  "k89a933d3bb6f": "bVXRbqMwEPyXPF6PGgIUsNQHp0RKTlcd/YS1WQMNgciGuMrp/v0ECSRA95VZ73hm1vxdnUAcIMPnT11XK7r6sfq50nBGS6M6o3r+1Cu6ioSzRpeyaxHG2FsHE6o4NZqUBSfAK8iPaLWqwaJ8Fn2bfAHb55SYLcsSQiS5kNiwsbbs9XV+TMkxra0GJA6H2Oj6IdI5sNUZcLSglf3gG9j3InxxKOkrjNl7TMb6ChlLDDFJuGOJRzbL6RyqdHoDx4ngJaDM7BljH3N8WgA2VllUepjvpEEkbTrONO+LHgXGugDmJapbE4aO4/GB9KaTppNr1ijLVuvJsNBN/XVICYnm2Ax1IfLGOqmaY3WD82gdOEA3ZnHv7NRa8pERcA4hn2ueA1YZqgkH2xWyE/wrnB96gCMqsCrIb9DIdoM1v2tDCNktuZQ98X7EQNx3/FTCpLEzl5w7gVM2qaT/mA0oOcZNjJBsabwWeaGOU7mkh2vbpb+XFHUOKSrrUOtmRLsYeDa/bsg+Jlcu4Wbeeb/c4CEAhA+BISFhu4WWupaNAYVWdmqH0HjoBz5lbL8AN3A8DvakwkUxN1I3XdAfaawj6fseJeTpujDLS1/XwrpgUeKYWxG4EX2LvTn4rOBoAc9UIeXgPveFjL4Lq8GysXhdN4OUThC4bidJ9Wh40lu5f/A6zj68ptyY7TQCe8aSbMG/n1KrZiDPgbueR2UWh4SEco4uVGMZEPkokOQIHf2FNxdUJWY4kVM6DqxTSoy8cr90T09wexLk0yTIl+WJBXZCV7rVg9ICPO7Tb6wxqA4cqsMN6Lm2E4T0F2Ns886SiS7bt6xbh35tJhX1cTUodj1uYxj7E5P9bdAJBTmpWhbd60hyaHUOZXP/Xfz7Dw=="
  },
  "sitzung": {
   "start": "2026-11-26T22:43:44.094Z",
@@ -1694,20 +1917,160 @@
    "bahn": "sitzung",
    "modus": "session"
   },
-  "karte2.same.preis.ausdauer#1": {
+  "karte2.planet.kopplung.stadtklima#1": {
    "gruen": false,
-   "zahl": "die Dauer misst nie über ein Neuladen: die Welt hing vor karte2.same.preis.ausdauer#1, die Sitzung ging durch die Tür — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Dauer misst nie über ein Neuladen: die Welt hing vor karte2.same.preis.ausdauer#1, die Sitzung ging durch die Tür — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-26T23:36:38.601Z",
-   "abdruck": "f7f6385a7cbf",
+   "zeit": "2026-11-27T00:08:50.301Z",
+   "abdruck": "5ec4314ed802",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
    "offen": 1,
-   "fahrt": "22400@mwy6vlzc"
+   "fahrt": "8692@mwy7v4aj"
+  },
+  "karte2.planet.kopplung.gegenwart#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T00:08:50.301Z",
+   "abdruck": "49e03240ac74",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kopplung.stadtklima#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "8692@mwy7v4aj"
+  },
+  "karte2.erleben.klang.stimme#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T00:08:50.410Z",
+   "abdruck": "2a841240456c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "8692@mwy7v4aj"
+  },
+  "karte2.leben.oeko.netz#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T00:08:50.484Z",
+   "abdruck": "d5b980754f6b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "8692@mwy7v4aj"
+  },
+  "karte2.leben.evolution.fremde-physik#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T00:08:50.600Z",
+   "abdruck": "f43329b4c2b2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "8692@mwy7v4aj"
+  },
+  "karte2.same.kopplung.aufwaerts#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T00:08:50.654Z",
+   "abdruck": "a4dd3c536d8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "8692@mwy7v4aj"
+  },
+  "karte2.same.kopplung.ereignis#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T00:08:50.654Z",
+   "abdruck": "2e8810ba0e83",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "8692@mwy7v4aj"
+  },
+  "karte2.same.kopplung.gewalt#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T00:08:50.654Z",
+   "abdruck": "4740884c8374",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "8692@mwy7v4aj"
+  },
+  "karte2.same.kopplung.kohaerenz#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T00:08:50.654Z",
+   "abdruck": "90d34fa9d678",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "8692@mwy7v4aj"
+  },
+  "karte2.same.kopplung.terraform#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: leben · wie {\"leben\":\"{\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\" → {\\\"feld\\\":[[\\\"-12,-9\\\",-0.0109780740203128,20],[\\\"-8,-8\\\",-0.056164177316273704,20],[\\\"\"}) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-27T00:08:50.654Z",
+   "abdruck": "6bfa5fe3e6c0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session",
+   "offen": 1,
+   "fahrt": "8692@mwy7v4aj"
   }
  }
 }
