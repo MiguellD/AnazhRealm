@@ -30759,7 +30759,7 @@
   },
   "karte2.planet.wasser.gezeiten": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 periodeH 12,353 gegen Soll 12,42 ± 2 % ✓ · Zeuge: der Fächer: ≥ 200 Adressen an ≥ 5 Küsten über 25 Stunden (die Heimat unter ihrer Uhr), der Spiegel stieg und fiel, das W an 7e73426e gtx — offen: karte2.planet.wasser.gezeiten#1 radeon: Station seit der Messung geändert · karte2.planet.wasser.gezeiten#2 radeon: ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 265 s von karte2.planet.wasser.gezeiten#2) — offen, UNGEMESSEN · karte2.planet.wasser.gezeiten#2 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#3 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#3 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#4 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#4 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#5 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#5 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#6 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#6 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#7 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 periodeH 12,353 gegen Soll 12,42 ± 2 % ✓ · Zeuge: der Fächer: ≥ 200 Adressen an ≥ 5 Küsten über 25 Stunden (die Heimat unter ihrer Uhr), der Spiegel stieg und fiel, das W an 7e73426e gtx — offen: karte2.planet.wasser.gezeiten#1 radeon: Station seit der Messung geändert · karte2.planet.wasser.gezeiten#2 radeon: ungemessen (R10) — zuletzt an b3740dd5: die Fahrt riss 1800 s (der Rest 37 s unter dem Grund-Deckel 265 s von karte2.planet.wasser.gezeiten#2) — offen, UNGEMESSEN · karte2.planet.wasser.gezeiten#2 gtx: ROT: S2 Umfang nicht erzeugbar: kein Mondlauf: der Mond steht der Sonne an 31 Tagen gegenüber (Winkel 180°, Spanne 0°; stamm/bild-himmel.js:1150 moonDir = −sunDir) — keine Spring- und Nipptide · springNippTage ungemessen gegen Soll 14,77 ± 2 % ✗ · tage 31 d gegen Soll ≥ 30 d ✓ · Täter: stamm/bild-himmel.js _applyDayNightToScene (moonDir = −sunDir: ewiger Vollmond) an b3740dd5 · karte2.planet.wasser.gezeiten#3 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#3 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#4 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#4 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#5 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#5 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#6 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#6 gtx: ungemessen (R10) · karte2.planet.wasser.gezeiten#7 radeon: ungemessen (R10) · karte2.planet.wasser.gezeiten#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.wasser.gezeiten#1",
@@ -30795,10 +30795,10 @@
      "id": "karte2.planet.wasser.gezeiten#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S2 Umfang nicht erzeugbar: kein Mondlauf: der Mond steht der Sonne an 31 Tagen gegenüber (Winkel 180°, Spanne 0°; stamm/bild-himmel.js:1150 moonDir = −sunDir) — keine Spring- und Nipptide · springNippTage ungemessen gegen Soll 14,77 ± 2 % ✗ · tage 31 d gegen Soll ≥ 30 d ✓ · Täter: stamm/bild-himmel.js _applyDayNightToScene (moonDir = −sunDir: ewiger Vollmond)",
+     "sha": "b3740dd5566793ae66152d955e5a55d9c272884c",
+     "grund": "ROT: S2 Umfang nicht erzeugbar: kein Mondlauf: der Mond steht der Sonne an 31 Tagen gegenüber (Winkel 180°, Spanne 0°; stamm/bild-himmel.js:1150 moonDir = −sunDir) — keine Spring- und Nipptide · springNippTage ungemessen gegen Soll 14,77 ± 2 % ✗ · tage 31 d gegen Soll ≥ 30 d ✓ · Täter: stamm/bild-himmel.js _applyDayNightToScene (moonDir = −sunDir: ewiger Vollmond)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.wasser.gezeiten#3",
@@ -37464,7 +37464,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 291,
+  "konsum": 292,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37587,10 +37587,10 @@
    "ultiversum.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3376
+  "ohne": 3375
  },
  "kopfVoll": "b3740dd5566793ae66152d955e5a55d9c272884c",
- "zeit": "2026-11-27T22:29:28.285Z",
+ "zeit": "2026-11-27T22:41:19.519Z",
  "vorher": "b3740dd5",
  "bilanz": {
   "gewinn": [],
