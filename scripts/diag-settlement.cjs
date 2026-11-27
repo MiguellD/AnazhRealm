@@ -25,7 +25,7 @@ const {
     fehlerStapel,
     taeterFaelle,
 } = require("./lib/welt-boot.cjs");
-const { stadtBreite, breiteUrteil, breiteOhne, breiteSelbsttest, BREITE } = require("./lib/stadt-proben.cjs");
+const { stadtBreite, breiteUrteil, breiteOhne, breiteSelbsttest, BREITE, stadtStand, standUrteil, standSelbsttest, STAND } = require("./lib/stadt-proben.cjs"); // prettier-ignore
 const { verkehrsnetzProben } = require("./lib/verkehrsnetz-proben.cjs");
 const { losProben, huelleProben, wurfProben, brandwandProben, kernMutante, kernAusText } = require("./lib/los-proben.cjs");
 const {
@@ -53,6 +53,14 @@ const {
 // (`_bewohnerSiedlungen`) mit Plan, Name und Region. Rückgabe: die fehlenden beim Namen (leer: GRÜN).
 const nachbarLuecke = (n) =>
     !n || !Array.isArray(n.gesetz) ? ["kein Zensus der Nachbarn"] : n.gesetz.filter((k) => !n.register.some((e) => e.k === k && e.name && e.region)); // prettier-ignore
+// C-K5 DER FEHLENDE LAUF BEIM NAMEN (stadt-zehntausend): ein Lauf der Probe, der nicht zurückkehrte (die Marke brach: der Zug hing,
+// `bruch` trägt seinen Zustand „DER ZUG {…}") oder ohne erstes Haus endete (`lauf` → null), fehlt im Urteil — es nennt ihn samt dem
+// Zug, statt an seinem Feld abzustürzen. Bis hier fiel das Urteil nach dem ROT an `k5.strecke13.vorrat` (TypeError, CI 140623402917).
+// Rückgabe: null (alle da) oder der Satz der Lücke.
+const k5Luecke = (k5, namen, bruch) => {
+    const fehlt = namen.filter((k) => !(k5 && k5[k]));
+    return fehlt.length ? `es fehlt der Lauf ${fehlt.join(", ")} — ${bruch || "er endete ohne erstes Haus"}` : null;
+};
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
 const goldenFile = path.join(goldenDir, "siedlung.json");
 // das Golden der Lose (los-huelle, `huelleProben`): je Fall je Haus eine Zeile [Same, x, z, phi, Hülle]
@@ -1705,6 +1713,13 @@ hauptLauf(async () => {
         check("Selbst-Test 11o: jeder Nachbar mit Name und Region → GRÜN", nachbarLuecke(voll).length === 0);
         const ohneName = { gesetz: ["3,2"], register: [{ k: "3,2", name: null, region: "nordisch" }] };
         check("Selbst-Test 11p: ein Nachbar ohne Namen ist ROT", nachbarLuecke(ohneName).join() === "3,2");
+        // C-K5: der Zug, der hing — das Urteil nennt den fehlenden Lauf samt dem Zug, nie ein TypeError
+        const zugHing = 'C-K5: Error: DER ZUG {"pending":"-6,-6"}';
+        check(
+            "Selbst-Test 11q: ein C-K5-Lauf, der nicht zurückkehrte, steht beim Namen samt Zug",
+            k5Luecke({ teleport300: {} }, ["teleport300", "strecke13"], zugHing) === `es fehlt der Lauf strecke13 — ${zugHing}` &&
+                k5Luecke({ strecke13: {} }, ["strecke13"], zugHing) === null
+        );
         // das L-Haus: der Grund unter der leeren Ecke der obb (x > 0, z < 0) liegt 1 m tiefer — unter den Wänden (`grund.boxen`)
         // steht es eben (Sockel 0), die obb allein läse die Ecke als Sockel 1
         // das Grund-Datum des Kerns (`grundVon`, keine Hüllen-Zeile): seine Boxen im Rahmen des Hauses
@@ -2122,6 +2137,7 @@ hauptLauf(async () => {
         // fallen beim Namen
         check("Selbst-Test C2", !dorfZugAmOrt({ still: 1 }) && dorfZugAmOrt({ ohne: 1, still: 1 }));
         errs.push(...breiteSelbsttest(taeterFaelle, breiteRollen)); // die Breite der Stadt: der grüne Gang und seine Täter
+        errs.push(...standSelbsttest(taeterFaelle)); // der Stand der Stadt: die Kachel mit Plan, an deren Losen nichts steht
         huelleProben(FC, check, { kernText: kernText(), golden: loseGolden, taeter: true }); // die Hülle vor dem Schnitt fällt beim Namen
         wurfProben(check, { kernText: kernText(), taeter: true }); // der EINE Strom der Lose (vor Welle SAMEN) fällt beim Los
         brandwandProben(FC, check, { kernText: kernText(), taeter: true }); // die Brandwand an dims (vor los-huelle-2) fällt beim Namen
@@ -2174,6 +2190,21 @@ hauptLauf(async () => {
     }
     // ===== DIE BREITE DER STADT (siedlung, Staffel Breite): die Stadt des Messorts steht in der Welt, der Gang durch jede Gasse
     // zählt, was steht und im Bild ist (lib/stadt-proben.cjs) =====
+    // `--stadt [--wort "dorf 7 9310"] [--sek 60]` allein: DER STAND DER STADT — die Union ihrer Kacheln, Bau oder Hülle ihres Plans
+    // (lib/stadt-proben.cjs `stadtStand`, die Zeile `STAND {…}`)
+    if (process.argv.includes("--stadt")) {
+        const arg = (n, d) => (process.argv.includes(n) ? process.argv[process.argv.indexOf(n) + 1] : d);
+        const o = { ...STAND, wort: arg("--wort", STAND.wort), sek: Number(arg("--sek", STAND.sek)) };
+        const server = statikServer();
+        const { browser, page } = await nullWelt(server, { port: Number(process.env.SETTLEMENT_PORT || 4436), frist: 900000 }); // prettier-ignore
+        const m = await page.evaluate(stadtStand, o);
+        await browser.close();
+        server.close();
+        const v = standUrteil(m);
+        check(`STAND (mensch.stadt.form#2) die Stadt „${o.wort}" steht als Union ihrer Kacheln nach ${o.sek} s`, !v.length, v.join(" · ")); // prettier-ignore
+        console.log(`STAND ${JSON.stringify(m)}`);
+        process.exit(errs.length ? 1 : 0);
+    }
     if (process.argv.includes("--breite")) {
         const ort = process.argv.includes("--ort") ? process.argv[process.argv.indexOf("--ort") + 1] : BREITE.ort;
         const server = statikServer();
@@ -3661,6 +3692,15 @@ hauptLauf(async () => {
                 // HÄNGT die Welt vor dem ersten Haus, nennt die Meldung den Zug beim Namen: die Zelle im Export, der Vorrat (sein
                 // Wasser-Urteil), der Zug (Gang, Reihe), die Trasse und die abgewiesenen Zellen — bis samen-ein-baum nannte sie nur
                 // das Offene der Welt (wald 4476, 3635 Takte), nie, wo der Dorf-Zug stand
+                // DER EXPORT IM FLUG (stadt-zehntausend): das Rennen am main (pending „-6,-6", Trasse in Runde 2, 4299–4363 Takte,
+                // an sechs Köpfen rot, lokal 0 von 3) nennt, worauf der Export der Zelle wartet — die bestellten Hydro-Kacheln
+                // ohne Kachel (der Export wartet auf JEDE, `_foundryRequestSettlement`), die Schlange und die Arbeit der Foundry
+                const flug = () => {
+                    const f = r._foundry, T = st.hydroTiles;
+                    const hydro = [...(r._hydroBestellt || new Map())].filter(([k]) => !(T && T.has(k))).map(([k, e]) => k + (e.gepostet ? "" : "!"));
+                    const warte = f && f.warte ? f.warte.map((a) => a.praefix + Math.round(performance.now() - a.t)) : null;
+                    return { hydro, warte: warte && warte.slice(0, 8), warteN: warte && warte.length, foundry: f && f.pending ? [...f.pending.keys()].slice(0, 4) : null };
+                };
                 const zugZustand = () => {
                     const q = r._autoSettlementQueue, v = r._dorfVorraete && r._dorfVorraete.get(key);
                     return JSON.stringify({
@@ -3672,7 +3712,8 @@ hauptLauf(async () => {
                         abgewiesen: [...(r._autoSettlementRejected || [])].slice(0, 6),
                         haus,
                         bild,
-                    }).slice(0, 700);
+                        flug: flug(),
+                    }).slice(0, 1000);
                 };
                 try {
                     for (
@@ -5044,6 +5085,8 @@ hauptLauf(async () => {
     // das erste Haus steht im zweiten Takt nach dem Erwachen: der erste legt den Grund (der Gang zuerst), der nächste hebt
     const soll = 2;
     const je = (n, f) => n.every((k) => k5[k] && f(k5[k]));
+    // ein Lauf, der fehlt, steht beim Namen samt dem Zug (`k5Luecke`) — das Urteil liest nie das Feld eines fehlenden Laufs
+    const luecke = (n, sonst = k5) => k5Luecke(k5, n, out.bruch) || sonst;
     // DAS ERSTE HAUS IM BILD (sk5-haus): nH 12 und 300 heben das nächste Haus nach dem Vorlauf, seine Stufen bestellt vor ihm, und
     // es steht in der Stufe seines Abstands ≤ `soll` Takte nach dem Erwachen, auch hinter vollem Fit-Takt — nie als Hülle, solange
     // ein Haus der Mesh-Zone vorn im Schirm liegt (das ferne vor dem nahen, beim Namen)
@@ -5055,24 +5098,24 @@ hauptLauf(async () => {
     check(
         `C-K5: DAS ERSTE HAUS IM BILD — nH 12 und 300 ≤ ${soll} Takte nach dem Erwachen, das nahe zuerst, vorgebacken`,
         je(["vorlauf12", "vorlauf300"], (w) => w.vorrat && w.erstes && w.bild <= soll && !fernVorNah(w)),
-        k5
+        luecke(["vorlauf12", "vorlauf300"])
     );
     check(
         "C-K5 Selbsttest: ein fernes Haus vor dem nahen ist ROT beim Namen",
         !!fernVorNah(k5.fern300),
-        fernVorNah(k5.fern300) || k5
+        fernVorNah(k5.fern300) || luecke(["fern300"])
     );
     check(
         // der Export nach dem Erwachen (Teleport) und die Schichten vor dem ersten Haus (alt)
         "C-K5 Selbsttest: Teleport und alt fallen ROT",
-        je(["teleport300", "alt300"], (w) => w.haus > soll) && !k5.strecke13.vorrat,
-        k5
+        je(["teleport300", "alt300"], (w) => w.haus > soll) && je(["strecke13"], (w) => !w.vorrat),
+        luecke(["teleport300", "alt300", "strecke13"])
     );
     check(
         // Teleport, Start-Dorf; die Pläne im Haupt-Thread und im Ort-Faden
         "C-K5 OHNE VORLAUF: Pläne bis zum ersten Haus nH 300 / nH 12 ≤ 1,2",
         je(["teleport12", "teleport300"], () => k5.teleport300.plaene / k5.teleport12.plaene <= 1.2),
-        k5
+        luecke(["teleport12", "teleport300"])
     );
     check(
         // 40 m voraus, 11 m bei 70°, 15 m daneben
