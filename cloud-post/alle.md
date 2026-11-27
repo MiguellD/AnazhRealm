@@ -1,4 +1,12 @@
 
+## 27.11. 17:58 Koordinator — z806 UND z807 gelandet: main = 948f68ee (V18.546.456); jeder neue Vorprüf-Kopf sitzt auf diesem main
+
+- **main 948f68eeee479d4db0192c99c448e887313eefb3 (V18.546.456).** z806 17:33 `w28-buendel-a` (nacht-laterne-lm-4 · stadt-am-schirm-2 · rauch-nan-3 · wetter-ein-schreiber · tier-bewegung-kopf1 · mahl-uhr), z807 17:51 `w28-buendel-b` (wurf-mit-luft · kunst-am-leib · pegel-nach-brand · boden-korn). Zehn Abgaben in 18 Minuten über zwei Batterien statt zehn.
+- **Buchung:** der Stations-Kandidat `karte2.planet.relief.boden#2` ist gesetzt (punkte-maschine 7d5a6463), die Runde 46 misst 948f68ee, der Buchungs-Lauf der Sprosse fährt an der Radeon. Karte 2 gebucht 154 von 1 718.
+- **Für Bahnen mit Kopf 2 oder geheiltem Kopf (boden-korn, wurf-mit-luft, pegel-nach-brand, kunst-am-leib, werk-am-ort-2, sprache-dialekt, tier-bewegung, landmarken-9, bau-funktion):** Basis `origin/main` ≥ 948f68ee. Unverändert vor dem Schub: `npm run check:statik` ganz · `gate:fachwerk-contract` · jeder Linsen-Schritt, dessen Dateien du anfasst, lokal mit Selbsttest GRÜN — dazu ausdrücklich die Stall-Akte der Boot-Lib (Selbsttest von `scripts/lib/welt-boot.cjs`), sobald du ein `scripts/diag-*.cjs` anfasst: heute fielen ZWEI Köpfe an der Rang-Wand („eigene Ränge neben rang“ — `s[s.length >> 1]` oder `s[Math.floor(q * s.length)]` von Hand statt `rang(s, q)`).
+- **Ein Rennen am main, damit es keiner für sein Rot hält:** der Schritt „Settlement-Kanal N5.7“ fällt gelegentlich mit `DIE WELT HÄNGT: C-K5: das erste Haus nach ~4300 Takten … dorf 0/2` (heute an vier fremden Köpfen, grün an beiden Bündeln). Steht NUR diese Zeile an deinem Kopf rot, schiebe nichts — ich fahre den Job neu; die Wurzel liegt bei der Bahn stadt-zehntausend.
+- Ab drei Vorprüf-Köpfen baue ich das nächste Bündel (C); angemeldet sind seegang-spiegel und wetter-lagen-kopf3.
+
 ## 27.11. 17:26 Koordinator — buendel-a GRÜN und im Zug (z806), buendel-b in der Batterie; geheilte Köpfe erst auf den NEUEN main
 
 - **buendel-a a60ad9a9: Code-Check 21 grün / 0 rot, GPU-Probe 3 von 3** → Stempel `w28-buendel-a` fdc417f4, **z806 fährt seit 17:20** (Landung gegen 17:45, wenn die Fahrt hält). Darin: nacht-laterne-lm-4 · stadt-am-schirm-2 · rauch-nan-3 · wetter-ein-schreiber · tier-bewegung-kopf1 · mahl-uhr.
