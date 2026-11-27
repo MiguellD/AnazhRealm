@@ -412,7 +412,7 @@
                     leaves,
                     runMeta,
                     P.hoeheM / P.weltSkala,
-                    bestand || P.conifer ? BESTAND.krone : 0,
+                    P.conifer ? P.kronenForm.krone : bestand ? BESTAND.krone : 0,
                     P.alter > 0
                 );
         // (die Konifere im Bestand trägt ihre Krone über BESTAND.krone der Höhe wie der Laubbaum — der Kronen-Ansatz folgt dem
@@ -423,7 +423,8 @@
                 leaves,
                 runMeta,
                 P.kroneAnteil * (frei ? KONIFERE_KEGEL.frei : 1),
-                P.whorlSpacing * P.height
+                P.whorlSpacing * P.height,
+                P.kronenForm.profil
             );
         // DER STAMM AUS DER KRONE: der Radius des Stamms aus dem Schirm, den die Krone nach Wuchs und Hub spannt (vor dem
         // Blatt-Budget: jede Stufe misst dieselben Anker), jeder Strang reist mit seinem Anteil.
@@ -492,9 +493,16 @@
     // Fichte 83 % ihrer Nadeln: die Spitzen der Rekursion lagen jenseits). `frei`: der Solitär trägt die breitere Krone
     // (UNGEPRÜFT, die Tafel kennt nur den Bestand).
     const KONIFERE_KEGEL = Object.freeze({ frei: 1.4, streck: 2.5 });
-    function koniferenKegel(segs, leaves, runMeta, anteil, trieb) {
+    function koniferenKegel(segs, leaves, runMeta, anteil, trieb, profil) {
         if (!(anteil > 0))
             throw new Error("[phyto] der Kegel der Konifere: die Krone ihrer Art fehlt (kroneAnteil, KERN-PFLICHT)");
+        // das Profil des Mantels (FOREST_PACK.form, arten-gattung): der Kegel linear zur Spitze, der Schirm die gewölbte Kuppel
+        // (k = der Abstand zur Spitze im Mantel, 1 am Kronen-Fuß, 0 an der Spitze: Kegel r = k, Schirm r = √(1 − (1 − k)²))
+        const mantel = profil === "kegel" ? (k) => k : profil === "schirm" ? (k) => Math.sqrt(k * (2 - k)) : null;
+        if (!mantel)
+            throw new Error(
+                `[phyto] der Mantel der Konifere: kein Profil „${profil}“ (FOREST_PACK.form, KERN-PFLICHT)`
+            );
         let H = 0;
         for (const l of leaves) H = Math.max(H, l.pos[1]);
         if (!(H > 0)) return;
@@ -541,7 +549,7 @@
         let yFuss = H;
         for (const A of aeste.values()) if (A.a && A.nadeln.length) yFuss = Math.min(yFuss, A.a[1]);
         if (!(yFuss < H)) return;
-        const R = (y) => anteil * H * Math.min(1, Math.max(0, (Hk - y) / (Hk - yFuss)));
+        const R = (y) => anteil * H * mantel(Math.min(1, Math.max(0, (Hk - y) / (Hk - yFuss))));
         for (const A of aeste.values()) {
             if (!A.a) continue;
             const a = A.a;
@@ -2589,6 +2597,13 @@
             );
         return r / ph.hoeheM;
     }
+    // DIE FORM DER KRONE DER KONIFERE (arten-gattung): die Zeile ihrer Art in FOREST_PACK.form — eine Konifere ohne ihre Zeile
+    // bricht laut (KERN-PFLICHT), wie ohne ihren Radius.
+    function konifereForm(ph) {
+        const f = ph.krone && FOREST_PACK.form[ph.krone];
+        if (!f) throw new Error(`[phyto] die Konifere trägt keine Zeile der Kronen-Form (ph.krone ${ph.krone})`);
+        return f;
+    }
     function treeParams(dials, seedInt, stufe, art, weltSkala, alter, gestalten) {
         const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
         const lerp = (a, b, t) => a + (b - a) * t;
@@ -2643,6 +2658,8 @@
             // in der EINEN Kronen-Tafel FOREST_PACK.crown (m, Größe 1) durch die Höhe der Größe 1 (`ph.hoeheM`); growSkeleton
             // `koniferenKegel` stellt jeden Ast in diesen Kegel. Eine Konifere ohne ihre Zeile bricht laut (KERN-PFLICHT).
             kroneAnteil: ph.conifer ? konifereKroneAnteil(ph) : undefined,
+            // die Form ihrer Krone (arten-gattung): das Profil des Mantels und die Länge der Krone im Bestand
+            kronenForm: ph.conifer ? konifereForm(ph) : undefined,
             flare: ph.flare,
             // Das Totholz trägt seine L1 mit den Wurzeln seiner L0 (w28-nadel-stufe, lod.K5): ohne Krone ist der Fuß die halbe
             // Silhouette — vier dickere Wurzeln statt fünf standen am Haushalt 12 m über einen Bildpunkt neben der L0.
@@ -3256,8 +3273,8 @@
     // gleichaltrige Kronen T = Krone·s dünnen sich mit dem Alter aus, N ~ D^−1,6 (Reineke 1933, J. Agric. Res. 46: 627–638:
     // log N = −1,605·log D + k). Wer in der Konkurrenz starb und vor `tau` Jahren noch stand, STEHT als Totholz (`forestStehende`).
     // Die Tafeln: WBR 86 Tab. 3 (Niedersachsen), Bestandesmittelhöhen, untere Grenzwerte je Leistungsklasse — Eiche JÜTTNER 1955,
-    // Buche SCHOBER 1967 (auch Karst, „sonstige Laubbäume“ → Buche), Birke SCHWAPPACH 1903/26, Erle MITSCHERLICH 1945 (die Weide
-    // der Erlen-Nische), Fichte WIEDEMANN 1936/42 (auch Kiefer-Nische), Tanne SCHMIDT 1955. `r` = h(A)/hoeheM in 5-Jahres-Schritten
+    // Buche SCHOBER 1967 (auch Karst, „sonstige Laubbäume“ → Buche), Birke SCHWAPPACH 1903/26, Erle MITSCHERLICH 1945 (die Erle
+    // und die Weide), Fichte WIEDEMANN 1936/42, Kiefer WIEDEMANN 1953, Tanne SCHMIDT 1955. `r` = h(A)/hoeheM in 5-Jahres-Schritten
     // ab `ab` (hoeheM: die Höhe der Größe 1, foundry PRESETS; gate:phyto-core hält beide gleich). DIE BONITÄT `kl`: die Klasse,
     // deren Tafel-Ende die Mitte der Natur-Spanne trägt (nordstern §4.5, gate:pflanzen-nah H: Buche 30–45 · Fichte 30–50 · Eiche
     // 15–35 · Birke 15–25 m; Fichte über der obersten Klasse → Lkl 13); die Tanne ohne Spanne: hoeheM im Alter 100; die Solitäre
@@ -3322,6 +3339,34 @@
                     0.8907, 0.9235, 0.9508, 0.9672, 0.9836, 1,
                 ]),
             }),
+            // DIE KIEFER UND DIE ERLE (arten-gattung, leben.pflanzen.arten#1): bis hier wuchs die Kiefer des Walds nach der
+            // Fichte (WIEDEMANN 1936/42) und die Erle nach der Weide (7 m, die unterste Klasse) — jede trägt jetzt ihre eigene
+            // Tafel aus WBR 86 Tab. 3. Kiefer WIEDEMANN 1953 (mäßige Durchforstung), Erle MITSCHERLICH 1945 (starke
+            // Durchforstung); `kl` die Klasse, deren Tafel-Ende die Mitte der Natur-Spanne trägt — Kiefer 20–30 m (LWF Wissen 57,
+            // SDW-Steckbrief), Erle 20–30 m (SDW „bis 30 m“, LWF Wissen 42 „meist nicht größer als 25 m“): 25 m, je linear
+            // zwischen den zwei Klassen der Tafel (Kiefer Lkl 5 23,0 / 6 26,0 m im Alter 160; Erle Lkl 6 23,0 / 7 25,3 m im
+            // Alter 100). hoeheM: die Höhe im Alter 100 (wie die Tanne).
+            kiefer: Object.freeze({
+                tafel: "kiefer",
+                kl: 5.67,
+                hoeheM: 21.47,
+                ab: 20,
+                r: Object.freeze([
+                    0.2593, 0.3338, 0.4068, 0.4735, 0.5325, 0.5915, 0.6459, 0.6955, 0.7452, 0.7856, 0.826, 0.8586,
+                    0.8912, 0.9222, 0.9502, 0.9766, 0.9998, 1.0216, 1.0433, 1.0619, 1.0806, 1.0977, 1.1116, 1.1256,
+                    1.1349, 1.1442, 1.152, 1.1598, 1.1644,
+                ]),
+            }),
+            erle: Object.freeze({
+                tafel: "erle",
+                kl: 6.87,
+                hoeheM: 25,
+                ab: 10,
+                r: Object.freeze([
+                    0.1153, 0.2703, 0.4447, 0.5271, 0.5831, 0.6346, 0.6786, 0.7216, 0.7536, 0.7856, 0.8176, 0.849,
+                    0.877, 0.9045, 0.9285, 0.9485, 0.9685, 0.9845, 1,
+                ]),
+            }),
             buche: Object.freeze({
                 tafel: "buche",
                 kl: 8.64,
@@ -3347,12 +3392,12 @@
         }),
         // die Art des Walds (Wirts-Name) → ihre Kurve; „sonstige Laubbäume“ (WBR) → Buche; der Mammut trägt keine
         art: Object.freeze({
-            baum_kiefer: "fichte",
+            baum_kiefer: "kiefer",
             baum_fichte: "fichte",
             baum_tanne: "tanne",
             baum_eiche: "eiche",
             baum_birke: "birke",
-            baum_erle: "weide",
+            baum_erle: "erle",
             baum_weide: "weide",
             baum_buche: "buche",
             baum_karst: "karst",
@@ -3438,7 +3483,7 @@
         if (rng() < 0.05) rng();
         return forestErtragGroesse(sp, u);
     }
-    // Mammut-Promotion. Species-Gate (Lab weide / Host baum_erle) bleibt Caller-lokal —
+    // Mammut-Promotion. Species-Gate (Lab erle / Host baum_erle) bleibt Caller-lokal —
     // NUR dann aufrufen, sonst ändert sich die Host-rng-Reihenfolge (prio/keep/totRoll/rotY).
     // Short-circuit wie heute: rng() nur wenn sd>0.72 && clim>0.5; s-rng nur bei promote.
     function forestMammutRoll(rng, sd, clim) {
@@ -3451,7 +3496,7 @@
         return { promote: promote, s: s };
     }
     // Convenience: size first (die Tafel der Art `sp` in der Phase `u`), then mammut — SAME order as today.
-    // Nur aufrufen wenn Species Mammut erlaubt (nicht weide/baum_erle).
+    // Nur aufrufen wenn Species Mammut erlaubt (nicht erle/baum_erle).
     function forestSizeAndMammut(rng, sd, clim, sp, u) {
         let s = forestTreeSize(rng, sp, u);
         const m = forestMammutRoll(rng, sd, clim);
@@ -3478,6 +3523,10 @@
     // je Laub-Art der sichtbare Radius ihrer L0 im Bestand (Atlas-Alpha ≥ 0,5, halbe Breite über 8 Azimute, Gestalten 1–4
     // × Welt-Skala; gate:pflanzen-nah H hält jede Zeile an ihrer Gestalt 1). Labor-Wald und Welt-Wald (stamm FOREST.crown
     // unter den Wirts-Namen) lesen sie. Vorher Eiche 5,2 gegen gewachsen 9,3 (der Ballen-Wald), mit dem Bestand 4,0.
+    // DIE KRONE DER ERLE (arten-gattung): der Radius ihrer gewachsenen Krone (m, Größe 1) — der sichtbare Radius ihrer L0 im
+    // Bestand, gemessen wie jede Laub-Zeile (gate:pflanzen-nah H, Gestalt 1: 3,45 m); bis hier pflanzte der Wald die Erle mit der
+    // Krone der Trauerweide (5,65 m). Die Krone der Schwarzerle im Bestand: „schlanke, ovale Krone“ (SDW-Steckbrief), ⌀ 6,9 m.
+    const ERLE_KRONE_M = 3.45;
     const FOREST_PACK = {
         pack: 1.16,
         dartsPerM2: 1.2,
@@ -3490,12 +3539,28 @@
             weide: 5.65,
             tanne: 2.95,
             fichte: 2.75,
+            kiefer: 2.75, // arten-gattung: der Radius, mit dem der Wald die Kiefer bis hier pflanzte (die Zeile der Fichte) — die Packung bleibt
+            erle: ERLE_KRONE_M,
             mammut: 9.2,
         },
         // DIE SCHLANKHEIT H/D DER KONIFERE je Zeile ihrer Krone (`ph.krone`, treeParams `P.hd`): Bestand 40–100 (waldwissen,
         // McMahon 1973), der Mammut gedrungen — EINE Quelle für die Art und die Konifere der Dials (bis fachwerk-buehne je Art
         // in foundry-core; die Eiche mit api 1 trug keine und brach im Bau, gate:studio-huelle H3)
-        schlank: { fichte: 70, tanne: 65, mammut: 18 },
+        schlank: { fichte: 70, tanne: 65, mammut: 18, kiefer: 70 },
+        // DIE FORM DER KRONE DER KONIFERE je Zeile (`ph.krone`, arten-gattung, leben.pflanzen.arten#1): das Profil ihres Mantels
+        // (`koniferenKegel`) und die Länge ihrer Krone im Bestand (Anteil der Höhe, `schaftHub`). Bis hier trug jede Konifere
+        // denselben Kegel über 0,6 der Höhe (BESTAND.krone) — die Kiefer des Walds stand als Fichte: im Blindtest 1 von 8.
+        //   kegel   Fichte · Tanne · Mammut: der Mantel schließt linear zur Spitze (r = 1 − t, t die Höhe im Mantel).
+        //   schirm  die Kiefer: „schirmartig gewölbte Krone“ (SDW-Steckbrief Kiefer), „im Alter vielgestaltig“ auf einem Schaft,
+        //           der unten dickborkig ist (LWF Wissen 57) — der Mantel ist die gewölbte Kuppel r = √(1 − t²). Die Lichtbaumart
+        //           (SDW: „benötigt eine freie Krone“) trägt ihre Krone über 0,35 der Höhe (UNGEPRÜFT: keine Tafel des
+        //           Kronenprozents gefunden; der Schaft darunter ist frei).
+        form: {
+            fichte: Object.freeze({ profil: "kegel", krone: BESTAND.krone }),
+            tanne: Object.freeze({ profil: "kegel", krone: BESTAND.krone }),
+            mammut: Object.freeze({ profil: "kegel", krone: BESTAND.krone }),
+            kiefer: Object.freeze({ profil: "schirm", krone: 0.35 }),
+        },
         // DIE SCHICHTEN DES BESTANDS (vegetation.K3, w16-wald-innen): ein Dart, den die Kronen-Schüchternheit aus dem Dach
         // nimmt (`forestSteht`), stirbt nicht, wenn er unter dem Schirm einer Dach-Krone steht — er wächst im Zwischen- und
         // Unterstand (Kraft'sche Baumklassen 3–5) im größten Alter `alter` (die Stufen der Jugend-Gestalt, stamm
@@ -3631,8 +3696,8 @@
         pathClearM: 3.6, // skip dart if pathDist < this
         pathBirkeMulDistM: 8, // wB *= pathBirkeMul if pathDist < this
         pathBirkeMul: 1.5,
-        seawardWeideM: 9, // if seaward > this && sp !== weide skip
-        wetSaumM: 1.2, // _de < this → only weide
+        seawardWeideM: 9, // if seaward > this && sp !== erle skip
+        wetSaumM: 1.2, // _de < this → only erle
         openWaterM: -0.2, // _de < this → skip
         garantieMammutMin: 2,
         garantieTries: 2500,
@@ -3664,23 +3729,23 @@
     // Optional map via forestLabToHost / forestHostToLab — fail-soft identity if unknown.
     const FOREST_SPECIES = {
         labToHost: {
-            fichte: "baum_kiefer",
+            kiefer: "baum_kiefer",
             tanne: "baum_tanne",
             eiche: "baum_eiche",
             birke: "baum_birke",
-            weide: "baum_erle",
+            erle: "baum_erle",
             mammut: "baum_mammut",
         },
         hostToLab: {
-            baum_kiefer: "fichte",
+            baum_kiefer: "kiefer",
             baum_tanne: "tanne",
             baum_eiche: "eiche",
             baum_birke: "birke",
-            baum_erle: "weide",
+            baum_erle: "erle",
             baum_mammut: "mammut",
         },
-        labNames: ["fichte", "tanne", "eiche", "birke", "weide", "mammut"],
-        verjPool: ["birke", "eiche", "fichte", "tanne"],
+        labNames: ["kiefer", "tanne", "eiche", "birke", "erle", "mammut"],
+        verjPool: ["birke", "eiche", "kiefer", "tanne"],
     };
     function forestLabToHost(id) {
         return FOREST_SPECIES.labToHost[id] || id;
@@ -4248,7 +4313,7 @@
             if (!(wsum > 0)) continue;
             let pick = rng() * wsum;
             let sp;
-            // pick strings Host-lokal (RNG heilig) — Lab-Zwilling fichte via FOREST_SPECIES.labToHost
+            // pick strings Host-lokal (RNG heilig) — die Lab-Namen kiefer/erle via FOREST_SPECIES.labToHost
             if ((pick -= wF) < 0) sp = "baum_kiefer";
             else if ((pick -= wT) < 0) sp = "baum_tanne";
             else if ((pick -= wE) < 0) sp = "baum_eiche";

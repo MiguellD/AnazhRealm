@@ -1,6 +1,6 @@
 {
-    "zweck": "DIE BILD-TAFEL (S3 pflanzen, Wand D in gate:asset-contract; Gegenprüfung R1): je Baum-Art × Same (Sommer) das Bild seiner L0 und L1 je Blick-Hebung 0°/30°/60° von unten (Mittel der acht Azimute der kronen-linse; Krone mit der Atlas-Alpha und Rinde über dem Boden der Vorlage, ohne Schatten-Teil; Raster-Kante px = L0-Höhe / 300 in Vorlagen-Einheiten, Fläche in Vorlagen-Einheiten²) — aus dem Ist des Stands T2 (zuerst V18.536; K20: die Bäume tragen ihr Welt-Maß). Je Art hält das Mittel über die Gestalten je Stufe und Hebung 0,92–1,08 davon, jede Gestalt 0,85–1,15 (die Karte misst seit S2 die Welt: werkbank licht --laub --karte).",
-    "quelle": "node scripts/diag-asset-contract.cjs --tafel (T2)",
+    "zweck": "DIE BILD-TAFEL (S3 pflanzen, Wand D in gate:asset-contract; Gegenprüfung R1): je Baum-Art × Same (Sommer) das Bild seiner L0 und L1 je Blick-Hebung 0°/30°/60° von unten (Mittel der acht Azimute der kronen-linse; Krone mit der Atlas-Alpha und Rinde über dem Boden der Vorlage, ohne Schatten-Teil; Raster-Kante px = L0-Höhe / 300 in Vorlagen-Einheiten, Fläche in Vorlagen-Einheiten²) — aus dem Ist des Stands T3 (zuerst V18.536; K20: die Bäume tragen ihr Welt-Maß). Je Art hält das Mittel über die Gestalten je Stufe und Hebung 0,92–1,08 davon, jede Gestalt 0,85–1,15 (die Karte misst seit S2 die Welt: werkbank licht --laub --karte).",
+    "quelle": "node scripts/diag-asset-contract.cjs --tafel (T3: kiefer, erle, tanne; die übrigen Zeilen T2)",
     "band": [0.92, 1.08],
     "gestaltBand": [0.85, 1.15],
     "faelle": {
@@ -64,6 +64,21 @@
             "L0": [4.789278, 4.2418063, 3.4000171],
             "L1": [5.1871877, 4.5369394, 3.5928106]
         },
+        "erle-s1": {
+            "px": 0.02611735,
+            "L0": [6.5214551, 5.8216894, 3.8819221],
+            "L1": [6.5245247, 5.8169146, 3.8764651]
+        },
+        "erle-s12345": {
+            "px": 0.02652832,
+            "L0": [8.3363797, 7.4177197, 5.035168],
+            "L1": [8.3133318, 7.3988943, 5.0253155]
+        },
+        "erle-s7": {
+            "px": 0.027913411,
+            "L0": [7.4994009, 6.7399162, 4.5768747],
+            "L1": [7.4802142, 6.7269626, 4.563142]
+        },
         "fichte-s1": {
             "px": 0.019527876,
             "L0": [2.0589389, 2.0057899, 1.4920324],
@@ -99,6 +114,26 @@
             "L0": [12.200616, 13.759314, 14.228806],
             "L1": [12.419441, 14.145944, 14.341256]
         },
+        "kiefer-s1": {
+            "px": 0.017593587,
+            "L0": [2.0131338, 1.8801888, 1.6007954],
+            "L1": [1.8294639, 1.7236031, 1.4680439]
+        },
+        "kiefer-s12345": {
+            "px": 0.017682292,
+            "L0": [2.0266844, 1.9244825, 1.6199093],
+            "L1": [1.8349436, 1.7397766, 1.4623269]
+        },
+        "kiefer-s2": {
+            "px": 0.016749674,
+            "L0": [2.5602788, 2.5503192, 2.0216548],
+            "L1": [2.3241245, 2.3168652, 1.8973704]
+        },
+        "kiefer-s7": {
+            "px": 0.01869222,
+            "L0": [2.2879089, 2.1733497, 1.8660532],
+            "L1": [2.1348284, 2.0576112, 1.8067427]
+        },
         "mammut-s1": {
             "px": 0.037253377,
             "L0": [14.146336, 13.466134, 11.086726],
@@ -116,23 +151,23 @@
         },
         "tanne-s1": {
             "px": 0.019730641,
-            "L0": [3.0842149, 2.9299555, 2.0827453],
-            "L1": [2.8526798, 2.7528735, 1.9668805]
+            "L0": [3.0030949, 3.0038735, 2.2008487],
+            "L1": [2.9158921, 2.9397367, 2.0954949]
         },
         "tanne-s12345": {
             "px": 0.019709544,
-            "L0": [3.0632982, 2.9256355, 2.0987368],
-            "L1": [2.8870317, 2.7739395, 1.9557813]
+            "L0": [3.1033102, 3.1088458, 2.2469366],
+            "L1": [3.0176049, 3.008136, 2.1102451]
         },
         "tanne-s2": {
             "px": 0.018682949,
-            "L0": [3.3187047, 3.1674777, 2.2295297],
-            "L1": [3.161282, 3.0264168, 2.1838911]
+            "L0": [2.7752298, 2.8235736, 2.017044],
+            "L1": [2.7394956, 2.7631875, 1.926683]
         },
         "tanne-s7": {
             "px": 0.020961375,
-            "L0": [3.8500606, 3.6174642, 2.5678421],
-            "L1": [3.4113954, 3.2918842, 2.3330489]
+            "L0": [3.426499, 3.4236431, 2.4811197],
+            "L1": [3.2706842, 3.3213226, 2.3290944]
         },
         "totholz-s1": {
             "px": 0.0075760357,

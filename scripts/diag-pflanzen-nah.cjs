@@ -850,7 +850,8 @@ function umrissUrteil(mips) {
 // letzten Viertel ihres Lebenslaufs (Phase 0,75 … 0,98, gleichverteilt: die Größen p75 … p98 der Art).
 // Die Spannen der Natur (Steckbriefe; nordstern §4.5): Buche 30–45, Fichte 30–50, Stieleiche 15–35, Birke 15–25 m.
 // H/D: Höhe durch den Stamm-Durchmesser in Brusthöhe (1,3 m Welt) — scale-frei, Bestand 40–100.
-const HOEHE_SPANNE = { buche: [30, 45], fichte: [30, 50], eiche: [15, 35], birke: [15, 25] };
+// die Kiefer 20–30 m (LWF Wissen 57), die Schwarzerle bis 30 m (SDW-Steckbrief; LWF Wissen 42: bis 35 m) — arten-gattung
+const HOEHE_SPANNE = { buche: [30, 45], fichte: [30, 50], kiefer: [20, 30], eiche: [15, 35], birke: [15, 25], erle: [20, 30] };
 const HD_BESTAND = [40, 100];
 function altbestandGroesse(art) {
     return [PC.forestErtragGroesse(art, 0.75), PC.forestErtragGroesse(art, 0.98)];

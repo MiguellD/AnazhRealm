@@ -2496,6 +2496,10 @@
             (engineSteht = weltEngine().then(async (A) => {
                 const wirt = new A();
                 Object.assign(wirt.state, { renderer: R, scene: szene, rendererReady: true, lodMaskOn: false });
+                // DIE SAAT DER BÜHNE (arten-gattung): der Wirt ohne Ankunft trug keine Welt — der Stoff der Lieferung liest ihre Saat
+                // (`_saat`, fail-closed) und brach am ersten Werk („Die Saat der Welt fehlt“, blick:werk an main 38194f83). Das EINE
+                // Heil jeder Welt gibt ihr die Eingangs-Welt (`_weltMetaHeil`): die Bühne zeichnet im Stoff der Standard-Welt.
+                A._weltMetaHeil((wirt.state.worldMeta = wirt.state.worldMeta || {}));
                 faden = weltFaden(A);
                 const m = await faden.buch;
                 wirt._foundry = { wirt: true, ready: true, recipes: null, cache: new Map(), pending: new Map(), buchDa: Promise.resolve(), buchRoh: m };

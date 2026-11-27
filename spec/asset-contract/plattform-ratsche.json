@@ -3,8 +3,8 @@
     "saetze": {
         "v1": {
             "kern": "foundry-core.js + phyto-core.js (Pflanzen, Chrome-Worker)",
-            "faelle": 43,
-            "probe": "jeder Golden-Fall mit Samen 7 im Sommer (21 Arten, alle Stufen)",
+            "faelle": 49,
+            "probe": "jeder Golden-Fall mit Samen 7 im Sommer (23 Arten, alle Stufen; 43 -> 49 mit Kiefer und Erle, arten-gattung: die Kipp-Zahlen halten)",
             "powWirt": "das gepinnte Chrome (puppeteer aus package-lock, 148.0.7778.97) - CI und lokal dieselbe V8; ein Chrome-Wechsel ist der Ausloeser, pow kippt dann 16 Faelle",
             "kippt": {
                 "pow": 2,

@@ -1185,11 +1185,11 @@ function plantForest(R, seedInt) {
     const shadeMulMammut = _n("shadeMulMammut", 1.7);
     const shadeMulOther = _n("shadeMulOther", 1.25);
     const killChance = _n("killChance", 0.92);
-    // FOREST_SPECIES.verjPool (.112) — fail-soft = aktuelle Lab-Literale
-    const verjPool =
-        _FS && Array.isArray(_FS.verjPool) && _FS.verjPool.length
-            ? _FS.verjPool
-            : ["birke", "eiche", "fichte", "tanne"];
+    // FOREST_SPECIES.verjPool (.112) — die Arten der Verjüngung aus dem Kern (arten-gattung: der stille Rückfall auf eine
+    // Labor-Liste fiel mit der Kiefer, er hätte die Fichte weiter verjüngt)
+    if (!_FS || !Array.isArray(_FS.verjPool) || !_FS.verjPool.length)
+        throw new Error("Labor-Wald: phyto-core FOREST_SPECIES.verjPool fehlt (KERN-PFLICHT)");
+    const verjPool = _FS.verjPool;
     // Leser: EINE Grid-Hash + shy-Distanz in phyto-core. Fail-soft = alte Lab-Inline.
     const _coreP = typeof window !== "undefined" && window.__phytoCore;
     const K =
@@ -1274,22 +1274,22 @@ function plantForest(R, seedInt) {
             sp;
         // Lab Kurzname intern (CROWN/Verj); Host-Zwilling via FOREST_SPECIES.labToHost
         // names from FOREST_SPECIES.labNames
-        if ((pick -= wF) < 0) sp = "fichte"; // → baum_kiefer
+        if ((pick -= wF) < 0) sp = "kiefer"; // → baum_kiefer (arten-gattung: die Studio-Art Kiefer, bis hier die Fichte)
         else if ((pick -= wT) < 0) sp = "tanne"; // → baum_tanne
         else if ((pick -= wE) < 0) sp = "eiche"; // → baum_eiche
         else if ((pick -= wB) < 0) sp = "birke"; // → baum_birke
-        else sp = "weide"; // → baum_erle (mammut → baum_mammut via promote)
+        else sp = "erle"; // → baum_erle (mammut → baum_mammut via promote; bis arten-gattung die Trauerweide)
         if (_de < openWaterM) continue; // im offenen Wasser waechst NICHTS
-        if (_de < wetSaumM && sp !== "weide") continue; // nur die Weide steht im nassen Saum; der Rest wuerde versaufen -> sie verstehen das Wasser
-        if (seaward(x, z) > seawardWeideM && sp !== "weide") continue; // MEER: nasser Strand-Saum -> nur Weide (Baeume kennen die Feuchtigkeit)
+        if (_de < wetSaumM && sp !== "erle") continue; // nur die Erle steht im nassen Saum; der Rest wuerde versaufen -> sie verstehen das Wasser
+        if (seaward(x, z) > seawardWeideM && sp !== "erle") continue; // MEER: nasser Strand-Saum -> nur Erle (Baeume kennen die Feuchtigkeit)
         // Größe + Mammut (phyto-core): die Ertragstafel der Art in der Phase ihres Flecks (der Lebenslauf des Bestands,
         // FOREST_ERTRAG) und der Mammut-Wurf — derselbe Kern wie der Wald der Welt, ohne Kern bricht das Labor laut.
-        // Species-ids bleiben Lab-lokal (mammut/weide). RNG-Ordnung: size first, then mammut iff not weide.
+        // Species-ids bleiben Lab-lokal (mammut/erle). RNG-Ordnung: size first, then mammut iff not erle.
         if (!_coreN || typeof _coreN.forestTreeSize !== "function" || typeof _coreN.forestMammutRoll !== "function")
             throw new Error("Labor-Wald: phyto-core forestTreeSize/forestMammutRoll fehlen (KERN-PFLICHT)");
         let s = _coreN.forestTreeSize(rng, sp, _coreN.forestFleckPhase(x, z, seedInt));
         let crown = CROWN[sp] * s;
-        if (sp !== "weide") {
+        if (sp !== "erle") {
             const m = _coreN.forestMammutRoll(rng, sd, clim);
             if (m.promote) {
                 sp = "mammut";
@@ -2089,7 +2089,7 @@ function buildForest() {
     // DIE GESTALTEN je Art lesen das Studio-Budget (PORTAL_RENDER_CONFIG.lod.budget.gestalten) — dieselben Zahlen
     // waehlt die Welt (`_foundryVariantFor`). Reihenfolge + Zahl der RNG()-Wuerfe wie zuvor (2/2/2/2/1/1).
     const _GEST = PORTAL_RENDER_CONFIG.lod.budget.gestalten;
-    for (const sp of ["eiche", "fichte", "birke", "tanne", "weide", "mammut"]) mp(sp, _GEST[sp], true);
+    for (const sp of ["eiche", "kiefer", "birke", "tanne", "erle", "mammut"]) mp(sp, _GEST[sp], true); // Lab = Welt: die Arten des Walds
     mp("strauch", _GEST.strauch, true); // der Strauch an der Stelle seines alten Wurfs
     for (const sp of ["buche", "karst", "totholz"]) mp(sp, _GEST[sp], false);
     // Impostor-Baubeschreibung fuer JEDE (Art,Variante)-Kombination sichern -> Fern-Billboard = derselbe Baum wie das 3D-LOD, kein generischer Ersatz

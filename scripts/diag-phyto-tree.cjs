@@ -52,6 +52,7 @@ const tanne = () => ({
     crownBase: 0.12,
     coniferDroop: 0.22,
     kroneAnteil: mainCore.FOREST_PACK.crown.tanne / 26.9, // die Zeile der Tanne in der Kronen-Tafel (foundry PRESETS hoeheM 26,9)
+    kronenForm: mainCore.FOREST_PACK.form.tanne, // ihre Form (arten-gattung): der Kegel
 });
 
 const { errs, check: ok, wandEnde } = pruefer();
@@ -151,7 +152,7 @@ vm.runInContext(
 );
 // Vergleich Schlüssel für Schlüssel (Werte per JSON — leafShape ist ein Objekt; ein fehlender Schlüssel ist undefined).
 const pDiff = (A, B) => Object.keys({ ...A, ...B }).filter((k) => JSON.stringify(A[k]) !== JSON.stringify(B[k]));
-const PZ = (fsb.__pZwillingArgs = { arten: ["eiche", "fichte", "birke", "weide", "mammut", "tanne", "buche", "karst", "totholz", "strauch"], samen: [1, 2, 7, 12345], stufen: [0, 1, 2] });
+const PZ = (fsb.__pZwillingArgs = { arten: ["eiche", "fichte", "kiefer", "birke", "weide", "erle", "mammut", "tanne", "buche", "karst", "totholz", "strauch"], samen: [1, 2, 7, 12345], stufen: [0, 1, 2] });
 const pPaare = vm.runInContext(
     `(function () {
         const a = self.__pZwillingArgs, out = [];

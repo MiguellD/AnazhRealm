@@ -487,7 +487,7 @@ class AnazhRealm_studio_gestalt {
         return maxY > minY ? Math.max(0.1, (maxY - minY - hub) * ws) : 0.1;
     }
     // DIE ART DES JAHRS EINES REZEPTS (leben.pflanzen.jahreslauf#2): die Spezies der Welt mit eigener Phänologie (phyto-core
-    // PHAENO_GESETZ: Laub oder Blüte), deren Gestalt das Rezept `preset` baut (`_foundryPresetFor`: baum_erle → weide, busch_hazel
+    // PHAENO_GESETZ: Laub oder Blüte), deren Gestalt das Rezept `preset` baut (`_foundryPresetFor`: baum_erle → erle, busch_hazel
     // → hazel) — null, wo keine Spezies des Gesetzes auf das Rezept zeigt (das Laub trägt dann den Bestand).
     _phaenoArtVon(preset) {
         const P = globalThis.__phytoCore.PHAENO_GESETZ;

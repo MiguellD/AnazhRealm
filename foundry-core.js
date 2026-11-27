@@ -239,7 +239,7 @@ var INSEL_VIS = { lab: "coast-74", host: "none" };
 var WALD_GESETZ = {
     flod: 0,
     glade: 22,
-    crownBase: { eiche: 0.42, fichte: 0.3, birke: 0.42, weide: 0.4, tanne: 0.3, mammut: 0.46 }
+    crownBase: { eiche: 0.42, fichte: 0.3, kiefer: 0.3, birke: 0.42, weide: 0.4, erle: 0.4, tanne: 0.3, mammut: 0.46 }
 };
 var WALD_VIS = { lab: "astung-glade", host: "none" };
 
@@ -652,6 +652,8 @@ const PORTAL_RENDER_CONFIG = {
                 tanne: 2,
                 weide: 1,
                 mammut: 1,
+                kiefer: 2, // arten-gattung: die Gestalten der Arten, deren Nische sie tragen (Fichte 2, Weide 1) — der Haushalt bleibt
+                erle: 1,
                 strauch: 1,
                 gras: 2,
                 buche: 2,
@@ -706,6 +708,8 @@ const PORTAL_RENDER_CONFIG = {
             weide: 2.75,
             tanne: 4.26,
             fichte: 4.85,
+            kiefer: 4.85, // arten-gattung: die Skala, mit der der Wald die Kiefer bis hier setzte (die der Fichte)
+            erle: 4.03, // die der Birke: die schlanke Laub-Krone im Bestand
             mammut: 4.31,
             buche: 4.0,
             karst: 2.4,
@@ -2459,8 +2463,14 @@ function emitTreeRezept(P, stufe) {
             rings.length > 2
         )
             rings = rings.filter((_, i) => i % 3 === 0 || i === rings.length - 1);
+        // DER ANLAUF DER L1 (arten-gattung): unter `fh` (der weite Term des Wurzelanlaufs `ffR`) trägt die L1 jeden Ring — der
+        // Radius dort ist die gekrümmte Kurve des Anlaufs, jeder zweite Ring legte eine Sehne darüber: die Erle (25 m) maß in
+        // Brusthöhe L1 0,319 gegen L0 0,285 m (1,120), die Tanne 1,15, die Fichte 1,06 (w28-stamm-krone, FUND). Nur der Baum: der
+        // Strauch (Rezept 1 auch in seiner L0) misst keinen Brusthöhen-Durchmesser, sein Anlauf kostete +600 △ ohne Blick.
         else if ((__lod === 1 || (_L0 && rings[0].r < nodes.trunkR * _rz.ast)) && rings.length > 3)
-            rings = rings.filter((_, i) => i % 2 === 0 || i === rings.length - 1);
+            rings = rings.filter(
+                (q, i) => i % 2 === 0 || i === rings.length - 1 || (__lod === 1 && P.kind === "tree" && q.c[1] < fh)
+            );
         return rings;
     }
     // Die Bahn-Toleranz der Baum-L1 (tree[1].ringToleranz in Baumhoehen, __ringBahn): sie gilt den Aesten — der Stamm
@@ -4767,7 +4777,42 @@ const PRESETS = {
         kind: "tree",
         panel: "plant",
         s: { api: 0.9, delta: 2.1, slim: 0.74, trop: 0.05, leaf: 0.78 },
-        ph: { hoeheM: 26.9, krone: "tanne" }, // Welt-Maß (K20): Weißtanne im Bestand (30–50 m)
+        // Welt-Maß (K20): Weißtanne im Bestand (30–50 m). DIE GESTALT DER GATTUNG (arten-gattung, leben.pflanzen.arten#1; im
+        // Blindtest 1 von 8): „Die Äste sind weit ausladend und gehen fast waagrecht vom Stamm ab“, die Rinde „hell, fast
+        // weißlich“ (SDW-Steckbrief Tanne; die Fichte: Äste „etwas durch“-hängend, Rinde rotbraun). Der Hang 0,5 legt den
+        // Seitenast am Stamm (57° aus der Lotrechten) auf 3° über die Waagrechte — bis hier stieg er wie der der Fichte 25°.
+        ph: { hoeheM: 26.9, krone: "tanne", coniferDroop: 0.5, barkA: 0x76736c, barkB: 0x8a8780 },
+    },
+    // DIE KIEFER (arten-gattung, leben.pflanzen.arten#1): bis hier stand die Kiefer des Walds als Fichte (im Blindtest 1 von 8).
+    // Pinus sylvestris: 20–30 (max. 45) m, „im Oberen Bereich des Stammes und an stärkeren Ästen hellrot (fuchsrot) … (Spiegelrinde);
+    // unterer Bereich älterer Stämme mit dicker, grau- oder rotbrauner … Schuppenborke“, Nadeln „hell-, gelb- oder graugrün“
+    // (LWF Wissen 57); „schirmartig gewölbte Krone“, Lichtbaumart mit freier Krone (SDW-Steckbrief Kiefer). Die Krone trägt ihre
+    // Form (phyto-core FOREST_PACK.form `schirm`), die Rinde ihr Rot zum Wipfel (barkA Fuß → barkB Krone), die Höhe ihre Tafel
+    // (FOREST_ERTRAG kiefer, WIEDEMANN 1953). Kiefer · Erle tragen place none: die Welt setzt sie über die Nischen des Walds.
+    kiefer: {
+        kind: "tree",
+        panel: "plant",
+        s: { api: 0.8, delta: 2.2, slim: 0.6, trop: 0.15, leaf: 0.62 },
+        fx: { place: { mode: "none" } },
+        ph: { hoeheM: 21.47, krone: "kiefer", barkA: 0x5a4a40, barkB: 0xc0663c, leafCol: 0x4d6b34 },
+    },
+    // DIE ERLE (arten-gattung): bis hier stand die Erle des Walds als Trauerweide von 7 m — im Blindtest 0 von 9, als Hasel gesehen
+    // (ein Strauch ohne Stamm). Alnus glutinosa: „Der Stamm ist wipfelschäftig“ (LWF Wissen 42), „gerader, bis in die
+    // Kronenspitze durchlaufender Stamm“ (Uni Göttingen), „schlanke, ovale Krone mit fast waagerecht ausgebildeten Seitenästen“,
+    // die Rinde dunkel, bis 30 m (SDW-Steckbrief Schwarzerle). Die Höhe ihre Tafel (FOREST_ERTRAG erle, MITSCHERLICH 1945),
+    // das Blatt rundlich-ganzrandig (die Ovalform, SHAPE ovate).
+    erle: {
+        kind: "tree",
+        panel: "plant",
+        s: { api: 0.6, delta: 2.2, slim: 0.62, trop: 0.0, leaf: 0.65 },
+        fx: { place: { mode: "none" } },
+        ph: {
+            hoeheM: 25,
+            barkA: 0x3a332d,
+            barkB: 0x524a42,
+            leafCol: 0x3b6127,
+            leafShape: { m: 2, n1: 1.0, n2: 1.0, n3: 1.0, a: 1, b: 1, wsc: 0.4 },
+        },
     },
     strauch: {
         kind: "shrub",

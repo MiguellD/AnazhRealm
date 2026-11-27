@@ -37,7 +37,10 @@ const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golde
 // tragen ihr Welt-Maß — Schaft und Schlankheit in Metern, die Karte rahmt den höheren Baum). Jede spätere Stufe deckt je Hebung 0,92–1,08 davon, jede Karte
 // 0,92–1,08 bei ΔE76 ≤ 2.
 const TAFEL_BILD = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "bild-tafel.json");
-const TAFEL_STAND = "T2"; // der Stand der Tafel (zuerst V18.536, K20; T2: die Zeilen der Laubkronen, der Bestand trägt seine Krone hoch und schmal)
+// T3 (arten-gattung): die Zeilen der Gattung — Kiefer und Erle neu, die Tanne mit ihren waagrechten Quirlen (droop 0,5);
+// jede andere Zeile trägt T2 unverändert (ihr Ist driftete auf main 38194f83 bis 0,905 — die Wand misst gegen T2, kein
+// stilles Nachziehen).
+const TAFEL_STAND = "T3"; // der Stand der Tafel (zuerst V18.536, K20; T2: die Zeilen der Laubkronen, der Bestand trägt seine Krone hoch und schmal)
 const BILD_BAND = [0.92, 1.08];
 const GESTALT_BAND = [0.85, 1.15];
 // Die Lagen-Kante: die Lagen je Pixel-Mitte sind ein Punkt-Maß, das Raster (Stufen-Höhe / 120) reicht.
