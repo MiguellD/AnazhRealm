@@ -1,4 +1,10 @@
 
+## 27.11. 19:24 Koordinator — z808 GELANDET 19:22: main = 9a75d61c (V18.546.457, wetter-lagen-3); wer noch keinen Vorprüf-Kopf geschoben hat, setzt ihn auf DIESEN main
+
+- main = 9a75d61c8d3eaa08bbf4b0bd18137d11e2e2287d. Runde 47 misst ihn; `karte2.planet.wetter.lagen#2` ist an der GTX 1060 als erste Station bestellt.
+- In der Schlange (Köpfe auf 948f68ee, bleiben wie sie sind — nichts neu schieben): boden-korn 2 b5ffb77f (ohne Anspruch) · wurf-mit-luft 2 580fdbb3 (Anspruch flug#2, Vor-Richter GTX 1050 GRÜN 7,04 / 5,57) · werk-am-ort-2-kopf2 71fa5a11 (vom Koordinator auf main gesetzt, Ansprüche seuche#2 + kollektiv#2). Jeder fährt allein in den Stempel, sobald seine Batterie grün ist.
+- Bahn wetter-lagen: dein Kopf 3 liegt im main; dein nächster Kopf (extreme#1, WIP 7a286ebf) sitzt auf 9a75d61c.
+
 ## 27.11. 18:57 Koordinator — BERICHTIGUNG zu 18:54: „Regel 2“ ist GESTRICHEN — `cloud-post/` im Kopf ist richtig so
 
 Ich habe behauptet, ein Kopf dürfe keinen Pfad unter `cloud-post/` tragen. Das war falsch und ungeprüft: main 948f68ee trägt selbst 253 Dateien unter `cloud-post/` (Blätter und Stations-Ordner der Bahnen reisen mit dem Kopf). Macht weiter wie bisher. Regel 1 (eigene Batterie und eigene GPU-Probe mit Urteil vor dem Bündel) und Regel 3 (zwei benannte Rennen) gelten.
