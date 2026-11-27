@@ -374,7 +374,7 @@ function klimaGang(FC) {
             d = FC.deckungVon({ stil: st });
         if (g < FC.DECKUNG_GESETZ[d].grad) unter.push(`stil ${st}: Grenze ${g}° unter ${d} ${FC.DECKUNG_GESETZ[d].grad}°`);
     }
-    return { je, aus, r4, unter, sockel: sockelGang(FC), dach: dachGang(FC), regen: regenGang(FC), planet: planetGang(FC), sprache: spracheGang(FC), baum: baumGang(FC), himmel: himmelGang(FC) };
+    return { je, aus, r4, unter, sockel: sockelGang(FC), dach: dachGang(FC), regen: regenGang(FC), planet: planetGang(FC), sprache: spracheGang(FC), baum: baumGang(FC), himmel: himmelGang(FC), mundart: mundartGang(FC) };
 }
 function klimaUrteil(K, check) {
     const fremd = Object.entries(K.aus)
@@ -407,6 +407,7 @@ function klimaUrteil(K, check) {
     if (K.sprache) spracheUrteil(K.sprache, check);
     if (K.baum) baumUrteil(K.baum, check);
     if (K.himmel) himmelUrteil(K.himmel, check);
+    if (K.mundart) mundartUrteil(K.mundart, check);
 }
 // R6/R7 (haus-dach): DIE DECKUNG FOLGT DEM ORT, DIE NEIGUNG DER DECKUNG — R6 die Wand: kein Bau trägt eine Deckung unter ihrer
 // Regeldachneigung (Reet 45°, Mönch-Nonne 40°, Biber 30°, Schiefer 26,5°, Schindel 22°, Hohlziegel 16,7°; fachwerk DECKUNG_GESETZ);
@@ -624,7 +625,7 @@ function spracheGang(FC) {
         L = [];
     for (const seed of REGEN_SAATEN) {
         const plan = FC.DORF({ seed, nH: 14, klima: k }),
-            S = FC.spracheVon(plan.region, seed),
+            S = FC.spracheVon(plan.region, plan.mundart), // der Plan ohne Ort spricht die Ursprache seiner Familie (sprache#4)
             nh = plan.houses.length;
         L.push({ w: plan.name, s: plan.region });
         for (let j = 0; j < 20; j++)
@@ -725,11 +726,11 @@ function baumGang(FC) {
         namen = 0;
     for (const R of Object.keys(FC.SPRACHE_GESETZ)) {
         const blatt = new Array(N).fill(null);
-        for (let s = 1; blatt.some((b) => !b) && s < 100000; s++) {
-            const L = FC.spracheVon(R, s);
-            if (blatt[L.blatt]) continue;
+        for (let s = 0; s < N; s++) {
+            // je Blatt die Mundart, die ganz dieses Blatt spricht (fachwerk `mundartBlatt`; bis sprache-dialekt wählte der Same das Blatt)
+            const L = FC.spracheVon(R, FC.mundartBlatt(s));
             blatt[L.blatt] = L;
-            const name = String(FC.ORTSNAME(R, s)).toLowerCase();
+            const name = String(FC.ORTSNAME(R, s + 1, FC.mundartBlatt(s))).toLowerCase();
             namen++;
             if (SB.bestimmung.some((b) => name.startsWith(FC.sprachWort(L, b)))) leser++;
             else if (beispiel.length < 3) beispiel.push(`${R} ${name}`);
@@ -802,6 +803,116 @@ function himmelUrteil(G, check) {
         G.r >= 0.5 && G.mutation >= 90 && G.gegen === G.n && G.wort0 === G.n
     );
 }
+// R13 (sprache-dialekt, Karte 2 mensch.kultur.sprache#4): DIE MUNDART FOLGT DEM TAL — je Welt-Saat von MUNDART_RAUM ein Gitter von
+// Orten um den Ursprung (die Lage der Saat, gelaende-core `lageGrund`): je trockenem Ort die Senke seines Tals (`talWeg`, der Wirt
+// `_mundartAm` liest dieselbe) und ihre Mundart (fachwerk `mundartVon`), je Familie seine Sprache (`spracheVon`). Gemessen wie die
+// Station: die KL der Laut-Verteilung (Vokal-Ketten und Konsonanten der Grundliste, symmetrisch, Glättung 0,5) zwischen Nachbarn —
+// p95 ≤ 0,2; die Wort-Isoglossen (ein Wort, das zwischen zwei Nachbarn wechselt) auf Barrieren (ein anderes Tal oder Wasser auf der
+// Strecke) ≥ 70 % — die Basis (der Anteil der Barrieren-Kanten) steht daneben; U_eff ≥ 1 000 verschiedene Sprachen. Der Täter
+// „die Sprache liest den Ort nicht“ (das Blatt aus dem Samen des Orts, main bis sprache-dialekt) fällt in R13 beim Namen.
+const MUNDART_RAUM = { saaten: ["welt-1", "welt-2"], gitter: 32, schrittM: 1600, stich: 8 };
+let _mundartOrte = null;
+function mundartOrte() {
+    if (_mundartOrte) return _mundartOrte;
+    const GC = gelaende(),
+        SNm = require(path.join(root, "vendor/simplex-noise.js")),
+        SN = SNm.SimplexNoise || SNm,
+        { gitter: G, schrittM: D, stich } = MUNDART_RAUM;
+    _mundartOrte = MUNDART_RAUM.saaten.map((saat) => {
+        const L = GC.lageGrund(saat, SN),
+            H = (x, z) => GC.hoehe(L, x, z, false),
+            orte = [];
+        for (let i = 0; i < G; i++)
+            for (let j = 0; j < G; j++) {
+                const x = (i - G / 2) * D,
+                    z = (j - G / 2) * D;
+                let w = GC.talWeg(L, x, z);
+                while (w.unter) w = w.unter;
+                orte.push({ i, j, x, z, nass: H(x, z) < L.waterLevel, senke: w });
+            }
+        const kanten = [];
+        for (const a of orte)
+            for (const [di, dj] of [[1, 0], [0, 1]]) {
+                const b = a.i + di < G && a.j + dj < G ? orte[(a.i + di) * G + a.j + dj] : null;
+                if (!b || a.nass || b.nass) continue;
+                let barriere = a.senke !== b.senke;
+                for (let k = 1; k < stich && !barriere; k++) barriere = H(a.x + ((b.x - a.x) * k) / stich, a.z + ((b.z - a.z) * k) / stich) < L.waterLevel;
+                kanten.push({ a, b, barriere });
+            }
+        return { saat, orte, kanten };
+    });
+    return _mundartOrte;
+}
+function mundartGang(FC) {
+    if (typeof FC.mundartVon !== "function") return { kl: Infinity, iso: 0, basis: 0, ueff: 0, orte: 0, beispiel: ["der Kern trägt keine Mundart: fachwerk spracheVon(region, seed) — das Blatt ein Wurf des Samens, kein Ort im Raum (mundartVon fehlt)"] };
+    const LAUT = /[aeiouyäöüøåæ]+|[^aeiouyäöüøåæ]/g,
+        vert = new Map(),
+        verteilung = (L) => {
+            if (vert.has(L)) return vert.get(L);
+            const m = new Map();
+            let t = 0;
+            for (const w of L.lex) for (const c of w.match(LAUT) || []) (m.set(c, (m.get(c) || 0) + 1), t++);
+            vert.set(L, [m, t]);
+            return [m, t];
+        },
+        kl = ([ma, ta], [mb, tb]) => {
+            const K = new Set([...ma.keys(), ...mb.keys()]),
+                na = ta + 0.5 * K.size,
+                nb = tb + 0.5 * K.size;
+            let d = 0;
+            for (const k of K) {
+                const p = ((ma.get(k) || 0) + 0.5) / na,
+                    q = ((mb.get(k) || 0) + 0.5) / nb;
+                d += 0.5 * (p * Math.log(p / q) + q * Math.log(q / p));
+            }
+            return d;
+        };
+    const R = Object.keys(FC.SPRACHE_GESETZ),
+        kls = [],
+        ueff = new Set(),
+        beispiel = [];
+    let iso = 0,
+        isoB = 0,
+        bar = 0,
+        n = 0,
+        orte = 0;
+    for (const { saat, orte: O, kanten } of mundartOrte()) {
+        const M = new Map(),
+            mund = (o) => M.get(o.senke) || (M.set(o.senke, FC.mundartVon(saat, o.senke.x, o.senke.z)), M.get(o.senke));
+        // DER LESER DES SPIELS: der Plan liest die Mundart (`DP.mundart`); der Täter liest den Samen des Orts — er steht hier für ihn
+        const sprache = (r, o) => FC.spracheVon(r, mund(o));
+        for (const o of O) if (!o.nass) (orte++, R.forEach((r) => ueff.add(r + "|" + sprache(r, o).lex.join(" "))));
+        for (const { a, b, barriere } of kanten) {
+            n++;
+            if (barriere) bar++;
+            for (const r of R) {
+                const A = sprache(r, a),
+                    B = sprache(r, b);
+                kls.push(kl(verteilung(A), verteilung(B)));
+                let q = 0;
+                for (let i = 0; i < A.lex.length; i++) if (A.lex[i] !== B.lex[i]) q++;
+                iso += q;
+                if (barriere) isoB += q;
+                if (q && !barriere && beispiel.length < 2 && q > 20) beispiel.push(`${saat} ${a.x}/${a.z}↔${b.x}/${b.z} ${r}: ${q} Wörter im selben Tal`);
+            }
+        }
+    }
+    kls.sort((x, y) => x - y);
+    return {
+        kl: kls.length ? +kls[Math.floor(kls.length * 0.95)].toFixed(3) : Infinity,
+        iso: iso ? +(isoB / iso).toFixed(3) : 0,
+        basis: n ? +(bar / n).toFixed(3) : 0,
+        ueff: ueff.size,
+        orte,
+        beispiel,
+    };
+}
+function mundartUrteil(G, check) {
+    check(
+        `R13 die Mundart folgt dem Tal — ${G.orte} Orte in ${MUNDART_RAUM.saaten.length} Welten: KL p95 zwischen Nachbarn ${G.kl} (Soll ≤ 0,2), Wort-Isoglossen auf Barrieren ${G.iso} (Soll ≥ 0,7; Basis ${G.basis}), U_eff ${G.ueff} (Soll ≥ 1 000)${G.beispiel.length ? " · " + G.beispiel.join(", ") : ""}`,
+        G.kl <= 0.2 && G.iso >= 0.7 && G.ueff >= 1000
+    );
+}
 const KLIMA_TAETER = {
     "der Kern liest das Klima nicht": [
         ["var im = Z.filter(function (z) { return klimaAbstand(z, klima) === 0; });", "var im = Z.slice();"],
@@ -840,6 +951,12 @@ KLIMA_TAETER["die Wüste behält den Schwung"] = [["const DEF_cv=(P.roofCurve>0&
 // das Gesetz ohne die Reihe Kotteks (B vor E): die Polwüste deckt flach wie die Wüste
 KLIMA_TAETER["das Dach liest den Himmel nicht"] = [["b.pitchDeg=himmelNeigung(b, b.pitchDeg, DP.himmel);", ""]];
 KLIMA_TAETER["die Trockenheit kennt den Pol nicht"] = [["if (klima.sommer < K.polar) return Infinity;", ""]];
+// das Blatt als Wurf des Orts (der Täter von main bis sprache-dialekt: `spracheVon(region, seed)`, EIN Blatt je Ort, kein Raum): die
+// Herde stehen je 5 m, ohne Fächer — jedes Tal zieht EIN beliebiges Blatt für alle Wörter, zwei Nachbarn sprechen so fremd wie zwei Enden
+// der Welt. (Mit dem Fächer zöge jedes Wort sein eigenes Blatt: die Mischung gleicht jede Laut-Verteilung dem Mittel der Familie an.)
+KLIMA_TAETER["die Sprache liest den Raum nicht"] = [["var SPRACH_RAUM = { sigma: 5000, faecher: 0.3 };", "var SPRACH_RAUM = { sigma: 5, faecher: 0 };"]];
+// der Fächer fehlt: jedes Wort eines Tals stammt aus dem Kern-Blatt, die Isoglossen bündeln sich zu einer Linie, U_eff fällt auf die Blätter
+KLIMA_TAETER["die Mundart kennt keinen Fächer"] = [["var SPRACH_RAUM = { sigma: 5000, faecher: 0.3 };", "var SPRACH_RAUM = { sigma: 5000, faecher: 0 };"]];
 const KLIMA_SOLL = {
     "die Trockenheit kennt den Pol nicht": "R8",
     "das Dach liest den Himmel nicht": "R12",
@@ -856,6 +973,8 @@ const KLIMA_SOLL = {
     "die Fuge kennt kein OCP": "R9",
     "die Wortliste kennt keinen Ersatz": "R11",
     "der Ort liest die Wortliste nicht": "R11",
+    "die Sprache liest den Raum nicht": "R13",
+    "die Mundart kennt keinen Fächer": "R13",
 };
 
 
@@ -3949,7 +4068,12 @@ hauptLauf(async () => {
                         // Ort-Gesetz des Geländes (gelaende-core `ortGesetz`, sein Klima `ortKlima`: Temperatur, Spende, Niederschlag,
                         // Schneefall), nicht aus dem Leser der Welt; der Akt (ein Wort) trägt keins
                         const klima = globalThis.__gelaendeCore.ortKlima(L.ort);
-                        plan = { seed: c.seed, nH: c.nH, epoche: r._siedlungEpoche(c.seed), klima };
+                        // ebenso die MUNDART der Zelle (sprache#4): an ihrer Mitte der Weg des Wassers bis zur Senke (gelaende-core
+                        // `talWeg`), dort das Gesetz der Saat (fachwerk `mundartVon`) — aus den Kernen, nie aus `_mundartAm`
+                        let tal = globalThis.__gelaendeCore.talWeg(L, (cx + 0.5) * SG.cellM, (cz + 0.5) * SG.cellM);
+                        while (tal.unter) tal = tal.unter;
+                        const mundart = globalThis.__fachwerkCore.mundartVon(String(L.seed), tal.x, tal.z);
+                        plan = { seed: c.seed, nH: c.nH, epoche: r._siedlungEpoche(c.seed), klima, mundart };
                     } else {
                         const ort = globalThis.__gelaendeCore.hangOrt(L, (x, z) => r._landAt(x, z, 0.2));
                         res.hang = ort;

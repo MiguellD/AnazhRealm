@@ -2070,6 +2070,53 @@
             }
         return out;
     }
+    // DER WEG DES WASSERS EINES ORTS (Karte 2 mensch.kultur.sprache#4, das Dialekt-Kontinuum): der Knoten der Ebene 0, dem (x, z)
+    // am nächsten liegt (die Zellen 3 × 3 um den Ort), als Glied der Kette seiner Unterlieger bis zur Senke — dasselbe Netz, das
+    // die Täler schneidet (`knotenFluss`: jeder Knoten fließt zu seinem tiefsten Nachbarn). Zwei Orte, deren Wasser sich erst
+    // weit unten trifft (oder nie: zwei Senken), trennt eine Wasserscheide. → { i, j, x, z, unter (das Glied des Unterliegers,
+    // null an der Senke), tiefe (Glieder bis zur Senke), senke (1 benannter See, 2 Meer), weg (m bis zur Senke) }, eingefroren,
+    // gemerkt je Knoten am Netz (die Kosten folgen den gefragten Orten, nie der Welt). Leser: fachwerk `mundartVon` über den
+    // Wirt (`_mundartAm`), die Station der Sprache.
+    function talWeg(L, x, z) {
+        const N = netzFuer(L);
+        const S = N.S[0];
+        const ci = Math.floor(x / S);
+        const cj = Math.floor(z / S);
+        let kn = null;
+        let bd = Infinity;
+        for (let dj = -1; dj <= 1; dj++)
+            for (let di = -1; di <= 1; di++) {
+                const m = knoten(N, 0, ci + di, cj + dj);
+                const d = (m.x - x) ** 2 + (m.z - z) ** 2;
+                if (d < bd) [bd, kn] = [d, m];
+            }
+        const W = N.talWege || (N.talWege = new Map());
+        const kette = [];
+        let c = kn;
+        while (c && !W.has(c)) {
+            kette.push(c);
+            if (kette.length > 100000) throw new Error("gelaende-core talWeg: die Kette der Unterlieger endet nicht (" + kn.i + "," + kn.j + ")");
+            c = knotenFluss(N, c);
+        }
+        let unter = c ? W.get(c) : null;
+        const senke = unter ? unter.senke : kette[kette.length - 1].senke;
+        for (let k = kette.length - 1; k >= 0; k--) {
+            const g = kette[k];
+            const glied = Object.freeze({
+                i: g.i,
+                j: g.j,
+                x: g.x,
+                z: g.z,
+                unter,
+                tiefe: unter ? unter.tiefe + 1 : 0,
+                senke,
+                weg: unter ? unter.weg + Math.hypot(unter.x - g.x, unter.z - g.z) : 0,
+            });
+            W.set(g, glied);
+            unter = glied;
+        }
+        return W.get(kn);
+    }
     // DAS WASSER LIEST DAS NETZ (K16): die Fluss-Läufe der Ebenen 0 und 1, die das Rechteck [x0, x1) × [z0, z1) berühren —
     // dasselbe Netz, das die Täler schneidet; die Hydrosphäre rechnet kein zweites. Ein Lauf beginnt an einer Quelle (ein
     // Knoten ohne Oberlieger seiner Ebene: `quelle`) oder, liegen alle Oberlieger jenseits der Reichweite, an ihrem Rand,
@@ -8676,6 +8723,7 @@
         landmarke: landmarke,
         landformRegler: landformRegler,
         netzZaehler: netzZaehler,
+        talWeg: talWeg, // der Weg des Wassers eines Orts bis zur Senke (Leser: fachwerk mundartVon über den Wirt, die Station der Sprache)
         benannteSeen: benannteSeen,
         flussLaeufe: flussLaeufe,
         schichtOrt: schichtOrt,
