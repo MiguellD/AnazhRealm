@@ -3020,15 +3020,15 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 61 Bilder · max 67 ms · 77.05 % > 33 ms · Fahrt 53 Bilder · max 116.93 ms · 86.79 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 77.05 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 116.93), 86.79 % > 33 ms an eef726c7 radeon · gehalten: Gehen 92 Bilder · max 83.25 ms · 13.04 % > 33 ms · Fahrt 5 Bilder · max 75.02 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 13.04 % > 33 ms | Fahrt: blind (5 Bilder in 2.5 s), 80.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 99649186 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an eef726c7: Last: Referenz f 1,255 (Faden 1,255 · alle Kerne 1,181; vor 104,8/305,8 ms, nach 102,3/275,4 ms, Ruhe 83,5/258,9 ms seit 2026-11-16) · fremd: node.exe scripts/diag-settlement.cjs --nur-a 60,0 CPU-s ·  · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +44)",
+   "beleg": "Maschine: Gehen 58 Bilder · max 91.93 ms · 79.31 % > 33 ms · Fahrt 52 Bilder · max 100.41 ms · 92.31 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 79.31 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.41), 92.31 % > 33 ms an eef726c7 radeon · gehalten: Gehen 92 Bilder · max 83.25 ms · 13.04 % > 33 ms · Fahrt 5 Bilder · max 75.02 ms · 80.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 13.04 % > 33 ms | Fahrt: blind (5 Bilder in 2.5 s), 80.00 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 99649186 gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an eef726c7: Last: Referenz f 1,277 (Faden 1,277 · alle Kerne 1,056; vor 106,6/273,1 ms, nach 85,6/249,4 ms, Ruhe 83,5/258,5 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +44)",
    "stationen": [
     {
      "id": "profiband.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Gehen 61 Bilder · max 67 ms · 77.05 % > 33 ms · Fahrt 53 Bilder · max 116.93 ms · 86.79 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 77.05 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 116.93), 86.79 % > 33 ms",
+     "zahl": "Gehen 58 Bilder · max 91.93 ms · 79.31 % > 33 ms · Fahrt 52 Bilder · max 100.41 ms · 92.31 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 79.31 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.41), 92.31 % > 33 ms",
      "sha": "eef726c747050e60042a4a0c9f65fea3ff3e9077",
-     "grund": "GRÜN trotz Last: Referenz f 1,255 (Faden 1,255 · alle Kerne 1,181; vor 104,8/305,8 ms, nach 102,3/275,4 ms, Ruhe 83,5/258,9 ms seit 2026-11-16) · fremd: node.exe scripts/diag-settlement.cjs --nur-a 60,0 CPU-s · bash.exe scratchpad/wache-0331.sh 10,0 CPU-s · bash.exe werkzeug/gpu-lauf.sh wache-streife-netz2 bash mega/probe-lauf2.sh netz2 8,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 24,4 CPU-s · svchost.exe 16,2 CPU-s · SearchIndexer.exe 1,7 CPU-s",
+     "grund": "GRÜN trotz Last: Referenz f 1,277 (Faden 1,277 · alle Kerne 1,056; vor 106,6/273,1 ms, nach 85,6/249,4 ms, Ruhe 83,5/258,5 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 9,7 CPU-s · bash.exe scratchpad/wache-0331.sh 9,2 CPU-s · bash.exe werkzeug/gpu-lauf.sh --waechter 1413119 claude/gpu-schloss.wache.1413119 5,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 31,2 CPU-s · svchost.exe 12,9 CPU-s · SearchIndexer.exe 1,5 CPU-s",
      "r6": "konsum"
     },
     {
@@ -3047,7 +3047,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an eef726c7: Last: Referenz f 1,255 (Faden 1,255 · alle Kerne 1,181; vor 104,8/305,8 ms, nach 102,3/275,4 ms, Ruhe 83,5/258,9 ms seit 2026-11-16) · fremd: node.exe scripts/diag-settlement.cjs --nur-a 60,0 CPU-s · ",
+     "grund": "Station seit der Messung geändert — zuletzt an eef726c7: Last: Referenz f 1,277 (Faden 1,277 · alle Kerne 1,056; vor 106,6/273,1 ms, nach 85,6/249,4 ms, Ruhe 83,5/258,5 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
      "ungemessen": true
     },
     {
@@ -5514,7 +5514,7 @@
   },
   "karte2.erleben.bild.nacht": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 · GRÜN ✅ schatten_kontrast 4,6456 (Soll ≥ 3) · ✅ kelvin_abw 38 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 482 an 2a2e8a54 radeon — offen: karte2.erleben.bild.nacht#1 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#2 radeon: Station seit der Messung geändert · karte2.erleben.bild.nacht#2 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#3 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#3 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#4 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#4 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#5 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#5 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#6 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#6 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#7 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#7 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#8 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 · GRÜN ✅ schatten_kontrast 4,6456 (Soll ≥ 3) · ✅ kelvin_abw 38 (Soll ≤ 200) · ✅ Umfang verlangt 1 Leuchtquellen, die Welt erzeugte 482 an 2a2e8a54 radeon — offen: karte2.erleben.bild.nacht#1 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#2 radeon: ROT: S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 5,3 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -5.3 EV): ΔEV p10 -15.29 · p25 -16.61 · p50 -4.21 · p75 -4.01 · p90 -4.53 · p99 -6.07 — Belichtung k 41700, Mittelgrau bei 0.06945 cd/m² · gasse_dev_median 5,3 statt ≤ 0,5 an eef726c7 · karte2.erleben.bild.nacht#2 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#3 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#3 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#4 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#4 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#5 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#5 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#6 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#6 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#7 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#7 gtx: Station seit der Messung geändert · karte2.erleben.bild.nacht#8 radeon: ungemessen (R10) · karte2.erleben.bild.nacht#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.bild.nacht#1",
@@ -5540,10 +5540,10 @@
      "id": "karte2.erleben.bild.nacht#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 5,3 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -5.3 EV): ΔEV p10 -15.29 · p25 -16.61 · p50 -4.21 · p75 -4.01 · p90 -4.53 · p99 -6.07 — Belichtung k 41700, Mittelgrau bei 0.06945 cd/m² · gasse_dev_median 5,3 statt ≤ 0,5",
+     "sha": "eef726c747050e60042a4a0c9f65fea3ff3e9077",
+     "grund": "ROT: S2 · ROT ✅ bodenfleck_anteil 1 (Soll ≥ 0,9) · ❌ gasse_dev_median 5,3 (Soll ≤ 0,5) · ✅ Umfang verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 755 — Täter: das Histogramm der Gasse liegt unter dem Band (Median -5.3 EV): ΔEV p10 -15.29 · p25 -16.61 · p50 -4.21 · p75 -4.01 · p90 -4.53 · p99 -6.07 — Belichtung k 41700, Mittelgrau bei 0.06945 cd/m² · gasse_dev_median 5,3 statt ≤ 0,5",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.bild.nacht#2",
@@ -16374,7 +16374,7 @@
   },
   "karte2.mensch.fahrzeug.medium": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 11,10 ms (Soll ≤ 33), größtes 144,40 ms, 2839 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 15,70 ms (Soll ≤ 33), größtes 363,20 ms, 3115 Bilder · Exit 0 · [linse-gpu] nvidia/pascal an e4e3f363 gtx — offen: karte2.mensch.fahrzeug.medium#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/stamm.cjs, scripts/werkbank.cjs +4) · karte2.mensch.fahrzeug.medium#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/stamm.cjs, scripts/werkbank.cjs +4) · karte2.mensch.fahrzeug.medium#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#6 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#7 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#7 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#8 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#8 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 11,10 ms (Soll ≤ 33), größtes 144,40 ms, 2839 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 15,70 ms (Soll ≤ 33), größtes 363,20 ms, 3115 Bilder · Exit 0 · [linse-gpu] nvidia/pascal an e4e3f363 gtx — offen: karte2.mensch.fahrzeug.medium#2 radeon: ROT: S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 1794 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] amd/rdna-3 an eef726c7 · karte2.mensch.fahrzeug.medium#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/stamm.cjs, scripts/werkbank.cjs +4) · karte2.mensch.fahrzeug.medium#3 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#3 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#4 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#4 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#5 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#5 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#6 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#6 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#7 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#7 gtx: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#8 radeon: ungemessen (R10) · karte2.mensch.fahrzeug.medium#8 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.medium#1",
@@ -16400,10 +16400,9 @@
      "id": "karte2.mensch.fahrzeug.medium#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/lib/stamm.cjs, scripts/werkbank.cjs +4)",
-     "ungemessen": true,
+     "zahl": "S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 1794 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] amd/rdna-3",
+     "sha": "eef726c747050e60042a4a0c9f65fea3ff3e9077",
+     "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: Bremsweg 100→0 0–45.39 m (im Band 75 %), 50→0 im Band 63 %, ≥ 130 km/h 120/160 · die Saat ändert die Physik nicht (1 Fahrt je Rezept über 20 Saaten: vehicle-core.js:3474 exportDrive liest keine Saat) · keine Spurrinne (kein Spur-Gesetz) · Fächer 160/160 Adressen (20 Saaten × 8 Orte) in 1794 ms · Les (gemessen 1, Soll 20 Saaten bis 130 km/h mit eigener Physik) · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -37504,7 +37503,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 305,
+  "konsum": 306,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37627,10 +37626,10 @@
    "ultiversum.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3362
+  "ohne": 3361
  },
  "kopfVoll": "eef726c747050e60042a4a0c9f65fea3ff3e9077",
- "zeit": "2026-11-27T09:06:38.248Z",
+ "zeit": "2026-11-27T09:28:51.568Z",
  "vorher": "eef726c7",
  "bilanz": {
   "gewinn": [],
