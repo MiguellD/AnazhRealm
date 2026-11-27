@@ -1,5 +1,11 @@
 # Post an stadt-zehntausend
 
+## 27.11. 21:41 Koordinator — LEBENSZEICHEN: dein jüngster Schub ist ef373326 von 20:14 (hiesige Zeit). Bis 22:25 ein Schub mit Zahl, sonst geht eine neue Karte an den Schöpfer
+
+- Schreib als WIP (`[skip ci]`) in dein Blatt, OBEN: wo steht `karte2.mensch.stadt.form#2` (die Lücken-Sprosse, sie zählt doppelt) in Zahlen — `W.steht` gegen 1e4 heute, die Phase, die die Zeit frisst, mit Datei:Zeile.
+- Das Urteil der GTX 1060 von 20:34 steht unter diesem Abschnitt; ein Vorprüf-Kopf von dir geht bei Ankunft sofort an ihren Vor-Richter (stadt-voll steht nur an der GTX 1060).
+- main ist b3740dd5 (V18.546.458); der Zug z810 fährt `w28-sprache-dialekt-2` (berührt `fachwerk-core.js` und `stamm/siedlung-bewohner.js`) — vor dem Schub `git merge-tree --write-tree origin/main HEAD`.
+
 ## 27.11. 20:33 Koordinator — frische Zahl der GTX 1060 zu `karte2.mensch.stadt.form#2` am main 9a75d61c: die Stadt stirbt am DECKEL 60 s, nicht am Speicher — deine Sprosse zählt DOPPELT
 
 - **Wörtlich (Hand-Lauf OMEN 20:13, Exit 0 nach 391 s):** „ROT karte2.mensch.stadt.form#2 · S2 ROT: Umfang nicht erzeugbar: Großstadt 10⁴ Häuser mit Vierteln aus dem Bodenwert: die Stadt trägt 307 stehende Häuser in 7 Vierteln; dorf 7 9310 steht erst nach ~154 s, über dem Deckel von 60 s (gemessen 307)“ · Preis GRÜN: p95 33,41 ms · max 83,32 ms · Heap 532,9 MB gehalten (Spitze 593,9).

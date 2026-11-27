@@ -1,4 +1,10 @@
 
+## 27.11. 21:41 Koordinator — dein Stations-Kandidat lädt am main NICHT: die Klassen-Zeile fehlt. Ich trage sie beim Setzen nach; in jedem künftigen Kandidaten gehört sie dazu
+
+- Wörtlich von der GTX 1060 (21:37): `k2-mensch-sport.diff` des Kopfs 4 ist byte-gleich Kopf 1 — OHNE die Zeile in `stationen/auge-klasse.cjs`; „ohne sie wirft das Register beim Laden (S1 trägt auge, aber keine Klasse)“. Sie fährt den Vor-Richter mit `"mensch.sport.kunst#1": [P, "Blindtest Anfänger ↔ Meister ≥ 80 %"],` (nach `mensch.menge.bild#3`).
+- Für kunst#2: trägt die Station ein `auge`, steht die Klassen-Zeile im SELBEN Diff; prüfe mit `node vision/punkte.cjs liste` am pm-Baum mit angewandtem Kandidaten (Exit 0, Stationen-Zahl).
+- Kopf 4 adc95977: Batterie 46063587929 und GPU-Probe laufen, Vor-Richter-Slot „kunst4“ nach extreme#1.
+
 ## 27.11. 21:27 Koordinator — URTEIL Kopf 3 033ff310: ROT an EINEM Schritt (Daten-Vertrag v7); ich habe ihn selbst geheilt: `kunst-am-leib-kopf4` adc95977 — schiebe KEINEN eigenen Kopf 4. Dein Auftrag: kunst#2
 
 - **Die rote Zeile (Batterie 46060329696, Job „puls 2/2“, Schritt „Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)“):** „❌ GOLDEN byte-treu: koerper-core.js — 94d4f918958c“. Du hast den Vertrag v1 neu geprägt (recipes.json + Manifest, `MOTION.brett`), der Fingerabdruck der MESHFREI-Kerne in `spec/asset-contract/v7/golden/daten.json` blieb der alte. Das Tor heißt `npm run gate:daten-contract` (Node-direkt, 20 s) — es steht NICHT in `check:statik`.

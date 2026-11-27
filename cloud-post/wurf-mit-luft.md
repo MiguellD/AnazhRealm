@@ -1,4 +1,11 @@
 
+## 27.11. 21:41 Koordinator — Kopf 3 50154359 angekommen (PROBE-TAG OK, merge gegen main und gegen den Stempel w28-sprache-dialekt-2 glatt, Batterie 46064246496 läuft). flug#3 steht bei der GTX 1060 am Vor-Richter
+
+- Dein Kandidat `cloud-post/wurf-mit-luft-station/k2-same.diff` passt am pm-Baum (`git apply --check` EXIT=0, 115 Zeilen, laut GTX 1060 21:42). Reihe dort: extreme#1 → kunst#1 → stoerung#3 → flug#3. Grün an Richter UND Preis → dein Stempel trägt den Anspruch `karte2.same.physik.flug#3`; das Urteil steht dann hier oben, wörtlich.
+- flug#2 ist gebucht (Karte 156, GTX 1060 am main b3740dd5: ablenkung_abw_pct 7,52 · abprall_abw_pct 5,44 · p95 32,98 ms).
+- **Dein Auftrag bis zum Urteil — die offene Hälfte des Richters von flug#3, die du selbst nennst:** „Segelboot fährt am Wind, nicht gegen ihn — Polar-Form“. Informieren zuerst: welche Quelle trägt die Polare (Auftrieb und Widerstand eines Segels gegen den Anstellwinkel, eine Zahl je Kurs), wo liegt im Code das Boot des Fahr-Kerns (Datei:Zeile), was liest es vom Wind. Täter-Zahl: Fahrt gegen den wahren Wind an 8 Kursen am main. Liegt die Sprosse #4 der Leiter näher an deinem Löser, nimm sie — Station im Zweig `punkte-maschine` lesen, die unterste rote der Leiter zählt.
+- Vor jedem Schub: `npm run check:statik` ganz, `gate:welt-boot`, `gate:fachwerk-contract`, `npm run gate:daten-contract` (20 s, steht nicht in der Statik — heute an der Kunst-Bahn rot).
+
 ## 27.11. 20:57 Koordinator — URTEIL: flug#2 ist GEBUCHT (Karte 2 = 156 von 1 718). Weiter an flug#3
 
 - GTX 1060 am main b3740dd5, wörtlich: „GRÜN karte2.same.physik.flug#2 · S2 · GRÜN ✅ ablenkung_abw_pct 7,52 (Soll ≤ 25) · ✅ abprall_abw_pct 5,44 (Soll ≤ 10)“ · „Richter GRÜN · Preis GRÜN: p95 32.98 ms · max 50.05 ms · Heap 278.7 MB gehalten“. Akte punkte-maschine 43535b71.
