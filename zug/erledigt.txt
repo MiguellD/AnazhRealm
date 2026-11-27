@@ -2784,3 +2784,4 @@ omen-gtx-gtx-45bad33f-w003342-1-45bad33f ROT 0 GRÜN / 2 ROT / 0 UNGEMESSEN · R
 2026-11-27 00:59 RUNDE 40 ALARM gtx: ohne Fortschritt seit 16 min (halt, 16/234, Station karte2.leben.tiere.masse#1, Kopf 45bad33f) — gesehen von radeon (radeon-dienst)
 omen-gtx-gtx-38194f83-fb-1-38194f83 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN karte2.planet.kopplung.stadtklima#1 ‖ karte2.planet.kopplung.stadtklima#1: S1 abweichungGrad 1,976 ° gegen Soll ≤ 20 ° ✓ · Zeuge: die Welt geändert (punkte-maschine 39f05c80 messung/38194f83-gtx.json)
 2026-11-27 01:01 RUNDE 40 ALARM gtx: OMEN: 44 Messungen ungepusht seit 04:58 — halt 16/234, Station karte2.leben.tiere.masse#1, Kopf 45bad33f; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
+2026-11-27 01:01 landung Runde 40 am 45bad33f: misst 25 von 234 Stationen (vorn; 16 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
