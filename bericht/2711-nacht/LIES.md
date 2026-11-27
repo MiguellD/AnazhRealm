@@ -32,3 +32,17 @@ Vorher = main 52937c92 (die Laterne 25,7 cd) · nachher = Kopf B 83eca605 (2 000
 Offen beim Namen: Soll dev ≤ 0,5 EV — p10/p25 sind der Himmel (29 % des Bilds bei 0,0004–0,002 cd/m², das Band p10 0,04); der Boden
 allein liegt 0,5–1,6 EV unter dem Band · die Bewohner in der Ferne bleiben schwarze Schattenrisse (impostor#fimp:atlas, 810 Instanzen,
 4 470 Null-Pixel) · die Scheiben sind flache helle Rechtecke, ihr Licht fällt nicht auf Wand und Gasse.
+
+## Kopf C am Dorf (Vorprüf 85c3ee24 auf main 948f68ee, Zweig nacht-licht-klasse-2)
+
+Vorher = main 948f68ee · nachher = Kopf C 85c3ee24. Nacht-Linse des Spiels (`werkbank licht --nacht dorf:third --bilder`), GTX 1050.
+
+**`dorf-nacht-vorher-948f68ee.png` ↔ `dorf-nacht-nachher-85c3ee24.png`:**
+- vorher: Bodenfleck 5/5 = 1 (ohne Karte 0,6), ein Fleck 4,16 ms, Takt höchstens 11,1 ms.
+- nachher: Bodenfleck 3/3 = 1, der Lichtkreis reicht weiter (Fleck in lux, Wandlaterne 70 m) und deckt den Weg gleichmäßig;
+  ein Fleck 2,86 ms, Takt höchstens 11,08 ms (ohne den Zellen-Rest des Unterschieds 21,89 / 32,4 ms — mitgeschnitten).
+- Stadt-voll: Karte steht 70,9 → 57,1 s, Nacht-p95 66,74 ↔ 66,77 ms, Gasse dev 1,68 → 0,68 EV, Bodenfleck 0,919.
+
+Offen beim Namen (das Auge vom 455 gilt weiter, dieser Kopf heilt es NICHT): das Gras im Lichtkreis brennt gelb-orange aus,
+die Nacht bleibt einfarbig rotbraun, der Laternenkopf ist eine flache helle Fläche · Gasse dev 0,68 über Soll 0,5 ·
+Wurf am freien Boden ungemessen (0 gesehene Punkte um laterne_dorf).
