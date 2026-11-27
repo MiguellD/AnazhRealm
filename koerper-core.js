@@ -5648,7 +5648,36 @@
         // Die Tat der Rolle (rollen-des-tages) ist ihr Werk: die Jagd und der Fischfang üben die Kunst des Werks („haupt“) — der
         // Jäger, der sein Handwerk nicht kann, steht am Revier im Takt des Lehrlings wie der Lehrling am Werk.
         kunst: Object.freeze({ arbeit: "haupt", zweikampf: "kampf", brett: "brett", jagd: "haupt", fischfang: "haupt" }),
-        stufe: Object.freeze([Object.freeze({ wort: "lehrling", unter: 0.5, takt: 0.5 })]),
+        // DIE STUFEN DES KÖNNENS (kunst-am-leib, mensch.sport.kunst 1): jeder Akt einer Kunst trägt seine Stufe als Wort — der
+        // Lehrling unter 0,5, der Geselle unter 1, der Meister im Band der Guten (die Schwellen der Station: Anfänger < 0,5, Meister
+        // ≥ 1) —, und jede Stufe liest das EINE Gesetz des Könnens (`koennen`, `leibKunst`) an ihrem Können `k`. Der Name ist die
+        // Naht: der nahe Leib und der ferne Satz (je Name gebacken) lesen dieselbe Stufe. Bis hier trug nur der Lehrling ein Wort,
+        // und es las allein den Takt (×0,5): der Meister streute seine Züge wie der Lehrling, der Kampf zeigte nichts.
+        stufe: Object.freeze([
+            Object.freeze({ wort: "lehrling", unter: 0.5, k: 0.5 }),
+            Object.freeze({ wort: "geselle", unter: 1, k: 0.75 }),
+            Object.freeze({ wort: "meister", unter: Infinity, k: 1 }),
+        ]),
+        // DAS GESETZ DES KÖNNENS AM LEIB (kunst-am-leib — woran man aus 3–8 m sieht, ob einer seine Kunst beherrscht): das Können
+        // k der geübten Kunst formt die Bewegung des Tuns. Je Größe [Meister, Lehrling] an den Ankern k = 1 und k = 0,5, linear in
+        // (1 − k), außerhalb gehalten. Das Tempo ist das Potenzgesetz selbst: die Zeit je Zug ∝ 1/k (Newell & Rosenbloom 1981).
+        koennen: Object.freeze({
+            anker: Object.freeze([1, 0.5]),
+            // Takt-Streuung (CV des Intervalls): Baer et al. 2013, Front Hum Neurosci 7:191, Tab. 1 — Musiker 10,06/401,79 ms = 2,5 %, Laien 22,55/390,54 ms = 5,8 %
+            periode: Object.freeze([0.025, 0.058]),
+            // Endpunkt-Streuung (SD des Ausschlags je Zug): Nasu, Matsuo & Kadota 2014, PLoS ONE 9:e88536 — Dart 21,3 ↔ 65,0 mm (×3,05); der Meister 5 % ANGENOMMEN
+            ende: Object.freeze([0.05, 0.153]),
+            // Schwanken (× das Schwanken des Profils): Lin, Su & Lin 2019, Front Bioeng Biotechnol 7:290, Tab. 2 — COM-COP-Neigung 2,77° ↔ 5,62° (×2,03)
+            schwanken: Object.freeze([1, 2.03]),
+            // Nachkorrektur (Anteil der Züge mit zweiter Teilbewegung, `nach` ihre Höhe, `kurz` die kürzere erste): Meyer et al. 1988, Psychol Rev 95:340 — Anteile ANGENOMMEN
+            korrektur: Object.freeze([0, 1]),
+            nach: 0.45,
+            kurz: 0.25,
+            // Steife (Einfrieren der Freiheitsgrade; `pose` rad je Achse, `schulter` ihr genommener Anteil am Zug): Vereijken et al. 1992, J Mot Behav 24:133 — Größen ANGENOMMEN
+            steife: Object.freeze([0, 1]),
+            pose: Object.freeze({ headX: 0.16, spineX: 0.07, elbowL: 0.3, elbowR: 0.3, kneeL: -0.04, kneeR: -0.04 }),
+            schulter: 0.6,
+        }),
         // DIE TRACHT DES TAGS — das Soll der Kleidung aus der Luft um 6 Uhr (Schiavon & Lee 2013, Building and Environment 59:250–260,
         // Gl. 10: < −5 °C 1,00 clo · −5 … 5 °C 0,818 − 0,0364·t · 5 … 26 °C 10^(−0,1635 − 0,0066·t) · ab 26 °C 0,46); die Isolation
         // des Kleids ist die Summe seiner Teile (ASHRAE 55, Tafel der Kleidungsstücke: T-Shirt 0,08 · ärmellose Bluse 0,12 · Langarm-Sweatshirt 0,34 · dicker
@@ -5691,6 +5720,28 @@
         }
         return z.length ? (h || "idle") + LEIB_SATZ.trenner + z.join(LEIB_SATZ.trenner) : h;
     }
+    // DIE KUNST AM LEIB (kunst-am-leib, LEIB_SATZ.koennen): die Größen der Bewegung zum Können k der geübten Kunst — `takt` (Zeit je
+    // Zug ∝ 1/k), `periode` (CV des Intervalls), `ende` (SD des Ausschlags je Zug), `schwanken` (× das Schwanken des Profils),
+    // `korrektur` (Anteil der Züge mit Nachkorrektur), `steife` (0 … 1); zwischen den Ankern linear in (1 − k), gemerkt je k
+    var _leibKunstMerk = Object.create(null);
+    function leibKunst(k) {
+        if (!Number.isFinite(k) || !(k > 0)) throw new Error("koerper leibKunst: das Können fehlt (" + k + ") — fail-closed");
+        if (_leibKunstMerk[k]) return _leibKunstMerk[k];
+        var G = LEIB_SATZ.koennen,
+            x = Math.max(0, Math.min(1, (G.anker[0] - k) / (G.anker[0] - G.anker[1]))),
+            an = function (B) {
+                return B[0] + (B[1] - B[0]) * x;
+            };
+        return (_leibKunstMerk[k] = Object.freeze({
+            k: k,
+            takt: Math.min(1, Math.max(G.anker[1], k)),
+            periode: an(G.periode),
+            ende: an(G.ende),
+            schwanken: an(G.schwanken),
+            korrektur: an(G.korrektur),
+            steife: an(G.steife),
+        }));
+    }
     // DAS PROFIL EINES NAMENS (leib-liest-satz): aus der Tafel M (das Buch des Körpers: `fx.motion.presets`, oder MOTION) — der Grund
     // ohne Zusatz ist seine Zeile; mit Zusätzen ihr Grund plus je Wort sein Delta (LEIB_SATZ.krank; die Stufe trägt ihren Takt ×freq).
     // Gemerkt je Tafel und Namen (dasselbe Objekt je Ruf: der Leser vergleicht Profile auf Identität). Ein Wort ohne Gesetz bricht laut.
@@ -5711,7 +5762,14 @@
             for (var j = 0; !d && j < LEIB_SATZ.stufe.length; j++) if (LEIB_SATZ.stufe[j].wort === w) st = LEIB_SATZ.stufe[j];
             if (!d && !st) throw new Error("koerper leibSatzProfil: das Wort „" + w + "“ trägt kein Gesetz (LEIB_SATZ) — fail-closed");
             if (d) for (var key in d) p[key] = (Number(p[key]) || 0) + d[key];
-            if (st) p.freq = (Number(p.freq) || 0) * st.takt;
+            if (st) {
+                // (kunst-am-leib) die Stufe liest das Gesetz des Könnens: der Takt des Stands, das Schwanken, die Steife der Haltung
+                var KL = leibKunst(st.k),
+                    SP = LEIB_SATZ.koennen.pose;
+                p.freq = (Number(p.freq) || 0) * KL.takt;
+                p.sway = (Number.isFinite(p.sway) ? p.sway : MOTION.idle.sway) * KL.schwanken;
+                for (var sk in SP) p[sk] = (Number(p[sk]) || 0) + SP[sk] * KL.steife;
+            }
         }
         p = Object.freeze(p);
         if (merk) merk[name] = p;
@@ -9236,9 +9294,14 @@
         ruhe: Object.freeze({ pronation: 1.2, ellbogen: 0.25, daumen: 0.035, daumenBis: 0.2 }), // rad: die Arme hängen (stand-lebt 3)
         blick: Object.freeze({ rad: Object.freeze([0, 0.56, -0.56]), wende: 0.4 }), // die Gier des Kopfs je Fixation, s je Wende
         tun: Object.freeze({ showcase: "reden", pwalk: "hand" }), // je Profil des Stands die Arbeit der Hände
+        // (kunst-am-leib) die Tat einer Kunst, wo das Profil selbst keine trägt: nur ein Name mit der Stufe einer Kunst
+        // (LEIB_SATZ.stufe) führt sie — wer im Zweikampf steht, stößt aus der Deckung; der Spieler in Garde („fight“ ohne Stufe)
+        // stößt nie von selbst. 3 Stöße je Seite und Zyklus (ein Stoß je 1,2 s, die Seiten im Wechsel), der Ellbogen streckt (−)
+        kunstTun: Object.freeze({ fight: "stoss" }),
         arme: Object.freeze({
             reden: Object.freeze({ je: 2, hub: 0.5, schulter: 0.35, ellbogen: 1.2 }), // rad: Beugung vor, Ellbogen
             hand: Object.freeze({ je: 4, hub: 0.6, schulter: 0.5, ellbogen: 0.9 }),
+            stoss: Object.freeze({ je: 3, hub: 0.35, schulter: 0.55, ellbogen: -1.1 }),
         }),
     });
     // das Bein, das trägt (+1: das rechte trägt, das linke ist das Spielbein — die Pose des Labors; −1 gespiegelt), zur Uhr t der
@@ -9272,18 +9335,77 @@
         if (typeof name !== "string") return null;
         if (name in _standTunMerk) return _standTunMerk[name];
         var teile = name.split(LEIB_SATZ.trenner),
-            A = STAND.arme[STAND.tun[teile[0]]] || null;
-        for (var i = 1; A && i < teile.length; i++)
-            for (var j = 0; j < LEIB_SATZ.stufe.length; j++)
-                if (LEIB_SATZ.stufe[j].wort === teile[i]) A = Object.freeze(Object.assign({}, A, { je: Math.max(1, Math.round(A.je * LEIB_SATZ.stufe[j].takt)) })); // prettier-ignore
-        return (_standTunMerk[name] = A);
+            st = null;
+        for (var i = 1; i < teile.length; i++)
+            for (var j = 0; j < LEIB_SATZ.stufe.length; j++) if (LEIB_SATZ.stufe[j].wort === teile[i]) st = LEIB_SATZ.stufe[j];
+        var A = STAND.arme[STAND.tun[teile[0]] || (st && STAND.kunstTun[teile[0]])] || null;
+        return (_standTunMerk[name] = A && st ? leibTunKunst(A, leibKunst(st.k)) : A);
+    }
+    // DIE ARME DES TUNS IM GESETZ DES KÖNNENS (kunst-am-leib, `leibKunst`): die Züge je Zyklus im Takt der Stufe, und je Seite und
+    // Zug — fest aus seiner Zahl im Zyklus, wie der Ausschlag der Geste — sein Beginn (`zeit`: Anteil des Takts, so gestreckt, dass
+    // die Intervalle der Seite um `periode` streuen), sein Ausschlag (`aus`: das Mittel des Bands, SD `ende`) und ob eine zweite
+    // Teilbewegung nachsetzt (`nach`: der Anteil `korrektur`); die Steife nimmt der Schulter ihren Anteil am Zug, der Ellbogen trägt ihn
+    function leibTunKunst(A, KL) {
+        var G = LEIB_SATZ.koennen,
+            je = Math.max(1, Math.round(A.je * KL.takt)),
+            mitte = (GESTE.ausschlag[0] + GESTE.ausschlag[1]) / 2,
+            los = function (n, s, salz) {
+                var h = Math.sin((n + 1) * 12.9898 + s * 78.233 + salz * 37.719) * 43758.5453;
+                return h - Math.floor(h);
+            },
+            zeit = [],
+            aus = [],
+            nach = [];
+        for (var s = 0; s < 2; s++) {
+            var z = [],
+                w = [],
+                sd = 0,
+                sw = 0,
+                mw = 0,
+                n;
+            for (n = 0; n < je; n++) (z.push(2 * los(n, s, 1) - 1), w.push(2 * los(n, s, 2) - 1));
+            for (n = 0; n < je; n++) sd += Math.pow(z[(n + 1) % je] - z[n], 2) / je;
+            for (n = 0; n < je; n++) mw += w[n] / je;
+            for (n = 0; n < je; n++) sw += Math.pow(w[n] - mw, 2) / je;
+            sd = Math.sqrt(sd);
+            sw = Math.sqrt(sw);
+            zeit.push(Object.freeze(z.map(function (x) { return sd > 0 ? Math.max(-0.1, Math.min(0.1, (x * KL.periode) / sd)) : 0; }))); // prettier-ignore
+            aus.push(Object.freeze(w.map(function (x) { return mitte * (1 + (sw > 0 ? (KL.ende * (x - mw)) / sw : 0)); }))); // prettier-ignore
+            nach.push(Object.freeze(z.map(function (x, i) { return los(i, s, 3) < KL.korrektur; }))); // prettier-ignore
+        }
+        return Object.freeze(
+            Object.assign({}, A, {
+                je: je,
+                zeit: Object.freeze(zeit),
+                aus: Object.freeze(aus),
+                nach: Object.freeze(nach),
+                schulter: A.schulter * (1 - G.schulter * KL.steife),
+                ellbogen: A.ellbogen * (1 + G.schulter * KL.steife * 0.5),
+            })
+        );
     }
     // der Anteil, den die Arme des Tuns A zur Uhr t an der Seite s heben (0 … 1): ganze Takte je Zyklus wie die Geste
-    // (`leibGesteWert`), die rechte Seite um `GESTE.versatz` versetzt, der Ausschlag je Takt aus seiner Zahl im Zyklus
+    // (`leibGesteWert`), die rechte Seite um `GESTE.versatz` versetzt, der Ausschlag je Takt aus seiner Zahl im Zyklus.
+    // (kunst-am-leib) Ein Tun im Gesetz des Könnens (`leibTunKunst`) beginnt jeden Zug zu seiner Zeit, mit seinem Ausschlag; wer
+    // nachkorrigiert, dessen erste Teilbewegung fällt um `kurz` kürzer und niedriger, und die zweite (`nach` hoch) setzt auf ihrem
+    // Rückweg an — zwei Gipfel je Zug statt einem.
     function leibTunWert(t, s, A) {
         var x = leibStandPhase(t) * A.je + (s ? GESTE.versatz : 0),
             n = Math.floor(x),
             u = x - n;
+        if (A.zeit) {
+            var i = n % A.je,
+                G = LEIB_SATZ.koennen,
+                k = A.nach[s][i] ? 1 - G.kurz : 1,
+                v = u - A.zeit[s][i],
+                h1 = A.hub * k,
+                a0 = 0.85 * h1,
+                h2 = 0.5 * A.hub,
+                w = 0;
+            if (v >= 0 && v < h1) w += k * Math.pow(Math.sin((Math.PI * v) / h1), 2);
+            if (k < 1 && v >= a0 && v < a0 + h2) w += G.nach * Math.pow(Math.sin((Math.PI * (v - a0)) / h2), 2);
+            return A.aus[s][i] * w;
+        }
         if (!(u < A.hub)) return 0;
         var h = Math.sin(((n % A.je) + 1) * 12.9898 + (s ? 78.233 : 0)) * 43758.5453,
             b = Math.sin((Math.PI * u) / A.hub);
@@ -12075,6 +12197,7 @@
         // leib-liest-satz — DER LEIB LIEST SEINEN SATZ (Leser: _bewohnerGemuet, _koerperMotionProfile, _bewohnerStaende, _bewohnerTracht)
         LEIB_SATZ: LEIB_SATZ,
         leibSatzProfil: leibSatzProfil,
+        leibKunst: leibKunst,
         leibSatzNamen: leibSatzNamen,
         // leib-liest-satz-2 — DER GANG LIEST DEN SATZ (Leser: _animateHumanoidRig → leibRigPose, _bewohnerGang, _bewohnerGangPose)
         leibSatzPose: leibSatzPose,
