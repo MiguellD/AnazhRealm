@@ -16880,7 +16880,7 @@
   },
   "karte2.mensch.geist.gespraech": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.gespraech#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +25) · karte2.mensch.geist.gespraech#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +25) · karte2.mensch.geist.gespraech#3 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#4 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#5 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#6 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#7 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.gespraech#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +25) · karte2.mensch.geist.gespraech#2 gtx: ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal an 031f4700 · karte2.mensch.geist.gespraech#3 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#3 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#4 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#4 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#5 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#5 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#6 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#6 gtx: Station seit der Messung geändert · karte2.mensch.geist.gespraech#7 radeon: ungemessen (R10) · karte2.mensch.geist.gespraech#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.geist.gespraech#2",
@@ -16896,10 +16896,9 @@
      "id": "karte2.mensch.geist.gespraech#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +25)",
-     "ungemessen": true,
+     "zahl": "S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal",
+     "sha": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e",
+     "grund": "ROT: S2 ROT an Umfang 0 < 10 sprechende Bewohner — Täter: stamm/feld-nexus.js maybeAnswerCreature → llmCallCreature — die Antwort ist der Lauf des Modells (ohne Schlüssel: „keine Stimme“); keine Antwort ist gegen den Lebenslauf geprüft, kein Gespräch erinnert die vorige Begegnung (der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · Faktentreue der Antworten — (Soll ≥ 0.95) · Anteil Gespräche mit Bezug auf die vorige Begegnung — (Soll ≥ 1) · Umfang 0 (Soll ≥ 10 sprechende Bewohner) · der Ruf trifft 30 von 30 gerufenen Bewohnern beim Vornamen (stamm/feld-nexus.js _findCreatureByName), 30 Personae tragen den Lebenslauf (_buildCreaturePersonaPrompt); Stimme der Welt aus (state.llm); 1356 Bewohner · [linse-gpu] nvidia/pascal",
      "r6": "konsum"
     },
     {
@@ -18853,7 +18852,7 @@
   },
   "karte2.mensch.kultur.sprache": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 GRÜN · Namen richtig zugeordnet 0.99686 (Soll ≥ 0.9) · Saaten der Namen 4 (Soll ≥ 2) · Umfang 1273 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran/alpin/mitteleuropa/nordisch · [linse-gpu] nvidia/pascal an 45bad33f gtx · gehalten: S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] amd/rdna-3 an 45bad33f radeon · gehalten: S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] nvidia/pascal an 45bad33f gtx — offen: karte2.mensch.kultur.sprache#1 radeon: Station seit der Messung geändert · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#2 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: S1 GRÜN · Namen richtig zugeordnet 0.99686 (Soll ≥ 0.9) · Saaten der Namen 4 (Soll ≥ 2) · Umfang 1273 (Soll ≥ 100 Namen (Orts- und Personennamen) aus 2 Saaten) · Saaten mediterran/alpin/mitteleuropa/nordisch · [linse-gpu] nvidia/pascal an 45bad33f gtx · S2 GRÜN · Sprachen an Sätzen getrennt 0.92308 (Soll ≥ 0.85) · Sätze 20 (Soll ≥ 20) · Umfang 26 (Soll ≥ 10 Sprachen (U_eff)) · 26 Sprachen aus 4 Familien (alpin/mitteleuropa/mediterran/nordisch) · 48 von 52 Hälften richtig (C&T N 1–5, P 400) · die Rede der Menge: 7 von 7 Sprechern sprechen den Satz des Lesers (7 Sätze, 1686 ms) · „Dastau moscau cau samau tom sore li da baup.“ · „Po momau pe li cau pani.“ · „Mau cogramau.“ · [linse-gpu] nvidia/pascal an 031f4700 gtx · gehalten: S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] amd/rdna-3 an 45bad33f radeon · gehalten: S3 GRÜN · Robinson-Foulds des Stammbaums 0.155 (Soll ≤ 0.3) · Anteil der Bäume mit RF ≤ 0,3 1 (Soll ≥ 0.7) · Sprachfamilien 6 (Soll ≥ 5) · Umfang 192 (Soll ≥ 100 Sprachen (U_eff)) · RF je Familie mitteleuropa 0.155 · alpin 0.017 · mediterran 0.19 · nordisch 0.034 · fernost 0.086 · antik 0.155 (Median gemeldet) · 105 Bedeutungen je Liste · Zeuge 32 von 32 Ortsnamen · [linse-gpu] nvidia/pascal an 45bad33f gtx — offen: karte2.mensch.kultur.sprache#1 radeon: Station seit der Messung geändert · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.sprache#1",
@@ -18887,11 +18886,11 @@
     {
      "id": "karte2.mensch.kultur.sprache#2",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "S2 GRÜN · Sprachen an Sätzen getrennt 0.92308 (Soll ≥ 0.85) · Sätze 20 (Soll ≥ 20) · Umfang 26 (Soll ≥ 10 Sprachen (U_eff)) · 26 Sprachen aus 4 Familien (alpin/mitteleuropa/mediterran/nordisch) · 48 von 52 Hälften richtig (C&T N 1–5, P 400) · die Rede der Menge: 7 von 7 Sprechern sprechen den Satz des Lesers (7 Sätze, 1686 ms) · „Dastau moscau cau samau tom sore li da baup.“ · „Po momau pe li cau pani.“ · „Mau cogramau.“ · [linse-gpu] nvidia/pascal",
+     "sha": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.kultur.sprache#3",
@@ -37595,7 +37594,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3787,
-  "konsum": 345,
+  "konsum": 346,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37765,10 +37764,10 @@
    "karte2.same.kopplung.terraform#1 gtx",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3275
+  "ohne": 3274
  },
  "kopfVoll": "031f4700b44ed32ea4362ff2744f8fa71fa5fc2e",
- "zeit": "2026-11-27T02:34:17.054Z",
+ "zeit": "2026-11-27T02:46:38.043Z",
  "vorher": "031f4700",
  "bilanz": {
   "gewinn": [],

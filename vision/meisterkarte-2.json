@@ -5568,10 +5568,10 @@
     "kriterien": 84,
     "sprossen": 569,
     "heute": 51,
-    "kern": 2,
-    "kernDazu": 2,
+    "kern": 4,
+    "kernDazu": 4,
     "anteilHeute": 8.6,
-    "anteilKern": 0.3
+    "anteilKern": 0.5
    },
    "perspektiven": [
     {
@@ -10730,7 +10730,7 @@
       }
      ],
      "heute": 1,
-     "kern": 0,
+     "kern": 2,
      "fuss": "gemessen",
      "beleg": "keine Welt-Sprache; Ortsnamen aus festen Silben je Region (fachwerk-core.js:3306)",
      "alt": [
@@ -20100,10 +20100,10 @@
   "sprossen": 1718,
   "heute": 138,
   "davonKopplungen": 33,
-  "kern": 2,
-  "kernDazu": 2,
+  "kern": 4,
+  "kernDazu": 4,
   "anteilHeute": 7.2,
-  "anteilKern": 0,
+  "anteilKern": 0.1,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
