@@ -1,7 +1,7 @@
 {
  "sha": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
  "geraet": "gtx",
- "zeit": "2026-11-27T14:49:37.699Z",
+ "zeit": "2026-11-27T15:02:19.386Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.fahrzeug.medium#2": {
@@ -139,6 +139,76 @@
    },
    "zeit": "2026-11-27T14:49:37.699Z",
    "abdruck": "73cec9f86a69",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.kunst#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.22,
+   "grund": "ROT: S1 ROT: fehlender Leser: der Anfänger ist nicht sichtbar ungeschickt: Meister {\"handwerk\":427,\"tanz\":8,\"kampf\":6,\"brett\":8} und Anfänger {\"handwerk\":574,\"tanz\":745,\"kampf\":1088,\"brett\":642} in 4 von 3 Künsten stehen im Lebenslauf (b.uebung), kein Leib liest ihr Können — Haltung (koerper-core tagesHaltung: Akt, Rolle), Gang  (koerper-core.js tagesHaltung · stamm/siedlung-bewohner.js _bewohnerGemuet) · gemessen 4 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k3234d4bce37c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k7a102ef6857b",
+   "s": 12.1,
+   "fremd": {
+    "s": 15.3,
+    "takte": 7,
+    "fremdS": 4.39,
+    "kerne": 0.286,
+    "fensterKerne": 0.301,
+    "namen": [
+     [
+      "Explorer.EXE",
+      0.78
+     ],
+     [
+      "bash.exe -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"$1/\"; while [ -n \"$4 ] && [ ! -e \"",
+      0.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.45
+     ]
+    ],
+    "dienerS": 4.02,
+    "diener": [
+     [
+      "dwm.exe",
+      1.66
+     ],
+     [
+      "System",
+      1.42
+     ]
+    ],
+    "geraetS": 7.16,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.28
+     ],
+     [
+      "svchost.exe",
+      1.55
+     ],
+     [
+      "SearchIndexer.exe",
+      0.22
+     ]
+    ],
+    "eigenS": 45.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T15:02:19.386Z",
+   "abdruck": "64bbef8b031b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
