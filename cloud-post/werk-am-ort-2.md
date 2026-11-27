@@ -82,6 +82,11 @@ Seite der Fahrbahn → `wer`).
   - Summe 3 966 s gegen geplant 3 076: die Stadt-Proben tragen den Unterschied (seuche +250, zielplan +250, werkort +242,
     bewohner +218, kaskade +119, mengebild +92). Der Schnitt folgt: `DAUER_S` = diese Zahlen, die Täter der Stadt-Proben billiger,
     je Teil ≤ 1 150 s.
+- Kopf 4 (Koordinator 20:59: VIER Teile): am Baum main b3740dd5 + werk-am-ort-2, `DAUER_S` gemessen, `--selftest --teil=k/4` mit
+  Stoppuhr — Teil 1/4 GRÜN 974 s (44 Täter, 8 Proben; bewohner 861) · Teil 2/4 GRÜN 1 049 s (42 Täter, 9 Proben; kaskade 528,
+  schreck 342 samt Gründung der vollen Stadt) · Teil 3/4 GRÜN 954 s (38 Täter, 12 Proben; werkort 416, seuche 278) · Teil 4/4 fährt.
+  Je Lauf gemessen: seuche Grund 124 s, je Täter 88 s (die Rechnung des Ausbruchs ≈ 0,2 s — der Rest ist die Stadt um den Lauf);
+  zielplan je Täter 29–35 s (sein Tag an fünf Stunden); der Wechsel in die frische Welt 12 s.
 
 ## Heap an der GTX 1060 (Koordinator 18:04)
 
