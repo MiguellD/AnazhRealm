@@ -110,6 +110,13 @@ const GROSS_S = 300;
 // Anzeige (ein Job-Median streut über die Läufe ±10 s)
 const PULS_S = 120;
 const ueber = (s, deckel) => Math.round(s / 6) > Math.round(deckel / 6);
+// DIE FRIST DES PULSES: seine Tafel trägt den MEDIAN (voll den p90). Der langsamste gelandete Lauf der Statik trug 1,32 × den
+// Median (586 s gegen 444 s, neun Zug-Kandidaten 26.–27.11.); mit demselben Rand 1,2 wie in voll hält die Frist 1,6 × den Plan.
+// EINE Formel für den Schreiber (ci-zeiten.cjs setzt timeout-minutes des Jobs puls) und die Wand (gate:ci-deckung (T) FRIST):
+// z810 (27.11.) — der Zug maß die Statik im Kandidaten neu (431 → 543 s Median), die Frist stand von Hand auf 15 min, und die
+// Wand riss erst auf der Fahrt (1,6 × 9,4 min); kein Kopf konnte sie vorher sehen, jede Landung stand.
+const PULS_FRIST = 1.6;
+const pulsFristMin = (planS) => Math.ceil((PULS_FRIST * planS) / 60);
 
 // ── R6: DER SELBSTTEST RUHT, WO SEINE LINSE RUHT (Schöpfer 07.11.: „wird nicht viel zu viel unnötig gemessen?") ──
 // Ein Selbsttest beweist die LINSE, nicht das Spiel: auf einem Zweig, einem PR und integ-probe läuft er nur, wenn der Kandidat
@@ -307,7 +314,9 @@ if (require.main === module) {
 module.exports = {
     GROSS_S,
     LAEUFER_PLAETZE,
+    PULS_FRIST,
     PULS_S,
+    pulsFristMin,
     klasseDesLaufs,
     ueber,
     R6_SHELL,
