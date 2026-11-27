@@ -1,0 +1,11 @@
+$ C:\Program Files\nodejs\node.exe -e eval(((r) => (process.argv.push(...r.argv), r.rumpf))(JSON.parse(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))))
+[linse-gpu] amd/rdna-3
+@@PUNKTE@@ ZEIT dorf 1.2 s
+@@PUNKTE@@ ZEIT leben.kopplung.leben-formt-planet 38.6 s
+@@PUNKTE@@ ZEIT leben.kopplung.evolution-planet 59.3 s
+@@PUNKTE@@ ZEIT leben.kopplung.stadt-im-netz 171.0 s
+@@PUNKTE@@ PROBE 171.1 s · Exit 0
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
