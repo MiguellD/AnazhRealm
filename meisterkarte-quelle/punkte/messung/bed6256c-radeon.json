@@ -1,7 +1,7 @@
 {
  "sha": "bed6256cc52c9489d5f9bb30b2d7faf5b307806d",
  "geraet": "radeon",
- "zeit": "2026-11-27T16:46:05.330Z",
+ "zeit": "2026-11-27T17:06:15.975Z",
  "host": "MiguellD",
  "je": {
   "karte2.mensch.geist.gespraech#2": {
@@ -1088,6 +1088,70 @@
    "modus": "session",
    "offen": 1,
    "fahrt": "32856@mwz6phvx"
+  },
+  "karte2.mensch.fahrzeug.lenker#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 84 von 2500000000000 s in 2520 Takten, 39.7 s Wand (15.7 ms je Takt)",
+   "exit": 0,
+   "minuten": 0.82,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ 48 s · S1 warf: eine Spielstunde Verkehr nicht erreicht: 84 von 2500000000000 s in 2520 Takten, 39.7 s Wand (15.7 ms je Takt)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 48.2,
+   "fremd": {
+    "s": 53.1,
+    "takte": 22,
+    "fremdS": 90.98,
+    "kerne": 1.714,
+    "fensterKerne": 1.994,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      11.14
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      8.94
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh seegang-regen-nah bash seegang/regen.sh",
+      7.89
+     ]
+    ],
+    "dienerS": 29.89,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.23
+     ],
+     [
+      "System",
+      9.58
+     ]
+    ],
+    "geraetS": 56.56,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.81
+     ],
+     [
+      "svchost.exe",
+      16.94
+     ],
+     [
+      "SearchIndexer.exe",
+      16.5
+     ]
+    ],
+    "eigenS": 114.16,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-27T17:06:15.975Z",
+   "abdruck": "1fee50cfa72d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  }
 }
