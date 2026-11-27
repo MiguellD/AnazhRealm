@@ -935,7 +935,7 @@ class AnazhRealm_klang {
             const z = k.z;
             if (klingen < UMWELT.stimmenMax && !(z.rede && z.ab < z.rede.length)) {
                 z.nr = M.saetze = (M.saetze || 0) + 1;
-                z.satz = this._bewohnerLauf(k.S, k.b, "rede", z.nr);
+                [z.satz, z.akt] = [this._bewohnerLauf(k.S, k.b, "rede", z.nr), k.b.akt];
                 if (typeof z.satz !== "string") return; // der Kern fehlt: `_kernPflichtBruch` hat laut gebrochen
                 const FC = globalThis.__fachwerkCore;
                 const L = FC.spracheVon(k.S.plan.region, k.S.plan.mundart);

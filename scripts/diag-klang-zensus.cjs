@@ -2123,6 +2123,10 @@ async function marktSeite(o) {
     if (o.mut === "satzlos") tausche(r, "_bewohnerLaut", ((alt) => function (b, laut, rede) {
         return alt.call(this, b, laut, rede && { ...rede, rede: undefined });
     })(r._bewohnerLaut));
+    // S31: der Satz vergisst seinen Akt (der Wirt reicht `b.akt` nicht an fachwerk `sprachSatz`)
+    if (o.mut === "handlungslos") tausche(r, "_bewohnerLauf", ((alt) => function (S, b, feld, tag) {
+        return alt.call(this, S, feld === "rede" ? Object.assign(Object.create(b), { akt: undefined }) : b, feld, tag);
+    })(r._bewohnerLauf));
     if (o.mut === "fremd") tausche(r, "_bewohnerLauf", ((alt) => function (S, b, feld, tag) {
         return alt.call(this, S, b, feld, feld === "rede" ? tag + 1 : tag);
     })(r._bewohnerLauf));
@@ -2302,14 +2306,24 @@ async function marktSeite(o) {
     // DER SATZ DER REDE (sprache#2): je Sprecher der Stadt, dessen Rede einen Satz trägt (`_mengeRede`: Nummer und Satz), der Satz
     // des Wirts mit derselben Nummer (`_bewohnerLauf` „rede“, die Mutanten sind zurück) — gleich, Wort für Wort; die Vokale der Kerne
     // aus dem Gesetz seiner Sprache (fachwerk `spracheVon(region, mundart).gesetz.vokale`)
-    const satz = { saetze: (sy.menge && sy.menge.saetze) || 0, sprecher: 0, gleich: 0, fremd: [], beispiel: [], vokaleFremd: [] };
+    // DER SATZ AM AKT (sprache#5): der Akt, in dem der Satz fiel (`z.akt`), trägt sein Verb (fachwerk SATZ_GESETZ.handlung) — das
+    // Wort der Sprache steht in einem Wort des Satzes (Zeit und Verneinung kleben an ihm; Doppel-Laute einfach gelesen)
+    const satz = { saetze: (sy.menge && sy.menge.saetze) || 0, sprecher: 0, gleich: 0, fremd: [], beispiel: [], vokaleFremd: [], mitAkt: 0, amAkt: 0, ohneVerb: [] }; // prettier-ignore
     const FC = window.__fachwerkCore;
-    const vokale = new Set(FC.spracheVon(W.S.plan.region, W.S.plan.mundart).gesetz.vokale.join(""));
+    const vokale = new Set(LS.gesetz.vokale.join(""));
+    const einfach = (w) => w.toLowerCase().replace(/([^aeiouyäöüøåæ])\1+/g, "$1");
     for (const b of W.S.liste) {
         const z = r._mengeRede && r._mengeRede.get(b);
         if (!z || typeof z.satz !== "string") continue;
         satz.sprecher++;
-        const soll = r._bewohnerLauf(W.S, b, "rede", z.nr);
+        if (z.akt != null) {
+            satz.mitAkt++;
+            const verb = (FC.SATZ_GESETZ.handlung || {})[z.akt];
+            const w = verb && einfach(FC.sprachWort(LS, verb));
+            if (w && z.satz.split(/[^\p{L}]+/u).some((t) => einfach(t).includes(w))) satz.amAkt++;
+            else if (satz.ohneVerb.length < 3) satz.ohneVerb.push(`${z.akt} → ${verb || "kein Verb"} in „${z.satz}“`);
+        }
+        const soll = r._bewohnerLauf(W.S, Object.assign(Object.create(b), { akt: z.akt }), "rede", z.nr);
         if (soll === z.satz) satz.gleich++;
         else if (satz.fremd.length < 3) satz.fremd.push(`„${z.satz}“ statt „${soll}“`);
         if (satz.beispiel.length < 4) satz.beispiel.push(z.satz);
@@ -2385,6 +2399,8 @@ function marktUrteil(m) {
         rot.push(`Mk Rede ohne Satz: ${m.redeOhneSilben} von ${m.rede} Reden der Menge ohne die Silben eines Satzes, ${Z.sprecher} Sprecher mit Satz (klang.js _bewohnerLautTakt ← fachwerk sprachSatz/sprachSilben)`); // prettier-ignore
     if (Z.sprecher > 0 && Z.gleich < Z.sprecher)
         rot.push(`Mk Satz ≠ Wirt: ${Z.sprecher - Z.gleich} von ${Z.sprecher} Sätzen der Rede sind nicht der Satz des Wirts (_bewohnerLauf „rede“): ${Z.fremd.join(" · ")}`); // prettier-ignore
+    if (!(Z.mitAkt > 0) || !(Z.amAkt / Z.mitAkt >= 0.8))
+        rot.push(`Mk Satz ↔ Handlung: ${Z.amAkt} von ${Z.mitAkt} Sätzen tragen das Verb ihres Akts (Soll ≥ 0,8, sprache#5; fachwerk SATZ_GESETZ.handlung ← stamm/siedlung-bewohner.js „rede“ b.akt): ${Z.ohneVerb.join(" · ")}`); // prettier-ignore
     if (Z.vokaleFremd.length) rot.push(`Mk Satz fremder Laute: Vokale außerhalb der Sprache ${m.region}: ${Z.vokaleFremd.join(" · ")}`);
     return rot;
 }
@@ -2408,6 +2424,7 @@ async function markt(page, erg) {
             ["lombard", /^Mk Lombard aus/, "S27: Lombard aus"],
             ["satzlos", /^Mk Rede ohne Satz/, "S29: die Rede spricht Vokale ohne Satz"],
             ["fremd", /^Mk Satz ≠ Wirt/, "S30: die Rede spricht einen fremden Satz"],
+            ["handlungslos", /^Mk Satz ↔ Handlung/, "S31: der Satz vergisst seinen Akt"],
         ]) {
             const u = marktUrteil(await lauf(mut, 8, 1));
             const t = u.find((z) => re.test(z));
@@ -2415,7 +2432,7 @@ async function markt(page, erg) {
             else console.log(`   ${was} → ${t}`);
         }
         for (const t of fehl) console.log("   ❌ " + t);
-        if (!fehl.length) console.log("   ✅ S24–S27, S29, S30 nennen jeden Täter beim Namen");
+        if (!fehl.length) console.log("   ✅ S24–S27, S29–S31 nennen jeden Täter beim Namen");
     }
     console.log("");
     if (rot.length) {

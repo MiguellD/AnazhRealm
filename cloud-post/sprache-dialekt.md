@@ -132,6 +132,15 @@ Art „auge“: auch mit Gesetz bleibt die Sprosse bis zum Blindpaar am Gerät o
 Konsonanten als Quelle aus Rauschen und Verschluss im EINEN `stimmPuffer`, Band: Klatt 1980, die Parallel-Zweige für Frikative) und den
 Satz an den Akt binden. Das Urteil spricht das Ohr.
 
+### sprache#5 Täter 2 geschnitten: der Satz spricht von seinem Akt (27.11. 23:5x, WIP über Kopf 2)
+
+Die Lesart entscheide ich selbst, das Soll bleibt unverändert: Ein Satz, der während eines Akts fällt, trägt das Verb dieses Akts.
+- fachwerk `SATZ_GESETZ.handlung`: 17 Akte → das nächste Verb der Grundliste (QUELLE UNGEPRUEFT in der Zuordnung; Swadesh kennt kein arbeiten, spielen, kämpfen); wer es tut, sind Leute. `sprachSatz(L, saat, akt)`: ein Akt ohne Zeile bricht laut, ohne Akt spricht der Satz frei.
+- Byte-Beweis: Sätze ohne Akt alt ↔ neu 0 von 1 800 verschieden. Damit liest die Station #2 (Bewohner ohne Akt) dieselben Sätze.
+- Wirt `_bewohnerLauf` „rede“ reicht `b.akt`; die Rede der Menge merkt sich ihn (`z.akt`, klang.js).
+- node, 400 Sätze je Familie: gebunden 1,000; frei trägt das Verb nur durch Zufall 0,05–0,17.
+- Linse gate:klang-zensus Mk „Satz ↔ Handlung“ (Soll ≥ 0,8): Markt **38 von 38**. Selbsttest S31 „der Satz vergisst seinen Akt“ ist ROT (27 von 41, noch mit Sätzen vor dem Mutanten). `--markt --selftest` rc=0 · check:statik GRÜN.
+
 ### sprache#5 Täter 1 geschnitten (WIP 88c3e75, 27.11. 22:43, über Kopf 2, kein Vorprüf-Kopf vor dem Urteil)
 
 Der Schnitt an der EINEN Wurzel, der Lautung des Satzes:

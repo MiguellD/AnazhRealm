@@ -5123,6 +5123,13 @@
       adjektive: ['groß', 'klein', 'lang', 'rot', 'grün', 'gelb', 'weiß', 'schwarz', 'warm', 'kalt', 'voll', 'neu', 'gut', 'rund', 'trocken'],
       // die Fürwörter tragen kein Adjektiv (*„großer ich“)
       fuerwort: ['ich', 'du', 'wir', 'wer'],
+      // DER SATZ AM AKT (sprache#5 „Satz ↔ Handlung“): wer spricht, spricht von dem, was er tut — je Akt des Tags (koerper
+      // `tagesPlan`, die Tat der Rolle, das Spiel des Abends, der Hieb der Wache) das Verb der Grundliste, das ihm am nächsten liegt;
+      // wer es tut, sind Leute. Ein Akt ohne Zeile bricht laut (`sprachSatz`); ohne Akt spricht der Satz frei.
+      // QUELLE UNGEPRUEFT im Wert: die Zuordnung (die Grundliste nach Swadesh kennt weder arbeiten noch spielen noch kämpfen).
+      handlung: { schlaf: 'schlafen', morgen: 'trinken', mittag: 'essen', abend: 'sitzen', einkauf: 'geben', besuch: 'kommen',
+        streife: 'gehen', arbeit: 'stehen', hilft: 'geben', spiel: 'sehen', zuschauen: 'sehen', wettkampf: 'gehen', zweikampf: 'beißen',
+        brett: 'wissen', jagd: 'töten', fischfang: 'töten', hieb: 'töten' },
     };
     // der Wurf nach den Zahlen der Typologie (Gewicht = Zahl der Sprachen)
     function _zahlZug(A, Z, u) { var H = 0, i; for (i = 0; i < Z.length; i++) H += Z[i]; var a = u * H; for (i = 0; i < A.length; i++) if ((a -= Z[i]) < 0) return A[i]; return A[A.length - 1]; }
@@ -5138,10 +5145,12 @@
         gram: { zeit: _urWort(U, z + "|zeit", 1, true), ort: _urWort(U, z + "|ort", 1, true) } });
       _SATZBAU.set(region, g); return g; }
     // prettier-ignore
-    function sprachSatz(L, saat) {
+    function sprachSatz(L, saat, akt) {
       var G = SATZ_GESETZ, B = _satzBau(L.region), z = "satz|" + saat, u = function (k) { return _sprachU(z, k); };
       var aus = function (liste, k) { var W = []; liste.forEach(function (x) { W = W.concat(G.klassen[x] || [x]); }); return W[Math.floor(u(k) * W.length) % W.length]; };
-      var V = Object.keys(G.verben), verb = V[Math.floor(u("verb") * V.length) % V.length], R = G.verben[verb];
+      var V = Object.keys(G.verben), verb = akt == null ? V[Math.floor(u("verb") * V.length) % V.length] : G.handlung[akt], R = G.verben[verb];
+      if (!R) throw new Error("fachwerk sprachSatz: der Akt „" + akt + "“ trägt kein Verb in SATZ_GESETZ.handlung");
+      if (akt != null) R = [['leute'], R[1]];
       var nominal = function (b, k) { var w = sprachWort(L, b);
         if (G.fuerwort.indexOf(b) >= 0 || !(u(k + "-adj") < G.anteil.adjektiv)) return w;
         var a = sprachWort(L, G.adjektive[Math.floor(u(k + "-adj-zug") * G.adjektive.length) % G.adjektive.length]);
