@@ -1,0 +1,307 @@
+{
+ "sha": "52937c92786457ffbc7e62e6c4e99949df3c135e",
+ "geraet": "radeon",
+ "zeit": "2026-11-27T11:14:26.523Z",
+ "host": "MiguellD",
+ "je": {
+  "profiband.K4#1": {
+   "gruen": true,
+   "zahl": "Gehen 64 Bilder · max 75.47 ms · 73.44 % > 33 ms · Fahrt 50 Bilder · max 133.89 ms · 94.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 73.44 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 133.89), 94.00 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.9,
+   "mass": [
+    {
+     "wort": "Gehen Frame max ms",
+     "wert": 75.47,
+     "soll": 100
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "kfb188f16bdd9",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "ka71c8a7254d1",
+   "s": 53.2,
+   "fremd": {
+    "s": 55.9,
+    "takte": 22,
+    "fremdS": 123.81,
+    "kerne": 2.217,
+    "fensterKerne": 3.455,
+    "namen": [
+     [
+      "node.exe scripts/diag-wetter-wache.cjs --selftest",
+      15.14
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… $f ] && echo $f; done; ls -d worktree",
+      9.75
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.78
+     ]
+    ],
+    "dienerS": 50.72,
+    "diener": [
+     [
+      "dwm.exe",
+      20.45
+     ],
+     [
+      "System",
+      19.72
+     ]
+    ],
+    "geraetS": 51.33,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      33.7
+     ],
+     [
+      "svchost.exe",
+      14.94
+     ],
+     [
+      "SearchIndexer.exe",
+      2.08
+     ]
+    ],
+    "eigenS": 282.66,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 4.778,
+     "nach": 1.831,
+     "station": 4.778
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 121.7,
+     "alle": 353.5,
+     "cpuEin": 124,
+     "tor": {
+      "ruhig": true,
+      "kerne": 0.63,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       2.96,
+       0.8,
+       0.63,
+       0.53,
+       0.65,
+       0.72
+      ]
+     },
+     "spanne": [
+      1795778066527,
+      1795778067194
+     ]
+    },
+    "nach": {
+     "ein": 104,
+     "alle": 327.1,
+     "cpuEin": 109,
+     "tor": {
+      "ruhig": true,
+      "kerne": 3.84,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       3.92,
+       3.72,
+       4.63,
+       3.24,
+       2.78,
+       5.42
+      ]
+     },
+     "spanne": [
+      1795778121004,
+      1795778121599
+     ]
+    },
+    "ruhe": {
+     "ein": 83.5,
+     "alle": 259.2,
+     "n": 1192,
+     "von": "2026-11-16"
+    },
+    "f": 1.457,
+    "fEin": 1.457,
+    "fAlle": 1.364,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "grund": "GRÜN trotz Last: Referenz f 1,457 (Faden 1,457 · alle Kerne 1,364; vor 121,7/353,5 ms, nach 104/327,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node.exe scripts/diag-wetter-wache.cjs --selftest 15,1 CPU-s · bash.exe -c source /c/Users/micha/.claude/shell-sna… $f ] && echo $f; done; ls -d worktree 9,8 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 7,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 33,7 CPU-s · svchost.exe 14,9 CPU-s · SearchIndexer.exe 2,1 CPU-s",
+   "zeit": "2026-11-27T11:14:26.523Z",
+   "abdruck": "67957095b356",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kfb188f16bdd9": "bVVdj5swEPwveWzLmc9gLN2DOSJd1Ls29xPWZg1cCEQ2hCpV/3sFCUmA8yszntnZXfN3dQS5hwyfPk1drdjq2+rHysAJLYP6hPrp06zYKpKOix7jH7w/hHP+0sOkLo6NIWUhCIgK8gNarW6wKJ/kQFNrsAPBSLfh2Y4QRc4k6Z6f59RSYFpbDSgciTZ6AUU2B7YmA4EWtGoQu4IDP8K1w8hwaMLfE3I7fyjnu450O/o6u0xAlU7dOk4E65DxbvvC+cfcZVoANlZZVGbUddIwUja7aXXvC46GzjoD5iXqKwmp4/hiNBv3cfbRzIiqbI2ZiFEvDVzKCInm2AxNIfPGOupaYHWFi8gNHWDxMu3s2Frq0REIAVTMs84Bqwz1xIPtSXUJWg32jbtTfcAxn4vs4YAarAryKzWyvdAV96wIIa9Lb+VQyCA5FhL5rkjtCbFvMjn1gad8cnbDx2xEqW78IG+QjC9EjcwLfZjGp3x0bY+9LS2aHFLU1r42zQ3tYejbgg0C24RcvNB4zrwXN/YUAOhjbZTwV7pQrFXTgUYrO7bjEPkYhAHjfLsAN3A43Gx5FDzGF2fzBatKJ9bcSAWBzwj5flmmZRCX1bHOWJR4m20ZetF8kk4aDhaITBdKjU0VgVTRV8PcYdlYoq6bsQYnDD2vj6h6HIBfQ2u3DzUl2YfflHG3mZa6XYzmoFDrZjQtQHi+z1SWUEKomqML3VgdyPwWjBIIESOdnF98Rl1ihpMYleOAmzLSXRaGnPvnKLw+F+r7ZKjPi86fC+wDrkxrxoQl+CJgX7SkQ70XUO2vQOmsQbrsjXMev/PdPZA445uXrF8NcqJkmlXsDSvykycXaMf574Twq9ARJTnqWhX9y0lyaE0OZXP/bfz7Dw==",
+  "ka71c8a7254d1": "jZXdcpswEIXfxZdNifg1oJlcyCHTJB23Tt9gJVZAjIGRIHTc6bt3wIAN5KJ7xXjOao++PeA/mwrEERK8f9dlsaGbL5uvGw0faGhUH6ju3/WGbkJh2ehQdinCGPvWyYTKqlqTPOMEeAHpCY1G1Zjl96Jvk1swPU5J+8SSAyGSnEnUsqke2cPD8picY1waNUgcDzHR8QKkS2GjE+BoQCP7wYPYc0PcWpT0FURsH5GpWsHYoSXtIXheHMahiOfOLSuErU9Z+8IYe1u6jDPA2sizQo9zrdgPpUmvs/arHgWtcQZMc1RDEwaW5fLR7K5D0mFaNMq80Xo2LHBizw4oIeFSm6DORFoblSo5FoOch7ZvAd21K9pJ1Rjy1hFwDgFfsk4BiwTVzIPpCNmB/h0sDz3CCRUYBaSDNDQd3+ZXNoSQ57WXvDfejxiNh67NY3PW2C31Ajhmszr0vyajSk4xE5MkWcdNizRTpzku6aJtOksGOoUYlXEsdT0pHfRdk1/eipeIXHwEu2Xn9WLj/gAguL1XQNjziqMuZd2CQiOpmjEwLnq+R1mySpeu4XSabDkBrC9QdyG/tWGH0vNcSsjdgHSF5/JKGGfMcpwyK3wnpI+RuxR/KDgZwBOVSTkukHtChp8FtcW8NnhZ1qNny/cdhxKHFLfL/tGyR8b2N3uO8l9unb/ePc3X/529fjahVPVonAN3XJfKNgoICeRSnanaaEGkExzJEcIlxDOqHBOcYZSWBXZM+8/L5NIdH+5m4T2vtnzOsANc6EaPhAW43LukY0jxyzy5Laojh+I4NAhrC8KmjEUJ27PDDZWfjL1XsmX/XW871g+qUJBKlTLrvowkhUankNfXv4i//wA="
+ },
+ "ungemessen": {
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,457 (Faden 1,457 · alle Kerne 1,364; vor 121,7/353,5 ms, nach 104/327,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node.exe scripts/diag-wetter-wache.cjs --selftest 15,1 CPU-s · bash.exe -c source /c/Users/micha/.claude/shell-sna… $f ] && echo $f; done; ls -d worktree 9,8 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 7,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 33,7 CPU-s · svchost.exe 14,9 CPU-s · SearchIndexer.exe 2,1 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 133,9, entlastet ≥ 66,94 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 64 Bilder · max 75.47 ms · 73.44 % > 33 ms · Fahrt 50 Bilder · max 133.89 ms · 94.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 73.44 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 133.89), 9)",
+   "exit": 0,
+   "minuten": 0.9,
+   "grund": "Last: Referenz f 1,457 (Faden 1,457 · alle Kerne 1,364; vor 121,7/353,5 ms, nach 104/327,1 ms, Ruhe 83,5/259,2 ms seit 2026-11-16) · fremd: node.exe scripts/diag-wetter-wache.cjs --selftest 15,1 CPU-s · bash.exe -c source /c/Users/micha/.claude/shell-sna… $f ] && echo $f; done; ls -d worktree 9,8 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 7,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 33,7 CPU-s · svchost.exe 14,9 CPU-s · SearchIndexer.exe 2,1 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 133,9, entlastet ≥ 66,94 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 64 Bilder · max 75.47 ms · 73.44 % > 33 ms · Fahrt 50 Bilder · max 133.89 ms · 94.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 73.44 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 133.89), 9)",
+   "mass": [
+    {
+     "wort": "Gehen Frame max ms",
+     "wert": 75.47,
+     "soll": 100
+    },
+    {
+     "wort": "Fahrt Frame max ms",
+     "wert": 133.89,
+     "soll": 100
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "kfb188f16bdd9",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "ka71c8a7254d1",
+   "s": 53.2,
+   "fremd": {
+    "s": 55.9,
+    "takte": 22,
+    "fremdS": 123.81,
+    "kerne": 2.217,
+    "fensterKerne": 3.455,
+    "namen": [
+     [
+      "node.exe scripts/diag-wetter-wache.cjs --selftest",
+      15.14
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… $f ] && echo $f; done; ls -d worktree",
+      9.75
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.78
+     ]
+    ],
+    "dienerS": 50.72,
+    "diener": [
+     [
+      "dwm.exe",
+      20.45
+     ],
+     [
+      "System",
+      19.72
+     ]
+    ],
+    "geraetS": 51.33,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      33.7
+     ],
+     [
+      "svchost.exe",
+      14.94
+     ],
+     [
+      "SearchIndexer.exe",
+      2.08
+     ]
+    ],
+    "eigenS": 282.66,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 4.778,
+     "nach": 1.831,
+     "station": 4.778
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 121.7,
+     "alle": 353.5,
+     "cpuEin": 124,
+     "tor": {
+      "ruhig": true,
+      "kerne": 0.63,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       2.96,
+       0.8,
+       0.63,
+       0.53,
+       0.65,
+       0.72
+      ]
+     },
+     "spanne": [
+      1795778066527,
+      1795778067194
+     ]
+    },
+    "nach": {
+     "ein": 104,
+     "alle": 327.1,
+     "cpuEin": 109,
+     "tor": {
+      "ruhig": true,
+      "kerne": 3.84,
+      "s": 0,
+      "soll": 6,
+      "reihe": [
+       3.92,
+       3.72,
+       4.63,
+       3.24,
+       2.78,
+       5.42
+      ]
+     },
+     "spanne": [
+      1795778121004,
+      1795778121599
+     ]
+    },
+    "ruhe": {
+     "ein": 83.5,
+     "alle": 259.2,
+     "n": 1192,
+     "von": "2026-11-16"
+    },
+    "f": 1.457,
+    "fEin": 1.457,
+    "fAlle": 1.364,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-27T11:14:26.523Z",
+   "abdruck": "464abdde1514",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  }
+ }
+}
