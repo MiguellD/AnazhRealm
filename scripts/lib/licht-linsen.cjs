@@ -3803,8 +3803,9 @@ function nachtSicht(o) {
         const { W, H } = o;
         const pp = st.playerMesh.position.clone();
         const proto = Object.getPrototypeOf(r);
-        // die Quellen der Welt um den Spieler: dieselbe Wahl wie der Pool, ohne Kegel (jede brennende, auch hinter dem Auge)
-        const alle = r._leuchtQuellen(pp.x, pp.y, pp.z, o.nahM, null).filter((q) => q.quelle !== "auge" && q.quelle !== "stahl" && !(q.L && q.L.ersatz) && Math.hypot(q.x - pp.x, q.z - pp.z) <= o.nahM);
+        // die Quellen der Welt um den Spieler: dieselbe Wahl wie der Pool, ohne Kegel (jede brennende, auch hinter dem Auge); das wache
+        // Glas (`normale`, nacht-fenster-glas) hat keinen Fuß, um den ein Ring läge — sein Licht trägt die Karte vor der Wand
+        const alle = r._leuchtQuellen(pp.x, pp.y, pp.z, o.nahM, null).filter((q) => !q.normale && q.quelle !== "auge" && q.quelle !== "stahl" && !(q.L && q.L.ersatz) && Math.hypot(q.x - pp.x, q.z - pp.z) <= o.nahM);
         const aus = { uhr: o.uhr, ort: [Math.round(pp.x), Math.round(pp.z)], quellen: alle.length, plaetze: window.anazhRealm.constructor.LICHT_POOL.plaetze, je: [] };
         const pkt = [];
         for (const [i, q] of alle.entries())

@@ -286,6 +286,9 @@ class AnazhRealm_gelaende_kollision {
         if (!AnazhRealm._huelleLauf(huelle, "fest", "fachwerk:__huelle")) return;
         entry._hausHuelle = huelle;
         this._dachWahl = null; // die Hülle trägt die Decken des Hauses: der Dach-Pool wählt neu (w28-innenlicht — bis hier erst nach `dachSchrittM` Weg)
+        // DAS WACHE GLAS (nacht-fenster-glas): mit der Hülle kennt das Haus seine wachen Fenster (`fenster`, `_fensterVon`) — trägt
+        // es eins, ist es eine Leuchtquelle und steht im Verzeichnis „licht“ (`_lichtDatum`; Leser: der Licht-Takt `_leuchtQuellen`)
+        this._blockerNameSetzen(entry, "licht", !!this._lichtDatum(entry));
         if (alt && AnazhRealm._huelleGleich(alt, huelle)) return;
         const pr = this._foundryPresetForEntry(entry);
         const ws = pr ? this._foundryWorldScaleMatrix(pr) : null;
@@ -1179,6 +1182,28 @@ class AnazhRealm_gelaende_kollision {
         const g = G ? G[typ.slice(k + 1)] : null;
         if (g && g.kind === typ.slice(0, k)) out.push("geraet");
         return out;
+    }
+
+    // EIN NAME DES VERZEICHNISSES ohne neuen Stempel (nacht-fenster-glas: die Hülle des Hauses bringt seine wachen Fenster, „licht“):
+    // der Eintrag im Bestand tritt unter `name` ein (`an`) oder aus — seine Zellen, seine Hülle und die Wachen des Netzes bleiben
+    // (ein voller Stempel, `_blockerNetzSetzen`, meldete jeder Wache eine Hülle, die sich nicht regte). Außerhalb des Bestands fragt
+    // der Eintritt die Namen selbst (`_blockerNamen`).
+    _blockerNameSetzen(entry, name, an) {
+        const N = this._blockerNetzStand;
+        if (!N || entry._blockerGen !== N.gen || entry._blockerZellenGen !== N.gen) return;
+        const namen = entry._blockerNamenListe || [];
+        if (namen.includes(name) === an) return;
+        let menge = N.verzeichnis.get(name);
+        if (an) {
+            if (!menge) N.verzeichnis.set(name, (menge = new Set()));
+            menge.add(entry);
+            entry._blockerNamenListe = namen.concat(name);
+        } else {
+            if (menge) menge.delete(entry);
+            const rest = namen.filter((n) => n !== name);
+            entry._blockerNamenListe = rest.length ? rest : null;
+        }
+        N.verzeichnisListe.delete(name);
     }
 
     // Die Einträge des Bestands, die `name` tragen, in seiner Ordnung — dieselbe Liste wie

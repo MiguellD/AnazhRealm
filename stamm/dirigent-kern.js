@@ -1740,16 +1740,65 @@ class AnazhRealm {
                 msMax: 0,
                 bauMs: 0,
                 offen: 0,
+                soll: null,
+                pruefen: false,
             });
-        // DAS SOLL: je Quelle ohne Platz ihre Stärke × (1 − Blende), die Blende in `blendeStufen` Stufen
-        const soll = new Map();
-        for (const q of pool.alle) {
-            if (q.quelle === "auge" || q.quelle === "stahl" || q.L.ersatz) continue;
-            const k = pool.halter.findIndex((h) => h && h.id === q.id);
-            const w = k >= 0 ? Math.round((1 - pool.blende[k]) * K.blendeStufen) / K.blendeStufen : 1;
-            const I = w > 0 ? this._leuchtStaerke(q, 0, true) * w : 0;
-            if (I > 0) soll.set(q.id, { q, I, x: q.x, y: q.y, z: q.z });
+        // DAS SOLL: je Quelle ohne Platz ihre Stärke × (1 − Blende), die Blende in `blendeStufen` Stufen. DIE KOSTEN AN DER
+        // ÄNDERUNG (nacht-fenster-glas, Gebot 7): die Stärken der Wahl rechnet die Karte, wenn die Wahl wechselt (`pool.alle`) oder
+        // die Stunde ihren Schaltplan (`_zeitplanJetzt`), je Bild nur die Quellen der Plätze — und den Unterschied prüft sie nur, wenn
+        // sich eins davon regte, ein Rest offen blieb oder eine neue Mitte steht. Das Dorf trägt je wachem Fenster eine Quelle: bis
+        // hier rechnete jedes Bild jede Quelle der Wahl samt ihrem Schaltplan (je Quelle die Sonne).
+        const S = this._zeitplanFest(() => {
+            const g = this._zeitplanJetzt();
+            const A = Z.soll;
+            if (
+                A &&
+                A.alle === pool.alle &&
+                A.nacht === g.nacht &&
+                A.abend === g.abend &&
+                A.plan === this._lichtZeitplan
+            )
+                return A;
+            const basis = new Map();
+            for (const q of pool.alle) {
+                if (q.quelle === "auge" || q.quelle === "stahl" || q.L.ersatz) continue;
+                const I = this._leuchtStaerke(q, 0, true);
+                if (I > 0) basis.set(q.id, { q, I, x: q.x, y: q.y, z: q.z });
+            }
+            const plan = this._lichtZeitplan;
+            return (Z.soll = {
+                alle: pool.alle,
+                nacht: g.nacht,
+                abend: g.abend,
+                plan,
+                basis,
+                soll: basis,
+                platz: [],
+                neu: true,
+            });
+        });
+        const platz = [];
+        for (let k = 0; k < pool.halter.length; k++) {
+            const h = pool.halter[k];
+            if (!h || !S.basis.has(h.id) || platz.some((p) => p[0] === h.id)) continue;
+            platz.push([h.id, Math.round((1 - pool.blende[k]) * K.blendeStufen) / K.blendeStufen]);
         }
+        let regt = S.neu;
+        if (
+            regt ||
+            platz.length !== S.platz.length ||
+            platz.some((p, i) => p[0] !== S.platz[i][0] || p[1] !== S.platz[i][1])
+        ) {
+            const soll = new Map(S.basis);
+            for (const [id, w] of platz) {
+                const b = S.basis.get(id);
+                if (w > 0) soll.set(id, { q: b.q, I: b.I * w, x: b.x, y: b.y, z: b.z });
+                else soll.delete(id);
+            }
+            Object.assign(S, { soll, platz, neu: false });
+            regt = true;
+        }
+        const soll = S.soll;
         // DIE NEUE MITTE im Hintergrund: erst die Höhen, dann die Quellen des Solls, je Bild bis zur Frist
         const cp = cam.position;
         if (!Z.bau && !(Math.hypot(cp.x - Z.mx, cp.z - Z.mz) <= K.nachM)) {
@@ -1806,6 +1855,7 @@ class AnazhRealm {
                         mz: B.tz * zm,
                         bau: null,
                         bauMs: B.ms,
+                        pruefen: true, // ihre Beiträge sind das Soll, als ihr Bau begann: der Unterschied prüft sie
                     });
                     Z.baue++;
                     LK.gitter.image.data.set(B.ablage);
@@ -1815,7 +1865,9 @@ class AnazhRealm {
                 }
             }
         }
-        if (!Z.g) return void (Z.msMax = Math.max(Z.msMax, performance.now() - t0));
+        if (!Z.g || !(regt || Z.offen > 0 || Z.pruefen))
+            return void (Z.msMax = Math.max(Z.msMax, performance.now() - t0));
+        Z.pruefen = false;
         // DER UNTERSCHIED je Quelle: was geht, kommt oder seine Stärke ändert (> `stufe` relativ), trägt nur seinen Fleck — die
         // nächste zuerst (am Auge), bis zur Frist `bauMs` und höchstens `zellenJeBild` Zellen hochzuladen; der Rest bleibt Unterschied
         // und folgt im nächsten Bild (die Nacht bricht
@@ -1895,12 +1947,15 @@ class AnazhRealm {
     // DER FLECK EINER QUELLE in der Karte (`_lichtKarteTakt`): ihre Stärke `I` (negativ: sie geht) in jede Zelle ihrer Reichweite um
     // die Mitte (mx, mz), je Lage über dem Boden der Zelle — Vektor E · (Quelle − Lage)/d, E · Farbe, E (fachwerk `lichtAbfall`, das
     // Gesetz des Platzes). Der Rand des Gitters trägt nie (das Band blutet nicht). → das Rechteck der Zellen [i0, j0, i1, j1] | null.
+    // DAS GLAS STRAHLT VOR SEINE WAND (nacht-fenster-glas): eine Quelle mit Normale (`normale`, das wache Fenster, `_leuchtQuellen`)
+    // ist eine Lambert-Fläche — ihr Licht × cos θ zur Normale, hinter der Wand (cos θ ≤ 0) trägt keine Zelle.
     _lichtKarteFleck(G, mx, mz, s, I) {
         const K = AnazhRealm.LICHT_KARTE;
         const n = K.texel;
         const zm = K.zelleM;
         const L = s.q.L;
         const R = L.reichweiteM;
+        const N = s.q.normale;
         const FC = globalThis.__fachwerkCore;
         const farbe = this._lichtKarteC || (this._lichtKarteC = new THREE.Color());
         this._lichtLinear(L, farbe);
@@ -1916,12 +1971,14 @@ class AnazhRealm {
             for (let i = i0; i <= i1; i++) {
                 const vx = s.x - (mx + (i + 0.5 - n / 2) * zm);
                 if (vx * vx + vz * vz >= R * R) continue;
+                const vor = N ? -(N[0] * vx + N[2] * vz) : 1; // (Zelle − Quelle) · Normale: davor > 0
+                if (!(vor > 0)) continue;
                 const t = j * n + i;
                 for (let l = 0; l < 2; l++) {
                     const vy = s.y - (boden[t] + (l ? l1 : l0));
                     // die Länge ohne Math.hypot (V8: 9,4 → 5,4 ms je 42 Laternen im Node-Maß)
                     const dd = Math.sqrt(vx * vx + vy * vy + vz * vz);
-                    const ee = I * FC.lichtAbfall(L, dd);
+                    const ee = N ? (I * FC.lichtAbfall(L, dd) * vor) / dd : I * FC.lichtAbfall(L, dd);
                     if (!(ee !== 0)) continue;
                     const D = d[l];
                     D[3 * t] += (ee * vx) / dd;
@@ -1941,7 +1998,8 @@ class AnazhRealm {
     // DIE WAHL DES ORTS (der eine Schritt, den Licht-Takt, Lichtmesser und Licht-Karte teilen): jede brennende Quelle im Umkreis
     // nach ihrem Rang (`_leuchtQuellen`, `alle`) — die `plaetze` mit dem höchsten Rang tragen Glanz und Wurf (`wahl`), jede andere
     // trägt ihr Licht in der Karte (`_lichtKarteTakt`): EIN Licht, nah und fern derselben Wahl — neu je `wahlS`, nach `wahlM` Weg
-    // und nach jedem Sprung der Uhr (`_uhrSetzen` setzt `t` auf −∞).
+    // und nach jedem Sprung der Uhr (`_uhrSetzen` setzt `t` auf −∞). DAS GLAS NIMMT NIE EINEN PLATZ (nacht-fenster-glas): eine Quelle mit
+    // Normale (das wache Fenster) trägt ihr Licht in der Karte — die Plätze (Glanz, Wurf) gehören den Leuchten.
     _leuchtWahl(pool, cam, jetzt = performance.now() / 1000) {
         const LP = AnazhRealm.LICHT_POOL;
         const cp = this._lodAuge() || cam.position; // das EINE Auge der Stufen
@@ -1950,9 +2008,10 @@ class AnazhRealm {
         pool.x = cp.x;
         pool.y = cp.y;
         pool.z = cp.z;
-        const q = this._leuchtQuellen(cp.x, cp.y, cp.z, LP.umkreisM, this._leuchtKegel(cam));
+        const q = this._zeitplanFest(() => this._leuchtQuellen(cp.x, cp.y, cp.z, LP.umkreisM, this._leuchtKegel(cam)));
         q.sort((a, b) => a.rang - b.rang);
-        pool.wahl = q.slice(0, LP.plaetze);
+        pool.wahl = [];
+        for (const s of q) if (!s.normale && pool.wahl.push(s) >= LP.plaetze) break;
         pool.alle = q;
     }
 
@@ -2023,33 +2082,70 @@ class AnazhRealm {
         const c = this._poolBildC || (this._poolBildC = new THREE.Color());
         const FC = globalThis.__fachwerkCore;
         const X = P.xyz;
-        // je Punkt sein Pool (Luma, Welt-Einheiten) — gesammelt über jede Quelle, dann das Fenster über die Punkte
-        const je =
-            this._poolBildJe && this._poolBildJe.length >= P.n
-                ? this._poolBildJe
-                : (this._poolBildJe = new Float64Array(P.kacheln || P.n));
-        je.fill(0, 0, P.n);
-        let farbig = 0;
         // DIE GANZE WAHL (nacht-lichter-2): der Messer liest jede Quelle, die leuchtet — die Plätze UND die Karte (`pool.alle`);
         // bis nacht-lichter-2 las er nur die `plaetze` Gewählten, und unter 42 Laternen der Gasse stand die Blende von vieren.
         // Die Kosten folgen dem Schirm (höchstens eine Kachel je Punkt) und der Wahl, nie der Welt: jenseits der Reichweite fällt
-        // ein Punkt vor dem Gesetz
-        for (const q of pool.alle) {
-            if (q.quelle === "auge" || q.L.ersatz) continue;
-            const I = this._leuchtStaerke(q, 0, true);
-            if (!(I > 0)) continue;
-            const R = q.L.reichweiteM;
-            this._lichtLinear(q.L, c);
-            const lu = I * (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b);
-            for (let i = 0; i < P.n; i++) {
-                const dy = q.y - X[3 * i + 1];
-                if (!(dy > 0)) continue;
-                const d = Math.hypot(q.x - X[3 * i], dy, q.z - X[3 * i + 2]);
-                if (!(d < R)) continue;
-                const e = FC.lichtAbfall(q.L, d) * (dy / d);
-                if (e > 0) ((je[i] += lu * e), farbig++);
+        // ein Punkt vor dem Gesetz. DIE KOSTEN AN DER ÄNDERUNG (nacht-fenster-glas): der Pool je Punkt hängt an der Messung (`P`), der
+        // Wahl und dem Schaltplan der Stunde — steht alles, liest der Messer, was er rechnete (nur der Stahl an der Hand wandert je
+        // Bild: mit ihm rechnet er jede Lesung). Das wache Glas strahlt nur vor seine Wand (Lambert, wie in der Karte).
+        const M = this._zeitplanFest(() => {
+            const g = this._zeitplanJetzt();
+            const A = this._poolBildMerk;
+            const plan = this._lichtZeitplan;
+            if (A && A.P === P && A.alle === pool.alle && A.nacht === g.nacht && A.abend === g.abend && A.plan === plan)
+                return A;
+            // je Punkt sein Pool (Luma, Welt-Einheiten) — gesammelt über jede Quelle, dann das Fenster über die Punkte
+            const je =
+                this._poolBildJe && this._poolBildJe.length >= P.n
+                    ? this._poolBildJe
+                    : (this._poolBildJe = new Float64Array(P.kacheln || P.n));
+            je.fill(0, 0, P.n);
+            let farbig = 0;
+            let wandert = false;
+            // der Kasten der Punkte: eine Quelle, deren Reichweite ihn nicht berührt, trägt keinem Punkt (sie fällt vor der Schleife)
+            const kasten = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
+            for (let i = 0; i < P.n; i++)
+                for (let a = 0; a < 3; a++) {
+                    kasten[a] = Math.min(kasten[a], X[3 * i + a]);
+                    kasten[a + 3] = Math.max(kasten[a + 3], X[3 * i + a]);
+                }
+            const weg = (q, a) => Math.max(kasten[a] - q, 0, q - kasten[a + 3]);
+            for (const q of pool.alle) {
+                if (q.quelle === "auge" || q.L.ersatz) continue;
+                if (q.quelle === "stahl") wandert = true;
+                const R = q.L.reichweiteM;
+                if (Math.hypot(weg(q.x, 0), weg(q.y, 1), weg(q.z, 2)) > R + 1e-6) continue;
+                const I = this._leuchtStaerke(q, 0, true);
+                if (!(I > 0)) continue;
+                const N = q.normale;
+                const R2 = R * R;
+                this._lichtLinear(q.L, c);
+                const lu = I * (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b);
+                for (let i = 0; i < P.n; i++) {
+                    const dy = q.y - X[3 * i + 1];
+                    if (!(dy > 0)) continue;
+                    const vx = q.x - X[3 * i];
+                    const vz = q.z - X[3 * i + 2];
+                    let d;
+                    let lambert = 1;
+                    if (N) {
+                        // das Glas: nur vor seiner Wand und in seiner Reichweite, die Länge ohne Math.hypot
+                        const vor = -(N[0] * vx + N[2] * vz);
+                        const d2 = vx * vx + dy * dy + vz * vz;
+                        if (!(vor > 0 && d2 < R2)) continue;
+                        d = Math.sqrt(d2);
+                        lambert = vor / d;
+                    } else d = Math.hypot(vx, dy, vz);
+                    if (!(d < R)) continue;
+                    const e = FC.lichtAbfall(q.L, d) * (dy / d) * lambert;
+                    if (e > 0) ((je[i] += lu * e), farbig++);
+                }
             }
-        }
+            const merk = { P, alle: pool.alle, nacht: g.nacht, abend: g.abend, plan, je, farbig };
+            this._poolBildMerk = wandert ? null : merk;
+            return merk;
+        });
+        const { je, farbig } = M;
         if (!farbig) return aus;
         // das Fenster: log₂((Himmel + Pool) ÷ Himmel) je Kachel des Bilds, sortiert, gemittelt zwischen den Perzentilen — eine
         // Kachel ohne Punkt (der Himmel) trägt das Licht des Himmels allein: 0 Stufen
@@ -2172,11 +2268,31 @@ class AnazhRealm {
         if (auge) nimm(auge, Object.assign({}, auge, { x, y, z }));
         const bett = AnazhRealm._umweltGesetz().UMWELT.stimmen.glut.bettRefM;
         const bezug = (Math.PI / 4) * bett * bett;
+        // DAS WACHE GLAS (nacht-fenster-glas, die Klasse „jede Quelle der Nacht geht durch den EINEN Lichtweg“): je wachem Fenster
+        // eines Hauses (`_fensterVon`) EINE Quelle 0,05 m vor seiner Wand — die Leuchtdichte, die das Glas zeigt, als Lambert-Fläche
+        // seiner Größe (`_fensterLicht`); ihr Licht trägt die Karte (nie ein Platz, `_leuchtWahl`) in den Halbraum vor der Wand
+        // (`_lichtKarteFleck`). Brennt kein Fenster zur Stunde (Schaltplan 0, der Tag), fragt die Wahl kein Glas. Bis hier leuchtete
+        // das Glas nur als Stoff: der Boden vor dem Haus stand im Mondlicht.
+        const fensterAn = this._lichtSchaltplan(globalThis.__fachwerkCore.LICHT_GESETZ.fenster) > 0;
         for (const e of this._blockerMit("licht")) {
             const p = e.position;
             if (!p || (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z) > R * R) continue;
+            if (fensterAn)
+                for (const f of this._fensterVon(e))
+                    nimm(f.kennung, {
+                        quelle: "fenster",
+                        x: f.x,
+                        y: f.y,
+                        z: f.z,
+                        normale: f.normale,
+                        L: f.L,
+                        leibM: 0,
+                        masse: 1,
+                        phase: 0,
+                    });
             const L = this._lichtDatum(e);
-            if (!L) continue; // das Datum ging mit dem Bauplan (das Verzeichnis stempelt beim Eintritt)
+            // das Datum ging mit dem Bauplan (das Verzeichnis stempelt beim Eintritt); das Haus allein mit wachem Glas trägt nur dieses
+            if (!L || L === globalThis.__fachwerkCore.LICHT_GESETZ.fenster) continue;
             const sk = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
             const gestalt = !!this._lichtDatumDerGestalt(e);
             const a = gestalt ? 0 : this._glutFlaeche(e);
@@ -2228,11 +2344,72 @@ class AnazhRealm {
 
     // DAS EMITTER-DATUM eines Eintrags (K11): die Zeile `fx.licht` des Studio-Rezepts seiner Gestalt (`studioGestalt` im
     // Gesetzbuch fachwerk, synchron geladen — die Feuerstelle trägt LICHT_GESETZ.feuer, dasselbe Rezept, das das Buch der Welt
-    // reist: recipes.json), sonst für jede Glut (Brenn-Fläche > 0) das Herdfeuer des Gesetzbuchs. null: keine Leuchtquelle.
+    // reist: recipes.json), sonst für jede Glut (Brenn-Fläche > 0) das Herdfeuer des Gesetzbuchs, sonst für ein Haus mit wachem
+    // Glas (`_fensterVon`, nacht-fenster-glas) das Fenster des Gesetzbuchs. null: keine Leuchtquelle.
     _lichtDatum(entry) {
+        const FC = globalThis.__fachwerkCore;
         const L = this._lichtDatumDerGestalt(entry);
         if (L) return L;
-        return this._glutFlaeche(entry) > 0 ? globalThis.__fachwerkCore.LICHT_GESETZ.feuer : null;
+        if (this._glutFlaeche(entry) > 0) return FC.LICHT_GESETZ.feuer;
+        return this._fensterVon(entry).length ? FC.LICHT_GESETZ.fenster : null;
+    }
+
+    // DIE WACHEN FENSTER EINES HAUSES in der Welt (nacht-fenster-glas): je Zeile der Hülle (fachwerk `fensterZeile` [cx, cy, cz, w,
+    // h, nx, nz], haus-lokal: das wache Glas, seine Mitte, seine Normale aus dem Körper, an dessen Wand es sitzt) die Mitte des Glases
+    // 0,05 m vor der Wand, die Normale, die Fläche w·h, ihr Licht (`_fensterLicht`) und eine feste Kennung je Haus und Fenster (der
+    // Fleck der Karte hält sie über jeden Wechsel der Stufe — die Zeile ist in jeder Stufe dieselbe). Die Lage wie die Decken
+    // (`_deckenVon`): Gier, Skala der Hülle, 0,5 m unter der Lage. Gemerkt am Eintrag, bis Hülle, Lage, Gier oder Skala wechseln.
+    _fensterVon(e) {
+        const hu = e && e._hausHuelle;
+        const zeilen = hu && Array.isArray(hu.fenster) ? hu.fenster : null;
+        if (!zeilen || !zeilen.length || !e.position) return [];
+        const k = Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1;
+        const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+        const { x: px, y: py, z: pz } = e.position;
+        const m = e._fensterMerk;
+        if (m && m.zeilen === zeilen && m.k === k && m.ry === ry && m.x === px && m.y === py && m.z === pz)
+            return m.fenster;
+        const [co, si] = [Math.cos(ry), Math.sin(ry)];
+        const kennung = e._fensterKennung || (e._fensterKennung = []);
+        const fenster = zeilen.map(([cx, cy, cz, w, h, nx, nz], i) => {
+            const [wx, wz] = [nx * co + nz * si, nz * co - nx * si];
+            return {
+                kennung: kennung[i] || (kennung[i] = { haus: e, fenster: i }),
+                x: px + (cx * co + cz * si) * k + wx * 0.05,
+                y: py - 0.5 + cy * k,
+                z: pz + (cz * co - cx * si) * k + wz * 0.05,
+                normale: Object.freeze([wx, 0, wz]),
+                flaeche: w * h * k * k,
+                L: this._fensterLicht(w * h * k * k),
+            };
+        });
+        e._fensterMerk = { zeilen, k, ry, x: px, y: py, z: pz, fenster };
+        return fenster;
+    }
+
+    // DAS LICHT EINES WACHEN FENSTERS der Fläche A m² (nacht-fenster-glas): das Glas ist eine Lambert-Fläche der Leuchtdichte des
+    // Gesetzbuchs (`LICHT_GESETZ.fenster` `cdM2`, dieselbe, die der Stoff des Glases zeigt) — wie die Flammen-Fläche (`_flammenLicht`)
+    // eine Scheibe gleicher Fläche: Kern k = √(A/π), Lichtstärke π·k²·cdM2 ÷ (1 + k²) cd im Abfall 2 (AN dem Glas π·cdM2 lx, fern
+    // cdM2·A ÷ d²), die Reichweite aus ihr (fachwerk `lichtReichweiteM`); Farbe und Schaltplan die des Fensters. Je Fläche ein Datum.
+    _fensterLicht(A) {
+        const FC = globalThis.__fachwerkCore;
+        const M = this._fensterLichter || (this._fensterLichter = new Map());
+        const a = Math.round(A * 1000) / 1000;
+        let L = M.get(a);
+        if (!L) {
+            const Lf = FC.LICHT_GESETZ.fenster;
+            const k = Math.sqrt(a / Math.PI);
+            const cd = (Math.PI * Lf.cdM2 * k * k) / (1 + k * k);
+            L = Object.freeze({
+                ...Lf,
+                cd,
+                kernM: k,
+                abfall: 2,
+                reichweiteM: FC.lichtReichweiteM({ cd, kernM: k, abfall: 2 }),
+            });
+            M.set(a, L);
+        }
+        return L;
     }
 
     // Das Emitter-Datum der Studio-Gestalt eines Eintrags (`fx.licht` ihres Rezepts) oder null.
@@ -2281,12 +2458,35 @@ class AnazhRealm {
     // führt stückweise linear vom Mittag über die Dämmerung (Morgen vor, Abend nach der Mitte des Tages) in die Nacht.
     _lichtZeitplan(z) {
         if (!z) return 1;
-        const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-        const n = this._tagAchse(this._sonnenRichtung().y).nacht;
-        const daemmer = ((t % 1) + 1) % 1 < 0.5 ? z.morgen : z.abend;
+        const { nacht: n, abend } = this._zeitplanJetzt();
+        const daemmer = abend ? z.abend : z.morgen;
         return n <= 0.5
             ? z.mittag + (daemmer - z.mittag) * (n / 0.5)
             : daemmer + (z.nacht - daemmer) * ((n - 0.5) / 0.5);
+    }
+
+    // DIE STUNDE DER ZEITPLÄNE (nacht-fenster-glas): der Kanal `nacht` der EINEN Tag-Achse (`_tagAchse` der Sonnenhöhe) und die
+    // Hälfte des Tages (Abend ab der Mitte) — im Gang einer Wahl, der Karte oder des Messers (`_zeitplanFest`) EINMAL gerechnet;
+    // bis hier rechnete jede Quelle je Ruf die Sonne (das Dorf trägt je wachem Fenster eine Quelle).
+    _zeitplanJetzt() {
+        const g = this._zeitplanGang;
+        if (g && g.lage) return g.lage;
+        const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+        const lage = { nacht: this._tagAchse(this._sonnenRichtung().y).nacht, abend: !(((t % 1) + 1) % 1 < 0.5) };
+        if (g) g.lage = lage;
+        return lage;
+    }
+
+    // DER GANG EINER STUNDE: `f` läuft unter EINER Lage der Zeitpläne (`_zeitplanJetzt`, beim ersten Bedarf gerechnet) — ein Gang
+    // im Gang trägt die äußere; danach gilt wieder jeder Ruf für sich (eine Linse, die die Uhr stellt, liest die neue Stunde).
+    _zeitplanFest(f) {
+        if (this._zeitplanGang) return f();
+        this._zeitplanGang = { lage: null };
+        try {
+            return f();
+        } finally {
+            this._zeitplanGang = null;
+        }
     }
 }
 

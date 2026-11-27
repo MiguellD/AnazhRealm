@@ -3,7 +3,8 @@
 // (`kreuzungsUrteil`) · G (`--nur-g` nach K): die Gründung ist flach (`gruendungFlach`, Operationen je Stand) · N: der Export
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
 // Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände ·
-// `--breite [--ort stadt-voll]` allein: die Breite der Stadt im Gang durch ihre Gassen (lib/stadt-proben.cjs, die Zeile `BREITE {…}`).
+// `--breite [--ort stadt-voll]` allein: die Breite der Stadt im Gang durch ihre Gassen (lib/stadt-proben.cjs, die Zeile `BREITE {…}`) ·
+// Teil F (`--nur-f` allein): das wache Glas jedes Hauses ist eine Quelle „fenster“ im EINEN Lichtweg (lib/ort-proben.cjs `fensterLicht`).
 // --selftest: jede Wand feuert an injizierten Brüchen.
 const {
     statikServer,
@@ -42,6 +43,9 @@ const {
     poseSicht,
     gassenLicht,
     stadtFunktion,
+    fensterLicht,
+    fensterUrteil,
+    FENSTER_TAETER,
 } = require("./lib/ort-proben.cjs");
 
 // C3n DER ORT KENNT SEINE NACHBARN (Karte 2 mensch.kultur.sprache#1): das Urteil über den Zensus der Seite — jeder Nachbar des
@@ -2147,6 +2151,24 @@ hauptLauf(async () => {
                 m.fehlt || rot.join(" · ")
             );
         }
+        // Selbst-Test F (nacht-fenster-glas): je Täter am Stamm fällt die Linse des wachen Glases (`fensterLicht`, vier Häuser des
+        // Plans) beim Namen — der Zweig des Glases fehlt in den Quellen, das Glas nimmt einen Platz, der Fleck strahlt hinter die Wand
+        const FENSTER_SOLL = {
+            "ohne Glas-Zweig": /Fenster 0 .*: 0 Quellen in `_leuchtQuellen`/,
+            "Glas auf dem Platz": /Normale auf einem Platz des Pools \(`_leuchtWahl`\)/,
+            "ohne Lambert": /Zellen hinter der Wand tragen Licht \(`_lichtKarteFleck`\)/,
+        };
+        let fensterRohe = null;
+        for (const [name, T] of Object.entries(FENSTER_TAETER)) {
+            const m = fensterLicht(root, { FC, taeter: T, haeuser: 4, rohe: fensterRohe });
+            fensterRohe = m.rohe;
+            const v = fensterUrteil(m);
+            check(
+                `Selbst-Test F: „${name}“ fällt in der Linse des wachen Glases beim Namen`,
+                v.some((x) => FENSTER_SOLL[name].test(x)),
+                v.slice(0, 2).join(" · ")
+            );
+        }
         selbsttestEnde(errs);
         process.exit(0);
     }
@@ -2177,7 +2199,23 @@ hauptLauf(async () => {
     // Teil J urteilt über das Gesetz und seine Mutanten: ohne Erbe bricht die Überdeckung, der Turm von 1455 (bis K4 die
     // Ring-Stadt) und ein Export ohne Tracht fallen beim Namen
     const [nur, ww] = [(t) => process.argv.includes("--nur-" + t), process.argv.includes("--nur-ww")];
-    if (nur("r") || (!nur("z") && !nur("w") && !nur("j") && !nur("t") && !ww)) {
+    // Teil F (`--nur-f` allein): DAS WACHE GLAS IST EINE QUELLE — die Familie des Dorf-Lichts in Node (lib/ort-proben.cjs
+    // `fensterLicht`: der Stamm im vm, die Häuser des Plans durch den EINEN Eintritt der Hülle, Mitternacht)
+    if (nur("f") || (!nur("z") && !nur("w") && !nur("j") && !nur("t") && !nur("r") && !ww)) {
+        console.log("=== TEIL F: DAS WACHE GLAS IST EINE QUELLE (nacht-fenster-glas, Dorf-Licht) ===");
+        const m = fensterLicht(root, { FC });
+        const { rohe, ...zahl } = m;
+        console.log("FENSTER-LICHT " + JSON.stringify({ ...zahl, fehl: m.fehl.length }));
+        const v = fensterUrteil(m);
+        check(
+            `F1 DAS WACHE GLAS: ${m.wach} wache Fenster in ${m.haeuser} Häusern (${m.jeHaus} je Haus) tragen ${m.quellen} Quellen „fenster“ (je Zeile genau eine, 0,05 m vor ihrem Glas), ${m.verzeichnis} Häuser im Verzeichnis „licht“, ${m.wahlGlas} Glas auf einem Platz, je Fleck ${m.zellen} Zellen, ${m.hinten} hinter der Wand`,
+            !v.length,
+            v.join(" · ")
+        );
+        console.log(`  Teil F: ${(m.ms / 1000).toFixed(1)} s`);
+        if (nur("f")) wandEnde(errs, "DAS WACHE GLAS IST EINE QUELLE (Teil F).");
+    }
+    if (nur("r") || (!nur("z") && !nur("w") && !nur("j") && !nur("t") && !nur("f") && !ww)) {
         console.log("=== TEIL R: DIE BAUWEISE FOLGT DEM KLIMA (mensch.bau.bauen, haus-gestalt) ===");
         const t0 = Date.now(),
             K = klimaGang(FC);
@@ -4520,9 +4558,10 @@ hauptLauf(async () => {
                             // dem Auge zeigt ihren glühenden Kopf, ihr Licht trägt der Pool nicht (Gebot 7: Kosten am Schirm)
                             const LP = AnazhRealm.LICHT_POOL;
                             const an = (p, l) => l.some(([x, z]) => Math.hypot(x - p.x, z - p.z) < 0.5);
+                            // (das wache Glas nimmt nie einen Platz, `_leuchtWahl`: es zählt weder im Horizont noch im Rang)
                             const horizont = r
                                 ._leuchtQuellen(cam.position.x, cam.position.y, cam.position.z, LP.umkreisM, null)
-                                .filter((q) => an(q, je));
+                                .filter((q) => !q.normale && an(q, je));
                             const imHorizont = horizont.length;
                             // DER PLATZ NACH DEM RANG DES POOLS (w28-stadt-grammatik, `poolZaehlen`): der Pool vergibt nach dem Rang aus
                             // `_leuchtQuellen` mit dem Sichtkegel (stamm/dirigent-kern.js: erst die Quelle, deren Lichtkugel den Kegel berührt, dann
@@ -4539,6 +4578,7 @@ hauptLauf(async () => {
                                     LP.umkreisM,
                                     r._leuchtKegel(cam)
                                 )
+                                .filter((q) => !q.normale)
                                 .map((q) => ({ x: q.x, z: q.z, rang: q.rang }));
                             const gezaehlt = (0, eval)("(" + zaehlSrc + ")")(
                                 pl.map((p) => ({ x: p.x, z: p.z, staerke: p.staerke })),
