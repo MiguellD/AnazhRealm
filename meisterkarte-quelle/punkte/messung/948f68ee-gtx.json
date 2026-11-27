@@ -1,7 +1,7 @@
 {
  "sha": "948f68eeee479d4db0192c99c448e887313eefb3",
  "geraet": "gtx",
- "zeit": "2026-11-27T17:39:32.307Z",
+ "zeit": "2026-11-27T17:56:38.057Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.erleben.bild.nacht#2": {
@@ -356,6 +356,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.macht.megastadt#1": {
+   "gruen": false,
+   "zahl": "S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (2 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.21,
+   "grund": "ROT: S1 ROT an Umfang 0 < 1 Wache mit Streife — Täter: stamm/siedlung-bewohner.js _bewohnerListe (DIE WACHE: der Wächter wird aus den Wohnhäusern nächst dem Posten gewählt, sein Werk ist der Posten) · koerper-core.js TAGES_GESETZ.angebot (die Wache ist ein Ort ohne eigenes Angebot) — keiner rückt aus der Wache aus, kein Wagen fährt Streife (stamm/siedlu · Antwortzeit ∝ Weg zur Wache ρ — (Soll ≥ 0.7) · wer im Sichtfeld erscheint (Zahl) — (Soll ≤ 0) · Umfang 0 (Soll ≥ 1 Wache mit Streife) · 1 Bauten mit der Rolle Wache in 1 Plänen um den Spieler (2 in den Plänen der Bewohner), 4 Bewohner wohnen in ihr, 0 davon bewaffnet oder am Steuer; 8 Wächter mit Waffe in der Welt, 0 Fahrer am Steuer · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kfda4dba4ff34",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kf166dff2abcc",
+   "s": 12.3,
+   "fremd": {
+    "s": 15.3,
+    "takte": 7,
+    "fremdS": 8.64,
+    "kerne": 0.565,
+    "fensterKerne": 0.577,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.83
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.14
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.08
+     ]
+    ],
+    "dienerS": 3.92,
+    "diener": [
+     [
+      "dwm.exe",
+      1.66
+     ],
+     [
+      "System",
+      1.25
+     ]
+    ],
+    "geraetS": 8.73,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.31
+     ],
+     [
+      "svchost.exe",
+      2.09
+     ],
+     [
+      "SearchIndexer.exe",
+      0.2
+     ]
+    ],
+    "eigenS": 33.53,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-27T17:56:38.057Z",
+   "abdruck": "ff636cfdbfc5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -363,7 +433,8 @@
   "kf166dff2abcc": "lZXdcpswEIXfxZdNifgNQjO5UEymSTtu3b7BClZAjIGRIOq403fvgA02kJvuFeM5qz18e5D/bBpIDpDh/Zuuqw3bfNp83mh4R0ujekd1/6Y3bBMljose4+cinPMvvSxRRdNqUhaCgKggP6LVqRaL8j4Z2uQD2IFgxDzzbE+IJCcSGz7Vlj8+Lo8pBaa11YLE8RAbvYAiWwo7nYFACzo5DL6IAz/CB4eRoWjMdzGZyiSc7w0xe/qyOExAlc6dO04EDyHj5pVz/nPpMi0AW6ssKj3OddIwkja7ztqtehQY6wSYl6guTUgdxxej2aceSY9p0SjLTuvZMOqlgUsZIdFSm6Eukry1GlULrC5yEbmhA+zJrGhnTWfJW0cgBFCxZJ0DVhmqmQfbS2QP+jddHnqAIyqwKsgv0sj2Qldc2RBCXtZeysH4MGI07nvUpc6ssV/qGXDKZ7Uffs1GlZxilkySbB03neSFOs5xSR9d21sy0DmkqKxDrdtJ6WHo2+L8VbzG5OyDPi07ry827g8A6E1YCCX8ZcVR17I1oNDKmm4MjI9BGDCerdKlWzgeJ1sehfULtH3Ib224kQwCnxFyd0G6wnP+JKwTFiVOmU1CL2Lb2F+K3xUcLRCZKqQcNy+CREYfBdVg2VqirtvRi2fbScCIR6rbZX83fMv57ubKiMtfflt+vXuer/8b//rRhFq1o3EBwvN9Jk1MCaFyqS5UaxlI8lEeegJxBfGEqsQMZxil44CbsuF6GSv2x4e7WXhPqy2fCuwBV7rTI+EEfBGc03FJ8es8uQbVQUB1mO48KiJknMcZ3/H9DZUfnL810vD/qGzbD2owIY2qZdHfjCSHTudQtte/iL//AA==",
   "k60b983c7378e": "bZXRbpswFIbfJZfrqAFDMZZ64ZZujbRM6SMcwzHQEEA2hCnT3n0CQhKgvkAo+Q/n4z+/zd9NDfEBUnz8NFW54Ztvm+8bAye0DOoT6sdPs+GbMHZcpFyMiwghXntZrPO6MaTIJQFZQnZEq9UN5sVjPJSpJ7B9yUn3JtI9IYqcSdQ9Py9LC4lJZTWgcCq0kfoM+VLYmhQkWtCqodlF7HshPjmcDItFYheR6+piIfYd6fbsffEwCWUyp3WcEJ4CLrqtEOJjSZnkgI1V5KWZ+jpJECqb33rtVjUaOusMmBWoL0XIHMeTE+xLb2dvzaJQFa0xs2aMJr7LOCHhUpuiyeOssWpdSSwvchm6gQP8Ze12WreWuicCKYHJpdcZYJminjHYNFa90X/Y8qEHOKIGq4TsIg1tGrjy5g0h5H3NUgzgQ4sJ3KPMZc6ssB/qaHAiZms//JpOKtVNf8RXSXq9i0Zdt2I3cZbr49w+5aFrU/5rjWwySFBbh8o0VzXFwLPluDu2ERnZ2Muy8vay00wBgN0FiDAi3td8lWo60GildTuFyEM/8LkQ25W4gePxikUZ0OVgTdMH/x7DDZXve5yQh4vNq5cet4l1xrzAa47jgIb8NfKW4pOGowUy1blSUxqkH6vwq/B2WDSWrKpmYqG2HfucUFLeB+D3MNrt3eyj9MPb/RDd2zwSW7HEGTpUupnAJUjqeVylESOEqaU6143VQZxN8oBKRMr7DC6kZ9QFpjizUjkOuAkfjp2Bsk9CcDke1MMs1OfVpM859iaXpjWTyzF40udfjKVDfZBQHq5nIJMhDhF82Yn93JTPut8a5MTI3KvoJD6EELufkz4aL+PZV2NMal2pvD8pSQatyaBobp+Jf/8B",
   "k678c3a0875a4": "bVXBbqMwEP2XHLfrGjAUY6kHp1TbSJtV+gljGAMNgciGUGW1/76ChDRA58LBbzzP780Mf1dHSPaQ4eOHrauVWP1Y/VxZOCGxaE5oHj/sSqyixPWQCXkJKqV86WGJKY6NpWWhKKgK8gOS1jRYlI/JkKafwAmUoN2rzHaUanqmcff8PE8tFaY1aUDjmOggCziKObC1GSgk0Oqh2BUc+BE+uYIOwWO5jektPrmUu452O/42u0xBlU7Zum4ET6GQ3UZK+T5nmRaADSmLyo513TSMtCNutbrtIsdAR86AeYnmmoTcdX01kl33cvbSzBJ12Vo7KcZZGnhcUBrNsRnaIskbcjS1wuoKV5EXuiDWS7WzY0v0PSNQCriaa50DVhmaCQeHJboX+pPPL93DAQ2QCvIrNHJY6KkvbSilb0su5UB8KDES9xn3uDtJ7E2lp17gVE5iNxxmI0p340Fyg2RyUdQmeWEOU7m0j57DxO8lRZtDiobsa9vc0AxD31GXadjE9MKFr+eZX48bPQQAftcwlFP5ttDS1rrpwCDJju3YND4GYSCk3CzADRwON1qMA5sbaZu+0e9peJEOAl9Q+nAZlOWjL2NBzliUeOvbJGTR/PKTgQMBlZlC69F5FSQ6+q5ROywbouq6GXkwx0kCQRmt7s3+M9i4ufM5zt79plx3r1P7N3LOe6hQm2YkrUAx3xc6izmlXM/RhWlIB0k+wkOmEJno+20GPaMpMcOJjNp1wUsF7fSF97lfNeF1FeiHSQOfFy6fC+wFrmxrR4UT8FUgvrGkQ7NXUO1v+46rCIf2W2/lbqLJ60vWjwE9cTrVKj4N3+2v3VW7WMqY62uhIyb0aGpd9FuR5tDaHMrm65fw7z8=",
-  "k1939e7b6a829": "bVXRjpswEPyXPPbKGTAcxtI9OMe1F6mpkk9Ywxq4EEA2hCpV/72ChCTA+YEXz3rHM+Pl76qG+AApPn+aqlzx1bfV95WBE1oG9Qn186dZ8VUYOy5SLi6LCCHeelis87oxpMglAVlCdkSr1Q3mxXM8lKkXsH3JSfcu0h0hipxJ1L2+zksLiUllNaBwLLSR+gz5HNiaFCRa0Kqh2RXseyG+OJwMi0ViG5Hb6mIhdh3pduxjdpiEMpmydZwQXgIuuo0QYj9nmeSAjVXkpRn7OkkQKpvfe20XNRo66wyYFaivRcgcx5Mj2XUvZy/NrFAVrTGTZowmvss4IeEcm6LJ46yxal1JLK9wGbqBA3y9VDutW0s9MgIpgcm51hlgmaKecLBprHqh/7D5oQc4ogarhOwKDW0auPKuDSHkY8mlGIgPLUbiHmUucyaFvank1AuciMnaDZvpiFLduBHfIKlYNDVxluvjVC7loWtT/mtJ0WSQoLYOlWluaIqBZ8vLa9hE5MKFreeV98uNHgIAewgMYUR8LLQ0lWo60GildTuGxkM/8LkQmwW4gePxRosyoHMjTdMH/ZGGGyrf9zghT5eHsrz05VlYZ8wLvOU2DmjI3yIxB580HC2Qqc6VGt2XfqzCr8LaYdFYsqqakQu17djnhJLy0fDfg5WbB6+jdO9tf4jufRqBzYLO0KHSzUhcgqSex1UaMUKYmqNz3VgdxNkID6hEpLzP3Ax6Rl1gihMpleOAm/BhzAws+yQE13GgniYhPi+cPufYi1ya1owqx+BJn39hS4f6IKE83GYekyEOEVxvxW4qymfdPwVyYmSqVXQSeyHE9ueIjy6fy6yrMSa1rlTeT0aSQWsyKJr7b+Hffw=="
+  "k1939e7b6a829": "bVXRjpswEPyXPPbKGTAcxtI9OMe1F6mpkk9Ywxq4EEA2hCpV/72ChCTA+YEXz3rHM+Pl76qG+AApPn+aqlzx1bfV95WBE1oG9Qn186dZ8VUYOy5SLi6LCCHeelis87oxpMglAVlCdkSr1Q3mxXM8lKkXsH3JSfcu0h0hipxJ1L2+zksLiUllNaBwLLSR+gz5HNiaFCRa0Kqh2RXseyG+OJwMi0ViG5Hb6mIhdh3pduxjdpiEMpmydZwQXgIuuo0QYj9nmeSAjVXkpRn7OkkQKpvfe20XNRo66wyYFaivRcgcx5Mj2XUvZy/NrFAVrTGTZowmvss4IeEcm6LJ46yxal1JLK9wGbqBA3y9VDutW0s9MgIpgcm51hlgmaKecLBprHqh/7D5oQc4ogarhOwKDW0auPKuDSHkY8mlGIgPLUbiHmUucyaFvank1AuciMnaDZvpiFLduBHfIKlYNDVxluvjVC7loWtT/mtJ0WSQoLYOlWluaIqBZ8vLa9hE5MKFreeV98uNHgIAewgMYUR8LLQ0lWo60GildTuGxkM/8LkQmwW4gePxRosyoHMjTdMH/ZGGGyrf9zghT5eHsrz05VlYZ8wLvOU2DmjI3yIxB580HC2Qqc6VGt2XfqzCr8LaYdFYsqqakQu17djnhJLy0fDfg5WbB6+jdO9tf4jufRqBzYLO0KHSzUhcgqSex1UaMUKYmqNz3VgdxNkID6hEpLzP3Ax6Rl1gihMpleOAm/BhzAws+yQE13GgniYhPi+cPufYi1ya1owqx+BJn39hS4f6IKE83GYekyEOEVxvxW4qymfdPwVyYmSqVXQSeyHE9ueIjy6fy6yrMSa1rlTeT0aSQWsyKJr7b+Hffw==",
+  "kfda4dba4ff34": "bVXBbqMwEP2XHLfrGjAUY6kHp1TbSJtV+gljGAMNgciGUGW1/76ChDRA58LBbzzP780Mf1dHSPaQ4eOHrauVWP1Y/VxZOCGxaE5oHj/sSqyixPWQCXkJKqV86WGJKY6NpWWhKKgK8gOS1jRYlI/JkKafwAmUoN2rzHaUanqmcff8PE8tFaY1aUDjmOggCziKObC1GSgk0Oqh2BUc+BE+uYIOwWO5jektPrmUu452O/42u0xBlU7Zum4ET6GQ3eZFyvc5y7QAbEhZVHas66ZhpB1xq9VtFzkGOnIGzEs01yTkruurkey6l7OXZpaoy9baSTHO0sDjgtJojs3QFknekKOpFVZXuIq80AWxXqqdHVui7xmBUsDVXOscsMrQTDg4LNG90J98fukeDmiAVJBfoZHDQk99aUMpfVtyKQfiQ4mRuM+4x91JYm8qPfUCp3ISu+EwG1G6Gw+SGySTi6I2yQtzmMqlffQcJn4vKdocUjRkX9vmhmYY+o66TMMmphcufD3P/Hrc6CEA8LuGoZzKt4WWttZNBwZJdmzHpvExCAMh5WYBbuBwuNFiHNjcSNv0jX5Pw4t0EPiC0ofLoCwffRkLcsaixFvfJiGL5pefDBwIqMwUWo/OqyDR0XeN2mHZEFXXzciDOU4SCMpodW/2n8HGzZ3PcfbuN+W6e53av5Fz3kOF2jQjaQWK+b7QWcwp5XqOLkxDOkjyER4yhchE328z6BlNiRlOZNSuC14qaKcvvM/9qgmvq0A/TBr4vHD5XGAvcGVbOyqcgK8C8Y0lHZq9gmp/23dcRTi033ordxNNXl+yfgzoidOpVvFp+G5/7a7axVLGXF8LHTGhR1Prot+KNIfW5lA2X7+Ef/8B"
  },
  "ungemessen": {
   "profiband.K4#2": {
