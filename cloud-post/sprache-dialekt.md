@@ -32,8 +32,34 @@ Akte (Zweig `punkte-maschine`) `vision/richter/mensch.kultur.sprache.4.52937c92-
 
 Der Baum TRÄGT die Nähe (Schwestern KL 0,04–0,07), aber der Raum liest sie nicht: Nachbar-Orte ziehen beliebige Blätter (KL bis 0,95).
 
-## Plan des Schnitts (EINE Quelle)
+## Der Schnitt (EINE Quelle)
 
-`spracheVon` bekommt den Ort: das Blatt des Orts ist eine Funktion von Welt-Same, Region und Lage — die Spaltungen des Stammbaums
-fallen im Raum auf die Barrieren der Welt (Wasser, Gebirge), Nachbarn teilen den Zweig. Kein zweiter Silben-Weg: ORTSNAME,
-`_bewohnerLauf` (Name, Rede), Station lesen dasselbe `spracheVon`.
+- **Gesetz:** die Mundart eines Orts ist eine Funktion von Welt-Saat und SENKE seines Einzugsgebiets: `mundartVon(saat, x, z)`
+  (fachwerk-core) auf gelaende-core `talWeg` (Kette `unter`). Je Baum-Ebene t = 1..5 setzt der nächste Herd im Maßstab σ·2^(5−t)
+  das Bit (σ = 5 km, Burridge 2017 PRX 7 031008: 5–15 km). Der Fächer: jedes Wort liest seinen Punkt um 0,3·Maßstab versetzt
+  (Wang 1969, der Rheinische Fächer). `spracheVon(region, mundart)` hat keinen Samen-Weg mehr. Ohne Ort spricht ein Plan die Ursprache
+  seiner Familie, und eine Mundart ohne Form wirft.
+- **Leser:** der Wirt `_mundartAm` → die Zelle `_zellEingang` → DORF `mundart` → der Export → `_bewohnerLauf` (Name, Rede) und
+  ORTSNAME. Die Welt-Probe ergibt 12/12 Zellen GLEICH (anazh-realm-seed, Schritt 24).
+- **Linse:** gate:settlement R13 „die Mundart folgt dem Tal“ (KL ≤ 0,2 · Isoglossen ≥ 0,7 · U_eff ≥ 1000). Täter: „die Sprache liest
+  den Raum nicht“ (σ 5, Fächer 0 = EIN Blatt je Ort wie main) → ROT KL 0,319 U_eff 192; „die Mundart kennt keinen Fächer“ → ROT
+  KL 0,216 U_eff 180. main 52937c92 → ROT „mundartVon fehlt“.
+
+## Gemessen vorher → nachher (node, 48×48 Orte auf 1,6 km)
+
+| Saat | KL-p95 | Isoglossen auf Barrieren | Basis | U_eff |
+|---|---|---|---|---|
+| main 52937c92 | bis 0,95 | — (jede Kante ≈ 0,97 Grenze) | — | 2 (Akte) |
+| welt-1 | 0,094 | 1,000 | 0,395 | 1 097 |
+| welt-2 | 0,107 | 1,000 | 0,402 | 1 233 |
+| anazh | 0,094 | 1,000 | 0,412 | 1 190 |
+| 7 | 0,097 | 1,000 | 0,416 | 1 167 |
+
+Station-Kandidat: `cloud-post/sprache-dialekt-station/` (gegen punkte-maschine d14d0aa2). `liste` am Kopf f757fb6a meldet genau 2 ROT,
+gelaende.K2#1/#2 (Wand HAKEN).
+
+## Offen (mit Adresse)
+
+- Messort stadt-voll, Station nicht gefahren: GPU (der Vor-Richter fährt nur an der GTX 1060).
+- Die Kacheln der Stadt des Worts und die Wort-Pläne sprechen die Ursprache, weil ihr Ort erst nach dem Plan feststeht
+  (fachwerk `spracheVon(region, null)`). Die Seite MUNDART misst das Gitter der Welt.
